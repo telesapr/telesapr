@@ -1,0 +1,189 @@
+package sketch_test
+
+import (
+	"math"
+	"path/filepath"
+	"runtime"
+	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
+)
+
+func fixturesPath(t *testing.T, sub ...string) string {
+	t.Helper()
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatalf("runtime.Caller failed")
+	}
+	dir := filepath.Dir(file)      // .../pkg/sketch
+	pkgDir := filepath.Dir(dir)    // .../pkg
+	goRoot := filepath.Dir(pkgDir) // .../go
+	parts := append([]string{goRoot, "testdata"}, sub...)
+	return filepath.Join(parts...)
+}
+
+func TestRuntimeLookup(t *testing.T) {
+	path := fixturesPath(t, "request", "line_segment", "normal.slvs")
+
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("load fixture: %v", err)
+	}
+
+	rt := sketch.NewRuntime(doc.Sketch)
+
+	if len(doc.Sketch.Entities) == 0 {
+		t.Fatalf("fixture has no entities")
+	}
+
+	firstEntity := doc.Sketch.Entities[0]
+	e, err := rt.Entity(firstEntity.H)
+	if err != nil {
+		t.Fatalf("runtime entity lookup: %v", err)
+	}
+	if e != &doc.Sketch.Entities[0] {
+		t.Fatalf("runtime returned unexpected entity pointer")
+	}
+
+	// Verify point and normal calculations align with stored values.
+	for _, ent := range doc.Sketch.Entities {
+		switch ent.Type {
+		case core.EntityPointIn3D, core.EntityPointIn2D:
+			got, err := rt.PointValue(ent.H)
+			if err != nil {
+				t.Fatalf("point value: %v", err)
+			}
+			if got.DistanceTo(ent.PointGetNum()) > 1e-8 {
+				t.Fatalf("point mismatch: got %v want %v", got, ent.PointGetNum())
+			}
+		case core.EntityNormalIn3D:
+			got, err := rt.NormalQuaternion(ent.H)
+			if err != nil {
+				t.Fatalf("normal quaternion: %v", err)
+			}
+			want := ent.ActNormal.Normal()
+			if !sketch.AlmostEqualQuaternion(got, want, 1e-8) {
+				t.Fatalf("normal mismatch: got %v want %v", got, want)
+			}
+		}
+	}
+
+	// Mutate sketch and rebuild indexes.
+	newGroup := sketch.Group{}
+	h := doc.Sketch.AddGroup(newGroup)
+	rt.Rebuild()
+	g, err := rt.Group(h)
+	if err != nil {
+		t.Fatalf("runtime group lookup: %v", err)
+	}
+	if g == nil {
+		t.Fatalf("expected group lookup to succeed")
+	}
+}
+
+func TestRuntimeConstraintDistance(t *testing.T) {
+	path := fixturesPath(t, "constraint", "pt_pt_distance", "normal.slvs")
+
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("load fixture: %v", err)
+	}
+
+	rt := sketch.NewRuntime(doc.Sketch)
+	found := false
+	for _, c := range doc.Sketch.Constraints {
+		if c.Type != core.ConstraintPtPtDistance {
+			continue
+		}
+		found = true
+		pa, err := rt.PointValue(c.PtA)
+		if err != nil {
+			t.Fatalf("point A value: %v", err)
+		}
+		pb, err := rt.PointValue(c.PtB)
+		if err != nil {
+			t.Fatalf("point B value: %v", err)
+		}
+		dist := pa.DistanceTo(pb)
+		if math.Abs(dist-c.ValA) > 1e-8 {
+			t.Fatalf("constraint distance mismatch: got %f want %f", dist, c.ValA)
+		}
+	}
+	if !found {
+		t.Fatalf("expected pt-pt distance constraint in fixture")
+	}
+}
+
+func TestRuntimeConstraintPointOnCircle(t *testing.T) {
+	path := fixturesPath(t, "constraint", "pt_on_circle", "normal.slvs")
+
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("load fixture: %v", err)
+	}
+
+	rt := sketch.NewRuntime(doc.Sketch)
+	found := false
+	for _, c := range doc.Sketch.Constraints {
+		if c.Type != core.ConstraintPtOnCircle {
+			continue
+		}
+		found = true
+		pt, err := rt.PointValue(c.PtA)
+		if err != nil {
+			t.Fatalf("point value: %v", err)
+		}
+		circle, err := rt.Entity(c.EntityA)
+		if err != nil {
+			t.Fatalf("circle entity: %v", err)
+		}
+		if circle == nil {
+			t.Fatalf("circle entity missing")
+		}
+		center, err := rt.PointValue(circle.Point[0])
+		if err != nil {
+			t.Fatalf("circle center: %v", err)
+		}
+		radius, err := rt.DistanceValue(circle.Distance)
+		if err != nil {
+			t.Fatalf("circle radius: %v", err)
+		}
+		dist := pt.DistanceTo(center)
+		if math.Abs(dist-radius) > 1e-8 {
+			t.Fatalf("point not on circle: got %f want %f", dist, radius)
+		}
+	}
+	if !found {
+		t.Fatalf("expected pt-on-circle constraint in fixture")
+	}
+}
+
+func TestRuntimeRecalculateEntities(t *testing.T) {
+	sk := sketch.NewSketch()
+
+	px := core.Param{H: core.HParam{V: 0x00010001}, Val: 3}
+	py := core.Param{H: core.HParam{V: 0x00010002}, Val: 4}
+	pz := core.Param{H: core.HParam{V: 0x00010003}, Val: 5}
+	sk.Params = append(sk.Params, px, py, pz)
+
+	ent := core.Entity{
+		EntityBase: core.EntityBase{
+			H:     core.HEntity{V: 0x00010000},
+			Type:  core.EntityPointIn3D,
+			Param: [8]core.HParam{px.H, py.H, pz.H},
+		},
+	}
+	sk.Entities = append(sk.Entities, ent)
+
+	rt := sketch.NewRuntime(sk)
+	rt.RecalculateEntities(false)
+
+	got := sk.Entities[0].ActPoint
+	want := geom.NewVector(3, 4, 5)
+	if got.DistanceTo(want) > 1e-9 {
+		t.Fatalf("recalculate entities: got %v want %v", got, want)
+	}
+}

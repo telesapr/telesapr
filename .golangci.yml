@@ -1,0 +1,23 @@
+version: 2
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+
+linters-settings:
+  revive:
+    confidence: 0.8
+    ignore-generated-header: true
+    rules:
+      - name: exported
+        disabled: true
+
+issues:
+  exclude-use-default: false
+
+output:
+  format: colored-line-number

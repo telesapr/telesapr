@@ -1,0 +1,74 @@
+package core
+
+import (
+	"math"
+	"testing"
+)
+
+func TestRgbaColorFromFloatAndAccessors(t *testing.T) {
+	c := RgbaColorFromFloat(0.5, 0.25, 1.0, 0.0)
+
+	if c.Red != 127 || c.Green != 63 || c.Blue != 255 || c.Alpha != 0 {
+		t.Fatalf("unexpected conversion: %+v", c)
+	}
+
+	if diff := math.Abs(float64(c.RedF() - float32(c.Red)/255.0)); diff > 1e-6 {
+		t.Fatalf("RedF mismatch: got %f want %f", c.RedF(), float32(c.Red)/255.0)
+	}
+	if diff := math.Abs(float64(c.GreenF() - float32(c.Green)/255.0)); diff > 1e-6 {
+		t.Fatalf("GreenF mismatch: got %f want %f", c.GreenF(), float32(c.Green)/255.0)
+	}
+	if diff := math.Abs(float64(c.BlueF() - float32(c.Blue)/255.0)); diff > 1e-6 {
+		t.Fatalf("BlueF mismatch: got %f want %f", c.BlueF(), float32(c.Blue)/255.0)
+	}
+	if diff := math.Abs(float64(c.AlphaF() - float32(c.Alpha)/255.0)); diff > 1e-6 {
+		t.Fatalf("AlphaF mismatch: got %f want %f", c.AlphaF(), float32(c.Alpha)/255.0)
+	}
+}
+
+func TestRgbaColorPacking(t *testing.T) {
+	c := NewRgbaColor(10, 20, 30, 40)
+
+	if c.IsEmpty() {
+		t.Fatal("expected color to be non-empty")
+	}
+
+	wantPacked := uint32(c.Red) |
+		(uint32(c.Green) << 8) |
+		(uint32(c.Blue) << 16) |
+		(uint32(255-c.Alpha) << 24)
+	if got := c.ToPackedInt(); got != wantPacked {
+		t.Fatalf("ToPackedInt: got %#x want %#x", got, wantPacked)
+	}
+
+	wantARGB := uint32(c.Blue) |
+		(uint32(c.Green) << 8) |
+		(uint32(c.Red) << 16) |
+		(uint32(c.Alpha) << 24)
+	if got := c.ToARGB32(); got != wantARGB {
+		t.Fatalf("ToARGB32: got %#x want %#x", got, wantARGB)
+	}
+
+	if !RgbaColorFromPackedInt(c.ToPackedInt()).Equals(c) {
+		t.Fatal("round-trip via packed int did not preserve color")
+	}
+}
+
+func TestRgbaColorEqualsAndWithAlpha(t *testing.T) {
+	c := NewRgbaColor(5, 6, 7, 0)
+
+	if !c.IsEmpty() {
+		t.Fatal("expected IsEmpty to report true when alpha is zero")
+	}
+
+	other := c.WithAlpha(128)
+	if other.Alpha != 128 {
+		t.Fatalf("WithAlpha failed: got alpha %d", other.Alpha)
+	}
+	if other.Equals(c) {
+		t.Fatal("WithAlpha should create a distinct color")
+	}
+	if !other.WithAlpha(128).Equals(other) {
+		t.Fatal("Equals should detect identical colors")
+	}
+}
