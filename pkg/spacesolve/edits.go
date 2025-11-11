@@ -347,9 +347,7 @@ func (es *EditState) SanitizeSelected() {
 	for n := range es.Selected {
 		if pg, has := n.AsTree().Parent.(*svg.Group); has {
 			pgi := pg.This.(svg.Node)
-			if _, issel := es.Selected[pgi]; issel {
-				delete(es.Selected, pgi)
-			}
+			delete(es.Selected, pgi)
 		}
 	}
 }

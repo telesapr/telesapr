@@ -690,9 +690,7 @@ func (g *Group) extrudeLoop(sk *Sketch, loop []*core.Entity, vector geom.Vector)
 
 	// Add bottom cap vertices
 	bottomStart := len(mesh.Vertices)
-	for _, p := range points {
-		mesh.Vertices = append(mesh.Vertices, p)
-	}
+	mesh.Vertices = append(mesh.Vertices, points...)
 
 	// Add top cap vertices (extruded)
 	topStart := len(mesh.Vertices)

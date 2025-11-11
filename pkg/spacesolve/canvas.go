@@ -100,8 +100,8 @@ func (cv *Canvas) Init() {
 		})
 		w.Maker(func(p *tree.Plan) {
 			tool := cv.EditState.Tool
-			switch {
-			case tool == NodeTool:
+			switch tool {
+			case NodeTool:
 				cv.MakeNodeToolbar(p)
 			default:
 				cv.MakeSelectToolbar(p)

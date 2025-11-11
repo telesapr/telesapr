@@ -47,10 +47,8 @@ func (cv *Canvas) setPropsOnSelectedInput(act Actions, data string, final bool, 
 	es := &cv.EditState
 	sv := cv.SVG
 	actStart := false
-	finalAct := false
-	if final && es.InAction() {
-		finalAct = true
-	}
+	finalAct := final && es.InAction()
+
 	if !final && !es.InAction() {
 		final = true
 		actStart = true

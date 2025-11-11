@@ -35,7 +35,7 @@ func (o *SolveOptions) withDefaults() SolveOptions {
 	if opts.LinearSolveTolerance <= 0 {
 		opts.LinearSolveTolerance = 1e-9
 	}
-	if opts.EnableStagedSolve == false {
+	if !opts.EnableStagedSolve {
 		opts.EnableStagedSolve = true
 	}
 	return opts

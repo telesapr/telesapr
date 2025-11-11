@@ -43,8 +43,8 @@ func (sv *SVG) ManipDone() {
 	sprites := sv.SpritesLock()
 	sv.InactivateSprites(SpAlignMatch)
 	es := sv.EditState()
-	switch {
-	case es.Action == BoxSelect:
+	switch es.Action {
+	case BoxSelect:
 		bbox := math32.Box2{Min: math32.FromPoint(es.DragStartPos), Max: math32.FromPoint(es.DragPos)}
 		bbox = bbox.Canon()
 		sv.InactivateSprites(SpRubberBand)

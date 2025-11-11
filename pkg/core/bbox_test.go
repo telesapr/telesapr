@@ -45,9 +45,9 @@ func TestBBoxConstructionAndInclude(t *testing.T) {
 }
 
 func TestBBoxOverlaps(t *testing.T) {
-	a := NewBBox(geom.Vector{0, 0, 0}, geom.Vector{1, 1, 1})
-	b := NewBBox(geom.Vector{0.5, 0.5, 0.5}, geom.Vector{2, 2, 2})
-	c := NewBBox(geom.Vector{2, 2, 2}, geom.Vector{3, 3, 3})
+	a := NewBBox(geom.Vector{X: 0, Y: 0, Z: 0}, geom.Vector{X: 1, Y: 1, Z: 1})
+	b := NewBBox(geom.Vector{X: 0.5, Y: 0.5, Z: 0.5}, geom.Vector{X: 2, Y: 2, Z: 2})
+	c := NewBBox(geom.Vector{X: 2, Y: 2, Z: 2}, geom.Vector{X: 3, Y: 3, Z: 3})
 
 	if !a.Overlaps(b) {
 		t.Fatal("expected overlapping boxes to report true")
