@@ -12,6 +12,7 @@ import (
 
 // UI wires the SolveSpace application state to the Cogent Core widgets.
 type UI struct {
+	app         *SpaceSolve
 	body        *core.Body
 	menu        []*MenuItem
 	statusText  *core.Text
@@ -20,8 +21,9 @@ type UI struct {
 
 // New constructs a UI instance and prepares the widget hierarchy. Call Run to
 // start the event loop.
-func New() *UI {
+func New(app *SpaceSolve) *UI {
 	ui := &UI{
+		app:         app,
 		menu:        buildMenuTree(menuEntries),
 		recentFiles: []string{}, // filled lazily by persistence layer later on
 	}
@@ -238,6 +240,11 @@ func (ui *UI) buildLinkRecentMenu(_ *MenuItem) []*MenuItem {
 	return ui.buildOpenRecentMenu(nil)
 }
 
+// SetRecentFiles updates the UI copy of the recent file list.
+func (ui *UI) SetRecentFiles(files []string) {
+	ui.recentFiles = append(ui.recentFiles[:0], files...)
+}
+
 func (ui *UI) buildLocaleMenu(_ *MenuItem) []*MenuItem {
 	// Placeholder until localization infrastructure is ported.
 	return []*MenuItem{
@@ -248,6 +255,10 @@ func (ui *UI) buildLocaleMenu(_ *MenuItem) []*MenuItem {
 }
 
 func (ui *UI) openRecentFile(path string) {
+	if ui.app != nil {
+		ui.app.OpenRecentFile(path)
+		return
+	}
 	ui.setStatus("Open recent: " + path + " (not yet implemented)")
 }
 

@@ -7,6 +7,10 @@ import (
 )
 
 func (ui *UI) MenuFile(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleFileCommand(cmd)
+		return
+	}
 	switch cmd {
 	case CommandNew:
 		ui.setStatus("Starting a new sketch (not yet implemented)")
@@ -29,6 +33,10 @@ func (ui *UI) MenuFile(cmd Command) {
 }
 
 func (ui *UI) MenuEdit(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleEditCommand(cmd)
+		return
+	}
 	switch cmd {
 	case CommandUndo, CommandRedo:
 		ui.setStatus(fmt.Sprintf("%s history is not connected yet", ui.commandLabel(cmd)))
@@ -45,10 +53,18 @@ func (ui *UI) MenuEdit(cmd Command) {
 }
 
 func (ui *UI) MenuClipboard(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleClipboardCommand(cmd)
+		return
+	}
 	ui.notifyPending(cmd)
 }
 
 func (ui *UI) MenuView(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleViewCommand(cmd)
+		return
+	}
 	switch cmd {
 	case CommandZoomIn, CommandZoomOut, CommandZoomToFit:
 		ui.setStatus(fmt.Sprintf("%s is not wired to the 3D view yet", ui.commandLabel(cmd)))
@@ -64,22 +80,42 @@ func (ui *UI) MenuView(cmd Command) {
 }
 
 func (ui *UI) MenuGroup(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleGroupCommand(cmd)
+		return
+	}
 	ui.notifyPending(cmd)
 }
 
 func (ui *UI) MenuRequest(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleRequestCommand(cmd)
+		return
+	}
 	ui.notifyPending(cmd)
 }
 
 func (ui *UI) MenuConstrain(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleConstraintCommand(cmd)
+		return
+	}
 	ui.notifyPending(cmd)
 }
 
 func (ui *UI) MenuAnalyze(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleAnalyzeCommand(cmd)
+		return
+	}
 	ui.notifyPending(cmd)
 }
 
 func (ui *UI) MenuHelp(cmd Command) {
+	if ui.app != nil {
+		ui.app.HandleHelpCommand(cmd)
+		return
+	}
 	switch cmd {
 	case CommandWebsite:
 		ui.setStatus("Website link launching is not implemented yet")
