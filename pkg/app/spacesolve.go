@@ -288,8 +288,7 @@ func NewSpaceSolve() *SpaceSolve {
 	}
 
 	ss.ui = New(ss)
-	ss.RememberUndo()
-	ss.ScheduleAutosave()
+	ss.NewFile()
 	return ss
 }
 
@@ -614,7 +613,7 @@ func (ss *SpaceSolve) NewFile() {
 	ss.sys = solver.NewSystem(sketchResolver{sketch: ss.sketch})
 	ss.undo.Clear()
 	ss.redo.Clear()
-	ss.fileState = FileState{}
+	ss.fileState = FileState{Unsaved: true}
 	ss.mu.Unlock()
 
 	ss.RememberUndo()
@@ -624,7 +623,18 @@ func (ss *SpaceSolve) NewFile() {
 
 // Load loads a SolveSpace .slvs document.
 func (ss *SpaceSolve) Load(path string) error {
-	doc, err := slvs.LoadFile(path)
+	if path == "" {
+		return errors.New("no filename specified")
+	}
+	path = filepath.Clean(path)
+
+	autosavePath, useAutosave := ss.loadAutosaveFor(path)
+	source := path
+	if useAutosave {
+		source = autosavePath
+	}
+
+	doc, err := slvs.LoadFile(source)
 	if err != nil {
 		return err
 	}
@@ -633,14 +643,40 @@ func (ss *SpaceSolve) Load(path string) error {
 	ss.sketch = cloneSketch(doc.Sketch)
 	ss.sys = solver.NewSystem(sketchResolver{sketch: ss.sketch})
 	ss.fileState.SavePath = path
-	ss.fileState.Unsaved = false
+	ss.fileState.Unsaved = useAutosave
+	if useAutosave {
+		ss.fileState.AutosavePath = autosavePath
+	} else {
+		ss.fileState.AutosavePath = ""
+	}
 	ss.mu.Unlock()
 
 	ss.RememberUndo()
 	ss.AddRecentFile(path)
 	ss.ScheduleAutosave()
-	ss.setStatus(fmt.Sprintf("Loaded %s", filepath.Base(path)))
+
+	if useAutosave {
+		ss.setStatus(fmt.Sprintf("Loaded autosave for %s", filepath.Base(path)))
+	} else {
+		ss.setStatus(fmt.Sprintf("Loaded %s", filepath.Base(path)))
+	}
 	return nil
+}
+
+func (ss *SpaceSolve) loadAutosaveFor(path string) (string, bool) {
+	backup := autosavePath(path)
+	info, err := os.Stat(backup)
+	if err != nil {
+		return "", false
+	}
+	orig, err := os.Stat(path)
+	if err != nil {
+		return backup, true
+	}
+	if info.ModTime().After(orig.ModTime()) {
+		return backup, true
+	}
+	return "", false
 }
 
 // Save writes the sketch to disk. When path is empty the existing save location
@@ -650,18 +686,13 @@ func (ss *SpaceSolve) Save(path string) error {
 	if path == "" {
 		path = ss.fileState.SavePath
 	}
+	ss.mu.Unlock()
 	if path == "" {
-		ss.mu.Unlock()
 		return errors.New("no filename specified")
 	}
-	doc := &slvs.Document{
-		Header: slvsHeader,
-		Sketch: ss.sketch,
-	}
-	ss.mu.Unlock()
+	path = filepath.Clean(path)
 
-	data := doc.Save()
-	if err := os.WriteFile(filepath.Clean(path), data, 0o644); err != nil {
+	if err := ss.writeDocument(path); err != nil {
 		return err
 	}
 
@@ -673,6 +704,18 @@ func (ss *SpaceSolve) Save(path string) error {
 	ss.AddRecentFile(path)
 	ss.RemoveAutosave()
 	return nil
+}
+
+func (ss *SpaceSolve) writeDocument(path string) error {
+	ss.mu.Lock()
+	doc := &slvs.Document{
+		Header: slvsHeader,
+		Sketch: cloneSketch(ss.sketch),
+	}
+	ss.mu.Unlock()
+
+	data := doc.Save()
+	return os.WriteFile(filepath.Clean(path), data, 0o644)
 }
 
 // AddRecentFile pushes a path onto the MRU list.
@@ -748,7 +791,7 @@ func (ss *SpaceSolve) Autosave() {
 		return
 	}
 	backup := autosavePath(path)
-	if err := ss.Save(backup); err != nil {
+	if err := ss.writeDocument(backup); err != nil {
 		log.Printf("autosave failed: %v", err)
 	} else {
 		ss.mu.Lock()
@@ -762,6 +805,7 @@ func (ss *SpaceSolve) Autosave() {
 func (ss *SpaceSolve) RemoveAutosave() {
 	ss.mu.Lock()
 	path := ss.fileState.AutosavePath
+	ss.fileState.AutosavePath = ""
 	ss.mu.Unlock()
 	if path == "" {
 		return
