@@ -292,6 +292,108 @@ func NewSpaceSolve() *SpaceSolve {
 	return ss
 }
 
+// ClearExisting discards the current sketch and solver state without altering
+// recent files or window metadata. It mirrors the legacy ClearExisting helper.
+func (ss *SpaceSolve) ClearExisting() {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+	ss.sketch = sketch.NewSketch()
+	ss.sys = solver.NewSystem(sketchResolver{sketch: ss.sketch})
+	ss.undo.Clear()
+	ss.redo.Clear()
+	ss.activeGroup = core.HGroup{}
+	ss.allConsistent = false
+}
+
+// AfterNewFile performs the post-load regeneration scheduling used throughout
+// the classic SolveSpace UI.
+func (ss *SpaceSolve) AfterNewFile() {
+	ss.ScheduleGenerateAll()
+	ss.ScheduleShowTW()
+}
+
+// HasUnsavedChanges reports whether the working document differs from the last
+// saved version on disk.
+func (ss *SpaceSolve) HasUnsavedChanges() bool {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+	return ss.fileState.Unsaved
+}
+
+// MarkDirty records that the working sketch has diverged from the last saved
+// snapshot.
+func (ss *SpaceSolve) MarkDirty() {
+	ss.mu.Lock()
+	ss.markDirtyLocked()
+	ss.mu.Unlock()
+}
+
+func (ss *SpaceSolve) markDirtyLocked() {
+	ss.fileState.Unsaved = true
+}
+
+// OkayToStartNewFile automatically preserves the current sketch if it has been
+// saved previously. The legacy UI prompted the user; in the Cogent port we
+// silently auto-save to minimize data loss until dialogs arrive.
+func (ss *SpaceSolve) OkayToStartNewFile() bool {
+	ss.mu.Lock()
+	unsaved := ss.fileState.Unsaved
+	path := ss.fileState.SavePath
+	ss.mu.Unlock()
+
+	if !unsaved {
+		return true
+	}
+
+	if path == "" {
+		ss.setStatus("Current sketch has unsaved changes; continuing will discard them.")
+		return true
+	}
+
+	if err := ss.Save(path); err != nil {
+		ss.setStatus(fmt.Sprintf("Unable to auto-save %s: %v", filepath.Base(path), err))
+		return true
+	}
+
+	ss.setStatus("Auto-saved current sketch before continuing.")
+	return true
+}
+
+// GetFilenameAndSave mirrors the SolveSpaceUI helper by saving to the existing
+// filename when available. Save As flows are deferred until file dialogs are
+// wired up.
+func (ss *SpaceSolve) GetFilenameAndSave(saveAs bool) error {
+	ss.mu.Lock()
+	path := ss.fileState.SavePath
+	ss.mu.Unlock()
+
+	if saveAs || path == "" {
+		return errors.New("filename prompt not implemented; specify a path explicitly")
+	}
+	return ss.Save(path)
+}
+
+// SaveToFile persists the sketch to the supplied path and updates the status bar.
+func (ss *SpaceSolve) SaveToFile(path string) error {
+	if err := ss.Save(path); err != nil {
+		return err
+	}
+	ss.setStatus(fmt.Sprintf("Saved %s", filepath.Base(path)))
+	return nil
+}
+
+// LoadFromFile loads a document from disk and reports success for menu handlers.
+func (ss *SpaceSolve) LoadFromFile(path string, canCancel bool) bool {
+	if err := ss.Load(path); err != nil {
+		if path == "" {
+			path = "(unspecified)"
+		}
+		ss.setStatus(fmt.Sprintf("Failed to load %s: %v", filepath.Base(path), err))
+		return false
+	}
+	return true
+}
+
 // UIInstance returns the Cogent Core UI associated with this app.
 func (ss *SpaceSolve) UIInstance() *UI {
 	ss.mu.Lock()
@@ -333,7 +435,7 @@ func (ss *SpaceSolve) Undo() bool {
 		ActiveGroup: ss.activeGroup,
 	})
 	ss.applyUndoState(state)
-	ss.fileState.Unsaved = true
+	ss.markDirtyLocked()
 	return true
 }
 
@@ -350,7 +452,7 @@ func (ss *SpaceSolve) Redo() bool {
 		ActiveGroup: ss.activeGroup,
 	})
 	ss.applyUndoState(state)
-	ss.fileState.Unsaved = true
+	ss.markDirtyLocked()
 	return true
 }
 
@@ -511,9 +613,11 @@ func (ss *SpaceSolve) CameraTangent() float64 {
 func (ss *SpaceSolve) HandleFileCommand(cmd Command) {
 	switch cmd {
 	case CommandNew:
-		ss.NewFile()
+		if ss.OkayToStartNewFile() {
+			ss.NewFile()
+		}
 	case CommandSave:
-		if err := ss.Save(""); err != nil {
+		if err := ss.GetFilenameAndSave(false); err != nil {
 			ss.setStatus(fmt.Sprintf("Save failed: %v", err))
 		} else {
 			ss.setStatus("Saved sketch")
@@ -608,16 +712,13 @@ func (ss *SpaceSolve) HandleAnalyzeCommand(cmd Command) {
 
 // NewFile clears the current sketch and resets state.
 func (ss *SpaceSolve) NewFile() {
+	ss.ClearExisting()
 	ss.mu.Lock()
-	ss.sketch = sketch.NewSketch()
-	ss.sys = solver.NewSystem(sketchResolver{sketch: ss.sketch})
-	ss.undo.Clear()
-	ss.redo.Clear()
 	ss.fileState = FileState{Unsaved: true}
 	ss.mu.Unlock()
-
 	ss.RememberUndo()
 	ss.ScheduleAutosave()
+	ss.AfterNewFile()
 	ss.setStatus("Started a new sketch")
 }
 
@@ -636,6 +737,8 @@ func (ss *SpaceSolve) Load(path string) error {
 
 	doc, err := slvs.LoadFile(source)
 	if err != nil {
+		ss.setStatus(fmt.Sprintf("Failed to read %s: %v", filepath.Base(source), err))
+		ss.NewFile()
 		return err
 	}
 
@@ -654,6 +757,7 @@ func (ss *SpaceSolve) Load(path string) error {
 	ss.RememberUndo()
 	ss.AddRecentFile(path)
 	ss.ScheduleAutosave()
+	ss.AfterNewFile()
 
 	if useAutosave {
 		ss.setStatus(fmt.Sprintf("Loaded autosave for %s", filepath.Base(path)))
@@ -739,6 +843,9 @@ func (ss *SpaceSolve) AddRecentFile(path string) {
 
 // OpenRecentFile loads a recent document if it exists.
 func (ss *SpaceSolve) OpenRecentFile(path string) {
+	if !ss.OkayToStartNewFile() {
+		return
+	}
 	if err := ss.Load(path); err != nil {
 		ss.setStatus(fmt.Sprintf("Failed to open %s: %v", path, err))
 	}
