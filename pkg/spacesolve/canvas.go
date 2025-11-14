@@ -117,6 +117,8 @@ func (cv *Canvas) Init() {
 			cv.tools = w
 			w.Styler(func(s *styles.Style) {
 				s.Direction = styles.Column
+				s.Display = styles.Grid
+				s.Columns = 2
 			})
 			w.Maker(cv.MakeTools)
 		})
