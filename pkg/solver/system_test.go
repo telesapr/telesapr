@@ -2112,3 +2112,372 @@ func TestSystemEqualLineArcLenConstraint(t *testing.T) {
 	_ = arc
 	t.Skip("equal-line-arc-len requires a second arc entity; covered by EQUAL_LENGTH_LINES fixture")
 }
+
+// TestSystemArcLineDifferenceConstraint verifies the arc-line
+// length difference constraint: the difference between an arc's
+// length and a line's length must equal the constraint value.
+func TestSystemArcLineDifferenceConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// Arc radius 2, quarter revolution → length π.
+	center := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f002}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f003}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f004}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x0001f020}}}}
+	startA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f005}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	finishA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 2, 0)}
+	arc := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f007}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{center.H, startA.H, finishA.H}, Normal: normalA.H, Distance: radiusA.H}}
+
+	// Line length π/2, on the same plane.
+	startL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f008}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	endL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f009}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(math.Pi/2, 0, 0)}
+	line := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001f00a}, Type: core.EntityLineSegment, Point: [core.MaxPointsInEntity]core.HEntity{startL.H, endL.H}, Normal: normalA.H}}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		center.H:      center,
+		normalA.H:     normalA,
+		radiusA.H:     radiusA,
+		startA.H:      startA,
+		finishA.H:     finishA,
+		arc.H:         arc,
+		startL.H:      startL,
+		endL.H:        endL,
+		line.H:        line,
+	}, params: map[core.HParam]*core.Param{
+		{V: 0x0001f020}: {H: core.HParam{V: 0x0001f020}, Val: 2, Known: true},
+	}}
+
+	sys := solver.NewSystem(res)
+	// arc length (π) − line length (π/2) = π/2
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b0}, Type: core.ConstraintArcLineDifference, EntityA: line.H, EntityB: arc.H, ValA: math.Pi / 2}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("arc-line diff residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemPtFaceDistanceConstraint verifies the point-to-face
+// distance constraint between a 3D point and a face entity.
+func TestSystemPtFaceDistanceConstraint(t *testing.T) {
+	// A face normal defines the plane; a separate point is
+	// distance-measured against that plane.
+	faceNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	facePoint := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020002}, Type: core.EntityFaceNormalPt, Normal: faceNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	face := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020003}, Type: core.EntityFaceNormalPt, Normal: faceNormal.H, Point: [core.MaxPointsInEntity]core.HEntity{facePoint.H}}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// A point 5 units along the face normal.
+	pt := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020004}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 5)}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		faceNormal.H: faceNormal,
+		facePoint.H:  facePoint,
+		face.H:       face,
+		pt.H:         pt,
+	}, params: map[core.HParam]*core.Param{}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b1}, Type: core.ConstraintPtFaceDistance, PtA: pt.H, EntityA: face.H, ValA: 5.0}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("pt-face distance residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemPtInPlaneConstraint verifies the point-in-plane constraint
+// between a 3D point and a workplane (or face) entity.
+func TestSystemPtInPlaneConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00021000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00021001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00021002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// A point on the XY plane (z=0).
+	pt := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00021003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(3, 4, 0)}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		workplane.H:   workplane,
+		pt.H:          pt,
+	}, params: map[core.HParam]*core.Param{}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b2}, Type: core.ConstraintPtInPlane, PtA: pt.H, Workplane: workplane.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("pt-in-plane residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemSymmetricConstraint verifies the symmetric constraint
+// between two points and a symmetry plane (workplane).
+func TestSystemSymmetricConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00022000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00022001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00022002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// Two points symmetric about the XY plane (z=0).
+	ptA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00022003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(3, 4, 3)}
+	ptB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00022004}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(3, 4, -3)}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		workplane.H:   workplane,
+		ptA.H:         ptA,
+		ptB.H:         ptB,
+	}, params: map[core.HParam]*core.Param{}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b3}, Type: core.ConstraintSymmetric, PtA: ptA.H, PtB: ptB.H, EntityA: workplane.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("symmetric residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemSymmetricHorizConstraint verifies the symmetric-horizontal
+// constraint: two points have the same Y coordinate (workplane
+// horizontal symmetry).
+func TestSystemSymmetricHorizConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00023000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00023001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00023002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	ptA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00023003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(3, 4, 0)}
+	ptB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00023004}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(-3, 4, 0)}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		workplane.H:   workplane,
+		ptA.H:         ptA,
+		ptB.H:         ptB,
+	}, params: map[core.HParam]*core.Param{}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b4}, Type: core.ConstraintSymmetricHoriz, PtA: ptA.H, PtB: ptB.H, Workplane: workplane.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("symmetric-horiz residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemSymmetricVertConstraint verifies the symmetric-vertical
+// constraint: two points have the same X coordinate.
+func TestSystemSymmetricVertConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00024000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00024001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00024002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	ptA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00024003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(4, 3, 0)}
+	ptB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00024004}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(4, -3, 0)}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		workplane.H:   workplane,
+		ptA.H:         ptA,
+		ptB.H:         ptB,
+	}, params: map[core.HParam]*core.Param{}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b5}, Type: core.ConstraintSymmetricVert, PtA: ptA.H, PtB: ptB.H, Workplane: workplane.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("symmetric-vert residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemSymmetricLineConstraint verifies symmetric-line: two
+// points are symmetric about a line entity on a workplane.
+func TestSystemSymmetricLineConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// Symmetry axis is the Y axis.
+	start := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	end := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025004}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 1, 0)}
+	axis := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025005}, Type: core.EntityLineSegment, Point: [core.MaxPointsInEntity]core.HEntity{start.H, end.H}, Normal: planeNormal.H}}
+
+	ptA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(3, 4, 0)}
+	ptB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00025007}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(-3, 4, 0)}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		workplane.H:   workplane,
+		start.H:       start,
+		end.H:         end,
+		axis.H:        axis,
+		ptA.H:         ptA,
+		ptB.H:         ptB,
+	}, params: map[core.HParam]*core.Param{}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b6}, Type: core.ConstraintSymmetricLine, PtA: ptA.H, PtB: ptB.H, EntityA: axis.H, Workplane: workplane.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("symmetric-line residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemCubicLineTangentConstraint verifies the cubic-line tangent
+// constraint. Cubic and line are on the same workplane, and the
+// cubic's tangent at its end point equals the line's direction.
+func TestSystemCubicLineTangentConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// Cubic from (0,0) to (1,0) with end-tangent (1,0).
+	p1 := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	p2 := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026004}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(1, 0, 0)}
+	cubic := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026005}, Type: core.EntityCubic, Workplane: workplane.H, Point: [core.MaxPointsInEntity]core.HEntity{p1.H, p1.H, p1.H, p2.H}}}
+
+	// Line along X axis from (1,0) to (2,0).
+	startL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(1, 0, 0)}
+	endL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026007}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	line := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00026008}, Type: core.EntityLineSegment, Point: [core.MaxPointsInEntity]core.HEntity{startL.H, endL.H}, Normal: planeNormal.H}}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		workplane.H:   workplane,
+		p1.H:          p1,
+		p2.H:          p2,
+		cubic.H:       cubic,
+		startL.H:      startL,
+		endL.H:        endL,
+		line.H:        line,
+	}, params: map[core.HParam]*core.Param{}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b7}, Type: core.ConstraintCubicLineTangent, EntityA: cubic.H, EntityB: line.H, Workplane: workplane.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("cubic-line tangent residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemEqualRadiusConstraint verifies equal-radius between two
+// circles (or arcs) on the same plane.
+func TestSystemEqualRadiusConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	centerA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027002}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027003}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027004}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x00027010}}}}
+	startA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027005}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	finishA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 2, 0)}
+	arcA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027007}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{centerA.H, startA.H, finishA.H}, Normal: normalA.H, Distance: radiusA.H}}
+
+	centerB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027008}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00027009}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0002700a}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x00027020}}}}
+	startB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0002700b}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	finishB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0002700c}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 2, 0)}
+	arcB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0002700d}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{centerB.H, startB.H, finishB.H}, Normal: normalB.H, Distance: radiusB.H}}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		centerA.H:     centerA,
+		normalA.H:     normalA,
+		radiusA.H:     radiusA,
+		startA.H:      startA,
+		finishA.H:     finishA,
+		arcA.H:        arcA,
+		centerB.H:     centerB,
+		normalB.H:     normalB,
+		radiusB.H:     radiusB,
+		startB.H:      startB,
+		finishB.H:     finishB,
+		arcB.H:        arcB,
+	}, params: map[core.HParam]*core.Param{
+		{V: 0x00027010}: {H: core.HParam{V: 0x00027010}, Val: 2, Known: true},
+		{V: 0x00027020}: {H: core.HParam{V: 0x00027020}, Val: 2, Known: true},
+	}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b8}, Type: core.ConstraintEqualRadius, EntityA: arcA.H, EntityB: arcB.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("equal-radius residual %d: %f", i, r)
+		}
+	}
+}
