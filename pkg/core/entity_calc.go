@@ -61,6 +61,42 @@ func (e *Entity) CalculateNumerical(res NumericalResolver, forExport bool) error
 		}
 	}
 
+	// Workplane: copy ActPoint from e.Point[0] (the workplane's
+	// origin point) and ActNormal from e.Normal (the workplane's
+	// normal). Without this, downstream planeExpr callers get a
+	// degenerate plane and constraint emitters that rely on the
+	// numeric plane values (proj-pt-distance, pt-plane-distance)
+	// produce ill-conditioned equations.
+	if e.Type == EntityWorkplane {
+		if originEnt, err := res.Entity(e.Point[0]); err == nil && originEnt != nil {
+			e.ActPoint = originEnt.ActPoint
+		}
+		if normalEnt, err := res.Entity(e.Normal); err == nil && normalEnt != nil {
+			e.ActNormal = normalEnt.ActNormal
+		}
+	}
+
+	// Circle and arc-of-circle: copy the center point and the plane
+	// normal from the referenced point and normal entities, and the
+	// distance from the referenced distance entity. Without this,
+	// pt-on-circle / equal-radius / arc-tangent constraints fall
+	// back to a zero-valued center and plane normal and the
+	// solver cannot classify their triangles.
+	if e.Type == EntityCircle || e.Type == EntityArcOfCircle {
+		// Center: e.Point[0]
+		if centerEnt, err := res.Entity(e.Point[0]); err == nil && centerEnt != nil {
+			e.ActPoint = centerEnt.ActPoint
+		}
+		// Normal: e.Normal
+		if normalEnt, err := res.Entity(e.Normal); err == nil && normalEnt != nil {
+			e.ActNormal = normalEnt.ActNormal
+		}
+		// Distance: e.Distance
+		if distEnt, err := res.Entity(e.Distance); err == nil && distEnt != nil {
+			e.ActDistance = distEnt.ActDistance
+		}
+	}
+
 	if forExport {
 		e.ActVisible = !e.ForceHidden
 	} else {

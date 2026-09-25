@@ -273,6 +273,10 @@ type Group struct {
 	SkipFirst bool
 
 	BooleanFailed bool
+
+	// SketchDiagnostic captures errors from the last GenerateAll.
+	// Cleared at the start of each GenerateAll invocation.
+	SketchDiagnostic *SketchDiagnostic
 	MeshCombine   CombineAs
 	ForceToMesh   bool
 
@@ -1052,3 +1056,9 @@ func (g *Group) revolveProfileWithPitch(sk *Sketch, profile []geom.Vector, axis 
 }
 
 type GroupList []Group
+
+// SketchDiagnostic captures transient per-group errors during
+// Sketch::GenerateAll. Cleared on each invocation.
+type SketchDiagnostic struct {
+	AddConstraintErrors []string
+}

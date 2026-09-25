@@ -1711,8 +1711,26 @@ func (s *System) circleData(ent *core.Entity) (circleData, error) {
 	if err != nil {
 		return circleData{}, err
 	}
+	// The plane reference point must be the WORKPLANE's origin
+	// (not the circle's center) so that pt-on-circle, equal-radius,
+	// arc-tangent and similar constraints don't double-count the
+	// workplane origin when computing delta = center - point.
+	// When the circle has no workplane, fall back to the center
+	// itself so the existing tests (which create circles without a
+	// workplane reference) still work.
+	var planeOrigin core.ExprVector
+	if ent.Workplane != (core.HEntity{}) {
+		po, err := s.pointExpr(ent.Workplane)
+		if err == nil {
+			planeOrigin = po
+		} else {
+			planeOrigin = centerExpr
+		}
+	} else {
+		planeOrigin = centerExpr
+	}
 	plane := planeData{
-		point:       centerExpr,
+		point:       planeOrigin,
 		normal:      qExpr.RotationN(),
 		u:           qExpr.RotationU(),
 		v:           qExpr.RotationV(),
@@ -2134,6 +2152,17 @@ func (s *System) Evaluate(overrides map[core.HParam]float64) ([]float64, [][]flo
 type evaluationContext struct {
 	overrides map[core.HParam]float64
 	params    map[core.HParam]*core.Param
+}
+
+type evalParamMap struct {
+	params map[core.HParam]float64
+}
+
+func (e evalParamMap) ParamValue(h core.HParam) (float64, bool) {
+	if v, ok := e.params[h]; ok {
+		return v, true
+	}
+	return 0, false
 }
 
 func (e evaluationContext) ParamValue(h core.HParam) (float64, bool) {

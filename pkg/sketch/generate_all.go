@@ -1,6 +1,7 @@
 package sketch
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -21,9 +22,20 @@ func (sk *Sketch) GenerateAll() {
 	}
 	for sk.PruneRequestsAndConstraints() {
 	}
+	// Clear per-group diagnostics from the previous GenerateAll.
+	for i := range sk.Groups {
+		sk.Groups[i].SketchDiagnostic = nil
+	}
 
 	// Phase 2: topologically sort groups by Order.
 	order := sk.orderedGroups()
+
+	// Phase 2.5: numerically evaluate every entity's ActPoint,
+	// ActNormal, and ActDistance so constraint emitters that fall
+	// back to numeric values (e.g. circleData for pt-on-circle,
+	// planeExpr for pt-plane-distance) have something to read.
+	rt := NewRuntime(sk)
+	rt.RecalculateEntities(false)
 
 	// Phase 3: build the solver system incrementally. For each
 	// group in order: invoke requests, then constraints, then emit
@@ -51,6 +63,22 @@ func (sk *Sketch) GenerateAll() {
 		}
 		sk.Entities = []core.Entity(entities)
 		sk.Params = []core.Param(params)
+		// request.Generate recreates entities and params for every
+		// request, which means the same handle appears twice in
+		// sk.Entities and sk.Params: the first copy from the parser
+		// (with the correct numeric values) and the second copy
+		// from request.Generate (with zero ActPoint/ActNormal/
+		// ActDistance/Val). Collapse to a single entry per handle,
+		// preferring the one with non-zero numeric state.
+		sk.Entities = dedupEntitiesByHandle(sk.Entities)
+		sk.Params = dedupParamsByHandle(sk.Params)
+		// Re-evaluate every entity's numeric state now that the
+		// request pipeline has created (and possibly duplicated)
+		// entities. Without this, the COPIES would have zero
+		// ActPoint/ActNormal/ActDistance and constraint emitters
+		// that read those values (e.g. circleData, planeExpr)
+		// would build ill-conditioned equations.
+		rt.RecalculateEntities(false)
 
 		// Add each constraint's equations to the solver.
 		for ci := range sk.Constraints {
@@ -60,8 +88,13 @@ func (sk *Sketch) GenerateAll() {
 			}
 			GenerateConstraint(c, sk)
 			if err := sys.AddConstraint(c); err != nil {
-				// Best-effort: ignore unrecognized constraints.
-				_ = err
+				// Surface in the group's reported diagnostics so
+				// callers can debug. The solve still runs.
+				if g.SketchDiagnostic == nil {
+					g.SketchDiagnostic = &SketchDiagnostic{}
+				}
+				g.SketchDiagnostic.AddConstraintErrors = append(g.SketchDiagnostic.AddConstraintErrors,
+					fmt.Sprintf("group %v constraint %v (type %d): %v", hg, c.H, c.Type, err))
 			}
 		}
 
@@ -79,10 +112,19 @@ func (sk *Sketch) GenerateAll() {
 	for _, p := range sk.Params {
 		initial[p.H] = p.Val
 	}
-	_, _ = sys.Solve(initial, solver.SolveOptions{})
+	report := solver.SolveReport{}
+	_, _ = sys.Solve(initial, solver.SolveOptions{Report: &report})
+	how := core.SolveOkay
+	if !report.Converged {
+		how = core.SolveDidntConverge
+	}
+	dof := report.DOF
+	rank := report.Rank
 
 	// Phase 5: for mesh groups, regenerate the SMesh and the
-	// display items.
+	// display items. Also propagate the solve status to every
+	// group's Solved struct (How, Dof) and set Clean=true on
+	// groups that converged.
 	for _, hg := range order {
 		g := sk.GetGroup(hg)
 		if g == nil {
@@ -92,7 +134,11 @@ func (sk *Sketch) GenerateAll() {
 			g.GenerateShellAndMesh(sk)
 			g.GenerateDisplayItems()
 		}
+		g.Solved.How = how
+		g.Solved.Dof = dof
+		g.Clean = report.Converged
 	}
+	_ = rank
 
 	// Phase 6: re-evaluate reference constraints.
 	for ci := range sk.Constraints {
@@ -125,6 +171,67 @@ func (sk *Sketch) generateAllLoopsAndShells() {
 			g.GenerateDisplayItems()
 		}
 	}
+}
+
+// dedupEntitiesByHandle collapses a slice of entities to one entry per
+// handle, preferring the entry with non-zero numeric state. This is
+// required because request.Generate creates entity copies that share
+// handles with the original parser entities, and the COPIES have
+// uninitialized numeric state. Keeping only the parser's original
+// preserves the user's authored numeric values.
+func dedupEntitiesByHandle(entities []core.Entity) []core.Entity {
+	if len(entities) == 0 {
+		return entities
+	}
+	type entry struct {
+		idx     int
+		hasData bool
+	}
+	byHandle := make(map[core.HEntity]entry)
+	out := make([]core.Entity, 0, len(entities))
+	for _, e := range entities {
+		cur, exists := byHandle[e.H]
+		hasData := !e.ActPoint.Equals(geom.Vector{}) ||
+			!e.ActNormal.Equals(geom.Quaternion{}) ||
+			e.ActDistance != 0 ||
+			e.NumPoint != (geom.Vector{}) ||
+			e.NumNormal != (geom.Quaternion{})
+		if !exists || (!cur.hasData && hasData) {
+			if exists {
+				// Replace prior entry with the data-bearing one.
+				out = out[:len(out)-1]
+			}
+			byHandle[e.H] = entry{idx: len(out), hasData: hasData}
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// dedupParamsByHandle collapses a slice of params to one entry per
+// handle, preferring the entry with non-zero value.
+func dedupParamsByHandle(params []core.Param) []core.Param {
+	if len(params) == 0 {
+		return params
+	}
+	type entry struct {
+		idx     int
+		hasData bool
+	}
+	byHandle := make(map[core.HParam]entry)
+	out := make([]core.Param, 0, len(params))
+	for _, p := range params {
+		cur, exists := byHandle[p.H]
+		hasData := p.Val != 0 || p.Known
+		if !exists || (!cur.hasData && hasData) {
+			if exists {
+				out = out[:len(out)-1]
+			}
+			byHandle[p.H] = entry{idx: len(out), hasData: hasData}
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // PruneOrphans removes entities, requests, and constraints that
