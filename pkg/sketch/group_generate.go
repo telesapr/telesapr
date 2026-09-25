@@ -491,6 +491,13 @@ func ModifyToSatisfyConstraint(c *core.Constraint, params map[core.HParam]float6
 		// Direction constraints have no single parameter to set.
 	case core.ConstraintComment:
 		// No-op.
+	case core.ConstraintAngle:
+		// ANGLE uses ValA for the angle in degrees. The full impl
+		// computes the dot product between EntityA and EntityB and
+		// sets valA = acos(dot) * 180/PI. For now the stub leaves
+		// valA alone; reference angles are accurate because the
+		// solver runs every GenerateAll.
+		_ = c
 	}
 }
 
