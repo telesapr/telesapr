@@ -7,6 +7,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/solver"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 // GenerateAll is the master orchestrator: walk every group in
@@ -121,6 +122,24 @@ func (sk *Sketch) GenerateAll() {
 	dof := report.DOF
 	rank := report.Rank
 
+	// Phase 5a: assemble Drawing groups first. Drawing groups own
+	// the LINE_SEGMENT entities; mesh groups (Extrude/Lathe/...)
+	// reference them via opA lineage. Without this pre-pass, the
+	// mesh groups' source BezierLoops are empty and the resulting
+	// shells are empty.
+	for _, hg := range order {
+		g := sk.GetGroup(hg)
+		if g == nil {
+			continue
+		}
+		if g.Type == GroupDrawing3D || g.Type == GroupDrawingWorkplane {
+			if len(g.BezierLoops.Sets) == 0 {
+				g.AssembleLoops(sk, rt)
+				g.GenerateLoops()
+			}
+		}
+	}
+
 	// Phase 5: for mesh groups, regenerate the SMesh and the
 	// display items. Also propagate the solve status to every
 	// group's Solved struct (How, Dof) and set Clean=true on
@@ -131,7 +150,51 @@ func (sk *Sketch) GenerateAll() {
 			continue
 		}
 		if g.IsMeshGroup2() {
+			// Walk the source lineage (g.OpA chain) and assemble
+			// BezierLoops on every group along the way. The
+			// entities actually live on the source Drawing group
+			// (or workplane group), not on the mesh group itself.
+			visited := make(map[core.HGroup]bool)
+			current := g
+			for current != nil && !visited[current.H] {
+				visited[current.H] = true
+				if len(current.BezierLoops.Sets) == 0 {
+					if current.Type == GroupDrawing3D ||
+						current.Type == GroupDrawingWorkplane ||
+						current.Type == GroupExtrude ||
+						current.Type == GroupLathe ||
+						current.Type == GroupRevolve ||
+						current.Type == GroupHelix {
+						current.AssembleLoops(sk, rt)
+						current.GenerateLoops()
+					}
+				}
+				if len(current.BezierLoops.Sets) > 0 {
+					break
+				}
+				if current.OpA == (core.HGroup{}) {
+					break
+				}
+				current = sk.GetGroup(current.OpA)
+			}
+			g.AssembleLoops(sk, rt)
+			g.GenerateLoops()
 			g.GenerateShellAndMesh(sk)
+			// C++ Group::GenerateShellAndMesh sets runningMesh =
+			// thisMesh unconditionally. For ASSEMBLE mode there's
+			// no boolean combine, so we copy directly.
+			g.RunningMesh = g.ThisMesh
+			// If the requested MeshCombine is not ASSEMBLE (e.g.
+			// union, difference, intersection), perform the
+			// implicit boolean with the previous mesh group.
+			if g.MeshCombine != CombineAssemble && g.MeshCombine != CombineUnion {
+				prev := g.PreviousGroup(sk)
+				if prev != nil && prev.IsMeshGroup2() && len(prev.RunningMesh.Triangles) > 0 {
+					var combined srf.SMesh
+					g.GenerateForBoolean(prev, &combined)
+					g.RunningMesh = combined
+				}
+			}
 			g.GenerateDisplayItems()
 		}
 		g.Solved.How = how

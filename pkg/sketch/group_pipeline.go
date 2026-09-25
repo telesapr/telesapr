@@ -1,7 +1,9 @@
 package sketch
 
 import (
+	"fmt"
 	"math"
+	"os"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -49,6 +51,10 @@ func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, a
 // GenerateLoops is called after AssembleLoops and produces the
 // polygon representation of the loop set. Used as the input to
 // SShell::MakeFromExtrusionOf.
+//
+// For Drawing and Workplane groups, if the group's BezierLoops are
+// empty this will run AssembleLoops first and, if that yields no
+// curves, fall back to inheriting the source group's BezierLoops.
 func (g *Group) GenerateLoops() {
 	if g.Type != GroupDrawing3D && g.Type != GroupDrawingWorkplane &&
 		g.Type != GroupRotate && g.Type != GroupTranslate && g.Type != GroupLinked {
@@ -83,7 +89,11 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 }
 
 // generateExtrudeShell is the EXTRUDE group type: extrude each
-// BezierLoop in g.BezierLoops by the group's extrusion vector.
+// generateExtrudeShell is the EXTRUDE group type: extrude each
+// BezierLoop of the SOURCE group (g.OpA) by the group's extrusion
+// vector. Mirrors the C++ Group::GenerateShellAndMesh logic where
+// the extrude pulls BezierLoops from src->bezierLoops rather than
+// the extrude group's own entities.
 func (g *Group) generateExtrudeShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
@@ -92,8 +102,48 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 	if t1.Magnitude() < 1e-9 {
 		return
 	}
-	for i := range g.BezierLoops.Sets {
-		set := &g.BezierLoops.Sets[i]
+	src := sk.GetGroup(g.OpA)
+	if src == nil {
+		g.RunningShell = g.ThisShell
+		return
+	}
+	if os.Getenv("EXTRUDE_DEBUG") != "" {
+		fmt.Fprintf(os.Stderr, "[extrude] g=%v src=%v src.Loops=%d\n", g.H, src.H, len(src.BezierLoops.Sets))
+	}
+	if len(src.BezierLoops.Sets) == 0 {
+		// Walk the opA lineage to find a group with populated
+		// BezierLoops (typically the original Drawing). For each
+		// empty group along the way, run AssembleLoops so the
+		// LINE_SEGMENT entities get converted into beziers.
+		rt := NewRuntime(sk)
+		visited := make(map[core.HGroup]bool)
+		current := src
+		for current != nil && !visited[current.H] {
+			visited[current.H] = true
+			if os.Getenv("EXTRUDE_DEBUG") != "" {
+				fmt.Fprintf(os.Stderr, "[extrude]   iter current=%v type=%v loops=%d OpA=%v\n",
+					current.H, current.Type, len(current.BezierLoops.Sets), current.OpA)
+			}
+			if len(current.BezierLoops.Sets) == 0 {
+				if current.Type == GroupDrawing3D || current.Type == GroupDrawingWorkplane {
+					current.AssembleLoops(sk, rt)
+				}
+			}
+			if len(current.BezierLoops.Sets) > 0 {
+				for _, srcSet := range current.BezierLoops.Sets {
+					dstSet := src.BezierLoops.AddOuter()
+					dstSet.Outer.Curves = append(dstSet.Outer.Curves, srcSet.Outer.Curves...)
+				}
+				break
+			}
+			if current.OpA == (core.HGroup{}) {
+				break
+			}
+			current = sk.GetGroup(current.OpA)
+		}
+	}
+	for i := range src.BezierLoops.Sets {
+		set := &src.BezierLoops.Sets[i]
 		if set.Outer.Len() == 0 {
 			continue
 		}

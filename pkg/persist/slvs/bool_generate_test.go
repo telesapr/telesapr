@@ -33,6 +33,15 @@ func TestBooleanFixtureLoadsAndGenerates(t *testing.T) {
 		}
 		// GenerateAll must complete without panicking.
 		doc.Sketch.GenerateAll()
-		_ = doc
+		totalTris := 0
+		for i := range doc.Sketch.Groups {
+			g := &doc.Sketch.Groups[i]
+			if g.IsMeshGroup() {
+				totalTris += len(g.RunningMesh.Triangles)
+			}
+		}
+		if totalTris == 0 {
+			t.Errorf("%s: no triangles after GenerateAll", p)
+		}
 	}
 }
