@@ -34,10 +34,14 @@ type SSurface struct {
 // Used during boolean operations when a single trim curve becomes
 // the boundary between two adjacent surfaces.
 type STrimBy struct {
-	Curve    core.HSCurve
-	Start    float64
-	Finish   float64
+	Curve     core.HSCurve
+	Start     float64 // parameter space: 0..1
+	Finish    float64 // parameter space: 0..1
 	Backwards bool
+	// 3D endpoints, populated by STrimByEntireCurveFromShell.
+	// Matches the C++ STrimBy::start / STrimBy::finish fields.
+	StartP  geom.Vector
+	FinishP geom.Vector
 }
 
 func STrimByEntireCurve(c core.HSCurve) STrimBy {
@@ -1108,4 +1112,29 @@ func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *
 	*level++
 	surf0.AllPointsIntersectingUntrimmed(a, b, cnt, level, l, asSegment, sorig)
 	surf1.AllPointsIntersectingUntrimmed(a, b, cnt, level, l, asSegment, sorig)
+}
+
+// STrimByEntireCurveFromShell creates an STrimBy covering the entire
+// range of an SCurve in a shell. Implements STrimBy::EntireCurve
+// from curve.cpp:868. The C++ version records 3D start/finish
+// points; here we keep parameter-space (0..1) but also expose the
+// 3D endpoints via the StartP/FinishP helpers below.
+func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool) STrimBy {
+	stb := STrimBy{Curve: hsc, Backwards: backwards, Start: 0, Finish: 1}
+	if shell == nil {
+		return stb
+	}
+	sc := shell.FindCurve(hsc)
+	if sc == nil || len(sc.Points) == 0 {
+		return stb
+	}
+	if backwards {
+		// Start = last point, Finish = first point.
+		stb.StartP = sc.Points[len(sc.Points)-1].P
+		stb.FinishP = sc.Points[0].P
+	} else {
+		stb.StartP = sc.Points[0].P
+		stb.FinishP = sc.Points[len(sc.Points)-1].P
+	}
+	return stb
 }

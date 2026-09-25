@@ -385,3 +385,44 @@ func (s *SShell) RemapFacesViaGroup(g interface {
 		s.Surface[i].Face = FaceID(newID.V)
 	}
 }
+
+// FindCurve returns the SCurve with the given handle, or nil if not found.
+func (s *SShell) FindCurve(h core.HSCurve) *SCurve {
+	if s == nil {
+		return nil
+	}
+	for i := range s.Curve {
+		if s.Curve[i].H == h {
+			return &s.Curve[i]
+		}
+	}
+	return nil
+}
+
+// FindSurface returns the SSurface with the given handle, or nil if not found.
+func (s *SShell) FindSurface(h core.HSSurface) *SSurface {
+	if s == nil {
+		return nil
+	}
+	for i := range s.Surface {
+		if s.Surface[i].H == h {
+			return &s.Surface[i]
+		}
+	}
+	return nil
+}
+
+// FindCurveBySurface returns all curves that reference the given surface as
+// either SurfA or SurfB.
+func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
+	if s == nil {
+		return nil
+	}
+	var out []*SCurve
+	for i := range s.Curve {
+		if s.Curve[i].SurfA == h || s.Curve[i].SurfB == h {
+			out = append(out, &s.Curve[i])
+		}
+	}
+	return out
+}
