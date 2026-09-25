@@ -595,11 +595,55 @@ var activeSketch *Sketch
 
 
 // GenerateConstraint populates the parameter list with the
-// constraint's dependent params (the C++ Constraint::Generate).
-// Phase 6 + Goal Item 10: stub.
+// constraint's dependent params. Implements the C++
+// ConstraintBase::Generate from constrainteq.cpp:253.
+//
+// For PARALLEL, CUBIC_LINE_TANGENT (in 3D), SAME_ORIENTATION, and
+// PT_ON_LINE, we add a new parameter (ValP) which holds the
+// constraint's primary degree of freedom: for PT_ON_LINE it's the
+// parameter t along the line; for PARALLEL/CUBIC_LINE_TANGENT it's
+// a free parameter that pins one vector to the other; for
+// SAME_ORIENTATION it's the rotation around the shared axis.
 func GenerateConstraint(c *core.Constraint, sk *Sketch) {
-	_ = c
-	_ = sk
+	if c == nil || sk == nil {
+		return
+	}
+	// PT_ON_LINE: always needs a t parameter along the line.
+	if c.Type == core.ConstraintPtOnLine {
+		addConstraintParam(c, sk)
+		return
+	}
+	// SAME_ORIENTATION: always needs a parameter.
+	if c.Type == core.ConstraintSameOrientation {
+		addConstraintParam(c, sk)
+		return
+	}
+	// PARALLEL/CUBIC_LINE_TANGENT: only when operating in 3D (free workplane).
+	if c.Type == core.ConstraintParallel || c.Type == core.ConstraintCubicLineTangent {
+		if c.Workplane == (core.HEntity{}) {
+			addConstraintParam(c, sk)
+		}
+		return
+	}
+}
+
+// addConstraintParam ensures c.ValP is registered as a Param in sk.
+// If c.ValP is unset, we synthesize a handle from c.H.param(0) and
+// set c.ValP to it (matching C++ where valP = h.param(0)).
+func addConstraintParam(c *core.Constraint, sk *Sketch) {
+	hparam := c.H.Param(0)
+	c.ValP = hparam
+	// Check if the param already exists.
+	for i := range sk.Params {
+		if sk.Params[i].H == hparam {
+			return
+		}
+	}
+	// Add a fresh param with default value 0.
+	sk.Params = append(sk.Params, core.Param{
+		H:   hparam,
+		Val: 0,
+	})
 }
 
 // GenerateMeshForRequest walks a request's entity, param list and

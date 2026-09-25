@@ -2539,3 +2539,37 @@ func TestSystemArcLineTangentConstraint(t *testing.T) {
 		}
 	}
 }
+
+// TestSystemAddConstraintWhereDragged exercises the WhereDragged constraint.
+func TestSystemAddConstraintWhereDragged(t *testing.T) {
+	sys := solver.NewSystem(&stubResolver{params: map[core.HParam]*core.Param{}})
+	// Without a point entity, should error.
+	c := &core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type: core.ConstraintWhereDragged,
+		H:    core.HConstraint{V: 1},
+	}}
+	err := sys.AddConstraint(c)
+	if err == nil {
+		t.Errorf("WhereDragged with no PtA should error")
+	}
+}
+
+// TestSystemAddConstraintUnsupportedType exercises the default branch.
+func TestSystemAddConstraintUnsupportedType(t *testing.T) {
+	sys := solver.NewSystem(&stubResolver{params: map[core.HParam]*core.Param{}})
+	c := &core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type: core.ConstraintUnknown,
+		H:    core.HConstraint{V: 1},
+	}}
+	err := sys.AddConstraint(c)
+	if err == nil {
+		t.Errorf("Unknown constraint type should error")
+	}
+	var unsupported solver.UnsupportedConstraintError
+	if !errors.As(err, &unsupported) {
+		t.Errorf("expected UnsupportedConstraintError, got %T", err)
+	}
+	if unsupported.Type != core.ConstraintUnknown {
+		t.Errorf("Type = %v, want ConstraintUnknown", unsupported.Type)
+	}
+}
