@@ -397,9 +397,11 @@ func classifyPointAgainstBsp(p geom.Vector, b *SBsp3) BspClass {
 		}
 		return BspNeg
 	default:
-		// Coplanar with the partitioner. Check the More chain by
-		// testing the point against each coplanar triangle's plane.
-		// TODO: conservative — treat as POS (keep).
-		return BspPos
+		// Coplanar with the partitioner plane — check the More
+		// chain (each successive coplanar splitter) before deciding.
+		if b.More != nil {
+			return classifyPointAgainstBsp(p, b.More)
+		}
+		return BspCoplanar
 	}
 }

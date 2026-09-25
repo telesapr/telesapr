@@ -4,8 +4,9 @@ import "github.com/spacesolve/spacesolve/pkg/geom"
 
 // SKdNode is a kd-tree over STriangles, used to accelerate
 // queries like "find the closest triangle to point p" and "snap
-// a point to the nearest vertex on the mesh". TODO
-// version: axis-aligned bounding boxes with median splits.
+// a point to the nearest vertex on the mesh". Construction uses
+// axis-aligned bounding boxes with median splits; the leaf node
+// holds up to 4 triangles for brute-force nearest lookup.
 type SKdNode struct {
 	BoxMin, BoxMax geom.Vector
 	Axis           int // 0=X, 1=Y, 2=Z, -1=leaf

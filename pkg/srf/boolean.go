@@ -177,14 +177,43 @@ func (s *SShell) MakeFromIntersectionOf(a, b *SShell) {
 
 // MakeClassifyingBsps pre-computes uv-space BSPs for every surface
 // in the shell. Used during boolean operations to classify a test
-// point as inside/outside the shell's region.
+// point as inside/outside the shell's region. Each surface's BSP is
+// built from the curves in useCurvesFrom (typically passed in the
+// second pass of MakeFromBoolean, after the new intersection curves
+// have been added); falls back to the shell's own curves otherwise.
 func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 	for i := range s.Surface {
-		// TODO: empty BSP. Full version walks the trim
-		// edges and builds an SBspUv per surface.
-		s.Surface[i].Bsp = nil
+		s.Surface[i].Bsp = buildSurfaceClassifyingBsp(s, &s.Surface[i], useCurvesFrom)
 	}
-	_ = useCurvesFrom
+}
+
+func buildSurfaceClassifyingBsp(sh *SShell, srf *SSurface, useCurvesFrom *SShell) *SBspUv {
+	if srf == nil {
+		return nil
+	}
+	src := useCurvesFrom
+	if src == nil {
+		src = sh
+	}
+	if src == nil {
+		return nil
+	}
+	el := &SEdgeList{}
+	for i := range src.Curve {
+		c := &src.Curve[i]
+		if !c.IsExact {
+			continue
+		}
+		if useCurvesFrom == nil && c.SurfA != srf.H && c.SurfB != srf.H {
+			continue
+		}
+		el.AddEdge(c.Exact.Start(), c.Exact.PointAt(0.5), 0, 0, 0)
+		el.AddEdge(c.Exact.PointAt(0.5), c.Exact.Finish(), 0, 0, 0)
+	}
+	if len(el.Edges) == 0 {
+		return nil
+	}
+	return BuildBspUvFromEdges(el, srf)
 }
 
 // AllPointsIntersecting computes all intersections of the segment

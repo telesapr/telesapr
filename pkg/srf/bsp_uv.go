@@ -4,8 +4,9 @@ import "github.com/spacesolve/spacesolve/pkg/geom"
 
 // SBspUv is a 2-D BSP tree over uv-space edges, used to test
 // whether a point (u, v) on a surface lies inside or outside the
-// trim region. TODO implementation: pure recursive
-// insertion over uv edges with a "more" chain for coplanar edges.
+// trim region. Built by recursive insertion of uv edges with a
+// "more" chain for coplanar edges, then queried via ClassifyPoint
+// or ClassifyEdge.
 type SBspUv struct {
 	A, B geom.Point2d
 	Pos  *SBspUv
@@ -133,7 +134,7 @@ func classifyPointUv(pt, a, b geom.Point2d) BspUvClass {
 
 // BuildBspUvFromEdges constructs an SBspUv from an edge list (in
 // uv-space). The edge list is read from el; srf is the surface
-// hosting the trim and is unused in the TODO version.
+// hosting the trim and is currently unused.
 func BuildBspUvFromEdges(el *SEdgeList, srf interface{}) *SBspUv {
 	var root *SBspUv
 	for i := range el.Edges {

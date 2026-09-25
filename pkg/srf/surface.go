@@ -262,23 +262,40 @@ func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, 
 		DegM: sb.Degree,
 		DegN: 2,
 	}
-	dtheta := thetaf - thetas
+	dtheta := math.Abs(wrapSymmetric(thetaf-thetas, 2*math.Pi))
+	w := math.Cos(dtheta / 2)
+	if w == 0 {
+		w = 1e-12
+	}
 	for i := 0; i <= s.DegM; i++ {
-		s.Ctrl[i][0] = sb.Ctrl[i].RotatedAbout(pt, axis, thetas)
-		s.Ctrl[i][1] = sb.Ctrl[i].Plus(axis.ScaledBy(dists - distf))
-		s.Ctrl[i][2] = sb.Ctrl[i].RotatedAbout(pt, axis, thetaf)
+		p := sb.Ctrl[i]
+		ps := p.RotatedAbout(pt, axis, thetas)
+		pf := p.RotatedAbout(pt, axis, thetaf)
+		mid := ps.Plus(pf).ScaledBy(0.5)
+		c0 := ps.ClosestPointOnLine(pt, axis)
+		ct := mid.Minus(c0).ScaledBy(1 / (w * w)).Plus(c0)
+		if ps.Equals(pf) {
+			ps = c0
+			ct = c0
+			pf = c0
+		}
+		s.Ctrl[i][0] = ps.Plus(axis.ScaledBy(dists))
+		s.Ctrl[i][1] = ct.Plus(axis.ScaledBy((dists + distf) / 2))
+		s.Ctrl[i][2] = pf.Plus(axis.ScaledBy(distf))
 		s.Weight[i][0] = sb.Weight[i]
-		s.Weight[i][1] = sb.Weight[i]
+		s.Weight[i][1] = sb.Weight[i] * w
 		s.Weight[i][2] = sb.Weight[i]
 	}
-	// Apply cos(dtheta/2) for middle row.
-	if dtheta != 0 {
-		c := math.Cos(dtheta / 2)
-		for i := 0; i <= s.DegM; i++ {
-			s.Weight[i][1] *= c
-		}
-	}
 	return s
+}
+
+func wrapSymmetric(a, period float64) float64 {
+	p2 := period / 2
+	r := math.Mod(a+p2, period)
+	if r < 0 {
+		r += period
+	}
+	return r - p2
 }
 
 // FromTransformationOf produces a transformed copy of the surface.

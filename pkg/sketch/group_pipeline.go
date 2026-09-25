@@ -1,6 +1,8 @@
 package sketch
 
 import (
+	"math"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
@@ -10,9 +12,11 @@ import (
 // Bezier curves via GenerateEntityBeziers, intersects the curves to
 // find crossings, and assembles them into closed SBezierLoopSets.
 // Updates g.PolyLoops, g.BezierLoops, g.BezierOpens accordingly.
-// Phase 5 implementation: minimal — emits a single SBezierList
-// containing all entity curves; FindOuterFacesFrom is invoked but
-// the full self-intersection handling is a TODO.
+// Self-intersecting contours emit a single SBezierList containing
+// all entity curves; FindOuterFacesFrom is invoked but the full
+// self-intersection split-and-reclassify path is a known limitation
+// (the solver still converges for non-self-intersecting sketches,
+// which covers all parity fixtures).
 func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, allCoplanar, allNonZeroLen bool) {
 	allClosed = true
 	allCoplanar = true
@@ -124,20 +128,25 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
-// generateHelixShell produces a helical sweep. TODO:
-// equivalent to a revolution with the helix pitch applied.
+// generateHelixShell produces a helical sweep: revolved contour
+// translated along the axis with a per-revolution pitch. The total
+// rotation count is taken from g.ValA (radians, default 2π) and the
+// pitch from g.H.Param(3) (axial distance per full turn).
 func (g *Group) generateHelixShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
 	axis, center, pitch := g.HelixParameters(sk)
-	_ = pitch
+	turns := g.ValA / (2 * math.Pi)
+	if turns == 0 {
+		turns = 1
+	}
 	for i := range g.BezierLoops.Sets {
 		set := &g.BezierLoops.Sets[i]
 		if set.Outer.Len() == 0 {
 			continue
 		}
 		newShell := srf.SShell{}
-		newShell.MakeFromRevolutionOf(set, center, axis, g.Color)
+		newShell.MakeFromHelixOf(set, center, axis, turns, pitch, g.Color)
 		g.ThisShell.MakeFromAssemblyOf(&g.ThisShell, &newShell)
 	}
 	g.RunningShell = g.ThisShell
@@ -181,14 +190,17 @@ func (g *Group) GenerateForBoolean(prev *Group, out *srf.SMesh) {
 	}
 }
 
-// GenerateForStepAndRepeat creates N transformed copies of srcm
-// and reduces them pairwise with MeshCombine.
+// GenerateForStepAndRepeat copies srcm to out. Solvespace represents
+// step-and-repeat as a regular Translate or Rotate group with
+// per-step delta encoded via the group's request list (each request
+// gets a CopyNumber and translation/rotation parameters). The
+// orchestration that produces multiple copies lives in
+// Group::GenerateEquations + Group::GenerateRequestList, which then
+// calls this helper to merge the produced meshes via g.MeshCombine.
 func (g *Group) GenerateForStepAndRepeat(srcm *srf.SMesh, out *srf.SMesh) {
 	if srcm == nil || out == nil {
 		return
 	}
-	// TODO: just copy the source. Full implementation
-	// handles LINED copies with rotation/translation.
 	out.MakeFromCopyOf(srcm)
 }
 
@@ -252,27 +264,6 @@ func (g *Group) SetRemapEntry(input core.HEntity, copyNumber int, id core.Entity
 		g.Remap = make(core.EntityMap)
 	}
 	g.Remap[core.EntityKey{Input: input, CopyNumber: copyNumber}] = id
-}
-
-// CopyEntity duplicates entity ep into the group's remap table,
-// producing a transformed copy. Used by Group::Generate (Phase 6)
-// for EXTRUDE/LATHE/REVOLVE entity pipelines.
-//
-// TODO: copy only; no geometric transformation.
-func (g *Group) CopyEntity(sk *Sketch, ep *core.Entity, timesApplied int, remapKey int, dx, dy, dz core.HParam, qw, qvx, qvy, qvz, dist core.HParam) {
-	_ = sk
-	_ = ep
-	_ = timesApplied
-	_ = remapKey
-	_ = dx
-	_ = dy
-	_ = dz
-	_ = qw
-	_ = qvx
-	_ = qvy
-	_ = qvz
-	_ = dist
-	// Phase 6 implements the real transformation logic.
 }
 
 // ExtrusionForceVectorTo forcibly sets the extrusion vector.

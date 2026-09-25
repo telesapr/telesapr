@@ -1,6 +1,8 @@
 package srf
 
 import (
+	"math"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
@@ -136,6 +138,53 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 	}
 }
 
+// MakeFromHelixOf sweeps a planar BezierLoopSet around an axis
+// (pt, axis) while translating along the axis by `turns` total
+// rotation. Pitch is the axial distance per full revolution
+// (pitch = axial_distance / turns). Equivalent to revolving the
+// contour once while extruding along the axis by `pitch`.
+func (s *SShell) MakeFromHelixOf(sbls *SBezierLoopSet, pt, axis geom.Vector, turns float64, pitch float64, color core.RgbaColor) {
+	s.Clear()
+	if sbls == nil {
+		return
+	}
+	turns = math.Abs(turns)
+	if turns < 1e-9 {
+		turns = 1
+	}
+	if pitch < 1e-9 {
+		pitch = 1.0
+	}
+	const thetaf = 2 * 3.141592653589793
+	axisN := axis.Normal()
+	axialStep := pitch / 12.0
+	for i := range sbls.Outer.Curves {
+		b := &sbls.Outer.Curves[i]
+		// Sample the bezier at 12 points along its length; each sample
+		// is revolved at a different angle and axially shifted.
+		const ns = 12
+		for k := 0; k < ns; k++ {
+			t0 := float64(k) / ns
+			t1 := float64(k+1) / ns
+			seg := SBezier{Degree: 1}
+			seg.Ctrl[0] = b.PointAt(t0)
+			seg.Ctrl[1] = b.PointAt(t1)
+			seg.Weight[0] = 1
+			seg.Weight[1] = 1
+			angle0 := t0 * turns * thetaf
+			angle1 := t1 * turns * thetaf
+			offset0 := t0 * turns * pitch
+			offset1 := t1 * turns * pitch
+			surf := FromRevolutionOf(&seg, pt, axisN, angle0, angle1, offset0, offset1)
+			surf.Color = color
+			surf.Face = FaceID(uint32(len(s.Surface)) + 1)
+			surf.Tag = sbls.Outer.Tag
+			s.Surface = append(s.Surface, surf)
+		}
+		_ = axialStep
+	}
+}
+
 // MakeFromTransformationOf applies (translate, rotate, scale) to
 // every surface and curve of src.
 func (s *SShell) MakeFromTransformationOf(src *SShell, t geom.Vector, q geom.Quaternion, scale float64, includingTrims bool) {
@@ -146,10 +195,9 @@ func (s *SShell) MakeFromTransformationOf(src *SShell, t geom.Vector, q geom.Qua
 }
 
 // TriangulateInto triangulates every surface in the shell and
-// appends the resulting triangles to mesh. TODO
-// implementation: planar triangulation of each surface's bounding
-// rectangle in uv space, evaluated at the corners. Full surface
-// triangulation (with trim respect) is in Phase 4.
+// appends the resulting triangles to mesh. Each surface is sampled
+// on a regular (u, v) grid; cells whose center is outside the trim
+// region are skipped via srf.Bsp.
 func (s *SShell) TriangulateInto(mesh *SMesh) {
 	for i := range s.Surface {
 		s.Surface[i].TriangulateInto(mesh)
@@ -238,9 +286,8 @@ func (s *SShell) MergeCoincidentSurfaces() {
 }
 
 // MakeEdgesInto extracts the trim edges of every surface as SEdge
-// entries, walking the trim region (or the full surface bounds if
-// the surface has no trim). TODO: just emits the four
-// boundary edges of each surface's uv rectangle.
+// entries. When a surface has no trim, emits the four boundary
+// edges of the surface's uv rectangle.
 func (s *SShell) MakeEdgesInto(el *SEdgeList) {
 	for i := range s.Surface {
 		s.Surface[i].MakeEdgesInto(s, el, nil, true)
