@@ -146,3 +146,29 @@ func TestParityConstraintCounts(t *testing.T) {
 		}
 	}
 }
+
+// TestParityLinkAndTranslateFixtures loads and solves each link and
+// translate fixture in testdata/group/. These exercise GroupLinked and
+// GroupTranslate/GroupAsmToken/GroupNmToken group types.
+func TestParityLinkAndTranslateFixtures(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
+	for _, dir := range []string{"link", "translate_asy", "translate_nd"} {
+		path := filepath.Join(root, "testdata/group", dir, "normal.slvs")
+		doc, err := LoadFile(path)
+		if err != nil {
+			t.Errorf("%s: load: %v", dir, err)
+			continue
+		}
+		doc.Sketch.GenerateAll()
+		clean := 0
+		for _, g := range doc.Sketch.Groups {
+			if g.Clean {
+				clean++
+			}
+		}
+		if clean != len(doc.Sketch.Groups) {
+			t.Errorf("%s: not all groups clean (%d/%d)", dir, clean, len(doc.Sketch.Groups))
+		}
+	}
+}

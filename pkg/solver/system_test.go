@@ -2481,3 +2481,61 @@ func TestSystemEqualRadiusConstraint(t *testing.T) {
 		}
 	}
 }
+
+// TestSystemArcLineTangentConstraint verifies that an arc and a
+// line are tangent (share a common tangent direction at a meeting
+
+// TestSystemArcLineTangentConstraint verifies that an arc and a
+// line are tangent (share a common tangent direction at a meeting
+// point on a workplane).
+func TestSystemArcLineTangentConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// Quarter arc from (2,0,0) to (0,2,0); tangent at startA is +Y.
+	center := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030004}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030005}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x00030010}}}}
+	startA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	finishA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030007}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 2, 0)}
+	arc := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030008}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{center.H, startA.H, finishA.H}, Normal: normalA.H, Distance: radiusA.H}}
+
+	// Line tangent at startA: direction perpendicular to radius (1,0,0),
+	// i.e., direction (0,1,0). Start at startA, end at (2,3,0).
+	startL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00030009}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	endL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0003000a}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 3, 0)}
+	line := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0003000b}, Type: core.EntityLineSegment, Point: [core.MaxPointsInEntity]core.HEntity{startL.H, endL.H}, Normal: normalA.H}}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		workplane.H:   workplane,
+		center.H:      center,
+		normalA.H:     normalA,
+		radiusA.H:     radiusA,
+		startA.H:      startA,
+		finishA.H:     finishA,
+		arc.H:         arc,
+		startL.H:      startL,
+		endL.H:        endL,
+		line.H:        line,
+	}, params: map[core.HParam]*core.Param{
+		{V: 0x00030010}: {H: core.HParam{V: 0x00030010}, Val: 2, Known: true},
+	}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000300c0}, Type: core.ConstraintArcLineTangent, EntityA: arc.H, EntityB: line.H, Workplane: workplane.H}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("arc-line tangent residual %d: %f", i, r)
+		}
+	}
+}
