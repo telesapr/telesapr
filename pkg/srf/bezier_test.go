@@ -553,3 +553,25 @@ func TestSSurfaceWeightControlPoints(t *testing.T) {
 		t.Errorf("after unweight: weight[0][0] = %v, want 1.0 (round-trip)", plane.Weight[0][0])
 	}
 }
+
+// TestSSurfaceAllPointsIntersectingUntrimmedPlane verifies subdivision finds intersection.
+func TestSSurfaceAllPointsIntersectingUntrimmedPlane(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	cnt, level := 0, 0
+	var l []SInter
+	plane.AllPointsIntersectingUntrimmed(geom.Vector{Z: -1}, geom.Vector{Z: 1}, &cnt, &level, &l, true, &plane)
+	if len(l) == 0 {
+		t.Errorf("expected at least one intersection on plane z=0, got 0")
+	}
+}
+
+// TestSSurfaceAllPointsIntersectingUntrimmedOutsideBbox verifies early exit.
+func TestSSurfaceAllPointsIntersectingUntrimmedOutsideBbox(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	cnt, level := 0, 0
+	var l []SInter
+	plane.AllPointsIntersectingUntrimmed(geom.Vector{Z: 5}, geom.Vector{Z: 10}, &cnt, &level, &l, true, &plane)
+	if len(l) != 0 {
+		t.Errorf("expected 0 intersections for line above plane, got %d", len(l))
+	}
+}

@@ -1063,3 +1063,49 @@ func (s *SSurface) BlendRowOrCol(byU bool, thisIJ int, a *SSurface, aIJ int, b *
 		}
 	}
 }
+
+// AllPointsIntersectingUntrimmed recursively subdivides the surface
+// to find line-surface intersections. If the surface is small
+// (DepartureFromCoplanar < tolerance), switch to Newton iteration
+// via PointIntersectingLine. Otherwise split the surface in half
+// and recurse, alternating u and v by level.
+//
+// Implements SSurface::AllPointsIntersectingUntrimmed from raycast.cpp.
+func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *int, l *[]SInter, asSegment bool, sorig *SSurface) {
+	if s.LineEntirelyOutsideBbox(a, b, asSegment) {
+		return
+	}
+	if *cnt > 2000 {
+		return
+	}
+	*cnt++
+	if s.DepartureFromCoplanar() < 0.2 {
+		// Surface is small; switch to Newton iteration.
+		p := s.Ctrl[0][0].Plus(s.Ctrl[0][s.DegN]).Plus(s.Ctrl[s.DegM][0]).Plus(s.Ctrl[s.DegM][s.DegN]).ScaledBy(0.25)
+		var puv geom.Point2d
+		sorig.ClosestPointTo(p, &puv, false)
+		u, v := puv.U, puv.V
+		if sorig.PointIntersectingLine(a, b, &u, &v) {
+			pxyz := sorig.PointAt(u, v)
+			// Refine u, v on this surface (sorig should equal s in the recursive case).
+			s.ClosestPointTo(pxyz, &puv, false)
+			u, v = puv.U, puv.V
+			*l = append(*l, SInter{
+				P:          pxyz,
+				SurfA:      core.HSSurface{V: 1},
+				SurfB:      core.HSSurface{V: 1},
+				SurfNormal: s.NormalAt(u, v),
+				PInter:     geom.Point2d{U: u, V: v},
+				Srf:        s,
+				OnEdge:     u == 0 || u == 1 || v == 0 || v == 1,
+			})
+		}
+		return
+	}
+	// Surface is big; split it.
+	var surf0, surf1 SSurface
+	s.SplitInHalf((*level&1) == 0, &surf0, &surf1)
+	*level++
+	surf0.AllPointsIntersectingUntrimmed(a, b, cnt, level, l, asSegment, sorig)
+	surf1.AllPointsIntersectingUntrimmed(a, b, cnt, level, l, asSegment, sorig)
+}
