@@ -258,8 +258,12 @@ func (s *SShell) AllPointsIntersecting(a, b geom.Vector, inters *[]SInter, asSeg
 // SInter is a ray-shell intersection point with metadata about the
 // surfaces and curves it crossed. Equivalent to C++ SInter.
 type SInter struct {
-	P     geom.Vector
-	SurfA core.HSSurface
-	SurfB core.HSSurface
-	Tag   int
+	P          geom.Vector
+	SurfA      core.HSSurface
+	SurfB      core.HSSurface
+	SurfNormal geom.Vector
+	PInter     geom.Point2d
+	Srf        *SSurface
+	OnEdge     bool
+	Tag        int
 }

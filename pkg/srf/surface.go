@@ -979,9 +979,13 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter, asSegmen
 			}
 		}
 		si := SInter{
-			P:      pxyz,
-			SurfA:  core.HSSurface{V: 1},
-			SurfB:  core.HSSurface{V: 1},
+			P:          pxyz,
+			SurfA:      core.HSSurface{V: 1},
+			SurfB:      core.HSSurface{V: 1},
+			SurfNormal: s.NormalAt(inter.P.U, inter.P.V),
+			PInter:     inter.P,
+			Srf:        s,
+			OnEdge:     inter.P.U == 0 || inter.P.U == 1 || inter.P.V == 0 || inter.P.V == 1,
 		}
 		_ = inclTangent
 		*l = append(*l, si)

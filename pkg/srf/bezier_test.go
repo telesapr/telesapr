@@ -408,3 +408,54 @@ func TestSSurfaceAllPointsIntersectingOutsideBbox(t *testing.T) {
 		t.Errorf("expected no intersections for line above plane, got %d", len(inters))
 	}
 }
+
+// TestSShellClassifyRegion tests the ClassifyRegion logic.
+func TestSShellClassifyRegion(t *testing.T) {
+	shell := &SShell{}
+	edgeN := geom.Vector{Z: 1}
+	// Edge normal aligned with inter-surf normal -> dot=1, OUTSIDE.
+	c := shell.ClassifyRegion(edgeN, geom.Vector{Z: 1}, geom.Vector{Z: 1})
+	if c != SurfOutside {
+		t.Errorf("ClassifyRegion aligned: got %v, want SurfOutside", c)
+	}
+	// Edge normal opposite -> INSIDE.
+	c = shell.ClassifyRegion(edgeN, geom.Vector{Z: -1}, geom.Vector{Z: 1})
+	if c != SurfInside {
+		t.Errorf("ClassifyRegion opposite: got %v, want SurfInside", c)
+	}
+	// Edge normal perpendicular -> check surf normal alignment.
+	c = shell.ClassifyRegion(geom.Vector{X: 1}, geom.Vector{Z: 1}, geom.Vector{Z: 1})
+	if c != SurfCoincSame {
+		t.Errorf("ClassifyRegion perp+same: got %v, want SurfCoincSame", c)
+	}
+	c = shell.ClassifyRegion(geom.Vector{X: 1}, geom.Vector{Z: 1}, geom.Vector{Z: -1})
+	if c != SurfCoincOpp {
+		t.Errorf("ClassifyRegion perp+opp: got %v, want SurfCoincOpp", c)
+	}
+}
+
+// TestSShellPointInShell tests the high-level point-in-shell entry point.
+func TestSShellPointInShell(t *testing.T) {
+	// Empty shell - point is outside.
+	shell := &SShell{}
+	p := geom.Vector{}
+	c := shell.PointInShell(p)
+	if c != SurfOutside {
+		t.Errorf("empty shell: got %v, want SurfOutside", c)
+	}
+}
+
+// TestProbeTangentFace exercises the tangent-face probe.
+func TestProbeTangentFace(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	var f geom.Vector
+	var flat bool
+	dev := ProbeTangentFace(&plane, geom.Vector{}, geom.Vector{Z: 1}, geom.Vector{Z: 1}, &f, &flat)
+	// Planar face should be perfectly flat.
+	if !flat {
+		t.Errorf("planar face should be flat")
+	}
+	if math.Abs(dev) > 1e-9 {
+		t.Errorf("planar dev = %v, want ~0", dev)
+	}
+}
