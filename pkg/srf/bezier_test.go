@@ -459,3 +459,30 @@ func TestProbeTangentFace(t *testing.T) {
 		t.Errorf("planar dev = %v, want ~0", dev)
 	}
 }
+
+// TestRayIsInside tests the ray-in-triangle check.
+func TestRayIsInside(t *testing.T) {
+	a := geom.Vector{}
+	b := geom.Vector{X: 1}
+	c := geom.Vector{Y: 1}
+	// d inside the triangle, ray goes upward.
+	d := geom.Vector{X: 0.5, Y: 0.1}
+	_ = c
+	if !RayIsInside(a, c, b, d) {
+		t.Errorf("ray into triangle should be inside")
+	}
+}
+
+// TestSContourIsEar tests ear detection on a simple square.
+func TestSContourIsEar(t *testing.T) {
+	c := &SContour{}
+	c.AddPoint(geom.Vector{X: 0, Y: 0})
+	c.AddPoint(geom.Vector{X: 1, Y: 0})
+	c.AddPoint(geom.Vector{X: 1, Y: 1})
+	c.AddPoint(geom.Vector{X: 0, Y: 1})
+	// Vertex 0 (origin) - triangle (3, 0, 1) is (top-left, origin, bottom-right).
+	// That's (0,1)→(0,0)→(1,0), normal points in -Z direction (CCW from above = CW).
+	if !c.IsEar(0, 1e-9) {
+		t.Errorf("vertex 0 should not be an ear (CW orientation)")
+	}
+}

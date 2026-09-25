@@ -387,3 +387,25 @@ func pointInTriangle(p, a, b, c geom.Vector) bool {
 	v := (dot00*dot12 - dot01*dot02) / den
 	return u >= 0 && v >= 0 && u+v < 1
 }
+
+// RayIsInside tests whether the ray from b in direction d passes
+// through the interior of triangle (a, b, c). Used to detect
+// bridge-candidate intersections during ear-clipping.
+func RayIsInside(a, c, b, d geom.Vector) bool {
+	if d.Equals(a) {
+		return false
+	}
+	if d.Equals(c) {
+		return false
+	}
+	ba := a.Minus(b)
+	bc := c.Minus(b)
+	bd := d.Minus(b)
+	if (bd.X*(ba.Y)+(bd.Y*(-ba.X)))*(bc.X*(ba.Y)+(bc.Y*(-ba.X))) < lengthEps {
+		return false
+	}
+	if (bd.X*(bc.Y)+(bd.Y*(-bc.X)))*(ba.X*(bc.Y)+(ba.Y*(-bc.X))) < lengthEps {
+		return false
+	}
+	return true
+}
