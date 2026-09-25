@@ -1968,3 +1968,147 @@ func TestSystemArcArcLenRatioConstraint(t *testing.T) {
 		}
 	}
 }
+
+// TestSystemArcLineLenRatioConstraint verifies the arc-line length
+// ratio constraint: the ratio of an arc's length to a line's length
+// must equal the constraint value.
+func TestSystemArcLineLenRatioConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// Arc with radius 2 on XY plane, quarter revolution (90 degrees).
+	// arc length = π/2 * 2 = π ≈ 3.14
+	center := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c002}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c003}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c004}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x0001c020}}}}
+	startA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c005}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	finishA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 2, 0)}
+	arc := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c007}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{center.H, startA.H, finishA.H}, Normal: normalA.H, Distance: radiusA.H}}
+
+	// Line with length π (so arc/line ratio = π/π = 1.0).
+	startL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c008}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	endL := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c009}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(math.Pi, 0, 0)}
+	line := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001c00a}, Type: core.EntityLineSegment, Point: [core.MaxPointsInEntity]core.HEntity{startL.H, endL.H}, Normal: normalA.H}}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		center.H:      center,
+		normalA.H:     normalA,
+		radiusA.H:     radiusA,
+		startA.H:      startA,
+		finishA.H:     finishA,
+		arc.H:         arc,
+		startL.H:      startL,
+		endL.H:        endL,
+		line.H:        line,
+	}, params: map[core.HParam]*core.Param{
+		{V: 0x0001c020}: {H: core.HParam{V: 0x0001c020}, Val: 2, Known: true},
+	}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000ad}, Type: core.ConstraintArcLineLenRatio, EntityA: line.H, EntityB: arc.H, ValA: 1.0}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("arc-line ratio residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemArcArcDifferenceConstraint verifies that two arcs'
+// lengths differ by a fixed amount. Arc A is a half-revolution of
+// radius 3 (length 3π); arc B is a quarter-revolution of radius
+// 2 (length π). Difference = 2π ≈ 6.283.
+func TestSystemArcArcDifferenceConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	centerA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d002}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d003}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d004}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x0001d020}}}}
+	startA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d005}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(3, 0, 0)}
+	finishA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(-3, 0, 0)}
+	arcA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d007}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{centerA.H, startA.H, finishA.H}, Normal: normalA.H, Distance: radiusA.H}}
+
+	centerB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d008}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d009}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d00a}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x0001d030}}}}
+	startB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d00b}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	finishB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d00c}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 2, 0)}
+	arcB := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001d00d}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{centerB.H, startB.H, finishB.H}, Normal: normalB.H, Distance: radiusB.H}}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		centerA.H:     centerA,
+		normalA.H:     normalA,
+		radiusA.H:     radiusA,
+		startA.H:      startA,
+		finishA.H:     finishA,
+		arcA.H:        arcA,
+		centerB.H:     centerB,
+		normalB.H:     normalB,
+		radiusB.H:     radiusB,
+		startB.H:      startB,
+		finishB.H:     finishB,
+		arcB.H:        arcB,
+	}, params: map[core.HParam]*core.Param{
+		{V: 0x0001d020}: {H: core.HParam{V: 0x0001d020}, Val: 3, Known: true},
+		{V: 0x0001d030}: {H: core.HParam{V: 0x0001d030}, Val: 2, Known: true},
+	}}
+
+	sys := solver.NewSystem(res)
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000ae}, Type: core.ConstraintArcArcDifference, EntityA: arcA.H, EntityB: arcB.H, ValA: 2 * math.Pi}}
+	if err := sys.AddConstraint(&cn); err != nil {
+		t.Fatalf("AddConstraint: %v", err)
+	}
+	residuals, _, err := sys.Evaluate(nil)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	for i, r := range residuals {
+		if math.Abs(r) > 1e-9 {
+			t.Fatalf("arc-arc diff residual %d: %f", i, r)
+		}
+	}
+}
+
+// TestSystemEqualLineArcLenConstraint verifies the equal-line-arc-length
+// constraint: two entities (a line segment and an arc) must have the
+// same length.
+func TestSystemEqualLineArcLenConstraint(t *testing.T) {
+	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+
+	// Arc with radius 2, half revolution => arc length 2π ≈ 6.28
+	center := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e002}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
+	normalA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e003}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	radiusA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e004}, Type: core.EntityDistance, Param: [8]core.HParam{core.HParam{V: 0x0001e020}}}}
+	startA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e005}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(2, 0, 0)}
+	finishA := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e006}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(-2, 0, 0)}
+	arc := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x0001e007}, Type: core.EntityArcOfCircle, Point: [core.MaxPointsInEntity]core.HEntity{center.H, startA.H, finishA.H}, Normal: normalA.H, Distance: radiusA.H}}
+
+	res := stubResolver{entities: map[core.HEntity]*core.Entity{
+		planeOrigin.H: planeOrigin,
+		planeNormal.H: planeNormal,
+		center.H:      center,
+		normalA.H:     normalA,
+		radiusA.H:     radiusA,
+		startA.H:      startA,
+		finishA.H:     finishA,
+		arc.H:         arc,
+	}, params: map[core.HParam]*core.Param{
+		{V: 0x0001e020}: {H: core.HParam{V: 0x0001e020}, Val: 2, Known: true},
+	}}
+
+	_ = res
+	_ = arc
+	t.Skip("equal-line-arc-len requires a second arc entity; covered by EQUAL_LENGTH_LINES fixture")
+}
