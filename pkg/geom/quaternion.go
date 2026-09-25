@@ -148,6 +148,11 @@ func (q Quaternion) ToThe(p float64) Quaternion {
 	return QuaternionFromAxisAngle(axis, 2*halfAngle*p)
 }
 
+// IsIdentity reports whether the quaternion is the identity (1, 0, 0, 0).
+func (q Quaternion) IsIdentity() bool {
+	return q.W == 1.0 && q.X == 0 && q.Y == 0 && q.Z == 0
+}
+
 func (q Quaternion) Rotate(v Vector) Vector {
 	qv := Quaternion{0, v.X, v.Y, v.Z}
 	qInv := q.Inverse()
