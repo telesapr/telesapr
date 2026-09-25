@@ -63,3 +63,64 @@ func TestIdListIDsInInsertionOrder(t *testing.T) {
 		}
 	}
 }
+
+// TestIdListClear verifies Clear empties the list.
+func TestIdListClear(t *testing.T) {
+	list := NewIdList[int, string](0)
+	list.Add(1, "one")
+	list.Add(2, "two")
+	list.Clear()
+	if list.Len() != 0 {
+		t.Errorf("Len after clear = %d, want 0", list.Len())
+	}
+}
+
+// TestIdListEmptyAdd verifies adding to empty list works.
+func TestIdListEmptyAdd(t *testing.T) {
+	list := NewIdList[int, string](0)
+	idx := list.Add(42, "hello")
+	if idx != 0 {
+		t.Errorf("first Add idx = %d, want 0", idx)
+	}
+	if list.Len() != 1 {
+		t.Errorf("Len = %d, want 1", list.Len())
+	}
+}
+
+// TestIdListFindById verifies FindById.
+func TestIdListFindById(t *testing.T) {
+	list := NewIdList[int, string](0)
+	list.Add(1, "one")
+	list.Add(2, "two")
+	v, ok := list.FindById(1)
+	if !ok || v != "one" {
+		t.Errorf("FindById(1) = (%v, %v), want (one, true)", v, ok)
+	}
+	_, ok = list.FindById(99)
+	if ok {
+		t.Errorf("FindById(99) should not find")
+	}
+}
+
+// TestIdListSortedHandles verifies SortedHandles ordering.
+func TestIdListSortedHandles(t *testing.T) {
+	list := NewIdList[int, string](0)
+	list.Add(3, "three")
+	list.Add(1, "one")
+	list.Add(2, "two")
+	ids := list.SortedHandles(func(a, b int) bool { return a < b })
+	if len(ids) != 3 || ids[0] != 1 || ids[1] != 2 || ids[2] != 3 {
+		t.Errorf("SortedHandles = %v, want [1, 2, 3]", ids)
+	}
+}
+
+// TestIdListIDs verifies IDs accessor.
+func TestIdListIDs(t *testing.T) {
+	list := NewIdList[int, string](0)
+	list.Add(10, "ten")
+	list.Add(20, "twenty")
+	ids := list.IDs()
+	if len(ids) != 2 || ids[0] != 10 || ids[1] != 20 {
+		t.Errorf("IDs = %v, want [10, 20]", ids)
+	}
+}

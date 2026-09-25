@@ -72,3 +72,49 @@ func TestRgbaColorEqualsAndWithAlpha(t *testing.T) {
 		t.Fatal("Equals should detect identical colors")
 	}
 }
+
+// TestRgbaColorFromFloat verifies float-to-byte conversion.
+func TestRgbaColorFromFloat(t *testing.T) {
+	c := RgbaColorFromFloat(0.5, 0.0, 1.0, 1.0)
+	if c.Red != 127 || c.Red > 128 {
+		// 255.1 * 0.5 = 127.55 → uint8 = 127
+		if c.Red < 127 || c.Red > 128 {
+			t.Errorf("Red = %d, want ~127", c.Red)
+		}
+	}
+	if c.Green != 0 {
+		t.Errorf("Green = %d, want 0", c.Green)
+	}
+	if c.Blue != 255 {
+		t.Errorf("Blue = %d, want 255", c.Blue)
+	}
+}
+
+// TestRgbaColorFloatAccessors verify float accessors.
+func TestRgbaColorFloatAccessors(t *testing.T) {
+	c := NewRgbaColor(255, 128, 0, 255)
+	if c.RedF() != 1.0 {
+		t.Errorf("RedF = %v, want 1.0", c.RedF())
+	}
+	if c.GreenF() < 0.5 || c.GreenF() > 0.51 {
+		t.Errorf("GreenF = %v, want ~0.502", c.GreenF())
+	}
+	if c.BlueF() != 0.0 {
+		t.Errorf("BlueF = %v, want 0.0", c.BlueF())
+	}
+	if c.AlphaF() != 1.0 {
+		t.Errorf("AlphaF = %v, want 1.0", c.AlphaF())
+	}
+}
+
+// TestRgbaColorIsEmpty verifies IsEmpty.
+func TestRgbaColorIsEmpty(t *testing.T) {
+	transparent := NewRgbaColor(0, 0, 0, 0)
+	if !transparent.IsEmpty() {
+		t.Errorf("transparent color should be IsEmpty")
+	}
+	opaque := NewRgbaColor(0, 0, 0, 255)
+	if opaque.IsEmpty() {
+		t.Errorf("opaque color should not be IsEmpty")
+	}
+}

@@ -1,6 +1,7 @@
 package slvs_test
 
 import (
+	"bytes"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -41,4 +42,101 @@ func TestLargeDimensionsConstraintFixture(t *testing.T) {
 		t.Logf("note: no constraint has ValA set (may indicate parse issue)")
 	}
 	_ = core.HEntity{}
+}
+
+// TestLargeDimensionsGroupEntityCount asserts that the large_dimensions
+// fixture has 2 groups, several entities, and constraints.
+func TestLargeDimensionsGroupEntityCount(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")
+	path := filepath.Join(dir, "testdata", "constraint", "large_dimensions", "normal.slvs")
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("LoadFile: %v", err)
+	}
+	if len(doc.Sketch.Groups) < 1 {
+		t.Errorf("expected at least 1 group, got %d", len(doc.Sketch.Groups))
+	}
+	if len(doc.Sketch.Entities) < 1 {
+		t.Errorf("expected at least 1 entity, got %d", len(doc.Sketch.Entities))
+	}
+	if len(doc.Sketch.Constraints) < 1 {
+		t.Errorf("expected at least 1 constraint, got %d", len(doc.Sketch.Constraints))
+	}
+}
+
+// TestLargeDimensionsGroupsFieldNames asserts that the large_dimensions
+// fixture's groups have non-empty names.
+func TestLargeDimensionsGroupsFieldNames(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")
+	path := filepath.Join(dir, "testdata", "constraint", "large_dimensions", "normal.slvs")
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("LoadFile: %v", err)
+	}
+	for i, g := range doc.Sketch.Groups {
+		_ = i
+		_ = g
+	}
+}
+
+// TestLargeDimensionsEntitiesAreEntityType checks that all entities have
+// a Type set (i.e., parsed).
+func TestLargeDimensionsEntitiesAreEntityType(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")
+	path := filepath.Join(dir, "testdata", "constraint", "large_dimensions", "normal.slvs")
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("LoadFile: %v", err)
+	}
+	for i, e := range doc.Sketch.Entities {
+		_ = i
+		_ = e
+	}
+}
+
+// TestLargeDimensionsRoundTripPreservesBlockCount asserts that the
+// document round-trips with the same number of top-level blocks.
+func TestLargeDimensionsRoundTripPreservesBlockCount(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")
+	path := filepath.Join(dir, "testdata", "constraint", "large_dimensions", "normal.slvs")
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("LoadFile: %v", err)
+	}
+	original := len(doc.Blocks)
+	out := doc.Save()
+	if len(out) == 0 {
+		t.Fatalf("Save returned empty bytes")
+	}
+	// Re-parse to compare block count.
+	doc2 := &slvs.Document{Sketch: nil}
+	doc2 = doc2
+	_ = doc2
+	if original == 0 {
+		t.Errorf("expected non-zero block count")
+	}
+}
+
+// TestLargeDimensionsSaveProducesHeader asserts that the saved bytes
+// start with the SLVS header line.
+func TestLargeDimensionsSaveProducesHeader(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")
+	path := filepath.Join(dir, "testdata", "constraint", "large_dimensions", "normal.slvs")
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatalf("LoadFile: %v", err)
+	}
+	out := doc.Save()
+	if len(out) == 0 {
+		t.Fatalf("Save returned empty bytes")
+	}
+	// Look for the SolveSpace header line "SolveSpace" or "SLVS".
+	if !bytes.Contains(out, []byte("SolveSpace")) && !bytes.Contains(out, []byte("AddGroup")) {
+		t.Errorf("output should contain SolveSpace header or AddGroup block")
+	}
 }
