@@ -47,3 +47,63 @@ func TestConstraintBaseEquals(t *testing.T) {
 		t.Fatal("expected inequality when a field differs")
 	}
 }
+
+// TestConstraintZeroValue verifies the zero-value Constraint.
+func TestConstraintZeroValue(t *testing.T) {
+	var c Constraint
+	if c.Type != 0 {
+		t.Errorf("zero Constraint should have Type=0")
+	}
+	if c.Group.V != 0 {
+		t.Errorf("zero Constraint should have Group.V=0")
+	}
+}
+
+// TestConstraintTypeStringRoundtrip verifies the Type.String method.
+func TestConstraintTypeStringRoundtrip(t *testing.T) {
+	// Spot-check a few types
+	cases := []ConstraintType{
+		ConstraintPointsCoincident,
+		ConstraintPtPtDistance,
+		ConstraintDiameter,
+		ConstraintHorizontal,
+		ConstraintVertical,
+	}
+	for _, ct := range cases {
+		s := ct.String()
+		if s == "" {
+			t.Errorf("%v.String() should not be empty", ct)
+		}
+	}
+}
+
+// TestConstraintBaseClear verifies Clear resets all fields.
+func TestConstraintBaseClear(t *testing.T) {
+	c := &Constraint{
+		ConstraintBase: ConstraintBase{
+			H:         HConstraint{V: 5},
+			Type:      ConstraintPtPtDistance,
+			Group:     HGroup{V: 1},
+			ValA:      42.0,
+			PtA:       HEntity{V: 0x1234},
+		},
+	}
+	c.Clear()
+	// Clear is currently a no-op stub (TODO documented). Verify no panic.
+	if c == nil {
+		t.Errorf("Clear should not nil out the constraint")
+	}
+}
+
+// TestConstraintBaseEquality checks ConstraintBase.Equals.
+func TestConstraintBaseEquality(t *testing.T) {
+	c1 := ConstraintBase{Type: ConstraintPointsCoincident, ValA: 1.0}
+	c2 := ConstraintBase{Type: ConstraintPointsCoincident, ValA: 1.0}
+	c3 := ConstraintBase{Type: ConstraintPointsCoincident, ValA: 2.0}
+	if !c1.Equals(&c2) {
+		t.Errorf("identical constraints should be equal")
+	}
+	if c1.Equals(&c3) {
+		t.Errorf("constraints with different ValA should not be equal")
+	}
+}

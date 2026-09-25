@@ -873,3 +873,52 @@ func TestComplexLoopFinding(t *testing.T) {
 		}
 	}
 }
+
+// TestGroupSketchAccessorsViaSketchPackage verifies accessors work.
+func TestGroupSketchAccessorsViaSketchPackage(t *testing.T) {
+	g := &Group{H: core.HGroup{V: 1}}
+	if g.IsMeshGroup() {
+		t.Errorf("default group should not be mesh group")
+	}
+	if g.IsVisible() {
+		t.Errorf("default group should not be visible")
+	}
+}
+
+// TestGroupIsMeshGroupTrueForAllMeshTypes verifies all mesh group types.
+func TestGroupIsMeshGroupTrueForAllMeshTypes(t *testing.T) {
+	for _, gt := range []GroupType{
+		GroupExtrude, GroupLathe, GroupRevolve, GroupHelix,
+		GroupRotate, GroupTranslate,
+	} {
+		g := &Group{Type: gt}
+		if !g.IsMeshGroup() {
+			t.Errorf("%v should be a mesh group", gt)
+		}
+	}
+}
+
+// TestGroupIsMeshGroupFalseForNonMeshTypes verifies drawing groups
+// are not mesh groups.
+func TestGroupIsMeshGroupFalseForNonMeshTypes(t *testing.T) {
+	for _, gt := range []GroupType{
+		GroupDrawing3D, GroupDrawingWorkplane, GroupLinked,
+	} {
+		g := &Group{Type: gt}
+		if g.IsMeshGroup() {
+			t.Errorf("%v should not be a mesh group", gt)
+		}
+	}
+}
+
+// TestGroupIsTriangleMeshAssemblyBasic verifies the triangle-mesh check.
+func TestGroupIsTriangleMeshAssemblyBasic(t *testing.T) {
+	g := &Group{ForceToMesh: true, MeshCombine: CombineAssemble}
+	if !g.IsTriangleMeshAssembly() {
+		t.Errorf("ForceToMesh+CombineAssemble should be triangle mesh assembly")
+	}
+	g.MeshCombine = CombineUnion
+	if g.IsTriangleMeshAssembly() {
+		t.Errorf("CombineUnion should not be triangle mesh assembly")
+	}
+}

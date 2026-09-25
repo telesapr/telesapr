@@ -90,3 +90,95 @@ func TestEntityListAdd(t *testing.T) {
 		t.Fatalf("EntityList.Add failed: len=%d entry=%+v", len(list), list[0])
 	}
 }
+
+// TestEntityEmptyEntity verifies the zero-value Entity.
+func TestEntityEmptyEntity(t *testing.T) {
+	var e Entity
+	if e.Type != 0 {
+		t.Errorf("zero Entity should have Type=0")
+	}
+	if e.Group.V != 0 {
+		t.Errorf("zero Entity should have Group.V=0")
+	}
+}
+
+// TestEntityPointIsPoint verifies the IsPoint check.
+func TestEntityPointIsPoint(t *testing.T) {
+	tests := []struct {
+		t    EntityType
+		want bool
+	}{
+		{EntityPointIn3D, true},
+		{EntityPointIn2D, true},
+		{EntityPointNCopy, true},
+		{EntityPointNTrans, true},
+		{EntityLineSegment, false},
+		{EntityWorkplane, false},
+	}
+	for _, tc := range tests {
+		e := Entity{EntityBase: EntityBase{Type: tc.t}}
+		if got := e.IsPoint(); got != tc.want {
+			t.Errorf("IsPoint for %v: got %v, want %v", tc.t, got, tc.want)
+		}
+	}
+}
+
+// TestEntityNormalIsNormal verifies the IsNormal check.
+func TestEntityNormalIsNormal(t *testing.T) {
+	e := Entity{EntityBase: EntityBase{Type: EntityNormalIn3D}}
+	if !e.IsNormal() {
+		t.Errorf("EntityNormalIn3D should be a normal")
+	}
+	e.Type = EntityPointIn3D
+	if e.IsNormal() {
+		t.Errorf("EntityPointIn3D should not be a normal")
+	}
+}
+
+// TestEntityIsWorkplane verifies the IsWorkplane check.
+func TestEntityIsWorkplane(t *testing.T) {
+	e := Entity{EntityBase: EntityBase{Type: EntityWorkplane}}
+	if !e.IsWorkplane() {
+		t.Errorf("EntityWorkplane should be a workplane")
+	}
+	e.Type = EntityPointIn3D
+	if e.IsWorkplane() {
+		t.Errorf("EntityPointIn3D should not be a workplane")
+	}
+}
+
+// TestEntityIsFace verifies the IsFace check.
+func TestEntityIsFace(t *testing.T) {
+	e := Entity{EntityBase: EntityBase{Type: EntityFaceNormalPt}}
+	if !e.IsFace() {
+		t.Errorf("EntityFaceNormalPt should be a face")
+	}
+	e.Type = EntityPointIn3D
+	if e.IsFace() {
+		t.Errorf("EntityPointIn3D should not be a face")
+	}
+}
+
+// TestEntityHasEndpoints verifies the HasEndpoints check.
+func TestEntityHasEndpoints(t *testing.T) {
+	e := Entity{EntityBase: EntityBase{Type: EntityLineSegment}}
+	if !e.HasEndpoints() {
+		t.Errorf("EntityLineSegment should have endpoints")
+	}
+	e.Type = EntityPointIn3D
+	if e.HasEndpoints() {
+		t.Errorf("EntityPointIn3D should not have endpoints")
+	}
+}
+
+// TestEntityIsCircle verifies the IsCircle check.
+func TestEntityIsCircle(t *testing.T) {
+	e := Entity{EntityBase: EntityBase{Type: EntityCircle}}
+	if !e.IsCircle() {
+		t.Errorf("EntityCircle should be a circle")
+	}
+	e.Type = EntityPointIn3D
+	if e.IsCircle() {
+		t.Errorf("EntityPointIn3D should not be a circle")
+	}
+}
