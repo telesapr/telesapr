@@ -2,6 +2,13 @@ package srf
 
 import "github.com/spacesolve/spacesolve/pkg/geom"
 
+// lengthEps is the convergence tolerance for bezier curve operations.
+const lengthEps = 1e-12
+
+// ratPolyEps is the convergence tolerance for rational-polynomial
+// root-finding and curve-curve intersection.
+const ratPolyEps = lengthEps / 100
+
 // SBezier is a rational Bezier curve of degree 1..3 with up to 4
 // weighted 3-D control points. Used for sketch curves (LineSegment,
 // ArcOfCircle, Cubic), trim curves on shell surfaces, and for
@@ -407,4 +414,52 @@ func (b *SBezier) Crossing(a, dir geom.Vector) (float64, bool) {
 		prevT = t
 	}
 	return 0, false
+}
+
+// PointOnThisAndCurve finds a point that lies on both this bezier
+// and the other bezier, by iteratively minimizing the closest
+// distances. Returns the converged point via *p. Used during
+// surface-surface intersection and curve trimming.
+func (b *SBezier) PointOnThisAndCurve(other *SBezier, p *geom.Vector) bool {
+	ta, _ := b.ClosestPointTo(*p, false)
+	tb, _ := other.ClosestPointTo(*p, false)
+	for i := 0; i < 20; i++ {
+		pa := b.PointAt(ta)
+		pb := other.PointAt(tb)
+		da := b.TangentAt(ta)
+		db := other.TangentAt(tb)
+		if pa.DistanceTo(pb) < ratPolyEps {
+			*p = pa
+			return true
+		}
+		tta, ttb := geom.ClosestPointBetweenLines(pa, da, pb, db)
+		ta += tta
+		tb += ttb
+	}
+	return false
+}
+
+// PointOnNonparallelCurve is like PointOnThisAndCurve but rejects
+// parallel-curve configurations that would converge to a degenerate
+// solution. Used by curve-curve intersection where tangents at the
+// candidate point should not be parallel.
+func (b *SBezier) PointOnNonparallelCurve(other *SBezier, p *geom.Vector) bool {
+	if b.Degree+other.Degree == 2 {
+		d1 := b.Ctrl[1].Minus(b.Ctrl[0]).WithMagnitude(1)
+		d2 := other.Ctrl[1].Minus(other.Ctrl[0]).WithMagnitude(1)
+		if d1.Cross(d2).Magnitude() < lengthEps {
+			return false
+		}
+	}
+	if !b.PointOnThisAndCurve(other, p) {
+		return false
+	}
+	ta, _ := b.ClosestPointTo(*p, false)
+	tb, _ := other.ClosestPointTo(*p, false)
+	da := b.TangentAt(ta).WithMagnitude(1)
+	db := other.TangentAt(tb).WithMagnitude(1)
+	if da.Cross(db).Magnitude() < lengthEps {
+		return false
+	}
+	return true
 }

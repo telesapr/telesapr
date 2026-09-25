@@ -261,6 +261,19 @@ func AtIntersectionOfLines(a0, a1, b0, b1 Vector) Vector {
 	return a0.Plus(da.ScaledBy(t))
 }
 
+// ClosestPointBetweenLines computes the parameters ta, tb on the two
+// lines (a0, da) and (b0, db) such that a0 + ta*da is the closest
+// point on the first line to the second. Lines need not be
+// perpendicular but must not be parallel.
+func ClosestPointBetweenLines(a0, da, b0, db Vector) (ta, tb float64) {
+	dn := da.Cross(db)
+	dna := dn.Cross(da)
+	dnb := dn.Cross(db)
+	tb = a0.Minus(b0).Dot(dna) / db.Dot(dna)
+	ta = -a0.Minus(b0).Dot(dnb) / da.Dot(dnb)
+	return ta, tb
+}
+
 // AtIntersectionOfPlaneAndLine returns the intersection of line
 // (a, b) with plane (n, d) where n is the plane normal and d is the
 // signed distance from the origin.
