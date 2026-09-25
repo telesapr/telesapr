@@ -78,3 +78,33 @@ func TestBuildEdgeKdTreeIntersect(t *testing.T) {
 		t.Fatalf("expected intersection with diagonal cross")
 	}
 }
+
+// TestSBsp3InsertHowCoplanar tests InsertHow with coplanar classification.
+func TestSBsp3InsertHowCoplanar(t *testing.T) {
+	tri := STriangle{A: geom.Vector{}, B: geom.Vector{X: 1}, C: geom.Vector{Y: 1}}
+	root := &SBsp3{N: geom.Vector{Z: 1}, D: 0, Tri: tri}
+	root.InsertHow(BspCoplanar, tri, nil)
+	if root.More == nil {
+		t.Errorf("InsertHow Coplanar should chain More")
+	}
+}
+
+// TestSBsp3InsertHowPos tests InsertHow with positive classification.
+func TestSBsp3InsertHowPos(t *testing.T) {
+	tri := STriangle{A: geom.Vector{Z: 1}, B: geom.Vector{X: 1, Z: 1}, C: geom.Vector{Y: 1, Z: 1}}
+	root := &SBsp3{N: geom.Vector{Z: 1}, D: 0, Tri: tri}
+	root.InsertHow(BspPos, tri, nil)
+	if root.Pos == nil {
+		t.Errorf("InsertHow Pos should create Pos subtree")
+	}
+}
+
+// TestSBsp3InsertHowNeg tests InsertHow with negative classification.
+func TestSBsp3InsertHowNeg(t *testing.T) {
+	tri := STriangle{A: geom.Vector{Z: -1}, B: geom.Vector{X: 1, Z: -1}, C: geom.Vector{Y: 1, Z: -1}}
+	root := &SBsp3{N: geom.Vector{Z: 1}, D: 0, Tri: tri}
+	root.InsertHow(BspNeg, tri, nil)
+	if root.Neg == nil {
+		t.Errorf("InsertHow Neg should create Neg subtree")
+	}
+}

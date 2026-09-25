@@ -346,3 +346,85 @@ func (b *SBsp3) InsertConvex(meta STriMeta, vertex []geom.Vector, instead *SMesh
 	}
 	return b
 }
+
+// InsertHow routes an already-classified triangle into the BSP tree.
+// how indicates POS, NEG, or COPLANAR classification. If instead is
+// provided, the triangle is added to that mesh instead of the tree.
+func (b *SBsp3) InsertHow(how BspClass, tr STriangle, instead *SMesh) {
+	if b == nil {
+		return
+	}
+	switch how {
+	case BspPos:
+		if instead == nil || b.Pos != nil {
+			b.Pos = SBsp3InsertOrCreate(b.Pos, tr, instead)
+		} else {
+			// alt path - add to instead mesh
+			if !instead.KeepInsideOtherShell {
+				tr = tr.withFlippedNormal()
+			}
+			instead.Triangles = append(instead.Triangles, tr)
+		}
+	case BspNeg:
+		if instead == nil || b.Neg != nil {
+			b.Neg = SBsp3InsertOrCreate(b.Neg, tr, instead)
+		} else {
+			if instead.KeepInsideOtherShell {
+				tr = tr.withFlippedNormal()
+			}
+			instead.Triangles = append(instead.Triangles, tr)
+		}
+	case BspCoplanar:
+		if instead == nil {
+			m := &SBsp3{
+				N:    b.N,
+				D:    b.D,
+				Tri:  tr,
+				More: b.More,
+			}
+			b.More = m
+		}
+	}
+}
+
+// InsertInPlane inserts a triangle known to be coplanar with b's plane.
+// Used when building a coplanar mesh. If pos2, keeps the triangle on
+// the positive side; otherwise negative.
+func (b *SBsp3) InsertInPlane(pos2 bool, tr STriangle, m *SMesh) {
+	if b == nil {
+		return
+	}
+	tc := tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0 / 3.0)
+	onFace := false
+	sameNormal := false
+	maxNormalMag := -1.0
+	trn := tr.NormalUnit()
+
+	// Walk the coplanar chain.
+	ll := b
+	for ll != nil {
+		// Check if any coplanar triangle contains the centroid.
+		if ll.Tri.ContainsPoint(tc) {
+			onFace = true
+			lln := ll.Tri.NormalUnit()
+			if lln.Magnitude() > maxNormalMag {
+				sameNormal = trn.Dot(lln) > 0
+				maxNormalMag = lln.Magnitude()
+			}
+		}
+		ll = ll.More
+	}
+
+	keep := (!onFace && ((m.KeepInsideOtherShell && !pos2) ||
+		(!m.KeepInsideOtherShell && pos2))) ||
+		(onFace && ((m.KeepCoplanar && m.FlipNormal && !sameNormal) ||
+			(m.KeepCoplanar && !m.FlipNormal && sameNormal)))
+
+	if keep {
+		if !m.FlipNormal {
+			m.Triangles = append(m.Triangles, tr)
+		} else {
+			m.Triangles = append(m.Triangles, tr.withFlippedNormal())
+		}
+	}
+}

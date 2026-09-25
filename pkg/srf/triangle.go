@@ -167,3 +167,11 @@ func (t *STriangle) Raytrace(point, dir geom.Vector) (tt float64, inters geom.Ve
 	inters = point.Plus(dir.ScaledBy(tt))
 	return tt, inters, t.ContainsPoint(inters)
 }
+
+// withFlippedNormal returns a copy of the triangle with vertices in reversed order
+// (which flips the normal direction).
+func (t STriangle) withFlippedNormal() STriangle {
+	return STriangle{
+		A: t.A, B: t.C, C: t.B,
+	}
+}
