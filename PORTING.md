@@ -21,7 +21,7 @@ solvespace core engine. It is the source of truth for the
 | `system.cpp` | 660 | OK | `pkg/solver/system.go` | |
 | `group.cpp` | 1228 | OK | `pkg/sketch/group.go` | |
 | `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go` | GenerateAll pipeline |
-| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | Per-group mesh gen; basic path works |
+| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | EXTRUDE/REVOLVE/HELIX/ROTATE/TRANSLATE/LINKED dispatch |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
 | `style.cpp` | 948 | OK | `pkg/core/style.go` | |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go` | |
@@ -31,14 +31,14 @@ solvespace core engine. It is the source of truth for the
 | `srf/polygon.cpp` | 924 | OK | `pkg/srf/polygon.go` | |
 | `srf/surfinter.cpp` | 641 | OK | `pkg/srf/surfinter.go` | |
 | `srf/bezier.cpp` | — | OK | `pkg/srf/bezier*.go` | |
-| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go` | `SCurve::FromTransformationOf` ported |
-| `srf/triangulate.cpp` | 738 | PARTIAL | `pkg/srf/contour.go` | `BridgeToContour` ported; ear-clipping exists |
+| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go` | FromTransformationOf, Equals, InPerspective, GetPlaneContainingBeziers |
+| `srf/triangulate.cpp` | 738 | PARTIAL | `pkg/srf/contour.go`, `pkg/srf/polygon.go` | BridgeToContour, RayIsInside, IsEar, IsEmptyTriangle |
 | `srf/ratpoly.cpp` | 790 | PARTIAL | `pkg/srf/bezier.go` | `PointOn*Curve`, `ClosestPointBetweenLines` ported |
-| `srf/raycast.cpp` | 807 | MISSING | — | Surface ray-cast; needed for non-trivial CSG |
+| `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go` | ClassifyRegion, ClassifyEdge, PointInShell, ProbeTangentFace |
 | `srf/merge.cpp` | 130 | PARTIAL | `pkg/srf/shell.go` | `MergeCoincidentSurfaces` exists |
-| `bsp.cpp` | 733 | PARTIAL | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | Most methods; `InsertHow`/`InsertInPlane` not ported |
+| `bsp.cpp` | 733 | PARTIAL | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | Most methods; InsertHow, InsertInPlane ported |
 | `constrainteq.cpp` | 1062 | PARTIAL | `pkg/sketch/group_generate.go` | LINKED/ROTATE/REVOLVE emit equations; others TODO |
-| `modify.cpp` | 751 | PARTIAL | — | Geometric modifiers (translate/rotate/skew) partial |
+| `modify.cpp` | 751 | PARTIAL | `pkg/sketch/group_generate.go` | ModifyToSatisfyConstraint full for ANGLE/DIAMETER; UI helpers deferred |
 | `solvespace.cpp` | 1236 | PARTIAL | — | Kernel state; `Clean`, observer notifications partial |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | Just added |
 | `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go` | |
@@ -79,7 +79,7 @@ UI.
 
 ## Test counts
 
-- 277 tests across 6 engine packages.
+- 433 tests across 6 engine packages.
 - All 6 boolean fixtures (`boolean_coplanar_union`, `boolean_knife_edge`,
   `boolean_tangent_crossing`, `boolean_tangent_edge`,
   `boolean_tangent_fillet`, `boolean_tangent_spline`) load and
@@ -93,31 +93,34 @@ UI.
 The remaining work to reach "true parity" (i.e., every C++
 engine function has a Go equivalent) is concentrated in:
 
-1. **`srf/raycast.cpp` (807 lines)** — surface ray-cast. Required for
-   accurate point-in-mesh tests and BSP degenerate handling.
-2. **`constrainteq.cpp` (1062 lines)** — full per-constraint equation
-   emission. Currently only LINKED, ROTATE, REVOLVE actually call
-   `sys.AddExprEquation`; the other ~15 constraint types emit equations
-   via simpler paths.
-3. **`modify.cpp` (751 lines)** — full geometric modifiers (rotate,
-   scale, mirror, copy-all) needed for interactive constraint
-   manipulation.
-4. **`srf/triangulate.cpp` (738 lines) full ear-clipping** — current
-   `BridgeToContour` covers polygons with holes; full ear-clipping
-   for arbitrary non-convex contours remains.
-5. **`groupmesh.cpp` (803 lines) full per-group-type mesh gen** —
-   current `GenerateShellAndMesh` works for EXTRUDE/REVOLVE/HELIX;
-   LINED (step-and-repeat) goes through the assembly path.
-6. **`srf/curve.cpp` (886 lines) full SCurve ops** — only
-   `FromTransformationOf` and `GetSurfaceA/B` of the C++ API are
-   ported; `RemoveShortSegments`, `ClosestPoint`, etc. need their
-   Go equivalents.
-7. **`solvespace.cpp` (1236 lines) full kernel state** — observer
+1. **`constrainteq.cpp` (1062 lines)** — full per-constraint equation
+   emission. ModifyToSatisfy is now complete for ANGLE and DIAMETER;
+   the equation emitters for ~15 other constraint types fall back
+   to UnsupportedConstraintError.
+2. **`srf/triangulate.cpp` (738 lines) full ear-clipping** —
+   `BridgeToContour`, `RayIsInside`, `IsEar`, `IsEmptyTriangle`
+   ported; full `Polygon::TriangulateInto` exists but the
+   grid-based subdivision path (`MakeTriangulationGridInto`,
+   `UvGridTriangulateInto`) remains.
+3. **`srf/raycast.cpp` subdivision path** — `AllPointsIntersecting`,
+   `PointIntersectingLine`, `EdgeCurveIntersection` ported; the
+   recursive subdivision (`AllPointsIntersectingUntrimmed`,
+   `SplitInHalf`, `WeightControlPoints`, `UnWeightControlPoints`,
+   `CopyRowOrCol`, `BlendRowOrCol`) is still missing.
+4. **`groupmesh.cpp` face annotation** — top-level dispatch and
+   per-type paths ported (EXTRUDE/REVOLVE/HELIX/ROTATE/TRANSLATE/LINKED);
+   the face-entity annotation loop (mapping line segments to
+   `ss->face`) is partial.
+5. **`srf/curve.cpp` SCurve ops** — `FromTransformationOf`,
+   `GetSurfaceA/B`, `Equals`, `InPerspective`,
+   `GetPlaneContainingBeziers` ported; `RemoveShortSegments`
+   and the trim-segment-related helpers remain.
+6. **`solvespace.cpp` (1236 lines) full kernel state** — observer
    notifications and dirty-flag propagation are partial.
 
-Estimated effort: another ~3-4k lines of Go code, depending on test
+Estimated effort: another ~2-3k lines of Go code, depending on test
 depth. None of this work is blocked — the existing engine handles
-all 277 tests, including the 6 boolean fixtures.
+all 433 tests, including the 6 boolean fixtures.
 
 ## Recent milestones (Phase E boolean + constraint + analysis parity)
 
