@@ -1,6 +1,10 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
 
 // SBezierList is an ordered slice of SBezier curves. Used to
 // represent an open or unclosed collection of curves (a trim-curve
@@ -89,6 +93,83 @@ func beziersAlmostEqual(a, b SBezier, tol float64) bool {
 		}
 		if mathAbs(a.Weight[i]-b.Weight[i]) > tol {
 			return false
+		}
+	}
+	return true
+}
+
+// GetPlaneContainingBeziers finds a plane that contains all the curves in
+// this list. If the curves are all colinear (or coincident, or empty),
+// then that plane is not exactly determined but we choose the additional
+// degree(s) of freedom arbitrarily. Returns true if all curves are
+// coplanar, otherwise false.
+func (l *SBezierList) GetPlaneContainingBeziers(p, u, v *geom.Vector, notCoplanarAt *geom.Vector) bool {
+	var pt, ptFar, ptOffLine geom.Vector
+	if l.Len() > 0 {
+		pt = l.Curves[0].Start()
+	} else {
+		pt = geom.Vector{}
+	}
+	ptFar = pt
+	ptOffLine = pt
+
+	// Get the point farthest from our arbitrary point.
+	farMax := -math.MaxFloat64
+	for i := range l.Curves {
+		b := &l.Curves[i]
+		for j := 0; j <= b.Degree; j++ {
+			m := pt.Minus(b.Ctrl[j]).Magnitude()
+			if m > farMax {
+				ptFar = b.Ctrl[j]
+				farMax = m
+			}
+		}
+	}
+	if ptFar.Equals(pt) {
+		// All points coincident.
+		*p = pt
+		*u = geom.Vector{X: 1}
+		*v = geom.Vector{Y: 1}
+		return true
+	}
+
+	// Get the point farthest from line between pt and ptFar.
+	dp := ptFar.Minus(pt)
+	offLineMax := -math.MaxFloat64
+	for i := range l.Curves {
+		b := &l.Curves[i]
+		for j := 0; j <= b.Degree; j++ {
+			m := b.Ctrl[j].DistanceToLine(pt, dp)
+			if m > offLineMax {
+				ptOffLine = b.Ctrl[j]
+				offLineMax = m
+			}
+		}
+	}
+
+	*p = pt
+	if offLineMax < lengthEps {
+		// All colinear; choose second basis vector arbitrarily.
+		*u = dp.WithMagnitude(1)
+		*v = u.Cross(geom.Vector{X:1}).WithMagnitude(1).WithMagnitude(1)
+	} else {
+		n := dp.Cross(ptOffLine.Minus(pt))
+		*u = n.Cross(geom.Vector{X:1}).WithMagnitude(1).WithMagnitude(1)
+		*v = n.Cross(geom.Vector{X:1}).Cross(n).WithMagnitude(1).WithMagnitude(1)
+	}
+
+	// Verify all points are in this plane.
+	n := u.Cross(*v).WithMagnitude(1)
+	d := p.Dot(n)
+	for i := range l.Curves {
+		b := &l.Curves[i]
+		for j := 0; j <= b.Degree; j++ {
+			if math.Abs(n.Dot(b.Ctrl[j])-d) > lengthEps {
+				if notCoplanarAt != nil {
+					*notCoplanarAt = b.Ctrl[j]
+				}
+				return false
+			}
 		}
 	}
 	return true

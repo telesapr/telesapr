@@ -267,3 +267,89 @@ func TestSBezierListScaleSelfBy(t *testing.T) {
 		}
 	}
 }
+
+// TestSBezierEquals verifies the Equals check.
+func TestSBezierEquals(t *testing.T) {
+	a := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 5})
+	b := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 5})
+	if !a.Equals(&b) {
+		t.Errorf("identical line segments should be equal")
+	}
+	c := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 6})
+	if a.Equals(&c) {
+		t.Errorf("different end-points should not be equal")
+	}
+	d := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2})
+	if a.Equals(&d) {
+		t.Errorf("different degree should not be equal")
+	}
+}
+
+// TestSBezierEqualsWeightDifference verifies weight-sensitive equality.
+func TestSBezierEqualsWeightDifference(t *testing.T) {
+	a := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2})
+	a.Weight[1] = 2.0
+	b := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2})
+	b.Weight[1] = 1.0
+	if a.Equals(&b) {
+		t.Errorf("different weights should not be equal")
+	}
+}
+
+// TestSBezierInPerspective verifies the perspective transformation.
+func TestSBezierInPerspective(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1, Z: 1})
+	out := b.InPerspective(geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1},
+		geom.Vector{}, 0.5)
+	if out.Degree != b.Degree {
+		t.Errorf("Degree changed: %d, want %d", out.Degree, b.Degree)
+	}
+	if out.Weight[1] >= b.Weight[1] {
+		t.Errorf("expected weight reduction with positive cameraTan, got %v vs %v",
+			out.Weight[1], b.Weight[1])
+	}
+}
+
+// TestSBezierListGetPlaneContainingBeziersCoplanar verifies plane-finding for coplanar curves.
+func TestSBezierListGetPlaneContainingBeziersCoplanar(t *testing.T) {
+	list := &SBezierList{}
+	list.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2}))
+	list.Add(SBezierFrom2(geom.Vector{X: 3, Y: 1}, geom.Vector{X: 4, Y: 1}))
+	var p, u, v geom.Vector
+	ok := list.GetPlaneContainingBeziers(&p, &u, &v, nil)
+	if !ok {
+		t.Errorf("colinear curves should report coplanar=true")
+	}
+}
+
+// TestSBezierListGetPlaneContainingBeziersEmpty verifies empty list handling.
+func TestSBezierListGetPlaneContainingBeziersEmpty(t *testing.T) {
+	list := &SBezierList{}
+	var p, u, v geom.Vector
+	ok := list.GetPlaneContainingBeziers(&p, &u, &v, nil)
+	if !ok {
+		t.Errorf("empty list should return true (trivially coplanar)")
+	}
+	if p.X != 0 || p.Y != 0 || p.Z != 0 {
+		t.Errorf("p = %v, want origin", p)
+	}
+}
+
+// TestSBezierListGetPlaneContainingBeziers3D verifies 3D plane-finding.
+func TestSBezierListGetPlaneContainingBeziers3D(t *testing.T) {
+	list := &SBezierList{}
+	// Three non-colinear points in z=0 plane.
+	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
+	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{Y: 1}))
+	list.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{Y: 1}))
+	var p, u, v geom.Vector
+	ok := list.GetPlaneContainingBeziers(&p, &u, &v, nil)
+	if !ok {
+		t.Errorf("XY-plane curves should report coplanar=true")
+	}
+	// Normal direction should be close to Z.
+	n := u.Cross(v)
+	if math.Abs(n.Z) < 0.5 {
+		t.Errorf("normal = %v, want ~Z", n)
+	}
+}

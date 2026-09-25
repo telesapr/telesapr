@@ -1,6 +1,10 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
 
 // lengthEps is the convergence tolerance for bezier curve operations.
 const lengthEps = 1e-12
@@ -462,4 +466,39 @@ func (b *SBezier) PointOnNonparallelCurve(other *SBezier, p *geom.Vector) bool {
 		return false
 	}
 	return true
+}
+
+// Equals returns true if two SBezier curves have identical degree,
+// control points, and weights (within LENGTH_EPS tolerance).
+func (b *SBezier) Equals(other *SBezier) bool {
+	if b.Degree != other.Degree {
+		return false
+	}
+	for i := 0; i <= b.Degree; i++ {
+		if !b.Ctrl[i].Equals(other.Ctrl[i]) {
+			return false
+		}
+		if math.Abs(b.Weight[i]-other.Weight[i]) > 1e-7 {
+			return false
+		}
+	}
+	return true
+}
+
+// InPerspective applies a perspective transformation, recomputing the
+// rational weights. After this, points that previously projected to
+// (x/w, y/w, z/w) now project to ((x/w)/(1-(z/w)*cameraTan), ...).
+func (b *SBezier) InPerspective(u, v, n, origin geom.Vector, cameraTan float64) SBezier {
+	q := geom.QuaternionFromBasis(u, v)
+	qInv := q.Inverse()
+	t := qInv.Rotate(origin).ScaledBy(-1)
+	ret := *b
+	ret.TransformedBy(t, qInv, 1.0)
+	for i := 0; i <= ret.Degree; i++ {
+		ct := geom.Vector4FromVector(ret.Ctrl[i], ret.Weight[i])
+		ct.W = ct.W - ct.Z*cameraTan
+		ret.Ctrl[i] = ct.Project3d()
+		ret.Weight[i] = ct.W
+	}
+	return ret
 }
