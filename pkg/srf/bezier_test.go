@@ -486,3 +486,23 @@ func TestSContourIsEar(t *testing.T) {
 		t.Errorf("vertex 0 should not be an ear (CW orientation)")
 	}
 }
+
+// TestSSurfaceMakeTriangulationGridIntoPlane verifies grid on a plane.
+func TestSSurfaceMakeTriangulationGridIntoPlane(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	var l []float64
+	plane.MakeTriangulationGridInto(&l, 0, 1, false, 0)
+	if len(l) == 0 {
+		t.Errorf("expected grid to produce at least one v-range")
+	}
+}
+
+// TestSSurfaceMakeTriangulationGridIntoPlaneMid tests depth-limited recursion.
+func TestSSurfaceMakeTriangulationGridIntoPlaneMid(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	var l []float64
+	plane.MakeTriangulationGridInto(&l, 0, 1, false, 3)
+	if len(l) < 2 {
+		t.Errorf("expected at least 2 v-values, got %d", len(l))
+	}
+}

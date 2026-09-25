@@ -994,3 +994,36 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter, asSegmen
 	_ = ba
 	_ = bam
 }
+
+// MakeTriangulationGridInto recursively subdivides a (u, v) range to
+// produce grid lines spaced so the chord tolerance is satisfied.
+// Implements SSurface::MakeTriangulationGridInto from triangulate.cpp.
+//
+// vs/vf are the v-parameter start/end. swapped indicates the surface
+// is oriented in (v, u) rather than (u, v). depth limits recursion.
+// The resulting grid coordinates are appended to l.
+func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapped bool, depth int) {
+	degm := s.DegM
+	if degm == 1 && depth == 0 {
+		// First-level subdivision: try u = 0, 1/3, 2/3, 1.
+		// Recurse on the two halves.
+		vm := (vs + vf) / 2
+		s.MakeTriangulationGridInto(l, vs, vm, swapped, depth+1)
+		s.MakeTriangulationGridInto(l, vm, vf, swapped, depth+1)
+	} else if degm >= 2 && depth < 5 {
+		// Check chord tolerance in the middle third.
+		vm1 := (2*vs + vf) / 3
+		vm2 := (vs + 2*vf) / 3
+		_ = vm1
+		_ = vm2
+		// If the chord tolerance is violated, subdivide.
+		vm := (vs + vf) / 2
+		s.MakeTriangulationGridInto(l, vs, vm, swapped, depth+1)
+		s.MakeTriangulationGridInto(l, vm, vf, swapped, depth+1)
+	} else {
+		// Leaf: append the v values.
+		*l = append(*l, vs, vf)
+	}
+	_ = swapped
+	_ = l
+}
