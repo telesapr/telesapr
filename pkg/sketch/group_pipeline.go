@@ -83,9 +83,29 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		g.generateHelixShell(sk)
 	case GroupRotate, GroupTranslate:
 		g.generateTransformMesh(sk)
+	case GroupLinked:
+		g.generateLinkedShell(sk)
 	default:
-		// Drawings, linked, etc.: no shell/mesh output.
+		// Drawings, etc.: no shell/mesh output.
 	}
+}
+
+// generateLinkedShell copies the imported shell and mesh into this
+// group, applying the group's translation/rotation/scale transform.
+// Implements the LINKED branch of C++ Group::GenerateShellAndMesh
+// (groupmesh.cpp:362-378).
+//
+// The Group struct currently does not store an imported shell/mesh
+// (those are part of the Link import pipeline, not yet wired into
+// the Go core). When importing is implemented, this function should
+// pull from the importer and apply the transform. For now, we
+// simply emit an empty shell/mesh and document the gap.
+func (g *Group) generateLinkedShell(sk *Sketch) {
+	_ = sk
+	g.ThisShell.Clear()
+	g.ThisMesh.Clear()
+	// Future: g.ThisShell.MakeFromTransformationOf(impShell, offset, q, scale)
+	// Future: g.ThisMesh.MakeFromTransformationOf(impMesh, offset, q, scale)
 }
 
 // generateExtrudeShell is the EXTRUDE group type: extrude each

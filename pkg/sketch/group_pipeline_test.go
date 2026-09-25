@@ -57,3 +57,15 @@ func TestGroupGenerateLoopsNoError(t *testing.T) {
 	g.GenerateLoops()
 	_ = sk
 }
+
+// TestGroupGenerateLinkedShell tests the Linked branch.
+func TestGroupGenerateLinkedShell(t *testing.T) {
+	sk := NewSketch()
+	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked}
+	g.generateLinkedShell(sk)
+	// ThisShell/ThisMesh should be cleared to empty (no imported data yet).
+	if len(g.ThisShell.Surface) != 0 {
+		t.Errorf("Linked shell should be empty (no imported data), got %d surfaces",
+			len(g.ThisShell.Surface))
+	}
+}
