@@ -96,3 +96,55 @@ func TestGroupAnnotateExtrudeFacesTopMatchesWithSource(t *testing.T) {
 		t.Errorf("expected top face annotation, got %v", shell.Surface[0].Face)
 	}
 }
+
+// TestGroupGenerateLinkedShellWithImportedMesh verifies LINKED group transforms mesh.
+func TestGroupGenerateLinkedShellWithImportedMesh(t *testing.T) {
+	sk := NewSketch()
+	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked, Scale: 1.0}
+	// Add imported mesh with one triangle.
+	g.ImportedMesh.Triangles = append(g.ImportedMesh.Triangles, srf.STriangle{
+		A: geom.Vector{}, B: geom.Vector{X: 1}, C: geom.Vector{Y: 1},
+	})
+	g.generateLinkedShell(sk)
+	if len(g.ThisMesh.Triangles) != 1 {
+		t.Errorf("expected 1 transformed triangle, got %d", len(g.ThisMesh.Triangles))
+	}
+}
+
+// TestGroupGenerateLinkedShellWithImportedShell verifies LINKED group transforms shell.
+func TestGroupGenerateLinkedShellWithImportedShell(t *testing.T) {
+	sk := NewSketch()
+	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked, Scale: 1.0}
+	g.ImportedShell.Surface = append(g.ImportedShell.Surface,
+		srf.FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1}))
+	g.generateLinkedShell(sk)
+	if len(g.ThisShell.Surface) != 1 {
+		t.Errorf("expected 1 transformed surface, got %d", len(g.ThisShell.Surface))
+	}
+}
+
+// TestGroupGenerateLinkedShellEmpty verifies LINKED group with no imported data.
+func TestGroupGenerateLinkedShellEmpty(t *testing.T) {
+	sk := NewSketch()
+	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked, Scale: 1.0}
+	g.generateLinkedShell(sk)
+	if len(g.ThisMesh.Triangles) != 0 {
+		t.Errorf("empty LINKED should produce empty mesh")
+	}
+}
+
+// TestGroupParamFloat verifies paramFloat lookup.
+func TestGroupParamFloat(t *testing.T) {
+	sk := NewSketch()
+	sk.Params = append(sk.Params, core.Param{H: core.HParam{V: 7}, Val: 42.0})
+	got := paramFloat(sk, core.HParam{V: 7})
+	if got != 42.0 {
+		t.Errorf("paramFloat = %v, want 42.0", got)
+	}
+	if paramFloat(sk, core.HParam{V: 999}) != 0 {
+		t.Errorf("missing param should return 0")
+	}
+	if paramFloat(nil, core.HParam{V: 1}) != 0 {
+		t.Errorf("nil sketch should return 0")
+	}
+}

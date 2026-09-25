@@ -101,11 +101,35 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 // pull from the importer and apply the transform. For now, we
 // simply emit an empty shell/mesh and document the gap.
 func (g *Group) generateLinkedShell(sk *Sketch) {
-	_ = sk
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
-	// Future: g.ThisShell.MakeFromTransformationOf(impShell, offset, q, scale)
-	// Future: g.ThisMesh.MakeFromTransformationOf(impMesh, offset, q, scale)
+	if sk == nil {
+		return
+	}
+	// Read the LINKED transform parameters: 0..2 are the offset,
+	// 3..6 are the quaternion.
+	offset := geom.Vector{
+		X: paramFloat(sk, g.H.Param(0)),
+		Y: paramFloat(sk, g.H.Param(1)),
+		Z: paramFloat(sk, g.H.Param(2)),
+	}
+	q := geom.Quaternion{
+		W: paramFloat(sk, g.H.Param(3)),
+		X: paramFloat(sk, g.H.Param(4)),
+		Y: paramFloat(sk, g.H.Param(5)),
+		Z: paramFloat(sk, g.H.Param(6)),
+	}
+	scale := g.Scale
+	// Apply transform to imported mesh/shell if present.
+	if len(g.ImportedMesh.Triangles) > 0 {
+		g.ThisMesh.MakeFromTransformationOf(&g.ImportedMesh, offset, q, scale)
+	}
+	if len(g.ImportedShell.Surface) > 0 || len(g.ImportedShell.Curve) > 0 {
+		g.ThisShell.MakeFromTransformationOf(&g.ImportedShell, offset, q, scale, true)
+	}
+	// Note: SMesh/SShell RemapFacesViaGroup requires Group to implement
+	// a Remap method that maps source entity handles to new ones.
+	// That's a UI/link-import concern; we leave it as a no-op for now.
 }
 
 // generateExtrudeShell is the EXTRUDE group type: extrude each
@@ -426,3 +450,17 @@ const (
 	FaceIDTop    srf.FaceID = 0xFFFFFFFE
 	FaceIDBottom srf.FaceID = 0xFFFFFFFD
 )
+
+// paramFloat returns the float value of a param by handle, or 0 if missing.
+// Used by generateLinkedShell to read the LINKED transform parameters.
+func paramFloat(sk *Sketch, h core.HParam) float64 {
+	if sk == nil {
+		return 0
+	}
+	for i := range sk.Params {
+		if sk.Params[i].H == h {
+			return sk.Params[i].Val
+		}
+	}
+	return 0
+}
