@@ -118,3 +118,81 @@ engine function has a Go equivalent) is concentrated in:
 Estimated effort: another ~3-4k lines of Go code, depending on test
 depth. None of this work is blocked — the existing engine handles
 all 277 tests, including the 6 boolean fixtures.
+
+## Recent milestones (Phase E boolean + constraint + analysis parity)
+
+### SLVS parser entity-group association (commit de5354b)
+
+The SLVS file format does not store `Entity.group.v`. The Go port's
+parser used to leave every entity's `Group` field at the zero value,
+so `AssembleLoops`'s filter `ent.Group == g.H` never matched and
+every mesh group produced empty meshes. The fix is a second-pass
+method `associateEntitiesWithGroups` that maps each entity's
+`Entity.workplane.v` to the group whose `Group.activeWorkplane.v`
+matches. With this fix:
+
+- All 6 boolean_* fixtures produce non-empty meshes:
+  - boolean_coplanar_union:   12288 triangles
+  - boolean_knife_edge:        6656
+  - boolean_tangent_crossing: 5120
+  - boolean_tangent_edge:     6656
+  - boolean_tangent_fillet:    4608
+  - boolean_tangent_spline:    5120
+
+- Phase 5 of `GenerateAll` was updated to walk `g.OpA` lineage for
+  each mesh group, running `AssembleLoops` on every upstream group
+  so `BezierLoops` propagate from the source Drawing down to the
+  mesh group.
+
+- Round-trip parity is preserved by recording which entities had
+  an explicit `Entity.group.v` in the source file and only emitting
+  the field on save when it was originally present.
+
+### Phase E parity tests added (commits 76fa83e, 77ff521, 203f3a8, 1c2af44)
+
+- `TestParityConstraintFixtures`: 31/31 constraint fixtures load,
+  round-trip, and solve with `How=SolveOkay` across all groups.
+- `TestParityConstraintCounts`: structural parity gate asserting each
+  constraint fixture's group/entity/constraint counts.
+- `TestParityBooleanFixtures`: asserts each boolean fixture produces
+  the recorded triangle count.
+- `TestParityBooleanFixtureBBoxValue`: asserts each boolean fixture
+  produces the recorded bounding box.
+- `TestParityAnalysisFixtures`: structural parity gate for the
+  analysis fixture family.
+- `TestContourAreaSignAndMagnitude`: computes the shoelace area of
+  the contour_area fixture (400 = 20x20 square, exactly correct).
+
+### Phase C unit tests added (commit 0cabadd)
+
+- `TestSystemAtMidpointPointOnLineConstraint`: verifies the
+  at-midpoint equation reads `point - 0.5*(start + end) = 0`.
+- `TestSystemSameOrientationConstraint`: verifies parallel line
+  segments with parallel plane normals emit zero residuals.
+- `TestSystemArcArcLenRatioConstraint`: verifies the arc-arc
+  length ratio equation for two concentric circles with known
+  radius ratio.
+
+### Test counts (post-Phase E)
+
+- Before Phase E: 277 tests
+- After Phase E: 290 tests (+13)
+
+### Remaining for full parity
+
+Still pending for true C++ parity:
+
+1. **Phase B**: `srf/raycast.cpp` (807 lines), `srf/triangulate.cpp`
+   full ear-clipping (738 lines), `srf/curve.cpp` full SCurve ops
+   (886 lines), `bsp.cpp` `InsertHow`/`InsertInPlane` (~300 lines).
+2. **Phase C**: `modify.cpp` full `Constraint::ModifyToSatisfy` for
+   `PT_PT_DISTANCE`, `PT_ON_LINE`, `ARC_ARC_DIFFERENCE`, etc. —
+   currently stubbed because the Go port's solver recomputes valA
+   every GenerateAll, so reference dimensions remain accurate
+   without the per-constraint modify path.
+3. **Phase C**: `groupmesh.cpp` full per-group-type mesh gen paths
+   (currently using simplified helpers that handle the common
+   EXTRUDE/LATHE/REVOLVE/HELIX cases).
+4. **Phase E**: golden values from a C++ binary for true parity
+   (the current recorded baselines are Go-port self-consistency
+   checks, not C++ reference values).
