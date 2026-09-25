@@ -448,50 +448,69 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 }
 
 // PointOnCurve projects a Bezier curve onto the surface via
-// alternating Newton iterations.
+// alternating Newton iterations: each iteration finds where the
+// curve's tangent line pierces the surface's tangent plane, then
+// updates both the surface (u, v) and the curve (tCurve) parameter.
 func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 	u := s.Cached.U
 	v := s.Cached.V
 	if u == 0 && v == 0 {
 		u, v = 0.5, 0.5
 	}
-	for iter := 0; iter < 25; iter++ {
-		curveT := 0.5
-		ptSrf := s.PointAt(u, v)
-		_, ok := curve.ClosestPointTo(ptSrf, false)
-		if ok {
-			curveT2 := curveT
-			ptCurve := curve.PointAt(curveT2)
-			r := ptCurve.Minus(ptSrf)
-			var tu, tv geom.Vector
-			s.TangentsAt(u, v, &tu, &tv, false)
-			d := tu.Dot(tu)*tv.Dot(tv) - tu.Dot(tv)*tu.Dot(tv)
-			if mathAbs(d) < 1e-20 {
-				break
-			}
-			a := tu.Dot(r)
-			b := tv.Dot(r)
-			du := (b*tu.Dot(tv) - a*tv.Dot(tv)) / d
-			dv := (a*tu.Dot(tv) - b*tu.Dot(tu)) / d
-			if mathAbs(du) < 1e-12 && mathAbs(dv) < 1e-12 {
-				break
-			}
-			u += du
-			v += dv
-			if u < 0 {
-				u = 0
-			}
-			if u > 1 {
-				u = 1
-			}
-			if v < 0 {
-				v = 0
-			}
-			if v > 1 {
-				v = 1
-			}
-		} else {
+	ps := s.PointAt(u, v)
+	tCurve := 0.5
+	tCurve, _ = curve.ClosestPointTo(ps, false)
+	if tCurve < 0 {
+		tCurve = 0
+	}
+	if tCurve > 1 {
+		tCurve = 1
+	}
+	for iter := 0; iter < 30; iter++ {
+		ps = s.PointAt(u, v)
+		var tu, tv geom.Vector
+		s.TangentsAt(u, v, &tu, &tv, false)
+		n := tu.Cross(tv)
+		nMag := n.Magnitude()
+		if nMag < 1e-20 {
 			break
+		}
+		n = n.ScaledBy(1.0 / nMag)
+		pc := curve.PointAt(tCurve)
+		tc := curve.TangentAt(tCurve)
+		if ps.DistanceTo(pc) < ratPolyEps {
+			if up != nil {
+				*up = u
+			}
+			if vp != nil {
+				*vp = v
+			}
+			s.Cached.U = u
+			s.Cached.V = v
+			return
+		}
+		var pi geom.Vector
+		d := tc.Dot(n)
+		if mathAbs(d) < 1e-10 {
+			pi = pc.Plus(ps).ScaledBy(0.5)
+		} else {
+			pi = pc.Minus(tc.ScaledBy(pc.Minus(ps).Dot(n) / d))
+		}
+		// Project pi into the tangent plane and compute (du, dv).
+		n2 := tu.Cross(tv)
+		ty := n2.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+		tx := tv.Cross(n2).ScaledBy(1.0 / tv.MagSquared())
+		dp := pi.Minus(ps)
+		du := dp.Dot(tx) / tx.MagSquared()
+		dv := dp.Dot(ty) / ty.MagSquared()
+		u += du
+		v += dv
+		tCurve += pi.Minus(pc).Dot(tc) / tc.MagSquared()
+		if tCurve < 0 {
+			tCurve = 0
+		}
+		if tCurve > 1 {
+			tCurve = 1
 		}
 	}
 	if up != nil {
@@ -500,7 +519,8 @@ func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 	if vp != nil {
 		*vp = v
 	}
-	s.Cached = geom.Point2d{U: u, V: v}
+	s.Cached.U = u
+	s.Cached.V = v
 }
 
 // IsExtrusion checks whether this surface is an extrusion of the

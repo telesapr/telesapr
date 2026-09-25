@@ -1,6 +1,10 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
 
 // SContour is an ordered list of SPoint forming one polygon contour.
 // Contours can be open (line strip) or closed (loop). The
@@ -134,11 +138,121 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf interface{}) {
 	EarClipTriangulate(&tmp, m, scaledEps)
 }
 
-// BridgeToContour attempts to bridge this contour to `other` via
-// tangent lines. Returns true if a bridge was found. // implementation: minimal — always returns false; the C++ version
-// uses tangent-direction search.
+// BridgeToContour attempts to bridge this contour to `other` so
+// that the two contours become a single contour. Used during
+// triangulation when a polygon has holes: each hole is merged into
+// the outer contour by inserting a "bridge" line that crosses
+// no existing edges.
+//
+// Implementation: search for either (a) a shared vertex between the
+// two contours, in which case no bridge is needed; or (b) a
+// non-crossing segment from a vertex of one to a vertex of the
+// other. Records the new bridge in el and the bridge endpoints in
+// vl so subsequent bridges can avoid them.
 func (c *SContour) BridgeToContour(other *SContour, el *SEdgeList, vl *[]geom.Vector) bool {
+	if other == nil || len(c.Points) == 0 || len(other.Points) == 0 {
+		return false
+	}
+	// Find the leftmost point of `other`.
+	sco := 0
+	xmin := other.Points[0].P.X
+	for i := 1; i < len(other.Points); i++ {
+		if other.Points[i].P.X < xmin {
+			xmin = other.Points[i].P.X
+			sco = i
+		}
+	}
+	// Find the closest point on `c` to that.
+	thiso := 0
+	dmin := math.Inf(1)
+	for i := 0; i < len(c.Points); i++ {
+		d := c.Points[i].P.Minus(other.Points[sco].P).MagSquared()
+		if d < dmin {
+			dmin = d
+			thiso = i
+		}
+	}
+	withBridge := true
+	// First, check for a shared vertex.
+	for i := 0; i < len(c.Points); i++ {
+		thisp := wrapMod(i+thiso, len(c.Points))
+		a := c.Points[thisp].P
+		if containsVec(*vl, a) {
+			continue
+		}
+		for j := 0; j < len(other.Points); j++ {
+			scp := wrapMod(j+sco, len(other.Points))
+			b := other.Points[scp].P
+			if a.Equals(b) {
+				withBridge = false
+				return c.mergeContourAt(thisp, scp, other, withBridge, el, vl, a, b)
+			}
+		}
+	}
+	// Otherwise, search for a non-crossing bridge.
+	for i := 0; i < len(c.Points); i++ {
+		thisp := wrapMod(i+thiso, len(c.Points))
+		a := c.Points[thisp].P
+		if containsVec(*vl, a) {
+			continue
+		}
+		for j := 0; j < len(other.Points); j++ {
+			scp := wrapMod(j+sco, len(other.Points))
+			b := other.Points[scp].P
+			if containsVec(*vl, b) {
+				continue
+			}
+			if el.AnyEdgeCrossings(a, b, nil, nil) == 0 {
+				return c.mergeContourAt(thisp, scp, other, withBridge, el, vl, a, b)
+			}
+		}
+	}
 	return false
+}
+
+func wrapMod(a, n int) int {
+	r := a % n
+	if r < 0 {
+		r += n
+	}
+	return r
+}
+
+func containsVec(vs []geom.Vector, v geom.Vector) bool {
+	for i := range vs {
+		if vs[i].Equals(v) {
+			return true
+		}
+	}
+	return false
+}
+
+// mergeContourAt merges `other` into `c` at the bridge (a, b). If
+// withBridge is false the contours share vertex a==b and no extra
+// bridge segment is recorded.
+func (c *SContour) mergeContourAt(thisp, scp int, other *SContour, withBridge bool, el *SEdgeList, vl *[]geom.Vector, a, b geom.Vector) bool {
+	merged := SContour{}
+	for i := 0; i < len(c.Points); i++ {
+		if !withBridge || i != thisp {
+			merged.AddPoint(c.Points[i].P)
+		}
+		if i == thisp {
+			for j := 0; j <= len(other.Points)-1; j++ {
+				jp := wrapMod(j+scp, len(other.Points))
+				merged.AddPoint(other.Points[jp].P)
+			}
+			if withBridge {
+				merged.AddPoint(c.Points[i].P)
+			}
+		}
+	}
+	if withBridge {
+		el.AddEdge(a, b, 0, 0, 0)
+		*vl = append(*vl, a)
+	}
+	*vl = append(*vl, b)
+	c.Points = merged.Points
+	return true
 }
 
 // IsEmptyTriangle reports whether the triangle formed by three
