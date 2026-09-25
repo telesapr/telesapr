@@ -14,16 +14,42 @@ type boolFixtureStats struct {
 }
 
 // booleanFixtureGoldens is the recorded baseline of expected
-// triangle counts. The values come from the Go port's first run
-// after the SLVS parser was taught to associate entities with their
-// parent group via the workplane reference (Phase E).
+// triangle counts and bounding boxes. The values come from the Go
+// port's first run after the SLVS parser was taught to associate
+// entities with their parent group via the workplane reference
+// (Phase E). These are regression baselines; once a C++ binary is
+// available, replace them with C++ reference values for true parity.
 var booleanFixtureGoldens = map[string]boolFixtureStats{
-	"boolean_coplanar_union":   {Triangles: 12288},
-	"boolean_knife_edge":        {Triangles: 6656},
-	"boolean_tangent_crossing": {Triangles: 5120},
-	"boolean_tangent_edge":     {Triangles: 6656},
-	"boolean_tangent_fillet":    {Triangles: 4608},
-	"boolean_tangent_spline":    {Triangles: 5120},
+	"boolean_coplanar_union": {
+		Triangles: 12288,
+		VMin:      [3]float64{0, -2.5, -10},
+		VMax:      [3]float64{10, 1, 15},
+	},
+	"boolean_knife_edge": {
+		Triangles: 6656,
+		VMin:      [3]float64{-1, 0, 0},
+		VMax:      [3]float64{1, 1, 0.24917011440269726},
+	},
+	"boolean_tangent_crossing": {
+		Triangles: 5120,
+		VMin:      [3]float64{-16.24430311833935, -30, -15},
+		VMax:      [3]float64{40.9599812579423, 18.788371264722734, 30},
+	},
+	"boolean_tangent_edge": {
+		Triangles: 6656,
+		VMin:      [3]float64{0, 0, 0},
+		VMax:      [3]float64{30, 50, 40},
+	},
+	"boolean_tangent_fillet": {
+		Triangles: 4608,
+		VMin:      [3]float64{0, -0.5, -0.25},
+		VMax:      [3]float64{1, 1, 0},
+	},
+	"boolean_tangent_spline": {
+		Triangles: 5120,
+		VMin:      [3]float64{-16.24430311833935, -30, -15},
+		VMax:      [3]float64{40.9599812579423, 18.788371264722734, 30},
+	},
 }
 
 // collectBoolStats loads a fixture and reports its mesh statistics.
@@ -139,5 +165,33 @@ func TestParityBooleanFixtureBBox(t *testing.T) {
 		}
 		t.Logf("%s: triangles=%d vmin=%v vmax=%v",
 			name, stats.Triangles, stats.VMin, stats.VMax)
+	}
+}
+
+// TestParityBooleanFixtureBBoxValue asserts each boolean fixture's
+// bounding box matches the recorded Go-port baseline. These are
+// regression baselines (not C++ goldens).
+func TestParityBooleanFixtureBBoxValue(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
+	for name, golden := range booleanFixtureGoldens {
+		path := filepath.Join(root, "testdata/group", name, "normal.slvs")
+		stats, err := collectBoolStats(path)
+		if err != nil {
+			t.Errorf("%s: load: %v", name, err)
+			continue
+		}
+		if stats.Triangles != golden.Triangles {
+			t.Errorf("%s: triangles: got %d, want %d",
+				name, stats.Triangles, golden.Triangles)
+		}
+		if stats.VMax != golden.VMax {
+			t.Errorf("%s: vmax drift: got %v, want %v",
+				name, stats.VMax, golden.VMax)
+		}
+		if stats.VMin != golden.VMin {
+			t.Errorf("%s: vmin drift: got %v, want %v",
+				name, stats.VMin, golden.VMin)
+		}
 	}
 }
