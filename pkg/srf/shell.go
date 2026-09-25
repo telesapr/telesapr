@@ -368,3 +368,20 @@ func (s *SShell) RemapFaces() {
 		s.Surface[i].Face = FaceID(uint32(i + 1))
 	}
 }
+
+// RemapFacesViaGroup calls g.Remap(face, copyNumber) for every
+// surface's face handle. Used by Group::GenerateShellAndMesh after
+// step-and-repeat and boolean operations when copies of entities
+// need new face ids.
+func (s *SShell) RemapFacesViaGroup(g interface {
+	Remap(core.HEntity, int) core.EntityID
+}, copyNumber int) {
+	for i := range s.Surface {
+		face := core.HEntity{V: uint32(s.Surface[i].Face)}
+		if face == (core.HEntity{}) {
+			continue
+		}
+		newID := g.Remap(face, copyNumber)
+		s.Surface[i].Face = FaceID(newID.V)
+	}
+}

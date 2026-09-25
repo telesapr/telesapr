@@ -16,6 +16,10 @@ type Sketch struct {
 
 	Entities []core.Entity
 	Params   []core.Param
+
+	// Undo/redo stacks.
+	Undo UndoStack
+	Redo UndoStack
 }
 
 func NewSketch() *Sketch {
