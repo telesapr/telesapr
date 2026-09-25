@@ -820,3 +820,109 @@ func (s *SSurface) DepartureFromCoplanar() float64 {
 	}
 	return maxDev
 }
+
+// PointIntersectingLine finds the uv parameter on the surface where
+// a line through p0 and p1 intersects it. Returns true if a point was
+// found within 20 Newton iterations, falling back to edge-curve
+
+// PointIntersectingLine finds the uv parameter on the surface where
+// a line through p0 and p1 intersects it. Returns true if a point was
+// found within 20 Newton iterations, falling back to edge-curve
+// intersection if necessary.
+func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool {
+	const ratPolyEps = lengthEps / 100.0
+	for i := 0; i < 20; i++ {
+		p := s.PointAt(*u, *v)
+		tu, tv := geom.Vector{}, geom.Vector{}
+		s.TangentsAt(*u, *v, &tu, &tv, false)
+		n := tu.Cross(tv).WithMagnitude(1)
+		d := p.Dot(n)
+		// Detect parallel: line direction dot n ~ 0
+		dirLen := p1.Minus(p0).Magnitude()
+		parallel := dirLen > 1e-12 && math.Abs(p1.Minus(p0).Dot(n)/dirLen) < 1e-10
+		if parallel {
+			break
+		}
+		pi := geom.AtIntersectionOfPlaneAndLine(n, d, p0, p1)
+		if p.Minus(pi).Magnitude() < ratPolyEps {
+			return true
+		}
+		n2 := tu.Cross(tv)
+		ty := n2.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+		tx := tv.Cross(n2).ScaledBy(1.0 / tv.MagSquared())
+		dp := pi.Minus(p)
+		du := dp.Dot(tx)
+		dv := dp.Dot(ty)
+		*u += du / tx.MagSquared()
+		*v += dv / ty.MagSquared()
+	}
+	curve := SBezierFrom2(p0, p1)
+	return s.EdgeCurveIntersection(u, v, &curve)
+}
+
+// EdgeCurveIntersection is a fallback for PointIntersectingLine: tries
+// to intersect the line with the boundary curve of the surface.
+func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
+	p := s.PointAt(*u, *v)
+	var edge SBezier
+	degm := s.DegM
+	degn := s.DegN
+	if math.Abs(*u-0.5) > math.Abs(*v-0.5) {
+		if *u < 0.5 {
+			for n := 0; n <= degn; n++ {
+				edge.Ctrl[n] = s.Ctrl[0][n]
+				edge.Weight[n] = s.Weight[0][n]
+			}
+			edge.Degree = degn
+			if edge.PointOnNonparallelCurve(curve, &p) {
+				if tv, _ := edge.ClosestPointTo(p, false); true {
+					*v = tv
+					*u = 0.0
+					return true
+				}
+			}
+		} else {
+			for n := 0; n <= degn; n++ {
+				edge.Ctrl[n] = s.Ctrl[degm][n]
+				edge.Weight[n] = s.Weight[degm][n]
+			}
+			edge.Degree = degn
+			if edge.PointOnNonparallelCurve(curve, &p) {
+				if tv, _ := edge.ClosestPointTo(p, false); true {
+					*v = tv
+					*u = 1.0
+					return true
+				}
+			}
+		}
+	} else {
+		if *v < 0.5 {
+			for n := 0; n <= degm; n++ {
+				edge.Ctrl[n] = s.Ctrl[n][0]
+				edge.Weight[n] = s.Weight[n][0]
+			}
+			edge.Degree = degm
+			if edge.PointOnNonparallelCurve(curve, &p) {
+				if tv, _ := edge.ClosestPointTo(p, false); true {
+					*u = tv
+					*v = 0.0
+					return true
+				}
+			}
+		} else {
+			for n := 0; n <= degm; n++ {
+				edge.Ctrl[n] = s.Ctrl[n][degn]
+				edge.Weight[n] = s.Weight[n][degn]
+			}
+			edge.Degree = degm
+			if edge.PointOnNonparallelCurve(curve, &p) {
+				if tv, _ := edge.ClosestPointTo(p, false); true {
+					*u = tv
+					*v = 1.0
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

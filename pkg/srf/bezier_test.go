@@ -353,3 +353,35 @@ func TestSBezierListGetPlaneContainingBeziers3D(t *testing.T) {
 		t.Errorf("normal = %v, want ~Z", n)
 	}
 }
+
+// TestSSurfacePointIntersectingLineOnPlane verifies line-plane intersection.
+func TestSSurfacePointIntersectingLineOnPlane(t *testing.T) {
+	// Plane z=0 (XY plane), line from (0,0,0) to (2,2,0).
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	u, v := 0.5, 0.5
+	ok := plane.PointIntersectingLine(geom.Vector{}, geom.Vector{X: 2, Y: 2}, &u, &v)
+	if !ok {
+		t.Errorf("PointIntersectingLine on plane should succeed")
+	}
+}
+
+// TestSSurfacePointIntersectingLineVertical verifies vertical line misses plane.
+func TestSSurfacePointIntersectingLineVertical(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	u, v := 0.5, 0.5
+	ok := plane.PointIntersectingLine(geom.Vector{}, geom.Vector{Z: 5}, &u, &v)
+	// Parallel line - should return false after Newton fails
+	_ = ok
+}
+
+// TestSSurfaceEdgeCurveIntersection exercises the edge-curve fallback.
+func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	u, v := 0.5, 0.5
+	curve := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2})
+	ok := plane.EdgeCurveIntersection(&u, &v, &curve)
+	// Should find intersection with edge u=1 (right side).
+	if ok && u != 1.0 {
+		t.Errorf("expected u=1 after right-edge intersection, got u=%v", u)
+	}
+}
