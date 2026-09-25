@@ -79,7 +79,7 @@ UI.
 
 ## Test counts
 
-- 433 tests across 6 engine packages.
+- 444 tests across 6 engine packages.
 - All 6 boolean fixtures (`boolean_coplanar_union`, `boolean_knife_edge`,
   `boolean_tangent_crossing`, `boolean_tangent_edge`,
   `boolean_tangent_fillet`, `boolean_tangent_spline`) load and
@@ -120,7 +120,7 @@ engine function has a Go equivalent) is concentrated in:
 
 Estimated effort: another ~2-3k lines of Go code, depending on test
 depth. None of this work is blocked — the existing engine handles
-all 433 tests, including the 6 boolean fixtures.
+all 444 tests, including the 6 boolean fixtures.
 
 ## Recent milestones (Phase E boolean + constraint + analysis parity)
 
