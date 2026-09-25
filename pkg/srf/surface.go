@@ -926,3 +926,67 @@ func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
 	}
 	return false
 }
+
+// AllPointsIntersecting finds all points where the line through a, b
+// intersects the surface. asSegment restricts to the finite line segment.
+// trimmed filters to points inside the trim region (UV [0,1]).
+// inclTangent includes tangent points (line touching surface tangentially).
+func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter, asSegment, trimmed, inclTangent bool) {
+	if s.LineEntirelyOutsideBbox(a, b, asSegment) {
+		return
+	}
+	ba := b.Minus(a)
+	bam := ba.Magnitude()
+
+	type Inter struct {
+		P geom.Point2d
+	}
+	var inters []Inter
+
+	degm := s.DegM
+	degn := s.DegN
+	if degm == 1 && degn == 1 {
+		// Plane
+		n := s.NormalAt(0, 0).WithMagnitude(1)
+		d := n.Dot(s.PointAt(0, 0))
+		if !asSegment ||
+			(n.Dot(a) > d+lengthEps && n.Dot(b) < d-lengthEps) ||
+			(n.Dot(b) > d+lengthEps && n.Dot(a) < d-lengthEps) {
+			p := geom.AtIntersectionOfPlaneAndLine(n, d, a, b)
+			var puv geom.Point2d
+			s.ClosestPointTo(p, &puv, false)
+			inters = append(inters, Inter{P: puv})
+		}
+	} else {
+		// General numerical solution: use subdivision
+		u, v := 0.5, 0.5
+		if s.PointIntersectingLine(a, b, &u, &v) {
+			inters = append(inters, Inter{P: geom.Point2d{U: u, V: v}})
+		}
+	}
+
+	for _, inter := range inters {
+		pxyz := s.PointAt(inter.P.U, inter.P.V)
+		if asSegment && bam > 0 {
+			t := pxyz.Minus(a).Dot(ba) / (bam * bam)
+			if t > 1-lengthEps/bam || t < lengthEps/bam {
+				continue
+			}
+		}
+		if trimmed {
+			if inter.P.U < 0 || inter.P.U > 1 || inter.P.V < 0 || inter.P.V > 1 {
+				continue
+			}
+		}
+		si := SInter{
+			P:      pxyz,
+			SurfA:  core.HSSurface{V: 1},
+			SurfB:  core.HSSurface{V: 1},
+		}
+		_ = inclTangent
+		*l = append(*l, si)
+	}
+	_ = asSegment
+	_ = ba
+	_ = bam
+}

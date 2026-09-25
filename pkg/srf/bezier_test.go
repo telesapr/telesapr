@@ -385,3 +385,26 @@ func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
 		t.Errorf("expected u=1 after right-edge intersection, got u=%v", u)
 	}
 }
+
+// TestSSurfaceAllPointsIntersectingOnPlane verifies line-plane intersection.
+func TestSSurfaceAllPointsIntersectingOnPlane(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	var inters []SInter
+	plane.AllPointsIntersecting(geom.Vector{Z: -1}, geom.Vector{Z: 1},
+		&inters, true, true, false)
+	if len(inters) == 0 {
+		t.Errorf("expected at least one intersection on plane z=0")
+	}
+}
+
+// TestSSurfaceAllPointsIntersectingOutsideBbox verifies early exit.
+func TestSSurfaceAllPointsIntersectingOutsideBbox(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	var inters []SInter
+	// Line entirely above plane.
+	plane.AllPointsIntersecting(geom.Vector{Z: 5}, geom.Vector{Z: 10},
+		&inters, true, true, false)
+	if len(inters) != 0 {
+		t.Errorf("expected no intersections for line above plane, got %d", len(inters))
+	}
+}
