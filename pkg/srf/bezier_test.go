@@ -255,7 +255,7 @@ func TestSBezierListOperations(t *testing.T) {
 }
 
 // TestSBezierListScaleSelfBy scales every curve.
-func TestSBezierListScaleSelfBy(t *testing.T) {
+func TestSBezierListScaleSelfByExisting(t *testing.T) {
 	var l SBezierList
 	l.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
 	l.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2}))
@@ -573,5 +573,114 @@ func TestSSurfaceAllPointsIntersectingUntrimmedOutsideBbox(t *testing.T) {
 	plane.AllPointsIntersectingUntrimmed(geom.Vector{Z: 5}, geom.Vector{Z: 10}, &cnt, &level, &l, true, &plane)
 	if len(l) != 0 {
 		t.Errorf("expected 0 intersections for line above plane, got %d", len(l))
+	}
+}
+
+// TestSBezierFrom3ViaCtrl verifies SBezierFrom3 with 3 ctrl points.
+func TestSBezierFrom3ViaCtrl(t *testing.T) {
+	b := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1, Y: 1}, geom.Vector{X: 2})
+	if b.Degree != 2 {
+		t.Errorf("Degree = %d, want 2", b.Degree)
+	}
+}
+
+// TestSBezierFrom4Degree verifies SBezierFrom4 with 4 ctrl points.
+func TestSBezierFrom4Degree(t *testing.T) {
+	b := SBezierFrom4(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2, Y: 1}, geom.Vector{X: 3, Y: 1})
+	if b.Degree != 3 {
+		t.Errorf("Degree = %d, want 3", b.Degree)
+	}
+}
+
+// TestSBezierPointAtMid verifies PointAt at t=0.5.
+func TestSBezierPointAtMid(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 2})
+	mid := b.PointAt(0.5)
+	if math.Abs(mid.X-1) > 1e-9 {
+		t.Errorf("PointAt(0.5) X = %v, want 1", mid.X)
+	}
+}
+
+// TestSBezierPointAtEnd verifies PointAt at t=1.
+func TestSBezierPointAtEnd(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 5})
+	end := b.PointAt(1)
+	if math.Abs(end.X-5) > 1e-9 {
+		t.Errorf("PointAt(1) X = %v, want 5", end.X)
+	}
+}
+
+// TestSBezierTangentAtStart verifies TangentAt at t=0.
+func TestSBezierTangentAtStart(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 5})
+	tan := b.TangentAt(0)
+	if math.Abs(tan.X-5) > 1e-9 {
+		t.Errorf("TangentAt(0) X = %v, want 5", tan.X)
+	}
+}
+
+// TestSBezierScaleByLinear verifies scaling.
+func TestSBezierScaleByLinear(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	b.ScaleSelfBy(2)
+	end := b.Finish()
+	if math.Abs(end.X-2) > 1e-9 {
+		t.Errorf("after scale, Finish X = %v, want 2", end.X)
+	}
+}
+
+// TestSBezierIsInPlaneOnXY verifies planar check.
+func TestSBezierIsInPlaneOnXY(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	if !b.IsInPlane(geom.Vector{Z: 1}, 0, 1e-9) {
+		t.Errorf("XY plane line should be in XY plane")
+	}
+}
+
+// TestSBezierIsRationalFalse verifies non-rational check.
+func TestSBezierIsRationalFalse(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	if b.IsRational() {
+		t.Errorf("default SBezier should not be rational")
+	}
+}
+
+// TestSBezierIsRationalTrue verifies rational check.
+func TestSBezierIsRationalTrue(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	b.Weight[1] = 2.0
+	if !b.IsRational() {
+		t.Errorf("weight 2 should make SBezier rational")
+	}
+}
+
+// TestSBezierListAddTwice verifies adding curves.
+func TestSBezierListAddTwice(t *testing.T) {
+	list := &SBezierList{}
+	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
+	list.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2}))
+	if list.Len() != 2 {
+		t.Errorf("Len = %d, want 2", list.Len())
+	}
+}
+
+// TestSBezierListScaleSelfBy verifies scaling a list.
+func TestSBezierListScaleSelfByBulk(t *testing.T) {
+	list := &SBezierList{}
+	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
+	list.ScaleSelfBy(2)
+	end := list.Curves[0].Finish()
+	if math.Abs(end.X-2) > 1e-9 {
+		t.Errorf("after scale, end X = %v, want 2", end.X)
+	}
+}
+
+// TestSBezierListClear verifies clear.
+func TestSBezierListClear(t *testing.T) {
+	list := &SBezierList{}
+	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
+	list.Clear()
+	if list.Len() != 0 {
+		t.Errorf("after clear, Len = %d, want 0", list.Len())
 	}
 }

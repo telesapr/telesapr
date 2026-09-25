@@ -187,3 +187,101 @@ func TestRuntimeRecalculateEntities(t *testing.T) {
 		t.Fatalf("recalculate entities: got %v want %v", got, want)
 	}
 }
+
+// TestRuntimeParamValueMissing verifies ParamValue returns ok=false for missing.
+func TestRuntimeParamValueMissing(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	_, ok := rt.ParamValue(core.HParam{V: 0x999})
+	if ok {
+		t.Errorf("unknown param should return ok=false")
+	}
+}
+
+// TestRuntimeEntityReturnsUnknown verifies Entity returns error for missing.
+func TestRuntimeEntityReturnsUnknown(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	_, err := rt.Entity(core.HEntity{V: 0x999})
+	if err == nil {
+		t.Errorf("unknown entity should return error")
+	}
+}
+
+// TestRuntimeDistanceValueMissing verifies DistanceValue handles missing entity.
+func TestRuntimeDistanceValueMissing(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	_, err := rt.DistanceValue(core.HEntity{V: 0x999})
+	if err == nil {
+		t.Errorf("missing entity distance should error")
+	}
+}
+
+// TestRuntimePointValueMissing verifies PointValue handles missing entity.
+func TestRuntimePointValueMissing(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	_, err := rt.PointValue(core.HEntity{V: 0x999})
+	if err == nil {
+		t.Errorf("missing entity point should error")
+	}
+}
+
+// TestRuntimeRecalculateEmpty verifies Recalculate on empty sketch.
+func TestRuntimeRecalculateEmpty(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	rt.RecalculateEntities(false)
+	if len(sk.Entities) != 0 {
+		t.Errorf("empty sketch should remain empty")
+	}
+}
+
+// TestRuntimeGroupAccessors verifies Runtime's accessors on a group.
+func TestRuntimeGroupAccessors(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	if _, err := rt.Group(core.HGroup{V: 0x999}); err == nil {
+		t.Errorf("missing group should return nil")
+	}
+}
+
+// TestRuntimeConstraintAccessors verifies Constraint accessors.
+func TestRuntimeConstraintAccessors(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	if _, err := rt.Constraint(core.HConstraint{V: 0x999}); err == nil {
+		t.Errorf("missing constraint should return nil")
+	}
+}
+
+// TestRuntimeRequestAccessors verifies Request accessors.
+func TestRuntimeRequestAccessors(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	if _, err := rt.Request(core.HRequest{V: 0x999}); err == nil {
+		t.Errorf("missing request should return nil")
+	}
+}
+
+// TestRuntimeParamStringValue verifies StringValue for params.
+func TestRuntimeParamStringValue(t *testing.T) {
+	sk := sketch.NewSketch()
+	sk.Params = append(sk.Params, core.Param{H: core.HParam{V: 1}, Val: 5.0})
+	rt := sketch.NewRuntime(sk)
+	v, ok := rt.ParamValue(core.HParam{V: 1})
+	if !ok || v != 5.0 {
+		t.Errorf("got (%v, %v), want (5.0, true)", v, ok)
+	}
+}
+
+// TestRuntimeParamStringValueMissing verifies StringValue for missing.
+func TestRuntimeParamStringValueMissing(t *testing.T) {
+	sk := sketch.NewSketch()
+	rt := sketch.NewRuntime(sk)
+	_, ok := rt.ParamValue(core.HParam{V: 0x999})
+	if ok {
+		t.Errorf("missing param should return ok=false")
+	}
+}

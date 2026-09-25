@@ -124,3 +124,23 @@ func TestIdListIDs(t *testing.T) {
 		t.Errorf("IDs = %v, want [10, 20]", ids)
 	}
 }
+
+// TestIdListReverseOrder verifies items preserve insertion order.
+func TestIdListReverseOrder(t *testing.T) {
+	list := NewIdList[int, string](0)
+	list.Add(1, "first")
+	list.Add(2, "second")
+	list.Add(3, "third")
+	if list.Items[0] != "first" || list.Items[1] != "second" || list.Items[2] != "third" {
+		t.Errorf("insertion order not preserved: %v", list.Items)
+	}
+}
+
+// TestIdListReserve verifies Reserve doesn't break length.
+func TestIdListReserve(t *testing.T) {
+	list := NewIdList[int, string](0)
+	list.Reserve(100)
+	if list.Len() != 0 {
+		t.Errorf("Reserve shouldn't add items, Len = %d", list.Len())
+	}
+}

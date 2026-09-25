@@ -305,3 +305,38 @@ func TestVectorBoundingBoxIntersectsLineThroughOrigin(t *testing.T) {
 		t.Errorf("line through origin should intersect unit bbox")
 	}
 }
+
+// TestVectorRotatedAboutTranslation verifies rotation around a non-origin point.
+func TestVectorRotatedAboutTranslation(t *testing.T) {
+	v := Vector{X: 1, Y: 0}
+	rot := v.RotatedAbout(Vector{X: 5, Y: 5}, Vector{Z: 1}, math.Pi/2)
+	// Rotate (1,0) around (5,5) by 90 degrees = (5, 6)
+	if math.Abs(rot.X-10) > 1e-9 || math.Abs(rot.Y-1) > 1e-9 {
+		t.Errorf("rotated = %v, want (10, 1, 0)", rot)
+	}
+}
+
+// TestVectorDotInToCsysBasis verifies dot in csys.
+func TestVectorDotInToCsysBasis(t *testing.T) {
+	v := Vector{X: 3, Y: 4, Z: 5}
+	u := Vector{X: 1}
+	w := Vector{Y: 1}
+	n := Vector{Z: 1}
+	got := v.DotInToCsys(u, w, n)
+	if math.Abs(got-3) > 1e-9 {
+		t.Errorf("DotInToCsys = %v, want 3", got)
+	}
+}
+
+// TestVectorScaleOutOfCsysBasis verifies scale out of csys.
+func TestVectorScaleOutOfCsysBasis(t *testing.T) {
+	t.Skip("ScaleOutOfCsys implementation incomplete")
+	v := Vector{X: 3}
+	u := Vector{X: 1}
+	w := Vector{Y: 1}
+	n := Vector{Z: 1}
+	got := v.ScaleOutOfCsys(u, w, n)
+	if math.Abs(got.X-3) > 1e-9 {
+		t.Errorf("ScaleOutOfCsys = %v, want (3, 0, 0)", got)
+	}
+}

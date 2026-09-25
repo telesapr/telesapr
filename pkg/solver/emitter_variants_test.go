@@ -1,6 +1,7 @@
 package solver_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -83,5 +84,66 @@ func TestSystemDiameterEmitterMissingEntity(t *testing.T) {
 	err := sys.AddConstraint(c)
 	if err == nil {
 		t.Errorf("missing entities should error")
+	}
+}
+
+// TestSystemAllConstraintsHaveEmitter verifies every constraint type routes
+// to a real addXxx method (not UnsupportedConstraintError).
+func TestSystemAllConstraintsHaveEmitter(t *testing.T) {
+	allTypes := []core.ConstraintType{
+		core.ConstraintPointsCoincident,
+		core.ConstraintPtPtDistance,
+		core.ConstraintPtPlaneDistance,
+		core.ConstraintPtLineDistance,
+		core.ConstraintPtFaceDistance,
+		core.ConstraintProjPtDistance,
+		core.ConstraintPtInPlane,
+		core.ConstraintPtOnLine,
+		core.ConstraintPtOnFace,
+		core.ConstraintEqualLengthLines,
+		core.ConstraintLengthRatio,
+		core.ConstraintEqLenPtLineD,
+		core.ConstraintEqPtLnDistances,
+		core.ConstraintEqualAngle,
+		core.ConstraintEqualLineArcLen,
+		core.ConstraintLengthDifference,
+		core.ConstraintSymmetric,
+		core.ConstraintSymmetricHoriz,
+		core.ConstraintSymmetricVert,
+		core.ConstraintSymmetricLine,
+		core.ConstraintAtMidpoint,
+		core.ConstraintHorizontal,
+		core.ConstraintVertical,
+		core.ConstraintDiameter,
+		core.ConstraintPtOnCircle,
+		core.ConstraintSameOrientation,
+		core.ConstraintAngle,
+		core.ConstraintParallel,
+		core.ConstraintPerpendicular,
+		core.ConstraintArcLineTangent,
+		core.ConstraintCubicLineTangent,
+		core.ConstraintCurveCurveTangent,
+		core.ConstraintEqualRadius,
+		core.ConstraintWhereDragged,
+		core.ConstraintArcArcLenRatio,
+		core.ConstraintArcLineLenRatio,
+		core.ConstraintArcArcDifference,
+		core.ConstraintArcLineDifference,
+		core.ConstraintComment,
+	}
+	sys := solver.NewSystem(&stubResolver{params: map[core.HParam]*core.Param{}})
+	for _, ct := range allTypes {
+		c := &core.Constraint{ConstraintBase: core.ConstraintBase{
+			Type: ct,
+			H:    core.HConstraint{V: 1},
+		}}
+		err := sys.AddConstraint(c)
+		// Unknown and Comment are valid no-ops; missing-entity errors are fine.
+		if err != nil {
+			var unsupported solver.UnsupportedConstraintError
+			if errors.As(err, &unsupported) {
+				t.Errorf("type %v should have an emitter, got UnsupportedConstraintError", ct)
+			}
+		}
 	}
 }

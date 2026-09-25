@@ -275,3 +275,79 @@ func TestExprDivByZero(t *testing.T) {
 func isInf(f float64) bool {
 	return f > 1e308 || f < -1e308
 }
+
+// TestExprConstantAddConstant verifies Constant + Constant.
+func TestExprConstantAddConstant(t *testing.T) {
+	a := NewConstant(3)
+	b := NewConstant(4)
+	sum := a.Plus(b)
+	if sum.Eval(nil, nil) != 7 {
+		t.Errorf("3+4 = %v, want 7", sum.Eval(nil, nil))
+	}
+}
+
+// TestExprConstantMinusConstant verifies subtraction.
+func TestExprConstantMinusConstant(t *testing.T) {
+	a := NewConstant(10)
+	b := NewConstant(3)
+	diff := a.Minus(b)
+	if diff.Eval(nil, nil) != 7 {
+		t.Errorf("10-3 = %v, want 7", diff.Eval(nil, nil))
+	}
+}
+
+// TestExprConstantTimesConstant verifies multiplication.
+func TestExprConstantTimesConstant(t *testing.T) {
+	a := NewConstant(6)
+	b := NewConstant(7)
+	prod := a.Times(b)
+	if prod.Eval(nil, nil) != 42 {
+		t.Errorf("6*7 = %v, want 42", prod.Eval(nil, nil))
+	}
+}
+
+// TestExprConstantDivConstant verifies division.
+func TestExprConstantDivConstant(t *testing.T) {
+	a := NewConstant(20)
+	b := NewConstant(4)
+	q := a.Div(b)
+	if q.Eval(nil, nil) != 5 {
+		t.Errorf("20/4 = %v, want 5", q.Eval(nil, nil))
+	}
+}
+
+// TestExprConstantNegate verifies negation.
+func TestExprConstantNegate(t *testing.T) {
+	a := NewConstant(5)
+	neg := a.Negate()
+	if neg.Eval(nil, nil) != -5 {
+		t.Errorf("-5 = %v, want -5", neg.Eval(nil, nil))
+	}
+}
+
+// TestExprConstantAbs verifies absolute value.
+func TestExprConstantAbs(t *testing.T) {
+	a := NewConstant(-7)
+	abs := a.Abs()
+	if abs.Eval(nil, nil) != 7 {
+		t.Errorf("|-7| = %v, want 7", abs.Eval(nil, nil))
+	}
+}
+
+// TestExprConstantSqrt verifies square root.
+func TestExprConstantSqrt(t *testing.T) {
+	a := NewConstant(16)
+	sqrt := a.Sqrt()
+	if sqrt.Eval(nil, nil) != 4 {
+		t.Errorf("sqrt(16) = %v, want 4", sqrt.Eval(nil, nil))
+	}
+}
+
+// TestExprConstantSquare verifies square.
+func TestExprConstantSquare(t *testing.T) {
+	a := NewConstant(5)
+	sq := a.Square()
+	if sq.Eval(nil, nil) != 25 {
+		t.Errorf("5^2 = %v, want 25", sq.Eval(nil, nil))
+	}
+}
