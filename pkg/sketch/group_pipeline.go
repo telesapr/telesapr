@@ -353,3 +353,76 @@ func (g *Group) TransformImportedBy(t geom.Vector, q geom.Quaternion) {
 	g.ImpMesh.MakeFromTransformationOf(&g.ImpMesh, t, q, 1)
 	g.ImpShell.MakeFromTransformationOf(&g.ImpShell, t, q, 1, true)
 }
+
+// annotateExtrudeFaces assigns face IDs to side surfaces of an
+// extruded shell, mapping line-segment entities from the source
+// group to the corresponding side face. Mirrors the face-id
+// annotation loop in C++ Group::GenerateShellAndMesh (groupmesh.cpp).
+//
+// The top and bottom surfaces get REMAP_TOP / REMAP_BOTTOM face IDs.
+// Side surfaces (degm=1, degn=1) are matched to line segments from
+// the source group whose endpoints lie on the side's edges.
+func (g *Group) annotateExtrudeFaces(sk *Sketch, shell *srf.SShell, tbot, ttop geom.Vector) {
+	if sk == nil || shell == nil {
+		return
+	}
+	src := sk.GetGroup(g.OpA)
+	if src == nil {
+		return
+	}
+	onOrig := geom.Vector{}
+	for i := range shell.Surface {
+		ss := &shell.Surface[i]
+		if ss == nil {
+			continue
+		}
+		p := ss.PointAt(0, 0)
+		n := ss.NormalAt(0, 0).WithMagnitude(1)
+		d := n.Dot(p)
+		if math.Abs((onOrig.Plus(ttop)).Dot(n)-d) < 1e-9 {
+			ss.Face = FaceIDTop
+			continue
+		}
+		if math.Abs((onOrig.Plus(tbot)).Dot(n)-d) < 1e-9 {
+			ss.Face = FaceIDBottom
+			continue
+		}
+		if ss.DegM != 1 || ss.DegN != 1 {
+			continue
+		}
+		for _, e := range sk.Entities {
+			if e.Type != core.EntityLineSegment {
+				continue
+			}
+			var a, b geom.Vector
+			var okA, okB bool
+			for j := range sk.Entities {
+				if sk.Entities[j].H == e.Point[0] { a = sk.Entities[j].PointGetNum(); okA = true }
+				if sk.Entities[j].H == e.Point[1] { b = sk.Entities[j].PointGetNum(); okB = true }
+			}
+			if !okA || !okB {
+				continue
+			}
+			aT := a.Plus(ttop)
+			bT := b.Plus(ttop)
+			c00 := ss.Ctrl[0][0]
+			c01 := ss.Ctrl[0][1]
+			c10 := ss.Ctrl[1][0]
+			c11 := ss.Ctrl[1][1]
+			if (aT.Equals(c00) && bT.Equals(c10)) ||
+				(bT.Equals(c00) && aT.Equals(c10)) ||
+				(aT.Equals(c01) && bT.Equals(c11)) ||
+				(bT.Equals(c01) && aT.Equals(c11)) {
+				ss.Face = srf.FaceID(e.H.V)
+				break
+			}
+		}
+	}
+}
+
+// FaceIDTop and FaceIDBottom are placeholder face IDs for the top
+// and bottom surfaces of an extrude.
+const (
+	FaceIDTop    srf.FaceID = 0xFFFFFFFE
+	FaceIDBottom srf.FaceID = 0xFFFFFFFD
+)
