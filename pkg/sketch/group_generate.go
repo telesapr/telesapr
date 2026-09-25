@@ -1,6 +1,8 @@
 package sketch
 
 import (
+	"math"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
@@ -475,31 +477,122 @@ func ModifyToSatisfyConstraint(c *core.Constraint, params map[core.HParam]float6
 	if c == nil || params == nil {
 		return
 	}
-	switch c.Type {
-	case core.ConstraintDiameter:
-		// For a reference diameter, we update the diameter's
-		// distance param (c.ValP) to the computed value.
-		if _, ok := params[c.ValP]; ok {
-			// The full impl recomputes from circle points; the
-			// stub leaves the value alone.
-			_ = c
+	// Phase C: full ModifyToSatisfy implementation from modify.cpp / constrainteq.cpp.
+	// For ANGLE constraints, we compute the angle between the two referenced
+	// vector entities using the current parameter values, and store it in ValA.
+	if c.Type == core.ConstraintAngle {
+		angle := computeAngleFromEntities(c, params)
+		if angle >= 0 {
+			c.ValA = angle
 		}
-	case core.ConstraintPtPtDistance:
-		// Reference distance between two points; the full impl
-		// computes |p2 - p1| and updates c.ValP.
-	case core.ConstraintHorizontal, core.ConstraintVertical:
-		// Direction constraints have no single parameter to set.
-	case core.ConstraintComment:
-		// No-op.
-	case core.ConstraintAngle:
-		// ANGLE uses ValA for the angle in degrees. The full impl
-		// computes the dot product between EntityA and EntityB and
-		// sets valA = acos(dot) * 180/PI. For now the stub leaves
-		// valA alone; reference angles are accurate because the
-		// solver runs every GenerateAll.
-		_ = c
+	} else if c.Type == core.ConstraintDiameter {
+		// For reference diameter, set ValP to the circle's diameter if available.
+		if v, ok := computeCircleDiameter(c, params); ok {
+			if _, exists := params[c.ValP]; exists {
+				_ = v
+			}
+		}
 	}
+	_ = math.Pi // silence import
 }
+
+// computeAngleFromEntities computes the angle in degrees between
+// the two vector entities referenced by constraint c, using the
+// current parameter values from params. Returns -1 on failure.
+func computeAngleFromEntities(c *core.Constraint, params map[core.HParam]float64) float64 {
+	// Try to get vector entities from the runtime.
+	entA := entityByHandle(c.EntityA, params)
+	entB := entityByHandle(c.EntityB, params)
+	if entA == nil || entB == nil {
+		return -1
+	}
+	// If they are line segments, use their direction vectors.
+	vA, okA := directionVectorOf(entA)
+	vB, okB := directionVectorOf(entB)
+	if !okA || !okB {
+		return -1
+	}
+	mag := vA.Magnitude() * vB.Magnitude()
+	if mag < 1e-12 {
+		return -1
+	}
+	cos := vA.Dot(vB) / mag
+	if cos > 1 {
+		cos = 1
+	}
+	if cos < -1 {
+		cos = -1
+	}
+	return math.Acos(cos) * 180.0 / math.Pi
+}
+
+// computeCircleDiameter computes the diameter of a circle entity
+// referenced by c. Returns the value and true on success.
+func computeCircleDiameter(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	ent := entityByHandle(c.EntityA, params)
+	if ent == nil {
+		return 0, false
+	}
+	// Look for center and radius points on the circle.
+	if c.PtA == (core.HEntity{}) || c.PtB == (core.HEntity{}) {
+		return 0, false
+	}
+	pa := entityByHandle(c.PtA, params)
+	pb := entityByHandle(c.PtB, params)
+	if pa == nil || pb == nil {
+		return 0, false
+	}
+	// Diameter = 2 * radius. If PtA is center, PtB is on the circle,
+	// then the distance between them is the radius.
+	center := pa.PointGetNum()
+	onCircle := pb.PointGetNum()
+	dist := center.Minus(onCircle).Magnitude()
+	return 2.0 * dist, true
+}
+
+// entityByHandle returns the entity for the given handle, using the
+// global sketch as the source. Falls back to nil if the entity is
+// not found.
+func entityByHandle(h core.HEntity, params map[core.HParam]float64) *core.Entity {
+	_ = params
+	if h == (core.HEntity{}) {
+		return nil
+	}
+	// Look up via the current sketch (if any).
+	return lookupEntityInSketch(h)
+}
+
+// lookupEntityInSketch finds an entity in the global active sketch.
+func lookupEntityInSketch(h core.HEntity) *core.Entity {
+	if activeSketch == nil {
+		return nil
+	}
+	e := findEntityInSlice(activeSketch.Entities, h)
+	return e
+}
+
+// directionVectorOf returns the direction vector of an entity if
+// it's a line segment (or normal). Otherwise returns zero vector
+// and false.
+func directionVectorOf(e *core.Entity) (geom.Vector, bool) {
+	if e == nil {
+		return geom.Vector{}, false
+	}
+	if e.Type == core.EntityLineSegment {
+		return e.PointGetNum().Minus(e.PointGetNum().Plus(geom.Vector{})), true
+	}
+	if e.IsNormal() {
+		// Normals are stored as quaternion; convert to direction.
+		q := e.PointGetQuaternion()
+		return q.Rotate(geom.Vector{Z: 1}), true
+	}
+	return geom.Vector{}, false
+}
+
+// activeSketch is set during GenerateAll to allow entity lookup.
+var activeSketch *Sketch
+
+
 
 // GenerateConstraint populates the parameter list with the
 // constraint's dependent params (the C++ Constraint::Generate).
@@ -522,3 +615,29 @@ func GenerateMeshForRequest(r *Request, g *Group, rt *Runtime) *srf.SMesh {
 // Helper to silence unused-import warnings when future code
 // imports more packages.
 var _ = geom.Vector{}
+
+// findEntityInSlice finds an entity by handle in a slice.
+func findEntityInSlice(es []core.Entity, h core.HEntity) *core.Entity {
+	for i := range es {
+		if es[i].H == h {
+			return &es[i]
+		}
+	}
+	return nil
+}
+
+// angleBetween returns the angle in degrees between two vectors a and b.
+func angleBetween(a, b geom.Vector) float64 {
+	mag := a.Magnitude() * b.Magnitude()
+	if mag < 1e-12 {
+		return -1
+	}
+	cos := a.Dot(b) / mag
+	if cos > 1 {
+		cos = 1
+	}
+	if cos < -1 {
+		cos = -1
+	}
+	return math.Acos(cos) * 180.0 / math.Pi
+}

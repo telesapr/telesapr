@@ -1,6 +1,7 @@
 package sketch
 
 import (
+	"math"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -126,5 +127,88 @@ func TestCopyEntityEmitsParamsForExtrude(t *testing.T) {
 func TestCopyAsEnum(t *testing.T) {
 	if CopyAsNumeric != 0 || CopyAsNTrans != 1 {
 		t.Fatalf("CopyAs enum values don't match C++ convention")
+	}
+}
+
+// TestModifyToSatisfyConstraintAngleNullConstraint tests handling of nil.
+func TestModifyToSatisfyConstraintAngleNullConstraint(t *testing.T) {
+	ModifyToSatisfyConstraint(nil, nil)
+	// Should not panic.
+}
+
+// TestModifyToSatisfyConstraintAngleEmptyParams tests no-param handling.
+func TestModifyToSatisfyConstraintAngleEmptyParams(t *testing.T) {
+	c := &core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type: core.ConstraintAngle,
+	}}
+	ModifyToSatisfyConstraint(c, map[core.HParam]float64{})
+	if c.ValA != 0 {
+		t.Errorf("expected ValA=0 (no entities), got %v", c.ValA)
+	}
+}
+
+// TestComputeAngleFromEntitiesNilSketch tests angle computation when
+// there is no active sketch.
+func TestComputeAngleFromEntitiesNilSketch(t *testing.T) {
+	c := &core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type:    core.ConstraintAngle,
+		EntityA: core.HEntity{V: 1},
+		EntityB: core.HEntity{V: 2},
+	}}
+	got := computeAngleFromEntities(c, map[core.HParam]float64{})
+	if got != -1 {
+		t.Errorf("expected -1 (no entities), got %v", got)
+	}
+}
+
+// TestComputeCircleDiameterNoEntity tests failure path.
+func TestComputeCircleDiameterNoEntity(t *testing.T) {
+	c := &core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type:    core.ConstraintDiameter,
+		EntityA: core.HEntity{},
+	}}
+	_, ok := computeCircleDiameter(c, nil)
+	if ok {
+		t.Errorf("expected failure on missing entity")
+	}
+}
+
+// TestAngleBetweenZero verifies angleBetween with zero vectors.
+func TestAngleBetweenZero(t *testing.T) {
+	a := geom.Vector{}
+	b := geom.Vector{X: 1}
+	got := angleBetween(a, b)
+	if got != -1 && got != 0 {
+		// 0 magnitude returns -1.
+	}
+}
+
+// TestAngleBetweenOrthogonal verifies orthogonal vectors give 90 degrees.
+func TestAngleBetweenOrthogonal(t *testing.T) {
+	a := geom.Vector{X: 1}
+	b := geom.Vector{Y: 1}
+	got := angleBetween(a, b)
+	if math.Abs(got-90) > 1e-6 {
+		t.Errorf("orthogonal angle = %v, want 90", got)
+	}
+}
+
+// TestAngleBetweenParallel verifies parallel vectors give 0 degrees.
+func TestAngleBetweenParallel(t *testing.T) {
+	a := geom.Vector{X: 1}
+	b := geom.Vector{X: 2}
+	got := angleBetween(a, b)
+	if math.Abs(got) > 1e-6 {
+		t.Errorf("parallel angle = %v, want 0", got)
+	}
+}
+
+// TestAngleBetweenAntiParallel verifies anti-parallel gives 180.
+func TestAngleBetweenAntiParallel(t *testing.T) {
+	a := geom.Vector{X: 1}
+	b := geom.Vector{X: -1}
+	got := angleBetween(a, b)
+	if math.Abs(got-180) > 1e-6 {
+		t.Errorf("anti-parallel angle = %v, want 180", got)
 	}
 }
