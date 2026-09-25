@@ -307,3 +307,23 @@ func (s *Sketch) GetRunningMeshGroupFor(h core.HGroup) *Group {
 	}
 	return nil
 }
+
+// ParamsToMap returns the current param values as a map from handle
+// to float64. Used by Constraint::ModifyToSatisfy and other places
+// that need direct param access.
+func (s *Sketch) ParamsToMap() map[core.HParam]float64 {
+	out := make(map[core.HParam]float64, len(s.Params))
+	for _, p := range s.Params {
+		out[p.H] = p.Val
+	}
+	return out
+}
+
+// EntitiesToMap returns the entities indexed by their handle.
+func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity {
+	out := make(map[core.HEntity]core.Entity, len(s.Entities))
+	for _, e := range s.Entities {
+		out[e.H] = e
+	}
+	return out
+}

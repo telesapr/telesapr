@@ -164,6 +164,12 @@ func (rt *Runtime) PointValue(h core.HEntity) (geom.Vector, error) {
 	return rt.pointValue(e)
 }
 
+// Point is an alias for PointValue that satisfies the
+// EntityBezierResolver interface.
+func (rt *Runtime) Point(h core.HEntity) (geom.Vector, error) {
+	return rt.PointValue(h)
+}
+
 func (rt *Runtime) pointValue(e *core.Entity) (geom.Vector, error) {
 	switch e.Type {
 	case core.EntityPointIn3D:
@@ -229,6 +235,17 @@ func (rt *Runtime) pointValue(e *core.Entity) (geom.Vector, error) {
 // NormalQuaternion returns the unit quaternion orientation for the entity referenced by h.
 func (rt *Runtime) NormalQuaternion(h core.HEntity) (geom.Quaternion, error) {
 	return rt.normalQuaternionHandle(h)
+}
+
+// Normal is an alias for NormalQuaternion that satisfies the
+// EntityBezierResolver interface.
+func (rt *Runtime) Normal(h core.HEntity) (geom.Quaternion, error) {
+	return rt.normalQuaternionHandle(h)
+}
+
+// Radius returns the radius of a circle/arc entity.
+func (rt *Runtime) Radius(h core.HEntity) (float64, error) {
+	return rt.DistanceValue(h)
 }
 
 func (rt *Runtime) normalQuaternionHandle(h core.HEntity) (geom.Quaternion, error) {

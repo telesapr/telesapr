@@ -2145,3 +2145,19 @@ func (e evaluationContext) ParamValue(h core.HParam) (float64, bool) {
 	}
 	return 0, false
 }
+
+// AddExprEquation registers a symbolic equation (LHS - RHS = 0) for
+// the solver to satisfy. Used by Group::GenerateEquations for group
+// type-specific constraints like quaternion normalization, axis
+// constraints, and extrusion orthogonality.
+func (s *System) AddExprEquation(lhs, rhs *core.Expr) error {
+	if lhs == nil || rhs == nil {
+		return fmt.Errorf("solver: nil expr in AddExprEquation")
+	}
+	eq := lhs.Minus(rhs)
+	s.Equations = append(s.Equations, &Equation{
+		H:    core.HEquation{V: uint32(len(s.Equations) + 1)},
+		Expr: eq,
+	})
+	return nil
+}

@@ -20,13 +20,27 @@ const (
 	OpMinus
 	OpTimes
 	OpDiv
+	OpPow
 	OpNegate
 	OpSqrt
 	OpSquare
 	OpSin
 	OpCos
+	OpTan
 	OpASin
 	OpACos
+	OpATan
+	OpATan2
+	OpHypot
+	OpExp
+	OpLn
+	OpLog
+	OpMin
+	OpMax
+	OpAbs
+	OpFloor
+	OpCeil
+	OpRound
 )
 
 // Expr represents a node in the symbolic expression tree used for constraint equations.
@@ -34,6 +48,7 @@ type Expr struct {
 	Op        Operation
 	Left      *Expr
 	Right     *Expr
+	Args      []*Expr // variadic args for OpMin/OpMax
 	Value     float64
 	Param     HParam
 	ParamPtr  *Param
@@ -73,7 +88,7 @@ func (e *Expr) clone() *Expr {
 	if e == nil {
 		return nil
 	}
-	return &Expr{
+	out := &Expr{
 		Op:        e.Op,
 		Left:      e.Left,
 		Right:     e.Right,
@@ -83,6 +98,11 @@ func (e *Expr) clone() *Expr {
 		VarID:     e.VarID,
 		constFold: e.constFold,
 	}
+	if len(e.Args) > 0 {
+		out.Args = make([]*Expr, len(e.Args))
+		copy(out.Args, e.Args)
+	}
+	return out
 }
 
 // DeepCopy returns a deep copy of the expression tree.
@@ -96,6 +116,14 @@ func (e *Expr) DeepCopy() *Expr {
 	}
 	if e.Right != nil {
 		copy.Right = e.Right.DeepCopy()
+	}
+	if len(e.Args) > 0 {
+		copy.Args = make([]*Expr, len(e.Args))
+		for i, a := range e.Args {
+			if a != nil {
+				copy.Args[i] = a.DeepCopy()
+			}
+		}
 	}
 	return copy
 }
@@ -161,6 +189,54 @@ func (e *Expr) Eval(ctx EvalParamProvider, vars map[string]float64) float64 {
 		return math.Asin(e.Left.Eval(ctx, vars))
 	case OpACos:
 		return math.Acos(e.Left.Eval(ctx, vars))
+	case OpPow:
+		return math.Pow(e.Left.Eval(ctx, vars), e.Right.Eval(ctx, vars))
+	case OpTan:
+		return math.Tan(e.Left.Eval(ctx, vars))
+	case OpATan:
+		return math.Atan(e.Left.Eval(ctx, vars))
+	case OpATan2:
+		return math.Atan2(e.Left.Eval(ctx, vars), e.Right.Eval(ctx, vars))
+	case OpHypot:
+		return math.Hypot(e.Left.Eval(ctx, vars), e.Right.Eval(ctx, vars))
+	case OpExp:
+		return math.Exp(e.Left.Eval(ctx, vars))
+	case OpLn:
+		return math.Log(e.Left.Eval(ctx, vars))
+	case OpLog:
+		return math.Log10(e.Left.Eval(ctx, vars))
+	case OpAbs:
+		return math.Abs(e.Left.Eval(ctx, vars))
+	case OpFloor:
+		return math.Floor(e.Left.Eval(ctx, vars))
+	case OpCeil:
+		return math.Ceil(e.Left.Eval(ctx, vars))
+	case OpRound:
+		return math.Round(e.Left.Eval(ctx, vars))
+	case OpMin:
+		if len(e.Args) == 0 {
+			return 0
+		}
+		v := math.Inf(1)
+		for _, a := range e.Args {
+			x := a.Eval(ctx, vars)
+			if x < v {
+				v = x
+			}
+		}
+		return v
+	case OpMax:
+		if len(e.Args) == 0 {
+			return 0
+		}
+		v := math.Inf(-1)
+		for _, a := range e.Args {
+			x := a.Eval(ctx, vars)
+			if x > v {
+				v = x
+			}
+		}
+		return v
 	default:
 		panic(fmt.Sprintf("expr: unsupported op %d", e.Op))
 	}
@@ -201,6 +277,11 @@ func (e *Expr) Square() *Expr {
 	return newUnary(OpSquare, e)
 }
 
+// Pow returns the expression raised to the power of another expression.
+func (e *Expr) Pow(b *Expr) *Expr {
+	return newBinary(OpPow, e, b)
+}
+
 // Sin returns sin(expression).
 func (e *Expr) Sin() *Expr {
 	return newUnary(OpSin, e)
@@ -211,6 +292,11 @@ func (e *Expr) Cos() *Expr {
 	return newUnary(OpCos, e)
 }
 
+// Tan returns tan(expression).
+func (e *Expr) Tan() *Expr {
+	return newUnary(OpTan, e)
+}
+
 // ASin returns arcsin(expression).
 func (e *Expr) ASin() *Expr {
 	return newUnary(OpASin, e)
@@ -219,6 +305,66 @@ func (e *Expr) ASin() *Expr {
 // ACos returns arccos(expression).
 func (e *Expr) ACos() *Expr {
 	return newUnary(OpACos, e)
+}
+
+// ATan returns arctan(expression).
+func (e *Expr) ATan() *Expr {
+	return newUnary(OpATan, e)
+}
+
+// ATan2 returns arctan2(y, x).
+func (e *Expr) ATan2(x *Expr) *Expr {
+	return newBinary(OpATan2, e, x)
+}
+
+// Hypot returns sqrt(x*x + y*y) without intermediate overflow.
+func (e *Expr) Hypot(x *Expr) *Expr {
+	return newBinary(OpHypot, e, x)
+}
+
+// Exp returns e^expression.
+func (e *Expr) Exp() *Expr {
+	return newUnary(OpExp, e)
+}
+
+// Ln returns natural log of expression.
+func (e *Expr) Ln() *Expr {
+	return newUnary(OpLn, e)
+}
+
+// Log returns base-10 log of expression.
+func (e *Expr) Log() *Expr {
+	return newUnary(OpLog, e)
+}
+
+// Abs returns |expression|.
+func (e *Expr) Abs() *Expr {
+	return newUnary(OpAbs, e)
+}
+
+// Floor returns floor(expression).
+func (e *Expr) Floor() *Expr {
+	return newUnary(OpFloor, e)
+}
+
+// Ceil returns ceil(expression).
+func (e *Expr) Ceil() *Expr {
+	return newUnary(OpCeil, e)
+}
+
+// Round returns the nearest integer.
+func (e *Expr) Round() *Expr {
+	return newUnary(OpRound, e)
+}
+
+// Min returns an OpMin variadic expr.
+func MinExpr(args ...*Expr) *Expr {
+	return &Expr{Op: OpMin, Args: args}
+}
+
+// Max returns an OpMax variadic expr.
+func MaxExpr(args ...*Expr) *Expr {
+	return &Expr{Op: OpMax, Args: args}
 }
 
 // IsZeroConst reports whether the expression structurally equals zero.
@@ -240,6 +386,11 @@ func (e *Expr) DependsOn(h HParam) bool {
 		}
 		return e.ParamPtr.H == h
 	}
+	for _, a := range e.Args {
+		if a.DependsOn(h) {
+			return true
+		}
+	}
 	return e.Left.DependsOn(h) || e.Right.DependsOn(h)
 }
 
@@ -255,6 +406,9 @@ func (e *Expr) ReferencedParams(set map[HParam]struct{}) {
 		if e.ParamPtr != nil {
 			set[e.ParamPtr.H] = struct{}{}
 		}
+	}
+	for _, a := range e.Args {
+		a.ReferencedParams(set)
 	}
 	if e.Left != nil {
 		e.Left.ReferencedParams(set)
@@ -291,7 +445,8 @@ func (e *Expr) FoldConstants() *Expr {
 				return NewConstant(left.Value / right.Value)
 			}
 		}
-	case OpNegate, OpSqrt, OpSquare, OpSin, OpCos, OpASin, OpACos:
+	case OpNegate, OpSqrt, OpSquare, OpSin, OpCos, OpASin, OpACos, OpTan, OpATan,
+		OpExp, OpLn, OpLog, OpAbs, OpFloor, OpCeil, OpRound:
 		if left != nil && left.Op == OpConstant {
 			switch e.Op {
 			case OpNegate:
@@ -304,11 +459,63 @@ func (e *Expr) FoldConstants() *Expr {
 				return NewConstant(math.Sin(left.Value))
 			case OpCos:
 				return NewConstant(math.Cos(left.Value))
+			case OpTan:
+				return NewConstant(math.Tan(left.Value))
 			case OpASin:
 				return NewConstant(math.Asin(left.Value))
 			case OpACos:
 				return NewConstant(math.Acos(left.Value))
+			case OpATan:
+				return NewConstant(math.Atan(left.Value))
+			case OpExp:
+				return NewConstant(math.Exp(left.Value))
+			case OpLn:
+				return NewConstant(math.Log(left.Value))
+			case OpLog:
+				return NewConstant(math.Log10(left.Value))
+			case OpAbs:
+				return NewConstant(math.Abs(left.Value))
+			case OpFloor:
+				return NewConstant(math.Floor(left.Value))
+			case OpCeil:
+				return NewConstant(math.Ceil(left.Value))
+			case OpRound:
+				return NewConstant(math.Round(left.Value))
 			}
+		}
+	case OpPow, OpATan2, OpHypot:
+		if left != nil && right != nil && left.Op == OpConstant && right.Op == OpConstant {
+			lv := left.Value
+			rv := right.Value
+			switch e.Op {
+			case OpPow:
+				return NewConstant(math.Pow(lv, rv))
+			case OpATan2:
+				return NewConstant(math.Atan2(lv, rv))
+			case OpHypot:
+				return NewConstant(math.Hypot(lv, rv))
+			}
+		}
+	case OpMin, OpMax:
+		allConst := true
+		for _, a := range e.Args {
+			if a == nil || a.Op != OpConstant {
+				allConst = false
+				break
+			}
+		}
+		if allConst && len(e.Args) > 0 {
+			best := e.Args[0].Value
+			for _, a := range e.Args[1:] {
+				v := a.Value
+				if e.Op == OpMin && v < best {
+					best = v
+				}
+				if e.Op == OpMax && v > best {
+					best = v
+				}
+			}
+			return NewConstant(best)
 		}
 	}
 

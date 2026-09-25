@@ -28,6 +28,7 @@ type RemapEntry struct {
 
 type Document struct {
 	Header          string
+	HeaderSep       string // separator line(s) between Header and first block (preserved across round-trip)
 	Blocks          []Block
 	Sketch          *sketch.Sketch
 	groupOrder      []core.HGroup
@@ -59,7 +60,11 @@ func LoadFile(path string) (*Document, error) {
 func (d *Document) Save() []byte {
 	var b strings.Builder
 	b.WriteString(d.Header)
-	b.WriteString("\n\n")
+	if d.HeaderSep != "" {
+		b.WriteString(d.HeaderSep)
+	} else {
+		b.WriteString("\n\n\n")
+	}
 
 	for i := range d.Sketch.Groups {
 		writeGroup(&b, &d.Sketch.Groups[i])
@@ -109,7 +114,19 @@ func (d *Document) parse(data []byte) error {
 	d.Header = lines[0]
 
 	i := 1
-	for i < len(lines) {
+	// Capture the separator lines (blank lines) between Header
+	// and the first block so Save() round-trips with identical
+	// whitespace. The file has "Header\n[\n]*Group..."; the number
+	// of '\n' chars after Header is (1 + blankLines).
+	var sep strings.Builder
+	sep.WriteString("\n") // header terminator
+	for i < len(lines) && strings.TrimSpace(lines[i]) == "" {
+		sep.WriteString("\n")
+		i++
+	}
+	d.HeaderSep = sep.String()
+
+	for ; i < len(lines); {
 		if strings.TrimSpace(lines[i]) == "" {
 			i++
 			continue

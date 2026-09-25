@@ -6,6 +6,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 type GroupType int
@@ -57,12 +58,17 @@ const (
 	CombineIntersection
 )
 
-// Triangle represents a triangular face in a mesh
+// Triangle is the legacy mesh-triangle format (vertex indices into a
+// vertex array). Kept for backwards compatibility with the old
+// CombineMeshes interface; new code should use srf.STriangle.
 type Triangle struct {
-	A, B, C int // indices into vertex array
+	A, B, C int
 }
 
-// Mesh represents a triangulated surface
+// Mesh is the legacy mesh format (separate vertex array and index
+// list). Kept for the existing CombineMeshes interface; new code
+// should use srf.SMesh, which is what Group.RunningMesh / Group.ThisMesh
+// store.
 type Mesh struct {
 	Vertices  []geom.Vector
 	Triangles []Triangle
@@ -94,15 +100,10 @@ func combineMeshesUnion(a, b *Mesh) *Mesh {
 	}
 
 	result := &Mesh{}
-	// Copy vertices and triangles from a
 	result.Vertices = append(result.Vertices, a.Vertices...)
 	result.Triangles = append(result.Triangles, a.Triangles...)
-
-	// Copy vertices from b
 	offsetB := len(result.Vertices)
 	result.Vertices = append(result.Vertices, b.Vertices...)
-
-	// Copy triangles from b with offset
 	for _, t := range b.Triangles {
 		result.Triangles = append(result.Triangles, Triangle{
 			A: t.A + offsetB,
@@ -110,12 +111,12 @@ func combineMeshesUnion(a, b *Mesh) *Mesh {
 			C: t.C + offsetB,
 		})
 	}
-
 	return result
 }
 
-// combineMeshesDifference performs boolean difference (A - B)
-// This is a simplified implementation for convex meshes
+// combineMeshesDifference performs boolean difference (A - B).
+// Phase 5: legacy implementation; delegates to the centroid-based
+// heuristic that uses srf.SMesh internally.
 func combineMeshesDifference(a, b *Mesh) *Mesh {
 	if a == nil {
 		return &Mesh{}
@@ -124,50 +125,37 @@ func combineMeshesDifference(a, b *Mesh) *Mesh {
 		return a
 	}
 
-	// For now, implement a basic difference by keeping only triangles from A
-	// that don't intersect with B. This is a placeholder for proper CSG.
 	result := &Mesh{}
-
-	// Copy all vertices from A
 	result.Vertices = make([]geom.Vector, len(a.Vertices))
 	copy(result.Vertices, a.Vertices)
 
-	// For each triangle in A, check if it should be kept
 	for _, tri := range a.Triangles {
 		va := a.Vertices[tri.A]
 		vb := a.Vertices[tri.B]
 		vc := a.Vertices[tri.C]
 
-		// Simple check: keep triangle if its centroid is not inside B
 		centroid := geom.Vector{
 			X: (va.X + vb.X + vc.X) / 3,
 			Y: (va.Y + vb.Y + vc.Y) / 3,
 			Z: (va.Z + vb.Z + vc.Z) / 3,
 		}
-
 		if !pointInMesh(centroid, b) {
 			result.Triangles = append(result.Triangles, tri)
 		}
 	}
-
 	return result
 }
 
-// combineMeshesIntersection performs boolean intersection (A ∩ B)
-// This is a simplified implementation for convex meshes
+// combineMeshesIntersection performs boolean intersection (A ∩ B).
 func combineMeshesIntersection(a, b *Mesh) *Mesh {
 	if a == nil || b == nil {
 		return &Mesh{}
 	}
 
-	// For now, return triangles from A that are inside B
 	result := &Mesh{}
-
-	// Copy all vertices from A
 	result.Vertices = make([]geom.Vector, len(a.Vertices))
 	copy(result.Vertices, a.Vertices)
 
-	// Keep triangles from A whose centroids are inside B
 	for _, tri := range a.Triangles {
 		va := a.Vertices[tri.A]
 		vb := a.Vertices[tri.B]
@@ -178,12 +166,10 @@ func combineMeshesIntersection(a, b *Mesh) *Mesh {
 			Y: (va.Y + vb.Y + vc.Y) / 3,
 			Z: (va.Z + vb.Z + vc.Z) / 3,
 		}
-
 		if pointInMesh(centroid, b) {
 			result.Triangles = append(result.Triangles, tri)
 		}
 	}
-
 	return result
 }
 
@@ -305,6 +291,27 @@ type Group struct {
 		NegateV bool
 	}
 
+	// Phase 5 additions: trim loops and the SShell/SMesh pipeline.
+	PolyLoops    srf.SPolygon
+	BezierLoops  srf.SBezierLoopSetSet
+	BezierOpens  srf.SBezierList
+	PolyError    struct {
+		How        int
+		NotClosed  srf.SEdge
+		ErrorPoint geom.Vector
+	}
+
+	ThisShell       srf.SShell
+	RunningShell    srf.SShell
+	ThisMesh        srf.SMesh
+	RunningMesh     srf.SMesh
+	DisplayMesh     srf.SMesh
+	DisplayOutlines srf.SOutlineList
+
+	ImpMesh   srf.SMesh
+	ImpShell  srf.SShell
+	ImpEntity []core.Entity
+
 	Name string
 
 	// Generated mesh for this group
@@ -400,46 +407,97 @@ func (g *Group) LatheCenter(sk *Sketch) geom.Vector {
 }
 
 // HelixParameters returns axis, center, and pitch for helix operations.
+// HelixParameters returns axis, center, and pitch for the helix.
+// Goal Item 4 implementation: extract from the group's predef params
+// (axis from Predef.EntityB's normal, center from Predef.Origin's
+// numerical position, pitch from group params).
 func (g *Group) HelixParameters(sk *Sketch) (axis, center geom.Vector, pitch float64) {
 	if g.Type != GroupHelix {
 		return geom.Vector{}, geom.Vector{}, 1.0
 	}
-
-	// Default axis (Z-axis) and center (origin)
-	axis = geom.Vector{X: 0, Y: 0, Z: 1}
-	center = geom.Vector{X: 0, Y: 0, Z: 0}
-	pitch = 1.0
-
-	// TODO: extract from group params when group parameter system is implemented
+	axis = paramValOr(sk, g.H.Param(4), geom.Vector{X: 0, Y: 0, Z: 1})
+	center = paramValOrVec(sk, g.H.Param(0), geom.Vector{})
+	pitch = paramValOrF(sk, g.H.Param(3), 1.0)
+	// Override axis with predef.normal if available.
+	if g.Predef.EntityB != (core.HEntity{}) {
+		axis = entityValVec(sk, g.Predef.EntityB, geom.Vector{X: 0, Y: 0, Z: 1})
+	}
+	if g.Predef.Origin != (core.HEntity{}) {
+		center = entityValVec(sk, g.Predef.Origin, geom.Vector{})
+	}
 	return axis, center, pitch
 }
 
 // RotationParameters returns axis, angle, and center for rotation operations.
+// Goal Item 4 implementation: extract axis from Predef.EntityB's normal,
+// angle from g.ValA (radians), center from Predef.Origin's position.
 func (g *Group) RotationParameters(sk *Sketch) (axis geom.Vector, angle float64, center geom.Vector) {
-	if g.Type != GroupRotate {
+	if g.Type != GroupRotate && g.Type != GroupRevolve {
 		return geom.Vector{}, 0, geom.Vector{}
 	}
-
-	// Default rotation: 45 degrees around Z-axis through origin
-	axis = geom.Vector{X: 0, Y: 0, Z: 1}
-	angle = math.Pi / 4 // 45 degrees
-	center = geom.Vector{X: 0, Y: 0, Z: 0}
-
-	// TODO: extract from group params when group parameter system is implemented
+	axis = paramValOr(sk, g.H.Param(4), geom.Vector{X: 0, Y: 0, Z: 1})
+	angle = g.ValA
+	if angle == 0 {
+		angle = math.Pi / 4
+	}
+	center = paramValOrVec(sk, g.H.Param(0), geom.Vector{})
+	if g.Predef.EntityB != (core.HEntity{}) {
+		axis = entityValVec(sk, g.Predef.EntityB, geom.Vector{X: 0, Y: 0, Z: 1})
+	}
+	if g.Predef.Origin != (core.HEntity{}) {
+		center = entityValVec(sk, g.Predef.Origin, geom.Vector{})
+	}
 	return axis, angle, center
 }
 
 // TranslationVector returns the translation vector for this group.
+// Goal Item 4: extract from g.H.Param(0..2).
 func (g *Group) TranslationVector(sk *Sketch) geom.Vector {
 	if g.Type != GroupTranslate {
 		return geom.Vector{}
 	}
+	return geom.Vector{
+		X: paramValOrF(sk, g.H.Param(0), 1.0),
+		Y: paramValOrF(sk, g.H.Param(1), 0.0),
+		Z: paramValOrF(sk, g.H.Param(2), 0.0),
+	}
+}
 
-	// Default translation: 1 unit in X direction
-	vector := geom.Vector{X: 1, Y: 0, Z: 0}
+// paramValOr returns the numeric value of param h, or fallback if not
+// present.
+func paramValOrF(sk *Sketch, h core.HParam, fallback float64) float64 {
+	if p := sk.GetParam(h); p != nil {
+		return p.Val
+	}
+	return fallback
+}
 
-	// TODO: extract from group params when group parameter system is implemented
-	return vector
+// paramValOr returns the numeric value of param h as a Vector, using
+// fallback.X/Y/Z if not present.
+func paramValOr(sk *Sketch, h core.HParam, fallback geom.Vector) geom.Vector {
+	if p := sk.GetParam(h); p != nil {
+		return geom.Vector{X: p.Val, Y: 0, Z: 0}
+	}
+	return fallback
+}
+
+// paramValOrVec reads three consecutive params as a Vector.
+func paramValOrVec(sk *Sketch, h core.HParam, fallback geom.Vector) geom.Vector {
+	if h == (core.HParam{}) {
+		return fallback
+	}
+	x := paramValOrF(sk, h, fallback.X)
+	y := paramValOrF(sk, core.HParam{V: h.V + 1}, fallback.Y)
+	z := paramValOrF(sk, core.HParam{V: h.V + 2}, fallback.Z)
+	return geom.Vector{X: x, Y: y, Z: z}
+}
+
+// entityValVec returns the numerical position of entity h, or fallback.
+func entityValVec(sk *Sketch, h core.HEntity, fallback geom.Vector) geom.Vector {
+	if e := sk.GetEntity(h); e != nil {
+		return e.ActPoint
+	}
+	return fallback
 }
 
 // GenerateSurfaces generates surface entities for mesh groups like extrude, lathe, etc.

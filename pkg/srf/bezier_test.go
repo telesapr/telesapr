@@ -1,0 +1,139 @@
+package srf
+
+import (
+	"math"
+	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
+
+func TestSBezierLineSegmentEvaluation(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	if b.PointAt(0).DistanceTo(geom.Vector{}) > 1e-12 {
+		t.Fatalf("PointAt(0) should be origin")
+	}
+	if b.PointAt(1).DistanceTo(geom.Vector{X: 1}) > 1e-12 {
+		t.Fatalf("PointAt(1) should be (1,0,0)")
+	}
+	mid := b.PointAt(0.5)
+	if mid.DistanceTo(geom.Vector{X: 0.5}) > 1e-12 {
+		t.Fatalf("PointAt(0.5) = %v, want (0.5,0,0)", mid)
+	}
+}
+
+func TestSBezierQuadraticEvaluation(t *testing.T) {
+	// Quarter-circle from (1,0) to (0,1).
+	k := math.Cos(math.Pi / 4)
+	b := SBezier{
+		Degree: 2,
+		Ctrl:   [4]geom.Vector{{X: 1}, {X: 1, Y: 1}, {Y: 1}},
+		Weight: [4]float64{1, k, 1},
+	}
+	// PointAt(0.5) should be (cos(pi/4), sin(pi/4)).
+	mid := b.PointAt(0.5)
+	expected := geom.Vector{X: math.Cos(math.Pi / 4), Y: math.Sin(math.Pi / 4)}
+	if mid.DistanceTo(expected) > 1e-9 {
+		t.Fatalf("PointAt(0.5) = %v, want %v", mid, expected)
+	}
+}
+
+func TestSBezierSplitAt(t *testing.T) {
+	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 2})
+	var bef, aft SBezier
+	b.SplitAt(0.5, &bef, &aft)
+	if bef.Start().DistanceTo(geom.Vector{}) > 1e-9 {
+		t.Fatalf("bef start should be origin, got %v", bef.Start())
+	}
+	if aft.Finish().DistanceTo(geom.Vector{X: 2}) > 1e-9 {
+		t.Fatalf("aft finish should be (2,0,0), got %v", aft.Finish())
+	}
+	if math.Abs(bef.Finish().X-1) > 1e-9 {
+		t.Fatalf("bef finish should be (1,0,0), got %v", bef.Finish())
+	}
+}
+
+func TestSSurfacePointAtPlane(t *testing.T) {
+	u := geom.Vector{X: 1}
+	v := geom.Vector{Y: 1}
+	pt := geom.Vector{Z: 5}
+	s := FromPlane(pt, u, v)
+	if s.PointAt(0, 0).DistanceTo(pt) > 1e-9 {
+		t.Fatalf("PointAt(0,0) should be plane origin, got %v", s.PointAt(0, 0))
+	}
+	if s.PointAt(1, 1).DistanceTo(pt.Plus(u).Plus(v)) > 1e-9 {
+		t.Fatalf("PointAt(1,1) should be at (1,1,5), got %v", s.PointAt(1, 1))
+	}
+}
+
+func TestSSurfaceExtrusionNormal(t *testing.T) {
+	profile := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	s := FromExtrusionOf(&profile, geom.Vector{}, geom.Vector{Z: 1})
+	n := s.NormalAt(0.5, 0.5)
+	// For an extrusion along Z with profile along X, the surface
+	// normal is X × Z = -Y (right-hand rule with parameter order
+	// (profile, t)).
+	if n.DistanceTo(geom.Vector{Y: -1}) > 1e-9 {
+		t.Fatalf("extrusion normal should be -Y, got %v", n)
+	}
+}
+
+func TestSSurfaceRevolutionNormal(t *testing.T) {
+	profile := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 1})
+	s := FromRevolutionOf(&profile, geom.Vector{}, geom.Vector{Z: 1}, 0, 2*math.Pi, 0, 0)
+	n := s.NormalAt(0.5, 0.5)
+	if n.Magnitude() < 1e-9 {
+		t.Fatalf("expected non-zero normal, got %v", n)
+	}
+}
+
+func TestSShellExtrusion(t *testing.T) {
+	profile := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	set := &SBezierLoopSet{}
+	set.Outer.Curves = []SBezier{profile}
+	shell := &SShell{}
+	shell.MakeFromExtrusionOf(set, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{Red: 255})
+	// 1 side surface + 2 caps = 3 surfaces.
+	if len(shell.Surface) != 3 {
+		t.Fatalf("expected 3 surfaces, got %d", len(shell.Surface))
+	}
+}
+
+func TestBernstein(t *testing.T) {
+	// B_{0,1}(t) = 1-t, B_{1,1}(t) = t.
+	if math.Abs(bernstein(0, 1, 0.3)-(1-0.3)) > 1e-12 {
+		t.Fatalf("B_{0,1}(0.3) = %f, want 0.7", bernstein(0, 1, 0.3))
+	}
+	if math.Abs(bernstein(1, 1, 0.3)-0.3) > 1e-12 {
+		t.Fatalf("B_{1,1}(0.3) = %f, want 0.3", bernstein(1, 1, 0.3))
+	}
+	// B'_{0,1}(t) = -1, B'_{1,1}(t) = 1.
+	if math.Abs(bernsteinDerivative(0, 1, 0.3)+1) > 1e-12 {
+		t.Fatalf("B'_{0,1}(0.3) = %f, want -1", bernsteinDerivative(0, 1, 0.3))
+	}
+	if math.Abs(bernsteinDerivative(1, 1, 0.3)-1) > 1e-12 {
+		t.Fatalf("B'_{1,1}(0.3) = %f, want 1", bernsteinDerivative(1, 1, 0.3))
+	}
+}
+
+func TestSShellRevolution(t *testing.T) {
+	profile := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 1})
+	set := &SBezierLoopSet{}
+	set.Outer.Curves = []SBezier{profile}
+	shell := &SShell{}
+	shell.MakeFromRevolutionOf(set, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{Red: 255})
+	if len(shell.Surface) != 1 {
+		t.Fatalf("expected 1 surface, got %d", len(shell.Surface))
+	}
+}
+
+func TestSBspUvClassify(t *testing.T) {
+	// Add an edge along the X axis.
+	root := InsertBspUvEdge(nil, geom.Point2d{U: -1, V: 0}, geom.Point2d{U: 1, V: 0})
+	// A point above the X axis should be classified as INSIDE
+	// (assuming the BSP convention).
+	c := root.ClassifyPoint(geom.Point2d{U: 0, V: 1})
+	if c != BspUvInside {
+		t.Fatalf("expected INSIDE for (0,1), got %v", c)
+	}
+}

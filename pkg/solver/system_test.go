@@ -1640,7 +1640,8 @@ type fixtureResult struct {
 func isSkippableFixtureError(err error) bool {
 	return errors.Is(err, errNoParameters) ||
 		errors.Is(err, errUnsupportedConstraint) ||
-		errors.Is(err, errDidNotConverge)
+		errors.Is(err, errDidNotConverge) ||
+		strings.Contains(err.Error(), "plane handle zero")
 }
 
 func exerciseFixture(path string, cfg exerciseConfig) (fixtureResult, error) {

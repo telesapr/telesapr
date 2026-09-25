@@ -88,6 +88,27 @@ type HStyle struct {
 	V uint32
 }
 
+type HSCurve struct {
+	V uint32
+}
+
+type HSSurface struct {
+	V uint32
+}
+
+func (h HSCurve) IsFromRequest() bool {
+	return h.V != 0 && (h.V&0x80000000) == 0
+}
+
+func (h HSSurface) IsFromRequest() bool {
+	return h.V != 0 && (h.V&0x80000000) == 0
+}
+
+var (
+	NoSCurve   = HSCurve{V: 0}
+	NoSSurface = HSSurface{V: 0}
+)
+
 type EntityID struct {
 	V uint32
 }
