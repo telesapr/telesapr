@@ -1027,3 +1027,39 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 	_ = swapped
 	_ = l
 }
+
+// CopyRowOrCol copies a row (byU=true) or column (byU=false) from
+// src to this surface at the given index.
+func (s *SSurface) CopyRowOrCol(byU bool, thisIJ int, src *SSurface, srcIJ int) {
+	if byU {
+		for j := 0; j <= s.DegN; j++ {
+			s.Ctrl[thisIJ][j] = src.Ctrl[srcIJ][j]
+			s.Weight[thisIJ][j] = src.Weight[srcIJ][j]
+		}
+	} else {
+		for i := 0; i <= s.DegM; i++ {
+			s.Ctrl[i][thisIJ] = src.Ctrl[i][srcIJ]
+			s.Weight[i][thisIJ] = src.Weight[i][srcIJ]
+		}
+	}
+}
+
+// BlendRowOrCol averages a row/column of a and b into this surface.
+// Used during de Casteljau subdivision.
+func (s *SSurface) BlendRowOrCol(byU bool, thisIJ int, a *SSurface, aIJ int, b *SSurface, bIJ int) {
+	if byU {
+		for j := 0; j <= s.DegN; j++ {
+			c := a.Ctrl[aIJ][j].Plus(b.Ctrl[bIJ][j])
+			w := a.Weight[aIJ][j] + b.Weight[bIJ][j]
+			s.Ctrl[thisIJ][j] = c.ScaledBy(0.5)
+			s.Weight[thisIJ][j] = w / 2
+		}
+	} else {
+		for i := 0; i <= s.DegM; i++ {
+			c := a.Ctrl[i][aIJ].Plus(b.Ctrl[i][bIJ])
+			w := a.Weight[i][aIJ] + b.Weight[i][bIJ]
+			s.Ctrl[i][thisIJ] = c.ScaledBy(0.5)
+			s.Weight[i][thisIJ] = w / 2
+		}
+	}
+}

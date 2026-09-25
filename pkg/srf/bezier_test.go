@@ -506,3 +506,50 @@ func TestSSurfaceMakeTriangulationGridIntoPlaneMid(t *testing.T) {
 		t.Errorf("expected at least 2 v-values, got %d", len(l))
 	}
 }
+
+
+// TestSSurfaceCopyRowOrCol verifies row/column copy.
+func TestSSurfaceCopyRowOrCol(t *testing.T) {
+	src := FromPlane(geom.Vector{X: 1}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	dst := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	dst.CopyRowOrCol(true, 0, &src, 1)
+	if !dst.Ctrl[0][0].Equals(src.Ctrl[1][0]) {
+		t.Errorf("row copy failed: got %v, want %v", dst.Ctrl[0][0], src.Ctrl[1][0])
+	}
+}
+
+// TestSSurfaceBlendRowOrCol verifies row blending.
+func TestSSurfaceBlendRowOrCol(t *testing.T) {
+	a := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	b := FromPlane(geom.Vector{X: 2}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	dst := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	dst.BlendRowOrCol(true, 0, &a, 0, &b, 0)
+	expected := geom.Vector{X: 1}
+	if !dst.Ctrl[0][0].Equals(expected) {
+		t.Errorf("blend: got %v, want %v", dst.Ctrl[0][0], expected)
+	}
+}
+
+// TestSSurfaceWeightControlPoints verifies weight normalization.
+func TestSSurfaceWeightControlPoints(t *testing.T) {
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	// Set non-trivial weights. With our normalize-to-w[0][0] implementation,
+	// weights are scaled so w[0][0] becomes 1.
+	plane.Weight[0][0] = 2.0
+	plane.Weight[1][0] = 4.0
+	original := plane.Weight[1][0]
+	plane.WeightControlPoints()
+	// After normalization, weight[0][0] should be 1.
+	if plane.Weight[0][0] != 1.0 {
+		t.Errorf("weight[0][0] = %v, want 1.0", plane.Weight[0][0])
+	}
+	// weight[1][0] should be original / 2 = 2.0
+	if math.Abs(plane.Weight[1][0]-original/2.0) > 1e-9 {
+		t.Errorf("weight[1][0] = %v, want %v", plane.Weight[1][0], original/2.0)
+	}
+	// Restore
+	plane.UnWeightControlPoints()
+	if math.Abs(plane.Weight[0][0]-1.0) > 1e-9 {
+		t.Errorf("after unweight: weight[0][0] = %v, want 1.0 (round-trip)", plane.Weight[0][0])
+	}
+}
