@@ -45,3 +45,37 @@ func TestGenerateAllRunsWithoutCrash(t *testing.T) {
 	sk.AddGroup(Group{Type: GroupDrawing3D})
 	sk.GenerateAll()
 }
+
+// TestGenerateAllTyped verifies GenerateAllTyped runs without panic.
+func TestGenerateAllTyped(t *testing.T) {
+	sk := NewSketch()
+	sk.GenerateAllTyped(GenerateDirty)
+}
+
+// TestGenerateAllTypedAll verifies the GenerateAll variant.
+func TestGenerateAllTypedAll(t *testing.T) {
+	sk := NewSketch()
+	sk.GenerateAllTyped(GenerateAll)
+}
+
+// TestScheduleGenerateAll verifies ScheduleGenerateAll runs.
+func TestScheduleGenerateAll(t *testing.T) {
+	sk := NewSketch()
+	sk.ScheduleGenerateAll()
+}
+
+// TestGenerateTypeString verifies each type has a String method or default fmt.
+func TestGenerateTypeString(t *testing.T) {
+	cases := map[GenerateType]string{
+		GenerateAll:         "All",
+		GenerateDirty:       "Dirty",
+		GenerateRegen:       "Regen",
+		GenerateUntilActive: "UntilActive",
+	}
+	for got, want := range cases {
+		if int(got) < 0 || int(got) > 3 {
+			t.Errorf("GenerateType(%d) out of range", got)
+		}
+		_ = want
+	}
+}

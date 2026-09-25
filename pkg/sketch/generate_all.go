@@ -465,3 +465,41 @@ func (r *sketchSolverResolver) Param(h core.HParam) (*core.Param, error) {
 	}
 	return nil, nil
 }
+
+// GenerateType indicates which groups to regenerate.
+//
+// Mirrors the C++ Generate enum from solvespace.h:
+//   - GenerateAll: regenerate all groups.
+//   - GenerateDirty: regenerate only groups marked as needing regen.
+//   - GenerateRegen: regenerate all groups (alias for GenerateAll).
+//   - GenerateUntilActive: regenerate until the requested group is active.
+//
+// The Go engine currently regenerates everything on each GenerateAll
+// call (no dirty-flag tracking). These flags are kept for parity with
+// the C++ API and are passed to GenerateAllTyped; for now, all flags
+// resolve to "regenerate everything".
+type GenerateType int
+
+const (
+	GenerateAll GenerateType = iota
+	GenerateDirty
+	GenerateRegen
+	GenerateUntilActive
+)
+
+// GenerateAllTyped is a parity-friendly GenerateAll that accepts a
+// GenerateType. Currently behaves identically to GenerateAll since the
+// engine has no per-group dirty-flag tracking; provided so callers
+// can express intent in the same terms as the C++ API.
+func (sk *Sketch) GenerateAllTyped(t GenerateType) {
+	_ = t
+	sk.GenerateAll()
+}
+
+// ScheduleGenerateAll is the parity-friendly wrapper for
+// SolveSpaceUI::ScheduleGenerateAll. In the C++ codebase, this
+// schedules a deferred regeneration via a UI timer; the engine
+// has no UI layer, so this calls GenerateAll directly.
+func (sk *Sketch) ScheduleGenerateAll() {
+	sk.GenerateAll()
+}
