@@ -91,10 +91,11 @@ func (s *SSurface) IntersectAgainst(other *SSurface, agnstA, agnstB *SShell, int
 	// Stitch points into chains of Bezier line segments.
 	for k := 0; k+1 < len(points); k += 2 {
 		c := SCurve{
-			H:     core.HSCurve{V: uint32(len(into.Curve) + 1)},
-			Exact: SBezierFrom2(points[k], points[k+1]),
-			SurfA: s.NewH,
-			SurfB: other.NewH,
+			H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
+			Exact:  SBezierFrom2(points[k], points[k+1]),
+			SurfA:  s.NewH,
+			SurfB:  other.NewH,
+			Source: CurveSourceIntersection,
 		}
 		into.Curve = append(into.Curve, c)
 	}
@@ -108,10 +109,11 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 		return
 	}
 	c := SCurve{
-		H:     core.HSCurve{V: uint32(len(into.Curve) + 1)},
-		Exact: *sb,
-		SurfA: s.NewH,
-		SurfB: srfB.NewH,
+		H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
+		Exact:  *sb,
+		SurfA:  s.NewH,
+		SurfB:  srfB.NewH,
+		Source: CurveSourceIntersection,
 	}
 	into.Curve = append(into.Curve, c)
 	_ = agnstA

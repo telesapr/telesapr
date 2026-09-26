@@ -93,8 +93,12 @@ UI.
 - `TestSystemAllConstraintsHaveEmitter` verifies every one of the
   38 constraint types routes to a real `addXxx` emitter (no
   `UnsupportedConstraintError`).
-- `TestParityBooleanVolumeVsCppGolden` captures C++ golden volumes
-  and tracks the Go/cpp volume ratio per boolean fixture.
+- `TestParityBooleanVolumeVsCppGolden` enforces per-fixture ratio
+  tolerance bands in `booleanFixtureCppGoldenTolerances` and logs
+  the Go/cpp volume ratio per boolean fixture. Each band is
+  calibrated to the current pipeline state so the test acts as a
+  regression gate; tightening a band must be coupled with work that
+  drives the ratio into the new band.
 - 0 TODO markers in engine packages.
 
 ## Definition of done
@@ -176,23 +180,122 @@ The Go port's `MakeFromUnionOf` / `MakeFromDifferenceOf` use triangle-
 classification BSP, while the C++ uses the SShell-level
 `MakeFromUnionOf` / `MakeFromDifferenceOf` (which performs proper
 coplanar-face merging via `MergeCoincidentSurfaces`). As a result,
-the Go port's boolean CSG does not yet match C++ post-CSG volume:
+the Go port's boolean CSG does not yet match C++ post-CSG volume.
+The current go/cpp ratios (captured by
+`TestParityBooleanVolumeVsCppGolden` in
+`pkg/persist/slvs/bool_generate_test.go`):
 
-- `boolean_coplanar_union`: go=833 cpp=13250 (ratio 0.06) — the Go
+- `boolean_coplanar_union`: go=833 cpp=13250 (ratio 0.063) — the Go
   port does not accumulate the four extrudes into a single shell.
-- `boolean_knife_edge`: go=0 cpp=1.83 (ratio 0) — the knife cut
-  geometry is not yet intersecting correctly.
-- `boolean_tangent_crossing`: go=109346 cpp=205477 (ratio 0.53)
-- `boolean_tangent_edge`: go=200422 cpp=296000 (ratio 0.68)
-- `boolean_tangent_fillet`: go=1.00 cpp=0.97 (ratio 1.03) — closest
-- `boolean_tangent_spline`: go=109346 cpp=204639 (ratio 0.53)
+  The SShell-level union CSG must replace the per-extrude
+  `RunningMesh` for the volume to reach 13250.
+- `boolean_knife_edge`: go=0 cpp=1.83 (ratio 0.000) — the knife cut
+  geometry is not yet intersecting correctly. The C++
+  `SShell::ClassifyEdge` `edge_inters >= 4` knife case (issue
+  #1091) is the missing piece.
+- `boolean_tangent_crossing`: go=109346 cpp=205477 (ratio 0.532)
+- `boolean_tangent_edge`: go=200422 cpp=296000 (ratio 0.677)
+- `boolean_tangent_fillet`: go=1.00 cpp=0.97 (ratio 1.028) — closest
+- `boolean_tangent_spline`: go=109346 cpp=204639 (ratio 0.534)
 
-This was addressed partially in this session: the previous mesh
-group's `runningMesh` is now propagated through drawing groups via
-`propagateFromPreviousMeshGroup`, and `findPreviousMeshGroup` walks
-back past drawing groups to find the correct operand for
-`MakeFromDifferenceOf`. ONE_SIDED extrudes now scale the translation
-vector by 2 to match the C++ convention.
+**Per-fixture tolerance bands**:
+`TestParityBooleanVolumeVsCppGolden` now fails (instead of just
+logging) when a fixture's ratio leaves its band in
+`booleanFixtureCppGoldenTolerances`. Each band is calibrated to the
+current pipeline state so the test acts as a regression gate without
+artificially restricting future algorithmic improvements. Tightening
+a band must be coupled with work that drives the ratio into the new
+band; both updates should land together with a note in this section.
 
-The remaining gap is the shell-level CSG implementation, which is a
-larger refactor not covered in this session.
+### Boolean-CSG scaffolding (this session)
+
+The `pkg/srf/boolean_trim.go` file added in this session scaffolds
+the C++ SShell-level boolean CSG. The per-surface
+`MakeCopyTrimAgainst`, `FindChainAvoiding`, `TrimFromEdgeList`,
+`EdgeNormalsWithinSurface`, `KeepRegion`, `KeepEdge`,
+`TagByClassifiedEdge`, and the `SShell.ClassifyEdge` skeleton are
+all in place. See §"Boolean-CSG parity gaps" above for what each
+piece is, which C++ lines it maps to, and what's still missing.
+
+`TestParityBooleanVolumeVsCppGolden` now acts as a real regression
+gate (with per-fixture tolerance bands) rather than a log-only
+diagnostic.
+
+#### Scaffolding pieces (this session)
+
+The following pieces are in place but the per-surface trim is not
+yet wired into `MakeFromBoolean` as the default path:
+
+- **`CurveSource::INTERSECTION`** constant added to
+  `pkg/srf/shell.go` and the new intersection curves produced by
+  `pkg/srf/surfinter.go`'s `IntersectAgainst` /
+  `AddExactIntersectionCurve` are now tagged with
+  `Source = CurveSourceIntersection`. The line-segment
+  approximations in `MakeIntersectionCurvesAgainst` are tagged the
+  same way. The previous `CurveSource::SplitA/B` split-curve
+  tagging is also wired up consistently.
+- **`SCurve.NewH`** field added (mirroring the C++
+  `SCurve::newH`) so the original-parent curve can record the new
+  handle it gets assigned in `into` during `CopyCurvesSplitAgainst`.
+  This is the prerequisite for the trim-list handle rewrite in
+  `MakeCopyTrimAgainst`.
+- **`SShellClass` enum** in `pkg/srf/boolean_trim.go` mirroring
+  the C++ `SShell::Class` (`SURF_INSIDE`, `SURF_OUTSIDE`,
+  `SURF_COINC_SAME`, `SURF_COINC_OPP`) and the corresponding
+  `shellDotpTol = 1e-5` constant.
+- **`KeepRegion` / `KeepEdge` / `TagByClassifiedEdge`** helpers
+  ported from `solvespace/src/srf/boolean.cpp:274, 310, 323` —
+  the per-edge keep/discard decision for UNION/DIFFERENCE/INTERSECTION.
+- **`SSurface::MakeCopyTrimAgainst`** ported from
+  `solvespace/src/srf/boolean.cpp:497`. For each surface in the
+  operand shell it builds an orig trim polygon from the new (split)
+  curves, intersects it against the freshly-computed intersection
+  curves with the proper orientation (`bkwds` flip for
+  DIFFERENCE-!opA and INTERSECTION; both directions for tangent
+  cases via `shellDotpTol`), then chains the kept edges back into
+  per-surface trims via `TrimFromEdgeList`. The "EDGE_PARALLEL"
+  case is also handled — an intersection edge that duplicates the
+  original boundary exactly is discarded to prevent the trim
+  polygon from failing to assemble.
+- **`SSurface::FindChainAvoiding`** + **`SSurface::TrimFromEdgeList`**
+  ported from `boolean.cpp:378, 223`. The chain finder is bounded
+  by a 1024-iteration cap so degenerate overlapping inputs (e.g.
+  two coincident shells whose line-segment intersection produces
+  thousands of duplicates) cannot infinite-loop.
+- **`CopySurfacesTrimAgainst` accurate path**: when
+  `into.Curve` contains intersection curves and the count is
+  reasonable (1..256), per-surface `MakeCopyTrimAgainst` is used;
+  otherwise the existing centroid ray-cast path runs. The accurate
+  path is intentionally not yet enabled by default, because the
+  current boolean fixtures don't exercise the typical
+  intersection-curve-heavy case (most produce 0 intersection
+  curves under the existing `MakeIntersectionCurvesAgainst`
+  approximation), and enabling it for the cases it does fire on
+  regresses triangle-count / bbox baselines without yet improving
+  volumes.
+
+#### Remaining work
+
+The C++ algorithm's per-surface trim-with-classification chain is
+in place. The two pieces still missing are:
+
+1. **Proper `SShell::ClassifyEdge` edge-on-edge / tangent-face
+   handling.** The Go version (also in `boolean_trim.go`) uses a
+   fallback ray-cast against `s`'s triangulated mesh; the C++
+   version handles `edge_inters == 2` (two faces meeting at the
+   shell's edge), `edge_inters >= 4` (knife edge from issue
+   #1091), and the tangent-only / probe-and-curve-away cases.
+   Without these, `boolean_knife_edge` cannot reach its C++ golden
+   of 1.83.
+2. **`MergeCoincidentSurfaces` driven by the new
+   `MakeCopyTrimAgainst` output.** Once the per-surface trim
+   emits surfaces whose trim polygons include the intersection
+   curves, running the existing `MergeCoincidentSurfaces` on
+   `into` (in `pkg/srf/shell.go`) should accumulate coplanar side
+   faces across stacked cuboids and drive
+   `boolean_coplanar_union` from ratio 0.06 toward 1.0.
+
+The scaffolding in `pkg/srf/boolean_trim.go` is the foundation for
+both — once the four fixtures above reach ratio 1.0, every other
+booleans-related entry in the Definition of done passes
+trivially.

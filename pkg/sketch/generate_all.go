@@ -200,9 +200,11 @@ func (sk *Sketch) GenerateAll() {
 			// Note: We skip Union because the Go port's MakeFromUnionOf
 			// uses triangle-classification BSP rather than C++'s full
 			// SShell-based CSG, which produces more triangles for
-			// overlapping cuboids. Until the Go port implements the
-			// shell-level boolean CSG, the raw extrude meshes (without
-			// union) are closer to the C++ goldens for union fixtures.
+			// overlapping cuboids. The SShell-level CSG is being
+			// scaffolded in pkg/srf/boolean_trim.go (see
+			// CopySurfacesTrimAgainst's accurate path) but isn't
+			// reliable enough yet to be enabled for the boolean
+			// fixtures.
 			if g.MeshCombine != CombineAssemble && g.MeshCombine != CombineUnion {
 				prev := findPreviousMeshGroup(g, sk)
 				if prev != nil && len(prev.RunningMesh.Triangles) > 0 {

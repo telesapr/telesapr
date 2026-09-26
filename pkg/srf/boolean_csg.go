@@ -13,32 +13,52 @@ import (
 // case (the C++ test fixtures), the implementation uses
 // SBezier::Crossing to find line-vs-Bezier intersections, then
 // SplitAt to insert a vertex.
+//
+// The emitted segments carry Source = CurveSourceSplitA / SplitB
+// (depending on whether the parent shell was operand A or B), so the
+// per-surface trim pass can distinguish them from intersection curves.
+// Also records the original curve's NewH handle for the first emitted
+// segment, so the trim-curve handles in the input surface's trim
+// list can be rewritten to point at into's new handles.
 func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 	if agnst == nil || into == nil {
 		return
 	}
 	// Phase 4 implementation: copy all curves from s into into,
 	// then split each by agnst's surface boundaries.
+	src := CurveSourceSplitB
+	if opA {
+		src = CurveSourceSplitA
+	}
 	for i := range s.Curve {
-		c := s.Curve[i]
+		pc := &s.Curve[i]
 		// Build a polyline approximation for the curve.
-		pts := c.curveToPolyline()
+		pts := pc.curveToPolyline()
 		// Split the polyline at every crossing with agnst's surfaces.
 		splitPts := agnst.splitPolylineAtSurfaceCrossings(pts)
 		// Emit each segment as a separate curve.
+		var firstNewH core.HSCurve
 		for j := 0; j+1 < len(splitPts); j++ {
 			seg := SCurve{
-				H:     core.HSCurve{V: uint32(len(into.Curve) + 1)},
-				Exact: SBezierFrom2(splitPts[j], splitPts[j+1]),
-				SurfA: c.SurfA,
-				SurfB: c.SurfB,
-				AuxA:  c.AuxA,
-				AuxB:  c.AuxB,
+				H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
+				Exact:  SBezierFrom2(splitPts[j], splitPts[j+1]),
+				SurfA:  pc.SurfA,
+				SurfB:  pc.SurfB,
+				AuxA:   pc.AuxA,
+				AuxB:   pc.AuxB,
+				Source: src,
+			}
+			if j == 0 {
+				firstNewH = seg.H
 			}
 			into.Curve = append(into.Curve, seg)
 		}
+		// Record the original curve's NewH handle (the first
+		// segment's handle in `into`) so the parent's trim list
+		// can be rewritten later.
+		pc.NewH = firstNewH
 	}
-	_ = opA
+	_ = agnst
 }
 
 // curveToPolyline returns the polyline vertices of c.Exact, sampled
@@ -145,6 +165,9 @@ func signedDistance(srf *SSurface, p geom.Vector) float64 {
 // surface by sampling its (u, v) grid, then walk every pair of
 // edges from the two surfaces and intersect them as line segments.
 // The resulting intersection points are stitched into chains.
+//
+// Each emitted curve is tagged Source = CurveSourceIntersection so
+// the per-surface trim pass can include it in the `inter` edge list.
 func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 	if agnst == nil || into == nil {
 		return
@@ -161,15 +184,17 @@ func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 	var edgesS []edge
 	var edgesB []edge
 	for i := range s.Surface {
-		pts := s.surfaceGridSample(&s.Surface[i], n)
+		srf := &s.Surface[i]
+		pts := s.surfaceGridSample(srf, n)
 		for j := 0; j+1 < len(pts); j++ {
-			edgesS = append(edgesS, edge{A: pts[j], B: pts[j+1], SRFA: &s.Surface[i]})
+			edgesS = append(edgesS, edge{A: pts[j], B: pts[j+1], SRFA: srf})
 		}
 	}
 	for i := range agnst.Surface {
-		pts := agnst.surfaceGridSample(&agnst.Surface[i], n)
+		srf := &agnst.Surface[i]
+		pts := agnst.surfaceGridSample(srf, n)
 		for j := 0; j+1 < len(pts); j++ {
-			edgesB = append(edgesB, edge{A: pts[j], B: pts[j+1], SRFB: &agnst.Surface[i]})
+			edgesB = append(edgesB, edge{A: pts[j], B: pts[j+1], SRFB: srf})
 		}
 	}
 	// Find all intersection points.
@@ -187,16 +212,17 @@ func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 			}
 		}
 	}
-	// Stitch hits into chains. Simple approach: for each hit,
-	// connect to the nearest hit that's on the same surface pair.
-	// This is a Phase 4 approximation; the full C++ uses
-	// AddExactIntersectionCurve to emit exact Beziers.
+	// Use the surfaces' original H (not NewH) so the per-surface
+	// trim pass can find them in their owning shells. The C++
+	// IntersectAgainst records them with the parent-relative
+	// handles.
 	for _, h := range hits {
 		into.Curve = append(into.Curve, SCurve{
-			H:     core.HSCurve{V: uint32(len(into.Curve) + 1)},
-			Exact: SBezierFrom2(h.P, h.P),
-			SurfA: h.SRFA.NewH,
-			SurfB: h.SRFB.NewH,
+			H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
+			Exact:  SBezierFrom2(h.P, h.P),
+			SurfA:  h.SRFA.H,
+			SurfB:  h.SRFB.H,
+			Source: CurveSourceIntersection,
 		})
 	}
 }
@@ -264,9 +290,59 @@ func lineLineIntersection(a, b, c, d geom.Vector) (geom.Vector, bool) {
 //     - INTERSECTION: keep surfaces from either operand that
 //     overlap the other.
 //  3. Emit the kept surface as-is.
+//
+// When `op` is a non-trivial boolean and the operand surfaces have
+// trim curves + intersection curves populated by the prior
+// CopyCurvesSplitAgainst / MakeIntersectionCurvesAgainst passes, the
+// accurate per-surface pipeline in boolean_trim.go is used instead so
+// each surface is properly trimmed against the other shell's
+// intersecting surfaces (mirrors the C++ SSurface::MakeCopyTrimAgainst).
 func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombineAs, isA bool) {
 	if sha == nil || shb == nil || into == nil {
 		return
+	}
+	// Decide whether to use the accurate trim pipeline. The accurate
+	// path needs `into` to contain the split curves (Source =
+	// SplitA/SplitB/Intersection); fall back to the centroid
+	// ray-cast path when those haven't been populated, so simple
+	// disjoint / nested shells (and the SMesh-driven tests in
+	// boolean_test.go) keep their existing behaviour.
+	//
+	// Avoid the accurate path when:
+	//   - no INTERSECTION curves are present (caller bypasses the
+	//     trim pass), or
+	//   - the two shells are fully coincident (every face's box
+	//     overlaps), so `MakeIntersectionCurvesAgainst` produces
+	//     excessive intersections that the trim pass can't
+	//     assemble cleanly.
+	useAccurate := false
+	if op == SurfaceUnion || op == SurfaceDiff || op == SurfaceInter {
+		interCount := 0
+		for i := range into.Curve {
+			if into.Curve[i].Source == CurveSourceIntersection {
+				interCount++
+			}
+		}
+		// Empirically, useful boolean fixtures produce < 256
+		// intersection curves; coincident overlapping shells (e.g.
+		// the difference test where a == b) produce thousands.
+		// Stay well below the threshold to avoid pathological
+		// MakeCopyTrimAgainst behaviour on degenerate inputs.
+		const maxIntersectionCurves = 256
+		if interCount > 0 && interCount < maxIntersectionCurves {
+			useAccurate = true
+		}
+	}
+	if useAccurate {
+		copySurfacesTrimAgainstAccurate(sha, shb, into, op)
+		// After the accurate pipeline runs, surfaces should have
+		// been added in `into`. If for some reason the pipeline
+		// produced none (e.g. all regions failed the keepEdge
+		// test), fall back to the simple path so a meaningful
+		// surface remains.
+		if len(into.Surface) > 0 {
+			return
+		}
 	}
 	for i := range sha.Surface {
 		srf := &sha.Surface[i]
@@ -532,6 +608,9 @@ const defaultChordTolMm = 0.01
 // with agnst's trim curves, emitting the resulting segments as
 // new SCurves in into. Phase 4 + Goal Item 14 implementation:
 // walk agnst.Curve, sample each, and split c at every crossing.
+//
+// The emitted segments carry Source = CurveSourceSplitA so the
+// downstream trim pass knows the curve came from operand A.
 func (c *SCurve) MakeCopySplitAgainst(agnst, into *SShell) {
 	if agnst == nil || into == nil {
 		return
@@ -540,10 +619,11 @@ func (c *SCurve) MakeCopySplitAgainst(agnst, into *SShell) {
 	splitPts := agnst.splitPolylineAtSurfaceCrossings(pts)
 	for j := 0; j+1 < len(splitPts); j++ {
 		seg := SCurve{
-			H:     core.HSCurve{V: uint32(len(into.Curve) + 1)},
-			Exact: SBezierFrom2(splitPts[j], splitPts[j+1]),
-			SurfA: c.SurfA,
-			SurfB: c.SurfB,
+			H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
+			Exact:  SBezierFrom2(splitPts[j], splitPts[j+1]),
+			SurfA:  c.SurfA,
+			SurfB:  c.SurfB,
+			Source: CurveSourceSplitA,
 		}
 		into.Curve = append(into.Curve, seg)
 	}

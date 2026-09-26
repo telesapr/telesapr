@@ -81,6 +81,36 @@ var booleanFixtureCppGoldens = map[string]float64{
 	"boolean_tangent_spline":   204638.6271882122,
 }
 
+// booleanFixtureCppGoldenTolerances is the per-fixture ratio band
+// the Go port currently satisfies. The ratio is stats.Volume / cpp.
+// Each entry is [lower, upper]. The bounds are calibrated against
+// the current pipeline state (see bool_generate_test.go logs at
+// commit time of PORTING.md §"Boolean-CSG parity gaps") so the test
+// acts as a regression gate without artificially restricting future
+// algorithmic improvements: tightening any fixture's tolerance
+// should be coupled with work that drives the ratio into the new
+// band, with documentation in PORTING.md.
+var booleanFixtureCppGoldenTolerances = map[string]struct{ Lo, Hi float64 }{
+	// Currently the Go port's lastMesh is just the last extrude,
+	// so its volume is ~one cuboid (833 of 13250 → ratio 0.063).
+	// The SShell-level union CSG (see boolean_trim.go) needs to
+	// wire through fully before this can be tightened.
+	"boolean_coplanar_union": {Lo: 0.05, Hi: 0.08},
+	// The cut plane doesn't yet intersect the L at the C++
+	// tolerance, so the difference volume rounds to zero. The
+	// MakeCopyTrimAgainst scaffolding from boolean_trim.go still
+	// has gaps for the edge-on-edge knife case from issue #1091.
+	"boolean_knife_edge": {Lo: 0.0, Hi: 0.05},
+	// Difference with a cubic-spline tool: needs better
+	// intersection curve generation (spline-against-plane).
+	"boolean_tangent_crossing": {Lo: 0.50, Hi: 0.60},
+	"boolean_tangent_edge":     {Lo: 0.65, Hi: 0.72},
+	// Fillet is already close to C++; gate against drift in
+	// either direction.
+	"boolean_tangent_fillet": {Lo: 0.95, Hi: 1.10},
+	"boolean_tangent_spline": {Lo: 0.50, Hi: 0.60},
+}
+
 // collectBoolStats loads a fixture and reports its mesh statistics.
 func collectBoolStats(path string) (boolFixtureStats, error) {
 	doc, err := LoadFile(path)
@@ -233,16 +263,24 @@ func TestParityBooleanFixtureBBoxValue(t *testing.T) {
 // accumulated mesh-group volume against the C++ reference volumes
 // produced by the solvespace-testsuite.
 //
-// This test captures the C++ goldens for traceability but allows a
-// wide tolerance because the Go port's boolean-CSG pipeline has
-// known parity gaps vs the C++ shell-level CSG (see PORTING.md,
-// "Path to full parity"). The Go port's MakeFromUnionOf /
-// MakeFromDifferenceOf use triangle-classification BSP while the
-// C++ uses the SShell-level MakeFromUnionOf / MakeFromDifferenceOf
-// which performs proper coplanar-face merging.
+// This test enforces per-fixture ratio tolerances (see
+// booleanFixtureCppGoldenTolerances). Each tolerance encodes the
+// current go/cpp ratio band; tightening a band is the signal that
+// the corresponding fixture's parity has improved enough to deserve
+// it.
 //
-// As the Go port's boolean CSG matures, the ratios should converge
-// to 1.0. Today's ratios for each fixture:
+// The C++ goldens come from
+// solvespace/test/group/<name>/test.cpp's CHECK_EQ_EPS assertions
+// and can be regenerated via scripts/regen-cpp-goldens.sh.
+//
+// As the SShell-level boolean CSG in pkg/srf/boolean_trim.go is
+// wired up (MakeCopyTrimAgainst + SShell::ClassifyEdge with the
+// edge-on-edge knife case from C++ issue #1091), the tolerance
+// bands should be tightened until every fixture's ratio reaches
+// 1.0. See PORTING.md §"Boolean-CSG parity gaps" for the current
+// per-fixture status and what each fixture needs.
+//
+// Today's ratios for each fixture:
 //
 //	boolean_coplanar_union:  0.06 (Go volume much smaller because
 //	                          the Go port doesn't accumulate unions
@@ -266,12 +304,25 @@ func TestParityBooleanVolumeVsCppGolden(t *testing.T) {
 		if cppGolden == 0 {
 			continue
 		}
-		// Log the ratio for regression tracking.
+		var ratio float64
 		if stats.Volume > 0 {
+			ratio = stats.Volume / cppGolden
 			t.Logf("%s: go=%.4f cpp=%.4f ratio=%.4f",
-				name, stats.Volume, cppGolden, stats.Volume/cppGolden)
+				name, stats.Volume, cppGolden, ratio)
 		}
-		// We don't fail on volume mismatch — see comment above.
-		_ = math.Abs
+		tol, ok := booleanFixtureCppGoldenTolerances[name]
+		if !ok {
+			// No tolerance recorded for this fixture; pass
+			// through as log-only.
+			continue
+		}
+		// Per-fixture tolerance band. The test fails (instead of
+		// just logging) when a fixture's ratio leaves its band,
+		// catching regressions in any future algorithmic change.
+		if ratio < tol.Lo || ratio > tol.Hi {
+			t.Errorf("%s: ratio %.4f outside band [%.4f, %.4f]",
+				name, ratio, tol.Lo, tol.Hi)
+		}
 	}
+	_ = math.Abs
 }

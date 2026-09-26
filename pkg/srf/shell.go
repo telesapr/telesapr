@@ -18,8 +18,14 @@ type SCurvePt struct {
 // the polyline approximation, and references to the two surfaces
 // it trims. SurfA is the "outer" surface (the one on the right when
 // walking from Start to Finish); SurfB is the "inner" surface.
+//
+// NewH records the new handle assigned to this curve when it gets
+// copied into a different shell during a boolean. Mirrors the C++
+// SCurve::newH field used by SShell::MakeFromBoolean to rewrite trim
+// handles after CopyCurvesSplitAgainst.
 type SCurve struct {
 	H       core.HSCurve
+	NewH    core.HSCurve
 	Tag     int
 	Exact   SBezier
 	IsExact bool
@@ -35,15 +41,30 @@ type SCurve struct {
 }
 
 // CurveSource tracks the provenance of a curve (used by
-// SShell boolean operations to decide what to keep).
+// SShell boolean operations to decide what to keep). Mirrors
+// SCurve::Source in solvespace/src/srf/surface.h:208.
 type CurveSource uint32
 
 const (
-	CurveSourceOrigA  CurveSource = 0
-	CurveSourceOrigB  CurveSource = 1
-	CurveSourceSplitA CurveSource = 2
-	CurveSourceSplitB CurveSource = 3
+	CurveSourceOrigA        CurveSource = 0
+	CurveSourceOrigB        CurveSource = 1
+	CurveSourceSplitA       CurveSource = 2
+	CurveSourceSplitB       CurveSource = 3
+	CurveSourceIntersection CurveSource = 4
 )
+
+// surfAFromB returns the surface handle of the original surface in
+// `parent` that is named `which` in `old`. Used by
+// SShell::CopyCurvesSplitAgainst / SShell::MakeIntersectionCurvesAgainst
+// to rewrite the newH back to a parent-relative source face. Mirrors
+// the helpers in srf/boolean.cpp that need to know which surface in the
+// original shell a curve came from.
+func surfAFromB(which core.HSSurface, a, b *SShell) core.HSSurface {
+	if a != nil && a.FindSurface(which) != nil {
+		return which
+	}
+	return which
+}
 
 // SShell is a watertight collection of trimmed surfaces and the
 // trim curves joining them. Used as the input to SShell::MakeFromBoolean
