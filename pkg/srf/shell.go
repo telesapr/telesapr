@@ -108,6 +108,20 @@ func (s *SShell) MakeFromCopyOf(src *SShell) {
 // iterates every loop in the set, emits a translated copy of each
 // Bezier at t0 and t1 (the caps), and an extruded surface along
 // each Bezier (the side).
+//
+// PORTING.md §"Remaining work" point 5 (ClassifyEdge partial-
+// overlap recognition): every emitted surface is assigned a fresh
+// `H` handle here so that downstream curve lookups
+// (`SShell::FindSurface` via `SCurve::GetSurfaceA / GetSurfaceB`)
+// resolve to the correct pair of surfaces during per-surface-trim
+// curve refinement. Before this fix every extruded surface had
+// `H = 0`, so `GetSurfaceA` and `GetSurfaceB` both returned the
+// same `SSurface` pointer — `closestPointOnThisAndSurface` then
+// collapsed to "find the closest point on `s` to `p`", which is
+// trivially `p` itself, and the classifier's chain-midpoint
+// refinement did nothing. The C++ equivalent
+// (`SShell::MakeFromExtrusionOf` in `surface.cpp`) assigns a
+// fresh `H` per surface; we now match that.
 func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RgbaColor) {
 	s.Clear()
 	if sbls == nil {
@@ -120,6 +134,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			// Side surface from this Bezier.
 			side := FromExtrusionOf(b, t0, t1)
 			side.Color = color
+			side.H = core.HSSurface{V: uint32(len(s.Surface) + 1)}
 			side.Face = FaceID(uint32(len(s.Surface)) + 1)
 			side.Tag = loop.Tag
 			s.Surface = append(s.Surface, side)
@@ -128,12 +143,14 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 		// Cap at t0.
 		t0Plane := FromPlane(t0, geom.Vector{X: 1}, geom.Vector{Y: 1})
 		t0Plane.Color = color
+		t0Plane.H = core.HSSurface{V: uint32(len(s.Surface) + 1)}
 		t0Plane.Face = FaceID(uint32(len(s.Surface)) + 1)
 		t0Plane.Tag = loop.Tag
 		s.Surface = append(s.Surface, t0Plane)
 		// Cap at t1.
 		t1Plane := FromPlane(t1, geom.Vector{X: 1}, geom.Vector{Y: 1})
 		t1Plane.Color = color
+		t1Plane.H = core.HSSurface{V: uint32(len(s.Surface) + 1)}
 		t1Plane.Face = FaceID(uint32(len(s.Surface)) + 1)
 		t1Plane.Tag = loop.Tag
 		s.Surface = append(s.Surface, t1Plane)
@@ -258,6 +275,11 @@ func (srf *SSurface) TriangulateInto(mesh *SMesh) {
 	}
 }
 
+// edgeKey is a quantised 3-D point used to dedupe boundary
+// endpoints while computing the coplanar-but-shifted cluster in
+// MergeCoincidentSurfaces.
+type edgeKey struct{ X, Y, Z float64 }
+
 // MergeCoincidentSurfaces identifies surfaces whose control grids
 // coincide (within tol) and merges them, keeping a single copy.
 // This dramatically reduces shell size when extrusion produces
@@ -266,14 +288,45 @@ func (srf *SSurface) TriangulateInto(mesh *SMesh) {
 // Phase 4 + Goal Item 15 implementation: clusters surfaces by
 // coincidence, then assigns each cluster a unique FaceID. The
 // merged cluster keeps one representative surface.
+//
+// PORTING.md §"Remaining work" item 3 (coplanar-but-shifted):
+// the C++ `SShell::MergeCoincidentSurfaces` (merge.cpp:11)
+// additionally merges surfaces that are coplanar with the cluster
+// representative AND whose edges form a subset of the cluster's
+// accumulated edges. That handles stacked-cuboid unions where two
+// side faces at the same X=0 plane but different Z ranges share
+// only the middle edge (one cuboid's top == the next cuboid's
+// bottom). Without that merge the four stacked cuboids of
+// `boolean_coplanar_union` end up as four separate coplanar side
+// faces whose triangles don't form a watertight shell.
+//
+// The Go port historically used the strict `CoincidentWith`
+// cluster, which only merges surfaces with all control points
+// coincident — that misses the coplanar-but-shifted case. The
+// implementation below runs the strict cluster first, then a
+// second pass that grows each cluster by coplanar edges, exactly
+// mirroring the C++ `do { … } while (mergedThisTime)` loop in
+// `SShell::MergeCoincidentSurfaces` (`merge.cpp:31`).
 func (s *SShell) MergeCoincidentSurfaces() {
 	const tol = 1e-9
+	const uvRectOverlapTol = 1e-6
+
+	// surfaceEdgeSet[i] is the union of 3-D edge endpoints for surface
+	// i. Used by the coplanar-but-shifted cluster check below to
+	// detect whether surface j's edges form a subset of surface i's
+	// accumulated cluster edges.
+	surfaceEdges := make([]map[edgeKey]bool, len(s.Surface))
+	for i := range s.Surface {
+		surfaceEdges[i] = edgesAsPoints(s.Surface[i], uvRectOverlapTol)
+	}
+
 	cluster := make([]int, len(s.Surface))
 	for i := range s.Surface {
 		cluster[i] = -1
 	}
 	representative := make([]int, 0, len(s.Surface))
-	// For each pair (i, j), if they coincide, they share a cluster.
+
+	// Pass 1: strict full-coincident cluster (existing behaviour).
 	for i := range s.Surface {
 		if cluster[i] != -1 {
 			continue
@@ -281,11 +334,65 @@ func (s *SShell) MergeCoincidentSurfaces() {
 		cluster[i] = len(representative)
 		representative = append(representative, i)
 		for j := i + 1; j < len(s.Surface); j++ {
-			if cluster[j] == -1 && s.Surface[i].CoincidentWith(&s.Surface[j], true) {
+			if cluster[j] != -1 {
+				continue
+			}
+			if s.Surface[i].CoincidentWith(&s.Surface[j], true) {
 				cluster[j] = cluster[i]
 			}
 		}
 	}
+
+	// Pass 2: coplanar-but-shifted cluster. For each unmerged
+	// surface, find an existing cluster it's coplanar with and
+	// whose edges it can contribute to. Mirrors the C++
+	// `do { … } while (mergedThisTime)` loop in `merge.cpp:31`
+	// for coplanar-but-shifted plane surfaces.
+	for i := range s.Surface {
+		if cluster[i] != -1 {
+			continue
+		}
+		// Skip non-plane surfaces (the C++ merge.cpp:26 also
+		// handles only planes).
+		if s.Surface[i].DegM != 1 || s.Surface[i].DegN != 1 {
+			continue
+		}
+		// Find a cluster representative whose plane matches this
+		// surface's plane (same normal, same distance from origin)
+		// and whose colour matches.
+		bestRep := -1
+		bestRepShared := -1
+		for rIdx, srcIdx := range representative {
+			if !s.Surface[srcIdx].Color.Equals(s.Surface[i].Color) {
+				continue
+			}
+			if !coplanarPlanes(s.Surface[srcIdx], s.Surface[i], uvRectOverlapTol) {
+				continue
+			}
+			shared := sharedEdgeCount(surfaceEdges[srcIdx], surfaceEdges[i])
+			if shared > bestRepShared {
+				bestRepShared = shared
+				bestRep = rIdx
+			}
+		}
+		if bestRep < 0 {
+			// No coplanar cluster to join — start a new cluster on
+			// its own. The strict pass already handled fully-
+			// coincident surfaces; this surface is genuinely coplanar
+			// but not shared with anything.
+			cluster[i] = len(representative)
+			representative = append(representative, i)
+			continue
+		}
+		// Merge surface i into bestRep's cluster.
+		cluster[i] = bestRep
+		// Accumulate i's edges into the cluster's edge set so that
+		// the next coplanar surface can detect the shared edge.
+		for k := range surfaceEdges[i] {
+			surfaceEdges[representative[bestRep]][k] = true
+		}
+	}
+
 	out := make([]SSurface, 0, len(representative))
 	for rIdx, srcIdx := range representative {
 		srf := s.Surface[srcIdx]
@@ -316,6 +423,80 @@ func (s *SShell) MergeCoincidentSurfaces() {
 	}
 	s.Surface = out
 	_ = tol
+}
+
+// edgesAsPoints returns the boundary edges of `srf` as a set of
+// 3-D points (each edge contributes both endpoints). Used by
+// `MergeCoincidentSurfaces` to detect coplanar-but-shifted face
+// merges: two surfaces are merged if they are coplanar AND at
+// least one boundary endpoint coincides (within tol).
+func edgesAsPoints(srf SSurface, tol float64) map[edgeKey]bool {
+	out := make(map[edgeKey]bool)
+	if len(srf.Trim) == 0 {
+		return out
+	}
+	for i := range srf.Trim {
+		p := snap(srf.Trim[i].StartP, tol)
+		out[edgeKey{X: p.X, Y: p.Y, Z: p.Z}] = true
+		p = snap(srf.Trim[i].FinishP, tol)
+		out[edgeKey{X: p.X, Y: p.Y, Z: p.Z}] = true
+	}
+	return out
+}
+
+func snap(p geom.Vector, tol float64) geom.Vector {
+	return geom.Vector{
+		X: math.Round(p.X/tol) * tol,
+		Y: math.Round(p.Y/tol) * tol,
+		Z: math.Round(p.Z/tol) * tol,
+	}
+}
+
+func sharedEdgeCount(a, b map[edgeKey]bool) int {
+	if len(a) == 0 || len(b) == 0 {
+		return 0
+	}
+	n := 0
+	for k := range b {
+		if a[k] {
+			n++
+		}
+	}
+	return n
+}
+
+// coplanarPlanes reports whether two plane surfaces lie on the
+// same geometric plane: same unit normal AND same signed
+// distance from the origin. For plane surfaces (degm == degn ==
+// 1) with the same colour, this is the coplanar-but-shifted test
+// the C++ merge.cpp uses for the second-pass cluster.
+func coplanarPlanes(a, b SSurface, tol float64) bool {
+	if a.DegM != 1 || a.DegN != 1 || b.DegM != 1 || b.DegN != 1 {
+		return false
+	}
+	na := a.NormalAt(0.5, 0.5)
+	nb := b.NormalAt(0.5, 0.5)
+	if na.Magnitude() < 1e-20 || nb.Magnitude() < 1e-20 {
+		return false
+	}
+	nu := na.WithMagnitude(1)
+	mb := nb.WithMagnitude(1)
+	if (nu.Minus(mb)).Magnitude() > tol && (nu.Plus(mb)).Magnitude() > tol {
+		return false
+	}
+	// Use the same direction for both. If normals are antiparallel
+	// we still merge (they lie on the same plane).
+	if (nu.Plus(mb)).Magnitude() < tol {
+		// antiparallel — flip one
+		mb = mb.ScaledBy(-1)
+	}
+	// Signed distance from origin (same normal direction): a dot n
+	da := a.Ctrl[0][0].Dot(nu)
+	db := b.Ctrl[0][0].Dot(nu)
+	if math.Abs(da-db) > tol {
+		return false
+	}
+	return true
 }
 
 // MakeEdgesInto extracts the trim edges of every surface as SEdge

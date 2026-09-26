@@ -182,18 +182,58 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 			}
 			return true
 		}
-		// Only one face tangent: classify using edge normals.
+		// 5 sub-branches the C++ has at the end of `edge_inters == 2`
+		// (solvespace/src/srf/raycast.cpp:602–637). The Go port
+		// historically collapsed these into one
+		// `interSurfN[s]·en[s]` test and discarded `towards0`
+		// — which the C++ uses here. For tangent-cutters like
+		// `boolean_tangent_crossing` (issue #1291) the discarded
+		// `towards0` is the only thing that distinguishes the
+		// material-side from the void-side of the tangent face, so
+		// the bug surfaces as every chain on the cutter
+		// classifying as `SurfOutside` and getting discarded.
 		dirs := [2]*Class{indir, outdir}
-		en := [2]geom.Vector{edgeNIn, edgeNOut}
-		for s := 0; s < 2; s++ {
-			dotn := interSurfN[s].Dot(en[s])
-			if dotn > 0 {
-				*dirs[s] = SurfOutside
+		if math.Abs(dotp[0]) < DotProductTol && dotp[1] > DotProductTol {
+			if edgeNOut.Dot(interEdgeN[0]) > 0 {
+				*dirs[0] = towards0
+				*dirs[1] = SurfOutside
 			} else {
-				*dirs[s] = SurfInside
+				*dirs[0] = SurfInside
+				*dirs[1] = towards0
 			}
+		} else if math.Abs(dotp[0]) < DotProductTol && dotp[1] < -DotProductTol {
+			if edgeNOut.Dot(interEdgeN[0]) > 0 {
+				*dirs[0] = towards0
+				*dirs[1] = SurfInside
+			} else {
+				*dirs[0] = SurfOutside
+				*dirs[1] = towards0
+			}
+		} else if dotp[0] > DotProductTol && dotp[1] > DotProductTol {
+			*indir = SurfInside
+			*outdir = SurfOutside
+		} else if dotp[0] < -DotProductTol && dotp[1] < -DotProductTol {
+			*indir = SurfOutside
+			*outdir = SurfInside
+		} else {
+			// Our edge is tangent to the shell at the shell's
+			// edge: the two faces meeting at the shell's edge
+			// lie on the same side of our surface, so the regions
+			// on both sides of our edge get the same class.
+			// That's outside the shell if the shell's edge is
+			// convex, and inside if it's concave (reflex).
+			// inter_edge_n[i] points away from face i's material,
+			// so the shell's edge is convex iff face 1's material
+			// direction lies behind face 0's plane.
+			var c Class
+			if interEdgeN[1].Dot(interSurfN[0]) > 0 {
+				c = SurfOutside
+			} else {
+				c = SurfInside
+			}
+			*indir = c
+			*outdir = c
 		}
-		_ = towards0
 		return true
 	}
 

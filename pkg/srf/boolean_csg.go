@@ -281,7 +281,11 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 		}
 	}
 	if useAccurate {
-		copySurfacesTrimAgainstAccurate(sha, shb, into, op)
+		// PORTING.md §"Remaining work" point 1: iterate the
+		// receiver's surfaces (and pass the receiver as `parent`
+		// to `makeCopyTrimAgainst`), matching the C++
+		// `SShell::CopySurvesTrimAgainst` in `boolean.cpp:750`.
+		copySurfacesTrimAgainstAccurate(s, sha, shb, into, op)
 		// After the accurate pipeline runs, surfaces should have
 		// been added in `into`. If for some reason the pipeline
 		// produced none (e.g. all regions failed the keepEdge

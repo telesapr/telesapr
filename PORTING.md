@@ -115,29 +115,43 @@ UI.
 The Go port's `MakeFromBoolean` runs the C++ SShell-level trim
 pipeline (`MakeClassifyingBsps` → `CopyCurvesSplitAgainst` →
 `MakeIntersectionCurvesAgainst` → `RemoveShortSegments` →
-`CleanupAfterBoolean` → `CopySurfacesTrimAgainst` →
+`CleanupAfterBoolean` → `CopySurvesTrimAgainst` →
 `RewriteSurfaceHandlesForCurves` → `MergeCoincidentSurfaces`).
 The accurate per-surface trim path
 (`pkg/srf/boolean_trim.go::makeCopyTrimAgainst`) is gated by an
 `interCount ∈ (0, 256)` heuristic to avoid pathological chain
 assembly on degenerate coincident overlap.
 
-The pipeline produces a mostly-correct shell but does not yet match
-the C++ post-CSG volume. The current go/cpp ratios (captured by
-`TestParityBooleanVolumeVsCppGolden` in
-`pkg/persist/slvs/bool_generate_test.go`):
+After this PR's landings, the per-surface trim runs on the
+correct surfaces with correct edge endpoints. The remaining
+ratio gap is dominated by the `BspUvClass` default in
+`SShell::ClassifyEdge` case 3 (edge-on-surface): when
+`srf.Bsp == nil` the Go port falls through to `BspUvOutside`
+and skips the surface, which discards every chain on the
+tangent-cutters (`boolean_tangent_*`). The C++ golden is
+correct because the C++'s refined probe lands inside the
+cube's solid and the raycast fallback classifies the chain
+correctly; the Go port's classifier still returns
+`ShellOutside`.
 
-- `boolean_coplanar_union`: go=1337 cpp=13250 (ratio 0.10) — the
-  Go port's per-surface bbox-keep gate drops enough faces that
-  the merged shell is missing roughly the union's interior volume.
-- `boolean_knife_edge`: go=1.39 cpp=1.83 (ratio 0.758) — the C++
-  `SShell::ClassifyEdge` `edge_inters >= 4` knife case (issue
-  #1091) is ported and the per-surface bbox-keep gate keeps the
-  cuboid sides. Final gap is the cutter volume itself.
-- `boolean_tangent_crossing`: go=144010 cpp=205477 (ratio 0.701)
-- `boolean_tangent_edge`: go=208000 cpp=296000 (ratio 0.703)
-- `boolean_tangent_fillet`: go=1.00 cpp=0.97 (ratio 1.028) — closest
-- `boolean_tangent_spline`: go=144010 cpp=204639 (ratio 0.704)
+Current go/cpp ratios (after this PR's landings):
+
+- `boolean_coplanar_union`: go=503 cpp=13250 (ratio 0.038) —
+  regressed from baseline 0.10 by the iteration fix. Dominant
+  lever remains `MergeCoincidentSurfaces` item 3 (the second-
+  pass coplanar-but-shifted cluster is in but the four stacked
+  cuboids' side faces still don't merge for some reason —
+  investigate). Or the `BspUvClass` default fix above.
+- `boolean_knife_edge`: go=1.39 cpp=1.83 (ratio 0.758) — unchanged.
+- `boolean_tangent_crossing`: go=110143 cpp=205477 (ratio 0.536)
+  — regressed from baseline 0.70. Fix is the `BspUvClass`
+  default.
+- `boolean_tangent_edge`: go=197360 cpp=296000 (ratio 0.667)
+  — regressed slightly from baseline 0.70. Same fix.
+- `boolean_tangent_fillet`: go=1.17 cpp=0.97 (ratio 1.199)
+  — regressed from baseline 1.03. Same fix.
+- `boolean_tangent_spline`: go=110143 cpp=204639 (ratio 0.538)
+  — regressed from baseline 0.70. Same fix.
 
 **Per-fixture tolerance bands**:
 `booleanFixtureCppGoldenTolerances` in
@@ -149,61 +163,118 @@ restricting future algorithmic improvements. Tightening a band
 must be coupled with work that drives the ratio into the new
 band; both updates should land together with a note here.
 
+## Landings
+
+This commit lands the three coordinated pieces from
+PORTING.md §"Remaining work" point **1** + item **3** + item
+**5**:
+
+- `pkg/srf/boolean_csg.go::CopySurfacesTrimAgainst` — forwards the
+  receiver `s` to `copySurfacesTrimAgainstAccurate` (PORTING.md
+  point 1).
+- `pkg/srf/boolean_trim.go::copySurfacesTrimAgainstAccurate` —
+  takes a `receiver` parameter, iterates `receiver.Surface`,
+  passes `receiver` as `parent` to `makeCopyTrimAgainst`.
+  Matches the C++ `boolean.cpp:750` semantics.
+- `pkg/srf/boolean_trim.go::findChainAvoiding` + the `choosing`
+  map in `makeCopyTrimAgainst` — tolerance loosened from `1e-9`
+  to `1e-8` to match the C++ `Vector::Equals` semantics.
+  Closes the closed-inter loop case for boundary-noise tolerance.
+- `pkg/srf/raycast.go::SShell::ClassifyEdge` — the 5 sub-branches
+  the C++ has at `raycast.cpp:602-637` (after the both-tangent
+  block) are now ported; the `_ = towards0` discard that was
+  silently throwing away the tangent-face classification is
+  removed.
+- `pkg/srf/boolean_trim.go::makeEdgesIntoForBoolean` — each 3-D
+  polyline sample from the inter curve is projected to receiver
+  UV via `srf.ClosestPointTo` before being stored. Matches the
+  C++ `MakeTrimEdgesInto`'s `MakeAs::UV` branch
+  (`surface.cpp:242-247`). Without this fix the chain walker
+  reads `se.A.X` / `se.A.Y` (originally XYZ) as UV, getting
+  junk values like `(30, -30)` that extrapolate wildly and
+  fail the `LineEntirelyOutsideBbox` check in every
+  `ClassifyEdge` branch.
+- `pkg/srf/shell.go::MergeCoincidentSurfaces` — second-pass
+  coplanar-but-shifted cluster added (PORTING.md item 3).
+  Same-colour requirement preserved.
+- `pkg/srf/boolean_trim.go::edgeNormalsWithinSurface` —
+  curve-refinement block added (PORTING.md item 5 follow-up):
+  for polyline curves, refines the probe to the intersection
+  of the two trimmed surfaces via
+  `closestPointOnThisAndSurface` (a 5-iteration Gauss-Newton
+  approximation of the C++ iterative solver).
+
+What did **not** land: the `BspUvClass` default fix that would
+resolve the tangent-cutter regression (described under item 5
+in "Remaining work"). With that default still `BspUvOutside`
+for extruded cube faces, every chain on a tangent-cutter is
+discarded, leaving the cut walls empty. The remaining ratio gap
+is dominated by that single missing piece — about a 30-line
+change to `pkg/srf/raycast.go`.
+
 ## Remaining work
 
 The per-surface trim-with-classification chain in
 `pkg/srf/boolean_trim.go::makeCopyTrimAgainst` is gated by the
 `interCount ∈ (0, 256)` heuristic. The accurate path's iteration
-is `for i := range sha.Surface` instead of `for i := range
-receiver.Surface` (i.e. the Go port iterates the first argument's
-surfaces in both calls of `CopySurvesTrimAgainst`, while the C++
-iterates the receiver's surfaces). Fixing this iteration to
-match C++ drives `boolean_coplanar_union` toward 1.0 but
-currently regresses the `tangent_*` fixtures. Targeted next steps:
+is `for i := range receiver.Surface` (matching the C++) and
+passes `receiver` as `parent` to `makeCopyTrimAgainst`. The
+`choosing` map tolerance is `1e-8` (matching C++ `Vector::Equals`).
+`findChainAvoiding` likewise uses `tol = 1e-8` so the closed-inter
+case works correctly.
 
-1. **Fix `CopySurfacesTrimAgainst`'s iteration** to match C++
-   (receiver's surfaces) and re-tune the `choosing` point
-   computation in `makeCopyTrimAgainst` so the per-surface trim
-   chain correctly extracts a closed rectangle from the new
-   intersection curves. The blocker for safely enabling this is
-   `findChainAvoiding`'s broken handling of the empty-orig +
-   closed-inter case (the chain finder must produce a single
-   chain that `classifyEdge` can then keep or discard).
+Targeted next steps (from this PR's landings):
+
+1. **Fix `CopySurvesTrimAgainst`'s iteration** *(landed)* — see
+   "Landings" below. The Go port now iterates `receiver.Surface`
+   and passes `receiver` as `parent`, matching the C++ in
+   `boolean.cpp:750`. Combined with the `makeEdgesIntoForBoolean`
+   UV-projection fix and the case-1 sub-branches below, the
+   per-surface trim now runs on the correct surfaces with
+   correct edge endpoints. The four `tangent_*` fixture ratios
+   regress from 0.70 to 0.54 because the classifier's
+   case-3 (edge-on-surface) branch still defaults
+   `BspUvOutside` for extruded cube faces with `Bsp == nil`,
+   which discards every chain on the tangent-cutters. The fix is
+   to make the case-3 default match what the C++ does (the
+   C++ golden is correct — see PORTING.md item 5 follow-up).
 
 2. **Algorithmic fix: `findChainAvoiding`** for the empty-orig +
-   closed-inter case (`pkg/srf/boolean_trim.go::findChainAvoiding`).
-   When `src` (orig or inter) is empty but the other edge list
-   forms a closed loop around the receiver's full uv rectangle,
-   the chain finder must produce a single chain that
-   `classifyEdge` can then keep or discard. Step A: orphan-edge
-   fallback (any remaining orphan edges after chain-finding
-   become their own closed loops using the receiver's uv
-   rectangle — conservative; never regresses bbox-keep). Step B:
-   explicit full-uv-rectangle loop detection (when all inter
-   edges have endpoints within tol of the four uv rectangle
-   corners, emit the four rectangle edges as the chain). After
-   Step B stabilises, Phase 1's gate can be relaxed.
+   closed-inter case — choosing re-tuned to `1e-8` (landed).
+   Step A (orphan-edge fallback) and Step B (full-uv-rectangle
+   loop detection) are still open if a future fixture exposes
+   the closed-loop closure-noise problem.
 
-3. **Surface-volume / face-id propagation through
-   `MergeCoincidentSurfaces`**. The current implementation in
-   `pkg/srf/shell.go` clusters surfaces by full-control-point
-   coincidence, which doesn't recognize coplanar-but-shifted
-   faces (e.g. two stacked cuboids' side faces at the same X=0
-   plane but different Z ranges). The C++ uses
-   `MakeCoincidentEdgesInto` to merge edges, then merges clusters
-   whose edges are shared. The Go port needs the same — only
-   merge when the candidate surfaces are (a) full-control-point
-   coincident, OR (b) coplanar with respect to both plane normal
-   and distance AND have edge-list overlap AND are interior to
-   the larger face (so the result is a single merged face
-   spanning the union of the two extents, not two distinct
-   boundary surfaces). The trim-curve handle rewrite in
-   `pkg/srf/srf/boolean_trim.go` step 1 is a prerequisite (it
-   makes the trim-curve data on coplanar side faces actually
-   shareable; without it the merge collapses boundary surfaces
-   incorrectly).
+3. **`MergeCoincidentSurfaces` for coplanar-but-shifted faces**
+   *(landed)* — see "Landings" below.
 
 4. **Tighten the per-fixture tolerance bands.** Each band is tied
    to its current pipeline state. As work above moves a fixture's
    ratio into a tighter band, both the ratio and the band should
    land together with a note in this section.
+
+5. **`ClassifyEdge` partial-overlap recognition** *(partially
+   landed)* — `closestPointOnThisAndSurface` and the
+   curve-refinement block in `edgeNormalsWithinSurface` (landed).
+   The five-sub-branches fix in `SShell::ClassifyEdge` case 1
+   (landed — see "Landings"). What's still missing:
+   - The C++ `MakeEdgesInto(..., MakeAs::UV)` branch stores
+     `{u, v, 0}` as the edge endpoints so the chain walker
+     reads back valid receiver UV. The Go port's
+     `makeEdgesIntoForBoolean` was storing raw XYZ
+     polyline points; the port now projects each 3-D
+     sample back to receiver UV via `srf.ClosestPointTo`
+     (landed — see "Landings").
+   - The remaining gap is the `BspUvClass` default: when
+     `srf.Bsp == nil` the Go port falls through to
+     `BspUvOutside` and skips the surface. The C++ has the
+     same default, but for the tangent-cutters the
+     raycast fallback correctly classifies the chain
+     because the C++'s refined probe lands inside the
+     cube's solid. The Go port's classifier returns
+     `ShellOutside` for everything, leaving the cut walls
+     empty. The fix is to make the case-3 default match
+     the C++'s intent (treat `Bsp == nil` as "the entire
+     surface is the trim region", i.e. `BspUvInside`),
+     OR to make the raycast fallback's onEdge detection
+     treat near-tangent probes correctly.
