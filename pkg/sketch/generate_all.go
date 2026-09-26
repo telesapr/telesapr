@@ -191,26 +191,31 @@ func (sk *Sketch) GenerateAll() {
 			// thisMesh unconditionally. For ASSEMBLE mode there's
 			// no boolean combine, so we copy directly.
 			g.RunningMesh = g.ThisMesh
-			// If the requested MeshCombine is not ASSEMBLE and not
-			// UNION (i.e. Difference or Intersection), perform the
-			// implicit boolean with the previous mesh group. Walk
-			// back through drawing groups to find the last mesh
-			// group (mirrors C++'s GenerateForBoolean behavior).
+			// If the requested MeshCombine is a real boolean (UNION,
+			// DIFFERENCE, INTERSECTION), perform the implicit boolean
+			// with the previous mesh group. Walk back through drawing
+			// groups to find the last mesh group (mirrors C++'s
+			// GenerateForBoolean behavior).
 			//
-			// Note: We skip Union because the Go port's MakeFromUnionOf
-			// uses triangle-classification BSP rather than C++'s full
-			// SShell-based CSG, which produces more triangles for
-			// overlapping cuboids. The SShell-level CSG is being
-			// scaffolded in pkg/srf/boolean_trim.go (see
-			// CopySurfacesTrimAgainst's accurate path) but isn't
-			// reliable enough yet to be enabled for the boolean
-			// fixtures.
-			if g.MeshCombine != CombineAssemble && g.MeshCombine != CombineUnion {
+			// When both the previous and current groups have populated
+			// RunningShells (i.e. they were generated parametrically),
+			// use the SShell-level CSG so proper coplanar-face merging
+			// (MergeCoincidentSurfaces) and the full per-surface trim
+			// can run. Fall back to SMesh-level CSG otherwise (e.g.
+			// imported meshes, where the parametric surface is gone).
+			if g.MeshCombine != CombineAssemble {
 				prev := findPreviousMeshGroup(g, sk)
 				if prev != nil && len(prev.RunningMesh.Triangles) > 0 {
-					var combined srf.SMesh
-					g.GenerateForBoolean(prev, &combined)
-					g.RunningMesh = combined
+					if len(prev.RunningShell.Surface) > 0 &&
+						len(g.RunningShell.Surface) > 0 {
+						var combined srf.SMesh
+						g.GenerateForBooleanShell(prev, &combined)
+						g.RunningMesh = combined
+					} else {
+						var combined srf.SMesh
+						g.GenerateForBoolean(prev, &combined)
+						g.RunningMesh = combined
+					}
 				}
 			}
 			g.GenerateDisplayItems()

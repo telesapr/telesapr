@@ -292,15 +292,27 @@ func (s *SShell) MergeCoincidentSurfaces() {
 		srf.Face = FaceID(uint32(rIdx + 1))
 		out = append(out, srf)
 	}
-	// Update every curve's surface handle to point at the merged face.
-	for i := range s.Curve {
-		for j := range s.Surface {
-			if cluster[j] == cluster[i] {
-				s.Curve[i].SurfA = out[cluster[j]].H
-				s.Curve[i].SurfB = out[cluster[j]].H
+	// Build a map from old surface handle -> representative H so we can
+	// rewrite every curve's surface handle to point at the merged face.
+	oldHToRepH := make(map[core.HSSurface]core.HSSurface, len(representative))
+	for _, srcIdx := range representative {
+		repH := out[cluster[srcIdx]].H
+		for j, c := range cluster {
+			if c == cluster[srcIdx] {
+				_ = j
+				oldHToRepH[s.Surface[j].H] = repH
 			}
 		}
-		_ = i
+	}
+	// Walk every curve and rewrite its surface handles to point at the
+	// representative of whichever surface cluster they referenced.
+	for i := range s.Curve {
+		if nh, ok := oldHToRepH[s.Curve[i].SurfA]; ok {
+			s.Curve[i].SurfA = nh
+		}
+		if nh, ok := oldHToRepH[s.Curve[i].SurfB]; ok {
+			s.Curve[i].SurfB = nh
+		}
 	}
 	s.Surface = out
 	_ = tol

@@ -100,6 +100,30 @@ func (v Vector) EqualsExactly(b Vector) bool {
 	return v.X == b.X && v.Y == b.Y && v.Z == b.Z
 }
 
+// MakeMaxMin expands `ptMax` and `ptMin` to include v. Used by
+// SBezier::GetAxisAlignedBounding and SCurve::GetAxisAlignedBounding
+// to compute a bounding box from a list of control points.
+func (v Vector) MakeMaxMin(ptMax, ptMin *Vector) {
+	if v.X > ptMax.X {
+		ptMax.X = v.X
+	}
+	if v.Y > ptMax.Y {
+		ptMax.Y = v.Y
+	}
+	if v.Z > ptMax.Z {
+		ptMax.Z = v.Z
+	}
+	if v.X < ptMin.X {
+		ptMin.X = v.X
+	}
+	if v.Y < ptMin.Y {
+		ptMin.Y = v.Y
+	}
+	if v.Z < ptMin.Z {
+		ptMin.Z = v.Z
+	}
+}
+
 func (v Vector) DirectionCosineWith(b Vector) float64 {
 	ma := v.Magnitude()
 	mb := b.Magnitude()
@@ -118,6 +142,17 @@ func (v Vector) ClosestPointOnLine(p0, dp Vector) Vector {
 	}
 	t := v.Minus(p0).Dot(dp) / den
 	return p0.Plus(dp.ScaledBy(t))
+}
+
+// DivProjected returns the scalar t such that
+// v == origin + t * dir, i.e. (v - origin) / dir in the direction
+// of dir. Mirrors Vector::DivProjected from solvespace's Vector.h.
+func (v Vector) DivProjected(dir Vector) float64 {
+	den := dir.MagSquared()
+	if den < 1e-20 {
+		return 0
+	}
+	return v.Dot(dir) / den
 }
 
 // Project2d returns the 2-D coordinates of v expressed in the basis

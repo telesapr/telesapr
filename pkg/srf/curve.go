@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
@@ -39,4 +40,100 @@ func FromTransformationOfSCurve(a *SCurve, t geom.Vector, q geom.Quaternion, sca
 		}
 	}
 	return out
+}
+
+// GetSurfaceA returns the SSurface that this curve's SurfA handle
+// refers to in either shell `a` or shell `b`. Mirrors
+// SCurve::GetSurfaceA in srf/curve.cpp.
+func (c *SCurve) GetSurfaceA(a, b *SShell) *SSurface {
+	if c == nil {
+		return nil
+	}
+	if a != nil {
+		if srf := a.FindSurface(c.SurfA); srf != nil {
+			return srf
+		}
+	}
+	if b != nil {
+		if srf := b.FindSurface(c.SurfA); srf != nil {
+			return srf
+		}
+	}
+	return nil
+}
+
+// GetSurfaceB is the SurfB counterpart of GetSurfaceA. Mirrors
+// SCurve::GetSurfaceB in srf/curve.cpp.
+func (c *SCurve) GetSurfaceB(a, b *SShell) *SSurface {
+	if c == nil {
+		return nil
+	}
+	if a != nil {
+		if srf := a.FindSurface(c.SurfB); srf != nil {
+			return srf
+		}
+	}
+	if b != nil {
+		if srf := b.FindSurface(c.SurfB); srf != nil {
+			return srf
+		}
+	}
+	return nil
+}
+
+// equalsIgnoringHandle returns true if two SCurves have the same
+// exact Bezier (with tolerance). Used by AddExactIntersectionCurve
+// to dedupe identical intersection curves across threads. Mirrors
+// SCurve::operator== in srf/curve.cpp.
+func (c *SCurve) equalsIgnoringHandle(other *SCurve) bool {
+	if c == nil || other == nil {
+		return c == other
+	}
+	if !c.IsExact || !other.IsExact {
+		return false
+	}
+	return c.Exact.Equals(&other.Exact)
+}
+
+// reversePoints reverses the polyline points of this curve in place.
+// Used by AddExactIntersectionCurve when an existing curve's polyline
+// is reused in reversed orientation.
+func (c *SCurve) reversePoints() {
+	if c == nil {
+		return
+	}
+	for i, j := 0, len(c.Points)-1; i < j; i, j = i+1, j-1 {
+		c.Points[i], c.Points[j] = c.Points[j], c.Points[i]
+	}
+}
+
+// GetAxisAlignedBounding computes the xyz bounding box of this
+// SCurve's exact Bezier. Mirrors SCurve::GetAxisAlignedBounding in
+// srf/curve.cpp:25. Used by FindVertsOnCurve to quickly reject
+// trim endpoints that lie outside the curve's box.
+func (c *SCurve) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector) {
+	negInf := geom.Vector{X: -1e30, Y: -1e30, Z: -1e30}
+	posInf := geom.Vector{X: 1e30, Y: 1e30, Z: 1e30}
+	*ptMax = negInf
+	*ptMin = posInf
+	if c == nil {
+		return
+	}
+	for i := 0; i <= c.Exact.Degree; i++ {
+		c.Exact.Ctrl[i].MakeMaxMin(ptMax, ptMin)
+	}
+}
+
+// pointsCopy returns a deep copy of c.Points.
+func (c *SCurve) pointsCopy() []SCurvePt {
+	out := make([]SCurvePt, len(c.Points))
+	copy(out, c.Points)
+	return out
+}
+
+// findH returns the curve handle for this curve; mirrors the C++
+// AddAndAssignId side-effect by giving the curve a fresh handle
+// when called inside a critical section.
+func (s *SShell) nextCurveHandle() core.HSCurve {
+	return core.HSCurve{V: uint32(len(s.Curve) + 1)}
 }

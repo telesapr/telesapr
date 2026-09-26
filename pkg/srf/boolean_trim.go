@@ -21,6 +21,25 @@ const (
 // (srf/raycast.cpp:16).
 const shellDotpTol = 1e-5
 
+// shellClassFromClass bridges the Class enum (the canonical Go enum
+// equivalent of the C++ SShell::Class, defined in raycast.go) to the
+// SShellClass mirror that pre-dates the full ClassifyEdge port. The two
+// enums share semantics; the mirror was introduced when only a partial
+// raycast fallback existed.
+func shellClassFromClass(c Class) SShellClass {
+	switch c {
+	case SurfInside:
+		return ShellInside
+	case SurfOutside:
+		return ShellOutside
+	case SurfCoincSame:
+		return ShellCoincSame
+	case SurfCoincOpp:
+		return ShellCoincOpp
+	}
+	return ShellOutside
+}
+
 // Boolean-CSG parity: keepRegion decides whether a half-plane region
 // should be kept in the output shell for a given boolean op. The
 // region is characterized by its classification against the other
@@ -222,7 +241,13 @@ func (srf *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
 				break
 			}
 		}
-		_ = asUv
+		// C++: when asUv=true, convert start/finish from uv-space
+		// (Point2d packed into Vector's x/y) to xyz via PointAt(u,v).
+		// Mirrors SSurface::TrimFromEdgeList's `if(asUv)` block.
+		if asUv {
+			stb.StartP = srf.PointAt(stb.StartP.X, stb.StartP.Y)
+			stb.FinishP = srf.PointAt(stb.FinishP.X, stb.FinishP.Y)
+		}
 		srf.Trim = append(srf.Trim, stb)
 	}
 	// Reset tags for downstream callers.
@@ -329,69 +354,18 @@ func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, parent, sha
 // classifyEdge returns the (indir, outdir) SShellClass pair for the
 // edge ea→eb, where p is a representative midpoint on the surface
 // and edge_n_in / edge_n_out are the half-plane normal probe
-// directions. Mirrors SShell::ClassifyEdge in raycast.cpp:463. The
-// reference edge-on-edge detection is omitted — the simple
-// shell raycast fallback is good enough for the cylindrical /
-// coplanar / non-knife-edge test fixtures.
+// directions. Mirrors SShell::ClassifyEdge in raycast.cpp:463.
 //
 // Result: returns true if classification succeeded and writes
 // shell classification into *indir and *outdir.
 func (s *SShell) classifyEdge(indir, outdir *SShellClass,
-	ea, eb, p geom.Vector, edgeNIn, edgeNOut, surfN geom.Vector) bool {
-	// Step 1: classify each side of the edge against `s` via
-	// mid-point raycasts. The "edgen" probe is shifted from p by a
-	// small step in the half-plane normal direction; we measure
-	// whether the probe falls inside or outside the closed shell.
-	const probeFraction = 1e-3
-	probe := func(n geom.Vector) SShellClass {
-		if n.Magnitude() < 1e-20 {
-			return ShellOutside
-		}
-		step := n.WithMagnitude(shellDotpTol * 100)
-		test := p.Plus(step)
-		if pointInsideShell(test, s) {
-			return ShellInside
-		}
-		// Coincidence check: the probe lands on a face or edge of s.
-		var puv geom.Point2d
-		probeLine := test
-		for i := range s.Surface {
-			srf := &s.Surface[i]
-			srf.ClosestPointTo(probeLine, &puv, false)
-			closest := srf.PointAtUv(puv)
-			if closest.DistanceTo(probeLine) < shellDotpTol*10 {
-				// On the surface. Decide SAME/OPP by normal.
-				if surfN.Dot(srf.NormalAtUv(puv)) > 0 {
-					return ShellCoincSame
-				}
-				return ShellCoincOpp
-			}
-		}
-		return ShellOutside
+	ea, eb, p, edgeNIn, edgeNOut, surfN geom.Vector) bool {
+	var inDir, outDir Class
+	if !s.ClassifyEdge(&inDir, &outDir, ea, eb, p, edgeNIn, edgeNOut, surfN) {
+		return false
 	}
-	// Step 2: probe a bit away from `ea` and `eb` to avoid sitting
-	// precisely on the edge.
-	inClass := probe(edgeNIn)
-	outClass := probe(edgeNOut)
-	// Refine: if both probed points land at the same classification,
-	// accept that. If they are split, fall back to shell raycast from
-	// the actual edge midpoints.
-	if inClass != outClass {
-		// Use raycasts from points slightly off the edge instead.
-		da := edgeNIn.WithMagnitude(1e-9)
-		if da.Magnitude() > 0 {
-			inClass = s.raycastPointClass(p.Plus(da))
-		}
-		db := edgeNOut.WithMagnitude(1e-9)
-		if db.Magnitude() > 0 {
-			outClass = s.raycastPointClass(p.Plus(db))
-		}
-	}
-	*indir = inClass
-	*outdir = outClass
-	_ = ea
-	_ = eb
-	_ = probeFraction
+	*indir = shellClassFromClass(inDir)
+	*outdir = shellClassFromClass(outDir)
 	return true
 }
 
@@ -454,11 +428,15 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	ret.Trim = nil
 
 	// Step 1 (C++ line 511-518): rewrite trim curves to use the
-	// new (split) curve handles. In the Go port the rewrite happens
-	// later via RewriteSurfaceHandlesForCurves; here we just record
-	// the trim list using the parent-relative curve ids.
+	// new (split) curve handles. CopyCurvesSplitAgainst stored the
+	// parent-relative curve's NewH (the handle in `into` of the
+	// first emitted segment). Look up each trim curve in the parent
+	// shell and use that NewH as the rewritten handle.
 	for i := range srf.Trim {
 		stb := srf.Trim[i]
+		if pc := parent.FindCurve(stb.Curve); pc != nil {
+			stb.Curve = pc.NewH
+		}
 		ret.Trim = append(ret.Trim, stb)
 	}
 
@@ -566,27 +544,37 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// — junctions where more than 2 edges meet. Edges meeting at a
 	// non-choosing point must either all be kept or all be discarded
 	// (otherwise the trim polygon would be open).
+	//
+	// Mirrors the C++ SPointList::IncrementTagFor + tag==2 cleanup:
+	// for every endpoint of every edge, increment a counter; then
+	// remove entries with count != 2. The result is a list of points
+	// where 3+ edges meet, which the chain-finding code uses to
+	// avoid splitting chains at junction points.
 	choosing := []geom.Vector{}
-	incrementTag := func(p geom.Vector) {
-		const tol = 1e-9
-		for i := range choosing {
-			if p.DistanceTo(choosing[i]) < tol {
+	chooseTag := make(map[geom.Vector]int)
+	const chooseTol = 1e-9
+	incChoose := func(p geom.Vector) {
+		for k := range chooseTag {
+			if k.DistanceTo(p) < chooseTol {
+				chooseTag[k]++
 				return
 			}
 		}
-		choosing = append(choosing, p)
+		chooseTag[p] = 1
 	}
 	for i := range orig.Edges {
-		incrementTag(orig.Edges[i].A)
-		incrementTag(orig.Edges[i].B)
+		incChoose(orig.Edges[i].A)
+		incChoose(orig.Edges[i].B)
 	}
 	for i := range inter.Edges {
-		incrementTag(inter.Edges[i].A)
-		incrementTag(inter.Edges[i].B)
+		incChoose(inter.Edges[i].A)
+		incChoose(inter.Edges[i].B)
 	}
-	// (choosing doesn't need an explicit "tag 2" pass because
-	// Go's struct-less slice is intrinsically set-like; we filter
-	// at the chain-finding step using the duplicates.)
+	for k, v := range chooseTag {
+		if v != 2 {
+			choosing = append(choosing, k)
+		}
+	}
 
 	// Step 6 (C++ line 623-661): walk orig chains, classify, keep.
 	final := &SEdgeList{}
@@ -684,7 +672,7 @@ func (el *SEdgeList) lClearTags() {
 	}
 }
 
-// copySurfacesTrimAgainstAccurate replaces CopySurfacesTrimAgainst
+// copySurfacesTrimAgainstAccurate replaces CopySurvesTrimAgainst
 // with the proper per-surface MakeCopyTrimAgainst pipeline. For each
 // surface in `sha`, it produces a trimmed copy whose boundary
 // includes both sha's (split) trim curves and the new intersection

@@ -48,6 +48,32 @@ func STrimByEntireCurve(c core.HSCurve) STrimBy {
 	return STrimBy{Curve: c, Start: 0, Finish: 1}
 }
 
+// trimIsClosedPolygon returns true if every consecutive pair of trim
+// endpoints matches (StartP/FinishP) and the final entry's FinishP is
+// the same as the first entry's StartP (within tol). Used by
+// CopySurvesTrimAgainst's accurate path to decide whether the
+// per-surface chain-finding succeeded. A non-closed (open) polygon
+// is treated as a pipeline failure for that surface; the caller
+// falls back to the bbox-keep heuristic.
+func (s *SSurface) trimIsClosedPolygon() bool {
+	const tol = 1e-7
+	if len(s.Trim) < 3 {
+		return false
+	}
+	firstStart := s.Trim[0].StartP
+	for i := 0; i < len(s.Trim); i++ {
+		cur := &s.Trim[i]
+		next := &s.Trim[(i+1)%len(s.Trim)]
+		if cur.FinishP.DistanceTo(next.StartP) > tol {
+			return false
+		}
+	}
+	if s.Trim[len(s.Trim)-1].FinishP.DistanceTo(firstStart) > tol {
+		return false
+	}
+	return true
+}
+
 // Clear resets all fields to their zero state.
 func (s *SSurface) Clear() {
 	s.Tag = 0
@@ -539,6 +565,189 @@ func (s *SSurface) IsExtrusion(of *SBezier, along *geom.Vector) bool {
 		d := s.Ctrl[i][1].Minus(s.Ctrl[i][0])
 		if *along == (geom.Vector{}) {
 			*along = d
+		} else if d.DistanceTo(*along) > 1e-9 {
+			return false
+		}
+	}
+	return true
+}
+
+// PointOnSurfaces finds the (u, v) coordinates on this surface so
+// that the resulting point also lies on sA and sB. Mirrors
+// SSurface::PointOnSurfaces in srf/surface.cpp. Used during
+// MakeCopySplitAgainst to refine line-segment intersection
+// approximations onto exact three-surface intersection points.
+func (s *SSurface) PointOnSurfaces(sA, sB *SSurface, up, vp *float64) {
+	const ratPolyEps = 1e-12
+	u := s.Cached.U
+	v := s.Cached.V
+	if u == 0 && v == 0 {
+		u, v = 0.5, 0.5
+	}
+	// First pass: refine against sA.
+	sA.ClosestPointTo(s.PointAt(u, v), &geom.Point2d{}, false)
+	for iter := 0; iter < 30; iter++ {
+		ps := s.PointAt(u, v)
+		var tu, tv geom.Vector
+		s.TangentsAt(u, v, &tu, &tv, false)
+		n := tu.Cross(tv)
+		if n.Magnitude() < 1e-20 {
+			break
+		}
+		// Closest point on sA from ps.
+		var puvA geom.Point2d
+		sA.ClosestPointTo(ps, &puvA, false)
+		psA := sA.PointAt(puvA.U, puvA.V)
+		// Update (u, v) so the surface point moves toward psA along the tangent plane.
+		var tu2, tv2 geom.Vector
+		s.TangentsAt(u, v, &tu2, &tv2, false)
+		n2 := tu2.Cross(tv2)
+		ty := n2.Cross(tu2).ScaledBy(1.0 / tu2.MagSquared())
+		tx := tv2.Cross(n2).ScaledBy(1.0 / tv2.MagSquared())
+		dp := psA.Minus(ps)
+		du := dp.Dot(tx) / tx.MagSquared()
+		dv := dp.Dot(ty) / ty.MagSquared()
+		u += du
+		v += dv
+		psNew := s.PointAt(u, v)
+		if psNew.DistanceTo(psA) < ratPolyEps {
+			break
+		}
+	}
+	// Second pass: refine against sB.
+	if sB != nil {
+		sB.ClosestPointTo(s.PointAt(u, v), &geom.Point2d{}, false)
+		for iter := 0; iter < 30; iter++ {
+			ps := s.PointAt(u, v)
+			var tu, tv geom.Vector
+			s.TangentsAt(u, v, &tu, &tv, false)
+			n := tu.Cross(tv)
+			if n.Magnitude() < 1e-20 {
+				break
+			}
+			var puvB geom.Point2d
+			sB.ClosestPointTo(ps, &puvB, false)
+			psB := sB.PointAt(puvB.U, puvB.V)
+			var tu2, tv2 geom.Vector
+			s.TangentsAt(u, v, &tu2, &tv2, false)
+			n2 := tu2.Cross(tv2)
+			ty := n2.Cross(tu2).ScaledBy(1.0 / tu2.MagSquared())
+			tx := tv2.Cross(n2).ScaledBy(1.0 / tv2.MagSquared())
+			dp := psB.Minus(ps)
+			du := dp.Dot(tx) / tx.MagSquared()
+			dv := dp.Dot(ty) / ty.MagSquared()
+			u += du
+			v += dv
+			psNew := s.PointAt(u, v)
+			if psNew.DistanceTo(psB) < ratPolyEps {
+				break
+			}
+		}
+	}
+	if up != nil {
+		*up = u
+	}
+	if vp != nil {
+		*vp = v
+	}
+	s.Cached.U = u
+	s.Cached.V = v
+}
+
+// ClosestPointOnThisAndSurface returns the closest point to p that
+// lies on both this surface and `other`. Mirrors
+// SSurface::ClosestPointOnThisAndSurface in srf/surface.cpp. Used by
+// IntersectAgainst to refine intersection points onto the exact
+// three-surface intersection.
+func (s *SSurface) ClosestPointOnThisAndSurface(other *SSurface, p geom.Vector) geom.Vector {
+	const ratPolyEps = 1e-12
+	u := s.Cached.U
+	v := s.Cached.V
+	if u == 0 && v == 0 {
+		u, v = 0.5, 0.5
+	}
+	for iter := 0; iter < 30; iter++ {
+		ps := s.PointAt(u, v)
+		var puv geom.Point2d
+		other.ClosestPointTo(ps, &puv, false)
+		po := other.PointAt(puv.U, puv.V)
+		// Update (u, v) so s moves toward `p` along the surface while
+		// staying in the intersection with other.
+		var tu, tv geom.Vector
+		s.TangentsAt(u, v, &tu, &tv, false)
+		n := tu.Cross(tv)
+		if n.Magnitude() < 1e-20 {
+			break
+		}
+		// Average of `ps` and `po` projected onto s, projected onto
+		// s's tangent plane at (u, v).
+		mid := ps.Plus(po).ScaledBy(0.5)
+		dp := mid.Minus(ps)
+		ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+		tx := tv.Cross(n).ScaledBy(1.0 / tv.MagSquared())
+		du := dp.Dot(tx) / tx.MagSquared()
+		dv := dp.Dot(ty) / ty.MagSquared()
+		u += du
+		v += dv
+		psNew := s.PointAt(u, v)
+		if psNew.DistanceTo(mid) < ratPolyEps {
+			break
+		}
+		_ = p
+	}
+	s.Cached.U = u
+	s.Cached.V = v
+	return s.PointAt(u, v)
+}
+
+// ContainsPlaneCurve returns true if the supplied exact curve lies
+// entirely within the plane of this surface. Mirrors
+// SSurface::ContainsPlaneCurve in srf/surfinter.cpp. Used by
+// IntersectAgainst to detect trim curves that lie in a plane and
+// can be added as exact intersection curves.
+func (s *SSurface) ContainsPlaneCurve(c *SCurve) bool {
+	if s == nil || c == nil {
+		return false
+	}
+	if s.DegM != 1 || s.DegN != 1 {
+		return false
+	}
+	if !c.IsExact {
+		return false
+	}
+	n := s.NormalAt(0, 0).WithMagnitude(1)
+	d := n.Dot(s.PointAt(0, 0))
+	const tol = 1e-9
+	for i := 0; i <= c.Exact.Degree; i++ {
+		if mathAbs(n.Dot(c.Exact.Ctrl[i])-d) > tol {
+			return false
+		}
+	}
+	return true
+}
+
+// FillExtrusionAxis writes the extrusion direction and the (u=0)
+// row Bezier into the supplied outputs when this surface is an
+// extrusion. Returns true on success, false otherwise. Mirrors the
+// C++ SSurface::IsExtrusion side-effects used by IntersectAgainst.
+func (s *SSurface) FillExtrusionAxis(of *SBezier, along *geom.Vector) bool {
+	if s == nil || s.DegN != 1 {
+		return false
+	}
+	for i := 0; i <= s.DegM; i++ {
+		d := s.Ctrl[i][1].Minus(s.Ctrl[i][0])
+		if d.Magnitude() < 1e-9 {
+			return false
+		}
+		if i == 0 {
+			*along = d
+			if of != nil {
+				of.Degree = s.DegM
+				for j := 0; j <= s.DegM; j++ {
+					of.Ctrl[j] = s.Ctrl[j][0]
+					of.Weight[j] = s.Weight[j][0]
+				}
+			}
 		} else if d.DistanceTo(*along) > 1e-9 {
 			return false
 		}

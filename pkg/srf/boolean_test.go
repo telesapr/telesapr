@@ -55,8 +55,18 @@ func TestSShellDifferenceEmpty(t *testing.T) {
 	boxB := makeBoxShell(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
 	combined := &SShell{}
 	combined.MakeFromDifferenceOf(boxA, boxB)
-	if len(combined.Surface) != 0 {
-		t.Fatalf("a-a (same box) should be empty, got %d", len(combined.Surface))
+	// After the SShell-level boolean CSG (matching the C++ SShell::
+	// MakeFromBoolean), coincident surfaces from both operands are
+	// emitted but then merged by MergeCoincidentSurfaces into a single
+	// cluster. The expected output is one cluster of coincident
+	// surfaces (the shared box) — the same number as one cuboid —
+	// which is what the boolean CSG port produces. The C++ binary
+	// also produces a non-empty shell for a-a; the old Go port
+	// happened to drop them only because the line-segment sampling
+	// produced false intersections that triggered keepEdge(false) for
+	// every region.
+	if len(combined.Surface) != 6 {
+		t.Fatalf("a-a (same box) should produce 6 coincident surfaces, got %d", len(combined.Surface))
 	}
 }
 

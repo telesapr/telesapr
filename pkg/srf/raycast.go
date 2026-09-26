@@ -197,7 +197,79 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		return true
 	}
 
-	// 2. Edge-on-surface check.
+	// 2. Knife-edge: more than two faces of the shell meet edge-on-edge
+	// along the given edge. The faces along the knife divide the directions
+	// perpendicular to the edge at p into sectors that are alternately
+	// inside and outside the shell, so classify each side of our edge
+	// against the face that lies angularly closest to it: that face bounds
+	// the sector containing it, and its normal points out of that sector
+	// iff the sector is outside the shell. Mirrors the C++ branch at
+	// srf/raycast.cpp:641 ("knife edge from issue #1091").
+	if edgeInters >= 4 && edgeInters%2 == 0 {
+		edgeD := eb.Minus(ea).WithMagnitude(1)
+		en := [2]geom.Vector{edgeNIn, edgeNOut}
+		var ep [2]geom.Vector
+		var bestDot [2]float64
+		var bestN [2]geom.Vector
+		for i := 0; i < 2; i++ {
+			bestDot[i] = math.Inf(-1)
+			perpendicular := en[i].Minus(edgeD.ScaledBy(en[i].Dot(edgeD)))
+			if perpendicular.Magnitude() < lengthEps {
+				ep[i] = geom.Vector{}
+			} else {
+				ep[i] = perpendicular.WithMagnitude(1)
+			}
+		}
+		for i := range s.Surface {
+			srf := &s.Surface[i]
+			if srf.LineEntirelyOutsideBbox(ea, eb, true) {
+				continue
+			}
+			for j := range srf.Edges.Edges {
+				se := &srf.Edges.Edges[j]
+				if (ea.Equals(se.A) && eb.Equals(se.B)) ||
+					(eb.Equals(se.A) && ea.Equals(se.B)) ||
+					p.OnLineSegment(se.A, se.B, lengthEps) {
+					var pm geom.Point2d
+					srf.ClosestPointTo(p, &pm, false)
+					n := srf.NormalAt(pm.U, pm.V)
+					f := se.B.Minus(se.A).Cross(n)
+					f = f.Minus(edgeD.ScaledBy(f.Dot(edgeD)))
+					if f.Magnitude() < lengthEps {
+						continue
+					}
+					f = f.WithMagnitude(1)
+					for k := 0; k < 2; k++ {
+						dot := ep[k].Dot(f)
+						if dot > bestDot[k] {
+							bestDot[k] = dot
+							bestN[k] = n
+						}
+					}
+				}
+			}
+		}
+		dirs := [2]*Class{indir, outdir}
+		for i := 0; i < 2; i++ {
+			dotn := en[i].DirectionCosineWith(bestN[i])
+			if bestDot[i] > 0 && math.Abs(dotn) < DotProductTol {
+				if surfN.Dot(bestN[i]) > 0 {
+					*dirs[i] = SurfCoincSame
+				} else {
+					*dirs[i] = SurfCoincOpp
+				}
+			} else {
+				if dotn > 0 {
+					*dirs[i] = SurfOutside
+				} else {
+					*dirs[i] = SurfInside
+				}
+			}
+		}
+		return true
+	}
+
+	// 3. Edge-on-surface check.
 	for i := range s.Surface {
 		srf := &s.Surface[i]
 		if srf.LineEntirelyOutsideBbox(ea, eb, true) {
@@ -229,7 +301,7 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		return true
 	}
 
-	// 3. Raycast fallback. Pick a random direction and count intersections.
+	// 4. Raycast fallback. Pick a random direction and count intersections.
 	cnt := 0
 	for {
 		ray := geom.Vector{

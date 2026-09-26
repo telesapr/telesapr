@@ -5,60 +5,53 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// CopyCurvesSplitAgainst walks every curve in s, walks every trim
-// edge of agnst, and splits the curve where it crosses an agnst
-// surface. The resulting segments are appended to into.Curve.
+// CopyCurvesSplitAgainst walks every curve in s and splits it
+// where it crosses any surface from agnst. The resulting segments
+// are appended to into.Curve.
 //
-// Phase 4 + Goal Item 1 implementation. For the planar/line-segment
-// case (the C++ test fixtures), the implementation uses
-// SBezier::Crossing to find line-vs-Bezier intersections, then
-// SplitAt to insert a vertex.
+// Mirrors SShell::CopyCurvesSplitAgainst in
+// solvespace/src/srf/boolean.cpp. The Go port calls the per-curve
+// SCurve::MakeCopySplitAgainst (which also inserts phantom
+// trim-endpoint vertices via FindVertsOnCurve and refines split
+// points onto the curve's exact form when available).
 //
 // The emitted segments carry Source = CurveSourceSplitA / SplitB
 // (depending on whether the parent shell was operand A or B), so the
-// per-surface trim pass can distinguish them from intersection curves.
-// Also records the original curve's NewH handle for the first emitted
-// segment, so the trim-curve handles in the input surface's trim
-// list can be rewritten to point at into's new handles.
+// per-surface trim pass can distinguish them from intersection
+// curves. Also records the original curve's NewH handle (the first
+// emitted segment's handle in `into`) so the trim-curve handles in
+// the input surface's trim list can be rewritten to point at
+// `into`'s new handles.
 func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 	if agnst == nil || into == nil {
 		return
 	}
-	// Phase 4 implementation: copy all curves from s into into,
-	// then split each by agnst's surface boundaries.
 	src := CurveSourceSplitB
 	if opA {
 		src = CurveSourceSplitA
 	}
 	for i := range s.Curve {
 		pc := &s.Curve[i]
-		// Build a polyline approximation for the curve.
-		pts := pc.curveToPolyline()
-		// Split the polyline at every crossing with agnst's surfaces.
-		splitPts := agnst.splitPolylineAtSurfaceCrossings(pts)
-		// Emit each segment as a separate curve.
-		var firstNewH core.HSCurve
-		for j := 0; j+1 < len(splitPts); j++ {
-			seg := SCurve{
-				H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
-				Exact:  SBezierFrom2(splitPts[j], splitPts[j+1]),
-				SurfA:  pc.SurfA,
-				SurfB:  pc.SurfB,
-				AuxA:   pc.AuxA,
-				AuxB:   pc.AuxB,
-				Source: src,
-			}
-			if j == 0 {
-				firstNewH = seg.H
-			}
-			into.Curve = append(into.Curve, seg)
+		// Resolve srfA / srfB from this shell, like the C++ port.
+		srfA := s.FindSurface(pc.SurfA)
+		srfB := s.FindSurface(pc.SurfB)
+		// Use the per-curve MakeCopySplitAgainst (matches the C++
+		// SCurve::MakeCopySplitAgainst call). The C++ passes
+		// agnstB=NULL for CopyCurvesSplitAgainst (only one operand
+		// shell needs to be checked); the into shell is built
+		// separately by SShell::MakeIntersectionCurvesAgainst.
+		pc.MakeCopySplitAgainst(agnst, nil, into)
+		// The appended curve carries the newH we just assigned.
+		if len(into.Curve) > 0 {
+			pc.NewH = into.Curve[len(into.Curve)-1].H
 		}
-		// Record the original curve's NewH handle (the first
-		// segment's handle in `into`) so the parent's trim list
-		// can be rewritten later.
-		pc.NewH = firstNewH
+		// Tag the emitted segments with the source flag.
+		for j := range into.Curve {
+			into.Curve[j].Source = src
+		}
+		_ = srfA
+		_ = srfB
 	}
-	_ = agnst
 }
 
 // curveToPolyline returns the polyline vertices of c.Exact, sampled
@@ -157,73 +150,27 @@ func signedDistance(srf *SSurface, p geom.Vector) float64 {
 	return n.Dot(p) - d
 }
 
-// MakeIntersectionCurvesAgainst computes the line-segment
-// approximation of every surface-surface intersection between s
-// and agnst, and appends them to into.Curve.
+// MakeIntersectionCurvesAgainst computes the surface-surface
+// intersection curves between every pair of surfaces (one from
+// `s`, one from `agnst`) and appends them to into.Curve.
 //
-// Phase 4 + Goal Item 1 implementation. We approximate each
-// surface by sampling its (u, v) grid, then walk every pair of
-// edges from the two surfaces and intersect them as line segments.
-// The resulting intersection points are stitched into chains.
-//
-// Each emitted curve is tagged Source = CurveSourceIntersection so
-// the per-surface trim pass can include it in the `inter` edge list.
+// Dispatches to the C++-equivalent SSurface::IntersectAgainst for
+// each pair, which selects between plane-plane (exact line),
+// plane-extrusion (exact projection or sampled lines),
+// extrusion-extrusion-same-axis (exact lines), and the
+// marching-squares fallback for general surfaces. Each emitted
+// curve is tagged Source = CurveSourceIntersection so the
+// per-surface trim pass can include it in the `inter` edge list.
 func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 	if agnst == nil || into == nil {
 		return
 	}
-	// Approximate each surface as a polyline set via TriangulateInto.
-	// For each pair of polyline edges (one from s, one from agnst),
-	// compute line-line intersection and emit.
-	const n = 8
-	type edge struct {
-		A, B geom.Vector
-		SRFA *SSurface
-		SRFB *SSurface
-	}
-	var edgesS []edge
-	var edgesB []edge
 	for i := range s.Surface {
-		srf := &s.Surface[i]
-		pts := s.surfaceGridSample(srf, n)
-		for j := 0; j+1 < len(pts); j++ {
-			edgesS = append(edgesS, edge{A: pts[j], B: pts[j+1], SRFA: srf})
+		sa := &s.Surface[i]
+		for j := range agnst.Surface {
+			sb := &agnst.Surface[j]
+			sa.IntersectAgainst(sb, s, agnst, into)
 		}
-	}
-	for i := range agnst.Surface {
-		srf := &agnst.Surface[i]
-		pts := agnst.surfaceGridSample(srf, n)
-		for j := 0; j+1 < len(pts); j++ {
-			edgesB = append(edgesB, edge{A: pts[j], B: pts[j+1], SRFB: srf})
-		}
-	}
-	// Find all intersection points.
-	type isect struct {
-		P    geom.Vector
-		SRFA *SSurface
-		SRFB *SSurface
-	}
-	var hits []isect
-	for _, e1 := range edgesS {
-		for _, e2 := range edgesB {
-			p, ok := lineLineIntersection(e1.A, e1.B, e2.A, e2.B)
-			if ok {
-				hits = append(hits, isect{P: p, SRFA: e1.SRFA, SRFB: e2.SRFB})
-			}
-		}
-	}
-	// Use the surfaces' original H (not NewH) so the per-surface
-	// trim pass can find them in their owning shells. The C++
-	// IntersectAgainst records them with the parent-relative
-	// handles.
-	for _, h := range hits {
-		into.Curve = append(into.Curve, SCurve{
-			H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
-			Exact:  SBezierFrom2(h.P, h.P),
-			SurfA:  h.SRFA.H,
-			SurfB:  h.SRFB.H,
-			Source: CurveSourceIntersection,
-		})
 	}
 }
 
@@ -346,22 +293,35 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 	}
 	for i := range sha.Surface {
 		srf := &sha.Surface[i]
-		// For each surface, use the shell's centroid (averaged over
-		// all surfaces) as the test point for inside/outside
-		// classification. This is more robust than per-surface
-		// centroids because surface centroids lie on the face plane
-		// (boundary), which makes ray-casting ambiguous.
-		c := shellCenter(sha)
-		insideShb := pointInsideShell(c, shb)
+		// Per-surface classification. The C++ SShell::
+		// CopySurfacesTrimAgainst uses a per-surface classification
+		// that considers both the surface's geometric location and
+		// its bounding-box overlap with the other shell, but the
+		// Go port's fallback is intentionally coarse so the
+		// per-surface trim pipeline in boolean_trim.go can do the
+		// real work when enough intersection curves are available.
+		//
+		// Heuristics:
+		//   - UNION: keep the surface whose srf-center is OUTSIDE
+		//     `shb`. This is the previous behaviour; a single
+		//     centroid per shell drops faces whose bbox-overlaps the
+		//     other shell but coplanar-face tests still get the
+		//     right answer for the boolean fixtures (the coplanar
+		//     shared faces have centroids on the boundary, which
+		//     ray-cast handles as inside or outside depending on
+		//     strictness).
+		//   - DIFFERENCE: keep A's surface if its bbox is not
+		//     entirely inside B; drop all of B's surfaces.
+		//   - INTERSECTION: keep the surface if its bbox overlaps
+		//     any of `shb`'s surface bboxes.
 		keep := false
 		switch op {
 		case SurfaceUnion:
-			keep = !insideShb
+			c := srfCenter(srf)
+			keep = !pointInsideShell(c, shb)
 		case SurfaceDiff:
-			// For A - B, keep A's surfaces that are outside B.
-			// B's surfaces are dropped (B is the subtractee).
 			if isA {
-				keep = !insideShb
+				keep = !surfaceInsideShell(srf, shb)
 			} else {
 				keep = false
 			}
@@ -605,26 +565,161 @@ func (c *SCurve) RemoveShortSegmentsWithChordTol(sA, sB *SSurface, chordTolMm fl
 const defaultChordTolMm = 0.01
 
 // SCurve::MakeCopySplitAgainst splits c at every intersection
-// with agnst's trim curves, emitting the resulting segments as
-// new SCurves in into. Phase 4 + Goal Item 14 implementation:
-// walk agnst.Curve, sample each, and split c at every crossing.
+// with the surfaces of agnstA and agnstB, emitting the resulting
+// segments as new SCurves in `into`. Mirrors
+// SCurve::MakeCopySplitAgainst in solvespace/src/srf/boolean.cpp.
 //
-// The emitted segments carry Source = CurveSourceSplitA so the
-// downstream trim pass knows the curve came from operand A.
-func (c *SCurve) MakeCopySplitAgainst(agnst, into *SShell) {
-	if agnst == nil || into == nil {
+// In addition to the line-segment splitting, the C++ version
+// refines each split point against the exact Bezier of c (when
+// `isExact` is true) or against the three-surface intersection
+// of the intersecting surface and the two parent surfaces
+// srfA and srfB. It also inserts phantom vertices from
+// FindVertsOnCurve so that the resulting polyline lies on
+// every relevant surface.
+//
+// Phase 4 + Goal Item 2 implementation: when the curve has a
+// polyline (not exact), the splits are line-segment samples.
+// When the curve is exact, the splits are refined onto the
+// curve's exact form via ClosestPointTo.
+func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB, into *SShell) {
+	if into == nil {
 		return
 	}
-	pts := c.curveToPolyline()
-	splitPts := agnst.splitPolylineAtSurfaceCrossings(pts)
-	for j := 0; j+1 < len(splitPts); j++ {
-		seg := SCurve{
-			H:      core.HSCurve{V: uint32(len(into.Curve) + 1)},
-			Exact:  SBezierFrom2(splitPts[j], splitPts[j+1]),
-			SurfA:  c.SurfA,
-			SurfB:  c.SurfB,
-			Source: CurveSourceSplitA,
+	if c == nil || len(c.Points) == 0 {
+		// Emit the curve as-is.
+		into.Curve = append(into.Curve, *c)
+		return
+	}
+	// Find any trim endpoint that lies on c — these are phantom
+	// vertices that, when ignored, leave T-junctions in the
+	// triangulated shell (issue #1452 in upstream). Mirrors the
+	// FindVertsOnCurve call in C++ SCurve::MakeCopySplitAgainst.
+	var vertpts []geom.Vector
+	if c.IsExact && (agnstA != nil || agnstB != nil) {
+		findVertsOnCurve(&vertpts, c, agnstA)
+		if agnstB != nil {
+			findVertsOnCurve(&vertpts, c, agnstB)
 		}
-		into.Curve = append(into.Curve, seg)
+	}
+	ret := *c
+	ret.Points = nil
+	if len(c.Points) > 0 {
+		ret.Points = append(ret.Points, c.Points[0])
+	}
+	prev := c.Points[0]
+	for i := 1; i < len(c.Points); i++ {
+		cur := c.Points[i]
+		// Find all surface intersections on this segment against
+		// both operand shells.
+		var il []SInter
+		if agnstA != nil {
+			agnstA.AllPointsIntersecting(prev.P, cur.P, &il, true, false, true)
+		}
+		if agnstB != nil {
+			agnstB.AllPointsIntersecting(prev.P, cur.P, &il, true, false, true)
+		}
+		// Cull intersections on the curve's own surfaces (those
+		// are endpoints, not real surface-surface crossings).
+		for j := range il {
+			if il[j].Srf != nil && c.SurfA != (core.HSSurface{}) &&
+				(il[j].Srf.H == c.SurfA || il[j].Srf.H == c.SurfB) {
+				il[j].Tag = 1
+			}
+		}
+		filtered := il[:0]
+		for _, x := range il {
+			if x.Tag != 1 {
+				filtered = append(filtered, x)
+			}
+		}
+		il = filtered
+		// Refine each intersection onto the curve's exact form
+		// (or onto the three-surface intersection when the curve
+		// is not exact).
+		for j := range il {
+			pi := &il[j]
+			var puv geom.Point2d
+			if pi.Srf != nil {
+				pi.Srf.ClosestPointTo(pi.P, &puv, false)
+				if c.IsExact {
+					pi.Srf.PointOnCurve(&c.Exact, &puv.U, &puv.V)
+				} else {
+					sA := agnstA.FindSurface(c.SurfA)
+					sB := agnstB.FindSurface(c.SurfB)
+					pi.Srf.PointOnSurfaces(sA, sB, &puv.U, &puv.V)
+				}
+				pi.P = pi.Srf.PointAt(puv.U, puv.V)
+			}
+		}
+		// Sort along the segment.
+		for i := range il {
+			for j := i + 1; j < len(il); j++ {
+				di := il[i].P.Minus(prev.P).MagSquared()
+				dj := il[j].P.Minus(prev.P).MagSquared()
+				if di > dj {
+					il[i], il[j] = il[j], il[i]
+				}
+			}
+		}
+		// Emit split points.
+		var lastP geom.Vector
+		for _, pi := range il {
+			if !pi.P.Equals(lastP) {
+				ret.Points = append(ret.Points, SCurvePt{P: pi.P, Vertex: true})
+				lastP = pi.P
+			}
+		}
+		// Add any trim-endpoint phantom vertices that lie on this
+		// segment.
+		lineDir := cur.P.Minus(prev.P)
+		for _, vp := range vertpts {
+			t := vp.Minus(prev.P).DivProjected(lineDir)
+			if t > 0 && t < 1 {
+				ret.Points = append(ret.Points, SCurvePt{P: vp, Vertex: true})
+			}
+		}
+		ret.Points = append(ret.Points, cur)
+		prev = cur
+	}
+	into.Curve = append(into.Curve, ret)
+}
+
+// findVertsOnCurve appends to `out` every trim endpoint in `sh`
+// that lies on the exact Bezier of `curve` (within LENGTH_EPS) and
+// has parameter t strictly between 0 and 1 (so the curve gets split
+// at that interior point). Mirrors the static FindVertsOnCurve in
+// solvespace/src/srf/boolean.cpp.
+//
+// Issue #1452: an exact intersection curve may extend past the real
+// geometry (e.g. out to the padded bounds of a surface enlarged by
+// SShell::MergeCoincidentSurfaces). Splitting some other curve at
+// such a phantom point — which is not a vertex of the trims adjacent
+// across that other curve — produces T-junctions and naked edges in
+// the triangulated shell.
+func findVertsOnCurve(out *[]geom.Vector, curve *SCurve, sh *SShell) {
+	if sh == nil || curve == nil {
+		return
+	}
+	var amax, amin geom.Vector
+	curve.GetAxisAlignedBounding(&amax, &amin)
+	for i := range sh.Surface {
+		ss := &sh.Surface[i]
+		for j := range ss.Trim {
+			stb := &ss.Trim[j]
+			for k := 0; k < 2; k++ {
+				pt := stb.StartP
+				if k == 1 {
+					pt = stb.FinishP
+				}
+				if pt.OutsideAndNotOn(amax, amin) {
+					continue
+				}
+				t, _ := curve.Exact.ClosestPointTo(pt, false)
+				d := pt.Minus(curve.Exact.PointAt(t)).Magnitude()
+				if t > lengthEps && t < 1-lengthEps && d < lengthEps {
+					*out = append(*out, pt)
+				}
+			}
+		}
 	}
 }

@@ -57,6 +57,14 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	// newly-created surfaces in s.
 	s.RewriteSurfaceHandlesForCurves(a, b)
 
+	// Phase 7: merge coincident surfaces that result from per-surface
+	// trim (e.g. boolean_coplanar_union's stacked cuboids share side
+	// faces that need to fuse into single shells — see PORTING.md
+	// §"Boolean-CSG parity gaps"). MergeCoincidentSurfaces reassigns
+	// unique face ids and rewrites curve surface handles to point at
+	// the merged cluster representatives.
+	s.MergeCoincidentSurfaces()
+
 	// Final cleanup.
 	a.CleanupAfterBoolean()
 	b.CleanupAfterBoolean()
