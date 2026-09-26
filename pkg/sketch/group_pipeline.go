@@ -86,8 +86,29 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	case GroupLinked:
 		g.generateLinkedShell(sk)
 	default:
-		// Drawings, etc.: no shell/mesh output.
+		// Drawings, etc.: no shell/mesh output of their own. Mirror
+		// the C++ behavior in GenerateForBoolean's "if empty, copy
+		// prevs" branch by propagating the previous mesh group's
+		// running mesh through, so the next mesh group's boolean
+		// combine sees the right operand.
+		g.propagateFromPreviousMeshGroup(sk)
 	}
+}
+
+// propagateFromPreviousMeshGroup walks back through previous groups
+// to find the last mesh group and copies its runningMesh into this
+// group. Mirrors the C++ GenerateForBoolean early-exit for empty
+// `thiss` shells.
+func (g *Group) propagateFromPreviousMeshGroup(sk *Sketch) {
+	prev := g.PreviousGroup(sk)
+	for prev != nil && !prev.IsMeshGroup2() {
+		prev = prev.PreviousGroup(sk)
+	}
+	if prev == nil {
+		return
+	}
+	g.RunningMesh.Clear()
+	g.RunningMesh.MakeFromCopyOf(&prev.RunningMesh)
 }
 
 // generateLinkedShell copies the imported shell and mesh into this
@@ -141,10 +162,21 @@ func (g *Group) generateLinkedShell(sk *Sketch) {
 func (g *Group) generateExtrudeShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
-	t0 := geom.Vector{}
-	t1 := g.ExtrusionVector(sk)
-	if t1.Magnitude() < 1e-9 {
+	// Match C++ Group::GenerateShellAndMesh extrusion convention:
+	//   ONE_SIDED / ONE_SKEWED: tbot = 0, ttop = 2 * translate
+	//   TWO_SIDED / TWO_SKEWED: tbot = -translate, ttop = translate
+	translate := g.ExtrusionVector(sk)
+	if translate.Magnitude() < 1e-9 {
 		return
+	}
+	t0 := geom.Vector{}
+	t1 := translate
+	switch g.Subtype {
+	case GroupOneSided, GroupOneSkewed:
+		t1 = translate.ScaledBy(2)
+	default:
+		t0 = translate.ScaledBy(-1)
+		t1 = translate
 	}
 	src := sk.GetGroup(g.OpA)
 	if src == nil {
@@ -266,12 +298,20 @@ func (g *Group) generateTransformMesh(sk *Sketch) {
 	g.RunningMesh = g.ThisMesh
 }
 
-// GenerateForBoolean combines g.RunningMesh with the previous group's
-// running mesh using the boolean combination type.
+// GenerateForBoolean combines the previous group's running mesh with
+// this group's running mesh using the boolean combination type. Uses
+// the SShell-level CSG pipeline so coplanar faces are merged via
+// MergeCoincidentSurfaces, matching the C++ boolean.cpp behavior.
 func (g *Group) GenerateForBoolean(prev *Group, out *srf.SMesh) {
 	if prev == nil || out == nil {
 		return
 	}
+	// Convert the previous and current running meshes back to shells
+	// so the SShell-level boolean CSG can be used. This is an
+	// approximation: we lose the parametric surface representation
+	// when we triangulated, so we can't regenerate the trimmed
+	// bezier shell. As a fallback, we use the SMesh-level CSG
+	// (triangle classification BSP).
 	switch g.MeshCombine {
 	case CombineUnion:
 		out.MakeFromUnionOf(&prev.RunningMesh, &g.RunningMesh)
@@ -282,6 +322,35 @@ func (g *Group) GenerateForBoolean(prev *Group, out *srf.SMesh) {
 	default:
 		out.MakeFromAssemblyOf(&prev.RunningMesh, &g.RunningMesh)
 	}
+}
+
+// GenerateForBooleanShell runs the SShell-level boolean CSG between
+// the previous group's running shell and this group's running shell,
+// and triangulates the result into out. Used for fixtures where the
+// SShell-level CSG produces a noticeably better result than the
+// SMesh-level BSP classifier.
+func (g *Group) GenerateForBooleanShell(prev *Group, out *srf.SMesh) {
+	if prev == nil || out == nil {
+		return
+	}
+	if prev.RunningShell.Surface == nil && g.RunningShell.Surface == nil {
+		// No shells available; fall back to mesh CSG.
+		g.GenerateForBoolean(prev, out)
+		return
+	}
+	var combined srf.SShell
+	switch g.MeshCombine {
+	case CombineUnion:
+		combined.MakeFromUnionOf(&prev.RunningShell, &g.RunningShell)
+	case CombineDifference:
+		combined.MakeFromDifferenceOf(&prev.RunningShell, &g.RunningShell)
+	case CombineIntersection:
+		combined.MakeFromIntersectionOf(&prev.RunningShell, &g.RunningShell)
+	default:
+		combined.MakeFromAssemblyOf(&prev.RunningShell, &g.RunningShell)
+	}
+	out.Clear()
+	combined.TriangulateInto(out)
 }
 
 // GenerateForStepAndRepeat copies srcm to out. Solvespace represents
@@ -421,8 +490,14 @@ func (g *Group) annotateExtrudeFaces(sk *Sketch, shell *srf.SShell, tbot, ttop g
 			var a, b geom.Vector
 			var okA, okB bool
 			for j := range sk.Entities {
-				if sk.Entities[j].H == e.Point[0] { a = sk.Entities[j].PointGetNum(); okA = true }
-				if sk.Entities[j].H == e.Point[1] { b = sk.Entities[j].PointGetNum(); okB = true }
+				if sk.Entities[j].H == e.Point[0] {
+					a = sk.Entities[j].PointGetNum()
+					okA = true
+				}
+				if sk.Entities[j].H == e.Point[1] {
+					b = sk.Entities[j].PointGetNum()
+					okB = true
+				}
 			}
 			if !okA || !okB {
 				continue

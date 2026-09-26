@@ -114,14 +114,27 @@ func TestIdListSortedHandles(t *testing.T) {
 	}
 }
 
-// TestIdListIDs verifies IDs accessor.
+// TestIdListIDs verifies the IDs accessor returns every handle that
+// was added. IDs is map-iteration-ordered so we only check membership.
 func TestIdListIDs(t *testing.T) {
 	list := NewIdList[int, string](0)
 	list.Add(10, "ten")
 	list.Add(20, "twenty")
 	ids := list.IDs()
-	if len(ids) != 2 || ids[0] != 10 || ids[1] != 20 {
-		t.Errorf("IDs = %v, want [10, 20]", ids)
+	if len(ids) != 2 {
+		t.Fatalf("IDs len = %d, want 2", len(ids))
+	}
+	seen := map[int]bool{10: false, 20: false}
+	for _, h := range ids {
+		if _, ok := seen[h]; !ok {
+			t.Errorf("unexpected handle in IDs: %v", h)
+		}
+		seen[h] = true
+	}
+	for h, ok := range seen {
+		if !ok {
+			t.Errorf("missing handle in IDs: %v", h)
+		}
 	}
 }
 

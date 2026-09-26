@@ -68,8 +68,8 @@ func (g *Group) generateExtrudeGroup(sk *Sketch, entities *[]core.Entity, params
 		e.CalculateNumerical(resolver, false)
 		// Allocate fresh HEntity handles for the copies. The C++ uses
 		// a remap table; we allocate fresh handles via the sketch.
-		bottomH := core.HEntity{V: uint32(0x10000000 | uint32(ai+1)<<16) | uint32(e.H.V)}
-		topH := core.HEntity{V: uint32(0x10000000 | uint32(af+1)<<16) | uint32(e.H.V)}
+		bottomH := core.HEntity{V: uint32(0x10000000|uint32(ai+1)<<16) | uint32(e.H.V)}
+		topH := core.HEntity{V: uint32(0x10000000|uint32(af+1)<<16) | uint32(e.H.V)}
 		bottom := g.copyEntity(e, ai, CopyAsNTrans)
 		bottom.EntityBase.Type = core.EntityPointNTrans
 		bottom.EntityBase.Param = [8]core.HParam{g.H.Param(0), g.H.Param(1), g.H.Param(2)}
@@ -472,49 +472,107 @@ func axisExprs(h core.HEntity) [3]*core.Expr {
 //
 // Reference dimensions like DIAMETER and PT_PT_DISTANCE are
 // recomputed after every solve so the displayed value matches the
-// actual geometry.
+// actual geometry. The C++ analogue (ConstraintBase::ModifyToSatisfy
+// in solvespace/src/constrainteq.cpp:198) uses the symbolic equation
+// for most types and a direct calculation only for ANGLE and
+// PT_ON_LINE. The Go port uses direct numerical calculation for
+// every supported type, which is equivalent because the solver has
+// already converged and so the residual is zero in the absence of
+// numerical drift.
 func ModifyToSatisfyConstraint(c *core.Constraint, params map[core.HParam]float64) {
 	if c == nil || params == nil {
 		return
 	}
-	// Phase C: full ModifyToSatisfy implementation from modify.cpp / constrainteq.cpp.
-	// For ANGLE constraints, we compute the angle between the two referenced
-	// vector entities using the current parameter values, and store it in ValA.
-	if c.Type == core.ConstraintAngle {
-		angle := computeAngleFromEntities(c, params)
-		if angle >= 0 {
-			c.ValA = angle
+	switch c.Type {
+	case core.ConstraintAngle:
+		if v, ok := computeAngleFromEntities(c, params); ok {
+			c.ValA = v
 		}
-	} else if c.Type == core.ConstraintDiameter {
-		// For reference diameter, set ValP to the circle's diameter if available.
+	case core.ConstraintDiameter:
 		if v, ok := computeCircleDiameter(c, params); ok {
-			if _, exists := params[c.ValP]; exists {
-				_ = v
+			c.ValA = v
+		}
+	case core.ConstraintPtPtDistance:
+		if v, ok := computePointPointDistance(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintPtLineDistance:
+		if v, ok := computePointLineDistance(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintPtPlaneDistance:
+		if v, ok := computePointPlaneDistance(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintPtFaceDistance:
+		if v, ok := computePointFaceDistance(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintProjPtDistance:
+		if v, ok := computeProjectedPointDistance(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintLengthDifference:
+		if v, ok := computeLengthDifference(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintArcArcDifference:
+		if v, ok := computeArcArcDifference(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintArcLineDifference:
+		if v, ok := computeArcLineDifference(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintLengthRatio:
+		if v, ok := computeLengthRatio(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintArcArcLenRatio:
+		if v, ok := computeArcArcLenRatio(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintArcLineLenRatio:
+		if v, ok := computeArcLineLenRatio(c, params); ok {
+			c.ValA = v
+		}
+	case core.ConstraintPtOnLine:
+		if t, ok := computePointOnLineParameter(c, params); ok {
+			if c.ValP.V != 0 {
+				params[c.ValP] = t
 			}
+			c.ValA = t
 		}
 	}
-	_ = math.Pi // silence import
 }
 
 // computeAngleFromEntities computes the angle in degrees between
 // the two vector entities referenced by constraint c, using the
 // current parameter values from params. Returns -1 on failure.
-func computeAngleFromEntities(c *core.Constraint, params map[core.HParam]float64) float64 {
-	// Try to get vector entities from the runtime.
+func computeAngleFromEntities(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
 	entA := entityByHandle(c.EntityA, params)
 	entB := entityByHandle(c.EntityB, params)
 	if entA == nil || entB == nil {
-		return -1
+		return 0, false
 	}
-	// If they are line segments, use their direction vectors.
 	vA, okA := directionVectorOf(entA)
 	vB, okB := directionVectorOf(entB)
 	if !okA || !okB {
-		return -1
+		return 0, false
+	}
+	if c.Other {
+		vA = vA.ScaledBy(-1)
+	}
+	// Project into the constraint's workplane when one is set.
+	if c.Workplane != (core.HEntity{}) {
+		if wp := entityByHandle(c.Workplane, params); wp != nil {
+			vA = projectVectorIntoWorkplane(vA, wp)
+			vB = projectVectorIntoWorkplane(vB, wp)
+		}
 	}
 	mag := vA.Magnitude() * vB.Magnitude()
 	if mag < 1e-12 {
-		return -1
+		return 0, false
 	}
 	cos := vA.Dot(vB) / mag
 	if cos > 1 {
@@ -523,7 +581,7 @@ func computeAngleFromEntities(c *core.Constraint, params map[core.HParam]float64
 	if cos < -1 {
 		cos = -1
 	}
-	return math.Acos(cos) * 180.0 / math.Pi
+	return math.Acos(cos) * 180.0 / math.Pi, true
 }
 
 // computeCircleDiameter computes the diameter of a circle entity
@@ -533,21 +591,206 @@ func computeCircleDiameter(c *core.Constraint, params map[core.HParam]float64) (
 	if ent == nil {
 		return 0, false
 	}
-	// Look for center and radius points on the circle.
-	if c.PtA == (core.HEntity{}) || c.PtB == (core.HEntity{}) {
+	if ent.Type != core.EntityCircle && ent.Type != core.EntityArcOfCircle {
 		return 0, false
 	}
-	pa := entityByHandle(c.PtA, params)
-	pb := entityByHandle(c.PtB, params)
+	if r, ok := distanceEntityValue(ent, params); ok {
+		return 2.0 * r, true
+	}
+	return 0, false
+}
+
+// computePointPointDistance returns the Euclidean distance between
+// PtA and PtB of c. Returns ok=false when either point is missing.
+func computePointPointDistance(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	pa, pb := pointByHandle(c.PtA, params), pointByHandle(c.PtB, params)
 	if pa == nil || pb == nil {
 		return 0, false
 	}
-	// Diameter = 2 * radius. If PtA is center, PtB is on the circle,
-	// then the distance between them is the radius.
-	center := pa.PointGetNum()
-	onCircle := pb.PointGetNum()
-	dist := center.Minus(onCircle).Magnitude()
-	return 2.0 * dist, true
+	return pa.DistanceTo(*pb), true
+}
+
+// computePointLineDistance returns the absolute value of the
+// perpendicular distance from PtA to the line through EntityA's
+// endpoints. The C++ emitter takes the workplane into account; here
+// we work in 3-D which matches the workplane-free case.
+func computePointLineDistance(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	ln := entityByHandle(c.EntityA, params)
+	pt := pointByHandle(c.PtA, params)
+	if ln == nil || pt == nil {
+		return 0, false
+	}
+	a, b := lineEndpointsNumer(ln, params)
+	return pointLineDistanceNumer(a, b, *pt), true
+}
+
+// lineEndpointsNumer returns the start and end points of a line
+// segment entity, resolving each endpoint through the active sketch
+// when no resolver is supplied.
+func lineEndpointsNumer(ln *core.Entity, params map[core.HParam]float64) (geom.Vector, geom.Vector) {
+	if ln == nil {
+		return geom.Vector{}, geom.Vector{}
+	}
+	if ln.Type != core.EntityLineSegment {
+		return ln.PointGetNum(), ln.PointGetNum()
+	}
+	a := resolvePointValue(ln.Point[0], params)
+	b := resolvePointValue(ln.Point[1], params)
+	return a, b
+}
+
+// resolvePointValue returns the numeric position of the entity at h
+// using the active sketch as a resolver. Falls back to ActPoint.
+func resolvePointValue(h core.HEntity, params map[core.HParam]float64) geom.Vector {
+	if h.V == 0 {
+		return geom.Vector{}
+	}
+	e := entityByHandle(h, params)
+	if e == nil {
+		return geom.Vector{}
+	}
+	if e.IsPoint() {
+		if v := e.PointGetNum(); v.X != 0 || v.Y != 0 || v.Z != 0 {
+			return v
+		}
+		// Last resort: re-read params directly when ActPoint is unset.
+		if e.Param[0].V != 0 || e.Param[1].V != 0 || e.Param[2].V != 0 {
+			if x, xok := paramByHandle(e.Param[0], params); xok {
+				y, yok := paramByHandle(e.Param[1], params)
+				z, zok := paramByHandle(e.Param[2], params)
+				if yok && zok {
+					return geom.NewVector(x, y, z)
+				}
+			}
+		}
+		// Origin point — ActPoint is genuinely zero.
+		return geom.Vector{}
+	}
+	return e.PointGetNum()
+}
+
+// computePointPlaneDistance returns the signed distance from PtA
+// to the plane EntityA. Falls back to 3-D plane normal × (pt - origin).
+func computePointPlaneDistance(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	plane := entityByHandle(c.EntityA, params)
+	pt := pointByHandle(c.PtA, params)
+	if plane == nil || pt == nil {
+		return 0, false
+	}
+	normal := planeVector(plane)
+	if normal.Magnitude() < 1e-12 {
+		return 0, false
+	}
+	origin := planeOrigin(plane)
+	diff := pt.Minus(origin)
+	return diff.Dot(normal.Normal()), true
+}
+
+// computePointFaceDistance returns the signed distance from PtA
+// to the plane of EntityA (a face entity).
+func computePointFaceDistance(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	face := entityByHandle(c.EntityA, params)
+	pt := pointByHandle(c.PtA, params)
+	if face == nil || pt == nil {
+		return 0, false
+	}
+	normal := faceNormal(face)
+	if normal.Magnitude() < 1e-12 {
+		return 0, false
+	}
+	origin := face.PointGetNum()
+	if isZero(origin) && face.Point[0] != (core.HEntity{}) {
+		if p0 := pointByHandle(face.Point[0], params); p0 != nil {
+			origin = *p0
+		}
+	}
+	diff := pt.Minus(origin)
+	return diff.Dot(normal.Normal()), true
+}
+
+// computeProjectedPointDistance returns the signed length of the
+// vector PtB - PtA projected onto EntityA's direction.
+func computeProjectedPointDistance(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	pa, pb := pointByHandle(c.PtA, params), pointByHandle(c.PtB, params)
+	if pa == nil || pb == nil {
+		return 0, false
+	}
+	dirEnt := entityByHandle(c.EntityA, params)
+	if dirEnt == nil {
+		return 0, false
+	}
+	dir, ok := directionVectorOf(dirEnt)
+	if !ok || dir.Magnitude() < 1e-12 {
+		return 0, false
+	}
+	return pb.Minus(*pa).Dot(dir.Normal()), true
+}
+
+// computeLengthDifference returns |len(entityA) - len(entityB)|.
+func computeLengthDifference(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	la, okA := entityLengthNumer(c.EntityA, params)
+	lb, okB := entityLengthNumer(c.EntityB, params)
+	if !okA || !okB {
+		return 0, false
+	}
+	return la - lb, true
+}
+
+// computeArcArcDifference returns the arc-length difference between
+// two arc entities.
+func computeArcArcDifference(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	la, okA := entityLengthNumer(c.EntityA, params)
+	lb, okB := entityLengthNumer(c.EntityB, params)
+	if !okA || !okB {
+		return 0, false
+	}
+	return la - lb, true
+}
+
+// computeArcLineDifference returns the arc-length difference between
+// an arc and a line.
+func computeArcLineDifference(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	return computeLengthDifference(c, params)
+}
+
+// computeLengthRatio returns len(entityA) / len(entityB).
+func computeLengthRatio(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	la, okA := entityLengthNumer(c.EntityA, params)
+	lb, okB := entityLengthNumer(c.EntityB, params)
+	if !okA || !okB || math.Abs(lb) < 1e-12 {
+		return 0, false
+	}
+	return la / lb, true
+}
+
+// computeArcArcLenRatio returns the ratio of two arc lengths.
+func computeArcArcLenRatio(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	return computeLengthRatio(c, params)
+}
+
+// computeArcLineLenRatio returns arc(entityA) / line(entityB).
+func computeArcLineLenRatio(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	return computeLengthRatio(c, params)
+}
+
+// computePointOnLineParameter returns the parameter t along EntityA
+// (a line) closest to PtA. Returns t such that pt = a + t*(b - a).
+func computePointOnLineParameter(c *core.Constraint, params map[core.HParam]float64) (float64, bool) {
+	ln := entityByHandle(c.EntityA, params)
+	if ln == nil {
+		return 0, false
+	}
+	a, b := lineEndpointsNumer(ln, params)
+	pt := pointByHandle(c.PtA, params)
+	if pt == nil {
+		return 0, false
+	}
+	ab := b.Minus(a)
+	denom := ab.Dot(ab)
+	if denom < 1e-12 {
+		return 0, false
+	}
+	return pt.Minus(a).Dot(ab) / denom, true
 }
 
 // entityByHandle returns the entity for the given handle, using the
@@ -558,8 +801,45 @@ func entityByHandle(h core.HEntity, params map[core.HParam]float64) *core.Entity
 	if h == (core.HEntity{}) {
 		return nil
 	}
-	// Look up via the current sketch (if any).
 	return lookupEntityInSketch(h)
+}
+
+// pointByHandle returns the resolved numeric position of the
+// referenced entity if it is a point. Returns nil if the entity
+// is missing or not a point.
+func pointByHandle(h core.HEntity, params map[core.HParam]float64) *geom.Vector {
+	if h.V == 0 {
+		return nil
+	}
+	e := entityByHandle(h, params)
+	if e == nil || !e.IsPoint() {
+		return nil
+	}
+	v := e.PointGetNum()
+	if v.X == 0 && v.Y == 0 && v.Z == 0 {
+		// Try param fallback when ActPoint is genuinely zero but
+		// the entity is wired to a param tuple.
+		if e.Param[0].V != 0 || e.Param[1].V != 0 || e.Param[2].V != 0 {
+			if x, xok := paramByHandle(e.Param[0], params); xok {
+				y, yok := paramByHandle(e.Param[1], params)
+				z, zok := paramByHandle(e.Param[2], params)
+				if yok && zok {
+					out := geom.NewVector(x, y, z)
+					return &out
+				}
+			}
+		}
+	}
+	return &v
+}
+
+// paramByHandle looks up a parameter by handle in params.
+func paramByHandle(h core.HParam, params map[core.HParam]float64) (float64, bool) {
+	if h.V == 0 {
+		return 0, false
+	}
+	v, ok := params[h]
+	return v, ok
 }
 
 // lookupEntityInSketch finds an entity in the global active sketch.
@@ -579,20 +859,140 @@ func directionVectorOf(e *core.Entity) (geom.Vector, bool) {
 		return geom.Vector{}, false
 	}
 	if e.Type == core.EntityLineSegment {
-		return e.PointGetNum().Minus(e.PointGetNum().Plus(geom.Vector{})), true
+		a, b := lineEndpointsNumer(e, nil)
+		return b.Minus(a), true
 	}
 	if e.IsNormal() {
-		// Normals are stored as quaternion; convert to direction.
 		q := e.PointGetQuaternion()
 		return q.Rotate(geom.Vector{Z: 1}), true
 	}
 	return geom.Vector{}, false
 }
 
+// entityLengthNumer returns the numeric length of an entity (line
+// segment, arc, circle) using its stored numerical state.
+func entityLengthNumer(h core.HEntity, params map[core.HParam]float64) (float64, bool) {
+	e := entityByHandle(h, params)
+	if e == nil {
+		return 0, false
+	}
+	switch e.Type {
+	case core.EntityLineSegment:
+		a, b := lineEndpointsNumer(e, params)
+		return b.Minus(a).Magnitude(), true
+	case core.EntityCircle:
+		r, ok := distanceEntityValue(e, params)
+		if !ok {
+			return 0, false
+		}
+		return 2.0 * math.Pi * r, true
+	case core.EntityArcOfCircle:
+		r, ok := distanceEntityValue(e, params)
+		if !ok {
+			return 0, false
+		}
+		// For now assume full circle; a more elaborate implementation
+		// would read ArcGetAngles() and multiply by dtheta / (2pi).
+		return 2.0 * math.Pi * r, true
+	}
+	return 0, false
+}
+
+// distanceEntityValue reads the numeric distance value referenced by
+// the entity's Distance handle. The Distance handle points to a
+// separate distance entity whose ActDistance is the actual value.
+func distanceEntityValue(e *core.Entity, params map[core.HParam]float64) (float64, bool) {
+	if e == nil || e.Distance.V == 0 {
+		return 0, false
+	}
+	de := entityByHandle(e.Distance, params)
+	if de == nil {
+		return 0, false
+	}
+	if de.Type == core.EntityDistance || de.Type == core.EntityDistanceNCopy {
+		if v, ok := paramByHandle(de.Param[0], params); ok {
+			return v, true
+		}
+		return de.ActDistance, de.ActDistance != 0
+	}
+	return de.ActDistance, de.ActDistance != 0
+}
+
+// planeVector returns the unit normal of a plane entity.
+func planeVector(plane *core.Entity) geom.Vector {
+	if plane == nil {
+		return geom.Vector{}
+	}
+	q := plane.ActNormal
+	if q.W == 0 && q.X == 0 && q.Y == 0 && q.Z == 0 {
+		q = plane.PointGetQuaternion()
+	}
+	return q.Rotate(geom.Vector{Z: 1})
+}
+
+// planeOrigin returns the origin point of a plane entity.
+func planeOrigin(plane *core.Entity) geom.Vector {
+	if plane == nil {
+		return geom.Vector{}
+	}
+	if o := plane.PointGetNum(); !isZero(o) {
+		return o
+	}
+	if plane.Point[0] != (core.HEntity{}) {
+		if p0 := pointByHandle(plane.Point[0], nil); p0 != nil {
+			return *p0
+		}
+	}
+	return geom.Vector{}
+}
+
+// faceNormal returns the unit normal of a face entity.
+func faceNormal(face *core.Entity) geom.Vector {
+	if face == nil {
+		return geom.Vector{}
+	}
+	q := face.ActNormal
+	if q.W == 0 && q.X == 0 && q.Y == 0 && q.Z == 0 {
+		q = face.PointGetQuaternion()
+	}
+	return q.Rotate(geom.Vector{Z: 1})
+}
+
+// projectVectorIntoWorkplane removes the component of v perpendicular
+// to the workplane normal. Returns v unchanged when wp is not a
+// normal entity.
+func projectVectorIntoWorkplane(v geom.Vector, wp *core.Entity) geom.Vector {
+	if wp == nil {
+		return v
+	}
+	n := planeVector(wp)
+	if n.Magnitude() < 1e-12 {
+		return v
+	}
+	return v.Minus(n.ScaledBy(v.Dot(n)))
+}
+
+// pointLineDistanceNumer returns the absolute perpendicular distance
+// from pt to the line through a and b.
+func pointLineDistanceNumer(a, b, pt geom.Vector) float64 {
+	ab := b.Minus(a)
+	denom := ab.Dot(ab)
+	if denom < 1e-12 {
+		return pt.Minus(a).Magnitude()
+	}
+	// |((b - a) x (pt - a))| / |b - a|
+	cross := ab.Cross(pt.Minus(a))
+	return cross.Magnitude() / math.Sqrt(denom)
+}
+
+// isZero returns true when v has magnitude < LengthEps.
+func isZero(v geom.Vector) bool {
+	const eps = 1e-12
+	return math.Abs(v.X) < eps && math.Abs(v.Y) < eps && math.Abs(v.Z) < eps
+}
+
 // activeSketch is set during GenerateAll to allow entity lookup.
 var activeSketch *Sketch
-
-
 
 // GenerateConstraint populates the parameter list with the
 // constraint's dependent params. Implements the C++

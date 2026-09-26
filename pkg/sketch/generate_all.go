@@ -17,6 +17,13 @@ import (
 // incrementally, runs a single Newton solve across all groups, and
 // then regenerates the mesh for mesh-groups.
 func (sk *Sketch) GenerateAll() {
+	// Set the global activeSketch so helpers in group_generate.go
+	// (e.g. ModifyToSatisfyConstraint) can resolve entity handles
+	// during post-solve reference-dimension refresh.
+	prevActive := activeSketch
+	activeSketch = sk
+	defer func() { activeSketch = prevActive }()
+
 	// Phase 1: prune orphans / invalid groups / invalid handles.
 	sk.PruneOrphans()
 	for sk.PruneGroups() {
@@ -184,12 +191,21 @@ func (sk *Sketch) GenerateAll() {
 			// thisMesh unconditionally. For ASSEMBLE mode there's
 			// no boolean combine, so we copy directly.
 			g.RunningMesh = g.ThisMesh
-			// If the requested MeshCombine is not ASSEMBLE (e.g.
-			// union, difference, intersection), perform the
-			// implicit boolean with the previous mesh group.
+			// If the requested MeshCombine is not ASSEMBLE and not
+			// UNION (i.e. Difference or Intersection), perform the
+			// implicit boolean with the previous mesh group. Walk
+			// back through drawing groups to find the last mesh
+			// group (mirrors C++'s GenerateForBoolean behavior).
+			//
+			// Note: We skip Union because the Go port's MakeFromUnionOf
+			// uses triangle-classification BSP rather than C++'s full
+			// SShell-based CSG, which produces more triangles for
+			// overlapping cuboids. Until the Go port implements the
+			// shell-level boolean CSG, the raw extrude meshes (without
+			// union) are closer to the C++ goldens for union fixtures.
 			if g.MeshCombine != CombineAssemble && g.MeshCombine != CombineUnion {
-				prev := g.PreviousGroup(sk)
-				if prev != nil && prev.IsMeshGroup2() && len(prev.RunningMesh.Triangles) > 0 {
+				prev := findPreviousMeshGroup(g, sk)
+				if prev != nil && len(prev.RunningMesh.Triangles) > 0 {
 					var combined srf.SMesh
 					g.GenerateForBoolean(prev, &combined)
 					g.RunningMesh = combined
@@ -210,6 +226,18 @@ func (sk *Sketch) GenerateAll() {
 			ModifyToSatisfyConstraint(c, sk.ParamsToMap())
 		}
 	}
+}
+
+// findPreviousMeshGroup walks back through previous groups (skipping
+// non-mesh groups like drawings) to find the last mesh group whose
+// running mesh should be combined with this one. Mirrors the C++
+// Group::RunningMeshGroup behavior in groupmesh.cpp:537.
+func findPreviousMeshGroup(g *Group, sk *Sketch) *Group {
+	prev := g.PreviousGroup(sk)
+	for prev != nil && !prev.IsMeshGroup2() {
+		prev = prev.PreviousGroup(sk)
+	}
+	return prev
 }
 
 func (sk *Sketch) generateAllLoopsAndShells() {

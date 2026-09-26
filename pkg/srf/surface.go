@@ -12,16 +12,16 @@ import (
 // weighted control points. The trim list specifies which (u, v)
 // sub-region of the rectangle [0,1]x[0,1] is "inside" the surface.
 type SSurface struct {
-	Tag int
-	H   core.HSSurface
+	Tag  int
+	H    core.HSSurface
 	NewH core.HSSurface
 
 	Color core.RgbaColor
 	Face  FaceID
 
 	DegM, DegN int
-	Ctrl  [4][4]geom.Vector
-	Weight [4][4]float64
+	Ctrl       [4][4]geom.Vector
+	Weight     [4][4]float64
 
 	Trim  []STrimBy
 	Bsp   *SBspUv
@@ -178,8 +178,8 @@ func (s *SSurface) tangentsAtImpl(u, v float64, tu, tv *geom.Vector) {
 	}
 	if wSum != 0 {
 		pt := s.PointAt(u, v)
-		*tu = tu.ScaledBy(1.0/wSum).Minus(pt.ScaledBy(dwDu/wSum))
-		*tv = tv.ScaledBy(1.0/wSum).Minus(pt.ScaledBy(dwDv/wSum))
+		*tu = tu.ScaledBy(1.0 / wSum).Minus(pt.ScaledBy(dwDu / wSum))
+		*tv = tv.ScaledBy(1.0 / wSum).Minus(pt.ScaledBy(dwDv / wSum))
 	}
 }
 
@@ -576,7 +576,6 @@ func (s *SSurface) IsCylinder(axis, center *geom.Vector, r, start, finish *float
 	}
 	*center = c
 	*r = radius
-	*axis = *axis
 	// The cylinder runs from ctrl[0][0] to ctrl[0][1] (along axis).
 	*start = pts[0].Minus(c).Dot(*axis)
 	*finish = s.Ctrl[0][1].Minus(c).Dot(*axis)
@@ -1119,6 +1118,60 @@ func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *
 // from curve.cpp:868. The C++ version records 3D start/finish
 // points; here we keep parameter-space (0..1) but also expose the
 // 3D endpoints via the StartP/FinishP helpers below.
+// ChordToleranceForEdge returns the worst deviation of the surface
+// from a straight line between two (u, v) parameters. Used by
+// SCurve::RemoveShortSegments to decide whether a polyline point is
+// necessary to satisfy the chord tolerance. Equivalent to
+// SSurface::ChordToleranceForEdge in solvespace/src/srf/triangulate.cpp:503.
+func (s *SSurface) ChordToleranceForEdge(a, b geom.Vector) float64 {
+	as := s.PointAt(a.X, a.Y)
+	bs := s.PointAt(b.X, b.Y)
+	worst := -1.0
+	for i := 1; i <= 3; i++ {
+		t := float64(i) / 4.0
+		p := a.Plus(b.Minus(a).ScaledBy(t))
+		ps := as.Plus(bs.Minus(as).ScaledBy(t))
+		pps := s.PointAt(p.X, p.Y)
+		d2 := pps.Minus(ps).MagSquared()
+		if d2 > worst {
+			worst = d2
+		}
+	}
+	if worst <= 0 {
+		return 0
+	}
+	return sqrtD(worst)
+}
+
+// PointAtMaybeSwapped evaluates the surface at (u, v) or (v, u)
+// depending on the swapped flag.
+func (s *SSurface) PointAtMaybeSwapped(u, v float64, swapped bool) geom.Vector {
+	if swapped {
+		return s.PointAt(v, u)
+	}
+	return s.PointAt(u, v)
+}
+
+// NormalAtMaybeSwapped returns the surface normal at (u, v) or
+// (v, u) depending on swapped.
+func (s *SSurface) NormalAtMaybeSwapped(u, v float64, swapped bool) geom.Vector {
+	if swapped {
+		return s.NormalAt(v, u)
+	}
+	return s.NormalAt(u, v)
+}
+
+func sqrtD(v float64) float64 {
+	if v <= 0 {
+		return 0
+	}
+	x := v / 2
+	for i := 0; i < 32; i++ {
+		x = (x + v/x) / 2
+	}
+	return x
+}
+
 func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool) STrimBy {
 	stb := STrimBy{Curve: hsc, Backwards: backwards, Start: 0, Finish: 1}
 	if shell == nil {

@@ -226,14 +226,149 @@ func (p *SPolygon) UvTriangulateInto(m *SMesh, srf interface{}) {
 	}
 }
 
-// UvGridTriangulateInto triangulates the polygon by sampling a
-// regular uv grid within the bounding rectangle, then evaluating
-// each grid point on srf. Useful for highly curved surfaces where
-// ear-clipping introduces distortion. implementation: planar
-// grid in the bounding rect of the polygon.
+// UvGridTriangulateInto triangulates the polygon by sampling an
+// adaptive uv grid driven by MakeTriangulationGridInto, then
+// evaluating each grid point on srf. Useful for highly curved
+// surfaces where ear-clipping introduces distortion. The grid
+// resolution is chosen by the surface itself: it recurses into
+// each (u, v) cell until the chord tolerance is satisfied.
+//
+// Mirrors SPolygon::UvGridTriangulateInto from
+// solvespace/src/srf/triangulate.cpp:581. When srf is nil or not
+// an *SSurface, the regular-grid fallback is used.
 func (p *SPolygon) UvGridTriangulateInto(m *SMesh, srf interface{}, nu, nv int) {
 	if len(p.Contours) == 0 {
 		return
+	}
+	if surface, ok := srf.(*SSurface); ok {
+		p.uvGridTriangulateAdaptive(m, surface)
+		return
+	}
+	uvGridTriangulateRegular(p, m, nu, nv)
+}
+
+// uvGridTriangulateAdaptive implements the C++
+// SPolygon::UvGridTriangulateInto adaptive path: build li/lj by
+// recursive MakeTriangulationGridInto, force a minimum of 4
+// segments in each direction for second-order surfaces, then emit
+// a quad for every cell whose corners are inside the polygon and
+// whose edges don't cross the boundary.
+func (p *SPolygon) uvGridTriangulateAdaptive(m *SMesh, srf *SSurface) {
+	orig := SEdgeList{}
+	p.MakeEdgesInto(&orig)
+
+	holes := SEdgeList{}
+	defer orig.Clear()
+	defer holes.Clear()
+
+	if p.Normal == (geom.Vector{}) {
+		p.ComputeNormal()
+	}
+	if p.Normal.Magnitude() < 1e-12 {
+		p.Normal = geom.Vector{Z: 1}
+	}
+	p.FixContourDirections()
+
+	// Build the adaptive grid lines.
+	li := []float64{0.0, 0.25, 0.5, 0.75}
+	srf.MakeTriangulationGridInto(&li, 0, 1, true, 0)
+	li = append(li, 1.0)
+
+	lj := []float64{0.0, 0.25, 0.5, 0.75}
+	srf.MakeTriangulationGridInto(&lj, 0, 1, false, 0)
+	lj = append(lj, 1.0)
+
+	// Force at least 4 segments in each direction for second-order
+	// surfaces.
+	if len(li) < 5 && srf.DegM > 1 {
+		li = []float64{0.0, 0.25, 0.5, 0.75, 1.0}
+	}
+	if len(lj) < 5 && srf.DegN > 1 {
+		lj = []float64{0.0, 0.25, 0.5, 0.75, 1.0}
+	}
+
+	if len(li) <= 3 || len(lj) <= 3 {
+		// Not enough grid resolution — fall back to ear-clipping.
+		p.TriangulateInto(m)
+		return
+	}
+
+	bottom := make([]bool, len(lj))
+	tu := geom.Vector{}
+	tv := geom.Vector{}
+	for i := 1; i < len(li)-1; i++ {
+		prevFlag := false
+		for j := 1; j < len(lj)-1; j++ {
+			us := li[i]
+			uf := li[i+1]
+			vs := lj[j]
+			vf := lj[j+1]
+
+			a := geom.Vector{X: us, Y: vs}
+			b := geom.Vector{X: us, Y: vf}
+			c := geom.Vector{X: uf, Y: vf}
+			d := geom.Vector{X: uf, Y: vs}
+
+			thisFlag := true
+			if i == len(li)-2 || j == len(lj)-2 ||
+				orig.AnyEdgeCrossings(a, b, nil, nil) != 0 ||
+				orig.AnyEdgeCrossings(b, c, nil, nil) != 0 ||
+				orig.AnyEdgeCrossings(c, d, nil, nil) != 0 ||
+				orig.AnyEdgeCrossings(d, a, nil, nil) != 0 {
+				thisFlag = false
+			}
+
+			if !p.ContainsPoint(a) {
+				thisFlag = false
+			}
+
+			if thisFlag {
+				tu, tv = surfaceTangentsXY(srf, us, vs)
+				if tu.Dot(tv) < lengthEps {
+					m.AddTriangle(STriangle{A: a, B: b, C: c})
+					m.AddTriangle(STriangle{A: a, B: c, C: d})
+				} else {
+					m.AddTriangle(STriangle{A: a, B: b, C: d})
+					m.AddTriangle(STriangle{A: b, B: c, C: d})
+				}
+				if !prevFlag {
+					holes.AddEdge(d, a, 0, 0, 0)
+				}
+				if !bottom[j] {
+					holes.AddEdge(a, b, 0, 0, 0)
+				}
+			} else {
+				if prevFlag {
+					holes.AddEdge(a, d, 0, 0, 0)
+				}
+				if bottom[j] {
+					holes.AddEdge(b, a, 0, 0, 0)
+				}
+			}
+			prevFlag = thisFlag
+			bottom[j] = thisFlag
+		}
+	}
+
+	hp := SPolygon{}
+	if holes.AssemblePolygon(&hp, nil, true) {
+		for i := range hp.Contours {
+			p.Contours = append(p.Contours, hp.Contours[i])
+		}
+	}
+
+	p.UvTriangulateInto(m, srf)
+}
+
+// uvGridTriangulateRegular is the simple nu×nv grid fallback when
+// no SSurface is available. Each cell whose lower-left corner is
+// inside the polygon contributes two triangles.
+func uvGridTriangulateRegular(p *SPolygon, m *SMesh, nu, nv int) {
+	if nu <= 0 {
+		nu = 16
+	}
+	if nv <= 0 {
+		nv = 16
 	}
 	umin, vmin := mathInfPos, mathInfPos
 	umax, vmax := mathInfNeg, mathInfNeg
@@ -252,12 +387,6 @@ func (p *SPolygon) UvGridTriangulateInto(m *SMesh, srf interface{}, nu, nv int) 
 				vmax = sp.P.Y
 			}
 		}
-	}
-	if nu <= 0 {
-		nu = 16
-	}
-	if nv <= 0 {
-		nv = 16
 	}
 	du := (umax - umin) / float64(nu)
 	dv := (vmax - vmin) / float64(nv)
@@ -278,6 +407,15 @@ func (p *SPolygon) UvGridTriangulateInto(m *SMesh, srf interface{}, nu, nv int) 
 			m.AddTriangle(STriangle{A: p00, B: p11, C: p01})
 		}
 	}
+}
+
+// surfaceTangentsXY returns the partial derivatives of an SSurface
+// in the (u, v) parametric space, ignoring the swapped parameter
+// for now (the UvGridTriangulateInto path does not require it).
+func surfaceTangentsXY(s *SSurface, u, v float64) (geom.Vector, geom.Vector) {
+	du := s.PointAt(u+1e-3, v).Minus(s.PointAt(u-1e-3, v))
+	dv := s.PointAt(u, v+1e-3).Minus(s.PointAt(u, v-1e-3))
+	return du, dv
 }
 
 const (

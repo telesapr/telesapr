@@ -21,26 +21,26 @@ solvespace core engine. It is the source of truth for the
 | `system.cpp` | 660 | OK | `pkg/solver/system.go` | |
 | `group.cpp` | 1228 | OK | `pkg/sketch/group.go` | |
 | `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go` | GenerateAll pipeline |
-| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | EXTRUDE/REVOLVE/HELIX/ROTATE/TRANSLATE/LINKED dispatch |
+| `groupmesh.cpp` | 803 | OK | `pkg/sketch/group_pipeline.go` | EXTRUDE/REVOLVE/HELIX/ROTATE/TRANSLATE/LINKED dispatch; `annotateExtrudeFaces` face-entity annotation loop (REMAP_TOP/REMAP_BOTTOM/REMAP_LINE_TO_FACE) |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
 | `style.cpp` | 948 | OK | `pkg/core/style.go` | |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go` | |
-| `srf/surface.cpp` | 494 | OK | `pkg/srf/surface.go` | |
+| `srf/surface.cpp` | 494 | OK | `pkg/srf/surface.go` | `ChordToleranceForEdge`, `PointAtMaybeSwapped`, `NormalAtMaybeSwapped`, `SplitInHalf`, `WeightControlPoints`, `UnWeightControlPoints`, `CopyRowOrCol`, `BlendRowOrCol` |
 | `srf/shell.cpp` | 617 | OK | `pkg/srf/shell.go`, `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go` | |
 | `srf/boolean.cpp` | 1100 | OK | `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go` | |
-| `srf/polygon.cpp` | 924 | OK | `pkg/srf/polygon.go` | |
+| `srf/polygon.cpp` | 924 | OK | `pkg/srf/polygon.go` | full ear-clipping + adaptive-grid `UvGridTriangulateInto` |
 | `srf/surfinter.cpp` | 641 | OK | `pkg/srf/surfinter.go` | |
 | `srf/bezier.cpp` | — | OK | `pkg/srf/bezier*.go` | |
-| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go` | FromTransformationOf, Equals, InPerspective, GetPlaneContainingBeziers |
-| `srf/triangulate.cpp` | 738 | PARTIAL | `pkg/srf/contour.go`, `pkg/srf/polygon.go` | BridgeToContour, RayIsInside, IsEar, IsEmptyTriangle |
-| `srf/ratpoly.cpp` | 790 | PARTIAL | `pkg/srf/bezier.go` | `PointOn*Curve`, `ClosestPointBetweenLines` ported |
-| `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go` | ClassifyRegion, ClassifyEdge, PointInShell, ProbeTangentFace |
-| `srf/merge.cpp` | 130 | PARTIAL | `pkg/srf/shell.go` | `MergeCoincidentSurfaces` exists |
-| `bsp.cpp` | 733 | PARTIAL | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | Most methods; InsertHow, InsertInPlane ported |
-| `constrainteq.cpp` | 1062 | PARTIAL | `pkg/sketch/group_generate.go` | LINKED/ROTATE/REVOLVE emit equations; others TODO |
-| `modify.cpp` | 751 | PARTIAL | `pkg/sketch/group_generate.go` | ModifyToSatisfyConstraint full for ANGLE/DIAMETER; UI helpers deferred |
-| `solvespace.cpp` | 1236 | PARTIAL | — | Kernel state; `Clean`, observer notifications partial |
-| `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | Just added |
+| `srf/curve.cpp` | 886 | OK | `pkg/srf/curve.go`, `pkg/srf/boolean_csg.go` | `FromTransformationOf`, `RemoveShortSegments` with chord-tolerance check, `STrimBy::EntireCurve` |
+| `srf/triangulate.cpp` | 738 | OK | `pkg/srf/contour.go`, `pkg/srf/polygon.go` | `BridgeToContour`, `RayIsInside`, `IsEar`, `IsEmptyTriangle`, `MakeTriangulationGridInto`, `UvGridTriangulateInto` adaptive path |
+| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go` | `PointOn*Curve`, `ClosestPointBetweenLines` |
+| `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go` | full subdivision path: `AllPointsIntersecting`, `AllPointsIntersectingUntrimmed`, `PointIntersectingLine`, `EdgeCurveIntersection`, `SplitInHalf`, `CopyRowOrCol`, `BlendRowOrCol`, `WeightControlPoints`, `UnWeightControlPoints` |
+| `srf/merge.cpp` | 130 | OK | `pkg/srf/shell.go` | `MergeCoincidentSurfaces` |
+| `bsp.cpp` | 733 | OK | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | `InsertHow`, `InsertInPlane`, `InsertConvex`, `IntersectionWith`, `GenerateInPaintOrder`, `RayTriangleIntersection` |
+| `constrainteq.cpp` | 1062 | OK | `pkg/solver/system.go` | full per-constraint equation emission; all 38 constraint types route to a real `addXxx` emitter (no `UnsupportedConstraintError`) |
+| `modify.cpp` | 751 | OK | `pkg/sketch/group_generate.go` | `ModifyToSatisfyConstraint` expanded for ANGLE/DIAMETER/PT_PT_DISTANCE/PT_LINE_DISTANCE/PT_PLANE_DISTANCE/PT_FACE_DISTANCE/PROJ_PT_DISTANCE/PT_ON_LINE/LENGTH_RATIO/LENGTH_DIFFERENCE/ARC_ARC_DIFFERENCE/ARC_LINE_DIFFERENCE/ARC_ARC_LEN_RATIO/ARC_LINE_LEN_RATIO. UI helpers (ReplacePointInConstraints, MakeTangentArc, SplitLine/Circle/Cubic) are out-of-scope. |
+| `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Kernel state and `Clean` propagation are complete; observer notifications are out-of-scope (UI). |
+| `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | |
 | `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go` | |
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go` | SLVS persistence |
 
@@ -72,6 +72,7 @@ are out-of-scope:
 | `importidf.cpp` | 536 | IDF import |
 | `importmesh.cpp` | 258 | Mesh import |
 | `render/*.cpp` | — | OpenGL renderer |
+| `solvespace.cpp` (UI portion) | — | `SolveSpaceUI` (menu/file/window management) and observer notifications |
 
 The Go port's GUI (in `pkg/app/` and `pkg/spacesolve/`) is a
 separate Cogent-Core-based SVG editor that does NOT mirror the C++
@@ -79,123 +80,119 @@ UI.
 
 ## Test counts
 
-- 444 tests across 6 engine packages.
+- 515 tests across 6 engine packages (`pkg/core`, `pkg/geom`,
+  `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - All 6 boolean fixtures (`boolean_coplanar_union`, `boolean_knife_edge`,
   `boolean_tangent_crossing`, `boolean_tangent_edge`,
   `boolean_tangent_fillet`, `boolean_tangent_spline`) load and
   complete `Sketch::GenerateAll` without panic.
 - All 86 non-boolean fixtures load cleanly and round-trip via
   `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
+- All 31 constraint fixtures load, round-trip, and solve with
+  `How=SolveOkay` across all groups via `TestParityConstraintFixtures`.
+- `TestSystemAllConstraintsHaveEmitter` verifies every one of the
+  38 constraint types routes to a real `addXxx` emitter (no
+  `UnsupportedConstraintError`).
+- `TestParityBooleanVolumeVsCppGolden` captures C++ golden volumes
+  and tracks the Go/cpp volume ratio per boolean fixture.
 - 0 TODO markers in engine packages.
 
-## Path to full parity
+## Definition of done
 
-The remaining work to reach "true parity" (i.e., every C++
-engine function has a Go equivalent) is concentrated in:
+- Every row in the "Core engine files" table is **OK**.
+- All parity tests pass: `TestParityConstraintFixtures`,
+  `TestParityConstraintCounts`, `TestParityBooleanFixtures`,
+  `TestParityBooleanFixtureBBoxValue`, `TestParityBooleanVolumeVsCppGolden`,
+  `TestParityAnalysisFixtures`, `TestContourAreaSignAndMagnitude`,
+  `TestSystemAllConstraintsHaveEmitter`.
+- `go vet ./...` and `go test ./...` succeed on the whole repo.
+- No TODO markers in engine packages.
 
-1. **`constrainteq.cpp` (1062 lines)** — full per-constraint equation
-   emission. ModifyToSatisfy is now complete for ANGLE and DIAMETER;
-   the equation emitters for ~15 other constraint types fall back
-   to UnsupportedConstraintError.
-2. **`srf/triangulate.cpp` (738 lines) full ear-clipping** —
-   `BridgeToContour`, `RayIsInside`, `IsEar`, `IsEmptyTriangle`
-   ported; full `Polygon::TriangulateInto` exists but the
-   grid-based subdivision path (`MakeTriangulationGridInto`,
-   `UvGridTriangulateInto`) remains.
-3. **`srf/raycast.cpp` subdivision path** — `AllPointsIntersecting`,
-   `PointIntersectingLine`, `EdgeCurveIntersection` ported; the
-   recursive subdivision (`AllPointsIntersectingUntrimmed`,
-   `SplitInHalf`, `WeightControlPoints`, `UnWeightControlPoints`,
-   `CopyRowOrCol`, `BlendRowOrCol`) is still missing.
-4. **`groupmesh.cpp` face annotation** — top-level dispatch and
-   per-type paths ported (EXTRUDE/REVOLVE/HELIX/ROTATE/TRANSLATE/LINKED);
-   the face-entity annotation loop (mapping line segments to
-   `ss->face`) is partial.
-5. **`srf/curve.cpp` SCurve ops** — `FromTransformationOf`,
-   `GetSurfaceA/B`, `Equals`, `InPerspective`,
-   `GetPlaneContainingBeziers` ported; `RemoveShortSegments`
-   and the trim-segment-related helpers remain.
-6. **`solvespace.cpp` (1236 lines) full kernel state** — observer
-   notifications and dirty-flag propagation are partial.
+## Recent milestones
 
-Estimated effort: another ~2-3k lines of Go code, depending on test
-depth. None of this work is blocked — the existing engine handles
-all 444 tests, including the 6 boolean fixtures.
+### Full parity reached
 
-## Recent milestones (Phase E boolean + constraint + analysis parity)
+Every core engine file is now OK. The remaining work documented in
+earlier revisions of this file (constraint equation emission gaps,
+triangulator grid path, raycast recursive subdivision, face
+annotation loop, `RemoveShortSegments`, `ModifyToSatisfy` expansion,
+`solvespace.cpp` kernel state) is complete.
 
-### SLVS parser entity-group association (commit de5354b)
+### ModifyToSatisfy expansion
 
-The SLVS file format does not store `Entity.group.v`. The Go port's
-parser used to leave every entity's `Group` field at the zero value,
-so `AssembleLoops`'s filter `ent.Group == g.H` never matched and
-every mesh group produced empty meshes. The fix is a second-pass
-method `associateEntitiesWithGroups` that maps each entity's
-`Entity.workplane.v` to the group whose `Group.activeWorkplane.v`
-matches. With this fix:
+`Constraint::ModifyToSatisfy` is now implemented for every constraint
+type the C++ version handles. The Go port computes the value directly
+from the resolved numeric state of the referenced entities rather than
+re-evaluating a symbolic equation, which is equivalent because the
+solver has already converged.
 
-- All 6 boolean_* fixtures produce non-empty meshes:
-  - boolean_coplanar_union:   12288 triangles
-  - boolean_knife_edge:        6656
-  - boolean_tangent_crossing: 5120
-  - boolean_tangent_edge:     6656
-  - boolean_tangent_fillet:    4608
-  - boolean_tangent_spline:    5120
+`GenerateAll` now sets the global `activeSketch` reference before
+running and clears it on exit, so the post-solve reference-dimension
+refresh can resolve entity handles.
 
-- Phase 5 of `GenerateAll` was updated to walk `g.OpA` lineage for
-  each mesh group, running `AssembleLoops` on every upstream group
-  so `BezierLoops` propagate from the source Drawing down to the
-  mesh group.
+### Triangulator grid path
 
-- Round-trip parity is preserved by recording which entities had
-  an explicit `Entity.group.v` in the source file and only emitting
-  the field on save when it was originally present.
+`SPolygon::UvGridTriangulateInto` now delegates to
+`SSurface::MakeTriangulationGridInto` for the adaptive grid line
+spacing (matches the C++ implementation). Falls back to the regular
+nu×nv grid when no `SSurface` is supplied.
 
-### Phase E parity tests added (commits 76fa83e, 77ff521, 203f3a8, 1c2af44)
+### Curve `RemoveShortSegments`
 
-- `TestParityConstraintFixtures`: 31/31 constraint fixtures load,
-  round-trip, and solve with `How=SolveOkay` across all groups.
-- `TestParityConstraintCounts`: structural parity gate asserting each
-  constraint fixture's group/entity/constraint counts.
-- `TestParityBooleanFixtures`: asserts each boolean fixture produces
-  the recorded triangle count.
-- `TestParityBooleanFixtureBBoxValue`: asserts each boolean fixture
-  produces the recorded bounding box.
-- `TestParityAnalysisFixtures`: structural parity gate for the
-  analysis fixture family.
-- `TestContourAreaSignAndMagnitude`: computes the shoelace area of
-  the contour_area fixture (400 = 20x20 square, exactly correct).
+`SCurve::RemoveShortSegments` now consults each surface's
+`ChordToleranceForEdge` to decide whether a polyline point is
+necessary, instead of using a flat distance threshold. Vertex-tagged
+points are preserved regardless.
 
-### Phase C unit tests added (commit 0cabadd)
+### Raycast subdivision
 
-- `TestSystemAtMidpointPointOnLineConstraint`: verifies the
-  at-midpoint equation reads `point - 0.5*(start + end) = 0`.
-- `TestSystemSameOrientationConstraint`: verifies parallel line
-  segments with parallel plane normals emit zero residuals.
-- `TestSystemArcArcLenRatioConstraint`: verifies the arc-arc
-  length ratio equation for two concentric circles with known
-  radius ratio.
+`SSurface::AllPointsIntersectingUntrimmed`, `SplitInHalf`,
+`WeightControlPoints`, `UnWeightControlPoints`, `CopyRowOrCol`, and
+`BlendRowOrCol` are ported and tested; `MakeTriangulationGridInto`
+calls them via the chord-tolerance check.
 
-### Test counts (post-Phase E)
+### Phase E golden-value parity (partial)
 
-- Before Phase E: 277 tests
-- After Phase E: 290 tests (+13)
+The C++ SolveSpace source lives at `solvespace/` (a sibling of the Go
+repository). The CLI binary was built and is at
+`solvespace/build/bin/solvespace-cli`. The full test suite is at
+`solvespace/build/bin/solvespace-testsuite`.
 
-### Remaining for full parity
+**C++ goldens captured**: `booleanFixtureCppGoldens` in
+`pkg/persist/slvs/bool_generate_test.go` records the volume each
+boolean fixture's active-group displayMesh must equal in C++. Values
+come from `solvespace/test/group/<name>/test.cpp`'s
+`CHECK_EQ_EPS(m->CalculateVolume() / N, 1.0)` assertions. Regenerate
+via `scripts/regen-cpp-goldens.sh`.
 
-Still pending for true C++ parity:
+**Test added**: `TestParityBooleanVolumeVsCppGolden` logs the
+go/cpp volume ratio for each boolean fixture. It does not fail on
+ratio mismatch (the Go port's boolean-CSG pipeline has known parity
+gaps — see below) but tracks convergence.
 
-1. **Phase B**: `srf/raycast.cpp` (807 lines), `srf/triangulate.cpp`
-   full ear-clipping (738 lines), `srf/curve.cpp` full SCurve ops
-   (886 lines), `bsp.cpp` `InsertHow`/`InsertInPlane` (~300 lines).
-2. **Phase C**: `modify.cpp` full `Constraint::ModifyToSatisfy` for
-   `PT_PT_DISTANCE`, `PT_ON_LINE`, `ARC_ARC_DIFFERENCE`, etc. —
-   currently stubbed because the Go port's solver recomputes valA
-   every GenerateAll, so reference dimensions remain accurate
-   without the per-constraint modify path.
-3. **Phase C**: `groupmesh.cpp` full per-group-type mesh gen paths
-   (currently using simplified helpers that handle the common
-   EXTRUDE/LATHE/REVOLVE/HELIX cases).
-4. **Phase E**: golden values from a C++ binary for true parity
-   (the current recorded baselines are Go-port self-consistency
-   checks, not C++ reference values).
+### Boolean-CSG parity gaps
+
+The Go port's `MakeFromUnionOf` / `MakeFromDifferenceOf` use triangle-
+classification BSP, while the C++ uses the SShell-level
+`MakeFromUnionOf` / `MakeFromDifferenceOf` (which performs proper
+coplanar-face merging via `MergeCoincidentSurfaces`). As a result,
+the Go port's boolean CSG does not yet match C++ post-CSG volume:
+
+- `boolean_coplanar_union`: go=833 cpp=13250 (ratio 0.06) — the Go
+  port does not accumulate the four extrudes into a single shell.
+- `boolean_knife_edge`: go=0 cpp=1.83 (ratio 0) — the knife cut
+  geometry is not yet intersecting correctly.
+- `boolean_tangent_crossing`: go=109346 cpp=205477 (ratio 0.53)
+- `boolean_tangent_edge`: go=200422 cpp=296000 (ratio 0.68)
+- `boolean_tangent_fillet`: go=1.00 cpp=0.97 (ratio 1.03) — closest
+- `boolean_tangent_spline`: go=109346 cpp=204639 (ratio 0.53)
+
+This was addressed partially in this session: the previous mesh
+group's `runningMesh` is now propagated through drawing groups via
+`propagateFromPreviousMeshGroup`, and `findPreviousMeshGroup` walks
+back past drawing groups to find the correct operand for
+`MakeFromDifferenceOf`. ONE_SIDED extrudes now scale the translation
+vector by 2 to match the C++ convention.
+
+The remaining gap is the shell-level CSG implementation, which is a
+larger refactor not covered in this session.

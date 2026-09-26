@@ -125,9 +125,11 @@ func (l *IdList[H, T]) SortedHandles(less func(a, b H) bool) []H {
 	return out
 }
 
-// IDs returns all handles in insertion order. The returned slice can be
-// allocated; if the caller needs allocation-free enumeration, walk the
-// slice order directly via the IDsByInsertion helper.
+// IDs returns all handles that have been added. Iteration order is
+// map order and therefore not deterministic; callers that need a
+// stable order should sort or use SortedHandles. If callers want
+// insertion order they should walk Items directly and key their own
+// reverse map.
 func (l *IdList[H, T]) IDs() []H {
 	out := make([]H, 0, len(l.Index))
 	for h := range l.Index {

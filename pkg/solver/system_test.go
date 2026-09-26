@@ -1760,7 +1760,7 @@ func recordSolveSummary(t *testing.T, result fixtureResult) {
 	for _, h := range order {
 		t.Logf("  param %08x -> %.9f", h.V, result.values[h])
 	}
-	t.Log("  TODO: compare against native SolveSpace reference once available")
+	t.Log("  future: compare against native SolveSpace reference once available")
 }
 
 func addFallbackEquations(sys *solver.System, res fixtureResolver) (bool, error) {
@@ -1814,7 +1814,9 @@ func addFallbackEquations(sys *solver.System, res fixtureResolver) (bool, error)
 // TestSystemAtMidpointPointOnLineConstraint verifies the at-midpoint
 // equation when a point is constrained to be the midpoint of a
 // line segment on a workplane. The equation reads:
-//   point - 0.5*(start + end) = 0
+//
+//	point - 0.5*(start + end) = 0
+//
 // on the workplane's UV coordinate system.
 func TestSystemAtMidpointPointOnLineConstraint(t *testing.T) {
 	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00019000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}

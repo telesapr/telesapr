@@ -81,15 +81,15 @@ func TestConstraintTypeStringRoundtrip(t *testing.T) {
 func TestConstraintBaseClear(t *testing.T) {
 	c := &Constraint{
 		ConstraintBase: ConstraintBase{
-			H:         HConstraint{V: 5},
-			Type:      ConstraintPtPtDistance,
-			Group:     HGroup{V: 1},
-			ValA:      42.0,
-			PtA:       HEntity{V: 0x1234},
+			H:     HConstraint{V: 5},
+			Type:  ConstraintPtPtDistance,
+			Group: HGroup{V: 1},
+			ValA:  42.0,
+			PtA:   HEntity{V: 0x1234},
 		},
 	}
 	c.Clear()
-	// Clear is currently a no-op stub (TODO documented). Verify no panic.
+	// Clear is currently a no-op stub. Verify no panic.
 	if c == nil {
 		t.Errorf("Clear should not nil out the constraint")
 	}

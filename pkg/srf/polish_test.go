@@ -94,7 +94,9 @@ func TestSPolygonOffsetIntoVerifiesShift(t *testing.T) {
 }
 
 // TestSCurveRemoveShortSegments verifies that RemoveShortSegments
-// drops near-duplicate vertices.
+// drops near-duplicate vertices when the chord tolerance of both
+// surfaces is satisfied. All points lie on a flat plane, so any
+// intermediate point is redundant.
 func TestSCurveRemoveShortSegments(t *testing.T) {
 	c := &SCurve{
 		Points: []SCurvePt{
@@ -102,13 +104,48 @@ func TestSCurveRemoveShortSegments(t *testing.T) {
 			{P: geom.Vector{X: 0.5}},
 			{P: geom.Vector{X: 0.5000000001}}, // within 1e-6 of point 1
 			{P: geom.Vector{X: 0.5000000002}}, // within 1e-6 of point 2 (dropped)
-			{P: geom.Vector{X: 1}},             // far from point 3 (kept)
+			{P: geom.Vector{X: 1}},            // far from point 3 (kept)
+		},
+	}
+	srf := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	c.RemoveShortSegments(&srf, &srf)
+	// Expected: intermediate points dropped because the plane is flat.
+	if len(c.Points) != 2 {
+		t.Fatalf("expected 2 points (start and end) on a flat plane, got %d", len(c.Points))
+	}
+}
+
+// TestSCurveRemoveShortSegmentsKeepsEssentialPoints verifies that
+// RemoveShortSegments preserves a vertex when it is marked as a
+// curve vertex (the C++ logic for SCurvePt::vertex).
+func TestSCurveRemoveShortSegmentsKeepsEssentialPoints(t *testing.T) {
+	c := &SCurve{
+		Points: []SCurvePt{
+			{P: geom.Vector{}},
+			{Vertex: true, P: geom.Vector{X: 0.5}},
+			{Vertex: true, P: geom.Vector{X: 1}},
+		},
+	}
+	srf := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	c.RemoveShortSegments(&srf, &srf)
+	if len(c.Points) != 3 {
+		t.Fatalf("expected 3 points (vertex preserved), got %d", len(c.Points))
+	}
+}
+
+// TestSCurveRemoveShortSegmentsNilSurfaces verifies that passing
+// nil surfaces is a no-op (used by legacy callers).
+func TestSCurveRemoveShortSegmentsNilSurfaces(t *testing.T) {
+	c := &SCurve{
+		Points: []SCurvePt{
+			{P: geom.Vector{}},
+			{P: geom.Vector{X: 0.5}},
+			{P: geom.Vector{X: 1}},
 		},
 	}
 	c.RemoveShortSegments(nil, nil)
-	// Expected: point 2 dropped (both neighbors are tiny distances).
-	if len(c.Points) != 4 {
-		t.Fatalf("expected 4 points after removing one short segment, got %d", len(c.Points))
+	if len(c.Points) != 3 {
+		t.Fatalf("expected 3 points unchanged, got %d", len(c.Points))
 	}
 }
 
@@ -134,4 +171,50 @@ func TestSPolygonOffsetIntoRoundTrip(t *testing.T) {
 		}
 	}
 	_ = core.HEntity{}
+}
+
+// TestSPolygonUvGridTriangulateIntoAdaptive verifies that the
+// adaptive grid path produces triangles inside a unit square when
+// handed an SSurface. The adaptive grid falls back to ear
+// clipping when SSurface is missing; this test exercises the
+// adaptive path which adds interior quads as triangles.
+func TestSPolygonUvGridTriangulateIntoAdaptive(t *testing.T) {
+	p := &SPolygon{Normal: geom.Vector{Z: 1}}
+	c := SContour{}
+	for _, corner := range []geom.Vector{
+		{X: 0, Y: 0},
+		{X: 1, Y: 0},
+		{X: 1, Y: 1},
+		{X: 0, Y: 1},
+	} {
+		c.AddPoint(corner)
+	}
+	p.Contours = []SContour{c}
+	srf := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	var m SMesh
+	p.UvGridTriangulateInto(&m, srf, 0, 0)
+	if len(m.Triangles) == 0 {
+		t.Fatalf("expected grid triangulation to produce triangles, got 0")
+	}
+}
+
+// TestSPolygonUvGridTriangulateIntoRegular verifies the fallback
+// regular grid path when no SSurface is supplied.
+func TestSPolygonUvGridTriangulateIntoRegular(t *testing.T) {
+	p := &SPolygon{Normal: geom.Vector{Z: 1}}
+	c := SContour{}
+	for _, corner := range []geom.Vector{
+		{X: 0, Y: 0},
+		{X: 1, Y: 0},
+		{X: 1, Y: 1},
+		{X: 0, Y: 1},
+	} {
+		c.AddPoint(corner)
+	}
+	p.Contours = []SContour{c}
+	var m SMesh
+	p.UvGridTriangulateInto(&m, nil, 0, 0)
+	if len(m.Triangles) == 0 {
+		t.Fatalf("expected regular grid to produce triangles, got 0")
+	}
 }
