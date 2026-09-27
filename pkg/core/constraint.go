@@ -1,6 +1,10 @@
 package core
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"fmt"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
 
 type ConstraintType int
 
@@ -190,3 +194,57 @@ type Constraint struct {
 }
 
 type ConstraintList []Constraint
+
+// constraintNames are the names C++ Constraint::DescriptionString
+// gives the constraint types.
+var constraintNames = map[ConstraintType]string{
+	ConstraintPointsCoincident:  "pts-coincident",
+	ConstraintPtPtDistance:      "pt-pt-distance",
+	ConstraintPtLineDistance:    "pt-line-distance",
+	ConstraintPtPlaneDistance:   "pt-plane-distance",
+	ConstraintPtFaceDistance:    "pt-face-distance",
+	ConstraintProjPtDistance:    "proj-pt-pt-distance",
+	ConstraintPtInPlane:         "pt-in-plane",
+	ConstraintPtOnLine:          "pt-on-line",
+	ConstraintPtOnFace:          "pt-on-face",
+	ConstraintEqualLengthLines:  "eq-length",
+	ConstraintEqLenPtLineD:      "eq-length-and-pt-ln-dist",
+	ConstraintEqPtLnDistances:   "eq-pt-line-distances",
+	ConstraintLengthRatio:       "length-ratio",
+	ConstraintArcArcLenRatio:    "arc-arc-length-ratio",
+	ConstraintArcLineLenRatio:   "arc-line-length-ratio",
+	ConstraintLengthDifference:  "length-difference",
+	ConstraintArcArcDifference:  "arc-arc-len-difference",
+	ConstraintArcLineDifference: "arc-line-len-difference",
+	ConstraintSymmetric:         "symmetric",
+	ConstraintSymmetricHoriz:    "symmetric-h",
+	ConstraintSymmetricVert:     "symmetric-v",
+	ConstraintSymmetricLine:     "symmetric-line",
+	ConstraintAtMidpoint:        "at-midpoint",
+	ConstraintHorizontal:        "horizontal",
+	ConstraintVertical:          "vertical",
+	ConstraintDiameter:          "diameter",
+	ConstraintPtOnCircle:        "pt-on-circle",
+	ConstraintSameOrientation:   "same-orientation",
+	ConstraintAngle:             "angle",
+	ConstraintParallel:          "parallel",
+	ConstraintArcLineTangent:    "arc-line-tangent",
+	ConstraintCubicLineTangent:  "cubic-line-tangent",
+	ConstraintCurveCurveTangent: "curve-curve-tangent",
+	ConstraintPerpendicular:     "perpendicular",
+	ConstraintEqualRadius:       "eq-radius",
+	ConstraintEqualAngle:        "eq-angle",
+	ConstraintEqualLineArcLen:   "eq-line-len-arc-len",
+	ConstraintWhereDragged:      "lock-where-dragged",
+	ConstraintComment:           "comment",
+}
+
+// DescriptionString names the constraint, e.g. "c002-horizontal" (C++
+// Constraint::DescriptionString, untranslated).
+func (c *ConstraintBase) DescriptionString() string {
+	s, ok := constraintNames[c.Type]
+	if !ok {
+		s = "???"
+	}
+	return fmt.Sprintf("c%03x-%s", c.H.V, s)
+}

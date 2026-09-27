@@ -27,6 +27,16 @@ type Sketch struct {
 	// calls it. Nil for a sketch that wasn't loaded from a file.
 	ReloadAllLinked func(sk *Sketch)
 
+	// Active is the group the user works in (C++ SS.GW.activeGroup);
+	// if unset or gone, ActiveGroup picks one as C++ does on load.
+	Active core.HGroup
+
+	// Unsaved is whether the sketch changed since it was saved (C++
+	// SS.unsaved).
+	Unsaved bool
+
+	scheduledGenerateAll bool
+
 	// Undo/redo stacks.
 	Undo UndoStack
 	Redo UndoStack
@@ -160,40 +170,74 @@ func (s *Sketch) AddReferences() {
 	}
 }
 
+// The Add* functions add an item with a new handle, one more than
+// the largest in use, as C++ IdList::AddAndAssignId does.
+
 func (s *Sketch) AddGroup(g Group) core.HGroup {
-	g.H.V = uint32(len(s.Groups) + 1)
+	var max uint32
+	for i := range s.Groups {
+		max = maxU32(max, s.Groups[i].H.V)
+	}
+	g.H.V = max + 1
 	s.Groups = append(s.Groups, g)
 	return g.H
 }
 
 func (s *Sketch) AddRequest(r Request) core.HRequest {
-	r.H.V = uint32(len(s.Requests) + 1)
+	var max uint32
+	for i := range s.Requests {
+		max = maxU32(max, s.Requests[i].H.V)
+	}
+	r.H.V = max + 1
 	s.Requests = append(s.Requests, r)
 	return r.H
 }
 
 func (s *Sketch) AddEntity(e core.Entity) core.HEntity {
-	e.H.V = uint32(len(s.Entities) + 1)
+	var max uint32
+	for i := range s.Entities {
+		max = maxU32(max, s.Entities[i].H.V)
+	}
+	e.H.V = max + 1
 	s.Entities = append(s.Entities, e)
 	return e.H
 }
 
 func (s *Sketch) AddParam(p core.Param) core.HParam {
-	p.H.V = uint32(len(s.Params) + 1)
+	var max uint32
+	for i := range s.Params {
+		max = maxU32(max, s.Params[i].H.V)
+	}
+	p.H.V = max + 1
 	s.Params = append(s.Params, p)
 	return p.H
 }
 
 func (s *Sketch) AddConstraint(c core.Constraint) core.HConstraint {
-	c.H.V = uint32(len(s.Constraints) + 1)
+	var max uint32
+	for i := range s.Constraints {
+		max = maxU32(max, s.Constraints[i].H.V)
+	}
+	c.H.V = max + 1
 	s.Constraints = append(s.Constraints, c)
 	return c.H
 }
 
 func (s *Sketch) AddStyle(st core.Style) core.HStyle {
-	st.H.V = uint32(len(s.Styles) + 1)
+	var max uint32
+	for i := range s.Styles {
+		max = maxU32(max, s.Styles[i].H.V)
+	}
+	st.H.V = max + 1
 	s.Styles = append(s.Styles, st)
 	return st.H
+}
+
+func maxU32(a, b uint32) uint32 {
+	if b > a {
+		return b
+	}
+	return a
 }
 
 func (s *Sketch) Clear() {

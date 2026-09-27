@@ -20,9 +20,7 @@ func (sk *Sketch) GenerateAll() {
 	sk.generateAll(GenerateAll, false, false)
 }
 
-// generateAll ports C++ SolveSpaceUI::GenerateAll (generate.cpp). The
-// engine has no active group or dirty tracking, so DIRTY and
-// UNTIL_ACTIVE regenerate every group, like ALL.
+// generateAll ports C++ SolveSpaceUI::GenerateAll (generate.cpp).
 func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	sk.GroupOrder = sk.GroupOrder[:0]
 	for i := range sk.Groups {
@@ -32,9 +30,42 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		return sk.GetGroup(sk.GroupOrder[i]).Order < sk.GetGroup(sk.GroupOrder[j]).Order
 	})
 
-	first, last := 0, math.MaxInt
-	if typ == GenerateRegen {
+	var first, last int
+	switch typ {
+	case GenerateDirty:
+		first, last = math.MaxInt, 0
+
+		// Start from the first dirty group, and solve until the active group,
+		// since all groups after the active group are hidden.
+		active := sk.ActiveGroup()
+		for i, hg := range sk.GroupOrder {
+			g := sk.GetGroup(hg)
+			if !g.Clean || !g.IsSolvedOkay() {
+				first = min(first, i)
+			}
+			if g.H == active {
+				last = i
+			}
+		}
+		if first == math.MaxInt || last == 0 {
+			// All clean; so just regenerate the entities, and don't solve anything.
+			first, last = -1, -1
+		}
+
+	case GenerateAll:
+		first, last = 0, math.MaxInt
+
+	case GenerateRegen:
 		first, last = -1, -1
+
+	case GenerateUntilActive:
+		i := 0
+		for ; i < len(sk.GroupOrder); i++ {
+			if sk.GroupOrder[i] == sk.ActiveGroup() {
+				break
+			}
+		}
+		first, last = 0, i
 	}
 
 	// If we're generating entities for display, first we need to find
@@ -377,13 +408,13 @@ func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l
 	g.GenerateEquations(sk, l)
 }
 
-// SolveGroupAndReport solves group hg for groupParams, the params its
-// requests, constraints and the group itself generate, holding every
-// other param fixed (C++ SolveSpaceUI::SolveGroup, with
-// WriteEqSystemForGroup).
-func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
+// writeEqSystemForGroup is the system that solves group hg for
+// groupParams, the params its requests, constraints and the group
+// itself generate, holding every other param fixed (C++
+// SolveSpaceUI::WriteEqSystemForGroup; C++ also marks the params being
+// dragged, which the engine has none of).
+func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HParam) (*solver.System, *solver.Group) {
 	g := sk.GetGroup(hg)
-	g.SketchDiagnostic = nil
 
 	// The solver works on copies of the group's params, with the
 	// sketch's values as initial guesses.
@@ -410,7 +441,63 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 			sk.WriteEquationsExceptFor(hg, hc, l)
 		},
 	}
+	return sys, sg
+}
 
+// groupParams lists the params group hg's requests, constraints and
+// the group itself generate, in handle order: what
+// WriteEqSystemForGroup generates into the system.
+func (sk *Sketch) groupParams(hg core.HGroup) []core.HParam {
+	var entities core.EntityList
+	var params core.ParamList
+	for ri := range sk.Requests {
+		r := &sk.Requests[ri]
+		if r.Group == hg {
+			r.Generate(sk, &entities, &params)
+		}
+	}
+	ps := []core.Param(params)
+	for ci := range sk.Constraints {
+		c := &sk.Constraints[ci]
+		if c.Group == hg {
+			GenerateConstraint(c, &ps)
+		}
+	}
+	es := []core.Entity(entities)
+	sk.GetGroup(hg).Generate(sk, &es, &ps)
+
+	hs := make([]core.HParam, 0, len(ps))
+	for _, p := range ps {
+		if sk.GetParam(p.H) != nil {
+			hs = append(hs, p.H)
+		}
+	}
+	sort.Slice(hs, func(i, j int) bool { return hs[i].V < hs[j].V })
+	return hs
+}
+
+// TestRankForGroup reports whether group hg would be redundantly
+// constrained, and its rank (C++ SolveSpaceUI::TestRankForGroup).
+func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult {
+	g := sk.GetGroup(hg)
+	// If we don't calculate dof or redundant is allowed, there is
+	// no point to solve rank because this result is not meaningful
+	if g.SuppressDofCalculation || g.AllowRedundant {
+		return core.SolveOkay
+	}
+	sys, sg := sk.writeEqSystemForGroup(hg, sk.groupParams(hg))
+	return sys.SolveRank(sg, rank, nil, nil, false, false)
+}
+
+// SolveGroupAndReport solves group hg for groupParams, the params its
+// requests, constraints and the group itself generate, holding every
+// other param fixed (C++ SolveSpaceUI::SolveGroup, with
+// WriteEqSystemForGroup).
+func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
+	g := sk.GetGroup(hg)
+	g.SketchDiagnostic = nil
+
+	sys, sg := sk.writeEqSystemForGroup(hg, groupParams)
 	g.Solved.Remove = nil
 	var how core.SolveResult
 	err := catchPanic(func() {
@@ -498,18 +585,10 @@ func ParseExprText(s string) *core.Expr {
 	return e
 }
 
-// GenerateType indicates which groups to regenerate.
-//
-// Mirrors the C++ Generate enum from solvespace.h:
-//   - GenerateAll: regenerate all groups.
-//   - GenerateDirty: regenerate only groups marked as needing regen.
-//   - GenerateRegen: regenerate all groups (alias for GenerateAll).
-//   - GenerateUntilActive: regenerate until the requested group is active.
-//
-// The Go engine currently regenerates everything on each GenerateAll
-// call (no dirty-flag tracking). These flags are kept for parity with
-// the C++ API and are passed to GenerateAllTyped; for now, all flags
-// resolve to "regenerate everything".
+// GenerateType is which groups GenerateAll solves (C++
+// SolveSpaceUI::Generate): all of them; from the first dirty or
+// unsolved one to the active one; none, only regenerating the
+// entities; or up to the active one.
 type GenerateType int
 
 const (
@@ -519,18 +598,50 @@ const (
 	GenerateUntilActive
 )
 
-// GenerateAllTyped is GenerateAll with a GenerateType. REGEN
-// regenerates entities without solving or meshing; the others
-// regenerate everything, since the engine has no dirty tracking or
-// active group.
+// GenerateAllTyped is GenerateAll with a GenerateType.
 func (sk *Sketch) GenerateAllTyped(t GenerateType) {
 	sk.generateAll(t, false, false)
 }
 
-// ScheduleGenerateAll is the parity-friendly wrapper for
-// SolveSpaceUI::ScheduleGenerateAll. In the C++ codebase, this
-// schedules a deferred regeneration via a UI timer; the engine
-// has no UI layer, so this calls GenerateAll directly.
+// ScheduleGenerateAll asks for a regeneration of the dirty groups when
+// Refresh next runs (C++ SolveSpaceUI::ScheduleGenerateAll, which
+// Refresh serves after the pending events).
 func (sk *Sketch) ScheduleGenerateAll() {
-	sk.GenerateAll()
+	sk.scheduledGenerateAll = true
+}
+
+// Refresh does the scheduled regeneration (C++
+// SolveSpaceUI::Refresh; showing the text window is the caller's).
+func (sk *Sketch) Refresh() {
+	if sk.scheduledGenerateAll {
+		sk.scheduledGenerateAll = false
+		sk.generateAll(GenerateDirty, false, false)
+	}
+}
+
+// MarkGroupDirty marks group hg, and unless onlyThis every group after
+// it, as needing regeneration, and schedules it (C++
+// SolveSpaceUI::MarkGroupDirty).
+func (sk *Sketch) MarkGroupDirty(hg core.HGroup, onlyThis bool) {
+	goOn := false
+	for _, gh := range sk.GroupOrder {
+		g := sk.GetGroup(gh)
+		if g.H == hg {
+			goOn = true
+		}
+		if goOn {
+			g.Clean = false
+			if onlyThis {
+				break
+			}
+		}
+	}
+	sk.Unsaved = true
+	sk.ScheduleGenerateAll()
+}
+
+// MarkGroupDirtyByEntity marks the group of entity he dirty (C++
+// SolveSpaceUI::MarkGroupDirtyByEntity).
+func (sk *Sketch) MarkGroupDirtyByEntity(he core.HEntity) {
+	sk.MarkGroupDirty(sk.MustGetEntity(he).Group, false)
 }

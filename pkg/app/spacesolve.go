@@ -964,14 +964,10 @@ func (ss *SpaceSolve) SolveGroupAndReport(h core.HGroup, andFindFree bool) {
 	}
 }
 
-// TestRankForGroup currently runs the global regenerate and returns the last
-// solver result.
-func (ss *SpaceSolve) TestRankForGroup(h core.HGroup) core.SolveResult {
-	ss.GenerateAll(GenerateDirty, false, false)
-	if ss.allConsistent {
-		return core.SolveOkay
-	}
-	return core.SolveDidntConverge
+// TestRankForGroup reports whether group h would be redundantly
+// constrained, and its rank (C++ SolveSpaceUI::TestRankForGroup).
+func (ss *SpaceSolve) TestRankForGroup(h core.HGroup, rank *int) core.SolveResult {
+	return ss.sketch.TestRankForGroup(h, rank)
 }
 
 // ActiveGroupsOkay returns true if the last solver pass succeeded.

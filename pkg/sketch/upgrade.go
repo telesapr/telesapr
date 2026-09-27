@@ -148,10 +148,14 @@ func evalVector(sk *Sketch, v core.ExprVector) geom.Vector {
 	return geom.Vector{X: core.EvalExpr(sk, v.X), Y: core.EvalExpr(sk, v.Y), Z: core.EvalExpr(sk, v.Z)}
 }
 
-// ActiveGroup is the group C++ makes active after loading a file
-// (GraphicsWindow::Init and EnsureValidActives): the last group, or the
-// first that isn't the references.
+// ActiveGroup is the active group: Active if it exists, else the one
+// C++ makes active after loading a file (GraphicsWindow::Init and
+// EnsureValidActives): the last group, or the first that isn't the
+// references.
 func (sk *Sketch) ActiveGroup() core.HGroup {
+	if sk.Active.V != 0 && sk.GetGroup(sk.Active) != nil {
+		return sk.Active
+	}
 	if len(sk.GroupOrder) == 0 {
 		return core.HGroup{}
 	}
@@ -223,4 +227,13 @@ func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
 	}
 
 	return !e.ForceHidden
+}
+
+// ActiveWorkplane is the active group's workplane (C++
+// GraphicsWindow::ActiveWorkplane).
+func (sk *Sketch) ActiveWorkplane() core.HEntity {
+	if g := sk.GetGroup(sk.ActiveGroup()); g != nil {
+		return g.ActiveWorkplane
+	}
+	return core.FreeIn3D
 }
