@@ -652,15 +652,8 @@ func TestGroupHelixGeneration(t *testing.T) {
 	sk.Groups = append(sk.Groups, helixGroup)
 	sk.GroupOrder = append(sk.GroupOrder, helixGroup.H)
 
-	// Create a simple resolver
-	resolver := newTestResolver(sk)
-
 	// Recalculate entity positions
-	for i := range sk.Entities {
-		if err := sk.Entities[i].CalculateNumerical(resolver, false); err != nil {
-			t.Logf("failed to calculate entity %v: %v", sk.Entities[i].H, err)
-		}
-	}
+	NewRuntime(sk).RecalculateEntities(false)
 
 	// Generate helix surface
 	if err := helixGroup.GenerateSurfaces(sk); err != nil {

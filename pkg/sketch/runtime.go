@@ -3,7 +3,6 @@ package sketch
 import (
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -104,25 +103,26 @@ func (rt *Runtime) Request(h core.HRequest) (*Request, error) {
 	return r, nil
 }
 
-// Entity retrieves an entity by handle.
+// Entity retrieves an entity by handle. It reads the sketch live, so
+// it sees entities GenerateAll has regenerated since NewRuntime.
 func (rt *Runtime) Entity(h core.HEntity) (*core.Entity, error) {
 	if h == (core.HEntity{}) {
 		return nil, nil
 	}
-	e, ok := rt.entities[h]
-	if !ok {
+	e := rt.Sketch.GetEntity(h)
+	if e == nil {
 		return nil, fmt.Errorf("entity %08x not found", h.V)
 	}
 	return e, nil
 }
 
-// Param retrieves a parameter by handle.
+// Param retrieves a parameter by handle, reading the sketch live.
 func (rt *Runtime) Param(h core.HParam) (*core.Param, error) {
 	if h == (core.HParam{}) {
 		return nil, nil
 	}
-	p, ok := rt.params[h]
-	if !ok {
+	p := rt.Sketch.GetParam(h)
+	if p == nil {
 		return nil, fmt.Errorf("param %08x not found", h.V)
 	}
 	return p, nil
@@ -170,66 +170,27 @@ func (rt *Runtime) Point(h core.HEntity) (geom.Vector, error) {
 	return rt.PointValue(h)
 }
 
+// numeric runs fn, turning a panic from a malformed entity (a missing
+// entity or param, which C++ asserts on) into an error.
+func numeric[T any](e *core.Entity, fn func() T) (r T, err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = fmt.Errorf("entity %08x: %v", e.H.V, rec)
+		}
+	}()
+	return fn(), nil
+}
+
 func (rt *Runtime) pointValue(e *core.Entity) (geom.Vector, error) {
-	switch e.Type {
-	case core.EntityPointIn3D:
-		if e.Param[0].V == 0 && e.Param[1].V == 0 && e.Param[2].V == 0 {
-			return e.PointGetNum(), nil
-		}
-		x, err := rt.paramValue(e.Param[0])
-		if err != nil {
-			return geom.Vector{}, err
-		}
-		y, err := rt.paramValue(e.Param[1])
-		if err != nil {
-			return geom.Vector{}, err
-		}
-		z, err := rt.paramValue(e.Param[2])
-		if err != nil {
-			return geom.Vector{}, err
-		}
-		return geom.NewVector(x, y, z), nil
-
-	case core.EntityPointIn2D:
-		if e.Param[0].V == 0 && e.Param[1].V == 0 {
-			return e.PointGetNum(), nil
-		}
-		wpEnt, err := rt.Entity(e.Workplane)
-		if err != nil {
-			return geom.Vector{}, err
-		}
-		if wpEnt == nil {
-			return geom.Vector{}, fmt.Errorf("workplane entity %08x missing", e.Workplane.V)
-		}
-		origin, err := rt.PointValue(wpEnt.Point[0])
-		if err != nil {
-			return geom.Vector{}, err
-		}
-		normalQuat, err := rt.normalQuaternionHandle(wpEnt.Normal)
-		if err != nil {
-			return geom.Vector{}, err
-		}
-		u := normalQuat.RotationU()
-		v := normalQuat.RotationV()
-
-		uv := geom.Vector{}
-		uVal, err := rt.paramValue(e.Param[0])
-		if err != nil {
-			return geom.Vector{}, err
-		}
-		vVal, err := rt.paramValue(e.Param[1])
-		if err != nil {
-			return geom.Vector{}, err
-		}
-
-		uv = uv.Plus(u.ScaledBy(uVal)).Plus(v.ScaledBy(vVal))
-		return origin.Plus(uv), nil
-
-	default:
-		// Fallback to stored value; useful for legacy entity
-		// types we do not handle yet.
-		return e.PointGetNum(), nil
+	// A POINT_IN_3D without params (hand-built test fixtures only; C++
+	// always gives it three) is a fixed point.
+	if e.Type == core.EntityPointIn3D && e.Param[0].V == 0 {
+		return e.ActPoint, nil
 	}
+	if !e.IsPoint() {
+		return geom.Vector{}, fmt.Errorf("entity %08x (type %d) is not a point", e.H.V, e.Type)
+	}
+	return numeric(e, func() geom.Vector { return e.PointGetNum(rt.Sketch) })
 }
 
 // NormalQuaternion returns the unit quaternion orientation for the entity referenced by h.
@@ -260,47 +221,15 @@ func (rt *Runtime) normalQuaternionHandle(h core.HEntity) (geom.Quaternion, erro
 }
 
 func (rt *Runtime) normalQuaternion(e *core.Entity) (geom.Quaternion, error) {
-	switch e.Type {
-	case core.EntityNormalIn3D:
-		if e.Param[0].V == 0 && e.Param[1].V == 0 && e.Param[2].V == 0 && e.Param[3].V == 0 {
-			return e.ActNormal.Normal(), nil
-		}
-		w, err := rt.paramValue(e.Param[0])
-		if err != nil {
-			return geom.Quaternion{}, err
-		}
-		x, err := rt.paramValue(e.Param[1])
-		if err != nil {
-			return geom.Quaternion{}, err
-		}
-		y, err := rt.paramValue(e.Param[2])
-		if err != nil {
-			return geom.Quaternion{}, err
-		}
-		z, err := rt.paramValue(e.Param[3])
-		if err != nil {
-			return geom.Quaternion{}, err
-		}
-		q := geom.NewQuaternion(w, x, y, z).Normal()
-		return q, nil
-
-	case core.EntityNormalIn2D:
-		if e.Workplane == (core.HEntity{}) {
-			return geom.Quaternion{}, fmt.Errorf("normal entity missing workplane")
-		}
-		wpEnt, err := rt.Entity(e.Workplane)
-		if err != nil {
-			return geom.Quaternion{}, err
-		}
-		if wpEnt == nil {
-			return geom.Quaternion{}, fmt.Errorf("workplane %08x not found", e.Workplane.V)
-		}
-		return rt.normalQuaternionHandle(wpEnt.Normal)
-
-	default:
-		// fall back to stored orientation
-		return e.ActNormal.Normal(), nil
+	// A NORMAL_IN_3D without params (hand-built test fixtures only) is a
+	// fixed orientation.
+	if e.Type == core.EntityNormalIn3D && e.Param[0].V == 0 {
+		return e.ActNormal, nil
 	}
+	if !e.IsNormal() {
+		return geom.Quaternion{}, fmt.Errorf("entity %08x (type %d) is not a normal", e.H.V, e.Type)
+	}
+	return numeric(e, func() geom.Quaternion { return e.NormalGetNum(rt.Sketch) })
 }
 
 func (rt *Runtime) paramValue(h core.HParam) (float64, error) {
@@ -331,19 +260,24 @@ func (rt *Runtime) ParamValue(h core.HParam) (float64, bool) {
 	if h == (core.HParam{}) {
 		return 0, false
 	}
-	p, ok := rt.params[h]
-	if !ok {
+	p := rt.Sketch.GetParam(h)
+	if p == nil {
 		return 0, false
 	}
 	return p.Val, true
 }
 
-// RecalculateEntities recomputes the numerical state for every entity in the
-// underlying sketch. The resolver-driven implementation gracefully falls back
-// to cached act values when a dependency cannot yet be evaluated.
+// RecalculateEntities caches every entity's numeric state in its Act*
+// fields (Entity::CalculateNumerical). Entities that can't be
+// evaluated (missing params, as in hand-built fixtures) keep their
+// cached values.
 func (rt *Runtime) RecalculateEntities(forExport bool) {
 	for i := range rt.Sketch.Entities {
-		_ = rt.Sketch.Entities[i].CalculateNumerical(rt, forExport)
+		e := &rt.Sketch.Entities[i]
+		_, _ = numeric(e, func() bool {
+			e.CalculateNumerical(rt.Sketch, forExport)
+			return true
+		})
 	}
 }
 
@@ -356,23 +290,11 @@ func (rt *Runtime) DistanceValue(h core.HEntity) (float64, error) {
 	if e == nil {
 		return 0, fmt.Errorf("distance entity %08x not found", h.V)
 	}
-	switch e.Type {
-	case core.EntityDistance:
-		// Some fixtures store the numeric value in a Param with the same handle as the distance entity.
-		if p, err := rt.Param(core.HParam{V: e.H.V}); err == nil && p != nil {
-			if p.Val != 0 {
-				return p.Val, nil
-			}
-		}
-		val, err := rt.paramValue(e.Param[0])
-		if err != nil {
-			return 0, err
-		}
-		return val, nil
-	default:
-		if math.Abs(e.ActDistance) > 0 {
-			return e.ActDistance, nil
-		}
-		return 0, fmt.Errorf("unsupported distance entity type %d", e.Type)
+	if e.Type == core.EntityDistance && e.Param[0].V == 0 {
+		return e.ActDistance, nil
 	}
+	if !e.IsDistance() {
+		return 0, fmt.Errorf("entity %08x (type %d) is not a distance", e.H.V, e.Type)
+	}
+	return numeric(e, func() float64 { return e.DistanceGetNum(rt.Sketch) })
 }

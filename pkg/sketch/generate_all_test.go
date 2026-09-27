@@ -2,6 +2,9 @@ package sketch
 
 import (
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
 // TestSketchParamsToMap verifies the helper that converts a
@@ -38,12 +41,41 @@ func TestSketchEntitiesToMap(t *testing.T) {
 	}
 }
 
-// TestGenerateAllRunsWithoutCrash verifies that GenerateAll on an
-// empty sketch completes without crashing.
-func TestGenerateAllRunsWithoutCrash(t *testing.T) {
+// TestGenerateAllNewSketch runs GenerateAll on a new sketch: the
+// references plus an empty drawing group. ForceReferences must put
+// the three reference workplanes at the origin with their fixed
+// orientations.
+func TestGenerateAllNewSketch(t *testing.T) {
 	sk := NewSketch()
-	sk.AddGroup(Group{Type: GroupDrawing3D})
+	sk.AddReferences()
+	sk.AddGroup(Group{Type: GroupDrawing3D, Order: 1, Scale: 1})
 	sk.GenerateAll()
+
+	wants := map[core.HRequest]geom.Quaternion{
+		HRequestReferenceXY: {W: 1},
+		HRequestReferenceYZ: {W: 0.5, X: 0.5, Y: 0.5, Z: 0.5},
+		HRequestReferenceZX: {W: 0.5, X: -0.5, Y: -0.5, Z: -0.5},
+	}
+	for hr, q := range wants {
+		wp := sk.GetEntity(hr.Entity(0))
+		if wp == nil || wp.Type != core.EntityWorkplane {
+			t.Fatalf("reference workplane %v missing", hr)
+		}
+		if got := wp.WorkplaneGetOffset(sk); !got.Equals(geom.Vector{}) {
+			t.Errorf("reference %v origin at %v", hr, got)
+		}
+		if got := wp.NormalEntity(sk).NormalGetNum(sk); !got.Equals(q) {
+			t.Errorf("reference %v normal %v, want %v", hr, got, q)
+		}
+		if !sk.GetEntity(wp.Point[0]).Construction {
+			t.Errorf("reference %v origin should be construction", hr)
+		}
+	}
+	for _, g := range sk.Groups {
+		if g.Solved.How != core.SolveOkay {
+			t.Errorf("group %v: solve result %v", g.H, g.Solved.How)
+		}
+	}
 }
 
 // TestGenerateAllTyped verifies GenerateAllTyped runs without panic.

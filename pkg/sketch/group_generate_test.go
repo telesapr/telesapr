@@ -8,119 +8,89 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-func TestGroupGenerateExtrudeAddsTransCopies(t *testing.T) {
-	// Build a minimal sketch with a SOURCE group containing one point
-	// at the origin and an EXTRUDE group referencing it.
+// TestGroupGenerateExtrude checks the entities Group::Generate makes
+// for a one-sided extrusion of a line: the remap numbering (which
+// fixes the copies' handles) and the copies' positions.
+func TestGroupGenerateExtrude(t *testing.T) {
 	sk := NewSketch()
-	srcH := sk.AddGroup(Group{Type: GroupDrawing3D})
-	extrH := sk.AddGroup(Group{Type: GroupExtrude, OpA: srcH})
-	_ = extrH
+	srcH := sk.AddGroup(Group{Type: GroupDrawing3D, Scale: 1})
+	extrH := sk.AddGroup(Group{Type: GroupExtrude, Subtype: GroupOneSided, OpA: srcH, Scale: 1})
 
-	// Add a point at the origin.
-	px := sk.AddParam(core.Param{H: core.HParam{V: 1}, Val: 0})
-	py := sk.AddParam(core.Param{H: core.HParam{V: 2}, Val: 0})
-	pz := sk.AddParam(core.Param{H: core.HParam{V: 3}, Val: 0})
-	sk.AddEntity(core.Entity{
-		EntityBase: core.EntityBase{
-			H:     core.HEntity{V: 1},
-			Type:  core.EntityPointIn3D,
-			Group: srcH,
-			Param: [8]core.HParam{px, py, pz},
-		},
-		ActPoint: geom.Vector{X: 0, Y: 0, Z: 0},
-	})
-	// Recalculate so the runtime has the point.
-	rt := NewRuntime(sk)
-	rt.RecalculateEntities(false)
-
-	// Run Generate: should add POINT_N_TRANS copies for top and bottom.
-	initialEntityCount := len(sk.Entities)
-	entities := sk.Entities
-	params := sk.Params
-	extrG := sk.GetGroup(extrH)
-	extrG.Generate(sk, &entities, &params)
-
-	addedEntities := entities[initialEntityCount:]
-	if len(addedEntities) < 2 {
-		t.Fatalf("expected at least 2 added entities (bottom+top), got %d", len(addedEntities))
+	param := func(v uint32, val float64) core.HParam {
+		h := core.HParam{V: v}
+		sk.Params = append(sk.Params, core.Param{H: h, Val: val})
+		return h
 	}
-	bottomFound := false
-	topFound := false
-	for _, e := range addedEntities {
-		if e.EntityBase.Type == core.EntityPointNTrans {
-			if e.EntityBase.TimesApplied == 0 {
-				bottomFound = true
-			}
-			if e.EntityBase.TimesApplied == 2 {
-				topFound = true
+	pa := core.HEntity{V: 0x10001}
+	pb := core.HEntity{V: 0x10002}
+	line := core.HEntity{V: 0x10000}
+	sk.Entities = append(sk.Entities,
+		core.Entity{EntityBase: core.EntityBase{H: pa, Type: core.EntityPointIn3D, Group: srcH,
+			Param: [8]core.HParam{param(1, 0), param(2, 0), param(3, 0)}}},
+		core.Entity{EntityBase: core.EntityBase{H: pb, Type: core.EntityPointIn3D, Group: srcH,
+			Param: [8]core.HParam{param(4, 10), param(5, 0), param(6, 0)}}},
+		core.Entity{EntityBase: core.EntityBase{H: line, Type: core.EntityLineSegment, Group: srcH,
+			Point: [core.MaxPointsInEntity]core.HEntity{pa, pb}}},
+	)
+
+	g := sk.GetGroup(extrH)
+	g.Generate(sk, &sk.Entities, &sk.Params)
+	for _, k := range []int{0, 1, 2} {
+		p := sk.GetParam(extrH.Param(k))
+		if p == nil {
+			t.Fatalf("extrusion param %d not added", k)
+		}
+		p.Val = []float64{0, 0, 5}[k]
+	}
+
+	// Remap ids are handed out in the order C++ asks for them: each
+	// point's bottom, top and side line, then the line's bottom, top
+	// and side face, then the top and bottom faces.
+	want := []struct {
+		key  core.EntityKey
+		id   uint32
+		typ  core.EntityType
+		want geom.Vector
+	}{
+		{core.EntityKey{Input: pa, CopyNumber: RemapBottom}, 1, core.EntityPointNTrans, geom.Vector{}},
+		{core.EntityKey{Input: pa, CopyNumber: RemapTop}, 2, core.EntityPointNTrans, geom.Vector{Z: 10}},
+		{core.EntityKey{Input: pa, CopyNumber: RemapPtToLine}, 3, core.EntityLineSegment, geom.Vector{}},
+		{core.EntityKey{Input: pb, CopyNumber: RemapBottom}, 4, core.EntityPointNTrans, geom.Vector{X: 10}},
+		{core.EntityKey{Input: pb, CopyNumber: RemapTop}, 5, core.EntityPointNTrans, geom.Vector{X: 10, Z: 10}},
+		{core.EntityKey{Input: pb, CopyNumber: RemapPtToLine}, 6, core.EntityLineSegment, geom.Vector{}},
+		{core.EntityKey{Input: line, CopyNumber: RemapBottom}, 7, core.EntityLineSegment, geom.Vector{}},
+		{core.EntityKey{Input: line, CopyNumber: RemapTop}, 8, core.EntityLineSegment, geom.Vector{}},
+		{core.EntityKey{Input: line, CopyNumber: RemapLineToFace}, 9, core.EntityFaceXProd, geom.Vector{}},
+		{core.EntityKey{Input: core.NoEntity, CopyNumber: RemapTop}, 10, core.EntityFaceNormalPt, geom.Vector{}},
+		{core.EntityKey{Input: core.NoEntity, CopyNumber: RemapBottom}, 11, core.EntityFaceNormalPt, geom.Vector{}},
+	}
+	if len(g.Remap) != len(want) {
+		t.Errorf("remap has %d entries, want %d", len(g.Remap), len(want))
+	}
+	for _, w := range want {
+		if got := g.Remap[w.key]; got.V != w.id {
+			t.Errorf("remap %v = %d, want %d", w.key, got.V, w.id)
+			continue
+		}
+		e := sk.GetEntity(extrH.Entity(int(w.id)))
+		if e == nil {
+			t.Errorf("entity for remap %v missing", w.key)
+			continue
+		}
+		if e.Type != w.typ {
+			t.Errorf("entity for remap %v has type %d, want %d", w.key, e.Type, w.typ)
+		}
+		if e.IsPoint() {
+			if got := e.PointGetNum(sk); !got.Equals(w.want) {
+				t.Errorf("point for remap %v at %v, want %v", w.key, got, w.want)
 			}
 		}
 	}
-	if !bottomFound {
-		t.Fatalf("expected bottom POINT_N_TRANS (timesApplied=0) in added entities")
-	}
-	if !topFound {
-		t.Fatalf("expected top POINT_N_TRANS (timesApplied=2) in added entities")
-	}
-}
 
-func TestCopyEntityPreservesActPoint(t *testing.T) {
-	g := &Group{}
-	src := &core.Entity{
-		EntityBase: core.EntityBase{
-			H:    core.HEntity{V: 5},
-			Type: core.EntityPointIn3D,
-		},
-		ActPoint: geom.Vector{X: 1, Y: 2, Z: 3},
-	}
-	copy := g.copyEntity(src, 1, CopyAsNTrans)
-	if copy.ActPoint.DistanceTo(src.ActPoint) > 1e-9 {
-		t.Fatalf("copy didn't preserve ActPoint: %v vs %v", copy.ActPoint, src.ActPoint)
-	}
-	if copy.EntityBase.TimesApplied != 1 {
-		t.Fatalf("timesApplied not set: %d", copy.EntityBase.TimesApplied)
-	}
-}
-
-func TestCopyEntityEmitsParamsForExtrude(t *testing.T) {
-	// Verify that after Generate, the extrusion params (0, 1, 2)
-	// are registered on the new HEntity.
-	sk := NewSketch()
-	srcH := sk.AddGroup(Group{Type: GroupDrawing3D})
-	extrH := sk.AddGroup(Group{Type: GroupExtrude, OpA: srcH})
-	_ = extrH
-	sk.AddEntity(core.Entity{
-		EntityBase: core.EntityBase{
-			H:     core.HEntity{V: 1},
-			Type:  core.EntityPointIn3D,
-			Group: srcH,
-		},
-		ActPoint: geom.Vector{},
-	})
-	rt := NewRuntime(sk)
-	rt.RecalculateEntities(false)
-
-	entities := sk.Entities
-	params := sk.Params
-	extrG := sk.GetGroup(extrH)
-	extrG.Generate(sk, &entities, &params)
-
-	// Should have registered the 3 extrusion params.
-	paramMap := make(map[core.HParam]bool, len(params))
-	for _, p := range params {
-		paramMap[p.H] = true
-	}
-	dx := extrH.Param(0)
-	dy := extrH.Param(1)
-	dz := extrH.Param(2)
-	if !paramMap[dx] {
-		t.Fatalf("extrusion param dx=%v not registered", dx)
-	}
-	if !paramMap[dy] {
-		t.Fatalf("extrusion param dy=%v not registered", dy)
-	}
-	if !paramMap[dz] {
-		t.Fatalf("extrusion param dz=%v not registered", dz)
+	// The side face of the line lies in the plane y = 0.
+	face := sk.GetEntity(extrH.Entity(9))
+	if n := face.FaceGetNormalNum(sk); !n.Equals(geom.Vector{Y: -1}) && !n.Equals(geom.Vector{Y: 1}) {
+		t.Errorf("side face normal %v, want +-y", n)
 	}
 }
 

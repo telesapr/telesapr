@@ -135,41 +135,22 @@ func (e *Entity) IsWorkplane() bool {
 }
 
 func (e *Entity) IsCircle() bool {
-	return e.Type == EntityCircle
+	return e.Type == EntityCircle || e.Type == EntityArcOfCircle
 }
 
 func (e *Entity) HasVector() bool {
-	return e.Type == EntityLineSegment ||
-		e.Type == EntityWorkplane ||
-		e.IsNormal()
+	switch e.Type {
+	case EntityLineSegment, EntityNormalIn3D, EntityNormalIn2D,
+		EntityNormalNCopy, EntityNormalNRot, EntityNormalNRotAA:
+		return true
+	}
+	return false
 }
 
 func (e *Entity) HasEndpoints() bool {
 	return e.Type == EntityLineSegment ||
-		e.Type == EntityArcOfCircle ||
 		e.Type == EntityCubic ||
-		e.Type == EntityCubicPeriodic
-}
-
-func (e *Entity) PointGetNum() geom.Vector {
-	if e.IsPoint() {
-		return e.ActPoint
-	}
-	return geom.Vector{}
-}
-
-func (e *Entity) NormalGetNum() geom.Quaternion {
-	if e.IsNormal() {
-		return e.ActNormal
-	}
-	return geom.Quaternion{W: 1, X: 0, Y: 0, Z: 0}
-}
-
-func (e *Entity) DistanceGetNum() float64 {
-	if e.IsDistance() {
-		return e.ActDistance
-	}
-	return 0
+		e.Type == EntityArcOfCircle
 }
 
 func (e *Entity) Clear() {}

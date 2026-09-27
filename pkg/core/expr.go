@@ -711,48 +711,78 @@ func NewExprQuaternionConst(q geom.Quaternion) ExprQuaternion {
 	}
 }
 
-// Rotate applies quaternion rotation to vector p.
+// Rotate expresses p in the basis (RotationU, RotationV, RotationN),
+// as C++ ExprQuaternion::Rotate does.
 func (q ExprQuaternion) Rotate(p ExprVector) ExprVector {
-	qVec := ExprVector{X: q.X, Y: q.Y, Z: q.Z}
-	t := qVec.Cross(p).ScaledBy(NewConstant(2))
-	return p.Plus(t.ScaledBy(q.W)).Plus(qVec.Cross(t))
+	return q.RotationU().ScaledBy(p.X).Plus(
+		q.RotationV().ScaledBy(p.Y)).Plus(
+		q.RotationN().ScaledBy(p.Z))
 }
 
-// RotationU returns the rotated unit X axis.
+// RotationU returns the rotated unit X axis (C++ ExprQuaternion::RotationU).
 func (q ExprQuaternion) RotationU() ExprVector {
-	return q.Rotate(ExprVector{
-		X: NewConstant(1),
-		Y: NewConstant(0),
-		Z: NewConstant(0),
-	})
+	two := NewConstant(2)
+	var u ExprVector
+	u.X = q.W.Square()
+	u.X = u.X.Plus(q.X.Square())
+	u.X = u.X.Minus(q.Y.Square())
+	u.X = u.X.Minus(q.Z.Square())
+
+	u.Y = two.Times(q.W.Times(q.Z))
+	u.Y = u.Y.Plus(two.Times(q.X.Times(q.Y)))
+
+	u.Z = two.Times(q.X.Times(q.Z))
+	u.Z = u.Z.Minus(two.Times(q.W.Times(q.Y)))
+	return u
 }
 
-// RotationV returns the rotated unit Y axis.
+// RotationV returns the rotated unit Y axis (C++ ExprQuaternion::RotationV).
 func (q ExprQuaternion) RotationV() ExprVector {
-	return q.Rotate(ExprVector{
-		X: NewConstant(0),
-		Y: NewConstant(1),
-		Z: NewConstant(0),
-	})
+	two := NewConstant(2)
+	var v ExprVector
+	v.X = two.Times(q.X.Times(q.Y))
+	v.X = v.X.Minus(two.Times(q.W.Times(q.Z)))
+
+	v.Y = q.W.Square()
+	v.Y = v.Y.Minus(q.X.Square())
+	v.Y = v.Y.Plus(q.Y.Square())
+	v.Y = v.Y.Minus(q.Z.Square())
+
+	v.Z = two.Times(q.W.Times(q.X))
+	v.Z = v.Z.Plus(two.Times(q.Y.Times(q.Z)))
+	return v
 }
 
-// RotationN returns the rotated unit Z axis.
+// RotationN returns the rotated unit Z axis (C++ ExprQuaternion::RotationN).
 func (q ExprQuaternion) RotationN() ExprVector {
-	return q.Rotate(ExprVector{
-		X: NewConstant(0),
-		Y: NewConstant(0),
-		Z: NewConstant(1),
-	})
+	two := NewConstant(2)
+	var n ExprVector
+	n.X = two.Times(q.W.Times(q.Y))
+	n.X = n.X.Plus(two.Times(q.X.Times(q.Z)))
+
+	n.Y = two.Times(q.Y.Times(q.Z))
+	n.Y = n.Y.Minus(two.Times(q.W.Times(q.X)))
+
+	n.Z = q.W.Square()
+	n.Z = n.Z.Minus(q.X.Square())
+	n.Z = n.Z.Minus(q.Y.Square())
+	n.Z = n.Z.Plus(q.Z.Square())
+	return n
 }
 
-// Times multiplies two quaternions.
+// Times multiplies two quaternions (C++ ExprQuaternion::Times).
 func (q ExprQuaternion) Times(b ExprQuaternion) ExprQuaternion {
-	return ExprQuaternion{
-		W: q.W.Times(b.W).Minus(q.X.Times(b.X)).Minus(q.Y.Times(b.Y)).Minus(q.Z.Times(b.Z)),
-		X: q.W.Times(b.X).Plus(q.X.Times(b.W)).Plus(q.Y.Times(b.Z)).Minus(q.Z.Times(b.Y)),
-		Y: q.W.Times(b.Y).Minus(q.X.Times(b.Z)).Plus(q.Y.Times(b.W)).Plus(q.Z.Times(b.X)),
-		Z: q.W.Times(b.Z).Plus(q.X.Times(b.Y)).Minus(q.Y.Times(b.X)).Plus(q.Z.Times(b.W)),
-	}
+	sa, sb := q.W, b.W
+	va := ExprVector{X: q.X, Y: q.Y, Z: q.Z}
+	vb := ExprVector{X: b.X, Y: b.Y, Z: b.Z}
+
+	var r ExprQuaternion
+	r.W = sa.Times(sb).Minus(va.Dot(vb))
+	vr := vb.ScaledBy(sa).Plus(va.ScaledBy(sb).Plus(va.Cross(vb)))
+	r.X = vr.X
+	r.Y = vr.Y
+	r.Z = vr.Z
+	return r
 }
 
 // Magnitude returns sqrt(w^2 + x^2 + y^2 + z^2).

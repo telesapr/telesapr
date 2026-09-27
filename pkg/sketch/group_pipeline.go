@@ -259,31 +259,9 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 // axis of a LATHE/REVOLVE/HELIX group, from its predef origin point
 // and axis vector entities.
 func (g *Group) revolveAxis(sk *Sketch) (pt, axis geom.Vector) {
-	if e := sk.GetEntity(g.Predef.Origin); e != nil {
-		pt = e.PointGetNum()
-	}
-	if e := sk.GetEntity(g.Predef.EntityB); e != nil {
-		axis = vectorGetNum(sk, e)
-	}
+	pt = sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
+	axis = sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
 	return pt, axis.WithMagnitude(1)
-}
-
-// vectorGetNum returns the numeric direction of a vector entity (a
-// line segment or a normal). Mirrors C++ EntityBase::VectorGetNum
-// (entity.cpp:69), including its point[0] - point[1] sense for line
-// segments; faces aren't handled.
-func vectorGetNum(sk *Sketch, e *core.Entity) geom.Vector {
-	switch {
-	case e.Type == core.EntityLineSegment:
-		a, b := sk.GetEntity(e.Point[0]), sk.GetEntity(e.Point[1])
-		if a == nil || b == nil {
-			return geom.Vector{}
-		}
-		return a.PointGetNum().Minus(b.PointGetNum())
-	case e.IsNormal():
-		return e.NormalGetNum().RotationN()
-	}
-	return geom.Vector{}
 }
 
 // generateRevolveShell is the LATHE/REVOLVE group type: revolve each
@@ -525,15 +503,6 @@ func (g *Group) IsMeshGroup2() bool {
 		g.Type == GroupTranslate
 }
 
-// RemapEntity returns the entity id assigned to (input, copyNumber) for
-// this group's remap table. Returns zero if not in the map.
-func (g *Group) RemapEntity(input core.HEntity, copyNumber int) core.EntityID {
-	if g.Remap == nil {
-		return core.EntityID{}
-	}
-	return g.Remap[core.EntityKey{Input: input, CopyNumber: copyNumber}]
-}
-
 // SetRemapEntry installs an entry in this group's remap table.
 func (g *Group) SetRemapEntry(input core.HEntity, copyNumber int, id core.EntityID) {
 	if g.Remap == nil {
@@ -604,11 +573,11 @@ func (g *Group) annotateExtrudeFaces(sk *Sketch, shell *srf.SShell, tbot, ttop g
 			var okA, okB bool
 			for j := range sk.Entities {
 				if sk.Entities[j].H == e.Point[0] {
-					a = sk.Entities[j].PointGetNum()
+					a = sk.Entities[j].PointGetNum(sk)
 					okA = true
 				}
 				if sk.Entities[j].H == e.Point[1] {
-					b = sk.Entities[j].PointGetNum()
+					b = sk.Entities[j].PointGetNum(sk)
 					okB = true
 				}
 			}

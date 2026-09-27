@@ -11,206 +11,491 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
-// GenerateAll is the master orchestrator: walk every group in
-// topological order (by Group.Order), generate its entities and
-// constraints, prune orphans, solve constraints, regenerate shells
-// and meshes. Goal Item 3 implementation: builds the solver system
-// incrementally, runs a single Newton solve across all groups, and
-// then regenerates the mesh for mesh-groups.
+// GenerateAll regenerates the whole model: every group's entities
+// and params, then the solve, loops and shells. It is C++
+// SolveSpaceUI::GenerateAll(Generate::ALL) as it runs outside export
+// mode.
 func (sk *Sketch) GenerateAll() {
-	// Set the global activeSketch so helpers in group_generate.go
-	// (e.g. ModifyToSatisfyConstraint) can resolve entity handles
-	// during post-solve reference-dimension refresh.
+	sk.generateAll(GenerateAll, false, false)
+}
+
+// generateAll ports C++ SolveSpaceUI::GenerateAll (generate.cpp). The
+// engine has no active group or dirty tracking, so DIRTY and
+// UNTIL_ACTIVE regenerate every group, like ALL.
+func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	prevActive := activeSketch
 	activeSketch = sk
 	defer func() { activeSketch = prevActive }()
 
-	// Phase 1: prune orphans / invalid groups / invalid handles.
-	sk.PruneOrphans()
-	for sk.PruneGroups() {
-	}
-	for sk.PruneRequestsAndConstraints() {
-	}
-	// Clear per-group diagnostics from the previous GenerateAll.
+	sk.GroupOrder = sk.GroupOrder[:0]
 	for i := range sk.Groups {
-		sk.Groups[i].SketchDiagnostic = nil
+		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
+	}
+	sort.SliceStable(sk.GroupOrder, func(i, j int) bool {
+		return sk.GetGroup(sk.GroupOrder[i]).Order < sk.GetGroup(sk.GroupOrder[j]).Order
+	})
+
+	first, last := 0, math.MaxInt
+	if typ == GenerateRegen {
+		first, last = -1, -1
 	}
 
-	// Phase 2: topologically sort groups by Order.
-	order := sk.orderedGroups()
-
-	// Phase 2.5: numerically evaluate every entity's ActPoint,
-	// ActNormal, and ActDistance so constraint emitters that fall
-	// back to numeric values (e.g. circleData for pt-on-circle,
-	// planeExpr for pt-plane-distance) have something to read.
-	rt := NewRuntime(sk)
-	rt.RecalculateEntities(false)
-
-	// Phase 3: build the solver system incrementally. For each
-	// group in order: invoke requests, then constraints, then emit
-	// group-specific symbolic equations (e.g. quaternion magnitude
-	// for LINKED).
-	resolver := &sketchSolverResolver{sk: sk}
-	sys := solver.NewSystem(resolver)
-	for _, hg := range order {
-		g := sk.GetGroup(hg)
-		if g == nil {
-			continue
-		}
-		// Run each request's Generate to populate entities/params.
-		entities := core.EntityList(sk.Entities)
-		params := core.ParamList(sk.Params)
-		groupReqIdx := 0
-		for ri := range sk.Requests {
-			r := &sk.Requests[ri]
-			if r.Group != hg {
-				continue
-			}
-			r.GroupRequestIndex = groupReqIdx
-			groupReqIdx++
-			r.Generate(&entities, &params)
-		}
-		sk.Entities = []core.Entity(entities)
-		sk.Params = []core.Param(params)
-		// request.Generate recreates entities and params for every
-		// request, which means the same handle appears twice in
-		// sk.Entities and sk.Params: the first copy from the parser
-		// (with the correct numeric values) and the second copy
-		// from request.Generate (with zero ActPoint/ActNormal/
-		// ActDistance/Val). Collapse to a single entry per handle,
-		// preferring the one with non-zero numeric state.
-		sk.Entities = dedupEntitiesByHandle(sk.Entities)
-		sk.Params = dedupParamsByHandle(sk.Params)
-		// Re-evaluate every entity's numeric state now that the
-		// request pipeline has created (and possibly duplicated)
-		// entities. Without this, the COPIES would have zero
-		// ActPoint/ActNormal/ActDistance and constraint emitters
-		// that read those values (e.g. circleData, planeExpr)
-		// would build ill-conditioned equations.
-		rt.RecalculateEntities(false)
-
-		// Add each constraint's equations to the solver.
-		for ci := range sk.Constraints {
-			c := &sk.Constraints[ci]
-			if c.Group != hg {
-				continue
-			}
-			GenerateConstraint(c, sk)
-			if err := sys.AddConstraint(c); err != nil {
-				// Surface in the group's reported diagnostics so
-				// callers can debug. The solve still runs.
-				if g.SketchDiagnostic == nil {
-					g.SketchDiagnostic = &SketchDiagnostic{}
-				}
-				g.SketchDiagnostic.AddConstraintErrors = append(g.SketchDiagnostic.AddConstraintErrors,
-					fmt.Sprintf("group %v constraint %v (type %d): %v", hg, c.H, c.Type, err))
-			}
-		}
-
-		// Emit group-specific symbolic equations (LINKED, EXTRUDE,
-		// ROTATE/REVOLVE/HELIX, TRANSLATE).
-		g.GenerateEquations(sys)
-
-		// Emit transformed entity copies for mesh groups (e.g.
-		// POINT_N_TRANS at the top and bottom of an EXTRUDE).
-		g.Generate(sk, &sk.Entities, &sk.Params)
-	}
-
-	// Phase 4: run a single Newton solve across all groups.
-	initial := make(map[core.HParam]float64)
-	for _, p := range sk.Params {
-		initial[p.H] = p.Val
-	}
-	report := solver.SolveReport{}
-	_, _ = sys.Solve(initial, solver.SolveOptions{Report: &report})
-	how := core.SolveOkay
-	if !report.Converged {
-		how = core.SolveDidntConverge
-	}
-	dof := report.DOF
-	rank := report.Rank
-
-	// Turn the relative chord tolerance into an absolute one from the
-	// entity bounding box, as C++ SolveSpaceUI::GenerateAll does
-	// (generate.cpp:219-226) with the default ChordTolerancePct of 0.1.
-	{
+	// If we're generating entities for display, first we need to find
+	// the bounding box to turn relative chord tolerance to absolute.
+	if !genForBBox {
+		sk.generateAll(typ, andFindFree, true)
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := math.Max(size.X, math.Max(size.Y, size.Z))
 		srf.SetChordTolMm(maxSize * chordTolPct / 100.0)
 	}
 
-	// Phase 5a: assemble Drawing groups first. Drawing groups own
-	// the LINE_SEGMENT entities; mesh groups (Extrude/Lathe/...)
-	// reference them via opA lineage. Without this pre-pass, the
-	// mesh groups' source BezierLoops are empty and the resulting
-	// shells are empty.
-	for _, hg := range order {
-		g := sk.GetGroup(hg)
-		if g == nil {
-			continue
+	// Remove any requests or constraints that refer to a nonexistent
+	// group; can check those immediately, since we know what the list
+	// of groups should be.
+	sk.PruneOrphans()
+
+	// Don't lose our numerical guesses when we regenerate.
+	prev := sk.Params
+	prevByHandle := make(map[core.HParam]*core.Param, len(prev))
+	for i := range prev {
+		prevByHandle[prev[i].H] = &prev[i]
+	}
+	sk.Params = make([]core.Param, 0, len(prev))
+	sk.Entities = make([]core.Entity, 0, len(sk.Entities))
+
+	rt := &Runtime{Sketch: sk}
+	for i, hg := range sk.GroupOrder {
+		// The group may depend on entities or other groups, to define its
+		// workplane geometry or for its operands. Those must already exist
+		// in a previous group, so check them before generating.
+		if sk.PruneGroups(hg) {
+			sk.generateAllPruned(prev, typ, andFindFree, genForBBox)
+			return
 		}
-		if g.Type == GroupDrawing3D || g.Type == GroupDrawingWorkplane {
-			if len(g.BezierLoops.Sets) == 0 {
+		g := sk.GetGroup(hg)
+
+		firstParam := len(sk.Params)
+		groupRequestIndex := 0
+		for ri := range sk.Requests {
+			r := &sk.Requests[ri]
+			if r.Group != hg {
+				continue
+			}
+			r.GroupRequestIndex = groupRequestIndex
+			groupRequestIndex++
+
+			entities := core.EntityList(sk.Entities)
+			params := core.ParamList(sk.Params)
+			r.Generate(&entities, &params)
+			sk.Entities = []core.Entity(entities)
+			sk.Params = []core.Param(params)
+		}
+		for ci := range sk.Constraints {
+			c := &sk.Constraints[ci]
+			if c.Group != hg {
+				continue
+			}
+			GenerateConstraint(c, &sk.Params)
+		}
+		g.Generate(sk, &sk.Entities, &sk.Params)
+		// The params this group's solve may change: C++
+		// WriteEqSystemForGroup collects the same set by generating the
+		// group's requests, constraints and group params again.
+		groupParams := make([]core.HParam, 0, len(sk.Params)-firstParam)
+		for pi := firstParam; pi < len(sk.Params); pi++ {
+			groupParams = append(groupParams, sk.Params[pi].H)
+		}
+
+		// The requests and constraints depend on stuff in this or the
+		// previous group, so check them after generating.
+		if sk.PruneRequestsAndConstraints(hg) {
+			sk.generateAllPruned(prev, typ, andFindFree, genForBBox)
+			return
+		}
+
+		// Use the previous values for params that we've seen before, as
+		// initial guesses for the solver.
+		for pi := range sk.Params {
+			newp := &sk.Params[pi]
+			if newp.Known {
+				continue
+			}
+			if prevp := prevByHandle[newp.H]; prevp != nil {
+				newp.Val = prevp.Val
+				newp.Free = prevp.Free
+			}
+		}
+		sk.recalculateGroupEntities(hg)
+
+		if hg.V == HGroupReferences {
+			sk.ForceReferences()
+			g.Solved.How = core.SolveOkay
+			g.Clean = true
+		} else if i >= first && i <= last {
+			// The group falls inside the range, so really solve it,
+			// and then regenerate the mesh based on the solved stuff.
+			if genForBBox {
+				sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 				g.GenerateLoops(sk, rt)
+			} else {
+				g.GenerateShellAndMesh(sk)
+				if g.IsMeshGroup2() {
+					g.combineWithRunningShell(sk)
+					g.GenerateDisplayItems()
+				}
+				g.Clean = true
+			}
+		} else {
+			// The group falls outside the range, so just assume that
+			// it's good wherever we left it. The mesh is unchanged,
+			// and the parameters must be marked as known.
+			for pi := range sk.Params {
+				if prevByHandle[sk.Params[pi].H] != nil {
+					sk.Params[pi].Known = true
+				}
 			}
 		}
 	}
 
-	// Phase 5: for mesh groups, regenerate the SMesh and the
-	// display items. Also propagate the solve status to every
-	// group's Solved struct (How, Dof) and set Clean=true on
-	// groups that converged.
-	for _, hg := range order {
-		g := sk.GetGroup(hg)
-		if g == nil {
-			continue
-		}
-		if g.IsMeshGroup2() {
-			// Walk the source lineage (g.OpA chain) and assemble
-			// BezierLoops on every group along the way. The
-			// entities actually live on the source Drawing group
-			// (or workplane group), not on the mesh group itself.
-			visited := make(map[core.HGroup]bool)
-			current := g
-			for current != nil && !visited[current.H] {
-				visited[current.H] = true
-				if len(current.BezierLoops.Sets) == 0 {
-					if current.Type == GroupDrawing3D ||
-						current.Type == GroupDrawingWorkplane ||
-						current.Type == GroupExtrude ||
-						current.Type == GroupLathe ||
-						current.Type == GroupRevolve ||
-						current.Type == GroupHelix {
-						current.GenerateLoops(sk, rt)
-					}
-				}
-				if len(current.BezierLoops.Sets) > 0 {
-					break
-				}
-				if current.OpA == (core.HGroup{}) {
-					break
-				}
-				current = sk.GetGroup(current.OpA)
-			}
-			g.GenerateLoops(sk, rt)
-			g.GenerateShellAndMesh(sk)
-			g.combineWithRunningShell(sk)
-			g.GenerateDisplayItems()
-		}
-		g.Solved.How = how
-		g.Solved.Dof = dof
-		g.Clean = report.Converged
-	}
-	_ = rank
-
-	// Phase 6: re-evaluate reference constraints.
+	// And update any reference dimensions with their new values
 	for ci := range sk.Constraints {
 		c := &sk.Constraints[ci]
 		if c.Reference {
 			ModifyToSatisfyConstraint(c, sk.ParamsToMap())
 		}
 	}
+}
+
+// generateAllPruned is GenerateAll's "pruned:" exit: restore the
+// numerical guesses and try again.
+func (sk *Sketch) generateAllPruned(prev []core.Param, typ GenerateType, andFindFree, genForBBox bool) {
+	sk.Params = prev
+	sk.generateAll(typ, andFindFree, genForBBox)
+}
+
+// HGroupReferences is the handle value of the references group.
+const HGroupReferences = core.HGroupReferences
+
+// ForceReferences forces the values of the params that define the
+// three reference coordinate systems (C++ SolveSpaceUI::ForceReferences).
+func (sk *Sketch) ForceReferences() {
+	quat := []struct {
+		hr core.HRequest
+		q  geom.Quaternion
+	}{
+		{HRequestReferenceXY, geom.Quaternion{W: 1, X: 0, Y: 0, Z: 0}},
+		{HRequestReferenceYZ, geom.Quaternion{W: 0.5, X: 0.5, Y: 0.5, Z: 0.5}},
+		{HRequestReferenceZX, geom.Quaternion{W: 0.5, X: -0.5, Y: -0.5, Z: -0.5}},
+	}
+	for _, rq := range quat {
+		wrkpl := sk.MustGetEntity(rq.hr.Entity(0))
+		// The origin for our coordinate system, always zero
+		origin := sk.MustGetEntity(wrkpl.Point[0])
+		origin.PointForceTo(sk, geom.Vector{})
+		origin.Construction = true
+		for k := 0; k < 3; k++ {
+			sk.GetParam(origin.Param[k]).Known = true
+		}
+		// The quaternion that defines the rotation, from the table.
+		normal := sk.MustGetEntity(wrkpl.Normal)
+		normal.NormalForceTo(sk, rq.q)
+		for k := 0; k < 4; k++ {
+			sk.GetParam(normal.Param[k]).Known = true
+		}
+	}
+}
+
+// groupExists reports whether hg is a group (C++ GroupExists).
+func (sk *Sketch) groupExists(hg core.HGroup) bool {
+	return sk.GetGroup(hg) != nil
+}
+
+// entityExists reports whether he is an entity or no entity at all
+// (C++ EntityExists).
+func (sk *Sketch) entityExists(he core.HEntity) bool {
+	if he == core.NoEntity {
+		return true
+	}
+	return sk.GetEntity(he) != nil
+}
+
+// groupsInOrder reports whether before comes before after (C++
+// GroupsInOrder).
+func (sk *Sketch) groupsInOrder(before, after core.HGroup) bool {
+	if before.V == 0 || after.V == 0 {
+		return true
+	}
+	if !sk.groupExists(before) || !sk.groupExists(after) {
+		return false
+	}
+	return sk.GetGroup(before).Order < sk.GetGroup(after).Order
+}
+
+// PruneOrphans removes requests and constraints whose group doesn't
+// exist (C++ SolveSpaceUI::PruneOrphans).
+func (sk *Sketch) PruneOrphans() bool {
+	requests, constraints := len(sk.Requests), len(sk.Constraints)
+
+	keptR := sk.Requests[:0]
+	for _, r := range sk.Requests {
+		if sk.groupExists(r.Group) {
+			keptR = append(keptR, r)
+		}
+	}
+	sk.Requests = keptR
+
+	keptC := sk.Constraints[:0]
+	for _, c := range sk.Constraints {
+		if sk.groupExists(c.Group) {
+			keptC = append(keptC, c)
+		}
+	}
+	sk.Constraints = keptC
+
+	return requests > len(sk.Requests) || constraints > len(sk.Constraints)
+}
+
+// PruneGroups removes group hg if its operand or predef entities
+// don't exist (yet), and reports whether it did (C++
+// SolveSpaceUI::PruneGroups).
+func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
+	g := sk.GetGroup(hg)
+	if sk.groupsInOrder(g.OpA, hg) &&
+		sk.entityExists(g.Predef.Origin) &&
+		sk.entityExists(g.Predef.EntityB) &&
+		sk.entityExists(g.Predef.EntityC) {
+		return false
+	}
+	for i := range sk.Groups {
+		if sk.Groups[i].H == hg {
+			sk.Groups = append(sk.Groups[:i], sk.Groups[i+1:]...)
+			break
+		}
+	}
+	return true
+}
+
+// PruneRequestsAndConstraints removes group hg's requests and
+// constraints that refer to entities that don't exist (C++
+// SolveSpaceUI::PruneRequestsAndConstraints).
+func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
+	entityRequestExists := func(he core.HEntity, checkEntity bool) bool {
+		if he == core.NoEntity {
+			return true
+		}
+		if he.IsFromRequest() {
+			if sk.GetRequest(he.Request()) != nil {
+				return true
+			}
+		} else if !checkEntity || sk.GetEntity(he) != nil {
+			return true
+		}
+		return false
+	}
+
+	requests, constraints := len(sk.Requests), len(sk.Constraints)
+
+	keptR := sk.Requests[:0]
+	for _, r := range sk.Requests {
+		if r.Group != hg || entityRequestExists(r.Workplane, false) {
+			keptR = append(keptR, r)
+		}
+	}
+	sk.Requests = keptR
+
+	keptC := sk.Constraints[:0]
+	for _, c := range sk.Constraints {
+		if c.Group != hg ||
+			(entityRequestExists(c.Workplane, true) &&
+				entityRequestExists(c.PtA, true) &&
+				entityRequestExists(c.PtB, true) &&
+				entityRequestExists(c.EntityA, true) &&
+				entityRequestExists(c.EntityB, true) &&
+				entityRequestExists(c.EntityC, true) &&
+				entityRequestExists(c.EntityD, true)) {
+			keptC = append(keptC, c)
+		}
+	}
+	sk.Constraints = keptC
+
+	return requests > len(sk.Requests) || constraints > len(sk.Constraints)
+}
+
+// constraintHasLabel reports whether c is a dimension (C++
+// ConstraintBase::HasLabel).
+func constraintHasLabel(c *core.Constraint) bool {
+	switch c.Type {
+	case core.ConstraintPtLineDistance, core.ConstraintPtPlaneDistance,
+		core.ConstraintPtFaceDistance, core.ConstraintPtPtDistance,
+		core.ConstraintProjPtDistance, core.ConstraintDiameter,
+		core.ConstraintLengthRatio, core.ConstraintArcArcLenRatio,
+		core.ConstraintArcLineLenRatio, core.ConstraintLengthDifference,
+		core.ConstraintArcArcDifference, core.ConstraintArcLineDifference,
+		core.ConstraintAngle, core.ConstraintComment:
+		return true
+	}
+	return false
+}
+
+// groupSolveResolver is the solver's view of the sketch while one
+// group is solved: the group's params are copies, so a failed solve
+// leaves the sketch untouched (C++ solves sys.param, a copy, and writes
+// it back only on success).
+type groupSolveResolver struct {
+	sk      *Sketch
+	unknown map[core.HParam]*core.Param
+}
+
+func (r *groupSolveResolver) Entity(h core.HEntity) (*core.Entity, error) {
+	return r.sk.GetEntity(h), nil
+}
+
+func (r *groupSolveResolver) Param(h core.HParam) (*core.Param, error) {
+	if p, ok := r.unknown[h]; ok {
+		return p, nil
+	}
+	return r.sk.GetParam(h), nil
+}
+
+// SolveGroupAndReport solves group hg for the params in groupParams,
+// holding every other param fixed (C++ SolveSpaceUI::SolveGroup with
+// WriteEqSystemForGroup and System::Solve). The equations come from
+// the group's constraints, its entities and the group itself.
+func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
+	g := sk.GetGroup(hg)
+	g.SketchDiagnostic = nil
+	g.Solved.Remove = nil
+
+	res := &groupSolveResolver{sk: sk, unknown: make(map[core.HParam]*core.Param, len(groupParams))}
+	for _, h := range groupParams {
+		p := *sk.GetParam(h)
+		p.Known = false
+		res.unknown[h] = &p
+	}
+	sys := solver.NewSystem(res)
+	sys.Known = func(h core.HParam) (float64, bool) {
+		if _, ok := res.unknown[h]; ok {
+			return 0, false
+		}
+		p := sk.GetParam(h)
+		if p == nil {
+			return 0, false
+		}
+		return p.Val, true
+	}
+
+	// The numeric parts of the solver's equation builders read the
+	// entities' cached Act* values.
+	sk.recalculateGroupEntities(hg)
+
+	addDiagnostic := func(msg string) {
+		if g.SketchDiagnostic == nil {
+			g.SketchDiagnostic = &SketchDiagnostic{}
+		}
+		g.SketchDiagnostic.AddConstraintErrors = append(g.SketchDiagnostic.AddConstraintErrors, msg)
+	}
+
+	// Generate all the equations from constraints in this group
+	for ci := range sk.Constraints {
+		c := &sk.Constraints[ci]
+		if c.Group != hg {
+			continue
+		}
+		if constraintHasLabel(c) && c.Type != core.ConstraintComment && g.AllDimsReference {
+			// When all dimensions are reference, we adjust them to display
+			// the correct value, and then don't generate any equations.
+			ModifyToSatisfyConstraint(c, sk.ParamsToMap())
+			continue
+		}
+		if g.RelaxConstraints && c.Type != core.ConstraintPointsCoincident {
+			// When the constraints are relaxed, we keep only the point-
+			// coincident constraints, and the constraints generated by
+			// the entities and groups.
+			continue
+		}
+		if err := sys.AddConstraint(c); err != nil {
+			addDiagnostic(fmt.Sprintf("group %v constraint %v (type %d): %v", hg, c.H, c.Type, err))
+		}
+	}
+	// And the equations from entities, and from the group itself
+	var eqs []core.Equation
+	err := catchPanic(func() {
+		for ei := range sk.Entities {
+			e := &sk.Entities[ei]
+			if e.Group != hg {
+				continue
+			}
+			e.GenerateEquations(sk, sk.Constraints, &eqs)
+		}
+		g.GenerateEquations(sk, &eqs)
+	})
+	if err != nil {
+		addDiagnostic(fmt.Sprintf("group %v equations: %v", hg, err))
+	}
+	for _, eq := range eqs {
+		if err := sys.AddEquation(eq.H, eq.Expr); err != nil {
+			addDiagnostic(fmt.Sprintf("group %v equation %08x: %v", hg, eq.H.V, err))
+		}
+	}
+
+	initial := make(map[core.HParam]float64, len(res.unknown))
+	for h, p := range res.unknown {
+		initial[h] = p.Val
+	}
+	report := solver.SolveReport{}
+	result, solveErr := sys.Solve(initial, solver.SolveOptions{Report: &report})
+	if solveErr != nil || !report.Converged {
+		g.Solved.How = core.SolveDidntConverge
+		g.Solved.Dof = report.DOF
+		return
+	}
+
+	// System solved correctly, so write the new values back in to the
+	// main parameter table.
+	for _, h := range groupParams {
+		val, ok := result[h]
+		if !ok {
+			if parent, subst := report.Substitutions[h]; subst {
+				val, ok = result[parent]
+			}
+		}
+		pp := sk.GetParam(h)
+		if ok {
+			pp.Val = val
+		}
+		pp.Known = true
+		pp.Free = res.unknown[h].Free
+	}
+	sk.recalculateGroupEntities(hg)
+	g.Solved.How = core.SolveOkay
+	g.Solved.Dof = report.DOF
+	g.DofCheckOk = true
+}
+
+// recalculateGroupEntities refreshes the cached Act* values of group
+// hg's entities, which the solver's numeric helpers and the renderer
+// read; C++ evaluates those live.
+func (sk *Sketch) recalculateGroupEntities(hg core.HGroup) {
+	for i := range sk.Entities {
+		e := &sk.Entities[i]
+		if e.Group != hg {
+			continue
+		}
+		_ = catchPanic(func() { e.CalculateNumerical(sk, false) })
+	}
+}
+
+// catchPanic runs fn, returning a panic (C++ would have asserted) as
+// an error.
+func catchPanic(fn func()) (err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = fmt.Errorf("%v", rec)
+		}
+	}()
+	fn()
+	return nil
 }
 
 // findPreviousMeshGroup walks back through previous groups (skipping
@@ -227,196 +512,6 @@ func findPreviousMeshGroup(g *Group, sk *Sketch) *Group {
 		prev = prev.PreviousGroup(sk)
 	}
 	return prev
-}
-
-func (sk *Sketch) generateAllLoopsAndShells() {
-	rt := NewRuntime(sk)
-	rt.RecalculateEntities(false)
-	order := make([]core.HGroup, len(sk.Groups))
-	for i, g := range sk.Groups {
-		order[i] = g.H
-	}
-	sort.Slice(order, func(i, j int) bool {
-		return sk.GetGroup(order[i]).Order < sk.GetGroup(order[j]).Order
-	})
-	for _, hg := range order {
-		g := sk.GetGroup(hg)
-		if g == nil {
-			continue
-		}
-		if g.Type == GroupExtrude {
-			g.GenerateLoops(sk, rt)
-			g.GenerateShellAndMesh(sk)
-			g.GenerateDisplayItems()
-		}
-	}
-}
-
-// dedupEntitiesByHandle collapses a slice of entities to one entry per
-// handle, preferring the entry with non-zero numeric state. This is
-// required because request.Generate creates entity copies that share
-// handles with the original parser entities, and the COPIES have
-// uninitialized numeric state. Keeping only the parser's original
-// preserves the user's authored numeric values.
-func dedupEntitiesByHandle(entities []core.Entity) []core.Entity {
-	if len(entities) == 0 {
-		return entities
-	}
-	type entry struct {
-		idx     int
-		hasData bool
-	}
-	byHandle := make(map[core.HEntity]entry)
-	out := make([]core.Entity, 0, len(entities))
-	for _, e := range entities {
-		cur, exists := byHandle[e.H]
-		hasData := !e.ActPoint.Equals(geom.Vector{}) ||
-			!e.ActNormal.Equals(geom.Quaternion{}) ||
-			e.ActDistance != 0 ||
-			e.NumPoint != (geom.Vector{}) ||
-			e.NumNormal != (geom.Quaternion{})
-		if !exists || (!cur.hasData && hasData) {
-			if exists {
-				// Replace prior entry with the data-bearing one.
-				out = out[:len(out)-1]
-			}
-			byHandle[e.H] = entry{idx: len(out), hasData: hasData}
-			out = append(out, e)
-		}
-	}
-	return out
-}
-
-// dedupParamsByHandle collapses a slice of params to one entry per
-// handle, preferring the entry with non-zero value.
-func dedupParamsByHandle(params []core.Param) []core.Param {
-	if len(params) == 0 {
-		return params
-	}
-	type entry struct {
-		idx     int
-		hasData bool
-	}
-	byHandle := make(map[core.HParam]entry)
-	out := make([]core.Param, 0, len(params))
-	for _, p := range params {
-		cur, exists := byHandle[p.H]
-		hasData := p.Val != 0 || p.Known
-		if !exists || (!cur.hasData && hasData) {
-			if exists {
-				out = out[:len(out)-1]
-			}
-			byHandle[p.H] = entry{idx: len(out), hasData: hasData}
-			out = append(out, p)
-		}
-	}
-	return out
-}
-
-// PruneOrphans removes entities, requests, and constraints that
-// refer to a non-existent group. Filters entities and constraints
-// whose Group is not in sk.Groups.
-func (sk *Sketch) PruneOrphans() {
-	validGroup := make(map[core.HGroup]bool, len(sk.Groups))
-	for _, g := range sk.Groups {
-		validGroup[g.H] = true
-	}
-	filtered := sk.Entities[:0]
-	for _, e := range sk.Entities {
-		if e.Group == (core.HGroup{}) || validGroup[e.Group] {
-			filtered = append(filtered, e)
-		}
-	}
-	sk.Entities = filtered
-
-	filteredR := sk.Requests[:0]
-	for _, r := range sk.Requests {
-		if r.Group == (core.HGroup{}) || validGroup[r.Group] {
-			filteredR = append(filteredR, r)
-		}
-	}
-	sk.Requests = filteredR
-
-	filteredC := sk.Constraints[:0]
-	for _, c := range sk.Constraints {
-		if c.Group == (core.HGroup{}) || validGroup[c.Group] {
-			filteredC = append(filteredC, c)
-		}
-	}
-	sk.Constraints = filteredC
-}
-
-// PruneGroups removes groups that depend on non-existent operands.
-func (sk *Sketch) PruneGroups() bool {
-	validGroup := make(map[core.HGroup]bool, len(sk.Groups))
-	for _, g := range sk.Groups {
-		validGroup[g.H] = true
-	}
-	filtered := sk.Groups[:0]
-	removed := false
-	for _, g := range sk.Groups {
-		if (g.OpA != core.HGroup{} && !validGroup[g.OpA]) ||
-			(g.OpB != core.HGroup{} && !validGroup[g.OpB]) {
-			removed = true
-			continue
-		}
-		filtered = append(filtered, g)
-	}
-	sk.Groups = filtered
-	return removed
-}
-
-// PruneRequestsAndConstraints removes requests/constraints that
-// reference a non-existent entity, param, or request.
-func (sk *Sketch) PruneRequestsAndConstraints() bool {
-	validEntity := make(map[core.HEntity]bool, len(sk.Entities))
-	for _, e := range sk.Entities {
-		validEntity[e.H] = true
-	}
-	removed := false
-	filteredR := sk.Requests[:0]
-	for _, r := range sk.Requests {
-		if !validEntity[r.H.Entity(0)] {
-			removed = true
-			continue
-		}
-		filteredR = append(filteredR, r)
-	}
-	sk.Requests = filteredR
-	filteredC := sk.Constraints[:0]
-	for _, c := range sk.Constraints {
-		if c.PtA != (core.HEntity{}) && !validEntity[c.PtA] {
-			removed = true
-			continue
-		}
-		if c.EntityA != (core.HEntity{}) && !validEntity[c.EntityA] {
-			removed = true
-			continue
-		}
-		filteredC = append(filteredC, c)
-	}
-	sk.Constraints = filteredC
-	return removed
-}
-
-type solveReport struct {
-	How    core.SolveResult
-	Dof    int
-	Rank   int
-	BadCon []core.HConstraint
-}
-
-func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, andFindFree bool) solveReport {
-	g := sk.GetGroup(hg)
-	if g == nil {
-		return solveReport{How: core.SolveOkay}
-	}
-	refGroup := core.HGroup{V: 1}
-	if hg == refGroup {
-		return solveReport{How: core.SolveOkay, Rank: 0}
-	}
-	_ = andFindFree
-	return solveReport{How: core.SolveOkay, Rank: 0}
 }
 
 func (sk *Sketch) orderedGroups() []core.HGroup {
@@ -457,31 +552,6 @@ func ParseExprText(s string) *core.Expr {
 	return e
 }
 
-// sketchSolverResolver adapts a Sketch to the solver.Resolver
-// interface so GenerateAll can build a single solver.System across
-// all groups.
-type sketchSolverResolver struct {
-	sk *Sketch
-}
-
-func (r *sketchSolverResolver) Entity(h core.HEntity) (*core.Entity, error) {
-	for i := range r.sk.Entities {
-		if r.sk.Entities[i].H == h {
-			return &r.sk.Entities[i], nil
-		}
-	}
-	return nil, nil
-}
-
-func (r *sketchSolverResolver) Param(h core.HParam) (*core.Param, error) {
-	for i := range r.sk.Params {
-		if r.sk.Params[i].H == h {
-			return &r.sk.Params[i], nil
-		}
-	}
-	return nil, nil
-}
-
 // GenerateType indicates which groups to regenerate.
 //
 // Mirrors the C++ Generate enum from solvespace.h:
@@ -503,13 +573,12 @@ const (
 	GenerateUntilActive
 )
 
-// GenerateAllTyped is a parity-friendly GenerateAll that accepts a
-// GenerateType. Currently behaves identically to GenerateAll since the
-// engine has no per-group dirty-flag tracking; provided so callers
-// can express intent in the same terms as the C++ API.
+// GenerateAllTyped is GenerateAll with a GenerateType. REGEN
+// regenerates entities without solving or meshing; the others
+// regenerate everything, since the engine has no dirty tracking or
+// active group.
 func (sk *Sketch) GenerateAllTyped(t GenerateType) {
-	_ = t
-	sk.GenerateAll()
+	sk.generateAll(t, false, false)
 }
 
 // ScheduleGenerateAll is the parity-friendly wrapper for

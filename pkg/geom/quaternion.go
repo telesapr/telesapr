@@ -26,48 +26,42 @@ func QuaternionFromAxisAngle(axis Vector, angle float64) Quaternion {
 
 // QuaternionFromBasis builds the quaternion that rotates the X axis
 // onto u and the Y axis onto v. Caller must ensure u and v are
-// perpendicular unit vectors.
+// perpendicular unit vectors. Mirrors C++ Quaternion::From(Vector u,
+// Vector v) (util.cpp), including its branch choice and sign.
 func QuaternionFromBasis(u, v Vector) Quaternion {
-	w := u.Cross(v).Normal()
-	// Build rotation matrix columns (u, v, w) and convert to quaternion.
-	m00, m01, m02 := u.X, v.X, w.X
-	m10, m11, m12 := u.Y, v.Y, w.Y
-	m20, m21, m22 := u.Z, v.Z, w.Z
-	trace := m00 + m11 + m22
-	switch {
-	case trace > 0:
-		s := 0.5 / math.Sqrt(trace+1.0)
-		return Quaternion{
-			W: 0.25 / s,
-			X: (m21 - m12) * s,
-			Y: (m02 - m20) * s,
-			Z: (m10 - m01) * s,
-		}
-	case m00 > m11 && m00 > m22:
-		s := 2.0 * math.Sqrt(1.0+m00-m11-m22)
-		return Quaternion{
-			W: (m21 - m12) / s,
-			X: 0.25 * s,
-			Y: (m01 + m10) / s,
-			Z: (m02 + m20) / s,
-		}
-	case m11 > m22:
-		s := 2.0 * math.Sqrt(1.0+m11-m00-m22)
-		return Quaternion{
-			W: (m02 - m20) / s,
-			X: (m01 + m10) / s,
-			Y: 0.25 * s,
-			Z: (m12 + m21) / s,
-		}
-	default:
-		s := 2.0 * math.Sqrt(1.0+m22-m00-m11)
-		return Quaternion{
-			W: (m10 - m01) / s,
-			X: (m02 + m20) / s,
-			Y: (m12 + m21) / s,
-			Z: 0.25 * s,
+	n := u.Cross(v)
+
+	var q Quaternion
+	tr := 1 + u.X + v.Y + n.Z
+	if tr > 1e-4 {
+		s := 2 * math.Sqrt(tr)
+		q.W = s / 4
+		q.X = (v.Z - n.Y) / s
+		q.Y = (n.X - u.Z) / s
+		q.Z = (u.Y - v.X) / s
+	} else {
+		if u.X > v.Y && u.X > n.Z {
+			s := 2 * math.Sqrt(1+u.X-v.Y-n.Z)
+			q.W = (v.Z - n.Y) / s
+			q.X = s / 4
+			q.Y = (u.Y + v.X) / s
+			q.Z = (n.X + u.Z) / s
+		} else if v.Y > n.Z {
+			s := 2 * math.Sqrt(1-u.X+v.Y-n.Z)
+			q.W = (n.X - u.Z) / s
+			q.X = (u.Y + v.X) / s
+			q.Y = s / 4
+			q.Z = (v.Z + n.Y) / s
+		} else {
+			s := 2 * math.Sqrt(1-u.X-v.Y+n.Z)
+			q.W = (u.Y - v.X) / s
+			q.X = (n.X + u.Z) / s
+			q.Y = (v.Z + n.Y) / s
+			q.Z = s / 4
 		}
 	}
+
+	return q.WithMagnitude(1)
 }
 
 func (q Quaternion) Plus(b Quaternion) Quaternion {
@@ -153,23 +147,37 @@ func (q Quaternion) IsIdentity() bool {
 	return q.W == 1.0 && q.X == 0 && q.Y == 0 && q.Z == 0
 }
 
+// Rotate expresses v in the basis (RotationU, RotationV, RotationN),
+// as C++ Quaternion::Rotate does. For a non-unit quaternion this
+// scales by |q|^2.
 func (q Quaternion) Rotate(v Vector) Vector {
-	qv := Quaternion{0, v.X, v.Y, v.Z}
-	qInv := q.Inverse()
-	r := q.Times(qv).Times(qInv)
-	return Vector{r.X, r.Y, r.Z}
+	return q.RotationU().ScaledBy(v.X).Plus(
+		q.RotationV().ScaledBy(v.Y)).Plus(
+		q.RotationN().ScaledBy(v.Z))
 }
 
 func (q Quaternion) RotationU() Vector {
-	return q.Rotate(Vector{1, 0, 0})
+	return Vector{
+		X: q.W*q.W + q.X*q.X - q.Y*q.Y - q.Z*q.Z,
+		Y: 2*q.W*q.Z + 2*q.X*q.Y,
+		Z: 2*q.X*q.Z - 2*q.W*q.Y,
+	}
 }
 
 func (q Quaternion) RotationV() Vector {
-	return q.Rotate(Vector{0, 1, 0})
+	return Vector{
+		X: 2*q.X*q.Y - 2*q.W*q.Z,
+		Y: q.W*q.W - q.X*q.X + q.Y*q.Y - q.Z*q.Z,
+		Z: 2*q.W*q.X + 2*q.Y*q.Z,
+	}
 }
 
 func (q Quaternion) RotationN() Vector {
-	return q.Rotate(Vector{0, 0, 1})
+	return Vector{
+		X: 2*q.W*q.Y + 2*q.X*q.Z,
+		Y: 2*q.Y*q.Z - 2*q.W*q.X,
+		Z: q.W*q.W - q.X*q.X - q.Y*q.Y + q.Z*q.Z,
+	}
 }
 
 func (q Quaternion) Equals(b Quaternion) bool {
@@ -187,4 +195,3 @@ func (q Quaternion) Equals(b Quaternion) bool {
 	}
 	return true
 }
-

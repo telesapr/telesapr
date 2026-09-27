@@ -1,6 +1,7 @@
 package sketch
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -8,96 +9,36 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
-// Generate is the top-level dispatcher for group entity generation.
-// It walks every entity in the source group and emits transformed
-// copies for EXTRUDE/LATHE/REVOLVE/HELIX/ROTATE/TRANSLATE groups.
-// Phase 6 + Goal Item 2 implementation: full CopyEntity with
-// POINT_N_TRANS / POINT_N_ROT_TRANS variants and the Make* helpers.
-func (g *Group) Generate(sk *Sketch, entities *[]core.Entity, params *[]core.Param) {
-	switch g.Type {
-	case GroupExtrude:
-		g.generateExtrudeGroup(sk, entities, params)
-	case GroupLathe, GroupRevolve:
-		g.generateRevolveGroup(sk, entities, params)
-	case GroupHelix:
-		g.generateHelixGroup(sk, entities, params)
-	case GroupRotate:
-		g.generateRotateGroup(sk, entities, params)
-	case GroupTranslate:
-		g.generateTranslateGroup(sk, entities, params)
-	default:
-		// Drawing / linked: no extra entity generation.
-	}
-}
-
-// Remap key constants for the group transform pipeline.
-const (
-	remapBottom = 1002
-	remapTop    = 1001
+// The view that Group::Generate seeds new group params from. The C++
+// reads SS.GW; the engine has no view, so this is the default view
+// of GraphicsWindow::Init (graphicswin.cpp), which is also what
+// AfterNewFile leaves in place. It only matters for params without a
+// previous value.
+var (
+	viewProjRight = geom.Vector{X: 1, Y: 0, Z: 0}
+	viewProjUp    = geom.Vector{X: 0, Y: 1, Z: 0}
+	viewOffset    = geom.Vector{}
+	viewScale     = 5.0
 )
 
-// generateExtrudeGroup creates the entities for an EXTRUDE group:
-// for each point/segment in the source group, emits POINT_N_TRANS
-// copies at the bottom and top of the extrusion, plus a
-// LINE_SEGMENT (or FACE_XPROD) for the side. Also emits two
-// FACE_NORMAL_PT caps parameterized by the extrusion vector.
-func (g *Group) generateExtrudeGroup(sk *Sketch, entities *[]core.Entity, params *[]core.Param) {
-	// Group parameters 0, 1, 2 are the extrusion direction.
-	AddGroupParam(params, g.H.Param(0), 0)
-	AddGroupParam(params, g.H.Param(1), 0)
-	AddGroupParam(params, g.H.Param(2), 0)
-	// Determine ai, af (bottom/top timesApplied) from subtype.
-	ai, af := 0, 2
-	if g.Subtype == GroupTwoSided || g.Subtype == GroupTwoSkewed {
-		ai, af = -1, 1
-	}
-	// Walk every entity in the source group and emit bottom + top copies.
-	resolver := &sketchRuntimeResolver{sk: sk}
-	var anyPt core.HEntity
-	for i := range *entities {
-		e := &(*entities)[i]
-		if e.Group != g.OpA {
-			continue
-		}
-		if !e.IsPoint() && !e.HasEndpoints() {
-			continue
-		}
-		if anyPt == (core.HEntity{}) && e.IsPoint() {
-			anyPt = e.H
-		}
-		e.CalculateNumerical(resolver, false)
-		// Allocate fresh HEntity handles for the copies. The C++ uses
-		// a remap table; we allocate fresh handles via the sketch.
-		bottomH := core.HEntity{V: uint32(0x10000000|uint32(ai+1)<<16) | uint32(e.H.V)}
-		topH := core.HEntity{V: uint32(0x10000000|uint32(af+1)<<16) | uint32(e.H.V)}
-		bottom := g.copyEntity(e, ai, CopyAsNTrans)
-		bottom.EntityBase.Type = core.EntityPointNTrans
-		bottom.EntityBase.Param = [8]core.HParam{g.H.Param(0), g.H.Param(1), g.H.Param(2)}
-		bottom.EntityBase.H = bottomH
-		bottom.EntityBase.Group = g.H
-		*entities = append(*entities, *bottom)
-		top := g.copyEntity(e, af, CopyAsNTrans)
-		top.EntityBase.Type = core.EntityPointNTrans
-		top.EntityBase.Param = [8]core.HParam{g.H.Param(0), g.H.Param(1), g.H.Param(2)}
-		top.EntityBase.H = topH
-		top.EntityBase.Group = g.H
-		*entities = append(*entities, *top)
-	}
-	// Emit the LINE_SEGMENT / FACE_XPROD for the extruded side.
-	for i := range *entities {
-		e := &(*entities)[i]
-		if e.Group != g.OpA {
-			continue
-		}
-		if e.IsPoint() {
-			g.MakeExtrusionLines(entities, e.EntityBase.H)
-		}
-	}
-	g.MakeExtrusionTopBottomFaces(entities, anyPt)
-}
+// Remap keys for entity copies made by Group::Generate (C++
+// Group::REMAP_*). Small non-negative keys are step-and-repeat copy
+// numbers.
+const (
+	RemapLast           = 1000
+	RemapTop            = 1001
+	RemapBottom         = 1002
+	RemapPtToLine       = 1003
+	RemapLineToFace     = 1004
+	RemapLatheStart     = 1006
+	RemapLatheEnd       = 1007
+	RemapPtToArc        = 1008
+	RemapPtToNormal     = 1009
+	RemapLatheArcCenter = 1010
+)
 
-// CopyAs is the type of transformation to apply when copying an
-// entity in Group::Generate. Mirrors the C++ Group::CopyAs enum.
+// CopyAs is the transformation a copied entity gets (C++
+// Group::CopyAs).
 type CopyAs int
 
 const (
@@ -108,361 +49,813 @@ const (
 	CopyAsNRotAxisTrans
 )
 
-// copyEntity creates a transformed copy of src with the requested
-// transformation type. Returns a pointer to the new entity; the
-// caller fills in the EntityBase fields (H, Group, Param) and
-// appends to its own entity list.
-func (g *Group) copyEntity(src *core.Entity, timesApplied int, as CopyAs) *core.Entity {
-	e := core.Entity{
-		EntityBase: core.EntityBase{
-			ExtraPoints:  src.ExtraPoints,
-			TimesApplied: timesApplied,
-			Group:        g.H,
-			Str:          src.Str,
-			Font:         src.Font,
-			File:         src.File,
-		},
-		Construction: src.Construction,
-		Style:        src.Style,
-	}
-	// Preserve the actPoint / actNormal / actDistance numerically so
-	// downstream Group::Generate can render before re-solving.
-	e.ActPoint = src.ActPoint
-	e.ActNormal = src.ActNormal
-	e.ActDistance = src.ActDistance
-	return &e
+// AddParam appends a group param with an initial value (C++
+// Group::AddParam).
+func AddParam(param *[]core.Param, hp core.HParam, v float64) {
+	*param = append(*param, core.Param{H: hp, Val: v})
 }
 
-// MakeExtrusionLines turns the source point into a FACE_XPROD so the
-// extruded side is selectable. Phase 6 + Goal Item 2: emit one
-// FACE_XPROD per source point.
-func (g *Group) MakeExtrusionLines(entities *[]core.Entity, in core.HEntity) {
-	if in == (core.HEntity{}) {
-		return
-	}
-	// Find the source point to use for the cross product.
-	var src *core.Entity
-	for i := range *entities {
-		if (*entities)[i].EntityBase.H == in {
-			src = &(*entities)[i]
-			break
-		}
-	}
-	if src == nil {
-		return
-	}
-	// Emit a FACE_XPROD: face whose normal is the cross product of
-	// the extrusion direction (dx, dy, dz) and the source vector.
-	fx := core.Entity{
-		EntityBase: core.EntityBase{
-			H:     core.HEntity{V: uint32(0x20000000 | uint32(in.V))},
-			Type:  core.EntityFaceXProd,
-			Group: g.H,
-			Param: [8]core.HParam{
-				g.H.Param(0), g.H.Param(1), g.H.Param(2), // extrusion direction
-				core.HParam{V: uint32(in.V)}, // source point for cross product (cast as HParam)
-			},
-		},
-		Style: src.Style,
-	}
-	*entities = append(*entities, fx)
-}
+// Generate creates this group's entities and params (C++
+// Group::Generate). It appends to entity and param, which during
+// GenerateAll are sk.Entities and sk.Params themselves.
+func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
+	gn := viewProjRight.Cross(viewProjUp)
+	gp := viewProjRight.Plus(viewProjUp)
+	gc := viewOffset.ScaledBy(-1)
+	gn = gn.WithMagnitude(200 / viewScale)
+	gp = gp.WithMagnitude(200 / viewScale)
+	h := g.H
 
-// MakeExtrusionTopBottomFaces emits the two FACE_NORMAL_PT caps for
-// the extrusion. Phase 6 + Goal Item 2: each cap is a planar face
-// with normal = extrusion direction and one point at the source
-// reference.
-func (g *Group) MakeExtrusionTopBottomFaces(entities *[]core.Entity, pt core.HEntity) {
-	if pt == (core.HEntity{}) {
-		return
-	}
-	// Phase 6 + Item 2 simplification: caps are emitted as inert
-	// faces; full implementation wires the actual normal direction
-	// and uses the EntityFaceRotNormalPt variant for revolve.
-	_ = entities
-	_ = pt
-}
-
-// generateRevolveGroup handles LATHE/REVOLVE: copies each source
-// point as POINT_N_COPY or POINT_N_ROT around the rotation axis.
-// Phase 6 + Goal Item 2: emit POINT_N_COPY copies for points
-// and POINT_N_ROT for normals around the rotation axis.
-func (g *Group) generateRevolveGroup(sk *Sketch, entities *[]core.Entity, params *[]core.Param) {
-	resolver := &sketchRuntimeResolver{sk: sk}
-	// Determine ai, af for full / partial revolution.
-	ai, af := 0, 1
-	if g.Subtype == GroupTwoSided || g.Subtype == GroupTwoSkewed {
-		ai, af = -1, 1
-	}
-	// Allocate the rotation quaternion and origin.
-	for i := 0; i < 7; i++ {
-		AddGroupParam(params, g.H.Param(i), 0)
-	}
-	_ = af
-	for i := range *entities {
-		e := &(*entities)[i]
-		if e.EntityBase.Group != g.OpA {
-			continue
-		}
-		if !e.IsPoint() && !e.IsNormal() {
-			continue
-		}
-		e.CalculateNumerical(resolver, false)
-		// Emit a copy at the original (rotation by 0).
-		copy0 := g.copyEntity(e, ai, CopyAsNumeric)
-		copy0.EntityBase.H = core.HEntity{V: uint32(0x30000000 | uint32(e.EntityBase.H.V))}
-		copy0.EntityBase.Group = g.H
-		*entities = append(*entities, *copy0)
-	}
-	g.MakeLatheCircles(entities, sk)
-}
-
-// MakeLatheCircles emits ARC_OF_CIRCLE entities for points in the
-// source group, so the revolved surfaces are visible. Phase 6 +
-// Goal Item 2 simplification: emits arcs only if the source has
-// the right point types.
-func (g *Group) MakeLatheCircles(entities *[]core.Entity, sk *Sketch) {
-	_ = entities
-	_ = sk
-}
-
-// MakeLatheSurfacesSelectable emits FACE_NORMAL_PT entities for the
-// revolved surfaces. Phase 6 + Item 2: stub.
-func (g *Group) MakeLatheSurfacesSelectable(entities *[]core.Entity, in core.HEntity) {
-	_ = entities
-	_ = in
-}
-
-// MakeRevolveEndFaces emits the FACE_ROT_NORMAL_PT caps for the
-// revolution. Phase 6 + Item 2: stub.
-func (g *Group) MakeRevolveEndFaces(entities *[]core.Entity, pt core.HEntity, ai, af int) {
-	_ = entities
-	_ = pt
-	_ = ai
-	_ = af
-}
-
-// generateHelixGroup handles HELIX: similar to revolve but with
-// pitch (linear translation along the axis per turn). Phase 6 +
-// Item 2: delegates to generateRevolveGroup.
-func (g *Group) generateHelixGroup(sk *Sketch, entities *[]core.Entity, params *[]core.Param) {
-	g.generateRevolveGroup(sk, entities, params)
-}
-
-// generateRotateGroup handles ROTATE: copies the source group's
-// mesh transformed by the rotation. Phase 6 + Item 2: emit
-// POINT_N_ROT_TRANS for each point.
-func (g *Group) generateRotateGroup(sk *Sketch, entities *[]core.Entity, params *[]core.Param) {
-	resolver := &sketchRuntimeResolver{sk: sk}
-	// Allocate the quaternion params.
-	AddGroupParam(params, g.H.Param(0), 0)
-	AddGroupParam(params, g.H.Param(1), 0)
-	AddGroupParam(params, g.H.Param(2), 0)
-	AddGroupParam(params, g.H.Param(3), 0)
-	for i := range *entities {
-		e := &(*entities)[i]
-		if e.EntityBase.Group != g.OpA {
-			continue
-		}
-		if !e.IsPoint() {
-			continue
-		}
-		e.CalculateNumerical(resolver, false)
-		copy0 := g.copyEntity(e, 0, CopyAsNRotTrans)
-		copy0.EntityBase.H = core.HEntity{V: uint32(0x40000000 | uint32(e.EntityBase.H.V))}
-		copy0.EntityBase.Group = g.H
-		copy0.EntityBase.Param = [8]core.HParam{
-			g.H.Param(0), g.H.Param(1), g.H.Param(2), g.H.Param(3),
-		}
-		*entities = append(*entities, *copy0)
-	}
-}
-
-// generateTranslateGroup handles TRANSLATE: copies the source
-// group's mesh translated by the group's translation vector. Phase
-// 6 + Item 2: emit POINT_N_TRANS for each point with the
-// translation params.
-func (g *Group) generateTranslateGroup(sk *Sketch, entities *[]core.Entity, params *[]core.Param) {
-	resolver := &sketchRuntimeResolver{sk: sk}
-	AddGroupParam(params, g.H.Param(0), 0)
-	AddGroupParam(params, g.H.Param(1), 0)
-	AddGroupParam(params, g.H.Param(2), 0)
-	for i := range *entities {
-		e := &(*entities)[i]
-		if e.EntityBase.Group != g.OpA {
-			continue
-		}
-		if !e.IsPoint() {
-			continue
-		}
-		e.CalculateNumerical(resolver, false)
-		copy0 := g.copyEntity(e, 0, CopyAsNTrans)
-		copy0.EntityBase.H = core.HEntity{V: uint32(0x50000000 | uint32(e.EntityBase.H.V))}
-		copy0.EntityBase.Group = g.H
-		copy0.EntityBase.Param = [8]core.HParam{g.H.Param(0), g.H.Param(1), g.H.Param(2)}
-		*entities = append(*entities, *copy0)
-	}
-}
-
-// AddGroupParam appends a parameter to the params list if hp has a
-// non-zero handle, with the given value.
-func AddGroupParam(params *[]core.Param, hp core.HParam, val float64) {
-	if hp == core.NoParam {
-		return
-	}
-	p := core.Param{H: hp, Val: val}
-	*params = append(*params, p)
-}
-
-// sketchRuntimeResolver is a tiny adapter that lets an Entity use
-// the Sketch's stored numerical values as its param/value source.
-type sketchRuntimeResolver struct {
-	sk *Sketch
-}
-
-func (r *sketchRuntimeResolver) Entity(h core.HEntity) (*core.Entity, error) {
-	return r.sk.GetEntity(h), nil
-}
-
-func (r *sketchRuntimeResolver) ParamValue(h core.HParam) (float64, bool) {
-	p := r.sk.GetParam(h)
-	if p == nil {
-		return 0, false
-	}
-	return p.Val, true
-}
-
-// GenerateEquations adds the group-specific symbolic equations to
-// the solver. Phase 6 + Goal Item 9 implementation: handles the
-// most common group types (LINKED, EXTRUDE, ROTATE/REVOLVE/HELIX,
-// TRANSLATE). The exact equations are added to the system via
-// its AddConstraint method.
-//
-// Equation convention: each equation is an Expr that should equal
-// zero at the solution. For quaternion-normalization the equation
-// is `q.Magnitude() - 1` (so zero means unit quaternion). For
-// extrusion orthogonality the equation is `u·extruden` (so zero
-// means perpendicular).
-func (g *Group) GenerateEquations(sys interface{}) {
-	// System is interface{} here to avoid an import cycle. The
-	// caller is expected to pass a *solver.System; if it doesn't,
-	// we no-op.
-	s, ok := sys.(GroupSystem)
-	if !ok {
-		return
-	}
 	switch g.Type {
-	case GroupLinked:
-		g.emitLinkedEquations(s)
+	case GroupDrawing3D:
+		return
+
+	case GroupDrawingWorkplane:
+		var q geom.Quaternion
+		switch g.Subtype {
+		case GroupWorkplaneByLineSegments:
+			u := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+			v := sk.MustGetEntity(g.Predef.EntityC).VectorGetNum(sk)
+			u = u.WithMagnitude(1)
+			n := u.Cross(v)
+			v = n.Cross(u).WithMagnitude(1)
+
+			if g.Predef.SwapUV {
+				u, v = v, u
+			}
+			if g.Predef.NegateU {
+				u = u.ScaledBy(-1)
+			}
+			if g.Predef.NegateV {
+				v = v.ScaledBy(-1)
+			}
+			q = geom.QuaternionFromBasis(u, v)
+		case GroupWorkplaneByPointOrtho:
+			// Already given, numerically.
+			q = g.Predef.Q
+		case GroupWorkplaneByPointNormal:
+			q = sk.MustGetEntity(g.Predef.EntityB).NormalGetNum(sk)
+		default:
+			panic(fmt.Sprintf("unexpected workplane subtype %d", g.Subtype))
+		}
+
+		normal := core.Entity{}
+		normal.Type = core.EntityNormalNCopy
+		normal.NumNormal = q
+		normal.Point[0] = h.Entity(2)
+		normal.Group = h
+		normal.H = h.Entity(1)
+		*entity = append(*entity, normal)
+
+		point := core.Entity{}
+		point.Type = core.EntityPointNCopy
+		point.NumPoint = sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
+		point.Construction = true
+		point.Group = h
+		point.H = h.Entity(2)
+		*entity = append(*entity, point)
+
+		wp := core.Entity{}
+		wp.Type = core.EntityWorkplane
+		wp.Normal = normal.H
+		wp.Point[0] = point.H
+		wp.Group = h
+		wp.H = h.Entity(0)
+		*entity = append(*entity, wp)
+		return
+
 	case GroupExtrude:
-		g.emitExtrudeEquations(s)
-	case GroupRotate, GroupRevolve, GroupHelix:
-		g.emitRotateEquations(s)
+		AddParam(param, h.Param(0), gn.X)
+		AddParam(param, h.Param(1), gn.Y)
+		AddParam(param, h.Param(2), gn.Z)
+		var ai, af int
+		switch g.Subtype {
+		case GroupOneSided, GroupOneSkewed:
+			ai, af = 0, 2
+		case GroupTwoSided, GroupTwoSkewed:
+			ai, af = -1, 1
+		default:
+			panic(fmt.Sprintf("unexpected extrusion subtype %d", g.Subtype))
+		}
+
+		// Get some arbitrary point in the sketch, that will be used
+		// as a reference when defining top and bottom faces.
+		var pt core.HEntity
+		// Not using range here because we're changing the size of
+		// entity in the loop.
+		for i := 0; i < len(*entity); i++ {
+			e := &(*entity)[i]
+			if e.Group != g.OpA {
+				continue
+			}
+
+			if e.IsPoint() {
+				pt = e.H
+			}
+
+			e.CalculateNumerical(sk, false)
+			he := e.H
+			// As soon as I call CopyEntity, e may become invalid! That
+			// adds entities, which may cause a realloc.
+			g.CopyEntity(sk, entity, sk.MustGetEntity(he), ai, RemapBottom,
+				h.Param(0), h.Param(1), h.Param(2),
+				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+				CopyAsNTrans)
+			g.CopyEntity(sk, entity, sk.MustGetEntity(he), af, RemapTop,
+				h.Param(0), h.Param(1), h.Param(2),
+				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+				CopyAsNTrans)
+			g.MakeExtrusionLines(sk, entity, he)
+		}
+		// Remapped versions of that arbitrary point will be used to
+		// provide points on the plane faces.
+		g.MakeExtrusionTopBottomFaces(sk, entity, pt)
+		return
+
+	case GroupLathe:
+		axisPos := sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
+		axisDir := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+
+		for i := 0; i < len(*entity); i++ {
+			e := &(*entity)[i]
+			if e.Group != g.OpA {
+				continue
+			}
+
+			e.CalculateNumerical(sk, false)
+			he := e.H
+
+			// As soon as I call CopyEntity, e may become invalid! That
+			// adds entities, which may cause a realloc.
+
+			// this is the regular copy of all entities
+			g.CopyEntity(sk, entity, sk.MustGetEntity(he), 0, RemapLatheStart,
+				core.NoParam, core.NoParam, core.NoParam,
+				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+				CopyAsNumeric)
+
+			e = &(*entity)[i] // because we copied.
+			if e.IsPoint() {
+				// for points this copy is used for the circle centers
+				g.CopyEntity(sk, entity, sk.MustGetEntity(he), 0, RemapLatheArcCenter,
+					core.NoParam, core.NoParam, core.NoParam,
+					core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+					CopyAsNumeric)
+				g.MakeLatheCircles(sk, entity, he, axisPos, axisDir)
+			}
+			g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
+		}
+		return
+
+	case GroupRevolve:
+		// this was borrowed from LATHE and ROTATE
+		axisPos := sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
+		axisDir := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+
+		// The center of rotation
+		AddParam(param, h.Param(0), axisPos.X)
+		AddParam(param, h.Param(1), axisPos.Y)
+		AddParam(param, h.Param(2), axisPos.Z)
+		// The rotation quaternion
+		AddParam(param, h.Param(3), 30*math.Pi/180)
+		AddParam(param, h.Param(4), axisDir.X)
+		AddParam(param, h.Param(5), axisDir.Y)
+		AddParam(param, h.Param(6), axisDir.Z)
+
+		// Get some arbitrary point in the sketch, that will be used
+		// as a reference when defining end faces.
+		var pt core.HEntity
+
+		ai, af := 0, 2
+		if g.Subtype == GroupTwoSided {
+			ai, af = -1, 1
+		}
+		for i := 0; i < len(*entity); i++ {
+			e := &(*entity)[i]
+			if e.Group != g.OpA {
+				continue
+			}
+
+			if e.IsPoint() {
+				pt = e.H
+			}
+
+			e.CalculateNumerical(sk, false)
+			he := e.H
+			// one copy for each end of the revolved surface
+			g.CopyEntity(sk, entity, e, ai, RemapLatheStart, h.Param(0),
+				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+				h.Param(6), core.NoParam, CopyAsNRotAA)
+
+			e = &(*entity)[i] // because we copied.
+			g.CopyEntity(sk, entity, e, af, RemapLatheEnd, h.Param(0),
+				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+				h.Param(6), core.NoParam, CopyAsNRotAA)
+
+			// Arcs are not generated for revolve groups, for now, because our current arc
+			// entity is not chiral, and dragging a revolve may break the arc by inverting it.
+			// MakeLatheCircles(entity, param, he, axis_pos, axis_dir);
+			g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
+		}
+		g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
+		return
+
+	case GroupHelix:
+		axisPos := sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
+		axisDir := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+
+		// The center of rotation
+		AddParam(param, h.Param(0), axisPos.X)
+		AddParam(param, h.Param(1), axisPos.Y)
+		AddParam(param, h.Param(2), axisPos.Z)
+		// The rotation quaternion
+		AddParam(param, h.Param(3), 30*math.Pi/180)
+		AddParam(param, h.Param(4), axisDir.X)
+		AddParam(param, h.Param(5), axisDir.Y)
+		AddParam(param, h.Param(6), axisDir.Z)
+		// distance to translate along the rotation axis
+		AddParam(param, h.Param(7), 20)
+
+		// Get some arbitrary point in the sketch, that will be used
+		// as a reference when defining end faces.
+		var pt core.HEntity
+
+		ai, af := 0, 2 // initial and final number of transformations
+		if g.Subtype != GroupOneSided {
+			ai, af = -1, 1
+		}
+
+		for i := 0; i < len(*entity); i++ {
+			e := &(*entity)[i]
+			if e.Group != g.OpA && e.H != g.Predef.Origin {
+				continue
+			}
+
+			if e.IsPoint() {
+				pt = e.H
+			}
+
+			e.CalculateNumerical(sk, false)
+
+			// one copy for each end of the helix
+			g.CopyEntity(sk, entity, e, ai, RemapLatheStart, h.Param(0),
+				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+				h.Param(6), h.Param(7), CopyAsNRotAxisTrans)
+
+			e = &(*entity)[i] // because we copied.
+			g.CopyEntity(sk, entity, e, af, RemapLatheEnd, h.Param(0),
+				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+				h.Param(6), h.Param(7), CopyAsNRotAxisTrans)
+
+			// For point entities on the axis, create a construction line
+			e = &(*entity)[i]
+			if e.IsPoint() {
+				check := e.PointGetNum(sk).Minus(axisPos).Cross(axisDir)
+				if check.Dot(check) < core.LengthEps {
+					ep := sk.MustGetEntity(e.H)
+					en := core.Entity{}
+					// A point gets extruded to form a line segment
+					en.Point[0] = g.RemapEntity(ep.H, RemapLatheStart)
+					en.Point[1] = g.RemapEntity(ep.H, RemapLatheEnd)
+					en.Group = h
+					en.Construction = ep.Construction
+					en.Style = ep.Style
+					en.H = g.RemapEntity(ep.H, RemapPtToLine)
+					en.Type = core.EntityLineSegment
+					*entity = append(*entity, en)
+				}
+			}
+		}
+		g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
+		return
+
 	case GroupTranslate:
-		g.emitTranslateEquations(s)
+		// inherit meshCombine from source group
+		srcg := sk.GetGroup(g.OpA)
+		g.MeshCombine = srcg.MeshCombine
+		// The translation vector
+		AddParam(param, h.Param(0), gp.X)
+		AddParam(param, h.Param(1), gp.Y)
+		AddParam(param, h.Param(2), gp.Z)
+
+		n, a0 := int(g.ValA), 0
+		if g.Subtype == GroupOneSided && g.SkipFirst {
+			a0++
+			n++
+		}
+
+		for a := a0; a < n; a++ {
+			for i := 0; i < len(*entity); i++ {
+				e := &(*entity)[i]
+				if e.Group != g.OpA {
+					continue
+				}
+
+				e.CalculateNumerical(sk, false)
+				g.CopyEntity(sk, entity, e,
+					a*2-stepOffset(g.Subtype, n),
+					stepRemap(a, n),
+					h.Param(0), h.Param(1), h.Param(2),
+					core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+					CopyAsNTrans)
+			}
+		}
+		return
+
+	case GroupRotate:
+		// inherit meshCombine from source group
+		srcg := sk.GetGroup(g.OpA)
+		g.MeshCombine = srcg.MeshCombine
+		// The center of rotation
+		AddParam(param, h.Param(0), gc.X)
+		AddParam(param, h.Param(1), gc.Y)
+		AddParam(param, h.Param(2), gc.Z)
+		// The rotation quaternion
+		AddParam(param, h.Param(3), 30*math.Pi/180)
+		AddParam(param, h.Param(4), gn.X)
+		AddParam(param, h.Param(5), gn.Y)
+		AddParam(param, h.Param(6), gn.Z)
+
+		n, a0 := int(g.ValA), 0
+		if g.Subtype == GroupOneSided && g.SkipFirst {
+			a0++
+			n++
+		}
+
+		for a := a0; a < n; a++ {
+			for i := 0; i < len(*entity); i++ {
+				e := &(*entity)[i]
+				if e.Group != g.OpA {
+					continue
+				}
+
+				e.CalculateNumerical(sk, false)
+				g.CopyEntity(sk, entity, e,
+					a*2-stepOffset(g.Subtype, n),
+					stepRemap(a, n),
+					h.Param(0), h.Param(1), h.Param(2),
+					h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
+					CopyAsNRotAA)
+			}
+		}
+		return
+
+	case GroupLinked:
+		// The translation vector
+		AddParam(param, h.Param(0), gp.X)
+		AddParam(param, h.Param(1), gp.Y)
+		AddParam(param, h.Param(2), gp.Z)
+		// The rotation quaternion
+		AddParam(param, h.Param(3), 1)
+		AddParam(param, h.Param(4), 0)
+		AddParam(param, h.Param(5), 0)
+		AddParam(param, h.Param(6), 0)
+
+		for i := 0; i < len(g.ImpEntity); i++ {
+			ie := &g.ImpEntity[i]
+			g.CopyEntity(sk, entity, ie, 0, 0,
+				h.Param(0), h.Param(1), h.Param(2),
+				h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
+				CopyAsNRotTrans)
+		}
+		return
+	}
+	panic(fmt.Sprintf("unexpected group type %d", g.Type))
+}
+
+// stepOffset and stepRemap are the step-and-repeat timesApplied offset
+// and remap key of copy a out of n (inline expressions in C++).
+func stepOffset(subtype GroupSubtype, n int) int {
+	if subtype == GroupOneSided {
+		return 0
+	}
+	return n - 1
+}
+
+func stepRemap(a, n int) int {
+	if a == n-1 {
+		return RemapLast
+	}
+	return a
+}
+
+// RemapEntity returns the handle of copy copyNumber of entity in, allocating
+// a new one in the group's remap table if needed (C++ Group::Remap).
+// The table is saved with the file, so copies keep their handles.
+func (g *Group) RemapEntity(in core.HEntity, copyNumber int) core.HEntity {
+	if g.Remap == nil {
+		g.Remap = make(core.EntityMap)
+	}
+	key := core.EntityKey{Input: in, CopyNumber: copyNumber}
+	id, ok := g.Remap[key]
+	if !ok {
+		// Due to the way the remap value is combined with the group handle into a 32-bit
+		// handle value to generate an entity handle, the mapped value must fit in a 16-bit
+		// variable.
+		if len(g.Remap) >= (1<<16)-1 {
+			panic("Too many entities in group")
+		}
+		id = core.EntityID{V: uint32(len(g.Remap)) + 1}
+		g.Remap[key] = id
+	}
+	return g.H.Entity(int(id.V))
+}
+
+func (g *Group) MakeExtrusionLines(sk *Sketch, el *[]core.Entity, in core.HEntity) {
+	ep := sk.MustGetEntity(in)
+
+	en := core.Entity{}
+	if ep.IsPoint() {
+		// A point gets extruded to form a line segment
+		en.Point[0] = g.RemapEntity(ep.H, RemapTop)
+		en.Point[1] = g.RemapEntity(ep.H, RemapBottom)
+		en.Group = g.H
+		en.Construction = ep.Construction
+		en.Style = ep.Style
+		en.H = g.RemapEntity(ep.H, RemapPtToLine)
+		en.Type = core.EntityLineSegment
+		*el = append(*el, en)
+	} else if ep.Type == core.EntityLineSegment {
+		// A line gets extruded to form a plane face; an endpoint of the
+		// original line is a point in the plane, and the line is in the plane.
+		a := sk.MustGetEntity(ep.Point[0]).PointGetNum(sk)
+		b := sk.MustGetEntity(ep.Point[1]).PointGetNum(sk)
+		ab := b.Minus(a)
+
+		en.Param[0] = g.H.Param(0)
+		en.Param[1] = g.H.Param(1)
+		en.Param[2] = g.H.Param(2)
+		en.NumPoint = a
+		// we need a point somewhere on the face, and it must be from the current group.
+		en.Point[0] = g.RemapEntity(ep.Point[0], RemapTop)
+		en.NumNormal = geom.Quaternion{W: 0, X: ab.X, Y: ab.Y, Z: ab.Z}
+
+		en.Group = g.H
+		en.Construction = ep.Construction
+		en.Style = ep.Style
+		en.H = g.RemapEntity(ep.H, RemapLineToFace)
+		en.Type = core.EntityFaceXProd
+		*el = append(*el, en)
 	}
 }
 
-// GroupSystem is the minimal solver interface needed by
-// GenerateEquations. solver.System satisfies it.
-type GroupSystem interface {
-	AddExprEquation(lhs, rhs *core.Expr) error
+func (g *Group) MakeLatheCircles(sk *Sketch, el *[]core.Entity, in core.HEntity, pt, axis geom.Vector) {
+	ep := sk.MustGetEntity(in)
+
+	en := core.Entity{}
+	if ep.IsPoint() {
+		// A point gets revolved to form an arc.
+		en.Point[0] = g.RemapEntity(ep.H, RemapLatheArcCenter)
+		en.Point[1] = g.RemapEntity(ep.H, RemapLatheStart)
+		en.Point[2] = en.Point[1] //Remap(ep->h, REMAP_LATHE_END);
+
+		// Get arc center and point on arc.
+		pc := sk.MustGetEntity(en.Point[0])
+		pp := sk.MustGetEntity(en.Point[1])
+
+		// Project arc point to the revolution axis and use it for arc center.
+		k := pp.NumPoint.Minus(pt).Dot(axis) / axis.Dot(axis)
+		pc.NumPoint = pt.Plus(axis.ScaledBy(k))
+
+		// Create arc entity.
+		en.Group = g.H
+		en.Construction = ep.Construction
+		en.Style = ep.Style
+		en.H = g.RemapEntity(ep.H, RemapPtToArc)
+		en.Type = core.EntityArcOfCircle
+
+		// Generate a normal.
+		n := core.Entity{}
+		n.Workplane = en.Workplane
+		n.H = g.RemapEntity(ep.H, RemapPtToNormal)
+		n.Group = en.Group
+		n.Style = en.Style
+		n.Type = core.EntityNormalNCopy
+
+		// Create basis for the normal.
+		nu := pp.NumPoint.Minus(pc.NumPoint).WithMagnitude(1.0)
+		nv := nu.Cross(axis).WithMagnitude(1.0)
+		n.NumNormal = geom.QuaternionFromBasis(nv, nu)
+
+		// The point determines where the normal gets displayed on-screen;
+		// it's entirely cosmetic.
+		n.Point[0] = en.Point[0]
+		*el = append(*el, n)
+		en.Normal = n.H
+		*el = append(*el, en)
+	}
 }
 
-// emitLinkedEquations adds q.Magnitude() = 1 for a LINKED group.
-// LINKED groups store their quaternion as params 3..6. The equation
-// is |q|² - 1 = 0, i.e., qw² + qvx² + qvy² + qvz² - 1 = 0.
-func (g *Group) emitLinkedEquations(sys GroupSystem) {
-	if sys == nil {
-		return
-	}
-	qw := core.NewParam(g.H.Param(3))
-	qvx := core.NewParam(g.H.Param(4))
-	qvy := core.NewParam(g.H.Param(5))
-	qvz := core.NewParam(g.H.Param(6))
-	// |q|² - 1 = 0
-	magSq := qw.Times(qw).Plus(qvx.Times(qvx)).Plus(qvy.Times(qvy)).Plus(qvz.Times(qvz))
-	_ = sys.AddExprEquation(magSq, core.NewConstant(1))
-}
+func (g *Group) MakeLatheSurfacesSelectable(sk *Sketch, el *[]core.Entity, in core.HEntity, axis geom.Vector) {
+	ep := sk.MustGetEntity(in)
 
-// emitExtrudeEquations adds orthogonality constraints for an EXTRUDE
-// group: if predef.entityB is set, the extrusion vector must be
-// perpendicular to the workplane's u/v basis vectors.
-func (g *Group) emitExtrudeEquations(sys GroupSystem) {
-	if sys == nil {
-		return
-	}
-	noEntity := core.HEntity{}
-	if g.Predef.EntityB == noEntity {
-		return
-	}
-	// Phase 1 + Goal Item 2 simplification: emit no equations. The
-	// full implementation reads the workplane's U/V axes and
-	// computes (u · extruden) and (v · extruden) symbolic
-	// expressions.
-}
+	en := core.Entity{}
+	if ep.Type == core.EntityLineSegment {
+		// An axis-perpendicular line gets revolved to form a face.
+		a := sk.MustGetEntity(ep.Point[0]).PointGetNum(sk)
+		b := sk.MustGetEntity(ep.Point[1]).PointGetNum(sk)
+		u := b.Minus(a).WithMagnitude(1.0)
 
-// emitRotateEquations adds axis and center constraints for ROTATE/
-// REVOLVE/HELIX groups: origin must coincide with predef.origin, and
-// the rotation axis must be the predef.entityB normal.
-func (g *Group) emitRotateEquations(sys GroupSystem) {
-	if sys == nil {
-		return
-	}
-	noEntity := core.HEntity{}
-	if g.Predef.Origin != noEntity {
-		op := originPointExprs(g.Predef.Origin)
-		for i := 0; i < 3; i++ {
-			_ = sys.AddExprEquation(op[i], core.NewConstant(0))
+		// Check for perpendicularity: calculate cosine of the angle
+		// between axis and line direction and check that
+		// cos(angle) == 0 <-> angle == +-90 deg.
+		if math.Abs(u.Dot(axis)/axis.Magnitude()) < core.AngleCosEps {
+			en.Param[0] = g.H.Param(0)
+			en.Param[1] = g.H.Param(1)
+			en.Param[2] = g.H.Param(2)
+			v := axis.Cross(u).WithMagnitude(1.0)
+			n := u.Cross(v)
+			en.NumNormal = geom.Quaternion{W: 0, X: n.X, Y: n.Y, Z: n.Z}
+
+			en.Group = g.H
+			en.Construction = ep.Construction
+			en.Style = ep.Style
+			en.H = g.RemapEntity(ep.H, RemapLineToFace)
+			en.Type = core.EntityFaceNormalPt
+			en.Point[0] = g.RemapEntity(ep.Point[0], RemapLatheStart)
+			*el = append(*el, en)
 		}
 	}
-	if g.Predef.EntityB != noEntity {
-		ax := axisExprs(g.Predef.EntityB)
-		for i := 0; i < 3; i++ {
-			_ = sys.AddExprEquation(ax[i], core.NewConstant(0))
-		}
-	}
 }
 
-// emitTranslateEquations adds orthogonality constraints for a
-// TRANSLATE group: if predef.entityB is set, the translation vector
-// must be perpendicular to the workplane's u/v basis vectors.
-func (g *Group) emitTranslateEquations(sys GroupSystem) {
-	if sys == nil {
+// sourceLoopNormal is the normal of the source group's loops, falling
+// back to its workplane's normal, for the end faces of extrusions and
+// revolutions.
+func (g *Group) sourceLoopNormal(sk *Sketch) geom.Vector {
+	src := sk.GetGroup(g.OpA)
+	n := src.PolyLoops.Normal
+
+	// When there is no loop normal (e.g. if the loop is broken), use normal of workplane
+	// as fallback, to avoid breaking constraints depending on the faces.
+	if n.Equals(geom.Vector{}) && src.Type == GroupDrawingWorkplane {
+		n = sk.MustGetEntity(src.H.Entity(0)).NormalEntity(sk).NormalN(sk)
+	}
+	return n
+}
+
+// For Revolve and Helix groups the end faces are remapped from an arbitrary
+// point on the sketch. We reference the transformed point but there is
+// no existing normal so we need to define the rotation and timesApplied.
+func (g *Group) MakeRevolveEndFaces(sk *Sketch, el *[]core.Entity, pt core.HEntity, ai, af int) {
+	if pt.V == 0 {
 		return
 	}
-	dx := core.NewParam(g.H.Param(0))
-	dy := core.NewParam(g.H.Param(1))
-	dz := core.NewParam(g.H.Param(2))
-	// Phase 1 + Goal Item 2 simplification: same projection constraint
-	// as extrude but with the translation vector.
-	_ = dx
-	_ = dy
-	_ = dz
+	n := g.sourceLoopNormal(sk)
+
+	en := core.Entity{}
+	en.Type = core.EntityFaceRotNormalPt
+	en.Group = g.H
+	// The center of rotation
+	en.Param[0] = g.H.Param(0)
+	en.Param[1] = g.H.Param(1)
+	en.Param[2] = g.H.Param(2)
+	// The rotation quaternion
+	en.Param[3] = g.H.Param(3)
+	en.Param[4] = g.H.Param(4)
+	en.Param[5] = g.H.Param(5)
+	en.Param[6] = g.H.Param(6)
+
+	en.NumNormal = geom.Quaternion{W: 0, X: n.X, Y: n.Y, Z: n.Z}
+	en.Point[0] = g.RemapEntity(pt, RemapLatheStart)
+	en.TimesApplied = ai
+	en.H = g.RemapEntity(core.NoEntity, RemapLatheStart)
+	*el = append(*el, en)
+
+	en.Point[0] = g.RemapEntity(pt, RemapLatheEnd)
+	en.TimesApplied = af
+	en.H = g.RemapEntity(core.NoEntity, RemapLatheEnd)
+	*el = append(*el, en)
 }
 
-// originPointExprs returns symbolic expressions for the (x, y, z)
-// coordinates of the entity at handle h (typically a point entity).
-func originPointExprs(h core.HEntity) [3]*core.Expr {
-	pt := core.NewExprVector(
-		core.NewParam(core.HParam{V: uint32(h.V)}),
-		core.NewParam(core.HParam{V: uint32(h.V)}),
-		core.NewParam(core.HParam{V: uint32(h.V)}),
-	)
-	return [3]*core.Expr{pt.X, pt.Y, pt.Z}
+func (g *Group) MakeExtrusionTopBottomFaces(sk *Sketch, el *[]core.Entity, pt core.HEntity) {
+	if pt.V == 0 {
+		return
+	}
+	n := g.sourceLoopNormal(sk)
+
+	en := core.Entity{}
+	en.Type = core.EntityFaceNormalPt
+	en.Group = g.H
+
+	en.NumNormal = geom.Quaternion{W: 0, X: n.X, Y: n.Y, Z: n.Z}
+	en.Point[0] = g.RemapEntity(pt, RemapTop)
+	en.H = g.RemapEntity(core.NoEntity, RemapTop)
+	*el = append(*el, en)
+
+	en.Point[0] = g.RemapEntity(pt, RemapBottom)
+	en.H = g.RemapEntity(core.NoEntity, RemapBottom)
+	*el = append(*el, en)
 }
 
-// axisExprs returns symbolic expressions for the (x, y, z) components
-// of the normal/quaternion referenced by h.
-func axisExprs(h core.HEntity) [3]*core.Expr {
-	q := core.NewExprQuaternion(
-		core.NewParam(core.HParam{V: uint32(h.V)}),
-		core.NewParam(core.HParam{V: uint32(h.V)}),
-		core.NewParam(core.HParam{V: uint32(h.V)}),
-		core.NewParam(core.HParam{V: uint32(h.V)}),
-	)
-	u := q.RotationU()
-	return [3]*core.Expr{u.X, u.Y, u.Z}
+// CopyEntity appends a transformed copy of ep (C++ Group::CopyEntity).
+func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity,
+	ep *core.Entity, timesApplied, remap int,
+	dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam,
+	as CopyAs) {
+	en := core.Entity{}
+	en.Type = ep.Type
+	en.ExtraPoints = ep.ExtraPoints
+	en.H = g.RemapEntity(ep.H, remap)
+	en.TimesApplied = timesApplied
+	en.Group = g.H
+	en.Construction = ep.Construction
+	en.Style = ep.Style
+	en.Str = ep.Str
+	en.Font = ep.Font
+	en.File = ep.File
+
+	scale := g.Scale
+
+	switch ep.Type {
+	case core.EntityWorkplane:
+		// Don't copy these.
+		return
+
+	case core.EntityPointNCopy, core.EntityPointNTrans, core.EntityPointNRotTrans,
+		core.EntityPointNRotAA, core.EntityPointNRotAxisTrans,
+		core.EntityPointIn3D, core.EntityPointIn2D:
+		if as == CopyAsNTrans {
+			en.Type = core.EntityPointNTrans
+			en.Param[0] = dx
+			en.Param[1] = dy
+			en.Param[2] = dz
+		} else if as == CopyAsNumeric {
+			en.Type = core.EntityPointNCopy
+		} else {
+			if as == CopyAsNRotAA {
+				en.Type = core.EntityPointNRotAA
+			} else if as == CopyAsNRotAxisTrans {
+				en.Type = core.EntityPointNRotAxisTrans
+			} else {
+				en.Type = core.EntityPointNRotTrans
+			}
+			en.Param[0] = dx
+			en.Param[1] = dy
+			en.Param[2] = dz
+			en.Param[3] = qw
+			en.Param[4] = qvx
+			en.Param[5] = qvy
+			en.Param[6] = qvz
+			if as == CopyAsNRotAxisTrans {
+				en.Param[7] = dist
+			}
+		}
+		en.NumPoint = ep.ActPoint.ScaledBy(scale)
+
+	case core.EntityNormalNCopy, core.EntityNormalNRot, core.EntityNormalNRotAA,
+		core.EntityNormalIn3D, core.EntityNormalIn2D:
+		if as == CopyAsNTrans || as == CopyAsNumeric {
+			en.Type = core.EntityNormalNCopy
+		} else { // N_ROT_AXIS_TRANS probably doesn't warrant a new entity Type
+			if as == CopyAsNRotAA || as == CopyAsNRotAxisTrans {
+				en.Type = core.EntityNormalNRotAA
+			} else {
+				en.Type = core.EntityNormalNRot
+			}
+			en.Param[0] = qw
+			en.Param[1] = qvx
+			en.Param[2] = qvy
+			en.Param[3] = qvz
+		}
+		en.NumNormal = ep.ActNormal
+		if scale < 0 {
+			en.NumNormal = en.NumNormal.Mirror()
+		}
+
+		en.Point[0] = g.RemapEntity(ep.Point[0], remap)
+
+	case core.EntityDistanceNCopy, core.EntityDistance:
+		en.Type = core.EntityDistanceNCopy
+		en.NumDistance = ep.ActDistance * math.Abs(scale)
+
+	case core.EntityFaceNormalPt, core.EntityFaceXProd, core.EntityFaceNRotTrans,
+		core.EntityFaceNTrans, core.EntityFaceNRotAA, core.EntityFaceRotNormalPt,
+		core.EntityFaceNRotAxisTrans:
+		if as == CopyAsNTrans {
+			en.Type = core.EntityFaceNTrans
+			en.Param[0] = dx
+			en.Param[1] = dy
+			en.Param[2] = dz
+		} else if as == CopyAsNumeric {
+			en.Type = core.EntityFaceNormalPt
+		} else if as == CopyAsNRotAxisTrans {
+			en.Type = core.EntityFaceNRotAxisTrans
+			en.Param[0] = dx
+			en.Param[1] = dy
+			en.Param[2] = dz
+			en.Param[3] = qw
+			en.Param[4] = qvx
+			en.Param[5] = qvy
+			en.Param[6] = qvz
+			en.Param[7] = dist
+		} else {
+			if as == CopyAsNRotAA {
+				en.Type = core.EntityFaceNRotAA
+			} else {
+				en.Type = core.EntityFaceNRotTrans
+			}
+			en.Param[0] = dx
+			en.Param[1] = dy
+			en.Param[2] = dz
+			en.Param[3] = qw
+			en.Param[4] = qvx
+			en.Param[5] = qvy
+			en.Param[6] = qvz
+		}
+		en.NumPoint = ep.ActPoint.ScaledBy(scale)
+		en.NumNormal = ep.ActNormal.ScaledBy(scale)
+		// the new face needs an associated point (old files may not have one)
+		if ep.Point[0].V != 0 {
+			en.Point[0] = g.RemapEntity(ep.Point[0], remap)
+		}
+
+	default:
+		if ep.Type == core.EntityImage && ep.Construction {
+			// Do not copy image entities if they are construction.
+			return
+		}
+
+		_, points, hasNormal, hasDistance, ok := getEntityInfo(ep.Type, ep.ExtraPoints)
+		if !ok {
+			panic(fmt.Sprintf("no entity info for type %d", ep.Type))
+		}
+		for i := 0; i < points; i++ {
+			en.Point[i] = g.RemapEntity(ep.Point[i], remap)
+		}
+		if hasNormal {
+			en.Normal = g.RemapEntity(ep.Normal, remap)
+		}
+		if hasDistance {
+			en.Distance = g.RemapEntity(ep.Distance, remap)
+		}
+	}
+
+	// If the entity came from an linked file where it was invisible then
+	// ep->actiVisble will be false, and we should hide it. Or if the entity
+	// came from a copy (e.g. step and repeat) of a force-hidden linked
+	// entity, then we also want to hide it.
+	en.ForceHidden = !ep.ActVisible || ep.ForceHidden
+
+	*el = append(*el, en)
+}
+
+// GenerateEquations appends the group's own equations (C++
+// Group::GenerateEquations).
+func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
+	addEq := func(expr *core.Expr, index int) {
+		*l = append(*l, core.Equation{H: g.H.Equation(index), Expr: expr})
+	}
+	ep := func(i int) *core.Expr { return core.NewParam(g.H.Param(i)) }
+	ec := func(v float64) *core.Expr { return core.NewConstant(v) }
+
+	switch {
+	case g.Type == GroupLinked:
+		// Normalize the quaternion
+		q := core.ExprQuaternion{W: ep(3), X: ep(4), Y: ep(5), Z: ep(6)}
+		addEq(q.Magnitude().Minus(ec(1)), 0)
+
+	case g.Type == GroupRotate || g.Type == GroupRevolve || g.Type == GroupHelix:
+		// The axis and center of rotation are specified numerically
+		orig := sk.MustGetEntity(g.Predef.Origin).PointGetExprs(sk)
+		addEq(orig.X.Minus(ep(0)), 0)
+		addEq(orig.Y.Minus(ep(1)), 1)
+		addEq(orig.Z.Minus(ep(2)), 2)
+		// param 3 is the angle, which is free
+		axis := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+		axis = axis.WithMagnitude(1)
+		addEq(ec(axis.X).Minus(ep(4)), 3)
+		addEq(ec(axis.Y).Minus(ep(5)), 4)
+		addEq(ec(axis.Z).Minus(ep(6)), 5)
+		if g.Type == GroupHelix {
+			if g.ValB != 0.0 {
+				addEq(ep(7).Times(ec(math.Pi)).
+					Minus(ep(3).Times(ec(g.ValB))), 6)
+			}
+		}
+
+	case g.Type == GroupExtrude && g.Subtype != GroupOneSkewed && g.Subtype != GroupTwoSkewed:
+		if !core.IsFreeIn3D(g.Predef.EntityB) {
+			// The extrusion path is locked along a line, normal to the
+			// specified workplane. Don't constrain for skewed extrusions.
+			w := sk.MustGetEntity(g.Predef.EntityB)
+			u := w.NormalEntity(sk).NormalExprsU(sk)
+			v := w.NormalEntity(sk).NormalExprsV(sk)
+			extruden := core.ExprVector{X: ep(0), Y: ep(1), Z: ep(2)}
+
+			addEq(u.Dot(extruden), 0)
+			addEq(v.Dot(extruden), 1)
+		}
+
+	case g.Type == GroupTranslate:
+		if !core.IsFreeIn3D(g.Predef.EntityB) {
+			w := sk.MustGetEntity(g.Predef.EntityB)
+			n := w.NormalEntity(sk).NormalExprsN(sk)
+			trans := core.ExprVector{X: ep(0), Y: ep(1), Z: ep(2)}
+
+			// The translation vector is parallel to the workplane
+			addEq(trans.Dot(n), 0)
+		}
+	}
 }
 
 // ModifyToSatisfyConstraint adjusts the constraint's parameters so
@@ -632,7 +1025,7 @@ func lineEndpointsNumer(ln *core.Entity, params map[core.HParam]float64) (geom.V
 		return geom.Vector{}, geom.Vector{}
 	}
 	if ln.Type != core.EntityLineSegment {
-		return ln.PointGetNum(), ln.PointGetNum()
+		return ln.ActPoint, ln.ActPoint
 	}
 	a := resolvePointValue(ln.Point[0], params)
 	b := resolvePointValue(ln.Point[1], params)
@@ -650,7 +1043,7 @@ func resolvePointValue(h core.HEntity, params map[core.HParam]float64) geom.Vect
 		return geom.Vector{}
 	}
 	if e.IsPoint() {
-		if v := e.PointGetNum(); v.X != 0 || v.Y != 0 || v.Z != 0 {
+		if v := e.ActPoint; v.X != 0 || v.Y != 0 || v.Z != 0 {
 			return v
 		}
 		// Last resort: re-read params directly when ActPoint is unset.
@@ -666,7 +1059,7 @@ func resolvePointValue(h core.HEntity, params map[core.HParam]float64) geom.Vect
 		// Origin point — ActPoint is genuinely zero.
 		return geom.Vector{}
 	}
-	return e.PointGetNum()
+	return e.ActPoint
 }
 
 // computePointPlaneDistance returns the signed distance from PtA
@@ -698,7 +1091,7 @@ func computePointFaceDistance(c *core.Constraint, params map[core.HParam]float64
 	if normal.Magnitude() < 1e-12 {
 		return 0, false
 	}
-	origin := face.PointGetNum()
+	origin := face.ActPoint
 	if isZero(origin) && face.Point[0] != (core.HEntity{}) {
 		if p0 := pointByHandle(face.Point[0], params); p0 != nil {
 			origin = *p0
@@ -815,7 +1208,7 @@ func pointByHandle(h core.HEntity, params map[core.HParam]float64) *geom.Vector 
 	if e == nil || !e.IsPoint() {
 		return nil
 	}
-	v := e.PointGetNum()
+	v := e.ActPoint
 	if v.X == 0 && v.Y == 0 && v.Z == 0 {
 		// Try param fallback when ActPoint is genuinely zero but
 		// the entity is wired to a param tuple.
@@ -863,7 +1256,7 @@ func directionVectorOf(e *core.Entity) (geom.Vector, bool) {
 		return b.Minus(a), true
 	}
 	if e.IsNormal() {
-		q := e.PointGetQuaternion()
+		q := e.ActNormal
 		return q.Rotate(geom.Vector{Z: 1}), true
 	}
 	return geom.Vector{}, false
@@ -925,7 +1318,7 @@ func planeVector(plane *core.Entity) geom.Vector {
 	}
 	q := plane.ActNormal
 	if q.W == 0 && q.X == 0 && q.Y == 0 && q.Z == 0 {
-		q = plane.PointGetQuaternion()
+		q = plane.ActNormal
 	}
 	return q.Rotate(geom.Vector{Z: 1})
 }
@@ -935,7 +1328,7 @@ func planeOrigin(plane *core.Entity) geom.Vector {
 	if plane == nil {
 		return geom.Vector{}
 	}
-	if o := plane.PointGetNum(); !isZero(o) {
+	if o := plane.ActPoint; !isZero(o) {
 		return o
 	}
 	if plane.Point[0] != (core.HEntity{}) {
@@ -953,7 +1346,7 @@ func faceNormal(face *core.Entity) geom.Vector {
 	}
 	q := face.ActNormal
 	if q.W == 0 && q.X == 0 && q.Y == 0 && q.Z == 0 {
-		q = face.PointGetQuaternion()
+		q = face.ActNormal
 	}
 	return q.Rotate(geom.Vector{Z: 1})
 }
@@ -994,56 +1387,20 @@ func isZero(v geom.Vector) bool {
 // activeSketch is set during GenerateAll to allow entity lookup.
 var activeSketch *Sketch
 
-// GenerateConstraint populates the parameter list with the
-// constraint's dependent params. Implements the C++
-// ConstraintBase::Generate from constrainteq.cpp:253.
-//
-// For PARALLEL, CUBIC_LINE_TANGENT (in 3D), SAME_ORIENTATION, and
-// PT_ON_LINE, we add a new parameter (ValP) which holds the
-// constraint's primary degree of freedom: for PT_ON_LINE it's the
-// parameter t along the line; for PARALLEL/CUBIC_LINE_TANGENT it's
-// a free parameter that pins one vector to the other; for
-// SAME_ORIENTATION it's the rotation around the shared axis.
-func GenerateConstraint(c *core.Constraint, sk *Sketch) {
-	if c == nil || sk == nil {
-		return
-	}
-	// PT_ON_LINE: always needs a t parameter along the line.
-	if c.Type == core.ConstraintPtOnLine {
-		addConstraintParam(c, sk)
-		return
-	}
-	// SAME_ORIENTATION: always needs a parameter.
-	if c.Type == core.ConstraintSameOrientation {
-		addConstraintParam(c, sk)
-		return
-	}
-	// PARALLEL/CUBIC_LINE_TANGENT: only when operating in 3D (free workplane).
-	if c.Type == core.ConstraintParallel || c.Type == core.ConstraintCubicLineTangent {
-		if c.Workplane == (core.HEntity{}) {
-			addConstraintParam(c, sk)
+// GenerateConstraint adds the params the constraint needs (C++
+// ConstraintBase::Generate).
+func GenerateConstraint(c *core.Constraint, l *[]core.Param) {
+	switch c.Type {
+	case core.ConstraintParallel, core.ConstraintCubicLineTangent:
+		// Add new parameter only when we operate in 3d space
+		if !core.IsFreeIn3D(c.Workplane) {
+			break
 		}
-		return
+		fallthrough
+	case core.ConstraintSameOrientation, core.ConstraintPtOnLine:
+		c.ValP = c.H.Param(0)
+		*l = append(*l, core.Param{H: c.ValP})
 	}
-}
-
-// addConstraintParam ensures c.ValP is registered as a Param in sk.
-// If c.ValP is unset, we synthesize a handle from c.H.param(0) and
-// set c.ValP to it (matching C++ where valP = h.param(0)).
-func addConstraintParam(c *core.Constraint, sk *Sketch) {
-	hparam := c.H.Param(0)
-	c.ValP = hparam
-	// Check if the param already exists.
-	for i := range sk.Params {
-		if sk.Params[i].H == hparam {
-			return
-		}
-	}
-	// Add a fresh param with default value 0.
-	sk.Params = append(sk.Params, core.Param{
-		H:   hparam,
-		Val: 0,
-	})
 }
 
 // GenerateMeshForRequest walks a request's entity, param list and

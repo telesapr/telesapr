@@ -51,7 +51,7 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 		VMax:      [3]float64{1, 0, 0},
 	},
 	"boolean_tangent_spline": {
-		Triangles: 90,
+		Triangles: 94,
 		VMin:      [3]float64{-30, -30, -30},
 		VMax:      [3]float64{30, 30, 30},
 	},
@@ -78,20 +78,10 @@ var booleanFixtureCppGoldens = map[string]float64{
 	"boolean_tangent_spline":   204638.6271882122,
 }
 
-// booleanFixtureCppGoldenTolerances is the per-fixture ratio band
-// [Lo, Hi] that stats.Volume / cpp must fall in. The C++ testsuite
-// itself requires |ratio - 1| < LENGTH_EPS (1e-6; test/harness.cpp,
-// CheckEqualEpsilon), and every fixture meets that except
-// boolean_tangent_spline, which is 0.99991 (see PORTING.md
-// §"Boolean-CSG parity").
-var booleanFixtureCppGoldenTolerances = map[string]struct{ Lo, Hi float64 }{
-	"boolean_coplanar_union":   {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
-	"boolean_knife_edge":       {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
-	"boolean_tangent_crossing": {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
-	"boolean_tangent_edge":     {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
-	"boolean_tangent_fillet":   {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
-	"boolean_tangent_spline":   {Lo: 1 - 1e-4, Hi: 1 + 1e-4},
-}
+// cppGoldenRatioTol is how far stats.Volume / cpp may be from 1: the
+// C++ testsuite's own criterion, |ratio - 1| < LENGTH_EPS (1e-6;
+// test/harness.cpp, CheckEqualEpsilon).
+const cppGoldenRatioTol = 1e-6
 
 // collectBoolStats loads a fixture and reports its mesh statistics.
 func collectBoolStats(path string) (boolFixtureStats, error) {
@@ -270,18 +260,8 @@ func TestParityBooleanVolumeVsCppGolden(t *testing.T) {
 			t.Logf("%s: go=%.4f cpp=%.4f ratio=%.6f",
 				name, stats.Volume, cppGolden, ratio)
 		}
-		tol, ok := booleanFixtureCppGoldenTolerances[name]
-		if !ok {
-			// No tolerance recorded for this fixture; pass
-			// through as log-only.
-			continue
-		}
-		// Per-fixture tolerance band. The test fails (instead of
-		// just logging) when a fixture's ratio leaves its band,
-		// catching regressions in any future algorithmic change.
-		if ratio < tol.Lo || ratio > tol.Hi {
-			t.Errorf("%s: ratio %.6f outside band [%.6f, %.6f]",
-				name, ratio, tol.Lo, tol.Hi)
+		if math.Abs(ratio-1) >= cppGoldenRatioTol {
+			t.Errorf("%s: ratio %.9f, want within %g of 1", name, ratio, cppGoldenRatioTol)
 		}
 	}
 }

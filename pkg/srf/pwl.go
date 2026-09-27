@@ -19,11 +19,11 @@ var (
 // ChordTolMm returns the absolute chord tolerance in mm.
 func ChordTolMm() float64 { return chordTolMm }
 
-// SetChordTolMm sets the absolute chord tolerance in mm.
+// SetChordTolMm sets the absolute chord tolerance in mm. Like C++
+// chordTolCalculated it can be 0, for a sketch whose entities all sit
+// at one point; the pwl routines are then bounded by maxSegments.
 func SetChordTolMm(t float64) {
-	if t > 0 {
-		chordTolMm = t
-	}
+	chordTolMm = t
 }
 
 // GetMaxSegments returns the maximum number of pwl segments per curve.

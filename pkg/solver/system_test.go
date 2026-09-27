@@ -20,7 +20,6 @@ import (
 
 var (
 	errNoParameters          = errors.New("fixture produced no parameters")
-	errNoEquations           = errors.New("fixture produced no equations")
 	errUnsupportedConstraint = errors.New("fixture contains unsupported constraint")
 	errDidNotConverge        = errors.New("fixture solver did not converge")
 	errNoMeshGenerated       = errors.New("no mesh generated for extrude group")
@@ -165,7 +164,6 @@ func TestSystemAddsCoincidentConstraint(t *testing.T) {
 func TestSketchSolveIntegration(t *testing.T) {
 	root := solverFixturesRoot(t)
 	candidates := []string{
-		filepath.Join(root, "solver", "param_point_distance.slvs"),
 		filepath.Join(root, "constraint", "pt_on_line", "normal.slvs"),
 		filepath.Join(root, "constraint", "pt_on_line", "left_free_in_3d.slvs"),
 		filepath.Join(root, "constraint", "pt_on_line", "right_free_in_3d.slvs"),
@@ -196,14 +194,16 @@ func TestSketchSolveIntegration(t *testing.T) {
 
 func TestSystemPointPointDistanceConstraint(t *testing.T) {
 	pAx := &core.Param{H: core.HParam{V: 0x00030001}, Val: 0}
+	pAy := &core.Param{H: core.HParam{V: 0x00030002}, Val: 0}
+	pAz := &core.Param{H: core.HParam{V: 0x00030003}, Val: 0}
 	entA := &core.Entity{
 		EntityBase: core.EntityBase{
 			H:    core.HEntity{V: 0x00003000},
 			Type: core.EntityPointIn3D,
 			Param: [8]core.HParam{
 				pAx.H,
-				{},
-				{},
+				pAy.H,
+				pAz.H,
 			},
 		},
 		ActPoint: geom.NewVector(0, 0, 0),
@@ -224,6 +224,8 @@ func TestSystemPointPointDistanceConstraint(t *testing.T) {
 		},
 		params: map[core.HParam]*core.Param{
 			pAx.H: pAx,
+			pAy.H: pAy,
+			pAz.H: pAz,
 		},
 	}
 
@@ -989,7 +991,9 @@ func TestSystemProjectedPointDistanceConstraint(t *testing.T) {
 	}, params: map[core.HParam]*core.Param{}}
 
 	sys := solver.NewSystem(res)
-	constraint := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x00000090}, Type: core.ConstraintProjPtDistance, PtA: pa.H, PtB: pb.H, EntityA: line.H, ValA: 3}}
+	// The line's vector is point[0] - point[1] (C++ VectorGetExprs), so
+	// pb - pa projects onto it as -3.
+	constraint := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x00000090}, Type: core.ConstraintProjPtDistance, PtA: pa.H, PtB: pb.H, EntityA: line.H, ValA: -3}}
 	if err := sys.AddConstraint(&constraint); err != nil {
 		t.Fatalf("AddConstraint: %v", err)
 	}
@@ -1185,10 +1189,35 @@ func TestSystemPointOnCircleConstraint(t *testing.T) {
 	}
 }
 
+// fixedParams gives a hand-built fixture entity its params, as
+// Request::Generate would, so the EntityBase accessors can read them.
+type fixedParams map[core.HParam]*core.Param
+
+func (fp fixedParams) add(h uint32, v float64) core.HParam {
+	hp := core.HParam{V: h}
+	fp[hp] = &core.Param{H: hp, Val: v}
+	return hp
+}
+
+// point3D is a POINT_IN_3D at v whose params are h+1..h+3.
+func (fp fixedParams) point3D(h uint32, v geom.Vector) *core.Entity {
+	return &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: h}, Type: core.EntityPointIn3D,
+		Param: [8]core.HParam{fp.add(h<<4|1, v.X), fp.add(h<<4|2, v.Y), fp.add(h<<4|3, v.Z)}}, ActPoint: v}
+}
+
+// normal3D is a NORMAL_IN_3D with orientation q whose params are
+// h+1..h+4.
+func (fp fixedParams) normal3D(h uint32, q geom.Quaternion) *core.Entity {
+	return &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: h}, Type: core.EntityNormalIn3D,
+		Param: [8]core.HParam{fp.add(h<<4|1, q.W), fp.add(h<<4|2, q.X), fp.add(h<<4|3, q.Y), fp.add(h<<4|4, q.Z)}}, ActNormal: q}
+}
+
 func TestSystemPointOnFaceConstraint(t *testing.T) {
-	origin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00016000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
-	normalEnt := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00016001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
-	face := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00016002}, Type: core.EntityFaceNormalPt, Point: [core.MaxPointsInEntity]core.HEntity{origin.H}, Normal: normalEnt.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	fp := fixedParams{}
+	origin := fp.point3D(0x00016000, geom.NewVector(0, 0, 0))
+	normalEnt := fp.normal3D(0x00016001, geom.NewQuaternion(1, 0, 0, 0))
+	// A FACE_NORMAL_PT keeps its normal vector in numNormal's vector part.
+	face := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00016002}, Type: core.EntityFaceNormalPt, Point: [core.MaxPointsInEntity]core.HEntity{origin.H}, NumNormal: geom.NewQuaternion(0, 0, 0, 1)}}
 	point := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00016003}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(1, 1, 0)}
 
 	res := stubResolver{entities: map[core.HEntity]*core.Entity{
@@ -1196,7 +1225,7 @@ func TestSystemPointOnFaceConstraint(t *testing.T) {
 		normalEnt.H: normalEnt,
 		face.H:      face,
 		point.H:     point,
-	}, params: map[core.HParam]*core.Param{}}
+	}, params: fp}
 
 	sys := solver.NewSystem(res)
 	constraint := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x00000098}, Type: core.ConstraintPtOnFace, PtA: point.H, EntityA: face.H}}
@@ -1296,7 +1325,6 @@ func TestSystemHorizontalVerticalConstraints(t *testing.T) {
 func TestSolverSLVSFixtures(t *testing.T) {
 	root := solverFixturesRoot(t)
 	candidates := []string{
-		filepath.Join(root, "solver", "param_point_distance.slvs"),
 		filepath.Join(root, "constraint", "pt_on_line", "normal.slvs"),
 		filepath.Join(root, "constraint", "pt_on_line", "left_free_in_3d.slvs"),
 		filepath.Join(root, "constraint", "pt_on_line", "right_free_in_3d.slvs"),
@@ -1401,15 +1429,8 @@ func TestMeshGenerationParity(t *testing.T) {
 	sk.Groups = append(sk.Groups, extrudeGroup)
 	sk.GroupOrder = append(sk.GroupOrder, extrudeGroup.H)
 
-	// Create a simple resolver
-	resolver := newFixtureResolver(sk)
-
-	// Recalculate entity positions (they're already set, but for consistency)
-	for i := range sk.Entities {
-		if err := sk.Entities[i].CalculateNumerical(resolver, false); err != nil {
-			t.Logf("failed to calculate entity %v: %v", sk.Entities[i].H, err)
-		}
-	}
+	// Recalculate entity positions
+	sketch.NewRuntime(sk).RecalculateEntities(false)
 
 	// Generate surfaces
 	if err := extrudeGroup.GenerateSurfaces(sk); err != nil {
@@ -1497,6 +1518,10 @@ func TestSolverAllSLVSFixtures(t *testing.T) {
 		rel, _ := filepath.Rel(root, path)
 		name := filepath.ToSlash(rel)
 		t.Run(name, func(t *testing.T) {
+			if reason, ok := fixtureSweepExclusions[name]; ok {
+				skipped++
+				t.Skip(reason)
+			}
 			result, solveErr := exerciseFixture(path, exerciseConfig{allowFallback: true})
 			if solveErr != nil {
 				if isSkippableFixtureError(solveErr) {
@@ -1528,100 +1553,6 @@ func solverFixturesRoot(t *testing.T) string {
 	return filepath.Join(goDir, "testdata")
 }
 
-type fixtureResolver struct {
-	entities map[core.HEntity]*core.Entity
-	params   map[core.HParam]*core.Param
-}
-
-func newFixtureResolver(sk *sketch.Sketch) fixtureResolver {
-	res := fixtureResolver{
-		entities: make(map[core.HEntity]*core.Entity, len(sk.Entities)),
-		params:   make(map[core.HParam]*core.Param, len(sk.Params)),
-	}
-	for i := range sk.Entities {
-		ent := &sk.Entities[i]
-		res.entities[ent.H] = ent
-	}
-	for i := range sk.Params {
-		p := &sk.Params[i]
-		res.params[p.H] = p
-	}
-	return res
-}
-
-func (r fixtureResolver) Entity(h core.HEntity) (*core.Entity, error) {
-	ent, ok := r.entities[h]
-	if !ok {
-		return nil, fmt.Errorf("entity %08x missing", h.V)
-	}
-	return ent, nil
-}
-
-func (r fixtureResolver) Param(h core.HParam) (*core.Param, error) {
-	param, ok := r.params[h]
-	if !ok {
-		return nil, fmt.Errorf("param %08x missing", h.V)
-	}
-	return param, nil
-}
-
-func (r fixtureResolver) ParamValue(h core.HParam) (float64, bool) {
-	param, ok := r.params[h]
-	if !ok {
-		return 0, false
-	}
-	return param.Val, true
-}
-
-func classifyEquations(eqs []*solver.Equation) (single, multi int) {
-	for _, eq := range eqs {
-		if eq == nil || eq.Expr == nil {
-			continue
-		}
-		handles := make(map[core.HParam]struct{})
-		collectHandles(eq.Expr, handles)
-		switch len(handles) {
-		case 0:
-			continue
-		case 1:
-			single++
-		default:
-			multi++
-		}
-	}
-	return single, multi
-}
-
-func collectHandles(expr *core.Expr, handles map[core.HParam]struct{}) {
-	if expr == nil {
-		return
-	}
-	switch expr.Op {
-	case core.OpParam:
-		handles[expr.Param] = struct{}{}
-	case core.OpParamPtr:
-		if expr.ParamPtr != nil {
-			handles[expr.ParamPtr.H] = struct{}{}
-		}
-	}
-	if expr.Left != nil {
-		collectHandles(expr.Left, handles)
-	}
-	if expr.Right != nil {
-		collectHandles(expr.Right, handles)
-	}
-}
-
-func maxAbsFloat(vals []float64) float64 {
-	max := 0.0
-	for _, v := range vals {
-		if mag := math.Abs(v); mag > max {
-			max = mag
-		}
-	}
-	return max
-}
-
 type exerciseConfig struct {
 	allowFallback bool
 }
@@ -1640,105 +1571,48 @@ type fixtureResult struct {
 func isSkippableFixtureError(err error) bool {
 	return errors.Is(err, errNoParameters) ||
 		errors.Is(err, errUnsupportedConstraint) ||
-		errors.Is(err, errDidNotConverge) ||
 		strings.Contains(err.Error(), "plane handle zero")
 }
 
-func exerciseFixture(path string, cfg exerciseConfig) (fixtureResult, error) {
-	result := fixtureResult{path: path}
+// fixtureSweepExclusions are the fixtures TestSolverAllSLVSFixtures
+// doesn't require to solve, with the reason.
+var fixtureSweepExclusions = map[string]string{
+	// Hand-made: entities without requests, which C++ can't load either.
+	"solver/param_point_distance.slvs": "not a valid SolveSpace file",
+	// C++ solves it; the Go solver's squared-distance equations don't
+	// converge at this scale (PORTING.md, constrainteq.cpp).
+	"constraint/large_dimensions/normal.slvs": "known Go solver gap",
+}
+
+// exerciseFixture loads a fixture and regenerates it as C++ does
+// after loading: GenerateAll solves each group in turn, holding the
+// params of the other groups fixed. It reports the first group that
+// didn't solve.
+func exerciseFixture(path string, cfg exerciseConfig) (result fixtureResult, err error) {
+	_ = cfg
+	result = fixtureResult{path: path}
 	doc, err := slvs.LoadFile(path)
 	if err != nil {
 		return result, fmt.Errorf("load fixture: %w", err)
 	}
-
-	res := newFixtureResolver(doc.Sketch)
-	sys := solver.NewSystem(res)
-
-	added := 0
-	for i := range doc.Sketch.Constraints {
-		constraint := doc.Sketch.Constraints[i]
-		if err := sys.AddConstraint(&constraint); err != nil {
-			var unsupported solver.UnsupportedConstraintError
-			if errors.As(err, &unsupported) {
-				return result, fmt.Errorf("%w: %s", errUnsupportedConstraint, unsupported.Type.String())
-			}
-			return result, fmt.Errorf("AddConstraint %d: %w", constraint.Type, err)
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = fmt.Errorf("GenerateAll: %v", rec)
 		}
-		added++
-	}
-	if added == 0 {
-		result.report = solver.SolveReport{Converged: true}
-		result.values = make(map[core.HParam]float64)
-		return result, nil
-	}
-
-	if err := sys.NormalizeEqualParameters(); err != nil {
-		return result, fmt.Errorf("normalize system: %w", err)
-	}
-
-	paramHandles := sys.ParamHandles()
-	if len(sys.Equations) == 0 {
-		result.report = solver.SolveReport{Converged: true}
-		result.values = make(map[core.HParam]float64)
-		return result, nil
-	}
-
-	singleBefore, multiBefore := classifyEquations(sys.Equations)
-
-	if cfg.allowFallback {
-		if len(paramHandles) == 0 || multiBefore == 0 {
-			used, fbErr := addFallbackEquations(sys, res)
-			if fbErr != nil {
-				if errors.Is(fbErr, errNoParameters) {
-					return result, errNoParameters
-				}
-				return result, fmt.Errorf("fallback equations: %w", fbErr)
-			}
-			if used {
-				result.usedFallback = true
-				paramHandles = sys.ParamHandles()
-				singleBefore, multiBefore = classifyEquations(sys.Equations)
-			}
+	}()
+	sk := doc.Sketch
+	sk.GenerateAll()
+	for _, hg := range sk.GroupOrder {
+		g := sk.GetGroup(hg)
+		if g.SketchDiagnostic != nil && len(g.SketchDiagnostic.AddConstraintErrors) > 0 {
+			return result, fmt.Errorf("group %08x: %v", hg.V, g.SketchDiagnostic.AddConstraintErrors)
+		}
+		if g.Solved.How != core.SolveOkay {
+			return result, fmt.Errorf("group %08x: %w", hg.V, errDidNotConverge)
 		}
 	}
-
-	if len(paramHandles) == 0 {
-		return result, errNoParameters
-	}
-	if len(sys.Equations) == 0 {
-		return result, errNoEquations
-	}
-
-	report := &solver.SolveReport{}
-	singleBefore, multiBefore = classifyEquations(sys.Equations)
-	values, err := sys.Solve(nil, solver.SolveOptions{Report: report})
-	if err != nil {
-		if strings.Contains(err.Error(), "did not converge") {
-			return result, errDidNotConverge
-		}
-		return result, fmt.Errorf("Solve: %w", err)
-	}
-	result.report = *report
-	result.values = values
-	result.singleBefore = singleBefore
-	result.multiBefore = multiBefore
-	result.stageSolved = report.StageSolved
-	result.remainingEquations = len(sys.Equations)
-
-	if singleBefore > 0 && report.StageSolved != singleBefore {
-		return result, fmt.Errorf("staged solve resolved %d equations, expected %d", report.StageSolved, singleBefore)
-	}
-	if multiBefore > 0 && len(sys.Equations) != multiBefore {
-		return result, fmt.Errorf("expected %d coupled equations to remain, have %d", multiBefore, len(sys.Equations))
-	}
-
-	residuals, _, err := sys.Evaluate(values)
-	if err != nil {
-		return result, fmt.Errorf("Evaluate: %w", err)
-	}
-	if maxAbsFloat(residuals) > 1e-7 {
-		return result, fmt.Errorf("residual too large: %v", residuals)
-	}
+	result.report = solver.SolveReport{Converged: true}
+	result.values = sk.ParamsToMap()
 	return result, nil
 }
 
@@ -1763,54 +1637,6 @@ func recordSolveSummary(t *testing.T, result fixtureResult) {
 	t.Log("  future: compare against native SolveSpace reference once available")
 }
 
-func addFallbackEquations(sys *solver.System, res fixtureResolver) (bool, error) {
-	existing := sys.ParamHandles()
-	if len(existing) < 2 {
-		known := make(map[core.HParam]struct{}, len(sys.Params))
-		for _, h := range existing {
-			known[h] = struct{}{}
-		}
-		for h, p := range res.params {
-			if _, ok := known[h]; ok {
-				continue
-			}
-			if sys.Params == nil {
-				sys.Params = make(map[core.HParam]*core.Param)
-			}
-			sys.Params[h] = p
-			known[h] = struct{}{}
-			existing = append(existing, h)
-			if len(existing) >= 2 {
-				break
-			}
-		}
-	}
-
-	handles := sys.ParamHandles()
-	if len(handles) < 2 {
-		return false, errNoParameters
-	}
-
-	paramA := handles[0]
-	paramB := handles[1]
-
-	baseA := res.params[paramA]
-	baseB := res.params[paramB]
-	if baseA == nil || baseB == nil {
-		return false, fmt.Errorf("fixture missing backing values for params %08x, %08x", paramA.V, paramB.V)
-	}
-
-	dimension := core.NewParam(paramA).Minus(core.NewConstant(baseA.Val))
-	diff := baseA.Val - baseB.Val
-	multi := core.NewParam(paramA).Minus(core.NewParam(paramB)).Minus(core.NewConstant(diff))
-
-	sys.Equations = append(sys.Equations,
-		&solver.Equation{Expr: dimension},
-		&solver.Equation{Expr: multi},
-	)
-	return true, nil
-}
-
 // TestSystemAtMidpointPointOnLineConstraint verifies the at-midpoint
 // equation when a point is constrained to be the midpoint of a
 // line segment on a workplane. The equation reads:
@@ -1819,8 +1645,9 @@ func addFallbackEquations(sys *solver.System, res fixtureResolver) (bool, error)
 //
 // on the workplane's UV coordinate system.
 func TestSystemAtMidpointPointOnLineConstraint(t *testing.T) {
-	planeOrigin := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00019000}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 0)}
-	planeNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00019001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	fp := fixedParams{}
+	planeOrigin := fp.point3D(0x00019000, geom.NewVector(0, 0, 0))
+	planeNormal := fp.normal3D(0x00019001, geom.NewQuaternion(1, 0, 0, 0))
 	workplane := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00019002}, Type: core.EntityWorkplane, Point: [core.MaxPointsInEntity]core.HEntity{planeOrigin.H}, Normal: planeNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
 
 	startPt := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00019003}, Type: core.EntityPointIn2D, Workplane: workplane.H, Param: [8]core.HParam{core.HParam{V: 0x00019010}, core.HParam{V: 0x00019011}}}, ActPoint: geom.NewVector(0, 0, 0)}
@@ -1844,6 +1671,9 @@ func TestSystemAtMidpointPointOnLineConstraint(t *testing.T) {
 		{V: 0x00019030}: {H: core.HParam{V: 0x00019030}, Val: 5, Known: false},
 		{V: 0x00019031}: {H: core.HParam{V: 0x00019031}, Val: 0, Known: false},
 	}}
+	for h, p := range fp {
+		res.params[h] = p
+	}
 
 	sys := solver.NewSystem(res)
 	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000aa}, Type: core.ConstraintAtMidpoint, EntityA: line.H, PtA: midPt.H, Workplane: workplane.H}}
@@ -1896,7 +1726,8 @@ func TestSystemSameOrientationConstraint(t *testing.T) {
 	}}
 
 	sys := solver.NewSystem(res)
-	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000ab}, Type: core.ConstraintSameOrientation, EntityA: lineA.H, EntityB: lineB.H, ValP: core.HParam{V: 0x0001a010}}}
+	// SAME_ORIENTATION constrains two normals.
+	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000ab}, Type: core.ConstraintSameOrientation, EntityA: normalA.H, EntityB: normalB.H, ValP: core.HParam{V: 0x0001a010}}}
 	if err := sys.AddConstraint(&cn); err != nil {
 		t.Fatalf("AddConstraint: %v", err)
 	}
@@ -2173,9 +2004,11 @@ func TestSystemArcLineDifferenceConstraint(t *testing.T) {
 func TestSystemPtFaceDistanceConstraint(t *testing.T) {
 	// A face normal defines the plane; a separate point is
 	// distance-measured against that plane.
-	faceNormal := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020001}, Type: core.EntityNormalIn3D}, ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
-	facePoint := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020002}, Type: core.EntityFaceNormalPt, Normal: faceNormal.H}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
-	face := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020003}, Type: core.EntityFaceNormalPt, Normal: faceNormal.H, Point: [core.MaxPointsInEntity]core.HEntity{facePoint.H}}, ActPoint: geom.NewVector(0, 0, 0), ActNormal: geom.NewQuaternion(1, 0, 0, 0)}
+	fp := fixedParams{}
+	faceNormal := fp.normal3D(0x00020001, geom.NewQuaternion(1, 0, 0, 0))
+	facePoint := fp.point3D(0x00020002, geom.NewVector(0, 0, 0))
+	// A FACE_NORMAL_PT keeps its normal vector in numNormal's vector part.
+	face := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020003}, Type: core.EntityFaceNormalPt, Point: [core.MaxPointsInEntity]core.HEntity{facePoint.H}, NumNormal: geom.NewQuaternion(0, 0, 0, 1)}}
 
 	// A point 5 units along the face normal.
 	pt := &core.Entity{EntityBase: core.EntityBase{H: core.HEntity{V: 0x00020004}, Type: core.EntityPointIn3D}, ActPoint: geom.NewVector(0, 0, 5)}
@@ -2185,7 +2018,7 @@ func TestSystemPtFaceDistanceConstraint(t *testing.T) {
 		facePoint.H:  facePoint,
 		face.H:       face,
 		pt.H:         pt,
-	}, params: map[core.HParam]*core.Param{}}
+	}, params: fp}
 
 	sys := solver.NewSystem(res)
 	cn := core.Constraint{ConstraintBase: core.ConstraintBase{H: core.HConstraint{V: 0x000000b1}, Type: core.ConstraintPtFaceDistance, PtA: pt.H, EntityA: face.H, ValA: 5.0}}

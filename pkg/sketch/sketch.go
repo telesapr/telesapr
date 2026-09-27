@@ -1,10 +1,11 @@
 package sketch
 
 import (
-	"math"
+	"fmt"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 type Sketch struct {
@@ -20,6 +21,12 @@ type Sketch struct {
 	// Undo/redo stacks.
 	Undo UndoStack
 	Redo UndoStack
+
+	// Handle -> index caches for GetEntity and GetParam. They are
+	// validated on every lookup and rebuilt on a miss, so appending to
+	// or reordering Entities and Params needs no bookkeeping.
+	entityIndex map[core.HEntity]int
+	paramIndex  map[core.HParam]int
 }
 
 func NewSketch() *Sketch {
@@ -44,19 +51,39 @@ func (s *Sketch) GetConstraint(h core.HConstraint) *core.Constraint {
 }
 
 func (s *Sketch) GetEntity(h core.HEntity) *core.Entity {
+	if i, ok := s.entityIndex[h]; ok && i < len(s.Entities) && s.Entities[i].H == h {
+		return &s.Entities[i]
+	}
+	s.entityIndex = make(map[core.HEntity]int, len(s.Entities))
 	for i := range s.Entities {
-		if s.Entities[i].H == h {
-			return &s.Entities[i]
-		}
+		s.entityIndex[s.Entities[i].H] = i
+	}
+	if i, ok := s.entityIndex[h]; ok {
+		return &s.Entities[i]
 	}
 	return nil
 }
 
+// MustGetEntity is GetEntity for handles that must exist (C++
+// SK.GetEntity, which asserts).
+func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity {
+	e := s.GetEntity(h)
+	if e == nil {
+		panic(fmt.Sprintf("entity %08x not found", h.V))
+	}
+	return e
+}
+
 func (s *Sketch) GetParam(h core.HParam) *core.Param {
+	if i, ok := s.paramIndex[h]; ok && i < len(s.Params) && s.Params[i].H == h {
+		return &s.Params[i]
+	}
+	s.paramIndex = make(map[core.HParam]int, len(s.Params))
 	for i := range s.Params {
-		if s.Params[i].H == h {
-			return &s.Params[i]
-		}
+		s.paramIndex[s.Params[i].H] = i
+	}
+	if i, ok := s.paramIndex[h]; ok {
+		return &s.Params[i]
 	}
 	return nil
 }
@@ -86,6 +113,32 @@ func (s *Sketch) GetStyle(h core.HStyle) *core.Style {
 		}
 	}
 	return nil
+}
+
+// AddReferences adds the references group and its three coordinate
+// plane workplanes, which every sketch has; the first half of C++
+// SolveSpaceUI::NewFile. Call it on an empty sketch.
+func (s *Sketch) AddReferences() {
+	// Our initial group, that contains the references.
+	s.Groups = append(s.Groups, Group{
+		H:       core.HGroup{V: core.HGroupReferences},
+		Type:    GroupDrawing3D,
+		Order:   0,
+		Name:    "#references",
+		Visible: true,
+		Scale:   1,
+	})
+
+	// Let's create three two-d coordinate systems, for the coordinate
+	// planes; these are our references, present in every sketch.
+	for _, hr := range []core.HRequest{HRequestReferenceXY, HRequestReferenceYZ, HRequestReferenceZX} {
+		s.Requests = append(s.Requests, Request{
+			H:         hr,
+			Type:      RequestWorkplane,
+			Group:     core.HGroup{V: core.HGroupReferences},
+			Workplane: core.FreeIn3D,
+		})
+	}
 }
 
 func (s *Sketch) AddGroup(g Group) core.HGroup {
@@ -134,173 +187,67 @@ func (s *Sketch) Clear() {
 	s.Params = s.Params[:0]
 }
 
+// CalculateEntityBBox returns the bounding box of the non-construction
+// entities (C++ Sketch::CalculateEntityBBox). Circles and arcs count
+// their Bezier control points, which is not exact for arcs.
+//
+// Without includingInvisible, the C++ skips entities for which
+// Entity::IsVisible (which depends on UI settings) is false; here that
+// is approximated by ActVisible and ForceHidden.
 func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox {
-	bbox := core.BBox{}
-	firstPoint := true
+	box := core.BBox{}
+	first := true
 
-	includePoint := func(p geom.Vector) {
-		if firstPoint {
-			bbox.MinP = p
-			bbox.MaxP = p
-			firstPoint = false
-			return
+	includePoint := func(point geom.Vector) {
+		if first {
+			box.MinP = point
+			box.MaxP = point
+			first = false
+		} else {
+			box.Include(point, 0)
 		}
-		bbox.Include(p, 0)
 	}
 
-	pointOnCircle := func(center, u, v geom.Vector, r, theta float64) geom.Vector {
-		c := math.Cos(theta)
-		sn := math.Sin(theta)
-		return center.Plus(u.ScaledBy(r * c)).Plus(v.ScaledBy(r * sn))
-	}
-
-	normalizeAngle := func(theta float64) float64 {
-		for theta < 0 {
-			theta += 2 * math.Pi
-		}
-		for theta >= 2*math.Pi {
-			theta -= 2 * math.Pi
-		}
-		return theta
-	}
-
-	angleInArc := func(thetaStart, dtheta, theta float64) bool {
-		thetaStart = normalizeAngle(thetaStart)
-		theta = normalizeAngle(theta)
-
-		thetaEnd := thetaStart + dtheta
-		if thetaEnd <= 2*math.Pi {
-			return theta >= thetaStart-1e-9 && theta <= thetaEnd+1e-9
-		}
-		thetaEnd = normalizeAngle(thetaEnd)
-		return theta >= thetaStart-1e-9 || theta <= thetaEnd+1e-9
-	}
-
+	rt := &Runtime{Sketch: s}
 	for i := range s.Entities {
 		e := &s.Entities[i]
 		if e.Construction {
 			continue
 		}
-		if !includingInvisible && !e.ActVisible {
+		if !includingInvisible && (!e.ActVisible || e.ForceHidden) {
 			continue
 		}
 
-		if e.IsPoint() {
-			// Skip the circle center generated for arc requests.
-			if e.H.IsFromRequest() {
-				if req := s.GetRequest(e.H.Request()); req != nil {
-					if req.Type == RequestArcOfCircle && e.H == req.H.Entity(1) {
-						continue
-					}
-				}
+		// arc center point shouldn't be included in bounding box calculation
+		if e.IsPoint() && e.H.IsFromRequest() {
+			r := s.GetRequest(e.H.Request())
+			if r.Type == RequestArcOfCircle && e.H == r.H.Entity(1) {
+				continue
 			}
-			includePoint(e.PointGetNum())
+		}
+
+		if e.IsPoint() {
+			includePoint(e.PointGetNum(s))
 			continue
 		}
 
 		switch e.Type {
+		// Circles and arcs are special cases. We calculate their bounds
+		// based on Bezier curve bounds. This is not exact for arcs,
+		// but the implementation is rather simple.
 		case core.EntityCircle, core.EntityArcOfCircle:
-			centerEntity := s.GetEntity(e.Point[0])
-			if centerEntity == nil {
-				continue
-			}
+			var sbl srf.SBezierList
+			GenerateEntityBeziers(e, &sbl, rt)
 
-			center := centerEntity.PointGetNum()
-
-			normalEntity := s.GetEntity(e.Normal)
-			q := geom.NewQuaternion(1, 0, 0, 0)
-			if normalEntity != nil {
-				q = normalEntity.NormalGetNum()
-			}
-			u := q.RotationU()
-			v := q.RotationV()
-
-			radius := 0.0
-			if e.Type == core.EntityCircle {
-				if dist := s.GetEntity(e.Distance); dist != nil {
-					radius = dist.DistanceGetNum()
-				}
-			} else {
-				if start := s.GetEntity(e.Point[1]); start != nil {
-					radius = start.PointGetNum().Minus(center).Magnitude()
-				}
-			}
-			if radius < core.LengthEps {
-				includePoint(center)
-				continue
-			}
-
-			if e.Type == core.EntityCircle {
-				for axis := 0; axis < 3; axis++ {
-					var uc, vc float64
-					switch axis {
-					case 0:
-						uc, vc = u.X, v.X
-					case 1:
-						uc, vc = u.Y, v.Y
-					default:
-						uc, vc = u.Z, v.Z
-					}
-					theta := math.Atan2(vc, uc)
-					for _, candidate := range []float64{theta, theta + math.Pi} {
-						includePoint(pointOnCircle(center, u, v, radius, candidate))
-					}
-				}
-				continue
-			}
-
-			startEntity := s.GetEntity(e.Point[1])
-			endEntity := s.GetEntity(e.Point[2])
-			if startEntity == nil || endEntity == nil {
-				continue
-			}
-
-			startPoint := startEntity.PointGetNum()
-			endPoint := endEntity.PointGetNum()
-
-			includePoint(startPoint)
-			includePoint(endPoint)
-
-			getAngle := func(p geom.Vector) float64 {
-				offset := p.Minus(center)
-				x := offset.Dot(u)
-				y := offset.Dot(v)
-				return math.Atan2(y, x)
-			}
-
-			thetaStart := getAngle(startPoint)
-			thetaEnd := getAngle(endPoint)
-			dtheta := thetaEnd - thetaStart
-
-			for dtheta < 1e-6 {
-				dtheta += 2 * math.Pi
-			}
-			for dtheta > 2*math.Pi {
-				dtheta -= 2 * math.Pi
-			}
-
-			for axis := 0; axis < 3; axis++ {
-				var uc, vc float64
-				switch axis {
-				case 0:
-					uc, vc = u.X, v.X
-				case 1:
-					uc, vc = u.Y, v.Y
-				default:
-					uc, vc = u.Z, v.Z
-				}
-				theta := math.Atan2(vc, uc)
-				for _, candidate := range []float64{theta, theta + math.Pi} {
-					if !angleInArc(thetaStart, dtheta, candidate) {
-						continue
-					}
-					includePoint(pointOnCircle(center, u, v, radius, candidate))
+			for _, sb := range sbl.Curves {
+				for j := 0; j <= sb.Degree; j++ {
+					includePoint(sb.Ctrl[j])
 				}
 			}
 		}
 	}
 
-	return bbox
+	return box
 }
 
 func (s *Sketch) GetRunningMeshGroupFor(h core.HGroup) *Group {

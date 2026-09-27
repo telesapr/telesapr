@@ -16,12 +16,12 @@ solvespace core engine. It is the source of truth for the
 
 | C++ file | Lines | Status | Go file(s) | Notes |
 |---|---|---|---|---|
-| `expr.cpp` | 963 | OK | `pkg/core/expr.go`, `pkg/core/expr_parse.go` | |
-| `entity.cpp` | 997 | PARTIAL | `pkg/core/entity.go`, `pkg/core/entity_methods.go` | `EntityBase::ArcGetAngles` is a stub (always a full circle); `pkg/sketch/entity_bezier.go` computes arc angles itself |
+| `expr.cpp` | 963 | OK | `pkg/core/expr.go`, `pkg/core/expr_parse.go` | `ExprQuaternion::Rotate`/`RotationU/V/N`/`Times` use the C++ formulas, which differ from a rotation for non-unit quaternions |
+| `entity.cpp` | 997 | OK | `pkg/core/entity.go`, `pkg/core/entity_base.go` | Every `EntityBase` accessor, numeric and symbolic, for all point/normal/face/distance types, plus `GenerateEquations` and `Entity::CalculateNumerical`. The sketch is passed in as a `core.EntitySketch` instead of the global `SK` |
 | `constraint.cpp` | 994 | OK | `pkg/core/constraint.go` | |
-| `system.cpp` | 660 | OK | `pkg/solver/system.go` | |
-| `group.cpp` | 1228 | PARTIAL | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | LATHE/REVOLVE/HELIX entity generation is a stub (`MakeLatheCircles`, `MakeLatheSurfacesSelectable`, `MakeRevolveEndFaces` do nothing; `generateHelixGroup` reuses revolve) |
-| `generate.cpp` | 598 | PARTIAL | `pkg/sketch/generate_all.go` | Solves all groups in one Newton system instead of per group; `chordTolCalculated` is ported, but `Sketch.CalculateEntityBBox` disagrees with C++ on some models (see §"Boolean-CSG parity") |
+| `system.cpp` | 660 | UNAUDITED | `pkg/solver/solve.go`, `pkg/solver/system.go` | Not a port. The Go solver is a damped least-squares Newton with its own substitution and staging passes; it has no rank test, and its DOF differs from C++. `System.Known` gives the per-group solve its fixed params |
+| `group.cpp` | 1228 | OK | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | `Generate` (all group types), `CopyEntity`, `Remap` (as `RemapEntity`), the `Make*` helpers and `GenerateEquations`. LINKED groups copy `ImpEntity`, which nothing populates yet. Menu and UI code are out of scope |
+| `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry, per-group `SolveGroup`), `ForceReferences`, `CalculateEntityBBox`. With no active group or dirty tracking, DIRTY and UNTIL_ACTIVE regenerate everything like ALL |
 | `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, the running-shell boolean combine and `MergeCoincidentSurfaces` placement are faithful. LATHE/REVOLVE/HELIX shells follow C++ (axis from `predef`, angle `param(3)*4`, helix distance `param(7)*2`), but faces aren't remapped (`REMAP_LINE_TO_FACE`, `REMAP_LATHE_START/END`): `SBezier` carries no source entity |
 | `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
@@ -39,13 +39,13 @@ solvespace core engine. It is the source of truth for the
 | `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go`, `pkg/srf/raycast_surface.go` | `ClassifyEdge` and trimmed `AllPointsIntersecting` (plane, cylinder, subdivision) |
 | `srf/merge.cpp` | 130 | OK | `pkg/srf/merge.go` | `MergeCoincidentSurfaces` |
 | `bsp.cpp` | 733 | OK | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | |
-| `constrainteq.cpp` | 1062 | OK | `pkg/solver/system.go` | all 38 constraint types route to a real `addXxx` emitter |
+| `constrainteq.cpp` | 1062 | PARTIAL | `pkg/solver/system.go`, `pkg/sketch/group_generate.go` | Every constraint type has an `addXxx` emitter, but not in the C++ form. PT_PT_DISTANCE squares both sides; PARALLEL is three equations on normalized vectors instead of `VectorsParallel3d`/the pseudo-scalar product. `ModifyToSatisfy` is computed numerically per type. `HasLabel` and `Generate` are faithful |
 | `modify.cpp` | 751 | OK | `pkg/sketch/group_generate.go` | UI helpers (ReplacePointInConstraints, MakeTangentArc, SplitLine/Circle/Cubic) are out-of-scope. |
 | `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | |
 | `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go` | |
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go` | SLVS persistence |
-| `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections |
+| `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)` |
 
 An **OK** row means the functions listed in its notes (or the whole
 file, when none are listed) were compared line by line against the C++.
@@ -89,12 +89,15 @@ UI.
 
 ## Test counts
 
-- 515 tests (422 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 505 tests (412 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - All 86 non-boolean fixtures load cleanly and round-trip via
   `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
 - All 31 constraint fixtures load, round-trip, and solve with
   `How=SolveOkay` across all groups via `TestParityConstraintFixtures`.
+- `TestSolverAllSLVSFixtures` runs `GenerateAll` on every fixture and
+  requires every group to solve, except `constraint/large_dimensions`
+  (see remaining work) and one hand-made file C++ can't load either.
 - `TestParityBooleanVolumeVsCppGolden` checks every boolean fixture's
   volume against the C++ testsuite golden (see below);
   `TestBooleanTwoBoxesVolume` checks union/difference/intersection of
@@ -111,8 +114,8 @@ UI.
   `TestSystemAllConstraintsHaveEmitter`.
 - `go vet ./...` and `go test ./...` succeed on the whole repo.
 - No TODO markers in engine packages.
-- Every boolean fixture's go/cpp volume ratio is within `[0.95, 1.05]`
-  (met; five of six are within the C++ testsuite's own 1e-6).
+- Every boolean fixture's go/cpp volume ratio is within the C++
+  testsuite's own 1e-6 (met).
 
 ## Boolean-CSG parity
 
@@ -123,21 +126,32 @@ UI.
 | `boolean_tangent_crossing` | 1.000000 |
 | `boolean_tangent_edge`     | 1.000000 |
 | `boolean_tangent_fillet`   | 1.000000 |
-| `boolean_tangent_spline`   | 0.999907 |
+| `boolean_tangent_spline`   | 1.000000 |
 
-None of the fixtures sets `BooleanFailed`. `booleanFixtureCppGoldenTolerances`
-(`pkg/persist/slvs/bool_generate_test.go`) enforces
-`|ratio - 1| < 1e-6` (the C++ `CHECK_EQ_EPS` criterion) for all but
-`boolean_tangent_spline`.
+None of the fixtures sets `BooleanFailed`. `TestParityBooleanVolumeVsCppGolden`
+(`pkg/persist/slvs/bool_generate_test.go`) enforces `|ratio - 1| < 1e-6`,
+the C++ `CHECK_EQ_EPS` criterion, for all six.
 
-`boolean_tangent_spline`'s residual is not in the CSG. At equal chord
-tolerance, the Go mesh volume matches C++ to STL float precision:
-`solvespace-cli export-mesh --chord-tol 0.12` gives 204619.494, and
-Go gives 204619.494. The C++ testsuite golden (204638.627) is what
-C++ produces at chord tolerances of about 0.07–0.1 mm. Go's
-`chordTolCalculated` is 0.12 mm, because `Sketch.CalculateEntityBBox`
-reports a 120 mm extent (entity points at z = ±60) where the C++
-evidently sees about 71 mm. See remaining work item 1.
+`boolean_tangent_spline` needed the chord tolerance, not the CSG. Go's
+`Group::Generate` was a stand-in that emitted copies of the extruded
+points with made-up handles at z = ±60. That gave a 120 mm bounding box
+where C++ has 70.96 mm, so the chord tolerance was 0.12 mm instead of
+0.07096 mm. With `Group::Generate` and `GenerateAll` ported, Go
+produces the same entities as C++ and the same volume.
+
+**Entity check against C++.** A throwaway C++ harness loaded each
+fixture the way the testsuite does (`LoadFromFile` + `AfterNewFile`).
+It dumped every entity's handle, type, group, construction flag, point,
+normal, face and distance, the chord tolerance, and each group's solve
+status. For 86 of the 89 fixtures C++ can load, the Go `GenerateAll`
+output matches exactly (to 1e-4). The three that differ:
+
+- `constraint/large_dimensions`: the Go solver doesn't converge.
+- `constraint/pt_on_circle/negative_dia`: the Go constraint equations
+  settle on a different solution.
+- `request/image/linked`: LINKED import isn't implemented.
+
+The first two are `constrainteq.cpp`/`system.cpp` differences.
 
 Parity came from replacing simplified stand-ins with faithful ports,
 not from tuning. The main fixes:
@@ -178,11 +192,12 @@ when the trim polygon doesn't assemble" path.
 
 In priority order:
 
-1. **`chordTolCalculated`.** Make `Sketch.CalculateEntityBBox` and the
-   generate order match C++ `SolveSpaceUI::GenerateAll`
-   (`genForBBox` pass, `generate.cpp:219`). That closes
-   `boolean_tangent_spline`'s 1e-4 residual, and the band can then
-   tighten to 1e-6.
+1. **Audit `constrainteq.cpp` and `system.cpp`.** Port
+   `ConstraintBase::GenerateEquations` line by line onto the `core`
+   `EntityBase` accessors, replacing the `addXxx` builders. Then compare
+   the solver with `System::Solve` (substitution, rank test, DOF). That
+   fixes `large_dimensions` and `negative_dia`, and makes
+   `ModifyToSatisfy` the C++ one (`valA += eq.Eval()`).
 2. **Audit `srf/surfinter.cpp`** (`IntersectAgainst` and its per-case
    helpers) line by line, as was done for `boolean.cpp`/`raycast.cpp`.
 3. **Watertightness check.** The C++ fixture tests also assert that
@@ -190,9 +205,14 @@ In priority order:
    naked or self-intersecting edges. Port that check and assert it in
    `TestParityBooleanFixtures`.
 4. **Smaller stand-ins found but not yet ported:**
-   - `EntityBase::ArcGetAngles` in `pkg/core`;
    - `SBezier::AllIntersectionsWith`;
    - `SSurface::MakeSectionEdgesInto`;
-   - per-group solving in `GenerateAll`;
-   - LATHE/REVOLVE/HELIX entity generation in `group.cpp`, and the
-     face remapping of their shells, which needs `SBezier::entity`.
+   - the face remapping of LATHE/REVOLVE/HELIX shells, which needs
+     `SBezier::entity`;
+   - the load-time `GenerateAll(REGEN)` in `UpgradeLegacyData`, so the
+     first bbox pass pwl's loops at the file's own chord tolerance;
+   - LINKED import (`impEntity`, `impShell`).
+5. **GUI.** `pkg/app` adds constraints over the entities as loaded,
+   without `GenerateAll`. Group-generated entities saved in a file
+   carry no params, so the faithful accessors report errors for them.
+   The app should regenerate like C++ `AfterNewFile`.

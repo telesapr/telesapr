@@ -32,6 +32,13 @@ func TestRuntimeLookup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load fixture: %v", err)
 	}
+	// The file's saved actPoint/actNormal are what C++ computed; check
+	// the regenerated entities against them.
+	saved := make(map[core.HEntity]core.Entity, len(doc.Sketch.Entities))
+	for _, e := range doc.Sketch.Entities {
+		saved[e.H] = e
+	}
+	doc.Sketch.GenerateAll()
 
 	rt := sketch.NewRuntime(doc.Sketch)
 
@@ -49,15 +56,19 @@ func TestRuntimeLookup(t *testing.T) {
 	}
 
 	// Verify point and normal calculations align with stored values.
-	for _, ent := range doc.Sketch.Entities {
+	for _, e := range doc.Sketch.Entities {
+		ent, ok := saved[e.H]
+		if !ok {
+			t.Fatalf("entity %v not in the file", e.H)
+		}
 		switch ent.Type {
 		case core.EntityPointIn3D, core.EntityPointIn2D:
 			got, err := rt.PointValue(ent.H)
 			if err != nil {
 				t.Fatalf("point value: %v", err)
 			}
-			if got.DistanceTo(ent.PointGetNum()) > 1e-8 {
-				t.Fatalf("point mismatch: got %v want %v", got, ent.PointGetNum())
+			if got.DistanceTo(ent.ActPoint) > 1e-8 {
+				t.Fatalf("point mismatch: got %v want %v", got, ent.ActPoint)
 			}
 		case core.EntityNormalIn3D:
 			got, err := rt.NormalQuaternion(ent.H)
@@ -92,6 +103,8 @@ func TestRuntimeConstraintDistance(t *testing.T) {
 		t.Fatalf("load fixture: %v", err)
 	}
 
+	doc.Sketch.GenerateAll()
+
 	rt := sketch.NewRuntime(doc.Sketch)
 	found := false
 	for _, c := range doc.Sketch.Constraints {
@@ -124,6 +137,8 @@ func TestRuntimeConstraintPointOnCircle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load fixture: %v", err)
 	}
+
+	doc.Sketch.GenerateAll()
 
 	rt := sketch.NewRuntime(doc.Sketch)
 	found := false

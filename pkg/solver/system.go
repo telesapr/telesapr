@@ -47,6 +47,12 @@ func (e UnsupportedConstraintError) Error() string {
 type System struct {
 	resolver Resolver
 
+	// Known, when set, reports the parameters that are not unknowns
+	// of this system, with their values. C++ SolveGroup solves only
+	// the params of one group; every other param keeps its value, so
+	// registerParams folds known params into constants.
+	Known func(core.HParam) (float64, bool)
+
 	Params    map[core.HParam]*core.Param
 	Equations []*Equation
 }
@@ -1270,7 +1276,9 @@ func (s *System) addCubicLineTangentConstraint(c *core.Constraint) error {
 	if cubic.Type != core.EntityCubic && cubic.Type != core.EntityCubicPeriodic {
 		return fmt.Errorf("cubic-line-tangent: entity %08x type %d unsupported", c.EntityA.V, cubic.Type)
 	}
-	line, err := s.lineExpr(c.EntityB)
+	// C++ uses line->VectorGetExprs(), point[0] - point[1]; the sign
+	// matters for the 3d form, whose valP scales it.
+	lineVec, err := s.vectorExpr(c.EntityB)
 	if err != nil {
 		return fmt.Errorf("cubic-line-tangent: %w", err)
 	}
@@ -1279,7 +1287,7 @@ func (s *System) addCubicLineTangentConstraint(c *core.Constraint) error {
 		return fmt.Errorf("cubic-line-tangent: %w", err)
 	}
 	if isFreeWorkplane(c.Workplane) {
-		eq := vectorsParallel3D(tangent, line.direction, c.ValP)
+		eq := vectorsParallel3D(tangent, lineVec, c.ValP)
 		components := []*core.Expr{eq.X, eq.Y, eq.Z}
 		for i, component := range components {
 			if err := s.registerParams(component); err != nil {
@@ -1296,7 +1304,7 @@ func (s *System) addCubicLineTangentConstraint(c *core.Constraint) error {
 	if err != nil {
 		return fmt.Errorf("cubic-line-tangent: %w", err)
 	}
-	expr := tangent.Cross(line.direction).Dot(plane.normal)
+	expr := tangent.Cross(lineVec).Dot(plane.normal)
 	if err := s.registerParams(expr); err != nil {
 		return err
 	}
@@ -1441,6 +1449,9 @@ func (s *System) addWhereDraggedConstraint(c *core.Constraint) error {
 }
 
 func (s *System) registerParams(expr *core.Expr) error {
+	if s.Known != nil {
+		foldKnownParams(expr, s.Known)
+	}
 	referenced := make(map[core.HParam]struct{})
 	expr.ReferencedParams(referenced)
 
@@ -1460,6 +1471,72 @@ func (s *System) registerParams(expr *core.Expr) error {
 	return nil
 }
 
+// foldKnownParams turns every parameter node of expr that known
+// reports into a constant, in place.
+func foldKnownParams(expr *core.Expr, known func(core.HParam) (float64, bool)) {
+	if expr == nil {
+		return
+	}
+	if h, ok := expr.ParamHandle(); ok {
+		if v, isKnown := known(h); isKnown {
+			*expr = *core.NewConstant(v)
+		}
+		return
+	}
+	foldKnownParams(expr.Left, known)
+	foldKnownParams(expr.Right, known)
+	for _, a := range expr.Args {
+		foldKnownParams(a, known)
+	}
+}
+
+// AddEquation registers the equation expr = 0 under handle h.
+func (s *System) AddEquation(h core.HEquation, expr *core.Expr) error {
+	if expr == nil {
+		return fmt.Errorf("solver: nil expr in AddEquation")
+	}
+	if err := s.registerParams(expr); err != nil {
+		return err
+	}
+	s.Equations = append(s.Equations, &Equation{H: h, Expr: expr})
+	return nil
+}
+
+// resolverSketch adapts a Resolver to the core.EntitySketch that the
+// EntityBase accessors read.
+type resolverSketch struct {
+	r Resolver
+}
+
+func (rs resolverSketch) GetEntity(h core.HEntity) *core.Entity {
+	e, err := rs.r.Entity(h)
+	if err != nil {
+		return nil
+	}
+	return e
+}
+
+func (rs resolverSketch) GetParam(h core.HParam) *core.Param {
+	p, err := rs.r.Param(h)
+	if err != nil {
+		return nil
+	}
+	return p
+}
+
+func (s *System) sketch() resolverSketch { return resolverSketch{r: s.resolver} }
+
+// entityExprs runs fn, turning a panic from a malformed entity (a
+// missing entity or param, which C++ asserts on) into an error.
+func entityExprs[T any](h core.HEntity, fn func() T) (r T, err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = fmt.Errorf("entity %08x: %v", h.V, rec)
+		}
+	}()
+	return fn(), nil
+}
+
 func (s *System) pointExpr(h core.HEntity) (core.ExprVector, error) {
 	if h == (core.HEntity{}) {
 		return core.ExprVector{}, fmt.Errorf("point handle zero")
@@ -1471,36 +1548,15 @@ func (s *System) pointExpr(h core.HEntity) (core.ExprVector, error) {
 	if ent == nil {
 		return core.ExprVector{}, fmt.Errorf("entity %08x not found", h.V)
 	}
-
-	switch ent.Type {
-	case core.EntityPointIn3D:
-		params := ent.Param
-		comps := [3]*core.Expr{}
-		values := []float64{ent.ActPoint.X, ent.ActPoint.Y, ent.ActPoint.Z}
-		for i := 0; i < 3; i++ {
-			if params[i].V != 0 {
-				comps[i] = s.paramOrConstant(params[i], values[i])
-			} else {
-				comps[i] = core.NewConstant(values[i])
-			}
-		}
-		return core.NewExprVector(comps[0], comps[1], comps[2]), nil
-	case core.EntityPointIn2D:
-		plane, err := s.planeExpr(ent.Workplane)
-		if err != nil {
-			return core.ExprVector{}, err
-		}
-		uDefault, vDefault := projectPointToPlane(ent.ActPoint, plane)
-		uExpr := s.paramOrConstant(ent.Param[0], uDefault)
-		vExpr := s.paramOrConstant(ent.Param[1], vDefault)
-		vec := plane.point.Plus(plane.u.ScaledBy(uExpr)).Plus(plane.v.ScaledBy(vExpr))
-		return vec, nil
-	default:
-		return core.NewExprVector(
-			core.NewConstant(ent.ActPoint.X),
-			core.NewConstant(ent.ActPoint.Y),
-			core.NewConstant(ent.ActPoint.Z)), nil
+	if !ent.IsPoint() {
+		return core.ExprVector{}, fmt.Errorf("entity %08x (type %d) is not a point", h.V, ent.Type)
 	}
+	// A POINT_IN_3D without params (hand-built test fixtures only; C++
+	// always gives it three) is a fixed point.
+	if ent.Type == core.EntityPointIn3D && ent.Param[0].V == 0 {
+		return core.FromVector(ent.ActPoint), nil
+	}
+	return entityExprs(h, func() core.ExprVector { return ent.PointGetExprs(s.sketch()) })
 }
 
 type planeData struct {
@@ -1596,22 +1652,16 @@ func (s *System) normalQuaternionExpr(h core.HEntity) (core.ExprQuaternion, geom
 	if qNumeric.W == 0 && qNumeric.X == 0 && qNumeric.Y == 0 && qNumeric.Z == 0 {
 		qNumeric = geom.NewQuaternion(1, 0, 0, 0)
 	}
-
-	switch ent.Type {
-	case core.EntityNormalIn3D:
-		params := ent.Param
-		if params[0].V != 0 || params[1].V != 0 || params[2].V != 0 || params[3].V != 0 {
-			expr := core.NewExprQuaternion(
-				core.NewParam(params[0]),
-				core.NewParam(params[1]),
-				core.NewParam(params[2]),
-				core.NewParam(params[3]),
-			)
-			return expr, qNumeric, nil
-		}
+	if !ent.IsNormal() {
+		return core.ExprQuaternion{}, geom.Quaternion{}, fmt.Errorf("entity %08x (type %d) is not a normal", h.V, ent.Type)
 	}
-
-	return core.NewExprQuaternionConst(qNumeric), qNumeric, nil
+	// A NORMAL_IN_3D without params (hand-built test fixtures only) is
+	// a fixed orientation.
+	if ent.Type == core.EntityNormalIn3D && ent.Param[0].V == 0 {
+		return core.NewExprQuaternionConst(qNumeric), qNumeric, nil
+	}
+	expr, err := entityExprs(h, func() core.ExprQuaternion { return ent.NormalGetExprs(s.sketch()) })
+	return expr, qNumeric, err
 }
 
 type lineData struct {
@@ -1791,6 +1841,8 @@ func (s *System) distanceExpr(h core.HEntity) (*core.Expr, float64, error) {
 			return core.NewParam(ent.Param[0]), ent.ActDistance, nil
 		}
 		return core.NewConstant(ent.ActDistance), ent.ActDistance, nil
+	case core.EntityDistanceNCopy:
+		return ent.DistanceGetExpr(), ent.NumDistance, nil
 	default:
 		return nil, 0, fmt.Errorf("unsupported distance entity type %d", ent.Type)
 	}
@@ -1838,19 +1890,15 @@ func (s *System) faceExpr(h core.HEntity) (faceData, error) {
 		return faceData{}, fmt.Errorf("face entity %08x missing", h.V)
 	}
 
-	var normalVec core.ExprVector
-	switch ent.Type {
-	case core.EntityFaceNormalPt:
-		n := geom.NewVector(ent.ActNormal.X, ent.ActNormal.Y, ent.ActNormal.Z)
-		if n.Magnitude() == 0 {
-			n = geom.NewVector(0, 0, 1)
-		}
-		normalVec = core.FromVector(n.Normal())
-	default:
-		normalVec = core.FromVector(ent.ActNormal.RotationN())
+	if !ent.IsFace() {
+		return faceData{}, fmt.Errorf("entity %08x (type %d) is not a face", h.V, ent.Type)
 	}
-	point := core.FromVector(ent.ActPoint)
-	return faceData{point: point, normal: normalVec}, nil
+	return entityExprs(h, func() faceData {
+		return faceData{
+			point:  ent.FaceGetPointExprs(s.sketch()),
+			normal: ent.FaceGetNormalExprs(),
+		}
+	})
 }
 
 func (s *System) vectorExpr(h core.HEntity) (core.ExprVector, error) {
@@ -1867,6 +1915,7 @@ func (s *System) vectorExpr(h core.HEntity) (core.ExprVector, error) {
 
 	switch ent.Type {
 	case core.EntityLineSegment:
+		// C++ EntityBase::VectorGetExprs: point[0] - point[1].
 		start, err := s.pointExpr(ent.Point[0])
 		if err != nil {
 			return core.ExprVector{}, err
@@ -1875,10 +1924,13 @@ func (s *System) vectorExpr(h core.HEntity) (core.ExprVector, error) {
 		if err != nil {
 			return core.ExprVector{}, err
 		}
-		return finish.Minus(start), nil
+		return start.Minus(finish), nil
 	default:
 		if ent.IsNormal() {
 			return s.normalExpr(ent.H)
+		}
+		if ent.IsFace() {
+			return entityExprs(h, ent.FaceGetNormalExprs)
 		}
 		return core.FromVector(ent.ActNormal.RotationN()), nil
 	}
