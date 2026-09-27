@@ -74,6 +74,16 @@ func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity {
 	return e
 }
 
+// MustGetParam is GetParam for handles that must exist (C++
+// SK.GetParam, which asserts).
+func (s *Sketch) MustGetParam(h core.HParam) *core.Param {
+	p := s.GetParam(h)
+	if p == nil {
+		panic(fmt.Sprintf("param %08x not found", h.V))
+	}
+	return p
+}
+
 func (s *Sketch) GetParam(h core.HParam) *core.Param {
 	if i, ok := s.paramIndex[h]; ok && i < len(s.Params) && s.Params[i].H == h {
 		return &s.Params[i]

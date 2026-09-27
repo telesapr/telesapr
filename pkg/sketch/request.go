@@ -227,64 +227,6 @@ func (r *Request) addParam(params *core.ParamList, hp core.HParam) core.HParam {
 	return hp
 }
 
-func (r *Request) BindEntities(sk *Sketch) {
-	entityType, pointCount, hasNormal, hasDistance, ok := getRequestInfo(r.Type, r.ExtraPoints)
-	if !ok {
-		return
-	}
-
-	assignParam := func(ent *core.Entity, slot int, hp core.HParam) {
-		if ent == nil || slot < 0 || slot >= len(ent.Param) || hp.V == 0 {
-			return
-		}
-		if ent.Param[slot].V != 0 {
-			return
-		}
-		if sk.GetParam(hp) == nil {
-			return
-		}
-		ent.Param[slot] = hp
-	}
-
-	entityOffset := 1
-	if entityType == core.EntityType(0) {
-		entityOffset = 0
-	}
-
-	for i := 0; i < pointCount; i++ {
-		pointHandle := r.H.Entity(i + entityOffset)
-		point := sk.GetEntity(pointHandle)
-		if point == nil {
-			continue
-		}
-		if r.Workplane == core.FreeIn3D {
-			assignParam(point, 0, r.H.Param(16+3*i+0))
-			assignParam(point, 1, r.H.Param(16+3*i+1))
-			assignParam(point, 2, r.H.Param(16+3*i+2))
-		} else {
-			assignParam(point, 0, r.H.Param(16+3*i+0))
-			assignParam(point, 1, r.H.Param(16+3*i+1))
-		}
-	}
-
-	if hasNormal && r.Workplane == core.FreeIn3D {
-		normal := sk.GetEntity(r.H.Entity(32))
-		if normal != nil {
-			assignParam(normal, 0, r.H.Param(32+0))
-			assignParam(normal, 1, r.H.Param(32+1))
-			assignParam(normal, 2, r.H.Param(32+2))
-			assignParam(normal, 3, r.H.Param(32+3))
-		}
-	}
-
-	if hasDistance {
-		distance := sk.GetEntity(r.H.Entity(64))
-		if distance != nil {
-			assignParam(distance, 0, r.H.Param(64))
-		}
-	}
-}
-
 type entReqMapping struct {
 	requestType    RequestType
 	entityType     core.EntityType

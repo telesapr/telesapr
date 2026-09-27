@@ -38,39 +38,54 @@ type Document struct {
 	entityOrder     []core.HEntity
 	constraintOrder []core.HConstraint
 	groupRemap      map[core.HGroup][]RemapEntry
-
-	// entityHasGroupField tracks which entities had an explicit
-	// Entity.group.v field in the original file. writeEntity uses
-	// this to preserve round-trip parity: only emit the field when
-	// the source had it. Entities whose group is inferred from a
-	// workplane reference are NOT flagged, so writeEntity skips them.
-	entityHasGroupField map[core.HEntity]bool
 }
 
-func LoadFile(path string) (*Document, error) {
+func LoadFile(path string) (doc *Document, err error) {
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
 
-	doc := &Document{
-		Sketch:              sketch.NewSketch(),
-		groupRemap:          make(map[core.HGroup][]RemapEntry),
-		entityHasGroupField: make(map[core.HEntity]bool),
+	doc = &Document{
+		Sketch:     sketch.NewSketch(),
+		groupRemap: make(map[core.HGroup][]RemapEntry),
 	}
 
 	if err := doc.parse(data); err != nil {
 		return nil, err
 	}
-	// SLVS files do not store Entity.group.v. Reconstruct the
-	// association by mapping each entity's workplane reference to
-	// the group whose Group.activeWorkplane.v matches.
-	doc.associateEntitiesWithGroups()
-	doc.bindRequestEntities()
+	// Like C++ SolveSpaceUI::LoadFromFile: the saved entities are
+	// regenerated, not loaded, and the sketch is then upgraded and
+	// regenerated without solving.
+	doc.Sketch.Entities = doc.Sketch.Entities[:0]
+	defer func() {
+		// A sketch C++ would assert on (e.g. one missing the reference
+		// workplanes) is an error here.
+		if rec := recover(); rec != nil {
+			doc, err = nil, fmt.Errorf("%s: can't regenerate: %v", path, rec)
+		}
+	}()
+	doc.Sketch.UpgradeLegacyData()
 	return doc, nil
 }
 
+// Save writes the document as C++ SolveSpaceUI::SaveToFile does: the
+// sketch is regenerated first, and each entity's numeric values and
+// visibility are refreshed as for export. The meshes and shells C++
+// appends for linking aren't written.
 func (d *Document) Save() []byte {
+	sk := d.Sketch
+	// Make sure all the entities are regenerated up to date, since they
+	// will be exported.
+	sk.GenerateAll()
+	for i := range sk.Entities {
+		e := &sk.Entities[i]
+		func() {
+			defer func() { _ = recover() }()
+			e.CalculateNumerical(sk, true)
+		}()
+	}
+
 	var b strings.Builder
 	b.WriteString(d.Header)
 	if d.HeaderSep != "" {
@@ -95,7 +110,7 @@ func (d *Document) Save() []byte {
 	}
 
 	for i := range d.Sketch.Entities {
-		writeEntity(&b, &d.Sketch.Entities[i], d.entityHasGroupField[d.Sketch.Entities[i].H])
+		writeEntity(&b, &d.Sketch.Entities[i])
 		b.WriteString("AddEntity\n\n")
 	}
 
@@ -139,7 +154,7 @@ func (d *Document) parse(data []byte) error {
 	}
 	d.HeaderSep = sep.String()
 
-	for ; i < len(lines); {
+	for i < len(lines) {
 		if strings.TrimSpace(lines[i]) == "" {
 			i++
 			continue
@@ -354,6 +369,11 @@ func (d *Document) processGroup(block Block) error {
 		}
 	}
 
+	// legacy files have a spurious dependency between linked groups
+	// and their parent groups, remove
+	if group.Type == sketch.GroupLinked {
+		group.OpA = core.HGroup{}
+	}
 	d.Sketch.Groups = append(d.Sketch.Groups, group)
 	d.Sketch.GroupOrder = append(d.Sketch.GroupOrder, group.H)
 	d.groupOrder = append(d.groupOrder, group.H)
@@ -460,7 +480,6 @@ func (d *Document) processEntity(block Block) {
 	}
 	if v, ok := fields["Entity.group.v"]; ok {
 		entity.Group = core.HGroup{V: parseHexUint32(v)}
-		d.entityHasGroupField[entity.H] = true
 	}
 	if v, ok := fields["Entity.workplane.v"]; ok {
 		entity.Workplane = core.HEntity{V: parseHexUint32(v)}
@@ -548,56 +567,6 @@ func (d *Document) processEntity(block Block) {
 
 	d.Sketch.Entities = append(d.Sketch.Entities, entity)
 	d.entityOrder = append(d.entityOrder, entity.H)
-}
-
-// associateEntitiesWithGroups is a second-pass over the loaded sketch
-// that assigns each entity's Group field from its Entity.workplane.v
-// reference. The SLVS file format does not store Entity.group.v; the
-// parent group is determined by mapping the entity's workplane handle
-// to the group whose Group.activeWorkplane.v matches it.
-//
-// This mirrors the implicit association in C++ SolveSpace, where
-// entities created during request regeneration inherit the parent
-// group's workplane. With this fix, AssembleLoops' filter
-// `ent.Group == g.H` finds the right entities for each group, so
-// extrude/revolve/etc. work on the correct BezierLoops.
-func (d *Document) associateEntitiesWithGroups() {
-	if d.Sketch == nil {
-		return
-	}
-	// Build workplaneHandle -> groupHandle map from each Workplane
-	// group's ActiveWorkplane field. In SolveSpace, every
-	// non-Drawing group has an activeWorkplane that points to the
-	// workplane entity owned by the group.
-	wpToGroup := make(map[core.HEntity]core.HGroup, len(d.Sketch.Groups))
-	for i := range d.Sketch.Groups {
-		g := &d.Sketch.Groups[i]
-		if g.ActiveWorkplane == (core.HEntity{}) {
-			continue
-		}
-		wpToGroup[g.ActiveWorkplane] = g.H
-	}
-	// Walk every entity. If it references a workplane we know
-	// about, assign that group's handle as entity.Group.
-	for i := range d.Sketch.Entities {
-		e := &d.Sketch.Entities[i]
-		if e.Workplane == (core.HEntity{}) {
-			continue
-		}
-		if h, ok := wpToGroup[e.Workplane]; ok {
-			e.Group = h
-		}
-	}
-}
-
-func (d *Document) bindRequestEntities() {
-	if d.Sketch == nil {
-		return
-	}
-	for i := range d.Sketch.Requests {
-		req := &d.Sketch.Requests[i]
-		req.BindEntities(d.Sketch)
-	}
 }
 
 func (d *Document) processConstraint(block Block) {
@@ -820,7 +789,7 @@ func writeRequest(b *strings.Builder, r *sketch.Request) {
 	writeFloat(b, "Request.aspectRatio", r.AspectRatio)
 }
 
-func writeEntity(b *strings.Builder, e *core.Entity, hasGroupField bool) {
+func writeEntity(b *strings.Builder, e *core.Entity) {
 	writeHandle(b, "Entity.h.v", e.H.V)
 	writeInt(b, "Entity.type", int(e.Type))
 	writeBool(b, "Entity.construction", e.Construction)
@@ -837,12 +806,8 @@ func writeEntity(b *strings.Builder, e *core.Entity, hasGroupField bool) {
 	writeInt(b, "Entity.extraPoints", e.ExtraPoints)
 	writeHandle(b, "Entity.normal.v", e.Normal.V)
 	writeHandle(b, "Entity.distance.v", e.Distance.V)
-	writeHandle(b, "Entity.workplane.v", e.Workplane.V)
-	// Only emit Entity.group.v if the original file had it. When the
-	// field was absent, the parser derives e.Group from the workplane
-	// reference; writing it back would change the file's byte layout.
-	if hasGroupField {
-		writeHandle(b, "Entity.group.v", e.Group.V)
+	if !core.IsFreeIn3D(e.Workplane) {
+		writeHandle(b, "Entity.workplane.v", e.Workplane.V)
 	}
 	writeFloat(b, "Entity.actPoint.x", e.ActPoint.X)
 	writeFloat(b, "Entity.actPoint.y", e.ActPoint.Y)

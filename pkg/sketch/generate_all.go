@@ -72,7 +72,10 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		}
 		g := sk.GetGroup(hg)
 
-		firstParam := len(sk.Params)
+		prevGroupParams := make(map[core.HParam]bool, len(sk.Params))
+		for _, p := range sk.Params {
+			prevGroupParams[p.H] = true
+		}
 		groupRequestIndex := 0
 		for ri := range sk.Requests {
 			r := &sk.Requests[ri]
@@ -95,13 +98,19 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 			}
 			GenerateConstraint(c, &sk.Params)
 		}
+		// C++ keeps its entity and param lists sorted by handle; the
+		// group iterates over them in that order.
+		sk.sortByHandle()
 		g.Generate(sk, &sk.Entities, &sk.Params)
+		sk.sortByHandle()
 		// The params this group's solve may change: C++
 		// WriteEqSystemForGroup collects the same set by generating the
 		// group's requests, constraints and group params again.
-		groupParams := make([]core.HParam, 0, len(sk.Params)-firstParam)
-		for pi := firstParam; pi < len(sk.Params); pi++ {
-			groupParams = append(groupParams, sk.Params[pi].H)
+		groupParams := make([]core.HParam, 0, len(sk.Params)-len(prevGroupParams))
+		for _, p := range sk.Params {
+			if !prevGroupParams[p.H] {
+				groupParams = append(groupParams, p.H)
+			}
 		}
 
 		// The requests and constraints depend on stuff in this or the
@@ -158,6 +167,13 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 			c.ModifyToSatisfy(sk)
 		}
 	}
+}
+
+// sortByHandle sorts the entities and params by handle, the order C++
+// IdList keeps them in.
+func (sk *Sketch) sortByHandle() {
+	sort.SliceStable(sk.Entities, func(i, j int) bool { return sk.Entities[i].H.V < sk.Entities[j].H.V })
+	sort.SliceStable(sk.Params, func(i, j int) bool { return sk.Params[i].H.V < sk.Params[j].H.V })
 }
 
 // generateAllPruned is GenerateAll's "pruned:" exit: restore the

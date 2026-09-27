@@ -44,7 +44,7 @@ solvespace core engine. It is the source of truth for the
 | `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | |
 | `mesh.cpp` | 1221 | PARTIAL | `pkg/srf/mesh.go`, `pkg/srf/kdnode.go`, `pkg/srf/outline.go` | `SKdNode` (`From`, with glibc's `rand()` shuffle; `AddTriangle`, `FindEdgeOn`, `MakeCertainEdgesInto`, `MakeOutlinesInto`) and `SMesh::MakeOutlinesInto` are faithful. The rest of the file hasn't been re-audited; `SnapToMesh`, `SplitLinesAgainstTriangle` and `OcclusionTestLine` aren't ported |
-| `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go` | SLVS persistence |
+| `file.cpp` | 1030 | PARTIAL | `pkg/persist/slvs/slvs.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view), and matches current C++ byte for byte on the fixtures it can write. The meshes and shells C++ appends for linking aren't written, and linked files aren't reloaded |
 | `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)` |
 
 An **OK** row means the functions listed in its notes (or the whole
@@ -91,8 +91,10 @@ UI.
 
 - 423 tests (334 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
-- All 86 non-boolean fixtures load cleanly and round-trip via
-  `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
+- `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip` load
+  and save every fixture and require the bytes current C++ writes
+  (checked with a C++ harness); the exceptions, with reasons, are in
+  `roundTripExclusions`, mostly files older versions wrote.
 - `TestParityGroupSolveVsCpp` runs `GenerateAll` on every fixture C++
   can load and requires every group to solve with the degrees of
   freedom C++ reports (`cpp_dof_golden_test.go`), every group's shell
@@ -197,8 +199,7 @@ when the trim polygon doesn't assemble" path.
 
 **Smaller stand-ins found but not yet ported:**
 
-- the load-time `GenerateAll(REGEN)` in `UpgradeLegacyData`, so the
-  first bbox pass pwl's loops at the file's own chord tolerance;
-- LINKED import (`impEntity`, `impShell`, `impMesh`);
+- LINKED import (`ReloadAllLinked`, `impEntity`, `impShell`,
+  `impMesh`), and saving the meshes and shells that linking reads;
 - the rest of `mesh.cpp` (see its row), including the forced-to-mesh
   combine's `SnapToMesh`.

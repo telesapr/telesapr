@@ -43,9 +43,8 @@ func TestSLVSLoadRoundTrip(t *testing.T) {
 		if len(dirName) >= 7 && dirName[:7] == "boolean" {
 			return nil
 		}
-		// Skip large_dimensions fixture (uses non-default field order
-		// that the C++ SAVED table writes in a different order).
-		if dirName == "large_dimensions" {
+		rel, _ := filepath.Rel(root, path)
+		if _, ok := roundTripExclusions[filepath.ToSlash(rel)]; ok {
 			return nil
 		}
 
