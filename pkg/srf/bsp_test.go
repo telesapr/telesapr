@@ -46,23 +46,6 @@ func TestSBsp3BuildFromMesh(t *testing.T) {
 	}
 }
 
-func TestSKdNodeFindClosest(t *testing.T) {
-	m := &SMesh{}
-	m.AddTriangle3(STriMeta{},
-		geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
-	kd := BuildMeshKdTree(m)
-	if kd == nil {
-		t.Fatalf("kd-tree empty")
-	}
-	p := geom.Vector{X: 0.5, Y: 0.5}
-	tri := FindClosestTriangle(kd, p, nil)
-	if tri == nil {
-		t.Fatalf("expected a triangle")
-	}
-	if tri.A.DistanceTo(geom.Vector{}) > 1e-9 {
-		t.Fatalf("expected the first triangle to be closest")
-	}
-}
 
 func TestBuildEdgeKdTreeIntersect(t *testing.T) {
 	el := &SEdgeList{}

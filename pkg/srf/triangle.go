@@ -48,9 +48,11 @@ func (t *STriangle) computeNormals() {
 }
 
 // Normal returns the unweighted face normal (cross product, not
-// normalized). Use NormalUnit for the normalized version.
+// normalized; C++ STriangle::Normal). Use NormalUnit for the
+// normalized version.
 func (t *STriangle) Normal() geom.Vector {
-	return t.B.Minus(t.A).Cross(t.C.Minus(t.A))
+	ab, bc := t.B.Minus(t.A), t.C.Minus(t.B)
+	return ab.Cross(bc)
 }
 
 // NormalUnit returns the normalized face normal.

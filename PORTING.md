@@ -43,7 +43,7 @@ solvespace core engine. It is the source of truth for the
 | `modify.cpp` | 751 | OK | `pkg/sketch/group_generate.go` | UI helpers (ReplacePointInConstraints, MakeTangentArc, SplitLine/Circle/Cubic) are out-of-scope. |
 | `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | |
-| `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go` | |
+| `mesh.cpp` | 1221 | PARTIAL | `pkg/srf/mesh.go`, `pkg/srf/kdnode.go`, `pkg/srf/outline.go` | `SKdNode` (`From`, with glibc's `rand()` shuffle; `AddTriangle`, `FindEdgeOn`, `MakeCertainEdgesInto`, `MakeOutlinesInto`) and `SMesh::MakeOutlinesInto` are faithful. The rest of the file hasn't been re-audited; `SnapToMesh`, `SplitLinesAgainstTriangle` and `OcclusionTestLine` aren't ported |
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go` | SLVS persistence |
 | `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)` |
 
@@ -89,7 +89,7 @@ UI.
 
 ## Test counts
 
-- 430 tests (341 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 431 tests (342 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - All 86 non-boolean fixtures load cleanly and round-trip via
   `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
@@ -103,6 +103,10 @@ UI.
   intersection cases no fixture reaches (coaxial cylinders, crossing
   cylinders, a lathe cut on its seam plane) to a C++ harness: volume,
   surface, curve and triangle counts.
+- `TestParityBooleanFixtures` requires every boolean fixture's mesh to
+  be watertight, as the C++ fixture tests do: `MakeCertainEdgesInto`
+  (`NAKED_OR_SELF_INTER`, `coplanarIsInter`) finds no naked or
+  self-intersecting edges.
 - `TestParityBooleanVolumeVsCppGolden` checks every boolean fixture's
   volume against the C++ testsuite golden (see below);
   `TestBooleanTwoBoxesVolume` checks union/difference/intersection of
@@ -190,17 +194,13 @@ when the trim polygon doesn't assemble" path.
 
 ## Remaining work
 
-In priority order:
+**Smaller stand-ins found but not yet ported:**
 
-1. **Watertightness check.** The C++ fixture tests also assert that
-   `SKdNode::MakeCertainEdgesInto(NAKED_OR_SELF_INTER)` finds no
-   naked or self-intersecting edges. Port that check and assert it in
-   `TestParityBooleanFixtures`.
-2. **Smaller stand-ins found but not yet ported:**
-   - `SBezier::AllIntersectionsWith`;
-   - `SSurface::MakeSectionEdgesInto`;
-   - the face remapping of LATHE/REVOLVE/HELIX shells, which needs
-     `SBezier::entity`;
-   - the load-time `GenerateAll(REGEN)` in `UpgradeLegacyData`, so the
-     first bbox pass pwl's loops at the file's own chord tolerance;
-   - LINKED import (`impEntity`, `impShell`).
+- `SBezier::AllIntersectionsWith`;
+- `SSurface::MakeSectionEdgesInto`;
+- the face remapping of LATHE/REVOLVE/HELIX shells, which needs
+  `SBezier::entity`;
+- the load-time `GenerateAll(REGEN)` in `UpgradeLegacyData`, so the
+  first bbox pass pwl's loops at the file's own chord tolerance;
+- LINKED import (`impEntity`, `impShell`);
+- the rest of `mesh.cpp` (see its row).

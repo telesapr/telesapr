@@ -2,6 +2,8 @@ package slvs
 
 import (
 	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/srf"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -13,7 +15,11 @@ type boolFixtureStats struct {
 	VMin      [3]float64
 	VMax      [3]float64
 	Volume    float64 // signed volume of the last (active) mesh group
-	TotalVol  float64 // sum of all mesh-group running volumes
+	// Naked and self-intersecting edges of the active group's display
+	// mesh, as the C++ fixture tests find them.
+	NakedEdges   int
+	Inters, Leak bool
+	TotalVol     float64 // sum of all mesh-group running volumes
 }
 
 // booleanFixtureGoldens holds, per fixture, the Go-port triangle
@@ -101,6 +107,14 @@ func collectBoolStats(path string) (boolFixtureStats, error) {
 		}
 		mesh := &g.RunningMesh
 		stats.Triangles += len(mesh.Triangles)
+		var el srf.SEdgeList
+		srf.SKdNodeFrom(&g.DisplayMesh).MakeCertainEdgesInto(&el,
+			srf.EdgeNakedOrSelfInter, true, &stats.Inters, &stats.Leak, 0)
+		stats.NakedEdges = len(el.Edges)
+		if len(g.DisplayMesh.Triangles) == 0 {
+			// An empty mesh would pass vacuously.
+			stats.Leak = true
+		}
 		v := mesh.CalculateVolume()
 		stats.TotalVol += v
 		stats.Volume = v
@@ -173,6 +187,12 @@ func TestParityBooleanFixtures(t *testing.T) {
 		if stats.Triangles != golden.Triangles {
 			t.Errorf("%s: triangle count drift: got %d, want %d",
 				name, stats.Triangles, golden.Triangles)
+		}
+		// The C++ fixture tests also require the mesh to be watertight:
+		// no naked or self-intersecting edges.
+		if stats.NakedEdges != 0 || stats.Inters || stats.Leak {
+			t.Errorf("%s: %d naked or self-intersecting edges (inters %v, leaks %v)",
+				name, stats.NakedEdges, stats.Inters, stats.Leak)
 		}
 	}
 }

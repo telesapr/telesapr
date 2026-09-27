@@ -463,8 +463,10 @@ func (g *Group) GenerateForStepAndRepeat(srcm *srf.SMesh, out *srf.SMesh) {
 func (g *Group) GenerateDisplayItems() {
 	g.DisplayMesh.Clear()
 	g.DisplayOutlines.Clear()
-	g.RunningMesh.MakeOutlinesInto(&g.DisplayOutlines, srf.EdgeNakedOrSelfInter)
 	g.DisplayMesh.MakeFromCopyOf(&g.RunningMesh)
+	// C++ outlines the triangulated shell's sharp edges (and then joins
+	// them into polylines for display, which is out of scope here).
+	g.DisplayMesh.MakeOutlinesInto(&g.DisplayOutlines, srf.EdgeSharp)
 }
 
 // IsForcedToMesh returns true if the group has no shell (only

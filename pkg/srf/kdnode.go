@@ -1,264 +1,518 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"math"
 
-// SKdNode is a kd-tree over STriangles, used to accelerate
-// queries like "find the closest triangle to point p" and "snap
-// a point to the nearest vertex on the mesh". Construction uses
-// axis-aligned bounding boxes with median splits; the leaf node
-// holds up to 4 triangles for brute-force nearest lookup.
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
+
+// This file ports the SKdNode part of solvespace/src/mesh.cpp: a
+// kd-tree over a mesh's triangles, used to find the edges of the mesh
+// that have no mate (naked), that cross other triangles, or that
+// outline it.
+
+// kdTreeEps is how close to a node's splitting plane a triangle must
+// be to go on both sides (C++ KDTREE_EPS).
+const kdTreeEps = 20 * lengthEps
+
+// SKdNode is a node of the kd-tree: an interior node splits space at
+// coordinate Which == C, a leaf holds a list of triangles (C++ SKdNode).
 type SKdNode struct {
-	BoxMin, BoxMax geom.Vector
-	Axis           int // 0=X, 1=Y, 2=Z, -1=leaf
-	Split          float64
-	Pos            *SKdNode
-	Neg            *SKdNode
-	Triangles      []STriangle
+	Which int // whether C is x, y, or z
+	C     float64
+
+	Gt, Lt *SKdNode
+
+	Tris []*STriangle
 }
 
-// BuildMeshKdTree builds an SKdNode over the triangles of mesh m.
-func BuildMeshKdTree(m *SMesh) *SKdNode {
-	if m == nil || len(m.Triangles) == 0 {
-		return nil
+// glibcRand reproduces glibc's rand() (the TYPE_3 additive feedback
+// generator of random_r) after srand(seed), so that the kd-tree C++
+// builds, and so the order in which it finds edges, comes out the same.
+type glibcRand struct {
+	r []int32
+	i int
+}
+
+func newGlibcRand(seed uint32) *glibcRand {
+	if seed == 0 {
+		seed = 1
 	}
-	root := &SKdNode{}
-	buildMeshKdRecursive(root, m.Triangles, 0)
-	return root
+	g := &glibcRand{r: make([]int32, 344)}
+	g.r[0] = int32(seed)
+	for i := 1; i < 31; i++ {
+		// r[i] = (16807 * r[i-1]) % 2147483647, without overflow
+		hi := g.r[i-1] / 127773
+		lo := g.r[i-1] % 127773
+		word := 16807*lo - 2836*hi
+		if word < 0 {
+			word += 2147483647
+		}
+		g.r[i] = word
+	}
+	for i := 31; i < 34; i++ {
+		g.r[i] = g.r[i-31]
+	}
+	for i := 34; i < 344; i++ {
+		g.r[i] = int32(uint32(g.r[i-31]) + uint32(g.r[i-3]))
+	}
+	g.i = 344
+	return g
 }
 
-func buildMeshKdRecursive(node *SKdNode, tris []STriangle, depth int) {
-	bn, bx := trianglesBoundingBox(tris)
-	node.BoxMin = bn
-	node.BoxMax = bx
-	if len(tris) <= 4 || depth > 30 {
-		node.Triangles = append([]STriangle{}, tris...)
-		node.Axis = -1
+func (g *glibcRand) rand() int {
+	v := int32(uint32(g.r[g.i-31]) + uint32(g.r[g.i-3]))
+	g.r = append(g.r, v)
+	g.i++
+	return int(uint32(v) >> 1)
+}
+
+// SKdNodeFrom builds the kd-tree of mesh m, over its triangles in the
+// shuffled order C++ gives them (C++ SKdNode::From(SMesh *)). The tree
+// refers to m's triangles, whose tags FindEdgeOn uses.
+func SKdNodeFrom(m *SMesh) *SKdNode {
+	tra := make([]*STriangle, len(m.Triangles))
+	for i := range m.Triangles {
+		tra[i] = &m.Triangles[i]
+	}
+
+	rnd := newGlibcRand(0)
+	n := len(tra)
+	for n > 1 {
+		k := rnd.rand() % n
+		n--
+		tra[k], tra[n] = tra[n], tra[k]
+	}
+
+	// C++ builds a linked list by prepending, which reverses the order.
+	tll := make([]*STriangle, len(tra))
+	for i, tr := range tra {
+		tll[len(tra)-1-i] = tr
+	}
+	return skdNodeFromList(tll)
+}
+
+// skdNodeFromList builds the kd-tree over tll (C++
+// SKdNode::From(STriangleLl *)).
+func skdNodeFromList(tll []*STriangle) *SKdNode {
+	ret := &SKdNode{}
+	if len(tll) == 0 {
+		return ret
+	}
+
+	var gtc, ltc [3]int
+	allc := 0
+	var badness, split [3]float64
+
+	for i := 0; i < 3; i++ {
+		for _, tr := range tll {
+			split[i] += tr.A.Element(i)
+			split[i] += tr.B.Element(i)
+			split[i] += tr.C.Element(i)
+		}
+		split[i] /= float64(len(tll) * 3)
+
+		for _, tr := range tll {
+			a, b, c := tr.A.Element(i), tr.B.Element(i), tr.C.Element(i)
+
+			if a < split[i]+kdTreeEps || b < split[i]+kdTreeEps || c < split[i]+kdTreeEps {
+				ltc[i]++
+			}
+			if a > split[i]-kdTreeEps || b > split[i]-kdTreeEps || c > split[i]-kdTreeEps {
+				gtc[i]++
+			}
+			if i == 0 {
+				allc++
+			}
+		}
+		badness[i] = math.Pow(float64(ltc[i]), 4) + math.Pow(float64(gtc[i]), 4)
+	}
+	which := 2
+	if badness[0] < badness[1] && badness[0] < badness[2] {
+		which = 0
+	} else if badness[1] < badness[2] {
+		which = 1
+	}
+
+	if allc < 3 || allc == gtc[which] || allc == ltc[which] {
+		ret.Tris = tll
+		return ret
+	}
+
+	// C++ prepends to each list, reversing the order.
+	var lgt, llt []*STriangle
+	for k := len(tll) - 1; k >= 0; k-- {
+		tr := tll[k]
+		a, b, c := tr.A.Element(which), tr.B.Element(which), tr.C.Element(which)
+
+		if a < split[which]+kdTreeEps || b < split[which]+kdTreeEps || c < split[which]+kdTreeEps {
+			llt = append(llt, tr)
+		}
+		if a > split[which]-kdTreeEps || b > split[which]-kdTreeEps || c > split[which]-kdTreeEps {
+			lgt = append(lgt, tr)
+		}
+	}
+
+	ret.Which = which
+	ret.C = split[which]
+	ret.Gt = skdNodeFromList(lgt)
+	ret.Lt = skdNodeFromList(llt)
+	return ret
+}
+
+// ClearTags zeroes the tags of every triangle in the tree.
+func (n *SKdNode) ClearTags() {
+	if n.Gt != nil && n.Lt != nil {
+		n.Gt.ClearTags()
+		n.Lt.ClearTags()
 		return
 	}
-	dx := bx.X - bn.X
-	dy := bx.Y - bn.Y
-	dz := bx.Z - bn.Z
-	if dx >= dy && dx >= dz {
-		node.Axis = 0
-	} else if dy >= dz {
-		node.Axis = 1
-	} else {
-		node.Axis = 2
+	for _, tr := range n.Tris {
+		tr.Tag = 0
 	}
-	// Sort and split at median centroid.
-	ts := append([]STriangle{}, tris...)
-	sortTrisByCentroidAxis(ts, node.Axis)
-	mid := len(ts) / 2
-	node.Split = triCentroidAxis(ts[mid], node.Axis)
-	node.Pos = &SKdNode{}
-	node.Neg = &SKdNode{}
-	buildMeshKdRecursive(node.Pos, ts[mid:], depth+1)
-	buildMeshKdRecursive(node.Neg, ts[:mid], depth+1)
 }
 
-func trianglesBoundingBox(tris []STriangle) (min, max geom.Vector) {
-	if len(tris) == 0 {
-		return geom.Vector{}, geom.Vector{}
-	}
-	min = tris[0].A
-	max = tris[0].A
-	for _, t := range tris {
-		for _, p := range [3]geom.Vector{t.A, t.B, t.C} {
-			if p.X < min.X {
-				min.X = p.X
-			}
-			if p.Y < min.Y {
-				min.Y = p.Y
-			}
-			if p.Z < min.Z {
-				min.Z = p.Z
-			}
-			if p.X > max.X {
-				max.X = p.X
-			}
-			if p.Y > max.Y {
-				max.Y = p.Y
-			}
-			if p.Z > max.Z {
-				max.Z = p.Z
-			}
+// AddTriangle adds tr to every leaf whose region it touches.
+func (n *SKdNode) AddTriangle(tr *STriangle) {
+	if n.Gt != nil && n.Lt != nil {
+		ta, tb, tc := tr.A.Element(n.Which), tr.B.Element(n.Which), tr.C.Element(n.Which)
+		if ta < n.C+kdTreeEps || tb < n.C+kdTreeEps || tc < n.C+kdTreeEps {
+			n.Lt.AddTriangle(tr)
 		}
-	}
-	return min, max
-}
-
-func triCentroidAxis(t STriangle, axis int) float64 {
-	c := t.A.Plus(t.B).Plus(t.C).ScaledBy(1.0 / 3.0)
-	switch axis {
-	case 0:
-		return c.X
-	case 1:
-		return c.Y
-	default:
-		return c.Z
-	}
-}
-
-func sortTrisByCentroidAxis(tris []STriangle, axis int) {
-	if len(tris) < 16 {
-		for i := 1; i < len(tris); i++ {
-			for j := i; j > 0 && triCentroidAxis(tris[j-1], axis) > triCentroidAxis(tris[j], axis); j-- {
-				tris[j-1], tris[j] = tris[j], tris[j-1]
-			}
+		if ta > n.C-kdTreeEps || tb > n.C-kdTreeEps || tc > n.C-kdTreeEps {
+			n.Gt.AddTriangle(tr)
 		}
 		return
 	}
-	var qs func(lo, hi int)
-	qs = func(lo, hi int) {
-		if lo >= hi {
-			return
-		}
-		pivot := triCentroidAxis(tris[(lo+hi)/2], axis)
-		i, j := lo, hi
-		for i <= j {
-			for triCentroidAxis(tris[i], axis) < pivot {
-				i++
-			}
-			for triCentroidAxis(tris[j], axis) > pivot {
-				j--
-			}
-			if i <= j {
-				tris[i], tris[j] = tris[j], tris[i]
-				i++
-				j--
-			}
-		}
-		qs(lo, j)
-		qs(i, hi)
-	}
-	qs(0, len(tris)-1)
+	// C++ prepends to the leaf's list.
+	n.Tris = append([]*STriangle{tr}, n.Tris...)
 }
 
-// FindClosestTriangle returns the triangle in the kd-tree closest
-// to point p, with the squared distance via distSq (if non-nil).
-// Returns nil if the kd-tree is empty.
-func FindClosestTriangle(node *SKdNode, p geom.Vector, distSq *float64) *STriangle {
-	if node == nil {
-		return nil
-	}
-	if !pointInBox(p, node.BoxMin, node.BoxMax) {
-		// Quick rejection: compute squared distance from p to box
-		// surface; if it's already worse than the current best, abort.
-		return nil
-	}
-	if node.Axis == -1 {
-		// Leaf: test every triangle.
-		var best *STriangle
-		var bestDistSq float64 = mathInfPos
-		for i := range node.Triangles {
-			t := &node.Triangles[i]
-			d := pointTriangleSquaredDistance(p, t)
-			if d < bestDistSq {
-				bestDistSq = d
-				best = t
-			}
-		}
-		if distSq != nil {
-			*distSq = bestDistSq
-		}
-		return best
-	}
-	// Recurse into both children (this is correct because the closest
-	// triangle could be on either side of the split).
-	left := FindClosestTriangle(node.Neg, p, distSq)
-	right := FindClosestTriangle(node.Pos, p, distSq)
-	if left == nil {
-		if distSq != nil {
-			*distSq = mathInfPos
-		}
-		return right
-	}
-	if right == nil {
-		return left
-	}
-	leftDist := pointTriangleSquaredDistance(p, left)
-	rightDist := pointTriangleSquaredDistance(p, right)
-	if leftDist < rightDist {
-		if distSq != nil {
-			*distSq = leftDist
-		}
-		return left
-	}
-	if distSq != nil {
-		*distSq = rightDist
-	}
-	return right
-}
-
-// MakeMeshInto is the Phase 2 version of SKdNode::MakeMeshInto:
-// walks the kd-tree and appends all triangles to m.
+// MakeMeshInto adds each triangle of the tree to m once.
 func (n *SKdNode) MakeMeshInto(m *SMesh) {
-	if n == nil {
-		return
+	if n.Gt != nil {
+		n.Gt.MakeMeshInto(m)
 	}
-	if n.Axis == -1 {
-		for i := range n.Triangles {
-			m.AddTriangle(n.Triangles[i])
+	if n.Lt != nil {
+		n.Lt.MakeMeshInto(m)
+	}
+	for _, tr := range n.Tris {
+		if tr.Tag != 0 {
+			continue
+		}
+		m.Triangles = append(m.Triangles, *tr)
+		tr.Tag = 1
+	}
+}
+
+// ListTrianglesInto lists each triangle of the tree once.
+func (n *SKdNode) ListTrianglesInto(tl *[]*STriangle) {
+	if n.Gt != nil {
+		n.Gt.ListTrianglesInto(tl)
+	}
+	if n.Lt != nil {
+		n.Lt.ListTrianglesInto(tl)
+	}
+	for _, tr := range n.Tris {
+		if tr.Tag != 0 {
+			continue
+		}
+		*tl = append(*tl, tr)
+		tr.Tag = 1
+	}
+}
+
+// EdgeOnInfo is what FindEdgeOn learns about an edge (C++
+// SKdNode::EdgeOnInfo).
+type EdgeOnInfo struct {
+	Count          int
+	FrontFacing    bool
+	IntersectsMesh bool
+	Tr             *STriangle
+	Ai, Bi         int
+}
+
+// FindEdgeOn looks for triangles that are mates of the edge a -> b (an
+// edge b -> a of theirs), counting them in info.Count; it also reports
+// whether the edge crosses the mesh. With coplanarIsInter, an edge
+// crossing a triangle on its boundary counts too. Triangles tagged cnt
+// were seen already (C++ SKdNode::FindEdgeOn).
+func (n *SKdNode) FindEdgeOn(a, b geom.Vector, cnt int, coplanarIsInter bool, info *EdgeOnInfo) {
+	if n.Gt != nil && n.Lt != nil {
+		ac, bc := a.Element(n.Which), b.Element(n.Which)
+		if ac < n.C+kdTreeEps || bc < n.C+kdTreeEps {
+			n.Lt.FindEdgeOn(a, b, cnt, coplanarIsInter, info)
+		}
+		if ac > n.C-kdTreeEps || bc > n.C-kdTreeEps {
+			n.Gt.FindEdgeOn(a, b, cnt, coplanarIsInter, info)
 		}
 		return
 	}
-	n.Pos.MakeMeshInto(m)
-	n.Neg.MakeMeshInto(m)
+
+	// We are a leaf node; so we iterate over all the triangles in our
+	// linked list.
+	for _, tr := range n.Tris {
+		if tr.Tag == cnt {
+			continue
+		}
+
+		// Test if this triangle matches up with the given edge
+		if (a.Equals(tr.B) && b.Equals(tr.A)) ||
+			(a.Equals(tr.C) && b.Equals(tr.B)) ||
+			(a.Equals(tr.A) && b.Equals(tr.C)) {
+			info.Count++
+			// Record whether this triangle is front- or back-facing.
+			info.FrontFacing = tr.Normal().Z > lengthEps
+			// Record the triangle
+			info.Tr = tr
+			// And record which vertices a and b correspond to
+			info.Ai = vertexIndex(tr, a)
+			info.Bi = vertexIndex(tr, b)
+		} else if (a.Equals(tr.A) && b.Equals(tr.B)) ||
+			(a.Equals(tr.B) && b.Equals(tr.C)) ||
+			(a.Equals(tr.C) && b.Equals(tr.A)) {
+			// It's an edge of this triangle, okay.
+		} else {
+			// Check for self-intersection
+			nn := tr.Normal().WithMagnitude(1)
+			d := tr.A.Dot(nn)
+			pa, pb := a.Dot(nn)-d, b.Dot(nn)-d
+			// It's an intersection if neither point lies in-plane,
+			// and the edge crosses the plane (should handle in-plane
+			// intersections separately but don't yet).
+			if (pa < -lengthEps || pa > lengthEps) &&
+				(pb < -lengthEps || pb > lengthEps) &&
+				pa*pb < 0 {
+				// The edge crosses the plane of the triangle; now see if
+				// it crosses inside the triangle.
+				if tr.ContainsPointProjd(b.Minus(a), a) {
+					if coplanarIsInter {
+						info.IntersectsMesh = true
+					} else {
+						p := geom.AtIntersectionOfPlaneAndLine(nn, d, a, b)
+						ta, tb, tc := tr.A, tr.B, tr.C
+						if p.DistanceToLine(ta, tb.Minus(ta)) < lengthEps ||
+							p.DistanceToLine(tb, tc.Minus(tb)) < lengthEps ||
+							p.DistanceToLine(tc, ta.Minus(tc)) < lengthEps {
+							// Intersection lies on edge. This happens when
+							// our edge is from a triangle coplanar with
+							// another triangle in the mesh. We don't test
+							// the edge against triangles whose plane contains
+							// that edge, but we do end up testing against
+							// the coplanar triangle's neighbours, which we
+							// will intersect on their edges.
+						} else {
+							info.IntersectsMesh = true
+						}
+					}
+				}
+			}
+		}
+
+		// Ensure that we don't count this triangle twice if it appears
+		// in two buckets of the kd tree.
+		tr.Tag = cnt
+	}
 }
 
-func pointInBox(p, bmin, bmax geom.Vector) bool {
-	return p.X >= bmin.X && p.X <= bmax.X &&
-		p.Y >= bmin.Y && p.Y <= bmax.Y &&
-		p.Z >= bmin.Z && p.Z <= bmax.Z
+func vertexIndex(tr *STriangle, p geom.Vector) int {
+	if p.Equals(tr.A) {
+		return 0
+	}
+	if p.Equals(tr.B) {
+		return 1
+	}
+	return 2
 }
 
-func pointTriangleSquaredDistance(p geom.Vector, t *STriangle) float64 {
-	// Closest point on triangle to p (Real-Time Collision Detection
-	// by Christer Ericson, section 5.1.5).
-	a := t.A
-	b := t.B
-	c := t.C
-	ab := b.Minus(a)
-	ac := c.Minus(a)
-	ap := p.Minus(a)
-	d1 := ab.Dot(ap)
-	d2 := ac.Dot(ap)
-	if d1 <= 0 && d2 <= 0 {
-		return ap.MagSquared()
+func (tr *STriangle) vertex(i int) geom.Vector {
+	switch i {
+	case 0:
+		return tr.A
+	case 1:
+		return tr.B
 	}
-	bp := p.Minus(b)
-	d3 := ab.Dot(bp)
-	d4 := ac.Dot(bp)
-	if d3 >= 0 && d4 <= d3 {
-		return bp.MagSquared()
+	return tr.C
+}
+
+func (tr *STriangle) vertexNormal(i int) geom.Vector {
+	switch i {
+	case 0:
+		return tr.NA
+	case 1:
+		return tr.NB
 	}
-	vc := d1*d4 - d3*d2
-	if vc <= 0 && d1 >= 0 && d3 <= 0 {
-		v := d1 / (d1 - d3)
-		closest := a.Plus(ab.ScaledBy(v))
-		return p.Minus(closest).MagSquared()
+	return tr.NC
+}
+
+type triPair struct{ a, b *STriangle }
+
+// checkAndAddTrianglePair reports whether the pair (a, b), in either
+// order, was seen already, and records it.
+func checkAndAddTrianglePair(pairs map[triPair]bool, a, b *STriangle) bool {
+	if pairs[triPair{a, b}] || pairs[triPair{b, a}] {
+		return true
 	}
-	cp := p.Minus(c)
-	d5 := ab.Dot(cp)
-	d6 := ac.Dot(cp)
-	if d6 >= 0 && d5 <= d6 {
-		return cp.MagSquared()
+	pairs[triPair{a, b}] = true
+	return false
+}
+
+// MakeCertainEdgesInto picks certain classes of edges out from the
+// mesh: naked edges (with no anti-parallel mate) and self-intersecting
+// edges, or turning, emphasized or sharp edges. inter and leaky, when
+// not nil, report whether any edge was self-intersecting or naked (C++
+// SKdNode::MakeCertainEdgesInto).
+func (n *SKdNode) MakeCertainEdgesInto(sel *SEdgeList, how EdgeKind, coplanarIsInter bool,
+	inter, leaky *bool, auxA int) {
+	if inter != nil {
+		*inter = false
 	}
-	vb := d5*d2 - d1*d6
-	if vb <= 0 && d2 >= 0 && d6 <= 0 {
-		w := d2 / (d2 - d6)
-		closest := a.Plus(ac.ScaledBy(w))
-		return p.Minus(closest).MagSquared()
+	if leaky != nil {
+		*leaky = false
 	}
-	va := d3*d6 - d5*d4
-	if va <= 0 && (d4-d3) >= 0 && (d5-d6) >= 0 {
-		w := (d4 - d3) / ((d4 - d3) + (d5 - d6))
-		closest := b.Plus(c.Minus(b).ScaledBy(w))
-		return p.Minus(closest).MagSquared()
+
+	var tris []*STriangle
+	n.ClearTags()
+	n.ListTrianglesInto(&tris)
+
+	edgeTris := map[triPair]bool{}
+	cnt := 1234
+	for _, tr := range tris {
+		for j := 0; j < 3; j++ {
+			a := tr.vertex(j)
+			b := tr.vertex((j + 1) % 3)
+
+			var info EdgeOnInfo
+			n.FindEdgeOn(a, b, cnt, coplanarIsInter, &info)
+
+			switch how {
+			case EdgeNakedOrSelfInter:
+				// there should be one anti-parllel edge
+				if info.Count != 1 {
+					// but there may be multiple parallel coincident edges
+					var parallelInfo EdgeOnInfo
+					n.FindEdgeOn(b, a, -cnt, coplanarIsInter, &parallelInfo)
+					if info.Count != parallelInfo.Count {
+						sel.AddEdge(a, b, auxA, 0, 0)
+						if leaky != nil {
+							*leaky = true
+						}
+					}
+				}
+				if info.IntersectsMesh {
+					sel.AddEdge(a, b, auxA, 0, 0)
+					if inter != nil {
+						*inter = true
+					}
+				}
+
+			case EdgeSelfInter:
+				if info.IntersectsMesh {
+					sel.AddEdge(a, b, auxA, 0, 0)
+					if inter != nil {
+						*inter = true
+					}
+				}
+
+			case EdgeTurning:
+				if tr.Normal().Z < lengthEps && info.Count == 1 && info.FrontFacing {
+					if checkAndAddTrianglePair(edgeTris, tr, info.Tr) {
+						break
+					}
+					// This triangle is back-facing (or on edge), and
+					// this edge has exactly one mate, and that mate is
+					// front-facing. So this is a turning edge.
+					sel.AddEdge(a, b, auxA, 0, 0)
+				}
+
+			case EdgeEmphasized:
+				if info.Count == 1 && tr.Meta.Face != info.Tr.Meta.Face {
+					if checkAndAddTrianglePair(edgeTris, tr, info.Tr) {
+						break
+					}
+					// The two triangles that join at this edge come from
+					// different faces; either really different faces,
+					// or one is from a face and the other is zero (i.e.,
+					// not from a face).
+					sel.AddEdge(a, b, auxA, 0, 0)
+				}
+
+			case EdgeSharp:
+				if info.Count == 1 && isSharp(tr, j, &info) {
+					if checkAndAddTrianglePair(edgeTris, tr, info.Tr) {
+						break
+					}
+					// The two triangles that join at this edge meet at a sharp
+					// angle. This implies they come from different faces.
+					sel.AddEdge(a, b, auxA, 0, 0)
+				}
+			}
+
+			cnt++
+		}
 	}
-	denom := 1.0 / (va + vb + vc)
-	v := vb * denom
-	w := vc * denom
-	closest := a.Plus(ab.ScaledBy(v)).Plus(ac.ScaledBy(w))
-	return p.Minus(closest).MagSquared()
+}
+
+// isSharp reports whether the vertex normals of tr's edge j differ from
+// those of its mate info.Tr.
+func isSharp(tr *STriangle, j int, info *EdgeOnInfo) bool {
+	na0 := tr.vertexNormal(j).WithMagnitude(1.0)
+	nb0 := tr.vertexNormal((j + 1) % 3).WithMagnitude(1.0)
+	na1 := info.Tr.vertexNormal(info.Ai).WithMagnitude(1.0)
+	nb1 := info.Tr.vertexNormal(info.Bi).WithMagnitude(1.0)
+	return !((na0.Equals(na1) && nb0.Equals(nb1)) ||
+		(na0.Equals(nb1) && nb0.Equals(na1)))
+}
+
+// MakeOutlinesInto lists the edges shared by two triangles, tagged 1
+// where they are emphasized or sharp (per edgeKind); untagged edges
+// between triangles with the same normal are left out (C++
+// SKdNode::MakeOutlinesInto).
+func (n *SKdNode) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind) {
+	var tris []*STriangle
+	n.ClearTags()
+	n.ListTrianglesInto(&tris)
+
+	edgeTris := map[triPair]bool{}
+	cnt := 1234
+	for _, tr := range tris {
+		for j := 0; j < 3; j++ {
+			a := tr.vertex(j)
+			b := tr.vertex((j + 1) % 3)
+
+			var info EdgeOnInfo
+			n.FindEdgeOn(a, b, cnt, false, &info)
+			cnt++
+			if info.Count != 1 {
+				continue
+			}
+			if checkAndAddTrianglePair(edgeTris, tr, info.Tr) {
+				continue
+			}
+
+			tag := 0
+			switch edgeKind {
+			case EdgeEmphasized:
+				if tr.Meta.Face != info.Tr.Meta.Face {
+					tag = 1
+				}
+			case EdgeSharp:
+				if isSharp(tr, j, &info) {
+					tag = 1
+				}
+			default:
+				panic("Unexpected edge kind")
+			}
+
+			nl := tr.Normal().WithMagnitude(1.0)
+			nr := info.Tr.Normal().WithMagnitude(1.0)
+
+			// We don't add edges with the same left and right
+			// normals because they can't produce outlines.
+			if tag == 0 && nl.Equals(nr) {
+				continue
+			}
+			sol.AddEdge(a, b, nl, nr, tag)
+		}
+	}
 }
