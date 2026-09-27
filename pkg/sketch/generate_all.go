@@ -198,6 +198,38 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 			c.ModifyToSatisfy(sk)
 		}
 	}
+
+	if sk.Deleted.Requests > 0 || sk.Deleted.Constraints > 0 || sk.Deleted.Groups > 0 {
+		d := sk.Deleted
+		sk.Deleted.Requests, sk.Deleted.Constraints = 0, 0
+		sk.Deleted.NonTrivialConstraints, sk.Deleted.Groups = 0, 0
+
+		// People get annoyed if I complain whenever they delete any request,
+		// and I otherwise will, since those always come with pt-coincident
+		// constraints.
+		if (d.Requests > 0 || d.NonTrivialConstraints > 0 || d.Groups > 0) && sk.Message != nil {
+			plural := func(n int) string {
+				if n == 1 {
+					return ""
+				}
+				return "s"
+			}
+			undo := ""
+			if sk.Undo.Cnt > 0 {
+				undo = "\n\nChoose Edit -> Undo to undelete all elements."
+			}
+			sk.Message(fmt.Sprintf("Additional sketch elements were deleted, because they "+
+				"depend on the element that was just deleted explicitly. "+
+				"These include: \n"+
+				"     %d request%s\n"+
+				"     %d constraint%s\n"+
+				"     %d group%s"+
+				"%s",
+				d.Requests, plural(d.Requests),
+				d.Constraints, plural(d.Constraints),
+				d.Groups, plural(d.Groups), undo))
+		}
+	}
 }
 
 // sortByHandle sorts the entities and params by handle, the order C++
@@ -284,6 +316,7 @@ func (sk *Sketch) PruneOrphans() bool {
 		}
 	}
 	sk.Requests = keptR
+	sk.Deleted.Requests += requests - len(sk.Requests)
 
 	keptC := sk.Constraints[:0]
 	for _, c := range sk.Constraints {
@@ -292,6 +325,8 @@ func (sk *Sketch) PruneOrphans() bool {
 		}
 	}
 	sk.Constraints = keptC
+	sk.Deleted.Constraints += constraints - len(sk.Constraints)
+	sk.Deleted.NonTrivialConstraints += constraints - len(sk.Constraints)
 
 	return requests > len(sk.Requests) || constraints > len(sk.Constraints)
 }
@@ -307,6 +342,7 @@ func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 		sk.entityExists(g.Predef.EntityC) {
 		return false
 	}
+	sk.Deleted.Groups++
 	for i := range sk.Groups {
 		if sk.Groups[i].H == hg {
 			sk.Groups = append(sk.Groups[:i], sk.Groups[i+1:]...)
@@ -343,6 +379,7 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 		}
 	}
 	sk.Requests = keptR
+	sk.Deleted.Requests += requests - len(sk.Requests)
 
 	keptC := sk.Constraints[:0]
 	for _, c := range sk.Constraints {
@@ -355,9 +392,17 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 				entityRequestExists(c.EntityC, true) &&
 				entityRequestExists(c.EntityD, true)) {
 			keptC = append(keptC, c)
+			continue
+		}
+
+		if c.Type != core.ConstraintPointsCoincident &&
+			c.Type != core.ConstraintHorizontal &&
+			c.Type != core.ConstraintVertical {
+			sk.Deleted.NonTrivialConstraints++
 		}
 	}
 	sk.Constraints = keptC
+	sk.Deleted.Constraints += constraints - len(sk.Constraints)
 
 	return requests > len(sk.Requests) || constraints > len(sk.Constraints)
 }

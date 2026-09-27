@@ -37,6 +37,19 @@ type Sketch struct {
 
 	scheduledGenerateAll bool
 
+	// Deleted counts what regeneration pruned because it depended on
+	// something deleted, until GenerateAll reports it (C++ SS.deleted).
+	Deleted struct {
+		Requests, Constraints, NonTrivialConstraints, Groups int
+	}
+
+	// Message shows the user a message, as C++ Message does; nil
+	// drops it.
+	Message func(msg string)
+
+	// Clipboard holds what was copied (C++ SS.clipboard).
+	Clipboard Clipboard
+
 	// Undo/redo stacks.
 	Undo UndoStack
 	Redo UndoStack

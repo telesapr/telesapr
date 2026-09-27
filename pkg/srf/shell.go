@@ -437,12 +437,12 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 	// So we can now generate the end caps of the extrusion within
 	// a translated and rotated (and maybe mirrored) version of that csys.
 	s0 := FromPlane(orig.RotatedAbout(pt, axis, angles).Plus(axis.ScaledBy(dists)),
-		u.RotatedAbout(geom.Vector{}, axis, angles), v.RotatedAbout(geom.Vector{}, axis, angles))
+		u.RotatedAroundAxis(axis, angles), v.RotatedAroundAxis(axis, angles))
 	s0.Color = color
 	s0.TrimBuilt = true
 
 	s1 := FromPlane(orig.Plus(u).RotatedAbout(pt, axis, anglef).Plus(axis.ScaledBy(distf)),
-		u.ScaledBy(-1).RotatedAbout(geom.Vector{}, axis, anglef), v.RotatedAbout(geom.Vector{}, axis, anglef))
+		u.ScaledBy(-1).RotatedAroundAxis(axis, anglef), v.RotatedAroundAxis(axis, anglef))
 	s1.Color = color
 	s1.TrimBuilt = true
 

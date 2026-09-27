@@ -211,18 +211,37 @@ func (v Vector) Project4d() Vector4 {
 	return Vector4{X: v.X, Y: v.Y, Z: v.Z, W: 1}
 }
 
-// RotatedAbout rotates v around an axis through orig with direction
-// axis by angle theta (radians). Right-hand rule.
+// RotatedAbout rotates v by theta about the axis through orig (C++
+// Vector::RotatedAbout(orig, axis, theta)).
 func (v Vector) RotatedAbout(orig, axis Vector, theta float64) Vector {
-	n := axis.Normal()
-	q := QuaternionFromAxisAngle(n, theta)
-	return q.Rotate(v.Minus(orig)).Plus(orig)
+	r := v.Minus(orig)
+	r = r.RotatedAroundAxis(axis, theta)
+	return r.Plus(orig)
 }
 
-// RotatedAroundAxis is a shortcut for rotating v around an axis
-// passing through the origin (saves the subtract/add of orig).
+// RotatedAroundAxis rotates v by theta about the axis through the
+// origin (C++ Vector::RotatedAbout(axis, theta)).
 func (v Vector) RotatedAroundAxis(axis Vector, theta float64) Vector {
-	return QuaternionFromAxisAngle(axis.Normal(), theta).Rotate(v)
+	c := math.Cos(theta)
+	s := math.Sin(theta)
+
+	axis = axis.WithMagnitude(1)
+
+	var r Vector
+
+	r.X = (v.X)*(c+(1-c)*(axis.X)*(axis.X)) +
+		(v.Y)*((1-c)*(axis.X)*(axis.Y)-s*(axis.Z)) +
+		(v.Z)*((1-c)*(axis.X)*(axis.Z)+s*(axis.Y))
+
+	r.Y = (v.X)*((1-c)*(axis.Y)*(axis.X)+s*(axis.Z)) +
+		(v.Y)*(c+(1-c)*(axis.Y)*(axis.Y)) +
+		(v.Z)*((1-c)*(axis.Y)*(axis.Z)-s*(axis.X))
+
+	r.Z = (v.X)*((1-c)*(axis.Z)*(axis.X)-s*(axis.Y)) +
+		(v.Y)*((1-c)*(axis.Z)*(axis.Y)+s*(axis.X)) +
+		(v.Z)*(c+(1-c)*(axis.Z)*(axis.Z))
+
+	return r
 }
 
 // ClampWithin clamps each component of v to [minv, maxv].
