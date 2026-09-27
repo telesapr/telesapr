@@ -277,17 +277,9 @@ func TestParityBooleanFixtureBBoxValue(t *testing.T) {
 // 1.0. See PORTING.md §"Boolean-CSG parity gaps" for the current
 // per-fixture status and what each fixture needs.
 //
-// Today's ratios for each fixture:
-//
-//	boolean_coplanar_union:  0.06 (Go volume much smaller because
-//	                          the Go port doesn't accumulate unions
-//	                          across the four extrudes)
-//	boolean_knife_edge:      0.00 (cut group is empty because the
-//	                          cut plane doesn't intersect the L)
-//	boolean_tangent_crossing: 0.53
-//	boolean_tangent_edge:    0.68
-//	boolean_tangent_fillet:  1.03 (close)
-//	boolean_tangent_spline:  0.53
+// Current per-fixture ratios are tabulated in PORTING.md
+// §"Boolean-CSG parity gaps" and enforced by
+// booleanFixtureCppGoldenTolerances above.
 func TestParityBooleanVolumeVsCppGolden(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))

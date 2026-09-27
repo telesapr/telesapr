@@ -80,7 +80,7 @@ UI.
 
 ## Test counts
 
-- 515 tests across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 515 tests (422 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - All 6 boolean fixtures load and complete `Sketch::GenerateAll`
   without panic.
@@ -128,10 +128,9 @@ constructor and populates every emitted surface's `Trim` list
 every extrusion-produced surface — closing the "separate, larger
 gap" earlier revisions of this doc referred to.
 
-**Ratios at HEAD (commit c2c17db) vs after this session's
-landings:**
+**Ratios before (commit c2c17db) vs after the deea878 landings:**
 
-| Fixture | HEAD | Now | Direction |
+| Fixture | c2c17db | deea878 | Direction |
 |---|---|---|---|
 | `boolean_coplanar_union`   | 0.038 | 0.088 | better |
 | `boolean_knife_edge`       | 0.758 | 0.458 | **worse** |
@@ -143,7 +142,7 @@ landings:**
 Three fixtures improved substantially, two of them (`tangent_crossing`,
 `tangent_spline`) now sitting inside the `[0.95, 1.05]`
 definition-of-done band. Three fixtures (`knife_edge`,
-`tangent_edge`, `tangent_fillet`) regressed relative to HEAD
+`tangent_edge`, `tangent_fillet`) regressed relative to c2c17db
 despite a serious, measurement-driven effort (documented under
 "What blocks the three regressed fixtures" below) — this is a
 known, explicit exception to the "never regress a fixture" goal,
@@ -159,12 +158,11 @@ new band; both updates should land together with a note here.
 
 ## Landings
 
-This session's measurement-first approach (a diagnostic test
+The deea878 measurement-first approach (a diagnostic test
 extruding two overlapping boxes directly through
 `SShell.MakeFromExtrusionOf` + `MakeFromBoolean`, bypassing the
-full `Sketch.GenerateAll` pipeline) found and fixed four
-independent, C++-verified bugs, all downstream of the prior
-session's `MakeFromExtrusionOf`/`Trim`-population rewrite:
+full `Sketch.GenerateAll` pipeline) found and fixed six
+independent bugs, all downstream of the `MakeFromExtrusionOf`/`Trim`-population rewrite:
 
 1. **`pkg/srf/boolean_trim.go::makeCopyTrimAgainst`'s Step 3 had
    a double-edge-list bug.** It built `orig` correctly via
@@ -247,6 +245,8 @@ session's `MakeFromExtrusionOf`/`Trim`-population rewrite:
    data at all" (`MakeFromRevolutionOf` / `MakeFromHelixOf`,
    still unported — always falls back) from "this surface went
    through the boolean per-surface trim and came out empty."
+   `MakeFromExtrusionOf` sets `TrimBuilt = true` on every surface
+   it emits (they always carry a non-empty `Trim`), and
    `makeCopyTrimAgainst` sets `TrimBuilt = (t == SurfaceInter)`:
    for `SurfaceInter`, an empty result reliably means "outside the
    intersection" (confirmed: with the *unconditional* fallback the
@@ -371,19 +371,18 @@ case works correctly.
 3. **`MergeCoincidentSurfaces` for coplanar-but-shifted faces**
    *(landed, prior session)*.
 
-4. **Tighten the per-fixture tolerance bands** *(landed this
-   session for `tangent_crossing`/`tangent_spline`, now
+4. **Tighten the per-fixture tolerance bands** *(landed in deea878 for `tangent_crossing`/`tangent_spline`, now
    `[0.95, 1.05]`)*. `coplanar_union`, `knife_edge`,
    `tangent_edge`, and `tangent_fillet` remain wide, tied to the
    ratios in "Boolean-CSG parity gaps" above.
 
 5. **`ClassifyEdge` partial-overlap recognition** *(most of the
-   groundwork landed across two sessions; the specific remaining
+   groundwork landed in c2c17db and deea878; the specific remaining
    gap changed)* — `closestPointOnThisAndSurface`,
    `edgeNormalsWithinSurface`'s curve-refinement, the case-1
    five-sub-branches fix, the `BspUvClass` default (`BspUvInside`
    for a nil `Bsp`), `SSurface.Edges` population for case 1/2, and
-   the `ClosestPointTo`/`classifyPointUv` fixes from this session
+   the `ClosestPointTo`/`classifyPointUv` fixes from deea878
    are all in place. What's still missing, per "What blocks the
    three regressed fixtures" above: for `boolean_knife_edge` and
    `boolean_tangent_edge` specifically, a real (non-fallback)
@@ -394,11 +393,10 @@ case works correctly.
    `tangent_crossing`/`tangent_spline` fixtures (which are now
    correct). Narrowing this further needs per-chain instrumentation
    of `agnst.classifyEdge`'s case-3/case-4 choice specifically on
-   those two fixtures' surfaces, which this session's time budget
-   did not extend to.
+   those two fixtures' surfaces, which has not been done yet.
 
 6. **`MakeFromRevolutionOf` / `MakeFromHelixOf` don't populate
-   `Trim`.** Still true; `SSurface.TrimBuilt` (this session) is
+   `Trim`.** Still true; `SSurface.TrimBuilt` (deea878) is
    the marker that keeps their surfaces falling back to the full
    parameter grid instead of vanishing. Porting real trim
    construction for these two constructors (mirroring
