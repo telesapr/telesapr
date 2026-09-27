@@ -204,5 +204,5 @@ func (b *SBspUv) MinimumDistanceToEdge(p geom.Point2d, srf *SSurface) float64 {
 	scalePoints(&p, &as, &bs, srf)
 	d := p.DistanceToLine(as, bs.Minus(as), true)
 
-	return math.Min(d, math.Min(dn, dpos))
+	return geom.Min(d, geom.Min(dn, dpos))
 }

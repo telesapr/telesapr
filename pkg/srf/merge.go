@@ -1,8 +1,6 @@
 package srf
 
 import (
-	"math"
-
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
@@ -109,10 +107,10 @@ func (s *SShell) MergeCoincidentSurfaces() {
 			vmax, vmin := -geom.VeryPositive, geom.VeryPositive
 			for _, se := range sel.Edges {
 				ut, vt := se.A.Dot(u), se.A.Dot(v)
-				umax = math.Max(umax, ut)
-				vmax = math.Max(vmax, vt)
-				umin = math.Min(umin, ut)
-				vmin = math.Min(vmin, vt)
+				umax = geom.Max(umax, ut)
+				vmax = geom.Max(vmax, vt)
+				umin = geom.Min(umin, ut)
+				vmin = geom.Min(vmin, vt)
 			}
 
 			// An interesting problem here; the real curve could extend
@@ -120,7 +118,7 @@ func (s *SShell) MergeCoincidentSurfaces() {
 			// bits. Not a problem for us, but some apps won't import STEP
 			// in that case. So give a bit of extra room; in theory just
 			// a chord tolerance, but more can't hurt.
-			muv := math.Max(umax-umin, vmax-vmin)
+			muv := geom.Max(umax-umin, vmax-vmin)
 			tol := muv/50 + 3*ChordTolMm()
 			umax += tol
 			vmax += tol

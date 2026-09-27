@@ -592,7 +592,7 @@ func (s *SSurface) ChordToleranceForEdge(a, b geom.Vector) float64 {
 		ps := as.Plus(bs.Minus(as).ScaledBy(float64(i) / 4.0))
 
 		pps := s.PointAt(p.X, p.Y)
-		worst = math.Max(worst, pps.Minus(ps).MagSquared())
+		worst = geom.Max(worst, pps.Minus(ps).MagSquared())
 	}
 	return math.Sqrt(worst)
 }
@@ -651,8 +651,8 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 			worstTwist = twist
 		}
 
-		worst = math.Max(worst, pm1.DistanceToLine(ps, pf.Minus(ps)))
-		worst = math.Max(worst, pm2.DistanceToLine(ps, pf.Minus(ps)))
+		worst = geom.Max(worst, pm1.DistanceToLine(ps, pf.Minus(ps)))
+		worst = geom.Max(worst, pm2.DistanceToLine(ps, pf.Minus(ps)))
 	}
 
 	step := 1.0 / float64(GetMaxSegments())

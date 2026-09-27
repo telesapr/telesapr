@@ -26,33 +26,59 @@ const (
 	EarIsEar   EarType = 2
 )
 
-// SPointList is an ordered list of SPoint with tag-based lookup.
+// SPointList is an ordered list of points, each with a tag (C++
+// SPointList).
 type SPointList struct {
 	Points []SPoint
-	TagCtr int
 }
 
 func (l *SPointList) Clear() {
 	l.Points = l.Points[:0]
-	l.TagCtr = 0
 }
 
-func (l *SPointList) Len() int { return len(l.Points) }
-
-func (l *SPointList) AddTag() int {
-	l.TagCtr++
-	return l.TagCtr
-}
-
-func (l *SPointList) Contains(idx int) bool {
-	return idx >= 0 && idx < len(l.Points)
-}
-
-func (l *SPointList) IndexOf(p geom.Vector) int {
-	for i, sp := range l.Points {
-		if sp.P.DistanceTo(p) < 1e-12 {
+// IndexForPoint is the index of the list's point equal to pt, or -1
+// (C++ SPointList::IndexForPoint).
+func (l *SPointList) IndexForPoint(pt geom.Vector) int {
+	for i := range l.Points {
+		if pt.Equals(l.Points[i].P) {
 			return i
 		}
 	}
+	// Not found, so return negative to indicate that.
 	return -1
+}
+
+// ContainsPoint reports whether pt is one of the list's points (C++
+// SPointList::ContainsPoint).
+func (l *SPointList) ContainsPoint(pt geom.Vector) bool {
+	return l.IndexForPoint(pt) >= 0
+}
+
+// IncrementTagFor counts pt: it increments the tag of the point equal
+// to pt, or adds pt with tag 1 (C++ SPointList::IncrementTagFor).
+func (l *SPointList) IncrementTagFor(pt geom.Vector) {
+	for i := range l.Points {
+		if pt.Equals(l.Points[i].P) {
+			l.Points[i].Tag++
+			return
+		}
+	}
+	l.Points = append(l.Points, SPoint{P: pt, Tag: 1})
+}
+
+// Add appends pt with tag 0 (C++ SPointList::Add).
+func (l *SPointList) Add(pt geom.Vector) {
+	l.Points = append(l.Points, SPoint{P: pt})
+}
+
+// removeTagged drops the points for which tagged is true, keeping the
+// order of the rest (C++ List::RemoveTagged, after the caller tags).
+func (l *SPointList) removeTagged(tagged func(*SPoint) bool) {
+	out := l.Points[:0]
+	for i := range l.Points {
+		if !tagged(&l.Points[i]) {
+			out = append(out, l.Points[i])
+		}
+	}
+	l.Points = out
 }

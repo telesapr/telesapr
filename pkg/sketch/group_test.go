@@ -7,6 +7,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 // Simple resolver for testing
@@ -904,14 +905,20 @@ func TestGroupIsMeshGroupFalseForNonMeshTypes(t *testing.T) {
 	}
 }
 
-// TestGroupIsTriangleMeshAssemblyBasic verifies the triangle-mesh check.
+// TestGroupIsTriangleMeshAssemblyBasic checks C++'s rule: a linked
+// group whose file brought a mesh and no shell.
 func TestGroupIsTriangleMeshAssemblyBasic(t *testing.T) {
-	g := &Group{ForceToMesh: true, MeshCombine: CombineAssemble}
+	g := &Group{Type: GroupLinked}
+	g.ImpMesh.AddTriangle3(srf.STriMeta{}, geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	if !g.IsTriangleMeshAssembly() {
-		t.Errorf("ForceToMesh+CombineAssemble should be triangle mesh assembly")
+		t.Errorf("linked group with only a mesh should be a triangle mesh assembly")
 	}
-	g.MeshCombine = CombineUnion
+	g.ImpShell.Surface = append(g.ImpShell.Surface, srf.SSurface{})
 	if g.IsTriangleMeshAssembly() {
-		t.Errorf("CombineUnion should not be triangle mesh assembly")
+		t.Errorf("linked group with a shell should not be a triangle mesh assembly")
+	}
+	g = &Group{Type: GroupExtrude, ForceToMesh: true, MeshCombine: CombineAssemble}
+	if g.IsTriangleMeshAssembly() {
+		t.Errorf("only linked groups are triangle mesh assemblies")
 	}
 }

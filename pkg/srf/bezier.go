@@ -303,7 +303,7 @@ func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList) {
 	for _, sp := range splRaw.Points {
 		p := sp.P
 		if b.PointOnThisAndCurve(sbb, &p) {
-			if !spl.containsPoint(p) {
+			if !spl.ContainsPoint(p) {
 				spl.Points = append(spl.Points, SPoint{P: p})
 			}
 		}

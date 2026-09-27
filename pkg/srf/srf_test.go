@@ -165,16 +165,6 @@ func TestSEdgeCrossing(t *testing.T) {
 	}
 }
 
-func TestSPointListIndex(t *testing.T) {
-	l := &SPointList{}
-	l.AddTag()
-	l.Points = append(l.Points, SPoint{P: geom.Vector{X: 1}})
-	l.Points = append(l.Points, SPoint{P: geom.Vector{X: 2}})
-	if l.IndexOf(geom.Vector{X: 2}) != 1 {
-		t.Fatalf("expected index 1")
-	}
-}
-
 func TestSPolygonContains(t *testing.T) {
 	p := &SPolygon{}
 	c := SContour{}

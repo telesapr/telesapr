@@ -37,12 +37,6 @@ func TestSLVSLoadRoundTrip(t *testing.T) {
 		if d.IsDir() || filepath.Ext(path) != ".slvs" {
 			return nil
 		}
-		// Skip boolean fixtures (they embed mesh/shell blocks that
-		// the Go port deliberately skips).
-		dirName := filepath.Base(filepath.Dir(path))
-		if len(dirName) >= 7 && dirName[:7] == "boolean" {
-			return nil
-		}
 		rel, _ := filepath.Rel(root, path)
 		if _, ok := roundTripExclusions[filepath.ToSlash(rel)]; ok {
 			return nil

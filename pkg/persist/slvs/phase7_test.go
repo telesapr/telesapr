@@ -69,12 +69,21 @@ var roundTripExclusions = map[string]string{
 	"constraint/large_dimensions/normal.slvs":   "older version",
 	// The solved values differ from C++'s in the last digit.
 	"constraint/same_orientation/normal.slvs": "last-digit solver difference",
-	// The meshes and shells C++ appends for linking aren't written.
-	"group/translate_asy/normal.slvs": "shell not written",
-	"group/translate_nd/normal.slvs":  "shell not written",
-	// LINKED import isn't ported.
-	"group/link/normal.slvs":    "LINKED import",
-	"request/image/linked.slvs": "LINKED import",
+	// Saved before C++ appended the running shell, or with an older
+	// boolean's curve numbering: current C++ writes what Go does.
+	"constraint/pt_face_distance/normal.slvs":    "older version",
+	"constraint/pt_face_distance/reference.slvs": "older version",
+	"constraint/pt_on_face/normal.slvs":          "older version",
+	"group/boolean_coplanar_union/normal.slvs":   "older version",
+	"group/boolean_knife_edge/normal.slvs":       "older version",
+	"group/boolean_tangent_crossing/normal.slvs": "older version",
+	"group/boolean_tangent_edge/normal.slvs":     "older version",
+	"group/boolean_tangent_fillet/normal.slvs":   "older version",
+	"group/boolean_tangent_spline/normal.slvs":   "older version",
+	"group/translate_asy/normal.slvs":            "older version",
+	"group/translate_nd/normal.slvs":             "older version",
+	// Written by SolveSpace 2.0, for group/link/normal.slvs to link.
+	"group/link/rect_v20.slvs": "older version",
 	// Not a valid SolveSpace file; C++ can't load it either.
 	"solver/param_point_distance.slvs": "not a valid file",
 }
@@ -94,11 +103,6 @@ func TestPhase7AllFixturesRoundTrip(t *testing.T) {
 			return err
 		}
 		if d.IsDir() || filepath.Ext(path) != ".slvs" {
-			return nil
-		}
-		// Skip boolean fixtures (mesh/shell blocks are not round-tripped).
-		dirName := filepath.Base(filepath.Dir(path))
-		if len(dirName) >= 7 && dirName[:7] == "boolean" {
 			return nil
 		}
 		rel, _ := filepath.Rel(root, path)

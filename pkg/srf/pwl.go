@@ -1,8 +1,6 @@
 package srf
 
 import (
-	"math"
-
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
@@ -90,8 +88,8 @@ func (b *SBezier) makePwlInitialWorker(l *[]geom.Vector, ta, tb, chordTol, maxDt
 	pm3 := b.PointAt(tm3)
 	dir := pb.Minus(pa)
 
-	d := math.Max(pm1.DistanceToLine(pa, dir),
-		math.Max(pm2.DistanceToLine(pa, dir), pm3.DistanceToLine(pa, dir)))
+	d := geom.Max(pm1.DistanceToLine(pa, dir),
+		geom.Max(pm2.DistanceToLine(pa, dir), pm3.DistanceToLine(pa, dir)))
 
 	step := 1.0 / float64(GetMaxSegments())
 	if ((tb-ta) < step || d < chordTol) && (tb-ta) <= maxDt {

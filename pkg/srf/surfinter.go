@@ -198,21 +198,21 @@ func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *SS
 		// so u = up + t*ud
 		//    v = vp + t*vd
 		if ud > lengthEps {
-			tmin = math.Max(tmin, -up/ud)
-			tmax = math.Min(tmax, (1-up)/ud)
+			tmin = geom.Max(tmin, -up/ud)
+			tmax = geom.Min(tmax, (1-up)/ud)
 		} else if ud < -lengthEps {
-			tmax = math.Min(tmax, -up/ud)
-			tmin = math.Max(tmin, (1-up)/ud)
+			tmax = geom.Min(tmax, -up/ud)
+			tmin = geom.Max(tmin, (1-up)/ud)
 		} else if up < -lengthEps || up > 1+lengthEps {
 			// u is constant, and outside [0, 1]
 			tmax = veryNegative
 		}
 		if vd > lengthEps {
-			tmin = math.Max(tmin, -vp/vd)
-			tmax = math.Min(tmax, (1-vp)/vd)
+			tmin = geom.Max(tmin, -vp/vd)
+			tmax = geom.Min(tmax, (1-vp)/vd)
 		} else if vd < -lengthEps {
-			tmax = math.Min(tmax, -vp/vd)
-			tmin = math.Max(tmin, (1-vp)/vd)
+			tmax = geom.Min(tmax, -vp/vd)
+			tmin = geom.Max(tmin, (1-vp)/vd)
 		} else if vp < -lengthEps || vp > 1+lengthEps {
 			// v is constant, and outside [0, 1]
 			tmax = veryNegative
@@ -341,8 +341,8 @@ func (s *SSurface) intersectCoaxialExtrusions(b *SSurface, oft *SBezier, alongt 
 		bAxis0, bAxis1 = bAxis1, bAxis0
 	}
 
-	abAxis0 := math.Max(aAxis0, bAxis0)
-	abAxis1 := math.Min(aAxis1, bAxis1)
+	abAxis0 := geom.Max(aAxis0, bAxis0)
+	abAxis1 := geom.Min(aAxis1, bAxis1)
 
 	if math.Abs(abAxis0-abAxis1) < lengthEps {
 		// The line would be zero-length
@@ -424,7 +424,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 					srfB.PointOnSurfaces(srfA, other, &u, &v)
 				}
 				p = srfB.PointAt(u, v)
-				if !spl.containsPoint(p) {
+				if !spl.ContainsPoint(p) {
 					sp := SPoint{P: p}
 					// We also need the edge normal, so that we know in
 					// which direction to march.
@@ -531,17 +531,6 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		split := sc.MakeCopySplitAgainst(agnstA, agnstB, s, b)
 		into.addAndAssignCurveId(split)
 	}
-}
-
-// containsPoint reports whether pt is one of the list's points (C++
-// SPointList::ContainsPoint).
-func (l *SPointList) containsPoint(pt geom.Vector) bool {
-	for i := range l.Points {
-		if pt.Equals(l.Points[i].P) {
-			return true
-		}
-	}
-	return false
 }
 
 // MakeCoincidentEdgesInto copies into el the trim polygons of every

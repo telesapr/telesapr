@@ -1,9 +1,6 @@
 package core
 
-import (
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"math"
-)
+import "github.com/spacesolve/spacesolve/pkg/geom"
 
 type BBox struct {
 	MinP geom.Vector
@@ -13,14 +10,14 @@ type BBox struct {
 func NewBBox(p0, p1 geom.Vector) BBox {
 	return BBox{
 		MinP: geom.Vector{
-			X: math.Min(p0.X, p1.X),
-			Y: math.Min(p0.Y, p1.Y),
-			Z: math.Min(p0.Z, p1.Z),
+			X: geom.Min(p0.X, p1.X),
+			Y: geom.Min(p0.Y, p1.Y),
+			Z: geom.Min(p0.Z, p1.Z),
 		},
 		MaxP: geom.Vector{
-			X: math.Max(p0.X, p1.X),
-			Y: math.Max(p0.Y, p1.Y),
-			Z: math.Max(p0.Z, p1.Z),
+			X: geom.Max(p0.X, p1.X),
+			Y: geom.Max(p0.Y, p1.Y),
+			Z: geom.Max(p0.Z, p1.Z),
 		},
 	}
 }
@@ -34,13 +31,13 @@ func (b BBox) GetExtents() geom.Vector {
 }
 
 func (b *BBox) Include(v geom.Vector, r float64) {
-	b.MinP.X = math.Min(b.MinP.X, v.X-r)
-	b.MinP.Y = math.Min(b.MinP.Y, v.Y-r)
-	b.MinP.Z = math.Min(b.MinP.Z, v.Z-r)
+	b.MinP.X = geom.Min(b.MinP.X, v.X-r)
+	b.MinP.Y = geom.Min(b.MinP.Y, v.Y-r)
+	b.MinP.Z = geom.Min(b.MinP.Z, v.Z-r)
 
-	b.MaxP.X = math.Max(b.MaxP.X, v.X+r)
-	b.MaxP.Y = math.Max(b.MaxP.Y, v.Y+r)
-	b.MaxP.Z = math.Max(b.MaxP.Z, v.Z+r)
+	b.MaxP.X = geom.Max(b.MaxP.X, v.X+r)
+	b.MaxP.Y = geom.Max(b.MaxP.Y, v.Y+r)
+	b.MaxP.Z = geom.Max(b.MaxP.Z, v.Z+r)
 }
 
 func (b BBox) Overlaps(other BBox) bool {

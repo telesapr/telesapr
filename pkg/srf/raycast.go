@@ -59,13 +59,13 @@ func ProbeTangentFace(srf *SSurface, p, interEdgeN, nu geom.Vector, f *geom.Vect
 	cm0 := srf.Ctrl[srf.DegM][0]
 	c0n := srf.Ctrl[0][srf.DegN]
 	cmn := srf.Ctrl[srf.DegM][srf.DegN]
-	size := math.Max(math.Max((cm0.Minus(c00)).Magnitude(), (c0n.Minus(c00)).Magnitude()),
+	size := geom.Max(geom.Max((cm0.Minus(c00)).Magnitude(), (c0n.Minus(c00)).Magnitude()),
 		(cmn.Minus(c00)).Magnitude())
-	*f = interEdgeN.ScaledBy(-1).WithMagnitude(math.Max(size/20, lengthEps*100))
+	*f = interEdgeN.ScaledBy(-1).WithMagnitude(geom.Max(size/20, lengthEps*100))
 	var fuv geom.Point2d
 	srf.ClosestPointTo(p.Plus(*f), &fuv, false)
 	dev := srf.PointAt(fuv.U, fuv.V).Minus(p).Dot(nu)
-	*flat = math.Abs(dev) < math.Max(lengthEps, 1e-3*f.Magnitude())
+	*flat = math.Abs(dev) < geom.Max(lengthEps, 1e-3*f.Magnitude())
 	return dev
 }
 

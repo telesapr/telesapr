@@ -84,16 +84,14 @@ func (s *SShell) Clear() {
 	s.BooleanFailed = false
 }
 
-// MakeFromCopyOf clones another shell.
+// MakeFromCopyOf copies src (C++ SShell::MakeFromCopyOf): a
+// transformation by the identity, which, like C++'s, still rotates
+// and translates the curves' exact forms (so turns -0 into +0).
 func (s *SShell) MakeFromCopyOf(src *SShell) {
-	s.Clear()
-	for _, c := range src.Curve {
-		s.Curve = append(s.Curve, c)
+	if s == src {
+		panic("Can't make from copy of self")
 	}
-	for _, ss := range src.Surface {
-		s.Surface = append(s.Surface, ss)
-	}
-	s.BooleanFailed = src.BooleanFailed
+	s.MakeFromTransformationOf(src, geom.Vector{}, geom.QuaternionIdentity, 1.0)
 }
 
 // addAndAssignSurfaceId appends ss to s.Surface with a fresh
@@ -722,22 +720,18 @@ func (s *SShell) MakeFirstOrderRevolvedSurfaces(pt, axis geom.Vector, i0 int) {
 
 // MakeFromTransformationOf applies (translate, rotate, scale) to
 // every surface and curve of src, keeping their original handles.
-// Faithful port of C++ `SShell::MakeFromTransformationOf`
-// (shell.cpp), which always transforms trims and always copies the
-// curve list too — booleans on the result need the operand curves,
-// not just the surfaces.
-func (s *SShell) MakeFromTransformationOf(src *SShell, t geom.Vector, q geom.Quaternion, scale float64, includingTrims bool) {
-	s.Clear()
-	if src == nil {
-		return
-	}
-	for _, ss := range src.Surface {
-		s.Surface = append(s.Surface, FromTransformationOf(&ss, t, q, scale, includingTrims))
-	}
-	for _, c := range src.Curve {
-		s.Curve = append(s.Curve, FromTransformationOfSCurve(&c, t, q, scale))
-	}
+// MakeFromTransformationOf adds the surfaces and curves of a, scaled,
+// then rotated, then translated, keeping their handles (C++
+// SShell::MakeFromTransformationOf).
+func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quaternion, scale float64) {
 	s.BooleanFailed = false
+	for i := range a.Surface {
+		s.Surface = append(s.Surface, FromTransformationOf(&a.Surface[i], t, q, scale, true))
+	}
+
+	for i := range a.Curve {
+		s.Curve = append(s.Curve, FromTransformationOfSCurve(&a.Curve[i], t, q, scale))
+	}
 }
 
 // TriangulateInto triangulates every surface in the shell and

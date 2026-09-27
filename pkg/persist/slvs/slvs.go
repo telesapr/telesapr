@@ -30,7 +30,10 @@ type Document struct {
 	Header    string
 	HeaderSep string // separator line(s) between Header and first block (preserved across round-trip)
 
-	Blocks          []Block
+	Blocks []Block
+	// shellLines are the mesh and shell a file saves for linking
+	// (Triangle, Surface, ... lines), in file order.
+	shellLines      []string
 	Sketch          *sketch.Sketch
 	groupOrder      []core.HGroup
 	paramOrder      []core.HParam
@@ -58,6 +61,7 @@ func LoadFile(path string) (doc *Document, err error) {
 	// regenerated, not loaded, and the sketch is then upgraded and
 	// regenerated without solving.
 	doc.Sketch.Entities = doc.Sketch.Entities[:0]
+	doc.reloadAllLinked(path)
 	defer func() {
 		// A sketch C++ would assert on (e.g. one missing the reference
 		// workplanes) is an error here.
@@ -124,6 +128,12 @@ func (d *Document) Save() []byte {
 		b.WriteString("AddStyle\n\n")
 	}
 
+	// A group will have either a mesh or a shell, but not both; but the code
+	// to print either of those just does nothing if the mesh/shell is empty.
+	if len(sk.GroupOrder) > 0 {
+		g := sk.GetGroup(sk.GroupOrder[len(sk.GroupOrder)-1])
+		writeShell(&b, &g.RunningMesh, &g.RunningShell)
+	}
 	return []byte(b.String())
 }
 
@@ -156,6 +166,13 @@ func (d *Document) parse(data []byte) error {
 
 	for i < len(lines) {
 		if strings.TrimSpace(lines[i]) == "" {
+			i++
+			continue
+		}
+		if isShellLine(lines[i]) {
+			// The mesh or shell, which a sketch regenerates; only a
+			// file linking this one reads them.
+			d.shellLines = append(d.shellLines, lines[i])
 			i++
 			continue
 		}
@@ -243,11 +260,10 @@ func (d *Document) processGroup(block Block) error {
 	if v, ok := fields["Group.name"]; ok {
 		group.Name = v
 	}
-	color, ok := fields["Group.color"]
-	if !ok || color == "" {
-		return fmt.Errorf("group %v missing color; legacy formats are unsupported", group.H)
+	// Files older than group colors leave C++'s zero color.
+	if v, ok := fields["Group.color"]; ok {
+		group.Color = core.RgbaColorFromPackedInt(parseHexUint32(v))
 	}
-	group.Color = core.RgbaColorFromPackedInt(parseHexUint32(color))
 	if v, ok := fields["Group.activeWorkplane.v"]; ok {
 		group.ActiveWorkplane = core.HEntity{V: parseHexUint32(v)}
 	}

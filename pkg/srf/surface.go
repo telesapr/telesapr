@@ -330,26 +330,50 @@ func wrapSymmetric(v, n float64) float64 {
 
 // FromTransformationOf produces a transformed copy of the surface.
 func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale float64, includingTrims bool) SSurface {
+	needRotate := !(q.X == 0 && q.Y == 0 && q.Z == 0 && q.W == 1)
+	needTranslate := !(t.X == 0 && t.Y == 0 && t.Z == 0)
+	needScale := scale != 1
+
+	transform := func(v geom.Vector) geom.Vector {
+		if needScale {
+			v = v.ScaledBy(scale)
+		}
+		if needRotate {
+			v = q.Rotate(v)
+		}
+		if needTranslate {
+			v = v.Plus(t)
+		}
+		return v
+	}
+
 	s := SSurface{
-		Tag:   a.Tag,
+		H:     a.H,
 		Color: a.Color,
 		Face:  a.Face,
 		DegM:  a.DegM,
 		DegN:  a.DegN,
 	}
-	for i := 0; i <= s.DegM; i++ {
-		for j := 0; j <= s.DegN; j++ {
-			s.Ctrl[i][j] = q.Rotate(a.Ctrl[i][j].ScaledBy(scale)).Plus(t)
+	for i := 0; i <= 3; i++ {
+		for j := 0; j <= 3; j++ {
+			s.Ctrl[i][j] = transform(a.Ctrl[i][j])
 			s.Weight[i][j] = a.Weight[i][j]
 		}
 	}
-	if scale < 0 {
-		s.Reverse()
-	}
+
 	if includingTrims {
-		for _, tb := range a.Trim {
-			s.Trim = append(s.Trim, tb)
+		for _, stb := range a.Trim {
+			stb.StartP = transform(stb.StartP)
+			stb.FinishP = transform(stb.FinishP)
+			s.Trim = append(s.Trim, stb)
 		}
+		s.TrimBuilt = a.TrimBuilt
+	}
+
+	if scale < 0 {
+		// If we mirror every surface of a shell, then it will end up inside
+		// out. So fix that here.
+		s.Reverse()
 	}
 	return s
 }

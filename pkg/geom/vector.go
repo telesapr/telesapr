@@ -62,12 +62,15 @@ func (v Vector) MagSquared() float64 {
 	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
 }
 
+// WithMagnitude is v scaled to magnitude s; a zero vector stays zero
+// (C++ Vector::WithMagnitude).
 func (v Vector) WithMagnitude(s float64) Vector {
-	mag := v.Magnitude()
-	if mag < 1e-20 {
-		return Vector{s, 0, 0}
+	m := v.Magnitude()
+	if m == 0 {
+		// We can do a zero vector with zero magnitude, but not any other cases.
+		return Vector{}
 	}
-	return v.ScaledBy(s / mag)
+	return v.ScaledBy(s / m)
 }
 
 func (v Vector) Normal() Vector {
@@ -451,4 +454,22 @@ func AtIntersectionOfThreePlanes(na Vector, da float64, nb Vector, db float64, n
 		nc.X, nc.Y, dc)
 
 	return Vector{X: detx / det, Y: dety / det, Z: detz / det}, false
+}
+
+// Max is C++ std::max for doubles: b if a < b, else a. Unlike math.Max
+// it keeps a when a and b are zeros of opposite sign (or either is
+// NaN), and ported code relies on getting C++'s bits.
+func Max(a, b float64) float64 {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+// Min is C++ std::min for doubles: b if b < a, else a (see Max).
+func Min(a, b float64) float64 {
+	if b < a {
+		return b
+	}
+	return a
 }

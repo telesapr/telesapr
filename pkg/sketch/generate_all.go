@@ -43,7 +43,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		sk.generateAll(typ, andFindFree, true)
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)
-		maxSize := math.Max(size.X, math.Max(size.Y, size.Z))
+		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
 		srf.SetChordTolMm(maxSize * chordTolPct / 100.0)
 	}
 

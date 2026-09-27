@@ -51,50 +51,60 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	b.CleanupAfterBoolean()
 }
 
-// MakeFromAssemblyOf combines two shells without performing any
-// boolean intersection: surfaces from both are copied as-is.
-// Used for step-and-repeat patterns (LINED copies) where the
-// geometry is intentionally non-overlapping.
+// MakeFromAssemblyOf copies all the surfaces and curves from two
+// different shells into a single shell, rewriting their handles; it
+// doesn't look for any surface intersections, so if two objects
+// interfere then the result is just self-intersecting. This is used
+// for assembly, since it's much faster than merging as union (C++
+// SShell::MakeFromAssemblyOf).
 func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
-	s.Clear()
-	if a != nil {
-		s.Surface = append(s.Surface, a.Surface...)
-		for i := range a.Curve {
-			s.Curve = append(s.Curve, a.Curve[i])
-		}
-	}
-	if b != nil {
-		s.Surface = append(s.Surface, b.Surface...)
-		for i := range b.Curve {
-			s.Curve = append(s.Curve, b.Curve[i])
-		}
-	}
 	s.BooleanFailed = false
+
+	t := geom.Vector{}
+	q := geom.QuaternionIdentity
+
+	// First, copy over all the curves. Note which shell (a or b) each
+	// curve came from, but assign it a new ID.
+	for i, ab := range [2]*SShell{a, b} {
+		for k := range ab.Curve {
+			c := &ab.Curve[k]
+			cn := FromTransformationOfSCurve(c, t, q, 1.0)
+			if i == 0 {
+				cn.Source = CurveSourceOrigA
+			} else {
+				cn.Source = CurveSourceOrigB
+			}
+			// surfA and surfB are wrong now, and we can't fix them until
+			// we've assigned IDs to the surfaces. So we'll get that later.
+			c.NewH = s.addAndAssignCurveId(cn)
+		}
+	}
+
+	// Likewise copy over all the surfaces.
+	for _, ab := range [2]*SShell{a, b} {
+		for k := range ab.Surface {
+			ss := &ab.Surface[k]
+			sn := FromTransformationOf(ss, t, q, 1.0, true)
+			// All the trim curve IDs get rewritten; we know the new handles
+			// to the curves since we recorded them in the previous step.
+			for m := range sn.Trim {
+				sn.Trim[m].Curve = ab.FindCurve(sn.Trim[m].Curve).NewH
+			}
+			ss.NewH = s.addSurfaceAssignId(sn)
+		}
+	}
+
+	// Finally, rewrite the surfaces associated with each curve to use the
+	// new handles.
+	s.RewriteSurfaceHandlesForCurves(a, b)
 }
 
-// CleanupAfterBoolean is invoked after a boolean to remove degenerate
-// surfaces (zero area, fully covered by another surface, etc.) and
-// to clear the temporary `Edges` calculation aid that
-// `MakeClassifyingBsps` populates (matches C++
-// `SShell::CleanupAfterBoolean`, boolean.cpp:780).
+// CleanupAfterBoolean clears the edges MakeClassifyingBsps made as a
+// calculation aid (C++ SShell::CleanupAfterBoolean).
 func (s *SShell) CleanupAfterBoolean() {
 	for i := range s.Surface {
 		s.Surface[i].Edges = SEdgeList{}
 	}
-	// Drop zero-area surfaces.
-	out := s.Surface[:0]
-	for i := range s.Surface {
-		var pMin, pMax geom.Vector
-		s.Surface[i].GetAxisAlignedBounding(&pMax, &pMin)
-		dx := pMax.X - pMin.X
-		dy := pMax.Y - pMin.Y
-		dz := pMax.Z - pMin.Z
-		if dx < 1e-9 && dy < 1e-9 && dz < 1e-9 {
-			continue
-		}
-		out = append(out, s.Surface[i])
-	}
-	s.Surface = out
 }
 
 // MakeFromUnionOf dispatches to MakeFromBoolean(UNION).

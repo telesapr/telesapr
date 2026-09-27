@@ -20,7 +20,7 @@ solvespace core engine. It is the source of truth for the
 | `entity.cpp` | 997 | OK | `pkg/core/entity.go`, `pkg/core/entity_base.go` | Every `EntityBase` accessor, numeric and symbolic, for all point/normal/face/distance types, plus `GenerateEquations` and `Entity::CalculateNumerical`. The sketch is passed in as a `core.EntitySketch` instead of the global `SK` |
 | `constraint.cpp` | 994 | OK | `pkg/core/constraint.go` | |
 | `system.cpp` | 660 | OK | `pkg/solver/system.go`, `pkg/solver/qr.go` | `Solve`, `SolveRank`, `SolveBySubstitution`, `WriteJacobian`, `NewtonSolve`, `SolveLeastSquares` (the QR-of-A' form of this checkout), `TestRank`, `FindWhichToRemoveToFixJacobian`, `MarkParamsFree`. Eigen's `SparseQR` is a dense left-looking Householder QR with the same dead-column rule and threshold, but without the COLAMD column order |
-| `group.cpp` | 1228 | OK | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | `Generate` (all group types), `CopyEntity`, `Remap` (as `RemapEntity`), the `Make*` helpers and `GenerateEquations`. LINKED groups copy `ImpEntity`, which nothing populates yet. Menu and UI code are out of scope |
+| `group.cpp` | 1228 | OK | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | `Generate` (all group types), `CopyEntity`, `Remap` (as `RemapEntity`), the `Make*` helpers, `GenerateEquations` and `TransformImportedBy`. LINKED groups copy the `ImpEntity` the loader reads from the linked file. Menu and UI code are out of scope |
 | `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry), `SolveGroup` with `WriteEqSystemForGroup` and `WriteEquationsExceptFor`, `ForceReferences`, `CalculateEntityBBox`. With no active group or dirty tracking, DIRTY and UNTIL_ACTIVE regenerate everything like ALL; dragged params aren't marked |
 | `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, `GenerateShellAndMesh` (every group type, step and repeat, the face entities, the running-shell combine), `GenerateForStepAndRepeat`, `GenerateForBoolean<SShell>`, `RemapFaces`, `GenerateDisplayItems` (without the render-side polyline join) are faithful. A group forced to a mesh combines meshes without `SnapToMesh`; nothing reaches that yet |
 | `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
@@ -44,7 +44,7 @@ solvespace core engine. It is the source of truth for the
 | `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | |
 | `mesh.cpp` | 1221 | PARTIAL | `pkg/srf/mesh.go`, `pkg/srf/kdnode.go`, `pkg/srf/outline.go` | `SKdNode` (`From`, with glibc's `rand()` shuffle; `AddTriangle`, `FindEdgeOn`, `MakeCertainEdgesInto`, `MakeOutlinesInto`) and `SMesh::MakeOutlinesInto` are faithful. The rest of the file hasn't been re-audited; `SnapToMesh`, `SplitLinesAgainstTriangle` and `OcclusionTestLine` aren't ported |
-| `file.cpp` | 1030 | PARTIAL | `pkg/persist/slvs/slvs.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view), and matches current C++ byte for byte on the fixtures it can write. The meshes and shells C++ appends for linking aren't written, and linked files aren't reloaded |
+| `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go`, `pkg/persist/slvs/linked.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, `ReloadAllLinked` reads each linked .slvs file's entities, styles, mesh and shell (`LoadEntitiesFromSlvs`), and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view, then the last group's running mesh and shell), and matches current C++ byte for byte on the fixtures, shells included. A missing linked file counts as declined (C++ asks the user to find it); STL and IDF links aren't ported |
 | `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)` |
 
 An **OK** row means the functions listed in its notes (or the whole
@@ -99,7 +99,7 @@ UI.
   can load and requires every group to solve with the degrees of
   freedom C++ reports (`cpp_dof_golden_test.go`), every group's shell
   to carry C++'s face entities (`cpp_faces_golden_test.go`), and every
-  constraint's equations to hold, except the LINKED fixture.
+  constraint's equations to hold.
 - `TestArcLengthConstraints` covers the four arc-length constraints no
   fixture uses.
 - `TestIntersectionBranchesVsCpp` pins booleans through the surface
@@ -155,10 +155,32 @@ produces the same entities as C++ and the same volume.
 fixture the way the testsuite does (`LoadFromFile` + `AfterNewFile`).
 It dumped the chord tolerance, each group's solve result and degrees of
 freedom, each constraint's value, and every entity's handle, type,
-group, construction flag, point, normal, face and distance. For 88 of
-the 89 fixtures C++ can load, the Go `GenerateAll` output matches
-exactly (to 1e-4). `request/image/linked` differs because LINKED
-import isn't implemented.
+group, construction flag, point, normal, face and distance. For all
+90 fixtures C++ can load, the Go `GenerateAll` output matches exactly
+(to 1e-4).
+
+**Save check against C++.** A second harness saved each fixture with
+`SaveToFile`, which appends the last group's running shell. Go's save
+is byte-identical to it on every fixture, boolean shells included,
+except the few that differ in a solved value's last digits
+(`same_orientation`, `negative_dia`, `large_dimensions`) and the image
+fixtures (C++ relativizes the image path). Getting the shells
+identical took these faithful ports:
+
+- `List::AddToBeginning` doesn't insert: its `std::move_backward`
+  moves only the first element, to the end, and then overwrites the
+  first. `FindChainAvoiding` relies on it, so the order of every
+  boolean surface's trims does too; Go reproduces it.
+- `SPointList` (the choosing points) matches points with
+  `Vector::Equals`, in list order; Go had used a map and a 1e-8
+  distance.
+- `std::max`/`std::min` keep the first argument for zeros of either
+  sign, unlike `math.Max`/`math.Min`; ported code uses `geom.Max`/`Min`.
+- `SShell::MakeFromCopyOf` is a transformation by the identity, and
+  `SBezier::TransformedBy` always rotates and translates, which turns
+  `-0` into `+0`. `SSurface::FromTransformationOf` keeps the handle and
+  transforms the trims; `MakeFromAssemblyOf` assigns new handles.
+- `Vector::WithMagnitude` returns zero only for an exactly zero vector.
 
 Parity came from replacing simplified stand-ins with faithful ports,
 not from tuning. The main fixes:
@@ -199,7 +221,5 @@ when the trim polygon doesn't assemble" path.
 
 **Smaller stand-ins found but not yet ported:**
 
-- LINKED import (`ReloadAllLinked`, `impEntity`, `impShell`,
-  `impMesh`), and saving the meshes and shells that linking reads;
 - the rest of `mesh.cpp` (see its row), including the forced-to-mesh
   combine's `SnapToMesh`.

@@ -109,7 +109,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		srcg = sk.GetGroup(g.OpA)
 
 		if !srcg.Suppress {
-			if !g.IsForcedToMesh() {
+			if !g.IsForcedToMesh(sk) {
 				g.generateForStepAndRepeatShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
 			} else {
 				var prevm srf.SMesh
@@ -137,7 +137,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	// we're done.
 	prevg := srcg.RunningMeshGroup(sk)
 
-	if !g.IsForcedToMesh() {
+	if !g.IsForcedToMesh(sk) {
 		var prevs srf.SShell
 		if prevg != nil {
 			prevs = prevg.RunningShell
@@ -203,7 +203,7 @@ func (g *Group) generateForStepAndRepeatShell(sk *Sketch, steps, outs *srf.SShel
 	// first generate a shell with each transformed copy
 	for a := a0; a < n; a++ {
 		t, q := g.stepTransform(sk, a, n)
-		transd[a].MakeFromTransformationOf(steps, t, q, 1.0, true)
+		transd[a].MakeFromTransformationOf(steps, t, q, 1.0)
 	}
 	for a := a0; a < n; a++ {
 		// We need to rewrite any plane face entities to the transformed ones.
@@ -310,7 +310,7 @@ func (g *Group) generateLinkedShell(sk *Sketch) {
 	g.ThisMesh.MakeFromTransformationOf(&g.ImpMesh, offset, q, scale)
 	g.ThisMesh.RemapFaces(shellGroup{g: g, sk: sk}, 0)
 
-	g.ThisShell.MakeFromTransformationOf(&g.ImpShell, offset, q, scale, true)
+	g.ThisShell.MakeFromTransformationOf(&g.ImpShell, offset, q, scale)
 	g.ThisShell.RemapFaces(shellGroup{g: g, sk: sk}, 0)
 }
 
@@ -596,29 +596,39 @@ func (g *Group) GenerateDisplayItems(sk *Sketch) {
 	}
 }
 
-// IsForcedToMesh returns true if the group has no shell (only
-// imported mesh), so rendering must use the mesh directly.
-func (g *Group) IsForcedToMesh() bool {
-	return g.ForceToMesh
+// IsForcedToMesh reports whether the group is built as a triangle mesh
+// instead of a shell: asked to be, an imported mesh, or combined with
+// a mesh (C++ Group::IsForcedToMesh).
+func (g *Group) IsForcedToMesh(sk *Sketch) bool {
+	return g.ForceToMesh || g.IsTriangleMeshAssembly() || g.IsForcedToMeshBySource(sk)
 }
 
-// IsForcedToMeshBySource returns true if any source group is
-// force-to-mesh.
+// IsForcedToMeshBySource reports whether the group combines with a
+// group forced to a mesh (C++ Group::IsForcedToMeshBySource).
 func (g *Group) IsForcedToMeshBySource(sk *Sketch) bool {
-	prev := g.PreviousGroup(sk)
-	if prev == nil {
+	srcg := g
+	if g.Type == GroupTranslate || g.Type == GroupRotate {
+		// A step and repeat gets merged against the group's previous group,
+		// not our own previous group.
+		srcg = sk.GetGroup(g.OpA)
+		if srcg.ForceToMesh {
+			return true
+		}
+	}
+	rg := srcg.RunningMeshGroup(sk)
+	if rg == nil {
 		return false
 	}
-	if prev.IsForcedToMesh() || prev.IsForcedToMeshBySource(sk) {
-		return true
-	}
-	return false
+	return rg.ForceToMesh || rg.IsForcedToMeshBySource(sk)
 }
 
-// IsTriangleMeshAssembly reports whether this group is an imported
-// mesh assembly (rather than a parametric model).
+// IsTriangleMeshAssembly reports whether the group links a triangle
+// mesh, without a shell (C++ Group::IsTriangleMeshAssembly).
 func (g *Group) IsTriangleMeshAssembly() bool {
-	return g.ForceToMesh && g.MeshCombine == CombineAssemble
+	if g.Type != GroupLinked {
+		return false
+	}
+	return len(g.ImpMesh.Triangles) > 0 && len(g.ImpShell.Surface) == 0
 }
 
 // IsMeshGroup returns true if this group produces a mesh output
@@ -652,10 +662,32 @@ func (g *Group) ExtrusionGetVector() geom.Vector {
 	return g.ExtrusionVector(nil)
 }
 
-// TransformImportedBy applies (t, q) to this group's imported mesh/shell.
-func (g *Group) TransformImportedBy(t geom.Vector, q geom.Quaternion) {
-	g.ImpMesh.MakeFromTransformationOf(&g.ImpMesh, t, q, 1)
-	g.ImpShell.MakeFromTransformationOf(&g.ImpShell, t, q, 1, true)
+// TransformImportedBy moves a linked group by t and rotates it by q,
+// composing them into its placement parameters (C++
+// Group::TransformImportedBy).
+func (g *Group) TransformImportedBy(sk *Sketch, t geom.Vector, q geom.Quaternion) {
+	if g.Type != GroupLinked {
+		panic("Expected a linked group")
+	}
+
+	tx, ty, tz := g.H.Param(0), g.H.Param(1), g.H.Param(2)
+	qw, qx, qy, qz := g.H.Param(3), g.H.Param(4), g.H.Param(5), g.H.Param(6)
+	val := func(h core.HParam) float64 { return sk.MustGetParam(h).Val }
+
+	qg := geom.NewQuaternion(val(qw), val(qx), val(qy), val(qz))
+	qg = q.Times(qg)
+
+	tg := geom.Vector{X: val(tx), Y: val(ty), Z: val(tz)}
+	tg = tg.Plus(t)
+
+	sk.MustGetParam(tx).Val = tg.X
+	sk.MustGetParam(ty).Val = tg.Y
+	sk.MustGetParam(tz).Val = tg.Z
+
+	sk.MustGetParam(qw).Val = qg.W
+	sk.MustGetParam(qx).Val = qg.X
+	sk.MustGetParam(qy).Val = qg.Y
+	sk.MustGetParam(qz).Val = qg.Z
 }
 
 // paramFloat returns the float value of a param by handle, or 0 if missing.
