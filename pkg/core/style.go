@@ -115,25 +115,46 @@ var StyleDefaults = []StyleDefault{
 }
 
 // FillDefaultStyle sets s to default style d, or to the active group's
-// style for nil (C++ Style::FillDefaultStyle with factory settings: the
-// engine has no settings store for the user's changes to the defaults).
-func FillDefaultStyle(s *Style, d *StyleDefault) {
+// style for nil: its factory settings if factory, else the user's
+// settings for it (C++ Style::FillDefaultStyle).
+func FillDefaultStyle(s *Style, d *StyleDefault, factory bool) {
+	settings := GetSettings()
+
 	if d == nil {
 		d = &StyleDefaults[0]
 	}
-	s.Color = d.Color
-	s.Width = d.Width
+	if factory {
+		s.Color = d.Color
+		s.Width = d.Width
+	} else {
+		s.Color = ThawColor(settings, CnfColor(d.CnfPrefix), d.Color)
+		s.Width = settings.ThawFloat(CnfWidth(d.CnfPrefix), float64(float32(d.Width)))
+	}
 	s.WidthAs = UnitsPixels
-	s.TextHeight = 11.5
+	if factory {
+		s.TextHeight = 11.5
+	} else {
+		s.TextHeight = settings.ThawFloat(CnfTextHeight(d.CnfPrefix), 11.5)
+	}
 	s.TextHeightAs = UnitsPixels
 	s.TextOrigin = TextOriginNone
 	s.TextAngle = 0
 	s.Visible = true
-	s.Exportable = d.Exportable
+	if factory {
+		s.Exportable = d.Exportable
+	} else {
+		s.Exportable = ThawBool(settings, CnfExportable(d.CnfPrefix), d.Exportable)
+	}
 	s.Filled = false
 	s.FillColor = rgbf(0.3, 0.3, 0.3)
-	s.StippleType = d.StippleType
-	s.StippleScale = 15.0
+	if factory {
+		s.StippleType = d.StippleType
+		s.StippleScale = 15.0
+	} else {
+		s.StippleType = StipplePatternFromString(
+			settings.ThawString(CnfStippleType(d.CnfPrefix), StipplePatternName(d.StippleType)))
+		s.StippleScale = settings.ThawFloat(CnfStippleScale(d.CnfPrefix), 15.0)
+	}
 	s.ZIndex = d.ZIndex
 }
 

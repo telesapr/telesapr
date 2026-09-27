@@ -46,12 +46,12 @@ func (sk *Sketch) CreateDefaultStyle(h core.HStyle) {
 
 	ns := core.Style{}
 	if d != nil {
-		core.FillDefaultStyle(&ns, d)
+		core.FillDefaultStyle(&ns, d, false)
 		ns.Name = core.CnfPrefixToName(d.CnfPrefix)
 	} else {
 		// Not a default style; so just create it the same as our default
 		// active group entity style.
-		core.FillDefaultStyle(&ns, nil)
+		core.FillDefaultStyle(&ns, nil, false)
 		ns.Name = "new-custom-style"
 	}
 	ns.H = h
@@ -101,6 +101,32 @@ func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool)
 		return core.RewriteColor(s.FillColor, fixExportColors)
 	}
 	return s.FillColor
+}
+
+// LoadFactoryDefaults resets the default styles to their factory
+// settings (C++ Style::LoadFactoryDefaults; the background colour it
+// also resets is the user interface's).
+func (sk *Sketch) LoadFactoryDefaults() {
+	for i := range core.StyleDefaults {
+		d := &core.StyleDefaults[i]
+		s := sk.StyleGet(d.H)
+		core.FillDefaultStyle(s, d, true)
+	}
+}
+
+// FreezeDefaultStyles saves the default styles as the user's settings,
+// with widths and text heights at the default view's scale (C++
+// Style::FreezeDefaultStyles).
+func (sk *Sketch) FreezeDefaultStyles(settings core.Settings) {
+	for i := range core.StyleDefaults {
+		d := &core.StyleDefaults[i]
+		core.FreezeColor(settings, core.CnfColor(d.CnfPrefix), sk.StyleColor(d.H, false, false))
+		settings.FreezeFloat(core.CnfWidth(d.CnfPrefix), float64(float32(sk.StyleWidth(d.H, viewScale))))
+		settings.FreezeString(core.CnfStippleType(d.CnfPrefix), core.StipplePatternName(sk.StylePatternType(d.H)))
+		settings.FreezeFloat(core.CnfStippleScale(d.CnfPrefix), float64(float32(sk.StyleStippleScale(d.H))))
+		settings.FreezeFloat(core.CnfTextHeight(d.CnfPrefix), float64(float32(sk.StyleTextHeight(d.H, viewScale))))
+		core.FreezeBool(settings, core.CnfExportable(d.CnfPrefix), sk.StyleExportable(d.H))
+	}
 }
 
 // StyleWidth is style h's width in pixels, at the view's scale in
