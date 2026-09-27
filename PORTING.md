@@ -31,11 +31,11 @@ solvespace core engine. It is the source of truth for the
 | `srf/shell.cpp` | 617 | OK | `pkg/srf/shell.go` | `MakeFromExtrusionOf`, `MakeFromRevolutionOf`, `MakeFromHelicalRevolutionOf`, `CheckNormalAxisRelationship`, `MakeFirstOrderRevolvedSurfaces` faithful; checked against a C++ harness in `pkg/srf/revolve_test.go` |
 | `srf/boolean.cpp` | 1100 | OK | `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go`, `pkg/srf/boolean_trim.go`, `pkg/srf/bsp_uv.go` | `SBspUv`, `MakeFromBoolean`, curve splitting, `MakeCopyTrimAgainst`, `TrimFromEdgeList`, `EdgeNormalsWithinSurface` |
 | `srf/polygon.cpp` / `polygon.cpp` | 924 | OK | `pkg/srf/polygon.go`, `pkg/srf/contour.go`, `pkg/srf/edgelist.go`, `pkg/srf/merge.go` | `AssemblePolygon`/`AssembleContour`, contour orientation (C++ sign convention), `FixContourDirections`, `EdgeCrosses`, `CullExtraneousEdges` |
-| `srf/surfinter.cpp` | 641 | UNAUDITED | `pkg/srf/surfinter.go` | Not yet compared line by line against C++; `AddExactIntersectionCurve` now uses the faithful curve split, and every branch passes `agnstA`/`agnstB` through as in C++. The general case is a Go marching-squares stand-in |
+| `srf/surfinter.cpp` | 641 | OK | `pkg/srf/surfinter.go`, `pkg/srf/surface.go`, `pkg/srf/merge.go` | `AddExactIntersectionCurve`, every `IntersectAgainst` case (plane-plane, plane-extrusion, coaxial extrusions, exact curves in a plane, the marching general case), `CoincidentWith`, `ContainsPlaneCurve`, `MakeCoincidentEdgesInto`. The branches no fixture reaches are pinned to a C++ harness by `TestIntersectionBranchesVsCpp` |
 | `srf/bezier.cpp` | — | OK | `pkg/srf/bezier*.go` | |
 | `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go`, `pkg/srf/bezier_loop*.go`, `pkg/srf/bezier_list.go`, `pkg/srf/boolean_csg.go` | Loop assembly (`FromCurves`, `SBezierLoopSet::From`, `FindOuterFacesFrom`, `GetPlaneContainingBeziers`), `IsCircle`, `GetSurfaceA/B`, `RemoveShortSegments` faithful. `SBezier::AllIntersectionsWith` is a sampling approximation |
 | `srf/triangulate.cpp` | 738 | OK | `pkg/srf/triangulate.go` | Hole bridging, ear clipping, adaptive grid |
-| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `PointOnCurve`, `ClosestPointOnThisAndSurface` |
+| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `PointOnCurve`, `ClosestPointOnThisAndSurface`, `SSurface::ClosestPointTo`/`ClosestPointNewton`, `TangentsAt`, `NormalAt` (unnormalized, as in C++). Callers pass `mustConverge`/`retry` as the C++ call sites do |
 | `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go`, `pkg/srf/raycast_surface.go` | `ClassifyEdge` and trimmed `AllPointsIntersecting` (plane, cylinder, subdivision) |
 | `srf/merge.cpp` | 130 | OK | `pkg/srf/merge.go` | `MergeCoincidentSurfaces` |
 | `bsp.cpp` | 733 | OK | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | |
@@ -89,7 +89,7 @@ UI.
 
 ## Test counts
 
-- 429 tests (340 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 430 tests (341 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - All 86 non-boolean fixtures load cleanly and round-trip via
   `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
@@ -99,6 +99,10 @@ UI.
   constraint's equations to hold, except the LINKED fixture.
 - `TestArcLengthConstraints` covers the four arc-length constraints no
   fixture uses.
+- `TestIntersectionBranchesVsCpp` pins booleans through the surface
+  intersection cases no fixture reaches (coaxial cylinders, crossing
+  cylinders, a lathe cut on its seam plane) to a C++ harness: volume,
+  surface, curve and triangle counts.
 - `TestParityBooleanVolumeVsCppGolden` checks every boolean fixture's
   volume against the C++ testsuite golden (see below);
   `TestBooleanTwoBoxesVolume` checks union/difference/intersection of
@@ -188,13 +192,11 @@ when the trim polygon doesn't assemble" path.
 
 In priority order:
 
-1. **Audit `srf/surfinter.cpp`** (`IntersectAgainst` and its per-case
-   helpers) line by line, as was done for `boolean.cpp`/`raycast.cpp`.
-2. **Watertightness check.** The C++ fixture tests also assert that
+1. **Watertightness check.** The C++ fixture tests also assert that
    `SKdNode::MakeCertainEdgesInto(NAKED_OR_SELF_INTER)` finds no
    naked or self-intersecting edges. Port that check and assert it in
    `TestParityBooleanFixtures`.
-3. **Smaller stand-ins found but not yet ported:**
+2. **Smaller stand-ins found but not yet ported:**
    - `SBezier::AllIntersectionsWith`;
    - `SSurface::MakeSectionEdgesInto`;
    - the face remapping of LATHE/REVOLVE/HELIX shells, which needs

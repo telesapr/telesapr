@@ -79,11 +79,15 @@ func TestSSurfaceExtrusionNormal(t *testing.T) {
 }
 
 func TestSSurfaceRevolutionNormal(t *testing.T) {
-	profile := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 1})
-	s := FromRevolutionOf(&profile, geom.Vector{}, geom.Vector{Z: 1}, 0, 2*math.Pi, 0, 0)
+	// Revolving a vertical line about z gives a cylinder, whose normal
+	// is radial.
+	profile := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 1, Z: 1})
+	s := FromRevolutionOf(&profile, geom.Vector{}, geom.Vector{Z: 1}, 0, math.Pi/2, 0, 0)
+	p := s.PointAt(0.5, 0.5)
 	n := s.NormalAt(0.5, 0.5)
-	if n.Magnitude() < 1e-9 {
-		t.Fatalf("expected non-zero normal, got %v", n)
+	radial := geom.Vector{X: p.X, Y: p.Y}
+	if n.Magnitude() < 1e-9 || math.Abs(math.Abs(n.WithMagnitude(1).Dot(radial.WithMagnitude(1)))-1) > 1e-9 {
+		t.Fatalf("expected a radial normal at %v, got %v", p, n)
 	}
 }
 

@@ -151,16 +151,12 @@ func (s *SSurface) PointAtUv(puv geom.Point2d) geom.Vector {
 	return s.PointAt(puv.U, puv.V)
 }
 
-// NormalAt returns the surface normal at (u, v) computed via cross
-// product of partial derivatives.
+// NormalAt returns the (unnormalized) surface normal at (u, v), the
+// cross product of the tangents (C++ SSurface::NormalAt).
 func (s *SSurface) NormalAt(u, v float64) geom.Vector {
-	tu, tv := new(geom.Vector), new(geom.Vector)
-	s.TangentsAt(u, v, tu, tv, false)
-	n := tu.Cross(*tv)
-	if n.Magnitude() < 1e-12 {
-		return geom.Vector{Z: 1}
-	}
-	return n.Normal()
+	var tu, tv geom.Vector
+	s.TangentsAt(u, v, &tu, &tv, true)
+	return tu.Cross(tv)
 }
 
 // NormalAtUv is the Point2d variant.
@@ -169,50 +165,43 @@ func (s *SSurface) NormalAtUv(puv geom.Point2d) geom.Vector {
 }
 
 // TangentsAt computes the partial derivatives dP/du and dP/dv at
-// (u, v). When retry=true and either tangent collapses to zero
-// (e.g. a sphere pole), perturb (u, v) and try again.
+// (u, v) (C++ SSurface::TangentsAt). A tangent is zero at
+// singularities like the north pole; with retry, (u, v) is then moved
+// a little toward the middle and the tangents recomputed.
 func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
-	for attempt := 0; attempt < 5; attempt++ {
-		s.tangentsAtImpl(u, v, tu, tv)
-		if tu.Magnitude() > 1e-9 && tv.Magnitude() > 1e-9 {
-			return
-		}
-		if !retry {
-			return
-		}
-		u += 0.001
-		v += 0.001
-	}
-}
+	var num, numU, numV geom.Vector
+	var den, denU, denV float64
 
-func (s *SSurface) tangentsAtImpl(u, v float64, tu, tv *geom.Vector) {
-	*tu = geom.Vector{}
-	*tv = geom.Vector{}
-	dwDu := 0.0
-	dwDv := 0.0
-	for i := 0; i <= s.DegM; i++ {
-		Bu := bernstein(i, s.DegM, u)
-		BuP := bernsteinDerivative(i, s.DegM, u)
-		for j := 0; j <= s.DegN; j++ {
-			Bv := bernstein(j, s.DegN, v)
-			BvP := bernsteinDerivative(j, s.DegN, v)
-			w := s.Weight[i][j]
-			*tu = (*tu).Plus(s.Ctrl[i][j].ScaledBy(w * BuP * Bv))
-			*tv = (*tv).Plus(s.Ctrl[i][j].ScaledBy(w * Bu * BvP))
-			dwDu += w * BuP * Bv
-			dwDv += w * Bu * BvP
-		}
-	}
-	wSum := 0.0
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			wSum += s.Weight[i][j] * bernstein(i, s.DegM, u) * bernstein(j, s.DegN, v)
+			bi := bernstein(i, s.DegM, u)
+			bj := bernstein(j, s.DegN, v)
+			bip := bernsteinDerivative(i, s.DegM, u)
+			bjp := bernsteinDerivative(j, s.DegN, v)
+
+			num = num.Plus(s.Ctrl[i][j].ScaledBy(bi * bj * s.Weight[i][j]))
+			den += s.Weight[i][j] * bi * bj
+
+			numU = numU.Plus(s.Ctrl[i][j].ScaledBy(bip * bj * s.Weight[i][j]))
+			denU += s.Weight[i][j] * bip * bj
+
+			numV = numV.Plus(s.Ctrl[i][j].ScaledBy(bi * bjp * s.Weight[i][j]))
+			denV += s.Weight[i][j] * bi * bjp
 		}
 	}
-	if wSum != 0 {
-		pt := s.PointAt(u, v)
-		*tu = tu.ScaledBy(1.0 / wSum).Minus(pt.ScaledBy(dwDu / wSum))
-		*tv = tv.ScaledBy(1.0 / wSum).Minus(pt.ScaledBy(dwDv / wSum))
+	// quotient rule; f(t) = n(t)/d(t), so f' = (n'*d - n*d')/(d^2)
+	*tu = numU.ScaledBy(den).Minus(num.ScaledBy(denU))
+	*tu = tu.ScaledBy(1.0 / (den * den))
+
+	*tv = numV.ScaledBy(den).Minus(num.ScaledBy(denV))
+	*tv = tv.ScaledBy(1.0 / (den * den))
+
+	// Tangent is zero at sungularities like the north pole. Move away a bit and retry.
+	if tv.Equals(geom.Vector{}) && retry {
+		s.TangentsAt(u+(0.5-u)*0.00001, v, tu, tv, false)
+	}
+	if tu.Equals(geom.Vector{}) && retry {
+		s.TangentsAt(u, v+(0.5-v)*0.00001, tu, tv, false)
 	}
 }
 
@@ -365,54 +354,38 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 	return s
 }
 
-// ClosestPointTo projects point p onto the surface in (u, v) space.
-// Phase 3 + Goal Item 6 implementation: Newton iteration from a
-// cached initial guess, with the proper inverse Jacobian
-//
-//	[ tu·tu  tu·tv ]^-1   [ tu·r ]
-//	[ tv·tu  tv·tv ]      [ tv·r ]
-//
-// applied as the step (du, dv) = J^-1 . r where r = p - pt. The
-// 2x2 inverse is computed via Cramer's rule for numerical
-// robustness. If the Jacobian is singular (e.g., at a pole), the
-// fallback grid search picks the best of 9 sample points instead.
+// ClosestPointTo finds the (u, v) of the point on the surface closest to
+// p (C++ SSurface::ClosestPointTo). With mustConverge the Newton
+// refinement starts from the last result, is given more iterations,
+// and stops once it reaches p.
 func (s *SSurface) ClosestPointTo(p geom.Vector, puv *geom.Point2d, mustConverge bool) {
-	if puv == nil {
-		return
-	}
-	// A few special cases first, matching C++
-	// `SSurface::ClosestPointTo` (ratpoly.cpp:414-439): coincident
-	// control points make the derivative go to zero at the corners
-	// (nonconvergence), and exact corner hits should return a
-	// consistent (u, v) rather than whatever the Newton iteration
-	// happens to settle on.
+	s.ClosestPointToUV(p, &puv.U, &puv.V, mustConverge)
+}
+
+// ClosestPointToUV is ClosestPointTo returning u and v separately.
+func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge bool) {
+	// A few special cases first; when control points are coincident the
+	// derivative goes to zero at the control points, and would result in
+	// nonconvergence. We avoid that here, and also guarantee a consistent
+	// (u, v) (of the infinitely many possible in one parameter).
 	if p.Equals(s.Ctrl[0][0]) {
-		puv.U, puv.V = 0, 0
+		*u, *v = 0, 0
 		return
 	}
 	if p.Equals(s.Ctrl[s.DegM][0]) {
-		puv.U, puv.V = 1, 0
+		*u, *v = 1, 0
 		return
 	}
 	if p.Equals(s.Ctrl[s.DegM][s.DegN]) {
-		puv.U, puv.V = 1, 1
+		*u, *v = 1, 1
 		return
 	}
 	if p.Equals(s.Ctrl[0][s.DegN]) {
-		puv.U, puv.V = 0, 1
+		*u, *v = 0, 1
 		return
 	}
-	// And planes are trivial, so don't waste time iterating over
-	// those — solve the exact linear projection instead. Critically,
-	// this does NOT clamp (u, v) to [0, 1]: callers that clip a line
-	// against a plane's trim rectangle (e.g. intersectPlanePlane's
-	// tmin/tmax sweep) need the true, possibly out-of-range (u, v) of
-	// a point that may lie outside this plane's parameter rectangle.
-	// The general Newton-iteration path below clamps every step to
-	// [0, 1], which is correct for finding the closest point ON a
-	// trimmed surface but wrong for this "where does p project on
-	// the surface's infinite plane" query. Matches C++
-	// ratpoly.cpp:424-439.
+
+	// And planes are trivial, so don't waste time iterating over those.
 	if s.DegM == 1 && s.DegN == 1 {
 		orig := s.Ctrl[0][0]
 		bu := s.Ctrl[1][0].Minus(orig)
@@ -421,118 +394,103 @@ func (s *SSurface) ClosestPointTo(p geom.Vector, puv *geom.Point2d, mustConverge
 			n := bu.Cross(bv)
 			ty := n.Cross(bu).ScaledBy(1.0 / bu.MagSquared())
 			tx := bv.Cross(n).ScaledBy(1.0 / bv.MagSquared())
+
 			dp := p.Minus(orig)
-			puv.U = dp.Dot(bu) / tx.MagSquared()
-			puv.V = dp.Dot(bv) / ty.MagSquared()
+			*u = dp.Dot(bu) / tx.MagSquared()
+			*v = dp.Dot(bv) / ty.MagSquared()
 			return
 		}
 	}
-	u := s.Cached.U
-	v := s.Cached.V
-	if u == 0 && v == 0 {
-		u, v = 0.5, 0.5
+
+	// Try whatever the previous guess was. This is likely to do something
+	// good if we're working our way along a curve or something else where
+	// we project successive points that are close to each other; something
+	// like a 20% speedup empirically.
+	if mustConverge {
+		ut, vt := s.Cached.U, s.Cached.V
+		if s.closestPointNewton(p, &ut, &vt, mustConverge) {
+			*u, *v = ut, vt
+			s.Cached = geom.Point2d{U: ut, V: vt}
+			return
+		}
 	}
-	bestU, bestV := u, v
-	bestDist := s.PointAt(u, v).DistanceTo(p)
-	for iter := 0; iter < 25; iter++ {
-		pt := s.PointAt(u, v)
+
+	// Search for a reasonable initial guess
+	minDist := veryPositive
+	res := 20
+	if max(s.DegM, s.DegN) == 2 {
+		res = 7
+	}
+	for i := 0; i < res; i++ {
+		for j := 0; j < res; j++ {
+			tryu, tryv := (float64(i)+0.5)/float64(res), (float64(j)+0.5)/float64(res)
+
+			tryp := s.PointAt(tryu, tryv)
+			d := tryp.Minus(p).Magnitude()
+			if d < minDist {
+				*u = tryu
+				*v = tryv
+				minDist = d
+			}
+		}
+	}
+
+	if s.closestPointNewton(p, u, v, mustConverge) {
+		s.Cached = geom.Point2d{U: *u, V: *v}
+		return
+	}
+
+	// If we failed to converge, then at least don't return NaN.
+	if isReasonable(*u) || isReasonable(*v) {
+		*u, *v = 0, 0
+	}
+}
+
+// closestPointNewton refines the guess (u, v) by Newton iteration,
+// clamped to the unit square (C++ SSurface::ClosestPointNewton).
+func (s *SSurface) closestPointNewton(p geom.Vector, u, v *float64, mustConverge bool) bool {
+	iters := 5
+	if mustConverge {
+		iters = 25
+	}
+	for i := 0; i < iters; i++ {
+		p0 := s.PointAt(*u, *v)
+		if mustConverge {
+			if p0.EqualsTol(p, ratPolyEps) {
+				return true
+			}
+		}
+
 		var tu, tv geom.Vector
-		s.TangentsAt(u, v, &tu, &tv, false)
-		// Jacobian 2x2: G = [[tu·tu, tu·tv], [tv·tu, tv·tv]].
-		// r = p - pt. We want step (du, dv) such that J^T (J step) = J^T r,
-		// which gives the Gauss-Newton step (du, dv) = G^-1 . (J^T r).
-		// For a 2x2 symmetric matrix G, G^-1 = (1/det) * [[b, -c], [-c, a]].
-		ttu := tu.Dot(tu)
-		ttv := tv.Dot(tv)
-		utv := tu.Dot(tv)
-		det := ttu*ttv - utv*utv
-		if mathAbs(det) > 1e-20 {
-			r := p.Minus(pt)
-			du := (ttv*tu.Dot(r) - utv*tv.Dot(r)) / det
-			dv := (ttu*tv.Dot(r) - utv*tu.Dot(r)) / det
-			if mathAbs(du) < 1e-12 && mathAbs(dv) < 1e-12 {
-				break
-			}
-			u += du
-			v += dv
-			if u < 0 {
-				u = 0
-			}
-			if u > 1 {
-				u = 1
-			}
-			if v < 0 {
-				v = 0
-			}
-			if v > 1 {
-				v = 1
-			}
-		} else {
-			// Jacobian singular (pole or degenerate). Fall back to
-			// a coarse grid search: pick the best of 9 sample points.
-			u, v = gridSearchClosest(s, p, u, v)
-			break
-		}
-		// Track the best (u, v) so far.
-		pt = s.PointAt(u, v)
-		d := pt.DistanceTo(p)
-		if d < bestDist {
-			bestDist = d
-			bestU, bestV = u, v
-		}
-	}
-	if mustConverge && bestDist > 1e-3 {
-		// Final fallback: global grid search.
-		bestU, bestV = gridSearchClosest(s, p, 0.5, 0.5)
-	}
-	puv.U = bestU
-	puv.V = bestV
-	s.Cached = *puv
-}
+		s.TangentsAt(*u, *v, &tu, &tv, true)
+		n := tu.Cross(tv)
+		// since tu and tv may not be orthogonal, use y in place of v.
+		// |y| = |v|sin(theta) where theta is the angle between tu and tv.
+		ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+		tx := tv.Cross(n).ScaledBy(1.0 / tv.MagSquared())
 
-// gridSearchClosest samples 9 points around (u0, v0) in a 3x3 grid
-// with step 0.25 and returns the (u, v) whose PointAt is closest to
-// p. Used as a fallback when the Newton iteration's Jacobian is
-// singular.
-func gridSearchClosest(s *SSurface, p geom.Vector, u0, v0 float64) (float64, float64) {
-	bestU, bestV := u0, v0
-	bestDist := s.PointAt(u0, v0).DistanceTo(p)
-	for du := -0.25; du <= 0.25; du += 0.25 {
-		u := u0 + du
-		if u < 0 {
-			u = 0
-		}
-		if u > 1 {
-			u = 1
-		}
-		for dv := -0.25; dv <= 0.25; dv += 0.25 {
-			v := v0 + dv
-			if v < 0 {
-				v = 0
-			}
-			if v > 1 {
-				v = 1
-			}
-			dist := s.PointAt(u, v).DistanceTo(p)
-			if dist < bestDist {
-				bestDist = dist
-				bestU, bestV = u, v
-			}
-		}
-	}
-	return bestU, bestV
-}
+		// Project the point into a plane through p0, with basis tu, tv; a
+		// second-order thing would converge faster but needs second
+		// derivatives.
+		dp := p.Minus(p0)
+		du := dp.Dot(tx)
+		dv := dp.Dot(ty)
+		*u += du / tx.MagSquared()
+		*v += dv / ty.MagSquared()
 
-// ClosestPointToUV stores (u, v) directly (Point2d convenience).
-func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge bool) {
-	var puv geom.Point2d
-	s.ClosestPointTo(p, &puv, mustConverge)
-	if u != nil {
-		*u = puv.U
+		if *u < 0.0 {
+			*u = 0.0
+		} else if *u > 1.0 {
+			*u = 1.0
+		}
+		if *v < 0.0 {
+			*v = 0.0
+		} else if *v > 1.0 {
+			*v = 1.0
+		}
 	}
-	if v != nil {
-		*v = puv.V
-	}
+
+	return false
 }
 
 // PointOnCurve refines (*up, *vp), an initial guess, to where curve
@@ -557,7 +515,7 @@ func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 		// Approximate the surface by a plane
 		ps := s.PointAt(u, v)
 		var tu, tv geom.Vector
-		s.TangentsAt(u, v, &tu, &tv, false)
+		s.TangentsAt(u, v, &tu, &tv, true)
 		n := tu.Cross(tv).WithMagnitude(1)
 
 		// point on curve and tangent line direction
@@ -607,50 +565,21 @@ func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 // SSurface::ContainsPlaneCurve in srf/surfinter.cpp. Used by
 // IntersectAgainst to detect trim curves that lie in a plane and
 // can be added as exact intersection curves.
-func (s *SSurface) ContainsPlaneCurve(c *SCurve) bool {
-	if s == nil || c == nil {
-		return false
-	}
+func (s *SSurface) ContainsPlaneCurve(sc *SCurve) bool {
 	if s.DegM != 1 || s.DegN != 1 {
 		return false
 	}
-	if !c.IsExact {
-		return false
+	if !sc.IsExact {
+		return false // we don't handle those (yet?)
 	}
-	n := s.NormalAt(0, 0).WithMagnitude(1)
-	d := n.Dot(s.PointAt(0, 0))
-	const tol = 1e-9
-	for i := 0; i <= c.Exact.Degree; i++ {
-		if mathAbs(n.Dot(c.Exact.Ctrl[i])-d) > tol {
-			return false
-		}
-	}
-	return true
-}
 
-// FillExtrusionAxis writes the extrusion direction and the (u=0)
-// row Bezier into the supplied outputs when this surface is an
-// extrusion. Returns true on success, false otherwise. Mirrors the
-// C++ SSurface::IsExtrusion side-effects used by IntersectAgainst.
-func (s *SSurface) FillExtrusionAxis(of *SBezier, along *geom.Vector) bool {
-	if s == nil || s.DegN != 1 {
-		return false
-	}
-	for i := 0; i <= s.DegM; i++ {
-		d := s.Ctrl[i][1].Minus(s.Ctrl[i][0])
-		if d.Magnitude() < 1e-9 {
-			return false
-		}
-		if i == 0 {
-			*along = d
-			if of != nil {
-				of.Degree = s.DegM
-				for j := 0; j <= s.DegM; j++ {
-					of.Ctrl[j] = s.Ctrl[j][0]
-					of.Weight[j] = s.Weight[j][0]
-				}
-			}
-		} else if d.DistanceTo(*along) > 1e-9 {
+	p := s.Ctrl[0][0]
+	n := s.NormalAt(0, 0).WithMagnitude(1)
+	d := n.Dot(p)
+
+	// check all control points on the curve
+	for i := 0; i <= sc.Exact.Degree; i++ {
+		if math.Abs(n.Dot(sc.Exact.Ctrl[i])-d) > lengthEps {
 			return false
 		}
 	}
@@ -874,7 +803,7 @@ func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool
 	for i := 0; i < 20; i++ {
 		p := s.PointAt(*u, *v)
 		tu, tv := geom.Vector{}, geom.Vector{}
-		s.TangentsAt(*u, *v, &tu, &tv, false)
+		s.TangentsAt(*u, *v, &tu, &tv, true)
 		n := tu.Cross(tv).WithMagnitude(1)
 		d := p.Dot(n)
 		// Detect parallel: line direction dot n ~ 0
@@ -915,7 +844,7 @@ func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
 			}
 			edge.Degree = degn
 			if edge.PointOnNonparallelCurve(curve, &p) {
-				if tv, _ := edge.ClosestPointTo(p, false); true {
+				if tv, _ := edge.ClosestPointTo(p, true); true {
 					*v = tv
 					*u = 0.0
 					return true
@@ -928,7 +857,7 @@ func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
 			}
 			edge.Degree = degn
 			if edge.PointOnNonparallelCurve(curve, &p) {
-				if tv, _ := edge.ClosestPointTo(p, false); true {
+				if tv, _ := edge.ClosestPointTo(p, true); true {
 					*v = tv
 					*u = 1.0
 					return true
@@ -943,7 +872,7 @@ func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
 			}
 			edge.Degree = degm
 			if edge.PointOnNonparallelCurve(curve, &p) {
-				if tv, _ := edge.ClosestPointTo(p, false); true {
+				if tv, _ := edge.ClosestPointTo(p, true); true {
 					*u = tv
 					*v = 0.0
 					return true
@@ -956,7 +885,7 @@ func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
 			}
 			edge.Degree = degm
 			if edge.PointOnNonparallelCurve(curve, &p) {
-				if tv, _ := edge.ClosestPointTo(p, false); true {
+				if tv, _ := edge.ClosestPointTo(p, true); true {
 					*u = tv
 					*v = 1.0
 					return true

@@ -12,6 +12,19 @@ const lengthEps = geom.LengthEps
 // ratPolyEps mirrors C++ RATPOLY_EPS (ratpoly.cpp:16).
 const ratPolyEps = lengthEps / 100
 
+// veryPositive and veryNegative mirror C++ VERY_POSITIVE and
+// VERY_NEGATIVE (defs.h).
+const (
+	veryPositive = 1e10
+	veryNegative = -1e10
+)
+
+// isReasonable is C++ IsReasonable, which despite its name is true
+// for NaN and huge values.
+func isReasonable(x float64) bool {
+	return math.IsNaN(x) || x > 1e11 || x < -1e11
+}
+
 // SBezier is a rational Bezier curve of degree 1..3 with up to 4
 // weighted 3-D control points. Used for sketch curves (LineSegment,
 // ArcOfCircle, Cubic), trim curves on shell surfaces, and for

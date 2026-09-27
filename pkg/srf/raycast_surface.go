@@ -16,7 +16,7 @@ func (s *SSurface) IsExtrusion(of *SBezier, along *geom.Vector) bool {
 	dir := s.Ctrl[0][1].Minus(s.Ctrl[0][0])
 	for i := 0; i <= s.DegM; i++ {
 		if math.Abs(s.Weight[i][1]-s.Weight[i][0]) < geom.LengthEps &&
-			s.Ctrl[i][1].Minus(s.Ctrl[i][0]).DistanceTo(dir) < geom.LengthEps {
+			s.Ctrl[i][1].Minus(s.Ctrl[i][0]).Equals(dir) {
 			continue
 		}
 		return false
@@ -183,7 +183,7 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			(n.Dot(b) > d+geom.LengthEps && n.Dot(a) < d-geom.LengthEps) {
 			p := geom.AtIntersectionOfPlaneAndLine(n, d, a, b)
 			var inter surfInter
-			s.ClosestPointTo(p, &inter.p, false)
+			s.ClosestPointTo(p, &inter.p, true)
 			inters = append(inters, inter)
 		}
 	} else if s.IsCylinder(&axis, &center, &radius, &start, &finish) {
@@ -238,7 +238,7 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			p := a.Plus(b.Minus(a).ScaledBy(t))
 
 			var inter surfInter
-			s.ClosestPointTo(p, &inter.p, false)
+			s.ClosestPointTo(p, &inter.p, true)
 			inters = append(inters, inter)
 		}
 	} else {

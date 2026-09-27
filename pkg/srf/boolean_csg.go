@@ -158,8 +158,8 @@ func (c *SCurve) RemoveShortSegmentsWithChordTol(sA, sB *SSurface, chordTolMm fl
 				continue
 			}
 			var puv, nuv geom.Point2d
-			s.ClosestPointTo(prev, &puv, false)
-			s.ClosestPointTo(scn.P, &nuv, false)
+			s.ClosestPointTo(prev, &puv, true)
+			s.ClosestPointTo(scn.P, &nuv, true)
 			if s.ChordToleranceForEdge(geom.Vector{X: nuv.U, Y: nuv.V}, geom.Vector{X: puv.U, Y: puv.V}) > chordTolMm {
 				mustKeep = true
 			}
