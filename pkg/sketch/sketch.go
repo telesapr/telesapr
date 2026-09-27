@@ -22,6 +22,11 @@ type Sketch struct {
 	// requests give (C++ SS.images); nil for one that couldn't be read.
 	Images map[string]*Image
 
+	// ReloadAllLinked reloads the files the sketch links, from wherever
+	// the sketch was loaded (C++ SS.ReloadAllLinked(SS.saveFile)); undo
+	// calls it. Nil for a sketch that wasn't loaded from a file.
+	ReloadAllLinked func(sk *Sketch)
+
 	// Undo/redo stacks.
 	Undo UndoStack
 	Redo UndoStack

@@ -323,7 +323,25 @@ type Group struct {
 	Mesh *Mesh
 }
 
-func (g *Group) Clear() {}
+// Clear drops everything regeneration makes, and the remap table (C++
+// Group::Clear).
+func (g *Group) Clear() {
+	g.Solved.Remove = nil
+	g.PolyLoops.Clear()
+	g.BezierLoops.Clear()
+	g.BezierOpens = nil
+	g.ThisMesh.Clear()
+	g.RunningMesh.Clear()
+	g.ThisShell.Clear()
+	g.RunningShell.Clear()
+	g.DisplayMesh.Clear()
+	g.DisplayOutlines.Clear()
+	g.ImpMesh.Clear()
+	g.ImpShell.Clear()
+	g.ImpEntity = nil
+	// remap is the only one that doesn't get recreated when we regen
+	g.Remap = nil
+}
 
 func (g *Group) IsSolvedOkay() bool {
 	return g.Solved.How == core.SolveOkay || g.Solved.How == core.SolveRedundantOkay

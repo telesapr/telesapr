@@ -62,6 +62,7 @@ func LoadFile(path string) (doc *Document, err error) {
 	// regenerated without solving.
 	doc.Sketch.Entities = doc.Sketch.Entities[:0]
 	doc.reloadAllLinked(path)
+	doc.Sketch.ReloadAllLinked = func(*sketch.Sketch) { doc.reloadAllLinked(path) }
 	defer func() {
 		// A sketch C++ would assert on (e.g. one missing the reference
 		// workplanes) is an error here.

@@ -1,133 +1,176 @@
 package sketch
 
 import (
+	"maps"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 )
 
-// MaxUndoStates is the maximum number of undo states retained.
-const MaxUndoStates = 32
+// This file ports solvespace/src/undoredo.cpp: whenever the user
+// changes something, the state is recorded and pushed on a stack, and
+// undo pops it.
 
-// UndoState is one snapshot of the sketch state for undo/redo.
+// MaxUndo is the depth of the undo and redo stacks (C++
+// SolveSpaceUI::MAX_UNDO).
+const MaxUndo = 100
+
+// UndoState is one snapshot of the sketch: what can't be regenerated
+// (C++ UndoState). The active group, which C++ also records, is derived
+// from the group order here.
 type UndoState struct {
 	Groups      []Group
-	Entities    []core.Entity
-	Params      []core.Param
+	GroupOrder  []core.HGroup
 	Requests    []Request
 	Constraints []core.Constraint
+	Params      []core.Param
 	Styles      []core.Style
 }
 
-// UndoStack holds up to MaxUndoStates entries in a circular buffer.
+// UndoStack is a ring of up to MaxUndo states (C++ UndoStack).
 type UndoStack struct {
-	D     [MaxUndoStates]UndoState
+	D     [MaxUndo]UndoState
 	Cnt   int
 	Write int
 }
 
-// UndoEnableMenus is a no-op in the headless Go port; the GUI
-// tracks its own enable/disable state.
-func (s *Sketch) UndoEnableMenus() {}
+func wrapUndo(v int) int { return ((v % MaxUndo) + MaxUndo) % MaxUndo }
 
-// UndoRemember pushes the current sketch state onto the undo stack
-// and clears the redo stack. Called whenever a user action modifies
-// the sketch.
+// UndoRemember records the current state for undo, and forgets what
+// could be redone (C++ SolveSpaceUI::UndoRemember; the unsaved flag and
+// the menus are the caller's).
 func (s *Sketch) UndoRemember() {
 	s.PushFromCurrentOnto(&s.Undo)
 	s.UndoClearStack(&s.Redo)
-	s.UndoEnableMenus()
 }
 
-// UndoUndo pops one state off the undo stack, pushes the current
-// state onto the redo stack, and restores the popped state as the
-// current sketch. Returns true if a state was restored.
+// UndoUndo restores the last remembered state, keeping the current one
+// for redo; false if there is none (C++ SolveSpaceUI::UndoUndo).
 func (s *Sketch) UndoUndo() bool {
 	if s.Undo.Cnt <= 0 {
 		return false
 	}
+
 	s.PushFromCurrentOnto(&s.Redo)
 	s.PopOntoCurrentFrom(&s.Undo)
-	s.UndoEnableMenus()
 	return true
 }
 
-// UndoRedo pops one state off the redo stack, pushes the current
-// state onto the undo stack, and restores the popped state as the
-// current sketch. Returns true if a state was restored.
+// UndoRedo restores the last undone state (C++ SolveSpaceUI::UndoRedo).
 func (s *Sketch) UndoRedo() bool {
 	if s.Redo.Cnt <= 0 {
 		return false
 	}
+
 	s.PushFromCurrentOnto(&s.Undo)
 	s.PopOntoCurrentFrom(&s.Redo)
-	s.UndoEnableMenus()
 	return true
 }
 
-// PushFromCurrentOnto writes the current sketch state into uk's
-// write position, advancing the write pointer and incrementing
-// count. If the stack is full, the oldest entry is overwritten.
+// PushFromCurrentOnto records the current state on uk, over its oldest
+// one when it's full (C++ SolveSpaceUI::PushFromCurrentOnto).
 func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
-	idx := uk.Write
-	if uk.Cnt == MaxUndoStates {
-		s.UndoClearState(&uk.D[idx])
+	if uk.Cnt == MaxUndo {
+		s.UndoClearState(&uk.D[uk.Write])
+		// And then write in to this one again
 	} else {
 		uk.Cnt++
 	}
-	dst := &uk.D[idx]
-	dst.Groups = append([]Group(nil), s.Groups...)
-	dst.Entities = append([]core.Entity(nil), s.Entities...)
-	dst.Params = append([]core.Param(nil), s.Params...)
-	dst.Requests = append([]Request(nil), s.Requests...)
-	dst.Constraints = append([]core.Constraint(nil), s.Constraints...)
-	dst.Styles = append([]core.Style(nil), s.Styles...)
-	uk.Write = (uk.Write + 1) % MaxUndoStates
+
+	ut := &uk.D[uk.Write]
+	*ut = UndoState{}
+	ut.Groups = make([]Group, 0, len(s.Groups))
+	for _, src := range s.Groups {
+		// Copy what defines the group; zero out all the dynamic stuff
+		// that will get regenerated.
+		dest := Group{
+			Tag:                    src.Tag,
+			H:                      src.H,
+			Type:                   src.Type,
+			Order:                  src.Order,
+			OpA:                    src.OpA,
+			OpB:                    src.OpB,
+			Visible:                src.Visible,
+			Suppress:               src.Suppress,
+			RelaxConstraints:       src.RelaxConstraints,
+			AllowRedundant:         src.AllowRedundant,
+			SuppressDofCalculation: src.SuppressDofCalculation,
+			AllDimsReference:       src.AllDimsReference,
+			Scale:                  src.Scale,
+			DofCheckOk:             src.DofCheckOk,
+			ActiveWorkplane:        src.ActiveWorkplane,
+			ValA:                   src.ValA,
+			ValB:                   src.ValB,
+			ValC:                   src.ValC,
+			Subtype:                src.Subtype,
+			SkipFirst:              src.SkipFirst,
+			BooleanFailed:          src.BooleanFailed,
+			MeshCombine:            src.MeshCombine,
+			ForceToMesh:            src.ForceToMesh,
+			Remap:                  maps.Clone(src.Remap),
+			LinkFile:               src.LinkFile,
+			Color:                  src.Color,
+			Predef:                 src.Predef,
+			Name:                   src.Name,
+		}
+		ut.Groups = append(ut.Groups, dest)
+	}
+	ut.GroupOrder = append([]core.HGroup(nil), s.GroupOrder...)
+	ut.Requests = append([]Request(nil), s.Requests...)
+	ut.Constraints = append([]core.Constraint(nil), s.Constraints...)
+	ut.Params = append([]core.Param(nil), s.Params...)
+	ut.Styles = append([]core.Style(nil), s.Styles...)
+
+	uk.Write = wrapUndo(uk.Write + 1)
 }
 
-// PopOntoCurrentFrom reads from the most recent entry of uk,
-// advancing in reverse, and replaces the current sketch state with
-// it. Skips empty (zero) entries.
+// PopOntoCurrentFrom makes the last state on uk the current one, then
+// reloads the linked files and regenerates (C++
+// SolveSpaceUI::PopOntoCurrentFrom).
 func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
-	for uk.Cnt > 0 {
-		uk.Cnt--
-		idx := (uk.Write - 1 - (MaxUndoStates-uk.Cnt-1) + MaxUndoStates) % MaxUndoStates
-		// The most recently written entry is at (Write - 1) mod M;
-		// for a circular buffer of size M with Cnt entries written,
-		// the last-written entry is at (Write - 1 + M) mod M, and
-		// each prior entry is at decreasing indices.
-		_ = idx
-		break
+	if uk.Cnt <= 0 {
+		panic("Cannot pop from empty undo stack")
 	}
-	if uk.Cnt == 0 && uk.Write == 0 {
-		// No valid state.
-		return
+	uk.Cnt--
+	uk.Write = wrapUndo(uk.Write - 1)
+
+	ut := &uk.D[uk.Write]
+
+	// Free everything in the main copy of the program before replacing it
+	for _, hg := range s.GroupOrder {
+		s.GetGroup(hg).Clear()
 	}
-	// Pop the last-written entry.
-	idx := (uk.Write - 1 + MaxUndoStates) % MaxUndoStates
-	src := &uk.D[idx]
-	uk.Write = idx
-	s.Groups = append([]Group(nil), src.Groups...)
-	s.Entities = append([]core.Entity(nil), src.Entities...)
-	s.Params = append([]core.Param(nil), src.Params...)
-	s.Requests = append([]Request(nil), src.Requests...)
-	s.Constraints = append([]core.Constraint(nil), src.Constraints...)
-	s.Styles = append([]core.Style(nil), src.Styles...)
+
+	// And then take the state from the undo list
+	s.Groups = ut.Groups
+	s.GroupOrder = ut.GroupOrder
+	s.Requests = ut.Requests
+	s.Constraints = ut.Constraints
+	s.Params = ut.Params
+	s.Styles = ut.Styles
+
+	// It has been moved, so no need to free it.
+	*ut = UndoState{}
+
+	// And reset the state everywhere else in the program, since the
+	// sketch just changed a lot.
+	if s.ReloadAllLinked != nil {
+		s.ReloadAllLinked(s)
+	}
+	s.GenerateAll()
 }
 
-// UndoClearStack clears all entries in uk.
+// UndoClearStack forgets every state on uk (C++
+// SolveSpaceUI::UndoClearStack).
 func (s *Sketch) UndoClearStack(uk *UndoStack) {
-	for i := range uk.D {
-		s.UndoClearState(&uk.D[i])
+	for uk.Cnt > 0 {
+		uk.Write = wrapUndo(uk.Write - 1)
+		uk.Cnt--
+		s.UndoClearState(&uk.D[uk.Write])
 	}
-	uk.Cnt = 0
-	uk.Write = 0
+	*uk = UndoStack{} // for good measure
 }
 
-// UndoClearState releases any state held by a single entry.
+// UndoClearState forgets one state (C++ SolveSpaceUI::UndoClearState).
 func (s *Sketch) UndoClearState(ut *UndoState) {
-	ut.Groups = nil
-	ut.Entities = nil
-	ut.Params = nil
-	ut.Requests = nil
-	ut.Constraints = nil
-	ut.Styles = nil
+	*ut = UndoState{}
 }
