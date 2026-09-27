@@ -4,12 +4,17 @@ type HEquation struct {
 	V uint32
 }
 
+// IsFromConstraint reports whether the equation was written by a
+// constraint (C++ hEquation::isFromConstraint): entity and group
+// equations set one of the top two bits.
 func (h HEquation) IsFromConstraint() bool {
-	return (h.V & 0x80000000) != 0
+	return h.V&0xc0000000 == 0
 }
 
+// Constraint is the constraint that wrote the equation (C++
+// hEquation::constraint).
 func (h HEquation) Constraint() HConstraint {
-	return HConstraint{V: h.V & 0x7FFFFFFF}
+	return HConstraint{V: h.V >> 16}
 }
 
 type HGroup struct {

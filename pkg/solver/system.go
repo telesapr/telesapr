@@ -1,2244 +1,875 @@
+// Package solver ports solvespace/src/system.cpp: it linearizes the
+// constraint equations of one group and solves them by a modified
+// Newton's method, and detects non-convergence or inconsistency.
 package solver
 
 import (
-	"fmt"
 	"math"
 	"sort"
+	"time"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// Resolver supplies entities and parameters needed to generate equations.
-type Resolver interface {
-	Entity(core.HEntity) (*core.Entity, error)
-	Param(core.HParam) (*core.Param, error)
-}
+// ConvergeTolerance is how close to zero every equation must be. It
+// must always be much less than LENGTH_EPS, and in practice should be
+// much less (C++ System::CONVERGE_TOLERANCE).
+const ConvergeTolerance = core.LengthEps / 1e2
 
-// Equation encapsulates a symbolic constraint equation.
+// MaxUnknowns bounds the size of the Jacobian (C++ System::MAX_UNKNOWNS).
+const MaxUnknowns = 2048
+
+// Tags the solver puts on params and equations (C++ System enum).
+const (
+	varSubstituted = 10000
+	varDofTest     = 10001
+	eqSubstituted  = 20000
+)
+
+// Equation is one equation of the system, expr = 0.
 type Equation struct {
-	H           core.HEquation
-	Expr        *core.Expr
-	derivatives map[core.HParam]*core.Expr
+	H   core.HEquation
+	E   *core.Expr
+	Tag int
 }
 
-func (e *Equation) derivative(h core.HParam) *core.Expr {
-	if e.derivatives == nil {
-		e.derivatives = make(map[core.HParam]*core.Expr)
-	}
-	if d, ok := e.derivatives[h]; ok {
-		return d
-	}
-	d := e.Expr.Derivative(h).FoldConstants()
-	e.derivatives[h] = d
-	return d
+// Param is one unknown of the system, a copy of the sketch's param.
+type Param struct {
+	core.Param
+	Tag int
 }
 
-// UnsupportedConstraintError is returned when a constraint type lacks an equation builder.
-type UnsupportedConstraintError struct {
-	Type core.ConstraintType
+// Group is what System::Solve reads from the group being solved.
+type Group struct {
+	SuppressDofCalculation bool
+	AllowRedundant         bool
+	// FindToFixTimeout bounds FindWhichToRemoveToFixJacobian; Timeout
+	// reports that it ran out.
+	FindToFixTimeout time.Duration
+	Timeout          bool
+	// Constraints are the group's constraints, in handle order.
+	Constraints []*core.Constraint
+	// WriteEquationsExceptFor appends the equations of the group's
+	// constraints except hc, of its entities and of the group itself
+	// (C++ System::WriteEquationsExceptFor).
+	WriteEquationsExceptFor func(hc core.HConstraint, l *[]core.Equation)
 }
 
-func (e UnsupportedConstraintError) Error() string {
-	return fmt.Sprintf("solver: constraint type %d not supported", e.Type)
-}
-
-// System accumulates parameters and equations generated from constraints.
+// System is the equations and unknowns of one group (C++ System).
 type System struct {
-	resolver Resolver
+	// Param are the unknowns, in handle order.
+	Param []*Param
+	// Eq are the equations, in handle order.
+	Eq []Equation
+	// Dragged are the params the user is dragging, which the least
+	// squares step prefers to change.
+	Dragged map[core.HParam]bool
+	// SK looks up the sketch's params: those that aren't unknowns are
+	// read as constants, and Solve writes the solution back to it.
+	SK func(core.HParam) *core.Param
 
-	// Known, when set, reports the parameters that are not unknowns
-	// of this system, with their values. C++ SolveGroup solves only
-	// the params of one group; every other param keeps its value, so
-	// registerParams folds known params into constants.
-	Known func(core.HParam) (float64, bool)
+	paramIndex map[core.HParam]*Param
 
-	Params    map[core.HParam]*core.Param
-	Equations []*Equation
-}
-
-// NewSystem creates an empty symbolic system backed by resolver.
-func NewSystem(res Resolver) *System {
-	return &System{
-		resolver: res,
-		Params:   make(map[core.HParam]*core.Param),
+	mat struct {
+		m, n  int
+		param []core.HParam
+		eq    []*Equation
+		// A is the Jacobian: A[i][j] is d eq[i] / d param[j], nil
+		// where that's zero.
+		A    [][]*core.Expr
+		B    []*core.Expr
+		Anum [][]float64
+		Bnum []float64
+		X    []float64
 	}
 }
 
-func (s *System) entity(handle core.HEntity) (*core.Entity, error) {
-	if handle == (core.HEntity{}) {
-		return nil, fmt.Errorf("solver: entity handle zero")
-	}
-	ent, err := s.resolver.Entity(handle)
-	if err != nil {
-		return nil, err
-	}
-	if ent == nil {
-		return nil, fmt.Errorf("solver: entity %08x missing", handle.V)
-	}
-	return ent, nil
+// AddParam adds an unknown, with the sketch param's value as its
+// initial guess.
+func (s *System) AddParam(p core.Param) {
+	s.Param = append(s.Param, &Param{Param: p})
+	sort.SliceStable(s.Param, func(i, j int) bool { return s.Param[i].H.V < s.Param[j].H.V })
+	s.paramIndex = nil
 }
 
-// AddConstraint expands the supplied constraint into equations (where supported).
-func (s *System) AddConstraint(c *core.Constraint) error {
-	if c == nil {
-		return fmt.Errorf("solver: nil constraint")
-	}
-
-	switch c.Type {
-	case core.ConstraintPointsCoincident:
-		return s.addCoincidentPoints(c)
-	case core.ConstraintPtPtDistance:
-		return s.addPointPointDistance(c)
-	case core.ConstraintProjPtDistance:
-		return s.addProjectedPointDistance(c)
-	case core.ConstraintPtLineDistance:
-		return s.addPointLineDistance(c)
-	case core.ConstraintPtPlaneDistance:
-		return s.addPointPlaneDistance(c)
-	case core.ConstraintPtFaceDistance:
-		return s.addPointFaceDistance(c)
-	case core.ConstraintPtInPlane:
-		return s.addPointInPlane(c)
-	case core.ConstraintPtOnLine:
-		return s.addPointOnLine(c)
-	case core.ConstraintPtOnFace:
-		return s.addPointOnFace(c)
-	case core.ConstraintPtOnCircle:
-		return s.addPointOnCircle(c)
-	case core.ConstraintEqualLengthLines:
-		return s.addEqualLineLength(c)
-	case core.ConstraintEqualLineArcLen:
-		return s.addEqualLineArcLength(c)
-	case core.ConstraintEqPtLnDistances:
-		return s.addEqualPointLineDistances(c)
-	case core.ConstraintEqLenPtLineD:
-		return s.addEqualLinePointDistance(c)
-	case core.ConstraintLengthRatio:
-		return s.addLengthRatio(c)
-	case core.ConstraintArcArcLenRatio:
-		return s.addArcArcLengthRatio(c)
-	case core.ConstraintArcLineLenRatio:
-		return s.addArcLineLengthRatio(c)
-	case core.ConstraintLengthDifference:
-		return s.addLengthDifference(c)
-	case core.ConstraintArcArcDifference:
-		return s.addArcArcDifference(c)
-	case core.ConstraintArcLineDifference:
-		return s.addArcLineDifference(c)
-	case core.ConstraintDiameter:
-		return s.addDiameterConstraint(c)
-	case core.ConstraintEqualRadius:
-		return s.addEqualRadiusConstraint(c)
-	case core.ConstraintSameOrientation:
-		return s.addSameOrientationConstraint(c)
-	case core.ConstraintSymmetric:
-		return s.addSymmetricConstraint(c)
-	case core.ConstraintSymmetricHoriz:
-		return s.addSymmetricHVConstraint(c, true)
-	case core.ConstraintSymmetricVert:
-		return s.addSymmetricHVConstraint(c, false)
-	case core.ConstraintSymmetricLine:
-		return s.addSymmetricLineConstraint(c)
-	case core.ConstraintAtMidpoint:
-		return s.addMidpointConstraint(c)
-	case core.ConstraintParallel:
-		return s.addParallelConstraint(c)
-	case core.ConstraintPerpendicular:
-		return s.addPerpendicularConstraint(c)
-	case core.ConstraintAngle:
-		return s.addAngleConstraint(c)
-	case core.ConstraintArcLineTangent:
-		return s.addArcLineTangentConstraint(c)
-	case core.ConstraintCubicLineTangent:
-		return s.addCubicLineTangentConstraint(c)
-	case core.ConstraintCurveCurveTangent:
-		return s.addCurveCurveTangentConstraint(c)
-	case core.ConstraintEqualAngle:
-		return s.addEqualAngleConstraint(c)
-	case core.ConstraintWhereDragged:
-		return s.addWhereDraggedConstraint(c)
-	case core.ConstraintComment:
-		return nil
-	case core.ConstraintHorizontal:
-		return s.addHorizontalConstraint(c, true)
-	case core.ConstraintVertical:
-		return s.addHorizontalConstraint(c, false)
-	default:
-		return UnsupportedConstraintError{Type: c.Type}
-	}
-}
-
-func (s *System) addCoincidentPoints(c *core.Constraint) error {
-	pa, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("coincident: %w", err)
-	}
-	pb, err := s.pointExpr(c.PtB)
-	if err != nil {
-		return fmt.Errorf("coincident: %w", err)
-	}
-
-	diff := pa.Minus(pb)
-	comps := []*core.Expr{diff.X, diff.Y, diff.Z}
-
-	for i, expr := range comps {
-		if err := s.registerParams(expr); err != nil {
-			return err
+func (s *System) findParam(h core.HParam) *Param {
+	if s.paramIndex == nil {
+		s.paramIndex = make(map[core.HParam]*Param, len(s.Param))
+		for _, p := range s.Param {
+			s.paramIndex[p.H] = p
 		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(i),
-			Expr: expr,
-		})
 	}
-	return nil
+	return s.paramIndex[h]
 }
 
-func (s *System) addPointPointDistance(c *core.Constraint) error {
-	pa, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("distance: %w", err)
-	}
-	pb, err := s.pointExpr(c.PtB)
-	if err != nil {
-		return fmt.Errorf("distance: %w", err)
-	}
-
-	diff := pa.Minus(pb)
-	distSq := diff.Dot(diff)
-	target := s.scalarValueExpr(c)
-	expr := distSq.Minus(target.Square())
-
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
+func (s *System) isDragged(h core.HParam) bool {
+	return s.Dragged[h]
 }
 
-func (s *System) addPointInPlane(c *core.Constraint) error {
-	p, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("point-in-plane: %w", err)
+// setEquations replaces the equations, sorted by handle as the C++
+// IdList keeps them.
+func (s *System) setEquations(l []core.Equation) {
+	s.Eq = s.Eq[:0]
+	for _, e := range l {
+		s.Eq = append(s.Eq, Equation{H: e.H, E: e.Expr})
 	}
-	plane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("point-in-plane: %w", err)
-	}
-
-	expr := plane.normal.Dot(p.Minus(plane.point))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
+	sort.SliceStable(s.Eq, func(i, j int) bool { return s.Eq[i].H.V < s.Eq[j].H.V })
 }
 
-func (s *System) addPointOnLine(c *core.Constraint) error {
-	p, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("point-on-line: %w", err)
+func (s *System) clearParamTags() {
+	for _, p := range s.Param {
+		p.Tag = 0
 	}
-	line, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("point-on-line: %w", err)
-	}
-
-	vec := p.Minus(line.a)
-	cross := vec.Cross(line.direction)
-
-	comps := []*core.Expr{cross.X, cross.Y, cross.Z}
-	for i, expr := range comps {
-		if err := s.registerParams(expr); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(i),
-			Expr: expr,
-		})
-	}
-	return nil
 }
 
-func (s *System) addProjectedPointDistance(c *core.Constraint) error {
-	pa, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("proj-pt-distance: %w", err)
+func (s *System) clearEqTags() {
+	for i := range s.Eq {
+		s.Eq[i].Tag = 0
 	}
-	pb, err := s.pointExpr(c.PtB)
-	if err != nil {
-		return fmt.Errorf("proj-pt-distance: %w", err)
-	}
-	dir, err := s.vectorExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("proj-pt-distance: %w", err)
-	}
-	unit := dir.WithMagnitude(core.NewConstant(1))
-	delta := pb.Minus(pa)
-	expr := delta.Dot(unit).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
 }
 
-func (s *System) addPointLineDistance(c *core.Constraint) error {
-	p, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("point-line-distance: %w", err)
-	}
-	line, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("point-line-distance: %w", err)
-	}
-	var planePtr *planeData
-	if !isFreeWorkplane(c.Workplane) {
-		wp, err := s.planeExpr(c.Workplane)
-		if err != nil {
-			return fmt.Errorf("point-line-distance: %w", err)
-		}
-		planePtr = &wp
-	}
-	distance := pointLineDistanceExpr(p, line, planePtr)
-	target := s.scalarValueExpr(c)
-	expr := distance.Minus(target)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addPointPlaneDistance(c *core.Constraint) error {
-	p, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("point-plane-distance: %w", err)
-	}
-	plane, err := s.planeExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("point-plane-distance: %w", err)
-	}
-	distance := pointPlaneDistanceExpr(p, plane)
-	target := s.scalarValueExpr(c)
-	expr := distance.Minus(target)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addPointFaceDistance(c *core.Constraint) error {
-	p, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("point-face-distance: %w", err)
-	}
-	face, err := s.faceExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("point-face-distance: %w", err)
-	}
-	distance := pointPlaneDistanceExprWithNormal(p, face.point, face.normal)
-	target := s.scalarValueExpr(c)
-	expr := distance.Minus(target)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addPointOnFace(c *core.Constraint) error {
-	p, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("point-on-face: %w", err)
-	}
-	face, err := s.faceExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("point-on-face: %w", err)
-	}
-	expr := pointPlaneDistanceExprWithNormal(p, face.point, face.normal)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addEqualLineLength(c *core.Constraint) error {
-	lineA, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("equal-length: %w", err)
-	}
-	lineB, err := s.lineExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("equal-length: %w", err)
-	}
-	lenA := lineA.direction.Magnitude()
-	lenB := lineB.direction.Magnitude()
-	expr := lenA.Minus(lenB)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addPointOnCircle(c *core.Constraint) error {
-	circleEnt, err := s.resolver.Entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("point-on-circle: %w", err)
-	}
-	if circleEnt == nil {
-		return fmt.Errorf("point-on-circle: circle entity %08x missing", c.EntityA.V)
-	}
-	data, err := s.circleData(circleEnt)
-	if err != nil {
-		return fmt.Errorf("point-on-circle: %w", err)
-	}
-	point, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("point-on-circle: %w", err)
-	}
-	delta := data.center.Minus(point)
-	du := delta.Dot(data.plane.u)
-	dv := delta.Dot(data.plane.v)
-	expr := du.Square().Plus(dv.Square()).Minus(data.radius.Square())
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addEqualPointLineDistances(c *core.Constraint) error {
-	lineA, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("eq-pt-ln-distances: %w", err)
-	}
-	lineB, err := s.lineExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("eq-pt-ln-distances: %w", err)
-	}
-	var planePtr *planeData
-	if !isFreeWorkplane(c.Workplane) {
-		wp, err := s.planeExpr(c.Workplane)
-		if err != nil {
-			return fmt.Errorf("eq-pt-ln-distances: %w", err)
-		}
-		planePtr = &wp
-	}
-	pointA, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("eq-pt-ln-distances: %w", err)
-	}
-	pointB, err := s.pointExpr(c.PtB)
-	if err != nil {
-		return fmt.Errorf("eq-pt-ln-distances: %w", err)
-	}
-	d1 := pointLineDistanceExpr(pointA, lineA, planePtr)
-	d2 := pointLineDistanceExpr(pointB, lineB, planePtr)
-	expr := d1.Square().Minus(d2.Square())
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addEqualLinePointDistance(c *core.Constraint) error {
-	line, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("eq-len-pt-line-d: %w", err)
-	}
-	targetLine, err := s.lineExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("eq-len-pt-line-d: %w", err)
-	}
-	point, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("eq-len-pt-line-d: %w", err)
-	}
-	length := line.direction.Magnitude()
-	var planePtr *planeData
-	if !isFreeWorkplane(c.Workplane) {
-		wp, err := s.planeExpr(c.Workplane)
-		if err != nil {
-			return fmt.Errorf("eq-len-pt-line-d: %w", err)
-		}
-		planePtr = &wp
-	}
-	distance := pointLineDistanceExpr(point, targetLine, planePtr)
-	expr := length.Square().Minus(distance.Square())
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addLengthRatio(c *core.Constraint) error {
-	lineA, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("length-ratio: %w", err)
-	}
-	lineB, err := s.lineExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("length-ratio: %w", err)
-	}
-	lenA := lineA.direction.Magnitude()
-	lenB := lineB.direction.Magnitude()
-	expr := lenA.Div(lenB).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addLengthDifference(c *core.Constraint) error {
-	lineA, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("length-difference: %w", err)
-	}
-	lineB, err := s.lineExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("length-difference: %w", err)
-	}
-	lenA := lineA.direction.Magnitude()
-	lenB := lineB.direction.Magnitude()
-	expr := lenA.Minus(lenB).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addDiameterConstraint(c *core.Constraint) error {
-	circleEnt, err := s.resolver.Entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("diameter: %w", err)
-	}
-	if circleEnt == nil {
-		return fmt.Errorf("diameter: circle entity %08x missing", c.EntityA.V)
-	}
-	data, err := s.circleData(circleEnt)
-	if err != nil {
-		return fmt.Errorf("diameter: %w", err)
-	}
-	expr := data.radius.Times(core.NewConstant(2)).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addEqualRadiusConstraint(c *core.Constraint) error {
-	circleA, err := s.resolver.Entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("equal-radius: %w", err)
-	}
-	if circleA == nil {
-		return fmt.Errorf("equal-radius: circle entity %08x missing", c.EntityA.V)
-	}
-	circleB, err := s.resolver.Entity(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("equal-radius: %w", err)
-	}
-	if circleB == nil {
-		return fmt.Errorf("equal-radius: circle entity %08x missing", c.EntityB.V)
-	}
-	dataA, err := s.circleData(circleA)
-	if err != nil {
-		return fmt.Errorf("equal-radius: %w", err)
-	}
-	dataB, err := s.circleData(circleB)
-	if err != nil {
-		return fmt.Errorf("equal-radius: %w", err)
-	}
-	expr := dataA.radius.Minus(dataB.radius)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addEqualLineArcLength(c *core.Constraint) error {
-	line, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("equal-line-arc: %w", err)
-	}
-	arc, err := s.entity(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("equal-line-arc: %w", err)
-	}
-	if arc.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("equal-line-arc: entity %08x type %d unsupported", c.EntityB.V, arc.Type)
-	}
-	lineLen := line.direction.Magnitude()
-	arcLen, err := s.arcLengthExpr(arc)
-	if err != nil {
-		return fmt.Errorf("equal-line-arc: %w", err)
-	}
-	expr := arcLen.Minus(lineLen)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addArcArcLengthRatio(c *core.Constraint) error {
-	arcA, err := s.entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("arc-arc-ratio: %w", err)
-	}
-	if arcA.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("arc-arc-ratio: entity %08x type %d unsupported", c.EntityA.V, arcA.Type)
-	}
-	arcB, err := s.entity(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("arc-arc-ratio: %w", err)
-	}
-	if arcB.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("arc-arc-ratio: entity %08x type %d unsupported", c.EntityB.V, arcB.Type)
-	}
-	lenA, err := s.arcLengthExpr(arcA)
-	if err != nil {
-		return fmt.Errorf("arc-arc-ratio: %w", err)
-	}
-	lenB, err := s.arcLengthExpr(arcB)
-	if err != nil {
-		return fmt.Errorf("arc-arc-ratio: %w", err)
-	}
-	expr := lenA.Div(lenB).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addArcLineLengthRatio(c *core.Constraint) error {
-	line, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("arc-line-ratio: %w", err)
-	}
-	arc, err := s.entity(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("arc-line-ratio: %w", err)
-	}
-	if arc.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("arc-line-ratio: entity %08x type %d unsupported", c.EntityB.V, arc.Type)
-	}
-	lineLen := line.direction.Magnitude()
-	arcLen, err := s.arcLengthExpr(arc)
-	if err != nil {
-		return fmt.Errorf("arc-line-ratio: %w", err)
-	}
-	expr := arcLen.Div(lineLen).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addArcArcDifference(c *core.Constraint) error {
-	arcA, err := s.entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("arc-arc-diff: %w", err)
-	}
-	if arcA.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("arc-arc-diff: entity %08x type %d unsupported", c.EntityA.V, arcA.Type)
-	}
-	arcB, err := s.entity(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("arc-arc-diff: %w", err)
-	}
-	if arcB.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("arc-arc-diff: entity %08x type %d unsupported", c.EntityB.V, arcB.Type)
-	}
-	lenA, err := s.arcLengthExpr(arcA)
-	if err != nil {
-		return fmt.Errorf("arc-arc-diff: %w", err)
-	}
-	lenB, err := s.arcLengthExpr(arcB)
-	if err != nil {
-		return fmt.Errorf("arc-arc-diff: %w", err)
-	}
-	expr := lenA.Minus(lenB).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addArcLineDifference(c *core.Constraint) error {
-	line, err := s.lineExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("arc-line-diff: %w", err)
-	}
-	arc, err := s.entity(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("arc-line-diff: %w", err)
-	}
-	if arc.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("arc-line-diff: entity %08x type %d unsupported", c.EntityB.V, arc.Type)
-	}
-	lineLen := line.direction.Magnitude()
-	arcLen, err := s.arcLengthExpr(arc)
-	if err != nil {
-		return fmt.Errorf("arc-line-diff: %w", err)
-	}
-	expr := arcLen.Minus(lineLen).Minus(s.scalarValueExpr(c))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addParallelConstraint(c *core.Constraint) error {
-	va, err := s.vectorExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("parallel: %w", err)
-	}
-	vb, err := s.vectorExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("parallel: %w", err)
-	}
-	ua := va.WithMagnitude(core.NewConstant(1))
-	ub := vb.WithMagnitude(core.NewConstant(1))
-	cross := ua.Cross(ub)
-	for i, component := range []*core.Expr{cross.X, cross.Y, cross.Z} {
-		if err := s.registerParams(component); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(i),
-			Expr: component,
-		})
-	}
-	return nil
-}
-
-func (s *System) addPerpendicularConstraint(c *core.Constraint) error {
-	va, err := s.vectorExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("perpendicular: %w", err)
-	}
-	vb, err := s.vectorExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("perpendicular: %w", err)
-	}
-	ua := va.WithMagnitude(core.NewConstant(1))
-	ub := vb.WithMagnitude(core.NewConstant(1))
-	dot := ua.Dot(ub)
-	if err := s.registerParams(dot); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: dot,
-	})
-	return nil
-}
-
-func (s *System) addHorizontalConstraint(c *core.Constraint, horizontal bool) error {
-	if c.Workplane == (core.HEntity{}) {
-		return fmt.Errorf("horizontal/vertical constraint requires workplane")
-	}
-	plane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("horizontal/vertical: %w", err)
-	}
-
-	var h1, h2 core.HEntity
-	if c.EntityA != (core.HEntity{}) {
-		lineEnt, err := s.resolver.Entity(c.EntityA)
-		if err != nil {
-			return fmt.Errorf("horizontal/vertical: %w", err)
-		}
-		if lineEnt == nil {
-			return fmt.Errorf("horizontal/vertical: line entity %08x missing", c.EntityA.V)
-		}
-		h1 = lineEnt.Point[0]
-		h2 = lineEnt.Point[1]
-	} else {
-		h1 = c.PtA
-		h2 = c.PtB
-	}
-	if h1 == (core.HEntity{}) || h2 == (core.HEntity{}) {
-		return fmt.Errorf("horizontal/vertical: missing point handles")
-	}
-	p1, err := s.pointExpr(h1)
-	if err != nil {
-		return fmt.Errorf("horizontal/vertical: %w", err)
-	}
-	p2, err := s.pointExpr(h2)
-	if err != nil {
-		return fmt.Errorf("horizontal/vertical: %w", err)
-	}
-	u1, v1 := plane.coords(p1)
-	u2, v2 := plane.coords(p2)
-	var expr *core.Expr
-	if horizontal {
-		expr = v1.Minus(v2)
-	} else {
-		expr = u1.Minus(u2)
-	}
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addAngleConstraint(c *core.Constraint) error {
-	va, err := s.vectorExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("angle: %w", err)
-	}
-	vb, err := s.vectorExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("angle: %w", err)
-	}
-	if c.Other {
-		va = negateVector(va)
-	}
-	if c.Other2 {
-		vb = negateVector(vb)
-	}
-	ua := va.WithMagnitude(core.NewConstant(1))
-	ub := vb.WithMagnitude(core.NewConstant(1))
-	dot := ua.Dot(ub)
-	angle := s.scalarValueExpr(c)
-	cos := angle.Times(core.NewConstant(math.Pi / 180)).Cos()
-	expr := dot.Minus(cos)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addSameOrientationConstraint(c *core.Constraint) error {
-	if c.EntityA == (core.HEntity{}) || c.EntityB == (core.HEntity{}) {
-		return fmt.Errorf("same-orientation: missing entity handle")
-	}
-	ua, _, na, err := s.normalFrameExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("same-orientation: %w", err)
-	}
-	ub, vb, nb, err := s.normalFrameExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("same-orientation: %w", err)
-	}
-
-	eq := vectorsParallel3D(na, nb, c.ValP)
-	for i, component := range []*core.Expr{eq.X, eq.Y, eq.Z} {
-		if err := s.registerParams(component); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(i),
-			Expr: component,
-		})
-	}
-
-	uaNum, _, _, err := s.normalFrameNumeric(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("same-orientation: %w", err)
-	}
-	ubNum, vbNum, _, err := s.normalFrameNumeric(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("same-orientation: %w", err)
-	}
-
-	d1 := ua.Dot(vb)
-	d2 := ua.Dot(ub)
-
-	d1Val := uaNum.Dot(vbNum)
-	d2Val := uaNum.Dot(ubNum)
-
-	var orientExpr *core.Expr
-	if math.Abs(d1Val) < math.Abs(d2Val) {
-		orientExpr = d1
-	} else {
-		orientExpr = d2
-	}
-
-	if err := s.registerParams(orientExpr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(3),
-		Expr: orientExpr,
-	})
-	return nil
-}
-
-func (s *System) addSymmetricConstraint(c *core.Constraint) error {
-	if c.EntityA == (core.HEntity{}) {
-		return fmt.Errorf("symmetric: missing symmetry plane")
-	}
-	planeEntity, err := s.planeExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("symmetric: %w", err)
-	}
-	pointA, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("symmetric: %w", err)
-	}
-	pointB, err := s.pointExpr(c.PtB)
-	if err != nil {
-		return fmt.Errorf("symmetric: %w", err)
-	}
-	mid := pointA.Plus(pointB).ScaledBy(core.NewConstant(0.5))
-	if isFreeWorkplane(c.Workplane) {
-		dist := pointPlaneDistanceExpr(mid, planeEntity)
-		if err := s.registerParams(dist); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(0),
-			Expr: dist,
-		})
-		au, av := planeEntity.coords(pointA)
-		bu, bv := planeEntity.coords(pointB)
-		diffU := au.Minus(bu)
-		diffV := av.Minus(bv)
-		if err := s.registerParams(diffU); err != nil {
-			return err
-		}
-		if err := s.registerParams(diffV); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations,
-			&Equation{H: c.H.Equation(1), Expr: diffU},
-			&Equation{H: c.H.Equation(2), Expr: diffV},
-		)
-		return nil
-	}
-	workplane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("symmetric: %w", err)
-	}
-	mu, mv := workplane.coords(mid)
-	pointOnPlane := workplane.pointFromCoords(mu, mv)
-	dist := pointPlaneDistanceExprWithNormal(pointOnPlane, planeEntity.point, planeEntity.normal)
-	if err := s.registerParams(dist); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: dist,
-	})
-	diff := pointA.Minus(pointB)
-	tangential := planeEntity.normal.Cross(workplane.u.Cross(workplane.v)).Dot(diff)
-	if err := s.registerParams(tangential); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(1),
-		Expr: tangential,
-	})
-	return nil
-}
-func (s *System) addSymmetricHVConstraint(c *core.Constraint, horizontal bool) error {
-	if isFreeWorkplane(c.Workplane) {
-		return fmt.Errorf("symmetric hv: requires workplane")
-	}
-	workplane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("symmetric hv: %w", err)
-	}
-	pointA, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("symmetric hv: %w", err)
-	}
-	pointB, err := s.pointExpr(c.PtB)
-	if err != nil {
-		return fmt.Errorf("symmetric hv: %w", err)
-	}
-	au, av := workplane.coords(pointA)
-	bu, bv := workplane.coords(pointB)
-	var eq0, eq1 *core.Expr
-	if horizontal {
-		eq0 = av.Minus(bv)
-		eq1 = au.Plus(bu)
-	} else {
-		eq0 = au.Minus(bu)
-		eq1 = av.Plus(bv)
-	}
-	for i, expr := range []*core.Expr{eq0, eq1} {
-		if err := s.registerParams(expr); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{H: c.H.Equation(i), Expr: expr})
-	}
-	return nil
-}
-func (s *System) addSymmetricLineConstraint(c *core.Constraint) error {
-	if isFreeWorkplane(c.Workplane) {
-		return fmt.Errorf("symmetric-line: requires workplane")
-	}
-	lineEnt, err := s.entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("symmetric-line: %w", err)
-	}
-	workplane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("symmetric-line: %w", err)
-	}
-	pa, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("symmetric-line: %w", err)
-	}
-	pb, err := s.pointExpr(c.PtB)
-	if err != nil {
-		return fmt.Errorf("symmetric-line: %w", err)
-	}
-	pau, pav := workplane.coords(pa)
-	pbu, pbv := workplane.coords(pb)
-	la, err := s.pointExpr(lineEnt.Point[0])
-	if err != nil {
-		return fmt.Errorf("symmetric-line: %w", err)
-	}
-	lb, err := s.pointExpr(lineEnt.Point[1])
-	if err != nil {
-		return fmt.Errorf("symmetric-line: %w", err)
-	}
-	lau, lav := workplane.coords(la)
-	lbu, lbv := workplane.coords(lb)
-	dpu := pbu.Minus(pau)
-	dpv := pbv.Minus(pav)
-	dlu := lbu.Minus(lau)
-	dlv := lbv.Minus(lav)
-	ortho := dlu.Times(dpu).Plus(dlv.Times(dpv))
-	if err := s.registerParams(ortho); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{H: c.H.Equation(0), Expr: ortho})
-	distA := dlv.Times(lau.Minus(pau)).Minus(dlu.Times(lav.Minus(pav)))
-	distB := dlv.Times(lau.Minus(pbu)).Minus(dlu.Times(lav.Minus(pbv)))
-	sum := distA.Plus(distB)
-	if err := s.registerParams(sum); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{H: c.H.Equation(1), Expr: sum})
-	return nil
-}
-func (s *System) addMidpointConstraint(c *core.Constraint) error {
-	if c.EntityA == (core.HEntity{}) {
-		return fmt.Errorf("midpoint: missing line entity")
-	}
-	lineEnt, err := s.entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("midpoint: %w", err)
-	}
-	start, err := s.pointExpr(lineEnt.Point[0])
-	if err != nil {
-		return fmt.Errorf("midpoint: %w", err)
-	}
-	end, err := s.pointExpr(lineEnt.Point[1])
-	if err != nil {
-		return fmt.Errorf("midpoint: %w", err)
-	}
-	mid := start.Plus(end.Minus(start).ScaledBy(core.NewConstant(0.5)))
-	if isFreeWorkplane(c.Workplane) {
-		if c.PtA != (core.HEntity{}) {
-			target, err := s.pointExpr(c.PtA)
-			if err != nil {
-				return fmt.Errorf("midpoint: %w", err)
+// deepCopyWithParamsAsPointers copies e, binding each param to the
+// system's copy if it is an unknown, else to the sketch's; a known
+// param becomes a constant. Constant subtrees are folded (C++
+// Expr::DeepCopyWithParamsAsPointers with foldConstants).
+func (s *System) deepCopyWithParamsAsPointers(e *core.Expr) *core.Expr {
+	if e.Op == core.OpParam {
+		var p *core.Param
+		if sp := s.findParam(e.Param); sp != nil {
+			p = &sp.Param
+		} else {
+			p = s.SK(e.Param)
+			if p == nil {
+				panic("param not found")
 			}
-			diff := mid.Minus(target)
-			for i, component := range []*core.Expr{diff.X, diff.Y, diff.Z} {
-				if err := s.registerParams(component); err != nil {
-					return err
-				}
-				s.Equations = append(s.Equations, &Equation{
-					H:    c.H.Equation(i),
-					Expr: component,
-				})
-			}
-			return nil
 		}
-		if c.EntityB == (core.HEntity{}) {
-			return fmt.Errorf("midpoint: missing target plane")
+		if p.Known {
+			return core.NewConstant(p.Val)
 		}
-		plane, err := s.planeExpr(c.EntityB)
-		if err != nil {
-			return fmt.Errorf("midpoint: %w", err)
+		return core.NewParamPtr(p)
+	}
+	n := *e
+	hasConstants := false
+	if e.Left != nil {
+		n.Left = s.deepCopyWithParamsAsPointers(e.Left)
+		hasConstants = n.Left.Op == core.OpConstant
+		if e.Right != nil {
+			n.Right = s.deepCopyWithParamsAsPointers(e.Right)
+			hasConstants = hasConstants || n.Right.Op == core.OpConstant
 		}
-		expr := pointPlaneDistanceExpr(mid, plane)
-		if err := s.registerParams(expr); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(0),
-			Expr: expr,
-		})
-		return nil
 	}
-	workplane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("midpoint: %w", err)
+	if hasConstants {
+		// The children are folded already; this folds just this node.
+		return n.FoldNode()
 	}
-	mu, mv := workplane.coords(mid)
-	if c.PtA != (core.HEntity{}) {
-		target, err := s.pointExpr(c.PtA)
-		if err != nil {
-			return fmt.Errorf("midpoint: %w", err)
-		}
-		tu, tv := workplane.coords(target)
-		diffU := tu.Minus(mu)
-		diffV := tv.Minus(mv)
-		for i, component := range []*core.Expr{diffU, diffV} {
-			if err := s.registerParams(component); err != nil {
-				return err
-			}
-			s.Equations = append(s.Equations, &Equation{
-				H:    c.H.Equation(i),
-				Expr: component,
-			})
-		}
-		return nil
-	}
-	if c.EntityB == (core.HEntity{}) {
-		return fmt.Errorf("midpoint: missing target plane")
-	}
-	targetPlane, err := s.planeExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("midpoint: %w", err)
-	}
-	pointOnPlane := workplane.pointFromCoords(mu, mv)
-	expr := pointPlaneDistanceExprWithNormal(pointOnPlane, targetPlane.point, targetPlane.normal)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
+	return &n
 }
 
-func (s *System) addEqualAngleConstraint(c *core.Constraint) error {
-	va, err := s.vectorExpr(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("equal-angle: %w", err)
+// paramsUsed lists the params e refers to (C++ Expr::ParamsUsedList).
+func paramsUsed(e *core.Expr, set map[core.HParam]bool, order *[]core.HParam) {
+	if h, ok := e.ParamHandle(); ok {
+		if !set[h] {
+			set[h] = true
+			*order = append(*order, h)
+		}
+		return
 	}
-	vb, err := s.vectorExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("equal-angle: %w", err)
+	if e.Left != nil {
+		paramsUsed(e.Left, set, order)
 	}
-	vc, err := s.vectorExpr(c.EntityC)
-	if err != nil {
-		return fmt.Errorf("equal-angle: %w", err)
+	if e.Right != nil {
+		paramsUsed(e.Right, set, order)
 	}
-	vd, err := s.vectorExpr(c.EntityD)
-	if err != nil {
-		return fmt.Errorf("equal-angle: %w", err)
-	}
-	if c.Other {
-		va = negateVector(va)
-	}
-	ua := va.WithMagnitude(core.NewConstant(1))
-	ub := vb.WithMagnitude(core.NewConstant(1))
-	uc := vc.WithMagnitude(core.NewConstant(1))
-	ud := vd.WithMagnitude(core.NewConstant(1))
-	expr := ua.Dot(ub).Minus(uc.Dot(ud))
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
 }
 
-func (s *System) addArcLineTangentConstraint(c *core.Constraint) error {
-	arc, err := s.entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("arc-line-tangent: %w", err)
-	}
-	if arc.Type != core.EntityArcOfCircle {
-		return fmt.Errorf("arc-line-tangent: entity %08x type %d unsupported", c.EntityA.V, arc.Type)
-	}
-	line, err := s.lineExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("arc-line-tangent: %w", err)
-	}
-	center, err := s.pointExpr(arc.Point[0])
-	if err != nil {
-		return fmt.Errorf("arc-line-tangent: %w", err)
-	}
-	idx := 1
-	if c.Other {
-		idx = 2
-	}
-	endpoint, err := s.pointExpr(arc.Point[idx])
-	if err != nil {
-		return fmt.Errorf("arc-line-tangent: %w", err)
-	}
-	radius := center.Minus(endpoint)
-	expr := line.direction.Dot(radius)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
+// WriteJacobian writes the equations and params tagged tag into the
+// matrix, symbolically (C++ System::WriteJacobian).
+func (s *System) WriteJacobian(tag int) bool {
+	s.mat.param = s.mat.param[:0]
+	s.mat.eq = s.mat.eq[:0]
+	s.mat.A = nil
+	s.mat.B = nil
 
-func (s *System) addCubicLineTangentConstraint(c *core.Constraint) error {
-	cubic, err := s.entity(c.EntityA)
-	if err != nil {
-		return fmt.Errorf("cubic-line-tangent: %w", err)
-	}
-	if cubic.Type != core.EntityCubic && cubic.Type != core.EntityCubicPeriodic {
-		return fmt.Errorf("cubic-line-tangent: entity %08x type %d unsupported", c.EntityA.V, cubic.Type)
-	}
-	// C++ uses line->VectorGetExprs(), point[0] - point[1]; the sign
-	// matters for the 3d form, whose valP scales it.
-	lineVec, err := s.vectorExpr(c.EntityB)
-	if err != nil {
-		return fmt.Errorf("cubic-line-tangent: %w", err)
-	}
-	tangent, err := s.cubicTangentExpr(cubic, c.Other)
-	if err != nil {
-		return fmt.Errorf("cubic-line-tangent: %w", err)
-	}
-	if isFreeWorkplane(c.Workplane) {
-		eq := vectorsParallel3D(tangent, lineVec, c.ValP)
-		components := []*core.Expr{eq.X, eq.Y, eq.Z}
-		for i, component := range components {
-			if err := s.registerParams(component); err != nil {
-				return err
-			}
-			s.Equations = append(s.Equations, &Equation{
-				H:    c.H.Equation(i),
-				Expr: component,
-			})
-		}
-		return nil
-	}
-	plane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("cubic-line-tangent: %w", err)
-	}
-	expr := tangent.Cross(lineVec).Dot(plane.normal)
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addCurveCurveTangentConstraint(c *core.Constraint) error {
-	dirs := [2]core.ExprVector{}
-	parallel := true
-
-	for i := 0; i < 2; i++ {
-		handle := c.EntityA
-		useFinish := c.Other
-		if i == 1 {
-			handle = c.EntityB
-			useFinish = c.Other2
-		}
-		ent, err := s.entity(handle)
-		if err != nil {
-			return fmt.Errorf("curve-curve-tangent: %w", err)
-		}
-		switch ent.Type {
-		case core.EntityArcOfCircle:
-			center, err := s.pointExpr(ent.Point[0])
-			if err != nil {
-				return fmt.Errorf("curve-curve-tangent: %w", err)
-			}
-			idx := 1
-			if useFinish {
-				idx = 2
-			}
-			endpoint, err := s.pointExpr(ent.Point[idx])
-			if err != nil {
-				return fmt.Errorf("curve-curve-tangent: %w", err)
-			}
-			dirs[i] = endpoint.Minus(center)
-			parallel = !parallel
-		case core.EntityCubic, core.EntityCubicPeriodic:
-			tangent, err := s.cubicTangentExpr(ent, useFinish)
-			if err != nil {
-				return fmt.Errorf("curve-curve-tangent: %w", err)
-			}
-			dirs[i] = tangent
-		default:
-			return fmt.Errorf("curve-curve-tangent: entity %08x type %d unsupported", handle.V, ent.Type)
-		}
-	}
-
-	if parallel {
-		if isFreeWorkplane(c.Workplane) {
-			cross := dirs[0].Cross(dirs[1])
-			for i, component := range []*core.Expr{cross.X, cross.Y, cross.Z} {
-				if err := s.registerParams(component); err != nil {
-					return err
-				}
-				s.Equations = append(s.Equations, &Equation{
-					H:    c.H.Equation(i),
-					Expr: component,
-				})
-			}
-			return nil
-		}
-		plane, err := s.planeExpr(c.Workplane)
-		if err != nil {
-			return fmt.Errorf("curve-curve-tangent: %w", err)
-		}
-		expr := dirs[0].Cross(dirs[1]).Dot(plane.normal)
-		if err := s.registerParams(expr); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(0),
-			Expr: expr,
-		})
-		return nil
-	}
-
-	expr := dirs[0].Dot(dirs[1])
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{
-		H:    c.H.Equation(0),
-		Expr: expr,
-	})
-	return nil
-}
-
-func (s *System) addWhereDraggedConstraint(c *core.Constraint) error {
-	if c.PtA == (core.HEntity{}) {
-		return fmt.Errorf("where-dragged: missing point handle")
-	}
-	pointEnt, err := s.entity(c.PtA)
-	if err != nil {
-		return fmt.Errorf("where-dragged: %w", err)
-	}
-	pointExpr, err := s.pointExpr(c.PtA)
-	if err != nil {
-		return fmt.Errorf("where-dragged: %w", err)
-	}
-	if isFreeWorkplane(c.Workplane) {
-		target := pointEnt.ActPoint
-		for i, component := range []*core.Expr{
-			pointExpr.X.Minus(core.NewConstant(target.X)),
-			pointExpr.Y.Minus(core.NewConstant(target.Y)),
-			pointExpr.Z.Minus(core.NewConstant(target.Z)),
-		} {
-			if err := s.registerParams(component); err != nil {
-				return err
-			}
-			s.Equations = append(s.Equations, &Equation{
-				H:    c.H.Equation(i),
-				Expr: component,
-			})
-		}
-		return nil
-	}
-	plane, err := s.planeExpr(c.Workplane)
-	if err != nil {
-		return fmt.Errorf("where-dragged: %w", err)
-	}
-	uExpr, vExpr := plane.coords(pointExpr)
-	targetU, targetV := projectPointToPlane(pointEnt.ActPoint, plane)
-	equations := []*core.Expr{
-		uExpr.Minus(core.NewConstant(targetU)),
-		vExpr.Minus(core.NewConstant(targetV)),
-	}
-	for i, expr := range equations {
-		if err := s.registerParams(expr); err != nil {
-			return err
-		}
-		s.Equations = append(s.Equations, &Equation{
-			H:    c.H.Equation(i),
-			Expr: expr,
-		})
-	}
-	return nil
-}
-
-func (s *System) registerParams(expr *core.Expr) error {
-	if s.Known != nil {
-		foldKnownParams(expr, s.Known)
-	}
-	referenced := make(map[core.HParam]struct{})
-	expr.ReferencedParams(referenced)
-
-	for h := range referenced {
-		if _, ok := s.Params[h]; ok {
+	for i := range s.Eq {
+		if s.Eq[i].Tag != tag {
 			continue
 		}
-		param, err := s.resolver.Param(h)
-		if err != nil {
-			return fmt.Errorf("lookup param %08x: %w", h.V, err)
+		s.mat.eq = append(s.mat.eq, &s.Eq[i])
+	}
+	if len(s.mat.eq) >= MaxUnknowns {
+		return false
+	}
+	s.mat.m = len(s.mat.eq)
+
+	paramToIndex := make(map[core.HParam]int)
+	for _, p := range s.Param {
+		if p.Tag != tag {
+			continue
 		}
-		if param == nil {
-			return fmt.Errorf("lookup param %08x: nil", h.V)
-		}
-		s.Params[h] = param
+		paramToIndex[p.H] = len(s.mat.param)
+		s.mat.param = append(s.mat.param, p.H)
 	}
-	return nil
-}
+	s.mat.n = len(s.mat.param)
 
-// foldKnownParams turns every parameter node of expr that known
-// reports into a constant, in place.
-func foldKnownParams(expr *core.Expr, known func(core.HParam) (float64, bool)) {
-	if expr == nil {
-		return
-	}
-	if h, ok := expr.ParamHandle(); ok {
-		if v, isKnown := known(h); isKnown {
-			*expr = *core.NewConstant(v)
-		}
-		return
-	}
-	foldKnownParams(expr.Left, known)
-	foldKnownParams(expr.Right, known)
-	for _, a := range expr.Args {
-		foldKnownParams(a, known)
-	}
-}
+	s.mat.A = make([][]*core.Expr, s.mat.m)
+	for i, e := range s.mat.eq {
+		// Deep-copy and simplify (fold) the current equation.
+		f := s.deepCopyWithParamsAsPointers(e.E)
 
-// AddEquation registers the equation expr = 0 under handle h.
-func (s *System) AddEquation(h core.HEquation, expr *core.Expr) error {
-	if expr == nil {
-		return fmt.Errorf("solver: nil expr in AddEquation")
-	}
-	if err := s.registerParams(expr); err != nil {
-		return err
-	}
-	s.Equations = append(s.Equations, &Equation{H: h, Expr: expr})
-	return nil
-}
+		var used []core.HParam
+		paramsUsed(f, map[core.HParam]bool{}, &used)
 
-// resolverSketch adapts a Resolver to the core.EntitySketch that the
-// EntityBase accessors read.
-type resolverSketch struct {
-	r Resolver
-}
-
-func (rs resolverSketch) GetEntity(h core.HEntity) *core.Entity {
-	e, err := rs.r.Entity(h)
-	if err != nil {
-		return nil
-	}
-	return e
-}
-
-func (rs resolverSketch) GetParam(h core.HParam) *core.Param {
-	p, err := rs.r.Param(h)
-	if err != nil {
-		return nil
-	}
-	return p
-}
-
-func (s *System) sketch() resolverSketch { return resolverSketch{r: s.resolver} }
-
-// entityExprs runs fn, turning a panic from a malformed entity (a
-// missing entity or param, which C++ asserts on) into an error.
-func entityExprs[T any](h core.HEntity, fn func() T) (r T, err error) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			err = fmt.Errorf("entity %08x: %v", h.V, rec)
-		}
-	}()
-	return fn(), nil
-}
-
-func (s *System) pointExpr(h core.HEntity) (core.ExprVector, error) {
-	if h == (core.HEntity{}) {
-		return core.ExprVector{}, fmt.Errorf("point handle zero")
-	}
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	if ent == nil {
-		return core.ExprVector{}, fmt.Errorf("entity %08x not found", h.V)
-	}
-	if !ent.IsPoint() {
-		return core.ExprVector{}, fmt.Errorf("entity %08x (type %d) is not a point", h.V, ent.Type)
-	}
-	// A POINT_IN_3D without params (hand-built test fixtures only; C++
-	// always gives it three) is a fixed point.
-	if ent.Type == core.EntityPointIn3D && ent.Param[0].V == 0 {
-		return core.FromVector(ent.ActPoint), nil
-	}
-	return entityExprs(h, func() core.ExprVector { return ent.PointGetExprs(s.sketch()) })
-}
-
-type planeData struct {
-	point       core.ExprVector
-	normal      core.ExprVector
-	u           core.ExprVector
-	v           core.ExprVector
-	originValue geom.Vector
-	uValue      geom.Vector
-	vValue      geom.Vector
-}
-
-func (s *System) planeExpr(h core.HEntity) (planeData, error) {
-	if h == (core.HEntity{}) {
-		return planeData{}, fmt.Errorf("plane handle zero")
-	}
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return planeData{}, err
-	}
-	if ent == nil {
-		return planeData{}, fmt.Errorf("plane entity %08x missing", h.V)
-	}
-
-	switch ent.Type {
-	case core.EntityWorkplane:
-		point, err := s.pointExpr(ent.Point[0])
-		if err != nil {
-			return planeData{}, err
-		}
-		qExpr, qNum, err := s.normalQuaternionExpr(ent.Normal)
-		if err != nil {
-			return planeData{}, err
-		}
-		normal := qExpr.RotationN()
-		u := qExpr.RotationU()
-		v := qExpr.RotationV()
-
-		originEnt, err := s.resolver.Entity(ent.Point[0])
-		if err != nil {
-			return planeData{}, err
-		}
-		var originVal geom.Vector
-		if originEnt != nil {
-			originVal = originEnt.ActPoint
-		}
-
-		return planeData{
-			point:       point,
-			normal:      normal,
-			u:           u,
-			v:           v,
-			originValue: originVal,
-			uValue:      qNum.RotationU(),
-			vValue:      qNum.RotationV(),
-		}, nil
-	default:
-		numericNormal := ent.ActNormal.RotationN()
-		uNum, vNum := orthonormalBasis(numericNormal)
-		return planeData{
-			point:       core.FromVector(ent.ActPoint),
-			normal:      core.FromVector(numericNormal),
-			u:           core.FromVector(uNum),
-			v:           core.FromVector(vNum),
-			originValue: ent.ActPoint,
-			uValue:      uNum,
-			vValue:      vNum,
-		}, nil
-	}
-}
-
-func (s *System) normalExpr(h core.HEntity) (core.ExprVector, error) {
-	q, _, err := s.normalQuaternionExpr(h)
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	return q.RotationN(), nil
-}
-
-func (s *System) normalQuaternionExpr(h core.HEntity) (core.ExprQuaternion, geom.Quaternion, error) {
-	if h == (core.HEntity{}) {
-		return core.ExprQuaternion{}, geom.Quaternion{}, fmt.Errorf("normal handle zero")
-	}
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return core.ExprQuaternion{}, geom.Quaternion{}, err
-	}
-	if ent == nil {
-		return core.ExprQuaternion{}, geom.Quaternion{}, fmt.Errorf("normal entity %08x missing", h.V)
-	}
-
-	qNumeric := ent.ActNormal.Normal()
-	if qNumeric.W == 0 && qNumeric.X == 0 && qNumeric.Y == 0 && qNumeric.Z == 0 {
-		qNumeric = geom.NewQuaternion(1, 0, 0, 0)
-	}
-	if !ent.IsNormal() {
-		return core.ExprQuaternion{}, geom.Quaternion{}, fmt.Errorf("entity %08x (type %d) is not a normal", h.V, ent.Type)
-	}
-	// A NORMAL_IN_3D without params (hand-built test fixtures only) is
-	// a fixed orientation.
-	if ent.Type == core.EntityNormalIn3D && ent.Param[0].V == 0 {
-		return core.NewExprQuaternionConst(qNumeric), qNumeric, nil
-	}
-	expr, err := entityExprs(h, func() core.ExprQuaternion { return ent.NormalGetExprs(s.sketch()) })
-	return expr, qNumeric, err
-}
-
-type lineData struct {
-	a         core.ExprVector
-	direction core.ExprVector
-}
-
-func (s *System) lineExpr(h core.HEntity) (lineData, error) {
-	if h == (core.HEntity{}) {
-		return lineData{}, fmt.Errorf("line handle zero")
-	}
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return lineData{}, err
-	}
-	if ent == nil {
-		return lineData{}, fmt.Errorf("line entity %08x missing", h.V)
-	}
-
-	switch ent.Type {
-	case core.EntityLineSegment:
-		start, err := s.pointExpr(ent.Point[0])
-		if err != nil {
-			return lineData{}, err
-		}
-		finish, err := s.pointExpr(ent.Point[1])
-		if err != nil {
-			return lineData{}, err
-		}
-		return lineData{
-			a:         start,
-			direction: finish.Minus(start),
-		}, nil
-	default:
-		return lineData{
-			a:         core.FromVector(ent.ActPoint),
-			direction: core.FromVector(ent.ActNormal.RotationU()),
-		}, nil
-	}
-}
-
-func (s *System) scalarValueExpr(c *core.Constraint) *core.Expr {
-	if c.ValP != (core.HParam{}) {
-		return core.NewParam(c.ValP)
-	}
-	return core.NewConstant(c.ValA)
-}
-
-type circleData struct {
-	center      core.ExprVector
-	plane       planeData
-	radius      *core.Expr
-	radiusValue float64
-}
-
-func (plane planeData) coords(p core.ExprVector) (*core.Expr, *core.Expr) {
-	delta := p.Minus(plane.point)
-	return delta.Dot(plane.u), delta.Dot(plane.v)
-}
-
-func (plane planeData) pointFromCoords(u, v *core.Expr) core.ExprVector {
-	return plane.point.Plus(plane.u.ScaledBy(u)).Plus(plane.v.ScaledBy(v))
-}
-func projectPointToPlane(point geom.Vector, plane planeData) (float64, float64) {
-	delta := point.Minus(plane.originValue)
-	u := delta.Dot(plane.uValue)
-	v := delta.Dot(plane.vValue)
-	return u, v
-}
-
-func (s *System) paramOrConstant(h core.HParam, defaultVal float64) *core.Expr {
-	if h != (core.HParam{}) {
-		if param, err := s.resolver.Param(h); err == nil && param != nil {
-			if param.Known && !param.Free {
-				return core.NewConstant(param.Val)
-			}
-		}
-		return core.NewParam(h)
-	}
-	return core.NewConstant(defaultVal)
-}
-
-func (s *System) circleData(ent *core.Entity) (circleData, error) {
-	centerExpr, err := s.pointExpr(ent.Point[0])
-	if err != nil {
-		return circleData{}, err
-	}
-	centerEnt, err := s.resolver.Entity(ent.Point[0])
-	if err != nil {
-		return circleData{}, err
-	}
-	var centerVal geom.Vector
-	if centerEnt != nil {
-		centerVal = centerEnt.ActPoint
-	}
-	qExpr, qNum, err := s.normalQuaternionExpr(ent.Normal)
-	if err != nil {
-		return circleData{}, err
-	}
-	// The plane reference point must be the WORKPLANE's origin
-	// (not the circle's center) so that pt-on-circle, equal-radius,
-	// arc-tangent and similar constraints don't double-count the
-	// workplane origin when computing delta = center - point.
-	// When the circle has no workplane, fall back to the center
-	// itself so the existing tests (which create circles without a
-	// workplane reference) still work.
-	var planeOrigin core.ExprVector
-	if ent.Workplane != (core.HEntity{}) {
-		po, err := s.pointExpr(ent.Workplane)
-		if err == nil {
-			planeOrigin = po
-		} else {
-			planeOrigin = centerExpr
-		}
-	} else {
-		planeOrigin = centerExpr
-	}
-	plane := planeData{
-		point:       planeOrigin,
-		normal:      qExpr.RotationN(),
-		u:           qExpr.RotationU(),
-		v:           qExpr.RotationV(),
-		originValue: centerVal,
-		uValue:      qNum.RotationU(),
-		vValue:      qNum.RotationV(),
-	}
-	radiusExpr, radiusVal, err := s.circleRadiusExpr(ent)
-	if err != nil {
-		return circleData{}, err
-	}
-	return circleData{center: centerExpr, plane: plane, radius: radiusExpr, radiusValue: radiusVal}, nil
-}
-
-func (s *System) circleRadiusExpr(ent *core.Entity) (*core.Expr, float64, error) {
-	if ent.Distance != (core.HEntity{}) {
-		expr, val, err := s.distanceExpr(ent.Distance)
-		if err == nil {
-			return expr, val, nil
-		}
-	}
-	if ent.Point[1] != (core.HEntity{}) {
-		center, err := s.pointExpr(ent.Point[0])
-		if err != nil {
-			return nil, 0, err
-		}
-		start, err := s.pointExpr(ent.Point[1])
-		if err != nil {
-			return nil, 0, err
-		}
-		diff := center.Minus(start)
-		expr := diff.Magnitude()
-		centerEnt, _ := s.resolver.Entity(ent.Point[0])
-		startEnt, _ := s.resolver.Entity(ent.Point[1])
-		var val float64
-		if centerEnt != nil && startEnt != nil {
-			val = centerEnt.ActPoint.DistanceTo(startEnt.ActPoint)
-		}
-		return expr, val, nil
-	}
-	return core.NewConstant(ent.ActDistance), ent.ActDistance, nil
-}
-
-func (s *System) distanceExpr(h core.HEntity) (*core.Expr, float64, error) {
-	if h == (core.HEntity{}) {
-		return nil, 0, fmt.Errorf("distance handle zero")
-	}
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return nil, 0, err
-	}
-	if ent == nil {
-		return nil, 0, fmt.Errorf("distance entity %08x missing", h.V)
-	}
-	switch ent.Type {
-	case core.EntityDistance:
-		if ent.Param[0].V != 0 {
-			return core.NewParam(ent.Param[0]), ent.ActDistance, nil
-		}
-		return core.NewConstant(ent.ActDistance), ent.ActDistance, nil
-	case core.EntityDistanceNCopy:
-		return ent.DistanceGetExpr(), ent.NumDistance, nil
-	default:
-		return nil, 0, fmt.Errorf("unsupported distance entity type %d", ent.Type)
-	}
-}
-
-func orthonormalBasis(n geom.Vector) (geom.Vector, geom.Vector) {
-	normalized := n.Normal()
-	if normalized.Magnitude() == 0 {
-		normalized = geom.NewVector(0, 0, 1)
-	}
-	var u geom.Vector
-	if math.Abs(normalized.X) > math.Abs(normalized.Z) {
-		u = geom.NewVector(-normalized.Y, normalized.X, 0)
-	} else {
-		u = geom.NewVector(0, -normalized.Z, normalized.Y)
-	}
-	u = u.Normal()
-	v := normalized.Cross(u)
-	return u, v
-}
-
-func negateVector(v core.ExprVector) core.ExprVector {
-	neg := core.NewConstant(-1)
-	return core.ExprVector{
-		X: v.X.Times(neg),
-		Y: v.Y.Times(neg),
-		Z: v.Z.Times(neg),
-	}
-}
-
-type faceData struct {
-	point  core.ExprVector
-	normal core.ExprVector
-}
-
-func (s *System) faceExpr(h core.HEntity) (faceData, error) {
-	if h == (core.HEntity{}) {
-		return faceData{}, fmt.Errorf("face handle zero")
-	}
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return faceData{}, err
-	}
-	if ent == nil {
-		return faceData{}, fmt.Errorf("face entity %08x missing", h.V)
-	}
-
-	if !ent.IsFace() {
-		return faceData{}, fmt.Errorf("entity %08x (type %d) is not a face", h.V, ent.Type)
-	}
-	return entityExprs(h, func() faceData {
-		return faceData{
-			point:  ent.FaceGetPointExprs(s.sketch()),
-			normal: ent.FaceGetNormalExprs(),
-		}
-	})
-}
-
-func (s *System) vectorExpr(h core.HEntity) (core.ExprVector, error) {
-	if h == (core.HEntity{}) {
-		return core.ExprVector{}, fmt.Errorf("vector handle zero")
-	}
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	if ent == nil {
-		return core.ExprVector{}, fmt.Errorf("entity %08x missing", h.V)
-	}
-
-	switch ent.Type {
-	case core.EntityLineSegment:
-		// C++ EntityBase::VectorGetExprs: point[0] - point[1].
-		start, err := s.pointExpr(ent.Point[0])
-		if err != nil {
-			return core.ExprVector{}, err
-		}
-		finish, err := s.pointExpr(ent.Point[1])
-		if err != nil {
-			return core.ExprVector{}, err
-		}
-		return start.Minus(finish), nil
-	default:
-		if ent.IsNormal() {
-			return s.normalExpr(ent.H)
-		}
-		if ent.IsFace() {
-			return entityExprs(h, ent.FaceGetNormalExprs)
-		}
-		return core.FromVector(ent.ActNormal.RotationN()), nil
-	}
-}
-
-func pointLineDistanceExpr(p core.ExprVector, line lineData, plane *planeData) *core.Expr {
-	if plane == nil {
-		vec := p.Minus(line.a)
-		cross := vec.Cross(line.direction)
-		numerator := cross.Magnitude()
-		denom := line.direction.Magnitude()
-		return numerator.Div(denom)
-	}
-
-	ua, va := plane.coords(line.a)
-	end := line.a.Plus(line.direction)
-	ub, vb := plane.coords(end)
-	up, vp := plane.coords(p)
-
-	du := ua.Minus(ub)
-	dv := va.Minus(vb)
-	denom := du.Square().Plus(dv.Square()).Sqrt()
-
-	proj := dv.Times(ua.Minus(up)).Minus(du.Times(va.Minus(vp)))
-	return proj.Div(denom)
-}
-
-func pointPlaneDistanceExpr(p core.ExprVector, plane planeData) *core.Expr {
-	return pointPlaneDistanceExprWithNormal(p, plane.point, plane.normal)
-}
-
-func pointPlaneDistanceExprWithNormal(p, planePoint, planeNormal core.ExprVector) *core.Expr {
-	norm := planeNormal.WithMagnitude(core.NewConstant(1))
-	return p.Minus(planePoint).Dot(norm)
-}
-
-func isFreeWorkplane(h core.HEntity) bool {
-	return h == (core.HEntity{}) || h == core.FreeIn3D
-}
-func vectorsParallel3D(a, b core.ExprVector, h core.HParam) core.ExprVector {
-	scale := core.NewConstant(1)
-	if h != (core.HParam{}) {
-		scale = core.NewParam(h)
-	}
-	return a.Minus(b.ScaledBy(scale))
-}
-
-func (s *System) normalFrameExpr(h core.HEntity) (core.ExprVector, core.ExprVector, core.ExprVector, error) {
-	qExpr, _, err := s.normalQuaternionExpr(h)
-	if err != nil {
-		return core.ExprVector{}, core.ExprVector{}, core.ExprVector{}, err
-	}
-	return qExpr.RotationU(), qExpr.RotationV(), qExpr.RotationN(), nil
-}
-
-func (s *System) normalFrameNumeric(h core.HEntity) (geom.Vector, geom.Vector, geom.Vector, error) {
-	ent, err := s.resolver.Entity(h)
-	if err != nil {
-		return geom.Vector{}, geom.Vector{}, geom.Vector{}, err
-	}
-	if ent == nil {
-		return geom.Vector{}, geom.Vector{}, geom.Vector{}, fmt.Errorf("normal entity %08x missing", h.V)
-	}
-	q := ent.ActNormal.Normal()
-	return q.RotationU(), q.RotationV(), q.RotationN(), nil
-}
-
-func (s *System) arcAnglesNumeric(arc *core.Entity) (float64, float64, float64, error) {
-	centerEnt, err := s.resolver.Entity(arc.Point[0])
-	if err != nil || centerEnt == nil {
-		return 0, 0, 0, fmt.Errorf("arc center entity missing")
-	}
-	startEnt, err := s.resolver.Entity(arc.Point[1])
-	if err != nil || startEnt == nil {
-		return 0, 0, 0, fmt.Errorf("arc start entity missing")
-	}
-	finishEnt, err := s.resolver.Entity(arc.Point[2])
-	if err != nil || finishEnt == nil {
-		return 0, 0, 0, fmt.Errorf("arc finish entity missing")
-	}
-	normalEnt, err := s.resolver.Entity(arc.Normal)
-	if err != nil || normalEnt == nil {
-		return 0, 0, 0, fmt.Errorf("arc normal entity missing")
-	}
-	center := centerEnt.ActPoint
-	start := startEnt.ActPoint
-	finish := finishEnt.ActPoint
-	q := normalEnt.ActNormal.Normal()
-	u := q.RotationU()
-	v := q.RotationV()
-	ps := start.Minus(center)
-	pf := finish.Minus(center)
-	ts := math.Atan2(ps.Dot(v), ps.Dot(u))
-	tf := math.Atan2(pf.Dot(v), pf.Dot(u))
-	dtheta := tf - ts
-	for dtheta < 1e-6 {
-		dtheta += 2 * math.Pi
-	}
-	for dtheta > 2*math.Pi {
-		dtheta -= 2 * math.Pi
-	}
-	return ts, tf, dtheta, nil
-}
-
-func (s *System) arcLengthComponents(arc *core.Entity) (*core.Expr, *core.Expr, error) {
-	center, err := s.pointExpr(arc.Point[0])
-	if err != nil {
-		return nil, nil, err
-	}
-	start, err := s.pointExpr(arc.Point[1])
-	if err != nil {
-		return nil, nil, err
-	}
-	finish, err := s.pointExpr(arc.Point[2])
-	if err != nil {
-		return nil, nil, err
-	}
-	normal, err := s.normalExpr(arc.Normal)
-	if err != nil {
-		return nil, nil, err
-	}
-	startDelta := start.Minus(center)
-	finishDelta := finish.Minus(center)
-	radius := finishDelta.Magnitude()
-	u := startDelta.WithMagnitude(core.NewConstant(1))
-	v := normal.Cross(u)
-	cosTheta := finishDelta.Dot(u).Div(radius)
-	sinTheta := finishDelta.Dot(v).Div(radius)
-	_, _, dtheta, err := s.arcAnglesNumeric(arc)
-	if err != nil {
-		return nil, nil, err
-	}
-	var theta *core.Expr
-	switch {
-	case dtheta < 3*math.Pi/4:
-		theta = cosTheta.ACos()
-	case dtheta < 5*math.Pi/4:
-		theta = core.NewConstant(math.Pi).Minus(sinTheta.ASin())
-	default:
-		theta = core.NewConstant(2 * math.Pi).Minus(cosTheta.ACos())
-	}
-	return radius, theta, nil
-}
-
-func (s *System) arcLengthExpr(arc *core.Entity) (*core.Expr, error) {
-	radius, theta, err := s.arcLengthComponents(arc)
-	if err != nil {
-		return nil, err
-	}
-	return radius.Times(theta), nil
-}
-
-func (s *System) lineLengthExpr(ent *core.Entity) (*core.Expr, error) {
-	data, err := s.lineExpr(ent.H)
-	if err != nil {
-		return nil, err
-	}
-	return data.direction.Magnitude(), nil
-}
-
-func (s *System) cubicTangentExpr(ent *core.Entity, finish bool) (core.ExprVector, error) {
-	if ent.Type != core.EntityCubic && ent.Type != core.EntityCubicPeriodic {
-		return core.ExprVector{}, fmt.Errorf("cubic tangent: unsupported entity type %d", ent.Type)
-	}
-	extra := ent.ExtraPoints
-	if finish {
-		tail, err := s.pointExpr(ent.Point[3+extra])
-		if err != nil {
-			return core.ExprVector{}, err
-		}
-		head, err := s.pointExpr(ent.Point[2+extra])
-		if err != nil {
-			return core.ExprVector{}, err
-		}
-		return tail.Minus(head), nil
-	}
-	head, err := s.pointExpr(ent.Point[0])
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	tail, err := s.pointExpr(ent.Point[1])
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	return head.Minus(tail), nil
-}
-
-func (s *System) arcTangentExpr(ent *core.Entity, useFinish bool) (core.ExprVector, error) {
-	center, err := s.pointExpr(ent.Point[0])
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	idx := 1
-	if useFinish {
-		idx = 2
-	}
-	point, err := s.pointExpr(ent.Point[idx])
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	normal, err := s.normalExpr(ent.Normal)
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	radius := point.Minus(center)
-	return normal.Cross(radius), nil
-}
-
-func (s *System) curveTangentExpr(h core.HEntity, useFinish bool) (core.ExprVector, error) {
-	ent, err := s.entity(h)
-	if err != nil {
-		return core.ExprVector{}, err
-	}
-	switch ent.Type {
-	case core.EntityArcOfCircle:
-		return s.arcTangentExpr(ent, useFinish)
-	case core.EntityCubic, core.EntityCubicPeriodic:
-		return s.cubicTangentExpr(ent, useFinish)
-	default:
-		return core.ExprVector{}, fmt.Errorf("curve tangent: unsupported entity type %d", ent.Type)
-	}
-}
-
-// ParamHandles returns the registered parameters in ascending handle order.
-func (s *System) ParamHandles() []core.HParam {
-	handles := make([]core.HParam, 0, len(s.Params))
-	for h := range s.Params {
-		handles = append(handles, h)
-	}
-	sort.Slice(handles, func(i, j int) bool {
-		return handles[i].V < handles[j].V
-	})
-	return handles
-}
-
-// DOF returns a naive degree-of-freedom count (params - equations).
-func (s *System) DOF() int {
-	return len(s.Params) - len(s.Equations)
-}
-
-// Evaluate computes equation residuals and Jacobian numerically using the supplied overrides.
-func (s *System) Evaluate(overrides map[core.HParam]float64) ([]float64, [][]float64, error) {
-	if len(s.Equations) == 0 {
-		return nil, nil, nil
-	}
-
-	ctx := evaluationContext{
-		overrides: overrides,
-		params:    s.Params,
-	}
-
-	paramOrder := s.ParamHandles()
-	residuals := make([]float64, len(s.Equations))
-	jacobian := make([][]float64, len(s.Equations))
-
-	for row, eq := range s.Equations {
-		residuals[row] = eq.Expr.Eval(ctx, nil)
-		jacobian[row] = make([]float64, len(paramOrder))
-		for col, h := range paramOrder {
-			if _, ok := s.Params[h]; !ok {
+		s.mat.A[i] = make([]*core.Expr, s.mat.n)
+		for _, p := range used {
+			j, ok := paramToIndex[p]
+			if !ok {
 				continue
 			}
-			d := eq.derivative(h)
-			jacobian[row][col] = d.Eval(ctx, nil)
+			// compute partial derivative of f
+			pd := f.Derivative(p).FoldConstants()
+			if pd.IsZeroConst() {
+				continue
+			}
+			s.mat.A[i][j] = pd
+		}
+		s.mat.B = append(s.mat.B, f)
+	}
+	return true
+}
+
+// EvalJacobian evaluates the symbolic Jacobian (C++ System::EvalJacobian).
+func (s *System) EvalJacobian() {
+	s.mat.Anum = make([][]float64, s.mat.m)
+	for i := 0; i < s.mat.m; i++ {
+		s.mat.Anum[i] = make([]float64, s.mat.n)
+		for j, pd := range s.mat.A[i] {
+			if pd != nil {
+				s.mat.Anum[i][j] = pd.Eval(nil, nil)
+			}
+		}
+	}
+}
+
+// substitute renames the params of e that subMap maps (C++
+// Expr::Substitute).
+func substitute(e *core.Expr, subMap map[core.HParam]*Param) {
+	if e.Op == core.OpParam {
+		if by, ok := subMap[e.Param]; ok {
+			e.Param = by.H
+		}
+		return
+	}
+	if e.Left != nil {
+		substitute(e.Left, subMap)
+		if e.Right != nil {
+			substitute(e.Right, subMap)
+		}
+	}
+}
+
+// SolveBySubstitution eliminates the equations that just say two
+// unknowns are equal, a - b = 0, by substituting one for the other; it
+// returns what each eliminated param was substituted by (C++
+// System::SolveBySubstitution).
+func (s *System) SolveBySubstitution() map[core.HParam]*Param {
+	// Contains pointers to last substitutions in a substitution chain
+	var subVec []*Param
+	// Maps a parameter to the index of its last substitution in subVec
+	leaves := map[core.HParam]int{}
+	var leafOrder []core.HParam
+	setLeaf := func(h core.HParam, idx int) {
+		if _, ok := leaves[h]; !ok {
+			leafOrder = append(leafOrder, h)
+		}
+		leaves[h] = idx
+	}
+	// Tracks how many slots in subVec contain a specific last
+	// substitution (slots that once contained a specific substitution
+	// are updated to point to another over the run)
+	slotTrack := map[core.HParam][]int{}
+
+	for i := range s.Eq {
+		teq := &s.Eq[i]
+		tex := teq.E
+
+		// If we have (a - b) = 0 where both a and b are parameters, then
+		// a = b and we can substitute
+		if tex.Op != core.OpMinus || tex.Left.Op != core.OpParam || tex.Right.Op != core.OpParam {
+			continue
+		}
+		sub := s.findParam(tex.Left.Param)
+		by := s.findParam(tex.Right.Param)
+		if sub == nil || by == nil {
+			// Don't substitute unless they're both solver params;
+			// otherwise it's an equation that can be solved immediately,
+			// or an error to flag later.
+			continue
+		}
+
+		if sub.H == by.H {
+			teq.Tag = eqSubstituted
+			continue
+		}
+
+		// Take the last substitution of parameter a
+		subIdx := 0
+		if idx, ok := leaves[sub.H]; ok {
+			subIdx = idx
+			sub = subVec[idx-1]
+		}
+
+		// Take the last substitution of parameter b
+		byIdx := 0
+		if idx, ok := leaves[by.H]; ok {
+			byIdx = idx
+			by = subVec[idx-1]
+		}
+
+		// If the last substituton of a is a dragged param, keep it
+		// and substitute the other param
+		if s.isDragged(sub.H) {
+			sub, by = by, sub
+			subIdx, byIdx = byIdx, subIdx
+		}
+
+		if subIdx == 0 {
+			if byIdx == 0 {
+				// Neither sub nor by are in the map, so add them and
+				// set the target index
+				subVec = append(subVec, by)
+				setLeaf(by.H, len(subVec))
+				setLeaf(sub.H, len(subVec))
+			} else {
+				// sub isn't in the map, but by is, so just add sub to
+				// the map with by as the target
+				setLeaf(sub.H, byIdx)
+			}
+		} else {
+			// sub already exists in the map, so just update any slots
+			// that point to it as the last substitution to point to by
+			// instead
+			if slots, ok := slotTrack[sub.H]; !ok {
+				// There's only this one slot, so just replace it with by
+				subVec[subIdx-1] = by
+
+				// If by was already in the map, that means we now have
+				// an additional slot where it resides, so add it to the
+				// slot tracker
+				if byIdx != 0 {
+					bySlots := slotTrack[by.H]
+					if len(bySlots) == 0 {
+						bySlots = append(bySlots, byIdx)
+					}
+					slotTrack[by.H] = append(bySlots, subIdx)
+				}
+			} else {
+				// We have more than one slot pointing to sub, so update
+				// all of the slots to point to by
+				for _, k := range slots {
+					subVec[k-1] = by
+				}
+
+				// No more slots are pointing to sub, so extract the slot
+				// list and erase sub from the tracker
+				delete(slotTrack, sub.H)
+
+				bySlots := slotTrack[by.H]
+				if len(bySlots) == 0 {
+					bySlots = slots
+					if byIdx != 0 {
+						bySlots = append(bySlots, byIdx)
+					}
+				} else {
+					bySlots = append(bySlots, slots...)
+				}
+				slotTrack[by.H] = bySlots
+			}
+
+			setLeaf(by.H, subIdx)
+		}
+
+		sub.Tag = varSubstituted
+		teq.Tag = eqSubstituted
+	}
+
+	subMap := map[core.HParam]*Param{}
+	for _, h := range leafOrder {
+		by := subVec[leaves[h]-1]
+		if h != by.H {
+			subMap[h] = by
 		}
 	}
 
-	return residuals, jacobian, nil
-}
-
-type evaluationContext struct {
-	overrides map[core.HParam]float64
-	params    map[core.HParam]*core.Param
-}
-
-type evalParamMap struct {
-	params map[core.HParam]float64
-}
-
-func (e evalParamMap) ParamValue(h core.HParam) (float64, bool) {
-	if v, ok := e.params[h]; ok {
-		return v, true
+	// Substitute all the equations
+	for i := range s.Eq {
+		substitute(s.Eq[i].E, subMap)
 	}
-	return 0, false
+
+	return subMap
 }
 
-func (e evaluationContext) ParamValue(h core.HParam) (float64, bool) {
-	if v, ok := e.overrides[h]; ok {
-		return v, true
+// CalculateRank returns the rank of the evaluated Jacobian (C++
+// System::CalculateRank).
+func (s *System) CalculateRank() int {
+	if s.mat.n == 0 || s.mat.m == 0 {
+		return 0
 	}
-	if p, ok := e.params[h]; ok && p != nil {
-		return p.Val, true
-	}
-	return 0, false
+	return factorQR(s.mat.Anum, s.mat.m, s.mat.n).rank
 }
 
-// AddExprEquation registers a symbolic equation (LHS - RHS = 0) for
-// the solver to satisfy. Used by Group::GenerateEquations for group
-// type-specific constraints like quaternion normalization, axis
-// constraints, and extrusion orthogonality.
-func (s *System) AddExprEquation(lhs, rhs *core.Expr) error {
-	if lhs == nil || rhs == nil {
-		return fmt.Errorf("solver: nil expr in AddExprEquation")
+// TestRank evaluates the Jacobian and reports whether it has full row
+// rank, along with the degrees of freedom and the rank (C++
+// System::TestRank).
+func (s *System) TestRank() (ok bool, dof, rank int) {
+	s.EvalJacobian()
+	jacobianRank := s.CalculateRank()
+	// We are calculating dof based on real rank, not mat.m.
+	// Using this approach we can calculate real dof even when redundant is allowed.
+	return jacobianRank == s.mat.m, s.mat.n - jacobianRank, jacobianRank
+}
+
+func transpose(a [][]float64, m, n int) [][]float64 {
+	t := make([][]float64, n)
+	for j := 0; j < n; j++ {
+		t[j] = make([]float64, m)
+		for i := 0; i < m; i++ {
+			t[j][i] = a[i][j]
+		}
 	}
-	eq := lhs.Minus(rhs)
-	s.Equations = append(s.Equations, &Equation{
-		H:    core.HEquation{V: uint32(len(s.Equations) + 1)},
-		Expr: eq,
-	})
-	return nil
+	return t
+}
+
+// SolveLeastSquares computes the minimum-norm Newton step X with
+// A X = B (C++ System::SolveLeastSquares).
+func (s *System) SolveLeastSquares() bool {
+	m, n := s.mat.m, s.mat.n
+	// Scale the columns; this scale weights the parameters for the least
+	// squares solve, so that we can encourage the solver to make bigger
+	// changes in some parameters, and smaller in others.
+	scale := make([]float64, n)
+	for c := 0; c < n; c++ {
+		scale[c] = 1
+		if s.isDragged(s.mat.param[c]) {
+			// It's least squares, so this parameter doesn't need to be all
+			// that big to get a large effect.
+			scale[c] = 1 / 20.0
+		}
+	}
+	for i := 0; i < m; i++ {
+		for c := 0; c < n; c++ {
+			s.mat.Anum[i][c] *= scale[c]
+		}
+	}
+
+	s.mat.X = make([]float64, n)
+	if m == 0 || n == 0 {
+		return true
+	}
+
+	var z []float64
+	if m <= n {
+		// We want the minimum norm solution of the underdetermined system
+		// A*x = B, which is x = A'*(A*A')^-1*B. Factor A' rather than
+		// forming A*A', which would square the condition number: as
+		// A'*P = Q*R, A*A' = P*R'*R*P', so
+		//     z = (A*A')^-1*B = P*R^-1*R'^-1*P'*B,
+		// two triangular solves, with the rank decision taken on R.
+		f := factorQR(transpose(s.mat.Anum, m, n), n, m)
+		v := make([]float64, m)
+		for k := 0; k < f.rank; k++ {
+			v[k] = s.mat.Bnum[f.perm[k]]
+		}
+		f.solveRt(v)
+		f.solveR(v)
+		z = make([]float64, m)
+		for k := 0; k < m; k++ {
+			z[f.perm[k]] = v[k]
+		}
+	} else {
+		// More equations than unknowns; solve the normal equations
+		// A*A' z = B instead. A system like that is redundant anyway,
+		// and gets reported as such.
+		aat := make([][]float64, m)
+		for i := 0; i < m; i++ {
+			aat[i] = make([]float64, m)
+			for k := 0; k < m; k++ {
+				sum := 0.0
+				for c := 0; c < n; c++ {
+					sum += s.mat.Anum[i][c] * s.mat.Anum[k][c]
+				}
+				aat[i][k] = sum
+			}
+		}
+		z = factorQR(aat, m, m).solve(s.mat.Bnum)
+	}
+
+	for c := 0; c < n; c++ {
+		sum := 0.0
+		for i := 0; i < m; i++ {
+			sum += s.mat.Anum[i][c] * z[i]
+		}
+		s.mat.X[c] = sum * scale[c]
+	}
+	return true
+}
+
+// isReasonable is C++ IsReasonable, which despite its name is true for
+// values that are clearly not.
+func isReasonable(x float64) bool {
+	return math.IsNaN(x) || x > 1e11 || x < -1e11
+}
+
+// NewtonSolve iterates Newton steps until every equation is within
+// ConvergeTolerance of zero (C++ System::NewtonSolve).
+func (s *System) NewtonSolve() bool {
+	iter := 0
+	converged := false
+
+	// Evaluate the functions at our operating point.
+	s.mat.Bnum = make([]float64, s.mat.m)
+	for i := 0; i < s.mat.m; i++ {
+		s.mat.Bnum[i] = s.mat.B[i].Eval(nil, nil)
+	}
+	for {
+		// And evaluate the Jacobian at our initial operating point.
+		s.EvalJacobian()
+
+		if !s.SolveLeastSquares() {
+			break
+		}
+
+		// Take the Newton step;
+		//      J(x_n) (x_{n+1} - x_n) = 0 - F(x_n)
+		for i := 0; i < s.mat.n; i++ {
+			p := s.findParam(s.mat.param[i])
+			p.Val -= s.mat.X[i]
+			if isReasonable(p.Val) {
+				// Very bad, and clearly not convergent
+				return false
+			}
+		}
+
+		// Re-evalute the functions, since the params have just changed.
+		for i := 0; i < s.mat.m; i++ {
+			s.mat.Bnum[i] = s.mat.B[i].Eval(nil, nil)
+			if isReasonable(s.mat.Bnum[i]) {
+				// Very bad, and clearly not convergent
+				return false
+			}
+		}
+
+		// Check for convergence
+		converged = true
+		for i := 0; i < s.mat.m; i++ {
+			if math.Abs(s.mat.Bnum[i]) > ConvergeTolerance {
+				converged = false
+				break
+			}
+		}
+		if !(iter < 50 && !converged) {
+			break
+		}
+		iter++
+	}
+
+	return converged
+}
+
+// writeEquationsExceptFor replaces the equations with the group's,
+// leaving out constraint hc.
+func (s *System) writeEquationsExceptFor(hc core.HConstraint, g *Group) {
+	var l []core.Equation
+	g.WriteEquationsExceptFor(hc, &l)
+	s.setEquations(l)
+}
+
+// FindWhichToRemoveToFixJacobian lists the constraints whose removal
+// would make the Jacobian full rank (C++
+// System::FindWhichToRemoveToFixJacobian).
+func (s *System) FindWhichToRemoveToFixJacobian(g *Group, bad *[]core.HConstraint, forceDofCheck bool) {
+	start := time.Now()
+	g.Timeout = false
+
+	for a := 0; a < 2; a++ {
+		for _, c := range g.Constraints {
+			if time.Since(start) > g.FindToFixTimeout {
+				g.Timeout = true
+				return
+			}
+
+			if (c.Type == core.ConstraintPointsCoincident && a == 0) ||
+				(c.Type != core.ConstraintPointsCoincident && a == 1) {
+				// Do the constraints in two passes: first everything but
+				// the point-coincident constraints, then only those
+				// constraints (so they appear last in the list).
+				continue
+			}
+
+			s.clearParamTags()
+			s.writeEquationsExceptFor(c.H, g)
+			s.clearEqTags()
+
+			// It's a major speedup to solve the easy ones by substitution here,
+			// and that doesn't break anything.
+			if !forceDofCheck {
+				s.SolveBySubstitution()
+			}
+
+			s.WriteJacobian(0)
+			s.EvalJacobian()
+
+			rank := s.CalculateRank()
+			if rank == s.mat.m {
+				// We fixed it by removing this constraint
+				*bad = append(*bad, c.H)
+			}
+		}
+	}
+}
+
+// referencedParam returns the one unknown e refers to, or reports none
+// or several (C++ Expr::ReferencedParams).
+func (s *System) referencedParam(e *core.Expr) (h core.HParam, none, multiple bool) {
+	var found core.HParam
+	var walk func(e *core.Expr) bool
+	walk = func(e *core.Expr) bool {
+		if e.Op == core.OpParam {
+			if s.findParam(e.Param) == nil {
+				return true
+			}
+			if found.V != 0 && found != e.Param {
+				return false
+			}
+			found = e.Param
+			return true
+		}
+		if e.Left != nil && !walk(e.Left) {
+			return false
+		}
+		if e.Right != nil && !walk(e.Right) {
+			return false
+		}
+		return true
+	}
+	if !walk(e) {
+		return core.HParam{}, false, true
+	}
+	return found, found.V == 0, false
+}
+
+// Solve solves the group's equations, writes the solution back to the
+// sketch, and reports the result, the degrees of freedom, and (if the
+// system is inconsistent or didn't converge) the constraints to blame
+// (C++ System::Solve).
+func (s *System) Solve(g *Group, dof *int, bad *[]core.HConstraint,
+	andFindBad, andFindFree, forceDofCheck bool) core.SolveResult {
+	s.writeEquationsExceptFor(core.NoConstraint, g)
+
+	rankOk := false
+
+	// All params and equations are assigned to group zero.
+	s.clearParamTags()
+	s.clearEqTags()
+
+	var subMap map[core.HParam]*Param
+
+	// Since we are suppressing dof calculation or allowing redundant, we
+	// can't / don't want to catch result of dof checking without substitution
+	if g.SuppressDofCalculation || g.AllowRedundant || !forceDofCheck {
+		subMap = s.SolveBySubstitution()
+	}
+
+	// Before solving the big system, see if we can find any equations that
+	// are soluble alone. This can be a huge speedup. We don't know whether
+	// the system is consistent yet, but if it isn't then we'll catch that
+	// later.
+	alone := 1
+	for i := range s.Eq {
+		e := &s.Eq[i]
+		if e.Tag != 0 {
+			continue
+		}
+
+		hp, none, multiple := s.referencedParam(e.E)
+		if none || multiple {
+			continue
+		}
+
+		p := s.findParam(hp)
+		if p.Tag != 0 {
+			continue // let rank test catch inconsistency
+		}
+
+		e.Tag = alone
+		p.Tag = alone
+		s.WriteJacobian(alone)
+		if !s.NewtonSolve() {
+			// We don't do the rank test, so let's arbitrarily return
+			// the DIDNT_CONVERGE result here.
+			rankOk = true
+			// Failed to converge, bail out early
+			return s.didntConverge(g, bad, rankOk)
+		}
+		alone++
+	}
+
+	// Now write the Jacobian for what's left, and do a rank test; that
+	// tells us if the system is inconsistently constrained.
+	if !s.WriteJacobian(0) {
+		return core.SolveTooManyUnknowns
+	}
+	// Clear dof value in order to have indication when dof is actually not calculated
+	if dof != nil {
+		*dof = -1
+	}
+	// We are suppressing or allowing redundant, so we no need to catch unsolveable + redundant
+	rankOk = true
+	if !g.SuppressDofCalculation && !g.AllowRedundant {
+		rankOk = s.testRank(dof)
+	}
+
+	// And do the leftovers as one big system
+	if !s.NewtonSolve() {
+		return s.didntConverge(g, bad, rankOk)
+	}
+
+	// Here we are want to calculate dof even when redundant is allowed, so just handle suppressing
+	rankOk = true
+	if !g.SuppressDofCalculation {
+		rankOk = s.testRank(dof)
+	}
+	if !rankOk {
+		if andFindBad {
+			s.FindWhichToRemoveToFixJacobian(g, bad, forceDofCheck)
+		}
+	} else {
+		s.MarkParamsFree(andFindFree)
+	}
+	// System solved correctly, so write the new values back in to the
+	// main parameter table.
+	for _, p := range s.Param {
+		val := p.Val
+		if by, ok := subMap[p.H]; ok {
+			val = by.Val
+		}
+
+		pp := s.SK(p.H)
+		pp.Val = val
+		pp.Known = true
+		pp.Free = p.Free
+	}
+	if rankOk {
+		return core.SolveOkay
+	}
+	return core.SolveRedundantOkay
+}
+
+func (s *System) testRank(dof *int) bool {
+	ok, d, _ := s.TestRank()
+	if dof != nil {
+		*dof = d
+	}
+	return ok
+}
+
+// didntConverge lists the constraints whose equations aren't
+// satisfied (the didnt_converge exit of C++ System::Solve).
+func (s *System) didntConverge(g *Group, bad *[]core.HConstraint, rankOk bool) core.SolveResult {
+	tagged := map[core.HConstraint]bool{}
+	for i, eq := range s.mat.eq {
+		b := s.mat.Bnum[i]
+		if math.Abs(b) > ConvergeTolerance || isReasonable(b) {
+			// This constraint is unsatisfied.
+			if !eq.H.IsFromConstraint() {
+				continue
+			}
+
+			hc := eq.H.Constraint()
+			if !g.hasConstraint(hc) {
+				continue
+			}
+			// Don't double-show constraints that generated multiple
+			// unsatisfied equations
+			if !tagged[hc] {
+				*bad = append(*bad, hc)
+				tagged[hc] = true
+			}
+		}
+	}
+
+	if rankOk {
+		return core.SolveDidntConverge
+	}
+	return core.SolveRedundantDidntConverge
+}
+
+func (g *Group) hasConstraint(hc core.HConstraint) bool {
+	for _, c := range g.Constraints {
+		if c.H == hc {
+			return true
+		}
+	}
+	return false
+}
+
+// SolveRank writes the group's equations and tests the Jacobian's rank
+// without solving (C++ System::SolveRank).
+func (s *System) SolveRank(g *Group, rank, dof *int, bad *[]core.HConstraint,
+	andFindBad, andFindFree bool) core.SolveResult {
+	s.writeEquationsExceptFor(core.NoConstraint, g)
+
+	// All params and equations are assigned to group zero.
+	s.clearParamTags()
+	s.clearEqTags()
+
+	// Now write the Jacobian, and do a rank test; that
+	// tells us if the system is inconsistently constrained.
+	if !s.WriteJacobian(0) {
+		return core.SolveTooManyUnknowns
+	}
+
+	rankOk, d, r := s.TestRank()
+	if dof != nil {
+		*dof = d
+	}
+	if rank != nil {
+		*rank = r
+	}
+	if !rankOk {
+		// When we are testing with redundant allowed, we don't want to have additional info
+		// about redundants since this test is working only for single redundant constraint
+		if !g.SuppressDofCalculation && !g.AllowRedundant {
+			if andFindBad {
+				s.FindWhichToRemoveToFixJacobian(g, bad, true)
+			}
+		}
+	} else {
+		s.MarkParamsFree(andFindFree)
+	}
+	if rankOk {
+		return core.SolveOkay
+	}
+	return core.SolveRedundantOkay
+}
+
+// MarkParamsFree finds, if asked, the params that no equation pins down;
+// that might be more than the number of degrees of freedom (C++
+// System::MarkParamsFree).
+func (s *System) MarkParamsFree(find bool) {
+	for _, p := range s.Param {
+		p.Free = false
+
+		if find {
+			if p.Tag == 0 {
+				p.Tag = varDofTest
+				s.WriteJacobian(0)
+				s.EvalJacobian()
+				rank := s.CalculateRank()
+				if rank == s.mat.m {
+					p.Free = true
+				}
+				p.Tag = 0
+			}
+		}
+	}
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/solver"
 )
 
 const (
@@ -243,7 +242,6 @@ type SpaceSolve struct {
 	ui *UI
 
 	sketch *sketch.Sketch
-	sys    *solver.System
 
 	prefs Preferences
 
@@ -280,7 +278,6 @@ func NewSpaceSolve() *SpaceSolve {
 	sk := sketch.NewSketch()
 	ss := &SpaceSolve{
 		sketch: sk,
-		sys:    solver.NewSystem(sketchResolver{sketch: sk}),
 		prefs:  defaultPreferences(),
 		undo:   newUndoStack(maxUndoEntries),
 		redo:   newUndoStack(maxUndoEntries),
@@ -298,7 +295,6 @@ func (ss *SpaceSolve) ClearExisting() {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 	ss.sketch = sketch.NewSketch()
-	ss.sys = solver.NewSystem(sketchResolver{sketch: ss.sketch})
 	ss.undo.Clear()
 	ss.redo.Clear()
 	ss.activeGroup = core.HGroup{}
@@ -461,7 +457,6 @@ func (ss *SpaceSolve) applyUndoState(state UndoState) {
 		return
 	}
 	ss.sketch = state.Sketch
-	ss.sys = solver.NewSystem(sketchResolver{sketch: ss.sketch})
 	ss.activeGroup = state.ActiveGroup
 }
 
@@ -744,7 +739,6 @@ func (ss *SpaceSolve) Load(path string) error {
 
 	ss.mu.Lock()
 	ss.sketch = cloneSketch(doc.Sketch)
-	ss.sys = solver.NewSystem(sketchResolver{sketch: ss.sketch})
 	ss.fileState.SavePath = path
 	ss.fileState.Unsaved = useAutosave
 	if useAutosave {
@@ -920,31 +914,41 @@ func (ss *SpaceSolve) RemoveAutosave() {
 	_ = os.Remove(path)
 }
 
-// GenerateAll rebuilds the constraint system; solver integration is still
-// incremental but we run the symbolic stage to ensure obvious failures surface.
+// GenerateAll regenerates and solves the sketch with the engine, as
+// C++ SolveSpaceUI::GenerateAll does, and reports whether every group
+// solved.
 func (ss *SpaceSolve) GenerateAll(kind GenerateKind, andFindFree, genForBBox bool) {
 	ss.mu.Lock()
 	ss.scheduledGenerateAll = false
-	sys := solver.NewSystem(sketchResolver{sketch: ss.sketch})
+	sk := ss.sketch
 	ss.mu.Unlock()
 
-	for i := range ss.sketch.Constraints {
-		constraint := ss.sketch.Constraints[i]
-		err := sys.AddConstraint(&constraint)
-		if err != nil {
-			ss.setStatus(fmt.Sprintf("Solver error: %v", err))
-			ss.mu.Lock()
-			ss.allConsistent = false
-			ss.mu.Unlock()
-			return
+	var failed error
+	func() {
+		defer func() {
+			if rec := recover(); rec != nil {
+				failed = fmt.Errorf("%v", rec)
+			}
+		}()
+		sk.GenerateAll()
+	}()
+	if failed == nil {
+		for _, g := range sk.Groups {
+			if g.Solved.How != core.SolveOkay && g.Solved.How != core.SolveRedundantOkay {
+				failed = fmt.Errorf("group %s didn't solve", g.Name)
+				break
+			}
 		}
 	}
 
 	ss.mu.Lock()
-	ss.sys = sys
-	ss.allConsistent = true
+	ss.allConsistent = failed == nil
 	ss.mu.Unlock()
-	ss.setStatus("Regenerated constraint system")
+	if failed != nil {
+		ss.setStatus(fmt.Sprintf("Solver error: %v", failed))
+		return
+	}
+	ss.setStatus("Regenerated the sketch")
 }
 
 // SolveGroup is a placeholder that currently reruns the full solver.
@@ -1093,34 +1097,6 @@ func (sp sketchParams) ParamValue(h core.HParam) (float64, bool) {
 		}
 	}
 	return 0, false
-}
-
-type sketchResolver struct {
-	sketch *sketch.Sketch
-}
-
-func (sr sketchResolver) Entity(h core.HEntity) (*core.Entity, error) {
-	if sr.sketch == nil {
-		return nil, fmt.Errorf("nil sketch")
-	}
-	for i := range sr.sketch.Entities {
-		if sr.sketch.Entities[i].H == h {
-			return &sr.sketch.Entities[i], nil
-		}
-	}
-	return nil, fmt.Errorf("entity %08x missing", h.V)
-}
-
-func (sr sketchResolver) Param(h core.HParam) (*core.Param, error) {
-	if sr.sketch == nil {
-		return nil, fmt.Errorf("nil sketch")
-	}
-	for i := range sr.sketch.Params {
-		if sr.sketch.Params[i].H == h {
-			return &sr.sketch.Params[i], nil
-		}
-	}
-	return nil, fmt.Errorf("param %08x missing", h.V)
 }
 
 func max(a, b int) int {

@@ -16,12 +16,12 @@ solvespace core engine. It is the source of truth for the
 
 | C++ file | Lines | Status | Go file(s) | Notes |
 |---|---|---|---|---|
-| `expr.cpp` | 963 | OK | `pkg/core/expr.go`, `pkg/core/expr_parse.go` | `ExprQuaternion::Rotate`/`RotationU/V/N`/`Times` use the C++ formulas, which differ from a rotation for non-unit quaternions |
+| `expr.cpp` | 963 | OK | `pkg/core/expr.go`, `pkg/core/expr_parse.go` | `ExprQuaternion::Rotate`/`RotationU/V/N`/`Times` use the C++ formulas, which differ from a rotation for non-unit quaternions. `PartialWrt` (`Derivative`), `FoldConstants` (including its `Tol` of 0.001 for the x+0, x*1, x*0 rules) and `IsZeroConst` are faithful |
 | `entity.cpp` | 997 | OK | `pkg/core/entity.go`, `pkg/core/entity_base.go` | Every `EntityBase` accessor, numeric and symbolic, for all point/normal/face/distance types, plus `GenerateEquations` and `Entity::CalculateNumerical`. The sketch is passed in as a `core.EntitySketch` instead of the global `SK` |
 | `constraint.cpp` | 994 | OK | `pkg/core/constraint.go` | |
-| `system.cpp` | 660 | UNAUDITED | `pkg/solver/solve.go`, `pkg/solver/system.go` | Not a port. The Go solver is a damped least-squares Newton with its own substitution and staging passes; it has no rank test, and its DOF differs from C++. `System.Known` gives the per-group solve its fixed params |
+| `system.cpp` | 660 | OK | `pkg/solver/system.go`, `pkg/solver/qr.go` | `Solve`, `SolveRank`, `SolveBySubstitution`, `WriteJacobian`, `NewtonSolve`, `SolveLeastSquares` (the QR-of-A' form of this checkout), `TestRank`, `FindWhichToRemoveToFixJacobian`, `MarkParamsFree`. Eigen's `SparseQR` is a dense left-looking Householder QR with the same dead-column rule and threshold, but without the COLAMD column order |
 | `group.cpp` | 1228 | OK | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | `Generate` (all group types), `CopyEntity`, `Remap` (as `RemapEntity`), the `Make*` helpers and `GenerateEquations`. LINKED groups copy `ImpEntity`, which nothing populates yet. Menu and UI code are out of scope |
-| `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry, per-group `SolveGroup`), `ForceReferences`, `CalculateEntityBBox`. With no active group or dirty tracking, DIRTY and UNTIL_ACTIVE regenerate everything like ALL |
+| `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry), `SolveGroup` with `WriteEqSystemForGroup` and `WriteEquationsExceptFor`, `ForceReferences`, `CalculateEntityBBox`. With no active group or dirty tracking, DIRTY and UNTIL_ACTIVE regenerate everything like ALL; dragged params aren't marked |
 | `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, the running-shell boolean combine and `MergeCoincidentSurfaces` placement are faithful. LATHE/REVOLVE/HELIX shells follow C++ (axis from `predef`, angle `param(3)*4`, helix distance `param(7)*2`), but faces aren't remapped (`REMAP_LINE_TO_FACE`, `REMAP_LATHE_START/END`): `SBezier` carries no source entity |
 | `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
@@ -39,7 +39,7 @@ solvespace core engine. It is the source of truth for the
 | `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go`, `pkg/srf/raycast_surface.go` | `ClassifyEdge` and trimmed `AllPointsIntersecting` (plane, cylinder, subdivision) |
 | `srf/merge.cpp` | 130 | OK | `pkg/srf/merge.go` | `MergeCoincidentSurfaces` |
 | `bsp.cpp` | 733 | OK | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | |
-| `constrainteq.cpp` | 1062 | PARTIAL | `pkg/solver/system.go`, `pkg/sketch/group_generate.go` | Every constraint type has an `addXxx` emitter, but not in the C++ form. PT_PT_DISTANCE squares both sides; PARALLEL is three equations on normalized vectors instead of `VectorsParallel3d`/the pseudo-scalar product. `ModifyToSatisfy` is computed numerically per type. `HasLabel` and `Generate` are faithful |
+| `constrainteq.cpp` | 1062 | OK | `pkg/core/constraint_eq.go`, `pkg/sketch/group_generate.go` | `GenerateEquations` for every type, `ModifyToSatisfy`, `HasLabel`, `Generate` and the static helpers (`Distance`, `PointLineDistance`, `PointPlaneDistance`, `DirectionCosine`, `PointInThreeSpace`, `VectorsParallel3d`) |
 | `modify.cpp` | 751 | OK | `pkg/sketch/group_generate.go` | UI helpers (ReplacePointInConstraints, MakeTangentArc, SplitLine/Circle/Cubic) are out-of-scope. |
 | `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | |
@@ -89,15 +89,16 @@ UI.
 
 ## Test counts
 
-- 505 tests (412 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 429 tests (340 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - All 86 non-boolean fixtures load cleanly and round-trip via
   `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
-- All 31 constraint fixtures load, round-trip, and solve with
-  `How=SolveOkay` across all groups via `TestParityConstraintFixtures`.
-- `TestSolverAllSLVSFixtures` runs `GenerateAll` on every fixture and
-  requires every group to solve, except `constraint/large_dimensions`
-  (see remaining work) and one hand-made file C++ can't load either.
+- `TestParityGroupSolveVsCpp` runs `GenerateAll` on every fixture C++
+  can load and requires every group to solve with the degrees of
+  freedom C++ reports (`cpp_dof_golden_test.go`), and every
+  constraint's equations to hold, except the LINKED fixture.
+- `TestArcLengthConstraints` covers the four arc-length constraints no
+  fixture uses.
 - `TestParityBooleanVolumeVsCppGolden` checks every boolean fixture's
   volume against the C++ testsuite golden (see below);
   `TestBooleanTwoBoxesVolume` checks union/difference/intersection of
@@ -111,7 +112,7 @@ UI.
   `TestParityConstraintCounts`, `TestParityBooleanFixtures`,
   `TestParityBooleanFixtureBBoxValue`, `TestParityBooleanVolumeVsCppGolden`,
   `TestParityAnalysisFixtures`, `TestContourAreaSignAndMagnitude`,
-  `TestSystemAllConstraintsHaveEmitter`.
+  `TestParityGroupSolveVsCpp`.
 - `go vet ./...` and `go test ./...` succeed on the whole repo.
 - No TODO markers in engine packages.
 - Every boolean fixture's go/cpp volume ratio is within the C++
@@ -141,17 +142,12 @@ produces the same entities as C++ and the same volume.
 
 **Entity check against C++.** A throwaway C++ harness loaded each
 fixture the way the testsuite does (`LoadFromFile` + `AfterNewFile`).
-It dumped every entity's handle, type, group, construction flag, point,
-normal, face and distance, the chord tolerance, and each group's solve
-status. For 86 of the 89 fixtures C++ can load, the Go `GenerateAll`
-output matches exactly (to 1e-4). The three that differ:
-
-- `constraint/large_dimensions`: the Go solver doesn't converge.
-- `constraint/pt_on_circle/negative_dia`: the Go constraint equations
-  settle on a different solution.
-- `request/image/linked`: LINKED import isn't implemented.
-
-The first two are `constrainteq.cpp`/`system.cpp` differences.
+It dumped the chord tolerance, each group's solve result and degrees of
+freedom, each constraint's value, and every entity's handle, type,
+group, construction flag, point, normal, face and distance. For 88 of
+the 89 fixtures C++ can load, the Go `GenerateAll` output matches
+exactly (to 1e-4). `request/image/linked` differs because LINKED
+import isn't implemented.
 
 Parity came from replacing simplified stand-ins with faithful ports,
 not from tuning. The main fixes:
@@ -192,19 +188,13 @@ when the trim polygon doesn't assemble" path.
 
 In priority order:
 
-1. **Audit `constrainteq.cpp` and `system.cpp`.** Port
-   `ConstraintBase::GenerateEquations` line by line onto the `core`
-   `EntityBase` accessors, replacing the `addXxx` builders. Then compare
-   the solver with `System::Solve` (substitution, rank test, DOF). That
-   fixes `large_dimensions` and `negative_dia`, and makes
-   `ModifyToSatisfy` the C++ one (`valA += eq.Eval()`).
-2. **Audit `srf/surfinter.cpp`** (`IntersectAgainst` and its per-case
+1. **Audit `srf/surfinter.cpp`** (`IntersectAgainst` and its per-case
    helpers) line by line, as was done for `boolean.cpp`/`raycast.cpp`.
-3. **Watertightness check.** The C++ fixture tests also assert that
+2. **Watertightness check.** The C++ fixture tests also assert that
    `SKdNode::MakeCertainEdgesInto(NAKED_OR_SELF_INTER)` finds no
    naked or self-intersecting edges. Port that check and assert it in
    `TestParityBooleanFixtures`.
-4. **Smaller stand-ins found but not yet ported:**
+3. **Smaller stand-ins found but not yet ported:**
    - `SBezier::AllIntersectionsWith`;
    - `SSurface::MakeSectionEdgesInto`;
    - the face remapping of LATHE/REVOLVE/HELIX shells, which needs
@@ -212,7 +202,3 @@ In priority order:
    - the load-time `GenerateAll(REGEN)` in `UpgradeLegacyData`, so the
      first bbox pass pwl's loops at the file's own chord tolerance;
    - LINKED import (`impEntity`, `impShell`).
-5. **GUI.** `pkg/app` adds constraints over the entities as loaded,
-   without `GenerateAll`. Group-generated entities saved in a file
-   carry no params, so the faithful accessors report errors for them.
-   The app should regenerate like C++ `AfterNewFile`.

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"time"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -23,10 +24,6 @@ func (sk *Sketch) GenerateAll() {
 // engine has no active group or dirty tracking, so DIRTY and
 // UNTIL_ACTIVE regenerate every group, like ALL.
 func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
-	prevActive := activeSketch
-	activeSketch = sk
-	defer func() { activeSketch = prevActive }()
-
 	sk.GroupOrder = sk.GroupOrder[:0]
 	for i := range sk.Groups {
 		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
@@ -162,7 +159,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	for ci := range sk.Constraints {
 		c := &sk.Constraints[ci]
 		if c.Reference {
-			ModifyToSatisfyConstraint(c, sk.ParamsToMap())
+			c.ModifyToSatisfy(sk)
 		}
 	}
 }
@@ -322,90 +319,29 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 	return requests > len(sk.Requests) || constraints > len(sk.Constraints)
 }
 
-// constraintHasLabel reports whether c is a dimension (C++
-// ConstraintBase::HasLabel).
-func constraintHasLabel(c *core.Constraint) bool {
-	switch c.Type {
-	case core.ConstraintPtLineDistance, core.ConstraintPtPlaneDistance,
-		core.ConstraintPtFaceDistance, core.ConstraintPtPtDistance,
-		core.ConstraintProjPtDistance, core.ConstraintDiameter,
-		core.ConstraintLengthRatio, core.ConstraintArcArcLenRatio,
-		core.ConstraintArcLineLenRatio, core.ConstraintLengthDifference,
-		core.ConstraintArcArcDifference, core.ConstraintArcLineDifference,
-		core.ConstraintAngle, core.ConstraintComment:
-		return true
-	}
-	return false
-}
+// timeoutRedundantConstr bounds the search for the constraints that
+// make a group inconsistent (C++ SS.timeoutRedundantConstr's default).
+const timeoutRedundantConstr = 1000 * time.Millisecond
 
-// groupSolveResolver is the solver's view of the sketch while one
-// group is solved: the group's params are copies, so a failed solve
-// leaves the sketch untouched (C++ solves sys.param, a copy, and writes
-// it back only on success).
-type groupSolveResolver struct {
-	sk      *Sketch
-	unknown map[core.HParam]*core.Param
-}
-
-func (r *groupSolveResolver) Entity(h core.HEntity) (*core.Entity, error) {
-	return r.sk.GetEntity(h), nil
-}
-
-func (r *groupSolveResolver) Param(h core.HParam) (*core.Param, error) {
-	if p, ok := r.unknown[h]; ok {
-		return p, nil
-	}
-	return r.sk.GetParam(h), nil
-}
-
-// SolveGroupAndReport solves group hg for the params in groupParams,
-// holding every other param fixed (C++ SolveSpaceUI::SolveGroup with
-// WriteEqSystemForGroup and System::Solve). The equations come from
-// the group's constraints, its entities and the group itself.
-func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
+// WriteEquationsExceptFor appends the equations of group hg: those of
+// its constraints except hc, of its entities, and of the group itself
+// (C++ System::WriteEquationsExceptFor).
+func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l *[]core.Equation) {
 	g := sk.GetGroup(hg)
-	g.SketchDiagnostic = nil
-	g.Solved.Remove = nil
-
-	res := &groupSolveResolver{sk: sk, unknown: make(map[core.HParam]*core.Param, len(groupParams))}
-	for _, h := range groupParams {
-		p := *sk.GetParam(h)
-		p.Known = false
-		res.unknown[h] = &p
-	}
-	sys := solver.NewSystem(res)
-	sys.Known = func(h core.HParam) (float64, bool) {
-		if _, ok := res.unknown[h]; ok {
-			return 0, false
-		}
-		p := sk.GetParam(h)
-		if p == nil {
-			return 0, false
-		}
-		return p.Val, true
-	}
-
-	// The numeric parts of the solver's equation builders read the
-	// entities' cached Act* values.
-	sk.recalculateGroupEntities(hg)
-
-	addDiagnostic := func(msg string) {
-		if g.SketchDiagnostic == nil {
-			g.SketchDiagnostic = &SketchDiagnostic{}
-		}
-		g.SketchDiagnostic.AddConstraintErrors = append(g.SketchDiagnostic.AddConstraintErrors, msg)
-	}
-
 	// Generate all the equations from constraints in this group
 	for ci := range sk.Constraints {
 		c := &sk.Constraints[ci]
 		if c.Group != hg {
 			continue
 		}
-		if constraintHasLabel(c) && c.Type != core.ConstraintComment && g.AllDimsReference {
+		if c.H == hc {
+			continue
+		}
+
+		if c.HasLabel() && c.Type != core.ConstraintComment && g.AllDimsReference {
 			// When all dimensions are reference, we adjust them to display
 			// the correct value, and then don't generate any equations.
-			ModifyToSatisfyConstraint(c, sk.ParamsToMap())
+			c.ModifyToSatisfy(sk)
 			continue
 		}
 		if g.RelaxConstraints && c.Type != core.ConstraintPointsCoincident {
@@ -414,63 +350,73 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 			// the entities and groups.
 			continue
 		}
-		if err := sys.AddConstraint(c); err != nil {
-			addDiagnostic(fmt.Sprintf("group %v constraint %v (type %d): %v", hg, c.H, c.Type, err))
+
+		c.GenerateEquations(sk, l, false)
+	}
+	// And the equations from entities
+	for ei := range sk.Entities {
+		e := &sk.Entities[ei]
+		if e.Group != hg {
+			continue
+		}
+		e.GenerateEquations(sk, sk.Constraints, l)
+	}
+	// And from the groups themselves
+	g.GenerateEquations(sk, l)
+}
+
+// SolveGroupAndReport solves group hg for groupParams, the params its
+// requests, constraints and the group itself generate, holding every
+// other param fixed (C++ SolveSpaceUI::SolveGroup, with
+// WriteEqSystemForGroup).
+func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
+	g := sk.GetGroup(hg)
+	g.SketchDiagnostic = nil
+
+	// The solver works on copies of the group's params, with the
+	// sketch's values as initial guesses.
+	sys := &solver.System{SK: sk.GetParam}
+	for _, h := range groupParams {
+		p := *sk.GetParam(h)
+		p.Known = false
+		sys.AddParam(p)
+	}
+
+	var constraints []*core.Constraint
+	for ci := range sk.Constraints {
+		if sk.Constraints[ci].Group == hg {
+			constraints = append(constraints, &sk.Constraints[ci])
 		}
 	}
-	// And the equations from entities, and from the group itself
-	var eqs []core.Equation
+	sort.SliceStable(constraints, func(i, j int) bool { return constraints[i].H.V < constraints[j].H.V })
+	sg := &solver.Group{
+		SuppressDofCalculation: g.SuppressDofCalculation,
+		AllowRedundant:         g.AllowRedundant,
+		FindToFixTimeout:       timeoutRedundantConstr,
+		Constraints:            constraints,
+		WriteEquationsExceptFor: func(hc core.HConstraint, l *[]core.Equation) {
+			sk.WriteEquationsExceptFor(hg, hc, l)
+		},
+	}
+
+	g.Solved.Remove = nil
+	var how core.SolveResult
 	err := catchPanic(func() {
-		for ei := range sk.Entities {
-			e := &sk.Entities[ei]
-			if e.Group != hg {
-				continue
-			}
-			e.GenerateEquations(sk, sk.Constraints, &eqs)
-		}
-		g.GenerateEquations(sk, &eqs)
+		how = sys.Solve(sg, &g.Solved.Dof, &g.Solved.Remove,
+			!g.AllowRedundant, andFindFree, !g.DofCheckOk)
 	})
 	if err != nil {
-		addDiagnostic(fmt.Sprintf("group %v equations: %v", hg, err))
+		// C++ would have asserted on the malformed sketch.
+		g.SketchDiagnostic = &SketchDiagnostic{AddConstraintErrors: []string{
+			fmt.Sprintf("group %v: %v", hg, err)}}
+		how = core.SolveDidntConverge
 	}
-	for _, eq := range eqs {
-		if err := sys.AddEquation(eq.H, eq.Expr); err != nil {
-			addDiagnostic(fmt.Sprintf("group %v equation %08x: %v", hg, eq.H.V, err))
-		}
+	g.Solved.Timeout = sg.Timeout
+	if how == core.SolveOkay {
+		g.DofCheckOk = true
 	}
-
-	initial := make(map[core.HParam]float64, len(res.unknown))
-	for h, p := range res.unknown {
-		initial[h] = p.Val
-	}
-	report := solver.SolveReport{}
-	result, solveErr := sys.Solve(initial, solver.SolveOptions{Report: &report})
-	if solveErr != nil || !report.Converged {
-		g.Solved.How = core.SolveDidntConverge
-		g.Solved.Dof = report.DOF
-		return
-	}
-
-	// System solved correctly, so write the new values back in to the
-	// main parameter table.
-	for _, h := range groupParams {
-		val, ok := result[h]
-		if !ok {
-			if parent, subst := report.Substitutions[h]; subst {
-				val, ok = result[parent]
-			}
-		}
-		pp := sk.GetParam(h)
-		if ok {
-			pp.Val = val
-		}
-		pp.Known = true
-		pp.Free = res.unknown[h].Free
-	}
+	g.Solved.How = how
 	sk.recalculateGroupEntities(hg)
-	g.Solved.How = core.SolveOkay
-	g.Solved.Dof = report.DOF
-	g.DofCheckOk = true
 }
 
 // recalculateGroupEntities refreshes the cached Act* values of group

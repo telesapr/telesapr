@@ -367,9 +367,10 @@ func MaxExpr(args ...*Expr) *Expr {
 	return &Expr{Op: OpMax, Args: args}
 }
 
-// IsZeroConst reports whether the expression structurally equals zero.
+// IsZeroConst reports whether the expression is the constant zero
+// (C++ Expr::IsZeroConst, an exact comparison).
 func (e *Expr) IsZeroConst() bool {
-	return e != nil && e.Op == OpConstant && math.Abs(e.Value) <= LengthEps
+	return e != nil && e.Op == OpConstant && e.Value == 0
 }
 
 // DependsOn reports whether the expression references the provided parameter.
@@ -418,158 +419,150 @@ func (e *Expr) ReferencedParams(set map[HParam]struct{}) {
 	}
 }
 
-// FoldConstants simplifies the expression by evaluating constant subtrees.
+// exprTol is C++ Expr::Tol, the tolerance FoldConstants uses to
+// recognize 0 and 1 (deliberately coarse, as in C++).
+func exprTol(a, b float64) bool {
+	return math.Abs(a-b) < 0.001
+}
+
+// FoldConstants returns a simplified copy of the expression (C++
+// Expr::FoldConstants with allocCopy): constant subtrees are evaluated,
+// and x+0, 0+x, x*1, 1*x reduce to x and x*0, 0*x to 0, where 0 and 1
+// are matched within exprTol.
 func (e *Expr) FoldConstants() *Expr {
 	if e == nil {
 		return nil
 	}
-	var left, right *Expr
+	n := e.clone()
 	if e.Left != nil {
-		left = e.Left.FoldConstants()
+		n.Left = e.Left.FoldConstants()
 	}
 	if e.Right != nil {
-		right = e.Right.FoldConstants()
+		n.Right = e.Right.FoldConstants()
 	}
-
-	switch e.Op {
-	case OpPlus, OpMinus, OpTimes, OpDiv:
-		if left != nil && right != nil && left.Op == OpConstant && right.Op == OpConstant {
-			switch e.Op {
-			case OpPlus:
-				return NewConstant(left.Value + right.Value)
-			case OpMinus:
-				return NewConstant(left.Value - right.Value)
-			case OpTimes:
-				return NewConstant(left.Value * right.Value)
-			case OpDiv:
-				return NewConstant(left.Value / right.Value)
-			}
-		}
-	case OpNegate, OpSqrt, OpSquare, OpSin, OpCos, OpASin, OpACos, OpTan, OpATan,
-		OpExp, OpLn, OpLog, OpAbs, OpFloor, OpCeil, OpRound:
-		if left != nil && left.Op == OpConstant {
-			switch e.Op {
-			case OpNegate:
-				return NewConstant(-left.Value)
-			case OpSqrt:
-				return NewConstant(math.Sqrt(left.Value))
-			case OpSquare:
-				return NewConstant(left.Value * left.Value)
-			case OpSin:
-				return NewConstant(math.Sin(left.Value))
-			case OpCos:
-				return NewConstant(math.Cos(left.Value))
-			case OpTan:
-				return NewConstant(math.Tan(left.Value))
-			case OpASin:
-				return NewConstant(math.Asin(left.Value))
-			case OpACos:
-				return NewConstant(math.Acos(left.Value))
-			case OpATan:
-				return NewConstant(math.Atan(left.Value))
-			case OpExp:
-				return NewConstant(math.Exp(left.Value))
-			case OpLn:
-				return NewConstant(math.Log(left.Value))
-			case OpLog:
-				return NewConstant(math.Log10(left.Value))
-			case OpAbs:
-				return NewConstant(math.Abs(left.Value))
-			case OpFloor:
-				return NewConstant(math.Floor(left.Value))
-			case OpCeil:
-				return NewConstant(math.Ceil(left.Value))
-			case OpRound:
-				return NewConstant(math.Round(left.Value))
-			}
-		}
-	case OpPow, OpATan2, OpHypot:
-		if left != nil && right != nil && left.Op == OpConstant && right.Op == OpConstant {
-			lv := left.Value
-			rv := right.Value
-			switch e.Op {
-			case OpPow:
-				return NewConstant(math.Pow(lv, rv))
-			case OpATan2:
-				return NewConstant(math.Atan2(lv, rv))
-			case OpHypot:
-				return NewConstant(math.Hypot(lv, rv))
-			}
-		}
-	case OpMin, OpMax:
-		allConst := true
-		for _, a := range e.Args {
-			if a == nil || a.Op != OpConstant {
-				allConst = false
-				break
-			}
-		}
-		if allConst && len(e.Args) > 0 {
-			best := e.Args[0].Value
-			for _, a := range e.Args[1:] {
-				v := a.Value
-				if e.Op == OpMin && v < best {
-					best = v
-				}
-				if e.Op == OpMax && v > best {
-					best = v
-				}
-			}
-			return NewConstant(best)
-		}
+	for k, a := range e.Args {
+		n.Args[k] = a.FoldConstants()
 	}
-
-	out := e.clone()
-	out.Left = left
-	out.Right = right
-	return out
+	return n.FoldNode()
 }
 
-// Derivative returns the symbolic derivative with respect to param h.
+// FoldNode is FoldConstants for a node whose children are folded
+// already: it simplifies just this node (C++ FoldConstants with depth
+// 0). It may return e itself.
+func (e *Expr) FoldNode() *Expr {
+	n, left, right := e, e.Left, e.Right
+	switch e.Op {
+	case OpMinus, OpTimes, OpDiv, OpPlus:
+		// If both ops are known, then we can evaluate immediately
+		if left.Op == OpConstant && right.Op == OpConstant {
+			return NewConstant(n.Eval(nil, nil))
+		}
+		// x + 0 = 0 + x = x
+		if e.Op == OpPlus && right.Op == OpConstant && exprTol(right.Value, 0) {
+			return left
+		}
+		if e.Op == OpPlus && left.Op == OpConstant && exprTol(left.Value, 0) {
+			return right
+		}
+		// 1*x = x*1 = x
+		if e.Op == OpTimes && right.Op == OpConstant && exprTol(right.Value, 1) {
+			return left
+		}
+		if e.Op == OpTimes && left.Op == OpConstant && exprTol(left.Value, 1) {
+			return right
+		}
+		// 0*x = x*0 = 0
+		if e.Op == OpTimes && right.Op == OpConstant && exprTol(right.Value, 0) {
+			return NewConstant(0)
+		}
+		if e.Op == OpTimes && left.Op == OpConstant && exprTol(left.Value, 0) {
+			return NewConstant(0)
+		}
+
+	case OpSqrt, OpSquare, OpNegate, OpSin, OpCos, OpASin, OpACos,
+		// Not in C++; folded the same way.
+		OpTan, OpATan, OpExp, OpLn, OpLog, OpAbs, OpFloor, OpCeil, OpRound:
+		if left.Op == OpConstant {
+			return NewConstant(n.Eval(nil, nil))
+		}
+
+	case OpPow, OpATan2, OpHypot:
+		// Not in C++.
+		if left.Op == OpConstant && right.Op == OpConstant {
+			return NewConstant(n.Eval(nil, nil))
+		}
+
+	case OpMin, OpMax:
+		// Not in C++.
+		allConst := len(e.Args) > 0
+		for _, a := range e.Args {
+			allConst = allConst && a.Op == OpConstant
+		}
+		if allConst {
+			return NewConstant(n.Eval(nil, nil))
+		}
+	}
+	return n
+}
+
+// Derivative returns the partial derivative with respect to param h
+// (C++ Expr::PartialWrt, in the same form).
 func (e *Expr) Derivative(h HParam) *Expr {
 	if e == nil {
 		return NewConstant(0)
 	}
+	a := e.Left
 	switch e.Op {
-	case OpConstant:
+	case OpParamPtr:
+		if e.ParamPtr != nil && e.ParamPtr.H == h {
+			return NewConstant(1)
+		}
 		return NewConstant(0)
 	case OpParam:
 		if e.Param == h {
 			return NewConstant(1)
 		}
 		return NewConstant(0)
-	case OpParamPtr:
-		if e.ParamPtr != nil && e.ParamPtr.H == h {
-			return NewConstant(1)
-		}
+
+	case OpConstant:
 		return NewConstant(0)
+
 	case OpPlus:
-		return e.Left.Derivative(h).Plus(e.Right.Derivative(h))
+		return a.Derivative(h).Plus(e.Right.Derivative(h))
 	case OpMinus:
-		return e.Left.Derivative(h).Minus(e.Right.Derivative(h))
+		return a.Derivative(h).Minus(e.Right.Derivative(h))
+
 	case OpTimes:
-		return e.Left.Derivative(h).Times(e.Right).Plus(e.Left.Times(e.Right.Derivative(h)))
+		da := a.Derivative(h)
+		db := e.Right.Derivative(h)
+		return a.Times(db).Plus(e.Right.Times(da))
+
 	case OpDiv:
-		num := e.Left.Derivative(h).Times(e.Right).Minus(e.Left.Times(e.Right.Derivative(h)))
-		den := e.Right.Square()
-		return num.Div(den)
-	case OpNegate:
-		return e.Left.Derivative(h).Negate()
+		da := a.Derivative(h)
+		db := e.Right.Derivative(h)
+		return da.Times(e.Right).Minus(a.Times(db)).Div(e.Right.Square())
+
 	case OpSqrt:
-		return e.Left.Derivative(h).Div(e.Left.Sqrt().Times(NewConstant(2)))
+		return NewConstant(0.5).Div(a.Sqrt()).Times(a.Derivative(h))
+
 	case OpSquare:
-		return NewConstant(2).Times(e.Left).Times(e.Left.Derivative(h))
+		return NewConstant(2.0).Times(a).Times(a.Derivative(h))
+
+	case OpNegate:
+		return a.Derivative(h).Negate()
 	case OpSin:
-		return e.Left.Derivative(h).Times(e.Left.Cos())
+		return a.Cos().Times(a.Derivative(h))
 	case OpCos:
-		return e.Left.Derivative(h).Times(e.Left.Sin()).Negate()
+		return a.Sin().Times(a.Derivative(h)).Negate()
+
 	case OpASin:
-		return e.Left.Derivative(h).Div(NewConstant(1).Minus(e.Left.Square()).Sqrt())
+		return NewConstant(1).Div(NewConstant(1).Minus(a.Square()).Sqrt()).
+			Times(a.Derivative(h))
 	case OpACos:
-		return e.Left.Derivative(h).Div(NewConstant(1).Minus(e.Left.Square()).Sqrt()).Negate()
-	default:
-		panic(fmt.Sprintf("expr: derivative for op %d not implemented", e.Op))
+		return NewConstant(-1).Div(NewConstant(1).Minus(a.Square()).Sqrt()).
+			Times(a.Derivative(h))
 	}
+	panic(fmt.Sprintf("expr: derivative for op %d not implemented", e.Op))
 }
 
 // Substitute replaces occurrences of parameters according to the map.

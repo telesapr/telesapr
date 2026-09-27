@@ -28,11 +28,8 @@ func TestHGroupDerivedHandles(t *testing.T) {
 	if eq.V != wantEquation {
 		t.Fatalf("group.Equation: got %#x want %#x", eq.V, wantEquation)
 	}
-	if eq.Constraint().V != (eq.V & 0x7FFFFFFF) {
-		t.Fatalf("Constraint masking failed: got %#x want %#x", eq.Constraint().V, eq.V&0x7FFFFFFF)
-	}
-	if !eq.IsFromConstraint() {
-		t.Fatal("expected high-bit equation to report as constraint-derived")
+	if eq.IsFromConstraint() {
+		t.Fatal("a group's equation isn't from a constraint")
 	}
 }
 
@@ -79,8 +76,8 @@ func TestHConstraintHandles(t *testing.T) {
 	if eq.V != wantEquation {
 		t.Fatalf("constraint.Equation: got %#x want %#x", eq.V, wantEquation)
 	}
-	if eq.Constraint().V != (eq.V & 0x7FFFFFFF) {
-		t.Fatalf("Constraint().V mismatch: got %#x want %#x", eq.Constraint().V, eq.V&0x7FFFFFFF)
+	if !eq.IsFromConstraint() || eq.Constraint() != constraint {
+		t.Fatalf("Constraint() = %#x, IsFromConstraint %v; want %#x, true", eq.Constraint().V, eq.IsFromConstraint(), constraint.V)
 	}
 	if (eq.V >> 16) != constraint.V {
 		t.Fatalf("encoded constraint handle lost: got %#x want %#x", eq.V>>16, constraint.V)
