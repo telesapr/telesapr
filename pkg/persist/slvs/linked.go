@@ -40,8 +40,7 @@ func linkPath(saveFile, link string) string {
 // reloadAllLinked loads the entities, mesh and shell of every file the
 // sketch links (C++ SolveSpaceUI::ReloadAllLinked). C++ asks the user
 // to find a missing file; here it counts as declined, so the geometry
-// that depends on it is pruned when the sketch is regenerated. Only
-// .slvs files can be linked; STL and IDF import aren't ported.
+// that depends on it is pruned when the sketch is regenerated.
 func (d *Document) reloadAllLinked(saveFile string) {
 	for i := range d.Sketch.Groups {
 		g := &d.Sketch.Groups[i]
@@ -53,9 +52,16 @@ func (d *Document) reloadAllLinked(saveFile string) {
 		g.ImpMesh.Clear()
 		g.ImpShell.Clear()
 
-		if loadEntitiesFromSlvs(linkPath(saveFile, g.LinkFile), d.Sketch, &g.ImpEntity, &g.ImpMesh, &g.ImpShell) {
-			// C++ also loads the linked file's images here, which only
-			// matter for drawing.
+		linkFile := linkPath(saveFile, g.LinkFile)
+		if loadEntitiesFromFile(linkFile, d.Sketch, &g.ImpEntity, &g.ImpMesh, &g.ImpShell) {
+			// We loaded the data, good. Now import its dependencies as
+			// well.
+			for _, e := range g.ImpEntity {
+				if e.Type != core.EntityImage {
+					continue
+				}
+				reloadLinkedImage(d.Sketch, linkFile, e.File)
+			}
 			if g.IsTriangleMeshAssembly() {
 				g.ForceToMesh = true
 			}
@@ -69,6 +75,29 @@ func (d *Document) reloadAllLinked(saveFile string) {
 		}
 		reloadLinkedImage(d.Sketch, saveFile, r.File)
 	}
+}
+
+// loadEntitiesFromFile reads the entities, mesh and shell of a linked
+// file: an IDF board, an STL mesh, or else a .slvs file (C++
+// SolveSpaceUI::LoadEntitiesFromFile).
+func loadEntitiesFromFile(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell) bool {
+	switch pathExtension(path) {
+	case "emn", "EMN":
+		return linkIDF(path, sk, le, m, sh)
+	case "stl", "STL":
+		return linkStl(path, sk, le, m)
+	default:
+		return loadEntitiesFromSlvs(path, sk, le, m, sh)
+	}
+}
+
+// pathExtension is what follows the last dot of the file name (C++
+// Platform::Path::Extension).
+func pathExtension(path string) string {
+	if dot := strings.LastIndexByte(path, '.'); dot >= 0 {
+		return path[dot+1:]
+	}
+	return ""
 }
 
 // loadEntitiesFromSlvs reads the saved entities, mesh and shell of a
@@ -205,11 +234,10 @@ func writeShell(b *strings.Builder, m *srf.SMesh, s *srf.SShell) {
 	}
 }
 
-// reloadLinkedImage loads the size of image file, named relative to
-// saveFile, into the sketch's images (C++
-// SolveSpaceUI::ReloadLinkedImage). C++ asks the user to find a
-// missing or unreadable file; here that counts as declined, and the
-// file is recorded as absent.
+// reloadLinkedImage loads image file, named relative to saveFile, into
+// the sketch's images (C++ SolveSpaceUI::ReloadLinkedImage). C++ asks
+// the user to find a missing or unreadable file; here that counts as
+// declined, and the file is recorded as absent.
 func reloadLinkedImage(sk *sketch.Sketch, saveFile, file string) {
 	if file == "" {
 		return
@@ -223,8 +251,9 @@ func reloadLinkedImage(sk *sketch.Sketch, saveFile, file string) {
 
 	var img *sketch.Image
 	if f, err := os.Open(linkPath(saveFile, file)); err == nil {
-		if cfg, err := png.DecodeConfig(f); err == nil {
-			img = &sketch.Image{Width: cfg.Width, Height: cfg.Height}
+		if pixels, err := png.Decode(f); err == nil {
+			b := pixels.Bounds()
+			img = &sketch.Image{Width: b.Dx(), Height: b.Dy(), Pixels: pixels}
 		}
 		f.Close()
 	}

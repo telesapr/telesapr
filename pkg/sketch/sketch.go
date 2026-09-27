@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"fmt"
+	"image"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -355,10 +356,11 @@ func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity {
 	return out
 }
 
-// Image is what the sketch needs of a loaded image file (C++ Pixmap):
-// its size in pixels.
+// Image is a loaded image file (C++ Pixmap): its size in pixels, which
+// sets an image request's aspect ratio, and its pixels, for drawing.
 type Image struct {
 	Width, Height int
+	Pixels        image.Image
 }
 
 // image is the loaded image for file, or nil (also for a nil sketch).
