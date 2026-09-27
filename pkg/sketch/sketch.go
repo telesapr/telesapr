@@ -18,6 +18,10 @@ type Sketch struct {
 	Entities []core.Entity
 	Params   []core.Param
 
+	// Images are the loaded image files, by the file name image
+	// requests give (C++ SS.images); nil for one that couldn't be read.
+	Images map[string]*Image
+
 	// Undo/redo stacks.
 	Undo UndoStack
 	Redo UndoStack
@@ -287,4 +291,18 @@ func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity {
 		out[e.H] = e
 	}
 	return out
+}
+
+// Image is what the sketch needs of a loaded image file (C++ Pixmap):
+// its size in pixels.
+type Image struct {
+	Width, Height int
+}
+
+// image is the loaded image for file, or nil (also for a nil sketch).
+func (s *Sketch) image(file string) *Image {
+	if s == nil {
+		return nil
+	}
+	return s.Images[file]
 }

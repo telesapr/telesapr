@@ -21,7 +21,7 @@ func (sk *Sketch) UpgradeLegacyData() {
 		// it is not fully constrained.
 		var entity core.EntityList
 		var param core.ParamList
-		r.Generate(&entity, &param)
+		r.Generate(sk, &entity, &param)
 
 		// If we didn't load all of the entities and params that this
 		// request would generate, then add them now, so that we can

@@ -20,7 +20,7 @@ func TestRequestGenerateWorkplane(t *testing.T) {
 	var entities core.EntityList
 	var params core.ParamList
 
-	req.Generate(&entities, &params)
+	req.Generate(nil, &entities, &params)
 
 	if len(entities) != 3 {
 		t.Fatalf("expected 3 entities, got %d", len(entities))
@@ -73,7 +73,7 @@ func TestRequestGenerateDatumPoint(t *testing.T) {
 	var entities core.EntityList
 	var params core.ParamList
 
-	req.Generate(&entities, &params)
+	req.Generate(nil, &entities, &params)
 
 	if len(entities) != 1 {
 		t.Fatalf("expected 1 entity, got %d", len(entities))
@@ -103,7 +103,7 @@ func TestRequestGenerateCircle(t *testing.T) {
 	var entities core.EntityList
 	var params core.ParamList
 
-	req.Generate(&entities, &params)
+	req.Generate(nil, &entities, &params)
 
 	if len(entities) != 4 {
 		t.Fatalf("expected 4 entities, got %d", len(entities))
@@ -160,7 +160,7 @@ func TestRequestGenerateArcOfCircle(t *testing.T) {
 	var entities core.EntityList
 	var params core.ParamList
 
-	req.Generate(&entities, &params)
+	req.Generate(nil, &entities, &params)
 
 	if len(entities) != 5 {
 		t.Fatalf("expected 5 entities (3 pts + normal + arc), got %d", len(entities))
@@ -210,7 +210,7 @@ func TestRequestGenerateCubicWithExtraPoints(t *testing.T) {
 	var entities core.EntityList
 	var params core.ParamList
 
-	req.Generate(&entities, &params)
+	req.Generate(nil, &entities, &params)
 
 	if len(entities) != 7 {
 		t.Fatalf("expected 7 entities (6 pts + cubic), got %d", len(entities))
@@ -249,7 +249,7 @@ func TestRequestGenerateImageDefaultsAspectRatio(t *testing.T) {
 	var entities core.EntityList
 	var params core.ParamList
 
-	req.Generate(&entities, &params)
+	req.Generate(nil, &entities, &params)
 
 	if len(entities) != 6 {
 		t.Fatalf("expected 6 entities, got %d", len(entities))
@@ -276,7 +276,7 @@ func TestRequestDescriptionString(t *testing.T) {
 	}
 
 	unknown := Request{H: core.HRequest{V: 0x123}, Type: RequestType(9999)}
-	if desc := unknown.DescriptionString(); desc != "r123-unknown" {
+	if desc := unknown.DescriptionString(); desc != "r123-" {
 		t.Fatalf("unexpected description for unknown type: %s", desc)
 	}
 }

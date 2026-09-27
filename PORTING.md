@@ -24,7 +24,7 @@ solvespace core engine. It is the source of truth for the
 | `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry), `SolveGroup` with `WriteEqSystemForGroup` and `WriteEquationsExceptFor`, `ForceReferences`, `CalculateEntityBBox`. With no active group or dirty tracking, DIRTY and UNTIL_ACTIVE regenerate everything like ALL; dragged params aren't marked |
 | `groupmesh.cpp` | 803 | OK | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, `GenerateShellAndMesh` (every group type, step and repeat, the face entities, the running-shell combine, and the forced-to-mesh combine with `SnapToMesh`), `GenerateForStepAndRepeat`, `GenerateForBoolean`, `RemapFaces`, `GenerateDisplayItems` (without the render-side polyline join) are faithful; `group/force_to_mesh` saves match C++ byte for byte |
 | `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
-| `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
+| `request.cpp` | 250 | OK | `pkg/sketch/request.go`, `pkg/persist/slvs/linked.go` | Audited: `Generate` (an image request takes its aspect ratio from the image file, loaded as `ReloadLinkedImage` does; a TTF request keeps its saved one, since font loading isn't ported), `DescriptionString`, `IndexOfPoint`, the entity/request table |
 | `style.cpp` | 948 | OK | `pkg/core/style.go` | |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go` | |
 | `srf/surface.cpp` | 494 | PARTIAL | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `Reverse`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `TriangulateInto`, `MakeFromExtrusionOf`, `FromRevolutionOf`, `MakeSectionEdgesInto`, `ExactSurfaceTangentAt`, `CoincidentWithPlane`, `FromTransformationOf`, `SShell::MakeFromCopyOf`/`MakeFromTransformationOf` are faithful |
@@ -224,7 +224,7 @@ entity and save checks cover every fixture (including
 `group/force_to_mesh`, whose saves carry C++'s running meshes).
 
 **Not yet re-audited:** the OK rows without notes (`constraint.cpp`,
-`request.cpp`, `style.cpp`, `clipboard.cpp`, `undoredo.cpp`,
+`style.cpp`, `clipboard.cpp`, `undoredo.cpp`,
 `srf/bezier.cpp`), and the rest of `srf/surface.cpp` and
 `srf/curve.cpp`. Given what the audits so far found, expect stand-ins
 there, especially in code no fixture reaches.

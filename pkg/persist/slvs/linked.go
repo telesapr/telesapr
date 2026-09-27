@@ -2,6 +2,7 @@ package slvs
 
 import (
 	"fmt"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,11 +54,20 @@ func (d *Document) reloadAllLinked(saveFile string) {
 		g.ImpShell.Clear()
 
 		if loadEntitiesFromSlvs(linkPath(saveFile, g.LinkFile), d.Sketch, &g.ImpEntity, &g.ImpMesh, &g.ImpShell) {
-			// C++ also loads the linked file's images here, for drawing.
+			// C++ also loads the linked file's images here, which only
+			// matter for drawing.
 			if g.IsTriangleMeshAssembly() {
 				g.ForceToMesh = true
 			}
 		}
+	}
+
+	for i := range d.Sketch.Requests {
+		r := &d.Sketch.Requests[i]
+		if r.Type != sketch.RequestImage {
+			continue
+		}
+		reloadLinkedImage(d.Sketch, saveFile, r.File)
 	}
 }
 
@@ -193,4 +203,30 @@ func writeShell(b *strings.Builder, m *srf.SMesh, s *srf.SShell) {
 
 		b.WriteString("AddCurve\n")
 	}
+}
+
+// reloadLinkedImage loads the size of image file, named relative to
+// saveFile, into the sketch's images (C++
+// SolveSpaceUI::ReloadLinkedImage). C++ asks the user to find a
+// missing or unreadable file; here that counts as declined, and the
+// file is recorded as absent.
+func reloadLinkedImage(sk *sketch.Sketch, saveFile, file string) {
+	if file == "" {
+		return
+	}
+	if _, ok := sk.Images[file]; ok {
+		return
+	}
+	if sk.Images == nil {
+		sk.Images = make(map[string]*sketch.Image)
+	}
+
+	var img *sketch.Image
+	if f, err := os.Open(linkPath(saveFile, file)); err == nil {
+		if cfg, err := png.DecodeConfig(f); err == nil {
+			img = &sketch.Image{Width: cfg.Width, Height: cfg.Height}
+		}
+		f.Close()
+	}
+	sk.Images[file] = img
 }

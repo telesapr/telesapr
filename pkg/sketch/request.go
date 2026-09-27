@@ -63,14 +63,31 @@ type Request struct {
 
 func (r *Request) Clear() {}
 
-func (r *Request) Generate(entities *core.EntityList, params *core.ParamList) {
+// Generate adds the entities and params of the request (C++
+// Request::Generate). sk stands in for C++'s SS, whose loaded images
+// give an image request its aspect ratio; it may be nil.
+func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.ParamList) {
 	entityType, pointCount, hasNormal, hasDistance, ok := getRequestInfo(r.Type, r.ExtraPoints)
 	if !ok {
-		panic("no request info for request type")
+		panic("No request info")
 	}
 
+	// Request-specific generation.
 	switch r.Type {
-	case RequestTTFText, RequestImage:
+	case RequestTTFText:
+		// C++ first takes the aspect ratio of the text as the font
+		// renders it; font loading (ttf.cpp) isn't ported, so the saved
+		// one stands.
+		if r.AspectRatio == 0 {
+			// We couldn't load the font and we don't have anything saved,
+			// so just use 1:1, which is valid for the missing font symbol anyhow.
+			r.AspectRatio = 1.0
+		}
+
+	case RequestImage:
+		if img := sk.image(r.File); img != nil {
+			r.AspectRatio = float64(img.Width) / float64(img.Height)
+		}
 		if r.AspectRatio == 0 {
 			r.AspectRatio = 1.0
 		}
@@ -137,9 +154,12 @@ func (r *Request) Generate(entities *core.EntityList, params *core.ParamList) {
 			normal.Type = core.EntityNormalIn2D
 		}
 
-		if pointCount > 0 {
-			normal.Point[0] = entity.Point[0]
+		if pointCount < 1 {
+			panic("Positioning a normal requires a point")
 		}
+		// The point determines where the normal gets displayed on-screen;
+		// it's entirely cosmetic.
+		normal.Point[0] = entity.Point[0]
 
 		if entities != nil {
 			entities.Add(normal)
@@ -197,8 +217,6 @@ func (r *Request) DescriptionString() string {
 		name = "ttf-text"
 	case RequestImage:
 		name = "image"
-	default:
-		name = "unknown"
 	}
 
 	return fmt.Sprintf("r%03x-%s", r.H.V, name)

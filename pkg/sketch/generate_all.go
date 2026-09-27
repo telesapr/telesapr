@@ -87,7 +87,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 
 			entities := core.EntityList(sk.Entities)
 			params := core.ParamList(sk.Params)
-			r.Generate(&entities, &params)
+			r.Generate(sk, &entities, &params)
 			sk.Entities = []core.Entity(entities)
 			sk.Params = []core.Param(params)
 		}
