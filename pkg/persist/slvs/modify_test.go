@@ -1,0 +1,179 @@
+package slvs
+
+import (
+	"bytes"
+	"fmt"
+	"math"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
+)
+
+// modifyLastDigits are the cases whose saved values may differ from
+// C++'s in the last digits, and why. The tangent arc is found with acos,
+// tan, sin and cos, where Go's math package and glibc disagree in the
+// last bit for about a quarter of arguments; and solving the result goes
+// through the QR without COLAMD's column order (see system.go).
+var modifyLastDigits = map[string]string{
+	"tangent":            "libm and QR column order",
+	"tangent_modify":     "libm",
+	"tangent_manual":     "libm and QR column order",
+	"tangent_arc":        "libm and QR column order",
+	"tangent_arc_modify": "libm",
+}
+
+// diffUpToLastDigits describes the first difference between two saves
+// other than numbers that agree to 1e-9; empty if there's none.
+func diffUpToLastDigits(got, want string) string {
+	gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
+	if len(gl) != len(wl) {
+		return fmt.Sprintf("%d lines, want %d", len(gl), len(wl))
+	}
+	for i := range gl {
+		if gl[i] == wl[i] {
+			continue
+		}
+		gk, gv, _ := strings.Cut(gl[i], "=")
+		wk, wv, _ := strings.Cut(wl[i], "=")
+		g, errG := strconv.ParseFloat(gv, 64)
+		w, errW := strconv.ParseFloat(wv, 64)
+		if gk != wk || errG != nil || errW != nil ||
+			math.Abs(g-w) > 1e-9*math.Max(1, math.Abs(w)) {
+			return fmt.Sprintf("line %d is %q, want %q", i+1, gl[i], wl[i])
+		}
+	}
+	return ""
+}
+
+// TestModifyToolsVsCpp runs the tangent arc and split tools on sketches
+// built on a fixture, and requires the saves C++ writes after the same
+// steps (testdata/edit, from a C++ harness).
+func TestModifyToolsVsCpp(t *testing.T) {
+	v := func(x, y float64) geom.Vector { return geom.Vector{X: x, Y: y} }
+	for _, tc := range []struct {
+		name    string
+		wantErr bool
+		run     func(sk *sketch.Sketch) error
+	}{
+		{"tangent", false, func(sk *sketch.Sketch) error {
+			return tangentCorner(sk, sketch.TangentArcSettings{Radius: 10})
+		}},
+		{"tangent_modify", false, func(sk *sketch.Sketch) error {
+			return tangentCorner(sk, sketch.TangentArcSettings{Radius: 10, Modify: true})
+		}},
+		{"tangent_manual", false, func(sk *sketch.Sketch) error {
+			return tangentCorner(sk, sketch.TangentArcSettings{Radius: 4, Manual: true})
+		}},
+		{"tangent_arc", false, func(sk *sketch.Sketch) error {
+			return tangentLineArc(sk, -15, sketch.TangentArcSettings{Radius: 10})
+		}},
+		{"tangent_arc_modify", false, func(sk *sketch.Sketch) error {
+			return tangentLineArc(sk, -15, sketch.TangentArcSettings{Radius: 10, Modify: true})
+		}},
+		{"tangent_fail", true, func(sk *sketch.Sketch) error {
+			return tangentLineArc(sk, 0, sketch.TangentArcSettings{Radius: 10})
+		}},
+		{"split_lines", false, func(sk *sketch.Sketch) error {
+			a := addRequest(sk, sketch.RequestLineSegment, v(-20, -5), v(30, 10))
+			b := addRequest(sk, sketch.RequestLineSegment, v(0, -20), v(4, 25))
+			sk.Constrain(core.ConstraintVertical, core.NoEntity, core.NoEntity, b.Entity(0), core.NoEntity, false, false)
+			sk.GenerateAllTyped(sketch.GenerateAll)
+			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), b.Entity(0)), geom.Point2d{})
+		}},
+		{"split_circle_line", false, func(sk *sketch.Sketch) error {
+			a := addRequest(sk, sketch.RequestCircle, v(5, 5))
+			sk.MustGetEntity(a.Entity(64)).DistanceForceTo(sk, 12)
+			b := addRequest(sk, sketch.RequestLineSegment, v(-30, 0), v(30, 8))
+			sk.GenerateAllTyped(sketch.GenerateAll)
+			return sk.SplitLinesOrCurves(selectEntities(b.Entity(0), a.Entity(0)), sketch.ProjectPoint(v(20, 6)))
+		}},
+		{"split_arc_cubic", false, func(sk *sketch.Sketch) error {
+			a := addRequest(sk, sketch.RequestArcOfCircle, v(0, 0), v(20, 0), v(-20, 0))
+			b := addRequest(sk, sketch.RequestCubic, v(-10, -5), v(-5, 30), v(5, 30), v(12, 25))
+			sk.GenerateAllTyped(sketch.GenerateAll)
+			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), b.Entity(0)), sketch.ProjectPoint(v(-10, 15)))
+		}},
+		{"split_point", false, func(sk *sketch.Sketch) error {
+			a := addRequest(sk, sketch.RequestLineSegment, v(-20, -5), v(30, 10))
+			p := addRequest(sk, sketch.RequestDatumPoint)
+			sk.MustGetEntity(p.Entity(0)).PointForceTo(sk, v(5, 3))
+			sk.Constrain(core.ConstraintPtOnLine, p.Entity(0), core.NoEntity, a.Entity(0), core.NoEntity, false, false)
+			sk.GenerateAllTyped(sketch.GenerateAll)
+			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), p.Entity(0)), geom.Point2d{})
+		}},
+		{"split_periodic", false, func(sk *sketch.Sketch) error {
+			a := addRequest(sk, sketch.RequestCubicPeriodic, v(0, 0), v(20, 0), v(20, 20))
+			b := addRequest(sk, sketch.RequestLineSegment, v(-10, 5), v(40, 8))
+			sk.GenerateAllTyped(sketch.GenerateAll)
+			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), b.Entity(0)), sketch.ProjectPoint(v(0, 5)))
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			doc, err := LoadFile(fixture("request/line_segment/normal.slvs"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			sk := doc.Sketch
+			if err := tc.run(sk); (err != nil) != tc.wantErr {
+				t.Fatalf("error %v, want error %v", err, tc.wantErr)
+			}
+			sk.GenerateAllTyped(sketch.GenerateAll)
+			got := doc.Save()
+			want, err := os.ReadFile(fixture("edit/" + tc.name + ".slvs"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, ok := modifyLastDigits[tc.name]; ok {
+				if msg := diffUpToLastDigits(string(got), string(want)); msg != "" {
+					t.Errorf("save differs from C++'s: %s", msg)
+				}
+			} else if !bytes.Equal(got, want) {
+				t.Errorf("save differs from C++'s")
+			}
+		})
+	}
+}
+
+// addRequest adds a request of type typ with its points at pts, as a
+// C++ harness does with GraphicsWindow::AddRequest and PointForceTo.
+func addRequest(sk *sketch.Sketch, typ sketch.RequestType, pts ...geom.Vector) core.HRequest {
+	hr := sk.AddRequestOfType(typ, false)
+	for i, p := range pts {
+		sk.MustGetEntity(hr.Entity(1+i)).PointForceTo(sk, p)
+	}
+	return hr
+}
+
+func selectEntities(hs ...core.HEntity) []sketch.Selection {
+	var sel []sketch.Selection
+	for _, h := range hs {
+		sel = append(sel, sketch.Selection{Entity: h})
+	}
+	return sel
+}
+
+// tangentCorner rounds the corner where two lines meet.
+func tangentCorner(sk *sketch.Sketch, s sketch.TangentArcSettings) error {
+	v := func(x, y float64) geom.Vector { return geom.Vector{X: x, Y: y} }
+	a := addRequest(sk, sketch.RequestLineSegment, v(0, 0), v(40, 5))
+	b := addRequest(sk, sketch.RequestLineSegment, v(0, 0), v(3, 30))
+	sk.ConstrainCoincident(a.Entity(1), b.Entity(1))
+	sk.GenerateAllTyped(sketch.GenerateAll)
+	return sk.MakeTangentArc(a.Entity(1), s)
+}
+
+// tangentLineArc rounds the corner where a line, from (-30, y0), meets
+// an arc.
+func tangentLineArc(sk *sketch.Sketch, y0 float64, s sketch.TangentArcSettings) error {
+	v := func(x, y float64) geom.Vector { return geom.Vector{X: x, Y: y} }
+	a := addRequest(sk, sketch.RequestLineSegment, v(-30, y0), v(0, 0))
+	b := addRequest(sk, sketch.RequestArcOfCircle, v(0, 20), v(0, 0), v(20, 20))
+	sk.ConstrainCoincident(a.Entity(2), b.Entity(2))
+	sk.GenerateAllTyped(sketch.GenerateAll)
+	return sk.MakeTangentArc(a.Entity(2), s)
+}
