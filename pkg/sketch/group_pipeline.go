@@ -45,6 +45,12 @@ func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, a
 	// as part of a single SBezierLoopSet (no chaining).
 	set := g.BezierLoops.AddOuter()
 	set.Outer.Curves = append(set.Outer.Curves, curves.Curves...)
+	// Mirrors the tail of C++ SBezierLoopSet::From (curve.cpp):
+	// populate Normal/Point/Area from the assembled contour. Without
+	// this, set.Normal stays the zero vector and
+	// SShell::MakeFromExtrusionOf's cap-plane (u, v) basis collapses
+	// (see SBezierLoopSet.ComputeNormalPointArea's doc comment).
+	set.ComputeNormalPointArea()
 	return
 }
 
@@ -209,6 +215,11 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 				for _, srcSet := range current.BezierLoops.Sets {
 					dstSet := src.BezierLoops.AddOuter()
 					dstSet.Outer.Curves = append(dstSet.Outer.Curves, srcSet.Outer.Curves...)
+					dstSet.Outer.Tag = srcSet.Outer.Tag
+					dstSet.Holes = append(dstSet.Holes, srcSet.Holes...)
+					dstSet.Normal = srcSet.Normal
+					dstSet.Point = srcSet.Point
+					dstSet.Area = srcSet.Area
 				}
 				break
 			}

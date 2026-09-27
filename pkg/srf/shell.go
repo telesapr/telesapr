@@ -100,60 +100,186 @@ func (s *SShell) MakeFromCopyOf(src *SShell) {
 	s.BooleanFailed = src.BooleanFailed
 }
 
+// addAndAssignSurfaceId appends ss to s.Surface with a fresh
+// sequential handle (and matching FaceID), mirroring the C++
+// `IdList::AddAndAssignId` semantics used throughout shell.cpp.
+func (s *SShell) addAndAssignSurfaceId(ss SSurface) core.HSSurface {
+	h := core.HSSurface{V: uint32(len(s.Surface) + 1)}
+	ss.H = h
+	ss.Face = FaceID(h.V)
+	s.Surface = append(s.Surface, ss)
+	return h
+}
+
+// addAndAssignCurveId appends sc to s.Curve with a fresh sequential
+// handle, mirroring the C++ `IdList::AddAndAssignId` semantics.
+func (s *SShell) addAndAssignCurveId(sc SCurve) core.HSCurve {
+	h := core.HSCurve{V: uint32(len(s.Curve) + 1)}
+	sc.H = h
+	s.Curve = append(s.Curve, sc)
+	return h
+}
+
+// makePwlSCurvePoints samples b's polyline approximation into
+// SCurvePt form, marking the first and last samples as vertices.
+// Mirrors the C++ `SBezier::MakePwlInto(List<SCurvePt> *l, ...)`
+// overload (ratpoly.cpp).
+func makePwlSCurvePoints(b *SBezier) []SCurvePt {
+	var raw []geom.Vector
+	b.MakePwlIntoPoints(&raw, 0, 0)
+	pts := make([]SCurvePt, len(raw))
+	for i, p := range raw {
+		pts[i] = SCurvePt{P: p, Vertex: i == 0 || i == len(raw)-1}
+	}
+	return pts
+}
+
+// shellTrimLine pairs a trim curve handle with the extrusion side
+// surface it belongs to. Mirrors the C++ `TrimLine` struct in
+// shell.cpp.
+type shellTrimLine struct {
+	hc core.HSCurve
+	hs core.HSSurface
+}
+
 // MakeFromExtrusionOf extrudes a planar BezierLoopSet from t0 to t1.
-// Each curve in the set becomes a side surface; the outer contour
-// is capped at t0 and t1 with two planar surfaces.
-//
-// This is one of the highest-level constructor methods. It
-// iterates every loop in the set, emits a translated copy of each
-// Bezier at t0 and t1 (the caps), and an extruded surface along
-// each Bezier (the side).
-//
-// PORTING.md §"Remaining work" point 5 (ClassifyEdge partial-
-// overlap recognition): every emitted surface is assigned a fresh
-// `H` handle here so that downstream curve lookups
-// (`SShell::FindSurface` via `SCurve::GetSurfaceA / GetSurfaceB`)
-// resolve to the correct pair of surfaces during per-surface-trim
-// curve refinement. Before this fix every extruded surface had
-// `H = 0`, so `GetSurfaceA` and `GetSurfaceB` both returned the
-// same `SSurface` pointer — `closestPointOnThisAndSurface` then
-// collapsed to "find the closest point on `s` to `p`", which is
-// trivially `p` itself, and the classifier's chain-midpoint
-// refinement did nothing. The C++ equivalent
-// (`SShell::MakeFromExtrusionOf` in `surface.cpp`) assigns a
-// fresh `H` per surface; we now match that.
+// Faithful port of C++ `SShell::MakeFromExtrusionOf` (shell.cpp).
+// Each curve in the set becomes a side surface trimmed by the two
+// translated copies of itself (at t0 and t1) and by the trim lines
+// joining consecutive curves; the outer contour and every hole are
+// capped at t0 and t1 with two shared planar surfaces trimmed by
+// the same translated curves.
 func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RgbaColor) {
 	s.Clear()
 	if sbls == nil {
 		return
 	}
-	// Process outer contour first, then holes.
-	for loopIdx, loop := range []SBezierLoop{sbls.Outer} {
-		for i := range loop.Curves {
-			b := &loop.Curves[i]
-			// Side surface from this Bezier.
-			side := FromExtrusionOf(b, t0, t1)
-			side.Color = color
-			side.H = core.HSSurface{V: uint32(len(s.Surface) + 1)}
-			side.Face = FaceID(uint32(len(s.Surface)) + 1)
-			side.Tag = loop.Tag
-			s.Surface = append(s.Surface, side)
-			_ = loopIdx
+
+	// Make the extrusion direction consistent with respect to the
+	// normal of the sketch we're extruding.
+	if t0.Minus(t1).Dot(sbls.Normal) < 0 {
+		t0, t1 = t1, t0
+	}
+
+	// Define a coordinate system to contain the original sketch, and
+	// get a bounding box in that csys.
+	n := sbls.Normal.ScaledBy(-1)
+	u := n.NormalDir(0)
+	v := n.NormalDir(1)
+	orig := sbls.Point
+	umin, umax := math.Inf(1), math.Inf(-1)
+	sbls.GetBoundingProjd(u, orig, &umin, &umax)
+	vmin, vmax := math.Inf(1), math.Inf(-1)
+	sbls.GetBoundingProjd(v, orig, &vmin, &vmax)
+	// and now fix things up so that all u and v lie between 0 and 1
+	orig = orig.Plus(u.ScaledBy(umin))
+	orig = orig.Plus(v.ScaledBy(vmin))
+	u = u.ScaledBy(umax - umin)
+	v = v.ScaledBy(vmax - vmin)
+
+	// So we can now generate the top and bottom surfaces of the
+	// extrusion, planes within a translated (and maybe mirrored)
+	// version of that csys.
+	s0 := FromPlane(orig.Plus(t0), u, v)
+	s0.Color = color
+	s0.TrimBuilt = true
+	s1 := FromPlane(orig.Plus(t1).Plus(u), u.ScaledBy(-1), v)
+	s1.Color = color
+	s1.TrimBuilt = true
+	hs0 := s.addAndAssignSurfaceId(s0)
+	hs1 := s.addAndAssignSurfaceId(s1)
+
+	// Now go through the input curves. For each one, generate its
+	// surface of extrusion, its two translated trim curves, and one
+	// trim line. We go through by loops so that we can assign the
+	// lines correctly.
+	loops := make([]*SBezierLoop, 0, 1+len(sbls.Holes))
+	loops = append(loops, &sbls.Outer)
+	for i := range sbls.Holes {
+		loops = append(loops, &sbls.Holes[i])
+	}
+
+	for _, loop := range loops {
+		var trimLines []shellTrimLine
+
+		for bi := range loop.Curves {
+			b := &loop.Curves[bi]
+
+			// Generate the surface of extrusion of this curve, and
+			// add it to the list.
+			ss := FromExtrusionOf(b, t0, t1)
+			ss.Color = color
+			ss.TrimBuilt = true
+			hsext := s.addAndAssignSurfaceId(ss)
+
+			// Translate the curve by t0 and t1 to produce two trim
+			// curves.
+			bt0 := *b
+			bt0.TransformedBy(t0, geom.QuaternionIdentity, 1.0)
+			hc0 := s.addAndAssignCurveId(SCurve{
+				IsExact: true,
+				Exact:   bt0,
+				Points:  makePwlSCurvePoints(&bt0),
+				SurfA:   hs0,
+				SurfB:   hsext,
+			})
+
+			bt1 := *b
+			bt1.TransformedBy(t1, geom.QuaternionIdentity, 1.0)
+			hc1 := s.addAndAssignCurveId(SCurve{
+				IsExact: true,
+				Exact:   bt1,
+				Points:  makePwlSCurvePoints(&bt1),
+				SurfA:   hs1,
+				SurfB:   hsext,
+			})
+
+			// The translated curves trim the flat top and bottom
+			// surfaces.
+			appendTrim(s, hs0, STrimByEntireCurveFromShell(s, hc0, false))
+			appendTrim(s, hs1, STrimByEntireCurveFromShell(s, hc1, true))
+
+			// The translated curves also trim the surface of
+			// extrusion.
+			appendTrim(s, hsext, STrimByEntireCurveFromShell(s, hc0, true))
+			appendTrim(s, hsext, STrimByEntireCurveFromShell(s, hc1, false))
+
+			// And form the trim line.
+			pt := b.Finish()
+			lineBez := SBezierFrom2(pt.Plus(t0), pt.Plus(t1))
+			hl := s.addAndAssignCurveId(SCurve{
+				IsExact: true,
+				Exact:   lineBez,
+				Points:  makePwlSCurvePoints(&lineBez),
+			})
+			// save this for later
+			trimLines = append(trimLines, shellTrimLine{hc: hl, hs: hsext})
 		}
-		// Cap at t0.
-		t0Plane := FromPlane(t0, geom.Vector{X: 1}, geom.Vector{Y: 1})
-		t0Plane.Color = color
-		t0Plane.H = core.HSSurface{V: uint32(len(s.Surface) + 1)}
-		t0Plane.Face = FaceID(uint32(len(s.Surface)) + 1)
-		t0Plane.Tag = loop.Tag
-		s.Surface = append(s.Surface, t0Plane)
-		// Cap at t1.
-		t1Plane := FromPlane(t1, geom.Vector{X: 1}, geom.Vector{Y: 1})
-		t1Plane.Color = color
-		t1Plane.H = core.HSSurface{V: uint32(len(s.Surface) + 1)}
-		t1Plane.Face = FaceID(uint32(len(s.Surface)) + 1)
-		t1Plane.Tag = loop.Tag
-		s.Surface = append(s.Surface, t1Plane)
+
+		nl := len(trimLines)
+		for i := 0; i < nl; i++ {
+			tl := trimLines[i]
+			tlp := trimLines[(i-1+nl)%nl]
+
+			appendTrim(s, tl.hs, STrimByEntireCurveFromShell(s, tl.hc, true))
+			appendTrim(s, tl.hs, STrimByEntireCurveFromShell(s, tlp.hc, false))
+
+			if c := s.FindCurve(tl.hc); c != nil {
+				c.SurfA = tl.hs
+			}
+			if c := s.FindCurve(tlp.hc); c != nil {
+				c.SurfB = tl.hs
+			}
+		}
+	}
+}
+
+// appendTrim adds stb to the Trim list of the surface identified by
+// h, looking it up by handle so callers never need to reason about
+// slice-append reallocation.
+func appendTrim(s *SShell, h core.HSSurface, stb STrimBy) {
+	if srf := s.FindSurface(h); srf != nil {
+		srf.Trim = append(srf.Trim, stb)
 	}
 }
 
@@ -224,30 +350,158 @@ func (s *SShell) MakeFromHelixOf(sbls *SBezierLoopSet, pt, axis geom.Vector, tur
 }
 
 // MakeFromTransformationOf applies (translate, rotate, scale) to
-// every surface and curve of src.
+// every surface and curve of src, keeping their original handles.
+// Faithful port of C++ `SShell::MakeFromTransformationOf`
+// (shell.cpp), which always transforms trims and always copies the
+// curve list too — booleans on the result need the operand curves,
+// not just the surfaces.
 func (s *SShell) MakeFromTransformationOf(src *SShell, t geom.Vector, q geom.Quaternion, scale float64, includingTrims bool) {
 	s.Clear()
+	if src == nil {
+		return
+	}
 	for _, ss := range src.Surface {
 		s.Surface = append(s.Surface, FromTransformationOf(&ss, t, q, scale, includingTrims))
 	}
+	for _, c := range src.Curve {
+		s.Curve = append(s.Curve, FromTransformationOfSCurve(&c, t, q, scale))
+	}
+	s.BooleanFailed = false
 }
 
 // TriangulateInto triangulates every surface in the shell and
-// appends the resulting triangles to mesh. Each surface is sampled
-// on a regular (u, v) grid; cells whose center is outside the trim
-// region are skipped via srf.Bsp.
+// appends the resulting triangles to mesh. Faithful port of C++
+// `SShell::TriangulateInto` (shell.cpp): each surface's trim curves
+// (resolved against this shell) are assembled into a uv-space
+// polygon and triangulated either by ear-clipping (planar surfaces)
+// or by the adaptive uv grid (curved surfaces); untrimmed surfaces
+// (no STrimBy at all — currently MakeFromRevolutionOf/MakeFromHelixOf
+// output) fall back to the regular 16x16 grid so they aren't
+// triangulated away to nothing.
 func (s *SShell) TriangulateInto(mesh *SMesh) {
 	for i := range s.Surface {
-		s.Surface[i].TriangulateInto(mesh)
+		s.Surface[i].TriangulateInto(s, mesh)
 	}
 }
 
-// TriangulateInto is the per-surface version. It samples the
-// surface on a regular (u, v) grid, then keeps only those cells
-// whose center is INSIDE the trim region (per srf.Bsp). Phase 4 +
-// Goal Item 4 implementation: supports trimmed surfaces via the
-// SBspUv classifier.
-func (srf *SSurface) TriangulateInto(mesh *SMesh) {
+// TriangulateInto is the per-surface version. Mirrors C++
+// `SSurface::TriangulateInto(SShell *shell, SMesh *sm)`
+// (surface.cpp:414): build the uv-space trim polygon via the
+// surface's own STrimBy list (resolved against shell), triangulate
+// it (ear-clipping for degree (1,1) planes, the adaptive uv grid for
+// curved surfaces), then map every uv-space vertex/normal back to
+// 3-D via PointAt/NormalAt and flip the winding to match the
+// trim-contour orientation convention.
+func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
+	if len(srf.Trim) == 0 {
+		// See SSurface.TrimBuilt's doc comment: an empty Trim list
+		// falls back to the full parameter grid unless this surface
+		// came from an INTERSECTION's per-surface trim (TrimBuilt),
+		// where an empty result reliably means "genuinely outside
+		// the kept region" and must render 0 triangles, matching the
+		// C++ (which has no untrimmed-grid fallback at all;
+		// surface.cpp:414).
+		if !srf.TrimBuilt {
+			srf.triangulateUntrimmedGrid(mesh)
+		}
+		return
+	}
+
+	el := SEdgeList{}
+	srf.makeUvTrimEdgesInto(shell, &el)
+
+	var poly SPolygon
+	if !el.AssemblePolygon(&poly, nil, true) {
+		// Failed to close the trim loop into a polygon. Unlike the
+		// empty-Trim case above, a *non-empty* Trim list that still
+		// fails to assemble means the per-surface trim/chain-walk
+		// pipeline produced inconsistent boundary data (a bug
+		// elsewhere, e.g. in the boolean CSG chain-walker for
+		// non-planar or multi-loop trim topology) rather than a
+		// deliberate "this region is fully discarded" answer. Always
+		// falling back here (regardless of TrimBuilt) keeps a
+		// reasonable approximation of the surface on screen instead
+		// of silently erasing it — matching this port's pre-existing
+		// behavior for that failure mode, which independent
+		// measurement (PORTING.md "Boolean-CSG parity gaps") shows is
+		// closer to the C++ golden than dropping the surface
+		// entirely for the fixtures whose chain-walk isn't yet
+		// fully correct.
+		srf.triangulateUntrimmedGrid(mesh)
+		return
+	}
+
+	start := len(mesh.Triangles)
+	if srf.DegM == 1 && srf.DegN == 1 {
+		poly.UvTriangulateInto(mesh, srf)
+	} else {
+		poly.UvGridTriangulateInto(mesh, srf, 8, 8)
+	}
+
+	meta := STriMeta{Face: srf.Face, RgbaColor: srf.Color}
+	for i := start; i < len(mesh.Triangles); i++ {
+		t := &mesh.Triangles[i]
+		t.Meta = meta
+		t.NA = srf.NormalAt(t.A.X, t.A.Y)
+		t.NB = srf.NormalAt(t.B.X, t.B.Y)
+		t.NC = srf.NormalAt(t.C.X, t.C.Y)
+		t.A = srf.PointAt(t.A.X, t.A.Y)
+		t.B = srf.PointAt(t.B.X, t.B.Y)
+		t.C = srf.PointAt(t.C.X, t.C.Y)
+		// Works out that the chosen contour direction is inconsistent
+		// with the triangle direction (matches the C++ comment).
+		t.FlipNormal()
+	}
+}
+
+// makeUvTrimEdgesInto emits the uv-space piecewise-linear
+// approximation of every trim curve on srf into el. Mirrors C++
+// `SSurface::MakeTrimEdgesInto(..., MakeAs::UV, ...)`
+// (surface.cpp:222), called once per STrimBy via `MakeEdgesInto`.
+func (srf *SSurface) makeUvTrimEdgesInto(shell *SShell, el *SEdgeList) {
+	for i := range srf.Trim {
+		stb := &srf.Trim[i]
+		sc := shell.FindCurve(stb.Curve)
+		if sc == nil || len(sc.Points) == 0 {
+			continue
+		}
+
+		var prev geom.Vector
+		inCurve := false
+		first, last, increment := 0, len(sc.Points)-1, 1
+		if stb.Backwards {
+			first, last, increment = len(sc.Points)-1, 0, -1
+		}
+		auxB := 0
+		if stb.Backwards {
+			auxB = 1
+		}
+		for i := first; i != last+increment; i += increment {
+			pt := sc.Points[i].P
+			var u, v float64
+			srf.ClosestPointToUV(pt, &u, &v, true)
+			tpt := geom.Vector{X: u, Y: v}
+
+			if inCurve {
+				el.AddEdge(prev, tpt, int(sc.H.V), auxB, sc.Tag)
+			}
+			prev = tpt
+
+			if pt.Equals(stb.StartP) {
+				inCurve = true
+			}
+			if pt.Equals(stb.FinishP) {
+				inCurve = false
+			}
+		}
+	}
+}
+
+// triangulateUntrimmedGrid samples the surface on a regular (u, v)
+// grid, keeping only cells whose center is inside srf.Bsp (when
+// present). This is the pre-item-3 triangulator, now used only as
+// the fallback for surfaces with no trim curves at all.
+func (srf *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
 	const n = 16
 	for j := 0; j < n; j++ {
 		for i := 0; i < n; i++ {
@@ -640,3 +894,4 @@ func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
 	}
 	return out
 }
+

@@ -180,7 +180,7 @@ func makeBoxMeshForTest(min, max geom.Vector) *SMesh {
 	sh := makeBoxShellForTest(min, max)
 	m := &SMesh{}
 	for i := range sh.Surface {
-		sh.Surface[i].TriangulateInto(m)
+		sh.Surface[i].TriangulateInto(sh, m)
 	}
 	return m
 }

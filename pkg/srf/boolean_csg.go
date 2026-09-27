@@ -398,7 +398,7 @@ func pointInsideShell(p geom.Vector, sh *SShell) bool {
 	var mesh SMesh
 	for i := range sh.Surface {
 		srf := &sh.Surface[i]
-		srf.TriangulateInto(&mesh)
+		srf.TriangulateInto(sh, &mesh)
 	}
 	if len(mesh.Triangles) == 0 {
 		return false

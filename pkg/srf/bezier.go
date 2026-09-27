@@ -364,10 +364,28 @@ func (b *SBezier) MakePwlInto(el *SEdgeList, chordTol float64, maxDt float64) {
 }
 
 // MakePwlIntoPoints emits the polyline approximation as a list of
-// points (used by SShell's triangulation pipeline).
+// points (used by SShell's triangulation pipeline). Mirrors the
+// degree-1 shortcut in C++ `SBezier::MakePwlInto(List<Vector> *l, ...)`
+// (ratpoly.cpp): with the default max_dt (0, meaning "unset"), a
+// straight line (degree 1) is emitted as just its two endpoints
+// instead of being subdivided into collinear samples — subdividing
+// a straight edge produces many collinear boundary vertices that
+// defeat ear-clipping triangulation.
 func (b *SBezier) MakePwlIntoPoints(pts *[]geom.Vector, chordTol float64, maxDt float64) {
+	if maxDt == 0 {
+		if b.Degree == 1 {
+			maxDt = 1.0
+		} else {
+			maxDt = 0.25
+		}
+	}
+	*pts = append(*pts, b.Ctrl[0])
+	if b.Degree == 1 && maxDt >= 1.0 {
+		*pts = append(*pts, b.Ctrl[1])
+		return
+	}
 	const n = 8
-	for i := 0; i <= n; i++ {
+	for i := 1; i <= n; i++ {
 		t := float64(i) / float64(n)
 		*pts = append(*pts, b.PointAt(t))
 	}

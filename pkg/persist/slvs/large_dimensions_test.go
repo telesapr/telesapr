@@ -114,7 +114,6 @@ func TestLargeDimensionsRoundTripPreservesBlockCount(t *testing.T) {
 	}
 	// Re-parse to compare block count.
 	doc2 := &slvs.Document{Sketch: nil}
-	doc2 = doc2
 	_ = doc2
 	if original == 0 {
 		t.Errorf("expected non-zero block count")

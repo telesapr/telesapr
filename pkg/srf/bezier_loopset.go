@@ -64,6 +64,30 @@ func (pb *PolylineBuilder) GenerateIntoContour(c *SContour, closeLoop bool) {
 	pb.Clear()
 }
 
+// ComputeNormalPointArea fills in s.Normal, s.Point, and s.Area from
+// the outer and hole contours. Mirrors the tail of C++
+// `SBezierLoopSet::From` (curve.cpp:520-528):
+//
+//	poly->normal = poly->ComputeNormal();
+//	ret.normal = poly->normal;
+//	ret.point = poly->AnyPoint();
+//
+// Callers that build an SBezierLoopSet by hand (rather than through
+// SBezierLoopSetSet::FindOuterFacesFrom, which calls this
+// internally) must call this before passing the set to
+// MakeFromExtrusionOf/MakeFromRevolutionOf/MakeFromHelixOf: those
+// constructors need a non-degenerate Normal to build the cap-plane
+// (u, v) basis (see Vector.NormalDir), and a zero Normal collapses
+// that basis to a single direction, destroying the extrusion.
+func (s *SBezierLoopSet) ComputeNormalPointArea() {
+	var poly SPolygon
+	s.MakePwlInto(&poly)
+	poly.ComputeNormal()
+	s.Normal = poly.Normal
+	s.Point = poly.AnyPoint()
+	s.Area = poly.SignedArea()
+}
+
 // GetBoundingProjd extends the axis-aligned bounding box from
 // every contour in the set.
 func (s *SBezierLoopSet) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {

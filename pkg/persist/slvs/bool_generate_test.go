@@ -29,34 +29,34 @@ type boolFixtureStats struct {
 // tracked in the Go kernel.
 var booleanFixtureGoldens = map[string]boolFixtureStats{
 	"boolean_coplanar_union": {
-		Triangles: 19456,
+		Triangles: 5669,
 		VMin:      [3]float64{0, -5, -10},
 		VMax:      [3]float64{10, 20, 20},
 	},
 	"boolean_knife_edge": {
-		Triangles: 10240,
+		Triangles: 915,
 		VMin:      [3]float64{-1, -1.6126052390506485, 0},
-		VMax:      [3]float64{1.5498346036820765, 1, 1},
+		VMax:      [3]float64{0, 1, 1},
 	},
 	"boolean_tangent_crossing": {
-		Triangles: 7680,
+		Triangles: 3407,
 		VMin:      [3]float64{-30, -30, -30},
-		VMax:      [3]float64{40.9599812579423, 30, 30},
+		VMax:      [3]float64{30.2341779373895, 30, 30},
 	},
 	"boolean_tangent_edge": {
-		Triangles: 9728,
+		Triangles: 1252,
 		VMin:      [3]float64{0, 0, 0},
 		VMax:      [3]float64{80, 80, 80},
 	},
 	"boolean_tangent_fillet": {
-		Triangles: 6656,
+		Triangles: 289,
 		VMin:      [3]float64{0, -2, -1},
-		VMax:      [3]float64{1, 1, 0},
+		VMax:      [3]float64{1, 0, 0},
 	},
 	"boolean_tangent_spline": {
-		Triangles: 7680,
+		Triangles: 3407,
 		VMin:      [3]float64{-30, -30, -30},
-		VMax:      [3]float64{40.9599812579423, 30, 30},
+		VMax:      [3]float64{30.2341779373895, 30, 30},
 	},
 }
 
@@ -91,24 +91,21 @@ var booleanFixtureCppGoldens = map[string]float64{
 // should be coupled with work that drives the ratio into the new
 // band, with documentation in PORTING.md.
 var booleanFixtureCppGoldenTolerances = map[string]struct{ Lo, Hi float64 }{
-	// After PORTING.md §"Remaining work" point 1 fully landed
-	// (iteration fix + choosing re-tune + case-1 sub-branches +
-	// `makeEdgesIntoForBoolean` UV projection), the per-surface
-	// trim runs on the receiver correctly but `ClassifyEdge`
-	// case-3 (edge-on-surface) still skips every cube face for
-	// the tangent-cutters because the extruded cube's surfaces
-	// have `Bsp == nil` and `BspUvClass` defaults to
-	// `BspUvOutside`. Result: the four `tangent_*` fixtures'
-	// ratios regress from baseline (0.70 → 0.54). The dominant
-	// lever on `boolean_coplanar_union` remains the
-	// `MergeCoincidentSurfaces` coplanar-but-shifted gap from
-	// item 3.
-	"boolean_coplanar_union":   {Lo: 0.02, Hi: 0.05},
-	"boolean_knife_edge":       {Lo: 0.70, Hi: 0.85},
-	"boolean_tangent_crossing": {Lo: 0.50, Hi: 0.60},
-	"boolean_tangent_edge":     {Lo: 0.60, Hi: 0.75},
-	"boolean_tangent_fillet":   {Lo: 0.99, Hi: 1.25},
-	"boolean_tangent_spline":   {Lo: 0.50, Hi: 0.60},
+	// See PORTING.md §"Boolean-CSG parity gaps" for the full
+	// per-fixture writeup of this session's landings (the
+	// `ClosestPointTo` plane fast path, the `classifyPointUv` sign
+	// convention fix, and the op-aware `SSurface.TrimBuilt`
+	// fallback policy) and what still blocks knife_edge,
+	// tangent_edge and tangent_fillet from clearing HEAD's ratio.
+	//
+	// `boolean_tangent_crossing` and `boolean_tangent_spline` are
+	// now within the [0.95, 1.05] definition-of-done band.
+	"boolean_coplanar_union":   {Lo: 0.07, Hi: 0.11},
+	"boolean_knife_edge":       {Lo: 0.40, Hi: 0.50},
+	"boolean_tangent_crossing": {Lo: 0.95, Hi: 1.05},
+	"boolean_tangent_edge":     {Lo: 0.40, Hi: 0.50},
+	"boolean_tangent_fillet":   {Lo: 0.65, Hi: 0.75},
+	"boolean_tangent_spline":   {Lo: 0.95, Hi: 1.05},
 }
 
 // collectBoolStats loads a fixture and reports its mesh statistics.

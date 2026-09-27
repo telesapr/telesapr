@@ -17,7 +17,21 @@ func (el *SEdgeList) AssemblePolygon(dest *SPolygon, errorAt *SEdge, keepDir boo
 	if len(el.Edges) == 0 {
 		return false
 	}
-	const tol = 1e-9
+	// C++ `SEdgeList::AssembleContour` chains edges via
+	// `Vector::Equals`, whose default tolerance is `LENGTH_EPS =
+	// 1e-6` (solvespace/src/defs.h:7), not this port's much tighter
+	// internal `lengthEps = 1e-12` (bezier.go). The accurate boolean
+	// per-surface trim pipeline accumulates floating-point error
+	// across several coordinate transforms (uv projection, curve
+	// sampling, Newton iteration) before the chain reaches here; at
+	// 1e-9 that noise routinely left real closed loops one edge
+	// short of closing, so AssemblePolygon reported failure (and
+	// TriangulateInto fell back to the coarse untrimmed grid) for
+	// surfaces whose trim chain was otherwise correct. Matching the
+	// C++ tolerance fixes that without masking genuinely open chains
+	// (LENGTH_EPS is still far below any real geometric feature size
+	// in the boolean fixtures).
+	const tol = 1e-6
 	used := make([]bool, len(el.Edges))
 	for start := 0; start < len(el.Edges); start++ {
 		if used[start] {
@@ -66,7 +80,7 @@ func (el *SEdgeList) AssemblePolygon(dest *SPolygon, errorAt *SEdge, keepDir boo
 // whose A-point matches `first`. Returns true if a contour was
 // produced (any length).
 func (el *SEdgeList) AssembleContour(first, last geom.Vector, dest *SContour, errorAt *SEdge, keepDir bool, start int) bool {
-	const tol = 1e-9
+	const tol = 1e-6
 	used := make([]bool, len(el.Edges))
 	contour := SContour{}
 	// Find the first edge whose A matches first.
@@ -130,7 +144,7 @@ func (el *SEdgeList) AnyEdgeCrossings(a, b geom.Vector, pi *geom.Vector, spl *SP
 
 // ContainsEdgeFrom reports whether sel is a subset of el.
 func (el *SEdgeList) ContainsEdgeFrom(sel *SEdgeList) bool {
-	const tol = 1e-9
+	const tol = 1e-6
 	for _, e := range sel.Edges {
 		found := false
 		for _, x := range el.Edges {
@@ -148,7 +162,7 @@ func (el *SEdgeList) ContainsEdgeFrom(sel *SEdgeList) bool {
 
 // ContainsEdge reports whether any edge in el matches se.
 func (el *SEdgeList) ContainsEdge(se *SEdge) bool {
-	const tol = 1e-9
+	const tol = 1e-6
 	for _, x := range el.Edges {
 		if x.A.DistanceTo(se.A) < tol && x.B.DistanceTo(se.B) < tol {
 			return true

@@ -117,13 +117,32 @@ func (b *SBspUv) ClassifyEdge(a, p geom.Point2d) BspUvClass {
 	return BspUvEdgeOther
 }
 
+// classifyPointUv classifies pt against the directed edge a->b.
+// Mirrors C++ `SBspUv::ScaledSignedDistanceToLine`
+// (boolean.cpp:967-976), which measures the signed distance to
+// pt.Dot(n) - a.Dot(n) where n = (b-a).Normal() and Point2d::Normal
+// rotates by -90° (util.cpp:985: `{y, -x}`) — i.e. n points to the
+// *right* of the a->b direction. `SBspUv::ClassifyPoint`'s
+// no-further-subdivision defaults are `pos -> INSIDE`, `neg ->
+// OUTSIDE` (boolean.cpp:1064-1065), so "inside" is the right-hand
+// side of each directed trim edge. Our `(b-a) x (pt-a)` cross
+// product is positive when pt is to the *left* of a->b, the
+// opposite sense, so the sign checks below are inverted relative to
+// the naive cross-product reading to match the C++ convention.
+// This must agree with the winding STrimBy chains actually have
+// (STrimByEntireCurveFromShell + the Backwards flag in
+// MakeFromExtrusionOf): flipping only this comparison (instead of
+// the trim-construction winding) was verified against a concrete
+// extruded-box trim loop, whose four edges are only ever all
+// classified consistently (every real interior point comes out
+// INSIDE on every edge) under this convention.
 func classifyPointUv(pt, a, b geom.Point2d) BspUvClass {
 	v := (b.U-a.U)*(pt.V-a.V) - (b.V-a.V)*(pt.U-a.U)
 	if v > 1e-12 {
-		return BspUvInside
+		return BspUvOutside
 	}
 	if v < -1e-12 {
-		return BspUvOutside
+		return BspUvInside
 	}
 	// Collinear; check orientation along the line.
 	if (pt.U-a.U)*(pt.U-b.U) > 1e-12 || (pt.V-a.V)*(pt.V-b.V) > 1e-12 {

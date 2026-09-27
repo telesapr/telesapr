@@ -301,62 +301,18 @@ func (srf *SSurface) makeSurfaceEdgesIntoUv(into *SShell, el *SEdgeList) {
 // build here keep their parent-relative Curve ids. The trim from
 // `makeSurfaceEdgesIntoUv` below is therefore built directly from the
 // curve in `into` that the trim refers to (looked up by raw H value).
-
-// makeEdgesIntoForBoolean extends MakeEdgesInto: when useCurvesFrom is
-// the boolean output shell (`into`), it emits edges from `into`'s
-// curves that touch this surface (SurfA/B == srf.H). Used by
-// MakeCopyTrimAgainst so the orig trim polygon reflects the
-// split (and possibly re-emitted) curve forms.
 //
-// PORTING.md §"Remaining work" point 5 (ClassifyEdge partial-
-// overlap recognition, follow-up): the chain walker downstream
-// of this function pulls `se.A.X` / `se.A.Y` and treats them as
-// UV coordinates on the receiver surface — see
-// `pkg/srf/boolean_trim.go` lines 692-697 and the C++
-// `SSurface::MakeEdgesInto(... MakeAs::UV)` at
-// `solvespace/src/srf/surface.cpp:242-247`. The earlier version
-// of this function stored the raw `b.PointAt(t)` XYZ samples,
-// which left the chain walker treating a 3-D XYZ point's
-// `(X, Y)` as receiver UV. For a unit-parameterised cube face
-// that's `(u = ±30, v = ±30)` — a value the receiver Bezier
-// extrapolates to `(30, 1770, -1830)` — which fails the
-// `LineEntirelyOutsideBbox` check in every branch of
-// `ClassifyEdge` (case 1, case 2, case 3) and falls through to
-// the raycast fallback (case 4), which always returns
-// `SurfOutside` for the boolean fixtures. The C++ instead
-// projects each 3-D sample back to receiver UV before
-// storing it (matching the `MakeAs::UV` branch of
-// `SSurface::MakeTrimEdgesInto`), so the chain walker sees
-// valid `(u, v)` ∈ `[0, 1]²` and every `ClassifyEdge` branch
-// can do its work.
-func (srf *SSurface) makeEdgesIntoForBoolean(parent, useCurvesFrom *SShell, el *SEdgeList) {
-	if parent == nil || useCurvesFrom == nil {
-		return
-	}
-	for i := range useCurvesFrom.Curve {
-		c := &useCurvesFrom.Curve[i]
-		if c.SurfA != srf.H && c.SurfB != srf.H {
-			continue
-		}
-		b := c.Exact
-		const ns = 8
-		// Project the first sample point to receiver UV (matches
-		// the C++ `MakeAs::UV` branch of `MakeTrimEdgesInto`,
-		// which stores `{u, v, 0}` rather than the raw `pt`).
-		var puvLast geom.Point2d
-		srf.ClosestPointTo(b.Start(), &puvLast, false)
-		last := geom.Vector{X: puvLast.U, Y: puvLast.V}
-		for k := 1; k <= ns; k++ {
-			t := float64(k) / float64(ns)
-			cur3 := b.PointAt(t)
-			var puv geom.Point2d
-			srf.ClosestPointTo(cur3, &puv, false)
-			cur := geom.Vector{X: puv.U, Y: puv.V}
-			el.AddEdge(last, cur, int(c.H.V), 0, 0)
-			last = cur
-		}
-	}
-}
+// An earlier version of this file also called a second helper
+// (`makeEdgesIntoForBoolean`) after `makeSurfaceEdgesIntoUv` to
+// rebuild `orig` a second time from every curve in `into` touching
+// `srf.H`, without clearing the edge list first. That appended a
+// second, overlapping copy of the boundary AND pulled in every
+// CurveSourceIntersection curve touching this surface (which
+// belongs in the separate `inter` list built below, not `orig`) —
+// neither matches the C++, which builds `orig` from `ret.trim`
+// alone (`boolean.cpp:528`: `ret.MakeEdgesInto(into, &orig,
+// MakeAs::UV)`). That second call has been removed;
+// `makeSurfaceEdgesIntoUv` alone now mirrors the C++.
 
 // edgeNormalsWithinSurface computes the geometric center of an edge on
 // `srf`, along with the inner/outer edge normals (in xyz) and the
@@ -551,6 +507,21 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	}
 	ret := *srf
 	ret.Trim = nil
+	// See SSurface.TrimBuilt's doc comment. An INTERSECTION keeps
+	// only the (typically small) overlap of the two operands, so an
+	// empty final chain below almost always means "this region is
+	// genuinely outside the intersection" — falling back to the full
+	// parameter grid there would systematically overcount volume
+	// (verified empirically: it roughly rendered the whole original
+	// surface for every discarded region). UNION/DIFFERENCE keep
+	// most of each operand outside a comparatively small cut/overlap
+	// region, so an empty final chain there is far more often a
+	// chain-walk/classification miss (see PORTING.md
+	// "Boolean-CSG parity gaps", tangent-cutter partial-overlap
+	// recognition) than a deliberate full discard; falling back to
+	// the full grid for those ops is measurably closer to the C++
+	// golden across the boolean fixtures than rendering nothing.
+	ret.TrimBuilt = t == SurfaceInter
 
 	// Step 1 (C++ line 511-518): rewrite trim curves to use the
 	// new (split) curve handles. CopyCurvesSplitAgainst stored the
@@ -575,11 +546,7 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// the new (split) curves.
 	orig := &SEdgeList{}
 	ret.makeSurfaceEdgesIntoUv(into, orig)
-	// Use the proper edges from `into` for classification by
-	// override: replace each edge from the parent-relative form
-	// with the most recent curve's polyline projection.
 	ret.Trim = nil
-	srf.makeEdgesIntoForBoolean(parent, into, orig)
 	origBsp := BuildBspUvFromEdges(orig, &ret)
 
 	// Step 4 (C++ line 535-594): build the inter edge list from the
@@ -726,9 +693,10 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		agnst.classifyEdge(&indirShell, &outdirShell,
 			ret.PointAtUv(auv), ret.PointAtUv(buv),
 			pt, enin, enout, surfN)
-		if keepEdge(t, opA,
+		keep := keepEdge(t, opA,
 			indirShell, outdirShell,
-			ShellInside, ShellOutside) {
+			ShellInside, ShellOutside)
+		if keep {
 			for _, e := range chain.Edges {
 				final.AddEdge(e.A, e.B, e.AuxA, e.AuxB, 0)
 			}
@@ -766,9 +734,10 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		agnst.classifyEdge(&indirShell, &outdirShell,
 			ret.PointAtUv(auv), ret.PointAtUv(buv),
 			pt, enin, enout, surfN)
-		if keepEdge(t, opA,
+		keep := keepEdge(t, opA,
 			indirShell, outdirShell,
-			indirOrig, outdirOrig) {
+			indirOrig, outdirOrig)
+		if keep {
 			for _, e := range chain.Edges {
 				final.AddEdge(e.A, e.B, e.AuxA, e.AuxB, 0)
 			}

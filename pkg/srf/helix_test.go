@@ -13,13 +13,13 @@ func TestSShellMakeFromHelixOfProducesNonEmptyShell(t *testing.T) {
 	loop := &SBezierLoopSet{}
 	loop.Outer.Tag = 1
 	loop.Outer.Curves = []SBezier{
-		{Degree: 1, Ctrl: [4]geom.Vector{{0, 0, 0}, {1, 0, 0}}, Weight: [4]float64{1, 1}},
-		{Degree: 1, Ctrl: [4]geom.Vector{{1, 0, 0}, {1, 1, 0}}, Weight: [4]float64{1, 1}},
-		{Degree: 1, Ctrl: [4]geom.Vector{{1, 1, 0}, {0, 1, 0}}, Weight: [4]float64{1, 1}},
-		{Degree: 1, Ctrl: [4]geom.Vector{{0, 1, 0}, {0, 0, 0}}, Weight: [4]float64{1, 1}},
+		{Degree: 1, Ctrl: [4]geom.Vector{{X: 0, Y: 0, Z: 0}, {X: 1, Y: 0, Z: 0}}, Weight: [4]float64{1, 1}},
+		{Degree: 1, Ctrl: [4]geom.Vector{{X: 1, Y: 0, Z: 0}, {X: 1, Y: 1, Z: 0}}, Weight: [4]float64{1, 1}},
+		{Degree: 1, Ctrl: [4]geom.Vector{{X: 1, Y: 1, Z: 0}, {X: 0, Y: 1, Z: 0}}, Weight: [4]float64{1, 1}},
+		{Degree: 1, Ctrl: [4]geom.Vector{{X: 0, Y: 1, Z: 0}, {X: 0, Y: 0, Z: 0}}, Weight: [4]float64{1, 1}},
 	}
 	var s SShell
-	s.MakeFromHelixOf(loop, geom.Vector{0.5, 0.5, 0}, geom.Vector{Z: 1}, 2, 4.0, core.NewRgbaColor(255, 0, 0, 255))
+	s.MakeFromHelixOf(loop, geom.Vector{X: 0.5, Y: 0.5, Z: 0}, geom.Vector{Z: 1}, 2, 4.0, core.NewRgbaColor(255, 0, 0, 255))
 	if len(s.Surface) == 0 {
 		t.Fatalf("helix produced 0 surfaces")
 	}

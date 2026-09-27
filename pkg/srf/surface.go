@@ -28,6 +28,30 @@ type SSurface struct {
 	Edges SEdgeList
 
 	Cached geom.Point2d
+
+	// TrimBuilt is a Go-port-only marker (no C++ field mirrors it)
+	// set true for surfaces where an empty Trim list should be
+	// trusted as "genuinely outside the kept region" (render 0
+	// triangles — matching the C++, which has no untrimmed-grid
+	// fallback at all; see solvespace/src/srf/surface.cpp:414's
+	// TriangulateInto) rather than papered over with the full
+	// parameter grid. Set unconditionally by MakeFromExtrusionOf
+	// (whose surfaces always have a non-empty Trim anyway) and,
+	// conditionally on the combine type, by the boolean per-surface
+	// trim in makeCopyTrimAgainst: true only for SurfaceInter, whose
+	// empty final chains reliably mean "outside the intersection".
+	// For SurfaceUnion/SurfaceDiff, an empty final chain is more
+	// often an unresolved chain-walk/classification miss on a
+	// tangent-contact boundary (PORTING.md "Boolean-CSG parity
+	// gaps") than a deliberate discard, so those get TrimBuilt=false
+	// and fall back to the grid — measurably closer to the C++
+	// golden across the boolean fixtures (see makeCopyTrimAgainst's
+	// comment for the specific measurement). A surface whose
+	// constructor never populates Trim at all (currently
+	// MakeFromRevolutionOf / MakeFromHelixOf) also has TrimBuilt
+	// false by default and gets the same grid fallback so it doesn't
+	// vanish.
+	TrimBuilt bool
 }
 
 // STrimBy records which sub-range of an SCurve trims this surface.
@@ -368,6 +392,53 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 func (s *SSurface) ClosestPointTo(p geom.Vector, puv *geom.Point2d, mustConverge bool) {
 	if puv == nil {
 		return
+	}
+	// A few special cases first, matching C++
+	// `SSurface::ClosestPointTo` (ratpoly.cpp:414-439): coincident
+	// control points make the derivative go to zero at the corners
+	// (nonconvergence), and exact corner hits should return a
+	// consistent (u, v) rather than whatever the Newton iteration
+	// happens to settle on.
+	if p.Equals(s.Ctrl[0][0]) {
+		puv.U, puv.V = 0, 0
+		return
+	}
+	if p.Equals(s.Ctrl[s.DegM][0]) {
+		puv.U, puv.V = 1, 0
+		return
+	}
+	if p.Equals(s.Ctrl[s.DegM][s.DegN]) {
+		puv.U, puv.V = 1, 1
+		return
+	}
+	if p.Equals(s.Ctrl[0][s.DegN]) {
+		puv.U, puv.V = 0, 1
+		return
+	}
+	// And planes are trivial, so don't waste time iterating over
+	// those — solve the exact linear projection instead. Critically,
+	// this does NOT clamp (u, v) to [0, 1]: callers that clip a line
+	// against a plane's trim rectangle (e.g. intersectPlanePlane's
+	// tmin/tmax sweep) need the true, possibly out-of-range (u, v) of
+	// a point that may lie outside this plane's parameter rectangle.
+	// The general Newton-iteration path below clamps every step to
+	// [0, 1], which is correct for finding the closest point ON a
+	// trimmed surface but wrong for this "where does p project on
+	// the surface's infinite plane" query. Matches C++
+	// ratpoly.cpp:424-439.
+	if s.DegM == 1 && s.DegN == 1 {
+		orig := s.Ctrl[0][0]
+		bu := s.Ctrl[1][0].Minus(orig)
+		bv := s.Ctrl[0][1].Minus(orig)
+		if s.Ctrl[1][1].Equals(orig.Plus(bu).Plus(bv)) {
+			n := bu.Cross(bv)
+			ty := n.Cross(bu).ScaledBy(1.0 / bu.MagSquared())
+			tx := bv.Cross(n).ScaledBy(1.0 / bv.MagSquared())
+			dp := p.Minus(orig)
+			puv.U = dp.Dot(bu) / tx.MagSquared()
+			puv.V = dp.Dot(bv) / ty.MagSquared()
+			return
+		}
 	}
 	u := s.Cached.U
 	v := s.Cached.V

@@ -12,25 +12,29 @@ import (
 func TestSSurfaceTriangulateIntoRespectsTrim(t *testing.T) {
 	// Build a planar surface in the XY plane.
 	s := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
-	// Build a small BSP that classifies points with v < 0.5 as
-	// inside (a "lower-half" trim). With edge direction (1, 0.5)→(0, 0.5),
-	// points below the line get v < 0 → INSIDE.
+	// Build a small BSP that classifies points with v > 0.5 as
+	// inside (an "upper-half" trim). classifyPointUv's convention
+	// mirrors C++ SBspUv::ClassifyPoint (see its doc comment in
+	// bsp_uv.go): "inside" is the right-hand side of the directed
+	// edge. With edge direction (1, 0.5)→(0, 0.5) (pointing toward
+	// -U), the right-hand side is +V, so points above the line
+	// (v > 0.5) are INSIDE.
 	bspRoot := InsertBspUvEdge(nil, geom.Point2d{U: 1, V: 0.5}, geom.Point2d{U: 0, V: 0.5})
 	s.Bsp = bspRoot
 
 	mesh := &SMesh{}
-	s.TriangulateInto(mesh)
+	s.TriangulateInto(nil, mesh)
 
-	// Count triangles above v=0.5: should be zero (trimmed).
-	above := 0
+	// Count triangles below v=0.5: should be zero (trimmed).
+	below := 0
 	for _, t := range mesh.Triangles {
 		c := t.A.Plus(t.B).Plus(t.C).ScaledBy(1.0 / 3.0)
-		if c.Y > 0.5 {
-			above++
+		if c.Y < 0.5 {
+			below++
 		}
 	}
-	if above != 0 {
-		t.Fatalf("expected 0 triangles above v=0.5 (trimmed), got %d", above)
+	if below != 0 {
+		t.Fatalf("expected 0 triangles below v=0.5 (trimmed), got %d", below)
 	}
 	if len(mesh.Triangles) == 0 {
 		t.Fatalf("expected non-empty mesh, got 0")

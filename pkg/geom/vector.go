@@ -74,6 +74,32 @@ func (v Vector) Normal() Vector {
 	return v.WithMagnitude(1.0)
 }
 
+// NormalDir returns one of two unit vectors perpendicular to v,
+// selected by an arbitrary but well-defined pivot rule (which=0 or
+// 1); which=1 is which=0 crossed with v, so the pair (Normal(0),
+// Normal(1), v) forms a right-handed orthonormal basis. Mirrors the
+// C++ `Vector::Normal(int)` (solvespace/src/util.cpp), used to build
+// a coordinate system from a single direction vector, e.g.
+// SShell::MakeFromExtrusionOf's cap-plane (u, v) basis.
+func (v Vector) NormalDir(which int) Vector {
+	var n Vector
+	xa, ya, za := math.Abs(v.X), math.Abs(v.Y), math.Abs(v.Z)
+	if v.Equals(Vector{X: 0, Y: 0, Z: 1}) {
+		// Make DXFs exported in the XY plane work nicely...
+		n = Vector{X: 1}
+	} else if xa < ya && xa < za {
+		n = Vector{X: 0, Y: v.Z, Z: -v.Y}
+	} else if ya < za {
+		n = Vector{X: -v.Z, Y: 0, Z: v.X}
+	} else {
+		n = Vector{X: v.Y, Y: -v.X, Z: 0}
+	}
+	if which == 1 {
+		n = v.Cross(n)
+	}
+	return n.Normal()
+}
+
 func (v Vector) DistanceTo(b Vector) float64 {
 	return v.Minus(b).Magnitude()
 }

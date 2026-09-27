@@ -404,7 +404,6 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 		}
 		split = sc
 	} else {
-		sc.IsExact = false
 		pts := make([]geom.Vector, 0, 16)
 		sb.MakePwlIntoPoints(&pts, defaultChordTolMm, defaultChordTolMm)
 		for _, p := range pts {

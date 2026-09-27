@@ -72,6 +72,7 @@ func (s *SBezierLoopSetSet) FindOuterFacesFrom(in *SBezierList, sp *SPolygon, op
 		if current.DistanceTo(start) < tol {
 			set := s.AddOuter()
 			set.Outer.Curves = chain
+			set.ComputeNormalPointArea()
 		} else if opensOut != nil {
 			opensOut.Add(in.Curves[i])
 		}

@@ -150,8 +150,14 @@ func surfaceOverlapsShell(srf *SSurface, sh *SShell) bool {
 }
 
 // CleanupAfterBoolean is invoked after a boolean to remove degenerate
-// surfaces (zero area, fully covered by another surface, etc.).
+// surfaces (zero area, fully covered by another surface, etc.) and
+// to clear the temporary `Edges` calculation aid that
+// `MakeClassifyingBsps` populates (matches C++
+// `SShell::CleanupAfterBoolean`, boolean.cpp:780).
 func (s *SShell) CleanupAfterBoolean() {
+	for i := range s.Surface {
+		s.Surface[i].Edges = SEdgeList{}
+	}
 	// Drop zero-area surfaces.
 	out := s.Surface[:0]
 	for i := range s.Surface {
@@ -189,14 +195,54 @@ func (s *SShell) MakeFromIntersectionOf(a, b *SShell) {
 // built from the curves in useCurvesFrom (typically passed in the
 // second pass of MakeFromBoolean, after the new intersection curves
 // have been added); falls back to the shell's own curves otherwise.
+//
+// PORTING.md §"Remaining work" item 5: a real bsp classifies a point
+// against this surface's own *trim* boundary (the STrimBy loop from
+// the surface's originating profile) — it is never split by a
+// cross-shell intersection curve, because that curve isn't a trim
+// edge of this (unmodified) operand surface; it only marks where the
+// *other* shell touches it, and is a trim edge of the freshly-copied
+// surface built later in the per-surface trim pass
+// (makeCopyTrimAgainst's own origBsp). The Go port doesn't populate
+// SSurface.Trim for surfaces produced by extrusion (a separate,
+// larger gap — see PORTING.md), so there is no real boundary data to
+// build a bsp from here: buildSurfaceClassifyingBsp always returns
+// nil for these fixtures, and ClassifyEdge's case-3 nil-bsp default
+// (below) supplies the correct semantic instead of a synthesized
+// one — see that default's doc comment.
+//
+// (An earlier version of this function tried to approximate a bsp by
+// splitting the surface's uv-rectangle along the cross-shell
+// intersection curves that reference it. That produces an
+// *unclosed* partition — it has no representation of the surface's
+// actual outer trim boundary, only the internal split line — and
+// empirically made classification worse, not better: it dropped
+// boolean_knife_edge's ratio from 0.76 to as low as 0.26 while only
+// inconsistently helping the tangent_* fixtures, because the
+// SurfA/SurfB "which side is which" convention it relied on isn't
+// well-defined for every intersection branch (plane-plane vs
+// extrusion-extrusion vs marching-squares). Reverted in favor of the
+// case-3 default fix.)
 func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 	for i := range s.Surface {
-		s.Surface[i].Bsp = buildSurfaceClassifyingBsp(s, &s.Surface[i], useCurvesFrom)
+		srf := &s.Surface[i]
+		srf.Bsp = buildSurfaceClassifyingBsp(s, srf, useCurvesFrom)
+		// Mirrors the second half of C++ `SSurface::MakeClassifyingBsp`
+		// (boolean.cpp:909-918): besides the uv-space bsp, it also
+		// rebuilds `edges` as the *xyz* trim boundary of this surface.
+		// `SShell::ClassifyEdge`'s edge-on-edge (case 1) and knife-edge
+		// (case 2) branches read `srf.Edges` to detect when the probe
+		// point lies exactly on another surface's trim boundary; with
+		// `Edges` always empty those branches could never fire and
+		// every such probe fell through to the raycast fallback
+		// (case 4), which is far less precise for the axis-aligned
+		// coincident-edge geometry the boolean fixtures are full of.
+		srf.Edges = buildSurfaceClassifyingEdgesXYZ(s, srf, useCurvesFrom)
 	}
 }
 
 func buildSurfaceClassifyingBsp(sh *SShell, srf *SSurface, useCurvesFrom *SShell) *SBspUv {
-	if srf == nil {
+	if srf == nil || len(srf.Trim) == 0 {
 		return nil
 	}
 	src := useCurvesFrom
@@ -207,21 +253,105 @@ func buildSurfaceClassifyingBsp(sh *SShell, srf *SSurface, useCurvesFrom *SShell
 		return nil
 	}
 	el := &SEdgeList{}
-	for i := range src.Curve {
-		c := &src.Curve[i]
-		if !c.IsExact {
+	for i := range srf.Trim {
+		stb := &srf.Trim[i]
+		c := src.FindCurve(stb.Curve)
+		if c == nil {
 			continue
 		}
-		if useCurvesFrom == nil && c.SurfA != srf.H && c.SurfB != srf.H {
-			continue
-		}
-		el.AddEdge(c.Exact.Start(), c.Exact.PointAt(0.5), 0, 0, 0)
-		el.AddEdge(c.Exact.PointAt(0.5), c.Exact.Finish(), 0, 0, 0)
+		addCurveUvEdgesForBsp(el, srf, c, stb.Backwards)
 	}
 	if len(el.Edges) == 0 {
 		return nil
 	}
 	return BuildBspUvFromEdges(el, srf)
+}
+
+// buildSurfaceClassifyingEdgesXYZ builds the xyz-space trim boundary
+// of srf from the same STrimBy list buildSurfaceClassifyingBsp uses,
+// but keeps the curve samples in 3-D instead of projecting them to
+// (u, v). Mirrors the `MakeEdgesInto(shell, &edges, MakeAs::XYZ,
+// useCurvesFrom)` call in C++ `SSurface::MakeClassifyingBsp`
+// (boolean.cpp:918).
+func buildSurfaceClassifyingEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *SShell) SEdgeList {
+	var el SEdgeList
+	if srf == nil || len(srf.Trim) == 0 {
+		return el
+	}
+	src := useCurvesFrom
+	if src == nil {
+		src = sh
+	}
+	if src == nil {
+		return el
+	}
+	for i := range srf.Trim {
+		stb := &srf.Trim[i]
+		c := src.FindCurve(stb.Curve)
+		if c == nil {
+			continue
+		}
+		addCurveXyzEdgesForClassify(&el, c, stb.Backwards)
+	}
+	return el
+}
+
+// addCurveXyzEdgesForClassify appends curve c's polyline (or, absent
+// polyline points, samples of its exact form) to el as raw xyz
+// edges, tagged with the curve's handle so ClassifyEdge's edge-on-
+// edge matching (`se.A.Equals(...)`) can identify which curve an
+// edge came from. reverse walks Finish->Start, matching
+// STrimBy.Backwards.
+func addCurveXyzEdgesForClassify(el *SEdgeList, c *SCurve, reverse bool) {
+	pts := make([]geom.Vector, 0, 3)
+	if len(c.Points) >= 2 {
+		for i := range c.Points {
+			pts = append(pts, c.Points[i].P)
+		}
+	} else {
+		pts = append(pts, c.Exact.Start(), c.Exact.PointAt(0.5), c.Exact.Finish())
+	}
+	if reverse {
+		for i, j := 0, len(pts)-1; i < j; i, j = i+1, j-1 {
+			pts[i], pts[j] = pts[j], pts[i]
+		}
+	}
+	tag := int(c.H.V)
+	for i := 1; i < len(pts); i++ {
+		el.AddEdge(pts[i-1], pts[i], tag, 0, tag)
+	}
+}
+
+// addCurveUvEdgesForBsp projects curve c's polyline (or, absent
+// polyline points, samples of its exact form) into srf's (u, v)
+// space and appends the resulting edges to el, matching the
+// `MakeAs::UV` branch of the C++ SSurface::MakeTrimEdgesInto: the
+// stored edge endpoints are `{u, v, 0}`, not the curve's raw xyz
+// samples, so the BSP's classifyPointUv operates in the same (u, v)
+// space as the ClassifyPoint / ClassifyEdge callers. reverse walks
+// the curve Finish->Start instead, matching STrimBy.Backwards.
+func addCurveUvEdgesForBsp(el *SEdgeList, srf *SSurface, c *SCurve, reverse bool) {
+	toUV := func(p geom.Vector) geom.Vector {
+		var puv geom.Point2d
+		srf.ClosestPointTo(p, &puv, false)
+		return geom.Vector{X: puv.U, Y: puv.V}
+	}
+	pts := make([]geom.Vector, 0, 3)
+	if len(c.Points) >= 2 {
+		for i := range c.Points {
+			pts = append(pts, toUV(c.Points[i].P))
+		}
+	} else {
+		pts = append(pts, toUV(c.Exact.Start()), toUV(c.Exact.PointAt(0.5)), toUV(c.Exact.Finish()))
+	}
+	if reverse {
+		for i, j := 0, len(pts)-1; i < j; i, j = i+1, j-1 {
+			pts[i], pts[j] = pts[j], pts[i]
+		}
+	}
+	for i := 1; i < len(pts); i++ {
+		el.AddEdge(pts[i-1], pts[i], 0, 0, 0)
+	}
 }
 
 // AllPointsIntersecting computes all intersections of the segment

@@ -38,17 +38,28 @@ func (c *SContour) Reverse() {
 	}
 }
 
-// ComputeNormal returns the unweighted face normal of the contour's
-// plane (best-fit for non-planar contours). For the planar case this
-// is the polygon normal.
+// ComputeNormal returns the unit face normal of the contour's plane
+// (best-fit for non-planar contours). Faithful port of C++
+// `SContour::ComputeNormal` (polygon.cpp:584): scans every
+// consecutive triple of points, normalizing each edge before
+// crossing them, and keeps whichever triple's cross product has the
+// largest magnitude. This matters because a contour sampled by
+// piecewise-linearizing a Bezier loop (MakePwlIntoEdges) often has
+// several collinear points in a row along a single straight edge —
+// checking only the first triple (as an earlier version of this
+// function did) can spuriously return the zero vector even though
+// the contour is planar and non-degenerate.
 func (c *SContour) ComputeNormal() geom.Vector {
-	if len(c.Points) < 3 {
-		return geom.Vector{}
+	n := geom.Vector{}
+	for i := 0; i+2 < len(c.Points); i++ {
+		u := c.Points[i+1].P.Minus(c.Points[i].P).WithMagnitude(1)
+		v := c.Points[i+2].P.Minus(c.Points[i+1].P).WithMagnitude(1)
+		nt := u.Cross(v)
+		if nt.Magnitude() > n.Magnitude() {
+			n = nt
+		}
 	}
-	a := c.Points[0].P
-	b := c.Points[1].P
-	c2 := c.Points[2].P
-	return b.Minus(a).Cross(c2.Minus(a))
+	return n.Normal()
 }
 
 // SignedAreaProjdToNormal returns the signed area of the contour

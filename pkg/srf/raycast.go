@@ -321,12 +321,19 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		if pp.Minus(p).Magnitude() > lengthEps {
 			continue
 		}
-		_ = geom.Point2d{}
 		var c BspUvClass
 		if srf.Bsp != nil {
 			c = srf.Bsp.ClassifyPoint(puv)
 		} else {
-			c = BspUvOutside
+			// srf.Bsp is nil only when srf.Trim is empty
+			// (buildSurfaceClassifyingBsp in boolean.go). Every real
+			// extrusion-produced surface now populates Trim (see
+			// SShell.MakeFromExtrusionOf), so this default is a
+			// defensive fallback for a genuinely trim-less surface —
+			// matching C++'s intent that "no trim boundary of its
+			// own" means "its entire (u, v) domain is its trim
+			// region", i.e. BspUvInside rather than BspUvOutside.
+			c = BspUvInside
 		}
 		if c == BspUvOutside {
 			continue

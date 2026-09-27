@@ -11,7 +11,7 @@ import (
 // adds a quaternion-magnitude=1 equation to the system.
 func TestAddExprEquationLinkedMagnitude(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{3}: 1, {4}: 0, {5}: 0, {6}: 0,
+		{V: 3}: 1, {V: 4}: 0, {V: 5}: 0, {V: 6}: 0,
 	}}
 	s := NewSystem(res1)
 	// LINKED: |q|² - 1 = 0 where q is on params 3..6.
@@ -33,7 +33,7 @@ func TestAddExprEquationLinkedMagnitude(t *testing.T) {
 	}
 	// Evaluate at q = (2, 0, 0, 0). Result should be 3 (|q|² - 1 = 3).
 	res2 := &stubResolver{params: map[core.HParam]float64{
-		{3}: 2, {4}: 0, {5}: 0, {6}: 0,
+		{V: 3}: 2, {V: 4}: 0, {V: 5}: 0, {V: 6}: 0,
 	}}
 	res = s.Equations[0].Expr.Eval(res2, nil)
 	if res != 3 {
@@ -87,7 +87,7 @@ func TestAddExprEquationZeroEqualsConstant(t *testing.T) {
 // TestAddExprEquationParamDifference verifies a simple param-vs-param equation.
 func TestAddExprEquationParamDifference(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 5, {2}: 3,
+		{V: 1}: 5, {V: 2}: 3,
 	}}
 	s := NewSystem(res1)
 	// param1 - param2 - 2 = 0 (5 - 3 - 2 = 0).
@@ -106,7 +106,7 @@ func TestAddExprEquationParamDifference(t *testing.T) {
 // TestAddExprEquationScaledDifference verifies a constant-scaled param eq.
 func TestAddExprEquationScaledDifference(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 10,
+		{V: 1}: 10,
 	}}
 	s := NewSystem(res1)
 	// param1 * 2 - 20 = 0.
@@ -126,7 +126,7 @@ func TestAddExprEquationScaledDifference(t *testing.T) {
 // TestAddExprEquationSumEqualsConstant verifies a sum equation.
 func TestAddExprEquationSumEqualsConstant(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 3, {2}: 7,
+		{V: 1}: 3, {V: 2}: 7,
 	}}
 	s := NewSystem(res1)
 	// param1 + param2 - 10 = 0 (3 + 7 - 10 = 0).
@@ -145,7 +145,7 @@ func TestAddExprEquationSumEqualsConstant(t *testing.T) {
 // TestAddExprEquationDivision verifies a division equation.
 func TestAddExprEquationDivision(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 20,
+		{V: 1}: 20,
 	}}
 	s := NewSystem(res1)
 	// param1 / 4 - 5 = 0 (20 / 4 - 5 = 0).
@@ -165,7 +165,7 @@ func TestAddExprEquationDivision(t *testing.T) {
 // TestAddExprEquationNegation verifies a negated param equation.
 func TestAddExprEquationNegation(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 7,
+		{V: 1}: 7,
 	}}
 	s := NewSystem(res1)
 	// -param1 + 7 = 0.
@@ -183,7 +183,7 @@ func TestAddExprEquationNegation(t *testing.T) {
 // TestAddExprEquationSqrt verifies a square-root equation.
 func TestAddExprEquationSqrt(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 16,
+		{V: 1}: 16,
 	}}
 	s := NewSystem(res1)
 	// sqrt(param1) - 4 = 0.
@@ -201,7 +201,7 @@ func TestAddExprEquationSqrt(t *testing.T) {
 // TestAddExprEquationSin verifies a sin equation.
 func TestAddExprEquationSin(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 0,
+		{V: 1}: 0,
 	}}
 	s := NewSystem(res1)
 	// sin(param1) = 0.
@@ -219,7 +219,7 @@ func TestAddExprEquationSin(t *testing.T) {
 // TestAddExprEquationCos verifies a cos equation.
 func TestAddExprEquationCos(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 0,
+		{V: 1}: 0,
 	}}
 	s := NewSystem(res1)
 	// cos(param1) - 1 = 0.
@@ -237,7 +237,7 @@ func TestAddExprEquationCos(t *testing.T) {
 // TestAddExprEquationMultipleEquations verifies multiple equations can be added.
 func TestAddExprEquationMultipleEquations(t *testing.T) {
 	res1 := &stubResolver{params: map[core.HParam]float64{
-		{1}: 2, {2}: 4, {3}: 8,
+		{V: 1}: 2, {V: 2}: 4, {V: 3}: 8,
 	}}
 	s := NewSystem(res1)
 	// 3 equations: param1 = 2, param2 = 4, param3 = 8.

@@ -128,13 +128,15 @@ func TestSShellRevolution(t *testing.T) {
 }
 
 func TestSBspUvClassify(t *testing.T) {
-	// Add an edge along the X axis.
+	// Add an edge along the X axis, directed toward +U.
 	root := InsertBspUvEdge(nil, geom.Point2d{U: -1, V: 0}, geom.Point2d{U: 1, V: 0})
-	// A point above the X axis should be classified as INSIDE
-	// (assuming the BSP convention).
-	c := root.ClassifyPoint(geom.Point2d{U: 0, V: 1})
+	// classifyPointUv's convention mirrors C++ SBspUv::ClassifyPoint
+	// (see its doc comment in bsp_uv.go): "inside" is the right-hand
+	// side of the directed edge. Facing +U, the right-hand side is
+	// -V, so a point BELOW the X axis is classified INSIDE.
+	c := root.ClassifyPoint(geom.Point2d{U: 0, V: -1})
 	if c != BspUvInside {
-		t.Fatalf("expected INSIDE for (0,1), got %v", c)
+		t.Fatalf("expected INSIDE for (0,-1), got %v", c)
 	}
 }
 
