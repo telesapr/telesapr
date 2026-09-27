@@ -25,7 +25,7 @@ solvespace core engine. It is the source of truth for the
 | `groupmesh.cpp` | 803 | OK | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, `GenerateShellAndMesh` (every group type, step and repeat, the face entities, the running-shell combine, and the forced-to-mesh combine with `SnapToMesh`), `GenerateForStepAndRepeat`, `GenerateForBoolean`, `RemapFaces`, `GenerateDisplayItems` (without the render-side polyline join) are faithful; `group/force_to_mesh` saves match C++ byte for byte |
 | `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go`, `pkg/persist/slvs/linked.go` | Audited: `Generate` (an image request takes its aspect ratio from the image file, loaded as `ReloadLinkedImage` does; a TTF request keeps its saved one, since font loading isn't ported), `DescriptionString`, `IndexOfPoint`, the entity/request table |
-| `style.cpp` | 948 | OK | `pkg/core/style.go`, `pkg/sketch/style.go` | Audited: the default styles and `FillDefaultStyle` (factory settings; the engine has no settings store), `Get` (which creates a missing style, so an entity naming one that the file lacks gets a saved "new-custom-style", as in C++), `ForEntity`, the colour, width, text height, exportable and stipple getters (widths in mm take the view scale), `DescriptionString`. Loading starts each style from the defaults. The style screens are user interface |
+| `style.cpp` | 948 | OK | `pkg/core/style.go`, `pkg/core/settings.go`, `pkg/sketch/style.go` | Audited: the default styles, `FillDefaultStyle` (from the user's settings, `core.GetSettings`, which like the headless C++ build's return the defaults unless the caller sets a store), `LoadFactoryDefaults` and `FreezeDefaultStyles`, `Get` (which creates a missing style, so an entity naming one that the file lacks gets a saved "new-custom-style", as in C++), `ForEntity`, the colour, width, text height, exportable and stipple getters (widths in mm take the view scale), `DescriptionString`. Loading starts each style from the defaults. The style screens are user interface |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go`, `pkg/sketch/edit.go` | Audited: the clipboard (`NewEntityFor` was off by one), `CopySelection`, `PasteClipboard` and `DeleteSelection`, taking the selection as an argument, with `GraphicsWindow::AddRequest` and `DeleteTaggedRequests`. The menus and the paste-transformed screen are user interface |
 | `srf/surface.cpp` | 494 | OK | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | Audited throughout: `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `FromRevolutionOf`, `FromTransformationOf`, `GetAxisAlignedBounding`, `LineEntirelyOutsideBbox`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `ExactSurfaceTangentAt`, `MakeSectionEdgesInto`, `TriangulateInto`, `Reverse`, `ScaleSelfBy`, `Clear` (trims only), `CoincidentWithPlane`, `SShell::MakeFromCopyOf`/`MakeFromTransformationOf` |
 | `srf/shell.cpp` | 617 | OK | `pkg/srf/shell.go` | `MakeFromExtrusionOf`, `MakeFromRevolutionOf`, `MakeFromHelicalRevolutionOf` (including their face entities, through the `ShellGroup` the caller passes in place of C++'s `Group`), `CheckNormalAxisRelationship`, `MakeFirstOrderRevolvedSurfaces`, `MakeSectionEdgesInto` faithful; checked against a C++ harness in `pkg/srf/revolve_test.go` |
@@ -34,16 +34,18 @@ solvespace core engine. It is the source of truth for the
 | `srf/surfinter.cpp` | 641 | OK | `pkg/srf/surfinter.go`, `pkg/srf/surface.go`, `pkg/srf/merge.go` | `AddExactIntersectionCurve`, every `IntersectAgainst` case (plane-plane, plane-extrusion, coaxial extrusions, exact curves in a plane, the marching general case), `CoincidentWith`, `ContainsPlaneCurve`, `MakeCoincidentEdgesInto`. The branches no fixture reaches are pinned to a C++ harness by `TestIntersectionBranchesVsCpp` |
 | `srf/curve.cpp` | 886 | OK | `pkg/srf/curve.go`, `pkg/srf/bezier*.go`, `pkg/srf/boolean_csg.go` | Audited throughout: the `SBezier` constructors (through `Vector4`, so unused weights are 0), `Start`/`Finish`, `Reverse`, `ScaleSelfBy`, `GetBoundingProjd`, `TransformedBy`, `IsInPlane`/`IsRational` (with `LENGTH_EPS`), `IsCircle`, `InPerspective`, `Equals`, `CullIdenticalBeziers` (was a stand-in), `AllIntersectionsWith`, `GetPlaneContainingBeziers`, loop assembly (`FromCurves`, `SBezierLoopSet::From`, `FindOuterFacesFrom`), `IsClosed`, the loop set's lazy `SignedArea`, `AddOpenPath`, `SCurve::FromTransformationOf`, `GetSurfaceA/B`, `RemoveShortSegments`, `STrimBy::EntireCurve`. The loop set keeps its outer loop and holes apart, in C++'s order |
 | `srf/triangulate.cpp` | 738 | OK | `pkg/srf/triangulate.go` | Audited throughout: hole bridging (`BridgeToContour`), `IsEmptyTriangle`, `IsEar` with `RayIsInside`, `ClipEarInto`, the fan pass and ear clipping, `ChordToleranceForEdge`, the adaptive grid (`MakeTriangulationGridInto`, `UvGridTriangulateInto`), `TriangulateInto` |
-| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `PointOnCurve`, `ClosestPointOnThisAndSurface`, `SSurface::ClosestPointTo`/`ClosestPointNewton`, `TangentsAt`, `NormalAt` (unnormalized, as in C++), `SSurface::PointAt` (C++'s product order, so the same bits), `SBezier::PointAt`/`TangentAt`, `SplitAt` (C++'s `Vector4::Blend`), `PointIntersectingLine`, `EdgeCurveIntersection`. Callers pass `mustConverge`/`retry` as the C++ call sites do |
+| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `PointOnCurve`, `ClosestPointOnThisAndSurface`, `SSurface::ClosestPointTo`/`ClosestPointNewton`, `TangentsAt`, `NormalAt` (unnormalized, as in C++), `SSurface::PointAt` (C++'s product order, so the same bits), `SBezier::PointAt`/`TangentAt`, `SBezier::ClosestPointTo` (re-ported: it was a clamped Newton stand-in, which put split points a few ulps off), `SplitAt` (C++'s `Vector4::Blend`), `PointIntersectingLine`, `EdgeCurveIntersection`. Callers pass `mustConverge`/`retry` as the C++ call sites do |
 | `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go`, `pkg/srf/raycast_surface.go`, `pkg/srf/surface.go` | Re-audited: `DepartureFromCoplanar` and `SplitInHalf` (with the weighting and row helpers) were stand-ins; the old `SplitInHalf` was wrong, and cancelled out a `PointIntersectingLine` difference on `boolean_tangent_crossing`. `ClassifyEdge` now treats a surface without a BSP as C++ does (outside). `AllPointsIntersecting`, `ClassifyRegion` checked |
 | `srf/merge.cpp` | 130 | OK | `pkg/srf/merge.go` | `MergeCoincidentSurfaces`, with `CoincidentWith` (audited) |
 | `bsp.cpp` | 733 | OK | `pkg/srf/bsp.go` | `SBsp3` (`FromMesh` with glibc's `rand()` shuffle, `Insert` with the triangle and quad splits, `InsertConvex`, `InsertInPlane`, `GenerateInPaintOrder`) and `SBsp2`, re-ported: the earlier port pushed straddling triangles down both sides unsplit |
 | `constrainteq.cpp` | 1062 | OK | `pkg/core/constraint_eq.go`, `pkg/sketch/group_generate.go` | `GenerateEquations` for every type, `ModifyToSatisfy`, `HasLabel`, `Generate` and the static helpers (`Distance`, `PointLineDistance`, `PointPlaneDistance`, `DirectionCosine`, `PointInThreeSpace`, `VectorsParallel3d`) |
-| `modify.cpp` | 751 | PARTIAL | `pkg/sketch/edit.go` | `ReplacePointInConstraints`, `RemoveConstraintsForPointBeingDeleted`, `FixConstraintsForRequestBeingDeleted`/`PointBeingDeleted` are ported. The editing tools (tangent arc, splitting lines and curves) aren't |
+| `modify.cpp` | 751 | OK | `pkg/sketch/edit.go`, `pkg/sketch/modify.go` | `ReplacePointInConstraints`, `RemoveConstraintsForPointBeingDeleted`, `FixConstraintsForRequestBeingDeleted`/`PointBeingDeleted`, and the editing tools: `MakeTangentArc` (with `ParametricCurve`; the tangent arc settings are passed in), `SplitLine`, `SplitCircle`, `SplitCubic`, `SplitEntity` and `SplitLinesOrCurves`, which take the selection, and the mouse position in the default view, as arguments. Checked against a C++ harness by `TestModifyToolsVsCpp` |
 | `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | `Refresh`, the unsaved flag; the `Add*` helpers assign handles as `IdList::AddAndAssignId` does (largest plus one; they used the count). Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | Re-ported: states hold what defines the sketch (groups without their generated data, group order, requests, constraints, params, styles), stacks are `MAX_UNDO` (100) deep, and a pop reloads linked files and regenerates. The active group is derived from the group order; the unsaved flag and menus are the caller's |
 | `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go`, `pkg/srf/kdnode.go`, `pkg/srf/outline.go` | `SMesh` (the BSP Booleans via `AddAgainstBsp` and `Simplify`, `MakeFromTransformationOf`, `MakeEdgesInPlaneInto`, `CalculateVolume`, `GetCenterOfMass`, ...), `SKdNode` (`From` copies the triangles and shuffles them with glibc's `rand()`; `SnapToMesh`, `FindEdgeOn`, `MakeCertainEdgesInto`, `MakeOutlinesInto`, `OcclusionTestLine`) and `SOutline`. `FirstIntersectionWith` takes the ray, which C++ makes from the view. `PrecomputeTransparency` sorts stably; C++'s `std::sort` may order ties differently, which only affects drawing |
-| `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go`, `pkg/persist/slvs/linked.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, `ReloadAllLinked` reads each linked .slvs file's entities, styles, mesh and shell (`LoadEntitiesFromSlvs`) and forces a mesh-only link to a mesh, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view, then the last group's running mesh and shell), and matches current C++ byte for byte on the fixtures, shells included. A missing linked file counts as declined (C++ asks the user to find it); STL and IDF links aren't ported, nor is loading linked images' pixels |
+| `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go`, `pkg/persist/slvs/linked.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, `ReloadAllLinked` reads each linked file's entities, mesh and shell (`LoadEntitiesFromFile`: an IDF board, an STL mesh, or a .slvs file's entities, styles, mesh and shell), loads the images it uses, and forces a mesh-only link to a mesh, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (C++'s header, whatever the loaded file had; regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view, the custom styles only, then the last group's running mesh and shell), and matches current C++ byte for byte on the fixtures, shells included. A missing linked file or image counts as declined (C++ asks the user to find it) |
+| `importmesh.cpp` | 258 | OK | `pkg/persist/slvs/stl.go` | `LinkStl`: a binary STL's triangles, colours, and the origin, bounding box and edge-vertex entities; `group/link_stl` saves match C++ byte for byte |
+| `importidf.cpp` | 536 | OK | `pkg/persist/slvs/idf.go` | `LinkIDF`: the board outline, cutouts, routing keepouts and drilled holes as entities, and the board extruded (`std::stof`'s float rounding included); `group/link_idf` saves match C++ byte for byte |
 | `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `AtIntersectionOfLines`, `DistanceToLine`/`DistanceToPlane`, `DotInToCsys`/`ScaleOutOfCsys`, `WithMagnitude`, `RotatedAbout` (both overloads; Go's went through a quaternion), `DirectionCosineWith`, `ClosestPointOnLine`, `DivProjected`, `ClampWithin`, `Vector4` (`From(w, v)` premultiplies, `Blend`), `Point2d` (`Equals` with `LENGTH_EPS`, `Angle`, `FromPolar`, `DistanceToLineSigned`), `BBox` (`GetOrigin` is the centre; `Overlaps`, `Contains`), `Quaternion::From(axis, angle)`, `Times`, `Inverse`, `Mirror` (was wrong), `ToThe`, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)`; `geom.Max`/`Min` are `std::max`/`min` |
 
 An **OK** row means the functions listed in its notes (or the whole
@@ -77,8 +79,6 @@ are out-of-scope:
 | `exportvector.cpp` | 1365 | 2D vector output formats |
 | `exportstep.cpp` | 721 | STEP export |
 | `importdxf.cpp` | 1199 | DXF import |
-| `importidf.cpp` | 536 | IDF import |
-| `importmesh.cpp` | 258 | Mesh import |
 | `render/*.cpp` | — | OpenGL renderer |
 | `solvespace.cpp` (UI portion) | — | `SolveSpaceUI` (menu/file/window management) and observer notifications |
 
@@ -88,12 +88,21 @@ UI.
 
 ## Test counts
 
-- 423 tests (334 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 427 tests (327 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip` load
   and save every fixture and require the bytes current C++ writes
   (checked with a C++ harness); the exceptions, with reasons, are in
-  `roundTripExclusions`, mostly files older versions wrote.
+  `roundTripExclusions`, mostly files older versions wrote. Most
+  fixtures have one blank line after the version line where C++ writes
+  two; the tests allow for that.
+- `TestModifyToolsVsCpp` runs the tangent arc and split tools on
+  sketches built on a fixture and requires the saves a C++ harness
+  wrote after the same steps (`testdata/edit`): byte for byte, except
+  that the tangent arcs' solved values may differ in the last digits
+  (see Remaining work).
+- `group/link_stl` and `group/link_idf` are C++ saves of files that
+  link an STL mesh and an IDF board.
 - `TestParityGroupSolveVsCpp` runs `GenerateAll` on every fixture C++
   can load and requires every group to solve with the degrees of
   freedom C++ reports (`cpp_dof_golden_test.go`), every group's shell
@@ -218,12 +227,27 @@ when the trim polygon doesn't assemble" path.
 
 ## Remaining work
 
-**Smaller stand-ins:** none known. Every core file in the table has
+**Smaller stand-ins:** none left that are known. Every core file in the table has
 now been compared with the C++; where a row's notes list functions,
 those are what was compared. The entity and save checks cover every fixture
 (including `group/force_to_mesh`, whose saves carry C++'s running
-meshes).
+meshes). `SBezier::ClosestPointTo` turned out to be a stand-in after
+all (found by the split tools' check), so other "audited" rows may still
+hide one.
 
-**Known gaps:** `modify.cpp`'s editing tools (tangent arc, splitting);
-STL and IDF links; TTF text's aspect ratio and linked images' pixels
-(font and image loading); the user's settings for the default styles.
+**Known gaps:**
+
+- TTF text: `ttf.cpp` is out of scope, so a TTF request keeps its saved
+  aspect ratio and draws no glyphs. Matching C++ means reproducing
+  FreeType's fixed-point scaling and outline decomposition, and C++'s
+  results depend on the fonts the system has.
+- Last-digit differences (a few ulps) in saved values:
+  - Go's `math` trigonometry (`Sin`, `Cos`, `Tan`, `Acos`, `Atan2`, ...)
+    differs from glibc's in the last bit for 20-30% of arguments. The
+    tangent arc tool is where it shows (`tangent_modify`,
+    `tangent_arc_modify` match C++ byte for byte when glibc's functions
+    are used through cgo). Matching everywhere means calling libm
+    through cgo or porting glibc's functions.
+  - `SolveLeastSquares`' QR has no COLAMD column order, which changes
+    the last digits of some solves (`same_orientation`, the tangent
+    arc cases).
