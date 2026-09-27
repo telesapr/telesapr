@@ -1,9 +1,7 @@
 package sketch
 
 import (
-	"fmt"
 	"math"
-	"os"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -86,60 +84,209 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 	}
 }
 
-// GenerateShellAndMesh is the master group-generation step: it
-// produces an SShell from the group's BezierLoops (by extrusion,
-// revolution, or transformation of the previous group), then
-// optionally performs a boolean against the previous group's
-// shell/mesh. Updates g.ThisShell, g.ThisMesh, g.RunningShell,
-// g.RunningMesh.
+// GenerateShellAndMesh builds this group's shell (by extrusion,
+// revolution, step and repeat, or linking), and combines it with the
+// previous group's running shell by the group's Boolean (C++
+// Group::GenerateShellAndMesh). A group whose shell is forced to a
+// mesh combines meshes instead; that branch isn't ported (see
+// combineMeshes).
 func (g *Group) GenerateShellAndMesh(sk *Sketch) {
+	prevBooleanFailed := g.BooleanFailed
+	_ = prevBooleanFailed
+	g.BooleanFailed = false
+
+	srcg := g
+
+	g.ThisShell.Clear()
+	g.ThisMesh.Clear()
+	g.RunningShell.Clear()
+	g.RunningMesh.Clear()
+
 	switch g.Type {
+	case GroupTranslate, GroupRotate:
+		// A step and repeat gets merged against the group's previous group,
+		// not our own previous group.
+		srcg = sk.GetGroup(g.OpA)
+
+		if !srcg.Suppress {
+			if !g.IsForcedToMesh() {
+				g.generateForStepAndRepeatShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
+			} else {
+				var prevm srf.SMesh
+				prevm.MakeFromCopyOf(&srcg.ThisMesh)
+				srcg.ThisShell.TriangulateInto(&prevm)
+				g.generateForStepAndRepeatMesh(sk, &prevm, &g.ThisMesh, srcg.MeshCombine)
+			}
+		}
 	case GroupExtrude:
 		g.generateExtrudeShell(sk)
 	case GroupLathe, GroupRevolve:
 		g.generateRevolveShell(sk)
 	case GroupHelix:
 		g.generateHelixShell(sk)
-	case GroupRotate, GroupTranslate:
-		g.generateTransformMesh(sk)
 	case GroupLinked:
 		g.generateLinkedShell(sk)
-	default:
-		// Drawings, etc.: no shell/mesh output of their own. Mirror
-		// the C++ behavior in GenerateForBoolean's "if empty, copy
-		// prevs" branch by propagating the previous mesh group's
-		// running mesh through, so the next mesh group's boolean
-		// combine sees the right operand.
-		g.propagateFromPreviousMeshGroup(sk)
+	}
+
+	if srcg.MeshCombine != CombineAssemble {
+		g.ThisShell.MergeCoincidentSurfaces()
+	}
+
+	// So now we've got the mesh or shell for this group. Combine it with
+	// the previous group's mesh or shell with the requested Boolean, and
+	// we're done.
+	prevg := srcg.RunningMeshGroup(sk)
+
+	if !g.IsForcedToMesh() {
+		var prevs srf.SShell
+		if prevg != nil {
+			prevs = prevg.RunningShell
+		}
+		g.generateForBooleanShell(&prevs, &g.ThisShell, &g.RunningShell, srcg.MeshCombine)
+
+		if srcg.MeshCombine != CombineAssemble {
+			g.RunningShell.MergeCoincidentSurfaces()
+		}
+
+		// If the Boolean failed, then we should note that in the text screen
+		// for this group.
+		g.BooleanFailed = g.RunningShell.BooleanFailed
+	} else {
+		g.combineMeshes(prevg, srcg.MeshCombine)
 	}
 }
 
-// propagateFromPreviousMeshGroup walks back through previous groups
-// to find the last mesh group and copies its runningMesh into this
-// group. Mirrors the C++ GenerateForBoolean early-exit for empty
-// `thiss` shells.
-func (g *Group) propagateFromPreviousMeshGroup(sk *Sketch) {
-	prev := g.PreviousGroup(sk)
-	for prev != nil && !prev.IsMeshGroup2() {
-		prev = prev.PreviousGroup(sk)
+// stepsOf returns the range of copies a step and repeat makes (C++
+// GenerateForStepAndRepeat's n and a0).
+func (g *Group) stepsOf() (n, a0 int) {
+	n, a0 = int(g.ValA), 0
+	if g.Subtype == GroupOneSided && g.SkipFirst {
+		a0++
+		n++
 	}
-	if prev == nil {
-		return
-	}
-	g.RunningMesh.Clear()
-	g.RunningMesh.MakeFromCopyOf(&prev.RunningMesh)
+	return n, a0
 }
 
-// generateLinkedShell copies the imported shell and mesh into this
-// group, applying the group's translation/rotation/scale transform.
-// Implements the LINKED branch of C++ Group::GenerateShellAndMesh
-// (groupmesh.cpp:362-378).
-//
-// The Group struct currently does not store an imported shell/mesh
-// (those are part of the Link import pipeline, not yet wired into
-// the Go core). When importing is implemented, this function should
-// pull from the importer and apply the transform. For now, we
-// simply emit an empty shell/mesh and document the gap.
+// stepTransform is the translation and rotation of step a of n.
+func (g *Group) stepTransform(sk *Sketch, a, n int) (geom.Vector, geom.Quaternion) {
+	ap := a*2 - stepOffset(g.Subtype, n)
+
+	trans := geom.Vector{
+		X: paramFloat(sk, g.H.Param(0)),
+		Y: paramFloat(sk, g.H.Param(1)),
+		Z: paramFloat(sk, g.H.Param(2)),
+	}
+	if g.Type == GroupTranslate {
+		return trans.ScaledBy(float64(ap)), geom.QuaternionIdentity
+	}
+	theta := float64(ap) * paramFloat(sk, g.H.Param(3))
+	c, sn := math.Cos(theta), math.Sin(theta)
+	axis := geom.Vector{
+		X: paramFloat(sk, g.H.Param(4)),
+		Y: paramFloat(sk, g.H.Param(5)),
+		Z: paramFloat(sk, g.H.Param(6)),
+	}
+	q := geom.Quaternion{W: c, X: sn * axis.X, Y: sn * axis.Y, Z: sn * axis.Z}
+	// Rotation is centered at t; so A(x - t) + t = Ax + (t - At)
+	return trans.Minus(q.Rotate(trans)), q
+}
+
+// generateForStepAndRepeatShell makes the transformed copies of steps
+// and combines them, a pair at a time (C++
+// Group::GenerateForStepAndRepeat<SShell>).
+func (g *Group) generateForStepAndRepeatShell(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs) {
+	n, a0 := g.stepsOf()
+
+	// create all the transformed copies
+	transd := make([]srf.SShell, n)
+	workA := make([]srf.SShell, n)
+	// first generate a shell with each transformed copy
+	for a := a0; a < n; a++ {
+		t, q := g.stepTransform(sk, a, n)
+		transd[a].MakeFromTransformationOf(steps, t, q, 1.0, true)
+	}
+	for a := a0; a < n; a++ {
+		// We need to rewrite any plane face entities to the transformed ones.
+		transd[a].RemapFaces(shellGroup{g: g, sk: sk}, stepRemap(a, n))
+	}
+
+	soFar, scratch := &transd, &workA
+	// do the boolean operations on pairs of equal size
+	for n > 1 {
+		for a := 0; a < n; a += 2 {
+			(*scratch)[a/2].Clear()
+			// combine a pair of shells
+			if a == 0 && a0 == 1 { // if the first was skipped just copy the 2nd
+				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a+1])
+				(*soFar)[a+1].Clear()
+				a0 = 0
+			} else if a == n-1 { // for an odd number just copy the last one
+				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a])
+				(*soFar)[a].Clear()
+			} else if forWhat == CombineAssemble {
+				(*scratch)[a/2].MakeFromAssemblyOf(&(*soFar)[a], &(*soFar)[a+1])
+				(*soFar)[a].Clear()
+				(*soFar)[a+1].Clear()
+			} else {
+				(*scratch)[a/2].MakeFromUnionOf(&(*soFar)[a], &(*soFar)[a+1])
+				(*soFar)[a].Clear()
+				(*soFar)[a+1].Clear()
+			}
+		}
+		soFar, scratch = scratch, soFar
+		n = (n + 1) / 2
+	}
+	outs.Clear()
+	*outs = (*soFar)[0]
+}
+
+// generateForStepAndRepeatMesh is generateForStepAndRepeatShell for a
+// group forced to a mesh (C++ Group::GenerateForStepAndRepeat<SMesh>).
+func (g *Group) generateForStepAndRepeatMesh(sk *Sketch, steps, outs *srf.SMesh, forWhat CombineAs) {
+	n, a0 := g.stepsOf()
+
+	transd := make([]srf.SMesh, n)
+	workA := make([]srf.SMesh, n)
+	for a := a0; a < n; a++ {
+		t, q := g.stepTransform(sk, a, n)
+		transd[a].MakeFromTransformationOf(steps, t, q, 1.0)
+	}
+	for a := a0; a < n; a++ {
+		transd[a].RemapFaces(shellGroup{g: g, sk: sk}, stepRemap(a, n))
+	}
+
+	soFar, scratch := &transd, &workA
+	for n > 1 {
+		for a := 0; a < n; a += 2 {
+			(*scratch)[a/2].Clear()
+			if a == 0 && a0 == 1 {
+				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a+1])
+				(*soFar)[a+1].Clear()
+				a0 = 0
+			} else if a == n-1 {
+				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a])
+				(*soFar)[a].Clear()
+			} else if forWhat == CombineAssemble {
+				(*scratch)[a/2].MakeFromAssemblyOf(&(*soFar)[a], &(*soFar)[a+1])
+				(*soFar)[a].Clear()
+				(*soFar)[a+1].Clear()
+			} else {
+				(*scratch)[a/2].MakeFromUnionOf(&(*soFar)[a], &(*soFar)[a+1])
+				(*soFar)[a].Clear()
+				(*soFar)[a+1].Clear()
+			}
+		}
+		soFar, scratch = scratch, soFar
+		n = (n + 1) / 2
+	}
+	outs.Clear()
+	*outs = (*soFar)[0]
+}
+
+// generateLinkedShell is the LINKED branch of C++
+// Group::GenerateShellAndMesh: the imported shell or mesh are copied
+// over, with the group's transformation applied, and their face
+// entities remapped. Nothing fills ImpShell or ImpMesh yet.
 func (g *Group) generateLinkedShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
@@ -160,98 +307,119 @@ func (g *Group) generateLinkedShell(sk *Sketch) {
 		Z: paramFloat(sk, g.H.Param(6)),
 	}
 	scale := g.Scale
-	// Apply transform to imported mesh/shell if present.
-	if len(g.ImportedMesh.Triangles) > 0 {
-		g.ThisMesh.MakeFromTransformationOf(&g.ImportedMesh, offset, q, scale)
-	}
-	if len(g.ImportedShell.Surface) > 0 || len(g.ImportedShell.Curve) > 0 {
-		g.ThisShell.MakeFromTransformationOf(&g.ImportedShell, offset, q, scale, true)
-	}
-	// Note: SMesh/SShell RemapFacesViaGroup requires Group to implement
-	// a Remap method that maps source entity handles to new ones.
-	// That's a UI/link-import concern; we leave it as a no-op for now.
+	g.ThisMesh.MakeFromTransformationOf(&g.ImpMesh, offset, q, scale)
+	g.ThisMesh.RemapFaces(shellGroup{g: g, sk: sk}, 0)
+
+	g.ThisShell.MakeFromTransformationOf(&g.ImpShell, offset, q, scale, true)
+	g.ThisShell.RemapFaces(shellGroup{g: g, sk: sk}, 0)
 }
 
-// generateExtrudeShell is the EXTRUDE group type: extrude each
-// generateExtrudeShell is the EXTRUDE group type: extrude each
-// BezierLoop of the SOURCE group (g.OpA) by the group's extrusion
-// vector. Mirrors the C++ Group::GenerateShellAndMesh logic where
-// the extrude pulls BezierLoops from src->bezierLoops rather than
-// the extrude group's own entities.
+// shellGroup is the group as the shell constructors see it: its
+// remap table gives the faces of the new surfaces.
+type shellGroup struct {
+	g  *Group
+	sk *Sketch
+}
+
+func (sg shellGroup) Remap(in core.HEntity, copyNumber int) core.HEntity {
+	return sg.g.RemapEntity(in, copyNumber)
+}
+
+func (sg shellGroup) EntityExists(h core.HEntity) bool {
+	return sg.sk.GetEntity(h) != nil
+}
+
+// haveSource reports whether the source section of an extrusion or
+// lathe is good: planar and not self-intersecting (C++
+// GenerateShellAndMesh's haveSrc).
+func (g *Group) haveSource(sk *Sketch) bool {
+	if g.Type == GroupExtrude || g.Type == GroupLathe || g.Type == GroupRevolve {
+		return sk.GetGroup(g.OpA).PolyError.How == int(core.PolyGood)
+	}
+	return true
+}
+
+// generateExtrudeShell is the EXTRUDE branch of C++
+// Group::GenerateShellAndMesh: extrude each of the source group's loop
+// sets, and give the plane faces their entities so they can be
+// selected.
 func (g *Group) generateExtrudeShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
-	// Match C++ Group::GenerateShellAndMesh extrusion convention:
-	//   ONE_SIDED / ONE_SKEWED: tbot = 0, ttop = 2 * translate
-	//   TWO_SIDED / TWO_SKEWED: tbot = -translate, ttop = translate
-	translate := g.ExtrusionVector(sk)
-	if translate.Magnitude() < 1e-9 {
+	if !g.haveSource(sk) {
 		return
-	}
-	t0 := geom.Vector{}
-	t1 := translate
-	switch g.Subtype {
-	case GroupOneSided, GroupOneSkewed:
-		t1 = translate.ScaledBy(2)
-	default:
-		t0 = translate.ScaledBy(-1)
-		t1 = translate
 	}
 	src := sk.GetGroup(g.OpA)
-	if src == nil {
-		g.RunningShell = g.ThisShell
-		return
+	translate := geom.Vector{
+		X: paramFloat(sk, g.H.Param(0)),
+		Y: paramFloat(sk, g.H.Param(1)),
+		Z: paramFloat(sk, g.H.Param(2)),
 	}
-	if os.Getenv("EXTRUDE_DEBUG") != "" {
-		fmt.Fprintf(os.Stderr, "[extrude] g=%v src=%v src.Loops=%d\n", g.H, src.H, len(src.BezierLoops.Sets))
+
+	var tbot, ttop geom.Vector
+	if g.Subtype == GroupOneSided || g.Subtype == GroupOneSkewed {
+		tbot, ttop = geom.Vector{}, translate.ScaledBy(2)
+	} else {
+		tbot, ttop = translate.ScaledBy(-1), translate.ScaledBy(1)
 	}
-	if len(src.BezierLoops.Sets) == 0 {
-		// Walk the opA lineage to find a group with populated
-		// BezierLoops (typically the original Drawing). For each
-		// empty group along the way, run AssembleLoops so the
-		// LINE_SEGMENT entities get converted into beziers.
-		rt := NewRuntime(sk)
-		visited := make(map[core.HGroup]bool)
-		current := src
-		for current != nil && !visited[current.H] {
-			visited[current.H] = true
-			if os.Getenv("EXTRUDE_DEBUG") != "" {
-				fmt.Fprintf(os.Stderr, "[extrude]   iter current=%v type=%v loops=%d OpA=%v\n",
-					current.H, current.Type, len(current.BezierLoops.Sets), current.OpA)
-			}
-			if len(current.BezierLoops.Sets) == 0 {
-				if current.Type == GroupDrawing3D || current.Type == GroupDrawingWorkplane {
-					current.AssembleLoops(sk, rt)
-				}
-			}
-			if len(current.BezierLoops.Sets) > 0 {
-				for _, srcSet := range current.BezierLoops.Sets {
-					dstSet := src.BezierLoops.AddOuter()
-					dstSet.Outer.Curves = append(dstSet.Outer.Curves, srcSet.Outer.Curves...)
-					dstSet.Outer.Tag = srcSet.Outer.Tag
-					dstSet.Holes = append(dstSet.Holes, srcSet.Holes...)
-					dstSet.Normal = srcSet.Normal
-					dstSet.Point = srcSet.Point
-					dstSet.Area = srcSet.Area
-				}
-				break
-			}
-			if current.OpA == (core.HGroup{}) {
-				break
-			}
-			current = sk.GetGroup(current.OpA)
-		}
-	}
-	for i := range src.BezierLoops.Sets {
-		set := &src.BezierLoops.Sets[i]
-		if set.Outer.Len() == 0 {
-			continue
-		}
+
+	for k := range src.BezierLoops.Sets {
+		sbls := &src.BezierLoops.Sets[k]
+		is := len(g.ThisShell.Surface)
 		// Extrude this outer contour (plus its inner contours, if present)
-		g.ThisShell.MakeFromExtrusionOf(set, t0, t1, g.Color)
+		g.ThisShell.MakeFromExtrusionOf(sbls, tbot, ttop, g.Color)
+
+		// And for any plane faces, annotate the model with the entity for
+		// that face, so that the user can select them with the mouse.
+		onOrig := sbls.Point
+		for i := is; i < len(g.ThisShell.Surface); i++ {
+			ss := &g.ThisShell.Surface[i]
+
+			p := ss.PointAt(0, 0)
+			n := ss.NormalAt(0, 0).WithMagnitude(1)
+			d := n.Dot(p)
+
+			if i == is || i == is+1 {
+				// These are the top and bottom of the shell.
+				if math.Abs(onOrig.Plus(ttop).Dot(n)-d) < core.LengthEps {
+					ss.Face = srf.FaceID(g.RemapEntity(core.NoEntity, RemapTop).V)
+				}
+				if math.Abs(onOrig.Plus(tbot).Dot(n)-d) < core.LengthEps {
+					ss.Face = srf.FaceID(g.RemapEntity(core.NoEntity, RemapBottom).V)
+				}
+				continue
+			}
+
+			// So these are the sides
+			if ss.DegM != 1 || ss.DegN != 1 {
+				continue
+			}
+
+			for ei := range sk.Entities {
+				e := &sk.Entities[ei]
+				if e.Group != g.OpA {
+					continue
+				}
+				if e.Type != core.EntityLineSegment {
+					continue
+				}
+
+				a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
+				b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+				a = a.Plus(ttop)
+				b = b.Plus(ttop)
+				// Could get taken backwards, so check all cases.
+				if (a.Equals(ss.Ctrl[0][0]) && b.Equals(ss.Ctrl[1][0])) ||
+					(b.Equals(ss.Ctrl[0][0]) && a.Equals(ss.Ctrl[1][0])) ||
+					(a.Equals(ss.Ctrl[0][1]) && b.Equals(ss.Ctrl[1][1])) ||
+					(b.Equals(ss.Ctrl[0][1]) && a.Equals(ss.Ctrl[1][1])) {
+					ss.Face = srf.FaceID(g.RemapEntity(e.H, RemapLineToFace).V)
+					break
+				}
+			}
+		}
 	}
 	g.RunningShell = g.ThisShell
-	// Mesh from shell.
 	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
@@ -264,57 +432,61 @@ func (g *Group) revolveAxis(sk *Sketch) (pt, axis geom.Vector) {
 	return pt, axis.WithMagnitude(1)
 }
 
-// generateRevolveShell is the LATHE/REVOLVE group type: revolve each
-// BezierLoopSet of the source group (g.OpA) about the group's axis, a
-// full turn for LATHE, by the group's angle for REVOLVE. Mirrors the
-// LATHE and REVOLVE branches of C++ Group::GenerateShellAndMesh
-// (groupmesh.cpp:317-351).
+// generateRevolveShell is the LATHE and REVOLVE branches of C++
+// Group::GenerateShellAndMesh: revolve each of the source group's loop
+// sets about the group's axis, a full turn for LATHE, by the group's
+// angle for REVOLVE.
 func (g *Group) generateRevolveShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
-	src := sk.GetGroup(g.OpA)
-	if src == nil {
+	if !g.haveSource(sk) {
 		return
 	}
+	src := sk.GetGroup(g.OpA)
 	pt, axis := g.revolveAxis(sk)
+	sg := shellGroup{g: g, sk: sk}
 
-	anglef, angles := 2*math.Pi, 0.0
-	if g.Type == GroupRevolve {
-		anglef = paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
+	if g.Type == GroupLathe {
+		for i := range src.BezierLoops.Sets {
+			g.ThisShell.MakeFromRevolutionOf(&src.BezierLoops.Sets[i], pt, axis, g.Color, sg)
+		}
+	} else {
+		anglef := paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
+		dists, distf := 0.0, 0.0
+		angles := 0.0
 		if g.Subtype != GroupOneSided {
 			anglef *= 0.5
 			angles = -anglef
 		}
-	}
-	for i := range src.BezierLoops.Sets {
-		sbls := &src.BezierLoops.Sets[i]
-		if g.Type == GroupRevolve && math.Abs(anglef-angles) < 2*math.Pi {
-			g.ThisShell.MakeFromHelicalRevolutionOf(sbls, pt, axis, g.Color,
-				angles, anglef, 0, 0, 0, 0)
-		} else {
-			g.ThisShell.MakeFromRevolutionOf(sbls, pt, axis, g.Color)
+		for i := range src.BezierLoops.Sets {
+			sbls := &src.BezierLoops.Sets[i]
+			if math.Abs(anglef-angles) < 2*math.Pi {
+				g.ThisShell.MakeFromHelicalRevolutionOf(sbls, pt, axis, g.Color, sg,
+					angles, anglef, dists, distf)
+			} else {
+				g.ThisShell.MakeFromRevolutionOf(sbls, pt, axis, g.Color, sg)
+			}
 		}
 	}
 	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
-// generateHelixShell is the HELIX group type: sweep each
-// BezierLoopSet of the source group (g.OpA) about the group's axis
-// while translating along it. Mirrors the HELIX branch of C++
-// Group::GenerateShellAndMesh (groupmesh.cpp:352-374).
+// generateHelixShell is the HELIX branch of C++
+// Group::GenerateShellAndMesh: sweep each of the source group's loop
+// sets about the group's axis while translating along it.
 func (g *Group) generateHelixShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
-	src := sk.GetGroup(g.OpA)
-	if src == nil {
+	if !g.haveSource(sk) {
 		return
 	}
+	src := sk.GetGroup(g.OpA)
 	pt, axis := g.revolveAxis(sk)
 
 	anglef := paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
+	dists, distf := 0.0, 0.0
 	angles := 0.0
-	dists := 0.0
-	distf := paramFloat(sk, g.H.Param(7)) * 2 // dist is applied twice
+	distf = paramFloat(sk, g.H.Param(7)) * 2 // dist is applied twice
 	if g.Subtype != GroupOneSided {
 		anglef *= 0.5
 		angles = -anglef
@@ -323,79 +495,14 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 	}
 	for i := range src.BezierLoops.Sets {
 		g.ThisShell.MakeFromHelicalRevolutionOf(&src.BezierLoops.Sets[i], pt, axis, g.Color,
-			angles, anglef, dists, distf, 0, 0)
+			shellGroup{g: g, sk: sk}, angles, anglef, dists, distf)
 	}
 	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
-// generateTransformMesh handles ROTATE/TRANSLATE groups: copies the
-// previous group's mesh with the transform applied.
-func (g *Group) generateTransformMesh(sk *Sketch) {
-	prev := g.PreviousGroup(sk)
-	if prev == nil {
-		return
-	}
-	if g.Type == GroupTranslate {
-		v := g.TranslationVector(sk)
-		g.ThisMesh.MakeFromTransformationOf(&prev.RunningMesh, v, geom.Quaternion{}, 1)
-	} else if g.Type == GroupRotate {
-		axis, angle, center := g.RotationParameters(sk)
-		_ = center
-		q := geom.QuaternionFromAxisAngle(axis, angle)
-		g.ThisMesh.MakeFromTransformationOf(&prev.RunningMesh, geom.Vector{}, q, 1)
-	}
-	g.RunningMesh = g.ThisMesh
-}
-
-// combineWithRunningShell combines this group's shell (or, for a
-// group forced to mesh, its mesh) with the previous mesh group's
-// running shell using the group's MeshCombine, producing
-// g.RunningShell and g.RunningMesh. Mirrors the tail of C++
-// Group::GenerateShellAndMesh (groupmesh.cpp:394-448); the running
-// mesh stands in for the displayMesh C++ triangulates from
-// runningShell in GenerateDisplayItems.
-func (g *Group) combineWithRunningShell(sk *Sketch) {
-	if g.MeshCombine != CombineAssemble {
-		g.ThisShell.MergeCoincidentSurfaces()
-	}
-
-	// So now we've got the mesh or shell for this group. Combine it with
-	// the previous group's mesh or shell with the requested Boolean, and
-	// we're done.
-	prevg := findPreviousMeshGroup(g, sk)
-
-	if !g.IsForcedToMesh() {
-		var prevs srf.SShell
-		if prevg != nil {
-			prevs = prevg.RunningShell
-		}
-		var outs srf.SShell
-		g.generateForBooleanShell(&prevs, &g.ThisShell, &outs)
-		if g.MeshCombine != CombineAssemble {
-			outs.MergeCoincidentSurfaces()
-		}
-		g.RunningShell = outs
-
-		// If the Boolean failed, then we should note that in the text screen
-		// for this group.
-		g.BooleanFailed = g.RunningShell.BooleanFailed
-
-		g.RunningMesh.Clear()
-		g.RunningShell.TriangulateInto(&g.RunningMesh)
-		return
-	}
-
-	g.RunningMesh = g.ThisMesh
-	if prevg != nil && len(prevg.RunningMesh.Triangles) > 0 {
-		var combined srf.SMesh
-		g.GenerateForBoolean(prevg, &combined)
-		g.RunningMesh = combined
-	}
-}
-
 // generateForBooleanShell combines prevs and thiss into outs with the
 // group's MeshCombine. Mirrors C++ Group::GenerateForBoolean<SShell>.
-func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell) {
+func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell, how CombineAs) {
 	// If this group contributes no new mesh, then our running mesh is the
 	// same as last time, no combining required. Likewise if we have a mesh
 	// but it's suppressed.
@@ -406,7 +513,7 @@ func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell) {
 
 	// So our group's shell appears in thisShell. Combine this with the
 	// previous group's shell, using the requested operation.
-	switch g.MeshCombine {
+	switch how {
 	case CombineUnion:
 		outs.MakeFromUnionOf(prevs, thiss)
 	case CombineDifference:
@@ -418,55 +525,75 @@ func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell) {
 	}
 }
 
-// GenerateForBoolean combines the previous group's running mesh with
-// this group's running mesh using the boolean combination type. Uses
-// the SShell-level CSG pipeline so coplanar faces are merged via
-// MergeCoincidentSurfaces, matching the C++ boolean.cpp behavior.
-func (g *Group) GenerateForBoolean(prev *Group, out *srf.SMesh) {
-	if prev == nil || out == nil {
-		return
+// combineMeshes is GenerateShellAndMesh's combine for a group forced
+// to a mesh: triangulate both operands and combine the meshes (C++
+// GenerateForBoolean<SMesh>). C++ then snaps the result vertex to
+// vertex (SKdNode::SnapToMesh), which isn't ported; nothing reaches
+// this yet, since meshes can't be imported.
+func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
+	var prevm, thism srf.SMesh
+	if prevg != nil {
+		prevm.MakeFromCopyOf(&prevg.RunningMesh)
+		prevg.RunningShell.TriangulateInto(&prevm)
 	}
-	// Convert the previous and current running meshes back to shells
-	// so the SShell-level boolean CSG can be used. This is an
-	// approximation: we lose the parametric surface representation
-	// when we triangulated, so we can't regenerate the trimmed
-	// bezier shell. As a fallback, we use the SMesh-level CSG
-	// (triangle classification BSP).
-	switch g.MeshCombine {
-	case CombineUnion:
-		out.MakeFromUnionOf(&prev.RunningMesh, &g.RunningMesh)
-	case CombineDifference:
-		out.MakeFromDifferenceOf(&prev.RunningMesh, &g.RunningMesh)
-	case CombineIntersection:
-		out.MakeFromIntersectionOf(&prev.RunningMesh, &g.RunningMesh)
+
+	thism.MakeFromCopyOf(&g.ThisMesh)
+	g.ThisShell.TriangulateInto(&thism)
+
+	var outm srf.SMesh
+	switch {
+	case len(thism.Triangles) == 0 || g.Suppress:
+		outm.MakeFromCopyOf(&prevm)
+	case how == CombineUnion:
+		outm.MakeFromUnionOf(&prevm, &thism)
+	case how == CombineDifference:
+		outm.MakeFromDifferenceOf(&prevm, &thism)
+	case how == CombineIntersection:
+		outm.MakeFromIntersectionOf(&prevm, &thism)
 	default:
-		out.MakeFromAssemblyOf(&prev.RunningMesh, &g.RunningMesh)
+		outm.MakeFromAssemblyOf(&prevm, &thism)
 	}
+	g.RunningMesh.MakeFromCopyOf(&outm)
 }
 
-// GenerateForStepAndRepeat copies srcm to out. Solvespace represents
-// step-and-repeat as a regular Translate or Rotate group with
-// per-step delta encoded via the group's request list (each request
-// gets a CopyNumber and translation/rotation parameters). The
-// orchestration that produces multiple copies lives in
-// Group::GenerateEquations + Group::GenerateRequestList, which then
-// calls this helper to merge the produced meshes via g.MeshCombine.
-func (g *Group) GenerateForStepAndRepeat(srcm *srf.SMesh, out *srf.SMesh) {
-	if srcm == nil || out == nil {
+// GenerateDisplayItems builds the mesh and outlines to display: the
+// previous group's, if this group adds no solid, else the running
+// shell triangulated, with the running mesh (C++
+// Group::GenerateDisplayItems). The outlines are the raw sharp edges;
+// C++ also joins them into polylines, which is display work.
+func (g *Group) GenerateDisplayItems(sk *Sketch) {
+	pg := g.RunningMeshGroup(sk)
+	if pg != nil && len(g.ThisMesh.Triangles) == 0 && len(g.ThisShell.Surface) == 0 {
+		// We don't contribute any new solid model in this group, so our
+		// display items are identical to the previous group's.
+		pg.GenerateDisplayItems(sk)
+
+		g.DisplayMesh.Clear()
+		g.DisplayMesh.MakeFromCopyOf(&pg.DisplayMesh)
+
+		g.DisplayOutlines.Clear()
+		g.DisplayOutlines.Outlines = append(g.DisplayOutlines.Outlines, pg.DisplayOutlines.Outlines...)
 		return
 	}
-	out.MakeFromCopyOf(srcm)
-}
 
-// GenerateDisplayItems updates g.DisplayMesh and g.DisplayOutlines
-// from g.ThisShell. Used by the renderer to draw the group.
-func (g *Group) GenerateDisplayItems() {
+	// We do contribute new solid model, so we have to triangulate the
+	// shell, and edge-find the mesh.
 	g.DisplayMesh.Clear()
+	g.RunningShell.TriangulateInto(&g.DisplayMesh)
+	for _, t := range g.RunningMesh.Triangles {
+		trn := t
+		n := trn.Normal()
+		trn.NA, trn.NB, trn.NC = n, n, n
+		g.DisplayMesh.Triangles = append(g.DisplayMesh.Triangles, trn)
+	}
+
 	g.DisplayOutlines.Clear()
-	g.DisplayMesh.MakeFromCopyOf(&g.RunningMesh)
-	// C++ outlines the triangulated shell's sharp edges (and then joins
-	// them into polylines for display, which is out of scope here).
-	g.DisplayMesh.MakeOutlinesInto(&g.DisplayOutlines, srf.EdgeSharp)
+	if len(g.RunningMesh.Triangles) > 0 {
+		// Triangle mesh only; no shell or emphasized edges.
+		g.RunningMesh.MakeOutlinesInto(&g.DisplayOutlines, srf.EdgeEmphasized)
+	} else {
+		g.DisplayMesh.MakeOutlinesInto(&g.DisplayOutlines, srf.EdgeSharp)
+	}
 }
 
 // IsForcedToMesh returns true if the group has no shell (only
@@ -530,85 +657,6 @@ func (g *Group) TransformImportedBy(t geom.Vector, q geom.Quaternion) {
 	g.ImpMesh.MakeFromTransformationOf(&g.ImpMesh, t, q, 1)
 	g.ImpShell.MakeFromTransformationOf(&g.ImpShell, t, q, 1, true)
 }
-
-// annotateExtrudeFaces assigns face IDs to side surfaces of an
-// extruded shell, mapping line-segment entities from the source
-// group to the corresponding side face. Mirrors the face-id
-// annotation loop in C++ Group::GenerateShellAndMesh (groupmesh.cpp).
-//
-// The top and bottom surfaces get REMAP_TOP / REMAP_BOTTOM face IDs.
-// Side surfaces (degm=1, degn=1) are matched to line segments from
-// the source group whose endpoints lie on the side's edges.
-func (g *Group) annotateExtrudeFaces(sk *Sketch, shell *srf.SShell, tbot, ttop geom.Vector) {
-	if sk == nil || shell == nil {
-		return
-	}
-	src := sk.GetGroup(g.OpA)
-	if src == nil {
-		return
-	}
-	onOrig := geom.Vector{}
-	for i := range shell.Surface {
-		ss := &shell.Surface[i]
-		if ss == nil {
-			continue
-		}
-		p := ss.PointAt(0, 0)
-		n := ss.NormalAt(0, 0).WithMagnitude(1)
-		d := n.Dot(p)
-		if math.Abs((onOrig.Plus(ttop)).Dot(n)-d) < 1e-9 {
-			ss.Face = FaceIDTop
-			continue
-		}
-		if math.Abs((onOrig.Plus(tbot)).Dot(n)-d) < 1e-9 {
-			ss.Face = FaceIDBottom
-			continue
-		}
-		if ss.DegM != 1 || ss.DegN != 1 {
-			continue
-		}
-		for _, e := range sk.Entities {
-			if e.Type != core.EntityLineSegment {
-				continue
-			}
-			var a, b geom.Vector
-			var okA, okB bool
-			for j := range sk.Entities {
-				if sk.Entities[j].H == e.Point[0] {
-					a = sk.Entities[j].PointGetNum(sk)
-					okA = true
-				}
-				if sk.Entities[j].H == e.Point[1] {
-					b = sk.Entities[j].PointGetNum(sk)
-					okB = true
-				}
-			}
-			if !okA || !okB {
-				continue
-			}
-			aT := a.Plus(ttop)
-			bT := b.Plus(ttop)
-			c00 := ss.Ctrl[0][0]
-			c01 := ss.Ctrl[0][1]
-			c10 := ss.Ctrl[1][0]
-			c11 := ss.Ctrl[1][1]
-			if (aT.Equals(c00) && bT.Equals(c10)) ||
-				(bT.Equals(c00) && aT.Equals(c10)) ||
-				(aT.Equals(c01) && bT.Equals(c11)) ||
-				(bT.Equals(c01) && aT.Equals(c11)) {
-				ss.Face = srf.FaceID(e.H.V)
-				break
-			}
-		}
-	}
-}
-
-// FaceIDTop and FaceIDBottom are placeholder face IDs for the top
-// and bottom surfaces of an extrude.
-const (
-	FaceIDTop    srf.FaceID = 0xFFFFFFFE
-	FaceIDBottom srf.FaceID = 0xFFFFFFFD
-)
 
 // paramFloat returns the float value of a param by handle, or 0 if missing.
 // Used by generateLinkedShell to read the LINKED transform parameters.

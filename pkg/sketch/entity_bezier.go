@@ -26,7 +26,9 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 		if errA != nil || errB != nil {
 			return
 		}
-		beziers.Add(srf.SBezierFrom2(a, b))
+		sb := srf.SBezierFrom2(a, b)
+		sb.Entity = e.H.V
+		beziers.Add(sb)
 
 	case core.EntityCubic:
 		computeInterpolatingSpline(e, beziers, rt, false)

@@ -378,14 +378,19 @@ func ClosestPointBetweenLines(a0, da, b0, db Vector) (ta, tb float64) {
 // AtIntersectionOfPlaneAndLine returns the intersection of line
 // (a, b) with plane (n, d) where n is the plane normal and d is the
 // signed distance from the origin.
-func AtIntersectionOfPlaneAndLine(n Vector, d float64, a, b Vector) Vector {
-	dir := b.Minus(a)
-	den := dir.Dot(n)
-	if math.Abs(den) < 1e-20 {
-		return a
+// A line parallel to the plane gives the zero vector, as in C++
+// Vector::AtIntersectionOfPlaneAndLine.
+func AtIntersectionOfPlaneAndLine(n Vector, d float64, p0, p1 Vector) Vector {
+	dp := p1.Minus(p0)
+
+	if math.Abs(n.Dot(dp)) < LengthEps {
+		return Vector{}
 	}
-	t := (d - a.Dot(n)) / den
-	return a.Plus(dir.ScaledBy(t))
+
+	// n dot (p0 + t*dp) = d
+	// (n dot p0) + t * (n dot dp) = d
+	t := (d - n.Dot(p0)) / n.Dot(dp)
+	return p0.Plus(dp.ScaledBy(t))
 }
 
 // AtIntersectionOfPlanes returns the intersection of three planes

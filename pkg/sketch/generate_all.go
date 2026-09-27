@@ -137,10 +137,6 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 				g.GenerateLoops(sk, rt)
 			} else {
 				g.GenerateShellAndMesh(sk)
-				if g.IsMeshGroup2() {
-					g.combineWithRunningShell(sk)
-					g.GenerateDisplayItems()
-				}
 				g.Clean = true
 			}
 		} else {
@@ -444,21 +440,9 @@ func catchPanic(fn func()) (err error) {
 	return nil
 }
 
-// findPreviousMeshGroup walks back through previous groups (skipping
-// non-mesh groups like drawings) to find the last mesh group whose
-// running mesh should be combined with this one. Mirrors the C++
-// Group::RunningMeshGroup behavior in groupmesh.cpp:537.
 // chordTolPct mirrors the default C++ "ChordTolerancePct" setting
 // (solvespace.cpp:50).
 const chordTolPct = 0.1
-
-func findPreviousMeshGroup(g *Group, sk *Sketch) *Group {
-	prev := g.PreviousGroup(sk)
-	for prev != nil && !prev.IsMeshGroup2() {
-		prev = prev.PreviousGroup(sk)
-	}
-	return prev
-}
 
 func (sk *Sketch) orderedGroups() []core.HGroup {
 	hs := make([]core.HGroup, 0, len(sk.Groups))

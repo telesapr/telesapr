@@ -1,9 +1,11 @@
 package slvs
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -18,7 +20,8 @@ var solveParityExclusions = map[string]string{
 
 // TestParityGroupSolveVsCpp regenerates every fixture C++ can load and
 // checks that each group solves, with the degrees of freedom C++
-// reports, and that every constraint's equations hold afterwards.
+// reports, that its shell's faces are C++'s, and that every
+// constraint's equations hold afterwards.
 func TestParityGroupSolveVsCpp(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(thisFile), "../../../testdata")
@@ -45,6 +48,20 @@ func TestParityGroupSolveVsCpp(t *testing.T) {
 				}
 				if g.Solved.Dof != dof {
 					t.Errorf("group %08x: dof %d, C++ %d", hv, g.Solved.Dof, dof)
+				}
+			}
+
+			// Every group's own shell has the faces C++ gives it.
+			for _, hg := range sk.GroupOrder {
+				g := sk.GetGroup(hg)
+				var faces []uint32
+				for _, ss := range g.ThisShell.Surface {
+					faces = append(faces, uint32(ss.Face))
+				}
+				sort.Slice(faces, func(i, j int) bool { return faces[i] < faces[j] })
+				want := cppShellFaces[name][hg.V]
+				if fmt.Sprint(faces) != fmt.Sprint(want) {
+					t.Errorf("group %08x: shell faces %x, C++ %x", hg.V, faces, want)
 				}
 			}
 

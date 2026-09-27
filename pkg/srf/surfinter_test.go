@@ -34,6 +34,12 @@ func polylineCurves(p ...geom.Vector) *SBezierList {
 	return sbl
 }
 
+// noFaces is a ShellGroup without a remap table: every face is 0.
+type noFaces struct{}
+
+func (noFaces) Remap(core.HEntity, int) core.HEntity { return core.NoEntity }
+func (noFaces) EntityExists(core.HEntity) bool       { return false }
+
 // loopsOf assembles curves into loop sets as a sketch's loops are.
 func loopsOf(sbl *SBezierList) *SBezierLoopSetSet {
 	var sblss SBezierLoopSetSet
@@ -83,7 +89,7 @@ func TestIntersectionBranchesVsCpp(t *testing.T) {
 		tube := &SShell{}
 		sblss := loopsOf(polylineCurves(geom.Vector{X: 1}, geom.Vector{X: 2}, geom.Vector{X: 2, Z: 1}, geom.Vector{X: 1, Z: 1}))
 		for i := range sblss.Sets {
-			tube.MakeFromRevolutionOf(&sblss.Sets[i], geom.Vector{}, z, core.RgbaColor{})
+			tube.MakeFromRevolutionOf(&sblss.Sets[i], geom.Vector{}, z, core.RgbaColor{}, noFaces{})
 		}
 		box := extrudedCurves(polylineCurves(geom.Vector{X: -3, Z: -1}, geom.Vector{X: 3, Z: -1},
 			geom.Vector{X: 3, Y: 3, Z: -1}, geom.Vector{X: -3, Y: 3, Z: -1}), geom.Vector{}, geom.Vector{Z: 3})

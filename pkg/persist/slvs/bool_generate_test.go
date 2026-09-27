@@ -105,7 +105,9 @@ func collectBoolStats(path string) (boolFixtureStats, error) {
 		if !g.IsMeshGroup() {
 			continue
 		}
-		mesh := &g.RunningMesh
+		// The mesh C++ displays, and its fixture tests check.
+		g.GenerateDisplayItems(doc.Sketch)
+		mesh := &g.DisplayMesh
 		stats.Triangles += len(mesh.Triangles)
 		var el srf.SEdgeList
 		srf.SKdNodeFrom(&g.DisplayMesh).MakeCertainEdgesInto(&el,
@@ -153,15 +155,15 @@ func TestBooleanFixtureLoadsAndGenerates(t *testing.T) {
 			continue
 		}
 		doc.Sketch.GenerateAll()
-		totalTris := 0
+		surfaces := 0
 		for i := range doc.Sketch.Groups {
 			g := &doc.Sketch.Groups[i]
 			if g.IsMeshGroup() {
-				totalTris += len(g.RunningMesh.Triangles)
+				surfaces += len(g.RunningShell.Surface)
 			}
 		}
-		if totalTris == 0 {
-			t.Errorf("%s: no triangles after GenerateAll", p)
+		if surfaces == 0 {
+			t.Errorf("%s: empty running shells after GenerateAll", p)
 		}
 	}
 }

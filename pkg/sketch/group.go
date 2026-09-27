@@ -309,14 +309,6 @@ type Group struct {
 	RunningShell srf.SShell
 	ThisMesh     srf.SMesh
 
-	// ImportedShell is the imported SShell from a Step/IGES/etc.
-	// linker. Populated by the link import pipeline; consumed by
-	// generateLinkedShell for LINKED groups.
-	ImportedShell srf.SShell
-	// ImportedMesh is the imported mesh from a mesh linker (STL/OBJ).
-	// Populated by the link import pipeline; consumed by
-	// generateLinkedShell for LINKED groups.
-	ImportedMesh    srf.SMesh
 	RunningMesh     srf.SMesh
 	DisplayMesh     srf.SMesh
 	DisplayOutlines srf.SOutlineList

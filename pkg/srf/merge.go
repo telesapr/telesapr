@@ -162,7 +162,7 @@ func (s *SSurface) CoincidentWith(ss *SSurface, sameNormal bool) bool {
 	n := s.NormalAt(0, 0).WithMagnitude(1)
 	d := n.Dot(p)
 
-	if !ss.CoincidentWithPlane(n, d, geom.LengthEps) {
+	if !ss.CoincidentWithPlane(n, d) {
 		return false
 	}
 

@@ -23,7 +23,7 @@ func profileLoopSet(r0, r1, z0, z1 float64) *SBezierLoopSet {
 
 func lathedTube(r0, r1, z0, z1 float64) *SShell {
 	sh := &SShell{}
-	sh.MakeFromRevolutionOf(profileLoopSet(r0, r1, z0, z1), geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{})
+	sh.MakeFromRevolutionOf(profileLoopSet(r0, r1, z0, z1), geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
 	return sh
 }
 
@@ -72,14 +72,14 @@ func TestRevolveVolumes(t *testing.T) {
 	for _, a := range []float64{math.Pi / 3, -2.5} {
 		var sh SShell
 		sh.MakeFromHelicalRevolutionOf(profileLoopSet(1, 2, 0, 1), geom.Vector{}, geom.Vector{Z: 1},
-			core.RgbaColor{}, 0, a, 0, 0, 0, 0)
+			core.RgbaColor{}, noFaces{}, 0, a, 0, 0)
 		checkVolume(t, "partial revolve", shellVolume(&sh), 1.5*math.Abs(a))
 	}
 
 	// A helix: the axial shear keeps Pappus' volume.
 	var hx SShell
 	hx.MakeFromHelicalRevolutionOf(profileLoopSet(1, 2, 0, 1), geom.Vector{}, geom.Vector{Z: 1},
-		core.RgbaColor{}, -math.Pi, math.Pi, -1, 1, 0, 0)
+		core.RgbaColor{}, noFaces{}, -math.Pi, math.Pi, -1, 1)
 	checkVolume(t, "helix", shellVolume(&hx), 1.5*2*math.Pi)
 }
 
@@ -148,7 +148,7 @@ func TestRevolveParityCpp(t *testing.T) {
 	} {
 		var sh SShell
 		sh.MakeFromHelicalRevolutionOf(profileLoopSet(1, 2, 0, 1), geom.Vector{}, geom.Vector{Z: 1},
-			core.RgbaColor{}, c.angles, c.anglef, c.dists, c.distf, 0, 0)
+			core.RgbaColor{}, noFaces{}, c.angles, c.anglef, c.dists, c.distf)
 		check(fmt.Sprintf("helical %v..%v", c.anglef, c.distf), shellVolume(&sh), c.want)
 	}
 	boxes := []struct {

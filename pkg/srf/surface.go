@@ -586,16 +586,25 @@ func (s *SSurface) ContainsPlaneCurve(sc *SCurve) bool {
 	return true
 }
 
-// CoincidentWithPlane returns true if every control point lies on
-// the plane (n, d) within tol.
-func (s *SSurface) CoincidentWithPlane(n geom.Vector, d, tol float64) bool {
-	for i := 0; i <= s.DegM; i++ {
-		for j := 0; j <= s.DegN; j++ {
-			if mathAbs(s.Ctrl[i][j].Dot(n)-d) > tol {
-				return false
-			}
-		}
+// CoincidentWithPlane reports whether the surface is a plane lying in
+// the plane n . p = d (C++ SSurface::CoincidentWithPlane).
+func (s *SSurface) CoincidentWithPlane(n geom.Vector, d float64) bool {
+	if s.DegM != 1 || s.DegN != 1 {
+		return false
 	}
+	if math.Abs(n.Dot(s.Ctrl[0][0])-d) > lengthEps {
+		return false
+	}
+	if math.Abs(n.Dot(s.Ctrl[0][1])-d) > lengthEps {
+		return false
+	}
+	if math.Abs(n.Dot(s.Ctrl[1][0])-d) > lengthEps {
+		return false
+	}
+	if math.Abs(n.Dot(s.Ctrl[1][1])-d) > lengthEps {
+		return false
+	}
+
 	return true
 }
 

@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"math"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -71,22 +72,42 @@ func TestSSurfaceMakeEdgesIntoFromCurves(t *testing.T) {
 	}
 }
 
-// TestSSurfaceMakeSectionEdgesIntoCoplanar verifies that
-// MakeSectionEdgesInto emits boundary edges only for surfaces that
-// are coplanar with the supplied (n, d) plane.
-func TestSSurfaceMakeSectionEdgesIntoCoplanar(t *testing.T) {
-	// Surface at z=5, plane z=0: NOT coplanar.
-	s := FromPlane(geom.Vector{Z: 5}, geom.Vector{X: 1}, geom.Vector{Y: 1})
-	el := &SEdgeList{}
-	s.MakeSectionEdgesInto(nil, el, geom.Vector{Z: 1}, 0)
-	if el.Len() != 0 {
-		t.Fatalf("non-coplanar surface (z=5 vs z=0) should emit 0 edges, got %d", el.Len())
+// TestShellMakeSectionEdgesInto sections an extruded box and an
+// extruded circle at their bottom faces: the square comes out as four
+// pwl edges or four exact lines, the circle as its four exact arcs.
+func TestShellMakeSectionEdgesInto(t *testing.T) {
+	box := extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2})
+	var sel SEdgeList
+	box.MakeSectionEdgesInto(geom.Vector{Z: 1}, 0, &sel, nil)
+	if len(sel.Edges) != 4 {
+		t.Errorf("box, as edges: %d edges, want 4", len(sel.Edges))
 	}
-	// Surface at z=0, plane z=0: coplanar.
-	s2 := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
-	el2 := &SEdgeList{}
-	s2.MakeSectionEdgesInto(nil, el2, geom.Vector{Z: 1}, 0)
-	if el2.Len() == 0 {
-		t.Fatalf("coplanar surface should emit boundary edges, got 0")
+	var sbl SBezierList
+	box.MakeSectionEdgesInto(geom.Vector{Z: 1}, 0, nil, &sbl)
+	if len(sbl.Curves) != 4 {
+		t.Errorf("box, as curves: %d curves, want 4", len(sbl.Curves))
+	}
+	for _, sb := range sbl.Curves {
+		if sb.Degree != 1 || sb.Start().Z != 0 || math.Abs(sb.Start().DistanceTo(sb.Finish())-2) > 1e-12 {
+			t.Errorf("box section curve %v", sb)
+		}
+	}
+	// No face lies in z = 1.
+	var none SEdgeList
+	box.MakeSectionEdgesInto(geom.Vector{Z: 1}, 1, &none, nil)
+	if len(none.Edges) != 0 {
+		t.Errorf("z = 1: %d edges, want 0", len(none.Edges))
+	}
+
+	cyl := extrudedCurves(circleCurves(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1}, 3), geom.Vector{}, geom.Vector{Z: 1})
+	var arcs SBezierList
+	cyl.MakeSectionEdgesInto(geom.Vector{Z: 1}, 0, &SEdgeList{}, &arcs)
+	if len(arcs.Curves) != 4 {
+		t.Fatalf("cylinder: %d curves, want 4", len(arcs.Curves))
+	}
+	for _, sb := range arcs.Curves {
+		if sb.Degree != 2 || math.Abs(sb.PointAt(0.5).Magnitude()-3) > 1e-9 {
+			t.Errorf("cylinder section curve %v isn't an arc of radius 3", sb)
+		}
 	}
 }

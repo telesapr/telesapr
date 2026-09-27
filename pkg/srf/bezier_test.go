@@ -180,14 +180,22 @@ func TestSBezierIsInPlane(t *testing.T) {
 	}
 }
 
-// TestSBezierCrossing verifies ray-bezier intersection.
-func TestSBezierCrossing(t *testing.T) {
-	t.Skip("TestSBezierCrossing: requires fixture-specific setup")
-	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 10})
-	// Ray going +X from origin crosses the segment at some paramT.
-	paramT, ok := b.Crossing(geom.Vector{}, geom.Vector{X: 1})
-	if !ok || paramT < 0 || paramT > 10 {
-		t.Errorf("crossing +X from origin: paramT=%v ok=%v, want 0<=paramT<=10", paramT, ok)
+// TestSBezierAllIntersectionsWith crosses a unit circle, as four
+// rational arcs, with the line y = 0.5: two points, at x = +-sqrt(3)/2,
+// each found once.
+func TestSBezierAllIntersectionsWith(t *testing.T) {
+	circle := circleCurves(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1}, 1)
+	line := &SBezierList{Curves: []SBezier{SBezierFrom2(geom.Vector{X: -2, Y: 0.5}, geom.Vector{X: 2, Y: 0.5})}}
+	var spl SPointList
+	circle.AllIntersectionsWith(line, &spl)
+	if len(spl.Points) != 2 {
+		t.Fatalf("%d intersections, want 2: %v", len(spl.Points), spl.Points)
+	}
+	x := math.Sqrt(3) / 2
+	for _, sp := range spl.Points {
+		if math.Abs(math.Abs(sp.P.X)-x) > 1e-9 || math.Abs(sp.P.Y-0.5) > 1e-9 {
+			t.Errorf("intersection at %v, want (+-%g, 0.5)", sp.P, x)
+		}
 	}
 }
 

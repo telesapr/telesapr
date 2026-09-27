@@ -37,6 +37,9 @@ type SBezier struct {
 	Tag  int
 	AuxA int
 	AuxB int
+	// Entity is the handle of the sketch entity (a line segment) the
+	// curve came from, or 0 (C++ SBezier::entity).
+	Entity uint32
 
 	// Hint of which kind of curve this is, used by SShell trimming.
 	IsCircleHint bool
@@ -280,36 +283,30 @@ func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
 	}
 }
 
-// AllIntersectionsWith collects all intersection points between this
-// Bezier and another into spl. Phase 3 implementation: simple
-// uniform sampling on both curves and duplicate removal.
-func (b *SBezier) AllIntersectionsWith(other *SBezier, spl *SPointList) {
-	const n = 32
-	type pt struct{ t1, t2 float64 }
-	var candidates []pt
-	for i := 0; i <= n; i++ {
-		t1 := float64(i) / float64(n)
-		p1 := b.PointAt(t1)
-		t2, _ := other.ClosestPointTo(p1, false)
-		p2 := other.PointAt(t2)
-		if p1.DistanceTo(p2) < 1e-3 {
-			candidates = append(candidates, pt{t1, t2})
-		}
+// AllIntersectionsWith adds to spl the points where this curve crosses
+// sbb: their pwls' crossings, refined onto both curves. It misses
+// tangencies, and crossings where two pwl vertices meet (C++
+// SBezier::AllIntersectionsWith).
+func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList) {
+	var splRaw SPointList
+	var sea, seb SEdgeList
+	b.MakePwlInto(&sea, 0, 0)
+	sbb.MakePwlInto(&seb, 0, 0)
+	for k := range sea.Edges {
+		se := &sea.Edges[k]
+		// This isn't quite correct, since AnyEdgeCrossings doesn't count
+		// the case where two pairs of line segments intersect at their
+		// vertices. So this isn't robust, although that case isn't very
+		// likely.
+		seb.AnyEdgeCrossings(se.A, se.B, nil, &splRaw)
 	}
-	for j := 0; j <= n; j++ {
-		t2 := float64(j) / float64(n)
-		p2 := other.PointAt(t2)
-		t1, _ := b.ClosestPointTo(p2, false)
-		p1 := b.PointAt(t1)
-		if p1.DistanceTo(p2) < 1e-3 {
-			candidates = append(candidates, pt{t1, t2})
+	for _, sp := range splRaw.Points {
+		p := sp.P
+		if b.PointOnThisAndCurve(sbb, &p) {
+			if !spl.containsPoint(p) {
+				spl.Points = append(spl.Points, SPoint{P: p})
+			}
 		}
-	}
-	for _, c := range candidates {
-		// Midpoint of the two closest samples.
-		spl.Points = append(spl.Points, SPoint{
-			P: b.PointAt(c.t1).Plus(other.PointAt(c.t2)).ScaledBy(0.5),
-		})
 	}
 }
 
@@ -328,53 +325,6 @@ func (b *SBezier) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 	}
 }
 
-// Crossing returns the parametric t along the segment (a, b) at
-// which this Bezier crosses the ray. Implemented via ray-vs-bezier
-// approximation: sample the curve at multiple points, find the
-// sample that crosses the ray's plane, refine. Returns ok=false if
-// no crossing found.
-func (b *SBezier) Crossing(a, dir geom.Vector) (float64, bool) {
-	const n = 32
-	prev := b.PointAt(0)
-	prevT := 0.0
-	for i := 1; i <= n; i++ {
-		t := float64(i) / float64(n)
-		cur := b.PointAt(t)
-		// Parametrize edge as prev + s*(cur - prev) for s in [0,1].
-		edge := cur.Minus(prev)
-		den := edge.Dot(dir)
-		if mathAbs(den) < 1e-20 {
-			prev = cur
-			prevT = t
-			continue
-		}
-		// Solve prev + s*edge = a + u*dir.
-		// 3 equations, 2 unknowns — solve for s by minimizing the
-		// perpendicular distance using the cross-product formula.
-		w := a.Minus(prev)
-		cross := edge.Cross(dir)
-		cross2 := cross.MagSquared()
-		if cross2 < 1e-20 {
-			prev = cur
-			prevT = t
-			continue
-		}
-		s := w.Dot(cross.Cross(dir)) / cross2
-		if s >= 0 && s <= 1 {
-			// Compute distance from a + u*dir to prev + s*edge.
-			closest := prev.Plus(edge.ScaledBy(s))
-			diff := closest.Minus(a)
-			u := diff.Dot(dir) / dir.MagSquared()
-			if u >= 0 && u <= 1 {
-				return prevT + s*(t-prevT), true
-			}
-		}
-		prev = cur
-		prevT = t
-	}
-	return 0, false
-}
-
 // PointOnThisAndCurve finds a point that lies on both this bezier
 // and the other bezier, by iteratively minimizing the closest
 // distances. Returns the converged point via *p. Used during
@@ -387,7 +337,7 @@ func (b *SBezier) PointOnThisAndCurve(other *SBezier, p *geom.Vector) bool {
 		pb := other.PointAt(tb)
 		da := b.TangentAt(ta)
 		db := other.TangentAt(tb)
-		if pa.DistanceTo(pb) < ratPolyEps {
+		if pa.EqualsTol(pb, ratPolyEps) {
 			*p = pa
 			return true
 		}

@@ -22,18 +22,18 @@ solvespace core engine. It is the source of truth for the
 | `system.cpp` | 660 | OK | `pkg/solver/system.go`, `pkg/solver/qr.go` | `Solve`, `SolveRank`, `SolveBySubstitution`, `WriteJacobian`, `NewtonSolve`, `SolveLeastSquares` (the QR-of-A' form of this checkout), `TestRank`, `FindWhichToRemoveToFixJacobian`, `MarkParamsFree`. Eigen's `SparseQR` is a dense left-looking Householder QR with the same dead-column rule and threshold, but without the COLAMD column order |
 | `group.cpp` | 1228 | OK | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | `Generate` (all group types), `CopyEntity`, `Remap` (as `RemapEntity`), the `Make*` helpers and `GenerateEquations`. LINKED groups copy `ImpEntity`, which nothing populates yet. Menu and UI code are out of scope |
 | `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry), `SolveGroup` with `WriteEqSystemForGroup` and `WriteEquationsExceptFor`, `ForceReferences`, `CalculateEntityBBox`. With no active group or dirty tracking, DIRTY and UNTIL_ACTIVE regenerate everything like ALL; dragged params aren't marked |
-| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, the running-shell boolean combine and `MergeCoincidentSurfaces` placement are faithful. LATHE/REVOLVE/HELIX shells follow C++ (axis from `predef`, angle `param(3)*4`, helix distance `param(7)*2`), but faces aren't remapped (`REMAP_LINE_TO_FACE`, `REMAP_LATHE_START/END`): `SBezier` carries no source entity |
+| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, `GenerateShellAndMesh` (every group type, step and repeat, the face entities, the running-shell combine), `GenerateForStepAndRepeat`, `GenerateForBoolean<SShell>`, `RemapFaces`, `GenerateDisplayItems` (without the render-side polyline join) are faithful. A group forced to a mesh combines meshes without `SnapToMesh`; nothing reaches that yet |
 | `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
 | `style.cpp` | 948 | OK | `pkg/core/style.go` | |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go` | |
-| `srf/surface.cpp` | 494 | PARTIAL | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `Reverse`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `TriangulateInto`, `MakeFromExtrusionOf`, `FromRevolutionOf` are faithful. `MakeSectionEdgesInto` is a stub |
-| `srf/shell.cpp` | 617 | OK | `pkg/srf/shell.go` | `MakeFromExtrusionOf`, `MakeFromRevolutionOf`, `MakeFromHelicalRevolutionOf`, `CheckNormalAxisRelationship`, `MakeFirstOrderRevolvedSurfaces` faithful; checked against a C++ harness in `pkg/srf/revolve_test.go` |
+| `srf/surface.cpp` | 494 | PARTIAL | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `Reverse`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `TriangulateInto`, `MakeFromExtrusionOf`, `FromRevolutionOf`, `MakeSectionEdgesInto`, `ExactSurfaceTangentAt`, `CoincidentWithPlane` are faithful |
+| `srf/shell.cpp` | 617 | OK | `pkg/srf/shell.go` | `MakeFromExtrusionOf`, `MakeFromRevolutionOf`, `MakeFromHelicalRevolutionOf` (including their face entities, through the `ShellGroup` the caller passes in place of C++'s `Group`), `CheckNormalAxisRelationship`, `MakeFirstOrderRevolvedSurfaces`, `MakeSectionEdgesInto` faithful; checked against a C++ harness in `pkg/srf/revolve_test.go` |
 | `srf/boolean.cpp` | 1100 | OK | `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go`, `pkg/srf/boolean_trim.go`, `pkg/srf/bsp_uv.go` | `SBspUv`, `MakeFromBoolean`, curve splitting, `MakeCopyTrimAgainst`, `TrimFromEdgeList`, `EdgeNormalsWithinSurface` |
 | `srf/polygon.cpp` / `polygon.cpp` | 924 | OK | `pkg/srf/polygon.go`, `pkg/srf/contour.go`, `pkg/srf/edgelist.go`, `pkg/srf/merge.go` | `AssemblePolygon`/`AssembleContour`, contour orientation (C++ sign convention), `FixContourDirections`, `EdgeCrosses`, `CullExtraneousEdges` |
 | `srf/surfinter.cpp` | 641 | OK | `pkg/srf/surfinter.go`, `pkg/srf/surface.go`, `pkg/srf/merge.go` | `AddExactIntersectionCurve`, every `IntersectAgainst` case (plane-plane, plane-extrusion, coaxial extrusions, exact curves in a plane, the marching general case), `CoincidentWith`, `ContainsPlaneCurve`, `MakeCoincidentEdgesInto`. The branches no fixture reaches are pinned to a C++ harness by `TestIntersectionBranchesVsCpp` |
 | `srf/bezier.cpp` | — | OK | `pkg/srf/bezier*.go` | |
-| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go`, `pkg/srf/bezier_loop*.go`, `pkg/srf/bezier_list.go`, `pkg/srf/boolean_csg.go` | Loop assembly (`FromCurves`, `SBezierLoopSet::From`, `FindOuterFacesFrom`, `GetPlaneContainingBeziers`), `IsCircle`, `GetSurfaceA/B`, `RemoveShortSegments` faithful. `SBezier::AllIntersectionsWith` is a sampling approximation |
+| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go`, `pkg/srf/bezier_loop*.go`, `pkg/srf/bezier_list.go`, `pkg/srf/boolean_csg.go` | Loop assembly (`FromCurves`, `SBezierLoopSet::From`, `FindOuterFacesFrom`, `GetPlaneContainingBeziers`), `IsCircle`, `GetSurfaceA/B`, `RemoveShortSegments`, `AllIntersectionsWith` faithful |
 | `srf/triangulate.cpp` | 738 | OK | `pkg/srf/triangulate.go` | Hole bridging, ear clipping, adaptive grid |
 | `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `PointOnCurve`, `ClosestPointOnThisAndSurface`, `SSurface::ClosestPointTo`/`ClosestPointNewton`, `TangentsAt`, `NormalAt` (unnormalized, as in C++). Callers pass `mustConverge`/`retry` as the C++ call sites do |
 | `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go`, `pkg/srf/raycast_surface.go` | `ClassifyEdge` and trimmed `AllPointsIntersecting` (plane, cylinder, subdivision) |
@@ -89,13 +89,14 @@ UI.
 
 ## Test counts
 
-- 431 tests (342 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 423 tests (334 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - All 86 non-boolean fixtures load cleanly and round-trip via
   `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
 - `TestParityGroupSolveVsCpp` runs `GenerateAll` on every fixture C++
   can load and requires every group to solve with the degrees of
-  freedom C++ reports (`cpp_dof_golden_test.go`), and every
+  freedom C++ reports (`cpp_dof_golden_test.go`), every group's shell
+  to carry C++'s face entities (`cpp_faces_golden_test.go`), and every
   constraint's equations to hold, except the LINKED fixture.
 - `TestArcLengthConstraints` covers the four arc-length constraints no
   fixture uses.
@@ -196,11 +197,8 @@ when the trim polygon doesn't assemble" path.
 
 **Smaller stand-ins found but not yet ported:**
 
-- `SBezier::AllIntersectionsWith`;
-- `SSurface::MakeSectionEdgesInto`;
-- the face remapping of LATHE/REVOLVE/HELIX shells, which needs
-  `SBezier::entity`;
 - the load-time `GenerateAll(REGEN)` in `UpgradeLegacyData`, so the
   first bbox pass pwl's loops at the file's own chord tolerance;
-- LINKED import (`impEntity`, `impShell`);
-- the rest of `mesh.cpp` (see its row).
+- LINKED import (`impEntity`, `impShell`, `impMesh`);
+- the rest of `mesh.cpp` (see its row), including the forced-to-mesh
+  combine's `SnapToMesh`.

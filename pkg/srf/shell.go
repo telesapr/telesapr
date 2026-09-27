@@ -97,20 +97,42 @@ func (s *SShell) MakeFromCopyOf(src *SShell) {
 }
 
 // addAndAssignSurfaceId appends ss to s.Surface with a fresh
-// sequential handle (and matching FaceID), mirroring the C++
-// `IdList::AddAndAssignId` semantics used throughout shell.cpp.
+// sequential handle, leaving its face alone (C++
+// IdList::AddAndAssignId).
 func (s *SShell) addAndAssignSurfaceId(ss SSurface) core.HSSurface {
-	var maxV uint32
-	for i := range s.Surface {
-		if s.Surface[i].H.V > maxV {
-			maxV = s.Surface[i].H.V
-		}
+	return s.addSurfaceAssignId(ss)
+}
+
+// ShellGroup is what the revolution constructors read from the group
+// they build a shell for (C++ passes its Group): the faces of the new
+// surfaces are entities from the group's remap table.
+type ShellGroup interface {
+	// Remap is the handle of copy copyNumber of entity in (C++
+	// Group::Remap).
+	Remap(in core.HEntity, copyNumber int) core.HEntity
+	// EntityExists reports whether the sketch has entity h.
+	EntityExists(h core.HEntity) bool
+}
+
+// The remap keys of the faces the shell constructors assign (C++
+// Group::REMAP_LINE_TO_FACE, REMAP_LATHE_START, REMAP_LATHE_END).
+const (
+	remapLineToFace = 1004
+	remapLatheStart = 1006
+	remapLatheEnd   = 1007
+)
+
+// lineToFace is the face of the surface swept by sb: the group's copy
+// of the line segment sb came from, if the sketch has it.
+func lineToFace(group ShellGroup, sb *SBezier) (FaceID, bool) {
+	if sb.Entity == 0 {
+		return 0, false
 	}
-	h := core.HSSurface{V: maxV + 1}
-	ss.H = h
-	ss.Face = FaceID(h.V)
-	s.Surface = append(s.Surface, ss)
-	return h
+	hface := group.Remap(core.HEntity{V: sb.Entity}, remapLineToFace)
+	if !group.EntityExists(hface) {
+		return 0, false
+	}
+	return FaceID(hface.V), true
 }
 
 // addAndAssignCurveId appends sc to s.Curve with a fresh sequential
@@ -380,7 +402,7 @@ func (s *SShell) addCurveTrimming(sc SCurve, backwardsA bool) {
 // REMAP_LINE_TO_FACE of the swept surfaces is not done: SBezier
 // carries no source entity.
 func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector,
-	color core.RgbaColor, angles, anglef, dists, distf float64, startFace, endFace uint32) {
+	color core.RgbaColor, group ShellGroup, angles, anglef, dists, distf float64) {
 	if sbls == nil {
 		return
 	}
@@ -388,13 +410,14 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 	dist := distf - dists
 	sections := int(math.Abs(anglef-angles)/(math.Pi/2) + 1)
 	wedge := (anglef - angles) / float64(sections)
+	startMapping, endMapping := remapLatheStart, remapLatheEnd
 
 	if CheckNormalAxisRelationship(sbls, pt, axis, anglef-angles, distf-dists) {
 		angles, anglef = anglef, angles
 		dists, distf = distf, dists
 		dist = -dist
 		wedge = -wedge
-		startFace, endFace = endFace, startFace
+		startMapping, endMapping = endMapping, startMapping
 	}
 
 	// Define a coordinate system to contain the original sketch, and get
@@ -425,14 +448,11 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 	s1.Color = color
 	s1.TrimBuilt = true
 
+	s0.Face = FaceID(group.Remap(core.NoEntity, startMapping).V)
+	s1.Face = FaceID(group.Remap(core.NoEntity, endMapping).V)
+
 	hs0 := s.addAndAssignSurfaceId(s0)
 	hs1 := s.addAndAssignSurfaceId(s1)
-	if startFace != 0 {
-		s.FindSurface(hs0).Face = FaceID(startFace)
-	}
-	if endFace != 0 {
-		s.FindSurface(hs1).Face = FaceID(endFace)
-	}
 
 	// Now we actually build and trim the swept surfaces. One loop at a time.
 	for _, sbl := range sbls.loops() {
@@ -454,6 +474,9 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 						dists+float64(j)*dist/float64(sections), dists+float64(j+1)*dist/float64(sections))
 					ss.Color = color
 					ss.TrimBuilt = true
+					if face, ok := lineToFace(group, sb); ok {
+						ss.Face = face
+					}
 					revs[j] = s.addAndAssignSurfaceId(ss)
 				}
 			}
@@ -538,10 +561,8 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 // around the axis (pt, axis). Each curve becomes four 90-degree
 // surfaces of revolution, trimmed by the rotated copies of the curve
 // and by the circles swept by its endpoints. Faithful port of C++
-// `SShell::MakeFromRevolutionOf` (shell.cpp), except that the C++
-// REMAP_LINE_TO_FACE of the surfaces is not done: SBezier carries no
-// source entity.
-func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor) {
+// `SShell::MakeFromRevolutionOf` (shell.cpp).
+func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor, group ShellGroup) {
 	if sbls == nil {
 		return
 	}
@@ -568,6 +589,9 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 						(math.Pi/2)*float64(j+1), 0.0, 0.0)
 					ss.Color = color
 					ss.TrimBuilt = true
+					if face, ok := lineToFace(group, sb); ok {
+						ss.Face = face
+					}
 					hsl[bi][j] = s.addAndAssignSurfaceId(ss)
 				}
 			}
@@ -890,58 +914,171 @@ func (srf *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, st
 	}
 }
 
-// MakeSectionEdgesInto emits the cross-section of the shell where it
-// is cut by the plane (n, d). Phase 4 + Item 4: emit the boundary
-// of each surface that's coplanar with (n, d).
-func (s *SShell) MakeSectionEdgesInto(n geom.Vector, d float64, el *SEdgeList) {
+// MakeSectionEdgesInto reports the trim curves of the shell's planar
+// faces that lie in the plane n . p = d: exactly into sbl where it can,
+// otherwise as pwl edges into sel (C++ SShell::MakeSectionEdgesInto).
+func (s *SShell) MakeSectionEdgesInto(n geom.Vector, d float64, sel *SEdgeList, sbl *SBezierList) {
 	for i := range s.Surface {
-		s.Surface[i].MakeSectionEdgesInto(s, el, n, d)
+		if s.Surface[i].CoincidentWithPlane(n, d) {
+			s.Surface[i].MakeSectionEdgesInto(s, sel, sbl)
+		}
 	}
 }
 
-// MakeSectionEdgesInto is the per-surface version.
-func (srf *SSurface) MakeSectionEdgesInto(parentShell *SShell, el *SEdgeList, n geom.Vector, d float64) {
-	_ = parentShell
-	// Phase 4 + Item 4: emit 4 boundary edges of the surface only
-	// when the surface is approximately coplanar with (n, d).
-	if !srf.CoincidentWithPlane(n, d, 1e-6) {
-		return
+// ExactSurfaceTangentAt is the direction, at p, of the curve where srfA
+// meets srfB, pointing along dir (C++ SSurface::ExactSurfaceTangentAt).
+func (srf *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector {
+	var puva, puvb geom.Point2d
+	srfA.ClosestPointTo(p, &puva, true)
+	srfB.ClosestPointTo(p, &puvb, true)
+	ts := srfA.NormalAtUv(puva).Cross(srfB.NormalAtUv(puvb))
+	ts = ts.WithMagnitude(1)
+	if ts.Dot(dir) < 0 {
+		ts = ts.ScaledBy(-1)
 	}
-	p00 := srf.PointAt(0, 0)
-	p10 := srf.PointAt(1, 0)
-	p11 := srf.PointAt(1, 1)
-	p01 := srf.PointAt(0, 1)
-	el.AddEdge(p00, p10, 0, 0, srf.Tag)
-	el.AddEdge(p10, p11, 0, 0, srf.Tag)
-	el.AddEdge(p11, p01, 0, 0, srf.Tag)
-	el.AddEdge(p01, p00, 0, 0, srf.Tag)
-	_ = el
-	_ = n
-	_ = d
+	return ts
 }
 
-// RemapFaces assigns fresh face ids to surfaces in the shell.
-// Called after a boolean operation when faces get split.
-func (s *SShell) RemapFaces() {
-	for i := range s.Surface {
-		s.Surface[i].Face = FaceID(uint32(i + 1))
+// MakeSectionEdgesInto reports our trim curves. If a trim curve is
+// exact and sbl is not nil, then add its exact form to sbl. Otherwise,
+// add its piecewise linearization to sel (C++
+// SSurface::MakeSectionEdgesInto).
+func (srf *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBezierList) {
+	for k := range srf.Trim {
+		stb := &srf.Trim[k]
+		sc := shell.FindCurve(stb.Curve)
+		sb := &sc.Exact
+
+		if sbl != nil && sc.IsExact && (sb.Degree != 1 || sel == nil) {
+			var ts, tf float64
+			if stb.Backwards {
+				tf, _ = sb.ClosestPointTo(stb.StartP, true)
+				ts, _ = sb.ClosestPointTo(stb.FinishP, true)
+			} else {
+				ts, _ = sb.ClosestPointTo(stb.StartP, true)
+				tf, _ = sb.ClosestPointTo(stb.FinishP, true)
+			}
+			var junkBef, keepAft SBezier
+			sb.SplitAt(ts, &junkBef, &keepAft)
+			// In the kept piece, the range that used to go from ts to 1
+			// now goes from 0 to 1; so rescale tf appropriately.
+			tf = (tf - ts) / (1 - ts)
+
+			var keepBef, junkAft SBezier
+			keepAft.SplitAt(tf, &keepBef, &junkAft)
+
+			sbl.Curves = append(sbl.Curves, keepBef)
+		} else if sbl != nil && sel == nil && !sc.IsExact {
+			// We must approximate this trim curve, as piecewise cubic sections.
+			srfA := shell.FindSurface(sc.SurfA)
+			srfB := shell.FindSurface(sc.SurfB)
+
+			s, f := stb.StartP, stb.FinishP
+			if stb.Backwards {
+				s, f = f, s
+			}
+
+			sp := 0
+			for ; sp < len(sc.Points); sp++ {
+				if s.Equals(sc.Points[sp].P) {
+					break
+				}
+			}
+			if sp >= len(sc.Points) {
+				return
+			}
+			fp := sp
+			for ; fp < len(sc.Points); fp++ {
+				if f.Equals(sc.Points[fp].P) {
+					break
+				}
+			}
+			if fp >= len(sc.Points) {
+				return
+			}
+			// So now the curve we want goes from elem[sp] to elem[fp]
+
+			for sp < fp {
+				// Initially, we'll try approximating the entire trim curve
+				// as a single Bezier segment
+				fpt := fp
+
+				for {
+					// So construct a cubic Bezier with the correct endpoints
+					// and tangents for the current span.
+					st := sc.Points[sp].P
+					ft := sc.Points[fpt].P
+					sf := ft.Minus(st)
+					m := sf.Magnitude() / 3
+
+					stan := srf.ExactSurfaceTangentAt(st, srfA, srfB, sf)
+					ftan := srf.ExactSurfaceTangentAt(ft, srfA, srfB, sf)
+
+					sb := SBezierFrom4(st,
+						st.Plus(stan.WithMagnitude(m)),
+						ft.Minus(ftan.WithMagnitude(m)),
+						ft)
+
+					// And test how much this curve deviates from the
+					// intermediate points (if any).
+					tooFar := false
+					for i := sp + 1; i <= fpt-1; i++ {
+						p := sc.Points[i].P
+						t, _ := sb.ClosestPointTo(p, false)
+						pp := sb.PointAt(t)
+						if pp.Minus(p).Magnitude() > ChordTolMm()/2 {
+							tooFar = true
+							break
+						}
+					}
+
+					if tooFar {
+						// Deviates by too much, so try a shorter span
+						fpt--
+						continue
+					}
+					// Okay, so use this piece and break.
+					sbl.Curves = append(sbl.Curves, sb)
+					break
+				}
+
+				// And continue interpolating, starting wherever the curve
+				// we just generated finishes.
+				sp = fpt
+			}
+		} else if sel != nil {
+			srf.makeTrimEdgesInto(sel, false, sc, stb)
+		}
 	}
 }
 
-// RemapFacesViaGroup calls g.Remap(face, copyNumber) for every
-// surface's face handle. Used by Group::GenerateShellAndMesh after
-// step-and-repeat and boolean operations when copies of entities
-// need new face ids.
-func (s *SShell) RemapFacesViaGroup(g interface {
-	Remap(core.HEntity, int) core.EntityID
-}, copyNumber int) {
+// RemapFaces rewrites each surface's face to the group's copy
+// copyNumber of it (C++ SShell::RemapFaces).
+func (s *SShell) RemapFaces(group ShellGroup, remap int) {
 	for i := range s.Surface {
-		face := core.HEntity{V: uint32(s.Surface[i].Face)}
-		if face == (core.HEntity{}) {
+		ss := &s.Surface[i]
+		face := core.HEntity{V: uint32(ss.Face)}
+		if face == core.NoEntity {
 			continue
 		}
-		newID := g.Remap(face, copyNumber)
-		s.Surface[i].Face = FaceID(newID.V)
+
+		face = group.Remap(face, remap)
+		ss.Face = FaceID(face.V)
+	}
+}
+
+// RemapFaces rewrites each triangle's face to the group's copy
+// copyNumber of it (C++ SMesh::RemapFaces).
+func (m *SMesh) RemapFaces(group ShellGroup, remap int) {
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		face := core.HEntity{V: uint32(tr.Meta.Face)}
+		if face == core.NoEntity {
+			continue
+		}
+
+		face = group.Remap(face, remap)
+		tr.Meta.Face = FaceID(face.V)
 	}
 }
 
