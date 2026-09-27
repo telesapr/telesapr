@@ -153,51 +153,43 @@ func (b *SBezier) TangentAt(t float64) geom.Vector {
 	return ret
 }
 
-// ClosestPointTo finds the parameter t on the curve closest to point
-// p, with the mustConverge flag controlling whether the result is
-// guaranteed converged.
+// ClosestPointTo is the parameter t of the point on the curve closest
+// to p: the closest of a few samples, refined by Newton's method. It
+// reports whether that converged; C++ only complains when mustConverge
+// (C++ SBezier::ClosestPointTo).
 func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, bool) {
-	// Coarse sample: 7 samples for degree <=2, 20 for cubic.
-	nSamples := 7
-	if b.Degree == 3 {
-		nSamples = 20
+	minDist := veryPositive
+	t := 0.0
+	res := 20.0
+	if b.Degree <= 2 {
+		res = 7.0
 	}
-	bestT := 0.0
-	bestDist := mathInfPos
-	for i := 0; i <= nSamples; i++ {
-		t := float64(i) / float64(nSamples)
-		d := b.PointAt(t).DistanceTo(p)
-		if d < bestDist {
-			bestDist = d
-			bestT = t
+	for i := 0; i < int(res); i++ {
+		tryt := float64(i) / res
+
+		tryp := b.PointAt(tryt)
+		d := tryp.Minus(p).Magnitude()
+		if d < minDist {
+			t = tryt
+			minDist = d
 		}
 	}
-	// Newton refinement.
-	for iter := 0; iter < 25; iter++ {
-		pt := b.PointAt(bestT)
-		tan := b.TangentAt(bestT)
-		tanMag2 := tan.MagSquared()
-		if tanMag2 < 1e-20 {
-			break
-		}
-		step := pt.Minus(p).Dot(tan) / tanMag2
-		newT := bestT - step
-		if newT < 0 {
-			newT = 0
-		}
-		if newT > 1 {
-			newT = 1
-		}
-		if mathAbs(newT-bestT) < 1e-12 {
-			bestT = newT
-			break
-		}
-		bestT = newT
+
+	iters := 5
+	if mustConverge {
+		iters = 15
 	}
-	if mustConverge && b.PointAt(bestT).DistanceTo(p) > 1e-6 {
-		return bestT, false
+	for i := 0; i < iters; i++ {
+		p0 := b.PointAt(t)
+		if p0.EqualsTol(p, ratPolyEps) {
+			return t, true
+		}
+
+		dp := b.TangentAt(t)
+		pc := p.ClosestPointOnLine(p0, dp)
+		t += pc.Minus(p0).DivProjected(dp)
 	}
-	return bestT, true
+	return t, false
 }
 
 // SBezierFromV4 is the curve with homogeneous control points ct (C++
