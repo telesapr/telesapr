@@ -4,9 +4,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 // TestPhase7AllFixturesLoad walks every .slvs fixture in testdata/
@@ -84,8 +86,24 @@ var roundTripExclusions = map[string]string{
 	"group/translate_nd/normal.slvs":             "older version",
 	// Written by SolveSpace 2.0, for group/link/normal.slvs to link.
 	"group/link/rect_v20.slvs": "older version",
+	// C++'s own load and save of these changes the last digits of
+	// solved values.
+	"edit/split_arc_cubic.slvs":    "C++ doesn't reproduce it",
+	"edit/tangent.slvs":            "C++ doesn't reproduce it",
+	"edit/tangent_arc.slvs":        "C++ doesn't reproduce it",
+	"edit/tangent_arc_modify.slvs": "C++ doesn't reproduce it",
+	"edit/tangent_manual.slvs":     "C++ doesn't reproduce it",
+	"edit/tangent_modify.slvs":     "C++ doesn't reproduce it",
 	// Not a valid SolveSpace file; C++ can't load it either.
 	"solver/param_point_distance.slvs": "not a valid file",
+}
+
+// withCppHeader is a saved file with the header C++ writes: the
+// version line and two blank lines. Most fixtures have one blank line.
+func withCppHeader(file []byte) string {
+	s := string(file)
+	i := strings.IndexByte(s, '\n')
+	return s[:i] + "\n\n\n" + strings.TrimLeft(s[i:], "\n")
 }
 
 // TestPhase7AllFixturesRoundTrip loads each fixture and saves it
@@ -109,6 +127,9 @@ func TestPhase7AllFixturesRoundTrip(t *testing.T) {
 		if _, ok := roundTripExclusions[filepath.ToSlash(rel)]; ok {
 			return nil
 		}
+		// C++ saved the fixtures in a fresh process, whose chord
+		// tolerance starts at 0; linking an IDF file uses it.
+		srf.SetChordTolMm(0)
 		doc, err := slvs.LoadFile(path)
 		if err != nil {
 			t.Errorf("load %s: %v", path, err)
@@ -120,7 +141,7 @@ func TestPhase7AllFixturesRoundTrip(t *testing.T) {
 			t.Errorf("rewind %s: %v", path, err)
 			return nil
 		}
-		if string(saved) != string(original) {
+		if string(saved) != withCppHeader(original) {
 			t.Errorf("roundtrip mismatch for %s", path)
 			return nil
 		}

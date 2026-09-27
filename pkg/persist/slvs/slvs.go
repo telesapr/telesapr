@@ -27,8 +27,7 @@ type RemapEntry struct {
 }
 
 type Document struct {
-	Header    string
-	HeaderSep string // separator line(s) between Header and first block (preserved across round-trip)
+	Header string
 
 	Blocks []Block
 	// shellLines are the mesh and shell a file saves for linking
@@ -92,12 +91,7 @@ func (d *Document) Save() []byte {
 	}
 
 	var b strings.Builder
-	b.WriteString(d.Header)
-	if d.HeaderSep != "" {
-		b.WriteString(d.HeaderSep)
-	} else {
-		b.WriteString("\n\n\n")
-	}
+	b.WriteString(versionString + "\n\n\n")
 
 	for i := range d.Sketch.Groups {
 		writeGroup(&b, &d.Sketch.Groups[i])
@@ -125,8 +119,10 @@ func (d *Document) Save() []byte {
 	}
 
 	for i := range d.Sketch.Styles {
-		writeStyle(&b, &d.Sketch.Styles[i])
-		b.WriteString("AddStyle\n\n")
+		if d.Sketch.Styles[i].H.V >= core.StyleFirstCustom {
+			writeStyle(&b, &d.Sketch.Styles[i])
+			b.WriteString("AddStyle\n\n")
+		}
 	}
 
 	// A group will have either a mesh or a shell, but not both; but the code
@@ -153,18 +149,6 @@ func (d *Document) parse(data []byte) error {
 	d.Header = lines[0]
 
 	i := 1
-	// Capture the separator lines (blank lines) between Header
-	// and the first block so Save() round-trips with identical
-	// whitespace. The file has "Header\n[\n]*Group..."; the number
-	// of '\n' chars after Header is (1 + blankLines).
-	var sep strings.Builder
-	sep.WriteString("\n") // header terminator
-	for i < len(lines) && strings.TrimSpace(lines[i]) == "" {
-		sep.WriteString("\n")
-		i++
-	}
-	d.HeaderSep = sep.String()
-
 	for i < len(lines) {
 		if strings.TrimSpace(lines[i]) == "" {
 			i++
@@ -667,7 +651,7 @@ func (d *Document) processStyle(block Block) {
 	}
 	// Like C++, fields the file leaves out take default values.
 	style := core.Style{}
-	core.FillDefaultStyle(&style, nil)
+	core.FillDefaultStyle(&style, nil, false)
 	style.H = core.HStyle{V: parseHexUint32(hStr)}
 	if v, ok := fields["Style.name"]; ok {
 		style.Name = v

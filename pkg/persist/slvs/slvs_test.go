@@ -9,6 +9,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 func fixturesRoot(t *testing.T) string {
@@ -42,6 +43,9 @@ func TestSLVSLoadRoundTrip(t *testing.T) {
 			return nil
 		}
 
+		// C++ saved the fixtures in a fresh process, whose chord
+		// tolerance starts at 0; linking an IDF file uses it.
+		srf.SetChordTolMm(0)
 		doc, err := slvs.LoadFile(path)
 		if err != nil {
 			t.Fatalf("load %s: %v", path, err)
@@ -63,7 +67,7 @@ func TestSLVSLoadRoundTrip(t *testing.T) {
 		if err != nil {
 			t.Fatalf("rewind %s: %v", path, err)
 		}
-		if string(saved) != string(original) {
+		if string(saved) != withCppHeader(original) {
 			t.Fatalf("roundtrip mismatch for %s", path)
 		}
 		return nil
