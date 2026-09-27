@@ -4,7 +4,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
@@ -80,29 +79,6 @@ func TestMergeCoincidentSurfacesJoinsCoplanarFaces(t *testing.T) {
 	}
 }
 
-// TestSPolygonOffsetIntoVerifiesShift verifies that OffsetInto
-// moves each contour edge by r along the outward normal.
-func TestSPolygonOffsetIntoVerifiesShift(t *testing.T) {
-	p := &SPolygon{Normal: geom.Vector{Z: 1}}
-	c := SContour{}
-	c.AddPoint(geom.Vector{})
-	c.AddPoint(geom.Vector{X: 1})
-	c.AddPoint(geom.Vector{X: 1, Y: 1})
-	c.AddPoint(geom.Vector{Y: 1})
-	p.Contours = []SContour{c}
-	var dst SPolygon
-	p.OffsetInto(&dst, 0.5)
-	if len(dst.Contours) != 1 {
-		t.Fatalf("expected 1 contour in dst, got %d", len(dst.Contours))
-	}
-	// All points should be at z = 0.5.
-	for i, p := range dst.Contours[0].Points {
-		if p.P.Z != 0.5 {
-			t.Fatalf("point %d z=%f, expected 0.5", i, p.P.Z)
-		}
-	}
-}
-
 // TestSCurveRemoveShortSegments verifies that RemoveShortSegments
 // drops near-duplicate vertices when the chord tolerance of both
 // surfaces is satisfied. All points lie on a flat plane, so any
@@ -159,30 +135,6 @@ func TestSCurveRemoveShortSegmentsNilSurfaces(t *testing.T) {
 	}
 }
 
-// TestSPolygonOffsetIntoRoundTrip checks that OffsetInto is
-// reversible by checking the centroid moved by the requested amount.
-func TestSPolygonOffsetIntoRoundTrip(t *testing.T) {
-	p := &SPolygon{Normal: geom.Vector{Z: 1}}
-	c := SContour{}
-	for _, corner := range []geom.Vector{
-		{X: 0, Y: 0},
-		{X: 1, Y: 0},
-		{X: 1, Y: 1},
-		{X: 0, Y: 1},
-	} {
-		c.AddPoint(corner)
-	}
-	p.Contours = []SContour{c}
-	var dst SPolygon
-	p.OffsetInto(&dst, 2.0)
-	for _, p := range dst.Contours[0].Points {
-		if p.P.Z != 2.0 {
-			t.Fatalf("offset point z=%f, expected 2.0", p.P.Z)
-		}
-	}
-	_ = core.HEntity{}
-}
-
 // TestSPolygonUvGridTriangulateIntoAdaptive verifies that the
 // adaptive grid path covers a (closed) unit uv square exactly.
 func TestSPolygonUvGridTriangulateIntoAdaptive(t *testing.T) {
@@ -210,5 +162,49 @@ func TestSPolygonUvGridTriangulateIntoAdaptive(t *testing.T) {
 	}
 	if math.Abs(area-1) > 1e-9 {
 		t.Fatalf("triangulated area = %v, want 1", area)
+	}
+}
+
+// TestSPolygonOffsetInto offsets squares as C++ does: counterclockwise
+// grows, with rounded corners exactly r from the square; clockwise
+// shrinks, with mitred corners.
+func TestSPolygonOffsetInto(t *testing.T) {
+	square := func(pts ...geom.Vector) *SPolygon {
+		p := &SPolygon{}
+		p.AddEmptyContour()
+		for _, v := range pts {
+			p.Contours[0].AddPoint(v)
+		}
+		return p
+	}
+	o, x, xy, y := geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 1, Y: 1}, geom.Vector{Y: 1}
+	const r = 0.1
+
+	var grown SPolygon
+	square(o, x, xy, y, o).OffsetInto(&grown, r)
+	pts := grown.Contours[0].Points
+	if len(pts) <= 4 {
+		t.Fatalf("grown square has %d points, want rounded corners", len(pts))
+	}
+	for _, sp := range pts {
+		// Distance from the unit square, for a point outside it.
+		dx := math.Max(math.Max(-sp.P.X, sp.P.X-1), 0)
+		dy := math.Max(math.Max(-sp.P.Y, sp.P.Y-1), 0)
+		if d := math.Hypot(dx, dy); math.Abs(d-r) > 1e-9 {
+			t.Errorf("grown point %v is %g from the square, want %g", sp.P, d, r)
+		}
+	}
+
+	var shrunk SPolygon
+	square(o, y, xy, x, o).OffsetInto(&shrunk, r)
+	got := shrunk.Contours[0].Points
+	want := []geom.Vector{{X: r, Y: r}, {X: r, Y: 1 - r}, {X: 1 - r, Y: 1 - r}, {X: 1 - r, Y: r}, {X: r, Y: r}}
+	if len(got) != len(want) {
+		t.Fatalf("shrunk square has %d points, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if !got[i].P.EqualsTol(want[i], 1e-12) {
+			t.Errorf("shrunk point %d = %v, want %v", i, got[i].P, want[i])
+		}
 	}
 }

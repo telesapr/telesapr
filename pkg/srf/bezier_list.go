@@ -33,26 +33,35 @@ func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList) 
 	}
 }
 
-// CullIdenticalBeziers removes duplicate curves from the list. If
-// `both` is true, removes both; otherwise keeps one of each.
+// CullIdenticalBeziers removes the curves identical to an earlier one,
+// either way round, and with both the earlier one too (C++
+// SBezierList::CullIdenticalBeziers).
 func (l *SBezierList) CullIdenticalBeziers(both bool) {
-	const tol = 1e-9
-	out := l.Curves[:0]
 	for i := range l.Curves {
-		keep := true
-		for j := 0; j < len(out); j++ {
-			if beziersAlmostEqual(l.Curves[i], out[j], tol) {
-				if !both {
-					keep = false
+		l.Curves[i].Tag = 0
+	}
+	for i := range l.Curves {
+		bi := &l.Curves[i]
+		bir := *bi
+		bir.Reverse()
+
+		for j := i + 1; j < len(l.Curves); j++ {
+			bj := &l.Curves[j]
+			if bj.Equals(bi) || bj.Equals(&bir) {
+				if both {
+					bi.Tag = 1
 				}
-				break
+				bj.Tag = 1
 			}
 		}
-		if keep {
-			out = append(out, l.Curves[i])
+	}
+	kept := l.Curves[:0]
+	for _, sb := range l.Curves {
+		if sb.Tag == 0 {
+			kept = append(kept, sb)
 		}
 	}
-	l.Curves = out
+	l.Curves = kept
 }
 
 // ScaleSelfBy multiplies every control point by s.
@@ -78,24 +87,6 @@ func (l *SBezierList) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64)
 			}
 		}
 	}
-}
-
-// beziersAlmostEqual reports whether two Beziers are geometrically
-// identical (same degree, same control points, same weights) within
-// tol.
-func beziersAlmostEqual(a, b SBezier, tol float64) bool {
-	if a.Degree != b.Degree {
-		return false
-	}
-	for i := 0; i <= a.Degree; i++ {
-		if a.Ctrl[i].DistanceTo(b.Ctrl[i]) > tol {
-			return false
-		}
-		if mathAbs(a.Weight[i]-b.Weight[i]) > tol {
-			return false
-		}
-	}
-	return true
 }
 
 // GetPlaneContainingBeziers finds a plane that contains all the curves in

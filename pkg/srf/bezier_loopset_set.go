@@ -6,13 +6,11 @@ import "github.com/spacesolve/spacesolve/pkg/geom"
 // a list of SBezierLoopSet (one per outer contour) plus an optional
 // list of open paths.
 type SBezierLoopSetSet struct {
-	Sets  []SBezierLoopSet
-	Opens SBezierList
+	Sets []SBezierLoopSet
 }
 
 func (s *SBezierLoopSetSet) Clear() {
 	s.Sets = s.Sets[:0]
-	s.Opens.Clear()
 }
 
 // AddOuter appends a new empty SBezierLoopSet and returns a pointer
@@ -22,9 +20,10 @@ func (s *SBezierLoopSetSet) AddOuter() *SBezierLoopSet {
 	return &s.Sets[len(s.Sets)-1]
 }
 
-// AddOpenPath appends an open path Bezier.
+// AddOpenPath adds a set holding a loop of just b (C++
+// SBezierLoopSetSet::AddOpenPath).
 func (s *SBezierLoopSetSet) AddOpenPath(b SBezier) {
-	s.Opens.Add(b)
+	s.Sets = append(s.Sets, SBezierLoopSet{Outer: SBezierLoop{Curves: []SBezier{b}}})
 }
 
 // FindOuterFacesFrom assembles the curves of sbl into closed loops and

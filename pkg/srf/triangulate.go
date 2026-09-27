@@ -61,7 +61,7 @@ func (p *SPolygon) UvTriangulateInto(m *SMesh, srf *SSurface) {
 
 		// List all of the edges, for testing whether bridges work.
 		var el SEdgeList
-		p.Contours[top].MakeEdgesInto(&el, false)
+		p.Contours[top].MakeEdgesInto(&el)
 		var vl []geom.Vector
 
 		// And now find all of its holes. Note that we will also find any
@@ -84,7 +84,7 @@ func (p *SPolygon) UvTriangulateInto(m *SMesh, srf *SSurface) {
 			tp := sc.AnyEdgeMidpoint()
 			if p.Contours[top].ContainsPointProjdToNormal(p.Normal, tp) {
 				sc.Tag = 2
-				sc.MakeEdgesInto(&el, false)
+				sc.MakeEdgesInto(&el)
 				sc.FindPointWithMinX()
 			}
 		}

@@ -1,6 +1,10 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
 
 // SContour is an ordered list of SPoint forming one polygon contour.
 // Contours can be open (line strip) or closed (loop). The
@@ -15,16 +19,9 @@ type SContour struct {
 
 func (c *SContour) Len() int { return len(c.Points) }
 
-// AddPoint appends a point and keeps XMinPt up to date.
+// AddPoint appends p with tag 0 (C++ SContour::AddPoint).
 func (c *SContour) AddPoint(p geom.Vector) {
 	c.Points = append(c.Points, SPoint{P: p})
-	if len(c.Points) == 1 {
-		c.XMinPt = p
-		return
-	}
-	if p.X < c.XMinPt.X {
-		c.XMinPt = p
-	}
 }
 
 // Reverse reverses the contour direction in place.
@@ -146,82 +143,137 @@ func containsVec(vs []geom.Vector, v geom.Vector) bool {
 	return false
 }
 
-// CopyInto copies all points to dest.
+// CopyInto adds the contour's points to dest (C++ SContour::CopyInto).
 func (c *SContour) CopyInto(dest *SContour) {
-	dest.Tag = c.Tag
-	dest.TimesEnclosed = c.TimesEnclosed
-	dest.XMinPt = c.XMinPt
-	dest.Points = make([]SPoint, len(c.Points))
-	copy(dest.Points, c.Points)
+	for _, sp := range c.Points {
+		dest.AddPoint(sp.P)
+	}
 }
 
-// OffsetInto produces a translated copy of every point on the
-// contour. This is a coarse offset along +normal*offset; the
-// full Minkowski-sum offset is implemented in extensions
-// once SSurface is in place.
+// OffsetInto adds to dest the contour, in the xy plane, offset by r:
+// outside corners are rounded, inside ones mitred (C++
+// SContour::OffsetInto).
 func (c *SContour) OffsetInto(dest *SContour, r float64) {
-	dest.Tag = c.Tag
-	dest.TimesEnclosed = c.TimesEnclosed
-	dest.Points = make([]SPoint, len(c.Points))
-	n := c.ComputeNormal().Normal()
-	for i, p := range c.Points {
-		dest.Points[i] = SPoint{P: p.P.Plus(n.ScaledBy(r))}
-	}
-	if len(dest.Points) > 0 {
-		dest.XMinPt = dest.Points[0].P
-		for _, sp := range dest.Points[1:] {
-			if sp.P.X < dest.XMinPt.X {
-				dest.XMinPt = sp.P
+	n := len(c.Points)
+	wrap := func(v int) int { return wrapIdx(v, n-1) }
+	for i := 0; i < n; i++ {
+		a := c.Points[wrap(i-1)].P
+		b := c.Points[wrap(i)].P
+		cc := c.Points[wrap(i+1)].P
+
+		dp := a.Minus(b)
+		thetap := math.Atan2(dp.Y, dp.X)
+
+		dn := b.Minus(cc)
+		thetan := math.Atan2(dn.Y, dn.X)
+
+		// A short line segment in a badly-generated polygon might look
+		// okay but screw up our sense of direction.
+		if dp.Magnitude() < geom.LengthEps || dn.Magnitude() < geom.LengthEps {
+			continue
+		}
+
+		if thetan > thetap && (thetan-thetap) > math.Pi {
+			thetap += 2 * math.Pi
+		}
+		if thetan < thetap && (thetap-thetan) > math.Pi {
+			thetan += 2 * math.Pi
+		}
+
+		if math.Abs(thetan-thetap) < (1*math.Pi)/180 {
+			dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(thetap), Y: b.Y + r*math.Cos(thetap)})
+		} else if thetan < thetap {
+			// This is an inside corner. We have two edges, Ep and En. Move
+			// out from their intersection by radius, normal to En, and
+			// then draw a line parallel to En. Move out from their
+			// intersection by radius, normal to Ep, and then draw a second
+			// line parallel to Ep. The point that we want to generate is
+			// the intersection of these two lines--it removes as much
+			// material as we can without removing any that we shouldn't.
+			px0 := b.X - r*math.Sin(thetap)
+			py0 := b.Y + r*math.Cos(thetap)
+			pdx := math.Cos(thetap)
+			pdy := math.Sin(thetap)
+
+			nx0 := b.X - r*math.Sin(thetan)
+			ny0 := b.Y + r*math.Cos(thetan)
+			ndx := math.Cos(thetan)
+			ndy := math.Sin(thetan)
+
+			x, y := 0.0, 0.0
+			intersectionOfLines(px0, py0, pdx, pdy, nx0, ny0, ndx, ndy, &x, &y)
+
+			dest.AddPoint(geom.Vector{X: x, Y: y})
+		} else {
+			if math.Abs(thetap-thetan) < (6*math.Pi)/180 {
+				dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(thetap), Y: b.Y + r*math.Cos(thetap)})
+				dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(thetan), Y: b.Y + r*math.Cos(thetan)})
+			} else {
+				for theta := thetap; theta <= thetan; theta += (6 * math.Pi) / 180 {
+					dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(theta), Y: b.Y + r*math.Cos(theta)})
+				}
 			}
 		}
 	}
 }
 
-// FindPointWithMinX updates XMinPt to the point with the smallest X.
-func (c *SContour) FindPointWithMinX() {
-	if len(c.Points) == 0 {
-		c.XMinPt = geom.Vector{}
-		return
+// intersectionOfLines is where the lines (x0A, y0A) + t*(dxA, dyA) and
+// (x0B, y0B) + t*(dxB, dyB) cross; false if they're parallel (C++'s
+// static IntersectionOfLines in polygon.cpp).
+func intersectionOfLines(x0A, y0A, dxA, dyA, x0B, y0B, dxB, dyB float64, xi, yi *float64) bool {
+	var A [2][2]float64
+	var b [2]float64
+
+	// The line is given to us in the form:
+	//    (x(t), y(t)) = (x0, y0) + t*(dx, dy)
+	// so first rewrite it as
+	//    (x - x0, y - y0) dot (dy, -dx) = 0
+	//    x*dy - x0*dy - y*dx + y0*dx = 0
+	//    x*dy - y*dx = (x0*dy - y0*dx)
+
+	// So write the matrix, pre-pivoted.
+	if math.Abs(dyA) > math.Abs(dyB) {
+		A[0][0], A[0][1], b[0] = dyA, -dxA, x0A*dyA-y0A*dxA
+		A[1][0], A[1][1], b[1] = dyB, -dxB, x0B*dyB-y0B*dxB
+	} else {
+		A[1][0], A[1][1], b[1] = dyA, -dxA, x0A*dyA-y0A*dxA
+		A[0][0], A[0][1], b[0] = dyB, -dxB, x0B*dyB-y0B*dxB
 	}
-	c.XMinPt = c.Points[0].P
-	for _, sp := range c.Points[1:] {
+
+	// Check the determinant; if it's zero then no solution.
+	if math.Abs(A[0][0]*A[1][1]-A[0][1]*A[1][0]) < geom.LengthEps {
+		return false
+	}
+
+	// Solve
+	v := A[1][0] / A[0][0]
+	A[1][0] -= A[0][0] * v
+	A[1][1] -= A[0][1] * v
+	b[1] -= b[0] * v
+
+	// Back-substitute.
+	*yi = b[1] / A[1][1]
+	*xi = (b[0] - A[0][1]*(*yi)) / A[0][0]
+
+	return true
+}
+
+// FindPointWithMinX sets XMinPt to the first point with the least x
+// (C++ SContour::FindPointWithMinX).
+func (c *SContour) FindPointWithMinX() {
+	c.XMinPt = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
+	for _, sp := range c.Points {
 		if sp.P.X < c.XMinPt.X {
 			c.XMinPt = sp.P
 		}
 	}
 }
 
-// MakeEdgesInto emits one SEdge per consecutive pair of points.
-// CloseLoop controls whether the last point connects back to the first.
-func (c *SContour) MakeEdgesInto(el *SEdgeList, closeLoop bool) {
-	if len(c.Points) < 2 {
-		return
-	}
+// MakeEdgesInto adds an edge for each pair of consecutive points; the
+// contour repeats its first point at the end, so it is closed (C++
+// SContour::MakeEdgesInto).
+func (c *SContour) MakeEdgesInto(el *SEdgeList) {
 	for i := 0; i < len(c.Points)-1; i++ {
 		el.AddEdge(c.Points[i].P, c.Points[i+1].P, 0, 0, 0)
 	}
-	// C++ contours repeat their first point at the end, so
-	// SContour::MakeEdgesInto needs no closing edge; only add one for a
-	// contour that isn't stored closed.
-	if closeLoop && !c.Points[len(c.Points)-1].P.EqualsExactly(c.Points[0].P) {
-		el.AddEdge(c.Points[len(c.Points)-1].P, c.Points[0].P, 0, 0, 0)
-	}
-}
-
-func pointInTriangle(p, a, b, c geom.Vector) bool {
-	v0 := c.Minus(a)
-	v1 := b.Minus(a)
-	v2 := p.Minus(a)
-	dot00 := v0.Dot(v0)
-	dot01 := v0.Dot(v1)
-	dot02 := v0.Dot(v2)
-	dot11 := v1.Dot(v1)
-	dot12 := v1.Dot(v2)
-	den := dot00*dot11 - dot01*dot01
-	if mathAbs(den) < 1e-20 {
-		return false
-	}
-	u := (dot11*dot02 - dot01*dot12) / den
-	v := (dot00*dot12 - dot01*dot02) / den
-	return u >= 0 && v >= 0 && u+v < 1
 }

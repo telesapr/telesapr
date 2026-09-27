@@ -172,10 +172,10 @@ func TestSBezierScaleSelfBy(t *testing.T) {
 func TestSBezierIsInPlane(t *testing.T) {
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
 	n := geom.Vector{Z: 1}
-	if !b.IsInPlane(n, 0, 1e-9) {
+	if !b.IsInPlane(n, 0) {
 		t.Errorf("X-axis line on XY plane: should be in plane")
 	}
-	if b.IsInPlane(n, 5, 1e-9) {
+	if b.IsInPlane(n, 5) {
 		t.Errorf("X-axis line not on z=5 plane: should not be in plane")
 	}
 }
@@ -636,7 +636,7 @@ func TestSBezierScaleByLinear(t *testing.T) {
 // TestSBezierIsInPlaneOnXY verifies planar check.
 func TestSBezierIsInPlaneOnXY(t *testing.T) {
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
-	if !b.IsInPlane(geom.Vector{Z: 1}, 0, 1e-9) {
+	if !b.IsInPlane(geom.Vector{Z: 1}, 0) {
 		t.Errorf("XY plane line should be in XY plane")
 	}
 }
@@ -686,5 +686,23 @@ func TestSBezierListClear(t *testing.T) {
 	list.Clear()
 	if list.Len() != 0 {
 		t.Errorf("after clear, Len = %d, want 0", list.Len())
+	}
+}
+
+// TestCullIdenticalBeziers: a curve identical to an earlier one, either
+// way round, goes; with both, the earlier one goes too (C++).
+func TestCullIdenticalBeziers(t *testing.T) {
+	a := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
+	b := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{}) // a reversed
+	c := SBezierFrom2(geom.Vector{}, geom.Vector{Y: 1})
+	for _, tc := range []struct {
+		both bool
+		want int
+	}{{false, 2}, {true, 1}} {
+		l := SBezierList{Curves: []SBezier{a, b, c}}
+		l.CullIdenticalBeziers(tc.both)
+		if len(l.Curves) != tc.want || !l.Curves[len(l.Curves)-1].Equals(&c) {
+			t.Errorf("both %v: %d curves left, want %d ending with c", tc.both, len(l.Curves), tc.want)
+		}
 	}
 }

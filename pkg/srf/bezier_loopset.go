@@ -29,12 +29,9 @@ func (s *SBezierLoopSet) loops() []*SBezierLoop {
 	return ls
 }
 
-// MakePwlInto converts every loop (outer + holes) into one contour of
-// sp each. Mirrors C++ SBezierLoopSet::MakePwlInto (curve.cpp:558).
+// MakePwlInto adds one contour to sp for each loop, outer loop first
+// (C++ SBezierLoopSet::MakePwlInto).
 func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon) {
-	if sp.Normal == (geom.Vector{}) {
-		sp.Normal = s.Normal
-	}
 	for _, l := range s.loops() {
 		sp.AddEmptyContour()
 		l.MakePwlIntoContour(&sp.Contours[len(sp.Contours)-1], 0)
@@ -75,28 +72,16 @@ func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, chordTol float64,
 	return loops, normal, point
 }
 
-// ComputeNormalPointArea fills in s.Normal, s.Point, and s.Area from
-// the outer and hole contours. Mirrors the tail of C++
-// `SBezierLoopSet::From` (curve.cpp:520-528):
-//
-//	poly->normal = poly->ComputeNormal();
-//	ret.normal = poly->normal;
-//	ret.point = poly->AnyPoint();
-//
-// Callers that build an SBezierLoopSet by hand (rather than through
-// SBezierLoopSetSet::FindOuterFacesFrom, which calls this
-// internally) must call this before passing the set to
-// MakeFromExtrusionOf/MakeFromHelicalRevolutionOf: those
-// constructors need a non-degenerate Normal to build the cap-plane
-// (u, v) basis (see Vector.NormalDir), and a zero Normal collapses
-// that basis to a single direction, destroying the extrusion.
-func (s *SBezierLoopSet) ComputeNormalPointArea() {
-	var poly SPolygon
-	s.MakePwlInto(&poly)
-	poly.ComputeNormal()
-	s.Normal = poly.Normal
-	s.Point = poly.AnyPoint()
-	s.Area = poly.SignedArea()
+// SignedArea is the set's area about its own normal, computed on first
+// use (C++ SBezierLoopSet::SignedArea).
+func (s *SBezierLoopSet) SignedArea() float64 {
+	if s.Area == 0.0 {
+		var sp SPolygon
+		s.MakePwlInto(&sp)
+		sp.Normal = sp.ComputeNormal()
+		s.Area = sp.SignedArea()
+	}
+	return s.Area
 }
 
 // GetBoundingProjd extends the axis-aligned bounding box from

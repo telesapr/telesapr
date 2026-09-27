@@ -47,29 +47,17 @@ type SBezier struct {
 
 // SBezierFrom2 builds a line segment from a to b.
 func SBezierFrom2(a, b geom.Vector) SBezier {
-	return SBezier{
-		Degree: 1,
-		Ctrl:   [4]geom.Vector{a, b, {}, {}},
-		Weight: [4]float64{1, 1, 1, 1},
-	}
+	return SBezierFromV4(a.Project4d(), b.Project4d())
 }
 
 // SBezierFrom3 builds a quadratic Bezier from three control points.
 func SBezierFrom3(a, b, c geom.Vector) SBezier {
-	return SBezier{
-		Degree: 2,
-		Ctrl:   [4]geom.Vector{a, b, c, {}},
-		Weight: [4]float64{1, 1, 1, 1},
-	}
+	return SBezierFromV4(a.Project4d(), b.Project4d(), c.Project4d())
 }
 
 // SBezierFrom4 builds a cubic Bezier from four control points.
 func SBezierFrom4(a, b, c, d geom.Vector) SBezier {
-	return SBezier{
-		Degree: 3,
-		Ctrl:   [4]geom.Vector{a, b, c, d},
-		Weight: [4]float64{1, 1, 1, 1},
-	}
+	return SBezierFromV4(a.Project4d(), b.Project4d(), c.Project4d(), d.Project4d())
 }
 
 // Start returns the first control point.
@@ -82,10 +70,11 @@ func (b *SBezier) Finish() geom.Vector {
 	return b.Ctrl[b.Degree]
 }
 
-// IsRational returns true if any weight differs from 1.
+// IsRational reports whether a weight differs from 1 (C++
+// SBezier::IsRational).
 func (b *SBezier) IsRational() bool {
 	for i := 0; i <= b.Degree; i++ {
-		if mathAbs(b.Weight[i]-1.0) > 1e-12 {
+		if mathAbs(b.Weight[i]-1.0) > lengthEps {
 			return true
 		}
 	}
@@ -116,11 +105,11 @@ func (b *SBezier) TransformedBy(t geom.Vector, q geom.Quaternion, scale float64)
 	}
 }
 
-// IsInPlane returns true if every control point lies on the plane
-// (n, d) within tol.
-func (b *SBezier) IsInPlane(n geom.Vector, d, tol float64) bool {
+// IsInPlane reports whether every control point lies in the plane
+// n . p = d (C++ SBezier::IsInPlane).
+func (b *SBezier) IsInPlane(n geom.Vector, d float64) bool {
 	for i := 0; i <= b.Degree; i++ {
-		if mathAbs(b.Ctrl[i].Dot(n)-d) > tol {
+		if mathAbs(b.Ctrl[i].Dot(n)-d) > lengthEps {
 			return false
 		}
 	}

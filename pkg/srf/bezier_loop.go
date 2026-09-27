@@ -51,6 +51,17 @@ func (l *SBezierLoop) Reverse() {
 	}
 }
 
+// IsClosed reports whether the loop ends where it starts (C++
+// SBezierLoop::IsClosed).
+func (l *SBezierLoop) IsClosed() bool {
+	if len(l.Curves) == 0 {
+		return false
+	}
+	s := l.Curves[0].Start()
+	f := l.Curves[len(l.Curves)-1].Finish()
+	return s.Equals(f)
+}
+
 // GetBoundingProjd extends the axis-aligned bounding box.
 func (l *SBezierLoop) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 	for i := range l.Curves {
