@@ -87,9 +87,8 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 // GenerateShellAndMesh builds this group's shell (by extrusion,
 // revolution, step and repeat, or linking), and combines it with the
 // previous group's running shell by the group's Boolean (C++
-// Group::GenerateShellAndMesh). A group whose shell is forced to a
-// mesh combines meshes instead; that branch isn't ported (see
-// combineMeshes).
+// Group::GenerateShellAndMesh). A group forced to a mesh combines
+// meshes instead (see combineMeshes).
 func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	prevBooleanFailed := g.BooleanFailed
 	_ = prevBooleanFailed
@@ -286,7 +285,7 @@ func (g *Group) generateForStepAndRepeatMesh(sk *Sketch, steps, outs *srf.SMesh,
 // generateLinkedShell is the LINKED branch of C++
 // Group::GenerateShellAndMesh: the imported shell or mesh are copied
 // over, with the group's transformation applied, and their face
-// entities remapped. Nothing fills ImpShell or ImpMesh yet.
+// entities remapped.
 func (g *Group) generateLinkedShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
@@ -419,8 +418,6 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 			}
 		}
 	}
-	g.RunningShell = g.ThisShell
-	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
 // revolveAxis returns the point on and the unit direction of the
@@ -468,7 +465,6 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 			}
 		}
 	}
-	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
 // generateHelixShell is the HELIX branch of C++
@@ -497,7 +493,6 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 		g.ThisShell.MakeFromHelicalRevolutionOf(&src.BezierLoops.Sets[i], pt, axis, g.Color,
 			shellGroup{g: g, sk: sk}, angles, anglef, dists, distf)
 	}
-	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
 // generateForBooleanShell combines prevs and thiss into outs with the
@@ -526,10 +521,8 @@ func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell, how Comb
 }
 
 // combineMeshes is GenerateShellAndMesh's combine for a group forced
-// to a mesh: triangulate both operands and combine the meshes (C++
-// GenerateForBoolean<SMesh>). C++ then snaps the result vertex to
-// vertex (SKdNode::SnapToMesh), which isn't ported; nothing reaches
-// this yet, since meshes can't be imported.
+// to a mesh: triangulate both operands, combine the meshes (C++
+// GenerateForBoolean<SMesh>), and make the result vertex to vertex.
 func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
 	var prevm, thism srf.SMesh
 	if prevg != nil {
@@ -542,7 +535,7 @@ func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
 
 	var outm srf.SMesh
 	switch {
-	case len(thism.Triangles) == 0 || g.Suppress:
+	case thism.IsEmpty() || g.Suppress:
 		outm.MakeFromCopyOf(&prevm)
 	case how == CombineUnion:
 		outm.MakeFromUnionOf(&prevm, &thism)
@@ -550,10 +543,23 @@ func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
 		outm.MakeFromDifferenceOf(&prevm, &thism)
 	case how == CombineIntersection:
 		outm.MakeFromIntersectionOf(&prevm, &thism)
-	default:
+	case how == CombineAssemble:
 		outm.MakeFromAssemblyOf(&prevm, &thism)
 	}
-	g.RunningMesh.MakeFromCopyOf(&outm)
+
+	// Remove degenerate triangles; if we don't, they'll get split in SnapToMesh
+	// in every generated group, resulting in polynomial increase in triangle count,
+	// and corresponding slowdown.
+	outm.RemoveDegenerateTriangles()
+
+	if how != CombineAssemble {
+		// And make sure that the output mesh is vertex-to-vertex.
+		root := srf.SKdNodeFrom(&outm)
+		root.SnapToMesh(&outm)
+		root.MakeMeshInto(&g.RunningMesh)
+	} else {
+		g.RunningMesh.MakeFromCopyOf(&outm)
+	}
 }
 
 // GenerateDisplayItems builds the mesh and outlines to display: the

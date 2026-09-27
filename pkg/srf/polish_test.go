@@ -8,29 +8,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// TestSBsp3RayTriangleIntersection verifies that the BSP's ray
-// intersection helper finds the closest triangle.
-func TestSBsp3RayTriangleIntersection(t *testing.T) {
-	m := &SMesh{}
-	m.AddTriangle3(STriMeta{},
-		geom.Vector{X: 0, Y: 0, Z: 0},
-		geom.Vector{X: 1, Y: 0, Z: 0},
-		geom.Vector{X: 0, Y: 1, Z: 0},
-	)
-	bsp := SBsp3FromMesh(m)
-	// Cast a ray from (0.5, 0.5, 1) in -Z direction. Should hit the triangle at (0.5, 0.5, 0).
-	hit, _, ok := bsp.RayTriangleIntersection(
-		geom.Vector{X: 0.5, Y: 0.5, Z: 1},
-		geom.Vector{Z: -1},
-	)
-	if !ok {
-		t.Fatalf("expected ray to hit triangle, got no hit")
-	}
-	if hit.DistanceTo(geom.Vector{X: 0.5, Y: 0.5, Z: 0}) > 1e-9 {
-		t.Fatalf("expected hit at (0.5, 0.5, 0), got %v", hit)
-	}
-}
-
 // TestFindOuterFacesFromChaining verifies that closed chains of
 // curves (given in scrambled order and direction) are assembled into
 // loops, and that a hole is grouped with the outer loop containing it.

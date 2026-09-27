@@ -67,13 +67,14 @@ func (g *glibcRand) rand() int {
 	return int(uint32(v) >> 1)
 }
 
-// SKdNodeFrom builds the kd-tree of mesh m, over its triangles in the
-// shuffled order C++ gives them (C++ SKdNode::From(SMesh *)). The tree
-// refers to m's triangles, whose tags FindEdgeOn uses.
+// SKdNodeFrom builds the kd-tree over copies of mesh m's triangles, in
+// the shuffled order C++ gives them (C++ SKdNode::From(SMesh *)).
 func SKdNodeFrom(m *SMesh) *SKdNode {
-	tra := make([]*STriangle, len(m.Triangles))
-	for i := range m.Triangles {
-		tra[i] = &m.Triangles[i]
+	copies := make([]STriangle, len(m.Triangles))
+	copy(copies, m.Triangles)
+	tra := make([]*STriangle, len(copies))
+	for i := range copies {
+		tra[i] = &copies[i]
 	}
 
 	rnd := newGlibcRand(0)
@@ -219,6 +220,244 @@ func (n *SKdNode) ListTrianglesInto(tl *[]*STriangle) {
 		}
 		*tl = append(*tl, tr)
 		tr.Tag = 1
+	}
+}
+
+// SnapToVertex splits every triangle with an edge that goes through v
+// (but not a vertex at v) so that it has a vertex there: the triangle
+// is modified, and the new one goes in extras (C++
+// SKdNode::SnapToVertex).
+func (n *SKdNode) SnapToVertex(v geom.Vector, extras *SMesh) {
+	if n.Gt != nil && n.Lt != nil {
+		vc := v.Element(n.Which)
+		if vc < n.C+kdTreeEps {
+			n.Lt.SnapToVertex(v, extras)
+		}
+		if vc > n.C-kdTreeEps {
+			n.Gt.SnapToVertex(v, extras)
+		}
+		// Nothing bad happens if the triangle to be split appears in both
+		// branches; the first call will split the triangle, so that the
+		// second call will do nothing, because the modified triangle will
+		// already contain v
+		return
+	}
+
+	for _, tr := range n.Tris {
+		// Do a cheap bbox test first
+		mightHit := true
+
+		for k := 0; k < 3; k++ {
+			trA, trB, trC := tr.A.Element(k), tr.B.Element(k), tr.C.Element(k)
+			vk := v.Element(k)
+			if trA < vk-kdTreeEps && trB < vk-kdTreeEps && trC < vk-kdTreeEps {
+				mightHit = false
+				break
+			}
+			if trA > vk+kdTreeEps && trB > vk+kdTreeEps && trC > vk+kdTreeEps {
+				mightHit = false
+				break
+			}
+		}
+		if !mightHit {
+			continue
+		}
+
+		if tr.A.Equals(v) {
+			tr.A = v
+			continue
+		}
+		if tr.B.Equals(v) {
+			tr.B = v
+			continue
+		}
+		if tr.C.Equals(v) {
+			tr.C = v
+			continue
+		}
+
+		if tr.IsDegenerate() {
+			continue
+		}
+
+		if v.OnLineSegment(tr.A, tr.B, geom.LengthEps) {
+			extras.AddTriangle(STriangleFrom(tr.Meta, tr.A, v, tr.C))
+			tr.A = v
+			continue
+		}
+		if v.OnLineSegment(tr.B, tr.C, geom.LengthEps) {
+			extras.AddTriangle(STriangleFrom(tr.Meta, tr.B, v, tr.A))
+			tr.B = v
+			continue
+		}
+		if v.OnLineSegment(tr.C, tr.A, geom.LengthEps) {
+			extras.AddTriangle(STriangleFrom(tr.Meta, tr.C, v, tr.B))
+			tr.C = v
+			continue
+		}
+	}
+}
+
+// SnapToMesh snaps the tree to each vertex of each triangle of m; if m
+// is the mesh the tree was made from, the result is vertex-to-vertex
+// (C++ SKdNode::SnapToMesh).
+func (n *SKdNode) SnapToMesh(m *SMesh) {
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		if tr.IsDegenerate() {
+			continue
+		}
+		for j := 0; j < 3; j++ {
+			v := tr.vertex(j)
+
+			var extra SMesh
+			n.SnapToVertex(v, &extra)
+
+			for k := range extra.Triangles {
+				tra := extra.Triangles[k]
+				n.AddTriangle(&tra)
+			}
+		}
+	}
+}
+
+// SplitLinesAgainstTriangle splits the edges of sel against tr, and
+// tags those that tr hides when looking down z (C++
+// SKdNode::SplitLinesAgainstTriangle).
+func (n *SKdNode) SplitLinesAgainstTriangle(sel *SEdgeList, tr *STriangle) {
+	var seln SEdgeList
+
+	tn := tr.Normal().WithMagnitude(1)
+	td := tn.Dot(tr.A)
+
+	// Consider front-facing triangles only.
+	if tn.Z <= geom.LengthEps {
+		return
+	}
+
+	// If the edge crosses our triangle's plane, then split into above
+	// and below parts. Note that we must preserve auxA, which contains
+	// the style associated with this line, as well as the tag, which
+	// contains the occlusion status.
+	for i := range sel.Edges {
+		se := &sel.Edges[i]
+		da := se.A.Dot(tn) - td
+		db := se.B.Dot(tn) - td
+		if (da < -geom.LengthEps && db > geom.LengthEps) ||
+			(db < -geom.LengthEps && da > geom.LengthEps) {
+			m := geom.AtIntersectionOfPlaneAndLine(tn, td, se.A, se.B)
+			seln.AddEdge(m, se.B, se.AuxA, 0, se.Tag)
+			se.B = m
+		}
+	}
+	for _, se := range seln.Edges {
+		sel.AddEdge(se.A, se.B, se.AuxA, 0, se.Tag)
+	}
+	seln.Edges = nil
+
+	for i := range sel.Edges {
+		se := &sel.Edges[i]
+		pt := se.A.Plus(se.B).ScaledBy(0.5)
+		if pt.Dot(tn)-td > -geom.LengthEps {
+			// Edge is in front of or on our plane (remember, tn.z > 0)
+			// so it is exempt from further splitting
+			se.AuxB = 1
+		} else {
+			// Edge is behind our plane, needs further splitting
+			se.AuxB = 0
+		}
+	}
+
+	// Considering only the (x, y) coordinates, split the edge against our
+	// triangle.
+	a, b, c := tr.A.ProjectXy(), tr.B.ProjectXy(), tr.C.ProjectXy()
+
+	nrm := [3]geom.Point2d{
+		b.Minus(a).Normal().WithMagnitude(1),
+		c.Minus(b).Normal().WithMagnitude(1),
+		a.Minus(c).Normal().WithMagnitude(1),
+	}
+
+	d := [3]float64{nrm[0].Dot(b), nrm[1].Dot(c), nrm[2].Dot(a)}
+
+	// Split all of the edges where they intersect the triangle edges
+	for i := 0; i < 3; i++ {
+		for k := range sel.Edges {
+			se := &sel.Edges[k]
+			if se.AuxB != 0 {
+				continue
+			}
+
+			ap, bp := se.A.ProjectXy(), se.B.ProjectXy()
+			da := nrm[i].Dot(ap) - d[i]
+			db := nrm[i].Dot(bp) - d[i]
+			if (da < -geom.LengthEps && db > geom.LengthEps) ||
+				(db < -geom.LengthEps && da > geom.LengthEps) {
+				dab := db - da
+				spl := se.A.ScaledBy(db / dab).Plus(se.B.ScaledBy(-da / dab))
+				seln.AddEdge(spl, se.B, se.AuxA, 0, se.Tag)
+				se.B = spl
+			}
+		}
+		for _, se := range seln.Edges {
+			// The split pieces are all behind the triangle, since only
+			// edges behind the triangle got split. So their auxB is 0.
+			sel.AddEdge(se.A, se.B, se.AuxA, 0, se.Tag)
+		}
+		seln.Edges = nil
+	}
+
+	for k := range sel.Edges {
+		se := &sel.Edges[k]
+		var occluded bool
+		if se.AuxB != 0 {
+			// Lies above or on the triangle plane, so triangle doesn't
+			// occlude it.
+			occluded = false
+		} else {
+			// Test the segment to see if it lies outside the triangle
+			// (i.e., outside wrt at least one edge), and keep it only
+			// then.
+			pt := se.A.Plus(se.B).ScaledBy(0.5).ProjectXy()
+			occluded = true
+			for i := 0; i < 3; i++ {
+				// If the test point lies on the boundary of our triangle,
+				// then we still discard the edge.
+				if nrm[i].Dot(pt)-d[i] > geom.LengthEps {
+					occluded = false
+				}
+			}
+		}
+
+		if occluded {
+			se.Tag = 1
+		}
+	}
+}
+
+// OcclusionTestLine splits orig against the mesh into sel, tagging the
+// hidden pieces (C++ SKdNode::OcclusionTestLine).
+func (n *SKdNode) OcclusionTestLine(orig SEdge, sel *SEdgeList, cnt int) {
+	if n.Gt != nil && n.Lt != nil {
+		ac, bc := orig.A.Element(n.Which), orig.B.Element(n.Which)
+		// We can ignore triangles that are separated in x or y, but triangles
+		// that are separated in z may still contribute
+		if ac < n.C+kdTreeEps || bc < n.C+kdTreeEps || n.Which == 2 {
+			n.Lt.OcclusionTestLine(orig, sel, cnt)
+		}
+		if ac > n.C-kdTreeEps || bc > n.C-kdTreeEps || n.Which == 2 {
+			n.Gt.OcclusionTestLine(orig, sel, cnt)
+		}
+		return
+	}
+
+	for _, tr := range n.Tris {
+		if tr.Tag == cnt {
+			continue
+		}
+
+		n.SplitLinesAgainstTriangle(sel, tr)
+		tr.Tag = cnt
 	}
 }
 

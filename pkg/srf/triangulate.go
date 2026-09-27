@@ -791,7 +791,7 @@ func (p *SPolygon) TriangulateInto(m *SMesh) {
 	var pm SMesh
 	tp.UvTriangulateInto(&pm, &srf)
 	for _, st := range pm.Triangles {
-		m.AddTriangle(st.TransformOutOfCsys(u, v, n))
+		m.AddTriangle(st.Transform(u, v, n))
 	}
 }
 
@@ -806,50 +806,6 @@ func (p *SPolygon) InverseTransformInto(sp *SPolygon, u, v, n geom.Vector) {
 		}
 		sp.Contours = append(sp.Contours, tsc)
 	}
-}
-
-// scaleOutOfCsys mirrors C++ Vector::ScaleOutOfCsys: v's components
-// taken as coordinates in the (u, v, n) basis.
-func scaleOutOfCsys(p, u, v, n geom.Vector) geom.Vector {
-	return u.ScaledBy(p.X).Plus(v.ScaledBy(p.Y).Plus(n.ScaledBy(p.Z)))
-}
-
-// TransformOutOfCsys mirrors C++ STriangle::Transform: every vertex and
-// normal taken as coordinates in the (u, v, n) basis.
-func (t STriangle) TransformOutOfCsys(u, v, n geom.Vector) STriangle {
-	tr := t
-	tr.A = scaleOutOfCsys(tr.A, u, v, n)
-	tr.NA = scaleOutOfCsys(tr.NA, u, v, n)
-	tr.B = scaleOutOfCsys(tr.B, u, v, n)
-	tr.NB = scaleOutOfCsys(tr.NB, u, v, n)
-	tr.C = scaleOutOfCsys(tr.C, u, v, n)
-	tr.NC = scaleOutOfCsys(tr.NC, u, v, n)
-	return tr
-}
-
-// ContainsPointProjd reports whether p, projected along n, lies in the
-// triangle (edges included). Mirrors C++ STriangle::ContainsPointProjd.
-func (t *STriangle) ContainsPointProjd(n, p geom.Vector) bool {
-	ab := t.B.Minus(t.A)
-	bc := t.C.Minus(t.B)
-	ca := t.A.Minus(t.C)
-
-	noAB := n.Cross(ab)
-	if noAB.Dot(p) < noAB.Dot(t.A)-geom.LengthEps {
-		return false
-	}
-
-	noBC := n.Cross(bc)
-	if noBC.Dot(p) < noBC.Dot(t.B)-geom.LengthEps {
-		return false
-	}
-
-	noCA := n.Cross(ca)
-	if noCA.Dot(p) < noCA.Dot(t.C)-geom.LengthEps {
-		return false
-	}
-
-	return true
 }
 
 // EdgeCrosses reports whether the segment ea->eb crosses this edge.

@@ -43,7 +43,7 @@ func TestSMeshRemoveDegenerate(t *testing.T) {
 	m := &SMesh{}
 	m.AddTriangle3(STriMeta{}, geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	m.AddTriangle3(STriMeta{}, geom.Vector{}, geom.Vector{}, geom.Vector{X: 1})
-	m.RemoveDegenerateTriangles(1e-6)
+	m.RemoveDegenerateTriangles()
 	if len(m.Triangles) != 1 {
 		t.Fatalf("expected 1 triangle after removal, got %d", len(m.Triangles))
 	}

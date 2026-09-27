@@ -22,158 +22,150 @@ func NewSTriMeta(face FaceID, color core.RgbaColor) STriMeta {
 // stored along with per-vertex normals (an, bn, cn) computed at
 // triangulation time.
 type STriangle struct {
-	Tag int
+	Tag  int
 	Meta STriMeta
 
 	A, B, C    geom.Vector
 	NA, NB, NC geom.Vector
 }
 
+// STriangleFrom is a triangle with the given vertices, and zero
+// vertex normals (C++ STriangle::From).
 func STriangleFrom(meta STriMeta, a, b, c geom.Vector) STriangle {
-	t := STriangle{
-		Meta: meta,
-		A:    a,
-		B:    b,
-		C:    c,
-	}
-	t.computeNormals()
-	return t
+	return STriangle{Meta: meta, A: a, B: b, C: c}
 }
 
-func (t *STriangle) computeNormals() {
-	n := t.Normal()
-	t.NA = n
-	t.NB = n
-	t.NC = n
-}
-
-// Normal returns the unweighted face normal (cross product, not
-// normalized; C++ STriangle::Normal). Use NormalUnit for the
-// normalized version.
+// Normal is the triangle's unnormalized normal (C++ STriangle::Normal).
 func (t *STriangle) Normal() geom.Vector {
 	ab, bc := t.B.Minus(t.A), t.C.Minus(t.B)
 	return ab.Cross(bc)
 }
 
-// NormalUnit returns the normalized face normal.
-func (t *STriangle) NormalUnit() geom.Vector {
-	return t.Normal().Normal()
-}
-
-// FlipNormal reverses the vertex winding so the face normal inverts.
+// FlipNormal swaps a and b (C++ STriangle::FlipNormal).
 func (t *STriangle) FlipNormal() {
 	t.A, t.B = t.B, t.A
 	t.NA, t.NB = t.NB, t.NA
-	t.AuxVSwap()
 }
 
-// AuxVSwap is a placeholder for any auxiliary vertex-tag inversion.
-// In the C++ code it operates on auxA/auxB; in the Go port these are
-// held outside the STriangle, so this is a no-op.
-func (t *STriangle) AuxVSwap() {}
-
-// MinAltitude returns the shortest altitude (distance from a vertex
-// to the opposite edge). Used by SMesh::Simplify and by the polyline
-// builder to skip near-degenerate triangles.
+// MinAltitude is the triangle's smallest altitude (C++
+// STriangle::MinAltitude).
 func (t *STriangle) MinAltitude() float64 {
-	e1 := t.B.Minus(t.A).Magnitude()
-	e2 := t.C.Minus(t.B).Magnitude()
-	e3 := t.A.Minus(t.C).Magnitude()
-	if e1 < 1e-20 || e2 < 1e-20 || e3 < 1e-20 {
-		return 0
-	}
-	area := t.Area()
-	return 2 * area / max3(e1, e2, e3)
+	altA := t.A.DistanceToLine(t.B, t.C.Minus(t.B))
+	altB := t.B.DistanceToLine(t.C, t.A.Minus(t.C))
+	altC := t.C.DistanceToLine(t.A, t.B.Minus(t.A))
+
+	return geom.Min(altA, geom.Min(altB, altC))
 }
 
-func max3(a, b, c float64) float64 {
-	m := a
-	if b > m {
-		m = b
+// ContainsPoint reports whether p, projected along the normal, lies in
+// the triangle; never for a zero-area triangle (C++
+// STriangle::ContainsPoint).
+func (t *STriangle) ContainsPoint(p geom.Vector) bool {
+	n := t.Normal()
+	if t.MinAltitude() < geom.LengthEps {
+		// shouldn't happen; zero-area triangle
+		return false
 	}
-	if c > m {
-		m = c
-	}
-	return m
+	return t.ContainsPointProjd(n.WithMagnitude(1), p)
 }
 
-// Area returns the unsigned area of the triangle (|cross|/2).
-func (t *STriangle) Area() float64 {
-	return 0.5 * t.Normal().Magnitude()
+// ContainsPointProjd reports whether p, projected along n, lies in the
+// triangle (edges included; C++ STriangle::ContainsPointProjd).
+func (t *STriangle) ContainsPointProjd(n, p geom.Vector) bool {
+	ab, bc, ca := t.B.Minus(t.A), t.C.Minus(t.B), t.A.Minus(t.C)
+
+	noAB := n.Cross(ab)
+	if noAB.Dot(p) < noAB.Dot(t.A)-geom.LengthEps {
+		return false
+	}
+
+	noBC := n.Cross(bc)
+	if noBC.Dot(p) < noBC.Dot(t.B)-geom.LengthEps {
+		return false
+	}
+
+	noCA := n.Cross(ca)
+	if noCA.Dot(p) < noCA.Dot(t.C)-geom.LengthEps {
+		return false
+	}
+
+	return true
 }
 
-// SignedVolume returns the signed volume of the tetrahedron formed
-// by the triangle and the origin.
+// Raytrace intersects the ray rayPoint + t*rayDir with the triangle,
+// which must face against the ray (C++ STriangle::Raytrace; the
+// Moeller-Trumbore algorithm).
+func (t *STriangle) Raytrace(rayPoint, rayDir geom.Vector) (tt float64, inters geom.Vector, ok bool) {
+	// Find vectors for two edges sharing vertex A.
+	edge1 := t.B.Minus(t.A)
+	edge2 := t.C.Minus(t.A)
+
+	// Begin calculating determinant - also used to calculate U parameter.
+	pvec := rayDir.Cross(edge2)
+
+	// If determinant is near zero, ray lies in plane of triangle.
+	// Also, cull back facing triangles here.
+	det := edge1.Dot(pvec)
+	if -det < geom.LengthEps {
+		return 0, geom.Vector{}, false
+	}
+	invDet := 1.0 / det
+
+	// Calculate distance from vertex A to ray origin.
+	tvec := rayPoint.Minus(t.A)
+
+	// Calculate U parameter and test bounds.
+	u := tvec.Dot(pvec) * invDet
+	if u < 0 || u > 1 {
+		return 0, geom.Vector{}, false
+	}
+
+	// Prepare to test V parameter.
+	qvec := tvec.Cross(edge1)
+
+	// Calculate V parameter and test bounds.
+	v := rayDir.Dot(qvec) * invDet
+	if v < 0 || u+v > 1 {
+		return 0, geom.Vector{}, false
+	}
+
+	// Calculate t, ray intersects triangle.
+	tt = edge2.Dot(qvec) * invDet
+
+	// Calculate intersection point.
+	return tt, rayPoint.Plus(rayDir.ScaledBy(tt)), true
+}
+
+// SignedVolume is the signed volume of the tetrahedron of the triangle
+// and the origin (C++ STriangle::SignedVolume).
 func (t *STriangle) SignedVolume() float64 {
 	return t.A.Dot(t.B.Cross(t.C)) / 6.0
 }
 
-// ContainsPoint returns true if p lies in the triangle's plane and
-// inside or on the boundary of the triangle. Does not check plane
-// containment first.
-func (t *STriangle) ContainsPoint(p geom.Vector) bool {
-	v0 := t.C.Minus(t.A)
-	v1 := t.B.Minus(t.A)
-	v2 := p.Minus(t.A)
-
-	dot00 := v0.Dot(v0)
-	dot01 := v0.Dot(v1)
-	dot02 := v0.Dot(v2)
-	dot11 := v1.Dot(v1)
-	dot12 := v1.Dot(v2)
-
-	den := dot00*dot11 - dot01*dot01
-	if mathAbs(den) < 1e-20 {
-		return false
-	}
-	u := (dot11*dot02 - dot01*dot12) / den
-	v := (dot00*dot12 - dot01*dot02) / den
-
-	return u >= 0 && v >= 0 && u+v <= 1
+// Area is the triangle's area (C++ STriangle::Area).
+func (t *STriangle) Area() float64 {
+	ab := t.A.Minus(t.B)
+	cb := t.C.Minus(t.B)
+	return ab.Cross(cb).Magnitude() / 2.0
 }
 
-// IsDegenerate returns true if any two vertices coincide.
+// IsDegenerate reports whether a vertex lies on the opposite edge (C++
+// STriangle::IsDegenerate).
 func (t *STriangle) IsDegenerate() bool {
-	return t.A.DistanceTo(t.B) < 1e-12 ||
-		t.B.DistanceTo(t.C) < 1e-12 ||
-		t.A.DistanceTo(t.C) < 1e-12
+	return t.A.OnLineSegment(t.B, t.C, geom.LengthEps) ||
+		t.B.OnLineSegment(t.A, t.C, geom.LengthEps) ||
+		t.C.OnLineSegment(t.A, t.B, geom.LengthEps)
 }
 
-// Transform applies a (translate, scale) transform and produces a
-// new triangle. Rotation is intentionally not supported here; for
-// rotated copies use SSurface::Transform.
-func (t STriangle) Transform(o, u, v geom.Vector) STriangle {
-	return STriangle{
-		Tag:  t.Tag,
-		Meta: t.Meta,
-		A:    t.A.Plus(u.ScaledBy(o.X)).Plus(v.ScaledBy(o.Y)).Plus(o),
-		B:    t.B.Plus(u.ScaledBy(o.X)).Plus(v.ScaledBy(o.Y)).Plus(o),
-		C:    t.C.Plus(u.ScaledBy(o.X)).Plus(v.ScaledBy(o.Y)).Plus(o),
-	}
-}
-
-// Raytrace computes the intersection of ray (point, dir) with the
-// triangle's plane. The intersection is returned via t and inters;
-// the ray hits the triangle if t > 0 and the hit point lies within
-// the triangle in plane coords.
-func (t *STriangle) Raytrace(point, dir geom.Vector) (tt float64, inters geom.Vector, ok bool) {
-	n := t.Normal()
-	den := dir.Dot(n)
-	if mathAbs(den) < 1e-20 {
-		return 0, geom.Vector{}, false
-	}
-	tt = t.A.Minus(point).Dot(n) / den
-	if tt < 0 {
-		return 0, geom.Vector{}, false
-	}
-	inters = point.Plus(dir.ScaledBy(tt))
-	return tt, inters, t.ContainsPoint(inters)
-}
-
-// withFlippedNormal returns a copy of the triangle with vertices in reversed order
-// (which flips the normal direction).
-func (t STriangle) withFlippedNormal() STriangle {
-	return STriangle{
-		A: t.A, B: t.C, C: t.B,
-	}
+// Transform takes every vertex and normal as coordinates in the
+// (u, v, n) basis (C++ STriangle::Transform).
+func (t STriangle) Transform(u, v, n geom.Vector) STriangle {
+	tr := t
+	tr.A = tr.A.ScaleOutOfCsys(u, v, n)
+	tr.NA = tr.NA.ScaleOutOfCsys(u, v, n)
+	tr.B = tr.B.ScaleOutOfCsys(u, v, n)
+	tr.NB = tr.NB.ScaleOutOfCsys(u, v, n)
+	tr.C = tr.C.ScaleOutOfCsys(u, v, n)
+	tr.NC = tr.NC.ScaleOutOfCsys(u, v, n)
+	return tr
 }

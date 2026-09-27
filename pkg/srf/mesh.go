@@ -1,407 +1,498 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"math"
+	"sort"
 
-// SMesh is a list of triangles with mesh-level flags controlling
-// rendering and CSG behavior. Boolean operations
-// (MakeFromUnionOf/DifferenceOf/IntersectionOf) and BSP-driven
-// insertion (AddAgainstBsp) are implemented in Phase 4.
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
+
+// This file ports the SMesh part of solvespace/src/mesh.cpp: operations
+// on triangle meshes, like the mesh Booleans using the BSP.
+
+// SMesh is a list of triangles, with the flags the Booleans use to pick
+// which triangles to keep (C++ SMesh).
 type SMesh struct {
 	Triangles []STriangle
 
-	FlipNormal          bool
+	FlipNormal           bool
 	KeepInsideOtherShell bool
-	KeepCoplanar        bool
+	KeepCoplanar         bool
 	AtLeastOneDiscarded  bool
-	IsTransparent       bool
+	IsTransparent        bool
 }
 
+// Clear drops the triangles; like C++ SMesh::Clear it keeps the flags.
 func (m *SMesh) Clear() {
 	m.Triangles = m.Triangles[:0]
-	m.FlipNormal = false
-	m.KeepInsideOtherShell = false
-	m.KeepCoplanar = false
-	m.AtLeastOneDiscarded = false
-	m.IsTransparent = false
 }
 
 func (m *SMesh) IsEmpty() bool { return len(m.Triangles) == 0 }
 
-// AddTriangle appends one triangle to the mesh.
+// AddTriangleN adds the triangle a, b, c, wound so its normal points
+// along n; a (nearly) collinear one is dropped (C++
+// SMesh::AddTriangle(meta, n, a, b, c)).
+func (m *SMesh) AddTriangleN(meta STriMeta, n, a, b, c geom.Vector) {
+	ab, bc := b.Minus(a), c.Minus(b)
+	np := ab.Cross(bc)
+	if np.Magnitude() < 1e-10 {
+		// ugh; gl sometimes tessellates to collinear triangles
+		return
+	}
+	if np.Dot(n) > 0 {
+		m.AddTriangle3(meta, a, b, c)
+	} else {
+		m.AddTriangle3(meta, c, b, a)
+	}
+}
+
+// AddTriangle3 adds the triangle a, b, c (C++ SMesh::AddTriangle(meta,
+// a, b, c)).
+func (m *SMesh) AddTriangle3(meta STriMeta, a, b, c geom.Vector) {
+	m.AddTriangle(STriangle{Meta: meta, A: a, B: b, C: c})
+}
+
+// AddTriangle adds a copy of t (C++ SMesh::AddTriangle(const STriangle *)).
 func (m *SMesh) AddTriangle(t STriangle) {
 	m.Triangles = append(m.Triangles, t)
 }
 
-// AddTriangle3 is a convenience constructor for (meta, a, b, c).
-func (m *SMesh) AddTriangle3(meta STriMeta, a, b, c geom.Vector) {
-	m.AddTriangle(STriangleFrom(meta, a, b, c))
+// DoBounding extends (vmax, vmin) to include v (C++ SMesh::DoBounding).
+func DoBounding(v geom.Vector, vmax, vmin *geom.Vector) {
+	vmax.X = geom.Max(vmax.X, v.X)
+	vmax.Y = geom.Max(vmax.Y, v.Y)
+	vmax.Z = geom.Max(vmax.Z, v.Z)
+
+	vmin.X = geom.Min(vmin.X, v.X)
+	vmin.Y = geom.Min(vmin.Y, v.Y)
+	vmin.Z = geom.Min(vmin.Z, v.Z)
 }
 
-// GetBounding returns the axis-aligned bounding box of all triangle
-// vertices. If the mesh is empty, the box is empty (max < min).
+// GetBounding is the mesh's bounding box (C++ SMesh::GetBounding).
 func (m *SMesh) GetBounding() (vmax, vmin geom.Vector) {
-	vmin = geom.Vector{X: 1e18, Y: 1e18, Z: 1e18}
-	vmax = geom.Vector{X: -1e18, Y: -1e18, Z: -1e18}
-	for _, t := range m.Triangles {
-		for _, p := range [3]geom.Vector{t.A, t.B, t.C} {
-			if p.X < vmin.X {
-				vmin.X = p.X
-			}
-			if p.Y < vmin.Y {
-				vmin.Y = p.Y
-			}
-			if p.Z < vmin.Z {
-				vmin.Z = p.Z
-			}
-			if p.X > vmax.X {
-				vmax.X = p.X
-			}
-			if p.Y > vmax.Y {
-				vmax.Y = p.Y
-			}
-			if p.Z > vmax.Z {
-				vmax.Z = p.Z
-			}
-		}
+	vmin = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
+	vmax = geom.Vector{X: veryNegative, Y: veryNegative, Z: veryNegative}
+	for i := range m.Triangles {
+		st := &m.Triangles[i]
+		DoBounding(st.A, &vmax, &vmin)
+		DoBounding(st.B, &vmax, &vmin)
+		DoBounding(st.C, &vmax, &vmin)
 	}
 	return vmax, vmin
 }
 
-// DoBounding accumulates one vertex into a running bounding box.
-func DoBounding(b geom.Vector, vmax, vmin *geom.Vector) {
-	if b.X < vmin.X {
-		vmin.X = b.X
+// MakeEdgesInPlaneInto reports the edges of the boundary of the
+// region(s) of the mesh that lie within the plane n . p = d (C++
+// SMesh::MakeEdgesInPlaneInto).
+func (m *SMesh) MakeEdgesInPlaneInto(sel *SEdgeList, n geom.Vector, d float64) {
+	var mc SMesh
+	mc.MakeFromCopyOf(m)
+
+	// Delete all triangles in the mesh that do not lie in our export plane.
+	kept := mc.Triangles[:0]
+	for _, tr := range mc.Triangles {
+		if math.Abs(n.Dot(tr.A)-d) >= geom.LengthEps ||
+			math.Abs(n.Dot(tr.B)-d) >= geom.LengthEps ||
+			math.Abs(n.Dot(tr.C)-d) >= geom.LengthEps {
+			continue
+		}
+		tr.Tag = 0
+		kept = append(kept, tr)
 	}
-	if b.Y < vmin.Y {
-		vmin.Y = b.Y
+	mc.Triangles = kept
+
+	// Select the naked edges in our resulting open mesh.
+	root := SKdNodeFrom(&mc)
+	root.SnapToMesh(&mc)
+	root.MakeCertainEdgesInto(sel, EdgeNakedOrSelfInter, false, nil, nil, 0)
+}
+
+// Simplify replaces the triangles from start on, which must be
+// coplanar, with fewer ones covering the same area: it pastes them
+// together into convex polygons, merging collinear edges where it can,
+// and triangulates those. It is used after a triangle has been split
+// against the BSP (C++ SMesh::Simplify).
+func (m *SMesh) Simplify(start int) {
+	meta := m.Triangles[start].Meta
+
+	var tout []STriangle
+
+	var n geom.Vector
+	var conv []geom.Vector
+
+	start0 := start
+
+	l := m.Triangles
+	for i := start; i < len(l); i++ {
+		tr := &l[i]
+		if tr.MinAltitude() < geom.LengthEps {
+			tr.Tag = 1
+		} else {
+			tr.Tag = 0
+		}
 	}
-	if b.Z < vmin.Z {
-		vmin.Z = b.Z
+
+	wrap := func(v, n int) int { return ((v % n) + n) % n }
+
+	for {
+		conv = conv[:0]
+		i := start
+		for ; i < len(l); i++ {
+			tr := &l[i]
+			if tr.Tag != 0 {
+				continue
+			}
+
+			tr.Tag = 1
+			n = tr.Normal().WithMagnitude(1)
+			conv = append(conv, tr.A, tr.B, tr.C)
+
+			start = i + 1
+			break
+		}
+		if i >= len(l) {
+			break
+		}
+
+		for {
+			didAdd := false
+
+			for j := 0; j < len(conv); j++ {
+				convc := len(conv)
+				a := conv[wrap(j-1, convc)]
+				b := conv[j]
+				d := conv[wrap(j+1, convc)]
+				e := conv[wrap(j+2, convc)]
+
+				var c geom.Vector
+				for i = start; i < len(l); i++ {
+					tr := &l[i]
+					if tr.Tag != 0 {
+						continue
+					}
+
+					if tr.A.Equals(d) && tr.B.Equals(b) {
+						c = tr.C
+					} else if tr.B.Equals(d) && tr.C.Equals(b) {
+						c = tr.A
+					} else if tr.C.Equals(d) && tr.A.Equals(b) {
+						c = tr.B
+					} else {
+						continue
+					}
+					// The vertex at C must be convex; but the others must
+					// be tested
+					ab := b.Minus(a)
+					bc := c.Minus(b)
+					cd := d.Minus(c)
+					de := e.Minus(d)
+
+					bDot := ab.Cross(bc).Dot(n)
+					dDot := cd.Cross(de).Dot(n)
+
+					bDot /= geom.Min(ab.Magnitude(), bc.Magnitude())
+					dDot /= geom.Min(cd.Magnitude(), de.Magnitude())
+
+					if math.Abs(bDot) < geom.LengthEps && math.Abs(dDot) < geom.LengthEps {
+						conv[wrap(j+1, convc)] = c
+						// and remove the vertex at j, which is a dup
+						conv = append(conv[:j], conv[j+1:]...)
+					} else if math.Abs(bDot) < geom.LengthEps && dDot > 0 {
+						conv[j] = c
+					} else if math.Abs(dDot) < geom.LengthEps && bDot > 0 {
+						conv[wrap(j+1, convc)] = c
+					} else if bDot > 0 && dDot > 0 {
+						// conv[j] is unchanged, conv[j+1] goes to [j+2]
+						conv = append(conv[:j+1], append([]geom.Vector{c}, conv[j+1:]...)...)
+					} else {
+						continue
+					}
+
+					didAdd = true
+					tr.Tag = 1
+					break
+				}
+			}
+			if !didAdd {
+				break
+			}
+		}
+
+		// I need to debug why this is required; sometimes the above code
+		// still generates a convex polygon
+		convc := len(conv)
+		for i = 0; i < convc; i++ {
+			a := conv[wrap(i-1, convc)]
+			b := conv[i]
+			c := conv[wrap(i+1, convc)]
+			ab := b.Minus(a)
+			bc := c.Minus(b)
+			bDot := ab.Cross(bc).Dot(n)
+			bDot /= geom.Min(ab.Magnitude(), bc.Magnitude())
+
+			if bDot < 0 {
+				return // XXX, shouldn't happen
+			}
+		}
+
+		for i = 0; i < convc-2; i++ {
+			tr := STriangleFrom(meta, conv[0], conv[i+1], conv[i+2])
+			if tr.MinAltitude() > geom.LengthEps {
+				tout = append(tout, tr)
+			}
+		}
 	}
-	if b.X > vmax.X {
-		vmax.X = b.X
-	}
-	if b.Y > vmax.Y {
-		vmax.Y = b.Y
-	}
-	if b.Z > vmax.Z {
-		vmax.Z = b.Z
+
+	m.Triangles = m.Triangles[:start0]
+	for i := range tout {
+		m.AddTriangle(tout[i])
 	}
 }
 
-// RemoveDegenerateTriangles drops triangles whose minimum altitude
-// is below eps. Used after shelling/trimming to clean up near-zero
-// areas that the boolean produced.
-func (m *SMesh) RemoveDegenerateTriangles(eps float64) {
+// AddAgainstBsp adds the triangles of srcm that the Boolean keeps
+// against bsp3, as the mesh's flags say, split where they cross the
+// other mesh (C++ SMesh::AddAgainstBsp).
+func (m *SMesh) AddAgainstBsp(srcm *SMesh, bsp3 *SBsp3) {
+	for i := range srcm.Triangles {
+		st := &srcm.Triangles[i]
+		pn := len(m.Triangles)
+		m.AtLeastOneDiscarded = false
+		SBsp3InsertOrCreate(bsp3, st, m)
+		if !m.AtLeastOneDiscarded && len(m.Triangles) != pn+1 {
+			m.Triangles = m.Triangles[:pn]
+			if m.FlipNormal {
+				m.AddTriangle3(st.Meta, st.C, st.B, st.A)
+			} else {
+				m.AddTriangle3(st.Meta, st.A, st.B, st.C)
+			}
+		}
+		if len(m.Triangles)-pn > 1 {
+			m.Simplify(pn)
+		}
+	}
+}
+
+// MakeFromUnionOf adds the union of a and b (C++ SMesh::MakeFromUnionOf).
+func (m *SMesh) MakeFromUnionOf(a, b *SMesh) {
+	bspa := SBsp3FromMesh(a)
+	bspb := SBsp3FromMesh(b)
+
+	m.FlipNormal = false
+	m.KeepInsideOtherShell = false
+
+	m.KeepCoplanar = true
+	m.AddAgainstBsp(b, bspa)
+
+	m.KeepCoplanar = false
+	m.AddAgainstBsp(a, bspb)
+}
+
+// MakeFromDifferenceOf adds a minus b (C++ SMesh::MakeFromDifferenceOf).
+func (m *SMesh) MakeFromDifferenceOf(a, b *SMesh) {
+	bspa := SBsp3FromMesh(a)
+	bspb := SBsp3FromMesh(b)
+
+	m.FlipNormal = true
+	m.KeepCoplanar = true
+	m.KeepInsideOtherShell = true
+	m.AddAgainstBsp(b, bspa)
+
+	m.FlipNormal = false
+	m.KeepCoplanar = false
+	m.KeepInsideOtherShell = false
+	m.AddAgainstBsp(a, bspb)
+}
+
+// MakeFromIntersectionOf adds the intersection of a and b (C++
+// SMesh::MakeFromIntersectionOf).
+func (m *SMesh) MakeFromIntersectionOf(a, b *SMesh) {
+	bspa := SBsp3FromMesh(a)
+	bspb := SBsp3FromMesh(b)
+
+	m.KeepInsideOtherShell = true
+	m.FlipNormal = false
+
+	m.KeepCoplanar = false
+	m.AddAgainstBsp(a, bspb)
+
+	m.KeepCoplanar = true
+	m.AddAgainstBsp(b, bspa)
+}
+
+// MakeFromCopyOf adds a's triangles (C++ SMesh::MakeFromCopyOf).
+func (m *SMesh) MakeFromCopyOf(a *SMesh) {
+	if m == a {
+		panic("Can't make from copy of self")
+	}
+	m.Triangles = append(m.Triangles, a.Triangles...)
+}
+
+// MakeFromAssemblyOf adds the triangles of a and of b (C++
+// SMesh::MakeFromAssemblyOf).
+func (m *SMesh) MakeFromAssemblyOf(a, b *SMesh) {
+	m.MakeFromCopyOf(a)
+	m.MakeFromCopyOf(b)
+}
+
+// MakeFromTransformationOf adds a's triangles, scaled, then rotated,
+// then translated; a mirroring scale keeps the mesh outside out (C++
+// SMesh::MakeFromTransformationOf).
+func (m *SMesh) MakeFromTransformationOf(a *SMesh, trans geom.Vector, q geom.Quaternion, scale float64) {
+	for _, tt := range a.Triangles {
+		tt.A = tt.A.ScaledBy(scale)
+		tt.B = tt.B.ScaledBy(scale)
+		tt.C = tt.C.ScaledBy(scale)
+		if scale < 0 {
+			// The mirroring would otherwise turn a closed mesh inside out.
+			tt.A, tt.B = tt.B, tt.A
+		}
+		tt.A = q.Rotate(tt.A).Plus(trans)
+		tt.B = q.Rotate(tt.B).Plus(trans)
+		tt.C = q.Rotate(tt.C).Plus(trans)
+		m.AddTriangle(tt)
+	}
+}
+
+// FirstIntersectionWith is the face of the farthest-along triangle,
+// with a face, that the ray rayPoint + t*rayDir hits; 0 if none. C++
+// SMesh::FirstIntersectionWith takes a point on the screen and makes
+// the ray from the view; here the caller does that.
+func (m *SMesh) FirstIntersectionWith(rayPoint, rayDir geom.Vector) uint32 {
+	var face uint32
+	faceT := veryNegative
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		if tr.Meta.Face == 0 {
+			continue
+		}
+
+		t, _, ok := tr.Raytrace(rayPoint, rayDir)
+		if !ok {
+			continue
+		}
+		if t > faceT {
+			face = uint32(tr.Meta.Face)
+			faceT = t
+		}
+	}
+
+	return face
+}
+
+// GetCenterOfMass is the centroid of the volume the mesh encloses (C++
+// SMesh::GetCenterOfMass).
+func (m *SMesh) GetCenterOfMass() geom.Vector {
+	center := geom.Vector{}
+	vol := 0.0
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		tvol := tr.SignedVolume()
+		center = center.Plus(tr.A.Plus(tr.B.Plus(tr.C)).ScaledBy(tvol / 4.0))
+		vol += tvol
+	}
+	return center.ScaledBy(1.0 / vol)
+}
+
+// PrecomputeTransparency sorts the opaque triangles before the
+// transparent ones, and notes whether there are any transparent ones
+// (C++ SMesh::PrecomputeTransparency). C++ uses std::sort, which may
+// order the triangles within each group differently; this is only
+// used for drawing.
+func (m *SMesh) PrecomputeTransparency() {
+	opaque := func(tr *STriangle) bool {
+		return tr.Meta.RgbaColor.IsEmpty() || tr.Meta.Alpha == 255
+	}
+	for i := range m.Triangles {
+		if !opaque(&m.Triangles[i]) {
+			m.IsTransparent = true
+		}
+	}
+	sort.SliceStable(m.Triangles, func(i, j int) bool {
+		return opaque(&m.Triangles[i]) && !opaque(&m.Triangles[j])
+	})
+}
+
+// RemoveDegenerateTriangles drops the degenerate triangles (C++
+// SMesh::RemoveDegenerateTriangles).
+func (m *SMesh) RemoveDegenerateTriangles() {
 	out := m.Triangles[:0]
-	for _, t := range m.Triangles {
-		if t.IsDegenerate() {
+	for _, tr := range m.Triangles {
+		if tr.IsDegenerate() {
 			continue
 		}
-		if t.MinAltitude() < eps {
-			continue
-		}
-		out = append(out, t)
+		tr.Tag = 0
+		out = append(out, tr)
 	}
 	m.Triangles = out
 }
 
-// PrecomputeTransparency sets IsTransparent if any triangle's color
-// has alpha < 255. Used by the renderer to switch blending modes.
-func (m *SMesh) PrecomputeTransparency() {
-	m.IsTransparent = false
-	for _, t := range m.Triangles {
-		if t.Meta.Alpha < 255 {
-			m.IsTransparent = true
-			return
-		}
-	}
-}
-
-// Simplify drops triangles with minimum altitude < chordTol.
-// Equivalent to RemoveDegenerateTriangles(chordTol) but called
-// after chord-tolerance-based mesh simplification passes.
-func (m *SMesh) Simplify(chordTol float64) {
-	m.RemoveDegenerateTriangles(chordTol)
-}
-
-// MakeFromCopyOf clones another mesh (with flags).
-func (m *SMesh) MakeFromCopyOf(src *SMesh) {
-	m.Clear()
-	m.FlipNormal = src.FlipNormal
-	m.KeepInsideOtherShell = src.KeepInsideOtherShell
-	m.KeepCoplanar = src.KeepCoplanar
-	m.AtLeastOneDiscarded = src.AtLeastOneDiscarded
-	m.IsTransparent = src.IsTransparent
-	m.Triangles = make([]STriangle, len(src.Triangles))
-	copy(m.Triangles, src.Triangles)
-}
-
-// MakeFromTransformationOf applies (translate, rotate, scale) to
-// every vertex of src. Quaternion::Rotate handles the rotation;
-// the scale is applied uniformly.
-func (m *SMesh) MakeFromTransformationOf(src *SMesh, trans geom.Vector, q geom.Quaternion, scale float64) {
-	m.Clear()
-	m.FlipNormal = src.FlipNormal
-	m.KeepInsideOtherShell = src.KeepInsideOtherShell
-	m.KeepCoplanar = src.KeepCoplanar
-	m.AtLeastOneDiscarded = src.AtLeastOneDiscarded
-	m.IsTransparent = src.IsTransparent
-	m.Triangles = make([]STriangle, len(src.Triangles))
-	for i, t := range src.Triangles {
-		newT := STriangle{
-			Tag:  t.Tag,
-			Meta: t.Meta,
-		}
-		newT.A = q.Rotate(t.A.ScaledBy(scale)).Plus(trans)
-		newT.B = q.Rotate(t.B.ScaledBy(scale)).Plus(trans)
-		newT.C = q.Rotate(t.C.ScaledBy(scale)).Plus(trans)
-		newT.NA = q.Rotate(t.NA)
-		newT.NB = q.Rotate(t.NB)
-		newT.NC = q.Rotate(t.NC)
-		m.Triangles[i] = newT
-	}
-}
-
-// MakeEdgesInPlaneInto emits an SEdge for every triangle whose
-// normal is parallel to the given plane normal n. Used by
-// SSurface::MakeEdgesInto to recover trim edges from a triangulated
-// mesh.
-func (m *SMesh) MakeEdgesInPlaneInto(sel *SEdgeList, n geom.Vector, d float64) {
-	for _, t := range m.Triangles {
-		// Check the plane equation n.x = d.
-		if mathAbs(t.A.Dot(n)-d) > 1e-9 {
-			continue
-		}
-		if mathAbs(t.B.Dot(n)-d) > 1e-9 {
-			continue
-		}
-		if mathAbs(t.C.Dot(n)-d) > 1e-9 {
-			continue
-		}
-		sel.AddEdge(t.A, t.B, int(t.Meta.Face), 0, t.Tag)
-		sel.AddEdge(t.B, t.C, int(t.Meta.Face), 0, t.Tag)
-		sel.AddEdge(t.C, t.A, int(t.Meta.Face), 0, t.Tag)
-	}
-}
-
-// CalculateVolume returns the unsigned volume enclosed by the mesh,
-// treating it as a closed triangle soup. The signed-volume sum
-// divided by 6 gives the net enclosed volume; we return the absolute
-// value.
+// CalculateVolume is the volume the mesh encloses, integrated under each
+// triangle (C++ SMesh::CalculateVolume).
 func (m *SMesh) CalculateVolume() float64 {
-	v := 0.0
-	for _, t := range m.Triangles {
-		v += t.SignedVolume()
+	vol := 0.0
+	for _, tr := range m.Triangles {
+		// Translate to place vertex A at (x, y, 0)
+		trans := geom.Vector{X: tr.A.X, Y: tr.A.Y}
+		tr.A = tr.A.Minus(trans)
+		tr.B = tr.B.Minus(trans)
+		tr.C = tr.C.Minus(trans)
+
+		// Rotate to place vertex B on the y-axis. Depending on
+		// whether the triangle is CW or CCW, C is either to the
+		// right or to the left of the y-axis. This handles the
+		// sign of our normal.
+		u := geom.Vector{X: -tr.B.Y, Y: tr.B.X}
+		u = u.WithMagnitude(1)
+		v := geom.Vector{X: tr.B.X, Y: tr.B.Y}
+		v = v.WithMagnitude(1)
+		n := geom.Vector{Z: 1}
+
+		tr.A = tr.A.DotInToCsys(u, v, n)
+		tr.B = tr.B.DotInToCsys(u, v, n)
+		tr.C = tr.C.DotInToCsys(u, v, n)
+
+		n = tr.Normal().WithMagnitude(1)
+
+		// Triangles on edge don't contribute
+		if math.Abs(n.Z) < geom.LengthEps {
+			continue
+		}
+
+		// The plane has equation p dot n = a dot n
+		d := tr.A.Dot(n)
+		// nx*x + ny*y + nz*z = d
+		// nz*z = d - nx*x - ny*y
+		A, B, C := -n.X/n.Z, -n.Y/n.Z, d/n.Z
+
+		mac, mbc := tr.C.Y/tr.C.X, (tr.C.Y-tr.B.Y)/tr.C.X
+		xc, yb := tr.C.X, tr.B.Y
+
+		// I asked Maple for
+		//    int(int(A*x + B*y +C, y=mac*x..(mbc*x + yb)), x=0..xc);
+		integral :=
+			(1.0/3)*(A*(mbc-mac)+
+				(1.0/2)*B*(mbc*mbc-mac*mac))*(xc*xc*xc) +
+				(1.0/2)*(A*yb+B*yb*mbc+C*(mbc-mac))*xc*xc +
+				C*yb*xc +
+				(1.0/2)*B*yb*yb*xc
+
+		vol += integral
 	}
-	if v < 0 {
-		v = -v
-	}
-	return v
+	return vol
 }
 
-// CalculateSurfaceArea sums triangle areas, optionally restricted to
-// a subset of faces.
+// CalculateSurfaceArea is the area of the triangles on the given faces
+// (C++ SMesh::CalculateSurfaceArea).
 func (m *SMesh) CalculateSurfaceArea(faces []uint32) float64 {
-	if faces == nil {
-		sum := 0.0
-		for _, t := range m.Triangles {
-			sum += t.Area()
-		}
-		return sum
-	}
-	allowed := make(map[uint32]bool, len(faces))
+	area := 0.0
 	for _, f := range faces {
-		allowed[f] = true
-	}
-	sum := 0.0
-	for _, t := range m.Triangles {
-		if allowed[uint32(t.Meta.Face)] {
-			sum += t.Area()
-		}
-	}
-	return sum
-}
-
-// GetCenterOfMass returns the centroid of all triangle vertices.
-// For a closed mesh, the volume-weighted centroid is more accurate;
-// this simple average is the surface centroid.
-func (m *SMesh) GetCenterOfMass() geom.Vector {
-	if len(m.Triangles) == 0 {
-		return geom.Vector{}
-	}
-	sum := geom.Vector{}
-	n := 0
-	for _, t := range m.Triangles {
-		sum = sum.Plus(t.A).Plus(t.B).Plus(t.C)
-		n += 3
-	}
-	return sum.ScaledBy(1.0 / float64(n))
-}
-
-// MakeFromUnionOf produces A ∪ B by ray-cast classifying each
-// triangle of a and b against the other's BSP. Goal Item 5:
-// uses SBsp3 for proper inside/outside classification. Triangles
-// outside the other mesh are kept; inside are dropped.
-func (m *SMesh) MakeFromUnionOf(a, b *SMesh) {
-	m.Clear()
-	if a != nil && b != nil && len(a.Triangles) > 0 && len(b.Triangles) > 0 {
-		bspA := SBsp3FromMesh(b)
-		bspB := SBsp3FromMesh(a)
-		// Keep a-triangles outside b.
-		for _, t := range a.Triangles {
-			if !triangleClassifiedInside(t, bspA) {
-				m.Triangles = append(m.Triangles, t)
+		for i := range m.Triangles {
+			t := &m.Triangles[i]
+			if f != uint32(t.Meta.Face) {
+				continue
 			}
-		}
-		for _, t := range b.Triangles {
-			if !triangleClassifiedInside(t, bspB) {
-				m.Triangles = append(m.Triangles, t)
-			}
-		}
-	} else {
-		m.MakeFromAssemblyOf(a, b)
-	}
-}
-
-// MakeFromAssemblyOf is a non-CSG assembly: triangles from both a
-// and b are concatenated. Used for step-and-repeat patterns.
-func (m *SMesh) MakeFromAssemblyOf(a, b *SMesh) {
-	m.Clear()
-	if a != nil {
-		m.Triangles = append(m.Triangles, a.Triangles...)
-		m.FlipNormal = a.FlipNormal
-		m.KeepInsideOtherShell = a.KeepInsideOtherShell
-		m.KeepCoplanar = a.KeepCoplanar
-		m.AtLeastOneDiscarded = a.AtLeastOneDiscarded
-		m.IsTransparent = a.IsTransparent
-	}
-	if b != nil {
-		m.Triangles = append(m.Triangles, b.Triangles...)
-	}
-}
-
-// MakeFromDifferenceOf produces A - B by ray-cast: triangles in a
-// whose centroid is OUTSIDE b are kept; triangles INSIDE b are
-// dropped. Goal Item 5: uses SBsp3 for proper classification.
-func (m *SMesh) MakeFromDifferenceOf(a, b *SMesh) {
-	m.Clear()
-	if a == nil {
-		return
-	}
-	if b == nil || len(b.Triangles) == 0 {
-		m.MakeFromCopyOf(a)
-		return
-	}
-	bsp := SBsp3FromMesh(b)
-	for _, t := range a.Triangles {
-		if !triangleClassifiedInside(t, bsp) {
-			m.Triangles = append(m.Triangles, t)
+			area += t.Area()
 		}
 	}
-}
-
-// MakeFromIntersectionOf produces A ∩ B by ray-cast: triangles in a
-// whose centroid is INSIDE b are kept. Goal Item 5: uses SBsp3.
-func (m *SMesh) MakeFromIntersectionOf(a, b *SMesh) {
-	m.Clear()
-	if a == nil || b == nil {
-		return
-	}
-	bsp := SBsp3FromMesh(b)
-	for _, t := range a.Triangles {
-		if triangleClassifiedInside(t, bsp) {
-			m.Triangles = append(m.Triangles, t)
-		}
-	}
-}
-
-// triangleClassifiedInside returns true if the centroid of t is
-// inside the BSP mesh (ray-cast odd count).
-func triangleClassifiedInside(t STriangle, bsp *SBsp3) bool {
-	c := t.A.Plus(t.B).Plus(t.C).ScaledBy(1.0 / 3.0)
-	// Ray-cast in the +X direction. Use a non-axis direction so we
-	// don't graze the plane of any triangle.
-	dir := geom.Vector{X: 1, Y: 0.3141593, Z: 0.2718282}
-	count := 0
-	for _, u := range bsp.collectTriangles() {
-		if _, _, ok := u.Raytrace(c, dir); ok {
-			count++
-		}
-	}
-	return count%2 == 1
-}
-
-// collectTriangles flattens the BSP into a triangle slice. Used
-// for point-in-mesh ray-cast.
-func (b *SBsp3) collectTriangles() []STriangle {
-	if b == nil {
-		return nil
-	}
-	out := []STriangle{b.Tri}
-	for n := b.More; n != nil; n = n.More {
-		out = append(out, n.Tri)
-	}
-	if b.Pos != nil {
-		out = append(out, b.Pos.collectTriangles()...)
-	}
-	if b.Neg != nil {
-		out = append(out, b.Neg.collectTriangles()...)
-	}
-	return out
-}
-
-// pointInsideMesh does a ray-cast from p in the +X direction and
-// counts triangle intersections. Odd = inside.
-func pointInsideMesh(p geom.Vector, m *SMesh) bool {
-	count := 0
-	for _, t := range m.Triangles {
-		if _, _, ok := t.Raytrace(p, geom.Vector{X: 1}); ok {
-			count++
-		}
-	}
-	return count%2 == 1
-}
-
-// AddAgainstBsp adds triangles from srcm to m, classifying each by
-// the BSP bsp3. Triangles inside the BSP get dropped; outside are
-// kept. Used by SShell boolean operations to subtract one mesh from
-// another after BSP classification.
-func (m *SMesh) AddAgainstBsp(srcm *SMesh, bsp3 *SBsp3) {
-	if srcm == nil {
-		return
-	}
-	for _, t := range srcm.Triangles {
-		c := t.A.Plus(t.B).Plus(t.C).ScaledBy(1.0 / 3.0)
-		cls := classifyPointAgainstBsp(c, bsp3)
-		if cls != BspNeg {
-			m.Triangles = append(m.Triangles, t)
-		}
-	}
-}
-
-func classifyPointAgainstBsp(p geom.Vector, b *SBsp3) BspClass {
-	if b == nil {
-		return BspCoplanar
-	}
-	c := ClassifyPointAgainstPlane(p, b.N, b.D)
-	switch c {
-	case BspPos:
-		if b.Pos != nil {
-			return classifyPointAgainstBsp(p, b.Pos)
-		}
-		return BspPos
-	case BspNeg:
-		if b.Neg != nil {
-			return classifyPointAgainstBsp(p, b.Neg)
-		}
-		return BspNeg
-	default:
-		// Coplanar with the partitioner plane — check the More
-		// chain (each successive coplanar splitter) before deciding.
-		if b.More != nil {
-			return classifyPointAgainstBsp(p, b.More)
-		}
-		return BspCoplanar
-	}
+	return area
 }

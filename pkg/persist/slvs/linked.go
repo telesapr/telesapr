@@ -52,7 +52,12 @@ func (d *Document) reloadAllLinked(saveFile string) {
 		g.ImpMesh.Clear()
 		g.ImpShell.Clear()
 
-		loadEntitiesFromSlvs(linkPath(saveFile, g.LinkFile), d.Sketch, &g.ImpEntity, &g.ImpMesh, &g.ImpShell)
+		if loadEntitiesFromSlvs(linkPath(saveFile, g.LinkFile), d.Sketch, &g.ImpEntity, &g.ImpMesh, &g.ImpShell) {
+			// C++ also loads the linked file's images here, for drawing.
+			if g.IsTriangleMeshAssembly() {
+				g.ForceToMesh = true
+			}
+		}
 	}
 }
 

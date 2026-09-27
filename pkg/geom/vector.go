@@ -107,18 +107,17 @@ func (v Vector) DistanceTo(b Vector) float64 {
 	return v.Minus(b).Magnitude()
 }
 
+// DistanceToLine is the distance from v to the line p0 + t*dp (C++
+// Vector::DistanceToLine).
 func (v Vector) DistanceToLine(p0, dp Vector) float64 {
-	num := v.Minus(p0).Cross(dp).Magnitude()
-	den := dp.Magnitude()
-	if den < 1e-20 {
-		return v.DistanceTo(p0)
-	}
-	return num / den
+	m := dp.Magnitude()
+	return v.Minus(p0).Cross(dp).Magnitude() / m
 }
 
+// DistanceToPlane is v's signed distance from the plane through origin
+// with normal (scaled by its magnitude, as C++ Vector::DistanceToPlane).
 func (v Vector) DistanceToPlane(normal, origin Vector) float64 {
-	n := normal.Normal()
-	return v.Minus(origin).Dot(n)
+	return v.Dot(normal) - origin.Dot(normal)
 }
 
 // Equals mirrors C++ Vector::Equals with its default LENGTH_EPS
@@ -315,17 +314,16 @@ func BoundingBoxIntersectsLine(amax, amin, p0, p1 Vector, asSegment bool) bool {
 	return false
 }
 
-// DotInToCsys returns the dot product of v with the contravariant basis
-// vector (u, w) of a coordinate system whose normal is n.
-func (v Vector) DotInToCsys(u, w, n Vector) float64 {
-	return v.Dot(n.Cross(u.Cross(n)).Normal().ScaledBy(u.Magnitude()))
+// DotInToCsys is v's components along u, w and n (C++
+// Vector::DotInToCsys).
+func (v Vector) DotInToCsys(u, w, n Vector) Vector {
+	return Vector{v.Dot(u), v.Dot(w), v.Dot(n)}
 }
 
-// ScaleOutOfCsys is the inverse of DotInToCsys: given a coordinate
-// value v projected onto u in (u, w, n) basis, return the
-// corresponding 3-D vector. Used by Vector::ProjectInto.
+// ScaleOutOfCsys takes v's components as coordinates in the (u, w, n)
+// basis (C++ Vector::ScaleOutOfCsys).
 func (v Vector) ScaleOutOfCsys(u, w, n Vector) Vector {
-	return u.ScaledBy(v.Dot(n.Cross(w.Cross(n)).Normal()) / u.Magnitude())
+	return u.ScaledBy(v.X).Plus(w.ScaledBy(v.Y).Plus(n.ScaledBy(v.Z)))
 }
 
 // OnLineSegment returns true if v lies on segment [a, b] within tol.
@@ -352,17 +350,17 @@ func (v Vector) OnLineSegment(a, b Vector, tol float64) bool {
 	return true
 }
 
-// AtIntersectionOfLines returns the intersection of line (a0, a1)
-// with line (b0, b1). Caller must ensure lines are not parallel.
+// AtIntersectionOfLines is the point on line (a0, a1) closest to line
+// (b0, b1), their intersection if they meet (C++
+// Vector::AtIntersectionOfLines, without the skew and parameter
+// outputs).
 func AtIntersectionOfLines(a0, a1, b0, b1 Vector) Vector {
-	da := a1.Minus(a0)
-	db := b1.Minus(b0)
-	den := da.Cross(db).Magnitude()
-	if den < 1e-20 {
-		return a0
-	}
-	t := b0.Minus(a0).Cross(db).Dot(da.Cross(db)) / (den * den)
-	return a0.Plus(da.ScaledBy(t))
+	da, db := a1.Minus(a0), b1.Minus(b0)
+
+	pa, _ := ClosestPointBetweenLines(a0, da, b0, db)
+
+	// And from either of those, we get the intersection point.
+	return a0.Plus(da.ScaledBy(pa))
 }
 
 // ClosestPointBetweenLines computes the parameters ta, tb on the two

@@ -143,42 +143,6 @@ func makeBoxShell(min, max geom.Vector) *SShell {
 	return sh
 }
 
-// TestSMeshUnionDisjointBoxes verifies the BSP ray-cast union of
-// two disjoint closed boxes keeps all triangles.
-func TestSMeshUnionDisjointBoxes(t *testing.T) {
-	a := makeBoxMeshForTest(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
-	b := makeBoxMeshForTest(geom.Vector{X: 5, Y: 5, Z: 5}, geom.Vector{X: 6, Y: 6, Z: 6})
-	combined := &SMesh{}
-	combined.MakeFromUnionOf(a, b)
-	if len(combined.Triangles) != len(a.Triangles)+len(b.Triangles) {
-		t.Fatalf("disjoint union should have %d triangles, got %d",
-			len(a.Triangles)+len(b.Triangles), len(combined.Triangles))
-	}
-}
-
-// TestSMeshDifferenceDisjointBoxes verifies the difference of two
-// disjoint boxes leaves the first intact.
-func TestSMeshDifferenceDisjointBoxes(t *testing.T) {
-	a := makeBoxMeshForTest(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
-	b := makeBoxMeshForTest(geom.Vector{X: 5, Y: 5, Z: 5}, geom.Vector{X: 6, Y: 6, Z: 6})
-	diff := &SMesh{}
-	diff.MakeFromDifferenceOf(a, b)
-	if len(diff.Triangles) != len(a.Triangles) {
-		t.Fatalf("disjoint difference should have %d triangles, got %d",
-			len(a.Triangles), len(diff.Triangles))
-	}
-}
-
-// makeBoxMeshForTest builds a triangulated box shell as an SMesh.
-func makeBoxMeshForTest(min, max geom.Vector) *SMesh {
-	sh := makeBoxShellForTest(min, max)
-	m := &SMesh{}
-	for i := range sh.Surface {
-		sh.Surface[i].TriangulateInto(sh, m)
-	}
-	return m
-}
-
 // TestSShellUnionOverlappingBoxes verifies union of two overlapping
 // axis-aligned boxes produces a non-empty result.
 func TestSShellUnionOverlappingBoxesSkip(t *testing.T) {

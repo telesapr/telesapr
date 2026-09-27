@@ -254,27 +254,18 @@ func TestVectorOnLineSegment(t *testing.T) {
 	}
 }
 
-// TestVectorDotInToCsys verifies vector projection onto csys.
-func TestVectorDotInToCsys(t *testing.T) {
-	v := Vector{X: 1}
-	u := Vector{X: 1}
-	w := Vector{Y: 1}
-	n := Vector{Z: 1}
-	if math.Abs(v.DotInToCsys(u, w, n)-1) > 1e-9 {
-		t.Errorf("DotInToCsys(X, U=X) = %v, want 1", v.DotInToCsys(u, w, n))
+// TestVectorCsys checks DotInToCsys and ScaleOutOfCsys as C++ defines
+// them: components along u, v, n, and the combination of u, v, n.
+func TestVectorCsys(t *testing.T) {
+	u := Vector{Y: 2}
+	w := Vector{Z: 1}
+	n := Vector{X: 3}
+	p := Vector{X: 1, Y: 2, Z: 3}
+	if got := p.DotInToCsys(u, w, n); got != (Vector{X: 4, Y: 3, Z: 3}) {
+		t.Errorf("DotInToCsys = %v, want (4, 3, 3)", got)
 	}
-}
-
-// TestVectorScaleOutOfCsys verifies csys-from-projection.
-func TestVectorScaleOutOfCsys(t *testing.T) {
-	t.Skip("signature differs from expected; investigate separately")
-	v := Vector{X: 1}
-	u := Vector{X: 1}
-	w := Vector{Y: 1}
-	n := Vector{Z: 1}
-	r := v.ScaleOutOfCsys(u, w, n)
-	if math.Abs(r.X-1) > 1e-9 || math.Abs(r.Y) > 1e-9 || math.Abs(r.Z) > 1e-9 {
-		t.Errorf("ScaleOutOfCsys = %v, want (1,0,0)", r)
+	if got := p.ScaleOutOfCsys(u, w, n); got != (Vector{X: 9, Y: 2, Z: 2}) {
+		t.Errorf("ScaleOutOfCsys = %v, want (9, 2, 2)", got)
 	}
 }
 
@@ -313,30 +304,5 @@ func TestVectorRotatedAboutTranslation(t *testing.T) {
 	// Rotate (1,0) around (5,5) by 90 degrees = (5, 6)
 	if math.Abs(rot.X-10) > 1e-9 || math.Abs(rot.Y-1) > 1e-9 {
 		t.Errorf("rotated = %v, want (10, 1, 0)", rot)
-	}
-}
-
-// TestVectorDotInToCsysBasis verifies dot in csys.
-func TestVectorDotInToCsysBasis(t *testing.T) {
-	v := Vector{X: 3, Y: 4, Z: 5}
-	u := Vector{X: 1}
-	w := Vector{Y: 1}
-	n := Vector{Z: 1}
-	got := v.DotInToCsys(u, w, n)
-	if math.Abs(got-3) > 1e-9 {
-		t.Errorf("DotInToCsys = %v, want 3", got)
-	}
-}
-
-// TestVectorScaleOutOfCsysBasis verifies scale out of csys.
-func TestVectorScaleOutOfCsysBasis(t *testing.T) {
-	t.Skip("ScaleOutOfCsys implementation incomplete")
-	v := Vector{X: 3}
-	u := Vector{X: 1}
-	w := Vector{Y: 1}
-	n := Vector{Z: 1}
-	got := v.ScaleOutOfCsys(u, w, n)
-	if math.Abs(got.X-3) > 1e-9 {
-		t.Errorf("ScaleOutOfCsys = %v, want (3, 0, 0)", got)
 	}
 }

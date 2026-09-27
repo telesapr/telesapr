@@ -129,21 +129,20 @@ func (s *SSurface) ScaleSelfBy(scale float64) {
 // PointAt evaluates the surface at parameter (u, v). Rational
 // Bernstein product basis.
 func (s *SSurface) PointAt(u, v float64) geom.Vector {
-	pt := geom.Vector{}
-	wSum := 0.0
+	num := geom.Vector{}
+	den := 0.0
+
 	for i := 0; i <= s.DegM; i++ {
-		Bu := bernstein(i, s.DegM, u)
 		for j := 0; j <= s.DegN; j++ {
-			Bv := bernstein(j, s.DegN, v)
-			w := s.Weight[i][j] * Bu * Bv
-			pt = pt.Plus(s.Ctrl[i][j].ScaledBy(w))
-			wSum += w
+			Bi := bernstein(i, s.DegM, u)
+			Bj := bernstein(j, s.DegN, v)
+
+			num = num.Plus(s.Ctrl[i][j].ScaledBy(Bi * Bj * s.Weight[i][j]))
+			den += s.Weight[i][j] * Bi * Bj
 		}
 	}
-	if wSum != 0 {
-		pt = pt.ScaledBy(1.0 / wSum)
-	}
-	return pt
+	num = num.ScaledBy(1.0 / den)
+	return num
 }
 
 // PointAtUv is the Point2d variant.

@@ -129,10 +129,10 @@ func (s *SShell) MergeCoincidentSurfaces() {
 			// +u direction as u goes from 0 to 1. So our normal ends up
 			// pointed the same direction.
 			nt := si.Ctrl[0][0].Dot(n)
-			si.Ctrl[0][0] = scaleOutOfCsys(geom.Vector{X: umin, Y: vmin, Z: nt}, u, v, n)
-			si.Ctrl[0][1] = scaleOutOfCsys(geom.Vector{X: umin, Y: vmax, Z: nt}, u, v, n)
-			si.Ctrl[1][1] = scaleOutOfCsys(geom.Vector{X: umax, Y: vmax, Z: nt}, u, v, n)
-			si.Ctrl[1][0] = scaleOutOfCsys(geom.Vector{X: umax, Y: vmin, Z: nt}, u, v, n)
+			si.Ctrl[0][0] = geom.Vector{X: umin, Y: vmin, Z: nt}.ScaleOutOfCsys(u, v, n)
+			si.Ctrl[0][1] = geom.Vector{X: umin, Y: vmax, Z: nt}.ScaleOutOfCsys(u, v, n)
+			si.Ctrl[1][1] = geom.Vector{X: umax, Y: vmax, Z: nt}.ScaleOutOfCsys(u, v, n)
+			si.Ctrl[1][0] = geom.Vector{X: umax, Y: vmin, Z: nt}.ScaleOutOfCsys(u, v, n)
 		}
 	}
 

@@ -130,43 +130,38 @@ func (b *SBezier) IsInPlane(n geom.Vector, d, tol float64) bool {
 // PointAt evaluates the rational Bezier at parameter t.
 func (b *SBezier) PointAt(t float64) geom.Vector {
 	pt := geom.Vector{}
-	wSum := 0.0
+	d := 0.0
+
 	for i := 0; i <= b.Degree; i++ {
 		B := bernstein(i, b.Degree, t)
-		w := b.Weight[i] * B
-		pt = pt.Plus(b.Ctrl[i].ScaledBy(w))
-		wSum += w
+		pt = pt.Plus(b.Ctrl[i].ScaledBy(B * b.Weight[i]))
+		d += b.Weight[i] * B
 	}
-	if wSum != 0 {
-		pt = pt.ScaledBy(1.0 / wSum)
-	}
+	pt = pt.ScaledBy(1.0 / d)
 	return pt
 }
 
-// TangentAt returns the tangent vector at parameter t.
+// TangentAt is the derivative of the curve at t (C++
+// SBezier::TangentAt).
 func (b *SBezier) TangentAt(t float64) geom.Vector {
-	n := geom.Vector{}
-	dw := 0.0
+	pt, ptP := geom.Vector{}, geom.Vector{}
+	d, dP := 0.0, 0.0
+
 	for i := 0; i <= b.Degree; i++ {
-		w := b.Weight[i]
+		B := bernstein(i, b.Degree, t)
 		Bp := bernsteinDerivative(i, b.Degree, t)
-		// d/dt (w_i * B_i * P_i) = w_i * B'_i * P_i
-		n = n.Plus(b.Ctrl[i].ScaledBy(w * Bp))
-		dw += w * Bp
+
+		pt = pt.Plus(b.Ctrl[i].ScaledBy(B * b.Weight[i]))
+		d += b.Weight[i] * B
+
+		ptP = ptP.Plus(b.Ctrl[i].ScaledBy(Bp * b.Weight[i]))
+		dP += b.Weight[i] * Bp
 	}
-	// Apply quotient rule: (w * N' - N * w') / w^2.
-	wSum := 0.0
-	for i := 0; i <= b.Degree; i++ {
-		wSum += b.Weight[i] * bernstein(i, b.Degree, t)
-	}
-	if wSum != 0 {
-		n = n.ScaledBy(1.0 / wSum)
-		if dw != 0 {
-			pt := b.PointAt(t)
-			n = n.Minus(pt.ScaledBy(dw / wSum))
-		}
-	}
-	return n
+
+	// quotient rule; f(t) = n(t)/d(t), so f' = (n'*d - n*d')/(d^2)
+	ret := ptP.ScaledBy(d).Minus(pt.ScaledBy(dP))
+	ret = ret.ScaledBy(1.0 / (d * d))
+	return ret
 }
 
 // ClosestPointTo finds the parameter t on the curve closest to point
