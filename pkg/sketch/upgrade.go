@@ -221,7 +221,7 @@ func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
 	}
 
 	if e.Style.V != 0 {
-		if s := sk.GetStyle(e.Style); s != nil && !s.Visible {
+		if s := sk.StyleGet(e.Style); !s.Visible {
 			return false
 		}
 	}

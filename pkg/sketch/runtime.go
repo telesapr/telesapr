@@ -204,6 +204,12 @@ func (rt *Runtime) Normal(h core.HEntity) (geom.Quaternion, error) {
 	return rt.normalQuaternionHandle(h)
 }
 
+// StyleForEntity is the style entity h draws in; part of the
+// EntityBezierResolver interface.
+func (rt *Runtime) StyleForEntity(h core.HEntity) core.HStyle {
+	return rt.Sketch.StyleForEntity(h)
+}
+
 // Radius returns the radius of a circle/arc entity.
 func (rt *Runtime) Radius(h core.HEntity) (float64, error) {
 	return rt.DistanceValue(h)

@@ -665,9 +665,10 @@ func (d *Document) processStyle(block Block) {
 	if !ok {
 		return
 	}
-	style := core.Style{
-		H: core.HStyle{V: parseHexUint32(hStr)},
-	}
+	// Like C++, fields the file leaves out take default values.
+	style := core.Style{}
+	core.FillDefaultStyle(&style, nil)
+	style.H = core.HStyle{V: parseHexUint32(hStr)}
 	if v, ok := fields["Style.name"]; ok {
 		style.Name = v
 	}

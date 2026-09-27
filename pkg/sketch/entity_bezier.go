@@ -113,16 +113,8 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 	}
 
 	// Record our style for all of the Beziers that we just created.
-	// C++ Style::ForEntity also distinguishes the active group from
-	// inactive ones (a UI notion); every non-construction entity of a
-	// group gets the same default either way, which is all that loop
-	// assembly relies on.
-	style := uint32(core.StyleActiveGrp)
-	if e.Style.V != 0 {
-		style = e.Style.V
-	}
 	for i := first; i < beziers.Len(); i++ {
-		beziers.Curves[i].AuxA = int(style)
+		beziers.Curves[i].AuxA = int(rt.StyleForEntity(e.H).V)
 	}
 }
 
@@ -351,4 +343,7 @@ type EntityBezierResolver interface {
 	Point(core.HEntity) (geom.Vector, error)
 	Normal(core.HEntity) (geom.Quaternion, error)
 	Radius(core.HEntity) (float64, error)
+	// StyleForEntity is the style the entity draws in (C++
+	// Style::ForEntity).
+	StyleForEntity(core.HEntity) core.HStyle
 }
