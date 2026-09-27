@@ -17,10 +17,10 @@ func TestBBoxConstructionAndInclude(t *testing.T) {
 	if b.MaxP != (geom.Vector{X: 5, Y: 4, Z: 3}) {
 		t.Fatalf("MaxP unexpected: %+v", b.MaxP)
 	}
-	if origin := b.GetOrigin(); origin != b.MinP {
-		t.Fatalf("GetOrigin mismatch: %+v vs %+v", origin, b.MinP)
+	if origin := b.GetOrigin(); origin != (geom.Vector{X: 1.5, Y: 1.5, Z: 2}) {
+		t.Fatalf("GetOrigin is the centre, got %+v", origin)
 	}
-	if extents := b.GetExtents(); extents != (geom.Vector{X: 7, Y: 5, Z: 2}) {
+	if extents := b.GetExtents(); extents != (geom.Vector{X: 3.5, Y: 2.5, Z: 1}) {
 		t.Fatalf("GetExtents unexpected: %+v", extents)
 	}
 
@@ -55,7 +55,10 @@ func TestBBoxOverlaps(t *testing.T) {
 	if a.Overlaps(c) {
 		t.Fatal("expected disjoint boxes to report false")
 	}
-	if !b.Overlaps(c) {
-		t.Fatal("expected overlapping boxes to report true (b vs c)")
+	if b.Overlaps(c) {
+		t.Fatal("boxes that only touch don't overlap, as in C++ (b vs c)")
+	}
+	if !b.Contains(geom.Point2d{U: 2.1, V: 1}, 0.2) || b.Contains(geom.Point2d{U: 2.3, V: 1}, 0.2) {
+		t.Fatal("Contains")
 	}
 }

@@ -1,6 +1,10 @@
 package core
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+)
 
 type BBox struct {
 	MinP geom.Vector
@@ -22,13 +26,11 @@ func NewBBox(p0, p1 geom.Vector) BBox {
 	}
 }
 
-func (b BBox) GetOrigin() geom.Vector {
-	return b.MinP
-}
+// GetOrigin is the box's centre (C++ BBox::GetOrigin).
+func (b BBox) GetOrigin() geom.Vector { return b.MinP.Plus(b.MaxP.Minus(b.MinP).ScaledBy(0.5)) }
 
-func (b BBox) GetExtents() geom.Vector {
-	return b.MaxP.Minus(b.MinP)
-}
+// GetExtents is half the box's size (C++ BBox::GetExtents).
+func (b BBox) GetExtents() geom.Vector { return b.MaxP.Minus(b.MinP).ScaledBy(0.5) }
 
 func (b *BBox) Include(v geom.Vector, r float64) {
 	b.MinP.X = geom.Min(b.MinP.X, v.X-r)
@@ -40,8 +42,20 @@ func (b *BBox) Include(v geom.Vector, r float64) {
 	b.MaxP.Z = geom.Max(b.MaxP.Z, v.Z+r)
 }
 
-func (b BBox) Overlaps(other BBox) bool {
-	return !(b.MaxP.X < other.MinP.X || other.MaxP.X < b.MinP.X ||
-		b.MaxP.Y < other.MinP.Y || other.MaxP.Y < b.MinP.Y ||
-		b.MaxP.Z < other.MinP.Z || other.MaxP.Z < b.MinP.Z)
+// Overlaps reports whether the boxes' interiors overlap (C++
+// BBox::Overlaps).
+func (b BBox) Overlaps(b1 BBox) bool {
+	t := b1.GetOrigin().Minus(b.GetOrigin())
+	e := b1.GetExtents().Plus(b.GetExtents())
+
+	return math.Abs(t.X) < e.X && math.Abs(t.Y) < e.Y && math.Abs(t.Z) < e.Z
+}
+
+// Contains reports whether p, in x and y, lies within r of the box
+// (C++ BBox::Contains).
+func (b BBox) Contains(p geom.Point2d, r float64) bool {
+	return p.U >= (b.MinP.X-r) &&
+		p.V >= (b.MinP.Y-r) &&
+		p.U <= (b.MaxP.X+r) &&
+		p.V <= (b.MaxP.Y+r)
 }

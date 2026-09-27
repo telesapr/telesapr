@@ -98,7 +98,7 @@ func TestPoint2d(t *testing.T) {
 func TestVector4Blend(t *testing.T) {
 	a := Vector4{X: 0, Y: 0, Z: 0, W: 1}
 	b := Vector4{X: 2, Y: 2, Z: 2, W: 1}
-	mid := a.Blend(b, 0.5)
+	mid := Vector4Blend(a, b, 0.5)
 	if mid.X != 1 || mid.Y != 1 || mid.Z != 1 {
 		t.Fatalf("blend at 0.5 = %v", mid)
 	}
@@ -109,12 +109,12 @@ func TestVectorAtIntersectionOfPlanes(t *testing.T) {
 	// Plane XZ (y=0): n=(0,1,0), d=0
 	// Plane YZ (x=0): n=(1,0,0), d=0
 	// Intersection: origin
-	p := AtIntersectionOfPlanes(
+	p, parallel := AtIntersectionOfThreePlanes(
 		Vector{0, 0, 1}, 0,
 		Vector{0, 1, 0}, 0,
 		Vector{1, 0, 0}, 0,
 	)
-	if p.Magnitude() > 1e-9 {
+	if parallel || p.Magnitude() > 1e-9 {
 		t.Fatalf("intersection of 3 coordinate planes = %v, want {0,0,0}", p)
 	}
 }
@@ -162,7 +162,7 @@ func TestVectorProject4d(t *testing.T) {
 // TestVectorClampWithin verifies clamping.
 func TestVectorClampWithin(t *testing.T) {
 	v := Vector{X: 5, Y: -5, Z: 0}
-	c := v.ClampWithin(Vector{X: 0, Y: 0, Z: 0}, Vector{X: 2, Y: 2, Z: 2})
+	c := v.ClampWithin(0, 2)
 	if c.X != 2 || c.Y != 0 || c.Z != 0 {
 		t.Errorf("ClampWithin = %v, want (2, 0, 0)", c)
 	}
@@ -203,15 +203,6 @@ func TestAtIntersectionOfPlaneAndLine(t *testing.T) {
 	p := AtIntersectionOfPlaneAndLine(n, d, a, b)
 	if math.Abs(p.Z-5) > 1e-9 {
 		t.Errorf("intersection = %v, want z=5", p)
-	}
-}
-
-// TestAtIntersectionOfPlanes verifies 3-plane intersection.
-func TestAtIntersectionOfPlanes(t *testing.T) {
-	// 3 perpendicular planes meet at origin.
-	p := AtIntersectionOfPlanes(Vector{X: 1}, 0, Vector{Y: 1}, 0, Vector{Z: 1}, 0)
-	if math.Abs(p.X) > 1e-9 || math.Abs(p.Y) > 1e-9 || math.Abs(p.Z) > 1e-9 {
-		t.Errorf("intersection of 3 planes at origin = %v, want (0,0,0)", p)
 	}
 }
 

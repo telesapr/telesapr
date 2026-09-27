@@ -211,70 +211,50 @@ func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, boo
 	return bestT, true
 }
 
-// SplitAt splits the Bezier at parameter t into two Beziers. The
-// De Casteljau algorithm produces the new control points; weights
-// are split using Vector4::Blend (De Casteljau in homogeneous
-// coordinates).
+// SBezierFromV4 is the curve with homogeneous control points ct (C++
+// SBezier::From(Vector4 ...)).
+func SBezierFromV4(ct ...geom.Vector4) SBezier {
+	ret := SBezier{Degree: len(ct) - 1}
+	for i, c := range ct {
+		ret.Weight[i] = c.W
+		ret.Ctrl[i] = c.PerspectiveProject()
+	}
+	return ret
+}
+
+// SplitAt splits the curve at t into the part before and the part
+// after, by de Casteljau's algorithm on the homogeneous control points
+// (C++ SBezier::SplitAt).
 func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
-	// Build Vector4 control points (homogeneous).
-	cp := [4]geom.Vector4{}
+	var ct [4]geom.Vector4
 	for i := 0; i <= b.Degree; i++ {
-		cp[i] = geom.Vector4{
-			X: b.Ctrl[i].X * b.Weight[i],
-			Y: b.Ctrl[i].Y * b.Weight[i],
-			Z: b.Ctrl[i].Z * b.Weight[i],
-			W: b.Weight[i],
-		}
-	}
-	// Standard De Casteljau split. After level j (j=1..degree),
-	// `work[0..degree-j]` contains the level-j interpolation points.
-	// Left control points: cp[0] at level 0, work[0] after level 1,
-	// work[0] after level 2, ..., work[0] after level degree.
-	// Right control points: work[0] after level degree (= P(t)),
-	// then backwards from the other "diagonal": Q012, Q01, P0.
-	work := [4]geom.Vector4{}
-	copy(work[:], cp[:])
-	left := [4]geom.Vector4{}
-	right := [4]geom.Vector4{}
-	left[0] = cp[0]
-	for j := 1; j <= b.Degree; j++ {
-		for i := 0; i <= b.Degree-j; i++ {
-			work[i] = work[i].Blend(work[i+1], t)
-		}
-		left[j] = work[0]
-	}
-	right[b.Degree] = cp[b.Degree]
-	right[0] = work[0]
-	for j := 1; j < b.Degree; j++ {
-		// Re-run De Casteljau to capture work[1] after each level.
-		copy(work[:], cp[:])
-		for k := 0; k < j; k++ {
-			for i := 0; i <= b.Degree-k-1; i++ {
-				work[i] = work[i].Blend(work[i+1], t)
-			}
-		}
-		right[j] = work[1]
+		ct[i] = geom.Vector4FromWeighted(b.Weight[i], b.Ctrl[i])
 	}
 
-	if bef != nil {
-		*bef = SBezier{Degree: b.Degree, Tag: b.Tag, AuxA: b.AuxA, AuxB: b.AuxB}
-		for i := 0; i <= b.Degree; i++ {
-			p3 := left[i]
-			if p3.W != 0 {
-				bef.Ctrl[i] = geom.Vector{X: p3.X / p3.W, Y: p3.Y / p3.W, Z: p3.Z / p3.W}
-			}
-			bef.Weight[i] = p3.W
-		}
-	}
-	if aft != nil {
-		*aft = SBezier{Degree: b.Degree, Tag: b.Tag, AuxA: b.AuxA, AuxB: b.AuxB}
-		for i := 0; i <= b.Degree; i++ {
-			p3 := right[i]
-			if p3.W != 0 {
-				aft.Ctrl[i] = geom.Vector{X: p3.X / p3.W, Y: p3.Y / p3.W, Z: p3.Z / p3.W}
-			}
-			aft.Weight[i] = p3.W
-		}
+	switch b.Degree {
+	case 1:
+		cts := geom.Vector4Blend(ct[0], ct[1], t)
+		*bef = SBezierFromV4(ct[0], cts)
+		*aft = SBezierFromV4(cts, ct[1])
+	case 2:
+		ct01 := geom.Vector4Blend(ct[0], ct[1], t)
+		ct12 := geom.Vector4Blend(ct[1], ct[2], t)
+		cts := geom.Vector4Blend(ct01, ct12, t)
+
+		*bef = SBezierFromV4(ct[0], ct01, cts)
+		*aft = SBezierFromV4(cts, ct12, ct[2])
+	case 3:
+		ct01 := geom.Vector4Blend(ct[0], ct[1], t)
+		ct12 := geom.Vector4Blend(ct[1], ct[2], t)
+		ct23 := geom.Vector4Blend(ct[2], ct[3], t)
+		ct01_12 := geom.Vector4Blend(ct01, ct12, t)
+		ct12_23 := geom.Vector4Blend(ct12, ct23, t)
+		cts := geom.Vector4Blend(ct01_12, ct12_23, t)
+
+		*bef = SBezierFromV4(ct[0], ct01, ct01_12, cts)
+		*aft = SBezierFromV4(cts, ct12_23, ct23, ct[3])
+	default:
+		panic("Unexpected degree of spline")
 	}
 }
 
@@ -395,9 +375,15 @@ func (b *SBezier) InPerspective(u, v, n, origin geom.Vector, cameraTan float64) 
 	ret := *b
 	ret.TransformedBy(t, qInv, 1.0)
 	for i := 0; i <= ret.Degree; i++ {
-		ct := geom.Vector4FromVector(ret.Ctrl[i], ret.Weight[i])
+		ct := geom.Vector4FromWeighted(ret.Weight[i], ret.Ctrl[i])
+		// so the desired curve, before perspective, is
+		//    (x/w, y/w, z/w)
+		// and after perspective is
+		//    ((x/w)/(1 - (z/w)*cameraTan, ...
+		//  = (x/(w - z*cameraTan), ...
+		// so we want to let w' = w - z*cameraTan
 		ct.W = ct.W - ct.Z*cameraTan
-		ret.Ctrl[i] = ct.Project3d()
+		ret.Ctrl[i] = ct.PerspectiveProject()
 		ret.Weight[i] = ct.W
 	}
 	return ret

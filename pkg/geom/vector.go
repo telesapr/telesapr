@@ -163,35 +163,35 @@ func (v Vector) MakeMaxMin(ptMax, ptMin *Vector) {
 	}
 }
 
+// DirectionCosineWith is the cosine of the angle between v and b (C++
+// Vector::DirectionCosineWith).
 func (v Vector) DirectionCosineWith(b Vector) float64 {
-	ma := v.Magnitude()
-	mb := b.Magnitude()
-	if ma < 1e-20 || mb < 1e-20 {
-		return 0
-	}
-	return v.Dot(b) / (ma * mb)
+	a := v.WithMagnitude(1)
+	b = b.WithMagnitude(1)
+	return a.Dot(b)
 }
 
-// ClosestPointOnLine returns the projection of v onto the line through
-// p0 with direction dp.
+// ClosestPointOnLine is the point of the line p0 + t*dp closest to v
+// (C++ Vector::ClosestPointOnLine).
 func (v Vector) ClosestPointOnLine(p0, dp Vector) Vector {
-	den := dp.Dot(dp)
-	if den < 1e-20 {
-		return p0
-	}
-	t := v.Minus(p0).Dot(dp) / den
-	return p0.Plus(dp.ScaledBy(t))
+	dp = dp.WithMagnitude(1)
+	// this, p0, and (p0+dp) define a plane; the min distance is in
+	// that plane, so calculate its normal
+	pn := v.Minus(p0).Cross(dp)
+	// The minimum distance line is in that plane, perpendicular
+	// to the line
+	n := pn.Cross(dp)
+
+	// Calculate the actual distance
+	d := dp.Cross(p0.Minus(v)).Magnitude()
+	return v.Plus(n.WithMagnitude(d))
 }
 
-// DivProjected returns the scalar t such that
-// v == origin + t * dir, i.e. (v - origin) / dir in the direction
-// of dir. Mirrors Vector::DivProjected from solvespace's Vector.h.
-func (v Vector) DivProjected(dir Vector) float64 {
-	den := dir.MagSquared()
-	if den < 1e-20 {
-		return 0
-	}
-	return v.Dot(dir) / den
+// DivProjected is v's length along delta, in units of delta (C++
+// Vector::DivProjected).
+func (v Vector) DivProjected(delta Vector) float64 {
+	return (v.X*delta.X + v.Y*delta.Y + v.Z*delta.Z) /
+		(delta.X*delta.X + delta.Y*delta.Y + delta.Z*delta.Z)
 }
 
 // Project2d returns the 2-D coordinates of v expressed in the basis
@@ -244,22 +244,32 @@ func (v Vector) RotatedAroundAxis(axis Vector, theta float64) Vector {
 	return r
 }
 
-// ClampWithin clamps each component of v to [minv, maxv].
-func (v Vector) ClampWithin(minv, maxv Vector) Vector {
-	clamp := func(x, lo, hi float64) float64 {
-		if x < lo {
-			return lo
-		}
-		if x > hi {
-			return hi
-		}
-		return x
+// ClampWithin clamps each component to [minv, maxv] (C++
+// Vector::ClampWithin).
+func (v Vector) ClampWithin(minv, maxv float64) Vector {
+	ret := v
+
+	if ret.X < minv {
+		ret.X = minv
 	}
-	return Vector{
-		X: clamp(v.X, minv.X, maxv.X),
-		Y: clamp(v.Y, minv.Y, maxv.Y),
-		Z: clamp(v.Z, minv.Z, maxv.Z),
+	if ret.Y < minv {
+		ret.Y = minv
 	}
+	if ret.Z < minv {
+		ret.Z = minv
+	}
+
+	if ret.X > maxv {
+		ret.X = maxv
+	}
+	if ret.Y > maxv {
+		ret.Y = maxv
+	}
+	if ret.Z > maxv {
+		ret.Z = maxv
+	}
+
+	return ret
 }
 
 // OutsideAndNotOn reports whether v lies outside the box [minv, maxv]
@@ -395,37 +405,28 @@ func ClosestPointBetweenLines(a0, da, b0, db Vector) (ta, tb float64) {
 	return ta, tb
 }
 
-// AtIntersectionOfPlaneAndLine returns the intersection of line
-// (a, b) with plane (n, d) where n is the plane normal and d is the
-// signed distance from the origin.
-// A line parallel to the plane gives the zero vector, as in C++
-// Vector::AtIntersectionOfPlaneAndLine.
+// AtIntersectionOfPlaneAndLine is where the line through p0 and p1
+// meets the plane n . p = d; zero if they're parallel (C++
+// Vector::AtIntersectionOfPlaneAndLine).
 func AtIntersectionOfPlaneAndLine(n Vector, d float64, p0, p1 Vector) Vector {
+	p, _ := AtIntersectionOfPlaneAndLineParallel(n, d, p0, p1)
+	return p
+}
+
+// AtIntersectionOfPlaneAndLineParallel is AtIntersectionOfPlaneAndLine,
+// also reporting whether the line and plane are parallel.
+func AtIntersectionOfPlaneAndLineParallel(n Vector, d float64, p0, p1 Vector) (Vector, bool) {
 	dp := p1.Minus(p0)
 
 	if math.Abs(n.Dot(dp)) < LengthEps {
-		return Vector{}
+		return Vector{}, true
 	}
 
 	// n dot (p0 + t*dp) = d
 	// (n dot p0) + t * (n dot dp) = d
 	t := (d - n.Dot(p0)) / n.Dot(dp)
-	return p0.Plus(dp.ScaledBy(t))
-}
 
-// AtIntersectionOfPlanes returns the intersection of three planes
-// (n1, d1), (n2, d2), (n3, d3). Caller must ensure planes are not
-// parallel.
-func AtIntersectionOfPlanes(n1 Vector, d1 float64, n2 Vector, d2 float64, n3 Vector, d3 float64) Vector {
-	x := n2.Cross(n3).ScaledBy(d1)
-	y := n3.Cross(n1).ScaledBy(d2)
-	z := n1.Cross(n2).ScaledBy(d3)
-	num := x.Plus(y).Plus(z)
-	den := n1.Dot(n2.Cross(n3))
-	if math.Abs(den) < 1e-20 {
-		return Vector{}
-	}
-	return num.ScaledBy(1.0 / den)
+	return p0.Plus(dp.ScaledBy(t)), false
 }
 
 // AtIntersectionOfTwoPlanes returns a point on the line where planes

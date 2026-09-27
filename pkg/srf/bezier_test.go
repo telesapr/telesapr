@@ -419,17 +419,6 @@ func TestSShellClassifyRegion(t *testing.T) {
 	}
 }
 
-// TestSShellPointInShell tests the high-level point-in-shell entry point.
-func TestSShellPointInShell(t *testing.T) {
-	// Empty shell - point is outside.
-	shell := &SShell{}
-	p := geom.Vector{}
-	c := shell.PointInShell(p)
-	if c != SurfOutside {
-		t.Errorf("empty shell: got %v, want SurfOutside", c)
-	}
-}
-
 // TestProbeTangentFace exercises the tangent-face probe.
 func TestProbeTangentFace(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
@@ -520,27 +509,52 @@ func TestSSurfaceBlendRowOrCol(t *testing.T) {
 	}
 }
 
-// TestSSurfaceWeightControlPoints verifies weight normalization.
+// TestSSurfaceWeightControlPoints: weighting scales each control point
+// by its weight, and unweighting undoes it (C++).
 func TestSSurfaceWeightControlPoints(t *testing.T) {
-	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
-	// Set non-trivial weights. With our normalize-to-w[0][0] implementation,
-	// weights are scaled so w[0][0] becomes 1.
-	plane.Weight[0][0] = 2.0
+	plane := FromPlane(geom.Vector{X: 1, Y: 2}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	plane.Weight[1][0] = 4.0
-	original := plane.Weight[1][0]
+	orig := plane.Ctrl
 	plane.WeightControlPoints()
-	// After normalization, weight[0][0] should be 1.
-	if plane.Weight[0][0] != 1.0 {
-		t.Errorf("weight[0][0] = %v, want 1.0", plane.Weight[0][0])
+	if want := orig[1][0].ScaledBy(4); plane.Ctrl[1][0] != want || plane.Ctrl[0][0] != orig[0][0] {
+		t.Errorf("weighted: %v %v, want %v %v", plane.Ctrl[1][0], plane.Ctrl[0][0], want, orig[0][0])
 	}
-	// weight[1][0] should be original / 2 = 2.0
-	if math.Abs(plane.Weight[1][0]-original/2.0) > 1e-9 {
-		t.Errorf("weight[1][0] = %v, want %v", plane.Weight[1][0], original/2.0)
-	}
-	// Restore
 	plane.UnWeightControlPoints()
-	if math.Abs(plane.Weight[0][0]-1.0) > 1e-9 {
-		t.Errorf("after unweight: weight[0][0] = %v, want 1.0 (round-trip)", plane.Weight[0][0])
+	if plane.Ctrl != orig {
+		t.Errorf("unweighting didn't restore the control points")
+	}
+}
+
+// TestSSurfaceSplitInHalf: the halves of a rational surface trace the
+// halves of the original.
+func TestSSurfaceSplitInHalf(t *testing.T) {
+	// A quarter cylinder: rational quadratic in u, linear in v.
+	w := math.Sqrt(2) / 2
+	s := SSurface{DegM: 2, DegN: 1}
+	for j := 0; j <= 1; j++ {
+		z := float64(j) * 3
+		s.Ctrl[0][j] = geom.Vector{X: 2, Z: z}
+		s.Ctrl[1][j] = geom.Vector{X: 2, Y: 2, Z: z}
+		s.Ctrl[2][j] = geom.Vector{Y: 2, Z: z}
+		s.Weight[0][j], s.Weight[1][j], s.Weight[2][j] = 1, w, 1
+	}
+	for _, byU := range []bool{true, false} {
+		var sa, sb SSurface
+		s.SplitInHalf(byU, &sa, &sb)
+		for _, u := range []float64{0, 0.3, 1} {
+			for _, v := range []float64{0, 0.6, 1} {
+				ua, va, ub, vb := u/2, v, 0.5+u/2, v
+				if !byU {
+					ua, va, ub, vb = u, v/2, u, 0.5+v/2
+				}
+				if got, want := sa.PointAt(u, v), s.PointAt(ua, va); !got.EqualsTol(want, 1e-12) {
+					t.Errorf("byU %v: first half at (%g, %g) = %v, want %v", byU, u, v, got, want)
+				}
+				if got, want := sb.PointAt(u, v), s.PointAt(ub, vb); !got.EqualsTol(want, 1e-12) {
+					t.Errorf("byU %v: second half at (%g, %g) = %v, want %v", byU, u, v, got, want)
+				}
+			}
+		}
 	}
 }
 

@@ -82,21 +82,9 @@ func (s *SSurface) trimIsClosedPolygon() bool {
 	return true
 }
 
-// Clear resets all fields to their zero state.
+// Clear drops the trims (C++ SSurface::Clear).
 func (s *SSurface) Clear() {
-	s.Tag = 0
-	s.H = core.HSSurface{}
-	s.NewH = core.HSSurface{}
-	s.Color = core.RgbaColor{}
-	s.Face = 0
-	s.DegM = 0
-	s.DegN = 0
-	s.Ctrl = [4][4]geom.Vector{}
-	s.Weight = [4][4]float64{}
 	s.Trim = nil
-	s.Bsp = nil
-	s.Edges = SEdgeList{}
-	s.Cached = geom.Point2d{}
 }
 
 // Reverse flips the first parameter direction, which flips the normal,
@@ -207,33 +195,12 @@ func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
 // GetAxisAlignedBounding extends (ptMin, ptMax) to include every
 // control point of the surface.
 func (s *SSurface) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector) {
-	ptMin.X = mathInfPos
-	ptMin.Y = mathInfPos
-	ptMin.Z = mathInfPos
-	ptMax.X = mathInfNeg
-	ptMax.Y = mathInfNeg
-	ptMax.Z = mathInfNeg
+	*ptMax = geom.Vector{X: veryNegative, Y: veryNegative, Z: veryNegative}
+	*ptMin = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
+
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			p := s.Ctrl[i][j]
-			if p.X < ptMin.X {
-				ptMin.X = p.X
-			}
-			if p.Y < ptMin.Y {
-				ptMin.Y = p.Y
-			}
-			if p.Z < ptMin.Z {
-				ptMin.Z = p.Z
-			}
-			if p.X > ptMax.X {
-				ptMax.X = p.X
-			}
-			if p.Y > ptMax.Y {
-				ptMax.Y = p.Y
-			}
-			if p.Z > ptMax.Z {
-				ptMax.Z = p.Z
-			}
+			s.Ctrl[i][j].MakeMaxMin(ptMax, ptMin)
 		}
 	}
 }
@@ -647,217 +614,215 @@ func (s *SSurface) LineEntirelyOutsideBbox(a, b geom.Vector, asSegment bool) boo
 	return false
 }
 
-// SplitInHalf splits the surface into two halves along the u or v
-// parameter. Used by AllPointsIntersectingUntrimmed to recursively
-// partition curved surfaces for line-vs-surface intersection.
-func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface) {
-	if sa == nil || sb == nil {
-		return
-	}
-	*sa = SSurface{DegM: s.DegM, DegN: s.DegN, Color: s.Color, Face: s.Face}
-	*sb = SSurface{DegM: s.DegM, DegN: s.DegN, Color: s.Color, Face: s.Face}
-	t := 0.5
+// WeightControlPoints multiplies each control point by its weight (C++
+// SSurface::WeightControlPoints).
+func (s *SSurface) WeightControlPoints() {
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			sa.Ctrl[i][j] = s.Ctrl[i][j]
-			sb.Ctrl[i][j] = s.Ctrl[i][j]
-			sa.Weight[i][j] = s.Weight[i][j]
-			sb.Weight[i][j] = s.Weight[i][j]
+			s.Ctrl[i][j] = s.Ctrl[i][j].ScaledBy(s.Weight[i][j])
 		}
 	}
-	// Apply De Casteljau on the chosen axis.
-	if byU {
-		// Build Vector4 control points per row.
+}
+
+// UnWeightControlPoints divides each control point by its weight (C++
+// SSurface::UnWeightControlPoints).
+func (s *SSurface) UnWeightControlPoints() {
+	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			cp := [4]geom.Vector4{}
-			for i := 0; i <= s.DegM; i++ {
-				w := s.Weight[i][j]
-				cp[i] = geom.Vector4{
-					X: s.Ctrl[i][j].X * w,
-					Y: s.Ctrl[i][j].Y * w,
-					Z: s.Ctrl[i][j].Z * w,
-					W: w,
-				}
-			}
-			for k := 1; k <= s.DegM; k++ {
-				for i := 0; i <= s.DegM-k; i++ {
-					cp[i] = cp[i].Blend(cp[i+1], t)
-				}
-			}
-			// cp[0] is the left half's ctrl[degM][j]; iterate.
-			for i := 0; i <= s.DegM; i++ {
-				if cp[i].W != 0 {
-					sa.Ctrl[i][j] = geom.Vector{X: cp[i].X / cp[i].W, Y: cp[i].Y / cp[i].W, Z: cp[i].Z / cp[i].W}
-				}
-				sa.Weight[i][j] = cp[i].W
-			}
-			// Right half requires the OTHER column of the table.
-			cp2 := [4]geom.Vector4{}
-			for i := 0; i <= s.DegM; i++ {
-				w := s.Weight[i][j]
-				cp2[i] = geom.Vector4{
-					X: s.Ctrl[i][j].X * w,
-					Y: s.Ctrl[i][j].Y * w,
-					Z: s.Ctrl[i][j].Z * w,
-					W: w,
-				}
-			}
-			for k := 1; k <= s.DegM; k++ {
-				for i := 0; i <= s.DegM-k; i++ {
-					cp2[i] = cp2[i].Blend(cp2[i+1], t)
-				}
-			}
-			// Read right-half: the "more" diagonal of cp2.
-			for i := 0; i <= s.DegM; i++ {
-				idx := s.DegM - i
-				if cp2[idx].W != 0 {
-					sb.Ctrl[i][j] = geom.Vector{X: cp2[idx].X / cp2[idx].W, Y: cp2[idx].Y / cp2[idx].W, Z: cp2[idx].Z / cp2[idx].W}
-				}
-				sb.Weight[i][j] = cp2[idx].W
-			}
+			s.Ctrl[i][j] = s.Ctrl[i][j].ScaledBy(1.0 / s.Weight[i][j])
+		}
+	}
+}
+
+// CopyRowOrCol copies row (or column) srcIJ of src into row thisIJ
+// (C++ SSurface::CopyRowOrCol).
+func (s *SSurface) CopyRowOrCol(row bool, thisIJ int, src *SSurface, srcIJ int) {
+	if row {
+		for j := 0; j <= s.DegN; j++ {
+			s.Ctrl[thisIJ][j] = src.Ctrl[srcIJ][j]
+			s.Weight[thisIJ][j] = src.Weight[srcIJ][j]
 		}
 	} else {
 		for i := 0; i <= s.DegM; i++ {
-			cp := [4]geom.Vector4{}
-			for j := 0; j <= s.DegN; j++ {
-				w := s.Weight[i][j]
-				cp[j] = geom.Vector4{
-					X: s.Ctrl[i][j].X * w,
-					Y: s.Ctrl[i][j].Y * w,
-					Z: s.Ctrl[i][j].Z * w,
-					W: w,
-				}
-			}
-			for k := 1; k <= s.DegN; k++ {
-				for j := 0; j <= s.DegN-k; j++ {
-					cp[j] = cp[j].Blend(cp[j+1], t)
-				}
-			}
-			for j := 0; j <= s.DegN; j++ {
-				if cp[j].W != 0 {
-					sa.Ctrl[i][j] = geom.Vector{X: cp[j].X / cp[j].W, Y: cp[j].Y / cp[j].W, Z: cp[j].Z / cp[j].W}
-				}
-				sa.Weight[i][j] = cp[j].W
-			}
-			cp2 := [4]geom.Vector4{}
-			for j := 0; j <= s.DegN; j++ {
-				w := s.Weight[i][j]
-				cp2[j] = geom.Vector4{
-					X: s.Ctrl[i][j].X * w,
-					Y: s.Ctrl[i][j].Y * w,
-					Z: s.Ctrl[i][j].Z * w,
-					W: w,
-				}
-			}
-			for k := 1; k <= s.DegN; k++ {
-				for j := 0; j <= s.DegN-k; j++ {
-					cp2[j] = cp2[j].Blend(cp2[j+1], t)
-				}
-			}
-			for j := 0; j <= s.DegN; j++ {
-				idx := s.DegN - j
-				if cp2[idx].W != 0 {
-					sb.Ctrl[i][j] = geom.Vector{X: cp2[idx].X / cp2[idx].W, Y: cp2[idx].Y / cp2[idx].W, Z: cp2[idx].Z / cp2[idx].W}
-				}
-				sb.Weight[i][j] = cp2[idx].W
-			}
+			s.Ctrl[i][thisIJ] = src.Ctrl[i][srcIJ]
+			s.Weight[i][thisIJ] = src.Weight[i][srcIJ]
 		}
 	}
 }
 
-// WeightControlPoints normalizes so that weight[0][0] = 1. Called
-// before storage to keep weights in a canonical range.
-func (s *SSurface) WeightControlPoints() {
-	if s.Weight[0][0] == 0 {
-		return
-	}
-	w := 1.0 / s.Weight[0][0]
-	for i := 0; i <= s.DegM; i++ {
+// BlendRowOrCol sets row (or column) thisIJ to the average of row aIJ
+// of a and row bIJ of b (C++ SSurface::BlendRowOrCol).
+func (s *SSurface) BlendRowOrCol(row bool, thisIJ int, a *SSurface, aIJ int, b *SSurface, bIJ int) {
+	if row {
 		for j := 0; j <= s.DegN; j++ {
-			s.Weight[i][j] *= w
+			c := a.Ctrl[aIJ][j].Plus(b.Ctrl[bIJ][j])
+			w := a.Weight[aIJ][j] + b.Weight[bIJ][j]
+			s.Ctrl[thisIJ][j] = c.ScaledBy(0.5)
+			s.Weight[thisIJ][j] = w / 2
+		}
+	} else {
+		for i := 0; i <= s.DegM; i++ {
+			c := a.Ctrl[i][aIJ].Plus(b.Ctrl[i][bIJ])
+			w := a.Weight[i][aIJ] + b.Weight[i][bIJ]
+			s.Ctrl[i][thisIJ] = c.ScaledBy(0.5)
+			s.Weight[i][thisIJ] = w / 2
 		}
 	}
 }
 
-// UnWeightControlPoints applies weight[0][0] as a multiplicative
-// scale to all weights, undoing WeightControlPoints.
-func (s *SSurface) UnWeightControlPoints() {
-	w := s.Weight[0][0]
-	if w == 0 {
-		return
+// SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa
+// and sb, by de Casteljau's algorithm in projective space (C++
+// SSurface::SplitInHalf).
+func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface) {
+	sa.DegM, sb.DegM = s.DegM, s.DegM
+	sa.DegN, sb.DegN = s.DegN, s.DegN
+
+	// by de Casteljau's algorithm in a projective space; so we must work
+	// on points (w*x, w*y, w*z, w) so create a temporary copy
+	st := *s
+	st.WeightControlPoints()
+
+	deg := s.DegN
+	if byU {
+		deg = s.DegM
 	}
-	for i := 0; i <= s.DegM; i++ {
-		for j := 0; j <= s.DegN; j++ {
-			s.Weight[i][j] /= w
-		}
+	switch deg {
+	case 1:
+		sa.CopyRowOrCol(byU, 0, &st, 0)
+		sb.CopyRowOrCol(byU, 1, &st, 1)
+
+		sa.BlendRowOrCol(byU, 1, &st, 0, &st, 1)
+		sb.BlendRowOrCol(byU, 0, &st, 0, &st, 1)
+
+	case 2:
+		sa.CopyRowOrCol(byU, 0, &st, 0)
+		sb.CopyRowOrCol(byU, 2, &st, 2)
+
+		sa.BlendRowOrCol(byU, 1, &st, 0, &st, 1)
+		sb.BlendRowOrCol(byU, 1, &st, 1, &st, 2)
+
+		sa.BlendRowOrCol(byU, 2, sa, 1, sb, 1)
+		sb.BlendRowOrCol(byU, 0, sa, 1, sb, 1)
+
+	case 3:
+		sa.CopyRowOrCol(byU, 0, &st, 0)
+		sb.CopyRowOrCol(byU, 3, &st, 3)
+
+		sa.BlendRowOrCol(byU, 1, &st, 0, &st, 1)
+		sb.BlendRowOrCol(byU, 2, &st, 2, &st, 3)
+		st.BlendRowOrCol(byU, 0, &st, 1, &st, 2) // use row/col 0 as scratch
+
+		sa.BlendRowOrCol(byU, 2, sa, 1, &st, 0)
+		sb.BlendRowOrCol(byU, 1, sb, 2, &st, 0)
+
+		sa.BlendRowOrCol(byU, 3, sa, 2, sb, 1)
+		sb.BlendRowOrCol(byU, 0, sa, 2, sb, 1)
+
+	default:
+		panic("Unexpected degree of spline")
 	}
+
+	sa.UnWeightControlPoints()
+	sb.UnWeightControlPoints()
 }
 
-// DepartureFromCoplanar returns the maximum distance of any control
-// point from the plane through the four corner control points.
-// Used by AllPointsIntersectingUntrimmed to decide when to stop
-// recursing.
+// DepartureFromCoplanar is how far the control points stray from the
+// plane through three of them, chosen far apart (C++
+// SSurface::DepartureFromCoplanar).
 func (s *SSurface) DepartureFromCoplanar() float64 {
-	if s.DegM < 1 || s.DegN < 1 {
-		return 0
-	}
-	n := s.Ctrl[0][0].Minus(s.Ctrl[1][0]).Cross(s.Ctrl[0][1].Minus(s.Ctrl[1][1]))
-	if n.Magnitude() < 1e-20 {
-		// Try a different diagonal.
-		n = s.Ctrl[0][0].Minus(s.Ctrl[1][1]).Cross(s.Ctrl[0][1].Minus(s.Ctrl[1][0]))
-	}
-	if n.Magnitude() < 1e-20 {
-		return 0
-	}
-	d := n.Dot(s.Ctrl[0][0])
-	n = n.Normal()
-	maxDev := 0.0
+	ib, jb, ic, jc := 0, 0, 0, 0
+
+	// Grab three points to define a plane; first choose (0, 0) arbitrarily.
+	ia, ja := 0, 0
+	// Then the point farthest from pt a.
+	best := veryNegative
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			dev := mathAbs(n.Dot(s.Ctrl[i][j]) - d)
-			if dev > maxDev {
-				maxDev = dev
+			if i == ia && j == ja {
+				continue
+			}
+
+			dist := s.Ctrl[i][j].Minus(s.Ctrl[ia][ja]).Magnitude()
+			if dist > best {
+				best = dist
+				ib, jb = i, j
 			}
 		}
 	}
-	return maxDev
+	// Then biggest magnitude of ab cross ac.
+	best = veryNegative
+	for i := 0; i <= s.DegM; i++ {
+		for j := 0; j <= s.DegN; j++ {
+			if i == ia && j == ja {
+				continue
+			}
+			if i == ib && j == jb {
+				continue
+			}
+
+			mag := s.Ctrl[ia][ja].Minus(s.Ctrl[ib][jb]).Cross(
+				s.Ctrl[ia][ja].Minus(s.Ctrl[i][j])).Magnitude()
+			if mag > best {
+				best = mag
+				ic, jc = i, j
+			}
+		}
+	}
+
+	n := s.Ctrl[ia][ja].Minus(s.Ctrl[ib][jb]).Cross(
+		s.Ctrl[ia][ja].Minus(s.Ctrl[ic][jc]))
+	n = n.WithMagnitude(1)
+	d := s.Ctrl[ia][ja].Dot(n)
+
+	// Finally, calculate the deviation from each point to the plane.
+	farthest := veryNegative
+	for i := 0; i <= s.DegM; i++ {
+		for j := 0; j <= s.DegN; j++ {
+			dist := math.Abs(n.Dot(s.Ctrl[i][j]) - d)
+			if dist > farthest {
+				farthest = dist
+			}
+		}
+	}
+	return farthest
 }
 
-// PointIntersectingLine finds the uv parameter on the surface where
-// a line through p0 and p1 intersects it. Returns true if a point was
-// found within 20 Newton iterations, falling back to edge-curve
-
-// PointIntersectingLine finds the uv parameter on the surface where
-// a line through p0 and p1 intersects it. Returns true if a point was
-// found within 20 Newton iterations, falling back to edge-curve
-// intersection if necessary.
+// PointIntersectingLine refines (u, v) by Newton's method to where the
+// line through p0 and p1 meets the surface, trying the surface's edge
+// if that fails (C++ SSurface::PointIntersectingLine).
 func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool {
 	for i := 0; i < 20; i++ {
+		var tu, tv geom.Vector
 		p := s.PointAt(*u, *v)
-		tu, tv := geom.Vector{}, geom.Vector{}
 		s.TangentsAt(*u, *v, &tu, &tv, true)
+
 		n := tu.Cross(tv).WithMagnitude(1)
 		d := p.Dot(n)
-		// Detect parallel: line direction dot n ~ 0
-		dirLen := p1.Minus(p0).Magnitude()
-		parallel := dirLen > 1e-12 && math.Abs(p1.Minus(p0).Dot(n)/dirLen) < 1e-10
+
+		pi, parallel := geom.AtIntersectionOfPlaneAndLineParallel(n, d, p0, p1)
 		if parallel {
 			break
 		}
-		pi := geom.AtIntersectionOfPlaneAndLine(n, d, p0, p1)
-		if p.Minus(pi).Magnitude() < ratPolyEps {
+
+		// Check for convergence - success exits
+		if pi.EqualsTol(p, ratPolyEps) {
 			return true
 		}
-		n2 := tu.Cross(tv)
-		ty := n2.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
-		tx := tv.Cross(n2).ScaledBy(1.0 / tv.MagSquared())
+
+		n = tu.Cross(tv)
+		ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+		tx := tv.Cross(n).ScaledBy(1.0 / tv.MagSquared())
+
+		// Adjust our guess and iterate
 		dp := pi.Minus(p)
-		du := dp.Dot(tx)
-		dv := dp.Dot(ty)
+		du, dv := dp.Dot(tx), dp.Dot(ty)
 		*u += du / tx.MagSquared()
 		*v += dv / ty.MagSquared()
 	}
-	curve := SBezierFrom2(p0, p1)
+	// Lets try the edge of the surface against the line before giving up
+	curve := SBezier{Degree: 1}
+	curve.Ctrl[0], curve.Weight[0] = p0, 1.0
+	curve.Ctrl[1], curve.Weight[1] = p1, 1.0
 	return s.EdgeCurveIntersection(u, v, &curve)
 }
 
@@ -926,42 +891,6 @@ func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
 		}
 	}
 	return false
-}
-
-// CopyRowOrCol copies a row (byU=true) or column (byU=false) from
-// src to this surface at the given index.
-func (s *SSurface) CopyRowOrCol(byU bool, thisIJ int, src *SSurface, srcIJ int) {
-	if byU {
-		for j := 0; j <= s.DegN; j++ {
-			s.Ctrl[thisIJ][j] = src.Ctrl[srcIJ][j]
-			s.Weight[thisIJ][j] = src.Weight[srcIJ][j]
-		}
-	} else {
-		for i := 0; i <= s.DegM; i++ {
-			s.Ctrl[i][thisIJ] = src.Ctrl[i][srcIJ]
-			s.Weight[i][thisIJ] = src.Weight[i][srcIJ]
-		}
-	}
-}
-
-// BlendRowOrCol averages a row/column of a and b into this surface.
-// Used during de Casteljau subdivision.
-func (s *SSurface) BlendRowOrCol(byU bool, thisIJ int, a *SSurface, aIJ int, b *SSurface, bIJ int) {
-	if byU {
-		for j := 0; j <= s.DegN; j++ {
-			c := a.Ctrl[aIJ][j].Plus(b.Ctrl[bIJ][j])
-			w := a.Weight[aIJ][j] + b.Weight[bIJ][j]
-			s.Ctrl[thisIJ][j] = c.ScaledBy(0.5)
-			s.Weight[thisIJ][j] = w / 2
-		}
-	} else {
-		for i := 0; i <= s.DegM; i++ {
-			c := a.Ctrl[i][aIJ].Plus(b.Ctrl[i][bIJ])
-			w := a.Weight[i][aIJ] + b.Weight[i][bIJ]
-			s.Ctrl[i][thisIJ] = c.ScaledBy(0.5)
-			s.Weight[i][thisIJ] = w / 2
-		}
-	}
 }
 
 func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool) STrimBy {

@@ -252,13 +252,8 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		var bestDot [2]float64
 		var bestN [2]geom.Vector
 		for i := 0; i < 2; i++ {
-			bestDot[i] = math.Inf(-1)
-			perpendicular := en[i].Minus(edgeD.ScaledBy(en[i].Dot(edgeD)))
-			if perpendicular.Magnitude() < lengthEps {
-				ep[i] = geom.Vector{}
-			} else {
-				ep[i] = perpendicular.WithMagnitude(1)
-			}
+			bestDot[i] = veryNegative
+			ep[i] = en[i].Minus(edgeD.ScaledBy(en[i].Dot(edgeD))).WithMagnitude(1)
 		}
 		for i := range s.Surface {
 			srf := &s.Surface[i]
@@ -321,19 +316,9 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		if pp.Minus(p).Magnitude() > lengthEps {
 			continue
 		}
-		var c BspUvClass
+		c := BspUvOutside
 		if srf.Bsp != nil {
 			c = srf.Bsp.ClassifyPoint(puv, geom.Point2d{}, srf)
-		} else {
-			// srf.Bsp is nil only when srf.Trim is empty
-			// (buildSurfaceClassifyingBsp in boolean.go). Every real
-			// extrusion-produced surface now populates Trim (see
-			// SShell.MakeFromExtrusionOf), so this default is a
-			// defensive fallback for a genuinely trim-less surface —
-			// matching C++'s intent that "no trim boundary of its
-			// own" means "its entire (u, v) domain is its trim
-			// region", i.e. BspUvInside rather than BspUvOutside.
-			c = BspUvInside
 		}
 		if c == BspUvOutside {
 			continue
@@ -360,7 +345,7 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		s.AllPointsIntersecting(p.Minus(ray), p.Plus(ray), &l, false, true, false)
 		*indir = SurfOutside
 		*outdir = SurfOutside
-		dmin := math.MaxFloat64
+		dmin := veryPositive
 		onEdge := false
 		for _, si := range l {
 			t := si.P.Minus(p).Dot(ray) / ray.MagSquared()
@@ -389,19 +374,4 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		}
 	}
 	return true
-}
-
-// PointInShell tests whether a point p lies inside, outside, or
-// coincident with the shell. Uses a single raycast through the
-// point and reports based on the closest intersection.
-func (s *SShell) PointInShell(p geom.Vector) Class {
-	var indir, outdir Class
-	s.ClassifyEdge(&indir, &outdir,
-		p.Plus(geom.Vector{X: -1, Y: -1, Z: -1}),
-		p.Plus(geom.Vector{X: 1, Y: 1, Z: 1}),
-		p,
-		geom.Vector{X: 1},
-		geom.Vector{X: -1},
-		geom.Vector{Z: 1})
-	return indir
 }

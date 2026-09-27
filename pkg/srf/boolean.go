@@ -8,7 +8,6 @@ import (
 // MakeFromBoolean sets s to the boolean combination of a and b.
 // Mirrors C++ SShell::MakeFromBoolean (boolean.cpp).
 func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
-	s.Clear()
 	s.BooleanFailed = false
 
 	a.MakeClassifyingBsps(nil)
