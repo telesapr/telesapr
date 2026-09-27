@@ -43,7 +43,7 @@ func TestVectorBoundingBoxIntersectsLine(t *testing.T) {
 	amin := Vector{0, 0, 0}
 	a := Vector{-1, 1, 1}
 	b := Vector{3, 1, 1}
-	if !a.BoundingBoxIntersectsLine(amax, amin, a, b) {
+	if !BoundingBoxIntersectsLine(amax, amin, a, b, true) {
 		t.Fatalf("expected line to intersect box")
 	}
 }
@@ -301,7 +301,7 @@ func TestVectorBoundingBoxIntersectsLineThroughOrigin(t *testing.T) {
 	amin := Vector{}
 	a := Vector{}
 	b := Vector{X: 2, Y: 0, Z: 0}
-	if !amin.BoundingBoxIntersectsLine(amax, amin, a, b) {
+	if !BoundingBoxIntersectsLine(amax, amin, a, b, true) {
 		t.Errorf("line through origin should intersect unit bbox")
 	}
 }

@@ -9,6 +9,7 @@ solvespace core engine. It is the source of truth for the
 - **OK** — file ported (or split across multiple Go files).
 - **PARTIAL** — most methods ported but some gaps remain; see notes.
 - **MISSING** — file not ported at all.
+- **UNAUDITED** — ported, but not yet compared line by line against the C++.
 - **OUT-OF-SCOPE** — UI / export / render work, not part of "core engine".
 
 ## Core engine files
@@ -16,33 +17,41 @@ solvespace core engine. It is the source of truth for the
 | C++ file | Lines | Status | Go file(s) | Notes |
 |---|---|---|---|---|
 | `expr.cpp` | 963 | OK | `pkg/core/expr.go`, `pkg/core/expr_parse.go` | |
-| `entity.cpp` | 997 | OK | `pkg/core/entity.go`, `pkg/core/entity_methods.go` | 46 methods ported |
+| `entity.cpp` | 997 | PARTIAL | `pkg/core/entity.go`, `pkg/core/entity_methods.go` | `EntityBase::ArcGetAngles` is a stub (always a full circle); `pkg/sketch/entity_bezier.go` computes arc angles itself |
 | `constraint.cpp` | 994 | OK | `pkg/core/constraint.go` | |
 | `system.cpp` | 660 | OK | `pkg/solver/system.go` | |
 | `group.cpp` | 1228 | OK | `pkg/sketch/group.go` | |
-| `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go` | GenerateAll pipeline |
-| `groupmesh.cpp` | 803 | OK | `pkg/sketch/group_pipeline.go` | EXTRUDE/REVOLVE/HELIX/ROTATE/TRANSLATE/LINKED dispatch; `annotateExtrudeFaces` face-entity annotation loop (REMAP_TOP/REMAP_BOTTOM/REMAP_LINE_TO_FACE) |
+| `generate.cpp` | 598 | PARTIAL | `pkg/sketch/generate_all.go` | Solves all groups in one Newton system instead of per group; `chordTolCalculated` is ported, but `Sketch.CalculateEntityBBox` disagrees with C++ on some models (see §"Boolean-CSG parity") |
+| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, the running-shell boolean combine and `MergeCoincidentSurfaces` placement are faithful. REVOLVE/HELIX shells are not (see `srf/surface.cpp`) |
+| `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
 | `style.cpp` | 948 | OK | `pkg/core/style.go` | |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go` | |
-| `srf/surface.cpp` | 494 | OK | `pkg/srf/surface.go` | `ChordToleranceForEdge`, `PointAtMaybeSwapped`, `NormalAtMaybeSwapped`, `SplitInHalf`, `WeightControlPoints`, `UnWeightControlPoints`, `CopyRowOrCol`, `BlendRowOrCol` |
-| `srf/shell.cpp` | 617 | OK | `pkg/srf/shell.go`, `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go` | |
-| `srf/boolean.cpp` | 1100 | OK | `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go` | |
-| `srf/polygon.cpp` | 924 | OK | `pkg/srf/polygon.go` | full ear-clipping + adaptive-grid `UvGridTriangulateInto` |
-| `srf/surfinter.cpp` | 641 | OK | `pkg/srf/surfinter.go` | |
+| `srf/surface.cpp` | 494 | PARTIAL | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `Reverse`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `TriangulateInto`, `MakeFromExtrusionOf` are faithful. `MakeFromRevolutionOf`/`MakeFromHelixOf` build no trims (their surfaces render untrimmed, `SSurface.TrimBuilt=false`); `MakeSectionEdgesInto` is a stub |
+| `srf/shell.cpp` | 617 | PARTIAL | `pkg/srf/shell.go` | Extrusion faithful; revolution/helix as above |
+| `srf/boolean.cpp` | 1100 | OK | `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go`, `pkg/srf/boolean_trim.go`, `pkg/srf/bsp_uv.go` | `SBspUv`, `MakeFromBoolean`, curve splitting, `MakeCopyTrimAgainst`, `TrimFromEdgeList`, `EdgeNormalsWithinSurface` |
+| `srf/polygon.cpp` / `polygon.cpp` | 924 | OK | `pkg/srf/polygon.go`, `pkg/srf/contour.go`, `pkg/srf/edgelist.go`, `pkg/srf/merge.go` | `AssemblePolygon`/`AssembleContour`, contour orientation (C++ sign convention), `FixContourDirections`, `EdgeCrosses`, `CullExtraneousEdges` |
+| `srf/surfinter.cpp` | 641 | UNAUDITED | `pkg/srf/surfinter.go` | Not yet compared line by line against C++; `AddExactIntersectionCurve` now uses the faithful curve split |
 | `srf/bezier.cpp` | — | OK | `pkg/srf/bezier*.go` | |
-| `srf/curve.cpp` | 886 | OK | `pkg/srf/curve.go`, `pkg/srf/boolean_csg.go` | `FromTransformationOf`, `RemoveShortSegments` with chord-tolerance check, `STrimBy::EntireCurve` |
-| `srf/triangulate.cpp` | 738 | OK | `pkg/srf/contour.go`, `pkg/srf/polygon.go` | `BridgeToContour`, `RayIsInside`, `IsEar`, `IsEmptyTriangle`, `MakeTriangulationGridInto`, `UvGridTriangulateInto` adaptive path |
-| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go` | `PointOn*Curve`, `ClosestPointBetweenLines` |
-| `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go` | full subdivision path: `AllPointsIntersecting`, `AllPointsIntersectingUntrimmed`, `PointIntersectingLine`, `EdgeCurveIntersection`, `SplitInHalf`, `CopyRowOrCol`, `BlendRowOrCol`, `WeightControlPoints`, `UnWeightControlPoints` |
-| `srf/merge.cpp` | 130 | OK | `pkg/srf/shell.go` | `MergeCoincidentSurfaces` |
-| `bsp.cpp` | 733 | OK | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | `InsertHow`, `InsertInPlane`, `InsertConvex`, `IntersectionWith`, `GenerateInPaintOrder`, `RayTriangleIntersection` |
-| `constrainteq.cpp` | 1062 | OK | `pkg/solver/system.go` | full per-constraint equation emission; all 38 constraint types route to a real `addXxx` emitter (no `UnsupportedConstraintError`) |
-| `modify.cpp` | 751 | OK | `pkg/sketch/group_generate.go` | `ModifyToSatisfyConstraint` expanded for ANGLE/DIAMETER/PT_PT_DISTANCE/PT_LINE_DISTANCE/PT_PLANE_DISTANCE/PT_FACE_DISTANCE/PROJ_PT_DISTANCE/PT_ON_LINE/LENGTH_RATIO/LENGTH_DIFFERENCE/ARC_ARC_DIFFERENCE/ARC_LINE_DIFFERENCE/ARC_ARC_LEN_RATIO/ARC_LINE_LEN_RATIO. UI helpers (ReplacePointInConstraints, MakeTangentArc, SplitLine/Circle/Cubic) are out-of-scope. |
-| `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Kernel state and `Clean` propagation are complete; observer notifications are out-of-scope (UI). |
+| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go`, `pkg/srf/bezier_loop*.go`, `pkg/srf/bezier_list.go`, `pkg/srf/boolean_csg.go` | Loop assembly (`FromCurves`, `SBezierLoopSet::From`, `FindOuterFacesFrom`, `GetPlaneContainingBeziers`), `IsCircle`, `GetSurfaceA/B` faithful. `SBezier::AllIntersectionsWith` is a sampling approximation |
+| `srf/triangulate.cpp` | 738 | OK | `pkg/srf/triangulate.go` | Hole bridging, ear clipping, adaptive grid |
+| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `ClosestPointOnThisAndSurface` |
+| `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go`, `pkg/srf/raycast_surface.go` | `ClassifyEdge` and trimmed `AllPointsIntersecting` (plane, cylinder, subdivision) |
+| `srf/merge.cpp` | 130 | OK | `pkg/srf/merge.go` | `MergeCoincidentSurfaces` |
+| `bsp.cpp` | 733 | OK | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | |
+| `constrainteq.cpp` | 1062 | OK | `pkg/solver/system.go` | all 38 constraint types route to a real `addXxx` emitter |
+| `modify.cpp` | 751 | OK | `pkg/sketch/group_generate.go` | UI helpers (ReplacePointInConstraints, MakeTangentArc, SplitLine/Circle/Cubic) are out-of-scope. |
+| `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | |
 | `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go` | |
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go` | SLVS persistence |
+| `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections |
+
+An **OK** row means the functions listed in its notes (or the whole
+file, when none are listed) were compared line by line against the C++.
+The 2026-09-27 audit showed that earlier OK markings were often wrong:
+several "ported" functions were simplified stand-ins. Treat rows not
+re-audited since then with suspicion.
 
 ## Out-of-scope (UI / export / render)
 
@@ -82,19 +91,14 @@ UI.
 
 - 515 tests (422 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
-- All 6 boolean fixtures load and complete `Sketch::GenerateAll`
-  without panic.
 - All 86 non-boolean fixtures load cleanly and round-trip via
   `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip`.
 - All 31 constraint fixtures load, round-trip, and solve with
   `How=SolveOkay` across all groups via `TestParityConstraintFixtures`.
-- `TestSystemAllConstraintsHaveEmitter` verifies every one of the
-  38 constraint types routes to a real `addXxx` emitter (no
-  `UnsupportedConstraintError`).
-- `TestParityBooleanVolumeVsCppGolden` enforces per-fixture ratio
-  tolerance bands in `booleanFixtureCppGoldenTolerances` (see
-  §"Boolean-CSG parity gaps" below) and logs the Go/cpp volume
-  ratio per boolean fixture.
+- `TestParityBooleanVolumeVsCppGolden` checks every boolean fixture's
+  volume against the C++ testsuite golden (see below);
+  `TestBooleanTwoBoxesVolume` checks union/difference/intersection of
+  two overlapping boxes exactly.
 - 0 TODO markers in engine packages.
 
 ## Definition of done
@@ -107,300 +111,89 @@ UI.
   `TestSystemAllConstraintsHaveEmitter`.
 - `go vet ./...` and `go test ./...` succeed on the whole repo.
 - No TODO markers in engine packages.
-- Every boolean fixture's go/cpp ratio in `booleanFixtureCppGoldens`
-  is within `[0.95, 1.05]` of 1.0 (currently NOT met; see below).
+- Every boolean fixture's go/cpp volume ratio is within `[0.95, 1.05]`
+  (met; five of six are within the C++ testsuite's own 1e-6).
 
-## Boolean-CSG parity gaps
+## Boolean-CSG parity
 
-The Go port's `MakeFromBoolean` runs the C++ SShell-level trim
-pipeline (`MakeClassifyingBsps` → `CopyCurvesSplitAgainst` →
-`MakeIntersectionCurvesAgainst` → `RemoveShortSegments` →
-`CleanupAfterBoolean` → `CopySurvesTrimAgainst` →
-`RewriteSurfaceHandlesForCurves` → `MergeCoincidentSurfaces`).
-The accurate per-surface trim path
-(`pkg/srf/boolean_trim.go::makeCopyTrimAgainst`) is gated by an
-`interCount ∈ (0, 256)` heuristic to avoid pathological chain
-assembly on degenerate coincident overlap. `MakeFromExtrusionOf`
-(`pkg/srf/shell.go`) is now a faithful port of the C++
-constructor and populates every emitted surface's `Trim` list
-(caps, sides, and the trim lines joining them), so
-`buildSurfaceClassifyingBsp` builds a real, non-nil `Bsp` for
-every extrusion-produced surface — closing the "separate, larger
-gap" earlier revisions of this doc referred to.
+| Fixture | go/cpp volume ratio |
+|---|---|
+| `boolean_coplanar_union`   | 1.000000 |
+| `boolean_knife_edge`       | 1.000000 |
+| `boolean_tangent_crossing` | 1.000000 |
+| `boolean_tangent_edge`     | 1.000000 |
+| `boolean_tangent_fillet`   | 1.000000 |
+| `boolean_tangent_spline`   | 0.999907 |
 
-**Ratios before (commit c2c17db) vs after the deea878 landings:**
+None of the fixtures sets `BooleanFailed`. `booleanFixtureCppGoldenTolerances`
+(`pkg/persist/slvs/bool_generate_test.go`) enforces
+`|ratio - 1| < 1e-6` (the C++ `CHECK_EQ_EPS` criterion) for all but
+`boolean_tangent_spline`.
 
-| Fixture | c2c17db | deea878 | Direction |
-|---|---|---|---|
-| `boolean_coplanar_union`   | 0.038 | 0.088 | better |
-| `boolean_knife_edge`       | 0.758 | 0.458 | **worse** |
-| `boolean_tangent_crossing` | 0.536 | 1.007 | better, in `[0.95,1.05]` |
-| `boolean_tangent_edge`     | 0.667 | 0.460 | **worse** |
-| `boolean_tangent_fillet`   | 1.199 | 0.707 | **worse** |
-| `boolean_tangent_spline`   | 0.538 | 1.011 | better, in `[0.95,1.05]` |
+`boolean_tangent_spline`'s residual is not in the CSG. At equal chord
+tolerance, the Go mesh volume matches C++ to STL float precision:
+`solvespace-cli export-mesh --chord-tol 0.12` gives 204619.494, and
+Go gives 204619.494. The C++ testsuite golden (204638.627) is what
+C++ produces at chord tolerances of about 0.07–0.1 mm. Go's
+`chordTolCalculated` is 0.12 mm, because `Sketch.CalculateEntityBBox`
+reports a 120 mm extent (entity points at z = ±60) where the C++
+evidently sees about 71 mm. See remaining work item 2.
 
-Three fixtures improved substantially, two of them (`tangent_crossing`,
-`tangent_spline`) now sitting inside the `[0.95, 1.05]`
-definition-of-done band. Three fixtures (`knife_edge`,
-`tangent_edge`, `tangent_fillet`) regressed relative to c2c17db
-despite a serious, measurement-driven effort (documented under
-"What blocks the three regressed fixtures" below) — this is a
-known, explicit exception to the "never regress a fixture" goal,
-called out here as the task instructions require.
+Parity came from replacing simplified stand-ins with faithful ports,
+not from tuning. The main fixes:
 
-**Per-fixture tolerance bands**:
-`booleanFixtureCppGoldenTolerances` in
-`pkg/persist/slvs/bool_generate_test.go` records the per-fixture
-`[Lo, Hi]` band that `TestParityBooleanVolumeVsCppGolden`
-enforces, calibrated to the ratios in the table above. Tightening
-a band must be coupled with work that drives the ratio into the
-new band; both updates should land together with a note here.
+- **Operand geometry.**
+  - `FromPlane` had u/v swapped, which flipped every plane's normal and transposed its parameterization.
+  - `Group.AssembleLoops` put every curve into one unchained "loop".
+  - `FindOuterFacesFrom` was a stub: no orientation fixing, no holes.
+  - Contour orientation used the opposite sign convention from C++.
+  - `GenerateEntityBeziers` drew arcs as full circles, split circles into degenerate 180° arcs, and read cubics' points off by one.
+  - `MakeFromExtrusionOf` of a multi-loop sketch kept only the last loop.
+- **Classification primitives.**
+  - `SBspUv` never returned `EDGE_PARALLEL`/`ANTIPARALLEL` and didn't split straddling edges.
+  - `SShell.AllPointsIntersecting` raytraced a cached mesh and returned zero normals, so the `ClassifyEdge` raycast always said OUTSIDE.
+  - `LineEntirelyOutsideBbox` ignored `asSegment`.
+  - The internal `lengthEps` was 1e-12 instead of `LENGTH_EPS` (1e-6).
+  - `EdgeNormalsWithinSurface` used xyz offsets as uv.
+- **Trim pipeline.**
+  - Split curves kept their original handles, so A's and B's curves collided.
+  - The `orig` trim edges were straight lines, double-reversed.
+  - Inter edges sampled `Exact` instead of the split polyline.
+  - `SSurface.Reverse` was a no-op.
+  - `AssemblePolygon` reported success on open chains.
+  - `CullExtraneousEdges` didn't cull anti-parallel pairs.
+  - `MergeCoincidentSurfaces` kept one surface's trims instead of merging them.
+  - The running shell never accumulated across groups.
+- **Triangulation.** Contours were ear-clipped one by one, with no hole bridging.
 
-## Landings
-
-The deea878 measurement-first approach (a diagnostic test
-extruding two overlapping boxes directly through
-`SShell.MakeFromExtrusionOf` + `MakeFromBoolean`, bypassing the
-full `Sketch.GenerateAll` pipeline) found and fixed six
-independent bugs, all downstream of the `MakeFromExtrusionOf`/`Trim`-population rewrite:
-
-1. **`pkg/srf/boolean_trim.go::makeCopyTrimAgainst`'s Step 3 had
-   a double-edge-list bug.** It built `orig` correctly via
-   `ret.makeSurfaceEdgesIntoUv(into, orig)` (matching C++
-   `ret.MakeEdgesInto(into, &orig, MakeAs::UV)`,
-   `boolean.cpp:529`), but then *appended* a second, overlapping
-   copy of the boundary via a since-deleted helper
-   (`makeEdgesIntoForBoolean`) that also pulled in every
-   `CurveSourceIntersection` curve touching the surface — curves
-   that belong in the separate `inter` list built by Step 4, not
-   `orig`. Removed the second call entirely; `makeSurfaceEdgesIntoUv`
-   alone now matches the C++.
-
-2. **`pkg/srf/surface.go::SSurface.ClosestPointTo` had no plane
-   fast path**, so it always ran the general Newton iteration,
-   which clamps `(u, v)` to `[0, 1]` on every step
-   (`if u < 0 { u = 0 }`, etc.). C++'s `ClosestPointTo`
-   (`ratpoly.cpp:424-439`) special-cases `degm == 1 && degn == 1`
-   with an exact, **unclamped** linear-algebra solve — needed
-   because callers like `intersectPlanePlane`'s `tmin`/`tmax`
-   sweep (`surfinter.cpp` / `pkg/srf/surfinter.go`) rely on
-   projecting a point that may lie *outside* a plane's parameter
-   rectangle to find where an infinite line crosses that
-   rectangle's edge. With the clamped Go path, every such
-   projection silently reported "still inside," so
-   `intersectPlanePlane` never clipped an intersection segment to
-   the region where both operand planes actually overlap — a
-   segment computed from a 2-unit-wide cap plane against a
-   2-unit-wide side plane came out as the full 2-unit span
-   instead of the correct, clipped 1-unit overlap. Ported the
-   exact C++ formula as a new early-return branch (plus the
-   C++'s four corner-coincidence special cases just above it).
-
-3. **`pkg/srf/bsp_uv.go::classifyPointUv` used the wrong
-   inside/outside sign convention.** C++ `SBspUv::ClassifyPoint`
-   (`boolean.cpp:1043-1075`) measures signed distance via
-   `Point2d::Normal()` (a `{y, -x}` rotation — util.cpp:985) and
-   defaults an unsubdivided "pos" side to `INSIDE`, an
-   unsubdivided "neg" side to `OUTSIDE`; net effect, "inside" is
-   the *right-hand* side of each directed trim edge. The Go
-   port's cross-product formula had the opposite sense (inside =
-   *left*-hand side). Verified directly: building the real
-   4-edge UV trim loop for one face of an extruded box and
-   classifying its own center point returned `BspUvOutside` under
-   the old convention for *every* extrusion-produced surface —
-   this was not a corner case, it was universal. Flipped the two
-   comparisons in `classifyPointUv`; updated the two hand-written
-   unit tests that had baked in the old (backwards) convention
-   (`TestSBspUvClassify` in `pkg/srf/bezier_test.go`,
-   `TestSSurfaceTriangulateIntoRespectsTrim` in
-   `pkg/srf/trim_test.go`).
-
-4. **`pkg/srf/shell.go::SSurface.TriangulateInto`'s
-   grid-rendering fallback was applied too broadly.** It has two
-   fallback sites (empty `Trim`; non-empty `Trim` whose
-   `AssemblePolygon` fails to close) that both called
-   `triangulateUntrimmedGrid` (render the surface's full
-   parameter rectangle) unconditionally. For a boolean-CSG output
-   surface this is wrong in two different ways:
-   - An *empty* `Trim` from `makeCopyTrimAgainst` usually means
-     "every candidate chain failed `keepEdge`" — i.e. this region
-     is genuinely outside the kept solid, and C++ has no fallback
-     at all here (`surface.cpp:414`: `AssemblePolygon` failing on
-     zero edges just logs and renders nothing). Falling back to
-     the full rectangle instead rendered every fully-discarded
-     operand face as if it survived unmodified — confirmed with
-     the two-overlapping-boxes diagnostic: `MakeFromBoolean` with
-     `SurfaceUnion`, `SurfaceDiff`, and `SurfaceInter` all
-     produced the *same* wrong mesh, because in every case the
-     "keep only some faces" logic was being silently overridden
-     by "render every operand face regardless."
-   - A *non-empty* `Trim` whose polygon fails to assemble is a
-     different failure mode (an inconsistency in the chain-walk,
-     not a deliberate discard); always falling back here (this
-     port's prior behavior) turned out to measurably help more
-     than it hurt across the boolean fixtures.
-
-   Added `SSurface.TrimBuilt bool` (Go-port-only, no C++
-   equivalent) to distinguish "this surface was never given trim
-   data at all" (`MakeFromRevolutionOf` / `MakeFromHelixOf`,
-   still unported — always falls back) from "this surface went
-   through the boolean per-surface trim and came out empty."
-   `MakeFromExtrusionOf` sets `TrimBuilt = true` on every surface
-   it emits (they always carry a non-empty `Trim`), and
-   `makeCopyTrimAgainst` sets `TrimBuilt = (t == SurfaceInter)`:
-   for `SurfaceInter`, an empty result reliably means "outside the
-   intersection" (confirmed: with the *unconditional* fallback the
-   two-box intersection ratio was wildly wrong, ~9x too big;
-   with the strict, op-aware policy it came out to 1.96,
-   closer to the true value of 1). For `SurfaceUnion` /
-   `SurfaceDiff` (the only ops any of the six golden fixtures use),
-   an empty result is far more often an unresolved tangent-contact
-   classification miss than a real discard, so those keep
-   `TrimBuilt = false` and fall back to the grid — this single
-   change is what moved `tangent_crossing` and `tangent_spline`
-   from ~0.02 (after fix 1-3 alone, which had made things *worse*
-   than HEAD by making the pipeline more "honest" about discarding
-   surfaces whose classification was still wrong) up to ~1.01,
-   and moved `knife_edge` / `tangent_edge` / `tangent_fillet` from
-   their worst point (0.15 / 0.02 / 0.34) back up to their current
-   (still-regressed-from-HEAD) values.
-
-5. **`pkg/srf/edgelist.go::AssemblePolygon` /
-   `AssembleContour` chain-closing tolerance loosened from
-   `1e-9` to `1e-6`**, matching C++ `Vector::Equals`'s default
-   tolerance (`LENGTH_EPS`, `defs.h:7`) rather than this port's
-   much tighter internal `lengthEps = 1e-12`
-   (`pkg/srf/bezier.go`). Measured no effect on the six golden
-   fixtures in isolation, but is a genuine correctness fix (the
-   accurate per-surface trim accumulates floating-point noise
-   across several transforms before reaching this check) kept for
-   consistency with the C++ semantics it's meant to mirror.
-
-6. **`pkg/srf/boolean.go::MakeClassifyingBsps`** now also
-   populates `SSurface.Edges` (the xyz-space trim boundary),
-   mirroring the second half of C++ `SSurface::MakeClassifyingBsp`
-   (`boolean.cpp:909-918`) that the Go port had only ported the
-   `bsp`-building half of. `SShell.ClassifyEdge`'s edge-on-edge
-   (case 1) and knife-edge (case 2) branches read this field; it
-   was always empty before, so those branches could never fire.
-   Measured no effect on the six golden fixtures (the probes that
-   exercise those cases didn't come up for these particular
-   fixtures), but it's a real gap-closer for other geometry and
-   is required for case 1/2 to ever execute at all.
-
-All of the above (1-6) are cumulative; each was verified in
-isolation (temporarily disabled, one at a time, against the full
-golden test) before being kept, except fix 4 (the op-aware
-`TrimBuilt` policy), which was iterated on directly against the
-measured ratios since a two-box synthetic case isn't enough to
-validate it.
-
-## What blocks the three regressed fixtures
-
-`boolean_knife_edge` (0.758 → 0.458), `boolean_tangent_edge`
-(0.667 → 0.460), and `boolean_tangent_fillet` (1.199 → 0.707) are
-below their HEAD ratio despite fixes 1-6 above, all of which are
-individually verified, C++-matching corrections (not
-speculative). Diagnostics narrowed the cause per fixture:
-
-- All three fixtures' boolean-combine surfaces go through the
-  accurate per-surface trim path (`interCount` was 6-17,
-  comfortably inside the `(0, 256)` gate — confirmed by
-  instrumenting `CopySurfacesTrimAgainst` directly), so this is
-  not a "falls back to the coarse centroid classifier" problem.
-- `boolean_tangent_edge`'s `AssemblePolygon` success rate is high
-  (33 succeeded / 3 fell back, measured by instrumenting
-  `SSurface.TriangulateInto` directly) — most surfaces DO produce
-  a closed trim polygon, but the *combined* result (`go=136000`)
-  is far short of the golden (`cpp=296000`) and, suspiciously,
-  close to neither operand's own volume in isolation (312000 and
-  168000). This points at the **kept region itself being wrong**
-  (an incorrect `keepEdge`/classification decision on a real,
-  successfully-assembled chain), not at a rendering/fallback
-  choice — i.e. this is the `ClassifyEdge` tangent-contact
-  partial-overlap problem already tracked below, on a different
-  fixture than the ones fix 4 above happened to fully repair.
-- `boolean_knife_edge` has a similar profile (26 succeeded / 13
-  fell back) with the same symptom: a plausible-looking but
-  undersized result.
-- `boolean_tangent_fillet` is the odd one out: its second group is
-  a plain `EXTRUDE` (not a boolean at all — the actual combine
-  happens implicitly via `Group.MeshCombine` when
-  `Sketch.GenerateAll` calls `GenerateForBooleanShell`), and its
-  own single-shell volume (measured directly from `g.ThisShell`
-  before any boolean runs) is already the *expected* single value
-  (1.0 for the first group). The shortfall therefore lives
-  entirely in the combine step, same mechanism as the other two.
-
-None of fixes 2, 3, 5, or 6 individually moved these three
-fixtures' ratios at all when toggled off one at a time (confirmed
-by re-running `TestParityBooleanVolumeVsCppGolden` with each
-disabled in turn) — the remaining gap is specifically in
-`makeCopyTrimAgainst`'s chain classification for near-tangent
-contact geometry, which is the same open problem item 5 below
-already describes for the tangent-cutter fixtures. Given more
-time, the next concrete step is to instrument
-`edgeNormalsWithinSurface`'s probe-refinement and
-`agnst.classifyEdge`'s case-3/case-4 choice specifically on
-`boolean_tangent_edge`'s surfaces that *do* assemble
-successfully but are classified with the wrong `keepEdge`
-verdict, to find why the kept region comes out smaller than it
-should.
+The Go-only heuristics these had been masking were removed: the
+`interCount` gate, the centroid classifier fallback, the op-aware
+`TrimBuilt` grid fallback, and the "fall back to the untrimmed grid
+when the trim polygon doesn't assemble" path.
 
 ## Remaining work
 
-The per-surface trim-with-classification chain in
-`pkg/srf/boolean_trim.go::makeCopyTrimAgainst` is gated by the
-`interCount ∈ (0, 256)` heuristic. The accurate path's iteration
-is `for i := range receiver.Surface` (matching the C++) and
-passes `receiver` as `parent` to `makeCopyTrimAgainst`. The
-`choosing` map tolerance is `1e-8` (matching C++ `Vector::Equals`).
-`findChainAvoiding` likewise uses `tol = 1e-8` so the closed-inter
-case works correctly.
+In priority order:
 
-1. **`CopySurvesTrimAgainst`'s iteration** *(landed, prior
-   session)* — iterates `receiver.Surface`, passes `receiver` as
-   `parent`, matching `boolean.cpp:750`.
-
-2. **Algorithmic fix: `findChainAvoiding`** for the empty-orig +
-   closed-inter case — choosing re-tuned to `1e-8` (landed, prior
-   session). Step A (orphan-edge fallback) and Step B (full-uv-
-   rectangle loop detection) are still open if a future fixture
-   exposes the closed-loop closure-noise problem.
-
-3. **`MergeCoincidentSurfaces` for coplanar-but-shifted faces**
-   *(landed, prior session)*.
-
-4. **Tighten the per-fixture tolerance bands** *(landed in deea878 for `tangent_crossing`/`tangent_spline`, now
-   `[0.95, 1.05]`)*. `coplanar_union`, `knife_edge`,
-   `tangent_edge`, and `tangent_fillet` remain wide, tied to the
-   ratios in "Boolean-CSG parity gaps" above.
-
-5. **`ClassifyEdge` partial-overlap recognition** *(most of the
-   groundwork landed in c2c17db and deea878; the specific remaining
-   gap changed)* — `closestPointOnThisAndSurface`,
-   `edgeNormalsWithinSurface`'s curve-refinement, the case-1
-   five-sub-branches fix, the `BspUvClass` default (`BspUvInside`
-   for a nil `Bsp`), `SSurface.Edges` population for case 1/2, and
-   the `ClosestPointTo`/`classifyPointUv` fixes from deea878
-   are all in place. What's still missing, per "What blocks the
-   three regressed fixtures" above: for `boolean_knife_edge` and
-   `boolean_tangent_edge` specifically, a real (non-fallback)
-   trim polygon is being assembled on most surfaces but the kept
-   region it encloses is smaller than correct — i.e. `keepEdge`'s
-   classification of at least one real chain is wrong on
-   near-tangent contact geometry that isn't exercised by the
-   `tangent_crossing`/`tangent_spline` fixtures (which are now
-   correct). Narrowing this further needs per-chain instrumentation
-   of `agnst.classifyEdge`'s case-3/case-4 choice specifically on
-   those two fixtures' surfaces, which has not been done yet.
-
-6. **`MakeFromRevolutionOf` / `MakeFromHelixOf` don't populate
-   `Trim`.** Still true; `SSurface.TrimBuilt` (deea878) is
-   the marker that keeps their surfaces falling back to the full
-   parameter grid instead of vanishing. Porting real trim
-   construction for these two constructors (mirroring
-   `MakeFromExtrusionOf`'s now-faithful port) would let them
-   participate correctly in future boolean-CSG fixtures that use
-   revolve/helix operands, none of which exist yet in the
-   6-fixture golden set.
+1. **`MakeFromRevolutionOf` / `MakeFromHelixOf` trims** (`srf/surface.cpp`).
+   Port the C++ constructors, which build trim curves the way
+   `MakeFromExtrusionOf` does. Until then, their surfaces render over
+   the full parameter range (`TrimBuilt=false`) and can't take part
+   in booleans correctly. Add a revolve-vs-box boolean test with an
+   analytic volume.
+2. **`chordTolCalculated`.** Make `Sketch.CalculateEntityBBox` and the
+   generate order match C++ `SolveSpaceUI::GenerateAll`
+   (`genForBBox` pass, `generate.cpp:219`). That closes
+   `boolean_tangent_spline`'s 1e-4 residual, and the band can then
+   tighten to 1e-6.
+3. **Audit `srf/surfinter.cpp`** (`IntersectAgainst` and its per-case
+   helpers) line by line, as was done for `boolean.cpp`/`raycast.cpp`.
+4. **Watertightness check.** The C++ fixture tests also assert that
+   `SKdNode::MakeCertainEdgesInto(NAKED_OR_SELF_INTER)` finds no
+   naked or self-intersecting edges. Port that check and assert it in
+   `TestParityBooleanFixtures`.
+5. **Smaller stand-ins found but not yet ported:**
+   - `EntityBase::ArcGetAngles` in `pkg/core`;
+   - `SBezier::AllIntersectionsWith`;
+   - `SSurface::MakeSectionEdgesInto`;
+   - per-group solving in `GenerateAll`.

@@ -55,8 +55,7 @@ func TestGroupGenerateDisplayItemsNoError(t *testing.T) {
 func TestGroupGenerateLoopsNoError(t *testing.T) {
 	sk := NewSketch()
 	g := &Group{H: core.HGroup{V: 1}, Type: GroupDrawing3D}
-	g.GenerateLoops()
-	_ = sk
+	g.GenerateLoops(sk, NewRuntime(sk))
 }
 
 // TestGroupGenerateLinkedShell tests the Linked branch.
@@ -77,7 +76,6 @@ func TestGroupAnnotateExtrudeFacesNullArgs(t *testing.T) {
 	g.annotateExtrudeFaces(nil, nil, geom.Vector{}, geom.Vector{})
 	// Should not panic.
 }
-
 
 // TestGroupAnnotateExtrudeFacesTopMatchesWithSource verifies top-face detection with source.
 func TestGroupAnnotateExtrudeFacesTopMatchesWithSource(t *testing.T) {

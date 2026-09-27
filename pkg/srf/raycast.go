@@ -323,7 +323,7 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		}
 		var c BspUvClass
 		if srf.Bsp != nil {
-			c = srf.Bsp.ClassifyPoint(puv)
+			c = srf.Bsp.ClassifyPoint(puv, geom.Point2d{}, srf)
 		} else {
 			// srf.Bsp is nil only when srf.Trim is empty
 			// (buildSurfaceClassifyingBsp in boolean.go). Every real

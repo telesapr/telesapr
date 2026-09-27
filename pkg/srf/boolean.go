@@ -5,86 +5,50 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// MakeFromBoolean is the master dispatcher for the BSP ray-cast
-// CSG pipeline. It runs the four phases defined in srf/boolean.cpp
-// (MakeClassifyingBsps, CopyCurvesSplitAgainst,
-// MakeIntersectionCurvesAgainst, CopySurfacesTrimAgainst,
-// RewriteSurfaceHandlesForCurves, CleanupAfterBoolean).
-//
-// Phase 4 + Goal Item 1 implementation. The exact-Bezier
-// surface-surface intersection is approximated by sampling each
-// surface's polyline boundary and intersecting line segments; this
-// is correct for the planar-against-planar case and the test
-// fixtures, but does not produce exact NURBS intersection curves.
+// MakeFromBoolean sets s to the boolean combination of a and b.
+// Mirrors C++ SShell::MakeFromBoolean (boolean.cpp).
 func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	s.Clear()
-	if a == nil || b == nil {
-		s.BooleanFailed = true
-		return
-	}
-	// Phase 1: build uv-space classifying BSPs for every surface in
-	// both shells. These BSPs classify a point in (u, v) space as
-	// inside or outside the surface's trim region.
+	s.BooleanFailed = false
+
 	a.MakeClassifyingBsps(nil)
 	b.MakeClassifyingBsps(nil)
 
-	// Phase 2: copy curves from a and b, splitting each where it
-	// enters/exits a surface from the other shell.
+	// Copy over all the original curves, splitting them so that a
+	// piecewise linear segment never crosses a surface from the other
+	// shell.
 	a.CopyCurvesSplitAgainst(true, b, s)
 	b.CopyCurvesSplitAgainst(false, a, s)
 
-	// Phase 3: compute surface-surface intersection curves (line
-	// segment approximation) and add them to s.
+	// Generate the intersection curves for each surface in A against all
+	// the surfaces in B (which is all of the intersection curves).
 	a.MakeIntersectionCurvesAgainst(b, s)
 
-	// Remove short segments (degenerate splitters).
 	for i := range s.Curve {
-		s.Curve[i].RemoveShortSegments(nil, nil)
+		sc := &s.Curve[i]
+		sc.RemoveShortSegments(sc.GetSurfaceA(a, b), sc.GetSurfaceB(a, b))
 	}
 
-	// Phase 4: rebuild classifying BSPs with the new (split) curves.
+	// And clean up the piecewise linear things we made as a calculation aid
 	a.CleanupAfterBoolean()
 	b.CleanupAfterBoolean()
+	// Remake the classifying BSPs with the split (and short-segment-removed)
+	// curves
 	a.MakeClassifyingBsps(s)
 	b.MakeClassifyingBsps(s)
 
-	// Phase 5: copy surfaces, trimming each region against the other
-	// shell according to the boolean op.
-	a.CopySurfacesTrimAgainst(a, b, s, op, true)
-	b.CopySurfacesTrimAgainst(a, b, s, op, false)
+	// Then trim and copy the surfaces
+	a.CopySurfacesTrimAgainst(a, b, s, op)
+	b.CopySurfacesTrimAgainst(a, b, s, op)
 
-	// Phase 6: rewrite curve surface handles to point to the
-	// newly-created surfaces in s.
+	// Now that we've copied the surfaces, we know their new hSurfaces, so
+	// rewrite the curves to refer to the surfaces by their handles in the
+	// result.
 	s.RewriteSurfaceHandlesForCurves(a, b)
 
-	// Phase 7: merge coincident surfaces that result from per-surface
-	// trim (e.g. boolean_coplanar_union's stacked cuboids share side
-	// faces that need to fuse into single shells — see PORTING.md
-	// §"Boolean-CSG parity gaps"). MergeCoincidentSurfaces reassigns
-	// unique face ids and rewrites curve surface handles to point at
-	// the merged cluster representatives.
-	s.MergeCoincidentSurfaces()
-
-	// Final cleanup.
+	// And clean up the piecewise linear things we made as a calculation aid
 	a.CleanupAfterBoolean()
 	b.CleanupAfterBoolean()
-	s.BooleanFailed = false
-}
-
-// makeUnion is a convenience wrapper: keep all surfaces from both
-// shells. Used for non-overlapping geometry.
-func (s *SShell) makeUnion(a, b *SShell) {
-	s.MakeFromBoolean(a, b, SurfaceUnion)
-}
-
-// makeDifference: A - B.
-func (s *SShell) makeDifference(a, b *SShell) {
-	s.MakeFromBoolean(a, b, SurfaceDiff)
-}
-
-// makeIntersection: A ∩ B.
-func (s *SShell) makeIntersection(a, b *SShell) {
-	s.MakeFromBoolean(a, b, SurfaceInter)
 }
 
 // MakeFromAssemblyOf combines two shells without performing any
@@ -106,47 +70,6 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 		}
 	}
 	s.BooleanFailed = false
-}
-
-// surfaceInsideShell returns true if surface srf lies entirely
-// inside shell `sh`. Used by MakeFromDifferenceOf. Phase 4
-// implementation: bounding-box containment test (good for the
-// common case of two non-overlapping axis-aligned extrusions).
-func surfaceInsideShell(srf *SSurface, sh *SShell) bool {
-	var sMin, sMax geom.Vector
-	srf.GetAxisAlignedBounding(&sMax, &sMin)
-	for i := range sh.Surface {
-		var bMin, bMax geom.Vector
-		sh.Surface[i].GetAxisAlignedBounding(&bMax, &bMin)
-		if sMin.X >= bMin.X && sMax.X <= bMax.X &&
-			sMin.Y >= bMin.Y && sMax.Y <= bMax.Y &&
-			sMin.Z >= bMin.Z && sMax.Z <= bMax.Z {
-			return true
-		}
-	}
-	return false
-}
-
-// surfaceOverlapsShell returns true if the bounding boxes of srf
-// and any surface of sh overlap.
-func surfaceOverlapsShell(srf *SSurface, sh *SShell) bool {
-	var sMin, sMax geom.Vector
-	srf.GetAxisAlignedBounding(&sMax, &sMin)
-	for i := range sh.Surface {
-		var bMin, bMax geom.Vector
-		sh.Surface[i].GetAxisAlignedBounding(&bMax, &bMin)
-		if sMax.X < bMin.X || bMax.X < sMin.X {
-			continue
-		}
-		if sMax.Y < bMin.Y || bMax.Y < sMin.Y {
-			continue
-		}
-		if sMax.Z < bMin.Z || bMax.Z < sMin.Z {
-			continue
-		}
-		return true
-	}
-	return false
 }
 
 // CleanupAfterBoolean is invoked after a boolean to remove degenerate
@@ -241,156 +164,30 @@ func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 	}
 }
 
+// buildSurfaceClassifyingBsp builds srf's uv-space trim BSP, as the
+// first half of C++ SSurface::MakeClassifyingBsp (boolean.cpp:913).
 func buildSurfaceClassifyingBsp(sh *SShell, srf *SSurface, useCurvesFrom *SShell) *SBspUv {
-	if srf == nil || len(srf.Trim) == 0 {
-		return nil
-	}
-	src := useCurvesFrom
-	if src == nil {
-		src = sh
-	}
-	if src == nil {
-		return nil
-	}
-	el := &SEdgeList{}
-	for i := range srf.Trim {
-		stb := &srf.Trim[i]
-		c := src.FindCurve(stb.Curve)
-		if c == nil {
-			continue
-		}
-		addCurveUvEdgesForBsp(el, srf, c, stb.Backwards)
-	}
-	if len(el.Edges) == 0 {
-		return nil
-	}
-	return BuildBspUvFromEdges(el, srf)
+	var el SEdgeList
+	srf.MakeEdgesInto(sh, &el, true, useCurvesFrom)
+	return SBspUvFrom(&el, srf)
 }
 
-// buildSurfaceClassifyingEdgesXYZ builds the xyz-space trim boundary
-// of srf from the same STrimBy list buildSurfaceClassifyingBsp uses,
-// but keeps the curve samples in 3-D instead of projecting them to
-// (u, v). Mirrors the `MakeEdgesInto(shell, &edges, MakeAs::XYZ,
-// useCurvesFrom)` call in C++ `SSurface::MakeClassifyingBsp`
+// buildSurfaceClassifyingEdgesXYZ builds srf's xyz-space trim
+// boundary, as the second half of C++ SSurface::MakeClassifyingBsp
 // (boolean.cpp:918).
 func buildSurfaceClassifyingEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *SShell) SEdgeList {
 	var el SEdgeList
-	if srf == nil || len(srf.Trim) == 0 {
-		return el
-	}
-	src := useCurvesFrom
-	if src == nil {
-		src = sh
-	}
-	if src == nil {
-		return el
-	}
-	for i := range srf.Trim {
-		stb := &srf.Trim[i]
-		c := src.FindCurve(stb.Curve)
-		if c == nil {
-			continue
-		}
-		addCurveXyzEdgesForClassify(&el, c, stb.Backwards)
-	}
+	srf.MakeEdgesInto(sh, &el, false, useCurvesFrom)
 	return el
 }
 
-// addCurveXyzEdgesForClassify appends curve c's polyline (or, absent
-// polyline points, samples of its exact form) to el as raw xyz
-// edges, tagged with the curve's handle so ClassifyEdge's edge-on-
-// edge matching (`se.A.Equals(...)`) can identify which curve an
-// edge came from. reverse walks Finish->Start, matching
-// STrimBy.Backwards.
-func addCurveXyzEdgesForClassify(el *SEdgeList, c *SCurve, reverse bool) {
-	pts := make([]geom.Vector, 0, 3)
-	if len(c.Points) >= 2 {
-		for i := range c.Points {
-			pts = append(pts, c.Points[i].P)
-		}
-	} else {
-		pts = append(pts, c.Exact.Start(), c.Exact.PointAt(0.5), c.Exact.Finish())
-	}
-	if reverse {
-		for i, j := 0, len(pts)-1; i < j; i, j = i+1, j-1 {
-			pts[i], pts[j] = pts[j], pts[i]
-		}
-	}
-	tag := int(c.H.V)
-	for i := 1; i < len(pts); i++ {
-		el.AddEdge(pts[i-1], pts[i], tag, 0, tag)
-	}
-}
-
-// addCurveUvEdgesForBsp projects curve c's polyline (or, absent
-// polyline points, samples of its exact form) into srf's (u, v)
-// space and appends the resulting edges to el, matching the
-// `MakeAs::UV` branch of the C++ SSurface::MakeTrimEdgesInto: the
-// stored edge endpoints are `{u, v, 0}`, not the curve's raw xyz
-// samples, so the BSP's classifyPointUv operates in the same (u, v)
-// space as the ClassifyPoint / ClassifyEdge callers. reverse walks
-// the curve Finish->Start instead, matching STrimBy.Backwards.
-func addCurveUvEdgesForBsp(el *SEdgeList, srf *SSurface, c *SCurve, reverse bool) {
-	toUV := func(p geom.Vector) geom.Vector {
-		var puv geom.Point2d
-		srf.ClosestPointTo(p, &puv, false)
-		return geom.Vector{X: puv.U, Y: puv.V}
-	}
-	pts := make([]geom.Vector, 0, 3)
-	if len(c.Points) >= 2 {
-		for i := range c.Points {
-			pts = append(pts, toUV(c.Points[i].P))
-		}
-	} else {
-		pts = append(pts, toUV(c.Exact.Start()), toUV(c.Exact.PointAt(0.5)), toUV(c.Exact.Finish()))
-	}
-	if reverse {
-		for i, j := 0, len(pts)-1; i < j; i, j = i+1, j-1 {
-			pts[i], pts[j] = pts[j], pts[i]
-		}
-	}
-	for i := 1; i < len(pts); i++ {
-		el.AddEdge(pts[i-1], pts[i], 0, 0, 0)
-	}
-}
-
-// AllPointsIntersecting computes all intersections of the segment
-// (a, b) with the triangulated shell mesh. Used during ray-cast
-// for inside/outside classification.
-//
-// Phase 5 + Goal Item 5 implementation: triangulate the shell once
-// (cached in s.cachedMesh), then for every triangle cast the
-// segment against it using Möller-Trumbore. This replaces the
-// sample-based count from Phase 4 with a proper line-mesh ray-cast.
+// AllPointsIntersecting collects the intersections of the line (a, b)
+// with every surface of the shell. Mirrors C++
+// SShell::AllPointsIntersecting (raycast.cpp:383).
 func (s *SShell) AllPointsIntersecting(a, b geom.Vector, inters *[]SInter, asSegment, trimmed, inclTangent bool) {
-	if inters == nil {
-		return
+	for i := range s.Surface {
+		s.Surface[i].AllPointsIntersecting(a, b, inters, asSegment, trimmed, inclTangent)
 	}
-	// Lazily build (and cache) the shell's triangulated mesh.
-	if len(s.cachedMesh.Triangles) == 0 {
-		s.TriangulateInto(&s.cachedMesh)
-	}
-	dir := b.Minus(a)
-	if dir.Magnitude() < 1e-20 {
-		return
-	}
-	for _, t := range s.cachedMesh.Triangles {
-		tt, _, ok := t.Raytrace(a, dir)
-		if !ok {
-			continue
-		}
-		if asSegment && (tt < 0 || tt > 1) {
-			continue
-		}
-		*inters = append(*inters, SInter{
-			P:      a.Plus(dir.ScaledBy(tt)),
-			SurfA:  core.HSSurface{V: uint32(t.Meta.Face)},
-			SurfB:  core.HSSurface{V: uint32(t.Meta.Face)},
-			Tag:    0,
-		})
-	}
-	_ = trimmed
-	_ = inclTangent
 }
 
 // SInter is a ray-shell intersection point with metadata about the

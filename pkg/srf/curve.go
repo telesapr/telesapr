@@ -42,45 +42,6 @@ func FromTransformationOfSCurve(a *SCurve, t geom.Vector, q geom.Quaternion, sca
 	return out
 }
 
-// GetSurfaceA returns the SSurface that this curve's SurfA handle
-// refers to in either shell `a` or shell `b`. Mirrors
-// SCurve::GetSurfaceA in srf/curve.cpp.
-func (c *SCurve) GetSurfaceA(a, b *SShell) *SSurface {
-	if c == nil {
-		return nil
-	}
-	if a != nil {
-		if srf := a.FindSurface(c.SurfA); srf != nil {
-			return srf
-		}
-	}
-	if b != nil {
-		if srf := b.FindSurface(c.SurfA); srf != nil {
-			return srf
-		}
-	}
-	return nil
-}
-
-// GetSurfaceB is the SurfB counterpart of GetSurfaceA. Mirrors
-// SCurve::GetSurfaceB in srf/curve.cpp.
-func (c *SCurve) GetSurfaceB(a, b *SShell) *SSurface {
-	if c == nil {
-		return nil
-	}
-	if a != nil {
-		if srf := a.FindSurface(c.SurfB); srf != nil {
-			return srf
-		}
-	}
-	if b != nil {
-		if srf := b.FindSurface(c.SurfB); srf != nil {
-			return srf
-		}
-	}
-	return nil
-}
-
 // equalsIgnoringHandle returns true if two SCurves have the same
 // exact Bezier (with tolerance). Used by AddExactIntersectionCurve
 // to dedupe identical intersection curves across threads. Mirrors

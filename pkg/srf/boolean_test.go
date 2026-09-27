@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"math"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -39,34 +40,27 @@ func TestSShellUnion(t *testing.T) {
 }
 
 func TestSShellDifference(t *testing.T) {
-	// a and b are disjoint closed box shells; a - b should equal a.
-	boxA := makeBoxShell(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
-	boxB := makeBoxShell(geom.Vector{X: 5, Y: 5, Z: 5}, geom.Vector{X: 6, Y: 6, Z: 6})
+	// a and b are disjoint boxes; a - b should equal a.
+	boxA := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
+	boxB := extrudedBox(geom.Vector{X: 5, Y: 5, Z: 5}, geom.Vector{X: 6, Y: 6, Z: 6})
 	combined := &SShell{}
 	combined.MakeFromDifferenceOf(boxA, boxB)
-	if len(combined.Surface) != 6 {
-		t.Fatalf("a-b (disjoint boxes) should have 6 surfaces (a's box), got %d", len(combined.Surface))
+	if combined.BooleanFailed {
+		t.Fatalf("a-b (disjoint boxes) failed")
+	}
+	if v := shellVolume(combined); math.Abs(v-1) > 1e-9 {
+		t.Fatalf("a-b (disjoint boxes) volume = %v, want 1", v)
 	}
 }
 
 func TestSShellDifferenceEmpty(t *testing.T) {
 	// a and b are the SAME box; a - b should be empty.
-	boxA := makeBoxShell(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
-	boxB := makeBoxShell(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
+	boxA := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
+	boxB := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
 	combined := &SShell{}
 	combined.MakeFromDifferenceOf(boxA, boxB)
-	// After the SShell-level boolean CSG (matching the C++ SShell::
-	// MakeFromBoolean), coincident surfaces from both operands are
-	// emitted but then merged by MergeCoincidentSurfaces into a single
-	// cluster. The expected output is one cluster of coincident
-	// surfaces (the shared box) — the same number as one cuboid —
-	// which is what the boolean CSG port produces. The C++ binary
-	// also produces a non-empty shell for a-a; the old Go port
-	// happened to drop them only because the line-segment sampling
-	// produced false intersections that triggered keepEdge(false) for
-	// every region.
-	if len(combined.Surface) != 6 {
-		t.Fatalf("a-a (same box) should produce 6 coincident surfaces, got %d", len(combined.Surface))
+	if v := shellVolume(combined); math.Abs(v) > 1e-9 {
+		t.Fatalf("a-a (same box) volume = %v, want 0", v)
 	}
 }
 
@@ -90,7 +84,7 @@ func makeBoxShell(min, max geom.Vector) *SShell {
 	face := func(p00, p10, p01, p11 geom.Vector) SSurface {
 		return SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(p00, p10, p01, p11), Weight: bilinearWeight}
 	}
-	
+
 	minZ := func() geom.Vector { return geom.Vector{X: min.X, Y: min.Y, Z: min.Z} }
 	maxZ := func() geom.Vector { return geom.Vector{X: max.X, Y: max.Y, Z: max.Z} }
 	cMinMinZ := func() geom.Vector { return geom.Vector{X: min.X, Y: min.Y, Z: min.Z} }

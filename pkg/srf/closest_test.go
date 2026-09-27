@@ -7,8 +7,9 @@ import (
 )
 
 // TestAllPointsIntersectingRaycastThroughShell verifies that
-// AllPointsIntersecting casts a ray against the triangulated shell
-// and returns one intersection per face the ray crosses.
+// AllPointsIntersecting casts a ray against the shell's surfaces and
+// returns one intersection per face the ray crosses. The test box has
+// no trim curves, so the query is untrimmed.
 func TestAllPointsIntersectingRaycastThroughShell(t *testing.T) {
 	sh := makeBoxShellForTest(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
 	// Cast a ray from (0.5, 0.5, -1) in +Z direction. It should
@@ -17,7 +18,7 @@ func TestAllPointsIntersectingRaycastThroughShell(t *testing.T) {
 	sh.AllPointsIntersecting(
 		geom.Vector{X: 0.5, Y: 0.5, Z: -1},
 		geom.Vector{X: 0.5, Y: 0.5, Z: 2},
-		&inters, true, true, false,
+		&inters, true, false, false,
 	)
 	if len(inters) < 2 {
 		t.Fatalf("expected at least 2 intersections, got %d", len(inters))

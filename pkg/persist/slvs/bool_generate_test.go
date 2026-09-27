@@ -16,47 +16,44 @@ type boolFixtureStats struct {
 	TotalVol  float64 // sum of all mesh-group running volumes
 }
 
-// booleanFixtureGoldens holds the Go-port regression baselines
-// (triangle count and bounding box of the active group's mesh).
-// Updated whenever the boolean-CSG pipeline changes; see
-// TestParityBooleanFixtureBBox for the live print of the current
-// numbers.
+// booleanFixtureGoldens holds, per fixture, the Go-port triangle
+// count (a regression baseline, not a C++ value) and the bounding box
+// of the active group's mesh, which is the model's exact extent.
 //
 // The active group in the C++ binary is SK.GetGroup(activeGroup),
 // which corresponds to the last group in topological order for
-// freshly-loaded fixtures. The Go port sums runningMesh across
-// every mesh group because the active-group equivalent is not yet
-// tracked in the Go kernel.
+// freshly-loaded fixtures. Triangles are summed across every mesh
+// group's running mesh.
 var booleanFixtureGoldens = map[string]boolFixtureStats{
 	"boolean_coplanar_union": {
-		Triangles: 5669,
+		Triangles: 118,
 		VMin:      [3]float64{0, -5, -10},
-		VMax:      [3]float64{10, 20, 20},
+		VMax:      [3]float64{30, 20, 20},
 	},
 	"boolean_knife_edge": {
-		Triangles: 915,
+		Triangles: 40,
 		VMin:      [3]float64{-1, -1.6126052390506485, 0},
-		VMax:      [3]float64{0, 1, 1},
+		VMax:      [3]float64{1.5498346036820765, 1, 1},
 	},
 	"boolean_tangent_crossing": {
-		Triangles: 3407,
+		Triangles: 94,
 		VMin:      [3]float64{-30, -30, -30},
-		VMax:      [3]float64{30.2341779373895, 30, 30},
+		VMax:      [3]float64{30, 30, 30},
 	},
 	"boolean_tangent_edge": {
-		Triangles: 1252,
+		Triangles: 48,
 		VMin:      [3]float64{0, 0, 0},
 		VMax:      [3]float64{80, 80, 80},
 	},
 	"boolean_tangent_fillet": {
-		Triangles: 289,
+		Triangles: 88,
 		VMin:      [3]float64{0, -2, -1},
 		VMax:      [3]float64{1, 0, 0},
 	},
 	"boolean_tangent_spline": {
-		Triangles: 3407,
+		Triangles: 90,
 		VMin:      [3]float64{-30, -30, -30},
-		VMax:      [3]float64{30.2341779373895, 30, 30},
+		VMax:      [3]float64{30, 30, 30},
 	},
 }
 
@@ -82,30 +79,18 @@ var booleanFixtureCppGoldens = map[string]float64{
 }
 
 // booleanFixtureCppGoldenTolerances is the per-fixture ratio band
-// the Go port currently satisfies. The ratio is stats.Volume / cpp.
-// Each entry is [lower, upper]. The bounds are calibrated against
-// the current pipeline state (see bool_generate_test.go logs at
-// commit time of PORTING.md §"Boolean-CSG parity gaps") so the test
-// acts as a regression gate without artificially restricting future
-// algorithmic improvements: tightening any fixture's tolerance
-// should be coupled with work that drives the ratio into the new
-// band, with documentation in PORTING.md.
+// [Lo, Hi] that stats.Volume / cpp must fall in. The C++ testsuite
+// itself requires |ratio - 1| < LENGTH_EPS (1e-6; test/harness.cpp,
+// CheckEqualEpsilon), and every fixture meets that except
+// boolean_tangent_spline, which is 0.99991 (see PORTING.md
+// §"Boolean-CSG parity").
 var booleanFixtureCppGoldenTolerances = map[string]struct{ Lo, Hi float64 }{
-	// See PORTING.md §"Boolean-CSG parity gaps" for the full
-	// per-fixture writeup of this session's landings (the
-	// `ClosestPointTo` plane fast path, the `classifyPointUv` sign
-	// convention fix, and the op-aware `SSurface.TrimBuilt`
-	// fallback policy) and what still blocks knife_edge,
-	// tangent_edge and tangent_fillet from clearing HEAD's ratio.
-	//
-	// `boolean_tangent_crossing` and `boolean_tangent_spline` are
-	// now within the [0.95, 1.05] definition-of-done band.
-	"boolean_coplanar_union":   {Lo: 0.07, Hi: 0.11},
-	"boolean_knife_edge":       {Lo: 0.40, Hi: 0.50},
-	"boolean_tangent_crossing": {Lo: 0.95, Hi: 1.05},
-	"boolean_tangent_edge":     {Lo: 0.40, Hi: 0.50},
-	"boolean_tangent_fillet":   {Lo: 0.65, Hi: 0.75},
-	"boolean_tangent_spline":   {Lo: 0.95, Hi: 1.05},
+	"boolean_coplanar_union":   {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
+	"boolean_knife_edge":       {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
+	"boolean_tangent_crossing": {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
+	"boolean_tangent_edge":     {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
+	"boolean_tangent_fillet":   {Lo: 1 - 1e-6, Hi: 1 + 1e-6},
+	"boolean_tangent_spline":   {Lo: 1 - 1e-4, Hi: 1 + 1e-4},
 }
 
 // collectBoolStats loads a fixture and reports its mesh statistics.
@@ -229,8 +214,8 @@ func TestParityBooleanFixtureBBox(t *testing.T) {
 }
 
 // TestParityBooleanFixtureBBoxValue asserts each boolean fixture's
-// bounding box matches the recorded Go-port baseline. These are
-// regression baselines (not C++ goldens).
+// triangle count and bounding box (within LENGTH_EPS) match
+// booleanFixtureGoldens.
 func TestParityBooleanFixtureBBoxValue(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
@@ -245,41 +230,27 @@ func TestParityBooleanFixtureBBoxValue(t *testing.T) {
 			t.Errorf("%s: triangles: got %d, want %d",
 				name, stats.Triangles, golden.Triangles)
 		}
-		if stats.VMax != golden.VMax {
-			t.Errorf("%s: vmax drift: got %v, want %v",
-				name, stats.VMax, golden.VMax)
+		for i := 0; i < 3; i++ {
+			if math.Abs(stats.VMax[i]-golden.VMax[i]) > 1e-6 {
+				t.Errorf("%s: vmax drift: got %v, want %v",
+					name, stats.VMax, golden.VMax)
+				break
+			}
 		}
-		if stats.VMin != golden.VMin {
-			t.Errorf("%s: vmin drift: got %v, want %v",
-				name, stats.VMin, golden.VMin)
+		for i := 0; i < 3; i++ {
+			if math.Abs(stats.VMin[i]-golden.VMin[i]) > 1e-6 {
+				t.Errorf("%s: vmin drift: got %v, want %v",
+					name, stats.VMin, golden.VMin)
+				break
+			}
 		}
 	}
 }
 
-// TestParityBooleanVolumeVsCppGolden compares the Go port's
-// accumulated mesh-group volume against the C++ reference volumes
-// produced by the solvespace-testsuite.
-//
-// This test enforces per-fixture ratio tolerances (see
-// booleanFixtureCppGoldenTolerances). Each tolerance encodes the
-// current go/cpp ratio band; tightening a band is the signal that
-// the corresponding fixture's parity has improved enough to deserve
-// it.
-//
-// The C++ goldens come from
-// solvespace/test/group/<name>/test.cpp's CHECK_EQ_EPS assertions
-// and can be regenerated via scripts/regen-cpp-goldens.sh.
-//
-// As the SShell-level boolean CSG in pkg/srf/boolean_trim.go is
-// wired up (MakeCopyTrimAgainst + SShell::ClassifyEdge with the
-// edge-on-edge knife case from C++ issue #1091), the tolerance
-// bands should be tightened until every fixture's ratio reaches
-// 1.0. See PORTING.md §"Boolean-CSG parity gaps" for the current
-// per-fixture status and what each fixture needs.
-//
-// Current per-fixture ratios are tabulated in PORTING.md
-// §"Boolean-CSG parity gaps" and enforced by
-// booleanFixtureCppGoldenTolerances above.
+// TestParityBooleanVolumeVsCppGolden compares each boolean fixture's
+// active-group volume against the C++ reference volume from
+// solvespace/test/group/<name>/test.cpp, within the per-fixture band
+// in booleanFixtureCppGoldenTolerances.
 func TestParityBooleanVolumeVsCppGolden(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
@@ -296,7 +267,7 @@ func TestParityBooleanVolumeVsCppGolden(t *testing.T) {
 		var ratio float64
 		if stats.Volume > 0 {
 			ratio = stats.Volume / cppGolden
-			t.Logf("%s: go=%.4f cpp=%.4f ratio=%.4f",
+			t.Logf("%s: go=%.4f cpp=%.4f ratio=%.6f",
 				name, stats.Volume, cppGolden, ratio)
 		}
 		tol, ok := booleanFixtureCppGoldenTolerances[name]
@@ -309,9 +280,8 @@ func TestParityBooleanVolumeVsCppGolden(t *testing.T) {
 		// just logging) when a fixture's ratio leaves its band,
 		// catching regressions in any future algorithmic change.
 		if ratio < tol.Lo || ratio > tol.Hi {
-			t.Errorf("%s: ratio %.4f outside band [%.4f, %.4f]",
+			t.Errorf("%s: ratio %.6f outside band [%.6f, %.6f]",
 				name, ratio, tol.Lo, tol.Hi)
 		}
 	}
-	_ = math.Abs
 }

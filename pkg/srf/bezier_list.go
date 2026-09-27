@@ -148,14 +148,16 @@ func (l *SBezierList) GetPlaneContainingBeziers(p, u, v *geom.Vector, notCoplana
 	}
 
 	*p = pt
-	if offLineMax < lengthEps {
-		// All colinear; choose second basis vector arbitrarily.
-		*u = dp.WithMagnitude(1)
-		*v = u.Cross(geom.Vector{X:1}).WithMagnitude(1).WithMagnitude(1)
+	if offLineMax < geom.LengthEps {
+		// The points are all colinear; so choose the second basis vector
+		// arbitrarily.
+		*u = ptFar.Minus(pt).WithMagnitude(1)
+		*v = u.NormalDir(0).WithMagnitude(1)
 	} else {
-		n := dp.Cross(ptOffLine.Minus(pt))
-		*u = n.Cross(geom.Vector{X:1}).WithMagnitude(1).WithMagnitude(1)
-		*v = n.Cross(geom.Vector{X:1}).Cross(n).WithMagnitude(1).WithMagnitude(1)
+		// The points actually define a plane.
+		n := ptFar.Minus(pt).Cross(ptOffLine.Minus(pt))
+		*u = n.NormalDir(0).WithMagnitude(1)
+		*v = n.NormalDir(1).WithMagnitude(1)
 	}
 
 	// Verify all points are in this plane.
@@ -164,7 +166,7 @@ func (l *SBezierList) GetPlaneContainingBeziers(p, u, v *geom.Vector, notCoplana
 	for i := range l.Curves {
 		b := &l.Curves[i]
 		for j := 0; j <= b.Degree; j++ {
-			if math.Abs(n.Dot(b.Ctrl[j])-d) > lengthEps {
+			if math.Abs(n.Dot(b.Ctrl[j])-d) > geom.LengthEps {
 				if notCoplanarAt != nil {
 					*notCoplanarAt = b.Ctrl[j]
 				}

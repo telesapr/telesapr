@@ -277,8 +277,8 @@ type Group struct {
 	// SketchDiagnostic captures errors from the last GenerateAll.
 	// Cleared at the start of each GenerateAll invocation.
 	SketchDiagnostic *SketchDiagnostic
-	MeshCombine   CombineAs
-	ForceToMesh   bool
+	MeshCombine      CombineAs
+	ForceToMesh      bool
 
 	Remap    core.EntityMap
 	LinkFile string
@@ -296,18 +296,18 @@ type Group struct {
 	}
 
 	// Phase 5 additions: trim loops and the SShell/SMesh pipeline.
-	PolyLoops    srf.SPolygon
-	BezierLoops  srf.SBezierLoopSetSet
-	BezierOpens  srf.SBezierList
-	PolyError    struct {
+	PolyLoops   srf.SPolygon
+	BezierLoops srf.SBezierLoopSetSet
+	BezierOpens []srf.SBezierLoop
+	PolyError   struct {
 		How        int
 		NotClosed  srf.SEdge
 		ErrorPoint geom.Vector
 	}
 
-	ThisShell       srf.SShell
-	RunningShell    srf.SShell
-	ThisMesh        srf.SMesh
+	ThisShell    srf.SShell
+	RunningShell srf.SShell
+	ThisMesh     srf.SMesh
 
 	// ImportedShell is the imported SShell from a Step/IGES/etc.
 	// linker. Populated by the link import pipeline; consumed by
@@ -316,7 +316,7 @@ type Group struct {
 	// ImportedMesh is the imported mesh from a mesh linker (STL/OBJ).
 	// Populated by the link import pipeline; consumed by
 	// generateLinkedShell for LINKED groups.
-	ImportedMesh srf.SMesh
+	ImportedMesh    srf.SMesh
 	RunningMesh     srf.SMesh
 	DisplayMesh     srf.SMesh
 	DisplayOutlines srf.SOutlineList

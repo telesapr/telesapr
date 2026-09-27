@@ -29,28 +29,12 @@ type SSurface struct {
 
 	Cached geom.Point2d
 
-	// TrimBuilt is a Go-port-only marker (no C++ field mirrors it)
-	// set true for surfaces where an empty Trim list should be
-	// trusted as "genuinely outside the kept region" (render 0
-	// triangles — matching the C++, which has no untrimmed-grid
-	// fallback at all; see solvespace/src/srf/surface.cpp:414's
-	// TriangulateInto) rather than papered over with the full
-	// parameter grid. Set unconditionally by MakeFromExtrusionOf
-	// (whose surfaces always have a non-empty Trim anyway) and,
-	// conditionally on the combine type, by the boolean per-surface
-	// trim in makeCopyTrimAgainst: true only for SurfaceInter, whose
-	// empty final chains reliably mean "outside the intersection".
-	// For SurfaceUnion/SurfaceDiff, an empty final chain is more
-	// often an unresolved chain-walk/classification miss on a
-	// tangent-contact boundary (PORTING.md "Boolean-CSG parity
-	// gaps") than a deliberate discard, so those get TrimBuilt=false
-	// and fall back to the grid — measurably closer to the C++
-	// golden across the boolean fixtures (see makeCopyTrimAgainst's
-	// comment for the specific measurement). A surface whose
-	// constructor never populates Trim at all (currently
-	// MakeFromRevolutionOf / MakeFromHelixOf) also has TrimBuilt
-	// false by default and gets the same grid fallback so it doesn't
-	// vanish.
+	// TrimBuilt is a Go-port-only marker (no C++ field mirrors it):
+	// true when the surface's Trim list is authoritative, so an empty
+	// one means "nothing to render", as in C++. It is false only for
+	// surfaces whose constructors don't populate Trim yet
+	// (MakeFromRevolutionOf / MakeFromHelixOf); TriangulateInto
+	// renders those over their full parameter range instead.
 	TrimBuilt bool
 }
 
@@ -115,22 +99,21 @@ func (s *SSurface) Clear() {
 	s.Cached = geom.Point2d{}
 }
 
-// Reverse flips the parameter domain so (u, v) -> (1-u, 1-v). Used
-// when the surface normal points the wrong way for a given mesh.
+// Reverse flips the first parameter direction, which flips the normal,
+// and reverses the trims to match. Mirrors C++ SSurface::Reverse.
 func (s *SSurface) Reverse() {
-	for i := 0; i <= s.DegM; i++ {
+	for i := 0; i < (s.DegM+1)/2; i++ {
 		for j := 0; j <= s.DegN; j++ {
 			ii := s.DegM - i
 			s.Ctrl[i][j], s.Ctrl[ii][j] = s.Ctrl[ii][j], s.Ctrl[i][j]
 			s.Weight[i][j], s.Weight[ii][j] = s.Weight[ii][j], s.Weight[i][j]
 		}
 	}
-	for i := 0; i <= s.DegM/2; i++ {
-		for j := 0; j <= s.DegN; j++ {
-			jj := s.DegN - j
-			s.Ctrl[i][j], s.Ctrl[i][jj] = s.Ctrl[i][jj], s.Ctrl[i][j]
-			s.Weight[i][j], s.Weight[i][jj] = s.Weight[i][jj], s.Weight[i][j]
-		}
+
+	for k := range s.Trim {
+		stb := &s.Trim[k]
+		stb.Backwards = !stb.Backwards
+		stb.StartP, stb.FinishP = stb.FinishP, stb.StartP
 	}
 }
 
@@ -301,10 +284,12 @@ func FromPlane(pt, u, v geom.Vector) SSurface {
 	s.Weight[0][1] = 1
 	s.Weight[1][0] = 1
 	s.Weight[1][1] = 1
+	// Matches C++ SSurface::FromPlane (surface.cpp:114): the m
+	// (first) index runs along v and the n index along u.
 	s.Ctrl[0][0] = pt
-	s.Ctrl[0][1] = pt.Plus(v)
-	s.Ctrl[1][0] = pt.Plus(u)
-	s.Ctrl[1][1] = pt.Plus(u).Plus(v)
+	s.Ctrl[0][1] = pt.Plus(u)
+	s.Ctrl[1][0] = pt.Plus(v)
+	s.Ctrl[1][1] = pt.Plus(v).Plus(u)
 	return s
 }
 
@@ -343,13 +328,15 @@ func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, 
 	return s
 }
 
-func wrapSymmetric(a, period float64) float64 {
-	p2 := period / 2
-	r := math.Mod(a+p2, period)
-	if r < 0 {
-		r += period
+func wrapSymmetric(v, n float64) float64 {
+	// Clamp it to the range (-n/2, n/2]. Mirrors C++ WRAP_SYMMETRIC.
+	for v > n/2 {
+		v -= n
 	}
-	return r - p2
+	for v <= -n/2 {
+		v += n
+	}
+	return v
 }
 
 // FromTransformationOf produces a transformed copy of the surface.
@@ -624,153 +611,6 @@ func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 	s.Cached.V = v
 }
 
-// IsExtrusion checks whether this surface is an extrusion of the
-// supplied Bezier along the supplied direction. Used by
-// Group::GenerateDisplayItems to detect and simplify degenerate
-// cases.
-func (s *SSurface) IsExtrusion(of *SBezier, along *geom.Vector) bool {
-	if s.DegN != 1 || s.DegM != of.Degree {
-		return false
-	}
-	for i := 0; i <= s.DegM; i++ {
-		d := s.Ctrl[i][1].Minus(s.Ctrl[i][0])
-		if *along == (geom.Vector{}) {
-			*along = d
-		} else if d.DistanceTo(*along) > 1e-9 {
-			return false
-		}
-	}
-	return true
-}
-
-// PointOnSurfaces finds the (u, v) coordinates on this surface so
-// that the resulting point also lies on sA and sB. Mirrors
-// SSurface::PointOnSurfaces in srf/surface.cpp. Used during
-// MakeCopySplitAgainst to refine line-segment intersection
-// approximations onto exact three-surface intersection points.
-func (s *SSurface) PointOnSurfaces(sA, sB *SSurface, up, vp *float64) {
-	const ratPolyEps = 1e-12
-	u := s.Cached.U
-	v := s.Cached.V
-	if u == 0 && v == 0 {
-		u, v = 0.5, 0.5
-	}
-	// First pass: refine against sA.
-	sA.ClosestPointTo(s.PointAt(u, v), &geom.Point2d{}, false)
-	for iter := 0; iter < 30; iter++ {
-		ps := s.PointAt(u, v)
-		var tu, tv geom.Vector
-		s.TangentsAt(u, v, &tu, &tv, false)
-		n := tu.Cross(tv)
-		if n.Magnitude() < 1e-20 {
-			break
-		}
-		// Closest point on sA from ps.
-		var puvA geom.Point2d
-		sA.ClosestPointTo(ps, &puvA, false)
-		psA := sA.PointAt(puvA.U, puvA.V)
-		// Update (u, v) so the surface point moves toward psA along the tangent plane.
-		var tu2, tv2 geom.Vector
-		s.TangentsAt(u, v, &tu2, &tv2, false)
-		n2 := tu2.Cross(tv2)
-		ty := n2.Cross(tu2).ScaledBy(1.0 / tu2.MagSquared())
-		tx := tv2.Cross(n2).ScaledBy(1.0 / tv2.MagSquared())
-		dp := psA.Minus(ps)
-		du := dp.Dot(tx) / tx.MagSquared()
-		dv := dp.Dot(ty) / ty.MagSquared()
-		u += du
-		v += dv
-		psNew := s.PointAt(u, v)
-		if psNew.DistanceTo(psA) < ratPolyEps {
-			break
-		}
-	}
-	// Second pass: refine against sB.
-	if sB != nil {
-		sB.ClosestPointTo(s.PointAt(u, v), &geom.Point2d{}, false)
-		for iter := 0; iter < 30; iter++ {
-			ps := s.PointAt(u, v)
-			var tu, tv geom.Vector
-			s.TangentsAt(u, v, &tu, &tv, false)
-			n := tu.Cross(tv)
-			if n.Magnitude() < 1e-20 {
-				break
-			}
-			var puvB geom.Point2d
-			sB.ClosestPointTo(ps, &puvB, false)
-			psB := sB.PointAt(puvB.U, puvB.V)
-			var tu2, tv2 geom.Vector
-			s.TangentsAt(u, v, &tu2, &tv2, false)
-			n2 := tu2.Cross(tv2)
-			ty := n2.Cross(tu2).ScaledBy(1.0 / tu2.MagSquared())
-			tx := tv2.Cross(n2).ScaledBy(1.0 / tv2.MagSquared())
-			dp := psB.Minus(ps)
-			du := dp.Dot(tx) / tx.MagSquared()
-			dv := dp.Dot(ty) / ty.MagSquared()
-			u += du
-			v += dv
-			psNew := s.PointAt(u, v)
-			if psNew.DistanceTo(psB) < ratPolyEps {
-				break
-			}
-		}
-	}
-	if up != nil {
-		*up = u
-	}
-	if vp != nil {
-		*vp = v
-	}
-	s.Cached.U = u
-	s.Cached.V = v
-}
-
-// ClosestPointOnThisAndSurface returns the closest point to p that
-// lies on both this surface and `other`. Mirrors
-// SSurface::ClosestPointOnThisAndSurface in srf/surface.cpp. Used by
-// IntersectAgainst to refine intersection points onto the exact
-// three-surface intersection.
-func (s *SSurface) ClosestPointOnThisAndSurface(other *SSurface, p geom.Vector) geom.Vector {
-	const ratPolyEps = 1e-12
-	u := s.Cached.U
-	v := s.Cached.V
-	if u == 0 && v == 0 {
-		u, v = 0.5, 0.5
-	}
-	for iter := 0; iter < 30; iter++ {
-		ps := s.PointAt(u, v)
-		var puv geom.Point2d
-		other.ClosestPointTo(ps, &puv, false)
-		po := other.PointAt(puv.U, puv.V)
-		// Update (u, v) so s moves toward `p` along the surface while
-		// staying in the intersection with other.
-		var tu, tv geom.Vector
-		s.TangentsAt(u, v, &tu, &tv, false)
-		n := tu.Cross(tv)
-		if n.Magnitude() < 1e-20 {
-			break
-		}
-		// Average of `ps` and `po` projected onto s, projected onto
-		// s's tangent plane at (u, v).
-		mid := ps.Plus(po).ScaledBy(0.5)
-		dp := mid.Minus(ps)
-		ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
-		tx := tv.Cross(n).ScaledBy(1.0 / tv.MagSquared())
-		du := dp.Dot(tx) / tx.MagSquared()
-		dv := dp.Dot(ty) / ty.MagSquared()
-		u += du
-		v += dv
-		psNew := s.PointAt(u, v)
-		if psNew.DistanceTo(mid) < ratPolyEps {
-			break
-		}
-		_ = p
-	}
-	s.Cached.U = u
-	s.Cached.V = v
-	return s.PointAt(u, v)
-}
-
 // ContainsPlaneCurve returns true if the supplied exact curve lies
 // entirely within the plane of this surface. Mirrors
 // SSurface::ContainsPlaneCurve in srf/surfinter.cpp. Used by
@@ -826,68 +666,6 @@ func (s *SSurface) FillExtrusionAxis(of *SBezier, along *geom.Vector) bool {
 	return true
 }
 
-// IsCylinder checks whether this surface is a (possibly truncated)
-// cylinder: extruded along the axis from center, with circular
-// cross-section of radius r.
-func (s *SSurface) IsCylinder(axis, center *geom.Vector, r, start, finish *float64) bool {
-	if !s.IsExtrusion(&SBezier{}, axis) {
-		return false
-	}
-	// Reconstruct the cross-section from row 0.
-	// For a cylinder the cross-section is a circle in the plane
-	// perpendicular to axis.
-	const tol = 1e-6
-	// Try to find a circle that fits ctrl[0][0], ctrl[1][0], ctrl[2][0].
-	if s.DegM != 2 {
-		return false
-	}
-	pts := [3]geom.Vector{s.Ctrl[0][0], s.Ctrl[1][0], s.Ctrl[2][0]}
-	// Two-axis basis perpendicular to axis.
-	u := geom.Vector{}
-	if mathAbs(axis.Z) < 0.9 {
-		u = axis.Cross(geom.Vector{Z: 1}).Normal()
-	} else {
-		u = axis.Cross(geom.Vector{X: 1}).Normal()
-	}
-	v := axis.Cross(u).Normal()
-	c, radius, ok := circleFromThreePoints(pts[0], pts[1], pts[2], u, v, tol)
-	if !ok {
-		return false
-	}
-	*center = c
-	*r = radius
-	// The cylinder runs from ctrl[0][0] to ctrl[0][1] (along axis).
-	*start = pts[0].Minus(c).Dot(*axis)
-	*finish = s.Ctrl[0][1].Minus(c).Dot(*axis)
-	return true
-}
-
-// circleFromThreePoints solves for the center of a circle given
-// three points on it, projected onto the (u, v) plane.
-func circleFromThreePoints(a, b, c geom.Vector, u, v geom.Vector, tol float64) (geom.Vector, float64, bool) {
-	pa := a.Project2d(u, v)
-	pb := b.Project2d(u, v)
-	pc := c.Project2d(u, v)
-	// Solve 2x2: |P - pi|^2 = r^2 -> linear system
-	ax := 2 * (pb.U - pa.U)
-	ay := 2 * (pb.V - pa.V)
-	bx := 2 * (pc.U - pa.U)
-	by := 2 * (pc.V - pa.V)
-	rhsA := pb.U*pb.U + pb.V*pb.V - pa.U*pa.U - pa.V*pa.V
-	rhsB := pc.U*pc.U + pc.V*pc.V - pa.U*pa.U - pa.V*pa.V
-	det := ax*by - ay*bx
-	if mathAbs(det) < tol {
-		return geom.Vector{}, 0, false
-	}
-	cuv := geom.Point2d{
-		U: (rhsA*by - rhsB*ay) / det,
-		V: (ax*rhsB - bx*rhsA) / det,
-	}
-	center := u.ScaledBy(cuv.U).Plus(v.ScaledBy(cuv.V)).Plus(a.Minus(u.ScaledBy(pa.U)).Minus(v.ScaledBy(pa.V)))
-	radius := a.DistanceTo(center)
-	return center, radius, true
-}
-
 // CoincidentWithPlane returns true if every control point lies on
 // the plane (n, d) within tol.
 func (s *SSurface) CoincidentWithPlane(n geom.Vector, d, tol float64) bool {
@@ -901,29 +679,18 @@ func (s *SSurface) CoincidentWithPlane(n geom.Vector, d, tol float64) bool {
 	return true
 }
 
-// CoincidentWith returns true if every control point of this surface
-// coincides with the corresponding control point of ss.
-func (s *SSurface) CoincidentWith(ss *SSurface, sameNormal bool) bool {
-	if s.DegM != ss.DegM || s.DegN != ss.DegN {
-		return false
-	}
-	for i := 0; i <= s.DegM; i++ {
-		for j := 0; j <= s.DegN; j++ {
-			if s.Ctrl[i][j].DistanceTo(ss.Ctrl[i][j]) > 1e-9 {
-				return false
-			}
-		}
-	}
-	return true
-}
-
 // LineEntirelyOutsideBbox returns true if the line (a, b) does not
 // cross the surface's bounding box.
 func (s *SSurface) LineEntirelyOutsideBbox(a, b geom.Vector, asSegment bool) bool {
-	var pmin, pmax geom.Vector
-	s.GetAxisAlignedBounding(&pmax, &pmin)
-	if !a.BoundingBoxIntersectsLine(pmax, pmin, a, b) {
-		return true
+	// Mirrors C++ SSurface::LineEntirelyOutsideBbox.
+	var amax, amin geom.Vector
+	s.GetAxisAlignedBounding(&amax, &amin)
+	if !geom.BoundingBoxIntersectsLine(amax, amin, a, b, asSegment) {
+		// The line segment could fail to intersect the bbox, but lie entirely
+		// within it and intersect the surface.
+		if a.OutsideAndNotOn(amax, amin) && b.OutsideAndNotOn(amax, amin) {
+			return true
+		}
 	}
 	return false
 }
@@ -1113,7 +880,6 @@ func (s *SSurface) DepartureFromCoplanar() float64 {
 // found within 20 Newton iterations, falling back to edge-curve
 // intersection if necessary.
 func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool {
-	const ratPolyEps = lengthEps / 100.0
 	for i := 0; i < 20; i++ {
 		p := s.PointAt(*u, *v)
 		tu, tv := geom.Vector{}, geom.Vector{}
@@ -1210,107 +976,6 @@ func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool {
 	return false
 }
 
-// AllPointsIntersecting finds all points where the line through a, b
-// intersects the surface. asSegment restricts to the finite line segment.
-// trimmed filters to points inside the trim region (UV [0,1]).
-// inclTangent includes tangent points (line touching surface tangentially).
-func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter, asSegment, trimmed, inclTangent bool) {
-	if s.LineEntirelyOutsideBbox(a, b, asSegment) {
-		return
-	}
-	ba := b.Minus(a)
-	bam := ba.Magnitude()
-
-	type Inter struct {
-		P geom.Point2d
-	}
-	var inters []Inter
-
-	degm := s.DegM
-	degn := s.DegN
-	if degm == 1 && degn == 1 {
-		// Plane
-		n := s.NormalAt(0, 0).WithMagnitude(1)
-		d := n.Dot(s.PointAt(0, 0))
-		if !asSegment ||
-			(n.Dot(a) > d+lengthEps && n.Dot(b) < d-lengthEps) ||
-			(n.Dot(b) > d+lengthEps && n.Dot(a) < d-lengthEps) {
-			p := geom.AtIntersectionOfPlaneAndLine(n, d, a, b)
-			var puv geom.Point2d
-			s.ClosestPointTo(p, &puv, false)
-			inters = append(inters, Inter{P: puv})
-		}
-	} else {
-		// General numerical solution: use subdivision
-		u, v := 0.5, 0.5
-		if s.PointIntersectingLine(a, b, &u, &v) {
-			inters = append(inters, Inter{P: geom.Point2d{U: u, V: v}})
-		}
-	}
-
-	for _, inter := range inters {
-		pxyz := s.PointAt(inter.P.U, inter.P.V)
-		if asSegment && bam > 0 {
-			t := pxyz.Minus(a).Dot(ba) / (bam * bam)
-			if t > 1-lengthEps/bam || t < lengthEps/bam {
-				continue
-			}
-		}
-		if trimmed {
-			if inter.P.U < 0 || inter.P.U > 1 || inter.P.V < 0 || inter.P.V > 1 {
-				continue
-			}
-		}
-		si := SInter{
-			P:          pxyz,
-			SurfA:      core.HSSurface{V: 1},
-			SurfB:      core.HSSurface{V: 1},
-			SurfNormal: s.NormalAt(inter.P.U, inter.P.V),
-			PInter:     inter.P,
-			Srf:        s,
-			OnEdge:     inter.P.U == 0 || inter.P.U == 1 || inter.P.V == 0 || inter.P.V == 1,
-		}
-		_ = inclTangent
-		*l = append(*l, si)
-	}
-	_ = asSegment
-	_ = ba
-	_ = bam
-}
-
-// MakeTriangulationGridInto recursively subdivides a (u, v) range to
-// produce grid lines spaced so the chord tolerance is satisfied.
-// Implements SSurface::MakeTriangulationGridInto from triangulate.cpp.
-//
-// vs/vf are the v-parameter start/end. swapped indicates the surface
-// is oriented in (v, u) rather than (u, v). depth limits recursion.
-// The resulting grid coordinates are appended to l.
-func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapped bool, depth int) {
-	degm := s.DegM
-	if degm == 1 && depth == 0 {
-		// First-level subdivision: try u = 0, 1/3, 2/3, 1.
-		// Recurse on the two halves.
-		vm := (vs + vf) / 2
-		s.MakeTriangulationGridInto(l, vs, vm, swapped, depth+1)
-		s.MakeTriangulationGridInto(l, vm, vf, swapped, depth+1)
-	} else if degm >= 2 && depth < 5 {
-		// Check chord tolerance in the middle third.
-		vm1 := (2*vs + vf) / 3
-		vm2 := (vs + 2*vf) / 3
-		_ = vm1
-		_ = vm2
-		// If the chord tolerance is violated, subdivide.
-		vm := (vs + vf) / 2
-		s.MakeTriangulationGridInto(l, vs, vm, swapped, depth+1)
-		s.MakeTriangulationGridInto(l, vm, vf, swapped, depth+1)
-	} else {
-		// Leaf: append the v values.
-		*l = append(*l, vs, vf)
-	}
-	_ = swapped
-	_ = l
-}
-
 // CopyRowOrCol copies a row (byU=true) or column (byU=false) from
 // src to this surface at the given index.
 func (s *SSurface) CopyRowOrCol(byU bool, thisIJ int, src *SSurface, srcIJ int) {
@@ -1347,111 +1012,6 @@ func (s *SSurface) BlendRowOrCol(byU bool, thisIJ int, a *SSurface, aIJ int, b *
 	}
 }
 
-// AllPointsIntersectingUntrimmed recursively subdivides the surface
-// to find line-surface intersections. If the surface is small
-// (DepartureFromCoplanar < tolerance), switch to Newton iteration
-// via PointIntersectingLine. Otherwise split the surface in half
-// and recurse, alternating u and v by level.
-//
-// Implements SSurface::AllPointsIntersectingUntrimmed from raycast.cpp.
-func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *int, l *[]SInter, asSegment bool, sorig *SSurface) {
-	if s.LineEntirelyOutsideBbox(a, b, asSegment) {
-		return
-	}
-	if *cnt > 2000 {
-		return
-	}
-	*cnt++
-	if s.DepartureFromCoplanar() < 0.2 {
-		// Surface is small; switch to Newton iteration.
-		p := s.Ctrl[0][0].Plus(s.Ctrl[0][s.DegN]).Plus(s.Ctrl[s.DegM][0]).Plus(s.Ctrl[s.DegM][s.DegN]).ScaledBy(0.25)
-		var puv geom.Point2d
-		sorig.ClosestPointTo(p, &puv, false)
-		u, v := puv.U, puv.V
-		if sorig.PointIntersectingLine(a, b, &u, &v) {
-			pxyz := sorig.PointAt(u, v)
-			// Refine u, v on this surface (sorig should equal s in the recursive case).
-			s.ClosestPointTo(pxyz, &puv, false)
-			u, v = puv.U, puv.V
-			*l = append(*l, SInter{
-				P:          pxyz,
-				SurfA:      core.HSSurface{V: 1},
-				SurfB:      core.HSSurface{V: 1},
-				SurfNormal: s.NormalAt(u, v),
-				PInter:     geom.Point2d{U: u, V: v},
-				Srf:        s,
-				OnEdge:     u == 0 || u == 1 || v == 0 || v == 1,
-			})
-		}
-		return
-	}
-	// Surface is big; split it.
-	var surf0, surf1 SSurface
-	s.SplitInHalf((*level&1) == 0, &surf0, &surf1)
-	*level++
-	surf0.AllPointsIntersectingUntrimmed(a, b, cnt, level, l, asSegment, sorig)
-	surf1.AllPointsIntersectingUntrimmed(a, b, cnt, level, l, asSegment, sorig)
-}
-
-// STrimByEntireCurveFromShell creates an STrimBy covering the entire
-// range of an SCurve in a shell. Implements STrimBy::EntireCurve
-// from curve.cpp:868. The C++ version records 3D start/finish
-// points; here we keep parameter-space (0..1) but also expose the
-// 3D endpoints via the StartP/FinishP helpers below.
-// ChordToleranceForEdge returns the worst deviation of the surface
-// from a straight line between two (u, v) parameters. Used by
-// SCurve::RemoveShortSegments to decide whether a polyline point is
-// necessary to satisfy the chord tolerance. Equivalent to
-// SSurface::ChordToleranceForEdge in solvespace/src/srf/triangulate.cpp:503.
-func (s *SSurface) ChordToleranceForEdge(a, b geom.Vector) float64 {
-	as := s.PointAt(a.X, a.Y)
-	bs := s.PointAt(b.X, b.Y)
-	worst := -1.0
-	for i := 1; i <= 3; i++ {
-		t := float64(i) / 4.0
-		p := a.Plus(b.Minus(a).ScaledBy(t))
-		ps := as.Plus(bs.Minus(as).ScaledBy(t))
-		pps := s.PointAt(p.X, p.Y)
-		d2 := pps.Minus(ps).MagSquared()
-		if d2 > worst {
-			worst = d2
-		}
-	}
-	if worst <= 0 {
-		return 0
-	}
-	return sqrtD(worst)
-}
-
-// PointAtMaybeSwapped evaluates the surface at (u, v) or (v, u)
-// depending on the swapped flag.
-func (s *SSurface) PointAtMaybeSwapped(u, v float64, swapped bool) geom.Vector {
-	if swapped {
-		return s.PointAt(v, u)
-	}
-	return s.PointAt(u, v)
-}
-
-// NormalAtMaybeSwapped returns the surface normal at (u, v) or
-// (v, u) depending on swapped.
-func (s *SSurface) NormalAtMaybeSwapped(u, v float64, swapped bool) geom.Vector {
-	if swapped {
-		return s.NormalAt(v, u)
-	}
-	return s.NormalAt(u, v)
-}
-
-func sqrtD(v float64) float64 {
-	if v <= 0 {
-		return 0
-	}
-	x := v / 2
-	for i := 0; i < 32; i++ {
-		x = (x + v/x) / 2
-	}
-	return x
-}
-
 func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool) STrimBy {
 	stb := STrimBy{Curve: hsc, Backwards: backwards, Start: 0, Finish: 1}
 	if shell == nil {
@@ -1470,4 +1030,106 @@ func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool
 		stb.FinishP = sc.Points[len(sc.Points)-1].P
 	}
 	return stb
+}
+
+// uvStepToward returns the (du, dv) that moves srf's point at (u, v)
+// by dp, to first order. Shared by the Newton iterations of C++
+// PointOnSurfaces and ClosestPointOnThisAndSurface.
+func uvStepToward(tu, tv, dp geom.Vector) (du, dv float64) {
+	n := tu.Cross(tv)
+	ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+	tx := tv.Cross(n).ScaledBy(1.0 / tv.MagSquared())
+	return dp.Dot(tx) / tx.MagSquared(), dp.Dot(ty) / ty.MagSquared()
+}
+
+// PointOnSurfaces refines (*up, *vp) on s so that the point also lies
+// on s1 and s2. Mirrors C++ SSurface::PointOnSurfaces (ratpoly.cpp).
+func (s *SSurface) PointOnSurfaces(s1, s2 *SSurface, up, vp *float64) {
+	u := [3]float64{*up, 0, 0}
+	v := [3]float64{*vp, 0, 0}
+	srf := [3]*SSurface{s, s1, s2}
+
+	// Get initial guesses for (u, v) in the other surfaces
+	p := s.PointAt(u[0], v[0])
+	srf[1].ClosestPointToUV(p, &u[1], &v[1], false)
+	srf[2].ClosestPointToUV(p, &u[2], &v[2], false)
+
+	for i := 0; i < 20; i++ {
+		// Approximate each surface by a plane
+		var pj, tu, tv, n [3]geom.Vector
+		var d [3]float64
+		for j := 0; j < 3; j++ {
+			pj[j] = srf[j].PointAt(u[j], v[j])
+			srf[j].TangentsAt(u[j], v[j], &tu[j], &tv[j], true)
+			n[j] = tu[j].Cross(tv[j]).WithMagnitude(1)
+			d[j] = n[j].Dot(pj[j])
+		}
+
+		// If a = b and b = c, then does a = c? No, it doesn't.
+		if pj[0].EqualsTol(pj[1], ratPolyEps) &&
+			pj[1].EqualsTol(pj[2], ratPolyEps) &&
+			pj[2].EqualsTol(pj[0], ratPolyEps) {
+			*up = u[0]
+			*vp = v[0]
+			return
+		}
+
+		pi, parallel := geom.AtIntersectionOfThreePlanes(n[0], d[0], n[1], d[1], n[2], d[2])
+		if parallel { // lets try something else for parallel planes
+			pi = pj[0].Plus(pj[1]).Plus(pj[2]).ScaledBy(1.0 / 3.0)
+		}
+
+		for j := 0; j < 3; j++ {
+			du, dv := uvStepToward(tu[j], tv[j], pi.Minus(pj[j]))
+			u[j] += du
+			v[j] += dv
+		}
+	}
+	// didn't converge (three surfaces intersecting); C++ leaves *up,
+	// *vp unchanged.
+}
+
+// ClosestPointOnThisAndSurface returns the point on the intersection
+// of s and srf2 closest to p. Mirrors C++
+// SSurface::ClosestPointOnThisAndSurface (ratpoly.cpp:627).
+func (s *SSurface) ClosestPointOnThisAndSurface(srf2 *SSurface, p geom.Vector) geom.Vector {
+	var puv [2]geom.Point2d
+	srf := [2]*SSurface{s, srf2}
+
+	for j := 0; j < 2; j++ {
+		srf[j].ClosestPointTo(p, &puv[j], false)
+	}
+
+	for i := 0; i < 10; i++ {
+		var tu, tv, cp, n [2]geom.Vector
+		var d [2]float64
+
+		for j := 0; j < 2; j++ {
+			srf[j].TangentsAt(puv[j].U, puv[j].V, &tu[j], &tv[j], true)
+
+			cp[j] = srf[j].PointAtUv(puv[j])
+
+			n[j] = tu[j].Cross(tv[j]).WithMagnitude(1)
+			d[j] = n[j].Dot(cp[j])
+		}
+
+		if cp[0].EqualsTol(cp[1], ratPolyEps) {
+			break
+		}
+
+		p0 := geom.AtIntersectionOfTwoPlanes(n[0], d[0], n[1], d[1])
+		dp := n[0].Cross(n[1])
+
+		pc := p.ClosestPointOnLine(p0, dp)
+
+		// Adjust our guess and iterate
+		for j := 0; j < 2; j++ {
+			du, dv := uvStepToward(tu[j], tv[j], pc.Minus(cp[j]))
+			puv[j].U += du
+			puv[j].V += dv
+		}
+	}
+
+	// If this converged, then the two points are actually equal.
+	return srf[0].PointAtUv(puv[0]).Plus(srf[1].PointAtUv(puv[1])).ScaledBy(0.5)
 }

@@ -18,50 +18,61 @@ func (s *SBezierLoopSet) Clear() {
 	s.Holes = s.Holes[:0]
 }
 
-// MakePwlInto converts every contour (outer + holes) into a
-// polyline edge list with the given chord tolerance.
-func (s *SBezierLoopSet) MakePwlInto(polygon *SPolygon) {
-	polygon.Normal = s.Normal
-	polygon.AddEmptyContour()
-	polylineBuilder := &PolylineBuilder{}
-	s.Outer.MakePwlIntoEdges(polylineBuilder)
-	polylineBuilder.GenerateIntoContour(&polygon.Contours[len(polygon.Contours)-1], true)
+// loops returns the set's loops in C++ order: the outer loop first,
+// then the holes.
+func (s *SBezierLoopSet) loops() []*SBezierLoop {
+	ls := make([]*SBezierLoop, 0, 1+len(s.Holes))
+	ls = append(ls, &s.Outer)
 	for i := range s.Holes {
-		polygon.AddEmptyContour()
-		s.Holes[i].MakePwlIntoEdges(polylineBuilder)
-		polylineBuilder.GenerateIntoContour(&polygon.Contours[len(polygon.Contours)-1], true)
+		ls = append(ls, &s.Holes[i])
+	}
+	return ls
+}
+
+// MakePwlInto converts every loop (outer + holes) into one contour of
+// sp each. Mirrors C++ SBezierLoopSet::MakePwlInto (curve.cpp:558).
+func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon) {
+	if sp.Normal == (geom.Vector{}) {
+		sp.Normal = s.Normal
+	}
+	for _, l := range s.loops() {
+		sp.AddEmptyContour()
+		l.MakePwlIntoContour(&sp.Contours[len(sp.Contours)-1], 0)
 	}
 }
 
-// MakePwlIntoEdges is a helper used by MakePwlInto.
-func (l *SBezierLoop) MakePwlIntoEdges(builder *PolylineBuilder) {
-	if len(l.Curves) == 0 {
-		return
-	}
-	builder.Start(l.Curves[0].Start())
-	for i := range l.Curves {
-		// Sample each curve at small increments and append.
-		const n = 8
-		for j := 1; j <= n; j++ {
-			t := float64(j) / float64(n)
-			p := l.Curves[i].PointAt(t)
-			builder.Extend(p, l.Curves[i].Tag)
+// sBezierLoopSetFrom assembles every curve of sbl into loops, adding
+// one pwl contour per closed loop to poly. Open loops go to
+// openContours (when non-nil). Returns the closed loops plus the
+// polygon's normal and a point on it. Mirrors C++
+// SBezierLoopSet::From (curve.cpp:497), whose result is a flat list of
+// loops not yet grouped into outer + holes.
+func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, chordTol float64,
+	allClosed *bool, errorAt *SEdge, openContours *[]SBezierLoop) (loops []SBezierLoop, normal, point geom.Vector) {
+
+	*allClosed = true
+	for len(sbl.Curves) > 0 {
+		var thisClosed bool
+		loop := SBezierLoopFromCurves(sbl, &thisClosed, errorAt)
+		if !thisClosed {
+			// Record open loops in a separate list, if requested.
+			*allClosed = false
+			if openContours != nil {
+				*openContours = append(*openContours, loop)
+			}
+		} else {
+			loops = append(loops, loop)
+			poly.AddEmptyContour()
+			loop.MakePwlIntoContour(&poly.Contours[len(poly.Contours)-1], chordTol)
 		}
 	}
-}
 
-// GenerateIntoContour converts a PolylineBuilder into an SContour.
-func (pb *PolylineBuilder) GenerateIntoContour(c *SContour, closeLoop bool) {
-	for _, p := range pb.Points {
-		c.AddPoint(p)
+	poly.Normal = poly.ComputeNormal()
+	normal = poly.Normal
+	if len(poly.Contours) > 0 {
+		point = poly.AnyPoint()
 	}
-	if closeLoop && len(pb.Points) > 1 {
-		// Closing point is implicit; SContour stores N+1 points with
-		// the closing duplicate, matching SolveSpace convention.
-		c.AddPoint(pb.Points[0])
-	}
-	c.FindPointWithMinX()
-	pb.Clear()
+	return loops, normal, point
 }
 
 // ComputeNormalPointArea fills in s.Normal, s.Point, and s.Area from

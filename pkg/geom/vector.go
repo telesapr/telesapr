@@ -118,8 +118,19 @@ func (v Vector) DistanceToPlane(normal, origin Vector) float64 {
 	return v.Minus(origin).Dot(n)
 }
 
+// Equals mirrors C++ Vector::Equals with its default LENGTH_EPS
+// tolerance (dsc.h:129).
 func (v Vector) Equals(b Vector) bool {
-	return v.DistanceTo(b) < 1e-8
+	return v.EqualsTol(b, LengthEps)
+}
+
+// EqualsTol mirrors C++ Vector::Equals(v, tol).
+func (v Vector) EqualsTol(b Vector, tol float64) bool {
+	dx, dy, dz := v.X-b.X, v.Y-b.Y, v.Z-b.Z
+	if math.Abs(dx) > tol || math.Abs(dy) > tol || math.Abs(dz) > tol {
+		return false
+	}
+	return dx*dx+dy*dy+dz*dz < tol*tol
 }
 
 func (v Vector) EqualsExactly(b Vector) bool {
@@ -230,56 +241,75 @@ func (v Vector) ClampWithin(minv, maxv Vector) Vector {
 	}
 }
 
-// OutsideAndNotOn returns true if v is outside the closed box
-// [minv, maxv] OR on a face (not strictly inside).
+// OutsideAndNotOn reports whether v lies outside the box [minv, maxv]
+// by more than LENGTH_EPS. Mirrors C++ Vector::OutsideAndNotOn.
 func (v Vector) OutsideAndNotOn(maxv, minv Vector) bool {
-	return v.X > maxv.X || v.X < minv.X ||
-		v.Y > maxv.Y || v.Y < minv.Y ||
-		v.Z > maxv.Z || v.Z < minv.Z
+	return (v.X > maxv.X+LengthEps) || (v.X < minv.X-LengthEps) ||
+		(v.Y > maxv.Y+LengthEps) || (v.Y < minv.Y-LengthEps) ||
+		(v.Z > maxv.Z+LengthEps) || (v.Z < minv.Z-LengthEps)
 }
 
-// BoundingBoxesDisjoint returns true if no point lies in both boxes.
+// BoundingBoxesDisjoint mirrors C++ Vector::BoundingBoxesDisjoint.
 func (v Vector) BoundingBoxesDisjoint(amax, amin, bmax, bmin Vector) bool {
-	return amax.X < bmin.X || bmax.X < amin.X ||
-		amax.Y < bmin.Y || bmax.Y < amin.Y ||
-		amax.Z < bmin.Z || bmax.Z < amin.Z
+	for i := 0; i < 3; i++ {
+		if amax.Element(i) < bmin.Element(i)-LengthEps {
+			return true
+		}
+		if amin.Element(i) > bmax.Element(i)+LengthEps {
+			return true
+		}
+	}
+	return false
 }
 
-// BoundingBoxIntersectsLine returns true if the line (a, b) crosses
-// the closed box (amax/amin). Used by ray-cast pruning.
-func (v Vector) BoundingBoxIntersectsLine(amax, amin, a, b Vector) bool {
-	dir := b.Minus(a)
-	if dir.Magnitude() < 1e-20 {
-		return false
-	}
-	tmin, tmax := 0.0, 1.0
-	axes := [3]float64{dir.X, dir.Y, dir.Z}
-	orig := [3]float64{a.X, a.Y, a.Z}
-	mins := [3]float64{amin.X, amin.Y, amin.Z}
-	maxs := [3]float64{amax.X, amax.Y, amax.Z}
+// BoundingBoxIntersectsLine reports whether the line (or, if
+// asSegment, the segment) p0-p1 crosses a face of the box. Mirrors C++
+// Vector::BoundingBoxIntersectsLine.
+func BoundingBoxIntersectsLine(amax, amin, p0, p1 Vector, asSegment bool) bool {
+	dp := p1.Minus(p0)
+	lp := dp.Magnitude()
+	dp = dp.ScaledBy(1.0 / lp)
+
 	for i := 0; i < 3; i++ {
-		if axes[i] == 0 {
-			if orig[i] < mins[i] || orig[i] > maxs[i] {
-				return false
+		j := (i + 1) % 3
+		k := (i + 2) % 3
+		if lp*math.Abs(dp.Element(i)) < LengthEps {
+			continue // parallel to plane
+		}
+
+		for a := 0; a < 2; a++ {
+			d := amin.Element(i)
+			if a == 0 {
+				d = amax.Element(i)
 			}
-			continue
-		}
-		t1 := (mins[i] - orig[i]) / axes[i]
-		t2 := (maxs[i] - orig[i]) / axes[i]
-		if t1 > t2 {
-			t1, t2 = t2, t1
-		}
-		if t1 > tmin {
-			tmin = t1
-		}
-		if t2 < tmax {
-			tmax = t2
-		}
-		if tmin > tmax {
-			return false
+			// n dot (p0 + t*dp) = d
+			// (n dot p0) + t * (n dot dp) = d
+			t := (d - p0.Element(i)) / dp.Element(i)
+			p := p0.Plus(dp.ScaledBy(t))
+
+			if asSegment && (t < -LengthEps || t > lp+LengthEps) {
+				continue
+			}
+
+			if p.Element(j) > amax.Element(j)+LengthEps {
+				continue
+			}
+			if p.Element(k) > amax.Element(k)+LengthEps {
+				continue
+			}
+
+			if p.Element(j) < amin.Element(j)-LengthEps {
+				continue
+			}
+			if p.Element(k) < amin.Element(k)-LengthEps {
+				continue
+			}
+
+			return true
 		}
 	}
-	return true
+
+	return false
 }
 
 // DotInToCsys returns the dot product of v with the contravariant basis
@@ -297,16 +327,26 @@ func (v Vector) ScaleOutOfCsys(u, w, n Vector) Vector {
 
 // OnLineSegment returns true if v lies on segment [a, b] within tol.
 func (v Vector) OnLineSegment(a, b Vector, tol float64) bool {
-	ab := b.Minus(a)
-	if ab.MagSquared() < 1e-20 {
-		return v.Minus(a).MagSquared() < tol*tol
+	// Mirrors C++ Vector::OnLineSegment (util.cpp:559).
+	if v.EqualsTol(a, tol) || v.EqualsTol(b, tol) {
+		return true
 	}
-	cross := v.Minus(a).Cross(ab)
-	if cross.Magnitude() > tol*ab.Magnitude() {
+
+	d := b.Minus(a)
+
+	m := d.MagSquared()
+	distsq := v.Minus(a).Cross(d).MagSquared() / m
+
+	if distsq >= tol*tol {
 		return false
 	}
-	t := v.Minus(a).Dot(ab) / ab.MagSquared()
-	return t >= -tol && t <= 1+tol
+
+	t := v.Minus(a).DivProjected(d)
+	// On-endpoint already tested
+	if t < 0 || t > 1 {
+		return false
+	}
+	return true
 }
 
 // AtIntersectionOfLines returns the intersection of line (a0, a1)
@@ -363,3 +403,47 @@ func AtIntersectionOfPlanes(n1 Vector, d1 float64, n2 Vector, d2 float64, n3 Vec
 	return num.ScaledBy(1.0 / den)
 }
 
+// AtIntersectionOfTwoPlanes returns a point on the line where planes
+// (n1, d1) and (n2, d2) meet. Mirrors the two-plane overload of C++
+// Vector::AtIntersectionOfPlanes (util.cpp:722).
+func AtIntersectionOfTwoPlanes(n1 Vector, d1 float64, n2 Vector, d2 float64) Vector {
+	det := n1.Dot(n1)*n2.Dot(n2) - n1.Dot(n2)*n1.Dot(n2)
+	c1 := (d1*n2.Dot(n2) - d2*n1.Dot(n2)) / det
+	c2 := (d2*n1.Dot(n1) - d1*n1.Dot(n2)) / det
+	return n1.ScaledBy(c1).Plus(n2.ScaledBy(c2))
+}
+
+func det2(a1, b1, a2, b2 float64) float64 {
+	return a1*b2 - b1*a2
+}
+
+func det3(a1, b1, c1, a2, b2, c2, a3, b3, c3 float64) float64 {
+	return a1*det2(b2, c2, b3, c3) -
+		b1*det2(a2, c2, a3, c3) +
+		c1*det2(a2, b2, a3, b3)
+}
+
+// AtIntersectionOfThreePlanes returns the point where the three planes
+// meet, reporting parallel when they don't meet in a point. Mirrors the
+// three-plane overload of C++ Vector::AtIntersectionOfPlanes
+// (util.cpp:812).
+func AtIntersectionOfThreePlanes(na Vector, da float64, nb Vector, db float64, nc Vector, dc float64) (Vector, bool) {
+	det := det3(na.X, na.Y, na.Z,
+		nb.X, nb.Y, nb.Z,
+		nc.X, nc.Y, nc.Z)
+	if math.Abs(det) < 1e-10 { // arbitrary tolerance, not so good
+		return Vector{}, true
+	}
+
+	detx := det3(da, na.Y, na.Z,
+		db, nb.Y, nb.Z,
+		dc, nc.Y, nc.Z)
+	dety := det3(na.X, da, na.Z,
+		nb.X, db, nb.Z,
+		nc.X, dc, nc.Z)
+	detz := det3(na.X, na.Y, da,
+		nb.X, nb.Y, db,
+		nc.X, nc.Y, dc)
+
+	return Vector{X: detx / det, Y: dety / det, Z: detz / det}, false
+}

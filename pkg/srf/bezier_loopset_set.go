@@ -6,8 +6,8 @@ import "github.com/spacesolve/spacesolve/pkg/geom"
 // a list of SBezierLoopSet (one per outer contour) plus an optional
 // list of open paths.
 type SBezierLoopSetSet struct {
-	Sets    []SBezierLoopSet
-	Opens   SBezierList
+	Sets  []SBezierLoopSet
+	Opens SBezierList
 }
 
 func (s *SBezierLoopSetSet) Clear() {
@@ -27,59 +27,157 @@ func (s *SBezierLoopSetSet) AddOpenPath(b SBezier) {
 	s.Opens.Add(b)
 }
 
-// FindOuterFacesFrom computes the outer faces of the supplied Bezier
-// list, given that they project onto the plane spanned by u and v.
-// The function populates s.Sets and returns the open paths through
-// the opensOut parameter.
-//
-// Phase 3 + Goal Item 12 implementation: chains curves whose
-// endpoints match within tol. Closed chains become SBezierLoopSets
-// (outer loops); chains that don't close are emitted as open
-// paths. The full C++ version uses point-line classification; this
-// version uses greedy endpoint matching that handles the common
-// case.
-func (s *SBezierLoopSetSet) FindOuterFacesFrom(in *SBezierList, sp *SPolygon, opensOut *SBezierList, u, v geom.Vector) {
-	const tol = 1e-9
-	_ = u
-	_ = v
-	used := make([]bool, len(in.Curves))
-	for i := 0; i < len(in.Curves); i++ {
-		if used[i] {
-			continue
+// FindOuterFacesFrom assembles the curves of sbl into closed loops and
+// groups each outer loop with its holes into one SBezierLoopSet. The
+// pwl of every loop goes into spxyz. If srfuv is nil, the curves must
+// all be coplanar and a plane through them is used. Leftover and open
+// loops go to openContours (when non-nil). Mirrors C++
+// SBezierLoopSetSet::FindOuterFacesFrom (curve.cpp:575).
+func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon,
+	srfuv *SSurface, chordTol float64,
+	allClosed *bool, notClosedAt *SEdge,
+	allCoplanar *bool, notCoplanarAt *geom.Vector,
+	openContours *[]SBezierLoop) {
+
+	var srfPlane SSurface
+	if srfuv == nil {
+		var p, u, v geom.Vector
+		*allCoplanar = sbl.GetPlaneContainingBeziers(&p, &u, &v, notCoplanarAt)
+		if !*allCoplanar {
+			// Don't even try to assemble them into loops if they're not
+			// all coplanar.
+			if openContours != nil {
+				for _, sb := range sbl.Curves {
+					*openContours = append(*openContours, SBezierLoop{Curves: []SBezier{sb}})
+				}
+			}
+			return
 		}
-		used[i] = true
-		start := in.Curves[i].Start()
-		chain := []SBezier{in.Curves[i]}
-		current := in.Curves[i].Finish()
-		for {
-			found := false
-			for j := 0; j < len(in.Curves); j++ {
-				if used[j] {
+		// All the curves lie in a plane through p with basis vectors u and v.
+		srfPlane = FromPlane(p, u, v)
+		srfuv = &srfPlane
+	}
+
+	// Assemble the Bezier trim curves into closed loops; we also get the
+	// piecewise linearization of the curves (in the SPolygon spxyz), as a
+	// calculation aid for the loop direction.
+	sbls, _, _ := sBezierLoopSetFrom(sbl, spxyz, chordTol, allClosed, notClosedAt, openContours)
+	if len(sbls) != len(spxyz.Contours) {
+		return
+	}
+
+	// Convert the xyz piecewise linear to uv piecewise linear.
+	var spuv SPolygon
+	for i := range spxyz.Contours {
+		spuv.AddEmptyContour()
+		for _, pt := range spxyz.Contours[i].Points {
+			var u, v float64
+			srfuv.ClosestPointToUV(pt.P, &u, &v, true)
+			spuv.Contours[len(spuv.Contours)-1].AddPoint(geom.Vector{X: u, Y: v})
+		}
+	}
+	spuv.Normal = geom.Vector{Z: 1} // must be, since it's in xy plane now
+
+	const (
+		outerLoop = 10
+		innerLoop = 20
+		usedLoop  = 30
+	)
+	// Fix the contour directions; we do this properly, in uv space, so it
+	// works for curved surfaces too (important for STEP export).
+	spuv.FixContourDirections()
+	for i := range spuv.Contours {
+		contour := &spuv.Contours[i]
+		bl := &sbls[i]
+		if contour.Tag != 0 {
+			// This contour got reversed in the polygon to make the directions
+			// consistent, so the same must be necessary for the Bezier loop.
+			bl.Reverse()
+		}
+		if contour.IsClockwiseProjdToNormal(spuv.Normal) {
+			bl.Tag = innerLoop
+		} else {
+			bl.Tag = outerLoop
+		}
+	}
+
+	loopsRemaining := true
+	for loopsRemaining {
+		loopsRemaining = false
+		for i := range sbls {
+			loop := &sbls[i]
+			if loop.Tag != outerLoop {
+				continue
+			}
+
+			// Check if this contour contains any outer loops; if it does, then
+			// we should do those "inner outer loops" first; otherwise we
+			// will steal their holes, since their holes also lie inside this
+			// contour.
+			j := 0
+			for ; j < len(sbls); j++ {
+				outer := &sbls[j]
+				if i == j {
 					continue
 				}
-				if in.Curves[j].Start().DistanceTo(current) < tol {
-					chain = append(chain, in.Curves[j])
-					current = in.Curves[j].Finish()
-					used[j] = true
-					found = true
+				if outer.Tag != outerLoop {
+					continue
+				}
+
+				p := spuv.Contours[j].AnyEdgeMidpoint()
+				if spuv.Contours[i].ContainsPointProjdToNormal(spuv.Normal, p) {
 					break
 				}
 			}
-			if !found {
-				break
+			if j < len(sbls) {
+				// It does, can't do this one yet.
+				continue
 			}
-		}
-		if current.DistanceTo(start) < tol {
-			set := s.AddOuter()
-			set.Outer.Curves = chain
-			set.ComputeNormalPointArea()
-		} else if opensOut != nil {
-			opensOut.Add(in.Curves[i])
+
+			loopsRemaining = true
+			loop.Tag = usedLoop
+			outerAndInners := SBezierLoopSet{Outer: *loop}
+			auxA := 0
+			if len(loop.Curves) > 0 {
+				auxA = loop.Curves[0].AuxA
+			}
+
+			for j := range sbls {
+				inner := &sbls[j]
+				if inner.Tag != innerLoop {
+					continue
+				}
+				if len(inner.Curves) < 1 {
+					continue
+				}
+				if inner.Curves[0].AuxA != auxA {
+					continue
+				}
+
+				p := spuv.Contours[j].AnyEdgeMidpoint()
+				if spuv.Contours[i].ContainsPointProjdToNormal(spuv.Normal, p) {
+					outerAndInners.Holes = append(outerAndInners.Holes, *inner)
+					inner.Tag = usedLoop
+				}
+			}
+
+			outerAndInners.Point = srfuv.PointAt(0, 0)
+			outerAndInners.Normal = srfuv.NormalAt(0, 0)
+			s.Sets = append(s.Sets, outerAndInners)
 		}
 	}
-	if sp != nil {
-		for i := range s.Sets {
-			s.Sets[i].MakePwlInto(sp)
+
+	// If we have poorly-formed loops--for example, overlapping zero-area
+	// stuff--then we can end up with leftovers. We use this function to
+	// group stuff into closed paths for export when possible, so it's bad
+	// to screw up on that stuff. So just add them onto the open curve list.
+	// Very ugly, but better than losing curves.
+	for i := range sbls {
+		if sbls[i].Tag == usedLoop {
+			continue
+		}
+		if openContours != nil {
+			*openContours = append(*openContours, sbls[i])
 		}
 	}
 }

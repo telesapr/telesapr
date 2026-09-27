@@ -50,43 +50,79 @@ func TestSMeshRemoveDegenerate(t *testing.T) {
 }
 
 func TestSContourEar(t *testing.T) {
+	// Clockwise about +Z, as FixContourDirections leaves outer contours.
 	c := &SContour{}
 	c.AddPoint(geom.Vector{})
-	c.AddPoint(geom.Vector{X: 1})
-	c.AddPoint(geom.Vector{X: 1, Y: 1})
 	c.AddPoint(geom.Vector{Y: 1})
-	c.FindPointWithMinX()
+	c.AddPoint(geom.Vector{X: 1, Y: 1})
+	c.AddPoint(geom.Vector{X: 1})
 	if !c.IsEar(0, 1e-9) {
 		t.Fatalf("vertex 0 should be an ear")
 	}
 }
 
-func TestEarClipTriangulateSquare(t *testing.T) {
+func TestSContourUvTriangulateSquare(t *testing.T) {
 	c := &SContour{}
 	c.AddPoint(geom.Vector{})
-	c.AddPoint(geom.Vector{X: 1})
-	c.AddPoint(geom.Vector{X: 1, Y: 1})
 	c.AddPoint(geom.Vector{Y: 1})
-	c.FindPointWithMinX()
+	c.AddPoint(geom.Vector{X: 1, Y: 1})
+	c.AddPoint(geom.Vector{X: 1})
+	c.AddPoint(geom.Vector{})
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	m := &SMesh{}
-	EarClipTriangulate(c, m, 1e-9)
+	c.UvTriangulateInto(m, &plane)
 	if len(m.Triangles) != 2 {
 		t.Fatalf("expected 2 triangles for a square, got %d", len(m.Triangles))
 	}
 }
 
+// TestSPolygonUvTriangulateWithHole checks that a hole is bridged into
+// its outer contour, so the triangulated area excludes it.
+func TestSPolygonUvTriangulateWithHole(t *testing.T) {
+	square := func(x0, y0, x1, y1 float64) SContour {
+		var c SContour
+		for _, p := range []geom.Vector{{X: x0, Y: y0}, {X: x1, Y: y0}, {X: x1, Y: y1}, {X: x0, Y: y1}, {X: x0, Y: y0}} {
+			c.AddPoint(p)
+		}
+		return c
+	}
+	p := &SPolygon{Contours: []SContour{square(0, 0, 4, 4), square(1, 1, 2, 3)}}
+	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
+	m := &SMesh{}
+	p.UvTriangulateInto(m, &plane)
+	area := 0.0
+	for i := range m.Triangles {
+		area += m.Triangles[i].Area()
+	}
+	if math.Abs(area-14) > 1e-9 {
+		t.Fatalf("triangulated area = %v, want 14", area)
+	}
+}
+
 func TestSPolygonFixDirections(t *testing.T) {
+	// A single (outer) contour, geometrically counterclockwise about +Z
+	// and stored closed. C++ SPolygon::FixContourDirections makes outer
+	// contours "counterclockwise" in the sense of
+	// SContour::IsClockwiseProjdToNormal, which is geometrically
+	// clockwise about the normal, so this one must get reversed.
 	p := &SPolygon{}
-	cw := SContour{}
-	cw.AddPoint(geom.Vector{})
-	cw.AddPoint(geom.Vector{Y: 1})
-	cw.AddPoint(geom.Vector{X: 1, Y: 1})
-	cw.AddPoint(geom.Vector{X: 1})
-	p.Contours = append(p.Contours, cw)
+	c := SContour{}
+	c.AddPoint(geom.Vector{})
+	c.AddPoint(geom.Vector{X: 1})
+	c.AddPoint(geom.Vector{X: 1, Y: 1})
+	c.AddPoint(geom.Vector{Y: 1})
+	c.AddPoint(geom.Vector{})
+	p.Contours = append(p.Contours, c)
 	p.Normal = geom.Vector{Z: 1}
 	p.FixContourDirections()
-	if p.Contours[0].SignedAreaProjdToNormal(p.Normal) > 0 {
-		t.Fatalf("after fix, contour should be CCW (negative signed area)")
+	if p.Contours[0].Tag != 1 {
+		t.Fatalf("expected the contour to be reversed (Tag=1)")
+	}
+	if p.Contours[0].IsClockwiseProjdToNormal(p.Normal) {
+		t.Fatalf("after fix, outer contour should not be clockwise")
+	}
+	if p.Contours[0].Points[1].P != (geom.Vector{Y: 1}) {
+		t.Fatalf("expected geometrically clockwise order, got %v", p.Contours[0].Points)
 	}
 }
 

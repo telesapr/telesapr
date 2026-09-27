@@ -9,7 +9,7 @@ import (
 
 // SCurvePt is one polyline vertex on a trim curve.
 type SCurvePt struct {
-	Vertex bool   // true if this point is a vertex of the original SBezier (used for snapping)
+	Vertex bool // true if this point is a vertex of the original SBezier (used for snapping)
 	P      geom.Vector
 	Tag    int
 }
@@ -75,10 +75,6 @@ type SShell struct {
 	Surface []SSurface
 
 	BooleanFailed bool
-
-	// cachedMesh is the SMesh produced by TriangulateInto; cached so
-	// AllPointsIntersecting doesn't re-triangulate on every ray.
-	cachedMesh SMesh
 }
 
 // Clear resets all data.
@@ -104,7 +100,13 @@ func (s *SShell) MakeFromCopyOf(src *SShell) {
 // sequential handle (and matching FaceID), mirroring the C++
 // `IdList::AddAndAssignId` semantics used throughout shell.cpp.
 func (s *SShell) addAndAssignSurfaceId(ss SSurface) core.HSSurface {
-	h := core.HSSurface{V: uint32(len(s.Surface) + 1)}
+	var maxV uint32
+	for i := range s.Surface {
+		if s.Surface[i].H.V > maxV {
+			maxV = s.Surface[i].H.V
+		}
+	}
+	h := core.HSSurface{V: maxV + 1}
 	ss.H = h
 	ss.Face = FaceID(h.V)
 	s.Surface = append(s.Surface, ss)
@@ -114,7 +116,15 @@ func (s *SShell) addAndAssignSurfaceId(ss SSurface) core.HSSurface {
 // addAndAssignCurveId appends sc to s.Curve with a fresh sequential
 // handle, mirroring the C++ `IdList::AddAndAssignId` semantics.
 func (s *SShell) addAndAssignCurveId(sc SCurve) core.HSCurve {
-	h := core.HSCurve{V: uint32(len(s.Curve) + 1)}
+	// Like C++ IdList::AddAndAssignId, use one more than the largest
+	// id in use.
+	var maxV uint32
+	for i := range s.Curve {
+		if s.Curve[i].H.V > maxV {
+			maxV = s.Curve[i].H.V
+		}
+	}
+	h := core.HSCurve{V: maxV + 1}
 	sc.H = h
 	s.Curve = append(s.Curve, sc)
 	return h
@@ -150,7 +160,8 @@ type shellTrimLine struct {
 // capped at t0 and t1 with two shared planar surfaces trimmed by
 // the same translated curves.
 func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RgbaColor) {
-	s.Clear()
+	// Like the C++, this adds to s rather than replacing it, so that a
+	// group's loop sets all extrude into one shell.
 	if sbls == nil {
 		return
 	}
@@ -274,6 +285,22 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 	}
 }
 
+// addSurfaceAssignId adds ss with a fresh handle (one more than the
+// largest in use), leaving its Face alone. Mirrors C++
+// IdList::AddAndAssignId for surfaces.
+func (s *SShell) addSurfaceAssignId(ss SSurface) core.HSSurface {
+	var maxV uint32
+	for i := range s.Surface {
+		if s.Surface[i].H.V > maxV {
+			maxV = s.Surface[i].H.V
+		}
+	}
+	h := core.HSSurface{V: maxV + 1}
+	ss.H = h
+	s.Surface = append(s.Surface, ss)
+	return h
+}
+
 // appendTrim adds stb to the Trim list of the surface identified by
 // h, looking it up by handle so callers never need to reason about
 // slice-append reallocation.
@@ -393,41 +420,19 @@ func (s *SShell) TriangulateInto(mesh *SMesh) {
 // 3-D via PointAt/NormalAt and flip the winding to match the
 // trim-contour orientation convention.
 func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
-	if len(srf.Trim) == 0 {
-		// See SSurface.TrimBuilt's doc comment: an empty Trim list
-		// falls back to the full parameter grid unless this surface
-		// came from an INTERSECTION's per-surface trim (TrimBuilt),
-		// where an empty result reliably means "genuinely outside
-		// the kept region" and must render 0 triangles, matching the
-		// C++ (which has no untrimmed-grid fallback at all;
-		// surface.cpp:414).
-		if !srf.TrimBuilt {
-			srf.triangulateUntrimmedGrid(mesh)
-		}
+	if len(srf.Trim) == 0 && !srf.TrimBuilt {
+		// See SSurface.TrimBuilt: a constructor that doesn't build
+		// trims yet.
+		srf.triangulateUntrimmedGrid(mesh)
 		return
 	}
 
-	el := SEdgeList{}
-	srf.makeUvTrimEdgesInto(shell, &el)
+	var el SEdgeList
+	srf.MakeEdgesInto(shell, &el, true, nil)
 
 	var poly SPolygon
 	if !el.AssemblePolygon(&poly, nil, true) {
-		// Failed to close the trim loop into a polygon. Unlike the
-		// empty-Trim case above, a *non-empty* Trim list that still
-		// fails to assemble means the per-surface trim/chain-walk
-		// pipeline produced inconsistent boundary data (a bug
-		// elsewhere, e.g. in the boolean CSG chain-walker for
-		// non-planar or multi-loop trim topology) rather than a
-		// deliberate "this region is fully discarded" answer. Always
-		// falling back here (regardless of TrimBuilt) keeps a
-		// reasonable approximation of the surface on screen instead
-		// of silently erasing it — matching this port's pre-existing
-		// behavior for that failure mode, which independent
-		// measurement (PORTING.md "Boolean-CSG parity gaps") shows is
-		// closer to the C++ golden than dropping the surface
-		// entirely for the fixtures whose chain-walk isn't yet
-		// fully correct.
-		srf.triangulateUntrimmedGrid(mesh)
+		// failed to assemble polygon to trim nurbs surface in uv space
 		return
 	}
 
@@ -435,7 +440,7 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 	if srf.DegM == 1 && srf.DegN == 1 {
 		poly.UvTriangulateInto(mesh, srf)
 	} else {
-		poly.UvGridTriangulateInto(mesh, srf, 8, 8)
+		poly.UvGridTriangulateInto(mesh, srf)
 	}
 
 	meta := STriMeta{Face: srf.Face, RgbaColor: srf.Color}
@@ -451,49 +456,6 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 		// Works out that the chosen contour direction is inconsistent
 		// with the triangle direction (matches the C++ comment).
 		t.FlipNormal()
-	}
-}
-
-// makeUvTrimEdgesInto emits the uv-space piecewise-linear
-// approximation of every trim curve on srf into el. Mirrors C++
-// `SSurface::MakeTrimEdgesInto(..., MakeAs::UV, ...)`
-// (surface.cpp:222), called once per STrimBy via `MakeEdgesInto`.
-func (srf *SSurface) makeUvTrimEdgesInto(shell *SShell, el *SEdgeList) {
-	for i := range srf.Trim {
-		stb := &srf.Trim[i]
-		sc := shell.FindCurve(stb.Curve)
-		if sc == nil || len(sc.Points) == 0 {
-			continue
-		}
-
-		var prev geom.Vector
-		inCurve := false
-		first, last, increment := 0, len(sc.Points)-1, 1
-		if stb.Backwards {
-			first, last, increment = len(sc.Points)-1, 0, -1
-		}
-		auxB := 0
-		if stb.Backwards {
-			auxB = 1
-		}
-		for i := first; i != last+increment; i += increment {
-			pt := sc.Points[i].P
-			var u, v float64
-			srf.ClosestPointToUV(pt, &u, &v, true)
-			tpt := geom.Vector{X: u, Y: v}
-
-			if inCurve {
-				el.AddEdge(prev, tpt, int(sc.H.V), auxB, sc.Tag)
-			}
-			prev = tpt
-
-			if pt.Equals(stb.StartP) {
-				inCurve = true
-			}
-			if pt.Equals(stb.FinishP) {
-				inCurve = false
-			}
-		}
 	}
 }
 
@@ -514,7 +476,7 @@ func (srf *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
 			if srf.Bsp != nil {
 				uc := (u0 + u1) / 2
 				vc := (v0 + v1) / 2
-				if srf.Bsp.ClassifyPoint(geom.Point2d{U: uc, V: vc}) == BspUvOutside {
+				if srf.Bsp.ClassifyPoint(geom.Point2d{U: uc, V: vc}, geom.Point2d{}, srf) == BspUvOutside {
 					continue
 				}
 			}
@@ -529,175 +491,6 @@ func (srf *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
 	}
 }
 
-// edgeKey is a quantised 3-D point used to dedupe boundary
-// endpoints while computing the coplanar-but-shifted cluster in
-// MergeCoincidentSurfaces.
-type edgeKey struct{ X, Y, Z float64 }
-
-// MergeCoincidentSurfaces identifies surfaces whose control grids
-// coincide (within tol) and merges them, keeping a single copy.
-// This dramatically reduces shell size when extrusion produces
-// many redundant planes.
-//
-// Phase 4 + Goal Item 15 implementation: clusters surfaces by
-// coincidence, then assigns each cluster a unique FaceID. The
-// merged cluster keeps one representative surface.
-//
-// PORTING.md §"Remaining work" item 3 (coplanar-but-shifted):
-// the C++ `SShell::MergeCoincidentSurfaces` (merge.cpp:11)
-// additionally merges surfaces that are coplanar with the cluster
-// representative AND whose edges form a subset of the cluster's
-// accumulated edges. That handles stacked-cuboid unions where two
-// side faces at the same X=0 plane but different Z ranges share
-// only the middle edge (one cuboid's top == the next cuboid's
-// bottom). Without that merge the four stacked cuboids of
-// `boolean_coplanar_union` end up as four separate coplanar side
-// faces whose triangles don't form a watertight shell.
-//
-// The Go port historically used the strict `CoincidentWith`
-// cluster, which only merges surfaces with all control points
-// coincident — that misses the coplanar-but-shifted case. The
-// implementation below runs the strict cluster first, then a
-// second pass that grows each cluster by coplanar edges, exactly
-// mirroring the C++ `do { … } while (mergedThisTime)` loop in
-// `SShell::MergeCoincidentSurfaces` (`merge.cpp:31`).
-func (s *SShell) MergeCoincidentSurfaces() {
-	const tol = 1e-9
-	const uvRectOverlapTol = 1e-6
-
-	// surfaceEdgeSet[i] is the union of 3-D edge endpoints for surface
-	// i. Used by the coplanar-but-shifted cluster check below to
-	// detect whether surface j's edges form a subset of surface i's
-	// accumulated cluster edges.
-	surfaceEdges := make([]map[edgeKey]bool, len(s.Surface))
-	for i := range s.Surface {
-		surfaceEdges[i] = edgesAsPoints(s.Surface[i], uvRectOverlapTol)
-	}
-
-	cluster := make([]int, len(s.Surface))
-	for i := range s.Surface {
-		cluster[i] = -1
-	}
-	representative := make([]int, 0, len(s.Surface))
-
-	// Pass 1: strict full-coincident cluster (existing behaviour).
-	for i := range s.Surface {
-		if cluster[i] != -1 {
-			continue
-		}
-		cluster[i] = len(representative)
-		representative = append(representative, i)
-		for j := i + 1; j < len(s.Surface); j++ {
-			if cluster[j] != -1 {
-				continue
-			}
-			if s.Surface[i].CoincidentWith(&s.Surface[j], true) {
-				cluster[j] = cluster[i]
-			}
-		}
-	}
-
-	// Pass 2: coplanar-but-shifted cluster. For each unmerged
-	// surface, find an existing cluster it's coplanar with and
-	// whose edges it can contribute to. Mirrors the C++
-	// `do { … } while (mergedThisTime)` loop in `merge.cpp:31`
-	// for coplanar-but-shifted plane surfaces.
-	for i := range s.Surface {
-		if cluster[i] != -1 {
-			continue
-		}
-		// Skip non-plane surfaces (the C++ merge.cpp:26 also
-		// handles only planes).
-		if s.Surface[i].DegM != 1 || s.Surface[i].DegN != 1 {
-			continue
-		}
-		// Find a cluster representative whose plane matches this
-		// surface's plane (same normal, same distance from origin)
-		// and whose colour matches.
-		bestRep := -1
-		bestRepShared := -1
-		for rIdx, srcIdx := range representative {
-			if !s.Surface[srcIdx].Color.Equals(s.Surface[i].Color) {
-				continue
-			}
-			if !coplanarPlanes(s.Surface[srcIdx], s.Surface[i], uvRectOverlapTol) {
-				continue
-			}
-			shared := sharedEdgeCount(surfaceEdges[srcIdx], surfaceEdges[i])
-			if shared > bestRepShared {
-				bestRepShared = shared
-				bestRep = rIdx
-			}
-		}
-		if bestRep < 0 {
-			// No coplanar cluster to join — start a new cluster on
-			// its own. The strict pass already handled fully-
-			// coincident surfaces; this surface is genuinely coplanar
-			// but not shared with anything.
-			cluster[i] = len(representative)
-			representative = append(representative, i)
-			continue
-		}
-		// Merge surface i into bestRep's cluster.
-		cluster[i] = bestRep
-		// Accumulate i's edges into the cluster's edge set so that
-		// the next coplanar surface can detect the shared edge.
-		for k := range surfaceEdges[i] {
-			surfaceEdges[representative[bestRep]][k] = true
-		}
-	}
-
-	out := make([]SSurface, 0, len(representative))
-	for rIdx, srcIdx := range representative {
-		srf := s.Surface[srcIdx]
-		srf.Face = FaceID(uint32(rIdx + 1))
-		out = append(out, srf)
-	}
-	// Build a map from old surface handle -> representative H so we can
-	// rewrite every curve's surface handle to point at the merged face.
-	oldHToRepH := make(map[core.HSSurface]core.HSSurface, len(representative))
-	for _, srcIdx := range representative {
-		repH := out[cluster[srcIdx]].H
-		for j, c := range cluster {
-			if c == cluster[srcIdx] {
-				_ = j
-				oldHToRepH[s.Surface[j].H] = repH
-			}
-		}
-	}
-	// Walk every curve and rewrite its surface handles to point at the
-	// representative of whichever surface cluster they referenced.
-	for i := range s.Curve {
-		if nh, ok := oldHToRepH[s.Curve[i].SurfA]; ok {
-			s.Curve[i].SurfA = nh
-		}
-		if nh, ok := oldHToRepH[s.Curve[i].SurfB]; ok {
-			s.Curve[i].SurfB = nh
-		}
-	}
-	s.Surface = out
-	_ = tol
-}
-
-// edgesAsPoints returns the boundary edges of `srf` as a set of
-// 3-D points (each edge contributes both endpoints). Used by
-// `MergeCoincidentSurfaces` to detect coplanar-but-shifted face
-// merges: two surfaces are merged if they are coplanar AND at
-// least one boundary endpoint coincides (within tol).
-func edgesAsPoints(srf SSurface, tol float64) map[edgeKey]bool {
-	out := make(map[edgeKey]bool)
-	if len(srf.Trim) == 0 {
-		return out
-	}
-	for i := range srf.Trim {
-		p := snap(srf.Trim[i].StartP, tol)
-		out[edgeKey{X: p.X, Y: p.Y, Z: p.Z}] = true
-		p = snap(srf.Trim[i].FinishP, tol)
-		out[edgeKey{X: p.X, Y: p.Y, Z: p.Z}] = true
-	}
-	return out
-}
-
 func snap(p geom.Vector, tol float64) geom.Vector {
 	return geom.Vector{
 		X: math.Round(p.X/tol) * tol,
@@ -706,97 +499,77 @@ func snap(p geom.Vector, tol float64) geom.Vector {
 	}
 }
 
-func sharedEdgeCount(a, b map[edgeKey]bool) int {
-	if len(a) == 0 || len(b) == 0 {
-		return 0
-	}
-	n := 0
-	for k := range b {
-		if a[k] {
-			n++
-		}
-	}
-	return n
-}
-
-// coplanarPlanes reports whether two plane surfaces lie on the
-// same geometric plane: same unit normal AND same signed
-// distance from the origin. For plane surfaces (degm == degn ==
-// 1) with the same colour, this is the coplanar-but-shifted test
-// the C++ merge.cpp uses for the second-pass cluster.
-func coplanarPlanes(a, b SSurface, tol float64) bool {
-	if a.DegM != 1 || a.DegN != 1 || b.DegM != 1 || b.DegN != 1 {
-		return false
-	}
-	na := a.NormalAt(0.5, 0.5)
-	nb := b.NormalAt(0.5, 0.5)
-	if na.Magnitude() < 1e-20 || nb.Magnitude() < 1e-20 {
-		return false
-	}
-	nu := na.WithMagnitude(1)
-	mb := nb.WithMagnitude(1)
-	if (nu.Minus(mb)).Magnitude() > tol && (nu.Plus(mb)).Magnitude() > tol {
-		return false
-	}
-	// Use the same direction for both. If normals are antiparallel
-	// we still merge (they lie on the same plane).
-	if (nu.Plus(mb)).Magnitude() < tol {
-		// antiparallel — flip one
-		mb = mb.ScaledBy(-1)
-	}
-	// Signed distance from origin (same normal direction): a dot n
-	da := a.Ctrl[0][0].Dot(nu)
-	db := b.Ctrl[0][0].Dot(nu)
-	if math.Abs(da-db) > tol {
-		return false
-	}
-	return true
-}
-
 // MakeEdgesInto extracts the trim edges of every surface as SEdge
 // entries. When a surface has no trim, emits the four boundary
 // edges of the surface's uv rectangle.
 func (s *SShell) MakeEdgesInto(el *SEdgeList) {
 	for i := range s.Surface {
-		s.Surface[i].MakeEdgesInto(s, el, nil, true)
+		s.Surface[i].MakeEdgesInto(s, el, false, nil)
 	}
 }
 
-// MakeEdgesInto emits the boundary edges of this surface. If
-// useCurvesFrom is non-nil, the trim region is taken from those
-// curves instead of the surface's own trim. Phase 4 + Goal Item 4
-// implementation: when srf has trim curves (or useCurvesFrom is
-// supplied), emit each curve as a 3-D edge; otherwise emit the four
-// boundary edges of the uv rectangle.
-func (srf *SSurface) MakeEdgesInto(parentShell *SShell, el *SEdgeList, useCurvesFrom *SShell, includeTrimCurves bool) {
-	_ = includeTrimCurves
-	if useCurvesFrom != nil {
-		for i := range useCurvesFrom.Curve {
-			tag := int(useCurvesFrom.Curve[i].H.V)
-			b := useCurvesFrom.Curve[i].Exact
-			// Sample the curve at multiple points and emit as a
-			// polyline in 3-D space (since edges are 3-D).
-			const ns = 8
-			last := b.Start()
-			for k := 1; k <= ns; k++ {
-				t := float64(k) / float64(ns)
-				cur := b.PointAt(t)
-				el.AddEdge(last, cur, tag, 0, tag)
-				last = cur
+// MakeEdgesInto emits the pwl edges of every trim curve of srf, in uv
+// space (asUV) or xyz. When useCurvesFrom is non-nil, each trim's
+// curve is replaced by its split copy (newH) in that shell; that is
+// used by the Booleans, since the curves from the output shell are
+// split against any intersecting surfaces (and the originals aren't).
+// Mirrors C++ SSurface::MakeEdgesInto (surface.cpp).
+func (srf *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCurvesFrom *SShell) {
+	for i := range srf.Trim {
+		stb := &srf.Trim[i]
+		sc := shell.FindCurve(stb.Curve)
+		if sc == nil {
+			continue
+		}
+
+		if useCurvesFrom != nil {
+			sc = useCurvesFrom.FindCurve(sc.NewH)
+			if sc == nil {
+				continue
 			}
 		}
-		return
+
+		srf.makeTrimEdgesInto(sel, asUV, sc, stb)
 	}
-	// No curves: emit 4 boundary edges of the surface's uv rectangle.
-	p00 := srf.PointAt(0, 0)
-	p10 := srf.PointAt(1, 0)
-	p11 := srf.PointAt(1, 1)
-	p01 := srf.PointAt(0, 1)
-	el.AddEdge(p00, p10, 0, 0, srf.Tag)
-	el.AddEdge(p10, p11, 0, 0, srf.Tag)
-	el.AddEdge(p11, p01, 0, 0, srf.Tag)
-	el.AddEdge(p01, p00, 0, 0, srf.Tag)
-	_ = parentShell
+}
+
+// makeTrimEdgesInto walks sc's pwl from stb's start to its finish
+// (backwards if stb says so), emitting edges in uv or xyz. Mirrors
+// C++ SSurface::MakeTrimEdgesInto (surface.cpp:222).
+func (srf *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb *STrimBy) {
+	var prev geom.Vector
+	inCurve := false
+
+	first, last, increment := 0, len(sc.Points)-1, 1
+	if stb.Backwards {
+		first, last, increment = len(sc.Points)-1, 0, -1
+	}
+	backwards := 0
+	if stb.Backwards {
+		backwards = 1
+	}
+	for i := first; i != last+increment; i += increment {
+		pt := sc.Points[i].P
+		tpt := pt
+		if asUV {
+			var u, v float64
+			srf.ClosestPointToUV(pt, &u, &v, true)
+			tpt = geom.Vector{X: u, Y: v}
+		}
+
+		if inCurve {
+			sel.AddEdge(prev, tpt, int(sc.H.V), backwards, 0)
+		}
+
+		prev = tpt // either uv or xyz, depending on flags
+
+		if pt.Equals(stb.StartP) {
+			inCurve = true
+		}
+		if pt.Equals(stb.FinishP) {
+			inCurve = false
+		}
+	}
 }
 
 // MakeSectionEdgesInto emits the cross-section of the shell where it
@@ -894,4 +667,3 @@ func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
 	}
 	return out
 }
-

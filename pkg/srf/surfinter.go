@@ -3,7 +3,6 @@ package srf
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
@@ -251,7 +250,7 @@ func (s *SSurface) intersectExtrusionExtrusion(other *SSurface, into *SShell, al
 	if !s.FillExtrusionAxis(&oft, &geom.Vector{}) {
 		return
 	}
-	oft.MakePwlIntoPoints(&lv, defaultChordTolMm, defaultChordTolMm)
+	oft.MakePwlIntoPoints(&lv, 0, 0)
 	a0 := s.Ctrl[0][0].Dot(axis)
 	a1 := s.Ctrl[0][1].Dot(axis)
 	b0 := other.Ctrl[0][0].Dot(axis)
@@ -367,7 +366,6 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 		return
 	}
 	sc := SCurve{
-		H:       s.nextCurveHandle(into),
 		SurfA:   s.H,
 		SurfB:   srfB.H,
 		Exact:   *sb,
@@ -405,11 +403,11 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 		split = sc
 	} else {
 		pts := make([]geom.Vector, 0, 16)
-		sb.MakePwlIntoPoints(&pts, defaultChordTolMm, defaultChordTolMm)
+		sb.MakePwlIntoPoints(&pts, 0, 0)
 		for _, p := range pts {
 			sc.Points = append(sc.Points, SCurvePt{P: p})
 		}
-		split = sc.makeCopySplitAgainstExact(agnstA, agnstB, s, srfB)
+		split = sc.MakeCopySplitAgainst(agnstA, agnstB, s, srfB)
 	}
 	// Discard if entirely outside one surface.
 	withinA, withinB := false, false
@@ -432,95 +430,7 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 		return
 	}
 	split.Source = CurveSourceIntersection
-	split.H = s.nextCurveHandle(into)
-	into.Curve = append(into.Curve, split)
-}
-
-// makeCopySplitAgainstExact is the local helper used by
-// AddExactIntersectionCurve to refine a polyline curve against the
-// operand shells. Mirrors the refinement loop in the C++
-// SSurface::AddExactIntersectionCurve that calls MakeCopySplitAgainst
-// after MakePwlInto.
-func (sc *SCurve) makeCopySplitAgainstExact(agnstA, agnstB *SShell, s, srfB *SSurface) SCurve {
-	if len(sc.Points) == 0 {
-		return *sc
-	}
-	out := *sc
-	out.Points = nil
-	out.Points = append(out.Points, sc.Points[0])
-	prev := sc.Points[0]
-	for i := 1; i < len(sc.Points); i++ {
-		cur := sc.Points[i]
-		var il []SInter
-		if agnstA != nil {
-			agnstA.AllPointsIntersecting(prev.P, cur.P, &il, true, false, true)
-		}
-		if agnstB != nil {
-			agnstB.AllPointsIntersecting(prev.P, cur.P, &il, true, false, true)
-		}
-		// Cull intersections on s or srfB (those are not real).
-		for j := range il {
-			if il[j].Srf == s || il[j].Srf == srfB {
-				il[j].Tag = 1
-			}
-		}
-		filtered := il[:0]
-		for _, x := range il {
-			if x.Tag != 1 {
-				filtered = append(filtered, x)
-			}
-		}
-		il = filtered
-		// Refine each remaining intersection onto the curve's exact form.
-		for j := range il {
-			pi := &il[j]
-			var puv geom.Point2d
-			if pi.Srf != nil {
-				pi.Srf.ClosestPointTo(pi.P, &puv, false)
-				if sc.IsExact {
-					pi.Srf.PointOnCurve(&sc.Exact, &puv.U, &puv.V)
-				} else if s != nil && srfB != nil {
-					// Skip refinement when either operand surface is
-					// unknown — the caller may have not threaded them
-					// through, in which case the polyline is still
-					// approximately on both surfaces (marching-squares
-					// approximation accuracy).
-					pi.Srf.PointOnSurfaces(s, srfB, &puv.U, &puv.V)
-				}
-				pi.P = pi.Srf.PointAt(puv.U, puv.V)
-			}
-		}
-		// Sort along the segment.
-		for i := range il {
-			for j := i + 1; j < len(il); j++ {
-				di := il[i].P.Minus(prev.P).MagSquared()
-				dj := il[j].P.Minus(prev.P).MagSquared()
-				if di > dj {
-					il[i], il[j] = il[j], il[i]
-				}
-			}
-		}
-		var lastP geom.Vector
-		for _, pi := range il {
-			if !pi.P.Equals(lastP) {
-				out.Points = append(out.Points, SCurvePt{P: pi.P, Vertex: true})
-				lastP = pi.P
-			}
-		}
-		out.Points = append(out.Points, cur)
-		prev = cur
-	}
-	return out
-}
-
-// nextCurveHandle allocates a fresh handle for a curve being added
-// to `into`. Used by AddExactIntersectionCurve so the new curve's
-// handle doesn't collide with existing entries.
-func (s *SSurface) nextCurveHandle(into *SShell) core.HSCurve {
-	if into == nil {
-		return core.HSCurve{V: 1}
-	}
-	return core.HSCurve{V: uint32(len(into.Curve) + 1)}
+	into.addAndAssignCurveId(split)
 }
 
 // MakeCoincidentEdgesInto copies the trim polygon of every
@@ -539,7 +449,7 @@ func (s *SShell) MakeCoincidentEdgesInto(proto *SSurface, sameNormal bool, el *S
 		if !proto.CoincidentWith(ss, sameNormal) {
 			continue
 		}
-		ss.MakeEdgesInto(s, el, useCurvesFrom, true)
+		ss.MakeEdgesInto(s, el, false, useCurvesFrom)
 	}
 	// Convert each edge from XYZ back to UV on the prototype.
 	for i := range el.Edges {

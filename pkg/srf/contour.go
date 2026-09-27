@@ -1,10 +1,6 @@
 package srf
 
-import (
-	"math"
-
-	"github.com/spacesolve/spacesolve/pkg/geom"
-)
+import "github.com/spacesolve/spacesolve/pkg/geom"
 
 // SContour is an ordered list of SPoint forming one polygon contour.
 // Contours can be open (line strip) or closed (loop). The
@@ -62,52 +58,67 @@ func (c *SContour) ComputeNormal() geom.Vector {
 	return n.Normal()
 }
 
-// SignedAreaProjdToNormal returns the signed area of the contour
-// projected onto the plane with normal n. Positive = counterclockwise.
+// SignedAreaProjdToNormal mirrors C++ SContour::SignedAreaProjdToNormal
+// (polygon.cpp:611). Contours are stored closed (last point repeats
+// the first). Note the C++ sign convention: the sum is negative for a
+// loop that winds counterclockwise about n in the right-handed basis
+// (n.Normal(0), n.Normal(1)).
 func (c *SContour) SignedAreaProjdToNormal(n geom.Vector) float64 {
-	if len(c.Points) < 3 {
-		return 0
+	// An arbitrary 2d coordinate system that has n as its normal
+	u := n.NormalDir(0)
+	v := n.NormalDir(1)
+
+	area := 0.0
+	for i := 0; i < len(c.Points)-1; i++ {
+		u0 := c.Points[i].P.Dot(u)
+		v0 := c.Points[i].P.Dot(v)
+		u1 := c.Points[i+1].P.Dot(u)
+		v1 := c.Points[i+1].P.Dot(v)
+
+		area += ((v0 + v1) / 2) * (u1 - u0)
 	}
-	u, v := basisFromNormal(n)
-	sum := 0.0
-	for i := 0; i < len(c.Points); i++ {
-		a := c.Points[i].P
-		b := c.Points[(i+1)%len(c.Points)].P
-		pa := a.Project2d(u, v)
-		pb := b.Project2d(u, v)
-		sum += (pb.U - pa.U) * (pb.V + pa.V)
-	}
-	return sum / 2
+	return area
 }
 
-// IsClockwiseProjdToNormal reports whether the contour is clockwise
-// when projected onto the plane with normal n.
+// IsClockwiseProjdToNormal mirrors C++ SContour::IsClockwiseProjdToNormal
+// (polygon.cpp:603), including its sign convention (see
+// SignedAreaProjdToNormal).
 func (c *SContour) IsClockwiseProjdToNormal(n geom.Vector) bool {
-	return c.SignedAreaProjdToNormal(n) > 0
+	// Degenerate things might happen as we draw; doesn't really matter
+	// what we do then.
+	if n.Magnitude() < 0.01 {
+		return true
+	}
+	return c.SignedAreaProjdToNormal(n) < 0
 }
 
-// ContainsPointProjdToNormal returns true if p lies inside the
-// contour (ray-cast along +U in the projected plane).
+// ContainsPointProjdToNormal mirrors C++
+// SContour::ContainsPointProjdToNormal (polygon.cpp). The contour must
+// be stored exactly closed.
 func (c *SContour) ContainsPointProjdToNormal(n, p geom.Vector) bool {
-	if len(c.Points) < 3 {
-		return false
-	}
-	u, v := basisFromNormal(n)
-	pp := p.Project2d(u, v)
-	intersections := 0
-	for i := 0; i < len(c.Points); i++ {
-		a := c.Points[i].P.Project2d(u, v)
-		b := c.Points[(i+1)%len(c.Points)].P.Project2d(u, v)
-		if (a.V > pp.V) == (b.V > pp.V) {
-			continue
+	u := n.NormalDir(0)
+	v := n.NormalDir(1)
+
+	up := p.Dot(u)
+	vp := p.Dot(v)
+
+	inside := false
+	ln := len(c.Points)
+	for i := 0; i < ln-1; i++ {
+		ua := c.Points[i].P.Dot(u)
+		va := c.Points[i].P.Dot(v)
+		// The curve needs to be exactly closed; approximation is death.
+		ub := c.Points[(i+1)%(ln-1)].P.Dot(u)
+		vb := c.Points[(i+1)%(ln-1)].P.Dot(v)
+
+		if (((va <= vp) && (vp < vb)) ||
+			((vb <= vp) && (vp < va))) &&
+			(up < (ub-ua)*(vp-va)/(vb-va)+ua) {
+			inside = !inside
 		}
-		// Compute x intersection of edge with horizontal line pp.V.
-		t := (pp.V - a.V) / (b.V - a.V)
-		if pp.U < a.U+(b.U-a.U)*t {
-			intersections++
-		}
 	}
-	return intersections%2 == 1
+
+	return inside
 }
 
 // AnyEdgeMidpoint returns the midpoint of the first edge.
@@ -116,109 +127,6 @@ func (c *SContour) AnyEdgeMidpoint() geom.Vector {
 		return geom.Vector{}
 	}
 	return c.Points[0].P.Plus(c.Points[1].P).ScaledBy(0.5)
-}
-
-// ClipEarInto removes the ear at index bp and adds the resulting
-// triangle to m. The full implementation requires SSurface
-// to handle the curved-surface case; the planar case is covered by
-// EarClipTriangulate.
-func (c *SContour) ClipEarInto(m *SMesh, bp int, scaledEps float64) {
-	if len(c.Points) < 3 {
-		return
-	}
-	n := len(c.Points)
-	ap := (bp - 1 + n) % n
-	cp := (bp + 1) % n
-	a := c.Points[ap].P
-	b := c.Points[bp].P
-	d := c.Points[cp].P
-	m.AddTriangle(STriangle{A: a, B: b, C: d})
-}
-
-// UvTriangulateInto triangulates this contour in the (u, v) plane of
-// srf, then evaluates the result on the surface srf. // implementation uses the planar ear-clipping pass; replaces
-// the surface evaluation with SSurface::PointAt.
-func (c *SContour) UvTriangulateInto(m *SMesh, srf interface{}) {
-	// Planar fallback: ear-clip in 2-D (using X, Y of the points).
-	scaledEps := 1e-9
-	tmp := SContour{}
-	for _, p := range c.Points {
-		tmp.AddPoint(p.P)
-	}
-	tmp.FindPointWithMinX()
-	EarClipTriangulate(&tmp, m, scaledEps)
-}
-
-// BridgeToContour attempts to bridge this contour to `other` so
-// that the two contours become a single contour. Used during
-// triangulation when a polygon has holes: each hole is merged into
-// the outer contour by inserting a "bridge" line that crosses
-// no existing edges.
-//
-// Implementation: search for either (a) a shared vertex between the
-// two contours, in which case no bridge is needed; or (b) a
-// non-crossing segment from a vertex of one to a vertex of the
-// other. Records the new bridge in el and the bridge endpoints in
-// vl so subsequent bridges can avoid them.
-func (c *SContour) BridgeToContour(other *SContour, el *SEdgeList, vl *[]geom.Vector) bool {
-	if other == nil || len(c.Points) == 0 || len(other.Points) == 0 {
-		return false
-	}
-	// Find the leftmost point of `other`.
-	sco := 0
-	xmin := other.Points[0].P.X
-	for i := 1; i < len(other.Points); i++ {
-		if other.Points[i].P.X < xmin {
-			xmin = other.Points[i].P.X
-			sco = i
-		}
-	}
-	// Find the closest point on `c` to that.
-	thiso := 0
-	dmin := math.Inf(1)
-	for i := 0; i < len(c.Points); i++ {
-		d := c.Points[i].P.Minus(other.Points[sco].P).MagSquared()
-		if d < dmin {
-			dmin = d
-			thiso = i
-		}
-	}
-	withBridge := true
-	// First, check for a shared vertex.
-	for i := 0; i < len(c.Points); i++ {
-		thisp := wrapMod(i+thiso, len(c.Points))
-		a := c.Points[thisp].P
-		if containsVec(*vl, a) {
-			continue
-		}
-		for j := 0; j < len(other.Points); j++ {
-			scp := wrapMod(j+sco, len(other.Points))
-			b := other.Points[scp].P
-			if a.Equals(b) {
-				withBridge = false
-				return c.mergeContourAt(thisp, scp, other, withBridge, el, vl, a, b)
-			}
-		}
-	}
-	// Otherwise, search for a non-crossing bridge.
-	for i := 0; i < len(c.Points); i++ {
-		thisp := wrapMod(i+thiso, len(c.Points))
-		a := c.Points[thisp].P
-		if containsVec(*vl, a) {
-			continue
-		}
-		for j := 0; j < len(other.Points); j++ {
-			scp := wrapMod(j+sco, len(other.Points))
-			b := other.Points[scp].P
-			if containsVec(*vl, b) {
-				continue
-			}
-			if el.AnyEdgeCrossings(a, b, nil, nil) == 0 {
-				return c.mergeContourAt(thisp, scp, other, withBridge, el, vl, a, b)
-			}
-		}
-	}
-	return false
 }
 
 func wrapMod(a, n int) int {
@@ -236,79 +144,6 @@ func containsVec(vs []geom.Vector, v geom.Vector) bool {
 		}
 	}
 	return false
-}
-
-// mergeContourAt merges `other` into `c` at the bridge (a, b). If
-// withBridge is false the contours share vertex a==b and no extra
-// bridge segment is recorded.
-func (c *SContour) mergeContourAt(thisp, scp int, other *SContour, withBridge bool, el *SEdgeList, vl *[]geom.Vector, a, b geom.Vector) bool {
-	merged := SContour{}
-	for i := 0; i < len(c.Points); i++ {
-		if !withBridge || i != thisp {
-			merged.AddPoint(c.Points[i].P)
-		}
-		if i == thisp {
-			for j := 0; j <= len(other.Points)-1; j++ {
-				jp := wrapMod(j+scp, len(other.Points))
-				merged.AddPoint(other.Points[jp].P)
-			}
-			if withBridge {
-				merged.AddPoint(c.Points[i].P)
-			}
-		}
-	}
-	if withBridge {
-		el.AddEdge(a, b, 0, 0, 0)
-		*vl = append(*vl, a)
-	}
-	*vl = append(*vl, b)
-	c.Points = merged.Points
-	return true
-}
-
-// IsEmptyTriangle reports whether the triangle formed by three
-// vertex indices in the contour is degenerate (any two coincident
-// or all three collinear).
-func (c *SContour) IsEmptyTriangle(ap, bp, cp int, scaledEPS float64) bool {
-	a := c.Points[ap].P
-	b := c.Points[bp].P
-	d := c.Points[cp].P
-	if a.DistanceTo(b) < scaledEPS || b.DistanceTo(d) < scaledEPS || a.DistanceTo(d) < scaledEPS {
-		return true
-	}
-	ab := b.Minus(a)
-	ad := d.Minus(a)
-	cross := ab.Cross(ad).Magnitude()
-	area := 0.5 * cross
-	return area < scaledEPS*scaledEPS
-}
-
-// IsEar reports whether the vertex at index bp is an "ear": the
-// triangle (ap, bp, cp) is non-degenerate and contains no other
-// vertices of the contour.
-func (c *SContour) IsEar(bp int, scaledEps float64) bool {
-	if len(c.Points) < 3 {
-		return false
-	}
-	n := len(c.Points)
-	ap := (bp - 1 + n) % n
-	cp := (bp + 1) % n
-	if c.IsEmptyTriangle(ap, bp, cp, scaledEps) {
-		return false
-	}
-	a := c.Points[ap].P
-	b := c.Points[bp].P
-	d := c.Points[cp].P
-	for i := 0; i < n; i++ {
-		if i == ap || i == bp || i == cp {
-			continue
-		}
-		p := c.Points[i].P
-		if pointInTriangle(p, a, b, d) {
-			return false
-		}
-	}
-	return true
 }
 
 // CopyInto copies all points to dest.
@@ -363,22 +198,14 @@ func (c *SContour) MakeEdgesInto(el *SEdgeList, closeLoop bool) {
 		return
 	}
 	for i := 0; i < len(c.Points)-1; i++ {
-		el.AddEdge(c.Points[i].P, c.Points[i+1].P, 0, 0, c.Tag)
+		el.AddEdge(c.Points[i].P, c.Points[i+1].P, 0, 0, 0)
 	}
-	if closeLoop {
-		el.AddEdge(c.Points[len(c.Points)-1].P, c.Points[0].P, 0, 0, c.Tag)
+	// C++ contours repeat their first point at the end, so
+	// SContour::MakeEdgesInto needs no closing edge; only add one for a
+	// contour that isn't stored closed.
+	if closeLoop && !c.Points[len(c.Points)-1].P.EqualsExactly(c.Points[0].P) {
+		el.AddEdge(c.Points[len(c.Points)-1].P, c.Points[0].P, 0, 0, 0)
 	}
-}
-
-func basisFromNormal(n geom.Vector) (u, v geom.Vector) {
-	n = n.Normal()
-	if mathAbs(n.Z) < 0.9 {
-		u = n.Cross(geom.Vector{Z: 1}).Normal()
-	} else {
-		u = n.Cross(geom.Vector{X: 1}).Normal()
-	}
-	v = n.Cross(u).Normal()
-	return u, v
 }
 
 func pointInTriangle(p, a, b, c geom.Vector) bool {
@@ -397,26 +224,4 @@ func pointInTriangle(p, a, b, c geom.Vector) bool {
 	u := (dot11*dot02 - dot01*dot12) / den
 	v := (dot00*dot12 - dot01*dot02) / den
 	return u >= 0 && v >= 0 && u+v < 1
-}
-
-// RayIsInside tests whether the ray from b in direction d passes
-// through the interior of triangle (a, b, c). Used to detect
-// bridge-candidate intersections during ear-clipping.
-func RayIsInside(a, c, b, d geom.Vector) bool {
-	if d.Equals(a) {
-		return false
-	}
-	if d.Equals(c) {
-		return false
-	}
-	ba := a.Minus(b)
-	bc := c.Minus(b)
-	bd := d.Minus(b)
-	if (bd.X*(ba.Y)+(bd.Y*(-ba.X)))*(bc.X*(ba.Y)+(bc.Y*(-ba.X))) < lengthEps {
-		return false
-	}
-	if (bd.X*(bc.Y)+(bd.Y*(-bc.X)))*(ba.X*(bc.Y)+(ba.Y*(-bc.X))) < lengthEps {
-		return false
-	}
-	return true
 }

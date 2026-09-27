@@ -6,11 +6,10 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// lengthEps is the convergence tolerance for bezier curve operations.
-const lengthEps = 1e-12
+// lengthEps mirrors C++ LENGTH_EPS (defs.h:7).
+const lengthEps = geom.LengthEps
 
-// ratPolyEps is the convergence tolerance for rational-polynomial
-// root-finding and curve-curve intersection.
+// ratPolyEps mirrors C++ RATPOLY_EPS (ratpoly.cpp:16).
 const ratPolyEps = lengthEps / 100
 
 // SBezier is a rational Bezier curve of degree 1..3 with up to 4
@@ -268,40 +267,6 @@ func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
 	}
 }
 
-// IsCircle reports whether this curve is a quadratic Bezier
-// representing a circular arc. Returns (center, radius, ok).
-func (b *SBezier) IsCircle() (center geom.Vector, radius float64, ok bool) {
-	if b.Degree != 2 || !b.IsRational() {
-		return geom.Vector{}, 0, false
-	}
-	// For a quadratic rational Bezier to be a circular arc, the
-	// weights[1] = cos(theta/2) where theta is the swept angle.
-	// Center is (|P0|^2 (P1-P2) + |P2|^2 (P0-P1) + |P1|^2 (P2-P0)) /
-	// (2 * (P0 x P1 + P1 x P2 + P2 x P0)) for the 3-D cross product
-	// reduction.
-	// Simplified: solve for center as the unique point equidistant
-	// from all three weighted control points in 3-D.
-	// Solve via linear least squares: |c - Pi|^2 = r^2 for i=0,1,2.
-	a := geom.Vector{X: 2 * (b.Ctrl[1].X - b.Ctrl[0].X), Y: 2 * (b.Ctrl[1].Y - b.Ctrl[0].Y), Z: 2 * (b.Ctrl[1].Z - b.Ctrl[0].Z)}
-	bv := geom.Vector{X: 2 * (b.Ctrl[2].X - b.Ctrl[0].X), Y: 2 * (b.Ctrl[2].Y - b.Ctrl[0].Y), Z: 2 * (b.Ctrl[2].Z - b.Ctrl[0].Z)}
-	rhsA := b.Ctrl[1].MagSquared() - b.Ctrl[0].MagSquared()
-	rhsB := b.Ctrl[2].MagSquared() - b.Ctrl[0].MagSquared()
-	// Solve 2x2: a . c = rhsA, b . c = rhsB
-	det := a.X*bv.Y - a.Y*bv.X
-	if mathAbs(det) < 1e-12 {
-		return geom.Vector{}, 0, false
-	}
-	cz := (rhsA*bv.Y - rhsB*a.Y) / det
-	cy := (a.X*rhsB - bv.X*rhsA) / det
-	c := geom.Vector{X: 0, Y: cy, Z: cz}
-	r := c.DistanceTo(b.Ctrl[0])
-	// Verify the mid control point also lies on this circle.
-	if mathAbs(c.DistanceTo(b.Ctrl[1])-r) > 1e-6 {
-		return geom.Vector{}, 0, false
-	}
-	return c, r, true
-}
-
 // AllIntersectionsWith collects all intersection points between this
 // Bezier and another into spl. Phase 3 implementation: simple
 // uniform sampling on both curves and duplicate removal.
@@ -347,47 +312,6 @@ func (b *SBezier) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 		if proj > *pmax {
 			*pmax = proj
 		}
-	}
-}
-
-// MakePwlInto emits the polyline approximation of this Bezier into
-// el (SEdgeList overload).
-func (b *SBezier) MakePwlInto(el *SEdgeList, chordTol float64, maxDt float64) {
-	const n = 8
-	last := b.Start()
-	for i := 1; i <= n; i++ {
-		t := float64(i) / float64(n)
-		p := b.PointAt(t)
-		el.AddEdge(last, p, b.AuxA, b.AuxB, b.Tag)
-		last = p
-	}
-}
-
-// MakePwlIntoPoints emits the polyline approximation as a list of
-// points (used by SShell's triangulation pipeline). Mirrors the
-// degree-1 shortcut in C++ `SBezier::MakePwlInto(List<Vector> *l, ...)`
-// (ratpoly.cpp): with the default max_dt (0, meaning "unset"), a
-// straight line (degree 1) is emitted as just its two endpoints
-// instead of being subdivided into collinear samples — subdividing
-// a straight edge produces many collinear boundary vertices that
-// defeat ear-clipping triangulation.
-func (b *SBezier) MakePwlIntoPoints(pts *[]geom.Vector, chordTol float64, maxDt float64) {
-	if maxDt == 0 {
-		if b.Degree == 1 {
-			maxDt = 1.0
-		} else {
-			maxDt = 0.25
-		}
-	}
-	*pts = append(*pts, b.Ctrl[0])
-	if b.Degree == 1 && maxDt >= 1.0 {
-		*pts = append(*pts, b.Ctrl[1])
-		return
-	}
-	const n = 8
-	for i := 1; i <= n; i++ {
-		t := float64(i) / float64(n)
-		*pts = append(*pts, b.PointAt(t))
 	}
 }
 
@@ -496,7 +420,7 @@ func (b *SBezier) Equals(other *SBezier) bool {
 		if !b.Ctrl[i].Equals(other.Ctrl[i]) {
 			return false
 		}
-		if math.Abs(b.Weight[i]-other.Weight[i]) > 1e-7 {
+		if math.Abs(b.Weight[i]-other.Weight[i]) > geom.LengthEps {
 			return false
 		}
 	}

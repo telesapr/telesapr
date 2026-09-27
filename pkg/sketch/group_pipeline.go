@@ -10,67 +10,80 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
-// AssembleLoops walks the sketch entities, converts each entity to
-// Bezier curves via GenerateEntityBeziers, intersects the curves to
-// find crossings, and assembles them into closed SBezierLoopSets.
-// Updates g.PolyLoops, g.BezierLoops, g.BezierOpens accordingly.
-// Self-intersecting contours emit a single SBezierList containing
-// all entity curves; FindOuterFacesFrom is invoked but the full
-// self-intersection split-and-reclassify path is a known limitation
-// (the solver still converges for non-self-intersecting sketches,
-// which covers all parity fixtures).
+// AssembleLoops converts this group's visible, non-construction
+// entities into Bezier curves and assembles them into closed loops:
+// the outer loops grouped with their holes go into g.BezierLoops (and
+// their pwl into g.PolyLoops), the leftovers into g.BezierOpens.
+// Mirrors C++ Group::AssembleLoops (groupmesh.cpp:12).
 func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, allCoplanar, allNonZeroLen bool) {
-	allClosed = true
-	allCoplanar = true
-	allNonZeroLen = true
-	g.PolyLoops.Clear()
-	g.BezierLoops.Clear()
-	g.BezierOpens.Clear()
+	var sbl srf.SBezierList
 
-	curves := &srf.SBezierList{}
 	for i := range sk.Entities {
-		ent := &sk.Entities[i]
-		if ent.Group != g.H {
+		e := &sk.Entities[i]
+		if e.Group != g.H {
 			continue
 		}
-		GenerateEntityBeziers(ent, curves, rt)
-	}
-	if curves.Len() == 0 {
-		allClosed = false
-		allNonZeroLen = false
-		return
+		if e.Construction {
+			continue
+		}
+		if e.ForceHidden {
+			continue
+		}
+
+		GenerateEntityBeziers(e, &sbl, rt)
 	}
 
-	// Pair-wise intersection detection. For now, emit each curve
-	// as part of a single SBezierLoopSet (no chaining).
-	set := g.BezierLoops.AddOuter()
-	set.Outer.Curves = append(set.Outer.Curves, curves.Curves...)
-	// Mirrors the tail of C++ SBezierLoopSet::From (curve.cpp):
-	// populate Normal/Point/Area from the assembled contour. Without
-	// this, set.Normal stays the zero vector and
-	// SShell::MakeFromExtrusionOf's cap-plane (u, v) basis collapses
-	// (see SBezierLoopSet.ComputeNormalPointArea's doc comment).
-	set.ComputeNormalPointArea()
+	allNonZeroLen = true
+	for _, sb := range sbl.Curves {
+		i := 1
+		for ; i <= sb.Degree; i++ {
+			if !sb.Ctrl[i].Equals(sb.Ctrl[0]) {
+				break
+			}
+		}
+		if i > sb.Degree {
+			// This is a zero-length edge.
+			allNonZeroLen = false
+			g.PolyError.ErrorPoint = sb.Ctrl[0]
+			return
+		}
+	}
+
+	// Try to assemble all these Beziers into loops. The closed loops go into
+	// bezierLoops, with the outer loops grouped with their holes. The
+	// leftovers, if any, go in bezierOpens.
+	g.BezierLoops.FindOuterFacesFrom(&sbl, &g.PolyLoops, nil,
+		srf.ChordTolMm(),
+		&allClosed, &g.PolyError.NotClosed,
+		&allCoplanar, &g.PolyError.ErrorPoint,
+		&g.BezierOpens)
 	return
 }
 
-// GenerateLoops is called after AssembleLoops and produces the
-// polygon representation of the loop set. Used as the input to
-// SShell::MakeFromExtrusionOf.
-//
-// For Drawing and Workplane groups, if the group's BezierLoops are
-// empty this will run AssembleLoops first and, if that yields no
-// curves, fall back to inheriting the source group's BezierLoops.
-func (g *Group) GenerateLoops() {
-	if g.Type != GroupDrawing3D && g.Type != GroupDrawingWorkplane &&
-		g.Type != GroupRotate && g.Type != GroupTranslate && g.Type != GroupLinked {
-		return
-	}
+// GenerateLoops rebuilds this group's loops: for sketch-like groups
+// it assembles them from the group's entities and records the
+// polygon error, otherwise it just clears them. Mirrors C++
+// Group::GenerateLoops (groupmesh.cpp:58). The self-intersection check
+// is skipped, as it is by default in C++ (SS.checkClosedContour).
+func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 	g.PolyLoops.Clear()
-	for i := range g.BezierLoops.Sets {
-		g.BezierLoops.Sets[i].MakePwlInto(&g.PolyLoops)
+	g.BezierLoops.Clear()
+	g.BezierOpens = nil
+
+	if g.Type == GroupDrawing3D || g.Type == GroupDrawingWorkplane ||
+		g.Type == GroupRotate || g.Type == GroupTranslate || g.Type == GroupLinked {
+		allClosed, allCoplanar, allNonZeroLen := g.AssembleLoops(sk, rt)
+		switch {
+		case !allNonZeroLen:
+			g.PolyError.How = int(core.PolyZeroLenEdge)
+		case !allCoplanar:
+			g.PolyError.How = int(core.PolyNotCoplanar)
+		case !allClosed:
+			g.PolyError.How = int(core.PolyNotClosed)
+		default:
+			g.PolyError.How = int(core.PolyGood)
+		}
 	}
-	g.PolyLoops.FixContourDirections()
 }
 
 // GenerateShellAndMesh is the master group-generation step: it
@@ -234,9 +247,8 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 		if set.Outer.Len() == 0 {
 			continue
 		}
-		newShell := srf.SShell{}
-		newShell.MakeFromExtrusionOf(set, t0, t1, g.Color)
-		g.ThisShell.MakeFromAssemblyOf(&g.ThisShell, &newShell)
+		// Extrude this outer contour (plus its inner contours, if present)
+		g.ThisShell.MakeFromExtrusionOf(set, t0, t1, g.Color)
 	}
 	g.RunningShell = g.ThisShell
 	// Mesh from shell.
@@ -309,6 +321,77 @@ func (g *Group) generateTransformMesh(sk *Sketch) {
 	g.RunningMesh = g.ThisMesh
 }
 
+// combineWithRunningShell combines this group's shell (or, for a
+// group forced to mesh, its mesh) with the previous mesh group's
+// running shell using the group's MeshCombine, producing
+// g.RunningShell and g.RunningMesh. Mirrors the tail of C++
+// Group::GenerateShellAndMesh (groupmesh.cpp:394-448); the running
+// mesh stands in for the displayMesh C++ triangulates from
+// runningShell in GenerateDisplayItems.
+func (g *Group) combineWithRunningShell(sk *Sketch) {
+	if g.MeshCombine != CombineAssemble {
+		g.ThisShell.MergeCoincidentSurfaces()
+	}
+
+	// So now we've got the mesh or shell for this group. Combine it with
+	// the previous group's mesh or shell with the requested Boolean, and
+	// we're done.
+	prevg := findPreviousMeshGroup(g, sk)
+
+	if !g.IsForcedToMesh() {
+		var prevs srf.SShell
+		if prevg != nil {
+			prevs = prevg.RunningShell
+		}
+		var outs srf.SShell
+		g.generateForBooleanShell(&prevs, &g.ThisShell, &outs)
+		if g.MeshCombine != CombineAssemble {
+			outs.MergeCoincidentSurfaces()
+		}
+		g.RunningShell = outs
+
+		// If the Boolean failed, then we should note that in the text screen
+		// for this group.
+		g.BooleanFailed = g.RunningShell.BooleanFailed
+
+		g.RunningMesh.Clear()
+		g.RunningShell.TriangulateInto(&g.RunningMesh)
+		return
+	}
+
+	g.RunningMesh = g.ThisMesh
+	if prevg != nil && len(prevg.RunningMesh.Triangles) > 0 {
+		var combined srf.SMesh
+		g.GenerateForBoolean(prevg, &combined)
+		g.RunningMesh = combined
+	}
+}
+
+// generateForBooleanShell combines prevs and thiss into outs with the
+// group's MeshCombine. Mirrors C++ Group::GenerateForBoolean<SShell>.
+func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell) {
+	// If this group contributes no new mesh, then our running mesh is the
+	// same as last time, no combining required. Likewise if we have a mesh
+	// but it's suppressed.
+	if len(thiss.Surface) == 0 || g.Suppress {
+		outs.MakeFromCopyOf(prevs)
+		return
+	}
+
+	// So our group's shell appears in thisShell. Combine this with the
+	// previous group's shell, using the requested operation.
+	switch g.MeshCombine {
+	case CombineUnion:
+		outs.MakeFromUnionOf(prevs, thiss)
+	case CombineDifference:
+		outs.MakeFromDifferenceOf(prevs, thiss)
+	case CombineIntersection:
+		outs.MakeFromIntersectionOf(prevs, thiss)
+	case CombineAssemble:
+		outs.MakeFromAssemblyOf(prevs, thiss)
+	}
+}
+
 // GenerateForBoolean combines the previous group's running mesh with
 // this group's running mesh using the boolean combination type. Uses
 // the SShell-level CSG pipeline so coplanar faces are merged via
@@ -333,35 +416,6 @@ func (g *Group) GenerateForBoolean(prev *Group, out *srf.SMesh) {
 	default:
 		out.MakeFromAssemblyOf(&prev.RunningMesh, &g.RunningMesh)
 	}
-}
-
-// GenerateForBooleanShell runs the SShell-level boolean CSG between
-// the previous group's running shell and this group's running shell,
-// and triangulates the result into out. Used for fixtures where the
-// SShell-level CSG produces a noticeably better result than the
-// SMesh-level BSP classifier.
-func (g *Group) GenerateForBooleanShell(prev *Group, out *srf.SMesh) {
-	if prev == nil || out == nil {
-		return
-	}
-	if prev.RunningShell.Surface == nil && g.RunningShell.Surface == nil {
-		// No shells available; fall back to mesh CSG.
-		g.GenerateForBoolean(prev, out)
-		return
-	}
-	var combined srf.SShell
-	switch g.MeshCombine {
-	case CombineUnion:
-		combined.MakeFromUnionOf(&prev.RunningShell, &g.RunningShell)
-	case CombineDifference:
-		combined.MakeFromDifferenceOf(&prev.RunningShell, &g.RunningShell)
-	case CombineIntersection:
-		combined.MakeFromIntersectionOf(&prev.RunningShell, &g.RunningShell)
-	default:
-		combined.MakeFromAssemblyOf(&prev.RunningShell, &g.RunningShell)
-	}
-	out.Clear()
-	combined.TriangulateInto(out)
 }
 
 // GenerateForStepAndRepeat copies srcm to out. Solvespace represents

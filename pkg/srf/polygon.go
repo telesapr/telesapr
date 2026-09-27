@@ -23,19 +23,19 @@ func (p *SPolygon) AddEmptyContour() {
 	p.Contours = append(p.Contours, SContour{})
 }
 
-// ComputeNormal sets p.Normal from the first non-empty contour.
+// ComputeNormal mirrors C++ SPolygon::ComputeNormal (the first
+// contour's normal) and also stores it in p.Normal.
 func (p *SPolygon) ComputeNormal() geom.Vector {
-	for i := range p.Contours {
-		if len(p.Contours[i].Points) >= 3 {
-			p.Normal = p.Contours[i].ComputeNormal()
-			return p.Normal
-		}
+	if len(p.Contours) == 0 {
+		return geom.Vector{}
 	}
-	return geom.Vector{}
+	p.Normal = p.Contours[0].ComputeNormal()
+	return p.Normal
 }
 
-// SignedArea sums the signed areas of all contours (assumes outer
-// contours are CCW and holes are CW so holes subtract).
+// SignedArea mirrors C++ SPolygon::SignedArea: the true area only if
+// the contours are all oriented correctly, with the holes backwards
+// from the outer contours.
 func (p *SPolygon) SignedArea() float64 {
 	if p.Normal == (geom.Vector{}) {
 		p.ComputeNormal()
@@ -47,35 +47,21 @@ func (p *SPolygon) SignedArea() float64 {
 	return sum
 }
 
-// ContainsPoint returns true if p is inside the polygon. The point
-// is first projected onto the polygon plane, then a winding-number
-// check is performed.
+// ContainsPoint mirrors C++ SPolygon::ContainsPoint (odd winding
+// number about p.Normal).
 func (p *SPolygon) ContainsPoint(pt geom.Vector) bool {
-	if p.Normal == (geom.Vector{}) {
-		p.ComputeNormal()
-	}
-	if p.Normal.Magnitude() < 1e-12 {
-		return false
-	}
-	u, v := basisFromNormal(p.Normal)
-	pp := pt.Project2d(u, v)
+	return p.WindingNumberForPoint(pt)%2 == 1
+}
+
+// WindingNumberForPoint mirrors C++ SPolygon::WindingNumberForPoint.
+func (p *SPolygon) WindingNumberForPoint(pt geom.Vector) int {
 	winding := 0
 	for i := range p.Contours {
-		c := &p.Contours[i]
-		for j := 0; j < len(c.Points); j++ {
-			a := c.Points[j].P.Project2d(u, v)
-			b := c.Points[(j+1)%len(c.Points)].P.Project2d(u, v)
-			if (a.V > pp.V) == (b.V > pp.V) {
-				continue
-			}
-			t := (pp.V - a.V) / (b.V - a.V)
-			xint := a.U + (b.U-a.U)*t
-			if xint > pp.U {
-				winding++
-			}
+		if p.Contours[i].ContainsPointProjdToNormal(p.Normal, pt) {
+			winding++
 		}
 	}
-	return winding%2 == 1
+	return winding
 }
 
 // MakeEdgesInto emits one SEdge per consecutive pair of points in
@@ -86,15 +72,43 @@ func (p *SPolygon) MakeEdgesInto(el *SEdgeList) {
 	}
 }
 
-// FixContourDirections adjusts contour orientations so outer
-// contours are CCW (relative to p.Normal) and holes are CW.
+// FixContourDirections orients every contour so that outer contours
+// look counterclockwise projected against p.Normal (in the C++ sense of
+// IsClockwiseProjdToNormal) and holes the opposite way. At output, a
+// contour's Tag is 1 if it was reversed, else 0. Mirrors C++
+// SPolygon::FixContourDirections (polygon.cpp:706).
 func (p *SPolygon) FixContourDirections() {
-	if p.Normal == (geom.Vector{}) {
-		p.ComputeNormal()
-	}
 	for i := range p.Contours {
-		if p.Contours[i].IsClockwiseProjdToNormal(p.Normal) {
-			p.Contours[i].Reverse()
+		p.Contours[i].Tag = 0
+	}
+
+	// Outside curve looks counterclockwise, projected against our normal.
+	for i := range p.Contours {
+		sc := &p.Contours[i]
+		if len(sc.Points) < 2 {
+			continue
+		}
+		// The contours may not intersect, but they may share vertices; so
+		// testing a vertex for point-in-polygon may fail, but the midpoint
+		// of an edge is okay.
+		pt := sc.Points[0].P.Plus(sc.Points[1].P).ScaledBy(0.5)
+
+		sc.TimesEnclosed = 0
+		outer := true
+		for j := range p.Contours {
+			if i == j {
+				continue
+			}
+			if p.Contours[j].ContainsPointProjdToNormal(p.Normal, pt) {
+				outer = !outer
+				sc.TimesEnclosed++
+			}
+		}
+
+		clockwise := sc.IsClockwiseProjdToNormal(p.Normal)
+		if (clockwise && outer) || (!clockwise && !outer) {
+			sc.Reverse()
+			sc.Tag = 1
 		}
 	}
 }
@@ -200,215 +214,6 @@ func offsetContourMinkowski(c *SContour, n geom.Vector, r float64) SContour {
 	return out
 }
 
-// TriangulateInto triangulates the polygon in 3-D using ear-clipping.
-// Each contour is triangulated independently; outer contours
-// produce CCW triangles, holes produce CW triangles. uses
-// the XZ-plane ear-clipper; introduces the surface-aware
-// version once SSurface is available.
-func (p *SPolygon) TriangulateInto(m *SMesh) {
-	if p.Normal == (geom.Vector{}) {
-		p.ComputeNormal()
-	}
-	for i := range p.Contours {
-		c := &p.Contours[i]
-		// Use XZ-plane projection for ear-clipping.
-		scaledEps := 1e-9
-		EarClipTriangulate(c, m, scaledEps)
-	}
-}
-
-// UvTriangulateInto triangulates the polygon in the (u, v) plane
-// of srf, then evaluates on srf. fallback: planar
-// triangulation only.
-func (p *SPolygon) UvTriangulateInto(m *SMesh, srf interface{}) {
-	for i := range p.Contours {
-		p.Contours[i].UvTriangulateInto(m, srf)
-	}
-}
-
-// UvGridTriangulateInto triangulates the polygon by sampling an
-// adaptive uv grid driven by MakeTriangulationGridInto, then
-// evaluating each grid point on srf. Useful for highly curved
-// surfaces where ear-clipping introduces distortion. The grid
-// resolution is chosen by the surface itself: it recurses into
-// each (u, v) cell until the chord tolerance is satisfied.
-//
-// Mirrors SPolygon::UvGridTriangulateInto from
-// solvespace/src/srf/triangulate.cpp:581. When srf is nil or not
-// an *SSurface, the regular-grid fallback is used.
-func (p *SPolygon) UvGridTriangulateInto(m *SMesh, srf interface{}, nu, nv int) {
-	if len(p.Contours) == 0 {
-		return
-	}
-	if surface, ok := srf.(*SSurface); ok {
-		p.uvGridTriangulateAdaptive(m, surface)
-		return
-	}
-	uvGridTriangulateRegular(p, m, nu, nv)
-}
-
-// uvGridTriangulateAdaptive implements the C++
-// SPolygon::UvGridTriangulateInto adaptive path: build li/lj by
-// recursive MakeTriangulationGridInto, force a minimum of 4
-// segments in each direction for second-order surfaces, then emit
-// a quad for every cell whose corners are inside the polygon and
-// whose edges don't cross the boundary.
-func (p *SPolygon) uvGridTriangulateAdaptive(m *SMesh, srf *SSurface) {
-	orig := SEdgeList{}
-	p.MakeEdgesInto(&orig)
-
-	holes := SEdgeList{}
-	defer orig.Clear()
-	defer holes.Clear()
-
-	if p.Normal == (geom.Vector{}) {
-		p.ComputeNormal()
-	}
-	if p.Normal.Magnitude() < 1e-12 {
-		p.Normal = geom.Vector{Z: 1}
-	}
-	p.FixContourDirections()
-
-	// Build the adaptive grid lines.
-	li := []float64{0.0, 0.25, 0.5, 0.75}
-	srf.MakeTriangulationGridInto(&li, 0, 1, true, 0)
-	li = append(li, 1.0)
-
-	lj := []float64{0.0, 0.25, 0.5, 0.75}
-	srf.MakeTriangulationGridInto(&lj, 0, 1, false, 0)
-	lj = append(lj, 1.0)
-
-	// Force at least 4 segments in each direction for second-order
-	// surfaces.
-	if len(li) < 5 && srf.DegM > 1 {
-		li = []float64{0.0, 0.25, 0.5, 0.75, 1.0}
-	}
-	if len(lj) < 5 && srf.DegN > 1 {
-		lj = []float64{0.0, 0.25, 0.5, 0.75, 1.0}
-	}
-
-	if len(li) <= 3 || len(lj) <= 3 {
-		// Not enough grid resolution — fall back to ear-clipping.
-		p.TriangulateInto(m)
-		return
-	}
-
-	bottom := make([]bool, len(lj))
-	tu := geom.Vector{}
-	tv := geom.Vector{}
-	for i := 1; i < len(li)-1; i++ {
-		prevFlag := false
-		for j := 1; j < len(lj)-1; j++ {
-			us := li[i]
-			uf := li[i+1]
-			vs := lj[j]
-			vf := lj[j+1]
-
-			a := geom.Vector{X: us, Y: vs}
-			b := geom.Vector{X: us, Y: vf}
-			c := geom.Vector{X: uf, Y: vf}
-			d := geom.Vector{X: uf, Y: vs}
-
-			thisFlag := true
-			if i == len(li)-2 || j == len(lj)-2 ||
-				orig.AnyEdgeCrossings(a, b, nil, nil) != 0 ||
-				orig.AnyEdgeCrossings(b, c, nil, nil) != 0 ||
-				orig.AnyEdgeCrossings(c, d, nil, nil) != 0 ||
-				orig.AnyEdgeCrossings(d, a, nil, nil) != 0 {
-				thisFlag = false
-			}
-
-			if !p.ContainsPoint(a) {
-				thisFlag = false
-			}
-
-			if thisFlag {
-				tu, tv = surfaceTangentsXY(srf, us, vs)
-				if tu.Dot(tv) < lengthEps {
-					m.AddTriangle(STriangle{A: a, B: b, C: c})
-					m.AddTriangle(STriangle{A: a, B: c, C: d})
-				} else {
-					m.AddTriangle(STriangle{A: a, B: b, C: d})
-					m.AddTriangle(STriangle{A: b, B: c, C: d})
-				}
-				if !prevFlag {
-					holes.AddEdge(d, a, 0, 0, 0)
-				}
-				if !bottom[j] {
-					holes.AddEdge(a, b, 0, 0, 0)
-				}
-			} else {
-				if prevFlag {
-					holes.AddEdge(a, d, 0, 0, 0)
-				}
-				if bottom[j] {
-					holes.AddEdge(b, a, 0, 0, 0)
-				}
-			}
-			prevFlag = thisFlag
-			bottom[j] = thisFlag
-		}
-	}
-
-	hp := SPolygon{}
-	if holes.AssemblePolygon(&hp, nil, true) {
-		for i := range hp.Contours {
-			p.Contours = append(p.Contours, hp.Contours[i])
-		}
-	}
-
-	p.UvTriangulateInto(m, srf)
-}
-
-// uvGridTriangulateRegular is the simple nu×nv grid fallback when
-// no SSurface is available. Each cell whose lower-left corner is
-// inside the polygon contributes two triangles.
-func uvGridTriangulateRegular(p *SPolygon, m *SMesh, nu, nv int) {
-	if nu <= 0 {
-		nu = 16
-	}
-	if nv <= 0 {
-		nv = 16
-	}
-	umin, vmin := mathInfPos, mathInfPos
-	umax, vmax := mathInfNeg, mathInfNeg
-	for i := range p.Contours {
-		for _, sp := range p.Contours[i].Points {
-			if sp.P.X < umin {
-				umin = sp.P.X
-			}
-			if sp.P.Y < vmin {
-				vmin = sp.P.Y
-			}
-			if sp.P.X > umax {
-				umax = sp.P.X
-			}
-			if sp.P.Y > vmax {
-				vmax = sp.P.Y
-			}
-		}
-	}
-	du := (umax - umin) / float64(nu)
-	dv := (vmax - vmin) / float64(nv)
-	for j := 0; j < nv; j++ {
-		for i := 0; i < nu; i++ {
-			u0 := umin + float64(i)*du
-			u1 := u0 + du
-			v0 := vmin + float64(j)*dv
-			v1 := v0 + dv
-			p00 := geom.Vector{X: u0, Y: v0}
-			p10 := geom.Vector{X: u1, Y: v0}
-			p11 := geom.Vector{X: u1, Y: v1}
-			p01 := geom.Vector{X: u0, Y: v1}
-			if !p.ContainsPoint(p00) {
-				continue
-			}
-			m.AddTriangle(STriangle{A: p00, B: p10, C: p11})
-			m.AddTriangle(STriangle{A: p00, B: p11, C: p01})
-		}
-	}
-}
-
 // surfaceTangentsXY returns the partial derivatives of an SSurface
 // in the (u, v) parametric space, ignoring the swapped parameter
 // for now (the UvGridTriangulateInto path does not require it).
@@ -422,27 +227,3 @@ const (
 	mathInfPos = 1e18
 	mathInfNeg = -1e18
 )
-
-// InverseTransformInto expresses every vertex in the basis (u, v, n)
-// and stores it back as a polygon in the (u, v) plane. Used by
-// SSurface::TriangulateInto for the planar / cylindrical / toroidal
-// cases.
-func (p *SPolygon) InverseTransformInto(sp *SPolygon, u, v, n geom.Vector) {
-	sp.Normal = n
-	sp.Contours = make([]SContour, len(p.Contours))
-	for i := range p.Contours {
-		c := &p.Contours[i]
-		sp.Contours[i] = SContour{
-			Tag:           c.Tag,
-			TimesEnclosed: c.TimesEnclosed,
-		}
-		sp.Contours[i].Points = make([]SPoint, len(c.Points))
-		for j, pt := range c.Points {
-			pp := pt.P.Project2d(u, v)
-			sp.Contours[i].Points[j] = SPoint{P: geom.Vector{X: pp.U, Y: pp.V}}
-		}
-		if len(sp.Contours[i].Points) > 0 {
-			sp.Contours[i].FindPointWithMinX()
-		}
-	}
-}

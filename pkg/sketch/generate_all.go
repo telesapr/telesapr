@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -129,6 +130,16 @@ func (sk *Sketch) GenerateAll() {
 	dof := report.DOF
 	rank := report.Rank
 
+	// Turn the relative chord tolerance into an absolute one from the
+	// entity bounding box, as C++ SolveSpaceUI::GenerateAll does
+	// (generate.cpp:219-226) with the default ChordTolerancePct of 0.1.
+	{
+		box := sk.CalculateEntityBBox(true)
+		size := box.MaxP.Minus(box.MinP)
+		maxSize := math.Max(size.X, math.Max(size.Y, size.Z))
+		srf.SetChordTolMm(maxSize * chordTolPct / 100.0)
+	}
+
 	// Phase 5a: assemble Drawing groups first. Drawing groups own
 	// the LINE_SEGMENT entities; mesh groups (Extrude/Lathe/...)
 	// reference them via opA lineage. Without this pre-pass, the
@@ -141,8 +152,7 @@ func (sk *Sketch) GenerateAll() {
 		}
 		if g.Type == GroupDrawing3D || g.Type == GroupDrawingWorkplane {
 			if len(g.BezierLoops.Sets) == 0 {
-				g.AssembleLoops(sk, rt)
-				g.GenerateLoops()
+				g.GenerateLoops(sk, rt)
 			}
 		}
 	}
@@ -172,8 +182,7 @@ func (sk *Sketch) GenerateAll() {
 						current.Type == GroupLathe ||
 						current.Type == GroupRevolve ||
 						current.Type == GroupHelix {
-						current.AssembleLoops(sk, rt)
-						current.GenerateLoops()
+						current.GenerateLoops(sk, rt)
 					}
 				}
 				if len(current.BezierLoops.Sets) > 0 {
@@ -184,40 +193,9 @@ func (sk *Sketch) GenerateAll() {
 				}
 				current = sk.GetGroup(current.OpA)
 			}
-			g.AssembleLoops(sk, rt)
-			g.GenerateLoops()
+			g.GenerateLoops(sk, rt)
 			g.GenerateShellAndMesh(sk)
-			// C++ Group::GenerateShellAndMesh sets runningMesh =
-			// thisMesh unconditionally. For ASSEMBLE mode there's
-			// no boolean combine, so we copy directly.
-			g.RunningMesh = g.ThisMesh
-			// If the requested MeshCombine is a real boolean (UNION,
-			// DIFFERENCE, INTERSECTION), perform the implicit boolean
-			// with the previous mesh group. Walk back through drawing
-			// groups to find the last mesh group (mirrors C++'s
-			// GenerateForBoolean behavior).
-			//
-			// When both the previous and current groups have populated
-			// RunningShells (i.e. they were generated parametrically),
-			// use the SShell-level CSG so proper coplanar-face merging
-			// (MergeCoincidentSurfaces) and the full per-surface trim
-			// can run. Fall back to SMesh-level CSG otherwise (e.g.
-			// imported meshes, where the parametric surface is gone).
-			if g.MeshCombine != CombineAssemble {
-				prev := findPreviousMeshGroup(g, sk)
-				if prev != nil && len(prev.RunningMesh.Triangles) > 0 {
-					if len(prev.RunningShell.Surface) > 0 &&
-						len(g.RunningShell.Surface) > 0 {
-						var combined srf.SMesh
-						g.GenerateForBooleanShell(prev, &combined)
-						g.RunningMesh = combined
-					} else {
-						var combined srf.SMesh
-						g.GenerateForBoolean(prev, &combined)
-						g.RunningMesh = combined
-					}
-				}
-			}
+			g.combineWithRunningShell(sk)
 			g.GenerateDisplayItems()
 		}
 		g.Solved.How = how
@@ -239,6 +217,10 @@ func (sk *Sketch) GenerateAll() {
 // non-mesh groups like drawings) to find the last mesh group whose
 // running mesh should be combined with this one. Mirrors the C++
 // Group::RunningMeshGroup behavior in groupmesh.cpp:537.
+// chordTolPct mirrors the default C++ "ChordTolerancePct" setting
+// (solvespace.cpp:50).
+const chordTolPct = 0.1
+
 func findPreviousMeshGroup(g *Group, sk *Sketch) *Group {
 	prev := g.PreviousGroup(sk)
 	for prev != nil && !prev.IsMeshGroup2() {
@@ -263,8 +245,7 @@ func (sk *Sketch) generateAllLoopsAndShells() {
 			continue
 		}
 		if g.Type == GroupExtrude {
-			g.AssembleLoops(sk, rt)
-			g.GenerateLoops()
+			g.GenerateLoops(sk, rt)
 			g.GenerateShellAndMesh(sk)
 			g.GenerateDisplayItems()
 		}

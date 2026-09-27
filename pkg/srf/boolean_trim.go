@@ -3,6 +3,7 @@ package srf
 import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"math"
 )
 
 // SShellClass mirrors the C++ SShell::Class enum (srf/surface.h:420).
@@ -11,10 +12,10 @@ import (
 type SShellClass uint32
 
 const (
-	ShellInside     SShellClass = 100
-	ShellOutside    SShellClass = 200
-	ShellCoincSame  SShellClass = 300
-	ShellCoincOpp   SShellClass = 400
+	ShellInside    SShellClass = 100
+	ShellOutside   SShellClass = 200
+	ShellCoincSame SShellClass = 300
+	ShellCoincOpp  SShellClass = 400
 )
 
 // shellDotpTol is the dot-product tolerance used by SShell::ClassifyEdge
@@ -185,110 +186,72 @@ func findChainAvoiding(src, dest *SEdgeList, avoid *[]geom.Vector) {
 	}
 }
 
-// trimFromEdgeList assembles `el` (an ordered list of UV-space edges)
-// into STrimBy entries, merging collinear / coincident runs into a
-// single trim per chain.
-//
-// Mirrors SSurface::TrimFromEdgeList in boolean.cpp:223. The Go port
-// uses parametric (Start, Finish) ∈ [0, 1] for the trim range, so we
-// record the entire curve (Start=0, Finish=1) for each chain. The
-// 3D endpoints are kept in StartP / FinishP. This is good enough for
-// the boolean-csg parity of the test fixtures, where the trim curves
-// are not sub-ranged mid-curve.
+// trimFromEdgeList rebuilds srf's trims from el, merging adjoining
+// edges from the same curve (and direction) into one STrimBy with xyz
+// start and finish points. Mirrors C++ SSurface::TrimFromEdgeList.
 func (srf *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
-	if el == nil {
-		return
+	for i := range el.Edges {
+		el.Edges[i].Tag = 0
 	}
-	const tol = 1e-9
+
 	for {
-		// Pick an unused edge.
-		var seed *SEdge
+		// Find an edge, any edge; we'll start from there.
+		var se *SEdge
 		for i := range el.Edges {
 			if el.Edges[i].Tag == 0 {
-				seed = &el.Edges[i]
+				se = &el.Edges[i]
 				break
 			}
 		}
-		if seed == nil {
+		if se == nil {
 			break
 		}
-		seed.Tag = 1
-		stb := STrimBy{}
-		stb.Curve = core.HSCurve{V: uint32(seed.AuxA)}
-		stb.Start = 0
-		stb.Finish = 1
-		stb.Backwards = seed.AuxB != 0
-		stb.StartP = seed.A
-		stb.FinishP = seed.B
-		// Extend the chain by merging collinear adjoining edges.
+		se.Tag = 1
+		stb := STrimBy{
+			StartP:    se.A,
+			FinishP:   se.B,
+			Curve:     core.HSCurve{V: uint32(se.AuxA)},
+			Backwards: se.AuxB != 0,
+		}
+
+		// Find adjoining edges from the same curve; those should be
+		// merged into a single trim.
 		for {
 			merged := false
 			for i := range el.Edges {
-				if el.Edges[i].Tag != 0 {
+				se := &el.Edges[i]
+				if se.Tag != 0 {
 					continue
 				}
-				if int(el.Edges[i].AuxA) != int(stb.Curve.V) {
+				if se.AuxA != int(stb.Curve.V) {
 					continue
 				}
-				if (el.Edges[i].AuxB != 0) != stb.Backwards {
+				if (se.AuxB != 0) != stb.Backwards {
 					continue
 				}
-				if el.Edges[i].A.DistanceTo(stb.FinishP) < tol {
-					stb.FinishP = el.Edges[i].B
-					el.Edges[i].Tag = 1
+
+				if se.A.Equals(stb.FinishP) {
+					stb.FinishP = se.B
+					se.Tag = 1
 					merged = true
-					break
-				}
-				if el.Edges[i].B.DistanceTo(stb.StartP) < tol {
-					stb.StartP = el.Edges[i].A
-					el.Edges[i].Tag = 1
+				} else if se.B.Equals(stb.StartP) {
+					stb.StartP = se.A
+					se.Tag = 1
 					merged = true
-					break
 				}
 			}
 			if !merged {
 				break
 			}
 		}
-		// C++: when asUv=true, convert start/finish from uv-space
-		// (Point2d packed into Vector's x/y) to xyz via PointAt(u,v).
-		// Mirrors SSurface::TrimFromEdgeList's `if(asUv)` block.
+
 		if asUv {
 			stb.StartP = srf.PointAt(stb.StartP.X, stb.StartP.Y)
 			stb.FinishP = srf.PointAt(stb.FinishP.X, stb.FinishP.Y)
 		}
-		srf.Trim = append(srf.Trim, stb)
-	}
-	// Reset tags for downstream callers.
-	for i := range el.Edges {
-		el.Edges[i].Tag = 0
-	}
-}
 
-// makeSurfaceEdgesIntoUv emits the UV-space boundary of srf from its
-// current trim list. Used by MakeCopyTrimAgainst to build the orig
-// trim polygon from the new (split) curves in `into`.
-func (srf *SSurface) makeSurfaceEdgesIntoUv(into *SShell, el *SEdgeList) {
-	if into == nil {
-		return
-	}
-	for i := range srf.Trim {
-		stb := &srf.Trim[i]
-		// The curve id was already rewritten to `into`'s namespace.
-		c := into.FindCurve(stb.Curve)
-		if c == nil {
-			continue
-		}
-		var puv, puv2 geom.Point2d
-		srf.ClosestPointTo(stb.StartP, &puv, false)
-		srf.ClosestPointTo(stb.FinishP, &puv2, false)
-		a := geom.Vector{X: puv.U, Y: puv.V}
-		b := geom.Vector{X: puv2.U, Y: puv2.V}
-		if !stb.Backwards {
-			el.AddEdge(a, b, int(c.H.V), 0, 0)
-		} else {
-			el.AddEdge(b, a, int(c.H.V), 1, 0)
-		}
+		// And add the merged trim, with xyz (not uv like the polygon) pts
+		srf.Trim = append(srf.Trim, stb)
 	}
 }
 
@@ -314,47 +277,22 @@ func (srf *SSurface) makeSurfaceEdgesIntoUv(into *SShell, el *SEdgeList) {
 // MakeAs::UV)`). That second call has been removed;
 // `makeSurfaceEdgesIntoUv` alone now mirrors the C++.
 
-// edgeNormalsWithinSurface computes the geometric center of an edge on
-// `srf`, along with the inner/outer edge normals (in xyz) and the
-// surface normal — all needed by SShell::ClassifyEdge. Mirrors
-// SSurface::EdgeNormalsWithinSurface in boolean.cpp:425.
-//
-// PORTING.md §"Remaining work" item 5 (ClassifyEdge partial-
-// overlap recognition): the C++ edgeNormalsWithinSurface refines
-// the 3-D probe so it actually lies on the inter curve that the
-// per-surface trim is classifying. Without that refinement the
-// probe is at the uv-midpoint of a polyline edge in receiver uv
-// space, which doesn't sit exactly on the intersection of the
-// receiver surface and `agnst` — so `SShell::ClassifyEdge`'s
-// edge-on-surface branch (which would return the correct
-// `SurfInside`/`SurfCoincOpp` for a tangent cutter) doesn't fire,
-// the raycast fallback counts zero intersections, and the chain
-// is wrongly classified as `SurfOutside` and discarded. For
-// `boolean_tangent_*` fixtures the per-surface trim then appends
-// receiver-side surfaces with empty Trim whose every chain
-// failed `keepEdge`, and the resulting volume is wrong.
-//
-// The refinement mirrors the C++ code's two branches:
-//   - exact curve with deg != 1 → refine onto `sc->exact`;
-//   - polyline (non-exact)     → refine onto both trimmed surfaces
-//     (`sc->GetSurfaceA / GetSurfaceB`) via a small iterative
-//     solver that's the closest-point-on-the-intersection of the
-//     two surfaces.
-// For the boolean-fixture curves (always polylines) the second
-// branch is what runs. We approximate the iterative solver with a
-// 5-step Gauss–Newton iteration, which is enough for the planar
-// surfaces in the fixture set.
-func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, parent, sha, shb *SShell,
+// edgeNormalsWithinSurface returns a point on the uv edge auv->buv
+// (refined onto the curve auxA it approximates) and the edge's inner
+// and outer normals within srf, in xyz; surfN gets srf's normal there.
+// Mirrors C++ SSurface::EdgeNormalsWithinSurface (boolean.cpp).
+func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha, shb *SShell,
 	auxA int, surfN *geom.Vector) (pt, enin, enout geom.Vector) {
+	// the midpoint of the edge
 	muv := auv.Plus(buv).ScaledBy(0.5)
+
 	pt = srf.PointAtUv(muv)
-	// PORTING.md item 5: refine the probe so it actually lies on
-	// the inter curve (or, for polylines, the intersection of
-	// the two trimmed surfaces). Without this, ClassifyEdge's
-	// edge-on-surface branch doesn't fire for partial-overlap
-	// tangent-cutters and the raycast fallback wrongly returns
-	// SurfOutside.
-	if sc := interCurveForRefinement(parent, sha, shb, auxA); sc != nil {
+
+	// If this edge just approximates a curve, then refine our midpoint so
+	// so that it actually lies on that curve too. Otherwise stuff like
+	// point-on-face tests will fail, since the point won't actually lie
+	// on the other face.
+	if sc := shell.FindCurve(core.HSCurve{V: uint32(auxA)}); sc != nil {
 		if sc.IsExact && sc.Exact.Degree != 1 {
 			t, _ := sc.Exact.ClosestPointTo(pt, false)
 			pt = sc.Exact.PointAt(t)
@@ -362,74 +300,45 @@ func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, parent, sha
 			trimmedA := sc.GetSurfaceA(sha, shb)
 			trimmedB := sc.GetSurfaceB(sha, shb)
 			if trimmedA != nil && trimmedB != nil {
-				pt = closestPointOnThisAndSurface(trimmedA, trimmedB, pt)
+				pt = trimmedA.ClosestPointOnThisAndSurface(trimmedB, pt)
 			}
 		}
-		srf.ClosestPointTo(pt, &muv, false)
 	}
+	srf.ClosestPointTo(pt, &muv, true)
+
 	*surfN = srf.NormalAt(muv.U, muv.V)
+
+	// Compute the edge's inner normal in xyz space. Use the configured
+	// chord tolerance as the probe distance, but never more than a
+	// fraction of this edge's own length: the classification must probe
+	// the surfaces close to the edge, and a coarse tolerance on a small
+	// model would otherwise evaluate them far away, or even extrapolate
+	// them outside their domain, and misclassify.
 	ab := srf.PointAtUv(auv).Minus(srf.PointAtUv(buv))
-	if ab.Magnitude() < 1e-20 {
-		enin = geom.Vector{X: shellDotpTol}
-		enout = geom.Vector{X: -shellDotpTol}
-		return
+	enxyz := ab.Cross(*surfN).WithMagnitude(math.Min(ChordTolMm(), ab.Magnitude()/10))
+	// And based on that, compute the edge's inner normal in uv space. This
+	// vector is perpendicular to the edge in xyz, but not necessarily in uv.
+	var tu, tv geom.Vector
+	srf.TangentsAt(muv.U, muv.V, &tu, &tv, true)
+	n := tu.Cross(tv)
+	// since tu and tv may not be orthogonal, use y in place of v, x in place of u.
+	// |y| = |v|sin(theta) where theta is the angle between tu and tv.
+	ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+	tx := tv.Cross(n).ScaledBy(1.0 / tv.MagSquared())
+
+	enuv := geom.Point2d{
+		U: enxyz.Dot(tx) / tx.MagSquared(),
+		V: enxyz.Dot(ty) / ty.MagSquared(),
 	}
-	// Pick a probe direction perpendicular to the edge on the surface.
-	enxyz := ab.Cross(*surfN).WithMagnitude(ab.Magnitude() / 10)
-	pin := srf.PointAtUv(muv.Minus(geom.Point2d{U: enxyz.X, V: enxyz.Y}))
-	pout := srf.PointAtUv(muv.Plus(geom.Point2d{U: enxyz.X, V: enxyz.Y}))
+
+	// Compute the inner and outer normals of this edge (within the srf),
+	// in xyz space. These are not necessarily antiparallel, if the
+	// surface is curved.
+	pin := srf.PointAtUv(muv.Minus(enuv))
+	pout := srf.PointAtUv(muv.Plus(enuv))
 	enin = pin.Minus(pt)
 	enout = pout.Minus(pt)
 	return
-}
-
-// interCurveForRefinement looks up the SCurve for the current
-// per-surface-trim chain edge in the parent shell. The C++ edge
-// normals routine takes the curve id from its `auxA` parameter
-// (boolean.cpp:441 `hSCurve hc = { auxA };`), so we mirror that
-// path. Returns nil if the curve id doesn't resolve to a known
-// curve — the refinement is then a no-op (matches the OLD Go
-// behaviour).
-func interCurveForRefinement(parent, sha, shb *SShell, auxA int) *SCurve {
-	if parent == nil || auxA == 0 {
-		return nil
-	}
-	h := core.HSCurve{V: uint32(auxA)}
-	return parent.FindCurve(h)
-}
-
-// closestPointOnThisAndSurface is a small Gauss-Newton
-// approximation of SSurface::ClosestPointOnThisAndSurface
-// (ratpoly.cpp:627) — the C++ routine that the per-surface-trim
-// edge refinement uses for polyline (non-exact) chains. It moves
-// `p` so that it lies on both surfaces simultaneously, which is
-// exactly the intersection curve we want the probe to sit on.
-//
-// The convergence tolerance matches `lengthEps` (the
-// `SShell::ClassifyEdge` edge-on-surface proximity check in
-// raycast.go). If we converged only to 1e-9 the probe would
-// still be too far from the receiver surface for the
-// edge-on-surface branch to fire, and the chain would fall
-// through to the raycast fallback (which returns `SurfOutside`
-// for tangent-cutters).
-func closestPointOnThisAndSurface(a, b *SSurface, p geom.Vector) geom.Vector {
-	var puvA, puvB geom.Point2d
-	a.ClosestPointTo(p, &puvA, false)
-	b.ClosestPointTo(p, &puvB, false)
-	for iter := 0; iter < 10; iter++ {
-		ptA := a.PointAtUv(puvA)
-		ptB := b.PointAtUv(puvB)
-		if (ptA.Minus(ptB)).Magnitude() < lengthEps {
-			return ptA
-		}
-		// Move both projections to the midpoint of the current
-		// chord. The C++ uses an exact plane-intersection update;
-		// for the planar boolean fixtures the midpoint is plenty.
-		mid := ptA.Plus(ptB).ScaledBy(0.5)
-		a.ClosestPointTo(mid, &puvA, false)
-		b.ClosestPointTo(mid, &puvB, false)
-	}
-	return a.PointAtUv(puvA)
 }
 
 // classifyEdge returns the (indir, outdir) SShellClass pair for the
@@ -448,36 +357,6 @@ func (s *SShell) classifyEdge(indir, outdir *SShellClass,
 	*indir = shellClassFromClass(inDir)
 	*outdir = shellClassFromClass(outDir)
 	return true
-}
-
-// raycastPointClass returns the SShellClass of point `p` relative to
-// `s`: inside the closed solid (ShellInside), outside
-// (ShellOutside), or coincident with a surface face (ShellCoincSame
-// if the normal agrees with the surface, ShellCoincOpp otherwise).
-func (s *SShell) raycastPointClass(p geom.Vector) SShellClass {
-	if len(s.Surface) == 0 {
-		return ShellOutside
-	}
-	// Coincidence check first: if p lies within `shellDotpTol*10` of
-	// any surface, classify as coincident.
-	for i := range s.Surface {
-		srf := &s.Surface[i]
-		var puv geom.Point2d
-		srf.ClosestPointTo(p, &puv, false)
-		closest := srf.PointAtUv(puv)
-		if closest.DistanceTo(p) < shellDotpTol*10 {
-			n := srf.NormalAtUv(puv)
-			if surfN := n; n.Dot(surfN) > 0 {
-				return ShellCoincSame
-			} else {
-				return ShellCoincOpp
-			}
-		}
-	}
-	if pointInsideShell(p, s) {
-		return ShellInside
-	}
-	return ShellOutside
 }
 
 // makeCopyTrimAgainst is the per-surface counterpart of
@@ -507,21 +386,7 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	}
 	ret := *srf
 	ret.Trim = nil
-	// See SSurface.TrimBuilt's doc comment. An INTERSECTION keeps
-	// only the (typically small) overlap of the two operands, so an
-	// empty final chain below almost always means "this region is
-	// genuinely outside the intersection" — falling back to the full
-	// parameter grid there would systematically overcount volume
-	// (verified empirically: it roughly rendered the whole original
-	// surface for every discarded region). UNION/DIFFERENCE keep
-	// most of each operand outside a comparatively small cut/overlap
-	// region, so an empty final chain there is far more often a
-	// chain-walk/classification miss (see PORTING.md
-	// "Boolean-CSG parity gaps", tangent-cutter partial-overlap
-	// recognition) than a deliberate full discard; falling back to
-	// the full grid for those ops is measurably closer to the C++
-	// golden across the boolean fixtures than rendering nothing.
-	ret.TrimBuilt = t == SurfaceInter
+	ret.TrimBuilt = true
 
 	// Step 1 (C++ line 511-518): rewrite trim curves to use the
 	// new (split) curve handles. CopyCurvesSplitAgainst stored the
@@ -545,9 +410,9 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// Step 3 (C++ line 528-532): build the orig trim polygon from
 	// the new (split) curves.
 	orig := &SEdgeList{}
-	ret.makeSurfaceEdgesIntoUv(into, orig)
+	ret.MakeEdgesInto(into, orig, true, nil)
 	ret.Trim = nil
-	origBsp := BuildBspUvFromEdges(orig, &ret)
+	origBsp := SBspUvFrom(orig, &ret)
 
 	// Step 4 (C++ line 535-594): build the inter edge list from the
 	// intersection curves in `into`.
@@ -572,63 +437,58 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		if ss == nil {
 			continue
 		}
-		// Walk the polyline of this curve.
-		const ns = 8
-		b := ic.Exact
-		prev := b.Start()
-		var prevPuv geom.Point2d
-		ss.ClosestPointTo(prev, &prevPuv, false)
-		for k := 1; k <= ns; k++ {
-			t0 := float64(k) / float64(ns)
-			cur := b.PointAt(t0)
-			var curPuv geom.Point2d
-			ss.ClosestPointTo(cur, &curPuv, false)
-			auv := geom.Point2d{U: prevPuv.U, V: prevPuv.V}
-			buv := geom.Point2d{U: curPuv.U, V: curPuv.V}
-			var c BspUvClass = BspUvOutside
+		for k := 1; k < len(ic.Points); k++ {
+			a := ic.Points[k-1].P
+			b := ic.Points[k].P
+
+			var auv, buv geom.Point2d
+			ss.ClosestPointTo(a, &auv, true)
+			ss.ClosestPointTo(b, &buv, true)
+
+			c := BspUvOutside
 			if ss.Bsp != nil {
-				c = ss.Bsp.ClassifyEdge(auv, buv)
-			} else if origBsp != nil {
-				c = origBsp.ClassifyEdge(auv, buv)
+				c = ss.Bsp.ClassifyEdge(auv, buv, ss)
 			}
-			if c != BspUvOutside {
-				var tap, tbp geom.Point2d
-				ret.ClosestPointTo(prev, &tap, false)
-				ret.ClosestPointTo(cur, &tbp, false)
-				tn := ret.NormalAt(tap.U, tap.V)
-				sn := ss.NormalAt(auv.U, auv.V)
-				tnxd := tn.Cross(cur.Minus(prev))
-				dot := tnxd.Dot(sn)
-				mag := tnxd.Magnitude() * sn.Magnitude()
-				if mathAbs(dot) < shellDotpTol*mag {
-					// Tangent: emit both orientations, classification
-					// downstream keeps the right one.
-					ta := geom.Vector{X: tap.U, Y: tap.V}
-					tb := geom.Vector{X: tbp.U, Y: tbp.V}
-					inter.AddEdge(ta, tb, int(ic.H.V), 0, 0)
-					inter.AddEdge(tb, ta, int(ic.H.V), 1, 0)
-				} else {
-					bkwds := true
-					if dot < 0 {
-						bkwds = !bkwds
-					}
-					if t == SurfaceDiff && !opA {
-						bkwds = !bkwds
-					}
-					if t == SurfaceInter {
-						bkwds = !bkwds
-					}
-					ta := geom.Vector{X: tap.U, Y: tap.V}
-					tb := geom.Vector{X: tbp.U, Y: tbp.V}
-					if bkwds {
-						inter.AddEdge(tb, ta, int(ic.H.V), 1, 0)
-					} else {
-						inter.AddEdge(ta, tb, int(ic.H.V), 0, 0)
-					}
-				}
+			if c == BspUvOutside {
+				continue
 			}
-			prev = cur
-			prevPuv = curPuv
+			var tap, tbp geom.Point2d
+			ret.ClosestPointTo(a, &tap, true)
+			ret.ClosestPointTo(b, &tbp, true)
+			ta := geom.Vector{X: tap.U, Y: tap.V}
+			tb := geom.Vector{X: tbp.U, Y: tbp.V}
+
+			tn := ret.NormalAt(tap.U, tap.V)
+			sn := ss.NormalAt(auv.U, auv.V)
+
+			// We are subtracting the portion of our surface that
+			// lies in the shell, so the in-plane edge normal should
+			// point opposite to the surface normal.
+			tnxd := tn.Cross(b.Minus(a))
+			dot := tnxd.Dot(sn)
+			if mathAbs(dot) < shellDotpTol*tnxd.Magnitude()*sn.Magnitude() {
+				// The surfaces are tangent along this curve, so their
+				// normals give no orientation for it. Add the edge in
+				// both directions; the classification against the
+				// shells keeps the correctly oriented one and
+				// discards the other.
+				inter.AddEdge(ta, tb, int(ic.H.V), 0, 0)
+				inter.AddEdge(tb, ta, int(ic.H.V), 1, 0)
+				continue
+			}
+			bkwds := true
+			if dot < 0 {
+				bkwds = !bkwds
+			}
+			if (t == SurfaceDiff && !opA) || t == SurfaceInter {
+				// Invert all newly created edges for intersection
+				bkwds = !bkwds
+			}
+			if bkwds {
+				inter.AddEdge(tb, ta, int(ic.H.V), 1, 0)
+			} else {
+				inter.AddEdge(ta, tb, int(ic.H.V), 0, 0)
+			}
 		}
 	}
 
@@ -724,7 +584,7 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		var indirOrig, outdirOrig SShellClass = ShellInside, ShellOutside
 		var cThis BspUvClass = BspUvOutside
 		if origBsp != nil {
-			cThis = origBsp.ClassifyEdge(auv, buv)
+			cThis = origBsp.ClassifyEdge(auv, buv, &ret)
 		}
 		if cThis == BspUvEdgeParallel {
 			chain.Edges = nil
@@ -748,8 +608,8 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// Step 8 (C++ line 723-727): cull duplicate / anti-parallel edges.
 	final.CullExtraneousEdges(true)
 
-// Step 9 (C++ line 729-744): assemble the trim polygon from the
-// kept edges; mark booleanFailed in `into` if it fails to close.
+	// Step 9 (C++ line 729-744): assemble the trim polygon from the
+	// kept edges; mark booleanFailed in `into` if it fails to close.
 	ret.trimFromEdgeList(final, true)
 	var poly SPolygon
 	final.lClearTags()

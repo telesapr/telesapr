@@ -129,12 +129,11 @@ func TestSShellRevolution(t *testing.T) {
 
 func TestSBspUvClassify(t *testing.T) {
 	// Add an edge along the X axis, directed toward +U.
-	root := InsertBspUvEdge(nil, geom.Point2d{U: -1, V: 0}, geom.Point2d{U: 1, V: 0})
-	// classifyPointUv's convention mirrors C++ SBspUv::ClassifyPoint
-	// (see its doc comment in bsp_uv.go): "inside" is the right-hand
+	root := bspUvInsertOrCreateEdge(nil, geom.Point2d{U: -1, V: 0}, geom.Point2d{U: 1, V: 0}, nil)
+	// As in C++ SBspUv::ClassifyPoint, "inside" is the right-hand
 	// side of the directed edge. Facing +U, the right-hand side is
 	// -V, so a point BELOW the X axis is classified INSIDE.
-	c := root.ClassifyPoint(geom.Point2d{U: 0, V: -1})
+	c := root.ClassifyPoint(geom.Point2d{U: 0, V: -1}, geom.Point2d{}, nil)
 	if c != BspUvInside {
 		t.Fatalf("expected INSIDE for (0,-1), got %v", c)
 	}
@@ -215,27 +214,6 @@ func TestSBezierTangentAtMidpoint(t *testing.T) {
 	tan := b.TangentAt(0.5)
 	if tan.X != 1 {
 		t.Errorf("linear tangent: got X=%v, want 1", tan.X)
-	}
-}
-
-// TestSBezierSplitAt verifies the split operation.
-// TestSBezierIsCircle verifies the circle detection on a cubic
-// approximation of a quarter circle.
-func TestSBezierIsCircle(t *testing.T) {
-	t.Skip("TestSBezierIsCircle: requires fixture-specific setup")
-	// Quarter-circle cubic approximation with control points at
-	// (1,0), (1,0.5523), (0.5523,1), (0,1).
-	b := SBezierFrom4(
-		geom.Vector{X: 1, Y: 0},
-		geom.Vector{X: 1, Y: 0.5523},
-		geom.Vector{X: 0.5523, Y: 1},
-		geom.Vector{X: 0, Y: 1})
-	_, r, ok := b.IsCircle()
-	if !ok {
-		t.Errorf("cubic quarter circle should be detected as a circle")
-	}
-	if r < 0.99 || r > 1.01 {
-		t.Errorf("cubic quarter circle radius: %v, want ~1.0", r)
 	}
 }
 
@@ -380,9 +358,11 @@ func TestSSurfacePointIntersectingLineVertical(t *testing.T) {
 func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	u, v := 0.5, 0.5
-	curve := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2})
+	// As in C++ SSurface::FromPlane, the first parameter runs along
+	// the plane's v vector (+Y), so the u=1 edge is the line y=1.
+	curve := SBezierFrom2(geom.Vector{Y: 1}, geom.Vector{Y: 2})
 	ok := plane.EdgeCurveIntersection(&u, &v, &curve)
-	// Should find intersection with edge u=1 (right side).
+	// Should find intersection with edge u=1.
 	if ok && u != 1.0 {
 		t.Errorf("expected u=1 after right-edge intersection, got u=%v", u)
 	}
@@ -392,8 +372,10 @@ func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
 func TestSSurfaceAllPointsIntersectingOnPlane(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var inters []SInter
+	// No trim BSP, so ask for untrimmed hits (C++ classifies a
+	// BSP-less surface as OUTSIDE for trimmed queries).
 	plane.AllPointsIntersecting(geom.Vector{Z: -1}, geom.Vector{Z: 1},
-		&inters, true, true, false)
+		&inters, true, false, false)
 	if len(inters) == 0 {
 		t.Errorf("expected at least one intersection on plane z=0")
 	}
@@ -475,17 +457,22 @@ func TestRayIsInside(t *testing.T) {
 	}
 }
 
-// TestSContourIsEar tests ear detection on a simple square.
+// TestSContourIsEar tests ear detection on a simple square. As in
+// C++ SContour::IsEar, contours are clipped with ears facing -Z, i.e.
+// wound clockwise about +Z (the orientation FixContourDirections
+// gives outer contours).
 func TestSContourIsEar(t *testing.T) {
 	c := &SContour{}
 	c.AddPoint(geom.Vector{X: 0, Y: 0})
 	c.AddPoint(geom.Vector{X: 1, Y: 0})
 	c.AddPoint(geom.Vector{X: 1, Y: 1})
 	c.AddPoint(geom.Vector{X: 0, Y: 1})
-	// Vertex 0 (origin) - triangle (3, 0, 1) is (top-left, origin, bottom-right).
-	// That's (0,1)→(0,0)→(1,0), normal points in -Z direction (CCW from above = CW).
+	if c.IsEar(0, 1e-9) {
+		t.Errorf("vertex 0 of a counterclockwise square should not be an ear")
+	}
+	c.Reverse()
 	if !c.IsEar(0, 1e-9) {
-		t.Errorf("vertex 0 should not be an ear (CW orientation)")
+		t.Errorf("vertex 0 of a clockwise square should be an ear")
 	}
 }
 
@@ -504,11 +491,11 @@ func TestSSurfaceMakeTriangulationGridIntoPlaneMid(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var l []float64
 	plane.MakeTriangulationGridInto(&l, 0, 1, false, 3)
-	if len(l) < 2 {
-		t.Errorf("expected at least 2 v-values, got %d", len(l))
+	// A plane is flat everywhere, so no subdivision is needed.
+	if len(l) != 1 || l[0] != 1 {
+		t.Errorf("expected just v=1, got %v", l)
 	}
 }
-
 
 // TestSSurfaceCopyRowOrCol verifies row/column copy.
 func TestSSurfaceCopyRowOrCol(t *testing.T) {
@@ -560,7 +547,7 @@ func TestSSurfaceWeightControlPoints(t *testing.T) {
 func TestSSurfaceAllPointsIntersectingUntrimmedPlane(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	cnt, level := 0, 0
-	var l []SInter
+	var l []surfInter
 	plane.AllPointsIntersectingUntrimmed(geom.Vector{Z: -1}, geom.Vector{Z: 1}, &cnt, &level, &l, true, &plane)
 	if len(l) == 0 {
 		t.Errorf("expected at least one intersection on plane z=0, got 0")
@@ -571,7 +558,7 @@ func TestSSurfaceAllPointsIntersectingUntrimmedPlane(t *testing.T) {
 func TestSSurfaceAllPointsIntersectingUntrimmedOutsideBbox(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	cnt, level := 0, 0
-	var l []SInter
+	var l []surfInter
 	plane.AllPointsIntersectingUntrimmed(geom.Vector{Z: 5}, geom.Vector{Z: 10}, &cnt, &level, &l, true, &plane)
 	if len(l) != 0 {
 		t.Errorf("expected 0 intersections for line above plane, got %d", len(l))
