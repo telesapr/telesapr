@@ -116,17 +116,6 @@ func TestBernstein(t *testing.T) {
 	}
 }
 
-func TestSShellRevolution(t *testing.T) {
-	profile := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 1})
-	set := &SBezierLoopSet{}
-	set.Outer.Curves = []SBezier{profile}
-	shell := &SShell{}
-	shell.MakeFromRevolutionOf(set, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{Red: 255})
-	if len(shell.Surface) != 1 {
-		t.Fatalf("expected 1 surface, got %d", len(shell.Surface))
-	}
-}
-
 func TestSBspUvClassify(t *testing.T) {
 	// Add an edge along the X axis, directed toward +U.
 	root := bspUvInsertOrCreateEdge(nil, geom.Point2d{U: -1, V: 0}, geom.Point2d{U: 1, V: 0}, nil)

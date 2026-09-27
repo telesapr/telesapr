@@ -134,9 +134,9 @@ func (s *SShell) addAndAssignCurveId(sc SCurve) core.HSCurve {
 // SCurvePt form, marking the first and last samples as vertices.
 // Mirrors the C++ `SBezier::MakePwlInto(List<SCurvePt> *l, ...)`
 // overload (ratpoly.cpp).
-func makePwlSCurvePoints(b *SBezier) []SCurvePt {
+func makePwlSCurvePoints(b *SBezier, maxDt float64) []SCurvePt {
 	var raw []geom.Vector
-	b.MakePwlIntoPoints(&raw, 0, 0)
+	b.MakePwlIntoPoints(&raw, 0, maxDt)
 	pts := make([]SCurvePt, len(raw))
 	for i, p := range raw {
 		pts[i] = SCurvePt{P: p, Vertex: i == 0 || i == len(raw)-1}
@@ -230,7 +230,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			hc0 := s.addAndAssignCurveId(SCurve{
 				IsExact: true,
 				Exact:   bt0,
-				Points:  makePwlSCurvePoints(&bt0),
+				Points:  makePwlSCurvePoints(&bt0, 0),
 				SurfA:   hs0,
 				SurfB:   hsext,
 			})
@@ -240,7 +240,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			hc1 := s.addAndAssignCurveId(SCurve{
 				IsExact: true,
 				Exact:   bt1,
-				Points:  makePwlSCurvePoints(&bt1),
+				Points:  makePwlSCurvePoints(&bt1, 0),
 				SurfA:   hs1,
 				SurfB:   hsext,
 			})
@@ -261,7 +261,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			hl := s.addAndAssignCurveId(SCurve{
 				IsExact: true,
 				Exact:   lineBez,
-				Points:  makePwlSCurvePoints(&lineBez),
+				Points:  makePwlSCurvePoints(&lineBez, 0),
 			})
 			// save this for later
 			trimLines = append(trimLines, shellTrimLine{hc: hl, hs: hsext})
@@ -310,69 +310,389 @@ func appendTrim(s *SShell, h core.HSSurface, stb STrimBy) {
 	}
 }
 
-// MakeFromRevolutionOf revolves a planar BezierLoopSet around an
-// axis (pt, axis). Each Bezier becomes a revolved surface; the
-// caps are filled by joining the start and end of the rotation.
-func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor) {
-	s.Clear()
+// CheckNormalAxisRelationship reports whether the direction of
+// revolution/extrusion ends up parallel to the normal of the sketch,
+// on the side of the axis where the sketch is. Faithful port of C++
+// `SShell::CheckNormalAxisRelationship` (shell.cpp).
+func CheckNormalAxisRelationship(sbls *SBezierLoopSet, pt, axis geom.Vector, da, dx float64) bool {
+	var pto geom.Vector
+	md := math.Inf(-1)
+	for _, sbl := range sbls.loops() {
+		for bi := range sbl.Curves {
+			sb := &sbl.Curves[bi]
+			// Choose the point farthest from the axis; we'll get garbage
+			// if we choose a point that lies on the axis, for example.
+			// (And our surface will be self-intersecting if the sketch
+			// spans the axis, so don't worry about that.)
+			for i := 0; i <= sb.Degree; i++ {
+				p := sb.Ctrl[i]
+				d := p.DistanceToLine(pt, axis)
+				if d > md {
+					md = d
+					pto = p
+				}
+			}
+		}
+	}
+	ptc := pto.ClosestPointOnLine(pt, axis)
+	up := axis.Cross(pto.Minus(ptc)).ScaledBy(da)
+	vp := up.Plus(axis.ScaledBy(dx))
+
+	return vp.Dot(sbls.Normal) > 0
+}
+
+// isOnAxisLine reports whether sb is a line lying on the axis of
+// revolution (pt, axis); such a curve contributes no surface.
+func isOnAxisLine(sb *SBezier, pt, axis geom.Vector) bool {
+	return sb.Degree == 1 &&
+		sb.Ctrl[0].DistanceToLine(pt, axis) < lengthEps &&
+		sb.Ctrl[1].DistanceToLine(pt, axis) < lengthEps
+}
+
+// transformedCopy returns sb transformed by (t, q, scale), leaving sb
+// alone. Mirrors the C++ `SBezier::TransformedBy`, which returns a
+// copy.
+func transformedCopy(sb *SBezier, t geom.Vector, q geom.Quaternion, scale float64) SBezier {
+	ret := *sb
+	ret.TransformedBy(t, q, scale)
+	return ret
+}
+
+// addCurveTrimming adds sc to the shell and trims its SurfA and SurfB
+// by it, SurfA with the given sense and SurfB with the opposite one.
+func (s *SShell) addCurveTrimming(sc SCurve, backwardsA bool) {
+	hc := s.addAndAssignCurveId(sc)
+	appendTrim(s, sc.SurfA, STrimByEntireCurveFromShell(s, hc, backwardsA))
+	appendTrim(s, sc.SurfB, STrimByEntireCurveFromShell(s, hc, !backwardsA))
+}
+
+// MakeFromHelicalRevolutionOf sweeps a planar BezierLoopSet around the
+// axis (pt, axis) from angle angles to anglef while translating along
+// the axis from dists to distf. The swept surfaces are split into
+// sections of at most 90 degrees and capped by two planes. Faithful
+// port of C++ `SShell::MakeFromHelicalRevolutionOf` (shell.cpp).
+//
+// The sketch must not contain the axis of revolution as a
+// non-construction line when dist is nonzero. startFace and endFace
+// are the face ids of the caps at angles and anglef (C++
+// Group::Remap(NO_ENTITY, REMAP_LATHE_START / REMAP_LATHE_END)); a
+// zero id leaves the cap's face at its surface handle. The C++
+// REMAP_LINE_TO_FACE of the swept surfaces is not done: SBezier
+// carries no source entity.
+func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector,
+	color core.RgbaColor, angles, anglef, dists, distf float64, startFace, endFace uint32) {
 	if sbls == nil {
 		return
 	}
-	const thetaf = 2 * 3.141592653589793
-	for i := range sbls.Outer.Curves {
-		b := &sbls.Outer.Curves[i]
-		surf := FromRevolutionOf(b, pt, axis, 0, thetaf, 0, 0)
-		surf.Color = color
-		surf.Face = FaceID(uint32(len(s.Surface)) + 1)
-		surf.Tag = sbls.Outer.Tag
-		s.Surface = append(s.Surface, surf)
+	i0 := len(s.Surface) // number of pre-existing surfaces
+	dist := distf - dists
+	sections := int(math.Abs(anglef-angles)/(math.Pi/2) + 1)
+	wedge := (anglef - angles) / float64(sections)
+
+	if CheckNormalAxisRelationship(sbls, pt, axis, anglef-angles, distf-dists) {
+		angles, anglef = anglef, angles
+		dists, distf = distf, dists
+		dist = -dist
+		wedge = -wedge
+		startFace, endFace = endFace, startFace
+	}
+
+	// Define a coordinate system to contain the original sketch, and get
+	// a bounding box in that csys
+	n := sbls.Normal.ScaledBy(-1)
+	u := n.NormalDir(0)
+	v := n.NormalDir(1)
+	orig := sbls.Point
+	umin, umax := math.Inf(1), math.Inf(-1)
+	sbls.GetBoundingProjd(u, orig, &umin, &umax)
+	vmin, vmax := math.Inf(1), math.Inf(-1)
+	sbls.GetBoundingProjd(v, orig, &vmin, &vmax)
+	// and now fix things up so that all u and v lie between 0 and 1
+	orig = orig.Plus(u.ScaledBy(umin))
+	orig = orig.Plus(v.ScaledBy(vmin))
+	u = u.ScaledBy(umax - umin)
+	v = v.ScaledBy(vmax - vmin)
+
+	// So we can now generate the end caps of the extrusion within
+	// a translated and rotated (and maybe mirrored) version of that csys.
+	s0 := FromPlane(orig.RotatedAbout(pt, axis, angles).Plus(axis.ScaledBy(dists)),
+		u.RotatedAbout(geom.Vector{}, axis, angles), v.RotatedAbout(geom.Vector{}, axis, angles))
+	s0.Color = color
+	s0.TrimBuilt = true
+
+	s1 := FromPlane(orig.Plus(u).RotatedAbout(pt, axis, anglef).Plus(axis.ScaledBy(distf)),
+		u.ScaledBy(-1).RotatedAbout(geom.Vector{}, axis, anglef), v.RotatedAbout(geom.Vector{}, axis, anglef))
+	s1.Color = color
+	s1.TrimBuilt = true
+
+	hs0 := s.addAndAssignSurfaceId(s0)
+	hs1 := s.addAndAssignSurfaceId(s1)
+	if startFace != 0 {
+		s.FindSurface(hs0).Face = FaceID(startFace)
+	}
+	if endFace != 0 {
+		s.FindSurface(hs1).Face = FaceID(endFace)
+	}
+
+	// Now we actually build and trim the swept surfaces. One loop at a time.
+	for _, sbl := range sbls.loops() {
+		nc := len(sbl.Curves)
+		hsl := make([][]core.HSSurface, nc)
+
+		// This is where all the NURBS are created
+		for bi := range sbl.Curves {
+			sb := &sbl.Curves[bi]
+			revs := make([]core.HSSurface, sections)
+			for j := 0; j < sections; j++ {
+				if dist == 0 && isOnAxisLine(sb, pt, axis) {
+					// This is a line on the axis of revolution; it does
+					// not contribute a surface.
+					revs[j] = core.HSSurface{}
+				} else {
+					ss := FromRevolutionOf(sb, pt, axis,
+						angles+wedge*float64(j), angles+wedge*float64(j+1),
+						dists+float64(j)*dist/float64(sections), dists+float64(j+1)*dist/float64(sections))
+					ss.Color = color
+					ss.TrimBuilt = true
+					revs[j] = s.addAndAssignSurfaceId(ss)
+				}
+			}
+			hsl[bi] = revs
+		}
+		// Still the same loop. Need to create trim curves
+		for i := 0; i < nc; i++ {
+			revs, revsp := hsl[i], hsl[(i-1+nc)%nc]
+			sb := &sbl.Curves[i]
+
+			// we will need the grid t-values for this entire row of surfaces
+			var tValues []float64
+			if revs[0].V != 0 {
+				tValues = append(tValues, 0.0)
+				s.FindSurface(revs[0]).MakeTriangulationGridInto(&tValues, 0.0, 1.0, true, 0)
+			}
+			// we generate one more curve than we did surfaces
+			for j := 0; j <= sections; j++ {
+				qs := geom.QuaternionFromAxisAngle(axis, angles+wedge*float64(j))
+				// we want Q*(x - p) + p = Q*x + (p - Q*p)
+				ts := pt.Minus(qs.Rotate(pt)).Plus(axis.ScaledBy(dists + float64(j)*dist/float64(sections)))
+
+				// If this input curve generated a surface, then trim that
+				// surface with the rotated version of the input curve.
+				if revs[0].V != 0 { // not revs[j] because crash on j==sections
+					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs, 1.0)}
+					// make the PWL for the curve based on t value list
+					for x, t := range tValues {
+						sc.Points = append(sc.Points, SCurvePt{
+							P:      sc.Exact.PointAt(t),
+							Vertex: x == 0 || x == len(tValues)-1,
+						})
+					}
+
+					// the surfaces already exists so trim with this curve
+					if j < sections {
+						sc.SurfA = revs[j]
+					} else {
+						sc.SurfA = hs1 // end cap
+					}
+					if j > 0 {
+						sc.SurfB = revs[j-1]
+					} else {
+						sc.SurfB = hs0 // staring cap
+					}
+					s.addCurveTrimming(sc, true)
+				} else if j == 0 { // curve was on the rotation axis and is shared by the end caps.
+					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs, 1.0)}
+					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.SurfA = hs1 // end cap
+					sc.SurfB = hs0 // staring cap
+					s.addCurveTrimming(sc, true)
+				}
+
+				// And if this input curve and the one after it both generated
+				// surfaces, then trim both of those by the appropriate
+				// curve based on the control points.
+				if j < sections && revs[j].V != 0 && revsp[j].V != 0 {
+					ss := s.FindSurface(revs[j])
+
+					sc := SCurve{IsExact: true, Exact: SBezierFrom3(ss.Ctrl[0][0], ss.Ctrl[0][1], ss.Ctrl[0][2])}
+					sc.Exact.Weight[1] = ss.Weight[0][1]
+					maxDt := 0.5
+					if sc.Exact.Degree > 1 {
+						maxDt = 0.125
+					}
+					sc.Points = makePwlSCurvePoints(&sc.Exact, maxDt)
+					sc.SurfA = revs[j]
+					sc.SurfB = revsp[j]
+					s.addCurveTrimming(sc, false)
+				}
+			}
+		}
+	}
+
+	if dist == 0 {
+		s.MakeFirstOrderRevolvedSurfaces(pt, axis, i0)
 	}
 }
 
-// MakeFromHelixOf sweeps a planar BezierLoopSet around an axis
-// (pt, axis) while translating along the axis by `turns` total
-// rotation. Pitch is the axial distance per full revolution
-// (pitch = axial_distance / turns). Equivalent to revolving the
-// contour once while extruding along the axis by `pitch`.
-func (s *SShell) MakeFromHelixOf(sbls *SBezierLoopSet, pt, axis geom.Vector, turns float64, pitch float64, color core.RgbaColor) {
-	s.Clear()
+// MakeFromRevolutionOf revolves a planar BezierLoopSet a full turn
+// around the axis (pt, axis). Each curve becomes four 90-degree
+// surfaces of revolution, trimmed by the rotated copies of the curve
+// and by the circles swept by its endpoints. Faithful port of C++
+// `SShell::MakeFromRevolutionOf` (shell.cpp), except that the C++
+// REMAP_LINE_TO_FACE of the surfaces is not done: SBezier carries no
+// source entity.
+func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor) {
 	if sbls == nil {
 		return
 	}
-	turns = math.Abs(turns)
-	if turns < 1e-9 {
-		turns = 1
+	i0 := len(s.Surface) // number of pre-existing surfaces
+
+	if CheckNormalAxisRelationship(sbls, pt, axis, 1.0, 0.0) {
+		axis = axis.ScaledBy(-1)
 	}
-	if pitch < 1e-9 {
-		pitch = 1.0
-	}
-	const thetaf = 2 * 3.141592653589793
-	axisN := axis.Normal()
-	axialStep := pitch / 12.0
-	for i := range sbls.Outer.Curves {
-		b := &sbls.Outer.Curves[i]
-		// Sample the bezier at 12 points along its length; each sample
-		// is revolved at a different angle and axially shifted.
-		const ns = 12
-		for k := 0; k < ns; k++ {
-			t0 := float64(k) / ns
-			t1 := float64(k+1) / ns
-			seg := SBezier{Degree: 1}
-			seg.Ctrl[0] = b.PointAt(t0)
-			seg.Ctrl[1] = b.PointAt(t1)
-			seg.Weight[0] = 1
-			seg.Weight[1] = 1
-			angle0 := t0 * turns * thetaf
-			angle1 := t1 * turns * thetaf
-			offset0 := t0 * turns * pitch
-			offset1 := t1 * turns * pitch
-			surf := FromRevolutionOf(&seg, pt, axisN, angle0, angle1, offset0, offset1)
-			surf.Color = color
-			surf.Face = FaceID(uint32(len(s.Surface)) + 1)
-			surf.Tag = sbls.Outer.Tag
-			s.Surface = append(s.Surface, surf)
+
+	// Now we actually build and trim the surfaces.
+	for _, sbl := range sbls.loops() {
+		nc := len(sbl.Curves)
+		hsl := make([][4]core.HSSurface, nc)
+
+		for bi := range sbl.Curves {
+			sb := &sbl.Curves[bi]
+			for j := 0; j < 4; j++ {
+				if isOnAxisLine(sb, pt, axis) {
+					// This is a line on the axis of revolution; it does
+					// not contribute a surface.
+					hsl[bi][j] = core.HSSurface{}
+				} else {
+					ss := FromRevolutionOf(sb, pt, axis, (math.Pi/2)*float64(j),
+						(math.Pi/2)*float64(j+1), 0.0, 0.0)
+					ss.Color = color
+					ss.TrimBuilt = true
+					hsl[bi][j] = s.addAndAssignSurfaceId(ss)
+				}
+			}
 		}
-		_ = axialStep
+
+		for i := 0; i < nc; i++ {
+			revs, revsp := hsl[i], hsl[(i-1+nc)%nc]
+			sb := &sbl.Curves[i]
+
+			for j := 0; j < 4; j++ {
+				qs := geom.QuaternionFromAxisAngle(axis, (math.Pi/2)*float64(j))
+				// we want Q*(x - p) + p = Q*x + (p - Q*p)
+				ts := pt.Minus(qs.Rotate(pt))
+
+				// If this input curve generate a surface, then trim that
+				// surface with the rotated version of the input curve.
+				if revs[j].V != 0 {
+					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs, 1.0)}
+					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.SurfA = revs[j]
+					sc.SurfB = revs[(j+3)%4]
+					s.addCurveTrimming(sc, true)
+				}
+
+				// And if this input curve and the one after it both generated
+				// surfaces, then trim both of those by the appropriate
+				// circle.
+				if revs[j].V != 0 && revsp[j].V != 0 {
+					ss := s.FindSurface(revs[j])
+
+					sc := SCurve{IsExact: true, Exact: SBezierFrom3(ss.Ctrl[0][0], ss.Ctrl[0][1], ss.Ctrl[0][2])}
+					sc.Exact.Weight[1] = ss.Weight[0][1]
+					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.SurfA = revs[j]
+					sc.SurfB = revsp[j]
+					s.addCurveTrimming(sc, false)
+				}
+			}
+		}
+	}
+
+	s.MakeFirstOrderRevolvedSurfaces(pt, axis, i0)
+}
+
+// MakeFirstOrderRevolvedSurfaces rewrites the surfaces from index i0
+// on that are revolutions of a line into lower-order forms where
+// possible: a revolution in a plane perpendicular to the axis becomes
+// a degree (1, 1) plane, and a cylinder is transposed so that it is
+// recognized as a surface of extrusion. Faithful port of C++
+// `SShell::MakeFirstOrderRevolvedSurfaces` (shell.cpp).
+func (s *SShell) MakeFirstOrderRevolvedSurfaces(pt, axis geom.Vector, i0 int) {
+	for i := i0; i < len(s.Surface); i++ {
+		srf := &s.Surface[i]
+
+		// Revolution of a line; this is potentially a plane, which we can
+		// rewrite to have degree (1, 1).
+		if srf.DegM != 1 || srf.DegN != 2 {
+			continue
+		}
+		// close start, far start, far finish
+		var cs, fs, ff geom.Vector
+		d0 := srf.Ctrl[0][0].DistanceToLine(pt, axis)
+		d1 := srf.Ctrl[1][0].DistanceToLine(pt, axis)
+
+		if d0 > d1 {
+			cs = srf.Ctrl[1][0]
+			fs = srf.Ctrl[0][0]
+			ff = srf.Ctrl[0][2]
+		} else {
+			cs = srf.Ctrl[0][0]
+			fs = srf.Ctrl[1][0]
+			ff = srf.Ctrl[1][2]
+		}
+
+		// origin close, origin far
+		oc := cs.ClosestPointOnLine(pt, axis)
+		of := fs.ClosestPointOnLine(pt, axis)
+
+		if oc.Equals(of) {
+			// This is a plane, not a (non-degenerate) cone.
+			oldn := srf.NormalAt(0.5, 0.5)
+
+			u := fs.Minus(of)
+			v := axis.Cross(u).WithMagnitude(1)
+
+			vm := ff.Minus(of).Dot(v)
+			v = v.ScaledBy(vm)
+
+			srf.DegM = 1
+			srf.DegN = 1
+			srf.Ctrl[0][0] = of
+			srf.Ctrl[0][1] = of.Plus(u)
+			srf.Ctrl[1][0] = of.Plus(v)
+			srf.Ctrl[1][1] = of.Plus(u).Plus(v)
+			srf.Weight[0][0] = 1
+			srf.Weight[0][1] = 1
+			srf.Weight[1][0] = 1
+			srf.Weight[1][1] = 1
+
+			if oldn.Dot(srf.NormalAt(0.5, 0.5)) < 0 {
+				srf.Ctrl[0][0], srf.Ctrl[1][0] = srf.Ctrl[1][0], srf.Ctrl[0][0]
+				srf.Ctrl[0][1], srf.Ctrl[1][1] = srf.Ctrl[1][1], srf.Ctrl[0][1]
+			}
+			continue
+		}
+
+		if math.Abs(d0-d1) < lengthEps {
+			// This is a cylinder; so transpose it so that we'll recognize
+			// it as a surface of extrusion.
+			sn := *srf
+
+			// Transposing u and v flips the normal, so reverse u to
+			// flip it again and put it back where we started.
+			sn.DegM = 2
+			sn.DegN = 1
+			for dm := 0; dm <= 1; dm++ {
+				for dn := 0; dn <= 2; dn++ {
+					sn.Ctrl[dn][dm] = srf.Ctrl[1-dm][dn]
+					sn.Weight[dn][dm] = srf.Weight[1-dm][dn]
+				}
+			}
+
+			*srf = sn
+			continue
+		}
 	}
 }
 
@@ -401,10 +721,8 @@ func (s *SShell) MakeFromTransformationOf(src *SShell, t geom.Vector, q geom.Qua
 // `SShell::TriangulateInto` (shell.cpp): each surface's trim curves
 // (resolved against this shell) are assembled into a uv-space
 // polygon and triangulated either by ear-clipping (planar surfaces)
-// or by the adaptive uv grid (curved surfaces); untrimmed surfaces
-// (no STrimBy at all — currently MakeFromRevolutionOf/MakeFromHelixOf
-// output) fall back to the regular 16x16 grid so they aren't
-// triangulated away to nothing.
+// or by the adaptive uv grid (curved surfaces). See SSurface.TrimBuilt
+// for the one Go-only fallback.
 func (s *SShell) TriangulateInto(mesh *SMesh) {
 	for i := range s.Surface {
 		s.Surface[i].TriangulateInto(s, mesh)

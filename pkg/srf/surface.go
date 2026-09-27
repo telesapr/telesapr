@@ -31,10 +31,10 @@ type SSurface struct {
 
 	// TrimBuilt is a Go-port-only marker (no C++ field mirrors it):
 	// true when the surface's Trim list is authoritative, so an empty
-	// one means "nothing to render", as in C++. It is false only for
-	// surfaces whose constructors don't populate Trim yet
-	// (MakeFromRevolutionOf / MakeFromHelixOf); TriangulateInto
-	// renders those over their full parameter range instead.
+	// one means "nothing to render", as in C++. Every SShell
+	// constructor sets it; it is false only for a bare surface built
+	// outside one (FromPlane etc.), which TriangulateInto renders
+	// over its full parameter range instead.
 	TrimBuilt bool
 }
 
@@ -535,80 +535,71 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 	}
 }
 
-// PointOnCurve projects a Bezier curve onto the surface via
-// alternating Newton iterations: each iteration finds where the
-// curve's tangent line pierces the surface's tangent plane, then
-// updates both the surface (u, v) and the curve (tCurve) parameter.
+// PointOnCurve refines (*up, *vp), an initial guess, to where curve
+// pierces the surface, by alternating Newton iterations: each finds
+// where the curve's tangent line pierces the surface's tangent plane,
+// then updates both the surface (u, v) and the curve parameter. If
+// it doesn't converge, *up and *vp are left alone. Faithful port of
+// C++ `SSurface::PointOnCurve` (ratpoly.cpp).
 func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
-	u := s.Cached.U
-	v := s.Cached.V
-	if u == 0 && v == 0 {
-		u, v = 0.5, 0.5
-	}
+	u, v := *up, *vp
 	ps := s.PointAt(u, v)
-	tCurve := 0.5
-	tCurve, _ = curve.ClosestPointTo(ps, false)
-	if tCurve < 0 {
-		tCurve = 0
+	// Get initial guesses for t on the curve
+	tCurve, _ := curve.ClosestPointTo(ps, false)
+	if tCurve < 0.0 {
+		tCurve = 0.0
 	}
-	if tCurve > 1 {
-		tCurve = 1
+	if tCurve > 1.0 {
+		tCurve = 1.0
 	}
-	for iter := 0; iter < 30; iter++ {
-		ps = s.PointAt(u, v)
+
+	for i := 0; i < 30; i++ {
+		// Approximate the surface by a plane
+		ps := s.PointAt(u, v)
 		var tu, tv geom.Vector
 		s.TangentsAt(u, v, &tu, &tv, false)
-		n := tu.Cross(tv)
-		nMag := n.Magnitude()
-		if nMag < 1e-20 {
-			break
-		}
-		n = n.ScaledBy(1.0 / nMag)
+		n := tu.Cross(tv).WithMagnitude(1)
+
+		// point on curve and tangent line direction
 		pc := curve.PointAt(tCurve)
 		tc := curve.TangentAt(tCurve)
-		if ps.DistanceTo(pc) < ratPolyEps {
-			if up != nil {
-				*up = u
-			}
-			if vp != nil {
-				*vp = v
-			}
-			s.Cached.U = u
-			s.Cached.V = v
+
+		if ps.EqualsTol(pc, ratPolyEps) {
+			*up = u
+			*vp = v
 			return
 		}
+
+		// pi is where the curve tangent line intersects the surface tangent plane
 		var pi geom.Vector
 		d := tc.Dot(n)
-		if mathAbs(d) < 1e-10 {
+		if math.Abs(d) < 1e-10 { // parallel line and plane, guess the average rather than fail
 			pi = pc.Plus(ps).ScaledBy(0.5)
 		} else {
 			pi = pc.Minus(tc.ScaledBy(pc.Minus(ps).Dot(n) / d))
 		}
-		// Project pi into the tangent plane and compute (du, dv).
-		n2 := tu.Cross(tv)
-		ty := n2.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
-		tx := tv.Cross(n2).ScaledBy(1.0 / tv.MagSquared())
-		dp := pi.Minus(ps)
-		du := dp.Dot(tx) / tx.MagSquared()
-		dv := dp.Dot(ty) / ty.MagSquared()
-		u += du
-		v += dv
+
+		// project the point onto the tangent plane and line
+		{
+			n := tu.Cross(tv)
+			ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
+			tx := tv.Cross(n).ScaledBy(1.0 / tv.MagSquared())
+
+			dp := pi.Minus(ps)
+			du, dv := dp.Dot(tx), dp.Dot(ty)
+
+			u += du / tx.MagSquared()
+			v += dv / ty.MagSquared()
+		}
 		tCurve += pi.Minus(pc).Dot(tc) / tc.MagSquared()
-		if tCurve < 0 {
-			tCurve = 0
+		if tCurve < 0.0 {
+			tCurve = 0.0
 		}
-		if tCurve > 1 {
-			tCurve = 1
+		if tCurve > 1.0 {
+			tCurve = 1.0
 		}
 	}
-	if up != nil {
-		*up = u
-	}
-	if vp != nil {
-		*vp = v
-	}
-	s.Cached.U = u
-	s.Cached.V = v
+	// didn't converge (surface and curve intersecting)
 }
 
 // ContainsPlaneCurve returns true if the supplied exact curve lies

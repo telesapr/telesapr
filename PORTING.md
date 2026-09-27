@@ -20,22 +20,22 @@ solvespace core engine. It is the source of truth for the
 | `entity.cpp` | 997 | PARTIAL | `pkg/core/entity.go`, `pkg/core/entity_methods.go` | `EntityBase::ArcGetAngles` is a stub (always a full circle); `pkg/sketch/entity_bezier.go` computes arc angles itself |
 | `constraint.cpp` | 994 | OK | `pkg/core/constraint.go` | |
 | `system.cpp` | 660 | OK | `pkg/solver/system.go` | |
-| `group.cpp` | 1228 | OK | `pkg/sketch/group.go` | |
+| `group.cpp` | 1228 | PARTIAL | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | LATHE/REVOLVE/HELIX entity generation is a stub (`MakeLatheCircles`, `MakeLatheSurfacesSelectable`, `MakeRevolveEndFaces` do nothing; `generateHelixGroup` reuses revolve) |
 | `generate.cpp` | 598 | PARTIAL | `pkg/sketch/generate_all.go` | Solves all groups in one Newton system instead of per group; `chordTolCalculated` is ported, but `Sketch.CalculateEntityBBox` disagrees with C++ on some models (see §"Boolean-CSG parity") |
-| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, the running-shell boolean combine and `MergeCoincidentSurfaces` placement are faithful. REVOLVE/HELIX shells are not (see `srf/surface.cpp`) |
+| `groupmesh.cpp` | 803 | PARTIAL | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, the running-shell boolean combine and `MergeCoincidentSurfaces` placement are faithful. LATHE/REVOLVE/HELIX shells follow C++ (axis from `predef`, angle `param(3)*4`, helix distance `param(7)*2`), but faces aren't remapped (`REMAP_LINE_TO_FACE`, `REMAP_LATHE_START/END`): `SBezier` carries no source entity |
 | `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
 | `request.cpp` | 250 | OK | `pkg/sketch/request.go` | |
 | `style.cpp` | 948 | OK | `pkg/core/style.go` | |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go` | |
-| `srf/surface.cpp` | 494 | PARTIAL | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `Reverse`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `TriangulateInto`, `MakeFromExtrusionOf` are faithful. `MakeFromRevolutionOf`/`MakeFromHelixOf` build no trims (their surfaces render untrimmed, `SSurface.TrimBuilt=false`); `MakeSectionEdgesInto` is a stub |
-| `srf/shell.cpp` | 617 | PARTIAL | `pkg/srf/shell.go` | Extrusion faithful; revolution/helix as above |
+| `srf/surface.cpp` | 494 | PARTIAL | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `Reverse`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `TriangulateInto`, `MakeFromExtrusionOf`, `FromRevolutionOf` are faithful. `MakeSectionEdgesInto` is a stub |
+| `srf/shell.cpp` | 617 | OK | `pkg/srf/shell.go` | `MakeFromExtrusionOf`, `MakeFromRevolutionOf`, `MakeFromHelicalRevolutionOf`, `CheckNormalAxisRelationship`, `MakeFirstOrderRevolvedSurfaces` faithful; checked against a C++ harness in `pkg/srf/revolve_test.go` |
 | `srf/boolean.cpp` | 1100 | OK | `pkg/srf/boolean.go`, `pkg/srf/boolean_csg.go`, `pkg/srf/boolean_trim.go`, `pkg/srf/bsp_uv.go` | `SBspUv`, `MakeFromBoolean`, curve splitting, `MakeCopyTrimAgainst`, `TrimFromEdgeList`, `EdgeNormalsWithinSurface` |
 | `srf/polygon.cpp` / `polygon.cpp` | 924 | OK | `pkg/srf/polygon.go`, `pkg/srf/contour.go`, `pkg/srf/edgelist.go`, `pkg/srf/merge.go` | `AssemblePolygon`/`AssembleContour`, contour orientation (C++ sign convention), `FixContourDirections`, `EdgeCrosses`, `CullExtraneousEdges` |
-| `srf/surfinter.cpp` | 641 | UNAUDITED | `pkg/srf/surfinter.go` | Not yet compared line by line against C++; `AddExactIntersectionCurve` now uses the faithful curve split |
+| `srf/surfinter.cpp` | 641 | UNAUDITED | `pkg/srf/surfinter.go` | Not yet compared line by line against C++; `AddExactIntersectionCurve` now uses the faithful curve split, and every branch passes `agnstA`/`agnstB` through as in C++. The general case is a Go marching-squares stand-in |
 | `srf/bezier.cpp` | — | OK | `pkg/srf/bezier*.go` | |
-| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go`, `pkg/srf/bezier_loop*.go`, `pkg/srf/bezier_list.go`, `pkg/srf/boolean_csg.go` | Loop assembly (`FromCurves`, `SBezierLoopSet::From`, `FindOuterFacesFrom`, `GetPlaneContainingBeziers`), `IsCircle`, `GetSurfaceA/B` faithful. `SBezier::AllIntersectionsWith` is a sampling approximation |
+| `srf/curve.cpp` | 886 | PARTIAL | `pkg/srf/curve.go`, `pkg/srf/bezier_loop*.go`, `pkg/srf/bezier_list.go`, `pkg/srf/boolean_csg.go` | Loop assembly (`FromCurves`, `SBezierLoopSet::From`, `FindOuterFacesFrom`, `GetPlaneContainingBeziers`), `IsCircle`, `GetSurfaceA/B`, `RemoveShortSegments` faithful. `SBezier::AllIntersectionsWith` is a sampling approximation |
 | `srf/triangulate.cpp` | 738 | OK | `pkg/srf/triangulate.go` | Hole bridging, ear clipping, adaptive grid |
-| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `ClosestPointOnThisAndSurface` |
+| `srf/ratpoly.cpp` | 790 | OK | `pkg/srf/bezier.go`, `pkg/srf/pwl.go`, `pkg/srf/surface.go` | Adaptive pwl (`MakePwlInto`), `PointOnSurfaces`, `PointOnCurve`, `ClosestPointOnThisAndSurface` |
 | `srf/raycast.cpp` | 807 | OK | `pkg/srf/raycast.go`, `pkg/srf/raycast_surface.go` | `ClassifyEdge` and trimmed `AllPointsIntersecting` (plane, cylinder, subdivision) |
 | `srf/merge.cpp` | 130 | OK | `pkg/srf/merge.go` | `MergeCoincidentSurfaces` |
 | `bsp.cpp` | 733 | OK | `pkg/srf/bsp3.go`, `pkg/srf/bsp2.go` | |
@@ -137,7 +137,7 @@ Go gives 204619.494. The C++ testsuite golden (204638.627) is what
 C++ produces at chord tolerances of about 0.07–0.1 mm. Go's
 `chordTolCalculated` is 0.12 mm, because `Sketch.CalculateEntityBBox`
 reports a 120 mm extent (entity points at z = ±60) where the C++
-evidently sees about 71 mm. See remaining work item 2.
+evidently sees about 71 mm. See remaining work item 1.
 
 Parity came from replacing simplified stand-ins with faithful ports,
 not from tuning. The main fixes:
@@ -164,6 +164,9 @@ not from tuning. The main fixes:
   - `CullExtraneousEdges` didn't cull anti-parallel pairs.
   - `MergeCoincidentSurfaces` kept one surface's trims instead of merging them.
   - The running shell never accumulated across groups.
+  - Plane-plane and same-axis extrusion intersection curves weren't split against the operand shells (`nil` passed for `agnstA`/`agnstB`).
+  - `SSurface.PointOnCurve` ignored its initial uv guess, so a circle cut by a plane could refine to the wrong root.
+  - `SCurve.RemoveShortSegments` lacked the exact-curve t-spacing check, so it thinned circles below C++'s pwl.
 - **Triangulation.** Contours were ear-clipped one by one, with no hole bridging.
 
 The Go-only heuristics these had been masking were removed: the
@@ -175,25 +178,21 @@ when the trim polygon doesn't assemble" path.
 
 In priority order:
 
-1. **`MakeFromRevolutionOf` / `MakeFromHelixOf` trims** (`srf/surface.cpp`).
-   Port the C++ constructors, which build trim curves the way
-   `MakeFromExtrusionOf` does. Until then, their surfaces render over
-   the full parameter range (`TrimBuilt=false`) and can't take part
-   in booleans correctly. Add a revolve-vs-box boolean test with an
-   analytic volume.
-2. **`chordTolCalculated`.** Make `Sketch.CalculateEntityBBox` and the
+1. **`chordTolCalculated`.** Make `Sketch.CalculateEntityBBox` and the
    generate order match C++ `SolveSpaceUI::GenerateAll`
    (`genForBBox` pass, `generate.cpp:219`). That closes
    `boolean_tangent_spline`'s 1e-4 residual, and the band can then
    tighten to 1e-6.
-3. **Audit `srf/surfinter.cpp`** (`IntersectAgainst` and its per-case
+2. **Audit `srf/surfinter.cpp`** (`IntersectAgainst` and its per-case
    helpers) line by line, as was done for `boolean.cpp`/`raycast.cpp`.
-4. **Watertightness check.** The C++ fixture tests also assert that
+3. **Watertightness check.** The C++ fixture tests also assert that
    `SKdNode::MakeCertainEdgesInto(NAKED_OR_SELF_INTER)` finds no
    naked or self-intersecting edges. Port that check and assert it in
    `TestParityBooleanFixtures`.
-5. **Smaller stand-ins found but not yet ported:**
+4. **Smaller stand-ins found but not yet ported:**
    - `EntityBase::ArcGetAngles` in `pkg/core`;
    - `SBezier::AllIntersectionsWith`;
    - `SSurface::MakeSectionEdgesInto`;
-   - per-group solving in `GenerateAll`.
+   - per-group solving in `GenerateAll`;
+   - LATHE/REVOLVE/HELIX entity generation in `group.cpp`, and the
+     face remapping of their shells, which needs `SBezier::entity`.

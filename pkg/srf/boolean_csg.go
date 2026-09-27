@@ -102,52 +102,56 @@ func (c *SCurve) GetSurfaceB(a, b *SShell) *SSurface {
 	}
 }
 
-// SCurve::RemoveShortSegments trims very short polyline segments
-// from the curve's polyline approximation. Phase 4 + Goal Item 14
-// implementation: drop polyline vertices that are within tol of
-// their neighbors.
-// RemoveShortSegments drops polyline points that don't violate the
-// chord tolerance of either surface. Mirrors SCurve::RemoveShortSegments
-// from solvespace/src/srf/curve.cpp:806.
-//
-// The C++ version checks (a) parameter spacing on the exact curve,
-// (b) chord tolerance of each surface. The Go port checks (b); (a)
-// applies only when the curve has an exact (rational) bezier form,
-// which the boolean CSG pipeline strips before calling this.
-//
-// When both surface arguments are nil, RemoveShortSegments is a
-// no-op (legacy behaviour for callers that haven't been updated to
-// pass the surfaces).
-//
-// chordTolMm is the global chord tolerance in millimetres; pass
-// the value used by SolveSpace (default 0.01 mm).
+// RemoveShortSegments drops the polyline points that aren't vertices,
+// aren't spaced deliberately along an exact curve, and aren't needed
+// to meet the chord tolerance in either surface. Faithful port of C++
+// SCurve::RemoveShortSegments (curve.cpp:806). When both surfaces are
+// nil (a Go-only case) it does nothing.
 func (c *SCurve) RemoveShortSegments(sA, sB *SSurface) {
 	c.RemoveShortSegmentsWithChordTol(sA, sB, ChordTolMm())
 }
 
-// RemoveShortSegmentsWithChordTol is the explicit-tolerance form of
-// RemoveShortSegments. Useful for tests and for callers that have
-// their own tolerance setting.
+// RemoveShortSegmentsWithChordTol is RemoveShortSegments with an
+// explicit chord tolerance in place of ChordTolMm().
 func (c *SCurve) RemoveShortSegmentsWithChordTol(sA, sB *SSurface, chordTolMm float64) {
 	if len(c.Points) <= 2 {
 		return
 	}
 	if sA == nil && sB == nil {
-		// No surface information; preserve all points.
 		return
 	}
 	keep := make([]SCurvePt, 0, len(c.Points))
 	keep = append(keep, c.Points[0])
+	prev := c.Points[0].P
 	for i := 1; i < len(c.Points)-1; i++ {
 		sct := &c.Points[i]
+		scn := &c.Points[i+1]
+
 		if sct.Vertex {
 			keep = append(keep, *sct)
+			prev = sct.P
 			continue
 		}
-		// Determine (u, v) coordinates on each surface for the prev
-		// and next polyline points.
-		prev := keep[len(keep)-1].P
-		next := c.Points[i+1].P
+
+		// if the curve is exact and points are >0.05 apart wrt t, point is there
+		// deliberately regardless of chord tolerance (ex: small circles)
+		var tprev, t, tnext float64
+		if c.IsExact {
+			tprev, _ = c.Exact.ClosestPointTo(prev, true)
+			t, _ = c.Exact.ClosestPointTo(sct.P, true)
+			tnext, _ = c.Exact.ClosestPointTo(scn.P, true)
+		}
+		if t-tprev > 0.05 && tnext-t > 0.05 {
+			keep = append(keep, *sct)
+			prev = sct.P
+			continue
+		}
+
+		// We must check against both surfaces; the piecewise linear edge
+		// may have a different chord tolerance in the two surfaces. (For
+		// example, a circle in the surface of a cylinder is just a straight
+		// line, so it always has perfect chord tol, but that circle in
+		// a plane is a circle so it doesn't).
 		mustKeep := false
 		for _, s := range []*SSurface{sA, sB} {
 			if s == nil {
@@ -155,17 +159,18 @@ func (c *SCurve) RemoveShortSegmentsWithChordTol(sA, sB *SSurface, chordTolMm fl
 			}
 			var puv, nuv geom.Point2d
 			s.ClosestPointTo(prev, &puv, false)
-			s.ClosestPointTo(next, &nuv, false)
-			puvV := geom.Vector{X: puv.U, Y: puv.V}
-			nuvV := geom.Vector{X: nuv.U, Y: nuv.V}
-			if s.ChordToleranceForEdge(puvV, nuvV) > chordTolMm {
+			s.ClosestPointTo(scn.P, &nuv, false)
+			if s.ChordToleranceForEdge(geom.Vector{X: nuv.U, Y: nuv.V}, geom.Vector{X: puv.U, Y: puv.V}) > chordTolMm {
 				mustKeep = true
-				break
 			}
 		}
+
 		if mustKeep {
 			keep = append(keep, *sct)
+			prev = sct.P
 		}
+		// else prev is unchanged, since there's no longer any point
+		// in between
 	}
 	keep = append(keep, c.Points[len(c.Points)-1])
 	c.Points = keep

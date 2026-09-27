@@ -36,7 +36,7 @@ func (s *SSurface) IntersectAgainst(other *SSurface, agnstA, agnstB *SShell, int
 
 	// Branch 1: plane-plane intersection (DegM=1, DegN=1 on both).
 	if s.DegM == 1 && s.DegN == 1 && other.DegM == 1 && other.DegN == 1 {
-		s.intersectPlanePlane(other, into)
+		s.intersectPlanePlane(other, agnstA, agnstB, into)
 		return
 	}
 	// Branch 2: plane-extrusion (one is a plane, the other an extrusion).
@@ -49,7 +49,7 @@ func (s *SSurface) IntersectAgainst(other *SSurface, agnstA, agnstB *SShell, int
 	if isExtdt && isExtdb &&
 		math.Abs(alongt.Dot(alongb)) >=
 			math.Sqrt(alongt.Magnitude()*alongb.Magnitude())-lengthEps {
-		s.intersectExtrusionExtrusion(other, into, alongt)
+		s.intersectExtrusionExtrusion(other, agnstA, agnstB, into, alongt)
 		return
 	}
 	// Branch 4 (only one of the two surfaces is a plane; not the
@@ -100,7 +100,7 @@ func (s *SSurface) IntersectAgainst(other *SSurface, agnstA, agnstB *SShell, int
 // planes. Mirrors the DegM=1, DegN=1 branch of C++
 // SSurface::IntersectAgainst. The intersection is a line segment
 // trimmed to the (u, v) range of both planes.
-func (s *SSurface) intersectPlanePlane(other *SSurface, into *SShell) {
+func (s *SSurface) intersectPlanePlane(other *SSurface, agnstA, agnstB *SShell, into *SShell) {
 	na := s.NormalAt(0, 0).WithMagnitude(1)
 	nb := other.NormalAt(0, 0).WithMagnitude(1)
 	da := na.Dot(s.PointAt(0, 0))
@@ -152,7 +152,7 @@ func (s *SSurface) intersectPlanePlane(other *SSurface, into *SShell) {
 	}
 	if tmax > tmin+lengthEps {
 		bz := SBezierFrom2(p.Plus(dl.ScaledBy(tmin)), p.Plus(dl.ScaledBy(tmax)))
-		s.AddExactIntersectionCurve(&bz, other, nil, nil, into)
+		s.AddExactIntersectionCurve(&bz, other, agnstA, agnstB, into)
 	}
 }
 
@@ -243,7 +243,7 @@ func (s *SSurface) intersectPlaneExtrusion(other *SSurface, agnstA, agnstB *SShe
 // the same axis. The intersection is zero or more line segments
 // parallel to the axis, one per crossing of the projected
 // cross-section curves.
-func (s *SSurface) intersectExtrusionExtrusion(other *SSurface, into *SShell, alongt geom.Vector) {
+func (s *SSurface) intersectExtrusionExtrusion(other *SSurface, agnstA, agnstB *SShell, into *SShell, alongt geom.Vector) {
 	axis := alongt.WithMagnitude(1)
 	var lv []geom.Vector
 	var oft SBezier
@@ -289,7 +289,7 @@ func (s *SSurface) intersectExtrusionExtrusion(other *SSurface, into *SShell, al
 		other.PointOnSurfaces(s, &plane, &ub, &vb)
 		p = other.PointAt(ub, vb)
 		bz := SBezierFrom2(p.Plus(axis0), p.Plus(axis1))
-		s.AddExactIntersectionCurve(&bz, other, nil, nil, into)
+		s.AddExactIntersectionCurve(&bz, other, agnstA, agnstB, into)
 	}
 }
 

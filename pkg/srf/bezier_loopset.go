@@ -86,7 +86,7 @@ func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, chordTol float64,
 // Callers that build an SBezierLoopSet by hand (rather than through
 // SBezierLoopSetSet::FindOuterFacesFrom, which calls this
 // internally) must call this before passing the set to
-// MakeFromExtrusionOf/MakeFromRevolutionOf/MakeFromHelixOf: those
+// MakeFromExtrusionOf/MakeFromHelicalRevolutionOf: those
 // constructors need a non-degenerate Normal to build the cap-plane
 // (u, v) basis (see Vector.NormalDir), and a zero Normal collapses
 // that basis to a single direction, destroying the extrusion.

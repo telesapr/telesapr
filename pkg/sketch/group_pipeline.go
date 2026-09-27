@@ -255,50 +255,98 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
-// generateRevolveShell is the LATHE/REVOLVE group type.
+// revolveAxis returns the point on and the unit direction of the
+// axis of a LATHE/REVOLVE/HELIX group, from its predef origin point
+// and axis vector entities.
+func (g *Group) revolveAxis(sk *Sketch) (pt, axis geom.Vector) {
+	if e := sk.GetEntity(g.Predef.Origin); e != nil {
+		pt = e.PointGetNum()
+	}
+	if e := sk.GetEntity(g.Predef.EntityB); e != nil {
+		axis = vectorGetNum(sk, e)
+	}
+	return pt, axis.WithMagnitude(1)
+}
+
+// vectorGetNum returns the numeric direction of a vector entity (a
+// line segment or a normal). Mirrors C++ EntityBase::VectorGetNum
+// (entity.cpp:69), including its point[0] - point[1] sense for line
+// segments; faces aren't handled.
+func vectorGetNum(sk *Sketch, e *core.Entity) geom.Vector {
+	switch {
+	case e.Type == core.EntityLineSegment:
+		a, b := sk.GetEntity(e.Point[0]), sk.GetEntity(e.Point[1])
+		if a == nil || b == nil {
+			return geom.Vector{}
+		}
+		return a.PointGetNum().Minus(b.PointGetNum())
+	case e.IsNormal():
+		return e.NormalGetNum().RotationN()
+	}
+	return geom.Vector{}
+}
+
+// generateRevolveShell is the LATHE/REVOLVE group type: revolve each
+// BezierLoopSet of the source group (g.OpA) about the group's axis, a
+// full turn for LATHE, by the group's angle for REVOLVE. Mirrors the
+// LATHE and REVOLVE branches of C++ Group::GenerateShellAndMesh
+// (groupmesh.cpp:317-351).
 func (g *Group) generateRevolveShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
-	center := g.LatheCenter(sk)
-	axis := geom.Vector{Z: 1}
+	src := sk.GetGroup(g.OpA)
+	if src == nil {
+		return
+	}
+	pt, axis := g.revolveAxis(sk)
+
+	anglef, angles := 2*math.Pi, 0.0
 	if g.Type == GroupRevolve {
-		axis, _, _ = g.RotationParameters(sk)
-	}
-	for i := range g.BezierLoops.Sets {
-		set := &g.BezierLoops.Sets[i]
-		if set.Outer.Len() == 0 {
-			continue
+		anglef = paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
+		if g.Subtype != GroupOneSided {
+			anglef *= 0.5
+			angles = -anglef
 		}
-		newShell := srf.SShell{}
-		newShell.MakeFromRevolutionOf(set, center, axis, g.Color)
-		g.ThisShell.MakeFromAssemblyOf(&g.ThisShell, &newShell)
 	}
-	g.RunningShell = g.ThisShell
+	for i := range src.BezierLoops.Sets {
+		sbls := &src.BezierLoops.Sets[i]
+		if g.Type == GroupRevolve && math.Abs(anglef-angles) < 2*math.Pi {
+			g.ThisShell.MakeFromHelicalRevolutionOf(sbls, pt, axis, g.Color,
+				angles, anglef, 0, 0, 0, 0)
+		} else {
+			g.ThisShell.MakeFromRevolutionOf(sbls, pt, axis, g.Color)
+		}
+	}
 	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
-// generateHelixShell produces a helical sweep: revolved contour
-// translated along the axis with a per-revolution pitch. The total
-// rotation count is taken from g.ValA (radians, default 2π) and the
-// pitch from g.H.Param(3) (axial distance per full turn).
+// generateHelixShell is the HELIX group type: sweep each
+// BezierLoopSet of the source group (g.OpA) about the group's axis
+// while translating along it. Mirrors the HELIX branch of C++
+// Group::GenerateShellAndMesh (groupmesh.cpp:352-374).
 func (g *Group) generateHelixShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisMesh.Clear()
-	axis, center, pitch := g.HelixParameters(sk)
-	turns := g.ValA / (2 * math.Pi)
-	if turns == 0 {
-		turns = 1
+	src := sk.GetGroup(g.OpA)
+	if src == nil {
+		return
 	}
-	for i := range g.BezierLoops.Sets {
-		set := &g.BezierLoops.Sets[i]
-		if set.Outer.Len() == 0 {
-			continue
-		}
-		newShell := srf.SShell{}
-		newShell.MakeFromHelixOf(set, center, axis, turns, pitch, g.Color)
-		g.ThisShell.MakeFromAssemblyOf(&g.ThisShell, &newShell)
+	pt, axis := g.revolveAxis(sk)
+
+	anglef := paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
+	angles := 0.0
+	dists := 0.0
+	distf := paramFloat(sk, g.H.Param(7)) * 2 // dist is applied twice
+	if g.Subtype != GroupOneSided {
+		anglef *= 0.5
+		angles = -anglef
+		distf *= 0.5
+		dists = -distf
 	}
-	g.RunningShell = g.ThisShell
+	for i := range src.BezierLoops.Sets {
+		g.ThisShell.MakeFromHelicalRevolutionOf(&src.BezierLoops.Sets[i], pt, axis, g.Color,
+			angles, anglef, dists, distf, 0, 0)
+	}
 	g.ThisShell.TriangulateInto(&g.ThisMesh)
 }
 
