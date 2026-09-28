@@ -2,53 +2,13 @@ package slvs
 
 import (
 	"bytes"
-	"fmt"
-	"math"
 	"os"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
-
-// modifyLastDigits are the cases whose saved values may differ from
-// C++'s in the last digits, and why. The tangent arc is found with acos,
-// tan, sin and cos, where Go's math package and glibc disagree in the
-// last bit for about a quarter of arguments; and solving the result goes
-// through the QR without COLAMD's column order (see system.go).
-var modifyLastDigits = map[string]string{
-	"tangent":            "libm and QR column order",
-	"tangent_modify":     "libm",
-	"tangent_manual":     "libm and QR column order",
-	"tangent_arc":        "libm and QR column order",
-	"tangent_arc_modify": "libm",
-}
-
-// diffUpToLastDigits describes the first difference between two saves
-// other than numbers that agree to 1e-9; empty if there's none.
-func diffUpToLastDigits(got, want string) string {
-	gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
-	if len(gl) != len(wl) {
-		return fmt.Sprintf("%d lines, want %d", len(gl), len(wl))
-	}
-	for i := range gl {
-		if gl[i] == wl[i] {
-			continue
-		}
-		gk, gv, _ := strings.Cut(gl[i], "=")
-		wk, wv, _ := strings.Cut(wl[i], "=")
-		g, errG := strconv.ParseFloat(gv, 64)
-		w, errW := strconv.ParseFloat(wv, 64)
-		if gk != wk || errG != nil || errW != nil ||
-			math.Abs(g-w) > 1e-9*math.Max(1, math.Abs(w)) {
-			return fmt.Sprintf("line %d is %q, want %q", i+1, gl[i], wl[i])
-		}
-	}
-	return ""
-}
 
 // TestModifyToolsVsCpp runs the tangent arc and split tools on sketches
 // built on a fixture, and requires the saves C++ writes after the same
@@ -128,11 +88,7 @@ func TestModifyToolsVsCpp(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, ok := modifyLastDigits[tc.name]; ok {
-				if msg := diffUpToLastDigits(string(got), string(want)); msg != "" {
-					t.Errorf("save differs from C++'s: %s", msg)
-				}
-			} else if !bytes.Equal(got, want) {
+			if !bytes.Equal(got, want) {
 				t.Errorf("save differs from C++'s")
 			}
 		})

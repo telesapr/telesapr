@@ -62,6 +62,9 @@ func TestSLVSLoadRoundTrip(t *testing.T) {
 			t.Fatalf("expected entities for %s", path)
 		}
 
+		// C++ AfterNewFile generates (and solves) the loaded sketch
+		// before the harness saves it, and SaveToFile generates again.
+		doc.Sketch.GenerateAll()
 		saved := doc.Save()
 		original, err := os.ReadFile(path)
 		if err != nil {

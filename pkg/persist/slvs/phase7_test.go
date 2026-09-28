@@ -59,7 +59,9 @@ func TestPhase7AllFixturesLoad(t *testing.T) {
 
 // roundTripExclusions are the fixtures TestPhase7AllFixturesRoundTrip
 // doesn't compare, with the reason. The others are what current C++
-// writes when it loads and saves them (checked with a C++ harness).
+// writes when it loads and saves them (checked with a C++ harness);
+// for these, TestExcludedFixturesVsCppSave compares with what C++
+// writes instead.
 var roundTripExclusions = map[string]string{
 	// Written by older versions: current C++ also rewrites them (for
 	// example it marks the reference origins as construction).
@@ -69,8 +71,6 @@ var roundTripExclusions = map[string]string{
 	"constraint/pt_line_distance/extended.slvs": "older version",
 	"constraint/pt_on_circle/negative_dia.slvs": "older version",
 	"constraint/large_dimensions/normal.slvs":   "older version",
-	// The solved values differ from C++'s in the last digit.
-	"constraint/same_orientation/normal.slvs": "last-digit solver difference",
 	// Saved before C++ appended the running shell, or with an older
 	// boolean's curve numbering: current C++ writes what Go does.
 	"constraint/pt_face_distance/normal.slvs":    "older version",
@@ -135,6 +135,9 @@ func TestPhase7AllFixturesRoundTrip(t *testing.T) {
 			t.Errorf("load %s: %v", path, err)
 			return nil
 		}
+		// C++ AfterNewFile generates (and solves) the loaded sketch
+		// before the harness saves it, and SaveToFile generates again.
+		doc.Sketch.GenerateAll()
 		saved := doc.Save()
 		original, err := os.ReadFile(path)
 		if err != nil {
@@ -155,4 +158,34 @@ func TestPhase7AllFixturesRoundTrip(t *testing.T) {
 		t.Fatalf("no fixtures round-tripped")
 	}
 	t.Logf("round-tripped %d fixtures successfully", count)
+}
+
+// TestExcludedFixturesVsCppSave requires what C++ writes when it opens
+// and saves the fixtures TestPhase7AllFixturesRoundTrip excludes
+// (testdata/cppsave, from scripts/regen-cpp-saves.sh).
+func TestExcludedFixturesVsCppSave(t *testing.T) {
+	_, file, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(file), "..", "..", "..", "testdata")
+	for rel, reason := range roundTripExclusions {
+		if reason == "not a valid file" {
+			continue
+		}
+		t.Run(rel, func(t *testing.T) {
+			srf.SetChordTolMm(0)
+			doc, err := slvs.LoadFile(filepath.Join(root, rel))
+			if err != nil {
+				t.Fatal(err)
+			}
+			// C++ AfterNewFile generates the loaded sketch before the
+			// harness saves it.
+			doc.Sketch.GenerateAll()
+			want, err := os.ReadFile(filepath.Join(root, "cppsave", strings.TrimSuffix(rel, ".slvs")+".cppsave"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(doc.Save()) != string(want) {
+				t.Errorf("save differs from C++'s")
+			}
+		})
+	}
 }
