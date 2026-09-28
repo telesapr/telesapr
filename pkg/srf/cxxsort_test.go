@@ -8,7 +8,7 @@ import (
 )
 
 // TestCxxSortVsLibstdcxx sorts 3000 random arrays with few distinct keys,
-// half with cxxSort and half with the heapsort cxxPartialSort, and
+// half with CxxSort and half with the heapsort cxxPartialSort, and
 // requires the permutations libstdc++ 16's std::sort and
 // std::partial_sort(first, last, last) give: the output of a C++
 // program with the same generator hashes to want.
@@ -34,7 +34,7 @@ func TestCxxSortVsLibstdcxx(t *testing.T) {
 			v[i] = e{int32(rnd() % uint64(alpha)), int32(i)}
 		}
 		if mode == 0 {
-			cxxSort(v, less)
+			CxxSort(v, less)
 		} else {
 			cxxPartialSort(v, 0, n, n, less)
 		}

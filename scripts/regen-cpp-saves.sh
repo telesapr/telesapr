@@ -5,6 +5,8 @@
 # wrote, and edits whose solved values C++'s own load changes.
 # TestExcludedFixturesVsCppSave requires Go's save to match these.
 #
+# TrueType text uses testdata/Gentium-R.ttf, as in the Go tests.
+#
 # Needs the C++ build in solvespace/build (libsolvespace-core.a and
 # libsolvespace-headless.a).
 #
@@ -38,7 +40,8 @@ while read -r f reason; do
     # Save next to the original, so that linked files keep their
     # relative paths.
     tmp="$(dirname "$f")/.cppsave-$(basename "$f")"
-    (cd "$(dirname "$f")" && "$TMP/harness" "$(basename "$f")" "$(basename "$tmp")") >/dev/null 2>&1
+    (cd "$(dirname "$f")" && "$TMP/harness" "$(basename "$f")" "$(basename "$tmp")" \
+        "$REPO_ROOT/testdata/Gentium-R.ttf") >/dev/null 2>&1
     mv "$tmp" "$out"
     echo "$out"
 done

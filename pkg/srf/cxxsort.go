@@ -2,12 +2,12 @@ package srf
 
 import "math/bits"
 
-// cxxSort sorts s as libstdc++'s std::sort does, so that elements that
+// CxxSort sorts s as libstdc++'s std::sort does, so that elements that
 // compare equal end up in the same order as in C++ (std::sort isn't
 // stable, and a mesh's order is what gets exported): introsort with a
 // median-of-three pivot, heapsort past the depth limit, then insertion
 // sort (bits/stl_algo.h, bits/stl_heap.h).
-func cxxSort[T any](s []T, less func(a, b *T) bool) {
+func CxxSort[T any](s []T, less func(a, b *T) bool) {
 	if len(s) == 0 {
 		return
 	}

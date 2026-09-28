@@ -7,6 +7,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
 
 // GenerateEntityBeziers populates the supplied SBezierList with the
@@ -111,6 +112,20 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 			sb.Weight[1] = libm.Cos(dtheta / 2)
 			beziers.Add(sb)
 		}
+
+	case core.EntityTTFText:
+		topLeft, errT := rt.Point(e.Point[0])
+		botLeft, errB := rt.Point(e.Point[1])
+		q, errN := rt.Normal(e.Normal)
+		if errT != nil || errB != nil || errN != nil {
+			return
+		}
+		n := q.RotationN()
+		v := topLeft.Minus(botLeft)
+		u := v.Cross(n).WithMagnitude(v.Magnitude())
+
+		// `ExtraPoints` is storing kerning boolean
+		ttf.Fonts.PlotString(e.Font, e.Str, beziers, e.ExtraPoints != 0, botLeft, u, v)
 	}
 
 	// Record our style for all of the Beziers that we just created.

@@ -93,5 +93,9 @@ var cppGroupDOF = map[string]map[uint32]int{
 	"request/image/linked.slvs":                         {0x00000001: 0, 0x00000002: 0, 0x00000003: 3},
 	"request/image/normal.slvs":                         {0x00000001: 0, 0x00000002: 4},
 	"request/line_segment/normal.slvs":                  {0x00000001: 0, 0x00000002: 4},
+	"request/ttf_text/extrude.slvs":                     {0x00000001: 0, 0x00000002: 4, 0x00000003: 1},
+	"request/ttf_text/extrude_kerning.slvs":             {0x00000001: 0, 0x00000002: 4, 0x00000003: 1},
+	"request/ttf_text/kerning.slvs":                     {0x00000001: 0, 0x00000002: 4},
+	"request/ttf_text/normal.slvs":                      {0x00000001: 0, 0x00000002: 4},
 	"request/workplane/normal.slvs":                     {0x00000001: 0, 0x00000002: 3},
 }

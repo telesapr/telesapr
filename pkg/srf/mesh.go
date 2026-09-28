@@ -397,7 +397,7 @@ func (m *SMesh) GetCenterOfMass() geom.Vector {
 // the comparisons met a transparent triangle (C++
 // SMesh::PrecomputeTransparency).
 func (m *SMesh) PrecomputeTransparency() {
-	cxxSort(m.Triangles, func(sta, stb *STriangle) bool {
+	CxxSort(m.Triangles, func(sta, stb *STriangle) bool {
 		colora, colorb := sta.Meta.RgbaColor, stb.Meta.RgbaColor
 		opaquea := colora.IsEmpty() || colora.Alpha == 255
 		opaqueb := colorb.IsEmpty() || colorb.Alpha == 255

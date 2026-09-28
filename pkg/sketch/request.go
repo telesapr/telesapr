@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
 
 type RequestType int
@@ -65,7 +66,8 @@ func (r *Request) Clear() {}
 
 // Generate adds the entities and params of the request (C++
 // Request::Generate). sk stands in for C++'s SS, whose loaded images
-// give an image request its aspect ratio; it may be nil.
+// give an image request its aspect ratio; it may be nil. A TTF request
+// takes its aspect ratio from its font, in ttf.Fonts (C++ SS.fonts).
 func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.ParamList) {
 	entityType, pointCount, hasNormal, hasDistance, ok := getRequestInfo(r.Type, r.ExtraPoints)
 	if !ok {
@@ -75,9 +77,12 @@ func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.P
 	// Request-specific generation.
 	switch r.Type {
 	case RequestTTFText:
-		// C++ first takes the aspect ratio of the text as the font
-		// renders it; font loading (ttf.cpp) isn't ported, so the saved
-		// one stands.
+		// `ExtraPoints` is storing kerning boolean
+		actualAspectRatio := ttf.Fonts.AspectRatio(r.Font, r.Str, r.ExtraPoints != 0)
+		if actualAspectRatio != 0 {
+			// We could load the font, so use the actual value.
+			r.AspectRatio = actualAspectRatio
+		}
 		if r.AspectRatio == 0 {
 			// We couldn't load the font and we don't have anything saved,
 			// so just use 1:1, which is valid for the missing font symbol anyhow.

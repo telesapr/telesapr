@@ -23,8 +23,8 @@ solvespace core engine. It is the source of truth for the
 | `group.cpp` | 1228 | OK | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | `Generate` (all group types), `Clear`, `CopyEntity`, `Remap` (as `RemapEntity`), the `Make*` helpers, `GenerateEquations` and `TransformImportedBy`. LINKED groups copy the `ImpEntity` the loader reads from the linked file. Menu and UI code are out of scope |
 | `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry), `SolveGroup` with `WriteEqSystemForGroup` and `WriteEquationsExceptFor`, `ForceReferences`, `CalculateEntityBBox`. `GenerateAll`'s DIRTY and UNTIL_ACTIVE ranges (the active group is `Sketch.Active`, else the one C++ picks on load), `TestRankForGroup`, `MarkGroupDirty`, the `deleted` counts and their message (through `Sketch.Message`), and `ScheduleGenerateAll`, which `Refresh` serves as C++'s event loop does. Dragged params aren't marked |
 | `groupmesh.cpp` | 803 | OK | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, `GenerateShellAndMesh` (every group type, step and repeat, the face entities, the running-shell combine, and the forced-to-mesh combine with `SnapToMesh`), `GenerateForStepAndRepeat`, `GenerateForBoolean`, `RemapFaces`, `GenerateDisplayItems` (without the render-side polyline join) are faithful; `group/force_to_mesh` saves match C++ byte for byte |
-| `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too); TTF text not ported |
-| `request.cpp` | 250 | OK | `pkg/sketch/request.go`, `pkg/persist/slvs/linked.go` | Audited: `Generate` (an image request takes its aspect ratio from the image file, loaded as `ReloadLinkedImage` does; a TTF request keeps its saved one, since font loading isn't ported), `DescriptionString`, `IndexOfPoint`, the entity/request table |
+| `drawentity.cpp` (`GenerateBezierCurves`) | — | OK | `pkg/sketch/entity_bezier.go` | Lines, arcs/circles, `ComputeInterpolatingSpline` (C2 cubics, periodic too), TTF text (through `ttf.Fonts.PlotString`) |
+| `request.cpp` | 250 | OK | `pkg/sketch/request.go`, `pkg/persist/slvs/linked.go` | Audited: `Generate` (an image request takes its aspect ratio from the image file, loaded as `ReloadLinkedImage` does, and a TTF request from its font), `DescriptionString`, `IndexOfPoint`, the entity/request table |
 | `style.cpp` | 948 | OK | `pkg/core/style.go`, `pkg/core/settings.go`, `pkg/sketch/style.go` | Audited: the default styles, `FillDefaultStyle` (from the user's settings, `core.GetSettings`, which like the headless C++ build's return the defaults unless the caller sets a store), `LoadFactoryDefaults` and `FreezeDefaultStyles`, `Get` (which creates a missing style, so an entity naming one that the file lacks gets a saved "new-custom-style", as in C++), `ForEntity`, the colour, width, text height, exportable and stipple getters (widths in mm take the view scale), `DescriptionString`. Loading starts each style from the defaults. The style screens are user interface |
 | `clipboard.cpp` | 527 | OK | `pkg/sketch/clipboard.go`, `pkg/sketch/edit.go` | Audited: the clipboard (`NewEntityFor` was off by one), `CopySelection`, `PasteClipboard` and `DeleteSelection`, taking the selection as an argument, with `GraphicsWindow::AddRequest` and `DeleteTaggedRequests`. The menus and the paste-transformed screen are user interface |
 | `srf/surface.cpp` | 494 | OK | `pkg/srf/surface.go`, `pkg/srf/shell.go`, `pkg/srf/raycast_surface.go` | Audited throughout: `FromPlane`, `FromExtrusionOf`, `IsExtrusion`, `IsCylinder`, `FromRevolutionOf`, `FromTransformationOf`, `GetAxisAlignedBounding`, `LineEntirelyOutsideBbox`, `MakeEdgesInto`/`MakeTrimEdgesInto`, `ExactSurfaceTangentAt`, `MakeSectionEdgesInto`, `TriangulateInto`, `Reverse`, `ScaleSelfBy`, `Clear` (trims only), `CoincidentWithPlane`, `SShell::MakeFromCopyOf`/`MakeFromTransformationOf` |
@@ -46,6 +46,7 @@ solvespace core engine. It is the source of truth for the
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go`, `pkg/persist/slvs/linked.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, `ReloadAllLinked` reads each linked file's entities, mesh and shell (`LoadEntitiesFromFile`: an IDF board, an STL mesh, or a .slvs file's entities, styles, mesh and shell), loads the images it uses, and forces a mesh-only link to a mesh, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (C++'s header, whatever the loaded file had; regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view, the custom styles only, then the last group's running mesh and shell), and matches current C++ byte for byte on the fixtures, shells included. A missing linked file or image counts as declined (C++ asks the user to find it) |
 | `importmesh.cpp` | 258 | OK | `pkg/persist/slvs/stl.go` | `LinkStl`: a binary STL's triangles, colours, and the origin, bounding box and edge-vertex entities; `group/link_stl` saves match C++ byte for byte |
 | `importidf.cpp` | 536 | OK | `pkg/persist/slvs/idf.go` | `LinkIDF`: the board outline, cutouts, routing keepouts and drilled holes as entities, and the board extruded (`std::stof`'s float rounding included); `group/link_idf` saves match C++ byte for byte |
+| `ttf.cpp` | 449 | OK | `pkg/ttf` | `TtfFontList` (`LoadAll`, sorted with `CxxSort` and deduplicated by name; the font files are `ttf.FontFiles`, set with `SetFontFiles`, as the headless build's `fontFiles`; the builtin Bitstream Vera is embedded), `LoadFont`, `PlotString` (its float factor included), `AspectRatio`, `ExtractTTFData`, and `ReadUTF8`'s decoding. Under it, FreeType 2.14.3's TrueType path as C++ calls it: opening a face (a collection's first), the names, the Unicode charmap (formats 0, 4, 6, 12, 13, 14, validated), `FT_Request_Size`, unhinted glyph loading (composites, phantom points, `FT_MulFix`/`FT_DivFix`/`FT_Hypot`), the `kern` table, `FT_Outline_Decompose`. Fonts with CFF outlines aren't read |
 | glibc `libm` (2.44) | — | OK | `pkg/libm` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` and the huge-argument reduction, as glibc's x86-64 FMA variants compile them (tables read from `libm-2.44.a`); the engine's trigonometry goes through it |
 | `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `AtIntersectionOfLines`, `DistanceToLine`/`DistanceToPlane`, `DotInToCsys`/`ScaleOutOfCsys`, `WithMagnitude`, `RotatedAbout` (both overloads; Go's went through a quaternion), `DirectionCosineWith`, `ClosestPointOnLine`, `DivProjected`, `ClampWithin`, `Vector4` (`From(w, v)` premultiplies, `Blend`), `Point2d` (`Equals` with `LENGTH_EPS`, `Angle`, `FromPolar`, `DistanceToLineSigned`), `BBox` (`GetOrigin` is the centre; `Overlaps`, `Contains`), `Quaternion::From(axis, angle)`, `Times`, `Inverse`, `Mirror` (was wrong), `ToThe`, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)`; `geom.Max`/`Min` are `std::max`/`min` |
 
@@ -71,7 +72,6 @@ are out-of-scope:
 | `describescreen.cpp` | 589 | "Describe" view |
 | `confscreen.cpp` | 592 | "Configuration" view |
 | `toolbar.cpp` | 252 | Toolbar widget |
-| `ttf.cpp` | 449 | TrueType font loading |
 | `style.cpp` (display portion) | — | Style for display only |
 | `export.cpp` | 1272 | 2D vector export, and the other mesh formats (OBJ, three.js, VRML). `ExportMeshTo`'s STL export is ported (`pkg/sketch/export.go`, with export mode's chord tolerance in `pkg/srf/pwl.go`) |
 | `exportvector.cpp` | 1365 | 2D vector output formats |
@@ -86,9 +86,9 @@ UI.
 
 ## Parity checks
 
-475 tests (334 top-level) across the 7 engine packages (`pkg/core`,
+481 tests (336 top-level) across the 8 engine packages (`pkg/core`,
 `pkg/geom`, `pkg/libm`, `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`,
-`pkg/srf`); no TODO markers. The tests that pin Go to C++:
+`pkg/srf`, `pkg/ttf`); no TODO markers. The tests that pin Go to C++:
 
 - **Saves.** `TestSLVSLoadRoundTrip`/`TestPhase7AllFixturesRoundTrip`:
   every fixture, loaded and generated as C++ `AfterNewFile` does, saves
@@ -96,10 +96,15 @@ UI.
   fixtures older versions wrote (`roundTripExclusions`) are compared
   with C++'s save of them instead (`TestExcludedFixturesVsCppSave`,
   `testdata/cppsave`). `TestModifyToolsVsCpp`: the tangent arc and split
-  tools, and `TestExportStlVsCpp`: STL export, byte for byte.
+  tools, and `TestExportStlVsCpp`: STL export, byte for byte. TrueType
+  text uses `testdata/Gentium-R.ttf`, as C++'s test harness does;
+  `request/ttf_text/extrude*.slvs` extrude text, so their shells come
+  from glyph outlines.
 - **Solving.** `TestParityGroupSolveVsCpp`: every group solves with
   C++'s degrees of freedom and face entities. `TestSparseQRVsEigen`:
   rank and least-squares solution bit for bit on 500 systems.
+- **Fonts.** `TestTTFVsCpp`: font names, cap heights, aspect ratios and
+  `PlotString`'s Beziers bit for bit, for Gentium and the builtin font.
 - **Numerics.** `TestLibmVsGlibc`: 33,400 inputs over every branch;
   `TestNoFusedMultiplyAdd`: the build doesn't fuse `x*y + z`;
   `TestCxxSortVsLibstdcxx`: `std::sort`.
@@ -112,7 +117,9 @@ UI.
 Golden data is regenerated by the `scripts/regen-*` scripts (C++
 harnesses built against `solvespace/build` and its vendored Eigen, or
 glibc); `scripts/libmcheck` compares `pkg/libm` with the system libm on
-~10^9 inputs.
+~10^9 inputs, and `scripts/regen-ttf-golden.sh` with font files compares
+`pkg/ttf` with C++ on them (every TrueType-outline font of 1,109 system
+fonts matched).
 
 ## Definition of done
 
@@ -140,10 +147,15 @@ hide one.
 
 **Known gaps:**
 
-- TTF text: `ttf.cpp` is out of scope, so a TTF request keeps its saved
-  aspect ratio and draws no glyphs. Matching C++ means reproducing
-  FreeType's fixed-point scaling and outline decomposition, and C++'s
-  results depend on the fonts the system has.
+- Fonts with CFF outlines (OpenType `OTTO` files, and collections of
+  them): FreeType reads them with its CFF driver and Adobe's charstring
+  engine, which aren't ported, so Go doesn't list them and a request
+  naming one keeps its saved aspect ratio and draws the error X. Also
+  not ported: WOFF files, FreeType's "tricky" fonts (a few CJK fonts
+  that need hinting), and cmap formats 2, 8 and 10 (multi-byte
+  encodings). The fonts a sketch can use are the ones the caller lists
+  with `ttf.SetFontFiles`, as in C++'s headless build (C++'s GUI builds
+  list the system's fonts through fontconfig).
 - The bits match C++ as built here: x86-64 with FMA and AVX2 (glibc
   2.44 picks the FMA variants of its trigonometry) and the vendored
   Eigen built without FMA. Elsewhere C++ itself computes other last
