@@ -5,28 +5,23 @@ This is a Go port of spacesolve, a parametric 2D/3D CAD tool.
 ## Project Structure
 
 ```
-go-spacesolve/
-├── cmd/
-│   └── spacesolve/      # Main application entry point
-├── pkg/
-│   ├── core/            # Core data structures (handles, entities, constraints)
-│   ├── sketch/          # Sketch and group management
-│   ├── system/          # Constraint solver
-│   ├── expr/            # Expression evaluator
-│   ├── geom/            # Geometric primitives and algorithms
-│   ├── mesh/            # Mesh generation and operations
-│   ├── render/          # Rendering abstractions
-│   ├── ui/              # User interface
-│   ├── file/            # File I/O
-│   ├── export/          # Export formats (DXF, STEP, etc.)
-│   └── platform/        # Platform-specific code
-└── test/                # Test files
+pkg/
+├── core/            # Handles, entities, constraints, expressions
+├── geom/            # Geometric primitives and algorithms
+├── libm/            # Bit-exact libm functions matching C++ output
+├── persist/slvs/    # .slvs file load/save
+├── sketch/          # Sketch, groups, requests, export
+├── solver/          # Constraint solver (sparse QR, COLAMD)
+├── srf/             # Surfaces, curves, booleans, meshing
+└── ttf/             # TrueType/FreeType font loading and text outlines
 ```
+
+There is no GUI at present. See `PORTING.md` for parity status.
 
 ## Build
 
 ```bash
-go build ./cmd/spacesolve
+go build ./...
 ```
 
 ## Original C++ Source

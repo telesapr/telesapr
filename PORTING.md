@@ -80,9 +80,8 @@ are out-of-scope:
 | `render/*.cpp` | — | OpenGL renderer |
 | `solvespace.cpp` (UI portion) | — | `SolveSpaceUI` (menu/file/window management) and observer notifications |
 
-The Go port's GUI (in `pkg/app/` and `pkg/spacesolve/`) is a
-separate Cogent-Core-based SVG editor that does NOT mirror the C++
-UI.
+The Go port has no GUI at present; the engine packages are
+UI-independent.
 
 ## Parity checks
 
