@@ -70,7 +70,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 
 	// If we're generating entities for display, first we need to find
 	// the bounding box to turn relative chord tolerance to absolute.
-	if !genForBBox {
+	if !srf.ExportMode() && !genForBBox {
 		sk.generateAll(typ, andFindFree, true)
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)

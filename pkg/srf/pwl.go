@@ -12,10 +12,33 @@ import (
 var (
 	chordTolMm  = 0.1
 	maxSegments = 20
+
+	// While exporting, the export tolerance and segment limit apply
+	// instead (C++ SS.exportMode, ExportChordTolMm, exportMaxSegments).
+	exportMode        bool
+	exportChordTolMm  float64
+	exportMaxSegments int
 )
 
-// ChordTolMm returns the absolute chord tolerance in mm.
-func ChordTolMm() float64 { return chordTolMm }
+// ChordTolMm returns the absolute chord tolerance in mm: the export
+// one in export mode (C++ SS.ChordTolMm).
+func ChordTolMm() float64 {
+	if exportMode {
+		return exportChordTolMm
+	}
+	return chordTolMm
+}
+
+// SetExportMode turns export mode on, with the given chord tolerance in
+// mm and segment limit, or off (C++ SS.exportMode).
+func SetExportMode(on bool, chordTolMm float64, maxSegments int) {
+	exportMode = on
+	exportChordTolMm = chordTolMm
+	exportMaxSegments = maxSegments
+}
+
+// ExportMode reports whether export mode is on.
+func ExportMode() bool { return exportMode }
 
 // SetChordTolMm sets the absolute chord tolerance in mm. Like C++
 // chordTolCalculated it can be 0, for a sketch whose entities all sit
@@ -24,8 +47,14 @@ func SetChordTolMm(t float64) {
 	chordTolMm = t
 }
 
-// GetMaxSegments returns the maximum number of pwl segments per curve.
-func GetMaxSegments() int { return maxSegments }
+// GetMaxSegments returns the maximum number of pwl segments per curve:
+// the export one in export mode (C++ SS.GetMaxSegments).
+func GetMaxSegments() int {
+	if exportMode {
+		return exportMaxSegments
+	}
+	return maxSegments
+}
 
 // MakePwlIntoPoints splits the curve into piecewise linear segments that
 // don't deviate from it by more than chordTol (0 means the default).

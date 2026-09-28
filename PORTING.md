@@ -42,7 +42,7 @@ solvespace core engine. It is the source of truth for the
 | `modify.cpp` | 751 | OK | `pkg/sketch/edit.go`, `pkg/sketch/modify.go` | `ReplacePointInConstraints`, `RemoveConstraintsForPointBeingDeleted`, `FixConstraintsForRequestBeingDeleted`/`PointBeingDeleted`, and the editing tools: `MakeTangentArc` (with `ParametricCurve`; the tangent arc settings are passed in), `SplitLine`, `SplitCircle`, `SplitCubic`, `SplitEntity` and `SplitLinesOrCurves`, which take the selection, and the mouse position in the default view, as arguments. Checked against a C++ harness by `TestModifyToolsVsCpp` |
 | `solvespace.cpp` | 1236 | OK | `pkg/sketch/sketch.go`, `pkg/sketch/group.go` | `Refresh`, the unsaved flag; the `Add*` helpers assign handles as `IdList::AddAndAssignId` does (largest plus one; they used the count). Observer notifications are out-of-scope (UI). |
 | `undoredo.cpp` | 157 | OK | `pkg/sketch/undo.go` | Re-ported: states hold what defines the sketch (groups without their generated data, group order, requests, constraints, params, styles), stacks are `MAX_UNDO` (100) deep, and a pop reloads linked files and regenerates. The active group is derived from the group order; the unsaved flag and menus are the caller's |
-| `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go`, `pkg/srf/kdnode.go`, `pkg/srf/outline.go` | `SMesh` (the BSP Booleans via `AddAgainstBsp` and `Simplify`, `MakeFromTransformationOf`, `MakeEdgesInPlaneInto`, `CalculateVolume`, `GetCenterOfMass`, ...), `SKdNode` (`From` copies the triangles and shuffles them with glibc's `rand()`; `SnapToMesh`, `FindEdgeOn`, `MakeCertainEdgesInto`, `MakeOutlinesInto`, `OcclusionTestLine`) and `SOutline`. `FirstIntersectionWith` takes the ray, which C++ makes from the view. `PrecomputeTransparency` sorts stably; C++'s `std::sort` may order ties differently, which only affects drawing |
+| `mesh.cpp` | 1221 | OK | `pkg/srf/mesh.go`, `pkg/srf/kdnode.go`, `pkg/srf/outline.go` | `SMesh` (the BSP Booleans via `AddAgainstBsp` and `Simplify`, `MakeFromTransformationOf`, `MakeEdgesInPlaneInto`, `CalculateVolume`, `GetCenterOfMass`, ...), `SKdNode` (`From` copies the triangles and shuffles them with glibc's `rand()`; `SnapToMesh`, `FindEdgeOn`, `MakeCertainEdgesInto`, `MakeOutlinesInto`, `OcclusionTestLine`) and `SOutline`. `FirstIntersectionWith` takes the ray, which C++ makes from the view. `PrecomputeTransparency` sorts with a port of libstdc++'s `std::sort` (`pkg/srf/cxxsort.go`, pinned by `TestCxxSortVsLibstdcxx`), since the display mesh's order is the order it exports in |
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go`, `pkg/persist/slvs/linked.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, `ReloadAllLinked` reads each linked file's entities, mesh and shell (`LoadEntitiesFromFile`: an IDF board, an STL mesh, or a .slvs file's entities, styles, mesh and shell), loads the images it uses, and forces a mesh-only link to a mesh, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (C++'s header, whatever the loaded file had; regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view, the custom styles only, then the last group's running mesh and shell), and matches current C++ byte for byte on the fixtures, shells included. A missing linked file or image counts as declined (C++ asks the user to find it) |
 | `importmesh.cpp` | 258 | OK | `pkg/persist/slvs/stl.go` | `LinkStl`: a binary STL's triangles, colours, and the origin, bounding box and edge-vertex entities; `group/link_stl` saves match C++ byte for byte |
 | `importidf.cpp` | 536 | OK | `pkg/persist/slvs/idf.go` | `LinkIDF`: the board outline, cutouts, routing keepouts and drilled holes as entities, and the board extruded (`std::stof`'s float rounding included); `group/link_idf` saves match C++ byte for byte |
@@ -75,7 +75,7 @@ are out-of-scope:
 | `toolbar.cpp` | 252 | Toolbar widget |
 | `ttf.cpp` | 449 | TrueType font loading |
 | `style.cpp` (display portion) | — | Style for display only |
-| `export.cpp` | 1272 | 2D vector export |
+| `export.cpp` | 1272 | 2D vector export, and the other mesh formats (OBJ, three.js, VRML). `ExportMeshTo`'s STL export is ported (`pkg/sketch/export.go`, with export mode's chord tolerance in `pkg/srf/pwl.go`) |
 | `exportvector.cpp` | 1365 | 2D vector output formats |
 | `exportstep.cpp` | 721 | STEP export |
 | `importdxf.cpp` | 1199 | DXF import |
@@ -88,7 +88,7 @@ UI.
 
 ## Test counts
 
-- 427 tests (327 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
+- 447 tests (330 top-level + subtests) across 6 engine packages (`pkg/core`, `pkg/geom`,
   `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
 - `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip` load
   and save every fixture and require the bytes current C++ writes
@@ -118,6 +118,9 @@ UI.
   be watertight, as the C++ fixture tests do: `MakeCertainEdgesInto`
   (`NAKED_OR_SELF_INTER`, `coplanarIsInter`) finds no naked or
   self-intersecting edges.
+- `TestExportStlVsCpp` exports the mesh of every fixture that has one
+  and requires the STL files `solvespace-cli export-mesh --chord-tol 0.1`
+  wrote (`testdata/export/stl`), byte for byte.
 - `TestParityBooleanVolumeVsCppGolden` checks every boolean fixture's
   volume against the C++ testsuite golden (see below);
   `TestBooleanTwoBoxesVolume` checks union/difference/intersection of
