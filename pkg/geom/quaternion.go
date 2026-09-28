@@ -1,6 +1,10 @@
 package geom
 
-import "math"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/libm"
+)
 
 var QuaternionIdentity = Quaternion{W: 1, X: 0, Y: 0, Z: 0}
 
@@ -15,7 +19,7 @@ func NewQuaternion(w, x, y, z float64) Quaternion {
 // QuaternionFromAxisAngle is the rotation by dtheta about axis (C++
 // Quaternion::From(Vector axis, double dtheta)).
 func QuaternionFromAxisAngle(axis Vector, dtheta float64) Quaternion {
-	c, s := math.Cos(dtheta/2), math.Sin(dtheta/2)
+	c, s := libm.Cos(dtheta/2), libm.Sin(dtheta/2)
 	axis = axis.WithMagnitude(s)
 	return Quaternion{W: c, X: axis.X, Y: axis.Y, Z: axis.Z}
 }
@@ -135,11 +139,11 @@ func (q Quaternion) ToThe(p float64) Quaternion {
 	}
 
 	axis := Vector{q.X, q.Y, q.Z}
-	theta := math.Acos(q.W) // okay, since magnitude is 1, so -1 <= w <= 1
+	theta := libm.Acos(q.W) // okay, since magnitude is 1, so -1 <= w <= 1
 	theta *= p
 	var r Quaternion
-	r.W = math.Cos(theta)
-	axis = axis.WithMagnitude(math.Sin(theta))
+	r.W = libm.Cos(theta)
+	axis = axis.WithMagnitude(libm.Sin(theta))
 	r.X, r.Y, r.Z = axis.X, axis.Y, axis.Z
 	return r
 }

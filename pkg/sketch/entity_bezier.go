@@ -5,6 +5,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
@@ -91,7 +92,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 		dtheta /= float64(n)
 
 		for i := 0; i < n; i++ {
-			c, s := math.Cos(thetaa), math.Sin(thetaa)
+			c, s := libm.Cos(thetaa), libm.Sin(thetaa)
 			// The start point of the curve, and the tangent vector at
 			// that start point.
 			p0 := center.Plus(u.ScaledBy(r * c)).Plus(v.ScaledBy(r * s))
@@ -99,7 +100,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 
 			thetaa += dtheta
 
-			c, s = math.Cos(thetaa), math.Sin(thetaa)
+			c, s = libm.Cos(thetaa), libm.Sin(thetaa)
 			p2 := center.Plus(u.ScaledBy(r * c)).Plus(v.ScaledBy(r * s))
 			t2 := u.ScaledBy(-r * s).Plus(v.ScaledBy(r * c))
 
@@ -107,7 +108,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 			p1 := geom.AtIntersectionOfLines(p0, p0.Plus(t0), p2, p2.Plus(t2))
 
 			sb := srf.SBezierFrom3(p0, p1, p2)
-			sb.Weight[1] = math.Cos(dtheta / 2)
+			sb.Weight[1] = libm.Cos(dtheta / 2)
 			beziers.Add(sb)
 		}
 	}
@@ -131,8 +132,8 @@ func arcGetAngles(e *core.Entity, rt EntityBezierResolver, c, u, v geom.Vector) 
 	pa2 := pa.Project2d(u, v).Minus(c2)
 	pb2 := pb.Project2d(u, v).Minus(c2)
 
-	thetaa = math.Atan2(pa2.V, pa2.U)
-	thetab := math.Atan2(pb2.V, pb2.U)
+	thetaa = libm.Atan2(pa2.V, pa2.U)
+	thetab := libm.Atan2(pb2.V, pb2.U)
 	dtheta = thetab - thetaa
 	// If the endpoints are coincident, call it a full arc, not a zero arc;
 	// useful concept to have when splitting

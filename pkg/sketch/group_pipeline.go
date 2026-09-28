@@ -5,6 +5,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
@@ -179,7 +180,7 @@ func (g *Group) stepTransform(sk *Sketch, a, n int) (geom.Vector, geom.Quaternio
 		return trans.ScaledBy(float64(ap)), geom.QuaternionIdentity
 	}
 	theta := float64(ap) * paramFloat(sk, g.H.Param(3))
-	c, sn := math.Cos(theta), math.Sin(theta)
+	c, sn := libm.Cos(theta), libm.Sin(theta)
 	axis := geom.Vector{
 		X: paramFloat(sk, g.H.Param(4)),
 		Y: paramFloat(sk, g.H.Param(5)),

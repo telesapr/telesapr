@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 )
 
 // SContour is an ordered list of SPoint forming one polygon contour.
@@ -162,10 +163,10 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 		cc := c.Points[wrap(i+1)].P
 
 		dp := a.Minus(b)
-		thetap := math.Atan2(dp.Y, dp.X)
+		thetap := libm.Atan2(dp.Y, dp.X)
 
 		dn := b.Minus(cc)
-		thetan := math.Atan2(dn.Y, dn.X)
+		thetan := libm.Atan2(dn.Y, dn.X)
 
 		// A short line segment in a badly-generated polygon might look
 		// okay but screw up our sense of direction.
@@ -181,7 +182,7 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 		}
 
 		if math.Abs(thetan-thetap) < (1*math.Pi)/180 {
-			dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(thetap), Y: b.Y + r*math.Cos(thetap)})
+			dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetap), Y: b.Y + r*libm.Cos(thetap)})
 		} else if thetan < thetap {
 			// This is an inside corner. We have two edges, Ep and En. Move
 			// out from their intersection by radius, normal to En, and
@@ -190,15 +191,15 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 			// line parallel to Ep. The point that we want to generate is
 			// the intersection of these two lines--it removes as much
 			// material as we can without removing any that we shouldn't.
-			px0 := b.X - r*math.Sin(thetap)
-			py0 := b.Y + r*math.Cos(thetap)
-			pdx := math.Cos(thetap)
-			pdy := math.Sin(thetap)
+			px0 := b.X - r*libm.Sin(thetap)
+			py0 := b.Y + r*libm.Cos(thetap)
+			pdx := libm.Cos(thetap)
+			pdy := libm.Sin(thetap)
 
-			nx0 := b.X - r*math.Sin(thetan)
-			ny0 := b.Y + r*math.Cos(thetan)
-			ndx := math.Cos(thetan)
-			ndy := math.Sin(thetan)
+			nx0 := b.X - r*libm.Sin(thetan)
+			ny0 := b.Y + r*libm.Cos(thetan)
+			ndx := libm.Cos(thetan)
+			ndy := libm.Sin(thetan)
 
 			x, y := 0.0, 0.0
 			intersectionOfLines(px0, py0, pdx, pdy, nx0, ny0, ndx, ndy, &x, &y)
@@ -206,11 +207,11 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 			dest.AddPoint(geom.Vector{X: x, Y: y})
 		} else {
 			if math.Abs(thetap-thetan) < (6*math.Pi)/180 {
-				dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(thetap), Y: b.Y + r*math.Cos(thetap)})
-				dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(thetan), Y: b.Y + r*math.Cos(thetan)})
+				dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetap), Y: b.Y + r*libm.Cos(thetap)})
+				dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetan), Y: b.Y + r*libm.Cos(thetan)})
 			} else {
 				for theta := thetap; theta <= thetan; theta += (6 * math.Pi) / 180 {
-					dest.AddPoint(geom.Vector{X: b.X - r*math.Sin(theta), Y: b.Y + r*math.Cos(theta)})
+					dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(theta), Y: b.Y + r*libm.Cos(theta)})
 				}
 			}
 		}

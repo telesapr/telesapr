@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 )
 
 // Operation identifies the symbolic operation performed by an Expr.
@@ -182,21 +183,21 @@ func (e *Expr) Eval(ctx EvalParamProvider, vars map[string]float64) float64 {
 		v := e.Left.Eval(ctx, vars)
 		return v * v
 	case OpSin:
-		return math.Sin(e.Left.Eval(ctx, vars))
+		return libm.Sin(e.Left.Eval(ctx, vars))
 	case OpCos:
-		return math.Cos(e.Left.Eval(ctx, vars))
+		return libm.Cos(e.Left.Eval(ctx, vars))
 	case OpASin:
-		return math.Asin(e.Left.Eval(ctx, vars))
+		return libm.Asin(e.Left.Eval(ctx, vars))
 	case OpACos:
-		return math.Acos(e.Left.Eval(ctx, vars))
+		return libm.Acos(e.Left.Eval(ctx, vars))
 	case OpPow:
 		return math.Pow(e.Left.Eval(ctx, vars), e.Right.Eval(ctx, vars))
 	case OpTan:
-		return math.Tan(e.Left.Eval(ctx, vars))
+		return libm.Tan(e.Left.Eval(ctx, vars))
 	case OpATan:
-		return math.Atan(e.Left.Eval(ctx, vars))
+		return libm.Atan(e.Left.Eval(ctx, vars))
 	case OpATan2:
-		return math.Atan2(e.Left.Eval(ctx, vars), e.Right.Eval(ctx, vars))
+		return libm.Atan2(e.Left.Eval(ctx, vars), e.Right.Eval(ctx, vars))
 	case OpHypot:
 		return math.Hypot(e.Left.Eval(ctx, vars), e.Right.Eval(ctx, vars))
 	case OpExp:

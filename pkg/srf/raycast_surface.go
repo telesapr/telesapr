@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 )
 
 // IsExtrusion reports whether this surface is an extrusion; if so and
@@ -67,8 +68,8 @@ func (b *SBezier) IsCircle(axis geom.Vector, center *geom.Vector, r *float64) bo
 	pa2 := b.Ctrl[0].Project2d(u, v).Minus(c2)
 	pb2 := b.Ctrl[2].Project2d(u, v).Minus(c2)
 
-	thetaa := math.Atan2(pa2.V, pa2.U) // in fact always zero due to csys
-	thetab := math.Atan2(pb2.V, pb2.U)
+	thetaa := libm.Atan2(pa2.V, pa2.U) // in fact always zero due to csys
+	thetab := libm.Atan2(pb2.V, pb2.U)
 	dtheta := wrapNot0(thetab-thetaa, 2*math.Pi)
 	if dtheta > math.Pi {
 		// Not possible with a second order Bezier arc; so we must have
@@ -76,7 +77,7 @@ func (b *SBezier) IsCircle(axis geom.Vector, center *geom.Vector, r *float64) bo
 		dtheta = 2*math.Pi - dtheta
 	}
 
-	return math.Abs(b.Weight[1]-math.Cos(dtheta/2)) <= geom.LengthEps
+	return math.Abs(b.Weight[1]-libm.Cos(dtheta/2)) <= geom.LengthEps
 }
 
 // wrapNot0 clamps v to the range (0, n]. Mirrors C++ WRAP_NOT_0.
@@ -203,8 +204,8 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 		sp := start.Minus(center).Project2d(u, v)
 		fp := finish.Minus(center).Project2d(u, v)
 
-		thetas := math.Atan2(sp.V, sp.U)
-		thetaf := math.Atan2(fp.V, fp.U)
+		thetas := libm.Atan2(sp.V, sp.U)
+		thetaf := libm.Atan2(fp.V, fp.U)
 
 		var ip [2]geom.Point2d
 		ipN := 0
@@ -225,7 +226,7 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			t := ip[i].Minus(ap).DivProjected(bp.Minus(ap))
 			// This is a point on the circle; but is it on the arc?
 			pp := ap.Plus(bp.Minus(ap).ScaledBy(t))
-			theta := math.Atan2(pp.V, pp.U)
+			theta := libm.Atan2(pp.V, pp.U)
 			dp := wrapSymmetric(theta-thetas, 2*math.Pi)
 			df := wrapSymmetric(thetaf-thetas, 2*math.Pi)
 			tol := geom.LengthEps / radius

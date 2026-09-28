@@ -5,6 +5,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 )
 
 // SSurface is a rational Bezier surface patch in (u, v). The
@@ -257,7 +258,7 @@ func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, 
 		DegN: 2,
 	}
 	dtheta := math.Abs(wrapSymmetric(thetaf-thetas, 2*math.Pi))
-	w := math.Cos(dtheta / 2)
+	w := libm.Cos(dtheta / 2)
 	if w == 0 {
 		w = 1e-12
 	}

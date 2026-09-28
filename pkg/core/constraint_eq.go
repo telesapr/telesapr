@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 )
 
 // This file ports solvespace/src/constrainteq.cpp: the equations each
@@ -155,7 +156,7 @@ func (c *Constraint) ModifyToSatisfy(sk EntitySketch) {
 			b = ProjectVectorInto(sk, b, c.Workplane)
 		}
 		cs := a.Dot(b) / (a.Magnitude() * b.Magnitude())
-		c.ValA = math.Acos(cs) * 180 / math.Pi
+		c.ValA = libm.Acos(cs) * 180 / math.Pi
 
 	case ConstraintPtOnLine:
 		eln := mustEntity(sk, c.EntityA)

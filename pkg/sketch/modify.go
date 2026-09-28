@@ -6,6 +6,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
@@ -90,7 +91,7 @@ func (pc *parametricCurve) pointAt(t float64) geom.Vector {
 		return pc.p0.Plus(pc.p1.Minus(pc.p0).ScaledBy(t))
 	}
 	theta := pc.theta0 + pc.dtheta*t
-	return pc.p0.Plus(pc.u.ScaledBy(pc.r * math.Cos(theta)).Plus(pc.v.ScaledBy(pc.r * math.Sin(theta))))
+	return pc.p0.Plus(pc.u.ScaledBy(pc.r * libm.Cos(theta)).Plus(pc.v.ScaledBy(pc.r * libm.Sin(theta))))
 }
 
 func (pc *parametricCurve) tangentAt(t float64) geom.Vector {
@@ -98,7 +99,7 @@ func (pc *parametricCurve) tangentAt(t float64) geom.Vector {
 		return pc.p1.Minus(pc.p0)
 	}
 	theta := pc.theta0 + pc.dtheta*t
-	tv := pc.u.ScaledBy(-pc.r * math.Sin(theta)).Plus(pc.v.ScaledBy(pc.r * math.Cos(theta)))
+	tv := pc.u.ScaledBy(-pc.r * libm.Sin(theta)).Plus(pc.v.ScaledBy(pc.r * libm.Cos(theta)))
 	tv = tv.ScaledBy(pc.dtheta)
 	return tv
 }
@@ -289,7 +290,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 		vv = t1.Dot(v)
 
 		dot := t0.WithMagnitude(1).Dot(t1.WithMagnitude(1))
-		theta := math.Acos(dot)
+		theta := libm.Acos(dot)
 
 		if settings.Manual {
 			r = settings.Radius
@@ -297,8 +298,8 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 			r = 200 / viewScale
 			// Set the radius so that no more than one third of the
 			// line segment disappears.
-			r = geom.Min(r, pc[0].lengthForAuto()*math.Tan(theta/2))
-			r = geom.Min(r, pc[1].lengthForAuto()*math.Tan(theta/2))
+			r = geom.Min(r, pc[0].lengthForAuto()*libm.Tan(theta/2))
+			r = geom.Min(r, pc[1].lengthForAuto()*libm.Tan(theta/2))
 		}
 		// We are source-stepping the radius, to improve convergence. So
 		// ramp that for most of the iterations, and then do a few at
@@ -309,7 +310,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 
 		// The distance from the intersection of the lines to the endpoint
 		// of the arc, along each line.
-		el := r / math.Tan(theta/2)
+		el := r / libm.Tan(theta/2)
 
 		// Compute the endpoints of the arc, for each curve
 		pa0 := pinter.Plus(t0.WithMagnitude(el))

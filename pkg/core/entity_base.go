@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 )
 
 // This file ports solvespace/src/entity.cpp: the symbolic and numeric
@@ -194,8 +195,8 @@ func (e *Entity) ArcGetAngles(sk EntitySketch) (thetaa, thetab, dtheta float64) 
 	pa2 := pa.Project2d(u, v).Minus(c2)
 	pb2 := pb.Project2d(u, v).Minus(c2)
 
-	thetaa = math.Atan2(pa2.V, pa2.U)
-	thetab = math.Atan2(pb2.V, pb2.U)
+	thetaa = libm.Atan2(pa2.V, pa2.U)
+	thetab = libm.Atan2(pb2.V, pb2.U)
 	dtheta = thetab - thetaa
 	// If the endpoints are coincident, call it a full arc, not a zero arc;
 	// useful concept to have when splitting
@@ -439,8 +440,8 @@ func (e *Entity) PointForceTo(sk EntitySketch, p geom.Vector) {
 		normal := vectorFromParams(sk, e.Param[4], e.Param[5], e.Param[6])
 		u, v := normal.NormalDir(0), normal.NormalDir(1)
 		po, numo := p.Minus(offset), e.NumPoint.Minus(offset)
-		thetap := math.Atan2(v.Dot(po), u.Dot(po))
-		thetan := math.Atan2(v.Dot(numo), u.Dot(numo))
+		thetap := libm.Atan2(v.Dot(po), u.Dot(po))
+		thetan := libm.Atan2(v.Dot(numo), u.Dot(numo))
 		thetaf := thetap - thetan
 		thetai := paramVal(sk, e.Param[3]) * float64(e.TimesApplied) * 2
 		dtheta := thetaf - thetai
@@ -469,8 +470,8 @@ func (e *Entity) PointForceTo(sk EntitySketch, p geom.Vector) {
 		} else { // otherwise do rotation style
 			u, v := normal.NormalDir(0), normal.NormalDir(1)
 			po, numo := p.Minus(offset), e.NumPoint.Minus(offset)
-			thetap := math.Atan2(v.Dot(po), u.Dot(po))
-			thetan := math.Atan2(v.Dot(numo), u.Dot(numo))
+			thetap := libm.Atan2(v.Dot(po), u.Dot(po))
+			thetan := libm.Atan2(v.Dot(numo), u.Dot(numo))
 			thetaf := thetap - thetan
 			thetai := paramVal(sk, e.Param[3]) * float64(e.TimesApplied) * 2
 			dtheta := thetaf - thetai
@@ -640,7 +641,7 @@ func (e *Entity) PointForceQuaternionTo(sk EntitySketch, q geom.Quaternion) {
 
 func (e *Entity) GetAxisAngleQuaternion(sk EntitySketch, param0 int) geom.Quaternion {
 	theta := float64(e.TimesApplied) * paramVal(sk, e.Param[param0+0])
-	s, c := math.Sin(theta), math.Cos(theta)
+	s, c := libm.Sin(theta), libm.Cos(theta)
 	return geom.Quaternion{
 		W: c,
 		X: s * paramVal(sk, e.Param[param0+1]),

@@ -11,6 +11,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
@@ -238,7 +239,7 @@ func arcCenter(p0, p1 geom.Vector, angle float64) geom.Vector {
 	perp := geom.Vector{X: p1.Y - p0.Y, Y: p0.X - p1.X}.WithMagnitude(1.0)
 	dist := 0.0
 	if angle != 180 {
-		dist = p1.Minus(m).Magnitude() / math.Tan(0.5*angle*3.141592653589793/180.0)
+		dist = p1.Minus(m).Magnitude() / libm.Tan(0.5*angle*3.141592653589793/180.0)
 	} else {
 		dist = 0.0
 	}
@@ -277,7 +278,7 @@ func createIDFEntity(el *[]core.Entity, id *int, h0, h1, hnorm core.HEntity,
 		perp := geom.Vector{X: p1.Y - p0.Y, Y: p0.X - p1.X}.WithMagnitude(1.0)
 		// half angle in radians
 		theta := 0.5 * angle * math.Pi / 180.0
-		dist := p1.Minus(m).Magnitude() * math.Cos(theta) / math.Sin(theta)
+		dist := p1.Minus(m).Magnitude() * libm.Cos(theta) / libm.Sin(theta)
 		c := m.Minus(perp.ScaledBy(dist))
 		hc := idfNewPoint(el, id, c, false)
 		idfNewArc(el, id, h0, h1, hc, hnorm, keepout)
@@ -299,7 +300,7 @@ func makeBeziersForArcs(sbl *srf.SBezierList, center, pa, pb geom.Vector,
 		c2 := center.Project2d(u, v)
 		pa2 := pa.Project2d(u, v).Minus(c2)
 
-		theta = math.Atan2(pa2.V, pa2.U)
+		theta = libm.Atan2(pa2.V, pa2.U)
 	}
 	dtheta = angle * math.Pi / 180
 
@@ -316,8 +317,8 @@ func makeBeziersForArcs(sbl *srf.SBezierList, center, pa, pb geom.Vector,
 	dtheta /= float64(n)
 
 	for i := 0; i < n; i++ {
-		c := math.Cos(theta)
-		s := math.Sin(theta)
+		c := libm.Cos(theta)
+		s := libm.Sin(theta)
 		// The start point of the curve, and the tangent vector at
 		// that start point.
 		p0 := center.Plus(u.ScaledBy(r * c)).Plus(v.ScaledBy(r * s))
@@ -325,8 +326,8 @@ func makeBeziersForArcs(sbl *srf.SBezierList, center, pa, pb geom.Vector,
 
 		theta += dtheta
 
-		c = math.Cos(theta)
-		s = math.Sin(theta)
+		c = libm.Cos(theta)
+		s = libm.Sin(theta)
 		p2 := center.Plus(u.ScaledBy(r * c)).Plus(v.ScaledBy(r * s))
 		t2 := u.ScaledBy(-r * s).Plus(v.ScaledBy(r * c))
 
@@ -334,7 +335,7 @@ func makeBeziersForArcs(sbl *srf.SBezierList, center, pa, pb geom.Vector,
 		p1 := geom.AtIntersectionOfLines(p0, p0.Plus(t0), p2, p2.Plus(t2))
 
 		sb := srf.SBezierFrom3(p0, p1, p2)
-		sb.Weight[1] = math.Cos(dtheta / 2)
+		sb.Weight[1] = libm.Cos(dtheta / 2)
 		sbl.Add(sb)
 	}
 }

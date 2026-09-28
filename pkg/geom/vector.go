@@ -1,6 +1,10 @@
 package geom
 
-import "math"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/libm"
+)
 
 type Vector struct {
 	X, Y, Z float64
@@ -222,8 +226,8 @@ func (v Vector) RotatedAbout(orig, axis Vector, theta float64) Vector {
 // RotatedAroundAxis rotates v by theta about the axis through the
 // origin (C++ Vector::RotatedAbout(axis, theta)).
 func (v Vector) RotatedAroundAxis(axis Vector, theta float64) Vector {
-	c := math.Cos(theta)
-	s := math.Sin(theta)
+	c := libm.Cos(theta)
+	s := libm.Sin(theta)
 
 	axis = axis.WithMagnitude(1)
 

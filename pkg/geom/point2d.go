@@ -1,6 +1,10 @@
 package geom
 
-import "math"
+import (
+	"math"
+
+	"github.com/spacesolve/spacesolve/pkg/libm"
+)
 
 // LengthEps and VeryPositive mirror C++ LENGTH_EPS and VERY_POSITIVE
 // (solvespace/src/defs.h:7-8).
@@ -107,12 +111,12 @@ func (p Point2d) EqualsTol(b Point2d, tol float64) bool {
 // Point2dFromPolar is the point at radius r and angle a (C++
 // Point2d::FromPolar).
 func Point2dFromPolar(r, a float64) Point2d {
-	return Point2d{U: r * math.Cos(a), V: r * math.Sin(a)}
+	return Point2d{U: r * libm.Cos(a), V: r * libm.Sin(a)}
 }
 
 // Angle is p's angle, in [0, 2 pi] (C++ Point2d::Angle).
 func (p Point2d) Angle() float64 {
-	a := math.Atan2(p.V, p.U)
+	a := libm.Atan2(p.V, p.U)
 	return math.Pi + math.Remainder(a-math.Pi, 2*math.Pi)
 }
 
