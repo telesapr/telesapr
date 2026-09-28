@@ -19,7 +19,7 @@ solvespace core engine. It is the source of truth for the
 | `expr.cpp` | 963 | OK | `pkg/core/expr.go`, `pkg/core/expr_parse.go` | `ExprQuaternion::Rotate`/`RotationU/V/N`/`Times` use the C++ formulas, which differ from a rotation for non-unit quaternions. `PartialWrt` (`Derivative`), `FoldConstants` (including its `Tol` of 0.001 for the x+0, x*1, x*0 rules) and `IsZeroConst` are faithful |
 | `entity.cpp` | 997 | OK | `pkg/core/entity.go`, `pkg/core/entity_base.go` | Every `EntityBase` accessor, numeric and symbolic, for all point/normal/face/distance types, plus `GenerateEquations` and `Entity::CalculateNumerical`. The sketch is passed in as a `core.EntitySketch` instead of the global `SK` |
 | `constraint.cpp` | 994 | OK | `pkg/core/constraint.go`, `pkg/sketch/constraint.go` | Audited: `DescriptionString`, `DeleteAllConstraintsFor`, `AddConstraint` (as `AddConstraintRemember`), `Constrain`, `TryConstrain`, `ConstrainCoincident` and the three tangent helpers, which return C++'s error message instead of showing it. `MenuConstrain` is user interface |
-| `system.cpp` | 660 | OK | `pkg/solver/system.go`, `pkg/solver/qr.go` | `Solve`, `SolveRank`, `SolveBySubstitution`, `WriteJacobian`, `NewtonSolve`, `SolveLeastSquares` (the QR-of-A' form of this checkout), `TestRank`, `FindWhichToRemoveToFixJacobian`, `MarkParamsFree`. The sparse QR is a port of the vendored Eigen 3.4's `SparseQR` with `COLAMDOrdering` (`pkg/solver/qr.go`, `pkg/solver/colamd.go`): the same column order, elimination tree, dead-column rule and threshold, storage order and summation order, and the same sparse products and triangular solves around it; `TestSparseQRVsEigen` pins it bit for bit to Eigen built with the C++ build's flags |
+| `system.cpp` | 660 | OK | `pkg/solver/system.go`, `pkg/solver/qr.go`, `pkg/solver/colamd.go` | `Solve`, `SolveRank`, `SolveBySubstitution`, `WriteJacobian`, `NewtonSolve`, `SolveLeastSquares` (the QR-of-A' form of this checkout), `TestRank`, `FindWhichToRemoveToFixJacobian`, `MarkParamsFree`. The QR is the vendored Eigen 3.4's `SparseQR` with `COLAMDOrdering` (`pkg/solver/colamd.go`), down to its storage and summation order |
 | `group.cpp` | 1228 | OK | `pkg/sketch/group.go`, `pkg/sketch/group_generate.go` | `Generate` (all group types), `Clear`, `CopyEntity`, `Remap` (as `RemapEntity`), the `Make*` helpers, `GenerateEquations` and `TransformImportedBy`. LINKED groups copy the `ImpEntity` the loader reads from the linked file. Menu and UI code are out of scope |
 | `generate.cpp` | 598 | OK | `pkg/sketch/generate_all.go`, `pkg/sketch/sketch.go` | `GenerateAll` (the `genForBBox` pass, regenerating entities and params, prune-and-retry), `SolveGroup` with `WriteEqSystemForGroup` and `WriteEquationsExceptFor`, `ForceReferences`, `CalculateEntityBBox`. `GenerateAll`'s DIRTY and UNTIL_ACTIVE ranges (the active group is `Sketch.Active`, else the one C++ picks on load), `TestRankForGroup`, `MarkGroupDirty`, the `deleted` counts and their message (through `Sketch.Message`), and `ScheduleGenerateAll`, which `Refresh` serves as C++'s event loop does. Dragged params aren't marked |
 | `groupmesh.cpp` | 803 | OK | `pkg/sketch/group_pipeline.go` | `AssembleLoops`/`GenerateLoops`, `GenerateShellAndMesh` (every group type, step and repeat, the face entities, the running-shell combine, and the forced-to-mesh combine with `SnapToMesh`), `GenerateForStepAndRepeat`, `GenerateForBoolean`, `RemapFaces`, `GenerateDisplayItems` (without the render-side polyline join) are faithful; `group/force_to_mesh` saves match C++ byte for byte |
@@ -46,14 +46,11 @@ solvespace core engine. It is the source of truth for the
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go`, `pkg/persist/slvs/linked.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, `ReloadAllLinked` reads each linked file's entities, mesh and shell (`LoadEntitiesFromFile`: an IDF board, an STL mesh, or a .slvs file's entities, styles, mesh and shell), loads the images it uses, and forces a mesh-only link to a mesh, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (C++'s header, whatever the loaded file had; regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view, the custom styles only, then the last group's running mesh and shell), and matches current C++ byte for byte on the fixtures, shells included. A missing linked file or image counts as declined (C++ asks the user to find it) |
 | `importmesh.cpp` | 258 | OK | `pkg/persist/slvs/stl.go` | `LinkStl`: a binary STL's triangles, colours, and the origin, bounding box and edge-vertex entities; `group/link_stl` saves match C++ byte for byte |
 | `importidf.cpp` | 536 | OK | `pkg/persist/slvs/idf.go` | `LinkIDF`: the board outline, cutouts, routing keepouts and drilled holes as entities, and the board extruded (`std::stof`'s float rounding included); `group/link_idf` saves match C++ byte for byte |
-| glibc `libm` (2.44) | — | OK | `pkg/libm` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`: ports of glibc's IBM Accurate Mathematical Library code as its x86-64 FMA variants compile it (with GCC's fused multiply-adds, found from the disassembly), the huge-argument reduction (`__ieee754_rem_pio2`, `__kernel_rem_pio2`), and the tables, read from `libm-2.44.a` by `scripts/gen-libm-tables.py`. Every engine call goes through it. Bit for bit on ~10^9 random inputs over every branch and on special values (`scripts/libmcheck`, through cgo); `TestLibmVsGlibc` keeps a sample |
+| glibc `libm` (2.44) | — | OK | `pkg/libm` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` and the huge-argument reduction, as glibc's x86-64 FMA variants compile them (tables read from `libm-2.44.a`); the engine's trigonometry goes through it |
 | `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `AtIntersectionOfLines`, `DistanceToLine`/`DistanceToPlane`, `DotInToCsys`/`ScaleOutOfCsys`, `WithMagnitude`, `RotatedAbout` (both overloads; Go's went through a quaternion), `DirectionCosineWith`, `ClosestPointOnLine`, `DivProjected`, `ClampWithin`, `Vector4` (`From(w, v)` premultiplies, `Blend`), `Point2d` (`Equals` with `LENGTH_EPS`, `Angle`, `FromPolar`, `DistanceToLineSigned`), `BBox` (`GetOrigin` is the centre; `Overlaps`, `Contains`), `Quaternion::From(axis, angle)`, `Times`, `Inverse`, `Mirror` (was wrong), `ToThe`, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)`; `geom.Max`/`Min` are `std::max`/`min` |
 
 An **OK** row means the functions listed in its notes (or the whole
 file, when none are listed) were compared line by line against the C++.
-The 2026-09-27 audit showed that earlier OK markings were often wrong:
-several "ported" functions were simplified stand-ins. Treat rows not
-re-audited since then with suspicion.
 
 ## Out-of-scope (UI / export / render)
 
@@ -87,164 +84,58 @@ The Go port's GUI (in `pkg/app/` and `pkg/spacesolve/`) is a
 separate Cogent-Core-based SVG editor that does NOT mirror the C++
 UI.
 
-## Test counts
+## Parity checks
 
-- 475 tests (334 top-level + subtests) across 7 engine packages (`pkg/core`, `pkg/geom`,
-  `pkg/libm`, `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`, `pkg/srf`).
-- `TestSLVSLoadRoundTrip` and `TestPhase7AllFixturesRoundTrip` load
-  every fixture, generate it as C++ `AfterNewFile` does, save it, and
-  require the bytes current C++ writes (checked with a C++ harness);
-  the exceptions, with reasons, are in `roundTripExclusions`, mostly
-  files older versions wrote. Most fixtures have one blank line after
-  the version line where C++ writes two; the tests allow for that.
-- `TestExcludedFixturesVsCppSave` requires, for those exceptions, the
-  bytes C++ writes when it opens and saves them (`testdata/cppsave`,
-  from `scripts/regen-cpp-saves.sh`).
-- `TestModifyToolsVsCpp` runs the tangent arc and split tools on
-  sketches built on a fixture and requires the saves a C++ harness
-  wrote after the same steps (`testdata/edit`), byte for byte.
-- `group/link_stl` and `group/link_idf` are C++ saves of files that
-  link an STL mesh and an IDF board.
-- `TestParityGroupSolveVsCpp` runs `GenerateAll` on every fixture C++
-  can load and requires every group to solve with the degrees of
-  freedom C++ reports (`cpp_dof_golden_test.go`), every group's shell
-  to carry C++'s face entities (`cpp_faces_golden_test.go`), and every
-  constraint's equations to hold.
-- `TestSparseQRVsEigen` requires the rank and the least-squares
-  solution Eigen computes, bit for bit, for 500 generated systems
-  (rank-deficient, tall, and large sparse ones among them;
-  `scripts/regen-sparseqr-golden.sh`).
-- `TestLibmVsGlibc` requires glibc's bits for 33,400 inputs spread over
-  every branch of the ported functions, and special values
-  (`scripts/regen-libm-golden.sh`).
-- `TestArcLengthConstraints` covers the four arc-length constraints no
-  fixture uses.
-- `TestIntersectionBranchesVsCpp` pins booleans through the surface
-  intersection cases no fixture reaches (coaxial cylinders, crossing
-  cylinders, a lathe cut on its seam plane) to a C++ harness: volume,
-  surface, curve and triangle counts.
-- `TestParityBooleanFixtures` requires every boolean fixture's mesh to
-  be watertight, as the C++ fixture tests do: `MakeCertainEdgesInto`
-  (`NAKED_OR_SELF_INTER`, `coplanarIsInter`) finds no naked or
-  self-intersecting edges.
-- `TestExportStlVsCpp` exports the mesh of every fixture that has one
-  and requires the STL files `solvespace-cli export-mesh --chord-tol 0.1`
-  wrote (`testdata/export/stl`), byte for byte.
-- `TestParityBooleanVolumeVsCppGolden` checks every boolean fixture's
-  volume against the C++ testsuite golden (see below);
-  `TestBooleanTwoBoxesVolume` checks union/difference/intersection of
-  two overlapping boxes exactly.
-- 0 TODO markers in engine packages.
+475 tests (334 top-level) across the 7 engine packages (`pkg/core`,
+`pkg/geom`, `pkg/libm`, `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`,
+`pkg/srf`); no TODO markers. The tests that pin Go to C++:
+
+- **Saves.** `TestSLVSLoadRoundTrip`/`TestPhase7AllFixturesRoundTrip`:
+  every fixture, loaded and generated as C++ `AfterNewFile` does, saves
+  to the bytes current C++ writes (boolean shells included); the
+  fixtures older versions wrote (`roundTripExclusions`) are compared
+  with C++'s save of them instead (`TestExcludedFixturesVsCppSave`,
+  `testdata/cppsave`). `TestModifyToolsVsCpp`: the tangent arc and split
+  tools, and `TestExportStlVsCpp`: STL export, byte for byte.
+- **Solving.** `TestParityGroupSolveVsCpp`: every group solves with
+  C++'s degrees of freedom and face entities. `TestSparseQRVsEigen`:
+  rank and least-squares solution bit for bit on 500 systems.
+- **Numerics.** `TestLibmVsGlibc`: 33,400 inputs over every branch;
+  `TestNoFusedMultiplyAdd`: the build doesn't fuse `x*y + z`;
+  `TestCxxSortVsLibstdcxx`: `std::sort`.
+- **Booleans.** `TestParityBooleanVolumeVsCppGolden`: every boolean
+  fixture's volume within the C++ testsuite's 1e-6;
+  `TestParityBooleanFixtures`: watertight meshes;
+  `TestIntersectionBranchesVsCpp`: the intersection cases no fixture
+  reaches.
+
+Golden data is regenerated by the `scripts/regen-*` scripts (C++
+harnesses built against `solvespace/build` and its vendored Eigen, or
+glibc); `scripts/libmcheck` compares `pkg/libm` with the system libm on
+~10^9 inputs.
 
 ## Definition of done
 
-- Every row in the "Core engine files" table is **OK**.
-- All parity tests pass: `TestParityConstraintFixtures`,
-  `TestParityConstraintCounts`, `TestParityBooleanFixtures`,
-  `TestParityBooleanFixtureBBoxValue`, `TestParityBooleanVolumeVsCppGolden`,
-  `TestParityAnalysisFixtures`, `TestContourAreaSignAndMagnitude`,
-  `TestParityGroupSolveVsCpp`, `TestSparseQRVsEigen`, `TestLibmVsGlibc`,
-  `TestNoFusedMultiplyAdd`, `TestExcludedFixturesVsCppSave`.
-- `go vet ./...` and `go test ./...` succeed on the whole repo.
-- No TODO markers in engine packages.
-- Every boolean fixture's go/cpp volume ratio is within the C++
-  testsuite's own 1e-6 (met).
+Every row above is **OK**, `go vet ./...` and `go test ./...` pass on
+the whole repo (the parity tests above included), and no engine package
+has TODO markers. Met.
 
-## Boolean-CSG parity
-
-| Fixture | go/cpp volume ratio |
-|---|---|
-| `boolean_coplanar_union`   | 1.000000 |
-| `boolean_knife_edge`       | 1.000000 |
-| `boolean_tangent_crossing` | 1.000000 |
-| `boolean_tangent_edge`     | 1.000000 |
-| `boolean_tangent_fillet`   | 1.000000 |
-| `boolean_tangent_spline`   | 1.000000 |
-
-None of the fixtures sets `BooleanFailed`. `TestParityBooleanVolumeVsCppGolden`
-(`pkg/persist/slvs/bool_generate_test.go`) enforces `|ratio - 1| < 1e-6`,
-the C++ `CHECK_EQ_EPS` criterion, for all six.
-
-`boolean_tangent_spline` needed the chord tolerance, not the CSG. Go's
-`Group::Generate` was a stand-in that emitted copies of the extruded
-points with made-up handles at z = ±60. That gave a 120 mm bounding box
-where C++ has 70.96 mm, so the chord tolerance was 0.12 mm instead of
-0.07096 mm. With `Group::Generate` and `GenerateAll` ported, Go
-produces the same entities as C++ and the same volume.
-
-**Entity check against C++.** A throwaway C++ harness loaded each
-fixture the way the testsuite does (`LoadFromFile` + `AfterNewFile`).
-It dumped the chord tolerance, each group's solve result and degrees of
-freedom, each constraint's value, and every entity's handle, type,
-group, construction flag, point, normal, face and distance. For all
-90 fixtures C++ can load, the Go `GenerateAll` output matches exactly
-(to 1e-4).
-
-**Save check against C++.** A second harness saved each fixture with
-`SaveToFile`, which appends the last group's running shell. Go's save
-is byte-identical to it on every fixture, boolean shells included.
-(A harness that saves to another directory changes only the relative
-paths of linked files and images.) Getting the shells identical took
-these faithful ports:
-
-- `List::AddToBeginning` doesn't insert: its `std::move_backward`
-  moves only the first element, to the end, and then overwrites the
-  first. `FindChainAvoiding` relies on it, so the order of every
-  boolean surface's trims does too; Go reproduces it.
-- `SPointList` (the choosing points) matches points with
-  `Vector::Equals`, in list order; Go had used a map and a 1e-8
-  distance.
-- `std::max`/`std::min` keep the first argument for zeros of either
-  sign, unlike `math.Max`/`math.Min`; ported code uses `geom.Max`/`Min`.
-- `SShell::MakeFromCopyOf` is a transformation by the identity, and
-  `SBezier::TransformedBy` always rotates and translates, which turns
-  `-0` into `+0`. `SSurface::FromTransformationOf` keeps the handle and
-  transforms the trims; `MakeFromAssemblyOf` assigns new handles.
-- `Vector::WithMagnitude` returns zero only for an exactly zero vector.
+## Lessons
 
 Parity came from replacing simplified stand-ins with faithful ports,
-not from tuning. The main fixes:
-
-- **Operand geometry.**
-  - `FromPlane` had u/v swapped, which flipped every plane's normal and transposed its parameterization.
-  - `Group.AssembleLoops` put every curve into one unchained "loop".
-  - `FindOuterFacesFrom` was a stub: no orientation fixing, no holes.
-  - Contour orientation used the opposite sign convention from C++.
-  - `GenerateEntityBeziers` drew arcs as full circles, split circles into degenerate 180° arcs, and read cubics' points off by one.
-  - `MakeFromExtrusionOf` of a multi-loop sketch kept only the last loop.
-- **Classification primitives.**
-  - `SBspUv` never returned `EDGE_PARALLEL`/`ANTIPARALLEL` and didn't split straddling edges.
-  - `SShell.AllPointsIntersecting` raytraced a cached mesh and returned zero normals, so the `ClassifyEdge` raycast always said OUTSIDE.
-  - `LineEntirelyOutsideBbox` ignored `asSegment`.
-  - The internal `lengthEps` was 1e-12 instead of `LENGTH_EPS` (1e-6).
-  - `EdgeNormalsWithinSurface` used xyz offsets as uv.
-- **Trim pipeline.**
-  - Split curves kept their original handles, so A's and B's curves collided.
-  - The `orig` trim edges were straight lines, double-reversed.
-  - Inter edges sampled `Exact` instead of the split polyline.
-  - `SSurface.Reverse` was a no-op.
-  - `AssemblePolygon` reported success on open chains.
-  - `CullExtraneousEdges` didn't cull anti-parallel pairs.
-  - `MergeCoincidentSurfaces` kept one surface's trims instead of merging them.
-  - The running shell never accumulated across groups.
-  - Plane-plane and same-axis extrusion intersection curves weren't split against the operand shells (`nil` passed for `agnstA`/`agnstB`).
-  - `SSurface.PointOnCurve` ignored its initial uv guess, so a circle cut by a plane could refine to the wrong root.
-  - `SCurve.RemoveShortSegments` lacked the exact-curve t-spacing check, so it thinned circles below C++'s pwl.
-- **Triangulation.** Contours were ear-clipped one by one, with no hole bridging.
-
-The Go-only heuristics these had been masking were removed: the
-`interCount` gate, the centroid classifier fallback, the op-aware
-`TrimBuilt` grid fallback, and the "fall back to the untrimmed grid
-when the trim polygon doesn't assemble" path.
+never from tuning; the Go-only heuristics that had masked them are
+gone. A faithful port can break parity by removing a bug that cancelled
+another; port the other side too. Bit-level details that mattered:
+`List::AddToBeginning` doesn't insert; `std::max`/`min` keep the first
+argument for zeros of either sign; identity transforms still turn `-0`
+into `+0`; product order changes bits; C++ links the vendored Eigen 3.4,
+not the system's; GCC's fused multiply-adds in glibc's FMA variants;
+and C++ solves once more on open (`AfterNewFile`) than on load.
 
 ## Remaining work
 
-**Smaller stand-ins:** none left that are known. Every core file in the table has
-now been compared with the C++; where a row's notes list functions,
-those are what was compared. The entity and save checks cover every fixture
-(including `group/force_to_mesh`, whose saves carry C++'s running
-meshes). `SBezier::ClosestPointTo` turned out to be a stand-in after
-all (found by the split tools' check), so other "audited" rows may still
+No known stand-ins are left, but `SBezier::ClosestPointTo` turned out
+to be one after its row was audited, so an "audited" row may still
 hide one.
 
 **Known gaps:**
@@ -253,10 +144,8 @@ hide one.
   aspect ratio and draws no glyphs. Matching C++ means reproducing
   FreeType's fixed-point scaling and outline decomposition, and C++'s
   results depend on the fonts the system has.
-- The bits match C++ as built here: x86-64 with FMA and AVX2, where
-  glibc 2.44 picks the FMA variants of its trigonometric functions, and
-  the vendored Eigen built without FMA. On another CPU, glibc version,
-  or build, C++ itself computes other last bits. The Go side has to be
-  built for `GOAMD64=v1` (the default) or `v2`: for `v3`, and on arm64
-  and some other architectures, Go fuses `x*y + z` itself, which changes
-  last bits throughout the port (`TestNoFusedMultiplyAdd` fails then).
+- The bits match C++ as built here: x86-64 with FMA and AVX2 (glibc
+  2.44 picks the FMA variants of its trigonometry) and the vendored
+  Eigen built without FMA. Elsewhere C++ itself computes other last
+  bits. Go has to be built for `GOAMD64=v1` (the default) or `v2`: for
+  `v3`, and on arm64, Go fuses `x*y + z` itself.
