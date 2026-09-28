@@ -2,7 +2,6 @@ package srf
 
 import (
 	"math"
-	"sort"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
@@ -394,21 +393,19 @@ func (m *SMesh) GetCenterOfMass() geom.Vector {
 }
 
 // PrecomputeTransparency sorts the opaque triangles before the
-// transparent ones, and notes whether there are any transparent ones
-// (C++ SMesh::PrecomputeTransparency). C++ uses std::sort, which may
-// order the triangles within each group differently; this is only
-// used for drawing.
+// transparent ones, for drawing, in std::sort's order; and notes whether
+// the comparisons met a transparent triangle (C++
+// SMesh::PrecomputeTransparency).
 func (m *SMesh) PrecomputeTransparency() {
-	opaque := func(tr *STriangle) bool {
-		return tr.Meta.RgbaColor.IsEmpty() || tr.Meta.Alpha == 255
-	}
-	for i := range m.Triangles {
-		if !opaque(&m.Triangles[i]) {
+	cxxSort(m.Triangles, func(sta, stb *STriangle) bool {
+		colora, colorb := sta.Meta.RgbaColor, stb.Meta.RgbaColor
+		opaquea := colora.IsEmpty() || colora.Alpha == 255
+		opaqueb := colorb.IsEmpty() || colorb.Alpha == 255
+
+		if !opaquea || !opaqueb {
 			m.IsTransparent = true
 		}
-	}
-	sort.SliceStable(m.Triangles, func(i, j int) bool {
-		return opaque(&m.Triangles[i]) && !opaque(&m.Triangles[j])
+		return opaquea != opaqueb && opaquea
 	})
 }
 

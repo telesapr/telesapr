@@ -579,9 +579,19 @@ func (g *Group) GenerateDisplayItems(sk *Sketch) {
 
 		g.DisplayOutlines.Clear()
 		g.DisplayOutlines.Outlines = append(g.DisplayOutlines.Outlines, pg.DisplayOutlines.Outlines...)
-		return
+	} else {
+		g.generateOwnDisplayItems()
 	}
 
+	// If we render this mesh, we need to know whether it's transparent,
+	// and we'll want all transparent triangles last, to make the depth
+	// test work correctly. This also sets the order the mesh exports in.
+	g.DisplayMesh.PrecomputeTransparency()
+}
+
+// generateOwnDisplayItems triangulates the running shell and adds the
+// running mesh, for a group that contributes new solid model.
+func (g *Group) generateOwnDisplayItems() {
 	// We do contribute new solid model, so we have to triangulate the
 	// shell, and edge-find the mesh.
 	g.DisplayMesh.Clear()
