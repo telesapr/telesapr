@@ -15,17 +15,14 @@ func TestQRRankAndDeadColumns(t *testing.T) {
 		{0, 1, 1},
 		{1, 1, 2},
 	}
-	f := factorQR(a, 3, 3)
+	f := factorSparseQR(spFromRows(a, 3, 3))
 	if f.rank != 2 {
 		t.Fatalf("rank %d, want 2", f.rank)
-	}
-	if f.perm[0] != 0 || f.perm[1] != 1 || f.perm[2] != 2 {
-		t.Errorf("perm %v, want the dead column last", f.perm)
 	}
 
 	// Full rank: the basic solution is the solution.
 	b := [][]float64{{2, 1}, {1, 3}}
-	x := factorQR(b, 2, 2).solve([]float64{5, 10})
+	x := factorSparseQR(spFromRows(b, 2, 2)).solve([]float64{5, 10})
 	if math.Abs(x[0]-1) > 1e-12 || math.Abs(x[1]-3) > 1e-12 {
 		t.Errorf("solve = %v, want [1 3]", x)
 	}

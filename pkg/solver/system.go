@@ -414,7 +414,7 @@ func (s *System) CalculateRank() int {
 	if s.mat.n == 0 || s.mat.m == 0 {
 		return 0
 	}
-	return factorQR(s.mat.Anum, s.mat.m, s.mat.n).rank
+	return factorSparseQR(spFromRows(s.mat.Anum, s.mat.m, s.mat.n)).rank
 }
 
 // TestRank evaluates the Jacobian and reports whether it has full row
@@ -426,17 +426,6 @@ func (s *System) TestRank() (ok bool, dof, rank int) {
 	// We are calculating dof based on real rank, not mat.m.
 	// Using this approach we can calculate real dof even when redundant is allowed.
 	return jacobianRank == s.mat.m, s.mat.n - jacobianRank, jacobianRank
-}
-
-func transpose(a [][]float64, m, n int) [][]float64 {
-	t := make([][]float64, n)
-	for j := 0; j < n; j++ {
-		t[j] = make([]float64, m)
-		for i := 0; i < m; i++ {
-			t[j][i] = a[i][j]
-		}
-	}
-	return t
 }
 
 // SolveLeastSquares computes the minimum-norm Newton step X with
@@ -455,9 +444,10 @@ func (s *System) SolveLeastSquares() bool {
 			scale[c] = 1 / 20.0
 		}
 	}
-	for i := 0; i < m; i++ {
-		for c := 0; c < n; c++ {
-			s.mat.Anum[i][c] *= scale[c]
+	a := spFromRows(s.mat.Anum, m, n)
+	for c := 0; c < n; c++ {
+		for k := range a.val[c] {
+			a.val[c][k] *= scale[c]
 		}
 	}
 
@@ -466,6 +456,17 @@ func (s *System) SolveLeastSquares() bool {
 		return true
 	}
 
+	s.mat.X = leastSquares(a, s.mat.Bnum)
+	for c := 0; c < n; c++ {
+		s.mat.X[c] *= scale[c]
+	}
+	return true
+}
+
+// leastSquares returns the minimum-norm solution X of A X = B, as C++
+// System::SolveLeastSquares finds it once A is scaled.
+func leastSquares(a *spMat, b []float64) []float64 {
+	m, n := a.rows, a.cols
 	var z []float64
 	if m <= n {
 		// We want the minimum norm solution of the underdetermined system
@@ -474,43 +475,28 @@ func (s *System) SolveLeastSquares() bool {
 		// A'*P = Q*R, A*A' = P*R'*R*P', so
 		//     z = (A*A')^-1*B = P*R^-1*R'^-1*P'*B,
 		// two triangular solves, with the rank decision taken on R.
-		f := factorQR(transpose(s.mat.Anum, m, n), n, m)
+		f := factorSparseQR(a.transpose())
 		v := make([]float64, m)
-		for k := 0; k < f.rank; k++ {
-			v[k] = s.mat.Bnum[f.perm[k]]
+		if f.rank > 0 {
+			for k := 0; k < f.rank; k++ {
+				v[k] = b[f.perm[k]]
+			}
+			f.solveUpperTransposed(v)
+			f.solveUpper(v)
 		}
-		f.solveRt(v)
-		f.solveR(v)
 		z = make([]float64, m)
 		for k := 0; k < m; k++ {
 			z[f.perm[k]] = v[k]
 		}
 	} else {
-		// More equations than unknowns; solve the normal equations
-		// A*A' z = B instead. A system like that is redundant anyway,
-		// and gets reported as such.
-		aat := make([][]float64, m)
-		for i := 0; i < m; i++ {
-			aat[i] = make([]float64, m)
-			for k := 0; k < m; k++ {
-				sum := 0.0
-				for c := 0; c < n; c++ {
-					sum += s.mat.Anum[i][c] * s.mat.Anum[k][c]
-				}
-				aat[i][k] = sum
-			}
-		}
-		z = factorQR(aat, m, m).solve(s.mat.Bnum)
+		// More equations than unknowns; A' is wide, which Eigen's sparse
+		// QR does not handle, so fall back to the normal equations. A
+		// system like that is redundant anyway, and gets reported as
+		// such.
+		z = factorSparseQR(a.mulSelfTransposed()).solve(b)
 	}
 
-	for c := 0; c < n; c++ {
-		sum := 0.0
-		for i := 0; i < m; i++ {
-			sum += s.mat.Anum[i][c] * z[i]
-		}
-		s.mat.X[c] = sum * scale[c]
-	}
-	return true
+	return a.mulTransposed(z)
 }
 
 // isReasonable is C++ IsReasonable, which despite its name is true for
@@ -533,7 +519,6 @@ func (s *System) NewtonSolve() bool {
 	for {
 		// And evaluate the Jacobian at our initial operating point.
 		s.EvalJacobian()
-
 		if !s.SolveLeastSquares() {
 			break
 		}
