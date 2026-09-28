@@ -2,7 +2,10 @@ module github.com/spacesolve/spacesolve
 
 go 1.25
 
-require cogentcore.org/core v0.3.12
+require (
+	cogentcore.org/core v0.3.12
+	github.com/andybalholm/brotli v1.2.0
+)
 
 require (
 	github.com/Bios-Marcel/wastebasket/v2 v2.0.3 // indirect

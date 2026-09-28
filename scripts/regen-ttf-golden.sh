@@ -2,13 +2,15 @@
 # Regenerate testdata/ttf/cpp-dump.txt.gz: what C++ SolveSpace's ttf.cpp
 # computes (font names, cap heights, aspect ratios and PlotString's
 # Beziers) for testdata/Gentium-R.ttf and the builtin font, over the
-# strings in testdata/ttf/strings.txt. TestTTFVsCpp requires pkg/ttf to
-# match it.
+# strings in testdata/ttf/strings.txt, and testdata/ttf/cpp-synth-dump.txt.gz,
+# the same for the test fonts in testdata/ttf/synth (made by
+# scripts/gen-ttf-testfonts.py) over testdata/ttf/synth-strings.txt.
+# TestTTFVsCpp and TestSynthFontsVsCpp require pkg/ttf to match them.
 #
 # With font files as arguments, it instead compares pkg/ttf with C++ on
 # them, 60 files at a time (for example every font the system has:
-#     ./scripts/regen-ttf-golden.sh $(find /usr/share/fonts -name '*.ttf')
-# ); fonts with CFF outlines, which pkg/ttf doesn't read, differ.
+#     ./scripts/regen-ttf-golden.sh $(find /usr/share/fonts -type f)
+# ).
 #
 # Needs the C++ build in solvespace/build (libsolvespace-core.a and
 # libsolvespace-headless.a, and res/ for the builtin font).
@@ -38,6 +40,10 @@ if [[ $# -eq 0 ]]; then
     "$TMP/bin/harness" "$REPO_ROOT/testdata/Gentium-R.ttf" < "$STRS" 2>/dev/null |
         gzip -9n > "$REPO_ROOT/testdata/ttf/cpp-dump.txt.gz"
     echo testdata/ttf/cpp-dump.txt.gz
+    (cd "$REPO_ROOT" && "$TMP/bin/harness" testdata/ttf/synth/* \
+        < testdata/ttf/synth-strings.txt 2>/dev/null) |
+        gzip -9n > "$REPO_ROOT/testdata/ttf/cpp-synth-dump.txt.gz"
+    echo testdata/ttf/cpp-synth-dump.txt.gz
     exit 0
 fi
 

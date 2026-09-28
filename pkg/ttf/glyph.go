@@ -23,8 +23,7 @@ type Glyph struct {
 }
 
 // RequestRealDimSize is FT_Request_Size with FT_SIZE_REQUEST_TYPE_REAL_DIM
-// (FT_Request_Metrics; tt_size_reset only changes the hinted metrics,
-// which unhinted loading doesn't use).
+// (FT_Request_Metrics, and tt_size_reset for the hinted metrics).
 func (f *Face) RequestRealDimSize(width, height int64, horiResolution, vertResolution uint32) error {
 	if width < 0 || height < 0 {
 		return errInvalidArg
@@ -73,9 +72,8 @@ func (f *Face) RequestRealDimSize(width, height int64, horiResolution, vertResol
 	}
 	f.xScale, f.yScale = xScale, yScale
 	f.xPpem, f.yPpem = scaledW, scaledH
-	if f.xPpem == 0 || f.yPpem == 0 {
-		// tt_size_reset
-		return errInvalidPpem
+	if f.cff == nil {
+		return f.sizeReset(horiResolution, vertResolution)
 	}
 	return nil
 }
@@ -103,10 +101,12 @@ func (f *Face) Kerning(left, right uint32) Vector {
 const (
 	argsAreWords          = 0x0001
 	argsAreXYValues       = 0x0002
+	roundXYToGrid         = 0x0004
 	weHaveAScale          = 0x0008
 	moreComponents        = 0x0020
 	weHaveAnXYScale       = 0x0040
 	weHaveA2x2            = 0x0080
+	weHaveInstr           = 0x0100
 	useMyMetrics          = 0x0200
 	scaledComponentOffset = 0x0800
 
@@ -125,28 +125,41 @@ type subGlyph struct {
 	xx, xy, yx, yy int64
 }
 
-// loader is a TT_LoaderRec for an unhinted, scaled load.
+// loader is a TT_LoaderRec.
 type loader struct {
 	f              *Face
-	xScale, yScale int64
+	xScale, yScale int64 // the size metrics' scales
+
+	// exec is the execution context when the glyph is loaded through
+	// the bytecode set-up; hinted is IS_HINTED of the load flags.
+	exec   *ttExecContext
+	hinted bool
+	widthp []byte
 
 	base Outline // the glyph loader's base outline
 
-	cursor      []byte
-	byteLen     int64
-	nContours   int
-	bbox        BBox
-	leftBearing int64
-	advance     int64
-	linear      int64
-	linearDef   bool
-	pp1, pp2    Vector
-	composites  []int64
+	cursor             []byte
+	byteLen            int64
+	insPos             int64
+	nContours          int
+	bbox               BBox
+	leftBearing        int64
+	advance            int64
+	topBearing         int64
+	vadvance           int64
+	linear             int64
+	linearDef          bool
+	pp1, pp2, pp3, pp4 Vector
+	composites         []int64
 }
 
 // LoadGlyph is FT_Load_Glyph with FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING,
-// through tt_glyph_load and TT_Load_Glyph.
+// through tt_glyph_load and TT_Load_Glyph: a tricky font's glyphs are
+// hinted still.
 func (f *Face) LoadGlyph(gindex uint32) (*Glyph, error) {
+	if f.cff != nil {
+		return f.loadCFFGlyph(gindex)
+	}
 	if int64(gindex) >= f.numGlyphs {
 		return nil, errInvalidArg
 	}
@@ -154,6 +167,13 @@ func (f *Face) LoadGlyph(gindex uint32) (*Glyph, error) {
 		return nil, errInvalidPpem
 	}
 	l := &loader{f: f, xScale: f.xScale, yScale: f.yScale}
+	if f.tricky {
+		// tt_glyph_load uses the hinted metrics
+		l.xScale, l.yScale = f.size.metrics.xScale, f.size.metrics.yScale
+		if err := l.initHinting(); err != nil {
+			return nil, err
+		}
+	}
 	if err := l.loadGlyph(gindex, 0); err != nil {
 		return nil, err
 	}
@@ -164,7 +184,11 @@ func (f *Face) LoadGlyph(gindex uint32) (*Glyph, error) {
 	// compute_glyph_metrics
 	cbox := g.Outline.CBox()
 	g.HoriBearingX = cbox.XMin
-	g.AdvanceX = l.pp2.X - l.pp1.X
+	if l.widthp != nil {
+		g.AdvanceX = int64(l.widthp[gindex]) * 64
+	} else {
+		g.AdvanceX = l.pp2.X - l.pp1.X
+	}
 
 	if err := g.Outline.check(); err != nil {
 		return nil, err
@@ -185,16 +209,17 @@ func (l *loader) loadGlyph(gindex uint32, recurseCount int) error {
 	offset, byteLen := f.location(gindex)
 	l.byteLen = byteLen
 	var glyph []byte
+	var glyphPos int64
 	if byteLen > 0 {
 		if f.glyfOffset == 0 {
 			return errInvalidTable
 		}
-		start := f.glyfOffset + offset
-		end := start + byteLen
-		if start < 0 || end > int64(len(f.data)) {
+		glyphPos = f.glyfOffset + offset
+		end := glyphPos + byteLen
+		if glyphPos < 0 || end > int64(len(f.data)) {
 			return errInvalidTable
 		}
-		glyph = f.data[start:end]
+		glyph = f.data[glyphPos:end]
 		// TT_Load_Glyph_Header
 		if len(glyph) < 10 {
 			return errInvalidOutl
@@ -210,10 +235,13 @@ func (l *loader) loadGlyph(gindex uint32, recurseCount int) error {
 		l.bbox = BBox{}
 	}
 
-	// tt_get_metrics (the vertical metrics aren't used)
+	// tt_get_metrics
 	lsb, aw := f.hMetrics(gindex)
+	tsb, ah := f.vMetrics(gindex, l.bbox.YMax)
 	l.leftBearing = int64(lsb)
 	l.advance = int64(aw)
+	l.topBearing = int64(tsb)
+	l.vadvance = int64(ah)
 	if !l.linearDef {
 		l.linearDef = true
 		l.linear = int64(aw)
@@ -222,10 +250,16 @@ func (l *loader) loadGlyph(gindex uint32, recurseCount int) error {
 	// tt_loader_set_pp
 	l.pp1 = Vector{l.bbox.XMin - l.leftBearing, 0}
 	l.pp2 = Vector{l.pp1.X + l.advance, 0}
+	l.pp3 = Vector{0, l.bbox.YMax + l.topBearing}
+	l.pp4 = Vector{0, l.pp3.Y - l.vadvance}
+	if l.exec != nil {
+		// the interpreter's render mode is FT_RENDER_MODE_NORMAL
+		l.pp3.X = l.advance / 2
+		l.pp4.X = l.advance / 2
+	}
 
 	if byteLen == 0 || l.nContours == 0 {
-		l.pp1.X = mulFix(l.pp1.X, l.xScale)
-		l.pp2.X = mulFix(l.pp2.X, l.xScale)
+		l.scalePhantoms()
 		return nil
 	}
 
@@ -235,13 +269,9 @@ func (l *loader) loadGlyph(gindex uint32, recurseCount int) error {
 		if err != nil {
 			return err
 		}
-		// TT_Process_Simple_Glyph: scale the points and phantom points.
-		for i := range cur.Points {
-			cur.Points[i].X = mulFix(cur.Points[i].X, l.xScale)
-			cur.Points[i].Y = mulFix(cur.Points[i].Y, l.yScale)
+		if err := l.processSimpleGlyph(&cur); err != nil {
+			return err
 		}
-		l.pp1.X = mulFix(l.pp1.X, l.xScale)
-		l.pp2.X = mulFix(l.pp2.X, l.xScale)
 		l.add(cur)
 		return nil
 	}
@@ -263,48 +293,207 @@ func (l *loader) loadGlyph(gindex uint32, recurseCount int) error {
 	}
 
 	startPoint := len(l.base.Points)
-	subglyphs, err := l.loadCompositeGlyph()
+	startContour := len(l.base.Contours)
+	subglyphs, consumed, err := l.loadCompositeGlyph()
 	if err != nil {
 		return err
 	}
+	insPos := glyphPos + 10 + int64(consumed)
 
-	l.pp1.X = mulFix(l.pp1.X, l.xScale)
-	l.pp2.X = mulFix(l.pp2.X, l.xScale)
+	l.scalePhantoms()
 
+	oldByteLen := l.byteLen
+	numPoints := startPoint
 	for n := range subglyphs {
 		sg := &subglyphs[n]
-		pp1, pp2 := l.pp1, l.pp2
-		linear := l.linear
+		pp1, pp2, pp3, pp4 := l.pp1, l.pp2, l.pp3, l.pp4
+		linear, vadvance := l.linear, l.vadvance
 		numBasePoints := len(l.base.Points)
 
 		if err := l.loadGlyph(sg.index, recurseCount+1); err != nil {
 			return err
 		}
 		if sg.flags&useMyMetrics == 0 {
-			l.pp1, l.pp2 = pp1, pp2
-			l.linear = linear
+			l.pp1, l.pp2, l.pp3, l.pp4 = pp1, pp2, pp3, pp4
+			l.linear, l.vadvance = linear, vadvance
 		}
-		if len(l.base.Points) == numBasePoints {
+		numPoints = len(l.base.Points)
+		if numPoints == numBasePoints {
 			continue
 		}
 		if err := l.processCompositeComponent(sg, startPoint, numBasePoints); err != nil {
 			return err
 		}
 	}
+	l.byteLen = oldByteLen
+
+	l.insPos = insPos
+	if l.hinted && len(subglyphs) > 0 && subglyphs[len(subglyphs)-1].flags&weHaveInstr != 0 &&
+		numPoints > startPoint {
+		return l.processCompositeGlyph(startPoint, startContour)
+	}
 	return nil
 }
 
-// add is FT_GlyphLoader_Add: the current outline joins the base one.
+// scalePhantoms scales the phantom points; TT_Hint_Glyph rounds them.
+func (l *loader) scalePhantoms() {
+	l.pp1.X = mulFix(l.pp1.X, l.xScale)
+	l.pp2.X = mulFix(l.pp2.X, l.xScale)
+	l.pp3.X = mulFix(l.pp3.X, l.xScale)
+	l.pp3.Y = mulFix(l.pp3.Y, l.yScale)
+	l.pp4.X = mulFix(l.pp4.X, l.xScale)
+	l.pp4.Y = mulFix(l.pp4.Y, l.yScale)
+}
+
+// add is FT_GlyphLoader_Add: the current outline, without its phantom
+// points, joins the base one.
 func (l *loader) add(cur Outline) {
 	n := len(l.base.Points)
-	l.base.Points = append(l.base.Points, cur.Points...)
-	l.base.Tags = append(l.base.Tags, cur.Tags...)
+	np := len(cur.Points) - 4
+	l.base.Points = append(l.base.Points, cur.Points[:np]...)
+	l.base.Tags = append(l.base.Tags, cur.Tags[:np]...)
 	for _, c := range cur.Contours {
 		l.base.Contours = append(l.base.Contours, c+n)
 	}
 }
 
-// loadSimpleGlyph is TT_Load_Simple_Glyph.
+// processSimpleGlyph is TT_Process_Simple_Glyph: cur has room for the
+// four phantom points after its points.
+func (l *loader) processSimpleGlyph(cur *Outline) error {
+	n := len(cur.Points) - 4
+	cur.Points[n] = l.pp1
+	cur.Points[n+1] = l.pp2
+	cur.Points[n+2] = l.pp3
+	cur.Points[n+3] = l.pp4
+
+	var zone ttGlyphZone
+	if l.hinted {
+		zone = prepareZone(cur, 0, 0)
+		copy(zone.orus, zone.cur)
+	}
+	for i := range cur.Points {
+		cur.Points[i].X = mulFix(cur.Points[i].X, l.xScale)
+		cur.Points[i].Y = mulFix(cur.Points[i].Y, l.yScale)
+	}
+	l.pp1, l.pp2 = cur.Points[n], cur.Points[n+1]
+	l.pp3, l.pp4 = cur.Points[n+2], cur.Points[n+3]
+
+	if l.hinted {
+		return l.hintGlyph(&zone, cur, false)
+	}
+	return nil
+}
+
+// prepareZone is tt_prepare_zone on an outline whose four phantom points
+// follow its points; the org and orus arrays are fresh.
+func prepareZone(o *Outline, startPoint, startContour int) ttGlyphZone {
+	n := len(o.Points) - startPoint
+	contours := make([]uint16, len(o.Contours)-startContour)
+	for i := range contours {
+		contours[i] = uint16(o.Contours[startContour+i])
+	}
+	return ttGlyphZone{
+		nPoints:    uint16(n),
+		nContours:  uint16(len(contours)),
+		org:        make([]Vector, n),
+		cur:        o.Points[startPoint:],
+		orus:       make([]Vector, n),
+		tags:       o.Tags[startPoint:],
+		contours:   contours,
+		firstPoint: uint16(startPoint),
+	}
+}
+
+// hintGlyph is TT_Hint_Glyph; tags0 is the tag of the current outline's
+// first point, which gets the drop-out mode.
+func (l *loader) hintGlyph(zone *ttGlyphZone, cur *Outline, isComposite bool) error {
+	exec := l.exec
+	size := l.f.size
+	nIns := len(exec.glyphIns)
+	n := int(zone.nPoints)
+
+	if nIns > 0 {
+		copy(zone.org, zone.cur[:n])
+	}
+	if isComposite {
+		exec.metrics.xScale = 1 << 16
+		exec.metrics.yScale = 1 << 16
+		copy(zone.orus, zone.cur[:n])
+	} else {
+		exec.metrics.xScale = size.metrics.xScale
+		exec.metrics.yScale = size.metrics.yScale
+	}
+
+	zone.cur[n-4].X = pixRound(zone.cur[n-4].X)
+	zone.cur[n-3].X = pixRound(zone.cur[n-3].X)
+	zone.cur[n-2].Y = pixRound(zone.cur[n-2].Y)
+	zone.cur[n-1].Y = pixRound(zone.cur[n-1].Y)
+
+	if nIns > 0 {
+		exec.setCodeRange(ttCoderangeGlyph, exec.glyphIns)
+		exec.isComposite = isComposite
+		exec.pts = *zone
+		// errors only count with pedantic hinting
+		_ = exec.runContext(size)
+		if cur != nil && len(cur.Tags) > 0 {
+			cur.Tags[0] |= byte(exec.GS.scanType<<5) | curveTagHasScanmode
+		}
+	}
+
+	if exec.backwardCompatibility != 0 {
+		return nil
+	}
+	l.pp1 = zone.cur[n-4]
+	l.pp2 = zone.cur[n-3]
+	l.pp3 = zone.cur[n-2]
+	l.pp4 = zone.cur[n-1]
+	return nil
+}
+
+// processCompositeGlyph is TT_Process_Composite_Glyph: it hints the
+// points from startPoint with the composite's instructions.
+func (l *loader) processCompositeGlyph(startPoint, startContour int) error {
+	b := &l.base
+	np := len(b.Points)
+	b.Points = append(b.Points, l.pp1, l.pp2, l.pp3, l.pp4)
+	b.Tags = append(b.Tags, 0, 0, 0, 0)
+	defer func() {
+		b.Points = b.Points[:np]
+		b.Tags = b.Tags[:np]
+	}()
+
+	exec := l.exec
+	exec.glyphIns = nil
+	s := &cffStream{data: l.f.data}
+	if err := s.seek(l.insPos); err != nil {
+		return err
+	}
+	nIns, err := s.readU16()
+	if err != nil {
+		return err
+	}
+	if nIns == 0 {
+		return nil
+	}
+	if int64(nIns) > l.byteLen {
+		return errTooManyHints
+	}
+	ins, err := s.read(int64(nIns))
+	if err != nil {
+		return err
+	}
+	exec.glyphIns = ins
+
+	zone := prepareZone(b, startPoint, startContour)
+	for i := 0; i < int(zone.nPoints)-4; i++ {
+		zone.tags[i] &^= curveTagTouchBoth
+	}
+	// the current outline's first tag is the first phantom point's
+	return l.hintGlyph(&zone, nil, true)
+}
+
+// loadSimpleGlyph is TT_Load_Simple_Glyph: the outline has room for the
+// four phantom points.
 func (l *loader) loadSimpleGlyph() (Outline, error) {
 	var o Outline
 	p := l.cursor
@@ -330,9 +519,15 @@ func (l *loader) loadSimpleGlyph() (Outline, error) {
 	if pos+nIns > len(p) {
 		return o, errTooManyHints
 	}
+	if l.hinted {
+		l.exec.glyphIns = nil
+		if nIns > 0 {
+			l.exec.glyphIns = p[pos : pos+nIns]
+		}
+	}
 	pos += nIns
 
-	o.Tags = make([]byte, nPoints)
+	o.Tags = make([]byte, nPoints+4)
 	for i := 0; i < nPoints; {
 		if pos+1 > len(p) {
 			return o, errInvalidOutl
@@ -357,7 +552,7 @@ func (l *loader) loadSimpleGlyph() (Outline, error) {
 		}
 	}
 
-	o.Points = make([]Vector, nPoints)
+	o.Points = make([]Vector, nPoints+4)
 	var x int64
 	for i := 0; i < nPoints; i++ {
 		var delta int64
@@ -409,21 +604,22 @@ func (l *loader) loadSimpleGlyph() (Outline, error) {
 	return o, nil
 }
 
-// loadCompositeGlyph is TT_Load_Composite_Glyph.
-func (l *loader) loadCompositeGlyph() ([]subGlyph, error) {
+// loadCompositeGlyph is TT_Load_Composite_Glyph; it also returns the
+// number of bytes read.
+func (l *loader) loadCompositeGlyph() ([]subGlyph, int, error) {
 	p := l.cursor
 	pos := 0
 	var subs []subGlyph
 	for {
 		if pos+4 > len(p) {
-			return nil, errInvalidComp
+			return nil, 0, errInvalidComp
 		}
 		var sg subGlyph
 		sg.flags = peek16(p, pos)
 		sg.index = uint32(peek16(p, pos+2))
 		pos += 4
 		if int64(sg.index) >= l.f.numGlyphs {
-			return nil, errInvalidComp
+			return nil, 0, errInvalidComp
 		}
 		count := 2
 		if sg.flags&argsAreWords != 0 {
@@ -437,7 +633,7 @@ func (l *loader) loadCompositeGlyph() ([]subGlyph, error) {
 			count += 8
 		}
 		if pos+count > len(p) {
-			return nil, errInvalidComp
+			return nil, 0, errInvalidComp
 		}
 
 		if sg.flags&argsAreXYValues != 0 {
@@ -485,7 +681,7 @@ func (l *loader) loadCompositeGlyph() ([]subGlyph, error) {
 			break
 		}
 	}
-	return subs, nil
+	return subs, pos, nil
 }
 
 // processCompositeComponent is TT_Process_Composite_Component.
@@ -523,6 +719,12 @@ func (l *loader) processCompositeComponent(sg *subGlyph, startPoint, numBasePoin
 		}
 		x = mulFix(x, l.xScale)
 		y = mulFix(y, l.yScale)
+		if sg.flags&roundXYToGrid != 0 && l.hinted {
+			if l.exec.backwardCompatibility == 0 {
+				x = pixRound(x)
+			}
+			y = pixRound(y)
+		}
 	}
 	if x != 0 || y != 0 {
 		for i := range pts {

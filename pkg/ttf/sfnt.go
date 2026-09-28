@@ -1,9 +1,9 @@
-// Package ttf reads TrueType fonts as C++ SolveSpace's ttf.cpp does,
-// through the parts of FreeType 2.14.3 it uses: opening a face and
-// selecting its Unicode charmap, a size request, loading unhinted
-// glyph outlines, kerning, and outline decomposition. Only fonts with
-// TrueType (glyf) outlines are read; FreeType's other drivers (CFF
-// OpenType, Type 1, ...) and compressed WOFF files aren't ported.
+// Package ttf reads fonts as C++ SolveSpace's ttf.cpp does, through the
+// parts of FreeType 2.14.3 it uses: opening a face and selecting its
+// Unicode charmap, a size request, loading unhinted glyph outlines,
+// kerning, and outline decomposition. FreeType's TrueType driver and
+// its CFF driver (OpenType CFF and CFF2 fonts, and bare CFF files) are
+// ported; its other drivers (Type 1, bitmap fonts, ...) aren't.
 package ttf
 
 import (
@@ -136,62 +136,132 @@ type Face struct {
 	// The size metrics (FT_Size_Metrics) after RequestSize.
 	xScale, yScale int64
 	xPpem, yPpem   int64
+
+	// The CFF driver's font, for a CFF face.
+	cff    *cffFont
+	isCFF2 bool
+
+	// post, and maxp's number of glyphs
+	postFormat    int64
+	postNames     postNames
+	isFixedPitch  uint32
+	maxpNumGlyphs int64
+
+	// maxp's version 1.0 fields
+	maxp maxProfile
+
+	// vhea and vmtx; vertInfo is face->vertical_info
+	vertInfo             bool
+	vheaNumberOfMetrics  uint16
+	vmtxOffset, vmtxSize int64
+
+	// The bytecode (the TrueType driver's, for tricky fonts): the
+	// unscaled CVT in 26.6, the font and CVT programs, and hdmx.
+	tricky      bool
+	cvt         []int32
+	fontProgram []byte
+	cvtProgram  []byte
+	hdmxRecords [][]byte
+
+	// The TrueType driver's size (TT_Size), created with the face.
+	size *ttSize
 }
 
-// NewFace opens the first face of a TrueType file (or TrueType
-// collection), as FT_New_Memory_Face does with the TrueType driver.
+// maxProfile is the part of a TT_MaxProfile the interpreter reads.
+type maxProfile struct {
+	version            int64
+	maxTwilightPoints  uint16
+	maxStorage         uint16
+	maxFunctionDefs    uint16
+	maxInstructionDefs uint16
+	maxStackElements   uint16
+}
+
+// NewFace opens the first face of a font file, as FT_New_Memory_Face
+// does: the TrueType driver takes TrueType fonts (and collections), and
+// the CFF driver OpenType CFF fonts and bare CFF files.
 func NewFace(data []byte) (*Face, error) {
+	// the TrueType driver (tt_face_init)
 	f := &Face{data: data}
-	if err := f.initFace(); err != nil {
-		return nil, err
+	formatTag, sfntErr := f.initFace()
+	if sfntErr == nil {
+		switch formatTag {
+		case 0x00010000, 0x00020000, tag("true"), 0xA56B6264, 0xA56C7374:
+			if err := f.loadFace(false); err != nil {
+				return nil, err
+			}
+			if err := f.loadLoca(); err != nil {
+				return nil, err
+			}
+			if err := f.loadBytecodeTables(); err != nil {
+				return nil, err
+			}
+			return f, nil
+		}
 	}
-	if err := f.loadFace(); err != nil {
-		return nil, err
+
+	// the CFF driver (cff_face_init), on the SFNT data of a WOFF file
+	f = &Face{data: f.data}
+	formatTag, sfntErr = f.initFace()
+	if sfntErr == nil && formatTag != tag("OTTO") {
+		return nil, errUnknownFormat
 	}
-	if err := f.loadLoca(); err != nil {
+	if err := f.cffFaceInit(sfntErr == nil); err != nil {
 		return nil, err
 	}
 	return f, nil
 }
 
 // initFace is sfnt_init_face and sfnt_open_font: the table directory,
-// through a collection's first font.
-func (f *Face) initFace() error {
+// through a collection's first font. It returns the font's format tag.
+func (f *Face) initFace() (uint32, error) {
 	r := &reader{b: f.data}
 	offset := 0
 	formatTag := r.u32()
 	if r.err != nil {
-		return errUnknownFormat
+		return 0, errUnknownFormat
+	}
+	if formatTag == tag("wOFF") || formatTag == tag("wOF2") {
+		// The SFNT replaces the file, for this driver and the next.
+		open := woffOpenFont
+		if formatTag == tag("wOF2") {
+			open = woff2OpenFont
+		}
+		sfnt, err := open(f.data)
+		if err != nil {
+			return 0, err
+		}
+		f.data = sfnt
+		return f.initFace()
+	}
+	switch formatTag {
+	case 0x00010000, tag("ttcf"), tag("OTTO"), tag("true"), tag("typ1"),
+		0xA56B6264, 0xA56C7374, 0x00020000:
+	default:
+		return 0, errUnknownFormat
 	}
 	if formatTag == tag("ttcf") {
 		r.u32() // version
 		count := r.u32()
 		if r.err != nil || count == 0 {
-			return errUnknownFormat
+			return 0, errUnknownFormat
 		}
 		offset = int(r.u32())
 		if r.err != nil {
-			return errUnknownFormat
+			return 0, errUnknownFormat
 		}
 		r.pos = offset
 		formatTag = r.u32()
 		if r.err != nil {
-			return errUnknownFormat
+			return 0, errUnknownFormat
 		}
-	}
-	switch formatTag {
-	case 0x00010000, 0x00020000, tag("true"):
-	default:
-		// 'OTTO' is FreeType's CFF driver's, and the others aren't
-		// SFNT files.
-		return errUnknownFormat
 	}
 
 	r.pos = offset + 4
 	numTables := int(r.u16())
 	r.pos += 6
 	if r.err != nil {
-		return errUnknownFormat
+		return 0, errUnknownFormat
 	}
 	size := uint32(len(f.data))
 	for i := 0; i < numTables; i++ {
@@ -203,23 +273,33 @@ func (f *Face) initFace() error {
 		if r.err != nil {
 			break
 		}
-		// check_table_dir ignores tables outside the file, and
+		// tt_face_load_font_dir ignores tables outside the file, and
 		// truncates hmtx and vmtx.
 		if e.offset > size {
 			continue
 		} else if e.length > size-e.offset {
 			if e.tag == tag("hmtx") || e.tag == tag("vmtx") {
-				e.length = size - e.offset
+				e.length = (size - e.offset) &^ 3
 			} else {
 				continue
 			}
 		}
-		f.tables = append(f.tables, e)
+		// the first of duplicate tables wins
+		duplicate := false
+		for _, d := range f.tables {
+			if d.tag == e.tag {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			f.tables = append(f.tables, e)
+		}
 	}
 	if len(f.tables) == 0 {
-		return errUnknownFormat
+		return 0, errUnknownFormat
 	}
-	return nil
+	return formatTag, nil
 }
 
 // table is goto_table (tt_face_lookup_table): zero-length tables count
@@ -234,16 +314,22 @@ func (f *Face) table(name string) ([]byte, int64, bool) {
 	return nil, 0, false
 }
 
-// loadFace is sfnt_load_face, for the fields ttf.cpp relies on.
-func (f *Face) loadFace() error {
-	_, _, hasGlyf := f.table("glyf")
-	if !hasGlyf {
-		return errUnknownFormat
+// loadFace is sfnt_load_face, for the fields ttf.cpp relies on, for the
+// TrueType driver or the CFF driver.
+func (f *Face) loadFace(cff bool) error {
+	if !cff {
+		if _, _, hasGlyf := f.table("glyf"); !hasGlyf {
+			return errUnknownFormat
+		}
 	}
 
-	head, _, ok := f.table("head")
-	if !ok || len(head) < 54 {
+	_, headPos, ok := f.table("head")
+	if !ok {
 		return errTableMissing
+	}
+	head, err := f.frameAt(headPos, 54)
+	if err != nil {
+		return err
 	}
 	r := &reader{b: head}
 	r.pos = 16
@@ -255,20 +341,23 @@ func (f *Face) loadFace() error {
 		return errInvalidTable
 	}
 
-	maxp, _, ok := f.table("maxp")
-	if !ok || len(maxp) < 6 {
-		return errTableMissing
+	if err := f.loadMaxp(); err != nil {
+		return err
 	}
-	f.numGlyphs = int64(binary.BigEndian.Uint16(maxp[4:]))
 
 	if cmap, _, ok := f.table("cmap"); ok {
 		f.cmapTable = cmap
 	}
 	f.loadNames()
+	postOK := f.loadPost()
 
-	hhea, _, ok := f.table("hhea")
-	if !ok || len(hhea) < 36 {
+	_, hheaPos, ok := f.table("hhea")
+	if !ok {
 		return errTableMissing
+	}
+	hhea, err := f.frameAt(hheaPos, 36)
+	if err != nil {
+		return err
 	}
 	r = &reader{b: hhea}
 	r.pos = 4
@@ -290,19 +379,11 @@ func (f *Face) loadFace() error {
 		}
 	}
 
-	f.os2Version = 0xFFFF
-	if os2, _, ok := f.table("OS/2"); ok && len(os2) >= 78 {
-		r = &reader{b: os2}
-		f.os2Version = r.u16()
-		r.pos = 62
-		f.fsSelection = r.u16()
-		r.pos = 68
-		f.typoAscender = r.i16()
-		f.typoDescender = r.i16()
-		f.typoLineGap = r.i16()
-		f.winAscent = r.u16()
-		f.winDescent = r.u16()
+	if err := f.loadVertical(); err != nil {
+		return err
 	}
+
+	f.loadOS2()
 
 	f.setNames()
 	f.loadKern()
@@ -311,6 +392,7 @@ func (f *Face) loadFace() error {
 	for _, cm := range f.charmaps {
 		cm.encoding = findEncoding(cm.platformID, cm.encodingID)
 	}
+	f.synthesizeUnicodeCmap(postOK && f.postFormat != 0x00030000)
 
 	// The metrics (sfnt_load_face's "Set up metrics").
 	if f.os2Version != 0xFFFF && f.fsSelection&128 != 0 {
@@ -330,6 +412,45 @@ func (f *Face) loadFace() error {
 		}
 	}
 	return nil
+}
+
+// loadOS2 is tt_face_load_os2; a table that can't be read counts as
+// missing, with version 0xFFFF.
+func (f *Face) loadOS2() {
+	f.os2Version = 0xFFFF
+	_, pos, ok := f.table("OS/2")
+	if !ok {
+		return
+	}
+	os2, err := f.frameAt(pos, 78)
+	if err != nil {
+		return
+	}
+	r := &reader{b: os2}
+	version := r.u16()
+	r.pos = 62
+	f.fsSelection = r.u16()
+	r.pos = 68
+	f.typoAscender = r.i16()
+	f.typoDescender = r.i16()
+	f.typoLineGap = r.i16()
+	f.winAscent = r.u16()
+	f.winDescent = r.u16()
+	// the fields of versions 1, 2 and 5
+	pos += 78
+	for _, extra := range []struct {
+		version uint16
+		n       int64
+	}{{1, 8}, {2, 10}, {5, 4}} {
+		if version < extra.version {
+			break
+		}
+		if _, err := f.frameAt(pos, uint64(extra.n)); err != nil {
+			return
+		}
+		pos += extra.n
+	}
+	f.os2Version = version
 }
 
 // loadLoca is tt_face_load_loca.
@@ -423,33 +544,6 @@ func (f *Face) location(gindex uint32) (int64, int64) {
 		return pos1, pos2 - pos1
 	}
 	return pos1, f.glyfLen - pos1
-}
-
-// hMetrics is tt_face_get_metrics for the horizontal metrics: a glyph's
-// left side bearing and advance width in font units.
-func (f *Face) hMetrics(gindex uint32) (lsb int16, aw uint16) {
-	tableEnd := f.hmtxOffset + f.hmtxSize
-	k := uint32(f.numberOfHMetrics)
-	if k == 0 {
-		return 0, 0
-	}
-	if gindex < k {
-		pos := f.hmtxOffset + 4*int64(gindex)
-		if pos+4 > tableEnd {
-			return 0, 0
-		}
-		return int16(peek16(f.data, int(pos)+2)), peek16(f.data, int(pos))
-	}
-	pos := f.hmtxOffset + 4*int64(k-1)
-	if pos+2 > tableEnd {
-		return 0, 0
-	}
-	aw = peek16(f.data, int(pos))
-	pos += 4 + 2*int64(gindex-k)
-	if pos+2 > tableEnd {
-		return 0, aw
-	}
-	return int16(peek16(f.data, int(pos))), aw
 }
 
 // Name table (tt_face_load_name and tt_face_get_name).

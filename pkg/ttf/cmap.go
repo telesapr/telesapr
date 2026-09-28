@@ -2,12 +2,12 @@ package ttf
 
 import "errors"
 
-// Charmaps (ttcmap.c), for the subtable formats a Unicode charmap
-// uses: 0, 4, 6, 12, 13 and 14. FreeType also reads formats 2, 8 and
-// 10, which encode multi-byte (non-Unicode) character sets.
+// Charmaps (ttcmap.c): the subtable formats 0, 2, 4, 6, 8, 10, 12, 13
+// and 14.
 
 const (
 	encodingUnicode = iota + 1
+	encodingMSSymbol
 	encodingOther
 
 	platformAppleUnicode = 0
@@ -31,10 +31,13 @@ type charmap struct {
 	format                 uint16
 	data                   []byte // from the subtable to the cmap table's end
 	flags                  int
+
+	// synthetic is a Unicode charmap built from glyph names.
+	synthetic *psUnicodes
 }
 
 // findEncoding is sfnt_find_encoding, as far as FT_Select_Charmap's
-// FT_ENCODING_UNICODE goes.
+// FT_ENCODING_UNICODE and the synthesized Unicode charmap go.
 func findEncoding(platformID, encodingID uint16) int {
 	switch platformID {
 	case platformISO, platformAppleUnicode:
@@ -43,6 +46,8 @@ func findEncoding(platformID, encodingID uint16) int {
 		switch encodingID {
 		case msIDUCS4, msIDUnicode:
 			return encodingUnicode
+		case msIDSymbol:
+			return encodingMSSymbol
 		}
 		return encodingOther
 	}
@@ -75,6 +80,12 @@ func (f *Face) buildCmaps() {
 		switch cm.format {
 		case 0:
 			err = validate0(cm.data)
+		case 2:
+			err = validate2(cm.data)
+		case 8:
+			err = validate8(cm.data)
+		case 10:
+			err = validate10(cm.data)
 		case 4:
 			flags, err = validate4(cm.data)
 		case 6:
@@ -128,6 +139,13 @@ func (f *Face) CharIndex(charcode uint32) uint32 {
 		return 0
 	}
 	var result uint32
+	if f.charmap.synthetic != nil {
+		result = f.charmap.synthetic.charIndex(charcode)
+		if int64(result) >= f.numGlyphs {
+			result = 0
+		}
+		return result
+	}
 	switch f.charmap.format {
 	case 0:
 		if charcode < 256 {
@@ -143,6 +161,12 @@ func (f *Face) CharIndex(charcode uint32) uint32 {
 		if idx < count {
 			result = uint32(peek16(f.charmap.data, p+4+2*int(idx)))
 		}
+	case 2:
+		result = cmap2CharIndex(f.charmap.data, charcode)
+	case 8:
+		result = cmap8CharIndex(f.charmap.data, charcode)
+	case 10:
+		result = cmap10CharIndex(f.charmap.data, charcode)
 	case 12, 13:
 		result = cmap12CharIndex(f.charmap, charcode)
 	}
@@ -548,6 +572,154 @@ func cmap12CharIndex(cm *charmap, charcode uint32) uint32 {
 			}
 			return id + (charcode - start)
 		}
+	}
+	return 0
+}
+
+// validate2 is tt_cmap2_validate at FT_VALIDATE_DEFAULT.
+func validate2(table []byte) error {
+	if len(table) < 4 {
+		return errInvalidCmap
+	}
+	length := int(peek16(table, 2))
+	if length > len(table) || length < 6+512 {
+		return errInvalidCmap
+	}
+	maxSubs := 0
+	for n := 0; n < 256; n++ {
+		if idx := int(peek16(table, 6+2*n)) >> 3; idx > maxSubs {
+			maxSubs = idx
+		}
+	}
+	glyphIDs := 518 + (maxSubs+1)*8
+	if glyphIDs > len(table) {
+		return errInvalidCmap
+	}
+	for n := 0; n <= maxSubs; n++ {
+		p := 518 + 8*n
+		codeCount := int(peek16(table, p+2))
+		offset := int(peek16(table, p+6))
+		if codeCount == 0 {
+			continue
+		}
+		if offset != 0 {
+			ids := p + 6 + offset
+			if ids < glyphIDs || ids+codeCount*2 > length {
+				return errInvalidCmap
+			}
+		}
+	}
+	return nil
+}
+
+// cmap2CharIndex is tt_cmap2_char_index, with tt_cmap2_get_subheader.
+func cmap2CharIndex(table []byte, charcode uint32) uint32 {
+	if charcode >= 0x10000 {
+		return 0
+	}
+	charLo := int(charcode & 0xFF)
+	charHi := int(charcode >> 8)
+	const subs = 518
+	var sub int
+	if charHi == 0 {
+		sub = subs
+		if peek16(table, 6+charLo*2) != 0 {
+			return 0
+		}
+	} else {
+		sub = subs + int(peek16(table, 6+charHi*2))&^7
+		if sub == subs {
+			return 0
+		}
+	}
+	start := uint32(peek16(table, sub))
+	count := uint32(peek16(table, sub+2))
+	delta := int32(int16(peek16(table, sub+4)))
+	offset := int(peek16(table, sub+6))
+	idx := uint32(charLo) - start
+	if idx < count && offset != 0 {
+		gid := peek16(table, sub+6+offset+2*int(idx))
+		if gid != 0 {
+			return uint32(int32(gid)+delta) & 0xFFFF
+		}
+	}
+	return 0
+}
+
+// validate8 is tt_cmap8_validate at FT_VALIDATE_DEFAULT.
+func validate8(table []byte) error {
+	if len(table) < 16+8192 {
+		return errInvalidCmap
+	}
+	length := uint64(peek32(table, 4))
+	if length > uint64(len(table)) || length < 8192+16 {
+		return errInvalidCmap
+	}
+	numGroups := uint64(peek32(table, 12+8192))
+	if numGroups > uint64(len(table)-8208)/12 {
+		return errInvalidCmap
+	}
+	var last uint32
+	for n := uint64(0); n < numGroups; n++ {
+		p := 8208 + 12*int(n)
+		start := peek32(table, p)
+		end := peek32(table, p+4)
+		if start > end {
+			return errInvalidCmap
+		}
+		if n > 0 && start <= last {
+			return errInvalidCmap
+		}
+		last = end
+	}
+	return nil
+}
+
+// cmap8CharIndex is tt_cmap8_char_index.
+func cmap8CharIndex(table []byte, charcode uint32) uint32 {
+	numGroups := peek32(table, 8204)
+	p := 8208
+	for ; numGroups > 0; numGroups-- {
+		start := peek32(table, p)
+		end := peek32(table, p+4)
+		startID := peek32(table, p+8)
+		p += 12
+		if charcode < start {
+			break
+		}
+		if charcode <= end {
+			if startID > 0xFFFFFFFF-(charcode-start) {
+				return 0
+			}
+			return startID + (charcode - start)
+		}
+	}
+	return 0
+}
+
+// validate10 is tt_cmap10_validate at FT_VALIDATE_DEFAULT.
+func validate10(table []byte) error {
+	if len(table) < 20 {
+		return errInvalidCmap
+	}
+	length := uint64(peek32(table, 4))
+	count := uint64(peek32(table, 16))
+	if length > uint64(len(table)) || length < 20 || (length-20)/2 < count {
+		return errInvalidCmap
+	}
+	return nil
+}
+
+// cmap10CharIndex is tt_cmap10_char_index.
+func cmap10CharIndex(table []byte, charcode uint32) uint32 {
+	start := peek32(table, 12)
+	count := peek32(table, 16)
+	if charcode < start {
+		return 0
+	}
+	idx := charcode - start
+	if idx < count {
+		return uint32(peek16(table, 20+2*int(idx)))
 	}
 	return 0
 }
