@@ -5,8 +5,10 @@ driver: the charstring operators, seac, subroutines, too many hints,
 FontMatrix scaling, CID fonts with several FontDicts, CFF2 blends, bare
 CFF files, and Unicode charmaps synthesized from glyph names. For the
 SFNT loader: Unicode charmaps synthesized from `post' glyph names, the
-cmap formats with multi-byte encodings, and WOFF files. TestSynthFontsVsCpp
-pins pkg/ttf to C++ on them.
+cmap formats with multi-byte encodings, and WOFF files. For the TrueType
+driver: `tricky' fonts, whose bytecode runs the interpreter. For the
+Type 1 driver: PFA and PFB files, and multiple masters.
+TestSynthFontsVsCpp pins pkg/ttf to C++ on them.
 
 Usage: gen-ttf-testfonts.py <output dir>   (needs fontTools)
 """
@@ -479,7 +481,7 @@ from fontTools.ttLib import TTFont
 base = os.path.join(out, "ttpost-mac.ttf")
 for flavor, name, family in [("woff", "ttwoff.woff", "TT Woff"),
                              ("woff2", "ttwoff2.woff2", "TT Woff2")]:
-    f = TTFont(base)
+    f = TTFont(base, recalcTimestamp=False)
     for rec in f["name"].names:
         if rec.nameID in (1, 16):
             rec.string = family
@@ -488,7 +490,7 @@ for flavor, name, family in [("woff", "ttwoff.woff", "TT Woff"),
         f.flavorData = __import__("fontTools.ttLib.woff2", fromlist=["WOFF2FlavorData"]
                                   ).WOFF2FlavorData(transformedTables={"glyf", "loca", "hmtx"})
     f.save(os.path.join(out, name))
-f = TTFont(os.path.join(out, "cfftest.otf"))
+f = TTFont(os.path.join(out, "cfftest.otf"), recalcTimestamp=False)
 for rec in f["name"].names:
     if rec.nameID in (1, 16):
         rec.string = "CFF Woff2"
@@ -814,3 +816,257 @@ def fill(code, length, checksum):
 # tricky by the checksums of its fpgm and prep (NEC fadpop7.ttf's; no cvt)
 tricky_font("Checksum Trick", cvt=None, fpgm=fill(FPGM, 0xE5, 0x40C92555),
             prep=fill(PREP, 0x117C, 0xA39B58E3)).save(os.path.join(out, "tricky-sum.ttf"))
+
+
+# Type 1 fonts (PFA and PFB), written out here: the charstrings exercise
+# the cf2 engine's Type 1 mode (flex and hint replacement through the
+# standard Subrs, seac, sbw, div, othersubr results, multiple masters).
+
+T1_OPS = {
+    "hstem": [1], "vstem": [3], "vmoveto": [4], "rlineto": [5], "hlineto": [6],
+    "vlineto": [7], "rrcurveto": [8], "closepath": [9], "callsubr": [10],
+    "return": [11], "hsbw": [13], "endchar": [14], "rmoveto": [21],
+    "hmoveto": [22], "vhcurveto": [30], "hvcurveto": [31],
+    "dotsection": [12, 0], "vstem3": [12, 1], "hstem3": [12, 2], "seac": [12, 6],
+    "sbw": [12, 7], "div": [12, 12], "callothersubr": [12, 16], "pop": [12, 17],
+    "setcurrentpoint": [12, 33],
+}
+
+
+def t1_cs(*items):
+    """A Type 1 charstring from ints and operator names."""
+    out = bytearray()
+    for it in items:
+        if isinstance(it, str):
+            out += bytes(T1_OPS[it])
+        elif -107 <= it <= 107:
+            out.append(it + 139)
+        elif 108 <= it <= 1131:
+            v = it - 108
+            out += bytes([247 + (v >> 8), v & 0xFF])
+        elif -1131 <= it <= -108:
+            v = -it - 108
+            out += bytes([251 + (v >> 8), v & 0xFF])
+        else:
+            out.append(255)
+            out += struct.pack(">i", it)
+    return bytes(out)
+
+
+def t1_encrypt(data, key, prefix=b""):
+    r = key
+    out = bytearray()
+    for b in prefix + data:
+        c = b ^ (r >> 8)
+        out.append(c)
+        r = ((c + r) * 52845 + 22719) & 0xFFFF
+    return bytes(out)
+
+
+# the standard flex and hint replacement Subrs
+T1_STD_SUBRS = [
+    t1_cs(3, 0, "callothersubr", "pop", "pop", "setcurrentpoint", "return"),
+    t1_cs(0, 1, "callothersubr", "return"),
+    t1_cs(0, 2, "callothersubr", "return"),
+    t1_cs("return"),
+    t1_cs(1, 3, "callothersubr", "pop", "callsubr", "return"),
+]
+
+
+def t1_glyph_a(k):
+    """A box with a notch, a curved contour, and stems."""
+    return t1_cs(40 + k, 600 + 10 * k, "hsbw",
+                 0, 30, "hstem", 700, 25, "hstem", 60, 40, "vstem",
+                 60, 0, "rmoveto", 400, "hlineto", 120 + k, 300, "rlineto",
+                 -40, 400, -100, 20, -80, 0, "rrcurveto",
+                 -200, "hlineto", -80, -200, "rlineto", "closepath",
+                 150, 150, "rmoveto", 100, 0, 50, 100, "vhcurveto",
+                 -60, 30, -50, -80, "hvcurveto", "closepath", "endchar")
+
+
+def t1_glyph_flex():
+    """Flex (Subrs 1, 2 and 0) between two lines."""
+    pts = [(100, 0), (50, 20), (50, 30), (50, 0), (50, -30), (50, -20), (50, 0)]
+    cs = [50, 700, "hsbw", 50, 100, "rmoveto", 100, "hlineto", 1, "callsubr"]
+    for dx, dy in pts:
+        cs += [dx, dy, "rmoveto", 2, "callsubr"]
+    cs += [50, 550, 100, 0, "callsubr", 0, 300, "rlineto", -500, "hlineto", "closepath",
+           "endchar"]
+    return t1_cs(*cs)
+
+
+def t1_glyph_hints():
+    """Hint replacement through Subr 4, and the three-stem hints."""
+    return t1_cs(30, 620, "hsbw", 0, 20, "hstem", 5, 4, "callsubr",
+                 40, 0, "rmoveto", 500, 0, "rlineto", 0, 650, "rlineto", "dotsection",
+                 6, 4, "callsubr", -500, 0, "rlineto", "dotsection", "closepath",
+                 0, 30, 300, 30, 600, 30, "hstem3", 0, 40, 200, 40, 400, 40, "vstem3",
+                 100, 100, "rmoveto", 50, 50, "rlineto", -50, 50, "rlineto", "closepath",
+                 "endchar")
+
+
+def t1_glyph_sbw():
+    """sbw, div of large integers, othersubr results and arithmetic."""
+    return t1_cs(25, 5, 580, 10, "sbw",
+                 60000, 100, "div", 0, "rmoveto",
+                 # an unknown othersubr leaves its two arguments to pop
+                 30, 40, 2, 99, "callothersubr", "pop", "pop", "rlineto",
+                 # othersubrs 20 (add), 22 (mul) and 27 (ifelse)
+                 150, 50, 2, 20, "callothersubr", "pop", 0, "rlineto",
+                 3, 70, 2, 22, "callothersubr", "pop", 0, "rlineto",
+                 11, 22, 1, 2, 4, 27, "callothersubr", "pop", 300, "rlineto",
+                 -700, 7, "div", -100, "rlineto", "closepath", "endchar")
+
+
+def t1_glyph_seac():
+    """Aacute from A and acute (standard codes 65 and 194), after sbw."""
+    return t1_cs(40, 15, 660, 0, "sbw", 40, 180, 230, 65, 194, "seac")
+
+
+def t1_glyph_acute():
+    # an advance of 300.5, from div
+    return t1_cs(60, 601, 2, "div", "hsbw", 60, 500, "rmoveto", 80, 120, "rlineto", 40, -30,
+                 "rlineto", "closepath", "endchar")
+
+
+def t1_glyph_subr(n):
+    """Calls a Subr of the sparse array by its index."""
+    return t1_cs(50, 600, "hsbw", 50, 50, "rmoveto", n, "callsubr", "closepath", "endchar")
+
+
+def t1_glyph_mm():
+    """Multiple-master blends (othersubrs 14 and 15)."""
+    return t1_cs(40, 640, "hsbw", 100, 0,
+                 300, 100, 2, 14, "callothersubr", "pop", "rmoveto",
+                 400, 300, 90, -50, 4, 15, "callothersubr", "pop", "pop", "rlineto",
+                 -200, 250, "rlineto", "closepath", "endchar")
+
+
+def t1_font(path, *, family, full=None, weight=None, font_name="T1Test", pfb=False,
+            hex_eexec=True, glyphs, subrs=None, encoding="StandardEncoding",
+            matrix="0.001 0 0 0.001 0 0", bbox="-50 -250 1000 900", len_iv=4,
+            num_subrs=None, private_extra="", font_info_extra="", fontdict_extra=""):
+    info = ["/version (001.000) readonly def"]
+    if full is not None:
+        info.append("/FullName (%s) readonly def" % full)
+    if family is not None:
+        info.append("/FamilyName (%s) readonly def" % family)
+    if weight is not None:
+        info.append("/Weight (%s) readonly def" % weight)
+    info += ["/ItalicAngle 0 def", "/isFixedPitch false def", font_info_extra]
+    clear = "\n".join([
+        "%!PS-AdobeFont-1.0: " + font_name + " 001.000",
+        "12 dict begin",
+        "/FontInfo 10 dict dup begin",
+        *info,
+        "end readonly def",
+        "/FontName /%s def" % font_name,
+        "/Encoding %s def" % encoding if isinstance(encoding, str) else encoding[0],
+        "/PaintType 0 def",
+        "/FontType 1 def",
+        "/FontMatrix [%s] readonly def" % matrix,
+        "/FontBBox {%s} readonly def" % bbox,
+        fontdict_extra,
+        "currentdict end",
+        "currentfile eexec",
+        "",
+    ])
+    iv = bytes(len_iv) if len_iv > 0 else b""
+
+    def enc(cs):
+        return t1_encrypt(cs, 4330, iv) if len_iv >= 0 else cs
+
+    subrs = T1_STD_SUBRS if subrs is None else subrs
+    if isinstance(subrs, list):
+        subrs = dict(enumerate(subrs))
+    priv = bytearray()
+    priv += ("dup /Private 12 dict dup begin\n"
+             "/RD{string currentfile exch readstring pop}executeonly def\n"
+             "/ND{noaccess def}executeonly def\n"
+             "/NP{noaccess put}executeonly def\n"
+             "/BlueValues [-20 0 700 720] def\n/OtherBlues [-250 -240] def\n"
+             "/StdHW [30] def\n/StdVW [40] def\n/StemSnapH [30 50] def\n"
+             "/MinFeature {16 16} def\n/password 5839 def\n").encode()
+    if len_iv != 4:
+        priv += b"/lenIV %d def\n" % len_iv
+    priv += private_extra.encode()
+    priv += b"/Subrs %d array\n" % (num_subrs if num_subrs is not None else len(subrs))
+    for i, cs in sorted(subrs.items()):
+        e = enc(cs)
+        priv += b"dup %d %d RD " % (i, len(e)) + e + b" NP\n"
+    priv += b"ND\n2 index /CharStrings %d dict dup begin\n" % len(glyphs)
+    for name, cs in glyphs:
+        e = enc(cs)
+        priv += b"/%s %d RD " % (name.encode(), len(e)) + e + b" ND\n"
+    priv += (b"end\nend\nreadonly put\nnoaccess put\n"
+             b"dup /FontName get exch definefont pop\nmark currentfile closefile\n")
+    eexec = t1_encrypt(bytes(priv), 55665, b"\x00\x00\x00\x00")
+    trailer = ("0" * 64 + "\n") * 8 + "cleartomark\n"
+    with open(path, "wb") as fh:
+        if pfb:
+            for kind, seg in ((1, clear.encode()), (2, eexec), (1, trailer.encode())):
+                fh.write(bytes([0x80, kind]) + struct.pack("<I", len(seg)) + seg)
+            fh.write(b"\x80\x03")
+        else:
+            fh.write(clear.encode())
+            if hex_eexec:
+                h = eexec.hex()
+                fh.write("\n".join(h[i:i + 64] for i in range(0, len(h), 64)).encode())
+                fh.write(b"\n")
+            else:
+                fh.write(eexec + b"\n")
+            fh.write(trailer.encode())
+
+
+T1_GLYPHS = [
+    (".notdef", t1_cs(0, 500, "hsbw", "endchar")),
+    ("A", t1_glyph_a(0)),
+    ("B", t1_glyph_flex()),
+    ("C", t1_glyph_hints()),
+    ("D", t1_glyph_sbw()),
+    ("E", t1_glyph_a(7)),
+    ("Aacute", t1_glyph_seac()),
+    ("acute", t1_glyph_acute()),
+    ("uni0416", t1_glyph_a(3)),
+    ("Delta", t1_glyph_flex()),
+    ("space", t1_cs(0, 250, "hsbw", "endchar")),
+]
+# Subrs 5 and 6 are hint sets for hint replacement
+T1_SUBRS = T1_STD_SUBRS + [t1_cs(0, 25, "hstem", 50, 40, "vstem", "return"),
+                           t1_cs(10, 25, "hstem", 480, 40, "vstem", "return")]
+
+t1_font(os.path.join(out, "t1test.pfa"), family="T1 Test", full="T1 Test Bold",
+        weight="Bold", glyphs=T1_GLYPHS, subrs=T1_SUBRS)
+# PFB, a 2048-unit skewed font matrix with an offset, and a style from
+# the weight
+t1_font(os.path.join(out, "t1test.pfb"), family="T1 Pfb", full="T1 Pfb", weight="Light",
+        font_name="T1Pfb", pfb=True, glyphs=T1_GLYPHS, subrs=T1_SUBRS,
+        matrix="0.00048828125 0 0.0001 0.00048828125 0.01 0.005",
+        bbox="-100 -500 2000 1800")
+# a binary eexec section in a PFA, no FamilyName (the FontName is the
+# family), .notdef not first, unencrypted charstrings, and a custom
+# encoding array
+enc_arr = ("/Encoding 256 array\n0 1 255 {1 index exch /.notdef put} for\n"
+           "dup 65 /A put\ndup 66 /B put\ndup 67 /C put\nreadonly def",)
+t1_font(os.path.join(out, "t1bin.pfa"), family=None, full="Binary Eexec Italic",
+        font_name="T1Binary", hex_eexec=False, len_iv=-1, encoding=enc_arr,
+        glyphs=[T1_GLYPHS[1], T1_GLYPHS[0]] + T1_GLYPHS[2:], subrs=T1_SUBRS)
+# no .notdef at all (one is made), and a sparse Subrs array (indices
+# hashed), with the style from the full name
+sparse = dict(enumerate(T1_SUBRS))
+sparse[2000] = t1_cs(300, 0, "rlineto", 0, 300, "rlineto", "return")
+sparse[1500] = t1_cs(200, 100, "rlineto", -100, 200, "rlineto", "return")
+t1_font(os.path.join(out, "t1sparse.pfb"), family="T1 Sparse", full="T1 Sparse Semi Bold",
+        font_name="T1Sparse", pfb=True, num_subrs=3000, subrs=sparse,
+        glyphs=[("A", t1_glyph_subr(2000)), ("B", t1_glyph_subr(1500))] + T1_GLYPHS[2:])
+# a multiple-master font: two designs on one axis, a blended FontBBox
+mm_dict = ("/BlendDesignPositions [[0] [1]] def\n"
+           "/BlendDesignMap [[[100 0] [900 1]]] def\n"
+           "/BlendAxisTypes [/Weight] def\n")
+t1_font(os.path.join(out, "t1mm.pfa"), family="T1 MM", full="T1 MM", font_name="T1MM",
+        glyphs=[T1_GLYPHS[0], ("A", t1_glyph_mm()), ("B", t1_glyph_a(2))] + T1_GLYPHS[3:],
+        subrs=T1_SUBRS, font_info_extra=mm_dict,
+        fontdict_extra="/WeightVector [0.3 0.7] def\n"
+                       "/Blend 3 dict dup begin\n"
+                       "/FontBBox {{-60 -40} {-300 -200} {1000 1100} {950 850}} def\n"
+                       "end def")

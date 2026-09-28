@@ -330,6 +330,20 @@ type cffDecoder struct {
 	numGlobals     uint32
 	numLocals      uint32
 	yPpem          int64
+
+	// Type 1 (ps_decoder_init with is_t1): the subrs (lengths
+	// included), their index hash, the builder's left bearing and
+	// advance (FT_Pos), and the flex state.
+	isT1           bool
+	t1             *t1Font
+	locals         [][]byte
+	localsHash     map[int32]int32
+	blend          *psBlend
+	buildchar      []int64
+	leftBearing    Vector
+	advance        Vector
+	flexState      bool
+	numFlexVectors int
 }
 
 // computeBias is cff_compute_bias.
@@ -374,10 +388,34 @@ func (d *cffDecoder) initLocalRegionBuffer(subrNum int32, buf *cf2Buffer) bool {
 	if idx >= d.numLocals {
 		return true
 	}
+	if d.isT1 {
+		// an empty subr for a missing one
+		*buf = cf2Buffer{data: d.locals[idx]}
+		return false
+	}
 	sub := d.currentSubfont
 	bytes := sub.localSubrsIndex.bytes
 	*buf = cf2Buffer{data: bytes[sub.localSubrs[idx]:sub.localSubrs[idx+1]]}
 	return false
+}
+
+// t1LookupGlyphByStdCharcode is t1_lookup_glyph_by_stdcharcode_ps.
+func (d *cffDecoder) t1LookupGlyphByStdCharcode(charcode int32) int32 {
+	if charcode < 0 || charcode > 255 {
+		return -1
+	}
+	glyphName, _ := standardString(uint(t1StandardEncoding[charcode]))
+	for n := uint32(0); n < uint32(d.t1.numGlyphs); n++ {
+		if name := d.t1.glyphNames[n]; name != nil && *name == glyphName {
+			return int32(n)
+		}
+	}
+	return -1
+}
+
+// t1SeacComponent is cf2_getT1SeacComponent.
+func (d *cffDecoder) t1SeacComponent(glyphIndex int32) *cf2Buffer {
+	return &cf2Buffer{data: d.t1.charstrings[glyphIndex]}
 }
 
 // lookupGlyphByStdCharcode is cff_lookup_glyph_by_stdcharcode.

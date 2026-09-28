@@ -69,6 +69,16 @@ func (s *cffStream) readU32() (uint32, error) {
 	return v, nil
 }
 
+// readU32LE is FT_READ_ULONG_LE.
+func (s *cffStream) readU32LE() (uint32, error) {
+	if s.pos+3 >= s.size() {
+		return 0, errInvalidStream
+	}
+	v := binary.LittleEndian.Uint32(s.data[s.pos:])
+	s.pos += 4
+	return v, nil
+}
+
 // read is FT_Stream_Read.
 func (s *cffStream) read(n int64) ([]byte, error) {
 	if s.pos >= s.size() {

@@ -1,9 +1,9 @@
 package ttf
 
 // FreeType's Adobe CFF engine (psaux's cf2 files: psfont.c, psintrp.c,
-// pshints.c, psblues.c, psstack.c) for CFF and CFF2 charstrings; the
-// Type 1 paths aren't ported. Its numbers are 16.16 in 32 bits, so
-// sums wrap (ADD_INT32) and FT_MulFix/FT_DivFix results are truncated.
+// pshints.c, psblues.c, psstack.c) for CFF, CFF2 and Type 1
+// charstrings. Its numbers are 16.16 in 32 bits, so sums wrap
+// (ADD_INT32) and FT_MulFix/FT_DivFix results are truncated.
 
 type cf2Fixed = int32
 
@@ -612,6 +612,11 @@ func (m *cf2HintMap) build(hStemHintArray, vStemHintArray *[]cf2StemHint, hintMa
 	if !hintMask.isValid {
 		hintMask.setAll(len(*hStemHintArray) + len(*vStemHintArray))
 		if !hintMask.isValid {
+			if m.font.isT1 {
+				// no error, just continue unhinted
+				*hintMask.err = nil
+				m.hinted = false
+			}
 			return
 		}
 	}
@@ -1404,6 +1409,7 @@ type cf2Font struct {
 	subfont *cffSubFont
 
 	isCFF2         bool
+	isT1           bool
 	renderingFlags int
 	hinted         bool
 	stemDarkened   bool
@@ -1528,8 +1534,7 @@ func (font *cf2Font) setup(transform *cf2Matrix) {
 		needExtraSetup = true
 	}
 
-	vstore := &font.cff.vstore
-	if vstore.dataCount != 0 {
+	if !font.isT1 && font.cff.vstore.dataCount != 0 {
 		lenNDV, ndv := font.cff.normalizedVector()
 		if subFont.blend.checkVector(subFont.privateDict.vsindex, lenNDV, ndv) {
 			font.cff.loadPrivateDict(subFont, lenNDV, ndv)
@@ -1712,7 +1717,7 @@ func (font *cf2Font) doStems(opStack *cf2Stack, stemHintArray *[]cf2StemHint, wi
 	count := opStack.count()
 	hasWidthArg := count&1 != 0
 	position := hintOffset
-	if hasWidthArg && !*haveWidth {
+	if !font.isT1 && hasWidthArg && !*haveWidth {
 		*width = opStack.getReal(0) + font.decoder.nominalWidthX()
 	}
 	i := uint32(0)
@@ -1821,6 +1826,14 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 	var storage [cf2StorageSize]cf2Fixed
 	instructionLimit := uint32(20000000)
 
+	// Type 1 state
+	knownOthersubrResultCnt := 0
+	largeInt := false
+	initialMapReady := false
+	var results [3]cf2Fixed // PS_STORAGE_SIZE, for othersubr results
+	resultCnt := 0
+	var flexStore [6]cf2Fixed
+
 	var hStemHintArray, vStemHintArray []cf2StemHint
 	var hintMask cf2HintMask
 	var glyphPath cf2GlyphPath
@@ -1859,6 +1872,24 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			op1 = byte(charstring.readByte())
 			if (op1 == cmdRETURN || op1 == cmdENDCHAR) && font.isCFF2 {
 				op1 = 0
+			}
+		}
+
+		if font.isT1 {
+			// the first pass only collects the hints
+			if !initialMapReady && !(op1 == cmdHSTEM || op1 == cmdVSTEM || op1 == cmdHSBW ||
+				op1 == cmdCALLSUBR || op1 == cmdRETURN || op1 == cmdESC || op1 == cmdENDCHAR ||
+				op1 >= 32) {
+				opStack.clear()
+				continue
+			}
+			if resultCnt > 0 && !(op1 == cmdCALLSUBR || op1 == cmdRETURN || op1 == cmdESC ||
+				op1 >= 32) {
+				resultCnt = 0
+			}
+			// (op1 == cf2_escDIV compares with the ESC opcode)
+			if largeInt && !(op1 >= 32 || op1 == escDIV) {
+				largeInt = false
 			}
 		}
 
@@ -1912,16 +1943,24 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			clearStack = false
 
 		case cmdHSTEMHM, cmdHSTEM:
-			if hintMask.isValid {
+			if !font.isT1 && hintMask.isValid {
 				break
 			}
-			font.doStems(opStack, &hStemHintArray, &width, &haveWidth, 0)
+			var hintOffset cf2Fixed
+			if font.isT1 {
+				hintOffset = cf2Fixed(d.leftBearing.Y)
+			}
+			font.doStems(opStack, &hStemHintArray, &width, &haveWidth, hintOffset)
 
 		case cmdVSTEMHM, cmdVSTEM:
-			if hintMask.isValid {
+			if !font.isT1 && hintMask.isValid {
 				break
 			}
-			font.doStems(opStack, &vStemHintArray, &width, &haveWidth, 0)
+			var hintOffset cf2Fixed
+			if font.isT1 {
+				hintOffset = cf2Fixed(d.leftBearing.X)
+			}
+			font.doStems(opStack, &vStemHintArray, &width, &haveWidth, hintOffset)
 
 		case cmdVMOVETO:
 			if opStack.count() > 1 && !haveWidth {
@@ -1929,7 +1968,9 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			}
 			haveWidth = true
 			curY += opStack.popFixed()
-			glyphPath.moveTo(curX, curY)
+			if !d.flexState {
+				glyphPath.moveTo(curX, curY)
+			}
 
 		case cmdRLINETO:
 			count := opStack.count()
@@ -1981,7 +2022,10 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			clearStack = false
 
 		case cmdCLOSEPATH:
-			// Type 1 only
+			if font.isT1 {
+				glyphPath.closeOpenPath()
+				haveWidth = true
+			}
 
 		case cmdCALLGSUBR, cmdCALLSUBR:
 			if charstringIndex > cf2MaxSubr {
@@ -1996,6 +2040,13 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			}
 			charstring = &subrStack[next]
 			subrNum := opStack.popInt()
+			if font.isT1 && d.localsHash != nil {
+				if val, ok := d.localsHash[subrNum]; ok {
+					subrNum = val
+				} else {
+					subrNum = -1
+				}
+			}
 			var failed bool
 			if op1 == cmdCALLGSUBR {
 				failed = d.initGlobalRegionBuffer(subrNum, charstring)
@@ -2038,13 +2089,306 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 				if font.isCFF2 || op2 >= escRESERVED38 {
 					break
 				}
+				if font.isT1 && resultCnt > 0 && op2 != escPOP {
+					// all operands have been transferred by previous pops
+					resultCnt = 0
+					break
+				}
 				switch op2 {
-				case escDOTSECTION, escVSTEM3, escHSTEM3, escSEAC, escSBW,
-					escCALLOTHERSUB, escSETCURRENTPT:
-					// ignored, or Type 1 only
-					if op2 == escCALLOTHERSUB {
-						clearStack = false
+				case escDOTSECTION:
+				case escVSTEM3, escHSTEM3:
+					if !font.isT1 {
+						break
 					}
+					isV := op2 == escVSTEM3
+					v0 := opStack.getReal(0)
+					v1 := opStack.getReal(2)
+					v2 := opStack.getReal(4)
+					opStack.setReal(2, v1-v0-opStack.getReal(1))
+					opStack.setReal(4, v2-v1-opStack.getReal(3))
+					if isV {
+						font.doStems(opStack, &vStemHintArray, &width, &haveWidth,
+							cf2Fixed(d.leftBearing.X))
+					} else {
+						font.doStems(opStack, &hStemHintArray, &width, &haveWidth,
+							cf2Fixed(d.leftBearing.Y))
+					}
+				case escSEAC:
+					if !font.isT1 {
+						break
+					}
+					achar := opStack.popInt()
+					bchar := opStack.popInt()
+					ady := int64(opStack.popFixed())
+					adx := int64(opStack.popFixed())
+					asb := int64(opStack.popFixed())
+					if doingSeac {
+						lastError = errInvalidGlyphFmt
+						return
+					}
+					adx += d.leftBearing.X
+					bcharIndex := d.t1LookupGlyphByStdCharcode(bchar)
+					acharIndex := d.t1LookupGlyphByStdCharcode(achar)
+					if bcharIndex < 0 || acharIndex < 0 {
+						lastError = errInvalidGlyphFmt
+						return
+					}
+					component := d.t1SeacComponent(bcharIndex)
+					leftBearing, advance := d.leftBearing, d.advance
+					font.interpT2CharString(component, translation, true, 0, 0)
+					if !haveWidth {
+						leftBearing, advance = d.leftBearing, d.advance
+					}
+					d.leftBearing = Vector{}
+					component = d.t1SeacComponent(acharIndex)
+					font.interpT2CharString(component, translation, true, cf2Fixed(adx-asb),
+						cf2Fixed(ady))
+					d.leftBearing, d.advance = leftBearing, advance
+					return
+				case escSBW:
+					if !font.isT1 {
+						break
+					}
+					d.advance.Y = int64(opStack.popFixed())
+					d.advance.X = int64(opStack.popFixed())
+					lsbY := opStack.popFixed()
+					lsbX := opStack.popFixed()
+					d.leftBearing.X = int64(int32(d.leftBearing.X) + lsbX)
+					d.leftBearing.Y = int64(int32(d.leftBearing.Y) + lsbY)
+					haveWidth = true
+					if initialMapReady {
+						curX += lsbX
+						curY += lsbY
+					}
+				case escCALLOTHERSUB:
+					clearStack = false
+					if !font.isT1 {
+						break
+					}
+					subrNo := opStack.popInt()
+					argCnt := opStack.popInt()
+					count := opStack.count()
+					if uint32(argCnt) > count {
+						lastError = errInvalidGlyphFmt
+						return
+					}
+					opIdx := count - uint32(argCnt)
+					knownOthersubrResultCnt = 0
+					resultCnt = 0
+					unexpected := false
+					switch subrNo {
+					case 0: // end flex
+						if argCnt != 3 {
+							unexpected = true
+							break
+						}
+						if initialMapReady && (!d.flexState || d.numFlexVectors != 7) {
+							lastError = errInvalidGlyphFmt
+							return
+						}
+						opStack.pushFixed(curX)
+						opStack.pushFixed(curY)
+						knownOthersubrResultCnt = 2
+					case 1: // start flex
+						if argCnt != 0 {
+							unexpected = true
+							break
+						}
+						if !initialMapReady {
+							break
+						}
+						if font.outline.checkPoints(6) != nil {
+							return
+						}
+						d.flexState = true
+						d.numFlexVectors = 0
+					case 2: // add flex vectors
+						if argCnt != 0 {
+							unexpected = true
+							break
+						}
+						if !initialMapReady {
+							break
+						}
+						if !d.flexState {
+							lastError = errInvalidGlyphFmt
+							return
+						}
+						idx := d.numFlexVectors
+						d.numFlexVectors++
+						if idx > 0 && idx < 7 {
+							if font.outline.checkPoints(1) != nil {
+								lastError = errInvalidGlyphFmt
+								return
+							}
+							idx2 := idx * 2
+							if idx > 3 {
+								idx2 = (idx - 3) * 2
+							}
+							flexStore[idx2-2] = curX
+							flexStore[idx2-1] = curY
+							if idx == 3 || idx == 6 {
+								glyphPath.curveTo(flexStore[0], flexStore[1], flexStore[2],
+									flexStore[3], flexStore[4], flexStore[5])
+							}
+						}
+					case 3: // change hints
+						if argCnt != 1 {
+							unexpected = true
+							break
+						}
+						if initialMapReady {
+							vStemHintArray = vStemHintArray[:0]
+							hStemHintArray = hStemHintArray[:0]
+							hintMask.init(errp)
+							hintMask.isValid = false
+							hintMask.isNew = true
+						}
+						knownOthersubrResultCnt = 1
+					case 12, 13:
+						opStack.clear()
+					case 14, 15, 16, 17, 18: // multiple masters
+						blend := d.blend
+						if blend == nil {
+							lastError = errInvalidGlyphFmt
+							return
+						}
+						numPoints := uint32(subrNo) - 13
+						if subrNo == 18 {
+							numPoints++
+						}
+						if argCnt != int32(numPoints*blend.numDesigns) {
+							lastError = errInvalidGlyphFmt
+							return
+						}
+						delta := opIdx + numPoints
+						values := opIdx
+						for nn := uint32(0); nn < numPoints; nn++ {
+							tmp := opStack.getReal(values)
+							for mm := uint32(1); mm < blend.numDesigns; mm++ {
+								tmp += cf2Fixed(mulFix(int64(opStack.getReal(delta)),
+									blend.weightVector[mm]))
+								delta++
+							}
+							opStack.setReal(values, tmp)
+							values++
+						}
+						opStack.pop(uint32(argCnt) - numPoints)
+						knownOthersubrResultCnt = int(numPoints)
+					case 19:
+						blend := d.blend
+						if argCnt != 1 || blend == nil {
+							unexpected = true
+							break
+						}
+						idx := uint32(opStack.popInt())
+						lenBuildchar := uint32(len(d.buildchar))
+						if lenBuildchar < blend.numDesigns || lenBuildchar-blend.numDesigns < idx {
+							unexpected = true
+							break
+						}
+						if d.buildchar != nil && blend.weightVector != nil {
+							copy(d.buildchar[idx:], blend.weightVector[:blend.numDesigns])
+						}
+					case 20, 21, 22, 23:
+						if argCnt != 2 {
+							unexpected = true
+							break
+						}
+						arg2 := opStack.popFixed()
+						arg1 := opStack.popFixed()
+						var r cf2Fixed
+						switch subrNo {
+						case 20:
+							r = arg1 + arg2
+						case 21:
+							r = arg1 - arg2
+						case 22:
+							r = cf2MulFix(arg1, arg2)
+						default:
+							if arg2 == 0 {
+								unexpected = true
+								break
+							}
+							r = cf2DivFix(arg1, arg2)
+						}
+						if unexpected {
+							break
+						}
+						opStack.pushFixed(r)
+						knownOthersubrResultCnt = 1
+					case 24:
+						if argCnt != 2 || d.blend == nil {
+							unexpected = true
+							break
+						}
+						idx := uint32(opStack.popInt())
+						if idx >= uint32(len(d.buildchar)) {
+							unexpected = true
+							break
+						}
+						d.buildchar[idx] = int64(opStack.popFixed())
+					case 25:
+						if argCnt != 1 || d.blend == nil {
+							unexpected = true
+							break
+						}
+						idx := uint32(opStack.popInt())
+						if idx >= uint32(len(d.buildchar)) {
+							unexpected = true
+							break
+						}
+						opStack.pushFixed(cf2Fixed(d.buildchar[idx]))
+						knownOthersubrResultCnt = 1
+					case 27:
+						if argCnt != 4 {
+							unexpected = true
+							break
+						}
+						cond2 := opStack.popFixed()
+						cond1 := opStack.popFixed()
+						arg2 := opStack.popFixed()
+						arg1 := opStack.popFixed()
+						if cond1 <= cond2 {
+							opStack.pushFixed(arg1)
+						} else {
+							opStack.pushFixed(arg2)
+						}
+						knownOthersubrResultCnt = 1
+					case 28:
+						if argCnt != 0 {
+							unexpected = true
+							break
+						}
+						sub := d.currentSubfont
+						r := cf2Fixed((sub.random & 0xFFFF) + 1)
+						sub.random = cffRandom(sub.random)
+						opStack.pushFixed(r)
+						knownOthersubrResultCnt = 1
+					default:
+						if argCnt >= 0 && subrNo >= 0 {
+							if argCnt > int32(len(results)) {
+								argCnt = int32(len(results))
+							}
+							resultCnt = int(argCnt)
+							for i := 1; i <= int(argCnt); i++ {
+								results[resultCnt-i] = opStack.popFixed()
+							}
+							break
+						}
+						unexpected = true
+					}
+					if unexpected {
+						lastError = errInvalidGlyphFmt
+						return
+					}
+				case escSETCURRENTPT:
+					if !font.isT1 || !initialMapReady {
+						break
+					}
+					curY = opStack.popFixed()
+					curX = opStack.popFixed()
+					d.flexState = false
 				case escAND:
 					arg2 := opStack.popFixed()
 					arg1 := opStack.popFixed()
@@ -2078,8 +2422,15 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 					opStack.pushFixed(minuend - subtrahend)
 					clearStack = false
 				case escDIV:
-					divisor := opStack.popFixed()
-					dividend := opStack.popFixed()
+					var divisor, dividend cf2Fixed
+					if font.isT1 && largeInt {
+						divisor = cf2Fixed(opStack.popInt())
+						dividend = cf2Fixed(opStack.popInt())
+						largeInt = false
+					} else {
+						divisor = opStack.popFixed()
+						dividend = opStack.popFixed()
+					}
 					opStack.pushFixed(cf2DivFix(dividend, divisor))
 					clearStack = false
 				case escNEG:
@@ -2096,8 +2447,20 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 					opStack.pushInt(b2i(arg1 == arg2))
 					clearStack = false
 				case escPOP:
-					// Type 1 only
 					clearStack = false
+					if !font.isT1 {
+						break
+					}
+					if knownOthersubrResultCnt > 0 {
+						knownOthersubrResultCnt--
+						break
+					}
+					if resultCnt == 0 {
+						lastError = errInvalidGlyphFmt
+						return
+					}
+					resultCnt--
+					opStack.pushFixed(results[resultCnt])
 				case escDROP:
 					opStack.popFixed()
 					clearStack = false
@@ -2180,9 +2543,35 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			}
 
 		case cmdHSBW:
-			// Type 1 only
+			if !font.isT1 {
+				break
+			}
+			d.advance.X = int64(opStack.popFixed())
+			d.advance.Y = 0
+			lsbX := opStack.popFixed()
+			d.leftBearing.X = int64(int32(d.leftBearing.X) + lsbX)
+			haveWidth = true
+			if initialMapReady {
+				curX += lsbX
+			}
 
 		case cmdENDCHAR:
+			if font.isT1 && !initialMapReady {
+				// build the initial hint map, then rewind
+				glyphPath.moveTo(curX, curY)
+				initialMapReady = true
+				vStemHintArray = vStemHintArray[:0]
+				hStemHintArray = hStemHintArray[:0]
+				hintMask.init(errp)
+				hintMask.isValid = false
+				hintMask.isNew = true
+				for charstringIndex > 0 {
+					charstringIndex--
+					charstring = &subrStack[charstringIndex]
+				}
+				charstring.ptr = 0
+				break
+			}
 			if opStack.count() == 1 || opStack.count() == 5 {
 				if !haveWidth {
 					width = opStack.getReal(0) + nominalWidthX
@@ -2191,7 +2580,7 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			haveWidth = true
 			glyphPath.closeOpenPath()
 
-			if !font.isCFF2 && opStack.count() > 1 {
+			if !font.isCFF2 && !font.isT1 && opStack.count() > 1 {
 				// an implied seac
 				if doingSeac {
 					lastError = errInvalidGlyphFmt
@@ -2241,7 +2630,9 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			haveWidth = true
 			curY += opStack.popFixed()
 			curX += opStack.popFixed()
-			glyphPath.moveTo(curX, curY)
+			if !d.flexState {
+				glyphPath.moveTo(curX, curY)
+			}
 
 		case cmdHMOVETO:
 			if opStack.count() > 1 && !haveWidth {
@@ -2249,7 +2640,9 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 			}
 			haveWidth = true
 			curX += opStack.popFixed()
-			glyphPath.moveTo(curX, curY)
+			if !d.flexState {
+				glyphPath.moveTo(curX, curY)
+			}
 
 		case cmdRLINECURVE:
 			count := opStack.count()
@@ -2396,7 +2789,16 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 				b2 := uint32(charstring.readByte())
 				b3 := uint32(charstring.readByte())
 				b4 := uint32(charstring.readByte())
-				opStack.pushFixed(cf2Fixed(b1<<24 | b2<<16 | b3<<8 | b4))
+				v := cf2Fixed(b1<<24 | b2<<16 | b3<<8 | b4)
+				if font.isT1 {
+					// an integer, which `div' may divide
+					if v > 32000 || v < -32000 {
+						largeInt = true
+					}
+					opStack.pushInt(v)
+				} else {
+					opStack.pushFixed(v)
+				}
 			}
 			clearStack = false
 		}

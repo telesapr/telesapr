@@ -72,7 +72,7 @@ func (f *Face) RequestRealDimSize(width, height int64, horiResolution, vertResol
 	}
 	f.xScale, f.yScale = xScale, yScale
 	f.xPpem, f.yPpem = scaledW, scaledH
-	if f.cff == nil {
+	if f.cff == nil && f.t1 == nil {
 		return f.sizeReset(horiResolution, vertResolution)
 	}
 	return nil
@@ -159,6 +159,9 @@ type loader struct {
 func (f *Face) LoadGlyph(gindex uint32) (*Glyph, error) {
 	if f.cff != nil {
 		return f.loadCFFGlyph(gindex)
+	}
+	if f.t1 != nil {
+		return f.loadT1Glyph(gindex)
 	}
 	if int64(gindex) >= f.numGlyphs {
 		return nil, errInvalidArg

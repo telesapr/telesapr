@@ -165,6 +165,9 @@ type Face struct {
 
 	// The TrueType driver's size (TT_Size), created with the face.
 	size *ttSize
+
+	// The Type 1 driver's font, for a Type 1 face.
+	t1 *t1Font
 }
 
 // maxProfile is the part of a TT_MaxProfile the interpreter reads.
@@ -178,8 +181,9 @@ type maxProfile struct {
 }
 
 // NewFace opens the first face of a font file, as FT_New_Memory_Face
-// does: the TrueType driver takes TrueType fonts (and collections), and
-// the CFF driver OpenType CFF fonts and bare CFF files.
+// does: the TrueType driver takes TrueType fonts (and collections), the
+// Type 1 driver PFA and PFB fonts, and the CFF driver OpenType CFF fonts
+// and bare CFF files.
 func NewFace(data []byte) (*Face, error) {
 	// the TrueType driver (tt_face_init)
 	f := &Face{data: data}
@@ -198,6 +202,14 @@ func NewFace(data []byte) (*Face, error) {
 			}
 			return f, nil
 		}
+	}
+
+	// the Type 1 driver (T1_Face_Init); an error other than an unknown
+	// format ends FT_Open_Face's search
+	if t1f, err := t1FaceInit(f.data); err == nil {
+		return t1f, nil
+	} else if err != errUnknownFormat {
+		return nil, err
 	}
 
 	// the CFF driver (cff_face_init), on the SFNT data of a WOFF file
