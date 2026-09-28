@@ -7,7 +7,9 @@ CFF files, and Unicode charmaps synthesized from glyph names. For the
 SFNT loader: Unicode charmaps synthesized from `post' glyph names, the
 cmap formats with multi-byte encodings, and WOFF files. For the TrueType
 driver: `tricky' fonts, whose bytecode runs the interpreter. For the
-Type 1 driver: PFA and PFB files, and multiple masters.
+Type 1 driver: PFA and PFB files, and multiple masters. For the Type 42
+driver: TrueType fonts in PostScript. For the PFR driver: PFR fonts,
+assembled here.
 TestSynthFontsVsCpp pins pkg/ttf to C++ on them.
 
 Usage: gen-ttf-testfonts.py <output dir>   (needs fontTools)
@@ -1070,3 +1072,453 @@ t1_font(os.path.join(out, "t1mm.pfa"), family="T1 MM", full="T1 MM", font_name="
                        "/Blend 3 dict dup begin\n"
                        "/FontBBox {{-60 -40} {-300 -200} {1000 1100} {950 850}} def\n"
                        "end def")
+
+
+# Type 42 fonts: TrueType fonts in a PostScript font dictionary, whose
+# CharStrings map glyph names (and through them Unicode) to the
+# TrueType glyphs.
+import io
+
+
+def sfnt_bytes(font):
+    buf = io.BytesIO()
+    font.save(buf)
+    return buf.getvalue()
+
+
+def sfnt_pieces(data):
+    """The SFNT split into strings at table boundaries (as the Type 42
+    spec asks), each padded to an odd length with a zero byte."""
+    num_tables = struct.unpack(">H", data[4:6])[0]
+    cuts = sorted({struct.unpack(">I", data[12 + 16 * i + 8:12 + 16 * i + 12])[0]
+                   for i in range(num_tables)} | {len(data)})
+    pieces, start = [], 0
+    for c in cuts:
+        if c > start:
+            pieces.append(data[start:c])
+            start = c
+    return [p + b"\0" if len(p) % 2 == 0 else p for p in pieces]
+
+
+def t42_font(path, sfnt, charstrings, *, family="T42 Test", full=None, font_name="T42Test",
+             encoding="StandardEncoding", binary=False, lilypond=False,
+             matrix="1 0 0 1 0 0", font_type=42, extra=""):
+    info = ["/version (001.000) readonly def"]
+    if full is not None:
+        info.append("/FullName (%s) readonly def" % full)
+    if family is not None:
+        info.append("/FamilyName (%s) readonly def" % family)
+    info += ["/ItalicAngle 0 def", "/isFixedPitch false def",
+             "/UnderlinePosition -100 def", "/UnderlineThickness 50 def"]
+    out = bytearray()
+    out += ("%!PS-TrueTypeFont-65536-65536-1\n"
+            "%%Creator: gen-ttf-testfonts.py\n"
+            "11 dict begin\n"
+            "/FontName /" + font_name + " def\n"
+            "/FontType %d def\n" % font_type +
+            "/FontMatrix [" + matrix + "] def\n"
+            "/FontBBox [0 -200 1000 900] def\n"
+            "/PaintType 0 def\n"
+            "/FontInfo 10 dict dup begin\n" + "\n".join(info) + "\nend readonly def\n"
+            + extra).encode()
+    out += (encoding if encoding.startswith("/Encoding") else
+            "/Encoding " + encoding + " def\n").encode()
+    out += b"/sfnts ["
+    for piece in sfnt_pieces(sfnt):
+        if binary:
+            out += b"%d RD " % len(piece) + piece + b"\n"
+        else:
+            h = piece.hex().upper()
+            out += b"<\n" + "\n".join(h[i:i + 72] for i in range(0, len(h), 72)).encode() + b"\n>\n"
+    out += b"] def\n"
+    if lilypond:
+        out += b"/CharStrings %d dict dup begin\n" % len(charstrings)
+        for name, gid in charstrings:
+            out += b"(%s) cvn %d def\n" % (name.encode(), gid)
+        out += b"end readonly def\n"
+    else:
+        out += b"/CharStrings << "
+        for name, gid in charstrings:
+            out += b"/%s %d\n" % (name.encode(), gid)
+        out += b">> def\n"
+    out += b"FontName currentdict end definefont pop\n"
+    with open(path, "wb") as fh:
+        fh.write(bytes(out))
+
+
+t42_base = tt_font(tt_order, "T42 Inner", [subtable(4, 3, 1, {0x41: "A"})],
+                   kern={("A", "B"): -100, ("B", "A"): 60})
+t42_sfnt = sfnt_bytes(t42_base)
+tt_gid = {g: i for i, g in enumerate(tt_order)}
+# Every character of synth-strings.txt has a glyph: for a missing one,
+# ttf.cpp loads the glyph whose index is the code point, and FreeType's
+# Type 42 driver reads past its CharStrings for it.
+T42_NAMES = ["space"] + list("ABCDEFGHIJ") + ["acute", "Aacute", "uni0394", "uni0416",
+                                              "u1F600"]
+
+
+def t42_charstrings(names, first=(".notdef",)):
+    return [(n, 0) for n in first] + [
+        (n, (7 * i + 3) % (len(tt_order) - 1) + 1) for i, n in enumerate(names)]
+
+
+# hex strings, a `<< >>' CharStrings dictionary whose names differ from
+# the TrueType glyphs', the style from the full name, and the kern
+# table unused (the driver has no kerning)
+t42_font(os.path.join(out, "t42test.t42"), t42_sfnt, t42_charstrings(T42_NAMES),
+         full="T42 Test Bold")
+# binary strings after RD, LilyPond's `(name) cvn' CharStrings with
+# .notdef not first (FreeType swaps it to 0), a custom encoding array,
+# a scaled font matrix, no FamilyName (the FontName is the family), and
+# a FontDirectory check
+cs = t42_charstrings(T42_NAMES[::-1], first=())
+t42_font(os.path.join(out, "t42bin.t42"), t42_sfnt, cs[:5] + [(".notdef", 0)] + cs[5:],
+         family=None, full="Whatever", font_name="T42Binary", binary=True, lilypond=True,
+         encoding="/Encoding 256 array\n0 1 255 {1 index exch /.notdef put} for\n"
+                  "dup 65 /A put\ndup 66 /B put\ndup 67 /C put\nreadonly def\n",
+         matrix="2 0 0.5 2 10 20",
+         extra="FontDirectory /T42Binary known {/T42Binary findfont dup /UniqueID known"
+               " {dup /UniqueID get 4242 eq exch /FontType get 42 eq and} {pop false}"
+               " ifelse {save true} {false} ifelse} {false} ifelse\n")
+# a tricky TrueType font inside (its glyphs are hinted), in an
+# ISOLatin1Encoding font
+tricky = sfnt_bytes(tricky_font("DFKaiShu T42"))
+t42_font(os.path.join(out, "t42tricky.t42"), tricky,
+         [(g, i) for i, g in enumerate(TRICKY_ORDER)] +
+         [(n, 1 + i % 9) for i, n in enumerate(["acute", "uni0394", "uni0416", "u1F600"])],
+         family="T42 Tricky", full="T42 Tricky", encoding="ISOLatin1Encoding")
+# not a Type 42 font (FontType 3): no driver takes it
+t42_font(os.path.join(out, "t42type3.t42"), t42_sfnt, [(".notdef", 0), ("A", 1)],
+         family="T42 Type3", font_type=3)
+
+
+# PFR fonts (Bitstream's Portable Font Resources), assembled here: glyph
+# programs with every instruction and argument form, compound glyphs,
+# kerning items, and the header, logical and physical font variants.
+
+def u8(v): return struct.pack(">B", v & 0xFF)
+def s8(v): return struct.pack(">b", v)
+def u16(v): return struct.pack(">H", v & 0xFFFF)
+def s16(v): return struct.pack(">h", v)
+def u24(v): return struct.pack(">I", v & 0xFFFFFF)[1:]
+
+
+# glyph program arguments: (kind, value) for x and y; kinds are
+# 0 (control index), 1 (absolute), 2 (delta from the last point), 3 (same)
+def pfr_args(*coords):
+    fmt, data = 0, b""
+    for i, (kind, val) in enumerate(coords):
+        fmt |= kind << (2 * i)
+        data += {0: u8, 1: s16, 2: s8}.get(kind, lambda v: b"")(val)
+    return fmt, data
+
+
+def pfr_point(x, y):
+    return pfr_args(x, y)
+
+
+def MOVE(x, y, inside=False):
+    fmt, data = pfr_point(x, y)
+    return u8((0x40 if inside else 0x50) | fmt) + data
+
+
+def LINE(x, y):
+    fmt, data = pfr_point(x, y)
+    return u8(0x10 | fmt) + data
+
+
+def HLINE(i): return u8(0x20 | i)
+def VLINE(i): return u8(0x30 | i)
+
+
+def CURVE(x1, y1, x2, y2, x3, y3):
+    f1, d1 = pfr_point(x1, y1)
+    f2, d2 = pfr_point(x2, y2)
+    f3, d3 = pfr_point(x3, y3)
+    return u8(0x80 | f1) + d1 + u8(f2 | f3 << 4) + d2 + d3
+
+
+def HVCURVE(dx1, xi2, dy2, dy3):
+    # formats 0xE, 0x8, 0xB: (dx, same), (index, dy), (same, dy)
+    return u8(0x60) + s8(dx1) + u8(xi2) + s8(dy2) + s8(dy3)
+
+
+def VHCURVE(dy1, dx2, yi2, dx3):
+    # formats 0xB, 0x2, 0xE: (same, dy), (dx, index), (dx, same)
+    return u8(0x70) + s8(dy1) + s8(dx2) + u8(yi2) + s8(dx3)
+
+
+END = b"\x00"
+
+
+def pfr_simple(xs, ys, code, *, one_byte_counts=True, extra=None):
+    flags = 0
+    if one_byte_counts and len(xs) < 16 and len(ys) < 16:
+        flags |= 0x04
+        counts = u8(len(xs) | len(ys) << 4)
+    else:
+        counts = b""
+        if xs:
+            flags |= 0x02
+            counts += u8(len(xs))
+        if ys:
+            flags |= 0x01
+            counts += u8(len(ys))
+    ctrl, prev = b"", 0
+    vals = list(xs) + list(ys)
+    for i in range(0, len(vals), 8):
+        mask, body = 0, b""
+        for j, v in enumerate(vals[i:i + 8]):
+            if 0 <= v - prev <= 255 and (i + j) % 3 != 2:
+                body += u8(v - prev)
+            else:
+                mask |= 1 << j
+                body += s16(v)
+            prev = v
+        ctrl += u8(mask) + body
+    if extra is not None:
+        flags |= 0x08
+    return u8(flags) + counts + ctrl + (extra if extra is not None else b"") + code + END
+
+
+def pfr_compound(parts, extra=None):
+    """parts: (gps_offset, gps_size, dx, dy, xscale, yscale); scales are
+    in 1/4096."""
+    out = bytearray(u8(0x80 | len(parts) | (0x40 if extra is not None else 0)))
+    if extra is not None:
+        out += extra
+    for off, size, dx, dy, xs, ys in parts:
+        fmt, body = 0, b""
+        if xs is not None:
+            fmt |= 0x10
+            body += s16(xs)
+        if ys is not None:
+            fmt |= 0x20
+            body += s16(ys)
+        for shift, d in ((0, dx), (2, dy)):
+            if d == 0:
+                continue
+            if -128 <= d <= 127:
+                fmt |= 2 << shift
+                body += s8(d)
+            else:
+                fmt |= 1 << shift
+                body += s16(d)
+        if size > 255:
+            fmt |= 0x40
+            body += u16(size)
+        else:
+            body += u8(size)
+        if off > 0xFFFF:
+            fmt |= 0x80
+            body += u24(off)
+        else:
+            body += u16(off)
+        out += u8(fmt) + body
+    return bytes(out)
+
+
+def extra_items(items):
+    return u8(len(items)) + b"".join(u8(len(d)) + u8(t) + d for t, d in items)
+
+
+def aux_record(typ, data):
+    if len(data) % 2:
+        data += b"\0"
+    return u16(len(data) + 4) + u16(typ) + data
+
+
+# the glyph programs: a box with a counter; curves of each kind; a glyph
+# whose second contour ends on the first contour's last point (FreeType
+# drops that point); an accent
+PFR_BOX = pfr_simple(
+    [40, 60, 440, 460, 150, 350], [0, 20, 680, 700, 200, 450],
+    MOVE((0, 0), (0, 0)) + HLINE(3) + VLINE(3) + HLINE(0) + LINE((3, 0), (0, 0))
+    + MOVE((0, 4), (0, 4), inside=True) + VLINE(5) + HLINE(5) + VLINE(4))
+PFR_CURVES = pfr_simple(
+    [50, 250, 450], [0, 350, 700],
+    MOVE((0, 0), (0, 0)) + HVCURVE(80, 1, 60, 90) + VHCURVE(70, 40, 2, 60)
+    + CURVE((1, 420), (2, -30), (0, 2), (2, 50), (2, -60), (1, 300))
+    + CURVE((3, 0), (2, -80), (2, -100), (3, 0), (0, 0), (0, 1))
+    + LINE((0, 0), (0, 0)))
+PFR_QUIRK = pfr_simple(
+    [0, 100, 300, 400], [0, 100, 500, 600],
+    MOVE((0, 0), (0, 0)) + LINE((0, 3), (0, 0)) + LINE((0, 3), (0, 3))
+    + LINE((0, 0), (0, 3))
+    + MOVE((0, 1), (0, 1)) + LINE((0, 2), (0, 1)) + LINE((0, 0), (0, 3)),
+    one_byte_counts=False)
+PFR_ACUTE = pfr_simple(
+    [150, 250, 300], [750, 900],
+    MOVE((0, 0), (0, 0)) + LINE((0, 1), (0, 0)) + LINE((0, 2), (0, 1)) + LINE((2, -60), (3, 0)),
+    extra=extra_items([(7, b"\x01\x02\x03")]))
+PFR_NARROW = pfr_simple(
+    [30, 230], [-100, 500],
+    MOVE((0, 0), (1, -150)) + LINE((0, 1), (1, -150)) + LINE((0, 1), (0, 1))
+    + CURVE((2, -20), (2, 40), (2, -80), (2, 10), (0, 0), (1, 400)))
+
+
+def pfr_font(path, glyphs, *, family="PFR Test", style="Regular", font_id="PFR Test Font v1",
+             outline_res=1000, metrics_res=1000, two_byte_codes=False, proportional=True,
+             ascii=False, gps_2byte=False, gps_3byte=False, kern=None, kern_2byte=False,
+             kern_2byte_adj=False, bbox=(0, -200, 1000, 900), vertical=False,
+             log_flags=0, size_high=False, strikes=0, stem_snaps=True, ascent=None,
+             sort=True, header_version=4):
+    """glyphs: (char code, advance, program or index into the programs
+    so far, or a compound given as parts with glyph indices)."""
+    # the glyph program section
+    gps = bytearray(b"\0" * 4)  # offset 0 means no outline
+    where = []
+    for code, adv, prog in glyphs:
+        if prog is None:
+            where.append((0, 0))
+            continue
+        if isinstance(prog, int):
+            where.append(where[prog])
+            continue
+        if isinstance(prog, list):
+            prog = pfr_compound([(where[g][0], where[g][1], dx, dy, xs, ys)
+                                 for g, dx, dy, xs, ys in prog])
+        where.append((len(gps), len(prog)))
+        gps += prog
+    if gps_3byte:
+        gps = bytearray(b"\0" * 0x10000) + gps
+        where = [(o + 0x10000 if o else 0, s) for o, s in where]
+
+    flags = 0
+    if vertical:
+        flags |= 0x01
+    if two_byte_codes:
+        flags |= 0x02
+    if proportional:
+        flags |= 0x04
+    if ascii:
+        flags |= 0x08
+    if gps_2byte:
+        flags |= 0x10
+    if gps_3byte:
+        flags |= 0x20
+    items = []
+    if strikes:
+        items.append((1, u24(0) + u8(0) + u8(strikes) + b"".join(
+            u8(10 + i) + u8(10 + i) + u8(0) + u16(0) + u16(0) + u8(0) for i in range(strikes))))
+    if font_id is not None:
+        items.append((2, font_id.encode()))
+    if stem_snaps:
+        items.append((3, u8(0x21) + s16(40) + s16(60) + s16(90)))
+    if kern:
+        for pairs in kern:
+            body = u8(len(pairs)) + s16(-20) + u8((1 if kern_2byte else 0) |
+                                                  (2 if kern_2byte_adj else 0))
+            for (a, b), v in sorted(pairs.items()):
+                body += (u16(a) + u16(b)) if kern_2byte else (u8(a) + u8(b))
+                body += s16(v) if kern_2byte_adj else u8(v)
+            items.append((4, body))
+    if items:
+        flags |= 0x80
+    phy = bytearray(u16(1) + u16(outline_res) + u16(metrics_res) +
+                    b"".join(s16(v) for v in bbox) + u8(flags))
+    if not proportional:
+        phy += s16(glyphs[0][1])
+    if items:
+        phy += extra_items(items)
+    aux = b""
+    if family is not None:
+        aux += aux_record(1, family.encode())
+    if ascent is not None:
+        aux += aux_record(2, bytes(10) + s16(ascent[0]) + s16(ascent[1]) + s16(0) + bytes(16))
+    if style is not None:
+        aux += aux_record(3, style.encode())
+    phy += u24(len(aux)) + aux
+    phy += u8(2) + s16(-10) + s16(0) + u8(1) + u8(20) + u16(40) + u16(30)
+    chars = sorted(zip(glyphs, where), key=lambda g: g[0][0]) if sort else list(zip(glyphs, where))
+    phy += u16(len(chars))
+    for (code, adv, _), (off, size) in chars:
+        phy += u16(code) if two_byte_codes else u8(code)
+        if proportional:
+            phy += s16(adv)
+        if ascii:
+            phy += u8(code & 0x7F)
+        phy += u16(size) if gps_2byte else u8(size)
+        phy += u24(off) if gps_3byte else u16(off)
+
+    # the logical font
+    log = bytearray(b"".join(s24 for s24 in
+                             (struct.pack(">i", v)[1:] for v in (1000, 0, 0, 1000))))
+    log += u8(log_flags)
+    if log_flags & 0x04:
+        log += (s16(12) if log_flags & 0x08 else u8(12))
+        if log_flags & 0x03 == 0:
+            log += u24(0x20000)
+    if log_flags & 0x10:
+        log += (s16(7) if log_flags & 0x20 else u8(7))
+    if log_flags & 0x40:
+        log += extra_items([(9, b"xyz")])
+
+    log_dir_off = 58
+    log_off = log_dir_off + 2 + 5
+    log_size = len(log) + 5 + (1 if size_high else 0)
+    phy_off = log_off + log_size
+    gps_off = phy_off + len(phy)
+    log += u16(len(phy)) + u24(phy_off)
+    if size_high:
+        log += u8(0)
+    header = (b"PFR0" + u16(header_version) + u16(0x0D0A) + u16(58) + u16(7) + u16(log_dir_off)
+              + u16(log_size) + u24(log_size) + u24(log_off)
+              + u16(len(phy)) + u24(len(phy)) + u24(phy_off)
+              + u16(max(s for _, s in where)) + u24(len(gps)) + u24(gps_off)
+              + u8(2) + u8(15) + u8(15) + u8(1 if size_high else 0) + u8(0)
+              + u24(0) + u24(0) + u24(0) + u16(1) + u8(1) + u8(2) + u16(len(glyphs)))
+    assert len(header) == 58
+    data = header + u16(1) + u16(log_size) + u24(log_off) + bytes(log) + bytes(phy) + bytes(gps)
+    data += b"$PFR" + u16(0) + u16(0)
+    with open(path, "wb") as fh:
+        fh.write(data)
+
+
+# glyph programs by index: 0 box, 1 curves, 2 quirk, 3 acute, 4 narrow
+PFR_PROGS = [PFR_BOX, PFR_CURVES, PFR_QUIRK, PFR_ACUTE, PFR_NARROW]
+
+
+def pfr_glyphs(codes):
+    """The test glyphs for the characters of synth-strings.txt (codes maps
+    their code points to the codes the font has)."""
+    g = [(codes(0x20), 250, PFR_NARROW)]
+    g += [(codes(0x41), 520, PFR_BOX), (codes(0x42), 540, PFR_CURVES),
+          (codes(0x43), 500, PFR_QUIRK), (codes(0xB4), 300, PFR_ACUTE),
+          (codes(0x44), 480, PFR_NARROW)]
+    # E-J: the programs again, as the same offsets
+    g += [(codes(c), 470 + 9 * i, i % 5) for i, c in enumerate(range(0x45, 0x4B))]
+    # Á: A with the acute raised and scaled
+    g += [(codes(0xC1), 520, [(1, 0, 0, None, None), (4, 120, 200, 3072, 5120)])]
+    return g
+
+
+# one-byte codes; kerning (one-byte pairs and adjustments); metrics in
+# other units than outlines; stroke and bold flags and extra items in
+# the logical font
+pfr_font(os.path.join(out, "pfrtest.pfr"), pfr_glyphs(lambda c: c),
+         metrics_res=2048, log_flags=0x04 | 0x10 | 0x40,
+         kern=[{(0x41, 0x42): 30, (0x42, 0x41): 10, (0x41, 0x41): 200, (0x42, 0x43): 5}])
+# two-byte codes (the Cyrillic and Greek letters have glyphs, the emoji
+# has none), a monospaced font with ASCII codes, two-byte GPS sizes and
+# three-byte offsets, two kerning items with two-byte characters and
+# adjustments (ten pairs: A-Á is found by the binary search's first
+# probe, of the pairs past the largest power of two), the
+# physical font size's high byte, and no family name (the font ID is)
+wide = pfr_glyphs(lambda c: c) + [(0x394, 610, [(1, 50, 0, 2048, 4096)]), (0x416, 600, 0)]
+pfr_font(os.path.join(out, "pfrwide.pfr"), wide, family=None, style="Book",
+         font_id="PFR Wide ID", outline_res=2048, two_byte_codes=True, proportional=False,
+         ascii=True, gps_2byte=True, gps_3byte=True, kern_2byte=True, kern_2byte_adj=True,
+         kern=[{(0x41, c): -40 - (c & 0xFF) for c in list(range(0x41, 0x49)) + [0xC1, 0x394]},
+               {(0x42, 0x41): 70, (0x394, 0x416): -300, (0x416, 0x394): 150}],
+         size_high=True, bbox=(-50, -300, 1100, 1800), ascent=(1500, -250),
+         header_version=0)
+# a vertical font (no horizontal advances)
+pfr_font(os.path.join(out, "pfrvert.pfr"), pfr_glyphs(lambda c: c), family="PFR Vertical",
+         vertical=True, stem_snaps=False)
+# characters out of order: the charmap fails, and with it the font
+pfr_font(os.path.join(out, "pfrunsorted.pfr"), pfr_glyphs(lambda c: c), family="PFR Unsorted",
+         sort=False)
+# bitmaps only: not scalable, so the size request fails
+pfr_font(os.path.join(out, "pfrbitmap.pfr"), [(c, 500, None) for c in range(0x41, 0x44)],
+         family="PFR Bitmap", strikes=2)

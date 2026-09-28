@@ -28,6 +28,20 @@ func (f *Face) RequestRealDimSize(width, height int64, horiResolution, vertResol
 	if width < 0 || height < 0 {
 		return errInvalidArg
 	}
+	if f.pfr != nil && !f.pfrScalable {
+		// a bitmap font: FT_Match_Size takes nominal size requests only
+		return errInvalidArg
+	}
+	if f.t42 != nil {
+		// T42_Size_Request: the TrueType font's size
+		ttf := f.t42.ttf
+		if err := ttf.RequestRealDimSize(width, height, horiResolution, vertResolution); err != nil {
+			return err
+		}
+		f.xScale, f.yScale = ttf.xScale, ttf.yScale
+		f.xPpem, f.yPpem = ttf.xPpem, ttf.yPpem
+		return nil
+	}
 	w := f.ascender - f.descender
 	h := w
 	if w < 0 {
@@ -72,7 +86,7 @@ func (f *Face) RequestRealDimSize(width, height int64, horiResolution, vertResol
 	}
 	f.xScale, f.yScale = xScale, yScale
 	f.xPpem, f.yPpem = scaledW, scaledH
-	if f.cff == nil && f.t1 == nil {
+	if f.cff == nil && f.t1 == nil && f.pfr == nil {
 		return f.sizeReset(horiResolution, vertResolution)
 	}
 	return nil
@@ -82,7 +96,11 @@ func (f *Face) RequestRealDimSize(width, height int64, horiResolution, vertResol
 // value for the pair, scaled and rounded to the pixel grid.
 func (f *Face) Kerning(left, right uint32) Vector {
 	var k Vector
-	k.X = f.kerning(left, right)
+	if f.pfr != nil {
+		k.X = f.pfrKerning(left, right)
+	} else {
+		k.X = f.kerning(left, right)
+	}
 	k.X = mulFix(k.X, f.xScale)
 	k.Y = mulFix(k.Y, f.yScale)
 	origX, origY := k.X, k.Y
@@ -162,6 +180,12 @@ func (f *Face) LoadGlyph(gindex uint32) (*Glyph, error) {
 	}
 	if f.t1 != nil {
 		return f.loadT1Glyph(gindex)
+	}
+	if f.t42 != nil {
+		return f.loadT42Glyph(gindex)
+	}
+	if f.pfr != nil {
+		return f.loadPFRGlyph(gindex)
 	}
 	if int64(gindex) >= f.numGlyphs {
 		return nil, errInvalidArg

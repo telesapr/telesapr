@@ -46,7 +46,7 @@ solvespace core engine. It is the source of truth for the
 | `file.cpp` | 1030 | OK | `pkg/persist/slvs/slvs.go`, `pkg/persist/slvs/linked.go`, `pkg/sketch/upgrade.go` | Loading follows `LoadFromFile`: the saved entities are dropped, `ReloadAllLinked` reads each linked file's entities, mesh and shell (`LoadEntitiesFromFile`: an IDF board, an STL mesh, or a .slvs file's entities, styles, mesh and shell), loads the images it uses, and forces a mesh-only link to a mesh, and `UpgradeLegacyData` regenerates the sketch (REGEN) and seeds legacy constraint params. Saving follows `SaveToFile` (C++'s header, whatever the loaded file had; regenerate, then each entity's export numerics and `Entity::IsVisible` with the default view, the custom styles only, then the last group's running mesh and shell), and matches current C++ byte for byte on the fixtures, shells included. A missing linked file or image counts as declined (C++ asks the user to find it) |
 | `importmesh.cpp` | 258 | OK | `pkg/persist/slvs/stl.go` | `LinkStl`: a binary STL's triangles, colours, and the origin, bounding box and edge-vertex entities; `group/link_stl` saves match C++ byte for byte |
 | `importidf.cpp` | 536 | OK | `pkg/persist/slvs/idf.go` | `LinkIDF`: the board outline, cutouts, routing keepouts and drilled holes as entities, and the board extruded (`std::stof`'s float rounding included); `group/link_idf` saves match C++ byte for byte |
-| `ttf.cpp` | 449 | OK | `pkg/ttf` | `TtfFontList` (`LoadAll`, sorted with `CxxSort` and deduplicated by name; the font files are `ttf.FontFiles`, set with `SetFontFiles`, as the headless build's `fontFiles`; the builtin Bitstream Vera is embedded), `LoadFont`, `PlotString` (its float factor included), `AspectRatio`, `ExtractTTFData`, and `ReadUTF8`'s decoding. Under it, FreeType 2.14.3 as C++ calls it: opening a face (a collection's first; WOFF and WOFF2 files, with brotli and WOFF2's glyf/loca/hmtx transforms), the names, the Unicode charmap (formats 0, 2, 4, 6, 8, 10, 12, 13, 14, validated; synthesized from `post` glyph names or the CFF charset without one), `FT_Request_Size`, the kern table, `FT_Outline_Decompose`. The TrueType driver's unhinted glyph loading (composites, phantom points, `FT_MulFix`/`FT_DivFix`/`FT_Hypot`), and for "tricky" fonts (detected by family name or `cvt`/`fpgm`/`prep` checksums) the hinted loading they need: the v40 bytecode interpreter (`ttinterp.c`), `fpgm`/`prep`, hinted metrics, `hdmx`. The CFF driver: CFF and CFF2 in OpenType (`OTTO`, collections) and bare CFF files, CID-keyed fonts, the Adobe charstring engine (`psaux/cf2*`, unhinted), the font matrix, CFF2 blends at the default instance. The Type 1 driver: PFA (hex or binary `eexec`) and PFB files, the PostScript dictionary parser (`psobjs.c`, `psconv.c`), Subrs (hashed when sparse) and CharStrings, encodings, multiple-master fonts at their `WeightVector`, and the charstrings through the Adobe engine's Type 1 mode (flex, hint replacement, `seac`, `sbw`, `div`, othersubrs) |
+| `ttf.cpp` | 449 | OK | `pkg/ttf` | `TtfFontList` (`LoadAll`, sorted with `CxxSort` and deduplicated by name; the font files are `ttf.FontFiles`, set with `SetFontFiles`, as the headless build's `fontFiles`; the builtin Bitstream Vera is embedded), `LoadFont`, `PlotString` (its float factor included), `AspectRatio`, `ExtractTTFData`, and `ReadUTF8`'s decoding. Under it, FreeType 2.14.3 as C++ calls it: opening a face (a collection's first; WOFF and WOFF2 files, with brotli and WOFF2's glyf/loca/hmtx transforms), the names, the Unicode charmap (formats 0, 2, 4, 6, 8, 10, 12, 13, 14, validated; synthesized from `post` glyph names or the CFF charset without one), `FT_Request_Size`, the kern table, `FT_Outline_Decompose`. The TrueType driver's unhinted glyph loading (composites, phantom points, `FT_MulFix`/`FT_DivFix`/`FT_Hypot`), and for "tricky" fonts (detected by family name or `cvt`/`fpgm`/`prep` checksums) the hinted loading they need: the v40 bytecode interpreter (`ttinterp.c`), `fpgm`/`prep`, hinted metrics, `hdmx`. The CFF driver: CFF and CFF2 in OpenType (`OTTO`, collections) and bare CFF files, CID-keyed fonts, the Adobe charstring engine (`psaux/cf2*`, unhinted), the font matrix, CFF2 blends at the default instance. The Type 1 driver: PFA (hex or binary `eexec`) and PFB files, the PostScript dictionary parser (`psobjs.c`, `psconv.c`), Subrs (hashed when sparse) and CharStrings, encodings, multiple-master fonts at their `WeightVector`, and the charstrings through the Adobe engine's Type 1 mode (flex, hint replacement, `seac`, `sbw`, `div`, othersubrs). The Type 42 driver: the font dictionary (hex or binary `sfnts` strings, `/name` and LilyPond `(name) cvn` CharStrings, `.notdef` swapped to glyph 0, the encodings), the embedded TrueType font through the TrueType driver (tricky fonts hinted), no kerning. The PFR driver: the header, logical and physical font records (extra items, the auxiliary names and metrics), its charmap, simple and compound glyph programs (with `pfr_glyph_close_contour`'s check against the previous contour's last point), kerning items and their binary search. FreeType's drivers are tried in its module order |
 | glibc `libm` (2.44) | — | OK | `pkg/libm` | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2` and the huge-argument reduction, as glibc's x86-64 FMA variants compile them (tables read from `libm-2.44.a`); the engine's trigonometry goes through it |
 | `util.cpp` (geometry helpers) | — | OK | `pkg/geom` | `Vector::Equals` uses `LENGTH_EPS`, `OnLineSegment`, `BoundingBoxIntersectsLine`, `BandedMatrix`, plane intersections, `AtIntersectionOfLines`, `DistanceToLine`/`DistanceToPlane`, `DotInToCsys`/`ScaleOutOfCsys`, `WithMagnitude`, `RotatedAbout` (both overloads; Go's went through a quaternion), `DirectionCosineWith`, `ClosestPointOnLine`, `DivProjected`, `ClampWithin`, `Vector4` (`From(w, v)` premultiplies, `Blend`), `Point2d` (`Equals` with `LENGTH_EPS`, `Angle`, `FromPolar`, `DistanceToLineSigned`), `BBox` (`GetOrigin` is the centre; `Overlaps`, `Contains`), `Quaternion::From(axis, angle)`, `Times`, `Inverse`, `Mirror` (was wrong), `ToThe`, `Quaternion::Rotate`/`RotationU/V/N`/`From(u, v)`; `geom.Max`/`Min` are `std::max`/`min` |
 
@@ -105,11 +105,12 @@ UI.
   rank and least-squares solution bit for bit on 500 systems.
 - **Fonts.** `TestTTFVsCpp`: font names, cap heights, aspect ratios and
   `PlotString`'s Beziers bit for bit, for Gentium and the builtin font;
-  `TestSynthFontsVsCpp`: the same for 30 generated fonts
+  `TestSynthFontsVsCpp`: the same for 39 generated fonts
   (`scripts/gen-ttf-testfonts.py`: CFF/CFF2 charstring operators, CID
   and bare CFF, WOFF/WOFF2, cmap formats 2/8/10, `post` names, tricky
   fonts whose bytecode exercises the interpreter, Type 1 PFA/PFB and
-  multiple-master fonts).
+  multiple-master fonts, Type 42 fonts, and PFR fonts from the script's
+  own PFR assembler).
 - **Numerics.** `TestLibmVsGlibc`: 33,400 inputs over every branch;
   `TestNoFusedMultiplyAdd`: the build doesn't fuse `x*y + z`;
   `TestCxxSortVsLibstdcxx`: `std::sort`.
@@ -158,10 +159,18 @@ hide one.
   the system's fonts through fontconfig).
 - FreeType's CFF and Type 1 drivers seed the charstring `random`
   operator from memory addresses, so a glyph using it can't match C++.
-  FreeType's Type 42 and PFR drivers aren't ported, so Go doesn't list
-  those fonts where C++ would (none is on this system). CID-keyed Type 1
-  fonts (FreeType's t1cid driver) get no Unicode charmap, so C++ never
-  lists them either; bitmap-only fonts fail in both.
+  CID-keyed Type 1 fonts (FreeType's t1cid driver, not ported) get no
+  Unicode charmap, so C++ never lists them either; bitmap-only fonts
+  fail in both.
+- Undefined behaviour in C++ that Go can't reproduce: for a character a
+  font lacks, ttf.cpp loads the glyph whose index is the code point, and
+  FreeType's Type 42 driver reads past its CharStrings for an index
+  beyond them (C++ crashes; Go stops the string, as for a glyph that
+  fails to load). A PFR font without a style name (or family name and
+  font ID) has C++ make a `std::string` from NULL. No test font does
+  either. There are no Type 42 or PFR fonts on this system, so those
+  drivers are pinned by generated fonts only (and a Type 42 wrapping of
+  Gentium, which matched C++ up to its crash).
 - The bits match C++ as built here: x86-64 with FMA and AVX2 (glibc
   2.44 picks the FMA variants of its trigonometry) and the vendored
   Eigen built without FMA. Elsewhere C++ itself computes other last

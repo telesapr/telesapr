@@ -34,6 +34,9 @@ type charmap struct {
 
 	// synthetic is a Unicode charmap built from glyph names.
 	synthetic *psUnicodes
+
+	// pfr is a PFR font's characters, for its charmap.
+	pfr []pfrChar
 }
 
 // findEncoding is sfnt_find_encoding, as far as FT_Select_Charmap's
@@ -139,6 +142,13 @@ func (f *Face) CharIndex(charcode uint32) uint32 {
 		return 0
 	}
 	var result uint32
+	if f.charmap.pfr != nil {
+		result = pfrCmapCharIndex(f.charmap.pfr, charcode)
+		if int64(result) >= f.numGlyphs {
+			result = 0
+		}
+		return result
+	}
 	if f.charmap.synthetic != nil {
 		result = f.charmap.synthetic.charIndex(charcode)
 		if int64(result) >= f.numGlyphs {

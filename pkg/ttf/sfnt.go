@@ -1,9 +1,10 @@
 // Package ttf reads fonts as C++ SolveSpace's ttf.cpp does, through the
 // parts of FreeType 2.14.3 it uses: opening a face and selecting its
 // Unicode charmap, a size request, loading unhinted glyph outlines,
-// kerning, and outline decomposition. FreeType's TrueType driver and
-// its CFF driver (OpenType CFF and CFF2 fonts, and bare CFF files) are
-// ported; its other drivers (Type 1, bitmap fonts, ...) aren't.
+// kerning, and outline decomposition. FreeType's drivers for scalable
+// fonts are ported: TrueType, Type 1, CFF (OpenType CFF and CFF2 fonts,
+// and bare CFF files), PFR and Type 42; its CID-keyed Type 1 driver and
+// its bitmap font drivers aren't, since ttf.cpp can't use those fonts.
 package ttf
 
 import (
@@ -168,6 +169,14 @@ type Face struct {
 
 	// The Type 1 driver's font, for a Type 1 face.
 	t1 *t1Font
+
+	// The Type 42 driver's font, for a Type 42 face.
+	t42 *t42Face
+
+	// The PFR driver's font, for a PFR face, and whether it has
+	// outlines (FT_FACE_FLAG_SCALABLE).
+	pfr         *pfrFace
+	pfrScalable bool
 }
 
 // maxProfile is the part of a TT_MaxProfile the interpreter reads.
@@ -181,31 +190,24 @@ type maxProfile struct {
 }
 
 // NewFace opens the first face of a font file, as FT_New_Memory_Face
-// does: the TrueType driver takes TrueType fonts (and collections), the
-// Type 1 driver PFA and PFB fonts, and the CFF driver OpenType CFF fonts
-// and bare CFF files.
+// does, trying FreeType's drivers in their order: the TrueType driver
+// takes TrueType fonts (and collections), the Type 1 driver PFA and PFB
+// fonts, the CFF driver OpenType CFF fonts and bare CFF files, the PFR
+// driver PFR fonts, and the Type 42 driver TrueType fonts in
+// PostScript. (The CID-keyed Type 1 driver comes between the CFF and
+// PFR drivers; the fonts it takes have no Unicode charmap, which fails
+// them in ttf.cpp as their unknown format fails them here.) An error other than an
+// unknown format ends the search, as in FT_Open_Face.
 func NewFace(data []byte) (*Face, error) {
 	// the TrueType driver (tt_face_init)
-	f := &Face{data: data}
-	formatTag, sfntErr := f.initFace()
-	if sfntErr == nil {
-		switch formatTag {
-		case 0x00010000, 0x00020000, tag("true"), 0xA56B6264, 0xA56C7374:
-			if err := f.loadFace(false); err != nil {
-				return nil, err
-			}
-			if err := f.loadLoca(); err != nil {
-				return nil, err
-			}
-			if err := f.loadBytecodeTables(); err != nil {
-				return nil, err
-			}
-			return f, nil
-		}
+	f, err := ttFaceInit(data)
+	if err == nil {
+		return f, nil
+	} else if err != errUnknownFormat || f == nil {
+		return nil, err
 	}
 
-	// the Type 1 driver (T1_Face_Init); an error other than an unknown
-	// format ends FT_Open_Face's search
+	// the Type 1 driver (T1_Face_Init)
 	if t1f, err := t1FaceInit(f.data); err == nil {
 		return t1f, nil
 	} else if err != errUnknownFormat {
@@ -214,11 +216,49 @@ func NewFace(data []byte) (*Face, error) {
 
 	// the CFF driver (cff_face_init), on the SFNT data of a WOFF file
 	f = &Face{data: f.data}
-	formatTag, sfntErr = f.initFace()
+	formatTag, sfntErr := f.initFace()
 	if sfntErr == nil && formatTag != tag("OTTO") {
 		return nil, errUnknownFormat
 	}
-	if err := f.cffFaceInit(sfntErr == nil); err != nil {
+	if err := f.cffFaceInit(sfntErr == nil); err == nil {
+		return f, nil
+	} else if err != errUnknownFormat {
+		return nil, err
+	}
+
+	// the PFR driver (pfr_face_init)
+	if pf, err := pfrFaceInit(f.data); err == nil {
+		return pf, nil
+	} else if err != errUnknownFormat {
+		return nil, err
+	}
+
+	// the Type 42 driver (T42_Face_Init)
+	return t42FaceInit(f.data)
+}
+
+// ttFaceInit is tt_face_init: a TrueType font as a face. For other
+// fonts it reports errUnknownFormat with the face, whose data (a WOFF
+// file's SFNT data) the next drivers read; an error loading a TrueType
+// font comes without it, and ends the search.
+func ttFaceInit(data []byte) (*Face, error) {
+	f := &Face{data: data}
+	formatTag, sfntErr := f.initFace()
+	if sfntErr != nil {
+		return f, errUnknownFormat
+	}
+	switch formatTag {
+	case 0x00010000, 0x00020000, tag("true"), 0xA56B6264, 0xA56C7374:
+	default:
+		return f, errUnknownFormat
+	}
+	if err := f.loadFace(false); err != nil {
+		return nil, err
+	}
+	if err := f.loadLoca(); err != nil {
+		return nil, err
+	}
+	if err := f.loadBytecodeTables(); err != nil {
 		return nil, err
 	}
 	return f, nil
