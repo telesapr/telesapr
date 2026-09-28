@@ -86,7 +86,7 @@ UI.
 
 ## Parity checks
 
-482 tests (337 top-level) across the 8 engine packages (`pkg/core`,
+481 tests (336 top-level) across the 8 engine packages (`pkg/core`,
 `pkg/geom`, `pkg/libm`, `pkg/persist/slvs`, `pkg/sketch`, `pkg/solver`,
 `pkg/srf`, `pkg/ttf`); no TODO markers. The tests that pin Go to C++:
 

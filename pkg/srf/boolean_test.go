@@ -143,12 +143,6 @@ func makeBoxShell(min, max geom.Vector) *SShell {
 	return sh
 }
 
-// TestSShellUnionOverlappingBoxes verifies union of two overlapping
-// axis-aligned boxes produces a non-empty result.
-func TestSShellUnionOverlappingBoxesSkip(t *testing.T) {
-	t.Skip("union of overlapping boxes requires full BSP CSG; covered by existing union tests on disjoint boxes")
-}
-
 // TestSShellIntersectionOverlappingBoxes verifies intersection of
 // two overlapping boxes is non-empty.
 func TestSShellIntersectionOverlappingBoxes(t *testing.T) {

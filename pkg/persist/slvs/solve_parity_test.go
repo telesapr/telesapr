@@ -12,12 +12,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/solver"
 )
 
-// solveParityExclusions are the fixtures TestParityGroupSolveVsCpp
-// skips, with the reason.
-var solveParityExclusions = map[string]string{
-	"request/image/linked.slvs": "LINKED import isn't ported (PORTING.md)",
-}
-
 // TestParityGroupSolveVsCpp regenerates every fixture C++ can load and
 // checks that each group solves, with the degrees of freedom C++
 // reports, that its shell's faces are C++'s, and that every
@@ -27,9 +21,6 @@ func TestParityGroupSolveVsCpp(t *testing.T) {
 	root := filepath.Join(filepath.Dir(thisFile), "../../../testdata")
 	for name, dofs := range cppGroupDOF {
 		t.Run(name, func(t *testing.T) {
-			if reason, ok := solveParityExclusions[name]; ok {
-				t.Skip(reason)
-			}
 			doc, err := LoadFile(filepath.Join(root, name))
 			if err != nil {
 				t.Fatalf("load: %v", err)

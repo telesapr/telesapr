@@ -208,13 +208,13 @@ func TestSBezierPointAtMidpoint(t *testing.T) {
 	}
 }
 
-// TestSBezierTangentAtMidpoint verifies linear tangent direction.
+// TestSBezierTangentAtMidpoint verifies the linear tangent, which is
+// the derivative, unnormalized, as C++ returns it.
 func TestSBezierTangentAtMidpoint(t *testing.T) {
-	t.Skip("TestSBezierTangentAtMidpoint: requires fixture-specific setup")
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 10})
 	tan := b.TangentAt(0.5)
-	if tan.X != 1 {
-		t.Errorf("linear tangent: got X=%v, want 1", tan.X)
+	if tan != (geom.Vector{X: 10}) {
+		t.Errorf("linear tangent: got %v, want (10, 0, 0)", tan)
 	}
 }
 
