@@ -1,0 +1,134 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg"  xmlns:xlink="http://www.w3.org/1999/xlink" width='23.480mm' height='19.797mm' viewBox="0 0 23.480 19.797">
+
+<title>Exported SVG</title>
+
+<style><![CDATA[
+polygon {
+shape-rendering:crispEdges;
+stroke-width:0.023480;
+}
+.s0 {
+stroke:#000000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s1 {
+stroke:#000000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s2 {
+stroke:#19b219;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s3 {
+stroke:#7f4c00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s4 {
+stroke:#00cc00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s5 {
+stroke:#000000;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s6 {
+stroke:#ff19ff;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s7 {
+stroke:#ff0000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s8 {
+stroke:#ffff00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s9 {
+stroke:#001919;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sa {
+stroke:#006666;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sb {
+stroke:#00ffff;
+stroke-width:0.300000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sc {
+stroke:#ff0000;
+stroke-width:0.800000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sd {
+stroke:#191919;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.se {
+stroke:#000000;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+stroke-dasharray:1.500,1.500;
+fill:none;
+}
+.sf {
+stroke:#000000;
+stroke-width:0.300000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+]]></style>
+<path d='M15.888 9.339 C15.277,8.576 14.156,7.791 12.840,7.376 C11.524,6.962 10.125,6.952 9.148,7.214 C8.170,7.476 7.278,8.099 6.974,8.947 C6.670,9.796 6.981,10.798 7.592,11.561 C8.203,12.323 9.324,13.109 10.640,13.523 C11.956,13.938 13.355,13.948 14.333,13.686 C15.310,13.424 16.203,12.801 16.506,11.953 C16.810,11.104 16.499,10.102 15.888,9.339  Z' class='s1' />
+<path d='M8.921 6.100 L8.974,6.381 L9.126,6.619 L9.353,6.778 L9.621,6.833 L9.888,6.778 L10.116,6.619 L10.267,6.381 L10.321,6.100 L10.267,5.819 L10.116,5.581 L9.888,5.422 L9.621,5.367 L9.353,5.422 L9.126,5.581 L8.974,5.819 L8.921,6.100  Z' class='s6' />
+<path d='M13.221 5.122 L13.161,5.071 L13.088,5.032 L13.007,5.008 L12.921,5.000 L12.834,5.008 L12.753,5.032 L12.680,5.071 L12.621,5.122 L12.491,5.354 L12.397,5.596 L12.340,5.846 L12.321,6.100 L12.340,6.354 L12.397,6.604 L12.491,6.846 L12.621,7.078 L12.680,7.129 L12.753,7.168 L12.834,7.192 L12.921,7.200 L13.007,7.192 L13.088,7.168 L13.161,7.129 L13.221,7.078 L13.350,6.846 L13.444,6.604 L13.501,6.354 L13.521,6.100 L13.501,5.846 L13.444,5.596 L13.350,5.354 L13.221,5.122  Z' class='s6' />
+<path d='M15.671 5.122 L15.621,5.071 L15.560,5.032 L15.492,5.008 L15.421,5.000 L15.349,5.008 L15.281,5.032 L15.220,5.071 L15.171,5.122 L15.062,5.354 L14.984,5.596 L14.936,5.846 L14.921,6.100 L14.936,6.354 L14.984,6.604 L15.062,6.846 L15.171,7.078 L15.220,7.129 L15.281,7.168 L15.349,7.192 L15.421,7.200 L15.492,7.192 L15.560,7.168 L15.621,7.129 L15.671,7.078 L15.779,6.846 L15.857,6.604 L15.905,6.354 L15.921,6.100 L15.905,5.846 L15.857,5.596 L15.779,5.354 L15.671,5.122  Z' class='s6' />
+<path d='M17.471 5.122 L17.421,5.071 L17.360,5.032 L17.292,5.008 L17.221,5.000 L17.149,5.008 L17.081,5.032 L17.020,5.071 L16.971,5.122 L16.862,5.354 L16.784,5.596 L16.736,5.846 L16.721,6.100 L16.736,6.354 L16.784,6.604 L16.862,6.846 L16.971,7.078 L17.020,7.129 L17.081,7.168 L17.149,7.192 L17.221,7.200 L17.292,7.192 L17.360,7.168 L17.421,7.129 L17.471,7.078 L17.579,6.846 L17.657,6.604 L17.705,6.354 L17.721,6.100 L17.705,5.846 L17.657,5.596 L17.579,5.354 L17.471,5.122  Z' class='s6' />
+<path d='M9.271 7.200 L9.971,5.000 ' class='s6' />
+<path d='M11.121 5.489 L11.721,5.000 L11.721,7.200 ' class='s6' />
+<path d='M14.121 7.200 L14.121,7.078 ' class='s6' />
+
+</svg>

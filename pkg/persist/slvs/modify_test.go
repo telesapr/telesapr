@@ -50,13 +50,13 @@ func TestModifyToolsVsCpp(t *testing.T) {
 			sk.MustGetEntity(a.Entity(64)).DistanceForceTo(sk, 12)
 			b := addRequest(sk, sketch.RequestLineSegment, v(-30, 0), v(30, 8))
 			sk.GenerateAllTyped(sketch.GenerateAll)
-			return sk.SplitLinesOrCurves(selectEntities(b.Entity(0), a.Entity(0)), sketch.ProjectPoint(v(20, 6)))
+			return sk.SplitLinesOrCurves(selectEntities(b.Entity(0), a.Entity(0)), sk.ProjectPoint(v(20, 6)))
 		}},
 		{"split_arc_cubic", false, func(sk *sketch.Sketch) error {
 			a := addRequest(sk, sketch.RequestArcOfCircle, v(0, 0), v(20, 0), v(-20, 0))
 			b := addRequest(sk, sketch.RequestCubic, v(-10, -5), v(-5, 30), v(5, 30), v(12, 25))
 			sk.GenerateAllTyped(sketch.GenerateAll)
-			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), b.Entity(0)), sketch.ProjectPoint(v(-10, 15)))
+			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), b.Entity(0)), sk.ProjectPoint(v(-10, 15)))
 		}},
 		{"split_point", false, func(sk *sketch.Sketch) error {
 			a := addRequest(sk, sketch.RequestLineSegment, v(-20, -5), v(30, 10))
@@ -70,7 +70,7 @@ func TestModifyToolsVsCpp(t *testing.T) {
 			a := addRequest(sk, sketch.RequestCubicPeriodic, v(0, 0), v(20, 0), v(20, 20))
 			b := addRequest(sk, sketch.RequestLineSegment, v(-10, 5), v(40, 8))
 			sk.GenerateAllTyped(sketch.GenerateAll)
-			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), b.Entity(0)), sketch.ProjectPoint(v(0, 5)))
+			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), b.Entity(0)), sk.ProjectPoint(v(0, 5)))
 		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -250,6 +250,26 @@ func (v Vector) RotatedAroundAxis(axis Vector, theta float64) Vector {
 
 // ClampWithin clamps each component to [minv, maxv] (C++
 // Vector::ClampWithin).
+// ClosestOrtho is the coordinate axis direction nearest v (C++
+// Vector::ClosestOrtho).
+func (v Vector) ClosestOrtho() Vector {
+	mx, my, mz := math.Abs(v.X), math.Abs(v.Y), math.Abs(v.Z)
+	sign := func(c float64) float64 {
+		if c > 0 {
+			return 1
+		}
+		return -1
+	}
+	switch {
+	case mx > my && mx > mz:
+		return Vector{X: sign(v.X)}
+	case my > mz:
+		return Vector{Y: sign(v.Y)}
+	default:
+		return Vector{Z: sign(v.Z)}
+	}
+}
+
 func (v Vector) ClampWithin(minv, maxv float64) Vector {
 	ret := v
 
@@ -396,6 +416,18 @@ func AtIntersectionOfLines(a0, a1, b0, b1 Vector) Vector {
 	return a0.Plus(da.ScaledBy(pa))
 }
 
+// AtIntersectionOfLinesSkew is AtIntersectionOfLines, also reporting
+// whether the lines are skew: whether the closest points on them
+// aren't coincident (C++ Vector::AtIntersectionOfLines with skew).
+func AtIntersectionOfLinesSkew(a0, a1, b0, b1 Vector) (Vector, bool) {
+	da, db := a1.Minus(a0), b1.Minus(b0)
+	pa, pb := ClosestPointBetweenLines(a0, da, b0, db)
+	pi := a0.Plus(da.ScaledBy(pa))
+	// Check if the intersection points on each line are actually
+	// coincident...
+	return pi, !pi.Equals(b0.Plus(db.ScaledBy(pb)))
+}
+
 // ClosestPointBetweenLines computes the parameters ta, tb on the two
 // lines (a0, da) and (b0, db) such that a0 + ta*da is the closest
 // point on the first line to the second. Lines need not be
@@ -494,4 +526,18 @@ func Min(a, b float64) float64 {
 		return b
 	}
 	return a
+}
+
+// InPerspective takes v into the csys (u, v, n) at origin, and applies
+// the perspective of cameraTan (C++ Vector::InPerspective). The csys is
+// one where u cross v equals n, backwards from the display's.
+func (v Vector) InPerspective(u, vv, n, origin Vector, cameraTan float64) Vector {
+	r := v.Minus(origin)
+	r = r.DotInToCsys(u, vv, n)
+	// yes, minus; we are assuming a csys where u cross v equals n,
+	// backwards from the display stuff
+	w := 1 - r.Z*cameraTan
+	r = r.ScaledBy(1 / w)
+
+	return r
 }

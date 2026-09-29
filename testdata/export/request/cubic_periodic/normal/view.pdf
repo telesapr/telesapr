@@ -1,0 +1,79 @@
+%PDF-1.1
+%‚„œ”
+1 0 obj
+  << /Type /Catalog
+     /Outlines 2 0 R
+     /Pages 3 0 R
+  >>
+endobj
+2 0 obj
+  << /Type /Outlines
+     /Count 0
+  >>
+endobj
+3 0 obj
+  << /Type /Pages
+     /Kids [4 0 R]
+     /Count 1
+  >>
+endobj
+4 0 obj
+  << /Type /Page
+     /Parent 3 0 R
+     /MediaBox [0 0 106.240 62.161]
+     /Contents 5 0 R
+     /Resources << /ProcSet 7 0 R
+                   /Font << /F1 8 0 R >>
+                >>
+  >>
+endobj
+5 0 obj
+  << /Length 6 0 R >>
+stream
+1 J 1 j 0.850 w [] 0 d 0.000 0.000 0.000 RG
+22.257 33.955 m
+14.173 26.221 21.522 17.048 36.954 15.611 c
+52.385 14.173 75.900 20.471 83.984 28.206 c
+92.067 35.940 84.719 45.113 69.287 46.550 c
+53.855 47.988 30.340 41.690 22.257 33.955 c
+S
+endstream
+endobj
+6 0 obj
+  245
+endobj
+7 0 obj
+  [/PDF /Text]
+endobj
+8 0 obj
+  << /Type /Font
+     /Subtype /Type1
+     /Name /F1
+     /BaseFont /Helvetica
+     /Encoding /WinAnsiEncoding
+  >>
+endobj
+9 0 obj
+  << /Creator (SolveSpace)
+  >>
+xref
+0 10
+0000000000 65535 f
+0000000017 00000 n
+0000000102 00000 n
+0000000162 00000 n
+0000000239 00000 n
+0000000456 00000 n
+0000000760 00000 n
+0000000784 00000 n
+0000000817 00000 n
+0000000956 00000 n
+
+trailer
+  << /Size 10
+     /Root 1 0 R
+     /Info 9 0 R
+  >>
+startxref
+999
+%%EOF

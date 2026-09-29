@@ -45,3 +45,7 @@ while read -r f reason; do
     mv "$tmp" "$out"
     echo "$out"
 done
+
+# A new file, as SS.Init makes it (TestNewFileVsCppSave).
+"$TMP/harness" - "$REPO_ROOT/testdata/cppsave/newfile.cppsave" >/dev/null 2>&1
+echo cppsave/newfile.cppsave

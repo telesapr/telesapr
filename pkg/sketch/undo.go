@@ -15,8 +15,7 @@ import (
 const MaxUndo = 100
 
 // UndoState is one snapshot of the sketch: what can't be regenerated
-// (C++ UndoState). The active group, which C++ also records, is derived
-// from the group order here.
+// (C++ UndoState).
 type UndoState struct {
 	Groups      []Group
 	GroupOrder  []core.HGroup
@@ -24,6 +23,7 @@ type UndoState struct {
 	Constraints []core.Constraint
 	Params      []core.Param
 	Styles      []core.Style
+	Active      core.HGroup
 }
 
 // UndoStack is a ring of up to MaxUndo states (C++ UndoStack).
@@ -119,6 +119,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 	ut.Constraints = append([]core.Constraint(nil), s.Constraints...)
 	ut.Params = append([]core.Param(nil), s.Params...)
 	ut.Styles = append([]core.Style(nil), s.Styles...)
+	ut.Active = s.Active
 
 	uk.Write = wrapUndo(uk.Write + 1)
 }
@@ -147,6 +148,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	s.Constraints = ut.Constraints
 	s.Params = ut.Params
 	s.Styles = ut.Styles
+	s.Active = ut.Active
 
 	// It has been moved, so no need to free it.
 	*ut = UndoState{}

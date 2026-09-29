@@ -155,6 +155,11 @@ func (c *SContour) CopyInto(dest *SContour) {
 // outside corners are rounded, inside ones mitred (C++
 // SContour::OffsetInto).
 func (c *SContour) OffsetInto(dest *SContour, r float64) {
+	// C++ computes (1*PI)/180 and (6*PI)/180 in doubles, rounding twice;
+	// Go's constant arithmetic would round once.
+	pi := math.Pi
+	oneDegree := (1 * pi) / 180
+	sixDegrees := (6 * pi) / 180
 	n := len(c.Points)
 	wrap := func(v int) int { return wrapIdx(v, n-1) }
 	for i := 0; i < n; i++ {
@@ -181,7 +186,7 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 			thetan += 2 * math.Pi
 		}
 
-		if math.Abs(thetan-thetap) < (1*math.Pi)/180 {
+		if math.Abs(thetan-thetap) < oneDegree {
 			dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetap), Y: b.Y + r*libm.Cos(thetap)})
 		} else if thetan < thetap {
 			// This is an inside corner. We have two edges, Ep and En. Move
@@ -206,11 +211,11 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 
 			dest.AddPoint(geom.Vector{X: x, Y: y})
 		} else {
-			if math.Abs(thetap-thetan) < (6*math.Pi)/180 {
+			if math.Abs(thetap-thetan) < sixDegrees {
 				dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetap), Y: b.Y + r*libm.Cos(thetap)})
 				dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetan), Y: b.Y + r*libm.Cos(thetan)})
 			} else {
-				for theta := thetap; theta <= thetan; theta += (6 * math.Pi) / 180 {
+				for theta := thetap; theta <= thetan; theta += sixDegrees {
 					dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(theta), Y: b.Y + r*libm.Cos(theta)})
 				}
 			}

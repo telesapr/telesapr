@@ -1,0 +1,386 @@
+package ui
+
+// The file handling half of solvespace.cpp and file.cpp: loading,
+// saving, autosave, the recent files and the File menu.
+
+import (
+	"math"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
+)
+
+// backupExt is the autosave file extension (C++ BACKUP_EXT).
+const backupExt = "slvs~"
+
+// withExtension replaces the extension of path's file name with ext
+// (C++ Path::WithExtension).
+func withExtension(path, ext string) string {
+	dir, base := filepath.Split(path)
+	if dot := strings.LastIndexByte(base, '.'); dot >= 0 {
+		base = base[:dot]
+	}
+	return dir + base + "." + ext
+}
+
+// hasExtension reports whether path's extension is ext, ignoring case
+// (C++ Path::HasExtension).
+func hasExtension(path, ext string) bool {
+	return strings.EqualFold(strings.TrimPrefix(filepath.Ext(path), "."), ext)
+}
+
+// LoadAutosaveFor offers to load filename's autosave file instead, and
+// loads it when the user agrees (C++ SolveSpaceUI::LoadAutosaveFor).
+func (ss *SolveSpaceUI) LoadAutosaveFor(filename string) bool {
+	autosaveFile := withExtension(filename, backupExt)
+	if _, err := os.Stat(autosaveFile); err != nil {
+		return false
+	}
+
+	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
+	dialog.SetType(platform.DialogQuestion)
+	dialog.SetTitle("Autosave Available")
+	dialog.SetMessage("An autosave file is available for this sketch.")
+	dialog.SetDescription("Do you want to load the autosave file instead?")
+	dialog.AddButton("&Load autosave", platform.ResponseYes, true)
+	dialog.AddButton("Do&n't Load", platform.ResponseNo, false)
+
+	if dialog.RunModal() == platform.ResponseYes {
+		if !ss.LoadFromFile(autosaveFile) {
+			return false
+		}
+		ss.SK.Unsaved = true
+		return true
+	}
+	return false
+}
+
+// Load opens filename, or its autosave, as the sketch being edited (C++
+// SolveSpaceUI::Load).
+func (ss *SolveSpaceUI) Load(filename string) bool {
+	autosaveLoaded := ss.LoadAutosaveFor(filename)
+	fileLoaded := autosaveLoaded || ss.LoadFromFile(filename)
+	if fileLoaded {
+		ss.SaveFile = filename
+		ss.AddToRecentList(filename)
+	} else {
+		ss.SaveFile = ""
+		ss.NewFile()
+	}
+	ss.AfterNewFile()
+	ss.SK.Unsaved = autosaveLoaded
+	return fileLoaded
+}
+
+// LoadFromFile reads filename into a new sketch (C++
+// SolveSpaceUI::LoadFromFile). A linked file that is missing counts as
+// declined rather than prompting for its new place.
+func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
+	ss.AllConsistent = false
+
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		ss.Error("Couldn't read from file '%s'", filename)
+		return false
+	}
+	if strings.TrimSpace(strings.ReplaceAll(string(data), "\r", "")) == "" {
+		ss.Error("The file is empty. It may be corrupt.")
+		ss.NewFile()
+		return true
+	}
+
+	doc, err := slvs.LoadFile(filename)
+	if err != nil {
+		ss.Error("Unrecognized data in file. This file may be corrupt, or " +
+			"from a newer version of the program.")
+		return false
+	}
+	ss.setSketch(doc.Sketch)
+	return true
+}
+
+// SaveToFile writes the sketch to filename (C++ SolveSpaceUI::SaveToFile).
+func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
+	// Make sure all the entities are regenerated up to date, since they
+	// will be exported.
+	ss.ScheduleShowTW()
+	ss.GenerateAll(sketch.GenerateAll)
+
+	if link, err := slvs.RebaseLinks(ss.SK, ss.SaveFile, filename); err != nil {
+		ss.Error("This sketch links the sketch '%s'; it can only be saved "+
+			"on the same volume.", link)
+		return false
+	}
+
+	data := slvs.NewDocument(ss.SK).Save()
+	if err := os.WriteFile(filename, data, 0o644); err != nil {
+		// Put the links back relative to where the sketch still is.
+		_, _ = slvs.RebaseLinks(ss.SK, filename, ss.SaveFile)
+		ss.Error("Couldn't write to file '%s'", filename)
+		return false
+	}
+	return true
+}
+
+// AddToRecentList puts filename first in the recent files (C++
+// SolveSpaceUI::AddToRecentList).
+func (ss *SolveSpaceUI) AddToRecentList(filename string) {
+	for i, p := range ss.RecentFiles {
+		if p == filename {
+			ss.RecentFiles = append(ss.RecentFiles[:i], ss.RecentFiles[i+1:]...)
+			break
+		}
+	}
+	if len(ss.RecentFiles) > MaxRecent {
+		ss.RecentFiles = append(ss.RecentFiles[:MaxRecent], ss.RecentFiles[MaxRecent+1:]...)
+	}
+	ss.RecentFiles = append([]string{filename}, ss.RecentFiles...)
+	ss.GW.PopulateRecentFiles()
+}
+
+// GetFilenameAndSave saves the sketch, asking for a file name for a new
+// sketch or for Save As (C++ SolveSpaceUI::GetFilenameAndSave).
+func (ss *SolveSpaceUI) GetFilenameAndSave(saveAs bool) bool {
+	newSaveFile := ss.SaveFile
+
+	if saveAs || newSaveFile == "" {
+		dialog := ss.Platform.CreateSaveFileDialog(ss.GW.window)
+		dialog.AddFilter(platform.FileFilter{Name: "SolveSpace models", Extensions: []string{"slvs"}})
+		dialog.ThawChoices(ss.Settings, "Sketch")
+		if newSaveFile != "" {
+			dialog.SetFilename(newSaveFile)
+		}
+		if !dialog.RunModal() {
+			return false
+		}
+		dialog.FreezeChoices(ss.Settings, "Sketch")
+		newSaveFile = dialog.GetFilename()
+	}
+
+	if !ss.SaveToFile(newSaveFile) {
+		return false
+	}
+	ss.AddToRecentList(newSaveFile)
+	ss.RemoveAutosave()
+	ss.SaveFile = newSaveFile
+	ss.SK.Unsaved = false
+	return true
+}
+
+// Autosave saves a backup of an unsaved sketch next to its file (C++
+// SolveSpaceUI::Autosave).
+func (ss *SolveSpaceUI) Autosave() {
+	ss.ScheduleAutosave()
+
+	if ss.SaveFile != "" && ss.SK.Unsaved {
+		ss.SaveToFile(withExtension(ss.SaveFile, backupExt))
+	}
+}
+
+// RemoveAutosave deletes the sketch's autosave file (C++
+// SolveSpaceUI::RemoveAutosave).
+func (ss *SolveSpaceUI) RemoveAutosave() {
+	if ss.SaveFile == "" {
+		return
+	}
+	_ = os.Remove(withExtension(ss.SaveFile, backupExt))
+}
+
+// OkayToStartNewFile asks whether to save unsaved changes, and reports
+// whether the sketch may be replaced (C++
+// SolveSpaceUI::OkayToStartNewFile).
+func (ss *SolveSpaceUI) OkayToStartNewFile() bool {
+	if !ss.SK.Unsaved {
+		return true
+	}
+
+	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
+	dialog.SetType(platform.DialogQuestion)
+	dialog.SetTitle("Modified File")
+	if ss.SaveFile != "" {
+		dialog.SetMessage("Do you want to save the changes you made to the sketch “" +
+			ss.SaveFile + "”?")
+	} else {
+		dialog.SetMessage("Do you want to save the changes you made to the new sketch?")
+	}
+	dialog.SetDescription("Your changes will be lost if you don't save them.")
+	dialog.AddButton("&Save", platform.ResponseYes, true)
+	dialog.AddButton("Do&n't Save", platform.ResponseNo, false)
+	dialog.AddButton("&Cancel", platform.ResponseCancel, false)
+
+	switch dialog.RunModal() {
+	case platform.ResponseYes:
+		return ss.GetFilenameAndSave(false)
+	case platform.ResponseNo:
+		ss.RemoveAutosave()
+		return true
+	default:
+		return false
+	}
+}
+
+// chooseLinkedImage asks for a picture for a new image request and
+// loads it (C++ SolveSpaceUI::ReloadLinkedImage with an empty name).
+func (ss *SolveSpaceUI) chooseLinkedImage() (string, bool) {
+	dialog := ss.Platform.CreateOpenFileDialog(ss.GW.window)
+	dialog.AddFilters(platform.RasterFileFilters)
+	dialog.ThawChoices(ss.Settings, "LinkImage")
+	if !dialog.RunModal() {
+		return "", false
+	}
+	dialog.FreezeChoices(ss.Settings, "LinkImage")
+	filename := dialog.GetFilename()
+	if !slvs.LoadLinkedImage(ss.SK, ss.SaveFile, filename) {
+		ss.Error("The image '%s' is corrupted.", filename)
+	}
+	return filename, true
+}
+
+// Exit saves the settings and quits (C++ SolveSpaceUI::Exit).
+func (ss *SolveSpaceUI) Exit() {
+	ss.SaveSettings()
+	ss.Platform.Exit()
+}
+
+// MenuFile runs a File menu command (C++ SolveSpaceUI::MenuFile).
+func (ss *SolveSpaceUI) MenuFile(id Command) {
+	settings := ss.Settings
+
+	switch id {
+	case CmdNew:
+		if !ss.OkayToStartNewFile() {
+			break
+		}
+		ss.SaveFile = ""
+		ss.NewFile()
+		ss.AfterNewFile()
+
+	case CmdOpen:
+		if !ss.OkayToStartNewFile() {
+			break
+		}
+		dialog := ss.Platform.CreateOpenFileDialog(ss.GW.window)
+		dialog.AddFilters(platform.SolveSpaceModelFileFilters)
+		dialog.ThawChoices(settings, "Sketch")
+		if dialog.RunModal() {
+			dialog.FreezeChoices(settings, "Sketch")
+			ss.Load(dialog.GetFilename())
+		}
+
+	case CmdSave:
+		ss.GetFilenameAndSave(false)
+
+	case CmdSaveAs:
+		ss.GetFilenameAndSave(true)
+
+	case CmdExportImage, CmdExportView, CmdExportWireframe, CmdExportSection,
+		CmdExportMesh, CmdExportSurfaces, CmdImport:
+		ss.menuExport(id)
+
+	case CmdExit:
+		if !ss.OkayToStartNewFile() {
+			break
+		}
+		ss.Exit()
+
+	default:
+		panic("ui: unexpected menu ID")
+	}
+
+	ss.UpdateWindowTitles()
+}
+
+// menuExport runs the File menu's export and import commands (those
+// cases of C++ SolveSpaceUI::MenuFile).
+func (ss *SolveSpaceUI) menuExport(id Command) {
+	settings := ss.Settings
+	gw := ss.GW
+
+	// saveDialog asks where to save, remembering the folder and type
+	// under key.
+	saveDialog := func(filters []platform.FileFilter, key string) (string, bool) {
+		dialog := ss.Platform.CreateSaveFileDialog(gw.window)
+		dialog.AddFilters(filters)
+		dialog.ThawChoices(settings, key)
+		dialog.SuggestFilename(ss.SaveFile)
+		if !dialog.RunModal() {
+			return "", false
+		}
+		dialog.FreezeChoices(settings, key)
+		return dialog.GetFilename(), true
+	}
+
+	switch id {
+	case CmdExportImage:
+		if filename, ok := saveDialog(platform.RasterFileFilters, "ExportImage"); ok {
+			ss.ExportAsPngTo(filename)
+		}
+
+	case CmdExportView:
+		filename, ok := saveDialog(platform.VectorFileFilters, "ExportView")
+		if !ok {
+			break
+		}
+
+		// If the user is exporting something where it would be
+		// inappropriate to include the constraints, then warn.
+		if gw.showConstraints != SCMNoShow &&
+			(hasExtension(filename, "txt") || math.Abs(ss.ExportOffset) > core.LengthEps) {
+			ss.Message("Constraints are currently shown, and will be exported " +
+				"in the toolpath. This is probably not what you want; " +
+				"hide them by clicking the link at the top of the " +
+				"text window.")
+		}
+
+		ss.ExportViewOrWireframeTo(filename, false)
+
+	case CmdExportWireframe:
+		if filename, ok := saveDialog(platform.Vector3dFileFilters, "ExportWireframe"); ok {
+			ss.ExportViewOrWireframeTo(filename, true)
+		}
+
+	case CmdExportSection:
+		if filename, ok := saveDialog(platform.VectorFileFilters, "ExportSection"); ok {
+			ss.ExportSectionTo(filename)
+		}
+
+	case CmdExportMesh:
+		if filename, ok := saveDialog(platform.MeshFileFilters, "ExportMesh"); ok {
+			ss.ExportMeshTo(filename)
+		}
+
+	case CmdExportSurfaces:
+		if filename, ok := saveDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
+			ss.ExportSurfacesTo(filename)
+		}
+
+	case CmdImport:
+		dialog := ss.Platform.CreateOpenFileDialog(gw.window)
+		dialog.AddFilters(platform.ImportFileFilters)
+		dialog.ThawChoices(settings, "Import")
+		if !dialog.RunModal() {
+			break
+		}
+		dialog.FreezeChoices(settings, "Import")
+
+		importFile := dialog.GetFilename()
+		switch {
+		case hasExtension(importFile, "dxf"):
+			ss.ImportDxf(importFile)
+		case hasExtension(importFile, "dwg"):
+			ss.ImportDwg(importFile)
+		default:
+			ss.Error("Can't identify file type from file extension of "+
+				"filename '%s'; try .dxf or .dwg.", importFile)
+			return
+		}
+
+		ss.GenerateAll(sketch.GenerateUntilActive)
+		ss.ScheduleShowTW()
+	}
+}

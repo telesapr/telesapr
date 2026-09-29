@@ -777,7 +777,7 @@ func writeRequest(b *strings.Builder, r *sketch.Request) {
 	writeHandle(b, "Request.h.v", r.H.V)
 	writeInt(b, "Request.type", int(r.Type))
 	writeInt(b, "Request.extraPoints", r.ExtraPoints)
-	if r.Workplane != core.FreeIn3D {
+	if !core.IsFreeIn3D(r.Workplane) {
 		writeHandle(b, "Request.workplane.v", r.Workplane.V)
 	}
 	writeHandle(b, "Request.group.v", r.Group.V)
@@ -945,4 +945,10 @@ func writeRemap(b *strings.Builder, desc string, m core.EntityMap) {
 		}
 	}
 	b.WriteString("}\n")
+}
+
+// NewDocument wraps a sketch made in memory, such as by
+// Sketch.NewFile, so it can be saved.
+func NewDocument(sk *sketch.Sketch) *Document {
+	return &Document{Sketch: sk, groupRemap: make(map[core.HGroup][]RemapEntry)}
 }

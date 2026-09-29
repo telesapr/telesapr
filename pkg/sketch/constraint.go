@@ -71,13 +71,15 @@ func (sk *Sketch) TryConstrain(typ core.ConstraintType, ptA, ptB, entityA, entit
 	if (howBefore == core.SolveOkay && howAfter == core.SolveRedundantOkay) ||
 		(howBefore == core.SolveRedundantOkay && howAfter == core.SolveRedundantOkay &&
 			rankBefore == rankAfter) {
-		sk.removeConstraint(hc)
+		sk.RemoveConstraint(hc)
 		hc = core.HConstraint{}
 	}
 	return hc
 }
 
-func (sk *Sketch) removeConstraint(hc core.HConstraint) {
+// RemoveConstraint deletes constraint hc (C++
+// SK.constraint.RemoveById).
+func (sk *Sketch) RemoveConstraint(hc core.HConstraint) {
 	for i := range sk.Constraints {
 		if sk.Constraints[i].H == hc {
 			sk.Constraints = append(sk.Constraints[:i], sk.Constraints[i+1:]...)

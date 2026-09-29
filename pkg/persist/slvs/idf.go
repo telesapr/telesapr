@@ -307,7 +307,7 @@ func makeBeziersForArcs(sbl *srf.SBezierList, center, pa, pb geom.Vector,
 	var n int
 	if dtheta > (3*math.Pi/2 + 0.01) {
 		n = 4
-	} else if dtheta > (math.Pi + 0.01) {
+	} else if dtheta > (geom.Pi + 0.01) {
 		n = 3
 	} else if dtheta > (math.Pi/2 + 0.01) {
 		n = 2

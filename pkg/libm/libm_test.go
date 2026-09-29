@@ -36,10 +36,14 @@ func TestLibmVsGlibc(t *testing.T) {
 		f := strings.Fields(line)
 		var got, want float64
 		var args []float64
-		if f[0] == "atan2" {
+		switch f[0] {
+		case "atan2":
 			args = []float64{f64(f[1]), f64(f[2])}
 			got, want = Atan2(args[0], args[1]), f64(f[3])
-		} else {
+		case "hypot":
+			args = []float64{f64(f[1]), f64(f[2])}
+			got, want = Hypot(args[0], args[1]), f64(f[3])
+		default:
 			args = []float64{f64(f[1])}
 			got, want = fns[f[0]](args[0]), f64(f[2])
 		}

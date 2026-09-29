@@ -259,3 +259,81 @@ func reloadLinkedImage(sk *sketch.Sketch, saveFile, file string) {
 	}
 	sk.Images[file] = img
 }
+
+// ReloadAllLinked reloads the linked files and images of sk, relative
+// to saveFile, the file the sketch is saved in or "" (C++
+// SolveSpaceUI::ReloadAllLinked).
+func ReloadAllLinked(sk *sketch.Sketch, saveFile string) {
+	(&Document{Sketch: sk}).reloadAllLinked(saveFile)
+}
+
+// LoadLinkedImage loads image file, named relative to saveFile, into
+// the sketch's images unless it is there already, and reports whether
+// the sketch now has its pixels.
+func LoadLinkedImage(sk *sketch.Sketch, saveFile, file string) bool {
+	reloadLinkedImage(sk, saveFile, file)
+	return sk.Images[file] != nil
+}
+
+// RebaseLinks rewrites the linked files and images of sk, named relative
+// to the file the sketch was in (from, or "" for a new sketch), relative
+// to the file it is saved in next (to), as C++ writes its 'P' fields
+// relative to the file being saved. It fails when a link can't be made
+// relative, such as across Windows volumes, and then changes nothing.
+func RebaseLinks(sk *sketch.Sketch, from, to string) (badLink string, err error) {
+	rebase := func(link string) (string, error) {
+		if link == "" {
+			return "", nil
+		}
+		abs, err := filepath.Abs(linkPath(from, link))
+		if err != nil {
+			return "", err
+		}
+		dir, err := filepath.Abs(filepath.Dir(to))
+		if err != nil {
+			return "", err
+		}
+		rel, err := filepath.Rel(dir, abs)
+		if err != nil {
+			return "", err
+		}
+		return filepath.ToSlash(rel), nil
+	}
+
+	groups := make([]string, len(sk.Groups))
+	for i := range sk.Groups {
+		rel, err := rebase(sk.Groups[i].LinkFile)
+		if err != nil {
+			return sk.Groups[i].LinkFile, err
+		}
+		groups[i] = rel
+	}
+	requests := make([]string, len(sk.Requests))
+	for i := range sk.Requests {
+		rel, err := rebase(sk.Requests[i].File)
+		if err != nil {
+			return sk.Requests[i].File, err
+		}
+		requests[i] = rel
+	}
+
+	for i := range sk.Groups {
+		sk.Groups[i].LinkFile = groups[i]
+	}
+	for i := range sk.Requests {
+		old := sk.Requests[i].File
+		if old == requests[i] {
+			continue
+		}
+		sk.Requests[i].File = requests[i]
+		if img, ok := sk.Images[old]; ok {
+			sk.Images[requests[i]] = img
+		}
+		for j := range sk.Entities {
+			if sk.Entities[j].File == old {
+				sk.Entities[j].File = requests[i]
+			}
+		}
+	}
+	return "", nil
+}

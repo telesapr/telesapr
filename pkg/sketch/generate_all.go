@@ -22,6 +22,7 @@ func (sk *Sketch) GenerateAll() {
 
 // generateAll ports C++ SolveSpaceUI::GenerateAll (generate.cpp).
 func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
+	defer func() { sk.Generation++ }()
 	sk.GroupOrder = sk.GroupOrder[:0]
 	for i := range sk.Groups {
 		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
@@ -75,7 +76,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
-		srf.SetChordTolMm(maxSize * chordTolPct / 100.0)
+		srf.SetChordTolMm(maxSize * sk.chordTolPct() / 100.0)
 	}
 
 	// Remove any requests or constraints that refer to a nonexistent
@@ -294,7 +295,7 @@ func (sk *Sketch) entityExists(he core.HEntity) bool {
 
 // groupsInOrder reports whether before comes before after (C++
 // GroupsInOrder).
-func (sk *Sketch) groupsInOrder(before, after core.HGroup) bool {
+func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool {
 	if before.V == 0 || after.V == 0 {
 		return true
 	}
@@ -336,7 +337,7 @@ func (sk *Sketch) PruneOrphans() bool {
 // SolveSpaceUI::PruneGroups).
 func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 	g := sk.GetGroup(hg)
-	if sk.groupsInOrder(g.OpA, hg) &&
+	if sk.GroupsInOrder(g.OpA, hg) &&
 		sk.entityExists(g.Predef.Origin) &&
 		sk.entityExists(g.Predef.EntityB) &&
 		sk.entityExists(g.Predef.EntityC) {
@@ -588,6 +589,16 @@ func catchPanic(fn func()) (err error) {
 	return nil
 }
 
+// chordTolPct is the chord tolerance as a percentage of the model's
+// size: Sketch.ChordTolPct, or the default C++ "ChordTolerancePct"
+// setting.
+func (sk *Sketch) chordTolPct() float64 {
+	if sk.ChordTolPct > 0 {
+		return sk.ChordTolPct
+	}
+	return chordTolPct
+}
+
 // chordTolPct mirrors the default C++ "ChordTolerancePct" setting
 // (solvespace.cpp:50).
 const chordTolPct = 0.1
@@ -648,11 +659,21 @@ func (sk *Sketch) GenerateAllTyped(t GenerateType) {
 	sk.generateAll(t, false, false)
 }
 
+// GenerateAllFindFree regenerates like GenerateAllTyped and also works
+// out which parameters are free, for Analyze > Show Degrees of Freedom
+// (C++ GenerateAll with andFindFree).
+func (sk *Sketch) GenerateAllFindFree(t GenerateType) {
+	sk.generateAll(t, true, false)
+}
+
 // ScheduleGenerateAll asks for a regeneration of the dirty groups when
 // Refresh next runs (C++ SolveSpaceUI::ScheduleGenerateAll, which
 // Refresh serves after the pending events).
 func (sk *Sketch) ScheduleGenerateAll() {
 	sk.scheduledGenerateAll = true
+	if sk.OnScheduleGenerateAll != nil {
+		sk.OnScheduleGenerateAll()
+	}
 }
 
 // Refresh does the scheduled regeneration (C++

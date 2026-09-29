@@ -789,3 +789,26 @@ func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forRefere
 	}
 	panic(fmt.Sprintf("Unexpected constraint type %d", c.Type))
 }
+
+// IsProjectible reports whether the constraint applies in a workplane,
+// projected into it (C++ ConstraintBase::IsProjectible).
+func (c *Constraint) IsProjectible() bool {
+	switch c.Type {
+	case ConstraintPointsCoincident, ConstraintPtPtDistance, ConstraintPtLineDistance,
+		ConstraintPtOnLine, ConstraintEqualLengthLines, ConstraintEqLenPtLineD,
+		ConstraintEqPtLnDistances, ConstraintEqualAngle, ConstraintLengthRatio,
+		ConstraintArcArcLenRatio, ConstraintArcLineLenRatio, ConstraintLengthDifference,
+		ConstraintArcArcDifference, ConstraintArcLineDifference, ConstraintSymmetric,
+		ConstraintSymmetricHoriz, ConstraintSymmetricVert, ConstraintSymmetricLine,
+		ConstraintAtMidpoint, ConstraintHorizontal, ConstraintVertical, ConstraintAngle,
+		ConstraintParallel, ConstraintPerpendicular, ConstraintWhereDragged, ConstraintComment:
+		return true
+
+	case ConstraintPtPlaneDistance, ConstraintPtFaceDistance, ConstraintProjPtDistance,
+		ConstraintPtInPlane, ConstraintPtOnFace, ConstraintEqualLineArcLen, ConstraintDiameter,
+		ConstraintPtOnCircle, ConstraintSameOrientation, ConstraintCubicLineTangent,
+		ConstraintCurveCurveTangent, ConstraintArcLineTangent, ConstraintEqualRadius:
+		return false
+	}
+	panic("core: impossible constraint type")
+}

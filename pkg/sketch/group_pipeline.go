@@ -91,6 +91,7 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 // Group::GenerateShellAndMesh). A group forced to a mesh combines
 // meshes instead (see combineMeshes).
 func (g *Group) GenerateShellAndMesh(sk *Sketch) {
+	defer func() { g.DisplayDirty = true }()
 	prevBooleanFailed := g.BooleanFailed
 	_ = prevBooleanFailed
 	g.BooleanFailed = false
@@ -566,9 +567,15 @@ func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
 // GenerateDisplayItems builds the mesh and outlines to display: the
 // previous group's, if this group adds no solid, else the running
 // shell triangulated, with the running mesh (C++
-// Group::GenerateDisplayItems). The outlines are the raw sharp edges;
-// C++ also joins them into polylines, which is display work.
+// Group::GenerateDisplayItems).
 func (g *Group) GenerateDisplayItems(sk *Sketch) {
+	// This is potentially slow (since we've got to triangulate a shell,
+	// or to find the emphasized edges for a mesh), so we will run it
+	// only if its inputs have changed.
+	if !g.DisplayDirty {
+		return
+	}
+	defer func() { g.DisplayDirty = false }()
 	pg := g.RunningMeshGroup(sk)
 	if pg != nil && len(g.ThisMesh.Triangles) == 0 && len(g.ThisShell.Surface) == 0 {
 		// We don't contribute any new solid model in this group, so our
@@ -579,9 +586,11 @@ func (g *Group) GenerateDisplayItems(sk *Sketch) {
 		g.DisplayMesh.MakeFromCopyOf(&pg.DisplayMesh)
 
 		g.DisplayOutlines.Clear()
-		g.DisplayOutlines.Outlines = append(g.DisplayOutlines.Outlines, pg.DisplayOutlines.Outlines...)
+		if show := sk.visibility(); show.Edges || show.Outlines {
+			g.DisplayOutlines.Outlines = append(g.DisplayOutlines.Outlines, pg.DisplayOutlines.Outlines...)
+		}
 	} else {
-		g.generateOwnDisplayItems()
+		g.generateOwnDisplayItems(sk)
 	}
 
 	// If we render this mesh, we need to know whether it's transparent,
@@ -592,7 +601,7 @@ func (g *Group) GenerateDisplayItems(sk *Sketch) {
 
 // generateOwnDisplayItems triangulates the running shell and adds the
 // running mesh, for a group that contributes new solid model.
-func (g *Group) generateOwnDisplayItems() {
+func (g *Group) generateOwnDisplayItems(sk *Sketch) {
 	// We do contribute new solid model, so we have to triangulate the
 	// shell, and edge-find the mesh.
 	g.DisplayMesh.Clear()
@@ -605,12 +614,19 @@ func (g *Group) generateOwnDisplayItems() {
 	}
 
 	g.DisplayOutlines.Clear()
+	if show := sk.visibility(); !show.Edges && !show.Outlines {
+		return
+	}
+	var rawOutlines srf.SOutlineList
 	if len(g.RunningMesh.Triangles) > 0 {
 		// Triangle mesh only; no shell or emphasized edges.
-		g.RunningMesh.MakeOutlinesInto(&g.DisplayOutlines, srf.EdgeEmphasized)
+		g.RunningMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeEmphasized)
 	} else {
-		g.DisplayMesh.MakeOutlinesInto(&g.DisplayOutlines, srf.EdgeSharp)
+		g.DisplayMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeSharp)
 	}
+	var builder srf.PolylineBuilder
+	builder.MakeFromOutlines(&rawOutlines)
+	builder.GenerateOutlines(&g.DisplayOutlines)
 }
 
 // IsForcedToMesh reports whether the group is built as a triangle mesh
@@ -667,16 +683,22 @@ func (g *Group) SetRemapEntry(input core.HEntity, copyNumber int, id core.Entity
 	g.Remap[core.EntityKey{Input: input, CopyNumber: copyNumber}] = id
 }
 
-// ExtrusionForceVectorTo forcibly sets the extrusion vector.
-func (g *Group) ExtrusionForceVectorTo(v geom.Vector) {
-	g.ValA = v.X
-	g.ValB = v.Y
-	g.ValC = v.Z
+// ExtrusionForceVectorTo sets the extrusion vector's parameters (C++
+// Group::ExtrusionForceVectorTo).
+func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector) {
+	sk.MustGetParam(g.H.Param(0)).Val = v.X
+	sk.MustGetParam(g.H.Param(1)).Val = v.Y
+	sk.MustGetParam(g.H.Param(2)).Val = v.Z
 }
 
-// ExtrusionGetVector returns the extrusion vector for this group.
-func (g *Group) ExtrusionGetVector() geom.Vector {
-	return g.ExtrusionVector(nil)
+// ExtrusionGetVector returns the extrusion vector, from its parameters
+// (C++ Group::ExtrusionGetVector).
+func (g *Group) ExtrusionGetVector(sk *Sketch) geom.Vector {
+	return geom.Vector{
+		X: sk.MustGetParam(g.H.Param(0)).Val,
+		Y: sk.MustGetParam(g.H.Param(1)).Val,
+		Z: sk.MustGetParam(g.H.Param(2)).Val,
+	}
 }
 
 // TransformImportedBy moves a linked group by t and rotates it by q,

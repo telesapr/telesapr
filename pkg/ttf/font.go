@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
@@ -18,6 +19,10 @@ import (
 var builtinFont []byte
 
 const builtinFontResource = "res://fonts/BitstreamVeraSans-Roman-builtin.ttf"
+
+// EmbeddedFont names the builtin font, as text requests store it (C++
+// Platform::embeddedFont).
+const EmbeddedFont = builtinFontResource
 
 // FontFiles are the font files the font list reads (C++
 // Platform::GetFontFiles, which the headless build takes from its
@@ -229,7 +234,7 @@ func (tf *Font) PlotString(str string, sbl *srf.SBezierList, kerning bool,
 
 	var dx int64
 	var prevGid uint32
-	for _, cid := range readUTF8(str) {
+	for _, cid := range core.ReadUTF8(str) {
 		gid := face.CharIndex(cid)
 		if gid == 0 {
 			// Using the CID as the GID.
@@ -307,7 +312,7 @@ func (tf *Font) AspectRatio(str string, kerning bool) float64 {
 
 	var dx float64
 	var prevGid uint32
-	for _, chr := range readUTF8(str) {
+	for _, chr := range core.ReadUTF8(str) {
 		gid := face.CharIndex(chr)
 		g, err := face.LoadGlyph(gid)
 		if err != nil {
@@ -320,38 +325,4 @@ func (tf *Font) AspectRatio(str string, kerning bool) float64 {
 		prevGid = gid
 	}
 	return dx
-}
-
-// readUTF8 decodes str as C++'s utf8_iterator does, which doesn't check
-// the encoding; the byte after the string reads as 0, like a C
-// string's terminator.
-func readUTF8(str string) []uint32 {
-	at := func(i int) uint32 {
-		if i < len(str) {
-			return uint32(str[i])
-		}
-		return 0
-	}
-	var out []uint32
-	for p := 0; p < len(str); {
-		it := p
-		result := at(it)
-		if result&0x80 != 0 {
-			mask := uint32(0x40)
-			for {
-				result <<= 6
-				it++
-				c := at(it)
-				mask <<= 5
-				result += c - 0x80
-				if result&mask == 0 {
-					break
-				}
-			}
-			result &= mask - 1
-		}
-		out = append(out, result)
-		p = it + 1
-	}
-	return out
 }

@@ -1,5 +1,6 @@
 // Package libm is a port of the glibc (2.44) functions C++ SolveSpace
-// calls for its trigonometry: sin, cos, tan, asin, acos, atan and atan2.
+// calls for its trigonometry: sin, cos, tan, asin, acos, atan and atan2,
+// and hypot (which libdxfrw uses).
 // Go's math package computes them differently, and its results differ
 // from glibc's in the last bit for a fifth to a third of arguments,
 // which shows in the last digits of saved files.

@@ -1,4 +1,4 @@
-/* Prints glibc's sin, cos, tan, asin, acos, atan and atan2 for inputs
+/* Prints glibc's sin, cos, tan, asin, acos, atan, atan2 and hypot for inputs
    spread over each function's branches, plus special values, as
    "name x [y] result" with the bits in hex. See
    scripts/regen-libm-golden.sh; pkg/libm's TestLibmVsGlibc requires
@@ -76,6 +76,31 @@ int main(void) {
                 double y = (s & 1) ? -sp2[i] : sp2[i], x = (s & 2) ? -sp2[j] : sp2[j];
                 printf("atan2 %016llx %016llx %016llx\n", (unsigned long long)bits(y), (unsigned long long)bits(x),
                        (unsigned long long)bits(atan2(y, x)));
+            }
+    /* hypot: both kernel branches (the ratio of the smaller to the
+       larger above or below about 0.5), huge and tiny inputs, widely
+       different ones, then pairs of special values. */
+    for(int br = 0; br < 5; br++)
+        for(int k = 0; k < N; k++) {
+            double x = fabs(sample(1e-3, 1e3)), y;
+            switch(br) {
+                case 0: y = x * fabs(sample(0.5, 1)); break;
+                case 1: y = x * fabs(sample(1e-8, 0.5)); break;
+                case 2: x *= 0x1p+600; y = x * fabs(sample(1e-3, 1)); break;
+                case 3: x *= 0x1p-600; y = x * fabs(sample(1e-3, 1)); break;
+                default: y = x * fabs(sample(1e-20, 1e-15)); break;
+            }
+            if(next() & 1) x = -x;
+            if(next() & 1) y = -y;
+            printf("hypot %016llx %016llx %016llx\n", (unsigned long long)bits(x), (unsigned long long)bits(y),
+                   (unsigned long long)bits(hypot(x, y)));
+        }
+    for(int i = 0; i < 8; i++)
+        for(int j = 0; j < 8; j++)
+            for(int s = 0; s < 4; s++) {
+                double x = (s & 1) ? -sp2[i] : sp2[i], y = (s & 2) ? -sp2[j] : sp2[j];
+                printf("hypot %016llx %016llx %016llx\n", (unsigned long long)bits(x), (unsigned long long)bits(y),
+                       (unsigned long long)bits(hypot(x, y)));
             }
     return 0;
 }

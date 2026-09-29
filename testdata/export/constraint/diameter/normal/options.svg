@@ -1,0 +1,138 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg"  xmlns:xlink="http://www.w3.org/1999/xlink" width='100.000mm' height='100.000mm' viewBox="0 0 100.000 100.000">
+
+<title>Exported SVG</title>
+
+<style><![CDATA[
+polygon {
+shape-rendering:crispEdges;
+stroke-width:0.100000;
+}
+.s0 {
+stroke:#000000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s1 {
+stroke:#000000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s2 {
+stroke:#19b219;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s3 {
+stroke:#7f4c00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s4 {
+stroke:#00cc00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s5 {
+stroke:#000000;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s6 {
+stroke:#ff19ff;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s7 {
+stroke:#ff0000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s8 {
+stroke:#ffff00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s9 {
+stroke:#001919;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sa {
+stroke:#006666;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sb {
+stroke:#00ffff;
+stroke-width:0.300000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sc {
+stroke:#ff0000;
+stroke-width:0.800000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sd {
+stroke:#191919;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.se {
+stroke:#000000;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+stroke-dasharray:1.500,1.500;
+fill:none;
+}
+.sf {
+stroke:#000000;
+stroke-width:0.300000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+]]></style>
+<style><![CDATA[
+svg {
+background-color:#000000;
+}
+]]></style>
+<path d='M-10.000 95.000 A5.000,5.000 0 0,0 -15.000,90.000 A5.000,5.000 0 0,0 -20.000,95.000 A5.000,5.000 0 0,0 -15.000,100.000 A5.000,5.000 0 0,0 -10.000,95.000  Z' class='s1' />
+<path d='M-8.350 89.022 L-8.400,88.971 L-8.460,88.932 L-8.528,88.908 L-8.600,88.900 L-8.672,88.908 L-8.740,88.932 L-8.800,88.971 L-8.850,89.022 L-8.958,89.254 L-9.037,89.496 L-9.084,89.746 L-9.100,90.000 L-9.084,90.254 L-9.037,90.504 L-8.958,90.746 L-8.850,90.978 L-8.800,91.029 L-8.740,91.068 L-8.672,91.092 L-8.600,91.100 L-8.528,91.092 L-8.460,91.068 L-8.400,91.029 L-8.350,90.978 L-8.242,90.746 L-8.163,90.504 L-8.116,90.254 L-8.100,90.000 L-8.116,89.746 L-8.163,89.496 L-8.242,89.254 L-8.350,89.022  Z' class='s6' />
+<path d='M-6.550 89.022 L-6.600,88.971 L-6.660,88.932 L-6.728,88.908 L-6.800,88.900 L-6.872,88.908 L-6.940,88.932 L-7.000,88.971 L-7.050,89.022 L-7.158,89.254 L-7.237,89.496 L-7.284,89.746 L-7.300,90.000 L-7.284,90.254 L-7.237,90.504 L-7.158,90.746 L-7.050,90.978 L-7.000,91.029 L-6.940,91.068 L-6.872,91.092 L-6.800,91.100 L-6.728,91.092 L-6.660,91.068 L-6.600,91.029 L-6.550,90.978 L-6.442,90.746 L-6.363,90.504 L-6.316,90.254 L-6.300,90.000 L-6.316,89.746 L-6.363,89.496 L-6.442,89.254 L-6.550,89.022  Z' class='s6' />
+<path d='M-13.700 91.100 L-13.700,88.900 L-13.100,88.900 L-12.870,88.947 L-12.676,89.079 L-12.546,89.277 L-12.500,89.511 L-12.546,89.745 L-12.676,89.943 L-12.870,90.076 L-13.100,90.122 L-13.700,90.122 ' class='s6' />
+<path d='M-12.500 91.100 L-12.985,90.110 ' class='s6' />
+<path d='M-10.700 88.900 L-11.700,88.900 L-11.700,89.878 L-11.200,89.878 L-11.103,89.888 L-11.009,89.916 L-10.923,89.961 L-10.848,90.022 L-10.785,90.096 L-10.739,90.180 L-10.710,90.272 L-10.700,90.367 L-10.700,90.611 L-10.710,90.706 L-10.739,90.798 L-10.785,90.882 L-10.848,90.956 L-10.923,91.017 L-11.009,91.062 L-11.103,91.090 L-11.200,91.100 L-11.700,91.100 ' class='s6' />
+<path d='M-9.900 91.100 L-9.900,90.978 ' class='s6' />
+
+</svg>

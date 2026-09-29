@@ -35,7 +35,7 @@ func isReasonable(x float64) bool {
 // LockedInWorkplane is whether the active group sketches in a workplane
 // (C++ GraphicsWindow::LockedInWorkplane).
 func (sk *Sketch) LockedInWorkplane() bool {
-	return sk.ActiveWorkplane() != core.FreeIn3D
+	return !core.IsFreeIn3D(sk.ActiveWorkplane())
 }
 
 // parametricCurve is a line or arc by its parametric equation, for
@@ -295,7 +295,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 		if settings.Manual {
 			r = settings.Radius
 		} else {
-			r = 200 / viewScale
+			r = 200 / sk.view().Scale
 			// Set the radius so that no more than one third of the
 			// line segment disappears.
 			r = geom.Min(r, pc[0].lengthForAuto()*libm.Tan(theta/2))
@@ -681,7 +681,7 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 		if len(inters.Points) > 0 {
 			dmin := geom.VeryPositive
 			for _, sp := range inters.Points {
-				d := ProjectPoint(sp.P).DistanceTo(mouse)
+				d := sk.ProjectPoint(sp.P).DistanceTo(mouse)
 				if d < dmin {
 					dmin = d
 					pi = sp.P
@@ -752,14 +752,4 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 		}
 	}
 	return err
-}
-
-// ProjectPoint projects p to the screen in the default view, which is
-// orthographic (C++ GraphicsWindow::ProjectPoint).
-func ProjectPoint(p geom.Vector) geom.Point2d {
-	p = p.Plus(viewOffset)
-	return geom.Point2d{
-		U: p.Dot(viewProjRight) * viewScale,
-		V: p.Dot(viewProjUp) * viewScale,
-	}
 }

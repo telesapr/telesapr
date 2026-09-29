@@ -180,16 +180,10 @@ func (sk *Sketch) groupIsVisible(g *Group) bool {
 	return active == nil || g.Order <= active.Order
 }
 
-// EntityIsVisible is C++ Entity::IsVisible, with the view as
-// GraphicsWindow::Init leaves it: points, normals and construction
-// shown, workplanes not, and the last group active.
+// EntityIsVisible is C++ Entity::IsVisible, with the show flags of
+// sk.Show (GraphicsWindow::Init's when nil).
 func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
-	const (
-		showPoints       = true
-		showNormals      = true
-		showConstruction = true
-		showWorkplanes   = false
-	)
+	show := sk.visibility()
 	g := sk.GetGroup(e.Group)
 
 	if g.H.V == core.HGroupReferences && e.IsNormal() {
@@ -200,17 +194,17 @@ func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
 		return false
 	}
 
-	if e.IsPoint() && !showPoints {
+	if e.IsPoint() && !show.Points {
 		return false
 	}
-	if e.IsNormal() && !showNormals {
+	if e.IsNormal() && !show.Normals {
 		return false
 	}
-	if e.Construction && !showConstruction {
+	if e.Construction && !show.Construction {
 		return false
 	}
 
-	if !showWorkplanes {
+	if !show.Workplanes {
 		if e.IsWorkplane() && !e.H.IsFromRequest() {
 			if g.H != sk.ActiveGroup() {
 				// The group-associated workplanes are hidden outside

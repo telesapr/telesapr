@@ -124,7 +124,7 @@ func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.P
 		point.Style = r.Style
 		point.Construction = r.Construction
 
-		if r.Workplane == core.FreeIn3D {
+		if core.IsFreeIn3D(r.Workplane) {
 			point.Type = core.EntityPointIn3D
 			point.Param[0] = r.addParam(params, r.H.Param(16+3*i+0))
 			point.Param[1] = r.addParam(params, r.H.Param(16+3*i+1))
@@ -149,7 +149,7 @@ func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.P
 		normal.Style = r.Style
 		normal.Construction = r.Construction
 
-		if r.Workplane == core.FreeIn3D {
+		if core.IsFreeIn3D(r.Workplane) {
 			normal.Type = core.EntityNormalIn3D
 			normal.Param[0] = r.addParam(params, r.H.Param(32+0))
 			normal.Param[1] = r.addParam(params, r.H.Param(32+1))
@@ -295,6 +295,14 @@ func getEntityInfo(entity core.EntityType, extraPoints int) (RequestType, int, b
 		}
 	}
 	return 0, 0, false, false, false
+}
+
+// EntityPointCount is how many points an entity of that type has
+// (C++ EntReqTable::GetEntityInfo's pts); ok is false for a type no
+// request makes.
+func EntityPointCount(entity core.EntityType, extraPoints int) (pts int, ok bool) {
+	_, pts, _, _, ok = getEntityInfo(entity, extraPoints)
+	return pts, ok
 }
 
 type RequestList []Request

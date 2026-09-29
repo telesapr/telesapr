@@ -74,14 +74,42 @@ func (el *SEdgeList) AssembleContour(first, last geom.Vector, dest *SContour, er
 	}
 }
 
-// MergeCollinearSegments replaces consecutive collinear edges (a-b-c
-// where b lies on the line from a to c) with a single edge a-c.
+// MergeCollinearSegments sorts the edges, which all lie on the line
+// from a to b, along it, and merges each run of joined edges of the
+// same style into one (C++ SEdgeList::MergeCollinearSegments).
 func (el *SEdgeList) MergeCollinearSegments(a, b geom.Vector) {
-	// Phase 1: no-op. The full implementation requires per-edge
-	// endpoint comparison and works best once SShell's boolean
-	// pipeline is in place (Phase 4).
-	_ = a
-	_ = b
+	lineStart := a
+	lineDirection := b.Minus(a)
+	CxxSort(el.Edges, func(ea, eb *SEdge) bool {
+		ta := ea.A.Minus(lineStart).DivProjected(lineDirection)
+		tb := eb.A.Minus(lineStart).DivProjected(lineDirection)
+
+		return ta < tb
+	})
+
+	for i := range el.Edges {
+		el.Edges[i].Tag = 0
+	}
+	var prev *SEdge
+	for i := range el.Edges {
+		now := &el.Edges[i]
+		if prev != nil {
+			if prev.B.Equals(now.A) && prev.AuxA == now.AuxA {
+				// The previous segment joins up to us; so merge it into
+				// us.
+				prev.Tag = 1
+				now.A = prev.A
+			}
+		}
+		prev = now
+	}
+	kept := el.Edges[:0]
+	for _, e := range el.Edges {
+		if e.Tag == 0 {
+			kept = append(kept, e)
+		}
+	}
+	el.Edges = kept
 }
 
 // ApproxEqualGeometry reports whether two SEdgeLists describe the

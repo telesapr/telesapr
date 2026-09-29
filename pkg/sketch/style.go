@@ -115,16 +115,16 @@ func (sk *Sketch) LoadFactoryDefaults() {
 }
 
 // FreezeDefaultStyles saves the default styles as the user's settings,
-// with widths and text heights at the default view's scale (C++
+// with widths and text heights at the view's scale (C++
 // Style::FreezeDefaultStyles).
 func (sk *Sketch) FreezeDefaultStyles(settings core.Settings) {
 	for i := range core.StyleDefaults {
 		d := &core.StyleDefaults[i]
 		core.FreezeColor(settings, core.CnfColor(d.CnfPrefix), sk.StyleColor(d.H, false, false))
-		settings.FreezeFloat(core.CnfWidth(d.CnfPrefix), float64(float32(sk.StyleWidth(d.H, viewScale))))
+		settings.FreezeFloat(core.CnfWidth(d.CnfPrefix), float64(float32(sk.StyleWidth(d.H, sk.view().Scale))))
 		settings.FreezeString(core.CnfStippleType(d.CnfPrefix), core.StipplePatternName(sk.StylePatternType(d.H)))
 		settings.FreezeFloat(core.CnfStippleScale(d.CnfPrefix), float64(float32(sk.StyleStippleScale(d.H))))
-		settings.FreezeFloat(core.CnfTextHeight(d.CnfPrefix), float64(float32(sk.StyleTextHeight(d.H, viewScale))))
+		settings.FreezeFloat(core.CnfTextHeight(d.CnfPrefix), float64(float32(sk.StyleTextHeight(d.H, sk.view().Scale))))
 		core.FreezeBool(settings, core.CnfExportable(d.CnfPrefix), sk.StyleExportable(d.H))
 	}
 }

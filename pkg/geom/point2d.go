@@ -154,3 +154,9 @@ func (p Point2d) DistanceToLineSigned(p0, dp Point2d, asSegment bool) float64 {
 
 	return dist
 }
+
+// Pi is math.Pi as a variable. Go folds constant expressions exactly and
+// rounds once, so 30*math.Pi/180 can differ in the last bit from C++'s
+// (30*PI)/180, which rounds at each step; expressions with Pi round as
+// C++ does.
+var Pi = math.Pi

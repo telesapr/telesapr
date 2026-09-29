@@ -8,18 +8,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// The view that Group::Generate seeds new group params from. The C++
-// reads SS.GW; the engine has no view, so this is the default view
-// of GraphicsWindow::Init (graphicswin.cpp), which is also what
-// AfterNewFile leaves in place. It only matters for params without a
-// previous value.
-var (
-	viewProjRight = geom.Vector{X: 1, Y: 0, Z: 0}
-	viewProjUp    = geom.Vector{X: 0, Y: 1, Z: 0}
-	viewOffset    = geom.Vector{}
-	viewScale     = 5.0
-)
-
 // Remap keys for entity copies made by Group::Generate (C++
 // Group::REMAP_*). Small non-negative keys are step-and-repeat copy
 // numbers.
@@ -58,11 +46,14 @@ func AddParam(param *[]core.Param, hp core.HParam, v float64) {
 // Group::Generate). It appends to entity and param, which during
 // GenerateAll are sk.Entities and sk.Params themselves.
 func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
-	gn := viewProjRight.Cross(viewProjUp)
-	gp := viewProjRight.Plus(viewProjUp)
-	gc := viewOffset.ScaledBy(-1)
-	gn = gn.WithMagnitude(200 / viewScale)
-	gp = gp.WithMagnitude(200 / viewScale)
+	// C++ seeds new group params from SS.GW's view; it only matters
+	// for params without a previous value.
+	view := sk.view()
+	gn := view.ProjRight.Cross(view.ProjUp)
+	gp := view.ProjRight.Plus(view.ProjUp)
+	gc := view.Offset.ScaledBy(-1)
+	gn = gn.WithMagnitude(200 / view.Scale)
+	gp = gp.WithMagnitude(200 / view.Scale)
 	h := g.H
 
 	switch g.Type {
@@ -216,7 +207,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		AddParam(param, h.Param(1), axisPos.Y)
 		AddParam(param, h.Param(2), axisPos.Z)
 		// The rotation quaternion
-		AddParam(param, h.Param(3), 30*math.Pi/180)
+		AddParam(param, h.Param(3), 30*geom.Pi/180)
 		AddParam(param, h.Param(4), axisDir.X)
 		AddParam(param, h.Param(5), axisDir.Y)
 		AddParam(param, h.Param(6), axisDir.Z)
@@ -268,7 +259,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		AddParam(param, h.Param(1), axisPos.Y)
 		AddParam(param, h.Param(2), axisPos.Z)
 		// The rotation quaternion
-		AddParam(param, h.Param(3), 30*math.Pi/180)
+		AddParam(param, h.Param(3), 30*geom.Pi/180)
 		AddParam(param, h.Param(4), axisDir.X)
 		AddParam(param, h.Param(5), axisDir.Y)
 		AddParam(param, h.Param(6), axisDir.Z)
@@ -370,7 +361,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		AddParam(param, h.Param(1), gc.Y)
 		AddParam(param, h.Param(2), gc.Z)
 		// The rotation quaternion
-		AddParam(param, h.Param(3), 30*math.Pi/180)
+		AddParam(param, h.Param(3), 30*geom.Pi/180)
 		AddParam(param, h.Param(4), gn.X)
 		AddParam(param, h.Param(5), gn.Y)
 		AddParam(param, h.Param(6), gn.Z)

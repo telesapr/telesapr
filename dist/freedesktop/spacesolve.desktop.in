@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=SpaceSolve
+Comment=A parametric 2d/3d CAD (Go port of SolveSpace)
+Exec=@BINDIR@/spacesolve %f
+MimeType=application/x-solvespace
+Icon=spacesolve
+Type=Application
+Categories=Graphics;3DGraphics;Engineering;
+Keywords=parametric;cad;2d;3d;

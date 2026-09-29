@@ -32,6 +32,28 @@ type Sketch struct {
 	// if unset or gone, ActiveGroup picks one as C++ does on load.
 	Active core.HGroup
 
+	// View is the screen projection (C++ SS.GW's offset, projRight,
+	// projUp, scale and SS.CameraTangent()); nil is DefaultView, as in
+	// C++'s headless build.
+	View *View
+
+	// Show holds the view's show flags Entity::IsVisible reads; nil is
+	// DefaultVisibility.
+	Show *Visibility
+
+	// OnScheduleGenerateAll, if set, is told when a regeneration is
+	// scheduled, so that the caller's event loop can call Refresh (C++
+	// ScheduleGenerateAll starts SS.refreshTimer).
+	OnScheduleGenerateAll func()
+
+	// ChordTolPct is the display chord tolerance as a percentage of the
+	// model's size (C++ SS.chordTol); 0 is the default, 0.1.
+	ChordTolPct float64
+
+	// Generation counts completed GenerateAll runs, so a GUI can tell
+	// when its per-entity drawing caches are stale.
+	Generation uint64
+
 	// Unsaved is whether the sketch changed since it was saved (C++
 	// SS.unsaved).
 	Unsaved bool

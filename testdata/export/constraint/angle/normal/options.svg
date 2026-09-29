@@ -1,0 +1,137 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg"  xmlns:xlink="http://www.w3.org/1999/xlink" width='100.000mm' height='100.000mm' viewBox="0 0 100.000 100.000">
+
+<title>Exported SVG</title>
+
+<style><![CDATA[
+polygon {
+shape-rendering:crispEdges;
+stroke-width:0.100000;
+}
+.s0 {
+stroke:#000000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s1 {
+stroke:#000000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s2 {
+stroke:#19b219;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s3 {
+stroke:#7f4c00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s4 {
+stroke:#00cc00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s5 {
+stroke:#000000;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s6 {
+stroke:#ff19ff;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s7 {
+stroke:#ff0000;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s8 {
+stroke:#ffff00;
+stroke-width:0.150000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.s9 {
+stroke:#001919;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sa {
+stroke:#006666;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sb {
+stroke:#00ffff;
+stroke-width:0.300000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sc {
+stroke:#ff0000;
+stroke-width:0.800000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.sd {
+stroke:#191919;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+.se {
+stroke:#000000;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+stroke-dasharray:1.500,1.500;
+fill:none;
+}
+.sf {
+stroke:#000000;
+stroke-width:0.300000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
+]]></style>
+<style><![CDATA[
+svg {
+background-color:#000000;
+}
+]]></style>
+<path d='M-18.500 92.667 L-18.470,92.807 L-18.383,92.926 L-18.253,93.005 L-18.100,93.033 L-17.947,93.005 L-17.817,92.926 L-17.730,92.807 L-17.700,92.667 L-17.730,92.526 L-17.817,92.407 L-17.947,92.328 L-18.100,92.300 L-18.253,92.328 L-18.383,92.407 L-18.470,92.526 L-18.500,92.667  Z' class='s6' />
+<path d='M-10.000 90.000 L-20.000,100.000 L-10.000,100.000 ' class='s1' />
+<path d='M-20.100 95.500 L-19.900,95.500 L-19.500,95.500 L-19.300,95.500 L-19.100,95.500 L-18.900,95.700 L-18.700,95.700 L-18.500,95.700 L-18.300,95.900 L-17.900,95.900 L-17.700,96.100 L-17.500,96.300 L-17.300,96.300 L-17.100,96.500 L-17.100,96.700 L-16.900,96.700 L-16.700,96.900 L-16.500,97.100 L-16.300,97.300 L-16.300,97.500 L-16.100,97.700 L-15.900,97.900 L-15.900,98.100 L-15.900,98.300 L-15.700,98.500 L-15.700,98.900 L-15.700,99.100 L-15.500,99.300 L-15.500,99.500 L-15.500,99.700 L-15.500,99.900 ' class='s6' />
+<path d='M-21.820 92.300 L-22.300,94.011 L-21.100,94.011 ' class='s6' />
+<path d='M-21.460 93.522 L-21.460,94.500 ' class='s6' />
+<path d='M-19.300 92.300 L-20.300,92.300 L-20.300,93.278 L-19.800,93.278 L-19.703,93.288 L-19.609,93.316 L-19.523,93.361 L-19.448,93.422 L-19.385,93.496 L-19.339,93.580 L-19.310,93.672 L-19.300,93.767 L-19.300,94.011 L-19.310,94.106 L-19.339,94.198 L-19.385,94.282 L-19.448,94.356 L-19.523,94.417 L-19.609,94.462 L-19.703,94.490 L-19.800,94.500 L-20.300,94.500 ' class='s6' />
+
+</svg>

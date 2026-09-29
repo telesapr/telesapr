@@ -45,8 +45,10 @@ func (h HRequest) Param(i int) HParam {
 	return HParam{V: (h.V << 16) | uint32(i)}
 }
 
+// IsFromReferences reports whether the request is one of the three
+// reference workplanes (C++ hRequest::IsFromReferences).
 func (h HRequest) IsFromReferences() bool {
-	return h.V == 1
+	return h.V == 1 || h.V == 2 || h.V == 3
 }
 
 type HEntity struct {

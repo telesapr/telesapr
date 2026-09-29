@@ -54,11 +54,14 @@ func TestHRequestDerivedHandles(t *testing.T) {
 		t.Fatalf("request.Param: got %#x want %#x", param.V, wantParam)
 	}
 
-	if !(HRequest{V: 1}).IsFromReferences() {
-		t.Fatal("IsFromReferences should be true when V == 1")
+	// The three reference workplanes are requests 1, 2 and 3.
+	for v := uint32(1); v <= 3; v++ {
+		if !(HRequest{V: v}).IsFromReferences() {
+			t.Fatalf("IsFromReferences should be true for request %d", v)
+		}
 	}
-	if (HRequest{V: 2}).IsFromReferences() {
-		t.Fatal("IsFromReferences should be false when V != 1")
+	if (HRequest{V: 4}).IsFromReferences() {
+		t.Fatal("IsFromReferences should be false for request 4")
 	}
 }
 

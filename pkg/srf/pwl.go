@@ -47,6 +47,12 @@ func SetChordTolMm(t float64) {
 	chordTolMm = t
 }
 
+// SetMaxSegments sets the maximum number of pwl segments per curve
+// outside export mode (C++ SS.maxSegments).
+func SetMaxSegments(n int) {
+	maxSegments = n
+}
+
 // GetMaxSegments returns the maximum number of pwl segments per curve:
 // the export one in export mode (C++ SS.GetMaxSegments).
 func GetMaxSegments() int {
