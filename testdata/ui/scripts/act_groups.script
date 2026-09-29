@@ -1,0 +1,32 @@
+# Extrude a rectangle, then sketch in a new workplane on its top face.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+dump
+key esc
+move 290 265
+hover
+move 200 200
+hover
+down L 200 200
+up L 200 200
+dump
+key w shift
+dump
+tw
+key c
+move 290 265
+down L 290 265
+up L 290 265
+move 320 265
+down L 320 265
+up L 320 265
+key esc
+dump
+save

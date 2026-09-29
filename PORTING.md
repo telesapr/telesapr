@@ -64,11 +64,11 @@ line by line with the C++.
 | C++ file | Lines | Status | Go file(s) | Notes |
 |---|---|---|---|---|
 | `render/render.h`, `render.cpp` | 867 | OK | `pkg/render/{camera,canvas,uicanvas,picker}.go` | `Camera`, `Lighting`, the canvas interfaces, `UiCanvas`, `ObjectPicker`; `TestCameraVsCpp` |
-| `render/rendergl1.cpp` | 857 | OK | `pkg/render/soft/*.go` | The GL1 renderer's semantics on a CPU z-buffer: depth ranges per layer, zIndex offsets, stipple, fat lines, lighting. Pixels are Go-only goldens (`testdata/render/soft`). A mesh is rasterised in horizontal bands at once; each pixel still meets its triangles in draw order, so the frame is the same as on one thread (`TestPaintParallelSameAsSerial`) |
+| `render/rendergl1.cpp` | 857 | OK | `pkg/render/soft/*.go` | The GL1 renderer's semantics on a CPU z-buffer: depth ranges per layer, zIndex offsets, stipple, fat lines, lighting. Pixels are Go-only goldens (`testdata/render/soft`). Meshes, faces and batches of thin lines (edges, outlines) are rasterised in horizontal bands at once; each pixel still meets its primitives in draw order, so the frame is the same as on one thread (`TestPaintParallelSameAsSerial`, `TestDrawEdgesParallelSameAsSerial`). A line tests only the columns of each row it can cover (`TestRasterLineSameAsFullScan`). In place of GL 3's persistent batch, the graphics window keeps the pixels of the snap grid and `DrawPersistent` (`pkg/ui/layercache.go`), reused while `persistentDirty` is clear and the view, lighting and show flags are unchanged |
 | `resource.cpp` | 1587 | OK | `pkg/res/*.go` | Embedded resources, `Pixmap`, `BitmapFont`, `VectorFont`; `TestFontsVsCpp`. Translations are not ported |
 | `platform/gui.h`, `gui.cpp` | 536 | OK | `pkg/platform/*.go` | Events, accelerators, file filters, JSON settings |
 | `platform/guinone.cpp` | 145 | OK | `pkg/platform/headless` | Also records windows, menus and dialogs, and answers dialogs from scripts |
-| `platform/guigtk.cpp` | 1683 | OK | `pkg/platform/tkgui` | takigo backend; no takigo changes. Fullscreen through `_NET_WM_STATE`, tooltips drawn on the canvas, the edit overlay selects its text as GTK's entry does. Every window gets the 48x48 icon through `_NET_WM_ICON`, as GTK's `set_icon` sets it. takigo quirks worked around here: its packer resizes a toplevel to its content and ignores a size set through `wm geometry`, so a restored size is set again once layout has run, and it does not follow a toplevel's moves, so `FreezePosition` asks the server and subtracts `_NET_FRAME_EXTENTS` |
+| `platform/guigtk.cpp` | 1683 | OK | `pkg/platform/tkgui` | takigo backend; no takigo changes. Fullscreen through `_NET_WM_STATE`, tooltips drawn on the canvas, the edit overlay selects its text as GTK's entry does. Every window gets the 48x48 icon through `_NET_WM_ICON`, as GTK's `set_icon` sets it. takigo quirks worked around here: its packer resizes a toplevel to its content and ignores a size set through `wm geometry`, so a restored size is set again once layout has run, and it does not follow a toplevel's moves, so `FreezePosition` asks the server and subtracts `_NET_FRAME_EXTENTS`. A frame is sent to the X server as the rectangle that changed since the last one |
 | `platform/entrygui.cpp` | 42 | OK | `cmd/spacesolve` | `make install` puts the desktop entry (`dist/freedesktop`), the icons and the MIME type in place, as `res/CMakeLists.txt` does |
 | `graphicswin.cpp` | 1481 | OK | `pkg/ui/graphicswin.go`, `menu_table.go` | |
 | `mouse.cpp` | 1600 | OK | `pkg/ui/mouse.go` | |
@@ -140,6 +140,22 @@ DWG import, and the Windows, macOS and HTML backends.
   `TestSaveNewFileVsCpp` (a new file saved through File > Save),
   `TestCameraVsCpp`, `TestFontsVsCpp`; headless tests drive the menus,
   dialogs and text window links.
+- **Interaction.** `scripts/cpp-ui-harness.cpp` gives C++ recording
+  windows, menus, timers, dialogs and settings (linked with
+  `--allow-multiple-definition` over `guinone.cpp`'s) and replays the
+  scripts in `testdata/ui/scripts`: mouse, keyboard, menu, context
+  menu, dialog and editor input, with timers and repaints between
+  events as an event loop runs them. `pkg/ui/uiscript_test.go` replays
+  them on the headless platform and compares the output byte for byte:
+  `TestMenuTableVsCpp` (the whole menu bar and its states),
+  `TestHoverVsCpp` (what the mouse hovers at 800 points of 20 fixtures,
+  in two views) and `TestInteractionVsCpp` (drawing, dragging, box
+  selection, deleting, constraints, editing a dimension on screen,
+  tangent arcs, splitting, groups, undo and redo, copy and paste, the
+  view, the text window's links, and the saves that follow). The Language
+  menu isn't compared: translations aren't ported.
+  `TestLayerCacheSameFrames`: every frame the scripts paint is the same
+  with the persistent layer cache and without it.
 - **Booleans.** `TestParityBooleanVolumeVsCppGolden`: every boolean
   fixture's volume within the C++ testsuite's 1e-6;
   `TestParityBooleanFixtures`: watertight meshes;
@@ -175,6 +191,20 @@ last argument first; C++ links the
 vendored Eigen 3.4,
 not the system's; GCC's fused multiply-adds in glibc's FMA variants;
 and C++ solves once more on open (`AfterNewFile`) than on load.
+
+Driving the interface as a user does (`TestInteractionVsCpp`) found
+what drawing and screen comparisons couldn't: the engine never marked
+the dragged point's params for the solver (C++ `MarkDraggedParams`), so
+a rectangle's corner didn't follow the mouse; GenerateAll's interface
+part (dropping deleted items from the selection, extending the traced
+path, clearing the pending operation after a deletion) never ran;
+`DeleteTaggedRequests` cleared the selection after regenerating rather
+than before; a save regenerated twice (the interface's GenerateAll,
+then the engine's own), which moved a param by an ulp; the hover list
+was sorted stably where C++ uses `std::sort`; and entity drawing caches
+outlived a loaded sketch. The engine now has hooks for these
+(`Sketch.DraggedParams`, `OnGenerated`, `RegenerateAfterDelete`), and
+`slvs.Document.SaveRegenerated` saves without regenerating again.
 
 ## Remaining work
 

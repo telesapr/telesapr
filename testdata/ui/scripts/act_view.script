@@ -1,0 +1,26 @@
+# Zoom, orbit, pan and the view keys.
+scroll 300 300 1
+dump
+scroll 250 250 -1
+dump
+move 300 300
+down M 300 300
+move 350 320 M
+move 400 330 M
+up M 400 330
+dump
+move 300 300
+down M 300 300 shift
+move 330 280 M shift
+up M 330 280 shift
+dump
+key F2
+dump
+key F3
+dump
+key f
+dump
+key `
+dump
+key w
+dump

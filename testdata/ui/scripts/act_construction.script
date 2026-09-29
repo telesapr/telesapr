@@ -1,0 +1,20 @@
+# Toggle construction from the context menu, then with the key.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+move 300 225
+down R 300 225
+popup Toggle Construction
+up R 300 225
+dump
+move 300 225
+down L 300 225
+up L 300 225
+key g
+dump
+save

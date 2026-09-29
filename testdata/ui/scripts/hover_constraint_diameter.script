@@ -1,0 +1,6 @@
+# What the mouse hovers over constraint/diameter/normal.slvs, in two views.
+load constraint/diameter/normal.slvs
+view default
+hovergrid 20
+view rotated
+hovergrid 20

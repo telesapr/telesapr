@@ -1,6 +1,7 @@
 package tkgui
 
 import (
+	"bytes"
 	"image"
 	"time"
 
@@ -22,6 +23,11 @@ type canvas struct {
 
 	frame         *image.RGBA
 	renderPending bool
+
+	// shown is a copy of the frame last copied to the window, shownW by
+	// shownH pixels, so that present can send only what changed.
+	shown          []byte
+	shownW, shownH int
 }
 
 func newCanvas(w *Window) *canvas {
@@ -109,13 +115,82 @@ func (c *canvas) invalidate() {
 	})
 }
 
-// present shows a frame and keeps it for exposures.
+// present shows a frame and keeps it for exposures. Only the rectangle
+// that changed since the last frame is sent: a repaint for a hover or a
+// drag changes a small part of the window, and sending the whole frame
+// is most of such a repaint's cost.
 func (c *canvas) present(frame *image.RGBA) {
 	c.frame = frame
-	c.blit()
+	b := frame.Bounds()
+	if c.shown == nil || c.shownW != b.Dx() || c.shownH != b.Dy() || frame.Stride != 4*b.Dx() {
+		c.blit()
+		return
+	}
+	x0, y0, x1, y1, ok := changedRect(c.shown, frame.Pix, b.Dx(), b.Dy())
+	if !ok {
+		return
+	}
+	win := c.Win
+	if c.Destroyed || win.PlatformID == 0 {
+		return
+	}
+	// Keep the copy in step with what the window will show.
+	for y := y0; y < y1; y++ {
+		row := y * frame.Stride
+		copy(c.shown[row+4*x0:row+4*x1], frame.Pix[row+4*x0:row+4*x1])
+	}
+	x1, y1 = min(x1, win.Width), min(y1, win.Height)
+	if x1 > x0 && y1 > y0 {
+		d := c.w.p.app.Server()
+		d.PutImageRGBA(win.Drawable(), win.GC, win.Depth, frame.Pix, frame.Stride, b.Dx(), b.Dy(),
+			x0, y0, x0, y0, x1-x0, y1-y0, 0)
+		c.w.tooltip.draw(c)
+		d.Flush()
+	}
 }
 
-// blit copies the frame to the window, and the tooltip over it.
+// changedRect is the bounding box, x0 to x1 and y0 to y1 exclusive, of
+// the pixels that differ between two frames of width by height packed
+// RGBA pixels; ok is false when none do.
+func changedRect(prev, next []byte, width, height int) (x0, y0, x1, y1 int, ok bool) {
+	stride := 4 * width
+	y0, y1 = -1, -1
+	for y := 0; y < height; y++ {
+		row := y * stride
+		if !bytes.Equal(prev[row:row+stride], next[row:row+stride]) {
+			if y0 < 0 {
+				y0 = y
+			}
+			y1 = y + 1
+		}
+	}
+	if y0 < 0 {
+		return 0, 0, 0, 0, false
+	}
+	x0, x1 = width, 0
+	for y := y0; y < y1; y++ {
+		p, n := prev[y*stride:(y+1)*stride], next[y*stride:(y+1)*stride]
+		for x := 0; x < x0; x++ {
+			if !bytes.Equal(p[4*x:4*x+4], n[4*x:4*x+4]) {
+				x0 = x
+				break
+			}
+		}
+		for x := width - 1; x >= x1; x-- {
+			if !bytes.Equal(p[4*x:4*x+4], n[4*x:4*x+4]) {
+				x1 = x + 1
+				break
+			}
+		}
+	}
+	if x0 >= x1 {
+		// Rows differed only in bytes a row compare saw; send them whole.
+		x0, x1 = 0, width
+	}
+	return x0, y0, x1, y1, true
+}
+
+// blit copies the whole frame to the window, and the tooltip over it.
 func (c *canvas) blit() {
 	win := c.Win
 	if c.Destroyed || win.PlatformID == 0 {
@@ -130,6 +205,8 @@ func (c *canvas) blit() {
 			d.PutImageRGBA(win.Drawable(), win.GC, win.Depth, f.Pix, f.Stride, b.Dx(), b.Dy(),
 				0, 0, 0, 0, width, height, 0)
 		}
+		c.shown = append(c.shown[:0], f.Pix...)
+		c.shownW, c.shownH = b.Dx(), b.Dy()
 	}
 	c.w.tooltip.draw(c)
 	d.Flush()

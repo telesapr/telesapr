@@ -1,0 +1,14 @@
+# An arc of a circle from three clicks.
+key a
+move 250 300
+down L 250 300
+up L 250 300
+move 350 300
+down L 350 300
+up L 350 300
+move 300 250
+dump
+down L 300 250
+up L 300 250
+dump
+save

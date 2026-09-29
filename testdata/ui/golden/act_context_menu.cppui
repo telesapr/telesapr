@@ -1,0 +1,50 @@
+popup
+  Assign to Style ind=0 en=1 act=0
+    No Style ind=0 en=1 act=0
+    Newly Created Custom Style... ind=0 en=1 act=0
+  Group Info ind=0 en=1 act=0
+  Style Info ind=0 en=1 act=0
+  Select Edge Chain ind=0 en=1 act=0
+  Toggle Construction ind=0 en=1 act=0
+  ---
+  Cut ind=0 en=1 act=0
+  Copy ind=0 en=1 act=0
+  Delete ind=0 en=1 act=0
+  ---
+  Unselect All ind=0 en=1 act=0
+  ---
+  Zoom to Fit ind=0 en=1 act=0
+popup none
+pending 0 0 "" 0 0 0 0
+hover 40000 0 0
+selection 1 40000/0
+active 2 80020000
+camera 5 0 0 0 1 0 0 0 1 0
+counts 2 4 15 0 25
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""
+popup
+  Assign to Style ind=0 en=1 act=0
+    No Style ind=0 en=1 act=0
+    Newly Created Custom Style... ind=0 en=1 act=0
+  Group Info ind=0 en=1 act=0
+  Style Info ind=0 en=1 act=0
+  Select Edge Chain ind=0 en=1 act=0
+  Toggle Construction ind=0 en=1 act=0
+  ---
+  Cut ind=0 en=1 act=0
+  Copy ind=0 en=1 act=0
+  Delete ind=0 en=1 act=0
+  ---
+  Unselect All ind=0 en=1 act=0
+  ---
+  Zoom to Fit ind=0 en=1 act=0
+popup none
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 1 40000/0
+active 2 80020000
+camera 5 0 0 0 1 0 0 0 1 0
+counts 2 4 15 0 25
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""

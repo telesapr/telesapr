@@ -1,0 +1,14 @@
+# Extrude a rectangle and hover its faces.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+dump
+view rotated
+hovergrid 12
+save

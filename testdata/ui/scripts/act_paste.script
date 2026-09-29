@@ -1,0 +1,22 @@
+# Copy a line and paste it at the mouse.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+move 300 225
+down L 300 225
+up L 300 225
+key c ctrl
+move 350 350
+key v ctrl
+dump
+move 360 360
+dump
+down L 360 360
+up L 360 360
+dump
+save

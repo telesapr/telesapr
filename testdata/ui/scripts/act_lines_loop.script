@@ -1,0 +1,22 @@
+# Chained line segments that close on their first point.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 205
+down L 400 205
+up L 400 205
+move 395 400
+down L 395 400
+up L 395 400
+move 202 398
+down L 202 398
+up L 202 398
+move 201 201
+hover
+down L 201 201
+up L 201 201
+dump
+key esc
+dump
+save

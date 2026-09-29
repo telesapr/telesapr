@@ -1,0 +1,23 @@
+# Select a line's end points and constrain their distance.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+dump
+tw
+key d
+dump
+move 300 225
+hover
+save

@@ -11,13 +11,9 @@ import (
 // GraphicsWindow::DeleteSelection); this regenerates and clears the
 // selection, to avoid lingering references to the deleted items.
 func (gw *GraphicsWindow) DeleteSelection() {
+	// This regenerates and clears the selection, to avoid lingering
+	// references to the just-deleted items.
 	gw.sk().DeleteSelection(gw.selectionForEngine())
-	gw.ss.afterGenerate()
-	gw.window.HideEditor()
-	gw.ss.TW.HideEditControl()
-	gw.ClearSuper()
-	gw.EnsureValidActives()
-	gw.ss.ScheduleShowTW()
 }
 
 // CopySelection copies the selection to the clipboard.

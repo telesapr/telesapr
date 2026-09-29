@@ -28,6 +28,14 @@ type Platform struct {
 	FontFiles    []string
 	OpenedURLs   []string
 	ExitRequests int
+
+	// PopUpHook, when set, picks the item a context menu without its own
+	// PopUpChoice triggers; nil triggers none.
+	PopUpHook func(m *Menu) *MenuItem
+	// OnMessageDialog and OnFileDialog, when set, see each dialog as it
+	// is run, before it is answered.
+	OnMessageDialog func(d *MessageDialog)
+	OnFileDialog    func(d *FileDialog)
 }
 
 var _ platform.Platform = (*Platform)(nil)
@@ -56,6 +64,29 @@ func (p *Platform) RunTimers(limit int) int {
 		fired := false
 		for _, t := range p.Timers {
 			if t.Running {
+				t.Running = false
+				fired = true
+				n++
+				if t.onTimeout != nil {
+					t.onTimeout()
+				}
+			}
+		}
+		if !fired {
+			break
+		}
+	}
+	return n
+}
+
+// RunDueTimers is RunTimers for the timers due within a second: those
+// an event loop fires while a script runs, not autosave.
+func (p *Platform) RunDueTimers(limit int) int {
+	n := 0
+	for range limit {
+		fired := false
+		for _, t := range p.Timers {
+			if t.Running && t.DelayMs < 1000 {
 				t.Running = false
 				fired = true
 				n++
@@ -144,7 +175,9 @@ func (t *Timer) RunAfterProcessingEvents() { t.RunAfter(0) }
 // MenuItem is a recorded menu entry: a separator, a command, or a
 // submenu.
 type MenuItem struct {
-	Label     string
+	Label string
+	// RawLabel is the label as given, with its '&' mnemonic markers.
+	RawLabel  string
 	Accel     string
 	Indicator platform.Indicator
 	Enabled   bool
@@ -171,29 +204,36 @@ type Menu struct {
 }
 
 func (m *Menu) AddItem(label string, onTrigger func(), mnemonics bool) platform.MenuItem {
+	raw := label
 	if mnemonics {
 		label = strings.ReplaceAll(label, "&", "")
 	}
-	it := &MenuItem{Label: label, OnTrigger: onTrigger, Enabled: true}
+	it := &MenuItem{Label: label, RawLabel: raw, OnTrigger: onTrigger, Enabled: true}
 	m.Items = append(m.Items, it)
 	return it
 }
 
 func (m *Menu) AddSubMenu(label string) platform.Menu {
 	sub := &Menu{platform: m.platform}
-	m.Items = append(m.Items, &MenuItem{Label: strings.ReplaceAll(label, "&", ""), SubMenu: sub, Enabled: true})
+	m.Items = append(m.Items, &MenuItem{Label: strings.ReplaceAll(label, "&", ""), RawLabel: label,
+		SubMenu: sub, Enabled: true})
 	return sub
 }
 
 func (m *Menu) AddSeparator() { m.Items = append(m.Items, &MenuItem{Separator: true}) }
 
-// PopUp triggers the item PopUpChoice picks, if any.
+// PopUp triggers the item PopUpChoice (else the platform's PopUpHook)
+// picks, if any.
 func (m *Menu) PopUp() {
 	m.PoppedUp++
-	if m.PopUpChoice == nil {
+	choose := m.PopUpChoice
+	if choose == nil && m.platform != nil {
+		choose = m.platform.PopUpHook
+	}
+	if choose == nil {
 		return
 	}
-	if it := m.PopUpChoice(m); it != nil && it.OnTrigger != nil {
+	if it := choose(m); it != nil && it.OnTrigger != nil {
 		it.OnTrigger()
 	}
 }
@@ -232,7 +272,8 @@ type MenuBar struct {
 
 func (b *MenuBar) AddSubMenu(label string) platform.Menu {
 	sub := &Menu{platform: b.platform}
-	b.Menus = append(b.Menus, &MenuItem{Label: strings.ReplaceAll(label, "&", ""), SubMenu: sub, Enabled: true})
+	b.Menus = append(b.Menus, &MenuItem{Label: strings.ReplaceAll(label, "&", ""), RawLabel: label,
+		SubMenu: sub, Enabled: true})
 	return sub
 }
 
@@ -402,6 +443,9 @@ func (d *MessageDialog) AddButton(label string, r platform.Response, _ bool) {
 // RunModal answers with the next scripted response; it panics without
 // one, so tests say what every dialog gets.
 func (d *MessageDialog) RunModal() platform.Response {
+	if d.platform.OnMessageDialog != nil {
+		d.platform.OnMessageDialog(d)
+	}
 	if len(d.platform.DialogResponses) == 0 {
 		panic("headless: unexpected message dialog: " + d.Message)
 	}
@@ -434,6 +478,9 @@ func (d *FileDialog) ThawChoices(core.Settings, string)   {}
 // RunModal answers with the next scripted path; "" cancels. It panics
 // without one.
 func (d *FileDialog) RunModal() bool {
+	if d.platform.OnFileDialog != nil {
+		d.platform.OnFileDialog(d)
+	}
 	if len(d.platform.FilePaths) == 0 {
 		panic("headless: unexpected file dialog: " + d.Title)
 	}

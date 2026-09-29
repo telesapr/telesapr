@@ -1,0 +1,31 @@
+# Navigate the text window with its links.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+twmove 136 142
+dump
+twdown L 136 142
+twup L 136 142
+dump
+tw
+twmove 19 12
+twdown L 19 12
+twup L 19 12
+twmove 217 202
+twdown L 217 202
+twup L 217 202
+dump
+tw
+twmove 19 12
+twdown L 19 12
+twup L 19 12
+twmove 154 202
+twdown L 154 202
+twup L 154 202
+tw
+twleave

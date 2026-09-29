@@ -346,6 +346,12 @@ type GraphicsWindow struct {
 	// made in (C++ Entity::beziers, edges and screenBBox).
 	entityCaches map[core.HEntity]*entityDrawCache
 	cacheGen     uint64
+	cacheSketch  *sketch.Sketch
+
+	// The lighting of the frame being painted, and the persistent part of
+	// the last frame.
+	lighting   render.Lighting
+	persistent persistentLayer
 }
 
 // maxSelectableFaces limits the faces selected at once.

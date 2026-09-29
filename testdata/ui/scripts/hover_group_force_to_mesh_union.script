@@ -1,0 +1,6 @@
+# What the mouse hovers over group/force_to_mesh/union.slvs, in two views.
+load group/force_to_mesh/union.slvs
+view default
+hovergrid 20
+view rotated
+hovergrid 20

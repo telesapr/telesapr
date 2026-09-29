@@ -49,6 +49,9 @@ func (ss *SolveSpaceUI) setSketch(sk *sketch.Sketch) {
 	sk.OnScheduleGenerateAll = ss.onScheduleGenerateAll
 	sk.Message = func(msg string) { ss.Message("%s", msg) }
 	sk.ReloadAllLinked = func(sk *sketch.Sketch) { slvs.ReloadAllLinked(sk, ss.SaveFile) }
+	sk.DraggedParams = ss.MarkDraggedParams
+	sk.OnGenerated = ss.onGenerated
+	sk.RegenerateAfterDelete = ss.GW.regenerateAfterDelete
 	ss.pixmaps = nil
 	ss.applyEngineSettings()
 }
@@ -120,4 +123,77 @@ func (ss *SolveSpaceUI) LoadSketchForTest(sk *sketch.Sketch, saveFile string) {
 	ss.SaveFile = saveFile
 	ss.setSketch(sk)
 	ss.AfterNewFile()
+}
+
+// MarkDraggedParams lists the params of what the graphics window is
+// dragging: its pending points, circle and normal (C++
+// SolveSpaceUI::MarkDraggedParams).
+func (ss *SolveSpaceUI) MarkDraggedParams() []core.HParam {
+	sk := ss.SK
+	pd := &ss.GW.pending
+	var dragged []core.HParam
+	for i := -1; i < len(pd.points); i++ {
+		hp := pd.point
+		if i >= 0 {
+			hp = pd.points[i]
+		}
+		if hp.V == 0 {
+			continue
+		}
+		// The pending point could be one in a group that has not yet
+		// been processed, in which case the lookup will fail; but
+		// that's not an error.
+		if pt := sk.GetEntity(hp); pt != nil {
+			switch pt.Type {
+			case core.EntityPointNTrans, core.EntityPointIn3D, core.EntityPointNRotAxisTrans:
+				dragged = append(dragged, pt.Param[0], pt.Param[1], pt.Param[2])
+			case core.EntityPointIn2D:
+				dragged = append(dragged, pt.Param[0], pt.Param[1])
+			}
+		}
+	}
+	if pd.circle.V != 0 {
+		if circ := sk.GetEntity(pd.circle); circ != nil {
+			if dist := sk.MustGetEntity(circ.Distance); dist.Type == core.EntityDistance {
+				dragged = append(dragged, dist.Param[0])
+			}
+		}
+	}
+	if pd.normal.V != 0 {
+		if norm := sk.GetEntity(pd.normal); norm != nil && norm.Type == core.EntityNormalIn3D {
+			dragged = append(dragged, norm.Param[0], norm.Param[1], norm.Param[2], norm.Param[3])
+		}
+	}
+	return dragged
+}
+
+// onGenerated is the user interface's part of the end of C++
+// GenerateAll.
+func (ss *SolveSpaceUI) onGenerated(requests, constraints, groups int) {
+	sk := ss.SK
+	// Make sure the point that we're tracing exists.
+	if ss.Traced.Point.V != 0 && sk.GetEntity(ss.Traced.Point) == nil {
+		ss.Traced.Point = core.HEntity{}
+	}
+	// And if we're tracing a point, add its new value to the path
+	if ss.Traced.Point.V != 0 {
+		ss.Traced.Path.AddPoint(sk.MustGetEntity(ss.Traced.Point).PointGetNum(sk))
+	}
+
+	ss.GW.Invalidate(false)
+
+	// Remove nonexistent selection items, for same reason we waited till
+	// the end to put up a dialog box.
+	ss.GW.ClearNonexistentSelectionItems()
+
+	if requests > 0 || constraints > 0 || groups > 0 {
+		// All sorts of interesting things could have happened; for
+		// example, the active group or active workplane could have been
+		// deleted. So clear all that out.
+		if groups > 0 {
+			ss.TW.ClearSuper()
+		}
+		ss.ScheduleShowTW()
+		ss.GW.ClearSuper()
+	}
 }

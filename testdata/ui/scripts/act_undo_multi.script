@@ -1,0 +1,36 @@
+# Several edits, undone and redone one by one.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key c
+move 300 400
+down L 300 400
+up L 300 400
+move 330 400
+down L 330 400
+up L 330 400
+key esc
+move 300 225
+down L 300 225
+up L 300 225
+key h
+key esc
+dump
+key z ctrl
+dump
+key z ctrl
+dump
+key z ctrl
+dump
+key z ctrl
+dump
+menus
+key y ctrl
+key y ctrl
+dump
+save

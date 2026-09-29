@@ -70,6 +70,24 @@ type Sketch struct {
 	// drops it.
 	Message func(msg string)
 
+	// DraggedParams, if set, lists the params the user is dragging,
+	// which the solver keeps as close to their values as it can (C++
+	// SolveSpaceUI::MarkDraggedParams, from the graphics window's
+	// pending drag).
+	DraggedParams func() []core.HParam
+
+	// OnGenerated, if set, is called near the end of each GenerateAll
+	// pass, before the message about what was deleted along with
+	// something, with how many requests, constraints and groups were
+	// (C++ GenerateAll's user interface part).
+	OnGenerated func(requests, constraints, groups int)
+
+	// RegenerateAfterDelete, if set, replaces the regeneration that
+	// follows deleting requests, so that a user interface can first
+	// clear its selection and editors (C++
+	// GraphicsWindow::DeleteTaggedRequests); it must regenerate.
+	RegenerateAfterDelete func()
+
 	// Clipboard holds what was copied (C++ SS.clipboard).
 	Clipboard Clipboard
 

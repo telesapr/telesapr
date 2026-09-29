@@ -78,10 +78,16 @@ func LoadFile(path string) (doc *Document, err error) {
 // visibility are refreshed as for export. The meshes and shells C++
 // appends for linking aren't written.
 func (d *Document) Save() []byte {
-	sk := d.Sketch
 	// Make sure all the entities are regenerated up to date, since they
 	// will be exported.
-	sk.GenerateAll()
+	d.Sketch.GenerateAll()
+	return d.SaveRegenerated()
+}
+
+// SaveRegenerated is Save for a sketch the caller has just regenerated,
+// as a user interface does through its own GenerateAll.
+func (d *Document) SaveRegenerated() []byte {
+	sk := d.Sketch
 	for i := range sk.Entities {
 		e := &sk.Entities[i]
 		func() {

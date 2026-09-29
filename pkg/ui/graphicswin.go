@@ -838,13 +838,20 @@ func (gw *GraphicsWindow) ForceTextWindowShown() {
 // display (C++ GraphicsWindow::DeleteTaggedRequests).
 func (gw *GraphicsWindow) DeleteTaggedRequests() {
 	gw.sk().DeleteTaggedRequests()
-	gw.ss.afterGenerate()
+}
+
+// regenerateAfterDelete is the end of C++
+// GraphicsWindow::DeleteTaggedRequests, after the requests are gone.
+func (gw *GraphicsWindow) regenerateAfterDelete() {
 	// An edit might be in progress for the just-deleted item. So now
 	// it's not.
 	gw.window.HideEditor()
 	gw.ss.TW.HideEditControl()
 	// And clear out the selection, which could contain that item.
 	gw.ClearSuper()
+	// And regenerate to get rid of what it generates, plus anything
+	// that references it (since the regen code checks for that).
+	gw.ss.GenerateAll(sketch.GenerateAll)
 	gw.EnsureValidActives()
 	gw.ss.ScheduleShowTW()
 }

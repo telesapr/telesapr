@@ -1,0 +1,43 @@
+# Hide and show groups and entities from the text window's home screen,
+# which changes the picture without regenerating.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+key esc
+twmove 19 12
+twdown L 19 12
+twup L 19 12
+tw
+twmove 64 162
+twdown L 64 162
+twup L 64 162
+dump
+twdown L 64 162
+twup L 64 162
+twmove 64 142
+twdown L 64 142
+twup L 64 142
+dump
+twmove 316 192
+twdown L 316 192
+twup L 316 192
+dump
+twmove 28 192
+twdown L 28 192
+twup L 28 192
+twmove 127 192
+twdown L 127 192
+twup L 127 192
+dump
+twmove 28 142
+twdown L 28 142
+twup L 28 142
+dump
+tw
+save

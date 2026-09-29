@@ -1,0 +1,17 @@
+# A rectangle, then its corner dragged.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+dump
+down L 380 330
+up L 380 330
+dump
+move 380 330
+down L 380 330
+move 390 340 L
+move 420 360 L
+up L 420 360
+dump
+save

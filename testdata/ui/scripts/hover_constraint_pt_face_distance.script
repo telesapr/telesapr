@@ -1,0 +1,6 @@
+# What the mouse hovers over constraint/pt_face_distance/normal.slvs, in two views.
+load constraint/pt_face_distance/normal.slvs
+view default
+hovergrid 20
+view rotated
+hovergrid 20

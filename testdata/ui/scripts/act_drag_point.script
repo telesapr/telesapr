@@ -1,0 +1,18 @@
+# Drag a line's end point.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+move 200 200
+hover
+down L 200 200
+move 210 190 L
+dump
+move 240 170 L
+up L 240 170
+dump
+save

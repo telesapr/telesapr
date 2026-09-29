@@ -1,0 +1,28 @@
+# Box select a line and a circle, then delete them.
+key s
+move 150 150
+down L 150 150
+up L 150 150
+move 250 200
+down L 250 200
+up L 250 200
+key esc
+key c
+move 400 400
+down L 400 400
+up L 400 400
+move 430 400
+down L 430 400
+up L 430 400
+key esc
+move 100 100
+down L 100 100
+move 300 300 L
+move 500 500 L
+dump
+up L 500 500
+dump
+tw
+key del
+dump
+save

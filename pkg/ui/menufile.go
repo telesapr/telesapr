@@ -117,7 +117,7 @@ func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 		return false
 	}
 
-	data := slvs.NewDocument(ss.SK).Save()
+	data := slvs.NewDocument(ss.SK).SaveRegenerated()
 	if err := os.WriteFile(filename, data, 0o644); err != nil {
 		// Put the links back relative to where the sketch still is.
 		_, _ = slvs.RebaseLinks(ss.SK, filename, ss.SaveFile)

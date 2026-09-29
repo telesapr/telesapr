@@ -1,0 +1,38 @@
+# Horizontal, vertical and on-point constraints from the keyboard.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key s
+move 250 350
+down L 250 350
+up L 250 350
+move 330 450
+down L 330 450
+up L 330 450
+key esc
+move 300 225
+down L 300 225
+up L 300 225
+key h
+dump
+move 290 400
+down L 290 400
+up L 290 400
+key v
+dump
+move 290 450
+down L 290 450
+up L 290 450
+move 300 225
+down L 300 225
+up L 300 225
+key o
+dump
+key esc
+tw
+save

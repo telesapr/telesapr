@@ -2,7 +2,6 @@ package ui
 
 import (
 	"math"
-	"sort"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -463,8 +462,8 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 		}
 	}
 
-	sort.SliceStable(gw.hoverList, func(i, j int) bool {
-		a, b := &gw.hoverList[i], &gw.hoverList[j]
+	// std::sort: ties land where libstdc++'s introsort puts them.
+	srf.CxxSort(gw.hoverList, func(a, b *Hover) bool {
 		if a.ZIndex == b.ZIndex {
 			return a.Distance < b.Distance
 		}
@@ -623,14 +622,9 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 		return
 	}
 
-	if gw.showSnapGrid {
-		gw.DrawSnapGrid(canvas)
-	}
-
-	// Draw all the things that don't change when we rotate. The software
-	// renderer has no batches, like the GL 1 one.
-	gw.persistentDirty = false
-	gw.DrawPersistent(canvas)
+	// The snap grid, and all the things that don't change when we
+	// rotate.
+	gw.drawPersistentLayer(canvas)
 
 	// Draw the entities that do change with viewport.
 	gw.DrawEntities(canvas, false)
@@ -794,6 +788,7 @@ func (gw *GraphicsWindow) Paint() {
 
 	canvas := gw.canvas
 	gw.shareBitmapFont(canvas)
+	gw.lighting = lighting
 	canvas.SetLighting(lighting)
 	canvas.SetCamera(camera)
 	canvas.StartFrame()

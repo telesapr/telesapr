@@ -1,0 +1,6 @@
+# What the mouse hovers over group/boolean_tangent_fillet/normal.slvs, in two views.
+load group/boolean_tangent_fillet/normal.slvs
+view default
+hovergrid 20
+view rotated
+hovergrid 20

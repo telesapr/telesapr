@@ -1,0 +1,14 @@
+# Menu states after changing modes and view options.
+key 3
+answer ok
+key >
+key `
+menu View|Dimension Units|Dimensions in Inches
+key tab
+menus
+dump
+answer ok
+key 2
+menu View|Dimension Units|Dimensions in Feet and Inches
+key tab
+menus

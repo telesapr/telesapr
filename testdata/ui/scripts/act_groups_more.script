@@ -1,0 +1,28 @@
+# Step translating, a 3d sketch, and a lathe around a line.
+key r
+move 350 200
+down L 350 200
+up L 350 200
+move 420 300
+down L 420 300
+up L 420 300
+key esc
+key t shift
+dump
+tw
+key esc
+menu New Group|Sketch In 3d
+dump
+answer ok
+menu Sketch|In Workplane
+key esc
+key s shift
+move 300 150
+down L 300 150
+up L 300 150
+move 300 350
+down L 300 350
+up L 300 350
+key esc
+dump
+save

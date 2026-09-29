@@ -1,0 +1,17 @@
+# The context menu on a line, then on empty space.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+move 300 225
+down R 300 225
+up R 300 225
+dump
+move 500 500
+down R 500 500
+up R 500 500
+dump

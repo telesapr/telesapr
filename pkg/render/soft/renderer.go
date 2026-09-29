@@ -44,6 +44,10 @@ type Renderer struct {
 
 	cur state
 
+	// Thin lines collected by batchLines.
+	batching  bool
+	lineBatch []lineSeg
+
 	// Lighting state that outlives frames, as in GL.
 	lights  [2]glLight
 	ambient float64
@@ -260,7 +264,50 @@ func (r *Renderer) line(a, b geom.Vector, widthPx float64) {
 		return
 	}
 	wa, wb := r.toWindow(&ca), r.toWindow(&cb)
+	if r.batching {
+		r.lineBatch = append(r.lineBatch, lineSeg{wa, wb, widthPx})
+		return
+	}
 	r.rasterLine(&wa, &wb, widthPx)
+}
+
+// lineSeg is a thin line in window coordinates, waiting to be drawn.
+type lineSeg struct {
+	a, b  rvert
+	width float64
+}
+
+// batchLines runs draw, which draws with one stroke, collecting its thin
+// lines, then rasterises them in order; many of them are drawn in
+// horizontal bands at once, as rasterTriangles does. A fat line is a
+// quad and caps, drawn at once, but a stroke's lines are all thin or
+// all fat.
+func (r *Renderer) batchLines(draw func()) {
+	r.batching = true
+	r.lineBatch = r.lineBatch[:0]
+	draw()
+	r.batching = false
+	segs := r.lineBatch
+	workers := min(runtime.GOMAXPROCS(0), r.height/16)
+	if len(segs) < 256 || workers < 2 {
+		for i := range segs {
+			r.rasterLine(&segs[i].a, &segs[i].b, segs[i].width)
+		}
+		return
+	}
+	band := (r.height + workers - 1) / workers
+	var wg sync.WaitGroup
+	for y0 := 0; y0 < r.height; y0 += band {
+		y1 := min(y0+band, r.height)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range segs {
+				r.rasterLineRows(&segs[i].a, &segs[i].b, segs[i].width, y0, y1)
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 // endcapCircle is cos and sin of (pi*i/10 + pi/2), for i from 0 to 10.
@@ -391,11 +438,13 @@ func (r *Renderer) DrawLine(a, b geom.Vector, hcs render.HStroke) {
 
 // DrawEdges draws each edge, carrying the dash phase along.
 func (r *Renderer) DrawEdges(el *srf.SEdgeList, hcs render.HStroke) {
-	phase := 0.0
-	for _, e := range el.Edges {
-		r.doStippledLine(e.A, e.B, hcs, phase)
-		phase += e.A.Minus(e.B).Magnitude()
-	}
+	r.batchLines(func() {
+		phase := 0.0
+		for _, e := range el.Edges {
+			r.doStippledLine(e.A, e.B, hcs, phase)
+			phase += e.A.Minus(e.B).Magnitude()
+		}
+	})
 }
 
 // DrawBeziers can't draw curves; the caller draws them as edges.
@@ -403,6 +452,10 @@ func (r *Renderer) DrawBeziers(*srf.SBezierList, render.HStroke) bool { return f
 
 // DrawOutlines draws the outlines drawAs picks.
 func (r *Renderer) DrawOutlines(ol *srf.SOutlineList, hcs render.HStroke, drawAs render.DrawOutlinesAs) {
+	r.batchLines(func() { r.drawOutlines(ol, hcs, drawAs) })
+}
+
+func (r *Renderer) drawOutlines(ol *srf.SOutlineList, hcs render.HStroke, drawAs render.DrawOutlinesAs) {
 	projDir := r.camera.ProjRight.Cross(r.camera.ProjUp)
 	phase := 0.0
 	for i := range ol.Outlines {
@@ -605,6 +658,7 @@ func (r *Renderer) light(n geom.Vector, mat [4]float64, flip bool) [4]float64 {
 // DrawFaces fills the triangles of the given faces, unlit.
 func (r *Renderer) DrawFaces(m *srf.SMesh, faces []uint32, hcf render.HFill) {
 	r.selectFill(hcf)
+	var tris []rvert
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
 		face := uint32(tr.Meta.Face)
@@ -612,10 +666,11 @@ func (r *Renderer) DrawFaces(m *srf.SMesh, faces []uint32, hcf render.HFill) {
 			if f != face {
 				continue
 			}
-			r.drawPolygonClip([]cvert{r.clip(tr.A), r.clip(tr.B), r.clip(tr.C)}, fragSolid)
+			tris = r.appendPolygonTriangles(tris, []cvert{r.clip(tr.A), r.clip(tr.B), r.clip(tr.C)})
 			break
 		}
 	}
+	r.rasterTriangles(tris, fragSolid)
 }
 
 // DrawPixmap draws a textured quad o, o+u, o+u+v, o+v with texture

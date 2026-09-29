@@ -1,0 +1,6 @@
+# What the mouse hovers over constraint/parallel/free_in_3d.slvs, in two views.
+load constraint/parallel/free_in_3d.slvs
+view default
+hovergrid 20
+view rotated
+hovergrid 20

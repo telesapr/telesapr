@@ -1,0 +1,16 @@
+# Undo and redo a line, with the Edit menu's states.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+menus
+key z ctrl
+dump
+menus
+key y ctrl
+dump
+save

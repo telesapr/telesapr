@@ -1,0 +1,30 @@
+# Drag a circle's radius, and drag a whole line by its middle.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+move 300 250
+down L 300 250
+move 300 240 L
+move 300 220 L
+dump
+up L 300 220
+key s
+move 100 500
+down L 100 500
+up L 100 500
+move 200 500
+down L 200 500
+up L 200 500
+key esc
+move 150 500
+down L 150 500
+move 160 490 L
+move 170 480 L
+dump
+up L 170 480
+save

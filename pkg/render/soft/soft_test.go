@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image"
 	"image/png"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -210,4 +211,57 @@ func sharedBitmapFont() *res.BitmapFont {
 		bitmapFont = res.NewBitmapFont()
 	}
 	return bitmapFont
+}
+
+// benchmarkSoftLines draws 50k thin lines about length mm long (5
+// pixels a mm) across a 1080p frame.
+func benchmarkSoftLines(b *testing.B, length float64) {
+	r := New()
+	cam := testCamera(1920, 1080)
+	var lines [][2]geom.Vector
+	for i := range 50000 {
+		// A spread of positions and directions, within the view.
+		a := float64(i) * 0.61803398875
+		x, y := 150*math.Sin(a*1.3), 90*math.Cos(a*0.7)
+		dx, dy := length*math.Cos(a*5.1), length*math.Sin(a*5.1)
+		lines = append(lines, [2]geom.Vector{v(x, y, 0), v(x+dx, y+dy, 0)})
+	}
+	for b.Loop() {
+		frame(r, cam, func() {
+			hs := r.GetStroke(render.Stroke{Layer: render.LayerNormal, Color: core.NewRgbaColor(255, 255, 255, 255),
+				Width: 1, Unit: render.UnitPX})
+			for _, l := range lines {
+				r.DrawLine(l[0], l[1], hs)
+			}
+		})
+	}
+}
+
+// BenchmarkSoftLines1080p: 50k lines of 10 pixels, as a detailed
+// model's edges.
+func BenchmarkSoftLines1080p(b *testing.B) { benchmarkSoftLines(b, 2) }
+
+// BenchmarkSoftLongLines1080p: 50k lines of 100 pixels, about five
+// million pixels drawn.
+func BenchmarkSoftLongLines1080p(b *testing.B) { benchmarkSoftLines(b, 20) }
+
+// BenchmarkSoftEdges1080p draws 50k edges of 10 pixels in one DrawEdges
+// call, as a model's edges are drawn.
+func BenchmarkSoftEdges1080p(b *testing.B) {
+	r := New()
+	cam := testCamera(1920, 1080)
+	var el srf.SEdgeList
+	for i := range 50000 {
+		a := float64(i) * 0.61803398875
+		x, y := 150*math.Sin(a*1.3), 90*math.Cos(a*0.7)
+		dx, dy := 2*math.Cos(a*5.1), 2*math.Sin(a*5.1)
+		el.AddEdge(v(x, y, 0), v(x+dx, y+dy, 0), 0, 0, 0)
+	}
+	for b.Loop() {
+		frame(r, cam, func() {
+			hs := r.GetStroke(render.Stroke{Layer: render.LayerNormal, Color: core.NewRgbaColor(255, 255, 255, 255),
+				Width: 1, Unit: render.UnitPX})
+			r.DrawEdges(&el, hs)
+		})
+	}
 }

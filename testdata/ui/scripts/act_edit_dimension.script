@@ -1,0 +1,36 @@
+# Dimension a line, drag its label, then edit its value on screen.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key d
+key esc
+move 195 225
+down L 195 225
+up L 195 225
+down L 195 225
+dbl L 195 225
+up L 195 225
+dump
+edit 30
+dump
+move 195 225
+hover
+down L 195 225
+move 180 215 L
+move 170 205 L
+up L 170 205
+dump
+tw
+save

@@ -33,12 +33,13 @@ const (
 	EntityDrawSelected
 )
 
-// entityCache returns e's drawing cache; a regeneration drops them all,
-// as C++ makes the entities anew.
+// entityCache returns e's drawing cache; a regeneration, or another
+// sketch, drops them all, as C++ makes the entities anew.
 func (gw *GraphicsWindow) entityCache(e *core.Entity) *entityDrawCache {
-	if gw.entityCaches == nil || gw.cacheGen != gw.sk().Generation {
+	if sk := gw.sk(); gw.entityCaches == nil || gw.cacheGen != sk.Generation || gw.cacheSketch != sk {
 		gw.entityCaches = make(map[core.HEntity]*entityDrawCache)
-		gw.cacheGen = gw.sk().Generation
+		gw.cacheGen = sk.Generation
+		gw.cacheSketch = sk
 	}
 	c := gw.entityCaches[e.H]
 	if c == nil {

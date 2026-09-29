@@ -1,0 +1,18 @@
+# A circle, then its diameter dimensioned and edited.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+dump
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+dump
+key d
+dump
+tw
+save

@@ -1,0 +1,15 @@
+# Draw a line segment with the line tool, then leave the tool.
+key s
+dump
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+dump
+down L 400 250
+up L 400 250
+dump
+key esc
+dump
+tw
+save

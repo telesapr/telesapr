@@ -200,6 +200,12 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		}
 	}
 
+	// The user interface's part: the traced point, the selection, and
+	// what a deletion invalidates.
+	if sk.OnGenerated != nil {
+		sk.OnGenerated(sk.Deleted.Requests, sk.Deleted.Constraints, sk.Deleted.Groups)
+	}
+
 	if sk.Deleted.Requests > 0 || sk.Deleted.Constraints > 0 || sk.Deleted.Groups > 0 {
 		d := sk.Deleted
 		sk.Deleted.Requests, sk.Deleted.Constraints = 0, 0
@@ -456,9 +462,8 @@ func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l
 
 // writeEqSystemForGroup is the system that solves group hg for
 // groupParams, the params its requests, constraints and the group
-// itself generate, holding every other param fixed (C++
-// SolveSpaceUI::WriteEqSystemForGroup; C++ also marks the params being
-// dragged, which the engine has none of).
+// itself generate, holding every other param fixed, and marks the
+// params being dragged (C++ SolveSpaceUI::WriteEqSystemForGroup).
 func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HParam) (*solver.System, *solver.Group) {
 	g := sk.GetGroup(hg)
 
@@ -469,6 +474,14 @@ func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HPara
 		p := *sk.GetParam(h)
 		p.Known = false
 		sys.AddParam(p)
+	}
+	if sk.DraggedParams != nil {
+		for _, h := range sk.DraggedParams() {
+			if sys.Dragged == nil {
+				sys.Dragged = make(map[core.HParam]bool)
+			}
+			sys.Dragged[h] = true
+		}
 	}
 
 	var constraints []*core.Constraint

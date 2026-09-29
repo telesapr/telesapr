@@ -104,6 +104,12 @@ func (sk *Sketch) DeleteTaggedRequests() {
 	}
 	sk.Requests = kept
 
+	// The user interface's part: it clears what could refer to the
+	// deleted requests, then regenerates.
+	if sk.RegenerateAfterDelete != nil {
+		sk.RegenerateAfterDelete()
+		return
+	}
 	// And regenerate to get rid of what it generates, plus anything
 	// that references it (since the regen code checks for that).
 	sk.GenerateAllTyped(GenerateAll)

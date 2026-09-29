@@ -1,0 +1,23 @@
+# A cubic spline from clicks, and a datum point.
+key b
+move 150 300
+down L 150 300
+up L 150 300
+move 250 200
+down L 250 200
+up L 250 200
+move 350 400
+down L 350 400
+up L 350 400
+move 450 300
+dump
+down L 450 300
+up L 450 300
+key esc
+dump
+key p
+move 300 150
+down L 300 150
+up L 300 150
+dump
+save

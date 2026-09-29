@@ -1,0 +1,45 @@
+# Two lines meeting at a corner get a tangent arc; crossing lines are
+# split at their intersection.
+key s
+move 200 320
+down L 200 320
+up L 200 320
+move 320 320
+down L 320 320
+up L 320 320
+move 320 200
+down L 320 200
+up L 320 200
+key esc
+move 320 320
+hover
+down L 320 320
+up L 320 320
+key a shift
+dump
+key esc
+key s
+move 350 350
+down L 350 350
+up L 350 350
+move 450 450
+down L 450 450
+up L 450 450
+key esc
+key s
+move 350 450
+down L 350 450
+up L 350 450
+move 450 350
+down L 450 350
+up L 450 350
+key esc
+move 380 380
+down L 380 380
+up L 380 380
+move 380 420
+down L 380 420
+up L 380 420
+key i
+dump
+save

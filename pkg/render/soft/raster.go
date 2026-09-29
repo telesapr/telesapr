@@ -341,6 +341,11 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 // as GL does with GL_LINE_SMOOTH: each pixel's coverage of the line's
 // rectangle scales its alpha.
 func (r *Renderer) rasterLine(a, b *rvert, width float64) {
+	r.rasterLineRows(a, b, width, 0, r.height)
+}
+
+// rasterLineRows is rasterLine for the rows from y0 up to y1 only.
+func (r *Renderer) rasterLineRows(a, b *rvert, width float64, y0, y1 int) {
 	dx, dy := b.x-a.x, b.y-a.y
 	length := math.Hypot(dx, dy)
 	if length == 0 || math.IsNaN(length) {
@@ -355,12 +360,28 @@ func (r *Renderer) rasterLine(a, b *rvert, width float64) {
 	minY := int(math.Floor(min(a.y, b.y) - ext))
 	maxY := int(math.Ceil(max(a.y, b.y) + ext))
 	minX = max(minX, 0)
-	minY = max(minY, 0)
+	minY = max(minY, 0, y0)
 	maxX = min(maxX, r.width-1)
-	maxY = min(maxY, r.height-1)
+	maxY = min(maxY, r.height-1, y1-1)
+	// Only the pixels near the segment can be covered: in each row, those
+	// within hw+0.5 of its line and within 0.5 of its ends. Bound them,
+	// with a margin far wider than the rounding of either this bound or
+	// the test below, and test just those; the test decides each pixel
+	// as before.
+	reach := hw + 0.5
 	for py := minY; py <= maxY; py++ {
 		fy := float64(py) + 0.5 - a.y
-		for px := minX; px <= maxX; px++ {
+		lo, hi := minX, maxX
+		if uy != 0 {
+			c := fy * ux
+			lo, hi = narrowColumns(lo, hi, (c-reach)/uy, (c+reach)/uy, a.x, 1e-9/math.Abs(uy))
+		}
+		if ux != 0 {
+			d := fy * uy
+			lo, hi = narrowColumns(lo, hi, (-0.5-d)/ux, (length+0.5-d)/ux, a.x,
+				1e-9*(1+length)/math.Abs(ux))
+		}
+		for px := lo; px <= hi; px++ {
 			fx := float64(px) + 0.5 - a.x
 			along := fx*ux + fy*uy
 			perp := math.Abs(fx*uy - fy*ux)
@@ -380,4 +401,22 @@ func (r *Renderer) rasterLine(a, b *rvert, width float64) {
 			r.fragment(px, py, z, col)
 		}
 	}
+}
+
+// narrowColumns narrows the columns lo to hi to those whose centres
+// fall between f1 and f2 (in either order) relative to x0, give or take
+// margin.
+func narrowColumns(lo, hi int, f1, f2, x0, margin float64) (int, int) {
+	if f1 > f2 {
+		f1, f2 = f2, f1
+	}
+	l := math.Floor(f1 + x0 - 0.5 - margin)
+	h := math.Ceil(f2 + x0 - 0.5 + margin)
+	if l > float64(lo) {
+		lo = int(min(l, float64(hi)+1))
+	}
+	if h < float64(hi) {
+		hi = int(max(h, float64(lo)-1))
+	}
+	return lo, hi
 }
