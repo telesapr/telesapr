@@ -33,13 +33,12 @@ type canvas struct {
 func newCanvas(w *Window) *canvas {
 	app := w.p.app
 	win := window.NewChildWindow(w.top.Window(), w.p.newName("canvas"), 0, 0, 1, 1)
-	window.MakeWindowExist(win)
+	makeCanvasWindow(win)
 	c := &canvas{w: w}
 	widget.InitBase(&c.Base, win, app)
 	win.Class = "SolveSpaceCanvas"
 	win.Flags |= window.FlagFocusable
 	win.ReqWidth, win.ReqHeight = 300, 200
-	win.BackgroundPixel = 0
 
 	disp := app.Dispatcher()
 	disp.Bind(win.PlatformID, event.ExposureMask, func(ev *event.Event) {
@@ -92,6 +91,38 @@ func newCanvas(w *Window) *canvas {
 		}
 	})
 	return c
+}
+
+// makeCanvasWindow creates the drawing area's X window as
+// window.MakeWindowExist does, but with no background and north-west
+// bit gravity: the server then keeps the last frame in place when the
+// window is resized, where a background would clear it and show a
+// flash of that colour on every step of a resize until the next frame
+// (GTK's GL area never clears either).
+func makeCanvasWindow(win *window.Window) {
+	parent := win.Parent
+	if win.PlatformID != 0 || parent == nil || parent.PlatformID == 0 {
+		window.MakeWindowExist(win)
+		return
+	}
+	d := win.Display
+	attrs := &tkplatform.WindowAttrs{
+		BorderPixel: d.BlackPixel,
+		BitGravity:  tkplatform.NorthWestGravity,
+		EventMask: int64(tkplatform.KeyPressMask | tkplatform.KeyReleaseMask |
+			tkplatform.ButtonPressMask | tkplatform.ButtonReleaseMask |
+			tkplatform.PointerMotionMask | tkplatform.EnterWindowMask |
+			tkplatform.LeaveWindowMask | tkplatform.ExposureMask |
+			tkplatform.StructureNotifyMask | tkplatform.PropertyChangeMask |
+			tkplatform.FocusChangeMask),
+	}
+	win.PlatformID = d.Server.CreateWindow(parent.PlatformID,
+		win.X, win.Y, uint(win.Width), uint(win.Height), uint(win.BorderWidth),
+		win.Depth, tkplatform.InputOutput,
+		tkplatform.CWBorderPixel|tkplatform.CWBitGravity|tkplatform.CWEventMask, attrs)
+	d.RegisterWindow(win.PlatformID, win)
+	win.GC = d.Server.CreateGC(win.Drawable(), tkplatform.GCForeground|tkplatform.GCBackground,
+		&tkplatform.GCValues{Foreground: d.BlackPixel, Background: 0})
 }
 
 func (c *canvas) pack() {
