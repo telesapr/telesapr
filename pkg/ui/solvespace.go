@@ -181,7 +181,7 @@ func (ss *SolveSpaceUI) LoadSettings() {
 	ss.AfterDecimalInch = int(s.ThawInt("AfterDecimalInch", 3))
 	ss.AfterDecimalDegree = int(s.ThawInt("AfterDecimalDegree", 2))
 	ss.UseSIPrefixes = core.ThawBool(s, "UseSIPrefixes", false)
-	ss.CameraTangentSetting = s.ThawFloat("CameraTangent", float64(float32(0.3)/1e3))
+	ss.CameraTangentSetting = s.ThawFloat("CameraTangent", float64(float32(0.3))/1e3) // C++ 0.3f/1e3, in double
 	ss.GridSpacing = s.ThawFloat("GridSpacing", 5.0)
 	ss.ExportScale = s.ThawFloat("ExportScale", 1.0)
 	ss.ExportOffset = s.ThawFloat("ExportOffset", 0.0)
@@ -231,6 +231,7 @@ func (ss *SolveSpaceUI) applyEngineSettings() {
 	srf.SetExportMode(ss.ExportMode, ss.ExportChordTolMm(), ss.ExportMaxSegments)
 	if ss.SK != nil {
 		ss.SK.ChordTolPct = ss.ChordTol
+		ss.SK.CheckClosedContour = ss.CheckClosedContour
 	}
 }
 

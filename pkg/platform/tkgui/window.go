@@ -5,6 +5,7 @@ import (
 	"image"
 	"strconv"
 	"time"
+	"unicode"
 
 	"github.com/msorc/takigo/cursor"
 	"github.com/msorc/takigo/event"
@@ -160,8 +161,9 @@ func (w *Window) SetFullScreen(full bool) {
 	}
 }
 
-// SetTitle sets the window title.
-func (w *Window) SetTitle(title string) { w.wmInfo.SetTitle(title) }
+// SetTitle sets the window title, with the application's name after
+// it as GTK's does.
+func (w *Window) SetTitle(title string) { w.wmInfo.SetTitle(prepareTitle(title)) }
 
 // SetTitleForFilename returns false: the title names the file.
 func (w *Window) SetTitleForFilename(string) bool { return false }
@@ -219,21 +221,28 @@ func (w *Window) FreezePosition(s core.Settings, key string) {
 	core.FreezeBool(s, key+"_Maximized", false)
 }
 
-// ThawPosition restores the geometry FreezePosition saved.
+// ThawPosition restores the geometry FreezePosition saved. Without a
+// saved size the window keeps its natural one, the content it asked
+// for, as GTK's get_size reports for a window not yet shown; without a
+// saved position it goes to the corner, as GTK's move(0, 0) puts it.
 func (w *Window) ThawPosition(s core.Settings, key string) {
-	width, height, x, y, _, _, _, _, err := wm.ParseGeometry(w.wmInfo.Geometry())
-	if err != nil {
-		width, height = w.topWin.Width, w.topWin.Height
+	has := func(name string) bool {
+		if h, ok := s.(interface{ Has(string) bool }); ok {
+			return h.Has(key + name)
+		}
+		return true
 	}
-	x = int(int32(s.ThawInt(key+"_Left", uint32(int32(x)))))
-	y = int(int32(s.ThawInt(key+"_Top", uint32(int32(y)))))
-	width = int(s.ThawInt(key+"_Width", uint32(width)))
-	height = int(s.ThawInt(key+"_Height", uint32(height)))
-	if width <= 0 || height <= 0 {
-		return
+	x := int(int32(s.ThawInt(key+"_Left", 0)))
+	y := int(int32(s.ThawInt(key+"_Top", 0)))
+	geom := signed(x) + signed(y)
+	if has("_Width") && has("_Height") {
+		width := int(s.ThawInt(key+"_Width", 0))
+		height := int(s.ThawInt(key+"_Height", 0))
+		if width <= 0 || height <= 0 {
+			return
+		}
+		geom = strconv.Itoa(width) + "x" + strconv.Itoa(height) + geom
 	}
-	geom := strconv.Itoa(width) + "x" + strconv.Itoa(height) +
-		signed(x) + signed(y)
 	_ = w.wmInfo.SetGeometry(geom)
 	// takigo's packer resizes a toplevel to its content whenever the
 	// requested size changes, ignoring a user size as Tk would not, and
@@ -358,7 +367,41 @@ func (w *Window) key(typ platform.KeyboardEventType, ev *event.Event) bool {
 	if w.events.OnKeyboardEvent == nil {
 		return false
 	}
-	return w.events.OnKeyboardEvent(k)
+	if w.events.OnKeyboardEvent(k) {
+		return true
+	}
+	// GTK matches a menu accelerator on the key pressed, with Shift
+	// left out when it made the symbol: Shift and '=' is the '+' of
+	// Zoom In, Shift and '.' the '>' of Show Snap Grid, and Shift and
+	// '3' is Sketch In 3d's Shift+3 although X names it '#'. The
+	// application sees only the symbol, so offer it those readings too.
+	if k.Key == platform.KeyCharacter && k.ShiftDown && typ == platform.KeyPress &&
+		!unicode.IsLetter(k.Chr) && !unicode.IsDigit(k.Chr) && k.Chr > ' ' {
+		unshifted := k
+		unshifted.ShiftDown = false
+		if w.events.OnKeyboardEvent(unshifted) {
+			return true
+		}
+		if digit, ok := digitRowKey(ev.KeyCode); ok {
+			asDigit := k
+			asDigit.Chr = digit
+			return w.events.OnKeyboardEvent(asDigit)
+		}
+	}
+	return false
+}
+
+// digitRowKey is the digit of a key of the keyboard's top row by its X
+// keycode, which on Linux (XKB over evdev) is 10 for '1' through 19
+// for '0' whatever the layout's symbols.
+func digitRowKey(keycode uint) (rune, bool) {
+	if keycode < 10 || keycode > 19 {
+		return 0, false
+	}
+	if keycode == 19 {
+		return '0', true
+	}
+	return rune('1' + keycode - 10), true
 }
 
 const (

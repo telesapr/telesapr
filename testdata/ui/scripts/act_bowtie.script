@@ -1,0 +1,29 @@
+# A self-intersecting sketch: a bowtie of four lines, which the closed
+# contour check reports, so it has no area and nothing to extrude.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 400
+down L 400 400
+up L 400 400
+move 400 200
+down L 400 200
+up L 400 200
+move 200 400
+down L 200 400
+up L 200 400
+move 200 200
+hover
+down L 200 200
+up L 200 200
+dump
+polyerror
+tw
+answer ok
+key a ctrl shift
+key x shift
+dump
+polyerror
+tw
+save

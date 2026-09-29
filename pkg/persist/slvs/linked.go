@@ -1,6 +1,7 @@
 package slvs
 
 import (
+	"errors"
 	"fmt"
 	"image/png"
 	"os"
@@ -37,11 +38,65 @@ func linkPath(saveFile, link string) string {
 	return filepath.Join(filepath.Dir(saveFile), filepath.FromSlash(link))
 }
 
+// LocateResponse is what the user answered when a linked file was
+// missing (C++ LocateImportedFile and the file dialog after it).
+type LocateResponse int
+
+const (
+	// LocateNo: the file stays missing; what depends on it is pruned.
+	LocateNo LocateResponse = iota
+	// LocateYes: the file was found at the path returned with it.
+	LocateYes
+	// LocateCancel: stop loading.
+	LocateCancel
+	// LocateGaveUp: the user wanted to find the file but chose none,
+	// where cancelling isn't allowed; nothing is remembered about it.
+	LocateGaveUp
+)
+
+// LocateMissingFile, when set, asks the user to find a linked file or
+// image that couldn't be read, named relative to the sketch's file,
+// and returns where it is now (C++ LocateImportedFile and the file
+// dialogs of ReloadAllLinked and ReloadLinkedImage). Without it a
+// missing file counts as declined. canCancel says whether loading can
+// be given up; it can when a file is being opened, not when the sketch
+// is regenerated or undone.
+var LocateMissingFile func(name string, isImage, canCancel bool) (path string, resp LocateResponse)
+
+// ErrCancelled is LoadFile's error when the user cancelled loading at
+// a missing linked file.
+var ErrCancelled = errors.New("slvs: loading cancelled")
+
+// relativeLink names a file the user chose as the sketch's file links
+// it: relative to the sketch's folder when it can be, as C++ writes
+// its 'P' fields; else absolute.
+func relativeLink(saveFile, chosen string) string {
+	abs, err := filepath.Abs(chosen)
+	if err != nil {
+		return chosen
+	}
+	if saveFile == "" {
+		return abs
+	}
+	dir, err := filepath.Abs(filepath.Dir(saveFile))
+	if err != nil {
+		return abs
+	}
+	rel, err := filepath.Rel(dir, abs)
+	if err != nil {
+		return abs
+	}
+	return filepath.ToSlash(rel)
+}
+
 // reloadAllLinked loads the entities, mesh and shell of every file the
-// sketch links (C++ SolveSpaceUI::ReloadAllLinked). C++ asks the user
-// to find a missing file; here it counts as declined, so the geometry
-// that depends on it is pruned when the sketch is regenerated.
-func (d *Document) reloadAllLinked(saveFile string) {
+// sketch links (C++ SolveSpaceUI::ReloadAllLinked), asking the user to
+// find a missing one through LocateMissingFile. It is false when the
+// user cancelled, which canCancel allows.
+func (d *Document) reloadAllLinked(saveFile string, canCancel bool) bool {
+	// If we prompted for this specific file before, don't ask again.
+	linkMap := make(map[string]string)
+
 	for i := range d.Sketch.Groups {
 		g := &d.Sketch.Groups[i]
 		if g.Type != sketch.GroupLinked {
@@ -52,19 +107,50 @@ func (d *Document) reloadAllLinked(saveFile string) {
 		g.ImpMesh.Clear()
 		g.ImpShell.Clear()
 
-		linkFile := linkPath(saveFile, g.LinkFile)
-		if loadEntitiesFromFile(linkFile, d.Sketch, &g.ImpEntity, &g.ImpMesh, &g.ImpShell) {
-			// We loaded the data, good. Now import its dependencies as
-			// well.
-			for _, e := range g.ImpEntity {
-				if e.Type != core.EntityImage {
-					continue
+		if found, ok := linkMap[g.LinkFile]; ok {
+			g.LinkFile = found
+		}
+
+		for {
+			linkFile := linkPath(saveFile, g.LinkFile)
+			if loadEntitiesFromFile(linkFile, d.Sketch, &g.ImpEntity, &g.ImpMesh, &g.ImpShell) {
+				// We loaded the data, good. Now import its dependencies
+				// as well.
+				for j := range g.ImpEntity {
+					e := &g.ImpEntity[j]
+					if e.Type != core.EntityImage {
+						continue
+					}
+					if !reloadLinkedImage(d.Sketch, linkFile, &e.File, canCancel) {
+						return false
+					}
 				}
-				reloadLinkedImage(d.Sketch, linkFile, e.File)
+				if g.IsTriangleMeshAssembly() {
+					g.ForceToMesh = true
+				}
+				break
 			}
-			if g.IsTriangleMeshAssembly() {
-				g.ForceToMesh = true
+			if _, asked := linkMap[g.LinkFile]; asked {
+				// User was already asked to and refused to locate a
+				// missing linked file.
+				break
 			}
+			// The file was moved; prompt the user for its new location.
+			path, resp := locateMissingFile(g.LinkFile, false, canCancel)
+			if resp == LocateYes {
+				found := relativeLink(saveFile, path)
+				linkMap[g.LinkFile] = found
+				g.LinkFile = found
+				continue
+			}
+			if resp == LocateCancel {
+				return false
+			}
+			if resp == LocateNo {
+				// Geometry will be pruned by GenerateAll().
+				linkMap[g.LinkFile] = ""
+			}
+			break
 		}
 	}
 
@@ -73,8 +159,19 @@ func (d *Document) reloadAllLinked(saveFile string) {
 		if r.Type != sketch.RequestImage {
 			continue
 		}
-		reloadLinkedImage(d.Sketch, saveFile, r.File)
+		if !reloadLinkedImage(d.Sketch, saveFile, &r.File, canCancel) {
+			return false
+		}
 	}
+	return true
+}
+
+// locateMissingFile asks LocateMissingFile, or declines without one.
+func locateMissingFile(name string, isImage, canCancel bool) (string, LocateResponse) {
+	if LocateMissingFile == nil {
+		return "", LocateNo
+	}
+	return LocateMissingFile(name, isImage, canCancel)
 }
 
 // loadEntitiesFromFile reads the entities, mesh and shell of a linked
@@ -234,44 +331,85 @@ func writeShell(b *strings.Builder, m *srf.SMesh, s *srf.SShell) {
 	}
 }
 
-// reloadLinkedImage loads image file, named relative to saveFile, into
-// the sketch's images (C++ SolveSpaceUI::ReloadLinkedImage). C++ asks
-// the user to find a missing or unreadable file; here that counts as
-// declined, and the file is recorded as absent.
-func reloadLinkedImage(sk *sketch.Sketch, saveFile, file string) {
-	if file == "" {
-		return
+// readImage reads a PNG image file, or nil if it can't.
+func readImage(path string) *sketch.Image {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
 	}
-	if _, ok := sk.Images[file]; ok {
-		return
+	defer f.Close()
+	pixels, err := png.Decode(f)
+	if err != nil {
+		return nil
+	}
+	b := pixels.Bounds()
+	return &sketch.Image{Width: b.Dx(), Height: b.Dy(), Pixels: pixels}
+}
+
+// reloadLinkedImage loads the image *file, named relative to saveFile,
+// into the sketch's images (C++ SolveSpaceUI::ReloadLinkedImage),
+// asking the user to find it through LocateMissingFile when it can't be
+// read, and renaming *file to where it was found. It is false when the
+// user cancelled, which canCancel allows.
+func reloadLinkedImage(sk *sketch.Sketch, saveFile string, file *string, canCancel bool) bool {
+	if *file == "" {
+		return true
+	}
+	if _, ok := sk.Images[*file]; ok {
+		return true
 	}
 	if sk.Images == nil {
 		sk.Images = make(map[string]*sketch.Image)
 	}
 
-	var img *sketch.Image
-	if f, err := os.Open(linkPath(saveFile, file)); err == nil {
-		if pixels, err := png.Decode(f); err == nil {
-			b := pixels.Bounds()
-			img = &sketch.Image{Width: b.Dx(), Height: b.Dy(), Pixels: pixels}
+	img := readImage(linkPath(saveFile, *file))
+	if img == nil {
+		// The file was moved; prompt the user for its new location.
+		switch path, resp := locateMissingFile(*file, true, canCancel); resp {
+		case LocateYes:
+			*file = relativeLink(saveFile, path)
+			if _, ok := sk.Images[*file]; ok {
+				return true
+			}
+			img = readImage(linkPath(saveFile, *file))
+			if img == nil && LocateMissingFile != nil {
+				// C++: Error("The image '%s' is corrupted.")
+				ImageCorrupted(*file)
+			}
+		case LocateCancel:
+			return false
+		case LocateGaveUp:
+			if canCancel {
+				return false
+			}
 		}
-		f.Close()
+		// We don't know where the file is, record it as absent.
 	}
-	sk.Images[file] = img
+	sk.Images[*file] = img
+	return true
 }
+
+// ImageCorrupted, when set, tells the user an image they chose can't be
+// read (C++ Error("The image '%s' is corrupted.")).
+var ImageCorrupted = func(file string) {}
 
 // ReloadAllLinked reloads the linked files and images of sk, relative
 // to saveFile, the file the sketch is saved in or "" (C++
 // SolveSpaceUI::ReloadAllLinked).
 func ReloadAllLinked(sk *sketch.Sketch, saveFile string) {
-	(&Document{Sketch: sk}).reloadAllLinked(saveFile)
+	(&Document{Sketch: sk}).reloadAllLinked(saveFile, false)
 }
 
 // LoadLinkedImage loads image file, named relative to saveFile, into
 // the sketch's images unless it is there already, and reports whether
 // the sketch now has its pixels.
 func LoadLinkedImage(sk *sketch.Sketch, saveFile, file string) bool {
-	reloadLinkedImage(sk, saveFile, file)
+	if _, ok := sk.Images[file]; !ok {
+		if sk.Images == nil {
+			sk.Images = make(map[string]*sketch.Image)
+		}
+		sk.Images[file] = readImage(linkPath(saveFile, file))
+	}
 	return sk.Images[file] != nil
 }
 

@@ -95,6 +95,12 @@ func (s *JSONSettings) saveLocked() {
 	}
 }
 
+// Has reports whether key is stored.
+func (s *JSONSettings) Has(key string) bool {
+	_, ok := s.get(key)
+	return ok
+}
+
 // FreezeInt stores an integer.
 func (s *JSONSettings) FreezeInt(key string, value uint32) { s.set(key, float64(value)) }
 
@@ -147,6 +153,12 @@ type MemorySettings struct {
 
 // NewMemorySettings returns empty settings.
 func NewMemorySettings() *MemorySettings { return &MemorySettings{Values: make(map[string]any)} }
+
+// Has reports whether key is stored.
+func (m *MemorySettings) Has(key string) bool {
+	_, ok := m.Values[key]
+	return ok
+}
 
 func (m *MemorySettings) FreezeInt(key string, value uint32) { m.Values[key] = value }
 func (m *MemorySettings) ThawInt(key string, def uint32) uint32 {

@@ -120,43 +120,32 @@ func (p *SPolygon) AnyPoint() geom.Vector {
 	return geom.Vector{}
 }
 
-// SelfIntersecting checks whether any pair of edges in the polygon
-// intersects. Used to detect bad sketches.
+// SelfIntersecting reports whether any edge of the polygon crosses
+// another, leaving a crossing in intersectsAt when it is given (C++
+// SPolygon::SelfIntersecting). Each edge is tested against the others
+// through a kd-tree over them; an edge counts as crossing itself, so
+// any other crossing makes the count differ from one.
 func (p *SPolygon) SelfIntersecting(intersectsAt *geom.Vector) bool {
-	type edge struct{ a, b geom.Vector }
-	var edges []edge
-	for i := range p.Contours {
-		c := &p.Contours[i]
-		for j := 0; j < len(c.Points); j++ {
-			a := c.Points[j].P
-			b := c.Points[(j+1)%len(c.Points)].P
-			edges = append(edges, edge{a, b})
-		}
-	}
-	for i := 0; i < len(edges); i++ {
-		for j := i + 1; j < len(edges); j++ {
-			if e1, e2 := edges[i], edges[j]; edgesIntersect(e1.a, e1.b, e2.a, e2.b) {
-				if intersectsAt != nil {
-					mid := e1.a.Plus(e1.b).ScaledBy(0.5)
-					*intersectsAt = mid
-				}
-				return true
-			}
-		}
-	}
-	return false
-}
+	var el SEdgeList
+	p.MakeEdgesInto(&el)
+	kdtree := SKdNodeEdgesFrom(&el)
 
-func edgesIntersect(p1, p2, p3, p4 geom.Vector) bool {
-	d1 := p2.Minus(p1)
-	d2 := p4.Minus(p3)
-	cross := d1.Cross(d2)
-	if mathAbs(cross.Z) < 1e-20 {
-		return false
+	cnt := 1
+	for i := range el.Edges {
+		el.Edges[i].Tag = 0
 	}
-	t := p3.Minus(p1).Cross(d2).Z / cross.Z
-	u := p3.Minus(p1).Cross(d1).Z / cross.Z
-	return t >= 0 && t <= 1 && u >= 0 && u <= 1
+
+	ret := false
+	for i := range el.Edges {
+		se := &el.Edges[i]
+		inters := kdtree.AnyEdgeCrossings(se.A, se.B, cnt, intersectsAt, nil)
+		if inters != 1 {
+			ret = true
+			break
+		}
+		cnt++
+	}
+	return ret
 }
 
 // OffsetInto sets dest to the polygon offset by r, contour by contour

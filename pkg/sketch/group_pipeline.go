@@ -63,7 +63,8 @@ func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, a
 // it assembles them from the group's entities and records the
 // polygon error, otherwise it just clears them. Mirrors C++
 // Group::GenerateLoops (groupmesh.cpp:58). The self-intersection check
-// is skipped, as it is by default in C++ (SS.checkClosedContour).
+// is slow, so it runs only with the sketch's CheckClosedContour (C++
+// SS.checkClosedContour).
 func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 	g.PolyLoops.Clear()
 	g.BezierLoops.Clear()
@@ -81,6 +82,13 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 			g.PolyError.How = int(core.PolyNotClosed)
 		default:
 			g.PolyError.How = int(core.PolyGood)
+			// The self-intersecting check is kind of slow, so don't run
+			// it unless requested.
+			if sk.CheckClosedContour {
+				if g.PolyLoops.SelfIntersecting(&g.PolyError.ErrorPoint) {
+					g.PolyError.How = int(core.PolySelfIntersecting)
+				}
+			}
 		}
 	}
 }

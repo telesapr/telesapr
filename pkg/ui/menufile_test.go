@@ -9,6 +9,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
 func newTestApp(t *testing.T) (*SolveSpaceUI, *headless.Platform) {
@@ -203,4 +204,77 @@ func TestAnalyzeVolume(t *testing.T) {
 		t.Errorf("message %q", d.Message)
 	}
 	t.Logf("%s / %s", d.Message, d.Description)
+}
+
+// TestLoadMissingLinkAsks loads a sketch whose linked file is missing:
+// as in C++, the user is asked to locate it, and may decline, cancel
+// the load, or pick the file.
+func TestLoadMissingLinkAsks(t *testing.T) {
+	fixture := filepath.Join("..", "..", "testdata", "group", "link")
+	linked, err := filepath.Abs(filepath.Join(fixture, "rect_v20.slvs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name      string
+		responses []platform.Response
+		files     []string
+		loaded    bool
+		found     bool
+	}{
+		{"no", []platform.Response{platform.ResponseNo}, nil, true, false},
+		{"cancel", []platform.Response{platform.ResponseCancel}, nil, false, false},
+		{"yes", []platform.Response{platform.ResponseYes}, []string{linked}, true, true},
+		{"yes but none", []platform.Response{platform.ResponseYes}, []string{""}, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ss, p := newTestApp(t)
+			dir := t.TempDir()
+			path := filepath.Join(dir, "moved.slvs")
+			copyFile(t, filepath.Join(fixture, "normal.slvs"), path)
+			p.DialogResponses = tc.responses
+			p.FilePaths = tc.files
+
+			loaded := ss.Load(path)
+			if loaded != tc.loaded {
+				t.Fatalf("loaded %v, want %v", loaded, tc.loaded)
+			}
+			if len(p.DialogsShown) != 1 {
+				t.Fatalf("%d dialogs shown, want 1", len(p.DialogsShown))
+			}
+			d := p.DialogsShown[0]
+			if d.Message != "The linked file “rect_v20.slvs” is not present." || d.Type != platform.DialogQuestion {
+				t.Errorf("dialog %q type %d", d.Message, d.Type)
+			}
+			if !tc.loaded {
+				if ss.SaveFile != "" {
+					t.Errorf("SaveFile %q after a cancelled load", ss.SaveFile)
+				}
+				return
+			}
+			var link *sketch.Group
+			for i := range ss.SK.Groups {
+				if ss.SK.Groups[i].Type == sketch.GroupLinked {
+					link = &ss.SK.Groups[i]
+				}
+			}
+			if link == nil {
+				t.Fatal("no link group")
+			}
+			if found := len(link.ImpEntity) > 0; found != tc.found {
+				t.Errorf("link group has %d entities", len(link.ImpEntity))
+			}
+			if tc.found {
+				rel, err := filepath.Rel(dir, linked)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if link.LinkFile != filepath.ToSlash(rel) {
+					t.Errorf("link file %q, want %q", link.LinkFile, filepath.ToSlash(rel))
+				}
+			} else if link.LinkFile != "rect_v20.slvs" {
+				t.Errorf("link file %q changed", link.LinkFile)
+			}
+		})
+	}
 }

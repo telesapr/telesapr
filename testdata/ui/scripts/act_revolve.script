@@ -1,0 +1,56 @@
+# A revolve: a rectangle turned about a construction line beside it, and
+# its group screen.
+key r
+move 350 200
+down L 350 200
+up L 350 200
+move 420 300
+down L 420 300
+up L 420 300
+key esc
+key s
+move 300 150
+down L 300 150
+up L 300 150
+move 300 350
+down L 300 350
+up L 300 350
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+key g
+move 300 250
+hover
+down L 300 250
+up L 300 250
+dump
+key v shift
+dump
+tw
+params
+save
+# Two-sided, as a difference, half transparent and red, from the group
+# screen.
+twmove 190 130
+twdown L 190 130
+twup L 190 130
+tw
+twmove 82 210
+twdown L 82 210
+twup L 82 210
+tw
+twmove 172 250
+twdown L 172 250
+twup L 172 250
+dump
+edit 0.5
+tw
+twmove 334 230
+twdown L 334 230
+twup L 334 230
+dump
+edit 1, 0, 0
+tw
+dump
+save

@@ -5,6 +5,7 @@ package ui
 
 import (
 	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
 // wrapSymmetric brings v into (-n/2, n/2] (C++ WRAP_SYMMETRIC).
@@ -361,7 +362,7 @@ func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
 		} else {
 			v = atof(str)
 		}
-		v = max(0.0, v)
+		v = geom.Max(0.0, v) // std::max: 0 for NaN
 		switch tw.edit.meaning {
 		case EditStyleTextHeight:
 			s.TextHeight = v

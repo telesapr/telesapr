@@ -80,7 +80,15 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	root := filepath.Join("..", "..", "testdata")
 	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
 
-	r := &uiScriptRunner{t: t, dir: root, savePath: filepath.Join(t.TempDir(), "save.slvs")}
+	// The save goes where the harness's mktemp -d puts its own, one
+	// folder under the temporary directory: a linked file is saved
+	// relative to it.
+	saveDir, err := os.MkdirTemp("", "spacesolve-ui-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(saveDir) })
+	r := &uiScriptRunner{t: t, dir: root, savePath: filepath.Join(saveDir, "save.slvs")}
 	r.p = headless.New()
 	r.p.FontFiles = []string{filepath.Join(root, "Gentium-R.ttf")}
 	r.p.PopUpHook = r.popUp
@@ -419,6 +427,10 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			fmt.Fprintf(&r.b, "group %x %d %d %d %d\n", hg.V, g.Solved.How, g.Solved.Dof, b2i(g.DofCheckOk),
 				b2i(g.Clean))
 		}
+	case "polyerror":
+		g := r.ss.SK.GetGroup(r.ss.GW.activeGroupH())
+		fmt.Fprintf(&r.b, "polyerror %d %s %s %s\n", g.PolyError.How, v17(g.PolyError.ErrorPoint),
+			v17(g.PolyError.NotClosed.A), v17(g.PolyError.NotClosed.B))
 	case "menus":
 		for _, m := range r.gw().MenuBar.(*headless.MenuBar).Menus {
 			dumpMenuItems(&r.b, []*headless.MenuItem{m}, 0)

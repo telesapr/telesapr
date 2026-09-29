@@ -1,0 +1,50 @@
+# A helix: a rectangle turned about a construction line beside it, and
+# its group screen.
+key r
+move 350 200
+down L 350 200
+up L 350 200
+move 420 300
+down L 420 300
+up L 420 300
+key esc
+key s
+move 300 150
+down L 300 150
+up L 300 150
+move 300 350
+down L 300 350
+up L 300 350
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+key g
+move 300 250
+hover
+down L 300 250
+up L 300 250
+dump
+key h shift
+dump
+tw
+params
+save
+# Fix the pitch, change it, and make the helix two-sided, from the group
+# screen.
+twmove 37 210
+twdown L 37 210
+twup L 37 210
+tw
+twmove 136 190
+twdown L 136 190
+twup L 136 190
+dump
+edit 100
+tw
+twmove 190 130
+twdown L 190 130
+twup L 190 130
+tw
+dump
+save

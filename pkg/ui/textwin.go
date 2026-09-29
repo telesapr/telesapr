@@ -348,6 +348,11 @@ func (tw *TextWindow) Init() {
 // ClearSuper resets everything but the window, and shows the home
 // screen (C++ TextWindow::ClearSuper).
 func (tw *TextWindow) ClearSuper() {
+	// C++ destroys the step dimension's timer with the rest; a step in
+	// progress must not go on with the reset state.
+	if t := tw.stepDim.timer; t != nil {
+		t.SetOnTimeout(nil)
+	}
 	*tw = TextWindow{ss: tw.ss, window: tw.window, canvas: tw.canvas, buttons: tw.buttons}
 
 	tw.HideEditControl()

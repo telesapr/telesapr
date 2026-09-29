@@ -50,6 +50,11 @@ type Sketch struct {
 	// model's size (C++ SS.chordTol); 0 is the default, 0.1.
 	ChordTolPct float64
 
+	// CheckClosedContour is whether a sketch's loops are checked for
+	// self-intersection, which is slow (C++ SS.checkClosedContour, on
+	// by default).
+	CheckClosedContour bool
+
 	// Generation counts completed GenerateAll runs, so a GUI can tell
 	// when its per-entity drawing caches are stale.
 	Generation uint64
@@ -104,13 +109,14 @@ type Sketch struct {
 
 func NewSketch() *Sketch {
 	return &Sketch{
-		Groups:      make([]Group, 0),
-		GroupOrder:  make([]core.HGroup, 0),
-		Constraints: make([]core.Constraint, 0),
-		Requests:    make([]Request, 0),
-		Styles:      make([]core.Style, 0),
-		Entities:    make([]core.Entity, 0),
-		Params:      make([]core.Param, 0),
+		CheckClosedContour: true,
+		Groups:             make([]Group, 0),
+		GroupOrder:         make([]core.HGroup, 0),
+		Constraints:        make([]core.Constraint, 0),
+		Requests:           make([]Request, 0),
+		Styles:             make([]core.Style, 0),
+		Entities:           make([]core.Entity, 0),
+		Params:             make([]core.Param, 0),
 	}
 }
 

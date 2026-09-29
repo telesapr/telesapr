@@ -1,0 +1,45 @@
+# A lathe: a rectangle turned about a construction line beside it, and
+# its group screen.
+key r
+move 350 200
+down L 350 200
+up L 350 200
+move 420 300
+down L 420 300
+up L 420 300
+key esc
+key s
+move 300 150
+down L 300 150
+up L 300 150
+move 300 350
+down L 300 350
+up L 300 350
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+key g
+move 300 250
+hover
+down L 300 250
+up L 300 250
+dump
+key l shift
+dump
+tw
+params
+save
+# Rename the group, then delete it, from the group screen.
+twmove 199 80
+twdown L 199 80
+twup L 199 80
+dump
+edit turned
+tw
+twmove 253 80
+twdown L 253 80
+twup L 253 80
+tw
+dump
+save

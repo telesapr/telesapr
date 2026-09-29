@@ -14,6 +14,9 @@ import (
 // SolveSpaceUI::Init).
 func (ss *SolveSpaceUI) Init() {
 	ss.LoadSettings()
+	// A missing linked file is looked for through the dialogs.
+	slvs.LocateMissingFile = ss.locateMissingFile
+	slvs.ImageCorrupted = func(file string) { ss.Error("The image '%s' is corrupted.", file) }
 	ttf.SetFontFiles(ss.Platform.GetFontFiles())
 
 	ss.refreshTimer = ss.Platform.CreateTimer()

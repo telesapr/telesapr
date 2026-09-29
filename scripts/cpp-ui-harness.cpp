@@ -685,6 +685,11 @@ int main(int argc, char **argv) {
                 printf("group %x %d %d %d %d\n", hg.v, (int)g->solved.how, g->solved.dof,
                        g->dofCheckOk ? 1 : 0, g->clean ? 1 : 0);
             }
+        } else if(op == "polyerror") {
+            Group *g = SK.GetGroup(SS.GW.activeGroup);
+            printf("polyerror %d %s %s %s\n", (int)g->polyError.how,
+                   V(g->polyError.errorPointAt).c_str(),
+                   V(g->polyError.notClosedAt.a).c_str(), V(g->polyError.notClosedAt.b).c_str());
         } else if(op == "menus") {
             auto bar = std::static_pointer_cast<RecordingMenuBar>(GW()->menuBar);
             DumpItems(bar->menus, 0);

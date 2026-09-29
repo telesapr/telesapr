@@ -18,18 +18,48 @@ func TestSBsp3BuildFromMesh(t *testing.T) {
 	}
 }
 
-func TestBuildEdgeKdTreeIntersect(t *testing.T) {
-	el := &SEdgeList{}
-	el.AddEdge(geom.Vector{X: -10}, geom.Vector{X: 10}, 0, 0, 0)
-	el.AddEdge(geom.Vector{Y: -10}, geom.Vector{Y: 10}, 0, 0, 0)
-	el.AddEdge(geom.Vector{Z: -10}, geom.Vector{Z: 10}, 0, 0, 0)
-	kd := BuildEdgeKdTree(el)
-	if kd == nil {
-		t.Fatalf("kd-tree empty")
+// TestSelfIntersectingPolygon checks the edge kd-tree's crossing count
+// through SPolygon.SelfIntersecting: a bowtie crosses itself, a square
+// doesn't, in any plane.
+func TestSelfIntersectingPolygon(t *testing.T) {
+	square := []geom.Vector{{}, {X: 10}, {X: 10, Y: 10}, {Y: 10}}
+	bowtie := []geom.Vector{{}, {X: 10, Y: 10}, {X: 10}, {Y: 10}}
+	// The same in the yz plane, where a test on x and y alone sees
+	// nothing.
+	yz := func(pts []geom.Vector) []geom.Vector {
+		out := make([]geom.Vector, len(pts))
+		for i, p := range pts {
+			out[i] = geom.Vector{Y: p.X, Z: p.Y}
+		}
+		return out
 	}
-	_, edge := EdgeKdIntersect(kd, geom.Vector{X: -5, Y: -5}, geom.Vector{X: 5, Y: 5})
-	if edge == nil {
-		t.Fatalf("expected intersection with diagonal cross")
+	for _, tc := range []struct {
+		name string
+		pts  []geom.Vector
+		want bool
+	}{
+		{"square", square, false},
+		{"bowtie", bowtie, true},
+		{"square yz", yz(square), false},
+		{"bowtie yz", yz(bowtie), true},
+	} {
+		var p SPolygon
+		p.AddEmptyContour()
+		c := &p.Contours[0]
+		for _, pt := range tc.pts {
+			c.AddPoint(pt)
+		}
+		c.AddPoint(tc.pts[0])
+		var at geom.Vector
+		if got := p.SelfIntersecting(&at); got != tc.want {
+			t.Errorf("%s: self-intersecting %v, want %v", tc.name, got, tc.want)
+		} else if got {
+			// The bowtie's diagonals cross at its centre.
+			want := tc.pts[0].Plus(tc.pts[1]).ScaledBy(0.5)
+			if !at.Equals(want) {
+				t.Errorf("%s: crossing at %v, want %v", tc.name, at, want)
+			}
+		}
 	}
 }
 

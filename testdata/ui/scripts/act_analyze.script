@@ -1,0 +1,49 @@
+# Measure the fillet model and check its mesh, in each unit system and
+# with SI prefixes; show the underconstrained points.
+load group/boolean_tangent_fillet/normal.slvs
+answer ok
+key v ctrl shift
+answer ok
+key n ctrl shift
+answer ok
+key i ctrl shift
+key c ctrl shift
+dump
+answer ok
+key a ctrl shift
+key a ctrl
+answer ok
+key p ctrl shift
+key esc
+key f ctrl shift
+params
+menu View|Dimension Units|Dimensions in Inches
+answer ok
+key v ctrl shift
+menu View|Dimension Units|Dimensions in Feet and Inches
+answer ok
+key v ctrl shift
+menu View|Dimension Units|Dimensions in Meters
+answer ok
+key v ctrl shift
+menu Edit|Configuration...
+tw
+twmove 28 560
+twdown L 28 560
+twup L 28 560
+tw
+answer ok
+key v ctrl shift
+menu View|Dimension Units|Dimensions in Millimeters
+answer ok
+key v ctrl shift
+key a ctrl
+answer ok
+key p ctrl shift
+key esc
+menu View|Dimension Units|Dimensions in Inches
+key a ctrl
+answer ok
+key p ctrl shift
+key esc
+dump

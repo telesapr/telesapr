@@ -390,6 +390,9 @@ func (tw *TextWindow) ShowConfiguration() {
 	}
 }
 
+// The clamps below are std::min and std::max (geom.Min/Max), which keep
+// the bound when the value is NaN, where Go's min and max give NaN.
+
 // EditControlDoneForConfiguration takes an edited configuration value,
 // and reports whether the edit was one of the configuration's (C++
 // TextWindow::EditControlDoneForConfiguration).
@@ -397,10 +400,10 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
 	case EditLightIntensity:
-		ss.LightIntensity[tw.edit.i] = min(1.0, max(0.0, atof(s)))
+		ss.LightIntensity[tw.edit.i] = geom.Min(1.0, geom.Max(0.0, atof(s)))
 		ss.GW.Invalidate(false)
 	case EditLightAmbient:
-		ss.AmbientIntensity = min(1.0, max(0.0, atof(s)))
+		ss.AmbientIntensity = geom.Min(1.0, geom.Max(0.0, atof(s)))
 		ss.GW.Invalidate(false)
 	case EditLightDirection:
 		if x, y, z, ok := scanVector3(s); ok {
@@ -417,10 +420,10 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 		}
 	case EditChordTolerance:
 		if tw.edit.i == 0 {
-			ss.ChordTol = max(0.0, atof(s))
+			ss.ChordTol = geom.Max(0.0, atof(s))
 			ss.GenerateAll(sketch.GenerateAll)
 		} else {
-			ss.ExportChordTol = max(0.0, atof(s))
+			ss.ExportChordTol = geom.Max(0.0, atof(s))
 		}
 	case EditMaxSegments:
 		if tw.edit.i == 0 {
@@ -430,17 +433,17 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 			ss.ExportMaxSegments = min(1000, max(7, atoi(s)))
 		}
 	case EditCameraTangent:
-		ss.CameraTangentSetting = min(2.0, max(0.0, atof(s))) / 1000.0
+		ss.CameraTangentSetting = geom.Min(2.0, geom.Max(0.0, atof(s))) / 1000.0
 		ss.GW.Invalidate(false)
 		if !ss.UsePerspectiveProj {
 			ss.Message("The perspective factor will have no effect until you " +
 				"enable View -> Use Perspective Projection.")
 		}
 	case EditGridSpacing:
-		ss.GridSpacing = toF32(min(1e4, max(1e-3, ss.StringToMm(s))))
+		ss.GridSpacing = toF32(geom.Min(1e4, geom.Max(1e-3, ss.StringToMm(s))))
 		ss.GW.Invalidate(false)
 	case EditExplodeDistance:
-		ss.ExplodeDistance = min(1e4, max(-1e4, ss.StringToMm(s)))
+		ss.ExplodeDistance = geom.Min(1e4, geom.Max(-1e4, ss.StringToMm(s)))
 		ss.SK.MarkGroupDirty(ss.GW.activeGroupH(), true)
 	case EditDigitsAfterDecimal:
 		v := atoi(s)

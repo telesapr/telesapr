@@ -1,0 +1,38 @@
+# Copy a rectangle and paste it transformed: three copies, turned,
+# scaled and mirrored.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 300 280
+down L 300 280
+up L 300 280
+key esc
+key a ctrl
+key c ctrl
+menu Edit|Paste Transformed...
+tw
+twmove 217 110
+twdown L 217 110
+twup L 217 110
+dump
+edit 3
+tw
+twmove 271 130
+twdown L 271 130
+twup L 271 130
+edit 30
+twmove 199 190
+twdown L 199 190
+twup L 199 190
+edit 2
+twmove 127 210
+twdown L 127 210
+twup L 127 210
+tw
+twmove 55 240
+twdown L 55 240
+twup L 55 240
+dump
+tw
+save

@@ -4,6 +4,7 @@ package ui
 // saving, autosave, the recent files and the File menu.
 
 import (
+	"errors"
 	"math"
 	"os"
 	"path/filepath"
@@ -96,6 +97,10 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 
 	doc, err := slvs.LoadFile(filename)
 	if err != nil {
+		if errors.Is(err, slvs.ErrCancelled) {
+			// The user gave up at a missing linked file.
+			return false
+		}
 		ss.Error("Unrecognized data in file. This file may be corrupt, or " +
 			"from a newer version of the program.")
 		return false
@@ -221,6 +226,50 @@ func (ss *SolveSpaceUI) OkayToStartNewFile() bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// locateMissingFile asks whether to find a linked file that couldn't be
+// read, and where it is (C++ LocateImportedFile, and the file dialogs
+// of ReloadAllLinked and ReloadLinkedImage).
+func (ss *SolveSpaceUI) locateMissingFile(name string, isImage, canCancel bool) (string, slvs.LocateResponse) {
+	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
+	dialog.SetType(platform.DialogQuestion)
+	dialog.SetTitle("Missing File")
+	dialog.SetMessage("The linked file “" + name + "” is not present.")
+	dialog.SetDescription("Do you want to locate it manually?\n\n" +
+		"If you decline, any geometry that depends on " +
+		"the missing file will be permanently removed.")
+	dialog.AddButton("&Yes", platform.ResponseYes, true)
+	dialog.AddButton("&No", platform.ResponseNo, false)
+	if canCancel {
+		dialog.AddButton("&Cancel", platform.ResponseCancel, false)
+	}
+
+	switch dialog.RunModal() {
+	case platform.ResponseYes:
+		fd := ss.Platform.CreateOpenFileDialog(ss.GW.window)
+		key := "LinkSketch"
+		if isImage {
+			key = "LinkImage"
+			fd.AddFilters(platform.RasterFileFilters)
+		} else {
+			fd.AddFilters(platform.SolveSpaceLinkFileFilters)
+		}
+		fd.ThawChoices(ss.Settings, key)
+		fd.SuggestFilename(name)
+		if fd.RunModal() {
+			fd.FreezeChoices(ss.Settings, key)
+			return fd.GetFilename(), slvs.LocateYes
+		}
+		if canCancel {
+			return "", slvs.LocateCancel
+		}
+		return "", slvs.LocateGaveUp
+	case platform.ResponseNo:
+		return "", slvs.LocateNo
+	default:
+		return "", slvs.LocateCancel
 	}
 }
 
