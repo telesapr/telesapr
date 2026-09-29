@@ -3,7 +3,6 @@ package tkgui
 import (
 	"encoding/binary"
 	"image"
-	"math/bits"
 	"strconv"
 	"time"
 
@@ -438,35 +437,27 @@ func setWindowIcon(win *window.Window) {
 		d.Atoms().Cardinal, 32, tkplatform.PropModeReplace, cardinals(vals), len(vals))
 }
 
-// cardinals lays out format-32 property data as Xlib wants it: one C
-// long per item. takigo hands the bytes to XChangeProperty unchanged.
+// cardinals packs format-32 property data as takigo takes it: four
+// bytes per item in native byte order.
 func cardinals(vals []uint32) []byte {
-	size := bits.UintSize / 8 // a C long on the Unix ABIs Go supports
-	data := make([]byte, len(vals)*size)
+	data := make([]byte, len(vals)*4)
 	for i, v := range vals {
-		if size == 8 {
-			binary.NativeEndian.PutUint64(data[i*size:], uint64(v))
-		} else {
-			binary.NativeEndian.PutUint32(data[i*size:], v)
-		}
+		binary.NativeEndian.PutUint32(data[i*4:], v)
 	}
 	return data
 }
 
 // frameOffset is how far the window manager's frame reaches left of
-// and above the window (_NET_FRAME_EXTENTS), zero without one.
+// and above the window (_NET_FRAME_EXTENTS: left, right, top, bottom),
+// zero without one.
 func frameOffset(win *window.Window) (left, top int) {
 	d := win.Display.Server
 	prop := d.InternAtom("_NET_FRAME_EXTENTS", false)
-	// takigo copies four bytes per format-32 item out of Xlib's array of
-	// longs, so read one item at a time: its low half on a little-endian
-	// machine.
-	read := func(i int64) int {
-		data, _, format := d.GetWindowProperty(win.PlatformID, prop, i, 1, false)
-		if format != 32 || len(data) < 4 {
-			return 0
-		}
-		return int(int32(binary.LittleEndian.Uint32(data)))
+	data, _, format := d.GetWindowProperty(win.PlatformID, prop, 0, 4, false)
+	if format != 32 || len(data) < 16 {
+		return 0, 0
 	}
-	return read(0), read(2)
+	left = int(int32(binary.NativeEndian.Uint32(data[0:])))
+	top = int(int32(binary.NativeEndian.Uint32(data[8:])))
+	return left, top
 }
