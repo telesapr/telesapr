@@ -120,13 +120,6 @@ func (d *MessageDialog) RunModal() platform.Response {
 		}
 	}
 
-	// dialog.Run sizes the dialog from what its frames request, but
-	// pack only works that out at idle time: lay them out now, inside
-	// out, or the dialog keeps its minimum size and clips the text.
-	pack.ArrangeContainer(text.Window())
-	pack.ArrangeContainer(dlg.Content.Window())
-	pack.ArrangeContainer(dlg.BtnFrame.Window())
-
 	res := int(dlg.Run()) - base
 	if res < 0 || res >= len(d.buttons) {
 		return platform.ResponseNone
