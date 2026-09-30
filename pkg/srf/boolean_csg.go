@@ -1,8 +1,6 @@
 package srf
 
 import (
-	"sort"
-
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/internal/par"
 )
@@ -325,9 +323,9 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 			// And now sort them in order along the line. Note that we must
 			// do that after refining, in case the refining would make two
 			// points switch places.
-			sort.SliceStable(il, func(i, j int) bool {
-				ta := il[i].P.Minus(lineStart).DivProjected(lineDirection)
-				tb := il[j].P.Minus(lineStart).DivProjected(lineDirection)
+			CxxSort(il, func(a, b *SInter) bool {
+				ta := a.P.Minus(lineStart).DivProjected(lineDirection)
+				tb := b.P.Minus(lineStart).DivProjected(lineDirection)
 				return ta < tb
 			})
 

@@ -2,7 +2,6 @@ package srf
 
 import (
 	"math"
-	"sort"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
@@ -38,10 +37,10 @@ const (
 func SBspUvFrom(el *SEdgeList, srf *SSurface) *SBspUv {
 	work := make([]SEdge, len(el.Edges))
 	copy(work, el.Edges)
-	sort.SliceStable(work, func(i, j int) bool {
-		li := work[i].A.Minus(work[i].B).Magnitude()
-		lj := work[j].A.Minus(work[j].B).Magnitude()
-		return li > lj
+	CxxSort(work, func(a, b *SEdge) bool {
+		la := a.A.Minus(a.B).Magnitude()
+		lb := b.A.Minus(b.B).Magnitude()
+		return la > lb
 	})
 	var bsp *SBspUv
 	for i := range work {
