@@ -83,8 +83,7 @@ func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window
 	// The drawing area has no background, so what shows in the part a
 	// resize uncovers, until the next frame, is the toplevel's; make it
 	// the default scene background rather than white.
-	w.topWin.BackgroundPixel = 0
-	w.topWin.Display.Server.SetWindowBackground(w.topWin.PlatformID, 0)
+	w.topWin.SetBackgroundPixel(0)
 	p.app.RegisterCloseHandler(w.topWin.PlatformID, func() {
 		if w.events.OnClose != nil {
 			w.events.OnClose()
