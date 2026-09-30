@@ -369,9 +369,13 @@ func (s *SShell) classifyEdge(indir, outdir *SShellClass,
 // planar / coplanar / cylindrical fixture cases over the C++'s full
 // edge-on-edge / tangent-face handling.
 func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
-	t SurfaceCombineAs, dbgIndex int) SSurface {
+	t SurfaceCombineAs, dbgIndex int) (trimmed SSurface, failed bool) {
+	ret := *srf
+	// The copy is this call's own, so it can use its closest-point cache
+	// whatever goes for the operands' surfaces.
+	ret.noCache = false
 	if parent == nil || sha == nil || shb == nil || into == nil {
-		return *srf
+		return ret, false
 	}
 	opA := parent == sha
 	var agnst *SShell
@@ -380,7 +384,6 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	} else {
 		agnst = sha
 	}
-	ret := *srf
 	ret.Trim = nil
 	ret.TrimBuilt = true
 
@@ -566,15 +569,14 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	final.CullExtraneousEdges(true)
 
 	// Step 9 (C++ line 729-744): assemble the trim polygon from the
-	// kept edges; mark booleanFailed in `into` if it fails to close.
+	// kept edges; if it fails to close, the caller marks booleanFailed
+	// in `into` (C++ does that here, in a critical section).
 	ret.trimFromEdgeList(final, true)
 	var poly SPolygon
 	final.lClearTags()
-	if !final.AssemblePolygon(&poly, nil, true) {
-		into.BooleanFailed = true
-	}
+	failed = !final.AssemblePolygon(&poly, nil, true)
 
-	return ret
+	return ret, failed
 }
 
 // lClearTags is a small helper to reset the Tag field on every edge
@@ -597,7 +599,10 @@ func copySurfacesTrimAgainstAccurate(receiver, sha, shb, into *SShell, t Surface
 	}
 	for i := range receiver.Surface {
 		srf := &receiver.Surface[i]
-		trimmed := srf.makeCopyTrimAgainst(receiver, sha, shb, into, t, i)
+		trimmed, failed := srf.makeCopyTrimAgainst(receiver, sha, shb, into, t, i)
+		if failed {
+			into.BooleanFailed = true
+		}
 		trimmed.NewH = core.HSSurface{V: uint32(len(into.Surface) + 1)}
 		trimmed.H = trimmed.NewH
 		into.Surface = append(into.Surface, trimmed)

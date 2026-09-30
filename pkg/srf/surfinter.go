@@ -16,6 +16,10 @@ import (
 // or else is split against the operand shells (C++
 // SSurface::AddExactIntersectionCurve).
 func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA, agnstB *SShell, into *SShell) {
+	s.addExactIntersectionCurve(sb, srfB, agnstA, agnstB, &curveSink{shell: into})
+}
+
+func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA, agnstB *SShell, into *curveSink) {
 	// Important to keep the order of (surfA, surfB) consistent; when we later
 	// rewrite the identifiers, we rewrite surfA from A and surfB from B.
 	sc := SCurve{
@@ -29,27 +33,11 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 	// identical curve in the shell, then follow that pwl exactly, otherwise
 	// calculate from scratch.
 	var split SCurve
-	var existing *SCurve
-	sbrev := *sb
-	sbrev.Reverse()
-	backwards := false
-	for i := range into.Curve {
-		se := &into.Curve[i]
-		if se.IsExact {
-			if sb.Equals(&se.Exact) {
-				existing = se
-				break
-			}
-			if sbrev.Equals(&se.Exact) {
-				existing = se
-				backwards = true
-				break
-			}
-		}
-	}
-	if existing != nil {
-		sc.Points = append([]SCurvePt(nil), existing.Points...)
-		if backwards {
+	existing := into.findExact(sb)
+	ex := exactCurve{s: s, srfB: srfB, sb: *sb, agnstA: agnstA, agnstB: agnstB, match: existing}
+	if existing.curve != nil {
+		sc.Points = append([]SCurvePt(nil), existing.curve.Points...)
+		if existing.backwards {
 			for i, j := 0, len(sc.Points)-1; i < j; i, j = i+1, j-1 {
 				sc.Points[i], sc.Points[j] = sc.Points[j], sc.Points[i]
 			}
@@ -82,6 +70,7 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 	if !(withinA && withinB) {
 		// Intersection curve lies entirely outside one of the surfaces, so
 		// it's fake.
+		into.putExact(nil, ex)
 		return
 	}
 
@@ -90,12 +79,16 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 	}
 
 	split.Source = CurveSourceIntersection
-	into.addAndAssignCurveId(split)
+	into.putExact(&split, ex)
 }
 
 // IntersectAgainst adds the curves where s meets b to into (C++
 // SSurface::IntersectAgainst).
 func (s *SSurface) IntersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *SShell) {
+	s.intersectAgainst(b, agnstA, agnstB, &curveSink{shell: into})
+}
+
+func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *curveSink) {
 	var amax, amin, bmax, bmin geom.Vector
 	s.GetAxisAlignedBounding(&amax, &amin)
 	b.GetAxisAlignedBounding(&bmax, &bmin)
@@ -147,7 +140,7 @@ func (s *SSurface) IntersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *S
 				// does it lie completely in the plane?
 				if splane.ContainsPlaneCurve(sc) {
 					bezier := sc.Exact
-					s.AddExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
+					s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
 					foundExact = true
 				}
 			}
@@ -165,7 +158,7 @@ func (s *SSurface) IntersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *S
 
 // intersectPlanes is IntersectAgainst's line-line case: two planes meet
 // in a line, or not at all.
-func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *SShell) {
+func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *curveSink) {
 	na := s.NormalAt(0, 0).WithMagnitude(1)
 	nb := b.NormalAt(0, 0).WithMagnitude(1)
 	da := na.Dot(s.PointAt(0, 0))
@@ -221,13 +214,13 @@ func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *SS
 
 	if tmax > tmin+lengthEps {
 		bezier := SBezierFrom2(p.Plus(dl.ScaledBy(tmin)), p.Plus(dl.ScaledBy(tmax)))
-		s.AddExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
+		s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
 	}
 }
 
 // intersectPlaneAndExtrusion is IntersectAgainst's case of a plane and
 // a surface of extrusion.
-func (s *SSurface) intersectPlaneAndExtrusion(b *SSurface, agnstA, agnstB *SShell, into *SShell) {
+func (s *SSurface) intersectPlaneAndExtrusion(b *SSurface, agnstA, agnstB *SShell, into *curveSink) {
 	splane, sext, shext := b, s, agnstA
 	if s.DegM == 1 && s.DegN == 1 {
 		splane, sext, shext = s, b, agnstB
@@ -278,7 +271,7 @@ func (s *SSurface) intersectPlaneAndExtrusion(b *SSurface, agnstA, agnstB *SShel
 			}
 			if splane.ContainsPlaneCurve(sc) {
 				bz := sc.Exact
-				s.AddExactIntersectionCurve(&bz, b, agnstA, agnstB, into)
+				s.addExactIntersectionCurve(&bz, b, agnstA, agnstB, into)
 				exacts = append(exacts, bz)
 			}
 		}
@@ -304,7 +297,7 @@ func (s *SSurface) intersectPlaneAndExtrusion(b *SSurface, agnstA, agnstB *SShel
 
 			al := along.ScaledBy(0.5)
 			bz := SBezierFrom2(si.P.Minus(al), si.P.Plus(al))
-			s.AddExactIntersectionCurve(&bz, b, agnstA, agnstB, into)
+			s.addExactIntersectionCurve(&bz, b, agnstA, agnstB, into)
 		}
 	} else {
 		// Direction of extrusion is not parallel to plane; so
@@ -316,14 +309,14 @@ func (s *SSurface) intersectPlaneAndExtrusion(b *SSurface, agnstA, agnstB *SShel
 			bezier.Ctrl[i] = geom.AtIntersectionOfPlaneAndLine(n, d, p0, p1)
 		}
 
-		s.AddExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
+		s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
 	}
 }
 
 // intersectCoaxialExtrusions is IntersectAgainst's case of two
 // surfaces of extrusion along the same axis: they might intersect along
 // some number of lines parallel to the axis.
-func (s *SSurface) intersectCoaxialExtrusions(b *SSurface, oft *SBezier, alongt geom.Vector, agnstA, agnstB *SShell, into *SShell) {
+func (s *SSurface) intersectCoaxialExtrusions(b *SSurface, oft *SBezier, alongt geom.Vector, agnstA, agnstB *SShell, into *curveSink) {
 	axis := alongt.WithMagnitude(1)
 
 	var inters []SInter
@@ -376,14 +369,14 @@ func (s *SSurface) intersectCoaxialExtrusions(b *SSurface, oft *SBezier, alongt 
 		p = b.PointAt(ub, vb)
 
 		bezier := SBezierFrom2(p.Plus(axis0), p.Plus(axis1))
-		s.AddExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
+		s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
 	}
 }
 
 // intersectByMarching is IntersectAgainst's general case: find where
 // each surface's trim edges cross the other surface, then march along
 // the intersection from each of those points.
-func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into *SShell) {
+func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into *curveSink) {
 	// Try intersecting the surfaces numerically, by a marching algorithm.
 	// First, we find all the intersections between a surface and the
 	// boundary of the other surface.
@@ -529,7 +522,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 
 		// And now we split and insert the curve
 		split := sc.MakeCopySplitAgainst(agnstA, agnstB, s, b)
-		into.addAndAssignCurveId(split)
+		into.add(split)
 	}
 }
 

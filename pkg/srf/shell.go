@@ -5,6 +5,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/internal/par"
 )
 
 // SCurvePt is one polyline vertex on a trim curve.
@@ -741,9 +742,23 @@ func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quate
 // polygon and triangulated either by ear-clipping (planar surfaces)
 // or by the adaptive uv grid (curved surfaces). See SSurface.TrimBuilt
 // for the one Go-only fallback.
+//
+// The surfaces are triangulated at once, as under C++'s OpenMP, each
+// into a mesh of its own; the meshes are joined in the surfaces' order,
+// which is the order C++ built without OpenMP adds them in.
 func (s *SShell) TriangulateInto(mesh *SMesh) {
-	for i := range s.Surface {
-		s.Surface[i].TriangulateInto(s, mesh)
+	if len(s.Surface) < 2 || par.Workers() < 2 {
+		for i := range s.Surface {
+			s.Surface[i].TriangulateInto(s, mesh)
+		}
+		return
+	}
+	ms := make([]SMesh, len(s.Surface))
+	par.For(len(s.Surface), func(i int) {
+		s.Surface[i].TriangulateInto(s, &ms[i])
+	})
+	for i := range ms {
+		mesh.Triangles = append(mesh.Triangles, ms[i].Triangles...)
 	}
 }
 

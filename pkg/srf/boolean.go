@@ -3,6 +3,7 @@ package srf
 import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/internal/par"
 )
 
 // MakeFromBoolean sets s to the boolean combination of a and b.
@@ -155,8 +156,11 @@ func (s *SShell) MakeFromIntersectionOf(a, b *SShell) {
 // well-defined for every intersection branch (plane-plane vs
 // extrusion-extrusion vs marching-squares). Reverted in favor of the
 // case-3 default fix.)
+//
+// The surfaces are done at once, as under C++'s OpenMP: each one writes
+// only its own bsp, edges and closest-point cache.
 func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
-	for i := range s.Surface {
+	par.For(len(s.Surface), func(i int) {
 		srf := &s.Surface[i]
 		srf.Bsp = buildSurfaceClassifyingBsp(s, srf, useCurvesFrom)
 		// Mirrors the second half of C++ `SSurface::MakeClassifyingBsp`
@@ -170,7 +174,7 @@ func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 		// (case 4), which is far less precise for the axis-aligned
 		// coincident-edge geometry the boolean fixtures are full of.
 		srf.Edges = buildSurfaceClassifyingEdgesXYZ(s, srf, useCurvesFrom)
-	}
+	})
 }
 
 // buildSurfaceClassifyingBsp builds srf's uv-space trim BSP, as the

@@ -173,6 +173,41 @@ glibc); `scripts/libmcheck` compares `pkg/libm` with the system libm on
 TrueType, OpenType CFF and CFF2, collections, Type 1 and
 multiple-master Type 1, bitmap-only).
 
+## Threads
+
+C++ runs six loops under OpenMP (`groupmesh.cpp`, `srf/shell.cpp`,
+`srf/boolean.cpp`). The build the goldens come from has it off; with it
+on, C++'s result depends on the threads' timing (the order of the curve
+ids and of the triangles, and `SSurface::cached`). Go runs the loops on
+goroutines (`pkg/internal/par`) so that the result never does:
+
+- What an iteration writes outside its own surface or shell it writes
+  afterwards, in index order: the curves and surfaces of a Boolean's
+  result, the triangles of `SShell::TriangulateInto`.
+  `MakeIntersectionCurvesAgainst` also makes over an exact curve that,
+  in order, would have followed the pwl of an earlier surface's curve
+  (`curveSink.commitTo`, `pkg/srf/parallel.go`).
+- The pairs of a step and repeat are combined at once too (C++ does
+  them in turn).
+- The loops of a Boolean over an operand's curves and surfaces project
+  points on surfaces the iterations share, and `ClosestPointTo` starts
+  from the surface's last result. Planes don't, so those loops run at
+  once for operands made of planes only, and in order for others: the
+  bits are those of one thread, so of the goldens.
+- `SPACESOLVE_PARALLEL=fast` (`srf.ParallelFast`) runs them at once for
+  curved operands as well, with that cache off meanwhile. The result is
+  the same on any number of goroutines, but its last bits needn't be
+  the goldens' (on the fixtures they are). `off` uses one goroutine.
+
+`TestParallelSameAsSerial` (and `...StepAndRepeat`, for 6 by 6 copies
+made in memory) requires the shells, meshes, save and STL
+of every fixture to the bit on one goroutine and on eight,
+`TestParallelFastSameOnAnyGoroutines` the same of the fast mode on one,
+two and eight, and `TestParallelFastSameShapeAsSerial` its solids to
+be the serial ones. `go test -race` over `pkg/srf`, `pkg/sketch` and
+`pkg/persist/slvs` is how the loops were checked for shared writes.
+`BenchmarkRegenerate*` (`pkg/persist/slvs`) time the modes.
+
 ## Definition of done
 
 Every row above is **OK**, `go vet ./...` and `go test ./...` pass on

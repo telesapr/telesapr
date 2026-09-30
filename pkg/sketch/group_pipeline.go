@@ -5,6 +5,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/internal/par"
 	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
@@ -200,6 +201,15 @@ func (g *Group) stepTransform(sk *Sketch, a, n int) (geom.Vector, geom.Quaternio
 	return trans.Minus(q.Rotate(trans)), q
 }
 
+// stepTransforms is stepTransform for every step of n.
+func (g *Group) stepTransforms(sk *Sketch, n int) ([]geom.Vector, []geom.Quaternion) {
+	ts, qs := make([]geom.Vector, n), make([]geom.Quaternion, n)
+	for a := range n {
+		ts[a], qs[a] = g.stepTransform(sk, a, n)
+	}
+	return ts, qs
+}
+
 // generateForStepAndRepeatShell makes the transformed copies of steps
 // and combines them, a pair at a time (C++
 // Group::GenerateForStepAndRepeat<SShell>).
@@ -210,43 +220,48 @@ func (g *Group) generateForStepAndRepeatShell(sk *Sketch, steps, outs *srf.SShel
 	transd := make([]srf.SShell, n)
 	workA := make([]srf.SShell, n)
 	// first generate a shell with each transformed copy
-	for a := a0; a < n; a++ {
-		t, q := g.stepTransform(sk, a, n)
-		transd[a].MakeFromTransformationOf(steps, t, q, 1.0)
-	}
+	ts, qs := g.stepTransforms(sk, n)
+	par.For(n-a0, func(i int) {
+		a := a0 + i
+		transd[a].MakeFromTransformationOf(steps, ts[a], qs[a], 1.0)
+	})
 	for a := a0; a < n; a++ {
 		// We need to rewrite any plane face entities to the transformed ones.
 		transd[a].RemapFaces(shellGroup{g: g, sk: sk}, stepRemap(a, n))
 	}
 
-	soFar, scratch := &transd, &workA
+	soFar, scratch := transd, workA
 	// do the boolean operations on pairs of equal size
 	for n > 1 {
-		for a := 0; a < n; a += 2 {
-			(*scratch)[a/2].Clear()
+		// The pairs share nothing, so they are combined at once (C++
+		// does them in turn).
+		skipFirst := a0 == 1
+		par.For((n+1)/2, func(i int) {
+			a := 2 * i
+			scratch[a/2].Clear()
 			// combine a pair of shells
-			if a == 0 && a0 == 1 { // if the first was skipped just copy the 2nd
-				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a+1])
-				(*soFar)[a+1].Clear()
-				a0 = 0
+			if a == 0 && skipFirst { // if the first was skipped just copy the 2nd
+				scratch[a/2].MakeFromCopyOf(&soFar[a+1])
+				soFar[a+1].Clear()
 			} else if a == n-1 { // for an odd number just copy the last one
-				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a])
-				(*soFar)[a].Clear()
+				scratch[a/2].MakeFromCopyOf(&soFar[a])
+				soFar[a].Clear()
 			} else if forWhat == CombineAssemble {
-				(*scratch)[a/2].MakeFromAssemblyOf(&(*soFar)[a], &(*soFar)[a+1])
-				(*soFar)[a].Clear()
-				(*soFar)[a+1].Clear()
+				scratch[a/2].MakeFromAssemblyOf(&soFar[a], &soFar[a+1])
+				soFar[a].Clear()
+				soFar[a+1].Clear()
 			} else {
-				(*scratch)[a/2].MakeFromUnionOf(&(*soFar)[a], &(*soFar)[a+1])
-				(*soFar)[a].Clear()
-				(*soFar)[a+1].Clear()
+				scratch[a/2].MakeFromUnionOf(&soFar[a], &soFar[a+1])
+				soFar[a].Clear()
+				soFar[a+1].Clear()
 			}
-		}
+		})
+		a0 = 0
 		soFar, scratch = scratch, soFar
 		n = (n + 1) / 2
 	}
 	outs.Clear()
-	*outs = (*soFar)[0]
+	*outs = soFar[0]
 }
 
 // generateForStepAndRepeatMesh is generateForStepAndRepeatShell for a
@@ -256,40 +271,43 @@ func (g *Group) generateForStepAndRepeatMesh(sk *Sketch, steps, outs *srf.SMesh,
 
 	transd := make([]srf.SMesh, n)
 	workA := make([]srf.SMesh, n)
-	for a := a0; a < n; a++ {
-		t, q := g.stepTransform(sk, a, n)
-		transd[a].MakeFromTransformationOf(steps, t, q, 1.0)
-	}
+	ts, qs := g.stepTransforms(sk, n)
+	par.For(n-a0, func(i int) {
+		a := a0 + i
+		transd[a].MakeFromTransformationOf(steps, ts[a], qs[a], 1.0)
+	})
 	for a := a0; a < n; a++ {
 		transd[a].RemapFaces(shellGroup{g: g, sk: sk}, stepRemap(a, n))
 	}
 
-	soFar, scratch := &transd, &workA
+	soFar, scratch := transd, workA
 	for n > 1 {
-		for a := 0; a < n; a += 2 {
-			(*scratch)[a/2].Clear()
-			if a == 0 && a0 == 1 {
-				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a+1])
-				(*soFar)[a+1].Clear()
-				a0 = 0
+		skipFirst := a0 == 1
+		par.For((n+1)/2, func(i int) {
+			a := 2 * i
+			scratch[a/2].Clear()
+			if a == 0 && skipFirst {
+				scratch[a/2].MakeFromCopyOf(&soFar[a+1])
+				soFar[a+1].Clear()
 			} else if a == n-1 {
-				(*scratch)[a/2].MakeFromCopyOf(&(*soFar)[a])
-				(*soFar)[a].Clear()
+				scratch[a/2].MakeFromCopyOf(&soFar[a])
+				soFar[a].Clear()
 			} else if forWhat == CombineAssemble {
-				(*scratch)[a/2].MakeFromAssemblyOf(&(*soFar)[a], &(*soFar)[a+1])
-				(*soFar)[a].Clear()
-				(*soFar)[a+1].Clear()
+				scratch[a/2].MakeFromAssemblyOf(&soFar[a], &soFar[a+1])
+				soFar[a].Clear()
+				soFar[a+1].Clear()
 			} else {
-				(*scratch)[a/2].MakeFromUnionOf(&(*soFar)[a], &(*soFar)[a+1])
-				(*soFar)[a].Clear()
-				(*soFar)[a+1].Clear()
+				scratch[a/2].MakeFromUnionOf(&soFar[a], &soFar[a+1])
+				soFar[a].Clear()
+				soFar[a+1].Clear()
 			}
-		}
+		})
+		a0 = 0
 		soFar, scratch = scratch, soFar
 		n = (n + 1) / 2
 	}
 	outs.Clear()
-	*outs = (*soFar)[0]
+	*outs = soFar[0]
 }
 
 // generateLinkedShell is the LINKED branch of C++

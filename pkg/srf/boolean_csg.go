@@ -1,8 +1,10 @@
 package srf
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/geom"
 	"sort"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/internal/par"
 )
 
 // CopyCurvesSplitAgainst copies every curve of s into `into`, split so
@@ -10,18 +12,28 @@ import (
 // each original curve's handle in `into` as its NewH (for rewriting
 // the trims). Mirrors C++ SShell::CopyCurvesSplitAgainst.
 func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
-	for i := range s.Curve {
+	atOnce, noCache := booleanLoops(s, agnst)
+	if atOnce && noCache {
+		setNoCache(true, s, agnst)
+		defer setNoCache(false, s, agnst)
+	}
+	// The curves are split at once, or in order (see parallel.go), and
+	// then added in order.
+	scn := make([]SCurve, len(s.Curve))
+	loop(atOnce, len(s.Curve), func(i int) {
 		sc := &s.Curve[i]
-		scn := sc.MakeCopySplitAgainst(agnst, nil,
+		scn[i] = sc.MakeCopySplitAgainst(agnst, nil,
 			s.FindSurface(sc.SurfA), s.FindSurface(sc.SurfB))
 		if opA {
-			scn.Source = CurveSourceOrigA
+			scn[i].Source = CurveSourceOrigA
 		} else {
-			scn.Source = CurveSourceOrigB
+			scn[i].Source = CurveSourceOrigB
 		}
-		hsc := into.addAndAssignCurveId(scn)
+	})
+	for i := range scn {
+		hsc := into.addAndAssignCurveId(scn[i])
 		// And note the new ID so that we can rewrite the trims appropriately
-		sc.NewH = hsc
+		s.Curve[i].NewH = hsc
 	}
 }
 
@@ -40,12 +52,37 @@ func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 	if agnst == nil || into == nil {
 		return
 	}
-	for i := range s.Surface {
+	atOnce, noCache := booleanLoops(s, agnst)
+	if !atOnce {
+		for i := range s.Surface {
+			sa := &s.Surface[i]
+			for j := range agnst.Surface {
+				sb := &agnst.Surface[j]
+				sa.IntersectAgainst(sb, s, agnst, into)
+			}
+		}
+		return
+	}
+	if noCache {
+		setNoCache(true, s, agnst)
+		defer setNoCache(false, s, agnst)
+	}
+	// Each surface of s is intersected on its own, its curves going on
+	// a list; then the lists are added in the surfaces' order, with
+	// the curves that would have followed another surface's curve had
+	// the loop run in order made over (curveSink.commitTo).
+	sinks := make([]curveSink, len(s.Surface))
+	par.For(len(s.Surface), func(i int) {
 		sa := &s.Surface[i]
+		sinks[i] = curveSink{shell: into, deferred: true}
 		for j := range agnst.Surface {
 			sb := &agnst.Surface[j]
-			sa.IntersectAgainst(sb, s, agnst, into)
+			sa.intersectAgainst(sb, s, agnst, &sinks[i])
 		}
+	})
+	first := len(into.Curve)
+	for i := range sinks {
+		sinks[i].commitTo(into, first)
 	}
 }
 
@@ -54,12 +91,21 @@ func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 // each surface's handle in `into` as its NewH. Mirrors C++
 // SShell::CopySurfacesTrimAgainst (boolean.cpp:750).
 func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombineAs) {
-	ssn := make([]SSurface, len(s.Surface))
-	for i := range s.Surface {
-		ssn[i] = s.Surface[i].makeCopyTrimAgainst(s, sha, shb, into, op, i)
+	atOnce, noCache := booleanLoops(sha, shb)
+	if atOnce && noCache {
+		setNoCache(true, sha, shb)
+		defer setNoCache(false, sha, shb)
 	}
+	ssn := make([]SSurface, len(s.Surface))
+	failed := make([]bool, len(s.Surface))
+	loop(atOnce, len(s.Surface), func(i int) {
+		ssn[i], failed[i] = s.Surface[i].makeCopyTrimAgainst(s, sha, shb, into, op, i)
+	})
 	for i := range s.Surface {
 		s.Surface[i].NewH = into.addSurfaceAssignId(ssn[i])
+		if failed[i] {
+			into.BooleanFailed = true
+		}
 	}
 }
 

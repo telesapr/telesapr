@@ -29,6 +29,10 @@ type SSurface struct {
 	Edges SEdgeList
 
 	Cached geom.Point2d
+	// noCache keeps ClosestPointTo off Cached while a loop run at once
+	// projects points on this surface from several goroutines (see
+	// ParallelFast).
+	noCache bool
 
 	// TrimBuilt is a Go-port-only marker (no C++ field mirrors it):
 	// true when the surface's Trim list is authoritative, so an empty
@@ -377,27 +381,22 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 	}
 
 	// And planes are trivial, so don't waste time iterating over those.
-	if s.DegM == 1 && s.DegN == 1 {
-		orig := s.Ctrl[0][0]
-		bu := s.Ctrl[1][0].Minus(orig)
-		bv := s.Ctrl[0][1].Minus(orig)
-		if s.Ctrl[1][1].Equals(orig.Plus(bu).Plus(bv)) {
-			n := bu.Cross(bv)
-			ty := n.Cross(bu).ScaledBy(1.0 / bu.MagSquared())
-			tx := bv.Cross(n).ScaledBy(1.0 / bv.MagSquared())
+	if orig, bu, bv, ok := s.planeBasis(); ok {
+		n := bu.Cross(bv)
+		ty := n.Cross(bu).ScaledBy(1.0 / bu.MagSquared())
+		tx := bv.Cross(n).ScaledBy(1.0 / bv.MagSquared())
 
-			dp := p.Minus(orig)
-			*u = dp.Dot(bu) / tx.MagSquared()
-			*v = dp.Dot(bv) / ty.MagSquared()
-			return
-		}
+		dp := p.Minus(orig)
+		*u = dp.Dot(bu) / tx.MagSquared()
+		*v = dp.Dot(bv) / ty.MagSquared()
+		return
 	}
 
 	// Try whatever the previous guess was. This is likely to do something
 	// good if we're working our way along a curve or something else where
 	// we project successive points that are close to each other; something
 	// like a 20% speedup empirically.
-	if mustConverge {
+	if mustConverge && !s.noCache {
 		ut, vt := s.Cached.U, s.Cached.V
 		if s.closestPointNewton(p, &ut, &vt, mustConverge) {
 			*u, *v = ut, vt
@@ -427,7 +426,9 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 	}
 
 	if s.closestPointNewton(p, u, v, mustConverge) {
-		s.Cached = geom.Point2d{U: *u, V: *v}
+		if !s.noCache {
+			s.Cached = geom.Point2d{U: *u, V: *v}
+		}
 		return
 	}
 
