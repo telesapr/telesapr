@@ -8,11 +8,14 @@ import (
 
 	"github.com/msorc/takigo/dialog"
 	"github.com/msorc/takigo/event"
+	"github.com/msorc/takigo/font"
 	"github.com/msorc/takigo/geometry/pack"
+	"github.com/msorc/takigo/geometry/place"
 	"github.com/msorc/takigo/option"
 	tkplatform "github.com/msorc/takigo/platform"
 	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/widget/button"
+	"github.com/msorc/takigo/widget/frame"
 	"github.com/msorc/takigo/widget/label"
 	"github.com/msorc/takigo/window"
 
@@ -40,6 +43,8 @@ type MessageDialog struct {
 	message     string
 	description string
 	buttons     []dialogButton
+	// The dialog's toplevel while it runs.
+	win *window.Window
 }
 
 type dialogButton struct {
@@ -65,8 +70,7 @@ func (d *MessageDialog) SetDescription(s string) {
 }
 
 // AddButton adds a button; a '&' in its label marks the mnemonic,
-// pressed with Alt as in GTK (takigo's buttons keep the underline but
-// don't draw it yet).
+// underlined and pressed with Alt as in GTK.
 func (d *MessageDialog) AddButton(label string, r platform.Response, isDefault bool) {
 	label, underline := prepareMnemonics(label)
 	d.buttons = append(d.buttons, dialogButton{label, underline, r, isDefault})
@@ -117,6 +121,7 @@ func (d *MessageDialog) RunModal() platform.Response {
 		btn := button.New(dlg.BtnFrame, fmt.Sprintf("b%d", i), button.Text(b.label),
 			button.Command(func() { dlg.Close(res) }))
 		btn.Underline = b.underline
+		underlineButton(btn)
 		pack.Pack(btn, pack.SideOpt(pack.Right), pack.PadX(5))
 		btns[i] = btn.Window()
 		if b.isDefault {
@@ -128,6 +133,7 @@ func (d *MessageDialog) RunModal() platform.Response {
 	// the focused button or else the default one, Alt and a mnemonic
 	// its button.
 	tw := dlg.Toplevel.Window()
+	d.win = tw
 	d.p.app.Dispatcher().BindGlobalFor(tw.PlatformID, event.KeyPressMask, func(ev *event.Event) {
 		if ev.Type != event.KeyPressType || ev.Handled || !inToplevel(tw, ev.Window) {
 			return
@@ -172,4 +178,35 @@ func inToplevel(top *window.Window, id tkplatform.WindowID) bool {
 		}
 	}
 	return false
+}
+
+// underlineButton draws the underline of b's mnemonic, which takigo's
+// buttons keep but don't draw: a frame of the text's colour under the
+// character, where Tk draws it (the text is centred, one line high).
+func underlineButton(b *button.Button) {
+	runes := []rune(b.Text)
+	if b.Underline < 0 || b.Underline >= len(runes) || b.Font == nil {
+		return
+	}
+	fg := "black"
+	if b.Foreground != nil {
+		fg = fmt.Sprintf("#%06x", b.Foreground.Pixel&0xffffff)
+	}
+	ul := frame.New(b, "underline", frame.Background(fg), frame.BorderWidth(0),
+		frame.HighlightThickness(0))
+	f := b.Font
+	textW := f.MeasureString(b.Text)
+	ulX := f.MeasureString(string(runes[:b.Underline]))
+	ulW := f.MeasureString(string(runes[b.Underline]))
+	m := f.Metrics()
+	pos, ulH := font.Underline(f)
+	win := b.Window()
+	b.AppContext().Dispatcher().Bind(win.PlatformID, event.StructureNotifyMask, func(ev *event.Event) {
+		if ev.Type != event.ConfigureType {
+			return
+		}
+		x := (ev.ConfigWidth-textW)/2 + ulX
+		y := (ev.ConfigHeight-m.Linespace())/2 + m.Ascent + pos
+		place.Place(ul, place.In(b), place.X(x), place.Y(y), place.Width(ulW), place.Height(ulH))
+	})
 }

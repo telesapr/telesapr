@@ -191,3 +191,43 @@ func TestMenuBarKeyboard(t *testing.T) {
 		t.Errorf("invoked %q", invoked)
 	}
 }
+
+// TestMessageDialogKeys presses a message dialog's buttons from the
+// keyboard: Alt and a mnemonic, and Return for the default button.
+func TestMessageDialogKeys(t *testing.T) {
+	p := requireGUI(t)
+	w := p.CreateWindow(platform.WindowToplevel, nil)
+	w.SetVisible(true)
+	ask := func(sym tkplatform.KeySym, state uint) platform.Response {
+		d := p.CreateMessageDialog(w)
+		d.SetMessage("Save?")
+		d.AddButton("&Save", platform.ResponseYes, true)
+		d.AddButton("Do&n't Save", platform.ResponseNo, false)
+		d.AddButton("&Cancel", platform.ResponseCancel, false)
+		dlg := d.(*MessageDialog)
+		press := func(sym tkplatform.KeySym, state uint) {
+			p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType,
+				Window: dlg.win.PlatformID, KeySym: sym, State: state})
+		}
+		p.app.After(300*time.Millisecond, func() {
+			press(sym, state)
+			// Close a dialog the key left open, which then answers none.
+			p.app.After(100*time.Millisecond, func() {
+				if !dlg.win.IsDestroyed() {
+					press(tkplatform.XK_Escape, 0)
+				}
+			})
+		})
+		return d.RunModal()
+	}
+	var got []platform.Response
+	run(p, func() {
+		got = append(got, ask('n', tkplatform.Mod1Mask), ask('C', tkplatform.Mod1Mask|tkplatform.ShiftMask),
+			ask(tkplatform.XK_Return, 0), ask('n', 0))
+	})
+	want := []platform.Response{platform.ResponseNo, platform.ResponseCancel,
+		platform.ResponseYes, platform.ResponseNone}
+	if !slices.Equal(got, want) {
+		t.Errorf("responses %v, want %v", got, want)
+	}
+}

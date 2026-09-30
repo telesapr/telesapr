@@ -39,6 +39,9 @@ type Window struct {
 
 	visible    bool
 	fullScreen bool
+	// Whether X has mapped the window, and whether Focus waits for it.
+	mapped       bool
+	focusPending bool
 
 	tooltip tooltip
 
@@ -89,6 +92,18 @@ func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window
 			w.events.OnClose()
 		}
 	})
+	p.app.Dispatcher().Bind(w.topWin.PlatformID, event.StructureNotifyMask, func(ev *event.Event) {
+		switch ev.Type {
+		case event.MapType:
+			w.mapped = true
+			if w.focusPending {
+				w.focusPending = false
+				w.present()
+			}
+		case event.UnmapType:
+			w.mapped = false
+		}
+	})
 	w.canvas = newCanvas(w)
 	w.scrollbar = newScrollbar(w)
 	w.layout()
@@ -135,10 +150,44 @@ func (w *Window) SetVisible(v bool) {
 	}
 }
 
-// Focus gives the drawing area the keyboard.
+// Focus raises the window and gives its drawing area the keyboard, as
+// GTK's present does. takigo gives a toplevel the X focus only once it
+// has had it, so ask for it; a window not mapped yet (the main window
+// at startup, shown after the property browser) is asked for once it
+// is, or the window manager would focus the one mapped first.
 func (w *Window) Focus() {
-	w.p.app.Server().RaiseWindow(w.topWin.PlatformID)
 	w.p.app.FocusManager().SetFocus(w.canvas.Win)
+	if !w.mapped {
+		w.focusPending = true
+		return
+	}
+	w.present()
+}
+
+// present raises the window and asks for the X focus: from the window
+// manager through _NET_ACTIVE_WINDOW when there is one (as
+// gdk_window_focus does), else directly.
+func (w *Window) present() {
+	d := w.p.app.Server()
+	id := w.topWin.PlatformID
+	d.RaiseWindow(id)
+	if hasWindowManager(w.topWin) {
+		// Source 1: an application's request; timestamp 0: none.
+		d.SendClientMessage(id, d.DefaultRootWindow(),
+			d.InternAtom("_NET_ACTIVE_WINDOW", false), 1, 0, 0, 0, 0)
+	} else {
+		d.SetInputFocus(id, tkplatform.RevertToParent, tkplatform.CurrentTime)
+	}
+	d.Flush()
+}
+
+// hasWindowManager reports whether an EWMH window manager runs: the
+// root window names its check window.
+func hasWindowManager(win *window.Window) bool {
+	d := win.Display.Server
+	prop := d.InternAtom("_NET_SUPPORTING_WM_CHECK", false)
+	data, _, format := d.GetWindowProperty(d.DefaultRootWindow(), prop, 0, 1, false)
+	return format == 32 && len(data) >= 4
 }
 
 // IsFullScreen reports whether the window was made full screen.
