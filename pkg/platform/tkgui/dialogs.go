@@ -2,6 +2,7 @@ package tkgui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/widget/button"
 	"github.com/msorc/takigo/widget/label"
+	"github.com/msorc/takigo/window"
 
 	"github.com/spacesolve/spacesolve/pkg/platform"
 )
@@ -42,6 +44,7 @@ type MessageDialog struct {
 
 type dialogButton struct {
 	label     string
+	underline int
 	response  platform.Response
 	isDefault bool
 }
@@ -62,10 +65,11 @@ func (d *MessageDialog) SetDescription(s string) {
 }
 
 // AddButton adds a button; a '&' in its label marks the mnemonic,
-// which Tk buttons don't show.
+// pressed with Alt as in GTK (takigo's buttons keep the underline but
+// don't draw it yet).
 func (d *MessageDialog) AddButton(label string, r platform.Response, isDefault bool) {
-	label, _ = prepareMnemonics(label)
-	d.buttons = append(d.buttons, dialogButton{label, r, isDefault})
+	label, underline := prepareMnemonics(label)
+	d.buttons = append(d.buttons, dialogButton{label, underline, r, isDefault})
 }
 
 // RunModal shows the dialog and returns the button pressed, or
@@ -105,24 +109,67 @@ func (d *MessageDialog) RunModal() platform.Response {
 	// Results are 100 + the button's index, clear of dialog's own.
 	// Packed from the right, so the last button goes in first.
 	const base = 100
+	btns := make([]*window.Window, len(d.buttons))
+	def := -1
 	for i := len(d.buttons) - 1; i >= 0; i-- {
 		b := d.buttons[i]
 		res := dialog.DialogResult(base + i)
 		btn := button.New(dlg.BtnFrame, fmt.Sprintf("b%d", i), button.Text(b.label),
 			button.Command(func() { dlg.Close(res) }))
+		btn.Underline = b.underline
 		pack.Pack(btn, pack.SideOpt(pack.Right), pack.PadX(5))
+		btns[i] = btn.Window()
 		if b.isDefault {
-			d.p.app.Dispatcher().Bind(dlg.Toplevel.Window().PlatformID, event.KeyPressMask, func(ev *event.Event) {
-				if ev.KeySym == tkplatform.XK_Return || ev.KeySym == xkKPEnter {
-					dlg.Close(res)
-				}
-			})
+			def = i
 		}
 	}
+	// Keys go to the focused widget, so watch them all, for those in
+	// this dialog (as takigo's dialog does for Escape): Return presses
+	// the focused button or else the default one, Alt and a mnemonic
+	// its button.
+	tw := dlg.Toplevel.Window()
+	d.p.app.Dispatcher().BindGlobalFor(tw.PlatformID, event.KeyPressMask, func(ev *event.Event) {
+		if ev.Type != event.KeyPressType || ev.Handled || !inToplevel(tw, ev.Window) {
+			return
+		}
+		pressed := -1
+		switch {
+		case ev.KeySym == tkplatform.XK_Return || ev.KeySym == xkKPEnter:
+			pressed = def
+			if i := slices.Index(btns, widget.FocusWindow(d.p.app)); i >= 0 {
+				pressed = i
+			}
+		case ev.State&(tkplatform.Mod1Mask|tkplatform.ControlMask) == tkplatform.Mod1Mask:
+			r := unicode.ToLower(tkplatform.KeySymToRune(ev.KeySym))
+			for i, b := range d.buttons {
+				if runes := []rune(b.label); r > 0 && b.underline >= 0 && b.underline < len(runes) &&
+					unicode.ToLower(runes[b.underline]) == r {
+					pressed = i
+					break
+				}
+			}
+		}
+		if pressed >= 0 {
+			dlg.Close(dialog.DialogResult(base + pressed))
+		}
+	})
 
 	res := int(dlg.Run()) - base
 	if res < 0 || res >= len(d.buttons) {
 		return platform.ResponseNone
 	}
 	return d.buttons[res].response
+}
+
+// inToplevel reports whether window id is top or inside it.
+func inToplevel(top *window.Window, id tkplatform.WindowID) bool {
+	for w := top.Display.LookupWindow(id); w != nil; w = w.Parent {
+		if w == top {
+			return true
+		}
+		if w.IsTopLevel() {
+			return false
+		}
+	}
+	return false
 }

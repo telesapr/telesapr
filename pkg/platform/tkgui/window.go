@@ -114,6 +114,11 @@ func (w *Window) IsVisible() bool { return w.visible }
 
 // SetVisible shows or hides the window.
 func (w *Window) SetVisible(v bool) {
+	// As GTK's show, nothing for a window already shown: takigo would
+	// map it raised again, over the window the user is working in.
+	if v && w.visible {
+		return
+	}
 	w.visible = v
 	if w.toolTop != nil {
 		if v {
@@ -346,6 +351,10 @@ func abs(v int) int {
 // with Shift reported separately) or a function key; keys with other
 // modifiers than Shift and Control are left alone.
 func (w *Window) key(typ platform.KeyboardEventType, ev *event.Event) bool {
+	// GTK's window takes its menu bar's keys before its widgets see them.
+	if typ == platform.KeyPress && w.menuBar != nil && w.menuBar.keyPress(ev) {
+		return true
+	}
 	if ev.State&(tkplatform.Mod1Mask|tkplatform.Mod4Mask) != 0 {
 		return false
 	}
@@ -405,6 +414,7 @@ func digitRowKey(keycode uint) (rune, bool) {
 
 const (
 	xkF1  = tkplatform.KeySym(0xffbe)
+	xkF10 = tkplatform.KeySym(0xffc7)
 	xkF12 = tkplatform.KeySym(0xffc9)
 )
 

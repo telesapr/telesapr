@@ -3,7 +3,11 @@ package tkgui
 import (
 	"strings"
 	"time"
+	"unicode"
 
+	"github.com/msorc/takigo/bind"
+	"github.com/msorc/takigo/event"
+	tkplatform "github.com/msorc/takigo/platform"
 	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/widget/menu"
 	"github.com/msorc/takigo/window"
@@ -197,7 +201,131 @@ func (b *MenuBar) AddSubMenu(label string) platform.Menu {
 	if b.bar != nil {
 		b.bar.AddCascade(label, underline, sub.m)
 	}
+	b.bindTraversal(sub)
 	return sub
+}
+
+// keyPress opens a menu from the keyboard as GTK's menu bar does: Alt
+// and a menu's mnemonic opens it, F10 the first one (Tk's
+// tk::TraverseToMenu and tk::FirstMenu, which takigo's menubar lacks).
+func (b *MenuBar) keyPress(ev *event.Event) bool {
+	if b.bar == nil || len(b.menus) == 0 {
+		return false
+	}
+	mods := ev.State & (tkplatform.ShiftMask | tkplatform.ControlMask |
+		tkplatform.Mod1Mask | tkplatform.Mod4Mask)
+	if ev.KeySym == xkF10 && mods == 0 {
+		b.postByKey(0)
+		return true
+	}
+	if mods&^tkplatform.ShiftMask != tkplatform.Mod1Mask {
+		return false
+	}
+	r := unicode.ToLower(tkplatform.KeySymToRune(ev.KeySym))
+	if r <= 0 {
+		return false
+	}
+	for i, m := range b.menus {
+		if runes := []rune(m.label); m.underline >= 0 && m.underline < len(runes) &&
+			unicode.ToLower(runes[m.underline]) == r {
+			b.postByKey(i)
+			return true
+		}
+	}
+	return false
+}
+
+// bindTraversal makes Left and Right in a menu of the bar open the
+// menu next to it, as Tk's tk::MenuLeftArrow and tk::MenuRightArrow
+// do. Left is bound on the menu's path, which comes before takigo's
+// class binding, whose closing of the menu it replaces: the next menu
+// is then posted while this one still holds the focus, as a click on
+// the menubar does. Right runs after the class binding, and does
+// nothing when that opened a cascade of the menu.
+func (b *MenuBar) bindTraversal(m *Menu) {
+	next := func(dir int) {
+		for i, bm := range b.menus {
+			if bm.menu == m {
+				n := len(b.menus)
+				b.postByKey((i + dir + n) % n)
+				return
+			}
+		}
+	}
+	win := m.m.Window()
+	_ = b.p.app.BindEng().Bind(win.PathName, "<KeyPress-Left>", func(*bind.EventData) bool {
+		if b.bar == nil {
+			return false
+		}
+		next(-1)
+		return true
+	})
+	b.p.app.Dispatcher().Bind(win.PlatformID, event.KeyPressMask, func(ev *event.Event) {
+		if ev.Type != event.KeyPressType || ev.KeySym != tkplatform.XK_Right || b.bar == nil {
+			return
+		}
+		for _, e := range m.m.Entries() {
+			if e.SubMenu != nil && e.SubMenu.IsPosted() {
+				return
+			}
+		}
+		next(1)
+	})
+}
+
+// postByKey opens menu i of the bar with its first entry active. The
+// menubar posts its menus only for a click, so it is given one on the
+// menu's label; Down then activates the first entry (Tk's
+// tk::MenuFirst).
+func (b *MenuBar) postByKey(i int) {
+	x, y, ok := b.entryCenter(i)
+	if !ok {
+		return
+	}
+	win := b.bar.Window()
+	disp := b.p.app.Dispatcher()
+	rx, ry := win.Display.Server.TranslateCoordinates(win.PlatformID, win.Display.RootWindow, x, y)
+	disp.Dispatch(&event.Event{Type: event.ButtonPressType, Window: win.PlatformID,
+		X: x, Y: y, RootX: rx, RootY: ry, Button: 1})
+	// After the crossing events of the menu's grab, whose Leave
+	// deactivates its entries.
+	sub := b.menus[i].menu.m
+	b.p.app.DoWhenIdle(func() {
+		if sub.IsPosted() {
+			disp.Dispatch(&event.Event{Type: event.KeyPressType, Window: sub.Window().PlatformID,
+				KeySym: tkplatform.XK_Down})
+		}
+	})
+}
+
+// entryCenter is the middle of the label of menu i in the menubar,
+// laid out as takigo's Menubar.geometry (TkpComputeMenubarGeometry)
+// does, which it keeps to itself: entries of equal height in rows as
+// wide as the window.
+func (b *MenuBar) entryCenter(i int) (x, y int, ok bool) {
+	mb := b.bar
+	if mb == nil || mb.Font == nil || i < 0 || i >= len(b.menus) {
+		return 0, 0, false
+	}
+	const abw = 1 // the menubar's active border width
+	bw := mb.BorderWidth
+	maxWidth := b.w.topWin.Width
+	if maxWidth <= 1 {
+		maxWidth = 0x7FFFFFF
+	}
+	height := mb.Font.Metrics().Linespace() + 1 + 2*abw + 10
+	ex, ey := bw, bw
+	for j, m := range b.menus {
+		width := mb.Font.MeasureString(m.label) + bw + 2*abw + 10
+		if ex+width+bw > maxWidth && ex > bw {
+			ex, ey = bw, ey+height
+		}
+		if j == i {
+			return ex + width/2, ey + height/2, true
+		}
+		ex += width
+	}
+	return 0, 0, false
 }
 
 // Clear removes the menus: the Tk menubar is made again.

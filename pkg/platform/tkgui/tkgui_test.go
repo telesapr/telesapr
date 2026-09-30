@@ -4,8 +4,12 @@ import (
 	"image"
 	"image/color"
 	"os"
+	"slices"
 	"testing"
 	"time"
+
+	"github.com/msorc/takigo/event"
+	tkplatform "github.com/msorc/takigo/platform"
 
 	"github.com/spacesolve/spacesolve/pkg/platform"
 )
@@ -132,4 +136,58 @@ func TestMenuStateAndClear(t *testing.T) {
 		t.Error("clearing a submenu didn't replace it in its cascade")
 	}
 	run(p)
+}
+
+// TestMenuBarKeyboard opens menus as GTK's menu bar does: Alt and a
+// mnemonic, F10, then Left and Right to the neighbouring menus, with
+// the first entry active so Return invokes it.
+func TestMenuBarKeyboard(t *testing.T) {
+	p := requireGUI(t)
+	w := p.CreateWindow(platform.WindowToplevel, nil).(*Window)
+	bar, _ := p.GetOrCreateMainMenu()
+	var invoked []string
+	add := func(label, item string) *Menu {
+		m := bar.AddSubMenu(label)
+		m.AddItem(item, func() { invoked = append(invoked, item) }, true)
+		return m.(*Menu)
+	}
+	file, edit, view := add("&File", "&New"), add("&Edit", "&Undo"), add("&View", "Zoom &In")
+	w.SetMenuBar(bar)
+	w.SetVisible(true)
+
+	posted := func() string {
+		var s string
+		for _, m := range []*Menu{file, edit, view} {
+			if m.m.IsPosted() {
+				s += m.m.Entries()[0].Label
+			}
+		}
+		return s
+	}
+	key := func(m *Menu, sym tkplatform.KeySym) {
+		p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType,
+			Window: m.m.Window().PlatformID, KeySym: sym})
+	}
+	var got []string
+	run(p,
+		func() { w.Focus() },
+		func() { w.key(platform.KeyPress, synthKey('e', tkplatform.Mod1Mask)) },
+		func() { got = append(got, posted()); key(edit, tkplatform.XK_Right) },
+		func() { got = append(got, posted()); key(view, tkplatform.XK_Right) },
+		func() { got = append(got, posted()); key(file, tkplatform.XK_Left) },
+		func() { got = append(got, posted()); key(view, tkplatform.XK_Return) },
+		func() {
+			got = append(got, posted())
+			w.key(platform.KeyPress, synthKey(xkF10, 0))
+		},
+		func() { got = append(got, posted()); key(file, tkplatform.XK_Escape) },
+		func() { got = append(got, posted()) },
+	)
+	want := []string{"Undo", "Zoom In", "New", "Zoom In", "", "New", ""}
+	if !slices.Equal(got, want) {
+		t.Errorf("posted menus %q, want %q", got, want)
+	}
+	if !slices.Equal(invoked, []string{"Zoom &In"}) {
+		t.Errorf("invoked %q", invoked)
+	}
 }
