@@ -278,3 +278,39 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 		})
 	}
 }
+
+// TestLoadCorruptFiles: a file of NUL bytes is empty, as C++ LoadFromFile
+// counts it, and a file with a line it doesn't know loads the rest.
+func TestLoadCorruptFiles(t *testing.T) {
+	ss, p := newTestApp(t)
+	dir := t.TempDir()
+	nul := filepath.Join(dir, "nul.slvs")
+	if err := os.WriteFile(nul, make([]byte, 64), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	before := len(p.DialogsShown)
+	if !ss.LoadFromFile(nul) {
+		t.Error("an empty file should still load as a new sketch")
+	}
+	if d := p.DialogsShown[len(p.DialogsShown)-1]; len(p.DialogsShown) == before || !strings.Contains(d.Message, "The file is empty") {
+		t.Errorf("dialogs after a NUL file: %+v", p.DialogsShown[before:])
+	}
+
+	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	junk := filepath.Join(dir, "junk.slvs")
+	if err := os.WriteFile(junk, append([]byte("garbage line\n"), src...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	before = len(p.DialogsShown)
+	if !ss.LoadFromFile(junk) || len(ss.SK.Groups) <= 2 {
+		t.Errorf("a file with a junk line didn't load: %d groups", len(ss.SK.Groups))
+	}
+	if d := p.DialogsShown[len(p.DialogsShown)-1]; len(p.DialogsShown) == before || !strings.Contains(d.Message, "Unrecognized data") {
+		t.Errorf("dialogs after a junk line: %+v", p.DialogsShown[before:])
+	}
+}

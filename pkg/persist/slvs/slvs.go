@@ -1,8 +1,6 @@
 package slvs
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +26,9 @@ type RemapEntry struct {
 
 type Document struct {
 	Header string
+	// Empty is set for a file with nothing in it, and LoadError for one
+	// with lines the loader didn't recognize; it loaded what it could.
+	Empty, LoadError bool
 
 	Blocks []Block
 	// shellLines are the mesh and shell a file saves for linking
@@ -142,17 +143,90 @@ func (d *Document) SaveRegenerated() []byte {
 	return []byte(b.String())
 }
 
+// fgetsLine reads one C `fgets(line, 1024, fh)` from data at pos: at most
+// 1023 bytes, through a newline. It returns the chunk as C sees it as a
+// string, which ends at the first NUL.
+func fgetsLine(data []byte, pos int) (chunk string, next int, ok bool) {
+	if pos >= len(data) {
+		return "", pos, false
+	}
+	end := pos
+	for end < len(data) && end-pos < 1023 {
+		end++
+		if data[end-1] == '\n' {
+			break
+		}
+	}
+	chunk = string(data[pos:end])
+	if i := strings.IndexByte(chunk, 0); i >= 0 {
+		chunk = chunk[:i]
+	}
+	return chunk, end, true
+}
+
+// scanLines reads the lines of a saved file as C++ LoadFromFile does: a
+// line ends at a newline, a carriage return or a NUL and is at most 1023
+// bytes; empty lines are skipped; a line the loader doesn't recognize is
+// dropped and counts as a load error; a file with no line left is empty.
+// The entries of a group's remap, which C++ reads with their own fgets,
+// are kept as they are.
+func scanLines(data []byte) (lines []string, empty, loadError bool) {
+	empty = true
+	pos := 0
+	for {
+		line, next, ok := fgetsLine(data, pos)
+		if !ok {
+			break
+		}
+		pos = next
+		if i := strings.IndexByte(line, '\n'); i >= 0 {
+			line = line[:i]
+		}
+		if i := strings.IndexByte(line, '\r'); i >= 0 {
+			line = line[:i]
+		}
+		if line == "" {
+			continue
+		}
+		empty = false
+
+		if e := strings.IndexByte(line, '='); e >= 0 {
+			lines = append(lines, line)
+			if line[:e] == "Group.remap" {
+				for {
+					entry, next, ok := fgetsLine(data, pos)
+					if !ok {
+						break
+					}
+					pos = next
+					lines = append(lines, strings.TrimRight(entry, "\r\n"))
+					var idx, ent, copyN int
+					if n, _ := fmt.Sscanf(entry, "%d %x %d", &idx, &ent, &copyN); n != 3 {
+						break
+					}
+				}
+			}
+			continue
+		}
+		switch line {
+		case "AddGroup", "AddParam", "AddEntity", "AddRequest", "AddConstraint",
+			"AddStyle", versionString:
+		default:
+			if !isShellLine(line) {
+				loadError = true
+				continue
+			}
+		}
+		lines = append(lines, line)
+	}
+	return lines, empty, loadError
+}
+
 func (d *Document) parse(data []byte) error {
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	lines := make([]string, 0, 256)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
+	lines, empty, loadError := scanLines(data)
+	d.Empty, d.LoadError = empty, loadError
 	if len(lines) == 0 {
-		return fmt.Errorf("slvs document is empty")
+		return nil
 	}
 	d.Header = lines[0]
 

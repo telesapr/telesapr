@@ -206,7 +206,7 @@ func loadEntitiesFromSlvs(path string, sk *sketch.Sketch, le *[]core.Entity, m *
 		return false
 	}
 	linked := &Document{Sketch: sketch.NewSketch(), groupRemap: make(map[core.HGroup][]RemapEntry)}
-	if err := linked.parse(data); err != nil {
+	if err := linked.parse(data); err != nil || linked.Empty {
 		return false
 	}
 	*le = append((*le)[:0], linked.Sketch.Entities...)

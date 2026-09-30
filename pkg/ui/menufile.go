@@ -84,15 +84,9 @@ func (ss *SolveSpaceUI) Load(filename string) bool {
 func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 	ss.AllConsistent = false
 
-	data, err := os.ReadFile(filename)
-	if err != nil {
+	if _, err := os.Stat(filename); err != nil {
 		ss.Error("Couldn't read from file '%s'", filename)
 		return false
-	}
-	if strings.TrimSpace(strings.ReplaceAll(string(data), "\r", "")) == "" {
-		ss.Error("The file is empty. It may be corrupt.")
-		ss.NewFile()
-		return true
 	}
 
 	doc, err := slvs.LoadFile(filename)
@@ -104,6 +98,19 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 		ss.Error("Unrecognized data in file. This file may be corrupt, or " +
 			"from a newer version of the program.")
 		return false
+	}
+	if doc.Empty {
+		ss.Error("The file is empty. It may be corrupt.")
+		ss.NewFile()
+		return true
+	}
+	if doc.LoadError {
+		ss.Error("Unrecognized data in file. This file may be corrupt, or " +
+			"from a newer version of the program.")
+		if len(doc.Sketch.GroupOrder) == 0 {
+			ss.NewFile()
+			return true
+		}
 	}
 	ss.setSketch(doc.Sketch)
 	return true
