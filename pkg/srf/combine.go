@@ -62,11 +62,11 @@ type FaceID uint32
 type FaceFlag uint32
 
 const (
-	FaceFlipNormal          FaceFlag = 1 << 0
+	FaceFlipNormal           FaceFlag = 1 << 0
 	FaceKeepInsideOtherShell FaceFlag = 1 << 1
-	FaceKeepCoplanar        FaceFlag = 1 << 2
-	FaceAtLeastOneDiscarded FaceFlag = 1 << 3
-	FaceIsTransparent       FaceFlag = 1 << 4
+	FaceKeepCoplanar         FaceFlag = 1 << 2
+	FaceAtLeastOneDiscarded  FaceFlag = 1 << 3
+	FaceIsTransparent        FaceFlag = 1 << 4
 )
 
 // MeshMeta is the colour/face tag attached to one triangle of an

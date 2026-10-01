@@ -294,14 +294,14 @@ func makeFunction(name string, args []*Expr) (*Expr, error) {
 	case "atan":
 		return args[0].ATan(), nil
 	case "atan2":
-			if len(args) != 2 {
-				return nil, fmt.Errorf("expr: function %q expects 2 arguments, got %d", name, len(args))
-			}
-			return args[0].ATan2(args[1]), nil
-		case "hypot":
-			if len(args) != 2 {
-				return nil, fmt.Errorf("expr: function %q expects 2 arguments, got %d", name, len(args))
-			}
+		if len(args) != 2 {
+			return nil, fmt.Errorf("expr: function %q expects 2 arguments, got %d", name, len(args))
+		}
+		return args[0].ATan2(args[1]), nil
+	case "hypot":
+		if len(args) != 2 {
+			return nil, fmt.Errorf("expr: function %q expects 2 arguments, got %d", name, len(args))
+		}
 		return args[0].Hypot(args[1]), nil
 	case "exp":
 		return args[0].Exp(), nil

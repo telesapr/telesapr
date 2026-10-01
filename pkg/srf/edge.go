@@ -19,10 +19,10 @@ const (
 // and kd-tree queries. AuxA/AuxB are user-defined slots used by
 // callers to carry mesh/curve handles alongside the geometric data.
 type SEdge struct {
-	Tag        int
-	AuxA       int
-	AuxB       int
-	A, B       geom.Vector
+	Tag  int
+	AuxA int
+	AuxB int
+	A, B geom.Vector
 }
 
 func SEdgeFrom(a, b geom.Vector) SEdge {

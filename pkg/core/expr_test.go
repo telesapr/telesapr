@@ -122,7 +122,6 @@ func TestExprAbsFloorCeilRound(t *testing.T) {
 	}
 }
 
-
 // TestExprLnExp verifies natural log and exponential.
 func TestExprLnExp(t *testing.T) {
 	ctx := stubParamProvider{values: map[HParam]float64{}}

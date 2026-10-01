@@ -148,11 +148,11 @@ func TestNewFromStringNested(t *testing.T) {
 
 func TestNewFromStringErrors(t *testing.T) {
 	bad := []string{
-		"1 +",          // trailing op
-		"(1",           // unclosed paren
-		"foo(",         // unclosed function
-		"bogus(x, y)",  // unknown function
-		"min()",        // min requires at least one arg
+		"1 +",         // trailing op
+		"(1",          // unclosed paren
+		"foo(",        // unclosed function
+		"bogus(x, y)", // unknown function
+		"min()",       // min requires at least one arg
 	}
 	for _, in := range bad {
 		if _, err := NewFromString(in); err == nil {

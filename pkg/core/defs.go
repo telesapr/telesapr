@@ -18,5 +18,5 @@ const (
 	WrapNotZero   int = 1
 
 	MaxBezierDegree = 3
-	MaxBezierCpts  = MaxBezierDegree + 1
+	MaxBezierCpts   = MaxBezierDegree + 1
 )
