@@ -1,7 +1,7 @@
 // Package ui is SolveSpace's user interface: the graphics window with
 // its drawing, mouse tools and menus, the text window with its screens,
-// and the application shell. It ports ui.h and the C++ files the
-// PORTING.md GUI rows name, over pkg/platform and pkg/render.
+// and the application shell. It began as a port of SolveSpace's ui.h
+// and GUI sources, over pkg/platform and pkg/render.
 package ui
 
 import (

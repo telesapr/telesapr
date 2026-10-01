@@ -129,7 +129,7 @@ func (s *SShell) MakeFromIntersectionOf(a, b *SShell) {
 // second pass of MakeFromBoolean, after the new intersection curves
 // have been added); falls back to the shell's own curves otherwise.
 //
-// PORTING.md §"Remaining work" item 5: a real bsp classifies a point
+// A real bsp classifies a point
 // against this surface's own *trim* boundary (the STrimBy loop from
 // the surface's originating profile) — it is never split by a
 // cross-shell intersection curve, because that curve isn't a trim
@@ -138,7 +138,7 @@ func (s *SShell) MakeFromIntersectionOf(a, b *SShell) {
 // surface built later in the per-surface trim pass
 // (makeCopyTrimAgainst's own origBsp). The Go port doesn't populate
 // SSurface.Trim for surfaces produced by extrusion (a separate,
-// larger gap — see PORTING.md), so there is no real boundary data to
+// larger gap), so there is no real boundary data to
 // build a bsp from here: buildSurfaceClassifyingBsp always returns
 // nil for these fixtures, and ClassifyEdge's case-3 nil-bsp default
 // (below) supplies the correct semantic instead of a synthesized

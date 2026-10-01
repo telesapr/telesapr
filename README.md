@@ -1,6 +1,8 @@
-# spacesolve (Go Port)
+# spacesolve
 
-This is a Go port of spacesolve, a parametric 2D/3D CAD tool.
+spacesolve is a parametric 2D/3D CAD tool written in Go. It started as a
+port of SolveSpace and is now a separate project: it no longer tracks
+SolveSpace's behaviour or file format.
 
 ## Project Structure
 
@@ -19,7 +21,7 @@ pkg/
 
 `cmd/spacesolve` is the application, `cmd/spacesolve-cli` the command line
 tool (`solvespace-cli`'s counterpart): `spacesolve-cli --help` lists its
-commands. See `PORTING.md` for parity status.
+commands. See `ROADMAP-JUMP.md` for where the project is going.
 
 ## Scripting
 
@@ -60,6 +62,6 @@ from `api.Current()`, so it can also be compiled as it is; see
 go build ./...
 ```
 
-## Original C++ Source
+## Origin
 
-This port is based on the C++ version at: https://github.com/solvespace/solvespace
+The code base was ported from SolveSpace's C++: https://github.com/solvespace/solvespace
