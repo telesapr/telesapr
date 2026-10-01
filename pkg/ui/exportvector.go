@@ -67,6 +67,15 @@ type epsFileWriter struct {
 func (w *epsFileWriter) HasCanvasSize() bool { return true }
 func (w *epsFileWriter) CanOutputMesh() bool { return true }
 
+// cppInt converts f to a C++ int as x86 does: what doesn't fit, such as
+// the extent of an empty sketch, is INT_MIN.
+func cppInt(f float64) int {
+	if !(f >= math.MinInt32 && f <= math.MaxInt32) {
+		return math.MinInt32
+	}
+	return int(f)
+}
+
 func (w *epsFileWriter) StartFile() {
 	w.printf(
 		"%%!PS-Adobe-2.0\r\n"+
@@ -80,8 +89,8 @@ func (w *epsFileWriter) StartFile() {
 			"\r\n"+
 			"gsave\r\n"+
 			"\r\n",
-		int(math.Ceil(MmToPts(w.ptMax.X-w.ptMin.X))),
-		int(math.Ceil(MmToPts(w.ptMax.Y-w.ptMin.Y))),
+		cppInt(math.Ceil(MmToPts(w.ptMax.X-w.ptMin.X))),
+		cppInt(math.Ceil(MmToPts(w.ptMax.Y-w.ptMin.Y))),
 		MmToPts(w.ptMax.X-w.ptMin.X),
 		MmToPts(w.ptMax.Y-w.ptMin.Y))
 }

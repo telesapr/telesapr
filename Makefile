@@ -12,7 +12,7 @@ help:
 	@echo "  make lint         - Run linter"
 	@echo ""
 	@echo "Application:"
-	@echo "  make build        - Build bin/spacesolve"
+	@echo "  make build        - Build bin/spacesolve and bin/spacesolve-cli"
 	@echo "  make install      - Install it with its desktop entry, icons and MIME type"
 	@echo "                      (PREFIX=$(PREFIX), DESTDIR for staging)"
 	@echo "  make uninstall    - Remove what install put in place"
@@ -49,12 +49,14 @@ lint:
 	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
 
 build:
-	@echo "==> go build ./cmd/spacesolve"
+	@echo "==> go build ./cmd/spacesolve ./cmd/spacesolve-cli"
 	GOCACHE=$(PWD)/.gocache go build -o bin/spacesolve ./cmd/spacesolve
+	GOCACHE=$(PWD)/.gocache go build -o bin/spacesolve-cli ./cmd/spacesolve-cli
 
 # The desktop entry, icons and MIME type follow solvespace/res/CMakeLists.txt.
 install: build
 	install -Dm755 bin/spacesolve $(DESTDIR)$(BINDIR)/spacesolve
+	install -Dm755 bin/spacesolve-cli $(DESTDIR)$(BINDIR)/spacesolve-cli
 	sed 's|@BINDIR@|$(BINDIR)|' dist/freedesktop/spacesolve.desktop.in > bin/spacesolve.desktop
 	install -Dm644 bin/spacesolve.desktop $(DESTDIR)$(DATADIR)/applications/spacesolve.desktop
 	install -Dm644 dist/freedesktop/spacesolve-mime.xml $(DESTDIR)$(DATADIR)/mime/packages/spacesolve-mime.xml
@@ -70,7 +72,7 @@ install: build
 	done
 
 uninstall:
-	rm -f $(DESTDIR)$(BINDIR)/spacesolve
+	rm -f $(DESTDIR)$(BINDIR)/spacesolve $(DESTDIR)$(BINDIR)/spacesolve-cli
 	rm -f $(DESTDIR)$(DATADIR)/applications/spacesolve.desktop
 	rm -f $(DESTDIR)$(DATADIR)/mime/packages/spacesolve-mime.xml
 	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/spacesolve.svg

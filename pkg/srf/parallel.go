@@ -1,6 +1,8 @@
 package srf
 
 import (
+	"log"
+	"os"
 	"sync/atomic"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -49,6 +51,22 @@ func SetParallelMode(m ParallelMode) {
 		par.SetWorkers(1)
 	} else {
 		par.SetWorkers(0)
+	}
+}
+
+// SetParallelModeFromEnv takes SPACESOLVE_PARALLEL: "exact" (the
+// default) has the solids generated on all the processors where that
+// gives the bits of one; "fast" on all of them throughout, for other
+// last bits; "off" on one.
+func SetParallelModeFromEnv() {
+	switch v := os.Getenv("SPACESOLVE_PARALLEL"); v {
+	case "", "exact":
+	case "fast":
+		SetParallelMode(ParallelFast)
+	case "off":
+		SetParallelMode(ParallelOff)
+	default:
+		log.Printf("SPACESOLVE_PARALLEL is '%s'; it can be exact, fast or off.", v)
 	}
 }
 

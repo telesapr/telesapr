@@ -16,7 +16,9 @@ pkg/
 └── ttf/             # TrueType/FreeType font loading and text outlines
 ```
 
-There is no GUI at present. See `PORTING.md` for parity status.
+`cmd/spacesolve` is the application, `cmd/spacesolve-cli` the command line
+tool (`solvespace-cli`'s counterpart): `spacesolve-cli --help` lists its
+commands. See `PORTING.md` for parity status.
 
 ## Build
 

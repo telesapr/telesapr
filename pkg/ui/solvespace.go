@@ -68,9 +68,13 @@ type SolveSpaceUI struct {
 	ExportPwlCurves          bool
 	ExportCanvasSizeAuto     bool
 	ExportMode               bool
-	ExportMargin             struct{ Left, Right, Bottom, Top float64 }
-	ExportCanvas             struct{ Width, Height, Dx, Dy float64 }
-	GCode                    struct {
+	// Windowless makes the graphics window behave as C++'s headless
+	// build, which has none: the view is never fitted to it and the
+	// camera is 297 by 210. The command-line tool sets it.
+	Windowless   bool
+	ExportMargin struct{ Left, Right, Bottom, Top float64 }
+	ExportCanvas struct{ Width, Height, Dx, Dy float64 }
+	GCode        struct {
 		Depth      float64
 		SafeHeight float64
 		Passes     int

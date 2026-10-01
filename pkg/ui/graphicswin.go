@@ -458,7 +458,7 @@ func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []
 // ZoomToFit scales and centres the view on the sketch, or on the
 // selection with useSelection.
 func (gw *GraphicsWindow) ZoomToFit(includingInvisibles, useSelection bool) {
-	if gw.window == nil {
+	if gw.window == nil || gw.ss.Windowless {
 		return
 	}
 	camera := gw.GetCamera()
@@ -1295,7 +1295,7 @@ func (gw *GraphicsWindow) SuggestLineConstraint(request core.HRequest) (core.Con
 // GetCamera is the camera for the current view and window.
 func (gw *GraphicsWindow) GetCamera() render.Camera {
 	var c render.Camera
-	if gw.window != nil {
+	if gw.window != nil && !gw.ss.Windowless {
 		c.Width, c.Height = gw.window.GetContentSize()
 		c.PixelRatio = gw.window.GetDevicePixelRatio()
 		c.GridFit = gw.window.GetDevicePixelRatio() == 1
