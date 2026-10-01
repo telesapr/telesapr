@@ -18,6 +18,8 @@ type Platform struct {
 	Windows  []*Window
 	MainMenu *MenuBar
 	Menus    []*Menu
+	// Consoles are the consoles made, see console.go.
+	Consoles []*Console
 	// DialogResponses answer message dialogs, in order; DialogsShown
 	// records them.
 	DialogResponses []platform.Response

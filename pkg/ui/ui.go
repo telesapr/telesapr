@@ -126,6 +126,10 @@ const (
 	CmdWebsite
 	CmdGithub
 	CmdAbout
+	// Script, which C++ doesn't have
+	CmdScriptConsole
+	CmdScriptRun
+	CmdScriptStop
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -263,6 +267,7 @@ type GraphicsWindow struct {
 	explodeMenuItem         platform.MenuItem
 	showToolbarMenuItem     platform.MenuItem
 	showTextWndMenuItem     platform.MenuItem
+	scriptConsoleMenuItem   platform.MenuItem
 	fullScreenMenuItem      platform.MenuItem
 
 	unitsMmMenuItem         platform.MenuItem

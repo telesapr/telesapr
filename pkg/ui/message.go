@@ -13,6 +13,15 @@ import (
 // followed by white space) as the message, the rest as its description
 // (C++ MessageBox, util.cpp).
 func (ss *SolveSpaceUI) messageBox(text string, isError bool, onDismiss func()) {
+	if ss.messageSink != nil {
+		// A script is running: a dialog would run the event loop under
+		// it, so the script takes the message.
+		ss.messageSink(text, isError)
+		if onDismiss != nil {
+			onDismiss()
+		}
+		return
+	}
 	separatorAt := 0
 	found := -1
 	for {

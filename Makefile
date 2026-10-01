@@ -10,6 +10,8 @@ help:
 	@echo "  make fmt          - Format code"
 	@echo "  make tidy         - Tidy go.mod"
 	@echo "  make lint         - Run linter"
+	@echo "  make generate     - Regenerate what scripts can import (pkg/script/symbols)"
+	@echo "  make generate-check - Fail if that is out of date"
 	@echo ""
 	@echo "Application:"
 	@echo "  make build        - Build bin/spacesolve and bin/spacesolve-cli"
@@ -18,7 +20,7 @@ help:
 	@echo "  make uninstall    - Remove what install put in place"
 	@echo ""
 
-.PHONY: test test-gui fmt tidy lint build install uninstall
+.PHONY: test test-gui fmt tidy lint generate generate-check build install uninstall
 
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
@@ -47,6 +49,15 @@ tidy:
 lint:
 	@echo "==> golangci-lint run"
 	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
+
+# The tables of what a script can import are generated from the
+# packages; they change when what those export does.
+generate:
+	@echo "==> go generate ./pkg/script/..."
+	GOCACHE=$(PWD)/.gocache go generate ./pkg/script/...
+
+generate-check: generate
+	git diff --exit-code -- pkg/script/symbols
 
 build:
 	@echo "==> go build ./cmd/spacesolve ./cmd/spacesolve-cli"

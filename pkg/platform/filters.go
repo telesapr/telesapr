@@ -5,6 +5,10 @@ var (
 	SolveSpaceModelFileFilters = []FileFilter{
 		{"SolveSpace models", []string{"slvs"}},
 	}
+	// ScriptFileFilters are the scripts the application runs.
+	ScriptFileFilters = []FileFilter{
+		{Name: "Go scripts", Extensions: []string{"go"}},
+	}
 	SolveSpaceLinkFileFilters = []FileFilter{
 		{"ALL", []string{"slvs", "emn", "stl"}},
 		{"SolveSpace models", []string{"slvs"}},

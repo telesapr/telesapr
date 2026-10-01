@@ -1,0 +1,25 @@
+Lines to try in the console (Script > Show Console), or in
+"spacesolve-cli repl": doc is the drawing, lengths are in mm.
+
+    help()
+
+    doc.Groups()
+    doc.Active().Constraints()
+    doc.Selection()
+
+    r := doc.Rect(V(0, 0, 0), V(40, 25, 0))
+    w := doc.Length(r[0], 40)
+    c := doc.Circle(V(20, 12, 0), 5)
+    doc.Diameter(c, 8)
+    plate := doc.Extrude(6, "plate")
+    plate.Volume()
+
+    // A dimension moved while you watch: the windows stay alive
+    // under a script.
+    for v := 40.0; v <= 80; v += 2 {
+        w.Set(v)
+        time.Sleep(50 * time.Millisecond)
+    }
+
+    doc.Undo()
+    doc.Export("plate.stl")

@@ -126,7 +126,15 @@ type SolveSpaceUI struct {
 	scheduledGenerateAll bool
 	scheduledShowTW      bool
 	refreshTimer         platform.Timer
-	autosaveTimer        platform.Timer
+
+	// scriptHost is what scripts work on the sketch through, and
+	// messageSink, while a script runs, takes what would be shown in
+	// a message dialog.
+	scriptHost  *ScriptHost
+	messageSink func(text string, isError bool)
+	// console is the window scripts are typed in, see Console.
+	console       *ScriptConsole
+	autosaveTimer platform.Timer
 
 	// bitmapFont is the text font the canvases share.
 	bitmapFont *res.BitmapFont
@@ -248,6 +256,9 @@ func (ss *SolveSpaceUI) SaveSettings() {
 	}
 	if ss.TW.window != nil {
 		ss.TW.window.FreezePosition(s, "TextWindow")
+	}
+	if ss.console != nil && ss.console.window != nil {
+		ss.console.window.FreezePosition(s, "ScriptConsole")
 	}
 	for i := range MaxRecent {
 		raw := ""

@@ -1,0 +1,214 @@
+// Package api is what a script sees of a sketch: a Doc and the groups,
+// requests, entities, constraints and parameters in it. Those are held
+// by handle, so they stay valid when the sketch regenerates, and are
+// looked up again at every call; a Doc therefore always shows the
+// drawing as it is.
+//
+// Lengths and coordinates are in millimetres, whatever unit the user
+// interface shows, and angles in degrees.
+//
+// A call that can't do what it was asked, because of what it was given
+// or of the sketch's state, panics with an error; the interpreter
+// reports it and goes on. What reads or writes files returns an error
+// instead.
+//
+// The package is plain Go: a script that works can be compiled as it
+// is.
+package api
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
+)
+
+// ExportKind is what Export writes.
+type ExportKind int
+
+const (
+	// ExportMesh is the triangle mesh of the solid (STL, OBJ, ...).
+	ExportMesh ExportKind = iota
+	// ExportView is the 2d view of the sketch (SVG, DXF, PDF, ...).
+	ExportView
+	// ExportWireframe is the 3d wireframe (DXF, STEP).
+	ExportWireframe
+	// ExportSurfaces is the exact surfaces of the solid (STEP).
+	ExportSurfaces
+)
+
+// Host owns a sketch on behalf of a Doc: it is the program around the
+// sketch, with or without windows. All of it but Run must be called
+// inside Run.
+type Host interface {
+	// Sketch is the sketch as it is now; it changes when a file loads.
+	Sketch() *sketch.Sketch
+	// Run runs fn on the goroutine that owns the sketch and waits for
+	// it. A panic in fn is raised in the caller.
+	Run(fn func())
+	// Changing is called before each change to the sketch, so that the
+	// first one in a script's step can be remembered for undo.
+	Changing()
+	// Regenerate regenerates what is dirty, now.
+	Regenerate()
+	// AddGroup adds g after the active group, activates it and
+	// regenerates.
+	AddGroup(g sketch.Group) core.HGroup
+	// DeleteGroup deletes a group, and with it what depends on it.
+	DeleteGroup(hg core.HGroup)
+	// Activate makes a group the one that is worked in.
+	Activate(hg core.HGroup)
+	Undo() bool
+	Redo() bool
+	// MmPerUnit is the size in mm of the unit lengths are shown in.
+	MmPerUnit() float64
+	Load(path string) error
+	Save(path string) error
+	Export(kind ExportKind, path string) error
+	// Render draws the sketch, seen with right to the right and up
+	// up and fitted to the picture, into a PNG file.
+	Render(path string, width, height int, right, up geom.Vector) error
+	// Selection is what is selected in the user interface, if any.
+	Selection() []sketch.Selection
+	Select(sel []sketch.Selection)
+}
+
+// errUnsupported is what a sketch without a program around it answers
+// to what only the program can do.
+var errUnsupported = errors.New("not available for a sketch opened without the application")
+
+// SketchHost is a Host for a bare sketch, with no user interface: what
+// Open and New make outside the application.
+type SketchHost struct {
+	sk       *sketch.Sketch
+	saveFile string
+	changed  bool
+}
+
+var _ Host = (*SketchHost)(nil)
+
+// NewSketchHost hosts sk, which was loaded from or will be saved to
+// saveFile ("" for none).
+func NewSketchHost(sk *sketch.Sketch, saveFile string) *SketchHost {
+	h := &SketchHost{sk: sk, saveFile: saveFile}
+	h.adopt(sk)
+	return h
+}
+
+func (h *SketchHost) adopt(sk *sketch.Sketch) {
+	h.sk = sk
+	sk.ReloadAllLinked = func(sk *sketch.Sketch) { slvs.ReloadAllLinked(sk, h.saveFile) }
+	sk.GenerateAll()
+	sk.Active = sk.ActiveGroup()
+	if g := sk.GetGroup(sk.Active); g != nil && g.Type == sketch.GroupDrawingWorkplane &&
+		g.ActiveWorkplane.V == 0 {
+		g.ActiveWorkplane = g.H.Entity(0)
+	}
+	sk.Unsaved = false
+}
+
+func (h *SketchHost) Sketch() *sketch.Sketch { return h.sk }
+func (h *SketchHost) Run(fn func())          { fn() }
+
+// BeginEval starts a step of a script: its first change is remembered
+// for undo.
+func (h *SketchHost) BeginEval() { h.changed = false }
+
+// EndEval ends a step of a script: what it changed is regenerated.
+func (h *SketchHost) EndEval() { h.Regenerate() }
+
+func (h *SketchHost) Changing() {
+	if !h.changed {
+		h.changed = true
+		h.sk.UndoRemember()
+	}
+}
+
+func (h *SketchHost) Regenerate() { h.sk.Refresh() }
+
+func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup {
+	sk := h.sk
+	hg := sk.AddGroupAfterActive(g)
+	gg := sk.GetGroup(hg)
+	if gg.Type == sketch.GroupLinked && sk.ReloadAllLinked != nil {
+		sk.ReloadAllLinked(sk)
+	}
+	gg.Clean = false
+	sk.Active = hg
+	sk.GenerateAll()
+	gg = sk.GetGroup(hg)
+	if gg != nil && gg.Type == sketch.GroupDrawingWorkplane {
+		gg.ActiveWorkplane = gg.H.Entity(0)
+	}
+	return hg
+}
+
+func (h *SketchHost) DeleteGroup(hg core.HGroup) {
+	sk := h.sk
+	if hg == sk.Active {
+		if prev := sk.GetGroup(hg).PreviousGroup(sk); prev != nil {
+			sk.Active = prev.H
+		}
+	}
+	for i := range sk.Groups {
+		if sk.Groups[i].H == hg {
+			sk.Groups = append(sk.Groups[:i], sk.Groups[i+1:]...)
+			break
+		}
+	}
+	sk.GenerateAll()
+}
+
+func (h *SketchHost) Activate(hg core.HGroup) {
+	h.sk.Active = hg
+	h.sk.MarkGroupDirty(hg, false)
+}
+
+func (h *SketchHost) Undo() bool { return h.sk.UndoUndo() }
+func (h *SketchHost) Redo() bool { return h.sk.UndoRedo() }
+
+func (h *SketchHost) MmPerUnit() float64 { return 1 }
+
+func (h *SketchHost) Load(path string) error {
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		return err
+	}
+	h.saveFile = path
+	h.adopt(doc.Sketch)
+	return nil
+}
+
+func (h *SketchHost) Save(path string) error {
+	h.sk.GenerateAll()
+	if link, err := slvs.RebaseLinks(h.sk, h.saveFile, path); err != nil {
+		return fmt.Errorf("the sketch links '%s', so it can only be saved on the same volume", link)
+	}
+	if err := os.WriteFile(path, slvs.NewDocument(h.sk).SaveRegenerated(), 0o644); err != nil {
+		_, _ = slvs.RebaseLinks(h.sk, path, h.saveFile)
+		return err
+	}
+	h.saveFile = path
+	h.sk.Unsaved = false
+	return nil
+}
+
+func (h *SketchHost) Export(kind ExportKind, path string) error {
+	if kind != ExportMesh || !strings.EqualFold(filepath.Ext(path), ".stl") {
+		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
+	}
+	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(core.GetSettings()))
+}
+
+func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error {
+	return fmt.Errorf("picture %s: %w", filepath.Base(path), errUnsupported)
+}
+
+func (h *SketchHost) Selection() []sketch.Selection { return nil }
+func (h *SketchHost) Select([]sketch.Selection)     {}

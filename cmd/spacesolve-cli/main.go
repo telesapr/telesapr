@@ -1,12 +1,15 @@
 // Command spacesolve-cli performs an action on SolveSpace files without
 // a window: it renders a thumbnail, exports a view, wireframe, mesh or
-// surfaces, or regenerates a sketch. It ports platform/entrycli.cpp.
+// surfaces, or regenerates a sketch. It ports platform/entrycli.cpp,
+// and adds running Go scripts on a sketch (script.go).
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 
@@ -82,6 +85,7 @@ File formats:
 `, list(platform.RasterFileFilters), list(platform.VectorFileFilters),
 		list(platform.Vector3dFileFilters), list(platform.MeshFileFilters),
 		list(platform.SurfaceFileFilters))
+	io.WriteString(w, scriptUsage)
 }
 
 // views are the camera directions --view names, as projRight and
@@ -365,6 +369,12 @@ func main() {
 	if len(args) == 1 {
 		showUsage(os.Stderr, args[0])
 		return
+	}
+	if isScriptCommand(args[1]) {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		status := runScript(ctx, args, os.Stdin, os.Stdout, os.Stderr)
+		stop()
+		os.Exit(status)
 	}
 	if !runCommand(args, os.Stderr) {
 		os.Exit(1)

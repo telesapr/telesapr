@@ -163,6 +163,11 @@ func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
 			fmt.Fprintf(b, "%s---\n", indent)
 			continue
 		}
+		if depth == 0 && it.RawLabel == "S&cript" {
+			// The Script menu is ours; the C++ program this is compared
+			// with has none.
+			continue
+		}
 		fmt.Fprintf(b, "%s%s", indent, it.RawLabel)
 		if it.Accel != "" {
 			fmt.Fprintf(b, " [%s]", it.Accel)

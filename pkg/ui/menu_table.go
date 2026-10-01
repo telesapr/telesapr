@@ -15,6 +15,7 @@ var (
 	mGrp  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuGroup(c, "") }
 	mAna  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuAnalyze(c) }
 	mHelp menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuHelp(c) }
+	mScr  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuScript(c) }
 )
 
 // Accelerator modifier bits in menuEntry.accel.
@@ -187,6 +188,13 @@ func init() {
 		{1, "&Trace Point", CmdTracePt, c_ | s_ | 't', kn, mAna},
 		{1, "&Stop Tracing...", CmdStopTracing, c_ | s_ | 's', kn, mAna},
 		{1, "Step &Dimension...", CmdStepDim, c_ | s_ | 'd', kn, mAna},
+
+		// C++ has no scripts; the menu is ours.
+		{0, "S&cript", CmdNone, 0, kn, mScr},
+		{1, "Show &Console", CmdScriptConsole, c_ | s_ | 'k', kc, mScr},
+		{1, "", CmdNone, 0, kn, nil},
+		{1, "&Run File...", CmdScriptRun, c_ | s_ | 'r', kn, mScr},
+		{1, "&Stop", CmdScriptStop, 0, kn, mScr},
 
 		{0, "&Help", CmdNone, 0, kn, mHelp},
 		{1, "&Website / Manual", CmdWebsite, 0, kn, mHelp},

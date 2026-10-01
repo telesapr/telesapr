@@ -17,12 +17,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 	gw := ss.GW
 	sk := ss.SK
 
-	g := sketch.Group{
-		Visible:  true,
-		Color:    rgbi(100, 100, 100),
-		Scale:    1,
-		LinkFile: linkFile,
-	}
+	g := sketch.NewGroup()
+	g.LinkFile = linkFile
 
 	gw.GroupSelection()
 	gs := &gw.gs
@@ -228,28 +224,28 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		panic("ui: unexpected menu ID")
 	}
 
-	// Copy color from the previous mesh-contributing group.
+	gw.ClearSelection()
+	ss.addNewGroup(g, true)
+}
+
+// addNewGroup adds g after the active group, activates it and
+// regenerates, as the end of C++ Group::MenuGroup does.
+func (ss *SolveSpaceUI) addNewGroup(g sketch.Group, rememberForUndo bool) core.HGroup {
+	gw := ss.GW
+	sk := ss.SK
+
+	// The undo state is remembered before the groups are reordered, but
+	// the colour is taken first, as in C++.
 	if g.IsMeshGroup() && len(sk.GroupOrder) > 0 {
 		if running := sk.GetRunningMeshGroupFor(gw.activeGroupH()); running != nil {
 			g.Color = running.Color
 		}
 	}
-
-	gw.ClearSelection()
-	ss.UndoRemember()
-
-	afterActive := false
-	for _, hg := range sk.GroupOrder {
-		gi := sk.GetGroup(hg)
-		if afterActive {
-			gi.Order++
-		}
-		if gi.H == gw.activeGroupH() {
-			g.Order = gi.Order + 1
-			afterActive = true
-		}
+	if rememberForUndo {
+		ss.UndoRemember()
 	}
 
+	sk.BumpOrderAfterActive(&g)
 	hg := sk.AddGroup(g)
 	gg := sk.GetGroup(hg)
 
@@ -268,6 +264,7 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 	ss.groupActivate(gg)
 	ss.TW.ScreenSelectGroup(0, gg.H.V)
 	gw.AnimateOntoWorkplane()
+	return hg
 }
 
 func abs(v float64) float64 {
