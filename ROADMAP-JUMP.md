@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01. Status: roadmap and estimates, nothing here is started.
+Date: 2026-10-01. Status: roadmap and estimates, nothing here is started. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -15,11 +15,88 @@ estimate, not an implementation plan. Each item still needs its own design pass 
 ## How to read the estimates
 
 - **Effort** is focused weeks for one developer who already knows this codebase,
-  including tests and UI. The port itself has moved much faster than such numbers
+  including basic tests and UI. The port itself has moved much faster than such numbers
   suggest, so read them as relative weights, not calendar promises.
+- **The tables in "Estimates by area" predate the definition of done below.** They do not
+  include scripting support or the full test bar. Add about 20% to every item with a user
+  surface. "Totals by tier" and "Recommended order" already include it.
 - **Size**: S under 1 week, M 1 to 3 weeks, L 3 to 8 weeks, XL more than 8 weeks or open ended.
 - **Risk** is the chance that the estimate is wrong by more than a factor of two.
 - **New code** is a rough count of non-test Go lines.
+
+## Definition of done for every new feature
+
+Requirement set by the user on 2026-10-01: a new feature is well tested, has a user interface,
+and has scripting support. A feature that lacks one of the three is not done and does not merge.
+The three paths, interface, script and file, must reach the same engine entry point in
+`pkg/sketch`, so none of them can drift from the others.
+
+### Tests
+
+| Requirement | How it is met here |
+|---|---|
+| Unit tests for new engine and kernel code | Beside the code, in the package. New packages hold at least 85% statement coverage and no exported function at 0%. Measure with `-coverpkg=./pkg/...`, since `pkg/sketch` and `pkg/core` are mostly exercised from other packages. |
+| Geometric invariants on every solid a test builds | The T1 oracle: watertight shell, no naked or self-intersecting edges, face count, and volume and centre of mass against a closed-form value where one exists, such as a filleted box. |
+| Golden files | A `.spcs` fixture per feature variant under `testdata`, with a regeneration script. A golden only changes in a commit that says why. |
+| Save and load round trip | Load, regenerate, save gives the same bytes. A file from the previous format version still loads. |
+| Undo and redo | Every creating and editing action is one undo step and comes back identical on redo. |
+| Failure behaviour | Bad input gives a diagnostic on the group, never a panic and never silently wrong geometry. Each documented failure has a test. |
+| Robustness sweep, for solid features | A parameter sweep over sizes, angles and placements in the style of the thread sweep, reporting the failure rate. The acceptable rate is fixed before the feature starts. Fuzz targets for parsers, with `.spcs` and STEP first. |
+| Concurrency | `go test -race` over the touched packages, and the same result on one goroutine and on eight. |
+| Performance | A benchmark for anything on the regeneration path, compared with the previous commit. |
+| Interface scenario | At least one script under `testdata/ui/scripts` that drives the feature through menus, mouse and text window on the headless platform. |
+| Path equivalence | One test builds the same model through the interface script and through a Go script and requires identical saved files. |
+
+### User interface
+
+- A menu entry in `pkg/ui/menu_table.go`, with an accelerator where one is free, and a toolbar icon for features used while drawing.
+- A text-window screen showing every parameter of the feature, editable in place, with expressions accepted wherever a number is.
+- Selection-driven creation as the existing groups do it: select, then invoke. A clear message when the selection does not fit, saying what to select.
+- Feedback on the canvas: hover and selection highlighting for whatever the feature lets the user pick, and failure marked on the model where it happened.
+- An entry in the command search once I5 exists.
+- No feature reachable only from the console or the command line.
+
+### Scripting
+
+- A method on `pkg/script/api` to create the feature, to read and change every parameter the text window shows, and to query the result.
+- Doc comments on every method, since `help()` and `docs.json` are generated from them. `make generate` is run and `make generate-check` passes.
+- A runnable example under `examples/scripts`, executed by a test.
+- A test in `pkg/script/api` that covers misuse as well as use, as `TestMisuse` does today.
+- Reachable from `spacesolve-cli run`, so the feature works without a window.
+- Kernel foundations have no interface of their own, but expose what scripts can use. Topology gives scripts faces, edges and vertices to enumerate and select by. The test oracle gives scripts a `Check()` on a group.
+
+### What exists today, and what is missing
+
+| Piece | State on 2026-10-01 |
+|---|---|
+| Headless interface scripts | 53 scenarios in `testdata/ui/scripts`. Every golden is a `.cppui` file recorded from C++, so a Go-only feature has nothing to compare against on `master`. |
+| Go-recorded interface goldens | Exist only on the `threads` branch, as `.goui` files with a regeneration switch. |
+| Script API | Covers drawing, constraints, the stock groups, export. Its own package tests reach 31% of its statements. |
+| Example scripts | One, `examples/scripts/bracket`. |
+| Generated symbol check | `make generate-check` exists. |
+| Continuous integration | None. `make test`, `make test-gui` and `make generate-check` are run by hand. |
+| Fuzzing | None. |
+| Geometric invariant checks | Only inside C++ parity tests, as watertight and volume comparisons for Boolean fixtures. |
+
+### Test infrastructure to build first
+
+| Item | Effort | Content |
+|---|---|---|
+| T1. Invariant oracle | 1 to 1.5 wk | Described under "Decisions taken". One call that checks a group's solid, usable from Go tests, from scripts, and from the Analyze menu. |
+| T3. Go-recorded interface goldens | 0.5 wk | Bring the `.goui` mechanism from the `threads` branch to `master`, with a regeneration switch and a rule that regenerated goldens are reviewed as diffs. |
+| T4. Script API completeness test | 0.5 wk | Fails when a group type or a creating menu command has no API method, when an exported API method has no doc comment, or when an example does not run. |
+| T5. Sweep and fuzz harness | 1 wk | A shared helper for parameter sweeps with a failure-rate report, and fuzz targets wired into `make`. |
+| T6. Continuous integration | 0.5 wk | Tests, race run on the engine packages, GUI tests under Xvfb, generated-symbol check, lint, and a coverage report with the 85% rule for new packages. |
+| T7. Path equivalence helper | 0.5 wk | Runs an interface script and a Go script and compares the saved files. |
+
+About 4 to 4.5 weeks in total, and it is the first step of the order below.
+
+### The screw thread feature
+
+It is the only Go-only feature so far and it is not on `master`. It sits on the `threads` branch,
+two commits ahead and four behind. It has an interface screen and goldens but no script API.
+Under this definition it merges after it gains `doc.Thread(...)`, an example, an API test and a
+path equivalence test. About half a week, and a good first trial of the checklist.
 
 ## What the code base gives us, and what it withholds
 
@@ -39,8 +116,7 @@ Findings from the survey that drive every estimate below.
 | Expression parser with an identifier node | `OpVariable`, `NewVariable`, `Eval(ctx, vars)` in `pkg/core/expr.go` |
 | Group suppress flag, mirrored mesh transform | `Group.Suppress`, `pkg/srf/mesh.go:344` |
 | Threaded Booleans | `pkg/srf/parallel.go` |
-| Extension gate that keeps C++ parity tests clean | `SolveSpaceUI.Extensions` |
-| Go-only feature precedent with goldens | screw threads, `testdata/thread` |
+| Go-only feature precedent with goldens and an extension gate | Screw threads, on the unmerged `threads` branch only |
 
 **Structural limits of the kernel (`pkg/srf`, about 11,000 lines)**
 
@@ -264,12 +340,14 @@ Each is an XL product in its own right and none is needed to count as a modern p
 
 | Tier | Items | Effort |
 |---|---|---|
-| 1. Cheap, high value, no kernel work | A1 to A3, B1, B2, C1 to C4, D1, D4, G2, I4, I5 | about 10 wk |
-| 2. Moderate, bounded | E1, E2, E3, E9, D2, D5, G1, G3, G5, H1, H4, I1, I3, F1, F8 | about 24 wk |
-| 3. Kernel-dependent features | F2, F3, F4, E4, E5, E7, E11, E13, F7, H2, H3, I2, I6 | about 40 wk |
+| 0. Test infrastructure | T1, T3 to T7, thread feature brought to the bar | about 5 wk |
+| 1. Cheap, high value, no kernel work | A1 to A3, B1, B2, C1 to C4, D1, D4, G2, I4, I5 | about 12 wk |
+| 2. Moderate, bounded | E1, E2, E3, E9, D2, D5, G1, G3, G5, H1, H4, I1, I3, F1, F8 | about 29 wk |
+| 3. Kernel-dependent features | F2, F3, F4, E4, E5, E7, E11, E13, F7, H2, H3, I2, I6 | about 47 wk |
 | 4. Research grade | E6, E8, E10, E12, D3, F5, F6, G4 | more than a year, no firm bound |
 
-Tiers 1 to 3 together are roughly 18 months of one developer at conventional pace.
+These totals include the definition of done: the full test bar, interface and scripting for
+every feature. Tiers 0 to 3 together are roughly 21 months of one developer at conventional pace.
 Tier 4 is where the estimate stops being meaningful.
 
 ## Decisions taken (2026-10-01)
@@ -376,31 +454,35 @@ to preserve upstream quirks on write.
 
 ## Recommended order (revised)
 
-1. **T1 test oracle, then the `.spcs` format (S2) with `.slvs` import.** About 3.5 weeks. Everything after this may change kernel output and add records to the format.
-2. **A1 named parameters, then B1, B2, I5, I4.** Three to four weeks. No kernel work, large change in feel.
-3. **C1 to C3 history editing.** Three to four weeks.
-4. **F1 raycast fix and F2 closed intersection loops, on by default.** About 2.5 weeks. Remove the rotate-and-retry workaround in the thread feature afterwards.
-5. **I1 OpenGL backend, then I3 section view.** Three weeks.
-6. **E1 mirror, E3 chamfer by Boolean, E9 sweep along lines and arcs.** About 5 weeks. First new solid features, all on existing machinery.
-7. **D2 STEP import as reference mesh.** Three to four weeks.
-8. **F3 topology as the primary representation, then F4 edge naming.** About 8 to 9 weeks. The first large kernel investment.
-9. **E4 and E5 fillets on straight and circular edges, E11 restricted shell, E7 ruled loft.** About 14 weeks.
-10. **F6 general surface type.** About 8 to 10 weeks. Then E6, E8, E10 and D3 become ordinary hard features instead of impossible ones.
+Efforts here include the definition of done. Every step ends with its features reachable from
+the interface and from scripts, and with the tests listed in that section.
 
-Steps 1 to 7 are about 22 weeks at conventional pace and deliver most of the visible gap.
-Steps 8 to 10 are about 8 months and are where the native kernel is actually built out.
+1. **Test infrastructure T1 and T3 to T7, then the thread feature brought to the bar and merged.** About 5 weeks. Nothing else can be called done without it.
+2. **The `.spcs` format (S2) with `.slvs` import.** About 3 weeks, with a fuzz target for the reader and `Save`, `Open` and `Import` in the script API. Everything after this may add records to the format.
+3. **A1 named parameters, then B1, B2, I5, I4.** About 4.5 weeks. No kernel work, large change in feel. Scripts get parameters by name, constraint state per entity, and measurements.
+4. **C1 to C3 history editing.** About 4 weeks. Scripts get reorder, suppress and the list of broken references.
+5. **F1 raycast fix and F2 closed intersection loops, on by default.** About 3 weeks, most of the addition being sweeps. Remove the rotate-and-retry workaround in the thread feature afterwards.
+6. **I1 OpenGL backend, then I3 section view.** About 3.5 weeks. Goldens stay on the software renderer. Scripts get the section plane and a rendered image.
+7. **E1 mirror, E3 chamfer by Boolean, E9 sweep along lines and arcs.** About 6 weeks. First new solid features, all on existing machinery, each with a robustness sweep.
+8. **D2 STEP import as reference mesh.** About 4.5 weeks, with a corpus of real files and a fuzz target for the reader.
+9. **F3 topology as the primary representation, then F4 edge naming.** About 10 weeks. The first large kernel investment. Scripts get faces, edges and vertices to enumerate and select by, which later features need for their own API.
+10. **E4 and E5 fillets on straight and circular edges, E11 restricted shell, E7 ruled loft.** About 17 weeks.
+11. **F6 general surface type.** About 10 to 12 weeks. Then E6, E8, E10 and D3 become ordinary hard features instead of impossible ones.
+
+Steps 1 to 8 are about 34 weeks at conventional pace and deliver most of the visible gap.
+Steps 9 to 11 are about 9 months and are where the native kernel is actually built out.
 
 ## Decisions still open
 
 - **Reading upstream files.** Settled in principle: `.slvs` is import only. The importer is kept indefinitely as the migration path.
 - **Grammar, extension and linked-file handling.** Settled, see "Format decisions taken by the user".
-- **What happens to the C++ comparison tests.** Recommended: keep them running until step 4 lands, then freeze their outputs as Go goldens under T1.
-- **Topology first or surface type first** at step 8. Recommended: topology first, since fillets on planes and cylinders need it and do not need the new surface type.
+- **What happens to the C++ comparison tests.** Recommended: keep them running until step 5 lands, then freeze their outputs as Go goldens under T1.
+- **Topology first or surface type first** at step 9. Recommended: topology first, since fillets on planes and cylinders need it and do not need the new surface type.
 
 ## How to check an estimate before committing to it
 
 For each kernel-dependent item, a two-day spike on the hardest fixture is cheaper than trusting
 the table. Suggested spikes: a Boolean-route fillet on one edge of a box with a hole near the edge
 for E4, a ruled loft from square to circle subtracted from a block for E7, and one real vendor STEP
-file of a fastener and one of a connector for D2. `TestThreadSweep` is the model for a sweep-style
+file of a fastener and one of a connector for D2. `TestThreadSweep`, on the `threads` branch, is the model for a sweep-style
 robustness test, and the naked-edge check in `pkg/ui/menuanalyze.go` is the pass criterion.
