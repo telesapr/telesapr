@@ -7,9 +7,15 @@ help:
 	@echo "Development:"
 	@echo "  make test         - Run all tests"
 	@echo "  make test-gui     - Run the GUI backend tests under Xvfb"
+	@echo "  make test-race    - Run the engine packages' tests under the race detector"
+	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
+	@echo "  make ci           - Everything the GitHub workflow runs"
 	@echo "  make fmt          - Format code"
+	@echo "  make fmt-check    - Fail if gofmt would change a tracked file"
+	@echo "  make vet          - Run go vet"
 	@echo "  make tidy         - Tidy go.mod"
 	@echo "  make lint         - Run linter"
+	@echo "  make lint-new     - Run linter on what changed since LINT_BASE ($(LINT_BASE))"
 	@echo "  make generate     - Regenerate what scripts can import (pkg/script/symbols)"
 	@echo "  make generate-check - Fail if that is out of date"
 	@echo ""
@@ -20,7 +26,7 @@ help:
 	@echo "  make uninstall    - Remove what install put in place"
 	@echo ""
 
-.PHONY: test test-gui fmt tidy lint generate generate-check build install uninstall
+.PHONY: test test-gui test-race coverage ci fmt fmt-check vet tidy lint lint-new generate generate-check build install uninstall
 
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
@@ -38,6 +44,33 @@ test-gui:
 	GOCACHE=$(PWD)/.gocache SPACESOLVE_GUI_TESTS=1 xvfb-run -a -s "-screen 0 1280x1024x24 -noreset" \
 		go test ./pkg/platform/tkgui/... -v
 
+# The packages whose loops run on several goroutines, and what loads
+# and regenerates through them.
+RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/...
+
+test-race:
+	@echo "==> go test -race $(RACE_PACKAGES)"
+	GOCACHE=$(PWD)/.gocache go test -race $(RACE_PACKAGES)
+
+# Every test, with a coverage profile over ./pkg/...; fails when a
+# package listed in scripts/coverage-packages.txt is under 85%.
+coverage:
+	@echo "==> tests with coverage"
+	GOCACHE=$(PWD)/.gocache scripts/coverage-check.sh
+
+# What .github/workflows/ci.yml runs. The existing code is not
+# lint-clean, so only what changed since LINT_BASE is linted.
+ci: fmt-check vet build generate-check coverage test-race test-gui lint-new
+
+fmt-check:
+	@echo "==> gofmt -l"
+	@unformatted=$$(gofmt -l $$(git ls-files '*.go')); \
+	if [ -n "$$unformatted" ]; then echo "gofmt needed:"; echo "$$unformatted"; exit 1; fi
+
+vet:
+	@echo "==> go vet ./..."
+	GOCACHE=$(PWD)/.gocache go vet ./...
+
 fmt:
 	@echo "==> gofmt"
 	gofmt -w $$(find . -name '*.go' -not -path './vendor/*')
@@ -49,6 +82,12 @@ tidy:
 lint:
 	@echo "==> golangci-lint run"
 	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
+
+LINT_BASE ?= HEAD
+
+lint-new:
+	@echo "==> golangci-lint run --new-from-rev=$(LINT_BASE)"
+	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run --new-from-rev=$(LINT_BASE) ./...
 
 # The tables of what a script can import are generated from the
 # packages; they change when what those export does.

@@ -1,0 +1,4 @@
+# Packages that scripts/coverage-check.sh holds to 85% statement
+# coverage, one per line, as paths from the module root (pkg/check).
+# Every package created after 2026-10-01 goes here (ROADMAP-JUMP.md,
+# "Definition of done for every new feature").

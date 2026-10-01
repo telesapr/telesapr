@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # go.mod replaces github.com/msorc/takigo with ../takigo, so takigo is
+  # checked out beside this repository, at the commit this was last
+  # built against. Move it when tkgui follows a newer takigo.
+  TAKIGO_REF: e3bad2ce0ae1e72bb1a0971ba7f3094413be4319
+  X11_PACKAGES: libx11-dev libxft-dev libfontconfig1-dev
+
+defaults:
+  run:
+    working-directory: spacesolve
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: spacesolve
+      - uses: actions/checkout@v4
+        with:
+          repository: msorc/takigo
+          ref: ${{ env.TAKIGO_REF }}
+          path: takigo
+          # takigo is private: a token with read access to its contents.
+          token: ${{ secrets.TAKIGO_TOKEN }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: spacesolve/go.mod
+          cache-dependency-path: spacesolve/go.sum
+      - name: Install X11 development packages, Xvfb and a font
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
+      - name: gofmt
+        run: make fmt-check
+      - name: Vet
+        run: make vet
+      - name: Build
+        run: make build
+      - name: Generated script symbols are up to date
+        run: make generate-check
+      - name: Tests, with coverage
+        run: make coverage
+      - name: Race detector on the engine packages
+        run: make test-race
+      - name: GUI tests under Xvfb
+        run: make test-gui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: spacesolve/coverage.out
+
+  lint:
+    # Reports only on lines the change touches: the existing code is not
+    # lint-clean (about 100 findings on 2026-10-01).
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: spacesolve
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: msorc/takigo
+          ref: ${{ env.TAKIGO_REF }}
+          path: takigo
+          token: ${{ secrets.TAKIGO_TOKEN }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: spacesolve/go.mod
+          cache-dependency-path: spacesolve/go.sum
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.13.2
+          working-directory: spacesolve
+          only-new-issues: true
