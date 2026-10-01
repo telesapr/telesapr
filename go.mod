@@ -8,12 +8,8 @@ require (
 	github.com/traefik/yaegi v0.16.1
 )
 
-// takigo isn't published yet; its master branch is checked out next to
-// this repository, as a worktree of the takigo repository:
-//
-//	git -C ../takigo worktree add ../takigo-master master
-//
-// ../takigo itself may be on a branch whose API has moved on.
-replace github.com/msorc/takigo => ../takigo-master
+// takigo isn't published yet; it is checked out next to this repository
+// (../takigo, branch master).
+replace github.com/msorc/takigo => ../takigo
 
 tool github.com/traefik/yaegi/cmd/yaegi

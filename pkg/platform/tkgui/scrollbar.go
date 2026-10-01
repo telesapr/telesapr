@@ -2,6 +2,7 @@ package tkgui
 
 import (
 	"github.com/msorc/takigo/geometry/pack"
+	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/widget/scrollbar"
 )
 
@@ -43,23 +44,15 @@ func (s *scrollbarAdapter) update() {
 	s.sb.Set((s.value-s.min)/span, (s.value+s.pageSize-s.min)/span)
 }
 
-func (s *scrollbarAdapter) command(args ...any) {
-	if len(args) == 0 {
-		return
-	}
+func (s *scrollbarAdapter) command(r widget.ScrollRequest) {
 	v := s.value
-	switch args[0] {
-	case "moveto":
-		if f, ok := args[1].(float64); ok {
-			v = s.min + f*(s.max-s.min)
-		}
-	case "scroll":
-		n, _ := args[1].(int)
-		unit := 1.0
-		if len(args) > 2 && args[2] == "pages" {
-			unit = 4
-		}
-		v += float64(n) * unit
+	switch {
+	case r.MoveTo:
+		v = s.min + r.Fraction*(s.max-s.min)
+	case r.Pages:
+		v += float64(r.Count) * 4
+	default:
+		v += float64(r.Count)
 	}
 	v = s.clamp(v)
 	if v == s.value {

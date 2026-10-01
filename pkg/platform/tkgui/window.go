@@ -314,7 +314,7 @@ func signed(v int) string {
 func (w *Window) SetCursor(c platform.Cursor) {
 	switch c {
 	case platform.CursorHand:
-		w.canvas.Win.SetCursor(uint(cursor.Hand2))
+		w.canvas.Win.SetCursor(cursor.Hand2)
 	default:
 		w.canvas.Win.ResetCursor()
 	}

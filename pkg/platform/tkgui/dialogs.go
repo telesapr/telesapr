@@ -13,6 +13,7 @@ import (
 	"github.com/msorc/takigo/geometry/place"
 	"github.com/msorc/takigo/option"
 	tkplatform "github.com/msorc/takigo/platform"
+	"github.com/msorc/takigo/screenunit"
 	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/widget/button"
 	"github.com/msorc/takigo/widget/frame"
@@ -102,11 +103,11 @@ func (d *MessageDialog) RunModal() platform.Response {
 		msgFont = "TkHeadingFont"
 	}
 	pack.Pack(label.New(text, "msg", label.Text(d.message), label.FontOpt(msgFont),
-		label.WrapLength("4i"), label.JustifyOpt(option.JustifyLeft), label.Anchor(option.AnchorW)),
+		label.WrapLength(screenunit.In(4)), label.JustifyOpt(option.JustifyLeft), label.Anchor(option.AnchorW)),
 		pack.SideOpt(pack.Top), pack.Anchor(option.AnchorW))
 	if d.description != "" {
 		pack.Pack(label.New(text, "desc", label.Text(d.description),
-			label.WrapLength("4i"), label.JustifyOpt(option.JustifyLeft), label.Anchor(option.AnchorW)),
+			label.WrapLength(screenunit.In(4)), label.JustifyOpt(option.JustifyLeft), label.Anchor(option.AnchorW)),
 			pack.SideOpt(pack.Top), pack.Anchor(option.AnchorW), pack.PadYPair(8, 0))
 	}
 

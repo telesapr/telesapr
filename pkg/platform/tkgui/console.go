@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/msorc/takigo/bind"
-	"github.com/msorc/takigo/event"
 	"github.com/msorc/takigo/geometry/pack"
 	"github.com/msorc/takigo/option"
 	tkplatform "github.com/msorc/takigo/platform"
+	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/widget/frame"
 	"github.com/msorc/takigo/widget/label"
 	"github.com/msorc/takigo/widget/scrollbar"
@@ -129,7 +129,7 @@ func (p *Platform) CreateConsole(parent platform.Window) platform.Console {
 	// These come before the text's own bindings, and replace them
 	// when they say so.
 	path := c.input.Window().PathName
-	eng := p.app.BindEng()
+	eng := p.app.Bind()
 	_ = eng.Bind(path, "<KeyPress-Return>", c.onReturn)
 	_ = eng.Bind(path, "<KeyPress-KP_Enter>", c.onReturn)
 	_ = eng.Bind(path, "<KeyPress-Up>", func(*bind.EventData) bool { return c.recall(-1) })
@@ -150,24 +150,12 @@ func (p *Platform) CreateConsole(parent platform.Window) platform.Console {
 }
 
 // scrolled is the scrollbar moving the text.
-func (c *Console) scrolled(args ...any) {
-	if len(args) == 0 {
+func (c *Console) scrolled(r widget.ScrollRequest) {
+	if r.MoveTo {
+		c.log.YViewMoveTo(r.Fraction)
 		return
 	}
-	switch args[0] {
-	case "moveto":
-		if len(args) >= 2 {
-			if f, ok := args[1].(float64); ok {
-				c.log.YViewMoveTo(f)
-			}
-		}
-	case "scroll":
-		if len(args) >= 3 {
-			n, _ := args[1].(int)
-			unit, _ := args[2].(string)
-			c.log.YViewScroll(n, unit == "pages")
-		}
-	}
+	c.log.YViewScroll(r.Count, r.Pages)
 }
 
 // Events returns the console's callbacks.
@@ -189,7 +177,7 @@ func (c *Console) setTyped(s string) {
 // onReturn enters what is in the box; with Shift it is left to the
 // text, which starts a new line.
 func (c *Console) onReturn(ev *bind.EventData) bool {
-	if raw, ok := ev.RawEvent.(*event.Event); ok && raw.State&tkplatform.ShiftMask != 0 {
+	if ev.Event != nil && ev.Event.State&tkplatform.ShiftMask != 0 {
 		return false
 	}
 	c.Enter()

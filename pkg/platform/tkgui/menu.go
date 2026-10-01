@@ -253,7 +253,7 @@ func (b *MenuBar) bindTraversal(m *Menu) {
 		}
 	}
 	win := m.m.Window()
-	_ = b.p.app.BindEng().Bind(win.PathName, "<KeyPress-Left>", func(*bind.EventData) bool {
+	_ = b.p.app.Bind().Bind(win.PathName, "<KeyPress-Left>", func(*bind.EventData) bool {
 		if b.bar == nil {
 			return false
 		}
