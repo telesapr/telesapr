@@ -115,6 +115,19 @@ func (tw *TextWindow) cellKey(r, c int) string {
 	return key
 }
 
+// sameCellKey is cellKey(r, c0) == cellKey(r, c1), without formatting
+// either.
+func (tw *TextWindow) sameCellKey(r, c0, c1 int) bool {
+	a, b := &tw.lines[r].meta[c0], &tw.lines[r].meta[c1]
+	if a.fg != b.fg || a.bg != b.bg || a.link != b.link {
+		return false
+	}
+	if a.bg == 'z' && a.bgRgb != b.bgRgb {
+		return false
+	}
+	return a.link == 0 || (a.data == b.data && (a.f != nil) == (b.f != nil) && (a.h != nil) == (b.h != nil))
+}
+
 // dumpRows is the harness's DumpRows.
 func (tw *TextWindow) dumpRows(b *strings.Builder) {
 	for r := 0; r < tw.rows; r++ {
@@ -145,12 +158,11 @@ func (tw *TextWindow) dumpRows(b *strings.Builder) {
 		b.WriteByte('\n')
 		c0 := 0
 		for c0 < MaxCols {
-			key := tw.cellKey(r, c0)
 			c1 := c0 + 1
-			for c1 < MaxCols && tw.cellKey(r, c1) == key {
+			for c1 < MaxCols && tw.sameCellKey(r, c0, c1) {
 				c1++
 			}
-			fmt.Fprintf(b, " %d-%d %s\n", c0, c1-1, key)
+			fmt.Fprintf(b, " %d-%d %s\n", c0, c1-1, tw.cellKey(r, c0))
 			c0 = c1
 		}
 	}

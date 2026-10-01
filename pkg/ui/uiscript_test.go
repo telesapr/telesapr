@@ -3,7 +3,7 @@ package ui
 import (
 	"bufio"
 	"fmt"
-	"hash/fnv"
+	"hash/maphash"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -113,6 +113,10 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 func (r *uiScriptRunner) gw() *headless.Window { return r.ss.GW.window.(*headless.Window) }
 func (r *uiScriptRunner) tw() *headless.Window { return r.ss.TW.window.(*headless.Window) }
 
+// frameSeed hashes the frames settle records: one seed, so the hashes
+// of two runs compare.
+var frameSeed = maphash.MakeSeed()
+
 // settle does the event loop's idle work: timers, then repaints, until
 // quiet.
 func (r *uiScriptRunner) settle() {
@@ -122,9 +126,7 @@ func (r *uiScriptRunner) settle() {
 			busy = true
 			w.Render()
 			if r.frames != nil && w.Frame != nil {
-				h := fnv.New64a()
-				h.Write(w.Frame.Pix)
-				*r.frames = append(*r.frames, h.Sum64())
+				*r.frames = append(*r.frames, maphash.Bytes(frameSeed, w.Frame.Pix))
 			}
 		}
 		if w := r.tw(); w.Invalidated > 0 {

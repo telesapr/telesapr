@@ -5,6 +5,7 @@
 package dxfread
 
 import (
+	"bytes"
 	"encoding/binary"
 	"math"
 	"strconv"
@@ -48,7 +49,7 @@ func (r *reader) readLine() string {
 		r.good = false
 		return ""
 	}
-	i := strings.IndexByte(string(r.data[r.pos:]), '\n')
+	i := bytes.IndexByte(r.data[r.pos:], '\n')
 	if i < 0 {
 		line := string(r.data[r.pos:])
 		r.pos = len(r.data)

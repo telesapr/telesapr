@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 )
 
 // The files are copies of solvespace/res: icons/graphics-window,
@@ -43,9 +44,23 @@ func LoadString(name string) string {
 	return strings.ReplaceAll(string(mustLoadResource(name)), "\r", "")
 }
 
+// inflated holds the gzipped resources inflated so far: Unifont takes
+// a good part of a second to inflate, and every application instance
+// loads it.
+var inflated sync.Map // name -> string
+
 // LoadStringFromGzip returns a gzipped text resource, inflated (C++
 // LoadStringFromGzip).
 func LoadStringFromGzip(name string) string {
+	if s, ok := inflated.Load(name); ok {
+		return s.(string)
+	}
+	s := inflate(name)
+	inflated.Store(name, s)
+	return s
+}
+
+func inflate(name string) string {
 	zr, err := gzip.NewReader(bytes.NewReader(mustLoadResource(name)))
 	if err != nil {
 		panic(fmt.Errorf("cannot inflate resource %s: %w", name, err))
