@@ -18,6 +18,9 @@ import (
 // new sketch, in its workplane and free in 3d, and compares the saved
 // sketch with C++'s (scripts/cpp-import-harness.cpp), byte for byte.
 func TestImportDxfVsCpp(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow; skipped with -short")
+	}
 	root := filepath.Join("..", "..", "testdata", "importdxf")
 	var files []string
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {

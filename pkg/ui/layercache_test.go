@@ -7,6 +7,9 @@ import "testing"
 // the graphics window presents is the same: the cache must never show
 // a stale picture.
 func TestLayerCacheSameFrames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow; skipped with -short")
+	}
 	for _, name := range uiScripts(t, "act_") {
 		t.Run(name, func(t *testing.T) {
 			var cached, drawn []uint64
