@@ -50,7 +50,7 @@ func TestParityAnalysisFixtures(t *testing.T) {
 // order. A non-zero result confirms that the contour forms a
 // closed polygon with non-trivial area.
 func TestContourAreaSignAndMagnitude(t *testing.T) {
-	doc, err := LoadFile("/home/msorc/projects/spacesolve/testdata/analysis/contour_area/normal.slvs")
+	doc, err := LoadFile(filepath.Join("..", "..", "..", "testdata", "analysis", "contour_area", "normal.slvs"))
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}

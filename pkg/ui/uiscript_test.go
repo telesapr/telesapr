@@ -6,6 +6,7 @@ import (
 	"hash/maphash"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -475,6 +476,18 @@ func uiScripts(t *testing.T, prefix string) []string {
 
 // compareUIScripts runs scripts and compares each with its C++ golden
 // (scripts/regen-ui-golden.sh), reporting the first differing line.
+// linkRelToTestdata matches a saved link group's path up to testdata.
+var linkRelToTestdata = regexp.MustCompile(`(?m)^(Group\.impFileRel=).*/testdata/`)
+
+// linkPathsFromTestdata makes the paths of the linked files in a save
+// start at testdata. A script saves into a temporary directory, so the
+// path from there to a linked fixture depends on where the repository
+// and the temporary directory are; the goldens hold what it was on the
+// machine that recorded them.
+func linkPathsFromTestdata(s string) string {
+	return linkRelToTestdata.ReplaceAllString(s, "${1}testdata/")
+}
+
 func compareUIScripts(t *testing.T, prefix string) {
 	names := uiScripts(t, prefix)
 	if len(names) == 0 {
@@ -486,8 +499,8 @@ func compareUIScripts(t *testing.T, prefix string) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := runUIScript(t, name)
-			want := string(wantB)
+			got := linkPathsFromTestdata(runUIScript(t, name))
+			want := linkPathsFromTestdata(string(wantB))
 			if got == want {
 				return
 			}
