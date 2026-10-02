@@ -49,7 +49,7 @@ row 11          ok  g001-#references
  13-13 64 61 0
  14-29 6c 61 108 1 1 0
  30-99 64 61 0
-row 13         err g002-sketch-in-plane
+row 13         err g002-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 2 1 0
  4-4 64 64 0
@@ -58,7 +58,11 @@ row 13         err g002-sketch-in-plane
  10-12 6d 64 0
  13-13 64 64 0
  14-33 6c 64 108 2 1 0
- 34-99 64 64 0
+ 34-35 64 64 0
+ 36-36 6c 64 117 2 1 0
+ 37-37 64 64 0
+ 38-38 6c 64 100 2 1 0
+ 39-99 64 64 0
 row 16   show all / only unconstrained / hide all
  0-1 64 64 0
  2-9 6c 64 115 0 1 0
@@ -75,297 +79,193 @@ row 19   line styles / view / configuration
  20-22 64 64 0
  23-35 6c 64 115 0 1 0
  36-99 64 64 0
-row 21 
+row 21   parameters
+ 0-1 64 64 0
+ 2-11 6c 64 114 0 1 0
+ 12-99 64 64 0
+row 23 
  0-99 64 64 0
 save
-���SolveSpaceREVa
+spacesolve 2
 
+units mm
 
-Group.h.v=00000001
-Group.type=5000
-Group.name=#references
-Group.color=ff000000
-Group.skipFirst=0
-Group.predef.swapUV=0
-Group.predef.negateU=0
-Group.predef.negateV=0
-Group.visible=1
-Group.suppress=0
-Group.relaxConstraints=0
-Group.allowRedundant=0
-Group.allDimsReference=0
-Group.remap={
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
 }
-AddGroup
 
-Group.h.v=00000002
-Group.type=5001
-Group.order=1
-Group.name=sketch-in-plane
-Group.activeWorkplane.v=80020000
-Group.color=ff000000
-Group.subtype=6000
-Group.skipFirst=0
-Group.predef.q.w=1.00000000000000000000
-Group.predef.origin.v=00010001
-Group.predef.swapUV=0
-Group.predef.negateU=0
-Group.predef.negateV=0
-Group.visible=1
-Group.suppress=0
-Group.relaxConstraints=0
-Group.allowRedundant=0
-Group.allDimsReference=0
-Group.remap={
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
 }
-AddGroup
 
-Param.h.v.=00010010
-AddParam
+request 0x1 workplane {
+  group 0x1
+}
 
-Param.h.v.=00010011
-AddParam
+request 0x2 workplane {
+  group 0x1
+}
 
-Param.h.v.=00010012
-AddParam
+request 0x3 workplane {
+  group 0x1
+}
 
-Param.h.v.=00010020
-Param.val=1.00000000000000000000
-AddParam
+request 0x4 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
 
-Param.h.v.=00010021
-AddParam
+constraint 0x1 pt-pt-distance {
+  group 0x2
+  workplane 0x80020000
+  value = 30
+  pt-a 0x40001
+  pt-b 0x40002
+  label-offset -2.42535625036333 -9.70142500145332 0
+}
 
-Param.h.v.=00010022
-AddParam
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 -14.552137502179978
+value 0x40011 18.638034375544994
+value 0x40013 14.552137502179978
+value 0x40014 11.361965624455005
 
-Param.h.v.=00010023
-AddParam
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
 
-Param.h.v.=00020010
-AddParam
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
 
-Param.h.v.=00020011
-AddParam
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
 
-Param.h.v.=00020012
-AddParam
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
 
-Param.h.v.=00020020
-Param.val=0.50000000000000000000
-AddParam
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
 
-Param.h.v.=00020021
-Param.val=0.50000000000000000000
-AddParam
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
 
-Param.h.v.=00020022
-Param.val=0.50000000000000000000
-AddParam
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
 
-Param.h.v.=00020023
-Param.val=0.50000000000000000000
-AddParam
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
 
-Param.h.v.=00030010
-AddParam
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
 
-Param.h.v.=00030011
-AddParam
+entity 0x40000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001 0x40002
+  act-visible
+}
 
-Param.h.v.=00030012
-AddParam
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -14.552137502179978 18.638034375544994 0
+  act-visible
+}
 
-Param.h.v.=00030020
-Param.val=0.50000000000000000000
-AddParam
+entity 0x40002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 14.552137502179978 11.361965624455005 0
+  act-visible
+}
 
-Param.h.v.=00030021
-Param.val=-0.50000000000000000000
-AddParam
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+  act-visible
+}
 
-Param.h.v.=00030022
-Param.val=-0.50000000000000000000
-AddParam
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
 
-Param.h.v.=00030023
-Param.val=-0.50000000000000000000
-AddParam
-
-Param.h.v.=00040010
-Param.val=-14.55213750217997770164
-AddParam
-
-Param.h.v.=00040011
-Param.val=18.63803437554499353723
-AddParam
-
-Param.h.v.=00040013
-Param.val=14.55213750217997770164
-AddParam
-
-Param.h.v.=00040014
-Param.val=11.36196562445500468641
-AddParam
-
-Request.h.v=00000001
-Request.type=100
-Request.group.v=00000001
-Request.construction=0
-AddRequest
-
-Request.h.v=00000002
-Request.type=100
-Request.group.v=00000001
-Request.construction=0
-AddRequest
-
-Request.h.v=00000003
-Request.type=100
-Request.group.v=00000001
-Request.construction=0
-AddRequest
-
-Request.h.v=00000004
-Request.type=200
-Request.workplane.v=80020000
-Request.group.v=00000002
-Request.construction=0
-AddRequest
-
-Entity.h.v=00010000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=00010001
-Entity.normal.v=00010020
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00010001
-Entity.type=2000
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00010020
-Entity.type=3000
-Entity.construction=0
-Entity.point[0].v=00010001
-Entity.actNormal.w=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00020000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=00020001
-Entity.normal.v=00020020
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00020001
-Entity.type=2000
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00020020
-Entity.type=3000
-Entity.construction=0
-Entity.point[0].v=00020001
-Entity.actNormal.w=0.50000000000000000000
-Entity.actNormal.vx=0.50000000000000000000
-Entity.actNormal.vy=0.50000000000000000000
-Entity.actNormal.vz=0.50000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00030000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=00030001
-Entity.normal.v=00030020
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00030001
-Entity.type=2000
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00030020
-Entity.type=3000
-Entity.construction=0
-Entity.point[0].v=00030001
-Entity.actNormal.w=0.50000000000000000000
-Entity.actNormal.vx=-0.50000000000000000000
-Entity.actNormal.vy=-0.50000000000000000000
-Entity.actNormal.vz=-0.50000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00040000
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=00040001
-Entity.point[1].v=00040002
-Entity.workplane.v=80020000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00040001
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=-14.55213750217997770164
-Entity.actPoint.y=18.63803437554499353723
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00040002
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=14.55213750217997770164
-Entity.actPoint.y=11.36196562445500468641
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80020000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=80020002
-Entity.normal.v=80020001
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80020001
-Entity.type=3010
-Entity.construction=0
-Entity.point[0].v=80020002
-Entity.actNormal.w=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80020002
-Entity.type=2012
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Constraint.h.v=00000001
-Constraint.type=30
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.valA=30.00000000000000000000
-Constraint.ptA.v=00040001
-Constraint.ptB.v=00040002
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-Constraint.disp.offset.x=-2.42535625036332991300
-Constraint.disp.offset.y=-9.70142500145331965200
-AddConstraint
-
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
 end save

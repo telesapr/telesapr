@@ -151,1081 +151,841 @@ at 475 575 0 0 0
 at 525 575 0 0 0
 at 575 575 0 0 0
 save
-±²³SolveSpaceREVa
+spacesolve 2
 
+units mm
 
-Group.h.v=00000001
-Group.type=5000
-Group.name=#references
-Group.color=ff000000
-Group.skipFirst=0
-Group.predef.swapUV=0
-Group.predef.negateU=0
-Group.predef.negateV=0
-Group.visible=1
-Group.suppress=0
-Group.relaxConstraints=0
-Group.allowRedundant=0
-Group.allDimsReference=0
-Group.remap={
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
 }
-AddGroup
 
-Group.h.v=00000002
-Group.type=5001
-Group.order=1
-Group.name=sketch-in-plane
-Group.activeWorkplane.v=80020000
-Group.color=ff000000
-Group.subtype=6000
-Group.skipFirst=0
-Group.predef.q.w=1.00000000000000000000
-Group.predef.origin.v=00010001
-Group.predef.swapUV=0
-Group.predef.negateU=0
-Group.predef.negateV=0
-Group.visible=1
-Group.suppress=0
-Group.relaxConstraints=0
-Group.allowRedundant=0
-Group.allDimsReference=0
-Group.remap={
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
 }
-AddGroup
 
-Group.h.v=00000003
-Group.type=5100
-Group.order=2
-Group.name=extrude
-Group.opA.v=00000002
-Group.color=00646464
-Group.subtype=7000
-Group.skipFirst=0
-Group.predef.entityB.v=80020000
-Group.predef.swapUV=0
-Group.predef.negateU=0
-Group.predef.negateV=0
-Group.visible=1
-Group.suppress=0
-Group.relaxConstraints=0
-Group.allowRedundant=0
-Group.allDimsReference=0
-Group.scale=1.00000000000000000000
-Group.remap={
-    1 00040000 1002
-    2 00040001 1002
-    3 00040002 1002
-    4 00040000 1001
-    5 00040001 1001
-    6 00040002 1001
-    7 00040000 1004
-    8 00040001 1003
-    9 00040002 1003
-    10 00050000 1002
-    11 00050001 1002
-    12 00050002 1002
-    13 00050000 1001
-    14 00050001 1001
-    15 00050002 1001
-    16 00050000 1004
-    17 00050001 1003
-    18 00050002 1003
-    19 00060000 1002
-    20 00060001 1002
-    21 00060002 1002
-    22 00060000 1001
-    23 00060001 1001
-    24 00060002 1001
-    25 00060000 1004
-    26 00060001 1003
-    27 00060002 1003
-    28 00070000 1002
-    29 00070001 1002
-    30 00070002 1002
-    31 00070000 1001
-    32 00070001 1001
-    33 00070002 1001
-    34 00070000 1004
-    35 00070001 1003
-    36 00070002 1003
-    37 80020000 1002
-    38 80020000 1001
-    39 80020001 1002
-    40 80020002 1002
-    41 80020001 1001
-    42 80020002 1001
-    43 80020002 1003
-    44 00000000 1001
-    45 00000000 1002
+group 0x3 extrude "extrude" {
+  order 2
+  subtype one-sided
+  op-a 0x2
+  color 100 100 100 255
+  predef {
+    entity-b 0x80020000
+  }
+  visible
+  remap {
+    map 1 0x40000 1002
+    map 2 0x40001 1002
+    map 3 0x40002 1002
+    map 4 0x40000 1001
+    map 5 0x40001 1001
+    map 6 0x40002 1001
+    map 7 0x40000 1004
+    map 8 0x40001 1003
+    map 9 0x40002 1003
+    map 10 0x50000 1002
+    map 11 0x50001 1002
+    map 12 0x50002 1002
+    map 13 0x50000 1001
+    map 14 0x50001 1001
+    map 15 0x50002 1001
+    map 16 0x50000 1004
+    map 17 0x50001 1003
+    map 18 0x50002 1003
+    map 19 0x60000 1002
+    map 20 0x60001 1002
+    map 21 0x60002 1002
+    map 22 0x60000 1001
+    map 23 0x60001 1001
+    map 24 0x60002 1001
+    map 25 0x60000 1004
+    map 26 0x60001 1003
+    map 27 0x60002 1003
+    map 28 0x70000 1002
+    map 29 0x70001 1002
+    map 30 0x70002 1002
+    map 31 0x70000 1001
+    map 32 0x70001 1001
+    map 33 0x70002 1001
+    map 34 0x70000 1004
+    map 35 0x70001 1003
+    map 36 0x70002 1003
+    map 37 0x80020000 1002
+    map 38 0x80020000 1001
+    map 39 0x80020001 1002
+    map 40 0x80020002 1002
+    map 41 0x80020001 1001
+    map 42 0x80020002 1001
+    map 43 0x80020002 1003
+    map 44 0x0 1001
+    map 45 0x0 1002
+  }
 }
-AddGroup
 
-Param.h.v.=00010010
-AddParam
-
-Param.h.v.=00010011
-AddParam
-
-Param.h.v.=00010012
-AddParam
-
-Param.h.v.=00010020
-Param.val=1.00000000000000000000
-AddParam
-
-Param.h.v.=00010021
-AddParam
-
-Param.h.v.=00010022
-AddParam
-
-Param.h.v.=00010023
-AddParam
-
-Param.h.v.=00020010
-AddParam
-
-Param.h.v.=00020011
-AddParam
-
-Param.h.v.=00020012
-AddParam
-
-Param.h.v.=00020020
-Param.val=0.50000000000000000000
-AddParam
-
-Param.h.v.=00020021
-Param.val=0.50000000000000000000
-AddParam
-
-Param.h.v.=00020022
-Param.val=0.50000000000000000000
-AddParam
-
-Param.h.v.=00020023
-Param.val=0.50000000000000000000
-AddParam
-
-Param.h.v.=00030010
-AddParam
-
-Param.h.v.=00030011
-AddParam
-
-Param.h.v.=00030012
-AddParam
-
-Param.h.v.=00030020
-Param.val=0.50000000000000000000
-AddParam
-
-Param.h.v.=00030021
-Param.val=-0.50000000000000000000
-AddParam
-
-Param.h.v.=00030022
-Param.val=-0.50000000000000000000
-AddParam
-
-Param.h.v.=00030023
-Param.val=-0.50000000000000000000
-AddParam
-
-Param.h.v.=00040010
-Param.val=16.00000000000000000000
-AddParam
-
-Param.h.v.=00040011
-Param.val=-6.00000000000000000000
-AddParam
-
-Param.h.v.=00040013
-Param.val=16.00000000000000000000
-AddParam
-
-Param.h.v.=00040014
-Param.val=20.00000000000000000000
-AddParam
-
-Param.h.v.=00050010
-Param.val=-20.00000000000000000000
-AddParam
-
-Param.h.v.=00050011
-Param.val=-6.00000000000000000000
-AddParam
-
-Param.h.v.=00050013
-Param.val=16.00000000000000000000
-AddParam
-
-Param.h.v.=00050014
-Param.val=-6.00000000000000000000
-AddParam
-
-Param.h.v.=00060010
-Param.val=-20.00000000000000000000
-AddParam
-
-Param.h.v.=00060011
-Param.val=20.00000000000000000000
-AddParam
-
-Param.h.v.=00060013
-Param.val=-20.00000000000000000000
-AddParam
-
-Param.h.v.=00060014
-Param.val=-6.00000000000000000000
-AddParam
-
-Param.h.v.=00070010
-Param.val=16.00000000000000000000
-AddParam
-
-Param.h.v.=00070011
-Param.val=20.00000000000000000000
-AddParam
-
-Param.h.v.=00070013
-Param.val=-20.00000000000000000000
-AddParam
-
-Param.h.v.=00070014
-Param.val=20.00000000000000000000
-AddParam
-
-Param.h.v.=80030000
-AddParam
-
-Param.h.v.=80030001
-AddParam
-
-Param.h.v.=80030002
-Param.val=40.00000000000000000000
-AddParam
-
-Request.h.v=00000001
-Request.type=100
-Request.group.v=00000001
-Request.construction=0
-AddRequest
-
-Request.h.v=00000002
-Request.type=100
-Request.group.v=00000001
-Request.construction=0
-AddRequest
-
-Request.h.v=00000003
-Request.type=100
-Request.group.v=00000001
-Request.construction=0
-AddRequest
-
-Request.h.v=00000004
-Request.type=200
-Request.workplane.v=80020000
-Request.group.v=00000002
-Request.construction=0
-AddRequest
-
-Request.h.v=00000005
-Request.type=200
-Request.workplane.v=80020000
-Request.group.v=00000002
-Request.construction=0
-AddRequest
-
-Request.h.v=00000006
-Request.type=200
-Request.workplane.v=80020000
-Request.group.v=00000002
-Request.construction=0
-AddRequest
-
-Request.h.v=00000007
-Request.type=200
-Request.workplane.v=80020000
-Request.group.v=00000002
-Request.construction=0
-AddRequest
-
-Entity.h.v=00010000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=00010001
-Entity.normal.v=00010020
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00010001
-Entity.type=2000
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00010020
-Entity.type=3000
-Entity.construction=0
-Entity.point[0].v=00010001
-Entity.actNormal.w=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00020000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=00020001
-Entity.normal.v=00020020
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00020001
-Entity.type=2000
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00020020
-Entity.type=3000
-Entity.construction=0
-Entity.point[0].v=00020001
-Entity.actNormal.w=0.50000000000000000000
-Entity.actNormal.vx=0.50000000000000000000
-Entity.actNormal.vy=0.50000000000000000000
-Entity.actNormal.vz=0.50000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00030000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=00030001
-Entity.normal.v=00030020
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00030001
-Entity.type=2000
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00030020
-Entity.type=3000
-Entity.construction=0
-Entity.point[0].v=00030001
-Entity.actNormal.w=0.50000000000000000000
-Entity.actNormal.vx=-0.50000000000000000000
-Entity.actNormal.vy=-0.50000000000000000000
-Entity.actNormal.vz=-0.50000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00040000
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=00040001
-Entity.point[1].v=00040002
-Entity.workplane.v=80020000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00040001
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00040002
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00050000
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=00050001
-Entity.point[1].v=00050002
-Entity.workplane.v=80020000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00050001
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00050002
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00060000
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=00060001
-Entity.point[1].v=00060002
-Entity.workplane.v=80020000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00060001
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00060002
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00070000
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=00070001
-Entity.point[1].v=00070002
-Entity.workplane.v=80020000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00070001
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=00070002
-Entity.type=2001
-Entity.construction=0
-Entity.workplane.v=80020000
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80020000
-Entity.type=10000
-Entity.construction=0
-Entity.point[0].v=80020002
-Entity.normal.v=80020001
-Entity.actVisible=0
-AddEntity
-
-Entity.h.v=80020001
-Entity.type=3010
-Entity.construction=0
-Entity.point[0].v=80020002
-Entity.actNormal.w=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80020002
-Entity.type=2012
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030001
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030002
-Entity.point[1].v=80030003
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030002
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030003
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030004
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030005
-Entity.point[1].v=80030006
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030005
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030006
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030007
-Entity.type=5001
-Entity.construction=0
-Entity.point[0].v=80030005
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actNormal.vx=-1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030008
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030005
-Entity.point[1].v=80030002
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030009
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030006
-Entity.point[1].v=80030003
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003000a
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=8003000b
-Entity.point[1].v=8003000c
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003000b
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003000c
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003000d
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=8003000e
-Entity.point[1].v=8003000f
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003000e
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003000f
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030010
-Entity.type=5001
-Entity.construction=0
-Entity.point[0].v=8003000e
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actNormal.vy=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030011
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=8003000e
-Entity.point[1].v=8003000b
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030012
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=8003000f
-Entity.point[1].v=8003000c
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030013
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030014
-Entity.point[1].v=80030015
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030014
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030015
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030016
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030017
-Entity.point[1].v=80030018
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030017
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030018
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=-6.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030019
-Entity.type=5001
-Entity.construction=0
-Entity.point[0].v=80030017
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actNormal.vx=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003001a
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030017
-Entity.point[1].v=80030014
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003001b
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030018
-Entity.point[1].v=80030015
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003001c
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=8003001d
-Entity.point[1].v=8003001e
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003001d
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003001e
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003001f
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030020
-Entity.point[1].v=80030021
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030020
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030021
-Entity.type=2010
-Entity.construction=0
-Entity.actPoint.x=-20.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030022
-Entity.type=5001
-Entity.construction=0
-Entity.point[0].v=80030020
-Entity.actPoint.x=16.00000000000000000000
-Entity.actPoint.y=20.00000000000000000000
-Entity.actNormal.vy=-1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030023
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030020
-Entity.point[1].v=8003001d
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030024
-Entity.type=11000
-Entity.construction=0
-Entity.point[0].v=80030021
-Entity.point[1].v=8003001e
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030027
-Entity.type=3010
-Entity.construction=0
-Entity.point[0].v=80030028
-Entity.actNormal.w=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030028
-Entity.type=2010
-Entity.construction=1
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=80030029
-Entity.type=3010
-Entity.construction=0
-Entity.point[0].v=8003002a
-Entity.actNormal.w=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003002a
-Entity.type=2010
-Entity.construction=1
-Entity.actPoint.z=80.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003002b
-Entity.type=11000
-Entity.construction=1
-Entity.point[0].v=8003002a
-Entity.point[1].v=80030028
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003002c
-Entity.type=5000
-Entity.construction=0
-Entity.point[0].v=8003002a
-Entity.actPoint.z=80.00000000000000000000
-Entity.actNormal.vz=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Entity.h.v=8003002d
-Entity.type=5000
-Entity.construction=0
-Entity.point[0].v=80030028
-Entity.actNormal.vz=1.00000000000000000000
-Entity.actVisible=1
-AddEntity
-
-Constraint.h.v=00000001
-Constraint.type=20
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.ptA.v=00040001
-Constraint.ptB.v=00050002
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Constraint.h.v=00000002
-Constraint.type=20
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.ptA.v=00050001
-Constraint.ptB.v=00060002
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Constraint.h.v=00000003
-Constraint.type=20
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.ptA.v=00060001
-Constraint.ptB.v=00070002
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Constraint.h.v=00000004
-Constraint.type=20
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.ptA.v=00070001
-Constraint.ptB.v=00040002
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Constraint.h.v=00000005
-Constraint.type=81
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.entityA.v=00040000
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Constraint.h.v=00000006
-Constraint.type=80
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.entityA.v=00050000
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Constraint.h.v=00000007
-Constraint.type=81
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.entityA.v=00060000
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Constraint.h.v=00000008
-Constraint.type=80
-Constraint.group.v=00000002
-Constraint.workplane.v=80020000
-Constraint.entityA.v=00070000
-Constraint.other=0
-Constraint.other2=0
-Constraint.reference=0
-AddConstraint
-
-Surface 00000001 00646464 8003002c 1 1
-SCtrl 0 0 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 0 1 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 0 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 1 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-TrimBy 0000000a 0 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000  16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-TrimBy 00000004 0 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000  -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-TrimBy 00000007 0 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000  16.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-TrimBy 00000001 0 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000  -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-AddSurface
-Surface 00000002 00646464 8003002d 1 1
-SCtrl 0 0 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 0 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 0 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-TrimBy 0000000b 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000  16.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-TrimBy 00000002 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000  16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-TrimBy 00000005 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000  -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-TrimBy 00000008 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000  -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-AddSurface
-Surface 00000003 00646464 80030010 1 1
-SCtrl 0 0 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 0 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 0 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-TrimBy 00000002 0 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000  -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-TrimBy 00000001 1 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000  16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-TrimBy 0000000c 0 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000  16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-TrimBy 00000003 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000  -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-AddSurface
-Surface 00000004 00646464 80030019 1 1
-SCtrl 0 0 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 0 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 0 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-TrimBy 00000005 0 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000  -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-TrimBy 00000004 1 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000  -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-TrimBy 00000003 0 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000  -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-TrimBy 00000006 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000  -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-AddSurface
-Surface 00000005 00646464 80030022 1 1
-SCtrl 0 0 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 0 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 0 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-TrimBy 00000008 0 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000  16.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-TrimBy 00000007 1 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000  -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-TrimBy 00000006 0 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000  -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-TrimBy 00000009 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000  16.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-AddSurface
-Surface 00000006 00646464 80030007 1 1
-SCtrl 0 0 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 0 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 0 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-SCtrl 1 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-TrimBy 0000000b 0 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000  16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-TrimBy 0000000a 1 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000  16.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-TrimBy 00000009 0 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000  16.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-TrimBy 0000000c 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000  16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-AddSurface
-Curve 00000001 1 1 00000001 00000003
-CCtrl 0 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-CurvePt 1 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-AddCurve
-Curve 00000002 1 1 00000002 00000003
-CCtrl 0 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-CurvePt 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-AddCurve
-Curve 00000003 1 1 00000003 00000004
-CCtrl 0 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-CurvePt 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-AddCurve
-Curve 00000004 1 1 00000001 00000004
-CCtrl 0 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 -20.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-CurvePt 1 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-AddCurve
-Curve 00000005 1 1 00000002 00000004
-CCtrl 0 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 -20.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-CurvePt 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-AddCurve
-Curve 00000006 1 1 00000004 00000005
-CCtrl 0 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-CurvePt 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-AddCurve
-Curve 00000007 1 1 00000001 00000005
-CCtrl 0 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 -20.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-CurvePt 1 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-AddCurve
-Curve 00000008 1 1 00000002 00000005
-CCtrl 0 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 -20.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-CurvePt 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-AddCurve
-Curve 00000009 1 1 00000005 00000006
-CCtrl 0 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-CurvePt 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-AddCurve
-Curve 0000000a 1 1 00000001 00000006
-CCtrl 0 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 16.00000000000000000000 20.00000000000000000000 80.00000000000000000000
-CurvePt 1 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-AddCurve
-Curve 0000000b 1 1 00000002 00000006
-CCtrl 0 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 16.00000000000000000000 20.00000000000000000000 0.00000000000000000000
-CurvePt 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-AddCurve
-Curve 0000000c 1 1 00000006 00000003
-CCtrl 0 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000 Weight 1.00000000000000000000
-CCtrl 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000 Weight 1.00000000000000000000
-CurvePt 1 16.00000000000000000000 -6.00000000000000000000 80.00000000000000000000
-CurvePt 1 16.00000000000000000000 -6.00000000000000000000 0.00000000000000000000
-AddCurve
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x5 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x6 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x7 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+constraint 0x1 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x40001
+  pt-b 0x50002
+}
+
+constraint 0x2 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x50001
+  pt-b 0x60002
+}
+
+constraint 0x3 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x60001
+  pt-b 0x70002
+}
+
+constraint 0x4 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x70001
+  pt-b 0x40002
+}
+
+constraint 0x5 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x40000
+}
+
+constraint 0x6 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x50000
+}
+
+constraint 0x7 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x60000
+}
+
+constraint 0x8 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x70000
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 16
+value 0x40011 -6
+value 0x40013 16
+value 0x40014 20
+value 0x50010 -20
+value 0x50011 -6
+value 0x50013 16
+value 0x50014 -6
+value 0x60010 -20
+value 0x60011 20
+value 0x60013 -20
+value 0x60014 -6
+value 0x70010 16
+value 0x70011 20
+value 0x70013 -20
+value 0x70014 20
+value 0x80030000 0
+value 0x80030001 0
+value 0x80030002 40
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001 0x40002
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 -6 0
+  act-visible
+}
+
+entity 0x40002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 20 0
+  act-visible
+}
+
+entity 0x50000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x50001 0x50002
+  act-visible
+}
+
+entity 0x50001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 -6 0
+  act-visible
+}
+
+entity 0x50002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 -6 0
+  act-visible
+}
+
+entity 0x60000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x60001 0x60002
+  act-visible
+}
+
+entity 0x60001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 20 0
+  act-visible
+}
+
+entity 0x60002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 -6 0
+  act-visible
+}
+
+entity 0x70000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x70001 0x70002
+  act-visible
+}
+
+entity 0x70001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 20 0
+  act-visible
+}
+
+entity 0x70002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 20 0
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+
+entity 0x80030001 line-segment {
+  group 0x3
+  points 0x80030002 0x80030003
+  act-visible
+}
+
+entity 0x80030002 point-n-trans {
+  group 0x3
+  act-point 16 -6 0
+  act-visible
+}
+
+entity 0x80030003 point-n-trans {
+  group 0x3
+  act-point 16 20 0
+  act-visible
+}
+
+entity 0x80030004 line-segment {
+  group 0x3
+  points 0x80030005 0x80030006
+  act-visible
+}
+
+entity 0x80030005 point-n-trans {
+  group 0x3
+  act-point 16 -6 80
+  act-visible
+}
+
+entity 0x80030006 point-n-trans {
+  group 0x3
+  act-point 16 20 80
+  act-visible
+}
+
+entity 0x80030007 face-xprod {
+  group 0x3
+  points 0x80030005
+  act-point 16 -6 0
+  act-normal 0 -1 0 0
+  act-visible
+}
+
+entity 0x80030008 line-segment {
+  group 0x3
+  points 0x80030005 0x80030002
+  act-visible
+}
+
+entity 0x80030009 line-segment {
+  group 0x3
+  points 0x80030006 0x80030003
+  act-visible
+}
+
+entity 0x8003000a line-segment {
+  group 0x3
+  points 0x8003000b 0x8003000c
+  act-visible
+}
+
+entity 0x8003000b point-n-trans {
+  group 0x3
+  act-point -20 -6 0
+  act-visible
+}
+
+entity 0x8003000c point-n-trans {
+  group 0x3
+  act-point 16 -6 0
+  act-visible
+}
+
+entity 0x8003000d line-segment {
+  group 0x3
+  points 0x8003000e 0x8003000f
+  act-visible
+}
+
+entity 0x8003000e point-n-trans {
+  group 0x3
+  act-point -20 -6 80
+  act-visible
+}
+
+entity 0x8003000f point-n-trans {
+  group 0x3
+  act-point 16 -6 80
+  act-visible
+}
+
+entity 0x80030010 face-xprod {
+  group 0x3
+  points 0x8003000e
+  act-point -20 -6 0
+  act-normal 0 0 1 0
+  act-visible
+}
+
+entity 0x80030011 line-segment {
+  group 0x3
+  points 0x8003000e 0x8003000b
+  act-visible
+}
+
+entity 0x80030012 line-segment {
+  group 0x3
+  points 0x8003000f 0x8003000c
+  act-visible
+}
+
+entity 0x80030013 line-segment {
+  group 0x3
+  points 0x80030014 0x80030015
+  act-visible
+}
+
+entity 0x80030014 point-n-trans {
+  group 0x3
+  act-point -20 20 0
+  act-visible
+}
+
+entity 0x80030015 point-n-trans {
+  group 0x3
+  act-point -20 -6 0
+  act-visible
+}
+
+entity 0x80030016 line-segment {
+  group 0x3
+  points 0x80030017 0x80030018
+  act-visible
+}
+
+entity 0x80030017 point-n-trans {
+  group 0x3
+  act-point -20 20 80
+  act-visible
+}
+
+entity 0x80030018 point-n-trans {
+  group 0x3
+  act-point -20 -6 80
+  act-visible
+}
+
+entity 0x80030019 face-xprod {
+  group 0x3
+  points 0x80030017
+  act-point -20 20 0
+  act-normal 0 1 0 -0
+  act-visible
+}
+
+entity 0x8003001a line-segment {
+  group 0x3
+  points 0x80030017 0x80030014
+  act-visible
+}
+
+entity 0x8003001b line-segment {
+  group 0x3
+  points 0x80030018 0x80030015
+  act-visible
+}
+
+entity 0x8003001c line-segment {
+  group 0x3
+  points 0x8003001d 0x8003001e
+  act-visible
+}
+
+entity 0x8003001d point-n-trans {
+  group 0x3
+  act-point 16 20 0
+  act-visible
+}
+
+entity 0x8003001e point-n-trans {
+  group 0x3
+  act-point -20 20 0
+  act-visible
+}
+
+entity 0x8003001f line-segment {
+  group 0x3
+  points 0x80030020 0x80030021
+  act-visible
+}
+
+entity 0x80030020 point-n-trans {
+  group 0x3
+  act-point 16 20 80
+  act-visible
+}
+
+entity 0x80030021 point-n-trans {
+  group 0x3
+  act-point -20 20 80
+  act-visible
+}
+
+entity 0x80030022 face-xprod {
+  group 0x3
+  points 0x80030020
+  act-point 16 20 0
+  act-normal 0 0 -1 0
+  act-visible
+}
+
+entity 0x80030023 line-segment {
+  group 0x3
+  points 0x80030020 0x8003001d
+  act-visible
+}
+
+entity 0x80030024 line-segment {
+  group 0x3
+  points 0x80030021 0x8003001e
+  act-visible
+}
+
+entity 0x80030027 normal-n-copy {
+  group 0x3
+  points 0x80030028
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030028 point-n-trans {
+  group 0x3
+  construction
+  act-visible
+}
+
+entity 0x80030029 normal-n-copy {
+  group 0x3
+  points 0x8003002a
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x8003002a point-n-trans {
+  group 0x3
+  construction
+  act-point 0 0 80
+  act-visible
+}
+
+entity 0x8003002b line-segment {
+  group 0x3
+  construction
+  points 0x8003002a 0x80030028
+  act-visible
+}
+
+entity 0x8003002c face-normal-pt {
+  group 0x3
+  points 0x8003002a
+  act-point 0 0 80
+  act-normal 0 0 -0 1
+  act-visible
+}
+
+entity 0x8003002d face-normal-pt {
+  group 0x3
+  points 0x80030028
+  act-normal 0 0 -0 1
+  act-visible
+}
+
+shell {
+  surface 0x1 {
+    color 100 100 100 255
+    face 0x8003002c
+    degree 1 1
+    ctrl 0 0 -20 20 80 1
+    ctrl 0 1 16 20 80 1
+    ctrl 1 0 -20 -6 80 1
+    ctrl 1 1 16 -6 80 1
+    trim 0xa forward 16 20 80 16 -6 80
+    trim 0x4 forward -20 -6 80 -20 20 80
+    trim 0x7 forward -20 20 80 16 20 80
+    trim 0x1 forward 16 -6 80 -20 -6 80
+  }
+  surface 0x2 {
+    color 100 100 100 255
+    face 0x8003002d
+    degree 1 1
+    ctrl 0 0 16 20 0 1
+    ctrl 0 1 -20 20 0 1
+    ctrl 1 0 16 -6 0 1
+    ctrl 1 1 -20 -6 0 1
+    trim 0xb backward 16 -6 0 16 20 0
+    trim 0x2 backward -20 -6 0 16 -6 0
+    trim 0x5 backward -20 20 0 -20 -6 0
+    trim 0x8 backward 16 20 0 -20 20 0
+  }
+  surface 0x3 {
+    color 100 100 100 255
+    face 0x80030010
+    degree 1 1
+    ctrl 0 0 16 -6 80 1
+    ctrl 0 1 16 -6 0 1
+    ctrl 1 0 -20 -6 80 1
+    ctrl 1 1 -20 -6 0 1
+    trim 0x2 forward 16 -6 0 -20 -6 0
+    trim 0x1 backward -20 -6 80 16 -6 80
+    trim 0xc forward 16 -6 80 16 -6 0
+    trim 0x3 backward -20 -6 0 -20 -6 80
+  }
+  surface 0x4 {
+    color 100 100 100 255
+    face 0x80030019
+    degree 1 1
+    ctrl 0 0 -20 -6 80 1
+    ctrl 0 1 -20 -6 0 1
+    ctrl 1 0 -20 20 80 1
+    ctrl 1 1 -20 20 0 1
+    trim 0x5 forward -20 -6 0 -20 20 0
+    trim 0x4 backward -20 20 80 -20 -6 80
+    trim 0x3 forward -20 -6 80 -20 -6 0
+    trim 0x6 backward -20 20 0 -20 20 80
+  }
+  surface 0x5 {
+    color 100 100 100 255
+    face 0x80030022
+    degree 1 1
+    ctrl 0 0 -20 20 80 1
+    ctrl 0 1 -20 20 0 1
+    ctrl 1 0 16 20 80 1
+    ctrl 1 1 16 20 0 1
+    trim 0x8 forward -20 20 0 16 20 0
+    trim 0x7 backward 16 20 80 -20 20 80
+    trim 0x6 forward -20 20 80 -20 20 0
+    trim 0x9 backward 16 20 0 16 20 80
+  }
+  surface 0x6 {
+    color 100 100 100 255
+    face 0x80030007
+    degree 1 1
+    ctrl 0 0 16 20 80 1
+    ctrl 0 1 16 20 0 1
+    ctrl 1 0 16 -6 80 1
+    ctrl 1 1 16 -6 0 1
+    trim 0xb forward 16 20 0 16 -6 0
+    trim 0xa backward 16 -6 80 16 20 80
+    trim 0x9 forward 16 20 80 16 20 0
+    trim 0xc backward 16 -6 0 16 -6 80
+  }
+  curve 0x1 {
+    exact
+    degree 1
+    surfaces 0x1 0x3
+    ctrl 0 16 -6 80 1
+    ctrl 1 -20 -6 80 1
+    vertex 16 -6 80
+    vertex -20 -6 80
+  }
+  curve 0x2 {
+    exact
+    degree 1
+    surfaces 0x2 0x3
+    ctrl 0 16 -6 0 1
+    ctrl 1 -20 -6 0 1
+    vertex 16 -6 0
+    vertex -20 -6 0
+  }
+  curve 0x3 {
+    exact
+    degree 1
+    surfaces 0x3 0x4
+    ctrl 0 -20 -6 80 1
+    ctrl 1 -20 -6 0 1
+    vertex -20 -6 80
+    vertex -20 -6 0
+  }
+  curve 0x4 {
+    exact
+    degree 1
+    surfaces 0x1 0x4
+    ctrl 0 -20 -6 80 1
+    ctrl 1 -20 20 80 1
+    vertex -20 -6 80
+    vertex -20 20 80
+  }
+  curve 0x5 {
+    exact
+    degree 1
+    surfaces 0x2 0x4
+    ctrl 0 -20 -6 0 1
+    ctrl 1 -20 20 0 1
+    vertex -20 -6 0
+    vertex -20 20 0
+  }
+  curve 0x6 {
+    exact
+    degree 1
+    surfaces 0x4 0x5
+    ctrl 0 -20 20 80 1
+    ctrl 1 -20 20 0 1
+    vertex -20 20 80
+    vertex -20 20 0
+  }
+  curve 0x7 {
+    exact
+    degree 1
+    surfaces 0x1 0x5
+    ctrl 0 -20 20 80 1
+    ctrl 1 16 20 80 1
+    vertex -20 20 80
+    vertex 16 20 80
+  }
+  curve 0x8 {
+    exact
+    degree 1
+    surfaces 0x2 0x5
+    ctrl 0 -20 20 0 1
+    ctrl 1 16 20 0 1
+    vertex -20 20 0
+    vertex 16 20 0
+  }
+  curve 0x9 {
+    exact
+    degree 1
+    surfaces 0x5 0x6
+    ctrl 0 16 20 80 1
+    ctrl 1 16 20 0 1
+    vertex 16 20 80
+    vertex 16 20 0
+  }
+  curve 0xa {
+    exact
+    degree 1
+    surfaces 0x1 0x6
+    ctrl 0 16 20 80 1
+    ctrl 1 16 -6 80 1
+    vertex 16 20 80
+    vertex 16 -6 80
+  }
+  curve 0xb {
+    exact
+    degree 1
+    surfaces 0x2 0x6
+    ctrl 0 16 20 0 1
+    ctrl 1 16 -6 0 1
+    vertex 16 20 0
+    vertex 16 -6 0
+  }
+  curve 0xc {
+    exact
+    degree 1
+    surfaces 0x6 0x3
+    ctrl 0 16 -6 80 1
+    ctrl 1 16 -6 0 1
+    vertex 16 -6 80
+    vertex 16 -6 0
+  }
+}
 end save

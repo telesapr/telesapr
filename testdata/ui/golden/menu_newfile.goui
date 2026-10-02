@@ -36,6 +36,11 @@
   &Line Styles... ind=0 en=1 act=0
   &View Projection... ind=0 en=1 act=0
   Con&figuration... ind=0 en=1 act=0
+  Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
+  Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
+  Move Group Earl&ier ind=0 en=1 act=0
+  Move Gr&oup Later ind=0 en=1 act=0
+  Bro&ken References... ind=0 en=1 act=0
 &View ind=0 en=1 act=0
   Zoom &In [+] ind=0 en=1 act=0
   Zoom &Out [-] ind=0 en=1 act=0
@@ -71,6 +76,7 @@
   &Helix [Shift+H] ind=0 en=1 act=0
   &Lathe [Shift+L] ind=0 en=1 act=0
   Re&volve [Shift+V] ind=0 en=1 act=0
+  Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0
@@ -125,12 +131,19 @@
   Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
   Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Center of Mass [Ctrl+Shift+C] ind=0 en=1 act=0
+  Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
+  Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
   ---
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
   &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
+S&cript ind=0 en=1 act=0
+  Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
+  ---
+  &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
+  &Stop ind=0 en=1 act=0
 &Help ind=0 en=1 act=0
   &Website / Manual ind=0 en=1 act=0
   &Go to GitHub commit ind=0 en=1 act=0

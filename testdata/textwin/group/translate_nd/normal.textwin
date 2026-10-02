@@ -24,7 +24,7 @@ row 11          ok  g001-#references
  13-13 64 61 0
  14-29 6c 61 108 1 1 0
  30-99 64 61 0
-row 13         4   g002-sketch-in-plane
+row 13         4   g002-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 2 1 0
  4-4 64 64 0
@@ -33,8 +33,12 @@ row 13         4   g002-sketch-in-plane
  10-12 69 64 0
  13-13 64 64 0
  14-33 6c 64 108 2 1 0
- 34-99 64 64 0
-row 15         ok  g003-extrude
+ 34-35 64 64 0
+ 36-36 6c 64 117 2 1 0
+ 37-37 64 64 0
+ 38-38 6c 64 100 2 1 0
+ 39-99 64 64 0
+row 15         ok  g003-extrude  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 3 1 0
  4-4 64 61 0
@@ -43,8 +47,12 @@ row 15         ok  g003-extrude
  10-12 73 61 0
  13-13 64 61 0
  14-25 6c 61 108 3 1 0
- 26-99 64 61 0
-row 17         4   g004-sketch-in-plane
+ 26-27 64 61 0
+ 28-28 6c 61 117 3 1 0
+ 29-29 64 61 0
+ 30-30 6c 61 100 3 1 0
+ 31-99 64 61 0
+row 17         4   g004-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 4 1 0
  4-4 64 64 0
@@ -53,8 +61,12 @@ row 17         4   g004-sketch-in-plane
  10-12 69 64 0
  13-13 64 64 0
  14-33 6c 64 108 4 1 0
- 34-99 64 64 0
-row 19         1   g005-extrude
+ 34-35 64 64 0
+ 36-36 6c 64 117 4 1 0
+ 37-37 64 64 0
+ 38-38 6c 64 100 4 1 0
+ 39-99 64 64 0
+row 19         1   g005-extrude  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 5 1 0
  4-4 64 61 0
@@ -63,8 +75,12 @@ row 19         1   g005-extrude
  10-12 69 61 0
  13-13 64 61 0
  14-25 6c 61 108 5 1 0
- 26-99 64 61 0
-row 21         3   g006-translate
+ 26-27 64 61 0
+ 28-28 6c 61 117 5 1 0
+ 29-29 64 61 0
+ 30-30 6c 61 100 5 1 0
+ 31-99 64 61 0
+row 21         3   g006-translate  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 6 1 0
  4-4 64 64 0
@@ -73,8 +89,12 @@ row 21         3   g006-translate
  10-12 69 64 0
  13-13 64 64 0
  14-27 6c 64 108 6 1 0
- 28-99 64 64 0
-row 23         2   g007-translate
+ 28-29 64 64 0
+ 30-30 6c 64 117 6 1 0
+ 31-31 64 64 0
+ 32-32 6c 64 100 6 1 0
+ 33-99 64 64 0
+row 23         2   g007-translate  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 7 1 0
  4-4 64 61 0
@@ -83,7 +103,11 @@ row 23         2   g007-translate
  10-12 69 61 0
  13-13 64 61 0
  14-27 6c 61 108 7 1 0
- 28-99 64 61 0
+ 28-29 64 61 0
+ 30-30 6c 61 117 7 1 0
+ 31-31 64 61 0
+ 32-32 6c 61 100 7 1 0
+ 33-99 64 61 0
 row 26   show all / only unconstrained / hide all
  0-1 64 64 0
  2-9 6c 64 115 0 1 0
@@ -100,7 +124,11 @@ row 29   line styles / view / configuration
  20-22 64 64 0
  23-35 6c 64 115 0 1 0
  36-99 64 64 0
-row 31 
+row 31   parameters
+ 0-1 64 64 0
+ 2-11 6c 64 114 0 1 0
+ 12-99 64 64 0
+row 33 
  0-99 64 64 0
 screen group 1
 row 0  home   in plane: r001-#XY
@@ -208,83 +236,87 @@ row 14    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 16    force NURBS surfaces to triangle mesh
+row 16    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 18    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 19    relax constraints and dimensions
+row 21    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 21    allow redundant constraints
+row 23    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 23    suppress dof calculation (improves solver performance)
+row 25    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 25    treat all dimensions as reference
+row 27    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
-row 29  requests in group
+row 31  requests in group
  0-99 74 64 0
-row 31    r004-line-segment
+row 33    r004-line-segment
  0-2 64 61 0
  3-19 6c 61 108 4 1 1
  20-99 64 61 0
-row 33    r005-line-segment
+row 35    r005-line-segment
  0-2 64 64 0
  3-19 6c 64 108 5 1 1
  20-99 64 64 0
-row 35    r006-line-segment
+row 37    r006-line-segment
  0-2 64 61 0
  3-19 6c 61 108 6 1 1
  20-99 64 61 0
-row 37    r007-line-segment
+row 39    r007-line-segment
  0-2 64 64 0
  3-19 6c 64 108 7 1 1
  20-99 64 64 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (4 DOF)
+row 43  constraints in group (4 DOF)
  0-99 74 64 0
-row 43    c001-pts-coincident
+row 45    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 45    c002-pts-coincident
+row 47    c002-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 2 1 1
  22-99 64 64 0
-row 47    c003-pts-coincident
+row 49    c003-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 3 1 1
  22-99 64 61 0
-row 49    c004-pts-coincident
+row 51    c004-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 4 1 1
  22-99 64 64 0
-row 51    c005-vertical
+row 53    c005-vertical
  0-2 64 61 0
  3-15 6c 61 108 5 1 1
  16-99 64 61 0
-row 53    c006-horizontal
+row 55    c006-horizontal
  0-2 64 64 0
  3-17 6c 64 108 6 1 1
  18-99 64 64 0
-row 55    c007-vertical
+row 57    c007-vertical
  0-2 64 61 0
  3-15 6c 61 108 7 1 1
  16-99 64 61 0
-row 57    c008-horizontal
+row 59    c008-horizontal
  0-2 64 64 0
  3-17 6c 64 108 8 1 1
  18-99 64 64 0
-row 59 
+row 61 
  0-99 64 64 0
 screen solve 2
 row 0  home   in plane: r001-#XY
@@ -314,85 +346,89 @@ row 14    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 16    force NURBS surfaces to triangle mesh
+row 16    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 18    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 19    relax constraints and dimensions
+row 21    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 21    allow redundant constraints
+row 23    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 23    suppress dof calculation (improves solver performance)
+row 25    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 25    treat all dimensions as reference
+row 27    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
-row 29  requests in group
+row 31  requests in group
  0-99 74 64 0
-row 31    r004-line-segment
+row 33    r004-line-segment
  0-2 64 61 0
  3-19 6c 61 108 4 1 1
  20-99 64 61 0
-row 33    r005-line-segment
+row 35    r005-line-segment
  0-2 64 64 0
  3-19 6c 64 108 5 1 1
  20-99 64 64 0
-row 35    r006-line-segment
+row 37    r006-line-segment
  0-2 64 61 0
  3-19 6c 61 108 6 1 1
  20-99 64 61 0
-row 37    r007-line-segment
+row 39    r007-line-segment
  0-2 64 64 0
  3-19 6c 64 108 7 1 1
  20-99 64 64 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (4 DOF)
+row 43  constraints in group (4 DOF)
  0-99 74 64 0
-row 43    c001-pts-coincident
+row 45    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 45    c002-pts-coincident
+row 47    c002-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 2 1 1
  22-99 64 64 0
-row 47    c003-pts-coincident
+row 49    c003-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 3 1 1
  22-99 64 61 0
-row 49    c004-pts-coincident
+row 51    c004-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 4 1 1
  22-99 64 64 0
-row 51    c005-vertical
+row 53    c005-vertical
  0-2 64 61 0
  3-15 6c 61 108 5 1 1
  16-99 64 61 0
-row 53    c006-horizontal
+row 55    c006-horizontal
  0-2 64 64 0
  3-17 6c 64 108 6 1 1
  18-99 64 64 0
-row 55    c007-vertical
+row 57    c007-vertical
  0-2 64 61 0
  3-15 6c 61 108 7 1 1
  16-99 64 61 0
-row 57    c008-horizontal
+row 59    c008-horizontal
  0-2 64 64 0
  3-17 6c 64 108 8 1 1
  18-99 64 64 0
-row 59 
- 0-99 64 64 0
 row 61 
+ 0-99 64 64 0
+row 63 
  0-99 64 64 0
 screen group 3
 row 0  home   in plane: r001-#XY
@@ -464,41 +500,45 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (0 DOF)
+row 53  constraints in group (0 DOF)
  0-99 74 64 0
-row 53    c00a-pt-pt-distance
+row 55    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 55 
+row 57 
  0-99 64 64 0
 screen solve 3
 row 0  home   in plane: r001-#XY
@@ -570,43 +610,47 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (0 DOF)
+row 53  constraints in group (0 DOF)
  0-99 74 64 0
-row 53    c00a-pt-pt-distance
+row 55    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 55 
- 0-99 64 64 0
 row 57 
+ 0-99 64 64 0
+row 59 
  0-99 64 64 0
 screen group 4
 row 0  home   in plane: r001-#XY
@@ -636,83 +680,87 @@ row 14    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 16    force NURBS surfaces to triangle mesh
+row 16    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 18    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 19    relax constraints and dimensions
+row 21    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 21    allow redundant constraints
+row 23    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 23    suppress dof calculation (improves solver performance)
+row 25    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 25    treat all dimensions as reference
+row 27    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
-row 29  requests in group
+row 31  requests in group
  0-99 74 64 0
-row 31    r008-line-segment
+row 33    r008-line-segment
  0-2 64 61 0
  3-19 6c 61 108 8 1 1
  20-99 64 61 0
-row 33    r009-line-segment
+row 35    r009-line-segment
  0-2 64 64 0
  3-19 6c 64 108 9 1 1
  20-99 64 64 0
-row 35    r00a-line-segment
+row 37    r00a-line-segment
  0-2 64 61 0
  3-19 6c 61 108 a 1 1
  20-99 64 61 0
-row 37    r00b-line-segment
+row 39    r00b-line-segment
  0-2 64 64 0
  3-19 6c 64 108 b 1 1
  20-99 64 64 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (4 DOF)
+row 43  constraints in group (4 DOF)
  0-99 74 64 0
-row 43    c00b-pts-coincident
+row 45    c00b-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 b 1 1
  22-99 64 61 0
-row 45    c00c-pts-coincident
+row 47    c00c-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 c 1 1
  22-99 64 64 0
-row 47    c00d-pts-coincident
+row 49    c00d-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 d 1 1
  22-99 64 61 0
-row 49    c00e-pts-coincident
+row 51    c00e-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 e 1 1
  22-99 64 64 0
-row 51    c00f-vertical
+row 53    c00f-vertical
  0-2 64 61 0
  3-15 6c 61 108 f 1 1
  16-99 64 61 0
-row 53    c010-horizontal
+row 55    c010-horizontal
  0-2 64 64 0
  3-17 6c 64 108 10 1 1
  18-99 64 64 0
-row 55    c011-vertical
+row 57    c011-vertical
  0-2 64 61 0
  3-15 6c 61 108 11 1 1
  16-99 64 61 0
-row 57    c012-horizontal
+row 59    c012-horizontal
  0-2 64 64 0
  3-17 6c 64 108 12 1 1
  18-99 64 64 0
-row 59 
+row 61 
  0-99 64 64 0
 screen solve 4
 row 0  home   in plane: r001-#XY
@@ -742,85 +790,89 @@ row 14    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 16    force NURBS surfaces to triangle mesh
+row 16    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 18    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 19    relax constraints and dimensions
+row 21    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 21    allow redundant constraints
+row 23    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 23    suppress dof calculation (improves solver performance)
+row 25    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 25    treat all dimensions as reference
+row 27    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
-row 29  requests in group
+row 31  requests in group
  0-99 74 64 0
-row 31    r008-line-segment
+row 33    r008-line-segment
  0-2 64 61 0
  3-19 6c 61 108 8 1 1
  20-99 64 61 0
-row 33    r009-line-segment
+row 35    r009-line-segment
  0-2 64 64 0
  3-19 6c 64 108 9 1 1
  20-99 64 64 0
-row 35    r00a-line-segment
+row 37    r00a-line-segment
  0-2 64 61 0
  3-19 6c 61 108 a 1 1
  20-99 64 61 0
-row 37    r00b-line-segment
+row 39    r00b-line-segment
  0-2 64 64 0
  3-19 6c 64 108 b 1 1
  20-99 64 64 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (4 DOF)
+row 43  constraints in group (4 DOF)
  0-99 74 64 0
-row 43    c00b-pts-coincident
+row 45    c00b-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 b 1 1
  22-99 64 61 0
-row 45    c00c-pts-coincident
+row 47    c00c-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 c 1 1
  22-99 64 64 0
-row 47    c00d-pts-coincident
+row 49    c00d-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 d 1 1
  22-99 64 61 0
-row 49    c00e-pts-coincident
+row 51    c00e-pts-coincident
  0-2 64 64 0
  3-21 6c 64 108 e 1 1
  22-99 64 64 0
-row 51    c00f-vertical
+row 53    c00f-vertical
  0-2 64 61 0
  3-15 6c 61 108 f 1 1
  16-99 64 61 0
-row 53    c010-horizontal
+row 55    c010-horizontal
  0-2 64 64 0
  3-17 6c 64 108 10 1 1
  18-99 64 64 0
-row 55    c011-vertical
+row 57    c011-vertical
  0-2 64 61 0
  3-15 6c 61 108 11 1 1
  16-99 64 61 0
-row 57    c012-horizontal
+row 59    c012-horizontal
  0-2 64 64 0
  3-17 6c 64 108 12 1 1
  18-99 64 64 0
-row 59 
- 0-99 64 64 0
 row 61 
+ 0-99 64 64 0
+row 63 
  0-99 64 64 0
 screen group 5
 row 0  home   in plane: r001-#XY
@@ -892,39 +944,43 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (1 DOF)
+row 53  constraints in group (1 DOF)
  0-99 74 64 0
-row 53    (none)
+row 55    (none)
  0-99 64 61 0
-row 55 
+row 57 
  0-99 64 64 0
 screen solve 5
 row 0  home   in plane: r001-#XY
@@ -996,41 +1052,45 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (1 DOF)
+row 53  constraints in group (1 DOF)
  0-99 74 64 0
-row 53    (none)
+row 55    (none)
  0-99 64 61 0
-row 55 
- 0-99 64 64 0
 row 57 
+ 0-99 64 64 0
+row 59 
  0-99 64 64 0
 screen group 6
 row 0  home   in plane: r001-#XY
@@ -1079,39 +1139,43 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (3 DOF)
+row 43  constraints in group (3 DOF)
  0-99 74 64 0
-row 43    (none)
+row 45    (none)
  0-99 64 61 0
-row 45 
+row 47 
  0-99 64 64 0
 screen solve 6
 row 0  home   in plane: r001-#XY
@@ -1160,41 +1224,45 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (3 DOF)
+row 43  constraints in group (3 DOF)
  0-99 74 64 0
-row 43    (none)
+row 45    (none)
  0-99 64 61 0
-row 45 
- 0-99 64 64 0
 row 47 
+ 0-99 64 64 0
+row 49 
  0-99 64 64 0
 screen group 7
 row 0  home   in plane: r001-#XY
@@ -1243,39 +1311,43 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (2 DOF)
+row 43  constraints in group (2 DOF)
  0-99 74 64 0
-row 43    (none)
+row 45    (none)
  0-99 64 61 0
-row 45 
+row 47 
  0-99 64 64 0
 screen solve 7
 row 0  home   in plane: r001-#XY
@@ -1324,41 +1396,45 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (2 DOF)
+row 43  constraints in group (2 DOF)
  0-99 74 64 0
-row 43    (none)
+row 45    (none)
  0-99 64 61 0
-row 45 
- 0-99 64 64 0
 row 47 
+ 0-99 64 64 0
+row 49 
  0-99 64 64 0
 screen variant 3 0
 row 0  home   in plane: r001-#XY
@@ -1421,41 +1497,45 @@ row 28    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 30    force NURBS surfaces to triangle mesh
+row 30    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 32    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 33    relax constraints and dimensions
+row 35    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 35    allow redundant constraints
+row 37    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 37    suppress dof calculation (improves solver performance)
+row 39    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 39    treat all dimensions as reference
+row 41    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 41 
+row 43 
  0-99 64 64 0
-row 43  requests in group
+row 45  requests in group
  0-99 74 64 0
-row 45    (none)
+row 47    (none)
  0-99 64 61 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  constraints in group (0 DOF)
+row 51  constraints in group (0 DOF)
  0-99 74 64 0
-row 51    c00a-pt-pt-distance
+row 53    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
 screen variant 3 1
 row 0  home   in plane: r001-#XY
@@ -1525,41 +1605,45 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (0 DOF)
+row 53  constraints in group (0 DOF)
  0-99 74 64 0
-row 53    c00a-pt-pt-distance
+row 55    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 55 
+row 57 
  0-99 64 64 0
 screen variant 3 2
 row 0  home   in plane: r001-#XY
@@ -1643,41 +1727,45 @@ row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    force NURBS surfaces to triangle mesh
+row 40    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 43    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 45    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 47    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 49    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 51 
+row 53 
  0-99 64 64 0
-row 53  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 55    (none)
+row 57    (none)
  0-99 64 61 0
-row 57 
+row 59 
  0-99 64 64 0
-row 59  constraints in group (0 DOF)
+row 61  constraints in group (0 DOF)
  0-99 74 64 0
-row 61    c00a-pt-pt-distance
+row 63    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 63 
+row 65 
  0-99 64 64 0
 screen variant 3 3
 row 0  home   in plane: r001-#XY
@@ -1726,41 +1814,45 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (0 DOF)
+row 43  constraints in group (0 DOF)
  0-99 74 64 0
-row 43    c00a-pt-pt-distance
+row 45    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 45 
+row 47 
  0-99 64 64 0
 screen variant 3 4
 row 0  home   in plane: r001-#XY
@@ -1802,41 +1894,45 @@ row 18    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 20    force NURBS surfaces to triangle mesh
+row 20    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 22    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 23    relax constraints and dimensions
+row 25    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 25    allow redundant constraints
+row 27    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 27    suppress dof calculation (improves solver performance)
+row 29    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 29    treat all dimensions as reference
+row 31    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 31 
+row 33 
  0-99 64 64 0
-row 33  requests in group
+row 35  requests in group
  0-99 74 64 0
-row 35    (none)
+row 37    (none)
  0-99 64 61 0
-row 37 
+row 39 
  0-99 64 64 0
-row 39  constraints in group (0 DOF)
+row 41  constraints in group (0 DOF)
  0-99 74 64 0
-row 41    c00a-pt-pt-distance
+row 43    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 43 
+row 45 
  0-99 64 64 0
 screen variant 3 5
 row 0  home   in plane: r001-#XY
@@ -1908,49 +2004,53 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45 The Boolean operation failed. It may be
+row 47 The Boolean operation failed. It may be
  0-99 64 64 0
-row 47 possible to fix the problem by choosing
+row 49 possible to fix the problem by choosing
  0-99 64 64 0
-row 49 'force NURBS surfaces to triangle mesh'.
+row 51 'force NURBS surfaces to triangle mesh'.
  0-99 64 64 0
-row 51 
+row 53 
  0-99 64 64 0
-row 53  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 55    (none)
+row 57    (none)
  0-99 64 61 0
-row 57 
+row 59 
  0-99 64 64 0
-row 59  constraints in group (0 DOF)
+row 61  constraints in group (0 DOF)
  0-99 74 64 0
-row 61    c00a-pt-pt-distance
+row 63    c00a-pt-pt-distance
  0-2 64 61 0
  3-21 6c 61 108 a 1 1
  22-99 64 61 0
-row 63 
+row 65 
  0-99 64 64 0
 screen variant 5 0
 row 0  home   in plane: r001-#XY
@@ -2013,39 +2113,43 @@ row 28    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 30    force NURBS surfaces to triangle mesh
+row 30    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 32    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 33    relax constraints and dimensions
+row 35    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 35    allow redundant constraints
+row 37    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 37    suppress dof calculation (improves solver performance)
+row 39    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 39    treat all dimensions as reference
+row 41    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 41 
+row 43 
  0-99 64 64 0
-row 43  requests in group
+row 45  requests in group
  0-99 74 64 0
-row 45    (none)
+row 47    (none)
  0-99 64 61 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  constraints in group (1 DOF)
+row 51  constraints in group (1 DOF)
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
 screen variant 5 1
 row 0  home   in plane: r001-#XY
@@ -2115,39 +2219,43 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (1 DOF)
+row 53  constraints in group (1 DOF)
  0-99 74 64 0
-row 53    (none)
+row 55    (none)
  0-99 64 61 0
-row 55 
+row 57 
  0-99 64 64 0
 screen variant 5 2
 row 0  home   in plane: r001-#XY
@@ -2231,39 +2339,43 @@ row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    force NURBS surfaces to triangle mesh
+row 40    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 43    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 45    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 47    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 49    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 51 
+row 53 
  0-99 64 64 0
-row 53  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 55    (none)
+row 57    (none)
  0-99 64 61 0
-row 57 
+row 59 
  0-99 64 64 0
-row 59  constraints in group (1 DOF)
+row 61  constraints in group (1 DOF)
  0-99 74 64 0
-row 61    (none)
+row 63    (none)
  0-99 64 61 0
-row 63 
+row 65 
  0-99 64 64 0
 screen variant 5 3
 row 0  home   in plane: r001-#XY
@@ -2312,39 +2424,43 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (1 DOF)
+row 43  constraints in group (1 DOF)
  0-99 74 64 0
-row 43    (none)
+row 45    (none)
  0-99 64 61 0
-row 45 
+row 47 
  0-99 64 64 0
 screen variant 5 4
 row 0  home   in plane: r001-#XY
@@ -2386,39 +2502,43 @@ row 18    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 20    force NURBS surfaces to triangle mesh
+row 20    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 22    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 23    relax constraints and dimensions
+row 25    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 25    allow redundant constraints
+row 27    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 27    suppress dof calculation (improves solver performance)
+row 29    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 29    treat all dimensions as reference
+row 31    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 31 
+row 33 
  0-99 64 64 0
-row 33  requests in group
+row 35  requests in group
  0-99 74 64 0
-row 35    (none)
+row 37    (none)
  0-99 64 61 0
-row 37 
+row 39 
  0-99 64 64 0
-row 39  constraints in group (1 DOF)
+row 41  constraints in group (1 DOF)
  0-99 74 64 0
-row 41    (none)
+row 43    (none)
  0-99 64 61 0
-row 43 
+row 45 
  0-99 64 64 0
 screen variant 5 5
 row 0  home   in plane: r001-#XY
@@ -2490,47 +2610,51 @@ row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45 The Boolean operation failed. It may be
+row 47 The Boolean operation failed. It may be
  0-99 64 64 0
-row 47 possible to fix the problem by choosing
+row 49 possible to fix the problem by choosing
  0-99 64 64 0
-row 49 'force NURBS surfaces to triangle mesh'.
+row 51 'force NURBS surfaces to triangle mesh'.
  0-99 64 64 0
-row 51 
+row 53 
  0-99 64 64 0
-row 53  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 55    (none)
+row 57    (none)
  0-99 64 61 0
-row 57 
+row 59 
  0-99 64 64 0
-row 59  constraints in group (1 DOF)
+row 61  constraints in group (1 DOF)
  0-99 74 64 0
-row 61    (none)
+row 63    (none)
  0-99 64 61 0
-row 63 
+row 65 
  0-99 64 64 0
 screen configuration
 row 0  home   in plane: r001-#XY
@@ -2755,59 +2879,63 @@ row 113     enable automatic line constraints
  0-1 64 64 0
  2-37 64 64 108 0 1 0
  38-99 64 64 0
-row 115     use camera mouse navigation
+row 115     colour entities by constraint state
+ 0-1 64 64 0
+ 2-39 64 64 108 0 1 0
+ 40-99 64 64 0
+row 117     use camera mouse navigation
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 117     use turntable mouse navigation
+row 119     use turntable mouse navigation
  0-1 64 64 0
  2-34 64 64 108 0 1 0
  35-99 64 64 0
-row 119     edit newly added dimensions
+row 121     edit newly added dimensions
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 121     arc default is diameter
+row 123     arc default is diameter
  0-1 64 64 0
  2-27 64 64 108 0 1 0
  28-99 64 64 0
-row 123     display the full path in the title bar
+row 125     display the full path in the title bar
  0-1 64 64 0
  2-42 64 64 108 0 1 0
  43-99 64 64 0
-row 125 
+row 127 
  0-99 64 64 0
-row 127  autosave interval (in minutes)
+row 129  autosave interval (in minutes)
  0-30 74 64 0
  31-99 64 64 0
-row 129    5 [change]
+row 131    5 [change]
  0-4 64 61 0
  5-12 6c 61 108 0 1 0
  13-99 64 61 0
-row 131 
+row 133 
  0-99 64 64 0
-row 133  redundant constraint timeout (in ms)
+row 135  redundant constraint timeout (in ms)
  0-36 74 64 0
  37-99 64 64 0
-row 135    1000 [change]
+row 137    1000 [change]
  0-7 64 61 0
  8-15 6c 61 108 0 1 0
  16-99 64 61 0
-row 137 
+row 139 
  0-99 64 64 0
-row 139  animation speed (in ms; 0 to disable)
+row 141  animation speed (in ms; 0 to disable)
  0-37 74 64 0
  38-99 64 64 0
-row 141    800 [change]
+row 143    800 [change]
  0-6 64 61 0
  7-14 6c 61 108 0 1 0
  15-99 64 61 0
-row 143 
+row 145 
  0-99 64 64 0
-row 145 (renderer)
 row 147 (renderer)
 row 149 (renderer)
-row 151 
+row 151 (renderer)
+row 153 
  0-99 64 64 0
 screen styles
 row 0  home   in plane: r001-#XY
@@ -16235,7 +16363,7 @@ row 11          ok  g001-#references
  13-13 64 61 0
  14-29 6c 61 108 1 1 0
  30-99 64 61 0
-row 13         ERR g002-sketch-in-plane
+row 13         ERR g002-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 2 1 0
  4-4 64 64 0
@@ -16244,8 +16372,12 @@ row 13         ERR g002-sketch-in-plane
  10-12 78 64 108 2 1 0
  13-13 64 64 0
  14-33 6c 64 108 2 1 0
- 34-99 64 64 0
-row 15         err g003-extrude
+ 34-35 64 64 0
+ 36-36 6c 64 117 2 1 0
+ 37-37 64 64 0
+ 38-38 6c 64 100 2 1 0
+ 39-99 64 64 0
+row 15         err g003-extrude  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 3 1 0
  4-4 64 61 0
@@ -16254,8 +16386,12 @@ row 15         err g003-extrude
  10-12 6d 61 0
  13-13 64 61 0
  14-25 6c 61 108 3 1 0
- 26-99 64 61 0
-row 17         4   g004-sketch-in-plane
+ 26-27 64 61 0
+ 28-28 6c 61 117 3 1 0
+ 29-29 64 61 0
+ 30-30 6c 61 100 3 1 0
+ 31-99 64 61 0
+row 17         4   g004-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 4 1 0
  4-4 64 64 0
@@ -16264,8 +16400,12 @@ row 17         4   g004-sketch-in-plane
  10-12 69 64 0
  13-13 64 64 0
  14-33 6c 64 108 4 1 0
- 34-99 64 64 0
-row 19         1   g005-extrude
+ 34-35 64 64 0
+ 36-36 6c 64 117 4 1 0
+ 37-37 64 64 0
+ 38-38 6c 64 100 4 1 0
+ 39-99 64 64 0
+row 19         1   g005-extrude  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 5 1 0
  4-4 64 61 0
@@ -16274,8 +16414,12 @@ row 19         1   g005-extrude
  10-12 69 61 0
  13-13 64 61 0
  14-25 6c 61 108 5 1 0
- 26-99 64 61 0
-row 21         3   g006-translate
+ 26-27 64 61 0
+ 28-28 6c 61 117 5 1 0
+ 29-29 64 61 0
+ 30-30 6c 61 100 5 1 0
+ 31-99 64 61 0
+row 21         3   g006-translate  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 6 1 0
  4-4 64 64 0
@@ -16284,8 +16428,12 @@ row 21         3   g006-translate
  10-12 69 64 0
  13-13 64 64 0
  14-27 6c 64 108 6 1 0
- 28-99 64 64 0
-row 23         2   g007-translate
+ 28-29 64 64 0
+ 30-30 6c 64 117 6 1 0
+ 31-31 64 64 0
+ 32-32 6c 64 100 6 1 0
+ 33-99 64 64 0
+row 23         2   g007-translate  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 7 1 0
  4-4 64 61 0
@@ -16294,7 +16442,11 @@ row 23         2   g007-translate
  10-12 69 61 0
  13-13 64 61 0
  14-27 6c 61 108 7 1 0
- 28-99 64 61 0
+ 28-29 64 61 0
+ 30-30 6c 61 117 7 1 0
+ 31-31 64 61 0
+ 32-32 6c 61 100 7 1 0
+ 33-99 64 61 0
 row 26   show all / only unconstrained / hide all
  0-1 64 64 0
  2-9 6c 64 115 0 1 0
@@ -16311,7 +16463,11 @@ row 29   line styles / view / configuration
  20-22 64 64 0
  23-35 6c 64 115 0 1 0
  36-99 64 64 0
-row 31 
+row 31   parameters
+ 0-1 64 64 0
+ 2-11 6c 64 114 0 1 0
+ 12-99 64 64 0
+row 33 
  0-99 64 64 0
 screen failed solve
 row 0  home   in plane: r001-#XY
@@ -16332,14 +16488,18 @@ row 10 SOLVE FAILED! redundant constraints
  13-99 64 64 0
 row 13 remove any one of these to fix it
  0-99 64 64 0
-row 15    c001-pts-coincident
+row 15    c001-pts-coincident [show]
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
- 22-99 64 61 0
-row 17    c013-pts-coincident
+ 22-22 64 61 0
+ 23-28 6c 61 106 1 1 1
+ 29-99 64 61 0
+row 17    c013-pts-coincident [show]
  0-2 64 64 0
  3-21 6c 64 108 13 1 1
- 22-99 64 64 0
+ 22-22 64 64 0
+ 23-28 6c 64 106 13 1 1
+ 29-99 64 64 0
 row 20 It may be possible to fix the problem
  0-99 64 64 0
 row 22 by selecting Edit -> Undo.
