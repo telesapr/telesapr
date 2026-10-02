@@ -486,3 +486,13 @@ func TestSetConstraintValue(t *testing.T) {
 		t.Fatal("IsLengthValue")
 	}
 }
+
+func TestTextIsOneLine(t *testing.T) {
+	sk := NewSketch()
+	if err := sk.AddParameter("a", " 1 +\n\t2  "); err != nil {
+		t.Fatal(err)
+	}
+	if got := sk.Parameter("a").Expr; got != "1 + 2" {
+		t.Fatalf("stored %q", got)
+	}
+}

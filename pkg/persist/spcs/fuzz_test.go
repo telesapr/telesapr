@@ -9,7 +9,8 @@ import (
 
 // FuzzRead reads any bytes as a file. They decode or give an error,
 // never a panic. What decodes encodes to a file that decodes again,
-// without warnings, to a document that encodes to the same bytes.
+// without warnings and with the same expression errors, to a document
+// that encodes to the same bytes.
 func FuzzRead(f *testing.F) {
 	for _, name := range []string{"sketch.spcs", "fields.spcs", "text.spcs", "assembly/assembly.spcs", "image/image.spcs"} {
 		data, err := os.ReadFile(filepath.Join("..", "..", "..", "testdata", "spcs", "v1", filepath.FromSlash(name)))
@@ -34,6 +35,9 @@ func FuzzRead(f *testing.F) {
 		}
 		if len(again.Warnings) > 0 {
 			t.Fatalf("encoded file has warnings %v\n%s", again.Warnings, first)
+		}
+		if len(again.ExprErrors) != len(doc.ExprErrors) {
+			t.Fatalf("expression errors %v, then %v\n%s", doc.ExprErrors, again.ExprErrors, first)
 		}
 		if second := again.Encode(); !bytes.Equal(first, second) {
 			t.Fatalf("encoding is not stable:\n%s\nthen\n%s", first, second)

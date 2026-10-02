@@ -63,6 +63,9 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 	add := func(n *Node) { f.Nodes = append(f.Nodes, n) }
 	add(field("spacesolve", Word(strconv.Itoa(Version))))
 	add(field("units", Word(enumName(docUnits, o.Units))))
+	for _, p := range sk.Parameters {
+		add(&Node{Name: "param", Args: []Value{Word(p.Name)}, HasExpr: true, Expr: p.Expr})
+	}
 
 	groups := make([]*sketch.Group, len(sk.Groups))
 	for i := range sk.Groups {
@@ -146,10 +149,13 @@ func (n *Node) real(name string, v float64) {
 	}
 }
 
-// expr writes a value that may hold an expression; version 1 writes
-// the number.
-func (n *Node) expr(name string, v float64) {
-	if !isPlusZero(v) {
+// expr writes a value that may hold an expression: the expression's
+// text when it has one, else the number, left out when it is 0.
+func (n *Node) expr(name string, v float64, text string) {
+	switch {
+	case text != "":
+		n.add(&Node{Name: name, HasExpr: true, Expr: text})
+	case !isPlusZero(v):
 		n.add(&Node{Name: name, HasExpr: true, Expr: FormatReal(v)})
 	}
 }
@@ -215,9 +221,9 @@ func encodeGroup(g *sketch.Group) *Node {
 	n.handle("workplane", g.ActiveWorkplane.V)
 	n.handle("op-a", g.OpA.V)
 	n.handle("op-b", g.OpB.V)
-	n.expr("copies", g.ValA)
-	n.expr("pitch", g.ValB)
-	n.expr("val-c", g.ValC)
+	n.expr("copies", g.ValA, g.ExprA)
+	n.expr("pitch", g.ValB, g.ExprB)
+	n.expr("val-c", g.ValC, g.ExprC)
 	n.color("color", g.Color)
 	n.flag("skip-first", g.SkipFirst)
 	if g.MeshCombine != sketch.CombineUnion {
@@ -243,7 +249,9 @@ func encodeGroup(g *sketch.Group) *Node {
 	n.flag("allow-redundant", g.AllowRedundant)
 	n.flag("suppress-dof", g.SuppressDofCalculation)
 	n.flag("all-dims-reference", g.AllDimsReference)
-	if g.Scale != 1 {
+	if g.ExprScale != "" {
+		n.expr("scale", g.Scale, g.ExprScale)
+	} else if g.Scale != 1 {
 		n.add(field("scale", num(g.Scale)))
 	}
 	n.str("link", g.LinkFile)
@@ -306,7 +314,7 @@ func encodeConstraint(c *core.Constraint) *Node {
 	n := block("constraint", hex(c.H.V), Word(enumName(constraintTypes, c.Type)))
 	n.handle("group", c.Group.V)
 	n.handle("workplane", c.Workplane.V)
-	n.expr("value", c.ValA)
+	n.expr("value", c.ValA, c.Expr)
 	n.handle("param", c.ValP.V)
 	n.handle("pt-a", c.PtA.V)
 	n.handle("pt-b", c.PtB.V)

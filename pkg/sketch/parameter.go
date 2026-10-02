@@ -166,7 +166,7 @@ func (sk *Sketch) AddParameter(name, expr string) error {
 	if sk.Parameter(name) != nil {
 		return fmt.Errorf("there is already a parameter %q", name)
 	}
-	expr = strings.TrimSpace(expr)
+	expr = cleanText(expr)
 	if _, _, err := sk.parseNamed(expr); err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (sk *Sketch) SetParameterExpr(name, expr string) error {
 	if p == nil {
 		return fmt.Errorf("no parameter %q", name)
 	}
-	expr = strings.TrimSpace(expr)
+	expr = cleanText(expr)
 	if _, _, err := sk.parseNamed(expr); err != nil {
 		return err
 	}
@@ -559,7 +559,7 @@ func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string, mmPerUnit 
 	if !c.HasLabel() || c.Type == core.ConstraintComment {
 		return fmt.Errorf("%s has no value", c.DescriptionString())
 	}
-	text = strings.TrimSpace(text)
+	text = cleanText(text)
 	e, names, err := sk.parseNamed(text)
 	if err != nil {
 		return err
@@ -647,7 +647,7 @@ func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string, mmPerU
 	if g == nil {
 		return fmt.Errorf("no group %08x", hg.V)
 	}
-	text = strings.TrimSpace(text)
+	text = cleanText(text)
 	e, names, err := sk.parseNamed(text)
 	if err != nil {
 		return err
@@ -677,3 +677,8 @@ func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string, mmPerU
 	sk.MarkGroupDirty(hg, false)
 	return nil
 }
+
+// cleanText is typed text as it is stored: each run of white space,
+// line ends included, made one space, so that a file holds it on one
+// line.
+func cleanText(s string) string { return strings.Join(strings.Fields(s), " ") }
