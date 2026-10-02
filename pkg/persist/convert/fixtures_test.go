@@ -160,7 +160,10 @@ func TestFixturesRoundTrip(t *testing.T) {
 	regen := os.Getenv("SPACESOLVE_REGEN_SPCS") != ""
 	root := t.TempDir()
 
-	for _, rel := range files {
+	for i, rel := range files {
+		if raceDetector && i%5 != 0 && !regen {
+			continue
+		}
 		t.Run(rel, func(t *testing.T) {
 			dir := copyDir(t, root, filepath.ToSlash(filepath.Dir(rel)))
 			src := filepath.Join(dir, filepath.Base(rel))

@@ -120,7 +120,7 @@ func meshStats(sk *sketch.Sketch, hg core.HGroup) (*srf.SMesh, int) {
 // the turned or bored part with its ridges, and the crest of each
 // ridge where the pitch and the hand of the thread put it.
 func TestThreadSolids(t *testing.T) {
-	for _, tc := range threadCases {
+	for _, tc := range raceSample(threadCases) {
 		t.Run(tc.name, func(t *testing.T) {
 			// The default chord tolerance, of a thousandth of the part,
 			// leaves a cylinder's mesh most of a percent short.
@@ -257,7 +257,7 @@ var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "s
 // writes the files for that script instead.
 func TestThreadVsCpp(t *testing.T) {
 	out := os.Getenv("THREAD_FIXTURE_DIR")
-	for _, tc := range threadCases {
+	for _, tc := range raceSample(threadCases) {
 		if !slices.Contains(threadGoldens, tc.name) {
 			continue
 		}

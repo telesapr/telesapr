@@ -49,9 +49,12 @@ test-gui:
 # and regenerates through them.
 RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/...
 
+# The slow packages' tests run as several processes side by side
+# (scripts/go-test.sh), and the fixture loops take a sample under the
+# race detector (raceSample in pkg/persist/slvs).
 test-race:
 	@echo "==> go test -race $(RACE_PACKAGES)"
-	GOCACHE=$(PWD)/.gocache go test -race -timeout 30m $(RACE_PACKAGES)
+	GOCACHE=$(PWD)/.gocache PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout 30m
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
 # package listed in scripts/coverage-packages.txt is under 85%.
@@ -72,7 +75,10 @@ fuzz:
 
 # What .github/workflows/ci.yml runs. The existing code is not
 # lint-clean, so only what changed since LINT_BASE is linted.
-ci: fmt-check vet build generate-check coverage test-race test-gui lint-new
+# The checks that rewrite or read the sources first; then the rest side
+# by side, each target's output printed when it is done.
+ci: fmt-check vet generate-check
+	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint-new
 
 fmt-check:
 	@echo "==> gofmt -l"
@@ -106,9 +112,11 @@ lint-new:
 
 # The tables of what a script can import are generated from the
 # packages; they change when what those export does.
+# scripts/generate-symbols.sh runs the //go:generate lines side by
+# side; `go generate ./pkg/script/...` gives the same files, slower.
 generate:
 	@echo "==> go generate ./pkg/script/..."
-	GOCACHE=$(PWD)/.gocache go generate ./pkg/script/...
+	GOCACHE=$(PWD)/.gocache scripts/generate-symbols.sh
 
 generate-check: generate
 	git diff --exit-code -- pkg/script/symbols
