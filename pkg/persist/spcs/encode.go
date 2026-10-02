@@ -223,7 +223,7 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	n.handle("op-a", g.OpA.V)
 	n.handle("op-b", g.OpB.V)
 	n.expr("copies", g.ValA, g.ExprA)
-	n.expr("pitch", g.ValB/mmPer, g.ExprB)
+	n.expr(g.FieldName(sketch.GroupPitch), g.ValB/mmPer, g.ExprB)
 	n.expr("val-c", g.ValC, g.ExprC)
 	n.color("color", g.Color)
 	n.flag("skip-first", g.SkipFirst)
@@ -231,6 +231,13 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		n.add(field("combine", Word(enumName(combines, g.MeshCombine))))
 	}
 	n.flag("force-to-mesh", g.ForceToMesh)
+	if len(g.Edges) > 0 {
+		args := make([]Value, len(g.Edges))
+		for i, he := range g.Edges {
+			args[i] = hex(he.V)
+		}
+		n.add(field("edges", args...))
+	}
 
 	pd := block("predef")
 	pd.quaternion("q", g.Predef.Q)

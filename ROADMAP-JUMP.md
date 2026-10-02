@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 6 are done and merged; step 7 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 7 are done and merged; step 8 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -23,6 +23,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 4. History editing | done 2026-10-02 | `fe7cb85` |
 | 5. First kernel fixes | done 2026-10-02, with the cylinder-through-cylinder failures (19 of 54, not new) left as a follow-up | `f24fcd9` |
 | 6. OpenGL and the section view | done 2026-10-02, with follow-ups listed under the step | `0a96960` |
+| 7. First new solid features | done 2026-10-03, with follow-ups listed under the step | (merge commit) |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -695,13 +696,33 @@ Follow-ups from step 6:
 
 | Package | Content | State |
 |---|---|---|
-| 7.1 E1 mirror entities | New entity types beside `EntityPointNTrans` in `pkg/core/entity.go` for a reflected point, normal and face, with solver expressions for reflection in a plane whose parameters can move. `Group.CopyEntity` in `pkg/sketch/group_generate.go` learns the reflected kind. | not started |
-| 7.2 E1 mirror group | New group type with the mirror plane in `Predef`. The solid comes from `SShell.MakeFromTransformationOf` with a negative scale, as linked groups already do. Options: keep the original, and combine as union. Menu entry, screen, `Doc.Mirror(plane, name)`. | not started |
-| 7.3 E3 chamfer | New group type holding a list of edge entities and one or two distances. For each edge it builds a prism cutter from the two face normals and subtracts it. It accepts only edges that have entities. Selecting anything else gives a message that says so. Sweep over edge length, distance and dihedral angle. `Doc.Chamfer(edges, distance, name)`. | not started |
-| 7.4 E9 sweep | New group type with a profile group and a path made of lines and arcs, tangent continuous in the first version. Each line gives extrusion surfaces and each arc gives revolution surfaces, built with the code behind `MakeFromExtrusionOf` and `MakeFromRevolutionOf`. The segments are assembled into one shell with caps only at the two ends, so no Boolean between segments is needed. A path with a corner gives a diagnostic. `Doc.Sweep(profile, path, name)`. | not started |
+| 7.1 E1 mirror entities | New entity types beside `EntityPointNTrans` in `pkg/core/entity.go` for a reflected point, normal and face, with solver expressions for reflection in a plane whose parameters can move. `Group.CopyEntity` in `pkg/sketch/group_generate.go` learns the reflected kind. | done 2026-10-03, without new entity types: a mirror copies as a link group with a scale of -1 does (point inversion, then a half turn about the plane's normal, then a translation), so its copies are the existing rotate-and-translate points, normals and faces made at scale -1 (`copyEntityScaled`). The group's seven parameters, the translation 2(o.n)n and the half turn (0, n), are tied to the plane by equations, so the copies follow the plane when it moves |
+| 7.2 E1 mirror group | New group type with the mirror plane in `Predef`. The solid comes from `SShell.MakeFromTransformationOf` with a negative scale, as linked groups already do. Options: keep the original, and combine as union. Menu entry, screen, `Doc.Mirror(plane, name)`. | done 2026-10-03: `GroupMirror` (`mirror` in the file), plane in `Predef.EntityB`, a workplane or a planar face, `SkipFirst` for the reflection alone; it reflects its source group as step and repeat copies it, so a mirrored pocket is cut too and the combine is the source's. New Group > Mirror (Shift+Y) with its screen; `Sketch.NewMirror`, `Doc.Mirror`, `KeepOriginal`, `SetKeepOriginal`, `Plane`. Scenario `ext_mirror`, pair `path_mirror`, example `examples/scripts/mirror`, goldens `testdata/solid/mirror-*.spcs` |
+| 7.3 E3 chamfer | New group type holding a list of edge entities and one or two distances. For each edge it builds a prism cutter from the two face normals and subtracts it. It accepts only edges that have entities. Selecting anything else gives a message that says so. Sweep over edge length, distance and dihedral angle. `Doc.Chamfer(edges, distance, name)`. | done 2026-10-03 with one distance: two would need a way to name which face of each edge takes which, left for step 9. `GroupChamfer` (`chamfer`, fields `edges` and `distance`), `Group.Edges`. Each edge's two faces are found from the triangles along it and its convexity by winding-number tests (`SMesh.WindingNumber`); the cutter is a wedge that reaches past both faces and twice the distance past the edge's ends (`SShell.MakePrism`), the wedges joined and taken away. An edge that isn't one, is concave, or is narrower than the distance gives `Group.Problem`, marked on the model and on the screen, and no cut. New Group > Chamfer Edges (Shift+Q), distance edited on the screen with expressions; `Sketch.NewChamfer`, `Doc.Chamfer`, `Distance`, `SetDistance`, `Edges`, `Problem`. `TestChamferSweep`: 84 of 84 sound with the exact volume (angle 20 to 165 degrees, distance, length). Scenario `ext_chamfer`, pair `path_chamfer`, example `examples/scripts/chamfer` |
+| 7.4 E9 sweep | New group type with a profile group and a path made of lines and arcs, tangent continuous in the first version. Each line gives extrusion surfaces and each arc gives revolution surfaces, built with the code behind `MakeFromExtrusionOf` and `MakeFromRevolutionOf`. The segments are assembled into one shell with caps only at the two ends, so no Boolean between segments is needed. A path with a corner gives a diagnostic. `Doc.Sweep(profile, path, name)`. | done 2026-10-03: `GroupSweep` (`sweep`, `edges` the path), `SShell.MakeFromSweepOf` in `pkg/srf/sweep.go`: per curve and piece an extrusion or a surface of revolution per quarter turn, the curves at the joints shared, caps at the ends, no Boolean. The chain is ordered from the selection in any order and starts at the end nearest the profile's plane; branches, gaps, corners, a closed path, a path in the profile's plane and a bend tighter than the profile are each a diagnostic. Copies of the profile at both ends and the two cap faces are entities. New Group > Sweep Along Path (Shift+U); `Sketch.NewSweep`, `Doc.Sweep`. `TestSweepGrid`: 7 of 72 flagged, all a thin tube on a tight bend whose turn triangulates exactly as a Revolve's and which a Revolve shows at some chord tolerances too. Scenario `ext_sweep` (from `testdata/ui/sweep_path.spcs`), pair `path_sweep`, example `examples/scripts/sweep` |
 
 Each package ends with goldens, an interface scenario, an example script and a path
 equivalence test. Order: 7.1, 7.2, then 7.3 and 7.4 in either order.
+
+Done: every package has its goldens (`scripts/regen-golden.sh solid`), scenario, example and
+path pair, and the three keep one file across a save and load, an undo and redo, and one or
+eight goroutines. Their group values and edges went into format version 2 without a bump.
+
+Follow-ups from step 7:
+
+- **Mirror of the whole solid**: a mirror reflects its source group, as step and repeat does;
+  mirroring a body made of several groups means mirroring each, or a group of its own.
+- **A solid mirrored onto itself**: a part symmetric about the plane, mirrored with the
+  original kept, puts coincident faces through the Boolean, which fails (reported as a failed
+  Boolean). The case is common enough to want handling.
+- **Two chamfer distances**, once step 9 names faces.
+- **Thin tori**: the solid check finds triangles of a thin tube's bend crossing their
+  neighbours by about 2e-4 mm, in a sweep and in a Revolve alike (`sweepGridMaxFailRate`).
+- **Benchmarks**: `BenchmarkRegen150` reads about 6% slower on this branch, all of it inside
+  the solver's QR, which the step doesn't touch; adding one file the benchmark never runs moves
+  it by 3%, so it is code layout, not work.
+- **Untrimmed surfaces after a difference**: a Boolean keeps the cutter's surfaces it removed
+  whole, with no trims, so a chamfered block's shell has 11 surfaces for 7 faces.
 
 ### Step 8. STEP import as a reference mesh
 

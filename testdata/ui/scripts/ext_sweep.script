@@ -1,0 +1,26 @@
+# Sweep along a path (an extension): New Group > Sweep Along Path with
+# nothing selected says what to select; with the line, the bend and the
+# line of the path picked, the active sketch's circle is swept along
+# them, and the group screen lists the path. Analyze > Check Solid
+# finds the pipe sound.
+file $testdata/ui/sweep_path.spcs
+menu File|Open...
+view other
+answer ok
+menu New Group|Sweep Along Path
+dump
+move 307.5 247.5
+down L 307.5 247.5
+up L 307.5 247.5
+move 322.5 187.5
+down L 322.5 187.5
+up L 322.5 187.5
+move 397.5 157.5
+down L 397.5 157.5
+up L 397.5 157.5
+menu New Group|Sweep Along Path
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+dump

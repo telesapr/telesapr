@@ -1,0 +1,15 @@
+# The extrusion of path_extrude mirrored in the face clicked; the same
+# as path_mirror.go makes (TestPathEquivalenceMirror).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+down L 290 265
+up L 290 265
+menu New Group|Mirror

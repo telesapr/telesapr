@@ -174,7 +174,8 @@ func (tw *TextWindow) ShowListOfGroups() {
 		ok := g.IsSolvedOkay()
 		warn := (g.Type == sketch.GroupDrawingWorkplane && g.PolyError.How != int(core.PolyGood)) ||
 			((g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe) &&
-				sk.GetGroup(g.OpA).PolyError.How != int(core.PolyGood))
+				sk.GetGroup(g.OpA).PolyError.How != int(core.PolyGood)) ||
+			g.Problem.Msg != ""
 		dof := g.Solved.Dof
 		sdof := "ok "
 		if ok && dof > 0 {
@@ -490,8 +491,8 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeHelixPitch edits a helix's pitch (C++
-// TextWindow::ScreenChangeHelixPitch).
+// ScreenChangeHelixPitch edits a helix's pitch, or a chamfer's
+// distance, both ValB (C++ TextWindow::ScreenChangeHelixPitch).
 func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	text := g.ExprB
@@ -666,6 +667,23 @@ func (tw *TextWindow) ShowGroupInfo() {
 			tw.Printf(false, "%Bp   %Ftrepeat%E %d time%s%s %Fl%Ll%D%f[change]%E",
 				bg, times, plural, exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
 		}
+	case sketch.GroupMirror:
+		tw.Printf(true, " %Ftmirror original sketch and solid%E")
+		pl := g.Predef.EntityB
+		tw.Printf(false, "%Ba   %Ftin plane%E %Fl%Ll%D%f%h%s%E",
+			pl.V, lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(pl))
+		tw.Printf(false, "%Bd   %Ftsolid  %f%LK%Fd%s with original%E  "+
+			"%f%Lk%Fd%s reflection only%E",
+			lf(tw.ScreenChangeGroupOption), radio(!g.SkipFirst),
+			lf(tw.ScreenChangeGroupOption), radio(g.SkipFirst))
+	case sketch.GroupChamfer:
+		tw.Printf(true, " %Ftchamfer edges of the solid%E")
+		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
+			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+		tw.showGroupEdges(g, "edges")
+	case sketch.GroupSweep:
+		tw.Printf(true, " %Ftsweep plane sketch along path%E")
+		tw.showGroupEdges(g, "path")
 	case sketch.GroupLinked:
 		tw.Printf(true, " %Ftlink geometry from file%E")
 		tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))
@@ -698,7 +716,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 	}
 
 	if g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe || g.Type == sketch.GroupRevolve ||
-		g.Type == sketch.GroupLinked || g.Type == sketch.GroupHelix {
+		g.Type == sketch.GroupLinked || g.Type == sketch.GroupHelix || g.Type == sketch.GroupSweep {
 		un := g.MeshCombine == sketch.CombineUnion
 		diff := g.MeshCombine == sketch.CombineDifference
 		intr := g.MeshCombine == sketch.CombineIntersection
@@ -715,7 +733,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 			lf(tw.ScreenChangeGroupOption), sketch.CombineIntersection, radio(intr))
 
 		if g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe ||
-			g.Type == sketch.GroupRevolve || g.Type == sketch.GroupHelix {
+			g.Type == sketch.GroupRevolve || g.Type == sketch.GroupHelix || g.Type == sketch.GroupSweep {
 			tw.Printf(false,
 				"%Bd   %Ftcolor   %E%Bz  %Bd (%@, %@, %@) %f%D%Lf%Fl[change]%E",
 				&g.Color,
@@ -755,6 +773,11 @@ func (tw *TextWindow) ShowGroupInfo() {
 	tw.Printf(false, " %f%Ld%Fd%s  treat all dimensions as reference",
 		lf(tw.ScreenChangeGroupOption), check(g.AllDimsReference))
 
+	if g.Problem.Msg != "" {
+		tw.Printf(false, "")
+		tw.Printf(false, "%FxThe group adds no solid: %s.%E", g.Problem.Msg)
+	}
+
 	if g.BooleanFailed {
 		tw.Printf(false, "")
 		tw.Printf(false, "The Boolean operation failed. It may be ")
@@ -763,6 +786,24 @@ func (tw *TextWindow) ShowGroupInfo() {
 	}
 
 	tw.showGroupItems(g)
+}
+
+// showGroupEdges lists the edges of a chamfer or the path of a sweep,
+// each one hovered and selected from its row.
+func (tw *TextWindow) showGroupEdges(g *sketch.Group, what string) {
+	sk := tw.ss.SK
+	tw.Printf(false, "%Ba   %Ft%s%E", what)
+	for i, he := range g.Edges {
+		bg := byte('d')
+		if i%2 == 1 {
+			bg = 'a'
+		}
+		tw.Printf(false, "%Bp     %Fl%Ll%D%f%h%s%E", bg, he.V,
+			lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(he))
+	}
+	if len(g.Edges) == 0 {
+		tw.Printf(false, "%Bd     (none)")
+	}
 }
 
 // showGroupItems lists a group's requests and constraints (the

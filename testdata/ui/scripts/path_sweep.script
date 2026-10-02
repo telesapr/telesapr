@@ -1,0 +1,15 @@
+# A circle swept along a line, a bend and a line, the path picked with
+# the mouse; the same as path_sweep.go makes (TestPathEquivalenceSweep).
+file $testdata/ui/sweep_path.spcs
+menu File|Open...
+view other
+move 307.5 247.5
+down L 307.5 247.5
+up L 307.5 247.5
+move 322.5 187.5
+down L 322.5 187.5
+up L 322.5 187.5
+move 397.5 157.5
+down L 397.5 157.5
+up L 397.5 157.5
+menu New Group|Sweep Along Path

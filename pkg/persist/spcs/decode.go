@@ -451,7 +451,7 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.OpB = core.HGroup{V: d.handleField(c)}
 		case "copies":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "pitch":
+		case "pitch", "distance":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "val-c":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
@@ -463,6 +463,11 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			enumField(d, combines, c, &g.MeshCombine)
 		case "force-to-mesh":
 			g.ForceToMesh = d.flag(c)
+		case "edges":
+			d.plain(c)
+			for _, v := range c.Args {
+				g.Edges = append(g.Edges, core.HEntity{V: d.handle(v)})
+			}
 		case "predef":
 			d.head(c, 0)
 			for _, p := range c.Children {

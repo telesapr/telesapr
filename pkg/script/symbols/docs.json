@@ -4153,6 +4153,10 @@
 						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
 						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Edit \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
 					},
+					"Chamfer": {
+						"decl": "func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group",
+						"text": "Chamfer cuts edges of the solid so far, at distance mm from each\nedge on both faces that meet there, a 45 degree chamfer where they\nare square. An edge is a line segment that lies along an edge\nbetween two flat faces and sticks out, as the copies of the sketch\nat the ends of an extrusion and the lines along its sides do. The\nnew group becomes active."
+					},
 					"Circle": {
 						"decl": "func (d *Doc) Circle(center Vec, radius float64) Entity",
 						"text": "Circle adds a circle. In a workplane it lies in it; in 3d it is\nparallel to the XY plane."
@@ -4280,6 +4284,10 @@
 					"Midpoint": {
 						"decl": "func (d *Doc) Midpoint(point, line Entity) Constraint",
 						"text": "Midpoint puts a point at the middle of a line segment."
+					},
+					"Mirror": {
+						"decl": "func (d *Doc) Mirror(plane Entity, name string) Group",
+						"text": "Mirror reflects the active group in plane, a workplane or a planar\nface: its entities are copied reflected, and its solid is reflected\nand joined with the original, combined with the model before it as\nthe active group's solid is, so a mirrored hole is cut too. The\ncopies follow the plane when it moves. The new group becomes\nactive; SetKeepOriginal(false) leaves the original out of the\nsolid."
 					},
 					"MmPerUnit": {
 						"decl": "func (d *Doc) MmPerUnit() (mm float64)",
@@ -4420,6 +4428,10 @@
 					"String": {
 						"decl": "func (d *Doc) String() (s string)",
 						"text": "String describes the document."
+					},
+					"Sweep": {
+						"decl": "func (d *Doc) Sweep(path []Entity, name string) Group",
+						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments and arcs joined end to end and\nmeeting tangent, as a pipe follows its bends. The sweep starts at\nthe end of the path nearest the sketch's plane, with the sketch\nwhere it is drawn, and keeps its attitude to the path. The new group\nbecomes active."
 					},
 					"Symmetric": {
 						"decl": "func (d *Doc) Symmetric(a, b, about Entity) Constraint",
@@ -4610,9 +4622,17 @@
 						"decl": "func (g Group) DependsOn() (groups []Group)",
 						"text": "DependsOn lists the groups this group refers to, in history order:\nthe group it extrudes or copies, the workplane it is drawn in, and the\ngroups whose entities its sketch and constraints name. The references\nare left out."
 					},
+					"Distance": {
+						"decl": "func (g Group) Distance() (mm float64)",
+						"text": "Distance is a chamfer's distance in mm."
+					},
 					"Dof": {
 						"decl": "func (g Group) Dof() (dof int)",
 						"text": "Dof is how many degrees of freedom the group's constraints leave."
+					},
+					"Edges": {
+						"decl": "func (g Group) Edges() (edges []Entity)",
+						"text": "Edges are the edges a chamfer cuts, or the path a sweep follows."
 					},
 					"Entities": {
 						"decl": "func (g Group) Entities() (entities []Entity)",
@@ -4626,9 +4646,13 @@
 						"decl": "func (g Group) Faces() (faces []Entity)",
 						"text": "Faces are the planar faces this group made, which constraints and\nthe section view can refer to."
 					},
+					"KeepOriginal": {
+						"decl": "func (g Group) KeepOriginal() (keep bool)",
+						"text": "KeepOriginal reports whether a mirror's solid has the original as\nwell as the reflection."
+					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
-						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\" or\n\"link\"."
+						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\",\n\"mirror\", \"chamfer\", \"sweep\" or \"link\"."
 					},
 					"LeftOut": {
 						"decl": "func (g Group) LeftOut() (why string)",
@@ -4654,6 +4678,14 @@
 						"decl": "func (g Group) Param(i int) Param",
 						"text": "Param is the group's i-th parameter: for an extrusion, 0 to 2 are\nthe vector to its middle; for a step and repeat translating, the step; for a\nrevolve or a step and repeat rotating, 3 is the angle in radians."
 					},
+					"Plane": {
+						"decl": "func (g Group) Plane() (plane Entity)",
+						"text": "Plane is the workplane or face a mirror reflects in."
+					},
+					"Problem": {
+						"decl": "func (g Group) Problem() (msg string)",
+						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut or a sweep path with\na corner, or \"\" when there is nothing; a group with a problem adds\nno solid."
+					},
 					"Requests": {
 						"decl": "func (g Group) Requests() (requests []Request)",
 						"text": "Requests are what was drawn in the group."
@@ -4670,9 +4702,17 @@
 						"decl": "func (g Group) SetCopies(n int)",
 						"text": "SetCopies is how many copies a step and repeat makes."
 					},
+					"SetDistance": {
+						"decl": "func (g Group) SetDistance(mm float64)",
+						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
 						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (Doc.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
+					},
+					"SetKeepOriginal": {
+						"decl": "func (g Group) SetKeepOriginal(keep bool)",
+						"text": "SetKeepOriginal has a mirror's solid keep the original beside the\nreflection, or not, which leaves the reflection alone."
 					},
 					"SetName": {
 						"decl": "func (g Group) SetName(name string)",
@@ -5143,6 +5183,10 @@
 						"decl": "func (g *Group) ExtrusionGetVector(sk *Sketch) geom.Vector",
 						"text": "ExtrusionGetVector returns the extrusion vector, from its parameters (C++ Group::ExtrusionGetVector)."
 					},
+					"FieldName": {
+						"decl": "func (g *Group) FieldName(f GroupValue) string",
+						"text": "FieldName is the value's name in the file and in messages for this group: a chamfer's distance is ValB, as a helix's pitch is."
+					},
 					"Generate": {
 						"decl": "func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)",
 						"text": "Generate creates this group's entities and params (C++ Group::Generate)."
@@ -5162,6 +5206,10 @@
 					"GenerateShellAndMesh": {
 						"decl": "func (g *Group) GenerateShellAndMesh(sk *Sketch)",
 						"text": "GenerateShellAndMesh builds this group's shell (by extrusion, revolution, step and repeat, or linking), and combines it with the previous group's running shell by the group's Boolean (C++ Group::GenerateShellAndMesh)."
+					},
+					"IsCopyGroup": {
+						"decl": "func (g *Group) IsCopyGroup() bool",
+						"text": "IsCopyGroup reports whether the group copies its source group, entities and solid, and combines the copies with what came before the source: step and repeat, and mirror."
 					},
 					"IsForcedToMesh": {
 						"decl": "func (g *Group) IsForcedToMesh(sk *Sketch) bool",
@@ -5234,6 +5282,10 @@
 			"GroupList": {
 				"kind": "[]Group"
 			},
+			"GroupProblem": {
+				"text": "GroupProblem is a diagnostic on a group: a message and, when the problem has a place, the point it is at.",
+				"kind": "struct"
+			},
 			"GroupSubtype": {
 				"kind": "int",
 				"values": [
@@ -5257,6 +5309,9 @@
 					"GroupHelix",
 					"GroupRotate",
 					"GroupTranslate",
+					"GroupMirror",
+					"GroupChamfer",
+					"GroupSweep",
 					"GroupLinked"
 				]
 			},
@@ -5579,6 +5634,10 @@
 						"decl": "func (sk *Sketch) EntityIsVisible(e *core.Entity) bool",
 						"text": "EntityIsVisible is C++ Entity::IsVisible, with the show flags of sk.Show (GraphicsWindow::Init's when nil)."
 					},
+					"EntityName": {
+						"decl": "func (sk *Sketch) EntityName(he core.HEntity) string",
+						"text": "entityName names entity he, which may have been deleted since the last regeneration, by its request or its group."
+					},
 					"EvaluateParameters": {
 						"decl": "func (sk *Sketch) EvaluateParameters() bool",
 						"text": "EvaluateParameters evaluates the parameter table, then every stored expression, and writes the numbers into the values they drive."
@@ -5676,6 +5735,10 @@
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
 					},
+					"MirrorPlaneOK": {
+						"decl": "func (sk *Sketch) MirrorPlaneOK(he core.HEntity) bool",
+						"text": "MirrorPlaneOK reports whether he can be the plane of a mirror: a workplane or a planar face."
+					},
 					"MoveGroup": {
 						"decl": "func (sk *Sketch) MoveGroup(h, before core.HGroup) error",
 						"text": "MoveGroup moves group h to just before group before in the history, or to the end for the zero handle."
@@ -5688,9 +5751,21 @@
 						"decl": "func (s *Sketch) MustGetParam(h core.HParam) *core.Param",
 						"text": "MustGetParam is GetParam for handles that must exist (C++ SK.GetParam, which asserts)."
 					},
+					"NewChamfer": {
+						"decl": "func (sk *Sketch) NewChamfer(edges []core.HEntity, distance float64, name string) (Group, error)",
+						"text": "NewChamfer starts a chamfer of edges of the solid at the active group, line segments along edges between two planar faces, at distance mm from each edge on both faces."
+					},
 					"NewFile": {
 						"decl": "func (sk *Sketch) NewFile()",
 						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group (C++ SolveSpaceUI::NewFile)."
+					},
+					"NewMirror": {
+						"decl": "func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error)",
+						"text": "NewMirror starts a mirror group that reflects the active group in plane, a workplane or a planar face."
+					},
+					"NewSweep": {
+						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
+						"text": "NewSweep starts a sweep of the active group's sketch along path, line segments and arcs joined end to end and meeting tangent."
 					},
 					"Parameter": {
 						"decl": "func (sk *Sketch) Parameter(name string) *Parameter",
@@ -6103,6 +6178,10 @@
 			"GenerateUntilActive": {
 				"decl": "const GenerateUntilActive"
 			},
+			"GroupChamfer": {
+				"decl": "const GroupChamfer",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
+			},
 			"GroupCopies": {
 				"decl": "const GroupCopies"
 			},
@@ -6124,6 +6203,10 @@
 			"GroupLinked": {
 				"decl": "const GroupLinked"
 			},
+			"GroupMirror": {
+				"decl": "const GroupMirror",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
+			},
 			"GroupOneSided": {
 				"decl": "const GroupOneSided"
 			},
@@ -6141,6 +6224,10 @@
 			},
 			"GroupScale": {
 				"decl": "const GroupScale"
+			},
+			"GroupSweep": {
+				"decl": "const GroupSweep",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
 			},
 			"GroupTranslate": {
 				"decl": "const GroupTranslate"
@@ -6426,6 +6513,23 @@
 				"text": "PolylineVertex is a joint between edges (C++ PolylineBuilder::Vertex).",
 				"kind": "struct"
 			},
+			"Rigid": {
+				"text": "Rigid is the rigid motion p -\u003e Q p + T.",
+				"kind": "struct",
+				"methods": {
+					"Apply": {
+						"decl": "func (r Rigid) Apply(p geom.Vector) geom.Vector",
+						"text": "Apply moves p."
+					},
+					"Then": {
+						"decl": "func (r Rigid) Then(s Rigid) Rigid",
+						"text": "Then is r followed by s."
+					}
+				},
+				"makers": [
+					"SweepEnd"
+				]
+			},
 			"SBezier": {
 				"text": "SBezier is a rational Bezier curve of degree 1..3 with up to 4 weighted 3-D control points.",
 				"kind": "struct",
@@ -6600,6 +6704,10 @@
 						"decl": "func (s *SBezierLoopSet) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
 						"text": "GetBoundingProjd extends the axis-aligned bounding box from every contour in the set."
 					},
+					"Loops": {
+						"decl": "func (s *SBezierLoopSet) Loops() []*SBezierLoop",
+						"text": "loops returns the set's loops in C++ order: the outer loop first, then the holes."
+					},
 					"MakePwlInto": {
 						"decl": "func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon)",
 						"text": "MakePwlInto adds one contour to sp for each loop, outer loop first (C++ SBezierLoopSet::MakePwlInto)."
@@ -6608,7 +6716,11 @@
 						"decl": "func (s *SBezierLoopSet) SignedArea() float64",
 						"text": "SignedArea is the set's area about its own normal, computed on first use (C++ SBezierLoopSet::SignedArea)."
 					}
-				}
+				},
+				"makers": [
+					"PolygonLoopSet",
+					"TransformedLoopSet"
+				]
 			},
 			"SBezierLoopSetSet": {
 				"text": "SBezierLoopSetSet is the top-level container for an entire sketch: a list of SBezierLoopSet (one per outer contour) plus an optional list of open paths.",
@@ -7061,6 +7173,10 @@
 					"Simplify": {
 						"decl": "func (m *SMesh) Simplify(start int)",
 						"text": "Simplify replaces the triangles from start on, which must be coplanar, with fewer ones covering the same area: it pastes them together into convex polygons, merging collinear edges where it can, and triangulates those."
+					},
+					"WindingNumber": {
+						"decl": "func (m *SMesh) WindingNumber(p geom.Vector) float64",
+						"text": "WindingNumber is how many times the mesh wraps around p: the sum of the solid angles its triangles subtend at p, over 4π (the formula of Van Oosterom and Strackee)."
 					}
 				}
 			},
@@ -7283,6 +7399,10 @@
 						"decl": "func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor, group ShellGroup)",
 						"text": "MakeFromRevolutionOf revolves a planar BezierLoopSet a full turn around the axis (pt, axis)."
 					},
+					"MakeFromSweepOf": {
+						"decl": "func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RgbaColor, startFace, endFace FaceID)",
+						"text": "MakeFromSweepOf adds the solid the planar loop set sbls sweeps through as it moves along steps, a chain whose pieces meet tangent: one side surface per curve and piece, an extrusion for a straight piece and a surface of revolution for each quarter of a turn, and a cap at each end, startFace at the profile and endFace where the steps take it."
+					},
 					"MakeFromTransformationOf": {
 						"decl": "func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quaternion, scale float64)",
 						"text": "MakeFromTransformationOf applies (translate, rotate, scale) to every surface and curve of src, keeping their original handles."
@@ -7294,6 +7414,10 @@
 					"MakeIntersectionCurvesAgainst": {
 						"decl": "func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell)",
 						"text": "MakeIntersectionCurvesAgainst computes the surface-surface intersection curves between every pair of surfaces (one from `s`, one from `agnst`) and appends them to into.Curve."
+					},
+					"MakePrism": {
+						"decl": "func (s *SShell) MakePrism(pts []geom.Vector, t0, t1 geom.Vector, color core.RgbaColor)",
+						"text": "MakePrism adds the prism of the plane polygon pts swept from t0 to t1, which must not lie in the polygon's plane."
 					},
 					"MakeSectionEdgesInto": {
 						"decl": "func (s *SShell) MakeSectionEdgesInto(n geom.Vector, d float64, sel *SEdgeList, sbl *SBezierList)",
@@ -7584,6 +7708,16 @@
 					"SurfaceDiff",
 					"SurfaceInter"
 				]
+			},
+			"SweepStep": {
+				"text": "SweepStep is one piece of a sweep's path: a translation by Along, or, with Arc, a turn by Angle radians about the axis through Center along Axis, by the right-hand rule.",
+				"kind": "struct",
+				"methods": {
+					"Motion": {
+						"decl": "func (st SweepStep) Motion() Rigid",
+						"text": "Motion is the rigid motion of the step."
+					}
+				}
 			}
 		},
 		"funcs": {
@@ -7650,6 +7784,10 @@
 			"NewSTriMeta": {
 				"decl": "func NewSTriMeta(face FaceID, color core.RgbaColor) STriMeta",
 				"text": "NewSTriMeta constructs an STriMeta with the given face id and color."
+			},
+			"PolygonLoopSet": {
+				"decl": "func PolygonLoopSet(pts []geom.Vector, n geom.Vector) *SBezierLoopSet",
+				"text": "PolygonLoopSet is the closed polygon through pts, which lie in a plane with normal n, as a loop set for the shell constructors: an outer loop of lines wound clockwise about n, as FindOuterFacesFrom leaves outer loops."
 			},
 			"ProbeTangentFace": {
 				"decl": "func ProbeTangentFace(srf *SSurface, p, interEdgeN, nu geom.Vector, f *geom.Vector, flat *bool) float64",
@@ -7735,6 +7873,14 @@
 			"SetParallelModeFromEnv": {
 				"decl": "func SetParallelModeFromEnv()",
 				"text": "SetParallelModeFromEnv takes SPACESOLVE_PARALLEL: \"exact\" (the default) has the solids generated on all the processors where that gives the bits of one; \"fast\" on all of them throughout, for other last bits; \"off\" on one."
+			},
+			"SweepEnd": {
+				"decl": "func SweepEnd(steps []SweepStep) Rigid",
+				"text": "SweepEnd is where the steps take the profile."
+			},
+			"TransformedLoopSet": {
+				"decl": "func TransformedLoopSet(sbls *SBezierLoopSet, r Rigid) *SBezierLoopSet",
+				"text": "TransformedLoopSet is a copy of sbls moved by r."
 			}
 		},
 		"values": {
@@ -7828,6 +7974,10 @@
 			},
 			"ParallelOff": {
 				"decl": "const ParallelOff"
+			},
+			"RigidIdentity": {
+				"decl": "var RigidIdentity",
+				"text": "RigidIdentity moves nothing."
 			},
 			"ShellCoincOpp": {
 				"decl": "const ShellCoincOpp"

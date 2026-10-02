@@ -1,0 +1,37 @@
+# Chamfer edges (an extension): New Group > Chamfer Edges with a face
+# selected says what to select; with two top edges of the extrusion of
+# path_extrude picked, they are cut at 1 mm. The screen lists the edges
+# and takes a new distance, here an expression.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+down L 290 265
+up L 290 265
+answer ok
+menu New Group|Chamfer Edges
+key esc
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu New Group|Chamfer Edges
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 186 125
+twdown L 186 125
+twup L 186 125
+edit 1+1
+tw
+answer ok
+menu Analyze|Check Solid

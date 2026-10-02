@@ -1,0 +1,33 @@
+# The mirror (an extension): New Group > Mirror with an edge selected
+# says what to select; with a face of the extrusion of path_extrude
+# selected, the extrusion is reflected in it and joined to it. Its
+# screen names the plane and keeps the original or not.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+answer ok
+menu New Group|Mirror
+key esc
+move 290 265
+down L 290 265
+up L 290 265
+menu New Group|Mirror
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 276 145
+twdown L 276 145
+twup L 276 145
+tw
+answer ok
+menu Analyze|Check Solid

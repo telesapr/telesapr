@@ -66,7 +66,7 @@ const (
 	// (ValA).
 	GroupCopies GroupValue = iota
 	// GroupPitch is a helix's fixed pitch in millimetres, 0 when the
-	// pitch is free (ValB).
+	// pitch is free, or a chamfer's distance (ValB).
 	GroupPitch
 	// GroupValC is the spare value no group uses today (ValC).
 	GroupValC
@@ -87,6 +87,15 @@ func (f GroupValue) Field() string {
 		return "scale"
 	}
 	return fmt.Sprintf("GroupValue(%d)", int(f))
+}
+
+// FieldName is the value's name in the file and in messages for this
+// group: a chamfer's distance is ValB, as a helix's pitch is.
+func (g *Group) FieldName(f GroupValue) string {
+	if f == GroupPitch && g.Type == GroupChamfer {
+		return "distance"
+	}
+	return f.Field()
 }
 
 // isLength reports whether the value is a length, which the
@@ -114,7 +123,7 @@ var groupValues = []GroupValue{GroupCopies, GroupPitch, GroupValC, GroupScale}
 
 // checkGroupValue says what is wrong with v as the value of f, as the
 // group screen does when it is typed.
-func checkGroupValue(f GroupValue, v float64) error {
+func checkGroupValue(g *Group, f GroupValue, v float64) error {
 	if math.IsNaN(v) || math.IsInf(v, 0) {
 		return errors.New("not a number")
 	}
@@ -129,6 +138,10 @@ func checkGroupValue(f GroupValue, v float64) error {
 	case GroupScale:
 		if math.Abs(v) < 1e-6 {
 			return errors.New("scale cannot be zero")
+		}
+	case GroupPitch:
+		if g.Type == GroupChamfer && v <= 0 {
+			return errors.New("a chamfer's distance must be more than zero")
 		}
 	}
 	return nil
@@ -284,7 +297,7 @@ func (sk *Sketch) forEachExpr(fn func(expr *string, who string)) {
 		g := &sk.Groups[i]
 		for _, f := range groupValues {
 			if _, expr := g.Value(f); *expr != "" {
-				fn(expr, fmt.Sprintf("group %s %s", g.Name, f.Field()))
+				fn(expr, fmt.Sprintf("group %s %s", g.Name, g.FieldName(f)))
 			}
 		}
 	}
@@ -395,11 +408,11 @@ func (sk *Sketch) evaluate() []core.HGroup {
 				if f.isLength() {
 					v *= sk.Units.MmPer()
 				}
-				err = checkGroupValue(f, v)
+				err = checkGroupValue(g, f, v)
 			}
 			if err != nil {
 				sk.ExprErrors = append(sk.ExprErrors, ExprError{
-					Group: g.H, Field: f.Field(), Expr: *expr, Err: err.Error()})
+					Group: g.H, Field: g.FieldName(f), Expr: *expr, Err: err.Error()})
 				continue
 			}
 			if *val != v {
@@ -654,7 +667,7 @@ func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error 
 		if f.isLength() {
 			v *= sk.Units.MmPer()
 		}
-		if err := checkGroupValue(f, v); err != nil {
+		if err := checkGroupValue(g, f, v); err != nil {
 			return err
 		}
 		*val, *expr = v, ""
@@ -663,7 +676,7 @@ func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error 
 		*expr = text
 		sk.applyParameters()
 		for _, ee := range sk.ExprErrors {
-			if ee.Group == hg && ee.Constraint.V == 0 && ee.Field == f.Field() {
+			if ee.Group == hg && ee.Constraint.V == 0 && ee.Field == g.FieldName(f) {
 				*val, *expr = oldVal, oldExpr
 				sk.applyParameters()
 				return errors.New(ee.Err)

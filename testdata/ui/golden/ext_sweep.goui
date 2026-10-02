@@ -1,0 +1,142 @@
+filedialog open
+dialog 3 Can't sweep along the selection.|There is no path to sweep along.\n\nSweep Along Path moves the active group's sketch along a path. Select:\n\n    * the line segments and arcs of the path, joined end to end and meeting tangent\n
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 80040000
+camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 4 7 33 4 38
+editor 0 "" 0 ""
+tw 0 unsaved 0 cursor 0 tooltip ""
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 5 7 47 4 38
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-sweep [rename/del]
+ 0-6 74 64 0
+ 7-18 64 64 0
+ 19-24 6c 64 108 5 1 0
+ 25-25 64 64 0
+ 26-28 6c 64 108 5 1 0
+ 29-99 64 64 0
+row 10  sweep plane sketch along path
+ 0-0 64 64 0
+ 1-29 74 64 0
+ 30-99 64 64 0
+row 12    path
+ 0-2 64 61 0
+ 3-6 74 61 0
+ 7-99 64 61 0
+row 14      r004-line-segment of g003-path
+ 0-4 64 64 0
+ 5-34 6c 64 108 40000 1 1
+ 35-99 64 64 0
+row 16      r005-arc-of-circle of g003-path
+ 0-4 64 61 0
+ 5-35 6c 61 108 50000 1 1
+ 36-99 64 61 0
+row 18      r006-line-segment of g003-path
+ 0-4 64 64 0
+ 5-34 6c 64 108 60000 1 1
+ 35-99 64 64 0
+row 20 
+ 0-99 64 64 0
+row 22  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 24     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 26     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 28    color      (0.39, 0.39, 0.39) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 646464ff 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 1c 1 0
+ 41-99 64 64 0
+row 30    opacity 1.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 32      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 34 
+ 0-99 64 64 0
+row 36    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 38    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 40    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 43    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 45    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 47    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 49    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 51 
+ 0-99 64 64 0
+row 53  requests in group
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+row 59  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 61    (none)
+ 0-99 64 61 0
+row 63 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 18\nTriangles: 1220\nVolume: 10.27 cm³\nCenter of mass: (13.89, 0.00001, 36.11)\nExtent: 56.00 x 12.00 x 56.00
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 5 7 47 4 38
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""

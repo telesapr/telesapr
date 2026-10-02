@@ -390,6 +390,17 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		}
 		return
 
+	case GroupMirror:
+		g.generateMirror(sk, entity, param)
+		return
+
+	case GroupChamfer:
+		return
+
+	case GroupSweep:
+		g.generateSweep(sk, entity)
+		return
+
 	case GroupLinked:
 		// The translation vector
 		AddParam(param, h.Param(0), gp.X)
@@ -642,6 +653,15 @@ func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity,
 	ep *core.Entity, timesApplied, remap int,
 	dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam,
 	as CopyAs) {
+	g.copyEntityScaled(sk, el, ep, timesApplied, remap, dx, dy, dz, qw, qvx, qvy, qvz, dist, as, g.Scale)
+}
+
+// copyEntityScaled is CopyEntity scaling by scale instead of the
+// group's Scale: a mirror copies at -1 without being a scaled group.
+func (g *Group) copyEntityScaled(sk *Sketch, el *[]core.Entity,
+	ep *core.Entity, timesApplied, remap int,
+	dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam,
+	as CopyAs, scale float64) {
 	en := core.Entity{}
 	en.Type = ep.Type
 	en.ExtraPoints = ep.ExtraPoints
@@ -653,8 +673,6 @@ func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity,
 	en.Str = ep.Str
 	en.Font = ep.Font
 	en.File = ep.File
-
-	scale := g.Scale
 
 	switch ep.Type {
 	case core.EntityWorkplane:
@@ -835,6 +853,9 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 			addEq(u.Dot(extruden), 0)
 			addEq(v.Dot(extruden), 1)
 		}
+
+	case g.Type == GroupMirror:
+		g.mirrorEquations(sk, addEq)
 
 	case g.Type == GroupTranslate:
 		if !core.IsFreeIn3D(g.Predef.EntityB) {

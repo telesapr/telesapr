@@ -642,7 +642,13 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 // recognized as a surface of extrusion. Faithful port of C++
 // `SShell::MakeFirstOrderRevolvedSurfaces` (shell.cpp).
 func (s *SShell) MakeFirstOrderRevolvedSurfaces(pt, axis geom.Vector, i0 int) {
-	for i := i0; i < len(s.Surface); i++ {
+	s.makeFirstOrderRevolvedRange(pt, axis, i0, len(s.Surface))
+}
+
+// makeFirstOrderRevolvedRange is MakeFirstOrderRevolvedSurfaces for
+// the surfaces from index i0 up to i1.
+func (s *SShell) makeFirstOrderRevolvedRange(pt, axis geom.Vector, i0, i1 int) {
+	for i := i0; i < i1; i++ {
 		srf := &s.Surface[i]
 
 		// Revolution of a line; this is potentially a plane, which we can

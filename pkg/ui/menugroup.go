@@ -196,6 +196,48 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		g.ActiveWorkplane = gw.ActiveWorkplane()
 		g.Name = "translate"
 
+	case CmdGroupMirror:
+		var plane core.HEntity
+		if gs.n == 1 && (gs.workplanes == 1 || gs.faces == 1) {
+			plane = gs.entity[0]
+		}
+		mg, err := sk.NewMirror(plane, "")
+		if err != nil {
+			ss.Error("Bad selection for a new mirror group. %s.\n\n"+
+				"Mirror reflects the active group in a plane. Select one of:\n\n"+
+				"    * a workplane\n"+
+				"    * a planar face of the solid\n", capitalize(err.Error()))
+			return
+		}
+		g = mg
+
+	case CmdGroupChamfer:
+		cg, err := sk.NewChamfer(gs.entity, 1, "")
+		if err != nil {
+			ss.Error("Can't chamfer the selection. %s.\n\n"+
+				"Chamfer Edges cuts edges of the solid so far. Select one or more of:\n\n"+
+				"    * line segments along edges between two flat faces, "+
+				"as the edges an extrusion makes\n", capitalize(err.Error()))
+			return
+		}
+		g = cg
+
+	case CmdGroupSweep:
+		if !gw.LockedInWorkplane() {
+			ss.Error("Activate the workplane of the profile to sweep (Sketch -> In Workplane): " +
+				"the active group's sketch is moved along the path.")
+			return
+		}
+		wg, err := sk.NewSweep(gs.entity, "")
+		if err != nil {
+			ss.Error("Can't sweep along the selection. %s.\n\n"+
+				"Sweep Along Path moves the active group's sketch along a path. Select:\n\n"+
+				"    * the line segments and arcs of the path, joined end to end "+
+				"and meeting tangent\n", capitalize(err.Error()))
+			return
+		}
+		g = wg
+
 	case CmdGroupLink:
 		g.Type = sketch.GroupLinked
 		g.MeshCombine = sketch.CombineAssemble

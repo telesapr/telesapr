@@ -20,7 +20,7 @@ declare -A pkg=(
     [draw]=./pkg/ui [export]=./pkg/ui [textwin]=./pkg/ui [ui]=./pkg/ui
     [render]=./pkg/render [res]=./pkg/res [ttf]=./pkg/ttf
     [spcs]=./pkg/persist/convert [newfile]=./pkg/persist/slvs [modify]=./pkg/persist/slvs
-    [thread]=./pkg/persist/slvs [importdxf]=./pkg/ui
+    [thread]=./pkg/persist/slvs [importdxf]=./pkg/ui [solid]=./pkg/sketch
 )
 declare -A run=(
     [display]='^TestDisplayOutlines$'                 # testdata/display
@@ -37,10 +37,11 @@ declare -A run=(
     [modify]='^TestModifyTools$'                      # testdata/spcs/golden/modify
     [thread]='^TestThreadGoldens$'                    # testdata/thread/*.spcs
     [importdxf]='^TestImportDxf$'                     # testdata/importdxf/golden
+    [solid]='^TestSolidGoldens$'                      # testdata/solid/*.spcs
 )
 areas=("$@")
 if [ ${#areas[@]} -eq 0 ]; then
-    areas=(display stl draw export textwin ui render res ttf spcs newfile modify thread importdxf)
+    areas=(display stl draw export textwin ui render res ttf spcs newfile modify thread importdxf solid)
 fi
 for a in "${areas[@]}"; do
     if [ -z "${run[$a]:-}" ]; then

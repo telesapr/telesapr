@@ -196,11 +196,13 @@ group <handle> <type> <name> {
   op-b <handle>
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
+  distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
   val-c = <expression>      # spare value, unused by every group today
   color <colour>
   skip-first
   combine <combine>
   force-to-mesh
+  edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
   predef { ... }
   visible
   suppress                  # the solid is left out
@@ -249,6 +251,15 @@ remap {
 | Rotate, step and repeat | `rotate` |
 | Translate, step and repeat | `translate` |
 | Link | `link` |
+| Mirror | `mirror` |
+| Chamfer | `chamfer` |
+| Sweep along a path | `sweep` |
+
+A mirror reflects its `op-a` in the plane `entity-b` of its `predef`, a workplane or a planar
+face; `skip-first` leaves the original out of its solid. A chamfer cuts its `edges` at its
+`distance` from the solid so far, so its `combine` is always `difference`. A sweep moves the
+loops of its `op-a`, a sketch in a workplane, along its `edges`, line segments and arcs that
+meet end to end and tangent.
 
 | Subtype | Name |
 |---|---|
@@ -487,6 +498,9 @@ file back as version 2.
 
 Version 2 gained the group field `suppress-all` on 2026-10-02. A reader from before skips it
 with a report, and so generates the group.
+
+Version 2 gained the group types `mirror`, `chamfer` and `sweep`, with the fields `edges` and
+`distance`, on 2026-10-03. A reader from before reports the unknown type.
 
 `testdata/spcs/v1` and `testdata/spcs/v2` hold files that every later reader must load.
 

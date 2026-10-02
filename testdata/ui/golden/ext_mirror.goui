@@ -1,0 +1,167 @@
+dialog 3 Bad selection for a new mirror group.|A mirror reflects in a plane: select a workplane or a planar face.\n\nMirror reflects the active group in a plane. Select one of:\n\n    * a workplane\n    * a planar face of the solid\n
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 4 7 110 8 47
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-mirror [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 4 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 4 1 0
+ 30-99 64 64 0
+row 10  mirror original sketch and solid
+ 0-0 64 64 0
+ 1-32 74 64 0
+ 33-99 64 64 0
+row 12    in plane entity 8003002c of g003-extrude
+ 0-2 64 61 0
+ 3-10 74 61 0
+ 11-11 64 61 0
+ 12-42 6c 61 108 8003002c 1 1
+ 43-99 64 61 0
+row 14    solid   with original   reflection only
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-24 64 64 75 0 1 0
+ 25-26 64 64 0
+ 27-43 64 64 107 0 1 0
+ 44-99 64 64 0
+row 16 
+ 0-99 64 64 0
+row 18    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 20    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 22    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 25    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 27    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 29    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 31    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 33 
+ 0-99 64 64 0
+row 35  requests in group
+ 0-99 74 64 0
+row 37    (none)
+ 0-99 64 61 0
+row 39 
+ 0-99 64 64 0
+row 41  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 43    (none)
+ 0-99 64 61 0
+row 45 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 20\nVolume: 149.76 cm³\nCenter of mass: (-2.00, 7.00, 80.00)\nExtent: 36.00 x 26.00 x 160.00
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-mirror [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 4 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 4 1 0
+ 30-99 64 64 0
+row 10  mirror original sketch and solid
+ 0-0 64 64 0
+ 1-32 74 64 0
+ 33-99 64 64 0
+row 12    in plane entity 8003002c of g003-extrude
+ 0-2 64 61 0
+ 3-10 74 61 0
+ 11-11 64 61 0
+ 12-42 6c 61 108 8003002c 1 1
+ 43-99 64 61 0
+row 14    solid   with original   reflection only
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-24 64 64 75 0 1 0
+ 25-26 64 64 0
+ 27-43 64 64 107 0 1 0
+ 44-99 64 64 0
+row 16 
+ 0-99 64 64 0
+row 18    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 20    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 22    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 25    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 27    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 29    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 31    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 33 
+ 0-99 64 64 0
+row 35  requests in group
+ 0-99 74 64 0
+row 37    (none)
+ 0-99 64 61 0
+row 39 
+ 0-99 64 64 0
+row 41  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 43    (none)
+ 0-99 64 61 0
+row 45 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 74.88 cm³\nCenter of mass: (-2.00, 7.00, 120.00)\nExtent: 36.00 x 26.00 x 80.00

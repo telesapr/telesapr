@@ -210,6 +210,17 @@ func (gw *GraphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
 		}
 	}
 	// Otherwise the contours will get filled in DrawFilledPaths.
+
+	// A problem with the group's input, as an edge a chamfer can't
+	// cut, is marked where it is.
+	if p := g.Problem; p.Msg != "" && p.HasPoint {
+		s := 6 / camera.Scale
+		r, u := camera.ProjRight.ScaledBy(s), camera.ProjUp.ScaledBy(s)
+		canvas.DrawLine(p.At.Minus(r).Minus(u), p.At.Plus(r).Plus(u), hcsError)
+		canvas.DrawLine(p.At.Minus(r).Plus(u), p.At.Plus(r).Minus(u), hcsError)
+		canvas.DrawVectorText(p.Msg, textHeight, p.At.Plus(r).Plus(u),
+			camera.ProjRight, camera.ProjUp, hcsError)
+	}
 }
 
 // drawFilledPaths is Group::DrawFilledPaths: the loops of styles with
