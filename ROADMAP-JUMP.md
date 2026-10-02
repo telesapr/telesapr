@@ -20,7 +20,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 1. Test infrastructure and the thread feature | done 2026-10-02, but for 1.8: the CI workflow has not run on GitHub, since the repository has no remote yet | `c5caea3` |
 | 2. The `.spcs` format and `.slvs` import | done 2026-10-02 | `d5b610c` |
 | 3. Parameters and sketch feedback | done 2026-10-02, with follow-ups: a faster freedom analysis, a scenario for it, `make lint-new` on the whole branch, no `scale 0` in saves (`a33a1ae`), and the unit as the document's, format version 2 (3.9, `dba44b9`) | `22daacd` |
-| 4. History editing | done 2026-10-02 | (merge commit) |
+| 4. History editing | done 2026-10-02 | `fe7cb85` |
 | 5. First kernel fixes | next | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
