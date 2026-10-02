@@ -9,6 +9,8 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/spacesolve/spacesolve/pkg/render"
+	"github.com/spacesolve/spacesolve/pkg/render/soft"
 )
 
 // Platform is a headless platform.Platform.
@@ -383,7 +385,13 @@ func (w *Window) ConfigureScrollbar(min, max, pageSize float64) {
 func (w *Window) GetScrollbarPosition() float64  { return w.ScrollPos }
 func (w *Window) SetScrollbarPosition(p float64) { w.ScrollPos = p }
 func (w *Window) Invalidate()                    { w.Invalidated++ }
-func (w *Window) PresentFrame(f *image.RGBA)     { w.Frame = f }
+
+// CreateRenderer returns the software renderer: a headless window has
+// no GL, so goldens and tests never see a driver's pixels.
+func (w *Window) CreateRenderer() render.ViewportCanvas { return soft.New() }
+
+// PresentFrame keeps the frame canvas finished as Frame.
+func (w *Window) PresentFrame(canvas render.ViewportCanvas) { w.Frame = canvas.ReadFrame() }
 
 // Render runs the window's OnRender now, as the event loop would after
 // Invalidate.

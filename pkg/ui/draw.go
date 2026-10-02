@@ -839,6 +839,6 @@ func (gw *GraphicsWindow) Paint() {
 
 	canvas.FlushFrame()
 	canvas.FinishFrame()
-	gw.window.PresentFrame(canvas.ReadFrame())
+	gw.window.PresentFrame(canvas)
 	canvas.Clear()
 }

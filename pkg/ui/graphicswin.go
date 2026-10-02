@@ -10,7 +10,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
@@ -263,7 +262,7 @@ func (gw *GraphicsWindow) Init() {
 	}
 
 	if gw.window != nil {
-		gw.canvas = soft.New()
+		gw.canvas = gw.window.CreateRenderer()
 		gw.persistentDirty = true
 	}
 
