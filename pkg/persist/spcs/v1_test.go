@@ -3,6 +3,7 @@ package spcs_test
 import (
 	"bytes"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/check"
 	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
@@ -25,7 +27,8 @@ func TestMain(m *testing.M) {
 // TestV1Corpus opens every file of testdata/spcs/v1, which every later
 // reader must load: it decodes without warnings, loads with its links,
 // and regenerates with every solid sound. fields.spcs, which is not a
-// model, is only decoded, and must encode to the same bytes.
+// model, is only decoded: it must upgrade to a version 2 file that
+// holds the same lengths in its unit and encodes the same again.
 func TestV1Corpus(t *testing.T) {
 	root := filepath.Join(testdata, "spcs", "v1")
 	n := 0
@@ -47,9 +50,15 @@ func TestV1Corpus(t *testing.T) {
 				t.Fatalf("version %d, warnings %v", doc.Version, doc.Warnings)
 			}
 			if filepath.Base(path) == "fields.spcs" {
-				if again := doc.Encode(); !bytes.Equal(again, data) {
-					t.Error("does not encode to the same bytes")
+				upgraded := doc.Encode()
+				v2, err := spcs.Decode(upgraded)
+				if err != nil || v2.Version != 2 || len(v2.Warnings) > 0 {
+					t.Fatalf("upgrade: %v, version %d, warnings %v", err, v2.Version, v2.Warnings)
 				}
+				if again := v2.Encode(); !bytes.Equal(again, upgraded) {
+					t.Error("the upgraded file does not encode to the same bytes")
+				}
+				sameLengths(t, doc.Sketch, v2.Sketch)
 				return
 			}
 			srf.SetChordTolMm(0)
@@ -84,5 +93,24 @@ func TestV1Corpus(t *testing.T) {
 	}
 	if n < 9 {
 		t.Errorf("only %d files", n)
+	}
+}
+
+// sameLengths checks that two sketches hold the same constraint and
+// group values, but for the rounding of a change of unit.
+func sameLengths(t *testing.T, a, b *sketch.Sketch) {
+	t.Helper()
+	near := func(x, y float64) bool {
+		return x == y || math.Abs(x-y) <= 1e-12*math.Max(math.Abs(x), math.Abs(y))
+	}
+	for i := range a.Constraints {
+		if ca, cb := &a.Constraints[i], &b.Constraints[i]; !near(ca.ValA, cb.ValA) || ca.Expr != cb.Expr {
+			t.Errorf("constraint %v: %v %q, then %v %q", ca.H, ca.ValA, ca.Expr, cb.ValA, cb.Expr)
+		}
+	}
+	for i := range a.Groups {
+		if ga, gb := &a.Groups[i], &b.Groups[i]; !near(ga.ValB, gb.ValB) || ga.ExprB != gb.ExprB {
+			t.Errorf("group %v: pitch %v %q, then %v %q", ga.H, ga.ValB, ga.ExprB, gb.ValB, gb.ExprB)
+		}
 	}
 }

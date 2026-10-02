@@ -200,7 +200,7 @@ func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 	if hasExtension(filename, "slvs") {
 		return ss.saveSlvs(filename)
 	}
-	err := spcs.SaveFile(ss.SK, ss.SaveFile, filename, spcs.Options{Units: ss.ViewUnits})
+	err := spcs.SaveFile(ss.SK, ss.SaveFile, filename, spcs.Options{})
 	var le *spcs.LinkError
 	switch {
 	case errors.As(err, &le):

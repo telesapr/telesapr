@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -15,8 +16,10 @@ import (
 // expression may name parameters from a table on the sketch. Every
 // regeneration evaluates the table and then the stored expressions.
 //
-// Stored expressions and parameter values are in millimetres and
-// degrees, whatever unit the interface shows.
+// Stored expressions are in the document's unit for lengths (Units)
+// and in degrees for angles; parameters are plain numbers, which take
+// the unit of the value they drive. A plain number the user types is
+// stored as the value it gives, in millimetres; any other text is kept.
 
 // Parameter is a named value that expressions can use.
 type Parameter struct {
@@ -372,6 +375,9 @@ func (sk *Sketch) evaluate() []core.HGroup {
 		if !signedValue(c.Type) {
 			v = math.Abs(v)
 		}
+		if IsLengthValue(c.Type) {
+			v *= sk.Units.MmPer()
+		}
 		if c.ValA != v {
 			c.ValA = v
 			mark(c.Group)
@@ -386,6 +392,9 @@ func (sk *Sketch) evaluate() []core.HGroup {
 			}
 			v, err := eval(*expr)
 			if err == nil {
+				if f.isLength() {
+					v *= sk.Units.MmPer()
+				}
 				err = checkGroupValue(f, v)
 			}
 			if err != nil {
@@ -545,13 +554,13 @@ func SetConstraintValue(c *core.Constraint, v float64) {
 	}
 }
 
-// SetConstraintText gives a constraint the value of an expression the
-// user typed for its label, as SetConstraintValue does for a number.
-// An expression that names no parameter is evaluated once, a length
-// being in the interface's unit, mmPerUnit millimetres. One that names
-// a parameter is kept, in millimetres and degrees, and evaluated again
-// at each regeneration. The constraint's group is marked dirty.
-func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string, mmPerUnit float64) error {
+// SetConstraintText gives a constraint the value of what the user
+// typed for its label, a length in the document's unit (Units). A plain
+// number is stored as its value, as SetConstraintValue does; any other
+// text is kept and evaluated again at each regeneration, so that "1/4"
+// and "wall*2" come back as they were typed. The constraint's group is
+// marked dirty.
+func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error {
 	c := sk.GetConstraint(hc)
 	if c == nil {
 		return fmt.Errorf("no constraint %08x", hc.V)
@@ -560,14 +569,13 @@ func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string, mmPerUnit 
 		return fmt.Errorf("%s has no value", c.DescriptionString())
 	}
 	text = cleanText(text)
-	e, names, err := sk.parseNamed(text)
+	_, names, err := sk.parseNamed(text)
 	if err != nil {
 		return err
 	}
-	if len(names) == 0 {
-		v := e.Eval(nil, nil)
+	if v, plain := plainNumber(text, names); plain {
 		if IsLengthValue(c.Type) {
-			v *= mmPerUnit
+			v *= sk.Units.MmPer()
 		}
 		SetConstraintValue(c, v)
 	} else {
@@ -623,40 +631,28 @@ func unwrap(s, prefix string) (string, bool) {
 		return "", false
 	}
 	inner := s[len(prefix) : len(s)-1]
-	depth := 0
-	for _, r := range inner {
-		switch r {
-		case '(':
-			depth++
-		case ')':
-			depth--
-			if depth < 0 {
-				return "", false
-			}
-		}
-	}
-	return inner, depth == 0
+	return inner, balanced(inner)
 }
 
-// SetGroupText gives a group value the value of an expression the
-// user typed, as SetConstraintText does for a constraint. The value is
-// checked as the group screen checks it: from 1 to 999 copies, a
-// scale that is not zero. The group is marked dirty.
-func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string, mmPerUnit float64) error {
+// SetGroupText gives a group value what the user typed, as
+// SetConstraintText does for a constraint: a pitch is in the
+// document's unit. The value is checked as the group screen checks it:
+// from 1 to 999 copies, a scale that is not zero. The group is marked
+// dirty.
+func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error {
 	g := sk.GetGroup(hg)
 	if g == nil {
 		return fmt.Errorf("no group %08x", hg.V)
 	}
 	text = cleanText(text)
-	e, names, err := sk.parseNamed(text)
+	_, names, err := sk.parseNamed(text)
 	if err != nil {
 		return err
 	}
 	val, expr := g.Value(f)
-	if len(names) == 0 {
-		v := e.Eval(nil, nil)
+	if v, plain := plainNumber(text, names); plain {
 		if f.isLength() {
-			v *= mmPerUnit
+			v *= sk.Units.MmPer()
 		}
 		if err := checkGroupValue(f, v); err != nil {
 			return err
@@ -682,3 +678,127 @@ func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string, mmPerU
 // line ends included, made one space, so that a file holds it on one
 // line.
 func cleanText(s string) string { return strings.Join(strings.Fields(s), " ") }
+
+// plainNumber reports whether typed text that parsed, naming the
+// parameters names, is a plain number, and its value.
+func plainNumber(text string, names []string) (float64, bool) {
+	if len(names) > 0 {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(text, 64)
+	return v, err == nil
+}
+
+// SetUnits makes u the document's unit, keeping every size: a plain
+// value is a number of millimetres and does not change, and a stored
+// expression of a length is rewritten to give the same length in u,
+// "(1/4)*25.4" from "1/4" in inches to millimetres, or back again
+// without the factor. It returns the parameters that lengths are
+// computed from, whose numbers now count in u: those the caller should
+// tell the user to check.
+func (sk *Sketch) SetUnits(u core.Unit) []string {
+	from := sk.Units
+	if from == u {
+		return nil
+	}
+	used := map[string]bool{}
+	convert := func(expr *string) {
+		if *expr == "" {
+			return
+		}
+		if e, err := core.NewFromString(*expr); err == nil {
+			for _, n := range e.Variables() {
+				used[n] = true
+			}
+		}
+		*expr = ConvertLengthExpr(*expr, from.MmPer(), u.MmPer())
+	}
+	for i := range sk.Constraints {
+		c := &sk.Constraints[i]
+		if IsLengthValue(c.Type) {
+			convert(&c.Expr)
+		}
+	}
+	for i := range sk.Groups {
+		g := &sk.Groups[i]
+		for _, f := range groupValues {
+			if f.isLength() {
+				_, expr := g.Value(f)
+				convert(expr)
+			}
+		}
+	}
+	sk.Units = u
+	// What the lengths name, and what those name in turn.
+	for changed := true; changed; {
+		changed = false
+		for _, p := range sk.Parameters {
+			if !used[p.Name] {
+				continue
+			}
+			if e, err := core.NewFromString(p.Expr); err == nil {
+				for _, n := range e.Variables() {
+					if !used[n] {
+						used[n], changed = true, true
+					}
+				}
+			}
+		}
+	}
+	var names []string
+	for _, p := range sk.Parameters {
+		if used[p.Name] {
+			names = append(names, p.Name)
+		}
+	}
+	if len(sk.GroupOrder) > 0 {
+		sk.MarkGroupDirty(sk.GroupOrder[0], false)
+	}
+	return names
+}
+
+// ConvertLengthExpr rewrites the expression of a length in a unit of fromMm
+// millimetres to give the same length in one of toMm: the factor
+// between them is appended, or taken off when it is the one a
+// conversion the other way appended.
+func ConvertLengthExpr(expr string, fromMm, toMm float64) string {
+	if fromMm == toMm {
+		return expr
+	}
+	var by string
+	if fromMm > toMm {
+		by = "*" + strconv.FormatFloat(fromMm/toMm, 'g', -1, 64)
+	} else {
+		by = "/" + strconv.FormatFloat(toMm/fromMm, 'g', -1, 64)
+	}
+	// Undo a conversion that went the other way: "(X)*25.4" back to
+	// inches is X.
+	inverse := map[byte]byte{'*': '/', '/': '*'}
+	if strings.HasPrefix(expr, "(") {
+		tail := string(inverse[by[0]]) + by[1:]
+		if strings.HasSuffix(expr, ")"+tail) {
+			inner := expr[1 : len(expr)-len(tail)-1]
+			if balanced(inner) {
+				return inner
+			}
+		}
+	}
+	return "(" + expr + ")" + by
+}
+
+// balanced reports whether the brackets of s pair up.
+func balanced(s string) bool {
+	depth := 0
+	for _, r := range s {
+		switch r {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth < 0 {
+				return false
+			}
+		}
+	}
+	return depth == 0
+}

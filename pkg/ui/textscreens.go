@@ -1131,7 +1131,7 @@ func exprNote(expr string) string {
 // reports whether it was taken; a refusal is shown as C++ shows its own.
 func (ss *SolveSpaceUI) setGroupText(hg core.HGroup, f sketch.GroupValue, s string) bool {
 	err := ss.SK.UndoRememberFor(func() error {
-		return ss.SK.SetGroupText(hg, f, s, ss.MmPerUnit())
+		return ss.SK.SetGroupText(hg, f, s)
 	})
 	if err != nil {
 		ss.Error("%s.", capitalize(err.Error()))

@@ -246,7 +246,7 @@ func (h *SketchHost) Save(path string) error {
 		return err
 	}
 	h.sk.GenerateAll()
-	err := spcs.SaveFile(h.sk, h.saveFile, path, spcs.Options{Units: core.UnitMM})
+	err := spcs.SaveFile(h.sk, h.saveFile, path, spcs.Options{})
 	var le *spcs.LinkError
 	if errors.As(err, &le) {
 		return fmt.Errorf("the sketch links '%s', so it can only be saved on the same volume", le.Link)

@@ -155,7 +155,7 @@ func TestRegenerateWritesSpcs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(string(data), "spacesolve 1\n") {
+	if !strings.HasPrefix(string(data), "spacesolve 2\n") {
 		t.Errorf("regenerated file starts %.30q", data)
 	}
 	out := filepath.Join(t.TempDir(), "x.stl")

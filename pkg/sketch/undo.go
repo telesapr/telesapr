@@ -24,6 +24,7 @@ type UndoState struct {
 	Params      []core.Param
 	Styles      []core.Style
 	Parameters  []Parameter
+	Units       core.Unit
 	Active      core.HGroup
 }
 
@@ -140,6 +141,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 	ut.Params = append([]core.Param(nil), s.Params...)
 	ut.Styles = append([]core.Style(nil), s.Styles...)
 	ut.Parameters = append([]Parameter(nil), s.Parameters...)
+	ut.Units = s.Units
 	ut.Active = s.Active
 
 	uk.Write = wrapUndo(uk.Write + 1)
@@ -170,6 +172,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	s.Params = ut.Params
 	s.Styles = ut.Styles
 	s.Parameters = ut.Parameters
+	s.Units = ut.Units
 	s.Active = ut.Active
 
 	// It has been moved, so no need to free it.

@@ -207,8 +207,7 @@ type Options struct {
 	// Overwrite rewrites a linked file's .spcs copy that exists
 	// already; without it the copy is reused as it is.
 	Overwrite bool
-	// Units is recorded in the files written, as the unit they were
-	// authored in.
+	// Units is the document unit of the files written.
 	Units core.Unit
 	// Quiet treats a linked file that can't be read as declined, where
 	// otherwise link.LocateMissingFile asks for it.
@@ -303,7 +302,10 @@ func convertOne(it Item, o Options) (data []byte, warnings []string, err error) 
 		warnings = append(warnings, fmt.Sprintf("%s: regeneration removed %d requests, %d constraints and %d groups that depended on what is missing",
 			it.Src, requests, constraints, groups))
 	}
-	return spcs.Encode(sk, spcs.Options{Units: o.Units}), warnings, nil
+	// The model is in millimetres; the unit only says what typed
+	// lengths are in, and an imported model has none typed yet.
+	sk.Units = o.Units
+	return spcs.Encode(sk, spcs.Options{}), warnings, nil
 }
 
 // File converts root and what it links to dst without asking anything:

@@ -115,7 +115,7 @@ func (c Constraint) SetExpr(expr string) (err error) {
 		if !constraint.HasLabel() || constraint.Type == core.ConstraintComment {
 			fail("%s has no value", constraint.DescriptionString())
 		}
-		err = sk.SetConstraintText(c.H, expr, c.d.h.MmPerUnit())
+		err = sk.SetConstraintText(c.H, expr)
 	})
 	return err
 }

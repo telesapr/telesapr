@@ -104,7 +104,7 @@ func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error) {
 		if value == sketch.GroupCopies && group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate {
 			fail("%s isn't a step and repeat", groupDescription(group))
 		}
-		err = sk.SetGroupText(g.H, value, expr, g.d.h.MmPerUnit())
+		err = sk.SetGroupText(g.H, value, expr)
 	})
 	return err
 }
