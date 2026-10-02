@@ -83,6 +83,7 @@ dialog 0 No workplane is active, so the grid will not appear.|
   ---
   &Mirror [Shift+Y] ind=0 en=1 act=0
   &Chamfer Edges [Shift+Q] ind=0 en=1 act=0
+  &Fillet Edges [Shift+F] ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0
@@ -247,6 +248,7 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   ---
   &Mirror [Shift+Y] ind=0 en=1 act=0
   &Chamfer Edges [Shift+Q] ind=0 en=1 act=0
+  &Fillet Edges [Shift+F] ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0
