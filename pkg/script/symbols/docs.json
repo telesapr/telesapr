@@ -4096,7 +4096,7 @@
 					},
 					"Rect": {
 						"decl": "func (d *Doc) Rect(a, b Vec) (lines []Entity)",
-						"text": "Rect adds a rectangle with the corners a and b and sides along the\nactive workplane's axes: four line segments, joined, two horizontal\nand two vertical, starting with the bottom one and going around."
+						"text": "Rect adds a rectangle with the corners a and b and sides along the\nactive workplane's axes: four line segments, joined, two horizontal\nand two vertical, returned starting with the bottom one and going\naround counter-clockwise. It makes the same requests and constraints\nas the interface's rectangle tool dragged from the top left corner."
 					},
 					"Redo": {
 						"decl": "func (d *Doc) Redo() (ok bool)",

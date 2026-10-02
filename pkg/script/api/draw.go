@@ -142,7 +142,9 @@ func (d *Doc) Polyline(closed bool, points ...Vec) (lines []Entity) {
 
 // Rect adds a rectangle with the corners a and b and sides along the
 // active workplane's axes: four line segments, joined, two horizontal
-// and two vertical, starting with the bottom one and going around.
+// and two vertical, returned starting with the bottom one and going
+// around counter-clockwise. It makes the same requests and constraints
+// as the interface's rectangle tool dragged from the top left corner.
 func (d *Doc) Rect(a, b Vec) (lines []Entity) {
 	d.Batch(func() {
 		var wp Entity
@@ -164,12 +166,27 @@ func (d *Doc) Rect(a, b Vec) (lines []Entity) {
 			va, vb = vb, va
 		}
 		at := func(s, t float64) Vec { return origin.Plus(u.ScaledBy(s)).Plus(v.ScaledBy(t)) }
-		corners := []Vec{at(ua, va), at(ub, va), at(ub, vb), at(ua, vb)}
-		lines = d.Polyline(true, corners...)
-		d.Horizontal(lines[0])
-		d.Vertical(lines[1])
-		d.Horizontal(lines[2])
-		d.Vertical(lines[3])
+		// What the interface's rectangle tool makes when the top left
+		// corner is clicked and the bottom right one dragged to: line i
+		// runs from corner i to corner i-1, corner 2 is the click and
+		// corner 0 the drag; the lines are joined, then made vertical,
+		// horizontal, vertical, horizontal.
+		corner := []Vec{at(ub, va), at(ua, va), at(ua, vb), at(ub, vb)}
+		var lns [4]Entity
+		for i := range lns {
+			lns[i] = d.Line(corner[i], corner[(i+3)%4])
+		}
+		for i := range lns {
+			d.Coincident(lns[i].Start(), lns[(i+1)%4].End())
+		}
+		for i := range lns {
+			if i%2 == 0 {
+				d.Vertical(lns[i])
+			} else {
+				d.Horizontal(lns[i])
+			}
+		}
+		lines = []Entity{lns[1], lns[0], lns[3], lns[2]}
 	})
 	return lines
 }
