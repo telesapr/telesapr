@@ -16,12 +16,6 @@ import (
 // invariantsPath is the baseline TestInvariants compares with.
 var invariantsPath = filepath.Join("..", "..", "..", "testdata", "invariants.txt")
 
-// invariantsRelTol is how far a volume, centre of mass or bounding box
-// coordinate may move, relative to the larger of 1 and the recorded
-// value. It is tight while the kernel's output still matches C++; it
-// is loosened when the kernel starts to diverge (ROADMAP-JUMP.md,
-// package 5.1).
-const invariantsRelTol = 1e-9
 
 // invariantFixtures lists every .slvs file under testdata, as paths
 // from testdata with forward slashes.
@@ -73,7 +67,7 @@ func invariantLines(fixture string) []string {
 // TestInvariants loads every fixture, regenerates it, checks the solid
 // of each group, and compares the reports with testdata/invariants.txt.
 // Counts and flags must match exactly; volume, centre of mass and
-// bounding box to invariantsRelTol. SPACESOLVE_REGEN_INVARIANTS=1
+// bounding box to check.BaselineRelTol. SPACESOLVE_REGEN_INVARIANTS=1
 // rewrites the file; review its diff before committing.
 //
 // The baseline was recorded while the kernel's output was verified
@@ -109,7 +103,7 @@ func TestInvariants(t *testing.T) {
 			t.Errorf("not in the baseline: %s", line)
 			continue
 		}
-		if msg := check.CompareBaseline(line, w, invariantsRelTol); msg != "" {
+		if msg := check.CompareBaseline(line, w, check.BaselineRelTol); msg != "" {
 			t.Errorf("%s: %s\n got: %s\nwant: %s", key, msg, line, w)
 		}
 	}

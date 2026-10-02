@@ -208,7 +208,7 @@ func TestFixturesRoundTrip(t *testing.T) {
 					t.Errorf("not in the baseline: %s", line)
 					continue
 				}
-				if msg := check.CompareBaseline(line, want, 1e-9); msg != "" {
+				if msg := check.CompareBaseline(line, want, check.BaselineRelTol); msg != "" {
 					t.Errorf("%s\n got: %s\nwant: %s", msg, line, want)
 				}
 			}

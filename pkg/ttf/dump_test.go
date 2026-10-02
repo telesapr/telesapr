@@ -25,8 +25,8 @@ func hexFloat(x float64) string {
 	return fmt.Sprintf("%sp%+d", s[:i], exp)
 }
 
-// dump is what scripts/cpp-ttf-harness.cpp prints, for the fonts in
-// files and the strings strs.
+// dump is what the C++ harness that recorded the first goldens printed,
+// for the fonts in files and the strings strs.
 func dump(files []string, strs []string) string {
 	SetFontFiles(files)
 	defer SetFontFiles(nil)

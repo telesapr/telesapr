@@ -11,8 +11,8 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
-// recordingCanvas prints every draw call, as scripts/cpp-draw-harness
-// does for C++.
+// recordingCanvas prints every draw call, as the C++ harness that
+// recorded the first draw goldens did.
 type recordingCanvas struct {
 	render.CanvasBase
 	camera render.Camera

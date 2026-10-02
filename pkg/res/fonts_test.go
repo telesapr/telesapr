@@ -11,7 +11,8 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// The strings and code points scripts/cpp-res-harness.cpp uses.
+// The strings and code points the golden covers, as the C++ harness that
+// recorded it used them.
 var fontTestStrings = []string{
 	"Hello, world!", "0.123 mm", "\u2220 45\u00b0", "日本語",
 	"Ω≈ƒ", "(x) [y] {z}", `@#$%^&*_+=|\/<>?~` + "`", "\ufffe\U0001F600",

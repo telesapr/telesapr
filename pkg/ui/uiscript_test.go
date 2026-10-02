@@ -20,8 +20,9 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
 
-// uiScriptRunner runs the scripts scripts/cpp-ui-harness.cpp runs, on
-// the headless platform, and prints what that harness prints.
+// uiScriptRunner runs the scripts in testdata/ui/scripts on the headless
+// platform, and prints what the C++ harness that recorded the first
+// goldens printed.
 type uiScriptRunner struct {
 	t        testing.TB
 	p        *headless.Platform
