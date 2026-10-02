@@ -314,7 +314,7 @@ func (tw *TextWindow) Init() {
 	if tw.window == nil {
 		tw.window = ss.Platform.CreateWindow(platform.WindowTool, ss.GW.window)
 		if tw.window != nil {
-			tw.canvas = tw.window.CreateRenderer()
+			tw.canvas = tw.window.CreateRenderer(ss.UseGL())
 
 			ev := tw.window.Events()
 			ev.OnClose = func() {

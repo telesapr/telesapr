@@ -109,6 +109,12 @@ func (tw *TextWindow) ScreenChangeTurntableNav(link int, v uint32) {
 	}
 }
 
+// ScreenChangeUseOpenGL switches between the OpenGL and the software
+// renderer (an extension).
+func (tw *TextWindow) ScreenChangeUseOpenGL(link int, v uint32) {
+	tw.ss.SetUseOpenGL(!tw.ss.UseGL())
+}
+
 func (tw *TextWindow) ScreenChangeCameraNav(link int, v uint32) {
 	tw.ss.CameraNav = !tw.ss.CameraNav
 }
@@ -377,6 +383,8 @@ func (tw *TextWindow) ShowConfiguration() {
 		lf(tw.ScreenChangeArcDimDefault), check(ss.ArcDimDefaultDiameter))
 	tw.Printf(false, "  %Fd%f%Ll%s  display the full path in the title bar%E",
 		lf(tw.ScreenChangeShowFullFilePath), check(ss.ShowFullFilePath))
+	tw.Printf(false, "  %Fd%f%Ll%s  draw with OpenGL%E",
+		lf(tw.ScreenChangeUseOpenGL), check(ss.UseGL()))
 	tw.Printf(false, "")
 	tw.Printf(false, "%Ft autosave interval (in minutes)%E")
 	tw.Printf(false, "%Ba   %d %Fl%Ll%f[change]%E",

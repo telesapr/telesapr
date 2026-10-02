@@ -388,7 +388,7 @@ func (w *Window) Invalidate()                    { w.Invalidated++ }
 
 // CreateRenderer returns the software renderer: a headless window has
 // no GL, so goldens and tests never see a driver's pixels.
-func (w *Window) CreateRenderer() render.ViewportCanvas { return soft.New() }
+func (w *Window) CreateRenderer(bool) render.ViewportCanvas { return soft.New() }
 
 // PresentFrame keeps the frame canvas finished as Frame.
 func (w *Window) PresentFrame(canvas render.ViewportCanvas) { w.Frame = canvas.ReadFrame() }

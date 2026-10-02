@@ -262,7 +262,7 @@ func (gw *GraphicsWindow) Init() {
 	}
 
 	if gw.window != nil {
-		gw.canvas = gw.window.CreateRenderer()
+		gw.canvas = gw.window.CreateRenderer(gw.ss.UseGL())
 		gw.persistentDirty = true
 	}
 

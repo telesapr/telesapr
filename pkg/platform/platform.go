@@ -242,11 +242,11 @@ type Window interface {
 
 	// Invalidate asks for OnRender to be called soon.
 	Invalidate()
-	// CreateRenderer returns the renderer that draws the window's
-	// content: OpenGL where the platform has it and the user hasn't
-	// turned it off, else the software renderer (C++ CreateRenderer).
-	// A window has at most one GL renderer; each call makes a new one.
-	CreateRenderer() render.ViewportCanvas
+	// CreateRenderer returns a renderer that draws the window's
+	// content: with useGL, OpenGL where the platform has it, else the
+	// software renderer (C++ CreateRenderer). A renderer made earlier
+	// for the window must not be used after.
+	CreateRenderer(useGL bool) render.ViewportCanvas
 	// PresentFrame shows the frame canvas, which CreateRenderer made,
 	// has just finished: of the content size times the device pixel
 	// ratio. The frame stays on screen until the next one.

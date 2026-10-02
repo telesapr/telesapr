@@ -24,6 +24,9 @@ type Platform struct {
 	rootUsed bool
 	names    int
 
+	// glReported is set once a GL failure has been logged.
+	glReported bool
+
 	// The pointer's last position on the screen, where a popup menu
 	// opens.
 	pointerX, pointerY int

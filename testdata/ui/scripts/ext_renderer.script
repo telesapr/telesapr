@@ -1,0 +1,15 @@
+# The renderer setting (an extension): the configuration screen's
+# "draw with OpenGL" box switches renderers. A headless window always
+# draws in software, so only the box and the setting change.
+twmove 217 202
+twdown L 217 202
+twup L 217 202
+tw
+twmove 28 1280
+twdown L 28 1280
+twup L 28 1280
+tw
+twmove 28 1280
+twdown L 28 1280
+twup L 28 1280
+tw
