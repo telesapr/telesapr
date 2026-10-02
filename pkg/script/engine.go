@@ -105,6 +105,8 @@ Look around
 Draw, in the active group and workplane
     doc.Point(p)  doc.Line(a, b)  doc.Circle(c, r)  doc.Arc(c, start, end)
     doc.Rect(a, b)  doc.Polyline(closed, p...)  doc.Cubic(p0, p1, p2, p3)
+    doc.Text(s, "", at, height)  doc.Image(path, at, height)
+    doc.TangentArc(corner, radius, trim)  doc.Split(a, b, near)
     V(x, y, z) is a point; doc.UV(u, v) one in the active workplane
 Constrain
     doc.Coincident(p, q)  doc.Distance(a, b, mm)  doc.Length(line, mm)
@@ -114,9 +116,10 @@ Constrain
     doc.Symmetric(p, q, about)  doc.Lock(p)  c.Set(value)  c.Delete()
 Make solids, each a new group
     doc.Extrude(depth, name)  doc.Lathe(axis, name)  doc.Revolve(axis, degrees, name)
+    doc.Helix(axis, degrees, length, name)
     doc.Translate(n, V(dx, dy, dz), name)  doc.Rotate(n, center, axis, degrees, name)
     doc.SketchIn(doc.Workplane("XY"), name)  doc.Sketch3D(name)  g.SetCombine(Difference)
-    g.Volume()  g.Bounds()
+    g.Volume()  g.Bounds()  g.Check() says whether the solid is sound
 Files
     doc.Save("part.slvs")  doc.Export("part.stl")  .step .svg .dxf .pdf .png
     doc.Undo()  doc.Redo()

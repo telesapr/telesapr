@@ -3892,6 +3892,10 @@
 						"decl": "func (c Constraint) Group() (g Group)",
 						"text": "Group is the group the constraint is in."
 					},
+					"Other": {
+						"decl": "func (c Constraint) Other() (other bool)",
+						"text": "Other is whether an angle measures the supplementary angle, or an\nequal-angle constraint pairs the other angles."
+					},
 					"Reference": {
 						"decl": "func (c Constraint) Reference() (reference bool)",
 						"text": "Reference reports whether the constraint is a reference dimension,\nwhich measures and doesn't constrain."
@@ -3907,6 +3911,10 @@
 					"SetExpr": {
 						"decl": "func (c Constraint) SetExpr(expr string) error",
 						"text": "SetExpr gives the constraint the value of an expression, as typing\nit in its label does: \"25.4/2\" or \"sqrt(2)*10\". A length is in the\nunit the user interface shows lengths in."
+					},
+					"SetOther": {
+						"decl": "func (c Constraint) SetOther(other bool)",
+						"text": "SetOther makes an angle measure the supplementary angle, the other\none of the two its lines make, or not; for an equal-angle\nconstraint it pairs the other angles. Constrain \u003e Other\nSupplementary Angle toggles it."
 					},
 					"SetReference": {
 						"decl": "func (c Constraint) SetReference(reference bool)",
@@ -4022,6 +4030,10 @@
 						"decl": "func (d *Doc) Groups() (groups []Group)",
 						"text": "Groups are the groups, in order, without the references."
 					},
+					"Helix": {
+						"decl": "func (d *Doc) Helix(axis Entity, degrees, length float64, name string) Group",
+						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. The new group becomes active."
+					},
 					"Horizontal": {
 						"decl": "func (d *Doc) Horizontal(lineOrPoints ...Entity) Constraint",
 						"text": "Horizontal makes a line segment, or two points, horizontal in the\nactive workplane."
@@ -4029,6 +4041,10 @@
 					"Host": {
 						"decl": "func (d *Doc) Host() Host",
 						"text": "Host is the program around the sketch."
+					},
+					"Image": {
+						"decl": "func (d *Doc) Image(path string, at Vec, height float64) Entity",
+						"text": "Image adds a picture from a file in the active workplane, for\ntracing: its bottom left corner at at, height high and as wide as\nthe picture's proportions make it. It is construction, as the\ninterface makes it."
 					},
 					"Lathe": {
 						"decl": "func (d *Doc) Lathe(axis Entity, name string) Group",
@@ -4154,6 +4170,10 @@
 						"decl": "func (d *Doc) SketchIn(wp Entity, name string) Group",
 						"text": "SketchIn adds a group to draw in, in a workplane like wp: one of\nthe reference workplanes, a workplane that was drawn, or the\nworkplane of another group. The new group becomes active, and its\nworkplane the one drawn in."
 					},
+					"Split": {
+						"decl": "func (d *Doc) Split(a, b Entity, near Vec)",
+						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near. It is its own step of undo."
+					},
 					"String": {
 						"decl": "func (d *Doc) String() (s string)",
 						"text": "String describes the document."
@@ -4165,6 +4185,14 @@
 					"Tangent": {
 						"decl": "func (d *Doc) Tangent(a, b Entity) Constraint",
 						"text": "Tangent makes an arc or a cubic tangent to a line segment, or to\nanother arc or cubic, where they share an end."
+					},
+					"TangentArc": {
+						"decl": "func (d *Doc) TangentArc(point Entity, radius float64, trim bool)",
+						"text": "TangentArc rounds the corner at a point where two line segments or\narcs of the active workplane meet, with an arc tangent to both, as\nSketch \u003e Tangent Arc at Point does. radius 0 lets the program choose\nit. With trim, the two are cut back to the arc; without, they become\nconstruction and trimmed copies are added. It is its own step of\nundo."
+					},
+					"Text": {
+						"decl": "func (d *Doc) Text(text, font string, at Vec, height float64) Entity",
+						"text": "Text adds text in a TrueType font in the active workplane, its\nbottom left corner at at, and height high; it is as wide as the\nfont makes it. font is the name of a font file the program knows,\nas the text window lists them, or \"\" for the one built in."
 					},
 					"Translate": {
 						"decl": "func (d *Doc) Translate(n int, delta Vec, name string) Group",
@@ -4477,60 +4505,76 @@
 				"kind": "struct",
 				"methods": {
 					"Activate": {
-						"decl": "func (h *SketchHost) Activate(hg core.HGroup)"
+						"decl": "func (h *SketchHost) Activate(hg core.HGroup)",
+						"text": "Activate makes a group the active one."
 					},
 					"AddGroup": {
-						"decl": "func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup"
+						"decl": "func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup",
+						"text": "AddGroup adds g after the active group, activates it, and\nregenerates."
 					},
 					"BeginEval": {
 						"decl": "func (h *SketchHost) BeginEval()",
 						"text": "BeginEval starts a step of a script: its first change is remembered\nfor undo."
 					},
 					"Changing": {
-						"decl": "func (h *SketchHost) Changing()"
+						"decl": "func (h *SketchHost) Changing()",
+						"text": "Changing remembers the sketch for undo before the first change of\na script's step."
 					},
 					"DeleteGroup": {
-						"decl": "func (h *SketchHost) DeleteGroup(hg core.HGroup)"
+						"decl": "func (h *SketchHost) DeleteGroup(hg core.HGroup)",
+						"text": "DeleteGroup deletes a group, activating the one before it if it was\nactive, and regenerates."
 					},
 					"EndEval": {
 						"decl": "func (h *SketchHost) EndEval()",
 						"text": "EndEval ends a step of a script: what it changed is regenerated."
 					},
 					"Export": {
-						"decl": "func (h *SketchHost) Export(kind ExportKind, path string) error"
+						"decl": "func (h *SketchHost) Export(kind ExportKind, path string) error",
+						"text": "Export writes the mesh as STL; the other formats need the\napplication around the sketch."
 					},
 					"Load": {
-						"decl": "func (h *SketchHost) Load(path string) error"
+						"decl": "func (h *SketchHost) Load(path string) error",
+						"text": "Load replaces the sketch by the one in a file."
 					},
 					"MmPerUnit": {
-						"decl": "func (h *SketchHost) MmPerUnit() float64"
+						"decl": "func (h *SketchHost) MmPerUnit() float64",
+						"text": "MmPerUnit is 1: with no interface, lengths are shown in mm."
 					},
 					"Redo": {
-						"decl": "func (h *SketchHost) Redo() bool"
+						"decl": "func (h *SketchHost) Redo() bool",
+						"text": "Redo does again the last step undone, and reports whether there was\none."
 					},
 					"Regenerate": {
-						"decl": "func (h *SketchHost) Regenerate()"
+						"decl": "func (h *SketchHost) Regenerate()",
+						"text": "Regenerate regenerates what is dirty."
 					},
 					"Render": {
-						"decl": "func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error"
+						"decl": "func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error",
+						"text": "Render fails: drawing needs the application around the sketch."
 					},
 					"Run": {
-						"decl": "func (h *SketchHost) Run(fn func())"
+						"decl": "func (h *SketchHost) Run(fn func())",
+						"text": "Run runs fn at once: a bare sketch has no goroutine of its own."
 					},
 					"Save": {
-						"decl": "func (h *SketchHost) Save(path string) error"
+						"decl": "func (h *SketchHost) Save(path string) error",
+						"text": "Save writes the sketch to a file, its links made relative to it."
 					},
 					"Select": {
-						"decl": "func (h *SketchHost) Select([]sketch.Selection)"
+						"decl": "func (h *SketchHost) Select([]sketch.Selection)",
+						"text": "Select does nothing, for the same reason."
 					},
 					"Selection": {
-						"decl": "func (h *SketchHost) Selection() []sketch.Selection"
+						"decl": "func (h *SketchHost) Selection() []sketch.Selection",
+						"text": "Selection is nothing: there is no interface to select in."
 					},
 					"Sketch": {
-						"decl": "func (h *SketchHost) Sketch() *sketch.Sketch"
+						"decl": "func (h *SketchHost) Sketch() *sketch.Sketch",
+						"text": "Sketch is the hosted sketch."
 					},
 					"Undo": {
-						"decl": "func (h *SketchHost) Undo() bool"
+						"decl": "func (h *SketchHost) Undo() bool",
+						"text": "Undo takes back the last step, and reports whether there was one."
 					}
 				},
 				"makers": [

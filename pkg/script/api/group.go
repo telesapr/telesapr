@@ -498,7 +498,29 @@ func (d *Doc) Revolve(axis Entity, degrees float64, name string) Group {
 		g.Subtype = sketch.GroupOneSided
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
-		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180
+		// The group turns its copies twice by twice the parameter.
+		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
+	})
+}
+
+// Helix makes a solid of the active group's sketch by sweeping it
+// around a line segment by an angle in degrees while moving it along
+// the segment's direction by length, as a screw thread does: 360 and a
+// length of the pitch make one turn. A negative angle turns the other
+// way. The new group becomes active.
+func (d *Doc) Helix(axis Entity, degrees, length float64, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		g := newGroup(sketch.GroupHelix, name, "helix")
+		workplaneNormal(sk, "Helix")
+		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, axis, "Helix")
+		g.OpA = sk.Active
+		g.ValA = 2
+		g.Subtype = sketch.GroupOneSided
+		return g
+	}, func(sk *sketch.Sketch, hg core.HGroup) {
+		// As for Revolve, and the copies move twice by the distance.
+		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
+		sk.MustGetParam(hg.Param(7)).Val = length / 2
 	})
 }
 
