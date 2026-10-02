@@ -86,11 +86,11 @@ func (p *prattParser) next() {
 	}
 }
 
+// readOp reads one operator character: every operator is one, and
+// reading a run of them would make "2*(3)" and "2*-3" one token.
 func (p *prattParser) readOp() {
 	start := p.pos
-	for p.pos < len(p.src) && isOpChar(rune(p.src[p.pos])) {
-		p.pos++
-	}
+	p.pos++
 	p.lit = p.src[start:p.pos]
 	p.kind = tokOp
 	p.cur = token{kind: tokOp, lit: p.lit}
@@ -357,4 +357,77 @@ func isOpChar(r rune) bool {
 }
 func isIdent(r rune) bool {
 	return r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+}
+
+// Variables returns the names the expression refers to, each once, in
+// the order they first appear.
+func (e *Expr) Variables() []string {
+	var names []string
+	seen := map[string]bool{}
+	var walk func(e *Expr)
+	walk = func(e *Expr) {
+		if e == nil {
+			return
+		}
+		if e.Op == OpVariable && !seen[e.VarID] {
+			seen[e.VarID] = true
+			names = append(names, e.VarID)
+		}
+		walk(e.Left)
+		walk(e.Right)
+		for _, a := range e.Args {
+			walk(a)
+		}
+	}
+	walk(e)
+	return names
+}
+
+// RenameVariable rewrites the expression text s with every use of the
+// name from replaced by to, leaving the rest of the text as it was:
+// function names and other names are untouched.
+func RenameVariable(s, from, to string) string {
+	p := &prattParser{src: s}
+	var b strings.Builder
+	last := 0
+	for {
+		start := skipSpace(s, p.pos)
+		p.next()
+		if p.kind == tokEOF || p.pos == start {
+			break
+		}
+		if p.kind == tokIdent && p.lit == from {
+			if after := skipSpace(s, p.pos); after >= len(s) || s[after] != '(' {
+				b.WriteString(s[last:start])
+				b.WriteString(to)
+				last = p.pos
+			}
+		}
+	}
+	b.WriteString(s[last:])
+	return b.String()
+}
+
+// ValidVariableName reports whether name can name a parameter in an
+// expression: a letter or underscore, then letters, digits and
+// underscores, and none of the names the parser reserves for its
+// constants and functions.
+func ValidVariableName(name string) bool {
+	if name == "" || !isIdent(rune(name[0])) {
+		return false
+	}
+	for i := 1; i < len(name); i++ {
+		if !isIdent(rune(name[i])) && !isDigit(rune(name[i])) {
+			return false
+		}
+	}
+	switch name {
+	case "pi", "PI", "e", "E":
+		return false
+	}
+	if _, err := makeFunction(name, []*Expr{NewConstant(0), NewConstant(0)}); err == nil ||
+		!strings.Contains(err.Error(), "unknown function") {
+		return false
+	}
+	return true
 }
