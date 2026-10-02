@@ -106,9 +106,11 @@ lint-new:
 
 # The tables of what a script can import are generated from the
 # packages; they change when what those export does.
+# scripts/generate-symbols.sh runs the //go:generate lines side by
+# side; `go generate ./pkg/script/...` gives the same files, slower.
 generate:
 	@echo "==> go generate ./pkg/script/..."
-	GOCACHE=$(PWD)/.gocache go generate ./pkg/script/...
+	GOCACHE=$(PWD)/.gocache scripts/generate-symbols.sh
 
 generate-check: generate
 	git diff --exit-code -- pkg/script/symbols
