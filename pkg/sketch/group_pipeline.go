@@ -153,6 +153,10 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		g.generateChamferShell(sk)
 	case GroupSweep:
 		g.generateSweepShell(sk)
+	case GroupFillet:
+		// It edits the solid so far into its running shell; no Boolean.
+		g.generateFilletShell(sk)
+		return
 	case GroupExtrude:
 		g.generateExtrudeShell(sk)
 	case GroupLathe, GroupRevolve:

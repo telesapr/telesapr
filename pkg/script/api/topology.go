@@ -376,11 +376,14 @@ func (d *Doc) ChamferSolid(edges []SolidEdge, distance float64, name string) Gro
 	}, nil)
 }
 
-// SolidEdges are the edges of the solid a chamfer cuts by name.
+// SolidEdges are the edges of the solid a chamfer cuts or a fillet
+// rounds by name.
 func (g Group) SolidEdges() (edges []SolidEdge) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		g.mustBe(group, sketch.GroupChamfer, "SolidEdges")
+		if group.Type != sketch.GroupFillet {
+			g.mustBe(group, sketch.GroupChamfer, "SolidEdges")
+		}
 		prev := group.PreviousGroup(sk)
 		for _, n := range group.SolidEdges {
 			s := Solid{d: g.d}
@@ -391,4 +394,68 @@ func (g Group) SolidEdges() (edges []SolidEdge) {
 		}
 	})
 	return edges
+}
+
+// Fillet rounds edges of the solid so far with radius mm: line segments
+// along edges between two flat faces, as the copies of the sketch at
+// the ends of an extrusion and the lines along its sides are. Each edge
+// must stick out, and end at corners where it meets one more flat face;
+// edges that meet at a corner can't be rounded together yet. The face
+// a fillet makes is an exact cylinder, and its edges have names. The
+// new group becomes active.
+func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		hs := make([]core.HEntity, len(edges))
+		for i, e := range edges {
+			hs[i] = e.get(sk).H
+		}
+		g, err := sk.NewFillet(hs, nil, radius, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// FilletSolid rounds edges of the solid so far, by name, with radius
+// mm, as Fillet does: any straight edge between two flat faces that
+// sticks out, such as one a Boolean made, picked from Solid. The fillet
+// keeps the names, so it follows the edges when the model upstream
+// changes. The new group becomes active.
+func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		names := make([]topo.Name, len(edges))
+		for i, e := range edges {
+			names[i] = e.name
+		}
+		g, err := sk.NewFillet(nil, names, radius, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// Radius is a fillet's radius in mm.
+func (g Group) Radius() (mm float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupFillet, "Radius")
+		mm = group.ValB
+	})
+	return mm
+}
+
+// SetRadius sets a fillet's radius in mm; SetExpr with
+// sketch.GroupPitch gives it an expression in the document's unit.
+func (g Group) SetRadius(mm float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupFillet, "SetRadius")
+		if mm <= 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
+			fail("a fillet's radius must be more than zero, not %g", mm)
+		}
+		group.ValB, group.ExprB = mm, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
 }

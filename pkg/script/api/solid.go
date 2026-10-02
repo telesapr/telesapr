@@ -92,12 +92,13 @@ func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group {
 	}, nil)
 }
 
-// Edges are the edges a chamfer cuts, or the path a sweep follows.
+// Edges are the edges a chamfer cuts or a fillet rounds, or the path a
+// sweep follows.
 func (g Group) Edges() (edges []Entity) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		if group.Type != sketch.GroupChamfer && group.Type != sketch.GroupSweep {
-			fail("Edges is for a chamfer or a sweep, and %s is a %s", groupDescription(group), kindName(group.Type))
+		if group.Type != sketch.GroupChamfer && group.Type != sketch.GroupSweep && group.Type != sketch.GroupFillet {
+			fail("Edges is for a chamfer, a fillet or a sweep, and %s is a %s", groupDescription(group), kindName(group.Type))
 		}
 		for _, he := range group.Edges {
 			edges = append(edges, Entity{d: g.d, H: he})

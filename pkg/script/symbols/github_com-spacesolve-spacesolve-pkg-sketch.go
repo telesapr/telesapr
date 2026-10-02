@@ -47,6 +47,7 @@ func init() {
 		"GroupDrawing3D":               reflect.ValueOf(sketch.GroupDrawing3D),
 		"GroupDrawingWorkplane":        reflect.ValueOf(sketch.GroupDrawingWorkplane),
 		"GroupExtrude":                 reflect.ValueOf(sketch.GroupExtrude),
+		"GroupFillet":                  reflect.ValueOf(sketch.GroupFillet),
 		"GroupHelix":                   reflect.ValueOf(sketch.GroupHelix),
 		"GroupLathe":                   reflect.ValueOf(sketch.GroupLathe),
 		"GroupLinked":                  reflect.ValueOf(sketch.GroupLinked),

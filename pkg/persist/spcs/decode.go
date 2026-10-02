@@ -452,7 +452,7 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.OpB = core.HGroup{V: d.handleField(c)}
 		case "copies":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "pitch", "distance":
+		case "pitch", "distance", "radius":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "val-c":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})

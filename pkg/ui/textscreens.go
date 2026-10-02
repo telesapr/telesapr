@@ -491,8 +491,8 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeHelixPitch edits a helix's pitch, or a chamfer's
-// distance, both ValB (C++ TextWindow::ScreenChangeHelixPitch).
+// ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance
+// or a fillet's radius, all ValB (C++ TextWindow::ScreenChangeHelixPitch).
 func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	text := g.ExprB
@@ -698,6 +698,11 @@ func (tw *TextWindow) ShowGroupInfo() {
 	case sketch.GroupChamfer:
 		tw.Printf(true, " %Ftchamfer edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
+			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+		tw.showGroupEdges(g, "edges")
+	case sketch.GroupFillet:
+		tw.Printf(true, " %Ftround edges of the solid%E")
+		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
 			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 		tw.showGroupEdges(g, "edges")
 	case sketch.GroupSweep:

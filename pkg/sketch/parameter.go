@@ -95,6 +95,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupPitch && g.Type == GroupChamfer {
 		return "distance"
 	}
+	if f == GroupPitch && g.Type == GroupFillet {
+		return "radius"
+	}
 	return f.Field()
 }
 
@@ -142,6 +145,9 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 	case GroupPitch:
 		if g.Type == GroupChamfer && v <= 0 {
 			return errors.New("a chamfer's distance must be more than zero")
+		}
+		if g.Type == GroupFillet && v <= 0 {
+			return errors.New("a fillet's radius must be more than zero")
 		}
 	}
 	return nil
