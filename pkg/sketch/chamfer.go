@@ -8,6 +8,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/spacesolve/spacesolve/pkg/topo"
 )
 
 // A chamfer cuts each of its edges with a wedge: the region between
@@ -19,11 +20,12 @@ import (
 // edge, it cuts that far into it. The wedges are joined, and the
 // union is taken from the solid so far.
 
-// NewChamfer starts a chamfer of edges of the solid at the active
-// group, line segments along edges between two planar faces, at
-// distance mm from each edge on both faces. It is what the interface
-// and scripts add with AddGroupAfterActive.
-func (sk *Sketch) NewChamfer(edges []core.HEntity, distance float64, name string) (Group, error) {
+// NewChamfer starts a chamfer at the active group, of edges of the
+// solid so far: line segments along edges between two planar faces,
+// and edges of the solid itself, by name, straight and between two
+// planar faces; at distance mm from each edge on both faces. It is
+// what the interface and scripts add with AddGroupAfterActive.
+func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, distance float64, name string) (Group, error) {
 	g := NewGroup()
 	g.Type = GroupChamfer
 	g.Name = name
@@ -32,7 +34,7 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, distance float64, name string
 	}
 	g.MeshCombine = CombineDifference
 	g.ValB = distance
-	if len(edges) == 0 {
+	if len(edges) == 0 && len(solidEdges) == 0 {
 		return g, errors.New("there are no edges to chamfer")
 	}
 	if distance <= 0 || math.IsNaN(distance) || math.IsInf(distance, 0) {
@@ -42,24 +44,113 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, distance float64, name string
 	if solid == nil {
 		return g, errors.New("there is no solid to chamfer at the active group")
 	}
-	var mesh srf.SMesh
-	solidMesh(solid, &mesh)
 	seen := map[core.HEntity]bool{}
 	for _, he := range edges {
 		if seen[he] {
 			return g, fmt.Errorf("edge %s is selected twice", sk.entityName(he))
 		}
 		seen[he] = true
-		if _, _, err := chamferWedge(sk, &mesh, he, distance); err != nil {
+	}
+	seenName := map[topo.Name]bool{}
+	for _, n := range solidEdges {
+		if seenName[n] {
+			return g, fmt.Errorf("%s is selected twice", sk.SolidEdgeName(n))
+		}
+		seenName[n] = true
+	}
+	segs, err := sk.chamferSegments(solid, edges, solidEdges)
+	if err != nil {
+		return g, err
+	}
+	var mesh srf.SMesh
+	solidMesh(solid, &mesh)
+	for _, seg := range segs {
+		if _, _, err := chamferWedge(&mesh, seg, distance); err != nil {
 			return g, err
 		}
 	}
 	g.Edges = append([]core.HEntity(nil), edges...)
+	g.SolidEdges = append([]topo.Name(nil), solidEdges...)
 	return g, nil
 }
 
-// solidAt is the group whose running solid is the model at group hg,
-// or nil when there is none.
+// chamferSegment is a straight edge a chamfer cuts, from a to b, and
+// how messages name it.
+type chamferSegment struct {
+	a, b  geom.Vector
+	label string
+}
+
+// chamferSegments are the segments of a chamfer's edges, on the solid
+// whose running shell is solid's: the line segment entities, then the
+// edges of the solid by name.
+func (sk *Sketch) chamferSegments(solid *Group, edges []core.HEntity, names []topo.Name) ([]chamferSegment, error) {
+	var out []chamferSegment
+	for _, he := range edges {
+		e := sk.GetEntity(he)
+		if e == nil {
+			return nil, fmt.Errorf("edge %s doesn't exist", sk.entityName(he))
+		}
+		if e.Type != core.EntityLineSegment {
+			return nil, fmt.Errorf("%s is not a line segment: a chamfer cuts straight edges", sk.entityName(he))
+		}
+		out = append(out, chamferSegment{
+			a:     sk.MustGetEntity(e.Point[0]).PointGetNum(sk),
+			b:     sk.MustGetEntity(e.Point[1]).PointGetNum(sk),
+			label: "line segment " + sk.entityName(he),
+		})
+	}
+	if len(names) == 0 {
+		return out, nil
+	}
+	if solid == nil || solid.IsForcedToMesh(sk) || len(solid.RunningShell.Surface) == 0 {
+		return nil, errors.New("the solid so far is a triangle mesh, whose edges have no names")
+	}
+	tp, _ := solid.Topology()
+	for _, n := range names {
+		e, err := tp.Resolve(n)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %v", sk.SolidEdgeName(n), err)
+		}
+		if !tp.Straight(e) {
+			return nil, fmt.Errorf("%s is not straight: a chamfer cuts straight edges", sk.SolidEdgeName(n))
+		}
+		ed := &tp.Edges[e]
+		out = append(out, chamferSegment{
+			a:     tp.Vertices[ed.V[0]].P,
+			b:     tp.Vertices[ed.V[1]].P,
+			label: sk.SolidEdgeName(n),
+		})
+	}
+	return out, nil
+}
+
+// SolidEdgeName names an edge of a solid for a person: the faces it
+// lies between.
+func (sk *Sketch) SolidEdgeName(n topo.Name) string {
+	s := fmt.Sprintf("the edge between %s and %s", sk.FaceName(n.A), sk.FaceName(n.B))
+	if n.N > 0 {
+		s += fmt.Sprintf(" (number %d of them)", n.N+1)
+	}
+	return s
+}
+
+// FaceName names a face of a solid by its identity: the entity that
+// made it, or for a face no entity names, the group that made it.
+func (sk *Sketch) FaceName(id srf.FaceID) string {
+	he := core.HEntity{V: uint32(id)}
+	if g := faceGroup(id); id&(1<<30) != 0 && id&(1<<31) == 0 {
+		return fmt.Sprintf("face %d of %s", uint32(id)&0xffff, sk.anyGroupName(g))
+	}
+	return "face " + sk.entityName(he)
+}
+
+// SolidAt is the group whose running solid is the model at group hg,
+// or nil when there is none: the solid whose edges a chamfer there
+// cuts and the interface lets the user pick.
+func (sk *Sketch) SolidAt(hg core.HGroup) *Group { return sk.solidAt(hg) }
+
+// solidAt is SolidAt.
 func (sk *Sketch) solidAt(hg core.HGroup) *Group {
 	for g := sk.GetGroup(hg); g != nil; g = g.PreviousGroup(sk) {
 		if len(g.RunningShell.Surface) > 0 || len(g.RunningMesh.Triangles) > 0 {
@@ -83,25 +174,17 @@ func solidMesh(g *Group, m *srf.SMesh) {
 // chamferWedge is the wedge that cuts edge he of the solid whose
 // triangles are in mesh, at distance d: a triangle at the start of
 // the edge and the vector it is swept along.
-func chamferWedge(sk *Sketch, mesh *srf.SMesh, he core.HEntity, d float64) (tri [3]geom.Vector, along geom.Vector, err error) {
-	e := sk.GetEntity(he)
-	if e == nil {
-		return tri, along, fmt.Errorf("edge %s doesn't exist", sk.entityName(he))
-	}
-	if e.Type != core.EntityLineSegment {
-		return tri, along, fmt.Errorf("%s is not a line segment: a chamfer cuts straight edges", sk.entityName(he))
-	}
-	a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-	b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+func chamferWedge(mesh *srf.SMesh, seg chamferSegment, d float64) (tri [3]geom.Vector, along geom.Vector, err error) {
+	a, b := seg.a, seg.b
 	length := b.Minus(a).Magnitude()
 	if length < core.LengthEps {
-		return tri, along, fmt.Errorf("edge %s has no length", sk.entityName(he))
+		return tri, along, fmt.Errorf("%s has no length", seg.label)
 	}
 	ed := b.Minus(a).ScaledBy(1 / length)
 	normals := edgeFaceNormals(mesh, a, b)
 	if len(normals) != 2 {
-		return tri, along, fmt.Errorf("line segment %s is not an edge between two flat faces of the solid (it touches %d)",
-			sk.entityName(he), len(normals))
+		return tri, along, fmt.Errorf("%s is not an edge between two flat faces of the solid (it touches %d)",
+			seg.label, len(normals))
 	}
 	n1, n2 := normals[0], normals[1]
 	// w1 is off plane 1 and in plane 2, w2 the other way round, so
@@ -119,9 +202,9 @@ func chamferWedge(sk *Sketch, mesh *srf.SMesh, he core.HEntity, d float64) (tri 
 	inside := func(p geom.Vector) bool { return mesh.WindingNumber(p) > 0.5 }
 	switch {
 	case !inside(at(-1, -1)) || inside(at(1, 1)):
-		return tri, along, fmt.Errorf("line segment %s is not an edge of the solid", sk.entityName(he))
+		return tri, along, fmt.Errorf("%s is not an edge of the solid", seg.label)
 	case inside(at(1, -1)) || inside(at(-1, 1)):
-		return tri, along, fmt.Errorf("edge %s is concave: a chamfer cuts only edges that stick out", sk.entityName(he))
+		return tri, along, fmt.Errorf("%s is concave: a chamfer cuts only edges that stick out", seg.label)
 	}
 	// Face 1 goes on from the edge against w2, face 2 against w1.
 	u1, u2 := w2.WithMagnitude(1).ScaledBy(-1), w1.WithMagnitude(1).ScaledBy(-1)
@@ -130,7 +213,7 @@ func chamferWedge(sk *Sketch, mesh *srf.SMesh, he core.HEntity, d float64) (tri 
 	for _, f := range []struct{ u, n geom.Vector }{{u1, n1}, {u2, n2}} {
 		q := m.Plus(f.u.ScaledBy(d))
 		if !inside(q.Minus(f.n.ScaledBy(probe))) || inside(q.Plus(f.n.ScaledBy(probe))) {
-			return tri, along, fmt.Errorf("a distance of %g is wider than a face at edge %s", d, sk.entityName(he))
+			return tri, along, fmt.Errorf("a distance of %g is wider than a face at %s", d, seg.label)
 		}
 	}
 	ext := 2 * d
@@ -190,7 +273,7 @@ func edgeFaceNormals(mesh *srf.SMesh, a, b geom.Vector) []geom.Vector {
 // shell, which the pipeline takes from the solid so far.
 func (g *Group) generateChamferShell(sk *Sketch) {
 	g.MeshCombine = CombineDifference
-	if len(g.Edges) == 0 {
+	if len(g.Edges) == 0 && len(g.SolidEdges) == 0 {
 		g.setProblem(nil, "the chamfer has no edges")
 		return
 	}
@@ -210,17 +293,17 @@ func (g *Group) generateChamferShell(sk *Sketch) {
 		g.setProblem(nil, "there is no solid to chamfer")
 		return
 	}
+	segs, err := sk.chamferSegments(prev, g.Edges, g.SolidEdges)
+	if err != nil {
+		g.setProblem(nil, "%v", err)
+		return
+	}
 	var wedges []srf.SShell
-	for _, he := range g.Edges {
-		tri, along, err := chamferWedge(sk, &mesh, he, d)
+	for _, seg := range segs {
+		tri, along, err := chamferWedge(&mesh, seg, d)
 		if err != nil {
-			var at *geom.Vector
-			if e := sk.GetEntity(he); e != nil && e.Type == core.EntityLineSegment {
-				m := sk.MustGetEntity(e.Point[0]).PointGetNum(sk).Plus(
-					sk.MustGetEntity(e.Point[1]).PointGetNum(sk)).ScaledBy(0.5)
-				at = &m
-			}
-			g.setProblem(at, "%v", err)
+			m := seg.a.Plus(seg.b).ScaledBy(0.5)
+			g.setProblem(&m, "%v", err)
 			return
 		}
 		var w srf.SShell

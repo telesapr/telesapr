@@ -2,6 +2,7 @@ package spcs
 
 import (
 	"fmt"
+	"github.com/spacesolve/spacesolve/pkg/topo"
 	"sort"
 	"strconv"
 	"strings"
@@ -468,6 +469,17 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			for _, v := range c.Args {
 				g.Edges = append(g.Edges, core.HEntity{V: d.handle(v)})
 			}
+		case "solid-edge":
+			d.plain(c)
+			if len(c.Args) != 3 {
+				d.fail(c.Pos, "solid-edge takes two face handles and an ordinal")
+			}
+			n := d.int(c.Args[2])
+			if n < 0 {
+				d.fail(c.Args[2].Pos, "an edge's ordinal is not negative")
+			}
+			g.SolidEdges = append(g.SolidEdges, topo.MakeName(srf.FaceID(d.handle(c.Args[0])),
+				srf.FaceID(d.handle(c.Args[1])), n))
 		case "predef":
 			d.head(c, 0)
 			for _, p := range c.Children {

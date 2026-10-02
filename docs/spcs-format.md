@@ -203,6 +203,7 @@ group <handle> <type> <name> {
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
+  solid-edge <face> <face> <n>  # chamfer: an edge of the solid cut, by name; one line each
   predef { ... }
   visible
   suppress                  # the solid is left out
@@ -257,7 +258,12 @@ remap {
 
 A mirror reflects its `op-a` in the plane `entity-b` of its `predef`, a workplane or a planar
 face; `skip-first` leaves the original out of its solid. A chamfer cuts its `edges` at its
-`distance` from the solid so far, so its `combine` is always `difference`. A sweep moves the
+`distance` from the solid so far, so its `combine` is always `difference`; and its
+`solid-edge`s, edges of the solid so far named by the identities of the two faces they lie
+between, lower first, and their place among the edges between those faces in geometric order
+(`pkg/topo`, `Name`). A face's identity is the handle of the entity that made it, or, for a
+surface no entity names, bit 30 set with the handle of the group that made it and the surface's
+place among that group's surfaces. A sweep moves the
 loops of its `op-a`, a sketch in a workplane, along its `edges`, line segments and arcs that
 meet end to end and tangent.
 
@@ -501,6 +507,9 @@ with a report, and so generates the group.
 
 Version 2 gained the group types `mirror`, `chamfer` and `sweep`, with the fields `edges` and
 `distance`, on 2026-10-03. A reader from before reports the unknown type.
+
+Version 2 gained the chamfer field `solid-edge` on 2026-10-03. A reader from before skips it
+with a report.
 
 `testdata/spcs/v1` and `testdata/spcs/v2` hold files that every later reader must load.
 

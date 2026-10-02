@@ -6,6 +6,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/spacesolve/spacesolve/pkg/topo"
 )
 
 type GroupType int
@@ -178,6 +179,15 @@ type Group struct {
 	// Edges are the entities a chamfer cuts, or the path a sweep
 	// follows, in the order the user gave them.
 	Edges []core.HEntity
+	// SolidEdges are the edges of the solid a chamfer cuts, by name:
+	// any edge of the solid so far, as the topology names it.
+	SolidEdges []topo.Name
+
+	// topology caches the topology of RunningShell, built on first use
+	// after a regeneration (Topology).
+	topology    *topo.Topology
+	topologyErr error
+	topologySet bool
 
 	// Problem is what the last regeneration found wrong with the
 	// group's input, such as an edge a chamfer can't cut; the group
@@ -223,8 +233,26 @@ func (g *Group) Clear() {
 	g.ImpMesh.Clear()
 	g.ImpShell.Clear()
 	g.ImpEntity = nil
+	g.forgetTopology()
 	// remap is the only one that doesn't get recreated when we regen
 	g.Remap = nil
+}
+
+// forgetTopology drops the cached topology, when the shell changes.
+func (g *Group) forgetTopology() {
+	g.topology, g.topologyErr, g.topologySet = nil, nil, false
+}
+
+// Topology is the topology of the solid so far at this group, its
+// running shell, derived on first use after a regeneration: the
+// faces, edges and vertices that edge names refer to. A group forced
+// to a triangle mesh has none.
+func (g *Group) Topology() (*topo.Topology, error) {
+	if !g.topologySet {
+		g.topology, g.topologyErr = topo.Build(&g.RunningShell)
+		g.topologySet = true
+	}
+	return g.topology, g.topologyErr
 }
 
 func (g *Group) IsSolvedOkay() bool {

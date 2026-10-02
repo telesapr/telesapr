@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 // This file holds history editing: which groups a group needs, and
@@ -46,6 +47,16 @@ func (sk *Sketch) entityGroup(he core.HEntity) core.HGroup {
 	return he.Group()
 }
 
+// faceGroup is the group that made a face, by its identity: an
+// entity's group, or for a surface no entity names, the group in its
+// origin (srf.OriginFor).
+func faceGroup(id srf.FaceID) core.HGroup {
+	if id&(1<<30) != 0 && id&(1<<31) == 0 {
+		return core.HGroup{V: uint32(id>>16) & 0x3fff}
+	}
+	return core.HEntity{V: uint32(id)}.Group()
+}
+
 // GroupDependencies lists the groups group h refers to, each once, in
 // history order: through its operand, its workplane and predefined
 // entities, the entities its requests and constraints name, and the
@@ -76,6 +87,10 @@ func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency {
 	addEntity(g.Predef.EntityC, "second direction")
 	for _, he := range g.Edges {
 		addEntity(he, "edge")
+	}
+	for _, n := range g.SolidEdges {
+		add(faceGroup(n.A), "solid edge "+n.String())
+		add(faceGroup(n.B), "solid edge "+n.String())
 	}
 
 	for i := range sk.Requests {

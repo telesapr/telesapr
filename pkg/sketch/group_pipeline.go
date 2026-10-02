@@ -103,6 +103,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	defer func() { g.DisplayDirty = true }()
 	g.BooleanFailed = false
 	g.Problem = GroupProblem{}
+	g.forgetTopology()
 
 	srcg := g
 
