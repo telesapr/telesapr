@@ -88,8 +88,7 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 	for j := range parent {
 		parent[j] = j
 	}
-	var find func(j int) int
-	find = func(j int) int {
+	find := func(j int) int {
 		for parent[j] != j {
 			parent[j] = parent[parent[j]]
 			j = parent[j]
