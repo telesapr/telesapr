@@ -188,6 +188,24 @@ func TestSolidGoldens(t *testing.T) {
 			// The notch's upright edge, which no entity draws.
 			d.FilletSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 0, 5))}, 1.5, "")
 		},
+		"loft-on-block": func(d *api.Doc) {
+			block(d, -10, -10, 10, 10, 5)
+			// A square on the block's top joined by its union to a
+			// smaller one above it, turned a quarter, so its sides are
+			// saddles.
+			bottom := d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Rect(api.V(-8, -8, 5), api.V(8, 8, 5))
+			top := d.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
+			d.Loft(bottom, top, "").SetTurn(1)
+		},
+		"loft-circle-to-square": func(d *api.Doc) {
+			bottom := d.SketchIn(d.Workplane("XY"), "")
+			d.Circle(api.V(0, 0, 0), 5)
+			top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+			d.Loft(bottom, top, "")
+		},
 		"sweep-pipe": func(d *api.Doc) {
 			path := pipePath(d, 10, 8, 12)
 			d.SketchIn(d.Workplane("XY"), "profile")
@@ -236,6 +254,16 @@ func benchRegen(b *testing.B, build func(d *api.Doc)) {
 		})
 		d.Regen()
 	}
+}
+
+func BenchmarkLoft(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		bottom := d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 5)
+		top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+		d.Loft(bottom, top, "").SetTurn(1)
+	})
 }
 
 func BenchmarkFillet(b *testing.B) {

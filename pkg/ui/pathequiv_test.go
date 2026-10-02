@@ -151,3 +151,12 @@ func TestPathEquivalenceFillet(t *testing.T) {
 		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
+
+// A loft from the active sketch to one an entity is picked from with
+// the mouse, and the same made by a script.
+func TestPathEquivalenceLoft(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft", "path_loft")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupLoft || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}

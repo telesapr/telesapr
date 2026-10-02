@@ -1,0 +1,9 @@
+# The top square of loft_profiles.spcs lofted to the bottom one, picked
+# with the mouse; the same as path_loft.go makes (TestPathEquivalenceLoft).
+file $testdata/ui/loft_profiles.spcs
+menu File|Open...
+view default
+move 300 400
+down L 300 400
+up L 300 400
+menu New Group|Loft To Selected Profile
