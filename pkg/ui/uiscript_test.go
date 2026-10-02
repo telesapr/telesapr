@@ -164,7 +164,7 @@ func (r *uiScriptRunner) popUp(m *headless.Menu) *headless.MenuItem {
 var goOnlyMenuItems = map[string]bool{
 	"S&cript":          true,
 	"Check S&olid":     true,
-	"Screw &Thread...": true,
+	"Screw Thr&ead...": true,
 }
 
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
