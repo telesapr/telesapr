@@ -165,17 +165,18 @@ func (g Grid) run(full bool, fn func(p Point) error) Report {
 	size := g.Size()
 	r := Report{Full: full || g.Sample == 0 || g.Sample >= size, GridSize: size, MaxFailRate: g.MaxFailRate}
 	start := time.Now()
-	n := size
+	n, stride := size, 1
 	if !r.Full {
-		n = g.Sample
+		// A stride coprime with the size visits n distinct points
+		// spread over every axis; one that divides it would keep to a
+		// few values of the faster axes.
+		n, stride = g.Sample, max(1, size/g.Sample)
+		for gcd(stride, size) != 1 {
+			stride++
+		}
 	}
 	for k := range n {
-		// Even spread: the k-th of n points over the grid.
-		i := k
-		if !r.Full {
-			i = k * size / n
-		}
-		p := g.At(i)
+		p := g.At(k * stride % size)
 		if err := call(fn, p); err != nil {
 			r.Failed = append(r.Failed, Failure{Point: p, Err: err})
 		}
@@ -183,6 +184,13 @@ func (g Grid) run(full bool, fn func(p Point) error) Report {
 	}
 	r.Elapsed = time.Since(start)
 	return r
+}
+
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
 }
 
 // call runs fn, turning a panic into an error.

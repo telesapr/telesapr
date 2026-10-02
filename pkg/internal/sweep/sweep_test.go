@@ -53,8 +53,13 @@ func TestSampleAndAll(t *testing.T) {
 	if r.Runs != 4 || r.Full || len(labels) != 4 || r.GridSize != 12 {
 		t.Fatalf("sample: %+v %v", r, labels)
 	}
-	// Spread over the grid, so every radius is met.
-	if !strings.HasPrefix(labels[0], "r=1") || !strings.HasPrefix(labels[3], "r=3") {
+	// Distinct points, spread over the grid, so every radius is met.
+	seen, radii := map[string]bool{}, map[string]bool{}
+	for _, l := range labels {
+		seen[l] = true
+		radii[strings.Fields(l)[0]] = true
+	}
+	if len(seen) != 4 || len(radii) != 3 {
 		t.Errorf("the sample is not spread: %v", labels)
 	}
 	if !strings.Contains(r.String(), "a sample of 12") {
@@ -88,6 +93,21 @@ func (r *recorder) Logf(format string, args ...any) {
 func (r *recorder) Errorf(format string, args ...any) {
 	r.failed = true
 	r.Logf(format, args...)
+}
+
+// A sample whose even stride divides the grid still meets every value
+// of the fastest axis.
+func TestSampleSpread(t *testing.T) {
+	g := Grid{Axes: []Axis{Floats("a", 1, 2, 3, 4, 5, 6, 7, 8), Floats("b", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)}, Sample: 16}
+	seen, bs := map[string]bool{}, map[float64]bool{}
+	g.run(false, func(p Point) error {
+		seen[p.Label()] = true
+		bs[p.Float("b")] = true
+		return nil
+	})
+	if len(seen) != 16 || len(bs) < 8 {
+		t.Errorf("%d distinct points, %d values of b", len(seen), len(bs))
+	}
 }
 
 func TestFailures(t *testing.T) {
