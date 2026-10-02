@@ -115,26 +115,14 @@ type ThreadResult struct {
 	// Sound tells whether the solid came out whole: both Booleans
 	// succeeded and the mesh is watertight.
 	Sound bool
-	// Tries is how many placements of the sketch planes were generated
-	// to get there.
-	Tries int
 }
-
-// threadTurns are the angles, in degrees, that AddThread turns the
-// thread's sketch planes by, in turn, until the solid is sound.
-var threadTurns = []float64{0, 5, -5, 10, -10, 15, -15}
 
 // AddThread makes a screw thread on the circle or arc he, along its
 // normal, after the active group: a sketch and a lathe group that turn
 // the part down to the root of the thread (or bore it out, for an
 // internal thread), then a sketch of the ridge and a helix group that
-// sweeps it. It generates the sketch.
-//
-// Whether a Boolean of curved surfaces succeeds depends on where its
-// surfaces happen to meet, at the chord tolerance of the moment. The
-// thread is the same solid wherever about the axis its sketches lie,
-// so AddThread turns them until the solid is sound, and says whether
-// it got one.
+// sweeps it. It generates the sketch, and says whether the solid came
+// out sound.
 func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error) {
 	if err := sk.CheckThread(he, o); err != nil {
 		return ThreadResult{}, err
@@ -225,7 +213,7 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 	none := core.NoEntity
 
 	// What the turning or the boring takes away: a rectangle, revolved.
-	blankSketch := addSketch("blank", 0)
+	addSketch("blank", 0)
 	blank := []core.HRequest{
 		line(l.blankIn, l.blankBottom, l.blankIn, l.blankTop),
 		line(l.blankIn, l.blankTop, l.blankOut, l.blankTop),
@@ -266,7 +254,7 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 		start = (2*quarter - past) / 2
 	}
 	start *= along * hand
-	profileSketch := addSketch("profile", start)
+	addSketch("profile", start)
 	var first core.HRequest
 	for i := range o.Spec.NumStarts() {
 		z := l.ridgeBottom + float64(i)*o.Spec.Pitch + l.baseW/2
@@ -313,31 +301,9 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 		hel.RemapEntity(first.Entity(2), RemapLatheStart), hel.RemapEntity(first.Entity(2), RemapLatheEnd),
 		circle.Normal, none)
 
-	// What is drawn in the sketches is held to the axis, not to their
-	// planes, so turning the planes turns the solids with them.
-	res := ThreadResult{Group: hel.H}
-	generate := func(turn float64) bool {
-		turn *= math.Pi / 180
-		sk.GetGroup(blankSketch).Predef.Q = plane(turn)
-		sk.GetGroup(profileSketch).Predef.Q = plane(turn + start)
-		if res.Tries == 0 {
-			sk.GenerateAllTyped(GenerateAll)
-		} else {
-			sk.MarkGroupDirty(blankSketch, false)
-			sk.GenerateAllTyped(GenerateDirty)
-		}
-		return sk.solidIsSound(lathe) && sk.solidIsSound(hel.H)
-	}
-	for _, turn := range threadTurns {
-		res.Sound = generate(turn)
-		res.Tries++
-		if res.Sound {
-			return res, nil
-		}
-	}
-	// No placement is better than another: keep the first.
-	generate(threadTurns[0])
-	return res, nil
+	sk.GenerateAllTyped(GenerateAll)
+	sound := sk.solidIsSound(lathe) && sk.solidIsSound(hel.H)
+	return ThreadResult{Group: hel.H, Sound: sound}, nil
 }
 
 // solidIsSound tells whether the group's Boolean succeeded and the

@@ -1,7 +1,7 @@
 package slvs
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"path/filepath"
 	"slices"
@@ -127,7 +127,7 @@ func TestThreadSolids(t *testing.T) {
 			sk, _, res := tc.build(t, 0.01)
 			hel := res.Group
 			if !res.Sound {
-				t.Errorf("the solid isn't sound after %d tries", res.Tries)
+				t.Error("the solid isn't sound")
 			}
 			o := tc.options(t)
 			s := o.Spec
@@ -401,9 +401,10 @@ func threadSweepCases() []threadCase {
 // TestThreadSweep makes threads of many kinds and sizes at chord
 // tolerances from coarse to fine, and requires a sound solid from
 // nearly all: an even sample by default, the whole grid with
-// SPACESOLVE_SWEEP=1 (three minutes). The rates allowed are what the
-// grid and the sample gave when the sweep was set up; they are the
-// kernel's, and package 5.3 of ROADMAP-JUMP.md lowers them to 0.
+// SPACESOLVE_SWEEP=1 (two minutes). AddThread generates each thread
+// once, in the first placement of its sketch planes; the target fixed
+// for package 5.3 of ROADMAP-JUMP.md was no unsound solid at the
+// default chord tolerance (0.1%) or at five times it.
 func TestThreadSweep(t *testing.T) {
 	cases := threadSweepCases()
 	byName := map[string]threadCase{}
@@ -419,37 +420,48 @@ func TestThreadSweep(t *testing.T) {
 		},
 		MaxFailRate:       threadSweepMaxFailRate,
 		Sample:            16,
-		SampleMaxFailRate: 2.0 / 16,
+		SampleMaxFailRate: 1.0 / 16,
 	}
 	grid.Run(func(p sweep.Point) error {
 		_, _, res := byName[p.String("case")].build(t, p.Float("tol"))
 		if !res.Sound {
-			return fmt.Errorf("not sound after %d tries", res.Tries)
+			return errors.New("not sound")
 		}
 		return nil
 	}).Require(t)
 }
 
 // threadSweepMaxFailRate is the fraction of TestThreadSweep's grid
-// allowed to be unsound: what the whole grid gave on 2026-10-02, 24 of
-// 400. All but three were at chord tolerances of 0.2% and coarser;
-// none at the default 0.1%. The sample of 16 then had two.
-const threadSweepMaxFailRate = 24.0 / 400
+// allowed to be unsound: what the whole grid gave on 2026-10-02 after the
+// raycast fix, 3 of 400, at 0.03% and 0.01%, none at 0.05% or coarser.
+// Before it, AddThread turned the planes up to seven times and 24 were
+// unsound; generated once, without the fix, 68 were, 27 of them at 0.5%.
+// The sample of 16 had none.
+const threadSweepMaxFailRate = 3.0 / 400
 
-// TestThreadGoldensSound checks the solid of every thread golden with
-// the invariant oracle.
+// TestThreadGoldensSound checks the solid of every thread golden, the
+// .spcs ones and the C++ saves, with the invariant oracle.
 func TestThreadGoldensSound(t *testing.T) {
-	files, err := filepath.Glob(filepath.Join("..", "..", "..", "testdata", "thread", "*.slvs"))
+	files, err := filepath.Glob(filepath.Join("..", "..", "..", "testdata", "thread", "*.s[lp]?s"))
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no thread goldens: %v", err)
 	}
 	for _, f := range files {
 		t.Run(filepath.Base(f), func(t *testing.T) {
-			doc, err := LoadFile(f)
-			if err != nil {
-				t.Fatal(err)
+			var sk *sketch.Sketch
+			if strings.HasSuffix(f, ".spcs") {
+				doc, err := spcs.LoadFile(f)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sk = doc.Sketch
+			} else {
+				doc, err := LoadFile(f)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sk = doc.Sketch
 			}
-			sk := doc.Sketch
 			sk.GenerateAll()
 			last := sk.GetGroup(sk.GroupOrder[len(sk.GroupOrder)-1])
 			if r := check.Group(sk, last); !r.Sound() || r.Empty() {
