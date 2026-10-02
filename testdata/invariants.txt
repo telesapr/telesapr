@@ -182,7 +182,7 @@ group/boolean_knife_edge/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=fal
 group/boolean_knife_edge/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_knife_edge/normal.slvs g3 tri=16 faces=10 naked=0 inter=0 failed=false vol=1.5812199213663625 com=0.083203907844943178,-0.11074371957313668,0.5 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1 topo=1 euler=3
 group/boolean_knife_edge/normal.slvs g4 tri=16 faces=10 naked=0 inter=0 failed=false vol=1.5812199213663625 com=0.083203907844943178,-0.11074371957313668,0.5 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1 topo=1 euler=3
-group/boolean_knife_edge/normal.slvs g5 tri=24 faces=13 naked=0 inter=0 failed=false vol=1.8303900357690592 com=0.026500893728191251,-0.050291724143743603,0.46585464842544572 min=-1.0000000000000009,-1.6126052390506493,0 max=1.5498346036820765,1,1 topo=6 euler=0
+group/boolean_knife_edge/normal.slvs g5 tri=24 faces=13 naked=0 inter=0 failed=false vol=1.8303900357690592 com=0.026500893728191251,-0.050291724143743603,0.46585464842544572 min=-1.0000000000000009,-1.6126052390506493,0 max=1.5498346036820765,1,1 topo=1 euler=2
 group/boolean_tangent_crossing/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_tangent_crossing/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_tangent_crossing/normal.slvs g3 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30 topo=0 euler=2

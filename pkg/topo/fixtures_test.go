@@ -86,9 +86,13 @@ func solidGroups(sk *sketch.Sketch) []*sketch.Group {
 	return out
 }
 
+// nonManifold are the fixtures whose solids have an edge where four
+// faces meet, on purpose.
+var nonManifold = map[string]bool{"group/boolean_knife_edge/normal.slvs": true}
+
 // TestFixtures builds the topology of every solid of every fixture,
 // validates it, and checks Euler's formula against the mesh made from
-// the same shell.
+// the same shell: every solid but the knife edge's is sound.
 func TestFixtures(t *testing.T) {
 	var lines []string
 	shells, sound, eulerOK := 0, 0, 0
@@ -110,6 +114,12 @@ func TestFixtures(t *testing.T) {
 			if got == want {
 				eulerOK++
 			}
+			if (err != nil || len(probs) > 0 || got != want) && !nonManifold[f] {
+				t.Errorf("%s g%x: err %v, %d problems, Euler %d, the mesh's %d", f, g.H.V, err, len(probs), got, want)
+			}
+			if nonManifold[f] && (len(probs) != 1 || !strings.Contains(probs[0].Msg, "4 co-edges")) {
+				t.Errorf("%s g%x: %v", f, g.H.V, probs)
+			}
 			if err != nil || len(probs) > 0 || got != want {
 				msg := ""
 				if err != nil {
@@ -126,4 +136,18 @@ func TestFixtures(t *testing.T) {
 		t.Log(l)
 	}
 	t.Logf("%d shells, %d sound, %d with the mesh's Euler characteristic", shells, sound, eulerOK)
+}
+
+// BenchmarkBuildThread derives the topology of a threaded bolt, about
+// 270 faces, as a chamfer by name does on each regeneration.
+func BenchmarkBuildThread(b *testing.B) {
+	t := &testing.T{}
+	sk := load(t, "thread/bolt_m8x30.slvs")
+	gs := solidGroups(sk)
+	sh := &gs[len(gs)-1].RunningShell
+	for b.Loop() {
+		if _, err := topo.Build(sh); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

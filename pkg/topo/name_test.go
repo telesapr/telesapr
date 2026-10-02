@@ -111,3 +111,16 @@ func TestFixtureNames(t *testing.T) {
 	}
 	t.Logf("%d of %d edges named", named, edges)
 }
+
+func TestAccessors(t *testing.T) {
+	sh := box()
+	tp := build(t, sh)
+	if tp.Shell() != sh {
+		t.Error("shell")
+	}
+	for f := range tp.Faces {
+		if s := tp.Surface(f); s == nil || s.H != tp.Faces[f].Surface {
+			t.Errorf("surface of face %d", f)
+		}
+	}
+}

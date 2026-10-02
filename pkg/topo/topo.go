@@ -227,10 +227,16 @@ func Build(sh *srf.SShell) (*Topology, error) {
 	edges := map[edgeKey][]int{}
 	var problems []string
 
+	// First the trims, with the vertices at their ends.
+	type piece struct {
+		surf  int
+		trim  int
+		curve core.HSCurve
+		pts   []geom.Vector
+	}
+	var pieces []piece
 	for si := range sh.Surface {
 		s := &sh.Surface[si]
-		// The surface's co-edges, to be chained into loops.
-		var ces []int
 		for ti := range s.Trim {
 			stb := &s.Trim[ti]
 			sc := sh.FindCurve(stb.Curve)
@@ -238,27 +244,41 @@ func Build(sh *srf.SShell) (*Topology, error) {
 				problems = append(problems, fmt.Sprintf("surface %d trims by a curve that isn't there", s.H.V))
 				continue
 			}
+			pts := curvePoints(sc, stb)
 			a := t.vertexAt(stb.StartP, index)
 			b := t.vertexAt(stb.FinishP, index)
-			if a == b {
+			if len(pts) < 2 || a == b && len(pts) < 3 {
 				// A trim that starts where it finishes: a closed curve,
 				// which SolveSpace splits, or a sliver; no edge.
-				if len(curvePoints(sc, stb)) < 3 {
-					continue
-				}
+				continue
 			}
-			pts := curvePoints(sc, stb)
-			// Along the curve's own points, the edge runs from its first
-			// point to its last; a trim that goes backwards runs the
-			// other way.
-			e := t.edgeFor(edges, a, b, pts, stb.Curve)
+			pts[0], pts[len(pts)-1] = t.Vertices[a].P, t.Vertices[b].P
+			pieces = append(pieces, piece{surf: si, trim: ti, curve: stb.Curve, pts: pts})
+		}
+	}
+	// A Boolean can leave a trim running past a vertex where two faces
+	// meet on its other side: split it there, so each piece of it
+	// meets one face.
+	cuts := t.vertexCuts()
+	var ces [][]int
+	for range sh.Surface {
+		ces = append(ces, nil)
+	}
+	for _, pc := range pieces {
+		for _, sub := range cuts(pc.pts) {
+			a := t.vertexAt(sub[0], index)
+			b := t.vertexAt(sub[len(sub)-1], index)
+			e := t.edgeFor(edges, a, b, sub, pc.curve)
 			ce := len(t.CoEdges)
 			t.CoEdges = append(t.CoEdges, CoEdge{Edge: e, Loop: -1, Reversed: t.Edges[e].V[0] != a,
-				Surface: s.H, Trim: ti, Curve: stb.Curve})
+				Surface: sh.Surface[pc.surf].H, Trim: pc.trim, Curve: pc.curve})
 			t.Edges[e].CoEdges = append(t.Edges[e].CoEdges, ce)
-			ces = append(ces, ce)
+			ces[pc.surf] = append(ces[pc.surf], ce)
 		}
-		loops, err := t.chain(ces)
+	}
+	for si := range sh.Surface {
+		s := &sh.Surface[si]
+		loops, err := t.chain(ces[si])
 		if err != nil {
 			problems = append(problems, fmt.Sprintf("surface %d: %v", s.H.V, err))
 		}
@@ -268,6 +288,109 @@ func Build(sh *srf.SShell) (*Topology, error) {
 		return t, fmt.Errorf("topo: %s", problems[0])
 	}
 	return t, nil
+}
+
+// vertexCuts is a function that splits a polyline at the vertices that
+// lie inside it, giving the pieces from end to end.
+func (t *Topology) vertexCuts() func(pts []geom.Vector) [][]geom.Vector {
+	// The vertices by cell, to find those near a polyline.
+	const cell = 1.0
+	key := func(p geom.Vector) vertexKey {
+		return vertexKey{int64(math.Floor(p.X / cell)), int64(math.Floor(p.Y / cell)), int64(math.Floor(p.Z / cell))}
+	}
+	cells := map[vertexKey][]int{}
+	for v := range t.Vertices {
+		k := key(t.Vertices[v].P)
+		cells[k] = append(cells[k], v)
+	}
+	const tol = 10 * vertexEps
+	return func(pts []geom.Vector) [][]geom.Vector {
+		type cut struct {
+			seg int
+			at  float64
+			p   geom.Vector
+		}
+		var cs []cut
+		seen := map[int]bool{}
+		for i := 1; i < len(pts); i++ {
+			a, b := pts[i-1], pts[i]
+			lo := key(geom.Vector{X: math.Min(a.X, b.X) - tol, Y: math.Min(a.Y, b.Y) - tol, Z: math.Min(a.Z, b.Z) - tol})
+			hi := key(geom.Vector{X: math.Max(a.X, b.X) + tol, Y: math.Max(a.Y, b.Y) + tol, Z: math.Max(a.Z, b.Z) + tol})
+			if (hi[0]-lo[0]+1)*(hi[1]-lo[1]+1)*(hi[2]-lo[2]+1) > 4096 {
+				// A long segment: look at every vertex.
+				lo, hi = vertexKey{math.MinInt64 / 4}, vertexKey{}
+			}
+			try := func(v int) {
+				p := t.Vertices[v].P
+				if seen[v] || p.EqualsTol(pts[0], vertexEps) || p.EqualsTol(pts[len(pts)-1], vertexEps) {
+					return
+				}
+				ab := b.Minus(a)
+				l := ab.MagSquared()
+				if l == 0 {
+					return
+				}
+				u := p.Minus(a).Dot(ab) / l
+				if u <= 0 || u >= 1 {
+					if !p.EqualsTol(b, vertexEps) || i == len(pts)-1 {
+						return
+					}
+					u = 1
+				}
+				if p.Minus(a.Plus(ab.ScaledBy(u))).Magnitude() > tol {
+					return
+				}
+				seen[v] = true
+				cs = append(cs, cut{seg: i, at: u, p: p})
+			}
+			if lo[0] == math.MinInt64/4 {
+				for v := range t.Vertices {
+					try(v)
+				}
+				continue
+			}
+			for x := lo[0]; x <= hi[0]; x++ {
+				for y := lo[1]; y <= hi[1]; y++ {
+					for z := lo[2]; z <= hi[2]; z++ {
+						for _, v := range cells[vertexKey{x, y, z}] {
+							try(v)
+						}
+					}
+				}
+			}
+		}
+		if len(cs) == 0 {
+			return [][]geom.Vector{pts}
+		}
+		sort.Slice(cs, func(i, j int) bool {
+			if cs[i].seg != cs[j].seg {
+				return cs[i].seg < cs[j].seg
+			}
+			return cs[i].at < cs[j].at
+		})
+		var out [][]geom.Vector
+		cur := []geom.Vector{pts[0]}
+		k := 0
+		for i := 1; i < len(pts); i++ {
+			for k < len(cs) && cs[k].seg == i {
+				cur = append(cur, cs[k].p)
+				out = append(out, cur)
+				cur = []geom.Vector{cs[k].p}
+				k++
+			}
+			if !pts[i].EqualsTol(cur[len(cur)-1], vertexEps) {
+				cur = append(cur, pts[i])
+			}
+		}
+		if len(cur) >= 2 {
+			out = append(out, cur)
+		} else if len(out) > 0 {
+			// The last cut was at the end itself.
+			last := out[len(out)-1]
+			last[len(last)-1] = pts[len(pts)-1]
+		}
+		return out
+	}
 }
 
 // curvePoints are the points of a trim, from its start to its finish
