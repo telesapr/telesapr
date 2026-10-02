@@ -305,7 +305,7 @@ func TestSegmentThroughVertex(t *testing.T) {
 			edges[[2]int{tr[k], tr[(k+1)%3]}] = true
 		}
 	}
-	if !(edges[[2]int{0, 4}] || edges[[2]int{4, 0}]) || !(edges[[2]int{4, 2}] || edges[[2]int{2, 4}]) {
+	if !edges[[2]int{0, 4}] && !edges[[2]int{4, 0}] || !edges[[2]int{4, 2}] && !edges[[2]int{2, 4}] {
 		t.Error("the diagonal is not split at the middle point")
 	}
 }

@@ -434,7 +434,6 @@ func (s *extrusion) Project(p geom.Vector, guess *[2]float64) (u, v float64) {
 		if s.Eval(u, v).Minus(p).Magnitude() < 1e-4+1e-6*p.Magnitude() {
 			return u, v
 		}
-		guess = nil
 	}
 	{
 		// Along d the surface is straight: project the point onto the
@@ -514,7 +513,6 @@ func (s *revolution) Project(p geom.Vector, guess *[2]float64) (u, v float64) {
 		if s.Eval(u, v).Minus(p).Magnitude() < 1e-4+1e-6*p.Magnitude() {
 			return wrap(u, 0, 2*math.Pi), v
 		}
-		guess = nil
 	}
 	{
 		// Turn the point back into the half plane of the curve.

@@ -51,7 +51,7 @@ func TestInchUnit(t *testing.T) {
 	if res.Report.Unit != "inches" {
 		t.Errorf("unit %q", res.Report.Unit)
 	}
-	want := 6000 * math.Pow(25.4, 3)
+	want := 6000 * 25.4 * 25.4 * 25.4
 	if v := volumeOf(res); math.Abs(v-want) > 1e-6*want {
 		t.Errorf("volume %g, want %g", v, want)
 	}
@@ -227,7 +227,7 @@ func TestUnsupportedSurface(t *testing.T) {
 func TestBadEntity(t *testing.T) {
 	// A circle with no radius: the faces on it are left out, and the
 	// report names the entity.
-	text := strings.Replace(shapeText(t, "cylinder"), "CIRCLE('',", "CIRCLE('',$,", -1)
+	text := strings.ReplaceAll(shapeText(t, "cylinder"), "CIRCLE('',", "CIRCLE('',$,")
 	res := mustRead(t, text)
 	if p := res.Report.Problem(); !strings.Contains(p, "bad CIRCLE") {
 		t.Errorf("problem %q", p)

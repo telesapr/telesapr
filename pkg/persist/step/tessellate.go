@@ -912,7 +912,6 @@ func (s *faceSurface) triangulate(cs []contour, tol float64, sense bool) ([]mesh
 	lv /= float64(nlv)
 	// Scaled parameters (x, y) = (u lu, v lv) are about millimetres.
 	kxx, kyy, kxy := kuu/(lu*lu), kvv/(lv*lv), kuv/(lu*lv)
-	w, h := (umax-umin)*lu, (vmax-vmin)*lv
 	spacing := func(k float64) float64 {
 		if k <= 1e-12 {
 			return math.Inf(1)
@@ -953,7 +952,7 @@ func (s *faceSurface) triangulate(cs []contour, tol float64, sense bool) ([]mesh
 		hx = math.Min(hx, hy)
 		hy = hx
 	}
-	w, h = x1-x0, y1-y0
+	w, h := x1-x0, y1-y0
 	if hx < w/2 || hy < h/2 {
 		hx, hy = math.Min(hx, w/2), math.Min(hy, h/2)
 		if n := (w / hx) * (h / hy); n > maxGridPoints {

@@ -181,14 +181,10 @@ func (b basis) ders(span int, t float64, nd int, ders [][]float64) {
 				d = a[s2][0] * ndu[rk][pk]
 			}
 			j1, j2 := 1, k-1
-			if rk >= -1 {
-				j1 = 1
-			} else {
+			if rk < -1 {
 				j1 = -rk
 			}
-			if r-1 <= pk {
-				j2 = k - 1
-			} else {
+			if r-1 > pk {
 				j2 = p - r
 			}
 			for j := j1; j <= j2; j++ {

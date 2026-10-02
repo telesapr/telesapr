@@ -701,8 +701,8 @@ func (p *parser) str() (string, error) {
 			return "", &SyntaxError{Line: start, Msg: "string not closed"}
 		}
 		c := p.src[p.pos]
-		switch {
-		case c == '\'':
+		switch c {
+		case '\'':
 			if p.pos+1 < len(p.src) && p.src[p.pos+1] == '\'' {
 				b.WriteByte('\'')
 				p.pos += 2
@@ -710,13 +710,13 @@ func (p *parser) str() (string, error) {
 			}
 			p.pos++
 			return b.String(), nil
-		case c == '\\':
+		case '\\':
 			p.escape(&b)
-		case c == '\n':
+		case '\n':
 			// Lines break inside long strings; the break isn't text.
 			p.line++
 			p.pos++
-		case c == '\r':
+		case '\r':
 			p.pos++
 		default:
 			b.WriteByte(c)
