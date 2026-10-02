@@ -1,16 +1,16 @@
 package slvs
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"math"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 
 	"github.com/spacesolve/spacesolve/pkg/check"
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -245,49 +245,38 @@ func TestThreadSolids(t *testing.T) {
 	}
 }
 
-// threadGoldens are the cases that have a C++ save in testdata/thread:
-// enough kinds of thread to pin the kernel on, at half a megabyte each.
+// threadGoldens are the cases that have a golden in testdata/thread:
+// enough kinds of thread to pin the generator and the kernel on.
 var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "screw_m6_down",
 	"lead_tr20", "screw_unc", "triple_m12"}
 
-// TestThreadVsCpp requires the file a thread makes to be one C++ reads
-// as Go does: saved, opened and saved again, it is the bytes C++ saves
-// after opening the same file (testdata/thread, from
-// scripts/regen-thread-golden.sh). With THREAD_FIXTURE_DIR set, it
-// writes the files for that script instead.
-func TestThreadVsCpp(t *testing.T) {
-	out := os.Getenv("THREAD_FIXTURE_DIR")
+// TestThreadGoldens saves the file a thread makes, opens it and saves
+// it again, and requires the golden, testdata/thread/<name>.spcs. Until
+// the C++ comparison was frozen, the same steps gave the bytes C++
+// saved after opening the file (testdata/thread/<name>.slvs, now plain
+// fixtures). SPACESOLVE_REGEN_GOLDEN=1 rewrites the goldens.
+func TestThreadGoldens(t *testing.T) {
 	for _, tc := range raceSample(threadCases) {
 		if !slices.Contains(threadGoldens, tc.name) {
 			continue
 		}
 		t.Run(tc.name, func(t *testing.T) {
 			sk, _, _ := tc.build(t, 0)
-			made := slvswrite.Save(sk)
-			dir := out
-			if dir == "" {
-				dir = t.TempDir()
-			}
-			path := filepath.Join(dir, tc.name+".slvs")
-			if err := os.WriteFile(path, made, 0o644); err != nil {
+			// Saved, which regenerates first.
+			sk.GenerateAll()
+			path := filepath.Join(t.TempDir(), tc.name+".spcs")
+			if err := spcs.SaveFile(sk, "", path, spcs.Options{}); err != nil {
 				t.Fatal(err)
-			}
-			if out != "" {
-				return
 			}
 			srf.SetChordTolMm(0)
-			doc, err := LoadFile(path)
+			doc, err := spcs.LoadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
+			// Opened, then saved: each regenerates.
 			doc.Sketch.GenerateAll()
-			want, err := os.ReadFile(fixture("thread/" + tc.name + ".slvs"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.Equal(slvswrite.Save(doc.Sketch), want) {
-				t.Errorf("save differs from C++'s")
-			}
+			doc.Sketch.GenerateAll()
+			golden.Check(t, fixture("thread/"+tc.name+".spcs"), spcs.Encode(doc.Sketch, spcs.Options{}))
 		})
 	}
 }

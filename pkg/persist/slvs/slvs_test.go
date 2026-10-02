@@ -1,7 +1,6 @@
 package slvs_test
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,7 +9,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 func fixturesRoot(t *testing.T) string {
@@ -28,56 +26,6 @@ func fixturesRoot(t *testing.T) string {
 		t.Fatalf("fixtures not found at %s: %v", root, err)
 	}
 	return root
-}
-
-func TestSLVSLoadRoundTrip(t *testing.T) {
-	root := fixturesRoot(t)
-	if err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() || filepath.Ext(path) != ".slvs" {
-			return nil
-		}
-		rel, _ := filepath.Rel(root, path)
-		if _, ok := roundTripExclusions[filepath.ToSlash(rel)]; ok {
-			return nil
-		}
-
-		// C++ saved the fixtures in a fresh process, whose chord
-		// tolerance starts at 0; linking an IDF file uses it.
-		srf.SetChordTolMm(0)
-		doc, err := slvs.LoadFile(path)
-		if err != nil {
-			t.Fatalf("load %s: %v", path, err)
-		}
-
-		if doc.Sketch == nil {
-			t.Fatalf("sketch not initialised for %s", path)
-		}
-
-		if len(doc.Sketch.Groups) == 0 {
-			t.Fatalf("expected groups for %s", path)
-		}
-		if len(doc.Sketch.Entities) == 0 {
-			t.Fatalf("expected entities for %s", path)
-		}
-
-		// C++ AfterNewFile generates (and solves) the loaded sketch
-		// before the harness saves it, and SaveToFile generates again.
-		doc.Sketch.GenerateAll()
-		saved := slvswrite.Save(doc.Sketch)
-		original, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("rewind %s: %v", path, err)
-		}
-		if string(saved) != withCppHeader(original) {
-			t.Fatalf("roundtrip mismatch for %s", path)
-		}
-		return nil
-	}); err != nil {
-		t.Fatalf("walk fixtures: %v", err)
-	}
 }
 
 func TestSLVSLoaderCapturesRequestTypes(t *testing.T) {

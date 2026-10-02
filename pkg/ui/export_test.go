@@ -48,8 +48,6 @@ func TestExport(t *testing.T) {
 	}
 }
 
-// firstDifference describes the first line where two files differ.
-func firstDifference(want, got []byte) string { return golden.FirstDifference(want, got) }
 
 // exportAllFor runs the harness's exports on a fixture.
 func exportAllFor(t testing.TB, path, dir string) {

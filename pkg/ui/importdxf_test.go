@@ -1,24 +1,25 @@
 package ui
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
-// TestImportDxfVsCpp imports each DXF file in testdata/importdxf into a
-// new sketch, in its workplane and free in 3d, and compares the saved
-// sketch with C++'s (scripts/cpp-import-harness.cpp), byte for byte.
-func TestImportDxfVsCpp(t *testing.T) {
+// TestImportDxf imports each DXF file in testdata/importdxf into a new
+// sketch, in its workplane and free in 3d, and compares the saved sketch
+// with the golden in testdata/importdxf/golden, byte for byte. Until the
+// C++ comparison was frozen, the .slvs save was C++'s byte for byte.
+func TestImportDxf(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow; skipped with -short")
 	}
@@ -42,20 +43,13 @@ func TestImportDxfVsCpp(t *testing.T) {
 	for _, f := range files {
 		for _, in3d := range []bool{false, true} {
 			name := f
-			golden := strings.TrimSuffix(f, ".dxf") + ".cppimport"
+			want := strings.TrimSuffix(f, ".dxf") + ".spcs"
 			if in3d {
 				name += " in 3d"
-				golden = strings.TrimSuffix(f, ".dxf") + ".3d.cppimport"
+				want = strings.TrimSuffix(f, ".dxf") + ".3d.spcs"
 			}
 			t.Run(name, func(t *testing.T) {
-				want, err := os.ReadFile(filepath.Join(root, "golden", golden))
-				if err != nil {
-					t.Fatalf("golden: %v", err)
-				}
-				got := importDxfFor(t, filepath.Join(root, f), in3d)
-				if !bytes.Equal(want, got) {
-					t.Errorf("saved sketch differs: %s", firstDifference(want, got))
-				}
+				golden.Check(t, filepath.Join(root, "golden", want), importDxfFor(t, filepath.Join(root, f), in3d))
 			})
 		}
 	}
@@ -76,5 +70,7 @@ func importDxfFor(t testing.TB, path string, in3d bool) []byte {
 	ss.ImportDxf(path)
 	ss.GenerateAll(sketch.GenerateUntilActive)
 	ss.ScheduleShowTW()
-	return slvswrite.Save(ss.SK)
+	// A save regenerates again.
+	ss.SK.GenerateAll()
+	return spcs.Encode(ss.SK, spcs.Options{})
 }
