@@ -16,7 +16,6 @@ import (
 // invariantsPath is the baseline TestInvariants compares with.
 var invariantsPath = filepath.Join("..", "..", "..", "testdata", "invariants.txt")
 
-
 // invariantFixtures lists every .slvs file under testdata, as paths
 // from testdata with forward slashes.
 func invariantFixtures(t *testing.T) []string {

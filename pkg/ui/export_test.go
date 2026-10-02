@@ -48,7 +48,6 @@ func TestExport(t *testing.T) {
 	}
 }
 
-
 // exportAllFor runs the harness's exports on a fixture.
 func exportAllFor(t testing.TB, path, dir string) {
 	p := headless.New()
