@@ -106,16 +106,21 @@ func generatedCopiesWith(t *testing.T, mode srf.ParallelMode, workers int, path,
 	return generatedDump(t, path, stl, copies)
 }
 
-// eachFixture calls fn for every sketch under testdata.
+// eachFixture calls fn for every sketch under testdata; under the race
+// detector, for a sample of them (raceSample).
 func eachFixture(t *testing.T, fn func(path string)) {
+	var paths []string
 	err := filepath.WalkDir(fixture(""), func(path string, d fs.DirEntry, err error) error {
 		if err == nil && !d.IsDir() && filepath.Ext(path) == ".slvs" {
-			fn(path)
+			paths = append(paths, path)
 		}
 		return err
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+	for _, path := range raceSample(paths) {
+		fn(path)
 	}
 }
 
@@ -221,4 +226,25 @@ func TestParallelFastSameShapeAsSerial(t *testing.T) {
 			}
 		}
 	})
+}
+
+// raceEvery is how many fixtures and cases make one that runs under the
+// race detector, which is about eight times slower. The race detector
+// needs the code that runs on several goroutines, not every model; the
+// plain and the coverage runs take them all.
+const raceEvery = 5
+
+// raceSample is every raceEvery-th of xs under the race detector, and
+// all of them otherwise.
+func raceSample[T any](xs []T) []T {
+	if !raceDetector {
+		return xs
+	}
+	var out []T
+	for i, x := range xs {
+		if i%raceEvery == 0 {
+			out = append(out, x)
+		}
+	}
+	return out
 }
