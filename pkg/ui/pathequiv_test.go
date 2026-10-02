@@ -109,3 +109,19 @@ func TestPathEquivalenceSection(t *testing.T) {
 		t.Errorf("the interface cuts by %v (%v), the script by %v (%v)", keepUI, okUI, keepScript, okScript)
 	}
 }
+
+// A circle swept along a path picked with the mouse, and by a script.
+func TestPathEquivalenceSweep(t *testing.T) {
+	requireSamePaths(t, "path_sweep", "path_sweep")
+}
+
+// An extrusion mirrored in a face picked with the mouse, and by a
+// script.
+func TestPathEquivalenceMirror(t *testing.T) {
+	requireSamePaths(t, "path_mirror", "path_mirror")
+}
+
+// Two edges picked with the mouse and chamfered, and by a script.
+func TestPathEquivalenceChamfer(t *testing.T) {
+	requireSamePaths(t, "path_chamfer", "path_chamfer")
+}

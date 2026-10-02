@@ -360,6 +360,19 @@ func (sk *Sketch) PruneOrphans() bool {
 // SolveSpaceUI::PruneGroups).
 func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 	g := sk.GetGroup(hg)
+	// An edge of a chamfer or a sweep path that is gone is dropped
+	// and listed; the group says what it lacks.
+	if len(g.Edges) > 0 {
+		kept := g.Edges[:0]
+		for _, he := range g.Edges {
+			if sk.entityExists(he) && he != core.NoEntity {
+				kept = append(kept, he)
+			} else {
+				sk.broke(hg, "edge of "+g.DescriptionString(), sk.entityName(he))
+			}
+		}
+		g.Edges = kept
+	}
 	var missing string
 	switch {
 	case !sk.GroupsInOrder(g.OpA, hg):

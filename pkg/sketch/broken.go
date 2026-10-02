@@ -84,6 +84,11 @@ func (sk *Sketch) anyGroupName(h core.HGroup) string {
 
 // entityName names entity he, which may have been deleted since the
 // last regeneration, by its request or its group.
+// EntityName names an entity for a message: a request's entity by its
+// request, "line-segment r005 of g002-sketch", another by its handle
+// and group.
+func (sk *Sketch) EntityName(he core.HEntity) string { return sk.entityName(he) }
+
 func (sk *Sketch) entityName(he core.HEntity) string {
 	if he.IsFromRequest() {
 		if r := sk.GetRequest(he.Request()); r != nil {

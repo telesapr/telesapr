@@ -1,6 +1,8 @@
 package sketch
 
 import (
+	"fmt"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
@@ -27,6 +29,21 @@ const (
 
 const (
 	GroupLinked GroupType = 5300
+)
+
+// Groups of this program's own, which SolveSpace has no counterpart
+// for.
+const (
+	// GroupMirror reflects its source group (OpA), the entities and
+	// the solid, in a plane: Predef.EntityB, a workplane or a planar
+	// face. SkipFirst leaves the original out of the solid.
+	GroupMirror GroupType = 5400 + iota
+	// GroupChamfer cuts the edges Edges of the solid so far, line
+	// segments between two planar faces, at the distance ValB.
+	GroupChamfer
+	// GroupSweep moves the loops of its profile group (OpA) along the
+	// path Edges, a chain of line segments and arcs meeting tangent.
+	GroupSweep
 )
 
 type GroupSubtype int
@@ -152,7 +169,36 @@ type Group struct {
 	ImpShell  srf.SShell
 	ImpEntity []core.Entity
 
+	// Edges are the entities a chamfer cuts, or the path a sweep
+	// follows, in the order the user gave them.
+	Edges []core.HEntity
+
+	// Problem is what the last regeneration found wrong with the
+	// group's input, such as an edge a chamfer can't cut; the group
+	// then adds no solid. It is not saved.
+	Problem GroupProblem
+
 	Name string
+}
+
+// GroupProblem is a diagnostic on a group: a message and, when the
+// problem has a place, the point it is at.
+type GroupProblem struct {
+	Msg      string
+	At       geom.Vector
+	HasPoint bool
+}
+
+// setProblem records a problem on the group; the first one found is
+// kept.
+func (g *Group) setProblem(at *geom.Vector, format string, args ...any) {
+	if g.Problem.Msg != "" {
+		return
+	}
+	g.Problem.Msg = fmt.Sprintf(format, args...)
+	if at != nil {
+		g.Problem.At, g.Problem.HasPoint = *at, true
+	}
 }
 
 // Clear drops everything regeneration makes, and the remap table (C++
@@ -190,7 +236,16 @@ func (g *Group) IsMeshGroup() bool {
 		g.Type == GroupRevolve ||
 		g.Type == GroupHelix ||
 		g.Type == GroupRotate ||
-		g.Type == GroupTranslate
+		g.Type == GroupTranslate ||
+		g.Type == GroupChamfer ||
+		g.Type == GroupSweep
+}
+
+// IsCopyGroup reports whether the group copies its source group,
+// entities and solid, and combines the copies with what came before
+// the source: step and repeat, and mirror.
+func (g *Group) IsCopyGroup() bool {
+	return g.Type == GroupRotate || g.Type == GroupTranslate || g.Type == GroupMirror
 }
 
 func (g *Group) PreviousGroup(sk *Sketch) *Group {
@@ -218,7 +273,7 @@ func (g *Group) RunningMeshGroup(sk *Sketch) *Group {
 	}
 
 	switch g.Type {
-	case GroupRotate, GroupTranslate:
+	case GroupRotate, GroupTranslate, GroupMirror:
 		opA := sk.GetGroup(g.OpA)
 		if opA == nil {
 			return nil

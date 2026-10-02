@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"maps"
+	"slices"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 )
@@ -134,6 +135,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 			LinkFile:               src.LinkFile,
 			Color:                  src.Color,
 			Predef:                 src.Predef,
+			Edges:                  slices.Clone(src.Edges),
 			Name:                   src.Name,
 		}
 		ut.Groups = append(ut.Groups, dest)

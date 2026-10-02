@@ -141,6 +141,9 @@ const (
 	CmdMoveGroupLater
 	CmdBrokenReferences
 	CmdSectionView
+	CmdGroupMirror
+	CmdGroupChamfer
+	CmdGroupSweep
 )
 
 // Pending is an operation to be completed by doing something with the

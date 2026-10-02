@@ -58,8 +58,10 @@ func init() {
 		"ParallelExact":               reflect.ValueOf(srf.ParallelExact),
 		"ParallelFast":                reflect.ValueOf(srf.ParallelFast),
 		"ParallelOff":                 reflect.ValueOf(srf.ParallelOff),
+		"PolygonLoopSet":              reflect.ValueOf(srf.PolygonLoopSet),
 		"ProbeTangentFace":            reflect.ValueOf(srf.ProbeTangentFace),
 		"RayIsInside":                 reflect.ValueOf(srf.RayIsInside),
+		"RigidIdentity":               reflect.ValueOf(&srf.RigidIdentity).Elem(),
 		"SBezierFrom2":                reflect.ValueOf(srf.SBezierFrom2),
 		"SBezierFrom3":                reflect.ValueOf(srf.SBezierFrom3),
 		"SBezierFrom4":                reflect.ValueOf(srf.SBezierFrom4),
@@ -91,6 +93,8 @@ func init() {
 		"SurfaceDiff":                 reflect.ValueOf(srf.SurfaceDiff),
 		"SurfaceInter":                reflect.ValueOf(srf.SurfaceInter),
 		"SurfaceUnion":                reflect.ValueOf(srf.SurfaceUnion),
+		"SweepEnd":                    reflect.ValueOf(srf.SweepEnd),
+		"TransformedLoopSet":          reflect.ValueOf(srf.TransformedLoopSet),
 
 		// type definitions
 		"BspClass":          reflect.ValueOf((*srf.BspClass)(nil)),
@@ -108,6 +112,7 @@ func init() {
 		"PolylineBuilder":   reflect.ValueOf((*srf.PolylineBuilder)(nil)),
 		"PolylineEdge":      reflect.ValueOf((*srf.PolylineEdge)(nil)),
 		"PolylineVertex":    reflect.ValueOf((*srf.PolylineVertex)(nil)),
+		"Rigid":             reflect.ValueOf((*srf.Rigid)(nil)),
 		"SBezier":           reflect.ValueOf((*srf.SBezier)(nil)),
 		"SBezierList":       reflect.ValueOf((*srf.SBezierList)(nil)),
 		"SBezierLoop":       reflect.ValueOf((*srf.SBezierLoop)(nil)),
@@ -139,6 +144,7 @@ func init() {
 		"STrimBy":           reflect.ValueOf((*srf.STrimBy)(nil)),
 		"ShellGroup":        reflect.ValueOf((*srf.ShellGroup)(nil)),
 		"SurfaceCombineAs":  reflect.ValueOf((*srf.SurfaceCombineAs)(nil)),
+		"SweepStep":         reflect.ValueOf((*srf.SweepStep)(nil)),
 
 		// interface wrapper definitions
 		"_ShellGroup": reflect.ValueOf((*_github_com_spacesolve_spacesolve_pkg_srf_ShellGroup)(nil)),

@@ -118,6 +118,10 @@ tw 0 unsaved 1 cursor 0 tooltip ""
   &Lathe [Shift+L] ind=0 en=1 act=0
   Re&volve [Shift+V] ind=0 en=1 act=0
   Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
+  Swee&p Along Path [Shift+U] ind=0 en=1 act=0
+  ---
+  &Mirror [Shift+Y] ind=0 en=1 act=0
+  &Chamfer Edges [Shift+Q] ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0

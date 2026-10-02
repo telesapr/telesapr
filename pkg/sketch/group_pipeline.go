@@ -72,7 +72,7 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 	g.BezierOpens = nil
 
 	if g.Type == GroupDrawing3D || g.Type == GroupDrawingWorkplane ||
-		g.Type == GroupRotate || g.Type == GroupTranslate || g.Type == GroupLinked {
+		g.IsCopyGroup() || g.Type == GroupLinked {
 		allClosed, allCoplanar, allNonZeroLen := g.AssembleLoops(sk, rt)
 		switch {
 		case !allNonZeroLen:
@@ -101,9 +101,8 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 // meshes instead (see combineMeshes).
 func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	defer func() { g.DisplayDirty = true }()
-	prevBooleanFailed := g.BooleanFailed
-	_ = prevBooleanFailed
 	g.BooleanFailed = false
+	g.Problem = GroupProblem{}
 
 	srcg := g
 
@@ -137,6 +136,22 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 				g.generateForStepAndRepeatMesh(sk, &prevm, &g.ThisMesh, srcg.MeshCombine)
 			}
 		}
+	case GroupMirror:
+		srcg = sk.GetGroup(g.OpA)
+		if !srcg.Suppress && g.checkMirror(sk) {
+			if !g.IsForcedToMesh(sk) {
+				g.generateMirrorShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
+			} else {
+				var prevm srf.SMesh
+				prevm.MakeFromCopyOf(&srcg.ThisMesh)
+				srcg.ThisShell.TriangulateInto(&prevm)
+				g.generateMirrorMesh(sk, &prevm, &g.ThisMesh, srcg.MeshCombine)
+			}
+		}
+	case GroupChamfer:
+		g.generateChamferShell(sk)
+	case GroupSweep:
+		g.generateSweepShell(sk)
 	case GroupExtrude:
 		g.generateExtrudeShell(sk)
 	case GroupLathe, GroupRevolve:
@@ -675,7 +690,7 @@ func (g *Group) IsForcedToMesh(sk *Sketch) bool {
 // group forced to a mesh (C++ Group::IsForcedToMeshBySource).
 func (g *Group) IsForcedToMeshBySource(sk *Sketch) bool {
 	srcg := g
-	if g.Type == GroupTranslate || g.Type == GroupRotate {
+	if g.IsCopyGroup() {
 		// A step and repeat gets merged against the group's previous group,
 		// not our own previous group.
 		srcg = sk.GetGroup(g.OpA)

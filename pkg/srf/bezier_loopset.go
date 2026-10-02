@@ -20,6 +20,9 @@ func (s *SBezierLoopSet) Clear() {
 
 // loops returns the set's loops in C++ order: the outer loop first,
 // then the holes.
+// Loops are the outer loop, then the holes.
+func (s *SBezierLoopSet) Loops() []*SBezierLoop { return s.loops() }
+
 func (s *SBezierLoopSet) loops() []*SBezierLoop {
 	ls := make([]*SBezierLoop, 0, 1+len(s.Holes))
 	ls = append(ls, &s.Outer)

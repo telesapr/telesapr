@@ -74,6 +74,9 @@ func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency {
 	addEntity(g.Predef.Origin, "origin")
 	addEntity(g.Predef.EntityB, "axis or workplane")
 	addEntity(g.Predef.EntityC, "second direction")
+	for _, he := range g.Edges {
+		addEntity(he, "edge")
+	}
 
 	for i := range sk.Requests {
 		r := &sk.Requests[i]

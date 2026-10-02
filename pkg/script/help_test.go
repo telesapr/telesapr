@@ -47,7 +47,7 @@ func TestHelpOfValues(t *testing.T) {
 	got = helped(t, `help(doc.Origin().Pos())`, `help(doc.Active().Type())`, `help(time.Second)`)
 	mustContain(t, got, "(0, 0, 0)\n\ntype geom.Vector struct", "    X                    float64",
 		"    Plus(b Vector) Vector",
-		"type sketch.GroupType int\n\nValues:\n    GroupDrawing3D GroupDrawingWorkplane GroupExtrude",
+		"type sketch.GroupType int\n\nValues:\n    GroupChamfer GroupDrawing3D GroupDrawingWorkplane GroupExtrude",
 		"1s\n\ntype time.Duration int64", "    Seconds() float64")
 
 	got = helped(t, `help(3.5)`, `help("a" == "b")`, `help(nil)`)
