@@ -13,7 +13,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
 	"github.com/spacesolve/spacesolve/pkg/res"
 )
 
@@ -66,6 +65,7 @@ const (
 	ScreenParameters
 	ScreenCommands
 	ScreenBrokenReferences
+	ScreenSection
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -139,6 +139,8 @@ const (
 	EditParameterName Edit = 912
 	// For the command search (an extension)
 	EditCommandQuery Edit = 920
+	// For the section view (an extension)
+	EditSectionOffset Edit = 930
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do
@@ -315,7 +317,7 @@ func (tw *TextWindow) Init() {
 	if tw.window == nil {
 		tw.window = ss.Platform.CreateWindow(platform.WindowTool, ss.GW.window)
 		if tw.window != nil {
-			tw.canvas = soft.New()
+			tw.canvas = tw.window.CreateRenderer(ss.UseGL())
 
 			ev := tw.window.Events()
 			ev.OnClose = func() {
@@ -757,6 +759,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowCommands()
 		case ScreenBrokenReferences:
 			tw.ShowBrokenReferences()
+		case ScreenSection:
+			tw.ShowSection()
 		}
 	}
 	tw.Printf(false, "")
@@ -1275,7 +1279,7 @@ func (tw *TextWindow) Paint() {
 
 	canvas.FlushFrame()
 	canvas.FinishFrame()
-	tw.window.PresentFrame(canvas.ReadFrame())
+	tw.window.PresentFrame(canvas)
 	canvas.Clear()
 }
 

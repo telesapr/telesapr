@@ -99,7 +99,9 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		if he.V != 0 && sk.GetEntity(he).IsFace() {
 			faces = append(faces, he.V)
 		}
+		unclip := gw.clipToSection(canvas)
 		canvas.DrawFaces(&g.DisplayMesh, faces, hcf)
+		unclip()
 
 	case drawMeshSelected:
 		hcf := canvas.GetFill(render.Fill{
@@ -112,7 +114,9 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		for _, fc := range gw.gs.face {
 			faces = append(faces, fc.V)
 		}
+		unclip := gw.clipToSection(canvas)
 		canvas.DrawFaces(&g.DisplayMesh, faces, hcf)
+		unclip()
 	}
 }
 
@@ -126,6 +130,7 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 	if regenerated && ss.CenterOfMass.Draw && ss.CenterOfMass.Dirty && g.H == gw.activeGroupH() {
 		ss.UpdateCenterOfMass()
 	}
+	unclip := gw.clipToSection(canvas)
 	gw.drawMesh(g, drawMeshDefault, canvas)
 
 	if gw.show.Edges {
@@ -156,6 +161,8 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 		hcsOutline := canvas.GetStroke(strokeOutline)
 		canvas.DrawOutlines(&g.DisplayOutlines, hcsOutline, render.ContourOnly)
 	}
+	unclip()
+	gw.drawSectionCap(g, canvas)
 }
 
 // drawPolyError is Group::DrawPolyError: where the sketch isn't a

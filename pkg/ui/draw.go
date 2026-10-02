@@ -478,7 +478,11 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 			m := &g.DisplayMesh
 			rayPoint := gw.view.UnProjectPoint3(geom.Vector{X: mp.U, Y: mp.V, Z: 0.0})
 			rayDir := gw.view.UnProjectPoint3(geom.Vector{X: mp.U, Y: mp.V, Z: 1.0}).Minus(rayPoint)
-			if face := m.FirstIntersectionWith(rayPoint, rayDir); face != 0 {
+			var keep *srf.HalfSpace
+			if h, ok := gw.sectionKeep(); ok {
+				keep = &h
+			}
+			if face := m.FirstIntersectionIn(rayPoint, rayDir, keep); face != 0 {
 				sel.Entity.V = face
 				gw.hoverList = append(gw.hoverList, Hover{Selection: sel})
 			}
@@ -779,6 +783,7 @@ func (gw *GraphicsWindow) Paint() {
 	}
 
 	gw.havePainted = true
+	gw.syncSectionMenu()
 
 	camera := gw.GetCamera()
 	lighting := gw.GetLighting()
@@ -839,6 +844,6 @@ func (gw *GraphicsWindow) Paint() {
 
 	canvas.FlushFrame()
 	canvas.FinishFrame()
-	gw.window.PresentFrame(canvas.ReadFrame())
+	gw.window.PresentFrame(canvas)
 	canvas.Clear()
 }

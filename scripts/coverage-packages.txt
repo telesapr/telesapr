@@ -8,3 +8,5 @@ pkg/thread
 pkg/persist/convert
 pkg/persist/link
 pkg/persist/spcs
+pkg/render/gl
+pkg/render/gl/glx

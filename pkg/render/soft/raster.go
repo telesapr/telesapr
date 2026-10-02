@@ -85,10 +85,17 @@ var clipPlanes = [...]func(v *cvert) float64{
 	func(v *cvert) float64 { return guardBand*v.w - v.y },
 }
 
-// clipPolygon clips a convex polygon in clip space (Sutherland-Hodgman).
-func clipPolygon(in []cvert) []cvert {
+// clipPolygon clips a convex polygon in clip space (Sutherland-Hodgman),
+// by the view's planes and by user, if set.
+func clipPolygon(in []cvert, user func(v *cvert) float64) []cvert {
 	cur := in
-	for _, plane := range clipPlanes {
+	for i := 0; i <= len(clipPlanes); i++ {
+		var plane func(v *cvert) float64
+		if i < len(clipPlanes) {
+			plane = clipPlanes[i]
+		} else if plane = user; plane == nil {
+			break
+		}
 		if len(cur) == 0 {
 			return cur
 		}
@@ -119,10 +126,16 @@ func clipPolygon(in []cvert) []cvert {
 	return cur
 }
 
-// clipSegment clips a segment in clip space; ok is false if nothing is
-// left.
-func clipSegment(a, b cvert) (cvert, cvert, bool) {
-	for _, plane := range clipPlanes {
+// clipSegment clips a segment in clip space, by the view's planes and
+// by user, if set; ok is false if nothing is left.
+func clipSegment(a, b cvert, user func(v *cvert) float64) (cvert, cvert, bool) {
+	for i := 0; i <= len(clipPlanes); i++ {
+		var plane func(v *cvert) float64
+		if i < len(clipPlanes) {
+			plane = clipPlanes[i]
+		} else if plane = user; plane == nil {
+			break
+		}
 		da, db := plane(&a), plane(&b)
 		if da < 0 && db < 0 {
 			return a, b, false

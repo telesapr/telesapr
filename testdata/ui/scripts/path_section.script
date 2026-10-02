@@ -1,0 +1,23 @@
+# The extrusion of path_extrude, cut by the section view parallel to
+# the face clicked, 10 mm into the solid, keeping the outer side; the
+# same as path_section.go sets (TestPathEquivalenceSection).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+down L 290 265
+up L 290 265
+menu View|Section View
+twmove 163 130
+twdown L 163 130
+twup L 163 130
+edit -10
+twmove 37 150
+twdown L 37 150
+twup L 37 150

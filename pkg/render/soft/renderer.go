@@ -51,6 +51,14 @@ type Renderer struct {
 	// Lighting state that outlives frames, as in GL.
 	lights  [2]glLight
 	ambient float64
+
+	// The user's clip plane in model space, and as a clip-space plane
+	// for the current projection: userClip is its signed distance
+	// function, nil with no plane, and userEq its coefficients of x,
+	// y, z and w.
+	clipPlane *srf.HalfSpace
+	userEq    [4]float64
+	userClip  func(v *cvert) float64
 }
 
 var _ render.ViewportCanvas = (*Renderer)(nil)
@@ -97,8 +105,44 @@ func (r *Renderer) updateProjection() {
 	r.sy = c.Scale * 2.0 / c.Height
 	r.sz = c.Scale * 1.0 / 30000
 	r.sw = c.Tangent * c.Scale
+	r.updateUserClip()
 
 	r.clearDepth()
+}
+
+// SetClipPlane makes what is drawn from now on keep only the half
+// space h, or with nil, everything (GL's glClipPlane).
+func (r *Renderer) SetClipPlane(h *srf.HalfSpace) {
+	if h == nil {
+		r.clipPlane = nil
+	} else {
+		cp := *h
+		r.clipPlane = &cp
+	}
+	r.updateUserClip()
+}
+
+// updateUserClip expresses the clip plane in clip space. A model point
+// p is kept when D - N.p >= 0. With q = p + offset rotated into the
+// view's axes, x = sx*q.right, y = sy*q.up, z = sz*q.n and w = sw*q.n
+// + 1, so that 1 = w - (sw/sz)*z, the distance is linear in x, y, z
+// and w.
+func (r *Renderer) updateUserClip() {
+	h := r.clipPlane
+	if h == nil || r.sx == 0 || r.sy == 0 || r.sz == 0 {
+		r.userClip = nil
+		return
+	}
+	c := &r.camera
+	c0 := h.D + h.N.Dot(c.Offset)
+	r.userEq = [4]float64{
+		-h.N.Dot(c.ProjRight) / r.sx,
+		-h.N.Dot(c.ProjUp) / r.sy,
+		-h.N.Dot(r.projN)/r.sz - c0*r.sw/r.sz,
+		c0,
+	}
+	eq := r.userEq
+	r.userClip = func(v *cvert) float64 { return eq[0]*v.x + eq[1]*v.y + eq[2]*v.z + eq[3]*v.w }
 }
 
 // clip transforms a model-space point to clip space.
@@ -127,6 +171,8 @@ func (r *Renderer) StartFrame() {
 	if l.AmbientIntensity != 0.0 {
 		r.ambient = float64(float32(l.AmbientIntensity))
 	}
+
+	r.SetClipPlane(nil)
 
 	bg := l.BackgroundColor
 	// The frame is read back as RGB, as the GL renderer does.
@@ -240,7 +286,7 @@ func (r *Renderer) selectFill(hcf render.HFill) *render.Fill {
 
 // drawPolygonClip draws a convex polygon given in clip space.
 func (r *Renderer) drawPolygonClip(vs []cvert, mode fragMode) {
-	vs = clipPolygon(vs)
+	vs = clipPolygon(vs, r.userClip)
 	if len(vs) < 3 {
 		return
 	}
@@ -259,7 +305,7 @@ func (r *Renderer) quad(a, b, c, d geom.Vector) {
 
 // line draws a GL_LINES segment of the current stroke's pixel width.
 func (r *Renderer) line(a, b geom.Vector, widthPx float64) {
-	ca, cb, ok := clipSegment(r.clip(a), r.clip(b))
+	ca, cb, ok := clipSegment(r.clip(a), r.clip(b), r.userClip)
 	if !ok {
 		return
 	}
@@ -564,7 +610,7 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 // appendPolygonTriangles clips a convex polygon given in clip space and
 // appends its fan of triangles in window space.
 func (r *Renderer) appendPolygonTriangles(tris []rvert, vs []cvert) []rvert {
-	vs = clipPolygon(vs)
+	vs = clipPolygon(vs, r.userClip)
 	if len(vs) < 3 {
 		return tris
 	}

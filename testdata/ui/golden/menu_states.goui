@@ -56,6 +56,7 @@ dialog 0 No workplane is active, so the grid will not appear.|
   Darken Inactive Solids ind=1 en=1 act=1
   Use &Perspective Projection [`] ind=1 en=1 act=1
   Show E&xploded View [\] ind=1 en=1 act=0
+  &Section View [Ctrl+Shift+X] ind=1 en=1 act=0
   Dimension &Units ind=0 en=1 act=0
     Dimensions in &Millimeters ind=2 en=1 act=0
     Dimensions in M&eters ind=2 en=1 act=0
@@ -215,6 +216,7 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   Darken Inactive Solids ind=1 en=1 act=1
   Use &Perspective Projection [`] ind=1 en=1 act=1
   Show E&xploded View [\] ind=1 en=1 act=0
+  &Section View [Ctrl+Shift+X] ind=1 en=1 act=0
   Dimension &Units ind=0 en=1 act=0
     Dimensions in &Millimeters ind=2 en=1 act=0
     Dimensions in M&eters ind=2 en=1 act=0

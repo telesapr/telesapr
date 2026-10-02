@@ -13,6 +13,8 @@ import (
 	"github.com/msorc/takigo/window"
 
 	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/spacesolve/spacesolve/pkg/render"
+	"github.com/spacesolve/spacesolve/pkg/render/gl/glx"
 )
 
 // canvas is the drawing area: a widget showing the last frame the
@@ -28,6 +30,10 @@ type canvas struct {
 	// shownH pixels, so that present can send only what changed.
 	shown          []byte
 	shownW, shownH int
+
+	// With OpenGL, the context and the renderer drawing with it.
+	glCtx *glx.Context
+	glr   render.ViewportCanvas
 }
 
 func newCanvas(w *Window) *canvas {
@@ -222,7 +228,12 @@ func changedRect(prev, next []byte, width, height int) (x0, y0, x1, y1 int, ok b
 }
 
 // blit copies the whole frame to the window, and the tooltip over it.
+// With GL, whose back buffer is gone after a swap, it renders anew.
 func (c *canvas) blit() {
+	if c.glr != nil {
+		c.invalidate()
+		return
+	}
 	win := c.Win
 	if c.Destroyed || win.PlatformID == 0 {
 		return

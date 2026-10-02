@@ -5,6 +5,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/render"
 	"github.com/spacesolve/spacesolve/pkg/render/soft"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 // layerCanvas is a canvas that can save and restore what it has drawn,
@@ -35,6 +36,9 @@ type persistentKey struct {
 	occludedAs  DrawOccludedAs
 	dimSolid    bool
 
+	section   srf.HalfSpace
+	sectionOn bool
+
 	snapGrid    bool
 	workplane   core.HEntity
 	gridSpacing float64
@@ -50,7 +54,10 @@ type persistentLayer struct {
 }
 
 func (gw *GraphicsWindow) persistentKeyFor(canvas render.Canvas, lighting render.Lighting) persistentKey {
+	section, sectionOn := gw.sectionKeep()
 	return persistentKey{
+		section:     section,
+		sectionOn:   sectionOn,
 		camera:      *canvas.GetCamera(),
 		lighting:    lighting,
 		sketch:      gw.sk(),

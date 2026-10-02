@@ -10,7 +10,6 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/libm"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
@@ -133,6 +132,9 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 				gw.dimSolidModelMenuItem = item
 			case CmdMeasure:
 				gw.measureMenuItem = item
+			case CmdSectionView:
+				gw.sectionMenuItem = item
+				gw.sectionMenuOn = false
 			case CmdPerspectiveProj:
 				gw.perspectiveProjMenuItem = item
 			case CmdExplodeSketch:
@@ -263,7 +265,7 @@ func (gw *GraphicsWindow) Init() {
 	}
 
 	if gw.window != nil {
-		gw.canvas = soft.New()
+		gw.canvas = gw.window.CreateRenderer(gw.ss.UseGL())
 		gw.persistentDirty = true
 	}
 

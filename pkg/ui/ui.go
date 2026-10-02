@@ -140,6 +140,7 @@ const (
 	CmdMoveGroupEarlier
 	CmdMoveGroupLater
 	CmdBrokenReferences
+	CmdSectionView
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -271,9 +272,13 @@ type GraphicsWindow struct {
 	openRecentMenu platform.Menu
 	linkRecentMenu platform.Menu
 
-	showGridMenuItem        platform.MenuItem
-	dimSolidModelMenuItem   platform.MenuItem
-	measureMenuItem         platform.MenuItem
+	showGridMenuItem      platform.MenuItem
+	dimSolidModelMenuItem platform.MenuItem
+	measureMenuItem       platform.MenuItem
+	sectionMenuItem       platform.MenuItem
+	sectionMenuOn         bool
+	// sectionCap is the section view's cap, as last computed.
+	sectionCap              sectionCap
 	perspectiveProjMenuItem platform.MenuItem
 	explodeMenuItem         platform.MenuItem
 	showToolbarMenuItem     platform.MenuItem

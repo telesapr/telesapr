@@ -2,7 +2,6 @@ package tkgui
 
 import (
 	"encoding/binary"
-	"image"
 	"strconv"
 	"time"
 	"unicode"
@@ -18,6 +17,8 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/spacesolve/spacesolve/pkg/render"
+	"github.com/spacesolve/spacesolve/pkg/render/soft"
 	"github.com/spacesolve/spacesolve/pkg/res"
 )
 
@@ -323,8 +324,28 @@ func (w *Window) SetCursor(c platform.Cursor) {
 // Invalidate schedules OnRender.
 func (w *Window) Invalidate() { w.canvas.invalidate() }
 
-// PresentFrame puts a rendered frame on screen.
-func (w *Window) PresentFrame(frame *image.RGBA) { w.canvas.present(frame) }
+// CreateRenderer returns, with useGL, an OpenGL renderer drawing on
+// the window, else or when GL fails, the software renderer.
+func (w *Window) CreateRenderer(useGL bool) render.ViewportCanvas {
+	if useGL {
+		r, err := w.canvas.makeGL()
+		if err == nil {
+			return r
+		}
+		w.p.glFailed(err)
+	}
+	w.canvas.dropGL()
+	return soft.New()
+}
+
+// PresentFrame puts the frame canvas rendered on screen.
+func (w *Window) PresentFrame(canvas render.ViewportCanvas) {
+	if c := w.canvas; c.glr != nil && canvas == c.glr {
+		c.presentGL()
+		return
+	}
+	w.canvas.present(canvas.ReadFrame())
+}
 
 // layout packs the drawing area and the scrollbar below the menu bar.
 func (w *Window) layout() {

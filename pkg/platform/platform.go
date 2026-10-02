@@ -7,10 +7,10 @@ package platform
 
 import (
 	"fmt"
-	"image"
 	"strings"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/render"
 )
 
 // MouseEventType is what a mouse event reports (C++ MouseEvent::Type).
@@ -242,10 +242,15 @@ type Window interface {
 
 	// Invalidate asks for OnRender to be called soon.
 	Invalidate()
-	// PresentFrame shows a rendered frame of the content size times the
-	// device pixel ratio. It is the part of the C++ OpenGL context the
-	// window owns: the frame stays on screen until the next one.
-	PresentFrame(frame *image.RGBA)
+	// CreateRenderer returns a renderer that draws the window's
+	// content: with useGL, OpenGL where the platform has it, else the
+	// software renderer (C++ CreateRenderer). A renderer made earlier
+	// for the window must not be used after.
+	CreateRenderer(useGL bool) render.ViewportCanvas
+	// PresentFrame shows the frame canvas, which CreateRenderer made,
+	// has just finished: of the content size times the device pixel
+	// ratio. The frame stays on screen until the next one.
+	PresentFrame(canvas render.ViewportCanvas)
 }
 
 // DialogType is a message dialog's icon (C++ MessageDialog::Type).

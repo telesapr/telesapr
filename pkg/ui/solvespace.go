@@ -63,7 +63,13 @@ type SolveSpaceUI struct {
 	AutomaticLineConstraints bool
 	// ColorByFreedom colours the active group's entities by how much
 	// of them their constraints fix (an extension).
-	ColorByFreedom        bool
+	ColorByFreedom bool
+	// UseOpenGL draws the windows with OpenGL where the platform has
+	// it (an extension; C++ chose at build time). RendererOverride,
+	// "opengl" or "software", is the command line's choice for this
+	// run, and wins over the setting until the setting is changed.
+	UseOpenGL             bool
+	RendererOverride      string
 	ShowToolbar           bool
 	ScreenshotFile        string
 	BackgroundColor       core.RgbaColor
@@ -216,6 +222,7 @@ func (ss *SolveSpaceUI) LoadSettings() {
 	ss.CheckClosedContour = core.ThawBool(s, "CheckClosedContour", true)
 	ss.AutomaticLineConstraints = core.ThawBool(s, "AutomaticLineConstraints", true)
 	ss.ColorByFreedom = core.ThawBool(s, "ColorByFreedom", true)
+	ss.UseOpenGL = core.ThawBool(s, "UseOpenGL", true)
 	ss.ShowContourAreas = core.ThawBool(s, "ShowContourAreas", false)
 	ss.ExportShadedTriangles = core.ThawBool(s, "ExportShadedTriangles", true)
 	ss.ExportPwlCurves = core.ThawBool(s, "ExportPwlCurves", false)
@@ -316,6 +323,7 @@ func (ss *SolveSpaceUI) SaveSettings() {
 	core.FreezeBool(s, "ImmediatelyEditDimension", ss.ImmediatelyEditDimension)
 	core.FreezeBool(s, "AutomaticLineConstraints", ss.AutomaticLineConstraints)
 	core.FreezeBool(s, "ColorByFreedom", ss.ColorByFreedom)
+	core.FreezeBool(s, "UseOpenGL", ss.UseOpenGL)
 	core.FreezeBool(s, "ExportShadedTriangles", ss.ExportShadedTriangles)
 	core.FreezeBool(s, "ExportPwlCurves", ss.ExportPwlCurves)
 	core.FreezeColor(s, "BackgroundColor", ss.BackgroundColor)
@@ -674,4 +682,33 @@ func cFormatG(prec int, v float64) string {
 		return s
 	}
 	return fmt.Sprintf("%.*g", prec, v)
+}
+
+// UseGL reports whether the windows are to be drawn with OpenGL: the
+// command line's choice if it made one, else the setting.
+func (ss *SolveSpaceUI) UseGL() bool {
+	switch ss.RendererOverride {
+	case "opengl":
+		return true
+	case "software":
+		return false
+	}
+	return ss.UseOpenGL
+}
+
+// SetUseOpenGL changes the renderer setting and makes both windows
+// draw with the renderer it picks from the next frame on.
+func (ss *SolveSpaceUI) SetUseOpenGL(on bool) {
+	ss.UseOpenGL = on
+	ss.RendererOverride = ""
+	if gw := ss.GW; gw.window != nil {
+		gw.canvas = gw.window.CreateRenderer(on)
+		gw.persistentDirty = true
+		gw.Invalidate(false)
+	}
+	if tw := ss.TW; tw.window != nil {
+		tw.canvas = tw.window.CreateRenderer(on)
+		tw.window.Invalidate()
+	}
+	ss.ScheduleShowTW()
 }

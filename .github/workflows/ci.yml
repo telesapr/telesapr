@@ -16,7 +16,7 @@ env:
   # checked out beside this repository, at the commit this was last
   # built against. Move it when tkgui follows a newer takigo.
   TAKIGO_REF: e3bad2ce0ae1e72bb1a0971ba7f3094413be4319
-  X11_PACKAGES: libx11-dev libxft-dev libfontconfig1-dev
+  X11_PACKAGES: libx11-dev libxft-dev libfontconfig1-dev libgl-dev
 
 defaults:
   run:

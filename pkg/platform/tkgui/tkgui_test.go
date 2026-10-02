@@ -63,7 +63,7 @@ func TestWindowRendersAndReportsInput(t *testing.T) {
 			img.Pix[i] = 0x80
 		}
 		img.Set(0, 0, color.RGBA{255, 0, 0, 255})
-		w.PresentFrame(img)
+		w.canvas.present(img)
 	}
 	ev.OnMouseEvent = func(e platform.MouseEvent) bool { events = append(events, e); return true }
 	ev.OnKeyboardEvent = func(e platform.KeyboardEvent) bool { keys = append(keys, e); return true }

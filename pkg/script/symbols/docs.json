@@ -4161,6 +4161,10 @@
 						"decl": "func (d *Doc) ClearBrokenReferences()",
 						"text": "ClearBrokenReferences empties the list BrokenReferences gives."
 					},
+					"ClearSection": {
+						"decl": "func (d *Doc) ClearSection()",
+						"text": "ClearSection turns the section view off."
+					},
 					"Coincident": {
 						"decl": "func (d *Doc) Coincident(a, b Entity) Constraint",
 						"text": "Coincident puts two points at the same place."
@@ -4365,6 +4369,10 @@
 						"decl": "func (d *Doc) Save(path string) (err error)",
 						"text": "Save regenerates the sketch and writes it to a .spcs file. A\nSolveSpace model (.slvs) is not written."
 					},
+					"Section": {
+						"decl": "func (d *Doc) Section() (s Section)",
+						"text": "Section is the section view's state and its cut of the active\ngroup's solid."
+					},
 					"Select": {
 						"decl": "func (d *Doc) Select(entities ...Entity)",
 						"text": "Select selects entities on the drawing, and nothing else."
@@ -4380,6 +4388,10 @@
 					"SetParameter": {
 						"decl": "func (d *Doc) SetParameter(name, expr string) (err error)",
 						"text": "SetParameter gives the parameter name the expression expr, and adds\nit to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
+					},
+					"SetSection": {
+						"decl": "func (d *Doc) SetSection(plane Entity, offset string, flip bool)",
+						"text": "SetSection turns the section view on: the solid is drawn cut by a\nplane parallel to plane, a workplane or a planar face, offset along\nits normal (a number or an expression in the document's unit, \"\"\nfor none), the side the normal points to taken away, or the other\nside with flip. It is a way of looking, as View \u003e Section View is:\nnot saved and not undone. Render draws it too."
 					},
 					"SetUnits": {
 						"decl": "func (d *Doc) SetUnits(u core.Unit) (check []string)",
@@ -4610,6 +4622,10 @@
 						"decl": "func (g Group) Expr(value sketch.GroupValue) (expr string)",
 						"text": "Expr is the expression one of the group's values comes from, or \"\"\nfor a plain number."
 					},
+					"Faces": {
+						"decl": "func (g Group) Faces() (faces []Entity)",
+						"text": "Faces are the planar faces this group made, which constraints and\nthe section view can refer to."
+					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
 						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\" or\n\"link\"."
@@ -4787,6 +4803,10 @@
 						"text": "Valid reports whether the request exists."
 					}
 				}
+			},
+			"Section": {
+				"text": "Section is the state of the section view, as its screen shows it,\nand the cut of the active group's solid.",
+				"kind": "struct"
 			},
 			"SketchHost": {
 				"text": "SketchHost is a Host for a bare sketch, with no user interface: what\nOpen and New make outside the application.",
@@ -5395,6 +5415,10 @@
 					"NewRuntime"
 				]
 			},
+			"Section": {
+				"text": "Section is the section view (an extension): the solid is drawn cut by a plane, the part on the side the plane's normal points to taken away and the cut capped.",
+				"kind": "struct"
+			},
 			"Selection": {
 				"text": "Selection is a selected entity or constraint (C++ Selection).",
 				"kind": "struct"
@@ -5478,6 +5502,10 @@
 					"ClearExisting": {
 						"decl": "func (sk *Sketch) ClearExisting()",
 						"text": "ClearExisting drops the whole sketch and the undo history, leaving it without even the references; the caller must fix that (C++ SolveSpaceUI::ClearExisting)."
+					},
+					"ClearSection": {
+						"decl": "func (sk *Sketch) ClearSection()",
+						"text": "ClearSection turns the section view off."
 					},
 					"Constrain": {
 						"decl": "func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity, other, other2 bool) core.HConstraint",
@@ -5732,6 +5760,14 @@
 						"decl": "func (sk *Sketch) ScheduleGenerateAll()",
 						"text": "ScheduleGenerateAll asks for a regeneration of the dirty groups when Refresh next runs (C++ SolveSpaceUI::ScheduleGenerateAll, which Refresh serves after the pending events)."
 					},
+					"SectionCut": {
+						"decl": "func (sk *Sketch) SectionCut() (keep srf.HalfSpace, origin geom.Vector, ok bool, err error)",
+						"text": "SectionCut is where the section view cuts now: the half space it keeps, and a point on its plane."
+					},
+					"SectionPlaneName": {
+						"decl": "func (sk *Sketch) SectionPlaneName() string",
+						"text": "SectionPlaneName names the section's plane for the user: a workplane by its request or group, a face by its group."
+					},
 					"SetConstraintText": {
 						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
 						"text": "SetConstraintText gives a constraint the value of what the user typed for its label, a length in the document's unit (Units)."
@@ -5747,6 +5783,10 @@
 					"SetParameterExpr": {
 						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
 						"text": "SetParameterExpr gives a parameter a new expression."
+					},
+					"SetSection": {
+						"decl": "func (sk *Sketch) SetSection(plane core.HEntity, offset string, flip bool) error",
+						"text": "SetSection turns the section view on, cutting parallel to plane, a workplane or a planar face, offset (typed, in the document's unit; \"\" is zero) along its normal, away from the side flip picks."
 					},
 					"SetSuppressAll": {
 						"decl": "func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error",
@@ -6304,6 +6344,16 @@
 			"FaceID": {
 				"text": "FaceID is a stable identifier for a face within a shell.",
 				"kind": "uint32"
+			},
+			"HalfSpace": {
+				"text": "HalfSpace is the points p with N.p \u003c= D: what a section plane keeps, its normal N pointing to the side cut away.",
+				"kind": "struct",
+				"methods": {
+					"Contains": {
+						"decl": "func (h *HalfSpace) Contains(p geom.Vector) bool",
+						"text": "Contains reports whether p is in the half space, or within LengthEps of its plane."
+					}
+				}
 			},
 			"MeshMeta": {
 				"text": "MeshMeta is the colour/face tag attached to one triangle of an SMesh or to one surface of an SShell.",
@@ -6941,6 +6991,10 @@
 						"decl": "func (m *SMesh) Clear()",
 						"text": "Clear drops the triangles; like C++ SMesh::Clear it keeps the flags."
 					},
+					"FirstIntersectionIn": {
+						"decl": "func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) uint32",
+						"text": "FirstIntersectionIn is FirstIntersectionWith counting only hits in the half space h, if it isn't nil: a face cut away by a section isn't there to hit."
+					},
 					"FirstIntersectionWith": {
 						"decl": "func (m *SMesh) FirstIntersectionWith(rayPoint, rayDir geom.Vector) uint32",
 						"text": "FirstIntersectionWith is the face of the farthest-along triangle, with a face, that the ray rayPoint + t*rayDir hits; 0 if none."
@@ -6987,6 +7041,10 @@
 					"MakeOutlinesInto": {
 						"decl": "func (m *SMesh) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind)",
 						"text": "MakeOutlinesInto lists the mesh's outline edges of the given kind (C++ SMesh::MakeOutlinesInto)."
+					},
+					"MakeSectionPolygonInto": {
+						"decl": "func (m *SMesh) MakeSectionPolygonInto(h HalfSpace, dest *SPolygon) bool",
+						"text": "MakeSectionPolygonInto puts the section of the mesh by the plane of h into dest: the loops where the plane cuts the triangles, to fill as the cap of a section view with the odd winding rule."
 					},
 					"PrecomputeTransparency": {
 						"decl": "func (m *SMesh) PrecomputeTransparency()",

@@ -6,6 +6,8 @@ package main
 import (
 	"log"
 	"os"
+	"runtime"
+	"strings"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/platform"
@@ -13,6 +15,10 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/srf"
 	"github.com/spacesolve/spacesolve/pkg/ui"
 )
+
+// OpenGL contexts belong to a thread, and the windows draw from the
+// event loop, which runs on the main goroutine: keep it on one thread.
+func init() { runtime.LockOSThread() }
 
 func main() {
 	log.SetFlags(0)
@@ -23,10 +29,13 @@ func main() {
 	}
 	core.SetSettings(p.GetSettings())
 
+	opts := parseArgs(os.Args[1:])
+	files, scriptFile, scriptArgs := opts.files, opts.scriptFile, opts.scriptArgs
+
 	ss := ui.New(p)
+	ss.RendererOverride = opts.renderer
 	ss.Init()
 
-	files, scriptFile, scriptArgs := parseArgs(os.Args[1:])
 	if len(files) >= 1 {
 		if len(files) > 1 {
 			log.Print("Only the first file passed on command line will be opened.")
@@ -43,21 +52,48 @@ func main() {
 	p.Run()
 }
 
-// parseArgs splits the command line into the sketch files to open and,
-// after --script, a Go script to run on the sketch with its arguments:
+// options is what the command line asks for.
+type options struct {
+	files      []string
+	renderer   string
+	scriptFile string
+	scriptArgs []string
+}
+
+// parseArgs splits the command line into the sketch files to open, the
+// renderer to draw with for this run, and, after --script, a Go script
+// to run on the sketch with its arguments:
 //
-//	spacesolve [sketch.spcs] [--script script.go [argument...]]
-func parseArgs(args []string) (files []string, scriptFile string, scriptArgs []string) {
-	for i, arg := range args {
-		if arg == "--script" {
+//	spacesolve [--renderer opengl|software] [sketch.spcs] [--script script.go [argument...]]
+func parseArgs(args []string) (o options) {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--script":
 			if i+1 < len(args) {
-				scriptFile, scriptArgs = args[i+1], args[i+2:]
+				o.scriptFile, o.scriptArgs = args[i+1], args[i+2:]
 			} else {
 				log.Print("--script needs the script to run.")
 			}
-			break
+			return o
+		case arg == "--renderer" || strings.HasPrefix(arg, "--renderer="):
+			value, ok := strings.CutPrefix(arg, "--renderer=")
+			if !ok {
+				if i+1 >= len(args) {
+					log.Print("--renderer needs opengl or software.")
+					continue
+				}
+				i++
+				value = args[i]
+			}
+			if value != "opengl" && value != "software" {
+				log.Printf("--renderer %s: it is opengl or software.", value)
+				continue
+			}
+			o.renderer = value
+		default:
+			o.files = append(o.files, arg)
 		}
-		files = append(files, arg)
 	}
-	return files, scriptFile, scriptArgs
+	return o
 }

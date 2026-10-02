@@ -97,6 +97,16 @@ func (r *Renderer) fillPlanarPolygon(p *srf.SPolygon) {
 				if nz < -1 || nz > 1 {
 					continue
 				}
+				if r.userClip != nil {
+					// The plane's distance over w is affine in normalized
+					// device coordinates, and w > 0 here.
+					eq := &r.userEq
+					nx := 2*(float64(px)+0.5)/float64(r.width) - 1
+					ny := 1 - 2*yc/float64(r.height)
+					if eq[0]*nx+eq[1]*ny+eq[2]*nz+eq[3] < 0 {
+						continue
+					}
+				}
 				z := r.cur.depthNear + (r.cur.depthFar-r.cur.depthNear)*(nz+1)*0.5
 				r.fragment(px, py, z, r.cur.color)
 			}

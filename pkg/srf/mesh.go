@@ -357,6 +357,13 @@ func (m *SMesh) MakeFromTransformationOf(a *SMesh, trans geom.Vector, q geom.Qua
 // SMesh::FirstIntersectionWith takes a point on the screen and makes
 // the ray from the view; here the caller does that.
 func (m *SMesh) FirstIntersectionWith(rayPoint, rayDir geom.Vector) uint32 {
+	return m.FirstIntersectionIn(rayPoint, rayDir, nil)
+}
+
+// FirstIntersectionIn is FirstIntersectionWith counting only hits in
+// the half space h, if it isn't nil: a face cut away by a section
+// isn't there to hit.
+func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) uint32 {
 	var face uint32
 	faceT := veryNegative
 	for i := range m.Triangles {
@@ -365,8 +372,11 @@ func (m *SMesh) FirstIntersectionWith(rayPoint, rayDir geom.Vector) uint32 {
 			continue
 		}
 
-		t, _, ok := tr.Raytrace(rayPoint, rayDir)
+		t, at, ok := tr.Raytrace(rayPoint, rayDir)
 		if !ok {
+			continue
+		}
+		if h != nil && !h.Contains(at) {
 			continue
 		}
 		if t > faceT {
@@ -493,3 +503,14 @@ func (m *SMesh) CalculateSurfaceArea(faces []uint32) float64 {
 	}
 	return area
 }
+
+// HalfSpace is the points p with N.p <= D: what a section plane keeps,
+// its normal N pointing to the side cut away.
+type HalfSpace struct {
+	N geom.Vector
+	D float64
+}
+
+// Contains reports whether p is in the half space, or within
+// LengthEps of its plane.
+func (h *HalfSpace) Contains(p geom.Vector) bool { return h.N.Dot(p) <= h.D+geom.LengthEps }

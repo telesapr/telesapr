@@ -4,6 +4,7 @@ go 1.27.0
 
 require (
 	github.com/andybalholm/brotli v1.2.0
+	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 	github.com/msorc/takigo v0.0.0
 	github.com/traefik/yaegi v0.16.1
 )

@@ -48,6 +48,7 @@ func init() {
 		"Param":           reflect.ValueOf((*api.Param)(nil)),
 		"Parameter":       reflect.ValueOf((*api.Parameter)(nil)),
 		"Request":         reflect.ValueOf((*api.Request)(nil)),
+		"Section":         reflect.ValueOf((*api.Section)(nil)),
 		"SketchHost":      reflect.ValueOf((*api.SketchHost)(nil)),
 		"SuppressMode":    reflect.ValueOf((*api.SuppressMode)(nil)),
 		"ThreadOptions":   reflect.ValueOf((*api.ThreadOptions)(nil)),

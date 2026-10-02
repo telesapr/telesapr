@@ -10,6 +10,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 	"github.com/spacesolve/spacesolve/pkg/script"
 	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
 // requireSamePaths builds a model twice, through the interface and
@@ -24,11 +25,11 @@ import (
 // regenerates, and the solver is not a fixed point, so a solved sketch
 // solved again can move by an ulp. SPACESOLVE_PATHEQUIV_DIR names a
 // directory to write both saves to.
-func requireSamePaths(t *testing.T, uiScript, goScript string) {
+func requireSamePaths(t *testing.T, uiScript, goScript string) (fromUI, fromScript *sketch.Sketch) {
 	t.Helper()
 	var r *uiScriptRunner
 	runUIScriptWith(t, uiScript, func(rr *uiScriptRunner) { r = rr })
-	fromUI := spcs.Encode(r.ss.SK, spcs.Options{})
+	savedUI := spcs.Encode(r.ss.SK, spcs.Options{})
 
 	path := filepath.Join("..", "..", "testdata", "ui", "scripts", goScript+".go")
 	src, err := os.ReadFile(path)
@@ -40,20 +41,21 @@ func requireSamePaths(t *testing.T, uiScript, goScript string) {
 	if err := script.RunSource(context.Background(), opts, path, string(src)); err != nil {
 		t.Fatalf("%s: %v", goScript, err)
 	}
-	fromScript := spcs.Encode(doc.Host().Sketch(), spcs.Options{})
+	savedScript := spcs.Encode(doc.Host().Sketch(), spcs.Options{})
 
 	if dir := os.Getenv("SPACESOLVE_PATHEQUIV_DIR"); dir != "" {
 		// Both saves, for a diff.
-		for name, data := range map[string][]byte{uiScript + ".ui.spcs": fromUI, goScript + ".go.spcs": fromScript} {
+		for name, data := range map[string][]byte{uiScript + ".ui.spcs": savedUI, goScript + ".go.spcs": savedScript} {
 			if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 				t.Fatal(err)
 			}
 		}
 	}
-	if string(fromUI) != string(fromScript) {
+	if string(savedUI) != string(savedScript) {
 		t.Fatalf("the interface (%s) and the script (%s) save different files, at %s",
-			uiScript, goScript, firstDiffLine(string(fromUI), string(fromScript)))
+			uiScript, goScript, firstDiffLine(string(savedUI), string(savedScript)))
 	}
+	return r.ss.SK, doc.Host().Sketch()
 }
 
 // A rectangle drawn with the mouse and extruded, and the same made by
@@ -87,4 +89,23 @@ func TestPathEquivalenceSuppressAll(t *testing.T) {
 // An extrusion deleted from its group screen, and by a script.
 func TestPathEquivalenceDeleteGroup(t *testing.T) {
 	requireSamePaths(t, "path_delete_group", "path_delete_group")
+}
+
+// A section view cut parallel to a face picked with the mouse, its
+// offset typed and its side flipped on its screen, and the same set by
+// a script. The section isn't saved, so its state and where it cuts
+// are compared too.
+func TestPathEquivalenceSection(t *testing.T) {
+	ui, script := requireSamePaths(t, "path_section", "path_section")
+	if ui.Section == nil || script.Section == nil {
+		t.Fatalf("section view on: interface %v, script %v", ui.Section != nil, script.Section != nil)
+	}
+	if *ui.Section != *script.Section {
+		t.Errorf("the interface's section %+v, the script's %+v", *ui.Section, *script.Section)
+	}
+	keepUI, _, okUI, _ := ui.SectionCut()
+	keepScript, _, okScript, _ := script.SectionCut()
+	if !okUI || !okScript || keepUI != keepScript {
+		t.Errorf("the interface cuts by %v (%v), the script by %v (%v)", keepUI, okUI, keepScript, okScript)
+	}
 }
