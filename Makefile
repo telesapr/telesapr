@@ -95,7 +95,10 @@ lint:
 	@echo "==> golangci-lint run"
 	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
 
-LINT_BASE ?= HEAD
+# Where the branch left master, so that a branch's commits are linted
+# and not only what is uncommitted; on master that is HEAD. The GitHub
+# workflow lints with golangci-lint-action's only-new-issues instead.
+LINT_BASE ?= $(shell git merge-base HEAD master 2>/dev/null || echo HEAD)
 
 lint-new:
 	@echo "==> golangci-lint run --new-from-rev=$(LINT_BASE)"
