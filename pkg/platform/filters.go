@@ -13,8 +13,9 @@ var (
 	// LinkFileFilters are the files a link group links. SolveSpace
 	// models are not among them: they are imported first.
 	LinkFileFilters = []FileFilter{
-		{"ALL", []string{"spcs", "emn", "stl"}},
+		{"ALL", []string{"spcs", "step", "stp", "emn", "stl"}},
 		{"spacesolve models", []string{"spcs"}},
+		{"STEP model, as a reference mesh", []string{"step", "stp"}},
 		{"IDF circuit board", []string{"emn"}},
 		{"STL triangle mesh", []string{"stl"}},
 	}

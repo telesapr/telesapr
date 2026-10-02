@@ -131,6 +131,12 @@ type Group struct {
 
 	Remap    core.EntityMap
 	LinkFile string
+	// LinkInfo describes the linked file as its loader read it, a line
+	// each, such as a STEP file's unit and how many faces it has; and
+	// LinkProblem says what of the file could not be used. Neither is
+	// saved; reloading the links fills them.
+	LinkInfo    []string
+	LinkProblem string
 
 	Color core.RgbaColor
 

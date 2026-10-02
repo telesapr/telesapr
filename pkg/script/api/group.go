@@ -645,9 +645,12 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 	})
 }
 
-// Link brings in another sketch file, or an STL file, as a group,
-// named after the file if name is empty. The new group becomes
-// active.
+// Link brings in another sketch file, a STEP file, or an STL file, as
+// a group, named after the file if name is empty. The new group becomes
+// active. A STEP file comes in as a reference mesh, its faces
+// tessellated, with a point at each vertex and at the centre of each
+// circular edge for constraints to use; LinkInfo and LinkProblem say
+// what was read.
 func (d *Doc) Link(path, name string) (g Group, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -677,6 +680,32 @@ func (d *Doc) Link(path, name string) (g Group, err error) {
 		}
 		return g
 	}, nil), nil
+}
+
+// LinkInfo describes the file a link group links, a line each, as the
+// group's screen shows it: for a STEP file its schema and unit, how
+// many shapes, faces and triangles it gave, and the chord tolerance it
+// was tessellated to. A sketch or STL file gives none.
+func (g Group) LinkInfo() (lines []string) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLinked, "LinkInfo")
+		lines = append(lines, group.LinkInfo...)
+	})
+	return lines
+}
+
+// LinkProblem says what of the file a link group links could not be
+// read, such as the faces of a STEP file on a kind of surface the
+// reader does not support, or that the file holds no solid it can
+// read; "" when all of it was.
+func (g Group) LinkProblem() (msg string) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLinked, "LinkProblem")
+		msg = group.LinkProblem
+	})
+	return msg
 }
 
 // Conflicts lists the constraints that keep the group from solving,

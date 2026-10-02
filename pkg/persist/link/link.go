@@ -1,8 +1,9 @@
 // Package link loads what a sketch links: the files of its link groups
 // and the pictures of its image requests. It knows no document format
 // of its own: a format registers a Loader for its extension, as
-// pkg/persist/spcs does for .spcs. IDF boards (.emn) and STL meshes
-// (.stl) are built in.
+// pkg/persist/spcs does for .spcs. IDF boards (.emn), STL meshes
+// (.stl) and STEP files (.step, .stp, through pkg/persist/step) are
+// built in.
 //
 // It ports the linking half of solvespace/src/file.cpp:
 // ReloadAllLinked, ReloadLinkedImage and LocateImportedFile.
@@ -26,26 +27,55 @@ import (
 // when the file can't be read.
 type Loader func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell) bool
 
+// Report is what a loader says about a file it read, for the group
+// that links it (sketch.Group.LinkInfo and LinkProblem).
+type Report struct {
+	Info    []string
+	Problem string
+}
+
+// ReportingLoader is a Loader that also describes the file, and says
+// what of it it could not read.
+type ReportingLoader func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool
+
 var (
 	loadersMu sync.RWMutex
-	loaders   = map[string]Loader{
-		"emn": linkIDF,
-		"stl": func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, _ *srf.SShell) bool {
+	loaders   = map[string]ReportingLoader{
+		"emn": quiet(linkIDF),
+		"stl": func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, _ *srf.SShell, _ *Report) bool {
 			return linkStl(path, sk, le, m)
 		},
+		"step": linkStep,
+		"stp":  linkStep,
 	}
 )
+
+// quiet makes a Loader a ReportingLoader that reports nothing.
+func quiet(l Loader) ReportingLoader {
+	if l == nil {
+		return nil
+	}
+	return func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, _ *Report) bool {
+		return l(path, sk, le, m, sh)
+	}
+}
 
 // Register makes l the loader of linked files with extension ext,
 // given without its dot and matched ignoring case.
 func Register(ext string, l Loader) {
+	RegisterReporting(ext, quiet(l))
+}
+
+// RegisterReporting makes l the loader of linked files with extension
+// ext, as Register does.
+func RegisterReporting(ext string, l ReportingLoader) {
 	loadersMu.Lock()
 	defer loadersMu.Unlock()
 	loaders[strings.ToLower(ext)] = l
 }
 
 // loaderFor is the registered loader of path's extension, or nil.
-func loaderFor(path string) Loader {
+func loaderFor(path string) ReportingLoader {
 	loadersMu.RLock()
 	defer loadersMu.RUnlock()
 	return loaders[strings.ToLower(strings.TrimPrefix(filepath.Ext(path), "."))]
@@ -149,6 +179,7 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 		g.ImpEntity = nil
 		g.ImpMesh.Clear()
 		g.ImpShell.Clear()
+		g.LinkInfo, g.LinkProblem = nil, ""
 
 		if found, ok := linkMap[g.LinkFile]; ok {
 			g.LinkFile = found
@@ -158,9 +189,11 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 			linkFile := Path(saveFile, g.LinkFile)
 			load := loaderFor(linkFile)
 			if load == nil {
-				load = o.Fallback
+				load = quiet(o.Fallback)
 			}
-			if load != nil && load(linkFile, sk, &g.ImpEntity, &g.ImpMesh, &g.ImpShell) {
+			var rep Report
+			if load != nil && load(linkFile, sk, &g.ImpEntity, &g.ImpMesh, &g.ImpShell, &rep) {
+				g.LinkInfo, g.LinkProblem = rep.Info, rep.Problem
 				// We loaded the data, good. Now import its dependencies
 				// as well.
 				for j := range g.ImpEntity {
