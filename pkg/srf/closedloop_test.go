@@ -1,11 +1,13 @@
 package srf
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
 )
 
 // sphereLoopSet is the half disc of radius r on the z axis, in the
@@ -101,4 +103,143 @@ func TestSphereThroughFace(t *testing.T) {
 			t.Errorf("%s: volume %.4f, want %.4f", c.name, got, c.want)
 		}
 	}
+}
+
+// sphereFaceCase unites, subtracts and intersects the box below z = top
+// with a sphere of radius r at c, and checks each result: the Boolean
+// succeeds, the mesh is watertight, and the volumes add up as sets do,
+// union + intersection = box + sphere and difference + intersection =
+// box, to a small fraction of the sphere's volume.
+func sphereFaceCase(r, top float64, c geom.Vector) error {
+	box := func() *SShell {
+		return extrudedBox(geom.Vector{X: -20, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: top})
+	}
+	vols := map[SurfaceCombineAs]float64{}
+	for _, op := range []SurfaceCombineAs{SurfaceUnion, SurfaceDiff, SurfaceInter} {
+		var out SShell
+		out.MakeFromBoolean(box(), patchUpSphere(r, c), op)
+		if out.BooleanFailed {
+			return fmt.Errorf("%v: boolean failed", op)
+		}
+		if !meshIsSound(&out) {
+			return fmt.Errorf("%v: mesh not watertight", op)
+		}
+		vols[op] = shellVolume(&out)
+	}
+	boxV, sphereV := shellVolume(box()), shellVolume(patchUpSphere(r, c))
+	tol := 1e-2 * sphereV
+	if d := vols[SurfaceUnion] + vols[SurfaceInter] - boxV - sphereV; math.Abs(d) > tol {
+		return fmt.Errorf("union + intersection off by %.4g", d)
+	}
+	if d := vols[SurfaceDiff] + vols[SurfaceInter] - boxV; math.Abs(d) > tol {
+		return fmt.Errorf("difference + intersection off by %.4g", d)
+	}
+	return nil
+}
+
+// TestSphereThroughFaceSweep runs sphereFaceCase over the sphere's
+// radius, how far it bulges through the face, and where it sits under
+// the face: small caps lie inside one patch of the sphere, larger ones
+// cross its seams.
+func TestSphereThroughFaceSweep(t *testing.T) {
+	sweepChordTol(t)
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("r", 3, 7, 10),
+			sweep.Floats("bulge", 0.02, 0.05, 0.1, 0.2, 0.4),
+			sweep.Floats("dx", 0, 0.37, 1.9),
+			sweep.Floats("dy", 0, -0.61, 2.3),
+		},
+		MaxFailRate:       sphereFaceMaxFailRate,
+		Sample:            12,
+		SampleMaxFailRate: 1.0 / 12,
+	}
+	grid.Run(func(p sweep.Point) error {
+		r := p.Float("r")
+		c := geom.Vector{X: p.Float("dx"), Y: p.Float("dy")}
+		return sphereFaceCase(r, r*(1-p.Float("bulge")), c)
+	}).Require(t)
+}
+
+// sphereFaceMaxFailRate is the fraction of TestSphereThroughFaceSweep's
+// grid allowed to fail: what the whole grid gave on 2026-10-02, 10 of
+// 135, against 99 before the closed loops were searched for. Nine are
+// the intersection at the largest bulge, whose cap crosses the sphere's
+// seams and which failed before as well; one is a cap so small that it
+// triangulates flat against the face. The sample of 12 had one.
+const sphereFaceMaxFailRate = 10.0 / 135
+
+// crossedCylinder is a solid cylinder of radius r, along x through the
+// point (0, dy, 0) turned by angle degrees about y, long enough to
+// pass through the solid cylinder of radius 5 and height 20 on the z
+// axis.
+func crossedCylinder(r, dy, angle float64) *SShell {
+	cyl := lathedTube(0, r, -30, 30)
+	// Lay it along x, then turn it about y.
+	q := geom.QuaternionFromAxisAngle(geom.Vector{Y: 1}, (90+angle)*math.Pi/180)
+	var out SShell
+	out.MakeFromTransformationOf(cyl, geom.Vector{Y: dy, Z: 10}, q, 1)
+	return &out
+}
+
+// cylinderCase combines the upright cylinder with a crossed one and
+// checks the results as sphereFaceCase does.
+func cylinderCase(r, dy, angle float64) error {
+	upright := func() *SShell { return lathedTube(0, 5, 0, 20) }
+	vols := map[SurfaceCombineAs]float64{}
+	for _, op := range []SurfaceCombineAs{SurfaceUnion, SurfaceDiff, SurfaceInter} {
+		var out SShell
+		out.MakeFromBoolean(upright(), crossedCylinder(r, dy, angle), op)
+		if out.BooleanFailed {
+			return fmt.Errorf("%v: boolean failed", op)
+		}
+		if !meshIsSound(&out) {
+			return fmt.Errorf("%v: mesh not watertight", op)
+		}
+		vols[op] = shellVolume(&out)
+	}
+	a, b := shellVolume(upright()), shellVolume(crossedCylinder(r, dy, angle))
+	tol := 1e-2 * math.Min(a, b)
+	if d := vols[SurfaceUnion] + vols[SurfaceInter] - a - b; math.Abs(d) > tol {
+		return fmt.Errorf("union + intersection off by %.4g", d)
+	}
+	if d := vols[SurfaceDiff] + vols[SurfaceInter] - a; math.Abs(d) > tol {
+		return fmt.Errorf("difference + intersection off by %.4g", d)
+	}
+	return nil
+}
+
+// TestCylinderThroughCylinderSweep crosses cylinders over the second's
+// radius, its offset from the first's axis and its angle to the first.
+func TestCylinderThroughCylinderSweep(t *testing.T) {
+	sweepChordTol(t)
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("r", 1, 2.5, 4),
+			sweep.Floats("dy", 0, 0.7, 2.9),
+			sweep.Floats("angle", 0, 15, 30, 45, 60, 75),
+		},
+		MaxFailRate:       cylinderMaxFailRate,
+		Sample:            10,
+		SampleMaxFailRate: 5.0 / 10,
+	}
+	grid.Run(func(p sweep.Point) error {
+		return cylinderCase(p.Float("r"), p.Float("dy"), p.Float("angle"))
+	}).Require(t)
+}
+
+// cylinderMaxFailRate is the fraction of TestCylinderThroughCylinderSweep's
+// grid allowed to fail: what the whole grid gave on 2026-10-02, 19 of
+// 54, the same points before and after the kernel fixes of roadmap
+// step 5. They are unions and steep crossings whose curves the
+// boundary-seeded marching follows; a guard against getting worse until
+// that is looked into. The sample of 10 had five.
+const cylinderMaxFailRate = 19.0 / 54
+
+// sweepChordTol sets the chord tolerance the sweeps run at: fine enough
+// that the volumes of the meshes add up as the solids' do.
+func sweepChordTol(t *testing.T) {
+	old := ChordTolMm()
+	SetChordTolMm(0.01)
+	t.Cleanup(func() { SetChordTolMm(old) })
 }
