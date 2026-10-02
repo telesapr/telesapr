@@ -22,6 +22,7 @@ func init() {
 		"CombineIntersection":          reflect.ValueOf(sketch.CombineIntersection),
 		"CombineUnion":                 reflect.ValueOf(sketch.CombineUnion),
 		"ConstraintText":               reflect.ValueOf(sketch.ConstraintText),
+		"ConvertLengthExpr":            reflect.ValueOf(sketch.ConvertLengthExpr),
 		"CopyAsNRotAA":                 reflect.ValueOf(sketch.CopyAsNRotAA),
 		"CopyAsNRotAxisTrans":          reflect.ValueOf(sketch.CopyAsNRotAxisTrans),
 		"CopyAsNRotTrans":              reflect.ValueOf(sketch.CopyAsNRotTrans),

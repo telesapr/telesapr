@@ -205,7 +205,7 @@ func TestFixturesRoundTrip(t *testing.T) {
 			}
 			sk := loaded.Sketch
 			sk.GenerateAll()
-			resaved := spcs.Encode(sk, spcs.Options{Units: loaded.Units})
+			resaved := spcs.Encode(sk, spcs.Options{})
 			if notFixedPoints[rel] == "" && !bytes.Equal(resaved, saved) {
 				t.Errorf("load, regenerate and save changed the file: %s", firstDiff(saved, resaved))
 			}

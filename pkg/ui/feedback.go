@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -96,4 +98,38 @@ func (ss *SolveSpaceUI) measureLabel() (string, geom.Vector, bool) {
 		v = ss.DegreeToString(m.Value) + "°"
 	}
 	return m.What + " " + v, m.At, true
+}
+
+// SetDocumentUnits makes u the document's unit, which lengths are shown
+// and typed in, keeping every size, as one undo step; new documents
+// start in it too. When lengths are computed from parameters, the user
+// is told that those now count in u. In the tests that compare with
+// C++, where the unit is only the view's, it changes nothing else.
+func (ss *SolveSpaceUI) SetDocumentUnits(u core.Unit) {
+	defer func() {
+		ss.ViewUnits = ss.SK.Units
+		ss.ScheduleShowTW()
+		ss.GW.EnsureValidActives()
+	}()
+	if cppComparison {
+		ss.SK.Units = u
+		return
+	}
+	ss.DefaultUnits = u
+	if ss.SK.Units == u {
+		return
+	}
+	var check []string
+	_ = ss.SK.UndoRememberFor(func() error {
+		check = ss.SK.SetUnits(u)
+		return nil
+	})
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	if len(check) > 0 {
+		ss.ViewUnits = u
+		ss.Message("The document's lengths are now in %s, and keep their sizes. "+
+			"Lengths computed from these parameters now count them in %s; "+
+			"check their values:\n\n    %s", ss.UnitName(), ss.UnitName(), strings.Join(check, ", "))
+	}
 }

@@ -48,7 +48,7 @@ func TestSaveNewFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(string(got), "spacesolve 1\n\nunits mm\n") {
+	if !strings.HasPrefix(string(got), "spacesolve 2\n\nunits mm\n") {
 		t.Errorf("saved file starts %.40q", got)
 	}
 	if ss.SaveFile != path || ss.SK.Unsaved {

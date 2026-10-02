@@ -19,6 +19,11 @@ type Sketch struct {
 	Entities []core.Entity
 	Params   []core.Param
 
+	// Units is the document's unit of length: what the values of
+	// lengths that the user types, and that a file stores as text, are
+	// in. The sketch itself is in millimetres.
+	Units core.Unit
+
 	// Parameters is the table of named values that expressions on
 	// constraints and groups use, in the order the user made them.
 	// Not to be confused with Params, the solver's unknowns.
@@ -321,6 +326,7 @@ func (s *Sketch) Clear() {
 	s.Params = s.Params[:0]
 	s.Parameters = nil
 	s.ExprErrors = nil
+	s.Units = core.UnitMM
 }
 
 // CalculateEntityBBox returns the bounding box of the non-construction

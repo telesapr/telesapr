@@ -180,6 +180,9 @@ func (ss *SolveSpaceUI) loadSlvs(filename string) bool {
 			return true
 		}
 	}
+	// A .slvs file has no unit; it is shown in the one in use, as C++
+	// does.
+	doc.Sketch.Units = ss.ViewUnits
 	ss.setSketch(doc.Sketch)
 	return true
 }
@@ -200,7 +203,7 @@ func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 	if hasExtension(filename, "slvs") {
 		return ss.saveSlvs(filename)
 	}
-	err := spcs.SaveFile(ss.SK, ss.SaveFile, filename, spcs.Options{Units: ss.ViewUnits})
+	err := spcs.SaveFile(ss.SK, ss.SaveFile, filename, spcs.Options{})
 	var le *spcs.LinkError
 	switch {
 	case errors.As(err, &le):

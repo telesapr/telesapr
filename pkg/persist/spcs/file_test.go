@@ -32,14 +32,15 @@ func TestSaveAndLoadFile(t *testing.T) {
 	dir := t.TempDir()
 	sk := newPart(t)
 	path := filepath.Join(dir, "part.spcs")
-	if err := spcs.SaveFile(sk, "", path, spcs.Options{Units: core.UnitMeters}); err != nil {
+	sk.Units = core.UnitMeters
+	if err := spcs.SaveFile(sk, "", path, spcs.Options{}); err != nil {
 		t.Fatal(err)
 	}
 	saved, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(string(saved), "spacesolve 1\n\nunits m\n") {
+	if !strings.HasPrefix(string(saved), "spacesolve 2\n\nunits m\n") {
 		t.Errorf("header:\n%.60s", saved)
 	}
 
@@ -47,14 +48,14 @@ func TestSaveAndLoadFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if doc.Units != core.UnitMeters || len(doc.Warnings) > 0 {
+	if doc.Units != core.UnitMeters || doc.Sketch.Units != core.UnitMeters || len(doc.Warnings) > 0 {
 		t.Errorf("units %v, warnings %v", doc.Units, doc.Warnings)
 	}
 	if doc.Sketch.ReloadAllLinked == nil {
 		t.Error("the loaded sketch can't reload its links")
 	}
 	doc.Sketch.GenerateAll()
-	if again := spcs.Encode(doc.Sketch, spcs.Options{Units: doc.Units}); string(again) != string(saved) {
+	if again := spcs.Encode(doc.Sketch, spcs.Options{}); string(again) != string(saved) {
 		t.Error("load, regenerate and save changed the file")
 	}
 }

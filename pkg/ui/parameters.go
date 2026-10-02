@@ -153,6 +153,7 @@ func (tw *TextWindow) ShowParameters() {
 		}
 	}
 	tw.Printf(false, "")
-	tw.Printf(false, "   Values are in millimetres and degrees, whatever the units of the view.")
+	tw.Printf(false, "   A parameter driving a length counts in the document's unit, %s;", tw.ss.UnitName())
+	tw.Printf(false, "   one driving an angle, in degrees.")
 	tw.Printf(true, "(%Fl%Ll%fback to the groups%E)", lf(tw.ScreenHome))
 }

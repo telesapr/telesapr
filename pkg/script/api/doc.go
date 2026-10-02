@@ -500,3 +500,21 @@ func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement) {
 	})
 	return m
 }
+
+// Units is the document's unit of length: what lengths typed as text,
+// in Constraint.SetExpr and Group.SetExpr and in the user interface,
+// are in. Every other length this package takes or gives is in mm.
+func (d *Doc) Units() (u core.Unit) {
+	d.read(func(sk *sketch.Sketch) { u = sk.Units })
+	return u
+}
+
+// SetUnits makes u the document's unit, keeping every size, as View >
+// Dimension Units does: a length expression is rewritten to give the
+// same length in u, "(1/4)*25.4" for "1/4" from inches to mm. It
+// returns the parameters that lengths are computed from, which now
+// count in u.
+func (d *Doc) SetUnits(u core.Unit) (check []string) {
+	d.change(func(sk *sketch.Sketch) { check = sk.SetUnits(u) })
+	return check
+}

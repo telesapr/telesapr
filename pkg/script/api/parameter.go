@@ -10,8 +10,9 @@ import (
 // unknowns.
 type Parameter struct {
 	Name string
-	// Expr is the expression the value comes from, in millimetres and
-	// degrees; it may name other parameters.
+	// Expr is the expression the value comes from; it may name other
+	// parameters. A parameter is a plain number, which counts in the
+	// document's unit where it drives a length.
 	Expr string
 	// Value is the expression's value at the last regeneration.
 	Value float64
@@ -42,8 +43,8 @@ func (d *Doc) Parameter(name string) (p Parameter, ok bool) {
 	return p, ok
 }
 
-// SetParameter gives the parameter name the expression expr, in
-// millimetres and degrees, and adds it to the table if there is none:
+// SetParameter gives the parameter name the expression expr, and adds
+// it to the table if there is none:
 // SetParameter("wall", "2.5"), then SetParameter("bore", "wall*4").
 // An expression that names an unknown parameter, makes a cycle or has
 // no value is refused, and the table is left as it was. What uses the
@@ -92,19 +93,19 @@ func (d *Doc) ExprErrors() (errs []string) {
 	return errs
 }
 
-// SetExpr gives one of the group's values an expression, as typing it
-// on the group screen does: sketch.GroupCopies for a step and repeat,
-// sketch.GroupPitch for a helix's fixed pitch, sketch.GroupScale for a
-// link. An expression that names a parameter is kept, in millimetres,
-// and evaluated again at each regeneration; one that names none is
-// evaluated once, a pitch in the unit the interface shows lengths in.
+// SetExpr gives one of the group's values text, as typing it on the
+// group screen does: sketch.GroupCopies for a step and repeat,
+// sketch.GroupPitch for a helix's fixed pitch, a length in the
+// document's unit (Doc.Units), sketch.GroupScale for a link. A plain
+// number is stored as its value; any other text is kept and evaluated
+// again at each regeneration.
 func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		if value == sketch.GroupCopies && group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate {
 			fail("%s isn't a step and repeat", groupDescription(group))
 		}
-		err = sk.SetGroupText(g.H, value, expr, g.d.h.MmPerUnit())
+		err = sk.SetGroupText(g.H, value, expr)
 	})
 	return err
 }

@@ -184,7 +184,7 @@ counts 3 4 28 1 27
 editor 0 "" 0 "4"
 tw 11 unsaved 1 cursor 0 tooltip ""
 save
-spacesolve 1
+spacesolve 2
 
 units mm
 

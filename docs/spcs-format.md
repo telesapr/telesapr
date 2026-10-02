@@ -1,4 +1,4 @@
-# The `.spcs` file format, version 1
+# The `.spcs` file format, version 2
 
 `.spcs` is the file format spacesolve opens and saves. It replaces SolveSpace's `.slvs`, which
 spacesolve only imports (File, Import) and never writes. The format is text, line oriented, and
@@ -15,7 +15,7 @@ Two datum points ten millimetres apart, as spacesolve saves them
 (`testdata/spcs/v1/sketch.spcs`), shortened where `...` stands:
 
 ```
-spacesolve 1
+spacesolve 2
 
 units mm
 
@@ -113,14 +113,18 @@ A field with no values is a flag: present means true, absent means false.
 
 ### Expressions
 
-A field written with `=` holds an expression, for any value a user may type as a formula. It is
-either a plain number, such as `value = 30`, or the text of an expression that names parameters,
-such as `value = wall*4`. A reader keeps the whole text and evaluates it at each regeneration.
+A field written with `=` holds what a user typed for a value: a plain number, such as
+`value = 30`, or the text of an expression, such as `value = 1/4` or `value = wall*4`. A reader
+keeps the whole text and evaluates it at each regeneration.
 
-Expressions are in millimetres and degrees, whatever unit the interface shows: a parameter's
-value is a number of millimetres when it is used as a length, and trigonometric functions take
-and give degrees. The `units` line records the unit the document was authored in, for display
-only.
+**Lengths are in the document's unit**, the one the `units` line names: in a file with
+`units inch`, `value = 1/4` on a distance is a quarter inch. Angles are in degrees, and
+trigonometric functions take and give degrees. Ratios, counts and scales have no unit. A
+parameter is a plain number, which takes the unit of the value it drives: in an inch document
+`param wall = 2.5` makes `value = wall` 2.5 inches. Feet and inches (`ft-in`) count in inches.
+
+Everything else the file holds is in millimetres whatever `units` says: solved values (`value
+<handle> <real>`), entities, meshes and shells, label offsets and style sizes.
 
 The expression syntax is that of the dimension editor: numbers, parameter names, `+ - * / ^`,
 brackets, the constants `pi` and `e`, and the functions `sqrt`, `sq`, `sin`, `cos`, `tan`,
@@ -160,7 +164,7 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 | Statement | Content |
 |---|---|
 | `spacesolve <major>` | The header. |
-| `units <unit>` | `mm`, `inch`, `m` or `ft-in`. Display only. |
+| `units <unit>` | `mm`, `inch`, `m` or `ft-in`: the document's unit, which typed lengths are in. A file without it is in `mm`. |
 | `param <name> = <expression>` | A named parameter, see "Parameters". |
 | `group <handle> <type> <name> { ... }` | A group. |
 | `request <handle> <type> { ... }` | A request, what the user drew. |
@@ -191,7 +195,7 @@ group <handle> <type> <name> {
   op-a <handle>
   op-b <handle>
   copies = <expression>     # step and repeat: the number of copies
-  pitch = <expression>      # helix: the fixed pitch in mm, 0 when free
+  pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   val-c = <expression>      # spare value, unused by every group today
   color <colour>
   skip-first
@@ -296,7 +300,7 @@ request <handle> <type> {
 constraint <handle> <type> {
   group <handle>
   workplane <handle>
-  value = <expression>      # mm for lengths, degrees for angles, a ratio for ratios
+  value = <expression>      # a length in the document's unit, degrees for an angle, or a ratio
   param <handle>            # the solver parameter of a constraint that has one
   pt-a <handle>
   pt-b <handle>
@@ -474,7 +478,13 @@ statement, field or enumeration name it does not know, with its line and column,
 and loads the rest. The interface shows those reports, as it shows unrecognised lines of a
 `.slvs` file.
 
-`testdata/spcs/v1` holds files that every later reader must load.
+Version 2 (2026-10-02) made `units` the document's unit: values with `=` that are lengths are
+in it. Version 1 stored them in millimetres whatever `units` said. A version 2 reader reads a
+version 1 file's plain lengths as millimetres, rewrites a length expression to give the same
+length in the file's unit (`wall*4` in an inch file becomes `(wall*4)/25.4`), and writes the
+file back as version 2.
+
+`testdata/spcs/v1` and `testdata/spcs/v2` hold files that every later reader must load.
 
 ## Links
 

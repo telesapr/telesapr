@@ -32,6 +32,7 @@ func (ss *SolveSpaceUI) UndoRedo() {
 // a lot (the end of C++ PopOntoCurrentFrom; the engine already reloaded
 // the linked files and regenerated).
 func (ss *SolveSpaceUI) afterUndoPop() {
+	ss.ViewUnits = ss.SK.Units
 	ss.afterGenerate()
 	ss.GW.ClearSuper()
 	ss.TW.ClearSuper()

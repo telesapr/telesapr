@@ -81,6 +81,7 @@ func fullDocument() *Document {
 	e.ActDistance, e.ActVisible = 4, true
 	sk.Entities = []core.Entity{e}
 
+	sk.Units = core.UnitInches
 	doc := &Document{Sketch: sk, Version: Version, Units: core.UnitInches}
 	doc.Mesh.AddTriangle3(srf.STriMeta{Face: 0x1234, RgbaColor: core.RgbaColor{Red: 10, Alpha: 255}},
 		geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1})
@@ -178,12 +179,12 @@ func TestFormatReal(t *testing.T) {
 }
 
 func TestVersions(t *testing.T) {
-	_, err := Decode([]byte("spacesolve 2\nunits mm\n"))
+	_, err := Decode([]byte("spacesolve 3\nunits mm\n"))
 	var ve *VersionError
-	if !errors.As(err, &ve) || ve.File != 2 || ve.Reader != Version {
+	if !errors.As(err, &ve) || ve.File != 3 || ve.Reader != Version {
 		t.Fatalf("got %v", err)
 	}
-	if !strings.Contains(err.Error(), "version 2") || !strings.Contains(err.Error(), "up to version 1") {
+	if !strings.Contains(err.Error(), "version 3") || !strings.Contains(err.Error(), "up to version 2") {
 		t.Errorf("message %q", err.Error())
 	}
 	for _, src := range []string{"spacesolve 0\n", "spacesolve one\n", "spacesolve \"1\"\n", "spacesolve\n", "spacesolve 1 2\n"} {
@@ -388,7 +389,7 @@ func TestEnums(t *testing.T) {
 // Parameters and stored expressions are read, evaluated and written
 // back as they were.
 func TestExpressions(t *testing.T) {
-	src := `spacesolve 1
+	src := `spacesolve 2
 
 units mm
 
@@ -454,7 +455,7 @@ constraint 0x2 angle {
 // Expressions a file holds that cannot be evaluated are kept, and
 // reported where they are.
 func TestExpressionErrors(t *testing.T) {
-	src := `spacesolve 1
+	src := `spacesolve 2
 
 units mm
 
@@ -518,6 +519,75 @@ func TestZeroScaleNotWritten(t *testing.T) {
 	for _, g := range doc.Sketch.Groups {
 		if g.Scale != 1 {
 			t.Errorf("group %v reads back scale %v", g.H, g.Scale)
+		}
+	}
+}
+
+// From version 2, what a file stores with "=" for a length is in its
+// unit; version 1 stored millimetres, and an expression read from it is
+// rewritten to give the same length in the file's unit.
+func TestUnitsInFiles(t *testing.T) {
+	body := `
+units inch
+
+param wall = 2
+
+group 0x1 sketch-3d "a" {
+  copies = 3
+  pitch = 1/4
+  color 0 0 0 0
+  scale 2
+}
+
+constraint 0x1 pt-pt-distance {
+  group 0x1
+  value = wall*4
+}
+
+constraint 0x2 pt-pt-distance {
+  group 0x1
+  value = 2
+}
+
+constraint 0x3 angle {
+  group 0x1
+  value = 30
+}
+`
+	v2, err := Decode([]byte("spacesolve 2\n" + body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sk := v2.Sketch
+	g := sk.GetGroup(core.HGroup{V: 1})
+	c := func(h uint32) *core.Constraint { return sk.GetConstraint(core.HConstraint{V: h}) }
+	if sk.Units != core.UnitInches || g.ValB != 6.35 || g.ValA != 3 || g.Scale != 2 ||
+		c(1).ValA != 203.2 || c(2).ValA != 50.8 || c(3).ValA != 30 {
+		t.Fatalf("version 2: units %v pitch %v copies %v scale %v values %v %v %v",
+			sk.Units, g.ValB, g.ValA, g.Scale, c(1).ValA, c(2).ValA, c(3).ValA)
+	}
+	if got := string(v2.Encode()); got != "spacesolve 2\n"+body {
+		t.Errorf("version 2 encodes as:\n%s", got)
+	}
+
+	v1, err := Decode([]byte("spacesolve 1\n" + body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sk = v1.Sketch
+	g = sk.GetGroup(core.HGroup{V: 1})
+	// The same lengths but for the rounding of /25.4*25.4.
+	near := func(a, b float64) bool { return math.Abs(a-b) < 1e-12 }
+	if !near(g.ValB, 0.25) || g.ExprB != "(1/4)/25.4" || !near(c(1).ValA, 8) || c(1).Expr != "(wall*4)/25.4" ||
+		c(2).ValA != 2 || c(3).ValA != 30 {
+		t.Fatalf("version 1: pitch %v %q, values %v %q, %v, %v",
+			g.ValB, g.ExprB, c(1).ValA, c(1).Expr, c(2).ValA, c(3).ValA)
+	}
+	up := string(v1.Encode())
+	for _, want := range []string{"spacesolve 2\n", "  pitch = (1/4)/25.4\n", "  value = (wall*4)/25.4\n",
+		"  value = 0.07874015748031496\n", "  value = 30\n"} {
+		if !strings.Contains(up, want) {
+			t.Errorf("the upgrade has no %q:\n%s", want, up)
 		}
 	}
 }

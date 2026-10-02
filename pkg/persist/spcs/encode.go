@@ -13,13 +13,11 @@ import (
 
 // Version is the major version of the format this package writes, and
 // the newest it reads.
-const Version = 1
+const Version = 2
 
-// Options are what a save records beside the sketch.
-type Options struct {
-	// Units is the unit the document was authored in, for display.
-	Units core.Unit
-}
+// Options are what a save records beside the sketch; none yet. The
+// document's unit is the sketch's own (Sketch.Units).
+type Options struct{}
 
 // Encode writes a sketch the caller has just regenerated, as a user
 // interface does through its own GenerateAll. Each entity's numeric
@@ -55,14 +53,15 @@ func EncodeTree(sk *sketch.Sketch, o Options) *File {
 // document decoded from a file this package wrote encodes to the same
 // bytes.
 func (d *Document) Encode() []byte {
-	return Print(encodeTree(d.Sketch, Options{Units: d.Units}, &d.Mesh, &d.Shell))
+	return Print(encodeTree(d.Sketch, Options{}, &d.Mesh, &d.Shell))
 }
 
 func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *File {
 	f := &File{}
 	add := func(n *Node) { f.Nodes = append(f.Nodes, n) }
 	add(field("spacesolve", Word(strconv.Itoa(Version))))
-	add(field("units", Word(enumName(docUnits, o.Units))))
+	add(field("units", Word(enumName(docUnits, sk.Units))))
+	mmPer := sk.Units.MmPer()
 	for _, p := range sk.Parameters {
 		add(&Node{Name: "param", Args: []Value{Word(p.Name)}, HasExpr: true, Expr: p.Expr})
 	}
@@ -78,14 +77,14 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 		return groups[i].H.V < groups[j].H.V
 	})
 	for _, g := range groups {
-		add(encodeGroup(g))
+		add(encodeGroup(g, mmPer))
 	}
 
 	for _, i := range sortedBy(len(sk.Requests), func(i int) uint32 { return sk.Requests[i].H.V }) {
 		add(encodeRequest(&sk.Requests[i]))
 	}
 	for _, i := range sortedBy(len(sk.Constraints), func(i int) uint32 { return sk.Constraints[i].H.V }) {
-		add(encodeConstraint(&sk.Constraints[i]))
+		add(encodeConstraint(&sk.Constraints[i], mmPer))
 	}
 	for _, i := range sortedBy(len(sk.Styles), func(i int) uint32 { return sk.Styles[i].H.V }) {
 		if sk.Styles[i].H.V >= core.StyleFirstCustom {
@@ -212,7 +211,9 @@ func FormatReal(v float64) string {
 	return strconv.FormatFloat(v, 'g', -1, 64)
 }
 
-func encodeGroup(g *sketch.Group) *Node {
+// encodeGroup writes a group; a length the user typed is written in
+// the document's unit, mmPer millimetres.
+func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	n := block("group", hex(g.H.V), Word(enumName(groupTypes, g.Type)), String(g.Name))
 	n.int("order", g.Order)
 	if g.Subtype != 0 {
@@ -222,7 +223,7 @@ func encodeGroup(g *sketch.Group) *Node {
 	n.handle("op-a", g.OpA.V)
 	n.handle("op-b", g.OpB.V)
 	n.expr("copies", g.ValA, g.ExprA)
-	n.expr("pitch", g.ValB, g.ExprB)
+	n.expr("pitch", g.ValB/mmPer, g.ExprB)
 	n.expr("val-c", g.ValC, g.ExprC)
 	n.color("color", g.Color)
 	n.flag("skip-first", g.SkipFirst)
@@ -313,11 +314,17 @@ func encodeRequest(r *sketch.Request) *Node {
 	return n
 }
 
-func encodeConstraint(c *core.Constraint) *Node {
+// encodeConstraint writes a constraint; a length is written in the
+// document's unit, mmPer millimetres.
+func encodeConstraint(c *core.Constraint, mmPer float64) *Node {
 	n := block("constraint", hex(c.H.V), Word(enumName(constraintTypes, c.Type)))
 	n.handle("group", c.Group.V)
 	n.handle("workplane", c.Workplane.V)
-	n.expr("value", c.ValA, c.Expr)
+	v := c.ValA
+	if sketch.IsLengthValue(c.Type) {
+		v /= mmPer
+	}
+	n.expr("value", v, c.Expr)
 	n.handle("param", c.ValP.V)
 	n.handle("pt-a", c.PtA.V)
 	n.handle("pt-b", c.PtB.V)

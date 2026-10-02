@@ -84,7 +84,7 @@ func TestLoadSpcsProblems(t *testing.T) {
 	}{
 		{"empty.spcs", "", "the file is empty", false},
 		{"syntax.spcs", "spacesolve 1\ngroup {\n", "2:1: block 'group' is not closed", false},
-		{"newer.spcs", "spacesolve 2\n", "This version reads files up to version 1", false},
+		{"newer.spcs", "spacesolve 3\n", "This version reads files up to version 2", false},
 	} {
 		p.DialogResponses = []platform.Response{platform.ResponseOK}
 		if got := ss.LoadFromFile(write(c.name, c.data)); got != c.loads {

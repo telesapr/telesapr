@@ -167,6 +167,7 @@ func (d *decoder) file(f *File) {
 	sort.SliceStable(sk.Styles, func(i, j int) bool { return sk.Styles[i].H.V < sk.Styles[j].H.V })
 	sort.SliceStable(sk.Params, func(i, j int) bool { return sk.Params[i].H.V < sk.Params[j].H.V })
 	sort.SliceStable(sk.Entities, func(i, j int) bool { return sk.Entities[i].H.V < sk.Entities[j].H.V })
+	d.lengths()
 	d.evaluate()
 }
 
@@ -307,6 +308,38 @@ func (d *decoder) param(n *Node) {
 	}
 	d.exprPos[exprPlace{param: name}] = n.ExprPos
 	sk.Parameters = append(sk.Parameters, sketch.Parameter{Name: name, Expr: n.Expr})
+}
+
+// lengths puts the lengths the user typed into the document's unit,
+// once every statement is read. Version 1 stored them in millimetres:
+// a number is already what the sketch holds, and an expression is
+// rewritten to give the same length in the document's unit. From
+// version 2 they are in the document's unit: a number is turned into
+// millimetres, and an expression is evaluated in the unit.
+func (d *decoder) lengths() {
+	sk := d.doc.Sketch
+	sk.Units = d.doc.Units
+	mmPer := sk.Units.MmPer()
+	if mmPer == 1 {
+		return
+	}
+	length := func(val *float64, expr *string) {
+		switch {
+		case d.doc.Version >= 2 && *expr == "":
+			*val *= mmPer
+		case d.doc.Version < 2 && *expr != "":
+			*expr = sketch.ConvertLengthExpr(*expr, 1, mmPer)
+		}
+	}
+	for i := range sk.Constraints {
+		if c := &sk.Constraints[i]; sketch.IsLengthValue(c.Type) {
+			length(&c.ValA, &c.Expr)
+		}
+	}
+	for i := range sk.Groups {
+		g := &sk.Groups[i]
+		length(&g.ValB, &g.ExprB)
+	}
 }
 
 // evaluate gives the stored expressions their values, and reports

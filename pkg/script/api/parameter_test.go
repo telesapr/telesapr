@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
@@ -356,5 +357,63 @@ func TestMeasure(t *testing.T) {
 	}
 	if m := d.Measure(a.Start(), faces[1]); m.What != "point to plane" {
 		t.Errorf("point and face: %+v", m)
+	}
+}
+
+// Typed text is in the document's unit; numbers the package takes are
+// millimetres whatever it is.
+func TestDocumentUnits(t *testing.T) {
+	d := New()
+	if d.Units() != core.UnitMM {
+		t.Fatalf("a new document is in %v", d.Units())
+	}
+	d.SetUnits(core.UnitInches)
+	if err := d.SetParameter("w", "0.5"); err != nil {
+		t.Fatal(err)
+	}
+	a := d.Line(V(0, 0, 0), V(20, 0, 0))
+	b := d.Line(V(0, 10, 0), V(20, 10, 0))
+	if err := d.Length(a, 20).SetExpr("w*2"); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Length(b, 20).SetExpr("1/4"); err != nil {
+		t.Fatal(err)
+	}
+	c := d.Length(d.Line(V(0, 20, 0), V(20, 20, 0)), 10) // mm, as every number here
+	if !near(a.Length(), 25.4) || !near(b.Length(), 6.35) || !near(c.Value(), 10) {
+		t.Fatalf("lengths %v %v %v", a.Length(), b.Length(), c.Value())
+	}
+	path := filepath.Join(t.TempDir(), "inch.spcs")
+	if err := d.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(path)
+	for _, want := range []string{"spacesolve 2\n", "units inch\n", "value = w*2\n", "value = 1/4\n", "value = 0.3937007874015748\n"} {
+		if !bytes.Contains(data, []byte(want)) {
+			t.Errorf("the file has no %q", want)
+		}
+	}
+	e, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.Units() != core.UnitInches {
+		t.Errorf("reopened in %v", e.Units())
+	}
+	check := d.SetUnits(core.UnitMM)
+	if len(check) != 1 || check[0] != "w" {
+		t.Errorf("to check %v", check)
+	}
+	if !near(a.Length(), 25.4) || !near(b.Length(), 6.35) {
+		t.Errorf("sizes changed: %v %v", a.Length(), b.Length())
+	}
+	var exprs []string
+	for _, c := range d.Active().Constraints() {
+		if x := c.Expr(); x != "" {
+			exprs = append(exprs, x)
+		}
+	}
+	if strings.Join(exprs, "; ") != "(w*2)*25.4; (1/4)*25.4" {
+		t.Errorf("expressions %v", exprs)
 	}
 }

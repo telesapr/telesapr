@@ -1416,7 +1416,7 @@ func (gw *GraphicsWindow) EditControlDone(s string) {
 		// A length typed as a plain expression is in the view's unit;
 		// one that names a parameter is kept, in mm and degrees.
 		err := ss.SK.UndoRememberFor(func() error {
-			return ss.SK.SetConstraintText(gw.constraintBeingEdited, s, ss.MmPerUnit())
+			return ss.SK.SetConstraintText(gw.constraintBeingEdited, s)
 		})
 		if err != nil {
 			ss.Error("%s.", capitalize(err.Error()))

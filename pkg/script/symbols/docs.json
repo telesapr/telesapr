@@ -2697,6 +2697,12 @@
 			},
 			"Unit": {
 				"kind": "int",
+				"methods": {
+					"MmPer": {
+						"decl": "func (u Unit) MmPer() float64",
+						"text": "MmPer is how many millimetres one of the unit is: a length in the unit times MmPer is millimetres."
+					}
+				},
 				"values": [
 					"UnitMM",
 					"UnitInches",
@@ -3940,7 +3946,7 @@
 				"kind": "struct"
 			},
 			"Options": {
-				"text": "Options are what a save records beside the sketch.",
+				"text": "Options are what a save records beside the sketch; none yet.",
 				"kind": "struct"
 			},
 			"Pos": {
@@ -4037,7 +4043,7 @@
 	},
 	"github.com/spacesolve/spacesolve/pkg/script/api": {
 		"name": "api",
-		"text": "Package api is what a script sees of a sketch: a Doc and the groups,\nrequests, entities, constraints and parameters in it. Those are held\nby handle, so they stay valid when the sketch regenerates, and are\nlooked up again at every call; a Doc therefore always shows the\ndrawing as it is.\n\nLengths and coordinates are in millimetres, whatever unit the user\ninterface shows, and angles in degrees.\n\nA call that can't do what it was asked, because of what it was given\nor of the sketch's state, panics with an error; the interpreter\nreports it and goes on. What reads or writes files returns an error\ninstead.\n\nThe package is plain Go: a script that works can be compiled as it\nis.",
+		"text": "Package api is what a script sees of a sketch: a Doc and the groups,\nrequests, entities, constraints and parameters in it. Those are held\nby handle, so they stay valid when the sketch regenerates, and are\nlooked up again at every call; a Doc therefore always shows the\ndrawing as it is.\n\nLengths and coordinates are in millimetres, whatever the document's\nunit, and angles in degrees. Only text typed for a value, as the\nSetExpr methods take, is in the document's unit (Doc.Units), as it\nis in the user interface.\n\nA call that can't do what it was asked, because of what it was given\nor of the sketch's state, panics with an error; the interpreter\nreports it and goes on. What reads or writes files returns an error\ninstead.\n\nThe package is plain Go: a script that works can be compiled as it\nis.",
 		"types": {
 			"Constraint": {
 				"text": "Constraint is a constraint of the sketch: a dimension, such as a\ndistance or an angle, or a relation, such as two lines being\nparallel.",
@@ -4077,7 +4083,7 @@
 					},
 					"SetExpr": {
 						"decl": "func (c Constraint) SetExpr(expr string) (err error)",
-						"text": "SetExpr gives the constraint the value of an expression, as typing\nit in its label does: \"25.4/2\" or \"sqrt(2)*10\" is evaluated once, a\nlength being in the unit the user interface shows lengths in. An\nexpression that names a parameter, \"wall*4\", is kept, in millimetres\nand degrees, and evaluated again at each regeneration (see\nDoc.SetParameter)."
+						"text": "SetExpr gives the constraint the value of text, as typing it in its\nlabel does: a length in the document's unit (Doc.Units), an angle in\ndegrees, a ratio. A plain number is stored as its value; any other\ntext, \"25.4/2\" or \"wall*4\" with a parameter (Doc.SetParameter), is\nkept and evaluated again at each regeneration."
 					},
 					"SetOther": {
 						"decl": "func (c Constraint) SetOther(other bool)",
@@ -4355,7 +4361,11 @@
 					},
 					"SetParameter": {
 						"decl": "func (d *Doc) SetParameter(name, expr string) (err error)",
-						"text": "SetParameter gives the parameter name the expression expr, in\nmillimetres and degrees, and adds it to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
+						"text": "SetParameter gives the parameter name the expression expr, and adds\nit to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
+					},
+					"SetUnits": {
+						"decl": "func (d *Doc) SetUnits(u core.Unit) (check []string)",
+						"text": "SetUnits makes u the document's unit, keeping every size, as View \u003e\nDimension Units does: a length expression is rewritten to give the\nsame length in u, \"(1/4)*25.4\" for \"1/4\" from inches to mm. It\nreturns the parameters that lengths are computed from, which now\ncount in u."
 					},
 					"SetWorkplane": {
 						"decl": "func (d *Doc) SetWorkplane(wp Entity)",
@@ -4412,6 +4422,10 @@
 					"Undo": {
 						"decl": "func (d *Doc) Undo() (ok bool)",
 						"text": "Undo takes back the last step: in a console, what the last line\nthat changed the sketch did."
+					},
+					"Units": {
+						"decl": "func (d *Doc) Units() (u core.Unit)",
+						"text": "Units is the document's unit of length: what lengths typed as text,\nin Constraint.SetExpr and Group.SetExpr and in the user interface,\nare in. Every other length this package takes or gives is in mm."
 					},
 					"Unsaved": {
 						"decl": "func (d *Doc) Unsaved() (unsaved bool)",
@@ -4608,7 +4622,7 @@
 					},
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
-						"text": "SetExpr gives one of the group's values an expression, as typing it\non the group screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, sketch.GroupScale for a\nlink. An expression that names a parameter is kept, in millimetres,\nand evaluated again at each regeneration; one that names none is\nevaluated once, a pitch in the unit the interface shows lengths in."
+						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (Doc.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
 					},
 					"SetName": {
 						"decl": "func (g Group) SetName(name string)",
@@ -5609,20 +5623,24 @@
 						"text": "ScheduleGenerateAll asks for a regeneration of the dirty groups when Refresh next runs (C++ SolveSpaceUI::ScheduleGenerateAll, which Refresh serves after the pending events)."
 					},
 					"SetConstraintText": {
-						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string, mmPerUnit float64) error",
-						"text": "SetConstraintText gives a constraint the value of an expression the user typed for its label, as SetConstraintValue does for a number."
+						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
+						"text": "SetConstraintText gives a constraint the value of what the user typed for its label, a length in the document's unit (Units)."
 					},
 					"SetEntityActPoint": {
 						"decl": "func (sk *Sketch) SetEntityActPoint(he core.HEntity, p geom.Vector)",
 						"text": "SetEntityActPoint updates an entity's cached actPoint."
 					},
 					"SetGroupText": {
-						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string, mmPerUnit float64) error",
-						"text": "SetGroupText gives a group value the value of an expression the user typed, as SetConstraintText does for a constraint."
+						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error",
+						"text": "SetGroupText gives a group value what the user typed, as SetConstraintText does for a constraint: a pitch is in the document's unit."
 					},
 					"SetParameterExpr": {
 						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
 						"text": "SetParameterExpr gives a parameter a new expression."
+					},
+					"SetUnits": {
+						"decl": "func (sk *Sketch) SetUnits(u core.Unit) []string",
+						"text": "SetUnits makes u the document's unit, keeping every size: a plain value is a number of millimetres and does not change, and a stored expression of a length is rewritten to give the same length in u, \"(1/4)*25.4\" from \"1/4\" in inches to millimetres, or back again without the factor."
 					},
 					"ShowNakedEdges": {
 						"decl": "func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList",
@@ -5818,6 +5836,10 @@
 			"ConstraintText": {
 				"decl": "func ConstraintText(c *core.Constraint) string",
 				"text": "ConstraintText is the stored expression of a constraint as its label's editor shows it, the inverse of SetConstraintText: without the sign of a distance on the far side, and as a radius for a diameter shown as one."
+			},
+			"ConvertLengthExpr": {
+				"decl": "func ConvertLengthExpr(expr string, fromMm, toMm float64) string",
+				"text": "ConvertLengthExpr rewrites the expression of a length in a unit of fromMm millimetres to give the same length in one of toMm: the factor between them is appended, or taken off when it is the one a conversion the other way appended."
 			},
 			"DefaultView": {
 				"decl": "func DefaultView() View",

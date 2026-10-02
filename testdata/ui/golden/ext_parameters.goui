@@ -19,13 +19,15 @@ row 12    [add a parameter]   (type: name = expression)
  20-99 64 64 0
 row 14 
  0-99 64 64 0
-row 16    Values are in millimetres and degrees, whatever the units of the view.
+row 16    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 19 (back to the groups)
+row 18    one driving an angle, in degrees.
+ 0-99 64 64 0
+row 21 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 21 
+row 23 
  0-99 64 64 0
 row 0  home   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -65,13 +67,15 @@ row 16    [add a parameter]   (type: name = expression)
  20-99 64 64 0
 row 18 
  0-99 64 64 0
-row 20    Values are in millimetres and degrees, whatever the units of the view.
+row 20    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 23 (back to the groups)
+row 22    one driving an angle, in degrees.
+ 0-99 64 64 0
+row 25 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 25 
+row 27 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
@@ -155,16 +159,18 @@ row 16    [add a parameter]   (type: name = expression)
  20-99 64 64 0
 row 18 
  0-99 64 64 0
-row 20    Values are in millimetres and degrees, whatever the units of the view.
+row 20    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 23 (back to the groups)
+row 22    one driving an angle, in degrees.
+ 0-99 64 64 0
+row 25 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 25 
+row 27 
  0-99 64 64 0
 save
-spacesolve 1
+spacesolve 2
 
 units mm
 
