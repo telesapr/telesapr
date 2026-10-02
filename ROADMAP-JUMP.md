@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 7 are done and merged; step 8 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 8 are done and merged; step 9 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -24,6 +24,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 5. First kernel fixes | done 2026-10-02, with the cylinder-through-cylinder failures (19 of 54, not new) left as a follow-up | `f24fcd9` |
 | 6. OpenGL and the section view | done 2026-10-02, with follow-ups listed under the step | `0a96960` |
 | 7. First new solid features | done 2026-10-03, with follow-ups listed under the step | `a5829a6` |
+| 8. STEP import as a reference mesh | done 2026-10-03, with follow-ups listed under the step | see step 8 |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -503,7 +504,7 @@ developed in its own branch and merged into `master` when it is done, see "Rules
 5. **F1 raycast fix and F2 closed intersection loops, on by default.** About 3 weeks, most of the addition being sweeps. Remove the rotate-and-retry workaround in the thread feature afterwards.
 6. **Done 2026-10-02.** **I1 OpenGL backend, then I3 section view.** About 3.5 weeks. Goldens stay on the software renderer. Scripts get the section plane and a rendered image.
 7. **E1 mirror, E3 chamfer by Boolean, E9 sweep along lines and arcs.** About 6 weeks. First new solid features, all on existing machinery, each with a robustness sweep. The chamfer takes only edges that exist as entities until step 9.
-8. **D2 STEP import as reference mesh.** About 4.5 weeks, with a corpus of real files and a fuzz target for the reader.
+8. **Done 2026-10-03.** **D2 STEP import as reference mesh.** About 4.5 weeks, with a corpus of real files and a fuzz target for the reader.
 9. **F3 topology as the primary representation, then F4 edge naming.** About 10 weeks. The first large kernel investment. Scripts get faces, edges and vertices to enumerate and select by, which later features need for their own API. The chamfer is extended to any edge of the solid.
 10. **E4 and E5 fillets on straight and circular edges, E11 restricted shell, E7 ruled loft.** About 20 weeks.
 11. **F6 general surface type.** About 10 to 12 weeks. Then E6, E8, E10 and D3 become ordinary hard features instead of impossible ones.
@@ -728,14 +729,34 @@ Follow-ups from step 7:
 
 | Package | Content | State |
 |---|---|---|
-| 8.1 Part 21 reader | New package `pkg/persist/step`. A tokenizer and an entity table keyed by instance number, with typed access to parameters. `FuzzStep` from the first day. | not started |
-| 8.2 Boundary representation | Map the AP203 and AP214 entities for solids, shells, faces, loops, edges and vertices, and the surface kinds plane, cylinder, cone, sphere, torus and B-spline, into the package's own structures. Unknown surface kinds are counted and reported, and their faces are skipped. | not started |
-| 8.3 Tessellation | Evaluate each surface in its own parameter space, trim by the face loops, and triangulate with `SPolygon.TriangulateInto`. This does not go through `SSurface`, so degree is not limited. | not started |
-| 8.4 Link entry | `pkg/persist/link` dispatches `.step` and `.stp`. The result fills `Group.ImpMesh` and gives a point entity per vertex in `ImpEntity`, so constraints can attach. Units and assembly placement are applied. `Doc.Link` needs no change. | not started |
-| 8.5 Corpus | The exporter is the first oracle. `testdata/export` holds 33 `.step` files, most of them from sketches without a solid, so the corpus adds exports of the solid fixtures: export, import, and require the volume to match within the chord tolerance. Then vendor files, starting with the fastener and the connector of the spike. | not started |
+| 8.1 Part 21 reader | New package `pkg/persist/step`. A tokenizer and an entity table keyed by instance number, with typed access to parameters. `FuzzStep` from the first day. | done 2026-10-03: `step.Parse` (complex instances, `\X2\` and the other string escapes, typed values, comments, ANCHOR and SIGNATURE sections skipped), `FuzzStep` over parsing, mapping and tessellating, in `make fuzz`; three minutes, seven million inputs, no finding |
+| 8.2 Boundary representation | Map the AP203 and AP214 entities for solids, shells, faces, loops, edges and vertices, and the surface kinds plane, cylinder, cone, sphere, torus and B-spline, into the package's own structures. Unknown surface kinds are counted and reported, and their faces are skipped. | done 2026-10-03: `step.ReadModel`; also AP242, faceted and shell-based models, voids, surfaces of extrusion and revolution, offset and rectangular-trimmed surfaces, rational and uniform B-splines and Bezier patches, conics, polylines, trimmed and surface curves. Units per representation context (SI prefixes and conversion-based, angles too), assembly placements through `NEXT_ASSEMBLY_USAGE_OCCURRENCE` in both orders of `rep_1` and `rep_2` (CAx-IF and SolidWorks), mapped items and mirroring operators, surface colours. What can't be read is counted by entity and named, with the first instance (`Report.Problem`, `Details`) |
+| 8.3 Tessellation | Evaluate each surface in its own parameter space, trim by the face loops, and triangulate with `SPolygon.TriangulateInto`. This does not go through `SSurface`, so degree is not limited. | done 2026-10-03, with a new constrained Delaunay triangulator (`pkg/internal/cdt`, exact predicates) instead of `TriangulateInto`, which is bound to `SSurface` and adds no interior points: each face gets a staggered grid of points as dense as its curvature needs. Edges are sampled once and shared, so the mesh is closed. Seams, poles (a polar chart about a pole, the development of a cone), loops round a closed surface (two joined by a cut, one closed at its pole or, as OpenCASCADE does, straight across) and faces with no bounds. Faces side by side on all cores, the result the same on one |
+| 8.4 Link entry | `pkg/persist/link` dispatches `.step` and `.stp`. The result fills `Group.ImpMesh` and gives a point entity per vertex in `ImpEntity`, so constraints can attach. Units and assembly placement are applied. `Doc.Link` needs no change. | done 2026-10-03: also a point at each circle's centre; the tessellation cached by file and chord tolerance (the sketch's `ChordTolPct` of the file's size), since undo reloads links. Loaders may report (`link.RegisterReporting`): `Group.LinkInfo` (protocol, unit, shapes, faces, triangles, tolerance) and `Group.LinkProblem`, on the group's screen and as a warning in the group list; a file that holds nothing readable links empty with the reason, a missing one asks to be found. `Group.LinkInfo`, `LinkProblem`, `examples/scripts/step`, scenario `ext_link_step`, pair `path_link_step` |
+| 8.5 Corpus | The exporter is the first oracle. `testdata/export` holds 33 `.step` files, most of them from sketches without a solid, so the corpus adds exports of the solid fixtures: export, import, and require the volume to match within the chord tolerance. Then vendor files, starting with the fastener and the connector of the spike. | done 2026-10-03: 14 analytic shapes written by FreeCAD (`testdata/step/shapes`, `scripts/step-fixtures.py`) against worked-out volumes at three tolerances; 11 files kept in `testdata/step/corpus` (NIST MBE PMI, OpenCASCADE's screw, FreeCAD, Gmsh, BRL-CAD) and 16 more listed in `external.txt` and checked under `SPACESOLVE_STEP_CORPUS` (SolidWorks assembly and parts, knurled bolt and nut, more NIST), all against FreeCAD's volumes within area times tolerance. Every solid fixture exported by our writer and read back came out closed with its volume, but the knife-edge one (below). No connector file was at hand |
 
-Done when: every corpus file imports or fails with a message that names the unsupported
-entity, and none panics.
+Done: every corpus file imports, closed and within the tolerance of the reference volume, or
+fails with a message that names the unsupported entities (the CSG and swept-solid files), and
+none panics.
+
+Follow-ups from step 8:
+
+- **Knife edges**: a solid whose faces meet along an edge four times (the
+  `boolean_knife_edge` fixture, exported and read back) gives six naked edges.
+- **Open thread ends**: the knurled bolt's thread ends are faces bounded by a single loop
+  round a cylinder; they are closed straight across, as OpenCASCADE does, which leaves
+  holes, as the file does (`external.txt` marks it open).
+- **Faces through both poles**, such as a whole sphere or a lune from pole to pole, are
+  triangulated in their parameters; only faces at one pole get the polar chart. They pass
+  the tests, but a split at the equator would be safer.
+- **Tessellated STEP** (AP242 `TRIANGULATED_FACE` and the like) and CSG and swept solids are
+  reported, not read.
+- **Self-intersections in tiny parts**: `linkrods.step` (5 mm across) passes the volume check,
+  but Check Solid finds 24 crossing edges at the default tolerance.
+- **Placement of a new link**: a linked part is placed at the middle of the view, as every
+  link is; a STEP file is usually wanted where it was drawn.
+- **Performance**: the triangulator's adjacency is a map; a 10 MB file reads in about a
+  second, of which the triangulator is most.
 
 ### Step 9. Topology and edge naming
 
