@@ -69,6 +69,7 @@ func (s *Sketch) UndoUndo() bool {
 
 	s.PushFromCurrentOnto(&s.Redo)
 	s.PopOntoCurrentFrom(&s.Undo)
+	s.ClearBrokenReferences()
 	return true
 }
 
@@ -80,6 +81,7 @@ func (s *Sketch) UndoRedo() bool {
 
 	s.PushFromCurrentOnto(&s.Undo)
 	s.PopOntoCurrentFrom(&s.Redo)
+	s.ClearBrokenReferences()
 	return true
 }
 

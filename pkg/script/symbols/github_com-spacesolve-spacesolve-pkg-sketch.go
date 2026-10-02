@@ -99,6 +99,7 @@ func init() {
 		"ThawExportSettings":           reflect.ValueOf(sketch.ThawExportSettings),
 
 		// type definitions
+		"BrokenReference":      reflect.ValueOf((*sketch.BrokenReference)(nil)),
 		"Clipboard":            reflect.ValueOf((*sketch.Clipboard)(nil)),
 		"ClipboardRequest":     reflect.ValueOf((*sketch.ClipboardRequest)(nil)),
 		"CombineAs":            reflect.ValueOf((*sketch.CombineAs)(nil)),

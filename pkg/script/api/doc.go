@@ -521,3 +521,39 @@ func (d *Doc) SetUnits(u core.Unit) (check []string) {
 	d.change(func(sk *sketch.Sketch) { check = sk.SetUnits(u) })
 	return check
 }
+
+// BrokenReference is something a regeneration deleted because what it
+// used was gone: a group whose sketch was deleted, or a constraint on a
+// line that was.
+type BrokenReference struct {
+	// Group is the group it was in, or the deleted group itself; it
+	// may be gone too.
+	Group Group
+	// Item names what was deleted: "c012-pt-pt-distance" or
+	// "g005-extrude".
+	Item string
+	// Missing names what it used: "r005-line-segment of
+	// g002-sketch-in-plane", or a group.
+	Missing string
+	// Text says it all in a line: "deleted g005-extrude, which used
+	// g004-sketch-in-plane".
+	Text string
+}
+
+// BrokenReferences lists what the last regeneration that deleted
+// something deleted, as Edit > Broken References shows it. The list
+// stays until a regeneration deletes something else, an undo or redo,
+// or ClearBrokenReferences. Undo brings the deleted items back.
+func (d *Doc) BrokenReferences() (refs []BrokenReference) {
+	d.read(func(sk *sketch.Sketch) {
+		for _, b := range sk.BrokenReferences {
+			refs = append(refs, BrokenReference{Group: Group{d, b.Group}, Item: b.Item, Missing: b.Missing, Text: b.String()})
+		}
+	})
+	return refs
+}
+
+// ClearBrokenReferences empties the list BrokenReferences gives.
+func (d *Doc) ClearBrokenReferences() {
+	d.h.Run(func() { d.h.Sketch().ClearBrokenReferences() })
+}

@@ -4045,6 +4045,10 @@
 		"name": "api",
 		"text": "Package api is what a script sees of a sketch: a Doc and the groups,\nrequests, entities, constraints and parameters in it. Those are held\nby handle, so they stay valid when the sketch regenerates, and are\nlooked up again at every call; a Doc therefore always shows the\ndrawing as it is.\n\nLengths and coordinates are in millimetres, whatever the document's\nunit, and angles in degrees. Only text typed for a value, as the\nSetExpr methods take, is in the document's unit (Doc.Units), as it\nis in the user interface.\n\nA call that can't do what it was asked, because of what it was given\nor of the sketch's state, panics with an error; the interpreter\nreports it and goes on. What reads or writes files returns an error\ninstead.\n\nThe package is plain Go: a script that works can be compiled as it\nis.",
 		"types": {
+			"BrokenReference": {
+				"text": "BrokenReference is something a regeneration deleted because what it\nused was gone: a group whose sketch was deleted, or a constraint on a\nline that was.",
+				"kind": "struct"
+			},
 			"Constraint": {
 				"text": "Constraint is a constraint of the sketch: a dimension, such as a\ndistance or an angle, or a relation, such as two lines being\nparallel.",
 				"kind": "struct",
@@ -4139,9 +4143,17 @@
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
 					},
+					"BrokenReferences": {
+						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
+						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Edit \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
+					},
 					"Circle": {
 						"decl": "func (d *Doc) Circle(center Vec, radius float64) Entity",
 						"text": "Circle adds a circle. In a workplane it lies in it; in 3d it is\nparallel to the XY plane."
+					},
+					"ClearBrokenReferences": {
+						"decl": "func (d *Doc) ClearBrokenReferences()",
+						"text": "ClearBrokenReferences empties the list BrokenReferences gives."
 					},
 					"Coincident": {
 						"decl": "func (d *Doc) Coincident(a, b Entity) Constraint",
@@ -4972,6 +4984,16 @@
 	"github.com/spacesolve/spacesolve/pkg/sketch": {
 		"name": "sketch",
 		"types": {
+			"BrokenReference": {
+				"text": "BrokenReference is a request, constraint or group that a regeneration deleted, because something it referred to was gone.",
+				"kind": "struct",
+				"methods": {
+					"String": {
+						"decl": "func (b BrokenReference) String() string",
+						"text": "String says what was deleted and why: \"deleted c012-pt-pt-distance of g004-sketch-in-plane, which used r005-line-segment of g002-sketch-in-plane\"."
+					}
+				}
+			},
 			"Clipboard": {
 				"text": "Clipboard holds copied requests, and the constraints among them (C++ SolveSpaceUI::Clipboard).",
 				"kind": "struct",
@@ -5442,6 +5464,10 @@
 					},
 					"Clear": {
 						"decl": "func (s *Sketch) Clear()"
+					},
+					"ClearBrokenReferences": {
+						"decl": "func (sk *Sketch) ClearBrokenReferences()",
+						"text": "ClearBrokenReferences empties the list of what regenerations deleted."
 					},
 					"ClearExisting": {
 						"decl": "func (sk *Sketch) ClearExisting()",

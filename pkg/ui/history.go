@@ -49,3 +49,60 @@ func (ss *SolveSpaceUI) MoveGroup(h core.HGroup, later bool) {
 func (tw *TextWindow) ScreenMoveGroup(link int, v uint32) {
 	tw.ss.MoveGroup(core.HGroup{V: v}, link == 'd')
 }
+
+// MenuBrokenReferences shows what regenerations deleted, from the menu.
+func (ss *SolveSpaceUI) MenuBrokenReferences() {
+	ss.GW.ClearSelection()
+	ss.TW.GoToScreen(ScreenBrokenReferences)
+	ss.GW.ForceTextWindowShown()
+	ss.ScheduleShowTW()
+}
+
+// ScreenShowBrokenReferences shows what regenerations deleted.
+func (tw *TextWindow) ScreenShowBrokenReferences(link int, v uint32) {
+	tw.GoToScreen(ScreenBrokenReferences)
+}
+
+// ScreenClearBrokenReferences empties the list.
+func (tw *TextWindow) ScreenClearBrokenReferences(link int, v uint32) {
+	tw.ss.SK.ClearBrokenReferences()
+	tw.ss.ScheduleShowTW()
+}
+
+// ShowBrokenReferences is the screen of what the last regeneration
+// that deleted something deleted, because what it used was gone, and
+// of the stored expressions that can't be evaluated; each with a link
+// to the group it is in, where that group is still there.
+func (tw *TextWindow) ShowBrokenReferences() {
+	sk := tw.ss.SK
+	groupLink := func(h core.HGroup, name string) {
+		if sk.GetGroup(h) != nil {
+			tw.Printf(false, "     %Fl%Ll%D%fin %s%E", h.V, lf(tw.ScreenSelectGroup), name)
+		}
+	}
+	tw.Printf(true, "%FtBROKEN REFERENCES%E")
+	if len(sk.BrokenReferences) == 0 {
+		tw.Printf(false, "%Ba   (none: nothing was deleted for want of what it used)")
+	}
+	for _, b := range sk.BrokenReferences {
+		tw.Printf(false, "   %Fx%s%E", b.String())
+		if b.Item != b.GroupName {
+			groupLink(b.Group, b.GroupName)
+		}
+	}
+	if len(sk.BrokenReferences) > 0 {
+		tw.Printf(false, "   Undo the deletion to bring them back. %Fl%Lc%f[clear the list]%E",
+			lf(tw.ScreenClearBrokenReferences))
+	}
+
+	if len(sk.ExprErrors) > 0 {
+		tw.Printf(true, "%FtEXPRESSIONS THAT COULD NOT BE EVALUATED%E")
+		for _, e := range sk.ExprErrors {
+			tw.Printf(false, "   %Fx%s%E", e.Error())
+			if g := sk.GetGroup(e.Group); g != nil {
+				groupLink(e.Group, g.DescriptionString())
+			}
+		}
+	}
+	tw.Printf(true, "(%Fl%Ll%fback to the groups%E)", lf(tw.ScreenHome))
+}

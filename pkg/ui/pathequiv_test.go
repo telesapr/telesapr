@@ -85,3 +85,8 @@ func TestPathEquivalenceMoveGroup(t *testing.T) {
 func TestPathEquivalenceSuppressAll(t *testing.T) {
 	requireSamePaths(t, "path_suppress_all", "path_suppress_all")
 }
+
+// An extrusion deleted from its group screen, and by a script.
+func TestPathEquivalenceDeleteGroup(t *testing.T) {
+	requireSamePaths(t, "path_delete_group", "path_delete_group")
+}

@@ -93,7 +93,8 @@ func Inch(v float64) float64
 
 	got = helped(t, `help("api")`, `help("Entity")`, `help("math")`)
 	mustContain(t, got, "package api  // import \"github.com/spacesolve/spacesolve/pkg/script/api\"\n    Package api is what a script sees",
-		"Types:\n    Constraint           Constraint is a constraint of the sketch",
+		"Types:\n    BrokenReference      BrokenReference is something a regeneration deleted",
+		"\n    Constraint           Constraint is a constraint of the sketch",
 		"Functions:\n    Commands() []string", "Constants and variables:\n    Assemble Difference",
 		"type api.Entity struct\n    Entity is something on the drawing",
 		"    Pos() (p Vec)                                Pos is where a point is.",

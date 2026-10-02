@@ -168,3 +168,42 @@ func TestSuppressMisuse(t *testing.T) {
 		}()
 	}
 }
+
+func TestBrokenReferences(t *testing.T) {
+	d := New()
+	sketch := d.Active()
+	d.Rect(V(0, 0, 0), V(10, 10, 0))
+	d.Extrude(5, "box")
+	d.Translate(2, V(20, 0, 0), "copies")
+	if refs := d.BrokenReferences(); len(refs) != 0 {
+		t.Fatalf("broken before anything was deleted: %v", refs)
+	}
+
+	step := d.Host().(*SketchHost).BeginEval
+	step()
+	sketch.Delete()
+	refs := d.BrokenReferences()
+	var lines []string
+	for _, r := range refs {
+		lines = append(lines, r.Text)
+	}
+	want := "deleted g003-box, which used g002-sketch-in-plane\n" +
+		"deleted g004-copies, which used g003-box"
+	if got := strings.Join(lines, "\n"); got != want {
+		t.Fatalf("broken:\n%s\nwant:\n%s", got, want)
+	}
+	if refs[0].Item != "g003-box" || refs[0].Missing != "g002-sketch-in-plane" || refs[0].Group.H.V != 3 {
+		t.Fatalf("%+v", refs[0])
+	}
+	if refs[0].Group.String() != "deleted group g003" {
+		t.Fatalf("the deleted group is %q", refs[0].Group.String())
+	}
+
+	d.ClearBrokenReferences()
+	if len(d.BrokenReferences()) != 0 {
+		t.Fatal("cleared, the list isn't empty")
+	}
+	if !d.Undo() || len(d.Groups()) != 3 {
+		t.Fatalf("undo left %s", names(d.Groups()))
+	}
+}

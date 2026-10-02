@@ -59,7 +59,7 @@ func TestGroupDependencies(t *testing.T) {
 		}
 	}
 	hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
-		Type: core.ConstraintPointsCoincident, Group: hg(4), Workplane: core.FreeIn3D,
+		Type: core.ConstraintPointsCoincident, Group: hg(4),
 		PtA: shank.Entity(1), PtB: hg(3).Entity(5),
 	}})
 	deps := sk.GroupDependencies(hg(4))

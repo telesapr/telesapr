@@ -175,6 +175,9 @@ func TestSuppressAllSweep(t *testing.T) {
 			before := spcs.Encode(sk, spcs.Options{})
 			sk.GenerateAll()
 			fixed := bytes.Equal(spcs.Encode(sk, spcs.Options{}), before)
+			if len(sk.BrokenReferences) > 0 {
+				t.Errorf("%s: loading broke %v", f, sk.BrokenReferences)
+			}
 
 			// What must be left out: h and whatever uses what is.
 			out := map[core.HGroup]bool{h: true}
@@ -191,8 +194,9 @@ func TestSuppressAllSweep(t *testing.T) {
 				t.Fatal(err)
 			}
 			sk.GenerateAll()
-			if len(sk.Requests) != r || len(sk.Constraints) != c || len(sk.Groups) != g {
-				t.Errorf("%s: suppressing g%03x pruned something", f, h.V)
+			if len(sk.Requests) != r || len(sk.Constraints) != c || len(sk.Groups) != g ||
+				len(sk.BrokenReferences) > 0 {
+				t.Errorf("%s: suppressing g%03x pruned %v", f, h.V, sk.BrokenReferences)
 			}
 			for _, hg := range order {
 				if got := sk.GetGroup(hg).SuppressedBy.V != 0; got != out[hg] {

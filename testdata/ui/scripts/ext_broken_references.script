@@ -1,0 +1,34 @@
+# Broken references (an extension): deleting a group deletes the groups
+# that use it, and Edit > Broken References names each, with what it
+# used. The home screen links to the list while it isn't empty.
+load group/translate_nd/normal.slvs
+menu Edit|Broken References...
+tw
+# The sketch on the extrusion's face, deleted from its screen.
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+tw
+twmove 145 180
+twdown L 145 180
+twup L 145 180
+tw
+answer ok
+twmove 343 80
+twdown L 343 80
+twup L 343 80
+tw
+dump
+# The list names the three groups that went with the sketch.
+twmove 50 260
+twdown L 50 260
+twup L 50 260
+tw
+# Cleared, the list is empty; undo brings the groups back.
+twmove 400 160
+twdown L 400 160
+twup L 400 160
+tw
+key z ctrl
+tw
+dump
