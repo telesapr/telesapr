@@ -419,6 +419,10 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 			if e := t.openEdgeAlong(sb); e >= 0 {
 				pc.curve = t.CoEdges[t.Edges[e].CoEdges[0]].Curve
 				pc.points = t.Edges[e].Points
+				if !pc.points[0].Equals(pc.a) {
+					// The edge's points run the other way from the loop.
+					pc.points = reversed(pc.points)
+				}
 			} else {
 				var pts []geom.Vector
 				sb.MakePwlIntoPoints(&pts, 0, 0)
