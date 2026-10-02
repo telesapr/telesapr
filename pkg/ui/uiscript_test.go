@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
 	"github.com/spacesolve/spacesolve/pkg/platform"
@@ -471,6 +472,21 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			g := r.ss.SK.GetGroup(hg)
 			fmt.Fprintf(&r.b, "group %x %d %d %d %d\n", hg.V, g.Solved.How, g.Solved.Dof, b2i(g.DofCheckOk),
 				b2i(g.Clean))
+		}
+	case "freedom":
+		// What colouring by constraint state gives each entity of the
+		// active group, as drawEntity asks for it.
+		sk := r.ss.SK
+		for i := range sk.Entities {
+			e := &sk.Entities[i]
+			if e.Group != r.ss.GW.activeGroupH() || e.IsNormal() || e.Type == core.EntityWorkplane {
+				continue
+			}
+			color := "-"
+			if c, ok := r.ss.freedomColor(e); ok {
+				color = fmt.Sprintf("%d,%d,%d", c.Red, c.Green, c.Blue)
+			}
+			fmt.Fprintf(&r.b, "freedom %x %s %s\n", e.H.V, sk.EntityFreedom(e.H), color)
 		}
 	case "polyerror":
 		g := r.ss.SK.GetGroup(r.ss.GW.activeGroupH())

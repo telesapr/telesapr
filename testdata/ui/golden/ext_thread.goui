@@ -329,7 +329,6 @@ units mm
 group 0x1 sketch-3d "#references" {
   color 0 0 0 0
   visible
-  scale 0
 }
 
 group 0x2 sketch-in-plane "sketch-in-plane" {
@@ -342,7 +341,6 @@ group 0x2 sketch-in-plane "sketch-in-plane" {
     origin 0x10001
   }
   visible
-  scale 0
 }
 
 group 0x3 extrude "extrude" {

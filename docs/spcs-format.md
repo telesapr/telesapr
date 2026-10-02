@@ -204,7 +204,7 @@ group <handle> <type> <name> {
   allow-redundant
   suppress-dof
   all-dims-reference
-  scale <real>              # left out when 1; "scale = <expression>" for an expression
+  scale <real>              # left out when 1, or 0, which is no scale; "scale = <expression>" for an expression
   link <string>             # linked file, relative to this file, with / separators
   remap { ... }
 }

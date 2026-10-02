@@ -13,15 +13,15 @@ func rankOf(a [][]float64, m, n int) int {
 	return factorSparseQR(spFromRows(a, m, n)).rank
 }
 
-// rrefFixedColumns agrees with the definition MarkParamsFree tests one
+// rrefFixedColumns and fixedColumns agree with the definition MarkParamsFree tests one
 // column at a time: column j is fixed when removing it loses rank.
 // The matrices are built as sketches make them: sparse rows, rows that
 // fix one unknown, equalities between two, and rows that repeat a
 // combination of others.
 func TestRrefFixedColumnsVsRank(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
-	for trial := 0; trial < 3000; trial++ {
-		n := 1 + rng.Intn(9)
+	for trial := 0; trial < 20000; trial++ {
+		n := 1 + rng.Intn(12)
 		m := rng.Intn(n + 3)
 		a := make([][]float64, m)
 		for i := range a {
@@ -51,6 +51,10 @@ func TestRrefFixedColumnsVsRank(t *testing.T) {
 			cp[i] = append([]float64(nil), a[i]...)
 		}
 		got := rrefFixedColumns(cp, m, n)
+		for i := range a {
+			cp[i] = append(cp[i][:0], a[i]...)
+		}
+		fast := fixedColumns(cp, m, n)
 		for j := 0; j < n; j++ {
 			without := make([][]float64, m)
 			for i := range a {
@@ -59,8 +63,9 @@ func TestRrefFixedColumnsVsRank(t *testing.T) {
 			// Removing a column loses rank exactly when that column's
 			// unit vector is in the row space.
 			want := rankOf(without, m, n-1) < full
-			if got[j] != want {
-				t.Fatalf("trial %d: column %d of %v: fixed %v, want %v", trial, j, a, got[j], want)
+			if got[j] != want || fast[j] != want {
+				t.Fatalf("trial %d: column %d of %v: fixed %v (dense) %v (reduced first), want %v",
+					trial, j, a, got[j], fast[j], want)
 			}
 		}
 	}

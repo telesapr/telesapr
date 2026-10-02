@@ -1,0 +1,33 @@
+# Colouring by constraint state (an extension): a line is free, then
+# partly free once one end is on the origin, then fixed once it is
+# horizontal and has a length.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+freedom
+move 200 200
+down L 200 200
+up L 200 200
+move 300 300
+down L 300 300
+up L 300 300
+key o
+key esc
+freedom
+move 350 275
+down L 350 275
+up L 350 275
+key h
+key esc
+move 350 300
+down L 350 300
+up L 350 300
+key d
+key esc
+freedom

@@ -1,0 +1,12 @@
+freedom 40000 free 255,160,70
+freedom 40001 free 255,160,70
+freedom 40002 free 255,160,70
+freedom 80020002 fixed -
+freedom 40000 partly free 100,180,255
+freedom 40001 fixed -
+freedom 40002 free 255,160,70
+freedom 80020002 fixed -
+freedom 40000 fixed -
+freedom 40001 fixed -
+freedom 40002 fixed -
+freedom 80020002 fixed -
