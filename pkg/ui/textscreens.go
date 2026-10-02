@@ -845,9 +845,15 @@ func (tw *TextWindow) ShowGroupSolveInfo() {
 		if i&1 != 0 {
 			bg = 'd'
 		}
-		tw.Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E",
+		if cppComparison {
+			tw.Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E",
+				bg, c.H.V, lf(tw.ScreenSelectConstraint), lf(tw.ScreenHoverConstraint),
+				c.DescriptionString())
+			continue
+		}
+		tw.Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E %Fl%Lj%D%f%h[show]%E",
 			bg, c.H.V, lf(tw.ScreenSelectConstraint), lf(tw.ScreenHoverConstraint),
-			c.DescriptionString())
+			c.DescriptionString(), c.H.V, lf(tw.ScreenShowConstraint), lf(tw.ScreenHoverConstraint))
 	}
 
 	if g.Solved.Timeout {

@@ -261,3 +261,28 @@ func TestEntityFree(t *testing.T) {
 		t.Errorf("a line of a group that did not solve is %v", f)
 	}
 }
+
+// A group that does not solve names the constraints to blame.
+func TestConflicts(t *testing.T) {
+	d := New()
+	line := d.Line(V(0, 0, 0), V(10, 5, 0))
+	g := d.Active()
+	d.Horizontal(line)
+	if c := g.Conflicts(); len(c) != 0 {
+		t.Errorf("a solved group has conflicts %v", c)
+	}
+	a := d.Length(line, 10)
+	d.Vertical(line)
+	b := d.Length(line, 12)
+	got := g.Conflicts()
+	if g.Solved() || len(got) == 0 {
+		t.Fatalf("solved %v, conflicts %v", g.Solved(), got)
+	}
+	names := map[uint32]bool{}
+	for _, c := range got {
+		names[c.H.V] = true
+	}
+	if !names[a.H.V] && !names[b.H.V] {
+		t.Errorf("conflicts %v name neither length", got)
+	}
+}

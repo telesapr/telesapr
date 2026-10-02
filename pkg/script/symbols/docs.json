@@ -4542,6 +4542,10 @@
 						"decl": "func (g Group) Check() (r check.Report)",
 						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked;\nReport.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
 					},
+					"Conflicts": {
+						"decl": "func (g Group) Conflicts() (constraints []Constraint)",
+						"text": "Conflicts lists the constraints that keep the group from solving,\nas its solve-failure screen does, any one of which could be removed\nto fix it; none when the group solved."
+					},
 					"Constraints": {
 						"decl": "func (g Group) Constraints() (constraints []Constraint)",
 						"text": "Constraints are the group's constraints."

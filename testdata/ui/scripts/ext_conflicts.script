@@ -1,0 +1,35 @@
+# Conflicting constraints (an extension): a line made horizontal,
+# vertical and given a length cannot solve; the failure screen lists
+# what to remove, and [show] selects and zooms to one.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+move 300 225
+down L 300 225
+up L 300 225
+key h
+move 300 225
+down L 300 225
+up L 300 225
+key d
+key esc
+move 300 225
+down L 300 225
+up L 300 225
+key v
+tw
+dump
+twmove 105 140
+twdown L 105 140
+twup L 105 140
+tw
+twmove 168 160
+twdown L 168 160
+twup L 168 160
+dump

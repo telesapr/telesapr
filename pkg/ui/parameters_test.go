@@ -131,3 +131,59 @@ func TestColorByFreedom(t *testing.T) {
 		t.Error("the configuration link didn't turn it on")
 	}
 }
+
+// The constraints a failed solve blames are drawn in their own colour,
+// and the failure screen shows each one.
+func TestConflictsShown(t *testing.T) {
+	asProduct(t)
+	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
+	ss, _ := newTestApp(t)
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss.LoadSketchForTest(doc.Sketch, path)
+	sk := ss.SK
+	hg := ss.GW.activeGroupH()
+	var line *core.Entity
+	for i := range sk.Entities {
+		if e := &sk.Entities[i]; e.Type == core.EntityLineSegment && e.Group == hg {
+			line = e
+		}
+	}
+	wp := ss.GW.ActiveWorkplane()
+	for _, typ := range []core.ConstraintType{core.ConstraintHorizontal, core.ConstraintVertical} {
+		sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+			Type: typ, Group: hg, Workplane: wp, EntityA: line.H}})
+	}
+	sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: wp, PtA: line.Point[0], PtB: line.Point[1], ValA: 10}})
+	sk.MarkGroupDirty(hg, false)
+	ss.GenerateAll(sketch.GenerateAll)
+	g := sk.GetGroup(hg)
+	if g.IsSolvedOkay() || len(g.Solved.Remove) == 0 {
+		t.Fatalf("solved %v, blamed %v", g.Solved.How, g.Solved.Remove)
+	}
+	blamed := sk.GetConstraint(g.Solved.Remove[0])
+	if !ss.isConflicting(blamed) {
+		t.Fatal("the blamed constraint is not marked")
+	}
+	tw := ss.TW
+	tw.shown.group = hg
+	tw.GoToScreen(ScreenGroupSolveInfo)
+	tw.Show()
+	before := ss.GW.view
+	clickText(t, ss, "[show]")
+	if len(ss.GW.selection) != 1 || ss.GW.selection[0].Constraint != blamed.H {
+		t.Errorf("selection %v after [show]", ss.GW.selection)
+	}
+	if v := ss.GW.view; v.Scale == before.Scale && v.Offset.Equals(before.Offset) {
+		t.Errorf("[show] didn't move the view from %+v", before)
+	}
+	saved := cppComparison
+	cppComparison = true
+	defer func() { cppComparison = saved }()
+	if ss.isConflicting(blamed) {
+		t.Error("marked in a C++ comparison")
+	}
+}
