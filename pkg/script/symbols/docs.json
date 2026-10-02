@@ -1686,6 +1686,48 @@
 			}
 		}
 	},
+	"github.com/spacesolve/spacesolve/pkg/check": {
+		"name": "check",
+		"text": "Package check judges the solid a group makes by invariants that hold for any sound solid, whatever produced it: the mesh is closed and does not cross itself, the Boolean that built the shell succeeded, and the volume, centre of mass and extent are those expected.",
+		"types": {
+			"Report": {
+				"text": "Report is what Solid finds.",
+				"kind": "struct",
+				"methods": {
+					"Empty": {
+						"decl": "func (r *Report) Empty() bool",
+						"text": "Empty reports whether there is no solid at all."
+					},
+					"Sound": {
+						"decl": "func (r *Report) Sound() bool",
+						"text": "Sound reports whether the solid is closed, does not cross itself, and came from a Boolean that succeeded."
+					},
+					"String": {
+						"decl": "func (r *Report) String() string",
+						"text": "String is the report on one line, every number written so it reads back to the same value: the form of testdata/invariants.txt."
+					},
+					"Summary": {
+						"decl": "func (r *Report) Summary() string",
+						"text": "Summary is the report for a person, in millimetres."
+					}
+				},
+				"makers": [
+					"Group",
+					"Solid"
+				]
+			}
+		},
+		"funcs": {
+			"Group": {
+				"decl": "func Group(sk *sketch.Sketch, g *sketch.Group) Report",
+				"text": "Group checks the solid a group's regeneration left, which is the solid of every group up to it: the shell of the last group that contributed solid model, and the mesh shown for g."
+			},
+			"Solid": {
+				"decl": "func Solid(shell *srf.SShell, mesh *srf.SMesh) Report",
+				"text": "Solid checks a shell and the mesh made from it."
+			}
+		}
+	},
 	"github.com/spacesolve/spacesolve/pkg/core": {
 		"name": "core",
 		"types": {
@@ -4263,6 +4305,10 @@
 					"Bounds": {
 						"decl": "func (g Group) Bounds() (min, max Vec)",
 						"text": "Bounds are the corners of the box around the model up to and with\nthis group."
+					},
+					"Check": {
+						"decl": "func (g Group) Check() (r check.Report)",
+						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked;\nReport.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
 					},
 					"Constraints": {
 						"decl": "func (g Group) Constraints() (constraints []Constraint)",

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/spacesolve/spacesolve/pkg/check"
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -316,6 +317,18 @@ func (g Group) Bounds() (min, max Vec) {
 		max, min = m.GetBounding()
 	})
 	return min, max
+}
+
+// Check checks the solid of the model up to and with this group: it
+// reports naked and self-intersecting edges, whether the Boolean
+// failed, the face and triangle counts, and the volume, centre of mass
+// and bounding box, in mm. Report.Sound() says whether the solid is
+// closed, does not cross itself, and came from a Boolean that worked;
+// Report.Summary() says it in words. Analyze > Check Solid shows the
+// same report.
+func (g Group) Check() (r check.Report) {
+	g.d.read(func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })
+	return r
 }
 
 // newGroup starts a group of a type, named name or else what the

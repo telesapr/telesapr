@@ -159,6 +159,13 @@ func (r *uiScriptRunner) popUp(m *headless.Menu) *headless.MenuItem {
 	return nil
 }
 
+// goOnlyMenuItems are the menus and entries the C++ program the menu
+// dumps are compared with doesn't have, left out of every dump.
+var goOnlyMenuItems = map[string]bool{
+	"S&cript":      true,
+	"Check S&olid": true,
+}
+
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
 	indent := strings.Repeat("  ", depth)
 	for _, it := range items {
@@ -166,9 +173,7 @@ func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
 			fmt.Fprintf(b, "%s---\n", indent)
 			continue
 		}
-		if depth == 0 && it.RawLabel == "S&cript" {
-			// The Script menu is ours; the C++ program this is compared
-			// with has none.
+		if goOnlyMenuItems[it.RawLabel] {
 			continue
 		}
 		fmt.Fprintf(b, "%s%s", indent, it.RawLabel)

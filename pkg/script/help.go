@@ -23,6 +23,7 @@ var helpOrder = []string{
 	"github.com/spacesolve/spacesolve/pkg/core",
 	"github.com/spacesolve/spacesolve/pkg/sketch",
 	"github.com/spacesolve/spacesolve/pkg/srf",
+	"github.com/spacesolve/spacesolve/pkg/check",
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs",
 }
 

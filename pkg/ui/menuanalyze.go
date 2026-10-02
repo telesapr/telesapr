@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spacesolve/spacesolve/pkg/check"
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -83,6 +84,9 @@ func (ss *SolveSpaceUI) MenuAnalyze(id Command) {
 		} else {
 			ss.Message("The assembly does not interfere, good.")
 		}
+
+	case CmdCheckSolid:
+		ss.CheckSolid()
 
 	case CmdCenterOfMass:
 		ss.UpdateCenterOfMass()
@@ -238,6 +242,52 @@ func (ss *SolveSpaceUI) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 	} else {
 		ss.Error("%s\n\n%s\n\n%d problematic edges, bad.%s",
 			intersMsg, leaksMsg, len(ss.NakedEdges.Edges), cntMsg)
+	}
+}
+
+// CheckSolid checks the active group's solid with check.Group, marks
+// its naked and self-intersecting edges, and reports what it found in
+// the view units.
+func (ss *SolveSpaceUI) CheckSolid() {
+	sk := ss.SK
+	g := sk.GetGroup(ss.GW.activeGroupH())
+	r := check.Group(sk, g)
+	ss.NakedEdges.Clear()
+	ss.NakedEdges.Edges = append(ss.NakedEdges.Edges, r.Problems.Edges...)
+	ss.GW.Invalidate(false)
+
+	if r.Empty() {
+		ss.Message("The active group has no solid to check.")
+		return
+	}
+	var b strings.Builder
+	if r.Sound() {
+		b.WriteString("The solid is sound.\n\nIt is closed, it does not intersect itself, " +
+			"and its Boolean succeeded.\n\n")
+	} else {
+		b.WriteString("The solid is NOT sound.\n\n")
+		if r.NakedEdges > 0 {
+			fmt.Fprintf(&b, "    %d naked edges, so it is not closed\n", r.NakedEdges)
+		}
+		if r.SelfIntersecting > 0 {
+			fmt.Fprintf(&b, "    %d self-intersecting edges\n", r.SelfIntersecting)
+		}
+		if r.BooleanFailed {
+			b.WriteString("    the Boolean failed; see the group's page\n")
+		}
+		b.WriteString("\nThe problem edges are marked.\n\n")
+	}
+	c, d := r.CenterOfMass, r.Max.Minus(r.Min)
+	fmt.Fprintf(&b, "Faces: %d\nTriangles: %d\nVolume: %s\n", r.Faces, r.Triangles,
+		ss.MmToStringSI(r.Volume, 3))
+	fmt.Fprintf(&b, "Center of mass: (%s, %s, %s)\n", ss.MmToString(c.X, false),
+		ss.MmToString(c.Y, false), ss.MmToString(c.Z, false))
+	fmt.Fprintf(&b, "Extent: %s x %s x %s", ss.MmToString(d.X, false),
+		ss.MmToString(d.Y, false), ss.MmToString(d.Z, false))
+	if r.Sound() {
+		ss.Message("%s", b.String())
+	} else {
+		ss.Error("%s", b.String())
 	}
 }
 

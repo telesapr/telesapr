@@ -130,6 +130,8 @@ const (
 	CmdScriptConsole
 	CmdScriptRun
 	CmdScriptStop
+	// Analyze, entries C++ doesn't have
+	CmdCheckSolid
 )
 
 // Pending is an operation to be completed by doing something with the
