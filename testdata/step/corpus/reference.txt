@@ -1,0 +1,17 @@
+# file, volume, area, expect: separated by tabs.
+# Volumes in mm3 and areas in mm2 from FreeCAD 26.3. expect is "ok" (a
+# closed mesh within the chord tolerance of the volume) or the start of the
+# report's problem.
+NIST_MBE_PMI_1.stp	14642337.728836	807399.842505	ok
+NIST_MBE_PMI_3.stp	313093.998034	353012.869277	ok
+NIST_MBE_PMI_5.stp	12722571.704926	857809.861859	ok
+NIST_MBE_PMI_6.stp	3328517.127506	282243.550185	ok
+NIST_MBE_PMI_11.stp	5138.629018	5474.830444	ok
+Schenkel.stp	121134.115680	42626.301867	ok
+screw.step	3788.270593	1929.332673	ok
+t20_data.step	18388.457850	6368.804012	ok
+# Two placed copies of a 10 x 15 x 20 block; FreeCAD rejects the file, as
+# every face names one plane, which the polygons do not lie on.
+ap203e2_mapped_assembly.stp	6000	2600	ok
+ap203e2_csg.stp	0	0	the file holds no solid or shell that can be read; it holds BLOCK (1), BOOLEAN_RESULT (6), CSG_SOLID (1)
+ap203e2_swept_solids.stp	0	0	the file holds no solid or shell that can be read; it holds REVOLVED_AREA_SOLID (1), SWEPT_DISK_SOLID (2)

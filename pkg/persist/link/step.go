@@ -1,0 +1,143 @@
+package link
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"sort"
+	"sync"
+	"time"
+
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/persist/step"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/spacesolve/spacesolve/pkg/srf"
+)
+
+// A STEP file links as a reference mesh: its faces tessellated, with
+// a point entity at each vertex and at the centre of each circular
+// edge, so constraints can attach to it.
+
+// maxStepPoints bounds the point entities of one STEP file, as STL
+// links bound theirs.
+const maxStepPoints = 15000
+
+// stepKey names a tessellation of a file: undo and regeneration reload
+// links, and a large STEP file takes long to read.
+type stepKey struct {
+	path  string
+	size  int64
+	mtime time.Time
+	pct   float64
+}
+
+type stepEntry struct {
+	res *step.Result
+	err error
+	use int
+}
+
+var (
+	stepCacheMu sync.Mutex
+	stepCache   = map[stepKey]*stepEntry{}
+	stepUses    int
+)
+
+// stepCacheSize is how many tessellations are kept.
+const stepCacheSize = 4
+
+// readStep reads a STEP file, or takes its tessellation from the cache
+// when the file and the chord tolerance are unchanged.
+func readStep(path string, pct float64) (*step.Result, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	key := stepKey{path: abs, size: info.Size(), mtime: info.ModTime(), pct: pct}
+	stepCacheMu.Lock()
+	defer stepCacheMu.Unlock()
+	stepUses++
+	if e, ok := stepCache[key]; ok {
+		e.use = stepUses
+		return e.res, e.err
+	}
+	res, err := step.ReadFile(path, step.Options{ChordTolPct: pct})
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, err
+	}
+	stepCache[key] = &stepEntry{res: res, err: err, use: stepUses}
+	if len(stepCache) > stepCacheSize {
+		keys := make([]stepKey, 0, len(stepCache))
+		for k := range stepCache {
+			keys = append(keys, k)
+		}
+		sort.Slice(keys, func(i, j int) bool { return stepCache[keys[i]].use < stepCache[keys[j]].use })
+		delete(stepCache, keys[0])
+	}
+	return res, err
+}
+
+// linkStep reads a STEP file into mesh m and point entities el. A
+// file that is missing or can't be opened counts as missing; one that
+// can't be parsed, or holds nothing this reader supports, links as an
+// empty mesh, with the reason in the report.
+func linkStep(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, _ *srf.SShell, rep *Report) bool {
+	*el = (*el)[:0]
+	res, err := readStep(path, sk.ChordTolPct)
+	if err != nil {
+		var pe *fs.PathError
+		if errors.As(err, &pe) {
+			return false
+		}
+		rep.Problem = fmt.Sprintf("the file can't be read: %v", err)
+		return true
+	}
+	m.MakeFromCopyOf(&res.Mesh)
+	r := &res.Report
+	shapes := plural(r.Shapes, "shape")
+	if r.Placements != r.Shapes {
+		shapes += fmt.Sprintf(" placed %s", plural(r.Placements, "time"))
+	}
+	rep.Info = []string{
+		fmt.Sprintf("STEP %s, in %s", step.Protocol(r.Schema), r.Unit),
+		fmt.Sprintf("%s, %s, %s", shapes, plural(r.Faces, "face"), plural(r.Triangles, "triangle")),
+		fmt.Sprintf("chord tolerance %.3g mm", r.ChordTol),
+	}
+	rep.Problem = r.Problem()
+
+	id := 1
+	origin := newPoint(el, &id, geom.Vector{})
+	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{X: 1}, geom.Vector{Y: 1}), origin)
+	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{Y: 1}, geom.Vector{Z: 1}), origin)
+	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{Z: 1}, geom.Vector{X: 1}), origin)
+	n := 0
+	for _, pts := range [][]geom.Vector{res.Vertices, res.Centers} {
+		for _, p := range pts {
+			if n >= maxStepPoints {
+				break
+			}
+			newPoint(el, &id, p)
+			n++
+		}
+	}
+	if n < len(res.Vertices)+len(res.Centers) {
+		rep.Info = append(rep.Info, fmt.Sprintf("points for the first %d of %d vertices and centres",
+			n, len(res.Vertices)+len(res.Centers)))
+	}
+	return true
+}
+
+// plural is "1 face" or "n faces".
+func plural(n int, what string) string {
+	if n == 1 {
+		return "1 " + what
+	}
+	return fmt.Sprintf("%d %ss", n, what)
+}

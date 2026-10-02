@@ -175,7 +175,7 @@ func (tw *TextWindow) ShowListOfGroups() {
 		warn := (g.Type == sketch.GroupDrawingWorkplane && g.PolyError.How != int(core.PolyGood)) ||
 			((g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe) &&
 				sk.GetGroup(g.OpA).PolyError.How != int(core.PolyGood)) ||
-			g.Problem.Msg != ""
+			g.Problem.Msg != "" || g.LinkProblem != ""
 		dof := g.Solved.Dof
 		sdof := "ok "
 		if ok && dof > 0 {
@@ -571,6 +571,25 @@ func (ss *SolveSpaceUI) linkDisplayPath(path string) string {
 	return path
 }
 
+// wrapWords breaks text into lines of at most width characters, at
+// spaces where it can.
+func wrapWords(text string, width int) []string {
+	var lines []string
+	for len([]rune(text)) > width {
+		r := []rune(text)
+		cut := width
+		for cut > width/2 && r[cut] != ' ' {
+			cut--
+		}
+		if r[cut] != ' ' {
+			cut = width
+		}
+		lines = append(lines, strings.TrimRight(string(r[:cut]), " "))
+		text = strings.TrimLeft(string(r[cut:]), " ")
+	}
+	return append(lines, text)
+}
+
 // ShowGroupInfo is the screen about one group, where the user edits it
 // (C++ TextWindow::ShowGroupInfo).
 func (tw *TextWindow) ShowGroupInfo() {
@@ -689,6 +708,18 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))
 		tw.Printf(false, "%Bd   %Ftscaled by%E %#%s %Fl%Ll%f%D[change]%E",
 			g.Scale, exprNote(g.ExprScale), lf(tw.ScreenChangeGroupScale), g.H.V)
+		for _, line := range g.LinkInfo {
+			tw.Printf(false, "   %Fd%s%E", line)
+		}
+		if g.LinkProblem != "" {
+			for i, line := range wrapWords("Not all of the file was read: "+g.LinkProblem+".", MaxCols-6) {
+				indent := "   "
+				if i > 0 {
+					indent = "     "
+				}
+				tw.Printf(false, "%s%Fx%s%E", indent, line)
+			}
+		}
 	case sketch.GroupDrawing3D:
 		tw.Printf(true, " %Ftsketch in 3d%E")
 	case sketch.GroupDrawingWorkplane:

@@ -4267,7 +4267,7 @@
 					},
 					"Link": {
 						"decl": "func (d *Doc) Link(path, name string) (g Group, err error)",
-						"text": "Link brings in another sketch file, or an STL file, as a group,\nnamed after the file if name is empty. The new group becomes\nactive."
+						"text": "Link brings in another sketch file, a STEP file, or an STL file, as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
 					},
 					"Load": {
 						"decl": "func (d *Doc) Load(path string) (err error)",
@@ -4657,6 +4657,14 @@
 					"LeftOut": {
 						"decl": "func (g Group) LeftOut() (why string)",
 						"text": "LeftOut says why the group is left out of the model, or \"\" if it is\nin: \"suppressed\" for a group suppressed whole, or \"uses g004-sketch,\nwhich is suppressed\" for one that uses such a group. A group left out\nhas no entities and no solid of its own, and can't be made active."
+					},
+					"LinkInfo": {
+						"decl": "func (g Group) LinkInfo() (lines []string)",
+						"text": "LinkInfo describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
+					},
+					"LinkProblem": {
+						"decl": "func (g Group) LinkProblem() (msg string)",
+						"text": "LinkProblem says what of the file a link group links could not be\nread, such as the faces of a STEP file on a kind of surface the\nreader does not support, or that the file holds no solid it can\nread; \"\" when all of it was."
 					},
 					"Mesh": {
 						"decl": "func (g Group) Mesh() (m *srf.SMesh)",

@@ -1,0 +1,19 @@
+# file, volume, area, expect, as in reference.txt, for files not kept here.
+NIST_MBE_PMI_2.stp	46723998.405986	2464205.142202	ok
+NIST_MBE_PMI_4.stp	17365278.582192	1008678.988562	ok
+linkrods.step	3.847002	32.151421	ok
+black_and_white.step	1477.546473	851.316520	ok
+knurling_nut_01.step	9047.300206	4890.208407	ok
+Work_Shap_Insert_v4.step	2745.826633	3135.974948	ok
+Work_Sharp_Hub_v4.step	22900.042963	11727.138200	ok
+Spirol INS 20-M3-.226.STEP	91.885232	177.040688	ok
+grip assembly.STEP	19341.848699	19263.021494	ok
+gripper arm.STEP	349.793528	449.280969	ok
+gripper finger left.STEP	3066.012298	3177.941723	ok
+gripper finger pad.STEP	1536.287250	1249.997500	ok
+gripper finger right.STEP	3065.941621	3177.244634	ok
+gripper wheel.STEP	1209.151921	1418.329176	ok
+gripper wrist.STEP	7861.037030	7382.786268	ok
+# Its thread ends are faces that one loop round a cylinder bounds; the
+# file leaves them open, so the mesh has holes.
+knurling_bolt_01.step	18211.808683	6188.557298	open

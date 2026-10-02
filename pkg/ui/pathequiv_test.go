@@ -125,3 +125,11 @@ func TestPathEquivalenceMirror(t *testing.T) {
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")
 }
+
+// A STEP file linked from the menu, and by a script.
+func TestPathEquivalenceLinkStep(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_link_step", "path_link_step")
+	if g := ui.GetGroup(ui.Active); len(g.ImpMesh.Triangles) == 0 || len(g.LinkInfo) == 0 {
+		t.Errorf("the link has %d triangles, info %q", len(g.ImpMesh.Triangles), g.LinkInfo)
+	}
+}

@@ -1,0 +1,16 @@
+# Link / Assemble of a STEP file (an extension), into an empty model
+# saved beside it: a cylinder links as a
+# reference mesh, a point at each vertex and circle centre, and its group
+# screen says what was read. A file with no solid this reader supports
+# links empty, its screen naming the entities it could not read.
+file $testdata/step/host.spcs
+menu File|Open...
+file $testdata/step/shapes/cylinder.step
+menu New Group|Link / Assemble...
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+file $testdata/step/corpus/ap203e2_csg.stp
+menu New Group|Link / Assemble...
+tw
