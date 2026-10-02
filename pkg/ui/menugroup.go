@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -238,6 +239,28 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 			return
 		}
 		g = fg
+
+	case CmdGroupLoft:
+		var to core.HGroup
+		for _, he := range append(append([]core.HEntity(nil), gs.entity...), gs.point...) {
+			if e := sk.GetEntity(he); e != nil && e.Group != sk.Active {
+				to = e.Group
+				break
+			}
+		}
+		err := errors.New("nothing of another sketch is selected")
+		var lg sketch.Group
+		if to.V != 0 {
+			lg, err = sk.NewLoft(sk.Active, to, "")
+		}
+		if err != nil {
+			ss.Error("Can't loft. %s.\n\n"+
+				"Loft To Selected Profile joins the active group's sketch, a closed loop "+
+				"in a workplane, to another one. Select:\n\n"+
+				"    * an entity of the other sketch, whose loop has as many curves as the active one's\n", capitalize(err.Error()))
+			return
+		}
+		g = lg
 
 	case CmdGroupSweep:
 		if !gw.LockedInWorkplane() {

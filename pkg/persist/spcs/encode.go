@@ -222,7 +222,7 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	n.handle("workplane", g.ActiveWorkplane.V)
 	n.handle("op-a", g.OpA.V)
 	n.handle("op-b", g.OpB.V)
-	n.expr("copies", g.ValA, g.ExprA)
+	n.expr(g.FieldName(sketch.GroupCopies), g.ValA, g.ExprA)
 	n.expr(g.FieldName(sketch.GroupPitch), g.ValB/mmPer, g.ExprB)
 	n.expr("val-c", g.ValC, g.ExprC)
 	n.color("color", g.Color)

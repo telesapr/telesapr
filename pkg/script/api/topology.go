@@ -459,3 +459,41 @@ func (g Group) SetRadius(mm float64) {
 		sk.MarkGroupDirty(group.H, false)
 	})
 }
+
+// Loft joins the closed loops of two sketches in workplanes, from and
+// to, with ruled faces, curve by curve, and closes the ends with the
+// sketches' planes: each loop must be one closed loop, with as many
+// curves as the other; a circle counts as four. The solid joins the
+// solid so far as an extrusion's does. The new group becomes active.
+func (d *Doc) Loft(from, to Group, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		g, err := sk.NewLoft(from.get(sk).H, to.get(sk).H, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// Turn is how many curves a loft turns its second profile by before
+// joining curve by curve.
+func (g Group) Turn() (n int) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "Turn")
+		n = int(group.ValA)
+	})
+	return n
+}
+
+// SetTurn turns a loft's second profile by n curves, which joins its
+// curves to others of the first: a square lofted to a square turned by
+// one twists by a quarter.
+func (g Group) SetTurn(n int) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "SetTurn")
+		group.ValA, group.ExprA = float64(n), ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}

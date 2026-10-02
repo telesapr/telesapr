@@ -51,6 +51,7 @@ func init() {
 		"GroupHelix":                   reflect.ValueOf(sketch.GroupHelix),
 		"GroupLathe":                   reflect.ValueOf(sketch.GroupLathe),
 		"GroupLinked":                  reflect.ValueOf(sketch.GroupLinked),
+		"GroupLoft":                    reflect.ValueOf(sketch.GroupLoft),
 		"GroupMirror":                  reflect.ValueOf(sketch.GroupMirror),
 		"GroupOneSided":                reflect.ValueOf(sketch.GroupOneSided),
 		"GroupOneSkewed":               reflect.ValueOf(sketch.GroupOneSkewed),

@@ -71,6 +71,10 @@ func (sk *Sketch) rememberNames() {
 
 // anyGroupName names group h, which may have been deleted since the
 // last regeneration.
+// GroupName names a group for a person, as its description, or by
+// handle when it is gone.
+func (sk *Sketch) GroupName(h core.HGroup) string { return sk.anyGroupName(h) }
+
 func (sk *Sketch) anyGroupName(h core.HGroup) string {
 	if g := sk.GetGroup(h); g != nil {
 		return g.DescriptionString()
