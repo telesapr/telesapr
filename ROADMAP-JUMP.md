@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01. Status: roadmap, estimates and implementation plan; steps 1 to 3 done (see the State columns). Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 3 are done and merged; step 4 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -12,6 +12,19 @@ This document lists what the program lacks compared with current parametric CAD,
 item against the code as it stood on that date, and gives the order to do them in. The
 "Implementation plan" section breaks that order into work packages with the files they touch.
 The kernel items of steps 9 to 11 still need a spike and a design pass before coding.
+
+## Progress
+
+| Step | State | Merged into `master` |
+|---|---|---|
+| 1. Test infrastructure and the thread feature | done 2026-10-02, but for 1.8: the CI workflow has not run on GitHub, since the repository has no remote yet | `c5caea3` |
+| 2. The `.spcs` format and `.slvs` import | done 2026-10-02 | `d5b610c` |
+| 3. Parameters and sketch feedback | done 2026-10-02, with follow-ups: a faster freedom analysis, a scenario for it, `make lint-new` on the whole branch, no `scale 0` in saves (`a33a1ae`), and the unit as the document's, format version 2 (3.9, `dba44b9`) | `22daacd` |
+| 4. History editing | next | |
+
+Decisions taken while doing them, beyond those below: the unit of length belongs to the
+document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
+by hand get an error on load and no other safeguard (2026-10-02).
 
 ## How to read the estimates
 
@@ -66,18 +79,18 @@ The three paths, interface, script and file, must reach the same engine entry po
 - Reachable from `spacesolve-cli run`, so the feature works without a window.
 - Kernel foundations have no interface of their own, but expose what scripts can use. Topology gives scripts faces, edges and vertices to enumerate and select by. The test oracle gives scripts a `Check()` on a group.
 
-### What exists today, and what is missing
+### What existed, and what exists now
 
-| Piece | State on 2026-10-01 |
-|---|---|
-| Headless interface scripts | 53 scenarios in `testdata/ui/scripts`. Every golden is a `.cppui` file recorded from C++, so a Go-only feature has nothing to compare against on `master`. |
-| Go-recorded interface goldens | Exist only on the `threads` branch: one file, `testdata/ui/golden/ext_thread.goui`, with the regeneration switch `SPACESOLVE_REGEN_GOUI`. |
-| Script API | Covers drawing, constraints, export, and the stock groups except helix. TTF text requests are also missing. Its own package tests reach 31% of its statements. |
-| Example scripts | One, `examples/scripts/bracket`. |
-| Generated symbol check | `make generate-check` exists. |
-| Continuous integration | `make ci` and `.github/workflows/ci.yml` were prepared on 2026-10-01 and pass locally. The workflow has not run on GitHub, since the repository has no remote yet. |
-| Fuzzing | None. |
-| Geometric invariant checks | Only inside C++ parity tests, as watertight and volume comparisons for Boolean fixtures. |
+| Piece | State on 2026-10-01 | State on 2026-10-02, after step 3 |
+|---|---|---|
+| Headless interface scripts | 53 scenarios in `testdata/ui/scripts`. Every golden is a `.cppui` file recorded from C++, so a Go-only feature has nothing to compare against on `master`. | 67 scenarios: the 53 compared with C++, 11 Go-only (`ext_*`) and 3 path-equivalence pairs (`path_*`). |
+| Go-recorded interface goldens | Exist only on the `threads` branch: one file, `testdata/ui/golden/ext_thread.goui`, with the regeneration switch `SPACESOLVE_REGEN_GOUI`. | 11 `.goui` goldens, `scripts/regen-goui.sh`. The C++ comparisons hide what C++ lacks through test-only switches (`cppComparison`, `goOnlyMenuItems`, `legacySlvsSave`) until package 5.1. |
+| Script API | Covers drawing, constraints, export, and the stock groups except helix. TTF text requests are also missing. Its own package tests reach 31% of its statements. | Every group type and creating command has a method (`completeness_test.go`); parameters, freedom, conflicts, commands, measure and units added. Its own package tests reach 55%; more is covered from other packages. |
+| Example scripts | One, `examples/scripts/bracket`. | Three, `bracket`, `bolt` and `plate`, each run by a test. |
+| Generated symbol check | `make generate-check` exists. | Unchanged. |
+| Continuous integration | `make ci` and `.github/workflows/ci.yml` were prepared on 2026-10-01 and pass locally. The workflow has not run on GitHub, since the repository has no remote yet. | Unchanged: passes locally, never run on GitHub. `make lint-new` now lints from the branch's merge base with `master`. |
+| Fuzzing | None. | `FuzzExpr`, `FuzzLoad` (`.slvs`) and `FuzzRead` (`.spcs`), `make fuzz`. |
+| Geometric invariant checks | Only inside C++ parity tests, as watertight and volume comparisons for Boolean fixtures. | `pkg/check`, Analyze > Check Solid, `Group.Check()`, and a baseline of 352 lines in `testdata/invariants.txt`. |
 
 ### Test infrastructure to build first
 
@@ -93,6 +106,9 @@ The three paths, interface, script and file, must reach the same engine entry po
 About 4 to 4.5 weeks in total, and it is the first step of the order below.
 
 ### The screw thread feature
+
+Done in step 1 (package 1.9): merged with `Doc.Thread`, `examples/scripts/bolt` and a path
+equivalence test. What follows is the state before it.
 
 It is the only Go-only feature so far and it is not on `master`. It sits on the `threads` branch,
 two commits ahead and six behind. It has an interface screen and goldens but no script API.
@@ -112,12 +128,12 @@ Findings from the survey that drive every estimate below.
 | STL and OBJ mesh export, DXF/SVG/EPS/PDF vector export | `pkg/ui/export.go`, `pkg/ui/exportvector.go` |
 | Section export and hidden-line vector export | `ExportSectionTo` in `pkg/ui/export.go` |
 | Interference check, naked edges, volume, centre of mass | `pkg/ui/menuanalyze.go` |
-| Free-parameter marking per point and normal | `System.MarkParamsFree` in `pkg/solver/system.go`, drawn in `pkg/ui/drawentity.go` |
+| Free-parameter marking per point and normal | `System.MarkParamsFree` in `pkg/solver/system.go`, drawn in `pkg/ui/drawentity.go`; since step 3 also `System.FreeParams`, one pass for every solve |
 | List of constraints to remove when a sketch is overconstrained | `System.FindWhichToRemoveToFixJacobian` |
 | Expression parser with an identifier node | `OpVariable`, `NewVariable`, `Eval(ctx, vars)` in `pkg/core/expr.go` |
 | Group suppress flag, mirrored mesh transform | `Group.Suppress`, `pkg/srf/mesh.go:344` |
 | Threaded Booleans | `pkg/srf/parallel.go` |
-| Go-only feature precedent with goldens and an extension gate | Screw threads, on the unmerged `threads` branch only |
+| Go-only feature precedent with goldens and an extension gate | Screw threads, merged in step 1 without the gate |
 
 **Structural limits of the kernel (`pkg/srf`, about 11,000 lines)**
 
@@ -151,7 +167,8 @@ Findings from the survey that drive every estimate below.
   The recent loader change means unknown lines are flagged and the rest loads, so the damage
   is graceful but real. This is one policy decision that covers almost every item below.
 - Expressions are evaluated at entry and only the number is stored. `ConstraintBase` has
-  `ValA float64` and no expression text.
+  `ValA float64` and no expression text. (Lifted in step 3: constraints and groups keep their
+  expression, and the sketch has a parameter table.)
 - Rendering is software only. The OpenGL spike passed but the backend is not built.
 - Regeneration runs on the UI thread.
 
@@ -170,6 +187,9 @@ beside `ValA` on constraints and beside `ValA`, `ValB`, `ValC` on groups. Re-eva
 of `GenerateAll` with cycle detection. A text-window screen to edit the table. Undo coverage.
 The parser needs no change. Best ratio of user value to effort in the whole report.
 
+A1 was done in step 3 (packages 3.1 to 3.4, and 3.9 for units). The parser did need two fixes:
+trigonometry in degrees, and one operator character per token.
+
 ### B. Sketch feedback
 
 | Item | Size | Effort | New code | Risk |
@@ -180,6 +200,9 @@ The parser needs no change. Best ratio of user value to effort in the whole repo
 
 The solver already produces the data. B1 has to run `MarkParamsFree` after every solve instead
 of on demand, which costs a rank computation per group. That needs measuring on large sketches.
+
+B1 and B2 were done in step 3 (3.5, 3.6). B1 does not run `MarkParamsFree`: a one-pass analysis
+of the Jacobian at the solved values costs 1.5 ms at about 600 unknowns, below the solve.
 
 ### C. History and the feature tree
 
@@ -333,6 +356,7 @@ which is the edge naming problem again, in 2D.
 | I6. Per-face and per-part appearance beyond a colour | S | 1 wk after I2 | 400 | Low |
 
 I5 is cheap because the menu is already a data table in `pkg/ui/menu_table.go`.
+I4 and I5 were done in step 3 (3.8, 3.7).
 I3 in the software renderer is possible but slow. It belongs after I1.
 
 ### J. Out of scope
@@ -401,7 +425,8 @@ upstream cannot read" would mislead users into thinking files round-trip. A sepa
 states the truth. Import-only also means the importer is a one-way converter, so it never has
 to preserve upstream quirks on write.
 
-**Current state**
+**State before step 2.** The format as built is described in `docs/spcs-format.md`; it is at
+version 2 since package 3.9.
 
 - All persistence is `pkg/persist/slvs`, about 2,300 lines: `slvs.go` reads and writes with one hand-written function per record type, `linked.go` resolves link groups and images, `idf.go` and `stl.go` are link importers.
 - `.slvs` is referenced in the file dialogs (`pkg/ui/menufile.go`, `pkg/platform/filters.go`), the backup extension `slvs~`, the command-line tool's default output pattern, and the script runner.
@@ -468,9 +493,9 @@ Efforts here include the definition of done. Every step ends with its features r
 the interface and from scripts, and with the tests listed in that section. Each step is
 developed in its own branch and merged into `master` when it is done, see "Rules for every package".
 
-1. **Test infrastructure T1 and T3 to T7, then the thread feature brought to the bar and merged.** About 5 weeks. Nothing else can be called done without it.
-2. **The `.spcs` format (S2) with `.slvs` import.** About 3 weeks, with a fuzz target for the reader and `Save`, `Open` and `Import` in the script API. Everything after this may add records to the format.
-3. **A1 named parameters, then B1, B2, I5, I4.** About 4.5 weeks. No kernel work, large change in feel. Scripts get parameters by name, constraint state per entity, and measurements.
+1. **Done 2026-10-02.** **Test infrastructure T1 and T3 to T7, then the thread feature brought to the bar and merged.** About 5 weeks. Nothing else can be called done without it.
+2. **Done 2026-10-02.** **The `.spcs` format (S2) with `.slvs` import.** About 3 weeks, with a fuzz target for the reader and `Save`, `Open` and `Import` in the script API. Everything after this may add records to the format.
+3. **Done 2026-10-02, with document units as a follow-up.** **A1 named parameters, then B1, B2, I5, I4.** About 4.5 weeks. No kernel work, large change in feel. Scripts get parameters by name, constraint state per entity, and measurements.
 4. **C1 to C3 history editing.** About 4 weeks. Scripts get reorder, suppress and the list of broken references.
 5. **F1 raycast fix and F2 closed intersection loops, on by default.** About 3 weeks, most of the addition being sweeps. Remove the rotate-and-retry workaround in the thread feature afterwards.
 6. **I1 OpenGL backend, then I3 section view.** About 3.5 weeks. Goldens stay on the software renderer. Scripts get the section plane and a rendered image.
@@ -608,7 +633,7 @@ through the screen and through a script, with identical files.
 | 4.1 Dependency query | `Sketch.GroupDependencies(h)`: the groups a group refers to through `OpA`, `OpB`, `ActiveWorkplane`, `Predef`, the entities its requests and constraints name, and the sources in `Remap`. Tested on every fixture by checking that each group depends only on earlier ones. | not started |
 | 4.2 C1 reorder | `Sketch.MoveGroup(h, before)` renumbers `Order` and refuses a move that puts a group ahead of a dependency, naming it. Up and down links in `ShowListOfGroups`. `Group.MoveBefore(other)` and `Group.DependsOn()` in the API. Sweep: every legal move on every fixture, then move back, and require the original bytes. | not started |
 | 4.3 C2 full suppress | A second flag beside `Group.Suppress` that also skips the group's solve and entities. Groups that depend on it get a diagnostic instead of a pruned reference. Checkbox in `ShowGroupInfo`. `Group.SetSuppress` gains a mode argument. | not started |
-| 4.4 C3 broken references | `PruneOrphans` and the pruning in `generateAll` record what they remove: the entity's description and the group that owned it. The record goes into `SketchDiagnostic` and into a screen that lists each break with a jump to the affected group. `Doc.BrokenReferences()` in the API. | not started |
+| 4.4 C3 broken references | `PruneOrphans` and the pruning in `generateAll` record what they remove: the entity's description and the group that owned it. The record goes into `SketchDiagnostic` and into a screen that lists each break with a jump to the affected group. `Doc.BrokenReferences()` in the API. Since step 3 a deletion can also break stored expressions; the screen lists `Sketch.ExprErrors` beside the pruned references. | not started |
 
 Done when: reordering, suppressing and deleting an upstream group each produce a named
 diagnostic, never a silent deletion.
@@ -617,7 +642,7 @@ diagnostic, never a silent deletion.
 
 | Package | Content | State |
 |---|---|---|
-| 5.1 Freeze the C++ comparison | Every test that compares against a C++ recording keeps its recorded file as a Go golden, and its regeneration script calls Go. The `scripts/cpp-*-harness.cpp` files, `scripts/regen-cpp-*.sh` and `pkg/internal/slvswrite` are deleted. The invariant tolerance in 1.3 is loosened to 1e-6. | not started |
+| 5.1 Freeze the C++ comparison | Every test that compares against a C++ recording keeps its recorded file as a Go golden, and its regeneration script calls Go. The `scripts/cpp-*-harness.cpp` files, `scripts/regen-cpp-*.sh` and `pkg/internal/slvswrite` are deleted. So are the test-only switches that keep the C++ recordings valid: `legacySlvsSave`, `cppComparison` (Go-only links and colours, the unit as the view's only) and `goOnlyMenuItems`; the scenarios they affect are regenerated in their own commit. The invariant tolerance in 1.3 is loosened to 1e-6. | not started |
 | 5.2 F1 raycast | The fallback at the end of `SShell.ClassifyEdge` in `pkg/srf/raycast.go` retries with another direction only when the nearest hit has `OnEdge` set, and `OnEdge` means within `lengthEps` of a trim. Widen it: `SSurface.AllPointsIntersecting` in `pkg/srf/raycast_surface.go` also marks a hit that lies within the chord tolerance of a piecewise-linear edge of a curved trim. Raise the retry limit from 5 and pick the ray with the largest clearance if all are marked. | not started |
 | 5.3 F1 proof | Run the thread sweep with the plane turning disabled. Target fixed before coding: no unsound solid in the full grid, at the default and at a five times coarser chord tolerance. Then delete the turning from `pkg/sketch/thread.go`. | not started |
 | 5.4 F2 closed loops | After the boundary-seeded pass in `SSurface.intersectByMarching`, search for seeds inside: sample each surface on a grid, project each sample onto both surfaces with `PointOnSurfaces`, drop seeds that lie on a curve already found, and march each remaining seed until it returns to its start. Fixture: a sphere bulging through one face of a box, so the circle lies inside one patch and inside the face. | not started |
@@ -729,5 +754,5 @@ phase starts.
 For each kernel-dependent item, a two-day spike on the hardest fixture is cheaper than trusting
 the table. Suggested spikes: a Boolean-route fillet on one edge of a box with a hole near the edge
 for E4, a ruled loft from square to circle subtracted from a block for E7, and one real vendor STEP
-file of a fastener and one of a connector for D2. `TestThreadSweep`, on the `threads` branch, is the model for a sweep-style
+file of a fastener and one of a connector for D2. `TestThreadSweep`, in `pkg/persist/slvs/thread_test.go`, is the model for a sweep-style
 robustness test, and the naked-edge check in `pkg/ui/menuanalyze.go` is the pass criterion.
