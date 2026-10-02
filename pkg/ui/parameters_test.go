@@ -27,7 +27,6 @@ func shows(ss *SolveSpaceUI, s string) bool {
 // could not be evaluated; its edits are undo steps, and a refused one
 // is none.
 func TestParametersScreen(t *testing.T) {
-	asProduct(t)
 	ss, p := newTestApp(t)
 	tw := ss.TW
 	w := tw.window.(*headless.Window)
@@ -86,7 +85,6 @@ func TestParametersScreen(t *testing.T) {
 // The active group's entities that their constraints don't fix are
 // drawn in their own colours, when the setting is on.
 func TestColorByFreedom(t *testing.T) {
-	asProduct(t)
 	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
 	ss, _ := newTestApp(t)
 	doc, err := slvs.LoadFile(path)
@@ -135,7 +133,6 @@ func TestColorByFreedom(t *testing.T) {
 // The constraints a failed solve blames are drawn in their own colour,
 // and the failure screen shows each one.
 func TestConflictsShown(t *testing.T) {
-	asProduct(t)
 	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
 	ss, _ := newTestApp(t)
 	doc, err := slvs.LoadFile(path)
@@ -179,11 +176,5 @@ func TestConflictsShown(t *testing.T) {
 	}
 	if v := ss.GW.view; v.Scale == before.Scale && v.Offset.Equals(before.Offset) {
 		t.Errorf("[show] didn't move the view from %+v", before)
-	}
-	saved := cppComparison
-	cppComparison = true
-	defer func() { cppComparison = saved }()
-	if ss.isConflicting(blamed) {
-		t.Error("marked in a C++ comparison")
 	}
 }

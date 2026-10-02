@@ -44,7 +44,6 @@ func dialogText(d *headless.MessageDialog) string { return d.Message + "\n" + d.
 // TestSlvsNotOpenedOrSaved: the product imports SolveSpace models, and
 // neither opens nor writes them.
 func TestSlvsNotOpenedOrSaved(t *testing.T) {
-	withoutLegacySlvs(t)
 	ss, p := newTestApp(t)
 	p.DialogResponses = []platform.Response{platform.ResponseOK, platform.ResponseOK}
 	if ss.LoadFromFile(filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
@@ -124,7 +123,6 @@ func TestLoadSpcsProblems(t *testing.T) {
 // TestImportSolveSpace imports a model through File > Import: it asks
 // where to save, shows the plan, writes the .spcs file and opens it.
 func TestImportSolveSpace(t *testing.T) {
-	withoutLegacySlvs(t)
 	ss, p := newTestApp(t)
 	dir := copyFixtureDir(t, "group/translate_nd")
 	src := filepath.Join(dir, "normal.slvs")
@@ -191,7 +189,6 @@ func TestImportSolveSpace(t *testing.T) {
 // both are converted, and a converted copy that exists is reused or
 // overwritten as the user says.
 func TestImportSolveSpaceAssembly(t *testing.T) {
-	withoutLegacySlvs(t)
 	ss, p := newTestApp(t)
 	dir := copyFixtureDir(t, "group/link")
 	src := filepath.Join(dir, "normal.slvs")
@@ -289,7 +286,6 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 // TestImportSolveSpaceCycle: models that link each other aren't
 // imported.
 func TestImportSolveSpaceCycle(t *testing.T) {
-	withoutLegacySlvs(t)
 	ss, p := newTestApp(t)
 	dir := t.TempDir()
 	model, err := os.ReadFile(filepath.Join("..", "..", "testdata", "group", "link", "normal.slvs"))

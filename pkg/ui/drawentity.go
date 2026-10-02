@@ -602,7 +602,7 @@ var (
 // much of it its constraints fix, when the setting is on and the
 // entity is not fixed.
 func (ss *SolveSpaceUI) freedomColor(e *core.Entity) (core.RgbaColor, bool) {
-	if !ss.ColorByFreedom || cppComparison {
+	if !ss.ColorByFreedom {
 		return core.RgbaColor{}, false
 	}
 	switch ss.SK.EntityFreedom(e.H) {

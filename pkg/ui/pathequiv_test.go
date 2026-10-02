@@ -23,11 +23,9 @@ import (
 // path is the other's judge. An interface script must not save: a save
 // regenerates, and the solver is not a fixed point, so a solved sketch
 // solved again can move by an ulp. SPACESOLVE_PATHEQUIV_DIR names a
-// directory to write both saves to. Both run as the product, with the
-// links and boxes the C++ comparisons hide.
+// directory to write both saves to.
 func requireSamePaths(t *testing.T, uiScript, goScript string) {
 	t.Helper()
-	asProduct(t)
 	var r *uiScriptRunner
 	runUIScriptWith(t, uiScript, func(rr *uiScriptRunner) { r = rr })
 	fromUI := spcs.Encode(r.ss.SK, spcs.Options{})

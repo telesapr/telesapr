@@ -15,7 +15,7 @@ func benchmarkPaint(b *testing.B, fixture string) {
 	p := headless.New()
 	ss := New(p)
 	ss.Init()
-	if !ss.Load(filepath.Join("..", "..", "testdata", fixture)) {
+	if !loadSlvs(b, ss, filepath.Join("..", "..", "testdata", fixture)) {
 		b.Fatal("load failed")
 	}
 	w := ss.GW.window.(*headless.Window)
@@ -45,7 +45,7 @@ func BenchmarkPaintHover(b *testing.B) {
 	p := headless.New()
 	ss := New(p)
 	ss.Init()
-	if !ss.Load(filepath.Join("..", "..", "testdata", "group/translate_nd/normal.slvs")) {
+	if !loadSlvs(b, ss, filepath.Join("..", "..", "testdata", "group/translate_nd/normal.slvs")) {
 		b.Fatal("load failed")
 	}
 	w := ss.GW.window.(*headless.Window)

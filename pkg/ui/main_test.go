@@ -1,40 +1,30 @@
 package ui
 
 import (
-	"os"
+	"errors"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
+	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 )
 
-// TestMain lets the interface open and save .slvs files, as the tests
-// that compare with C++ need until ROADMAP-JUMP.md package 5.1 freezes
-// them. A test of the product's own behaviour with .slvs files sets
-// legacySlvsSave to nil for its duration (withoutLegacySlvs).
-//
-// It also hides what C++ does not have from the screens C++ has
-// (cppComparison), since most tests here compare with C++; a test of
-// what only spacesolve has calls asProduct.
-func TestMain(m *testing.M) {
-	legacySlvsSave = slvswrite.SaveRegenerated
-	cppComparison = true
-	os.Exit(m.Run())
-}
-
-// withoutLegacySlvs runs the rest of the test as the product: .slvs
-// files are imported, never opened or saved.
-func withoutLegacySlvs(t *testing.T) {
+// loadSlvs opens a .slvs fixture as the sketch being edited, as Load
+// opens a .spcs file, for the tests and scenarios whose goldens were
+// recorded from those fixtures. The product only imports .slvs files.
+func loadSlvs(t testing.TB, ss *SolveSpaceUI, path string) bool {
 	t.Helper()
-	saved := legacySlvsSave
-	legacySlvsSave = nil
-	t.Cleanup(func() { legacySlvsSave = saved })
-}
-
-// asProduct runs the rest of the test with the screens as the product
-// shows them, with the links to what only spacesolve has.
-func asProduct(t *testing.T) {
-	t.Helper()
-	saved := cppComparison
-	cppComparison = false
-	t.Cleanup(func() { cppComparison = saved })
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		if errors.Is(err, slvs.ErrCancelled) {
+			return false
+		}
+		t.Fatalf("load %s: %v", path, err)
+	}
+	// A .slvs file has no unit; it is shown in the one in use.
+	doc.Sketch.Units = ss.ViewUnits
+	ss.SaveFile = path
+	ss.setSketch(doc.Sketch)
+	ss.AddToRecentList(path)
+	ss.AfterNewFile()
+	ss.SK.Unsaved = false
+	return true
 }

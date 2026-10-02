@@ -9,12 +9,6 @@ import (
 // The screen lists the sketch's parameter table, with what could not
 // be evaluated, and edits it.
 
-// cppComparison is set by the tests that compare the interface with
-// C++ recordings, and hides the links to what C++ does not have from
-// the screens C++ has, until ROADMAP-JUMP.md package 5.1 freezes those
-// recordings.
-var cppComparison bool
-
 // ScreenShowParameters shows the parameter table.
 func (tw *TextWindow) ScreenShowParameters(link int, v uint32) {
 	tw.GoToScreen(ScreenParameters)

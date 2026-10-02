@@ -13,7 +13,6 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/persist/link"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -21,12 +20,6 @@ import (
 
 // backupExt is the autosave file extension (C++ BACKUP_EXT).
 const backupExt = spcs.Extension + "~"
-
-// legacySlvsSave, set only by tests, lets the interface open and save
-// .slvs files, for the tests that compare with C++ until ROADMAP-JUMP.md
-// package 5.1 freezes them. In the product it is nil: spacesolve opens
-// and saves .spcs files, and imports .slvs files.
-var legacySlvsSave func(sk *sketch.Sketch) []byte
 
 // maxWarnings is how many of a file's warnings a message lists.
 const maxWarnings = 8
@@ -118,12 +111,9 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 		return false
 	}
 	if hasExtension(filename, "slvs") {
-		if legacySlvsSave == nil {
-			ss.Error("'%s' is a SolveSpace model. Use File > Import, or spacesolve-cli "+
-				"convert, to convert it to a spacesolve model, which can then be opened.", filename)
-			return false
-		}
-		return ss.loadSlvs(filename)
+		ss.Error("'%s' is a SolveSpace model. Use File > Import, or spacesolve-cli "+
+			"convert, to convert it to a spacesolve model, which can then be opened.", filename)
+		return false
 	}
 
 	doc, err := spcs.LoadFile(filename)
@@ -154,42 +144,9 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 	return true
 }
 
-// loadSlvs is LoadFromFile for a .slvs file, which only the tests that
-// compare with C++ open.
-func (ss *SolveSpaceUI) loadSlvs(filename string) bool {
-	doc, err := slvs.LoadFile(filename)
-	if err != nil {
-		if errors.Is(err, slvs.ErrCancelled) {
-			// The user gave up at a missing linked file.
-			return false
-		}
-		ss.Error("Unrecognized data in file. This file may be corrupt, or " +
-			"from a newer version of the program.")
-		return false
-	}
-	if doc.Empty {
-		ss.Error("The file is empty. It may be corrupt.")
-		ss.NewFile()
-		return true
-	}
-	if doc.LoadError {
-		ss.Error("Unrecognized data in file. This file may be corrupt, or " +
-			"from a newer version of the program.")
-		if len(doc.Sketch.GroupOrder) == 0 {
-			ss.NewFile()
-			return true
-		}
-	}
-	// A .slvs file has no unit; it is shown in the one in use, as C++
-	// does.
-	doc.Sketch.Units = ss.ViewUnits
-	ss.setSketch(doc.Sketch)
-	return true
-}
-
 // SaveToFile writes the sketch to filename (C++ SolveSpaceUI::SaveToFile).
 func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
-	if hasExtension(filename, "slvs") && legacySlvsSave == nil {
+	if hasExtension(filename, "slvs") {
 		ss.Error("spacesolve doesn't write SolveSpace models; save the sketch as a " +
 			".spcs file.")
 		return false
@@ -200,9 +157,6 @@ func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 	ss.ScheduleShowTW()
 	ss.GenerateAll(sketch.GenerateAll)
 
-	if hasExtension(filename, "slvs") {
-		return ss.saveSlvs(filename)
-	}
 	err := spcs.SaveFile(ss.SK, ss.SaveFile, filename, spcs.Options{})
 	var le *spcs.LinkError
 	switch {
@@ -211,23 +165,6 @@ func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 			"on the same volume.", le.Link)
 		return false
 	case err != nil:
-		ss.Error("Couldn't write to file '%s'", filename)
-		return false
-	}
-	return true
-}
-
-// saveSlvs is SaveToFile for a .slvs file, which only the tests that
-// compare with C++ save.
-func (ss *SolveSpaceUI) saveSlvs(filename string) bool {
-	if link, err := link.RebaseLinks(ss.SK, ss.SaveFile, filename); err != nil {
-		ss.Error("This sketch links the sketch '%s'; it can only be saved "+
-			"on the same volume.", link)
-		return false
-	}
-	if err := os.WriteFile(filename, legacySlvsSave(ss.SK), 0o644); err != nil {
-		// Put the links back relative to where the sketch still is.
-		_, _ = link.RebaseLinks(ss.SK, filename, ss.SaveFile)
 		ss.Error("Couldn't write to file '%s'", filename)
 		return false
 	}

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Regenerate testdata/ui/golden/*.goui: what the Go interface shows for
-# each script testdata/ui/scripts/ext_*.script, recorded by Go itself.
-# These scripts cover what only spacesolve has, so there is no C++
-# output to compare with; the golden is a frozen baseline. Review the
-# diff of every regenerated golden before committing it, and commit it
-# on its own with a message that says why it changed.
+# Regenerate testdata/ui/golden/<name>.goui: what the interface shows
+# for each script in testdata/ui/scripts. The goldens of the scripts
+# that are not ext_ were first recorded from C++ SolveSpace; Go writes
+# them all since the C++ comparison was frozen. Review the diff before
+# committing.
 #
 # Usage:
 #     ./scripts/regen-goui.sh [script names...]
@@ -14,9 +13,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
-run='^TestGoScripts$'
+run='^(TestGoScripts|TestMenuTable|TestHover|TestInteraction)$'
 if [ $# -gt 0 ]; then
     run="$run/^($(IFS='|'; echo "$*"))\$"
 fi
-SPACESOLVE_REGEN_GOUI=1 go test ./pkg/ui -run "$run" -count=1
+SPACESOLVE_REGEN_GOLDEN=1 go test ./pkg/ui -run "$run" -count=1
 git status --short testdata/ui/golden

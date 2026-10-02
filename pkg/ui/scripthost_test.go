@@ -85,24 +85,24 @@ func TestScriptHostMessages(t *testing.T) {
 		`doc.Extrude(3, "disc")`,
 		`doc.Export("`+filepath.Join(dir, "disc.xyz")+`")`,
 		`doc.Export("`+filepath.Join(dir, "disc.stl")+`")`,
-		`doc.Save("`+filepath.Join(dir, "disc.slvs")+`")`,
+		`doc.Save("`+filepath.Join(dir, "disc.spcs")+`")`,
 		`doc.Unsaved()`,
-		`doc.Load("`+filepath.Join(dir, "none.slvs")+`")`,
+		`doc.Load("`+filepath.Join(dir, "none.spcs")+`")`,
 	)
 	want := "Active group mesh is empty; nothing to export.\n" +
 		"circle r004-circle, radius 5.000\n" +
 		"g003-disc\n" +
 		"can't tell what to export from the name '" + filepath.Join(dir, "disc.xyz") + "'\n" +
 		"nil\nnil\nfalse\n" +
-		"Couldn't read from file '" + filepath.Join(dir, "none.slvs") + "'\n"
+		"Couldn't read from file '" + filepath.Join(dir, "none.spcs") + "'\n"
 	if got != want {
 		t.Errorf("the console showed:\n%s\nwant:\n%s", got, want)
 	}
 	// The file that couldn't be loaded left the sketch as it was.
-	if ss.SaveFile != filepath.Join(dir, "disc.slvs") || len(ss.SK.Groups) != 3 {
+	if ss.SaveFile != filepath.Join(dir, "disc.spcs") || len(ss.SK.Groups) != 3 {
 		t.Errorf("the sketch's file is %q, with %d groups", ss.SaveFile, len(ss.SK.Groups))
 	}
-	if got := scriptConsole(t, ss, `doc.Load("`+filepath.Join(dir, "disc.slvs")+`")`, `doc.Groups()`); got !=
+	if got := scriptConsole(t, ss, `doc.Load("`+filepath.Join(dir, "disc.spcs")+`")`, `doc.Groups()`); got !=
 		"nil\n0: g002-sketch-in-plane\n1: g003-disc\n" {
 		t.Errorf("loading the saved sketch showed %q", got)
 	}

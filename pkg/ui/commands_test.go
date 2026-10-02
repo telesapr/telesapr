@@ -192,7 +192,6 @@ func TestMeasureMode(t *testing.T) {
 // says which parameters now count in the new unit, sets the unit of new
 // documents, and a file opens in its own unit.
 func TestDocumentUnitsInterface(t *testing.T) {
-	asProduct(t)
 	ss, p := newTestApp(t)
 	sk := ss.SK
 	if err := sk.AddParameter("w", "0.5"); err != nil {
@@ -258,13 +257,4 @@ func TestDocumentUnitsInterface(t *testing.T) {
 		t.Error("the parameters screen doesn't name the unit")
 	}
 
-	// In a comparison with C++ the unit is only the view's.
-	cppComparison = true
-	defer func() { cppComparison = false }()
-	steps := ss.SK.Undo.Cnt
-	ss.SK.Unsaved = false
-	ss.SetDocumentUnits(core.UnitMM)
-	if ss.SK.Undo.Cnt != steps || ss.SK.Unsaved || ss.ViewUnits != core.UnitMM {
-		t.Errorf("C++ comparison: steps %d, unsaved %v, view %v", ss.SK.Undo.Cnt, ss.SK.Unsaved, ss.ViewUnits)
-	}
 }

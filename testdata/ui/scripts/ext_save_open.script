@@ -17,7 +17,6 @@ file $tmp/part.spcs
 menu File|Open...
 dump
 save
-product
 menu File|New
 file $testdata/group/translate_nd/normal.slvs
 answer ok

@@ -92,7 +92,7 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.RemoveAll(saveDir) })
-	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.slvs")}
+	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.spcs")}
 	r.p = headless.New()
 	r.p.FontFiles = []string{filepath.Join(root, "Gentium-R.ttf")}
 	r.p.PopUpHook = r.popUp
@@ -188,29 +188,11 @@ func (r *uiScriptRunner) popUp(m *headless.Menu) *headless.MenuItem {
 	return nil
 }
 
-// goOnlyMenuItems are the menus and entries the C++ program the menu
-// dumps are compared with doesn't have, left out of the dumps compared
-// with it.
-var goOnlyMenuItems = map[string]bool{
-	"S&cript":               true,
-	"Check S&olid":          true,
-	"Screw Thr&ead...":      true,
-	"Para&meters...":        true,
-	"Find Comman&d...":      true,
-	"Measure Se&lection":    true,
-	"Move Group Earl&ier":   true,
-	"Move Gr&oup Later":     true,
-	"Bro&ken References...": true,
-}
-
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
 	indent := strings.Repeat("  ", depth)
 	for _, it := range items {
 		if it.Separator {
 			fmt.Fprintf(b, "%s---\n", indent)
-			continue
-		}
-		if goOnlyMenuItems[it.RawLabel] && cppComparison {
 			continue
 		}
 		fmt.Fprintf(b, "%s%s", indent, it.RawLabel)
@@ -412,7 +394,7 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 	}()
 	switch op := t[0]; op {
 	case "load":
-		r.ss.Load(filepath.Join(r.dir, t[1]))
+		loadSlvs(r.t, r.ss, filepath.Join(r.dir, t[1]))
 	case "view":
 		r.setView(t[1])
 	case "move", "down", "up", "dbl", "scroll", "leave":
@@ -502,12 +484,6 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 		}
 	case "tw":
 		r.ss.TW.dumpRows(&r.b)
-	case "product":
-		// From here on, as the product: .slvs files are imported, never
-		// opened or saved.
-		saved := legacySlvsSave
-		legacySlvsSave = nil
-		r.t.Cleanup(func() { legacySlvsSave = saved })
 	case "save":
 		if !r.ss.SaveToFile(r.savePath) {
 			fmt.Fprintf(&r.b, "save failed\n")
@@ -550,8 +526,11 @@ func linkPathsFromTestdata(s string) string {
 	return linkRelToTestdata.ReplaceAllString(s, "${1}testdata/")
 }
 
-// compareUIScripts runs scripts and compares each with its golden,
-// first recorded from C++, reporting the first differing line.
+// compareUIScripts runs the scripts with a prefix and compares each
+// output with its golden, testdata/ui/golden/<name>.goui, reporting the
+// first differing line. The goldens of the scripts that are not ext_
+// were first recorded from C++. SPACESOLVE_REGEN_GOLDEN=1 rewrites them
+// (scripts/regen-goui.sh); review the diff before committing.
 func compareUIScripts(t *testing.T, prefix string) {
 	names := uiScripts(t, prefix)
 	if len(names) == 0 {
@@ -559,7 +538,7 @@ func compareUIScripts(t *testing.T, prefix string) {
 	}
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
-			path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".cppui")
+			path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".goui")
 			got := linkPathsFromTestdata(runUIScript(t, name))
 			if golden.Regen() {
 				golden.Check(t, path, []byte(got))
@@ -567,10 +546,9 @@ func compareUIScripts(t *testing.T, prefix string) {
 			}
 			wantB, err := os.ReadFile(path)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("%v (record it with scripts/regen-goui.sh %s)", err, name)
 			}
-			want := linkPathsFromTestdata(string(wantB))
-			if got != want {
+			if want := linkPathsFromTestdata(string(wantB)); got != want {
 				t.Fatalf("output differs from the golden at %s", firstDiffLine(got, want))
 			}
 		})
@@ -595,54 +573,21 @@ func firstDiffLine(got, want string) string {
 	return ""
 }
 
-// TestGoScripts replays the scripts of what only spacesolve has
-// (ext_*) and compares each output with the golden Go itself recorded,
-// testdata/ui/golden/<name>.goui. SPACESOLVE_REGEN_GOUI=1 rewrites the
-// goldens (scripts/regen-goui.sh); review the diff before committing.
-func TestGoScripts(t *testing.T) {
-	names := uiScripts(t, "ext_")
-	if len(names) == 0 {
-		t.Skip("no scripts ext_*")
-	}
-	regen := os.Getenv("SPACESOLVE_REGEN_GOUI") != ""
-	asProduct(t)
-	for _, name := range names {
-		t.Run(name, func(t *testing.T) {
-			// What only spacesolve has is saved as spacesolve saves.
-			got := linkPathsFromTestdata(runUIScriptWith(t, name, func(r *uiScriptRunner) {
-				r.savePath = filepath.Join(r.tmp, "save.spcs")
-			}))
-			path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".goui")
-			if regen {
-				if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
-					t.Fatal(err)
-				}
-				return
-			}
-			wantB, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatalf("%v (record it with scripts/regen-goui.sh %s)", err, name)
-			}
-			if want := string(wantB); got != want {
-				t.Fatalf("output differs from the golden at %s", firstDiffLine(got, want))
-			}
-		})
-	}
-}
+// TestGoScripts replays the scripts of what only spacesolve has (ext_*).
+func TestGoScripts(t *testing.T) { compareUIScripts(t, "ext_") }
 
-// TestMenuTableVsCpp compares the main menu, and its states, with
-// C++'s.
-func TestMenuTableVsCpp(t *testing.T) { compareUIScripts(t, "menu_") }
+// TestMenuTable replays the main menu, and its states.
+func TestMenuTable(t *testing.T) { compareUIScripts(t, "menu_") }
 
-// TestHoverVsCpp compares what the mouse hovers with C++.
-func TestHoverVsCpp(t *testing.T) { compareUIScripts(t, "hover_") }
+// TestHover replays what the mouse hovers.
+func TestHover(t *testing.T) { compareUIScripts(t, "hover_") }
 
-// TestInteractionVsCpp replays mouse, keyboard, menu and dialog input
-// and compares what the interface shows and saves with C++.
-func TestInteractionVsCpp(t *testing.T) { compareUIScripts(t, "act_") }
+// TestInteraction replays mouse, keyboard, menu and dialog input, and
+// what the interface shows and saves.
+func TestInteraction(t *testing.T) { compareUIScripts(t, "act_") }
 
 // TestUIScript prints the output of the script SPACESOLVE_UI_SCRIPT
-// names, for comparing with the harness's by hand.
+// names.
 func TestUIScript(t *testing.T) {
 	name := os.Getenv("SPACESOLVE_UI_SCRIPT")
 	if name == "" {
