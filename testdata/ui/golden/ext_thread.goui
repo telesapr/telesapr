@@ -202,41 +202,45 @@ row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    force NURBS surfaces to triangle mesh
+row 40    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 43    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 45    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 47    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 49    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 51 
+row 53 
  0-99 64 64 0
-row 53  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 55    (none)
+row 57    (none)
  0-99 64 61 0
-row 57 
+row 59 
  0-99 64 64 0
-row 59  constraints in group (0 DOF)
+row 61  constraints in group (0 DOF)
  0-99 74 64 0
-row 61    c01a-proj-pt-pt-distance
+row 63    c01a-proj-pt-pt-distance
  0-2 64 61 0
  3-26 6c 61 108 1a 1 1
  27-99 64 61 0
-row 63 
+row 65 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0

@@ -44,39 +44,43 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (2 DOF)
+row 43  constraints in group (2 DOF)
  0-99 74 64 0
-row 43    (none)
+row 45    (none)
  0-99 64 61 0
-row 45 
+row 47 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
@@ -141,39 +145,43 @@ row 20    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 27    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 29    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 31    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 33    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  requests in group
+row 37  requests in group
  0-99 74 64 0
-row 37    (none)
+row 39    (none)
  0-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
-row 41  constraints in group (2 DOF)
+row 43  constraints in group (2 DOF)
  0-99 74 64 0
-row 43    (none)
+row 45    (none)
  0-99 64 61 0
-row 45 
+row 47 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
