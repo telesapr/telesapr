@@ -2,17 +2,18 @@ package slvs
 
 import (
 	"bytes"
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 )
 
 // TestStyleDefaults: a style block fills the fields it leaves out with
 // the default style's, and an entity naming a style the file lacks
-// gets a new custom style when saved; both as C++ writes them (checked
-// with a C++ harness).
+// gets a new custom style when saved; both as C++ wrote them (checked
+// with a C++ harness while the C++ comparison ran).
 func TestStyleDefaults(t *testing.T) {
 	data, err := os.ReadFile(fixture("request/line_segment/normal.slvs"))
 	if err != nil {
@@ -25,25 +26,23 @@ func TestStyleDefaults(t *testing.T) {
 		"\n\nStyle.h.v=00000100\nStyle.name=thin\nStyle.width=0.50000000000000000000\nAddStyle\n\n"...)
 
 	block := func(name, width string) string {
-		return "Style.h.v=00000100\n" +
-			"Style.name=" + name + "\n" +
-			"Style.width=" + width + "\n" +
-			"Style.textHeight=11.50000000000000000000\n" +
-			"Style.color=00ffffff\n" +
-			"Style.fillColor=004c4c4c\n" +
-			"Style.filled=0\n" +
-			"Style.visible=1\n" +
-			"Style.exportable=1\n" +
-			"Style.stippleScale=15.00000000000000000000\n" +
-			"AddStyle\n"
+		return "style 0x100 \"" + name + "\" {\n" +
+			"  width " + width + "\n" +
+			"  text-height 11.5\n" +
+			"  color 255 255 255 255\n" +
+			"  fill-color 76 76 76 255\n" +
+			"  visible\n" +
+			"  exportable\n" +
+			"  stipple-scale 15\n" +
+			"}\n"
 	}
 	for _, tc := range []struct {
 		name string
 		data []byte
 		want string
 	}{
-		{"missing", styled, block("new-custom-style", "1.50000000000000000000")},
-		{"partial", partial, block("thin", "0.50000000000000000000")},
+		{"missing", styled, block("new-custom-style", "1.5")},
+		{"partial", partial, block("thin", "0.5")},
 	} {
 		path := filepath.Join(t.TempDir(), tc.name+".slvs")
 		os.WriteFile(path, tc.data, 0o644)
@@ -51,8 +50,8 @@ func TestStyleDefaults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if saved := string(slvswrite.Save(doc.Sketch)); !strings.Contains(saved, tc.want) {
-			t.Errorf("%s: saved style isn't C++'s:\n%s", tc.name, saved[strings.LastIndex(saved, "Style.h.v"):])
+		if saved := string(spcs.Encode(doc.Sketch, spcs.Options{})); !strings.Contains(saved, tc.want) {
+			t.Errorf("%s: saved style isn't the one C++ wrote:\n%s", tc.name, saved[strings.Index(saved, "\nstyle "):])
 		}
 	}
 }

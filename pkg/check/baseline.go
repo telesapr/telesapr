@@ -41,6 +41,14 @@ func ReadBaseline(path string) (map[string]string, []string, error) {
 	return lines, order, nil
 }
 
+// BaselineRelTol is how far a volume, centre of mass or bounding box
+// coordinate may move from the baseline, relative to the larger of 1 and
+// the recorded value. It was 1e-9 while the kernel's output matched C++
+// byte for byte, and was loosened when the C++ comparison was frozen
+// (ROADMAP-JUMP.md, package 5.1), so that kernel fixes can move the
+// last digits without a new baseline.
+const BaselineRelTol = 1e-6
+
 // CompareBaseline compares two baseline lines field by field and says
 // what differs, or returns "". Counts and flags must match exactly;
 // volume, centre of mass and bounding box to relTol, relative to the

@@ -2,7 +2,6 @@ package slvs_test
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,8 +13,7 @@ import (
 )
 
 // displayFixtures are the fixtures whose display outlines
-// TestDisplayOutlinesVsCpp compares; scripts/regen-display-golden.sh
-// reads this list.
+// TestDisplayOutlines compares with testdata/display.
 var displayFixtures = []string{
 	"group/boolean_coplanar_union/normal.slvs",
 	"group/boolean_knife_edge/normal.slvs",
@@ -34,18 +32,15 @@ var displayFixtures = []string{
 	"request/ttf_text/extrude.slvs",
 }
 
-// TestDisplayOutlinesVsCpp checks each group's display items against
-// what C++ Group::GenerateDisplayItems makes: the mesh's size, and the
-// outlines as PolylineBuilder joins them, bit for bit.
-func TestDisplayOutlinesVsCpp(t *testing.T) {
+// TestDisplayOutlines checks each group's display items against the
+// golden, first recorded from C++ Group::GenerateDisplayItems: the
+// mesh's size, and the outlines as PolylineBuilder joins them, bit for
+// bit.
+func TestDisplayOutlines(t *testing.T) {
 	root := filepath.Join("..", "..", "..", "testdata")
 	for _, f := range displayFixtures {
 		t.Run(f, func(t *testing.T) {
 			goldenPath := filepath.Join(root, "display", strings.TrimSuffix(f, ".slvs")+".outlines")
-			want, err := os.ReadFile(goldenPath)
-			if err != nil {
-				t.Fatalf("golden: %v", err)
-			}
 			// As the harness's SS.Init, generate a new file first: the
 			// linked files load with the chord tolerance it leaves.
 			blank := sketch.NewSketch()
@@ -70,7 +65,7 @@ func TestDisplayOutlinesVsCpp(t *testing.T) {
 						hexVector(so.A), hexVector(so.B), hexVector(so.NL), hexVector(so.NR))
 				}
 			}
-			golden.CompareDump(t, string(want), got.String())
+			golden.CheckDump(t, goldenPath, got.String())
 		})
 	}
 }

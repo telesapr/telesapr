@@ -21,9 +21,6 @@ var colorConflict = rgbi(255, 60, 60)
 // isConflicting reports whether constraint c is one the active group's
 // failed solve blames: one of those that could be removed to fix it.
 func (ss *SolveSpaceUI) isConflicting(c *core.Constraint) bool {
-	if cppComparison {
-		return false
-	}
 	g := ss.SK.GetGroup(ss.GW.activeGroupH())
 	if g == nil || c.Group != g.H || g.IsSolvedOkay() {
 		return false
@@ -103,18 +100,13 @@ func (ss *SolveSpaceUI) measureLabel() (string, geom.Vector, bool) {
 // SetDocumentUnits makes u the document's unit, which lengths are shown
 // and typed in, keeping every size, as one undo step; new documents
 // start in it too. When lengths are computed from parameters, the user
-// is told that those now count in u. In the tests that compare with
-// C++, where the unit is only the view's, it changes nothing else.
+// is told that those now count in u.
 func (ss *SolveSpaceUI) SetDocumentUnits(u core.Unit) {
 	defer func() {
 		ss.ViewUnits = ss.SK.Units
 		ss.ScheduleShowTW()
 		ss.GW.EnsureValidActives()
 	}()
-	if cppComparison {
-		ss.SK.Units = u
-		return
-	}
 	ss.DefaultUnits = u
 	if ss.SK.Units == u {
 		return

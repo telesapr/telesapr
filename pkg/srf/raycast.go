@@ -333,45 +333,80 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		return true
 	}
 
-	// 4. Raycast fallback. Pick a random direction and count intersections.
-	cnt := 0
-	for {
-		ray := geom.Vector{
-			X: randomTable[cnt],
-			Y: randomTable[cnt+1],
-			Z: randomTable[cnt+2],
-		}
+	// 4. Raycast fallback: the nearest surface along a ray tells which
+	// side p is on. A hit is not trusted when it lies on a trim edge, or
+	// within the chord tolerance of a curved trim's pwl, where the trim
+	// BSP can put it on the wrong side of the true curve; then another
+	// direction is tried. If none is clear, the ray whose nearest hit is
+	// farthest from its surface's trim edges decides.
+	c, _ := s.raycastClass(p)
+	*indir, *outdir = c, c
+	return true
+}
+
+// raycastTries is how many directions raycastClass tries.
+const raycastTries = 16
+
+// rayDirection is the i-th direction raycastClass tries: the six C++
+// tries first, then points spread evenly over the sphere.
+func rayDirection(i int) geom.Vector {
+	if i < 6 {
+		return geom.Vector{X: randomTable[i], Y: randomTable[i+1], Z: randomTable[i+2]}
+	}
+	// A Fibonacci lattice, at about the length of the first ones.
+	k, n := float64(i-6)+0.5, float64(raycastTries-6)
+	z := 1 - 2*k/n
+	r := math.Sqrt(1 - z*z)
+	phi := k * math.Pi * (3 - math.Sqrt(5))
+	return geom.Vector{X: r * math.Cos(phi), Y: r * math.Sin(phi), Z: z}.ScaledBy(10)
+}
+
+// raycastClass classifies p by the nearest surface along rays, and
+// returns how many directions it tried.
+func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
+	tol := ChordTolMm() + lengthEps
+	best, bestClear := SurfOutside, -1.0
+	for try := 0; try < raycastTries; try++ {
+		ray := rayDirection(try)
 		var l []SInter
-		s.AllPointsIntersecting(p.Minus(ray), p.Plus(ray), &l, false, true, false)
-		*indir = SurfOutside
-		*outdir = SurfOutside
+		for i := range s.Surface {
+			s.Surface[i].allPointsIntersecting(p.Minus(ray), p.Plus(ray), &l, false, true, false, tol)
+		}
+		c := SurfOutside
 		dmin := veryPositive
-		onEdge := false
-		for _, si := range l {
+		var nearest *SInter
+		for k := range l {
+			si := &l[k]
 			t := si.P.Minus(p).Dot(ray) / ray.MagSquared()
 			if t*ray.Magnitude() < -lengthEps {
 				continue
 			}
-			d := si.P.Minus(p).Magnitude()
-			if d < dmin {
+			if d := si.P.Minus(p).Magnitude(); d < dmin {
 				dmin = d
+				nearest = si
 				if si.SurfNormal.Dot(ray) > 0 {
-					*indir = SurfInside
-					*outdir = SurfInside
+					c = SurfInside
 				} else {
-					*indir = SurfOutside
-					*outdir = SurfOutside
+					c = SurfOutside
 				}
-				onEdge = si.OnEdge
 			}
 		}
-		if !onEdge {
-			break
+		// How far the hit is from where its surface's trim could be
+		// wrong; a ray that meets nothing is clear.
+		clear := veryPositive
+		switch {
+		case nearest == nil || !nearest.OnEdge:
+		case nearest.nearTrim:
+			clear = distanceToEdges(nearest.P, &nearest.Srf.Edges)
+		default:
+			clear = 0
 		}
-		cnt++
-		if cnt > 5 {
-			break
+		if clear >= tol {
+			return c, try + 1
+		}
+		if clear > bestClear {
+			best, bestClear = c, clear
 		}
 	}
-	return true
+	return best, raycastTries
 }

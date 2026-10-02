@@ -1,20 +1,21 @@
 package slvs
 
 import (
-	"bytes"
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
-	"os"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
-// TestModifyToolsVsCpp runs the tangent arc and split tools on sketches
-// built on a fixture, and requires the saves C++ writes after the same
-// steps (testdata/edit, from a C++ harness).
-func TestModifyToolsVsCpp(t *testing.T) {
+// TestModifyTools runs the tangent arc and split tools on sketches built
+// on a fixture, and requires the goldens in testdata/spcs/golden/modify.
+// Until the C++ comparison was frozen, the saves were those C++ wrote
+// after the same steps (testdata/edit, from a C++ harness).
+func TestModifyTools(t *testing.T) {
 	v := func(x, y float64) geom.Vector { return geom.Vector{X: x, Y: y} }
 	for _, tc := range []struct {
 		name    string
@@ -84,14 +85,9 @@ func TestModifyToolsVsCpp(t *testing.T) {
 				t.Fatalf("error %v, want error %v", err, tc.wantErr)
 			}
 			sk.GenerateAllTyped(sketch.GenerateAll)
-			got := slvswrite.Save(doc.Sketch)
-			want, err := os.ReadFile(fixture("edit/" + tc.name + ".slvs"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.Equal(got, want) {
-				t.Errorf("save differs from C++'s")
-			}
+			// As a save regenerates again.
+			sk.GenerateAll()
+			golden.Check(t, fixture("spcs/golden/modify/"+tc.name+".spcs"), spcs.Encode(doc.Sketch, spcs.Options{}))
 		})
 	}
 }

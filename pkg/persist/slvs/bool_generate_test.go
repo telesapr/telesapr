@@ -70,11 +70,9 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 // ground truth; the Go port's volumes should converge to these as
 // the boolean-CSG pipeline matures.
 //
-// Regenerate by running
-//
-//	cd solvespace/build && ./bin/solvespace-testsuite --filter "<fixture>" -d yes
-//
-// and reading the printed `CalculateVolume() / N == 1.0` golden.
+// They were read from the C++ testsuite's `CalculateVolume() / N == 1.0`
+// checks; since the C++ comparison was frozen they are this project's
+// goldens, changed by hand when the kernel changes a volume on purpose.
 var booleanFixtureCppGoldens = map[string]float64{
 	"boolean_coplanar_union":   13250.0,
 	"boolean_knife_edge":       1.8303900357690596,

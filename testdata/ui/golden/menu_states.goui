@@ -1,0 +1,310 @@
+dialog 0 No workplane is active, so the grid will not appear.|
+&File ind=0 en=1 act=0
+  &New [Ctrl+N] ind=0 en=1 act=0
+  &Open... [Ctrl+O] ind=0 en=1 act=0
+  Open &Recent ind=0 en=1 act=0
+    (no recent files) ind=0 en=0 act=0
+  &Save [Ctrl+S] ind=0 en=1 act=0
+  Save &As... [Ctrl+Shift+S] ind=0 en=1 act=0
+  ---
+  Export &Image... ind=0 en=1 act=0
+  Export 2d &View... ind=0 en=1 act=0
+  Export 2d &Section... ind=0 en=1 act=0
+  Export 3d &Wireframe... ind=0 en=1 act=0
+  Export Triangle &Mesh... ind=0 en=1 act=0
+  Export &Surfaces... ind=0 en=1 act=0
+  Im&port... ind=0 en=1 act=0
+  ---
+  E&xit [Ctrl+Q] ind=0 en=1 act=0
+&Edit ind=0 en=1 act=0
+  &Undo [Ctrl+Z] ind=0 en=1 act=0
+  &Redo [Ctrl+Y] ind=0 en=0 act=0
+  Re&generate All [Space] ind=0 en=1 act=0
+  ---
+  Snap Selection to &Grid [.] ind=0 en=1 act=0
+  Rotate Imported &90° [9] ind=0 en=1 act=0
+  ---
+  Cu&t [Ctrl+X] ind=0 en=1 act=0
+  &Copy [Ctrl+C] ind=0 en=1 act=0
+  &Paste [Ctrl+V] ind=0 en=1 act=0
+  Paste &Transformed... [Ctrl+T] ind=0 en=1 act=0
+  &Delete [Del] ind=0 en=1 act=0
+  ---
+  Select &Edge Chain [Ctrl+E] ind=0 en=1 act=0
+  Select &All [Ctrl+A] ind=0 en=1 act=0
+  &Unselect All [Esc] ind=0 en=1 act=0
+  ---
+  &Line Styles... ind=0 en=1 act=0
+  &View Projection... ind=0 en=1 act=0
+  Con&figuration... ind=0 en=1 act=0
+  Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
+  Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
+  Move Group Earl&ier ind=0 en=1 act=0
+  Move Gr&oup Later ind=0 en=1 act=0
+  Bro&ken References... ind=0 en=1 act=0
+&View ind=0 en=1 act=0
+  Zoom &In [+] ind=0 en=1 act=0
+  Zoom &Out [-] ind=0 en=1 act=0
+  Zoom To &Fit [F] ind=0 en=1 act=0
+  ---
+  Align View to &Workplane [W] ind=0 en=1 act=0
+  Nearest &Ortho View [F2] ind=0 en=1 act=0
+  Nearest &Isometric View [F3] ind=0 en=1 act=0
+  &Center View At Point [F4] ind=0 en=1 act=0
+  ---
+  Show Snap &Grid [>] ind=1 en=1 act=1
+  Darken Inactive Solids ind=1 en=1 act=1
+  Use &Perspective Projection [`] ind=1 en=1 act=1
+  Show E&xploded View [\] ind=1 en=1 act=0
+  Dimension &Units ind=0 en=1 act=0
+    Dimensions in &Millimeters ind=2 en=1 act=0
+    Dimensions in M&eters ind=2 en=1 act=0
+    Dimensions in &Inches ind=2 en=1 act=1
+    Dimensions in &Feet and Inches ind=2 en=1 act=0
+  ---
+  Show &Toolbar [Ctrl+Tab] ind=1 en=1 act=1
+  Show Property Bro&wser [Tab] ind=1 en=1 act=0
+  ---
+  &Full Screen [Ctrl+F11] ind=1 en=1 act=0
+&New Group ind=0 en=1 act=0
+  Sketch In &3d [Shift+3] ind=0 en=1 act=0
+  Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  ---
+  Step &Translating [Shift+T] ind=0 en=1 act=0
+  Step &Rotating [Shift+R] ind=0 en=1 act=0
+  ---
+  E&xtrude [Shift+X] ind=0 en=1 act=0
+  &Helix [Shift+H] ind=0 en=1 act=0
+  &Lathe [Shift+L] ind=0 en=1 act=0
+  Re&volve [Shift+V] ind=0 en=1 act=0
+  Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
+  ---
+  Link / Assemble... [Shift+I] ind=0 en=1 act=0
+  Link Recent ind=0 en=1 act=0
+    (no recent files) ind=0 en=0 act=0
+&Sketch ind=0 en=1 act=0
+  In &Workplane [2] ind=2 en=1 act=0
+  Anywhere In &3d [3] ind=2 en=1 act=1
+  ---
+  Datum &Point [P] ind=0 en=1 act=0
+  Wor&kplane ind=0 en=1 act=0
+  ---
+  Line &Segment [S] ind=0 en=1 act=0
+  C&onstruction Line Segment [Shift+S] ind=0 en=1 act=0
+  &Rectangle [R] ind=0 en=1 act=0
+  &Circle [C] ind=0 en=1 act=0
+  &Arc of a Circle [A] ind=0 en=1 act=0
+  &Bezier Cubic Spline [B] ind=0 en=1 act=0
+  ---
+  &Text in TrueType Font [T] ind=0 en=1 act=0
+  I&mage ind=0 en=1 act=0
+  ---
+  To&ggle Construction [G] ind=0 en=1 act=0
+  Ta&ngent Arc at Point [Shift+A] ind=0 en=1 act=0
+  Split Curves at &Intersection [I] ind=0 en=1 act=0
+&Constrain ind=0 en=1 act=0
+  &Distance / Diameter [D] ind=0 en=1 act=0
+  Re&ference Dimension [Shift+D] ind=0 en=1 act=0
+  A&ngle / Equal Angle [N] ind=0 en=1 act=0
+  Reference An&gle [Shift+N] ind=0 en=1 act=0
+  Other S&upplementary Angle [U] ind=0 en=1 act=0
+  Toggle R&eference Dim [E] ind=0 en=1 act=0
+  ---
+  &Horizontal [H] ind=0 en=1 act=0
+  &Vertical [V] ind=0 en=1 act=0
+  ---
+  &On Point / Curve / Plane [O] ind=0 en=1 act=0
+  E&qual Length / Radius [Q] ind=0 en=1 act=0
+  Length / Arc Ra&tio [Z] ind=0 en=1 act=0
+  Length / Arc Diff&erence [J] ind=0 en=1 act=0
+  At &Midpoint [M] ind=0 en=1 act=0
+  S&ymmetric [Y] ind=0 en=1 act=0
+  Para&llel / Tangent [L] ind=0 en=1 act=0
+  &Perpendicular [[] ind=0 en=1 act=0
+  Same Orient&ation [X] ind=0 en=1 act=0
+  Lock Point Where &Dragged []] ind=0 en=1 act=0
+  ---
+  Comment [;] ind=0 en=1 act=0
+&Analyze ind=0 en=1 act=0
+  Measure &Volume [Ctrl+Shift+V] ind=0 en=1 act=0
+  Measure A&rea [Ctrl+Shift+A] ind=0 en=1 act=0
+  Measure &Perimeter [Ctrl+Shift+P] ind=0 en=1 act=0
+  Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
+  Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
+  Show &Center of Mass [Ctrl+Shift+C] ind=0 en=1 act=0
+  Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
+  Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
+  ---
+  Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
+  ---
+  &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
+  &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
+  Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
+S&cript ind=0 en=1 act=0
+  Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
+  ---
+  &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
+  &Stop ind=0 en=1 act=0
+&Help ind=0 en=1 act=0
+  &Website / Manual ind=0 en=1 act=0
+  &Go to GitHub commit ind=0 en=1 act=0
+  &About ind=0 en=1 act=0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 2 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 2 3 12 0 21
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""
+dialog 0 No workplane selected.|Activating default workplane for this group.
+&File ind=0 en=1 act=0
+  &New [Ctrl+N] ind=0 en=1 act=0
+  &Open... [Ctrl+O] ind=0 en=1 act=0
+  Open &Recent ind=0 en=1 act=0
+    (no recent files) ind=0 en=0 act=0
+  &Save [Ctrl+S] ind=0 en=1 act=0
+  Save &As... [Ctrl+Shift+S] ind=0 en=1 act=0
+  ---
+  Export &Image... ind=0 en=1 act=0
+  Export 2d &View... ind=0 en=1 act=0
+  Export 2d &Section... ind=0 en=1 act=0
+  Export 3d &Wireframe... ind=0 en=1 act=0
+  Export Triangle &Mesh... ind=0 en=1 act=0
+  Export &Surfaces... ind=0 en=1 act=0
+  Im&port... ind=0 en=1 act=0
+  ---
+  E&xit [Ctrl+Q] ind=0 en=1 act=0
+&Edit ind=0 en=1 act=0
+  &Undo [Ctrl+Z] ind=0 en=1 act=0
+  &Redo [Ctrl+Y] ind=0 en=0 act=0
+  Re&generate All [Space] ind=0 en=1 act=0
+  ---
+  Snap Selection to &Grid [.] ind=0 en=1 act=0
+  Rotate Imported &90° [9] ind=0 en=1 act=0
+  ---
+  Cu&t [Ctrl+X] ind=0 en=1 act=0
+  &Copy [Ctrl+C] ind=0 en=1 act=0
+  &Paste [Ctrl+V] ind=0 en=1 act=0
+  Paste &Transformed... [Ctrl+T] ind=0 en=1 act=0
+  &Delete [Del] ind=0 en=1 act=0
+  ---
+  Select &Edge Chain [Ctrl+E] ind=0 en=1 act=0
+  Select &All [Ctrl+A] ind=0 en=1 act=0
+  &Unselect All [Esc] ind=0 en=1 act=0
+  ---
+  &Line Styles... ind=0 en=1 act=0
+  &View Projection... ind=0 en=1 act=0
+  Con&figuration... ind=0 en=1 act=0
+  Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
+  Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
+  Move Group Earl&ier ind=0 en=1 act=0
+  Move Gr&oup Later ind=0 en=1 act=0
+  Bro&ken References... ind=0 en=1 act=0
+&View ind=0 en=1 act=0
+  Zoom &In [+] ind=0 en=1 act=0
+  Zoom &Out [-] ind=0 en=1 act=0
+  Zoom To &Fit [F] ind=0 en=1 act=0
+  ---
+  Align View to &Workplane [W] ind=0 en=1 act=0
+  Nearest &Ortho View [F2] ind=0 en=1 act=0
+  Nearest &Isometric View [F3] ind=0 en=1 act=0
+  &Center View At Point [F4] ind=0 en=1 act=0
+  ---
+  Show Snap &Grid [>] ind=1 en=1 act=1
+  Darken Inactive Solids ind=1 en=1 act=1
+  Use &Perspective Projection [`] ind=1 en=1 act=1
+  Show E&xploded View [\] ind=1 en=1 act=0
+  Dimension &Units ind=0 en=1 act=0
+    Dimensions in &Millimeters ind=2 en=1 act=0
+    Dimensions in M&eters ind=2 en=1 act=0
+    Dimensions in &Inches ind=2 en=1 act=0
+    Dimensions in &Feet and Inches ind=2 en=1 act=1
+  ---
+  Show &Toolbar [Ctrl+Tab] ind=1 en=1 act=1
+  Show Property Bro&wser [Tab] ind=1 en=1 act=1
+  ---
+  &Full Screen [Ctrl+F11] ind=1 en=1 act=0
+&New Group ind=0 en=1 act=0
+  Sketch In &3d [Shift+3] ind=0 en=1 act=0
+  Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  ---
+  Step &Translating [Shift+T] ind=0 en=1 act=0
+  Step &Rotating [Shift+R] ind=0 en=1 act=0
+  ---
+  E&xtrude [Shift+X] ind=0 en=1 act=0
+  &Helix [Shift+H] ind=0 en=1 act=0
+  &Lathe [Shift+L] ind=0 en=1 act=0
+  Re&volve [Shift+V] ind=0 en=1 act=0
+  Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
+  ---
+  Link / Assemble... [Shift+I] ind=0 en=1 act=0
+  Link Recent ind=0 en=1 act=0
+    (no recent files) ind=0 en=0 act=0
+&Sketch ind=0 en=1 act=0
+  In &Workplane [2] ind=2 en=1 act=1
+  Anywhere In &3d [3] ind=2 en=1 act=0
+  ---
+  Datum &Point [P] ind=0 en=1 act=0
+  Wor&kplane ind=0 en=1 act=0
+  ---
+  Line &Segment [S] ind=0 en=1 act=0
+  C&onstruction Line Segment [Shift+S] ind=0 en=1 act=0
+  &Rectangle [R] ind=0 en=1 act=0
+  &Circle [C] ind=0 en=1 act=0
+  &Arc of a Circle [A] ind=0 en=1 act=0
+  &Bezier Cubic Spline [B] ind=0 en=1 act=0
+  ---
+  &Text in TrueType Font [T] ind=0 en=1 act=0
+  I&mage ind=0 en=1 act=0
+  ---
+  To&ggle Construction [G] ind=0 en=1 act=0
+  Ta&ngent Arc at Point [Shift+A] ind=0 en=1 act=0
+  Split Curves at &Intersection [I] ind=0 en=1 act=0
+&Constrain ind=0 en=1 act=0
+  &Distance / Diameter [D] ind=0 en=1 act=0
+  Re&ference Dimension [Shift+D] ind=0 en=1 act=0
+  A&ngle / Equal Angle [N] ind=0 en=1 act=0
+  Reference An&gle [Shift+N] ind=0 en=1 act=0
+  Other S&upplementary Angle [U] ind=0 en=1 act=0
+  Toggle R&eference Dim [E] ind=0 en=1 act=0
+  ---
+  &Horizontal [H] ind=0 en=1 act=0
+  &Vertical [V] ind=0 en=1 act=0
+  ---
+  &On Point / Curve / Plane [O] ind=0 en=1 act=0
+  E&qual Length / Radius [Q] ind=0 en=1 act=0
+  Length / Arc Ra&tio [Z] ind=0 en=1 act=0
+  Length / Arc Diff&erence [J] ind=0 en=1 act=0
+  At &Midpoint [M] ind=0 en=1 act=0
+  S&ymmetric [Y] ind=0 en=1 act=0
+  Para&llel / Tangent [L] ind=0 en=1 act=0
+  &Perpendicular [[] ind=0 en=1 act=0
+  Same Orient&ation [X] ind=0 en=1 act=0
+  Lock Point Where &Dragged []] ind=0 en=1 act=0
+  ---
+  Comment [;] ind=0 en=1 act=0
+&Analyze ind=0 en=1 act=0
+  Measure &Volume [Ctrl+Shift+V] ind=0 en=1 act=0
+  Measure A&rea [Ctrl+Shift+A] ind=0 en=1 act=0
+  Measure &Perimeter [Ctrl+Shift+P] ind=0 en=1 act=0
+  Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
+  Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
+  Show &Center of Mass [Ctrl+Shift+C] ind=0 en=1 act=0
+  Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
+  Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
+  ---
+  Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
+  ---
+  &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
+  &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
+  Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
+S&cript ind=0 en=1 act=0
+  Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
+  ---
+  &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
+  &Stop ind=0 en=1 act=0
+&Help ind=0 en=1 act=0
+  &Website / Manual ind=0 en=1 act=0
+  &Go to GitHub commit ind=0 en=1 act=0
+  &About ind=0 en=1 act=0

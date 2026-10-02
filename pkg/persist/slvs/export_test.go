@@ -1,28 +1,28 @@
 package slvs
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
-// TestExportStlVsCpp exports the mesh of every fixture that has one, at a
-// 0.1 mm chord tolerance, and requires the STL file solvespace-cli
-// export-mesh --chord-tol 0.1 wrote (testdata/export/stl, named after
-// the fixture's path).
-func TestExportStlVsCpp(t *testing.T) {
+// TestExportStl exports the mesh of every fixture that has one, at a
+// 0.1 mm chord tolerance, and requires the golden STL file
+// (testdata/export/stl, named after the fixture's path; first written
+// by C++ solvespace-cli export-mesh --chord-tol 0.1).
+func TestExportStl(t *testing.T) {
 	goldens, err := filepath.Glob(fixture("export/stl/*.stl"))
 	if err != nil || len(goldens) == 0 {
 		t.Fatalf("no goldens: %v", err)
 	}
 	dir := t.TempDir()
-	for _, golden := range goldens {
-		name := strings.TrimSuffix(filepath.Base(golden), ".stl")
+	for _, goldenPath := range goldens {
+		name := strings.TrimSuffix(filepath.Base(goldenPath), ".stl")
 		// constraint_pt_on_face_normal -> constraint/pt_on_face/normal.slvs
 		i := strings.IndexByte(name, '_')
 		j := strings.LastIndexByte(name, '_')
@@ -47,13 +47,7 @@ func TestExportStlVsCpp(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want, err := os.ReadFile(golden)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.Equal(got, want) {
-				t.Errorf("STL differs from C++'s")
-			}
+			golden.Check(t, goldenPath, got)
 		})
 	}
 }

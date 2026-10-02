@@ -3,13 +3,14 @@ package slvs
 import (
 	"bytes"
 	"fmt"
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
@@ -75,7 +76,7 @@ func generatedDump(t *testing.T, path, stl string, copies map[uint32]float64) []
 		}
 	}
 	b.WriteString("save\n")
-	b.Write(slvswrite.Save(doc.Sketch))
+	b.Write(spcs.Encode(doc.Sketch, spcs.Options{}))
 
 	es := sketch.ExportSettings{ChordTol: 0.1, MaxSegments: 64, Scale: 1}
 	if err := sk.ExportMeshTo(stl, es); err != nil {

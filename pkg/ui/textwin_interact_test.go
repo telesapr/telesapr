@@ -35,7 +35,7 @@ func clickText(t *testing.T, ss *SolveSpaceUI, s string) {
 // a group's name through the edit control.
 func TestTextWindowLinks(t *testing.T) {
 	ss, _ := newTestApp(t)
-	if !ss.Load(filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
+	if !loadSlvs(t, ss, filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
 		t.Fatal("load failed")
 	}
 	tw := ss.TW

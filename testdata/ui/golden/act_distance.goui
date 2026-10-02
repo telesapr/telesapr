@@ -1,0 +1,252 @@
+pending 0 0 "" 0 0 0 0
+hover 40002 0 0
+selection 2 40001/0 40002/0
+active 2 80020000
+camera 5 0 0 0 1 0 0 0 1 0
+counts 2 4 15 0 25
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""
+row 0         in plane: g002-sketch-in-plane
+ 0-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 6 
+ 0-99 64 64 0
+row 8 TWO POINTS
+ 0-99 74 64 0
+row 11    at (-20.00, 20.00, 0.00)
+ 0-5 64 64 0
+ 6-6 64 64 108 40001 1 1
+ 7-12 69 64 108 40001 1 1
+ 13-14 64 64 108 40001 1 1
+ 15-19 69 64 108 40001 1 1
+ 20-21 64 64 108 40001 1 1
+ 22-25 69 64 108 40001 1 1
+ 26-26 64 64 108 40001 1 1
+ 27-99 64 64 0
+row 13       (20.00, 10.00, 0.00)
+ 0-5 64 64 0
+ 6-6 64 64 108 40002 1 1
+ 7-11 69 64 108 40002 1 1
+ 12-13 64 64 108 40002 1 1
+ 14-18 69 64 108 40002 1 1
+ 19-20 64 64 108 40002 1 1
+ 21-24 69 64 108 40002 1 1
+ 25-25 64 64 108 40002 1 1
+ 26-99 64 64 0
+row 16   d = 41.23
+ 0-5 64 64 0
+ 6-99 69 64 0
+row 18   d(x, y, z) = (40.00, -10.00, 0.00)
+ 0-15 64 64 0
+ 16-20 69 64 0
+ 21-22 64 64 0
+ 23-28 69 64 0
+ 29-30 64 64 0
+ 31-34 69 64 0
+ 35-99 64 64 0
+row 21 (unselect all)
+ 0-13 6c 64 108 0 1 0
+ 14-99 64 64 0
+row 23 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 2 80020000
+camera 5 0 0 0 1 0 0 0 1 0
+counts 2 4 15 1 25
+editor 1 "41.2310562562" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""
+hover 0 0 0
+hoverlist 2
+  6 -3.5 0 40002 0
+  5 -0.75 0 40000 0
+save
+spacesolve 2
+
+units mm
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+constraint 0x1 pt-pt-distance {
+  group 0x2
+  workplane 0x80020000
+  value = 41.23105625617661
+  pt-a 0x40001
+  pt-b 0x40002
+  label-offset -2.42535625036333 -9.70142500145332 0
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 -20
+value 0x40011 20
+value 0x40013 20
+value 0x40014 10
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001 0x40002
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 20 0
+  act-visible
+}
+
+entity 0x40002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 20 10 0
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+  act-visible
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+end save

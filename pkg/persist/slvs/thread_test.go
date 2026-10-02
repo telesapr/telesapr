@@ -1,16 +1,16 @@
 package slvs
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
+	"errors"
 	"math"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 
 	"github.com/spacesolve/spacesolve/pkg/check"
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -127,7 +127,7 @@ func TestThreadSolids(t *testing.T) {
 			sk, _, res := tc.build(t, 0.01)
 			hel := res.Group
 			if !res.Sound {
-				t.Errorf("the solid isn't sound after %d tries", res.Tries)
+				t.Error("the solid isn't sound")
 			}
 			o := tc.options(t)
 			s := o.Spec
@@ -245,49 +245,38 @@ func TestThreadSolids(t *testing.T) {
 	}
 }
 
-// threadGoldens are the cases that have a C++ save in testdata/thread:
-// enough kinds of thread to pin the kernel on, at half a megabyte each.
+// threadGoldens are the cases that have a golden in testdata/thread:
+// enough kinds of thread to pin the generator and the kernel on.
 var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "screw_m6_down",
 	"lead_tr20", "screw_unc", "triple_m12"}
 
-// TestThreadVsCpp requires the file a thread makes to be one C++ reads
-// as Go does: saved, opened and saved again, it is the bytes C++ saves
-// after opening the same file (testdata/thread, from
-// scripts/regen-thread-golden.sh). With THREAD_FIXTURE_DIR set, it
-// writes the files for that script instead.
-func TestThreadVsCpp(t *testing.T) {
-	out := os.Getenv("THREAD_FIXTURE_DIR")
+// TestThreadGoldens saves the file a thread makes, opens it and saves
+// it again, and requires the golden, testdata/thread/<name>.spcs. Until
+// the C++ comparison was frozen, the same steps gave the bytes C++
+// saved after opening the file (testdata/thread/<name>.slvs, now plain
+// fixtures). SPACESOLVE_REGEN_GOLDEN=1 rewrites the goldens.
+func TestThreadGoldens(t *testing.T) {
 	for _, tc := range raceSample(threadCases) {
 		if !slices.Contains(threadGoldens, tc.name) {
 			continue
 		}
 		t.Run(tc.name, func(t *testing.T) {
 			sk, _, _ := tc.build(t, 0)
-			made := slvswrite.Save(sk)
-			dir := out
-			if dir == "" {
-				dir = t.TempDir()
-			}
-			path := filepath.Join(dir, tc.name+".slvs")
-			if err := os.WriteFile(path, made, 0o644); err != nil {
+			// Saved, which regenerates first.
+			sk.GenerateAll()
+			path := filepath.Join(t.TempDir(), tc.name+".spcs")
+			if err := spcs.SaveFile(sk, "", path, spcs.Options{}); err != nil {
 				t.Fatal(err)
-			}
-			if out != "" {
-				return
 			}
 			srf.SetChordTolMm(0)
-			doc, err := LoadFile(path)
+			doc, err := spcs.LoadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
+			// Opened, then saved: each regenerates.
 			doc.Sketch.GenerateAll()
-			want, err := os.ReadFile(fixture("thread/" + tc.name + ".slvs"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !bytes.Equal(slvswrite.Save(doc.Sketch), want) {
-				t.Errorf("save differs from C++'s")
-			}
+			doc.Sketch.GenerateAll()
+			golden.Check(t, fixture("thread/"+tc.name+".spcs"), spcs.Encode(doc.Sketch, spcs.Options{}))
 		})
 	}
 }
@@ -412,9 +401,10 @@ func threadSweepCases() []threadCase {
 // TestThreadSweep makes threads of many kinds and sizes at chord
 // tolerances from coarse to fine, and requires a sound solid from
 // nearly all: an even sample by default, the whole grid with
-// SPACESOLVE_SWEEP=1 (three minutes). The rates allowed are what the
-// grid and the sample gave when the sweep was set up; they are the
-// kernel's, and package 5.3 of ROADMAP-JUMP.md lowers them to 0.
+// SPACESOLVE_SWEEP=1 (two minutes). AddThread generates each thread
+// once, in the first placement of its sketch planes; the target fixed
+// for package 5.3 of ROADMAP-JUMP.md was no unsound solid at the
+// default chord tolerance (0.1%) or at five times it.
 func TestThreadSweep(t *testing.T) {
 	cases := threadSweepCases()
 	byName := map[string]threadCase{}
@@ -430,37 +420,48 @@ func TestThreadSweep(t *testing.T) {
 		},
 		MaxFailRate:       threadSweepMaxFailRate,
 		Sample:            16,
-		SampleMaxFailRate: 2.0 / 16,
+		SampleMaxFailRate: 1.0 / 16,
 	}
 	grid.Run(func(p sweep.Point) error {
 		_, _, res := byName[p.String("case")].build(t, p.Float("tol"))
 		if !res.Sound {
-			return fmt.Errorf("not sound after %d tries", res.Tries)
+			return errors.New("not sound")
 		}
 		return nil
 	}).Require(t)
 }
 
 // threadSweepMaxFailRate is the fraction of TestThreadSweep's grid
-// allowed to be unsound: what the whole grid gave on 2026-10-02, 24 of
-// 400. All but three were at chord tolerances of 0.2% and coarser;
-// none at the default 0.1%. The sample of 16 then had two.
-const threadSweepMaxFailRate = 24.0 / 400
+// allowed to be unsound: what the whole grid gave on 2026-10-02 after the
+// raycast fix, 3 of 400, at 0.03% and 0.01%, none at 0.05% or coarser.
+// Before it, AddThread turned the planes up to seven times and 24 were
+// unsound; generated once, without the fix, 68 were, 27 of them at 0.5%.
+// The sample of 16 had none.
+const threadSweepMaxFailRate = 3.0 / 400
 
-// TestThreadGoldensSound checks the solid of every thread golden with
-// the invariant oracle.
+// TestThreadGoldensSound checks the solid of every thread golden, the
+// .spcs ones and the C++ saves, with the invariant oracle.
 func TestThreadGoldensSound(t *testing.T) {
-	files, err := filepath.Glob(filepath.Join("..", "..", "..", "testdata", "thread", "*.slvs"))
+	files, err := filepath.Glob(filepath.Join("..", "..", "..", "testdata", "thread", "*.s[lp]?s"))
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no thread goldens: %v", err)
 	}
 	for _, f := range files {
 		t.Run(filepath.Base(f), func(t *testing.T) {
-			doc, err := LoadFile(f)
-			if err != nil {
-				t.Fatal(err)
+			var sk *sketch.Sketch
+			if strings.HasSuffix(f, ".spcs") {
+				doc, err := spcs.LoadFile(f)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sk = doc.Sketch
+			} else {
+				doc, err := LoadFile(f)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sk = doc.Sketch
 			}
-			sk := doc.Sketch
 			sk.GenerateAll()
 			last := sk.GetGroup(sk.GroupOrder[len(sk.GroupOrder)-1])
 			if r := check.Group(sk, last); !r.Sound() || r.Empty() {

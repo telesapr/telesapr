@@ -253,9 +253,8 @@ func (tw *TextWindow) ShowListOfGroups() {
 			g.H.V, lf(tw.ScreenSelectGroup), s,
 			suffix,
 		}
-		// Arrows that move the group earlier and later, which C++
-		// doesn't have.
-		if !ref && !cppComparison {
+		// Arrows that move the group earlier and later.
+		if !ref {
 			format += "  %Fl%Lu%D%f↑%E %Fl%Ld%D%f↓%E"
 			args = append(args, g.H.V, lf(tw.ScreenMoveGroup), g.H.V, lf(tw.ScreenMoveGroup))
 		}
@@ -277,11 +276,9 @@ func (tw *TextWindow) ShowListOfGroups() {
 		lf(tw.ScreenShowListOfStyles),
 		lf(tw.ScreenShowEditView),
 		lf(tw.ScreenShowConfiguration))
-	if !cppComparison {
-		tw.Printf(false, "  %Fl%Lr%fparameters%E", lf(tw.ScreenShowParameters))
-		if n := len(sk.BrokenReferences) + len(sk.ExprErrors); n > 0 {
-			tw.Printf(false, "  %Fx%Lb%fbroken references (%d)%E", lf(tw.ScreenShowBrokenReferences), n)
-		}
+	tw.Printf(false, "  %Fl%Lr%fparameters%E", lf(tw.ScreenShowParameters))
+	if n := len(sk.BrokenReferences) + len(sk.ExprErrors); n > 0 {
+		tw.Printf(false, "  %Fx%Lb%fbroken references (%d)%E", lf(tw.ScreenShowBrokenReferences), n)
 	}
 }
 
@@ -736,10 +733,8 @@ func (tw *TextWindow) ShowGroupInfo() {
 
 	tw.Printf(false, " %f%Lv%Fd%s  show entities from this group",
 		lf(tw.ScreenChangeGroupOption), check(g.Visible))
-	if !cppComparison {
-		tw.Printf(false, " %f%LA%Fd%s  suppress this group and the groups that use it",
-			lf(tw.ScreenChangeGroupOption), check(g.SuppressAll))
-	}
+	tw.Printf(false, " %f%LA%Fd%s  suppress this group and the groups that use it",
+		lf(tw.ScreenChangeGroupOption), check(g.SuppressAll))
 
 	if !g.IsForcedToMeshBySource(sk) && !g.IsTriangleMeshAssembly() {
 		tw.Printf(false, " %f%Lf%Fd%s  force NURBS surfaces to triangle mesh",
@@ -880,12 +875,6 @@ func (tw *TextWindow) ShowGroupSolveInfo() {
 		bg := byte('a')
 		if i&1 != 0 {
 			bg = 'd'
-		}
-		if cppComparison {
-			tw.Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E",
-				bg, c.H.V, lf(tw.ScreenSelectConstraint), lf(tw.ScreenHoverConstraint),
-				c.DescriptionString())
-			continue
 		}
 		tw.Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E %Fl%Lj%D%f%h[show]%E",
 			bg, c.H.V, lf(tw.ScreenSelectConstraint), lf(tw.ScreenHoverConstraint),

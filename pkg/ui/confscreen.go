@@ -365,10 +365,8 @@ func (tw *TextWindow) ShowConfiguration() {
 		lf(tw.ScreenChangeShowContourAreas), check(ss.ShowContourAreas))
 	tw.Printf(false, "  %Fd%f%Ll%s  enable automatic line constraints%E",
 		lf(tw.ScreenChangeAutomaticLineConstraints), check(ss.AutomaticLineConstraints))
-	if !cppComparison {
-		tw.Printf(false, "  %Fd%f%Ll%s  colour entities by constraint state%E",
-			lf(tw.ScreenChangeColorByFreedom), check(ss.ColorByFreedom))
-	}
+	tw.Printf(false, "  %Fd%f%Ll%s  colour entities by constraint state%E",
+		lf(tw.ScreenChangeColorByFreedom), check(ss.ColorByFreedom))
 	tw.Printf(false, "  %Fd%f%Ll%s  use camera mouse navigation%E",
 		lf(tw.ScreenChangeCameraNav), check(ss.CameraNav))
 	tw.Printf(false, "  %Fd%f%Ll%s  use turntable mouse navigation%E",

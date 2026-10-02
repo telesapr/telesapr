@@ -160,6 +160,15 @@ func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *
 // (raycast.cpp:249).
 func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 	asSegment, trimmed, inclTangent bool) {
+	s.allPointsIntersecting(a, b, l, asSegment, trimmed, inclTangent, 0)
+}
+
+// allPointsIntersecting is AllPointsIntersecting. With nearCurved > 0,
+// a trimmed search also reports, with OnEdge set, the hits within
+// nearCurved of a curved trim's pwl, on whichever side of it the trim
+// BSP puts them: there the BSP can be wrong about the true curve.
+func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
+	asSegment, trimmed, inclTangent bool, nearCurved float64) {
 	if s.LineEntirelyOutsideBbox(a, b, asSegment) {
 		return
 	}
@@ -275,7 +284,11 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 		if s.Bsp != nil {
 			c = s.Bsp.ClassifyPoint(puv, geom.Point2d{}, s)
 		}
-		if trimmed && c == BspUvOutside {
+		// A point outside the patch projects onto its boundary, off the
+		// line; only a point really on the line is a hit.
+		near := trimmed && nearCurved > 0 && distanceToEdges(pxyz, &s.curvedEdges) < nearCurved &&
+			pxyz.DistanceToLine(a, ba) < lengthEps
+		if trimmed && c == BspUvOutside && !near {
 			continue
 		}
 
@@ -285,7 +298,8 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			SurfNormal: s.NormalAt(puv.U, puv.V),
 			PInter:     puv,
 			Srf:        s,
-			OnEdge:     c != BspUvInside,
+			OnEdge:     c != BspUvInside || near,
+			nearTrim:   near && (c == BspUvInside || c == BspUvOutside),
 		})
 	}
 }

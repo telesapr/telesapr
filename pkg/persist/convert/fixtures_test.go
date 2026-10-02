@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/check"
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
 	"github.com/spacesolve/spacesolve/pkg/persist/convert"
 	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 	"github.com/spacesolve/spacesolve/pkg/srf"
@@ -118,26 +119,12 @@ func firstDiff(a, b []byte) string {
 	return fmt.Sprintf("%d lines, then %d", len(al), len(bl))
 }
 
-// goldenDir holds a .spcs golden per fixture directory: the import of
-// its normal.slvs, or of its first fixture.
-var goldenDir = filepath.Join(testdata, "spcs", "golden")
-
-// goldenFixtures picks the fixture of each directory that has a golden.
-func goldenFixtures(files []string) map[string]string {
-	picked := map[string]string{}
-	for _, f := range files {
-		dir := filepath.ToSlash(filepath.Dir(f))
-		if cur, ok := picked[dir]; !ok || (filepath.Base(f) == "normal.slvs" && filepath.Base(cur) != "normal.slvs") {
-			picked[dir] = f
-		}
-	}
-	out := map[string]string{}
-	for dir, f := range picked {
-		if f != invalidFixture {
-			out[f] = filepath.Join(goldenDir, filepath.FromSlash(dir)+".spcs")
-		}
-	}
-	return out
+// goldenPath is the .spcs golden of a fixture: its import, which is
+// what loading and regenerating it gives. For the fixtures C++ saved,
+// that was C++'s own save of them, byte for byte, until the C++
+// comparison was frozen (ROADMAP-JUMP.md, package 5.1).
+func goldenPath(rel string) string {
+	return filepath.Join(testdata, "spcs", "golden", filepath.FromSlash(strings.TrimSuffix(rel, ".slvs"))+".spcs")
 }
 
 // TestFixturesRoundTrip imports every fixture and requires:
@@ -148,16 +135,16 @@ func goldenFixtures(files []string) map[string]string {
 //     for the fixtures in notFixedPoints;
 //   - every group's check report matches testdata/invariants.txt, the
 //     baseline the .slvs loader recorded;
-//   - the fixtures that have a golden in testdata/spcs/golden import to
-//     it. SPACESOLVE_REGEN_SPCS=1 rewrites the goldens.
+//   - each fixture imports to its golden in testdata/spcs/golden.
+//     SPACESOLVE_REGEN_GOLDEN=1 rewrites the goldens
+//     (scripts/regen-spcs-golden.sh).
 func TestFixturesRoundTrip(t *testing.T) {
 	baseline, _, err := check.ReadBaseline(filepath.Join(testdata, "invariants.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	files := fixtures(t)
-	goldens := goldenFixtures(files)
-	regen := os.Getenv("SPACESOLVE_REGEN_SPCS") != ""
+	regen := golden.Regen()
 	root := t.TempDir()
 
 	for i, rel := range files {
@@ -221,31 +208,12 @@ func TestFixturesRoundTrip(t *testing.T) {
 					t.Errorf("not in the baseline: %s", line)
 					continue
 				}
-				if msg := check.CompareBaseline(line, want, 1e-9); msg != "" {
+				if msg := check.CompareBaseline(line, want, check.BaselineRelTol); msg != "" {
 					t.Errorf("%s\n got: %s\nwant: %s", msg, line, want)
 				}
 			}
 
-			golden, ok := goldens[rel]
-			if !ok {
-				return
-			}
-			if regen {
-				if err := os.MkdirAll(filepath.Dir(golden), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(golden, saved, 0o644); err != nil {
-					t.Fatal(err)
-				}
-				return
-			}
-			want, err := os.ReadFile(golden)
-			if err != nil {
-				t.Fatalf("%v (SPACESOLVE_REGEN_SPCS=1 makes it)", err)
-			}
-			if !bytes.Equal(saved, want) {
-				t.Errorf("import differs from %s: %s", golden, firstDiff(want, saved))
-			}
+			golden.Check(t, goldenPath(rel), saved)
 		})
 	}
 }

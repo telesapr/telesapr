@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,28 +73,6 @@ func TestSaveNewFile(t *testing.T) {
 	}
 }
 
-// TestSaveNewFileVsCpp saves a new sketch as .slvs, through the hook
-// the C++ comparison tests use, and compares it with C++'s save of a new
-// file.
-func TestSaveNewFileVsCpp(t *testing.T) {
-	ss, _ := newTestApp(t)
-	path := filepath.Join(t.TempDir(), "a.slvs")
-	if !ss.SaveToFile(path) {
-		t.Fatal("save failed")
-	}
-	got, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := os.ReadFile(filepath.Join("..", "..", "testdata", "cppsave", "newfile.cppsave"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("saved new file differs from C++ (%d vs %d bytes)", len(got), len(want))
-	}
-}
-
 func TestModelFileName(t *testing.T) {
 	for in, want := range map[string]string{
 		"a.spcs": "a.spcs", "a.SPCS": "a.SPCS", "a.slvs": "a.spcs", "a": "a.spcs", "a.b": "a.b.spcs",
@@ -133,8 +110,7 @@ func importFixture(t *testing.T, fixture string) string {
 // about unsaved changes before a new file.
 func TestOpenAndUnsavedChanges(t *testing.T) {
 	ss, p := newTestApp(t)
-	path := filepath.Join(t.TempDir(), "normal.slvs")
-	copyFile(t, filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs"), path)
+	path := importFixture(t, "group/translate_nd/normal.slvs")
 
 	p.FilePaths = []string{path}
 	ss.MenuFile(CmdOpen)
@@ -248,7 +224,7 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 // TestAnalyzeVolume runs Analyze > Volume on an extrusion.
 func TestAnalyzeVolume(t *testing.T) {
 	ss, p := newTestApp(t)
-	if !ss.Load(filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
+	if !loadSlvs(t, ss, filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
 		t.Fatal("load failed")
 	}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
@@ -264,8 +240,8 @@ func TestAnalyzeVolume(t *testing.T) {
 // as in C++, the user is asked to locate it, and may decline, cancel
 // the load, or pick the file.
 func TestLoadMissingLinkAsks(t *testing.T) {
-	fixture := filepath.Join("..", "..", "testdata", "group", "link")
-	linked, err := filepath.Abs(filepath.Join(fixture, "rect_v20.slvs"))
+	fixture := importFixture(t, "group/link/normal.slvs")
+	linked, err := filepath.Abs(filepath.Join(filepath.Dir(fixture), "rect_v20.spcs"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,8 +260,8 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ss, p := newTestApp(t)
 			dir := t.TempDir()
-			path := filepath.Join(dir, "moved.slvs")
-			copyFile(t, filepath.Join(fixture, "normal.slvs"), path)
+			path := filepath.Join(dir, "moved.spcs")
+			copyFile(t, fixture, path)
 			p.DialogResponses = tc.responses
 			p.FilePaths = tc.files
 
@@ -297,7 +273,7 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 				t.Fatalf("%d dialogs shown, want 1", len(p.DialogsShown))
 			}
 			d := p.DialogsShown[0]
-			if d.Message != "The linked file “rect_v20.slvs” is not present." || d.Type != platform.DialogQuestion {
+			if d.Message != "The linked file “rect_v20.spcs” is not present." || d.Type != platform.DialogQuestion {
 				t.Errorf("dialog %q type %d", d.Message, d.Type)
 			}
 			if !tc.loaded {
@@ -326,45 +302,9 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 				if link.LinkFile != filepath.ToSlash(rel) {
 					t.Errorf("link file %q, want %q", link.LinkFile, filepath.ToSlash(rel))
 				}
-			} else if link.LinkFile != "rect_v20.slvs" {
+			} else if link.LinkFile != "rect_v20.spcs" {
 				t.Errorf("link file %q changed", link.LinkFile)
 			}
 		})
-	}
-}
-
-// TestLoadCorruptFiles: a file of NUL bytes is empty, as C++ LoadFromFile
-// counts it, and a file with a line it doesn't know loads the rest.
-func TestLoadCorruptFiles(t *testing.T) {
-	ss, p := newTestApp(t)
-	dir := t.TempDir()
-	nul := filepath.Join(dir, "nul.slvs")
-	if err := os.WriteFile(nul, make([]byte, 64), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	before := len(p.DialogsShown)
-	if !ss.LoadFromFile(nul) {
-		t.Error("an empty file should still load as a new sketch")
-	}
-	if d := p.DialogsShown[len(p.DialogsShown)-1]; len(p.DialogsShown) == before || !strings.Contains(d.Message, "The file is empty") {
-		t.Errorf("dialogs after a NUL file: %+v", p.DialogsShown[before:])
-	}
-
-	src, err := os.ReadFile(filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	junk := filepath.Join(dir, "junk.slvs")
-	if err := os.WriteFile(junk, append([]byte("garbage line\n"), src...), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	before = len(p.DialogsShown)
-	if !ss.LoadFromFile(junk) || len(ss.SK.Groups) <= 2 {
-		t.Errorf("a file with a junk line didn't load: %d groups", len(ss.SK.Groups))
-	}
-	if d := p.DialogsShown[len(p.DialogsShown)-1]; len(p.DialogsShown) == before || !strings.Contains(d.Message, "Unrecognized data") {
-		t.Errorf("dialogs after a junk line: %+v", p.DialogsShown[before:])
 	}
 }

@@ -27,6 +27,11 @@ type SSurface struct {
 	Trim  []STrimBy
 	Bsp   *SBspUv
 	Edges SEdgeList
+	// curvedEdges are the xyz pwl edges of the trims whose curve is not
+	// straight, built with Edges. Within the chord tolerance of them the
+	// trim BSP can put a point on the wrong side of the true curve, so
+	// the raycast in ClassifyEdge does not trust a hit there.
+	curvedEdges SEdgeList
 
 	Cached geom.Point2d
 	// noCache keeps ClosestPointTo off Cached while a loop run at once

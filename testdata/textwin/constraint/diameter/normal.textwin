@@ -24,7 +24,7 @@ row 11          ok  g001-#references
  13-13 64 61 0
  14-29 6c 61 108 1 1 0
  30-99 64 61 0
-row 13         2   g002-sketch-in-plane
+row 13         2   g002-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 2 1 0
  4-4 64 64 0
@@ -33,7 +33,11 @@ row 13         2   g002-sketch-in-plane
  10-12 69 64 0
  13-13 64 64 0
  14-33 6c 64 108 2 1 0
- 34-99 64 64 0
+ 34-35 64 64 0
+ 36-36 6c 64 117 2 1 0
+ 37-37 64 64 0
+ 38-38 6c 64 100 2 1 0
+ 39-99 64 64 0
 row 16   show all / only unconstrained / hide all
  0-1 64 64 0
  2-9 6c 64 115 0 1 0
@@ -50,7 +54,11 @@ row 19   line styles / view / configuration
  20-22 64 64 0
  23-35 6c 64 115 0 1 0
  36-99 64 64 0
-row 21 
+row 21   parameters
+ 0-1 64 64 0
+ 2-11 6c 64 114 0 1 0
+ 12-99 64 64 0
+row 23 
  0-99 64 64 0
 screen group 1
 row 0  home   in plane: g002-sketch-in-plane
@@ -158,43 +166,47 @@ row 14    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 16    force NURBS surfaces to triangle mesh
+row 16    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 18    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 19    relax constraints and dimensions
+row 21    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 21    allow redundant constraints
+row 23    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 23    suppress dof calculation (improves solver performance)
+row 25    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 25    treat all dimensions as reference
+row 27    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
-row 29  requests in group
+row 31  requests in group
  0-99 74 64 0
-row 31    r004-circle
+row 33    r004-circle
  0-2 64 61 0
  3-13 6c 61 108 4 1 1
  14-99 64 61 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  constraints in group (2 DOF)
+row 37  constraints in group (2 DOF)
  0-99 74 64 0
-row 37    c001-diameter
+row 39    c001-diameter
  0-2 64 61 0
  3-15 6c 61 108 1 1 1
  16-99 64 61 0
-row 39 
+row 41 
  0-99 64 64 0
 screen solve 2
 row 0  home   in plane: g002-sketch-in-plane
@@ -224,45 +236,49 @@ row 14    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 16    force NURBS surfaces to triangle mesh
+row 16    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 18    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 19    relax constraints and dimensions
+row 21    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 21    allow redundant constraints
+row 23    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 23    suppress dof calculation (improves solver performance)
+row 25    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 25    treat all dimensions as reference
+row 27    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
-row 29  requests in group
+row 31  requests in group
  0-99 74 64 0
-row 31    r004-circle
+row 33    r004-circle
  0-2 64 61 0
  3-13 6c 61 108 4 1 1
  14-99 64 61 0
-row 33 
+row 35 
  0-99 64 64 0
-row 35  constraints in group (2 DOF)
+row 37  constraints in group (2 DOF)
  0-99 74 64 0
-row 37    c001-diameter
+row 39    c001-diameter
  0-2 64 61 0
  3-15 6c 61 108 1 1 1
  16-99 64 61 0
-row 39 
- 0-99 64 64 0
 row 41 
+ 0-99 64 64 0
+row 43 
  0-99 64 64 0
 screen configuration
 row 0  home   in plane: g002-sketch-in-plane
@@ -487,59 +503,63 @@ row 113     enable automatic line constraints
  0-1 64 64 0
  2-37 64 64 108 0 1 0
  38-99 64 64 0
-row 115     use camera mouse navigation
+row 115     colour entities by constraint state
+ 0-1 64 64 0
+ 2-39 64 64 108 0 1 0
+ 40-99 64 64 0
+row 117     use camera mouse navigation
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 117     use turntable mouse navigation
+row 119     use turntable mouse navigation
  0-1 64 64 0
  2-34 64 64 108 0 1 0
  35-99 64 64 0
-row 119     edit newly added dimensions
+row 121     edit newly added dimensions
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 121     arc default is diameter
+row 123     arc default is diameter
  0-1 64 64 0
  2-27 64 64 108 0 1 0
  28-99 64 64 0
-row 123     display the full path in the title bar
+row 125     display the full path in the title bar
  0-1 64 64 0
  2-42 64 64 108 0 1 0
  43-99 64 64 0
-row 125 
+row 127 
  0-99 64 64 0
-row 127  autosave interval (in minutes)
+row 129  autosave interval (in minutes)
  0-30 74 64 0
  31-99 64 64 0
-row 129    5 [change]
+row 131    5 [change]
  0-4 64 61 0
  5-12 6c 61 108 0 1 0
  13-99 64 61 0
-row 131 
+row 133 
  0-99 64 64 0
-row 133  redundant constraint timeout (in ms)
+row 135  redundant constraint timeout (in ms)
  0-36 74 64 0
  37-99 64 64 0
-row 135    1000 [change]
+row 137    1000 [change]
  0-7 64 61 0
  8-15 6c 61 108 0 1 0
  16-99 64 61 0
-row 137 
+row 139 
  0-99 64 64 0
-row 139  animation speed (in ms; 0 to disable)
+row 141  animation speed (in ms; 0 to disable)
  0-37 74 64 0
  38-99 64 64 0
-row 141    800 [change]
+row 143    800 [change]
  0-6 64 61 0
  7-14 6c 61 108 0 1 0
  15-99 64 61 0
-row 143 
+row 145 
  0-99 64 64 0
-row 145 (renderer)
 row 147 (renderer)
 row 149 (renderer)
-row 151 
+row 151 (renderer)
+row 153 
  0-99 64 64 0
 screen styles
 row 0  home   in plane: g002-sketch-in-plane
@@ -4370,7 +4390,7 @@ row 11          ok  g001-#references
  13-13 64 61 0
  14-29 6c 61 108 1 1 0
  30-99 64 61 0
-row 13         ERR g002-sketch-in-plane
+row 13         ERR g002-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 2 1 0
  4-4 64 64 0
@@ -4379,7 +4399,11 @@ row 13         ERR g002-sketch-in-plane
  10-12 78 64 108 2 1 0
  13-13 64 64 0
  14-33 6c 64 108 2 1 0
- 34-99 64 64 0
+ 34-35 64 64 0
+ 36-36 6c 64 117 2 1 0
+ 37-37 64 64 0
+ 38-38 6c 64 100 2 1 0
+ 39-99 64 64 0
 row 16   show all / only unconstrained / hide all
  0-1 64 64 0
  2-9 6c 64 115 0 1 0
@@ -4396,7 +4420,11 @@ row 19   line styles / view / configuration
  20-22 64 64 0
  23-35 6c 64 115 0 1 0
  36-99 64 64 0
-row 21 
+row 21   parameters
+ 0-1 64 64 0
+ 2-11 6c 64 114 0 1 0
+ 12-99 64 64 0
+row 23 
  0-99 64 64 0
 screen failed solve
 row 0  home   in plane: g002-sketch-in-plane
@@ -4417,14 +4445,18 @@ row 10 SOLVE FAILED! redundant constraints
  13-99 64 64 0
 row 13 remove any one of these to fix it
  0-99 64 64 0
-row 15    c001-diameter
+row 15    c001-diameter [show]
  0-2 64 61 0
  3-15 6c 61 108 1 1 1
- 16-99 64 61 0
-row 17    c002-diameter
+ 16-16 64 61 0
+ 17-22 6c 61 106 1 1 1
+ 23-99 64 61 0
+row 17    c002-diameter [show]
  0-2 64 64 0
  3-15 6c 64 108 2 1 1
- 16-99 64 64 0
+ 16-16 64 64 0
+ 17-22 6c 64 106 2 1 1
+ 23-99 64 64 0
 row 20 It may be possible to fix the problem
  0-99 64 64 0
 row 22 by selecting Edit -> Undo.

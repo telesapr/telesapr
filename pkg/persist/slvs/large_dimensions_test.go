@@ -2,10 +2,11 @@ package slvs_test
 
 import (
 	"bytes"
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
@@ -109,7 +110,7 @@ func TestLargeDimensionsRoundTripPreservesBlockCount(t *testing.T) {
 		t.Fatalf("LoadFile: %v", err)
 	}
 	original := len(doc.Blocks)
-	out := slvswrite.Save(doc.Sketch)
+	out := spcs.Encode(doc.Sketch, spcs.Options{})
 	if len(out) == 0 {
 		t.Fatalf("Save returned empty bytes")
 	}
@@ -122,7 +123,7 @@ func TestLargeDimensionsRoundTripPreservesBlockCount(t *testing.T) {
 }
 
 // TestLargeDimensionsSaveProducesHeader asserts that the saved bytes
-// start with the SLVS header line.
+// start with the header line.
 func TestLargeDimensionsSaveProducesHeader(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	dir := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")
@@ -131,12 +132,8 @@ func TestLargeDimensionsSaveProducesHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadFile: %v", err)
 	}
-	out := slvswrite.Save(doc.Sketch)
-	if len(out) == 0 {
-		t.Fatalf("Save returned empty bytes")
-	}
-	// Look for the SolveSpace header line "SolveSpace" or "SLVS".
-	if !bytes.Contains(out, []byte("SolveSpace")) && !bytes.Contains(out, []byte("AddGroup")) {
-		t.Errorf("output should contain SolveSpace header or AddGroup block")
+	out := spcs.Encode(doc.Sketch, spcs.Options{})
+	if !bytes.HasPrefix(out, []byte("spacesolve ")) || !bytes.Contains(out, []byte("\ngroup ")) {
+		t.Errorf("output should start with the header and hold groups")
 	}
 }

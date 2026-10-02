@@ -15,7 +15,7 @@ func paintFrame(t *testing.T, fixture string) []byte {
 	p := headless.New()
 	ss := New(p)
 	ss.Init()
-	if !ss.Load(filepath.Join("..", "..", "testdata", fixture)) {
+	if !loadSlvs(t, ss, filepath.Join("..", "..", "testdata", fixture)) {
 		t.Fatal("load failed")
 	}
 	w := ss.GW.window.(*headless.Window)

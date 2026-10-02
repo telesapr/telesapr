@@ -1,0 +1,282 @@
+spacesolve 2
+
+units mm
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+group 0x3 link "normal" {
+  order 2
+  workplane 0x10000
+  color 100 100 100 255
+  combine assemble
+  visible
+  link "normal.spcs"
+  remap {
+    map 1 0x10000 0
+    map 2 0x10001 0
+    map 3 0x10020 0
+    map 4 0x20000 0
+    map 5 0x20001 0
+    map 6 0x20020 0
+    map 7 0x30000 0
+    map 8 0x30001 0
+    map 9 0x30020 0
+    map 10 0x40000 0
+    map 11 0x40001 0
+    map 12 0x40002 0
+    map 13 0x40003 0
+    map 14 0x40004 0
+    map 15 0x40020 0
+    map 16 0x80020000 0
+    map 17 0x80020001 0
+    map 18 0x80020002 0
+  }
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+constraint 0x1 same-orientation {
+  group 0x3
+  workplane 0x10000
+  param 0x40000001
+  entity-a 0x80030006
+  entity-b 0x20020
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40000001 1
+value 0x80030000 5
+value 0x80030001 5
+value 0x80030002 0
+value 0x80030003 1
+value 0x80030004 0
+value 0x80030005 0
+value 0x80030006 0
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+
+entity 0x80030002 point-n-rot-trans {
+  group 0x3
+  construction
+  act-point 5 5 0
+  act-visible
+}
+
+entity 0x80030003 normal-n-rot {
+  group 0x3
+  points 0x80030002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030005 point-n-rot-trans {
+  group 0x3
+  construction
+  act-point 5 5 0
+  act-visible
+}
+
+entity 0x80030006 normal-n-rot {
+  group 0x3
+  points 0x80030005
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x80030008 point-n-rot-trans {
+  group 0x3
+  construction
+  act-point 5 5 0
+  act-visible
+}
+
+entity 0x80030009 normal-n-rot {
+  group 0x3
+  points 0x80030008
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x8003000a image {
+  group 0x3
+  file "drawing.png"
+  points 0x8003000b 0x8003000c 0x8003000d 0x8003000e
+  normal 0x8003000f
+  act-visible
+}
+
+entity 0x8003000b point-n-rot-trans {
+  group 0x3
+  act-point 5 15 0
+  act-visible
+}
+
+entity 0x8003000c point-n-rot-trans {
+  group 0x3
+  act-point 5 5 0
+  act-visible
+}
+
+entity 0x8003000d point-n-rot-trans {
+  group 0x3
+  act-point 20 5 0
+  act-visible
+}
+
+entity 0x8003000e point-n-rot-trans {
+  group 0x3
+  act-point 20 15 0
+  act-visible
+}
+
+entity 0x8003000f normal-n-rot {
+  group 0x3
+  points 0x8003000b
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030011 normal-n-rot {
+  group 0x3
+  points 0x80030012
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030012 point-n-rot-trans {
+  group 0x3
+  construction
+  act-point 5 5 0
+  act-visible
+}

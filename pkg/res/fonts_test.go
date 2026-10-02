@@ -2,16 +2,17 @@ package res
 
 import (
 	"fmt"
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
+
 	"github.com/spacesolve/spacesolve/pkg/geom"
 )
 
-// The strings and code points scripts/cpp-res-harness.cpp uses.
+// The strings and code points the golden covers, as the C++ harness that
+// recorded it used them.
 var fontTestStrings = []string{
 	"Hello, world!", "0.123 mm", "\u2220 45\u00b0", "日本語",
 	"Ω≈ƒ", "(x) [y] {z}", `@#$%^&*_+=|\/<>?~` + "`", "\ufffe\U0001F600",
@@ -21,15 +22,11 @@ var fontTestStrings = []string{
 var fontTestCodepoints = []rune{'A', ' ', 'g', 0xE000, 0xE003, 0xE007, 0x00B0, 0x2220, 0x65E5,
 	0x672C, 0x8A9E, 0xFFFE, 0x1F600, 0x0416, 0x05D0, 0x3042}
 
-// TestFontsVsCpp compares the vector and bitmap fonts with C++
-// resource.cpp's (testdata/res/fonts.golden, from
-// scripts/regen-res-golden.sh): metrics, widths and traced strokes bit
-// for bit, and each bitmap glyph's texture slot and pixels.
-func TestFontsVsCpp(t *testing.T) {
-	want, err := os.ReadFile(filepath.Join("..", "..", "testdata", "res", "fonts.golden"))
-	if err != nil {
-		t.Fatal(err)
-	}
+// TestFonts compares the vector and bitmap fonts with the golden
+// (testdata/res/fonts.golden, first recorded from C++ resource.cpp):
+// metrics, widths and traced strokes bit for bit, and each bitmap
+// glyph's texture slot and pixels.
+func TestFonts(t *testing.T) {
 	var b strings.Builder
 	vf := BuiltinVectorFont()
 	fmt.Fprintf(&b, "vector cap %x asc %x desc %x rsb %x\n", vf.CapHeight, vf.Ascender, vf.Descender, vf.RightSideBearing)
@@ -57,5 +54,5 @@ func TestFontsVsCpp(t *testing.T) {
 			b.WriteByte('\n')
 		}
 	}
-	golden.CompareDump(t, string(want), b.String())
+	golden.CheckDump(t, filepath.Join("..", "..", "testdata", "res", "fonts.golden"), b.String())
 }

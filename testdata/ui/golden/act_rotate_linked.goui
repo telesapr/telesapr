@@ -1,0 +1,396 @@
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 10000
+camera 36 -7.5 -7.5 0 1 0 0 0 1 0
+counts 3 3 32 0 28
+editor 0 "" 0 ""
+tw 0 unsaved 0 cursor 0 tooltip ""
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 10000
+camera 36 -7.5 -7.5 0 1 0 0 0 1 0
+counts 3 3 32 0 28
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""
+param 10010 0 0 1
+param 10011 0 0 1
+param 10012 0 0 1
+param 10020 1 0 1
+param 10021 0 0 1
+param 10022 0 0 1
+param 10023 0 0 1
+param 20010 0 0 1
+param 20011 0 0 1
+param 20012 0 0 1
+param 20020 0.5 0 1
+param 20021 0.5 0 1
+param 20022 0.5 0 1
+param 20023 0.5 0 1
+param 30010 0 0 1
+param 30011 0 0 1
+param 30012 0 0 1
+param 30020 0.5 0 1
+param 30021 -0.5 0 1
+param 30022 -0.5 0 1
+param 30023 -0.5 0 1
+param 80030000 10 0 0
+param 80030001 10 0 0
+param 80030002 0 0 0
+param 80030003 0.70710678118654757 0 0
+param 80030004 0 0 0
+param 80030005 0 0 0
+param 80030006 0.70710678118654746 0 0
+group 1 0 0 0 1
+group 2 0 0 1 1
+group 3 0 6 1 1
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 10000
+camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 3 3 32 0 28
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""
+param 10010 0 0 1
+param 10011 0 0 1
+param 10012 0 0 1
+param 10020 1 0 1
+param 10021 0 0 1
+param 10022 0 0 1
+param 10023 0 0 1
+param 20010 0 0 1
+param 20011 0 0 1
+param 20012 0 0 1
+param 20020 0.5 0 1
+param 20021 0.5 0 1
+param 20022 0.5 0 1
+param 20023 0.5 0 1
+param 30010 0 0 1
+param 30011 0 0 1
+param 30012 0 0 1
+param 30020 0.5 0 1
+param 30021 -0.5 0 1
+param 30022 -0.5 0 1
+param 30023 -0.5 0 1
+param 80030000 10 0 0
+param 80030001 10 0 0
+param 80030002 0 0 0
+param 80030003 2.2204460492503131e-16 0 0
+param 80030004 0 0 0
+param 80030005 0 0 0
+param 80030006 1 0 0
+group 1 0 0 0 1
+group 2 0 0 1 1
+group 3 0 6 1 1
+save
+spacesolve 2
+
+units mm
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+group 0x3 link "rect-v20" {
+  order 2
+  workplane 0x10000
+  color 100 100 100 255
+  combine assemble
+  visible
+  link "testdata/group/link/rect_v20.slvs"
+  remap {
+    map 1 0x10000 0
+    map 2 0x10001 0
+    map 3 0x10020 0
+    map 4 0x20000 0
+    map 5 0x20001 0
+    map 6 0x20020 0
+    map 7 0x30000 0
+    map 8 0x30001 0
+    map 9 0x30020 0
+    map 10 0x40000 0
+    map 11 0x40001 0
+    map 12 0x40002 0
+    map 13 0x50000 0
+    map 14 0x50001 0
+    map 15 0x50002 0
+    map 16 0x60000 0
+    map 17 0x60001 0
+    map 18 0x60002 0
+    map 19 0x70000 0
+    map 20 0x70001 0
+    map 21 0x70002 0
+    map 22 0x80020000 0
+    map 23 0x80020001 0
+    map 24 0x80020002 0
+  }
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x80030000 10
+value 0x80030001 10
+value 0x80030002 0
+value 0x80030003 2.220446049250313e-16
+value 0x80030004 0
+value 0x80030005 0
+value 0x80030006 1
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+
+entity 0x80030002 point-n-rot-trans {
+  group 0x3
+  act-point 10 10 0
+  act-visible
+}
+
+entity 0x80030003 normal-n-rot {
+  group 0x3
+  points 0x80030002
+  act-normal 2.220446049250313e-16 0 0 1
+  act-visible
+}
+
+entity 0x80030005 point-n-rot-trans {
+  group 0x3
+  act-point 10 10 0
+  act-visible
+}
+
+entity 0x80030006 normal-n-rot {
+  group 0x3
+  points 0x80030005
+  act-normal -0.4999999999999999 -0.4999999999999999 0.5000000000000001 0.5000000000000001
+  act-visible
+}
+
+entity 0x80030008 point-n-rot-trans {
+  group 0x3
+  act-point 10 10 0
+  act-visible
+}
+
+entity 0x80030009 normal-n-rot {
+  group 0x3
+  points 0x80030008
+  act-normal 0.5000000000000001 0.4999999999999999 -0.5000000000000001 0.4999999999999999
+  act-visible
+}
+
+entity 0x8003000a line-segment {
+  group 0x3
+  points 0x8003000b 0x8003000c
+  act-visible
+}
+
+entity 0x8003000b point-n-rot-trans {
+  group 0x3
+  act-point 5.000000000000002 15.000000000000002 0
+  act-visible
+}
+
+entity 0x8003000c point-n-rot-trans {
+  group 0x3
+  act-point 4.999999999999998 5.000000000000002 0
+  act-visible
+}
+
+entity 0x8003000d line-segment {
+  group 0x3
+  points 0x8003000e 0x8003000f
+  act-visible
+}
+
+entity 0x8003000e point-n-rot-trans {
+  group 0x3
+  act-point 15.000000000000002 14.999999999999998 0
+  act-visible
+}
+
+entity 0x8003000f point-n-rot-trans {
+  group 0x3
+  act-point 5.000000000000002 15.000000000000002 0
+  act-visible
+}
+
+entity 0x80030010 line-segment {
+  group 0x3
+  points 0x80030011 0x80030012
+  act-visible
+}
+
+entity 0x80030011 point-n-rot-trans {
+  group 0x3
+  act-point 14.999999999999998 4.999999999999998 0
+  act-visible
+}
+
+entity 0x80030012 point-n-rot-trans {
+  group 0x3
+  act-point 15.000000000000002 14.999999999999998 0
+  act-visible
+}
+
+entity 0x80030013 line-segment {
+  group 0x3
+  points 0x80030014 0x80030015
+  act-visible
+}
+
+entity 0x80030014 point-n-rot-trans {
+  group 0x3
+  act-point 4.999999999999998 5.000000000000002 0
+  act-visible
+}
+
+entity 0x80030015 point-n-rot-trans {
+  group 0x3
+  act-point 14.999999999999998 4.999999999999998 0
+  act-visible
+}
+
+entity 0x80030017 normal-n-rot {
+  group 0x3
+  points 0x80030018
+  act-normal 2.220446049250313e-16 0 0 1
+  act-visible
+}
+
+entity 0x80030018 point-n-rot-trans {
+  group 0x3
+  act-point 10 10 0
+  act-visible
+}
+end save

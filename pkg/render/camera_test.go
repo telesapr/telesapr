@@ -2,24 +2,20 @@ package render
 
 import (
 	"fmt"
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
-// TestCameraVsCpp compares the camera's projections and the object
-// picker with C++ render.cpp's, bit for bit (testdata/render/
-// camera.golden, from scripts/regen-render-golden.sh).
-func TestCameraVsCpp(t *testing.T) {
-	want, err := os.ReadFile(filepath.Join("..", "..", "testdata", "render", "camera.golden"))
-	if err != nil {
-		t.Fatal(err)
-	}
+// TestCamera compares the camera's projections and the object picker
+// with the golden, bit for bit (testdata/render/camera.golden, first
+// recorded from C++ render.cpp).
+func TestCamera(t *testing.T) {
 	var cams [3]Camera
 	cams[0].LoadIdentity()
 	cams[0].Width, cams[0].Height, cams[0].PixelRatio, cams[0].Scale = 600, 600, 1, 5
@@ -84,5 +80,5 @@ func TestCameraVsCpp(t *testing.T) {
 			fmt.Fprintf(&b, "pick %d %x %x %d\n", h, op.MinDistance, op.MinDepth, op.MaxZIndex)
 		}
 	}
-	golden.CompareDump(t, string(want), b.String())
+	golden.CheckDump(t, filepath.Join("..", "..", "testdata", "render", "camera.golden"), b.String())
 }

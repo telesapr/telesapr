@@ -1,0 +1,648 @@
+dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+dialog 0 The mesh is not self-intersecting (okay, valid).|The mesh is watertight (okay, valid).\n\nZero problematic edges, good.\n\nThe model contains 80 triangles, from 10 surfaces.
+dialog 0 The assembly does not interfere, good.|
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 270 -0.5 1 0 1 0 0 0 1 0
+counts 5 9 107 19 55
+editor 0 "" 0 ""
+tw 0 unsaved 0 cursor 0 tooltip ""
+dialog 0 The area of the region sketched in this group is:|0 ²\n\nCurves have been approximated as piecewise linear.\nThis introduces error, typically of around 1%.
+dialog 3 Bad selection for perimeter; select line segments, arcs, and curves.|
+param 10010 0 0 1
+param 10011 0 0 1
+param 10012 0 0 1
+param 10020 1 0 1
+param 10021 0 0 1
+param 10022 0 0 1
+param 10023 0 0 1
+param 20010 0 0 1
+param 20011 0 0 1
+param 20012 0 0 1
+param 20020 0.5 0 1
+param 20021 0.5 0 1
+param 20022 0.5 0 1
+param 20023 0.5 0 1
+param 30010 0 0 1
+param 30011 0 0 1
+param 30012 0 0 1
+param 30020 0.5 0 1
+param 30021 -0.5 0 1
+param 30022 -0.5 0 1
+param 30023 -0.5 0 1
+param 40010 0 0 0
+param 40011 -2 0 0
+param 40013 1 0 0
+param 40014 0 0 0
+param 50010 1 0 0
+param 50011 0 0 0
+param 50013 0 0 0
+param 50014 0 0 0
+param 60010 0 0 0
+param 60011 0 0 0
+param 60013 0 0 0
+param 60014 -2 0 0
+param 70010 0 0 0
+param 70011 0 0 0
+param 70013 -0 0 0
+param 70014 -0.5 0 0
+param 80010 0 0 0
+param 80011 0 0 0
+param 80013 0.5 0 0
+param 80014 -0 0 0
+param 90010 0.5 0 0
+param 90011 -0.5 0 0
+param 90013 0.5 0 0
+param 90014 -0 0 0
+param 90016 -0 0 0
+param 90017 -0.5 0 0
+param 4000000b 0.25 0 0
+param 4000000d 0.5 0 0
+param 80030000 0 0 0
+param 80030001 0 0 0
+param 80030002 -0.5 0 0
+param 80050000 0 0 0
+param 80050001 0 0 0
+param 80050002 -0.25 0 0
+group 1 0 0 0 1
+group 2 0 0 1 1
+group 3 0 0 1 1
+group 4 0 0 1 1
+group 5 0 0 1 1
+dialog 0 The volume of the solid model is:|59377.087 mil³\nThe volume of current group mesh is:\n\n    1646.657 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+dialog 0 The volume of the solid model is:|34.362 ft³\nThe volume of current group mesh is:\n\n    1646.657 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7  user color (r, g, b)
+ 0-99 74 64 0
+row 9    #0:      (0.59, 0.59, 0.59) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 969696ff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 0 1 0
+ 39-99 64 61 0
+row 11    #1:      (0.39, 0.39, 0.39) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 646464ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 1 1 0
+ 39-99 64 64 0
+row 13    #2:      (0.12, 0.12, 0.12) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 1e1e1eff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 2 1 0
+ 39-99 64 61 0
+row 15    #3:      (0.59, 0.00, 0.00) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 960000ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 3 1 0
+ 39-99 64 64 0
+row 17    #4:      (0.00, 0.39, 0.00) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 006400ff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 4 1 0
+ 39-99 64 61 0
+row 19    #5:      (0.00, 0.31, 0.31) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 005050ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 5 1 0
+ 39-99 64 64 0
+row 21    #6:      (0.00, 0.00, 0.51) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 000082ff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 6 1 0
+ 39-99 64 61 0
+row 23    #7:      (0.31, 0.00, 0.31) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 500050ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 7 1 0
+ 39-99 64 64 0
+row 25 
+ 0-99 64 64 0
+row 27  chord tolerance (in percents)
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 29    0.10 % [change]; 0.00 mm, 80 triangles
+ 0-9 64 61 0
+ 10-17 6c 61 108 0 1 0
+ 18-99 64 61 0
+row 31  max piecewise linear segments
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 33    20 [change]
+ 0-5 64 61 0
+ 6-13 6c 61 108 0 1 0
+ 14-99 64 61 0
+row 35 
+ 0-99 64 64 0
+row 37  export chord tolerance (in mm)
+ 0-30 74 64 0
+ 31-99 64 64 0
+row 39    0.10 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 41  export max piecewise linear segments
+ 0-36 74 64 0
+ 37-99 64 64 0
+row 43    64 [change]
+ 0-5 64 61 0
+ 6-13 6c 61 108 0 1 0
+ 14-99 64 61 0
+row 45  snap grid spacing
+ 0-17 74 64 0
+ 18-99 64 64 0
+row 47    0.01 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 49 
+ 0-99 64 64 0
+row 51  digits after decimal point to show
+ 0-34 74 64 0
+ 35-99 64 64 0
+row 53    distances: 2 [change] (e.g. '1.23')
+ 0-13 74 61 0
+ 14-15 64 61 0
+ 16-23 6c 61 108 0 1 0
+ 24-99 64 61 0
+row 55    angles:    2 [change] (e.g. '1.23')
+ 0-13 74 64 0
+ 14-15 64 64 0
+ 16-23 6c 64 108 0 1 0
+ 24-99 64 64 0
+row 57     use SI prefixes for distances
+ 0-1 64 64 0
+ 2-33 64 64 108 0 1 0
+ 34-99 64 64 0
+row 59 
+ 0-99 64 64 0
+row 61  export scale factor (1:1=mm, 1:25.4=inch)
+ 0-99 74 64 0
+row 63    1:1.000 [change]
+ 0-10 64 61 0
+ 11-18 6c 61 108 0 1 0
+ 19-99 64 61 0
+row 65  cutter radius offset (0=no offset)
+ 0-99 74 64 0
+row 67    0.00 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 69 
+ 0-99 64 64 0
+row 71     export shaded 2d triangles
+ 0-1 64 64 0
+ 2-30 64 64 108 0 1 0
+ 31-99 64 64 0
+row 73     export curves as piecewise linear
+ 0-1 64 64 0
+ 2-37 64 64 108 0 1 0
+ 38-99 64 64 0
+row 75     fix white exported lines
+ 0-1 64 64 0
+ 2-28 64 64 108 0 1 0
+ 29-99 64 64 0
+row 77     export background color
+ 0-1 64 64 0
+ 2-27 64 64 108 0 1 0
+ 28-99 64 64 0
+row 79 
+ 0-99 64 64 0
+row 81  export canvas size:   fixed   auto
+ 0-21 74 64 0
+ 22-28 64 64 102 0 1 0
+ 29-30 64 64 0
+ 31-36 64 64 116 0 1 0
+ 37-99 64 64 0
+row 83  (by margins around exported geometry)
+ 0-99 74 64 0
+row 85    left:   0.01 [change]
+ 0-10 74 61 0
+ 11-15 64 61 0
+ 16-23 6c 61 108 0 1 0
+ 24-99 64 61 0
+row 87    right:  0.01 [change]
+ 0-10 74 64 0
+ 11-15 64 64 0
+ 16-23 6c 64 108 1 1 0
+ 24-99 64 64 0
+row 89    bottom: 0.01 [change]
+ 0-10 74 61 0
+ 11-15 64 61 0
+ 16-23 6c 61 108 2 1 0
+ 24-99 64 61 0
+row 91    top:    0.01 [change]
+ 0-10 74 64 0
+ 11-15 64 64 0
+ 16-23 6c 64 108 3 1 0
+ 24-99 64 64 0
+row 93 
+ 0-99 64 64 0
+row 95  exported g code parameters
+ 0-99 74 64 0
+row 97    depth:     0.01 [change]
+ 0-13 74 61 0
+ 14-18 64 61 0
+ 19-26 6c 61 100 0 1 0
+ 27-99 64 61 0
+row 99    passes:    1 [change]
+ 0-13 74 64 0
+ 14-15 64 64 0
+ 16-23 6c 64 115 0 1 0
+ 24-99 64 64 0
+row 101    feed:      0.01 [change]
+ 0-13 74 61 0
+ 14-18 64 61 0
+ 19-26 6c 61 70 0 1 0
+ 27-99 64 61 0
+row 103    plunge fd: 0.01 [change]
+ 0-13 74 64 0
+ 14-18 64 64 0
+ 19-26 6c 64 80 0 1 0
+ 27-99 64 64 0
+row 105 
+ 0-99 64 64 0
+row 107     draw triangle back faces in red
+ 0-1 64 64 0
+ 2-35 64 64 108 0 1 0
+ 36-99 64 64 0
+row 109     check sketch for closed contour
+ 0-1 64 64 0
+ 2-35 64 64 108 0 1 0
+ 36-99 64 64 0
+row 111     show areas of closed contours
+ 0-1 64 64 0
+ 2-33 64 64 108 0 1 0
+ 34-99 64 64 0
+row 113     enable automatic line constraints
+ 0-1 64 64 0
+ 2-37 64 64 108 0 1 0
+ 38-99 64 64 0
+row 115     colour entities by constraint state
+ 0-1 64 64 0
+ 2-39 64 64 108 0 1 0
+ 40-99 64 64 0
+row 117     use camera mouse navigation
+ 0-1 64 64 0
+ 2-31 64 64 108 0 1 0
+ 32-99 64 64 0
+row 119     use turntable mouse navigation
+ 0-1 64 64 0
+ 2-34 64 64 108 0 1 0
+ 35-99 64 64 0
+row 121     edit newly added dimensions
+ 0-1 64 64 0
+ 2-31 64 64 108 0 1 0
+ 32-99 64 64 0
+row 123     arc default is diameter
+ 0-1 64 64 0
+ 2-27 64 64 108 0 1 0
+ 28-99 64 64 0
+row 125     display the full path in the title bar
+ 0-1 64 64 0
+ 2-42 64 64 108 0 1 0
+ 43-99 64 64 0
+row 127 
+ 0-99 64 64 0
+row 129  autosave interval (in minutes)
+ 0-30 74 64 0
+ 31-99 64 64 0
+row 131    5 [change]
+ 0-4 64 61 0
+ 5-12 6c 61 108 0 1 0
+ 13-99 64 61 0
+row 133 
+ 0-99 64 64 0
+row 135  redundant constraint timeout (in ms)
+ 0-36 74 64 0
+ 37-99 64 64 0
+row 137    1000 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 139 
+ 0-99 64 64 0
+row 141  animation speed (in ms; 0 to disable)
+ 0-37 74 64 0
+ 38-99 64 64 0
+row 143    0 [change]
+ 0-4 64 61 0
+ 5-12 6c 61 108 0 1 0
+ 13-99 64 61 0
+row 145 
+ 0-99 64 64 0
+row 147 (renderer)
+row 149 (renderer)
+row 151 (renderer)
+row 153 
+ 0-99 64 64 0
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7  user color (r, g, b)
+ 0-99 74 64 0
+row 9    #0:      (0.59, 0.59, 0.59) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 969696ff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 0 1 0
+ 39-99 64 61 0
+row 11    #1:      (0.39, 0.39, 0.39) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 646464ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 1 1 0
+ 39-99 64 64 0
+row 13    #2:      (0.12, 0.12, 0.12) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 1e1e1eff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 2 1 0
+ 39-99 64 61 0
+row 15    #3:      (0.59, 0.00, 0.00) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 960000ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 3 1 0
+ 39-99 64 64 0
+row 17    #4:      (0.00, 0.39, 0.00) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 006400ff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 4 1 0
+ 39-99 64 61 0
+row 19    #5:      (0.00, 0.31, 0.31) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 005050ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 5 1 0
+ 39-99 64 64 0
+row 21    #6:      (0.00, 0.00, 0.51) [change]
+ 0-7 64 61 0
+ 8-9 64 7a 000082ff 0
+ 10-30 64 61 0
+ 31-38 6c 61 108 6 1 0
+ 39-99 64 61 0
+row 23    #7:      (0.31, 0.00, 0.31) [change]
+ 0-7 64 64 0
+ 8-9 64 7a 500050ff 0
+ 10-30 64 64 0
+ 31-38 6c 64 108 7 1 0
+ 39-99 64 64 0
+row 25 
+ 0-99 64 64 0
+row 27  chord tolerance (in percents)
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 29    0.10 % [change]; 0.00 mm, 80 triangles
+ 0-9 64 61 0
+ 10-17 6c 61 108 0 1 0
+ 18-99 64 61 0
+row 31  max piecewise linear segments
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 33    20 [change]
+ 0-5 64 61 0
+ 6-13 6c 61 108 0 1 0
+ 14-99 64 61 0
+row 35 
+ 0-99 64 64 0
+row 37  export chord tolerance (in mm)
+ 0-30 74 64 0
+ 31-99 64 64 0
+row 39    0.10 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 41  export max piecewise linear segments
+ 0-36 74 64 0
+ 37-99 64 64 0
+row 43    64 [change]
+ 0-5 64 61 0
+ 6-13 6c 61 108 0 1 0
+ 14-99 64 61 0
+row 45  snap grid spacing
+ 0-17 74 64 0
+ 18-99 64 64 0
+row 47    0.01 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 49 
+ 0-99 64 64 0
+row 51  digits after decimal point to show
+ 0-34 74 64 0
+ 35-99 64 64 0
+row 53    distances: 2 [change] (e.g. '1.23')
+ 0-13 74 61 0
+ 14-15 64 61 0
+ 16-23 6c 61 108 0 1 0
+ 24-99 64 61 0
+row 55    angles:    2 [change] (e.g. '1.23')
+ 0-13 74 64 0
+ 14-15 64 64 0
+ 16-23 6c 64 108 0 1 0
+ 24-99 64 64 0
+row 57     use SI prefixes for distances
+ 0-1 64 64 0
+ 2-33 64 64 108 0 1 0
+ 34-99 64 64 0
+row 59 
+ 0-99 64 64 0
+row 61  export scale factor (1:1=mm, 1:25.4=inch)
+ 0-99 74 64 0
+row 63    1:1.000 [change]
+ 0-10 64 61 0
+ 11-18 6c 61 108 0 1 0
+ 19-99 64 61 0
+row 65  cutter radius offset (0=no offset)
+ 0-99 74 64 0
+row 67    0.00 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 69 
+ 0-99 64 64 0
+row 71     export shaded 2d triangles
+ 0-1 64 64 0
+ 2-30 64 64 108 0 1 0
+ 31-99 64 64 0
+row 73     export curves as piecewise linear
+ 0-1 64 64 0
+ 2-37 64 64 108 0 1 0
+ 38-99 64 64 0
+row 75     fix white exported lines
+ 0-1 64 64 0
+ 2-28 64 64 108 0 1 0
+ 29-99 64 64 0
+row 77     export background color
+ 0-1 64 64 0
+ 2-27 64 64 108 0 1 0
+ 28-99 64 64 0
+row 79 
+ 0-99 64 64 0
+row 81  export canvas size:   fixed   auto
+ 0-21 74 64 0
+ 22-28 64 64 102 0 1 0
+ 29-30 64 64 0
+ 31-36 64 64 116 0 1 0
+ 37-99 64 64 0
+row 83  (by margins around exported geometry)
+ 0-99 74 64 0
+row 85    left:   0.01 [change]
+ 0-10 74 61 0
+ 11-15 64 61 0
+ 16-23 6c 61 108 0 1 0
+ 24-99 64 61 0
+row 87    right:  0.01 [change]
+ 0-10 74 64 0
+ 11-15 64 64 0
+ 16-23 6c 64 108 1 1 0
+ 24-99 64 64 0
+row 89    bottom: 0.01 [change]
+ 0-10 74 61 0
+ 11-15 64 61 0
+ 16-23 6c 61 108 2 1 0
+ 24-99 64 61 0
+row 91    top:    0.01 [change]
+ 0-10 74 64 0
+ 11-15 64 64 0
+ 16-23 6c 64 108 3 1 0
+ 24-99 64 64 0
+row 93 
+ 0-99 64 64 0
+row 95  exported g code parameters
+ 0-99 74 64 0
+row 97    depth:     0.01 [change]
+ 0-13 74 61 0
+ 14-18 64 61 0
+ 19-26 6c 61 100 0 1 0
+ 27-99 64 61 0
+row 99    passes:    1 [change]
+ 0-13 74 64 0
+ 14-15 64 64 0
+ 16-23 6c 64 115 0 1 0
+ 24-99 64 64 0
+row 101    feed:      0.01 [change]
+ 0-13 74 61 0
+ 14-18 64 61 0
+ 19-26 6c 61 70 0 1 0
+ 27-99 64 61 0
+row 103    plunge fd: 0.01 [change]
+ 0-13 74 64 0
+ 14-18 64 64 0
+ 19-26 6c 64 80 0 1 0
+ 27-99 64 64 0
+row 105 
+ 0-99 64 64 0
+row 107     draw triangle back faces in red
+ 0-1 64 64 0
+ 2-35 64 64 108 0 1 0
+ 36-99 64 64 0
+row 109     check sketch for closed contour
+ 0-1 64 64 0
+ 2-35 64 64 108 0 1 0
+ 36-99 64 64 0
+row 111     show areas of closed contours
+ 0-1 64 64 0
+ 2-33 64 64 108 0 1 0
+ 34-99 64 64 0
+row 113     enable automatic line constraints
+ 0-1 64 64 0
+ 2-37 64 64 108 0 1 0
+ 38-99 64 64 0
+row 115     colour entities by constraint state
+ 0-1 64 64 0
+ 2-39 64 64 108 0 1 0
+ 40-99 64 64 0
+row 117     use camera mouse navigation
+ 0-1 64 64 0
+ 2-31 64 64 108 0 1 0
+ 32-99 64 64 0
+row 119     use turntable mouse navigation
+ 0-1 64 64 0
+ 2-34 64 64 108 0 1 0
+ 35-99 64 64 0
+row 121     edit newly added dimensions
+ 0-1 64 64 0
+ 2-31 64 64 108 0 1 0
+ 32-99 64 64 0
+row 123     arc default is diameter
+ 0-1 64 64 0
+ 2-27 64 64 108 0 1 0
+ 28-99 64 64 0
+row 125     display the full path in the title bar
+ 0-1 64 64 0
+ 2-42 64 64 108 0 1 0
+ 43-99 64 64 0
+row 127 
+ 0-99 64 64 0
+row 129  autosave interval (in minutes)
+ 0-30 74 64 0
+ 31-99 64 64 0
+row 131    5 [change]
+ 0-4 64 61 0
+ 5-12 6c 61 108 0 1 0
+ 13-99 64 61 0
+row 133 
+ 0-99 64 64 0
+row 135  redundant constraint timeout (in ms)
+ 0-36 74 64 0
+ 37-99 64 64 0
+row 137    1000 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 139 
+ 0-99 64 64 0
+row 141  animation speed (in ms; 0 to disable)
+ 0-37 74 64 0
+ 38-99 64 64 0
+row 143    0 [change]
+ 0-4 64 61 0
+ 5-12 6c 61 108 0 1 0
+ 13-99 64 61 0
+row 145 
+ 0-99 64 64 0
+row 147 (renderer)
+row 149 (renderer)
+row 151 (renderer)
+row 153 
+ 0-99 64 64 0
+dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+dialog 3 Bad selection for perimeter; select line segments, arcs, and curves.|
+dialog 3 Bad selection for perimeter; select line segments, arcs, and curves.|
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 270 -0.5 1 0 1 0 0 0 1 0
+counts 5 9 107 19 55
+editor 0 "" 0 ""
+tw 3 unsaved 1 cursor 0 tooltip ""

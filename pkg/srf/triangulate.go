@@ -699,6 +699,7 @@ func (p *SPolygon) UvGridTriangulateInto(mesh *SMesh, srf *SSurface) {
 		// Quads around the perimeter would be rejected by AnyEdgeCrossings.
 		bottom := make([]bool, len(lj)) // did we use this quad?
 		var tu, tv geom.Vector
+		nearTrim := gridNearTrim(srf, &orig, li, lj)
 		for i := 1; i < len(li)-1; i++ {
 			prevFlag := false
 			for j := 1; j < len(lj)-1; j++ {
@@ -729,6 +730,12 @@ func (p *SPolygon) UvGridTriangulateInto(mesh *SMesh, srf *SSurface) {
 				// There's no intersections, so it doesn't matter which point
 				// we decide to test.
 				if !p.ContainsPoint(a) {
+					thisFlag = false
+				}
+				// A corner within the chord tolerance of the trim may lie
+				// between a chord and the curve it stands for, on the far
+				// side of the true boundary.
+				if thisFlag && (nearTrim[i][j] || nearTrim[i][j+1] || nearTrim[i+1][j] || nearTrim[i+1][j+1]) {
 					thisFlag = false
 				}
 
@@ -772,6 +779,57 @@ func (p *SPolygon) UvGridTriangulateInto(mesh *SMesh, srf *SSurface) {
 		p.Contours = append(p.Contours, hp.Contours...)
 	}
 	p.UvTriangulateInto(mesh, srf)
+}
+
+// gridNearTrim tells, for each point of the triangulation grid li x lj,
+// whether it lies, on the surface in xyz, within the sag of a trim
+// edge of el (in uv): the gap between a chord of a curved trim and the
+// curve it stands for, where a point inside the chords can lie beyond
+// the true boundary. An edge's sag is taken from how far its curve
+// turns at its ends, and is at least the chord tolerance.
+func gridNearTrim(srf *SSurface, el *SEdgeList, li, lj []float64) [][]bool {
+	type key struct{ x, y float64 }
+	n := len(el.Edges)
+	xyzA, xyzB := make([]geom.Vector, n), make([]geom.Vector, n)
+	from, to := map[key]int{}, map[key]int{}
+	for k, e := range el.Edges {
+		xyzA[k], xyzB[k] = srf.PointAt(e.A.X, e.A.Y), srf.PointAt(e.B.X, e.B.Y)
+		from[key{e.A.X, e.A.Y}] = k
+		to[key{e.B.X, e.B.Y}] = k
+	}
+	// turn is the angle between edge k and the edge of the same curve
+	// that meets it at its start (or its end), or 0 for none.
+	turn := func(k, other int, ok bool) float64 {
+		if !ok || el.Edges[other].AuxA != el.Edges[k].AuxA {
+			return 0
+		}
+		d0, d1 := xyzB[k].Minus(xyzA[k]), xyzB[other].Minus(xyzA[other])
+		c := d0.Dot(d1) / (d0.Magnitude() * d1.Magnitude())
+		return math.Acos(math.Max(-1, math.Min(1, c)))
+	}
+	tol := make([]float64, n)
+	for k, e := range el.Edges {
+		prev, okp := to[key{e.A.X, e.A.Y}]
+		next, okn := from[key{e.B.X, e.B.Y}]
+		phi := (turn(k, prev, okp) + turn(k, next, okn)) / 2
+		// A circular arc turning by phi per chord of length L sags by
+		// about L phi / 8; take twice that.
+		tol[k] = math.Max(ChordTolMm(), xyzB[k].Minus(xyzA[k]).Magnitude()*phi/4)
+	}
+	near := make([][]bool, len(li))
+	for i := range li {
+		near[i] = make([]bool, len(lj))
+		for j := range lj {
+			p := srf.PointAt(li[i], lj[j])
+			for k := range el.Edges {
+				if distanceToSegment(p, xyzA[k], xyzB[k]) < tol[k] {
+					near[i][j] = true
+					break
+				}
+			}
+		}
+	}
+	return near
 }
 
 // TriangulateInto triangulates this planar xyz polygon into m. Mirrors
