@@ -162,6 +162,14 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		g.generateLinkedShell(sk)
 	}
 
+	// Surfaces no entity names get an identity from this group, so
+	// the edges of the faces they bound can be named.
+	for i := range g.ThisShell.Surface {
+		if s := &g.ThisShell.Surface[i]; s.Face == 0 && s.Origin == 0 {
+			s.Origin = srf.OriginFor(g.H.V, i)
+		}
+	}
+
 	if srcg.MeshCombine != CombineAssemble {
 		g.ThisShell.MergeCoincidentSurfaces()
 	}

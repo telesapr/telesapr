@@ -1,0 +1,256 @@
+package topo
+
+import (
+	"fmt"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/srf"
+)
+
+// Name names an edge of a solid so that the name outlives a
+// regeneration: by the identities of the two faces it separates, the
+// lower first, and its place among the edges between those two faces,
+// ordered by where they lie. A face's identity is the sketch entity
+// that made it (srf.FaceID), which an edit upstream keeps; positions
+// are not names, since an edit moves them.
+//
+// A name stops resolving, visibly, when a face goes or when the faces
+// meet along fewer edges than its ordinal: it never moves to another
+// edge between other faces. An edit that reorders the edges between
+// the same two faces can move it, which the ordinal's geometric order
+// makes rare: edges keep their order along the line they spread on.
+type Name struct {
+	A, B srf.FaceID
+	N    int
+}
+
+// String is the name as files and scripts write it: "edge A B N",
+// handles in hex.
+func (n Name) String() string {
+	return fmt.Sprintf("edge %x %x %d", uint32(n.A), uint32(n.B), n.N)
+}
+
+// ParseName reads a name as String writes it.
+func ParseName(s string) (Name, error) {
+	f := strings.Fields(s)
+	if len(f) != 4 || f[0] != "edge" {
+		return Name{}, fmt.Errorf("%q is not an edge name: it is \"edge\", two face handles and an ordinal", s)
+	}
+	a, err1 := strconv.ParseUint(f[1], 16, 32)
+	b, err2 := strconv.ParseUint(f[2], 16, 32)
+	n, err3 := strconv.Atoi(f[3])
+	if err1 != nil || err2 != nil || err3 != nil || n < 0 {
+		return Name{}, fmt.Errorf("%q is not an edge name: it is \"edge\", two face handles in hex and an ordinal", s)
+	}
+	return MakeName(srf.FaceID(a), srf.FaceID(b), n), nil
+}
+
+// MakeName is the name of ordinal n of the edges between faces a and
+// b, in either order.
+func MakeName(a, b srf.FaceID, n int) Name {
+	if b < a {
+		a, b = b, a
+	}
+	return Name{A: a, B: b, N: n}
+}
+
+// EdgeFaces are the faces on the two sides of an edge, through its
+// first two co-edges; -1 where there is none.
+func (t *Topology) EdgeFaces(e int) [2]int {
+	out := [2]int{-1, -1}
+	for i, ce := range t.Edges[e].CoEdges {
+		if i >= 2 {
+			break
+		}
+		if l := t.CoEdges[ce].Loop; l >= 0 {
+			out[i] = t.Loops[l].Face
+		}
+	}
+	return out
+}
+
+// pairOf is the face identities an edge separates, lower first, and
+// whether both have one.
+func (t *Topology) pairOf(e int) (a, b srf.FaceID, ok bool) {
+	fs := t.EdgeFaces(e)
+	if fs[0] < 0 || fs[1] < 0 {
+		return 0, 0, false
+	}
+	a, b = t.Faces[fs[0]].ID, t.Faces[fs[1]].ID
+	if b < a {
+		a, b = b, a
+	}
+	return a, b, a != 0 && b != 0 && a != b
+}
+
+// between lists the edges between the faces with identities a and b,
+// in their geometric order: by their midpoints along the direction in
+// which those spread most, then along the others.
+func (t *Topology) between(a, b srf.FaceID) []int {
+	var es []int
+	for e := range t.Edges {
+		if pa, pb, ok := t.pairOf(e); ok && pa == a && pb == b {
+			es = append(es, e)
+		}
+	}
+	if len(es) < 2 {
+		return es
+	}
+	mids := make([]geom.Vector, len(es))
+	lo := geom.Vector{X: math.Inf(1), Y: math.Inf(1), Z: math.Inf(1)}
+	hi := lo.ScaledBy(-1)
+	for i, e := range es {
+		mids[i] = midpoint(t.Edges[e].Points)
+		lo.X, lo.Y, lo.Z = math.Min(lo.X, mids[i].X), math.Min(lo.Y, mids[i].Y), math.Min(lo.Z, mids[i].Z)
+		hi.X, hi.Y, hi.Z = math.Max(hi.X, mids[i].X), math.Max(hi.Y, mids[i].Y), math.Max(hi.Z, mids[i].Z)
+	}
+	span := hi.Minus(lo)
+	// The axes by spread, widest first.
+	axes := []int{0, 1, 2}
+	sort.SliceStable(axes, func(i, j int) bool { return span.Element(axes[i]) > span.Element(axes[j]) })
+	tol := 1e-6 * (1 + span.Magnitude())
+	order := make([]int, len(es))
+	for i := range order {
+		order[i] = i
+	}
+	sort.SliceStable(order, func(i, j int) bool {
+		p, q := mids[order[i]], mids[order[j]]
+		for _, ax := range axes {
+			if d := p.Element(ax) - q.Element(ax); math.Abs(d) > tol {
+				return d < 0
+			}
+		}
+		return false
+	})
+	out := make([]int, len(es))
+	for i, k := range order {
+		out[i] = es[k]
+	}
+	return out
+}
+
+// NameOf is the name of edge e. An edge with a face that has no
+// identity, such as one a Boolean's tool made, has none.
+func (t *Topology) NameOf(e int) (Name, error) {
+	a, b, ok := t.pairOf(e)
+	if !ok {
+		return Name{}, fmt.Errorf("edge %d does not lie between two faces that come from the sketch", e)
+	}
+	for i, x := range t.between(a, b) {
+		if x == e {
+			return Name{A: a, B: b, N: i}, nil
+		}
+	}
+	return Name{}, fmt.Errorf("edge %d is not between its own faces", e)
+}
+
+// Resolve is the edge a name names, or an error that says why there
+// is none: a face gone, or fewer edges between the two faces.
+func (t *Topology) Resolve(n Name) (int, error) {
+	es := t.between(n.A, n.B)
+	if n.N < len(es) {
+		return es[n.N], nil
+	}
+	hasA, hasB := false, false
+	for _, f := range t.Faces {
+		hasA = hasA || f.ID == n.A
+		hasB = hasB || f.ID == n.B
+	}
+	switch {
+	case !hasA && !hasB:
+		return -1, fmt.Errorf("faces %x and %x are no longer in the solid", uint32(n.A), uint32(n.B))
+	case !hasA:
+		return -1, fmt.Errorf("face %x is no longer in the solid", uint32(n.A))
+	case !hasB:
+		return -1, fmt.Errorf("face %x is no longer in the solid", uint32(n.B))
+	case len(es) == 0:
+		return -1, fmt.Errorf("faces %x and %x no longer meet", uint32(n.A), uint32(n.B))
+	}
+	return -1, fmt.Errorf("faces %x and %x now meet along %d edges, so there is no edge %d of them",
+		uint32(n.A), uint32(n.B), len(es), n.N)
+}
+
+// EdgeAt is the edge whose points come nearest p, and that distance.
+func (t *Topology) EdgeAt(p geom.Vector) (int, float64) {
+	best, bestD := -1, math.Inf(1)
+	for e := range t.Edges {
+		if d := distanceToPolyline(p, t.Edges[e].Points); d < bestD {
+			best, bestD = e, d
+		}
+	}
+	return best, bestD
+}
+
+// Straight reports whether an edge is a line segment.
+func (t *Topology) Straight(e int) bool {
+	pts := t.Edges[e].Points
+	if len(pts) < 2 {
+		return false
+	}
+	a, b := pts[0], pts[len(pts)-1]
+	d := b.Minus(a)
+	if d.Magnitude() < geom.LengthEps {
+		return false
+	}
+	for _, p := range pts[1 : len(pts)-1] {
+		if p.DistanceToLine(a, d) > 10*geom.LengthEps {
+			return false
+		}
+	}
+	return true
+}
+
+// Length is an edge's length along its points.
+func (t *Topology) Length(e int) float64 {
+	l := 0.0
+	pts := t.Edges[e].Points
+	for i := 1; i < len(pts); i++ {
+		l += pts[i].Minus(pts[i-1]).Magnitude()
+	}
+	return l
+}
+
+// FaceEdges are the edges round a face, each once.
+func (t *Topology) FaceEdges(f int) []int {
+	var out []int
+	seen := map[int]bool{}
+	for _, l := range t.Faces[f].Loops {
+		for _, ce := range t.Loops[l].CoEdges {
+			if e := t.CoEdges[ce].Edge; !seen[e] {
+				seen[e] = true
+				out = append(out, e)
+			}
+		}
+	}
+	return out
+}
+
+// Neighbours are the faces that share an edge with face f.
+func (t *Topology) Neighbours(f int) []int {
+	var out []int
+	seen := map[int]bool{f: true}
+	for _, e := range t.FaceEdges(f) {
+		for _, g := range t.EdgeFaces(e) {
+			if g >= 0 && !seen[g] {
+				seen[g] = true
+				out = append(out, g)
+			}
+		}
+	}
+	return out
+}
+
+// FacesWithID are the faces that carry identity id.
+func (t *Topology) FacesWithID(id srf.FaceID) []int {
+	var out []int
+	for f := range t.Faces {
+		if t.Faces[f].ID == id {
+			out = append(out, f)
+		}
+	}
+	return out
+}
