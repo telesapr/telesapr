@@ -281,23 +281,25 @@ func makeFunction(name string, args []*Expr) (*Expr, error) {
 		return args[0].Sqrt(), nil
 	case "sq":
 		return args[0].Square(), nil
+	// Angles a user types are in degrees, as in C++ ExprParser::Reduce
+	// and in stored expressions.
 	case "sin":
-		return args[0].Sin(), nil
+		return args[0].Times(NewConstant(math.Pi / 180)).Sin(), nil
 	case "cos":
-		return args[0].Cos(), nil
+		return args[0].Times(NewConstant(math.Pi / 180)).Cos(), nil
 	case "tan":
-		return args[0].Tan(), nil
+		return args[0].Times(NewConstant(math.Pi / 180)).Tan(), nil
 	case "asin":
-		return args[0].ASin(), nil
+		return args[0].ASin().Times(NewConstant(180 / math.Pi)), nil
 	case "acos":
-		return args[0].ACos(), nil
+		return args[0].ACos().Times(NewConstant(180 / math.Pi)), nil
 	case "atan":
-		return args[0].ATan(), nil
+		return args[0].ATan().Times(NewConstant(180 / math.Pi)), nil
 	case "atan2":
 		if len(args) != 2 {
 			return nil, fmt.Errorf("expr: function %q expects 2 arguments, got %d", name, len(args))
 		}
-		return args[0].ATan2(args[1]), nil
+		return args[0].ATan2(args[1]).Times(NewConstant(180 / math.Pi)), nil
 	case "hypot":
 		if len(args) != 2 {
 			return nil, fmt.Errorf("expr: function %q expects 2 arguments, got %d", name, len(args))
