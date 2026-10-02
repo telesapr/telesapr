@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 5 are done and merged; step 6 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 6 are done and merged; step 7 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -22,6 +22,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 3. Parameters and sketch feedback | done 2026-10-02, with follow-ups: a faster freedom analysis, a scenario for it, `make lint-new` on the whole branch, no `scale 0` in saves (`a33a1ae`), and the unit as the document's, format version 2 (3.9, `dba44b9`) | `22daacd` |
 | 4. History editing | done 2026-10-02 | `fe7cb85` |
 | 5. First kernel fixes | done 2026-10-02, with the cylinder-through-cylinder failures (19 of 54, not new) left as a follow-up | `f24fcd9` |
+| 6. OpenGL and the section view | done 2026-10-02 | see the step's section |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -499,7 +500,7 @@ developed in its own branch and merged into `master` when it is done, see "Rules
 3. **Done 2026-10-02, with document units as a follow-up.** **A1 named parameters, then B1, B2, I5, I4.** About 4.5 weeks. No kernel work, large change in feel. Scripts get parameters by name, constraint state per entity, and measurements.
 4. **C1 to C3 history editing.** About 4 weeks. Scripts get reorder, suppress and the list of broken references.
 5. **F1 raycast fix and F2 closed intersection loops, on by default.** About 3 weeks, most of the addition being sweeps. Remove the rotate-and-retry workaround in the thread feature afterwards.
-6. **I1 OpenGL backend, then I3 section view.** About 3.5 weeks. Goldens stay on the software renderer. Scripts get the section plane and a rendered image.
+6. **Done 2026-10-02.** **I1 OpenGL backend, then I3 section view.** About 3.5 weeks. Goldens stay on the software renderer. Scripts get the section plane and a rendered image.
 7. **E1 mirror, E3 chamfer by Boolean, E9 sweep along lines and arcs.** About 6 weeks. First new solid features, all on existing machinery, each with a robustness sweep. The chamfer takes only edges that exist as entities until step 9.
 8. **D2 STEP import as reference mesh.** About 4.5 weeks, with a corpus of real files and a fuzz target for the reader.
 9. **F3 topology as the primary representation, then F4 edge naming.** About 10 weeks. The first large kernel investment. Scripts get faces, edges and vertices to enumerate and select by, which later features need for their own API. The chamfer is extended to any edge of the solid.
@@ -669,14 +670,26 @@ Follow-ups from step 5, each a guard in its sweep's allowed rate until looked in
 
 | Package | Content | State |
 |---|---|---|
-| 6.1 Renderer choice | `Window` gains `CreateRenderer()` so the platform picks the software or the GL renderer. Headless always picks software, so goldens do not move. | not started |
-| 6.2 I1 GL renderer | New `pkg/render/gl` on `go-gl/gl/v2.1`, implementing the canvas interface of `pkg/render`. Polygons go through the Go triangulator. | not started |
-| 6.3 I1 GLX window | A build-tagged file in `pkg/platform/tkgui` that makes a GLX context on the existing window from a second X connection, as the spike of 2026-09-29 did. `cmd/spacesolve` locks the OS thread. A setting and a command-line flag choose the renderer, and software stays the fallback when GLX fails. | not started |
-| 6.4 I1 tests | Smoke tests under `make test-gui`: a frame renders, and a read-back pixel inside a known face has the face colour. No pixel goldens for GL. | not started |
-| 6.5 I3 section view | A clipping plane taken from a selected workplane or face. The cap is the section polygon that `ExportSectionTo` already computes, filled. View menu entry and a screen for offset and flip. `Doc.SetSection(plane, offset)` and `Doc.ClearSection()`, and `Doc.Render` honours it on both renderers. | not started |
+| 6.1 Renderer choice | `Window` gains `CreateRenderer()` so the platform picks the software or the GL renderer. Headless always picks software, so goldens do not move. | done 2026-10-02: `Window.CreateRenderer(useGL)`, and `PresentFrame` takes the canvas, so GL presents by swapping buffers. Headless returns software |
+| 6.2 I1 GL renderer | New `pkg/render/gl` on `go-gl/gl/v2.1`, implementing the canvas interface of `pkg/render`. Polygons go through the Go triangulator. | done 2026-10-02: a port of `rendergl1.cpp` in `pkg/render/gl`, contexts from the new `pkg/render/gl/glx` (a window's, or an offscreen pixel buffer for tests). Without cgo or with the `nogl` tag both build and return `ErrUnavailable`. Two scenes drawn on both renderers differ in 3 and 190 of 43200 pixels under Xvfb |
+| 6.3 I1 GLX window | A build-tagged file in `pkg/platform/tkgui` that makes a GLX context on the existing window from a second X connection, as the spike of 2026-09-29 did. `cmd/spacesolve` locks the OS thread. A setting and a command-line flag choose the renderer, and software stays the fallback when GLX fails. | done 2026-10-02, in `pkg/platform/tkgui/gl.go` on `glx` rather than a build-tagged file there (the stubs live in `glx`). Setting: Configuration > "draw with OpenGL" (on by default), switching both windows live; flag `--renderer opengl\|software` for one run. Failure logs once and draws in software |
+| 6.4 I1 tests | Smoke tests under `make test-gui`: a frame renders, and a read-back pixel inside a known face has the face colour. No pixel goldens for GL. | done 2026-10-02: `pkg/platform/tkgui/gl_test.go` reads a face's colour back from a GL window and switches renderers; `pkg/render/gl` tests run in `make test-gui`, and `make coverage` runs under Xvfb so both GL packages are held to 85% |
+| 6.5 I3 section view | A clipping plane taken from a selected workplane or face. The cap is the section polygon that `ExportSectionTo` already computes, filled. View menu entry and a screen for offset and flip. `Doc.SetSection(plane, offset)` and `Doc.ClearSection()`, and `Doc.Render` honours it on both renderers. | done 2026-10-02: `Sketch.SetSection(plane, offset, flip)`, with the offset typed in the document's unit (expressions and parameters allowed) and a face's normal taken out of the solid. View state: not saved, not undone. The cap is the section of the display mesh (`SMesh.MakeSectionPolygonInto`) rather than of the shell, so it meets the clipped mesh exactly. View > Section View (Ctrl+Shift+X), screen with offset, flip and off. `Doc.SetSection(plane, offset, flip)`, `ClearSection`, `Section` (with the cap's area), `Group.Faces`. Scenario `ext_section`, pair `path_section`, example `examples/scripts/section` |
 
 Done when: the same model looks the same on both renderers by eye, and the section scenario
-passes on the software renderer.
+passes on the software renderer. Both hold: the application under Xvfb draws the sectioned
+example the same with `--renderer opengl` and `software`.
+
+Follow-ups from step 6:
+
+- **Cap colour**: a fixed colour (`sectionCapColor` in `pkg/ui/section.go`); a style for it,
+  or a hatch, would let the user change it.
+- **Section in files**: the section is view state, as the camera is. If views are ever saved,
+  it belongs with them.
+- **Face normals**: extrusion side faces carry normals that point into the solid. The section
+  turns them out using the mesh; anything else that relies on a face's normal may need the same.
+- **GL on other platforms**: only GLX exists; the takigo backends for Windows and macOS would
+  need their own context code.
 
 ### Step 7. First new solid features
 
