@@ -2259,6 +2259,10 @@
 					"Times": {
 						"decl": "func (e *Expr) Times(b *Expr) *Expr",
 						"text": "Times returns an expression representing a * b."
+					},
+					"Variables": {
+						"decl": "func (e *Expr) Variables() []string",
+						"text": "Variables returns the names the expression refers to, each once, in the order they first appear."
 					}
 				},
 				"makers": [
@@ -2837,6 +2841,10 @@
 				"decl": "func ReadUTF8(str string) []uint32",
 				"text": "ReadUTF8 decodes str as C++'s utf8_iterator does, which doesn't check the encoding; the byte after the string reads as 0, like a C string's terminator."
 			},
+			"RenameVariable": {
+				"decl": "func RenameVariable(s, from, to string) string",
+				"text": "RenameVariable rewrites the expression text s with every use of the name from replaced by to, leaving the rest of the text as it was: function names and other names are untouched."
+			},
 			"RewriteColor": {
 				"decl": "func RewriteColor(rgbin RgbaColor, fixExportColors bool) RgbaColor",
 				"text": "RewriteColor turns an almost-white colour black when fixExportColors, so it doesn't vanish on a light background (C++ Style::RewriteColor, with SS.fixExportColors as an argument)."
@@ -2872,6 +2880,10 @@
 			},
 			"ThawColor": {
 				"decl": "func ThawColor(s Settings, key string, defaultValue RgbaColor) RgbaColor"
+			},
+			"ValidVariableName": {
+				"decl": "func ValidVariableName(name string) bool",
+				"text": "ValidVariableName reports whether name can name a parameter in an expression: a letter or underscore, then letters, digits and underscores, and none of the names the parser reserves for its constants and functions."
 			},
 			"VectorsParallel3d": {
 				"decl": "func VectorsParallel3d(a, b ExprVector, p HParam) ExprVector",
@@ -4039,6 +4051,10 @@
 						"decl": "func (c Constraint) Delete()",
 						"text": "Delete deletes the constraint."
 					},
+					"Expr": {
+						"decl": "func (c Constraint) Expr() (expr string)",
+						"text": "Expr is the expression the constraint's value comes from, as its\nlabel's editor shows it, or \"\" for a plain number."
+					},
 					"Group": {
 						"decl": "func (c Constraint) Group() (g Group)",
 						"text": "Group is the group the constraint is in."
@@ -4060,8 +4076,8 @@
 						"text": "SetComment changes the text of a comment."
 					},
 					"SetExpr": {
-						"decl": "func (c Constraint) SetExpr(expr string) error",
-						"text": "SetExpr gives the constraint the value of an expression, as typing\nit in its label does: \"25.4/2\" or \"sqrt(2)*10\". A length is in the\nunit the user interface shows lengths in."
+						"decl": "func (c Constraint) SetExpr(expr string) (err error)",
+						"text": "SetExpr gives the constraint the value of an expression, as typing\nit in its label does: \"25.4/2\" or \"sqrt(2)*10\" is evaluated once, a\nlength being in the unit the user interface shows lengths in. An\nexpression that names a parameter, \"wall*4\", is kept, in millimetres\nand degrees, and evaluated again at each regeneration (see\nDoc.SetParameter)."
 					},
 					"SetOther": {
 						"decl": "func (c Constraint) SetOther(other bool)",
@@ -4141,6 +4157,10 @@
 						"decl": "func (d *Doc) Cubic(p0, p1, p2, p3 Vec) Entity",
 						"text": "Cubic adds a cubic Bézier curve from p0 to p3, with the control\npoints p1 and p2."
 					},
+					"DeleteParameter": {
+						"decl": "func (d *Doc) DeleteParameter(name string) (err error)",
+						"text": "DeleteParameter removes a parameter. One that an expression names\nis not removed, and the error says what names it."
+					},
 					"Diameter": {
 						"decl": "func (d *Doc) Diameter(circle Entity, v float64) Constraint",
 						"text": "Diameter sets the diameter of a circle or an arc."
@@ -4164,6 +4184,10 @@
 					"ExportAs": {
 						"decl": "func (d *Doc) ExportAs(kind ExportKind, path string) (err error)",
 						"text": "ExportAs is Export for a format that can hold several things, such\nas a wireframe in a .dxf or a .step."
+					},
+					"ExprErrors": {
+						"decl": "func (d *Doc) ExprErrors() (errs []string)",
+						"text": "ExprErrors lists the expressions on constraints and group values\nthat the last regeneration could not evaluate, each with why; the\nvalues they drive keep their last good value."
 					},
 					"Extrude": {
 						"decl": "func (d *Doc) Extrude(depth float64, name string) Group",
@@ -4245,6 +4269,18 @@
 						"decl": "func (d *Doc) Parallel(a, b Entity) Constraint",
 						"text": "Parallel makes two line segments or normals parallel."
 					},
+					"Parameter": {
+						"decl": "func (d *Doc) Parameter(name string) (p Parameter, ok bool)",
+						"text": "Parameter returns the parameter named name, and whether there is\none."
+					},
+					"ParameterUsers": {
+						"decl": "func (d *Doc) ParameterUsers(name string) (users []string)",
+						"text": "ParameterUsers describes what names the parameter: other\nparameters, constraints and group values."
+					},
+					"Parameters": {
+						"decl": "func (d *Doc) Parameters() (params []Parameter)",
+						"text": "Parameters lists the parameter table, in the order the parameters\nwere made."
+					},
 					"Perpendicular": {
 						"decl": "func (d *Doc) Perpendicular(a, b Entity) Constraint",
 						"text": "Perpendicular makes two line segments or normals perpendicular."
@@ -4272,6 +4308,10 @@
 					"Regen": {
 						"decl": "func (d *Doc) Regen()",
 						"text": "Regen regenerates the whole sketch and solves it."
+					},
+					"RenameParameter": {
+						"decl": "func (d *Doc) RenameParameter(from, to string) (err error)",
+						"text": "RenameParameter renames a parameter, and rewrites every expression\nthat names it."
 					},
 					"Render": {
 						"decl": "func (d *Doc) Render(path string, width, height int, view string) (err error)",
@@ -4304,6 +4344,10 @@
 					"Selection": {
 						"decl": "func (d *Doc) Selection() (entities []Entity)",
 						"text": "Selection is what is selected on the drawing, but for the\nconstraints."
+					},
+					"SetParameter": {
+						"decl": "func (d *Doc) SetParameter(name, expr string) (err error)",
+						"text": "SetParameter gives the parameter name the expression expr, in\nmillimetres and degrees, and adds it to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
 					},
 					"SetWorkplane": {
 						"decl": "func (d *Doc) SetWorkplane(wp Entity)",
@@ -4510,6 +4554,10 @@
 						"decl": "func (g Group) Entities() (entities []Entity)",
 						"text": "Entities are the group's entities, the points and normals among\nthem."
 					},
+					"Expr": {
+						"decl": "func (g Group) Expr(value sketch.GroupValue) (expr string)",
+						"text": "Expr is the expression one of the group's values comes from, or \"\"\nfor a plain number."
+					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
 						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\" or\n\"link\"."
@@ -4541,6 +4589,10 @@
 					"SetCopies": {
 						"decl": "func (g Group) SetCopies(n int)",
 						"text": "SetCopies is how many copies a step and repeat makes."
+					},
+					"SetExpr": {
+						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
+						"text": "SetExpr gives one of the group's values an expression, as typing it\non the group screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, sketch.GroupScale for a\nlink. An expression that names a parameter is kept, in millimetres,\nand evaluated again at each regeneration; one that names none is\nevaluated once, a pitch in the unit the interface shows lengths in."
 					},
 					"SetName": {
 						"decl": "func (g Group) SetName(name string)",
@@ -4577,6 +4629,10 @@
 					"Valid": {
 						"decl": "func (g Group) Valid() (ok bool)",
 						"text": "Valid reports whether the group exists."
+					},
+					"Value": {
+						"decl": "func (g Group) Value(value sketch.GroupValue) (v float64)",
+						"text": "Value is one of the group's values: the number of copies, the pitch\nin mm, or the scale."
 					},
 					"Visible": {
 						"decl": "func (g Group) Visible() (visible bool)",
@@ -4617,6 +4673,10 @@
 						"text": "Valid reports whether the parameter exists."
 					}
 				}
+			},
+			"Parameter": {
+				"text": "Parameter is a named value of the document's parameter table, which\nexpressions on dimensions and group values can name, as Edit \u003e\nParameters shows it. It is not a Param, which is one of the solver's\nunknowns.",
+				"kind": "struct"
 			},
 			"Request": {
 				"text": "Request is something that was drawn: a line segment, a circle, a\ndatum point. The property browser lists the requests of a group.",
@@ -4883,6 +4943,15 @@
 					"ThawExportSettings"
 				]
 			},
+			"ExprError": {
+				"text": "ExprError is a stored expression of a constraint or a group that could not be evaluated.",
+				"kind": "struct",
+				"methods": {
+					"Error": {
+						"decl": "func (e ExprError) Error() string"
+					}
+				}
+			},
 			"GenerateType": {
 				"text": "GenerateType is which groups GenerateAll solves (C++ SolveSpaceUI::Generate): all of them; from the first dirty or unsolved one to the active one; none, only regenerating the entities; or up to the active one.",
 				"kind": "int",
@@ -4994,6 +5063,10 @@
 					"TransformImportedBy": {
 						"decl": "func (g *Group) TransformImportedBy(sk *Sketch, t geom.Vector, q geom.Quaternion)",
 						"text": "TransformImportedBy moves a linked group by t and rotates it by q, composing them into its placement parameters (C++ Group::TransformImportedBy)."
+					},
+					"Value": {
+						"decl": "func (g *Group) Value(f GroupValue) (val *float64, expr *string)",
+						"text": "Value returns the field's number and its expression, both addressable."
 					}
 				},
 				"makers": [
@@ -5029,8 +5102,28 @@
 					"GroupLinked"
 				]
 			},
+			"GroupValue": {
+				"text": "GroupValue names a group value that may hold an expression.",
+				"kind": "int",
+				"methods": {
+					"Field": {
+						"decl": "func (f GroupValue) Field() string",
+						"text": "Field is the value's name in the file."
+					}
+				},
+				"values": [
+					"GroupCopies",
+					"GroupPitch",
+					"GroupValC",
+					"GroupScale"
+				]
+			},
 			"Image": {
 				"text": "Image is a loaded image file (C++ Pixmap): its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
+				"kind": "struct"
+			},
+			"Parameter": {
+				"text": "Parameter is a named value that expressions can use.",
 				"kind": "struct"
 			},
 			"Request": {
@@ -5176,6 +5269,10 @@
 					"AddParam": {
 						"decl": "func (s *Sketch) AddParam(p core.Param) core.HParam"
 					},
+					"AddParameter": {
+						"decl": "func (sk *Sketch) AddParameter(name, expr string) error",
+						"text": "AddParameter adds a parameter at the end of the table."
+					},
 					"AddReferences": {
 						"decl": "func (s *Sketch) AddReferences()",
 						"text": "AddReferences adds the references group and its three coordinate plane workplanes, which every sketch has; the first half of C++ SolveSpaceUI::NewFile."
@@ -5257,6 +5354,10 @@
 						"decl": "func (sk *Sketch) DeleteAllConstraintsFor(typ core.ConstraintType, entityA, ptA core.HEntity)",
 						"text": "DeleteAllConstraintsFor deletes the constraints of the given type on entityA and ptA; used when auto-removing constraints that would become redundant (C++ Constraint::DeleteAllConstraintsFor)."
 					},
+					"DeleteParameter": {
+						"decl": "func (sk *Sketch) DeleteParameter(name string) error",
+						"text": "DeleteParameter removes a parameter."
+					},
 					"DeleteSelection": {
 						"decl": "func (sk *Sketch) DeleteSelection(selection []Selection)",
 						"text": "DeleteSelection deletes the selected requests (not the references) and constraints (C++ GraphicsWindow::DeleteSelection)."
@@ -5265,6 +5366,10 @@
 						"decl": "func (sk *Sketch) DeleteTaggedRequests()",
 						"text": "DeleteTaggedRequests deletes the tagged requests, fixing up the point-coincident constraints on their points, and regenerates (C++ GraphicsWindow::DeleteTaggedRequests)."
 					},
+					"DistanceLabelOffset": {
+						"decl": "func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector",
+						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view (C++ GraphicsWindow::MenuConstrain)."
+					},
 					"EntitiesToMap": {
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
 						"text": "EntitiesToMap returns the entities indexed by their handle."
@@ -5272,6 +5377,10 @@
 					"EntityIsVisible": {
 						"decl": "func (sk *Sketch) EntityIsVisible(e *core.Entity) bool",
 						"text": "EntityIsVisible is C++ Entity::IsVisible, with the show flags of sk.Show (GraphicsWindow::Init's when nil)."
+					},
+					"EvaluateParameters": {
+						"decl": "func (sk *Sketch) EvaluateParameters() bool",
+						"text": "EvaluateParameters evaluates the parameter table, then every stored expression, and writes the numbers into the values they drive."
 					},
 					"ExportMeshTo": {
 						"decl": "func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error",
@@ -5362,6 +5471,14 @@
 						"decl": "func (sk *Sketch) NewFile()",
 						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group (C++ SolveSpaceUI::NewFile)."
 					},
+					"Parameter": {
+						"decl": "func (sk *Sketch) Parameter(name string) *Parameter",
+						"text": "Parameter returns the parameter named name, or nil."
+					},
+					"ParameterUsers": {
+						"decl": "func (sk *Sketch) ParameterUsers(name string) []string",
+						"text": "ParameterUsers describes what names the parameter: other parameters, constraints and group values."
+					},
 					"ParamsToMap": {
 						"decl": "func (s *Sketch) ParamsToMap() map[core.HParam]float64",
 						"text": "ParamsToMap returns the current param values as a map from handle to float64."
@@ -5410,6 +5527,10 @@
 						"decl": "func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity)",
 						"text": "RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt (C++ GraphicsWindow::RemoveConstraintsForPointBeingDeleted)."
 					},
+					"RenameParameter": {
+						"decl": "func (sk *Sketch) RenameParameter(from, to string) error",
+						"text": "RenameParameter renames a parameter and every use of it, in other parameters, in constraints and in groups."
+					},
 					"ReplacePointInConstraints": {
 						"decl": "func (sk *Sketch) ReplacePointInConstraints(oldpt, newpt core.HEntity)",
 						"text": "ReplacePointInConstraints moves the constraints on oldpt to newpt (C++ GraphicsWindow::ReplacePointInConstraints)."
@@ -5418,9 +5539,21 @@
 						"decl": "func (sk *Sketch) ScheduleGenerateAll()",
 						"text": "ScheduleGenerateAll asks for a regeneration of the dirty groups when Refresh next runs (C++ SolveSpaceUI::ScheduleGenerateAll, which Refresh serves after the pending events)."
 					},
+					"SetConstraintText": {
+						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string, mmPerUnit float64) error",
+						"text": "SetConstraintText gives a constraint the value of an expression the user typed for its label, as SetConstraintValue does for a number."
+					},
 					"SetEntityActPoint": {
 						"decl": "func (sk *Sketch) SetEntityActPoint(he core.HEntity, p geom.Vector)",
 						"text": "SetEntityActPoint updates an entity's cached actPoint."
+					},
+					"SetGroupText": {
+						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string, mmPerUnit float64) error",
+						"text": "SetGroupText gives a group value the value of an expression the user typed, as SetConstraintText does for a constraint."
+					},
+					"SetParameterExpr": {
+						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
+						"text": "SetParameterExpr gives a parameter a new expression."
 					},
 					"ShowNakedEdges": {
 						"decl": "func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList",
@@ -5509,6 +5642,10 @@
 					"UndoRemember": {
 						"decl": "func (s *Sketch) UndoRemember()",
 						"text": "UndoRemember records the current state for undo, and forgets what could be redone (C++ SolveSpaceUI::UndoRemember; the unsaved flag and the menus are the caller's)."
+					},
+					"UndoRememberFor": {
+						"decl": "func (s *Sketch) UndoRememberFor(fn func() error) error",
+						"text": "UndoRememberFor records the current state for undo, as UndoRemember does, and then runs fn to change it."
 					},
 					"UndoUndo": {
 						"decl": "func (s *Sketch) UndoUndo() bool",
@@ -5609,6 +5746,10 @@
 				"decl": "func AlmostEqualVector(a, b geom.Vector, tol float64) bool",
 				"text": "AlmostEqualVector reports whether two vectors are within tolerance."
 			},
+			"ConstraintText": {
+				"decl": "func ConstraintText(c *core.Constraint) string",
+				"text": "ConstraintText is the stored expression of a constraint as its label's editor shows it, the inverse of SetConstraintText: without the sign of a distance on the far side, and as a radius for a diameter shown as one."
+			},
 			"DefaultView": {
 				"decl": "func DefaultView() View",
 				"text": "DefaultView is the view GraphicsWindow::Init sets up: identity projection at 5 pixels per mm, orthographic."
@@ -5633,6 +5774,10 @@
 				"decl": "func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBezierResolver)",
 				"text": "GenerateEntityBeziers populates the supplied SBezierList with the piecewise-rational Bezier representation of this entity."
 			},
+			"IsLengthValue": {
+				"decl": "func IsLengthValue(t core.ConstraintType) bool",
+				"text": "IsLengthValue reports whether a constraint's value is a length, which the interface shows in its unit, rather than an angle or a ratio."
+			},
 			"NewGroup": {
 				"decl": "func NewGroup() Group",
 				"text": "NewGroup is a group as C++ Group::MenuGroup starts one: visible, grey, at scale 1."
@@ -5647,6 +5792,10 @@
 			"ParseExprText": {
 				"decl": "func ParseExprText(s string) *core.Expr",
 				"text": "ParseExprText parses a string expression and returns an Expr."
+			},
+			"SetConstraintValue": {
+				"decl": "func SetConstraintValue(c *core.Constraint, v float64)",
+				"text": "SetConstraintValue gives a constraint the value v that the user typed: in millimetres, degrees or a ratio, the magnitude the label shows."
 			},
 			"ThawExportSettings": {
 				"decl": "func ThawExportSettings(settings core.Settings) ExportSettings",
@@ -5693,6 +5842,9 @@
 			"GenerateUntilActive": {
 				"decl": "const GenerateUntilActive"
 			},
+			"GroupCopies": {
+				"decl": "const GroupCopies"
+			},
 			"GroupDrawing3D": {
 				"decl": "const GroupDrawing3D"
 			},
@@ -5717,11 +5869,17 @@
 			"GroupOneSkewed": {
 				"decl": "const GroupOneSkewed"
 			},
+			"GroupPitch": {
+				"decl": "const GroupPitch"
+			},
 			"GroupRevolve": {
 				"decl": "const GroupRevolve"
 			},
 			"GroupRotate": {
 				"decl": "const GroupRotate"
+			},
+			"GroupScale": {
+				"decl": "const GroupScale"
 			},
 			"GroupTranslate": {
 				"decl": "const GroupTranslate"
@@ -5731,6 +5889,9 @@
 			},
 			"GroupTwoSkewed": {
 				"decl": "const GroupTwoSkewed"
+			},
+			"GroupValC": {
+				"decl": "const GroupValC"
 			},
 			"GroupWorkplaneByLineSegments": {
 				"decl": "const GroupWorkplaneByLineSegments"

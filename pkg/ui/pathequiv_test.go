@@ -66,3 +66,9 @@ func TestPathEquivalenceExtrude(t *testing.T) {
 func TestPathEquivalenceThread(t *testing.T) {
 	requireSamePaths(t, "path_thread", "path_thread")
 }
+
+// A rectangle whose sides come from parameters, made through the
+// parameters screen and the dimension editor, and by a script.
+func TestPathEquivalenceParameters(t *testing.T) {
+	requireSamePaths(t, "path_parameters", "path_parameters")
+}

@@ -131,3 +131,13 @@ func (sk *Sketch) visibility() Visibility {
 	}
 	return DefaultVisibility()
 }
+
+// DistanceLabelOffset is where the label of a new distance between
+// points at a and b goes, as Constrain > Distance puts it: 50 pixels
+// from the middle, across the line between them in the view (C++
+// GraphicsWindow::MenuConstrain).
+func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector {
+	v := sk.view()
+	n := v.ProjRight.Cross(v.ProjUp)
+	return n.Cross(a.Minus(b)).WithMagnitude(50 / v.Scale)
+}

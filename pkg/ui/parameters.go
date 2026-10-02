@@ -149,7 +149,7 @@ func (tw *TextWindow) ShowParameters() {
 				name = g.Name
 			}
 			tw.Printf(false, "   %Fx%s%E", e.Error())
-			tw.Printf(false, "     in group %Fl%Ll%D%f%s%E", e.Group.V, lf(tw.ScreenSelectGroup), name)
+			tw.Printf(false, "     %Fl%Ll%D%fin group %s%E", e.Group.V, lf(tw.ScreenSelectGroup), name)
 		}
 	}
 	tw.Printf(false, "")

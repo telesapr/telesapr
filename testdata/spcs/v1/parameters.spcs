@@ -1,0 +1,2266 @@
+spacesolve 1
+
+units mm
+
+param width = 60
+param height = width*2/3
+param margin = height/5
+param hole = margin*0.8
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+  scale 0
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+  scale 0
+}
+
+group 0x3 extrude "plate" {
+  order 2
+  subtype one-sided
+  op-a 0x2
+  color 100 100 100 255
+  predef {
+    entity-b 0x80020000
+  }
+  visible
+  remap {
+    map 1 0x40000 1002
+    map 2 0x40001 1002
+    map 3 0x40002 1002
+    map 4 0x40000 1001
+    map 5 0x40001 1001
+    map 6 0x40002 1001
+    map 7 0x40000 1004
+    map 8 0x40001 1003
+    map 9 0x40002 1003
+    map 10 0x50000 1002
+    map 11 0x50001 1002
+    map 12 0x50002 1002
+    map 13 0x50000 1001
+    map 14 0x50001 1001
+    map 15 0x50002 1001
+    map 16 0x50000 1004
+    map 17 0x50001 1003
+    map 18 0x50002 1003
+    map 19 0x60000 1002
+    map 20 0x60001 1002
+    map 21 0x60002 1002
+    map 22 0x60000 1001
+    map 23 0x60001 1001
+    map 24 0x60002 1001
+    map 25 0x60000 1004
+    map 26 0x60001 1003
+    map 27 0x60002 1003
+    map 28 0x70000 1002
+    map 29 0x70001 1002
+    map 30 0x70002 1002
+    map 31 0x70000 1001
+    map 32 0x70001 1001
+    map 33 0x70002 1001
+    map 34 0x70000 1004
+    map 35 0x70001 1003
+    map 36 0x70002 1003
+    map 37 0x80000 1002
+    map 38 0x80001 1002
+    map 39 0x80020 1002
+    map 40 0x80040 1002
+    map 41 0x80000 1001
+    map 42 0x80001 1001
+    map 43 0x80020 1001
+    map 44 0x80040 1001
+    map 45 0x80001 1003
+    map 46 0x90000 1002
+    map 47 0x90001 1002
+    map 48 0x90020 1002
+    map 49 0x90040 1002
+    map 50 0x90000 1001
+    map 51 0x90001 1001
+    map 52 0x90020 1001
+    map 53 0x90040 1001
+    map 54 0x90001 1003
+    map 55 0xa0000 1002
+    map 56 0xa0001 1002
+    map 57 0xa0020 1002
+    map 58 0xa0040 1002
+    map 59 0xa0000 1001
+    map 60 0xa0001 1001
+    map 61 0xa0020 1001
+    map 62 0xa0040 1001
+    map 63 0xa0001 1003
+    map 64 0xb0000 1002
+    map 65 0xb0001 1002
+    map 66 0xb0020 1002
+    map 67 0xb0040 1002
+    map 68 0xb0000 1001
+    map 69 0xb0001 1001
+    map 70 0xb0020 1001
+    map 71 0xb0040 1001
+    map 72 0xb0001 1003
+    map 73 0x80020000 1002
+    map 74 0x80020000 1001
+    map 75 0x80020001 1002
+    map 76 0x80020002 1002
+    map 77 0x80020001 1001
+    map 78 0x80020002 1001
+    map 79 0x80020002 1003
+    map 80 0x0 1001
+    map 81 0x0 1002
+  }
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x5 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x6 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x7 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x8 circle {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x9 circle {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0xa circle {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0xb circle {
+  group 0x2
+  workplane 0x80020000
+}
+
+constraint 0x1 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x40001
+  pt-b 0x50002
+}
+
+constraint 0x2 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x50001
+  pt-b 0x60002
+}
+
+constraint 0x3 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x60001
+  pt-b 0x70002
+}
+
+constraint 0x4 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x70001
+  pt-b 0x40002
+}
+
+constraint 0x5 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x40000
+}
+
+constraint 0x6 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x50000
+}
+
+constraint 0x7 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x60000
+}
+
+constraint 0x8 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x70000
+}
+
+constraint 0x9 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x50001
+  pt-b 0x10001
+}
+
+constraint 0xa pt-pt-distance {
+  group 0x2
+  workplane 0x80020000
+  value = width
+  pt-a 0x50001
+  pt-b 0x50002
+}
+
+constraint 0xb pt-pt-distance {
+  group 0x2
+  workplane 0x80020000
+  value = height
+  pt-a 0x40001
+  pt-b 0x40002
+}
+
+constraint 0xc diameter {
+  group 0x2
+  workplane 0x80020000
+  value = hole
+  entity-a 0x80000
+}
+
+constraint 0xd pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0x80001
+  entity-a 0x50000
+}
+
+constraint 0xe pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0x80001
+  entity-a 0x60000
+}
+
+constraint 0xf diameter {
+  group 0x2
+  workplane 0x80020000
+  value = hole
+  entity-a 0x90000
+}
+
+constraint 0x10 pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0x90001
+  entity-a 0x40000
+}
+
+constraint 0x11 pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0x90001
+  entity-a 0x50000
+}
+
+constraint 0x12 diameter {
+  group 0x2
+  workplane 0x80020000
+  value = hole
+  entity-a 0xa0000
+}
+
+constraint 0x13 pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0xa0001
+  entity-a 0x70000
+}
+
+constraint 0x14 pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0xa0001
+  entity-a 0x40000
+}
+
+constraint 0x15 diameter {
+  group 0x2
+  workplane 0x80020000
+  value = hole
+  entity-a 0xb0000
+}
+
+constraint 0x16 pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0xb0001
+  entity-a 0x60000
+}
+
+constraint 0x17 pt-line-distance {
+  group 0x2
+  workplane 0x80020000
+  value = -(margin)
+  pt-a 0xb0001
+  entity-a 0x70000
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 60
+value 0x40011 0
+value 0x40013 60
+value 0x40014 40
+value 0x50010 0
+value 0x50011 0
+value 0x50013 60
+value 0x50014 0
+value 0x60010 0
+value 0x60011 40
+value 0x60013 0
+value 0x60014 0
+value 0x70010 60
+value 0x70011 40
+value 0x70013 0
+value 0x70014 40
+value 0x80010 8
+value 0x80011 8
+value 0x80040 3.2
+value 0x90010 52
+value 0x90011 8
+value 0x90040 3.2
+value 0xa0010 52
+value 0xa0011 32
+value 0xa0040 3.2
+value 0xb0010 8
+value 0xb0011 32
+value 0xb0040 3.2
+value 0x80030000 0
+value 0x80030001 0
+value 0x80030002 2.5
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001 0x40002
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 60 0 0
+  act-visible
+}
+
+entity 0x40002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 60 40 0
+  act-visible
+}
+
+entity 0x50000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x50001 0x50002
+  act-visible
+}
+
+entity 0x50001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-visible
+}
+
+entity 0x50002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 60 0 0
+  act-visible
+}
+
+entity 0x60000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x60001 0x60002
+  act-visible
+}
+
+entity 0x60001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 0 40 0
+  act-visible
+}
+
+entity 0x60002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-visible
+}
+
+entity 0x70000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x70001 0x70002
+  act-visible
+}
+
+entity 0x70001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 60 40 0
+  act-visible
+}
+
+entity 0x70002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 0 40 0
+  act-visible
+}
+
+entity 0x80000 circle {
+  group 0x2
+  workplane 0x80020000
+  points 0x80001
+  normal 0x80020
+  distance 0x80040
+  act-visible
+}
+
+entity 0x80001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 8 8 0
+  act-visible
+}
+
+entity 0x80020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  points 0x80001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80040 distance {
+  group 0x2
+  workplane 0x80020000
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x90000 circle {
+  group 0x2
+  workplane 0x80020000
+  points 0x90001
+  normal 0x90020
+  distance 0x90040
+  act-visible
+}
+
+entity 0x90001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 52 8 0
+  act-visible
+}
+
+entity 0x90020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  points 0x90001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x90040 distance {
+  group 0x2
+  workplane 0x80020000
+  act-distance 3.2
+  act-visible
+}
+
+entity 0xa0000 circle {
+  group 0x2
+  workplane 0x80020000
+  points 0xa0001
+  normal 0xa0020
+  distance 0xa0040
+  act-visible
+}
+
+entity 0xa0001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 52 32 0
+  act-visible
+}
+
+entity 0xa0020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  points 0xa0001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0xa0040 distance {
+  group 0x2
+  workplane 0x80020000
+  act-distance 3.2
+  act-visible
+}
+
+entity 0xb0000 circle {
+  group 0x2
+  workplane 0x80020000
+  points 0xb0001
+  normal 0xb0020
+  distance 0xb0040
+  act-visible
+}
+
+entity 0xb0001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 8 32 0
+  act-visible
+}
+
+entity 0xb0020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  points 0xb0001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0xb0040 distance {
+  group 0x2
+  workplane 0x80020000
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+
+entity 0x80030001 line-segment {
+  group 0x3
+  points 0x80030002 0x80030003
+  act-visible
+}
+
+entity 0x80030002 point-n-trans {
+  group 0x3
+  act-point 60 0 0
+  act-visible
+}
+
+entity 0x80030003 point-n-trans {
+  group 0x3
+  act-point 60 40 0
+  act-visible
+}
+
+entity 0x80030004 line-segment {
+  group 0x3
+  points 0x80030005 0x80030006
+  act-visible
+}
+
+entity 0x80030005 point-n-trans {
+  group 0x3
+  act-point 60 0 5
+  act-visible
+}
+
+entity 0x80030006 point-n-trans {
+  group 0x3
+  act-point 60 40 5
+  act-visible
+}
+
+entity 0x80030007 face-xprod {
+  group 0x3
+  points 0x80030005
+  act-point 60 0 0
+  act-normal 0 -1 0 0
+  act-visible
+}
+
+entity 0x80030008 line-segment {
+  group 0x3
+  points 0x80030005 0x80030002
+  act-visible
+}
+
+entity 0x80030009 line-segment {
+  group 0x3
+  points 0x80030006 0x80030003
+  act-visible
+}
+
+entity 0x8003000a line-segment {
+  group 0x3
+  points 0x8003000b 0x8003000c
+  act-visible
+}
+
+entity 0x8003000b point-n-trans {
+  group 0x3
+  act-visible
+}
+
+entity 0x8003000c point-n-trans {
+  group 0x3
+  act-point 60 0 0
+  act-visible
+}
+
+entity 0x8003000d line-segment {
+  group 0x3
+  points 0x8003000e 0x8003000f
+  act-visible
+}
+
+entity 0x8003000e point-n-trans {
+  group 0x3
+  act-point 0 0 5
+  act-visible
+}
+
+entity 0x8003000f point-n-trans {
+  group 0x3
+  act-point 60 0 5
+  act-visible
+}
+
+entity 0x80030010 face-xprod {
+  group 0x3
+  points 0x8003000e
+  act-normal 0 0 1 0
+  act-visible
+}
+
+entity 0x80030011 line-segment {
+  group 0x3
+  points 0x8003000e 0x8003000b
+  act-visible
+}
+
+entity 0x80030012 line-segment {
+  group 0x3
+  points 0x8003000f 0x8003000c
+  act-visible
+}
+
+entity 0x80030013 line-segment {
+  group 0x3
+  points 0x80030014 0x80030015
+  act-visible
+}
+
+entity 0x80030014 point-n-trans {
+  group 0x3
+  act-point 0 40 0
+  act-visible
+}
+
+entity 0x80030015 point-n-trans {
+  group 0x3
+  act-visible
+}
+
+entity 0x80030016 line-segment {
+  group 0x3
+  points 0x80030017 0x80030018
+  act-visible
+}
+
+entity 0x80030017 point-n-trans {
+  group 0x3
+  act-point 0 40 5
+  act-visible
+}
+
+entity 0x80030018 point-n-trans {
+  group 0x3
+  act-point 0 0 5
+  act-visible
+}
+
+entity 0x80030019 face-xprod {
+  group 0x3
+  points 0x80030017
+  act-point 0 40 0
+  act-normal 0 1 0 -0
+  act-visible
+}
+
+entity 0x8003001a line-segment {
+  group 0x3
+  points 0x80030017 0x80030014
+  act-visible
+}
+
+entity 0x8003001b line-segment {
+  group 0x3
+  points 0x80030018 0x80030015
+  act-visible
+}
+
+entity 0x8003001c line-segment {
+  group 0x3
+  points 0x8003001d 0x8003001e
+  act-visible
+}
+
+entity 0x8003001d point-n-trans {
+  group 0x3
+  act-point 60 40 0
+  act-visible
+}
+
+entity 0x8003001e point-n-trans {
+  group 0x3
+  act-point 0 40 0
+  act-visible
+}
+
+entity 0x8003001f line-segment {
+  group 0x3
+  points 0x80030020 0x80030021
+  act-visible
+}
+
+entity 0x80030020 point-n-trans {
+  group 0x3
+  act-point 60 40 5
+  act-visible
+}
+
+entity 0x80030021 point-n-trans {
+  group 0x3
+  act-point 0 40 5
+  act-visible
+}
+
+entity 0x80030022 face-xprod {
+  group 0x3
+  points 0x80030020
+  act-point 60 40 0
+  act-normal 0 0 -1 0
+  act-visible
+}
+
+entity 0x80030023 line-segment {
+  group 0x3
+  points 0x80030020 0x8003001d
+  act-visible
+}
+
+entity 0x80030024 line-segment {
+  group 0x3
+  points 0x80030021 0x8003001e
+  act-visible
+}
+
+entity 0x80030025 circle {
+  group 0x3
+  points 0x80030026
+  normal 0x80030027
+  distance 0x80030028
+  act-visible
+}
+
+entity 0x80030026 point-n-trans {
+  group 0x3
+  act-point 8 8 0
+  act-visible
+}
+
+entity 0x80030027 normal-n-copy {
+  group 0x3
+  points 0x80030026
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030028 distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x80030029 circle {
+  group 0x3
+  points 0x8003002a
+  normal 0x8003002b
+  distance 0x8003002c
+  act-visible
+}
+
+entity 0x8003002a point-n-trans {
+  group 0x3
+  act-point 8 8 5
+  act-visible
+}
+
+entity 0x8003002b normal-n-copy {
+  group 0x3
+  points 0x8003002a
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x8003002c distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x8003002d line-segment {
+  group 0x3
+  points 0x8003002a 0x80030026
+  act-visible
+}
+
+entity 0x8003002e circle {
+  group 0x3
+  points 0x8003002f
+  normal 0x80030030
+  distance 0x80030031
+  act-visible
+}
+
+entity 0x8003002f point-n-trans {
+  group 0x3
+  act-point 52 8 0
+  act-visible
+}
+
+entity 0x80030030 normal-n-copy {
+  group 0x3
+  points 0x8003002f
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030031 distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x80030032 circle {
+  group 0x3
+  points 0x80030033
+  normal 0x80030034
+  distance 0x80030035
+  act-visible
+}
+
+entity 0x80030033 point-n-trans {
+  group 0x3
+  act-point 52 8 5
+  act-visible
+}
+
+entity 0x80030034 normal-n-copy {
+  group 0x3
+  points 0x80030033
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030035 distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x80030036 line-segment {
+  group 0x3
+  points 0x80030033 0x8003002f
+  act-visible
+}
+
+entity 0x80030037 circle {
+  group 0x3
+  points 0x80030038
+  normal 0x80030039
+  distance 0x8003003a
+  act-visible
+}
+
+entity 0x80030038 point-n-trans {
+  group 0x3
+  act-point 52 32 0
+  act-visible
+}
+
+entity 0x80030039 normal-n-copy {
+  group 0x3
+  points 0x80030038
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x8003003a distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x8003003b circle {
+  group 0x3
+  points 0x8003003c
+  normal 0x8003003d
+  distance 0x8003003e
+  act-visible
+}
+
+entity 0x8003003c point-n-trans {
+  group 0x3
+  act-point 52 32 5
+  act-visible
+}
+
+entity 0x8003003d normal-n-copy {
+  group 0x3
+  points 0x8003003c
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x8003003e distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x8003003f line-segment {
+  group 0x3
+  points 0x8003003c 0x80030038
+  act-visible
+}
+
+entity 0x80030040 circle {
+  group 0x3
+  points 0x80030041
+  normal 0x80030042
+  distance 0x80030043
+  act-visible
+}
+
+entity 0x80030041 point-n-trans {
+  group 0x3
+  act-point 8 32 0
+  act-visible
+}
+
+entity 0x80030042 normal-n-copy {
+  group 0x3
+  points 0x80030041
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030043 distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x80030044 circle {
+  group 0x3
+  points 0x80030045
+  normal 0x80030046
+  distance 0x80030047
+  act-visible
+}
+
+entity 0x80030045 point-n-trans {
+  group 0x3
+  act-point 8 32 5
+  act-visible
+}
+
+entity 0x80030046 normal-n-copy {
+  group 0x3
+  points 0x80030045
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030047 distance-n-copy {
+  group 0x3
+  act-distance 3.2
+  act-visible
+}
+
+entity 0x80030048 line-segment {
+  group 0x3
+  points 0x80030045 0x80030041
+  act-visible
+}
+
+entity 0x8003004b normal-n-copy {
+  group 0x3
+  points 0x8003004c
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x8003004c point-n-trans {
+  group 0x3
+  construction
+  act-visible
+}
+
+entity 0x8003004d normal-n-copy {
+  group 0x3
+  points 0x8003004e
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x8003004e point-n-trans {
+  group 0x3
+  construction
+  act-point 0 0 5
+  act-visible
+}
+
+entity 0x8003004f line-segment {
+  group 0x3
+  construction
+  points 0x8003004e 0x8003004c
+  act-visible
+}
+
+entity 0x80030050 face-normal-pt {
+  group 0x3
+  points 0x8003004e
+  act-point 0 0 5
+  act-normal 0 0 -0 1
+  act-visible
+}
+
+entity 0x80030051 face-normal-pt {
+  group 0x3
+  points 0x8003004c
+  act-normal 0 0 -0 1
+  act-visible
+}
+
+shell {
+  surface 0x1 {
+    color 100 100 100 255
+    face 0x80030050
+    degree 1 1
+    ctrl 0 0 0 40 5 1
+    ctrl 0 1 60 40 5 1
+    ctrl 1 0 0 0 5 1
+    ctrl 1 1 60 0 5 1
+    trim 0xa forward 60 40 5 60 0 5
+    trim 0x4 forward 0 0 5 0 40 5
+    trim 0x7 forward 0 40 5 60 40 5
+    trim 0x1 forward 60 0 5 0 0 5
+    trim 0x16 forward 7.999999999999998 4.8 5 11.200000000000001 7.999999999999998 5.000000000000001
+    trim 0xd forward 11.200000000000001 7.999999999999998 5.000000000000001 8 11.200000000000001 5
+    trim 0x10 forward 8 11.200000000000001 5 4.8 7.999999999999998 5.000000000000001
+    trim 0x13 forward 4.8 7.999999999999998 5.000000000000001 7.999999999999998 4.8 5
+    trim 0x22 forward 52.00000000000001 4.8 5 55.2 7.999999999999998 5
+    trim 0x19 forward 55.2 7.999999999999998 5 52 11.2 5
+    trim 0x1c forward 52 11.2 5 48.800000000000004 7.999999999999998 5
+    trim 0x1f forward 48.800000000000004 7.999999999999998 5 52.00000000000001 4.8 5
+    trim 0x2e forward 52 28.8 5 55.2 32 5
+    trim 0x25 forward 55.2 32 5 52.00000000000001 35.20000000000001 5.000000000000001
+    trim 0x28 forward 52.00000000000001 35.20000000000001 5.000000000000001 48.80000000000001 32 5
+    trim 0x2b forward 48.80000000000001 32 5 52 28.8 5
+    trim 0x3a forward 7.999999999999998 28.8 5 11.2 32 5
+    trim 0x31 forward 11.2 32 5 8 35.20000000000001 5.000000000000001
+    trim 0x34 forward 8 35.20000000000001 5.000000000000001 4.8 32.00000000000001 5.000000000000001
+    trim 0x37 forward 4.8 32.00000000000001 5.000000000000001 7.999999999999998 28.8 5
+  }
+  surface 0x2 {
+    color 100 100 100 255
+    face 0x80030051
+    degree 1 1
+    ctrl 0 0 60 40 0 1
+    ctrl 0 1 0 40 0 1
+    ctrl 1 0 60 0 0 1
+    ctrl 1 1 0 0 0 1
+    trim 0xb backward 60 0 0 60 40 0
+    trim 0x2 backward 0 0 0 60 0 0
+    trim 0x5 backward 0 40 0 0 0 0
+    trim 0x8 backward 60 40 0 0 40 0
+    trim 0x11 backward 4.799999999999998 7.999999999999998 0 7.999999999999998 11.2 0
+    trim 0xe backward 7.999999999999998 11.2 0 11.2 7.999999999999998 0
+    trim 0x17 backward 11.2 7.999999999999998 0 7.999999999999998 4.8 0
+    trim 0x14 backward 7.999999999999998 4.8 0 4.799999999999998 7.999999999999998 0
+    trim 0x1d backward 48.8 7.999999999999997 0 52 11.200000000000001 0
+    trim 0x1a backward 52 11.200000000000001 0 55.2 7.999999999999998 0
+    trim 0x23 backward 55.2 7.999999999999998 0 52.00000000000001 4.8 0
+    trim 0x20 backward 52.00000000000001 4.8 0 48.8 7.999999999999997 0
+    trim 0x29 backward 48.8 32 0 52.00000000000001 35.20000000000001 0
+    trim 0x26 backward 52.00000000000001 35.20000000000001 0 55.2 32 0
+    trim 0x2f backward 55.2 32 0 52 28.8 0
+    trim 0x2c backward 52 28.8 0 48.8 32 0
+    trim 0x35 backward 4.799999999999998 32 0 7.999999999999998 35.20000000000001 0
+    trim 0x32 backward 7.999999999999998 35.20000000000001 0 11.2 32 0
+    trim 0x3b backward 11.2 32 0 7.999999999999998 28.8 0
+    trim 0x38 backward 7.999999999999998 28.8 0 4.799999999999998 32 0
+  }
+  surface 0x3 {
+    color 100 100 100 255
+    face 0x80030010
+    degree 1 1
+    ctrl 0 0 60 0 5 1
+    ctrl 0 1 60 0 0 1
+    ctrl 1 0 0 0 5 1
+    ctrl 1 1 0 0 0 1
+    trim 0x2 forward 60 0 0 0 0 0
+    trim 0x1 backward 0 0 5 60 0 5
+    trim 0xc forward 60 0 5 60 0 0
+    trim 0x3 backward 0 0 0 0 0 5
+  }
+  surface 0x4 {
+    color 100 100 100 255
+    face 0x80030019
+    degree 1 1
+    ctrl 0 0 0 0 5 1
+    ctrl 0 1 0 0 0 1
+    ctrl 1 0 0 40 5 1
+    ctrl 1 1 0 40 0 1
+    trim 0x5 forward 0 0 0 0 40 0
+    trim 0x4 backward 0 40 5 0 0 5
+    trim 0x3 forward 0 0 5 0 0 0
+    trim 0x6 backward 0 40 0 0 40 5
+  }
+  surface 0x5 {
+    color 100 100 100 255
+    face 0x80030022
+    degree 1 1
+    ctrl 0 0 0 40 5 1
+    ctrl 0 1 0 40 0 1
+    ctrl 1 0 60 40 5 1
+    ctrl 1 1 60 40 0 1
+    trim 0x8 forward 0 40 0 60 40 0
+    trim 0x7 backward 60 40 5 0 40 5
+    trim 0x6 forward 0 40 5 0 40 0
+    trim 0x9 backward 60 40 0 60 40 5
+  }
+  surface 0x6 {
+    color 100 100 100 255
+    face 0x80030007
+    degree 1 1
+    ctrl 0 0 60 40 5 1
+    ctrl 0 1 60 40 0 1
+    ctrl 1 0 60 0 5 1
+    ctrl 1 1 60 0 0 1
+    trim 0xb forward 60 40 0 60 0 0
+    trim 0xa backward 60 0 5 60 40 5
+    trim 0x9 forward 60 40 5 60 40 0
+    trim 0xc backward 60 0 0 60 0 5
+  }
+  surface 0x7 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 11.2 8 5 1
+    ctrl 0 1 11.2 8 0 1
+    ctrl 1 0 11.2 11.2 5 0.7071067811865476
+    ctrl 1 1 11.2 11.2 0 0.7071067811865476
+    ctrl 2 0 8 11.2 5 1
+    ctrl 2 1 8 11.2 0 1
+    trim 0xe forward 11.2 8 0 8 11.2 0
+    trim 0xd backward 8 11.2 5 11.2 8 5
+    trim 0x18 forward 11.2 8 5 11.2 8 0
+    trim 0xf backward 8 11.2 0 8 11.2 5
+  }
+  surface 0x8 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 8 11.2 5 1
+    ctrl 0 1 8 11.2 0 1
+    ctrl 1 0 4.8 11.2 5 0.7071067811865476
+    ctrl 1 1 4.8 11.2 0 0.7071067811865476
+    ctrl 2 0 4.8 8 5 1
+    ctrl 2 1 4.8 8 0 1
+    trim 0x11 forward 8 11.2 0 4.8 8 0
+    trim 0x10 backward 4.8 8 5 8 11.2 5
+    trim 0xf forward 8 11.2 5 8 11.2 0
+    trim 0x12 backward 4.8 8 0 4.8 8 5
+  }
+  surface 0x9 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 4.8 8 5 1
+    ctrl 0 1 4.8 8 0 1
+    ctrl 1 0 4.8 4.800000000000001 5 0.7071067811865476
+    ctrl 1 1 4.8 4.800000000000001 0 0.7071067811865476
+    ctrl 2 0 7.999999999999999 4.8 5 1
+    ctrl 2 1 7.999999999999999 4.8 0 1
+    trim 0x14 forward 4.8 8 0 7.999999999999999 4.8 0
+    trim 0x13 backward 7.999999999999999 4.8 5 4.8 8 5
+    trim 0x12 forward 4.8 8 5 4.8 8 0
+    trim 0x15 backward 7.999999999999999 4.8 0 7.999999999999999 4.8 5
+  }
+  surface 0xa {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 7.999999999999999 4.8 5 1
+    ctrl 0 1 7.999999999999999 4.8 0 1
+    ctrl 1 0 11.2 4.799999999999999 5 0.7071067811865476
+    ctrl 1 1 11.2 4.799999999999999 0 0.7071067811865476
+    ctrl 2 0 11.2 7.999999999999999 5 1
+    ctrl 2 1 11.2 7.999999999999999 0 1
+    trim 0x17 forward 7.999999999999999 4.8 0 11.2 7.999999999999999 0
+    trim 0x16 backward 11.2 7.999999999999999 5 7.999999999999999 4.8 5
+    trim 0x15 forward 7.999999999999999 4.8 5 7.999999999999999 4.8 0
+    trim 0x18 backward 11.2 7.999999999999999 0 11.2 7.999999999999999 5
+  }
+  surface 0xb {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 55.2 8 5 1
+    ctrl 0 1 55.2 8 0 1
+    ctrl 1 0 55.2 11.2 5 0.7071067811865476
+    ctrl 1 1 55.2 11.2 0 0.7071067811865476
+    ctrl 2 0 52 11.2 5 1
+    ctrl 2 1 52 11.2 0 1
+    trim 0x1a forward 55.2 8 0 52 11.2 0
+    trim 0x19 backward 52 11.2 5 55.2 8 5
+    trim 0x24 forward 55.2 8 5 55.2 8 0
+    trim 0x1b backward 52 11.2 0 52 11.2 5
+  }
+  surface 0xc {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 52 11.2 5 1
+    ctrl 0 1 52 11.2 0 1
+    ctrl 1 0 48.8 11.2 5 0.7071067811865476
+    ctrl 1 1 48.8 11.2 0 0.7071067811865476
+    ctrl 2 0 48.8 8 5 1
+    ctrl 2 1 48.8 8 0 1
+    trim 0x1d forward 52 11.2 0 48.8 8 0
+    trim 0x1c backward 48.8 8 5 52 11.2 5
+    trim 0x1b forward 52 11.2 5 52 11.2 0
+    trim 0x1e backward 48.8 8 0 48.8 8 5
+  }
+  surface 0xd {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 48.8 8 5 1
+    ctrl 0 1 48.8 8 0 1
+    ctrl 1 0 48.8 4.800000000000001 5 0.7071067811865476
+    ctrl 1 1 48.8 4.800000000000001 0 0.7071067811865476
+    ctrl 2 0 52 4.8 5 1
+    ctrl 2 1 52 4.8 0 1
+    trim 0x20 forward 48.8 8 0 52 4.8 0
+    trim 0x1f backward 52 4.8 5 48.8 8 5
+    trim 0x1e forward 48.8 8 5 48.8 8 0
+    trim 0x21 backward 52 4.8 0 52 4.8 5
+  }
+  surface 0xe {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 52 4.8 5 1
+    ctrl 0 1 52 4.8 0 1
+    ctrl 1 0 55.2 4.799999999999999 5 0.7071067811865476
+    ctrl 1 1 55.2 4.799999999999999 0 0.7071067811865476
+    ctrl 2 0 55.2 7.999999999999999 5 1
+    ctrl 2 1 55.2 7.999999999999999 0 1
+    trim 0x23 forward 52 4.8 0 55.2 7.999999999999999 0
+    trim 0x22 backward 55.2 7.999999999999999 5 52 4.8 5
+    trim 0x21 forward 52 4.8 5 52 4.8 0
+    trim 0x24 backward 55.2 7.999999999999999 0 55.2 7.999999999999999 5
+  }
+  surface 0xf {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 55.2 32 5 1
+    ctrl 0 1 55.2 32 0 1
+    ctrl 1 0 55.2 35.2 5 0.7071067811865476
+    ctrl 1 1 55.2 35.2 0 0.7071067811865476
+    ctrl 2 0 52 35.2 5 1
+    ctrl 2 1 52 35.2 0 1
+    trim 0x26 forward 55.2 32 0 52 35.2 0
+    trim 0x25 backward 52 35.2 5 55.2 32 5
+    trim 0x30 forward 55.2 32 5 55.2 32 0
+    trim 0x27 backward 52 35.2 0 52 35.2 5
+  }
+  surface 0x10 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 52 35.2 5 1
+    ctrl 0 1 52 35.2 0 1
+    ctrl 1 0 48.8 35.2 5 0.7071067811865476
+    ctrl 1 1 48.8 35.2 0 0.7071067811865476
+    ctrl 2 0 48.8 32 5 1
+    ctrl 2 1 48.8 32 0 1
+    trim 0x29 forward 52 35.2 0 48.8 32 0
+    trim 0x28 backward 48.8 32 5 52 35.2 5
+    trim 0x27 forward 52 35.2 5 52 35.2 0
+    trim 0x2a backward 48.8 32 0 48.8 32 5
+  }
+  surface 0x11 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 48.8 32 5 1
+    ctrl 0 1 48.8 32 0 1
+    ctrl 1 0 48.8 28.8 5 0.7071067811865476
+    ctrl 1 1 48.8 28.8 0 0.7071067811865476
+    ctrl 2 0 52 28.8 5 1
+    ctrl 2 1 52 28.8 0 1
+    trim 0x2c forward 48.8 32 0 52 28.8 0
+    trim 0x2b backward 52 28.8 5 48.8 32 5
+    trim 0x2a forward 48.8 32 5 48.8 32 0
+    trim 0x2d backward 52 28.8 0 52 28.8 5
+  }
+  surface 0x12 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 52 28.8 5 1
+    ctrl 0 1 52 28.8 0 1
+    ctrl 1 0 55.2 28.8 5 0.7071067811865476
+    ctrl 1 1 55.2 28.8 0 0.7071067811865476
+    ctrl 2 0 55.2 32 5 1
+    ctrl 2 1 55.2 32 0 1
+    trim 0x2f forward 52 28.8 0 55.2 32 0
+    trim 0x2e backward 55.2 32 5 52 28.8 5
+    trim 0x2d forward 52 28.8 5 52 28.8 0
+    trim 0x30 backward 55.2 32 0 55.2 32 5
+  }
+  surface 0x13 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 11.2 32 5 1
+    ctrl 0 1 11.2 32 0 1
+    ctrl 1 0 11.2 35.2 5 0.7071067811865476
+    ctrl 1 1 11.2 35.2 0 0.7071067811865476
+    ctrl 2 0 8 35.2 5 1
+    ctrl 2 1 8 35.2 0 1
+    trim 0x32 forward 11.2 32 0 8 35.2 0
+    trim 0x31 backward 8 35.2 5 11.2 32 5
+    trim 0x3c forward 11.2 32 5 11.2 32 0
+    trim 0x33 backward 8 35.2 0 8 35.2 5
+  }
+  surface 0x14 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 8 35.2 5 1
+    ctrl 0 1 8 35.2 0 1
+    ctrl 1 0 4.8 35.2 5 0.7071067811865476
+    ctrl 1 1 4.8 35.2 0 0.7071067811865476
+    ctrl 2 0 4.8 32 5 1
+    ctrl 2 1 4.8 32 0 1
+    trim 0x35 forward 8 35.2 0 4.8 32 0
+    trim 0x34 backward 4.8 32 5 8 35.2 5
+    trim 0x33 forward 8 35.2 5 8 35.2 0
+    trim 0x36 backward 4.8 32 0 4.8 32 5
+  }
+  surface 0x15 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 4.8 32 5 1
+    ctrl 0 1 4.8 32 0 1
+    ctrl 1 0 4.8 28.8 5 0.7071067811865476
+    ctrl 1 1 4.8 28.8 0 0.7071067811865476
+    ctrl 2 0 7.999999999999999 28.8 5 1
+    ctrl 2 1 7.999999999999999 28.8 0 1
+    trim 0x38 forward 4.8 32 0 7.999999999999999 28.8 0
+    trim 0x37 backward 7.999999999999999 28.8 5 4.8 32 5
+    trim 0x36 forward 4.8 32 5 4.8 32 0
+    trim 0x39 backward 7.999999999999999 28.8 0 7.999999999999999 28.8 5
+  }
+  surface 0x16 {
+    color 100 100 100 255
+    degree 2 1
+    ctrl 0 0 7.999999999999999 28.8 5 1
+    ctrl 0 1 7.999999999999999 28.8 0 1
+    ctrl 1 0 11.2 28.8 5 0.7071067811865476
+    ctrl 1 1 11.2 28.8 0 0.7071067811865476
+    ctrl 2 0 11.2 32 5 1
+    ctrl 2 1 11.2 32 0 1
+    trim 0x3b forward 7.999999999999999 28.8 0 11.2 32 0
+    trim 0x3a backward 11.2 32 5 7.999999999999999 28.8 5
+    trim 0x39 forward 7.999999999999999 28.8 5 7.999999999999999 28.8 0
+    trim 0x3c backward 11.2 32 0 11.2 32 5
+  }
+  curve 0x1 {
+    exact
+    degree 1
+    surfaces 0x1 0x3
+    ctrl 0 60 0 5 1
+    ctrl 1 0 0 5 1
+    vertex 60 0 5
+    vertex 0 0 5
+  }
+  curve 0x2 {
+    exact
+    degree 1
+    surfaces 0x2 0x3
+    ctrl 0 60 0 0 1
+    ctrl 1 0 0 0 1
+    vertex 60 0 0
+    vertex 0 0 0
+  }
+  curve 0x3 {
+    exact
+    degree 1
+    surfaces 0x3 0x4
+    ctrl 0 0 0 5 1
+    ctrl 1 0 0 0 1
+    vertex 0 0 5
+    vertex 0 0 0
+  }
+  curve 0x4 {
+    exact
+    degree 1
+    surfaces 0x1 0x4
+    ctrl 0 0 0 5 1
+    ctrl 1 0 40 5 1
+    vertex 0 0 5
+    vertex 0 40 5
+  }
+  curve 0x5 {
+    exact
+    degree 1
+    surfaces 0x2 0x4
+    ctrl 0 0 0 0 1
+    ctrl 1 0 40 0 1
+    vertex 0 0 0
+    vertex 0 40 0
+  }
+  curve 0x6 {
+    exact
+    degree 1
+    surfaces 0x4 0x5
+    ctrl 0 0 40 5 1
+    ctrl 1 0 40 0 1
+    vertex 0 40 5
+    vertex 0 40 0
+  }
+  curve 0x7 {
+    exact
+    degree 1
+    surfaces 0x1 0x5
+    ctrl 0 0 40 5 1
+    ctrl 1 60 40 5 1
+    vertex 0 40 5
+    vertex 60 40 5
+  }
+  curve 0x8 {
+    exact
+    degree 1
+    surfaces 0x2 0x5
+    ctrl 0 0 40 0 1
+    ctrl 1 60 40 0 1
+    vertex 0 40 0
+    vertex 60 40 0
+  }
+  curve 0x9 {
+    exact
+    degree 1
+    surfaces 0x5 0x6
+    ctrl 0 60 40 5 1
+    ctrl 1 60 40 0 1
+    vertex 60 40 5
+    vertex 60 40 0
+  }
+  curve 0xa {
+    exact
+    degree 1
+    surfaces 0x1 0x6
+    ctrl 0 60 40 5 1
+    ctrl 1 60 0 5 1
+    vertex 60 40 5
+    vertex 60 0 5
+  }
+  curve 0xb {
+    exact
+    degree 1
+    surfaces 0x2 0x6
+    ctrl 0 60 40 0 1
+    ctrl 1 60 0 0 1
+    vertex 60 40 0
+    vertex 60 0 0
+  }
+  curve 0xc {
+    exact
+    degree 1
+    surfaces 0x6 0x3
+    ctrl 0 60 0 5 1
+    ctrl 1 60 0 0 1
+    vertex 60 0 5
+    vertex 60 0 0
+  }
+  curve 0xd {
+    exact
+    degree 2
+    surfaces 0x1 0x7
+    ctrl 0 11.2 8 5 1
+    ctrl 1 11.2 11.2 5 0.7071067811865476
+    ctrl 2 8 11.2 5 1
+    vertex 11.2 8 5
+    point 10.975322563399777 9.177903070597994 5
+    point 10.678385635899684 9.751071210832455 5
+    point 10.262741699796953 10.262741699796953 5
+    point 9.751071210832457 10.678385635899684 5
+    point 9.177903070597994 10.975322563399777 5
+    vertex 8 11.2 5
+  }
+  curve 0xe {
+    exact
+    degree 2
+    surfaces 0x2 0x7
+    ctrl 0 11.2 8 0 1
+    ctrl 1 11.2 11.2 0 0.7071067811865476
+    ctrl 2 8 11.2 0 1
+    vertex 11.2 8 0
+    point 10.975322563399777 9.177903070597994 0
+    point 10.678385635899684 9.751071210832455 0
+    point 10.262741699796953 10.262741699796953 0
+    point 9.751071210832457 10.678385635899684 0
+    point 9.177903070597994 10.975322563399777 0
+    vertex 8 11.2 0
+  }
+  curve 0xf {
+    exact
+    degree 1
+    surfaces 0x7 0x8
+    ctrl 0 8 11.2 5 1
+    ctrl 1 8 11.2 0 1
+    vertex 8 11.2 5
+    vertex 8 11.2 0
+  }
+  curve 0x10 {
+    exact
+    degree 2
+    surfaces 0x1 0x8
+    ctrl 0 8 11.2 5 1
+    ctrl 1 4.8 11.2 5 0.7071067811865476
+    ctrl 2 4.8 8 5 1
+    vertex 8 11.2 5
+    point 6.822096929402007 10.975322563399777 5
+    point 6.248928789167543 10.678385635899684 5
+    point 5.737258300203049 10.262741699796953 5
+    point 5.3216143641003155 9.751071210832457 5
+    point 5.024677436600223 9.177903070597994 5
+    vertex 4.8 8 5
+  }
+  curve 0x11 {
+    exact
+    degree 2
+    surfaces 0x2 0x8
+    ctrl 0 8 11.2 0 1
+    ctrl 1 4.8 11.2 0 0.7071067811865476
+    ctrl 2 4.8 8 0 1
+    vertex 8 11.2 0
+    point 6.822096929402007 10.975322563399777 0
+    point 6.248928789167543 10.678385635899684 0
+    point 5.737258300203049 10.262741699796953 0
+    point 5.3216143641003155 9.751071210832457 0
+    point 5.024677436600223 9.177903070597994 0
+    vertex 4.8 8 0
+  }
+  curve 0x12 {
+    exact
+    degree 1
+    surfaces 0x8 0x9
+    ctrl 0 4.8 8 5 1
+    ctrl 1 4.8 8 0 1
+    vertex 4.8 8 5
+    vertex 4.8 8 0
+  }
+  curve 0x13 {
+    exact
+    degree 2
+    surfaces 0x1 0x9
+    ctrl 0 4.8 8 5 1
+    ctrl 1 4.8 4.800000000000001 5 0.7071067811865476
+    ctrl 2 7.999999999999999 4.8 5 1
+    vertex 4.8 8 5
+    point 5.024677436600222 6.822096929402007 5
+    point 5.321614364100315 6.248928789167543 5
+    point 5.737258300203047 5.737258300203049 5
+    point 6.248928789167542 5.3216143641003155 5
+    point 6.822096929402006 5.024677436600223 5
+    vertex 7.999999999999999 4.8 5
+  }
+  curve 0x14 {
+    exact
+    degree 2
+    surfaces 0x2 0x9
+    ctrl 0 4.8 8 0 1
+    ctrl 1 4.8 4.800000000000001 0 0.7071067811865476
+    ctrl 2 7.999999999999999 4.8 0 1
+    vertex 4.8 8 0
+    point 5.024677436600222 6.822096929402007 0
+    point 5.321614364100315 6.248928789167543 0
+    point 5.737258300203047 5.737258300203049 0
+    point 6.248928789167542 5.3216143641003155 0
+    point 6.822096929402006 5.024677436600223 0
+    vertex 7.999999999999999 4.8 0
+  }
+  curve 0x15 {
+    exact
+    degree 1
+    surfaces 0x9 0xa
+    ctrl 0 7.999999999999999 4.8 5 1
+    ctrl 1 7.999999999999999 4.8 0 1
+    vertex 7.999999999999999 4.8 5
+    vertex 7.999999999999999 4.8 0
+  }
+  curve 0x16 {
+    exact
+    degree 2
+    surfaces 0x1 0xa
+    ctrl 0 7.999999999999999 4.8 5 1
+    ctrl 1 11.2 4.799999999999999 5 0.7071067811865476
+    ctrl 2 11.2 7.999999999999999 5 1
+    vertex 7.999999999999999 4.8 5
+    point 9.177903070597992 5.024677436600222 5
+    point 9.751071210832455 5.321614364100315 5
+    point 10.262741699796953 5.737258300203047 5
+    point 10.678385635899684 6.248928789167542 5
+    point 10.975322563399777 6.822096929402006 5
+    vertex 11.2 7.999999999999999 5
+  }
+  curve 0x17 {
+    exact
+    degree 2
+    surfaces 0x2 0xa
+    ctrl 0 7.999999999999999 4.8 0 1
+    ctrl 1 11.2 4.799999999999999 0 0.7071067811865476
+    ctrl 2 11.2 7.999999999999999 0 1
+    vertex 7.999999999999999 4.8 0
+    point 9.177903070597992 5.024677436600222 0
+    point 9.751071210832455 5.321614364100315 0
+    point 10.262741699796953 5.737258300203047 0
+    point 10.678385635899684 6.248928789167542 0
+    point 10.975322563399777 6.822096929402006 0
+    vertex 11.2 7.999999999999999 0
+  }
+  curve 0x18 {
+    exact
+    degree 1
+    surfaces 0xa 0x7
+    ctrl 0 11.2 7.999999999999999 5 1
+    ctrl 1 11.2 7.999999999999999 0 1
+    vertex 11.2 7.999999999999999 5
+    vertex 11.2 7.999999999999999 0
+  }
+  curve 0x19 {
+    exact
+    degree 2
+    surfaces 0x1 0xb
+    ctrl 0 55.2 8 5 1
+    ctrl 1 55.2 11.2 5 0.7071067811865476
+    ctrl 2 52 11.2 5 1
+    vertex 55.2 8 5
+    point 54.975322563399786 9.177903070597994 5
+    point 54.67838563589969 9.751071210832455 5
+    point 54.262741699796955 10.262741699796953 5
+    point 53.75107121083245 10.678385635899684 5
+    point 53.17790307059799 10.975322563399777 5
+    vertex 52 11.2 5
+  }
+  curve 0x1a {
+    exact
+    degree 2
+    surfaces 0x2 0xb
+    ctrl 0 55.2 8 0 1
+    ctrl 1 55.2 11.2 0 0.7071067811865476
+    ctrl 2 52 11.2 0 1
+    vertex 55.2 8 0
+    point 54.975322563399786 9.177903070597994 0
+    point 54.67838563589969 9.751071210832455 0
+    point 54.262741699796955 10.262741699796953 0
+    point 53.75107121083245 10.678385635899684 0
+    point 53.17790307059799 10.975322563399777 0
+    vertex 52 11.2 0
+  }
+  curve 0x1b {
+    exact
+    degree 1
+    surfaces 0xb 0xc
+    ctrl 0 52 11.2 5 1
+    ctrl 1 52 11.2 0 1
+    vertex 52 11.2 5
+    vertex 52 11.2 0
+  }
+  curve 0x1c {
+    exact
+    degree 2
+    surfaces 0x1 0xc
+    ctrl 0 52 11.2 5 1
+    ctrl 1 48.8 11.2 5 0.7071067811865476
+    ctrl 2 48.8 8 5 1
+    vertex 52 11.2 5
+    point 50.822096929402 10.975322563399777 5
+    point 50.248928789167536 10.678385635899684 5
+    point 49.737258300203045 10.262741699796953 5
+    point 49.32161436410031 9.751071210832457 5
+    point 49.02467743660022 9.177903070597994 5
+    vertex 48.8 8 5
+  }
+  curve 0x1d {
+    exact
+    degree 2
+    surfaces 0x2 0xc
+    ctrl 0 52 11.2 0 1
+    ctrl 1 48.8 11.2 0 0.7071067811865476
+    ctrl 2 48.8 8 0 1
+    vertex 52 11.2 0
+    point 50.822096929402 10.975322563399777 0
+    point 50.248928789167536 10.678385635899684 0
+    point 49.737258300203045 10.262741699796953 0
+    point 49.32161436410031 9.751071210832457 0
+    point 49.02467743660022 9.177903070597994 0
+    vertex 48.8 8 0
+  }
+  curve 0x1e {
+    exact
+    degree 1
+    surfaces 0xc 0xd
+    ctrl 0 48.8 8 5 1
+    ctrl 1 48.8 8 0 1
+    vertex 48.8 8 5
+    vertex 48.8 8 0
+  }
+  curve 0x1f {
+    exact
+    degree 2
+    surfaces 0x1 0xd
+    ctrl 0 48.8 8 5 1
+    ctrl 1 48.8 4.800000000000001 5 0.7071067811865476
+    ctrl 2 52 4.8 5 1
+    vertex 48.8 8 5
+    point 49.02467743660022 6.822096929402007 5
+    point 49.32161436410031 6.248928789167543 5
+    point 49.737258300203045 5.737258300203049 5
+    point 50.248928789167536 5.3216143641003155 5
+    point 50.822096929402 5.024677436600223 5
+    vertex 52 4.8 5
+  }
+  curve 0x20 {
+    exact
+    degree 2
+    surfaces 0x2 0xd
+    ctrl 0 48.8 8 0 1
+    ctrl 1 48.8 4.800000000000001 0 0.7071067811865476
+    ctrl 2 52 4.8 0 1
+    vertex 48.8 8 0
+    point 49.02467743660022 6.822096929402007 0
+    point 49.32161436410031 6.248928789167543 0
+    point 49.737258300203045 5.737258300203049 0
+    point 50.248928789167536 5.3216143641003155 0
+    point 50.822096929402 5.024677436600223 0
+    vertex 52 4.8 0
+  }
+  curve 0x21 {
+    exact
+    degree 1
+    surfaces 0xd 0xe
+    ctrl 0 52 4.8 5 1
+    ctrl 1 52 4.8 0 1
+    vertex 52 4.8 5
+    vertex 52 4.8 0
+  }
+  curve 0x22 {
+    exact
+    degree 2
+    surfaces 0x1 0xe
+    ctrl 0 52 4.8 5 1
+    ctrl 1 55.2 4.799999999999999 5 0.7071067811865476
+    ctrl 2 55.2 7.999999999999999 5 1
+    vertex 52 4.8 5
+    point 53.177903070598 5.024677436600222 5
+    point 53.751071210832464 5.321614364100315 5
+    point 54.262741699796955 5.737258300203047 5
+    point 54.67838563589969 6.248928789167542 5
+    point 54.975322563399786 6.822096929402006 5
+    vertex 55.2 7.999999999999999 5
+  }
+  curve 0x23 {
+    exact
+    degree 2
+    surfaces 0x2 0xe
+    ctrl 0 52 4.8 0 1
+    ctrl 1 55.2 4.799999999999999 0 0.7071067811865476
+    ctrl 2 55.2 7.999999999999999 0 1
+    vertex 52 4.8 0
+    point 53.177903070598 5.024677436600222 0
+    point 53.751071210832464 5.321614364100315 0
+    point 54.262741699796955 5.737258300203047 0
+    point 54.67838563589969 6.248928789167542 0
+    point 54.975322563399786 6.822096929402006 0
+    vertex 55.2 7.999999999999999 0
+  }
+  curve 0x24 {
+    exact
+    degree 1
+    surfaces 0xe 0xb
+    ctrl 0 55.2 7.999999999999999 5 1
+    ctrl 1 55.2 7.999999999999999 0 1
+    vertex 55.2 7.999999999999999 5
+    vertex 55.2 7.999999999999999 0
+  }
+  curve 0x25 {
+    exact
+    degree 2
+    surfaces 0x1 0xf
+    ctrl 0 55.2 32 5 1
+    ctrl 1 55.2 35.2 5 0.7071067811865476
+    ctrl 2 52 35.2 5 1
+    vertex 55.2 32 5
+    point 54.975322563399786 33.17790307059799 5
+    point 54.67838563589969 33.75107121083246 5
+    point 54.262741699796955 34.26274169979696 5
+    point 53.75107121083245 34.67838563589968 5
+    point 53.17790307059799 34.97532256339978 5
+    vertex 52 35.2 5
+  }
+  curve 0x26 {
+    exact
+    degree 2
+    surfaces 0x2 0xf
+    ctrl 0 55.2 32 0 1
+    ctrl 1 55.2 35.2 0 0.7071067811865476
+    ctrl 2 52 35.2 0 1
+    vertex 55.2 32 0
+    point 54.975322563399786 33.17790307059799 0
+    point 54.67838563589969 33.75107121083246 0
+    point 54.262741699796955 34.26274169979696 0
+    point 53.75107121083245 34.67838563589968 0
+    point 53.17790307059799 34.97532256339978 0
+    vertex 52 35.2 0
+  }
+  curve 0x27 {
+    exact
+    degree 1
+    surfaces 0xf 0x10
+    ctrl 0 52 35.2 5 1
+    ctrl 1 52 35.2 0 1
+    vertex 52 35.2 5
+    vertex 52 35.2 0
+  }
+  curve 0x28 {
+    exact
+    degree 2
+    surfaces 0x1 0x10
+    ctrl 0 52 35.2 5 1
+    ctrl 1 48.8 35.2 5 0.7071067811865476
+    ctrl 2 48.8 32 5 1
+    vertex 52 35.2 5
+    point 50.822096929402 34.97532256339978 5
+    point 50.248928789167536 34.67838563589968 5
+    point 49.737258300203045 34.262741699796955 5
+    point 49.32161436410031 33.75107121083246 5
+    point 49.02467743660022 33.17790307059799 5
+    vertex 48.8 32 5
+  }
+  curve 0x29 {
+    exact
+    degree 2
+    surfaces 0x2 0x10
+    ctrl 0 52 35.2 0 1
+    ctrl 1 48.8 35.2 0 0.7071067811865476
+    ctrl 2 48.8 32 0 1
+    vertex 52 35.2 0
+    point 50.822096929402 34.97532256339978 0
+    point 50.248928789167536 34.67838563589968 0
+    point 49.737258300203045 34.262741699796955 0
+    point 49.32161436410031 33.75107121083246 0
+    point 49.02467743660022 33.17790307059799 0
+    vertex 48.8 32 0
+  }
+  curve 0x2a {
+    exact
+    degree 1
+    surfaces 0x10 0x11
+    ctrl 0 48.8 32 5 1
+    ctrl 1 48.8 32 0 1
+    vertex 48.8 32 5
+    vertex 48.8 32 0
+  }
+  curve 0x2b {
+    exact
+    degree 2
+    surfaces 0x1 0x11
+    ctrl 0 48.8 32 5 1
+    ctrl 1 48.8 28.8 5 0.7071067811865476
+    ctrl 2 52 28.8 5 1
+    vertex 48.8 32 5
+    point 49.02467743660022 30.822096929402008 5
+    point 49.32161436410031 30.24892878916754 5
+    point 49.737258300203045 29.73725830020305 5
+    point 50.248928789167536 29.321614364100313 5
+    point 50.822096929402 29.024677436600225 5
+    vertex 52 28.8 5
+  }
+  curve 0x2c {
+    exact
+    degree 2
+    surfaces 0x2 0x11
+    ctrl 0 48.8 32 0 1
+    ctrl 1 48.8 28.8 0 0.7071067811865476
+    ctrl 2 52 28.8 0 1
+    vertex 48.8 32 0
+    point 49.02467743660022 30.822096929402008 0
+    point 49.32161436410031 30.24892878916754 0
+    point 49.737258300203045 29.73725830020305 0
+    point 50.248928789167536 29.321614364100313 0
+    point 50.822096929402 29.024677436600225 0
+    vertex 52 28.8 0
+  }
+  curve 0x2d {
+    exact
+    degree 1
+    surfaces 0x11 0x12
+    ctrl 0 52 28.8 5 1
+    ctrl 1 52 28.8 0 1
+    vertex 52 28.8 5
+    vertex 52 28.8 0
+  }
+  curve 0x2e {
+    exact
+    degree 2
+    surfaces 0x1 0x12
+    ctrl 0 52 28.8 5 1
+    ctrl 1 55.2 28.8 5 0.7071067811865476
+    ctrl 2 55.2 32 5 1
+    vertex 52 28.8 5
+    point 53.177903070598 29.024677436600225 5
+    point 53.751071210832464 29.321614364100313 5
+    point 54.262741699796955 29.73725830020305 5
+    point 54.67838563589969 30.24892878916754 5
+    point 54.975322563399786 30.82209692940201 5
+    vertex 55.2 32 5
+  }
+  curve 0x2f {
+    exact
+    degree 2
+    surfaces 0x2 0x12
+    ctrl 0 52 28.8 0 1
+    ctrl 1 55.2 28.8 0 0.7071067811865476
+    ctrl 2 55.2 32 0 1
+    vertex 52 28.8 0
+    point 53.177903070598 29.024677436600225 0
+    point 53.751071210832464 29.321614364100313 0
+    point 54.262741699796955 29.73725830020305 0
+    point 54.67838563589969 30.24892878916754 0
+    point 54.975322563399786 30.82209692940201 0
+    vertex 55.2 32 0
+  }
+  curve 0x30 {
+    exact
+    degree 1
+    surfaces 0x12 0xf
+    ctrl 0 55.2 32 5 1
+    ctrl 1 55.2 32 0 1
+    vertex 55.2 32 5
+    vertex 55.2 32 0
+  }
+  curve 0x31 {
+    exact
+    degree 2
+    surfaces 0x1 0x13
+    ctrl 0 11.2 32 5 1
+    ctrl 1 11.2 35.2 5 0.7071067811865476
+    ctrl 2 8 35.2 5 1
+    vertex 11.2 32 5
+    point 10.975322563399777 33.17790307059799 5
+    point 10.678385635899684 33.75107121083246 5
+    point 10.262741699796953 34.26274169979696 5
+    point 9.751071210832457 34.67838563589968 5
+    point 9.177903070597994 34.97532256339978 5
+    vertex 8 35.2 5
+  }
+  curve 0x32 {
+    exact
+    degree 2
+    surfaces 0x2 0x13
+    ctrl 0 11.2 32 0 1
+    ctrl 1 11.2 35.2 0 0.7071067811865476
+    ctrl 2 8 35.2 0 1
+    vertex 11.2 32 0
+    point 10.975322563399777 33.17790307059799 0
+    point 10.678385635899684 33.75107121083246 0
+    point 10.262741699796953 34.26274169979696 0
+    point 9.751071210832457 34.67838563589968 0
+    point 9.177903070597994 34.97532256339978 0
+    vertex 8 35.2 0
+  }
+  curve 0x33 {
+    exact
+    degree 1
+    surfaces 0x13 0x14
+    ctrl 0 8 35.2 5 1
+    ctrl 1 8 35.2 0 1
+    vertex 8 35.2 5
+    vertex 8 35.2 0
+  }
+  curve 0x34 {
+    exact
+    degree 2
+    surfaces 0x1 0x14
+    ctrl 0 8 35.2 5 1
+    ctrl 1 4.8 35.2 5 0.7071067811865476
+    ctrl 2 4.8 32 5 1
+    vertex 8 35.2 5
+    point 6.822096929402007 34.97532256339978 5
+    point 6.248928789167543 34.67838563589968 5
+    point 5.737258300203049 34.262741699796955 5
+    point 5.3216143641003155 33.75107121083246 5
+    point 5.024677436600223 33.17790307059799 5
+    vertex 4.8 32 5
+  }
+  curve 0x35 {
+    exact
+    degree 2
+    surfaces 0x2 0x14
+    ctrl 0 8 35.2 0 1
+    ctrl 1 4.8 35.2 0 0.7071067811865476
+    ctrl 2 4.8 32 0 1
+    vertex 8 35.2 0
+    point 6.822096929402007 34.97532256339978 0
+    point 6.248928789167543 34.67838563589968 0
+    point 5.737258300203049 34.262741699796955 0
+    point 5.3216143641003155 33.75107121083246 0
+    point 5.024677436600223 33.17790307059799 0
+    vertex 4.8 32 0
+  }
+  curve 0x36 {
+    exact
+    degree 1
+    surfaces 0x14 0x15
+    ctrl 0 4.8 32 5 1
+    ctrl 1 4.8 32 0 1
+    vertex 4.8 32 5
+    vertex 4.8 32 0
+  }
+  curve 0x37 {
+    exact
+    degree 2
+    surfaces 0x1 0x15
+    ctrl 0 4.8 32 5 1
+    ctrl 1 4.8 28.8 5 0.7071067811865476
+    ctrl 2 7.999999999999999 28.8 5 1
+    vertex 4.8 32 5
+    point 5.024677436600222 30.822096929402008 5
+    point 5.321614364100315 30.24892878916754 5
+    point 5.737258300203047 29.73725830020305 5
+    point 6.248928789167542 29.321614364100313 5
+    point 6.822096929402006 29.024677436600225 5
+    vertex 7.999999999999999 28.8 5
+  }
+  curve 0x38 {
+    exact
+    degree 2
+    surfaces 0x2 0x15
+    ctrl 0 4.8 32 0 1
+    ctrl 1 4.8 28.8 0 0.7071067811865476
+    ctrl 2 7.999999999999999 28.8 0 1
+    vertex 4.8 32 0
+    point 5.024677436600222 30.822096929402008 0
+    point 5.321614364100315 30.24892878916754 0
+    point 5.737258300203047 29.73725830020305 0
+    point 6.248928789167542 29.321614364100313 0
+    point 6.822096929402006 29.024677436600225 0
+    vertex 7.999999999999999 28.8 0
+  }
+  curve 0x39 {
+    exact
+    degree 1
+    surfaces 0x15 0x16
+    ctrl 0 7.999999999999999 28.8 5 1
+    ctrl 1 7.999999999999999 28.8 0 1
+    vertex 7.999999999999999 28.8 5
+    vertex 7.999999999999999 28.8 0
+  }
+  curve 0x3a {
+    exact
+    degree 2
+    surfaces 0x1 0x16
+    ctrl 0 7.999999999999999 28.8 5 1
+    ctrl 1 11.2 28.8 5 0.7071067811865476
+    ctrl 2 11.2 32 5 1
+    vertex 7.999999999999999 28.8 5
+    point 9.177903070597992 29.024677436600225 5
+    point 9.751071210832455 29.321614364100313 5
+    point 10.262741699796953 29.73725830020305 5
+    point 10.678385635899684 30.24892878916754 5
+    point 10.975322563399777 30.82209692940201 5
+    vertex 11.2 32 5
+  }
+  curve 0x3b {
+    exact
+    degree 2
+    surfaces 0x2 0x16
+    ctrl 0 7.999999999999999 28.8 0 1
+    ctrl 1 11.2 28.8 0 0.7071067811865476
+    ctrl 2 11.2 32 0 1
+    vertex 7.999999999999999 28.8 0
+    point 9.177903070597992 29.024677436600225 0
+    point 9.751071210832455 29.321614364100313 0
+    point 10.262741699796953 29.73725830020305 0
+    point 10.678385635899684 30.24892878916754 0
+    point 10.975322563399777 30.82209692940201 0
+    vertex 11.2 32 0
+  }
+  curve 0x3c {
+    exact
+    degree 1
+    surfaces 0x16 0x13
+    ctrl 0 11.2 32 5 1
+    ctrl 1 11.2 32 0 1
+    vertex 11.2 32 5
+    vertex 11.2 32 0
+  }
+}
