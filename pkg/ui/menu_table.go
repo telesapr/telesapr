@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/spacesolve/spacesolve/pkg/platform"
+import (
+	"strings"
+
+	"github.com/spacesolve/spacesolve/pkg/platform"
+)
 
 // menuHandler runs a menu command.
 type menuHandler func(ss *SolveSpaceUI, cmd Command)
@@ -202,4 +206,29 @@ func init() {
 		{1, "&Go to GitHub commit", CmdGithub, 0, kn, mHelp},
 		{1, "&About", CmdAbout, 0, kn, mHelp},
 	}
+}
+
+// MenuItem is an entry of the main menu: the labels of the menus it
+// is in and its own, without the & that marks a mnemonic, and its
+// command.
+type MenuItem struct {
+	Path []string
+	Cmd  Command
+}
+
+// MenuItems lists the entries of the main menu that run a command, in
+// the menus' order.
+func MenuItems() []MenuItem {
+	var items []MenuItem
+	var path []string
+	for _, m := range menuTable {
+		if m.label == "" {
+			continue
+		}
+		path = append(path[:m.level], strings.ReplaceAll(m.label, "&", ""))
+		if m.cmd != CmdNone {
+			items = append(items, MenuItem{Path: append([]string(nil), path...), Cmd: m.cmd})
+		}
+	}
+	return items
 }
