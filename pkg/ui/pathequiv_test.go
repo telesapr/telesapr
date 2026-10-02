@@ -72,3 +72,9 @@ func TestPathEquivalenceThread(t *testing.T) {
 func TestPathEquivalenceParameters(t *testing.T) {
 	requireSamePaths(t, "path_parameters", "path_parameters")
 }
+
+// A sketch in 3d moved earlier in the history through the Edit menu,
+// and by a script.
+func TestPathEquivalenceMoveGroup(t *testing.T) {
+	requireSamePaths(t, "path_move_group", "path_move_group")
+}

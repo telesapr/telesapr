@@ -95,6 +95,8 @@ func init() {
 		{1, "Con&figuration...", CmdConfiguration, 0, kn, mEdit},
 		{1, "Find Comman&d...", CmdFindCommand, c_ | 'k', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuFindCommand() }},
 		{1, "Para&meters...", CmdParameters, c_ | s_ | 'm', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuParameters() }},
+		{1, "Move Group Earl&ier", CmdMoveGroupEarlier, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), false) }},
+		{1, "Move Gr&oup Later", CmdMoveGroupLater, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), true) }},
 
 		{0, "&View", CmdNone, 0, kn, mView},
 		{1, "Zoom &In", CmdZoomIn, '+', kn, mView},

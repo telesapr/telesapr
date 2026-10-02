@@ -638,3 +638,63 @@ func (g Group) Conflicts() (constraints []Constraint) {
 	})
 	return constraints
 }
+
+// DependsOn lists the groups this group refers to, in history order:
+// the group it extrudes or copies, the workplane it is drawn in, and the
+// groups whose entities its sketch and constraints name. The references
+// are left out.
+func (g Group) DependsOn() (groups []Group) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		for _, dep := range sk.GroupDependencies(g.H) {
+			if dep.Group.V != core.HGroupReferences {
+				groups = append(groups, Group{g.d, dep.Group})
+			}
+		}
+	})
+	return groups
+}
+
+// UsedBy lists the groups that refer to this group directly, in
+// history order.
+func (g Group) UsedBy() (groups []Group) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		for _, h := range sk.GroupDependents(g.H) {
+			groups = append(groups, Group{g.d, h})
+		}
+	})
+	return groups
+}
+
+// MoveBefore moves the group in the history to just before other, as
+// one undo step. A move that would put a group ahead of a group it
+// uses is refused with an error naming both, and nothing changes:
+// an extrusion can't move before its sketch, nor a sketch after its
+// extrusion. The references stay first.
+func (g Group) MoveBefore(other Group) error {
+	if other.H.V == 0 {
+		fail("no group to move before")
+	}
+	other.d = g.d
+	g.d.read(func(sk *sketch.Sketch) { other.get(sk) })
+	return g.move(other.H)
+}
+
+// MoveToEnd moves the group to the end of the history, as MoveBefore
+// does.
+func (g Group) MoveToEnd() error {
+	return g.move(core.HGroup{})
+}
+
+func (g Group) move(before core.HGroup) (err error) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		err = sk.CheckMoveGroup(g.H, before)
+	})
+	if err != nil {
+		return err
+	}
+	g.d.change(func(sk *sketch.Sketch) { err = sk.MoveGroup(g.H, before) })
+	return err
+}

@@ -7,7 +7,8 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 )
 
-// This file holds history editing: which groups a group needs.
+// This file holds history editing: which groups a group needs, and
+// moving a group within the history without breaking those needs.
 
 // Dependency is one group that another group needs, and the first
 // reason found for it.
@@ -147,4 +148,125 @@ func (sk *Sketch) groupName(h core.HGroup) string {
 		return g.DescriptionString()
 	}
 	return fmt.Sprintf("g%03x", h.V)
+}
+
+// MoveError is why a group can't move where it was asked to: Group
+// would come before On, which it refers to through Why.
+type MoveError struct {
+	Moved core.HGroup
+	Group core.HGroup
+	On    core.HGroup
+	Why   string
+	msg   string
+}
+
+func (e *MoveError) Error() string { return e.msg }
+
+// MoveGroup moves group h to just before group before in the history,
+// or to the end for the zero handle. It refuses, with a *MoveError
+// naming the reference, a move that would put a group ahead of a group
+// it refers to, either h ahead of what it uses or something that uses
+// h ahead of h. The references group stays first. The groups keep the
+// set of order numbers they had, so that moving a group back restores
+// the history exactly. The caller remembers the undo state.
+func (sk *Sketch) MoveGroup(h, before core.HGroup) error {
+	newOrder, err := sk.movedOrder(h, before)
+	if err != nil || newOrder == nil {
+		return err
+	}
+	order := sk.orderedGroups()
+	vals := make([]int, len(order))
+	for i, hg := range order {
+		vals[i] = sk.GetGroup(hg).Order
+	}
+	// A file may give two groups one order; make them distinct, or
+	// the sort could undo the move.
+	for i := 1; i < len(vals); i++ {
+		if vals[i] <= vals[i-1] {
+			vals[i] = vals[i-1] + 1
+		}
+	}
+	for i, hg := range newOrder {
+		sk.GetGroup(hg).Order = vals[i]
+	}
+	sk.GroupOrder = append(sk.GroupOrder[:0], newOrder...)
+	for i := range newOrder {
+		if newOrder[i] != order[i] {
+			sk.MarkGroupDirty(newOrder[i], false)
+			break
+		}
+	}
+	return nil
+}
+
+// CheckMoveGroup reports the error MoveGroup(h, before) would give,
+// without moving anything.
+func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error {
+	_, err := sk.movedOrder(h, before)
+	return err
+}
+
+// movedOrder is the history with group h moved before group before, or
+// nil if the move changes nothing.
+func (sk *Sketch) movedOrder(h, before core.HGroup) ([]core.HGroup, error) {
+	if sk.GetGroup(h) == nil {
+		return nil, fmt.Errorf("no group g%03x", h.V)
+	}
+	if before.V != 0 && sk.GetGroup(before) == nil {
+		return nil, fmt.Errorf("no group g%03x", before.V)
+	}
+	if h.V == core.HGroupReferences || before.V == core.HGroupReferences {
+		return nil, fmt.Errorf("the references group stays first")
+	}
+	if h == before {
+		return nil, nil
+	}
+	order := sk.orderedGroups()
+	newOrder := make([]core.HGroup, 0, len(order))
+	for _, hg := range order {
+		if hg == before {
+			newOrder = append(newOrder, h)
+		}
+		if hg != h {
+			newOrder = append(newOrder, hg)
+		}
+	}
+	if before.V == 0 {
+		newOrder = append(newOrder, h)
+	}
+	same := true
+	for i := range order {
+		if order[i] != newOrder[i] {
+			same = false
+			break
+		}
+	}
+	if same {
+		return nil, nil
+	}
+
+	pos := make(map[core.HGroup]int, len(newOrder))
+	for i, hg := range newOrder {
+		pos[hg] = i
+	}
+	for i, hg := range newOrder {
+		for _, d := range sk.GroupDependencies(hg) {
+			// Only references to or from h can change; a history
+			// broken before the move is not the move's fault.
+			at, ok := pos[d.Group]
+			if !ok || at < i || (hg != h && d.Group != h) {
+				continue
+			}
+			e := &MoveError{Moved: h, Group: hg, On: d.Group, Why: d.Why}
+			if hg == h {
+				e.msg = fmt.Sprintf("%s can't move before %s, which it uses (%s)",
+					sk.groupName(h), sk.groupName(d.Group), d.Why)
+			} else {
+				e.msg = fmt.Sprintf("%s can't move after %s, which uses it (%s)",
+					sk.groupName(h), sk.groupName(hg), d.Why)
+			}
+			return nil, e
+		}
+	}
+	return newOrder, nil
 }

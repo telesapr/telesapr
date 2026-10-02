@@ -19,7 +19,7 @@ cd "$(dirname "$0")/.."
 PACKAGES=${PACKAGES:-./...}
 SHARDED=${SHARDED:-./pkg/persist/slvs}
 HEAVY=${HEAVY:-TestParallelSameAsSerial TestParallelFastSameOnAnyGoroutines TestThreadSolids \
-TestThreadVsCpp TestThreadSweep TestFreedomVsShowDof TestParallelFastSameShapeAsSerial}
+TestThreadVsCpp TestThreadSweep TestFreedomVsShowDof TestParallelFastSameShapeAsSerial TestMoveGroupSweep}
 REST_SHARDS=${REST_SHARDS:-3}
 COVERPROFILE=${COVERPROFILE:-}
 

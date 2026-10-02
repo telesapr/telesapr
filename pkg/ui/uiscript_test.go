@@ -191,12 +191,14 @@ func (r *uiScriptRunner) popUp(m *headless.Menu) *headless.MenuItem {
 // dumps are compared with doesn't have, left out of the dumps compared
 // with it.
 var goOnlyMenuItems = map[string]bool{
-	"S&cript":            true,
-	"Check S&olid":       true,
-	"Screw Thr&ead...":   true,
-	"Para&meters...":     true,
-	"Find Comman&d...":   true,
-	"Measure Se&lection": true,
+	"S&cript":             true,
+	"Check S&olid":        true,
+	"Screw Thr&ead...":    true,
+	"Para&meters...":      true,
+	"Find Comman&d...":    true,
+	"Measure Se&lection":  true,
+	"Move Group Earl&ier": true,
+	"Move Gr&oup Later":   true,
 }
 
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {

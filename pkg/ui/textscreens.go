@@ -214,12 +214,12 @@ func (tw *TextWindow) ShowListOfGroups() {
 		if g.Suppress {
 			fgName = 'g'
 		}
-		tw.Printf(false,
-			"%Bp%Fd "+
-				"%Ft%s%Fb%D%f%Ll%s%E "+
-				"%Fb%s%D%f%Ll%s%E  "+
-				"%Fp%D%f%s%Ll%s%E "+
-				"%Fp%Ll%D%f%s%E%s",
+		format := "%Bp%Fd " +
+			"%Ft%s%Fb%D%f%Ll%s%E " +
+			"%Fb%s%D%f%Ll%s%E  " +
+			"%Fp%D%f%s%Ll%s%E " +
+			"%Fp%Ll%D%f%s%E%s"
+		args := []any{
 			// Alternate between light and dark backgrounds, for
 			// readability
 			bgc,
@@ -239,7 +239,15 @@ func (tw *TextWindow) ShowListOfGroups() {
 			// Link to a screen that gives more details on the group
 			fgName,
 			g.H.V, lf(tw.ScreenSelectGroup), s,
-			suffix)
+			suffix,
+		}
+		// Arrows that move the group earlier and later, which C++
+		// doesn't have.
+		if !ref && !cppComparison {
+			format += "  %Fl%Lu%D%f↑%E %Fl%Ld%D%f↓%E"
+			args = append(args, g.H.V, lf(tw.ScreenMoveGroup), g.H.V, lf(tw.ScreenMoveGroup))
+		}
+		tw.Printf(false, format, args...)
 
 		if active {
 			afterActive = true

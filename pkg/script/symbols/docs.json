@@ -4576,6 +4576,10 @@
 						"decl": "func (g Group) Delete()",
 						"text": "Delete deletes the group and what depends on it."
 					},
+					"DependsOn": {
+						"decl": "func (g Group) DependsOn() (groups []Group)",
+						"text": "DependsOn lists the groups this group refers to, in history order:\nthe group it extrudes or copies, the workplane it is drawn in, and the\ngroups whose entities its sketch and constraints name. The references\nare left out."
+					},
 					"Dof": {
 						"decl": "func (g Group) Dof() (dof int)",
 						"text": "Dof is how many degrees of freedom the group's constraints leave."
@@ -4595,6 +4599,14 @@
 					"Mesh": {
 						"decl": "func (g Group) Mesh() (m *srf.SMesh)",
 						"text": "Mesh is the triangle mesh of the model up to and with this group.\nIt is the sketch's own, and is replaced when the sketch\nregenerates."
+					},
+					"MoveBefore": {
+						"decl": "func (g Group) MoveBefore(other Group) error",
+						"text": "MoveBefore moves the group in the history to just before other, as\none undo step. A move that would put a group ahead of a group it\nuses is refused with an error naming both, and nothing changes:\nan extrusion can't move before its sketch, nor a sketch after its\nextrusion. The references stay first."
+					},
+					"MoveToEnd": {
+						"decl": "func (g Group) MoveToEnd() error",
+						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes."
 					},
 					"Name": {
 						"decl": "func (g Group) Name() (name string)",
@@ -4655,6 +4667,10 @@
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",
 						"text": "Type is the group's type, as the sketch package names them."
+					},
+					"UsedBy": {
+						"decl": "func (g Group) UsedBy() (groups []Group)",
+						"text": "UsedBy lists the groups that refer to this group directly, in\nhistory order."
 					},
 					"Valid": {
 						"decl": "func (g Group) Valid() (ok bool)",
@@ -4968,6 +4984,10 @@
 					"CopyAsNRotAxisTrans"
 				]
 			},
+			"Dependency": {
+				"text": "Dependency is one group that another group needs, and the first reason found for it.",
+				"kind": "struct"
+			},
 			"EntityBezierResolver": {
 				"text": "EntityBezierResolver is the lookup interface that GenerateEntityBeziers needs to evaluate entity points, normals, and radii at solve time.",
 				"kind": "interface"
@@ -5033,6 +5053,10 @@
 					"CopyEntity": {
 						"decl": "func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity, ep *core.Entity, timesApplied, remap int, dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam, as CopyAs)",
 						"text": "CopyEntity appends a transformed copy of ep (C++ Group::CopyEntity)."
+					},
+					"DescriptionString": {
+						"decl": "func (g *Group) DescriptionString() string",
+						"text": "DescriptionString names the group as the property browser does: \"g003-extrude\"."
 					},
 					"ExtrusionForceVectorTo": {
 						"decl": "func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector)",
@@ -5192,6 +5216,15 @@
 			"Measurement": {
 				"text": "Measurement is what Measure finds.",
 				"kind": "struct"
+			},
+			"MoveError": {
+				"text": "MoveError is why a group can't move where it was asked to: Group would come before On, which it refers to through Why.",
+				"kind": "struct",
+				"methods": {
+					"Error": {
+						"decl": "func (e *MoveError) Error() string"
+					}
+				}
 			},
 			"Parameter": {
 				"text": "Parameter is a named value that expressions can use.",
@@ -5370,6 +5403,10 @@
 						"decl": "func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox",
 						"text": "CalculateEntityBBox returns the bounding box of the non-construction entities (C++ Sketch::CalculateEntityBBox)."
 					},
+					"CheckMoveGroup": {
+						"decl": "func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error",
+						"text": "CheckMoveGroup reports the error MoveGroup(h, before) would give, without moving anything."
+					},
 					"CheckThread": {
 						"decl": "func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error",
 						"text": "CheckThread reports why AddThread would refuse to make the thread, without changing anything."
@@ -5510,6 +5547,14 @@
 					"GetStyle": {
 						"decl": "func (s *Sketch) GetStyle(h core.HStyle) *core.Style"
 					},
+					"GroupDependencies": {
+						"decl": "func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency",
+						"text": "GroupDependencies lists the groups group h refers to, each once, in history order: through its operand, its workplane and predefined entities, the entities its requests and constraints name, and the sources of its copied entities."
+					},
+					"GroupDependents": {
+						"decl": "func (sk *Sketch) GroupDependents(h core.HGroup) []core.HGroup",
+						"text": "GroupDependents lists the groups that refer to group h directly, in history order."
+					},
 					"GroupFreedom": {
 						"decl": "func (sk *Sketch) GroupFreedom(hg core.HGroup) map[core.HParam]bool",
 						"text": "GroupFreedom reports which of the params group hg solves for are free to move, at the values of the last regeneration; nil when the group did not solve or is too large."
@@ -5541,6 +5586,10 @@
 					"Measure": {
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
+					},
+					"MoveGroup": {
+						"decl": "func (sk *Sketch) MoveGroup(h, before core.HGroup) error",
+						"text": "MoveGroup moves group h to just before group before in the history, or to the end for the zero handle."
 					},
 					"MustGetEntity": {
 						"decl": "func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity",

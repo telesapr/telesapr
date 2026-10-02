@@ -137,6 +137,8 @@ const (
 	CmdParameters
 	CmdFindCommand
 	CmdMeasure
+	CmdMoveGroupEarlier
+	CmdMoveGroupLater
 )
 
 // Pending is an operation to be completed by doing something with the
