@@ -199,3 +199,68 @@ func TestNewFromStringErrorMessages(t *testing.T) {
 		}
 	}
 }
+
+func TestVariables(t *testing.T) {
+	e, err := NewFromString("a*2 + max(b, a) - sin(c)/pi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.Join(e.Variables(), ",")
+	if got != "a,b,c" {
+		t.Fatalf("Variables = %q", got)
+	}
+	if v := NewConstant(1).Variables(); len(v) != 0 {
+		t.Fatalf("constant has variables %v", v)
+	}
+}
+
+func TestRenameVariable(t *testing.T) {
+	cases := []struct{ in, from, to, want string }{
+		{"wall*2", "wall", "w", "w*2"},
+		{"wall * wall2 + wall", "wall", "t", "t * wall2 + t"},
+		{"  wall", "wall", "x", "  x"},
+		{"sin(sin)", "sin", "s", "sin(s)"},
+		{"1e5+e5", "e5", "x", "1e5+x"},
+		{"a+ba+ab+a", "a", "zz", "zz+ba+ab+zz"},
+		{"max(a,a)", "a", "b", "max(b,b)"},
+		{"", "a", "b", ""},
+		{"$a", "a", "b", "$a"},
+	}
+	for _, c := range cases {
+		if got := RenameVariable(c.in, c.from, c.to); got != c.want {
+			t.Errorf("RenameVariable(%q, %q, %q) = %q, want %q", c.in, c.from, c.to, got, c.want)
+		}
+	}
+}
+
+func TestValidVariableName(t *testing.T) {
+	for _, ok := range []string{"a", "wall", "_x", "x2", "Wall_3"} {
+		if !ValidVariableName(ok) {
+			t.Errorf("%q should be valid", ok)
+		}
+	}
+	for _, bad := range []string{"", "2x", "a-b", "pi", "e", "E", "sin", "max", "atan2", "a b", "ü"} {
+		if ValidVariableName(bad) {
+			t.Errorf("%q should be invalid", bad)
+		}
+	}
+}
+
+func TestOperatorBeforeBracketOrSign(t *testing.T) {
+	for in, want := range map[string]float64{
+		"2*(3)": 6, "2*-3": -6, "-(4)": -4, "2^-1": 0.5, "10/(2+3)": 2, "1--1": 2,
+	} {
+		e, err := NewFromString(in)
+		if err != nil {
+			t.Fatalf("%q: %v", in, err)
+		}
+		if got := e.Eval(nil, nil); got != want {
+			t.Errorf("%q = %v, want %v", in, got, want)
+		}
+	}
+	for _, bad := range []string{"2**3", "1<2", "3="} {
+		if _, err := NewFromString(bad); err == nil {
+			t.Errorf("%q parsed", bad)
+		}
+	}
+}

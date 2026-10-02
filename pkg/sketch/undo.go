@@ -23,6 +23,7 @@ type UndoState struct {
 	Constraints []core.Constraint
 	Params      []core.Param
 	Styles      []core.Style
+	Parameters  []Parameter
 	Active      core.HGroup
 }
 
@@ -101,6 +102,10 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 			ValA:                   src.ValA,
 			ValB:                   src.ValB,
 			ValC:                   src.ValC,
+			ExprA:                  src.ExprA,
+			ExprB:                  src.ExprB,
+			ExprC:                  src.ExprC,
+			ExprScale:              src.ExprScale,
 			Subtype:                src.Subtype,
 			SkipFirst:              src.SkipFirst,
 			BooleanFailed:          src.BooleanFailed,
@@ -119,6 +124,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 	ut.Constraints = append([]core.Constraint(nil), s.Constraints...)
 	ut.Params = append([]core.Param(nil), s.Params...)
 	ut.Styles = append([]core.Style(nil), s.Styles...)
+	ut.Parameters = append([]Parameter(nil), s.Parameters...)
 	ut.Active = s.Active
 
 	uk.Write = wrapUndo(uk.Write + 1)
@@ -148,6 +154,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	s.Constraints = ut.Constraints
 	s.Params = ut.Params
 	s.Styles = ut.Styles
+	s.Parameters = ut.Parameters
 	s.Active = ut.Active
 
 	// It has been moved, so no need to free it.

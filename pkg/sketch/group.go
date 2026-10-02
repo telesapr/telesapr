@@ -77,6 +77,10 @@ type Group struct {
 	ValA            float64
 	ValB            float64
 	ValC            float64
+	// ExprA, ExprB, ExprC and ExprScale are the expressions ValA,
+	// ValB, ValC and Scale are evaluated from at each regeneration,
+	// or "" for a plain number.
+	ExprA, ExprB, ExprC, ExprScale string
 
 	Solved struct {
 		How              core.SolveResult

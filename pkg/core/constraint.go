@@ -149,7 +149,11 @@ type ConstraintBase struct {
 	Group     HGroup
 	Workplane HEntity
 
-	ValA    float64
+	ValA float64
+	// Expr is the expression ValA is evaluated from at each
+	// regeneration, in millimetres and degrees, or "" for a plain
+	// number (see Sketch.EvaluateParameters).
+	Expr    string
 	ValP    HParam
 	PtA     HEntity
 	PtB     HEntity
@@ -169,6 +173,7 @@ func (c *ConstraintBase) Equals(other *ConstraintBase) bool {
 		c.Group == other.Group &&
 		c.Workplane == other.Workplane &&
 		c.ValA == other.ValA &&
+		c.Expr == other.Expr &&
 		c.ValP == other.ValP &&
 		c.PtA == other.PtA &&
 		c.PtB == other.PtB &&

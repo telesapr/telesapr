@@ -19,6 +19,14 @@ type Sketch struct {
 	Entities []core.Entity
 	Params   []core.Param
 
+	// Parameters is the table of named values that expressions on
+	// constraints and groups use, in the order the user made them.
+	// Not to be confused with Params, the solver's unknowns.
+	Parameters []Parameter
+	// ExprErrors lists the stored expressions of constraints and
+	// groups that the last regeneration could not evaluate.
+	ExprErrors []ExprError
+
 	// Images are the loaded image files, by the file name image
 	// requests give (C++ SS.images); nil for one that couldn't be read.
 	Images map[string]*Image
@@ -308,6 +316,8 @@ func (s *Sketch) Clear() {
 	s.Styles = s.Styles[:0]
 	s.Entities = s.Entities[:0]
 	s.Params = s.Params[:0]
+	s.Parameters = nil
+	s.ExprErrors = nil
 }
 
 // CalculateEntityBBox returns the bounding box of the non-construction
