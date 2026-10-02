@@ -411,9 +411,9 @@ func threadSweepCases() []threadCase {
 // TestThreadSweep makes threads of many kinds and sizes at chord
 // tolerances from coarse to fine, and requires a sound solid from
 // nearly all: an even sample by default, the whole grid with
-// SPACESOLVE_SWEEP=1. The rate allowed is what the full grid gave
-// when the sweep was set up; it is the kernel's, and package 5.3 of
-// ROADMAP-JUMP.md lowers it to 0.
+// SPACESOLVE_SWEEP=1 (three minutes). The rates allowed are what the
+// grid and the sample gave when the sweep was set up; they are the
+// kernel's, and package 5.3 of ROADMAP-JUMP.md lowers them to 0.
 func TestThreadSweep(t *testing.T) {
 	cases := threadSweepCases()
 	byName := map[string]threadCase{}
@@ -427,8 +427,9 @@ func TestThreadSweep(t *testing.T) {
 			sweep.Floats("tol", 0.5, 0.3, 0.2, 0.1, 0.05, 0.03, 0.02, 0.01),
 			sweep.Strings("case", names...),
 		},
-		MaxFailRate: threadSweepMaxFailRate,
-		Sample:      16,
+		MaxFailRate:       threadSweepMaxFailRate,
+		Sample:            16,
+		SampleMaxFailRate: 2.0 / 16,
 	}
 	grid.Run(func(p sweep.Point) error {
 		_, _, res := byName[p.String("case")].build(t, p.Float("tol"))
@@ -440,8 +441,10 @@ func TestThreadSweep(t *testing.T) {
 }
 
 // threadSweepMaxFailRate is the fraction of TestThreadSweep's grid
-// allowed to be unsound.
-const threadSweepMaxFailRate = 1.0
+// allowed to be unsound: what the whole grid gave on 2026-10-02, 24 of
+// 400. All but three were at chord tolerances of 0.2% and coarser;
+// none at the default 0.1%. The sample of 16 then had two.
+const threadSweepMaxFailRate = 24.0 / 400
 
 // TestThreadGoldensSound checks the solid of every thread golden with
 // the invariant oracle.

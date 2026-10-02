@@ -88,6 +88,10 @@ type Grid struct {
 	// Sample is how many points the ordinary test run takes, spread
 	// evenly over the grid; 0 takes them all.
 	Sample int
+	// SampleMaxFailRate is the fraction of the sample allowed to fail,
+	// when a sample is too small to show the grid's rate; 0 is
+	// MaxFailRate.
+	SampleMaxFailRate float64
 }
 
 // Size is the number of points in the grid.
@@ -128,7 +132,7 @@ type Report struct {
 	Elapsed  time.Duration
 	Full     bool
 	GridSize int
-	// MaxFailRate is the grid's.
+	// MaxFailRate is the grid's, or for a sample its own.
 	MaxFailRate float64
 }
 
@@ -164,6 +168,9 @@ func (g Grid) RunAll(fn func(p Point) error) Report {
 func (g Grid) run(full bool, fn func(p Point) error) Report {
 	size := g.Size()
 	r := Report{Full: full || g.Sample == 0 || g.Sample >= size, GridSize: size, MaxFailRate: g.MaxFailRate}
+	if !r.Full && g.SampleMaxFailRate > 0 {
+		r.MaxFailRate = g.SampleMaxFailRate
+	}
 	start := time.Now()
 	n, stride := size, 1
 	if !r.Full {

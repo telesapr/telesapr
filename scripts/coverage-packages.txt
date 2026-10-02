@@ -4,3 +4,4 @@
 # "Definition of done for every new feature").
 pkg/check
 pkg/internal/sweep
+pkg/thread

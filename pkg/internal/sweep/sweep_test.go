@@ -140,6 +140,14 @@ func TestFailures(t *testing.T) {
 	if !rec.failed || !strings.Contains(rec.logs[len(rec.logs)-1], "3 of 12 failed (25.0%, 20.0% allowed)") {
 		t.Errorf("over the rate: failed %t, logs %v", rec.failed, rec.logs)
 	}
+	// A sample may have its own allowance.
+	g.SampleMaxFailRate = 0.5
+	if r := g.run(false, fails); r.MaxFailRate != 0.5 || r.Full {
+		t.Errorf("sample allowance %g, full %t", r.MaxFailRate, r.Full)
+	}
+	if r := g.RunAll(fails); r.MaxFailRate != 0.2 {
+		t.Errorf("full allowance %g", r.MaxFailRate)
+	}
 	if (Report{}).FailRate() != 0 {
 		t.Error("an empty report has failures")
 	}
