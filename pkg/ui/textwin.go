@@ -64,6 +64,7 @@ const (
 	// Extensions: screens C++ SolveSpace doesn't have.
 	ScreenThread
 	ScreenParameters
+	ScreenCommands
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -135,6 +136,8 @@ const (
 	EditParameterAdd  Edit = 910
 	EditParameterExpr Edit = 911
 	EditParameterName Edit = 912
+	// For the command search (an extension)
+	EditCommandQuery Edit = 920
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do
@@ -161,7 +164,8 @@ type shownState struct {
 		origin geom.Vector
 		scale  float64
 	}
-	thread threadScreen
+	thread   threadScreen
+	commands commandScreen
 }
 
 // cellMeta is how one character cell is drawn and what clicking it
@@ -748,6 +752,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowThread()
 		case ScreenParameters:
 			tw.ShowParameters()
+		case ScreenCommands:
+			tw.ShowCommands()
 		}
 	}
 	tw.Printf(false, "")

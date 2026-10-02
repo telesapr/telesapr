@@ -4329,6 +4329,10 @@
 						"decl": "func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) Group",
 						"text": "Rotate repeats the model so far n times, each turned by an angle in\ndegrees from the one before, about an axis through a point: the\ndirection of a line segment or of a normal, or, with no axis\n(Entity{}), the normal of the active workplane. The new group\nbecomes active."
 					},
+					"RunCommand": {
+						"decl": "func (d *Doc) RunCommand(label string) (err error)",
+						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. A host with no window, such as spacesolve-cli,\nhas no menu to run it from, and it is an error."
+					},
 					"Save": {
 						"decl": "func (d *Doc) Save(path string) (err error)",
 						"text": "Save regenerates the sketch and writes it to a .spcs file. A\nSolveSpace model (.slvs) is not written."
@@ -4780,6 +4784,10 @@
 						"decl": "func (h *SketchHost) Run(fn func())",
 						"text": "Run runs fn at once: a bare sketch has no goroutine of its own."
 					},
+					"RunCommand": {
+						"decl": "func (h *SketchHost) RunCommand(label string) error",
+						"text": "RunCommand is an error: a sketch with no window has no menu."
+					},
 					"Save": {
 						"decl": "func (h *SketchHost) Save(path string) error",
 						"text": "Save writes the sketch to a .spcs file, its links made relative to\nit."
@@ -4818,6 +4826,10 @@
 			}
 		},
 		"funcs": {
+			"Commands": {
+				"decl": "func Commands() []string",
+				"text": "Commands lists the commands of the main menu as the command search\n(Edit \u003e Find Command) shows them, \"Menu \u003e Entry\", for RunCommand;\nnone in a program without the interface."
+			},
 			"Current": {
 				"decl": "func Current() *Doc",
 				"text": "Current is the document the script was run on: the drawing on screen\nin the application, the file named on the command line of the\ncommand-line tool, or a new sketch. A script compiled as a program\nof its own gets a new sketch too, unless it called SetCurrent."
@@ -4845,6 +4857,10 @@
 			"Open": {
 				"decl": "func Open(path string) (*Doc, error)",
 				"text": "Open loads a sketch from a .spcs file. A SolveSpace model (.slvs) is\nconverted with Import instead."
+			},
+			"SetCommandList": {
+				"decl": "func SetCommandList(list func() []string)",
+				"text": "SetCommandList is how the user interface tells this package its\ncommands; scripts don't call it."
 			},
 			"SetCurrent": {
 				"decl": "func SetCurrent(d *Doc)",

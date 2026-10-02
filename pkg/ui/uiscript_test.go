@@ -193,6 +193,7 @@ var goOnlyMenuItems = map[string]bool{
 	"Check S&olid":     true,
 	"Screw Thr&ead...": true,
 	"Para&meters...":   true,
+	"Find Comman&d...": true,
 }
 
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {

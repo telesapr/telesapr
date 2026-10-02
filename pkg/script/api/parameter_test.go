@@ -286,3 +286,21 @@ func TestConflicts(t *testing.T) {
 		t.Errorf("conflicts %v name neither length", got)
 	}
 }
+
+// Without a window there is no menu to run a command from.
+func TestRunCommandWithoutWindow(t *testing.T) {
+	d := New()
+	if err := d.RunCommand("View > Zoom To Fit"); err == nil || !strings.Contains(err.Error(), "no window") {
+		t.Errorf("RunCommand: %v", err)
+	}
+	saved := commandList
+	t.Cleanup(func() { commandList = saved })
+	SetCommandList(nil)
+	if c := Commands(); c != nil {
+		t.Errorf("commands %v with no interface", c)
+	}
+	SetCommandList(func() []string { return []string{"A > B"} })
+	if c := Commands(); len(c) != 1 || c[0] != "A > B" {
+		t.Errorf("commands %v", c)
+	}
+}

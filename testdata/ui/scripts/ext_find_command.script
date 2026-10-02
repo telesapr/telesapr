@@ -1,0 +1,11 @@
+# The command search (an extension): Ctrl+K opens it; Enter lists what
+# matches, Enter again runs the first; a single match runs at once.
+key k ctrl
+tw
+edit dimensions in
+tw
+edit dimensions in
+dump
+key k ctrl
+edit rectangle
+dump
