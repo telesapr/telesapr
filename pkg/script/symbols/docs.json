@@ -4245,6 +4245,10 @@
 						"decl": "func (d *Doc) Lock(point Entity) Constraint",
 						"text": "Lock keeps a point where it is."
 					},
+					"Measure": {
+						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
+						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm."
+					},
 					"Midpoint": {
 						"decl": "func (d *Doc) Midpoint(point, line Entity) Constraint",
 						"text": "Midpoint puts a point at the middle of a line segment."
@@ -5161,6 +5165,20 @@
 				"text": "Image is a loaded image file (C++ Pixmap): its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
 				"kind": "struct"
 			},
+			"MeasureKind": {
+				"text": "MeasureKind is what a measurement is.",
+				"kind": "int",
+				"values": [
+					"MeasureLength",
+					"MeasureRadius",
+					"MeasureDistance",
+					"MeasureAngle"
+				]
+			},
+			"Measurement": {
+				"text": "Measurement is what Measure finds.",
+				"kind": "struct"
+			},
 			"Parameter": {
 				"text": "Parameter is a named value that expressions can use.",
 				"kind": "struct"
@@ -5505,6 +5523,10 @@
 					"MarkGroupDirtyByEntity": {
 						"decl": "func (sk *Sketch) MarkGroupDirtyByEntity(he core.HEntity)",
 						"text": "MarkGroupDirtyByEntity marks the group of entity he dirty (C++ SolveSpaceUI::MarkGroupDirtyByEntity)."
+					},
+					"Measure": {
+						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
+						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
 					},
 					"MustGetEntity": {
 						"decl": "func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity",
@@ -5977,6 +5999,18 @@
 			"MaxUndo": {
 				"decl": "const MaxUndo",
 				"text": "MaxUndo is the depth of the undo and redo stacks (C++ SolveSpaceUI::MAX_UNDO)."
+			},
+			"MeasureAngle": {
+				"decl": "const MeasureAngle"
+			},
+			"MeasureDistance": {
+				"decl": "const MeasureDistance"
+			},
+			"MeasureLength": {
+				"decl": "const MeasureLength"
+			},
+			"MeasureRadius": {
+				"decl": "const MeasureRadius"
 			},
 			"RemapBottom": {
 				"decl": "const RemapBottom",

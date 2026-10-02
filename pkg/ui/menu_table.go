@@ -190,6 +190,7 @@ func init() {
 		{1, "Show &Naked Edges", CmdNakedEdges, c_ | s_ | 'n', kn, mAna},
 		{1, "Show &Center of Mass", CmdCenterOfMass, c_ | s_ | 'c', kn, mAna},
 		{1, "Check S&olid", CmdCheckSolid, c_ | s_ | 'o', kn, mAna},
+		{1, "Measure Se&lection", CmdMeasure, c_ | s_ | 'e', kc, func(ss *SolveSpaceUI, c Command) { ss.MenuMeasure() }},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Show &Underconstrained Points", CmdShowDOF, c_ | s_ | 'f', kn, mAna},
 		{1, "", CmdNone, 0, kn, nil},

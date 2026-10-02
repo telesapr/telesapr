@@ -304,3 +304,57 @@ func TestRunCommandWithoutWindow(t *testing.T) {
 		t.Errorf("commands %v", c)
 	}
 }
+
+func TestMeasure(t *testing.T) {
+	d := New()
+	a := d.Line(V(0, 0, 0), V(30, 40, 0))
+	b := d.Line(V(0, 0, 0), V(10, 0, 0))
+	c := d.Circle(V(100, 0, 0), 5)
+	for _, tc := range []struct {
+		what string
+		m    sketch.Measurement
+		kind sketch.MeasureKind
+		v    float64
+	}{
+		{"length", d.Measure(a), sketch.MeasureLength, 50},
+		{"radius", d.Measure(c), sketch.MeasureRadius, 5},
+		{"distance", d.Measure(a.End(), b.End()), sketch.MeasureDistance, math.Hypot(20, 40)},
+		{"point to circle", d.Measure(b.End(), c), sketch.MeasureDistance, 85},
+		{"point to line", d.Measure(b.End(), a), sketch.MeasureDistance, 8},
+		{"angle", d.Measure(a, b), sketch.MeasureAngle, math.Atan2(40, 30) * 180 / math.Pi},
+		// Signed along the line's vector, which points from its end to its start.
+		{"projected distance", d.Measure(a.End(), c.Center(), b), sketch.MeasureDistance, -70},
+	} {
+		if tc.m.What != tc.what || tc.m.Kind != tc.kind || !near(tc.m.Value, tc.v) {
+			t.Errorf("%s: %+v, want %v", tc.what, tc.m, tc.v)
+		}
+	}
+	// Nothing was constrained.
+	if n := len(d.Active().Constraints()); n != 0 {
+		t.Errorf("measuring added %d constraints", n)
+	}
+	func() {
+		defer func() {
+			if _, ok := recover().(error); !ok {
+				t.Error("measuring three lines did not fail")
+			}
+		}()
+		d.Measure(a, b, a)
+	}()
+	ex := d.Extrude(10, "")
+	var faces []Entity
+	for _, e := range ex.Entities() {
+		if e.Kind() == "face" {
+			faces = append(faces, e)
+		}
+	}
+	if len(faces) < 2 {
+		t.Fatalf("faces %v", faces)
+	}
+	if m := d.Measure(faces[0], faces[1]); m.Kind != sketch.MeasureAngle {
+		t.Errorf("two faces: %+v", m)
+	}
+	if m := d.Measure(a.Start(), faces[1]); m.What != "point to plane" {
+		t.Errorf("point and face: %+v", m)
+	}
+}

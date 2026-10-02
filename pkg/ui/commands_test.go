@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/script/api"
 )
@@ -123,5 +126,62 @@ func TestCommandSearchScreen(t *testing.T) {
 	tw.Show()
 	if !shows(ss, "Enter again runs the first.") {
 		t.Error("no help on an empty search")
+	}
+}
+
+// The measure mode labels what the selection measures.
+func TestMeasureMode(t *testing.T) {
+	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
+	ss, _ := newTestApp(t)
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss.LoadSketchForTest(doc.Sketch, path)
+	var line *core.Entity
+	for i := range ss.SK.Entities {
+		if e := &ss.SK.Entities[i]; e.Type == core.EntityLineSegment {
+			line = e
+		}
+	}
+	ss.GW.MakeSelectedEntity(line.H)
+	if _, _, ok := ss.measureLabel(); ok {
+		t.Fatal("a label with the mode off")
+	}
+	if err := ss.RunCommand("Measure Selection"); err != nil {
+		t.Fatal(err)
+	}
+	label, _, ok := ss.measureLabel()
+	m, _ := ss.SK.Measure(line.H)
+	if !ok || label != "length "+ss.MmToString(m.Value, false) {
+		t.Fatalf("label %q %v", label, ok)
+	}
+	var b strings.Builder
+	rc := newRecordingCanvas(&b)
+	rc.camera = ss.GW.GetCamera()
+	rc.SetBitmapFont(ss.GW.bitmapFont())
+	ss.GW.Draw(rc)
+	if !strings.Contains(b.String(), label) {
+		t.Error("the label isn't drawn")
+	}
+	// Two points and a line: their distance along it.
+	ss.GW.MakeSelectedEntity(line.Point[0])
+	ss.GW.MakeSelectedEntity(line.Point[1])
+	if label, _, _ := ss.measureLabel(); !strings.HasPrefix(label, "projected distance ") {
+		t.Errorf("label %q for a line and its two points", label)
+	}
+	// What it can't measure has no label.
+	ss.GW.ClearSelection()
+	ss.GW.MakeSelectedEntity(line.Normal)
+	if label, _, ok := ss.measureLabel(); ok {
+		t.Errorf("label %q for a normal", label)
+	}
+	ss.GW.ClearSelection()
+	if _, _, ok := ss.measureLabel(); ok {
+		t.Error("a label for nothing")
+	}
+	ss.MenuMeasure()
+	if ss.GW.measuring {
+		t.Error("the mode didn't turn off")
 	}
 }
