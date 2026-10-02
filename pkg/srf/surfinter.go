@@ -377,6 +377,10 @@ func (s *SSurface) intersectCoaxialExtrusions(b *SSurface, oft *SBezier, alongt 
 // each surface's trim edges cross the other surface, then march along
 // the intersection from each of those points.
 func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into *curveSink) {
+	// The curves marched from the boundaries, to tell the closed loops
+	// inside the surfaces apart from them.
+	var marched [][]SCurvePt
+
 	// Try intersecting the surfaces numerically, by a marching algorithm.
 	// First, we find all the intersections between a surface and the
 	// boundary of the other surface.
@@ -521,9 +525,202 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		spl.Points = kept
 
 		// And now we split and insert the curve
+		marched = append(marched, sc.Points)
 		split := sc.MakeCopySplitAgainst(agnstA, agnstB, s, b)
 		into.add(split)
 	}
+
+	s.intersectClosedLoops(b, agnstA, agnstB, into, marched)
+}
+
+// loopDepth is how many times intersectClosedLoops halves each surface
+// in turn, so a piece is an eighth of its surface each way.
+const loopDepth = 6
+
+// intersectClosedLoops finds the curves where s meets b that cross no
+// trim edge of either, such as the circle where a sphere bulges through
+// the middle of a face, which the boundary-seeded marching cannot
+// reach. It halves both surfaces in turn, keeping the pairs of pieces
+// whose control hulls overlap, takes a seed from each pair left that is
+// off the curves already found, projects it onto the intersection, and
+// marches from it until it comes back to where it started.
+func (s *SSurface) intersectClosedLoops(b *SSurface, agnstA, agnstB *SShell, into *curveSink,
+	marched [][]SCurvePt) {
+	maxtol := ChordTolMm()
+	near := func(p geom.Vector, d float64) bool {
+		for _, pts := range marched {
+			for k := 1; k < len(pts); k++ {
+				if distanceToSegment(p, pts[k-1].P, pts[k].P) < d {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	var tried []geom.Vector
+	var visit func(pa, pb *SSurface, depth int)
+	visit = func(pa, pb *SSurface, depth int) {
+		var amax, amin, bmax, bmin geom.Vector
+		pa.GetAxisAlignedBounding(&amax, &amin)
+		pb.GetAxisAlignedBounding(&bmax, &bmin)
+		if amax.BoundingBoxesDisjoint(amax, amin, bmax, bmin) {
+			return
+		}
+		if depth < loopDepth {
+			var a0, a1, b0, b1 SSurface
+			pa.SplitInHalf(depth%2 == 0, &a0, &a1)
+			pb.SplitInHalf(depth%2 == 0, &b0, &b1)
+			for _, x := range []*SSurface{&a0, &a1} {
+				for _, y := range []*SSurface{&b0, &b1} {
+					visit(x, y, depth+1)
+				}
+			}
+			return
+		}
+		// Where the boxes overlap; a curve already found within a box's
+		// size of it is the one that brought them together.
+		lo := geom.Vector{X: math.Max(amin.X, bmin.X), Y: math.Max(amin.Y, bmin.Y), Z: math.Max(amin.Z, bmin.Z)}
+		hi := geom.Vector{X: math.Min(amax.X, bmax.X), Y: math.Min(amax.Y, bmax.Y), Z: math.Min(amax.Z, bmax.Z)}
+		guess := lo.Plus(hi).ScaledBy(0.5)
+		size := amax.Minus(amin).Magnitude() + bmax.Minus(bmin).Magnitude()
+		if near(guess, size+2*maxtol) {
+			return
+		}
+		// Neighbouring pairs project to the same point.
+		for _, q := range tried {
+			if q.Minus(guess).Magnitude() < size {
+				return
+			}
+		}
+		seed, ok := s.seedOnIntersection(b, guess)
+		tried = append(tried, seed)
+		if !ok || near(seed, 2*maxtol+lengthEps) {
+			return
+		}
+		pts, ok := s.marchLoop(b, seed)
+		if !ok {
+			return
+		}
+		marched = append(marched, pts)
+		// A trim runs from its start point to its finish, so a curve
+		// that ends where it starts can't be one: the loop goes in as
+		// pieces, as a circle goes in as arcs.
+		for _, piece := range splitLoop(pts, loopPieces) {
+			sc := SCurve{
+				SurfA:   s.H,
+				SurfB:   b.H,
+				IsExact: false,
+				Source:  CurveSourceIntersection,
+				Points:  piece,
+			}
+			split := sc.MakeCopySplitAgainst(agnstA, agnstB, s, b)
+			into.add(split)
+		}
+	}
+	visit(s, b, 0)
+}
+
+// loopPieces is how many curves a closed loop is cut into.
+const loopPieces = 4
+
+// splitLoop cuts the closed polyline pts, whose last point is its
+// first, into n pieces of about equal point count, each ending where
+// the next starts.
+func splitLoop(pts []SCurvePt, n int) [][]SCurvePt {
+	segs := len(pts) - 1
+	n = min(n, segs)
+	var out [][]SCurvePt
+	for k := 0; k < n; k++ {
+		from, to := k*segs/n, (k+1)*segs/n
+		piece := append([]SCurvePt(nil), pts[from:to+1]...)
+		piece[0].Vertex = true
+		piece[len(piece)-1].Vertex = true
+		out = append(out, piece)
+	}
+	return out
+}
+
+// inTrim tells whether p lies on srf, inside its trim. A loop that
+// crosses no trim edge lies inside the trims of both surfaces; a curve
+// that leaves either is one the boundary-seeded marching follows.
+func inTrim(srf *SSurface, p geom.Vector) bool {
+	var uv geom.Point2d
+	srf.ClosestPointTo(p, &uv, false)
+	if srf.PointAtUv(uv).Minus(p).Magnitude() >= lengthEps {
+		return false
+	}
+	return inTrimUv(srf, uv)
+}
+
+// inTrimUv tells whether uv lies within srf's parameter range and not
+// outside its trim.
+func inTrimUv(srf *SSurface, uv geom.Point2d) bool {
+	const margin = 1e-6
+	if uv.U < -margin || uv.U > 1+margin || uv.V < -margin || uv.V > 1+margin {
+		return false
+	}
+	return srf.Bsp == nil || srf.Bsp.ClassifyPoint(uv, geom.Point2d{}, srf) != BspUvOutside
+}
+
+// seedOnIntersection projects p onto the curve where s meets b, and
+// tells whether that converged to a point inside both trims.
+func (s *SSurface) seedOnIntersection(b *SSurface, p geom.Vector) (geom.Vector, bool) {
+	q := s.ClosestPointOnThisAndSurface(b, p)
+	if math.IsNaN(q.X) || math.IsNaN(q.Y) || math.IsNaN(q.Z) {
+		return q, false
+	}
+	return q, inTrim(s, q) && inTrim(b, q)
+}
+
+// marchLoop marches along the curve where s meets b from start, as
+// intersectByMarching does, and returns its points if it comes back to
+// start without leaving either trim.
+func (s *SSurface) marchLoop(b *SSurface, start geom.Vector) ([]SCurvePt, bool) {
+	maxtol := ChordTolMm()
+	maxsteps := max(300, GetMaxSegments()*3)
+	pts := []SCurvePt{{Vertex: true, P: start}}
+	at := start
+	step := maxtol
+	travelled := 0.0
+	for a := 0; a < maxsteps; a++ {
+		var pa, pb geom.Point2d
+		s.ClosestPointTo(at, &pa, true)
+		b.ClosestPointTo(at, &pb, true)
+		na := s.NormalAtUv(pa).WithMagnitude(1)
+		nb := b.NormalAtUv(pb).WithMagnitude(1)
+		dp := nb.Cross(na)
+		if dp.Magnitude() < lengthEps {
+			// The surfaces are tangent here: no curve to follow.
+			return nil, false
+		}
+		dp = dp.WithMagnitude(1)
+		var npc geom.Vector
+		for i := 0; i < 20; i++ {
+			np := at.Plus(dp.ScaledBy(step))
+			npc = s.ClosestPointOnThisAndSurface(b, np)
+			tol := npc.Minus(np).Magnitude()
+			if tol > maxtol*0.8 {
+				step *= 0.90
+			} else {
+				step /= 0.90
+			}
+			if tol < maxtol && tol > maxtol/2 {
+				break
+			}
+		}
+		if !inTrim(s, npc) || !inTrim(b, npc) {
+			return nil, false
+		}
+		// Back at the start, once well away from it.
+		if travelled > 4*maxtol && start.OnLineSegment(at, npc, 2*maxtol) {
+			pts = append(pts, SCurvePt{Vertex: true, P: start})
+			return pts, len(pts) > 3
+		}
+		travelled += npc.Minus(at).Magnitude()
+		pts = append(pts, SCurvePt{P: npc})
+		at = npc
+	}
+	return nil, false
 }
 
 // MakeCoincidentEdgesInto copies into el the trim polygons of every
