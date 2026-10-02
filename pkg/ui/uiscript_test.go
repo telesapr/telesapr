@@ -215,7 +215,11 @@ func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
 
 func (r *uiScriptRunner) dumpHover() {
 	h := &r.ss.GW.hover
-	fmt.Fprintf(&r.b, "hover %x %x %d\n", h.Entity.V, h.Constraint.V, b2i(h.Emphasized))
+	fmt.Fprintf(&r.b, "hover %x %x %d", h.Entity.V, h.Constraint.V, b2i(h.Emphasized))
+	if h.Edge.A != 0 {
+		fmt.Fprintf(&r.b, " %s", h.Edge)
+	}
+	fmt.Fprintf(&r.b, "\n")
 }
 
 func b2i(v bool) int {
@@ -235,6 +239,9 @@ func (r *uiScriptRunner) dump() {
 	fmt.Fprintf(&r.b, "selection %d", len(gw.selection))
 	for _, s := range gw.selection {
 		fmt.Fprintf(&r.b, " %x/%x", s.Entity.V, s.Constraint.V)
+		if s.Edge.A != 0 {
+			fmt.Fprintf(&r.b, "/%s", strings.ReplaceAll(s.Edge.String(), " ", "-"))
+		}
 	}
 	fmt.Fprintf(&r.b, "\n")
 	fmt.Fprintf(&r.b, "active %x %x\n", gw.activeGroupH().V, gw.ActiveWorkplane().V)
@@ -447,8 +454,12 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 					X: 600.0 * (float64(j) + 0.5) / float64(n), Y: 600.0 * (float64(i) + 0.5) / float64(n)}
 				r.gw().Mouse(ev)
 				h := &r.ss.GW.hover
-				fmt.Fprintf(&r.b, "at %s %s %x %x %d\n", g17(ev.X), g17(ev.Y), h.Entity.V, h.Constraint.V,
+				fmt.Fprintf(&r.b, "at %s %s %x %x %d", g17(ev.X), g17(ev.Y), h.Entity.V, h.Constraint.V,
 					b2i(h.Emphasized))
+				if h.Edge.A != 0 {
+					fmt.Fprintf(&r.b, " %s", h.Edge)
+				}
+				fmt.Fprintf(&r.b, "\n")
 			}
 		}
 	case "params":

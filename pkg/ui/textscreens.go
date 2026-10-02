@@ -832,7 +832,20 @@ func (tw *TextWindow) showGroupEdges(g *sketch.Group, what string) {
 		tw.Printf(false, "%Bp     %Fl%Ll%D%f%h%s%E", bg, he.V,
 			lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(he))
 	}
-	if len(g.Edges) == 0 {
+	for i, n := range g.SolidEdges {
+		bg := byte('d')
+		if (len(g.Edges)+i)%2 == 1 {
+			bg = 'a'
+		}
+		for k, line := range wrapWords(sk.SolidEdgeName(n), MaxCols-8) {
+			indent := "     "
+			if k > 0 {
+				indent = "       "
+			}
+			tw.Printf(false, "%Bp%s%s", bg, indent, line)
+		}
+	}
+	if len(g.Edges) == 0 && len(g.SolidEdges) == 0 {
 		tw.Printf(false, "%Bd     (none)")
 	}
 }

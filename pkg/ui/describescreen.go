@@ -528,6 +528,28 @@ func (tw *TextWindow) DescribeSelection() {
 		// We should probably compute and show the intersection point if
 		// there is one.
 
+	case gs.n == 0 && gs.constraints == 0 && len(gs.solidEdge) == 1:
+		n := gs.solidEdge[0]
+		tw.Printf(false, "%FtSOLID EDGE%E  %s", n.String())
+		for k, line := range wrapWords(sk.SolidEdgeName(n), MaxCols-4) {
+			if k == 0 {
+				tw.Printf(true, "  %s", line)
+			} else {
+				tw.Printf(false, "    %s", line)
+			}
+		}
+		if tp := ss.GW.activeTopology(); tp != nil {
+			if e, err := tp.Resolve(n); err == nil {
+				ed := &tp.Edges[e]
+				tw.Printf(true, "  from "+ptAsStrNoLink, costrNoLink(tp.Vertices[ed.V[0]].P)...)
+				tw.Printf(false, "  to   "+ptAsStrNoLink, costrNoLink(tp.Vertices[ed.V[1]].P)...)
+				tw.Printf(true, "  length = %Fi%s%E", mm(tp.Length(e)))
+				if !tp.Straight(e) {
+					tw.Printf(false, "  (curved)")
+				}
+			}
+		}
+
 	case gs.n == 0 && gs.constraints == 1:
 		c := sk.GetConstraint(gs.constraint[0])
 		desc := c.DescriptionString()

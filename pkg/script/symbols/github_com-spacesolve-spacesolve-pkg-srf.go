@@ -55,6 +55,7 @@ func init() {
 		"GetParallelMode":             reflect.ValueOf(srf.GetParallelMode),
 		"NewMeshMeta":                 reflect.ValueOf(srf.NewMeshMeta),
 		"NewSTriMeta":                 reflect.ValueOf(srf.NewSTriMeta),
+		"OriginFor":                   reflect.ValueOf(srf.OriginFor),
 		"ParallelExact":               reflect.ValueOf(srf.ParallelExact),
 		"ParallelFast":                reflect.ValueOf(srf.ParallelFast),
 		"ParallelOff":                 reflect.ValueOf(srf.ParallelOff),

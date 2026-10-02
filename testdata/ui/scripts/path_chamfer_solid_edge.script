@@ -1,0 +1,11 @@
+# An edge of the solid that no entity draws, picked on the model and
+# chamfered; the same as path_chamfer_solid_edge.go makes
+# (TestPathEquivalenceChamferSolidEdge).
+file $testdata/topo/slot.spcs
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+move 335 425
+down L 335 425
+up L 335 425
+menu New Group|Chamfer Edges

@@ -84,7 +84,7 @@ func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group {
 		for i, e := range edges {
 			hs[i] = e.get(sk).H
 		}
-		g, err := sk.NewChamfer(hs, distance, name)
+		g, err := sk.NewChamfer(hs, nil, distance, name)
 		if err != nil {
 			fail("%v", err)
 		}
