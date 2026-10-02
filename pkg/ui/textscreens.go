@@ -257,6 +257,9 @@ func (tw *TextWindow) ShowListOfGroups() {
 		lf(tw.ScreenShowListOfStyles),
 		lf(tw.ScreenShowEditView),
 		lf(tw.ScreenShowConfiguration))
+	if !cppComparison {
+		tw.Printf(false, "  %Fl%Lr%fparameters%E", lf(tw.ScreenShowParameters))
+	}
 }
 
 // ScreenHoverGroupWorkplane hovers a group's workplane (C++
@@ -430,7 +433,11 @@ func (tw *TextWindow) ScreenOpacity(link int, v uint32) {
 func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 
-	tw.ShowEditControl(10, sprintf("%d", int(g.ValA)))
+	text := g.ExprA
+	if text == "" {
+		text = sprintf("%d", int(g.ValA))
+	}
+	tw.ShowEditControl(10, text)
 	tw.edit.meaning = EditTimesRepeated
 	tw.edit.group = core.HGroup{V: v}
 }
@@ -449,7 +456,11 @@ func (tw *TextWindow) ScreenChangeGroupName(link int, v uint32) {
 func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 
-	tw.ShowEditControl(13, sprintf("%.3f", g.Scale))
+	text := g.ExprScale
+	if text == "" {
+		text = sprintf("%.3f", g.Scale)
+	}
+	tw.ShowEditControl(13, text)
 	tw.edit.meaning = EditGroupScale
 	tw.edit.group = core.HGroup{V: v}
 }
@@ -458,8 +469,11 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 // TextWindow::ScreenChangeHelixPitch).
 func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
-	pitch := g.ValB / tw.ss.MmPerUnit()
-	tw.ShowEditControl(3, sprintf("%.8f", pitch))
+	text := g.ExprB
+	if text == "" {
+		text = sprintf("%.8f", g.ValB/tw.ss.MmPerUnit())
+	}
+	tw.ShowEditControl(3, text)
 	tw.edit.meaning = EditHelixPitch
 	tw.edit.group = core.HGroup{V: v}
 }
@@ -474,6 +488,7 @@ func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
 	} else {
 		g.ValB = 0.0
 	}
+	g.ExprB = ""
 	tw.ss.GW.Invalidate(false)
 }
 
@@ -619,14 +634,14 @@ func (tw *TextWindow) ShowGroupInfo() {
 			if times == 1 {
 				plural = ""
 			}
-			tw.Printf(false, "%Bp   %Ftrepeat%E %d time%s %Fl%Ll%D%f[change]%E",
-				bg, times, plural, g.H.V, lf(tw.ScreenChangeExprA))
+			tw.Printf(false, "%Bp   %Ftrepeat%E %d time%s%s %Fl%Ll%D%f[change]%E",
+				bg, times, plural, exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
 		}
 	case sketch.GroupLinked:
 		tw.Printf(true, " %Ftlink geometry from file%E")
 		tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))
-		tw.Printf(false, "%Bd   %Ftscaled by%E %# %Fl%Ll%f%D[change]%E",
-			g.Scale, lf(tw.ScreenChangeGroupScale), g.H.V)
+		tw.Printf(false, "%Bd   %Ftscaled by%E %#%s %Fl%Ll%f%D[change]%E",
+			g.Scale, exprNote(g.ExprScale), lf(tw.ScreenChangeGroupScale), g.H.V)
 	case sketch.GroupDrawing3D:
 		tw.Printf(true, " %Ftsketch in 3d%E")
 	case sketch.GroupDrawingWorkplane:
@@ -640,8 +655,8 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(false, "%Ft pitch - length per turn%E")
 
 		if math.Abs(g.ValB) != 0.0 {
-			tw.Printf(false, "  %Ba %# %Fl%Ll%f%D[change]%E",
-				g.ValB/ss.MmPerUnit(), lf(tw.ScreenChangeHelixPitch), g.H.V)
+			tw.Printf(false, "  %Ba %#%s %Fl%Ll%f%D[change]%E",
+				g.ValB/ss.MmPerUnit(), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 		} else {
 			tw.Printf(false, "  %Ba %# %E",
 				sk.MustGetParam(g.H.Param(7)).Val*math.Pi/
@@ -1097,6 +1112,30 @@ func scanVector3(s string) (x, y, z float64, ok bool) {
 	return vals[0], vals[1], vals[2], true
 }
 
+// exprNote is how a screen shows that a value comes from an
+// expression: " (= n+1)", or nothing for a plain number.
+func exprNote(expr string) string {
+	if expr == "" {
+		return ""
+	}
+	return " (= " + expr + ")"
+}
+
+// setGroupText gives a group value typed text, as one undo step, and
+// reports whether it was taken; a refusal is shown as C++ shows its own.
+func (ss *SolveSpaceUI) setGroupText(hg core.HGroup, f sketch.GroupValue, s string) bool {
+	err := ss.SK.UndoRememberFor(func() error {
+		return ss.SK.SetGroupText(hg, f, s, ss.MmPerUnit())
+	})
+	if err != nil {
+		ss.Error("%s.", capitalize(err.Error()))
+		return false
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	return true
+}
+
 // EditControlDone handles the text entered in the edit control (C++
 // TextWindow::EditControlDone).
 func (tw *TextWindow) EditControlDone(s string) {
@@ -1107,21 +1146,10 @@ func (tw *TextWindow) EditControlDone(s string) {
 	switch tw.edit.meaning {
 	case EditTimesRepeated:
 		if e := ss.exprFromString(s, true); e != nil {
-			ss.UndoRemember()
-
-			ev := ss.evalExpr(e)
-			if int(ev) < 1 {
-				ss.Error("Can't repeat fewer than 1 time.")
-				break
-			}
-			if int(ev) > 999 {
-				ss.Error("Can't repeat more than 999 times.")
-				break
-			}
-
 			g := sk.GetGroup(tw.edit.group)
-			g.ValA = ev
-
+			if !ss.setGroupText(g.H, sketch.GroupCopies, s) {
+				break
+			}
 			if g.Type == sketch.GroupRotate {
 				// If the group does not contain any constraints, then
 				// set the numerical guess to space the copies uniformly
@@ -1129,15 +1157,13 @@ func (tw *TextWindow) EditControlDone(s string) {
 				// already constrained, because that would break
 				// convergence.
 				if groupNumConstraints(sk, g.H) == 0 {
-					copies := ev
+					copies := g.ValA
 					if g.SkipFirst {
-						copies = ev + 1
+						copies = g.ValA + 1
 					}
 					sk.MustGetParam(g.H.Param(3)).Val = math.Pi / (2 * copies)
 				}
 			}
-
-			sk.MarkGroupDirty(g.H, false)
 		}
 
 	case EditGroupName:
@@ -1152,22 +1178,12 @@ func (tw *TextWindow) EditControlDone(s string) {
 
 	case EditGroupScale:
 		if e := ss.exprFromString(s, true); e != nil {
-			ev := ss.evalExpr(e)
-			if math.Abs(ev) < 1e-6 {
-				ss.Error("Scale cannot be zero.")
-			} else {
-				g := sk.GetGroup(tw.edit.group)
-				g.Scale = ev
-				sk.MarkGroupDirty(g.H, false)
-			}
+			ss.setGroupText(tw.edit.group, sketch.GroupScale, s)
 		}
 
 	case EditHelixPitch: // stored in valB
 		if e := ss.exprFromString(s, true); e != nil {
-			ev := ss.evalExpr(e)
-			g := sk.GetGroup(tw.edit.group)
-			g.ValB = ev * ss.MmPerUnit()
-			sk.MarkGroupDirty(g.H, false)
+			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
 		}
 
 	case EditGroupColor:
@@ -1243,6 +1259,9 @@ func (tw *TextWindow) EditControlDone(s string) {
 			cnt++
 		}
 		if tw.EditControlDoneForThread(s) {
+			cnt++
+		}
+		if tw.EditControlDoneForParameters(s) {
 			cnt++
 		}
 		if cnt != 1 {

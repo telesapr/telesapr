@@ -496,3 +496,26 @@ func TestTextIsOneLine(t *testing.T) {
 		t.Fatalf("stored %q", got)
 	}
 }
+
+// A refused edit leaves no undo step; a taken one leaves one.
+func TestUndoRememberFor(t *testing.T) {
+	sk := NewSketch()
+	sk.NewFile()
+	sk.GenerateAll()
+	if err := sk.UndoRememberFor(func() error { return sk.AddParameter("2bad", "1") }); err == nil {
+		t.Fatal("bad name accepted")
+	}
+	if sk.Undo.Cnt != 0 {
+		t.Fatalf("refused edit left %d undo steps", sk.Undo.Cnt)
+	}
+	if err := sk.UndoRememberFor(func() error { return sk.AddParameter("ok", "1") }); err != nil {
+		t.Fatal(err)
+	}
+	if sk.Undo.Cnt != 1 {
+		t.Fatalf("edit left %d undo steps", sk.Undo.Cnt)
+	}
+	sk.UndoUndo()
+	if len(sk.Parameters) != 0 {
+		t.Fatal("undo kept the parameter")
+	}
+}

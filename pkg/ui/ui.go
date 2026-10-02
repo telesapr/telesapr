@@ -134,6 +134,7 @@ const (
 	// numbers stay.
 	CmdCheckSolid
 	CmdGroupThread
+	CmdParameters
 )
 
 // Pending is an operation to be completed by doing something with the

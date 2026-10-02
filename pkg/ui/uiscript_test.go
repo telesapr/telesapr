@@ -192,6 +192,7 @@ var goOnlyMenuItems = map[string]bool{
 	"S&cript":          true,
 	"Check S&olid":     true,
 	"Screw Thr&ead...": true,
+	"Para&meters...":   true,
 }
 
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
@@ -576,6 +577,7 @@ func TestGoScripts(t *testing.T) {
 		t.Skip("no scripts ext_*")
 	}
 	regen := os.Getenv("SPACESOLVE_REGEN_GOUI") != ""
+	asProduct(t)
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
 			// What only spacesolve has is saved as spacesolve saves.

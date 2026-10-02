@@ -44,6 +44,21 @@ func (s *Sketch) UndoRemember() {
 	s.UndoClearStack(&s.Redo)
 }
 
+// UndoRememberFor records the current state for undo, as UndoRemember
+// does, and then runs fn to change it. When fn fails, the record is
+// dropped, so a refused edit leaves no undo step.
+func (s *Sketch) UndoRememberFor(fn func() error) error {
+	s.PushFromCurrentOnto(&s.Undo)
+	if err := fn(); err != nil {
+		s.Undo.Cnt--
+		s.Undo.Write = wrapUndo(s.Undo.Write - 1)
+		s.UndoClearState(&s.Undo.D[s.Undo.Write])
+		return err
+	}
+	s.UndoClearStack(&s.Redo)
+	return nil
+}
+
 // UndoUndo restores the last remembered state, keeping the current one
 // for redo; false if there is none (C++ SolveSpaceUI::UndoUndo).
 func (s *Sketch) UndoUndo() bool {

@@ -1333,6 +1333,12 @@ func (gw *GraphicsWindow) EditConstraint(constraint core.HConstraint) {
 		editPlaceholder = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 	default:
+		if text := sketch.ConstraintText(c); text != "" {
+			// A stored expression is edited as it was typed.
+			editValue = text
+			editPlaceholder = "10.000000"
+			break
+		}
 		value := math.Abs(c.ValA)
 
 		// If displayed as radius, also edit as radius.
@@ -1407,38 +1413,17 @@ func (gw *GraphicsWindow) EditControlDone(s string) {
 	}
 
 	if e := ss.exprFromString(s, true); e != nil {
-		ss.UndoRemember()
-		c = gw.sk().GetConstraint(gw.constraintBeingEdited)
-
-		switch c.Type {
-		case core.ConstraintProjPtDistance, core.ConstraintPtLineDistance, core.ConstraintPtFaceDistance,
-			core.ConstraintPtPlaneDistance, core.ConstraintLengthDifference, core.ConstraintArcArcDifference,
-			core.ConstraintArcLineDifference:
-			// The sign is not displayed to the user, but this is a signed
-			// distance internally. To flip the sign, the user enters a
-			// negative distance.
-			if c.ValA < 0 {
-				c.ValA = -ss.ExprToMm(e)
-			} else {
-				c.ValA = ss.ExprToMm(e)
-			}
-		case core.ConstraintAngle, core.ConstraintLengthRatio, core.ConstraintArcArcLenRatio,
-			core.ConstraintArcLineLenRatio:
-			// These don't get the units conversion for distance, and
-			// they're always positive
-			c.ValA = math.Abs(e.Eval(sketch.NewRuntime(ss.SK), nil))
-		case core.ConstraintDiameter:
-			c.ValA = math.Abs(ss.ExprToMm(e))
-			// If displayed and edited as radius, convert back to diameter
-			if c.Other {
-				c.ValA *= 2
-			}
-		default:
-			// These are always positive, and they get the units
-			// conversion.
-			c.ValA = math.Abs(ss.ExprToMm(e))
+		// A length typed as a plain expression is in the view's unit;
+		// one that names a parameter is kept, in mm and degrees.
+		err := ss.SK.UndoRememberFor(func() error {
+			return ss.SK.SetConstraintText(gw.constraintBeingEdited, s, ss.MmPerUnit())
+		})
+		if err != nil {
+			ss.Error("%s.", capitalize(err.Error()))
+			return
 		}
-		ss.SK.MarkGroupDirty(c.Group, false)
+		ss.SK.Unsaved = true
+		ss.UndoEnableMenus()
 	}
 }
 
