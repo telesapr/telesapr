@@ -422,7 +422,7 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 			continue
 		}
 		missing := core.NoEntity
-		for _, he := range []core.HEntity{c.Workplane, c.PtA, c.PtB,
+		for _, he := range [...]core.HEntity{c.Workplane, c.PtA, c.PtB,
 			c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
 			if !entityRequestExists(he, true) {
 				missing = he

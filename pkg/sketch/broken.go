@@ -42,25 +42,31 @@ type knownNames struct {
 	requests map[core.HRequest]knownRequest
 }
 
+// knownRequest is what names a request: its description comes from
+// its type and handle.
 type knownRequest struct {
-	desc  string
+	typ   RequestType
 	group core.HGroup
 }
 
 // rememberNames records the names of the groups and requests there are.
+// It runs at every regeneration, so it refills the maps it has.
 func (sk *Sketch) rememberNames() {
-	n := knownNames{
-		groups:   make(map[core.HGroup]string, len(sk.Groups)),
-		requests: make(map[core.HRequest]knownRequest, len(sk.Requests)),
+	n := &sk.names
+	if n.groups == nil {
+		n.groups = make(map[core.HGroup]string, len(sk.Groups))
+		n.requests = make(map[core.HRequest]knownRequest, len(sk.Requests))
 	}
+	clear(n.groups)
+	clear(n.requests)
 	for i := range sk.Groups {
-		n.groups[sk.Groups[i].H] = sk.Groups[i].DescriptionString()
+		g := &sk.Groups[i]
+		n.groups[g.H] = g.Name
 	}
 	for i := range sk.Requests {
 		r := &sk.Requests[i]
-		n.requests[r.H] = knownRequest{r.DescriptionString(), r.Group}
+		n.requests[r.H] = knownRequest{r.Type, r.Group}
 	}
-	sk.names = n
 }
 
 // anyGroupName names group h, which may have been deleted since the
@@ -70,7 +76,8 @@ func (sk *Sketch) anyGroupName(h core.HGroup) string {
 		return g.DescriptionString()
 	}
 	if name, ok := sk.names.groups[h]; ok {
-		return name
+		g := Group{H: h, Name: name}
+		return g.DescriptionString()
 	}
 	return fmt.Sprintf("g%03x", h.V)
 }
@@ -83,7 +90,8 @@ func (sk *Sketch) entityName(he core.HEntity) string {
 			return r.DescriptionString() + " of " + sk.anyGroupName(r.Group)
 		}
 		if r, ok := sk.names.requests[he.Request()]; ok {
-			return r.desc + " of " + sk.anyGroupName(r.group)
+			gone := Request{H: he.Request(), Type: r.typ}
+			return gone.DescriptionString() + " of " + sk.anyGroupName(r.group)
 		}
 		return fmt.Sprintf("r%03x", he.Request().V)
 	}
