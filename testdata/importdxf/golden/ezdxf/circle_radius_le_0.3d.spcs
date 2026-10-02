@@ -163,6 +163,7 @@ entity 0x30020 normal-in-3d {
 
 entity 0x40000 circle {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x40001
@@ -173,6 +174,7 @@ entity 0x40000 circle {
 
 entity 0x40001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-visible
@@ -180,6 +182,7 @@ entity 0x40001 point-in-3d {
 
 entity 0x40020 normal-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x40001
@@ -189,12 +192,14 @@ entity 0x40020 normal-in-3d {
 
 entity 0x40040 distance {
   group 0x2
+  workplane 0xffffffff
   style 0x100
   act-visible
 }
 
 entity 0x50000 circle {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x50001
@@ -205,6 +210,7 @@ entity 0x50000 circle {
 
 entity 0x50001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 1 0 0
@@ -213,6 +219,7 @@ entity 0x50001 point-in-3d {
 
 entity 0x50020 normal-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x50001
@@ -222,6 +229,7 @@ entity 0x50020 normal-in-3d {
 
 entity 0x50040 distance {
   group 0x2
+  workplane 0xffffffff
   style 0x100
   act-distance -1
   act-visible

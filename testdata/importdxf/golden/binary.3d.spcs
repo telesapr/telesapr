@@ -301,6 +301,7 @@ entity 0x30020 normal-in-3d {
 
 entity 0x40000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x40001 0x40002
@@ -309,6 +310,7 @@ entity 0x40000 line-segment {
 
 entity 0x40001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-visible
@@ -316,6 +318,7 @@ entity 0x40001 point-in-3d {
 
 entity 0x40002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 5 0 0
@@ -324,6 +327,7 @@ entity 0x40002 point-in-3d {
 
 entity 0x50000 arc-of-circle {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   points 0x50001 0x50002 0x50003
@@ -333,6 +337,7 @@ entity 0x50000 arc-of-circle {
 
 entity 0x50001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-visible
@@ -340,6 +345,7 @@ entity 0x50001 point-in-3d {
 
 entity 0x50002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 2.954423259036624 0.520944533000791 0
@@ -348,6 +354,7 @@ entity 0x50002 point-in-3d {
 
 entity 0x50003 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 0.5209445330007912 2.954423259036624 0
@@ -356,6 +363,7 @@ entity 0x50003 point-in-3d {
 
 entity 0x50020 normal-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   points 0x50001
@@ -364,6 +372,7 @@ entity 0x50020 normal-in-3d {
 
 entity 0x60000 arc-of-circle {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   points 0x60001 0x60002 0x60003
@@ -373,6 +382,7 @@ entity 0x60000 arc-of-circle {
 
 entity 0x60001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 2.5000000000000004 8.791666666666666 0
@@ -381,6 +391,7 @@ entity 0x60001 point-in-3d {
 
 entity 0x60002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 0 5 0
@@ -389,6 +400,7 @@ entity 0x60002 point-in-3d {
 
 entity 0x60003 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 5 5 0
@@ -397,6 +409,7 @@ entity 0x60003 point-in-3d {
 
 entity 0x60020 normal-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   points 0x60001
@@ -405,6 +418,7 @@ entity 0x60020 normal-in-3d {
 
 entity 0x70000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   points 0x70001 0x70002
@@ -413,6 +427,7 @@ entity 0x70000 line-segment {
 
 entity 0x70001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 5 5 0
@@ -421,6 +436,7 @@ entity 0x70001 point-in-3d {
 
 entity 0x70002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 5 8 0
@@ -429,6 +445,7 @@ entity 0x70002 point-in-3d {
 
 entity 0x80000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   points 0x80001 0x80002
@@ -437,6 +454,7 @@ entity 0x80000 line-segment {
 
 entity 0x80001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 5 8 0
@@ -445,6 +463,7 @@ entity 0x80001 point-in-3d {
 
 entity 0x80002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x101
   act-point 0 5 0
@@ -453,6 +472,7 @@ entity 0x80002 point-in-3d {
 
 entity 0x90000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x103
   points 0x90001 0x90002
@@ -460,6 +480,7 @@ entity 0x90000 line-segment {
 
 entity 0x90001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x103
   act-point 5 12 0
@@ -467,6 +488,7 @@ entity 0x90001 point-in-3d {
 
 entity 0x90002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x103
   act-point 5.371390676354104 11.07152330911474 0
@@ -474,6 +496,7 @@ entity 0x90002 point-in-3d {
 
 entity 0xa0000 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   act-point 0 10 0
   act-visible
 }

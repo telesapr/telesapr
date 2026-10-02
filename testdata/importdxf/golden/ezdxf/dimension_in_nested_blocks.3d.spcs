@@ -1325,6 +1325,7 @@ entity 0x30020 normal-in-3d {
 
 entity 0x40000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x40001 0x40002
@@ -1333,6 +1334,7 @@ entity 0x40000 line-segment {
 
 entity 0x40001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 30 0
@@ -1341,6 +1343,7 @@ entity 0x40001 point-in-3d {
 
 entity 0x40002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 40 30 0
@@ -1349,6 +1352,7 @@ entity 0x40002 point-in-3d {
 
 entity 0x50000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x50001 0x50002
@@ -1357,6 +1361,7 @@ entity 0x50000 line-segment {
 
 entity 0x50001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 40 30 0
@@ -1365,6 +1370,7 @@ entity 0x50001 point-in-3d {
 
 entity 0x50002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 40 40 0
@@ -1373,6 +1379,7 @@ entity 0x50002 point-in-3d {
 
 entity 0x60000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x60001 0x60002
@@ -1381,6 +1388,7 @@ entity 0x60000 line-segment {
 
 entity 0x60001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 40 40 0
@@ -1389,6 +1397,7 @@ entity 0x60001 point-in-3d {
 
 entity 0x60002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 40 0
@@ -1397,6 +1406,7 @@ entity 0x60002 point-in-3d {
 
 entity 0x70000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x70001 0x70002
@@ -1405,6 +1415,7 @@ entity 0x70000 line-segment {
 
 entity 0x70001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 40 0
@@ -1413,6 +1424,7 @@ entity 0x70001 point-in-3d {
 
 entity 0x70002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 30 0
@@ -1421,6 +1433,7 @@ entity 0x70002 point-in-3d {
 
 entity 0x80000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x80001 0x80002
@@ -1429,6 +1442,7 @@ entity 0x80000 line-segment {
 
 entity 0x80001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 60 0
@@ -1437,6 +1451,7 @@ entity 0x80001 point-in-3d {
 
 entity 0x80002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 60 0
@@ -1445,6 +1460,7 @@ entity 0x80002 point-in-3d {
 
 entity 0x90000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x90001 0x90002
@@ -1453,6 +1469,7 @@ entity 0x90000 line-segment {
 
 entity 0x90001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 60 0
@@ -1461,6 +1478,7 @@ entity 0x90001 point-in-3d {
 
 entity 0x90002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 30 0
@@ -1469,6 +1487,7 @@ entity 0x90002 point-in-3d {
 
 entity 0xa0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0xa0001 0xa0002
@@ -1477,6 +1496,7 @@ entity 0xa0000 line-segment {
 
 entity 0xa0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 30 30 0
@@ -1485,6 +1505,7 @@ entity 0xa0001 point-in-3d {
 
 entity 0xa0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 30 0
@@ -1493,6 +1514,7 @@ entity 0xa0002 point-in-3d {
 
 entity 0xb0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0xb0001 0xb0002
@@ -1501,6 +1523,7 @@ entity 0xb0000 line-segment {
 
 entity 0xb0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 30 0
@@ -1509,6 +1532,7 @@ entity 0xb0001 point-in-3d {
 
 entity 0xb0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 60 0
@@ -1517,6 +1541,7 @@ entity 0xb0002 point-in-3d {
 
 entity 0xc0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0xc0001 0xc0002
@@ -1525,6 +1550,7 @@ entity 0xc0000 line-segment {
 
 entity 0xc0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 60 0
@@ -1533,6 +1559,7 @@ entity 0xc0001 point-in-3d {
 
 entity 0xc0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 67.07106781186548 67.07106781186548 0
@@ -1541,6 +1568,7 @@ entity 0xc0002 point-in-3d {
 
 entity 0xd0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0xd0001 0xd0002
@@ -1549,6 +1577,7 @@ entity 0xd0000 line-segment {
 
 entity 0xd0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 67.07106781186548 67.07106781186548 0
@@ -1557,6 +1586,7 @@ entity 0xd0001 point-in-3d {
 
 entity 0xd0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 74.14213562373095 0
@@ -1565,6 +1595,7 @@ entity 0xd0002 point-in-3d {
 
 entity 0xe0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0xe0001 0xe0002
@@ -1573,6 +1604,7 @@ entity 0xe0000 line-segment {
 
 entity 0xe0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 74.14213562373095 0
@@ -1581,6 +1613,7 @@ entity 0xe0001 point-in-3d {
 
 entity 0xe0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 52.928932188134524 67.07106781186548 0
@@ -1589,6 +1622,7 @@ entity 0xe0002 point-in-3d {
 
 entity 0xf0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0xf0001 0xf0002
@@ -1597,6 +1631,7 @@ entity 0xf0000 line-segment {
 
 entity 0xf0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 52.928932188134524 67.07106781186548 0
@@ -1605,6 +1640,7 @@ entity 0xf0001 point-in-3d {
 
 entity 0xf0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 60 0
@@ -1613,6 +1649,7 @@ entity 0xf0002 point-in-3d {
 
 entity 0x100000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x100001 0x100002
@@ -1621,6 +1658,7 @@ entity 0x100000 line-segment {
 
 entity 0x100001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 102.42640687119285 0
@@ -1629,6 +1667,7 @@ entity 0x100001 point-in-3d {
 
 entity 0x100002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 38.78679656440357 81.21320343559643 0
@@ -1637,6 +1676,7 @@ entity 0x100002 point-in-3d {
 
 entity 0x110000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x110001 0x110002
@@ -1645,6 +1685,7 @@ entity 0x110000 line-segment {
 
 entity 0x110001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 38.78679656440357 81.21320343559643 0
@@ -1653,6 +1694,7 @@ entity 0x110001 point-in-3d {
 
 entity 0x110002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 60 0
@@ -1661,6 +1703,7 @@ entity 0x110002 point-in-3d {
 
 entity 0x120000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x120001 0x120002
@@ -1669,6 +1712,7 @@ entity 0x120000 line-segment {
 
 entity 0x120001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 60 0
@@ -1677,6 +1721,7 @@ entity 0x120001 point-in-3d {
 
 entity 0x120002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 81.21320343559643 81.21320343559643 0
@@ -1685,6 +1730,7 @@ entity 0x120002 point-in-3d {
 
 entity 0x130000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x130001 0x130002
@@ -1693,6 +1739,7 @@ entity 0x130000 line-segment {
 
 entity 0x130001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 81.21320343559643 81.21320343559643 0
@@ -1701,6 +1748,7 @@ entity 0x130001 point-in-3d {
 
 entity 0x130002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 60 102.42640687119285 0
@@ -1709,6 +1757,7 @@ entity 0x130002 point-in-3d {
 
 entity 0x140000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x140001 0x140002
@@ -1717,6 +1766,7 @@ entity 0x140000 line-segment {
 
 entity 0x140001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 30 0
@@ -1725,6 +1775,7 @@ entity 0x140001 point-in-3d {
 
 entity 0x140002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 120 30 0
@@ -1733,6 +1784,7 @@ entity 0x140002 point-in-3d {
 
 entity 0x150000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x150001 0x150002
@@ -1741,6 +1793,7 @@ entity 0x150000 line-segment {
 
 entity 0x150001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 120 30 0
@@ -1749,6 +1802,7 @@ entity 0x150001 point-in-3d {
 
 entity 0x150002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 120 40 0
@@ -1757,6 +1811,7 @@ entity 0x150002 point-in-3d {
 
 entity 0x160000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x160001 0x160002
@@ -1765,6 +1820,7 @@ entity 0x160000 line-segment {
 
 entity 0x160001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 120 40 0
@@ -1773,6 +1829,7 @@ entity 0x160001 point-in-3d {
 
 entity 0x160002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 40 0
@@ -1781,6 +1838,7 @@ entity 0x160002 point-in-3d {
 
 entity 0x170000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x170001 0x170002
@@ -1789,6 +1847,7 @@ entity 0x170000 line-segment {
 
 entity 0x170001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 40 0
@@ -1797,6 +1856,7 @@ entity 0x170001 point-in-3d {
 
 entity 0x170002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 30 0
@@ -1805,6 +1865,7 @@ entity 0x170002 point-in-3d {
 
 entity 0x180000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x180001 0x180002
@@ -1813,6 +1874,7 @@ entity 0x180000 line-segment {
 
 entity 0x180001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 60 0
@@ -1821,6 +1883,7 @@ entity 0x180001 point-in-3d {
 
 entity 0x180002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 60 0
@@ -1829,6 +1892,7 @@ entity 0x180002 point-in-3d {
 
 entity 0x190000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x190001 0x190002
@@ -1837,6 +1901,7 @@ entity 0x190000 line-segment {
 
 entity 0x190001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 60 0
@@ -1845,6 +1910,7 @@ entity 0x190001 point-in-3d {
 
 entity 0x190002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 30 0
@@ -1853,6 +1919,7 @@ entity 0x190002 point-in-3d {
 
 entity 0x1a0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x1a0001 0x1a0002
@@ -1861,6 +1928,7 @@ entity 0x1a0000 line-segment {
 
 entity 0x1a0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 30 0
@@ -1869,6 +1937,7 @@ entity 0x1a0001 point-in-3d {
 
 entity 0x1a0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 30 0
@@ -1877,6 +1946,7 @@ entity 0x1a0002 point-in-3d {
 
 entity 0x1b0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x1b0001 0x1b0002
@@ -1885,6 +1955,7 @@ entity 0x1b0000 line-segment {
 
 entity 0x1b0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 30 0
@@ -1893,6 +1964,7 @@ entity 0x1b0001 point-in-3d {
 
 entity 0x1b0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 60 0
@@ -1901,6 +1973,7 @@ entity 0x1b0002 point-in-3d {
 
 entity 0x1c0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x1c0001 0x1c0002
@@ -1909,6 +1982,7 @@ entity 0x1c0000 line-segment {
 
 entity 0x1c0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 60 0
@@ -1917,6 +1991,7 @@ entity 0x1c0001 point-in-3d {
 
 entity 0x1c0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 147.07106781186548 67.07106781186548 0
@@ -1925,6 +2000,7 @@ entity 0x1c0002 point-in-3d {
 
 entity 0x1d0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x1d0001 0x1d0002
@@ -1933,6 +2009,7 @@ entity 0x1d0000 line-segment {
 
 entity 0x1d0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 147.07106781186548 67.07106781186548 0
@@ -1941,6 +2018,7 @@ entity 0x1d0001 point-in-3d {
 
 entity 0x1d0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 74.14213562373095 0
@@ -1949,6 +2027,7 @@ entity 0x1d0002 point-in-3d {
 
 entity 0x1e0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x1e0001 0x1e0002
@@ -1957,6 +2036,7 @@ entity 0x1e0000 line-segment {
 
 entity 0x1e0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 74.14213562373095 0
@@ -1965,6 +2045,7 @@ entity 0x1e0001 point-in-3d {
 
 entity 0x1e0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 132.92893218813452 67.07106781186548 0
@@ -1973,6 +2054,7 @@ entity 0x1e0002 point-in-3d {
 
 entity 0x1f0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x1f0001 0x1f0002
@@ -1981,6 +2063,7 @@ entity 0x1f0000 line-segment {
 
 entity 0x1f0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 132.92893218813452 67.07106781186548 0
@@ -1989,6 +2072,7 @@ entity 0x1f0001 point-in-3d {
 
 entity 0x1f0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 60 0
@@ -1997,6 +2081,7 @@ entity 0x1f0002 point-in-3d {
 
 entity 0x200000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x200001 0x200002
@@ -2005,6 +2090,7 @@ entity 0x200000 line-segment {
 
 entity 0x200001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 102.42640687119285 0
@@ -2013,6 +2099,7 @@ entity 0x200001 point-in-3d {
 
 entity 0x200002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 118.78679656440357 81.21320343559643 0
@@ -2021,6 +2108,7 @@ entity 0x200002 point-in-3d {
 
 entity 0x210000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x210001 0x210002
@@ -2029,6 +2117,7 @@ entity 0x210000 line-segment {
 
 entity 0x210001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 118.78679656440357 81.21320343559643 0
@@ -2037,6 +2126,7 @@ entity 0x210001 point-in-3d {
 
 entity 0x210002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 60 0
@@ -2045,6 +2135,7 @@ entity 0x210002 point-in-3d {
 
 entity 0x220000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x220001 0x220002
@@ -2053,6 +2144,7 @@ entity 0x220000 line-segment {
 
 entity 0x220001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 60 0
@@ -2061,6 +2153,7 @@ entity 0x220001 point-in-3d {
 
 entity 0x220002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 161.21320343559643 81.21320343559643 0
@@ -2069,6 +2162,7 @@ entity 0x220002 point-in-3d {
 
 entity 0x230000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x230001 0x230002
@@ -2077,6 +2171,7 @@ entity 0x230000 line-segment {
 
 entity 0x230001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 161.21320343559643 81.21320343559643 0
@@ -2085,6 +2180,7 @@ entity 0x230001 point-in-3d {
 
 entity 0x230002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 140 102.42640687119285 0
@@ -2093,6 +2189,7 @@ entity 0x230002 point-in-3d {
 
 entity 0x240000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x240001 0x240002
@@ -2101,6 +2198,7 @@ entity 0x240000 line-segment {
 
 entity 0x240001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 30 0
@@ -2109,6 +2207,7 @@ entity 0x240001 point-in-3d {
 
 entity 0x240002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 110 0
@@ -2117,6 +2216,7 @@ entity 0x240002 point-in-3d {
 
 entity 0x250000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x250001 0x250002
@@ -2125,6 +2225,7 @@ entity 0x250000 line-segment {
 
 entity 0x250001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 110 0
@@ -2133,6 +2234,7 @@ entity 0x250001 point-in-3d {
 
 entity 0x250002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0
@@ -2141,6 +2243,7 @@ entity 0x250002 point-in-3d {
 
 entity 0x260000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x260001 0x260002
@@ -2149,6 +2252,7 @@ entity 0x260000 line-segment {
 
 entity 0x260001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0
@@ -2157,6 +2261,7 @@ entity 0x260001 point-in-3d {
 
 entity 0x260002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 30 0
@@ -2165,6 +2270,7 @@ entity 0x260002 point-in-3d {
 
 entity 0x270000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x270001 0x270002
@@ -2173,6 +2279,7 @@ entity 0x270000 line-segment {
 
 entity 0x270001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 30 0
@@ -2181,6 +2288,7 @@ entity 0x270001 point-in-3d {
 
 entity 0x270002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 110 30 0
@@ -2189,6 +2297,7 @@ entity 0x270002 point-in-3d {
 
 entity 0x280000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x280001 0x280002
@@ -2197,6 +2306,7 @@ entity 0x280000 line-segment {
 
 entity 0x280001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0
@@ -2205,6 +2315,7 @@ entity 0x280001 point-in-3d {
 
 entity 0x280002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 197.07106781186548 117.07106781186548 0
@@ -2213,6 +2324,7 @@ entity 0x280002 point-in-3d {
 
 entity 0x290000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x290001 0x290002
@@ -2221,6 +2333,7 @@ entity 0x290000 line-segment {
 
 entity 0x290001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 197.07106781186548 117.07106781186548 0
@@ -2229,6 +2342,7 @@ entity 0x290001 point-in-3d {
 
 entity 0x290002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 124.14213562373095 0
@@ -2237,6 +2351,7 @@ entity 0x290002 point-in-3d {
 
 entity 0x2a0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x2a0001 0x2a0002
@@ -2245,6 +2360,7 @@ entity 0x2a0000 line-segment {
 
 entity 0x2a0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 124.14213562373095 0
@@ -2253,6 +2369,7 @@ entity 0x2a0001 point-in-3d {
 
 entity 0x2a0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 182.92893218813452 117.07106781186548 0
@@ -2261,6 +2378,7 @@ entity 0x2a0002 point-in-3d {
 
 entity 0x2b0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x2b0001 0x2b0002
@@ -2269,6 +2387,7 @@ entity 0x2b0000 line-segment {
 
 entity 0x2b0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 182.92893218813452 117.07106781186548 0
@@ -2277,6 +2396,7 @@ entity 0x2b0001 point-in-3d {
 
 entity 0x2b0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0
@@ -2285,6 +2405,7 @@ entity 0x2b0002 point-in-3d {
 
 entity 0x2c0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x2c0001 0x2c0002
@@ -2293,6 +2414,7 @@ entity 0x2c0000 line-segment {
 
 entity 0x2c0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 152.42640687119285 0
@@ -2301,6 +2423,7 @@ entity 0x2c0001 point-in-3d {
 
 entity 0x2c0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 168.78679656440357 131.21320343559643 0
@@ -2309,6 +2432,7 @@ entity 0x2c0002 point-in-3d {
 
 entity 0x2d0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x2d0001 0x2d0002
@@ -2317,6 +2441,7 @@ entity 0x2d0000 line-segment {
 
 entity 0x2d0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 168.78679656440357 131.21320343559643 0
@@ -2325,6 +2450,7 @@ entity 0x2d0001 point-in-3d {
 
 entity 0x2d0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0
@@ -2333,6 +2459,7 @@ entity 0x2d0002 point-in-3d {
 
 entity 0x2e0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x2e0001 0x2e0002
@@ -2341,6 +2468,7 @@ entity 0x2e0000 line-segment {
 
 entity 0x2e0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0
@@ -2349,6 +2477,7 @@ entity 0x2e0001 point-in-3d {
 
 entity 0x2e0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 211.21320343559643 131.21320343559643 0
@@ -2357,6 +2486,7 @@ entity 0x2e0002 point-in-3d {
 
 entity 0x2f0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x2f0001 0x2f0002
@@ -2365,6 +2495,7 @@ entity 0x2f0000 line-segment {
 
 entity 0x2f0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 211.21320343559643 131.21320343559643 0
@@ -2373,6 +2504,7 @@ entity 0x2f0001 point-in-3d {
 
 entity 0x2f0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 152.42640687119285 0
@@ -2381,6 +2513,7 @@ entity 0x2f0002 point-in-3d {
 
 entity 0x300000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x300001 0x300002
@@ -2389,6 +2522,7 @@ entity 0x300000 line-segment {
 
 entity 0x300001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 152.42640687119285 0
@@ -2397,6 +2531,7 @@ entity 0x300001 point-in-3d {
 
 entity 0x300002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 162.42640687119285 0
@@ -2405,6 +2540,7 @@ entity 0x300002 point-in-3d {
 
 entity 0x310000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x310001 0x310002
@@ -2413,6 +2549,7 @@ entity 0x310000 line-segment {
 
 entity 0x310001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 162.42640687119285 0
@@ -2421,6 +2558,7 @@ entity 0x310001 point-in-3d {
 
 entity 0x310002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 180 162.42640687119285 0
@@ -2429,6 +2567,7 @@ entity 0x310002 point-in-3d {
 
 entity 0x320000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x320001 0x320002
@@ -2437,6 +2576,7 @@ entity 0x320000 line-segment {
 
 entity 0x320001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 180 162.42640687119285 0
@@ -2445,6 +2585,7 @@ entity 0x320001 point-in-3d {
 
 entity 0x320002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 180 152.42640687119285 0
@@ -2453,6 +2594,7 @@ entity 0x320002 point-in-3d {
 
 entity 0x330000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x330001 0x330002
@@ -2461,6 +2603,7 @@ entity 0x330000 line-segment {
 
 entity 0x330001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 180 152.42640687119285 0
@@ -2469,6 +2612,7 @@ entity 0x330001 point-in-3d {
 
 entity 0x330002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 152.42640687119285 0
@@ -2477,6 +2621,7 @@ entity 0x330002 point-in-3d {
 
 entity 0x340000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x340001 0x340002
@@ -2485,6 +2630,7 @@ entity 0x340000 line-segment {
 
 entity 0x340001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 160 182.42640687119285 0
@@ -2493,6 +2639,7 @@ entity 0x340001 point-in-3d {
 
 entity 0x340002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 160 152.42640687119285 0
@@ -2501,6 +2648,7 @@ entity 0x340002 point-in-3d {
 
 entity 0x350000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x350001 0x350002
@@ -2509,6 +2657,7 @@ entity 0x350000 line-segment {
 
 entity 0x350001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 160 152.42640687119285 0
@@ -2517,6 +2666,7 @@ entity 0x350001 point-in-3d {
 
 entity 0x350002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 152.42640687119285 0
@@ -2525,6 +2675,7 @@ entity 0x350002 point-in-3d {
 
 entity 0x360000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x360001 0x360002
@@ -2533,6 +2684,7 @@ entity 0x360000 line-segment {
 
 entity 0x360001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 152.42640687119285 0
@@ -2541,6 +2693,7 @@ entity 0x360001 point-in-3d {
 
 entity 0x360002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 182.42640687119285 0
@@ -2549,6 +2702,7 @@ entity 0x360002 point-in-3d {
 
 entity 0x370000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x370001 0x370002
@@ -2557,6 +2711,7 @@ entity 0x370000 line-segment {
 
 entity 0x370001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 182.42640687119285 0
@@ -2565,6 +2720,7 @@ entity 0x370001 point-in-3d {
 
 entity 0x370002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 160 182.42640687119285 0
@@ -2573,6 +2729,7 @@ entity 0x370002 point-in-3d {
 
 entity 0x380000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x380001 0x380002
@@ -2581,6 +2738,7 @@ entity 0x380000 line-segment {
 
 entity 0x380001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0
@@ -2589,6 +2747,7 @@ entity 0x380001 point-in-3d {
 
 entity 0x380002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 133.4314575050762 166.5685424949238 0
@@ -2597,6 +2756,7 @@ entity 0x380002 point-in-3d {
 
 entity 0x390000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x390001 0x390002
@@ -2605,6 +2765,7 @@ entity 0x390000 line-segment {
 
 entity 0x390001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 133.4314575050762 166.5685424949238 0
@@ -2613,6 +2774,7 @@ entity 0x390001 point-in-3d {
 
 entity 0x390002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 223.1370849898476 0
@@ -2621,6 +2783,7 @@ entity 0x390002 point-in-3d {
 
 entity 0x3a0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x3a0001 0x3a0002
@@ -2629,6 +2792,7 @@ entity 0x3a0000 line-segment {
 
 entity 0x3a0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 223.1370849898476 0
@@ -2637,6 +2801,7 @@ entity 0x3a0001 point-in-3d {
 
 entity 0x3a0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 246.5685424949238 166.5685424949238 0
@@ -2645,6 +2810,7 @@ entity 0x3a0002 point-in-3d {
 
 entity 0x3b0000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x3b0001 0x3b0002
@@ -2653,6 +2819,7 @@ entity 0x3b0000 line-segment {
 
 entity 0x3b0001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 246.5685424949238 166.5685424949238 0
@@ -2661,6 +2828,7 @@ entity 0x3b0001 point-in-3d {
 
 entity 0x3b0002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 190 110 0

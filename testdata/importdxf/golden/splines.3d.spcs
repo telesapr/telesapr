@@ -171,6 +171,7 @@ entity 0x30020 normal-in-3d {
 
 entity 0x40000 cubic {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x40001 0x40002 0x40003 0x40004
@@ -179,6 +180,7 @@ entity 0x40000 cubic {
 
 entity 0x40001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-visible
@@ -186,6 +188,7 @@ entity 0x40001 point-in-3d {
 
 entity 0x40002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 2 3 0
@@ -194,6 +197,7 @@ entity 0x40002 point-in-3d {
 
 entity 0x40003 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 5 3 0
@@ -202,6 +206,7 @@ entity 0x40003 point-in-3d {
 
 entity 0x40004 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 7 0 0
@@ -210,6 +215,7 @@ entity 0x40004 point-in-3d {
 
 entity 0x50000 cubic {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x50001 0x50002 0x50003 0x50004
@@ -218,6 +224,7 @@ entity 0x50000 cubic {
 
 entity 0x50001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 20 0 0
@@ -226,6 +233,7 @@ entity 0x50001 point-in-3d {
 
 entity 0x50002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 18.790102304011466 2.9966650550924263 0
@@ -234,6 +242,7 @@ entity 0x50002 point-in-3d {
 
 entity 0x50003 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 28.32866923590585 8.521138623486923 0
@@ -242,6 +251,7 @@ entity 0x50003 point-in-3d {
 
 entity 0x50004 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 27.34042761742065 -3.0468337557566496 0
