@@ -1,6 +1,8 @@
 package srf
 
 import (
+	"math"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/internal/par"
@@ -174,7 +176,72 @@ func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 		// (case 4), which is far less precise for the axis-aligned
 		// coincident-edge geometry the boolean fixtures are full of.
 		srf.Edges = buildSurfaceClassifyingEdgesXYZ(s, srf, useCurvesFrom)
+		srf.curvedEdges = buildCurvedTrimEdgesXYZ(s, srf, useCurvesFrom)
 	})
+}
+
+// buildCurvedTrimEdgesXYZ is buildSurfaceClassifyingEdgesXYZ for the
+// trims whose curve is not straight only.
+func buildCurvedTrimEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *SShell) SEdgeList {
+	var el SEdgeList
+	for i := range srf.Trim {
+		stb := &srf.Trim[i]
+		sc := sh.FindCurve(stb.Curve)
+		if sc == nil {
+			continue
+		}
+		if useCurvesFrom != nil {
+			if sc = useCurvesFrom.FindCurve(sc.NewH); sc == nil {
+				continue
+			}
+		}
+		if !sc.isStraight() {
+			srf.makeTrimEdgesInto(&el, false, sc, stb)
+		}
+	}
+	return el
+}
+
+// isStraight tells whether the curve's pwl lies on one line, so that it
+// is the curve itself rather than chords of it.
+func (c *SCurve) isStraight() bool {
+	if c.IsExact && c.Exact.Degree == 1 {
+		return true
+	}
+	if len(c.Points) <= 2 {
+		return true
+	}
+	a, b := c.Points[0].P, c.Points[len(c.Points)-1].P
+	if b.Minus(a).Magnitude() < lengthEps {
+		return false
+	}
+	for _, p := range c.Points[1 : len(c.Points)-1] {
+		if p.P.DistanceToLine(a, b.Minus(a)) > lengthEps {
+			return false
+		}
+	}
+	return true
+}
+
+// distanceToSegment is the distance from p to the segment ab.
+func distanceToSegment(p, a, b geom.Vector) float64 {
+	ab := b.Minus(a)
+	m := ab.MagSquared()
+	if m == 0 {
+		return p.Minus(a).Magnitude()
+	}
+	t := math.Max(0, math.Min(1, p.Minus(a).Dot(ab)/m))
+	return p.Minus(a.Plus(ab.ScaledBy(t))).Magnitude()
+}
+
+// distanceToEdges is the distance from p to the nearest edge of el, or
+// veryPositive for none.
+func distanceToEdges(p geom.Vector, el *SEdgeList) float64 {
+	d := veryPositive
+	for i := range el.Edges {
+		d = math.Min(d, distanceToSegment(p, el.Edges[i].A, el.Edges[i].B))
+	}
+	return d
 }
 
 // buildSurfaceClassifyingBsp builds srf's uv-space trim BSP, as the
@@ -214,4 +281,7 @@ type SInter struct {
 	Srf        *SSurface
 	OnEdge     bool
 	Tag        int
+	// nearTrim marks a hit that the trim BSP put inside or outside, but
+	// within the sag of a curved trim, where the BSP may be wrong.
+	nearTrim bool
 }
