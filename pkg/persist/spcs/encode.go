@@ -251,7 +251,10 @@ func encodeGroup(g *sketch.Group) *Node {
 	n.flag("all-dims-reference", g.AllDimsReference)
 	if g.ExprScale != "" {
 		n.expr("scale", g.Scale, g.ExprScale)
-	} else if g.Scale != 1 {
+	} else if g.Scale != 1 && g.Scale != 0 {
+		// 0 is no scale: the groups a new file starts with have it, as in
+		// C++, and only link groups use the scale. A reader takes a
+		// missing scale as 1.
 		n.add(field("scale", num(g.Scale)))
 	}
 	n.str("link", g.LinkFile)

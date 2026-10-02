@@ -500,3 +500,24 @@ constraint 0x1 pt-pt-distance {
 		t.Fatalf("encoded:\n%s\nwant:\n%s", got, src)
 	}
 }
+
+// A scale of 0, which the groups of a new file have, is not written,
+// and reads back as 1.
+func TestZeroScaleNotWritten(t *testing.T) {
+	sk := sketch.NewSketch()
+	sk.NewFile()
+	sk.GenerateAll()
+	data := Encode(sk, Options{})
+	if strings.Contains(string(data), "scale") {
+		t.Fatalf("a new file writes a scale:\n%s", data)
+	}
+	doc, err := Decode(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, g := range doc.Sketch.Groups {
+		if g.Scale != 1 {
+			t.Errorf("group %v reads back scale %v", g.H, g.Scale)
+		}
+	}
+}
