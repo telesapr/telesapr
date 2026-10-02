@@ -453,3 +453,50 @@ func (d *Doc) String() (s string) {
 	})
 	return s
 }
+
+// commandList lists the interface's commands, when the program has
+// one (SetCommandList).
+var commandList func() []string
+
+// SetCommandList is how the user interface tells this package its
+// commands; scripts don't call it.
+func SetCommandList(list func() []string) { commandList = list }
+
+// Commands lists the commands of the main menu as the command search
+// (Edit > Find Command) shows them, "Menu > Entry", for RunCommand;
+// none in a program without the interface.
+func Commands() []string {
+	if commandList == nil {
+		return nil
+	}
+	return commandList()
+}
+
+// RunCommand runs a command of the main menu, as choosing it does:
+// "View > Zoom To Fit", or the entry's own name, "Zoom To Fit", when
+// only one entry has it. A host with no window, such as spacesolve-cli,
+// has no menu to run it from, and it is an error.
+func (d *Doc) RunCommand(label string) (err error) {
+	d.h.Run(func() { err = d.h.RunCommand(label) })
+	return err
+}
+
+// Measure measures what it is given, as the description of the
+// selection and Analyze > Measure do, without adding a constraint: one
+// line segment (its length) or circle (its radius); two points; a point
+// and a circle, line segment or plane face; two lines, normals or
+// plane faces (their angle in degrees); or two points and a line to
+// project their distance on. Lengths are in mm.
+func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement) {
+	d.read(func(sk *sketch.Sketch) {
+		hs := make([]core.HEntity, len(entities))
+		for i, e := range entities {
+			hs[i] = e.get(sk).H
+		}
+		var err error
+		if m, err = sk.Measure(hs...); err != nil {
+			fail("%v", err)
+		}
+	})
+	return m
+}

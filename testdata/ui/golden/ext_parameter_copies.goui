@@ -1,0 +1,511 @@
+row 0  home   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g003-translate [rename/del]
+ 0-6 74 64 0
+ 7-22 64 64 0
+ 23-28 6c 64 108 3 1 0
+ 29-29 64 64 0
+ 30-32 6c 64 108 3 1 0
+ 33-99 64 64 0
+row 10  translate original sketch
+ 0-0 64 64 0
+ 1-25 74 64 0
+ 26-99 64 64 0
+row 12     one-sided   two-sided
+ 0-2 64 61 0
+ 3-13 64 61 115 0 1 0
+ 14-15 64 61 0
+ 16-26 64 61 83 0 1 0
+ 27-99 64 61 0
+row 14    start   with original   with copy #1
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-24 64 64 75 0 1 0
+ 25-26 64 64 0
+ 27-40 64 64 107 0 1 0
+ 41-99 64 64 0
+row 16    repeat 5 times (= n+1) [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-25 64 61 0
+ 26-33 6c 61 108 3 1 0
+ 34-99 64 61 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 25    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 27    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 29    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 31    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 33 
+ 0-99 64 64 0
+row 35  requests in group
+ 0-99 74 64 0
+row 37    (none)
+ 0-99 64 61 0
+row 39 
+ 0-99 64 64 0
+row 41  constraints in group (2 DOF)
+ 0-99 74 64 0
+row 43    (none)
+ 0-99 64 61 0
+row 45 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 80020000
+camera 5 -0 -0 -0 1 0 0 0 1 0
+counts 3 4 46 1 27
+editor 0 "" 0 "3"
+tw 1 unsaved 1 cursor 0 tooltip ""
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 80020000
+camera 5 -0 -0 -0 1 0 0 0 1 0
+counts 3 4 46 1 27
+editor 0 "" 1 "n+1"
+tw 1 unsaved 1 cursor 0 tooltip ""
+dialog 3 Can't repeat fewer than 1 time.|
+row 0  home   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g003-translate [rename/del]
+ 0-6 74 64 0
+ 7-22 64 64 0
+ 23-28 6c 64 108 3 1 0
+ 29-29 64 64 0
+ 30-32 6c 64 108 3 1 0
+ 33-99 64 64 0
+row 10  translate original sketch
+ 0-0 64 64 0
+ 1-25 74 64 0
+ 26-99 64 64 0
+row 12     one-sided   two-sided
+ 0-2 64 61 0
+ 3-13 64 61 115 0 1 0
+ 14-15 64 61 0
+ 16-26 64 61 83 0 1 0
+ 27-99 64 61 0
+row 14    start   with original   with copy #1
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-24 64 64 75 0 1 0
+ 25-26 64 64 0
+ 27-40 64 64 107 0 1 0
+ 41-99 64 64 0
+row 16    repeat 5 times (= n+1) [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-25 64 61 0
+ 26-33 6c 61 108 3 1 0
+ 34-99 64 61 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 25    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 27    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 29    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 31    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 33 
+ 0-99 64 64 0
+row 35  requests in group
+ 0-99 74 64 0
+row 37    (none)
+ 0-99 64 61 0
+row 39 
+ 0-99 64 64 0
+row 41  constraints in group (2 DOF)
+ 0-99 74 64 0
+row 43    (none)
+ 0-99 64 61 0
+row 45 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 80020000
+camera 5 -0 -0 -0 1 0 0 0 1 0
+counts 3 4 28 1 27
+editor 0 "" 0 "4"
+tw 11 unsaved 1 cursor 0 tooltip ""
+save
+spacesolve 1
+
+units mm
+
+param n = 1
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+  scale 0
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+  scale 0
+}
+
+group 0x3 translate "translate" {
+  order 2
+  subtype one-sided
+  workplane 0x80020000
+  op-a 0x2
+  copies = n+1
+  color 100 100 100 255
+  predef {
+    entity-b 0x80020000
+  }
+  visible
+  remap {
+    map 1 0x40000 0
+    map 2 0x40001 0
+    map 3 0x40020 0
+    map 4 0x40040 0
+    map 5 0x80020000 0
+    map 6 0x80020001 0
+    map 7 0x80020002 0
+    map 8 0x40000 1
+    map 9 0x40001 1
+    map 10 0x40020 1
+    map 11 0x40040 1
+    map 12 0x80020000 1
+    map 13 0x80020001 1
+    map 14 0x80020002 1
+    map 15 0x40000 1000
+    map 16 0x40001 1000
+    map 17 0x40020 1000
+    map 18 0x40040 1000
+    map 19 0x80020000 1000
+    map 20 0x80020001 1000
+    map 21 0x80020002 1000
+    map 22 0x40000 2
+    map 23 0x40001 2
+    map 24 0x40020 2
+    map 25 0x40040 2
+    map 26 0x80020000 2
+    map 27 0x80020001 2
+    map 28 0x80020002 2
+    map 29 0x40000 3
+    map 30 0x40001 3
+    map 31 0x40020 3
+    map 32 0x40040 3
+    map 33 0x80020000 3
+    map 34 0x80020001 3
+    map 35 0x80020002 3
+  }
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 circle {
+  group 0x2
+  workplane 0x80020000
+}
+
+constraint 0x1 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x80020002
+  pt-b 0x40001
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 0
+value 0x40011 0
+value 0x40040 6
+value 0x80030000 28.2842712474619
+value 0x80030001 28.2842712474619
+value 0x80030002 0
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 circle {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001
+  normal 0x40020
+  distance 0x40040
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-visible
+}
+
+entity 0x40020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x40040 distance {
+  group 0x2
+  workplane 0x80020000
+  act-distance 6
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+
+entity 0x80030001 circle {
+  group 0x3
+  points 0x80030002
+  normal 0x80030003
+  distance 0x80030004
+  act-visible
+}
+
+entity 0x80030002 point-n-trans {
+  group 0x3
+  act-visible
+}
+
+entity 0x80030003 normal-n-copy {
+  group 0x3
+  points 0x80030002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030004 distance-n-copy {
+  group 0x3
+  act-distance 6
+  act-visible
+}
+
+entity 0x80030006 normal-n-copy {
+  group 0x3
+  points 0x80030007
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030007 point-n-trans {
+  group 0x3
+  construction
+  act-visible
+}
+
+entity 0x8003000f circle {
+  group 0x3
+  points 0x80030010
+  normal 0x80030011
+  distance 0x80030012
+  act-visible
+}
+
+entity 0x80030010 point-n-trans {
+  group 0x3
+  act-point 56.5685424949238 56.5685424949238 0
+  act-visible
+}
+
+entity 0x80030011 normal-n-copy {
+  group 0x3
+  points 0x80030010
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030012 distance-n-copy {
+  group 0x3
+  act-distance 6
+  act-visible
+}
+
+entity 0x80030014 normal-n-copy {
+  group 0x3
+  points 0x80030015
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030015 point-n-trans {
+  group 0x3
+  construction
+  act-point 56.5685424949238 56.5685424949238 0
+  act-visible
+}
+end save

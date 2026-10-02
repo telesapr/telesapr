@@ -701,6 +701,13 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	}
 
 	scale := gw.view.Scale
+	if label, at, ok := ss.measureLabel(); ok {
+		h := ss.defaultTextHeight() / camera.Scale
+		canvas.DrawVectorText(label, h,
+			at.Plus(camera.ProjRight.ScaledBy(10/scale)).Plus(camera.ProjUp.ScaledBy(10/scale)),
+			camera.ProjRight, camera.ProjUp, hcsDatum)
+	}
+
 	if ss.CenterOfMass.Draw && !ss.CenterOfMass.Dirty {
 		p := ss.CenterOfMass.Position
 		u := camera.ProjRight

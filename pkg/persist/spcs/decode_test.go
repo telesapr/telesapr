@@ -253,7 +253,6 @@ shell {
 	want := []string{
 		`2:7: unknown unit "furlong"`,
 		`3:1: unknown statement "future-thing"; skipped`,
-		`4:1: named parameters are not supported by this version; skipped`,
 		`6:3: unknown field "new-field" in group; skipped`,
 		`7:11: unknown combine "xor"`,
 		`9:5: unknown field "new-predef" in predef; skipped`,
@@ -280,6 +279,9 @@ shell {
 		t.Errorf("warnings:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}
 	sk := doc.Sketch
+	if p := sk.Parameter("wall"); p == nil || p.Value != 2.5 {
+		t.Errorf("parameter wall: %+v", p)
+	}
 	if len(sk.Groups) != 1 || len(sk.Requests) != 0 || len(sk.Constraints) != 0 || len(sk.Entities) != 0 {
 		t.Errorf("kept %d groups, %d requests, %d constraints, %d entities",
 			len(sk.Groups), len(sk.Requests), len(sk.Constraints), len(sk.Entities))
@@ -305,8 +307,13 @@ func TestMalformed(t *testing.T) {
 		{"spacesolve 1\ngroup 0x1 sketch-3d a {\n}\n", `2:21: expected a string in quotes, not "a"`},
 		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  order x\n}\n", `3:9: expected an integer, not "x"`},
 		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  scale big\n}\n", `3:9: expected a number, not "big"`},
-		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  copies 3\n}\n", `3:3: "copies" is written as 'copies = <number>'`},
-		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  copies = n+1\n}\n", `3:10: "n+1": expressions other than numbers are not supported`},
+		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  copies 3\n}\n", `3:3: "copies" is written as 'copies = <expression>'`},
+		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  copies = n+\n}\n", `3:10: "n+" is not a valid expression`},
+		{"spacesolve 1\nparam 2a = 1\n", `2:7: "2a" can't name a parameter`},
+		{"spacesolve 1\nparam a = 1\nparam a = 2\n", `3:7: a second parameter "a"`},
+		{"spacesolve 1\nparam a 1\n", `2:1: a parameter is written as 'param <name> = <expression>'`},
+		{"spacesolve 1\nparam \"a\" = 1\n", `2:1: a parameter is written as`},
+		{"spacesolve 1\nparam a = (\n", `2:9: "(" is not a valid expression`},
 		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  visible 1\n}\n", `3:3: "visible" takes 0 values, not 1`},
 		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  color 1 2 3 256\n}\n", "3:15: a colour component is 0 to 255, not 256"},
 		{"spacesolve 1\ngroup 0x1 sketch-3d \"a\" {\n  remap {\n    map -1 0x1 0\n  }\n}\n", "4:9: a remap index is not negative"},
@@ -376,4 +383,120 @@ func TestEnums(t *testing.T) {
 		}
 	}()
 	newEnum("dup", map[int]string{1: "a", 2: "a"})
+}
+
+// Parameters and stored expressions are read, evaluated and written
+// back as they were.
+func TestExpressions(t *testing.T) {
+	src := `spacesolve 1
+
+units mm
+
+param wall = 2.5
+param n = 3
+param bore = wall*4
+
+group 0x1 sketch-3d "a" {
+  copies = n+1
+  pitch = wall/2
+  val-c = 7
+  color 0 0 0 0
+  scale = bore/5
+}
+
+group 0x2 sketch-3d "b" {
+  order 1
+  color 0 0 0 0
+  scale 3
+}
+
+constraint 0x1 pt-pt-distance {
+  group 0x1
+  value = bore
+}
+
+constraint 0x2 angle {
+  group 0x1
+  value = 30
+}
+`
+	doc, err := Decode([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Warnings) > 0 || len(doc.ExprErrors) > 0 {
+		t.Fatalf("warnings %v, expression errors %v", doc.Warnings, doc.ExprErrors)
+	}
+	sk := doc.Sketch
+	if len(sk.Parameters) != 3 || sk.Parameter("bore").Value != 10 {
+		t.Fatalf("parameters %+v", sk.Parameters)
+	}
+	g := sk.GetGroup(core.HGroup{V: 1})
+	if g.ValA != 4 || g.ExprA != "n+1" || g.ValB != 1.25 || g.ExprB != "wall/2" ||
+		g.ValC != 7 || g.ExprC != "" || g.Scale != 2 || g.ExprScale != "bore/5" {
+		t.Fatalf("group values %+v", g)
+	}
+	if g := sk.GetGroup(core.HGroup{V: 2}); g.Scale != 3 || g.ExprScale != "" {
+		t.Fatalf("plain scale %v %q", g.Scale, g.ExprScale)
+	}
+	c := sk.GetConstraint(core.HConstraint{V: 1})
+	if c.ValA != 10 || c.Expr != "bore" {
+		t.Fatalf("constraint %q = %v", c.Expr, c.ValA)
+	}
+	if c := sk.GetConstraint(core.HConstraint{V: 2}); c.ValA != 30 || c.Expr != "" {
+		t.Fatalf("plain value %q = %v", c.Expr, c.ValA)
+	}
+	if got := string(doc.Encode()); got != src {
+		t.Fatalf("encoded:\n%s\nwant:\n%s", got, src)
+	}
+}
+
+// Expressions a file holds that cannot be evaluated are kept, and
+// reported where they are.
+func TestExpressionErrors(t *testing.T) {
+	src := `spacesolve 1
+
+units mm
+
+param a = b
+param b = a
+param c = zz
+
+group 0x1 sketch-3d "a" {
+  copies = c*0
+  color 0 0 0 0
+}
+
+constraint 0x1 pt-pt-distance {
+  group 0x1
+  value = nope
+}
+`
+	doc, err := Decode([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, e := range doc.ExprErrors {
+		got = append(got, e.Error())
+	}
+	want := []string{
+		"5:9: parameter a: cycle: a -> b -> a",
+		"6:9: parameter b: cycle: a -> b -> a",
+		`7:9: parameter c: unknown parameter "zz"`,
+		`16:9: constraint c001 = nope: unknown parameter "nope"`,
+		"10:10: group g001 copies = c*0: can't repeat fewer than 1 time",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("errors:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+	if len(doc.Warnings) > 0 {
+		t.Errorf("warnings %v", doc.Warnings)
+	}
+	if g := doc.Sketch.GetGroup(core.HGroup{V: 1}); g.ValA != 1 {
+		t.Errorf("copies %v, want the default 1", g.ValA)
+	}
+	if got := string(doc.Encode()); got != src {
+		t.Fatalf("encoded:\n%s\nwant:\n%s", got, src)
+	}
 }

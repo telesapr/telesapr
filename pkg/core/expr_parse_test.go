@@ -97,7 +97,13 @@ func TestNewFromStringFunctions(t *testing.T) {
 		{"acos(1)", 0},
 		{"atan(0)", 0},
 		{"atan2(0, 1)", 0},
-		{"atan2(1, 0)", math.Pi / 2},
+		{"atan2(1, 0)", 90},
+		{"sin(30)", 0.5},
+		{"cos(60)", 0.5},
+		{"tan(45)", 1},
+		{"asin(0.5)", 30},
+		{"acos(0.5)", 60},
+		{"atan(1)", 45},
 		{"hypot(3, 4)", 5},
 		{"exp(0)", 1},
 		{"ln(e)", 1},
@@ -190,6 +196,71 @@ func TestNewFromStringErrorMessages(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), tc.contains) {
 			t.Errorf("%q: error %q does not contain %q", tc.in, err.Error(), tc.contains)
+		}
+	}
+}
+
+func TestVariables(t *testing.T) {
+	e, err := NewFromString("a*2 + max(b, a) - sin(c)/pi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.Join(e.Variables(), ",")
+	if got != "a,b,c" {
+		t.Fatalf("Variables = %q", got)
+	}
+	if v := NewConstant(1).Variables(); len(v) != 0 {
+		t.Fatalf("constant has variables %v", v)
+	}
+}
+
+func TestRenameVariable(t *testing.T) {
+	cases := []struct{ in, from, to, want string }{
+		{"wall*2", "wall", "w", "w*2"},
+		{"wall * wall2 + wall", "wall", "t", "t * wall2 + t"},
+		{"  wall", "wall", "x", "  x"},
+		{"sin(sin)", "sin", "s", "sin(s)"},
+		{"1e5+e5", "e5", "x", "1e5+x"},
+		{"a+ba+ab+a", "a", "zz", "zz+ba+ab+zz"},
+		{"max(a,a)", "a", "b", "max(b,b)"},
+		{"", "a", "b", ""},
+		{"$a", "a", "b", "$a"},
+	}
+	for _, c := range cases {
+		if got := RenameVariable(c.in, c.from, c.to); got != c.want {
+			t.Errorf("RenameVariable(%q, %q, %q) = %q, want %q", c.in, c.from, c.to, got, c.want)
+		}
+	}
+}
+
+func TestValidVariableName(t *testing.T) {
+	for _, ok := range []string{"a", "wall", "_x", "x2", "Wall_3"} {
+		if !ValidVariableName(ok) {
+			t.Errorf("%q should be valid", ok)
+		}
+	}
+	for _, bad := range []string{"", "2x", "a-b", "pi", "e", "E", "sin", "max", "atan2", "a b", "ü"} {
+		if ValidVariableName(bad) {
+			t.Errorf("%q should be invalid", bad)
+		}
+	}
+}
+
+func TestOperatorBeforeBracketOrSign(t *testing.T) {
+	for in, want := range map[string]float64{
+		"2*(3)": 6, "2*-3": -6, "-(4)": -4, "2^-1": 0.5, "10/(2+3)": 2, "1--1": 2,
+	} {
+		e, err := NewFromString(in)
+		if err != nil {
+			t.Fatalf("%q: %v", in, err)
+		}
+		if got := e.Eval(nil, nil); got != want {
+			t.Errorf("%q = %v, want %v", in, got, want)
+		}
+	}
+	for _, bad := range []string{"2**3", "1<2", "3="} {
+		if _, err := NewFromString(bad); err == nil {
+			t.Errorf("%q parsed", bad)
 		}
 	}
 }

@@ -61,13 +61,16 @@ type SolveSpaceUI struct {
 	TurntableNav             bool
 	ImmediatelyEditDimension bool
 	AutomaticLineConstraints bool
-	ShowToolbar              bool
-	ScreenshotFile           string
-	BackgroundColor          core.RgbaColor
-	ExportShadedTriangles    bool
-	ExportPwlCurves          bool
-	ExportCanvasSizeAuto     bool
-	ExportMode               bool
+	// ColorByFreedom colours the active group's entities by how much
+	// of them their constraints fix (an extension).
+	ColorByFreedom        bool
+	ShowToolbar           bool
+	ScreenshotFile        string
+	BackgroundColor       core.RgbaColor
+	ExportShadedTriangles bool
+	ExportPwlCurves       bool
+	ExportCanvasSizeAuto  bool
+	ExportMode            bool
 	// Windowless makes the graphics window behave as C++'s headless
 	// build, which has none: the view is never fitted to it and the
 	// camera is 297 by 210. The command-line tool sets it.
@@ -207,6 +210,7 @@ func (ss *SolveSpaceUI) LoadSettings() {
 	ss.ImmediatelyEditDimension = core.ThawBool(s, "ImmediatelyEditDimension", true)
 	ss.CheckClosedContour = core.ThawBool(s, "CheckClosedContour", true)
 	ss.AutomaticLineConstraints = core.ThawBool(s, "AutomaticLineConstraints", true)
+	ss.ColorByFreedom = core.ThawBool(s, "ColorByFreedom", true)
 	ss.ShowContourAreas = core.ThawBool(s, "ShowContourAreas", false)
 	ss.ExportShadedTriangles = core.ThawBool(s, "ExportShadedTriangles", true)
 	ss.ExportPwlCurves = core.ThawBool(s, "ExportPwlCurves", false)
@@ -306,6 +310,7 @@ func (ss *SolveSpaceUI) SaveSettings() {
 	core.FreezeBool(s, "TurntableNav", ss.TurntableNav)
 	core.FreezeBool(s, "ImmediatelyEditDimension", ss.ImmediatelyEditDimension)
 	core.FreezeBool(s, "AutomaticLineConstraints", ss.AutomaticLineConstraints)
+	core.FreezeBool(s, "ColorByFreedom", ss.ColorByFreedom)
 	core.FreezeBool(s, "ExportShadedTriangles", ss.ExportShadedTriangles)
 	core.FreezeBool(s, "ExportPwlCurves", ss.ExportPwlCurves)
 	core.FreezeColor(s, "BackgroundColor", ss.BackgroundColor)

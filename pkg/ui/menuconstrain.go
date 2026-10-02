@@ -79,11 +79,9 @@ func (ss *SolveSpaceUI) MenuConstrain(id Command) {
 			return
 		}
 		if c.Type == core.ConstraintPtPtDistance || c.Type == core.ConstraintProjPtDistance {
-			n := gw.view.ProjRight.Cross(gw.view.ProjUp)
 			a := sk.GetEntity(c.PtA).PointGetNum(sk)
 			b := sk.GetEntity(c.PtB).PointGetNum(sk)
-			c.Disp.Offset = n.Cross(a.Minus(b))
-			c.Disp.Offset = c.Disp.Offset.WithMagnitude(50 / gw.view.Scale)
+			c.Disp.Offset = sk.DistanceLabelOffset(a, b)
 		} else {
 			c.Disp.Offset = geom.Vector{}
 		}

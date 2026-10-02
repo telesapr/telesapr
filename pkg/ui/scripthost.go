@@ -338,3 +338,6 @@ func (h *ScriptHost) Select(sel []sketch.Selection) {
 	h.ss.ScheduleShowTW()
 	gw.Invalidate(false)
 }
+
+// RunCommand runs a menu command, as choosing it does.
+func (h *ScriptHost) RunCommand(label string) error { return h.ss.RunCommand(label) }

@@ -620,3 +620,21 @@ func (d *Doc) Link(path, name string) (g Group, err error) {
 		return g
 	}, nil), nil
 }
+
+// Conflicts lists the constraints that keep the group from solving,
+// as its solve-failure screen does, any one of which could be removed
+// to fix it; none when the group solved.
+func (g Group) Conflicts() (constraints []Constraint) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if group.IsSolvedOkay() {
+			return
+		}
+		for _, hc := range group.Solved.Remove {
+			if sk.GetConstraint(hc) != nil {
+				constraints = append(constraints, Constraint{g.d, hc})
+			}
+		}
+	})
+	return constraints
+}

@@ -88,42 +88,6 @@ func (c Constraint) Value() (v float64) {
 	return v
 }
 
-// setValue gives a constraint the value v, which is what its label
-// would show, as editing the label does.
-func setValue(c *core.Constraint, v float64) {
-	switch c.Type {
-	case core.ConstraintProjPtDistance, core.ConstraintPtLineDistance, core.ConstraintPtFaceDistance,
-		core.ConstraintPtPlaneDistance, core.ConstraintLengthDifference, core.ConstraintArcArcDifference,
-		core.ConstraintArcLineDifference:
-		// These are signed, which the label doesn't show; a negative
-		// value flips the side.
-		if c.ValA < 0 {
-			c.ValA = -v
-		} else {
-			c.ValA = v
-		}
-	case core.ConstraintDiameter:
-		c.ValA = math.Abs(v)
-		if c.Other {
-			// Shown as a radius.
-			c.ValA *= 2
-		}
-	default:
-		c.ValA = math.Abs(v)
-	}
-}
-
-// isLength reports whether a constraint's value is a length, rather
-// than an angle or a ratio.
-func isLength(t core.ConstraintType) bool {
-	switch t {
-	case core.ConstraintAngle, core.ConstraintLengthRatio, core.ConstraintArcArcLenRatio,
-		core.ConstraintArcLineLenRatio:
-		return false
-	}
-	return true
-}
-
 // Set gives the constraint a value, as editing its label on the
 // drawing does: a length in mm, an angle in degrees, a ratio. A
 // negative distance from a line or a plane puts the point on the
@@ -134,32 +98,33 @@ func (c Constraint) Set(v float64) {
 		if !constraint.HasLabel() {
 			fail("%s has no value", constraint.DescriptionString())
 		}
-		setValue(constraint, v)
+		sketch.SetConstraintValue(constraint, v)
 		sk.MarkGroupDirty(constraint.Group, false)
 	})
 }
 
 // SetExpr gives the constraint the value of an expression, as typing
-// it in its label does: "25.4/2" or "sqrt(2)*10". A length is in the
-// unit the user interface shows lengths in.
-func (c Constraint) SetExpr(expr string) error {
-	e, err := core.NewFromString(expr)
-	if err != nil {
-		return fmt.Errorf("not a valid number or expression: '%s': %w", expr, err)
-	}
+// it in its label does: "25.4/2" or "sqrt(2)*10" is evaluated once, a
+// length being in the unit the user interface shows lengths in. An
+// expression that names a parameter, "wall*4", is kept, in millimetres
+// and degrees, and evaluated again at each regeneration (see
+// Doc.SetParameter).
+func (c Constraint) SetExpr(expr string) (err error) {
 	c.d.change(func(sk *sketch.Sketch) {
 		constraint := c.get(sk)
-		if !constraint.HasLabel() {
+		if !constraint.HasLabel() || constraint.Type == core.ConstraintComment {
 			fail("%s has no value", constraint.DescriptionString())
 		}
-		v := e.Eval(sketch.NewRuntime(sk), nil)
-		if isLength(constraint.Type) {
-			v *= c.d.h.MmPerUnit()
-		}
-		setValue(constraint, v)
-		sk.MarkGroupDirty(constraint.Group, false)
+		err = sk.SetConstraintText(c.H, expr, c.d.h.MmPerUnit())
 	})
-	return nil
+	return err
+}
+
+// Expr is the expression the constraint's value comes from, as its
+// label's editor shows it, or "" for a plain number.
+func (c Constraint) Expr() (expr string) {
+	c.d.read(func(sk *sketch.Sketch) { expr = sketch.ConstraintText(c.get(sk)) })
+	return expr
 }
 
 // Reference reports whether the constraint is a reference dimension,
@@ -278,9 +243,14 @@ func hasVector(e *core.Entity) bool { return e.HasVector() }
 // dimension gives a new dimension the value v: it is first made to
 // measure the sketch, which tells its sign.
 func dimension(sk *sketch.Sketch, c *core.Constraint, v float64) {
+	if c.Type == core.ConstraintPtPtDistance || c.Type == core.ConstraintProjPtDistance {
+		// Where the interface puts the label.
+		c.Disp.Offset = sk.DistanceLabelOffset(sk.MustGetEntity(c.PtA).PointGetNum(sk),
+			sk.MustGetEntity(c.PtB).PointGetNum(sk))
+	}
 	c.ValA = 0
 	c.ModifyToSatisfy(sk)
-	setValue(c, v)
+	sketch.SetConstraintValue(c, v)
 }
 
 // Constrain adds a constraint of any type, as the core package names

@@ -1,0 +1,82 @@
+row 0  home   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 6  FIND A COMMAND  [type]
+ 0-14 74 64 0
+ 15-16 64 64 0
+ 17-22 6c 64 101 0 1 0
+ 23-99 64 64 0
+row 8 
+ 0-99 64 64 0
+row 10    Type words of a menu entry, then Enter to list the matches;
+ 0-99 64 64 0
+row 12    Enter again runs the first.
+ 0-99 64 64 0
+row 15 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 17 
+ 0-99 64 64 0
+row 0  home   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 6  FIND A COMMAND  [type]
+ 0-14 74 64 0
+ 15-16 64 64 0
+ 17-22 6c 64 101 0 1 0
+ 23-99 64 64 0
+row 8 
+ 0-99 64 64 0
+row 10    View > Dimension Units > Dimensions in Millimeters  (Enter)
+ 0-2 64 61 0
+ 3-52 6c 61 114 0 1 0
+ 53-99 64 61 0
+row 12    View > Dimension Units > Dimensions in Meters
+ 0-2 64 64 0
+ 3-47 6c 64 114 1 1 0
+ 48-99 64 64 0
+row 14    View > Dimension Units > Dimensions in Inches
+ 0-2 64 61 0
+ 3-47 6c 61 114 2 1 0
+ 48-99 64 61 0
+row 16    View > Dimension Units > Dimensions in Feet and Inches
+ 0-2 64 64 0
+ 3-56 6c 64 114 3 1 0
+ 57-99 64 64 0
+row 19 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 21 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 2 80020000
+camera 5 0 0 0 1 0 0 0 1 0
+counts 2 3 12 0 21
+editor 0 "" 0 ""
+tw 0 unsaved 0 cursor 0 tooltip ""
+pending 1 155 "click one corner of rectangle" 0 0 0 0
+hover 0 0 0
+selection 0
+active 2 80020000
+camera 5 0 0 0 1 0 0 0 1 0
+counts 2 3 12 0 21
+editor 0 "" 0 ""
+tw 0 unsaved 0 cursor 0 tooltip ""

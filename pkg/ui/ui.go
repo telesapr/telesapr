@@ -134,6 +134,9 @@ const (
 	// numbers stay.
 	CmdCheckSolid
 	CmdGroupThread
+	CmdParameters
+	CmdFindCommand
+	CmdMeasure
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -267,6 +270,7 @@ type GraphicsWindow struct {
 
 	showGridMenuItem        platform.MenuItem
 	dimSolidModelMenuItem   platform.MenuItem
+	measureMenuItem         platform.MenuItem
 	perspectiveProjMenuItem platform.MenuItem
 	explodeMenuItem         platform.MenuItem
 	showToolbarMenuItem     platform.MenuItem
@@ -350,6 +354,8 @@ type GraphicsWindow struct {
 
 	showSnapGrid  bool
 	dimSolidModel bool
+	// measuring is the measure mode (MenuMeasure), an extension.
+	measuring bool
 
 	// Per-entity drawing caches, for the sketch generation they were
 	// made in (C++ Entity::beziers, edges and screenBBox).

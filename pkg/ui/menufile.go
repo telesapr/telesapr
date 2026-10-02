@@ -145,6 +145,11 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 		ss.Error("Some of the file '%s' was not recognized and was left out. It may "+
 			"be from a newer version of the program.\n\n%s", filename, warningList(errorStrings(doc.Warnings)))
 	}
+	if len(doc.ExprErrors) > 0 {
+		ss.Error("Some expressions in the file '%s' could not be evaluated. They are kept, "+
+			"and what they drive keeps a default value until they are fixed.\n\n%s",
+			filename, warningList(errorStrings(doc.ExprErrors)))
+	}
 	ss.setSketch(doc.Sketch)
 	return true
 }

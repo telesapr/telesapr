@@ -31,6 +31,12 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		return sk.GetGroup(sk.GroupOrder[i]).Order < sk.GetGroup(sk.GroupOrder[j]).Order
 	})
 
+	// Parameters and stored expressions first, since they set the
+	// values the groups are solved for and which groups are dirty.
+	if !genForBBox {
+		sk.EvaluateParameters()
+	}
+
 	var first, last int
 	switch typ {
 	case GenerateDirty:

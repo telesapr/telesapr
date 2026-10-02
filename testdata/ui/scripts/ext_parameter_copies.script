@@ -1,0 +1,39 @@
+# A step and repeat group whose copies come from a parameter (an
+# extension), through the group screen.
+menu Edit|Parameters...
+twmove 51 130
+twdown L 51 130
+twup L 51 130
+edit n = 4
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 330 300
+down L 330 300
+up L 330 300
+key esc
+key t shift
+# The copies take an expression; the screen shows it beside the count.
+twmove 186 170
+twdown L 186 170
+twup L 186 170
+edit n+1
+tw
+dump
+# Too few copies is refused, and nothing changes.
+answer ok
+twmove 258 170
+twdown L 258 170
+twup L 258 170
+dump
+edit n-10
+tw
+# A change of the parameter changes the copies.
+menu Edit|Parameters...
+twmove 420 120
+twdown L 420 120
+twup L 420 120
+edit 1
+dump
+save

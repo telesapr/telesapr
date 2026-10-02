@@ -14,6 +14,7 @@ func init() {
 	Symbols["github.com/spacesolve/spacesolve/pkg/script/api/api"] = map[string]reflect.Value{
 		// function, constant and variable definitions
 		"Assemble":        reflect.ValueOf(api.Assemble),
+		"Commands":        reflect.ValueOf(api.Commands),
 		"Current":         reflect.ValueOf(api.Current),
 		"Difference":      reflect.ValueOf(api.Difference),
 		"ExportMesh":      reflect.ValueOf(api.ExportMesh),
@@ -27,6 +28,7 @@ func init() {
 		"NewDoc":          reflect.ValueOf(api.NewDoc),
 		"NewSketchHost":   reflect.ValueOf(api.NewSketchHost),
 		"Open":            reflect.ValueOf(api.Open),
+		"SetCommandList":  reflect.ValueOf(api.SetCommandList),
 		"SetCurrent":      reflect.ValueOf(api.SetCurrent),
 		"ThreadNearest":   reflect.ValueOf(api.ThreadNearest),
 		"Union":           reflect.ValueOf(api.Union),
@@ -40,6 +42,7 @@ func init() {
 		"Group":         reflect.ValueOf((*api.Group)(nil)),
 		"Host":          reflect.ValueOf((*api.Host)(nil)),
 		"Param":         reflect.ValueOf((*api.Param)(nil)),
+		"Parameter":     reflect.ValueOf((*api.Parameter)(nil)),
 		"Request":       reflect.ValueOf((*api.Request)(nil)),
 		"SketchHost":    reflect.ValueOf((*api.SketchHost)(nil)),
 		"ThreadOptions": reflect.ValueOf((*api.ThreadOptions)(nil)),
@@ -64,6 +67,7 @@ type _github_com_spacesolve_spacesolve_pkg_script_api_Host struct {
 	WRegenerate  func()
 	WRender      func(path string, width int, height int, right geom.Vector, up geom.Vector) error
 	WRun         func(fn func())
+	WRunCommand  func(label string) error
 	WSave        func(path string) error
 	WSelect      func(sel []sketch.Selection)
 	WSelection   func() []sketch.Selection
@@ -103,6 +107,9 @@ func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) Render(path strin
 }
 func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) Run(fn func()) {
 	W.WRun(fn)
+}
+func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) RunCommand(label string) error {
+	return W.WRunCommand(label)
 }
 func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) Save(path string) error {
 	return W.WSave(path)

@@ -1,0 +1,71 @@
+# Named parameters (an extension): a dimension driven by a parameter,
+# through the parameters screen and the dimension editor.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key d
+key esc
+menu Edit|Parameters...
+tw
+# Two parameters, the second naming the first.
+twmove 51 130
+twdown L 51 130
+twup L 51 130
+edit len = 20
+twmove 51 150
+twdown L 51 150
+twup L 51 150
+edit w = len/4
+tw
+# The dimension takes a parameter by name, and the editor shows the
+# name again.
+move 195 225
+down L 195 225
+up L 195 225
+down L 195 225
+dbl L 195 225
+up L 195 225
+edit len
+move 250 250
+down L 250 250
+up L 250 250
+down L 250 250
+dbl L 250 250
+up L 250 250
+dump
+edit len+w
+dump
+# A change of the table regenerates the dimension: len+w is 50.
+twmove 420 120
+twdown L 420 120
+twup L 420 120
+edit 40
+params
+# A rename rewrites what uses the name; a delete of a used one is
+# refused, saying what uses it.
+twmove 483 120
+twdown L 483 120
+twup L 483 120
+edit length
+answer ok
+twmove 555 120
+twdown L 555 120
+twup L 555 120
+tw
+save
+# Undo takes the rename back.
+key z ctrl
+tw
+params

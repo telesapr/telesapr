@@ -93,6 +93,8 @@ func init() {
 		{1, "&Line Styles...", CmdEditLineStyles, 0, kn, mEdit},
 		{1, "&View Projection...", CmdViewProjection, 0, kn, mEdit},
 		{1, "Con&figuration...", CmdConfiguration, 0, kn, mEdit},
+		{1, "Find Comman&d...", CmdFindCommand, c_ | 'k', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuFindCommand() }},
+		{1, "Para&meters...", CmdParameters, c_ | s_ | 'm', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuParameters() }},
 
 		{0, "&View", CmdNone, 0, kn, mView},
 		{1, "Zoom &In", CmdZoomIn, '+', kn, mView},
@@ -188,6 +190,7 @@ func init() {
 		{1, "Show &Naked Edges", CmdNakedEdges, c_ | s_ | 'n', kn, mAna},
 		{1, "Show &Center of Mass", CmdCenterOfMass, c_ | s_ | 'c', kn, mAna},
 		{1, "Check S&olid", CmdCheckSolid, c_ | s_ | 'o', kn, mAna},
+		{1, "Measure Se&lection", CmdMeasure, c_ | s_ | 'e', kc, func(ss *SolveSpaceUI, c Command) { ss.MenuMeasure() }},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Show &Underconstrained Points", CmdShowDOF, c_ | s_ | 'f', kn, mAna},
 		{1, "", CmdNone, 0, kn, nil},

@@ -23,6 +23,7 @@ type UndoState struct {
 	Constraints []core.Constraint
 	Params      []core.Param
 	Styles      []core.Style
+	Parameters  []Parameter
 	Active      core.HGroup
 }
 
@@ -41,6 +42,21 @@ func wrapUndo(v int) int { return ((v % MaxUndo) + MaxUndo) % MaxUndo }
 func (s *Sketch) UndoRemember() {
 	s.PushFromCurrentOnto(&s.Undo)
 	s.UndoClearStack(&s.Redo)
+}
+
+// UndoRememberFor records the current state for undo, as UndoRemember
+// does, and then runs fn to change it. When fn fails, the record is
+// dropped, so a refused edit leaves no undo step.
+func (s *Sketch) UndoRememberFor(fn func() error) error {
+	s.PushFromCurrentOnto(&s.Undo)
+	if err := fn(); err != nil {
+		s.Undo.Cnt--
+		s.Undo.Write = wrapUndo(s.Undo.Write - 1)
+		s.UndoClearState(&s.Undo.D[s.Undo.Write])
+		return err
+	}
+	s.UndoClearStack(&s.Redo)
+	return nil
 }
 
 // UndoUndo restores the last remembered state, keeping the current one
@@ -101,6 +117,10 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 			ValA:                   src.ValA,
 			ValB:                   src.ValB,
 			ValC:                   src.ValC,
+			ExprA:                  src.ExprA,
+			ExprB:                  src.ExprB,
+			ExprC:                  src.ExprC,
+			ExprScale:              src.ExprScale,
 			Subtype:                src.Subtype,
 			SkipFirst:              src.SkipFirst,
 			BooleanFailed:          src.BooleanFailed,
@@ -119,6 +139,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 	ut.Constraints = append([]core.Constraint(nil), s.Constraints...)
 	ut.Params = append([]core.Param(nil), s.Params...)
 	ut.Styles = append([]core.Style(nil), s.Styles...)
+	ut.Parameters = append([]Parameter(nil), s.Parameters...)
 	ut.Active = s.Active
 
 	uk.Write = wrapUndo(uk.Write + 1)
@@ -148,6 +169,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	s.Constraints = ut.Constraints
 	s.Params = ut.Params
 	s.Styles = ut.Styles
+	s.Parameters = ut.Parameters
 	s.Active = ut.Active
 
 	// It has been moved, so no need to free it.

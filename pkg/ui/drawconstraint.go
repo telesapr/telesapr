@@ -591,6 +591,9 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 	switch how {
 	case ConstraintDrawDefault:
 		color = ss.styleColor(constraintStyle(c))
+		if ss.isConflicting(c) {
+			color = colorConflict
+		}
 	case ConstraintDrawHovered:
 		color = ss.styleColor(hstyle(core.StyleHovered))
 	case ConstraintDrawSelected:

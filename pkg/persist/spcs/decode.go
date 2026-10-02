@@ -24,6 +24,11 @@ type Document struct {
 	// Warnings are the statements, fields and names the reader did not
 	// know and skipped, at their places in the file.
 	Warnings []*Error
+	// ExprErrors are the stored expressions that could not be
+	// evaluated, at their places in the file: a cycle, an unknown name
+	// or a value out of range. They are kept as they are, so a save
+	// loses nothing; what they drive takes a default value.
+	ExprErrors []*Error
 
 	// Mesh and Shell are the generated mesh and shell the file holds
 	// for files that link it; Sketch.Entities holds its generated
@@ -74,6 +79,8 @@ func DecodeTree(f *File) (doc *Document, err error) {
 
 type decoder struct {
 	doc *Document
+	// exprPos is where each stored expression was read.
+	exprPos map[exprPlace]Pos
 }
 
 func (d *decoder) fail(pos Pos, format string, args ...any) {
@@ -139,7 +146,7 @@ func (d *decoder) file(f *File) {
 		case "spacesolve":
 			d.fail(n.Pos, "a second header")
 		case "param":
-			d.warn(n.Pos, "named parameters are not supported by this version; skipped")
+			d.param(n)
 		default:
 			d.warn(n.Pos, "unknown statement %q; skipped", n.Name)
 		}
@@ -160,6 +167,7 @@ func (d *decoder) file(f *File) {
 	sort.SliceStable(sk.Styles, func(i, j int) bool { return sk.Styles[i].H.V < sk.Styles[j].H.V })
 	sort.SliceStable(sk.Params, func(i, j int) bool { return sk.Params[i].H.V < sk.Params[j].H.V })
 	sort.SliceStable(sk.Entities, func(i, j int) bool { return sk.Entities[i].H.V < sk.Entities[j].H.V })
+	d.evaluate()
 }
 
 // fieldArgs checks that n is a plain field with count values, and
@@ -244,18 +252,90 @@ func (d *decoder) str(v Value) string {
 	return v.Text
 }
 
-// expr reads a value that may hold an expression. Version 1 keeps no
-// expression text, so it must be a number.
-func (d *decoder) expr(n *Node) float64 {
+// expr reads a value that may hold an expression: a number, or the
+// text of an expression, which a later evaluation turns into the
+// number. where names the value for the evaluation's warnings.
+func (d *decoder) expr(n *Node, where exprPlace) (float64, string) {
 	if !n.HasExpr || n.Block || len(n.Args) != 0 {
-		d.fail(n.Pos, "%q is written as '%s = <number>'", n.Name, n.Name)
+		d.fail(n.Pos, "%q is written as '%s = <expression>'", n.Name, n.Name)
 	}
-	if _, err := strconv.ParseFloat(n.Expr, 64); err != nil {
-		if ne, ok := err.(*strconv.NumError); !ok || ne.Err != strconv.ErrRange {
-			d.fail(n.ExprPos, "%q: expressions other than numbers are not supported by this version", n.Expr)
+	if _, err := strconv.ParseFloat(n.Expr, 64); err == nil || isRangeError(err) {
+		return d.parseReal(n.ExprPos, n.Expr), ""
+	}
+	if _, err := core.NewFromString(n.Expr); err != nil {
+		d.fail(n.ExprPos, "%q is not a valid expression: %v", n.Expr, err)
+	}
+	if d.exprPos == nil {
+		d.exprPos = map[exprPlace]Pos{}
+	}
+	d.exprPos[where] = n.ExprPos
+	return 0, n.Expr
+}
+
+func isRangeError(err error) bool {
+	ne, ok := err.(*strconv.NumError)
+	return ok && ne.Err == strconv.ErrRange
+}
+
+// exprPlace is where a stored expression is: a parameter by name, a
+// constraint's value, or a group's value by its field name.
+type exprPlace struct {
+	param      string
+	group      core.HGroup
+	constraint core.HConstraint
+	field      string
+}
+
+// param reads "param <name> = <expression>".
+func (d *decoder) param(n *Node) {
+	if !n.HasExpr || n.Block || len(n.Args) != 1 || n.Args[0].Quoted {
+		d.fail(n.Pos, "a parameter is written as 'param <name> = <expression>'")
+	}
+	name := n.Args[0].Text
+	if !core.ValidVariableName(name) {
+		d.fail(n.Args[0].Pos, "%q can't name a parameter", name)
+	}
+	sk := d.doc.Sketch
+	if sk.Parameter(name) != nil {
+		d.fail(n.Args[0].Pos, "a second parameter %q", name)
+	}
+	if _, err := core.NewFromString(n.Expr); err != nil {
+		d.fail(n.ExprPos, "%q is not a valid expression: %v", n.Expr, err)
+	}
+	if d.exprPos == nil {
+		d.exprPos = map[exprPlace]Pos{}
+	}
+	d.exprPos[exprPlace{param: name}] = n.ExprPos
+	sk.Parameters = append(sk.Parameters, sketch.Parameter{Name: name, Expr: n.Expr})
+}
+
+// evaluate gives the stored expressions their values, and reports
+// those it could not evaluate, at their places in the file.
+func (d *decoder) evaluate() {
+	sk := d.doc.Sketch
+	if d.exprPos == nil {
+		return
+	}
+	report := func(pos Pos, format string, args ...any) {
+		d.doc.ExprErrors = append(d.doc.ExprErrors, &Error{pos, fmt.Sprintf(format, args...)})
+	}
+	sk.EvaluateParameters()
+	for _, p := range sk.Parameters {
+		if p.Err != "" {
+			report(d.exprPos[exprPlace{param: p.Name}], "parameter %s: %s", p.Name, p.Err)
 		}
 	}
-	return d.parseReal(n.ExprPos, n.Expr)
+	for _, e := range sk.ExprErrors {
+		at := exprPlace{constraint: e.Constraint}
+		if e.Constraint.V == 0 {
+			at = exprPlace{group: e.Group, field: e.Field}
+			if g := sk.GetGroup(e.Group); g != nil && e.Field == "copies" {
+				// No copies is no group a user can make.
+				g.ValA = 1
+			}
+		}
+		report(d.exprPos[at], "%s", e.Error())
+	}
 }
 
 func (d *decoder) flag(n *Node) bool {
@@ -337,11 +417,11 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 		case "op-b":
 			g.OpB = core.HGroup{V: d.handleField(c)}
 		case "copies":
-			g.ValA = d.expr(c)
+			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "pitch":
-			g.ValB = d.expr(c)
+			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "val-c":
-			g.ValC = d.expr(c)
+			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "color":
 			g.Color = d.colorField(c)
 		case "skip-first":
@@ -385,7 +465,13 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 		case "all-dims-reference":
 			g.AllDimsReference = d.flag(c)
 		case "scale":
-			g.Scale = d.realField(c)
+			// A plain number is written as a field; an expression
+			// with "=".
+			if c.HasExpr {
+				g.Scale, g.ExprScale = d.expr(c, exprPlace{group: g.H, field: c.Name})
+			} else {
+				g.Scale = d.realField(c)
+			}
 		case "link":
 			g.LinkFile = d.strField(c)
 		case "remap":
@@ -461,7 +547,7 @@ func (d *decoder) constraint(n *Node) (core.Constraint, bool) {
 		case "workplane":
 			c.Workplane = core.HEntity{V: d.handleField(f)}
 		case "value":
-			c.ValA = d.expr(f)
+			c.ValA, c.Expr = d.expr(f, exprPlace{constraint: c.H})
 		case "param":
 			c.ValP = core.HParam{V: d.handleField(f)}
 		case "pt-a":

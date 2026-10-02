@@ -113,13 +113,35 @@ A field with no values is a flag: present means true, absent means false.
 
 ### Expressions
 
-A field written with `=` holds an expression, for any value a user may type as a formula.
-Version 1 writes only plain numbers there, such as `value = 30`, but a reader must keep the
-whole text. Named parameters arrive with roadmap step 3 and will be written as
-`param <name> = <expression>`. The name `param` is reserved for them.
+A field written with `=` holds an expression, for any value a user may type as a formula. It is
+either a plain number, such as `value = 30`, or the text of an expression that names parameters,
+such as `value = wall*4`. A reader keeps the whole text and evaluates it at each regeneration.
 
-Expressions are in millimetres and degrees, whatever unit the interface shows. The `units`
-line records the unit the document was authored in, for display only.
+Expressions are in millimetres and degrees, whatever unit the interface shows: a parameter's
+value is a number of millimetres when it is used as a length, and trigonometric functions take
+and give degrees. The `units` line records the unit the document was authored in, for display
+only.
+
+The expression syntax is that of the dimension editor: numbers, parameter names, `+ - * / ^`,
+brackets, the constants `pi` and `e`, and the functions `sqrt`, `sq`, `sin`, `cos`, `tan`,
+`asin`, `acos`, `atan`, `atan2`, `hypot`, `exp`, `ln`, `log`, `abs`, `floor`, `ceil`,
+`round`, `min` and `max`. An expression the syntax refuses is an error in the file.
+
+### Parameters
+
+```
+param <name> = <expression>
+```
+
+A named value that expressions use. The name is a letter or underscore followed by letters,
+digits and underscores, and is none of the constant and function names above. A parameter's
+expression may name other parameters, in any order in the file; the writer keeps the order the
+user made them in. A second parameter of the same name is an error.
+
+What cannot be evaluated is not an error of the file: a cycle, a name that is no parameter, a
+value that is no number, or a group value out of its range (fewer than 1 or more than 999
+copies, a scale of 0). The reader keeps the text, so a save writes it back, and reports it with
+its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 
 ## Values
 
@@ -139,6 +161,7 @@ line records the unit the document was authored in, for display only.
 |---|---|
 | `spacesolve <major>` | The header. |
 | `units <unit>` | `mm`, `inch`, `m` or `ft-in`. Display only. |
+| `param <name> = <expression>` | A named parameter, see "Parameters". |
 | `group <handle> <type> <name> { ... }` | A group. |
 | `request <handle> <type> { ... }` | A request, what the user drew. |
 | `constraint <handle> <type> { ... }` | A constraint. |
@@ -147,13 +170,12 @@ line records the unit the document was authored in, for display only.
 | `entity <handle> <type> { ... }` | A generated entity, see "Generated data". |
 | `mesh { ... }` | The last group's triangle mesh, see "Generated data". |
 | `shell { ... }` | The last group's exact shell, see "Generated data". |
-| `param <name> = <expression>` | Reserved for named parameters, roadmap step 3. |
 
 ### Order
 
-The writer puts statements in this order: header, `units`, groups in their `order`, ties by
-handle, then requests, constraints, styles, values and entities, each by handle, then `mesh`
-and `shell`. A reader accepts any order of the top-level statements after the header.
+The writer puts statements in this order: header, `units`, parameters in the user's order,
+groups in their `order`, ties by handle, then requests, constraints, styles, values and
+entities, each by handle, then `mesh` and `shell`. A reader accepts any order of the top-level statements after the header.
 
 The printer separates top-level statements with a blank line before every block and wherever
 the statement name changes, so runs of `value` lines stay together. Blocks are indented by two
@@ -182,7 +204,7 @@ group <handle> <type> <name> {
   allow-redundant
   suppress-dof
   all-dims-reference
-  scale <real>              # left out when 1
+  scale <real>              # left out when 1; "scale = <expression>" for an expression
   link <string>             # linked file, relative to this file, with / separators
   remap { ... }
 }

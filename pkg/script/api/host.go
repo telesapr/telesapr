@@ -66,6 +66,9 @@ type Host interface {
 	Activate(hg core.HGroup)
 	Undo() bool
 	Redo() bool
+	// RunCommand runs a menu command by its label; an error on a host
+	// with no window.
+	RunCommand(label string) error
 	// MmPerUnit is the size in mm of the unit lengths are shown in.
 	MmPerUnit() float64
 	Load(path string) error
@@ -275,3 +278,8 @@ func (h *SketchHost) Selection() []sketch.Selection { return nil }
 
 // Select does nothing, for the same reason.
 func (h *SketchHost) Select([]sketch.Selection) {}
+
+// RunCommand is an error: a sketch with no window has no menu.
+func (h *SketchHost) RunCommand(label string) error {
+	return fmt.Errorf("no window to run %q in: commands need the application", label)
+}

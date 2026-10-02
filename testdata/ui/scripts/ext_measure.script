@@ -1,0 +1,19 @@
+# The measure mode (an extension): Analyze > Measure Selection checks
+# in the menu, and measuring adds no constraint.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+move 300 225
+down L 300 225
+up L 300 225
+menu Analyze|Measure Selection
+menus
+dump
+key e ctrl shift
+dump
