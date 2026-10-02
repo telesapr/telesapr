@@ -12,3 +12,4 @@ pkg/render/gl
 pkg/render/gl/glx
 pkg/persist/step
 pkg/internal/cdt
+pkg/topo
