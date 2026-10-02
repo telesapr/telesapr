@@ -204,10 +204,7 @@ func SplitFace(sh *srf.SShell, t *Topology, f int, cut srf.SBezier) (core.HSSurf
 	n := len(outer.CoEdges)
 	// The loop from a to b keeps the face; from b to a goes to the new
 	// one.
-	var keep, move []int
-	for k := ia; k != ib; k = (k + 1) % n {
-		keep = append(keep, outer.CoEdges[k])
-	}
+	var move []int
 	for k := ib; k != ia; k = (k + 1) % n {
 		move = append(move, outer.CoEdges[k])
 	}
@@ -237,11 +234,7 @@ func SplitFace(sh *srf.SShell, t *Topology, f int, cut srf.SBezier) (core.HSSurf
 	for _, ce := range move {
 		moveTrim[t.CoEdges[ce].Trim] = true
 	}
-	var moveLoop []int
-	for _, ce := range move {
-		moveLoop = append(moveLoop, ce)
-	}
-	newOuterUV := t.chainUV(s, moveLoop, pts, true)
+	newOuterUV := t.chainUV(s, move, pts, true)
 	for _, l := range face.Loops {
 		if t.Loops[l].Outer || len(t.Loops[l].CoEdges) == 0 {
 			continue
@@ -496,7 +489,7 @@ func (t *Topology) openEdgeAlong(sb srf.SBezier) int {
 			continue
 		}
 		pa, pb := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
-		if !(pa.Equals(a) && pb.Equals(b)) && !(pa.Equals(b) && pb.Equals(a)) {
+		if (!pa.Equals(a) || !pb.Equals(b)) && (!pa.Equals(b) || !pb.Equals(a)) {
 			continue
 		}
 		if distanceToPolyline(mid, ed.Points) <= edgeTol(ed.Points) {
