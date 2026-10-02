@@ -26,7 +26,7 @@ func (ss *SolveSpaceUI) MenuThread() {
 	sk := ss.SK
 	gw.GroupSelection()
 	gs := &gw.gs
-	if !(gs.circlesOrArcs == 1 && gs.n == 1) {
+	if gs.circlesOrArcs != 1 || gs.n != 1 {
 		ss.Error("Bad selection for new screw thread. This group can " +
 			"be created with:\n\n" +
 			"    * a circle or an arc (thread about its axis, from its plane)\n")

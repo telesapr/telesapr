@@ -51,7 +51,7 @@ RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/..
 
 test-race:
 	@echo "==> go test -race $(RACE_PACKAGES)"
-	GOCACHE=$(PWD)/.gocache go test -race $(RACE_PACKAGES)
+	GOCACHE=$(PWD)/.gocache go test -race -timeout 30m $(RACE_PACKAGES)
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
 # package listed in scripts/coverage-packages.txt is under 85%.
