@@ -432,7 +432,8 @@ to preserve upstream quirks on write.
 
 **Format decisions taken by the user (2026-10-01)**
 
-- **Stored expressions are in millimetres and degrees** (decided 2026-10-01). The file does not depend on the view unit, which is an interface preference. The interface converts when it shows and when it reads an expression typed in view units. The `units` line records the unit the document was authored in, for display only.
+- ~~**Stored expressions are in millimetres and degrees** (decided 2026-10-01). The file does not depend on the view unit, which is an interface preference. The interface converts when it shows and when it reads an expression typed in view units. The `units` line records the unit the document was authored in, for display only.~~
+- **Revised 2026-10-02: the unit belongs to the document** (format version 2, package 3.9). The `units` line is the document's unit; lengths written with `=` are in it, angles in degrees, and parameters are plain numbers that take the unit of what they drive. Typed text other than a plain number is always kept. Everything else in the file stays in millimetres. Unit suffixes in expressions (`1/4 in`) were considered and not taken.
 - **Extension is `.spcs`.** The first idea, `.sps`, clashes with SPSS syntax files.
 - **Grammar is the new extensible text form (S2).** Version header, named blocks with braces, `name = expression` for values that keep their expression. Sketch of the shape agreed:
 
@@ -593,6 +594,7 @@ ten minutes without a finding.
 | 3.6 B2 conflict highlighting | `Group.Solved.Remove` holds the list and `ShowGroupSolveInfo` prints it. Add canvas highlighting in `pkg/ui/drawconstraint.go` and a jump that zooms to the constraint. `Group.Conflicts()` in the API. | done 2026-10-02: red, `[show]` on the failure screen, scenario `ext_conflicts` |
 | 3.7 I5 command search | A palette over the `menuEntry` table: type to filter, Enter to run the entry's handler. One accelerator. `api.Commands()` lists entries and `Doc.RunCommand(label)` runs one. On a host with no window it returns an error. | done 2026-10-02: Edit > Find Command (Ctrl+K). The editor reports only Enter, so Enter lists and a second Enter runs the first match. Scenario `ext_find_command` |
 | 3.8 I4 measure | A mode that shows distance, angle or radius for the selection on the canvas without creating a constraint, reusing the computation in `pkg/ui/describescreen.go`. `Doc.Measure(a, b)` returns the same numbers. | done 2026-10-02: `Sketch.Measure`; Analyze > Measure Selection (Ctrl+Shift+E) labels the selection on the canvas. Scenario `ext_measure` |
+| 3.9 Document units (follow-up) | The `units` line becomes the document's unit: typed lengths and `=` lengths in the file are in it, so typed text can always be kept. Format version 2; version 1 files read as before and are upgraded on save. View > Dimension Units sets the document's unit, keeping sizes, as an undo step. | done 2026-10-02: `Sketch.Units`, `Sketch.SetUnits` (wraps length expressions in the factor and lists the parameters to check), `Doc.Units`/`SetUnits`, `testdata/spcs/v2`, scenario `ext_units`. In the C++ comparisons the unit stays the view's only. A plain length in a non-mm document moves by an ulp on its first reload, then is stable |
 
 Order: 3.1 to 3.4 in sequence, then the rest in any order.
 
