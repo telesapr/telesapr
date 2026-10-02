@@ -337,6 +337,9 @@ type Window struct {
 
 	Invalidated int
 	Frame       *image.RGBA
+	// NoFrame keeps PresentFrame from reading the frame back, for
+	// benchmarks that time drawing alone.
+	NoFrame bool
 }
 
 var _ platform.Window = (*Window)(nil)
@@ -390,8 +393,13 @@ func (w *Window) Invalidate()                    { w.Invalidated++ }
 // no GL, so goldens and tests never see a driver's pixels.
 func (w *Window) CreateRenderer(bool) render.ViewportCanvas { return soft.New() }
 
-// PresentFrame keeps the frame canvas finished as Frame.
-func (w *Window) PresentFrame(canvas render.ViewportCanvas) { w.Frame = canvas.ReadFrame() }
+// PresentFrame keeps the frame canvas finished as Frame, unless
+// NoFrame is set.
+func (w *Window) PresentFrame(canvas render.ViewportCanvas) {
+	if !w.NoFrame {
+		w.Frame = canvas.ReadFrame()
+	}
+}
 
 // Render runs the window's OnRender now, as the event loop would after
 // Invalidate.
