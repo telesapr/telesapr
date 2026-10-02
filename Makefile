@@ -43,7 +43,7 @@ test:
 test-gui:
 	@echo "==> GUI tests under Xvfb"
 	GOCACHE=$(PWD)/.gocache SPACESOLVE_GUI_TESTS=1 xvfb-run -a -s "-screen 0 1280x1024x24 -noreset" \
-		go test ./pkg/platform/tkgui/... -v
+		go test ./pkg/platform/tkgui/... ./pkg/render/gl/... -v
 
 # The packages whose loops run on several goroutines, and what loads
 # and regenerates through them.
