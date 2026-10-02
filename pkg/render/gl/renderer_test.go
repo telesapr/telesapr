@@ -35,6 +35,11 @@ const width, height = 240, 180
 // stays on its thread, as GL wants.
 func newGL(t *testing.T) *Renderer {
 	t.Helper()
+	// Read here so that go test's cache knows the result depends on
+	// it: Xlib reads it in C, which the cache doesn't see.
+	if os.Getenv("DISPLAY") == "" {
+		t.Skip("no X display")
+	}
 	runtime.LockOSThread()
 	t.Cleanup(runtime.UnlockOSThread)
 	ctx, err := glx.NewOffscreen(width, height)
