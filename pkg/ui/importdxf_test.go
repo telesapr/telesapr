@@ -2,12 +2,13 @@ package ui
 
 import (
 	"bytes"
-	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"

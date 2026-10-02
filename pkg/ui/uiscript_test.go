@@ -14,6 +14,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/ttf"
@@ -536,8 +537,6 @@ func uiScripts(t *testing.T, prefix string) []string {
 	return names
 }
 
-// compareUIScripts runs scripts and compares each with its C++ golden
-// (scripts/regen-ui-golden.sh), reporting the first differing line.
 // linkRelToTestdata matches a saved link group's path up to testdata,
 // in a .slvs and in a .spcs file.
 var linkRelToTestdata = regexp.MustCompile(`(?m)^(Group\.impFileRel=|  link ").*/testdata/`)
@@ -551,6 +550,8 @@ func linkPathsFromTestdata(s string) string {
 	return linkRelToTestdata.ReplaceAllString(s, "${1}testdata/")
 }
 
+// compareUIScripts runs scripts and compares each with its golden,
+// first recorded from C++, reporting the first differing line.
 func compareUIScripts(t *testing.T, prefix string) {
 	names := uiScripts(t, prefix)
 	if len(names) == 0 {
@@ -558,14 +559,19 @@ func compareUIScripts(t *testing.T, prefix string) {
 	}
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
-			wantB, err := os.ReadFile(filepath.Join("..", "..", "testdata", "ui", "golden", name+".cppui"))
+			path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".cppui")
+			got := linkPathsFromTestdata(runUIScript(t, name))
+			if golden.Regen() {
+				golden.Check(t, path, []byte(got))
+				return
+			}
+			wantB, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := linkPathsFromTestdata(runUIScript(t, name))
 			want := linkPathsFromTestdata(string(wantB))
 			if got != want {
-				t.Fatalf("output differs from the C++ golden at %s", firstDiffLine(got, want))
+				t.Fatalf("output differs from the golden at %s", firstDiffLine(got, want))
 			}
 		})
 	}

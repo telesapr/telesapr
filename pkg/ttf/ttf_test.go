@@ -1,28 +1,31 @@
 package ttf
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
 )
 
-// TestTTFVsCpp requires the font list, cap heights, aspect ratios and
-// PlotString's Beziers to be C++'s, bit for bit, for Gentium and the
-// builtin font over testdata/ttf/strings.txt (golden data from
-// scripts/regen-ttf-golden.sh).
-func TestTTFVsCpp(t *testing.T) {
+// TestTTF requires the font list, cap heights, aspect ratios and
+// PlotString's Beziers to be the golden's, bit for bit, for Gentium and
+// the builtin font over testdata/ttf/strings.txt (golden data first
+// recorded from C++ ttf.cpp).
+func TestTTF(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	testDumpVsGolden(t, []string{filepath.Join(root, "Gentium-R.ttf")},
 		filepath.Join(root, "ttf", "strings.txt"), filepath.Join(root, "ttf", "cpp-dump.txt.gz"))
 }
 
-// TestSynthFontsVsCpp does the same for the test fonts in
+// TestSynthFonts does the same for the test fonts in
 // testdata/ttf/synth (from scripts/gen-ttf-testfonts.py), which reach
 // the parts of the port that no system font does.
-func TestSynthFontsVsCpp(t *testing.T) {
+func TestSynthFonts(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	fonts, err := filepath.Glob(filepath.Join(root, "ttf", "synth", "*"))
 	if err != nil || len(fonts) == 0 {
@@ -36,6 +39,15 @@ func testDumpVsGolden(t *testing.T, fonts []string, strsFile, goldenFile string)
 	strs, err := os.ReadFile(strsFile)
 	if err != nil {
 		t.Fatal(err)
+	}
+	got := dump(fonts, lines(string(strs)))
+	if golden.Regen() {
+		var b bytes.Buffer
+		zw, _ := gzip.NewWriterLevel(&b, gzip.BestCompression)
+		zw.Write([]byte(got))
+		zw.Close()
+		golden.Check(t, goldenFile, b.Bytes())
+		return
 	}
 	f, err := os.Open(goldenFile)
 	if err != nil {
@@ -51,15 +63,14 @@ func testDumpVsGolden(t *testing.T, fonts []string, strsFile, goldenFile string)
 		t.Fatal(err)
 	}
 
-	got := dump(fonts, lines(string(strs)))
 	wl, gl := strings.Split(string(want), "\n"), strings.Split(got, "\n")
 	for i := 0; i < len(wl) && i < len(gl); i++ {
 		if wl[i] != gl[i] {
-			t.Fatalf("line %d differs:\nC++: %s\nGo:  %s", i+1, wl[i], gl[i])
+			t.Fatalf("line %d differs:\nwant: %s\n got: %s", i+1, wl[i], gl[i])
 		}
 	}
 	if len(wl) != len(gl) {
-		t.Fatalf("C++ dumps %d lines, Go %d", len(wl), len(gl))
+		t.Fatalf("the golden has %d lines, the dump %d", len(wl), len(gl))
 	}
 }
 
@@ -68,4 +79,12 @@ func TestEmbeddedFontFound(t *testing.T) {
 	if Fonts.LoadFont(EmbeddedFont) == nil || Fonts.AspectRatio(EmbeddedFont, "Abc", false) <= 0 {
 		t.Errorf("the builtin font isn't found by the name text requests store, %q", EmbeddedFont)
 	}
+}
+
+func lines(s string) []string {
+	s = strings.TrimSuffix(s, "\n")
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, "\n")
 }

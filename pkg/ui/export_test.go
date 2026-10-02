@@ -1,23 +1,20 @@
 package ui
 
 import (
-	"bytes"
-	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
 
-// exportFixtures are the fixtures TestExportVsCpp exports;
-// scripts/regen-export-golden.sh reads this list.
+// exportFixtures are the fixtures TestExport exports.
 var exportFixtures = []string{
 	"constraint/angle/normal.slvs",
 	"constraint/comment/normal.slvs",
@@ -36,75 +33,23 @@ var exportFixtures = []string{
 	"request/ttf_text/normal.slvs",
 }
 
-// TestExportVsCpp exports each fixture in every format and compares the
-// files with what C++ exports (scripts/cpp-export-harness.cpp), byte
-// for byte.
-func TestExportVsCpp(t *testing.T) {
+// TestExport exports each fixture in every format and compares the
+// files with the goldens (testdata/export, first recorded from C++),
+// byte for byte.
+func TestExport(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range exportFixtures {
 		t.Run(f, func(t *testing.T) {
-			wantDir := filepath.Join(root, "export", strings.TrimSuffix(f, ".slvs"))
 			gotDir := t.TempDir()
 			exportAllFor(t, filepath.Join(root, f), gotDir)
-
-			want := dirFiles(t, wantDir)
-			got := dirFiles(t, gotDir)
-			if strings.Join(want, " ") != strings.Join(got, " ") {
-				t.Errorf("files: C++ %v, Go %v", want, got)
-			}
-			for _, name := range want {
-				w, err := os.ReadFile(filepath.Join(wantDir, name))
-				if err != nil {
-					t.Fatal(err)
-				}
-				g, err := os.ReadFile(filepath.Join(gotDir, name))
-				if err != nil {
-					continue
-				}
-				if !bytes.Equal(w, g) {
-					t.Errorf("%s differs: %s", name, firstDifference(w, g))
-				}
-			}
+			golden.CheckDir(t, filepath.Join(root, "export", strings.TrimSuffix(f, ".slvs")), gotDir)
 		})
 	}
 }
 
-func dirFiles(t *testing.T, dir string) []string {
-	t.Helper()
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var names []string
-	for _, e := range entries {
-		names = append(names, e.Name())
-	}
-	sort.Strings(names)
-	return names
-}
-
 // firstDifference describes the first line where two files differ.
-func firstDifference(want, got []byte) string {
-	wl := strings.Split(string(want), "\n")
-	gl := strings.Split(string(got), "\n")
-	for i := 0; i < len(wl) || i < len(gl); i++ {
-		var w, g string
-		if i < len(wl) {
-			w = wl[i]
-		}
-		if i < len(gl) {
-			g = gl[i]
-		}
-		if w != g {
-			return "line " + itoa(i+1) + ": C++ " + quote(w) + ", Go " + quote(g)
-		}
-	}
-	return "lengths"
-}
-
-func itoa(i int) string     { return sprintf("%d", i) }
-func quote(s string) string { return sprintf("%q", s) }
+func firstDifference(want, got []byte) string { return golden.FirstDifference(want, got) }
 
 // exportAllFor runs the harness's exports on a fixture.
 func exportAllFor(t testing.TB, path, dir string) {

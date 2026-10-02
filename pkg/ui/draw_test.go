@@ -14,8 +14,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
 
-// drawFixtures are the fixtures TestDrawCallsVsCpp draws;
-// scripts/regen-draw-golden.sh reads this list.
+// drawFixtures are the fixtures TestDrawCalls draws.
 var drawFixtures = []string{
 	"constraint/angle/free_in_3d.slvs",
 	"constraint/angle/normal.slvs",
@@ -119,24 +118,19 @@ var drawFixtures = []string{
 	"request/workplane/normal.slvs",
 }
 
-// TestDrawCallsVsCpp compares every canvas call GraphicsWindow.Draw
-// makes with C++'s (testdata/draw, from scripts/regen-draw-golden.sh),
-// in the default view and a rotated one, bit for bit.
-func TestDrawCallsVsCpp(t *testing.T) {
+// TestDrawCalls compares every canvas call GraphicsWindow.Draw makes
+// with the golden (testdata/draw, first recorded from C++), in the
+// default view and a rotated one, bit for bit.
+func TestDrawCalls(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range drawFixtures {
 		t.Run(f, func(t *testing.T) {
 			goldenPath := filepath.Join(root, "draw", strings.TrimSuffix(f, ".slvs")+".draw")
-			want, err := os.ReadFile(goldenPath)
-			if err != nil {
-				t.Skipf("no golden: %v", err)
-			}
-			if len(want) == 0 {
+			if want, err := os.ReadFile(goldenPath); err == nil && len(want) == 0 {
 				t.Skip("C++ couldn't draw this fixture")
 			}
-			got := drawCallsFor(t, filepath.Join(root, f))
-			golden.CompareDump(t, string(want), got)
+			golden.CheckDump(t, goldenPath, drawCallsFor(t, filepath.Join(root, f)))
 		})
 	}
 }

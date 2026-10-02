@@ -53,9 +53,10 @@ func run(t *testing.T, args ...string) (bool, string) {
 	return ok, stderr.String()
 }
 
-// TestExportMeshVsCpp requires the STL that solvespace-cli export-mesh
-// --chord-tol 0.1 wrote.
-func TestExportMeshVsCpp(t *testing.T) {
+// TestExportMesh requires the golden STL of export-mesh --chord-tol 0.1
+// (first written by C++ solvespace-cli; TestExportStl in
+// pkg/persist/slvs regenerates it).
+func TestExportMesh(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "mesh.stl")
 	ok, msg := run(t, "export-mesh", "--chord-tol", "0.1", "-o", out,
 		model(t, "group/boolean_knife_edge/normal.slvs"))
@@ -71,7 +72,7 @@ func TestExportMeshVsCpp(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(got, want) {
-		t.Errorf("STL differs from C++'s")
+		t.Errorf("STL differs from the golden")
 	}
 }
 

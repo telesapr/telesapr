@@ -10,14 +10,15 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/internal/golden"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
 
-// textwinFixtures are the fixtures TestTextWindowVsCpp shows the
-// screens of; scripts/regen-textwin-golden.sh reads this list.
+// textwinFixtures are the fixtures TestTextWindow shows the screens
+// of.
 var textwinFixtures = []string{
 	"analysis/contour_area/normal.slvs",
 	"constraint/angle/normal.slvs",
@@ -52,20 +53,24 @@ var textwinFixtures = []string{
 	"request/workplane/normal.slvs",
 }
 
-// TestTextWindowVsCpp shows each text window screen for the fixtures,
-// and compares the rows, their text and each cell's colours and links
-// with what C++ shows (scripts/cpp-textwin-harness.cpp).
-func TestTextWindowVsCpp(t *testing.T) {
+// TestTextWindow shows each text window screen for the fixtures, and
+// compares the rows, their text and each cell's colours and links with
+// the golden (testdata/textwin, first recorded from C++).
+func TestTextWindow(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range textwinFixtures {
 		t.Run(f, func(t *testing.T) {
 			goldenPath := filepath.Join(root, "textwin", strings.TrimSuffix(f, ".slvs")+".textwin")
+			got := textwinScreensFor(t, filepath.Join(root, f))
+			if golden.Regen() {
+				golden.Check(t, goldenPath, []byte(got))
+				return
+			}
 			want, err := os.ReadFile(goldenPath)
 			if err != nil {
 				t.Fatalf("golden: %v", err)
 			}
-			got := textwinScreensFor(t, filepath.Join(root, f))
 			compareTextwin(t, string(want), got)
 		})
 	}
@@ -90,7 +95,7 @@ func compareTextwin(t *testing.T, want, got string) {
 			screen = w
 		}
 		if w != g {
-			t.Fatalf("%s, line %d:\n  C++: %q\n   Go: %q", screen, i+1, w, g)
+			t.Fatalf("%s, line %d:\n  want: %q\n   got: %q", screen, i+1, w, g)
 		}
 	}
 }
