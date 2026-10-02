@@ -133,3 +133,12 @@ func TestPathEquivalenceLinkStep(t *testing.T) {
 		t.Errorf("the link has %d triangles, info %q", len(g.ImpMesh.Triangles), g.LinkInfo)
 	}
 }
+
+// An edge of the solid picked on the model and chamfered, and the same
+// edge chamfered by its name in a script.
+func TestPathEquivalenceChamferSolidEdge(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_chamfer_solid_edge", "path_chamfer_solid_edge")
+	if g := ui.GetGroup(ui.Active); len(g.SolidEdges) != 1 || g.Problem.Msg != "" {
+		t.Errorf("the chamfer has %d solid edges, problem %q", len(g.SolidEdges), g.Problem.Msg)
+	}
+}

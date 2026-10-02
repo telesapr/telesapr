@@ -275,6 +275,10 @@ func (ss *SolveSpaceUI) CheckSolid() {
 		if r.BooleanFailed {
 			b.WriteString("    the Boolean failed; see the group's page\n")
 		}
+		if r.TopologyProblems > 0 {
+			fmt.Fprintf(&b, "    %d problems with its topology, the first: %s\n",
+				r.TopologyProblems, r.Topology[0].Msg)
+		}
 		b.WriteString("\nThe problem edges are marked.\n\n")
 	}
 	c, d := r.CenterOfMass, r.Max.Minus(r.Min)

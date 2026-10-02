@@ -39,6 +39,9 @@ func (gw *GraphicsWindow) drawSelection(s *Selection, isHovered bool, canvas ren
 			refs = append(refs, gw.entityReferencePoints(e)...)
 		}
 	}
+	if s.Edge.A != 0 {
+		gw.drawSolidEdge(s.Edge, isHovered, canvas)
+	}
 	if s.Constraint.V != 0 {
 		c := sk.GetConstraint(s.Constraint)
 		gw.drawConstraint(c, chow, canvas)
@@ -309,6 +312,9 @@ func (gw *GraphicsWindow) GroupSelection() {
 				gs.circlesOrArcs++
 			}
 		}
+		if s.Edge.A != 0 {
+			gs.solidEdge = append(gs.solidEdge, s.Edge)
+		}
 		if s.Constraint.V != 0 {
 			gs.constraints++
 			gs.constraint = append(gs.constraint, s.Constraint)
@@ -471,9 +477,18 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	})
 	sel = gw.ChooseFromHoverToSelect()
 
+	if gw.pending.operation == PendingNone && sel.IsEmpty() && gw.showShaded {
+		// Edges of the solid that no entity draws, as a Boolean makes:
+		// below entities and constraints, above faces.
+		if n, ok := gw.hoverSolidEdge(mp); ok {
+			sel = Selection{Edge: n}
+			gw.hoverList = append(gw.hoverList, Hover{Selection: sel})
+		}
+	}
+
 	if gw.pending.operation == PendingNone {
 		// Faces, from the triangle mesh; these are lowest priority
-		if sel.Constraint.V == 0 && sel.Entity.V == 0 && gw.showShaded && gw.showFaces {
+		if sel.IsEmpty() && gw.showShaded && gw.showFaces {
 			g := sk.GetGroup(gw.activeGroupH())
 			m := &g.DisplayMesh
 			rayPoint := gw.view.UnProjectPoint3(geom.Vector{X: mp.U, Y: mp.V, Z: 0.0})

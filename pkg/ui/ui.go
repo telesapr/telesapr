@@ -6,6 +6,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/render"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/spacesolve/spacesolve/pkg/topo"
 )
 
 // Command is a menu or toolbar command (C++ Command, ui.h).
@@ -189,22 +190,25 @@ type Selection struct {
 	Tag        int
 	Entity     core.HEntity
 	Constraint core.HConstraint
+	// Edge is an edge of the solid, by name, when its A is not zero.
+	Edge       topo.Name
 	Emphasized bool
 }
 
 // Equals compares what is selected.
 func (s *Selection) Equals(b *Selection) bool {
-	return s.Entity == b.Entity && s.Constraint == b.Constraint
+	return s.Entity == b.Entity && s.Constraint == b.Constraint && s.Edge == b.Edge
 }
 
 // IsEmpty reports whether nothing is selected.
 func (s *Selection) IsEmpty() bool {
-	return s.Entity.V == 0 && s.Constraint.V == 0
+	return s.Entity.V == 0 && s.Constraint.V == 0 && s.Edge.A == 0
 }
 
 // Clear selects nothing.
 func (s *Selection) Clear() {
 	s.Entity, s.Constraint = core.HEntity{}, core.HConstraint{}
+	s.Edge = topo.Name{}
 	s.Emphasized = false
 }
 
@@ -226,6 +230,9 @@ type groupedSelection struct {
 	vector     []core.HEntity
 	face       []core.HEntity
 	constraint []core.HConstraint
+	// solidEdge lists the edges of the solid selected, which n does
+	// not count.
+	solidEdge []topo.Name
 
 	points           int
 	entities         int

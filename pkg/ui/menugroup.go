@@ -212,12 +212,14 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		g = mg
 
 	case CmdGroupChamfer:
-		cg, err := sk.NewChamfer(gs.entity, 1, "")
+		cg, err := sk.NewChamfer(gs.entity, gs.solidEdge, 1, "")
 		if err != nil {
 			ss.Error("Can't chamfer the selection. %s.\n\n"+
 				"Chamfer Edges cuts edges of the solid so far. Select one or more of:\n\n"+
 				"    * line segments along edges between two flat faces, "+
-				"as the edges an extrusion makes\n", capitalize(err.Error()))
+				"as the edges an extrusion makes\n"+
+				"    * straight edges of the solid between two flat faces, "+
+				"picked on the model\n", capitalize(err.Error()))
 			return
 		}
 		g = cg

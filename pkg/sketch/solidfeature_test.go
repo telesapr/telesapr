@@ -158,6 +158,21 @@ func TestSolidGoldens(t *testing.T) {
 				t.Fatal(err)
 			}
 		},
+		"chamfer-solid-edge": func(d *api.Doc) {
+			block(d, 0, 0, 20, 10, 10)
+			d.SketchIn(d.Workplane("XY"), "")
+			d.Rect(api.V(5, -1, 0), api.V(15, 4, 0))
+			d.Extrude(20, "").SetCombine(api.Difference)
+			// Where the notch's side meets the top: no entity draws it.
+			d.ChamferSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 2, 10))}, 1, "")
+		},
+		"chamfer-of-chamfer": func(d *api.Doc) {
+			ex := block(d, 0, 0, 10, 10, 10)
+			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 2, "")
+			// The edge between the first chamfer's face, which no entity
+			// names, and the front.
+			d.ChamferSolid([]api.SolidEdge{c.Solid().EdgeAt(api.V(5, 0, 8))}, 0.5, "")
+		},
 		"sweep-pipe": func(d *api.Doc) {
 			path := pipePath(d, 10, 8, 12)
 			d.SketchIn(d.Workplane("XY"), "profile")

@@ -19,6 +19,11 @@ type SSurface struct {
 
 	Color core.RgbaColor
 	Face  FaceID
+	// Origin identifies a surface that no sketch entity names (Face is
+	// 0), such as a thread's or a Boolean tool's: the group that made
+	// it and its place among that group's surfaces (see
+	// OriginFor). Copies keep it, so the faces it bounds can be named.
+	Origin uint32
 
 	DegM, DegN int
 	Ctrl       [4][4]geom.Vector
@@ -304,6 +309,13 @@ func wrapSymmetric(v, n float64) float64 {
 	return v
 }
 
+// OriginFor is the Origin of surface i of the surfaces group g made:
+// bit 30 set, which no entity handle a sketch makes has, then the
+// group's handle and i.
+func OriginFor(g uint32, i int) uint32 {
+	return 1<<30 | (g&0x3fff)<<16 | uint32(i)&0xffff
+}
+
 // FromTransformationOf produces a transformed copy of the surface.
 func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale float64, includingTrims bool) SSurface {
 	needRotate := !(q.X == 0 && q.Y == 0 && q.Z == 0 && q.W == 1)
@@ -324,11 +336,12 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 	}
 
 	s := SSurface{
-		H:     a.H,
-		Color: a.Color,
-		Face:  a.Face,
-		DegM:  a.DegM,
-		DegN:  a.DegN,
+		H:      a.H,
+		Color:  a.Color,
+		Face:   a.Face,
+		Origin: a.Origin,
+		DegM:   a.DegM,
+		DegN:   a.DegN,
 	}
 	for i := 0; i <= 3; i++ {
 		for j := 0; j <= 3; j++ {

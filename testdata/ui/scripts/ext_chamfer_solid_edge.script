@@ -1,0 +1,20 @@
+# Chamfer of an edge of the solid that no entity draws (an extension):
+# where the notch of testdata/topo/slot.spcs (slot.go) meets the front,
+# an upright edge is hovered and selected on the model, its name and
+# length shown, and chamfered; the chamfer's screen names the edge by
+# the faces it lies between. A face picked with it is no edge.
+file $testdata/topo/slot.spcs
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+move 335 425
+dump
+down L 335 425
+up L 335 425
+dump
+tw
+menu New Group|Chamfer Edges
+dump
+tw
+answer ok
+menu Analyze|Check Solid
