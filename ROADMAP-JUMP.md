@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 4 are done and merged; step 5 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 5 are done and merged; step 6 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -21,7 +21,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 2. The `.spcs` format and `.slvs` import | done 2026-10-02 | `d5b610c` |
 | 3. Parameters and sketch feedback | done 2026-10-02, with follow-ups: a faster freedom analysis, a scenario for it, `make lint-new` on the whole branch, no `scale 0` in saves (`a33a1ae`), and the unit as the document's, format version 2 (3.9, `dba44b9`) | `22daacd` |
 | 4. History editing | done 2026-10-02 | `fe7cb85` |
-| 5. First kernel fixes | next | |
+| 5. First kernel fixes | done 2026-10-02, with the cylinder-through-cylinder failures (19 of 54, not new) left as a follow-up | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -643,11 +643,11 @@ diagnostic, never a silent deletion.
 
 | Package | Content | State |
 |---|---|---|
-| 5.1 Freeze the C++ comparison | Every test that compares against a C++ recording keeps its recorded file as a Go golden, and its regeneration script calls Go. The `scripts/cpp-*-harness.cpp` files, `scripts/regen-cpp-*.sh` and `pkg/internal/slvswrite` are deleted. So are the test-only switches that keep the C++ recordings valid: `legacySlvsSave`, `cppComparison` (Go-only links and colours, the unit as the view's only) and `goOnlyMenuItems`; the scenarios they affect are regenerated in their own commit. The invariant tolerance in 1.3 is loosened to 1e-6. | not started |
-| 5.2 F1 raycast | The fallback at the end of `SShell.ClassifyEdge` in `pkg/srf/raycast.go` retries with another direction only when the nearest hit has `OnEdge` set, and `OnEdge` means within `lengthEps` of a trim. Widen it: `SSurface.AllPointsIntersecting` in `pkg/srf/raycast_surface.go` also marks a hit that lies within the chord tolerance of a piecewise-linear edge of a curved trim. Raise the retry limit from 5 and pick the ray with the largest clearance if all are marked. | not started |
-| 5.3 F1 proof | Run the thread sweep with the plane turning disabled. Target fixed before coding: no unsound solid in the full grid, at the default and at a five times coarser chord tolerance. Then delete the turning from `pkg/sketch/thread.go`. | not started |
-| 5.4 F2 closed loops | After the boundary-seeded pass in `SSurface.intersectByMarching`, search for seeds inside: sample each surface on a grid, project each sample onto both surfaces with `PointOnSurfaces`, drop seeds that lie on a curve already found, and march each remaining seed until it returns to its start. Fixture: a sphere bulging through one face of a box, so the circle lies inside one patch and inside the face. | not started |
-| 5.5 Sweeps | A sweep of that fixture over radius, depth and position, and a sweep of cylinder through cylinder at angles. Each reports its failure rate through `pkg/internal/sweep`. Goldens regenerated in their own commit. | not started |
+| 5.1 Freeze the C++ comparison | Every test that compares against a C++ recording keeps its recorded file as a Go golden, and its regeneration script calls Go. The `scripts/cpp-*-harness.cpp` files, `scripts/regen-cpp-*.sh` and `pkg/internal/slvswrite` are deleted. So are the test-only switches that keep the C++ recordings valid: `legacySlvsSave`, `cppComparison` (Go-only links and colours, the unit as the view's only) and `goOnlyMenuItems`; the scenarios they affect are regenerated in their own commit. The invariant tolerance in 1.3 is loosened to 1e-6. | done 2026-10-02: `golden.Check`, `CheckDump` and `CheckDir` rewrite a golden under `SPACESOLVE_REGEN_GOLDEN=1`, which `scripts/regen-golden.sh [areas]` and `scripts/regen-goui.sh [names]` set; the hex-float goldens were rewritten once in Go's spelling, values unchanged. The C++ scenarios became `.goui` goldens, regenerated without the switches in their own commit. With no `.slvs` writer left, what was compared with a C++ save is now a `.spcs` golden Go wrote from the same state: an import golden per fixture under `testdata/spcs/golden`, the new file, the modify tools, the thread goldens (`testdata/thread/*.spcs`) and the DXF imports. Tests open `.slvs` fixtures through a test-only `loadSlvs`. `check.BaselineRelTol` is 1e-6. The glibc and Eigen references stay, since they pin libraries |
+| 5.2 F1 raycast | The fallback at the end of `SShell.ClassifyEdge` in `pkg/srf/raycast.go` retries with another direction only when the nearest hit has `OnEdge` set, and `OnEdge` means within `lengthEps` of a trim. Widen it: `SSurface.AllPointsIntersecting` in `pkg/srf/raycast_surface.go` also marks a hit that lies within the chord tolerance of a piecewise-linear edge of a curved trim. Raise the retry limit from 5 and pick the ray with the largest clearance if all are marked. | done 2026-10-02, in `ClassifyEdge`'s raycast rather than for every caller of `AllPointsIntersecting`: each surface keeps its curved trims' xyz edges, hits within the chord tolerance of them are untrusted on either side of the BSP (the BSP also drops hits inside the true rim but outside the chords, which sent the ray on to a farther surface), up to 16 directions, the farthest from a trim edge wins. A hit clamped onto the patch boundary is off the ray and not one. No fixture output changed |
+| 5.3 F1 proof | Run the thread sweep with the plane turning disabled. Target fixed before coding: no unsound solid in the full grid, at the default and at a five times coarser chord tolerance. Then delete the turning from `pkg/sketch/thread.go`. | done 2026-10-02: 3 of 400 unsound generated once (at 0.03% and 0.01%), none at 0.1% or 0.5%; it was 68 without the fix and 24 with seven placements. `AddThread` generates once; `ThreadResult.Tries` is gone. Two thread goldens moved with the fix, in their own commit |
+| 5.4 F2 closed loops | After the boundary-seeded pass in `SSurface.intersectByMarching`, search for seeds inside: sample each surface on a grid, project each sample onto both surfaces with `PointOnSurfaces`, drop seeds that lie on a curve already found, and march each remaining seed until it returns to its start. Fixture: a sphere bulging through one face of a box, so the circle lies inside one patch and inside the face. | done 2026-10-02, with seeds from a recursive subdivision of both surfaces instead of a grid (a grid made the thread imports four times slower; this adds about a sixth). A loop goes in as four curves, since a trim can't start and finish at one point. The grid triangulation now leaves out grid points within a trim edge's sag, which otherwise put a hole's rim through the face around it. `TestSphereThroughFace` in `pkg/srf`. No golden changed |
+| 5.5 Sweeps | A sweep of that fixture over radius, depth and position, and a sweep of cylinder through cylinder at angles. Each reports its failure rate through `pkg/internal/sweep`. Goldens regenerated in their own commit. | done 2026-10-02 at a 0.01 mm chord tolerance: sphere 10 of 135 (99 before), cylinders 19 of 54, the same points before and after the step, kept as a guard. Follow-ups: the cylinder failures, and the sphere cap that crosses the seams at the largest bulge |
 
 Order: 5.1 first, in a commit that changes no output. Then 5.2 and 5.3, then 5.4 and 5.5.
 
@@ -747,7 +747,6 @@ phase starts.
 
 ## Decisions still open
 
-- **What happens to the C++ comparison tests.** Recommended: keep them running until step 5 starts, then freeze their outputs as Go goldens under T1. They cannot run past that point, since F1 and F2 change Boolean output. Work package 5.1 does the freeze.
 - **Topology first or surface type first** at step 9. Recommended: topology first, since fillets on planes and cylinders need it and do not need the new surface type.
 
 ## How to check an estimate before committing to it
