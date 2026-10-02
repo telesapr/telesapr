@@ -228,3 +228,36 @@ func TestParameterMisuse(t *testing.T) {
 		t.Error("a scale of 0 was taken")
 	}
 }
+
+// Entities tell how much of them their constraints fix, as the
+// drawing colours them.
+func TestEntityFree(t *testing.T) {
+	d := New()
+	line := d.Line(V(0, 0, 0), V(10, 5, 0))
+	if f := line.Free(); f != sketch.FreedomFree {
+		t.Errorf("an unconstrained line is %v", f)
+	}
+	d.Coincident(line.Start(), d.Origin())
+	if f := line.Free(); f != sketch.FreedomPartly {
+		t.Errorf("a line held at one end is %v", f)
+	}
+	if f := line.Start().Free(); f != sketch.FreedomFixed {
+		t.Errorf("the held end is %v", f)
+	}
+	d.Horizontal(line)
+	d.Length(line, 10)
+	if f := line.Free(); f != sketch.FreedomFixed {
+		t.Errorf("a fully constrained line is %v", f)
+	}
+	if s := sketch.FreedomPartly.String(); s != "partly free" {
+		t.Errorf("String %q", s)
+	}
+	if s := sketch.FreedomUnknown.String() + sketch.FreedomFixed.String() + sketch.FreedomFree.String(); s != "unknownfixedfree" {
+		t.Errorf("String %q", s)
+	}
+	// Over-constrained: the group does not solve, so nothing is known.
+	d.Length(line, 12)
+	if f := line.Free(); f != sketch.FreedomUnknown {
+		t.Errorf("a line of a group that did not solve is %v", f)
+	}
+}

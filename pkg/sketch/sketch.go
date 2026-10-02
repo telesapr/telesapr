@@ -73,6 +73,9 @@ type Sketch struct {
 
 	scheduledGenerateAll bool
 
+	// freedom caches GroupFreedom.
+	freedom []freedomCache
+
 	// Deleted counts what regeneration pruned because it depended on
 	// something deleted, until GenerateAll reports it (C++ SS.deleted).
 	Deleted struct {

@@ -4454,6 +4454,10 @@
 						"decl": "func (e Entity) End() (p Entity)",
 						"text": "End is the other end of a line segment, an arc or a cubic."
 					},
+					"Free": {
+						"decl": "func (e Entity) Free() (f sketch.Freedom)",
+						"text": "Free is how much of the entity its group's constraints fix, as the\ndrawing colours it: sketch.FreedomFixed when it is fully constrained,\nsketch.FreedomPartly when some of it can still move,\nsketch.FreedomFree when nothing holds it, and sketch.FreedomUnknown\nwhen its group did not solve. Parameters from earlier groups, such\nas a workplane's, count as fixed."
+					},
 					"Group": {
 						"decl": "func (e Entity) Group() (g Group)",
 						"text": "Group is the group the entity is in."
@@ -4952,6 +4956,21 @@
 					}
 				}
 			},
+			"Freedom": {
+				"text": "Freedom is how much of an entity its group's constraints fix.",
+				"kind": "int",
+				"methods": {
+					"String": {
+						"decl": "func (f Freedom) String() string"
+					}
+				},
+				"values": [
+					"FreedomUnknown",
+					"FreedomFixed",
+					"FreedomPartly",
+					"FreedomFree"
+				]
+			},
 			"GenerateType": {
 				"text": "GenerateType is which groups GenerateAll solves (C++ SolveSpaceUI::Generate): all of them; from the first dirty or unsolved one to the active one; none, only regenerating the entities; or up to the active one.",
 				"kind": "int",
@@ -5374,6 +5393,10 @@
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
 						"text": "EntitiesToMap returns the entities indexed by their handle."
 					},
+					"EntityFreedom": {
+						"decl": "func (sk *Sketch) EntityFreedom(he core.HEntity) Freedom",
+						"text": "EntityFreedom is how much of entity he its group's constraints fix: whether all, some or none of the params it is made of, and that its group solves for, can move."
+					},
 					"EntityIsVisible": {
 						"decl": "func (sk *Sketch) EntityIsVisible(e *core.Entity) bool",
 						"text": "EntityIsVisible is C++ Entity::IsVisible, with the show flags of sk.Show (GraphicsWindow::Init's when nil)."
@@ -5434,6 +5457,10 @@
 					},
 					"GetStyle": {
 						"decl": "func (s *Sketch) GetStyle(h core.HStyle) *core.Style"
+					},
+					"GroupFreedom": {
+						"decl": "func (sk *Sketch) GroupFreedom(hg core.HGroup) map[core.HParam]bool",
+						"text": "GroupFreedom reports which of the params group hg solves for are free to move, at the values of the last regeneration; nil when the group did not solve or is too large."
 					},
 					"GroupsInOrder": {
 						"decl": "func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool",
@@ -5829,6 +5856,18 @@
 			},
 			"CopyAsNumeric": {
 				"decl": "const CopyAsNumeric"
+			},
+			"FreedomFixed": {
+				"decl": "const FreedomFixed"
+			},
+			"FreedomFree": {
+				"decl": "const FreedomFree"
+			},
+			"FreedomPartly": {
+				"decl": "const FreedomPartly"
+			},
+			"FreedomUnknown": {
+				"decl": "const FreedomUnknown"
 			},
 			"GenerateAll": {
 				"decl": "const GenerateAll"

@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -77,5 +80,54 @@ func TestParametersScreen(t *testing.T) {
 	ss.UndoUndo()
 	if ss.SK.Parameter("a") == nil {
 		t.Error("undo didn't bring a back")
+	}
+}
+
+// The active group's entities that their constraints don't fix are
+// drawn in their own colours, when the setting is on.
+func TestColorByFreedom(t *testing.T) {
+	asProduct(t)
+	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
+	ss, _ := newTestApp(t)
+	doc, err := slvs.LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss.LoadSketchForTest(doc.Sketch, path)
+	draw := func() string {
+		var b strings.Builder
+		rc := newRecordingCanvas(&b)
+		rc.camera = ss.GW.GetCamera()
+		rc.SetBitmapFont(ss.GW.bitmapFont())
+		ss.GW.Draw(rc)
+		return b.String()
+	}
+	var line *core.Entity
+	for i := range ss.SK.Entities {
+		if e := &ss.SK.Entities[i]; e.Type == core.EntityLineSegment && e.Group == ss.GW.activeGroupH() {
+			line = e
+		}
+	}
+	if line == nil {
+		t.Fatal("no line in the active group")
+	}
+	f := ss.SK.EntityFreedom(line.H)
+	c, ok := ss.freedomColor(line)
+	if f == sketch.FreedomFixed || !ok || (c != colorFree && c != colorPartlyFree) {
+		t.Fatalf("line is %v, colour %v %v", f, c, ok)
+	}
+	ss.ColorByFreedom = true
+	on := draw()
+	ss.ColorByFreedom = false
+	off := draw()
+	if on == off {
+		t.Error("the setting changes nothing drawn")
+	}
+	if _, ok := ss.freedomColor(line); ok {
+		t.Error("a colour with the setting off")
+	}
+	ss.TW.ScreenChangeColorByFreedom(0, 0)
+	if !ss.ColorByFreedom {
+		t.Error("the configuration link didn't turn it on")
 	}
 }

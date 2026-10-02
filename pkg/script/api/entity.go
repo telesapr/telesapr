@@ -458,3 +458,14 @@ func (p Param) String() string {
 	}
 	return fmt.Sprintf("p%08x = %g", p.H.V, p.Val())
 }
+
+// Free is how much of the entity its group's constraints fix, as the
+// drawing colours it: sketch.FreedomFixed when it is fully constrained,
+// sketch.FreedomPartly when some of it can still move,
+// sketch.FreedomFree when nothing holds it, and sketch.FreedomUnknown
+// when its group did not solve. Parameters from earlier groups, such
+// as a workplane's, count as fixed.
+func (e Entity) Free() (f sketch.Freedom) {
+	e.d.read(func(sk *sketch.Sketch) { f = sk.EntityFreedom(e.get(sk).H) })
+	return f
+}

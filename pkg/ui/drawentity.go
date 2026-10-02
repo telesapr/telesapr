@@ -292,6 +292,12 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 	}
 
 	stroke := ss.styleStroke(hs)
+	if (how == EntityDrawDefault || how == EntityDrawOverlay) && !e.IsNormal() &&
+		e.Type != core.EntityWorkplane && e.Group == gw.activeGroupH() {
+		if c, ok := ss.freedomColor(e); ok {
+			stroke.Color = c
+		}
+	}
 	switch how {
 	case EntityDrawDefault:
 		stroke.Layer = render.LayerNormal
@@ -583,4 +589,27 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		return
 	}
 	panic("ui: unexpected entity type")
+}
+
+// The colours of entities their constraints don't fix (an extension):
+// one some of whose parameters can move, and one that nothing holds.
+var (
+	colorPartlyFree = rgbi(100, 180, 255)
+	colorFree       = rgbi(255, 160, 70)
+)
+
+// freedomColor is the colour for an entity of the active group by how
+// much of it its constraints fix, when the setting is on and the
+// entity is not fixed.
+func (ss *SolveSpaceUI) freedomColor(e *core.Entity) (core.RgbaColor, bool) {
+	if !ss.ColorByFreedom || cppComparison {
+		return core.RgbaColor{}, false
+	}
+	switch ss.SK.EntityFreedom(e.H) {
+	case sketch.FreedomPartly:
+		return colorPartlyFree, true
+	case sketch.FreedomFree:
+		return colorFree, true
+	}
+	return core.RgbaColor{}, false
 }
