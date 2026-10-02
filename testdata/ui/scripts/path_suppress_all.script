@@ -1,0 +1,25 @@
+# A rectangle extruded, then its sketch suppressed whole through the
+# group screen's check box, which leaves out the extrusion too; the same
+# model as path_suppress_all.go makes (TestPathEquivalenceSuppressAll).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+# Home, the sketch's screen, and its check box.
+tw
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+tw
+twmove 145 140
+twdown L 145 140
+twup L 145 140
+tw
+twmove 28 170
+twdown L 28 170
+twup L 28 170

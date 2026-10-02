@@ -218,13 +218,62 @@ func (g Group) SetVisible(visible bool) {
 	})
 }
 
-// SetSuppress leaves the group's solid out of the model, or puts it
-// back.
-func (g Group) SetSuppress(suppress bool) {
+// SuppressMode is how much of a group is left out of the model.
+type SuppressMode int
+
+// The suppress modes: nothing left out, the solid only, or the whole
+// group with every group that uses it.
+const (
+	Unsuppressed SuppressMode = iota
+	SuppressSolid
+	SuppressWhole
+)
+
+// SetSuppress leaves the group's solid out of the model with
+// SuppressSolid; the whole group, its sketch, solve and solid, with
+// SuppressWhole, which also leaves out every group that uses it; and
+// puts everything back with Unsuppressed. Nothing is deleted. The
+// references can't be suppressed whole.
+func (g Group) SetSuppress(mode SuppressMode) {
+	if mode < Unsuppressed || mode > SuppressWhole {
+		fail("no suppress mode %d", mode)
+	}
 	g.d.change(func(sk *sketch.Sketch) {
-		g.get(sk).Suppress = suppress
+		group := g.get(sk)
+		if mode != SuppressWhole {
+			group.Suppress = mode == SuppressSolid
+		}
+		if err := sk.SetSuppressAll(g.H, mode == SuppressWhole); err != nil {
+			fail("%v", err)
+		}
 		sk.MarkGroupDirty(g.H, false)
 	})
+}
+
+// Suppression is the group's suppress mode, as SetSuppress set it.
+func (g Group) Suppression() (mode SuppressMode) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		switch {
+		case group.SuppressAll:
+			mode = SuppressWhole
+		case group.Suppress:
+			mode = SuppressSolid
+		}
+	})
+	return mode
+}
+
+// LeftOut says why the group is left out of the model, or "" if it is
+// in: "suppressed" for a group suppressed whole, or "uses g004-sketch,
+// which is suppressed" for one that uses such a group. A group left out
+// has no entities and no solid of its own, and can't be made active.
+func (g Group) LeftOut() (why string) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		why = sk.SuppressedReason(g.H)
+	})
+	return why
 }
 
 // SetCombine says how the group's solid combines with the solid so

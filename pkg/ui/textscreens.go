@@ -101,6 +101,11 @@ func (tw *TextWindow) ScreenShowGroupsSpecial(link int, v uint32) {
 // TextWindow::ScreenActivateGroup).
 func (tw *TextWindow) ScreenActivateGroup(link int, v uint32) {
 	ss := tw.ss
+	if why := ss.SK.SuppressedReason(core.HGroup{V: v}); why != "" {
+		ss.Error("%s can't be made active: it is left out of the model (%s).",
+			ss.SK.GetGroup(core.HGroup{V: v}).DescriptionString(), why)
+		return
+	}
 	ss.SK.Active = core.HGroup{V: v}
 	ss.groupActivate(ss.SK.GetGroup(ss.SK.Active))
 	ss.GW.ClearSuper()
@@ -211,8 +216,15 @@ func (tw *TextWindow) ShowListOfGroups() {
 			solveText = pick(warn && ss.CheckClosedContour, "err", sdof)
 		}
 		fgName := byte('l')
-		if g.Suppress {
+		if g.Suppress || g.SuppressedBy.V != 0 {
 			fgName = 'g'
+		}
+		// A group left out says so, and what left it out.
+		switch {
+		case g.SuppressedBy == g.H:
+			suffix += " (suppressed)"
+		case g.SuppressedBy.V != 0:
+			suffix += sprintf(" (suppressed with g%03x)", g.SuppressedBy.V)
 		}
 		format := "%Bp%Fd " +
 			"%Ft%s%Fb%D%f%Ll%s%E " +
@@ -394,6 +406,11 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 
 	case 'P':
 		g.Suppress = !g.Suppress
+
+	case 'A':
+		if err := sk.SetSuppressAll(g.H, !g.SuppressAll); err != nil {
+			ss.Error("%v.", err)
+		}
 
 	case 'r':
 		g.RelaxConstraints = !g.RelaxConstraints
@@ -584,6 +601,10 @@ func (tw *TextWindow) ShowGroupInfo() {
 		g.H.V, lf(tw.ScreenChangeGroupName),
 		g.H.V, lf(tw.ScreenDeleteGroup))
 
+	if why := sk.SuppressedReason(g.H); why != "" {
+		tw.Printf(false, " %Fxleft out of the model: %s%E", why)
+	}
+
 	switch g.Type {
 	case sketch.GroupLathe:
 		tw.Printf(true, " %Ftlathe plane sketch")
@@ -712,6 +733,10 @@ func (tw *TextWindow) ShowGroupInfo() {
 
 	tw.Printf(false, " %f%Lv%Fd%s  show entities from this group",
 		lf(tw.ScreenChangeGroupOption), check(g.Visible))
+	if !cppComparison {
+		tw.Printf(false, " %f%LA%Fd%s  suppress this group and the groups that use it",
+			lf(tw.ScreenChangeGroupOption), check(g.SuppressAll))
+	}
 
 	if !g.IsForcedToMeshBySource(sk) && !g.IsTriangleMeshAssembly() {
 		tw.Printf(false, " %f%Lf%Fd%s  force NURBS surfaces to triangle mesh",

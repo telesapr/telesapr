@@ -30,8 +30,11 @@ func init() {
 		"Open":            reflect.ValueOf(api.Open),
 		"SetCommandList":  reflect.ValueOf(api.SetCommandList),
 		"SetCurrent":      reflect.ValueOf(api.SetCurrent),
+		"SuppressSolid":   reflect.ValueOf(api.SuppressSolid),
+		"SuppressWhole":   reflect.ValueOf(api.SuppressWhole),
 		"ThreadNearest":   reflect.ValueOf(api.ThreadNearest),
 		"Union":           reflect.ValueOf(api.Union),
+		"Unsuppressed":    reflect.ValueOf(api.Unsuppressed),
 		"V":               reflect.ValueOf(api.V),
 
 		// type definitions
@@ -45,6 +48,7 @@ func init() {
 		"Parameter":     reflect.ValueOf((*api.Parameter)(nil)),
 		"Request":       reflect.ValueOf((*api.Request)(nil)),
 		"SketchHost":    reflect.ValueOf((*api.SketchHost)(nil)),
+		"SuppressMode":  reflect.ValueOf((*api.SuppressMode)(nil)),
 		"ThreadOptions": reflect.ValueOf((*api.ThreadOptions)(nil)),
 		"Vec":           reflect.ValueOf((*api.Vec)(nil)),
 

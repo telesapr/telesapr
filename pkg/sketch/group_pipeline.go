@@ -112,6 +112,15 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	g.RunningShell.Clear()
 	g.RunningMesh.Clear()
 
+	// A group left out passes the solid so far through.
+	if g.SuppressedBy.V != 0 {
+		if prevg := g.PreviousGroup(sk); prevg != nil {
+			g.RunningShell.MakeFromCopyOf(&prevg.RunningShell)
+			g.RunningMesh.MakeFromCopyOf(&prevg.RunningMesh)
+		}
+		return
+	}
+
 	switch g.Type {
 	case GroupTranslate, GroupRotate:
 		// A step and repeat gets merged against the group's previous group,

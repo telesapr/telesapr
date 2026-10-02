@@ -108,6 +108,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 			OpB:                    src.OpB,
 			Visible:                src.Visible,
 			Suppress:               src.Suppress,
+			SuppressAll:            src.SuppressAll,
 			RelaxConstraints:       src.RelaxConstraints,
 			AllowRedundant:         src.AllowRedundant,
 			SuppressDofCalculation: src.SuppressDofCalculation,

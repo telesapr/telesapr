@@ -276,7 +276,10 @@ func (d *Doc) Active() (g Group) {
 // Activate makes g the group that is worked in.
 func (d *Doc) Activate(g Group) {
 	d.read(func(sk *sketch.Sketch) {
-		g.get(sk)
+		group := g.get(sk)
+		if why := sk.SuppressedReason(g.H); why != "" {
+			fail("%s is left out of the model (%s)", groupDescription(group), why)
+		}
 		d.h.Activate(g.H)
 	})
 }

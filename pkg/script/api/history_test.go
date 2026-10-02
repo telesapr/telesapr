@@ -101,3 +101,70 @@ func TestMoveGroupMisuse(t *testing.T) {
 		}()
 	}
 }
+
+func TestSuppressWhole(t *testing.T) {
+	d := New()
+	sketch := d.Active()
+	d.Rect(V(0, 0, 0), V(10, 10, 0))
+	ex := d.Extrude(5, "box")
+	d.Activate(sketch)
+	d.Activate(ex)
+	box := ex.Check().Volume
+
+	step := d.Host().(*SketchHost).BeginEval
+	step()
+	sketch.SetSuppress(SuppressWhole)
+	if sketch.Suppression() != SuppressWhole || ex.Suppression() != Unsuppressed {
+		t.Fatalf("modes %v, %v", sketch.Suppression(), ex.Suppression())
+	}
+	if got := sketch.LeftOut(); got != "suppressed" {
+		t.Fatalf("the sketch is left out: %q", got)
+	}
+	if got := ex.LeftOut(); got != "uses g002-sketch-in-plane, which is suppressed" {
+		t.Fatalf("the extrusion is left out: %q", got)
+	}
+	if len(ex.Entities()) != 0 || ex.Check().Volume != 0 {
+		t.Fatal("the extrusion is still there")
+	}
+	if d.Active().H.V != 1 {
+		t.Fatalf("active group %v, want the references: nothing else is in", d.Active())
+	}
+
+	// Back, with the extrusion made active again: the active group had
+	// to move to the references.
+	step()
+	sketch.SetSuppress(Unsuppressed)
+	d.Activate(ex)
+	if ex.LeftOut() != "" || ex.Check().Volume != box {
+		t.Fatal("the box didn't come back")
+	}
+	step()
+	ex.SetSuppress(SuppressSolid)
+	if ex.Suppression() != SuppressSolid || ex.LeftOut() != "" || ex.Check().Volume != 0 {
+		t.Fatal("suppressing the solid")
+	}
+	if !d.Undo() || ex.Suppression() != Unsuppressed {
+		t.Fatal("undo")
+	}
+}
+
+func TestSuppressMisuse(t *testing.T) {
+	d := New()
+	sketch := d.Active()
+	d.Line(V(0, 0, 0), V(5, 0, 0))
+	sketch.SetSuppress(SuppressWhole)
+	for name, fn := range map[string]func(){
+		"activate a group left out": func() { d.Activate(sketch) },
+		"suppress the references":   func() { d.Group("g001").SetSuppress(SuppressWhole) },
+		"no such mode":              func() { sketch.SetSuppress(7) },
+	} {
+		func() {
+			defer func() {
+				if _, ok := recover().(error); !ok {
+					t.Errorf("%s: no error", name)
+				}
+			}()
+			fn()
+		}()
+	}
+}

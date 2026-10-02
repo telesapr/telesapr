@@ -99,8 +99,16 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	sk.Params = make([]core.Param, 0, len(prev))
 	sk.Entities = make([]core.Entity, 0, len(sk.Entities))
 
+	sk.markSuppressed()
+
 	rt := &Runtime{Sketch: sk}
 	for i, hg := range sk.GroupOrder {
+		// A group suppressed whole, or using one that is, is left out
+		// before anything could prune what it refers to.
+		if g := sk.GetGroup(hg); g.SuppressedBy.V != 0 {
+			sk.skipGroup(g, prev, i >= first && i <= last, genForBBox)
+			continue
+		}
 		// The group may depend on entities or other groups, to define its
 		// workplane geometry or for its operands. Those must already exist
 		// in a previous group, so check them before generating.
@@ -201,7 +209,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	// And update any reference dimensions with their new values
 	for ci := range sk.Constraints {
 		c := &sk.Constraints[ci]
-		if c.Reference {
+		if c.Reference && sk.GetGroup(c.Group).SuppressedBy.V == 0 {
 			c.ModifyToSatisfy(sk)
 		}
 	}

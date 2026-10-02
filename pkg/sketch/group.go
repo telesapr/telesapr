@@ -59,12 +59,16 @@ type Group struct {
 	Tag int
 	H   core.HGroup
 
-	Type                   GroupType
-	Order                  int
-	OpA                    core.HGroup
-	OpB                    core.HGroup
-	Visible                bool
-	Suppress               bool
+	Type     GroupType
+	Order    int
+	OpA      core.HGroup
+	OpB      core.HGroup
+	Visible  bool
+	Suppress bool
+	// SuppressAll leaves the whole group out of the model: its sketch,
+	// its solve and its solid, where Suppress leaves out the solid
+	// only. The groups that use it are left out with it.
+	SuppressAll            bool
 	RelaxConstraints       bool
 	AllowRedundant         bool
 	SuppressDofCalculation bool
@@ -94,6 +98,13 @@ type Group struct {
 	SkipFirst bool
 
 	BooleanFailed bool
+
+	// SuppressedBy is set by each regeneration: the group whose
+	// SuppressAll leaves this one out, this group itself or one it
+	// uses, directly or not; zero for a group that is generated. A
+	// group left out has no entities, no solve and no solid of its own,
+	// and keeps its parameter values for when it comes back.
+	SuppressedBy core.HGroup
 
 	// SketchDiagnostic captures errors from the last GenerateAll.
 	// Cleared at the start of each GenerateAll invocation.
@@ -170,7 +181,7 @@ func (g *Group) IsSolvedOkay() bool {
 }
 
 func (g *Group) IsVisible() bool {
-	return g.Visible && !g.Suppress
+	return g.Visible && !g.Suppress && g.SuppressedBy.V == 0
 }
 
 func (g *Group) IsMeshGroup() bool {

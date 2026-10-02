@@ -489,6 +489,8 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.Visible = d.flag(c)
 		case "suppress":
 			g.Suppress = d.flag(c)
+		case "suppress-all":
+			g.SuppressAll = d.flag(c)
 		case "relax-constraints":
 			g.RelaxConstraints = d.flag(c)
 		case "allow-redundant":

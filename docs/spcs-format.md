@@ -203,7 +203,8 @@ group <handle> <type> <name> {
   force-to-mesh
   predef { ... }
   visible
-  suppress
+  suppress                  # the solid is left out
+  suppress-all              # the whole group is left out, and the groups that use it
   relax-constraints
   allow-redundant
   suppress-dof
@@ -483,6 +484,9 @@ in it. Version 1 stored them in millimetres whatever `units` said. A version 2 r
 version 1 file's plain lengths as millimetres, rewrites a length expression to give the same
 length in the file's unit (`wall*4` in an inch file becomes `(wall*4)/25.4`), and writes the
 file back as version 2.
+
+Version 2 gained the group field `suppress-all` on 2026-10-02. A reader from before skips it
+with a report, and so generates the group.
 
 `testdata/spcs/v1` and `testdata/spcs/v2` hold files that every later reader must load.
 

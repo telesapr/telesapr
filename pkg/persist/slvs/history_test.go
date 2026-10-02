@@ -146,3 +146,80 @@ func firstLineDiff(a, b []byte) string {
 	}
 	return fmt.Sprintf("%d lines, then %d", len(al), len(bl))
 }
+
+// TestSuppressAllSweep suppresses each group of every fixture whole: the
+// regeneration must prune nothing, leave out the group and every group
+// that uses it, directly or not, and nothing else; brought back, the
+// fixture must save as it did, where it is a fixed point of the solver.
+// By default one group per fixture is tried, every one under
+// SPACESOLVE_SWEEP=1.
+func TestSuppressAllSweep(t *testing.T) {
+	tried, compared := 0, 0
+	for fi, f := range invariantFixtures(t) {
+		if slvs.RaceDetector && fi%5 != 0 {
+			continue
+		}
+		sk := loadFixture(t, f)
+		if sk == nil {
+			continue
+		}
+		order := append([]core.HGroup(nil), sk.GroupOrder...)
+		for k, h := range order[1:] {
+			if !sweep.Full() && k != fi%(len(order)-1) {
+				continue
+			}
+			tried++
+			sk := loadFixture(t, f)
+			sk.Active = order[len(order)-1]
+			sk.GenerateAll()
+			before := spcs.Encode(sk, spcs.Options{})
+			sk.GenerateAll()
+			fixed := bytes.Equal(spcs.Encode(sk, spcs.Options{}), before)
+
+			// What must be left out: h and whatever uses what is.
+			out := map[core.HGroup]bool{h: true}
+			for _, hg := range order {
+				for _, d := range sk.GroupDependencies(hg) {
+					if out[d.Group] {
+						out[hg] = true
+					}
+				}
+			}
+
+			r, c, g := len(sk.Requests), len(sk.Constraints), len(sk.Groups)
+			if err := sk.SetSuppressAll(h, true); err != nil {
+				t.Fatal(err)
+			}
+			sk.GenerateAll()
+			if len(sk.Requests) != r || len(sk.Constraints) != c || len(sk.Groups) != g {
+				t.Errorf("%s: suppressing g%03x pruned something", f, h.V)
+			}
+			for _, hg := range order {
+				if got := sk.GetGroup(hg).SuppressedBy.V != 0; got != out[hg] {
+					t.Errorf("%s: suppressing g%03x, g%03x left out %v", f, h.V, hg.V, got)
+				}
+			}
+			for _, e := range sk.Entities {
+				if out[e.Group] {
+					t.Errorf("%s: suppressing g%03x left entity %x", f, h.V, e.H.V)
+					break
+				}
+			}
+
+			if err := sk.SetSuppressAll(h, false); err != nil {
+				t.Fatal(err)
+			}
+			sk.Active = order[len(order)-1]
+			sk.GenerateAll()
+			if !fixed {
+				continue
+			}
+			compared++
+			if got := spcs.Encode(sk, spcs.Options{}); !bytes.Equal(got, before) {
+				t.Errorf("%s: suppressing g%03x and bringing it back changed the file: %s",
+					f, h.V, firstLineDiff(before, got))
+			}
+		}
+	}
+	t.Logf("%d suppressions tried, %d files compared", tried, compared)
+}

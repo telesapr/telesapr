@@ -23,9 +23,11 @@ import (
 // path is the other's judge. An interface script must not save: a save
 // regenerates, and the solver is not a fixed point, so a solved sketch
 // solved again can move by an ulp. SPACESOLVE_PATHEQUIV_DIR names a
-// directory to write both saves to.
+// directory to write both saves to. Both run as the product, with the
+// links and boxes the C++ comparisons hide.
 func requireSamePaths(t *testing.T, uiScript, goScript string) {
 	t.Helper()
+	asProduct(t)
 	var r *uiScriptRunner
 	runUIScriptWith(t, uiScript, func(rr *uiScriptRunner) { r = rr })
 	fromUI := spcs.Encode(r.ss.SK, spcs.Options{})
@@ -77,4 +79,9 @@ func TestPathEquivalenceParameters(t *testing.T) {
 // and by a script.
 func TestPathEquivalenceMoveGroup(t *testing.T) {
 	requireSamePaths(t, "path_move_group", "path_move_group")
+}
+
+// A sketch suppressed whole through its group screen, and by a script.
+func TestPathEquivalenceSuppressAll(t *testing.T) {
+	requireSamePaths(t, "path_suppress_all", "path_suppress_all")
 }

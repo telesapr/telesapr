@@ -4596,6 +4596,10 @@
 						"decl": "func (g Group) Kind() string",
 						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\" or\n\"link\"."
 					},
+					"LeftOut": {
+						"decl": "func (g Group) LeftOut() (why string)",
+						"text": "LeftOut says why the group is left out of the model, or \"\" if it is\nin: \"suppressed\" for a group suppressed whole, or \"uses g004-sketch,\nwhich is suppressed\" for one that uses such a group. A group left out\nhas no entities and no solid of its own, and can't be made active."
+					},
 					"Mesh": {
 						"decl": "func (g Group) Mesh() (m *srf.SMesh)",
 						"text": "Mesh is the triangle mesh of the model up to and with this group.\nIt is the sketch's own, and is replaced when the sketch\nregenerates."
@@ -4641,8 +4645,8 @@
 						"text": "SetName names the group."
 					},
 					"SetSuppress": {
-						"decl": "func (g Group) SetSuppress(suppress bool)",
-						"text": "SetSuppress leaves the group's solid out of the model, or puts it\nback."
+						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
+						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
 					},
 					"SetVisible": {
 						"decl": "func (g Group) SetVisible(visible bool)",
@@ -4659,6 +4663,10 @@
 					"String": {
 						"decl": "func (g Group) String() (s string)",
 						"text": "String describes the group as the property browser does:\n\"g003-extrude\"."
+					},
+					"Suppression": {
+						"decl": "func (g Group) Suppression() (mode SuppressMode)",
+						"text": "Suppression is the group's suppress mode, as SetSuppress set it."
 					},
 					"Triangles": {
 						"decl": "func (g Group) Triangles() (n int)",
@@ -4847,6 +4855,15 @@
 					"NewSketchHost"
 				]
 			},
+			"SuppressMode": {
+				"text": "SuppressMode is how much of a group is left out of the model.",
+				"kind": "int",
+				"values": [
+					"Unsuppressed",
+					"SuppressSolid",
+					"SuppressWhole"
+				]
+			},
 			"ThreadOptions": {
 				"text": "ThreadOptions are what New Group \u003e Screw Thread asks for. The zero\nvalue is what the screen starts with: the standard thread nearest\nthe circle's diameter, external, one and a half diameters long,\nending at a shoulder.",
 				"kind": "struct"
@@ -4934,9 +4951,21 @@
 				"decl": "const Intersection",
 				"text": "How a group's solid combines with the solid so far."
 			},
+			"SuppressSolid": {
+				"decl": "const SuppressSolid",
+				"text": "The suppress modes: nothing left out, the solid only, or the whole\ngroup with every group that uses it."
+			},
+			"SuppressWhole": {
+				"decl": "const SuppressWhole",
+				"text": "The suppress modes: nothing left out, the solid only, or the whole\ngroup with every group that uses it."
+			},
 			"Union": {
 				"decl": "const Union",
 				"text": "How a group's solid combines with the solid so far."
+			},
+			"Unsuppressed": {
+				"decl": "const Unsuppressed",
+				"text": "The suppress modes: nothing left out, the solid only, or the whole\ngroup with every group that uses it."
 			}
 		}
 	},
@@ -5687,6 +5716,10 @@
 						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
 						"text": "SetParameterExpr gives a parameter a new expression."
 					},
+					"SetSuppressAll": {
+						"decl": "func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error",
+						"text": "SetSuppressAll suppresses group h whole, or brings it back, and has the model regenerated."
+					},
 					"SetUnits": {
 						"decl": "func (sk *Sketch) SetUnits(u core.Unit) []string",
 						"text": "SetUnits makes u the document's unit, keeping every size: a plain value is a number of millimetres and does not change, and a stored expression of a length is rewritten to give the same length in u, \"(1/4)*25.4\" from \"1/4\" in inches to millimetres, or back again without the factor."
@@ -5754,6 +5787,10 @@
 					"StyleWidth": {
 						"decl": "func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64",
 						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm (C++ Style::Width)."
+					},
+					"SuppressedReason": {
+						"decl": "func (sk *Sketch) SuppressedReason(h core.HGroup) string",
+						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
 					},
 					"TestRankForGroup": {
 						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult",
