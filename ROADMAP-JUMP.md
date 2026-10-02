@@ -653,6 +653,18 @@ Order: 5.1 first, in a commit that changes no output. Then 5.2 and 5.3, then 5.4
 
 Done when: both sweeps meet their rates and the invariant baseline shows no fixture got worse.
 
+Follow-ups from step 5, each a guard in its sweep's allowed rate until looked into:
+
+- **Cylinder through cylinder** (`TestCylinderThroughCylinderSweep`, `pkg/srf/closedloop_test.go`):
+  19 of 54 fail, the same points before and after the step; mostly unions and steep crossings,
+  as failed Booleans or leaky meshes. The curves come from the boundary-seeded marching.
+- **Sphere cap across the seams** (`TestSphereThroughFaceSweep`): the intersection at the largest
+  bulge (0.4 of the radius, radius 7) leaks at every position, nine of the ten failures; it failed
+  before the step too. The tenth is a cap so small that it triangulates flat against the face.
+- **Threads at fine chord tolerance** (`TestThreadSweep`, `pkg/persist/slvs/thread_test.go`): 3 of
+  400 unsound, `nut_m6_down_lh` at 0.03% and `M3 tapped`, `M4 tapped` at 0.01%. Since `AddThread`
+  no longer turns its planes, such a thread is reported unsound to the user.
+
 ### Step 6. OpenGL and the section view
 
 | Package | Content | State |
