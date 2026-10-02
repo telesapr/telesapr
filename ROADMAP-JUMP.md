@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 3 are done and merged; step 4 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-02. Status: steps 1 to 4 are done and merged; step 5 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -20,7 +20,8 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 1. Test infrastructure and the thread feature | done 2026-10-02, but for 1.8: the CI workflow has not run on GitHub, since the repository has no remote yet | `c5caea3` |
 | 2. The `.spcs` format and `.slvs` import | done 2026-10-02 | `d5b610c` |
 | 3. Parameters and sketch feedback | done 2026-10-02, with follow-ups: a faster freedom analysis, a scenario for it, `make lint-new` on the whole branch, no `scale 0` in saves (`a33a1ae`), and the unit as the document's, format version 2 (3.9, `dba44b9`) | `22daacd` |
-| 4. History editing | next | |
+| 4. History editing | done 2026-10-02 | (merge commit) |
+| 5. First kernel fixes | next | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -630,10 +631,10 @@ through the screen and through a script, with identical files.
 
 | Package | Content | State |
 |---|---|---|
-| 4.1 Dependency query | `Sketch.GroupDependencies(h)`: the groups a group refers to through `OpA`, `OpB`, `ActiveWorkplane`, `Predef`, the entities its requests and constraints name, and the sources in `Remap`. Tested on every fixture by checking that each group depends only on earlier ones. | not started |
-| 4.2 C1 reorder | `Sketch.MoveGroup(h, before)` renumbers `Order` and refuses a move that puts a group ahead of a dependency, naming it. Up and down links in `ShowListOfGroups`. `Group.MoveBefore(other)` and `Group.DependsOn()` in the API. Sweep: every legal move on every fixture, then move back, and require the original bytes. | not started |
-| 4.3 C2 full suppress | A second flag beside `Group.Suppress` that also skips the group's solve and entities. Groups that depend on it get a diagnostic instead of a pruned reference. Checkbox in `ShowGroupInfo`. `Group.SetSuppress` gains a mode argument. | not started |
-| 4.4 C3 broken references | `PruneOrphans` and the pruning in `generateAll` record what they remove: the entity's description and the group that owned it. The record goes into `SketchDiagnostic` and into a screen that lists each break with a jump to the affected group. `Doc.BrokenReferences()` in the API. Since step 3 a deletion can also break stored expressions; the screen lists `Sketch.ExprErrors` beside the pruned references. | not started |
+| 4.1 Dependency query | `Sketch.GroupDependencies(h)`: the groups a group refers to through `OpA`, `OpB`, `ActiveWorkplane`, `Predef`, the entities its requests and constraints name, and the sources in `Remap`. Tested on every fixture by checking that each group depends only on earlier ones. | done 2026-10-02: each dependency carries the first reason found ("operand", "constraint c012"); worked out from the stored model, so it holds before a regeneration; a linked group's remap is left out, since it names entities of its file. `GroupDependents` for the other direction |
+| 4.2 C1 reorder | `Sketch.MoveGroup(h, before)` renumbers `Order` and refuses a move that puts a group ahead of a dependency, naming it. Up and down links in `ShowListOfGroups`. `Group.MoveBefore(other)` and `Group.DependsOn()` in the API. Sweep: every legal move on every fixture, then move back, and require the original bytes. | done 2026-10-02: the groups keep their set of order numbers, so a move back restores the file; arrows in the group list and Edit > Move Group Earlier/Later; `MoveToEnd`, `UsedBy`. `TestMoveGroupSweep`: 192 moves allowed, 908 refused, every allowed one regenerates without pruning. Scenario `ext_move_group`, pair `path_move_group` |
+| 4.3 C2 full suppress | A second flag beside `Group.Suppress` that also skips the group's solve and entities. Groups that depend on it get a diagnostic instead of a pruned reference. Checkbox in `ShowGroupInfo`. `Group.SetSuppress` gains a mode argument. | done 2026-10-02: `Group.SuppressAll`, `.spcs` field `suppress-all` (added within version 2); groups that use it are left out with it (`SuppressedBy`), keeping their parameter values; the active group moves to the nearest one still in. `SetSuppress(Unsuppressed/SuppressSolid/SuppressWhole)`, `Suppression`, `LeftOut`. `TestSuppressAllSweep`: nothing pruned, and the 176 fixed-point fixtures save the same once brought back. Scenario `ext_suppress_all`, pair `path_suppress_all` |
+| 4.4 C3 broken references | `PruneOrphans` and the pruning in `generateAll` record what they remove: the entity's description and the group that owned it. The record goes into `SketchDiagnostic` and into a screen that lists each break with a jump to the affected group. `Doc.BrokenReferences()` in the API. Since step 3 a deletion can also break stored expressions; the screen lists `Sketch.ExprErrors` beside the pruned references. | done 2026-10-02, in `Sketch.BrokenReferences` rather than `SketchDiagnostic`, which each solve clears: the list stays until the next deletion, an undo or `ClearBrokenReferences`. Names come from the last regeneration, so a deleted request or group is still named; what belonged to a deleted group is not listed. Edit > Broken References, a home-screen link while the list isn't empty. Scenario `ext_broken_references`, pair `path_delete_group`, `examples/scripts/history` |
 
 Done when: reordering, suppressing and deleting an upstream group each produce a named
 diagnostic, never a silent deletion.

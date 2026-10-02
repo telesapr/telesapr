@@ -4045,6 +4045,10 @@
 		"name": "api",
 		"text": "Package api is what a script sees of a sketch: a Doc and the groups,\nrequests, entities, constraints and parameters in it. Those are held\nby handle, so they stay valid when the sketch regenerates, and are\nlooked up again at every call; a Doc therefore always shows the\ndrawing as it is.\n\nLengths and coordinates are in millimetres, whatever the document's\nunit, and angles in degrees. Only text typed for a value, as the\nSetExpr methods take, is in the document's unit (Doc.Units), as it\nis in the user interface.\n\nA call that can't do what it was asked, because of what it was given\nor of the sketch's state, panics with an error; the interpreter\nreports it and goes on. What reads or writes files returns an error\ninstead.\n\nThe package is plain Go: a script that works can be compiled as it\nis.",
 		"types": {
+			"BrokenReference": {
+				"text": "BrokenReference is something a regeneration deleted because what it\nused was gone: a group whose sketch was deleted, or a constraint on a\nline that was.",
+				"kind": "struct"
+			},
 			"Constraint": {
 				"text": "Constraint is a constraint of the sketch: a dimension, such as a\ndistance or an angle, or a relation, such as two lines being\nparallel.",
 				"kind": "struct",
@@ -4139,9 +4143,17 @@
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
 					},
+					"BrokenReferences": {
+						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
+						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Edit \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
+					},
 					"Circle": {
 						"decl": "func (d *Doc) Circle(center Vec, radius float64) Entity",
 						"text": "Circle adds a circle. In a workplane it lies in it; in 3d it is\nparallel to the XY plane."
+					},
+					"ClearBrokenReferences": {
+						"decl": "func (d *Doc) ClearBrokenReferences()",
+						"text": "ClearBrokenReferences empties the list BrokenReferences gives."
 					},
 					"Coincident": {
 						"decl": "func (d *Doc) Coincident(a, b Entity) Constraint",
@@ -4576,6 +4588,10 @@
 						"decl": "func (g Group) Delete()",
 						"text": "Delete deletes the group and what depends on it."
 					},
+					"DependsOn": {
+						"decl": "func (g Group) DependsOn() (groups []Group)",
+						"text": "DependsOn lists the groups this group refers to, in history order:\nthe group it extrudes or copies, the workplane it is drawn in, and the\ngroups whose entities its sketch and constraints name. The references\nare left out."
+					},
 					"Dof": {
 						"decl": "func (g Group) Dof() (dof int)",
 						"text": "Dof is how many degrees of freedom the group's constraints leave."
@@ -4592,9 +4608,21 @@
 						"decl": "func (g Group) Kind() string",
 						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\" or\n\"link\"."
 					},
+					"LeftOut": {
+						"decl": "func (g Group) LeftOut() (why string)",
+						"text": "LeftOut says why the group is left out of the model, or \"\" if it is\nin: \"suppressed\" for a group suppressed whole, or \"uses g004-sketch,\nwhich is suppressed\" for one that uses such a group. A group left out\nhas no entities and no solid of its own, and can't be made active."
+					},
 					"Mesh": {
 						"decl": "func (g Group) Mesh() (m *srf.SMesh)",
 						"text": "Mesh is the triangle mesh of the model up to and with this group.\nIt is the sketch's own, and is replaced when the sketch\nregenerates."
+					},
+					"MoveBefore": {
+						"decl": "func (g Group) MoveBefore(other Group) error",
+						"text": "MoveBefore moves the group in the history to just before other, as\none undo step. A move that would put a group ahead of a group it\nuses is refused with an error naming both, and nothing changes:\nan extrusion can't move before its sketch, nor a sketch after its\nextrusion. The references stay first."
+					},
+					"MoveToEnd": {
+						"decl": "func (g Group) MoveToEnd() error",
+						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes."
 					},
 					"Name": {
 						"decl": "func (g Group) Name() (name string)",
@@ -4629,8 +4657,8 @@
 						"text": "SetName names the group."
 					},
 					"SetSuppress": {
-						"decl": "func (g Group) SetSuppress(suppress bool)",
-						"text": "SetSuppress leaves the group's solid out of the model, or puts it\nback."
+						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
+						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
 					},
 					"SetVisible": {
 						"decl": "func (g Group) SetVisible(visible bool)",
@@ -4648,6 +4676,10 @@
 						"decl": "func (g Group) String() (s string)",
 						"text": "String describes the group as the property browser does:\n\"g003-extrude\"."
 					},
+					"Suppression": {
+						"decl": "func (g Group) Suppression() (mode SuppressMode)",
+						"text": "Suppression is the group's suppress mode, as SetSuppress set it."
+					},
 					"Triangles": {
 						"decl": "func (g Group) Triangles() (n int)",
 						"text": "Triangles is how many triangles the model has up to and with this\ngroup."
@@ -4655,6 +4687,10 @@
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",
 						"text": "Type is the group's type, as the sketch package names them."
+					},
+					"UsedBy": {
+						"decl": "func (g Group) UsedBy() (groups []Group)",
+						"text": "UsedBy lists the groups that refer to this group directly, in\nhistory order."
 					},
 					"Valid": {
 						"decl": "func (g Group) Valid() (ok bool)",
@@ -4831,6 +4867,15 @@
 					"NewSketchHost"
 				]
 			},
+			"SuppressMode": {
+				"text": "SuppressMode is how much of a group is left out of the model.",
+				"kind": "int",
+				"values": [
+					"Unsuppressed",
+					"SuppressSolid",
+					"SuppressWhole"
+				]
+			},
 			"ThreadOptions": {
 				"text": "ThreadOptions are what New Group \u003e Screw Thread asks for. The zero\nvalue is what the screen starts with: the standard thread nearest\nthe circle's diameter, external, one and a half diameters long,\nending at a shoulder.",
 				"kind": "struct"
@@ -4918,15 +4963,37 @@
 				"decl": "const Intersection",
 				"text": "How a group's solid combines with the solid so far."
 			},
+			"SuppressSolid": {
+				"decl": "const SuppressSolid",
+				"text": "The suppress modes: nothing left out, the solid only, or the whole\ngroup with every group that uses it."
+			},
+			"SuppressWhole": {
+				"decl": "const SuppressWhole",
+				"text": "The suppress modes: nothing left out, the solid only, or the whole\ngroup with every group that uses it."
+			},
 			"Union": {
 				"decl": "const Union",
 				"text": "How a group's solid combines with the solid so far."
+			},
+			"Unsuppressed": {
+				"decl": "const Unsuppressed",
+				"text": "The suppress modes: nothing left out, the solid only, or the whole\ngroup with every group that uses it."
 			}
 		}
 	},
 	"github.com/spacesolve/spacesolve/pkg/sketch": {
 		"name": "sketch",
 		"types": {
+			"BrokenReference": {
+				"text": "BrokenReference is a request, constraint or group that a regeneration deleted, because something it referred to was gone.",
+				"kind": "struct",
+				"methods": {
+					"String": {
+						"decl": "func (b BrokenReference) String() string",
+						"text": "String says what was deleted and why: \"deleted c012-pt-pt-distance of g004-sketch-in-plane, which used r005-line-segment of g002-sketch-in-plane\"."
+					}
+				}
+			},
 			"Clipboard": {
 				"text": "Clipboard holds copied requests, and the constraints among them (C++ SolveSpaceUI::Clipboard).",
 				"kind": "struct",
@@ -4967,6 +5034,10 @@
 					"CopyAsNRotTrans",
 					"CopyAsNRotAxisTrans"
 				]
+			},
+			"Dependency": {
+				"text": "Dependency is one group that another group needs, and the first reason found for it.",
+				"kind": "struct"
 			},
 			"EntityBezierResolver": {
 				"text": "EntityBezierResolver is the lookup interface that GenerateEntityBeziers needs to evaluate entity points, normals, and radii at solve time.",
@@ -5033,6 +5104,10 @@
 					"CopyEntity": {
 						"decl": "func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity, ep *core.Entity, timesApplied, remap int, dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam, as CopyAs)",
 						"text": "CopyEntity appends a transformed copy of ep (C++ Group::CopyEntity)."
+					},
+					"DescriptionString": {
+						"decl": "func (g *Group) DescriptionString() string",
+						"text": "DescriptionString names the group as the property browser does: \"g003-extrude\"."
 					},
 					"ExtrusionForceVectorTo": {
 						"decl": "func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector)",
@@ -5192,6 +5267,15 @@
 			"Measurement": {
 				"text": "Measurement is what Measure finds.",
 				"kind": "struct"
+			},
+			"MoveError": {
+				"text": "MoveError is why a group can't move where it was asked to: Group would come before On, which it refers to through Why.",
+				"kind": "struct",
+				"methods": {
+					"Error": {
+						"decl": "func (e *MoveError) Error() string"
+					}
+				}
 			},
 			"Parameter": {
 				"text": "Parameter is a named value that expressions can use.",
@@ -5370,12 +5454,20 @@
 						"decl": "func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox",
 						"text": "CalculateEntityBBox returns the bounding box of the non-construction entities (C++ Sketch::CalculateEntityBBox)."
 					},
+					"CheckMoveGroup": {
+						"decl": "func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error",
+						"text": "CheckMoveGroup reports the error MoveGroup(h, before) would give, without moving anything."
+					},
 					"CheckThread": {
 						"decl": "func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error",
 						"text": "CheckThread reports why AddThread would refuse to make the thread, without changing anything."
 					},
 					"Clear": {
 						"decl": "func (s *Sketch) Clear()"
+					},
+					"ClearBrokenReferences": {
+						"decl": "func (sk *Sketch) ClearBrokenReferences()",
+						"text": "ClearBrokenReferences empties the list of what regenerations deleted."
 					},
 					"ClearExisting": {
 						"decl": "func (sk *Sketch) ClearExisting()",
@@ -5510,6 +5602,14 @@
 					"GetStyle": {
 						"decl": "func (s *Sketch) GetStyle(h core.HStyle) *core.Style"
 					},
+					"GroupDependencies": {
+						"decl": "func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency",
+						"text": "GroupDependencies lists the groups group h refers to, each once, in history order: through its operand, its workplane and predefined entities, the entities its requests and constraints name, and the sources of its copied entities."
+					},
+					"GroupDependents": {
+						"decl": "func (sk *Sketch) GroupDependents(h core.HGroup) []core.HGroup",
+						"text": "GroupDependents lists the groups that refer to group h directly, in history order."
+					},
 					"GroupFreedom": {
 						"decl": "func (sk *Sketch) GroupFreedom(hg core.HGroup) map[core.HParam]bool",
 						"text": "GroupFreedom reports which of the params group hg solves for are free to move, at the values of the last regeneration; nil when the group did not solve or is too large."
@@ -5541,6 +5641,10 @@
 					"Measure": {
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
+					},
+					"MoveGroup": {
+						"decl": "func (sk *Sketch) MoveGroup(h, before core.HGroup) error",
+						"text": "MoveGroup moves group h to just before group before in the history, or to the end for the zero handle."
 					},
 					"MustGetEntity": {
 						"decl": "func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity",
@@ -5638,6 +5742,10 @@
 						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
 						"text": "SetParameterExpr gives a parameter a new expression."
 					},
+					"SetSuppressAll": {
+						"decl": "func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error",
+						"text": "SetSuppressAll suppresses group h whole, or brings it back, and has the model regenerated."
+					},
 					"SetUnits": {
 						"decl": "func (sk *Sketch) SetUnits(u core.Unit) []string",
 						"text": "SetUnits makes u the document's unit, keeping every size: a plain value is a number of millimetres and does not change, and a stored expression of a length is rewritten to give the same length in u, \"(1/4)*25.4\" from \"1/4\" in inches to millimetres, or back again without the factor."
@@ -5705,6 +5813,10 @@
 					"StyleWidth": {
 						"decl": "func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64",
 						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm (C++ Style::Width)."
+					},
+					"SuppressedReason": {
+						"decl": "func (sk *Sketch) SuppressedReason(h core.HGroup) string",
+						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
 					},
 					"TestRankForGroup": {
 						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult",

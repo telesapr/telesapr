@@ -99,8 +99,16 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	sk.Params = make([]core.Param, 0, len(prev))
 	sk.Entities = make([]core.Entity, 0, len(sk.Entities))
 
+	sk.markSuppressed()
+
 	rt := &Runtime{Sketch: sk}
 	for i, hg := range sk.GroupOrder {
+		// A group suppressed whole, or using one that is, is left out
+		// before anything could prune what it refers to.
+		if g := sk.GetGroup(hg); g.SuppressedBy.V != 0 {
+			sk.skipGroup(g, prev, i >= first && i <= last, genForBBox)
+			continue
+		}
 		// The group may depend on entities or other groups, to define its
 		// workplane geometry or for its operands. Those must already exist
 		// in a previous group, so check them before generating.
@@ -201,10 +209,13 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	// And update any reference dimensions with their new values
 	for ci := range sk.Constraints {
 		c := &sk.Constraints[ci]
-		if c.Reference {
+		if c.Reference && sk.GetGroup(c.Group).SuppressedBy.V == 0 {
 			c.ModifyToSatisfy(sk)
 		}
 	}
+
+	sk.publishBroken()
+	sk.rememberNames()
 
 	// The user interface's part: the traced point, the selection, and
 	// what a deletion invalidates.
@@ -349,12 +360,20 @@ func (sk *Sketch) PruneOrphans() bool {
 // SolveSpaceUI::PruneGroups).
 func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 	g := sk.GetGroup(hg)
-	if sk.GroupsInOrder(g.OpA, hg) &&
-		sk.entityExists(g.Predef.Origin) &&
-		sk.entityExists(g.Predef.EntityB) &&
-		sk.entityExists(g.Predef.EntityC) {
+	var missing string
+	switch {
+	case !sk.GroupsInOrder(g.OpA, hg):
+		missing = sk.anyGroupName(g.OpA)
+	case !sk.entityExists(g.Predef.Origin):
+		missing = sk.entityName(g.Predef.Origin)
+	case !sk.entityExists(g.Predef.EntityB):
+		missing = sk.entityName(g.Predef.EntityB)
+	case !sk.entityExists(g.Predef.EntityC):
+		missing = sk.entityName(g.Predef.EntityC)
+	default:
 		return false
 	}
+	sk.broke(hg, g.DescriptionString(), missing)
 	sk.Deleted.Groups++
 	for i := range sk.Groups {
 		if sk.Groups[i].H == hg {
@@ -389,6 +408,8 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 	for _, r := range sk.Requests {
 		if r.Group != hg || entityRequestExists(r.Workplane, false) {
 			keptR = append(keptR, r)
+		} else {
+			sk.broke(hg, r.DescriptionString(), sk.entityName(r.Workplane))
 		}
 	}
 	sk.Requests = keptR
@@ -396,17 +417,23 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 
 	keptC := sk.Constraints[:0]
 	for _, c := range sk.Constraints {
-		if c.Group != hg ||
-			(entityRequestExists(c.Workplane, true) &&
-				entityRequestExists(c.PtA, true) &&
-				entityRequestExists(c.PtB, true) &&
-				entityRequestExists(c.EntityA, true) &&
-				entityRequestExists(c.EntityB, true) &&
-				entityRequestExists(c.EntityC, true) &&
-				entityRequestExists(c.EntityD, true)) {
+		if c.Group != hg {
 			keptC = append(keptC, c)
 			continue
 		}
+		missing := core.NoEntity
+		for _, he := range [...]core.HEntity{c.Workplane, c.PtA, c.PtB,
+			c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
+			if !entityRequestExists(he, true) {
+				missing = he
+				break
+			}
+		}
+		if missing == core.NoEntity {
+			keptC = append(keptC, c)
+			continue
+		}
+		sk.broke(hg, c.DescriptionString(), sk.entityName(missing))
 
 		if c.Type != core.ConstraintPointsCoincident &&
 			c.Type != core.ConstraintHorizontal &&

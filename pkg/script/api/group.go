@@ -218,13 +218,62 @@ func (g Group) SetVisible(visible bool) {
 	})
 }
 
-// SetSuppress leaves the group's solid out of the model, or puts it
-// back.
-func (g Group) SetSuppress(suppress bool) {
+// SuppressMode is how much of a group is left out of the model.
+type SuppressMode int
+
+// The suppress modes: nothing left out, the solid only, or the whole
+// group with every group that uses it.
+const (
+	Unsuppressed SuppressMode = iota
+	SuppressSolid
+	SuppressWhole
+)
+
+// SetSuppress leaves the group's solid out of the model with
+// SuppressSolid; the whole group, its sketch, solve and solid, with
+// SuppressWhole, which also leaves out every group that uses it; and
+// puts everything back with Unsuppressed. Nothing is deleted. The
+// references can't be suppressed whole.
+func (g Group) SetSuppress(mode SuppressMode) {
+	if mode < Unsuppressed || mode > SuppressWhole {
+		fail("no suppress mode %d", mode)
+	}
 	g.d.change(func(sk *sketch.Sketch) {
-		g.get(sk).Suppress = suppress
+		group := g.get(sk)
+		if mode != SuppressWhole {
+			group.Suppress = mode == SuppressSolid
+		}
+		if err := sk.SetSuppressAll(g.H, mode == SuppressWhole); err != nil {
+			fail("%v", err)
+		}
 		sk.MarkGroupDirty(g.H, false)
 	})
+}
+
+// Suppression is the group's suppress mode, as SetSuppress set it.
+func (g Group) Suppression() (mode SuppressMode) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		switch {
+		case group.SuppressAll:
+			mode = SuppressWhole
+		case group.Suppress:
+			mode = SuppressSolid
+		}
+	})
+	return mode
+}
+
+// LeftOut says why the group is left out of the model, or "" if it is
+// in: "suppressed" for a group suppressed whole, or "uses g004-sketch,
+// which is suppressed" for one that uses such a group. A group left out
+// has no entities and no solid of its own, and can't be made active.
+func (g Group) LeftOut() (why string) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		why = sk.SuppressedReason(g.H)
+	})
+	return why
 }
 
 // SetCombine says how the group's solid combines with the solid so
@@ -637,4 +686,64 @@ func (g Group) Conflicts() (constraints []Constraint) {
 		}
 	})
 	return constraints
+}
+
+// DependsOn lists the groups this group refers to, in history order:
+// the group it extrudes or copies, the workplane it is drawn in, and the
+// groups whose entities its sketch and constraints name. The references
+// are left out.
+func (g Group) DependsOn() (groups []Group) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		for _, dep := range sk.GroupDependencies(g.H) {
+			if dep.Group.V != core.HGroupReferences {
+				groups = append(groups, Group{g.d, dep.Group})
+			}
+		}
+	})
+	return groups
+}
+
+// UsedBy lists the groups that refer to this group directly, in
+// history order.
+func (g Group) UsedBy() (groups []Group) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		for _, h := range sk.GroupDependents(g.H) {
+			groups = append(groups, Group{g.d, h})
+		}
+	})
+	return groups
+}
+
+// MoveBefore moves the group in the history to just before other, as
+// one undo step. A move that would put a group ahead of a group it
+// uses is refused with an error naming both, and nothing changes:
+// an extrusion can't move before its sketch, nor a sketch after its
+// extrusion. The references stay first.
+func (g Group) MoveBefore(other Group) error {
+	if other.H.V == 0 {
+		fail("no group to move before")
+	}
+	other.d = g.d
+	g.d.read(func(sk *sketch.Sketch) { other.get(sk) })
+	return g.move(other.H)
+}
+
+// MoveToEnd moves the group to the end of the history, as MoveBefore
+// does.
+func (g Group) MoveToEnd() error {
+	return g.move(core.HGroup{})
+}
+
+func (g Group) move(before core.HGroup) (err error) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		err = sk.CheckMoveGroup(g.H, before)
+	})
+	if err != nil {
+		return err
+	}
+	g.d.change(func(sk *sketch.Sketch) { err = sk.MoveGroup(g.H, before) })
+	return err
 }

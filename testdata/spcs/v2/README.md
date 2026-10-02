@@ -8,3 +8,6 @@ lengths written with `=` are in.
 
 `inch.spcs` is a plate in an inch document: its sides come from parameters, and its hole has
 the typed values `1/4` and `1/2`.
+
+`suppress_all.spcs` is an extruded rectangle whose sketch is suppressed whole (`suppress-all`,
+added within version 2 on 2026-10-02), which leaves the extrusion out with it.

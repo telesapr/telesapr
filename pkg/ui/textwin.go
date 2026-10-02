@@ -65,6 +65,7 @@ const (
 	ScreenThread
 	ScreenParameters
 	ScreenCommands
+	ScreenBrokenReferences
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -754,6 +755,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowParameters()
 		case ScreenCommands:
 			tw.ShowCommands()
+		case ScreenBrokenReferences:
+			tw.ShowBrokenReferences()
 		}
 	}
 	tw.Printf(false, "")

@@ -32,6 +32,15 @@ type Sketch struct {
 	// groups that the last regeneration could not evaluate.
 	ExprErrors []ExprError
 
+	// BrokenReferences lists what the last regeneration that deleted
+	// something deleted, and why. It stays until another regeneration
+	// deletes something, an undo or redo, or ClearBrokenReferences.
+	BrokenReferences []BrokenReference
+	// broken collects them during a regeneration; names are those of
+	// the groups and requests at the end of the last one.
+	broken []BrokenReference
+	names  knownNames
+
 	// Images are the loaded image files, by the file name image
 	// requests give (C++ SS.images); nil for one that couldn't be read.
 	Images map[string]*Image
@@ -326,6 +335,8 @@ func (s *Sketch) Clear() {
 	s.Params = s.Params[:0]
 	s.Parameters = nil
 	s.ExprErrors = nil
+	s.ClearBrokenReferences()
+	s.names = knownNames{}
 	s.Units = core.UnitMM
 }
 

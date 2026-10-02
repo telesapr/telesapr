@@ -1,0 +1,23 @@
+# A rectangle extruded, then a sketch in 3d with a line, moved two
+# places earlier through Edit > Move Group Earlier; the same model as
+# path_move_group.go makes (TestPathEquivalenceMoveGroup).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+key 3 shift
+key s
+move 200 400
+down L 200 400
+up L 200 400
+move 400 400
+down L 400 400
+up L 400 400
+key esc
+menu Edit|Move Group Earlier
+menu Edit|Move Group Earlier

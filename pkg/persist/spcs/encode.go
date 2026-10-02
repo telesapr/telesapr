@@ -246,6 +246,7 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 
 	n.flag("visible", g.Visible)
 	n.flag("suppress", g.Suppress)
+	n.flag("suppress-all", g.SuppressAll)
 	n.flag("relax-constraints", g.RelaxConstraints)
 	n.flag("allow-redundant", g.AllowRedundant)
 	n.flag("suppress-dof", g.SuppressDofCalculation)

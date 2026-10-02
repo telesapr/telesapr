@@ -1,0 +1,29 @@
+# Suppressing a group whole (an extension): the group screen's check box
+# leaves out the shank's sketch, and with it every group that uses it,
+# with nothing deleted. The group list says what is left out and why;
+# a group left out can't be made active; undo brings it all back.
+load thread/bolt_m8x30.slvs
+tw
+# The shank sketch's screen, and its check box.
+twmove 145 180
+twdown L 145 180
+twup L 145 180
+tw
+twmove 28 170
+twdown L 28 170
+twup L 28 170
+tw
+dump
+# Home: the shank and the thread are left out with the sketch.
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+tw
+# The shank can't be made active.
+answer ok
+twmove 28 200
+twdown L 28 200
+twup L 28 200
+key z ctrl
+tw
+dump
