@@ -43,9 +43,16 @@ func testDumpVsGolden(t *testing.T, fonts []string, strsFile, goldenFile string)
 	got := dump(fonts, lines(string(strs)))
 	if golden.Regen() {
 		var b bytes.Buffer
-		zw, _ := gzip.NewWriterLevel(&b, gzip.BestCompression)
-		zw.Write([]byte(got))
-		zw.Close()
+		zw, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
+		if err == nil {
+			_, err = zw.Write([]byte(got))
+		}
+		if err == nil {
+			err = zw.Close()
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
 		golden.Check(t, goldenFile, b.Bytes())
 		return
 	}
