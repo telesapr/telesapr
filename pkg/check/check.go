@@ -15,6 +15,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/spacesolve/spacesolve/pkg/topo"
 )
 
 // Report is what Solid finds. Lengths are in millimetres, volume in
@@ -42,6 +43,17 @@ type Report struct {
 	// Min and Max are the corners of the mesh's bounding box, both zero
 	// for an empty mesh.
 	Min, Max geom.Vector
+	// TopologyProblems counts what the shell's topology gets wrong
+	// (topo.Validate): an edge not shared by exactly two faces running
+	// it opposite ways, a loop that doesn't close; and, for a closed
+	// mesh, an Euler characteristic that isn't the mesh's. Zero for a
+	// group with no shell.
+	TopologyProblems int
+	// Euler is the shell's Euler characteristic, V - E + F - H: two for
+	// each closed piece, less two for each hole through it.
+	Euler int
+	// Topology lists the topology's problems, for showing.
+	Topology []topo.Problem
 
 	// Problems holds the naked and self-intersecting edges, for drawing.
 	Problems srf.SEdgeList
@@ -53,7 +65,7 @@ func (r *Report) Empty() bool { return r.Triangles == 0 }
 // Sound reports whether the solid is closed, does not cross itself, and
 // came from a Boolean that succeeded. An empty solid is sound.
 func (r *Report) Sound() bool {
-	return r.NakedEdges == 0 && r.SelfIntersecting == 0 && !r.BooleanFailed
+	return r.NakedEdges == 0 && r.SelfIntersecting == 0 && !r.BooleanFailed && r.TopologyProblems == 0
 }
 
 // Solid checks a shell and the mesh made from it. shell may be nil, for
@@ -84,6 +96,21 @@ func Solid(shell *srf.SShell, mesh *srf.SMesh) Report {
 		r.CenterOfMass = mesh.GetCenterOfMass()
 	}
 	r.Max, r.Min = mesh.GetBounding()
+	if shell != nil && len(shell.Surface) > 0 {
+		tp, err := topo.Build(shell)
+		r.Topology = tp.Validate()
+		if err != nil && len(r.Topology) == 0 {
+			r.Topology = append(r.Topology, topo.Problem{Msg: err.Error()})
+		}
+		r.Euler = tp.Euler()
+		if r.NakedEdges == 0 && len(r.Topology) == 0 {
+			if me := topo.MeshEuler(mesh); me != r.Euler {
+				r.Topology = append(r.Topology, topo.Problem{
+					Msg: fmt.Sprintf("the shell's Euler characteristic is %d, its mesh's %d", r.Euler, me)})
+			}
+		}
+		r.TopologyProblems = len(r.Topology)
+	}
 	return r
 }
 
@@ -118,6 +145,9 @@ func (r *Report) String() string {
 		fmt.Fprintf(&b, " vol=%s com=%s min=%s max=%s",
 			g17(r.Volume), v17(r.CenterOfMass), v17(r.Min), v17(r.Max))
 	}
+	if r.Faces > 0 {
+		fmt.Fprintf(&b, " topo=%d euler=%d", r.TopologyProblems, r.Euler)
+	}
 	return b.String()
 }
 
@@ -139,6 +169,9 @@ func (r *Report) Summary() string {
 		}
 		if r.BooleanFailed {
 			b.WriteString("    the Boolean failed\n")
+		}
+		if r.TopologyProblems > 0 {
+			fmt.Fprintf(&b, "    %d topology problems, the first: %s\n", r.TopologyProblems, r.Topology[0].Msg)
 		}
 		b.WriteString("\n")
 	}
