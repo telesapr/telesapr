@@ -213,7 +213,7 @@ group 0x1 sketch-3d "a" {
     new-map 1
   }
 }
-group 0x2 sweep "b" {
+group 0x2 morph "b" {
   order 1
 }
 request 0x1 nurbs {
@@ -258,7 +258,7 @@ shell {
 		`7:11: unknown combine "xor"`,
 		`9:5: unknown field "new-predef" in predef; skipped`,
 		`12:5: unknown field "new-map" in remap; skipped`,
-		`15:11: unknown group type "sweep"`,
+		`15:11: unknown group type "morph"`,
 		`15:1: group 0x2 skipped`,
 		`18:13: unknown request type "nurbs"`,
 		`19:3: unknown field "new-field" in request; skipped`,
