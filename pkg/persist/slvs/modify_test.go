@@ -2,6 +2,7 @@ package slvs
 
 import (
 	"bytes"
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"testing"
 
@@ -83,7 +84,7 @@ func TestModifyToolsVsCpp(t *testing.T) {
 				t.Fatalf("error %v, want error %v", err, tc.wantErr)
 			}
 			sk.GenerateAllTyped(sketch.GenerateAll)
-			got := doc.Save()
+			got := slvswrite.Save(doc.Sketch)
 			want, err := os.ReadFile(fixture("edit/" + tc.name + ".slvs"))
 			if err != nil {
 				t.Fatal(err)

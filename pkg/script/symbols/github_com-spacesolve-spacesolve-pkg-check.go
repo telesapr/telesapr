@@ -10,8 +10,11 @@ import (
 func init() {
 	Symbols["github.com/spacesolve/spacesolve/pkg/check/check"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"Group": reflect.ValueOf(check.Group),
-		"Solid": reflect.ValueOf(check.Solid),
+		"BaselineKey":     reflect.ValueOf(check.BaselineKey),
+		"CompareBaseline": reflect.ValueOf(check.CompareBaseline),
+		"Group":           reflect.ValueOf(check.Group),
+		"ReadBaseline":    reflect.ValueOf(check.ReadBaseline),
+		"Solid":           reflect.ValueOf(check.Solid),
 
 		// type definitions
 		"Report": reflect.ValueOf((*check.Report)(nil)),

@@ -1,6 +1,7 @@
 package slvs_test
 
 import (
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -147,7 +148,7 @@ func TestPhase7AllFixturesRoundTrip(t *testing.T) {
 		// C++ AfterNewFile generates (and solves) the loaded sketch
 		// before the harness saves it, and SaveToFile generates again.
 		doc.Sketch.GenerateAll()
-		saved := doc.Save()
+		saved := slvswrite.Save(doc.Sketch)
 		original, err := os.ReadFile(path)
 		if err != nil {
 			t.Errorf("rewind %s: %v", path, err)
@@ -192,7 +193,7 @@ func TestExcludedFixturesVsCppSave(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(doc.Save()) != string(want) {
+			if string(slvswrite.Save(doc.Sketch)) != string(want) {
 				t.Errorf("save differs from C++'s")
 			}
 		})

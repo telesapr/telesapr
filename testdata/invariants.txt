@@ -238,7 +238,7 @@ group/link/rect_v20.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 group/link/rect_v20.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/link_idf/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 group/link_idf/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-group/link_idf/normal.slvs g3 tri=604 faces=19 naked=0 inter=0 failed=false vol=2228.1318822257044 com=35.036350553751006,25.243908130190313,0.80000000000000193 min=10,10,0 max=60,40,1.6000000000000005
+group/link_idf/normal.slvs g3 tri=284 faces=19 naked=0 inter=0 failed=false vol=2229.2573604869021 com=35.023344721516004,25.246702334852408,0.8000000000000006 min=10,10,0 max=60,40,1.6000000000000005
 group/link_stl/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 group/link_stl/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/link_stl/normal.slvs g3 tri=12 faces=0 naked=0 inter=0 failed=false vol=1000 com=15,20,2.5 min=10,10,0 max=20,30,5

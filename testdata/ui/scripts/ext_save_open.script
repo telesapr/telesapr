@@ -1,0 +1,25 @@
+# File > Save of a new sketch writes a spacesolve model: the name given
+# gets the .spcs extension. File > New, then File > Open of that file,
+# brings the sketch back. Opening a SolveSpace model is refused with a
+# pointer to File > Import.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+file $tmp/part
+menu File|Save
+menu File|New
+file $tmp/part.spcs
+menu File|Open...
+dump
+save
+product
+menu File|New
+file $testdata/group/translate_nd/normal.slvs
+answer ok
+menu File|Open...
+dump

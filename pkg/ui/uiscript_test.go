@@ -26,6 +26,7 @@ type uiScriptRunner struct {
 	ss       *SolveSpaceUI
 	b        strings.Builder
 	dir      string // the directory script paths are relative to
+	tmp      string // a temporary directory, $tmp in a script's paths
 	savePath string
 
 	popupChoices []string
@@ -89,12 +90,12 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.RemoveAll(saveDir) })
-	r := &uiScriptRunner{t: t, dir: root, savePath: filepath.Join(saveDir, "save.slvs")}
+	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.slvs")}
 	r.p = headless.New()
 	r.p.FontFiles = []string{filepath.Join(root, "Gentium-R.ttf")}
 	r.p.PopUpHook = r.popUp
 	r.p.OnMessageDialog = func(d *headless.MessageDialog) {
-		fmt.Fprintf(&r.b, "dialog %d %s|%s\n", d.Type, escLine(d.Message), escLine(d.Description))
+		fmt.Fprintf(&r.b, "dialog %d %s|%s\n", d.Type, escLine(r.unexpand(d.Message)), escLine(r.unexpand(d.Description)))
 	}
 	r.p.OnFileDialog = func(d *headless.FileDialog) {
 		kind := "open"
@@ -109,6 +110,32 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	r.ss.AnimationSpeed = 0
 	r.settle()
 	return r
+}
+
+// expand replaces $tmp/ and $testdata/ at the start of a script's path
+// by the runner's temporary directory and testdata.
+func (r *uiScriptRunner) expand(path string) string {
+	for prefix, dir := range map[string]string{"$tmp/": r.tmp, "$testdata/": r.dir} {
+		if rest, ok := strings.CutPrefix(path, prefix); ok {
+			abs, err := filepath.Abs(dir)
+			if err != nil {
+				r.t.Fatal(err)
+			}
+			return filepath.Join(abs, filepath.FromSlash(rest))
+		}
+	}
+	return path
+}
+
+// unexpand writes the runner's temporary directory and testdata in s
+// as $tmp and $testdata, so output doesn't depend on the machine.
+func (r *uiScriptRunner) unexpand(s string) string {
+	for _, d := range []struct{ dir, name string }{{r.tmp, "$tmp"}, {r.dir, "$testdata"}} {
+		if abs, err := filepath.Abs(d.dir); err == nil {
+			s = strings.ReplaceAll(s, abs, d.name)
+		}
+	}
+	return s
 }
 
 func (r *uiScriptRunner) gw() *headless.Window { return r.ss.GW.window.(*headless.Window) }
@@ -397,7 +424,7 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 		}
 		r.p.DialogResponses = append(r.p.DialogResponses, resp)
 	case "file":
-		f := t[1]
+		f := r.expand(t[1])
 		if f == "-" {
 			f = ""
 		}
@@ -451,6 +478,12 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 		}
 	case "tw":
 		r.ss.TW.dumpRows(&r.b)
+	case "product":
+		// From here on, as the product: .slvs files are imported, never
+		// opened or saved.
+		saved := legacySlvsSave
+		legacySlvsSave = nil
+		r.t.Cleanup(func() { legacySlvsSave = saved })
 	case "save":
 		if !r.ss.SaveToFile(r.savePath) {
 			fmt.Fprintf(&r.b, "save failed\n")
@@ -482,8 +515,9 @@ func uiScripts(t *testing.T, prefix string) []string {
 
 // compareUIScripts runs scripts and compares each with its C++ golden
 // (scripts/regen-ui-golden.sh), reporting the first differing line.
-// linkRelToTestdata matches a saved link group's path up to testdata.
-var linkRelToTestdata = regexp.MustCompile(`(?m)^(Group\.impFileRel=).*/testdata/`)
+// linkRelToTestdata matches a saved link group's path up to testdata,
+// in a .slvs and in a .spcs file.
+var linkRelToTestdata = regexp.MustCompile(`(?m)^(Group\.impFileRel=|  link ").*/testdata/`)
 
 // linkPathsFromTestdata makes the paths of the linked files in a save
 // start at testdata. A script saves into a temporary directory, so the
@@ -544,7 +578,10 @@ func TestGoScripts(t *testing.T) {
 	regen := os.Getenv("SPACESOLVE_REGEN_GOUI") != ""
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
-			got := linkPathsFromTestdata(runUIScript(t, name))
+			// What only spacesolve has is saved as spacesolve saves.
+			got := linkPathsFromTestdata(runUIScriptWith(t, name, func(r *uiScriptRunner) {
+				r.savePath = filepath.Join(r.tmp, "save.spcs")
+			}))
 			path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".goui")
 			if regen {
 				if err := os.WriteFile(path, []byte(got), 0o644); err != nil {

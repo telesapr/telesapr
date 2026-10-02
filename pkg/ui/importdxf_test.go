@@ -2,13 +2,13 @@ package ui
 
 import (
 	"bytes"
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -75,5 +75,5 @@ func importDxfFor(t testing.TB, path string, in3d bool) []byte {
 	ss.ImportDxf(path)
 	ss.GenerateAll(sketch.GenerateUntilActive)
 	ss.ScheduleShowTW()
-	return slvs.NewDocument(ss.SK).Save()
+	return slvswrite.Save(ss.SK)
 }

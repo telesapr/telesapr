@@ -19,15 +19,15 @@ import (
 
 const scriptUsage = `
 Scripting commands:
-    run [<sketch.slvs>] <script.go> [<argument>...]
+    run [<sketch.spcs>] <script.go> [<argument>...]
         Runs a Go script on the sketch, or on a new sketch if none is given.
         The script is a program, with "package main" and a main function, or
         just statements. The arguments are the script's os.Args[1:]. Nothing
         is saved unless the script does it.
-    repl [<sketch.slvs>]
+    repl [<sketch.spcs>]
         Reads Go statements and expressions from standard input and runs each
         on the sketch, printing the values of the expressions.
-    eval [<sketch.slvs>] <code> [<code>...]
+    eval [<sketch.spcs>] <code> [<code>...]
         Runs each <code> as a line given to repl.
 
     A script works on the sketch through the package
@@ -50,9 +50,11 @@ func isScriptCommand(cmd string) bool {
 }
 
 // isSketch reports whether a command-line argument names a sketch
-// file rather than a script.
+// file rather than a script. A SolveSpace model counts, so that loading
+// it says it must be converted first.
 func isSketch(arg string) bool {
-	return strings.EqualFold(filepath.Ext(arg), ".slvs")
+	ext := filepath.Ext(arg)
+	return strings.EqualFold(ext, ".spcs") || strings.EqualFold(ext, ".slvs")
 }
 
 // scriptSession is a session for scripts, with file loaded if one is

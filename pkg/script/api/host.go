@@ -19,13 +19,13 @@ package api
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/persist/link"
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
@@ -103,7 +103,7 @@ func NewSketchHost(sk *sketch.Sketch, saveFile string) *SketchHost {
 
 func (h *SketchHost) adopt(sk *sketch.Sketch) {
 	h.sk = sk
-	sk.ReloadAllLinked = func(sk *sketch.Sketch) { slvs.ReloadAllLinked(sk, h.saveFile) }
+	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAllLinked(sk, h.saveFile) }
 	sk.GenerateAll()
 	sk.Active = sk.ActiveGroup()
 	if g := sk.GetGroup(sk.Active); g != nil && g.Type == sketch.GroupDrawingWorkplane &&
@@ -191,9 +191,9 @@ func (h *SketchHost) Redo() bool { return h.sk.UndoRedo() }
 // MmPerUnit is 1: with no interface, lengths are shown in mm.
 func (h *SketchHost) MmPerUnit() float64 { return 1 }
 
-// Load replaces the sketch by the one in a file.
+// Load replaces the sketch by the one in a .spcs file.
 func (h *SketchHost) Load(path string) error {
-	doc, err := slvs.LoadFile(path)
+	doc, err := loadModel(path)
 	if err != nil {
 		return err
 	}
@@ -202,14 +202,53 @@ func (h *SketchHost) Load(path string) error {
 	return nil
 }
 
-// Save writes the sketch to a file, its links made relative to it.
-func (h *SketchHost) Save(path string) error {
-	h.sk.GenerateAll()
-	if link, err := slvs.RebaseLinks(h.sk, h.saveFile, path); err != nil {
-		return fmt.Errorf("the sketch links '%s', so it can only be saved on the same volume", link)
+// loadModel opens a .spcs file. A .slvs file is refused, since it is
+// imported, and so is a file with parts this version doesn't know,
+// which a save would lose.
+func loadModel(path string) (*spcs.Document, error) {
+	if strings.EqualFold(filepath.Ext(path), ".slvs") {
+		return nil, fmt.Errorf("%s is a SolveSpace model; convert it with Import first", path)
 	}
-	if err := os.WriteFile(path, slvs.NewDocument(h.sk).SaveRegenerated(), 0o644); err != nil {
-		_, _ = slvs.RebaseLinks(h.sk, path, h.saveFile)
+	doc, err := spcs.LoadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if len(doc.Warnings) > 0 {
+		var b strings.Builder
+		for _, w := range doc.Warnings {
+			b.WriteString("\n  ")
+			b.WriteString(w.Error())
+		}
+		return nil, fmt.Errorf("%s has parts this version doesn't know, which a save would lose:%s", path, b.String())
+	}
+	return doc, nil
+}
+
+// checkSavePath refuses to save anywhere but a .spcs file.
+func checkSavePath(path string) error {
+	switch ext := filepath.Ext(path); {
+	case strings.EqualFold(ext, "."+spcs.Extension):
+		return nil
+	case strings.EqualFold(ext, ".slvs"):
+		return fmt.Errorf("can't save %s: spacesolve doesn't write SolveSpace models; save as .%s", path, spcs.Extension)
+	default:
+		return fmt.Errorf("can't save %s: a sketch is saved as a .%s file", path, spcs.Extension)
+	}
+}
+
+// Save writes the sketch to a .spcs file, its links made relative to
+// it.
+func (h *SketchHost) Save(path string) error {
+	if err := checkSavePath(path); err != nil {
+		return err
+	}
+	h.sk.GenerateAll()
+	err := spcs.SaveFile(h.sk, h.saveFile, path, spcs.Options{Units: core.UnitMM})
+	var le *spcs.LinkError
+	if errors.As(err, &le) {
+		return fmt.Errorf("the sketch links '%s', so it can only be saved on the same volume", le.Link)
+	}
+	if err != nil {
 		return err
 	}
 	h.saveFile = path

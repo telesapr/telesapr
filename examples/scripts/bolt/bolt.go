@@ -8,7 +8,7 @@
 //
 //	spacesolve --script examples/scripts/bolt/bolt.go
 //
-// It writes bolt.slvs and bolt.stl where it is run, unless it is given
+// It writes bolt.spcs and bolt.stl where it is run, unless it is given
 // "-" as a third argument. The designation is any the screw thread
 // screen takes, M8 by default; the length is the shank's, in mm.
 package main
@@ -82,7 +82,7 @@ func main() {
 	if !write {
 		return
 	}
-	if err := doc.Save("bolt.slvs"); err != nil {
+	if err := doc.Save("bolt.spcs"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

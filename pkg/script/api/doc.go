@@ -3,12 +3,13 @@ package api
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/persist/convert"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
@@ -60,13 +61,47 @@ func New() *Doc {
 	return NewDoc(NewSketchHost(sk, ""))
 }
 
-// Open loads a sketch from a file.
+// Open loads a sketch from a .spcs file. A SolveSpace model (.slvs) is
+// converted with Import instead.
 func Open(path string) (*Doc, error) {
-	doc, err := slvs.LoadFile(path)
+	doc, err := loadModel(path)
 	if err != nil {
 		return nil, err
 	}
 	return NewDoc(NewSketchHost(doc.Sketch, path)), nil
+}
+
+// Import converts the SolveSpace model src (.slvs) to the spacesolve
+// model dst (.spcs), and opens it. Every SolveSpace model src links is
+// converted too, to a .spcs file beside it, and the links are pointed
+// at those; a converted file that exists already is used as it is. The
+// .slvs files are not changed. It fails when a linked file is missing,
+// when the links form a cycle, or when a file can't be written.
+func Import(src, dst string) (*Doc, error) {
+	plan, err := convert.MakePlan(src, dst)
+	if err != nil {
+		return nil, err
+	}
+	if missing := plan.Missing(); len(missing) > 0 {
+		var names []string
+		for _, it := range missing {
+			names = append(names, fmt.Sprintf("%s (linked from %s)", it.Src, it.LinkedFrom))
+		}
+		return nil, fmt.Errorf("can't import %s: missing linked files: %s", src, strings.Join(names, ", "))
+	}
+	res, err := convert.Run(plan, convert.Options{Units: core.UnitMM, Quiet: true})
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Failed) > 0 {
+		var failed []string
+		for path, err := range res.Failed {
+			failed = append(failed, fmt.Sprintf("%s: %v", path, err))
+		}
+		sort.Strings(failed)
+		return nil, fmt.Errorf("can't import %s: %s", src, strings.Join(failed, "; "))
+	}
+	return Open(plan.Root().Dst)
 }
 
 // fail stops the call with an error.
@@ -92,13 +127,14 @@ func (d *Doc) change(fn func(sk *sketch.Sketch)) {
 	})
 }
 
-// Load replaces the sketch by the one in a file.
+// Load replaces the sketch by the one in a .spcs file.
 func (d *Doc) Load(path string) (err error) {
 	d.h.Run(func() { err = d.h.Load(path) })
 	return err
 }
 
-// Save regenerates the sketch and writes it to a file.
+// Save regenerates the sketch and writes it to a .spcs file. A
+// SolveSpace model (.slvs) is not written.
 func (d *Doc) Save(path string) (err error) {
 	d.h.Run(func() { err = d.h.Save(path) })
 	return err

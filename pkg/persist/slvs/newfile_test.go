@@ -2,12 +2,12 @@ package slvs_test
 
 import (
 	"fmt"
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
@@ -22,7 +22,7 @@ func TestNewFileVsCppSave(t *testing.T) {
 	sk := sketch.NewSketch()
 	sk.NewFile()
 	sk.GenerateAll()
-	got := slvs.NewDocument(sk).Save()
+	got := slvswrite.Save(sk)
 	if string(got) != string(want) {
 		t.Errorf("new file save differs from C++:\n%s", firstDiff(string(want), string(got)))
 	}

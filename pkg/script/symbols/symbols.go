@@ -6,7 +6,7 @@ package symbols
 
 import "reflect"
 
-//go:generate go tool yaegi extract -name symbols github.com/spacesolve/spacesolve/pkg/script/api github.com/spacesolve/spacesolve/pkg/check github.com/spacesolve/spacesolve/pkg/geom github.com/spacesolve/spacesolve/pkg/core github.com/spacesolve/spacesolve/pkg/sketch github.com/spacesolve/spacesolve/pkg/srf github.com/spacesolve/spacesolve/pkg/persist/slvs
+//go:generate go tool yaegi extract -name symbols github.com/spacesolve/spacesolve/pkg/script/api github.com/spacesolve/spacesolve/pkg/check github.com/spacesolve/spacesolve/pkg/geom github.com/spacesolve/spacesolve/pkg/core github.com/spacesolve/spacesolve/pkg/sketch github.com/spacesolve/spacesolve/pkg/srf github.com/spacesolve/spacesolve/pkg/persist/spcs github.com/spacesolve/spacesolve/pkg/persist/convert
 //go:generate go tool yaegi extract -name symbols bufio bytes cmp context encoding/csv errors flag fmt io io/fs math math/bits math/cmplx math/rand os path path/filepath regexp sort strconv strings sync text/tabwriter time unicode unicode/utf8
 
 //
@@ -15,7 +15,7 @@ import "reflect"
 
 //
 // What help() says about all of those, from their sources.
-//go:generate go run ./gendoc -full github.com/spacesolve/spacesolve/pkg/script/api github.com/spacesolve/spacesolve/pkg/script/api github.com/spacesolve/spacesolve/pkg/check github.com/spacesolve/spacesolve/pkg/geom github.com/spacesolve/spacesolve/pkg/core github.com/spacesolve/spacesolve/pkg/sketch github.com/spacesolve/spacesolve/pkg/srf github.com/spacesolve/spacesolve/pkg/persist/slvs bufio bytes cmp context encoding/csv encoding/json errors flag fmt io io/fs math math/bits math/cmplx math/rand os path path/filepath regexp sort strconv strings sync text/tabwriter time unicode unicode/utf8
+//go:generate go run ./gendoc -full github.com/spacesolve/spacesolve/pkg/script/api github.com/spacesolve/spacesolve/pkg/script/api github.com/spacesolve/spacesolve/pkg/check github.com/spacesolve/spacesolve/pkg/geom github.com/spacesolve/spacesolve/pkg/core github.com/spacesolve/spacesolve/pkg/sketch github.com/spacesolve/spacesolve/pkg/srf github.com/spacesolve/spacesolve/pkg/persist/spcs github.com/spacesolve/spacesolve/pkg/persist/convert bufio bytes cmp context encoding/csv encoding/json errors flag fmt io io/fs math math/bits math/cmplx math/rand os path path/filepath regexp sort strconv strings sync text/tabwriter time unicode unicode/utf8
 
 // Symbols maps an import path, with the package's name after it, to
 // the package's exported symbols.

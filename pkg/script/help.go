@@ -24,7 +24,8 @@ var helpOrder = []string{
 	"github.com/spacesolve/spacesolve/pkg/sketch",
 	"github.com/spacesolve/spacesolve/pkg/srf",
 	"github.com/spacesolve/spacesolve/pkg/check",
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs",
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs",
+	"github.com/spacesolve/spacesolve/pkg/persist/convert",
 }
 
 // helpPackages are the import paths help knows, helpOrder first.

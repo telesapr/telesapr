@@ -1,4 +1,4 @@
-package slvs
+package link
 
 import (
 	"fmt"

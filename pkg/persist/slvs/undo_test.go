@@ -1,6 +1,7 @@
 package slvs
 
 import (
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -22,7 +23,7 @@ func TestUndoRedoRegenerates(t *testing.T) {
 		t.Fatal(err)
 	}
 	sk := doc.Sketch
-	before := string(doc.Save())
+	before := string(slvswrite.Save(doc.Sketch))
 
 	sk.UndoRemember()
 	var c *core.Constraint
@@ -36,18 +37,18 @@ func TestUndoRedoRegenerates(t *testing.T) {
 	}
 	c.ValA *= 2
 	sk.GenerateAll()
-	after := string(doc.Save())
+	after := string(slvswrite.Save(doc.Sketch))
 	if after == before {
 		t.Fatal("changing the dimension changed nothing")
 	}
 
-	if !sk.UndoUndo() || string(doc.Save()) != before {
+	if !sk.UndoUndo() || string(slvswrite.Save(doc.Sketch)) != before {
 		t.Errorf("undo didn't restore the original")
 	}
 	if sk.Undo.Cnt != 0 || sk.Redo.Cnt != 1 {
 		t.Errorf("stacks: undo %d redo %d, want 0 1", sk.Undo.Cnt, sk.Redo.Cnt)
 	}
-	if !sk.UndoRedo() || string(doc.Save()) != after {
+	if !sk.UndoRedo() || string(slvswrite.Save(doc.Sketch)) != after {
 		t.Errorf("redo didn't restore the change")
 	}
 	if sk.UndoRedo() {
@@ -69,12 +70,12 @@ func TestUndoReloadsLinked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	before := string(doc.Save())
+	before := string(slvswrite.Save(doc.Sketch))
 	doc.Sketch.UndoRemember()
 	if !doc.Sketch.UndoUndo() {
 		t.Fatal("nothing to undo")
 	}
-	if got := string(doc.Save()); got != before {
+	if got := string(slvswrite.Save(doc.Sketch)); got != before {
 		t.Errorf("undo changed the linked sketch")
 	}
 }

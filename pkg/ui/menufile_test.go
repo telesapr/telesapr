@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/persist/convert"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -34,24 +35,21 @@ func copyFile(t *testing.T, from, to string) {
 	}
 }
 
-// TestSaveNewFileVsCpp saves a new sketch through File > Save and
-// compares it with C++'s save of a new file.
-func TestSaveNewFileVsCpp(t *testing.T) {
+// TestSaveNewFile saves a new sketch through File > Save: the name the
+// user gives gets the .spcs extension.
+func TestSaveNewFile(t *testing.T) {
 	ss, p := newTestApp(t)
-	path := filepath.Join(t.TempDir(), "a.slvs")
+	path := filepath.Join(t.TempDir(), "a")
 	p.FilePaths = []string{path}
 	ss.MenuFile(CmdSave)
+	path += ".spcs"
 
 	got, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := os.ReadFile(filepath.Join("..", "..", "testdata", "cppsave", "newfile.cppsave"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("saved new file differs from C++ (%d vs %d bytes)", len(got), len(want))
+	if !strings.HasPrefix(string(got), "spacesolve 1\n\nunits mm\n") {
+		t.Errorf("saved file starts %.40q", got)
 	}
 	if ss.SaveFile != path || ss.SK.Unsaved {
 		t.Errorf("SaveFile %q unsaved %v", ss.SaveFile, ss.SK.Unsaved)
@@ -69,6 +67,66 @@ func TestSaveNewFileVsCpp(t *testing.T) {
 	if len(p.FileDialogs) != 1 {
 		t.Errorf("%d file dialogs", len(p.FileDialogs))
 	}
+
+	// What the file holds opens as the sketch saved.
+	if !ss.Load(path) || len(ss.SK.Groups) != 2 {
+		t.Errorf("reopened with %d groups", len(ss.SK.Groups))
+	}
+}
+
+// TestSaveNewFileVsCpp saves a new sketch as .slvs, through the hook
+// the C++ comparison tests use, and compares it with C++'s save of a new
+// file.
+func TestSaveNewFileVsCpp(t *testing.T) {
+	ss, _ := newTestApp(t)
+	path := filepath.Join(t.TempDir(), "a.slvs")
+	if !ss.SaveToFile(path) {
+		t.Fatal("save failed")
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(filepath.Join("..", "..", "testdata", "cppsave", "newfile.cppsave"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("saved new file differs from C++ (%d vs %d bytes)", len(got), len(want))
+	}
+}
+
+func TestModelFileName(t *testing.T) {
+	for in, want := range map[string]string{
+		"a.spcs": "a.spcs", "a.SPCS": "a.SPCS", "a.slvs": "a.spcs", "a": "a.spcs", "a.b": "a.b.spcs",
+	} {
+		if got := modelFileName(in); got != want {
+			t.Errorf("modelFileName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// importFixture converts a fixture to a .spcs file in a new temporary
+// directory, with the files beside it, and returns the .spcs file.
+func importFixture(t *testing.T, fixture string) string {
+	t.Helper()
+	dir := t.TempDir()
+	from := filepath.Join("..", "..", "testdata", filepath.FromSlash(filepath.Dir(fixture)))
+	entries, err := os.ReadDir(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			copyFile(t, filepath.Join(from, e.Name()), filepath.Join(dir, e.Name()))
+		}
+	}
+	src := filepath.Join(dir, filepath.Base(fixture))
+	dst := withExtension(src, "spcs")
+	if _, _, err := convert.File(src, dst, true); err != nil {
+		t.Fatal(err)
+	}
+	return dst
 }
 
 // TestOpenAndUnsavedChanges opens a fixture, and checks the question
@@ -112,14 +170,13 @@ func TestOpenAndUnsavedChanges(t *testing.T) {
 // when the file is opened again.
 func TestAutosave(t *testing.T) {
 	ss, p := newTestApp(t)
-	path := filepath.Join(t.TempDir(), "normal.slvs")
-	copyFile(t, filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs"), path)
+	path := importFixture(t, "group/translate_nd/normal.slvs")
 	if !ss.Load(path) {
 		t.Fatal("load failed")
 	}
 
 	ss.Autosave()
-	backup := strings.TrimSuffix(path, ".slvs") + ".slvs~"
+	backup := path + "~"
 	if _, err := os.Stat(backup); err == nil {
 		t.Fatal("autosave of a saved sketch")
 	}
@@ -149,11 +206,8 @@ func TestAutosave(t *testing.T) {
 // folder, and checks the link still resolves from there.
 func TestSaveAsKeepsLinks(t *testing.T) {
 	ss, p := newTestApp(t)
-	dir := t.TempDir()
-	src := filepath.Join(dir, "src", "normal.slvs")
-	copyFile(t, filepath.Join("..", "..", "testdata", "group", "link_stl", "normal.slvs"), src)
-	copyFile(t, filepath.Join("..", "..", "testdata", "group", "link_stl", "box.stl"),
-		filepath.Join(dir, "src", "box.stl"))
+	src := importFixture(t, "group/link_stl/normal.slvs")
+	dir := filepath.Dir(filepath.Dir(src))
 	if !ss.Load(src) {
 		t.Fatal("load failed")
 	}
@@ -169,7 +223,7 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 		t.Fatal("linked mesh didn't load")
 	}
 
-	dst := filepath.Join(dir, "other", "deeper", "b.slvs")
+	dst := filepath.Join(dir, "other", "deeper", "b.spcs")
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +233,7 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "Group.impFileRel=../../src/box.stl\n") {
+	if want := "  link \"../../" + filepath.Base(filepath.Dir(src)) + "/box.stl\"\n"; !strings.Contains(string(data), want) {
 		t.Error("link not rewritten relative to the new file")
 	}
 

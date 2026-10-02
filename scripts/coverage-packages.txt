@@ -5,3 +5,7 @@
 pkg/check
 pkg/internal/sweep
 pkg/thread
+pkg/internal/slvswrite
+pkg/persist/convert
+pkg/persist/link
+pkg/persist/spcs

@@ -5,7 +5,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/persist/link"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
@@ -243,7 +243,7 @@ func (d *Doc) Image(path string, at Vec, height float64) Entity {
 		fail("%v", err)
 	}
 	return d.request(sketch.RequestImage, needWorkplane("an image"), func(sk *sketch.Sketch, hr core.HRequest) {
-		if !slvs.LoadLinkedImage(sk, "", abs) {
+		if !link.LoadLinkedImage(sk, "", abs) {
 			fail("can't read the image '%s'", path)
 		}
 		img := sk.Images[abs]

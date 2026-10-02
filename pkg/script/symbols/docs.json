@@ -1718,9 +1718,21 @@
 			}
 		},
 		"funcs": {
+			"BaselineKey": {
+				"decl": "func BaselineKey(line string) string",
+				"text": "BaselineKey is the fixture and group a baseline line is about."
+			},
+			"CompareBaseline": {
+				"decl": "func CompareBaseline(got, want string, relTol float64) string",
+				"text": "CompareBaseline compares two baseline lines field by field and says what differs, or returns \"\"."
+			},
 			"Group": {
 				"decl": "func Group(sk *sketch.Sketch, g *sketch.Group) Report",
 				"text": "Group checks the solid a group's regeneration left, which is the solid of every group up to it: the shell of the last group that contributed solid model, and the mesh shown for g."
+			},
+			"ReadBaseline": {
+				"decl": "func ReadBaseline(path string) (map[string]string, []string, error)",
+				"text": "ReadBaseline reads a baseline file into its lines by key, and the keys in file order."
 			},
 			"Solid": {
 				"decl": "func Solid(shell *srf.SShell, mesh *srf.SMesh) Report",
@@ -3787,62 +3799,213 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs": {
-		"name": "slvs",
+	"github.com/spacesolve/spacesolve/pkg/persist/convert": {
+		"name": "convert",
+		"text": "Package convert imports SolveSpace .slvs files as .spcs documents.",
 		"types": {
-			"Block": {
-				"kind": "struct"
-			},
-			"Document": {
+			"CycleError": {
+				"text": "CycleError is the error for files that link each other in a ring.",
 				"kind": "struct",
 				"methods": {
-					"Save": {
-						"decl": "func (d *Document) Save() []byte",
-						"text": "Save writes the document as C++ SolveSpaceUI::SaveToFile does: the sketch is regenerated first, and each entity's numeric values and visibility are refreshed as for export."
+					"Error": {
+						"decl": "func (e *CycleError) Error() string"
+					}
+				}
+			},
+			"Item": {
+				"text": "Item is one file of a plan.",
+				"kind": "struct"
+			},
+			"Options": {
+				"text": "Options say how Run treats what is there already.",
+				"kind": "struct"
+			},
+			"Plan": {
+				"text": "Plan is what an import would write: every file, links before the files that link them, and the root last.",
+				"kind": "struct",
+				"methods": {
+					"Existing": {
+						"decl": "func (p *Plan) Existing() []Item",
+						"text": "Existing lists the linked files whose .spcs copy exists already, for which the user chooses reuse or overwrite once."
 					},
-					"SaveRegenerated": {
-						"decl": "func (d *Document) SaveRegenerated() []byte",
-						"text": "SaveRegenerated is Save for a sketch the caller has just regenerated, as a user interface does through its own GenerateAll."
+					"Missing": {
+						"decl": "func (p *Plan) Missing() []Item",
+						"text": "Missing lists the files of the plan that can't be read."
+					},
+					"Root": {
+						"decl": "func (p *Plan) Root() Item",
+						"text": "Root is the plan's root item."
 					}
 				},
 				"makers": [
-					"LoadFile",
-					"NewDocument"
+					"MakePlan"
 				]
 			},
-			"LocateResponse": {
-				"text": "LocateResponse is what the user answered when a linked file was missing (C++ LocateImportedFile and the file dialog after it).",
-				"kind": "int",
-				"values": [
-					"LocateNo",
-					"LocateYes",
-					"LocateCancel",
-					"LocateGaveUp"
+			"Result": {
+				"text": "Result is what Run did.",
+				"kind": "struct",
+				"makers": [
+					"Run"
 				]
-			},
-			"RemapEntry": {
-				"kind": "struct"
 			}
 		},
 		"funcs": {
+			"File": {
+				"decl": "func File(root, dst string, overwrite bool) (*Plan, *Result, error)",
+				"text": "File converts root and what it links to dst without asking anything: the batch conversion the command line runs."
+			},
+			"MakePlan": {
+				"decl": "func MakePlan(root, dst string) (*Plan, error)",
+				"text": "MakePlan walks the link tree of root, which is converted to dst."
+			},
+			"Run": {
+				"decl": "func Run(p *Plan, o Options) (*Result, error)",
+				"text": "Run converts the files of the plan, links first."
+			},
+			"SiblingPath": {
+				"decl": "func SiblingPath(src string) string",
+				"text": "SiblingPath is where a linked .slvs file's .spcs copy goes: beside it, with the extension changed."
+			}
+		},
+		"values": {
+			"ErrCancelled": {
+				"decl": "var ErrCancelled",
+				"text": "ErrCancelled is Run's error when the user cancelled at a missing linked file."
+			}
+		}
+	},
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs": {
+		"name": "spcs",
+		"text": "Package spcs reads and writes spacesolve's own file format, .spcs, described in docs/spcs-format.md.",
+		"types": {
+			"Document": {
+				"text": "Document is a decoded file.",
+				"kind": "struct",
+				"methods": {
+					"Encode": {
+						"decl": "func (d *Document) Encode() []byte",
+						"text": "Encode writes the document as it was decoded, without regenerating it: its saved entities, mesh and shell as the file held them."
+					}
+				},
+				"makers": [
+					"Decode",
+					"DecodeTree",
+					"Load",
+					"LoadFile"
+				]
+			},
+			"Error": {
+				"text": "Error is a syntax error, or a model error found while decoding, at a place in the file.",
+				"kind": "struct",
+				"methods": {
+					"Error": {
+						"decl": "func (e *Error) Error() string"
+					}
+				}
+			},
+			"File": {
+				"text": "File is a parsed file: its statements in order, the header first.",
+				"kind": "struct",
+				"makers": [
+					"EncodeTree",
+					"Parse"
+				]
+			},
+			"LinkError": {
+				"text": "LinkError is SaveFile's error for a link that can't be written relative to the new file, such as one on another Windows volume.",
+				"kind": "struct",
+				"methods": {
+					"Error": {
+						"decl": "func (e *LinkError) Error() string"
+					},
+					"Unwrap": {
+						"decl": "func (e *LinkError) Unwrap() error"
+					}
+				}
+			},
+			"Node": {
+				"text": "Node is a statement: a field, a field with an expression, or a block with statements inside.",
+				"kind": "struct"
+			},
+			"Options": {
+				"text": "Options are what a save records beside the sketch.",
+				"kind": "struct"
+			},
+			"Pos": {
+				"text": "Pos is a place in a file: a line and a column, both from 1.",
+				"kind": "struct",
+				"methods": {
+					"String": {
+						"decl": "func (p Pos) String() string"
+					}
+				}
+			},
+			"Value": {
+				"text": "Value is one value of a statement: a word, or a string when Quoted.",
+				"kind": "struct",
+				"makers": [
+					"String",
+					"Word"
+				]
+			},
+			"VersionError": {
+				"text": "VersionError is the error for a file of a newer major version than this reader knows.",
+				"kind": "struct",
+				"methods": {
+					"Error": {
+						"decl": "func (e *VersionError) Error() string"
+					}
+				}
+			}
+		},
+		"funcs": {
+			"Decode": {
+				"decl": "func Decode(data []byte) (doc *Document, err error)",
+				"text": "Decode reads a file."
+			},
+			"DecodeTree": {
+				"decl": "func DecodeTree(f *File) (doc *Document, err error)",
+				"text": "DecodeTree is Decode for a parsed file."
+			},
+			"Encode": {
+				"decl": "func Encode(sk *sketch.Sketch, o Options) []byte",
+				"text": "Encode writes a sketch the caller has just regenerated, as a user interface does through its own GenerateAll."
+			},
+			"EncodeTree": {
+				"decl": "func EncodeTree(sk *sketch.Sketch, o Options) *File",
+				"text": "EncodeTree is Encode without the refresh, as a tree."
+			},
+			"FormatReal": {
+				"decl": "func FormatReal(v float64) string",
+				"text": "FormatReal writes v in the shortest form that reads back to the same bits: plain notation from 1e-6 up to 1e21, exponent notation outside."
+			},
+			"Load": {
+				"decl": "func Load(data []byte, path string) (doc *Document, err error)",
+				"text": "Load is LoadFile for a file's contents, data, with links relative to path."
+			},
 			"LoadFile": {
-				"decl": "func LoadFile(path string) (doc *Document, err error)"
+				"decl": "func LoadFile(path string) (*Document, error)",
+				"text": "LoadFile opens a document: it decodes the file, loads what the sketch links, asking through link.LocateMissingFile for a missing file, and regenerates the sketch without solving."
 			},
-			"LoadLinkedImage": {
-				"decl": "func LoadLinkedImage(sk *sketch.Sketch, saveFile, file string) bool",
-				"text": "LoadLinkedImage loads image file, named relative to saveFile, into the sketch's images unless it is there already, and reports whether the sketch now has its pixels."
+			"Parse": {
+				"decl": "func Parse(data []byte) (*File, error)",
+				"text": "Parse reads the syntax of a file."
 			},
-			"NewDocument": {
-				"decl": "func NewDocument(sk *sketch.Sketch) *Document",
-				"text": "NewDocument wraps a sketch made in memory, such as by Sketch.NewFile, so it can be saved."
+			"Print": {
+				"decl": "func Print(f *File) []byte",
+				"text": "Print writes a tree back as text."
 			},
-			"RebaseLinks": {
-				"decl": "func RebaseLinks(sk *sketch.Sketch, from, to string) (badLink string, err error)",
-				"text": "RebaseLinks rewrites the linked files and images of sk, named relative to the file the sketch was in (from, or \"\" for a new sketch), relative to the file it is saved in next (to), as C++ writes its 'P' fields relative to the file being saved."
+			"SaveFile": {
+				"decl": "func SaveFile(sk *sketch.Sketch, from, path string, o Options) error",
+				"text": "SaveFile regenerates nothing: it writes a sketch the caller has just regenerated to path, with its links rebased from the file the sketch was in (from, or \"\" for a new sketch) to path."
 			},
-			"ReloadAllLinked": {
-				"decl": "func ReloadAllLinked(sk *sketch.Sketch, saveFile string)",
-				"text": "ReloadAllLinked reloads the linked files and images of sk, relative to saveFile, the file the sketch is saved in or \"\" (C++ SolveSpaceUI::ReloadAllLinked)."
+			"String": {
+				"decl": "func String(s string) Value",
+				"text": "String makes a quoted value."
+			},
+			"Word": {
+				"decl": "func Word(s string) Value",
+				"text": "Word makes an unquoted value."
 			}
 		},
 		"values": {
@@ -3850,25 +4013,13 @@
 				"decl": "var ErrCancelled",
 				"text": "ErrCancelled is LoadFile's error when the user cancelled loading at a missing linked file."
 			},
-			"ImageCorrupted": {
-				"decl": "var ImageCorrupted",
-				"text": "ImageCorrupted, when set, tells the user an image they chose can't be read (C++ Error(\"The image '%s' is corrupted.\"))."
+			"Extension": {
+				"decl": "const Extension",
+				"text": "Extension is the file extension of the format, without its dot."
 			},
-			"LocateCancel": {
-				"decl": "const LocateCancel"
-			},
-			"LocateGaveUp": {
-				"decl": "const LocateGaveUp"
-			},
-			"LocateMissingFile": {
-				"decl": "var LocateMissingFile",
-				"text": "LocateMissingFile, when set, asks the user to find a linked file or image that couldn't be read, named relative to the sketch's file, and returns where it is now (C++ LocateImportedFile and the file dialogs of ReloadAllLinked and ReloadLinkedImage)."
-			},
-			"LocateNo": {
-				"decl": "const LocateNo"
-			},
-			"LocateYes": {
-				"decl": "const LocateYes"
+			"Version": {
+				"decl": "const Version",
+				"text": "Version is the major version of the format this package writes, and the newest it reads."
 			}
 		}
 	},
@@ -4064,7 +4215,7 @@
 					},
 					"Load": {
 						"decl": "func (d *Doc) Load(path string) (err error)",
-						"text": "Load replaces the sketch by the one in a file."
+						"text": "Load replaces the sketch by the one in a .spcs file."
 					},
 					"Lock": {
 						"decl": "func (d *Doc) Lock(point Entity) Constraint",
@@ -4140,7 +4291,7 @@
 					},
 					"Save": {
 						"decl": "func (d *Doc) Save(path string) (err error)",
-						"text": "Save regenerates the sketch and writes it to a file."
+						"text": "Save regenerates the sketch and writes it to a .spcs file. A\nSolveSpace model (.slvs) is not written."
 					},
 					"Select": {
 						"decl": "func (d *Doc) Select(entities ...Entity)",
@@ -4229,6 +4380,7 @@
 				},
 				"makers": [
 					"Current",
+					"Import",
 					"New",
 					"NewDoc",
 					"Open"
@@ -4538,7 +4690,7 @@
 					},
 					"Load": {
 						"decl": "func (h *SketchHost) Load(path string) error",
-						"text": "Load replaces the sketch by the one in a file."
+						"text": "Load replaces the sketch by the one in a .spcs file."
 					},
 					"MmPerUnit": {
 						"decl": "func (h *SketchHost) MmPerUnit() float64",
@@ -4562,7 +4714,7 @@
 					},
 					"Save": {
 						"decl": "func (h *SketchHost) Save(path string) error",
-						"text": "Save writes the sketch to a file, its links made relative to it."
+						"text": "Save writes the sketch to a .spcs file, its links made relative to\nit."
 					},
 					"Select": {
 						"decl": "func (h *SketchHost) Select([]sketch.Selection)",
@@ -4602,6 +4754,10 @@
 				"decl": "func Current() *Doc",
 				"text": "Current is the document the script was run on: the drawing on screen\nin the application, the file named on the command line of the\ncommand-line tool, or a new sketch. A script compiled as a program\nof its own gets a new sketch too, unless it called SetCurrent."
 			},
+			"Import": {
+				"decl": "func Import(src, dst string) (*Doc, error)",
+				"text": "Import converts the SolveSpace model src (.slvs) to the spacesolve\nmodel dst (.spcs), and opens it. Every SolveSpace model src links is\nconverted too, to a .spcs file beside it, and the links are pointed\nat those; a converted file that exists already is used as it is. The\n.slvs files are not changed. It fails when a linked file is missing,\nwhen the links form a cycle, or when a file can't be written."
+			},
 			"Inch": {
 				"decl": "func Inch(v float64) float64",
 				"text": "Inch is v inches in mm."
@@ -4620,7 +4776,7 @@
 			},
 			"Open": {
 				"decl": "func Open(path string) (*Doc, error)",
-				"text": "Open loads a sketch from a file."
+				"text": "Open loads a sketch from a .spcs file. A SolveSpace model (.slvs) is\nconverted with Import instead."
 			},
 			"SetCurrent": {
 				"decl": "func SetCurrent(d *Doc)",

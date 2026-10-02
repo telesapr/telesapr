@@ -1,0 +1,14 @@
+# File > Import of a SolveSpace model: the import asks where to save the
+# converted model, shows the files it will write, writes them and opens
+# the result. A second import into the same file is cancelled at the plan.
+product
+file $testdata/group/translate_nd/normal.slvs
+file $tmp/imported
+answer yes
+menu File|Import...
+dump
+save
+file $testdata/group/translate_nd/normal.slvs
+file $tmp/imported.spcs
+answer cancel
+menu File|Import...
