@@ -1,0 +1,91 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('FreeCAD Model'),'2;1');
+FILE_NAME('Open CASCADE Shape Model','2026-10-03T02:00:24',('FreeCAD'),(
+    'FreeCAD'),'Open CASCADE STEP processor 7.9','FreeCAD','Unknown');
+FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));
+ENDSEC;
+DATA;
+#1 = APPLICATION_PROTOCOL_DEFINITION('international standard',
+  'automotive_design',2000,#2);
+#2 = APPLICATION_CONTEXT(
+  'core data for automotive mechanical design processes');
+#3 = SHAPE_DEFINITION_REPRESENTATION(#4,#10);
+#4 = PRODUCT_DEFINITION_SHAPE('','',#5);
+#5 = PRODUCT_DEFINITION('design','',#6,#9);
+#6 = PRODUCT_DEFINITION_FORMATION('','',#7);
+#7 = PRODUCT('Open CASCADE STEP translator 7.9 5',
+  'Open CASCADE STEP translator 7.9 5','',(#8));
+#8 = PRODUCT_CONTEXT('',#2,'mechanical');
+#9 = PRODUCT_DEFINITION_CONTEXT('part definition',#2,'design');
+#10 = ADVANCED_BREP_SHAPE_REPRESENTATION('',(#11,#15),#69);
+#11 = AXIS2_PLACEMENT_3D('',#12,#13,#14);
+#12 = CARTESIAN_POINT('',(0.,0.,0.));
+#13 = DIRECTION('',(0.,0.,1.));
+#14 = DIRECTION('',(1.,0.,-0.));
+#15 = MANIFOLD_SOLID_BREP('',#16);
+#16 = CLOSED_SHELL('',(#17,#43,#59));
+#17 = ADVANCED_FACE('',(#18),#38,.T.);
+#18 = FACE_BOUND('',#19,.T.);
+#19 = EDGE_LOOP('',(#20,#31));
+#20 = ORIENTED_EDGE('',*,*,#21,.T.);
+#21 = EDGE_CURVE('',#22,#24,#26,.T.);
+#22 = VERTEX_POINT('',#23);
+#23 = CARTESIAN_POINT('',(4.286263797016E-16,-1.049831847863E-31,-7.));
+#24 = VERTEX_POINT('',#25);
+#25 = CARTESIAN_POINT('',(4.286263797016E-16,-1.049831847863E-31,7.));
+#26 = CIRCLE('',#27,7.);
+#27 = AXIS2_PLACEMENT_3D('',#28,#29,#30);
+#28 = CARTESIAN_POINT('',(0.,0.,0.));
+#29 = DIRECTION('',(1.,0.,-0.));
+#30 = DIRECTION('',(0.,0.,1.));
+#31 = ORIENTED_EDGE('',*,*,#32,.F.);
+#32 = EDGE_CURVE('',#22,#24,#33,.T.);
+#33 = CIRCLE('',#34,7.);
+#34 = AXIS2_PLACEMENT_3D('',#35,#36,#37);
+#35 = CARTESIAN_POINT('',(0.,0.,0.));
+#36 = DIRECTION('',(-2.449293598295E-16,-1.,0.));
+#37 = DIRECTION('',(1.,-2.449293598295E-16,0.));
+#38 = SPHERICAL_SURFACE('',#39,7.);
+#39 = AXIS2_PLACEMENT_3D('',#40,#41,#42);
+#40 = CARTESIAN_POINT('',(0.,0.,0.));
+#41 = DIRECTION('',(0.,0.,1.));
+#42 = DIRECTION('',(1.,0.,-0.));
+#43 = ADVANCED_FACE('',(#44),#54,.F.);
+#44 = FACE_BOUND('',#45,.F.);
+#45 = EDGE_LOOP('',(#46,#47));
+#46 = ORIENTED_EDGE('',*,*,#21,.T.);
+#47 = ORIENTED_EDGE('',*,*,#48,.T.);
+#48 = EDGE_CURVE('',#24,#22,#49,.T.);
+#49 = CIRCLE('',#50,7.);
+#50 = AXIS2_PLACEMENT_3D('',#51,#52,#53);
+#51 = CARTESIAN_POINT('',(0.,0.,0.));
+#52 = DIRECTION('',(1.,0.,-0.));
+#53 = DIRECTION('',(0.,0.,1.));
+#54 = PLANE('',#55);
+#55 = AXIS2_PLACEMENT_3D('',#56,#57,#58);
+#56 = CARTESIAN_POINT('',(0.,-10.,-10.));
+#57 = DIRECTION('',(1.,0.,-0.));
+#58 = DIRECTION('',(0.,0.,1.));
+#59 = ADVANCED_FACE('',(#60),#64,.T.);
+#60 = FACE_BOUND('',#61,.T.);
+#61 = EDGE_LOOP('',(#62,#63));
+#62 = ORIENTED_EDGE('',*,*,#32,.T.);
+#63 = ORIENTED_EDGE('',*,*,#48,.T.);
+#64 = SPHERICAL_SURFACE('',#65,7.);
+#65 = AXIS2_PLACEMENT_3D('',#66,#67,#68);
+#66 = CARTESIAN_POINT('',(0.,0.,0.));
+#67 = DIRECTION('',(0.,0.,1.));
+#68 = DIRECTION('',(1.,0.,-0.));
+#69 = ( GEOMETRIC_REPRESENTATION_CONTEXT(3) 
+GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#73)) GLOBAL_UNIT_ASSIGNED_CONTEXT(
+(#70,#71,#72)) REPRESENTATION_CONTEXT('Context #1',
+  '3D Context with UNIT and UNCERTAINTY') );
+#70 = ( LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.) );
+#71 = ( NAMED_UNIT(*) PLANE_ANGLE_UNIT() SI_UNIT($,.RADIAN.) );
+#72 = ( NAMED_UNIT(*) SI_UNIT($,.STERADIAN.) SOLID_ANGLE_UNIT() );
+#73 = UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(1.E-07),#70,
+  'distance_accuracy_value','confusion accuracy');
+#74 = PRODUCT_RELATED_PRODUCT_CATEGORY('part',$,(#7));
+ENDSEC;
+END-ISO-10303-21;

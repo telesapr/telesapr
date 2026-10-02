@@ -1,0 +1,16 @@
+# name volume area (mm3, mm2): volumes worked out from the dimensions;
+# a measured one is marked m. Written by scripts/step-fixtures.py.
+box 6000 2200
+box_hole 10492.0355 3853.45127
+cylinder 942.477796 534.070751
+sphere 1436.75504 615.75216
+sphere_half_poles 718.37752 461.81412
+sphere_dome 718.37752 461.81412
+cone_apex 339.292007 316.986457
+cone_frustum 593.761012 409.605553
+torus 1776.52879 1184.35253
+torus_quarter 444.132198 352.6368
+vase_revolved 1849.3801 934.298116 m
+blob_extruded 473.778213 399.495963
+box_fillet 1961.37167 970.384947
+sphere_bored 1059.68942 794.767061

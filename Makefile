@@ -69,7 +69,7 @@ coverage:
 
 # The fuzz targets, as package:target; go test fuzzes one at a time.
 FUZZTIME ?= 30s
-FUZZ_TARGETS = ./pkg/core:FuzzExpr ./pkg/persist/slvs:FuzzLoad ./pkg/persist/spcs:FuzzRead
+FUZZ_TARGETS = ./pkg/core:FuzzExpr ./pkg/persist/slvs:FuzzLoad ./pkg/persist/spcs:FuzzRead ./pkg/persist/step:FuzzStep
 
 fuzz:
 	@for t in $(FUZZ_TARGETS); do \
