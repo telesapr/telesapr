@@ -5,19 +5,39 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/spacesolve/spacesolve/pkg/persist/link"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
 // backupExt is the autosave file extension (C++ BACKUP_EXT).
-const backupExt = "slvs~"
+const backupExt = spcs.Extension + "~"
+
+// legacySlvsSave, set only by tests, lets the interface open and save
+// .slvs files, for the tests that compare with C++ until ROADMAP-JUMP.md
+// package 5.1 freezes them. In the product it is nil: spacesolve opens
+// and saves .spcs files, and imports .slvs files.
+var legacySlvsSave func(sk *sketch.Sketch) []byte
+
+// maxWarnings is how many of a file's warnings a message lists.
+const maxWarnings = 8
+
+// warningList lists warnings for a message, at most maxWarnings.
+func warningList(ws []string) string {
+	if len(ws) > maxWarnings {
+		return strings.Join(ws[:maxWarnings], "\n") + fmt.Sprintf("\n... and %d more", len(ws)-maxWarnings)
+	}
+	return strings.Join(ws, "\n")
+}
 
 // withExtension replaces the extension of path's file name with ext
 // (C++ Path::WithExtension).
@@ -33,6 +53,15 @@ func withExtension(path, ext string) string {
 // (C++ Path::HasExtension).
 func hasExtension(path, ext string) bool {
 	return strings.EqualFold(strings.TrimPrefix(filepath.Ext(path), "."), ext)
+}
+
+// errorStrings is the text of each error.
+func errorStrings[E error](errs []E) []string {
+	out := make([]string, len(errs))
+	for i, e := range errs {
+		out[i] = e.Error()
+	}
+	return out
 }
 
 // LoadAutosaveFor offers to load filename's autosave file instead, and
@@ -88,7 +117,41 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 		ss.Error("Couldn't read from file '%s'", filename)
 		return false
 	}
+	if hasExtension(filename, "slvs") {
+		if legacySlvsSave == nil {
+			ss.Error("'%s' is a SolveSpace model. Use File > Import, or spacesolve-cli "+
+				"convert, to convert it to a spacesolve model, which can then be opened.", filename)
+			return false
+		}
+		return ss.loadSlvs(filename)
+	}
 
+	doc, err := spcs.LoadFile(filename)
+	var ve *spcs.VersionError
+	switch {
+	case errors.Is(err, spcs.ErrCancelled):
+		// The user gave up at a missing linked file.
+		return false
+	case errors.As(err, &ve):
+		ss.Error("The file '%s' was saved by a newer version of the program, in format "+
+			"version %d. This version reads files up to version %d.", filename, ve.File, ve.Reader)
+		return false
+	case err != nil:
+		ss.Error("Unrecognized data in file. This file may be corrupt, or "+
+			"from a newer version of the program.\n\n%v", err)
+		return false
+	}
+	if len(doc.Warnings) > 0 {
+		ss.Error("Some of the file '%s' was not recognized and was left out. It may "+
+			"be from a newer version of the program.\n\n%s", filename, warningList(errorStrings(doc.Warnings)))
+	}
+	ss.setSketch(doc.Sketch)
+	return true
+}
+
+// loadSlvs is LoadFromFile for a .slvs file, which only the tests that
+// compare with C++ open.
+func (ss *SolveSpaceUI) loadSlvs(filename string) bool {
 	doc, err := slvs.LoadFile(filename)
 	if err != nil {
 		if errors.Is(err, slvs.ErrCancelled) {
@@ -118,21 +181,45 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 
 // SaveToFile writes the sketch to filename (C++ SolveSpaceUI::SaveToFile).
 func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
+	if hasExtension(filename, "slvs") && legacySlvsSave == nil {
+		ss.Error("spacesolve doesn't write SolveSpace models; save the sketch as a " +
+			".spcs file.")
+		return false
+	}
+
 	// Make sure all the entities are regenerated up to date, since they
 	// will be exported.
 	ss.ScheduleShowTW()
 	ss.GenerateAll(sketch.GenerateAll)
 
-	if link, err := slvs.RebaseLinks(ss.SK, ss.SaveFile, filename); err != nil {
+	if hasExtension(filename, "slvs") {
+		return ss.saveSlvs(filename)
+	}
+	err := spcs.SaveFile(ss.SK, ss.SaveFile, filename, spcs.Options{Units: ss.ViewUnits})
+	var le *spcs.LinkError
+	switch {
+	case errors.As(err, &le):
+		ss.Error("This sketch links the sketch '%s'; it can only be saved "+
+			"on the same volume.", le.Link)
+		return false
+	case err != nil:
+		ss.Error("Couldn't write to file '%s'", filename)
+		return false
+	}
+	return true
+}
+
+// saveSlvs is SaveToFile for a .slvs file, which only the tests that
+// compare with C++ save.
+func (ss *SolveSpaceUI) saveSlvs(filename string) bool {
+	if link, err := link.RebaseLinks(ss.SK, ss.SaveFile, filename); err != nil {
 		ss.Error("This sketch links the sketch '%s'; it can only be saved "+
 			"on the same volume.", link)
 		return false
 	}
-
-	data := slvs.NewDocument(ss.SK).SaveRegenerated()
-	if err := os.WriteFile(filename, data, 0o644); err != nil {
+	if err := os.WriteFile(filename, legacySlvsSave(ss.SK), 0o644); err != nil {
 		// Put the links back relative to where the sketch still is.
-		_, _ = slvs.RebaseLinks(ss.SK, filename, ss.SaveFile)
+		_, _ = link.RebaseLinks(ss.SK, filename, ss.SaveFile)
 		ss.Error("Couldn't write to file '%s'", filename)
 		return false
 	}
@@ -162,7 +249,7 @@ func (ss *SolveSpaceUI) GetFilenameAndSave(saveAs bool) bool {
 
 	if saveAs || newSaveFile == "" {
 		dialog := ss.Platform.CreateSaveFileDialog(ss.GW.window)
-		dialog.AddFilter(platform.FileFilter{Name: "SolveSpace models", Extensions: []string{"slvs"}})
+		dialog.AddFilters(platform.ModelFileFilters)
 		dialog.ThawChoices(ss.Settings, "Sketch")
 		if newSaveFile != "" {
 			dialog.SetFilename(newSaveFile)
@@ -171,7 +258,7 @@ func (ss *SolveSpaceUI) GetFilenameAndSave(saveAs bool) bool {
 			return false
 		}
 		dialog.FreezeChoices(ss.Settings, "Sketch")
-		newSaveFile = dialog.GetFilename()
+		newSaveFile = modelFileName(dialog.GetFilename())
 	}
 
 	if !ss.SaveToFile(newSaveFile) {
@@ -182,6 +269,20 @@ func (ss *SolveSpaceUI) GetFilenameAndSave(saveAs bool) bool {
 	ss.SaveFile = newSaveFile
 	ss.SK.Unsaved = false
 	return true
+}
+
+// modelFileName is the file a sketch is saved in when the user chose
+// name: name with the .spcs extension, in place of a .slvs extension or
+// added to another.
+func modelFileName(name string) string {
+	switch {
+	case hasExtension(name, spcs.Extension):
+		return name
+	case hasExtension(name, "slvs"):
+		return withExtension(name, spcs.Extension)
+	default:
+		return name + "." + spcs.Extension
+	}
 }
 
 // Autosave saves a backup of an unsaved sketch next to its file (C++
@@ -239,7 +340,7 @@ func (ss *SolveSpaceUI) OkayToStartNewFile() bool {
 // locateMissingFile asks whether to find a linked file that couldn't be
 // read, and where it is (C++ LocateImportedFile, and the file dialogs
 // of ReloadAllLinked and ReloadLinkedImage).
-func (ss *SolveSpaceUI) locateMissingFile(name string, isImage, canCancel bool) (string, slvs.LocateResponse) {
+func (ss *SolveSpaceUI) locateMissingFile(name string, isImage, canCancel bool) (string, link.LocateResponse) {
 	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
 	dialog.SetType(platform.DialogQuestion)
 	dialog.SetTitle("Missing File")
@@ -261,22 +362,22 @@ func (ss *SolveSpaceUI) locateMissingFile(name string, isImage, canCancel bool) 
 			key = "LinkImage"
 			fd.AddFilters(platform.RasterFileFilters)
 		} else {
-			fd.AddFilters(platform.SolveSpaceLinkFileFilters)
+			fd.AddFilters(platform.LinkFileFilters)
 		}
 		fd.ThawChoices(ss.Settings, key)
 		fd.SuggestFilename(name)
 		if fd.RunModal() {
 			fd.FreezeChoices(ss.Settings, key)
-			return fd.GetFilename(), slvs.LocateYes
+			return fd.GetFilename(), link.LocateYes
 		}
 		if canCancel {
-			return "", slvs.LocateCancel
+			return "", link.LocateCancel
 		}
-		return "", slvs.LocateGaveUp
+		return "", link.LocateGaveUp
 	case platform.ResponseNo:
-		return "", slvs.LocateNo
+		return "", link.LocateNo
 	default:
-		return "", slvs.LocateCancel
+		return "", link.LocateCancel
 	}
 }
 
@@ -291,7 +392,7 @@ func (ss *SolveSpaceUI) chooseLinkedImage() (string, bool) {
 	}
 	dialog.FreezeChoices(ss.Settings, "LinkImage")
 	filename := dialog.GetFilename()
-	if !slvs.LoadLinkedImage(ss.SK, ss.SaveFile, filename) {
+	if !link.LoadLinkedImage(ss.SK, ss.SaveFile, filename) {
 		ss.Error("The image '%s' is corrupted.", filename)
 	}
 	return filename, true
@@ -321,7 +422,7 @@ func (ss *SolveSpaceUI) MenuFile(id Command) {
 			break
 		}
 		dialog := ss.Platform.CreateOpenFileDialog(ss.GW.window)
-		dialog.AddFilters(platform.SolveSpaceModelFileFilters)
+		dialog.AddFilters(platform.ModelFileFilters)
 		dialog.ThawChoices(settings, "Sketch")
 		if dialog.RunModal() {
 			dialog.FreezeChoices(settings, "Sketch")
@@ -430,9 +531,13 @@ func (ss *SolveSpaceUI) menuExport(id Command) {
 			ss.ImportDxf(importFile)
 		case hasExtension(importFile, "dwg"):
 			ss.ImportDwg(importFile)
+		case hasExtension(importFile, "slvs"):
+			// A whole model: it replaces the sketch.
+			ss.ImportSolveSpace(importFile)
+			return
 		default:
 			ss.Error("Can't identify file type from file extension of "+
-				"filename '%s'; try .dxf or .dwg.", importFile)
+				"filename '%s'; try .dxf, .dwg or .slvs.", importFile)
 			return
 		}
 

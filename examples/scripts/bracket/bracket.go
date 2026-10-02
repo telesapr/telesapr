@@ -9,7 +9,7 @@
 //
 //	spacesolve --script examples/scripts/bracket/bracket.go
 //
-// It writes bracket.slvs, bracket.stl, bracket.step and bracket.png
+// It writes bracket.spcs, bracket.stl, bracket.step and bracket.png
 // where it is run, unless it is given "-" as a third argument.
 package main
 
@@ -59,7 +59,7 @@ func main() {
 	if !write {
 		return
 	}
-	if err := doc.Save("bracket.slvs"); err != nil {
+	if err := doc.Save("bracket.spcs"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

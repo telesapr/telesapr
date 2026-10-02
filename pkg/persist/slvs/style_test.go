@@ -2,6 +2,7 @@ package slvs
 
 import (
 	"bytes"
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,7 +51,7 @@ func TestStyleDefaults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if saved := string(doc.Save()); !strings.Contains(saved, tc.want) {
+		if saved := string(slvswrite.Save(doc.Sketch)); !strings.Contains(saved, tc.want) {
 			t.Errorf("%s: saved style isn't C++'s:\n%s", tc.name, saved[strings.LastIndex(saved, "Style.h.v"):])
 		}
 	}

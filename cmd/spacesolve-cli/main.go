@@ -1,7 +1,8 @@
-// Command spacesolve-cli performs an action on SolveSpace files without
+// Command spacesolve-cli performs an action on spacesolve models without
 // a window: it renders a thumbnail, exports a view, wireframe, mesh or
-// surfaces, or regenerates a sketch. It ports platform/entrycli.cpp,
-// and adds running Go scripts on a sketch (script.go).
+// surfaces, or regenerates a model. It ports platform/entrycli.cpp, and
+// adds converting SolveSpace models and running Go scripts on a model
+// (script.go).
 package main
 
 import (
@@ -14,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/persist/convert"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/srf"
@@ -29,9 +31,9 @@ func showUsage(w io.Writer, cmd string) {
 
 Common options:
     -o, --output <pattern>
-        For an input file <name>.slvs, replaces the '%' symbol in <pattern>
+        For an input file <name>.spcs, replaces the '%' symbol in <pattern>
         with <name> and uses it as output file. For example, when using
-        --output %-2d.png for input files f/a.slvs and f/b.slvs, output files
+        --output %-2d.png for input files f/a.spcs and f/b.spcs, output files
         f/a-2d.png and f/b-2d.png will be written.
     -v, --view <direction>
         Selects the camera direction. <direction> can be one of "top", "bottom",
@@ -66,6 +68,13 @@ Commands:
         Reloads all imported files, regenerates the sketch, and saves it.
         Note that, although this is not an export command, it uses absolute
         chord tolerance, and can be used to prepare assemblies for export.
+    convert [--output <pattern>] [--overwrite] <model.slvs>...
+        Converts SolveSpace models to spacesolve models, by default each
+        to <name>.spcs beside it. Every SolveSpace model a model links is
+        converted too, to a .spcs file beside it, and the links are pointed
+        at those. A converted linked model that exists already is used as it
+        is, unless --overwrite is given. Nothing is written for a model with
+        a missing linked file or links that form a cycle.
 `)
 
 	list := func(filters []platform.FileFilter) string {
@@ -109,6 +118,7 @@ type options struct {
 	chordTol      float64
 	bgColor       bool
 	width, height uint
+	overwrite     bool
 }
 
 // parse reads args[2:] with the options the command accepts, which are
@@ -158,6 +168,8 @@ func (o *options) parse(args []string, accepted []string, stderr io.Writer) bool
 			case "off":
 				o.bgColor, ok = false, true
 			}
+		case arg == "--overwrite" && takes("--overwrite", "", "--overwrite"):
+			o.overwrite, ok = true, true
 		case hasValue && takes("--size", "", arg):
 			n++
 			var w, h uint
@@ -215,7 +227,11 @@ func newSession(stderr io.Writer) *session {
 			kind = "Error"
 			s.errored = true
 		}
-		fmt.Fprintf(stderr, "%s: %s\n", kind, d.Message)
+		msg := d.Message
+		if d.Description != "" {
+			msg += " " + d.Description
+		}
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", kind, msg)
 		// A message has only its OK button.
 		p.DialogResponses = append(p.DialogResponses, platform.ResponseOK)
 	}
@@ -258,12 +274,18 @@ func runCommand(args []string, stderr io.Writer) bool {
 		accepted = []string{"--output"}
 	case "regenerate":
 		accepted = []string{"--chord-tol"}
+	case "convert":
+		accepted = []string{"--output", "--overwrite"}
 	default:
 		fmt.Fprintf(stderr, "Unrecognized command '%s'.\n", args[1])
 		return false
 	}
 	if !o.parse(args, accepted, stderr) {
 		return false
+	}
+
+	if args[1] == "convert" {
+		return convertModels(o, stderr)
 	}
 
 	switch args[1] {
@@ -309,7 +331,7 @@ func runCommand(args []string, stderr io.Writer) bool {
 			return nil
 		}
 	case "regenerate":
-		o.outputPattern = "%.slvs"
+		o.outputPattern = "%.spcs"
 		runner = func(s *session, output string) error {
 			s.ss.ExportChordTol = o.chordTol
 			s.ss.ExportMode = true
@@ -361,6 +383,60 @@ func runCommand(args []string, stderr io.Writer) bool {
 		fmt.Fprintf(stderr, "Written '%s'.\n", output)
 	}
 	return true
+}
+
+// convertModels converts the SolveSpace models o names, with what they
+// link. It is false when one could not be converted.
+func convertModels(o *options, stderr io.Writer) bool {
+	say := func(format string, args ...any) { _, _ = fmt.Fprintf(stderr, format, args...) }
+	if o.outputPattern == "" {
+		o.outputPattern = "%.spcs"
+	}
+	if !strings.Contains(o.outputPattern, "%") && len(o.inputs) > 1 {
+		say("%s\n", "Output pattern must include a % symbol when using multiple inputs!")
+		return false
+	}
+	if len(o.inputs) == 0 {
+		say("At least one input file must be specified.\n")
+		return false
+	}
+	ok := true
+	for _, input := range o.inputs {
+		output := outputFor(o.outputPattern, input)
+		plan, err := convert.MakePlan(input, output)
+		if err != nil {
+			say("Cannot convert '%s': %v\n", input, err)
+			ok = false
+			continue
+		}
+		if missing := plan.Missing(); len(missing) > 0 {
+			for _, it := range missing {
+				say("Cannot convert '%s': the linked file '%s' can't be read: %v\n",
+					input, it.Src, it.Err)
+			}
+			ok = false
+			continue
+		}
+		res, err := convert.Run(plan, convert.Options{Overwrite: o.overwrite, Quiet: true})
+		for _, w := range res.Written {
+			say("Written '%s'.\n", w)
+		}
+		for _, r := range res.Reused {
+			say("Kept '%s', which exists already.\n", r)
+		}
+		for _, w := range res.Warnings {
+			say("Warning: %s\n", w)
+		}
+		for path, ferr := range res.Failed {
+			say("Cannot write '%s': %v\n", path, ferr)
+			ok = false
+		}
+		if err != nil {
+			say("Cannot convert '%s': %v\n", input, err)
+			ok = false
+		}
+	}
+	return ok
 }
 
 func main() {

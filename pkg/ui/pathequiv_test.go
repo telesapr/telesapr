@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
 	"github.com/spacesolve/spacesolve/pkg/script"
 	"github.com/spacesolve/spacesolve/pkg/script/api"
 )
@@ -28,7 +28,7 @@ func requireSamePaths(t *testing.T, uiScript, goScript string) {
 	t.Helper()
 	var r *uiScriptRunner
 	runUIScriptWith(t, uiScript, func(rr *uiScriptRunner) { r = rr })
-	fromUI := slvs.NewDocument(r.ss.SK).SaveRegenerated()
+	fromUI := spcs.Encode(r.ss.SK, spcs.Options{})
 
 	path := filepath.Join("..", "..", "testdata", "ui", "scripts", goScript+".go")
 	src, err := os.ReadFile(path)
@@ -40,11 +40,11 @@ func requireSamePaths(t *testing.T, uiScript, goScript string) {
 	if err := script.RunSource(context.Background(), opts, path, string(src)); err != nil {
 		t.Fatalf("%s: %v", goScript, err)
 	}
-	fromScript := slvs.NewDocument(doc.Host().Sketch()).SaveRegenerated()
+	fromScript := spcs.Encode(doc.Host().Sketch(), spcs.Options{})
 
 	if dir := os.Getenv("SPACESOLVE_PATHEQUIV_DIR"); dir != "" {
 		// Both saves, for a diff.
-		for name, data := range map[string][]byte{uiScript + ".ui.slvs": fromUI, goScript + ".go.slvs": fromScript} {
+		for name, data := range map[string][]byte{uiScript + ".ui.spcs": fromUI, goScript + ".go.spcs": fromScript} {
 			if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 				t.Fatal(err)
 			}

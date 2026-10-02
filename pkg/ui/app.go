@@ -5,7 +5,7 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/persist/link"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
 	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
@@ -15,8 +15,8 @@ import (
 func (ss *SolveSpaceUI) Init() {
 	ss.LoadSettings()
 	// A missing linked file is looked for through the dialogs.
-	slvs.LocateMissingFile = ss.locateMissingFile
-	slvs.ImageCorrupted = func(file string) { ss.Error("The image '%s' is corrupted.", file) }
+	link.LocateMissingFile = ss.locateMissingFile
+	link.ImageCorrupted = func(file string) { ss.Error("The image '%s' is corrupted.", file) }
 	ttf.SetFontFiles(ss.Platform.GetFontFiles())
 
 	ss.refreshTimer = ss.Platform.CreateTimer()
@@ -51,7 +51,7 @@ func (ss *SolveSpaceUI) setSketch(sk *sketch.Sketch) {
 	sk.Show = &ss.GW.show
 	sk.OnScheduleGenerateAll = ss.onScheduleGenerateAll
 	sk.Message = func(msg string) { ss.Message("%s", msg) }
-	sk.ReloadAllLinked = func(sk *sketch.Sketch) { slvs.ReloadAllLinked(sk, ss.SaveFile) }
+	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAllLinked(sk, ss.SaveFile) }
 	sk.DraggedParams = ss.MarkDraggedParams
 	sk.OnGenerated = ss.onGenerated
 	sk.RegenerateAfterDelete = ss.GW.regenerateAfterDelete

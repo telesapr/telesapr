@@ -3,6 +3,7 @@ package slvs
 import (
 	"bytes"
 	"fmt"
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"math"
 	"os"
 	"path/filepath"
@@ -262,7 +263,7 @@ func TestThreadVsCpp(t *testing.T) {
 		}
 		t.Run(tc.name, func(t *testing.T) {
 			sk, _, _ := tc.build(t, 0)
-			made := NewDocument(sk).Save()
+			made := slvswrite.Save(sk)
 			dir := out
 			if dir == "" {
 				dir = t.TempDir()
@@ -284,7 +285,7 @@ func TestThreadVsCpp(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(doc.Save(), want) {
+			if !bytes.Equal(slvswrite.Save(doc.Sketch), want) {
 				t.Errorf("save differs from C++'s")
 			}
 		})

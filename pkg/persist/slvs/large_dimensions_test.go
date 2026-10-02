@@ -2,6 +2,7 @@ package slvs_test
 
 import (
 	"bytes"
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -108,7 +109,7 @@ func TestLargeDimensionsRoundTripPreservesBlockCount(t *testing.T) {
 		t.Fatalf("LoadFile: %v", err)
 	}
 	original := len(doc.Blocks)
-	out := doc.Save()
+	out := slvswrite.Save(doc.Sketch)
 	if len(out) == 0 {
 		t.Fatalf("Save returned empty bytes")
 	}
@@ -130,7 +131,7 @@ func TestLargeDimensionsSaveProducesHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadFile: %v", err)
 	}
-	out := doc.Save()
+	out := slvswrite.Save(doc.Sketch)
 	if len(out) == 0 {
 		t.Fatalf("Save returned empty bytes")
 	}

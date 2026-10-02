@@ -40,7 +40,7 @@ func main() {
 	fmt.Printf("%s %.0f\n", block, block.Volume())
 	for _, name := range os.Args[2:] {
 		var err error
-		if filepath := name; len(filepath) > 5 && filepath[len(filepath)-5:] == ".slvs" {
+		if filepath := name; len(filepath) > 5 && filepath[len(filepath)-5:] == ".spcs" {
 			err = doc.Save(name)
 		} else {
 			err = doc.Export(name)
@@ -61,8 +61,8 @@ func TestRunScript(t *testing.T) {
 	if err := os.WriteFile(file, []byte(blockScript), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	slvs := filepath.Join(dir, "block.slvs")
-	outputs := []string{slvs, filepath.Join(dir, "block.stl"), filepath.Join(dir, "block.step"),
+	model := filepath.Join(dir, "block.spcs")
+	outputs := []string{model, filepath.Join(dir, "block.stl"), filepath.Join(dir, "block.step"),
 		filepath.Join(dir, "block.svg"), filepath.Join(dir, "block.png")}
 
 	status, stdout, stderr := runScripting(t, "", append([]string{"run", file, "10"}, outputs...)...)
@@ -75,7 +75,7 @@ func TestRunScript(t *testing.T) {
 		}
 	}
 
-	status, stdout, stderr = runScripting(t, "", "eval", slvs,
+	status, stdout, stderr = runScripting(t, "", "eval", model,
 		`g := doc.Group("block")`, `math.Round(g.Volume())`, `g.Bounds()`, `len(doc.Groups())`)
 	if status != exitOK || stdout != "1000\n(0, 0, 0), (10, 10, 10)\n2\n" || stderr != "" {
 		t.Errorf("eval: status %d, stdout %q, stderr %q", status, stdout, stderr)
@@ -83,7 +83,7 @@ func TestRunScript(t *testing.T) {
 
 	// The saved sketch is one the other commands take.
 	var errs bytes.Buffer
-	if !runCommand([]string{"spacesolve-cli", "export-mesh", "-o", filepath.Join(dir, "again.stl"), slvs}, &errs) {
+	if !runCommand([]string{"spacesolve-cli", "export-mesh", "-o", filepath.Join(dir, "again.stl"), model}, &errs) {
 		t.Errorf("export-mesh of the script's sketch failed: %s", errs.String())
 	}
 
@@ -116,7 +116,8 @@ func TestScriptFailures(t *testing.T) {
 		{[]string{"run"}, exitUsage, "A script must be specified.\n"},
 		{[]string{"eval"}, exitUsage, "Code to run must be specified.\n"},
 		{[]string{"repl", "-x"}, exitUsage, "Unrecognized option '-x'.\n"},
-		{[]string{"run", filepath.Join(dir, "none.slvs"), bad}, exitLoad, "Cannot load"},
+		{[]string{"run", filepath.Join(dir, "none.spcs"), bad}, exitLoad, "Cannot load"},
+		{[]string{"run", filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs"), bad}, exitLoad, "spacesolve-cli convert"},
 		{[]string{"run", filepath.Join(dir, "none.go")}, exitScript, "no such file"},
 		{[]string{"run", bad}, exitScript, bad + ":3:16: undefined: y\n"},
 		{[]string{"eval", "os.Exit(9)"}, 9, ""},

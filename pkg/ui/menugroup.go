@@ -201,7 +201,7 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		g.MeshCombine = sketch.CombineAssemble
 		if g.LinkFile == "" {
 			dialog := ss.Platform.CreateOpenFileDialog(gw.window)
-			dialog.AddFilters(platform.SolveSpaceLinkFileFilters)
+			dialog.AddFilters(platform.LinkFileFilters)
 			dialog.ThawChoices(ss.Settings, "LinkSketch")
 			if !dialog.RunModal() {
 				return

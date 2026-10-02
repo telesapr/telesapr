@@ -1,17 +1,20 @@
 package platform
 
-// The file types SolveSpace reads and writes (C++ gui.cpp).
+// The file types spacesolve reads and writes (after C++ gui.cpp).
 var (
-	SolveSpaceModelFileFilters = []FileFilter{
-		{"SolveSpace models", []string{"slvs"}},
+	// ModelFileFilters are the documents spacesolve opens and saves.
+	ModelFileFilters = []FileFilter{
+		{"spacesolve models", []string{"spcs"}},
 	}
 	// ScriptFileFilters are the scripts the application runs.
 	ScriptFileFilters = []FileFilter{
 		{Name: "Go scripts", Extensions: []string{"go"}},
 	}
-	SolveSpaceLinkFileFilters = []FileFilter{
-		{"ALL", []string{"slvs", "emn", "stl"}},
-		{"SolveSpace models", []string{"slvs"}},
+	// LinkFileFilters are the files a link group links. SolveSpace
+	// models are not among them: they are imported first.
+	LinkFileFilters = []FileFilter{
+		{"ALL", []string{"spcs", "emn", "stl"}},
+		{"spacesolve models", []string{"spcs"}},
 		{"IDF circuit board", []string{"emn"}},
 		{"STL triangle mesh", []string{"stl"}},
 	}
@@ -41,8 +44,12 @@ var (
 		{"STEP file", []string{"step", "stp"}},
 		{"DXF file (AutoCAD 2007)", []string{"dxf"}},
 	}
+	// ImportFileFilters are what File > Import reads: drawings into
+	// the sketch, and SolveSpace models, which are converted.
 	ImportFileFilters = []FileFilter{
+		{"ALL", []string{"dxf", "dwg", "slvs"}},
 		{"AutoCAD DXF and DWG files", []string{"dxf", "dwg"}},
+		{"SolveSpace models", []string{"slvs"}},
 	}
 	CsvFileFilters = []FileFilter{
 		{"Comma-separated values", []string{"csv"}},

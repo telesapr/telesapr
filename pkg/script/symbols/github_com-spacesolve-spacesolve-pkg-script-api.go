@@ -20,6 +20,7 @@ func init() {
 		"ExportSurfaces":  reflect.ValueOf(api.ExportSurfaces),
 		"ExportView":      reflect.ValueOf(api.ExportView),
 		"ExportWireframe": reflect.ValueOf(api.ExportWireframe),
+		"Import":          reflect.ValueOf(api.Import),
 		"Inch":            reflect.ValueOf(api.Inch),
 		"Intersection":    reflect.ValueOf(api.Intersection),
 		"New":             reflect.ValueOf(api.New),

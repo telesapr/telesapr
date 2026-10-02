@@ -46,7 +46,7 @@ func main() {
 // parseArgs splits the command line into the sketch files to open and,
 // after --script, a Go script to run on the sketch with its arguments:
 //
-//	spacesolve [sketch.slvs] [--script script.go [argument...]]
+//	spacesolve [sketch.spcs] [--script script.go [argument...]]
 func parseArgs(args []string) (files []string, scriptFile string, scriptArgs []string) {
 	for i, arg := range args {
 		if arg == "--script" {

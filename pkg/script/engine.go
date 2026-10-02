@@ -121,7 +121,7 @@ Make solids, each a new group
     doc.SketchIn(doc.Workplane("XY"), name)  doc.Sketch3D(name)  g.SetCombine(Difference)
     g.Volume()  g.Bounds()  g.Check() says whether the solid is sound
 Files
-    doc.Save("part.slvs")  doc.Export("part.stl")  .step .svg .dxf .pdf .png
+    doc.Save("part.spcs")  doc.Export("part.stl")  .step .svg .dxf .pdf .png
     doc.Undo()  doc.Redo()
 
 help(x) says what a value is and what it can do: help(doc), help(doc.Active()).

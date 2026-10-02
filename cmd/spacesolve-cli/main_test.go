@@ -8,10 +8,42 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/persist/convert"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 func testdata(name string) string { return filepath.Join("..", "..", "testdata", name) }
+
+// model converts a fixture, and the files beside it, into a new
+// temporary directory and returns the .spcs file.
+func model(t *testing.T, fixture string) string {
+	t.Helper()
+	dir := t.TempDir()
+	from := testdata(filepath.Dir(fixture))
+	entries, err := os.ReadDir(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(from, e.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, e.Name()), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	src := filepath.Join(dir, filepath.Base(fixture))
+	dst := convert.SiblingPath(src)
+	srf.SetChordTolMm(0)
+	if _, _, err := convert.File(src, dst, true); err != nil {
+		t.Fatal(err)
+	}
+	return dst
+}
 
 func run(t *testing.T, args ...string) (bool, string) {
 	t.Helper()
@@ -26,7 +58,7 @@ func run(t *testing.T, args ...string) (bool, string) {
 func TestExportMeshVsCpp(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "mesh.stl")
 	ok, msg := run(t, "export-mesh", "--chord-tol", "0.1", "-o", out,
-		testdata("group/boolean_knife_edge/normal.slvs"))
+		model(t, "group/boolean_knife_edge/normal.slvs"))
 	if !ok {
 		t.Fatalf("failed: %s", msg)
 	}
@@ -45,10 +77,11 @@ func TestExportMeshVsCpp(t *testing.T) {
 
 func TestOutputFor(t *testing.T) {
 	for _, c := range []struct{ pattern, in, want string }{
-		{"%-2d.png", "f/a.slvs", "f/a-2d.png"},
-		{"%-2d.png", "a.slvs", "a-2d.png"},
-		{"out/%.stl", "f/a.slvs", "out/f/a.stl"},
-		{"x.stl", "f/a.slvs", "x.stl"},
+		{"%-2d.png", "f/a.spcs", "f/a-2d.png"},
+		{"%-2d.png", "a.spcs", "a-2d.png"},
+		{"out/%.stl", "f/a.spcs", "out/f/a.stl"},
+		{"x.stl", "f/a.spcs", "x.stl"},
+		{"%.spcs", "f/a.slvs", "f/a.spcs"},
 	} {
 		if got := outputFor(c.pattern, c.in); got != c.want {
 			t.Errorf("outputFor(%q, %q) = %q, want %q", c.pattern, c.in, got, c.want)
@@ -59,7 +92,7 @@ func TestOutputFor(t *testing.T) {
 func TestThumbnail(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "t.png")
 	ok, msg := run(t, "thumbnail", "--size", "64x48", "--view", "isometric", "-o", out,
-		testdata("group/boolean_knife_edge/normal.slvs"))
+		model(t, "group/boolean_knife_edge/normal.slvs"))
 	if !ok {
 		t.Fatalf("failed: %s", msg)
 	}
@@ -75,7 +108,7 @@ func TestThumbnail(t *testing.T) {
 }
 
 func TestBadCommandLines(t *testing.T) {
-	in := testdata("request/line_segment/normal.slvs")
+	in := model(t, "request/line_segment/normal.slvs")
 	for _, c := range []struct {
 		args []string
 		msg  string
@@ -87,7 +120,11 @@ func TestBadCommandLines(t *testing.T) {
 		{[]string{"export-mesh", "--view", "top", "-o", "x.stl", in}, "Unrecognized option '--view'"},
 		{[]string{"export-view", "-o", "x.svg", in}, "View direction must be specified"},
 		{[]string{"thumbnail", "-v", "top", "-o", "x.png", in}, "viewport size"},
-		{[]string{"export-mesh", "-o", "x.stl", "nothere.slvs"}, "Cannot load 'nothere.slvs'"},
+		{[]string{"export-mesh", "-o", "x.stl", "nothere.spcs"}, "Cannot load 'nothere.spcs'"},
+		{[]string{"export-mesh", "-o", "x.stl", testdata("request/line_segment/normal.slvs")}, "spacesolve-cli convert"},
+		{[]string{"convert", "--view", "top", in}, "Unrecognized option '--view'"},
+		{[]string{"convert"}, "At least one input file"},
+		{[]string{"convert", "-o", "x.spcs", in, in}, "must include a %"},
 	} {
 		ok, out := run(t, c.args...)
 		if ok || !strings.Contains(out, c.msg) {
@@ -100,8 +137,96 @@ func TestBadCommandLines(t *testing.T) {
 // sketch without solids, to fail.
 func TestExportErrorFails(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "x.stl")
-	ok, msg := run(t, "export-mesh", "-o", out, testdata("request/line_segment/normal.slvs"))
+	ok, msg := run(t, "export-mesh", "-o", out, model(t, "request/line_segment/normal.slvs"))
 	if ok || !strings.Contains(msg, "nothing to export") {
 		t.Errorf("ok=%v: %s", ok, msg)
+	}
+}
+
+// TestRegenerateWritesSpcs regenerates a model into its own file, at
+// the absolute chord tolerance, so the shell it holds for linking files
+// is finer than the default.
+func TestRegenerateWritesSpcs(t *testing.T) {
+	in := model(t, "group/translate_nd/normal.slvs")
+	if ok, msg := run(t, "regenerate", "--chord-tol", "0.05", in); !ok || !strings.Contains(msg, "Written '"+in+"'") {
+		t.Fatalf("ok=%v: %s", ok, msg)
+	}
+	data, err := os.ReadFile(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(data), "spacesolve 1\n") {
+		t.Errorf("regenerated file starts %.30q", data)
+	}
+	out := filepath.Join(t.TempDir(), "x.stl")
+	if ok, msg := run(t, "export-mesh", "-o", out, in); !ok {
+		t.Errorf("the regenerated model doesn't export: %s", msg)
+	}
+}
+
+// copyTestdata copies the files of a testdata directory into a new
+// temporary directory, and returns it.
+func copyTestdata(t *testing.T, dir string) string {
+	t.Helper()
+	out := t.TempDir()
+	entries, err := os.ReadDir(testdata(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		data, err := os.ReadFile(filepath.Join(testdata(dir), e.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(out, e.Name()), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return out
+}
+
+// TestConvert converts an assembly, and checks what is reused,
+// overwritten, and refused.
+func TestConvert(t *testing.T) {
+	dir := copyTestdata(t, "group/link")
+	src := filepath.Join(dir, "normal.slvs")
+	linked := filepath.Join(dir, "rect_v20.spcs")
+
+	ok, msg := run(t, "convert", src)
+	if !ok || !strings.Contains(msg, "Written '"+linked+"'") || !strings.Contains(msg, "Written '"+filepath.Join(dir, "normal.spcs")+"'") {
+		t.Fatalf("ok=%v: %s", ok, msg)
+	}
+	ok, msg = run(t, "convert", "-o", "%-copy.spcs", src)
+	if !ok || !strings.Contains(msg, "Kept '"+linked+"'") || !strings.Contains(msg, "normal-copy.spcs") {
+		t.Errorf("ok=%v: %s", ok, msg)
+	}
+	ok, msg = run(t, "convert", "--overwrite", src)
+	if !ok || !strings.Contains(msg, "Written '"+linked+"'") {
+		t.Errorf("ok=%v: %s", ok, msg)
+	}
+
+	// What it wrote is a model the other commands take.
+	if ok, msg := run(t, "regenerate", filepath.Join(dir, "normal.spcs")); !ok {
+		t.Errorf("regenerating the converted model: %s", msg)
+	}
+
+	if err := os.Remove(filepath.Join(dir, "rect_v20.slvs")); err != nil {
+		t.Fatal(err)
+	}
+	ok, msg = run(t, "convert", "-o", "%-missing.spcs", src)
+	if ok || !strings.Contains(msg, "the linked file '"+filepath.Join(dir, "rect_v20.slvs")+"' can't be read") {
+		t.Errorf("ok=%v: %s", ok, msg)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "normal-missing.spcs")); err == nil {
+		t.Error("a model with a missing link was written")
+	}
+
+	ok, msg = run(t, "convert", "-o", filepath.Join(dir, "x.txt"), src)
+	if ok || !strings.Contains(msg, "is not a spacesolve file") {
+		t.Errorf("ok=%v: %s", ok, msg)
+	}
+	ok, msg = run(t, "convert", "-o", filepath.Join(dir, "none", "x.spcs"), filepath.Join(dir, "normal.slvs"))
+	if ok || !strings.Contains(msg, "Cannot convert") {
+		t.Errorf("unwritable output: ok=%v: %s", ok, msg)
 	}
 }

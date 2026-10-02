@@ -1,6 +1,7 @@
 package slvs_test
 
 import (
+	"github.com/spacesolve/spacesolve/pkg/internal/slvswrite"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -65,7 +66,7 @@ func TestSLVSLoadRoundTrip(t *testing.T) {
 		// C++ AfterNewFile generates (and solves) the loaded sketch
 		// before the harness saves it, and SaveToFile generates again.
 		doc.Sketch.GenerateAll()
-		saved := doc.Save()
+		saved := slvswrite.Save(doc.Sketch)
 		original, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("rewind %s: %v", path, err)
