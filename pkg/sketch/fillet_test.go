@@ -202,3 +202,26 @@ func TestFilletSweep(t *testing.T) {
 		return nil
 	}).Require(t)
 }
+
+// A fillet's faces join later Booleans: a boss on the top face over the
+// rounded edge, and a cut through the round.
+func TestFilletThenBoolean(t *testing.T) {
+	for _, cut := range []bool{false, true} {
+		d := api.New()
+		ex := block(d, 0, 0, 20, 10, 10)
+		d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
+		d.SketchIn(d.Workplane("XY"), "")
+		var g api.Group
+		if cut {
+			d.Rect(api.V(5, -1, 0), api.V(8, 4, 0))
+			g = d.Extrude(20, "")
+			g.SetCombine(api.Difference)
+		} else {
+			d.Rect(api.V(5, 1, 0), api.V(8, 4, 0))
+			g = d.Extrude(14, "")
+		}
+		if r := g.Check(); !r.Sound() || g.Problem() != "" {
+			t.Errorf("cut %v: %s %s", cut, r.String(), g.Problem())
+		}
+	}
+}

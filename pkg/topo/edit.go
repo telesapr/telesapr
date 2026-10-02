@@ -224,7 +224,7 @@ func SplitFace(sh *srf.SShell, t *Topology, f int, cut srf.SBezier) (core.HSSurf
 	cut.MakePwlIntoPoints(&pts, 0, 0)
 	pts[0], pts[len(pts)-1] = a, b
 	nc := srf.SCurve{H: newCurveHandle(sh), Exact: cut, IsExact: true, Deg: cut.Degree,
-		SurfA: ns.H, SurfB: s.H, Source: srf.CurveSourceIntersection}
+		SurfA: ns.H, SurfB: s.H}
 	for _, p := range pts {
 		nc.Points = append(nc.Points, srf.SCurvePt{Vertex: true, P: p})
 	}
@@ -427,8 +427,7 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 				var pts []geom.Vector
 				sb.MakePwlIntoPoints(&pts, 0, 0)
 				pts[0], pts[len(pts)-1] = pc.a, pc.b
-				nc := &srf.SCurve{H: nextH, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H,
-					Source: srf.CurveSourceIntersection}
+				nc := &srf.SCurve{H: nextH, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H}
 				nextH.V++
 				for _, p := range pts {
 					nc.Points = append(nc.Points, srf.SCurvePt{Vertex: true, P: p})

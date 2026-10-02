@@ -102,3 +102,19 @@ func TestLoftRefusals(t *testing.T) {
 		}
 	}
 }
+
+// A square to a smaller one turned by a quarter: each side face is a
+// saddle, a patch of degree 1 across that twists along, which must mesh
+// as one rather than as the two flat triangles across its corners;
+// those would make the frustum. Its volume is h (A0 + A1) / 3, the mixed
+// area of a loop and its quarter turn being zero.
+func TestLoftTwistedSides(t *testing.T) {
+	srf.SetChordTolMm(0.01)
+	a, b := square(40, 0), square(20, 30)
+	b = append(b[1:], b[:1]...)
+	vol, tp := loftVolume(t, a, b)
+	want := 30 * (1600 + 400) / 3.0
+	if math.Abs(vol-want) > 0.005*want || len(tp.Faces) != 6 {
+		t.Errorf("volume %g, want %g within the mesh's error; %d faces", vol, want, len(tp.Faces))
+	}
+}
