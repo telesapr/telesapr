@@ -464,7 +464,8 @@ to preserve upstream quirks on write.
 ## Recommended order (revised)
 
 Efforts here include the definition of done. Every step ends with its features reachable from
-the interface and from scripts, and with the tests listed in that section.
+the interface and from scripts, and with the tests listed in that section. Each step is
+developed in its own branch and merged into `master` when it is done, see "Rules for every package".
 
 1. **Test infrastructure T1 and T3 to T7, then the thread feature brought to the bar and merged.** About 5 weeks. Nothing else can be called done without it.
 2. **The `.spcs` format (S2) with `.slvs` import.** About 3 weeks, with a fuzz target for the reader and `Save`, `Open` and `Import` in the script API. Everything after this may add records to the format.
@@ -523,8 +524,12 @@ planned to the package level. Steps 9 to 11 are planned as phases, each opened b
 
 ### Rules for every package
 
-- **One branch per step**, cut from `master`. A package is one commit or a short series, and
-  `make test` passes after each.
+- **One branch per step**, cut from `master` and named after the step, such as `step-3-parameters`.
+  The whole step is developed on that branch and nothing from it lands on `master` earlier.
+  A package is one commit or a short series, and `make test` passes after each. When the step is
+  finished, `make ci` passes on the branch and it is merged into `master`. The next step is cut
+  from the updated `master`, so steps never stack on each other's unmerged branches. The
+  `threads` branch is step 1's package 1.9 and follows the same rule.
 - **Engine first.** The order inside a feature is: entry point in `pkg/sketch`, save and load,
   interface, script API, path equivalence test. The interface and the script API call the same
   entry point, as `ss.addNewGroup` and `SketchHost.AddGroup` both reach
@@ -533,8 +538,8 @@ planned to the package level. Steps 9 to 11 are planned as phases, each opened b
   `pkg/sketch/undo.go`, or it is lost on undo.
 - **A golden changes only on purpose.** A commit that regenerates goldens runs the
   regeneration script, contains nothing else, and says why in its message.
-- **A step is finished** when every feature in it passes the definition of done and the
-  "State" column below is updated.
+- **A step is finished** when every feature in it passes the definition of done, the
+  "State" column below is updated, and its branch is merged into `master`.
 
 ### Step 1. Test infrastructure and the thread feature
 
