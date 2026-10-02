@@ -172,7 +172,7 @@ Group.remap={
     23 80020001 0
     24 80020002 0
 }
-Group.impFileRel=../../home/msorc/projects/spacesolve/testdata/group/link/rect_v20.slvs
+Group.impFileRel=testdata/group/link/rect_v20.slvs
 AddGroup
 
 Param.h.v.=00010010
