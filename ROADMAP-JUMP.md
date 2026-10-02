@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 8 are done and merged; step 9 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 9 are done and merged; step 10 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -25,6 +25,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 6. OpenGL and the section view | done 2026-10-02, with follow-ups listed under the step | `0a96960` |
 | 7. First new solid features | done 2026-10-03, with follow-ups listed under the step | `a5829a6` |
 | 8. STEP import as a reference mesh | done 2026-10-03, with follow-ups listed under the step | `e556586` |
+| 9. Topology and edge naming | done 2026-10-03, on derived topology (9.2 not taken), with follow-ups listed under the step | see step 9 |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -505,7 +506,7 @@ developed in its own branch and merged into `master` when it is done, see "Rules
 6. **Done 2026-10-02.** **I1 OpenGL backend, then I3 section view.** About 3.5 weeks. Goldens stay on the software renderer. Scripts get the section plane and a rendered image.
 7. **E1 mirror, E3 chamfer by Boolean, E9 sweep along lines and arcs.** About 6 weeks. First new solid features, all on existing machinery, each with a robustness sweep. The chamfer takes only edges that exist as entities until step 9.
 8. **Done 2026-10-03.** **D2 STEP import as reference mesh.** About 4.5 weeks, with a corpus of real files and a fuzz target for the reader.
-9. **F3 topology as the primary representation, then F4 edge naming.** About 10 weeks. The first large kernel investment. Scripts get faces, edges and vertices to enumerate and select by, which later features need for their own API. The chamfer is extended to any edge of the solid.
+9. **Done 2026-10-03, on derived topology.** **F3 topology as the primary representation, then F4 edge naming.** About 10 weeks. The first large kernel investment. Scripts get faces, edges and vertices to enumerate and select by, which later features need for their own API. The chamfer is extended to any edge of the solid.
 10. **E4 and E5 fillets on straight and circular edges, E11 restricted shell, E7 ruled loft.** About 20 weeks.
 11. **F6 general surface type.** About 10 to 12 weeks. Then E6, E8, E10 and D3 become ordinary hard features instead of impossible ones.
 
@@ -765,15 +766,30 @@ fixture and checks Euler's formula on each. What fails there decides the design.
 
 | Phase | Content | State |
 |---|---|---|
-| 9.1 Derived topology | New package `pkg/topo`: solid, face, loop, co-edge, edge, vertex, built from `SShell` by walking `SCurve.SurfA`, `SurfB` and each surface's `Trim` list. A validator: every edge has two co-edges of opposite sense, loops close, Euler's formula holds. The validator joins `check.Solid`. | not started |
-| 9.2 Topology as output of the kernel | `MakeFromBoolean` and the shell constructors produce topology directly instead of having it derived afterwards. `SShell` keeps its lists as storage. The trim handling in `pkg/srf/boolean_trim.go` becomes loop editing. | not started |
-| 9.3 Local edit helpers | Split an edge, split a face along a curve, remove a face and heal, replace a face's surface. Each keeps the validator green. Steps 10 and 11 are built from these. | not started |
-| 9.4 F4 edge names | An edge name is the two `FaceID` values it separates and an ordinal. The ordinal comes from a geometric order along the face pair, not from creation order. A name that no longer resolves gives a diagnostic naming both faces. Written to `.spcs` as a reference kind. | not started |
-| 9.5 Picking and scripting | Hover and selection of solid edges in the graphics window through the outline list, and a selection kind for them. `Group.Faces()`, `Edges()`, `Vertices()`, adjacency queries, and filters such as edges between two faces or edges parallel to a direction. | not started |
-| 9.6 Chamfer on any edge | E3 accepts named edges. Naming sweep: change an upstream dimension through its range and require every chamfer to stay on its edge or report. | not started |
+| 9.1 Derived topology | New package `pkg/topo`: solid, face, loop, co-edge, edge, vertex, built from `SShell` by walking `SCurve.SurfA`, `SurfB` and each surface's `Trim` list. A validator: every edge has two co-edges of opposite sense, loops close, Euler's formula holds. The validator joins `check.Solid`. | done 2026-10-03. The spike found what the design needed: the two sides of an edge can trim by two coincident curves after a Boolean, so edges are matched by their vertices and points, not by curve; a Boolean can leave a T-junction, a trim running past a vertex where two faces meet on its other side, so edges are split at vertices inside them; outer loops run clockwise in SolveSpace's parameters. Every fixture solid validates and has its mesh's Euler characteristic, but the knife edge's, which is non-manifold on purpose. `check.Report` gains `TopologyProblems` and `Euler` (`topo=`, `euler=` in `testdata/invariants.txt`); problems make a solid unsound |
+| 9.2 Topology as output of the kernel | `MakeFromBoolean` and the shell constructors produce topology directly instead of having it derived afterwards. `SShell` keeps its lists as storage. The trim handling in `pkg/srf/boolean_trim.go` becomes loop editing. | not taken, as the risk note allows: derivation works on every manifold fixture and costs about 7 ms for a threaded bolt of 270 faces (`BenchmarkBuildThread`); it is built lazily, per regeneration (`Group.Topology`) |
+| 9.3 Local edit helpers | Split an edge, split a face along a curve, remove a face and heal, replace a face's surface. Each keeps the validator green. Steps 10 and 11 are built from these. | done 2026-10-03: `SplitEdge`, `SplitFace`, `RemoveFaces`, `AddFace` (taking the open edges it runs along, the surface turned to suit), `ReplaceSurface`; a box edge chamfered with them alone validates with the exact volume (`TestLocalChamfer`) |
+| 9.4 F4 edge names | An edge name is the two `FaceID` values it separates and an ordinal. The ordinal comes from a geometric order along the face pair, not from creation order. A name that no longer resolves gives a diagnostic naming both faces. Written to `.spcs` as a reference kind. | done 2026-10-03: `topo.Name` ("edge A B N"), ordered by midpoints along the direction the edges between the pair spread most. Surfaces no entity names get `SSurface.Origin` from the group that made them (`srf.OriginFor`, bit 30), carried through Booleans, so all 4445 manifold edges of the fixtures have names, each resolving to itself. `solid-edge` fields in `.spcs` (version 2) |
+| 9.5 Picking and scripting | Hover and selection of solid edges in the graphics window through the outline list, and a selection kind for them. `Group.Faces()`, `Edges()`, `Vertices()`, adjacency queries, and filters such as edges between two faces or edges parallel to a direction. | done 2026-10-03: `Selection.Edge`, hovered within six pixels of the projected edge and not hidden behind the solid, below entities and constraints and above faces; described in the text window. `Group.Solid()` with `Faces`, `Edges`, `Vertices`, `Edge(name)`, `EdgeAt`, `EdgesBetween`, `EdgesAlong`, `Problems`, `Euler`, and `SolidFace`, `SolidEdge`, `SolidVertex` with adjacency (`Group.Faces` and `Group.Edges` already meant other things). `examples/scripts/edges` |
+| 9.6 Chamfer on any edge | E3 accepts named edges. Naming sweep: change an upstream dimension through its range and require every chamfer to stay on its edge or report. | done 2026-10-03: `Group.SolidEdges`, Chamfer Edges takes picked edges, `Doc.ChamferSolid`. `TestNamingSweep` moves a notch across the block in 23 steps: the chamfer of the second piece of the front's top edge stays on it, with the exact volume, while the notch splits the front, and reports otherwise; none moves silently. Scenario `ext_chamfer_solid_edge`, pair `path_chamfer_solid_edge`, goldens `chamfer-solid-edge`, `chamfer-of-chamfer` |
 
-Done when: the validator passes on every fixture and golden, and the naming sweep reports no
-silent move of a feature to another edge.
+Done: the validator passes on every fixture and golden but the knife edge, and the naming sweep
+reports no silent move of a chamfer to another edge.
+
+Follow-ups from step 9:
+
+- **9.2**, topology made by the kernel, if derived topology ever costs too much or a feature
+  needs to keep identities through a Boolean.
+- **Origins shift**: a surface's `Origin` is its place among its group's surfaces, so an edit
+  that changes how many surfaces a group makes (a thread's length) renames the later ones.
+- **A face picked by the mouse** is still the entity of its `FaceID`; faces that only have an
+  `Origin` can't be selected as faces, only their edges.
+- **Hidden edges** are tested against the active group's display mesh with a ray per hover;
+  a large mesh makes hovering slower.
+- **Non-manifold edges** (the knife edge) are reported as topology problems, not modelled.
+- **Ordinals** follow geometric order; an edit that reorders the edges between two faces along
+  their spread can move a name, as the sweep's design keeps from happening but does not forbid.
+- **Loops through a vertex twice** choose the sharpest left turn, which no fixture exercises.
 
 ### Step 10. Fillets, shell and loft
 
