@@ -3,3 +3,4 @@
 # Every package created after 2026-10-01 goes here (ROADMAP-JUMP.md,
 # "Definition of done for every new feature").
 pkg/check
+pkg/internal/sweep
