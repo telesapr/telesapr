@@ -151,7 +151,6 @@ func (g *Group) checkMirror(sk *Sketch) bool {
 	return true
 }
 
-
 // generateMirrorShell reflects the source's shell and, unless
 // SkipFirst, combines it with the original as the source combines.
 func (g *Group) generateMirrorShell(sk *Sketch, src *srf.SShell, out *srf.SShell, forWhat CombineAs) {
