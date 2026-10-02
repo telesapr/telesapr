@@ -20,9 +20,11 @@ var builtinFont []byte
 
 const builtinFontResource = "res://fonts/BitstreamVeraSans-Roman-builtin.ttf"
 
-// EmbeddedFont names the builtin font, as text requests store it (C++
-// Platform::embeddedFont).
-const EmbeddedFont = builtinFontResource
+// EmbeddedFont names the builtin font, as text requests store it: by
+// its file's basename, as every font is looked up (C++
+// Platform::embeddedFont off Windows; on Windows C++ stores the
+// resource path, which matches no font).
+const EmbeddedFont = "BitstreamVeraSans-Roman-builtin.ttf"
 
 // FontFiles are the font files the font list reads (C++
 // Platform::GetFontFiles, which the headless build takes from its

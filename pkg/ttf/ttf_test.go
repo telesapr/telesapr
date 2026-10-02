@@ -62,3 +62,10 @@ func testDumpVsGolden(t *testing.T, fonts []string, strsFile, goldenFile string)
 		t.Fatalf("C++ dumps %d lines, Go %d", len(wl), len(gl))
 	}
 }
+
+// A text request in the builtin font finds it.
+func TestEmbeddedFontFound(t *testing.T) {
+	if Fonts.LoadFont(EmbeddedFont) == nil || Fonts.AspectRatio(EmbeddedFont, "Abc", false) <= 0 {
+		t.Errorf("the builtin font isn't found by the name text requests store, %q", EmbeddedFont)
+	}
+}
