@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/spacesolve/spacesolve/pkg/platform"
+import (
+	"strings"
+
+	"github.com/spacesolve/spacesolve/pkg/platform"
+)
 
 // menuHandler runs a menu command.
 type menuHandler func(ss *SolveSpaceUI, cmd Command)
@@ -126,6 +130,7 @@ func init() {
 		{1, "&Helix", CmdGroupHelix, s_ | 'h', kn, mGrp},
 		{1, "&Lathe", CmdGroupLathe, s_ | 'l', kn, mGrp},
 		{1, "Re&volve", CmdGroupRevolve, s_ | 'v', kn, mGrp},
+		{1, "Screw Thr&ead...", CmdGroupThread, s_ | 'e', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuThread() }},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Link / Assemble...", CmdGroupLink, s_ | 'i', kn, mGrp},
 		{1, "Link Recent", CmdGroupRecent, 0, kn, mGrp},
@@ -182,6 +187,7 @@ func init() {
 		{1, "Show &Interfering Parts", CmdInterference, c_ | s_ | 'i', kn, mAna},
 		{1, "Show &Naked Edges", CmdNakedEdges, c_ | s_ | 'n', kn, mAna},
 		{1, "Show &Center of Mass", CmdCenterOfMass, c_ | s_ | 'c', kn, mAna},
+		{1, "Check S&olid", CmdCheckSolid, c_ | s_ | 'o', kn, mAna},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Show &Underconstrained Points", CmdShowDOF, c_ | s_ | 'f', kn, mAna},
 		{1, "", CmdNone, 0, kn, nil},
@@ -201,4 +207,29 @@ func init() {
 		{1, "&Go to GitHub commit", CmdGithub, 0, kn, mHelp},
 		{1, "&About", CmdAbout, 0, kn, mHelp},
 	}
+}
+
+// MenuItem is an entry of the main menu: the labels of the menus it
+// is in and its own, without the & that marks a mnemonic, and its
+// command.
+type MenuItem struct {
+	Path []string
+	Cmd  Command
+}
+
+// MenuItems lists the entries of the main menu that run a command, in
+// the menus' order.
+func MenuItems() []MenuItem {
+	var items []MenuItem
+	var path []string
+	for _, m := range menuTable {
+		if m.label == "" {
+			continue
+		}
+		path = append(path[:m.level], strings.ReplaceAll(m.label, "&", ""))
+		if m.cmd != CmdNone {
+			items = append(items, MenuItem{Path: append([]string(nil), path...), Cmd: m.cmd})
+		}
+	}
+	return items
 }

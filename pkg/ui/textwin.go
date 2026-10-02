@@ -61,6 +61,8 @@ const (
 	ScreenPasteTransformed
 	ScreenEditView
 	ScreenTangentArc
+	// Extensions: screens C++ SolveSpace doesn't have.
+	ScreenThread
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -124,6 +126,10 @@ const (
 	EditTangentArcRadius Edit = 800
 	// For helix pitch
 	EditHelixPitch Edit = 802
+	// For the screw thread (an extension)
+	EditThreadDesignation Edit = 900
+	EditThreadLength      Edit = 901
+	EditThreadClearance   Edit = 902
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do
@@ -150,6 +156,7 @@ type shownState struct {
 		origin geom.Vector
 		scale  float64
 	}
+	thread threadScreen
 }
 
 // cellMeta is how one character cell is drawn and what clicking it
@@ -732,6 +739,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowEditView()
 		case ScreenTangentArc:
 			tw.ShowTangentArc()
+		case ScreenThread:
+			tw.ShowThread()
 		}
 	}
 	tw.Printf(false, "")

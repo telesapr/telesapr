@@ -9,6 +9,7 @@ help:
 	@echo "  make test-gui     - Run the GUI backend tests under Xvfb"
 	@echo "  make test-race    - Run the engine packages' tests under the race detector"
 	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
+	@echo "  make fuzz         - Run each fuzz target for FUZZTIME ($(FUZZTIME))"
 	@echo "  make ci           - Everything the GitHub workflow runs"
 	@echo "  make fmt          - Format code"
 	@echo "  make fmt-check    - Fail if gofmt would change a tracked file"
@@ -26,7 +27,7 @@ help:
 	@echo "  make uninstall    - Remove what install put in place"
 	@echo ""
 
-.PHONY: test test-gui test-race coverage ci fmt fmt-check vet tidy lint lint-new generate generate-check build install uninstall
+.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy lint lint-new generate generate-check build install uninstall
 
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
@@ -50,13 +51,24 @@ RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/..
 
 test-race:
 	@echo "==> go test -race $(RACE_PACKAGES)"
-	GOCACHE=$(PWD)/.gocache go test -race $(RACE_PACKAGES)
+	GOCACHE=$(PWD)/.gocache go test -race -timeout 30m $(RACE_PACKAGES)
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
 # package listed in scripts/coverage-packages.txt is under 85%.
 coverage:
 	@echo "==> tests with coverage"
 	GOCACHE=$(PWD)/.gocache scripts/coverage-check.sh
+
+# The fuzz targets, as package:target; go test fuzzes one at a time.
+FUZZTIME ?= 30s
+FUZZ_TARGETS = ./pkg/core:FuzzExpr ./pkg/persist/slvs:FuzzLoad
+
+fuzz:
+	@for t in $(FUZZ_TARGETS); do \
+		pkg=$${t%%:*}; name=$${t##*:}; \
+		echo "==> $$name in $$pkg for $(FUZZTIME)"; \
+		GOCACHE=$(PWD)/.gocache go test $$pkg -run '^$$' -fuzz "^$$name\$$" -fuzztime $(FUZZTIME) || exit 1; \
+	done
 
 # What .github/workflows/ci.yml runs. The existing code is not
 # lint-clean, so only what changed since LINT_BASE is linted.

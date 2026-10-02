@@ -53,6 +53,15 @@ func TestPlate(t *testing.T) {
 		t.Errorf("the plate is %g thick, want 5", hi.Z-lo.Z)
 	}
 
+	r := ex.Check()
+	// Four sides, two caps, and the hole's wall in four patches.
+	if !r.Sound() || r.Faces != 10 || !near(r.Volume, ex.Volume()) || !near(r.Max.Z-r.Min.Z, 5) {
+		t.Errorf("the plate does not check sound with 10 faces: %s", r.String())
+	}
+	if r := g.Check(); !r.Empty() {
+		t.Errorf("the sketch before the extrusion has a solid: %s", r.String())
+	}
+
 	// A dimension changes what depends on it.
 	width.Set(50)
 	want = (50*25 - math.Pi*16) * 5
@@ -92,6 +101,11 @@ func TestMisuse(t *testing.T) {
 		"diameter of a line": func() { d.Diameter(line, 3) },
 		"no workplane":       func() { d.Workplane("AB") },
 		"deleted entity":     func() { line.Delete(); line.Length() },
+		"check of a deleted group": func() {
+			g := d.Sketch3D("gone")
+			g.Delete()
+			g.Check()
+		},
 	} {
 		func() {
 			defer func() {

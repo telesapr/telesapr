@@ -103,6 +103,8 @@ func init() {
 		"Sketch":               reflect.ValueOf((*sketch.Sketch)(nil)),
 		"SketchDiagnostic":     reflect.ValueOf((*sketch.SketchDiagnostic)(nil)),
 		"TangentArcSettings":   reflect.ValueOf((*sketch.TangentArcSettings)(nil)),
+		"ThreadOptions":        reflect.ValueOf((*sketch.ThreadOptions)(nil)),
+		"ThreadResult":         reflect.ValueOf((*sketch.ThreadResult)(nil)),
 		"UndoStack":            reflect.ValueOf((*sketch.UndoStack)(nil)),
 		"UndoState":            reflect.ValueOf((*sketch.UndoState)(nil)),
 		"View":                 reflect.ValueOf((*sketch.View)(nil)),

@@ -159,6 +159,14 @@ func (r *uiScriptRunner) popUp(m *headless.Menu) *headless.MenuItem {
 	return nil
 }
 
+// goOnlyMenuItems are the menus and entries the C++ program the menu
+// dumps are compared with doesn't have, left out of every dump.
+var goOnlyMenuItems = map[string]bool{
+	"S&cript":          true,
+	"Check S&olid":     true,
+	"Screw Thr&ead...": true,
+}
+
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
 	indent := strings.Repeat("  ", depth)
 	for _, it := range items {
@@ -166,9 +174,7 @@ func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {
 			fmt.Fprintf(b, "%s---\n", indent)
 			continue
 		}
-		if depth == 0 && it.RawLabel == "S&cript" {
-			// The Script menu is ours; the C++ program this is compared
-			// with has none.
+		if goOnlyMenuItems[it.RawLabel] {
 			continue
 		}
 		fmt.Fprintf(b, "%s%s", indent, it.RawLabel)
@@ -501,21 +507,57 @@ func compareUIScripts(t *testing.T, prefix string) {
 			}
 			got := linkPathsFromTestdata(runUIScript(t, name))
 			want := linkPathsFromTestdata(string(wantB))
-			if got == want {
+			if got != want {
+				t.Fatalf("output differs from the C++ golden at %s", firstDiffLine(got, want))
+			}
+		})
+	}
+}
+
+// firstDiffLine reports the first line where two outputs differ.
+func firstDiffLine(got, want string) string {
+	gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
+	for i := 0; i < max(len(gl), len(wl)); i++ {
+		var g, w string
+		if i < len(gl) {
+			g = gl[i]
+		}
+		if i < len(wl) {
+			w = wl[i]
+		}
+		if g != w {
+			return fmt.Sprintf("line %d:\n got: %q\nwant: %q", i+1, g, w)
+		}
+	}
+	return ""
+}
+
+// TestGoScripts replays the scripts of what only spacesolve has
+// (ext_*) and compares each output with the golden Go itself recorded,
+// testdata/ui/golden/<name>.goui. SPACESOLVE_REGEN_GOUI=1 rewrites the
+// goldens (scripts/regen-goui.sh); review the diff before committing.
+func TestGoScripts(t *testing.T) {
+	names := uiScripts(t, "ext_")
+	if len(names) == 0 {
+		t.Skip("no scripts ext_*")
+	}
+	regen := os.Getenv("SPACESOLVE_REGEN_GOUI") != ""
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			got := linkPathsFromTestdata(runUIScript(t, name))
+			path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".goui")
+			if regen {
+				if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+					t.Fatal(err)
+				}
 				return
 			}
-			gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
-			for i := 0; i < max(len(gl), len(wl)); i++ {
-				var g, w string
-				if i < len(gl) {
-					g = gl[i]
-				}
-				if i < len(wl) {
-					w = wl[i]
-				}
-				if g != w {
-					t.Fatalf("line %d differs:\n got: %q\nwant: %q", i+1, g, w)
-				}
+			wantB, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("%v (record it with scripts/regen-goui.sh %s)", err, name)
+			}
+			if want := string(wantB); got != want {
+				t.Fatalf("output differs from the golden at %s", firstDiffLine(got, want))
 			}
 		})
 	}

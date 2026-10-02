@@ -96,6 +96,15 @@ var roundTripExclusions = map[string]string{
 	"edit/tangent_modify.slvs":     "C++ doesn't reproduce it",
 	// Not a valid SolveSpace file; C++ can't load it either.
 	"solver/param_point_distance.slvs": "not a valid file",
+	// Threads C++ saved from the files Go made (TestThreadVsCpp pins
+	// those); opened and saved again, C++ itself moves the last digits
+	// of their solved values, every time.
+	"thread/lead_tr20.slvs": "not a fixed point of C++'s save",
+	"thread/screw_unc.slvs": "not a fixed point of C++'s save",
+	// Made in the application, not by C++ or a generator a script
+	// reruns (scripts/regen-thread-golden.sh remakes the others): it
+	// lacks the scale of its first two groups, which C++ always writes.
+	"thread/bolt_m8x30.slvs": "not saved by C++",
 }
 
 // withCppHeader is a saved file with the header C++ writes: the
@@ -167,7 +176,7 @@ func TestExcludedFixturesVsCppSave(t *testing.T) {
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(file), "..", "..", "..", "testdata")
 	for rel, reason := range roundTripExclusions {
-		if reason == "not a valid file" {
+		if strings.HasPrefix(reason, "not") {
 			continue
 		}
 		t.Run(rel, func(t *testing.T) {

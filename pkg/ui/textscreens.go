@@ -1242,6 +1242,9 @@ func (tw *TextWindow) EditControlDone(s string) {
 		if tw.EditControlDoneForView(s) {
 			cnt++
 		}
+		if tw.EditControlDoneForThread(s) {
+			cnt++
+		}
 		if cnt != 1 {
 			panic("ui: expected exactly one parameter to be edited")
 		}

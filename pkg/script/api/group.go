@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/spacesolve/spacesolve/pkg/check"
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -318,6 +319,18 @@ func (g Group) Bounds() (min, max Vec) {
 	return min, max
 }
 
+// Check checks the solid of the model up to and with this group: it
+// reports naked and self-intersecting edges, whether the Boolean
+// failed, the face and triangle counts, and the volume, centre of mass
+// and bounding box, in mm. Report.Sound() says whether the solid is
+// closed, does not cross itself, and came from a Boolean that worked;
+// Report.Summary() says it in words. Analyze > Check Solid shows the
+// same report.
+func (g Group) Check() (r check.Report) {
+	g.d.read(func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })
+	return r
+}
+
 // newGroup starts a group of a type, named name or else what the
 // menu would name it.
 func newGroup(typ sketch.GroupType, name, defaultName string) sketch.Group {
@@ -485,7 +498,29 @@ func (d *Doc) Revolve(axis Entity, degrees float64, name string) Group {
 		g.Subtype = sketch.GroupOneSided
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
-		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180
+		// The group turns its copies twice by twice the parameter.
+		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
+	})
+}
+
+// Helix makes a solid of the active group's sketch by sweeping it
+// around a line segment by an angle in degrees while moving it along
+// the segment's direction by length, as a screw thread does: 360 and a
+// length of the pitch make one turn. A negative angle turns the other
+// way. The new group becomes active.
+func (d *Doc) Helix(axis Entity, degrees, length float64, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		g := newGroup(sketch.GroupHelix, name, "helix")
+		workplaneNormal(sk, "Helix")
+		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, axis, "Helix")
+		g.OpA = sk.Active
+		g.ValA = 2
+		g.Subtype = sketch.GroupOneSided
+		return g
+	}, func(sk *sketch.Sketch, hg core.HGroup) {
+		// As for Revolve, and the copies move twice by the distance.
+		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
+		sk.MustGetParam(hg.Param(7)).Val = length / 2
 	})
 }
 

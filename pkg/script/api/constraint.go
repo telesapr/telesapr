@@ -182,6 +182,33 @@ func (c Constraint) SetReference(reference bool) {
 	})
 }
 
+// Other is whether an angle measures the supplementary angle, or an
+// equal-angle constraint pairs the other angles.
+func (c Constraint) Other() (other bool) {
+	c.d.read(func(sk *sketch.Sketch) { other = c.get(sk).Other })
+	return other
+}
+
+// SetOther makes an angle measure the supplementary angle, the other
+// one of the two its lines make, or not; for an equal-angle
+// constraint it pairs the other angles. Constrain > Other
+// Supplementary Angle toggles it.
+func (c Constraint) SetOther(other bool) {
+	c.d.change(func(sk *sketch.Sketch) {
+		constraint := c.get(sk)
+		switch constraint.Type {
+		case core.ConstraintAngle:
+			constraint.Other = other
+			constraint.ModifyToSatisfy(sk)
+		case core.ConstraintEqualAngle:
+			constraint.Other = other
+		default:
+			fail("%s isn't an angle", constraint.DescriptionString())
+		}
+		sk.MarkGroupDirty(constraint.Group, false)
+	})
+}
+
 // Comment is the text of a comment.
 func (c Constraint) Comment() (text string) {
 	c.d.read(func(sk *sketch.Sketch) { text = c.get(sk).Comment })

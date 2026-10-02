@@ -113,8 +113,11 @@ func (h *SketchHost) adopt(sk *sketch.Sketch) {
 	sk.Unsaved = false
 }
 
+// Sketch is the hosted sketch.
 func (h *SketchHost) Sketch() *sketch.Sketch { return h.sk }
-func (h *SketchHost) Run(fn func())          { fn() }
+
+// Run runs fn at once: a bare sketch has no goroutine of its own.
+func (h *SketchHost) Run(fn func()) { fn() }
 
 // BeginEval starts a step of a script: its first change is remembered
 // for undo.
@@ -123,6 +126,8 @@ func (h *SketchHost) BeginEval() { h.changed = false }
 // EndEval ends a step of a script: what it changed is regenerated.
 func (h *SketchHost) EndEval() { h.Regenerate() }
 
+// Changing remembers the sketch for undo before the first change of
+// a script's step.
 func (h *SketchHost) Changing() {
 	if !h.changed {
 		h.changed = true
@@ -130,8 +135,11 @@ func (h *SketchHost) Changing() {
 	}
 }
 
+// Regenerate regenerates what is dirty.
 func (h *SketchHost) Regenerate() { h.sk.Refresh() }
 
+// AddGroup adds g after the active group, activates it, and
+// regenerates.
 func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup {
 	sk := h.sk
 	hg := sk.AddGroupAfterActive(g)
@@ -149,6 +157,8 @@ func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup {
 	return hg
 }
 
+// DeleteGroup deletes a group, activating the one before it if it was
+// active, and regenerates.
 func (h *SketchHost) DeleteGroup(hg core.HGroup) {
 	sk := h.sk
 	if hg == sk.Active {
@@ -165,16 +175,23 @@ func (h *SketchHost) DeleteGroup(hg core.HGroup) {
 	sk.GenerateAll()
 }
 
+// Activate makes a group the active one.
 func (h *SketchHost) Activate(hg core.HGroup) {
 	h.sk.Active = hg
 	h.sk.MarkGroupDirty(hg, false)
 }
 
+// Undo takes back the last step, and reports whether there was one.
 func (h *SketchHost) Undo() bool { return h.sk.UndoUndo() }
+
+// Redo does again the last step undone, and reports whether there was
+// one.
 func (h *SketchHost) Redo() bool { return h.sk.UndoRedo() }
 
+// MmPerUnit is 1: with no interface, lengths are shown in mm.
 func (h *SketchHost) MmPerUnit() float64 { return 1 }
 
+// Load replaces the sketch by the one in a file.
 func (h *SketchHost) Load(path string) error {
 	doc, err := slvs.LoadFile(path)
 	if err != nil {
@@ -185,6 +202,7 @@ func (h *SketchHost) Load(path string) error {
 	return nil
 }
 
+// Save writes the sketch to a file, its links made relative to it.
 func (h *SketchHost) Save(path string) error {
 	h.sk.GenerateAll()
 	if link, err := slvs.RebaseLinks(h.sk, h.saveFile, path); err != nil {
@@ -199,6 +217,8 @@ func (h *SketchHost) Save(path string) error {
 	return nil
 }
 
+// Export writes the mesh as STL; the other formats need the
+// application around the sketch.
 func (h *SketchHost) Export(kind ExportKind, path string) error {
 	if kind != ExportMesh || !strings.EqualFold(filepath.Ext(path), ".stl") {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
@@ -206,9 +226,13 @@ func (h *SketchHost) Export(kind ExportKind, path string) error {
 	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(core.GetSettings()))
 }
 
+// Render fails: drawing needs the application around the sketch.
 func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error {
 	return fmt.Errorf("picture %s: %w", filepath.Base(path), errUnsupported)
 }
 
+// Selection is nothing: there is no interface to select in.
 func (h *SketchHost) Selection() []sketch.Selection { return nil }
-func (h *SketchHost) Select([]sketch.Selection)     {}
+
+// Select does nothing, for the same reason.
+func (h *SketchHost) Select([]sketch.Selection) {}

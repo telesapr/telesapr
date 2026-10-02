@@ -1,9 +1,13 @@
 package api
 
 import (
+	"path/filepath"
+
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/spacesolve/spacesolve/pkg/ttf"
 )
 
 // request adds a request to the active group, in the active
@@ -142,7 +146,9 @@ func (d *Doc) Polyline(closed bool, points ...Vec) (lines []Entity) {
 
 // Rect adds a rectangle with the corners a and b and sides along the
 // active workplane's axes: four line segments, joined, two horizontal
-// and two vertical, starting with the bottom one and going around.
+// and two vertical, returned starting with the bottom one and going
+// around counter-clockwise. It makes the same requests and constraints
+// as the interface's rectangle tool dragged from the top left corner.
 func (d *Doc) Rect(a, b Vec) (lines []Entity) {
 	d.Batch(func() {
 		var wp Entity
@@ -164,12 +170,133 @@ func (d *Doc) Rect(a, b Vec) (lines []Entity) {
 			va, vb = vb, va
 		}
 		at := func(s, t float64) Vec { return origin.Plus(u.ScaledBy(s)).Plus(v.ScaledBy(t)) }
-		corners := []Vec{at(ua, va), at(ub, va), at(ub, vb), at(ua, vb)}
-		lines = d.Polyline(true, corners...)
-		d.Horizontal(lines[0])
-		d.Vertical(lines[1])
-		d.Horizontal(lines[2])
-		d.Vertical(lines[3])
+		// What the interface's rectangle tool makes when the top left
+		// corner is clicked and the bottom right one dragged to: line i
+		// runs from corner i to corner i-1, corner 2 is the click and
+		// corner 0 the drag; the lines are joined, then made vertical,
+		// horizontal, vertical, horizontal.
+		corner := []Vec{at(ub, va), at(ua, va), at(ua, vb), at(ub, vb)}
+		var lns [4]Entity
+		for i := range lns {
+			lns[i] = d.Line(corner[i], corner[(i+3)%4])
+		}
+		for i := range lns {
+			d.Coincident(lns[i].Start(), lns[(i+1)%4].End())
+		}
+		for i := range lns {
+			if i%2 == 0 {
+				d.Vertical(lns[i])
+			} else {
+				d.Horizontal(lns[i])
+			}
+		}
+		lines = []Entity{lns[1], lns[0], lns[3], lns[2]}
 	})
 	return lines
+}
+
+// box places the four points of a text or an image request: its
+// bottom left corner at, height up the active workplane's v axis, and
+// as wide as aspect says.
+func box(sk *sketch.Sketch, hr core.HRequest, at Vec, height, aspect float64) {
+	n := sk.MustGetEntity(sk.ActiveWorkplane()).NormalEntity(sk)
+	up, right := n.NormalV(sk).ScaledBy(height), n.NormalU(sk).ScaledBy(height*aspect)
+	// The points are the top left, the bottom left, the bottom right
+	// and the top right corners.
+	for i, p := range []Vec{at.Plus(up), at, at.Plus(right), at.Plus(right).Plus(up)} {
+		forceTo(sk, hr.Entity(1+i), p)
+	}
+}
+
+// Text adds text in a TrueType font in the active workplane, its
+// bottom left corner at at, and height high; it is as wide as the
+// font makes it. font is the name of a font file the program knows,
+// as the text window lists them, or "" for the one built in.
+func (d *Doc) Text(text, font string, at Vec, height float64) Entity {
+	if height <= 0 {
+		fail("text can't be %g high", height)
+	}
+	if font == "" {
+		font = ttf.EmbeddedFont
+	}
+	return d.request(sketch.RequestTTFText, needWorkplane("text"), func(sk *sketch.Sketch, hr core.HRequest) {
+		r := sk.GetRequest(hr)
+		r.Str, r.Font = text, font
+		aspect := ttf.Fonts.AspectRatio(font, text, false)
+		if aspect == 0 {
+			fail("the font '%s' isn't there, or has none of '%s'", font, text)
+		}
+		box(sk, hr, at, height, aspect)
+	})
+}
+
+// Image adds a picture from a file in the active workplane, for
+// tracing: its bottom left corner at at, height high and as wide as
+// the picture's proportions make it. It is construction, as the
+// interface makes it.
+func (d *Doc) Image(path string, at Vec, height float64) Entity {
+	if height <= 0 {
+		fail("an image can't be %g high", height)
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		fail("%v", err)
+	}
+	return d.request(sketch.RequestImage, needWorkplane("an image"), func(sk *sketch.Sketch, hr core.HRequest) {
+		if !slvs.LoadLinkedImage(sk, "", abs) {
+			fail("can't read the image '%s'", path)
+		}
+		img := sk.Images[abs]
+		r := sk.GetRequest(hr)
+		r.File, r.Construction = abs, true
+		box(sk, hr, at, height, float64(img.Width)/float64(img.Height))
+	})
+}
+
+// edit runs one of the engine's edits of the drawing, which keeps its
+// own undo step, and fails with what it says.
+func (d *Doc) edit(fn func(sk *sketch.Sketch) error) {
+	d.h.Run(func() {
+		if d.h.Sketch().RegenerationPending() {
+			d.h.Regenerate()
+		}
+		sk := d.h.Sketch()
+		sk.Active = sk.ActiveGroup()
+		undo := sk.Undo.Write
+		err := fn(sk)
+		if sk.Undo.Write != undo {
+			sk.Unsaved = true
+		}
+		if err != nil {
+			fail("%s", err.Error())
+		}
+	})
+}
+
+// TangentArc rounds the corner at a point where two line segments or
+// arcs of the active workplane meet, with an arc tangent to both, as
+// Sketch > Tangent Arc at Point does. radius 0 lets the program choose
+// it. With trim, the two are cut back to the arc; without, they become
+// construction and trimmed copies are added. It is its own step of
+// undo.
+func (d *Doc) TangentArc(point Entity, radius float64, trim bool) {
+	if radius < 0 {
+		fail("a tangent arc can't have the radius %g", radius)
+	}
+	d.edit(func(sk *sketch.Sketch) error {
+		h := point.must(sk, "a point", isPoint)
+		return sk.MakeTangentArc(h, sketch.TangentArcSettings{Manual: radius > 0, Radius: radius, Modify: trim})
+	})
+}
+
+// Split cuts two curves where they cross, or a curve at a point on it,
+// as Sketch > Split Curves at Intersection does. Of several crossings
+// it takes the one nearest near. It is its own step of undo.
+func (d *Doc) Split(a, b Entity, near Vec) {
+	d.edit(func(sk *sketch.Sketch) error {
+		a.get(sk)
+		b.get(sk)
+		sel := []sketch.Selection{{Entity: a.H}, {Entity: b.H}}
+		return sk.SplitLinesOrCurves(sel, sk.ProjectPoint(near))
+	})
 }
