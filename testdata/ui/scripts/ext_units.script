@@ -1,0 +1,38 @@
+# The document's unit (an extension): in an inch document a typed 1/4
+# is kept as typed and saved in inches; a change to mm keeps every size
+# and is one undo step. (TestDocumentUnitsInterface checks the message
+# about parameters.)
+menu View|Dimension Units|Dimensions in Inches
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+move 200 200
+down L 200 200
+up L 200 200
+move 400 250
+down L 400 250
+up L 400 250
+key d
+key esc
+move 195 225
+down L 195 225
+up L 195 225
+down L 195 225
+dbl L 195 225
+up L 195 225
+dump
+edit 1/4
+dump
+save
+menu View|Dimension Units|Dimensions in Millimeters
+dump
+save
+key z ctrl
+dump
+save

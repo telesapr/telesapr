@@ -25,7 +25,7 @@ func init() {
 		"Print":        reflect.ValueOf(spcs.Print),
 		"SaveFile":     reflect.ValueOf(spcs.SaveFile),
 		"String":       reflect.ValueOf(spcs.String),
-		"Version":      reflect.ValueOf(constant.MakeFromLiteral("1", token.INT, 0)),
+		"Version":      reflect.ValueOf(constant.MakeFromLiteral("2", token.INT, 0)),
 		"Word":         reflect.ValueOf(spcs.Word),
 
 		// type definitions

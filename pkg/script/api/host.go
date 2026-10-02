@@ -4,8 +4,10 @@
 // looked up again at every call; a Doc therefore always shows the
 // drawing as it is.
 //
-// Lengths and coordinates are in millimetres, whatever unit the user
-// interface shows, and angles in degrees.
+// Lengths and coordinates are in millimetres, whatever the document's
+// unit, and angles in degrees. Only text typed for a value, as the
+// SetExpr methods take, is in the document's unit (Doc.Units), as it
+// is in the user interface.
 //
 // A call that can't do what it was asked, because of what it was given
 // or of the sketch's state, panics with an error; the interpreter
@@ -192,7 +194,7 @@ func (h *SketchHost) Undo() bool { return h.sk.UndoUndo() }
 func (h *SketchHost) Redo() bool { return h.sk.UndoRedo() }
 
 // MmPerUnit is 1: with no interface, lengths are shown in mm.
-func (h *SketchHost) MmPerUnit() float64 { return 1 }
+func (h *SketchHost) MmPerUnit() float64 { return h.sk.Units.MmPer() }
 
 // Load replaces the sketch by the one in a .spcs file.
 func (h *SketchHost) Load(path string) error {

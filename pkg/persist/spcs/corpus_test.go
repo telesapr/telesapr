@@ -2,6 +2,7 @@ package spcs_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"math"
 	"os"
@@ -24,13 +25,20 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// TestV1Corpus opens every file of testdata/spcs/v1, which every later
-// reader must load: it decodes without warnings, loads with its links,
-// and regenerates with every solid sound. fields.spcs, which is not a
+// TestCorpus opens every file of testdata/spcs/v1 and v2, which every
+// later reader must load: it decodes without warnings as the version
+// of its directory, loads with its links, and regenerates with every
+// solid sound. fields.spcs, which is not a
 // model, is only decoded: it must upgrade to a version 2 file that
 // holds the same lengths in its unit and encodes the same again.
-func TestV1Corpus(t *testing.T) {
-	root := filepath.Join(testdata, "spcs", "v1")
+func TestCorpus(t *testing.T) {
+	for version, min := range map[int]int{1: 9, 2: 1} {
+		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) { corpus(t, version, min) })
+	}
+}
+
+func corpus(t *testing.T, version, min int) {
+	root := filepath.Join(testdata, "spcs", fmt.Sprintf("v%d", version))
 	n := 0
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".spcs") {
@@ -46,7 +54,7 @@ func TestV1Corpus(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(doc.Warnings) > 0 || doc.Version != 1 {
+			if len(doc.Warnings) > 0 || doc.Version != version {
 				t.Fatalf("version %d, warnings %v", doc.Version, doc.Warnings)
 			}
 			if filepath.Base(path) == "fields.spcs" {
@@ -91,7 +99,7 @@ func TestV1Corpus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n < 9 {
+	if n < min {
 		t.Errorf("only %d files", n)
 	}
 }

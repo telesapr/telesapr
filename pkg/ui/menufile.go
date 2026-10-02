@@ -180,6 +180,9 @@ func (ss *SolveSpaceUI) loadSlvs(filename string) bool {
 			return true
 		}
 	}
+	// A .slvs file has no unit; it is shown in the one in use, as C++
+	// does.
+	doc.Sketch.Units = ss.ViewUnits
 	ss.setSketch(doc.Sketch)
 	return true
 }

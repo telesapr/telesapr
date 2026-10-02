@@ -699,21 +699,13 @@ func (gw *GraphicsWindow) MenuView(id Command) {
 		gw.showTextWindow = !gw.showTextWindow
 		gw.EnsureValidActives()
 	case CmdUnitsInches:
-		ss.ViewUnits = core.UnitInches
-		ss.ScheduleShowTW()
-		gw.EnsureValidActives()
+		ss.SetDocumentUnits(core.UnitInches)
 	case CmdUnitsFeetInches:
-		ss.ViewUnits = core.UnitFeetInches
-		ss.ScheduleShowTW()
-		gw.EnsureValidActives()
+		ss.SetDocumentUnits(core.UnitFeetInches)
 	case CmdUnitsMm:
-		ss.ViewUnits = core.UnitMM
-		ss.ScheduleShowTW()
-		gw.EnsureValidActives()
+		ss.SetDocumentUnits(core.UnitMM)
 	case CmdUnitsMeters:
-		ss.ViewUnits = core.UnitMeters
-		ss.ScheduleShowTW()
-		gw.EnsureValidActives()
+		ss.SetDocumentUnits(core.UnitMeters)
 	case CmdFullScreen:
 		gw.window.SetFullScreen(!gw.window.IsFullScreen())
 		gw.EnsureValidActives()

@@ -7,8 +7,10 @@ import (
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/platform/headless"
 	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
 func TestFindCommands(t *testing.T) {
@@ -183,5 +185,86 @@ func TestMeasureMode(t *testing.T) {
 	ss.MenuMeasure()
 	if ss.GW.measuring {
 		t.Error("the mode didn't turn off")
+	}
+}
+
+// The unit is the document's: a change keeps sizes as one undo step,
+// says which parameters now count in the new unit, sets the unit of new
+// documents, and a file opens in its own unit.
+func TestDocumentUnitsInterface(t *testing.T) {
+	asProduct(t)
+	ss, p := newTestApp(t)
+	sk := ss.SK
+	if err := sk.AddParameter("w", "0.5"); err != nil {
+		t.Fatal(err)
+	}
+	hg := ss.GW.activeGroupH()
+	hr := sk.AddRequest(sketch.Request{Type: sketch.RequestLineSegment, Group: hg, Workplane: hg.Entity(0)})
+	sk.GenerateAll()
+	hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: hg.Entity(0),
+		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 1}})
+	ss.SetDocumentUnits(core.UnitInches)
+	if sk.Units != core.UnitInches || ss.ViewUnits != core.UnitInches || ss.DefaultUnits != core.UnitInches {
+		t.Fatalf("units %v view %v default %v", sk.Units, ss.ViewUnits, ss.DefaultUnits)
+	}
+	if err := sk.SetConstraintText(hc, "w*2"); err != nil {
+		t.Fatal(err)
+	}
+	undo := sk.Undo.Cnt
+	p.DialogResponses = append(p.DialogResponses, platform.ResponseOK)
+	ss.SetDocumentUnits(core.UnitMM)
+	if sk.Undo.Cnt != undo+1 || !sk.Unsaved {
+		t.Errorf("undo steps %d, was %d; unsaved %v", sk.Undo.Cnt, undo, sk.Unsaved)
+	}
+	last := p.DialogsShown[len(p.DialogsShown)-1]
+	if !strings.Contains(last.Message+last.Description, "w") || !strings.Contains(last.Message+last.Description, "mm") {
+		t.Errorf("message %q %q", last.Message, last.Description)
+	}
+	if got := sk.GetConstraint(hc).Expr; got != "(w*2)*25.4" {
+		t.Errorf("expression %q", got)
+	}
+	ss.UndoUndo()
+	if ss.SK.Units != core.UnitInches || ss.ViewUnits != core.UnitInches {
+		t.Errorf("undo: units %v view %v", ss.SK.Units, ss.ViewUnits)
+	}
+	ss.SetDocumentUnits(core.UnitInches) // no change, no step
+	if ss.SK.Undo.Cnt != undo {
+		t.Errorf("a change to the same unit made a step")
+	}
+
+	// A new document starts in the last unit chosen; a file opens in
+	// its own.
+	path := filepath.Join(t.TempDir(), "inch.spcs")
+	if !ss.SaveToFile(path) {
+		t.Fatal("save failed")
+	}
+	p.DialogResponses = append(p.DialogResponses, platform.ResponseOK)
+	ss.SetDocumentUnits(core.UnitMeters)
+	ss.NewFile()
+	if ss.SK.Units != core.UnitMeters || ss.ViewUnits != core.UnitMeters {
+		t.Errorf("a new file is in %v, view %v", ss.SK.Units, ss.ViewUnits)
+	}
+	if !ss.Load(path) {
+		t.Fatal("load failed")
+	}
+	if ss.SK.Units != core.UnitInches || ss.ViewUnits != core.UnitInches {
+		t.Errorf("the file opened in %v, view %v", ss.SK.Units, ss.ViewUnits)
+	}
+	tw := ss.TW
+	ss.MenuParameters()
+	tw.Show()
+	if !shows(ss, "counts in the document's unit, in;") {
+		t.Error("the parameters screen doesn't name the unit")
+	}
+
+	// In a comparison with C++ the unit is only the view's.
+	cppComparison = true
+	defer func() { cppComparison = false }()
+	steps := ss.SK.Undo.Cnt
+	ss.SK.Unsaved = false
+	ss.SetDocumentUnits(core.UnitMM)
+	if ss.SK.Undo.Cnt != steps || ss.SK.Unsaved || ss.ViewUnits != core.UnitMM {
+		t.Errorf("C++ comparison: steps %d, unsaved %v, view %v", ss.SK.Undo.Cnt, ss.SK.Unsaved, ss.ViewUnits)
 	}
 }

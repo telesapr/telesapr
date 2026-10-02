@@ -85,7 +85,11 @@ type SolveSpaceUI struct {
 		PlungeFeed float64
 	}
 
+	// ViewUnits is the unit lengths are shown and typed in: the
+	// document's (Sketch.Units), which it follows. DefaultUnits is the
+	// unit of a new document, the last one the user chose.
 	ViewUnits          core.Unit
+	DefaultUnits       core.Unit
 	AfterDecimalMm     int
 	AfterDecimalInch   int
 	AfterDecimalDegree int
@@ -191,7 +195,8 @@ func (ss *SolveSpaceUI) LoadSettings() {
 	ss.ExportMaxSegments = int(s.ThawInt("ExportMaxSegments", 64))
 	ss.TimeoutRedundantConstr = int(s.ThawInt("TimeoutRedundantConstraints", 1000))
 	ss.AnimationSpeed = int(s.ThawInt("AnimationSpeed", 800))
-	ss.ViewUnits = core.Unit(s.ThawInt("ViewUnits", uint32(core.UnitMM)))
+	ss.DefaultUnits = core.Unit(s.ThawInt("ViewUnits", uint32(core.UnitMM)))
+	ss.ViewUnits = ss.DefaultUnits
 	ss.AfterDecimalMm = int(s.ThawInt("AfterDecimalMm", 2))
 	ss.AfterDecimalInch = int(s.ThawInt("AfterDecimalInch", 3))
 	ss.AfterDecimalDegree = int(s.ThawInt("AfterDecimalDegree", 2))
@@ -290,7 +295,7 @@ func (ss *SolveSpaceUI) SaveSettings() {
 	s.FreezeInt("ExportMaxSegments", uint32(ss.ExportMaxSegments))
 	s.FreezeInt("TimeoutRedundantConstraints", uint32(ss.TimeoutRedundantConstr))
 	s.FreezeInt("AnimationSpeed", uint32(ss.AnimationSpeed))
-	s.FreezeInt("ViewUnits", uint32(ss.ViewUnits))
+	s.FreezeInt("ViewUnits", uint32(ss.DefaultUnits))
 	s.FreezeInt("AfterDecimalMm", uint32(ss.AfterDecimalMm))
 	s.FreezeInt("AfterDecimalInch", uint32(ss.AfterDecimalInch))
 	s.FreezeInt("AfterDecimalDegree", uint32(ss.AfterDecimalDegree))

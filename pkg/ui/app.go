@@ -47,6 +47,7 @@ func (ss *SolveSpaceUI) Init() {
 // view, the show flags and the event loop.
 func (ss *SolveSpaceUI) setSketch(sk *sketch.Sketch) {
 	ss.SK = sk
+	ss.ViewUnits = sk.Units
 	sk.View = &ss.GW.view
 	sk.Show = &ss.GW.show
 	sk.OnScheduleGenerateAll = ss.onScheduleGenerateAll
@@ -63,6 +64,7 @@ func (ss *SolveSpaceUI) setSketch(sk *sketch.Sketch) {
 func (ss *SolveSpaceUI) NewFile() {
 	sk := sketch.NewSketch()
 	sk.NewFile()
+	sk.Units = ss.DefaultUnits
 	ss.setSketch(sk)
 }
 

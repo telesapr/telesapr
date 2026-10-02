@@ -103,12 +103,11 @@ func (c Constraint) Set(v float64) {
 	})
 }
 
-// SetExpr gives the constraint the value of an expression, as typing
-// it in its label does: "25.4/2" or "sqrt(2)*10" is evaluated once, a
-// length being in the unit the user interface shows lengths in. An
-// expression that names a parameter, "wall*4", is kept, in millimetres
-// and degrees, and evaluated again at each regeneration (see
-// Doc.SetParameter).
+// SetExpr gives the constraint the value of text, as typing it in its
+// label does: a length in the document's unit (Doc.Units), an angle in
+// degrees, a ratio. A plain number is stored as its value; any other
+// text, "25.4/2" or "wall*4" with a parameter (Doc.SetParameter), is
+// kept and evaluated again at each regeneration.
 func (c Constraint) SetExpr(expr string) (err error) {
 	c.d.change(func(sk *sketch.Sketch) {
 		constraint := c.get(sk)
