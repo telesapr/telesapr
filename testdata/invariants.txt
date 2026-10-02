@@ -1,0 +1,287 @@
+# Invariant baseline: one line per fixture and group, from TestInvariants
+# in pkg/persist/slvs. Regenerate with SPACESOLVE_REGEN_INVARIANTS=1.
+analysis/contour_area/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+analysis/contour_area/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/reference_free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/reference_free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/skew.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/angle/skew.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/arc_line_tangent/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/arc_line_tangent/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_plane_free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_plane_free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_plane_normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_plane_normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_pt_free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_pt_free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_pt_normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/at_midpoint/line_pt_normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/comment/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/comment/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/cubic_line_tangent/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/cubic_line_tangent/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/cubic_line_tangent/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/cubic_line_tangent/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/curve_curve_tangent/arc_arc.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/curve_curve_tangent/arc_arc.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/curve_curve_tangent/arc_cubic.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/curve_curve_tangent/arc_cubic.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/diameter/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/diameter/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/diameter/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/diameter/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/eq_len_pt_line_d/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/eq_len_pt_line_d/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/eq_pt_ln_distances/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/eq_pt_ln_distances/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_angle/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_angle/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_angle/normal_old_version.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_angle/normal_old_version.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_angle/other.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_angle/other.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_length_lines/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_length_lines/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_line_arc_len/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_line_arc_len/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_line_arc_len/pi.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_line_arc_len/pi.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_line_arc_len/tau.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_line_arc_len/tau.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_radius/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/equal_radius/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/horizontal/line.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/horizontal/line.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/horizontal/pt_pt.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/horizontal/pt_pt.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/large_dimensions/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/large_dimensions/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_difference/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_difference/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_difference/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_difference/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_ratio/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_ratio/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_ratio/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/length_ratio/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/parallel/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/parallel/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/parallel/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/parallel/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/perpendicular/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/perpendicular/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/points_coincident/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/points_coincident/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/points_coincident/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/points_coincident/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/proj_pt_distance/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/proj_pt_distance/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/proj_pt_distance/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/proj_pt_distance/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_face_distance/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_face_distance/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_face_distance/normal.slvs g3 tri=260 faces=6 naked=0 inter=0 failed=false vol=784.12896981693302 com=4.9999999999998783,4.7573160874436388e-17,1.5319690495875051e-16 min=0,-5,-5 max=10.000000000000002,5,5
+constraint/pt_face_distance/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_face_distance/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_face_distance/reference.slvs g3 tri=260 faces=6 naked=0 inter=0 failed=false vol=784.12896981693302 com=4.9999999999998783,4.7573160874436388e-17,1.5319690495875051e-16 min=0,-5,-5 max=10.000000000000002,5,5
+constraint/pt_in_plane/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_in_plane/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/extended.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/extended.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_line_distance/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_circle/negative_dia.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_circle/negative_dia.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_circle/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_circle/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_face/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_face/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_face/normal.slvs g3 tri=260 faces=6 naked=0 inter=0 failed=false vol=784.12896981682115 com=-1.8505393233002491e-16,-5.2103938100573192e-17,-4.9999999999998828 min=-5,-5.0000000000000009,-10.000000000000002 max=5,5,0
+constraint/pt_on_line/left_free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_line/left_free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_line/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_line/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_line/right_free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_on_line/right_free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_plane_distance/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_plane_distance/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_plane_distance/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_plane_distance/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_pt_distance/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_pt_distance/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_pt_distance/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_pt_distance/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_pt_distance/reference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/pt_pt_distance/reference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/same_orientation/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/same_orientation/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/same_orientation/same_group.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/same_orientation/same_group.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric_horiz/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric_horiz/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric_line/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric_line/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric_vert/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/symmetric_vert/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/vertical/line.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/vertical/line.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/vertical/pt_pt.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/vertical/pt_pt.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/where_dragged/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/where_dragged/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/where_dragged/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+constraint/where_dragged/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_arc_cubic.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_arc_cubic.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_circle_line.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_circle_line.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_lines.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_lines.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_periodic.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_periodic.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_point.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/split_point.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_arc.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_arc.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_arc_modify.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_arc_modify.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_fail.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_fail.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_manual.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_manual.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_modify.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+edit/tangent_modify.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_coplanar_union/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_coplanar_union/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_coplanar_union/normal.slvs g3 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_coplanar_union/normal.slvs g4 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_coplanar_union/normal.slvs g5 tri=12 faces=6 naked=0 inter=0 failed=false vol=6000 com=15,10,-5 min=0,0,-10 max=30,20,0
+group/boolean_coplanar_union/normal.slvs g6 tri=12 faces=6 naked=0 inter=0 failed=false vol=6000 com=15,10,-5 min=0,0,-10 max=30,20,0
+group/boolean_coplanar_union/normal.slvs g7 tri=24 faces=9 naked=0 inter=0 failed=false vol=9999.9999999999982 com=12.999999999999996,9.9999999999999982,-0.99999999999999933 min=-1.2490009027033011e-16,0,-10.000000000000002 max=30,20.000000000000004,10.000000000000002
+group/boolean_coplanar_union/normal.slvs g8 tri=24 faces=9 naked=0 inter=0 failed=false vol=10000 com=13,9.9999999999999982,-0.99999999999999978 min=-1.2490009027033011e-16,0,-10.000000000000002 max=30,20.000000000000004,10.000000000000002
+group/boolean_coplanar_union/normal.slvs g9 tri=36 faces=12 naked=0 inter=0 failed=false vol=12000 com=11.666666666666663,9.9999999999999982,1.6666666666666661 min=0,-1.6653345369377343e-16,-10.000000000000004 max=30.000000000000004,20.000000000000004,20.000000000000004
+group/boolean_coplanar_union/normal.slvs ga tri=36 faces=12 naked=0 inter=0 failed=false vol=12000 com=11.666666666666664,10,1.6666666666666661 min=0,-1.6653345369377343e-16,-10.000000000000004 max=30.000000000000004,20.000000000000004,20.000000000000004
+group/boolean_coplanar_union/normal.slvs gb tri=46 faces=15 naked=0 inter=0 failed=false vol=13250 com=11.037735849056602,8.8207547169811313,1.7452830188679249 min=0,-5.0000000000000009,-10.000000000000004 max=30.000000000000004,20.000000000000004,20.000000000000004
+group/boolean_knife_edge/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_knife_edge/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_knife_edge/normal.slvs g3 tri=16 faces=10 naked=0 inter=0 failed=false vol=1.5812199213663625 com=0.083203907844943178,-0.11074371957313668,0.5 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1
+group/boolean_knife_edge/normal.slvs g4 tri=16 faces=10 naked=0 inter=0 failed=false vol=1.5812199213663625 com=0.083203907844943178,-0.11074371957313668,0.5 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1
+group/boolean_knife_edge/normal.slvs g5 tri=24 faces=13 naked=0 inter=0 failed=false vol=1.8303900357690592 com=0.026500893728191251,-0.050291724143743603,0.46585464842544572 min=-1.0000000000000009,-1.6126052390506493,0 max=1.5498346036820765,1,1
+group/boolean_tangent_crossing/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_crossing/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_crossing/normal.slvs g3 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30
+group/boolean_tangent_crossing/normal.slvs g4 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30
+group/boolean_tangent_crossing/normal.slvs g5 tri=82 faces=11 naked=0 inter=0 failed=false vol=205477.05860474202 com=-1.0731783854241581,1.0528821746956367,-0.76818366975213948 min=-30,-30.000000000000014,-30 max=30.000000000000004,30,30.000000000000004
+group/boolean_tangent_edge/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_edge/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_edge/normal.slvs g3 tri=20 faces=8 naked=0 inter=0 failed=false vol=312000 com=30.384615384615383,30.384615384615383,40 min=0,0,0 max=80,80,80
+group/boolean_tangent_edge/normal.slvs g4 tri=20 faces=8 naked=0 inter=0 failed=false vol=312000 com=30.384615384615383,30.384615384615383,40 min=0,0,0 max=80,80,80
+group/boolean_tangent_edge/normal.slvs g5 tri=28 faces=13 naked=0 inter=0 failed=false vol=296000 com=30.765765765765771,29.68468468468469,40 min=0,0,0 max=80,80,80
+group/boolean_tangent_fillet/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_fillet/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_fillet/normal.slvs g3 tri=8 faces=5 naked=0 inter=0 failed=false vol=1 com=0.33333333333333331,-0.66666666666666663,-0.49999999999999994 min=0,-2,-1 max=1,0,0
+group/boolean_tangent_fillet/normal.slvs g4 tri=8 faces=5 naked=0 inter=0 failed=false vol=1 com=0.33333333333333331,-0.66666666666666663,-0.49999999999999994 min=0,-2,-1 max=1,0,0
+group/boolean_tangent_fillet/normal.slvs g5 tri=80 faces=10 naked=0 inter=0 failed=false vol=0.97301612122710268 com=0.33946918086845412,-0.68204658124379847,-0.50693305028149871 min=0,-2,-1 max=1,0,0
+group/boolean_tangent_spline/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_spline/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/boolean_tangent_spline/normal.slvs g3 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30
+group/boolean_tangent_spline/normal.slvs g4 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30
+group/boolean_tangent_spline/normal.slvs g5 tri=82 faces=11 naked=0 inter=0 failed=false vol=204638.62718821224 com=-1.1748603254221188,1.0840678767264353,-0.83278799568991801 min=-30,-30.000000000000014,-30 max=30.000000000000004,30,30.000000000000007
+group/force_to_mesh/difference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/difference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/difference.slvs g3 tri=16 faces=0 naked=0 inter=0 failed=false vol=1.5812199213663622 com=0.083203907844943206,-0.11074371957313663,0.5 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1
+group/force_to_mesh/difference.slvs g4 tri=16 faces=0 naked=0 inter=0 failed=false vol=1.5812199213663622 com=0.083203907844943206,-0.11074371957313663,0.5 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1
+group/force_to_mesh/difference.slvs g5 tri=28 faces=0 naked=0 inter=0 failed=false vol=1.8303900357690597 com=0.026500893728191255,-0.050291724143743589,0.46585464842544577 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1
+group/force_to_mesh/fillet.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/fillet.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/fillet.slvs g3 tri=8 faces=0 naked=0 inter=0 failed=false vol=1 com=0.33333333333333331,-0.66666666666666663,-0.5 min=0,-2,-1 max=1,0,0
+group/force_to_mesh/fillet.slvs g4 tri=8 faces=0 naked=0 inter=0 failed=false vol=1 com=0.33333333333333331,-0.66666666666666663,-0.5 min=0,-2,-1 max=1,0,0
+group/force_to_mesh/fillet.slvs g5 tri=87 faces=0 naked=3 inter=0 failed=false vol=0.97301612122734904 com=0.33946918086844724,-0.68204658124359185,-0.50693305028141977 min=0,-2,-1 max=1,0,0
+group/force_to_mesh/translate.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/translate.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/translate.slvs g3 tri=12 faces=0 naked=0 inter=0 failed=false vol=1225 com=2.5000000000000004,-2.5,0.5 min=-15,-20,0 max=20,15,1
+group/force_to_mesh/translate.slvs g4 tri=12 faces=0 naked=0 inter=0 failed=false vol=1225 com=2.5000000000000004,-2.5,0.5 min=-15,-20,0 max=20,15,1
+group/force_to_mesh/translate.slvs g5 tri=46 faces=0 naked=0 inter=0 failed=false vol=1200 com=2.7083333333333326,-2.7083333333333335,0.49999999999999983 min=-15,-20,0 max=20,15,1
+group/force_to_mesh/translate.slvs g6 tri=86 faces=0 naked=0 inter=0 failed=false vol=1150 com=2.5000000000000018,-3.1521739130434803,0.50000000000000022 min=-15,-20,0 max=20,15,1
+group/force_to_mesh/translate.slvs g7 tri=250 faces=0 naked=0 inter=0 failed=false vol=1000 com=2.5000000000000027,-2.5000000000000004,0.50000000000000056 min=-15,-20,0 max=20,15,1
+group/force_to_mesh/union.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/union.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/union.slvs g3 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/union.slvs g4 tri=0 faces=0 naked=0 inter=0 failed=false
+group/force_to_mesh/union.slvs g5 tri=12 faces=0 naked=0 inter=0 failed=false vol=6000 com=15,10,-5 min=0,0,-10 max=30,20,0
+group/force_to_mesh/union.slvs g6 tri=12 faces=0 naked=0 inter=0 failed=false vol=6000 com=15,10,-5 min=0,0,-10 max=30,20,0
+group/force_to_mesh/union.slvs g7 tri=26 faces=0 naked=0 inter=0 failed=false vol=10000 com=13,10.000000000000002,-1 min=0,0,-10 max=30,20,10
+group/force_to_mesh/union.slvs g8 tri=26 faces=0 naked=0 inter=0 failed=false vol=10000 com=13,10,-1.0000000000000002 min=0,0,-10 max=30,20,10
+group/force_to_mesh/union.slvs g9 tri=40 faces=0 naked=0 inter=0 failed=false vol=12000 com=11.666666666666668,10,1.6666666666666665 min=0,0,-10 max=30,20,20
+group/force_to_mesh/union.slvs ga tri=40 faces=0 naked=0 inter=0 failed=false vol=12000 com=11.666666666666666,10,1.6666666666666654 min=0,0,-10 max=30,20,20
+group/force_to_mesh/union.slvs gb tri=62 faces=0 naked=0 inter=0 failed=false vol=13250 com=11.037735849056602,8.8207547169811331,1.7452830188679249 min=0,-5,-10 max=30,20,20
+group/link/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link/normal.slvs g3 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link/rect_v20.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link/rect_v20.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link_idf/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link_idf/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link_idf/normal.slvs g3 tri=604 faces=19 naked=0 inter=0 failed=false vol=2228.1318822257044 com=35.036350553751006,25.243908130190313,0.80000000000000193 min=10,10,0 max=60,40,1.6000000000000005
+group/link_stl/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link_stl/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/link_stl/normal.slvs g3 tri=12 faces=0 naked=0 inter=0 failed=false vol=1000 com=15,20,2.5 min=10,10,0 max=20,30,5
+group/translate_asy/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/translate_asy/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/translate_asy/normal.slvs g3 tri=12 faces=6 naked=0 inter=0 failed=false vol=1500 com=2.4999999999999996,0,4.9999999999999991 min=-5,-5,0 max=10,5,10
+group/translate_asy/normal.slvs g4 tri=24 faces=12 naked=0 inter=11 failed=false vol=3000 com=7.4999999999999982,2.4999999999999996,2.4999999999999991 min=-5,-5,-5 max=20,10,10
+group/translate_nd/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+group/translate_nd/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+group/translate_nd/normal.slvs g3 tri=12 faces=6 naked=0 inter=0 failed=false vol=1225 com=2.5,-2.5,0.5 min=-15,-20,0 max=20,15,1
+group/translate_nd/normal.slvs g4 tri=12 faces=6 naked=0 inter=0 failed=false vol=1225 com=2.5,-2.5,0.5 min=-15,-20,0 max=20,15,1
+group/translate_nd/normal.slvs g5 tri=32 faces=12 naked=0 inter=0 failed=false vol=1200 com=2.7083333333333339,-2.7083333333333335,0.5 min=-15,-20,0 max=20,15,1
+group/translate_nd/normal.slvs g6 tri=72 faces=24 naked=0 inter=0 failed=false vol=1150 com=2.5000000000000013,-3.1521739130434785,0.50000000000000011 min=-15,-20,0 max=20,15,1
+group/translate_nd/normal.slvs g7 tri=192 faces=60 naked=0 inter=0 failed=false vol=1000 com=2.500000000000004,-2.5000000000000044,0.50000000000000078 min=-15,-20,0 max=20,15,1
+request/arc_of_circle/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/arc_of_circle/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/circle/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/circle/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/circle/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/circle/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/cubic/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/cubic/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/cubic_periodic/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/cubic_periodic/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/datum_point/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/datum_point/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/image/linked.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/image/linked.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/image/linked.slvs g3 tri=0 faces=0 naked=0 inter=0 failed=false
+request/image/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/image/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/line_segment/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/line_segment/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/extrude.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/extrude.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/extrude.slvs g3 tri=1726 faces=127 naked=0 inter=0 failed=false vol=427.92052609060801 com=7.5344550812963123,-0.4402070232819324,2.9999999999999889 min=-5,-5.227792505174877,0 max=20.535175800323486,5,6.0000000000000027
+request/ttf_text/extrude_kerning.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/extrude_kerning.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/extrude_kerning.slvs g3 tri=932 faces=69 naked=0 inter=0 failed=false vol=229.46290303711174 com=3.0541235824908002,-0.32330716790713498,3.0000000000000018 min=-4.9241196503862739,-5.2277925051748753,0 max=10.167436599731445,4.5671337842941284,6.0000000000000018
+request/ttf_text/kerning.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/kerning.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/ttf_text/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+request/workplane/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
+request/workplane/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
+solver/param_point_distance.slvs error "group missing handle"
