@@ -65,6 +65,7 @@ const (
 	ScreenParameters
 	ScreenCommands
 	ScreenBrokenReferences
+	ScreenSection
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -138,6 +139,8 @@ const (
 	EditParameterName Edit = 912
 	// For the command search (an extension)
 	EditCommandQuery Edit = 920
+	// For the section view (an extension)
+	EditSectionOffset Edit = 930
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do
@@ -756,6 +759,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowCommands()
 		case ScreenBrokenReferences:
 			tw.ShowBrokenReferences()
+		case ScreenSection:
+			tw.ShowSection()
 		}
 	}
 	tw.Printf(false, "")

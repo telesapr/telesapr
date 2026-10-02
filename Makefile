@@ -57,10 +57,14 @@ test-race:
 	GOCACHE=$(PWD)/.gocache PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout 30m
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
-# package listed in scripts/coverage-packages.txt is under 85%.
+# package listed in scripts/coverage-packages.txt is under 85%. The
+# OpenGL packages are only reached with an X server, so it runs under
+# Xvfb, with the GUI tests, where xvfb-run is installed.
+XVFB_COVERAGE := $(if $(shell command -v xvfb-run),xvfb-run -a -s "-screen 0 1280x1024x24 -noreset" env SPACESOLVE_GUI_TESTS=1)
+
 coverage:
 	@echo "==> tests with coverage"
-	GOCACHE=$(PWD)/.gocache scripts/coverage-check.sh
+	GOCACHE=$(PWD)/.gocache $(XVFB_COVERAGE) scripts/coverage-check.sh
 
 # The fuzz targets, as package:target; go test fuzzes one at a time.
 FUZZTIME ?= 30s

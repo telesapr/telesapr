@@ -265,3 +265,53 @@ func BenchmarkSoftEdges1080p(b *testing.B) {
 		})
 	}
 }
+
+// The clip plane keeps one side of a plane, for quads, lines and
+// planar polygons, in parallel and in perspective, and follows the
+// camera it is drawn with.
+func TestSoftClipPlane(t *testing.T) {
+	for _, tangent := range []float64{0, 0.003} {
+		cam := testCamera(200, 160)
+		cam.Tangent = tangent
+		r := New()
+		// Keep x + z <= 12: at z = 10, x <= 2.
+		keep := srf.HalfSpace{N: v(1, 0, 1).WithMagnitude(1), D: 12 / math.Sqrt2}
+		img := frame(r, testCamera(10, 10), func() {
+			r.SetClipPlane(&keep)
+			r.SetCamera(cam)
+			fill := r.GetFill(render.Fill{Color: red})
+			r.DrawQuad(v(-18, -14, 10), v(-18, 0, 10), v(18, 0, 10), v(18, -14, 10), fill)
+			var p srf.SPolygon
+			p.Normal = v(0, 0, 1)
+			p.AddEmptyContour()
+			for _, q := range []geom.Vector{v(-18, 2, 10), v(18, 2, 10), v(18, 10, 10), v(-18, 10, 10), v(-18, 2, 10)} {
+				p.Contours[0].AddPoint(q)
+			}
+			r.DrawPolygon(&p, r.GetFill(render.Fill{Color: green}))
+			fat := r.GetStroke(render.Stroke{Color: white, Width: 5, Unit: render.UnitPX})
+			r.DrawLine(v(-18, 13, 10), v(18, 13, 10), fat)
+			r.SetClipPlane(nil)
+			r.DrawLine(v(-18, -1, 10), v(18, -1, 10), fat)
+		})
+		edge := cam.ProjectPoint(v(2, 0, 10))
+		ex := int(math.Round(100 + edge.U))
+		row := func(y float64) int { return int(math.Round(80 - cam.ProjectPoint(v(0, y, 10)).V)) }
+		for _, c := range []struct {
+			y    float64
+			want core.RgbaColor
+		}{{-7, red}, {6, green}, {13, white}} {
+			y := row(c.y)
+			in, out := img.RGBAAt(ex-4, y), img.RGBAAt(ex+4, y)
+			if in.R != c.want.Red || in.G != c.want.Green || in.B != c.want.Blue {
+				t.Errorf("tangent %v, y %v: kept pixel %v, want %v", tangent, c.y, in, c.want)
+			}
+			if out.R != 0 || out.G != 0 || out.B != 0 {
+				t.Errorf("tangent %v, y %v: cut pixel %v, want the background", tangent, c.y, out)
+			}
+		}
+		// Drawn after the plane was removed: not clipped.
+		if px := img.RGBAAt(ex+4, row(-1)); px.R != 255 {
+			t.Errorf("tangent %v: the line drawn without the plane is cut: %v", tangent, px)
+		}
+	}
+}

@@ -1298,6 +1298,9 @@ func (tw *TextWindow) EditControlDone(s string) {
 		if tw.EditControlDoneForCommands(s) {
 			cnt++
 		}
+		if tw.EditControlDoneForSection(s) {
+			cnt++
+		}
 		if cnt != 1 {
 			panic("ui: expected exactly one parameter to be edited")
 		}

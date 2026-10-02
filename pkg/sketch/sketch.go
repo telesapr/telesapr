@@ -59,6 +59,9 @@ type Sketch struct {
 	// C++'s headless build.
 	View *View
 
+	// Section is the section view, nil when it is off; see SetSection.
+	Section *Section
+
 	// Show holds the view's show flags Entity::IsVisible reads; nil is
 	// DefaultVisibility.
 	Show *Visibility
@@ -336,6 +339,7 @@ func (s *Sketch) Clear() {
 	s.Parameters = nil
 	s.ExprErrors = nil
 	s.ClearBrokenReferences()
+	s.Section = nil
 	s.names = knownNames{}
 	s.Units = core.UnitMM
 }

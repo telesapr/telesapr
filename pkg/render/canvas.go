@@ -169,6 +169,10 @@ type ViewportCanvas interface {
 	Canvas
 	SetCamera(Camera)
 	SetLighting(Lighting)
+	// SetClipPlane makes what is drawn from now on keep only the half
+	// space h, until it is called with nil or the next StartFrame; for
+	// the section view (an extension).
+	SetClipPlane(h *srf.HalfSpace)
 
 	StartFrame()
 	FlushFrame()

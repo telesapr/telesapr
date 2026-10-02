@@ -113,6 +113,7 @@ func init() {
 		{1, "Darken Inactive Solids", CmdDimSolidModel, 0, kc, mView},
 		{1, "Use &Perspective Projection", CmdPerspectiveProj, '`', kc, mView},
 		{1, "Show E&xploded View", CmdExplodeSketch, '\\', kc, mView},
+		{1, "&Section View", CmdSectionView, c_ | s_ | 'x', kc, func(ss *SolveSpaceUI, c Command) { ss.GW.MenuSectionView() }},
 		{1, "Dimension &Units", CmdNone, 0, kn, nil},
 		{2, "Dimensions in &Millimeters", CmdUnitsMm, 0, kr, mView},
 		{2, "Dimensions in M&eters", CmdUnitsMeters, 0, kr, mView},

@@ -3,6 +3,7 @@
 package gl
 
 import (
+	"fmt"
 	"image"
 	"image/png"
 	"os"
@@ -109,7 +110,13 @@ func scene(c render.ViewportCanvas) {
 	c.StartFrame()
 
 	front := c.GetFill(render.Fill{Layer: render.LayerNormal, Color: core.RgbaColor{}})
-	c.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, blue), front, 0)
+	// Cut by a plane, as the section view does: the near top corner of
+	// the box is taken away, so its inside shows.
+	keep := srf.HalfSpace{N: geom.Vector{X: 1, Y: 1, Z: 1}.WithMagnitude(1), D: 6}
+	c.SetClipPlane(&keep)
+	back := c.GetFill(render.Fill{Layer: render.LayerNormal, Color: red})
+	c.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, blue), front, back)
+	c.SetClipPlane(nil)
 
 	thin := c.GetStroke(render.Stroke{Layer: render.LayerNormal, ZIndex: 1, Color: white, Width: 1, Unit: render.UnitPX})
 	fat := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 6, Unit: render.UnitPX})
@@ -181,24 +188,80 @@ func dump(t *testing.T, name string, img *image.RGBA) {
 	}
 }
 
+// scene2 draws the rest: outlines, edges, vector text, points, faces,
+// the occluded, depth-only and back layers, the other checkerboard,
+// and dotted lines, whose dots are points.
+func scene2(c render.ViewportCanvas) {
+	c.SetLighting(lighting())
+	c.SetCamera(isoCamera())
+	c.StartFrame()
+
+	m := box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, green)
+	c.DrawMesh(m, c.GetFill(render.Fill{Color: core.RgbaColor{}}), 0)
+	selected := c.GetFill(render.Fill{ZIndex: 1, Color: blue, Pattern: render.FillCheckeredB})
+	c.DrawFaces(m, []uint32{2, 6}, selected)
+
+	var ol srf.SOutlineList
+	m.MakeOutlinesInto(&ol, srf.EdgeSharp)
+	edge := c.GetStroke(render.Stroke{ZIndex: 2, Color: white, Width: 1.5, Unit: render.UnitPX})
+	for _, as := range []render.DrawOutlinesAs{render.EmphasizedAndContour, render.EmphasizedWithoutContour, render.ContourOnly} {
+		c.DrawOutlines(&ol, edge, as)
+	}
+	hidden := c.GetStroke(render.Stroke{Layer: render.LayerOccluded, Color: red, Width: 1, Unit: render.UnitPX,
+		StipplePattern: core.StippleDot, StippleScale: 3})
+	c.DrawOutlines(&ol, hidden, render.EmphasizedAndContour)
+
+	var el srf.SEdgeList
+	el.AddEdge(geom.Vector{X: -16, Y: -16}, geom.Vector{X: -16, Y: 16}, 0, 0, 0)
+	el.AddEdge(geom.Vector{X: -16, Y: 16}, geom.Vector{X: 16, Y: 16}, 0, 0, 0)
+	dots := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 6, Unit: render.UnitPX,
+		StipplePattern: core.StippleDashDot, StippleScale: 5})
+	c.DrawEdges(&el, dots)
+	if c.DrawBeziers(&srf.SBezierList{}, dots) {
+		panic("the renderer says it drew curves")
+	}
+
+	text := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: white, Width: 1, Unit: render.UnitPX})
+	c.DrawVectorText("section", 3, geom.Vector{X: -14, Y: -14, Z: 12}, geom.Vector{X: 1}, geom.Vector{Y: 1}, text)
+	point := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 7, Unit: render.UnitPX})
+	c.DrawPoint(geom.Vector{X: 14, Y: -14, Z: 12}, point)
+
+	// Depth only: it hides the line behind it but shows nothing.
+	depth := c.GetFill(render.Fill{Layer: render.LayerDepthOnly, Color: white})
+	c.DrawQuad(geom.Vector{X: 10, Y: 6, Z: 20}, geom.Vector{X: 16, Y: 6, Z: 20},
+		geom.Vector{X: 16, Y: 12, Z: 20}, geom.Vector{X: 10, Y: 12, Z: 20}, depth)
+	c.DrawLine(geom.Vector{X: 8, Y: 9, Z: 15}, geom.Vector{X: 18, Y: 9, Z: 15}, edge)
+	back := c.GetFill(render.Fill{Layer: render.LayerBack, Color: core.NewRgbaColor(50, 50, 50, 255)})
+	c.DrawQuad(geom.Vector{X: -20, Y: -20}, geom.Vector{X: -20, Y: -12},
+		geom.Vector{X: -12, Y: -12}, geom.Vector{X: -12, Y: -20}, back)
+	c.FlushFrame()
+	c.FinishFrame()
+}
+
 // The GL renderer follows the software one: the same scene differs
 // only in a few pixels, at antialiased line edges and triangle seams.
 func TestMatchesSoftware(t *testing.T) {
-	g := newGL(t)
-	scene(g)
-	got := g.ReadFrame()
-	s := newSoft()
-	scene(s)
-	want := s.ReadFrame()
-	if got.Bounds() != want.Bounds() {
-		t.Fatalf("bounds %v, software %v", got.Bounds(), want.Bounds())
-	}
-	dump(t, "gl", got)
-	dump(t, "soft", want)
-	n := diff(got, want, 24)
-	t.Logf("%d of %d pixels differ", n, width*height)
-	if n > width*height/50 {
-		t.Errorf("%d of %d pixels differ from the software renderer", n, width*height)
+	for i, draw := range []func(render.ViewportCanvas){scene, scene2} {
+		g := newGL(t)
+		draw(g)
+		got := g.ReadFrame()
+		s := newSoft()
+		draw(s)
+		want := s.ReadFrame()
+		if got.Bounds() != want.Bounds() {
+			t.Fatalf("bounds %v, software %v", got.Bounds(), want.Bounds())
+		}
+		dump(t, fmt.Sprintf("gl%d", i+1), got)
+		dump(t, fmt.Sprintf("soft%d", i+1), want)
+		n := diff(got, want, 24)
+		t.Logf("scene %d: %d of %d pixels differ", i+1, n, width*height)
+		if n > width*height/50 {
+			t.Errorf("scene %d: %d of %d pixels differ from the software renderer", i+1, n, width*height)
+		}
+		g.Clear()
+		if g.CreateBatch() != nil {
+			t.Error("the GL 1 renderer batches")
+		}
 	}
 }
 

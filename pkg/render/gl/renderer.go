@@ -77,6 +77,21 @@ func (r *Renderer) SetCamera(c render.Camera) {
 // SetLighting sets the lighting for the next frame.
 func (r *Renderer) SetLighting(l render.Lighting) { r.lighting = l }
 
+// SetClipPlane makes what is drawn from now on keep only the half
+// space h, or with nil, everything.
+func (r *Renderer) SetClipPlane(h *srf.HalfSpace) {
+	r.unSelectPrimitive()
+	if h == nil {
+		glapi.Disable(glapi.CLIP_PLANE0)
+		return
+	}
+	// GL keeps (a, b, c, d) . (x, y, z, 1) >= 0 in eye space, which is
+	// model space here since the modelview matrix is the identity.
+	eq := [4]float64{-h.N.X, -h.N.Y, -h.N.Z, h.D}
+	glapi.ClipPlane(glapi.CLIP_PLANE0, &eq[0])
+	glapi.Enable(glapi.CLIP_PLANE0)
+}
+
 func (r *Renderer) pixelSize() (int, int) {
 	pr := r.camera.PixelRatio
 	if pr == 0 {
@@ -126,6 +141,7 @@ func (r *Renderer) updateProjection() {
 func (r *Renderer) StartFrame() {
 	r.makeCurrent()
 	r.cur.hcs, r.cur.stroke, r.cur.hcf, r.cur.fill, r.cur.texture = 0, nil, 0, nil, nil
+	r.SetClipPlane(nil)
 
 	glapi.Enable(glapi.NORMALIZE)
 	glapi.BlendFunc(glapi.SRC_ALPHA, glapi.ONE_MINUS_SRC_ALPHA)

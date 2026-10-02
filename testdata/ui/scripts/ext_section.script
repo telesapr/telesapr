@@ -1,0 +1,46 @@
+# The section view (an extension): View > Section View cuts the solid
+# parallel to the selected face, the screen changes the offset and the
+# side, and the menu turns it off. With no fitting selection, it says
+# what to select.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+answer ok
+menu View|Section View
+move 290 265
+down L 290 265
+up L 290 265
+dump
+menu View|Section View
+menus
+tw
+dump
+twmove 163 130
+twdown L 163 130
+twup L 163 130
+edit -10
+tw
+dump
+twmove 37 150
+twdown L 37 150
+twup L 37 150
+tw
+dump
+answer ok
+twmove 190 130
+twdown L 190 130
+twup L 190 130
+edit q
+dump
+tw
+twmove 28 180
+twdown L 28 180
+twup L 28 180
+menus
+tw

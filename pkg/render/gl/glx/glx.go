@@ -31,10 +31,6 @@ static int glxTrapEnd(Display *dpy, glxHandler prev) {
 	return glxErrorCode;
 }
 
-static Visual *glxDefaultVisual(Display *dpy) {
-	return DefaultVisual(dpy, DefaultScreen(dpy));
-}
-
 static int glxDefaultScreen(Display *dpy) {
 	return DefaultScreen(dpy);
 }
@@ -146,11 +142,7 @@ func NewForWindow(window uint64) (*Context, error) {
 		C.XCloseDisplay(dpy)
 		return nil, fmt.Errorf("glx: no X window 0x%x (error %d)", window, int(code))
 	}
-	vid := C.XVisualIDFromVisual(attrs.visual)
-	if attrs.visual == nil {
-		vid = C.XVisualIDFromVisual(C.glxDefaultVisual(dpy))
-	}
-	cfg, err := chooseConfig(dpy, C.GLX_WINDOW_BIT, true, vid)
+	cfg, err := chooseConfig(dpy, C.GLX_WINDOW_BIT, true, C.XVisualIDFromVisual(attrs.visual))
 	if err != nil {
 		C.XCloseDisplay(dpy)
 		return nil, err

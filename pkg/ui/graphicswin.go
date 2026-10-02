@@ -132,6 +132,9 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 				gw.dimSolidModelMenuItem = item
 			case CmdMeasure:
 				gw.measureMenuItem = item
+			case CmdSectionView:
+				gw.sectionMenuItem = item
+				gw.sectionMenuOn = false
 			case CmdPerspectiveProj:
 				gw.perspectiveProjMenuItem = item
 			case CmdExplodeSketch:
