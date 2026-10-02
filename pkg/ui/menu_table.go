@@ -130,6 +130,7 @@ func init() {
 		{1, "&Helix", CmdGroupHelix, s_ | 'h', kn, mGrp},
 		{1, "&Lathe", CmdGroupLathe, s_ | 'l', kn, mGrp},
 		{1, "Re&volve", CmdGroupRevolve, s_ | 'v', kn, mGrp},
+		{1, "Screw &Thread...", CmdGroupThread, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuThread() }},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Link / Assemble...", CmdGroupLink, s_ | 'i', kn, mGrp},
 		{1, "Link Recent", CmdGroupRecent, 0, kn, mGrp},

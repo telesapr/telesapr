@@ -20,7 +20,9 @@ import (
 // Both paths must reach the same engine entry points, so neither can
 // drift from the other (ROADMAP-JUMP.md, "Definition of done").
 // The pairs are named path_*, and have no golden of their own: each
-// path is the other's judge. SPACESOLVE_PATHEQUIV_DIR names a
+// path is the other's judge. An interface script must not save: a save
+// regenerates, and the solver is not a fixed point, so a solved sketch
+// solved again can move by an ulp. SPACESOLVE_PATHEQUIV_DIR names a
 // directory to write both saves to.
 func requireSamePaths(t *testing.T, uiScript, goScript string) {
 	t.Helper()
@@ -54,8 +56,13 @@ func requireSamePaths(t *testing.T, uiScript, goScript string) {
 	}
 }
 
-// An extruded rectangle, drawn with the mouse and dimensioned in the
-// interface, and made by a script.
+// A rectangle drawn with the mouse and extruded, and the same made by
+// a script.
 func TestPathEquivalenceExtrude(t *testing.T) {
 	requireSamePaths(t, "path_extrude", "path_extrude")
+}
+
+// A screw thread made through its screen, and by a script.
+func TestPathEquivalenceThread(t *testing.T) {
+	requireSamePaths(t, "path_thread", "path_thread")
 }

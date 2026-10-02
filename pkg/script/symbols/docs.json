@@ -4194,6 +4194,10 @@
 						"decl": "func (d *Doc) Text(text, font string, at Vec, height float64) Entity",
 						"text": "Text adds text in a TrueType font in the active workplane, its\nbottom left corner at at, and height high; it is as wide as the\nfont makes it. font is the name of a font file the program knows,\nas the text window lists them, or \"\" for the one built in."
 					},
+					"Thread": {
+						"decl": "func (d *Doc) Thread(circle Entity, o ThreadOptions) (g Group)",
+						"text": "Thread makes a screw thread on a circle or an arc, about its axis\nand from its plane, as New Group \u003e Screw Thread does: four groups,\na sketch and a lathe that turn the part down (or bore it), and a\nridge sketch and a helix that sweeps it. It returns the helix group,\nwhich becomes active; its Check says whether the solid came out\nsound at the chord tolerance of the moment."
+					},
 					"Translate": {
 						"decl": "func (d *Doc) Translate(n int, delta Vec, name string) Group",
 						"text": "Translate repeats the model so far n times, each a step of delta\nfrom the one before. The new group becomes active."
@@ -4581,6 +4585,10 @@
 					"NewSketchHost"
 				]
 			},
+			"ThreadOptions": {
+				"text": "ThreadOptions are what New Group \u003e Screw Thread asks for. The zero\nvalue is what the screen starts with: the standard thread nearest\nthe circle's diameter, external, one and a half diameters long,\nending at a shoulder.",
+				"kind": "struct"
+			},
 			"Vec": {
 				"text": "Vec is a point or a direction in space, in mm.",
 				"kind": "geom.Vector",
@@ -4617,6 +4625,10 @@
 			"SetCurrent": {
 				"decl": "func SetCurrent(d *Doc)",
 				"text": "SetCurrent sets what Current returns in a compiled program."
+			},
+			"ThreadNearest": {
+				"decl": "func ThreadNearest(d float64) string",
+				"text": "ThreadNearest is the designation of the standard thread whose major\ndiameter is nearest d mm, as the screw thread screen first offers."
 			},
 			"V": {
 				"decl": "func V(x, y, z float64) Vec",
@@ -5022,6 +5034,10 @@
 					"AddStyle": {
 						"decl": "func (s *Sketch) AddStyle(st core.Style) core.HStyle"
 					},
+					"AddThread": {
+						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
+						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
+					},
 					"BumpOrderAfterActive": {
 						"decl": "func (sk *Sketch) BumpOrderAfterActive(g *Group)",
 						"text": "BumpOrderAfterActive gives g the order after the active group's and moves the groups after that one down."
@@ -5029,6 +5045,10 @@
 					"CalculateEntityBBox": {
 						"decl": "func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox",
 						"text": "CalculateEntityBBox returns the bounding box of the non-construction entities (C++ Sketch::CalculateEntityBBox)."
+					},
+					"CheckThread": {
+						"decl": "func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error",
+						"text": "CheckThread reports why AddThread would refuse to make the thread, without changing anything."
 					},
 					"Clear": {
 						"decl": "func (s *Sketch) Clear()"
@@ -5357,6 +5377,14 @@
 			},
 			"TangentArcSettings": {
 				"text": "TangentArcSettings are the user's settings for MakeTangentArc (C++ SS.tangentArcManual, tangentArcRadius and tangentArcModify).",
+				"kind": "struct"
+			},
+			"ThreadOptions": {
+				"text": "ThreadOptions is a screw thread to make on a circle.",
+				"kind": "struct"
+			},
+			"ThreadResult": {
+				"text": "ThreadResult is what AddThread made.",
 				"kind": "struct"
 			},
 			"UndoStack": {

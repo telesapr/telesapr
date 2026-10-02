@@ -40,6 +40,7 @@ var menuMethods = map[string]string{
 	"New Group/Revolve":                   "Doc.Revolve",
 	"New Group/Link / Assemble...":        "Doc.Link",
 	"New Group/Link Recent":               "- links a file from the recent list; Doc.Link takes any file",
+	"New Group/Screw Thread...":           "Doc.Thread",
 	"Sketch/In Workplane":                 "Doc.SetWorkplane",
 	"Sketch/Anywhere In 3d":               "Doc.Free3D",
 	"Sketch/Datum Point":                  "Doc.Point",

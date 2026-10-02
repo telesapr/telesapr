@@ -162,8 +162,9 @@ func (r *uiScriptRunner) popUp(m *headless.Menu) *headless.MenuItem {
 // goOnlyMenuItems are the menus and entries the C++ program the menu
 // dumps are compared with doesn't have, left out of every dump.
 var goOnlyMenuItems = map[string]bool{
-	"S&cript":      true,
-	"Check S&olid": true,
+	"S&cript":          true,
+	"Check S&olid":     true,
+	"Screw &Thread...": true,
 }
 
 func dumpMenuItems(b *strings.Builder, items []*headless.MenuItem, depth int) {

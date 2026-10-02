@@ -3,6 +3,7 @@ package api
 import (
 	"math"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -159,6 +160,59 @@ func TestOtherAngle(t *testing.T) {
 	}
 }
 
+// A screw thread on a rod is a sound solid, and its options reach it.
+func TestThread(t *testing.T) {
+	d := New()
+	rod := d.Circle(V(0, 0, 0), 4)
+	d.Extrude(30, "rod")
+	before := len(d.Groups())
+	// Made as a script's step, which is one step of undo.
+	d.Host().(*SketchHost).BeginEval()
+	g := d.Thread(rod, ThreadOptions{Length: 12})
+	if len(d.Groups()) != before+4 || d.Active().H != g.H || g.Kind() != "helix" {
+		t.Fatalf("the thread made %d groups, active %v (%s)", len(d.Groups())-before, d.Active(), g.Kind())
+	}
+	if !strings.HasPrefix(g.Name(), "M8-") {
+		t.Errorf("the nearest thread to 8 mm is named %q, want M8", g.Name())
+	}
+	r := g.Check()
+	if !r.Sound() {
+		t.Fatalf("the thread is not sound: %s", r.String())
+	}
+	// The rod is turned down and the ridge added: less than the rod,
+	// more than the core.
+	rodVol, core := math.Pi*16*30, math.Pi*sq(3.2)*30
+	if r.Volume >= rodVol || r.Volume <= core {
+		t.Errorf("the threaded rod's volume is %g, want between %g and %g", r.Volume, core, rodVol)
+	}
+	if ThreadNearest(8) != "M8" || ThreadNearest(6.3) != "M6" {
+		t.Errorf("nearest threads: %s %s", ThreadNearest(8), ThreadNearest(6.3))
+	}
+	if !d.Undo() || len(d.Groups()) != before {
+		t.Errorf("undo leaves %d groups, want %d", len(d.Groups()), before)
+	}
+
+	// A nut: an internal thread bores the circle it is made on.
+	n := New()
+	outside := n.Circle(V(0, 0, 0), 7)
+	n.Extrude(6.5, "nut")
+	nut := n.Thread(outside, ThreadOptions{Designation: "M8", Internal: true, Through: true, Length: 6.5})
+	if r := nut.Check(); !r.Sound() || r.Volume >= math.Pi*49*6.5 {
+		t.Errorf("the nut is not sound, or not bored: %s", r.String())
+	}
+
+	// A left-hand screw.
+	l := New()
+	lrod := l.Circle(V(0, 0, 0), 4)
+	l.Extrude(30, "rod")
+	lh := l.Thread(lrod, ThreadOptions{Designation: "M8-LH", Length: 12})
+	if r := lh.Check(); !r.Sound() || !strings.Contains(lh.Name(), "LH") {
+		t.Errorf("the left-hand thread %q is not sound: %s", lh.Name(), r.String())
+	}
+}
+
+func sq(x float64) float64 { return x * x }
+
 // What can't be done panics with an error that says why.
 func TestMisuseMore(t *testing.T) {
 	d := New()
@@ -176,6 +230,9 @@ func TestMisuseMore(t *testing.T) {
 		"split parallel lines":  func() { d.Split(line, far, V(0, 0, 0)) },
 		"other of a length":     func() { length.SetOther(true) },
 		"helix about a point":   func() { d.Helix(line.Start(), 360, 10, "") },
+		"thread on a line":      func() { d.Thread(line, ThreadOptions{}) },
+		"thread designation":    func() { d.Thread(d.Circle(V(0, 0, 0), 4), ThreadOptions{Designation: "Q9"}) },
+		"thread length":         func() { d.Thread(d.Circle(V(0, 0, 0), 4), ThreadOptions{Length: -1}) },
 		"text in 3d":            func() { d.Free3D(); d.Text("x", "", V(0, 0, 0), 5) },
 	} {
 		func() {

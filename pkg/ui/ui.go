@@ -130,8 +130,10 @@ const (
 	CmdScriptConsole
 	CmdScriptRun
 	CmdScriptStop
-	// Analyze, entries C++ doesn't have
+	// Commands C++ SolveSpace doesn't have, after its own so that their
+	// numbers stay.
 	CmdCheckSolid
+	CmdGroupThread
 )
 
 // Pending is an operation to be completed by doing something with the
