@@ -1738,6 +1738,12 @@
 				"decl": "func Solid(shell *srf.SShell, mesh *srf.SMesh) Report",
 				"text": "Solid checks a shell and the mesh made from it."
 			}
+		},
+		"values": {
+			"BaselineRelTol": {
+				"decl": "const BaselineRelTol",
+				"text": "BaselineRelTol is how far a volume, centre of mass or bounding box coordinate may move from the baseline, relative to the larger of 1 and the recorded value."
+			}
 		}
 	},
 	"github.com/spacesolve/spacesolve/pkg/core": {

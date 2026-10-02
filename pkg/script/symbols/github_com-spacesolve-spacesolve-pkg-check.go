@@ -4,6 +4,8 @@ package symbols
 
 import (
 	"github.com/spacesolve/spacesolve/pkg/check"
+	"go/constant"
+	"go/token"
 	"reflect"
 )
 
@@ -11,6 +13,7 @@ func init() {
 	Symbols["github.com/spacesolve/spacesolve/pkg/check/check"] = map[string]reflect.Value{
 		// function, constant and variable definitions
 		"BaselineKey":     reflect.ValueOf(check.BaselineKey),
+		"BaselineRelTol":  reflect.ValueOf(constant.MakeFromLiteral("1.00000000000000000003625036316452388482356461452127405209466815e-06", token.FLOAT, 0)),
 		"CompareBaseline": reflect.ValueOf(check.CompareBaseline),
 		"Group":           reflect.ValueOf(check.Group),
 		"ReadBaseline":    reflect.ValueOf(check.ReadBaseline),
