@@ -22,7 +22,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 3. Parameters and sketch feedback | done 2026-10-02, with follow-ups: a faster freedom analysis, a scenario for it, `make lint-new` on the whole branch, no `scale 0` in saves (`a33a1ae`), and the unit as the document's, format version 2 (3.9, `dba44b9`) | `22daacd` |
 | 4. History editing | done 2026-10-02 | `fe7cb85` |
 | 5. First kernel fixes | done 2026-10-02, with the cylinder-through-cylinder failures (19 of 54, not new) left as a follow-up | `f24fcd9` |
-| 6. OpenGL and the section view | done 2026-10-02 | see the step's section |
+| 6. OpenGL and the section view | done 2026-10-02, with follow-ups listed under the step | `0a96960` |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
