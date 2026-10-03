@@ -27,7 +27,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 8. STEP import as a reference mesh | done 2026-10-03, with follow-ups listed under the step | `e556586` |
 | 9. Topology and edge naming | done 2026-10-03, on derived topology (9.2 not taken), with follow-ups listed under the step | `6f60438` |
 | 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups 10.6 concave fillets, 10.7 smooth chains, 10.8 uneven mitres, 10.9 plane meeting cone, 10.10 a radius per edge; the rest listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0`, 10.7 `5a2239e`, 10.8 `f1cf92e`, 10.9 `e86d002`, 10.10 `47ff6e0` |
-| 11. General surface type | done 2026-10-03: 11.1 faces of several patches, 11.2 B-spline surfaces with knots, 11.3 degree up to 5, 11.4 STEP export of a face as one surface, 11.5 the tier 4 items sized and planned; follow-ups listed under the step | see the step |
+| 11. General surface type | done 2026-10-03: 11.1 faces of several patches, 11.2 B-spline surfaces with knots, 11.3 degree up to 5, 11.4 STEP export of a face as one surface, 11.5 the tier 4 items sized and planned; follow-ups listed under the step | `a8a973b` |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
