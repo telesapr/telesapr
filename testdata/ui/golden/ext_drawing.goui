@@ -39,38 +39,49 @@ row 18     hidden edges, dashed
  0-2 64 61 0
  3-24 64 61 104 0 1 0
  25-99 64 61 0
-row 21    title block
+row 21    sections and details
+ 0-22 74 64 0
+ 23-99 64 64 0
+row 23    [add a section]   (type: view offset, as front 0)
+ 0-2 64 64 0
+ 3-17 6c 64 97 0 1 0
+ 18-99 64 64 0
+row 25    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
+ 0-2 64 64 0
+ 3-16 6c 64 100 0 1 0
+ 17-99 64 64 0
+row 28    title block
  0-13 74 64 0
  14-99 64 64 0
-row 23    title        - [change]
+row 30    title        - [change]
  0-17 64 61 0
  18-25 6c 61 49 0 1 0
  26-99 64 61 0
-row 25    drawn by     - [change]
+row 32    drawn by     - [change]
  0-17 64 64 0
  18-25 6c 64 50 0 1 0
  26-99 64 64 0
-row 27    drawing no.  - [change]
+row 34    drawing no.  - [change]
  0-17 64 61 0
  18-25 6c 61 51 0 1 0
  26-99 64 61 0
-row 29    revision     - [change]
+row 36    revision     - [change]
  0-17 64 64 0
  18-25 6c 64 52 0 1 0
  26-99 64 64 0
-row 31    material     - [change]
+row 38    material     - [change]
  0-17 64 61 0
  18-25 6c 61 53 0 1 0
  26-99 64 61 0
-row 33    company      - [change]
+row 40    company      - [change]
  0-17 64 64 0
  18-25 6c 64 54 0 1 0
  26-99 64 64 0
-row 36 (back to the groups)
+row 43 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 38 
+row 45 
  0-99 64 64 0
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0
@@ -113,38 +124,57 @@ row 18     hidden edges, dashed
  0-2 64 61 0
  3-24 64 61 104 0 1 0
  25-99 64 61 0
-row 21    title block
+row 21    sections and details
+ 0-22 74 64 0
+ 23-99 64 64 0
+row 23    A: section of the top view, 0 mm toward it [delete]
+ 0-45 64 61 0
+ 46-53 6c 61 120 0 1 0
+ 54-99 64 61 0
+row 25    B: detail of the front view at -10, 0, radius 5, 2 times [delete]
+ 0-59 64 64 0
+ 60-67 6c 64 88 0 1 0
+ 68-99 64 64 0
+row 27    [add a section]   (type: view offset, as front 0)
+ 0-2 64 64 0
+ 3-17 6c 64 97 0 1 0
+ 18-99 64 64 0
+row 29    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
+ 0-2 64 64 0
+ 3-16 6c 64 100 0 1 0
+ 17-99 64 64 0
+row 32    title block
  0-13 74 64 0
  14-99 64 64 0
-row 23    title        PLATE [change]
+row 34    title        PLATE [change]
  0-21 64 61 0
  22-29 6c 61 49 0 1 0
  30-99 64 61 0
-row 25    drawn by     - [change]
+row 36    drawn by     - [change]
  0-17 64 64 0
  18-25 6c 64 50 0 1 0
  26-99 64 64 0
-row 27    drawing no.  - [change]
+row 38    drawing no.  - [change]
  0-17 64 61 0
  18-25 6c 61 51 0 1 0
  26-99 64 61 0
-row 29    revision     - [change]
+row 40    revision     - [change]
  0-17 64 64 0
  18-25 6c 64 52 0 1 0
  26-99 64 64 0
-row 31    material     - [change]
+row 42    material     - [change]
  0-17 64 61 0
  18-25 6c 61 53 0 1 0
  26-99 64 61 0
-row 33    company      - [change]
+row 44    company      - [change]
  0-17 64 64 0
  18-25 6c 64 54 0 1 0
  26-99 64 64 0
-row 36 (back to the groups)
+row 47 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 38 
+row 49 
  0-99 64 64 0
 filedialog save
 save
@@ -157,6 +187,8 @@ drawing {
   scale 0.5
   first-angle
   hidden
+  section top 0 0 0
+  detail front -10 0 5 2 0 0
   title "PLATE"
 }
 
