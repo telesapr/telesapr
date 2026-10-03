@@ -30,7 +30,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 11. General surface type | done 2026-10-03: 11.1 faces of several patches, 11.2 B-spline surfaces with knots, 11.3 degree up to 5, 11.4 STEP export of a face as one surface, 11.5 the tier 4 items sized and planned; follow-ups listed under the step | `a8a973b` |
 | I7. Drawing with an AI model (outside the steps) | done 2026-10-03; follow-ups listed under the item | `baaec8d` |
 | The name TeleSAPR (outside the steps) | done 2026-10-03: the project, until then spacesolve, is TeleSAPR; the module is `github.com/telesapr/telesapr`, the programs `telesapr` and `telesapr-cli`, the format `.tlspr` with the header `telesapr <version>`. It took the parts of 12.2 that are about the name | `74ff70b` |
-| 12. Close the first eleven steps | done 2026-10-03 but for 12.4, which waits for the user: licence and notices, TeleSAPR 0.1.0 with its own icons, README, `TestMenuBarKeyboard` mended in the code, the guards set and kept from going stale, lint at 0 and run on everything, the audit in `docs/done-audit.md`, the user's guide in `docs/guide` | MERGE12 |
+| 12. Close the first eleven steps | done 2026-10-03 but for 12.4, which waits for the user: licence and notices, TeleSAPR 0.1.0 with its own icons, README, `TestMenuBarKeyboard` mended in the code, the guards set and kept from going stale, lint at 0 and run on everything, the audit in `docs/done-audit.md`, the user's guide in `docs/guide` | `f5c6971` |
 | 13 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
