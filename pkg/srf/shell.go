@@ -1158,3 +1158,27 @@ func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
 	}
 	return out
 }
+
+// Clone is a copy of the shell that shares nothing with it, to the bit:
+// the surfaces with their trims, the curves with their points. What is
+// built from them for a Boolean or a triangulation (the trims' BSPs and
+// edge lists) is left for the copy to build again.
+func (s *SShell) Clone() SShell {
+	out := SShell{BooleanFailed: s.BooleanFailed}
+	out.Surface = make([]SSurface, len(s.Surface))
+	for i := range s.Surface {
+		ss := s.Surface[i]
+		ss.Trim = append([]STrimBy(nil), ss.Trim...)
+		ss.Bsp = nil
+		ss.Edges = SEdgeList{}
+		ss.curvedEdges = SEdgeList{}
+		out.Surface[i] = ss
+	}
+	out.Curve = make([]SCurve, len(s.Curve))
+	for i := range s.Curve {
+		sc := s.Curve[i]
+		sc.Points = append([]SCurvePt(nil), sc.Points...)
+		out.Curve[i] = sc
+	}
+	return out
+}

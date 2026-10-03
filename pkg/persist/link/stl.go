@@ -42,17 +42,43 @@ func isEdgeVertex(v *stlVertex) bool {
 	return result
 }
 
-func addUnique(lv *[]stlVertex, p, n geom.Vector) {
-	i := 0
-	for ; i < len(*lv); i++ {
-		if (*lv)[i].p.EqualsTol(p, minPointDistance) {
-			break
+// vertexIndex finds the vertices by cells of minPointDistance, so that
+// a mesh's vertices are made unique in time linear in their number,
+// not quadratic (roadmap 17.4): the vertex a point joins is the first
+// within the distance, as a search through the list in order finds.
+type vertexIndex struct {
+	verts []stlVertex
+	cells map[[3]int64][]int
+}
+
+func (vi *vertexIndex) cell(p geom.Vector) [3]int64 {
+	return [3]int64{int64(math.Floor(p.X / minPointDistance)), int64(math.Floor(p.Y / minPointDistance)),
+		int64(math.Floor(p.Z / minPointDistance))}
+}
+
+func (vi *vertexIndex) addUnique(p, n geom.Vector) {
+	if vi.cells == nil {
+		vi.cells = map[[3]int64][]int{}
+	}
+	c := vi.cell(p)
+	found := -1
+	for dx := int64(-1); dx <= 1; dx++ {
+		for dy := int64(-1); dy <= 1; dy++ {
+			for dz := int64(-1); dz <= 1; dz++ {
+				for _, i := range vi.cells[[3]int64{c[0] + dx, c[1] + dy, c[2] + dz}] {
+					if (found < 0 || i < found) && vi.verts[i].p.EqualsTol(p, minPointDistance) {
+						found = i
+					}
+				}
+			}
 		}
 	}
-	if i == len(*lv) {
-		*lv = append(*lv, stlVertex{p: p})
+	if found < 0 {
+		found = len(vi.verts)
+		vi.verts = append(vi.verts, stlVertex{p: p})
+		vi.cells[c] = append(vi.cells[c], found)
 	}
-	(*lv)[i].normal = append((*lv)[i].normal, n)
+	vi.verts[found].normal = append(vi.verts[found].normal, n)
 }
 
 // newPoint makes a point with the next id; its type doesn't matter,
@@ -271,14 +297,15 @@ func textStlTriangles(data []byte) ([]srf.STriangle, error) {
 // linkMesh puts triangles into mesh m, with entities for the origin,
 // the bounding box and the vertices on the mesh's edges.
 func linkMesh(tris []srf.STriangle, el *[]core.Entity, m *srf.SMesh) {
-	var verts []stlVertex
+	var vi vertexIndex
 	for _, tr := range tris {
 		m.AddTriangle(tr)
 		normal := tr.Normal().WithMagnitude(1.0)
-		addUnique(&verts, tr.A, normal)
-		addUnique(&verts, tr.B, normal)
-		addUnique(&verts, tr.C, normal)
+		vi.addUnique(tr.A, normal)
+		vi.addUnique(tr.B, normal)
+		vi.addUnique(tr.C, normal)
 	}
+	verts := vi.verts
 
 	id := 1
 

@@ -16,7 +16,10 @@ triangulated to, and the entities it could not read, by name. A file with
 no solid that the reader supports links empty, and says so.
 
 The link keeps the file's path. On opening, and on undo and redo, the file is read again, so a
-changed file shows its changes.
+changed file shows its changes; one that hasn't changed (the same size and modification time) is
+taken from memory, so a part linked many times is read once. A STEP file's triangles are kept
+on disk too, in the user's cache folder (`telesapr/step`, or `TELESAPR_CACHE_DIR`), so the next
+session doesn't triangulate it again; deleting the folder only costs that time.
 
 From a script:
 

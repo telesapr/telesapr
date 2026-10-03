@@ -50,7 +50,8 @@ var (
 const stepCacheSize = 4
 
 // readStep reads a STEP file, or takes its tessellation from the cache
-// when the file and the chord tolerance are unchanged.
+// when the file and the chord tolerance are unchanged, in memory or on
+// disk (stepdisk.go).
 func readStep(path string, pct float64) (*step.Result, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -68,9 +69,15 @@ func readStep(path string, pct float64) (*step.Result, error) {
 		e.use = stepUses
 		return e.res, e.err
 	}
-	res, err := step.ReadFile(path, step.Options{ChordTolPct: pct})
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, err
+	res, kept := readStepDisk(key)
+	if !kept {
+		res, err = step.ReadFile(path, step.Options{ChordTolPct: pct})
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, err
+		}
+		if err == nil {
+			writeStepDisk(key, res)
+		}
 	}
 	stepCache[key] = &stepEntry{res: res, err: err, use: stepUses}
 	if len(stepCache) > stepCacheSize {
