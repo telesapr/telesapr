@@ -200,6 +200,7 @@ group <handle> <type> <name> {
   val-c = <expression>      # spare value, unused by every group today
   color <colour>
   skip-first
+  mirror-solid              # mirror: the whole solid so far, not op-a's own
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
