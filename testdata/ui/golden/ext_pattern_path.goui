@@ -1,0 +1,81 @@
+dialog 3 Can't repeat along the selection.|There is no path to repeat along.\n\nPattern Along Path repeats the active group's solid along a path, three times to begin with. Select:\n\n    * the line segments and arcs of the path, joined end to end and meeting tangent\n
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-pattern [rename/del]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 4 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 4 1 0
+ 31-99 64 64 0
+row 10  repeat solid along path
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12    copies 3 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-11 64 61 0
+ 12-19 6c 61 108 4 1 0
+ 20-99 64 61 0
+row 14    path
+ 0-2 64 61 0
+ 3-6 74 61 0
+ 7-99 64 61 0
+row 16      entity 8003000d of g003-extrude
+ 0-4 64 64 0
+ 5-35 6c 64 108 8003000d 1 1
+ 36-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37  requests in group
+ 0-99 74 64 0
+row 39    (none)
+ 0-99 64 61 0
+row 41 
+ 0-99 64 64 0
+row 43  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 45    (none)
+ 0-99 64 61 0
+row 47 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 9, of 18 patches\nTriangles: 204\nVolume: 2.94 cm³\nCenter of mass: (0.00, 0.00, 40.00)\nExtent: 44.00 x 4.00 x 80.00

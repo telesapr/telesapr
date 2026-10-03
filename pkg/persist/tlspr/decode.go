@@ -457,12 +457,14 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "pitch", "distance", "radius", "thickness":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "val-c":
+		case "val-c", "draft":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "color":
 			g.Color = d.colorField(c)
 		case "skip-first":
 			g.SkipFirst = d.flag(c)
+		case "mirror-solid":
+			g.MirrorSolid = d.flag(c)
 		case "combine":
 			enumField(d, combines, c, &g.MeshCombine)
 		case "force-to-mesh":

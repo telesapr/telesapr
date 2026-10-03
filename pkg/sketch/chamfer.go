@@ -62,6 +62,13 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, dista
 	if err != nil {
 		return g, err
 	}
+	if !solid.IsForcedToMesh(sk) && len(solid.RunningShell.Surface) > 0 {
+		if _, err := chamferByEdit(&solid.RunningShell, segs, distance, 1<<30); err == nil {
+			g.Edges = append([]core.HEntity(nil), edges...)
+			g.SolidEdges = append([]topo.Name(nil), solidEdges...)
+			return g, nil
+		}
+	}
 	var mesh srf.SMesh
 	solidMesh(solid, &mesh)
 	var arcs []topo.FilletPick
@@ -336,6 +343,19 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 		g.setProblem(nil, "%v", err)
 		return false
 	}
+	// On a shell every edge is cut by the fillet's local edit, flat:
+	// straight ones as circular ones, so concave edges and chains through
+	// smooth joins come too (roadmap 15.1). Where that can't be done, as
+	// at a corner where a concave edge meets the cut, and on a solid
+	// forced to a mesh, which has no faces to edit, straight edges are
+	// cut by wedges and a Boolean, as before.
+	if !prev.IsForcedToMesh(sk) && len(prev.RunningShell.Surface) > 0 {
+		if sh, err := chamferByEdit(&prev.RunningShell, segs, d, srf.OriginFor(g.H.V, 0)); err == nil {
+			g.RunningShell = sh
+			g.ThisShell.MakeFromCopyOf(&sh)
+			return true
+		}
+	}
 	var arcs []topo.FilletPick
 	var straight []chamferSegment
 	for _, seg := range segs {
@@ -387,6 +407,19 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	g.RunningShell = sh
 	g.ThisShell.MakeFromCopyOf(&sh)
 	return true
+}
+
+// chamferByEdit cuts every segment of a copy of solid at distance d by
+// the fillet's edit, flat.
+func chamferByEdit(solid *srf.SShell, segs []chamferSegment, d float64, origin uint32) (srf.SShell, error) {
+	picks := make([]topo.FilletPick, len(segs))
+	for i, seg := range segs {
+		picks[i] = seg.pick()
+	}
+	var sh srf.SShell
+	sh.MakeFromCopyOf(solid)
+	err := topo.FilletPicks(&sh, picks, d, origin, true)
+	return sh, err
 }
 
 // unionAll joins shells a pair at a time.

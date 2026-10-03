@@ -150,6 +150,7 @@ const (
 	CmdGroupLoft
 	CmdGroupShell
 	CmdScriptAgent
+	CmdGroupPathPattern
 )
 
 // Pending is an operation to be completed by doing something with the

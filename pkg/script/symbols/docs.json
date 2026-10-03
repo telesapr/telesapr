@@ -4345,6 +4345,10 @@
 						"decl": "func (d *Doc) Parameters() (params []Parameter)",
 						"text": "Parameters lists the parameter table, in the order the parameters\nwere made."
 					},
+					"PatternAlongPath": {
+						"decl": "func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group",
+						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as New Group \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
+					},
 					"Perpendicular": {
 						"decl": "func (d *Doc) Perpendicular(a, b Entity) Constraint",
 						"text": "Perpendicular makes two line segments or normals perpendicular."
@@ -4650,6 +4654,10 @@
 						"decl": "func (g Group) Constraints() (constraints []Constraint)",
 						"text": "Constraints are the group's constraints."
 					},
+					"Copies": {
+						"decl": "func (g Group) Copies() (n int)",
+						"text": "Copies is how many copies a step and repeat or a pattern makes."
+					},
 					"Delete": {
 						"decl": "func (g Group) Delete()",
 						"text": "Delete deletes the group and what depends on it."
@@ -4670,13 +4678,17 @@
 						"decl": "func (g Group) Dof() (dof int)",
 						"text": "Dof is how many degrees of freedom the group's constraints leave."
 					},
+					"Draft": {
+						"decl": "func (g Group) Draft() (degrees float64)",
+						"text": "Draft is an extrusion's draft in degrees: its sides lean into the\nsolid by that much from the sketch's plane, out when it is negative."
+					},
 					"EdgeRadius": {
 						"decl": "func (g Group) EdgeRadius(i int) (mm float64)",
 						"text": "EdgeRadius is the radius in mm a fillet gives its edge i, counting\nthe entities Edges gives and then the edges SolidEdges gives, from 0:\nthe edge's own, or the fillet's."
 					},
 					"Edges": {
 						"decl": "func (g Group) Edges() (edges []Entity)",
-						"text": "Edges are the edges a chamfer cuts or a fillet rounds, or the path a\nsweep follows."
+						"text": "Edges are the edges a chamfer cuts or a fillet rounds, or the path a\nsweep or a pattern follows."
 					},
 					"Entities": {
 						"decl": "func (g Group) Entities() (entities []Entity)",
@@ -4713,6 +4725,10 @@
 					"Mesh": {
 						"decl": "func (g Group) Mesh() (m *srf.SMesh)",
 						"text": "Mesh is the triangle mesh of the model up to and with this group.\nIt is the sketch's own, and is replaced when the sketch\nregenerates."
+					},
+					"MirrorSolid": {
+						"decl": "func (g Group) MirrorSolid() (whole bool)",
+						"text": "MirrorSolid reports whether a mirror reflects the whole solid so far,\nup to and with its source group, rather than the source group's own\nsolid."
 					},
 					"MoveBefore": {
 						"decl": "func (g Group) MoveBefore(other Group) error",
@@ -4756,11 +4772,15 @@
 					},
 					"SetCopies": {
 						"decl": "func (g Group) SetCopies(n int)",
-						"text": "SetCopies is how many copies a step and repeat makes."
+						"text": "SetCopies is how many copies a step and repeat or a pattern makes."
 					},
 					"SetDistance": {
 						"decl": "func (g Group) SetDistance(mm float64)",
 						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
+					"SetDraft": {
+						"decl": "func (g Group) SetDraft(degrees float64)",
+						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs, each arc meeting its neighbours tangent. A\ndraft at which the sides meet is a problem on the group, and the\nextrusion is made without it. SetExpr with sketch.GroupValC gives it\nan expression."
 					},
 					"SetEdgeRadius": {
 						"decl": "func (g Group) SetEdgeRadius(i int, mm float64)",
@@ -4777,6 +4797,10 @@
 					"SetKeepOriginal": {
 						"decl": "func (g Group) SetKeepOriginal(keep bool)",
 						"text": "SetKeepOriginal has a mirror's solid keep the original beside the\nreflection, or not, which leaves the reflection alone."
+					},
+					"SetMirrorSolid": {
+						"decl": "func (g Group) SetMirrorSolid(whole bool)",
+						"text": "SetMirrorSolid has a mirror reflect the whole solid so far, as a body\nmade of several groups needs, or only its source group's solid. With\nthe whole solid, the mirror's result is the solid so far: with its\nreflection when it keeps the original, or the reflection alone."
 					},
 					"SetName": {
 						"decl": "func (g Group) SetName(name string)",
@@ -5447,6 +5471,10 @@
 						"decl": "func (g *Group) GenerateShellAndMesh(sk *Sketch)",
 						"text": "GenerateShellAndMesh builds this group's shell (by extrusion, revolution, step and repeat, or linking), and combines it with the previous group's running shell by the group's Boolean (C++ Group::GenerateShellAndMesh)."
 					},
+					"HasDraft": {
+						"decl": "func (g *Group) HasDraft() bool",
+						"text": "HasDraft reports whether the group is an extrusion with a draft."
+					},
 					"IsCopyGroup": {
 						"decl": "func (g *Group) IsCopyGroup() bool",
 						"text": "IsCopyGroup reports whether the group copies its source group, entities and solid, and combines the copies with what came before the source: step and repeat, and mirror."
@@ -5563,6 +5591,7 @@
 					"GroupFillet",
 					"GroupLoft",
 					"GroupShell",
+					"GroupPathPattern",
 					"GroupLinked"
 				]
 			},
@@ -6033,6 +6062,10 @@
 					"NewMirror": {
 						"decl": "func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error)",
 						"text": "NewMirror starts a mirror group that reflects the active group in plane, a workplane or a planar face."
+					},
+					"NewPathPattern": {
+						"decl": "func (sk *Sketch) NewPathPattern(path []core.HEntity, copies int, name string) (Group, error)",
+						"text": "NewPathPattern starts a pattern of the active group's solid along path, line segments and arcs joined end to end and meeting tangent, copies times in all."
 					},
 					"NewShell": {
 						"decl": "func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Group, error)",
@@ -6516,6 +6549,10 @@
 			"GroupOneSkewed": {
 				"decl": "const GroupOneSkewed"
 			},
+			"GroupPathPattern": {
+				"decl": "const GroupPathPattern",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
+			},
 			"GroupPitch": {
 				"decl": "const GroupPitch"
 			},
@@ -6609,6 +6646,10 @@
 			"RemapLineToFace": {
 				"decl": "const RemapLineToFace",
 				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+			},
+			"RemapPattern": {
+				"decl": "const RemapPattern",
+				"text": "RemapPattern is the remap copy number of a pattern's first copy."
 			},
 			"RemapPtToArc": {
 				"decl": "const RemapPtToArc",

@@ -141,13 +141,30 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		srcg = sk.GetGroup(g.OpA)
 		if !srcg.Suppress && g.checkMirror(sk) {
 			if !g.IsForcedToMesh(sk) {
-				g.generateMirrorShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
+				src := &srcg.ThisShell
+				if g.mirrorsSolid(sk) {
+					src = &srcg.RunningShell
+				}
+				g.generateMirrorShell(sk, src, &g.ThisShell, srcg.MeshCombine)
 			} else {
 				var prevm srf.SMesh
-				prevm.MakeFromCopyOf(&srcg.ThisMesh)
-				srcg.ThisShell.TriangulateInto(&prevm)
+				if g.MirrorSolid {
+					prevm.MakeFromCopyOf(&srcg.RunningMesh)
+					srcg.RunningShell.TriangulateInto(&prevm)
+				} else {
+					prevm.MakeFromCopyOf(&srcg.ThisMesh)
+					srcg.ThisShell.TriangulateInto(&prevm)
+				}
 				g.generateMirrorMesh(sk, &prevm, &g.ThisMesh, srcg.MeshCombine)
 			}
+		}
+	case GroupPathPattern:
+		srcg = sk.GetGroup(g.OpA)
+		switch {
+		case g.IsForcedToMesh(sk):
+			g.setProblem(nil, "a pattern along a path is made of solids, not of triangle meshes")
+		case !srcg.Suppress && g.checkPattern(sk):
+			g.generatePatternShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
 		}
 	case GroupChamfer:
 		if g.generateChamferShell(sk) {
@@ -200,6 +217,23 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	// the previous group's mesh or shell with the requested Boolean, and
 	// we're done.
 	prevg := srcg.RunningMeshGroup(sk)
+
+	// A mirror of the solid so far made the whole of it: no Boolean with
+	// what it already holds.
+	if g.Type == GroupMirror && g.mirrorsSolid(sk) {
+		switch {
+		case g.Suppress || srcg.Suppress:
+			g.RunningShell.MakeFromCopyOf(&srcg.RunningShell)
+			g.RunningMesh.MakeFromCopyOf(&srcg.RunningMesh)
+		case !g.IsForcedToMesh(sk):
+			g.RunningShell.MakeFromCopyOf(&g.ThisShell)
+			g.RunningShell.MergeCoincidentSurfaces()
+			g.BooleanFailed = g.RunningShell.BooleanFailed
+		default:
+			g.combineMeshes(nil, CombineUnion)
+		}
+		return
+	}
 
 	if !g.IsForcedToMesh(sk) {
 		var prevs srf.SShell
@@ -269,19 +303,28 @@ func (g *Group) stepTransforms(sk *Sketch, n int) ([]geom.Vector, []geom.Quatern
 // Group::GenerateForStepAndRepeat<SShell>).
 func (g *Group) generateForStepAndRepeatShell(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs) {
 	n, a0 := g.stepsOf()
+	ts, qs := g.stepTransforms(sk, n)
+	g.unionCopies(sk, steps, outs, forWhat, ts, qs, a0, func(a int) int { return stepRemap(a, n) })
+}
+
+// unionCopies makes the copies of steps that ts and qs move it to, from
+// a0 on, with their faces remapped by remap, and combines them a pair
+// at a time.
+func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs,
+	ts []geom.Vector, qs []geom.Quaternion, a0 int, remap func(a int) int) {
+	n := len(ts)
 
 	// create all the transformed copies
 	transd := make([]srf.SShell, n)
 	workA := make([]srf.SShell, n)
 	// first generate a shell with each transformed copy
-	ts, qs := g.stepTransforms(sk, n)
 	par.For(n-a0, func(i int) {
 		a := a0 + i
 		transd[a].MakeFromTransformationOf(steps, ts[a], qs[a], 1.0)
 	})
 	for a := a0; a < n; a++ {
 		// We need to rewrite any plane face entities to the transformed ones.
-		transd[a].RemapFaces(shellGroup{g: g, sk: sk}, stepRemap(a, n))
+		transd[a].RemapFaces(shellGroup{g: g, sk: sk}, remap(a))
 	}
 
 	soFar, scratch := transd, workA
@@ -442,6 +485,13 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 		tbot, ttop = geom.Vector{}, translate.ScaledBy(2)
 	} else {
 		tbot, ttop = translate.ScaledBy(-1), translate.ScaledBy(1)
+	}
+	if g.HasDraft() && len(src.BezierLoops.Sets) > 0 {
+		if g.generateDraftShell(src, tbot, ttop) {
+			g.annotateDraftFaces(sk, src.BezierLoops.Sets[0].Point, tbot, ttop)
+			return
+		}
+		g.ThisShell.Clear()
 	}
 
 	for k := range src.BezierLoops.Sets {

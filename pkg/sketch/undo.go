@@ -128,6 +128,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 			ExprScale:              src.ExprScale,
 			Subtype:                src.Subtype,
 			SkipFirst:              src.SkipFirst,
+			MirrorSolid:            src.MirrorSolid,
 			BooleanFailed:          src.BooleanFailed,
 			MeshCombine:            src.MeshCombine,
 			ForceToMesh:            src.ForceToMesh,

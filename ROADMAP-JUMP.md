@@ -33,6 +33,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 12. Close the first eleven steps | done 2026-10-03 but for 12.4, which waits for the user: licence and notices, TeleSAPR 0.1.0 with its own icons, README, `TestMenuBarKeyboard` mended in the code, the guards set and kept from going stale, lint at 0 and run on everything, the audit in `docs/done-audit.md`, the user's guide in `docs/guide` | `f5c6971` |
 | 13. Kernel soundness | done 2026-10-03: curves split at the seams of flat faces, ears that fold over skipped, 32 rows of twist, untrimmed surfaces dropped after a Boolean, a symmetric part its own mirror image, STEP meshes mended at T-junctions; the sphere and cylinder guards at 1 and 2, with their causes named | `101f59e` |
 | 14. Names, faces and picking | done 2026-10-03: faces with only an Origin drawn apart and picked, a circle's fillet one face, names that count their edges and survive a longer thread, non-manifold edges reported where they are, hover on large meshes by a grid, Measure by outward normals | `f512ed1` |
+| 15. Solid features completed | done 2026-10-03: chamfers by the fillet's edit (concave edges, chains; two distances not done), shells of prisms with round sides, apexes of four faces split, the draft angle on extrusions, the mirror of the whole solid, the pattern along a path, the stopped chain's message | MERGE15 |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
@@ -785,7 +786,8 @@ Follow-ups from step 7:
 - **A solid mirrored onto itself** [13.4]: a part symmetric about the plane, mirrored with the
   original kept, puts coincident faces through the Boolean, which fails (reported as a failed
   Boolean). The case is common enough to want handling.
-- **Two chamfer distances** [15.1], once step 9 names faces.
+- **Two chamfer distances** [left by 15.1; not placed], once step 9 names faces: the edit's
+  corners, where three chamfered edges meet, would need the setback on each face apart.
 - **Thin tori** [closed]: the solid check finds triangles of a thin tube's bend crossing their
   neighbours by about 2e-4 mm, in a sweep and in a Revolve alike (`sweepGridMaxFailRate`).
   On 2026-10-03 `TestSweepGrid` has 0 of 72; the guard still allows 7 (12.6).
@@ -887,7 +889,7 @@ Follow-ups from step 10:
   that go on straight through a vertex (a T-junction a Boolean left), convex and concave
   fillets meeting at a corner, and rounded edges of different radii meeting at a corner
   (variable-radius blends, setbacks) are refused.
-- **Chamfer group** [15.1]: it cuts concave straight edges by its Boolean, which refuses them, and
+- **Chamfer group** [done in 15.1]: it cuts concave straight edges by its Boolean, which refuses them, and
   takes no chains through smooth joins, its straight edges being cut by wedges.
 - **A chain stopped by its radius** [15.7]: a fillet's radius at least a rounded outline's corner
   radius stops the chain there, and the message speaks of the curved face it ends on rather
@@ -908,9 +910,10 @@ Follow-ups from step 10:
   lofts through more than two profiles, are not done.
 - **Faces with only an Origin** [14.1] (a loft's, a fillet's) can't be picked as faces, as for step 9;
   scripts reach them through `Solid.FaceAt` and `Doc.ShellSolid`.
-- **Shell of curved faces** [15.2 for cylinders; the rest left out with E12]: cylinders, and so filleted or lofted solids, are refused; a
-  cylinder's offset is a cylinder, but its vertices are no longer where three planes meet.
-- **Shell vertices of four faces** [15.3] that don't meet in one point once moved (an off-centre
+- **Shell of curved faces** [15.2 for prisms; the rest left out with E12]: prisms whose sides are
+  flat or round, open at their ends, are hollowed since 15.2; other curved faces (filleted,
+  lofted, revolved solids, a cylinder's side taken away) are refused.
+- **Shell vertices of four faces** [done in 15.3] that don't meet in one point once moved (an off-centre
   pyramid's apex) are refused; the shell would need a new edge there.
 - **A Boolean's leftover surface** [13.3]: a shell's inner face flush with a face taken away stays in
   the shell untrimmed, which the solid check counts as a face (Check Solid says 12 faces for an
@@ -1223,15 +1226,20 @@ meet, which say so.
 
 | Package | Content | Effort | State |
 |---|---|---|---|
-| 15.1 Chamfer by local edit | Straight edges go through the fillet's edit, as circular ones do since 10.3, in place of wedges and a Boolean. That brings concave edges, chains through smooth joins (step 10), and two distances, with the face that takes the first named (step 7). | 2.5 wk | not started |
-| 15.2 Shell with cylinders | E11 as it was sized: a cylinder's offset is a cylinder, and a vertex is where the offset surfaces meet, no longer three planes (step 10). Filleted and lofted solids stay refused until 22.1 gives offsets of other surfaces. | 3 wk | not started |
-| 15.3 Shell vertices of four faces | An apex whose faces do not meet in one point once moved gets a new edge (step 10). | 1 wk | not started |
-| 15.4 E13 draft angle | Side faces of an extrusion tilted about a neutral plane, by `ReplaceSurface` on flat faces; cylinders become cones. | 4.2 wk | not started |
-| 15.5 Mirror of a body | A mirror reflects its source group; an option reflects the solid so far (step 7). | 1 wk | not started |
-| 15.6 E2 pattern along a curve | Step and repeat along the path the sweep of 7.4 takes. | 1.8 wk | not started |
-| 15.7 The message of a stopped chain | A fillet whose radius stops its chain at a rounded corner says so, in place of naming the curved face (step 10). | 0.1 wk | not started |
+| 15.1 Chamfer by local edit | Straight edges go through the fillet's edit, as circular ones do since 10.3, in place of wedges and a Boolean. That brings concave edges, chains through smooth joins (step 10), and two distances, with the face that takes the first named (step 7). | 2.5 wk | done 2026-10-03 but for two distances (`48cba44`, goldens `3e82b81`): the chamfer tries the edit first, flat, for every edge, and falls back to wedges where it can't make a corner (a concave edge at a notch) or on a solid forced to a mesh; concave edges are filled and chains go round smooth joins by cones; a mirror of a chamfer reflects the solid so far. Sweep 0 of 84. Two distances would need the edit's corners to set back on each face apart, and are left |
+| 15.2 Shell with cylinders | E11 as it was sized: a cylinder's offset is a cylinder, and a vertex is where the offset surfaces meet, no longer three planes (step 10). Filleted and lofted solids stay refused until 22.1 gives offsets of other surfaces. | 3 wk | done 2026-10-03 for prisms (`e3d41f9`, golden `8aac3dc`): a solid whose sides are flat or extrusions of arcs, with flat ends, is hollowed by offsetting an end's outline (lines moved, arcs to a smaller or larger radius, an arc thinner than the walls to a sharp corner), extruding it between the ends moved in and taking it away; sides can't be opened, other curved faces are refused. Path pair `path_shell_cup`, example `pot`, sweep 0 of 108 at a chord tolerance of 0.001; at the default 0.1, walls thinner than about twice it beside a round hole come out unsound (in the guide) |
+| 15.3 Shell vertices of four faces | An apex whose faces do not meet in one point once moved gets a new edge (step 10). | 1 wk | done 2026-10-03 (`616528d`, sweep `28a0c33`): the vertex splits into two points, each on three of the planes, joined by a new edge between the two opposite faces; five faces or more must still meet in one point. Sweep of apexes 0 of 108 |
+| 15.4 E13 draft angle | Side faces of an extrusion tilted about a neutral plane, by `ReplaceSurface` on flat faces; cylinders become cones. | 4.2 wk | done 2026-10-03 by another route (`ecb2de2`, goldens `9f53558`): the far end is the profile offset as 15.2 offsets an end, and each piece is joined to its copy by a ruled patch, a plane or an exact cone, with no `ReplaceSurface` and no Boolean. The extrusion's `draft` (ValC, degrees) on its group screen and `Group.SetDraft`; the sketch's plane is the neutral one, a two-sided extrusion leans both ways; arcs must meet their neighbours tangent; the far end's entities are hidden, not moved. Scenario `ext_draft`, path pair `path_draft`, example `draft`, sweep 0 of 150 |
+| 15.5 Mirror of a body | A mirror reflects its source group; an option reflects the solid so far (step 7). | 1 wk | done 2026-10-03 (`3d73b15`, `bc01560`): `Group.MirrorSolid`, file field `mirror-solid`, the screen's "the whole solid so far", `Doc`/`Group.SetMirrorSolid`; the mirror example mirrors a bracket of two groups |
+| 15.6 E2 pattern along a curve | Step and repeat along the path the sweep of 7.4 takes. | 1.8 wk | done 2026-10-03 (`606d643`, goldens `9985efc`): group `pattern-path`, New Group > Pattern Along Path, `Doc.PatternAlongPath`, example `pattern`; sweep 0 of 36. The solid is repeated, not the entities; a closed path is refused |
+| 15.7 The message of a stopped chain | A fillet whose radius stops its chain at a rounded corner says so, in place of naming the curved face (step 10). | 0.1 wk | done 2026-10-03 (`519f19d`) |
 
 Done when: each has its sweep at a rate set before it starts, as in step 10.
+
+State, 2026-10-03: done, on branch `step-15-solid-features`, each package's sweep at 0 over its
+whole grid (the chamfer 0 of 84, the curved shell 0 of 108, the apexes 0 of 108, the draft 0 of
+150, the pattern 0 of 36). Left: two chamfer distances; drafts of chosen faces, about another
+plane, or of an arc meeting a line at a corner; shells of other curved solids (22.1).
 
 ### Step 16. Small features
 

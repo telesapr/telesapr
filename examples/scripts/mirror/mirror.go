@@ -10,9 +10,11 @@
 //	telesapr --script examples/scripts/mirror/mirror.go
 //
 // The half is an L from the middle plane x = 0 out to x = 30, with a
-// hole in its foot; New Group > Mirror in the YZ workplane makes the
-// other half, hole and all, and joins it on, a T. The script prints what
-// Check Solid finds and saves bracket.tlspr, unless given "-".
+// hole in its foot, and a bore down its upright cut by a later group;
+// New Group > Mirror in the YZ workplane, set to the whole solid so
+// far, makes the other half, holes and all, and joins it on, a T. The
+// script prints what Check Solid finds and saves bracket.tlspr, unless
+// given "-".
 package main
 
 import (
@@ -29,10 +31,17 @@ func main() {
 	// A hole through the foot.
 	doc.Circle(api.V(18, 3, 0), 1.5)
 	half := doc.Extrude(20, "half")
+	// A hole down through the upright, cut by a group of its own.
+	doc.SketchIn(doc.Workplane("XY"), "bore-sketch")
+	doc.Circle(api.V(3, 15, 0), 1.5)
+	bore := doc.Extrude(20, "bore")
+	bore.SetCombine(api.Difference)
 
-	// Mirror reflects the active group, the half, in the YZ workplane,
-	// and joins the reflection on.
+	// Mirror reflects the active group in the YZ workplane, and joins
+	// the reflection on; set to the whole solid so far, it reflects the
+	// half and the bore together, as a body of several groups needs.
 	both := doc.Mirror(doc.Workplane("YZ"), "bracket")
+	both.SetMirrorSolid(true)
 	r := both.Check()
 	fmt.Printf("bracket: sound %v, %d faces, volume %.1f mm³ (half %.1f)\n",
 		r.Sound(), r.Faces, r.Volume, half.Check().Volume)

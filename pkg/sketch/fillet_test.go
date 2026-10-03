@@ -674,3 +674,23 @@ func TestFilletBordersDrawn(t *testing.T) {
 
 // near reports whether a and b agree to a millionth of a millimetre.
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-6 }
+
+// A fillet whose radius is the rounded outline's corner radius can't go
+// on round the corner, and says so, rather than naming a curved face at
+// the edge's end (roadmap 15.7).
+func TestFilletStoppedAtRoundedCorner(t *testing.T) {
+	d := api.New()
+	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	for _, s := range sides {
+		d.TangentArc(s.Start(), 4, true)
+	}
+	ex := d.Extrude(10, "")
+	defer func() {
+		err, _ := recover().(error)
+		if err == nil || !strings.Contains(err.Error(), "stops at a rounded corner") ||
+			!strings.Contains(err.Error(), "smaller than the corner's radius") {
+			t.Errorf("refused with %v", err)
+		}
+	}()
+	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 4, "")
+}

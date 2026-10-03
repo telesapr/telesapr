@@ -259,7 +259,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"Shell Solid hollows the solid so far to walls of one thickness, open where "+
 				"faces are taken away. Select one or more of:\n\n"+
 				"    * flat faces of the solid, to take away\n\n"+
-				"Every face of the solid must be flat, and the walls must not meet.", capitalize(err.Error()))
+				"The solid's faces must be flat, or the solid a prism of lines and arcs open only "+
+				"at its ends, and the walls must not meet.", capitalize(err.Error()))
 			return
 		}
 		g = shg
@@ -285,6 +286,18 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 			return
 		}
 		g = lg
+
+	case CmdGroupPathPattern:
+		pg, err := sk.NewPathPattern(gs.entity, 3, "")
+		if err != nil {
+			ss.Error("Can't repeat along the selection. %s.\n\n"+
+				"Pattern Along Path repeats the active group's solid along a path, three times "+
+				"to begin with. Select:\n\n"+
+				"    * the line segments and arcs of the path, joined end to end "+
+				"and meeting tangent\n", capitalize(err.Error()))
+			return
+		}
+		g = pg
 
 	case CmdGroupSweep:
 		if !gw.LockedInWorkplane() {

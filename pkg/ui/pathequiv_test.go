@@ -133,6 +133,24 @@ func TestPathEquivalenceMirror(t *testing.T) {
 	requireSamePaths(t, "path_mirror", "path_mirror")
 }
 
+// A mirror set on its screen to reflect the whole solid so far, and by
+// a script (roadmap 15.5).
+func TestPathEquivalenceMirrorSolid(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_mirror_solid", "path_mirror_solid")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupMirror || !g.MirrorSolid || g.Problem.Msg != "" {
+		t.Errorf("the mirror: type %d, whole %v, problem %q", g.Type, g.MirrorSolid, g.Problem.Msg)
+	}
+}
+
+// A post repeated along a construction line picked with the mouse, and
+// by a script (roadmap 15.6).
+func TestPathEquivalencePathPattern(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_pattern_path", "path_pattern_path")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || g.ValA != 3 {
+		t.Errorf("the pattern: type %d, problem %q, copies %g", g.Type, g.Problem.Msg, g.ValA)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")
@@ -190,6 +208,24 @@ func TestPathEquivalenceShell(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_shell", "path_shell")
 	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
 		t.Errorf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
+// The top of an extruded circle picked with the mouse and the cylinder
+// hollowed into a cup, and the same made by a script (roadmap 15.2).
+func TestPathEquivalenceShellCup(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_shell_cup", "path_shell_cup")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+		t.Errorf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
+// An extrusion's draft set on its group screen, and the same set by a
+// script (roadmap 15.4).
+func TestPathEquivalenceDraft(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_draft", "path_draft")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupExtrude || g.ValC != 5 || g.Problem.Msg != "" {
+		t.Errorf("the extrusion: type %d, draft %g, problem %q", g.Type, g.ValC, g.Problem.Msg)
 	}
 }
 

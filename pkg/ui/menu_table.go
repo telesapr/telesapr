@@ -144,6 +144,7 @@ func init() {
 		{1, "&Fillet Edges", CmdGroupFillet, s_ | 'f', kn, mGrp},
 		{1, "Loft To Selected Pr&ofile", CmdGroupLoft, s_ | 'o', kn, mGrp},
 		{1, "&Shell Solid", CmdGroupShell, s_ | 'g', kn, mGrp},
+		{1, "Pattern Along Pat&h", CmdGroupPathPattern, 0, kn, mGrp},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Link / Assemble...", CmdGroupLink, s_ | 'i', kn, mGrp},
 		{1, "Link Recent", CmdGroupRecent, 0, kn, mGrp},

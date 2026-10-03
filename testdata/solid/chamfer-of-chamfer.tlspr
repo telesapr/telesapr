@@ -91,7 +91,7 @@ group 0x5 chamfer "chamfer" {
   distance = 0.5
   color 100 100 100 255
   combine difference
-  solid-edge 0x40040003 0x80030010 0 of 1
+  solid-edge 0x40040000 0x80030010 0 of 1
   visible
 }
 
@@ -661,19 +661,6 @@ entity 0x8003002d face-normal-pt {
 }
 
 shell {
-  surface 0x1 {
-    color 100 100 100 255
-    face 0x8003002c
-    degree 1 1
-    ctrl 0 0 0 10 10 1
-    ctrl 0 1 10 10 10 1
-    ctrl 1 0 0 0 10 1
-    ctrl 1 1 10 0 10 1
-    trim 0xa forward 10 10 10 10 2.0000000000000027 10
-    trim 0x7 forward 0 10 10 10 10 10
-    trim 0x4 forward -4.440892098500627e-16 1.9999999999999996 10 0 10 10
-    trim 0xf forward 10 1.9999999999999996 10 0 1.9999999999999996 10
-  }
   surface 0x2 {
     color 100 100 100 255
     face 0x8003002d
@@ -682,40 +669,10 @@ shell {
     ctrl 0 1 0 10 0 1
     ctrl 1 0 10 0 0 1
     ctrl 1 1 0 0 0 1
-    trim 0x5 backward 0 10 0 0 0 0
-    trim 0x8 backward 10 10 0 0 10 0
     trim 0xb backward 10 0 0 10 10 0
     trim 0x2 backward 0 0 0 10 0 0
-  }
-  surface 0x3 {
-    color 100 100 100 255
-    face 0x80030010
-    sheet 0x50000
-    degree 1 1
-    ctrl 0 0 10 0 10 1
-    ctrl 0 1 10 0 0 1
-    ctrl 1 0 0 0 10 1
-    ctrl 1 1 0 0 0 1
-    trim 0xc forward 10 0 7.500000000000001 10 0 0
-    trim 0x2 forward 10 0 0 0 0 0
-    trim 0x3 backward 0 0 0 0 0 7.500000000000001
-    trim 0x1e forward 0 0 7.500000000000002 10 0 7.500000000000002
-  }
-  surface 0x4 {
-    color 100 100 100 255
-    face 0x80030019
-    sheet 0x60000
-    degree 1 1
-    ctrl 0 0 0 0 10 1
-    ctrl 0 1 0 0 0 1
-    ctrl 1 0 0 10 10 1
-    ctrl 1 1 0 10 0 1
-    trim 0x3 forward 0 3.532708032038493e-16 7.500000000000001 0 0 0
-    trim 0x5 forward 0 0 0 0 10 0
-    trim 0x6 backward 0 10 0 0 10 10
-    trim 0x4 backward 0 10 10 0 1.9999999999999996 10
-    trim 0x12 forward 0 2 10 0 0.35355339059327373 8.353553390593275
-    trim 0x21 forward 0 0.3535533905932735 8.353553390593275 0 4.440892098500626e-16 7.500000000000002
+    trim 0x5 backward 0 10 0 0 0 0
+    trim 0x8 backward 10 10 0 0 10 0
   }
   surface 0x5 {
     color 100 100 100 255
@@ -733,6 +690,49 @@ shell {
   }
   surface 0x6 {
     color 100 100 100 255
+    face 0x8003002c
+    degree 1 1
+    ctrl 0 0 0 10 10 1
+    ctrl 0 1 10 10 10 1
+    ctrl 1 0 0 0 10 1
+    ctrl 1 1 10 0 10 1
+    trim 0xc forward 10 10 10 10 2 10
+    trim 0xd forward 10 2 10 0 2 10
+    trim 0xe forward 0 2 10 0 10 10
+    trim 0x7 forward 0 10 10 10 10 10
+  }
+  surface 0x7 {
+    color 100 100 100 255
+    face 0x80030010
+    sheet 0x50000
+    degree 1 1
+    ctrl 0 0 10 0 10 1
+    ctrl 0 1 10 0 0 1
+    ctrl 1 0 0 0 10 1
+    ctrl 1 1 0 0 0 1
+    trim 0x2 forward 10 0 0 0 0 0
+    trim 0xf forward 0 0 0 0 0 7.5
+    trim 0x10 forward 0 0 7.5 10 0 7.5
+    trim 0x11 forward 10 0 7.5 10 0 0
+  }
+  surface 0x8 {
+    color 100 100 100 255
+    face 0x80030019
+    sheet 0x60000
+    degree 1 1
+    ctrl 0 0 0 0 10 1
+    ctrl 0 1 0 0 0 1
+    ctrl 1 0 0 10 10 1
+    ctrl 1 1 0 10 0 1
+    trim 0x5 forward 0 0 0 0 10 0
+    trim 0x6 backward 0 10 0 0 10 10
+    trim 0xe backward 0 10 10 0 2 10
+    trim 0x12 forward 0 2 10 0 0.35355339059327373 8.353553390593273
+    trim 0x13 forward 0 0.35355339059327373 8.353553390593273 0 0 7.5
+    trim 0xf backward 0 0 7.5 0 0 0
+  }
+  surface 0x9 {
+    color 100 100 100 255
     face 0x80030007
     sheet 0x40000
     degree 1 1
@@ -740,81 +740,52 @@ shell {
     ctrl 0 1 10 10 0 1
     ctrl 1 0 10 0 10 1
     ctrl 1 1 10 0 0 1
-    trim 0x13 forward 10.000000000000002 0.3535533905932742 8.353553390593275 10 1.9999999999999996 10
-    trim 0x9 forward 10 10 10 10 10 0
-    trim 0xa backward 10 2.000000000000003 9.999999999999998 10 10 10
     trim 0xb forward 10 10 0 10 0 0
-    trim 0xc backward 10 0 0 10 0 7.500000000000001
-    trim 0x23 forward 10 0 7.5 10.000000000000002 0.3535533905932742 8.353553390593275
+    trim 0x11 backward 10 0 0 10 0 7.5
+    trim 0x14 forward 10 0 7.5 10 0.35355339059327373 8.353553390593273
+    trim 0x15 forward 10 0.35355339059327373 8.353553390593273 10 2 10
+    trim 0xc backward 10 2 10 10 10 10
+    trim 0x9 forward 10 10 10 10 10 0
   }
-  surface 0x7 {
+  surface 0xa {
     color 100 100 100 255
+    sheet 0x40040000
     degree 1 1
-    ctrl 0 0 -4 2 10 1
-    ctrl 0 1 14 2 10 1
-    ctrl 1 0 -4 0 8 1
-    ctrl 1 1 14 0 8 1
-    trim 0x12 backward 0 0.3535533905932735 8.353553390593273 -4.440892098500626e-16 2 10
-    trim 0xe forward -4.440892098500626e-16 2 10 10 1.9999999999999998 9.999999999999998
-    trim 0x13 backward 10 2 10 10.000000000000002 0.35355339059327284 8.353553390593273
-    trim 0x26 forward 10.000000000000002 0.35355339059327506 8.353553390593277 0 0.3535533905932753 8.353553390593275
+    ctrl 0 0 16 0 8 1
+    ctrl 0 1 -6 0 8 1
+    ctrl 1 0 16 2 10 1
+    ctrl 1 1 -6 2 10 1
+    trim 0x15 backward 10 2 10 10 0.35355339059327373 8.353553390593273
+    trim 0x16 forward 10 0.35355339059327373 8.353553390593273 0 0.35355339059327373 8.353553390593273
+    trim 0x12 backward 0 0.35355339059327373 8.353553390593273 0 2 10
+    trim 0xd backward 0 2 10 10 2 10
   }
   surface 0xb {
     color 100 100 100 255
+    sheet 0x40050000
     degree 1 1
-    ctrl 0 0 11 0 7.5 1
-    ctrl 0 1 -1 0 7.5 1
-    ctrl 1 0 11 0.35355339059327373 8.353553390593273 1
-    ctrl 1 1 -1 0.35355339059327373 8.353553390593273 1
-    trim 0x19 forward 9.999999999999998 0 7.5 4.440892098500626e-16 0 7.5
-    trim 0x16 backward 4.440892098500626e-16 0.35355339059327495 8.353553390593277 9.999999999999998 0.3535533905932746 8.353553390593275
-    trim 0x21 backward 3.3306690738754785e-16 6.930723425301644e-16 7.500000000000004 4.440892098500626e-16 0.35355339059327373 8.353553390593273
-    trim 0x23 backward 10 0.3535533905932737 8.353553390593273 10 -6.503535905665388e-17 7.5
-  }
-  curve 0x1 {
-    exact
-    degree 1
-    surfaces 0x1 0x3
-    ctrl 0 10 0 10 1
-    ctrl 1 0 0 10 1
-    vertex 10 0 10
-    vertex 0 0 10
+    ctrl 0 0 -1.5 0.3535533905932738 8.353553390593273 1
+    ctrl 0 1 11.5 0.3535533905932738 8.353553390593273 1
+    ctrl 1 0 -1.5 0 7.5 1
+    ctrl 1 1 11.5 0 7.5 1
+    trim 0x13 backward 0 0 7.5 0 0.35355339059327373 8.353553390593273
+    trim 0x16 backward 0 0.35355339059327373 8.353553390593273 10 0.35355339059327373 8.353553390593273
+    trim 0x14 backward 10 0.35355339059327373 8.353553390593273 10 0 7.5
+    trim 0x10 backward 10 0 7.5 0 0 7.5
   }
   curve 0x2 {
     exact
     degree 1
-    surfaces 0x2 0x3
+    surfaces 0x2 0x7
     ctrl 0 10 0 0 1
     ctrl 1 0 0 0 1
     vertex 10 0 0
     vertex 0 0 0
   }
-  curve 0x3 {
-    exact
-    degree 1
-    surfaces 0x3 0x4
-    ctrl 0 0 0 10 1
-    ctrl 1 0 0 0 1
-    vertex 0 0 10
-    vertex 8.43769498715119e-15 0 8.25
-    vertex -4.440892098500626e-16 0 8
-    vertex 4.440892098500626e-16 3.5327080320384933e-16 7.500000000000001
-    vertex 0 0 0
-  }
-  curve 0x4 {
-    exact
-    degree 1
-    surfaces 0x1 0x4
-    ctrl 0 0 0 10 1
-    ctrl 1 0 10 10 1
-    vertex 0 0 10
-    vertex -4.440892098500627e-16 1.9999999999999998 10
-    vertex 0 10 10
-  }
   curve 0x5 {
     exact
     degree 1
-    surfaces 0x2 0x4
+    surfaces 0x2 0x8
     ctrl 0 0 0 0 1
     ctrl 1 0 10 0 1
     vertex 0 0 0
@@ -823,7 +794,7 @@ shell {
   curve 0x6 {
     exact
     degree 1
-    surfaces 0x4 0x5
+    surfaces 0x8 0x5
     ctrl 0 0 10 10 1
     ctrl 1 0 10 0 1
     vertex 0 10 10
@@ -832,7 +803,7 @@ shell {
   curve 0x7 {
     exact
     degree 1
-    surfaces 0x1 0x5
+    surfaces 0x6 0x5
     ctrl 0 0 10 10 1
     ctrl 1 10 10 10 1
     vertex 0 10 10
@@ -850,26 +821,16 @@ shell {
   curve 0x9 {
     exact
     degree 1
-    surfaces 0x5 0x6
+    surfaces 0x5 0x9
     ctrl 0 10 10 10 1
     ctrl 1 10 10 0 1
     vertex 10 10 10
     vertex 10 10 0
   }
-  curve 0xa {
-    exact
-    degree 1
-    surfaces 0x1 0x6
-    ctrl 0 10 10 10 1
-    ctrl 1 10 0 10 1
-    vertex 10 10 10
-    vertex 10 2.0000000000000027 9.999999999999998
-    vertex 10 0 10
-  }
   curve 0xb {
     exact
     degree 1
-    surfaces 0x2 0x6
+    surfaces 0x2 0x9
     ctrl 0 10 10 0 1
     ctrl 1 10 0 0 1
     vertex 10 10 0
@@ -878,133 +839,100 @@ shell {
   curve 0xc {
     exact
     degree 1
-    surfaces 0x6 0x3
-    ctrl 0 10 0 10 1
-    ctrl 1 10 0 0 1
-    vertex 10 0 10
-    vertex 10.000000000000002 3.469446951953614e-18 8.25
-    vertex 10 0 8
-    vertex 10 -3.7391549984342727e-16 7.500000000000001
-    vertex 10 0 0
+    surfaces 0x6 0x9
+    ctrl 0 10 10 10 1
+    ctrl 1 10 2 10 1
+    vertex 10 10 10
+    vertex 10 2 10
+  }
+  curve 0xd {
+    exact
+    degree 1
+    surfaces 0x6 0xa
+    ctrl 0 10 2 10 1
+    ctrl 1 0 2 10 1
+    vertex 10 2 10
+    vertex 0 2 10
   }
   curve 0xe {
     exact
     degree 1
-    surfaces 0x7 0xb
-    ctrl 0 -4 2 10 1
-    ctrl 1 14 2 10 1
-    vertex -4 2 10
+    surfaces 0x6 0x8
+    ctrl 0 0 2 10 1
+    ctrl 1 0 10 10 1
     vertex 0 2 10
-    vertex 10 1.9999999999999996 10
-    vertex 14 2 10
+    vertex 0 10 10
   }
   curve 0xf {
     exact
     degree 1
-    surfaces 0x1 0x7
-    ctrl 0 10 2 10.000000000000002 1
-    ctrl 1 0 2 10.000000000000002 1
-    vertex 10 2 10.000000000000002
-    vertex 0 2 10.000000000000002
+    surfaces 0x7 0x8
+    ctrl 0 0 0 0 1
+    ctrl 1 0 0 7.5 1
+    vertex 0 0 0
+    vertex 0 0 7.5
+  }
+  curve 0x10 {
+    exact
+    degree 1
+    surfaces 0x7 0xb
+    ctrl 0 0 0 7.5 1
+    ctrl 1 10 0 7.5 1
+    vertex 0 0 7.5
+    vertex 10 0 7.5
   }
   curve 0x11 {
     exact
     degree 1
-    surfaces 0x3 0x7
-    ctrl 0 0 0 8 1
-    ctrl 1 10 0 8 1
-    vertex -0 0 8.000000000000002
-    vertex 10 0 8.000000000000002
+    surfaces 0x7 0x9
+    ctrl 0 10 0 7.5 1
+    ctrl 1 10 0 0 1
+    vertex 10 0 7.5
+    vertex 10 0 0
   }
   curve 0x12 {
     exact
     degree 1
-    surfaces 0x4 0x7
+    surfaces 0x8 0xa
     ctrl 0 0 2 10 1
-    ctrl 1 0 8.881784197001252e-16 8 1
+    ctrl 1 0 0.35355339059327373 8.353553390593273 1
     vertex 0 2 10
-    vertex 4.440892098500626e-16 0.35355339059327373 8.353553390593273
-    vertex 0 8.881784197001252e-16 8
+    vertex 0 0.35355339059327373 8.353553390593273
   }
   curve 0x13 {
     exact
     degree 1
-    surfaces 0x6 0x7
-    ctrl 0 10 0 8 1
+    surfaces 0x8 0xb
+    ctrl 0 0 0.35355339059327373 8.353553390593273 1
+    ctrl 1 0 0 7.5 1
+    vertex 0 0.35355339059327373 8.353553390593273
+    vertex 0 0 7.5
+  }
+  curve 0x14 {
+    exact
+    degree 1
+    surfaces 0x9 0xb
+    ctrl 0 10 0 7.5 1
+    ctrl 1 10 0.35355339059327373 8.353553390593273 1
+    vertex 10 0 7.5
+    vertex 10 0.35355339059327373 8.353553390593273
+  }
+  curve 0x15 {
+    exact
+    degree 1
+    surfaces 0x9 0xa
+    ctrl 0 10 0.35355339059327373 8.353553390593273 1
     ctrl 1 10 2 10 1
-    vertex 10 0 8
-    vertex 10 0.3535533905932725 8.353553390593273
+    vertex 10 0.35355339059327373 8.353553390593273
     vertex 10 2 10
   }
   curve 0x16 {
     exact
     degree 1
     surfaces 0xa 0xb
-    ctrl 0 11 0.35355339059327373 8.353553390593273 1
-    ctrl 1 -1 0.35355339059327373 8.353553390593273 1
-    vertex 11 0.35355339059327373 8.353553390593273
-    vertex 10 0.3535533905932753 8.353553390593275
-    vertex 0 0.3535533905932738 8.353553390593277
-    vertex -1 0.35355339059327373 8.353553390593273
-  }
-  curve 0x19 {
-    exact
-    degree 1
-    surfaces 0xb 0xc
-    ctrl 0 11 0 7.5 1
-    ctrl 1 -1 0 7.5 1
-    vertex 11 0 7.5
-    vertex 10 0 7.5
-    vertex 0 0 7.5
-    vertex -1 0 7.5
-  }
-  curve 0x1e {
-    exact
-    degree 1
-    surfaces 0x3 0xb
-    ctrl 0 0 3.552713678800501e-15 7.500000000000002 1
-    ctrl 1 10 3.552713678800501e-15 7.500000000000002 1
-    vertex 0 3.552713678800501e-15 7.500000000000002
-    vertex 10 3.552713678800501e-15 7.500000000000002
-  }
-  curve 0x21 {
-    exact
-    degree 1
-    surfaces 0x4 0xb
-    ctrl 0 0 0.3535533905932735 8.353553390593273 1
-    ctrl 1 0 4.440892098500626e-16 7.500000000000002 1
-    vertex 0 0.3535533905932735 8.353553390593273
-    vertex 0 4.440892098500626e-16 7.500000000000002
-  }
-  curve 0x23 {
-    exact
-    degree 1
-    surfaces 0x6 0xb
-    ctrl 0 10 -4.440892098500626e-16 7.5 1
-    ctrl 1 10 0.3535533905932735 8.353553390593273 1
-    vertex 10 -4.440892098500626e-16 7.5
-    vertex 10 0.3535533905932735 8.353553390593273
-  }
-  curve 0x26 {
-    exact
-    degree 1
-    surfaces 0x7 0xa
-    ctrl 0 10.999999999999996 0.35355339059327573 8.353553390593275 1
-    ctrl 1 -1.0000000000000044 0.35355339059327573 8.353553390593275 1
-    vertex 11 0.35355339059327373 8.353553390593273
-    vertex 10 0.3535533905932753 8.353553390593275
-    vertex 0 0.3535533905932738 8.353553390593277
-    vertex -1 0.35355339059327373 8.353553390593273
-  }
-  curve 0x27 {
-    exact
-    degree 1
-    surfaces 0x7 0xb
-    ctrl 0 11 0.3535533905932766 8.353553390593273 1
-    ctrl 1 -1.0000000000000004 0.3535533905932766 8.353553390593273 1
-    vertex 11 0.35355339059327373 8.353553390593273
-    vertex 10 0.3535533905932753 8.353553390593275
-    vertex 0 0.3535533905932738 8.353553390593277
-    vertex -1 0.35355339059327373 8.353553390593273
+    ctrl 0 10 0.35355339059327373 8.353553390593273 1
+    ctrl 1 0 0.35355339059327373 8.353553390593273 1
+    vertex 10 0.35355339059327373 8.353553390593273
+    vertex 0 0.35355339059327373 8.353553390593273
   }
 }

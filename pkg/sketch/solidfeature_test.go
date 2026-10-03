@@ -437,6 +437,26 @@ func BenchmarkShell(b *testing.B) {
 	})
 }
 
+// A cylinder hollowed into a cup (roadmap 15.2).
+func BenchmarkShellCup(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 5)
+		cyl := d.Extrude(10, "")
+		d.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
+	})
+}
+
+// A ring extruded with a draft: cones inside and out (roadmap 15.4).
+func BenchmarkDraft(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 10)
+		d.Circle(api.V(0, 0, 0), 4)
+		d.Extrude(10, "").SetDraft(3)
+	})
+}
+
 func BenchmarkLoft(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		bottom := d.SketchIn(d.Workplane("XY"), "")
@@ -489,5 +509,15 @@ func BenchmarkSweep(b *testing.B) {
 		d.Circle(api.V(0, 0, 0), 3)
 		d.Circle(api.V(0, 0, 0), 2)
 		d.Sweep(path, "")
+	})
+}
+
+func BenchmarkPathPattern(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		path := patternPath(d, 20, 10, 90)
+		d.SketchIn(d.Workplane("XY"), "post-sketch")
+		d.Circle(api.V(0, 0, 0), 1)
+		d.Extrude(5, "post")
+		d.PatternAlongPath(path, 7, "")
 	})
 }

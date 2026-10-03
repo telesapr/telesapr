@@ -1,0 +1,30 @@
+# A circle and a construction line drawn in one sketch, the circle
+# extruded, and the post repeated along the line, picked with the mouse;
+# the same as path_pattern_path.go makes (TestPathEquivalencePathPattern).
+key c
+move 200 300
+down L 200 300
+up L 200 300
+move 210 300
+down L 210 300
+up L 210 300
+key esc
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 200
+down L 400 200
+up L 400 200
+key esc
+key esc
+move 300 200
+down L 300 200
+up L 300 200
+key g
+key esc
+key x shift
+move 300 200
+down L 300 200
+up L 300 200
+menu New Group|Pattern Along Path

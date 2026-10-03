@@ -24,4 +24,4 @@ doc.Sweep(path, "tube")
 ## Not yet
 
 The path is lines and arcs, tangent where they meet; splines and corners are roadmap 20
-(E10). Step and repeat along a path is 15.6.
+(E10). Repeating a solid along a path is [Pattern Along Path](pattern.md).

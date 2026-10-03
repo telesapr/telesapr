@@ -46,6 +46,31 @@ func (g Group) SetKeepOriginal(keep bool) {
 	})
 }
 
+// MirrorSolid reports whether a mirror reflects the whole solid so far,
+// up to and with its source group, rather than the source group's own
+// solid.
+func (g Group) MirrorSolid() (whole bool) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupMirror, "MirrorSolid")
+		whole = group.MirrorSolid
+	})
+	return whole
+}
+
+// SetMirrorSolid has a mirror reflect the whole solid so far, as a body
+// made of several groups needs, or only its source group's solid. With
+// the whole solid, the mirror's result is the solid so far: with its
+// reflection when it keeps the original, or the reflection alone.
+func (g Group) SetMirrorSolid(whole bool) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupMirror, "SetMirrorSolid")
+		group.MirrorSolid = whole
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // Plane is the workplane or face a mirror reflects in.
 func (g Group) Plane() (plane Entity) {
 	g.d.read(func(sk *sketch.Sketch) {
@@ -95,13 +120,35 @@ func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group {
 	}, nil)
 }
 
+// PatternAlongPath repeats the active group's solid along path, line
+// segments and arcs joined end to end and meeting tangent, as a sweep's
+// path, copies times in all: the first where the solid is and the last
+// at the far end of the path, spaced evenly along it, each turned with
+// it, as New Group > Pattern Along Path does. The path starts at its
+// end nearest the solid. Copies and SetCopies read and change the
+// count; the sketch's entities are not copied.
+func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		hs := make([]core.HEntity, len(path))
+		for i, e := range path {
+			hs[i] = e.get(sk).H
+		}
+		g, err := sk.NewPathPattern(hs, copies, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
 // Edges are the edges a chamfer cuts or a fillet rounds, or the path a
-// sweep follows.
+// sweep or a pattern follows.
 func (g Group) Edges() (edges []Entity) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		if group.Type != sketch.GroupChamfer && group.Type != sketch.GroupSweep && group.Type != sketch.GroupFillet {
-			fail("Edges is for a chamfer, a fillet or a sweep, and %s is a %s", groupDescription(group), kindName(group.Type))
+		if group.Type != sketch.GroupChamfer && group.Type != sketch.GroupSweep && group.Type != sketch.GroupFillet &&
+			group.Type != sketch.GroupPathPattern {
+			fail("Edges is for a chamfer, a fillet, a sweep or a pattern, and %s is a %s", groupDescription(group), kindName(group.Type))
 		}
 		for _, he := range group.Edges {
 			edges = append(edges, Entity{d: g.d, H: he})

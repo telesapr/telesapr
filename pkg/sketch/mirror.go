@@ -142,6 +142,25 @@ func (g *Group) mirrorTransform(sk *Sketch) (geom.Vector, geom.Quaternion) {
 	return t, q
 }
 
+// mirrorsSolid reports whether the mirror reflects the solid so far:
+// when MirrorSolid asks it to, or when its source edits the solid in
+// place, a fillet, a shell, a chamfer, whose own solid is already the
+// whole of it and whose combine says nothing of how to join it.
+func (g *Group) mirrorsSolid(sk *Sketch) bool {
+	if g.MirrorSolid {
+		return true
+	}
+	src := sk.GetGroup(g.OpA)
+	if src == nil || src.IsForcedToMesh(sk) {
+		return false
+	}
+	switch src.Type {
+	case GroupFillet, GroupShell, GroupChamfer:
+		return true
+	}
+	return false
+}
+
 // checkMirror records what is wrong with the group's input.
 func (g *Group) checkMirror(sk *Sketch) bool {
 	if g.mirrorPlane(sk) == nil {

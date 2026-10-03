@@ -386,6 +386,9 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 		g.SkipFirst = true
 	case 'K':
 		g.SkipFirst = false
+	case 'm':
+		// A mirror of the whole solid so far, or of its source alone.
+		g.MirrorSolid = !g.MirrorSolid
 
 	case 'c':
 		as := sketch.CombineAs(v)
@@ -518,6 +521,18 @@ func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	}
 	tw.ShowEditControl(3, text)
 	tw.edit.meaning = EditHelixPitch
+	tw.edit.group = core.HGroup{V: v}
+}
+
+// ScreenChangeGroupDraft edits an extrusion's draft, in degrees.
+func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
+	g := tw.ss.SK.GetGroup(tw.shown.group)
+	text := g.ExprC
+	if text == "" {
+		text = sprintf("%g", g.ValC)
+	}
+	tw.ShowEditControl(10, text)
+	tw.edit.meaning = EditGroupDraft
 	tw.edit.group = core.HGroup{V: v}
 }
 
@@ -673,6 +688,8 @@ func (tw *TextWindow) ShowGroupInfo() {
 				lf(tw.ScreenChangeGroupOption), radio(one),
 				lf(tw.ScreenChangeGroupOption), radio(two),
 				lf(tw.ScreenChangeGroupOption), check(skew))
+			tw.Printf(false, "%Bd   %Ftdraft%E %s deg%s %Fl%Ll%f%D[change]%E",
+				sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
 		} else {
 			tw.Printf(false,
 				"%Ba   %f%Ls%Fd%s one-sided%E  "+
@@ -712,6 +729,8 @@ func (tw *TextWindow) ShowGroupInfo() {
 			"%f%Lk%Fd%s reflection only%E",
 			lf(tw.ScreenChangeGroupOption), radio(!g.SkipFirst),
 			lf(tw.ScreenChangeGroupOption), radio(g.SkipFirst))
+		tw.Printf(false, "%Ba   %f%Lm%Fd%s the whole solid so far%E",
+			lf(tw.ScreenChangeGroupOption), check(g.MirrorSolid))
 	case sketch.GroupChamfer:
 		tw.Printf(true, " %Ftchamfer edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
@@ -742,6 +761,11 @@ func (tw *TextWindow) ShowGroupInfo() {
 		}
 	case sketch.GroupSweep:
 		tw.Printf(true, " %Ftsweep plane sketch along path%E")
+		tw.showGroupEdges(g, "path")
+	case sketch.GroupPathPattern:
+		tw.Printf(true, " %Ftrepeat solid along path%E")
+		tw.Printf(false, "%Ba   %Ftcopies%E %d%s %Fl%Ll%D%f[change]%E",
+			int(g.ValA), exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
 		tw.showGroupEdges(g, "path")
 	case sketch.GroupLinked:
 		tw.Printf(true, " %Ftlink geometry from file%E")
@@ -846,7 +870,11 @@ func (tw *TextWindow) ShowGroupInfo() {
 
 	if g.Problem.Msg != "" {
 		tw.Printf(false, "")
-		tw.Printf(false, "%FxThe group adds no solid: %s.%E", g.Problem.Msg)
+		if g.HasDraft() {
+			tw.Printf(false, "%FxThe draft is left out: %s.%E", g.Problem.Msg)
+		} else {
+			tw.Printf(false, "%FxThe group adds no solid: %s.%E", g.Problem.Msg)
+		}
 	}
 
 	if g.BooleanFailed {
@@ -1394,6 +1422,11 @@ func (tw *TextWindow) EditControlDone(s string) {
 	case EditHelixPitch: // stored in valB
 		if e := ss.exprFromString(s, true); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
+		}
+
+	case EditGroupDraft:
+		if e := ss.exprFromString(s, true); e != nil {
+			ss.setGroupText(tw.edit.group, sketch.GroupValC, s)
 		}
 
 	case EditEdgeRadius:

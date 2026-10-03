@@ -22,9 +22,11 @@ time, and `help()` there lists what a script can call.
 | [Mirror](mirror.md) | A group reflected in a plane | `mirror` |
 | [Chamfer](chamfer.md) | Edges cut at a distance | `chamfer`, `edges` |
 | [Fillet](fillet.md) | Edges rounded, or filled when they go in | `fillet`, `roundbox`, `tray` |
-| [Shell](shell.md) | A solid hollowed to walls | `shell` |
+| [Shell](shell.md) | A solid hollowed to walls | `shell`, `pot` |
+| [Draft](draft.md) | An extrusion's sides leaned for a mould | `draft` |
 | [Loft](loft.md) | Two profiles joined by ruled faces | `loft` |
 | [Sweep](sweep.md) | A profile moved along a path | `sweep` |
+| [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
 | [Screw threads](threads.md) | Metric, unified and trapezoidal threads | `bolt` |
 | [STEP links](step-links.md) | A STEP file linked as a reference | `step` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |

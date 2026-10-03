@@ -143,6 +143,8 @@ func kindName(t sketch.GroupType) string {
 		return "loft"
 	case sketch.GroupShell:
 		return "shell"
+	case sketch.GroupPathPattern:
+		return "pattern"
 	case sketch.GroupLinked:
 		return "link"
 	}
@@ -309,14 +311,26 @@ func (g Group) SetColor(red, green, blue int) {
 	})
 }
 
-// SetCopies is how many copies a step and repeat makes.
+// Copies is how many copies a step and repeat or a pattern makes.
+func (g Group) Copies() (n int) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate && group.Type != sketch.GroupPathPattern {
+			fail("%s isn't a step and repeat or a pattern", groupDescription(group))
+		}
+		n = int(group.ValA)
+	})
+	return n
+}
+
+// SetCopies is how many copies a step and repeat or a pattern makes.
 func (g Group) SetCopies(n int) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate {
-			fail("%s isn't a step and repeat", groupDescription(group))
+		if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate && group.Type != sketch.GroupPathPattern {
+			fail("%s isn't a step and repeat or a pattern", groupDescription(group))
 		}
-		if n < 1 || n > 999 {
+		if n < 1 || n > 999 || (group.Type == sketch.GroupPathPattern && n < 2) {
 			fail("can't repeat %d times", n)
 		}
 		group.ValA = float64(n)
@@ -524,6 +538,36 @@ func (d *Doc) Extrude(depth float64, name string) Group {
 		sk.MustGetParam(hg.Param(0)).Val = v.X
 		sk.MustGetParam(hg.Param(1)).Val = v.Y
 		sk.MustGetParam(hg.Param(2)).Val = v.Z
+	})
+}
+
+// Draft is an extrusion's draft in degrees: its sides lean into the
+// solid by that much from the sketch's plane, out when it is negative.
+func (g Group) Draft() (degrees float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "Draft")
+		degrees = group.ValC
+	})
+	return degrees
+}
+
+// SetDraft leans an extrusion's sides into the solid by degrees from
+// the sketch's plane, so that the far end is smaller (larger when
+// negative), as a moulded part's; 0 takes the draft away. The profile
+// must be of lines and arcs, each arc meeting its neighbours tangent. A
+// draft at which the sides meet is a problem on the group, and the
+// extrusion is made without it. SetExpr with sketch.GroupValC gives it
+// an expression.
+func (g Group) SetDraft(degrees float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "SetDraft")
+		if math.IsNaN(degrees) || math.Abs(degrees) >= 90 {
+			fail("a draft is between -90 and 90 degrees, not %g", degrees)
+		}
+		group.ValC, group.ExprC = degrees, ""
+		sk.MarkGroupDirty(group.H, false)
 	})
 }
 

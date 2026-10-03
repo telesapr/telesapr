@@ -1,0 +1,43 @@
+# Draft (an extension): the extrusion of path_extrude, its group screen's
+# draft changed to 5 degrees, leans its sides in, and Analyze > Check
+# Solid finds it sound; the draft takes an expression, leans both ways
+# from the sketch when the extrusion is two-sided, and one at which
+# the sides meet is a problem on the group, the extrusion made without
+# it.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+tw
+twmove 163 145
+twdown L 163 145
+twup L 163 145
+edit 5
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 163 145
+twdown L 163 145
+twup L 163 145
+edit 2*3
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 186 125
+twdown L 186 125
+twup L 186 125
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 235 145
+twdown L 235 145
+twup L 235 145
+edit 60
+tw
+answer ok
+menu Analyze|Check Solid

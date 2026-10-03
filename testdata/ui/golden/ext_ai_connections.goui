@@ -85,6 +85,7 @@
   &Fillet Edges [Shift+F] ind=0 en=1 act=0
   Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
   &Shell Solid [Shift+G] ind=0 en=1 act=0
+  Pattern Along Pat&h ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0
@@ -821,6 +822,7 @@ row 157
   &Fillet Edges [Shift+F] ind=0 en=1 act=0
   Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
   &Shell Solid [Shift+G] ind=0 en=1 act=0
+  Pattern Along Pat&h ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0
@@ -981,6 +983,7 @@ S&cript ind=0 en=1 act=0
   &Fillet Edges [Shift+F] ind=0 en=1 act=0
   Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
   &Shell Solid [Shift+G] ind=0 en=1 act=0
+  Pattern Along Pat&h ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0

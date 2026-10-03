@@ -109,114 +109,23 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 	if src == nil {
 		return nil, nil, errors.New("the profile group is gone")
 	}
-	var pieces []pathPiece
-	for _, he := range g.Edges {
-		e := sk.GetEntity(he)
-		if e == nil {
-			return nil, src, pathErr(nil, "path entity %s doesn't exist", sk.entityName(he))
-		}
-		switch e.Type {
-		case core.EntityLineSegment:
-			a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-			b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
-			if b.Minus(a).Magnitude() < sweepTol {
-				return nil, src, pathErr(&a, "line segment %s of the path has no length", sk.entityName(he))
-			}
-			pieces = append(pieces, pathPiece{h: he, start: a, end: b})
-		case core.EntityArcOfCircle:
-			c := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-			a := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
-			b := sk.MustGetEntity(e.Point[2]).PointGetNum(sk)
-			_, _, dtheta := e.ArcGetAngles(sk)
-			n := sk.MustGetEntity(e.Normal).NormalN(sk).WithMagnitude(1)
-			pieces = append(pieces, pathPiece{h: he, start: a, end: b, arc: true, center: c, axis: n, angle: dtheta})
-		default:
-			return nil, src, pathErr(nil, "%s is not a line segment or an arc: a path is made of those", sk.entityName(he))
-		}
-	}
-
-	// Each end must meet at most one other.
-	near := func(p, q geom.Vector) bool { return p.Minus(q).Magnitude() < sweepTol }
-	degree := func(p geom.Vector) int {
-		n := 0
-		for _, q := range pieces {
-			if near(p, q.start) {
-				n++
-			}
-			if near(p, q.end) {
-				n++
-			}
-		}
-		return n
-	}
-	var ends []geom.Vector
-	for _, p := range pieces {
-		for _, x := range []geom.Vector{p.start, p.end} {
-			switch degree(x) {
-			case 1:
-				ends = append(ends, x)
-			case 2:
-			default:
-				return nil, src, pathErr(&x, "the path branches at (%g, %g, %g)", x.X, x.Y, x.Z)
-			}
-		}
-	}
-	if len(ends) == 0 {
-		return nil, src, pathErr(&pieces[0].start, "the path is closed: a sweep needs a path with two ends")
-	}
-
-	// Start at the end nearest the profile's plane.
 	sbls := &src.BezierLoops
 	if len(sbls.Sets) == 0 {
 		return nil, src, errors.New("the profile has no closed loops")
 	}
 	normal, onPlane := sbls.Sets[0].Normal, sbls.Sets[0].Point
-	start := ends[0]
-	for _, x := range ends[1:] {
-		if math.Abs(x.Minus(onPlane).Dot(normal)) < math.Abs(start.Minus(onPlane).Dot(normal))-sweepTol {
-			start = x
-		}
-	}
-
-	var chain []pathPiece
-	used := make([]bool, len(pieces))
-	at := start
-	for len(chain) < len(pieces) {
-		found := false
-		for i, p := range pieces {
-			if used[i] {
-				continue
-			}
-			switch {
-			case near(at, p.start):
-			case near(at, p.end):
-				p = p.reversed()
-			default:
-				continue
-			}
-			used[i], found = true, true
-			chain = append(chain, p)
-			at = p.end
-			break
-		}
-		if !found {
-			return nil, src, pathErr(&at, "the path is not one chain: it breaks at (%g, %g, %g)", at.X, at.Y, at.Z)
-		}
-	}
-
-	for k := 1; k < len(chain); k++ {
-		if chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) < sweepTangentCos {
-			x := chain[k].start
-			return nil, src, pathErr(&x, "the path has a corner at (%g, %g, %g): a sweep needs its pieces to meet tangent",
-				x.X, x.Y, x.Z)
-		}
+	// Start at the end nearest the profile's plane.
+	chain, err := sk.pathChain(g.Edges, "sweep", func(x geom.Vector) float64 {
+		return math.Abs(x.Minus(onPlane).Dot(normal))
+	})
+	if err != nil {
+		return nil, src, err
 	}
 
 	steps := make([]srf.SweepStep, len(chain))
 	for k, p := range chain {
 		steps[k] = p.step()
 	}
-
 	// The profile must cross the path, and stay clear of each turn's
 	// axis.
 	if math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
@@ -245,6 +154,111 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 		frame = frame.Then(steps[k].Motion())
 	}
 	return steps, src, nil
+}
+
+// pathChain reads the path entities into a chain of pieces end to end,
+// starting at the end where dist is least, and requires its pieces to
+// meet tangent; what names the feature in messages.
+func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Vector) float64) ([]pathPiece, error) {
+	var pieces []pathPiece
+	for _, he := range edges {
+		e := sk.GetEntity(he)
+		if e == nil {
+			return nil, pathErr(nil, "path entity %s doesn't exist", sk.entityName(he))
+		}
+		switch e.Type {
+		case core.EntityLineSegment:
+			a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
+			b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+			if b.Minus(a).Magnitude() < sweepTol {
+				return nil, pathErr(&a, "line segment %s of the path has no length", sk.entityName(he))
+			}
+			pieces = append(pieces, pathPiece{h: he, start: a, end: b})
+		case core.EntityArcOfCircle:
+			c := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
+			a := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+			b := sk.MustGetEntity(e.Point[2]).PointGetNum(sk)
+			_, _, dtheta := e.ArcGetAngles(sk)
+			n := sk.MustGetEntity(e.Normal).NormalN(sk).WithMagnitude(1)
+			pieces = append(pieces, pathPiece{h: he, start: a, end: b, arc: true, center: c, axis: n, angle: dtheta})
+		default:
+			return nil, pathErr(nil, "%s is not a line segment or an arc: a path is made of those", sk.entityName(he))
+		}
+	}
+	if len(pieces) == 0 {
+		return nil, errors.New("there is no path")
+	}
+
+	// Each end must meet at most one other.
+	near := func(p, q geom.Vector) bool { return p.Minus(q).Magnitude() < sweepTol }
+	degree := func(p geom.Vector) int {
+		n := 0
+		for _, q := range pieces {
+			if near(p, q.start) {
+				n++
+			}
+			if near(p, q.end) {
+				n++
+			}
+		}
+		return n
+	}
+	var ends []geom.Vector
+	for _, p := range pieces {
+		for _, x := range []geom.Vector{p.start, p.end} {
+			switch degree(x) {
+			case 1:
+				ends = append(ends, x)
+			case 2:
+			default:
+				return nil, pathErr(&x, "the path branches at (%g, %g, %g)", x.X, x.Y, x.Z)
+			}
+		}
+	}
+	if len(ends) == 0 {
+		return nil, pathErr(&pieces[0].start, "the path is closed: a %s needs a path with two ends", what)
+	}
+	start := ends[0]
+	for _, x := range ends[1:] {
+		if dist(x) < dist(start)-sweepTol {
+			start = x
+		}
+	}
+
+	var chain []pathPiece
+	used := make([]bool, len(pieces))
+	at := start
+	for len(chain) < len(pieces) {
+		found := false
+		for i, p := range pieces {
+			if used[i] {
+				continue
+			}
+			switch {
+			case near(at, p.start):
+			case near(at, p.end):
+				p = p.reversed()
+			default:
+				continue
+			}
+			used[i], found = true, true
+			chain = append(chain, p)
+			at = p.end
+			break
+		}
+		if !found {
+			return nil, pathErr(&at, "the path is not one chain: it breaks at (%g, %g, %g)", at.X, at.Y, at.Z)
+		}
+	}
+
+	for k := 1; k < len(chain); k++ {
+		if chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) < sweepTangentCos {
+			x := chain[k].start
+			return nil, pathErr(&x, "the path has a corner at (%g, %g, %g): a %s needs its pieces to meet tangent",
+				x.X, x.Y, x.Z, what)
+		}
+	}
+	return chain, nil
 }
 
 // generateSweep copies the profile's entities to both ends of the

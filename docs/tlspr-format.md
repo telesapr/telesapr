@@ -197,9 +197,10 @@ group <handle> <type> <name> {
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
-  val-c = <expression>      # spare value, unused by every group today
+  draft = <expression>      # extrude: the sides' lean into the solid, in degrees (the field val-c, unused by other groups)
   color <colour>
   skip-first
+  mirror-solid              # mirror: the whole solid so far, not op-a's own
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
@@ -255,9 +256,14 @@ remap {
 | Mirror | `mirror` |
 | Chamfer | `chamfer` |
 | Sweep along a path | `sweep` |
+| Fillet | `fillet` |
+| Shell | `shell` |
+| Loft | `loft` |
+| Pattern along a path | `pattern-path` |
 
 A mirror reflects its `op-a` in the plane `entity-b` of its `predef`, a workplane or a planar
-face; `skip-first` leaves the original out of its solid. A chamfer cuts its `edges` at its
+face; `skip-first` leaves the original out of its solid, and `mirror-solid` has it reflect the
+whole solid so far, up to its `op-a`, in place of `op-a`'s own. A chamfer cuts its `edges` at its
 `distance` from the solid so far, so its `combine` is always `difference`; and its
 `solid-edge`s, edges of the solid so far named by the identities of the two faces they lie
 between, lower first, their place among the edges between those faces in geometric order, and
@@ -514,6 +520,13 @@ Version 2 gained the group types `mirror`, `chamfer` and `sweep`, with the field
 
 Version 2 gained the chamfer field `solid-edge` on 2026-10-03. A reader from before skips it
 with a report.
+
+Version 2 gained the group type `pattern-path` on 2026-10-03 (roadmap 15.6): it repeats the
+solid of its `op-a` `copies` times along its `edges`, a path as a sweep's. A reader from before
+reports the unknown type.
+
+Version 2 gained the mirror field `mirror-solid` on 2026-10-03 (roadmap 15.5). A reader from
+before skips it with a report, and mirrors the source group alone.
 
 Version 2's `solid-edge` gained `of <m>`, the count of edges between its faces, on 2026-10-03
 (roadmap 14.2). A reader from before refuses such a line; a reader since reads lines without
