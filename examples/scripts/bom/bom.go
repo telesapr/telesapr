@@ -77,6 +77,16 @@ func main() {
 		fmt.Fprintln(os.Stderr, "the counts are wrong")
 		os.Exit(1)
 	}
+	// The bolt stands in the plate, as one through a hole would; the
+	// check by shells says by how much each part overlaps another.
+	found, _ := doc.Interferences()
+	for _, f := range found {
+		fmt.Printf("%s and %s share %.1f mm³\n", f.A, f.B, f.Volume)
+	}
+	if len(found) == 0 {
+		fmt.Fprintln(os.Stderr, "the bolt doesn't meet the plate")
+		os.Exit(1)
+	}
 	if write {
 		must(doc.ExportBOM("bom.csv"))
 	}

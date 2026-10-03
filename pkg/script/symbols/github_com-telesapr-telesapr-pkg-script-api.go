@@ -45,6 +45,7 @@ func init() {
 		"ExportKind":      reflect.ValueOf((*api.ExportKind)(nil)),
 		"Group":           reflect.ValueOf((*api.Group)(nil)),
 		"Host":            reflect.ValueOf((*api.Host)(nil)),
+		"Interference":    reflect.ValueOf((*api.Interference)(nil)),
 		"MotionFrame":     reflect.ValueOf((*api.MotionFrame)(nil)),
 		"Param":           reflect.ValueOf((*api.Param)(nil)),
 		"Parameter":       reflect.ValueOf((*api.Parameter)(nil)),

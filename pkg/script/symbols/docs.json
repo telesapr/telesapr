@@ -4316,6 +4316,10 @@
 						"decl": "func (d *Doc) Image(path string, at Vec, height float64) Entity",
 						"text": "Image adds a picture from a file in the active workplane, for\ntracing: its bottom left corner at at, height high and as wide as\nthe picture's proportions make it. It is construction, as the\ninterface makes it."
 					},
+					"Interferences": {
+						"decl": "func (d *Doc) Interferences() (found []Interference, meshOnly []Group)",
+						"text": "Interferences checks the parts of the assembly up to the active\ngroup against each other by their shells (Analyze \u003e Show Interfering\nParts): each group that combines as an assembly is a part, and so is\nthe solid made before the first of them. It lists the pairs that\noverlap, not those that only touch. A part with no shell, as a\nlinked mesh or STEP file, can't be checked so; meshOnly lists them."
+					},
 					"Lathe": {
 						"decl": "func (d *Doc) Lathe(axis Entity, name string) Group",
 						"text": "Lathe makes a solid of the active group's sketch by turning it all\nthe way around a line segment. The new group becomes active."
@@ -4946,6 +4950,10 @@
 			"Host": {
 				"text": "Host owns a sketch on behalf of a Doc: it is the program around the\nsketch, with or without windows. All of it but Run must be called\ninside Run.",
 				"kind": "interface"
+			},
+			"Interference": {
+				"text": "Interference is two parts of an assembly that overlap, and the\nvolume they share in mm³.",
+				"kind": "struct"
 			},
 			"MotionFrame": {
 				"text": "MotionFrame is a step of a motion study: the parameter's value, the\nfile its frame went to, if any, whether every group solved, and the\nvolume of the solid up to the active group.",
@@ -5682,6 +5690,10 @@
 				"text": "Image is a loaded image file (C++ Pixmap): its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
 				"kind": "struct"
 			},
+			"Interference": {
+				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
+				"kind": "struct"
+			},
 			"MeasureKind": {
 				"text": "MeasureKind is what a measurement is.",
 				"kind": "int",
@@ -6097,6 +6109,10 @@
 					"GroupsInOrder": {
 						"decl": "func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool",
 						"text": "groupsInOrder reports whether before comes before after (C++ GroupsInOrder)."
+					},
+					"Interferences": {
+						"decl": "func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup)",
+						"text": "Interferences checks the parts of the model up to group upTo against each other."
 					},
 					"LaterReference": {
 						"decl": "func (sk *Sketch) LaterReference(h core.HGroup) (dep Dependency, ok bool)",

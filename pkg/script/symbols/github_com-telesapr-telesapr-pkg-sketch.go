@@ -132,6 +132,7 @@ func init() {
 		"GroupType":            reflect.ValueOf((*sketch.GroupType)(nil)),
 		"GroupValue":           reflect.ValueOf((*sketch.GroupValue)(nil)),
 		"Image":                reflect.ValueOf((*sketch.Image)(nil)),
+		"Interference":         reflect.ValueOf((*sketch.Interference)(nil)),
 		"MeasureKind":          reflect.ValueOf((*sketch.MeasureKind)(nil)),
 		"Measurement":          reflect.ValueOf((*sketch.Measurement)(nil)),
 		"MoveError":            reflect.ValueOf((*sketch.MoveError)(nil)),

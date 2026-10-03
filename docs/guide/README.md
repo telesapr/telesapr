@@ -29,7 +29,7 @@ time, and `help()` there lists what a script can call.
 | [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
 | [Screw threads](threads.md) | Metric, unified and trapezoidal threads | `bolt` |
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference | `step` |
-| [Bill of materials](bill-of-materials.md) | The parts an assembly links, counted, to a CSV file | `bom` |
+| [Bill of materials](bill-of-materials.md) | The parts an assembly links, counted, to a CSV file; interfering parts by their shells | `bom` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
 
 Files are saved as `.tlspr`, a text format described in [`docs/tlspr-format.md`](../tlspr-format.md).

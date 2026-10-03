@@ -21,6 +21,22 @@ for _, it := range doc.BillOfMaterials() {
 must(doc.ExportBOM("bom.csv"))
 ```
 
+## Interfering parts
+
+Analyze > Show Interfering Parts checks the parts of an assembly against each other by their
+shells: each group that combines as an assembly is a part, and so is the solid made before the
+first of them. Two parts interfere where they share volume; parts that only touch don't. The
+message lists each pair with the volume they share, and the shared solid is outlined. A part
+linked from a mesh or a STEP file has no shell; with one in the model, the check falls back to
+the triangles of the whole model, as SolveSpace's does.
+
+```go
+found, meshOnly := doc.Interferences()
+for _, f := range found {
+	fmt.Println(f.A, f.B, f.Volume)
+}
+```
+
 ## Not yet
 
 Only the files the model links are counted, not the files those link in turn; a part linked
