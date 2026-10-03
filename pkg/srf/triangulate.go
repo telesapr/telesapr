@@ -397,12 +397,36 @@ func (c *SContour) IsEar(bp int, scaledEps float64) bool {
 // ClipEarInto adds the triangle at vertex bp to m (unless degenerate)
 // and removes that vertex. Mirrors C++ SContour::ClipEarInto.
 func (c *SContour) ClipEarInto(m *SMesh, bp int, scaledEps float64) {
+	c.clipEarInto(m, bp, scaledEps, nil)
+}
+
+// clipEarInto is ClipEarInto on surface srf, nil for none. A triangle
+// is culled when it is thin in uv: its height over its longest side
+// below scaledEps (C++ compares its doubled area with the square of
+// the epsilon, which also culls thin triangles that are real, such as
+// the sliver between a fine chord of a curve and the next, and leaves a
+// hole there). On a curved surface a triangle thin in uv may not be in
+// xyz: three points along a seam between two patches of a face lie on
+// a line in uv, the line that the seam is in the patch's parameters,
+// but on a curve in xyz, and the next patch meets the chords between
+// them; so it is kept unless it is thin in xyz too.
+func (c *SContour) clipEarInto(m *SMesh, bp int, scaledEps float64, srf *SSurface) {
 	ln := len(c.Points)
 	ap := wrapIdx(bp-1, ln)
 	cp := wrapIdx(bp+1, ln)
 
 	tr := STriangle{A: c.Points[ap].P, B: c.Points[bp].P, C: c.Points[cp].P}
-	if tr.Normal().MagSquared() < scaledEps*scaledEps {
+	thin := func(t STriangle, eps float64) bool {
+		long := max(t.B.Minus(t.A).MagSquared(), t.C.Minus(t.B).MagSquared(), t.A.Minus(t.C).MagSquared())
+		n := t.Normal().MagSquared()
+		return n < eps*eps*long || n == 0
+	}
+	cull := thin(tr, scaledEps)
+	if cull && srf != nil && (srf.DegM != 1 || srf.DegN != 1) && !tr.A.Equals(tr.C) {
+		x := STriangle{A: srf.PointAt(tr.A.X, tr.A.Y), B: srf.PointAt(tr.B.X, tr.B.Y), C: srf.PointAt(tr.C.X, tr.C.Y)}
+		cull = thin(x, geom.LengthEps)
+	}
+	if cull {
 		// A vertex with more than two edges will cause us to generate
 		// zero-area triangles, which must be culled.
 	} else {
@@ -571,11 +595,11 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 			// couldn't find an ear! fail
 			return
 		}
-		c.ClipEarInto(m, bestEar, scaledEps)
+		c.clipEarInto(m, bestEar, scaledEps, srf)
 	}
 
 	if len(c.Points) == 3 {
-		c.ClipEarInto(m, 0, scaledEps) // add the last triangle
+		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
 }
 

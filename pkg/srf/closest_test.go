@@ -46,13 +46,13 @@ func TestClosestPointToCurvedSurface(t *testing.T) {
 	k := 0.5522847498 // (4/3)*(sqrt(2)-1), Bezier circle approximation
 	s := SSurface{
 		DegM: 2, DegN: 1,
-		Weight: [4][4]float64{
+		Weight: [MaxDegree + 1][MaxDegree + 1]float64{
 			{1, 1, 0, 0},
 			{1, k, 0, 0},
 			{1, k, 0, 0},
 			{1, 1, 0, 0},
 		},
-		Ctrl: [4][4]geom.Vector{
+		Ctrl: [MaxDegree + 1][MaxDegree + 1]geom.Vector{
 			{geom.Vector{X: 0}, geom.Vector{X: 1}, {}, {}},
 			{geom.Vector{X: 0, Y: 1, Z: k}, geom.Vector{X: 1, Y: 1, Z: k}, {}, {}},
 			{geom.Vector{X: 0, Y: k, Z: 1}, geom.Vector{X: 1, Y: k, Z: 1}, {}, {}},
@@ -78,15 +78,15 @@ func TestClosestPointToCurvedSurface(t *testing.T) {
 // that we duplicate here to avoid cross-test file imports).
 func makeBoxShellForTest(min, max geom.Vector) *SShell {
 	sh := &SShell{}
-	bilinear := func(p00, p10, p01, p11 geom.Vector) [4][4]geom.Vector {
-		return [4][4]geom.Vector{
+	bilinear := func(p00, p10, p01, p11 geom.Vector) [MaxDegree + 1][MaxDegree + 1]geom.Vector {
+		return [MaxDegree + 1][MaxDegree + 1]geom.Vector{
 			{p00, p01, {}, {}},
 			{p10, p11, {}, {}},
 			{{}, {}, {}, {}},
 			{{}, {}, {}, {}},
 		}
 	}
-	bw := [4][4]float64{{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}}
+	bw := [MaxDegree + 1][MaxDegree + 1]float64{{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}}
 	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: min.Y, Z: min.Z}, geom.Vector{X: max.X, Y: min.Y, Z: min.Z}, geom.Vector{X: min.X, Y: max.Y, Z: min.Z}, geom.Vector{X: max.X, Y: max.Y, Z: min.Z}), Weight: bw})
 	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: min.Y, Z: max.Z}, geom.Vector{X: min.X, Y: max.Y, Z: max.Z}, geom.Vector{X: max.X, Y: min.Y, Z: max.Z}, geom.Vector{X: max.X, Y: max.Y, Z: max.Z}), Weight: bw})
 	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: min.Y, Z: min.Z}, geom.Vector{X: min.X, Y: min.Y, Z: max.Z}, geom.Vector{X: max.X, Y: min.Y, Z: min.Z}, geom.Vector{X: max.X, Y: min.Y, Z: max.Z}), Weight: bw})

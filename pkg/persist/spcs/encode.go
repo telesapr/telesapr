@@ -450,6 +450,9 @@ func encodeShell(s *srf.SShell) *Node {
 		b := block("surface", hex(sf.H.V))
 		b.color("color", sf.Color)
 		b.handle("face", uint32(sf.Face))
+		if sf.Sheet != 0 {
+			b.handle("sheet", sf.Sheet)
+		}
 		b.add(field("degree", Word(strconv.Itoa(sf.DegM)), Word(strconv.Itoa(sf.DegN))))
 		for i := 0; i <= sf.DegM && i < len(sf.Ctrl); i++ {
 			for j := 0; j <= sf.DegN && j < len(sf.Ctrl[i]); j++ {

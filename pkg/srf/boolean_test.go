@@ -71,15 +71,15 @@ func TestSShellDifferenceEmpty(t *testing.T) {
 // box from min to max. The 6 faces are the standard inward-facing
 // box faces.
 func makeBoxShell(min, max geom.Vector) *SShell {
-	bilinear := func(p00, p10, p01, p11 geom.Vector) [4][4]geom.Vector {
-		return [4][4]geom.Vector{
+	bilinear := func(p00, p10, p01, p11 geom.Vector) [MaxDegree + 1][MaxDegree + 1]geom.Vector {
+		return [MaxDegree + 1][MaxDegree + 1]geom.Vector{
 			{p00, p01, {}, {}},
 			{p10, p11, {}, {}},
 			{{}, {}, {}, {}},
 			{{}, {}, {}, {}},
 		}
 	}
-	bilinearWeight := [4][4]float64{{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}}
+	bilinearWeight := [MaxDegree + 1][MaxDegree + 1]float64{{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}}
 
 	face := func(p00, p10, p01, p11 geom.Vector) SSurface {
 		return SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(p00, p10, p01, p11), Weight: bilinearWeight}

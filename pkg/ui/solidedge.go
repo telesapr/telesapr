@@ -40,6 +40,9 @@ func (gw *GraphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, bool) {
 	best, bestD := -1, solidEdgePickRadius
 	var bestP geom.Vector
 	for e := range tp.Edges {
+		if tp.Edges[e].Seam {
+			continue
+		}
 		pts := tp.Edges[e].Points
 		for i := 1; i < len(pts); i++ {
 			a, b := gw.ProjectPoint(pts[i-1]), gw.ProjectPoint(pts[i])
@@ -53,7 +56,9 @@ func (gw *GraphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, bool) {
 	if best < 0 {
 		return topo.Name{}, false
 	}
-	n, err := tp.NameOf(best)
+	// The piece of the edge that names it, for a circle the arc whose
+	// name is lowest, so that every piece picks the same edge.
+	n, err := tp.NameOf(tp.Lead(best))
 	if err != nil || gw.hiddenBySolid(bestP) {
 		return topo.Name{}, false
 	}
@@ -118,7 +123,8 @@ func rayHitsTriangle(o, d geom.Vector, t *srf.STriangle) bool {
 	return e2.Dot(q)*inv > 0
 }
 
-// drawSolidEdge draws an edge of the solid hovered or selected.
+// drawSolidEdge draws an edge of the solid hovered or selected, all of
+// it: every piece its seams cut it into.
 func (gw *GraphicsWindow) drawSolidEdge(n topo.Name, hovered bool, canvas render.Canvas) {
 	tp := gw.activeTopology()
 	if tp == nil {
@@ -137,7 +143,7 @@ func (gw *GraphicsWindow) drawSolidEdge(n topo.Name, hovered bool, canvas render
 	stroke.Unit = render.UnitPX
 	stroke.Width = 4
 	h := canvas.GetStroke(stroke)
-	pts := tp.Edges[e].Points
+	pts := tp.ChainPoints(tp.Chain(e))
 	for i := 1; i < len(pts); i++ {
 		canvas.DrawLine(pts[i-1], pts[i], h)
 	}

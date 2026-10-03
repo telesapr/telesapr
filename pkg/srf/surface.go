@@ -8,6 +8,10 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/libm"
 )
 
+// MaxDegree is the highest degree of a patch or a curve in either
+// direction.
+const MaxDegree = 5
+
 // SSurface is a rational Bezier surface patch in (u, v). The
 // surface is degree degm in u, degree degn in v, with up to 4x4
 // weighted control points. The trim list specifies which (u, v)
@@ -24,10 +28,15 @@ type SSurface struct {
 	// it and its place among that group's surfaces (see
 	// OriginFor). Copies keep it, so the faces it bounds can be named.
 	Origin uint32
+	// Sheet groups the patches swept from the pieces of one sketch
+	// curve, such as the four quarters of an extruded circle: patches
+	// of one Sheet that meet smoothly are one face of the solid, the
+	// edge between them a seam (pkg/topo, Sheet). 0 for none.
+	Sheet uint32
 
 	DegM, DegN int
-	Ctrl       [4][4]geom.Vector
-	Weight     [4][4]float64
+	Ctrl       [MaxDegree + 1][MaxDegree + 1]geom.Vector
+	Weight     [MaxDegree + 1][MaxDegree + 1]float64
 
 	Trim  []STrimBy
 	Bsp   *SBspUv
@@ -135,10 +144,18 @@ func (s *SSurface) PointAt(u, v float64) geom.Vector {
 	num := geom.Vector{}
 	den := 0.0
 
+	// Each basis function once; the products are as they were.
+	var bu, bv [MaxDegree + 1]float64
+	for i := 0; i <= s.DegM; i++ {
+		bu[i] = bernstein(i, s.DegM, u)
+	}
+	for j := 0; j <= s.DegN; j++ {
+		bv[j] = bernstein(j, s.DegN, v)
+	}
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			Bi := bernstein(i, s.DegM, u)
-			Bj := bernstein(j, s.DegN, v)
+			Bi := bu[i]
+			Bj := bv[j]
 
 			num = num.Plus(s.Ctrl[i][j].ScaledBy(Bi * Bj * s.Weight[i][j]))
 			den += s.Weight[i][j] * Bi * Bj
@@ -174,12 +191,19 @@ func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
 	var num, numU, numV geom.Vector
 	var den, denU, denV float64
 
+	var bu, bv, bup, bvp [MaxDegree + 1]float64
+	for i := 0; i <= s.DegM; i++ {
+		bu[i], bup[i] = bernstein(i, s.DegM, u), bernsteinDerivative(i, s.DegM, u)
+	}
+	for j := 0; j <= s.DegN; j++ {
+		bv[j], bvp[j] = bernstein(j, s.DegN, v), bernsteinDerivative(j, s.DegN, v)
+	}
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			bi := bernstein(i, s.DegM, u)
-			bj := bernstein(j, s.DegN, v)
-			bip := bernsteinDerivative(i, s.DegM, u)
-			bjp := bernsteinDerivative(j, s.DegN, v)
+			bi := bu[i]
+			bj := bv[j]
+			bip := bup[i]
+			bjp := bvp[j]
 
 			num = num.Plus(s.Ctrl[i][j].ScaledBy(bi * bj * s.Weight[i][j]))
 			den += s.Weight[i][j] * bi * bj
@@ -224,9 +248,9 @@ func (s *SSurface) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector) {
 // from t0 to t1. The degree is (deg, 1).
 func FromExtrusionOf(spc *SBezier, t0, t1 geom.Vector) SSurface {
 	s := SSurface{
-		DegM:   spc.Degree,
-		DegN:   1,
-		Weight: [4][4]float64{},
+		DegM:  spc.Degree,
+		DegN:  1,
+		Sheet: spc.Sheet,
 	}
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
@@ -268,8 +292,9 @@ func FromPlane(pt, u, v geom.Vector) SSurface {
 // with optional endpoint shrinkage distances (dists, distf).
 func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, distf float64) SSurface {
 	s := SSurface{
-		DegM: sb.Degree,
-		DegN: 2,
+		DegM:  sb.Degree,
+		DegN:  2,
+		Sheet: sb.Sheet,
 	}
 	dtheta := math.Abs(wrapSymmetric(thetaf-thetas, 2*math.Pi))
 	w := libm.Cos(dtheta / 2)
@@ -340,6 +365,7 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 		Color:  a.Color,
 		Face:   a.Face,
 		Origin: a.Origin,
+		Sheet:  a.Sheet,
 		DegM:   a.DegM,
 		DegN:   a.DegN,
 	}
@@ -701,58 +727,48 @@ func (s *SSurface) BlendRowOrCol(row bool, thisIJ int, a *SSurface, aIJ int, b *
 
 // SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa
 // and sb, by de Casteljau's algorithm in projective space (C++
-// SSurface::SplitInHalf).
+// SSurface::SplitInHalf, for any degree). Only the control net of sa
+// and sb is written.
 func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface) {
 	sa.DegM, sb.DegM = s.DegM, s.DegM
 	sa.DegN, sb.DegN = s.DegN, s.DegN
 
-	// by de Casteljau's algorithm in a projective space; so we must work
-	// on points (w*x, w*y, w*z, w) so create a temporary copy
-	st := *s
-	st.WeightControlPoints()
-
-	deg := s.DegN
+	deg, lines := s.DegN, s.DegM
 	if byU {
-		deg = s.DegM
+		deg, lines = s.DegM, s.DegN
 	}
-	switch deg {
-	case 1:
-		sa.CopyRowOrCol(byU, 0, &st, 0)
-		sb.CopyRowOrCol(byU, 1, &st, 1)
-
-		sa.BlendRowOrCol(byU, 1, &st, 0, &st, 1)
-		sb.BlendRowOrCol(byU, 0, &st, 0, &st, 1)
-
-	case 2:
-		sa.CopyRowOrCol(byU, 0, &st, 0)
-		sb.CopyRowOrCol(byU, 2, &st, 2)
-
-		sa.BlendRowOrCol(byU, 1, &st, 0, &st, 1)
-		sb.BlendRowOrCol(byU, 1, &st, 1, &st, 2)
-
-		sa.BlendRowOrCol(byU, 2, sa, 1, sb, 1)
-		sb.BlendRowOrCol(byU, 0, sa, 1, sb, 1)
-
-	case 3:
-		sa.CopyRowOrCol(byU, 0, &st, 0)
-		sb.CopyRowOrCol(byU, 3, &st, 3)
-
-		sa.BlendRowOrCol(byU, 1, &st, 0, &st, 1)
-		sb.BlendRowOrCol(byU, 2, &st, 2, &st, 3)
-		st.BlendRowOrCol(byU, 0, &st, 1, &st, 2) // use row/col 0 as scratch
-
-		sa.BlendRowOrCol(byU, 2, sa, 1, &st, 0)
-		sb.BlendRowOrCol(byU, 1, sb, 2, &st, 0)
-
-		sa.BlendRowOrCol(byU, 3, sa, 2, sb, 1)
-		sb.BlendRowOrCol(byU, 0, sa, 2, sb, 1)
-
-	default:
-		panic("Unexpected degree of spline")
+	// Each line across the split is a curve of degree deg, worked on as
+	// points (w*x, w*y, w*z) and weights w.
+	var p [MaxDegree + 1]geom.Vector
+	var w [MaxDegree + 1]float64
+	for l := 0; l <= lines; l++ {
+		for k := 0; k <= deg; k++ {
+			i, j := l, k
+			if byU {
+				i, j = k, l
+			}
+			p[k] = s.Ctrl[i][j].ScaledBy(s.Weight[i][j])
+			w[k] = s.Weight[i][j]
+		}
+		set := func(dst *SSurface, k int, q geom.Vector, wq float64) {
+			i, j := l, k
+			if byU {
+				i, j = k, l
+			}
+			dst.Ctrl[i][j] = q.ScaledBy(1.0 / wq)
+			dst.Weight[i][j] = wq
+		}
+		set(sa, 0, p[0], w[0])
+		set(sb, deg, p[deg], w[deg])
+		for r := 1; r <= deg; r++ {
+			for k := 0; k+r <= deg; k++ {
+				p[k] = p[k].Plus(p[k+1]).ScaledBy(0.5)
+				w[k] = (w[k] + w[k+1]) / 2
+			}
+			set(sa, r, p[0], w[0])
+			set(sb, deg-r, p[deg-r], w[deg-r])
+		}
 	}
-
-	sa.UnWeightControlPoints()
-	sb.UnWeightControlPoints()
 }
 
 // DepartureFromCoplanar is how far the control points stray from the

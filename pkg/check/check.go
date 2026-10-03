@@ -23,9 +23,12 @@ import (
 type Report struct {
 	// Triangles is the number of triangles in the mesh.
 	Triangles int
-	// Faces is the number of surfaces in the shell; zero for a group
-	// that makes a mesh and no shell.
+	// Faces is the number of faces of the shell, each one or more
+	// patches joined smoothly (topo.Sheet); zero for a group that makes
+	// a mesh and no shell.
 	Faces int
+	// Patches is the number of surfaces in the shell.
+	Patches int
 	// NakedEdges is the number of mesh edges with no mate running the
 	// other way, so where the mesh is open.
 	NakedEdges int
@@ -74,6 +77,7 @@ func Solid(shell *srf.SShell, mesh *srf.SMesh) Report {
 	var r Report
 	if shell != nil {
 		r.Faces = len(shell.Surface)
+		r.Patches = len(shell.Surface)
 		r.BooleanFailed = shell.BooleanFailed
 	}
 	r.Triangles = len(mesh.Triangles)
@@ -103,6 +107,9 @@ func Solid(shell *srf.SShell, mesh *srf.SMesh) Report {
 			r.Topology = append(r.Topology, topo.Problem{Msg: err.Error()})
 		}
 		r.Euler = tp.Euler()
+		if len(tp.Sheets) > 0 {
+			r.Faces = len(tp.Sheets)
+		}
 		if r.NakedEdges == 0 && len(r.Topology) == 0 {
 			if me := topo.MeshEuler(mesh); me != r.Euler {
 				r.Topology = append(r.Topology, topo.Problem{
@@ -148,6 +155,9 @@ func (r *Report) String() string {
 	if r.Faces > 0 {
 		fmt.Fprintf(&b, " topo=%d euler=%d", r.TopologyProblems, r.Euler)
 	}
+	if r.Patches != r.Faces {
+		fmt.Fprintf(&b, " patches=%d", r.Patches)
+	}
 	return b.String()
 }
 
@@ -175,7 +185,11 @@ func (r *Report) Summary() string {
 		}
 		b.WriteString("\n")
 	}
-	fmt.Fprintf(&b, "Faces: %d\nTriangles: %d\n", r.Faces, r.Triangles)
+	if r.Patches != r.Faces {
+		fmt.Fprintf(&b, "Faces: %d, of %d patches\nTriangles: %d\n", r.Faces, r.Patches, r.Triangles)
+	} else {
+		fmt.Fprintf(&b, "Faces: %d\nTriangles: %d\n", r.Faces, r.Triangles)
+	}
 	fmt.Fprintf(&b, "Volume: %s mm^3\n", cfmt.Sprintf("%.6g", r.Volume))
 	c := r.CenterOfMass
 	fmt.Fprintf(&b, "Center of mass: (%s, %s, %s) mm\n",

@@ -467,6 +467,7 @@ shell {
   surface <handle> {
     color <colour>
     face <handle>
+    sheet <handle>          # the curve entity the patch was swept from; patches of one sheet meeting smoothly are one face
     degree <m> <n>
     ctrl <i> <j> <x> <y> <z> <weight>
     trim <curve handle> <forward|backward> <sx> <sy> <sz> <fx> <fy> <fz>
@@ -483,7 +484,8 @@ shell {
 ```
 
 `point` and `vertex` are the curve's piecewise-linear points in order; a `vertex` is one that
-was a vertex of the original curve.
+was a vertex of the original curve. Degrees and control point indices run from 0 to 5
+(`srf.MaxDegree`); readers before step 11 took them up to 3 and refuse a higher one.
 
 ## Versions
 

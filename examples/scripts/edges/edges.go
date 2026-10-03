@@ -16,8 +16,10 @@
 // between and its place among their edges, so it holds when the model
 // upstream changes. The script chamfers the notch's upright edge by
 // name, moves the notch through the parameter "notch", and prints where
-// the chamfered edge is each time. It saves edges.spcs, unless given
-// "-".
+// the chamfered edge is each time. Then it bores a hole through the
+// block: the hole's wall is one face of four patches, joined along
+// seams that are no edges, and its rims are one edge each, of four
+// pieces. It saves edges.spcs, unless given "-".
 package main
 
 import (
@@ -74,6 +76,16 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	doc.SketchIn(doc.Workplane("XY"), "hole-sketch")
+	doc.Circle(api.V(8, 22, 0), 4)
+	hole := doc.Extrude(10, "hole")
+	hole.SetCombine(api.Difference)
+	solid = hole.Solid()
+	wall := solid.FaceAt(api.V(12, 22, 5))
+	rim := solid.EdgeAt(api.V(12, 22, 10))
+	fmt.Printf("with the hole: %d faces, %d edges; its wall is %d patches with %d edges, its rim %d pieces, %.2f mm long\n",
+		len(solid.Faces()), len(solid.Edges()), wall.Patches(), len(wall.Edges()), rim.Pieces(), rim.Length())
+
 	if len(os.Args) > 1 && os.Args[1] == "-" {
 		return
 	}

@@ -53,6 +53,7 @@ func init() {
 		"FromTransformationOfSCurve":  reflect.ValueOf(srf.FromTransformationOfSCurve),
 		"GetMaxSegments":              reflect.ValueOf(srf.GetMaxSegments),
 		"GetParallelMode":             reflect.ValueOf(srf.GetParallelMode),
+		"MaxDegree":                   reflect.ValueOf(constant.MakeFromLiteral("5", token.INT, 0)),
 		"NewMeshMeta":                 reflect.ValueOf(srf.NewMeshMeta),
 		"NewSTriMeta":                 reflect.ValueOf(srf.NewSTriMeta),
 		"OriginFor":                   reflect.ValueOf(srf.OriginFor),
@@ -98,6 +99,8 @@ func init() {
 		"TransformedLoopSet":          reflect.ValueOf(srf.TransformedLoopSet),
 
 		// type definitions
+		"BSplineCurve":      reflect.ValueOf((*srf.BSplineCurve)(nil)),
+		"BSplineSurface":    reflect.ValueOf((*srf.BSplineSurface)(nil)),
 		"BspClass":          reflect.ValueOf((*srf.BspClass)(nil)),
 		"BspUvClass":        reflect.ValueOf((*srf.BspUvClass)(nil)),
 		"Class":             reflect.ValueOf((*srf.Class)(nil)),

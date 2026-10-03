@@ -31,8 +31,8 @@ func isReasonable(x float64) bool {
 // building SSurface extrusion/lathe profiles.
 type SBezier struct {
 	Degree int
-	Ctrl   [4]geom.Vector // control points (only Ctrl[0..Degree] used)
-	Weight [4]float64     // rational weights (1.0 = non-rational)
+	Ctrl   [MaxDegree + 1]geom.Vector // control points (only Ctrl[0..Degree] used)
+	Weight [MaxDegree + 1]float64     // rational weights (1.0 = non-rational)
 
 	Tag  int
 	AuxA int
@@ -43,6 +43,9 @@ type SBezier struct {
 
 	// Hint of which kind of curve this is, used by SShell trimming.
 	IsCircleHint bool
+	// Sheet is the sketch entity the curve is a piece of, any kind of
+	// curve, or 0; the surfaces swept from it carry it (SSurface.Sheet).
+	Sheet uint32
 }
 
 // SBezierFrom2 builds a line segment from a to b.
@@ -207,36 +210,24 @@ func SBezierFromV4(ct ...geom.Vector4) SBezier {
 // after, by de Casteljau's algorithm on the homogeneous control points
 // (C++ SBezier::SplitAt).
 func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
-	var ct [4]geom.Vector4
+	if b.Degree < 1 || b.Degree > MaxDegree {
+		panic("Unexpected degree of spline")
+	}
+	var ct [MaxDegree + 1]geom.Vector4
 	for i := 0; i <= b.Degree; i++ {
 		ct[i] = geom.Vector4FromWeighted(b.Weight[i], b.Ctrl[i])
 	}
-
-	switch b.Degree {
-	case 1:
-		cts := geom.Vector4Blend(ct[0], ct[1], t)
-		*bef = SBezierFromV4(ct[0], cts)
-		*aft = SBezierFromV4(cts, ct[1])
-	case 2:
-		ct01 := geom.Vector4Blend(ct[0], ct[1], t)
-		ct12 := geom.Vector4Blend(ct[1], ct[2], t)
-		cts := geom.Vector4Blend(ct01, ct12, t)
-
-		*bef = SBezierFromV4(ct[0], ct01, cts)
-		*aft = SBezierFromV4(cts, ct12, ct[2])
-	case 3:
-		ct01 := geom.Vector4Blend(ct[0], ct[1], t)
-		ct12 := geom.Vector4Blend(ct[1], ct[2], t)
-		ct23 := geom.Vector4Blend(ct[2], ct[3], t)
-		ct01_12 := geom.Vector4Blend(ct01, ct12, t)
-		ct12_23 := geom.Vector4Blend(ct12, ct23, t)
-		cts := geom.Vector4Blend(ct01_12, ct12_23, t)
-
-		*bef = SBezierFromV4(ct[0], ct01, ct01_12, cts)
-		*aft = SBezierFromV4(cts, ct12_23, ct23, ct[3])
-	default:
-		panic("Unexpected degree of spline")
+	n := b.Degree
+	var l, r [MaxDegree + 1]geom.Vector4
+	l[0], r[n] = ct[0], ct[n]
+	for k := 1; k <= n; k++ {
+		for i := 0; i+k <= n; i++ {
+			ct[i] = geom.Vector4Blend(ct[i], ct[i+1], t)
+		}
+		l[k], r[n-k] = ct[0], ct[n-k]
 	}
+	*bef = SBezierFromV4(l[:n+1]...)
+	*aft = SBezierFromV4(r[:n+1]...)
 }
 
 // AllIntersectionsWith adds to spl the points where this curve crosses

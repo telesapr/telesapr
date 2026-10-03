@@ -321,9 +321,9 @@ func TestMalformed(t *testing.T) {
 		{"spacesolve 1\nstyle 0x5 \"builtin\" {\n}\n", "2:7: style 0x5 is a built-in style, which is not saved"},
 		{"spacesolve 1\nentity 0x1 line-segment {\n  points 0x1 0x2 0x3 0x4 0x5 0x6 0x7 0x8 0x9 0xa 0xb 0xc 0xd 0xe 0xf\n}\n", "3:3: an entity has at most"},
 		{"spacesolve 1\nmesh {\n  triangle 0x1 1 2 3\n}\n", `3:3: "triangle" takes 14 values, not 4`},
-		{"spacesolve 1\nshell {\n  surface 0x1 {\n    degree 4 1\n  }\n}\n", "4:12: 4 is out of range 0 to 3"},
+		{"spacesolve 1\nshell {\n  surface 0x1 {\n    degree 6 1\n  }\n}\n", "4:12: 6 is out of range 0 to 5"},
 		{"spacesolve 1\nshell {\n  surface 0x1 {\n    trim 0x1 sideways 0 0 0 0 0 0\n  }\n}\n", `4:14: a trim runs forward or backward, not "sideways"`},
-		{"spacesolve 1\nshell {\n  curve 0x1 {\n    ctrl 9 0 0 0 1\n  }\n}\n", "4:10: 9 is out of range 0 to 3"},
+		{"spacesolve 1\nshell {\n  curve 0x1 {\n    ctrl 9 0 0 0 1\n  }\n}\n", "4:10: 9 is out of range 0 to 5"},
 		{"spacesolve 1\nvalue 0x1\n", `2:1: "value" takes 2 values, not 1`},
 	} {
 		_, err := Decode([]byte(c.src))

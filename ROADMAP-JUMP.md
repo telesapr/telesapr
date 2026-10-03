@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 9 are done and merged; step 10 is next. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 11 are done and merged; the tier 4 items are sized and planned under step 11, "11.5: the tier 4 items opened". See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -27,6 +27,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 8. STEP import as a reference mesh | done 2026-10-03, with follow-ups listed under the step | `e556586` |
 | 9. Topology and edge naming | done 2026-10-03, on derived topology (9.2 not taken), with follow-ups listed under the step | `6f60438` |
 | 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups 10.6 concave fillets, 10.7 smooth chains, 10.8 uneven mitres, 10.9 plane meeting cone, 10.10 a radius per edge; the rest listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0`, 10.7 `5a2239e`, 10.8 `f1cf92e`, 10.9 `e86d002`, 10.10 `47ff6e0` |
+| 11. General surface type | done 2026-10-03: 11.1 faces of several patches, 11.2 B-spline surfaces with knots, 11.3 degree up to 5, 11.4 STEP export of a face as one surface, 11.5 the tier 4 items sized and planned; follow-ups listed under the step | see the step |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -509,7 +510,7 @@ developed in its own branch and merged into `master` when it is done, see "Rules
 8. **Done 2026-10-03.** **D2 STEP import as reference mesh.** About 4.5 weeks, with a corpus of real files and a fuzz target for the reader.
 9. **Done 2026-10-03, on derived topology.** **F3 topology as the primary representation, then F4 edge naming.** About 10 weeks. The first large kernel investment. Scripts get faces, edges and vertices to enumerate and select by, which later features need for their own API. The chamfer is extended to any edge of the solid.
 10. **E4 and E5 fillets on straight and circular edges, E11 restricted shell, E7 ruled loft.** About 20 weeks.
-11. **F6 general surface type.** About 10 to 12 weeks. Then E6, E8, E10 and D3 become ordinary hard features instead of impossible ones.
+11. **Done 2026-10-03.** **F6 general surface type.** About 10 to 12 weeks. Then E6, E8, E10 and D3 become ordinary hard features instead of impossible ones; their plans are under step 11.
 
 Steps 1 to 8 are about 34 weeks at conventional pace and deliver most of the visible gap.
 Steps 9 to 11 are about 41 weeks, between 9 and 10 months, and are where the native kernel is
@@ -850,13 +851,124 @@ Follow-ups from step 10:
 
 ### Step 11. General surface type
 
+Spike first (2026-10-03), on the two questions that decided the design. Raising the patch's
+fixed `[4][4]` net to `[8][8]` (degree 7) made the regeneration benchmarks 3.7% slower in the
+geometric mean, all of it in copying and clearing whole surfaces; `[6][6]` (degree 5) cost
+under 1% once two whole-surface copies were taken out of the Boolean. Slices, which the table
+below proposed, were not taken: a copied surface would share its control net with the
+original, and `Reverse`, `ScaleSelfBy` and `WeightControlPoints` change it in place. The
+second question, whether the Boolean survives faces of several patches, was answered by the
+B-spline lids of 11.2: it did not, in three places, all fixed there.
+
 | Phase | Content | State |
 |---|---|---|
-| 11.1 Multi-patch faces | A face in `pkg/topo` may own several patches joined by seams marked smooth. Seams are hidden from display, picking and naming. This alone makes approximated blends and offsets representable. | not started |
-| 11.2 B-spline surface with knots | A surface type with arbitrary degree and knot vectors for storage, evaluation and exchange. It is cut into Bezier patches at its knots for the existing intersection and triangulation code. | not started |
-| 11.3 Degree above 3 | Replace the fixed `[4][4]` arrays in `SSurface` with slices and lift the degree limit in evaluation, subdivision and the Bernstein tables of `pkg/srf/bernstein.go`. Benchmarks guard the regeneration path, since this touches the hottest loops. | not started |
-| 11.4 STEP export | `pkg/ui/exportstep.go` writes one B-spline surface per face instead of one per patch. | not started |
-| 11.5 Open the tier 4 items | E6, E8, E10 and D3 each get their own estimate and plan at this point. | not started |
+| 11.1 Multi-patch faces | A face in `pkg/topo` may own several patches joined by seams marked smooth. Seams are hidden from display, picking and naming. This alone makes approximated blends and offsets representable. | done 2026-10-03: surfaces carry a sheet key (`srf.SSurface.Sheet`), the sketch entity of the curve they were swept from, kept by extrusions, revolutions, sweeps, copies and Booleans and saved as `sheet` in `.spcs` shells; an edge between two patches of one key, or one identity, whose normals agree along it is a seam (`topo.Edge.Seam`), and `topo.Topology.Sheets` are the faces they make. A chain is an edge as a person sees it, the pieces on either side of vertices that only seams touch. Seams are not picked or named (names still count them, so names saved before keep resolving); hovering any piece picks the chain by its lead piece and draws all of it. The script API works in faces and edges as a person sees them, with `SolidFace.Patches` and `SolidEdge.Pieces`; Check Solid counts faces, and patches when they differ. Over every fixture solid 2272 patches make 935 faces. Pair `path_fillet_rim` on `testdata/topo/boss.spcs`, `examples/scripts/edges`, `TestSolidSheets` |
+| 11.2 B-spline surface with knots | A surface type with arbitrary degree and knot vectors for storage, evaluation and exchange. It is cut into Bezier patches at its knots for the existing intersection and triangulation code. | done 2026-10-03: `srf.BSplineSurface` and `srf.BSplineCurve`, rational or not, clamped or not, any degree; `PointAt`, knot insertion, `Patches` and `Beziers` (degree up to `srf.MaxDegree`); `topo.AddBSplineFace` puts one into a shell as one face of its patches, `topo.AddPlanarFace` a flat face. The Boolean needed three fixes across seams: a split at a segment's own end, where the three-surface refinement can't converge on two tangent patches; a split off the curve, where a raycast stops at a patch's edge; and the ear clipper culling triangles thin in uv that are not in xyz, as along a seam. `TestBSplineLid` (degrees 2x3 to 5x4 against a closed form), `TestBSplineSweep`, 96 lids holed or cut by blocks against Gauss quadrature, rate 0, set before. No user surface yet: D3 and E8 below are the first features to make these faces |
+| 11.3 Degree above 3 | Replace the fixed `[4][4]` arrays in `SSurface` with slices and lift the degree limit in evaluation, subdivision and the Bernstein tables of `pkg/srf/bernstein.go`. Benchmarks guard the regeneration path, since this touches the hottest loops. | done 2026-10-03 with fixed arrays of `srf.MaxDegree` 5 (see the spike above), for patches and curves; de Casteljau splitting for any degree, degree elevation, Bernstein polynomials of every degree by one Horner form whose results for degrees up to 3 are bit for bit those of before; `.spcs` takes degrees up to 5, DXF writes knots for any degree. `TestElevatedSolids`: boxes, tubes and their Boolean rebuilt from patches of degree 4 and 5, against their volumes. Found on the way: the ear clipper culled real slivers by comparing an area with a squared length. Against `master` the regeneration benchmarks are 3.6% faster in the geometric mean, none slower, since `PointAt` and `TangentsAt` now work out each basis function once |
+| 11.4 STEP export | `pkg/ui/exportstep.go` writes one B-spline surface per face instead of one per patch. | done 2026-10-03: `topo.SheetSpline` writes a face's patches as one B-spline where they make a grid, in any turning, closing into a ring along u (a lathe's along v, turned), knots of full multiplicity spaced by the patches' lengths; all 101 faces of several patches over the fixtures are grids. Export joins the face's trims but its seams into loops, and on a ring joins the two loops that go round it along a seam edge, as OpenCASCADE writes a cylinder. Faces whose patches make no grid are written a patch at a time, as before. `TestExportStepSheets` reads ten exports back with the step 8 reader (one face per face, sound, the volume of the same solid written a patch at a time); FreeCAD finds every file valid and the surfaces within 1e-14 mm of the patches |
+| 11.5 Open the tier 4 items | E6, E8, E10 and D3 each get their own estimate and plan at this point. | done 2026-10-03, below |
+
+Follow-ups from step 11:
+
+- **Knot removal on export**: knots between patches are written at full multiplicity, so the
+  surface is C0 at each in its parameters though smooth in space. OpenCASCADE's volume of such
+  a face is off by up to 0.3% (its meshes agree with ours to 2.5e-4); removing the knots where
+  the patches join with matching derivatives would make the surfaces C1 or C2.
+- **Degree above 5**: `srf.MaxDegree` is 5, and the Horner form in `bernstein.go` is written
+  out for it (a compile-time check fails for any other). STEP files with degree 6 to 9 surfaces
+  need degree reduction or approximation in D3.
+- **Faces whose patches make no grid**: a whole torus (closed both ways), a ring of two patches,
+  and a face some of whose patches a Boolean removed entirely are written a patch at a time.
+- **A fillet's patches are faces of their own**: tori and cylinders built by `FilletNetwork` get
+  identities but no sheet key, so a circle's fillet is four faces, each with an edge between.
+- **Edges between faces with no entity** (a fillet's, a Boolean tool's) are hidden in the
+  display mesh, which tells faces by entity (`STriMeta.Face` is 0 for both); the topology knows
+  them.
+- **A face's name** is its first patch's identity; a script can't name a face of several
+  patches by another patch's.
+
+### 11.5: the tier 4 items opened
+
+What step 11 leaves in place, which none of these had before: faces of any number of patches,
+B-spline surfaces and curves with knots and knot insertion, patches up to degree 5, the
+Boolean and the mesher sound across seams (a sweep of 96 lids at rate 0), and STEP export of a
+face as one surface. What none of them has yet: surface fitting (interpolation or least squares
+of a grid of points by a B-spline), trimming a face of several patches by a loop that crosses
+its knot lines, offsets of curved surfaces, and per-edge tolerances. The estimates below are for
+one developer who knows the code base, with the definition of done included, as elsewhere in
+this document.
+
+| Item | Size | Effort | New code | Risk | Depends on |
+|---|---|---|---|---|---|
+| D3. STEP import as a NURBS shell usable in Booleans | L | 8 to 10 wk | 4,000 | High | the trimmed-sheet builder (D3.1) |
+| E8. Loft through several sections, smooth | L | 4 to 5 wk | 2,000 | Medium | surface interpolation (E8.2) |
+| E10. Sweep along a general 3D curve | L | 4 to 6 wk | 2,000 | High | surface fitting from E8 |
+| E6. Fillet on general edges, with vertex blends | XL | 5 to 7 months | 8,000+ | Very high | offsets and fitting from E10, D3's trimming |
+
+Recommended order: E8, then E10, then D3, then E6. E8 is the cheapest and is exact in the new
+surface type; it builds surface interpolation, which E10 and E6 reuse. D3 builds the trimmed
+sheet, which E6 needs where a blend runs into a face of several patches.
+
+**E8 smooth loft.** Skinning: the sections' curves are made compatible (same degree by
+elevation, same knot vector by insertion of each other's knots), then interpolated across the
+sections by cubic B-splines in the other direction. The surface is exact B-spline output, so no
+tolerance enters; it goes in by `topo.AddBSplineFace` with caps by `topo.AddPlanarFace`.
+
+| Phase | Content | Effort |
+|---|---|---|
+| E8.1 Compatible sections | Each section's closed loop as one B-spline curve (`srf.BSplineCurve` from its Beziers, a knot per joint), degrees raised to one, knot vectors merged; the vertex matching and turn of the ruled loft (step 10.5) choose where each starts | 1 wk |
+| E8.2 Interpolation across | A cubic B-spline through the sections' control points by chord-length parameters, solved by the banded solver `pkg/sketch` uses for splines; rational sections interpolated in homogeneous coordinates | 1.5 wk |
+| E8.3 Group, file, interface, scripts | The loft group takes more than two sections, in order; `Doc.Loft` takes a list; `ext_loft_smooth`, a path pair, an example, goldens | 1.5 wk |
+| E8.4 Sweep | Lofts through 3 to 6 sections of polygons, circles and splines against volumes by Gauss quadrature of the surface (as `TestBSplineSweep`), joined to blocks; rate 0 set before | 1 wk |
+
+**E10 sweep along a 3D curve.** The swept surface of a profile along a space curve is not a
+B-spline, so it is fitted: frames by rotation-minimising transport along the path (the step 7
+sweep uses fixed frames along lines and arcs), the profile placed at enough frames that the
+fitted surface stays within a tenth of the chord tolerance of the true sweep, then E8's
+interpolation through those placed profiles. The error is measured, and sections added where it
+is too large.
+
+| Phase | Content | Effort |
+|---|---|---|
+| E10.1 Paths and frames | A path of any sketch curves in 3D (cubics, helices, a step 9 edge chain); rotation-minimising frames with an optional twist and a fixed binormal mode | 1.5 wk |
+| E10.2 Fitting with an error bound | Sections placed and interpolated; the distance from the fitted surface to the true sweep sampled between sections, sections added until it is within tolerance; the profile's caps as planar faces | 2 wk |
+| E10.3 Group, file, interface, scripts | The sweep group takes a 3D path; the existing sweep's lines and arcs keep their exact surfaces | 1 wk |
+| E10.4 Sweep | Profiles along helices and cubics against volumes by Pappus where the path is planar and by quadrature of the fitted surface where not, joined to blocks, rate 0 set before | 1 wk |
+
+**D3 STEP import as a solid.** The step 8 reader parses every surface and curve a solid needs
+and meshes them; D3 builds a shell from them instead. Analytic surfaces are exact as rational
+patches (planes, cylinders, cones, spheres, tori), B-splines by `Patches`. The hard part is a
+face's trim: a STEP face is a B-spline trimmed by edge loops that cross its knot lines, and the
+kernel trims patches, so each loop has to be cut at the knot lines and given to the patches it
+crosses, which nothing does yet. Then vendor files: edges that miss their surfaces by up to a
+hundredth of a millimetre, surfaces of degree 7 and above, sliver faces, all of which the
+kernel's 1e-6 mm epsilon rejects.
+
+| Phase | Content | Effort |
+|---|---|---|
+| D3.1 Trimmed sheets | `topo.AddTrimmedSheet`: a B-spline face bounded by any loops of curves on it, the loops cut at the knot lines and handed to the patches; patches no loop reaches dropped or kept whole by a point test. Tested on the lids of 11.2 with holes and outlines put in by the builder instead of a Boolean, against the Boolean's result | 3 wk |
+| D3.2 From STEP to a shell | Each STEP face to a sheet (analytic or B-spline), each edge to a curve shared by its two faces; healing: vertices within the file's tolerance merged, edges projected onto both faces' surfaces, seams and poles of closed surfaces as step 8 found them; degree above 5 by reduction where the error allows, else the face is refused and the import falls back to a reference mesh | 3 wk |
+| D3.3 Booleans on imported solids | A corpus (the NIST files, the SolidWorks gripper, our own exports) imported, checked sound, and cut by a block and a cylinder; the failure rate is measured first and the target set from it, as for the threads | 2.5 wk |
+| D3.4 Interface and scripts | The link group of a STEP file gets "as a solid" beside "as a reference mesh"; `Doc.LinkStep` takes the choice; Check Solid on the result; a scenario and an example | 1 wk |
+
+**E6 general fillets.** The rolling-ball blend between two faces of any kind: its spine is
+where the two faces' offsets by the radius meet, marched as the intersector marches; each
+cross section is a circular arc between the contact points; the blend is fitted through those
+arcs by E10's fitting, and the two faces are cut along the contact curves (D3.1's trimmed
+sheets, since the faces are often of several patches). Fillets between planes, cylinders and
+cones stay on step 10's exact construction; E6 is for the rest.
+
+| Phase | Content | Effort |
+|---|---|---|
+| E6.1 Offsets | The offset of a patch by a distance, fitted with an error bound (E10.2's method), for the spine | 3 wk |
+| E6.2 One edge, two curved faces | The blend along one smooth chain between two faces of any kind, ending where the chain meets a flat face; the faces cut back along the contact curves; the curved-curved follow-up of step 10 (a cylinder meeting a cone) is its first test | 6 wk |
+| E6.3 Blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk |
+| E6.4 Vertex blends | Three or more blends meeting at a vertex: a setback corner patch fitted to the three blends' ends with G1 seams, as commercial kernels do; the step 10 corner cases (spheres, mitres) stay exact | 8 wk |
+| E6.5 Sweeps | Fillets on lofts, sweeps and imported solids, against OpenCASCADE's where its fillet is exact (step 10's oracle), the failure rate measured first | 3 wk |
+
+E6 is 24 weeks of phases plus the interface and scripts, which the fillet group already has;
+the range of 5 to 7 months allows for E6.4, which is the part nobody gets right the first time.
+Tier 4's other items, E12 general shell, F5 tangent contact and G4, stay unplanned.
 
 ### Risks to the plan itself
 

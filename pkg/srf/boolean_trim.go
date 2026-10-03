@@ -368,14 +368,17 @@ func (s *SShell) classifyEdge(indir, outdir *SShellClass,
 // focused Go port that prioritises the boolean-csg parity for the
 // planar / coplanar / cylindrical fixture cases over the C++'s full
 // edge-on-edge / tangent-face handling.
+//
+// The copy is written to ret, which the caller owns: a surface is too
+// large to hand back by value in this loop.
 func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
-	t SurfaceCombineAs, dbgIndex int) (trimmed SSurface, failed bool) {
-	ret := *srf
+	t SurfaceCombineAs, dbgIndex int, ret *SSurface) (failed bool) {
+	*ret = *srf
 	// The copy is this call's own, so it can use its closest-point cache
 	// whatever goes for the operands' surfaces.
 	ret.noCache = false
 	if parent == nil || sha == nil || shb == nil || into == nil {
-		return ret, false
+		return false
 	}
 	opA := parent == sha
 	var agnst *SShell
@@ -411,7 +414,7 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	orig := &SEdgeList{}
 	ret.MakeEdgesInto(into, orig, true, nil)
 	ret.Trim = nil
-	origBsp := SBspUvFrom(orig, &ret)
+	origBsp := SBspUvFrom(orig, ret)
 
 	// Step 4 (C++ line 535-594): build the inter edge list from the
 	// intersection curves in `into`.
@@ -544,7 +547,7 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		var indirOrig, outdirOrig SShellClass = ShellInside, ShellOutside
 		var cThis BspUvClass = BspUvOutside
 		if origBsp != nil {
-			cThis = origBsp.ClassifyEdge(auv, buv, &ret)
+			cThis = origBsp.ClassifyEdge(auv, buv, ret)
 		}
 		if cThis == BspUvEdgeParallel {
 			chain.Edges = nil
@@ -576,7 +579,7 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	final.lClearTags()
 	failed = !final.AssemblePolygon(&poly, nil, true)
 
-	return ret, failed
+	return failed
 }
 
 // lClearTags is a small helper to reset the Tag field on every edge
@@ -584,27 +587,5 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 func (el *SEdgeList) lClearTags() {
 	for i := range el.Edges {
 		el.Edges[i].Tag = 0
-	}
-}
-
-// copySurfacesTrimAgainstAccurate replaces CopySurvesTrimAgainst
-// with the proper per-surface MakeCopyTrimAgainst pipeline. For each
-// surface in `receiver`, it produces a trimmed copy whose boundary
-// includes both the receiver's (split) trim curves and the new
-// intersection curves computed against `sha` and `shb`. The
-// resulting surfaces are appended to `into`.
-func copySurfacesTrimAgainstAccurate(receiver, sha, shb, into *SShell, t SurfaceCombineAs) {
-	if receiver == nil || sha == nil || shb == nil || into == nil {
-		return
-	}
-	for i := range receiver.Surface {
-		srf := &receiver.Surface[i]
-		trimmed, failed := srf.makeCopyTrimAgainst(receiver, sha, shb, into, t, i)
-		if failed {
-			into.BooleanFailed = true
-		}
-		trimmed.NewH = core.HSSurface{V: uint32(len(into.Surface) + 1)}
-		trimmed.H = trimmed.NewH
-		into.Surface = append(into.Surface, trimmed)
 	}
 }

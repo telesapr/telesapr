@@ -161,7 +161,7 @@ func (t *Topology) pointAlong(x, v int, into geom.Vector, s float64, back bool) 
 
 // edgeAtPoint is the edge through p, within LengthEps.
 func (t *Topology) edgeAtPoint(p geom.Vector) int {
-	e, d := t.EdgeAt(p)
+	e, d := t.EdgeAt(p, false)
 	if d > 10*geom.LengthEps {
 		return -1
 	}

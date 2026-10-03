@@ -90,7 +90,7 @@ row 47    (none)
  0-99 64 61 0
 row 49 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 772\nVolume: 1.64 cm³\nCenter of mass: (-0.00, -0.00, 3.34)\nExtent: 20.00 x 20.00 x 8.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7, of 10 patches\nTriangles: 772\nVolume: 1.64 cm³\nCenter of mass: (-0.00, -0.00, 3.34)\nExtent: 20.00 x 20.00 x 8.00
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -174,4 +174,4 @@ row 47    (none)
  0-99 64 61 0
 row 49 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 756\nVolume: 1.63 cm³\nCenter of mass: (-0.00, -0.00, 3.32)\nExtent: 20.00 x 20.00 x 8.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7, of 10 patches\nTriangles: 756\nVolume: 1.63 cm³\nCenter of mass: (-0.00, -0.00, 3.32)\nExtent: 20.00 x 20.00 x 8.00
