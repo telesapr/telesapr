@@ -26,7 +26,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 7. First new solid features | done 2026-10-03, with follow-ups listed under the step | `a5829a6` |
 | 8. STEP import as a reference mesh | done 2026-10-03, with follow-ups listed under the step | `e556586` |
 | 9. Topology and edge naming | done 2026-10-03, on derived topology (9.2 not taken), with follow-ups listed under the step | `6f60438` |
-| 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones; plane meeting cone not yet), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0` |
+| 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones; plane meeting cone not yet), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0`, 10.7 `5a2239e` |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
