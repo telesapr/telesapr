@@ -59,7 +59,9 @@ func TestExportStepSheets(t *testing.T) {
 			}
 			res, data := read()
 			if d := os.Getenv("SPACESOLVE_STEP_OUT"); d != "" {
-				os.WriteFile(filepath.Join(d, strings.ReplaceAll(model, "/", "_")+".faces.step"), []byte(data), 0o644)
+				if err := os.WriteFile(filepath.Join(d, strings.ReplaceAll(model, "/", "_")+".faces.step"), []byte(data), 0o644); err != nil {
+					t.Fatal(err)
+				}
 			}
 			if n := strings.Count(data, "ADVANCED_FACE("); n != len(tp.Sheets) {
 				t.Errorf("%d advanced faces for %d faces of %d patches", n, len(tp.Sheets), len(tp.Faces))
@@ -77,7 +79,9 @@ func TestExportStepSheets(t *testing.T) {
 			res2, data2 := read()
 			stepOneSurfacePerFace = true
 			if d := os.Getenv("SPACESOLVE_STEP_OUT"); d != "" {
-				os.WriteFile(filepath.Join(d, strings.ReplaceAll(model, "/", "_")+".patches.step"), []byte(data2), 0o644)
+				if err := os.WriteFile(filepath.Join(d, strings.ReplaceAll(model, "/", "_")+".patches.step"), []byte(data2), 0o644); err != nil {
+					t.Fatal(err)
+				}
 			}
 			was := check.Solid(nil, &res2.Mesh)
 			if !back.Sound() || math.Abs(back.Volume-was.Volume) > 1e-3*was.Volume ||

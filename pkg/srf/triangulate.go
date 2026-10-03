@@ -422,7 +422,7 @@ func (c *SContour) clipEarInto(m *SMesh, bp int, scaledEps float64, srf *SSurfac
 		return n < eps*eps*long || n == 0
 	}
 	cull := thin(tr, scaledEps)
-	if cull && srf != nil && !(srf.DegM == 1 && srf.DegN == 1) && !tr.A.Equals(tr.C) {
+	if cull && srf != nil && (srf.DegM != 1 || srf.DegN != 1) && !tr.A.Equals(tr.C) {
 		x := STriangle{A: srf.PointAt(tr.A.X, tr.A.Y), B: srf.PointAt(tr.B.X, tr.B.Y), C: srf.PointAt(tr.C.X, tr.C.Y)}
 		cull = thin(x, geom.LengthEps)
 	}
