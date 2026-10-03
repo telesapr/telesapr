@@ -1049,42 +1049,21 @@ func (ss *SolveSpaceUI) ExportSurfacesTo(filename string) {
 	w.WriteHeader()
 	w.WriteProductHeader()
 
-	sheets := map[core.HSSurface]*stepSheet{}
-	if stepOneSurfacePerFace {
-		sheets = stepSheets(shell)
-	}
-	for i := range shell.Surface {
-		// C++ ranges over the surfaces by reference, so the export scale
-		// below scales the shell itself.
-		srfc := &shell.Surface[i]
-		if len(srfc.Trim) == 0 {
-			continue
+	// An assembly: a product a part, placed (roadmap 16.8).
+	if parts := ss.SK.AssemblyParts(g.H); len(parts) >= 2 {
+		w.WriteAssembly(parts, 1.0/ss.ExportScale)
+		w.WriteFooter()
+		_, err = f.Write(out.Bytes())
+		if cerr := f.Close(); err == nil {
+			err = cerr
 		}
-		if sh, ok := sheets[srfc.H]; ok {
-			// A face of several patches, written as one surface where
-			// its first patch comes.
-			if sh != nil {
-				w.ExportSheet(shell, sh, 1.0/ss.ExportScale)
-				for _, h := range sh.patches {
-					sheets[h] = nil
-				}
-			}
-			continue
+		if err != nil {
+			ss.Error("Couldn't write to '%s'", filename)
 		}
-
-		// Get all of the loops of Beziers that trim our surface (with
-		// each Bezier split so that we use the section as t goes from 0
-		// to 1), and the piecewise linearization of those loops in xyz
-		// space.
-		var sbl srf.SBezierList
-		srfc.MakeSectionEdgesInto(shell, nil, &sbl)
-
-		// Apply the export scale factor.
-		srfc.ScaleSelfBy(1.0 / ss.ExportScale)
-		sbl.ScaleSelfBy(1.0 / ss.ExportScale)
-
-		w.ExportSurface(srfc, &sbl)
+		return
 	}
+
+	w.exportShellFaces(shell, 1.0/ss.ExportScale)
 
 	w.printf("#%d=CLOSED_SHELL('',(", w.id)
 	for i, af := range w.advancedFaces {
@@ -1106,6 +1085,48 @@ func (ss *SolveSpaceUI) ExportSurfacesTo(filename string) {
 	}
 	if err != nil {
 		ss.Error("Couldn't write to '%s'", filename)
+	}
+}
+
+
+// exportShellFaces writes the faces of shell, scaled by scale, adding
+// them to w.advancedFaces.
+func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
+	sheets := map[core.HSSurface]*stepSheet{}
+	if stepOneSurfacePerFace {
+		sheets = stepSheets(shell)
+	}
+	for i := range shell.Surface {
+		// C++ ranges over the surfaces by reference, so the export scale
+		// below scales the shell itself.
+		srfc := &shell.Surface[i]
+		if len(srfc.Trim) == 0 {
+			continue
+		}
+		if sh, ok := sheets[srfc.H]; ok {
+			// A face of several patches, written as one surface where
+			// its first patch comes.
+			if sh != nil {
+				w.ExportSheet(shell, sh, scale)
+				for _, h := range sh.patches {
+					sheets[h] = nil
+				}
+			}
+			continue
+		}
+
+		// Get all of the loops of Beziers that trim our surface (with
+		// each Bezier split so that we use the section as t goes from 0
+		// to 1), and the piecewise linearization of those loops in xyz
+		// space.
+		var sbl srf.SBezierList
+		srfc.MakeSectionEdgesInto(shell, nil, &sbl)
+
+		// Apply the export scale factor.
+		srfc.ScaleSelfBy(scale)
+		sbl.ScaleSelfBy(scale)
+
+		w.ExportSurface(srfc, &sbl)
 	}
 }
 

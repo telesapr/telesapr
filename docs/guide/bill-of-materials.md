@@ -37,6 +37,14 @@ for _, f := range found {
 }
 ```
 
+## STEP export of an assembly
+
+File > Export 3d Surfaces... writes a model with parts as an assembly: the model is the top
+product, and each part a product of its own, written once in its own coordinates, with its faces
+in their colours; each place a part goes is an occurrence of it, with the rotation and offset
+that put it there. A file linked twice is one product used twice. The parts are those the
+interference check takes. A model with no assembled parts is written as one solid, as before.
+
 ## Not yet
 
 Only the files the model links are counted, not the files those link in turn; a part linked
