@@ -588,7 +588,7 @@ func (w *svgFileWriter) Bezier(sb *srf.SBezier) {
 			sweep = 1
 		}
 		w.printf("A%.3f,%.3f 0 0,%d %.3f,%.3f ", r, r, sweep, p1.X-w.ptMin.X, w.ptMax.Y-p1.Y)
-	case !sb.IsRational():
+	case !sb.IsRational() && sb.Degree <= 3:
 		switch sb.Degree {
 		case 2:
 			w.maybeMoveTo(sb.Ctrl[0], sb.Ctrl[2])

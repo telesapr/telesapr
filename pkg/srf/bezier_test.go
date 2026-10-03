@@ -27,8 +27,8 @@ func TestSBezierQuadraticEvaluation(t *testing.T) {
 	k := math.Cos(math.Pi / 4)
 	b := SBezier{
 		Degree: 2,
-		Ctrl:   [4]geom.Vector{{X: 1}, {X: 1, Y: 1}, {Y: 1}},
-		Weight: [4]float64{1, k, 1},
+		Ctrl:   [MaxDegree + 1]geom.Vector{{X: 1}, {X: 1, Y: 1}, {Y: 1}},
+		Weight: [MaxDegree + 1]float64{1, k, 1},
 	}
 	// PointAt(0.5) should be (cos(pi/4), sin(pi/4)).
 	mid := b.PointAt(0.5)
@@ -136,12 +136,12 @@ func TestSBspUvClassify(t *testing.T) {
 func TestSBezierIsRational(t *testing.T) {
 	// Non-rational: all weights 1.
 	b := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2})
-	b.Weight = [4]float64{1, 1, 1, 1}
+	b.Weight = [MaxDegree + 1]float64{1, 1, 1, 1}
 	if b.IsRational() {
 		t.Errorf("weight=1,1,1,1 should not be rational")
 	}
 	// Rational: at least one weight != 1.
-	b.Weight = [4]float64{1, 1, 2, 1}
+	b.Weight = [MaxDegree + 1]float64{1, 1, 2, 1}
 	if !b.IsRational() {
 		t.Errorf("weight=1,1,2,1 should be rational")
 	}

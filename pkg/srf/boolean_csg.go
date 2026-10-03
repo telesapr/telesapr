@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/internal/par"
 )
@@ -94,13 +95,23 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 		setNoCache(true, sha, shb)
 		defer setNoCache(false, sha, shb)
 	}
-	ssn := make([]SSurface, len(s.Surface))
+	// The copies are made in place at the end of into's surfaces, a
+	// surface being too large to copy twice; their handles follow the
+	// largest there, in order, as addSurfaceAssignId would give them.
+	var maxV uint32
+	for i := range into.Surface {
+		maxV = max(maxV, into.Surface[i].H.V)
+	}
+	first := len(into.Surface)
+	into.Surface = append(into.Surface, make([]SSurface, len(s.Surface))...)
+	ssn := into.Surface[first:]
 	failed := make([]bool, len(s.Surface))
 	loop(atOnce, len(s.Surface), func(i int) {
-		ssn[i], failed[i] = s.Surface[i].makeCopyTrimAgainst(s, sha, shb, into, op, i)
+		failed[i] = s.Surface[i].makeCopyTrimAgainst(s, sha, shb, into, op, i, &ssn[i])
 	})
 	for i := range s.Surface {
-		s.Surface[i].NewH = into.addSurfaceAssignId(ssn[i])
+		ssn[i].H = core.HSSurface{V: maxV + 1 + uint32(i)}
+		s.Surface[i].NewH = ssn[i].H
 		if failed[i] {
 			into.BooleanFailed = true
 		}

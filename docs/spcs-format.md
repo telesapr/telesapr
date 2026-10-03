@@ -483,7 +483,8 @@ shell {
 ```
 
 `point` and `vertex` are the curve's piecewise-linear points in order; a `vertex` is one that
-was a vertex of the original curve.
+was a vertex of the original curve. Degrees and control point indices run from 0 to 5
+(`srf.MaxDegree`); readers before step 11 took them up to 3 and refuse a higher one.
 
 ## Versions
 

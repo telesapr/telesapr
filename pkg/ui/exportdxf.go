@@ -457,13 +457,11 @@ func (d *dxfWriteInterface) writeSpline(sb *srf.SBezier) {
 	}
 	spline.Degree = sb.Degree
 	// QCad/LibreCAD require the knots for some reason.
-	switch sb.Degree {
-	case 3:
-		spline.Knots = []float64{0, 0, 0, 0, 1, 1, 1, 1}
-	case 2:
-		spline.Knots = []float64{0, 0, 0, 1, 1, 1}
-	default:
+	if sb.Degree < 2 {
 		panic("ui: unexpected degree of spline")
+	}
+	for k := 0; k < 2*(sb.Degree+1); k++ {
+		spline.Knots = append(spline.Knots, float64(k/(sb.Degree+1)))
 	}
 	for i := 0; i <= sb.Degree; i++ {
 		spline.Controls = append(spline.Controls, toCoord(sb.Ctrl[i]))
