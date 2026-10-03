@@ -226,7 +226,8 @@ func TestSolidGoldens(t *testing.T) {
 			ex := d.Extrude(10, "")
 			d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 		},
-		"fillet-pocket": func(d *api.Doc) { filletPocket(d, 2) },
+		"fillet-pocket":  func(d *api.Doc) { filletPocket(d, 2) },
+		"fillet-outline": func(d *api.Doc) { filletOutline(t, d) },
 		"fillet-boss-foot": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
 			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
@@ -351,6 +352,24 @@ func filletPocket(d *api.Doc, r float64) {
 // spheres.
 func BenchmarkFilletPocket(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) { filletPocket(d, 2) })
+}
+
+// filletOutline is a block over a rectangle with its corners rounded,
+// its top rounded all round from one side picked.
+func filletOutline(t *testing.T, d *api.Doc) {
+	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	for _, s := range sides {
+		d.TangentArc(s.Start(), 4, true)
+	}
+	ex := d.Extrude(10, "")
+	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 2, "")
+}
+
+// BenchmarkFilletOutline rounds a rounded rectangle's top: four
+// cylinders and four tori.
+func BenchmarkFilletOutline(b *testing.B) {
+	t := &testing.T{}
+	benchRegen(b, func(d *api.Doc) { filletOutline(t, d) })
 }
 
 func BenchmarkShell(b *testing.B) {

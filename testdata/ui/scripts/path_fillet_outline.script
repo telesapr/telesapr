@@ -1,0 +1,21 @@
+# A rectangle with a corner rounded by a tangent arc, extruded, and one
+# top side picked with the mouse and rounded round the outline; the same
+# as path_fillet_outline.go makes (TestPathEquivalenceFilletOutline).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+move 380 330
+down L 380 330
+up L 380 330
+key a shift
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+menu New Group|Fillet Edges
