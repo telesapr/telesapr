@@ -4235,7 +4235,7 @@
 					},
 					"Fillet": {
 						"decl": "func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group",
-						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust end at corners of three flat faces. An edge that sticks out is\nrounded off, and one that goes in, as a pocket's, is filled. Two\nrounded edges that meet at a corner are mitred, their cylinders\nmeeting along an ellipse, the one that turns further going on past it\nwhen the faces don't lie alike about them; three get a sphere. A\ncircle or arc where a flat face meets a cylinder or a cone about the\ncircle's axis, as an extruded circle's, a hole's rim, a boss's foot or\na lathed frustum's top, is rounded all round by a torus. An edge\ntakes with it the edges it meets smoothly, as round a rectangle whose\ncorners are rounded. The faces a fillet makes are exact cylinders,\nspheres and tori, and their edges have names. The new group becomes active."
+						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust end at corners of three flat faces. An edge that sticks out is\nrounded off, and one that goes in, as a pocket's, is filled. Two\nrounded edges that meet at a corner are mitred, their cylinders\nmeeting along an ellipse, the one that turns further going on past it\nwhen the faces don't lie alike about them; three get a sphere. A\ncircle or arc where a flat face meets a cylinder or a cone about the\ncircle's axis, as an extruded circle's, a hole's rim, a boss's foot or\na lathed frustum's top, is rounded all round by a torus. An edge\ntakes with it the edges it meets smoothly, as round a rectangle whose\ncorners are rounded. An edge may have a radius of its own\n(SetEdgeRadius), but edges that meet at a corner need one. The faces\na fillet makes are exact cylinders, spheres and tori, and their edges\nhave names. The new group becomes active."
 					},
 					"FilletSolid": {
 						"decl": "func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group",
@@ -4662,6 +4662,10 @@
 						"decl": "func (g Group) Dof() (dof int)",
 						"text": "Dof is how many degrees of freedom the group's constraints leave."
 					},
+					"EdgeRadius": {
+						"decl": "func (g Group) EdgeRadius(i int) (mm float64)",
+						"text": "EdgeRadius is the radius in mm a fillet gives its edge i, counting\nthe entities Edges gives and then the edges SolidEdges gives, from 0:\nthe edge's own, or the fillet's."
+					},
 					"Edges": {
 						"decl": "func (g Group) Edges() (edges []Entity)",
 						"text": "Edges are the edges a chamfer cuts or a fillet rounds, or the path a\nsweep follows."
@@ -4749,6 +4753,14 @@
 					"SetDistance": {
 						"decl": "func (g Group) SetDistance(mm float64)",
 						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
+					"SetEdgeRadius": {
+						"decl": "func (g Group) SetEdgeRadius(i int, mm float64)",
+						"text": "SetEdgeRadius gives a fillet's edge i, counted as EdgeRadius counts,\na radius of its own in mm, or with 0 the fillet's again. Rounded\nedges that meet at a corner must have one radius; one that ends where\nno other rounded edge does may have any."
+					},
+					"SetEdgeRadiusExpr": {
+						"decl": "func (g Group) SetEdgeRadiusExpr(i int, expr string) (err error)",
+						"text": "SetEdgeRadiusExpr gives a fillet's edge i, counted as EdgeRadius\ncounts, a radius of its own from an expression in the document's\nunit, which may name parameters; \"\" gives it the fillet's radius\nagain."
 					},
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
@@ -5301,6 +5313,10 @@
 				"text": "Dependency is one group that another group needs, and the first reason found for it.",
 				"kind": "struct"
 			},
+			"EdgeRadius": {
+				"text": "EdgeRadius is a fillet's radius for one of its edges, Edge counting Edges and then SolidEdges: Val millimetres, from Expr when it is not \"\".",
+				"kind": "struct"
+			},
 			"EntityBezierResolver": {
 				"text": "EntityBezierResolver is the lookup interface that GenerateEntityBeziers needs to evaluate entity points, normals, and radii at solve time.",
 				"kind": "interface"
@@ -5370,6 +5386,10 @@
 					"DescriptionString": {
 						"decl": "func (g *Group) DescriptionString() string",
 						"text": "DescriptionString names the group as the property browser does: \"g003-extrude\"."
+					},
+					"EdgeRadius": {
+						"decl": "func (g *Group) EdgeRadius(i int) (float64, string, bool)",
+						"text": "EdgeRadius is the radius a fillet gives its edge i, counting Edges and then SolidEdges, and its expression: the edge's own, or the group's."
 					},
 					"ExtrusionForceVectorTo": {
 						"decl": "func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector)",
@@ -6078,6 +6098,10 @@
 						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
 						"text": "SetConstraintText gives a constraint the value of what the user typed for its label, a length in the document's unit (Units)."
 					},
+					"SetEdgeRadiusText": {
+						"decl": "func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error",
+						"text": "SetEdgeRadiusText gives a fillet's edge i a radius of its own from what the user typed, in the document's unit, as SetGroupText does for the group's radius; \"\" gives it the group's radius again."
+					},
 					"SetEntityActPoint": {
 						"decl": "func (sk *Sketch) SetEntityActPoint(he core.HEntity, p geom.Vector)",
 						"text": "SetEntityActPoint updates an entity's cached actPoint."
@@ -6320,6 +6344,10 @@
 			"DefaultVisibility": {
 				"decl": "func DefaultVisibility() Visibility",
 				"text": "DefaultVisibility is what GraphicsWindow::Init sets: points, normals, construction and edges shown, workplanes and outlines not."
+			},
+			"EdgeRadiusField": {
+				"decl": "func EdgeRadiusField(i int) string",
+				"text": "EdgeRadiusField names an edge's radius in messages and in the file."
 			},
 			"EntityPointCount": {
 				"decl": "func EntityPointCount(entity core.EntityType, extraPoints int) (pts int, ok bool)",

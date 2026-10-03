@@ -340,6 +340,9 @@ func (d *decoder) lengths() {
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
 		length(&g.ValB, &g.ExprB)
+		for k := range g.EdgeRadii {
+			length(&g.EdgeRadii[k].Val, &g.EdgeRadii[k].Expr)
+		}
 	}
 }
 
@@ -480,6 +483,25 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 			g.SolidEdges = append(g.SolidEdges, topo.MakeName(srf.FaceID(d.handle(c.Args[0])),
 				srf.FaceID(d.handle(c.Args[1])), n))
+		case "edge-radius":
+			// "edge-radius <n> = <expression>": the fillet's n-th edge,
+			// counting its entities and then its solid edges.
+			if !c.HasExpr || c.Block || len(c.Args) != 1 {
+				d.fail(c.Pos, "an edge's radius is written as 'edge-radius <n> = <expression>'")
+			}
+			i := d.int(c.Args[0]) - 1
+			if i < 0 {
+				d.fail(c.Args[0].Pos, "edges count from 1")
+			}
+			for _, er := range g.EdgeRadii {
+				if er.Edge == i {
+					d.fail(c.Pos, "a second radius for edge %d", i+1)
+				}
+			}
+			at := *c
+			at.Args = nil
+			val, expr := d.expr(&at, exprPlace{group: g.H, field: sketch.EdgeRadiusField(i)})
+			g.EdgeRadii = append(g.EdgeRadii, sketch.EdgeRadius{Edge: i, Val: val, Expr: expr})
 		case "solid-face":
 			d.plain(c)
 			if len(c.Args) != 1 {

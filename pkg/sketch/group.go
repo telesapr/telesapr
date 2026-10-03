@@ -194,6 +194,9 @@ type Group struct {
 	// SolidFaces are the faces of the solid a shell takes away, by
 	// identity (srf.FaceID).
 	SolidFaces []srf.FaceID
+	// EdgeRadii are a fillet's edges that have a radius of their own,
+	// rather than ValB, in the order of Edges and then SolidEdges.
+	EdgeRadii []EdgeRadius
 
 	// topology caches the topology of RunningShell, built on first use
 	// after a regeneration (Topology).

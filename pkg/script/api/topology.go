@@ -2,6 +2,7 @@ package api
 
 import (
 	"math"
+	"strconv"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -422,8 +423,10 @@ func (g Group) SolidEdges() (edges []SolidEdge) {
 // circle's axis, as an extruded circle's, a hole's rim, a boss's foot or
 // a lathed frustum's top, is rounded all round by a torus. An edge
 // takes with it the edges it meets smoothly, as round a rectangle whose
-// corners are rounded. The faces a fillet makes are exact cylinders,
-// spheres and tori, and their edges have names. The new group becomes active.
+// corners are rounded. An edge may have a radius of its own
+// (SetEdgeRadius), but edges that meet at a corner need one. The faces
+// a fillet makes are exact cylinders, spheres and tori, and their edges
+// have names. The new group becomes active.
 func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		hs := make([]core.HEntity, len(edges))
@@ -479,6 +482,54 @@ func (g Group) SetRadius(mm float64) {
 		group.ValB, group.ExprB = mm, ""
 		sk.MarkGroupDirty(group.H, false)
 	})
+}
+
+// EdgeRadius is the radius in mm a fillet gives its edge i, counting
+// the entities Edges gives and then the edges SolidEdges gives, from 0:
+// the edge's own, or the fillet's.
+func (g Group) EdgeRadius(i int) (mm float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupFillet, "EdgeRadius")
+		if i < 0 || i >= len(group.Edges)+len(group.SolidEdges) {
+			fail("the fillet has no edge %d", i)
+		}
+		mm, _, _ = group.EdgeRadius(i)
+	})
+	return mm
+}
+
+// SetEdgeRadius gives a fillet's edge i, counted as EdgeRadius counts,
+// a radius of its own in mm, or with 0 the fillet's again. Rounded
+// edges that meet at a corner must have one radius; one that ends where
+// no other rounded edge does may have any.
+func (g Group) SetEdgeRadius(i int, mm float64) {
+	text := ""
+	if mm != 0 {
+		if mm < 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
+			fail("a fillet's radius must be more than zero, not %g", mm)
+		}
+		// The text in the document's unit, as the screen takes it.
+		var per float64
+		g.d.read(func(sk *sketch.Sketch) { per = sk.Units.MmPer() })
+		text = strconv.FormatFloat(mm/per, 'g', -1, 64)
+	}
+	if err := g.SetEdgeRadiusExpr(i, text); err != nil {
+		fail("%v", err)
+	}
+}
+
+// SetEdgeRadiusExpr gives a fillet's edge i, counted as EdgeRadius
+// counts, a radius of its own from an expression in the document's
+// unit, which may name parameters; "" gives it the fillet's radius
+// again.
+func (g Group) SetEdgeRadiusExpr(i int, expr string) (err error) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupFillet, "SetEdgeRadiusExpr")
+		err = sk.SetEdgeRadiusText(g.H, i, expr)
+	})
+	return err
 }
 
 // Shell hollows the solid so far to walls thick mm, open where the faces

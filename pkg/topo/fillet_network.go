@@ -45,11 +45,13 @@ import (
 
 // FilletPick picks an edge to round: a straight edge by its ends, which
 // must be a whole edge's; a circular one by a point on it, and with it
-// the pieces of its circle it goes on into smoothly.
+// the pieces of its circle it goes on into smoothly. R is its own
+// radius, or 0 for the one all the picks are given.
 type FilletPick struct {
 	A, B geom.Vector
 	At   geom.Vector
 	Arc  bool
+	R    float64
 }
 
 // filletEdge is one edge to round and what follows from its faces.
@@ -97,8 +99,9 @@ type filletCorner struct {
 	at map[[2]int]geom.Vector
 	// For one edge: the face it ends on.
 	end int
-	// For three: the sphere's centre.
+	// For three: the sphere's centre; and its radius, the edges'.
 	centre geom.Vector
+	r      float64
 	// For two: the mitre's plane, through centre.
 	mitreN geom.Vector
 	// For two whose faces don't lie alike: the edge whose strip turns
@@ -142,11 +145,19 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 	if picks[0].Arc {
 		at0 = picks[0].At
 	}
-	if !(r > 0) || math.IsInf(r, 0) {
-		if flat {
-			return filletErr(at0, "a chamfer's distance must be more than zero")
+	radii := []float64{r}
+	for _, p := range picks {
+		if p.R != 0 {
+			radii = append(radii, p.R)
 		}
-		return filletErr(at0, "a fillet's radius must be more than zero")
+	}
+	for _, x := range radii {
+		if !(x > 0) || math.IsInf(x, 0) {
+			if flat {
+				return filletErr(at0, "a chamfer's distance must be more than zero")
+			}
+			return filletErr(at0, "a fillet's radius must be more than zero")
+		}
 	}
 	t, err := Build(sh)
 	if err != nil {
@@ -172,7 +183,11 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		} else if e, err = t.wholeEdge(p.A, p.B); err != nil {
 			return err
 		}
-		fe, err := t.filletEdgeOf(e, r, flat)
+		pr := r
+		if p.R != 0 {
+			pr = p.R
+		}
+		fe, err := t.filletEdgeOf(e, pr, flat)
 		if err != nil {
 			return err
 		}
@@ -186,7 +201,7 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 				if _, ok := byEdge[x]; ok {
 					continue
 				}
-				if fe, err := t.filletEdgeOf(x, r, flat); err == nil && t.smoothJoin(&edges[i], &fe, v) {
+				if fe, err := t.filletEdgeOf(x, edges[i].r, flat); err == nil && t.smoothJoin(&edges[i], &fe, v) {
 					add(fe)
 				}
 			}
@@ -200,7 +215,7 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 			if corners[v] != nil {
 				continue
 			}
-			c, err := t.filletCornerAt(v, edges, byEdge, r)
+			c, err := t.filletCornerAt(v, edges, byEdge)
 			if err != nil {
 				return err
 			}
@@ -295,7 +310,7 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		if err != nil {
 			return filletErr(t.Vertices[v].P, "the corner's arcs don't close: %v", err)
 		}
-		sphere := spherePatch(c.centre, r, loop)
+		sphere := spherePatch(c.centre, c.r, loop)
 		sphere.Color = color
 		sphere.Origin = next
 		next++
@@ -687,8 +702,24 @@ func (t *Topology) facesAt(v int) []int {
 }
 
 // filletCornerAt works out how the rounded edges meet at vertex v.
-func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int, r float64) (*filletCorner, error) {
+func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int) (*filletCorner, error) {
 	p := t.Vertices[v].P
+	// The rounded edges here are all convex or all concave, of one radius.
+	sg, r, n := 1.0, 0.0, 0
+	for _, x := range t.Vertices[v].Edges {
+		i, ok := byEdge[x]
+		if !ok {
+			continue
+		}
+		fe := &edges[i]
+		if n > 0 && fe.sign() != sg {
+			return nil, filletErr(p, "a convex edge's fillet meets a concave one's here")
+		}
+		if n > 0 && math.Abs(fe.r-r) > geom.LengthEps {
+			return nil, filletErr(p, "fillets of radius %g and %g meet here; where rounded edges meet, their radii must be one", r, fe.r)
+		}
+		sg, r, n = fe.sign(), fe.r, n+1
+	}
 	if n := len(t.Vertices[v].Edges); n != 3 || len(t.facesAt(v)) != 3 {
 		// Four, where two rounded edges meet smoothly, each face of one
 		// going on into a face of the other, as a lathe's quarters do.
@@ -714,7 +745,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 			plain = append(plain, x)
 		}
 	}
-	c := &filletCorner{kind: len(round), at: map[[2]int]geom.Vector{}, long: -1}
+	c := &filletCorner{kind: len(round), at: map[[2]int]geom.Vector{}, long: -1, r: r}
 	if c.kind == 2 && t.smoothJoin(&edges[byEdge[round[0]]], &edges[byEdge[round[1]]], v) {
 		// A smooth join: both share the cross section, and the third edge,
 		// between their other faces, is cut back to its point on them.
@@ -752,14 +783,6 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 	}
 	if circular > 0 && c.kind != 1 {
 		return nil, filletErr(p, "a circular edge's fillet meets other fillets here")
-	}
-	sg := 1.0
-	for i, x := range round {
-		fe := &edges[byEdge[x]]
-		if i > 0 && fe.sign() != sg {
-			return nil, filletErr(p, "a convex edge's fillet meets a concave one's here")
-		}
-		sg = fe.sign()
 	}
 	if circular == 0 {
 		for _, f := range t.facesAt(v) {

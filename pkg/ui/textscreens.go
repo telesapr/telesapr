@@ -870,6 +870,7 @@ func (tw *TextWindow) showGroupEdges(g *sketch.Group, what string) {
 		}
 		tw.Printf(false, "%Bp     %Fl%Ll%D%f%h%s%E", bg, he.V,
 			lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(he))
+		tw.showEdgeRadius(g, i, bg)
 	}
 	for i, n := range g.SolidEdges {
 		bg := byte('d')
@@ -883,10 +884,63 @@ func (tw *TextWindow) showGroupEdges(g *sketch.Group, what string) {
 			}
 			tw.Printf(false, "%Bp%s%s", bg, indent, line)
 		}
+		tw.showEdgeRadius(g, len(g.Edges)+i, bg)
 	}
 	if len(g.Edges) == 0 && len(g.SolidEdges) == 0 {
 		tw.Printf(false, "%Bd     (none)")
 	}
+}
+
+// showEdgeRadius shows, under a fillet's edge i, the radius of its own
+// that it has, or a link to give it one.
+func (tw *TextWindow) showEdgeRadius(g *sketch.Group, i int, bg byte) {
+	if g.Type != sketch.GroupFillet {
+		return
+	}
+	val, expr, own := g.EdgeRadius(i)
+	if !own {
+		tw.Printf(false, "%Bp       %Fl%Ll%f%D[own radius]%E", bg, lf(tw.ScreenChangeEdgeRadius), uint32(i))
+		return
+	}
+	tw.Printf(false, "%Bp       %Ftradius%E %s%s %Fl%Ll%f%D[change]%E %Fl%Ll%f%D[the fillet's]%E", bg,
+		tw.ss.MmToString(val, false), exprNote(expr), lf(tw.ScreenChangeEdgeRadius), uint32(i),
+		lf(tw.ScreenResetEdgeRadius), uint32(i))
+}
+
+// ScreenChangeEdgeRadius edits the own radius of the shown fillet's
+// edge v.
+func (tw *TextWindow) ScreenChangeEdgeRadius(link int, v uint32) {
+	g := tw.ss.SK.GetGroup(tw.shown.group)
+	val, text, _ := g.EdgeRadius(int(v))
+	if text == "" {
+		text = sprintf("%.8f", val/tw.ss.MmPerUnit())
+	}
+	tw.ShowEditControl(9, text)
+	tw.edit.meaning = EditEdgeRadius
+	tw.edit.group = g.H
+	tw.edit.i = int(v)
+}
+
+// ScreenResetEdgeRadius gives the shown fillet's edge v the fillet's
+// radius again.
+func (tw *TextWindow) ScreenResetEdgeRadius(link int, v uint32) {
+	tw.ss.setEdgeRadiusText(tw.shown.group, int(v), "")
+}
+
+// setEdgeRadiusText gives a fillet's edge its own radius from typed
+// text, or "" the fillet's, as one step of undo.
+func (ss *SolveSpaceUI) setEdgeRadiusText(hg core.HGroup, i int, s string) bool {
+	err := ss.SK.UndoRememberFor(func() error {
+		return ss.SK.SetEdgeRadiusText(hg, i, s)
+	})
+	if err != nil {
+		ss.Error("%s.", capitalize(err.Error()))
+		return false
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	ss.GW.Invalidate(false)
+	return true
 }
 
 // showGroupItems lists a group's requests and constraints (the
@@ -1339,6 +1393,11 @@ func (tw *TextWindow) EditControlDone(s string) {
 	case EditHelixPitch: // stored in valB
 		if e := ss.exprFromString(s, true); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
+		}
+
+	case EditEdgeRadius:
+		if e := ss.exprFromString(s, true); e != nil {
+			ss.setEdgeRadiusText(tw.edit.group, tw.edit.i, s)
 		}
 
 	case EditGroupColor:

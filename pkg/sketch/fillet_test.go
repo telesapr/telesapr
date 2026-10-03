@@ -3,9 +3,11 @@ package sketch_test
 import (
 	"fmt"
 	"math"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
 	"github.com/spacesolve/spacesolve/pkg/script/api"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
@@ -527,5 +529,94 @@ func TestFilletCone(t *testing.T) {
 	back := roundTrip(t, d)
 	if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
 		t.Fatalf("reopened: %s", br.String())
+	}
+}
+
+// One fillet group, edges at radii of their own: a block's two top
+// long edges at the group's radius, its foot's front edge at one of its
+// own, and its foot's back edge from a parameter; undone, redone,
+// reopened, and the parameter changed.
+func TestFilletEdgeRadii(t *testing.T) {
+	d := api.New()
+	fineChordFillet(d)
+	if err := d.SetParameter("r", "1.5"); err != nil {
+		t.Fatal(err)
+	}
+	ex := block(d, 0, 0, 20, 10, 10)
+	f := d.Fillet([]api.Entity{
+		lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
+		lineAlong(t, ex, api.V(0, 10, 10), api.V(20, 10, 10)),
+		lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0)),
+		lineAlong(t, ex, api.V(0, 10, 0), api.V(20, 10, 0)),
+	}, 2, "")
+	step(d)
+	before := saved(t, d)
+	f.SetEdgeRadius(2, 1)
+	if err := f.SetEdgeRadiusExpr(3, "r*2"); err != nil {
+		t.Fatal(err)
+	}
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	check := func(what string, r3 float64) {
+		t.Helper()
+		loss := 2*filletLoss(2, math.Pi/2, 20) + filletLoss(1, math.Pi/2, 20) + filletLoss(r3, math.Pi/2, 20)
+		want := 2000 - loss
+		if r := f.Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.01*loss {
+			t.Fatalf("%s: %s, want volume %g", what, r.String(), want)
+		}
+		if got := f.EdgeRadius(3); got != r3 || f.EdgeRadius(0) != 2 || f.EdgeRadius(2) != 1 {
+			t.Fatalf("%s: radii %g %g %g", what, f.EdgeRadius(0), f.EdgeRadius(2), got)
+		}
+	}
+	check("set", 3)
+	if err := d.SetParameter("r", "1"); err != nil {
+		t.Fatal(err)
+	}
+	check("parameter changed", 2)
+	if err := f.SetEdgeRadiusExpr(3, "-r"); err == nil {
+		t.Error("a radius below zero is taken")
+	}
+	undoRedo(t, d, before)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+	back := roundTrip(t, d)
+	bf := back.Group(f.Name())
+	if br := bf.Check(); bf.EdgeRadius(2) != 1 || bf.EdgeRadius(3) != 2 || !br.Sound() {
+		t.Fatalf("reopened: radii %g %g", bf.EdgeRadius(2), bf.EdgeRadius(3))
+	}
+	// In inches, the sizes stay, and the expression gains the factor;
+	// reopened, the same (a plain length may move by an ulp on its first
+	// reload in inches, as any does).
+	d.SetUnits(core.UnitInches)
+	if math.Abs(f.EdgeRadius(3)-2) > 1e-9 || math.Abs(f.EdgeRadius(2)-1) > 1e-9 {
+		t.Fatalf("in inches: radii %g %g", f.EdgeRadius(2), f.EdgeRadius(3))
+	}
+	file := filepath.Join(t.TempDir(), "inches.spcs")
+	if err := d.Save(file); err != nil {
+		t.Fatal(err)
+	}
+	inches, err := api.Open(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bi := inches.Group(f.Name()); math.Abs(bi.EdgeRadius(3)-2) > 1e-9 || math.Abs(bi.EdgeRadius(2)-1) > 1e-9 {
+		t.Fatalf("reopened in inches: radii %g %g", bi.EdgeRadius(2), bi.EdgeRadius(3))
+	}
+	d.SetUnits(core.UnitMM)
+	// Back to the group's radius.
+	f.SetEdgeRadius(2, 0)
+	if f.EdgeRadius(2) != 2 {
+		t.Errorf("edge 2 at %g after its own radius is taken off", f.EdgeRadius(2))
+	}
+	// Two that meet must have one radius.
+	d = api.New()
+	ex = block(d, 0, 0, 20, 10, 10)
+	g := d.Fillet([]api.Entity{
+		lineAlong(t, ex, api.V(0, 0, 10), api.V(0, 10, 10)),
+		lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, 10)),
+	}, 1, "")
+	g.SetEdgeRadius(1, 2)
+	if p := g.Problem(); !strings.Contains(p, "radius 1 and 2 meet") {
+		t.Errorf("a corner of two radii: %q", p)
 	}
 }
