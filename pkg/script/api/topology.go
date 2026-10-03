@@ -416,8 +416,8 @@ func (g Group) SolidEdges() (edges []SolidEdge) {
 // must end at corners of three flat faces. An edge that sticks out is
 // rounded off, and one that goes in, as a pocket's, is filled. Two
 // rounded edges that meet at a corner are mitred, their cylinders
-// meeting along an ellipse, when the faces lie alike about them; three
-// get a sphere. A circle or arc where a flat face meets a cylinder
+// meeting along an ellipse, the one that turns further going on past it
+// when the faces don't lie alike about them; three get a sphere. A circle or arc where a flat face meets a cylinder
 // square to it, as an extruded circle's, a hole's rim or a boss's foot,
 // is rounded all round by a torus. An edge takes with it the edges it
 // meets smoothly, as round a rectangle whose corners are rounded. The

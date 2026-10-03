@@ -239,8 +239,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"rounded off; one that goes in, as a pocket's or a boss's foot, is filled. "+
 				"A rounded edge takes with it the edges it meets smoothly, as round a rounded "+
 				"rectangle. "+
-				"Where two rounded edges meet, they are mitred, which needs the faces to lie alike "+
-				"about them; where three meet, a sphere rounds the corner.", capitalize(err.Error()))
+				"Where two rounded edges meet, they are mitred; where three meet, a sphere "+
+				"rounds the corner.", capitalize(err.Error()))
 			return
 		}
 		g = fg

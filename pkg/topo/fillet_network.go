@@ -30,8 +30,10 @@ import (
 //   - one edge: it ends on the third face, cut along the arc where the
 //     rounded face meets it, as the end of a single fillet;
 //   - two straight edges: their cylinders meet along an ellipse in the
-//     plane that halves them, a mitre, when their tangent lines on the
-//     two other faces reach the unrounded edge at one point;
+//     plane that halves them, a mitre; when the faces don't lie alike
+//     about them, the one whose section turns further goes on past the
+//     ellipse, cut by the other's side face along a conic, to where its
+//     tangent line meets the unrounded edge;
 //   - three straight edges: a sphere about the point r inside all three
 //     faces, or outside them for concave edges (a face's tangent point
 //     is that centre moved r back to the face along its normal), which
@@ -95,6 +97,15 @@ type filletCorner struct {
 	centre geom.Vector
 	// For two: the mitre's plane, through centre.
 	mitreN geom.Vector
+	// For two whose faces don't lie alike: the edge whose strip turns
+	// further, which goes on past the mitre; the curve the two strips
+	// share, from the top's tangent point to where the other's strip
+	// ends; and the conic where the longer strip meets the other's side
+	// face, cutFace, from there to the third edge.
+	long    int
+	shared  srf.SBezier
+	conic   srf.SBezier
+	cutFace int
 }
 
 // seam is the kind of a corner where two pieces of a circular edge meet.
@@ -251,12 +262,14 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		side0 := fe.tangentCurve(0, start[0], end[0])
 		side1 := fe.tangentCurve(1, start[1], end[1])
 		side1.Reverse()
-		endArc := fe.connector(t, fe.v[1], cb, end[0], end[1], flat)
-		startArc := fe.connector(t, fe.v[0], ca, start[1], start[0], flat)
+		loop := []srf.SBezier{side0}
+		loop = append(loop, fe.connectors(t, fe.v[1], cb, end[0], end[1], flat)...)
+		loop = append(loop, side1)
+		loop = append(loop, fe.connectors(t, fe.v[0], ca, start[1], start[0], flat)...)
 		s := fe.surface(a, b, flat)
 		s.Color = color
 		s.Origin = fe.origin
-		patches = append(patches, patch{s, []srf.SBezier{side0, endArc, side1, startArc}, mid})
+		patches = append(patches, patch{s, loop, mid})
 	}
 	next := origin + uint32(len(edges))
 	var vs []int
@@ -602,7 +615,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 			plain = append(plain, x)
 		}
 	}
-	c := &filletCorner{kind: len(round), at: map[[2]int]geom.Vector{}}
+	c := &filletCorner{kind: len(round), at: map[[2]int]geom.Vector{}, long: -1}
 	if c.kind == 2 && t.smoothJoin(&edges[byEdge[round[0]]], &edges[byEdge[round[1]]], v) {
 		// A smooth join: both share the cross section, and the third edge,
 		// between their other faces, is cut back to its point on them.
@@ -715,14 +728,17 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 				return nil, err
 			}
 		}
-		if !q[0].Equals(q[1]) {
-			return nil, filletErr(p, "two fillets meet at a corner whose faces don't lie alike about them; a mitre needs them to")
-		}
 		nt, _ := t.planarNormal(top)
 		n1, _ := t.planarNormal(side[0])
 		n2, _ := t.planarNormal(side[1])
 		c.centre = meet3(nt, nt.Dot(p)-sg*r, n1, n1.Dot(p)-sg*r, n2, n2.Dot(p)-sg*r)
 		tt := c.centre.Plus(nt.ScaledBy(sg * r))
+		if !q[0].Equals(q[1]) {
+			if err := t.unevenMitre(c, v, [2]*filletEdge{a, b}, top, side, q, sg*r); err != nil {
+				return nil, err
+			}
+			return c, nil
+		}
 		// The plane through the centre that halves the two cylinders and
 		// holds the mitre's ends.
 		m := q[0].Minus(c.centre).Cross(tt.Minus(c.centre))
@@ -735,6 +751,127 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		c.at[[2]int{b.e, side[1]}], c.at[[2]int{z, side[1]}] = q[1], q[1]
 	}
 	return c, nil
+}
+
+// unevenMitre works out the corner where two fillets meet whose side
+// faces don't lie alike about them, their sections turning by different
+// angles. Their cylinders, of one radius, have axes that meet at the
+// centre, so they still meet along an ellipse in the plane that halves
+// the edges, through the centre and square to the top; but the strip
+// that turns less, A, reaches its side face's tangent line there before
+// the other, B, does. B goes on past the ellipse, cut by A's side face
+// along a conic, to where its own tangent line meets the third edge.
+// q are where each edge's tangent line on its side face meets the third
+// edge; sr is the radius, negative for concave edges.
+func (t *Topology) unevenMitre(c *filletCorner, v int, fes [2]*filletEdge, top int, side [2]int, q [2]geom.Vector, sr float64) error {
+	p := t.Vertices[v].P
+	ia, ib := 0, 1
+	if fes[0].w < fes[1].w {
+		ia, ib = 1, 0
+	}
+	A, B := fes[ia], fes[ib]
+	away := func(fe *filletEdge) geom.Vector {
+		if fe.v[1] == v {
+			return fe.dir.ScaledBy(-1)
+		}
+		return fe.dir
+	}
+	nt, _ := t.planarNormal(top)
+	na, _ := t.planarNormal(side[ia])
+	nb, _ := t.planarNormal(side[ib])
+	m := away(A).Plus(away(B)).Cross(nt)
+	if m.Magnitude() < 1e-9 {
+		return filletErr(p, "the mitre between the two fillets is degenerate")
+	}
+	c.mitreN = m.WithMagnitude(1)
+	tt := c.centre.Plus(nt.ScaledBy(sr))
+	// A's tangent line on its side meets the mitre's plane at qa, which
+	// lies further from the vertex than where the line meets the third
+	// edge.
+	la := c.centre.Plus(na.ScaledBy(sr))
+	qa := la.Plus(A.dir.ScaledBy(c.centre.Minus(la).Dot(c.mitreN) / A.dir.Dot(c.mitreN)))
+	w := q[ib]
+	if qa.Minus(q[ia]).Dot(away(A)) < 10*geom.LengthEps {
+		return filletErr(p, "two fillets meet at a corner whose faces lie too unlike about them for a mitre")
+	}
+	// The conic in A's side face on B's cylinder, from qa to w: tangent at
+	// qa to both, and at w to the third edge, where B's cylinder touches
+	// its own side face.
+	radial := func(x geom.Vector) geom.Vector {
+		d := x.Minus(c.centre)
+		return d.Minus(B.dir.ScaledBy(d.Dot(B.dir)))
+	}
+	t0 := na.Cross(radial(qa)).WithMagnitude(1)
+	t1 := na.Cross(nb).WithMagnitude(1)
+	ctrl, ok := lineMeet(qa, t0, w, t1)
+	if !ok {
+		return filletErr(p, "the mitre between the two fillets is degenerate")
+	}
+	// The weight from the conic's middle, on the line from the chord's
+	// middle to the control point: B's cylinder there.
+	mc := qa.Plus(w).ScaledBy(0.5)
+	d0, d1 := radial(mc), radial(ctrl).Minus(radial(mc))
+	qa2, qb2, qc2 := d1.Dot(d1), 2*d0.Dot(d1), d0.Dot(d0)-sr*sr
+	disc := qb2*qb2 - 4*qa2*qc2
+	if qa2 < 1e-18 || disc < 0 {
+		return filletErr(p, "the mitre between the two fillets is degenerate")
+	}
+	k := -1.0
+	for _, x := range []float64{(-qb2 - math.Sqrt(disc)) / (2 * qa2), (-qb2 + math.Sqrt(disc)) / (2 * qa2)} {
+		if x > 1e-9 && x < 1-1e-9 {
+			k = x
+		}
+	}
+	if k < 0 {
+		return filletErr(p, "the mitre between the two fillets is degenerate")
+	}
+	c.conic = arc(qa, ctrl, w, k/(1-k))
+	c.long, c.cutFace = B.e, side[ia]
+	c.at[[2]int{A.e, top}], c.at[[2]int{B.e, top}] = tt, tt
+	c.at[[2]int{A.e, side[ia]}] = qa
+	c.at[[2]int{B.e, side[ib]}] = w
+	for _, f := range t.EdgeFaces(c.plainEdge(t, v, A.e, B.e)) {
+		c.at[[2]int{c.plainEdge(t, v, A.e, B.e), f}] = w
+	}
+	c.shared = A.connector(t, v, c, tt, qa, false)
+	return nil
+}
+
+// plainEdge is the edge at vertex v other than a and b.
+func (c *filletCorner) plainEdge(t *Topology, v, a, b int) int {
+	for _, x := range t.Vertices[v].Edges {
+		if x != a && x != b {
+			return x
+		}
+	}
+	return -1
+}
+
+// lineMeet is where the line through a along da meets the one through b
+// along db, which lie in one plane.
+func lineMeet(a, da, b, db geom.Vector) (geom.Vector, bool) {
+	n := da.Cross(db)
+	if n.Magnitude() < 1e-12 {
+		return geom.Vector{}, false
+	}
+	k := b.Minus(a).Cross(db).Dot(n) / n.Dot(n)
+	return a.Plus(da.ScaledBy(k)), true
+}
+
+// connectors are the curves across the edge's rounded face at vertex v,
+// from p to q: one, but for the strip that goes on past an uneven
+// mitre, which runs along the mitre and then the conic.
+func (fe *filletEdge) connectors(t *Topology, v int, c *filletCorner, p, q geom.Vector, flat bool) []srf.SBezier {
+	if c.kind != 2 || c.long != fe.e || flat {
+		return []srf.SBezier{fe.connector(t, v, c, p, q, flat)}
+	}
+	chain := []srf.SBezier{c.shared, c.conic}
+	if !chain[0].Start().Equals(p) {
+		chain[0].Reverse()
+		chain[1].Reverse()
+		chain[0], chain[1] = chain[1], chain[0]
+	}
+	return chain
 }
 
 // connector is the curve across the edge's rounded face at vertex v,
@@ -818,6 +955,17 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 			// At the vertex the co-edge ends at, the end of the rounded face
 			// when the face is one a fillet ends on.
 			nx := t.CoEdges[ces[(i+1)%len(ces)]].Edge
+			if c := corners[vb]; c != nil && c.kind == 2 && c.long >= 0 && c.cutFace == f {
+				// The conic where an uneven mitre's longer strip cuts this face.
+				p, q := point(x, vb), point(nx, vb)
+				sb := c.conic
+				if !sb.Start().Equals(p) {
+					sb.Reverse()
+				}
+				if !p.Equals(q) {
+					loop = append(loop, sb)
+				}
+			}
 			if c := corners[vb]; c != nil && c.kind == 1 && c.end == f {
 				p, q := point(x, vb), point(nx, vb)
 				for _, fe := range edges {

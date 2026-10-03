@@ -451,3 +451,37 @@ func TestFilletRoundedOutline(t *testing.T) {
 		t.Fatalf("reopened: %s", br.String())
 	}
 }
+
+// A ramp: a trapezoid drawn upright and extruded, its top's front edge
+// and its edge along the slope rounded, meeting in an uneven mitre (the
+// slope leans, the front doesn't); the volume as OpenCASCADE gives, whose
+// curves are exact here.
+func TestFilletUnevenMitre(t *testing.T) {
+	d := api.New()
+	d.SetChordTolerance(0.005)
+	d.SketchIn(d.Workplane("ZX"), "")
+	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
+	ex := d.Extrude(10, "")
+	s := ex.Solid()
+	front, slope := s.EdgeAt(api.V(7, 0, 10)), s.EdgeAt(api.V(15, 5, 10))
+	if a, b := slope.Ends(); a.Y < -1 || b.Y < -1 {
+		// The extrusion runs to -y.
+		slope = s.EdgeAt(api.V(15, -5, 10))
+	}
+	step(d)
+	saveBefore := saved(t, d)
+	f := d.FilletSolid([]api.SolidEdge{front, slope}, 2, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	r := f.Check()
+	if want := 1734.655169; !r.Sound() || math.Abs(r.Volume-want) > 0.5 {
+		t.Fatalf("%s, want volume %g", r.String(), want)
+	}
+	undoRedo(t, d, saveBefore)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+	back := roundTrip(t, d)
+	if br := back.Group(f.Name()).Check(); !br.Sound() {
+		t.Fatalf("reopened: %s", br.String())
+	}
+}
