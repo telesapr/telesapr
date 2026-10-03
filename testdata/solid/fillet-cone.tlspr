@@ -102,7 +102,7 @@ group 0x5 fillet "fillet" {
   order 4
   radius = 1.5
   color 100 100 100 255
-  solid-edge 0x40040004 0x80040020 0
+  solid-edge 0x40040004 0x80040020 0 of 1
   visible
 }
 
@@ -111,7 +111,7 @@ group 0x6 chamfer "chamfer" {
   distance = 1
   color 100 100 100 255
   combine difference
-  solid-edge 0x40040004 0x8004000d 0
+  solid-edge 0x40040004 0x8004000d 0 of 1
   visible
 }
 

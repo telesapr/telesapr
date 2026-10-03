@@ -93,8 +93,8 @@ group 0x5 fillet "fillet" {
   order 4
   radius = 2
   color 100 100 100 255
-  solid-edge 0x80040019 0x8004002d 0
-  solid-edge 0x80040010 0x80040019 0
+  solid-edge 0x80040019 0x8004002d 0 of 1
+  solid-edge 0x80040010 0x80040019 0 of 1
   visible
 }
 

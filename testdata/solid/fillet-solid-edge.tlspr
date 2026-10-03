@@ -152,7 +152,7 @@ group 0x6 fillet "fillet" {
   order 5
   radius = 1.5
   color 100 100 100 255
-  solid-edge 0x80030010 0x80050007 0
+  solid-edge 0x80030010 0x80050007 0 of 1
   visible
 }
 

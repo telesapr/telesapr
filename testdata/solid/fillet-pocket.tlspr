@@ -158,14 +158,14 @@ group 0x7 fillet "fillet" {
   order 6
   radius = 2
   color 100 100 100 255
-  solid-edge 0x80060010 0x8006002c 0
-  solid-edge 0x80060010 0x80060019 0
-  solid-edge 0x80060007 0x8006002c 0
-  solid-edge 0x80060007 0x80060010 0
-  solid-edge 0x80060022 0x8006002c 0
-  solid-edge 0x80060007 0x80060022 0
-  solid-edge 0x80060019 0x8006002c 0
-  solid-edge 0x80060019 0x80060022 0
+  solid-edge 0x80060010 0x8006002c 0 of 1
+  solid-edge 0x80060010 0x80060019 0 of 1
+  solid-edge 0x80060007 0x8006002c 0 of 1
+  solid-edge 0x80060007 0x80060010 0 of 1
+  solid-edge 0x80060022 0x8006002c 0 of 1
+  solid-edge 0x80060007 0x80060022 0 of 1
+  solid-edge 0x80060019 0x8006002c 0 of 1
+  solid-edge 0x80060019 0x80060022 0 of 1
   visible
 }
 
