@@ -162,8 +162,8 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 }
 
 // sphereFaceMaxFailRate is the fraction of TestSphereThroughFaceSweep's
-// grid allowed to fail: what the whole grid gave on 2026-10-02, 10 of
-// 135, against 99 before the closed loops were searched for. Nine are
+// grid allowed to fail: what the whole grid gave on 2026-10-02 and
+// again on 2026-10-03, 10 of 135, against 99 before the closed loops were searched for. Nine are
 // the intersection at the largest bulge, whose cap crosses the sphere's
 // seams and which failed before as well; one is a cap so small that it
 // triangulates flat against the face. The sample of 12 had one.
@@ -221,7 +221,7 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 		},
 		MaxFailRate:       cylinderMaxFailRate,
 		Sample:            10,
-		SampleMaxFailRate: 5.0 / 10,
+		SampleMaxFailRate: 2.0 / 10,
 	}
 	grid.Run(func(p sweep.Point) error {
 		return cylinderCase(p.Float("r"), p.Float("dy"), p.Float("angle"))
@@ -229,12 +229,13 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 }
 
 // cylinderMaxFailRate is the fraction of TestCylinderThroughCylinderSweep's
-// grid allowed to fail: what the whole grid gave on 2026-10-02, 19 of
-// 54, the same points before and after the kernel fixes of roadmap
-// step 5. They are unions and steep crossings whose curves the
-// boundary-seeded marching follows; a guard against getting worse until
-// that is looked into. The sample of 10 had five.
-const cylinderMaxFailRate = 19.0 / 54
+// grid allowed to fail: what the whole grid gave on 2026-10-03, 11 of
+// 54, ten unions at 45 degrees and steeper and one difference that
+// leaks. On 2026-10-02 it was 19, the same points before and after the
+// kernel fixes of roadmap step 5; which commit mended eight was not
+// looked for. Their curves are the ones the boundary-seeded marching
+// follows (roadmap 13.2). The sample of 10 has two.
+const cylinderMaxFailRate = 11.0 / 54
 
 // sweepChordTol sets the chord tolerance the sweeps run at: fine enough
 // that the volumes of the meshes add up as the solids' do.
