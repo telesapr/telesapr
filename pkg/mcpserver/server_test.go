@@ -64,8 +64,8 @@ func connect(t *testing.T) (*mcp.ClientSession, *painter) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		cs.Close()
-		served.Wait()
+		_ = cs.Close()
+		_ = served.Wait()
 	})
 	return cs, backend
 }

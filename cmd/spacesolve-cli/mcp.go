@@ -53,7 +53,7 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 			headless = true
 		case arg == "--socket":
 			if i+1 >= len(rest) {
-				fmt.Fprintln(stderr, "--socket needs the socket's path.")
+				_, _ = fmt.Fprintln(stderr, "--socket needs the socket's path.")
 				return exitUsage
 			}
 			i++
@@ -61,12 +61,12 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 		case headless && sketchFile == "" && isSketch(arg):
 			sketchFile = arg
 		default:
-			fmt.Fprintf(stderr, "Unrecognized option '%s'.\n", arg)
+			_, _ = fmt.Fprintf(stderr, "Unrecognized option '%s'.\n", arg)
 			return exitUsage
 		}
 	}
 	if headless && socket != "" {
-		fmt.Fprintln(stderr, "--socket is of a spacesolve that is running; with --headless there is none.")
+		_, _ = fmt.Fprintln(stderr, "--socket is of a spacesolve that is running; with --headless there is none.")
 		return exitUsage
 	}
 
@@ -77,7 +77,7 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 		out := &agent.Capture{}
 		host, err := scriptSession(sketchFile, out)
 		if err != nil {
-			fmt.Fprintf(stderr, "Cannot load '%s'!\n", sketchFile)
+			_, _ = fmt.Fprintf(stderr, "Cannot load '%s'!\n", sketchFile)
 			return exitLoad
 		}
 		engine, err := script.New(script.Options{
@@ -91,7 +91,7 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 			},
 		})
 		if err != nil {
-			fmt.Fprintln(stderr, err)
+			_, _ = fmt.Fprintln(stderr, err)
 			return exitScript
 		}
 		backend = agent.NewSession(engine, out)
@@ -113,7 +113,7 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 	server := mcpserver.New(backend, version)
 	transport := &mcp.IOTransport{Reader: io.NopCloser(stdin), Writer: nopWriteCloser{stdout}}
 	if err := server.Run(ctx, transport); err != nil && ctx.Err() == nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return exitScript
 	}
 	return exitOK

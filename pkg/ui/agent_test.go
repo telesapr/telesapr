@@ -70,7 +70,7 @@ func newAgentApp(t *testing.T) *agentApp {
 		a.r.Close()
 		a.on(func() { _ = a.ss.AllowAgent(false) })
 		close(a.p.posted)
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 	})
 	return a
 }
@@ -290,7 +290,7 @@ func TestAgentSettings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	ss, p := newTestApp(t)
 	ss.AgentSocketDir = dir

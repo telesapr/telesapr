@@ -194,7 +194,7 @@ func (r *Remote) link() (net.Conn, error) {
 	if r.conn != nil {
 		// Another call connected meanwhile.
 		r.mu.Unlock()
-		conn.Close()
+		_ = conn.Close()
 		return r.link()
 	}
 	r.conn, r.enc, r.pending = conn, json.NewEncoder(conn), map[int]chan response{}
@@ -237,7 +237,7 @@ func (r *Remote) read(conn net.Conn) {
 // drop forgets a connection that ended, and fails the calls that wait
 // on it.
 func (r *Remote) drop(conn net.Conn) {
-	conn.Close()
+	_ = conn.Close()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.conn != conn {

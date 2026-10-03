@@ -95,7 +95,7 @@ File formats:
 		list(platform.Vector3dFileFilters), list(platform.MeshFileFilters),
 		list(platform.SurfaceFileFilters))
 	io.WriteString(w, scriptUsage)
-	io.WriteString(w, mcpUsage)
+	_, _ = io.WriteString(w, mcpUsage)
 }
 
 // views are the camera directions --view names, as projRight and

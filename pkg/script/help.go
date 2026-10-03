@@ -66,7 +66,7 @@ var funcNames = sync.OnceValue(func() map[uintptr][2]string {
 // written.
 func Help(w io.Writer, name string) bool {
 	if name == "" {
-		fmt.Fprint(w, helpText)
+		_, _ = fmt.Fprint(w, helpText)
 		return true
 	}
 	return helpName(w, name)

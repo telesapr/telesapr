@@ -279,7 +279,7 @@ func (s *Session) Render(_ context.Context, view string, width, height int) (png
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	file := filepath.Join(dir, "view.png")
 	var rerr error
 	if err := try(func() { rerr = s.engine.Doc().Render(file, width, height, view) }); err != nil {

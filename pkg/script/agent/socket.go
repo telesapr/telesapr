@@ -109,7 +109,7 @@ func Listen(dir string) (net.Listener, string, error) {
 		return nil, "", err
 	}
 	if err := os.Chmod(path, 0o600); err != nil {
-		l.Close()
+		_ = l.Close()
 		return nil, "", err
 	}
 	return l, path, nil
@@ -151,10 +151,10 @@ func Accept(ctx context.Context, l net.Listener, b Backend) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			stop := context.AfterFunc(ctx, func() { conn.Close() })
+			stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 			defer stop()
 			_ = Serve(ctx, conn, b)
-			conn.Close()
+			_ = conn.Close()
 		}()
 	}
 }

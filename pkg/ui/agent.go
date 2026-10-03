@@ -53,7 +53,7 @@ func (ss *SolveSpaceUI) AllowAgent(allow bool) error {
 	if !allow {
 		a := ss.agent
 		ss.agent = nil
-		a.listener.Close()
+		_ = a.listener.Close()
 		// The connections end on their own goroutines: one may wait
 		// for this one, the event loop's, to run its script.
 		a.stop()

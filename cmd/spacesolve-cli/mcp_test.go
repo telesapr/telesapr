@@ -64,7 +64,7 @@ func converse(t *testing.T, args []string, lines []string) (answers map[int]answ
 	done := make(chan int, 1)
 	go func() {
 		done <- runMCP(context.Background(), append([]string{"spacesolve-cli", "mcp"}, args...), toServer, serverWrites, &errs)
-		serverWrites.Close()
+		_ = serverWrites.Close()
 	}()
 
 	answers = map[int]answer{}
@@ -97,8 +97,8 @@ func converse(t *testing.T, args []string, lines []string) (answers map[int]answ
 			}
 		}
 	}
-	clientWrites.Close()
-	go io.Copy(io.Discard, fromServer)
+	_ = clientWrites.Close()
+	go func() { _, _ = io.Copy(io.Discard, fromServer) }()
 	return answers, <-done, errs.String()
 }
 
@@ -267,7 +267,7 @@ func TestMCPThroughSocket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	socket := filepath.Join(dir, "none.sock")
 	call := `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"doc.Circle(V(0, 0, 0), 2).Radius()"}}}`
 	hello := []string{
@@ -306,7 +306,7 @@ func TestMCPThroughSocket(t *testing.T) {
 		agent.Accept(context.Background(), l, session)
 	}()
 	answers, status, stderr = converse(t, []string{"--socket", path}, append(hello, call))
-	l.Close()
+	_ = l.Close()
 	<-served
 	if status != exitOK || stderr != "" {
 		t.Fatalf("mcp --socket: status %d, stderr %q", status, stderr)

@@ -23,7 +23,7 @@ func socketDir(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
 	return dir
 }
 
@@ -44,7 +44,7 @@ func serve(t *testing.T, dir string, b Backend) (stop func()) {
 	stop = func() {
 		if !stopped {
 			stopped = true
-			l.Close()
+			_ = l.Close()
 			<-done
 		}
 	}
@@ -209,7 +209,7 @@ func TestSockets(t *testing.T) {
 		t.Fatal(err)
 	}
 	sl.(*net.UnixListener).SetUnlinkOnClose(false)
-	sl.Close()
+	_ = sl.Close()
 	later := time.Now().Add(time.Hour)
 	if err := os.Chtimes(stale, later, later); err != nil {
 		t.Fatal(err)
@@ -221,7 +221,7 @@ func TestSockets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conn.Close()
+	_ = conn.Close()
 	if _, err := os.Stat(stale); !os.IsNotExist(err) {
 		t.Errorf("the socket nothing listens on is still there: %v", err)
 	}
@@ -229,8 +229,8 @@ func TestSockets(t *testing.T) {
 	if conn, err = ConnectTo(path); err != nil {
 		t.Fatal(err)
 	}
-	conn.Close()
-	l.Close()
+	_ = conn.Close()
+	_ = l.Close()
 	if _, err := Connect(dir); !errors.Is(err, ErrNotRunning) {
 		t.Errorf("connecting after the listener closed: %v, want ErrNotRunning", err)
 	}
@@ -282,8 +282,8 @@ func exchange(t *testing.T, b Backend, lines ...string) []response {
 		}
 		out = append(out, res)
 	}
-	client.Close()
-	server.Close()
+	_ = client.Close()
+	_ = server.Close()
 	<-done
 	return out
 }
@@ -318,7 +318,7 @@ func TestRemoteProtocolMismatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	go func() {
 		for {
 			conn, err := l.Accept()
@@ -326,7 +326,7 @@ func TestRemoteProtocolMismatch(t *testing.T) {
 				return
 			}
 			go func() {
-				defer conn.Close()
+				defer func() { _ = conn.Close() }()
 				scan := bufio.NewScanner(conn)
 				for scan.Scan() {
 					var req request
