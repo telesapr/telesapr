@@ -584,6 +584,66 @@ func (g Group) SetDraft(degrees float64) {
 	})
 }
 
+// Twist is how far a sweep turns its profile about the path over the
+// whole of it, in degrees.
+func (g Group) Twist() (degrees float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupSweep, "Twist")
+		degrees = group.ValC
+	})
+	return degrees
+}
+
+// SetTwist turns a sweep's profile about the path by degrees over the
+// whole of it, evenly along its length: a square swept along a line and
+// twisted by 90 is a twisted bar. A twisted sweep's surface is fitted
+// to the true one within a tenth of the chord tolerance, as a sweep
+// along a cubic is. SetExpr with sketch.GroupValC gives it an
+// expression.
+func (g Group) SetTwist(degrees float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupSweep, "SetTwist")
+		if math.IsNaN(degrees) || math.IsInf(degrees, 0) {
+			fail("a twist is a number of degrees, not %g", degrees)
+		}
+		group.ValC, group.ExprC = degrees, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
+// SweepUp is the direction a sweep holds its frames to, or zero when
+// they turn as little as the path lets them.
+func (g Group) SweepUp() (up Vec) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupSweep, "SweepUp")
+		up = group.SweepUp
+	})
+	return up
+}
+
+// SetSweepUp holds a sweep's frames to the direction up, as far as the
+// path's tangent allows, rather than turning them as little as the path
+// lets them: a profile swept along a helix with up its axis keeps
+// facing the axis, as a thread's does. The path must never run along
+// up. Zero turns them least again.
+func (g Group) SetSweepUp(up Vec) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupSweep, "SetSweepUp")
+		if math.IsNaN(up.X+up.Y+up.Z) || math.IsInf(up.X+up.Y+up.Z, 0) {
+			fail("an up direction is a vector of numbers, not %v", up)
+		}
+		if up.Magnitude() > 0 {
+			up = up.WithMagnitude(1)
+		}
+		group.SweepUp = up
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // axisOf is the point and the direction a line segment gives to turn
 // about.
 func axisOf(sk *sketch.Sketch, axis Entity, what string) (origin, dir core.HEntity) {

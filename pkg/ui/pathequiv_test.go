@@ -192,6 +192,26 @@ func TestPathEquivalenceLoft(t *testing.T) {
 	}
 }
 
+// A smooth loft from the active sketch through two picked with the
+// mouse, and the same made by a script (roadmap 20).
+func TestPathEquivalenceSmoothLoft(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_smooth", "path_loft_smooth")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupLoft || g.Problem.Msg != "" || len(g.LoftThrough) != 1 {
+		t.Errorf("the loft: type %d, problem %q, through %v", g.Type, g.Problem.Msg, g.LoftThrough)
+	}
+}
+
+// A sweep along a cubic picked with the mouse, twisted and held to an
+// axis on the group screen, and the same made by a script (roadmap 20).
+func TestPathEquivalenceSweepCubic(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sweep_cubic", "path_sweep_cubic")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupSweep || g.Problem.Msg != "" || g.ValC != 90 || g.SweepUp.X != 1 {
+		t.Errorf("the sweep: type %d, problem %q, twist %g, up %v", g.Type, g.Problem.Msg, g.ValC, g.SweepUp)
+	}
+}
+
 // A loft's side, a face no entity names, picked with the mouse on the
 // model and taken away by Shell Solid, and the same face by a script
 // (roadmap 14.1).

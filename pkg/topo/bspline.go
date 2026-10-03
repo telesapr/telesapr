@@ -22,6 +22,11 @@ import (
 // point, a pole, makes no edge. The patches' handles come back, by span
 // along u, then along v.
 func AddBSplineFace(sh *srf.SShell, bs *srf.BSplineSurface, id, sheet uint32, color core.RgbaColor) ([][]core.HSSurface, error) {
+	return NewFaceAdder(sh).AddBSplineFace(bs, id, sheet, color)
+}
+
+// AddBSplineFace is AddBSplineFace by the adder.
+func (fa *FaceAdder) AddBSplineFace(bs *srf.BSplineSurface, id, sheet uint32, color core.RgbaColor) ([][]core.HSSurface, error) {
 	ps, err := bs.Patches()
 	if err != nil {
 		return nil, err
@@ -48,7 +53,7 @@ func AddBSplineFace(sh *srf.SShell, bs *srf.BSplineSurface, id, sheet uint32, co
 			if len(loop) < 2 {
 				return nil, fmt.Errorf("topo: patch %d,%d of the surface has no area", a, b)
 			}
-			h, err := AddFace(sh, p, [][]srf.SBezier{loop})
+			h, err := fa.Add(p, [][]srf.SBezier{loop})
 			if err != nil {
 				return nil, err
 			}
@@ -74,6 +79,11 @@ func pole(c *srf.SBezier) bool {
 // planeOver). The face takes identity id. The curves must lie in one
 // plane.
 func AddPlanarFace(sh *srf.SShell, loops [][]srf.SBezier, id uint32, color core.RgbaColor) (core.HSSurface, error) {
+	return NewFaceAdder(sh).AddPlanarFace(loops, id, color)
+}
+
+// AddPlanarFace is AddPlanarFace by the adder.
+func (fa *FaceAdder) AddPlanarFace(loops [][]srf.SBezier, id uint32, color core.RgbaColor) (core.HSSurface, error) {
 	if len(loops) == 0 || len(loops[0]) == 0 {
 		return core.HSSurface{}, errors.New("topo: a face needs a loop")
 	}
@@ -102,5 +112,5 @@ func AddPlanarFace(sh *srf.SShell, loops [][]srf.SBezier, id uint32, color core.
 	}
 	s := planeOver(pts, n)
 	s.Origin, s.Color = id, color
-	return AddFace(sh, s, loops)
+	return fa.Add(s, loops)
 }

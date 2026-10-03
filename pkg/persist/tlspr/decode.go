@@ -571,11 +571,22 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.OpA = core.HGroup{V: d.handleField(c)}
 		case "op-b":
 			g.OpB = core.HGroup{V: d.handleField(c)}
+		case "sweep-up":
+			a := d.fieldArgs(c, 3)
+			g.SweepUp = geom.Vector{X: d.real(a[0]), Y: d.real(a[1]), Z: d.real(a[2])}
+		case "loft-through":
+			d.plain(c)
+			if len(c.Args) == 0 {
+				d.fail(c.Pos, "loft-through takes the handles of groups")
+			}
+			for _, v := range c.Args {
+				g.LoftThrough = append(g.LoftThrough, core.HGroup{V: d.handle(v)})
+			}
 		case "copies", "turn":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "pitch", "distance", "radius", "thickness":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "val-c", "draft":
+		case "val-c", "draft", "twist":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "color":
 			g.Color = d.colorField(c)

@@ -72,7 +72,7 @@ func (g *Group) patternMotions(sk *Sketch) ([]srf.Rigid, error) {
 		smin.MakeMaxMin(&hi, &lo)
 	}
 	centre := hi.Plus(lo).ScaledBy(0.5)
-	chain, err := sk.pathChain(g.Edges, "pattern", func(x geom.Vector) float64 { return x.Minus(centre).Magnitude() })
+	chain, err := sk.pathChain(g.Edges, "pattern", func(x geom.Vector) float64 { return x.Minus(centre).Magnitude() }, false)
 	if err != nil {
 		return nil, err
 	}

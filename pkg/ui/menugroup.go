@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -266,23 +267,38 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		g = shg
 
 	case CmdGroupLoft:
-		var to core.HGroup
+		// The active sketch and the others selected, in the order of the
+		// history from the active one, which is the first or the last.
+		others := map[core.HGroup]bool{}
 		for _, he := range append(append([]core.HEntity(nil), gs.entity...), gs.point...) {
 			if e := sk.GetEntity(he); e != nil && e.Group != sk.Active {
-				to = e.Group
-				break
+				others[e.Group] = true
 			}
+		}
+		var profiles []core.HGroup
+		for _, hg := range sk.GroupOrder {
+			if others[hg] || hg == sk.Active {
+				profiles = append(profiles, hg)
+			}
+		}
+		if profiles[len(profiles)-1] == sk.Active {
+			slices.Reverse(profiles)
 		}
 		err := errors.New("nothing of another sketch is selected")
 		var lg sketch.Group
-		if to.V != 0 {
-			lg, err = sk.NewLoft(sk.Active, to, "")
+		switch {
+		case len(others) > 0 && profiles[0] != sk.Active:
+			err = errors.New("the active sketch lies between the others in the history; a loft starts or ends at it")
+		case len(others) > 0:
+			lg, err = sk.NewSmoothLoft(profiles, "")
 		}
 		if err != nil {
 			ss.Error("Can't loft. %s.\n\n"+
 				"Loft To Selected Profile joins the active group's sketch, a closed loop "+
-				"in a workplane, to another one. Select:\n\n"+
-				"    * an entity of the other sketch, whose loop has as many curves as the active one's\n", capitalize(err.Error()))
+				"in a workplane, to others. Select:\n\n"+
+				"    * an entity of another sketch, to join the two by ruled faces\n"+
+				"    * entities of two or more other sketches, to join them all by one smooth "+
+				"surface, in the order of the history from the active one\n", capitalize(err.Error()))
 			return
 		}
 		g = lg
@@ -309,7 +325,7 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		if err != nil {
 			ss.Error("Can't sweep along the selection. %s.\n\n"+
 				"Sweep Along Path moves the active group's sketch along a path. Select:\n\n"+
-				"    * the line segments and arcs of the path, joined end to end "+
+				"    * the line segments, arcs and cubics of the path, joined end to end "+
 				"and meeting tangent\n", capitalize(err.Error()))
 			return
 		}

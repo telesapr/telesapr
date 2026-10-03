@@ -374,10 +374,76 @@ func dropUnusedCurves(sh *srf.SShell) {
 // parameters, as SolveSpace's trims do. The new surface's handle comes
 // back.
 func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface, error) {
+	return NewFaceAdder(sh).Add(s, loops)
+}
+
+// FaceAdder adds faces to a shell one after another, as AddFace does,
+// keeping the shell's open edges as it goes rather than finding them
+// again for each face: a surface of hundreds of patches goes in in time
+// that grows with its patches, not their square. Nothing else may change
+// the shell while it is used.
+type FaceAdder struct {
+	sh   *srf.SShell
+	open []openEdge
+}
+
+// openEdge is an edge only one face has: its curve, and its points from
+// the end the face runs it from to the other.
+type openEdge struct {
+	curve  core.HSCurve
+	points []geom.Vector
+	gone   bool
+}
+
+// NewFaceAdder starts adding faces to sh, finding its open edges once.
+func NewFaceAdder(sh *srf.SShell) *FaceAdder {
+	fa := &FaceAdder{sh: sh}
+	t, _ := Build(sh)
+	if t == nil {
+		return fa
+	}
+	for e := range t.Edges {
+		ed := &t.Edges[e]
+		if len(ed.CoEdges) != 1 {
+			continue
+		}
+		ce := ed.CoEdges[0]
+		pts := ed.Points
+		if !pts[0].Equals(t.Vertices[t.Start(ce)].P) {
+			pts = reversed(pts)
+		}
+		fa.open = append(fa.open, openEdge{curve: t.CoEdges[ce].Curve, points: pts})
+	}
+	return fa
+}
+
+// along is the open edge that runs between the ends of sb and along it,
+// or -1.
+func (fa *FaceAdder) along(sb srf.SBezier) int {
+	a, b := sb.Start(), sb.Finish()
+	mid := sb.PointAt(0.5)
+	for i := range fa.open {
+		oe := &fa.open[i]
+		if oe.gone {
+			continue
+		}
+		pa, pb := oe.points[0], oe.points[len(oe.points)-1]
+		if (!pa.Equals(a) || !pb.Equals(b)) && (!pa.Equals(b) || !pb.Equals(a)) {
+			continue
+		}
+		if distanceToPolyline(mid, oe.points) <= edgeTol(oe.points) {
+			return i
+		}
+	}
+	return -1
+}
+
+// Add puts a face into the shell as AddFace does.
+func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface, error) {
+	sh := fa.sh
 	if len(loops) == 0 || len(loops[0]) == 0 {
 		return core.HSSurface{}, errors.New("topo: a face needs a loop")
 	}
-	t, _ := Build(sh)
 	s.H = newSurfaceHandle(sh)
 	s.Trim = nil
 	s.TrimBuilt = true
@@ -389,6 +455,8 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 		fresh  *srf.SCurve
 		a, b   geom.Vector
 		points []geom.Vector
+		// taken is the open edge the piece runs along, or -1.
+		taken int
 	}
 	var all [][]piece
 	nextH := newCurveHandle(sh)
@@ -397,11 +465,10 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 		// Run the loop the way an open edge it takes says.
 		flip := false
 		for _, sb := range loop {
-			if e := t.openEdgeAlong(sb); e >= 0 {
-				ce := t.Edges[e].CoEdges[0]
+			if e := fa.along(sb); e >= 0 {
 				// The existing face runs the edge from its start to its
 				// end; this loop must run it the other way.
-				flip = t.Vertices[t.Start(ce)].P.Equals(sb.Start())
+				flip = fa.open[e].points[0].Equals(sb.Start())
 				break
 			}
 		}
@@ -415,10 +482,11 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 			}
 		}
 		for _, sb := range seq {
-			pc := piece{a: sb.Start(), b: sb.Finish()}
-			if e := t.openEdgeAlong(sb); e >= 0 {
-				pc.curve = t.CoEdges[t.Edges[e].CoEdges[0]].Curve
-				pc.points = t.Edges[e].Points
+			pc := piece{a: sb.Start(), b: sb.Finish(), taken: -1}
+			if e := fa.along(sb); e >= 0 {
+				pc.curve = fa.open[e].curve
+				pc.points = fa.open[e].points
+				pc.taken = e
 				if !pc.points[0].Equals(pc.a) {
 					// The edge's points run the other way from the loop.
 					pc.points = reversed(pc.points)
@@ -478,32 +546,14 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 				Start: 0, Finish: 1})
 			if pc.fresh != nil {
 				sh.Curve = append(sh.Curve, *pc.fresh)
+				fa.open = append(fa.open, openEdge{curve: pc.curve, points: pc.points})
+			} else if pc.taken >= 0 {
+				fa.open[pc.taken].gone = true
 			}
 		}
 	}
 	sh.Surface = append(sh.Surface, s)
 	return s.H, nil
-}
-
-// openEdgeAlong is an edge with one co-edge that runs between the ends
-// of sb and along it, or -1.
-func (t *Topology) openEdgeAlong(sb srf.SBezier) int {
-	a, b := sb.Start(), sb.Finish()
-	mid := sb.PointAt(0.5)
-	for e := range t.Edges {
-		ed := &t.Edges[e]
-		if len(ed.CoEdges) != 1 {
-			continue
-		}
-		pa, pb := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
-		if (!pa.Equals(a) || !pb.Equals(b)) && (!pa.Equals(b) || !pb.Equals(a)) {
-			continue
-		}
-		if distanceToPolyline(mid, ed.Points) <= edgeTol(ed.Points) {
-			return e
-		}
-	}
-	return -1
 }
 
 // ReplaceSurface gives face f's surface new geometry, keeping its

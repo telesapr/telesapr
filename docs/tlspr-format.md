@@ -206,10 +206,13 @@ group <handle> <type> <name> {
   workplane <handle>        # the group's active workplane
   op-a <handle>
   op-b <handle>
+  loft-through <handle> ... # loft: the profiles between op-a and op-b a smooth loft goes through, in order
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
   draft = <expression>      # extrude: the sides' lean into the solid, in degrees (the field val-c, unused by other groups)
+  twist = <expression>      # sweep: the profile's turn about the path over its whole length, in degrees (the field val-c)
+  sweep-up <x> <y> <z>      # sweep: the direction its frames are held to, rather than turning least; left out when none
   color <colour>
   skip-first
   mirror-solid              # mirror: the whole solid so far, not op-a's own

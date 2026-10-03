@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/version"
@@ -525,7 +526,31 @@ func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeGroupDraft edits an extrusion's draft, in degrees.
+// ScreenChangeSweepUp holds a sweep's frames to an axis, by the link's
+// letter, or ('n') lets them turn least.
+func (tw *TextWindow) ScreenChangeSweepUp(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.GetGroup(tw.shown.group)
+	if g == nil || g.Type != sketch.GroupSweep {
+		return
+	}
+	ss.UndoRemember()
+	switch link {
+	case 'x':
+		g.SweepUp = geom.Vector{X: 1}
+	case 'y':
+		g.SweepUp = geom.Vector{Y: 1}
+	case 'z':
+		g.SweepUp = geom.Vector{Z: 1}
+	default:
+		g.SweepUp = geom.Vector{}
+	}
+	ss.SK.MarkGroupDirty(g.H, false)
+	ss.GW.ClearSuper()
+}
+
+// ScreenChangeGroupDraft edits an extrusion's draft or a sweep's twist,
+// in degrees.
 func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	text := g.ExprC
@@ -738,11 +763,28 @@ func (tw *TextWindow) ShowGroupInfo() {
 			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 		tw.showGroupEdges(g, "edges")
 	case sketch.GroupLoft:
-		tw.Printf(true, " %Ftloft between two profiles%E")
-		tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
-		tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
-		tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
-			int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+		if len(g.LoftThrough) == 0 {
+			tw.Printf(true, " %Ftloft between two profiles%E")
+			tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
+			tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
+			tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
+				int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+			break
+		}
+		tw.Printf(true, " %Ftsmooth loft through %d profiles%E", len(g.LoftThrough)+2)
+		for i, h := range g.LoftProfiles() {
+			bg := byte('a')
+			if i%2 == 1 {
+				bg = 'd'
+			}
+			tw.Printf(false, "%Bp   %Ft%d%E %s", bg, i+1, sk.GroupName(h))
+		}
+		bg := byte('a')
+		if len(g.LoftThrough)%2 == 1 {
+			bg = 'd'
+		}
+		tw.Printf(false, "%Bp   %Ftturn those after the first by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
+			bg, int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
 	case sketch.GroupFillet:
 		tw.Printf(true, " %Ftround edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
@@ -763,6 +805,18 @@ func (tw *TextWindow) ShowGroupInfo() {
 	case sketch.GroupSweep:
 		tw.Printf(true, " %Ftsweep plane sketch along path%E")
 		tw.showGroupEdges(g, "path")
+		tw.Printf(false, "%Bd   %Fttwist%E %s deg%s %Fl%Ll%f%D[change]%E",
+			sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+		up := g.SweepUp
+		tw.Printf(false, "%Ba   %Ftframes%E "+
+			"%f%Ln%Fd%s turn least%E  "+
+			"%f%Lx%Fd%s held to x%E  "+
+			"%f%Ly%Fd%s y%E  "+
+			"%f%Lz%Fd%s z%E",
+			lf(tw.ScreenChangeSweepUp), radio(up.Magnitude() == 0),
+			lf(tw.ScreenChangeSweepUp), radio(up == geom.Vector{X: 1}),
+			lf(tw.ScreenChangeSweepUp), radio(up == geom.Vector{Y: 1}),
+			lf(tw.ScreenChangeSweepUp), radio(up == geom.Vector{Z: 1}))
 	case sketch.GroupPathPattern:
 		tw.Printf(true, " %Ftrepeat solid along path%E")
 		tw.Printf(false, "%Ba   %Ftcopies%E %d%s %Fl%Ll%D%f[change]%E",

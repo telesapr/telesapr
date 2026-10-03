@@ -1,24 +1,46 @@
 # Loft
 
-Example: [`examples/scripts/loft`](../../examples/scripts/loft/loft.go), a round-to-square
-duct adapter.
+Examples: [`examples/scripts/loft`](../../examples/scripts/loft/loft.go), a round-to-square
+duct adapter; [`examples/scripts/vase`](../../examples/scripts/vase/vase.go), a vase lofted
+smoothly through four profiles.
 
-A loft joins the closed loop of the active group's sketch, in a workplane, to that of another
-sketch by ruled faces, curve by curve. Activate one sketch, select any entity of the other, and
-choose New Group > Loft To Selected Profile (Shift+O). The two loops must have as many curves
-each: a circle counts as four arcs, so it lofts to a square. The group's screen lists the
-profiles and has "turn the second by [-1] [+1]", which matches the loops' curves with an offset:
-a square turned a quarter has saddle faces.
+A loft joins the closed loop of the active group's sketch, in a workplane, to those of other
+sketches. Activate one sketch, select any entity of each other one, and choose New Group > Loft
+To Selected Profile (Shift+O).
+
+- With one other sketch picked, the two loops are joined by ruled faces, curve by curve.
+- With two or more, one smooth surface goes through all the loops, in the order of the history
+  from the active sketch, which must be the first or the last of them. Since the window shows
+  only the groups up to the active one, activate the last profile and pick the earlier ones.
+
+Loops need not have as many curves each: a circle counts as four arcs, and a loop with fewer
+curves has its longest split in two until the counts match, so a triangle lofts to a square.
+
+The group's screen lists the profiles and has "turn the second by [-1] [+1]" (for a smooth
+loft, "turn those after the first"), which matches the loops' curves with an offset: a square
+turned a quarter has saddle faces. A smooth loft first turns each profile to start at the curve
+nearest where the one before it starts; the turn twists from there. A large twist can fold the
+surface through itself, which Analyze > Check Solid reports.
 
 From a script:
 
 ```go
 l := doc.Loft(bottom, top, "duct")
 l.SetTurn(1)
+
+v := doc.LoftThrough([]Group{foot, belly, neck, lip}, "vase")
+v.Profiles() // foot, belly, neck, lip
 ```
+
+## How the smooth surface is made
+
+Each loop becomes one B-spline curve, its pieces raised to one degree, a knot at each joint;
+the curves are then interpolated across the profiles by a cubic B-spline (or a quadratic
+through three), at parameters spaced by the distances between the profiles. Arcs stay exact:
+circles about one axis loft to a true surface of revolution. The surface passes through each
+profile exactly; where a profile has a corner, the surface has a crease there that fades out
+toward smooth profiles, and the window draws it as an edge.
 
 ## Not yet
 
-The faces are ruled, straight from one profile to the other. Smooth lofts, and lofts through
-more than two profiles, are roadmap 20; loops of unequal counts are matched by splitting curves
-in 20.1.
+Lofts along a guide curve, and tangency set at the end profiles, are not done.

@@ -1,0 +1,18 @@
+# The rectangle of sweep_cubic.tlspr swept along the cubic of its 3d
+# sketch, picked with the mouse, twisted by 90 degrees typed in and its
+# frames held to x; the same as path_sweep_cubic.go makes
+# (TestPathEquivalenceSweepCubic).
+file $testdata/ui/sweep_cubic.tlspr
+menu File|Open...
+view default
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+menu New Group|Sweep Along Path
+twmove 154 165
+twdown L 154 165
+twup L 154 165
+edit 90
+twmove 235 185
+twdown L 235 185
+twup L 235 185

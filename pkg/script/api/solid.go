@@ -182,11 +182,14 @@ func (g Group) SetDistance(mm float64) {
 }
 
 // Sweep moves the closed loops of the active group, a sketch in a
-// workplane, along path, line segments and arcs joined end to end and
-// meeting tangent, as a pipe follows its bends. The sweep starts at
-// the end of the path nearest the sketch's plane, with the sketch
-// where it is drawn, and keeps its attitude to the path. The new group
-// becomes active.
+// workplane, along path, line segments, arcs and cubics joined end to
+// end and meeting tangent, as a pipe follows its bends. The sweep
+// starts at the end of the path nearest the sketch's plane, with the
+// sketch where it is drawn, and keeps its attitude to the path, turning
+// as little as the path lets it. Along lines and arcs its surfaces are
+// exact; along cubics they are fitted within a tenth of the chord
+// tolerance (see also SetTwist and SetSweepUp). The new group becomes
+// active.
 func (d *Doc) Sweep(path []Entity, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		hs := make([]core.HEntity, len(path))

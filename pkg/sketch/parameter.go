@@ -108,6 +108,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupCopies && g.Type == GroupLoft {
 		return "turn"
 	}
+	if f == GroupValC && g.Type == GroupSweep {
+		return "twist"
+	}
 	return f.Field()
 }
 
