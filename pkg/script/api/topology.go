@@ -419,8 +419,10 @@ func (g Group) SolidEdges() (edges []SolidEdge) {
 // meeting along an ellipse, when the faces lie alike about them; three
 // get a sphere. A circle or arc where a flat face meets a cylinder
 // square to it, as an extruded circle's, a hole's rim or a boss's foot,
-// is rounded all round by a torus. The faces a fillet makes are exact cylinders, spheres and
-// tori, and their edges have names. The new group becomes active.
+// is rounded all round by a torus. An edge takes with it the edges it
+// meets smoothly, as round a rectangle whose corners are rounded. The
+// faces a fillet makes are exact cylinders, spheres and tori, and their
+// edges have names. The new group becomes active.
 func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		hs := make([]core.HEntity, len(edges))

@@ -237,6 +237,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"    * straight or circular edges of the solid, picked on the model\n\n"+
 				"Each ends at corners of three flat faces. An edge that sticks out is "+
 				"rounded off; one that goes in, as a pocket's or a boss's foot, is filled. "+
+				"A rounded edge takes with it the edges it meets smoothly, as round a rounded "+
+				"rectangle. "+
 				"Where two rounded edges meet, they are mitred, which needs the faces to lie alike "+
 				"about them; where three meet, a sphere rounds the corner.", capitalize(err.Error()))
 			return

@@ -415,3 +415,39 @@ func TestFilletConcave(t *testing.T) {
 		}
 	}
 }
+
+// A rectangle with its corners rounded by tangent arcs, extruded, and
+// one top line picked: the fillet runs on round the outline, through the
+// group, undone and redone and reopened; the loss along the centroid's
+// path.
+func TestFilletRoundedOutline(t *testing.T) {
+	d := api.New()
+	d.SetChordTolerance(0.005)
+	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	for _, s := range sides {
+		d.TangentArc(s.Start(), 4, true)
+	}
+	ex := d.Extrude(10, "")
+	before := ex.Check().Volume
+	step(d)
+	saveBefore := saved(t, d)
+	f := d.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 2, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	a := 2 * 2 * (1 - math.Pi/4)
+	c := 2 * (10 - 3*math.Pi) / (12 - 3*math.Pi)
+	want := a * (2*22 + 2*12 + 2*math.Pi*(4-c))
+	r := f.Check()
+	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
+		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
+	}
+	undoRedo(t, d, saveBefore)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+	d.Regen()
+	r = f.Check()
+	back := roundTrip(t, d)
+	if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+		t.Fatalf("reopened: %s", br.String())
+	}
+}

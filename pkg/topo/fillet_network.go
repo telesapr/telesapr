@@ -36,8 +36,9 @@ import (
 //     faces, or outside them for concave edges (a face's tangent point
 //     is that centre moved r back to the face along its normal), which
 //     each cylinder meets along the arc where it ends;
-//   - two pieces of one circular edge, at a seam of the cylinder: their
-//     tori meet along the cross section there.
+//   - two edges that meet smoothly, as two pieces of one circle at a
+//     seam of the cylinder, or a rounded outline's arc and line: their
+//     rounded faces meet along the cross section there.
 
 // FilletPick picks an edge to round: a straight edge by its ends, which
 // must be a whole edge's; a circular one by a point on it, and with it
@@ -162,18 +163,15 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		}
 		add(fe)
 	}
-	// A circular edge goes on into the pieces of its circle it meets
-	// smoothly.
+	// A rounded edge goes on into the edges it meets smoothly: the other
+	// pieces of a circle, and the lines and arcs of a rounded outline.
 	for i := 0; i < len(edges); i++ {
-		if !edges[i].circ {
-			continue
-		}
 		for _, v := range edges[i].v {
 			for _, x := range t.Vertices[v].Edges {
-				if _, ok := byEdge[x]; ok || t.Straight(x) {
+				if _, ok := byEdge[x]; ok {
 					continue
 				}
-				if fe, err := t.filletEdgeOf(x, r, flat); err == nil && fe.circ && sameCircle(&fe, &edges[i]) {
+				if fe, err := t.filletEdgeOf(x, r, flat); err == nil && t.smoothJoin(&edges[i], &fe, v) {
 					add(fe)
 				}
 			}
@@ -457,11 +455,35 @@ func (t *Topology) circularEdgeOf(e int, r float64, flat bool) (filletEdge, erro
 	return fe, nil
 }
 
-// sameCircle reports whether two circular edges lie on one circle, of
-// one flat face.
-func sameCircle(a, b *filletEdge) bool {
-	return a.centre.Equals(b.centre) && math.Abs(a.radius-b.radius) < geom.LengthEps &&
-		a.axis.Dot(b.axis) > 1-1e-9 && a.f[a.flatK] == b.f[b.flatK] && a.out == b.out && a.concave == b.concave
+// smoothJoin reports whether rounded edges a and b meet smoothly at
+// vertex v: they share a face, their other faces meet tangentially at
+// the third edge there, and their cross sections at v are one, so that
+// their rounded faces go on into each other with no corner between, as
+// at a seam of a cylinder or where a rounded outline's arc meets its
+// line.
+func (t *Topology) smoothJoin(a, b *filletEdge, v int) bool {
+	if a.e == b.e || a.concave != b.concave || math.Abs(a.s-b.s) > geom.LengthEps || math.Abs(a.w-b.w) > 1e-9 {
+		return false
+	}
+	if (a.v[0] != v && a.v[1] != v) || (b.v[0] != v && b.v[1] != v) {
+		return false
+	}
+	p := t.Vertices[v].P
+	shared := 0
+	for ka := 0; ka < 2; ka++ {
+		for kb := 0; kb < 2; kb++ {
+			if a.f[ka] == b.f[kb] {
+				shared++
+				// The tangent points on the shared face, and on the others.
+				qa, qb := p.Plus(a.into(ka, p).ScaledBy(a.s)), p.Plus(b.into(kb, p).ScaledBy(b.s))
+				ra, rb := p.Plus(a.into(1-ka, p).ScaledBy(a.s)), p.Plus(b.into(1-kb, p).ScaledBy(b.s))
+				if !qa.Equals(qb) || !ra.Equals(rb) {
+					return false
+				}
+			}
+		}
+	}
+	return shared == 1
 }
 
 // radial is the direction from a circular edge's axis to p, square to
@@ -581,24 +603,28 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		}
 	}
 	c := &filletCorner{kind: len(round), at: map[[2]int]geom.Vector{}}
-	if circular > 0 && c.kind == 2 {
+	if c.kind == 2 && t.smoothJoin(&edges[byEdge[round[0]]], &edges[byEdge[round[1]]], v) {
+		// A smooth join: both share the cross section, and the third edge,
+		// between their other faces, is cut back to its point on them.
 		a, b := &edges[byEdge[round[0]]], &edges[byEdge[round[1]]]
-		if circular != 2 || !sameCircle(a, b) {
-			return nil, filletErr(p, "a circular edge's fillet meets another edge's here")
-		}
-		// A seam of the cylinder: both pieces share the cross section, and
-		// the seam is cut back along the cylinder.
 		c.kind = seam
 		for _, fe := range []*filletEdge{a, b} {
 			for k := 0; k < 2; k++ {
 				c.at[[2]int{fe.e, fe.f[k]}] = p.Plus(fe.into(k, p).ScaledBy(fe.s))
 			}
 		}
-		down := p.Plus(a.into(1-a.flatK, p).ScaledBy(a.s))
+		k := 0
+		if a.f[0] == b.f[0] || a.f[0] == b.f[1] {
+			k = 1
+		}
+		down := p.Plus(a.into(k, p).ScaledBy(a.s))
 		for _, f := range t.EdgeFaces(plain[0]) {
 			c.at[[2]int{plain[0], f}] = down
 		}
 		return c, nil
+	}
+	if circular > 0 && c.kind == 2 {
+		return nil, filletErr(p, "a circular edge's fillet meets another's at an angle; they must meet smoothly")
 	}
 	if circular > 0 && c.kind != 1 {
 		return nil, filletErr(p, "a circular edge's fillet meets other fillets here")
