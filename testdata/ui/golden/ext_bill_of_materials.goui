@@ -1,0 +1,103 @@
+row 0  home   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BILL OF MATERIALS
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    (none: no group links a part)
+ 0-99 64 61 0
+row 12 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 14 
+ 0-99 64 64 0
+filedialog open
+filedialog open
+filedialog open
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BILL OF MATERIALS
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    count  part
+ 0-13 74 64 0
+ 14-99 64 64 0
+row 11        2  cylinder
+ 0-99 64 61 0
+row 13           $testdata/step/shapes/cylinder.step
+ 0-99 64 61 0
+row 15           by g003-cylinder, g004-cylinder
+ 0-99 64 61 0
+row 17        1  box
+ 0-99 64 64 0
+row 19           $testdata/step/shapes/box.step
+ 0-99 64 64 0
+row 21           by g005-box
+ 0-99 64 64 0
+row 24 [export to a CSV file...]
+ 0-24 6c 64 99 0 1 0
+ 25-99 64 64 0
+row 27 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 29 
+ 0-99 64 64 0
+filedialog save
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BILL OF MATERIALS
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    count  part
+ 0-13 74 64 0
+ 14-99 64 64 0
+row 11        2  cylinder
+ 0-99 64 61 0
+row 13           $testdata/step/shapes/cylinder.step
+ 0-99 64 61 0
+row 15           by g003-cylinder, g004-cylinder
+ 0-99 64 61 0
+row 17        1  box
+ 0-99 64 64 0
+row 19           $testdata/step/shapes/box.step
+ 0-99 64 64 0
+row 21           by g005-box
+ 0-99 64 64 0
+row 24 [export to a CSV file...]
+ 0-24 6c 64 99 0 1 0
+ 25-99 64 64 0
+row 27 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 29 
+ 0-99 64 64 0
+cat $tmp/bom.csv
+part,count,file,groups
+cylinder,2,$testdata/step/shapes/cylinder.step,g003-cylinder; g004-cylinder
+box,1,$testdata/step/shapes/box.step,g005-box

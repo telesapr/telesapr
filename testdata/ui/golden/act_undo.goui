@@ -141,6 +141,7 @@
   Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Center of Mass [Ctrl+Shift+C] ind=0 en=1 act=0
   Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
+  &Bill of Materials ind=0 en=1 act=0
   Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
   ---
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
@@ -310,6 +311,7 @@ tw 0 unsaved 1 cursor 0 tooltip ""
   Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Center of Mass [Ctrl+Shift+C] ind=0 en=1 act=0
   Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
+  &Bill of Materials ind=0 en=1 act=0
   Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
   ---
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
