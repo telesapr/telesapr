@@ -231,6 +231,21 @@ func (c *SCurve) RemoveShortSegmentsWithChordTol(sA, sB *SSurface, chordTolMm fl
 	c.Points = keep
 }
 
+// splitEndTol is how near a segment's end a split point is taken as
+// that end, and how near a surface a split point must be.
+const splitEndTol = 10 * geom.LengthEps
+
+// onSurface reports whether p lies on s, within splitEndTol; true for
+// no surface.
+func onSurface(s *SSurface, p geom.Vector) bool {
+	if s == nil {
+		return true
+	}
+	var u, v float64
+	s.ClosestPointToUV(p, &u, &v, true)
+	return s.PointAt(u, v).EqualsTol(p, splitEndTol)
+}
+
 // MakeCopySplitAgainst returns a copy of c whose pwl is split wherever
 // it crosses a (trimmed, or nearly trimmed) surface of agnstA or
 // agnstB, and at any trim vertex of those shells lying on the curve.
@@ -317,6 +332,24 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 					pi.Srf.PointOnSurfaces(srfA, srfB, &puv.U, &puv.V)
 				}
 				pi.P = pi.Srf.PointAt(puv.U, puv.V)
+				// A split at the segment's end is none: the curve has a
+				// vertex there. Where pi.Srf meets srfA or srfB smoothly,
+				// as the next patch of a face does across the seam the
+				// curve starts on, the refinement above can't converge
+				// (two of its three surfaces are tangent) and leaves the
+				// point a little off the end, which would make a sliver
+				// of an edge there.
+				if pi.P.EqualsTol(prev.P, splitEndTol) || pi.P.EqualsTol(p.P, splitEndTol) {
+					continue
+				}
+				// And a split must lie on the curve: on both its surfaces.
+				// A segment that starts on the edge of a patch can seem to
+				// meet that patch further on, where the raycast's closest
+				// point stops at the patch's edge, and the refinement then
+				// fails to move it.
+				if !c.IsExact && (!onSurface(srfA, pi.P) || !onSurface(srfB, pi.P)) {
+					continue
+				}
 				kept = append(kept, pi)
 			}
 			il = kept
