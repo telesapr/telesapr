@@ -226,6 +226,14 @@ func TestSolidGoldens(t *testing.T) {
 			ex := d.Extrude(10, "")
 			d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 		},
+		"fillet-pocket": func(d *api.Doc) { filletPocket(d, 2) },
+		"fillet-boss-foot": func(d *api.Doc) {
+			block(d, -10, -10, 10, 10, 5)
+			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Circle(api.V(0, 0, 5), 4)
+			boss := d.Extrude(5, "")
+			d.Fillet([]api.Entity{circleOf(t, boss, 5)}, 1.5, "")
+		},
 		"chamfer-circle-and-edge": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
 			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
@@ -319,6 +327,30 @@ func BenchmarkFilletCircle(b *testing.B) {
 		ex := d.Extrude(10, "")
 		d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 	})
+}
+
+// filletPocket is a block with a pocket in its top, every edge inside
+// it filled at radius r: spheres in its corners.
+func filletPocket(d *api.Doc, r float64) {
+	block(d, 0, 0, 30, 20, 10)
+	d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+	d.Rect(api.V(5, 5, 10), api.V(25, 15, 10))
+	cut := d.Extrude(-6, "")
+	cut.SetCombine(api.Difference)
+	s := cut.Solid()
+	var edges []api.SolidEdge
+	corners := []api.Vec{api.V(5, 5, 4), api.V(25, 5, 4), api.V(25, 15, 4), api.V(5, 15, 4)}
+	for i, c := range corners {
+		n := corners[(i+1)%4]
+		edges = append(edges, s.EdgeAt(c.Plus(n).ScaledBy(0.5)), s.EdgeAt(api.V(c.X, c.Y, 7)))
+	}
+	d.FilletSolid(edges, r, "")
+}
+
+// BenchmarkFilletPocket fills the eight edges inside a pocket: four
+// spheres.
+func BenchmarkFilletPocket(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) { filletPocket(d, 2) })
 }
 
 func BenchmarkShell(b *testing.B) {
