@@ -134,6 +134,10 @@ dialog 0 No workplane is active, so the grid will not appear.|
   Lock Point Where &Dragged []] ind=0 en=1 act=0
   ---
   Comment [;] ind=0 en=1 act=0
+  ---
+  Mate &Concentric ind=0 en=1 act=0
+  Mate &Flush ind=0 en=1 act=0
+  Mate &Hinge ind=0 en=1 act=0
 &Analyze ind=0 en=1 act=0
   Measure &Volume [Ctrl+Shift+V] ind=0 en=1 act=0
   Measure A&rea [Ctrl+Shift+A] ind=0 en=1 act=0
@@ -306,6 +310,10 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   Lock Point Where &Dragged []] ind=0 en=1 act=0
   ---
   Comment [;] ind=0 en=1 act=0
+  ---
+  Mate &Concentric ind=0 en=1 act=0
+  Mate &Flush ind=0 en=1 act=0
+  Mate &Hinge ind=0 en=1 act=0
 &Analyze ind=0 en=1 act=0
   Measure &Volume [Ctrl+Shift+V] ind=0 en=1 act=0
   Measure A&rea [Ctrl+Shift+A] ind=0 en=1 act=0
