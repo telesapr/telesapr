@@ -35,6 +35,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 14. Names, faces and picking | done 2026-10-03: faces with only an Origin drawn apart and picked, a circle's fillet one face, names that count their edges and survive a longer thread, non-manifold edges reported where they are, hover on large meshes by a grid, Measure by outward normals | `f512ed1` |
 | 15. Solid features completed | done 2026-10-03: chamfers by the fillet's edit (concave edges, chains; two distances not done), shells of prisms with round sides, apexes of four faces split, the draft angle on extrusions, the mirror of the whole solid, the pattern along a path, the stopped chain's message | `fb151c3` |
 | 16. Small features | done 2026-10-03: dimensions by name, configurations, motion study, groups inserted mid-history, 3MF export, text STL and OBJ links, bill of materials, STEP assemblies, mates, interference by shells, constraints inferred while drawing, the section's hatch, STEP links in place, what an AI program sees | `5e2d5be` |
+| 17. Regeneration | done 2026-10-03: one parallel mode, the coincident planes merged at once, solids made off the window's thread with cancel, linked files kept in memory and STEP meshes on disk, packed models | MERGE17 |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
@@ -1118,9 +1119,9 @@ still open" asked a question step 9 had answered; 11.5 called G4 unplanned.
 - **C4 and half of D4 exist since the port.** A new group goes in after the active one, with
   the later ones moved down (`Sketch.AddGroupAfterActive`), which is insertion in the middle of
   the history. Binary STL files link as reference meshes (`pkg/persist/link/stl.go`); text STL
-  and OBJ do not.
-- **Two parallel modes remain.** `ParallelExact` is the default (`pkg/srf/parallel.go`), kept
-  for bits that no longer have a C++ to match.
+  and OBJ do not. [Closed by 16.4 and 16.6.]
+- **Two parallel modes remain** [closed by 17.1]. `ParallelExact` was the default
+  (`pkg/srf/parallel.go`), kept for bits that no longer have a C++ to match.
 - **No user's guide.** `docs` holds the file format and the AI guide; the features of steps 3
   to 10 are documented by their example scripts only. The examples cover no measurement,
   freedom, conflict or unit call.
@@ -1273,11 +1274,13 @@ the UI harness wrote machine paths in text-window dumps.
 
 | Package | Content | Effort | State |
 |---|---|---|---|
-| 17.1 One parallel mode | The fast mode becomes the only one; `ParallelExact` goes, and the tests that compare the two. Goldens that move in their last bits are regenerated in their own commit. | 0.3 wk | not started |
-| 17.2 F8 parallel `MergeCoincidentSurfaces` | No longer bound to the serial order. | 1 wk | not started |
-| 17.3 F7 regeneration off the UI thread | With cancel, and the window drawing the last good solid meanwhile. | 3.6 wk | not started |
-| 17.4 G4 large assemblies | Links that load a mesh and its points without regenerating the part, and meshes kept between sessions. It was in tier 4 unplanned; at L and medium risk it is sized like its neighbours. | 4.8 wk | not started |
-| 17.5 S3 packed container | A zip of the text model with its linked parts and imported geometry, which is also where 17.4's meshes are kept. | 1.2 wk | not started |
+| 17.1 One parallel mode | The fast mode becomes the only one; `ParallelExact` goes, and the tests that compare the two. Goldens that move in their last bits are regenerated in their own commit. | 0.3 wk | done 2026-10-03 (`4c6b5af`, goldens after it): the loops always run at once, the closest-point caches off for curved operands, on all processors or one (TELESAPR_PARALLEL=off), the same bits either way; the threads' goldens moved in their last bits |
+| 17.2 F8 parallel `MergeCoincidentSurfaces` | No longer bound to the serial order. | 1 wk | done 2026-10-03 (`918a414`): planes in classes merged at once, curves renamed after, the serial result to the bit; curves found by a map. The 6 x 6 step and repeat 196 ms to 84 ms |
+| 17.3 F7 regeneration off the UI thread | With cancel, and the window drawing the last good solid meanwhile. | 3.6 wk | done 2026-10-03 (`828823a`): a scheduled regeneration solves on the thread and leaves the solids (ShellsStale); a ShellJob makes them from a copy on another goroutine, applied if the sketch is still defined the same way; Esc stops it. Scripts, saves, exports and tests stay synchronous |
+| 17.4 G4 large assemblies | Links that load a mesh and its points without regenerating the part, and meshes kept between sessions. It was in tier 4 unplanned; at L and medium risk it is sized like its neighbours. | 4.8 wk | done 2026-10-03 (`c02cd31`): linked files kept in memory by path, size and time (each group its own copy); STEP tessellations kept on disk; a mesh's vertices found by cells. Twenty links of a 50,000-triangle part: 5.45 s to 149 ms cold, 8.6 ms warm |
+| 17.5 S3 packed container | A zip of the text model with its linked parts and imported geometry, which is also where 17.4's meshes are kept. | 1.2 wk | done 2026-10-03 (`adcf928`): `.tlsprz`, the model with its parts, pictures and STEP tessellations, nested links rewritten; deterministic; opens elsewhere |
+
+State, 2026-10-03: done, on branch `step-17-regeneration`.
 
 ### Step 18. Drawings
 
