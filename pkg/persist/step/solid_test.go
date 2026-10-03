@@ -235,3 +235,19 @@ func TestTessellated(t *testing.T) {
 		t.Error("a tessellated shape read as a solid")
 	}
 }
+
+func BenchmarkSolidNIST3(b *testing.B) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "testdata", "step", "corpus", "NIST_MBE_PMI_3.stp"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	for b.Loop() {
+		f, err := Parse(data)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if _, _, err := ReadModel(f).Solid(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
