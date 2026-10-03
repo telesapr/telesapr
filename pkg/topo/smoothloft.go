@@ -131,37 +131,7 @@ func MakeSmoothLoft(loops [][]srf.SBezier, turn int, color core.RgbaColor, origi
 	if err != nil {
 		return nil, err
 	}
-	sh := &srf.SShell{}
-	if _, err := AddBSplineFace(sh, bs, origin+2, origin+2, color); err != nil {
-		return nil, err
-	}
-	ps, err := bs.Patches()
-	if err != nil {
-		return nil, err
-	}
-	// The surface's normal is along u (counter-clockwise about the way
-	// on) crossed with v (on), outward. Its patches run the first
-	// section's edges with u falling, so its cap runs them with u, and
-	// the last's the other way.
-	var first, last []srf.SBezier
-	for a := range ps {
-		first = append(first, ps[a][0].EdgeCurve(0))
-		last = append(last, ps[a][len(ps[a])-1].EdgeCurve(2))
-	}
-	if _, err := AddPlanarFace(sh, [][]srf.SBezier{first}, origin, color); err != nil {
-		return nil, fmt.Errorf("the first profile's cap: %v", err)
-	}
-	if _, err := AddPlanarFace(sh, [][]srf.SBezier{reverseLoop(last)}, origin+1, color); err != nil {
-		return nil, fmt.Errorf("the last profile's cap: %v", err)
-	}
-	t, err := Build(sh)
-	if err != nil {
-		return nil, err
-	}
-	if probs := t.Validate(); len(probs) > 0 {
-		return nil, fmt.Errorf("the loft's surface is not closed: %s", probs[0].Msg)
-	}
-	return sh, nil
+	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2)
 }
 
 // SmoothLoftSurface is the B-spline surface of a smooth loft through
