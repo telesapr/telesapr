@@ -5035,7 +5035,7 @@
 					},
 					"Edges": {
 						"decl": "func (s Solid) Edges() (edges []SolidEdge)",
-						"text": "Edges are the solid's edges that lie between two faces, in the\norder the topology finds them."
+						"text": "Edges are the solid's edges that lie between two faces, in the\norder the topology finds them. The seams between the patches of a\nface are none of them, and an edge they cut, as a cylinder's rim, is\none."
 					},
 					"EdgesAlong": {
 						"decl": "func (s Solid) EdgesAlong(dir Vec) (edges []SolidEdge)",
@@ -5043,7 +5043,7 @@
 					},
 					"EdgesBetween": {
 						"decl": "func (s Solid) EdgesBetween(a, b SolidFace) (edges []SolidEdge)",
-						"text": "EdgesBetween are the edges where faces a and b meet, in the order\ntheir names number them."
+						"text": "EdgesBetween are the edges where faces with the identities of a and\nb meet, in the order their names number them: both pieces of a face\nanother cuts in two count."
 					},
 					"Euler": {
 						"decl": "func (s Solid) Euler() (chi int)",
@@ -5077,7 +5077,7 @@
 					},
 					"Ends": {
 						"decl": "func (e SolidEdge) Ends() (a, b Vec)",
-						"text": "Ends are the edge's two vertices' positions."
+						"text": "Ends are the edge's two ends' positions, one point for an edge that\ncloses, as a circle does."
 					},
 					"Faces": {
 						"decl": "func (e SolidEdge) Faces() (faces [2]SolidFace)",
@@ -5091,6 +5091,10 @@
 						"decl": "func (e SolidEdge) Name() string",
 						"text": "Name is the edge's name, \"edge A B N\": the two faces' identities in\nhex and its place among the edges between them. Solid.Edge reads it\nback."
 					},
+					"Pieces": {
+						"decl": "func (e SolidEdge) Pieces() (n int)",
+						"text": "Pieces is how many pieces the seams of the faces it bounds cut the\nedge into: four for an extruded circle's rim."
+					},
 					"Points": {
 						"decl": "func (e SolidEdge) Points() (pts []Vec)",
 						"text": "Points are points along the edge, from one end to the other."
@@ -5102,7 +5106,7 @@
 				}
 			},
 			"SolidFace": {
-				"text": "SolidFace is a face of a solid: its identity, the sketch entity that\nmade it or the group whose surface it is, and which of the faces\nwith that identity it is.",
+				"text": "SolidFace is a face of a solid: its identity, the sketch entity that\nmade it or the group whose surface it is, and which of the faces\nwith that identity it is. A face may be several patches joined\nsmoothly, as an extruded circle's side is four.",
 				"kind": "struct",
 				"methods": {
 					"Edges": {
@@ -5124,6 +5128,10 @@
 					"Neighbours": {
 						"decl": "func (f SolidFace) Neighbours() (faces []SolidFace)",
 						"text": "Neighbours are the faces that share an edge with this one."
+					},
+					"Patches": {
+						"decl": "func (f SolidFace) Patches() (n int)",
+						"text": "Patches is how many patches the face is made of: one for a flat\nface, four for an extruded circle's side, more for a surface cut\ninto patches at its knots."
 					}
 				}
 			},
@@ -6821,6 +6829,14 @@
 						"decl": "func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, bool)",
 						"text": "ClosestPointTo is the parameter t of the point on the curve closest to p: the closest of a few samples, refined by Newton's method."
 					},
+					"Elevated": {
+						"decl": "func (b *SBezier) Elevated() (SBezier, error)",
+						"text": "Elevated is the curve raised by one degree, or an error at MaxDegree."
+					},
+					"ElevatedTo": {
+						"decl": "func (b *SBezier) ElevatedTo(deg int) (SBezier, error)",
+						"text": "ElevatedTo is the curve raised to degree deg, at least its own."
+					},
 					"Equals": {
 						"decl": "func (b *SBezier) Equals(other *SBezier) bool",
 						"text": "Equals returns true if two SBezier curves have identical degree, control points, and weights (within LENGTH_EPS tolerance)."
@@ -7794,6 +7810,14 @@
 						"decl": "func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool",
 						"text": "EdgeCurveIntersection is a fallback for PointIntersectingLine: tries to intersect the line with the boundary curve of the surface."
 					},
+					"Elevated": {
+						"decl": "func (s *SSurface) Elevated(byU bool) (SSurface, error)",
+						"text": "Elevated is the patch raised by one degree in u (byU) or v."
+					},
+					"ElevatedTo": {
+						"decl": "func (s *SSurface) ElevatedTo(m, n int) (SSurface, error)",
+						"text": "ElevatedTo is the patch raised to degrees m and n, at least its own."
+					},
 					"ExactSurfaceTangentAt": {
 						"decl": "func (srf *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector",
 						"text": "ExactSurfaceTangentAt is the direction, at p, of the curve where srfA meets srfB, pointing along dir (C++ SSurface::ExactSurfaceTangentAt)."
@@ -7876,7 +7900,7 @@
 					},
 					"SplitInHalf": {
 						"decl": "func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface)",
-						"text": "SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa and sb, by de Casteljau's algorithm in projective space (C++ SSurface::SplitInHalf)."
+						"text": "SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa and sb, by de Casteljau's algorithm in projective space (C++ SSurface::SplitInHalf, for any degree)."
 					},
 					"TangentsAt": {
 						"decl": "func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool)",
@@ -8248,6 +8272,10 @@
 			},
 			"FaceKeepInsideOtherShell": {
 				"decl": "const FaceKeepInsideOtherShell"
+			},
+			"MaxDegree": {
+				"decl": "const MaxDegree",
+				"text": "MaxDegree is the highest degree of a patch or a curve in either direction."
 			},
 			"ParallelExact": {
 				"decl": "const ParallelExact"

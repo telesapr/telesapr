@@ -282,8 +282,12 @@ func (ss *SolveSpaceUI) CheckSolid() {
 		b.WriteString("\nThe problem edges are marked.\n\n")
 	}
 	c, d := r.CenterOfMass, r.Max.Minus(r.Min)
-	fmt.Fprintf(&b, "Faces: %d\nTriangles: %d\nVolume: %s\n", r.Faces, r.Triangles,
-		ss.MmToStringSI(r.Volume, 3))
+	if r.Patches != r.Faces {
+		fmt.Fprintf(&b, "Faces: %d, of %d patches\n", r.Faces, r.Patches)
+	} else {
+		fmt.Fprintf(&b, "Faces: %d\n", r.Faces)
+	}
+	fmt.Fprintf(&b, "Triangles: %d\nVolume: %s\n", r.Triangles, ss.MmToStringSI(r.Volume, 3))
 	fmt.Fprintf(&b, "Center of mass: (%s, %s, %s)\n", ss.MmToString(c.X, false),
 		ss.MmToString(c.Y, false), ss.MmToString(c.Z, false))
 	fmt.Fprintf(&b, "Extent: %s x %s x %s", ss.MmToString(d.X, false),

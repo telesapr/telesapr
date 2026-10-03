@@ -34,6 +34,17 @@ func (n Name) String() string {
 	return fmt.Sprintf("edge %x %x %d", uint32(n.A), uint32(n.B), n.N)
 }
 
+// Less orders names by their faces' identities, then their ordinals.
+func (a Name) Less(b Name) bool {
+	if a.A != b.A {
+		return a.A < b.A
+	}
+	if a.B != b.B {
+		return a.B < b.B
+	}
+	return a.N < b.N
+}
+
 // ParseName reads a name as String writes it.
 func ParseName(s string) (Name, error) {
 	f := strings.Fields(s)
@@ -88,15 +99,30 @@ func (t *Topology) pairOf(e int) (a, b srf.FaceID, ok bool) {
 }
 
 // between lists the edges between the faces with identities a and b,
-// in their geometric order: by their midpoints along the direction in
-// which those spread most, then along the others.
+// in their geometric order (see sortBetween).
 func (t *Topology) between(a, b srf.FaceID) []int {
-	var es []int
+	return t.byPair[[2]srf.FaceID{a, b}]
+}
+
+// nameEdges lists the edges between every pair of identities, in
+// order, once for the topology.
+func (t *Topology) nameEdges() {
+	t.byPair = map[[2]srf.FaceID][]int{}
 	for e := range t.Edges {
-		if pa, pb, ok := t.pairOf(e); ok && pa == a && pb == b {
-			es = append(es, e)
+		if a, b, ok := t.pairOf(e); ok {
+			k := [2]srf.FaceID{a, b}
+			t.byPair[k] = append(t.byPair[k], e)
 		}
 	}
+	for k, es := range t.byPair {
+		t.byPair[k] = t.sortBetween(es)
+	}
+}
+
+// sortBetween puts edges between one pair of faces in their geometric
+// order: by their midpoints along the direction in which those spread
+// most, then along the others.
+func (t *Topology) sortBetween(es []int) []int {
 	if len(es) < 2 {
 		return es
 	}
@@ -134,8 +160,13 @@ func (t *Topology) between(a, b srf.FaceID) []int {
 }
 
 // NameOf is the name of edge e. An edge with a face that has no
-// identity, such as one a Boolean's tool made, has none.
+// identity, such as one a Boolean's tool made, has none, nor has a
+// seam. Ordinals count seams all the same, so a name made before seams
+// were found names the same edge.
 func (t *Topology) NameOf(e int) (Name, error) {
+	if t.Edges[e].Seam {
+		return Name{}, fmt.Errorf("edge %d is a seam between two patches of one face", e)
+	}
 	a, b, ok := t.pairOf(e)
 	if !ok {
 		return Name{}, fmt.Errorf("edge %d does not lie between two faces that come from the sketch", e)
@@ -174,13 +205,21 @@ func (t *Topology) Resolve(n Name) (int, error) {
 		uint32(n.A), uint32(n.B), len(es), n.N)
 }
 
-// EdgeAt is the edge whose points come nearest p, and that distance.
-func (t *Topology) EdgeAt(p geom.Vector) (int, float64) {
+// EdgeAt is the edge whose points come nearest p, and that distance;
+// with lead, the lead piece of the solid's edge it is a piece of,
+// seams not counting.
+func (t *Topology) EdgeAt(p geom.Vector, lead bool) (int, float64) {
 	best, bestD := -1, math.Inf(1)
 	for e := range t.Edges {
+		if lead && t.Edges[e].Seam {
+			continue
+		}
 		if d := distanceToPolyline(p, t.Edges[e].Points); d < bestD {
 			best, bestD = e, d
 		}
+	}
+	if lead && best >= 0 {
+		best = t.Lead(best)
 	}
 	return best, bestD
 }

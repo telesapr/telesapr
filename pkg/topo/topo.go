@@ -29,10 +29,16 @@ type Topology struct {
 	CoEdges  []CoEdge
 	Loops    []Loop
 	Faces    []Face
+	// Sheets are the faces as a person sees them, each one or more
+	// patches (Faces) joined along seams (see sheet.go).
+	Sheets []Sheet
 
 	shell *srf.SShell
 	// surfFace maps a surface handle to the faces on it.
 	surfFace map[core.HSSurface][]int
+	// byPair lists the edges between each pair of identities in the
+	// order names number them.
+	byPair map[[2]srf.FaceID][]int
 }
 
 // Vertex is a point where edges end.
@@ -53,6 +59,8 @@ type Edge struct {
 	CoEdges []int
 	// Points are the curve's points from V[0] to V[1].
 	Points []geom.Vector
+	// Seam is set when the edge joins two patches of one sheet.
+	Seam bool
 }
 
 // CoEdge is an edge as a loop runs along it.
@@ -79,7 +87,7 @@ type Loop struct {
 }
 
 // Face is a connected region of one surface: an outer loop and its
-// holes.
+// holes. It is a patch of a sheet, which may have others.
 type Face struct {
 	Surface core.HSSurface
 	// ID is the face's identity as the shell gives it: the entity of the
@@ -88,6 +96,8 @@ type Face struct {
 	// group's surfaces (srf.SSurface.Origin).
 	ID    srf.FaceID
 	Loops []int
+	// Sheet is the sheet the face is a patch of.
+	Sheet int
 }
 
 // faceID is a surface's identity for naming.
@@ -284,6 +294,8 @@ func Build(sh *srf.SShell) (*Topology, error) {
 		}
 		t.makeFaces(s, loops)
 	}
+	t.findSheets()
+	t.nameEdges()
 	if len(problems) > 0 {
 		return t, fmt.Errorf("topo: %s", problems[0])
 	}

@@ -801,6 +801,8 @@ func (d *decoder) surface(n *Node) srf.SSurface {
 			sf.Color = d.colorField(c)
 		case "face":
 			sf.Face = srf.FaceID(d.handleField(c))
+		case "sheet":
+			sf.Sheet = d.handleField(c)
 		case "degree":
 			da := d.fieldArgs(c, 2)
 			sf.DegM, sf.DegN = d.degree(da[0], len(sf.Ctrl)-1), d.degree(da[1], len(sf.Ctrl[0])-1)

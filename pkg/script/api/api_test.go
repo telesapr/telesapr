@@ -54,9 +54,9 @@ func TestPlate(t *testing.T) {
 	}
 
 	r := ex.Check()
-	// Four sides, two caps, and the hole's wall in four patches.
-	if !r.Sound() || r.Faces != 10 || !near(r.Volume, ex.Volume()) || !near(r.Max.Z-r.Min.Z, 5) {
-		t.Errorf("the plate does not check sound with 10 faces: %s", r.String())
+	// Four sides, two caps, and the hole's wall, of four patches.
+	if !r.Sound() || r.Faces != 7 || r.Patches != 10 || !near(r.Volume, ex.Volume()) || !near(r.Max.Z-r.Min.Z, 5) {
+		t.Errorf("the plate does not check sound with 7 faces of 10 patches: %s", r.String())
 	}
 	if r := g.Check(); !r.Empty() {
 		t.Errorf("the sketch before the extrusion has a solid: %s", r.String())

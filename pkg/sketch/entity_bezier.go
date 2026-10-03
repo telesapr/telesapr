@@ -131,6 +131,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 	// Record our style for all of the Beziers that we just created.
 	for i := first; i < beziers.Len(); i++ {
 		beziers.Curves[i].AuxA = int(rt.StyleForEntity(e.H).V)
+		beziers.Curves[i].Sheet = e.H.V
 	}
 }
 

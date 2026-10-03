@@ -192,3 +192,58 @@ func TestSolidMisuse(t *testing.T) {
 		m.Group("box").Solid().Faces()
 	}()
 }
+
+// TestSolidSheets extrudes a circle: its side is one face of four
+// patches, its rims one edge each of four pieces, and it has no
+// vertex.
+func TestSolidSheets(t *testing.T) {
+	d := New()
+	d.SetChordTolerance(0.01)
+	d.Circle(V(0, 0, 0), 10)
+	s := d.Extrude(5, "body").Solid()
+	if n := len(s.Faces()); n != 3 {
+		t.Errorf("%d faces, want 3", n)
+	}
+	side := s.FaceAt(V(10, 0, 2.5))
+	if side.Patches() != 4 || len(side.Edges()) != 2 || len(side.Neighbours()) != 2 {
+		t.Errorf("the side: %d patches, %d edges, %d neighbours", side.Patches(), len(side.Edges()), len(side.Neighbours()))
+	}
+	if n := len(s.Edges()); n != 2 {
+		t.Errorf("%d edges, want 2", n)
+	}
+	if n := len(s.Vertices()); n != 0 {
+		t.Errorf("%d vertices, want none", n)
+	}
+	rim := s.EdgeAt(V(0, 10, 5))
+	if rim.Pieces() != 4 || rim.Straight() || math.Abs(rim.Length()-20*math.Pi) > 0.05 {
+		t.Errorf("the rim: %d pieces, straight %v, length %g", rim.Pieces(), rim.Straight(), rim.Length())
+	}
+	// Every piece of the rim is the same edge.
+	for _, p := range []Vec{V(10, 0, 5), V(-10, 0, 5), V(0, -10, 5), V(7.0710678, 7.0710678, 5)} {
+		if e := s.EdgeAt(p); e.Name() != rim.Name() {
+			t.Errorf("the rim at %v is %s, not %s", p, e.Name(), rim.Name())
+		}
+	}
+	if a, b := rim.Ends(); !a.Equals(b) {
+		t.Errorf("the rim's ends %v %v", a, b)
+	}
+	top := s.FaceAt(V(0, 0, 5))
+	if bt := s.EdgesBetween(top, side); len(bt) != 1 || bt[0].Name() != rim.Name() {
+		t.Errorf("between the top and the side: %v", bt)
+	}
+	fs := rim.Faces()
+	if fs[0].Patches()+fs[1].Patches() != 5 {
+		t.Errorf("the rim's faces have %d and %d patches", fs[0].Patches(), fs[1].Patches())
+	}
+	// Filleting the rim by its name rounds it all round.
+	f := d.FilletSolid([]SolidEdge{rim}, 1, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	// Pappus: the spandrel of radius 1 turned about the axis, its
+	// centroid (10-3pi)/(12-3pi) in from the rim.
+	want := math.Pi*100*5 - 2*math.Pi*(10-(10-3*math.Pi)/(12-3*math.Pi))*(1-math.Pi/4)
+	if r := f.Check(); !r.Sound() || math.Abs(r.Volume-want) > 1e-3*want {
+		t.Errorf("the fillet: %s, want volume %g", r.Summary(), want)
+	}
+}

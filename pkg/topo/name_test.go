@@ -74,7 +74,7 @@ func TestNames(t *testing.T) {
 			t.Errorf("%q parsed", s)
 		}
 	}
-	if e, d := tp.EdgeAt(v(5, 0.1, 30.1)); e != edgeBetween(t, tp, v(0, 0, 30), v(10, 0, 30)) || d > 0.2 {
+	if e, d := tp.EdgeAt(v(5, 0.1, 30.1), false); e != edgeBetween(t, tp, v(0, 0, 30), v(10, 0, 30)) || d > 0.2 {
 		t.Errorf("edge at: %d, %g", e, d)
 	}
 	if len(tp.FacesWithID(tp.Faces[top].ID)) != 2 {

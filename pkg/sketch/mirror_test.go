@@ -33,15 +33,15 @@ func TestMirrorApart(t *testing.T) {
 	}
 }
 
-// A block touching the plane joins its reflection into one block; the
-// top and the bottom stay two faces each, one per half, since each
-// half's face has its own entity.
+// A block touching the plane joins its reflection into one block of six
+// faces: each face across the plane is two patches, one per half, the
+// reflection's swept from the same line as the original's.
 func TestMirrorTouching(t *testing.T) {
 	d := api.New()
 	block(d, 0, 0, 10, 10, 5)
 	m := d.Mirror(d.Workplane("YZ"), "")
 	r := m.Check()
-	if !r.Sound() || math.Abs(r.Volume-1000) > 1e-6 || r.Faces != 8 {
+	if !r.Sound() || math.Abs(r.Volume-1000) > 1e-6 || r.Faces != 6 || r.Patches != 8 {
 		t.Fatalf("mirror of a block on the plane: %s", r.String())
 	}
 	// Without the original, only the reflection is left.

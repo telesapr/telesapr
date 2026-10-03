@@ -43,6 +43,9 @@ type SBezier struct {
 
 	// Hint of which kind of curve this is, used by SShell trimming.
 	IsCircleHint bool
+	// Sheet is the sketch entity the curve is a piece of, any kind of
+	// curve, or 0; the surfaces swept from it carry it (SSurface.Sheet).
+	Sheet uint32
 }
 
 // SBezierFrom2 builds a line segment from a to b.

@@ -467,6 +467,7 @@ shell {
   surface <handle> {
     color <colour>
     face <handle>
+    sheet <handle>          # the curve entity the patch was swept from; patches of one sheet meeting smoothly are one face
     degree <m> <n>
     ctrl <i> <j> <x> <y> <z> <weight>
     trim <curve handle> <forward|backward> <sx> <sy> <sz> <fx> <fy> <fz>

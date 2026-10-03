@@ -28,6 +28,11 @@ type SSurface struct {
 	// it and its place among that group's surfaces (see
 	// OriginFor). Copies keep it, so the faces it bounds can be named.
 	Origin uint32
+	// Sheet groups the patches swept from the pieces of one sketch
+	// curve, such as the four quarters of an extruded circle: patches
+	// of one Sheet that meet smoothly are one face of the solid, the
+	// edge between them a seam (pkg/topo, Sheet). 0 for none.
+	Sheet uint32
 
 	DegM, DegN int
 	Ctrl       [MaxDegree + 1][MaxDegree + 1]geom.Vector
@@ -228,8 +233,9 @@ func (s *SSurface) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector) {
 // from t0 to t1. The degree is (deg, 1).
 func FromExtrusionOf(spc *SBezier, t0, t1 geom.Vector) SSurface {
 	s := SSurface{
-		DegM: spc.Degree,
-		DegN: 1,
+		DegM:  spc.Degree,
+		DegN:  1,
+		Sheet: spc.Sheet,
 	}
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
@@ -271,8 +277,9 @@ func FromPlane(pt, u, v geom.Vector) SSurface {
 // with optional endpoint shrinkage distances (dists, distf).
 func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, distf float64) SSurface {
 	s := SSurface{
-		DegM: sb.Degree,
-		DegN: 2,
+		DegM:  sb.Degree,
+		DegN:  2,
+		Sheet: sb.Sheet,
 	}
 	dtheta := math.Abs(wrapSymmetric(thetaf-thetas, 2*math.Pi))
 	w := libm.Cos(dtheta / 2)
@@ -343,6 +350,7 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 		Color:  a.Color,
 		Face:   a.Face,
 		Origin: a.Origin,
+		Sheet:  a.Sheet,
 		DegM:   a.DegM,
 		DegN:   a.DegN,
 	}

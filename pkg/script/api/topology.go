@@ -2,6 +2,7 @@ package api
 
 import (
 	"math"
+	"sort"
 	"strconv"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
@@ -21,7 +22,8 @@ type Solid struct {
 
 // SolidFace is a face of a solid: its identity, the sketch entity that
 // made it or the group whose surface it is, and which of the faces
-// with that identity it is.
+// with that identity it is. A face may be several patches joined
+// smoothly, as an extruded circle's side is four.
 type SolidFace struct {
 	s  Solid
 	id srf.FaceID
@@ -64,11 +66,12 @@ func (s Solid) topology(sk *sketch.Sketch) *topo.Topology {
 	return tp
 }
 
-func (s Solid) face(sk *sketch.Sketch, tp *topo.Topology, f int) SolidFace {
-	id := tp.Faces[f].ID
+// face is the SolidFace of sheet sh.
+func (s Solid) face(tp *topo.Topology, sh int) SolidFace {
+	id := tp.Sheets[sh].ID
 	n := 0
-	for _, g := range tp.FacesWithID(id) {
-		if g == f {
+	for _, g := range tp.SheetsWithID(id) {
+		if g == sh {
 			break
 		}
 		n++
@@ -76,8 +79,13 @@ func (s Solid) face(sk *sketch.Sketch, tp *topo.Topology, f int) SolidFace {
 	return SolidFace{s: s, id: id, n: n}
 }
 
+// edge is the SolidEdge that edge e is a piece of, named by its lead
+// piece.
 func (s Solid) edge(tp *topo.Topology, e int) (SolidEdge, bool) {
-	n, err := tp.NameOf(e)
+	if tp.Edges[e].Seam {
+		return SolidEdge{}, false
+	}
+	n, err := tp.NameOf(tp.Lead(e))
 	if err != nil {
 		return SolidEdge{}, false
 	}
@@ -88,19 +96,21 @@ func (s Solid) edge(tp *topo.Topology, e int) (SolidEdge, bool) {
 func (s Solid) Faces() (faces []SolidFace) {
 	s.d.read(func(sk *sketch.Sketch) {
 		tp := s.topology(sk)
-		for f := range tp.Faces {
-			faces = append(faces, s.face(sk, tp, f))
+		for sh := range tp.Sheets {
+			faces = append(faces, s.face(tp, sh))
 		}
 	})
 	return faces
 }
 
 // Edges are the solid's edges that lie between two faces, in the
-// order the topology finds them.
+// order the topology finds them. The seams between the patches of a
+// face are none of them, and an edge they cut, as a cylinder's rim, is
+// one.
 func (s Solid) Edges() (edges []SolidEdge) {
 	s.d.read(func(sk *sketch.Sketch) {
 		tp := s.topology(sk)
-		for e := range tp.Edges {
+		for _, e := range tp.SolidEdges() {
 			if se, ok := s.edge(tp, e); ok {
 				edges = append(edges, se)
 			}
@@ -112,8 +122,11 @@ func (s Solid) Edges() (edges []SolidEdge) {
 // Vertices are the solid's vertices.
 func (s Solid) Vertices() (vs []SolidVertex) {
 	s.d.read(func(sk *sketch.Sketch) {
-		for _, v := range s.topology(sk).Vertices {
-			vs = append(vs, SolidVertex{s: s, p: v.P})
+		tp := s.topology(sk)
+		for v := range tp.Vertices {
+			if tp.SolidVertex(v) {
+				vs = append(vs, SolidVertex{s: s, p: tp.Vertices[v].P})
+			}
 		}
 	})
 	return vs
@@ -139,7 +152,7 @@ func (s Solid) Edge(name string) (e SolidEdge) {
 func (s Solid) EdgeAt(p Vec) (e SolidEdge) {
 	s.d.read(func(sk *sketch.Sketch) {
 		tp := s.topology(sk)
-		i, d := tp.EdgeAt(p)
+		i, d := tp.EdgeAt(p, true)
 		if i < 0 || d > 0.01 {
 			fail("no edge of the solid passes through (%g, %g, %g)", p.X, p.Y, p.Z)
 		}
@@ -159,21 +172,33 @@ func (s Solid) FaceAt(p Vec) (f SolidFace) {
 		if i < 0 || d > 0.01 {
 			fail("no face of the solid passes through (%g, %g, %g)", p.X, p.Y, p.Z)
 		}
-		f = s.face(sk, tp, i)
+		f = s.face(tp, tp.SheetOf(i))
 	})
 	return f
 }
 
-// EdgesBetween are the edges where faces a and b meet, in the order
-// their names number them.
+// EdgesBetween are the edges where faces with the identities of a and
+// b meet, in the order their names number them: both pieces of a face
+// another cuts in two count.
 func (s Solid) EdgesBetween(a, b SolidFace) (edges []SolidEdge) {
 	s.d.read(func(sk *sketch.Sketch) {
 		tp := s.topology(sk)
-		for n := 0; ; n++ {
-			if _, err := tp.Resolve(topo.MakeName(a.id, b.id, n)); err != nil {
-				break
+		var found []topo.Name
+		for _, e := range tp.SolidEdges() {
+			sh := tp.EdgeSheets(e)
+			if sh[0] < 0 || sh[1] < 0 {
+				continue
 			}
-			edges = append(edges, SolidEdge{s: s, name: topo.MakeName(a.id, b.id, n)})
+			ia, ib := tp.Sheets[sh[0]].ID, tp.Sheets[sh[1]].ID
+			if ia == a.id && ib == b.id || ia == b.id && ib == a.id {
+				if se, ok := s.edge(tp, e); ok {
+					found = append(found, se.name)
+				}
+			}
+		}
+		sort.Slice(found, func(i, j int) bool { return found[i].Less(found[j]) })
+		for _, n := range found {
+			edges = append(edges, SolidEdge{s: s, name: n})
 		}
 	})
 	return edges
@@ -187,8 +212,8 @@ func (s Solid) EdgesAlong(dir Vec) (edges []SolidEdge) {
 	dir = dir.WithMagnitude(1)
 	s.d.read(func(sk *sketch.Sketch) {
 		tp := s.topology(sk)
-		for e := range tp.Edges {
-			if !tp.Straight(e) {
+		for _, e := range tp.SolidEdges() {
+			if !tp.Straight(e) || len(tp.Chain(e)) > 1 {
 				continue
 			}
 			pts := tp.Edges[e].Points
@@ -221,14 +246,25 @@ func (s Solid) Euler() (chi int) {
 	return chi
 }
 
-// resolve finds the face in the current topology.
+// resolve finds the face's sheet in the current topology.
 func (f SolidFace) resolve(sk *sketch.Sketch) (*topo.Topology, int) {
 	tp := f.s.topology(sk)
-	fs := tp.FacesWithID(f.id)
+	fs := tp.SheetsWithID(f.id)
 	if f.n >= len(fs) {
 		fail("%s is no longer in the solid", sk.FaceName(f.id))
 	}
 	return tp, fs[f.n]
+}
+
+// Patches is how many patches the face is made of: one for a flat
+// face, four for an extruded circle's side, more for a surface cut
+// into patches at its knots.
+func (f SolidFace) Patches() (n int) {
+	f.s.d.read(func(sk *sketch.Sketch) {
+		tp, i := f.resolve(sk)
+		n = len(tp.Sheets[i].Faces)
+	})
+	return n
 }
 
 // Name names the face: the entity that made it, or the group.
@@ -259,7 +295,7 @@ func (f SolidFace) Entity() (e Entity) {
 func (f SolidFace) Edges() (edges []SolidEdge) {
 	f.s.d.read(func(sk *sketch.Sketch) {
 		tp, i := f.resolve(sk)
-		for _, e := range tp.FaceEdges(i) {
+		for _, e := range tp.SheetEdges(i) {
 			if se, ok := f.s.edge(tp, e); ok {
 				edges = append(edges, se)
 			}
@@ -272,8 +308,8 @@ func (f SolidFace) Edges() (edges []SolidEdge) {
 func (f SolidFace) Neighbours() (faces []SolidFace) {
 	f.s.d.read(func(sk *sketch.Sketch) {
 		tp, i := f.resolve(sk)
-		for _, g := range tp.Neighbours(i) {
-			faces = append(faces, f.s.face(sk, tp, g))
+		for _, g := range tp.SheetNeighbours(i) {
+			faces = append(faces, f.s.face(tp, g))
 		}
 	})
 	return faces
@@ -304,45 +340,55 @@ func (e SolidEdge) Describe() (s string) {
 func (e SolidEdge) Faces() (faces [2]SolidFace) {
 	e.s.d.read(func(sk *sketch.Sketch) {
 		tp, i := e.resolve(sk)
-		for k, f := range tp.EdgeFaces(i) {
-			faces[k] = e.s.face(sk, tp, f)
+		for k, sh := range tp.EdgeSheets(i) {
+			if sh >= 0 {
+				faces[k] = e.s.face(tp, sh)
+			}
 		}
 	})
 	return faces
 }
 
-// Ends are the edge's two vertices' positions.
+// Ends are the edge's two ends' positions, one point for an edge that
+// closes, as a circle does.
 func (e SolidEdge) Ends() (a, b Vec) {
-	e.s.d.read(func(sk *sketch.Sketch) {
-		tp, i := e.resolve(sk)
-		a, b = tp.Vertices[tp.Edges[i].V[0]].P, tp.Vertices[tp.Edges[i].V[1]].P
-	})
-	return a, b
+	pts := e.Points()
+	return pts[0], pts[len(pts)-1]
 }
 
 // Points are points along the edge, from one end to the other.
 func (e SolidEdge) Points() (pts []Vec) {
 	e.s.d.read(func(sk *sketch.Sketch) {
 		tp, i := e.resolve(sk)
-		pts = append(pts, tp.Edges[i].Points...)
+		pts = tp.ChainPoints(tp.Chain(i))
 	})
 	return pts
 }
 
 // Length is the edge's length in mm.
 func (e SolidEdge) Length() (l float64) {
+	pts := e.Points()
+	for i := 1; i < len(pts); i++ {
+		l += pts[i].Minus(pts[i-1]).Magnitude()
+	}
+	return l
+}
+
+// Pieces is how many pieces the seams of the faces it bounds cut the
+// edge into: four for an extruded circle's rim.
+func (e SolidEdge) Pieces() (n int) {
 	e.s.d.read(func(sk *sketch.Sketch) {
 		tp, i := e.resolve(sk)
-		l = tp.Length(i)
+		n = len(tp.Chain(i))
 	})
-	return l
+	return n
 }
 
 // Straight reports whether the edge is a line segment.
 func (e SolidEdge) Straight() (ok bool) {
 	e.s.d.read(func(sk *sketch.Sketch) {
 		tp, i := e.resolve(sk)
-		ok = tp.Straight(i)
+		ok = len(tp.Chain(i)) == 1 && tp.Straight(i)
 	})
 	return ok
 }
@@ -358,8 +404,10 @@ func (v SolidVertex) Edges() (edges []SolidEdge) {
 			if !tp.Vertices[i].P.Equals(v.p) {
 				continue
 			}
+			seen := map[topo.Name]bool{}
 			for _, e := range tp.Vertices[i].Edges {
-				if se, ok := v.s.edge(tp, e); ok {
+				if se, ok := v.s.edge(tp, e); ok && !seen[se.name] {
+					seen[se.name] = true
 					edges = append(edges, se)
 				}
 			}
