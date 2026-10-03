@@ -64,7 +64,7 @@ func main() {
 	// along its length; each corner the cube the three edges count
 	// three times over less the sphere's eighth.
 	a := radius * radius * (1 - math.Pi/4)
-	want := w*d*h - a*4*(w+d+h) - 8*math.Pow(radius, 3)*(7*math.Pi/12-2)
+	want := w*d*h - a*4*(w+d+h) - 8*radius*radius*radius*(7*math.Pi/12-2)
 	fmt.Printf("%d edges rounded at %g mm: %s, %.1f mm³ (%.1f by the formula)\n",
 		len(edges), radius, map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume, want)
 	// The mesh cuts each arc into at most ten chords, losing the
