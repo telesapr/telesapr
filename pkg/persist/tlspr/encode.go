@@ -97,6 +97,26 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 	if sk.ActiveConfiguration != "" {
 		add(field("active-configuration", String(sk.ActiveConfiguration)))
 	}
+	if d := sk.Drawing; d != nil {
+		n := block("drawing")
+		n.add(field("sheet", Word(d.Sheet)))
+		n.flag("portrait", d.Portrait)
+		if d.Scale != 0 {
+			n.add(field("scale", Word(FormatReal(d.Scale))))
+		}
+		n.flag("first-angle", d.FirstAngle)
+		n.flag("hidden", d.Hidden)
+		for _, v := range d.Views {
+			n.add(field("view", Word(v.Kind), Word(FormatReal(v.X)), Word(FormatReal(v.Y))))
+		}
+		n.str("title", d.Title)
+		n.str("author", d.Author)
+		n.str("number", d.Number)
+		n.str("revision", d.Revision)
+		n.str("material", d.Material)
+		n.str("company", d.Company)
+		add(n)
+	}
 
 	groups := make([]*sketch.Group, len(sk.Groups))
 	for i := range sk.Groups {

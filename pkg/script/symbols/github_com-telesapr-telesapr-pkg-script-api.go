@@ -41,6 +41,8 @@ func init() {
 		"BrokenReference": reflect.ValueOf((*api.BrokenReference)(nil)),
 		"Constraint":      reflect.ValueOf((*api.Constraint)(nil)),
 		"Doc":             reflect.ValueOf((*api.Doc)(nil)),
+		"Drawing":         reflect.ValueOf((*api.Drawing)(nil)),
+		"DrawingView":     reflect.ValueOf((*api.DrawingView)(nil)),
 		"Entity":          reflect.ValueOf((*api.Entity)(nil)),
 		"ExportKind":      reflect.ValueOf((*api.ExportKind)(nil)),
 		"Group":           reflect.ValueOf((*api.Group)(nil)),
@@ -73,6 +75,7 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	WChanging          func()
 	WDeleteGroup       func(hg core.HGroup)
 	WExport            func(kind api.ExportKind, path string) error
+	WExportDrawing     func(path string, d *sketch.Drawing) error
 	WHovered           func() sketch.Selection
 	WLoad              func(path string) error
 	WMmPerUnit         func() float64
@@ -103,6 +106,9 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) DeleteGroup(hg core.H
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Export(kind api.ExportKind, path string) error {
 	return W.WExport(kind, path)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) ExportDrawing(path string, d *sketch.Drawing) error {
+	return W.WExportDrawing(path, d)
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Hovered() sketch.Selection {
 	return W.WHovered()

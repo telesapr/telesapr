@@ -278,6 +278,15 @@ func TestPathEquivalenceMate(t *testing.T) {
 	}
 }
 
+// A drawing set on its screen, and the same set by a script (roadmap
+// 18.1).
+func TestPathEquivalenceDrawing(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_drawing", "path_drawing")
+	if d := ui.Drawing; d == nil || d.Sheet != "A2" || d.Title != "PLATE" {
+		t.Errorf("the drawing: %+v", d)
+	}
+}
+
 // Two edges that meet at a corner picked with the mouse and rounded,
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {

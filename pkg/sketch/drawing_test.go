@@ -1,0 +1,47 @@
+package sketch_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/telesapr/telesapr/pkg/script/api"
+)
+
+// The drawing is part of the model (roadmap 18.1, 18.2): set, it goes
+// through undo, redo and a round trip; a sheet or view there isn't is
+// refused.
+func TestDrawingSaved(t *testing.T) {
+	d := api.New()
+	block(d, 0, 0, 20, 10, 5)
+	step(d)
+	before := saved(t, d)
+	dr := d.Drawing()
+	dr.Sheet, dr.Portrait, dr.Scale, dr.FirstAngle = "A2", true, 0.5, true
+	dr.Title, dr.Author, dr.Number, dr.Material = "Plate", "M. S.", "TS-7", "steel"
+	dr.Views = []api.DrawingView{{Kind: "front", X: 100, Y: 200}, {Kind: "iso", X: 300, Y: 400}}
+	d.SetDrawing(dr)
+	undoRedo(t, d, before)
+	back := roundTrip(t, d)
+	got := back.Drawing()
+	if got.Sheet != "A2" || !got.Portrait || got.Scale != 0.5 || !got.FirstAngle || got.Title != "Plate" ||
+		got.Material != "steel" || len(got.Views) != 2 || got.Views[1].Kind != "iso" || got.Views[1].Y != 400 {
+		t.Errorf("reopened: %+v", got)
+	}
+	if !strings.Contains(string(saved(t, d)), "drawing {") {
+		t.Error("the file has no drawing")
+	}
+	for name, bad := range map[string]api.Drawing{
+		"sheet": {Sheet: "B5"},
+		"view":  {Sheet: "A4", Views: []api.DrawingView{{Kind: "sideways"}}},
+		"scale": {Sheet: "A4", Scale: -1},
+	} {
+		func() {
+			defer func() {
+				if _, ok := recover().(error); !ok {
+					t.Errorf("a %s there isn't: no error", name)
+				}
+			}()
+			d.SetDrawing(bad)
+		}()
+	}
+}

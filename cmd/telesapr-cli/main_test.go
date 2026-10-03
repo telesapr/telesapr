@@ -111,6 +111,19 @@ func TestExportMesh3mf(t *testing.T) {
 	}
 }
 
+// TestExportDrawing writes the default drawing of a model: an SVG on an
+// A3 sheet (roadmap 18.1).
+func TestExportDrawing(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "sheet.svg")
+	if ok, msg := run(t, "export-drawing", "-o", out, model(t, "group/boolean_knife_edge/normal.slvs")); !ok {
+		t.Fatalf("failed: %s", msg)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil || !bytes.Contains(data, []byte("width='420.000mm' height='297.000mm'")) {
+		t.Errorf("not an A3 sheet (%v): %.200s", err, data)
+	}
+}
+
 func TestOutputFor(t *testing.T) {
 	for _, c := range []struct{ pattern, in, want string }{
 		{"%-2d.png", "f/a.tlspr", "f/a-2d.png"},

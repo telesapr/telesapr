@@ -319,6 +319,17 @@ func (h *ScriptHost) Export(kind api.ExportKind, path string) error {
 	})
 }
 
+// ExportDrawing writes the model's drawing to a vector file.
+func (h *ScriptHost) ExportDrawing(path string, d *sketch.Drawing) error {
+	defer h.leaveExportMode()
+	var derr error
+	err := h.collect(func() { derr = h.ss.ExportDrawingTo(path, d) })
+	if derr != nil {
+		return derr
+	}
+	return err
+}
+
 // Render draws the sketch into a file without disturbing the view on
 // screen.
 func (h *ScriptHost) Render(path string, width, height int, right, up geom.Vector) error {

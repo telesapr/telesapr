@@ -1,0 +1,217 @@
+package sketch
+
+import (
+	"fmt"
+	"math"
+	"strings"
+)
+
+// A drawing (roadmap step 18) is a sheet of paper with views of the
+// solid: the standard ones (front, top, a side and an isometric)
+// placed by the projection's convention, at a scale, in a border with a
+// title block. It is part of the model, saved with it; what is drawn is
+// made from the solid each time it is exported (pkg/ui, drawing.go).
+
+// DrawingView is a view on the sheet: what it looks at, from where,
+// and where its middle is on the sheet, in mm from the bottom left.
+type DrawingView struct {
+	// Kind is front, back, top, bottom, left, right or iso.
+	Kind string
+	X, Y float64
+}
+
+// Drawing is the model's sheet.
+type Drawing struct {
+	// Sheet is A4 to A0, Letter or Tabloid; Portrait turns it.
+	Sheet    string
+	Portrait bool
+	// Scale is mm on paper per mm of the model; 0 picks the largest
+	// standard one at which the views fit.
+	Scale float64
+	// FirstAngle places the views as ISO's first-angle projection
+	// does (the top view below the front, the left view on the right);
+	// otherwise third-angle (top above, right on the right).
+	FirstAngle bool
+	// Views, when not empty, are the views and where they are; empty,
+	// the standard views are placed (Layout).
+	Views []DrawingView
+	// Hidden draws the hidden edges of the orthographic views, dashed.
+	Hidden bool
+	// The title block (roadmap 18.2).
+	Title, Author, Number, Revision, Material, Company string
+}
+
+// SheetSize is the size of a sheet in mm, landscape.
+func SheetSize(name string) (w, h float64, ok bool) {
+	switch strings.ToUpper(name) {
+	case "A4":
+		return 297, 210, true
+	case "A3":
+		return 420, 297, true
+	case "A2":
+		return 594, 420, true
+	case "A1":
+		return 841, 594, true
+	case "A0":
+		return 1189, 841, true
+	case "LETTER":
+		return 279.4, 215.9, true
+	case "TABLOID":
+		return 431.8, 279.4, true
+	}
+	return 0, 0, false
+}
+
+// Size is the drawing's sheet in mm, turned as it is.
+func (d *Drawing) Size() (w, h float64) {
+	w, h, ok := SheetSize(d.Sheet)
+	if !ok {
+		w, h, _ = SheetSize("A3")
+	}
+	if d.Portrait {
+		w, h = h, w
+	}
+	return w, h
+}
+
+// Check reports what is wrong with the drawing's settings.
+func (d *Drawing) Check() error {
+	if _, _, ok := SheetSize(d.Sheet); !ok {
+		return fmt.Errorf("no sheet %q: the sheets are A4, A3, A2, A1, A0, Letter and Tabloid", d.Sheet)
+	}
+	if d.Scale < 0 || math.IsNaN(d.Scale) || math.IsInf(d.Scale, 0) {
+		return fmt.Errorf("a drawing's scale is more than zero, or zero to fit, not %g", d.Scale)
+	}
+	for _, v := range d.Views {
+		if _, _, ok := ViewDirection(v.Kind); !ok {
+			return fmt.Errorf("no view %q: the views are front, back, top, bottom, left, right and iso", v.Kind)
+		}
+	}
+	return nil
+}
+
+// ViewDirection is what is to the right and what is up in a view.
+func ViewDirection(kind string) (right, up [3]float64, ok bool) {
+	switch kind {
+	case "front":
+		return [3]float64{1, 0, 0}, [3]float64{0, 1, 0}, true
+	case "back":
+		return [3]float64{-1, 0, 0}, [3]float64{0, 1, 0}, true
+	case "top":
+		return [3]float64{1, 0, 0}, [3]float64{0, 0, -1}, true
+	case "bottom":
+		return [3]float64{1, 0, 0}, [3]float64{0, 0, 1}, true
+	case "right":
+		return [3]float64{0, 0, -1}, [3]float64{0, 1, 0}, true
+	case "left":
+		return [3]float64{0, 0, 1}, [3]float64{0, 1, 0}, true
+	case "iso":
+		return [3]float64{0.7071067811865476, 0, -0.7071067811865476},
+			[3]float64{-0.4082482904638631, 0.8164965809277261, -0.4082482904638631}, true
+	}
+	return right, up, false
+}
+
+// StandardScales are the scales a drawing picks from, largest first.
+var StandardScales = []float64{10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001}
+
+// ScaleText is a scale as a drawing writes it: 1:2, 5:1.
+func ScaleText(s float64) string {
+	if s >= 1 {
+		return fmt.Sprintf("%g:1", s)
+	}
+	return fmt.Sprintf("1:%g", math.Round(1/s*1000)/1000)
+}
+
+// TitleBlockSize is the title block's size in mm, at the sheet's bottom
+// right inside the border.
+const (
+	TitleBlockWidth  = 180.0
+	TitleBlockHeight = 40.0
+	// SheetBorder is the margin from the paper's edge to the frame.
+	SheetBorder = 10.0
+	// viewGap is the space between views.
+	viewGap = 15.0
+)
+
+// Layout places the views: the drawing's own, or the standard ones,
+// front, top, a side and the isometric, by the projection's convention,
+// given each view's width and height on the model in mm (sizes, by
+// kind). It returns the views and the scale, which is the drawing's or,
+// for 0, the largest standard one at which they fit above the title
+// block.
+func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64) {
+	w, h := d.Size()
+	if len(d.Views) > 0 {
+		scale := d.Scale
+		if scale == 0 {
+			scale = 1
+		}
+		return append([]DrawingView(nil), d.Views...), scale
+	}
+	side := "right"
+	if d.FirstAngle {
+		side = "left"
+	}
+	fw, fh := sizes["front"][0], sizes["front"][1]
+	tw, th := sizes["top"][0], sizes["top"][1]
+	sw, sh := sizes[side][0], sizes[side][1]
+	iw, ih := sizes["iso"][0], sizes["iso"][1]
+	// The room: the frame less the title block's height below.
+	roomW := w - 2*SheetBorder - 2*viewGap
+	roomH := h - 2*SheetBorder - TitleBlockHeight - 2*viewGap
+	fits := func(s float64) bool {
+		return s*(math.Max(fw, tw)+math.Max(sw, iw))+viewGap <= roomW &&
+			s*(math.Max(fh, sh)+math.Max(th, ih))+viewGap <= roomH
+	}
+	scale := d.Scale
+	if scale == 0 {
+		scale = StandardScales[len(StandardScales)-1]
+		for _, s := range StandardScales {
+			if fits(s) {
+				scale = s
+				break
+			}
+		}
+	}
+	// A grid of two columns and two rows: the front and the top share a
+	// column, the front and the side a row; the isometric the corner
+	// left.
+	col0 := scale * math.Max(fw, tw)
+	col1 := scale * math.Max(sw, iw)
+	row0 := scale * math.Max(fh, sh) // the front's row
+	row1 := scale * math.Max(th, ih) // the top's row
+	left := SheetBorder + viewGap + (roomW-(col0+col1+viewGap))/2
+	bottom := SheetBorder + TitleBlockHeight + viewGap + (roomH-(row0+row1+viewGap))/2
+	frontX, sideX := left+col0/2, left+col0+viewGap+col1/2
+	var frontY, topY float64
+	if d.FirstAngle {
+		// Top below the front; the left view to the front's right.
+		topY, frontY = bottom+row1/2, bottom+row1+viewGap+row0/2
+	} else {
+		frontY, topY = bottom+row0/2, bottom+row0+viewGap+row1/2
+	}
+	return []DrawingView{
+		{Kind: "front", X: frontX, Y: frontY},
+		{Kind: "top", X: frontX, Y: topY},
+		{Kind: side, X: sideX, Y: frontY},
+		{Kind: "iso", X: sideX, Y: topY},
+	}, scale
+}
+
+// Clone is a copy of the drawing that shares nothing with it; nil for
+// none.
+func (d *Drawing) Clone() *Drawing {
+	if d == nil {
+		return nil
+	}
+	c := *d
+	c.Views = append([]DrawingView(nil), d.Views...)
+	return &c
+}
+
+// DefaultDrawing is the drawing a model starts one with: an A3 sheet,
+// landscape, fitted, third-angle, with hidden edges.
+func DefaultDrawing() *Drawing {
+	return &Drawing{Sheet: "A3", Hidden: true}
+}

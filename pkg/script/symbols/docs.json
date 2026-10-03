@@ -4277,6 +4277,10 @@
 						"decl": "func (d *Doc) Distance(a, b Entity, v float64) Constraint",
 						"text": "Distance sets the distance between two points, or from a point to a\nline segment, a workplane or a face; either may come first. A\nnegative distance from a line, a workplane or a face is on the\nother side of it."
 					},
+					"Drawing": {
+						"decl": "func (d *Doc) Drawing() (dr Drawing)",
+						"text": "Drawing is the model's drawing, or the default one, an A3 sheet\nfitted, if it has none yet. It is a copy: SetDrawing changes it."
+					},
 					"Entity": {
 						"decl": "func (d *Doc) Entity(h uint32) Entity",
 						"text": "Entity is the entity with a handle."
@@ -4296,6 +4300,10 @@
 					"ExportBOM": {
 						"decl": "func (d *Doc) ExportBOM(path string) error",
 						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them."
+					},
+					"ExportDrawing": {
+						"decl": "func (d *Doc) ExportDrawing(path string) (err error)",
+						"text": "ExportDrawing writes the model's drawing to a vector file, by its\nextension: .pdf, .svg, .dxf, .eps, .ps, .plt. It needs the\napplication, or telesapr-cli export-drawing."
 					},
 					"ExprErrors": {
 						"decl": "func (d *Doc) ExprErrors() (errs []string)",
@@ -4513,6 +4521,10 @@
 						"decl": "func (d *Doc) SetChordTolerance(pct float64)",
 						"text": "SetChordTolerance sets how closely meshes follow curves, as a\npercentage of the model's size (0.1 unless set; smaller is finer and\nslower), and regenerates everything. In the application it is the\nsetting Configuration shows; scripts that check volumes against a\nformula use a fine one."
 					},
+					"SetDrawing": {
+						"decl": "func (d *Doc) SetDrawing(dr Drawing)",
+						"text": "SetDrawing gives the model the drawing dr: a sheet A4 to A0, Letter\nor Tabloid; a scale, 0 to fit; views, none for the standard ones\nplaced by the projection."
+					},
 					"SetParameter": {
 						"decl": "func (d *Doc) SetParameter(name, expr string) (err error)",
 						"text": "SetParameter gives the parameter name the expression expr, and adds\nit to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
@@ -4621,6 +4633,14 @@
 					"NewDoc",
 					"Open"
 				]
+			},
+			"Drawing": {
+				"text": "Drawing is the model's sheet of views (roadmap step 18): its size,\nscale, projection, views and title block. See sketch.Drawing.",
+				"kind": "sketch.Drawing"
+			},
+			"DrawingView": {
+				"text": "DrawingView is a view on the sheet, see sketch.DrawingView.",
+				"kind": "sketch.DrawingView"
 			},
 			"Entity": {
 				"text": "Entity is something on the drawing: a point, a line segment, a\ncircle, an arc, a curve, a workplane, a normal, a face. What is\ndrawn makes several: a line segment is an entity and so are its two\nends.",
@@ -5100,6 +5120,10 @@
 						"decl": "func (h *SketchHost) Export(kind ExportKind, path string) error",
 						"text": "Export writes the mesh as STL; the other formats need the\napplication around the sketch."
 					},
+					"ExportDrawing": {
+						"decl": "func (h *SketchHost) ExportDrawing(path string, _ *sketch.Drawing) error",
+						"text": "ExportDrawing fails: drawing needs the application around the\nsketch, or telesapr-cli export-drawing."
+					},
 					"Hovered": {
 						"decl": "func (h *SketchHost) Hovered() sketch.Selection",
 						"text": "Hovered is nothing, for the same reason."
@@ -5479,6 +5503,35 @@
 			},
 			"Dependency": {
 				"text": "Dependency is one group that another group needs, and the first reason found for it.",
+				"kind": "struct"
+			},
+			"Drawing": {
+				"text": "Drawing is the model's sheet.",
+				"kind": "struct",
+				"methods": {
+					"Check": {
+						"decl": "func (d *Drawing) Check() error",
+						"text": "Check reports what is wrong with the drawing's settings."
+					},
+					"Clone": {
+						"decl": "func (d *Drawing) Clone() *Drawing",
+						"text": "Clone is a copy of the drawing that shares nothing with it; nil for none."
+					},
+					"Layout": {
+						"decl": "func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64)",
+						"text": "Layout places the views: the drawing's own, or the standard ones, front, top, a side and the isometric, by the projection's convention, given each view's width and height on the model in mm (sizes, by kind)."
+					},
+					"Size": {
+						"decl": "func (d *Drawing) Size() (w, h float64)",
+						"text": "Size is the drawing's sheet in mm, turned as it is."
+					}
+				},
+				"makers": [
+					"DefaultDrawing"
+				]
+			},
+			"DrawingView": {
+				"text": "DrawingView is a view on the sheet: what it looks at, from where, and where its middle is on the sheet, in mm from the bottom left.",
 				"kind": "struct"
 			},
 			"EdgeRadius": {
@@ -6604,6 +6657,10 @@
 				"decl": "func ConvertLengthExpr(expr string, fromMm, toMm float64) string",
 				"text": "ConvertLengthExpr rewrites the expression of a length in a unit of fromMm millimetres to give the same length in one of toMm: the factor between them is appended, or taken off when it is the one a conversion the other way appended."
 			},
+			"DefaultDrawing": {
+				"decl": "func DefaultDrawing() *Drawing",
+				"text": "DefaultDrawing is the drawing a model starts one with: an A3 sheet, landscape, fitted, third-angle, with hidden edges."
+			},
 			"DefaultView": {
 				"decl": "func DefaultView() View",
 				"text": "DefaultView is the view GraphicsWindow::Init sets up: identity projection at 5 pixels per mm, orthographic."
@@ -6655,9 +6712,17 @@
 				"decl": "func ParseExprText(s string) *core.Expr",
 				"text": "ParseExprText parses a string expression and returns an Expr."
 			},
+			"ScaleText": {
+				"decl": "func ScaleText(s float64) string",
+				"text": "ScaleText is a scale as a drawing writes it: 1:2, 5:1."
+			},
 			"SetConstraintValue": {
 				"decl": "func SetConstraintValue(c *core.Constraint, v float64)",
 				"text": "SetConstraintValue gives a constraint the value v that the user typed: in millimetres, degrees or a ratio, the magnitude the label shows."
+			},
+			"SheetSize": {
+				"decl": "func SheetSize(name string) (w, h float64, ok bool)",
+				"text": "SheetSize is the size of a sheet in mm, landscape."
 			},
 			"SplitNamedText": {
 				"decl": "func SplitNamedText(s string) (name string, named bool, value string)",
@@ -6666,6 +6731,10 @@
 			"ThawExportSettings": {
 				"decl": "func ThawExportSettings(settings core.Settings) ExportSettings",
 				"text": "ThawExportSettings reads the export settings, with C++'s defaults (C++ SolveSpaceUI::Init)."
+			},
+			"ViewDirection": {
+				"decl": "func ViewDirection(kind string) (right, up [3]float64, ok bool)",
+				"text": "ViewDirection is what is to the right and what is up in a view."
 			},
 			"WriteBOMCSV": {
 				"decl": "func WriteBOMCSV(w io.Writer, items []BOMItem) error",
@@ -6911,6 +6980,22 @@
 			},
 			"RequestWorkplane": {
 				"decl": "const RequestWorkplane"
+			},
+			"SheetBorder": {
+				"decl": "const SheetBorder",
+				"text": "TitleBlockSize is the title block's size in mm, at the sheet's bottom right inside the border."
+			},
+			"StandardScales": {
+				"decl": "var StandardScales",
+				"text": "StandardScales are the scales a drawing picks from, largest first."
+			},
+			"TitleBlockHeight": {
+				"decl": "const TitleBlockHeight",
+				"text": "TitleBlockSize is the title block's size in mm, at the sheet's bottom right inside the border."
+			},
+			"TitleBlockWidth": {
+				"decl": "const TitleBlockWidth",
+				"text": "TitleBlockSize is the title block's size in mm, at the sheet's bottom right inside the border."
 			}
 		}
 	},

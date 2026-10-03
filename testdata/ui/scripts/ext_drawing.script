@@ -1,0 +1,33 @@
+# The drawing (an extension): the extrusion of path_extrude, File >
+# Drawing Sheet shows the sheet's screen; the sheet goes to A2, the
+# scale to 1:2, first angle, a title, and File > Export Drawing writes
+# it.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+menu File|Drawing Sheet...
+tw
+twmove 307 105
+twdown L 307 105
+twup L 307 105
+twmove 325 145
+twdown L 325 145
+twup L 325 145
+edit 1:2
+twmove 172 165
+twdown L 172 165
+twup L 172 165
+twmove 181 235
+twdown L 181 235
+twup L 181 235
+edit PLATE
+tw
+file $tmp/sheet.svg
+menu File|Export Drawing...
+save

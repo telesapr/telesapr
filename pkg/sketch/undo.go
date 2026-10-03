@@ -27,6 +27,7 @@ type UndoState struct {
 	Parameters  []Parameter
 	Configs     []Configuration
 	ActiveConf  string
+	Drawing     *Drawing
 	Units       core.Unit
 	Active      core.HGroup
 }
@@ -161,6 +162,7 @@ func (s *Sketch) definingState() *UndoState {
 	ut.Parameters = append([]Parameter(nil), s.Parameters...)
 	ut.Configs = cloneConfigurations(s.Configurations)
 	ut.ActiveConf = s.ActiveConfiguration
+	ut.Drawing = s.Drawing.Clone()
 	ut.Units = s.Units
 	ut.Active = s.Active
 
@@ -194,6 +196,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	s.Parameters = ut.Parameters
 	s.Configurations = ut.Configs
 	s.ActiveConfiguration = ut.ActiveConf
+	s.Drawing = ut.Drawing
 	s.Units = ut.Units
 	s.Active = ut.Active
 

@@ -65,6 +65,8 @@ func init() {
 		{1, "Export &Image...", CmdExportImage, 0, kn, mFile},
 		{1, "Export 2d &View...", CmdExportView, 0, kn, mFile},
 		{1, "Export 2d &Section...", CmdExportSection, 0, kn, mFile},
+		{1, "Drawing S&heet...", CmdDrawingSheet, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuDrawingSheet() }},
+		{1, "Export &Drawing...", CmdExportDrawing, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuExportDrawing() }},
 		{1, "Export 3d &Wireframe...", CmdExportWireframe, 0, kn, mFile},
 		{1, "Export Triangle &Mesh...", CmdExportMesh, 0, kn, mFile},
 		{1, "Export &Surfaces...", CmdExportSurfaces, 0, kn, mFile},

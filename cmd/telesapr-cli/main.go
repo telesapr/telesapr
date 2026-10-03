@@ -18,6 +18,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/persist/convert"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/ui"
 	"github.com/telesapr/telesapr/pkg/version"
@@ -56,6 +57,9 @@ Commands:
     export-view --output <pattern> --view <direction> [--chord-tol <tolerance>]
                 [--bg-color <on|off>]
         Exports a view of the sketch, in a 2d vector format.
+    export-drawing --output <pattern> [--chord-tol <tolerance>]
+        Exports the sketch's drawing (File > Drawing Sheet), or the default
+        one, an A3 sheet of the standard views fitted, in a 2d vector format.
     export-wireframe --output <pattern> [--chord-tol <tolerance>]
         Exports a wireframe of the sketch, in a 3d vector format.
     export-mesh --output <pattern> [--chord-tol <tolerance>]
@@ -86,7 +90,7 @@ Commands:
 	fmt.Fprintf(w, `
 File formats:
     thumbnail:%s
-    export-view:%s
+    export-view, export-drawing:%s
     export-wireframe:%s
     export-mesh:%s
     export-surfaces:%s
@@ -268,6 +272,8 @@ func runCommand(args []string, stderr io.Writer) bool {
 		accepted = []string{"--output", "--view", "--chord-tol", "--bg-color"}
 	case "export-wireframe":
 		accepted = []string{"--output", "--chord-tol"}
+	case "export-drawing":
+		accepted = []string{"--output", "--chord-tol"}
 	case "export-mesh":
 		accepted = []string{"--output", "--chord-tol"}
 	case "export-surfaces":
@@ -318,6 +324,15 @@ func runCommand(args []string, stderr io.Writer) bool {
 			s.ss.ExportChordTol = o.chordTol
 			s.ss.ExportViewOrWireframeTo(output, true)
 			return nil
+		}
+	case "export-drawing":
+		runner = func(s *session, output string) error {
+			s.ss.ExportChordTol = o.chordTol
+			d := s.ss.SK.Drawing
+			if d == nil {
+				d = sketch.DefaultDrawing()
+			}
+			return s.ss.ExportDrawingTo(output, d)
 		}
 	case "export-mesh":
 		runner = func(s *session, output string) error {
