@@ -594,6 +594,11 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 		case "solid-edge":
 			g.SolidEdges = append(g.SolidEdges, d.solidEdge(c))
+		case "appearance":
+			g.Appearance = d.word(d.fieldArgs(c, 1)[0])
+		case "face-appearance":
+			a := d.fieldArgs(c, 2)
+			g.FaceAppearances = append(g.FaceAppearances, sketch.FaceAppearance{Face: srf.FaceID(d.handle(a[0])), Appearance: d.word(a[1])})
 		case "edge-radius":
 			// "edge-radius <n> = <expression>": the fillet's n-th edge,
 			// counting its entities and then its solid edges.

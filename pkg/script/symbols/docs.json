@@ -4321,6 +4321,10 @@
 						"decl": "func (d *Doc) Extrude(depth float64, name string) Group",
 						"text": "Extrude makes a solid of the active group's sketch by extruding it\nby depth along the normal of its workplane, or against it for a\nnegative depth. The depth is where the extrusion starts, as when it\nis dragged; constrain a point of it to keep it. The new group\nbecomes active."
 					},
+					"FaceAppearance": {
+						"decl": "func (d *Doc) FaceAppearance(face SolidFace) (name string)",
+						"text": "FaceAppearance is the appearance the face has: its own, its group's,\nor \"\" for the default."
+					},
 					"Fillet": {
 						"decl": "func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group",
 						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust end at corners of three flat faces. An edge that sticks out is\nrounded off, and one that goes in, as a pocket's, is filled. Two\nrounded edges that meet at a corner are mitred, their cylinders\nmeeting along an ellipse, the one that turns further going on past it\nwhen the faces don't lie alike about them; three get a sphere. A\ncircle or arc where a flat face meets a cylinder or a cone about the\ncircle's axis, as an extruded circle's, a hole's rim, a boss's foot or\na lathed frustum's top, is rounded all round by a torus. An edge\ntakes with it the edges it meets smoothly, as round a rectangle whose\ncorners are rounded. An edge may have a radius of its own\n(SetEdgeRadius), but edges that meet at a corner need one. The faces\na fillet makes are exact cylinders, spheres and tori, and their edges\nhave names. The new group becomes active."
@@ -4532,6 +4536,10 @@
 					"SetDrawing": {
 						"decl": "func (d *Doc) SetDrawing(dr Drawing)",
 						"text": "SetDrawing gives the model the drawing dr: a sheet A4 to A0, Letter\nor Tabloid; a scale, 0 to fit; views, none for the standard ones\nplaced by the projection."
+					},
+					"SetFaceAppearance": {
+						"decl": "func (d *Doc) SetFaceAppearance(face SolidFace, name string)",
+						"text": "SetFaceAppearance gives one face of the solid its own appearance, or\nwith \"\" takes it away, so that the face has its group's. The face is\nkept by its identity, in the group that made it."
 					},
 					"SetParameter": {
 						"decl": "func (d *Doc) SetParameter(name, expr string) (err error)",
@@ -4766,6 +4774,10 @@
 				"text": "Group is a group of the sketch: a drawing in a workplane or in 3d,\nor a step that makes a solid from the group before it, as an\nextrusion does.",
 				"kind": "struct",
 				"methods": {
+					"Appearance": {
+						"decl": "func (g Group) Appearance() (name string)",
+						"text": "Appearance is the group's solid's appearance, \"\" for the default,\nplastic."
+					},
 					"Bounds": {
 						"decl": "func (g Group) Bounds() (min, max Vec)",
 						"text": "Bounds are the corners of the box around the model up to and with\nthis group."
@@ -4889,6 +4901,10 @@
 					"Requests": {
 						"decl": "func (g Group) Requests() (requests []Request)",
 						"text": "Requests are what was drawn in the group."
+					},
+					"SetAppearance": {
+						"decl": "func (g Group) SetAppearance(name string)",
+						"text": "SetAppearance gives the group's solid an appearance: matte, plastic,\nglossy or metal, or \"\" for the default. Its colour stays."
 					},
 					"SetColor": {
 						"decl": "func (g Group) SetColor(red, green, blue int)",
@@ -5359,6 +5375,10 @@
 			}
 		},
 		"funcs": {
+			"Appearances": {
+				"decl": "func Appearances() []string",
+				"text": "Appearances are the appearances a solid or a face can have, how it\ntakes light when the window shades (roadmap 19.2): matte, plastic,\nglossy and metal."
+			},
 			"Commands": {
 				"decl": "func Commands() []string",
 				"text": "Commands lists the commands of the main menu as the command search\n(Edit \u003e Find Command) shows them, \"Menu \u003e Entry\", for RunCommand;\nnone in a program without the interface."
@@ -5595,6 +5615,10 @@
 						"decl": "func (e ExprError) Error() string"
 					}
 				}
+			},
+			"FaceAppearance": {
+				"text": "FaceAppearance is a face's own appearance, by the face's identity.",
+				"kind": "struct"
 			},
 			"Freedom": {
 				"text": "Freedom is how much of an entity its group's constraints fix.",
@@ -6045,6 +6069,10 @@
 					"AnyShellsStale": {
 						"decl": "func (sk *Sketch) AnyShellsStale() bool",
 						"text": "AnyShellsStale reports whether a group's solid is out of date."
+					},
+					"AppearanceOf": {
+						"decl": "func (sk *Sketch) AppearanceOf(id srf.FaceID) string",
+						"text": "AppearanceOf is the appearance of the face id of the model: its own, or its group's, or \"\" for the default."
 					},
 					"Apply": {
 						"decl": "func (sk *Sketch) Apply(j *ShellJob) bool",
@@ -6716,6 +6744,10 @@
 			"ExportMeshAsStlTo": {
 				"decl": "func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error",
 				"text": "ExportMeshAsStlTo writes m as a binary STL file, in export units of scale mm (C++ SolveSpaceUI::ExportMeshAsStlTo)."
+			},
+			"FaceGroup": {
+				"decl": "func FaceGroup(id srf.FaceID) core.HGroup",
+				"text": "FaceGroup is the group that made a face, by its identity: an entity's group, or for a surface no entity names, the group in its origin."
 			},
 			"GenerateConstraint": {
 				"decl": "func GenerateConstraint(c *core.Constraint, l *[]core.Param)",

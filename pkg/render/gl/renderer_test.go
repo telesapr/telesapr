@@ -318,3 +318,49 @@ func TestInvalidatePixmap(t *testing.T) {
 		}
 	}
 }
+
+// shadedScene draws boxes of three materials lit Shaded (roadmap 19.1,
+// 19.2).
+func shadedScene(c render.ViewportCanvas) {
+	l := lighting()
+	l.Shaded = true
+	c.SetLighting(l)
+	c.SetCamera(isoCamera())
+	if mc, ok := c.(render.MaterialCanvas); ok {
+		mc.SetMaterials(func(face uint32) render.Material {
+			return render.Materials[render.MaterialNames[int(face)%len(render.MaterialNames)]]
+		})
+	}
+	c.StartFrame()
+	front := c.GetFill(render.Fill{Color: core.RgbaColor{}})
+	c.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, green), front, 0)
+	c.FinishFrame()
+}
+
+// The GL program lights each pixel as the software renderer lights
+// each vertex: on flat faces seen without perspective they are the
+// same, and the shaded box differs from the one lit by the fixed
+// function.
+func TestShadedMatchesSoftware(t *testing.T) {
+	g := newGL(t)
+	shadedScene(g)
+	got := g.ReadFrame()
+	s := newSoft()
+	shadedScene(s)
+	want := s.ReadFrame()
+	dump(t, "gl-shaded", got)
+	dump(t, "soft-shaded", want)
+	if n := diff(got, want, 8); n > width*height/100 {
+		t.Errorf("%d of %d pixels differ from the software renderer", n, width*height)
+	}
+	plain := newSoft()
+	plain.SetLighting(lighting())
+	plain.SetCamera(isoCamera())
+	plain.StartFrame()
+	plain.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, green),
+		plain.GetFill(render.Fill{Color: core.RgbaColor{}}), 0)
+	plain.FinishFrame()
+	if n := diff(want, plain.ReadFrame(), 8); n == 0 {
+		t.Error("shaded and fixed-function lighting are the same")
+	}
+}

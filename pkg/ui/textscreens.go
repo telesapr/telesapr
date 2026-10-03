@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/version"
 )
@@ -826,6 +827,18 @@ func (tw *TextWindow) ShowGroupInfo() {
 			"%f%D%Lc%Fd%s intersection%E  ",
 			lf(tw.ScreenChangeGroupOption), sketch.CombineDifference, radio(diff),
 			lf(tw.ScreenChangeGroupOption), sketch.CombineIntersection, radio(intr))
+		// The appearance when the window shades (roadmap 19.2).
+		app := g.Appearance
+		if app == "" {
+			app = "plastic"
+		}
+		line := "%Bd   %Ftappearance%E"
+		var args []any
+		for _, name := range render.MaterialNames {
+			line += "  %f%Lp%D%Fd%s " + name + "%E"
+			args = append(args, lf(tw.ScreenChangeAppearance), 'a', appearanceIndex(name), radio(app == name))
+		}
+		tw.Printf(false, line, args...)
 
 		if g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe ||
 			g.Type == sketch.GroupRevolve || g.Type == sketch.GroupHelix || g.Type == sketch.GroupSweep {

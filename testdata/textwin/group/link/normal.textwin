@@ -333,53 +333,65 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24      suppress this group's solid model
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 26 
+row 28 
  0-99 64 64 0
-row 28    show entities from this group
+row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 30    suppress this group and the groups that use it
+row 32    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (6 DOF)
+row 53  constraints in group (6 DOF)
  0-99 74 64 0
-row 53    (none)
+row 55    (none)
  0-99 64 61 0
-row 55 
+row 57 
  0-99 64 64 0
 screen solve 3
 row 0  home   in plane: r001-#XY
@@ -428,55 +440,67 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24      suppress this group's solid model
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 26 
+row 28 
  0-99 64 64 0
-row 28    show entities from this group
+row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 30    suppress this group and the groups that use it
+row 32    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 35    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 37    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 41    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 43 
+row 45 
  0-99 64 64 0
-row 45  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 47    (none)
+row 49    (none)
  0-99 64 61 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  constraints in group (6 DOF)
+row 53  constraints in group (6 DOF)
  0-99 74 64 0
-row 53    (none)
+row 55    (none)
  0-99 64 61 0
-row 55 
- 0-99 64 64 0
 row 57 
+ 0-99 64 64 0
+row 59 
  0-99 64 64 0
 screen configuration
 row 0  home   in plane: r001-#XY
@@ -705,67 +729,71 @@ row 115     colour entities by constraint state
  0-1 64 64 0
  2-39 64 64 108 0 1 0
  40-99 64 64 0
-row 117     use camera mouse navigation
+row 117     shade solids by their appearance
+ 0-1 64 64 0
+ 2-36 64 64 108 0 1 0
+ 37-99 64 64 0
+row 119     use camera mouse navigation
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 119     use turntable mouse navigation
+row 121     use turntable mouse navigation
  0-1 64 64 0
  2-34 64 64 108 0 1 0
  35-99 64 64 0
-row 121     edit newly added dimensions
+row 123     edit newly added dimensions
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 123     arc default is diameter
+row 125     arc default is diameter
  0-1 64 64 0
  2-27 64 64 108 0 1 0
  28-99 64 64 0
-row 125     display the full path in the title bar
+row 127     display the full path in the title bar
  0-1 64 64 0
  2-42 64 64 108 0 1 0
  43-99 64 64 0
-row 127     draw with OpenGL
+row 129     draw with OpenGL
  0-1 64 64 0
  2-20 64 64 108 0 1 0
  21-99 64 64 0
-row 129     ask before an AI program's script runs
+row 131     ask before an AI program's script runs
  0-1 64 64 0
  2-42 64 64 108 0 1 0
  43-99 64 64 0
-row 131 
+row 133 
  0-99 64 64 0
-row 133  autosave interval (in minutes)
+row 135  autosave interval (in minutes)
  0-30 74 64 0
  31-99 64 64 0
-row 135    5 [change]
+row 137    5 [change]
  0-4 64 61 0
  5-12 6c 61 108 0 1 0
  13-99 64 61 0
-row 137 
+row 139 
  0-99 64 64 0
-row 139  redundant constraint timeout (in ms)
+row 141  redundant constraint timeout (in ms)
  0-36 74 64 0
  37-99 64 64 0
-row 141    1000 [change]
+row 143    1000 [change]
  0-7 64 61 0
  8-15 6c 61 108 0 1 0
  16-99 64 61 0
-row 143 
+row 145 
  0-99 64 64 0
-row 145  animation speed (in ms; 0 to disable)
+row 147  animation speed (in ms; 0 to disable)
  0-37 74 64 0
  38-99 64 64 0
-row 147    800 [change]
+row 149    800 [change]
  0-6 64 61 0
  7-14 6c 61 108 0 1 0
  15-99 64 61 0
-row 149 
+row 151 
  0-99 64 64 0
-row 151 (renderer)
 row 153 (renderer)
 row 155 (renderer)
-row 157 
+row 157 (renderer)
+row 159 
  0-99 64 64 0
 screen styles
 row 0  home   in plane: r001-#XY

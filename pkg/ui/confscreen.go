@@ -148,6 +148,13 @@ func (tw *TextWindow) ScreenChangeColorByFreedom(link int, v uint32) {
 	tw.ss.GW.Invalidate(false)
 }
 
+// ScreenChangeShaded turns the shading by appearances on or off
+// (roadmap 19.1).
+func (tw *TextWindow) ScreenChangeShaded(link int, v uint32) {
+	tw.ss.Shaded = !tw.ss.Shaded
+	tw.ss.GW.Invalidate(false)
+}
+
 func (tw *TextWindow) ScreenChangeAutomaticLineConstraints(link int, v uint32) {
 	tw.ss.AutomaticLineConstraints = !tw.ss.AutomaticLineConstraints
 	tw.ss.GW.Invalidate(false)
@@ -380,6 +387,8 @@ func (tw *TextWindow) ShowConfiguration() {
 		lf(tw.ScreenChangeAutomaticLineConstraints), check(ss.AutomaticLineConstraints))
 	tw.Printf(false, "  %Fd%f%Ll%s  colour entities by constraint state%E",
 		lf(tw.ScreenChangeColorByFreedom), check(ss.ColorByFreedom))
+	tw.Printf(false, "  %Fd%f%Ll%s  shade solids by their appearance%E",
+		lf(tw.ScreenChangeShaded), check(ss.Shaded))
 	tw.Printf(false, "  %Fd%f%Ll%s  use camera mouse navigation%E",
 		lf(tw.ScreenChangeCameraNav), check(ss.CameraNav))
 	tw.Printf(false, "  %Fd%f%Ll%s  use turntable mouse navigation%E",

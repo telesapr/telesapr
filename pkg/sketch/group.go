@@ -198,6 +198,12 @@ type Group struct {
 	// group's solid as it was (shelljob.go).
 	ShellsStale bool
 
+	// Appearance is how the group's solid takes light when the window
+	// shades (roadmap 19.2): matte, plastic, glossy or metal, "" for
+	// plastic; FaceAppearances give single faces their own.
+	Appearance      string
+	FaceAppearances []FaceAppearance
+
 	// Edges are the entities a chamfer cuts, or the path a sweep
 	// follows, in the order the user gave them.
 	Edges []core.HEntity
@@ -356,4 +362,30 @@ type GroupList []Group
 // Sketch::GenerateAll. Cleared on each invocation.
 type SketchDiagnostic struct {
 	AddConstraintErrors []string
+}
+
+// FaceAppearance is a face's own appearance, by the face's identity.
+type FaceAppearance struct {
+	Face       srf.FaceID
+	Appearance string
+}
+
+// FaceGroup is the group that made a face, by its identity: an
+// entity's group, or for a surface no entity names, the group in its
+// origin.
+func FaceGroup(id srf.FaceID) core.HGroup { return faceGroup(id) }
+
+// AppearanceOf is the appearance of the face id of the model: its own,
+// or its group's, or "" for the default.
+func (sk *Sketch) AppearanceOf(id srf.FaceID) string {
+	g := sk.GetGroup(faceGroup(id))
+	if g == nil {
+		return ""
+	}
+	for _, fa := range g.FaceAppearances {
+		if fa.Face == id {
+			return fa.Appearance
+		}
+	}
+	return g.Appearance
 }

@@ -52,6 +52,9 @@ type Renderer struct {
 	lights  [2]glLight
 	ambient float64
 
+	// materials gives a face's material for Shaded lighting.
+	materials func(face uint32) render.Material
+
 	// The user's clip plane in model space, and as a clip-space plane
 	// for the current projection: userClip is its signed distance
 	// function, nil with no plane, and userEq its coefficients of x,
@@ -77,6 +80,10 @@ func (r *Renderer) SetCamera(c render.Camera) {
 	r.camera = c
 	r.updateProjection()
 }
+
+// SetMaterials sets what gives each face's material when the lighting
+// is Shaded.
+func (r *Renderer) SetMaterials(of func(face uint32) render.Material) { r.materials = of }
 
 // SetLighting sets the lighting for the next frame.
 func (r *Renderer) SetLighting(l render.Lighting) { r.lighting = l }
@@ -599,9 +606,19 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 		if twoSide && !frontFacing {
 			mat, flip = matBack, true
 		}
-		vs[0].col = r.light(na, mat, flip)
-		vs[1].col = r.light(nb, mat, flip)
-		vs[2].col = r.light(nc, mat, flip)
+		if r.lighting.Shaded {
+			m := render.Materials["plastic"]
+			if r.materials != nil {
+				m = r.materials(uint32(tr.Meta.Face))
+			}
+			vs[0].col = r.shade(na, mat, flip, m)
+			vs[1].col = r.shade(nb, mat, flip, m)
+			vs[2].col = r.shade(nc, mat, flip, m)
+		} else {
+			vs[0].col = r.light(na, mat, flip)
+			vs[1].col = r.light(nb, mat, flip)
+			vs[2].col = r.light(nc, mat, flip)
+		}
 		tris = r.appendPolygonTriangles(tris, vs)
 	}
 	r.rasterTriangles(tris, fragColor)
@@ -699,6 +716,26 @@ func (r *Renderer) light(n geom.Vector, mat [4]float64, flip bool) [4]float64 {
 	}
 	c[3] = mat[3]
 	return c
+}
+
+// shade is a vertex's Shaded lighting (render.Shade), with the back
+// face lit with the normal reversed when flip is set.
+func (r *Renderer) shade(n geom.Vector, mat [4]float64, flip bool, m render.Material) [4]float64 {
+	if flip {
+		n = n.ScaledBy(-1)
+	}
+	var lights []geom.Vector
+	var intensity []float64
+	for _, l := range r.lights {
+		if l.enabled {
+			lights = append(lights, l.dir.WithMagnitude(1))
+			intensity = append(intensity, l.intensity)
+		}
+	}
+	view := r.camera.ProjRight.Cross(r.camera.ProjUp).WithMagnitude(1)
+	c := render.Shade(n, [3]float64{mat[0], mat[1], mat[2]}, r.ambient, lights, intensity, view,
+		r.camera.ProjUp.WithMagnitude(1), m)
+	return [4]float64{c[0], c[1], c[2], mat[3]}
 }
 
 // DrawFaces fills the triangles of the given faces, unlit.

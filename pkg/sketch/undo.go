@@ -139,6 +139,8 @@ func (s *Sketch) definingState() *UndoState {
 			Subtype:                src.Subtype,
 			SkipFirst:              src.SkipFirst,
 			MirrorSolid:            src.MirrorSolid,
+			Appearance:             src.Appearance,
+			FaceAppearances:        slices.Clone(src.FaceAppearances),
 			BooleanFailed:          src.BooleanFailed,
 			MeshCombine:            src.MeshCombine,
 			ForceToMesh:            src.ForceToMesh,
