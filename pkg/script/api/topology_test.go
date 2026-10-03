@@ -289,3 +289,57 @@ func TestFaceByAnyPatch(t *testing.T) {
 	}()
 	s.Face(0x12345)
 }
+
+// The naming of 9.6 with a thread upstream whose length changes: the
+// names of every edge of a threaded part, the helix's own among them,
+// still resolve once the thread is made longer, which gives the helix
+// more sections (roadmap 14.2); but for the edges where the last
+// section met the thread's end, which now meets a later one: those say
+// their faces no longer meet, and name no other edge.
+func TestNamesThroughThreadLength(t *testing.T) {
+	d := New()
+	d.Circle(V(0, 0, 0), 4)
+	d.Extrude(30, "shank")
+	var top Entity
+	for _, e := range d.Active().Entities() {
+		if e.Kind() == "circle" && e.Center().Pos().Z == 30 {
+			top = e
+		}
+	}
+	hel := d.Thread(top, ThreadOptions{Designation: "M8", Length: 8})
+	var names []string
+	for _, e := range hel.Solid().Edges() {
+		names = append(names, e.Name())
+	}
+	cs := hel.Constraints()
+	if len(cs) != 1 {
+		t.Fatalf("the helix has %d constraints", len(cs))
+	}
+	if err := cs[0].SetExpr(fmt.Sprint(cs[0].Value() * 2)); err != nil {
+		t.Fatal(err)
+	}
+	if r := hel.Check(); !r.Sound() {
+		t.Fatalf("the longer thread: %s", r.String())
+	}
+	s := hel.Solid()
+	resolved, gone := 0, 0
+	for _, name := range names {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					if err, ok := r.(error); ok && strings.Contains(err.Error(), "no longer meet") {
+						gone++
+						return
+					}
+					t.Errorf("%s: %v", name, r)
+				}
+			}()
+			s.Edge(name)
+			resolved++
+		}()
+	}
+	// One for each curve of the ridge's profile.
+	if gone > 4 || resolved+gone != len(names) {
+		t.Errorf("of %d names, %d resolve and %d are gone", len(names), resolved, gone)
+	}
+}
