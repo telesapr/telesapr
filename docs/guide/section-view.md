@@ -21,4 +21,5 @@ doc.ClearSection()
 ## Not yet
 
 The section is part of the view, not of the model: it is not saved in the file, and undo does
-not change it. The cut face has one colour; a hatch is roadmap 16.12.
+not change it. The cut face is filled and hatched in the colour of the SectionCap line style
+(Line Styles on the home screen), the hatch at 45 degrees every 10 pixels.
