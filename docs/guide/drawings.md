@@ -33,6 +33,15 @@ Under **sections and details**:
 They are lettered A, B, ... in that order and placed in columns right of the views, unless a
 script gives them a place (`X`, `Y`).
 
+Under **dimensions**: select one or two edges of the solid in the model (a length, a diameter or a
+radius of one; the distance between two), then `[dimension the selected edges]` and type the view
+and kind, `front length` or `front distance 15` with how far out in mm. A dimension holds the
+edges' names, so each time the drawing is made it finds them in the solid as it is and measures
+them as the view shows them: a length along the view, the distance from the first edge, which must
+be straight, to the second square to it, a circle's diameter (DIA) or radius (R) with a leader
+when it faces the view, or across it when it is seen edge on. The screen lists each with what it
+measures now; one whose edge is gone, or seen end on, says why and isn't drawn.
+
 File > Export Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
 sheet's size in millimetres. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
 without a window.
@@ -47,13 +56,16 @@ doc.SetDrawing(d)
 must(doc.ExportDrawing("bracket.pdf"))   // in the application
 ```
 
-`d.Sections` and `d.Details` hold the section and detail views; `d.Views` places views where you
+`doc.AddDrawingDimension("front", "length", 10, edge)` adds a dimension by solid edges and
+`doc.DrawingDimensions()` measures them. `d.Sections` and `d.Details` hold the section and detail
+views; `d.Views` places views where you
 want them, by kind and the sheet position of their middle in
 millimetres from the bottom left; empty, the standard ones are placed.
 
 ## Not yet
 
-Dimensions on the views (roadmap 18.4). A section's half beyond is drawn with hidden edges as the
+Dimensions are of edges only: not of vertices, angles, or on the isometric, a section or a
+detail. A section's half beyond is drawn with hidden edges as the
 drawing has them; a section is of the whole solid, not a broken-out or offset section. The drawing is not
 shown in the window, only written. The text is the vector font's, which has no colon: the title
 block writes a scale of 1:2 as 1/2.

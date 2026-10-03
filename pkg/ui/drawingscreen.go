@@ -103,6 +103,28 @@ func (tw *TextWindow) ShowDrawing() {
 	tw.Printf(false, "   %Fl%Ld%f[add a detail]%E   (type: view x y radius times, as front 10 5 8 2)",
 		lf(tw.ScreenChangeDrawing))
 
+	// The dimensions (roadmap 18.4), measured as the solid is.
+	tw.Printf(true, "%Ft   dimensions%E")
+	var results []DimensionResult
+	if len(d.Dimensions) > 0 {
+		results = tw.ss.DrawingDimensions(d)
+	}
+	for i, dm := range d.Dimensions {
+		bg := byte('a' + i%2*3)
+		value := "?"
+		if i < len(results) && results[i].Err == nil {
+			value = formatValue(results[i].Value)
+		}
+		tw.Printf(false, "%Bp   %s of %d edge%s on the %s view: %s %Fl%Lr%D%f[delete]%E",
+			bg, dm.Kind, len(dm.Edges), map[bool]string{true: "s"}[len(dm.Edges) > 1], dm.View, value,
+			i, lf(tw.ScreenChangeDrawing))
+		if i < len(results) && results[i].Err != nil {
+			tw.Printf(false, "%Bp     %Fx%s%E", bg, results[i].Err.Error())
+		}
+	}
+	tw.Printf(false, "   %Fl%Lm%f[dimension the selected edges]%E   (type: view kind, as front length)",
+		lf(tw.ScreenChangeDrawing))
+
 	tw.Printf(true, "%Ft   title block%E")
 	fields := []struct {
 		link  int
@@ -175,6 +197,21 @@ func (tw *TextWindow) ScreenChangeDrawing(link int, v uint32) {
 				d.Details = append(d.Details[:v], d.Details[v+1:]...)
 			}
 		})
+	case 'r':
+		change(func(d *sketch.Drawing) {
+			if int(v) < len(d.Dimensions) {
+				d.Dimensions = append(d.Dimensions[:v], d.Dimensions[v+1:]...)
+			}
+		})
+	case 'm':
+		ss.GW.GroupSelection()
+		if n := len(ss.GW.gs.solidEdge); n < 1 || n > 2 {
+			ss.Error("Select one edge of the solid for a length, a diameter or a radius, or two for the " +
+				"distance between them, then dimension them on a view of the drawing.")
+			return
+		}
+		tw.ShowEditControl(18, "front length")
+		tw.edit.meaning = EditDrawingDimension
 	case 'a':
 		tw.ShowEditControl(18, "front 0")
 		tw.edit.meaning = EditDrawingSection
@@ -246,6 +283,32 @@ func (tw *TextWindow) editDrawing(s string) bool {
 		}
 		ss.UndoRemember()
 		ss.SK.Drawing = d
+	case EditDrawingDimension:
+		f := strings.Fields(s)
+		if len(f) < 2 || len(f) > 3 {
+			ss.Error("A dimension is typed as its view and kind, as front length, and how far out, as front length 10.")
+			return true
+		}
+		dm := sketch.DrawingDimension{View: f[0], Kind: f[1]}
+		if len(f) == 3 {
+			off, err := strconv.ParseFloat(f[2], 64)
+			if err != nil {
+				ss.Error("Not a number: '%s'.", f[2])
+				return true
+			}
+			dm.Offset = off
+		}
+		ss.GW.GroupSelection()
+		dm.Edges = append(dm.Edges, ss.GW.gs.solidEdge...)
+		d := ss.drawing().Clone()
+		d.Dimensions = append(d.Dimensions, dm)
+		if err := d.Check(); err != nil {
+			ss.Error("%s.", capitalize(err.Error()))
+			return true
+		}
+		ss.UndoRemember()
+		ss.SK.Drawing = d
+		ss.GW.ClearSelection()
 	case EditDrawingField:
 		ss.UndoRemember()
 		d := ss.drawing()

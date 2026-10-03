@@ -177,7 +177,7 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 | `param <name> = <expression>` | A named parameter, see "Parameters". |
 | `configuration <string> { param <name> = <expression> ... }` | A configuration: a named set of the parameters' expressions, see "Parameters". |
 | `active-configuration <string>` | The configuration the table holds, if one does. |
-| `drawing { ... }` | The model's drawing: `sheet <name>`, `portrait`, `scale <real>` (0 or left out to fit), `first-angle`, `hidden`, a `view <kind> <x> <y>` for each placed view (none for the standard ones), a `section <view> <offset> <x> <y>` for each section view and a `detail <view> <cx> <cy> <r> <scale> <x> <y>` for each detail view (`x`, `y` 0 to place it), and `title`, `author`, `number`, `revision`, `material`, `company` strings. |
+| `drawing { ... }` | The model's drawing: `sheet <name>`, `portrait`, `scale <real>` (0 or left out to fit), `first-angle`, `hidden`, a `view <kind> <x> <y>` for each placed view (none for the standard ones), a `section <view> <offset> <x> <y>` for each section view and a `detail <view> <cx> <cy> <r> <scale> <x> <y>` for each detail view (`x`, `y` 0 to place it), a `dimension <view> <kind> <offset> { solid-edge ... }` block for each dimension, `kind` length, distance, diameter or radius, its edges by name as a chamfer's are, and `title`, `author`, `number`, `revision`, `material`, `company` strings. |
 | `group <handle> <type> <name> { ... }` | A group. |
 | `request <handle> <type> { ... }` | A request, what the user drew. |
 | `constraint <handle> <type> { ... }` | A constraint. |

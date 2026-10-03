@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // A drawing (roadmap step 18) is a sheet of paper with views of the
@@ -38,6 +40,24 @@ type DrawingDetail struct {
 	CX, CY, R, Scale, X, Y float64
 }
 
+// DrawingDimension is a dimension on a view of the drawing (roadmap
+// 18.4, H2): the length of an edge, the distance between two, or the
+// diameter or radius of a circular one, the edges held by their names
+// (step 9), so that it measures them again as the model changes. Offset
+// is how far, in sheet mm, the dimension line stands off what it
+// measures, out from the view's middle (in toward it when negative; 0
+// for 10).
+type DrawingDimension struct {
+	View   string
+	Kind   string
+	Edges  []topo.Name
+	Offset float64
+}
+
+// DimensionKinds are the kinds of drawing dimension and how many edges
+// each takes.
+var DimensionKinds = map[string]int{"length": 1, "distance": 2, "diameter": 1, "radius": 1}
+
 // Drawing is the model's sheet.
 type Drawing struct {
 	// Sheet is A4 to A0, Letter or Tabloid; Portrait turns it.
@@ -59,6 +79,8 @@ type Drawing struct {
 	// A, B, ... in that order.
 	Sections []DrawingSection
 	Details  []DrawingDetail
+	// Dimensions are the dimensions on the views.
+	Dimensions []DrawingDimension
 	// The title block (roadmap 18.2).
 	Title, Author, Number, Revision, Material, Company string
 }
@@ -120,6 +142,18 @@ func (d *Drawing) Check() error {
 		}
 		if !(dt.R > 0) || !(dt.Scale > 0) {
 			return fmt.Errorf("a detail's radius and scale are more than zero, not %g and %g", dt.R, dt.Scale)
+		}
+	}
+	for _, dm := range d.Dimensions {
+		if _, _, ok := ViewDirection(dm.View); !ok || dm.View == "iso" {
+			return fmt.Errorf("no dimension on %q: dimensions are on front, back, top, bottom, left or right", dm.View)
+		}
+		n, ok := DimensionKinds[dm.Kind]
+		if !ok {
+			return fmt.Errorf("no dimension %q: they are length, distance, diameter and radius", dm.Kind)
+		}
+		if len(dm.Edges) != n {
+			return fmt.Errorf("a %s dimension measures %d edge%s, not %d", dm.Kind, n, map[bool]string{true: "s"}[n > 1], len(dm.Edges))
 		}
 	}
 	return nil
@@ -244,6 +278,11 @@ func (d *Drawing) Clone() *Drawing {
 	c.Views = append([]DrawingView(nil), d.Views...)
 	c.Sections = append([]DrawingSection(nil), d.Sections...)
 	c.Details = append([]DrawingDetail(nil), d.Details...)
+	c.Dimensions = nil
+	for _, dm := range d.Dimensions {
+		dm.Edges = append([]topo.Name(nil), dm.Edges...)
+		c.Dimensions = append(c.Dimensions, dm)
+	}
 	return &c
 }
 

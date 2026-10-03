@@ -292,6 +292,7 @@ func (ss *SolveSpaceUI) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch
 		sheetText(&sheet, label, 3, geom.Vector{X: v.X - w/2, Y: v.Y - scale*sizes[v.Kind][1]/2 - 7})
 	}
 	ss.drawExtras(&sheet, g, d, views, scale, edges, sizes, mids)
+	ss.drawDimensions(&sheet, g, d, views, scale, mids)
 	ss.sheetFrame(&sheet, d, scale)
 	return sheet, views, scale, nil
 }

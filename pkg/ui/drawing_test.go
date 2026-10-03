@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -176,5 +177,71 @@ func TestDrawingSectionDetail(t *testing.T) {
 		if _, _, _, err := ss.DrawingSheet(bad); err == nil {
 			t.Errorf("%s: no error", name)
 		}
+	}
+}
+
+// Dimensions on the front view (roadmap 18.4): the block's top edge
+// (120), the distance from its bottom edge to its top (60), the hole's
+// diameter (16). They follow the model: the block made wider, the
+// edge's length with it. The hole taken away, its dimension can't be
+// measured, and says why; the others still can.
+func TestDrawingDimensions(t *testing.T) {
+	ss, doc := drawingModel(t)
+	var block, hole api.Group
+	for _, g := range doc.Groups() {
+		switch g.Name() {
+		case "block":
+			block = g
+		case "hole":
+			hole = g
+		}
+	}
+	solid := hole.Solid()
+	var top, bottom, rim api.SolidEdge
+	for _, e := range solid.Edges() {
+		a, b := e.Ends()
+		switch {
+		case e.Straight() && a.Z == 40 && b.Z == 40 && a.Y == 60 && b.Y == 60:
+			top = e
+		case e.Straight() && a.Z == 40 && b.Z == 40 && a.Y == 0 && b.Y == 0:
+			bottom = e
+		case !e.Straight() && a.Z == 40 && rim.Name() == "edge 0 0 0":
+			rim = e
+		}
+	}
+	doc.AddDrawingDimension("front", "length", 10, top)
+	doc.AddDrawingDimension("front", "distance", -12, bottom, top)
+	doc.AddDrawingDimension("front", "diameter", 0, rim)
+	values, errs := doc.DrawingDimensions()
+	want := []float64{120, 60, 16}
+	for i := range want {
+		if errs[i] != nil || math.Abs(values[i]-want[i]) > 1e-6 {
+			t.Errorf("dimension %d: %g, %v, want %g", i, values[i], errs[i], want[i])
+		}
+	}
+	sheet, _, _, err := ss.DrawingSheet(ss.SK.Drawing)
+	if err != nil || len(sheet.Edges) == 0 {
+		t.Fatal(err)
+	}
+
+	// Wider: the block's sketch made 150 wide by its constraint-free
+	// corner; the length follows.
+	_ = block
+	for i := range ss.SK.Params {
+		p := &ss.SK.Params[i]
+		if p.Val == 120 {
+			p.Val = 150
+		}
+	}
+	doc.Regen()
+	values, errs = doc.DrawingDimensions()
+	if errs[0] != nil || math.Abs(values[0]-150) > 1e-6 {
+		t.Errorf("after the block grew: %g, %v", values[0], errs[0])
+	}
+
+	hole.Delete()
+	_, errs = doc.DrawingDimensions()
+	if errs[2] == nil || errs[0] != nil {
+		t.Errorf("without the hole: %v", errs)
 	}
 }

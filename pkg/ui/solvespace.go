@@ -66,6 +66,9 @@ type SolveSpaceUI struct {
 	// sets it, the tests don't.
 	BackgroundShells bool
 	shellJobs        shellJobs
+	// lastDimensions are what the drawing's dimensions measured when
+	// it was last made (drawingdim.go).
+	lastDimensions []DimensionResult
 	// ColorByFreedom colours the active group's entities by how much
 	// of them their constraints fix (an extension).
 	ColorByFreedom bool

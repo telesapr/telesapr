@@ -1,7 +1,8 @@
 # The drawing (an extension): the extrusion of path_extrude, File >
 # Drawing Sheet shows the sheet's screen; the sheet goes to A2, the
 # scale to 1:2, first angle, a title, a section of the top view and a
-# detail of the front view, and File > Export Drawing writes it.
+# detail of the front view; dimensioning with no edges selected says
+# what to select; and File > Export Drawing writes it.
 key r
 move 200 200
 down L 200 200
@@ -23,9 +24,9 @@ edit 1:2
 twmove 172 165
 twdown L 172 165
 twup L 172 165
-twmove 181 305
-twdown L 181 305
-twup L 181 305
+twmove 181 355
+twdown L 181 355
+twup L 181 355
 edit PLATE
 twmove 46 235
 twdown L 46 235
@@ -35,6 +36,10 @@ twmove 46 275
 twdown L 46 275
 twup L 46 275
 edit front -10 0 5 2
+answer ok
+twmove 46 345
+twdown L 46 345
+twup L 46 345
 tw
 file $tmp/sheet.svg
 menu File|Export Drawing...
