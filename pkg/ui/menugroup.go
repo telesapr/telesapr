@@ -235,8 +235,9 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"as the edges an extrusion makes\n"+
 				"    * straight edges of the solid between two flat faces, "+
 				"picked on the model\n\n"+
-				"Each must stick out, and end at corners where it meets one more flat face; "+
-				"edges that meet at a corner can't be rounded together yet.", capitalize(err.Error()))
+				"Each must stick out, and end at corners of three flat faces. Where two "+
+				"rounded edges meet, they are mitred, which needs the faces to lie alike "+
+				"about them; where three meet, a sphere rounds the corner.", capitalize(err.Error()))
 			return
 		}
 		g = fg

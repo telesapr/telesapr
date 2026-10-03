@@ -1,7 +1,8 @@
 # Fillet edges (an extension): New Group > Fillet Edges with two top
-# edges of the extrusion of path_extrude that meet at a corner says
-# they can't be rounded together; with one, it is rounded at 1 mm. The
-# screen lists the edge and takes a new radius, here an expression.
+# edges of the extrusion of path_extrude that meet at a corner rounds
+# them at 1 mm, mitred where they meet. The screen lists the edges and
+# takes a new radius, here an expression; Check Solid finds it sound
+# each time.
 key r
 move 200 200
 down L 200 200
@@ -17,12 +18,6 @@ up L 382.5 232.5
 move 247.5 202.5
 down L 247.5 202.5
 up L 247.5 202.5
-answer ok
-menu New Group|Fillet Edges
-key esc
-move 382.5 232.5
-down L 382.5 232.5
-up L 382.5 232.5
 menu New Group|Fillet Edges
 dump
 tw

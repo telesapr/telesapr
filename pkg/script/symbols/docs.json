@@ -4231,7 +4231,7 @@
 					},
 					"Fillet": {
 						"decl": "func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group",
-						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust stick out, and end at corners where it meets one more flat face;\nedges that meet at a corner can't be rounded together yet. The face\na fillet makes is an exact cylinder, and its edges have names. The\nnew group becomes active."
+						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust stick out, and end at corners of three flat faces. Two rounded\nedges that meet at a corner are mitred, their cylinders meeting along\nan ellipse, when the faces lie alike about them; three get a sphere.\nThe faces a fillet makes are exact cylinders and spheres, and their\nedges have names. The new group becomes active."
 					},
 					"FilletSolid": {
 						"decl": "func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group",

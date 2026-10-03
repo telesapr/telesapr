@@ -9,11 +9,11 @@ import (
 )
 
 // A fillet rounds a straight edge between two planar faces with a
-// cylinder of radius r tangent to both, by local edits: each face is cut
-// along the line where the cylinder touches it, each end face along the
-// arc where the cylinder meets it, the strips and corners between the
-// cuts and the edge are taken out, and the cylinder's patch put in.
-// The cylinder is exact: a rational quadratic arc swept along the edge.
+// cylinder of radius r tangent to both: the faces are cut back along the
+// lines where the cylinder touches them, an end face along the arc where
+// the cylinder meets it, and the cylinder's patch put in
+// (FilletNetwork). The cylinder is exact: a rational quadratic arc swept
+// along the edge.
 
 // FilletError is why an edge can't be filleted, with where.
 type FilletError struct {
@@ -171,185 +171,13 @@ func (t *Topology) vertexNear(p geom.Vector) int {
 	return -1
 }
 
-// faceOnPlaneAt is the face incident to vertex v whose plane has
-// normal n, or -1.
-func (t *Topology) faceOnPlaneAt(v int, n geom.Vector) int {
-	for _, e := range t.Vertices[v].Edges {
-		for _, f := range t.EdgeFaces(e) {
-			if f < 0 {
-				continue
-			}
-			if fn, ok := t.planarNormal(f); ok && fn.Dot(n) > 1-1e-9 {
-				return f
-			}
-		}
-	}
-	return -1
-}
-
-// FilletEdge rounds the edge from a to b of the shell with radius r.
-// The edge must be straight, between two planar faces that meet at
-// less than a straight angle with the solid between them, and end at
-// corners where it meets one more planar face. The new face's surface
-// gets origin as its Origin, so its edges have names.
+// FilletEdge rounds the edge from a to b of the shell with radius r,
+// as FilletNetwork does one edge: straight, between two planar faces
+// that meet at less than a straight angle with the solid between them,
+// ending at corners where it meets one more planar face. The new face's
+// surface gets origin as its Origin, so its edges have names.
 func FilletEdge(sh *srf.SShell, a, b geom.Vector, r float64, origin uint32) error {
-	if !(r > 0) || math.IsInf(r, 0) {
-		return filletErr(a, "a fillet's radius must be more than zero")
-	}
-	t, err := Build(sh)
-	if err != nil {
-		return filletErr(a, "the solid's topology is broken: %v", err)
-	}
-	m := a.Plus(b).ScaledBy(0.5)
-	e := t.edgeAtPoint(m)
-	if e < 0 {
-		return filletErr(m, "no edge of the solid runs there")
-	}
-	va, vb := t.vertexNear(a), t.vertexNear(b)
-	ed := &t.Edges[e]
-	whole := ed.V[0] == va && ed.V[1] == vb || ed.V[0] == vb && ed.V[1] == va
-	if va < 0 || vb < 0 || !whole {
-		return filletErr(m, "the segment is not a whole edge of the solid")
-	}
-	if !t.Straight(e) {
-		return filletErr(m, "the edge is curved: a fillet here rounds straight edges")
-	}
-	fs := t.EdgeFaces(e)
-	if fs[0] < 0 || fs[1] < 0 || len(ed.CoEdges) != 2 {
-		return filletErr(m, "the edge is not between two faces")
-	}
-	n1, ok1 := t.planarNormal(fs[0])
-	n2, ok2 := t.planarNormal(fs[1])
-	if !ok1 || !ok2 {
-		return filletErr(m, "a face at the edge is curved: a fillet here rounds edges between flat faces")
-	}
-	dir := b.Minus(a).WithMagnitude(1)
-	u1 := t.intoFace(fs[0], a, b, n1)
-	u2 := t.intoFace(fs[1], a, b, n2)
-	if u1.Dot(n2) > -1e-9 || u2.Dot(n1) > -1e-9 {
-		return filletErr(m, "the edge is concave or flat: a fillet here rounds edges that stick out")
-	}
-	beta := math.Acos(math.Max(-1, math.Min(1, u1.Dot(u2))))
-	s := r / math.Tan(beta/2)
-	w := math.Sin(beta / 2)
-
-	// Where the cuts meet the edges at each end.
-	type end struct {
-		v      int
-		t1, t2 geom.Vector
-		face   int
-	}
-	var ends [2]end
-	for k, v := range []int{va, vb} {
-		along, endFace, err := t.endEdges(e, v, fs)
-		if err != nil {
-			return err
-		}
-		if _, ok := t.planarNormal(endFace); !ok {
-			return filletErr(t.Vertices[v].P, "the face at the edge's end is curved")
-		}
-		t1, err := t.pointAlong(along[0], v, u1, s)
-		if err != nil {
-			return err
-		}
-		t2, err := t.pointAlong(along[1], v, u2, s)
-		if err != nil {
-			return err
-		}
-		ends[k] = end{v: v, t1: t1, t2: t2, face: endFace}
-	}
-	endNormals := [2]geom.Vector{}
-	for k := range ends {
-		endNormals[k], _ = t.planarNormal(ends[k].face)
-	}
-
-	// Split the four edges at the ends.
-	for _, en := range ends {
-		for _, p := range []geom.Vector{en.t1, en.t2} {
-			x := t.edgeAtPoint(p)
-			if x < 0 {
-				return filletErr(p, "no edge where the fillet meets the end")
-			}
-			if err := SplitEdge(sh, t, x, p); err != nil {
-				return filletErr(p, "the fillet's edge can't be split: %v", err)
-			}
-			if t, err = Build(sh); err != nil {
-				return filletErr(p, "%v", err)
-			}
-		}
-	}
-	// Cut the two faces along the tangent lines, the end faces along
-	// the arcs.
-	cuts := []struct {
-		at  geom.Vector // the vertex the face is found at
-		n   geom.Vector
-		cut srf.SBezier
-	}{
-		{a, n1, srf.SBezierFrom2(ends[0].t1, ends[1].t1)},
-		{a, n2, srf.SBezierFrom2(ends[0].t2, ends[1].t2)},
-		{a, endNormals[0], arc(ends[0].t1, a, ends[0].t2, w)},
-		{b, endNormals[1], arc(ends[1].t1, b, ends[1].t2, w)},
-	}
-	for _, c := range cuts {
-		v := t.vertexNear(c.at)
-		f := -1
-		if v >= 0 {
-			f = t.faceOnPlaneAt(v, c.n)
-		}
-		if f < 0 {
-			return filletErr(c.at, "a face at the edge is gone")
-		}
-		if _, err := SplitFace(sh, t, f, c.cut); err != nil {
-			return filletErr(c.cut.Start(), "the fillet runs into another edge of a face: %v", err)
-		}
-		if t, err = Build(sh); err != nil {
-			return filletErr(c.cut.Start(), "%v", err)
-		}
-	}
-	// Take out every face at the edge's ends: the strips and corners.
-	var gone []int
-	seen := map[int]bool{}
-	for _, p := range []geom.Vector{a, b} {
-		v := t.vertexNear(p)
-		if v < 0 {
-			continue
-		}
-		for _, x := range t.Vertices[v].Edges {
-			for _, f := range t.EdgeFaces(x) {
-				if f >= 0 && !seen[f] {
-					seen[f] = true
-					gone = append(gone, f)
-				}
-			}
-		}
-	}
-	color := t.Surface(fs[0]).Color
-	RemoveFaces(sh, t, gone)
-
-	// The cylinder: the cross section's arc swept along the edge, from
-	// a little before it to a little past.
-	margin := s + r
-	p0 := a.Minus(dir.ScaledBy(margin))
-	section := arc(p0.Plus(u1.ScaledBy(s)), p0, p0.Plus(u2.ScaledBy(s)), w)
-	cyl := srf.FromExtrusionOf(&section, geom.Vector{}, dir.ScaledBy(b.Minus(a).Magnitude()+2*margin))
-	cyl.Color = color
-	cyl.Origin = origin
-	_, err = AddFace(sh, cyl, [][]srf.SBezier{{
-		srf.SBezierFrom2(ends[0].t1, ends[1].t1),
-		arc(ends[1].t1, b, ends[1].t2, w),
-		srf.SBezierFrom2(ends[1].t2, ends[0].t2),
-		arc(ends[0].t2, a, ends[0].t1, w),
-	}})
-	if err != nil {
-		return filletErr(m, "%v", err)
-	}
-	if t, err = Build(sh); err != nil {
-		return filletErr(m, "%v", err)
-	}
-	if probs := t.Validate(); len(probs) > 0 {
-		return filletErr(probs[0].At, "the fillet leaves the solid open: %s", probs[0].Msg)
-	}
-	return nil
+	return FilletNetwork(sh, [][2]geom.Vector{{a, b}}, r, origin)
 }
 
 // arc is the rational quadratic Bezier from p to q with control c and
@@ -361,25 +189,8 @@ func arc(p, c, q geom.Vector, w float64) srf.SBezier {
 }
 
 // FilletEdges fillets several edges, each a segment from a to b, with
-// radius r, one after another. Edges that meet at a vertex are refused:
-// a corner where fillets meet needs a blend of its own. Origins are
-// origin, origin+1, and so on.
+// radius r, as one edit (FilletNetwork): edges that meet at a corner
+// are blended there. Origins are origin, origin+1, and so on.
 func FilletEdges(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint32) error {
-	for i := range segs {
-		for j := i + 1; j < len(segs); j++ {
-			for _, p := range segs[i] {
-				for _, q := range segs[j] {
-					if p.Equals(q) {
-						return filletErr(p, "two of the edges meet here: fillets that meet at a corner are not made yet")
-					}
-				}
-			}
-		}
-	}
-	for i, sg := range segs {
-		if err := FilletEdge(sh, sg[0], sg[1], r, origin+uint32(i)); err != nil {
-			return err
-		}
-	}
-	return nil
+	return FilletNetwork(sh, segs, r, origin)
 }

@@ -463,8 +463,12 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 			if c == nil {
 				c = sh.FindCurve(pc.curve)
 			}
-			// Along the curve's own points or against them.
+			// Along the curve's own points or against them: the curve may
+			// run past the edge's ends, as a Boolean's do.
 			back := !c.Points[0].P.Equals(pc.a)
+			if ia, ib := pointIndex(c, pc.a), pointIndex(c, pc.b); ia >= 0 && ib >= 0 {
+				back = ib < ia
+			}
 			if c.SurfA.V == 0 || c.SurfA == s.H {
 				c.SurfA = s.H
 			} else {

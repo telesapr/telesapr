@@ -123,14 +123,10 @@ func TestFilletRefused(t *testing.T) {
 		fn   func()
 		want string
 	}{
-		"concave":   {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5))}, 1, "") }, "concave"},
-		"no edges":  {func() { d.Fillet(nil, 1, "") }, "no edges"},
-		"zero":      {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
-		"too large": {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 50, "") }, "wider than a face"},
-		"meeting": {func() {
-			d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5)),
-				lineAlong(t, ex, api.V(20, 0, 5), api.V(20, 5, 5))}, 1, "")
-		}, "meet"},
+		"concave":           {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5))}, 1, "") }, "concave"},
+		"no edges":          {func() { d.Fillet(nil, 1, "") }, "no edges"},
+		"zero":              {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
+		"too large":         {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 50, "") }, "wider than a face"},
 		"radius of extrude": {func() { ex.Radius() }, "fillet"},
 		"bad radius": {func() {
 			d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 20, 5), api.V(5, 20, 5))}, 1, "").SetRadius(-1)
@@ -222,6 +218,51 @@ func TestFilletThenBoolean(t *testing.T) {
 		}
 		if r := g.Check(); !r.Sound() || g.Problem() != "" {
 			t.Errorf("cut %v: %s %s", cut, r.String(), g.Problem())
+		}
+	}
+}
+
+// boxCornerLoss is what fillets of radius r take off a box: each edge its
+// cross section times its length, less at a corner where two meet the
+// part both count, and at one where three meet, the corner cube they
+// count three times less the sphere's eighth (as OpenCASCADE gives,
+// pkg/topo's TestFilletCorners).
+func boxCornerLoss(r, length float64, mitres, spheres int) float64 {
+	a := r * r * (1 - math.Pi/4)
+	return a*length - float64(mitres)*r*r*r*(5.0/3-math.Pi/2) + float64(spheres)*r*r*r*(7*math.Pi/12-2)
+}
+
+// Edges that meet at a block's corner: two (a mitre) and three (a
+// sphere), through the group, undone and redone and reopened.
+func TestFilletCorners(t *testing.T) {
+	for _, three := range []bool{false, true} {
+		d := api.New()
+		fineChordFillet(d)
+		ex := block(d, 0, 0, 20, 10, 10)
+		edges := []api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
+			lineAlong(t, ex, api.V(20, 0, 10), api.V(20, 10, 10))}
+		length, mitres, spheres := 30.0, 1, 0
+		if three {
+			edges = append(edges, lineAlong(t, ex, api.V(20, 0, 0), api.V(20, 0, 10)))
+			length, mitres, spheres = 40, 0, 1
+		}
+		step(d)
+		before := saved(t, d)
+		f := d.Fillet(edges, 2, "")
+		if p := f.Problem(); p != "" {
+			t.Fatal(p)
+		}
+		r := f.Check()
+		loss := boxCornerLoss(2, length, mitres, spheres)
+		want := 2000 - loss
+		if !r.Sound() || math.Abs(r.Volume-want) > 0.01*loss {
+			t.Fatalf("three %v: %s, want volume %g", three, r.String(), want)
+		}
+		undoRedo(t, d, before)
+		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+		back := roundTrip(t, d)
+		if br := back.Group(f.Name()).Check(); !br.Sound() {
+			t.Fatalf("three %v reopened: %s", three, br.String())
 		}
 	}
 }
