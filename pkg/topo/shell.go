@@ -81,21 +81,33 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 		}
 	}
 
-	// Each vertex where its faces' moved planes meet.
-	moved := make([]geom.Vector, len(t.Vertices))
+	// Each vertex where its faces' moved planes meet: one point, or at a
+	// vertex of four faces whose planes don't meet in one, two points
+	// joined by a new edge (roadmap 15.3).
+	moved := make([]movedPoints, len(t.Vertices))
 	for v := range t.Vertices {
-		p, err := t.movedVertex(v, normal, offset)
+		mp, err := t.movedVertex(v, normal, offset)
 		if err != nil {
 			return nil, err
 		}
-		moved[v] = p
+		moved[v] = mp
+	}
+	// at is where vertex v goes in face f beside face g.
+	at := func(v, f, g int) geom.Vector { return moved[v].in(f, g) }
+	other := func(e, f int) int {
+		fs := t.EdgeFaces(e)
+		if fs[0] == f {
+			return fs[1]
+		}
+		return fs[0]
 	}
 
 	// A thickness that turns an edge round takes a face away.
 	for e := range t.Edges {
 		ed := &t.Edges[e]
+		fs := t.EdgeFaces(e)
 		was := t.Vertices[ed.V[1]].P.Minus(t.Vertices[ed.V[0]].P)
-		now := moved[ed.V[1]].Minus(moved[ed.V[0]])
+		now := at(ed.V[1], fs[0], fs[1]).Minus(at(ed.V[0], fs[0], fs[1]))
 		if now.Magnitude() < geom.LengthEps || now.Dot(was) <= 0 {
 			return nil, shellErr(t.Vertices[ed.V[0]].P,
 				"a thickness of %g makes the walls meet, closing up a face", thick)
@@ -108,10 +120,19 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 		var pts []geom.Vector
 		for _, l := range t.outerFirst(f) {
 			var loop []srf.SBezier
-			for _, ce := range t.Loops[l].CoEdges {
-				a, b := moved[t.Start(ce)], moved[t.End(ce)]
+			ces := t.Loops[l].CoEdges
+			for k, ce := range ces {
+				g := other(t.CoEdges[ce].Edge, f)
+				a, b := at(t.Start(ce), f, g), at(t.End(ce), f, g)
 				loop = append(loop, srf.SBezierFrom2(a, b))
 				pts = append(pts, a)
+				// Where the vertex was split, the new edge between
+				// this side's point and the next one's.
+				next := ces[(k+1)%len(ces)]
+				if c := at(t.End(ce), f, other(t.CoEdges[next].Edge, f)); !c.Equals(b) {
+					loop = append(loop, srf.SBezierFrom2(b, c))
+					pts = append(pts, b)
+				}
 			}
 			loops = append(loops, loop)
 		}
@@ -161,32 +182,66 @@ func (t *Topology) faceAnchor(f int) geom.Vector {
 	return geom.Vector{}
 }
 
+// movedPoints is where a vertex goes: one point, or, split, two, each
+// on the planes of three of its four faces.
+type movedPoints struct {
+	p     [2]geom.Vector
+	faces [2][3]int
+	split bool
+}
+
+// in is the point face f takes beside face g: the one on both planes.
+func (m movedPoints) in(f, g int) geom.Vector {
+	if !m.split {
+		return m.p[0]
+	}
+	for k := range 2 {
+		hasF, hasG := false, false
+		for _, x := range m.faces[k] {
+			hasF = hasF || x == f
+			hasG = hasG || x == g
+		}
+		if hasF && hasG {
+			return m.p[k]
+		}
+	}
+	return m.p[0]
+}
+
 // movedVertex is where the moved planes of the faces round vertex v
 // meet. Three faces meet in a point; two, along a line, on which the
-// vertex keeps its place along the edge; more must meet in one point
-// again, or the shell would need new edges, which it doesn't make.
-func (t *Topology) movedVertex(v int, normal []geom.Vector, offset []float64) (geom.Vector, error) {
+// vertex keeps its place along the edge. Four faces whose moved planes
+// don't meet in one point, as at an off-centre pyramid's apex, meet in
+// two: two opposite faces of the four come to share a new edge between
+// them, each end on the planes of three faces, the pair taken whose
+// ends lie inside the fourth face's plane. More faces must meet in one
+// point again.
+func (t *Topology) movedVertex(v int, normal []geom.Vector, offset []float64) (movedPoints, error) {
 	p := t.Vertices[v].P
 	var fs []int
 	seen := map[int]bool{}
+	adjacent := map[[2]int]bool{}
 	for _, e := range t.Vertices[v].Edges {
-		for _, f := range t.EdgeFaces(e) {
+		ef := t.EdgeFaces(e)
+		adjacent[[2]int{ef[0], ef[1]}], adjacent[[2]int{ef[1], ef[0]}] = true, true
+		for _, f := range ef {
 			if f >= 0 && !seen[f] {
 				seen[f] = true
 				fs = append(fs, f)
 			}
 		}
 	}
+	one := func(q geom.Vector) movedPoints { return movedPoints{p: [2]geom.Vector{q, q}} }
 	switch {
 	case len(fs) < 2:
-		return p, shellErr(p, "a vertex of the solid lies on fewer than two faces")
+		return one(p), shellErr(p, "a vertex of the solid lies on fewer than two faces")
 	case len(fs) == 2:
 		a, b := fs[0], fs[1]
 		along := normal[a].Cross(normal[b])
 		if along.Magnitude() < 1e-9 {
-			return p, shellErr(p, "two faces meet at a vertex in one plane")
+			return one(p), shellErr(p, "two faces meet at a vertex in one plane")
 		}
-		return meet3(normal[a], offset[a], normal[b], offset[b], along.WithMagnitude(1), along.WithMagnitude(1).Dot(p)), nil
+		return one(meet3(normal[a], offset[a], normal[b], offset[b], along.WithMagnitude(1), along.WithMagnitude(1).Dot(p))), nil
 	}
 	// The three most independent planes fix the point; the rest must
 	// pass through it.
@@ -202,15 +257,58 @@ func (t *Topology) movedVertex(v int, normal []geom.Vector, offset []float64) (g
 		}
 	}
 	if best < 1e-9 {
-		return p, shellErr(p, "the faces at a vertex don't meet in a point")
+		return one(p), shellErr(p, "the faces at a vertex don't meet in a point")
 	}
 	q := meet3(normal[bi[0]], offset[bi[0]], normal[bi[1]], offset[bi[1]], normal[bi[2]], offset[bi[2]])
+	on := func(f int, x geom.Vector) float64 { return normal[f].Dot(x) - offset[f] }
+	meets := true
 	for _, f := range fs {
-		if math.Abs(normal[f].Dot(q)-offset[f]) > 10*geom.LengthEps {
-			return p, shellErr(p, "%d faces meet at a vertex and, moved in, don't meet in one point; a shell needs vertices of three faces", len(fs))
+		if math.Abs(on(f, q)) > 10*geom.LengthEps {
+			meets = false
 		}
 	}
-	return q, nil
+	if meets {
+		return one(q), nil
+	}
+	if len(fs) != 4 {
+		return one(p), shellErr(p, "%d faces meet at a vertex and, moved in, don't meet in one point; "+
+			"a shell splits vertices of four faces only", len(fs))
+	}
+	// The two pairs of opposite faces; for each, the ends of the new
+	// edge, and whether they lie inside the plane of the face they
+	// leave out.
+	for i := 1; i < 4; i++ {
+		if adjacent[[2]int{fs[0], fs[i]}] {
+			continue
+		}
+		a, c := fs[0], fs[i]
+		var bd []int
+		for _, f := range fs[1:] {
+			if f != c {
+				bd = append(bd, f)
+			}
+		}
+		for _, pair := range [][2]int{{a, c}, {bd[0], bd[1]}} {
+			x, y := pair[0], pair[1]
+			var rest []int
+			for _, f := range fs {
+				if f != x && f != y {
+					rest = append(rest, f)
+				}
+			}
+			p0 := meet3(normal[x], offset[x], normal[y], offset[y], normal[rest[0]], offset[rest[0]])
+			p1 := meet3(normal[x], offset[x], normal[y], offset[y], normal[rest[1]], offset[rest[1]])
+			if on(rest[1], p0) <= 10*geom.LengthEps && on(rest[0], p1) <= 10*geom.LengthEps {
+				return movedPoints{
+					p:     [2]geom.Vector{p0, p1},
+					faces: [2][3]int{{x, y, rest[0]}, {x, y, rest[1]}},
+					split: true,
+				}, nil
+			}
+		}
+		break
+	}
+	return one(p), shellErr(p, "4 faces meet at a vertex and, moved in, meet in no edge a shell can make")
 }
 
 // meet3 is the point on the three planes n·x = d.

@@ -19,6 +19,7 @@ sh.SetThickness(1.5)
 
 ## Not yet
 
-Every face of the solid must be flat. Cylinders are roadmap 15.2; apexes where four faces do
-not meet at one point once moved, 15.3. Filleted and lofted solids wait for offsets of other
+Every face of the solid must be flat; cylinders are roadmap 15.2. Where four faces meet at a
+vertex and, moved in, don't meet at one point, as at an off-centre pyramid's apex, the inside gets
+a short new edge there; five or more such faces are refused. Filleted and lofted solids wait for offsets of other
 surfaces (roadmap 22.1).

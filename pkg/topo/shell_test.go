@@ -194,14 +194,40 @@ func TestShellRefusals(t *testing.T) {
 		// A plane over the face: a parallelogram on two of its sides,
 		// tripled about its first corner.
 		s := srf.FromPlane(f[0].Minus(f[1].Minus(f[0])).Minus(f[len(f)-1].Minus(f[0])),
-			f[1].Minus(f[0]).ScaledBy(3), f[len(f)-1].Minus(f[0]).ScaledBy(3))
+			f[len(f)-1].Minus(f[0]).ScaledBy(3), f[1].Minus(f[0]).ScaledBy(3))
 		if _, err := topo.AddFace(pyr, s, [][]srf.SBezier{l}); err != nil {
 			t.Fatal(err)
 		}
 	}
+	// AddFace makes the faces face in; turned out, the pyramid is sound.
+	for i := range pyr.Surface {
+		pyr.Surface[i].Reverse()
+	}
+	var pm srf.SMesh
+	pyr.TriangulateInto(&pm)
+	if pr := check.Solid(pyr, &pm); !pr.Sound() || math.Abs(pr.Volume-2000.0/3) > 1e-9 {
+		t.Fatalf("the pyramid: %s", pr.String())
+	}
 	pt := build(t, pyr)
-	if _, err := topo.ShellSolid(pyr, []int{faceAt(t, pt, v(0, 0, 0), v(0, 0, 1))}, 0.5, 1<<30); !errors.As(err, &se) {
-		t.Errorf("four faces at a vertex: %v", err)
+	got, err := topo.ShellSolid(pyr, []int{faceAt(t, pt, v(0, 0, 0), v(0, 0, 1))}, 0.5, 1<<30)
+	if err != nil {
+		t.Fatalf("four faces at a vertex: %v", err)
+	}
+	// The apex is split by a new edge inside (roadmap 15.3): a sound
+	// shell, its walls about their area times the thickness.
+	var m srf.SMesh
+	got.TriangulateInto(&m)
+	r := check.Solid(got, &m)
+	gt := build(t, got)
+	if !r.Sound() || len(gt.Validate()) != 0 || r.Volume <= 0 || r.Volume >= 2000.0/3 {
+		t.Errorf("the pyramid's shell: %s", r.String())
+	}
+	area := 0.0
+	for _, f := range faces[1:] {
+		area += f[1].Minus(f[0]).Cross(f[2].Minus(f[0])).Magnitude() / 2
+	}
+	if r.Volume < 0.4*area || r.Volume > 0.5*area {
+		t.Errorf("walls of %g mm³ for %g mm² of sides 0.5 thick", r.Volume, area)
 	}
 }
 
