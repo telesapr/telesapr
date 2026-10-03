@@ -289,6 +289,13 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	n.handle("workplane", g.ActiveWorkplane.V)
 	n.handle("op-a", g.OpA.V)
 	n.handle("op-b", g.OpB.V)
+	if len(g.LoftThrough) > 0 {
+		args := make([]Value, len(g.LoftThrough))
+		for i, h := range g.LoftThrough {
+			args[i] = hex(h.V)
+		}
+		n.add(field("loft-through", args...))
+	}
 	n.expr(g.FieldName(sketch.GroupCopies), g.ValA, g.ExprA)
 	n.expr(g.FieldName(sketch.GroupPitch), g.ValB/mmPer, g.ExprB)
 	n.expr(g.FieldName(sketch.GroupValC), g.ValC, g.ExprC)

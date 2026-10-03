@@ -88,6 +88,9 @@ func (sk *Sketch) DependenciesOf(g *Group) []Dependency {
 
 	add(g.OpA, "operand")
 	add(g.OpB, "second operand")
+	for _, through := range g.LoftThrough {
+		add(through, "profile lofted through")
+	}
 	addEntity(g.ActiveWorkplane, "workplane")
 	addEntity(g.Predef.Origin, "origin")
 	addEntity(g.Predef.EntityB, "axis or workplane")

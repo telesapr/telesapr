@@ -123,16 +123,16 @@ func SmoothLoftSections(loops [][]srf.SBezier, turn int) ([][]srf.SBezier, error
 }
 
 // MakeSmoothLoft is the shell of a smooth loft through closed loops, in
-// order, as SmoothLoftSections takes them with turn. The surface's
-// patches take origins from origin on, one face of sheet origin; the
-// first profile's cap origin + 1000, the last's origin + 1001.
+// order, as SmoothLoftSections takes them with turn. The first
+// profile's cap takes origin, the last's origin + 1, and the surface's
+// patches origins from origin + 2 on, one face of sheet origin + 2.
 func MakeSmoothLoft(loops [][]srf.SBezier, turn int, color core.RgbaColor, origin uint32) (*srf.SShell, error) {
 	bs, err := SmoothLoftSurface(loops, turn)
 	if err != nil {
 		return nil, err
 	}
 	sh := &srf.SShell{}
-	if _, err := AddBSplineFace(sh, bs, origin, origin, color); err != nil {
+	if _, err := AddBSplineFace(sh, bs, origin+2, origin+2, color); err != nil {
 		return nil, err
 	}
 	ps, err := bs.Patches()
@@ -148,10 +148,10 @@ func MakeSmoothLoft(loops [][]srf.SBezier, turn int, color core.RgbaColor, origi
 		first = append(first, ps[a][0].EdgeCurve(0))
 		last = append(last, ps[a][len(ps[a])-1].EdgeCurve(2))
 	}
-	if _, err := AddPlanarFace(sh, [][]srf.SBezier{first}, origin+1000, color); err != nil {
+	if _, err := AddPlanarFace(sh, [][]srf.SBezier{first}, origin, color); err != nil {
 		return nil, fmt.Errorf("the first profile's cap: %v", err)
 	}
-	if _, err := AddPlanarFace(sh, [][]srf.SBezier{reverseLoop(last)}, origin+1001, color); err != nil {
+	if _, err := AddPlanarFace(sh, [][]srf.SBezier{reverseLoop(last)}, origin+1, color); err != nil {
 		return nil, fmt.Errorf("the last profile's cap: %v", err)
 	}
 	t, err := Build(sh)

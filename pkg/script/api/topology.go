@@ -670,9 +670,10 @@ func (g Group) SetThickness(mm float64) {
 
 // Loft joins the closed loops of two sketches in workplanes, from and
 // to, with ruled faces, curve by curve, and closes the ends with the
-// sketches' planes: each loop must be one closed loop, with as many
-// curves as the other; a circle counts as four. The solid joins the
-// solid so far as an extrusion's does. The new group becomes active.
+// sketches' planes: each loop must be one closed loop; a circle counts
+// as four curves, and a loop with fewer curves than the other has its
+// longest split until they match. The solid joins the solid so far as
+// an extrusion's does. The new group becomes active.
 func (d *Doc) Loft(from, to Group, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		g, err := sk.NewLoft(from.get(sk).H, to.get(sk).H, name)
@@ -683,8 +684,40 @@ func (d *Doc) Loft(from, to Group, name string) Group {
 	}, nil)
 }
 
+// LoftThrough joins the closed loops of sketches in workplanes, three
+// or more, in order, by one smooth surface through them all, and closes
+// the ends with the first and last sketches' planes. Loops of fewer
+// curves have their longest split until all match, and each loop after
+// the first starts at the curve nearest where the one before it does.
+// The new group becomes active.
+func (d *Doc) LoftThrough(profiles []Group, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		hs := make([]core.HGroup, len(profiles))
+		for i, p := range profiles {
+			hs[i] = p.get(sk).H
+		}
+		g, err := sk.NewSmoothLoft(hs, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// Profiles are the sketches a loft joins, in order.
+func (g Group) Profiles() (out []Group) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "Profiles")
+		for _, h := range group.LoftProfiles() {
+			out = append(out, Group{g.d, h})
+		}
+	})
+	return out
+}
+
 // Turn is how many curves a loft turns its second profile by before
-// joining curve by curve.
+// joining curve by curve; a smooth loft turns each after the first.
 func (g Group) Turn() (n int) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)

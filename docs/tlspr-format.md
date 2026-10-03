@@ -206,6 +206,7 @@ group <handle> <type> <name> {
   workplane <handle>        # the group's active workplane
   op-a <handle>
   op-b <handle>
+  loft-through <handle> ... # loft: the profiles between op-a and op-b a smooth loft goes through, in order
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)

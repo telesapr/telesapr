@@ -5,9 +5,12 @@ import (
 	"math"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // twoProfiles makes a square of side a in the XY plane and, in a
@@ -236,5 +239,121 @@ func TestLoftOnBlock(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// A loft through three circles about one axis is a solid of revolution
+// (roadmap 20): its volume is that of the surface topo.SmoothLoftSurface
+// makes of the same circles, pi R² dZ, the mesh's within its error. It
+// is undone and redone, saved and read back with its profiles, and a
+// profile deleted leaves it a problem.
+func TestSmoothLoftGroup(t *testing.T) {
+	d := api.New()
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
+	rs, zs := []float64{10, 14, 8}, []float64{0, 10, 25}
+	var profiles []api.Group
+	var loops [][]srf.SBezier
+	for i := range rs {
+		if i == 0 {
+			profiles = append(profiles, d.SketchIn(d.Workplane("XY"), fmt.Sprintf("p%d", i)))
+		} else {
+			profiles = append(profiles, d.SketchAt(above(d, zs[i]), api.V(1, 0, 0), api.V(0, 1, 0), fmt.Sprintf("p%d", i)))
+		}
+		d.Circle(api.V(0, 0, zs[i]), rs[i])
+		loops = append(loops, circleLoop(rs[i], zs[i]))
+	}
+	step(d)
+	before := saved(t, d)
+	l := d.LoftThrough(profiles, "vase")
+	if p := l.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	bs, err := topo.SmoothLoftSurface(loops, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// pi R² Z' over v, by the trapezoid rule on a fine grid: R and Z
+	// are smooth within the two spans across.
+	want := 0.0
+	const n = 4000
+	for k := 0; k < n; k++ {
+		a, b := bs.PointAt(0, float64(k)/n), bs.PointAt(0, float64(k+1)/n)
+		ra, rb := math.Hypot(a.X, a.Y), math.Hypot(b.X, b.Y)
+		want += math.Pi * (ra*ra + rb*rb) / 2 * (b.Z - a.Z)
+	}
+	r := l.Check()
+	if !r.Sound() || math.Abs(r.Volume-want) > 1e-3*want || l.Kind() != "loft" {
+		t.Fatalf("the vase: %s, want %g", r.String(), want)
+	}
+	if got := l.Profiles(); len(got) != 3 || got[1].Name() != "p1" {
+		t.Fatalf("profiles %v", got)
+	}
+	undoRedo(t, d, before)
+	// A file holds the curves' points at the chord tolerance, which it
+	// doesn't hold: the default's, for the round trip.
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	d.Regen()
+	r = l.Check()
+	back := roundTrip(t, d)
+	if bl := back.Group("vase"); len(bl.Profiles()) != 3 || bl.Profiles()[2].Name() != "p2" {
+		t.Fatalf("reopened with profiles %v", bl.Profiles())
+	} else if br := bl.Check(); math.Abs(br.Volume-r.Volume) > 1e-9 {
+		t.Fatalf("reopened with volume %g, was %g", br.Volume, r.Volume)
+	}
+	profiles[1].Delete()
+	if p := d.Group("vase").Problem(); p == "" {
+		t.Error("the loft lost a profile and has no problem")
+	}
+}
+
+// circleLoop is a circle of radius r about the z axis at height z, as
+// four quarter arcs.
+func circleLoop(r, z float64) []srf.SBezier {
+	var out []srf.SBezier
+	for k := 0; k < 4; k++ {
+		a0 := float64(k) * math.Pi / 2
+		sb := srf.SBezierFrom3(geom.Vector{X: r * math.Cos(a0), Y: r * math.Sin(a0), Z: z},
+			geom.Vector{X: r * math.Sqrt2 * math.Cos(a0+math.Pi/4), Y: r * math.Sqrt2 * math.Sin(a0+math.Pi/4), Z: z},
+			geom.Vector{X: r * math.Cos(a0+math.Pi/2), Y: r * math.Sin(a0+math.Pi/2), Z: z})
+		sb.Weight[1] = math.Sqrt2 / 2
+		out = append(out, sb)
+	}
+	return out
+}
+
+// Profiles of unequal counts loft once the longest curves are split
+// (roadmap 20.1): a triangle to a square, ruled, and through a hexagon,
+// smooth; both sound. A loft refuses a profile twice, and one alone.
+func TestLoftUnequalCounts(t *testing.T) {
+	profiles := func() (*api.Doc, api.Group, api.Group, api.Group) {
+		d := api.New()
+		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
+		tri := d.SketchIn(d.Workplane("XY"), "triangle")
+		ngon(d, 3, 10, 0)
+		sq := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "square")
+		ngon(d, 4, 8, 10)
+		hex := d.SketchAt(above(d, 20), api.V(1, 0, 0), api.V(0, 1, 0), "hexagon")
+		ngon(d, 6, 9, 20)
+		return d, tri, sq, hex
+	}
+	d, tri, sq, _ := profiles()
+	ruled := d.Loft(tri, sq, "ruled")
+	if r := ruled.Check(); !r.Sound() || ruled.Problem() != "" {
+		t.Errorf("triangle to square: %s %s", r.String(), ruled.Problem())
+	}
+	d, tri, sq, hex := profiles()
+	smooth := d.LoftThrough([]api.Group{tri, sq, hex}, "smooth")
+	if r := smooth.Check(); !r.Sound() || smooth.Problem() != "" {
+		t.Errorf("triangle through square to hexagon: %s %s", r.String(), smooth.Problem())
+	}
+	for name, ps := range map[string][]api.Group{"twice": {tri, sq, tri}, "alone": {tri}} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("a loft of a profile %s", name)
+				}
+			}()
+			d.LoftThrough(ps, "")
+		}()
 	}
 }

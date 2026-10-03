@@ -1,0 +1,13 @@
+# The top circle of loft_sections.tlspr lofted smoothly through the
+# middle square to the bottom circle, both picked with the mouse; the
+# same as path_loft_smooth.go makes (TestPathEquivalenceSmoothLoft).
+file $testdata/ui/loft_sections.tlspr
+menu File|Open...
+view default
+move 292.5 232.5
+down L 292.5 232.5
+up L 292.5 232.5
+move 292.5 217.5
+down L 292.5 217.5
+up L 292.5 217.5
+menu New Group|Loft To Selected Profile

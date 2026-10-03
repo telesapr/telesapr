@@ -738,11 +738,28 @@ func (tw *TextWindow) ShowGroupInfo() {
 			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 		tw.showGroupEdges(g, "edges")
 	case sketch.GroupLoft:
-		tw.Printf(true, " %Ftloft between two profiles%E")
-		tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
-		tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
-		tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
-			int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+		if len(g.LoftThrough) == 0 {
+			tw.Printf(true, " %Ftloft between two profiles%E")
+			tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
+			tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
+			tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
+				int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+			break
+		}
+		tw.Printf(true, " %Ftsmooth loft through %d profiles%E", len(g.LoftThrough)+2)
+		for i, h := range g.LoftProfiles() {
+			bg := byte('a')
+			if i%2 == 1 {
+				bg = 'd'
+			}
+			tw.Printf(false, "%Bp   %Ft%d%E %s", bg, i+1, sk.GroupName(h))
+		}
+		bg := byte('a')
+		if len(g.LoftThrough)%2 == 1 {
+			bg = 'd'
+		}
+		tw.Printf(false, "%Bp   %Ftturn those after the first by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
+			bg, int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
 	case sketch.GroupFillet:
 		tw.Printf(true, " %Ftround edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",

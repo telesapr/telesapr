@@ -1,0 +1,30 @@
+# Smooth loft (roadmap 20): with the top circle's sketch active, a line
+# of the middle square and the bottom circle picked, New Group > Loft To
+# Selected Profile joins the three by one smooth surface, from the top
+# down; the group screen lists the profiles in order and the turn.
+# Analyze > Check Solid finds it sound; [-1] turns the profiles after the
+# first by one curve, still sound; undo turns them back, to the first
+# volume.
+file $testdata/ui/loft_sections.tlspr
+menu File|Open...
+view default
+move 292.5 232.5
+down L 292.5 232.5
+up L 292.5 232.5
+move 292.5 217.5
+down L 292.5 217.5
+up L 292.5 217.5
+menu New Group|Loft To Selected Profile
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 334 185
+twdown L 334 185
+twup L 334 185
+tw
+answer ok
+menu Analyze|Check Solid
+key z ctrl
+answer ok
+menu Analyze|Check Solid

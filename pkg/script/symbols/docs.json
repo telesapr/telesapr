@@ -4399,7 +4399,11 @@
 					},
 					"Loft": {
 						"decl": "func (d *Doc) Loft(from, to Group, name string) Group",
-						"text": "Loft joins the closed loops of two sketches in workplanes, from and\nto, with ruled faces, curve by curve, and closes the ends with the\nsketches' planes: each loop must be one closed loop, with as many\ncurves as the other; a circle counts as four. The solid joins the\nsolid so far as an extrusion's does. The new group becomes active."
+						"text": "Loft joins the closed loops of two sketches in workplanes, from and\nto, with ruled faces, curve by curve, and closes the ends with the\nsketches' planes: each loop must be one closed loop; a circle counts\nas four curves, and a loop with fewer curves than the other has its\nlongest split until they match. The solid joins the solid so far as\nan extrusion's does. The new group becomes active."
+					},
+					"LoftThrough": {
+						"decl": "func (d *Doc) LoftThrough(profiles []Group, name string) Group",
+						"text": "LoftThrough joins the closed loops of sketches in workplanes, three\nor more, in order, by one smooth surface through them all, and closes\nthe ends with the first and last sketches' planes. Loops of fewer\ncurves have their longest split until all match, and each loop after\nthe first starts at the curve nearest where the one before it does.\nThe new group becomes active."
 					},
 					"Measure": {
 						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
@@ -4894,6 +4898,10 @@
 						"decl": "func (g Group) Problem() (msg string)",
 						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut or a sweep path with\na corner, or \"\" when there is nothing; a group with a problem adds\nno solid."
 					},
+					"Profiles": {
+						"decl": "func (g Group) Profiles() (out []Group)",
+						"text": "Profiles are the sketches a loft joins, in order."
+					},
 					"Radius": {
 						"decl": "func (g Group) Radius() (mm float64)",
 						"text": "Radius is a fillet's radius in mm."
@@ -5004,7 +5012,7 @@
 					},
 					"Turn": {
 						"decl": "func (g Group) Turn() (n int)",
-						"text": "Turn is how many curves a loft turns its second profile by before\njoining curve by curve."
+						"text": "Turn is how many curves a loft turns its second profile by before\njoining curve by curve; a smooth loft turns each after the first."
 					},
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",
@@ -5733,6 +5741,10 @@
 					"IsVisible": {
 						"decl": "func (g *Group) IsVisible() bool"
 					},
+					"LoftProfiles": {
+						"decl": "func (g *Group) LoftProfiles() []core.HGroup",
+						"text": "LoftProfiles are the groups a loft joins, in order: OpA, LoftThrough and OpB."
+					},
 					"LoftTurn": {
 						"decl": "func (g *Group) LoftTurn(n int) int",
 						"text": "LoftTurn is how many curves on the loft joins the second profile's curves turned by, in 0 to the count less one."
@@ -6360,7 +6372,7 @@
 					},
 					"NewLoft": {
 						"decl": "func (sk *Sketch) NewLoft(from, to core.HGroup, name string) (Group, error)",
-						"text": "NewLoft starts a loft from the profile of group from to that of group to, both sketches in workplanes with one closed loop of the same number of curves."
+						"text": "NewLoft starts a loft from the profile of group from to that of group to, both sketches in workplanes with one closed loop."
 					},
 					"NewMirror": {
 						"decl": "func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error)",
@@ -6377,6 +6389,10 @@
 					"NewShellJob": {
 						"decl": "func (sk *Sketch) NewShellJob() *ShellJob",
 						"text": "NewShellJob copies what defines the sketch, for a job to regenerate."
+					},
+					"NewSmoothLoft": {
+						"decl": "func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, error)",
+						"text": "NewSmoothLoft starts a loft through the profiles of groups, two or more, in order: two make a ruled loft, more a smooth one."
 					},
 					"NewSweep": {
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
@@ -7099,7 +7115,10 @@
 						"decl": "func (c *BSplineCurve) PointAt(t float64) geom.Vector",
 						"text": "PointAt is the curve's point at t."
 					}
-				}
+				},
+				"makers": [
+					"ChainCurve"
+				]
 			},
 			"BSplineSurface": {
 				"text": "BSplineSurface is a tensor product B-spline surface: Ctrl[i][j] is the control point i along u and j along v.",
@@ -7125,7 +7144,10 @@
 						"decl": "func (s *BSplineSurface) PointAt(u, v float64) geom.Vector",
 						"text": "PointAt is the surface's point at (u, v)."
 					}
-				}
+				},
+				"makers": [
+					"Skin"
+				]
 			},
 			"BspClass": {
 				"text": "BspClass is the side of a BSP node's plane something is on (C++ BspClass).",
@@ -8528,6 +8550,10 @@
 				"decl": "func ApproxEqualGeometry(a, b *SEdgeList, tol float64) bool",
 				"text": "ApproxEqualGeometry reports whether two SEdgeLists describe the same set of edges within tol."
 			},
+			"ChainCurve": {
+				"decl": "func ChainCurve(chain []SBezier, deg int) (BSplineCurve, error)",
+				"text": "ChainCurve is a chain of Bezier curves joined end to end as one clamped B-spline curve of degree deg, each piece raised to it: piece i runs over [i/n, (i+1)/n], its joints knots deg times over."
+			},
 			"CheckNormalAxisRelationship": {
 				"decl": "func CheckNormalAxisRelationship(sbls *SBezierLoopSet, pt, axis geom.Vector, da, dx float64) bool",
 				"text": "CheckNormalAxisRelationship reports whether the direction of revolution/extrusion ends up parallel to the normal of the sketch, on the side of the axis where the sketch is."
@@ -8684,6 +8710,10 @@
 			"SetParallelModeFromEnv": {
 				"decl": "func SetParallelModeFromEnv()",
 				"text": "SetParallelModeFromEnv takes TELESAPR_PARALLEL: \"on\" (the default) has the solids generated on all the processors, \"off\" on one; the result is the same."
+			},
+			"Skin": {
+				"decl": "func Skin(sections []BSplineCurve) (*BSplineSurface, []float64, error)",
+				"text": "Skin is the surface through sections, curves of one degree and knot vector: u runs along them, v across, from the first section at v = 0 to the last at v = 1."
 			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",
