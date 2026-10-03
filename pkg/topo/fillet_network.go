@@ -43,8 +43,8 @@ type FilletPick struct {
 // filletEdge is one edge to round and what follows from its faces.
 type filletEdge struct {
 	e      int
-	v      [2]int // its vertices, from start to end
-	f      [2]int // its faces
+	v      [2]int         // its vertices, from start to end
+	f      [2]int         // its faces
 	u      [2]geom.Vector // into each face, square to the edge (straight edges)
 	dir    geom.Vector    // from v[0] to v[1] (straight edges)
 	s, w   float64        // the tangent curves' distance from the edge, the arc's weight
