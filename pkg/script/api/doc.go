@@ -504,8 +504,10 @@ func Commands() []string {
 
 // RunCommand runs a command of the main menu, as choosing it does:
 // "View > Zoom To Fit", or the entry's own name, "Zoom To Fit", when
-// only one entry has it. A host with no window, such as telesapr-cli,
-// has no menu to run it from, and it is an error.
+// only one entry has it. telesapr-cli runs scripts on the interface
+// without a window, so commands run there too; a document of a Go
+// program's own, from New, has no menu to run them from, and it is an
+// error.
 func (d *Doc) RunCommand(label string) (err error) {
 	d.h.Run(func() { err = d.h.RunCommand(label) })
 	return err
