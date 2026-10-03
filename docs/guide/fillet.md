@@ -10,7 +10,8 @@ New Group > Fillet Edges (Shift+F) rounds edges of the solid so far, 1 mm to beg
 takes the same selection as a chamfer:
 
 - line segments along edges between two flat faces;
-- circles where a flat face meets a cylinder or a cone;
+- circles where a flat face meets a cylinder or a cone, or where a cylinder and a cone, or two
+  cones, meet about one axis, as a frustum turned on a shaft;
 - straight or circular edges of the solid, picked on the model.
 
 What it makes:
@@ -37,7 +38,9 @@ doc.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
 
 ## Not yet
 
-Fillets between two curved faces, and corners where more than three rounded edges meet, or
-where convex meets concave at a vertex, are refused with a message; they are roadmap 22. A
+Fillets between two curved faces other than cylinders and cones about one axis (a sphere, a
+torus, a spline surface, or two cylinders at an angle), and corners where more than three
+rounded edges meet, or where convex meets concave at a vertex, are refused with a message; they
+are the rest of roadmap 22. A
 fillet whose radius stops its chain at a rounded corner names the curved face rather than
 saying so (15.7).

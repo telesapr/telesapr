@@ -8421,6 +8421,10 @@
 						"decl": "func (s *SSurface) NormalAtUv(puv geom.Point2d) geom.Vector",
 						"text": "NormalAtUv is the Point2d variant."
 					},
+					"OffsetSurface": {
+						"decl": "func (s *SSurface) OffsetSurface(d, tol float64, maxGrid int) (*BSplineSurface, error)",
+						"text": "OffsetSurface is the patch's offset by d, along its normal (against it for d below zero), as a non-rational cubic B-spline surface within tol of it between the points it was fitted through, over the patch's own parameters."
+					},
 					"PointAt": {
 						"decl": "func (s *SSurface) PointAt(u, v float64) geom.Vector",
 						"text": "PointAt evaluates the surface at parameter (u, v)."

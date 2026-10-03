@@ -466,7 +466,14 @@ func (t *Topology) circularEdgeOf(e int, r float64, flat bool) (filletEdge, erro
 		}
 	}
 	if flatK < 0 {
-		return fe, filletErr(m, "the edge is curved and neither face at it is flat: %s rounds edges of flat faces and cylinders or cones", what)
+		// Two curved faces (roadmap 22.2): cylinders and cones about the
+		// circle's axis, which its own plane gives.
+		var ok bool
+		if np, ok = planeNormalOf(ed.Points); !ok {
+			return fe, filletErr(m, "the edge is curved, neither face at it is flat, and it is not a circle: %s rounds "+
+				"edges of flat faces, cylinders and cones about one axis", what)
+		}
+		return t.coaxialEdgeOf(e, r, flat, np)
 	}
 	pa, pb := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
 	var sb srf.SBezier
@@ -529,6 +536,97 @@ func (t *Topology) circularEdgeOf(e int, r float64, flat bool) (filletEdge, erro
 	for k := 0; k < 2; k++ {
 		if rad+fe.s*fe.gen[k][0] < geom.LengthEps {
 			return fe, filletErr(m, "a radius this large is wider than the %s", fe.kindName(gen))
+		}
+	}
+	return fe, nil
+}
+
+// planeNormalOf is the normal of the plane the points lie in, when
+// they do and don't lie on a line.
+func planeNormalOf(pts []geom.Vector) (geom.Vector, bool) {
+	if len(pts) < 3 {
+		return geom.Vector{}, false
+	}
+	a, m, b := pts[0], pts[len(pts)/3], pts[2*len(pts)/3]
+	n := m.Minus(a).Cross(b.Minus(a))
+	if n.Magnitude() < 1e-12 {
+		return geom.Vector{}, false
+	}
+	n = n.WithMagnitude(1)
+	for _, p := range pts {
+		if math.Abs(p.Minus(a).Dot(n)) > 10*geom.LengthEps {
+			return geom.Vector{}, false
+		}
+	}
+	return n, true
+}
+
+// coaxialEdgeOf checks a circular edge between two curved faces,
+// cylinders or cones about the circle's axis n (roadmap 22.2): a cone
+// on a shaft, a shaft from a cone's top. The fillet is the torus of the
+// section's arc, as between a flat face and a cylinder; the edge is
+// convex when each face runs away from the other's outside.
+func (t *Topology) coaxialEdgeOf(e int, r float64, flat bool, n geom.Vector) (filletEdge, error) {
+	var fe filletEdge
+	ed := &t.Edges[e]
+	m := midpoint(ed.Points)
+	fs := t.EdgeFaces(e)
+	pa, pb := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
+	var sb srf.SBezier
+	c := t.shell.FindCurve(ed.Curve)
+	switch {
+	case c != nil && c.IsExact:
+		sb = c.Exact
+		switch {
+		case sb.Start().Equals(pa) && sb.Finish().Equals(pb):
+		case sb.Start().Equals(pb) && sb.Finish().Equals(pa):
+			sb.Reverse()
+		default:
+			return fe, filletErr(m, "the edge is part of a longer curve")
+		}
+	default:
+		var ok bool
+		if sb, ok = arcThrough(ed.Points, n); !ok {
+			return fe, filletErr(m, "the edge has no exact curve, and its points are not on an arc of a circle")
+		}
+	}
+	var cc geom.Vector
+	var rad float64
+	if !sb.IsCircle(n, &cc, &rad) {
+		return fe, filletErr(m, "the edge is curved but not an arc of a circle")
+	}
+	fe = filletEdge{e: e, v: ed.V, f: fs, r: r, circ: true, curve: sb, centre: cc, axis: n, radius: rad, flatK: -1}
+	// Each face's generator, and its outward normal in the half plane
+	// through the axis.
+	radial := fe.radial(m)
+	var normal [2][2]float64
+	for k := 0; k < 2; k++ {
+		gen, ok := t.generator(&fe, fs[k])
+		if !ok {
+			return fe, filletErr(m, "the edge is curved, and a face at it is neither flat nor a cylinder or a cone "+
+				"about the circle's axis")
+		}
+		fe.gen[k] = gen
+		s := t.Surface(fs[k])
+		var u, v float64
+		s.ClosestPointToUV(m, &u, &v, true)
+		nk := s.NormalAt(u, v).WithMagnitude(1)
+		normal[k] = [2]float64{nk.Dot(radial), nk.Dot(n)}
+	}
+	dot := func(a, b [2]float64) float64 { return a[0]*b[0] + a[1]*b[1] }
+	c0, c1 := dot(fe.gen[0], normal[1]), dot(fe.gen[1], normal[0])
+	if math.Abs(c0) < 1e-9 || math.Abs(c1) < 1e-9 || (c0 > 0) != (c1 > 0) {
+		return fe, filletErr(m, "the faces don't meet as a corner at the edge: they go on smoothly into each other")
+	}
+	fe.concave = c0 > 0
+	beta := math.Acos(math.Max(-1, math.Min(1, dot(fe.gen[0], fe.gen[1]))))
+	fe.s, fe.w = r/math.Tan(beta/2), math.Sin(beta/2)
+	if flat {
+		fe.s = r
+	}
+	for k := 0; k < 2; k++ {
+		if rad+fe.s*fe.gen[k][0] < geom.LengthEps {
+			return fe, filletErr(m, "a radius this large is wider than the %s", fe.kindName(fe.gen[k]))
 		}
 	}
 	return fe, nil
