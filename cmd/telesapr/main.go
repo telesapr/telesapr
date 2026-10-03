@@ -34,6 +34,9 @@ func main() {
 
 	ss := ui.New(p)
 	ss.RendererOverride = opts.renderer
+	// The solids are made off the interface's thread unless
+	// TELESAPR_BACKGROUND is off (roadmap 17.3).
+	ss.BackgroundShells = os.Getenv("TELESAPR_BACKGROUND") != "off"
 	ss.Init()
 
 	if len(files) >= 1 {

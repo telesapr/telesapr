@@ -1,6 +1,9 @@
 package srf
 
 import (
+	"math"
+	"sync/atomic"
+
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
@@ -9,8 +12,14 @@ import (
 // SolveSpaceUI::GenerateAll from the entity bounding box
 // (generate.cpp:225); sketch.GenerateAll does the same via
 // SetChordTolMm.
+// The chord tolerance is atomic: a sketch generated on another
+// goroutine (the solids made off the interface's thread, roadmap 17.3)
+// sets it to the value the interface's own generation does.
+var chordTolBits atomic.Uint64
+
+func init() { chordTolBits.Store(math.Float64bits(0.1)) }
+
 var (
-	chordTolMm  = 0.1
 	maxSegments = 20
 
 	// While exporting, the export tolerance and segment limit apply
@@ -26,7 +35,7 @@ func ChordTolMm() float64 {
 	if exportMode {
 		return exportChordTolMm
 	}
-	return chordTolMm
+	return math.Float64frombits(chordTolBits.Load())
 }
 
 // SetExportMode turns export mode on, with the given chord tolerance in
@@ -44,7 +53,7 @@ func ExportMode() bool { return exportMode }
 // chordTolCalculated it can be 0, for a sketch whose entities all sit
 // at one point; the pwl routines are then bounded by maxSegments.
 func SetChordTolMm(t float64) {
-	chordTolMm = t
+	chordTolBits.Store(math.Float64bits(t))
 }
 
 // SetMaxSegments sets the maximum number of pwl segments per curve

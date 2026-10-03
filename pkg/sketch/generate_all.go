@@ -103,6 +103,9 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 
 	rt := &Runtime{Sketch: sk}
 	for i, hg := range sk.GroupOrder {
+		if sk.Cancel != nil && sk.Cancel() {
+			return
+		}
 		// A group suppressed whole, or using one that is, is left out
 		// before anything could prune what it refers to.
 		if g := sk.GetGroup(hg); g.SuppressedBy.V != 0 {
@@ -190,8 +193,13 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 			if genForBBox {
 				sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 				g.GenerateLoops(sk, rt)
+			} else if sk.DeferShells {
+				// The solid as it was, to be made off the thread.
+				g.ShellsStale = true
+				g.Clean = true
 			} else {
 				g.GenerateShellAndMesh(sk)
+				g.ShellsStale = false
 				g.Clean = true
 			}
 		} else {

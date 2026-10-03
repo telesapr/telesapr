@@ -114,6 +114,12 @@ type Sketch struct {
 	// pending drag).
 	DraggedParams func() []core.HParam
 
+	// DeferShells, while set, has a regeneration leave each group's
+	// solid as it was, marked ShellsStale (shelljob.go); Cancel, if
+	// set, stops one between groups when it reports true.
+	DeferShells bool
+	Cancel      func() bool
+
 	// OnGenerated, if set, is called near the end of each GenerateAll
 	// pass, before the message about what was deleted along with
 	// something, with how many requests, constraints and groups were

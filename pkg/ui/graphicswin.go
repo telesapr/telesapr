@@ -885,6 +885,10 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 	sk := gw.sk()
 	switch id {
 	case CmdUnselectAll:
+		// Esc stops the solid being made off the thread first.
+		if ss.stopShellJob() {
+			break
+		}
 		gw.GroupSelection()
 		// If there's nothing selected to de-select, and no operation to
 		// cancel, then perhaps they want to return to the home screen in

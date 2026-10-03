@@ -61,6 +61,11 @@ type SolveSpaceUI struct {
 	TurntableNav             bool
 	ImmediatelyEditDimension bool
 	AutomaticLineConstraints bool
+	// BackgroundShells has the regenerations the interface schedules
+	// make the solids off its thread (shelljob.go); the application
+	// sets it, the tests don't.
+	BackgroundShells bool
+	shellJobs        shellJobs
 	// ColorByFreedom colours the active group's entities by how much
 	// of them their constraints fix (an extension).
 	ColorByFreedom bool
@@ -372,7 +377,16 @@ func (ss *SolveSpaceUI) Refresh() {
 	// GenerateAll must happen before updating displays.
 	if ss.scheduledGenerateAll {
 		ss.scheduledGenerateAll = false
-		ss.SK.Refresh()
+		if ss.BackgroundShells {
+			ss.SK.DeferShells = true
+			ss.SK.Refresh()
+			ss.SK.DeferShells = false
+			if ss.SK.AnyShellsStale() {
+				ss.startShellJob()
+			}
+		} else {
+			ss.SK.Refresh()
+		}
 		ss.afterGenerate()
 	}
 	if ss.scheduledShowTW {

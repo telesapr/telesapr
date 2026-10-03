@@ -194,6 +194,10 @@ type Group struct {
 	ImpShell  srf.SShell
 	ImpEntity []core.Entity
 
+	// ShellsStale is set when a regeneration with DeferShells left the
+	// group's solid as it was (shelljob.go).
+	ShellsStale bool
+
 	// Edges are the entities a chamfer cuts, or the path a sweep
 	// follows, in the order the user gave them.
 	Edges []core.HEntity

@@ -98,8 +98,15 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 		uk.Cnt++
 	}
 
-	ut := &uk.D[uk.Write]
-	*ut = UndoState{}
+	uk.D[uk.Write] = *s.definingState()
+	uk.Write = wrapUndo(uk.Write + 1)
+}
+
+// definingState is a copy of what defines the sketch, as undo keeps it:
+// the groups without what is made from them, the requests, constraints,
+// solver values, styles, parameters and configurations.
+func (s *Sketch) definingState() *UndoState {
+	ut := &UndoState{}
 	ut.Groups = make([]Group, 0, len(s.Groups))
 	for _, src := range s.Groups {
 		// Copy what defines the group; zero out all the dynamic stuff
@@ -157,7 +164,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 	ut.Units = s.Units
 	ut.Active = s.Active
 
-	uk.Write = wrapUndo(uk.Write + 1)
+	return ut
 }
 
 // PopOntoCurrentFrom makes the last state on uk the current one, then

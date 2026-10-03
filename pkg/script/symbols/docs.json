@@ -5861,6 +5861,20 @@
 				"text": "Selection is a selected entity or constraint (C++ Selection).",
 				"kind": "struct"
 			},
+			"ShellJob": {
+				"text": "ShellJob is a regeneration of a copy of the sketch.",
+				"kind": "struct",
+				"methods": {
+					"Cancel": {
+						"decl": "func (j *ShellJob) Cancel()",
+						"text": "Cancel asks Run to stop at the next group."
+					},
+					"Run": {
+						"decl": "func (j *ShellJob) Run()",
+						"text": "Run regenerates the copy in full; it may run on any goroutine."
+					}
+				}
+			},
 			"Sketch": {
 				"kind": "struct",
 				"methods": {
@@ -5921,6 +5935,14 @@
 					"AddThread": {
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
+					},
+					"AnyShellsStale": {
+						"decl": "func (sk *Sketch) AnyShellsStale() bool",
+						"text": "AnyShellsStale reports whether a group's solid is out of date."
+					},
+					"Apply": {
+						"decl": "func (sk *Sketch) Apply(j *ShellJob) bool",
+						"text": "Apply moves the job's groups, with their solids, into the sketch if it is still defined as when the job was made and the job ran to the end, and reports whether it did."
 					},
 					"AssemblyParts": {
 						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
@@ -6217,6 +6239,10 @@
 					"NewShell": {
 						"decl": "func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Group, error)",
 						"text": "NewShell starts a shell at the active group, hollowing the solid so far to walls thick mm, open at faces."
+					},
+					"NewShellJob": {
+						"decl": "func (sk *Sketch) NewShellJob() *ShellJob",
+						"text": "NewShellJob copies what defines the sketch, for a job to regenerate."
 					},
 					"NewSweep": {
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
