@@ -279,7 +279,9 @@ type pendingState struct {
 // GraphicsWindow is the window with the model and the toolbar (C++
 // GraphicsWindow).
 type GraphicsWindow struct {
-	ss *SolveSpaceUI
+	// hoverTris is the grid hiddenBySolid looks triangles up in.
+	hoverTris *hoverGrid
+	ss        *SolveSpaceUI
 
 	window platform.Window
 
