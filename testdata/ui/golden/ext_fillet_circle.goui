@@ -41,49 +41,53 @@ row 16      entity 80030005 of g003-extrude
  0-4 64 64 0
  5-35 6c 64 108 80030005 1 1
  36-99 64 64 0
-row 18 
+row 18        [own radius]
+ 0-6 64 64 0
+ 7-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 20 
  0-99 64 64 0
-row 20    show entities from this group
+row 22    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    suppress this group and the groups that use it
+row 24    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 24    force NURBS surfaces to triangle mesh
+row 26    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 27    relax constraints and dimensions
+row 29    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 29    allow redundant constraints
+row 31    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 31    suppress dof calculation (improves solver performance)
+row 33    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 33    treat all dimensions as reference
+row 35    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 35 
+row 37 
  0-99 64 64 0
-row 37  requests in group
+row 39  requests in group
  0-99 74 64 0
-row 39    (none)
+row 41    (none)
  0-99 64 61 0
-row 41 
+row 43 
  0-99 64 64 0
-row 43  constraints in group (0 DOF)
+row 45  constraints in group (0 DOF)
  0-99 74 64 0
-row 45    (none)
+row 47    (none)
  0-99 64 61 0
-row 47 
+row 49 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 388\nVolume: 24.96 cm³\nCenter of mass: (-2.00, 7.00, 39.98)\nExtent: 20.00 x 20.00 x 80.00
 row 0  home   drawing / constraining in 3d
@@ -121,48 +125,52 @@ row 16      entity 80030005 of g003-extrude
  0-4 64 64 0
  5-35 6c 64 108 80030005 1 1
  36-99 64 64 0
-row 18 
+row 18        [own radius]
+ 0-6 64 64 0
+ 7-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 20 
  0-99 64 64 0
-row 20    show entities from this group
+row 22    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    suppress this group and the groups that use it
+row 24    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 24    force NURBS surfaces to triangle mesh
+row 26    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 27    relax constraints and dimensions
+row 29    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 29    allow redundant constraints
+row 31    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 31    suppress dof calculation (improves solver performance)
+row 33    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 33    treat all dimensions as reference
+row 35    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 35 
+row 37 
  0-99 64 64 0
-row 37  requests in group
+row 39  requests in group
  0-99 74 64 0
-row 39    (none)
+row 41    (none)
  0-99 64 61 0
-row 41 
+row 43 
  0-99 64 64 0
-row 43  constraints in group (0 DOF)
+row 45  constraints in group (0 DOF)
  0-99 74 64 0
-row 45    (none)
+row 47    (none)
  0-99 64 61 0
-row 47 
+row 49 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 388\nVolume: 24.85 cm³\nCenter of mass: (-2.00, 7.00, 39.81)\nExtent: 20.00 x 20.00 x 80.00

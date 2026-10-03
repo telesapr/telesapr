@@ -364,12 +364,31 @@ func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 	// and listed; the group says what it lacks.
 	if len(g.Edges) > 0 {
 		kept := g.Edges[:0]
-		for _, he := range g.Edges {
+		// An edge's own radius follows it to its new place.
+		at := make([]int, len(g.Edges))
+		for i, he := range g.Edges {
+			at[i] = -1
 			if sk.entityExists(he) && he != core.NoEntity {
+				at[i] = len(kept)
 				kept = append(kept, he)
 			} else {
 				sk.broke(hg, "edge of "+g.DescriptionString(), sk.entityName(he))
 			}
+		}
+		if dropped := len(g.Edges) - len(kept); dropped > 0 && len(g.EdgeRadii) > 0 {
+			radii := g.EdgeRadii[:0]
+			for _, er := range g.EdgeRadii {
+				switch {
+				case er.Edge >= len(at):
+					er.Edge -= dropped
+				case at[er.Edge] < 0:
+					continue
+				default:
+					er.Edge = at[er.Edge]
+				}
+				radii = append(radii, er)
+			}
+			g.EdgeRadii = radii
 		}
 		g.Edges = kept
 	}

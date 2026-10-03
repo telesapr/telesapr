@@ -240,7 +240,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"A rounded edge takes with it the edges it meets smoothly, as round a rounded "+
 				"rectangle. "+
 				"Where two rounded edges meet, they are mitred; where three meet, a sphere "+
-				"rounds the corner.", capitalize(err.Error()))
+				"rounds the corner. The group's screen gives an edge a radius of its own, "+
+				"where it meets no other rounded edge.", capitalize(err.Error()))
 			return
 		}
 		g = fg

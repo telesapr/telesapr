@@ -1,0 +1,24 @@
+# Two top edges of the extrusion of path_extrude that don't meet, picked
+# and rounded, the second given a radius of its own through the
+# screen's [own radius] link; the same as path_fillet_radii.go makes
+# (TestPathEquivalenceFilletRadii).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 262.5
+down L 382.5 262.5
+up L 382.5 262.5
+move 197.5 262.5
+down L 197.5 262.5
+up L 197.5 262.5
+menu New Group|Fillet Edges
+twmove 105 225
+twdown L 105 225
+twup L 105 225
+edit 3

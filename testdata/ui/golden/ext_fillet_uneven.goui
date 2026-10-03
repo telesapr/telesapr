@@ -42,53 +42,61 @@ row 16      entity 8004001a of g004-ramp
  0-4 64 64 0
  5-32 6c 64 108 8004001a 1 1
  33-99 64 64 0
-row 18      entity 80040013 of g004-ramp
+row 18        [own radius]
+ 0-6 64 64 0
+ 7-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 20      entity 80040013 of g004-ramp
  0-4 64 61 0
  5-32 6c 61 108 80040013 1 1
  33-99 64 61 0
-row 20 
+row 22        [own radius]
+ 0-6 64 61 0
+ 7-18 6c 61 108 1 1 0
+ 19-99 64 61 0
+row 24 
  0-99 64 64 0
-row 22    show entities from this group
+row 26    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 24    suppress this group and the groups that use it
+row 28    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 26    force NURBS surfaces to triangle mesh
+row 30    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 29    relax constraints and dimensions
+row 33    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 31    allow redundant constraints
+row 35    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 33    suppress dof calculation (improves solver performance)
+row 37    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 35    treat all dimensions as reference
+row 39    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 37 
+row 41 
  0-99 64 64 0
-row 39  requests in group
+row 43  requests in group
  0-99 74 64 0
-row 41    (none)
+row 45    (none)
  0-99 64 61 0
-row 43 
+row 47 
  0-99 64 64 0
-row 45  constraints in group (0 DOF)
+row 49  constraints in group (0 DOF)
  0-99 74 64 0
-row 47    (none)
+row 51    (none)
  0-99 64 61 0
-row 49 
+row 53 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 54\nVolume: 1.75 cm³\nCenter of mass: (8.81, 5.01, 4.75)\nExtent: 20.00 x 10.00 x 10.00
 row 0  home   drawing / constraining in 3d
@@ -126,52 +134,60 @@ row 16      entity 8004001a of g004-ramp
  0-4 64 64 0
  5-32 6c 64 108 8004001a 1 1
  33-99 64 64 0
-row 18      entity 80040013 of g004-ramp
+row 18        [own radius]
+ 0-6 64 64 0
+ 7-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 20      entity 80040013 of g004-ramp
  0-4 64 61 0
  5-32 6c 61 108 80040013 1 1
  33-99 64 61 0
-row 20 
+row 22        [own radius]
+ 0-6 64 61 0
+ 7-18 6c 61 108 1 1 0
+ 19-99 64 61 0
+row 24 
  0-99 64 64 0
-row 22    show entities from this group
+row 26    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 24    suppress this group and the groups that use it
+row 28    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 26    force NURBS surfaces to triangle mesh
+row 30    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 29    relax constraints and dimensions
+row 33    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 31    allow redundant constraints
+row 35    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 33    suppress dof calculation (improves solver performance)
+row 37    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 35    treat all dimensions as reference
+row 39    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 37 
+row 41 
  0-99 64 64 0
-row 39  requests in group
+row 43  requests in group
  0-99 74 64 0
-row 41    (none)
+row 45    (none)
  0-99 64 61 0
-row 43 
+row 47 
  0-99 64 64 0
-row 45  constraints in group (0 DOF)
+row 49  constraints in group (0 DOF)
  0-99 74 64 0
-row 47    (none)
+row 51    (none)
  0-99 64 61 0
-row 49 
+row 53 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 64\nVolume: 1.73 cm³\nCenter of mass: (8.81, 5.03, 4.72)\nExtent: 20.00 x 10.00 x 10.00

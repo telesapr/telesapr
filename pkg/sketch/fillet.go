@@ -10,7 +10,8 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/topo"
 )
 
-// A fillet rounds its edges of the solid so far with its radius, ValB:
+// A fillet rounds its edges of the solid so far with its radius, ValB,
+// or an edge's own (EdgeRadii):
 // straight edges between two planar faces, or circles where a planar
 // face meets a cylinder or a cone, ending at corners of three faces
 // (topo.FilletPicks); those that go in are filled. It edits a copy of
@@ -95,9 +96,15 @@ func (g *Group) generateFilletShell(sk *Sketch) {
 		g.setProblem(nil, "%v", err)
 		return
 	}
+	picks := segmentPicks(segs)
+	for _, er := range g.EdgeRadii {
+		if er.Edge < len(picks) {
+			picks[er.Edge].R = er.Val
+		}
+	}
 	var sh srf.SShell
 	sh.MakeFromCopyOf(&prev.RunningShell)
-	if err := topo.FilletPicks(&sh, segmentPicks(segs), g.ValB, srf.OriginFor(g.H.V, 0), false); err != nil {
+	if err := topo.FilletPicks(&sh, picks, g.ValB, srf.OriginFor(g.H.V, 0), false); err != nil {
 		var fe *topo.FilletError
 		if errors.As(err, &fe) {
 			at := fe.At

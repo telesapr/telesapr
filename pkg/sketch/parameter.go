@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -125,6 +126,95 @@ func (g *Group) Value(f GroupValue) (val *float64, expr *string) {
 		return &g.Scale, &g.ExprScale
 	}
 	panic(fmt.Sprintf("sketch: no group value %d", int(f)))
+}
+
+// EdgeRadius is a fillet's radius for one of its edges, Edge counting
+// Edges and then SolidEdges: Val millimetres, from Expr when it is not
+// "".
+type EdgeRadius struct {
+	Edge int
+	Val  float64
+	Expr string
+}
+
+// EdgeRadiusField names an edge's radius in messages and in the file.
+func EdgeRadiusField(i int) string { return fmt.Sprintf("radius of edge %d", i+1) }
+
+// EdgeRadius is the radius a fillet gives its edge i, counting Edges
+// and then SolidEdges, and its expression: the edge's own, or the
+// group's.
+func (g *Group) EdgeRadius(i int) (float64, string, bool) {
+	for _, er := range g.EdgeRadii {
+		if er.Edge == i {
+			return er.Val, er.Expr, true
+		}
+	}
+	return g.ValB, g.ExprB, false
+}
+
+// SetEdgeRadiusText gives a fillet's edge i a radius of its own from
+// what the user typed, in the document's unit, as SetGroupText does
+// for the group's radius; "" gives it the group's radius again.
+func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error {
+	g := sk.GetGroup(hg)
+	if g == nil {
+		return fmt.Errorf("no group %08x", hg.V)
+	}
+	if g.Type != GroupFillet {
+		return fmt.Errorf("%s is not a fillet: only a fillet's edges have radii", g.Name)
+	}
+	if i < 0 || i >= len(g.Edges)+len(g.SolidEdges) {
+		return fmt.Errorf("the fillet has no edge %d", i+1)
+	}
+	text = cleanText(text)
+	at := -1
+	for k := range g.EdgeRadii {
+		if g.EdgeRadii[k].Edge == i {
+			at = k
+		}
+	}
+	if text == "" {
+		if at >= 0 {
+			g.EdgeRadii = append(g.EdgeRadii[:at], g.EdgeRadii[at+1:]...)
+		}
+		sk.MarkGroupDirty(hg, false)
+		return nil
+	}
+	_, names, err := sk.parseNamed(text)
+	if err != nil {
+		return err
+	}
+	old := append([]EdgeRadius(nil), g.EdgeRadii...)
+	if at < 0 {
+		g.EdgeRadii = append(g.EdgeRadii, EdgeRadius{Edge: i})
+		sort.Slice(g.EdgeRadii, func(a, b int) bool { return g.EdgeRadii[a].Edge < g.EdgeRadii[b].Edge })
+		for k := range g.EdgeRadii {
+			if g.EdgeRadii[k].Edge == i {
+				at = k
+			}
+		}
+	}
+	er := &g.EdgeRadii[at]
+	if v, plain := plainNumber(text, names); plain {
+		v *= sk.Units.MmPer()
+		if v <= 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+			g.EdgeRadii = old
+			return errors.New("a fillet's radius must be more than zero")
+		}
+		er.Val, er.Expr = v, ""
+	} else {
+		er.Expr = text
+		sk.applyParameters()
+		for _, ee := range sk.ExprErrors {
+			if ee.Group == hg && ee.Constraint.V == 0 && ee.Field == EdgeRadiusField(i) {
+				g.EdgeRadii = old
+				sk.applyParameters()
+				return errors.New(ee.Err)
+			}
+		}
+	}
+	sk.MarkGroupDirty(hg, false)
+	return nil
 }
 
 // groupValues are the group values in file order.
@@ -321,6 +411,11 @@ func (sk *Sketch) forEachExpr(fn func(expr *string, who string)) {
 				fn(expr, fmt.Sprintf("group %s %s", g.Name, g.FieldName(f)))
 			}
 		}
+		for k := range g.EdgeRadii {
+			if er := &g.EdgeRadii[k]; er.Expr != "" {
+				fn(&er.Expr, fmt.Sprintf("group %s %s", g.Name, EdgeRadiusField(er.Edge)))
+			}
+		}
 	}
 }
 
@@ -438,6 +533,28 @@ func (sk *Sketch) evaluate() []core.HGroup {
 			}
 			if *val != v {
 				*val = v
+				mark(g.H)
+			}
+		}
+		for k := range g.EdgeRadii {
+			er := &g.EdgeRadii[k]
+			if er.Expr == "" {
+				continue
+			}
+			v, err := eval(er.Expr)
+			if err == nil {
+				v *= sk.Units.MmPer()
+				if !(v > 0) {
+					err = errors.New("a fillet's radius must be more than zero")
+				}
+			}
+			if err != nil {
+				sk.ExprErrors = append(sk.ExprErrors, ExprError{
+					Group: g.H, Field: EdgeRadiusField(er.Edge), Expr: er.Expr, Err: err.Error()})
+				continue
+			}
+			if er.Val != v {
+				er.Val = v
 				mark(g.H)
 			}
 		}
@@ -760,6 +877,9 @@ func (sk *Sketch) SetUnits(u core.Unit) []string {
 				_, expr := g.Value(f)
 				convert(expr)
 			}
+		}
+		for k := range g.EdgeRadii {
+			convert(&g.EdgeRadii[k].Expr)
 		}
 	}
 	sk.Units = u

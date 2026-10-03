@@ -26,7 +26,7 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 7. First new solid features | done 2026-10-03, with follow-ups listed under the step | `a5829a6` |
 | 8. STEP import as a reference mesh | done 2026-10-03, with follow-ups listed under the step | `e556586` |
 | 9. Topology and edge naming | done 2026-10-03, on derived topology (9.2 not taken), with follow-ups listed under the step | `6f60438` |
-| 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones; plane meeting cone not yet), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0`, 10.7 `5a2239e`, 10.8 `f1cf92e`, 10.9 `e86d002` |
+| 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups 10.6 concave fillets, 10.7 smooth chains, 10.8 uneven mitres, 10.9 plane meeting cone, 10.10 a radius per edge; the rest listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0`, 10.7 `5a2239e`, 10.8 `f1cf92e`, 10.9 `e86d002` |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -807,18 +807,23 @@ Spikes first, as listed under "How to check an estimate before committing to it"
 | 10.7 Circular and straight edges meeting (follow-up) | A circular edge's fillet meets a straight one's where the arc meets the line smoothly, as round a rounded rectangle; picking one edge takes the chain. The rate for the sweep, 0, set before. | done 2026-10-03: the seam of two pieces of a circle generalised to any two rounded edges that share a face and have one cross section at the vertex; the third edge there is cut back to its point. A circular edge meeting another at an angle is refused. `TestFilletOutlineSweep`, 36 points over rectangles with one, two or four rounded corners, top or pocket floor, against the cross section along its centroid's path, rate 0. Scenario `ext_fillet_outline`, pair `path_fillet_outline`, `examples/scripts/soap`, golden `fillet-outline`, `BenchmarkFilletOutline` |
 | 10.8 Uneven mitres (follow-up) | Two rounded edges whose faces don't lie alike about them meet as a mitre too. The rate for the sweep, 0, set before. | done 2026-10-03: the cylinders still meet along an ellipse in the plane that halves the edges; the strip that turns further goes on past it, cut by the other's side face along a conic, as OpenCASCADE builds it. `TestFilletUnevenMitreSweep`, 96 leaning prisms against OpenCASCADE (`testdata/topo/fillet-mitres.txt`, `scripts/fillet-mitre-fixtures.py`), rate 0; OpenCASCADE is exact for 62, its spline between the cylinders straying by up to 0.15 mm or its shape invalid in the rest, which are checked for soundness only (where it is exact, these solids exported to STEP measure as its to 1e-4 mm³). Scenario `ext_fillet_uneven` on `testdata/topo/ramp.spcs`, pair `path_fillet_uneven`, `examples/scripts/ramp`, golden `fillet-uneven`, `BenchmarkFilletUneven` |
 | 10.9 Plane meeting cone (follow-up, 10.3's last part) | Where a flat face meets a cone about the circle's axis: a torus, or a chamfer's cone. The rate for the sweep, 0, set before. | done 2026-10-03: the other face's generator at the edge, found from the face and checked against its whole surface, gives the section's angle; the tangent circles turn to new radii and move along the axis; a chamfer cuts at its distance along both faces (on a cylinder as before). A lathe's flat faces (quarters of a disc, of degree 2) count as flat, and two rounded edges meet smoothly across them at a vertex of four edges. A Boolean's plane-cone curve, not exact, is taken as the arc through its points. `TestFilletConeSweep`, 96 points over a lathed frustum's top or foot, a countersink's rim and a frustum's foot on a plate (filled), fillet or chamfer, slope and radius, against Pappus, rate 0. Scenario `ext_fillet_cone` on `testdata/topo/frustum.spcs`, pair `path_fillet_cone`, `examples/scripts/spinner`, golden `fillet-cone`, `BenchmarkFilletCone` |
+| 10.10 A radius per edge (follow-up) | A fillet's edge may have a radius of its own. The rate for the sweep, 0, set before. | done 2026-10-03: `Group.EdgeRadii`, `edge-radius <n> = <expression>` in the file, a number or an expression in the document's unit, kept by parameters, units, undo and pruning; the group's screen shows it under its edge with [change] and [the fillet's], or [own radius]; `Group.EdgeRadius`, `SetEdgeRadius`, `SetEdgeRadiusExpr`. Edges an edge takes on through smooth joins inherit its radius; rounded edges meeting at a corner need one radius (a diagnostic otherwise), an edge ending where no other rounded edge does may have any. `TestFilletRadiiSweep`, 18 points over a box's top and foot edges and a cylinder's two circles at two radii, rate 0. Scenario `ext_fillet_radii`, pair `path_fillet_radii`, `examples/scripts/plinth`, golden `fillet-radii`, `BenchmarkFilletRadii` |
 
 Each phase carries a sweep whose acceptable failure rate is written into this table before the
 phase starts.
 
 Follow-ups from step 10:
 
-- **Corners left**: corners of more than three faces, a circular edge meeting another rounded one at an angle, edges that
-  go on straight through a vertex (a T-junction a Boolean left), and convex and concave fillets
-  meeting at a corner are refused. One radius per group. A chamfer group cuts concave straight
-  edges by its Boolean, which refuses them; it takes no chains through smooth joins either, its
-  straight edges being cut by wedges. A fillet's radius at least a rounded outline's corner
-  radius stops the chain there, and the message speaks of the curved face it ends on.
+- **Corners left**: corners of more than three faces (but the four where a lathe's quarters
+  meet along a smooth join), a circular edge meeting another rounded one at an angle, edges
+  that go on straight through a vertex (a T-junction a Boolean left), convex and concave
+  fillets meeting at a corner, and rounded edges of different radii meeting at a corner
+  (variable-radius blends, setbacks) are refused.
+- **Chamfer group**: it cuts concave straight edges by its Boolean, which refuses them, and
+  takes no chains through smooth joins, its straight edges being cut by wedges.
+- **A chain stopped by its radius**: a fillet's radius at least a rounded outline's corner
+  radius stops the chain there, and the message speaks of the curved face it ends on rather
+  than of the radius.
 - **Fillets between two curved faces** (a cylinder meeting a cone, a chamfer's cone meeting the
   cylinder it was cut from).
 - **Small spheres at fine tolerances**: with the chord tolerance below about a thousandth of a

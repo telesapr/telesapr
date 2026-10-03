@@ -1,0 +1,29 @@
+# A fillet's edges at radii of their own (an extension): two top edges
+# of the extrusion of path_extrude that don't meet, picked and rounded
+# by New Group > Fillet Edges; the second edge's [own radius] link takes
+# a radius for it alone, here 3, which the screen lists under it with a
+# link back to the fillet's; Check Solid finds it sound.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 262.5
+down L 382.5 262.5
+up L 382.5 262.5
+move 197.5 262.5
+down L 197.5 262.5
+up L 197.5 262.5
+menu New Group|Fillet Edges
+dump
+twmove 105 225
+twdown L 105 225
+twup L 105 225
+edit 3
+tw
+answer ok
+menu Analyze|Check Solid

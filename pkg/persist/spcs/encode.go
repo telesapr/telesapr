@@ -244,6 +244,13 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	for _, f := range g.SolidFaces {
 		n.add(field("solid-face", hex(uint32(f))))
 	}
+	for _, er := range g.EdgeRadii {
+		text := er.Expr
+		if text == "" {
+			text = FormatReal(er.Val / mmPer)
+		}
+		n.add(&Node{Name: "edge-radius", Args: []Value{Word(strconv.Itoa(er.Edge + 1))}, HasExpr: true, Expr: text})
+	}
 
 	pd := block("predef")
 	pd.quaternion("q", g.Predef.Q)

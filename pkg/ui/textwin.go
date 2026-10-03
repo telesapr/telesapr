@@ -129,6 +129,8 @@ const (
 	EditTangentArcRadius Edit = 800
 	// For helix pitch
 	EditHelixPitch Edit = 802
+	// For a fillet's edge's own radius (an extension)
+	EditEdgeRadius Edit = 803
 	// For the screw thread (an extension)
 	EditThreadDesignation Edit = 900
 	EditThreadLength      Edit = 901
