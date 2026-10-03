@@ -52,13 +52,8 @@ var (
 // loadCacheSize is how many files are kept.
 const loadCacheSize = 64
 
-// cachedLoad is load(path, ...), or what it gave for the file before.
-func cachedLoad(load ReportingLoader, path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool {
-	return cachedLoadAs(load, path, false, sk, le, m, sh, rep)
-}
-
-// cachedLoadAs is cachedLoad keeping a file read as a solid apart from
-// the same file read as a mesh.
+// cachedLoadAs is load(path, ...), or what it gave for the file before,
+// a file read as a solid kept apart from the same file read as a mesh.
 func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool {
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {

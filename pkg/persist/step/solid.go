@@ -601,33 +601,6 @@ func (g *faceGrid) crossed(a, b float64, lines []float64, period, eps float64) [
 	return out
 }
 
-// along reports whether the step from p to q lies on a line of the grid.
-func (g *faceGrid) along(p, q uvSample) bool {
-	on := func(x float64, lines []float64, period, eps float64) (float64, bool) {
-		for _, ln := range lines {
-			d := x - ln
-			if period > 0 {
-				d -= math.Round(d/period) * period
-			}
-			if math.Abs(d) <= eps {
-				return ln, true
-			}
-		}
-		return 0, false
-	}
-	if a, ok := on(p.u, g.us, g.pu, g.epsU); ok {
-		if b, ok2 := on(q.u, g.us, g.pu, g.epsU); ok2 && a == b && math.Abs(p.v-q.v) > g.epsV {
-			return true
-		}
-	}
-	if a, ok := on(p.v, g.vs, g.pv, g.epsV); ok {
-		if b, ok2 := on(q.v, g.vs, g.pv, g.epsV); ok2 && a == b && math.Abs(p.u-q.u) > g.epsU {
-			return true
-		}
-	}
-	return false
-}
-
 // refine is the parameter of the curve between samples p and q where
 // it crosses the line at ln of u (byU) or v, by bisection on the
 // surface's parameters of the curve's points.
