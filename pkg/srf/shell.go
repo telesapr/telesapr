@@ -797,7 +797,7 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 	if srf.DegM == 1 && srf.DegN == 1 {
 		poly.UvTriangulateInto(mesh, srf)
 	} else {
-		poly.UvGridTriangulateInto(mesh, srf)
+		poly.uvGridTriangulateInto(mesh, srf, &el)
 	}
 
 	meta := STriMeta{Face: srf.Face, RgbaColor: srf.Color}

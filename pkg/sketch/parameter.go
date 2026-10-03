@@ -95,6 +95,12 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupPitch && g.Type == GroupChamfer {
 		return "distance"
 	}
+	if f == GroupPitch && g.Type == GroupFillet {
+		return "radius"
+	}
+	if f == GroupCopies && g.Type == GroupLoft {
+		return "turn"
+	}
 	return f.Field()
 }
 
@@ -129,6 +135,12 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 	}
 	switch f {
 	case GroupCopies:
+		if g.Type == GroupLoft {
+			if v != float64(int(v)) {
+				return errors.New("a loft turns its second profile by a whole number of curves")
+			}
+			break
+		}
 		if int(v) < 1 {
 			return errors.New("can't repeat fewer than 1 time")
 		}
@@ -142,6 +154,9 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 	case GroupPitch:
 		if g.Type == GroupChamfer && v <= 0 {
 			return errors.New("a chamfer's distance must be more than zero")
+		}
+		if g.Type == GroupFillet && v <= 0 {
+			return errors.New("a fillet's radius must be more than zero")
 		}
 	}
 	return nil

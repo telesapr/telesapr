@@ -436,6 +436,22 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
+// ScreenChangeLoftTurn turns a loft's second profile by one curve,
+// either way (v is +1 or -1, as an unsigned word).
+func (tw *TextWindow) ScreenChangeLoftTurn(link int, v uint32) {
+	ss := tw.ss
+	sk := ss.SK
+	g := sk.GetGroup(tw.shown.group)
+	if g == nil || g.Type != sketch.GroupLoft {
+		return
+	}
+	ss.UndoRemember()
+	g.ValA += float64(int32(v))
+	g.ExprA = ""
+	sk.MarkGroupDirty(g.H, false)
+	ss.GW.Invalidate(false)
+}
+
 // ScreenColor edits a group's colour (C++ TextWindow::ScreenColor).
 func (tw *TextWindow) ScreenColor(link int, v uint32) {
 	tw.ss.UndoRemember()
@@ -491,8 +507,8 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeHelixPitch edits a helix's pitch, or a chamfer's
-// distance, both ValB (C++ TextWindow::ScreenChangeHelixPitch).
+// ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance
+// or a fillet's radius, all ValB (C++ TextWindow::ScreenChangeHelixPitch).
 func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	text := g.ExprB
@@ -698,6 +714,17 @@ func (tw *TextWindow) ShowGroupInfo() {
 	case sketch.GroupChamfer:
 		tw.Printf(true, " %Ftchamfer edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
+			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+		tw.showGroupEdges(g, "edges")
+	case sketch.GroupLoft:
+		tw.Printf(true, " %Ftloft between two profiles%E")
+		tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
+		tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
+		tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
+			int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+	case sketch.GroupFillet:
+		tw.Printf(true, " %Ftround edges of the solid%E")
+		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
 			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 		tw.showGroupEdges(g, "edges")
 	case sketch.GroupSweep:

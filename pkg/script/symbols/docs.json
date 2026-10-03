@@ -4229,6 +4229,14 @@
 						"decl": "func (d *Doc) Extrude(depth float64, name string) Group",
 						"text": "Extrude makes a solid of the active group's sketch by extruding it\nby depth along the normal of its workplane, or against it for a\nnegative depth. The depth is where the extrusion starts, as when it\nis dragged; constrain a point of it to keep it. The new group\nbecomes active."
 					},
+					"Fillet": {
+						"decl": "func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group",
+						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust stick out, and end at corners where it meets one more flat face;\nedges that meet at a corner can't be rounded together yet. The face\na fillet makes is an exact cylinder, and its edges have names. The\nnew group becomes active."
+					},
+					"FilletSolid": {
+						"decl": "func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group",
+						"text": "FilletSolid rounds edges of the solid so far, by name, with radius\nmm, as Fillet does: any straight edge between two flat faces that\nsticks out, such as one a Boolean made, picked from Solid. The fillet\nkeeps the names, so it follows the edges when the model upstream\nchanges. The new group becomes active."
+					},
 					"Free3D": {
 						"decl": "func (d *Doc) Free3D()",
 						"text": "Free3D draws freely in 3d, in no workplane, in the active group."
@@ -4280,6 +4288,10 @@
 					"Lock": {
 						"decl": "func (d *Doc) Lock(point Entity) Constraint",
 						"text": "Lock keeps a point where it is."
+					},
+					"Loft": {
+						"decl": "func (d *Doc) Loft(from, to Group, name string) Group",
+						"text": "Loft joins the closed loops of two sketches in workplanes, from and\nto, with ruled faces, curve by curve, and closes the ends with the\nsketches' planes: each loop must be one closed loop, with as many\ncurves as the other; a circle counts as four. The solid joins the\nsolid so far as an extrusion's does. The new group becomes active."
 					},
 					"Measure": {
 						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
@@ -4636,7 +4648,7 @@
 					},
 					"Edges": {
 						"decl": "func (g Group) Edges() (edges []Entity)",
-						"text": "Edges are the edges a chamfer cuts, or the path a sweep follows."
+						"text": "Edges are the edges a chamfer cuts or a fillet rounds, or the path a\nsweep follows."
 					},
 					"Entities": {
 						"decl": "func (g Group) Entities() (entities []Entity)",
@@ -4656,7 +4668,7 @@
 					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
-						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\",\n\"mirror\", \"chamfer\", \"sweep\" or \"link\"."
+						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\",\n\"mirror\", \"chamfer\", \"sweep\", \"fillet\", \"loft\" or \"link\"."
 					},
 					"LeftOut": {
 						"decl": "func (g Group) LeftOut() (why string)",
@@ -4698,6 +4710,10 @@
 						"decl": "func (g Group) Problem() (msg string)",
 						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut or a sweep path with\na corner, or \"\" when there is nothing; a group with a problem adds\nno solid."
 					},
+					"Radius": {
+						"decl": "func (g Group) Radius() (mm float64)",
+						"text": "Radius is a fillet's radius in mm."
+					},
 					"Requests": {
 						"decl": "func (g Group) Requests() (requests []Request)",
 						"text": "Requests are what was drawn in the group."
@@ -4730,9 +4746,17 @@
 						"decl": "func (g Group) SetName(name string)",
 						"text": "SetName names the group."
 					},
+					"SetRadius": {
+						"decl": "func (g Group) SetRadius(mm float64)",
+						"text": "SetRadius sets a fillet's radius in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
 					"SetSuppress": {
 						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
 						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
+					},
+					"SetTurn": {
+						"decl": "func (g Group) SetTurn(n int)",
+						"text": "SetTurn turns a loft's second profile by n curves, which joins its\ncurves to others of the first: a square lofted to a square turned by\none twists by a quarter."
 					},
 					"SetVisible": {
 						"decl": "func (g Group) SetVisible(visible bool)",
@@ -4748,7 +4772,7 @@
 					},
 					"SolidEdges": {
 						"decl": "func (g Group) SolidEdges() (edges []SolidEdge)",
-						"text": "SolidEdges are the edges of the solid a chamfer cuts by name."
+						"text": "SolidEdges are the edges of the solid a chamfer cuts or a fillet\nrounds by name."
 					},
 					"Solved": {
 						"decl": "func (g Group) Solved() (ok bool)",
@@ -4765,6 +4789,10 @@
 					"Triangles": {
 						"decl": "func (g Group) Triangles() (n int)",
 						"text": "Triangles is how many triangles the model has up to and with this\ngroup."
+					},
+					"Turn": {
+						"decl": "func (g Group) Turn() (n int)",
+						"text": "Turn is how many curves a loft turns its second profile by before\njoining curve by curve."
 					},
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",
@@ -5372,6 +5400,10 @@
 					"IsVisible": {
 						"decl": "func (g *Group) IsVisible() bool"
 					},
+					"LoftTurn": {
+						"decl": "func (g *Group) LoftTurn(n int) int",
+						"text": "LoftTurn is how many curves on the loft joins the second profile's curves turned by, in 0 to the count less one."
+					},
 					"MakeExtrusionLines": {
 						"decl": "func (g *Group) MakeExtrusionLines(sk *Sketch, el *[]core.Entity, in core.HEntity)"
 					},
@@ -5452,6 +5484,8 @@
 					"GroupMirror",
 					"GroupChamfer",
 					"GroupSweep",
+					"GroupFillet",
+					"GroupLoft",
 					"GroupLinked"
 				]
 			},
@@ -5851,6 +5885,10 @@
 						"decl": "func (sk *Sketch) GroupFreedom(hg core.HGroup) map[core.HParam]bool",
 						"text": "GroupFreedom reports which of the params group hg solves for are free to move, at the values of the last regeneration; nil when the group did not solve or is too large."
 					},
+					"GroupName": {
+						"decl": "func (sk *Sketch) GroupName(h core.HGroup) string",
+						"text": "anyGroupName names group h, which may have been deleted since the last regeneration."
+					},
 					"GroupsInOrder": {
 						"decl": "func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool",
 						"text": "groupsInOrder reports whether before comes before after (C++ GroupsInOrder)."
@@ -5902,6 +5940,14 @@
 					"NewFile": {
 						"decl": "func (sk *Sketch) NewFile()",
 						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group (C++ SolveSpaceUI::NewFile)."
+					},
+					"NewFillet": {
+						"decl": "func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius float64, name string) (Group, error)",
+						"text": "NewFillet starts a fillet at the active group, of edges of the solid so far, given as line segment entities or by name, with radius mm."
+					},
+					"NewLoft": {
+						"decl": "func (sk *Sketch) NewLoft(from, to core.HGroup, name string) (Group, error)",
+						"text": "NewLoft starts a loft from the profile of group from to that of group to, both sketches in workplanes with one closed loop of the same number of curves."
 					},
 					"NewMirror": {
 						"decl": "func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error)",
@@ -6346,6 +6392,10 @@
 			"GroupExtrude": {
 				"decl": "const GroupExtrude"
 			},
+			"GroupFillet": {
+				"decl": "const GroupFillet",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
+			},
 			"GroupHelix": {
 				"decl": "const GroupHelix"
 			},
@@ -6354,6 +6404,10 @@
 			},
 			"GroupLinked": {
 				"decl": "const GroupLinked"
+			},
+			"GroupLoft": {
+				"decl": "const GroupLoft",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
 			},
 			"GroupMirror": {
 				"decl": "const GroupMirror",

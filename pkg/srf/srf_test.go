@@ -181,3 +181,18 @@ func TestSPolygonContains(t *testing.T) {
 		t.Fatalf("expected (3,3,5) outside")
 	}
 }
+
+// A plane whose parameter axes are not square to each other, as the
+// side of a leaning prism: points project to the parameters they come
+// from.
+func TestClosestPointOnSkewPlane(t *testing.T) {
+	s := FromPlane(geom.Vector{X: 1, Y: 2, Z: 3}, geom.Vector{X: 10}, geom.Vector{X: 3, Z: 5})
+	for _, uv := range [][2]float64{{0.25, 0.5}, {0.9, 0.1}, {-0.5, 2}} {
+		p := s.PointAt(uv[0], uv[1])
+		var u, v float64
+		s.ClosestPointToUV(p, &u, &v, true)
+		if math.Abs(u-uv[0]) > 1e-12 || math.Abs(v-uv[1]) > 1e-12 {
+			t.Errorf("%v projects to (%g, %g)", uv, u, v)
+		}
+	}
+}

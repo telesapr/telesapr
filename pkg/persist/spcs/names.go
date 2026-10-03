@@ -39,6 +39,8 @@ var groupTypes = newEnum("group type", map[sketch.GroupType]string{
 	sketch.GroupMirror:           "mirror",
 	sketch.GroupChamfer:          "chamfer",
 	sketch.GroupSweep:            "sweep",
+	sketch.GroupFillet:           "fillet",
+	sketch.GroupLoft:             "loft",
 })
 
 var groupSubtypes = newEnum("group subtype", map[sketch.GroupSubtype]string{

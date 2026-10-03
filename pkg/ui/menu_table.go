@@ -141,6 +141,8 @@ func init() {
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "&Mirror", CmdGroupMirror, s_ | 'y', kn, mGrp},
 		{1, "&Chamfer Edges", CmdGroupChamfer, s_ | 'q', kn, mGrp},
+		{1, "&Fillet Edges", CmdGroupFillet, s_ | 'f', kn, mGrp},
+		{1, "Loft To Selected Pr&ofile", CmdGroupLoft, s_ | 'o', kn, mGrp},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Link / Assemble...", CmdGroupLink, s_ | 'i', kn, mGrp},
 		{1, "Link Recent", CmdGroupRecent, 0, kn, mGrp},

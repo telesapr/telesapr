@@ -401,10 +401,19 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 	// And planes are trivial, so don't waste time iterating over those.
 	if orig, bu, bv, ok := s.planeBasis(); ok {
 		n := bu.Cross(bv)
+		dp := p.Minus(orig)
+		if math.Abs(bu.Dot(bv)) > 1e-12*bu.Magnitude()*bv.Magnitude() {
+			// Axes not square to each other, as on the side of a leaning
+			// prism: solve dp = u bu + v bv, through the vectors in the
+			// plane square to each axis. (C++ assumes square axes.)
+			tx, ty := bv.Cross(n), n.Cross(bu)
+			*u = dp.Dot(tx) / bu.Dot(tx)
+			*v = dp.Dot(ty) / bv.Dot(ty)
+			return
+		}
 		ty := n.Cross(bu).ScaledBy(1.0 / bu.MagSquared())
 		tx := bv.Cross(n).ScaledBy(1.0 / bv.MagSquared())
 
-		dp := p.Minus(orig)
 		*u = dp.Dot(bu) / tx.MagSquared()
 		*v = dp.Dot(bv) / ty.MagSquared()
 		return

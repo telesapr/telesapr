@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -223,6 +224,43 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 			return
 		}
 		g = cg
+
+	case CmdGroupFillet:
+		fg, err := sk.NewFillet(gs.entity, gs.solidEdge, 1, "")
+		if err != nil {
+			ss.Error("Can't fillet the selection. %s.\n\n"+
+				"Fillet Edges rounds edges of the solid so far. Select one or more of:\n\n"+
+				"    * line segments along edges between two flat faces, "+
+				"as the edges an extrusion makes\n"+
+				"    * straight edges of the solid between two flat faces, "+
+				"picked on the model\n\n"+
+				"Each must stick out, and end at corners where it meets one more flat face; "+
+				"edges that meet at a corner can't be rounded together yet.", capitalize(err.Error()))
+			return
+		}
+		g = fg
+
+	case CmdGroupLoft:
+		var to core.HGroup
+		for _, he := range append(append([]core.HEntity(nil), gs.entity...), gs.point...) {
+			if e := sk.GetEntity(he); e != nil && e.Group != sk.Active {
+				to = e.Group
+				break
+			}
+		}
+		err := errors.New("nothing of another sketch is selected")
+		var lg sketch.Group
+		if to.V != 0 {
+			lg, err = sk.NewLoft(sk.Active, to, "")
+		}
+		if err != nil {
+			ss.Error("Can't loft. %s.\n\n"+
+				"Loft To Selected Profile joins the active group's sketch, a closed loop "+
+				"in a workplane, to another one. Select:\n\n"+
+				"    * an entity of the other sketch, whose loop has as many curves as the active one's\n", capitalize(err.Error()))
+			return
+		}
+		g = lg
 
 	case CmdGroupSweep:
 		if !gw.LockedInWorkplane() {

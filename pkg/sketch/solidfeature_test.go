@@ -173,6 +173,39 @@ func TestSolidGoldens(t *testing.T) {
 			// names, and the front.
 			d.ChamferSolid([]api.SolidEdge{c.Solid().EdgeAt(api.V(5, 0, 8))}, 0.5, "")
 		},
+		"fillet-edges": func(d *api.Doc) {
+			ex := block(d, 0, 0, 20, 10, 10)
+			d.Fillet([]api.Entity{
+				lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
+				lineAlong(t, ex, api.V(0, 10, 0), api.V(20, 10, 0)),
+			}, 2, "")
+		},
+		"fillet-solid-edge": func(d *api.Doc) {
+			block(d, 0, 0, 20, 10, 10)
+			d.SketchIn(d.Workplane("XY"), "")
+			d.Rect(api.V(5, -1, 0), api.V(15, 4, 0))
+			d.Extrude(20, "").SetCombine(api.Difference)
+			// The notch's upright edge, which no entity draws.
+			d.FilletSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 0, 5))}, 1.5, "")
+		},
+		"loft-on-block": func(d *api.Doc) {
+			block(d, -10, -10, 10, 10, 5)
+			// A square on the block's top joined by its union to a
+			// smaller one above it, turned a quarter, so its sides are
+			// saddles.
+			bottom := d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Rect(api.V(-8, -8, 5), api.V(8, 8, 5))
+			top := d.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
+			d.Loft(bottom, top, "").SetTurn(1)
+		},
+		"loft-circle-to-square": func(d *api.Doc) {
+			bottom := d.SketchIn(d.Workplane("XY"), "")
+			d.Circle(api.V(0, 0, 0), 5)
+			top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+			d.Loft(bottom, top, "")
+		},
 		"sweep-pipe": func(d *api.Doc) {
 			path := pipePath(d, 10, 8, 12)
 			d.SketchIn(d.Workplane("XY"), "profile")
@@ -221,6 +254,27 @@ func benchRegen(b *testing.B, build func(d *api.Doc)) {
 		})
 		d.Regen()
 	}
+}
+
+func BenchmarkLoft(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		bottom := d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 5)
+		top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+		d.Loft(bottom, top, "").SetTurn(1)
+	})
+}
+
+func BenchmarkFillet(b *testing.B) {
+	t := &testing.T{}
+	benchRegen(b, func(d *api.Doc) {
+		ex := block(d, 0, 0, 20, 10, 10)
+		d.Fillet([]api.Entity{
+			lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
+			lineAlong(t, ex, api.V(0, 10, 0), api.V(20, 10, 0)),
+		}, 2, "")
+	})
 }
 
 func BenchmarkMirror(b *testing.B) {

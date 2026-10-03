@@ -82,7 +82,7 @@ func TestSolidFeatureMisuse(t *testing.T) {
 		"chamfer nothing":     {func() { d.Chamfer(nil, 1, "") }, "no edges"},
 		"negative distance":   {func() { d.Chamfer([]Entity{line}, -1, "") }, "more than zero"},
 		"sweep from extrude":  {func() { d.Sweep([]Entity{line}, "") }, "sketch in a workplane"},
-		"edges of an extrude": {func() { ex.Edges() }, "chamfer or a sweep"},
+		"edges of an extrude": {func() { ex.Edges() }, "a fillet or a sweep"},
 		"plane of an extrude": {func() { ex.Plane() }, "mirror"},
 		"keep on an extrude":  {func() { ex.SetKeepOriginal(false) }, "mirror"},
 		"distance to zero":    {func() { ex.SetDistance(1) }, "chamfer"},

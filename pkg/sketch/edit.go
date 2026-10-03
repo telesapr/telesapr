@@ -30,6 +30,11 @@ func (sk *Sketch) AddRequestOfType(typ RequestType, rememberForUndo bool) core.H
 		r.Construction = true
 	}
 	r.Workplane = sk.ActiveWorkplane()
+	if r.Workplane == core.NoEntity {
+		// A group with no workplane draws in 3d, which is what its file
+		// reads back as, so a save and a reload agree.
+		r.Workplane = core.FreeIn3D
+	}
 	r.Type = typ
 	r.H = sk.AddRequest(r)
 

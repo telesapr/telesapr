@@ -797,14 +797,29 @@ Spikes first, as listed under "How to check an estimate before committing to it"
 
 | Phase | Content | State |
 |---|---|---|
-| 10.1 E4 fillet, straight edge between planes | Local edit: split both faces along the offset lines, remove the strip, insert a cylinder patch, which the rational patch represents exactly, and rebuild the end faces. Chains of tangent edges are taken as one. | not started |
+| 10.1 E4 fillet, straight edge between planes | Local edit: split both faces along the offset lines, remove the strip, insert a cylinder patch, which the rational patch represents exactly, and rebuild the end faces. Chains of tangent edges are taken as one. | done 2026-10-03, but for chains: `topo.FilletEdge` cuts both faces along the cylinder's tangent lines and the end faces along its arcs (leaning end faces get the cross section projected along the edge), takes out the strip and puts in an exact cylinder patch; `FilletEdges` refuses edges that meet, as a corner is 10.2. The fillet group (Sketch -> Fillet Edges, Shift+F) edits the solid so far with no Boolean; entity edges or named ones, the radius an expression. `TestFilletSweep` in `pkg/topo`, 126 prisms over angle, radius, length and lean, and in `pkg/sketch`, 63 points, rate 0 for both, set before. Scenario `ext_fillet`, pair `path_fillet`, `examples/scripts/fillet`, goldens `fillet-edges`, `fillet-solid-edge` |
 | 10.2 E4 corners | Three filleted edges meeting at a convex vertex of a box get a sphere patch. Other vertex cases give a diagnostic in this version. | not started |
 | 10.3 E5 circular edges | Plane meeting cylinder gives a torus patch, and a chamfer there gives a cone. Both are exact in the patch type. Plane meeting cone follows. | not started |
 | 10.4 E11 restricted shell | Offset every plane and cylinder inward, intersect neighbours again through the topology, drop the picked faces, and join inner and outer shells at the openings. A thickness that makes a face vanish gives a diagnostic. | not started |
-| 10.5 E7 ruled loft | Two profile groups with equal segment counts and a vertex matching the user can rotate. One patch per segment pair, degree 1 across. | not started |
+| 10.5 E7 ruled loft | Two profile groups with equal segment counts and a vertex matching the user can rotate. One patch per segment pair, degree 1 across. | done 2026-10-03: `topo.MakeRuledLoft` builds the shell face by face; flat sides are planes trimmed to their trapezoid, twisted ones patches of degree 2 along the curves. The loft group (Sketch -> Loft To Selected Profile, Shift+O) joins the active sketch's one closed loop to that of the sketch an entity is picked from, a circle counting four arcs; the screen turns the second by a curve either way (`turn` in the file); it combines as an extrusion does. `Doc.Loft`, `Group.Turn`, `SetTurn`. Volumes by formula, h (A0/3 + A1/3 + K/6) with K the loops' mixed area; `TestLoftSweep` (81 points over polygon, circle, scale, height and turn, and 9 untwisted triangles, rate 0, set before); `TestLoftOnBlock` joins lofts to a block on, in, under and above it. Scenario `ext_loft`, pair `path_loft`, `examples/scripts/loft`, goldens `loft-on-block`, `loft-circle-to-square`. Found on the way: the grid mesher dropped its grid near any trim corner, shells built by `AddFace` met no Boolean (planes on a 1 mm square, curves marked as a Boolean's), and new requests in 3d groups saved differently after a reload |
 
 Each phase carries a sweep whose acceptable failure rate is written into this table before the
 phase starts.
+
+Follow-ups from step 10:
+
+- **Tangent chains and corners**: edges that meet are refused, both at a corner (10.2) and
+  where they continue each other tangentially.
+- **Strong twists**: a ruled face turned by a third of a turn or more meshes with false
+  self-intersections and about 1% error in volume; the mesher's grid stops refining a twist at
+  16 rows (`MakeTriangulationGridInto`'s depth), and the rows along the trim are ear-clipped.
+  A deeper cap fixes the triangles in the sweep but makes it four times slower and changes the
+  meshes of cones.
+- **Chord loss after a Boolean**: a filleted block cut afterwards loses about 1 mm³ more than
+  the fillet's own mesh, the cylinder's trim being cut into coarser chords.
+- **Loft matching**: profiles must have as many curves; splitting curves to match counts, and
+  lofts through more than two profiles, are not done.
+- **Faces with only an Origin** (a loft's, a fillet's) can't be picked as faces, as for step 9.
 
 ### Step 11. General surface type
 

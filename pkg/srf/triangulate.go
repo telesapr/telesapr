@@ -668,8 +668,19 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 // adaptive grid of quads, cuts those out of the polygon, and
 // ear-clips the rest. Mirrors C++ SPolygon::UvGridTriangulateInto.
 func (p *SPolygon) UvGridTriangulateInto(mesh *SMesh, srf *SSurface) {
+	p.uvGridTriangulateInto(mesh, srf, nil)
+}
+
+// uvGridTriangulateInto is UvGridTriangulateInto with the trim's edges
+// in uv as the surface made them, each with its curve in AuxA, which
+// tell the chords of one curve from the corners between two; nil takes
+// the polygon's edges, which don't.
+func (p *SPolygon) uvGridTriangulateInto(mesh *SMesh, srf *SSurface, trim *SEdgeList) {
 	var orig SEdgeList
 	p.MakeEdgesInto(&orig)
+	if trim == nil {
+		trim = &orig
+	}
 
 	var holes SEdgeList
 
@@ -699,7 +710,7 @@ func (p *SPolygon) UvGridTriangulateInto(mesh *SMesh, srf *SSurface) {
 		// Quads around the perimeter would be rejected by AnyEdgeCrossings.
 		bottom := make([]bool, len(lj)) // did we use this quad?
 		var tu, tv geom.Vector
-		nearTrim := gridNearTrim(srf, &orig, li, lj)
+		nearTrim := gridNearTrim(srf, trim, li, lj)
 		for i := 1; i < len(li)-1; i++ {
 			prevFlag := false
 			for j := 1; j < len(lj)-1; j++ {

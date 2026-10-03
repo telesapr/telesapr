@@ -145,6 +145,8 @@ const (
 	CmdGroupMirror
 	CmdGroupChamfer
 	CmdGroupSweep
+	CmdGroupFillet
+	CmdGroupLoft
 )
 
 // Pending is an operation to be completed by doing something with the

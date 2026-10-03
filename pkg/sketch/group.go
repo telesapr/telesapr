@@ -45,6 +45,12 @@ const (
 	// GroupSweep moves the loops of its profile group (OpA) along the
 	// path Edges, a chain of line segments and arcs meeting tangent.
 	GroupSweep
+	// GroupFillet rounds its edges of the solid so far, Edges and
+	// SolidEdges, with the radius ValB, editing a copy of that solid.
+	GroupFillet
+	// GroupLoft joins the closed loops of two sketches in workplanes,
+	// OpA and OpB, by ruled patches, the second turned by ValA curves.
+	GroupLoft
 )
 
 type GroupSubtype int
@@ -272,7 +278,9 @@ func (g *Group) IsMeshGroup() bool {
 		g.Type == GroupRotate ||
 		g.Type == GroupTranslate ||
 		g.Type == GroupChamfer ||
-		g.Type == GroupSweep
+		g.Type == GroupSweep ||
+		g.Type == GroupFillet ||
+		g.Type == GroupLoft
 }
 
 // IsCopyGroup reports whether the group copies its source group,

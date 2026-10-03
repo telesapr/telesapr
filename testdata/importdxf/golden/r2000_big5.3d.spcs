@@ -166,6 +166,7 @@ entity 0x30020 normal-in-3d {
 
 entity 0x40000 line-segment {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   points 0x40001 0x40002
@@ -174,6 +175,7 @@ entity 0x40000 line-segment {
 
 entity 0x40001 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-visible
@@ -181,6 +183,7 @@ entity 0x40001 point-in-3d {
 
 entity 0x40002 point-in-3d {
   group 0x2
+  workplane 0xffffffff
   construction
   style 0x100
   act-point 5 5 0
