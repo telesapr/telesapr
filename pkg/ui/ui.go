@@ -152,6 +152,7 @@ const (
 	CmdScriptAgent
 	CmdGroupPathPattern
 	CmdBillOfMaterials
+	CmdMotionStudy
 )
 
 // Pending is an operation to be completed by doing something with the

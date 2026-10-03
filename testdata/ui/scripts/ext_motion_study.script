@@ -1,0 +1,46 @@
+# Motion study (an extension): a parameter w drives a rectangle's side;
+# Analyze > Motion Study drives w from 30 to 60 in three steps, listing
+# whether each solved, then again saving a mesh of each step.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+menu Edit|Parameters...
+twmove 51 130
+twdown L 51 130
+twup L 51 130
+edit w = 30
+move 290 330
+down L 290 330
+up L 290 330
+key d
+key esc
+move 290 370
+down L 290 370
+up L 290 370
+down L 290 370
+dbl L 290 370
+up L 290 370
+edit w
+key x shift
+menu Analyze|Motion Study...
+tw
+twmove 159 165
+twdown L 159 165
+twup L 159 165
+edit 3
+twmove 42 195
+twdown L 42 195
+twup L 42 195
+tw
+file $tmp/frame.stl
+twmove 114 195
+twdown L 114 195
+twup L 114 195
+tw
+menu Edit|Parameters...
+tw

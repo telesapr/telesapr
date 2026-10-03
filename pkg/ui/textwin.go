@@ -67,6 +67,7 @@ const (
 	ScreenBrokenReferences
 	ScreenSection
 	ScreenBillOfMaterials
+	ScreenMotionStudy
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -145,6 +146,11 @@ const (
 	// For configurations (an extension)
 	EditConfigurationAdd  Edit = 913
 	EditConfigurationName Edit = 914
+	// For the motion study (an extension)
+	EditMotionParameter Edit = 915
+	EditMotionFrom      Edit = 916
+	EditMotionTo        Edit = 917
+	EditMotionSteps     Edit = 918
 	// For the command search (an extension)
 	EditCommandQuery Edit = 920
 	// For the section view (an extension)
@@ -251,6 +257,9 @@ type TextWindow struct {
 			picker2dActive bool
 		}
 	}
+
+	// motion is the motion study's screen (motion.go).
+	motion motionStudy
 
 	stepDim struct {
 		isDistance bool
@@ -771,6 +780,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowSection()
 		case ScreenBillOfMaterials:
 			tw.ShowBillOfMaterials()
+		case ScreenMotionStudy:
+			tw.ShowMotionStudy()
 		}
 	}
 	tw.Printf(false, "")

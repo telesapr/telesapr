@@ -4360,6 +4360,10 @@
 						"decl": "func (d *Doc) MmPerUnit() (mm float64)",
 						"text": "MmPerUnit is the size in mm of the unit the user interface shows\nlengths in."
 					},
+					"MotionStudy": {
+						"decl": "func (d *Doc) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error)",
+						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach (roadmap 16.3). With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
+					},
 					"NewWorkplane": {
 						"decl": "func (d *Doc) NewWorkplane(origin, u, v Vec) Entity",
 						"text": "NewWorkplane adds a workplane through origin, with u to its right\nand v up, to a group drawn freely in 3d."
@@ -4942,6 +4946,10 @@
 			"Host": {
 				"text": "Host owns a sketch on behalf of a Doc: it is the program around the\nsketch, with or without windows. All of it but Run must be called\ninside Run.",
 				"kind": "interface"
+			},
+			"MotionFrame": {
+				"text": "MotionFrame is a step of a motion study: the parameter's value, the\nfile its frame went to, if any, whether every group solved, and the\nvolume of the solid up to the active group.",
+				"kind": "struct"
 			},
 			"Param": {
 				"text": "Param is one of the numbers the solver works out: a coordinate of a\npoint, a radius, the depth of an extrusion.",

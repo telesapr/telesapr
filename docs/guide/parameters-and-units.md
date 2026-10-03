@@ -57,6 +57,27 @@ must(doc.SetParameter("w", "100"))   // large's w
 must(doc.ActivateConfiguration("small"))
 ```
 
+## Motion study
+
+Example: [`examples/scripts/motion`](../../examples/scripts/motion/motion.go), a plate grown
+through a range of widths, a mesh saved at each step.
+
+Analyze > Motion Study drives one parameter through a range: its screen takes the parameter, the
+values to go from and to, and the number of steps. `[run]` regenerates the model at each step,
+and lists the value, whether every group solved, and the volume of the solid. `[run, saving each
+step...]` asks for a file and saves a frame of each step beside it, numbered: a picture of the
+view the window shows for `.png`, which makes an animation, or a mesh for `.stl` and `.3mf`.
+The parameter gets its expression back afterwards.
+
+```go
+frames, err := doc.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")
+for _, f := range frames {
+	fmt.Println(f.Value, f.Solved, f.Volume, f.File)
+}
+```
+
+Pictures need the application's window; `telesapr-cli` saves meshes.
+
 ## Dimensions by name
 
 Example: [`examples/scripts/dimensions`](../../examples/scripts/dimensions/dimensions.go), a

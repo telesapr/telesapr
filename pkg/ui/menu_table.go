@@ -210,6 +210,7 @@ func init() {
 		{1, "&Trace Point", CmdTracePt, c_ | s_ | 't', kn, mAna},
 		{1, "&Stop Tracing...", CmdStopTracing, c_ | s_ | 's', kn, mAna},
 		{1, "Step &Dimension...", CmdStepDim, c_ | s_ | 'd', kn, mAna},
+		{1, "Motion St&udy...", CmdMotionStudy, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMotionStudy() }},
 
 		// C++ has no scripts; the menu is ours.
 		{0, "S&cript", CmdNone, 0, kn, mScr},

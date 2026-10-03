@@ -294,7 +294,7 @@ func (h *SketchHost) Save(path string) error {
 // Export writes the mesh as STL; the other formats need the
 // application around the sketch.
 func (h *SketchHost) Export(kind ExportKind, path string) error {
-	if kind != ExportMesh || !strings.EqualFold(filepath.Ext(path), ".stl") {
+	if ext := filepath.Ext(path); kind != ExportMesh || !strings.EqualFold(ext, ".stl") && !strings.EqualFold(ext, ".3mf") {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
 	}
 	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(core.GetSettings()))
