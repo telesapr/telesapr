@@ -364,6 +364,7 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		n.add(field("scale", num(g.Scale)))
 	}
 	n.str("link", g.LinkFile)
+	n.flag("link-as-solid", g.LinkAsSolid)
 
 	if len(g.Remap) > 0 {
 		type entry struct {

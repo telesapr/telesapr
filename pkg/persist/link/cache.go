@@ -26,6 +26,8 @@ type loadKey struct {
 	size  int64
 	mtime time.Time
 	pct   float64
+	// solid is set for a STEP file read as a solid.
+	solid bool
 }
 
 type loadEntry struct {
@@ -52,6 +54,12 @@ const loadCacheSize = 64
 
 // cachedLoad is load(path, ...), or what it gave for the file before.
 func cachedLoad(load ReportingLoader, path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool {
+	return cachedLoadAs(load, path, false, sk, le, m, sh, rep)
+}
+
+// cachedLoadAs is cachedLoad keeping a file read as a solid apart from
+// the same file read as a mesh.
+func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool {
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		return load(path, sk, le, m, sh, rep)
@@ -60,7 +68,7 @@ func cachedLoad(load ReportingLoader, path string, sk *sketch.Sketch, le *[]core
 	if err != nil {
 		abs = path
 	}
-	key := loadKey{path: abs, size: info.Size(), mtime: info.ModTime(), pct: sk.ChordTolPct}
+	key := loadKey{path: abs, size: info.Size(), mtime: info.ModTime(), pct: sk.ChordTolPct, solid: solid}
 
 	loadMu.Lock()
 	loadUses++

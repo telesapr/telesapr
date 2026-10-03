@@ -152,6 +152,10 @@ type Group struct {
 
 	Remap    core.EntityMap
 	LinkFile string
+	// LinkAsSolid reads a linked STEP file as a solid, its faces exact,
+	// rather than as a reference mesh (roadmap D3); a file that can't be
+	// read as one links as a mesh, with the reason in LinkProblem.
+	LinkAsSolid bool
 	// LinkInfo describes the linked file as its loader read it, a line
 	// each, such as a STEP file's unit and how many faces it has; and
 	// LinkProblem says what of the file could not be used. Neither is

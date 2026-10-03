@@ -1,7 +1,9 @@
 # STEP links
 
-Example: [`examples/scripts/step`](../../examples/scripts/step/step.go), which links a STEP
+Examples: [`examples/scripts/step`](../../examples/scripts/step/step.go), which links a STEP
 file and prints what was read; given none, it exports a plate as STEP and links it back.
+[`examples/scripts/stepsolid`](../../examples/scripts/stepsolid/stepsolid.go) links a STEP
+file as a solid and cuts a slot across it.
 
 New Group > Link / Assemble... (Shift+I) takes a STEP file (`.step`, `.stp`) as well as a
 TeleSAPR model or a triangle mesh: an STL file, binary or text, or a Wavefront OBJ file, whose
@@ -30,17 +32,38 @@ name the files there, so saving it packed again packs them again. Saving it as a
 those links, into that folder: to work on the parts, unpack it somewhere of your own first (a zip
 tool will do; the model is `model.tlspr`).
 
-From a script:
+## As a solid
+
+The group's screen of a STEP link has "read as reference mesh / solid". Read as a solid, the
+file's faces are exact: planes, cylinders, cones, spheres, tori, surfaces of revolution and of
+extrusion, and B-splines up to degree 5, each cut into the kernel's patches along its knots (a
+quarter turn for one that turns about an axis) and trimmed by its edges. The linked part then
+takes part in Booleans, so a later group can cut it or join it, as a solid made here does; the
+screen says "read as a solid, n faces exact". A file that can't be read as one comes in as the
+reference mesh, and the screen says why, as "read as a mesh, not a solid: ...".
+
+Files are written to a tolerance, and edges miss their faces by up to it: the reader takes a
+thousandth of a millimetre, and the mesh of a face from a file puts its edges' points where the
+edges are, so faces that meet in the file meet in the mesh. What it can't take yet: offset
+surfaces, curves and surfaces of degree above 5, a face's bound that runs along the line where
+the pieces of its surface meet, one face's edge along another face's seam, and edges further from
+their faces than the tolerance. Of the files TeleSAPR is tested on, the 14 shapes made in
+FreeCAD and 5 of 9 from other systems read as sound solids.
+
+## From a script
 
 ```go
 g, err := doc.Link("parts/bracket.step", "bracket")
 fmt.Println(g.LinkInfo(), g.LinkProblem())
 fmt.Println(g.Check().Volume)
+
+part, err := doc.LinkStep("parts/bracket.step", "bracket", true) // as a solid
+part.LinkAsSolid()                                              // true
+part.SetLinkAsSolid(false)                                      // back to a mesh
 ```
 
 ## Not yet
 
-The link is a mesh: its faces and edges can't be filleted, chamfered or cut, and it takes no
-part in Booleans. Reading a STEP file as a solid is roadmap 21. A linked file is placed at the
-middle of the view rather than where it was drawn (16.13). CSG and swept solids, and
-tessellated STEP files, are reported by name and not read.
+CSG and swept solids, and tessellated STEP files, are reported by name and not read. Booleans on
+imported solids fail where the kernel's do on its own: a cylinder cut through a cylinder, a cone
+through its apex.

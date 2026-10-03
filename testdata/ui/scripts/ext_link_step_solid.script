@@ -1,0 +1,25 @@
+# A STEP file linked as a solid (roadmap D3): a block with a hole links
+# as a reference mesh; "read as solid" on its group screen reads its
+# faces exact, the screen saying so; Analyze > Check Solid finds the
+# solid sound; undo reads it as a mesh again. A file whose shape can't
+# be read as a solid stays a mesh, the screen saying why.
+file $testdata/step/host.tlspr
+menu File|Open...
+file $testdata/step/shapes/box_hole.step
+menu New Group|Link / Assemble...
+tw
+twmove 289 165
+twdown L 289 165
+twup L 289 165
+tw
+answer ok
+menu Analyze|Check Solid
+key z ctrl
+answer ok
+menu Analyze|Check Solid
+file $testdata/step/corpus/ap203e2_csg.stp
+menu New Group|Link / Assemble...
+twmove 289 165
+twdown L 289 165
+twup L 289 165
+tw

@@ -194,8 +194,12 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 			if load == nil {
 				load = quiet(o.Fallback)
 			}
+			solid := g.LinkAsSolid && IsStep(linkFile)
+			if solid {
+				load = linkStepSolid
+			}
 			var rep Report
-			if load != nil && cachedLoad(load, linkFile, sk, &g.ImpEntity, &g.ImpMesh, &g.ImpShell, &rep) {
+			if load != nil && cachedLoadAs(load, linkFile, solid, sk, &g.ImpEntity, &g.ImpMesh, &g.ImpShell, &rep) {
 				g.LinkInfo, g.LinkProblem = rep.Info, rep.Problem
 				// We loaded the data, good. Now import its dependencies
 				// as well.

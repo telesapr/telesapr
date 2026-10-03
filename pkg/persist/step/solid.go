@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"sort"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -62,9 +63,12 @@ type uvSample struct {
 // solidBuilder builds one shape's shell.
 type solidBuilder struct {
 	edges map[*Edge]*solidEdge
-	sh    *srf.SShell
-	fa    *topo.FaceAdder
-	next  uint32
+	// turned are the faces whose bounds the file runs the wrong way
+	// round: clockwise about the face, as some writers do.
+	turned map[*Face]bool
+	sh     *srf.SShell
+	fa     *topo.FaceAdder
+	next   uint32
 }
 
 // ShellOf is shape i of the model as a solid, faces' identities from
@@ -82,7 +86,7 @@ func buildSolid(shape *Shape, origin uint32) (sh *srf.SShell, err error) {
 			sh, err = nil, fmt.Errorf("step: %v", r)
 		}
 	}()
-	b := &solidBuilder{edges: map[*Edge]*solidEdge{}, sh: &srf.SShell{}, next: origin}
+	b := &solidBuilder{edges: map[*Edge]*solidEdge{}, turned: map[*Face]bool{}, sh: &srf.SShell{}, next: origin}
 	b.fa = topo.NewFaceAdder(b.sh)
 	shape = withPolygonEdges(shape)
 	for _, f := range shape.Faces {
@@ -203,6 +207,23 @@ func loopsOf(f *Face) [][]solidUse {
 		out = append(out, l)
 	}
 	return out
+}
+
+// loops are the face's bounds as loopsOf gives them, turned round for
+// a face whose file runs them the wrong way.
+func (b *solidBuilder) loops(f *Face) [][]solidUse {
+	ls := loopsOf(f)
+	if b.turned[f] {
+		for _, l := range ls {
+			for i, j := 0, len(l)-1; i < j; i, j = i+1, j-1 {
+				l[i], l[j] = l[j], l[i]
+			}
+			for i := range l {
+				l[i].forward = !l[i].forward
+			}
+		}
+	}
+	return ls
 }
 
 // beziersOf are a use's Beziers the way it runs, from the edge's
@@ -371,8 +392,10 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	var all []sampled
 	var lo, hi geom.Vector
 	first := true
+	var loopSmps [][]uvSample
 	for _, l := range loopsOf(f) {
 		var prev *uvSample
+		loopSmps = append(loopSmps, nil)
 		for _, u := range l {
 			bz := b.beziersOf(u, false)
 			for i, sb := range bz {
@@ -383,6 +406,7 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 					idx = len(bz) - 1 - i
 				}
 				all = append(all, sampled{use: u, bez: idx, smps: smps})
+				loopSmps[len(loopSmps)-1] = append(loopSmps[len(loopSmps)-1], smps...)
 				for _, q := range smps {
 					p := geom.Vector{X: q.u, Y: q.v, Z: 0}
 					if first {
@@ -397,6 +421,7 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	if s.scale == 0 {
 		s.scale = 1
 	}
+	b.turned[f] = turnedLoops(loopSmps, s.pu, s.pv)
 	// The grid along each parameter: a period's worth where the surface
 	// closes on itself, from where the bounds leave the widest gap; else
 	// the bounds' extent and a little more, but not past a pole.
@@ -495,6 +520,32 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 		}
 	}
 	return g, nil
+}
+
+// turnedLoops reports whether a face's bounds, laid out in its
+// surface's parameters, run the wrong way: the largest clockwise, where
+// the face on their left would have it counter-clockwise. Bounds that go
+// round a closed surface have no inside to tell by, and are taken as
+// the file gives them.
+func turnedLoops(loops [][]uvSample, pu, pv float64) bool {
+	best, area := -1.0, 0.0
+	for _, l := range loops {
+		if len(l) < 3 {
+			continue
+		}
+		a, z := l[0], l[len(l)-1]
+		if (pu > 0 && math.Abs(z.u-a.u) > pu/2) || (pv > 0 && math.Abs(z.v-a.v) > pv/2) {
+			return false
+		}
+		poly := make([]geom.Vector, len(l))
+		for i, q := range l {
+			poly[i] = geom.Vector{X: q.u, Y: q.v}
+		}
+		if x := polyArea(poly); math.Abs(x) > best {
+			best, area = math.Abs(x), x
+		}
+	}
+	return area < 0
 }
 
 // widestGap is the middle of the widest gap, a period round, between
@@ -630,16 +681,12 @@ func (b *solidBuilder) cut(u solidUse, bez int, t float64) {
 func (b *solidBuilder) planeFace(f *Face) error {
 	pl := f.Surf.(*plane)
 	var loops [][]srf.SBezier
+	var areas []float64
 	outer, best := -1, -1.0
 	for _, l := range loopsOf(f) {
 		var cs []srf.SBezier
 		for _, u := range l {
 			cs = append(cs, b.beziersOf(u, true)...)
-		}
-		// The kernel's loops run clockwise about the face's normal: the
-		// bounds run with the face on their left about the plane's.
-		if f.Sense {
-			cs = reverseCurves(cs)
 		}
 		var poly []geom.Vector
 		for _, c := range cs {
@@ -647,13 +694,25 @@ func (b *solidBuilder) planeFace(f *Face) error {
 				poly = append(poly, pl.f.local(c.PointAt(float64(k)/8)))
 			}
 		}
-		if a := math.Abs(polyArea(poly)); a > best {
-			best, outer = a, len(loops)
+		a := polyArea(poly)
+		if math.Abs(a) > best {
+			best, outer = math.Abs(a), len(loops)
 		}
 		loops = append(loops, cs)
+		areas = append(areas, a)
 	}
 	if outer < 0 {
 		return errors.New("a flat face with no bounds")
+	}
+	// The bounds run with the face on their left about the plane's
+	// normal, the outer one counter-clockwise; a file that runs them the
+	// other way has them turned. The kernel's run clockwise about the
+	// face's normal.
+	turn := areas[outer] < 0
+	for i := range loops {
+		if turn != f.Sense {
+			loops[i] = reverseCurves(loops[i])
+		}
 	}
 	loops[0], loops[outer] = loops[outer], loops[0]
 	id := b.next
@@ -831,7 +890,7 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 		}
 	}
 	// Each bound's pieces, with their cells.
-	for _, l := range loopsOf(f) {
+	for _, l := range b.loops(f) {
 		var ps []gridPiece
 		var prev *uvSample
 		for _, u := range l {
@@ -1424,4 +1483,73 @@ func (b *solidBuilder) walk(g *faceGrid, c *gridCell) ([]cellLoop, [4]bool, erro
 		out = append(out, l)
 	}
 	return out, sides, nil
+}
+
+// SolidFile reads a STEP file's shapes, placed, as one shell of solids,
+// or says why a shape can't be read as one: the caller keeps the mesh.
+func SolidFile(path string) (sh *srf.SShell, faces int, err error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() {
+		// A file this reader didn't foresee must not take the program
+		// down with it.
+		if r := recover(); r != nil {
+			sh, err = nil, fmt.Errorf("step: %v", r)
+		}
+	}()
+	f, err := Parse(data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return ReadModel(f).Solid()
+}
+
+// Solid is the model's placed shapes as one shell of solids, each
+// shape's faces given identities of their own, and the faces read.
+func (m *Model) Solid() (*srf.SShell, int, error) {
+	if len(m.Placements) == 0 {
+		return nil, 0, errors.New("the file holds no solid or shell that can be read")
+	}
+	shapes := map[int]*srf.SShell{}
+	out := &srf.SShell{}
+	faces := 0
+	for k, pl := range m.Placements {
+		sh := shapes[pl.Shape]
+		if sh == nil {
+			var err error
+			if sh, err = m.ShellOf(pl.Shape, srf.OriginFor(uint32(pl.Shape+1), 0)); err != nil {
+				return nil, 0, fmt.Errorf("shape %d: %w", pl.Shape+1, err)
+			}
+			shapes[pl.Shape] = sh
+		}
+		q, ok := pl.T.rotation()
+		if !ok {
+			return nil, 0, fmt.Errorf("placement %d mirrors or stretches its shape", k+1)
+		}
+		var placed srf.SShell
+		placed.MakeFromTransformationOf(sh, pl.T.T, q, 1)
+		faces += len(m.Shapes[pl.Shape].Faces)
+		if k == 0 {
+			out = &placed
+			continue
+		}
+		var both srf.SShell
+		both.MakeFromAssemblyOf(out, &placed)
+		out = &both
+	}
+	return out, faces, nil
+}
+
+// rotation is the transform's matrix as a rotation, if it is one.
+func (t Transform) rotation() (geom.Quaternion, bool) {
+	col := func(j int) geom.Vector { return geom.Vector{X: t.M[0][j], Y: t.M[1][j], Z: t.M[2][j]} }
+	x, y, z := col(0), col(1), col(2)
+	const eps = 1e-9
+	if math.Abs(x.Magnitude()-1) > eps || math.Abs(y.Magnitude()-1) > eps || math.Abs(x.Dot(y)) > eps ||
+		x.Cross(y).Minus(z).Magnitude() > 1e-6 {
+		return geom.Quaternion{}, false
+	}
+	return geom.QuaternionFromBasis(x, y), true
 }

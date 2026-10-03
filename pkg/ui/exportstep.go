@@ -491,12 +491,15 @@ func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int 
 	}
 	w.printf("));\n")
 
+	// The kernel's loops run clockwise about the face's normal, and a
+	// STEP face's counter-clockwise: the bound runs its loop backwards
+	// (C++ wrote .T., which readers that classify by pcurves forgive).
 	fb := w.id + 1
 	bound := "FACE_OUTER_BOUND"
 	if inner {
 		bound = "FACE_BOUND"
 	}
-	w.printf("#%d=%s('',#%d,.T.);\n", fb, bound, w.id)
+	w.printf("#%d=%s('',#%d,.F.);\n", fb, bound, w.id)
 
 	w.id += 2
 

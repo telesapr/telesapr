@@ -340,10 +340,12 @@ func cellsOf(s Surface) (*surfaceCells, error) {
 			return nil, err
 		}
 		bu, bv := bs.Breaks()
+		// The lines are the knots inside the domain: past its ends the
+		// first and last pieces reach on.
 		inside := func(br []float64) func(lo, hi float64) []float64 {
 			return func(lo, hi float64) []float64 {
 				var out []float64
-				for _, k := range br {
+				for _, k := range br[1 : len(br)-1] {
 					if k > lo && k < hi {
 						out = append(out, k)
 					}
