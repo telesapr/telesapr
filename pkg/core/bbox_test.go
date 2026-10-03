@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 func TestBBoxConstructionAndInclude(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // The description of a drawing names every group, request and

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // invariantsPath is the baseline TestInvariants compares with.
@@ -66,7 +66,7 @@ func invariantLines(fixture string) []string {
 // TestInvariants loads every fixture, regenerates it, checks the solid
 // of each group, and compares the reports with testdata/invariants.txt.
 // Counts and flags must match exactly; volume, centre of mass and
-// bounding box to check.BaselineRelTol. SPACESOLVE_REGEN_INVARIANTS=1
+// bounding box to check.BaselineRelTol. TELESAPR_REGEN_INVARIANTS=1
 // rewrites the file; review its diff before committing.
 //
 // The baseline was recorded while the kernel's output was verified
@@ -79,9 +79,9 @@ func TestInvariants(t *testing.T) {
 		got = append(got, invariantLines(f)...)
 	}
 
-	if os.Getenv("SPACESOLVE_REGEN_INVARIANTS") != "" {
+	if os.Getenv("TELESAPR_REGEN_INVARIANTS") != "" {
 		data := "# Invariant baseline: one line per fixture and group, from TestInvariants\n" +
-			"# in pkg/persist/slvs. Regenerate with SPACESOLVE_REGEN_INVARIANTS=1.\n" +
+			"# in pkg/persist/slvs. Regenerate with TELESAPR_REGEN_INVARIANTS=1.\n" +
 			strings.Join(got, "\n") + "\n"
 		if err := os.WriteFile(invariantsPath, []byte(data), 0o644); err != nil {
 			t.Fatal(err)

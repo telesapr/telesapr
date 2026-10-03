@@ -1,7 +1,7 @@
 // Package link loads what a sketch links: the files of its link groups
 // and the pictures of its image requests. It knows no document format
 // of its own: a format registers a Loader for its extension, as
-// pkg/persist/spcs does for .spcs. IDF boards (.emn), STL meshes
+// pkg/persist/tlspr does for .tlspr. IDF boards (.emn), STL meshes
 // (.stl) and STEP files (.step, .stp, through pkg/persist/step) are
 // built in.
 //
@@ -17,9 +17,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // Loader reads the entities, mesh and shell of a linked file at path

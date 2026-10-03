@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=TeleSAPR
+Comment=A parametric 2d/3d CAD
+Exec=@BINDIR@/telesapr %f
+MimeType=application/x-telesapr
+Icon=telesapr
+Type=Application
+Categories=Graphics;3DGraphics;Engineering;
+Keywords=parametric;cad;2d;3d;

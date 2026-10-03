@@ -8,17 +8,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
-	"github.com/spacesolve/spacesolve/pkg/topo"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 var testdata = filepath.Join("..", "..", "testdata")
 
 // fixtures lists the models under testdata with a solid to check: the
-// .slvs fixtures, and the .spcs goldens and solids that have no .slvs
+// .slvs fixtures, and the .tlspr goldens and solids that have no .slvs
 // beside them.
 func fixtures(t *testing.T) []string {
 	var files []string
@@ -36,8 +36,8 @@ func fixtures(t *testing.T) []string {
 		switch {
 		case strings.HasSuffix(path, ".slvs"):
 			files = append(files, filepath.ToSlash(rel))
-		case strings.HasSuffix(path, ".spcs") && !strings.HasPrefix(filepath.ToSlash(rel), "spcs/golden"):
-			if _, err := os.Stat(strings.TrimSuffix(path, ".spcs") + ".slvs"); err != nil {
+		case strings.HasSuffix(path, ".tlspr") && !strings.HasPrefix(filepath.ToSlash(rel), "tlspr/golden"):
+			if _, err := os.Stat(strings.TrimSuffix(path, ".tlspr") + ".slvs"); err != nil {
 				files = append(files, filepath.ToSlash(rel))
 			}
 		}
@@ -62,7 +62,7 @@ func load(t *testing.T, rel string) *sketch.Sketch {
 		}
 		sk = doc.Sketch
 	} else {
-		doc, err := spcs.LoadFile(path)
+		doc, err := tlspr.LoadFile(path)
 		if err != nil {
 			return nil
 		}

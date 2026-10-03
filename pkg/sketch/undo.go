@@ -4,7 +4,7 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // This file ports solvespace/src/undoredo.cpp: whenever the user

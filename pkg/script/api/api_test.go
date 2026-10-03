@@ -71,7 +71,7 @@ func TestPlate(t *testing.T) {
 
 	// Undo takes back everything since the document was made, which
 	// was one step.
-	file := filepath.Join(t.TempDir(), "plate.spcs")
+	file := filepath.Join(t.TempDir(), "plate.tlspr")
 	if err := d.Save(file); err != nil {
 		t.Fatal(err)
 	}

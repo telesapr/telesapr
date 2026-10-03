@@ -10,13 +10,13 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/par"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/par"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // generatedDump loads a fixture, generates it, and returns all that
@@ -76,7 +76,7 @@ func generatedDump(t *testing.T, path, stl string, copies map[uint32]float64) []
 		}
 	}
 	b.WriteString("save\n")
-	b.Write(spcs.Encode(doc.Sketch, spcs.Options{}))
+	b.Write(tlspr.Encode(doc.Sketch, tlspr.Options{}))
 
 	es := sketch.ExportSettings{ChordTol: 0.1, MaxSegments: 64, Scale: 1}
 	if err := sk.ExportMeshTo(stl, es); err != nil {

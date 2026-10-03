@@ -9,11 +9,11 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // ScriptHost is the application as scripts see it: it lets package

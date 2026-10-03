@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // wrapData puts instances into a file around them.

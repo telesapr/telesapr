@@ -7,16 +7,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"github.com/spacesolve/spacesolve/pkg/internal/par"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
+	"github.com/telesapr/telesapr/pkg/internal/par"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // saved is the document's file.
 func saved(t *testing.T, d *api.Doc) []byte {
 	t.Helper()
-	file := filepath.Join(t.TempDir(), "doc.spcs")
+	file := filepath.Join(t.TempDir(), "doc.tlspr")
 	if err := d.Save(file); err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func saved(t *testing.T, d *api.Doc) []byte {
 // requires the same bytes; it returns the opened document.
 func roundTrip(t *testing.T, d *api.Doc) *api.Doc {
 	t.Helper()
-	file := filepath.Join(t.TempDir(), "doc.spcs")
+	file := filepath.Join(t.TempDir(), "doc.tlspr")
 	if err := d.Save(file); err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestSolidGoldens(t *testing.T) {
 				t.Fatalf("unsound: %s", r.String())
 			}
 			roundTrip(t, d)
-			golden.Check(t, filepath.Join("..", "..", "testdata", "solid", name+".spcs"), saved(t, d))
+			golden.Check(t, filepath.Join("..", "..", "testdata", "solid", name+".tlspr"), saved(t, d))
 		})
 	}
 }

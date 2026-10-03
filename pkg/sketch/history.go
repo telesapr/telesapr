@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // This file holds history editing: which groups a group needs, and

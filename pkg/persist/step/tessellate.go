@@ -6,8 +6,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/cdt"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/cdt"
 )
 
 // Limits that keep a hostile or enormous file from exhausting memory.

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/render"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/render"
 )
 
 // MouseEventType is what a mouse event reports (C++ MouseEvent::Type).

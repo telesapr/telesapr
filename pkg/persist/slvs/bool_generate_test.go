@@ -3,7 +3,7 @@ package slvs
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/srf"
 	"path/filepath"
 	"runtime"
 	"testing"

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/libm"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // This file ports the editing tools of solvespace/src/modify.cpp:

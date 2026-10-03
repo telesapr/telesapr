@@ -3,11 +3,11 @@ package sketch
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/libm"
-	"github.com/spacesolve/spacesolve/pkg/srf"
-	"github.com/spacesolve/spacesolve/pkg/ttf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 // GenerateEntityBeziers populates the supplied SBezierList with the

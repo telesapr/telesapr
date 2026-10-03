@@ -3,11 +3,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/section/section.go [offset]
+//	telesapr-cli run examples/scripts/section/section.go [offset]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/section/section.go
+//	telesapr --script examples/scripts/section/section.go
 //
 // The block is cut parallel to its side face, offset mm into it (20,
 // through the bore's axis, unless given), as View > Section View does.
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

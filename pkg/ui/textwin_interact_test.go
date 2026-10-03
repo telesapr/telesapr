@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
 )
 
 // clickText clicks the first place the text window shows s, as the

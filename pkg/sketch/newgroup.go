@@ -1,6 +1,6 @@
 package sketch
 
-import "github.com/spacesolve/spacesolve/pkg/core"
+import "github.com/telesapr/telesapr/pkg/core"
 
 // This file holds the part of making a group that doesn't depend on
 // the selection, which C++ does at the end of Group::MenuGroup, so that

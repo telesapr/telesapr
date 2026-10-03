@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/render"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/render"
 )
 
 func hstyle(v uint32) core.HStyle { return core.HStyle{V: v} }

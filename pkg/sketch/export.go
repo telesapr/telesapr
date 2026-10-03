@@ -10,8 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // This file ports the triangle mesh export of solvespace/src/export.cpp:

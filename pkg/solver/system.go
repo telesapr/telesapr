@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // ConvergeTolerance is how close to zero every equation must be. It

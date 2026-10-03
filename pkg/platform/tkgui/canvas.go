@@ -12,9 +12,9 @@ import (
 	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/window"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/gl/glx"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/render/gl/glx"
 )
 
 // canvas is the drawing area: a widget showing the last frame the

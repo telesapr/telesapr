@@ -3,11 +3,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/soap/soap.go [radius] [-]
+//	telesapr-cli run examples/scripts/soap/soap.go [radius] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/soap/soap.go
+//	telesapr --script examples/scripts/soap/soap.go
 //
 // Fillet Edges goes on from the edges it is given into those they meet
 // smoothly: here one side of the top, picked, takes the corners' arcs
@@ -15,7 +15,7 @@
 // corner between. A 60 x 40 rectangle with corners of radius 10, 20
 // high, its top rounded at 6 mm unless given. The script checks the
 // solid against the volume the cross section takes along the path of
-// its centroid, prints it, and saves soap.spcs, unless given "-".
+// its centroid, prints it, and saves soap.tlspr, unless given "-".
 package main
 
 import (
@@ -24,7 +24,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("soap.spcs"); err != nil {
+		if err := doc.Save("soap.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

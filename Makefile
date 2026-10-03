@@ -1,8 +1,8 @@
-# Makefile for SolveSpace Go port
+# Makefile for TeleSAPR
 
 .PHONY: help
 help:
-	@echo "SolveSpace Go Build Targets:"
+	@echo "TeleSAPR Build Targets:"
 	@echo ""
 	@echo "Development:"
 	@echo "  make test         - Run all tests"
@@ -21,7 +21,7 @@ help:
 	@echo "  make generate-check - Fail if that is out of date"
 	@echo ""
 	@echo "Application:"
-	@echo "  make build        - Build bin/spacesolve and bin/spacesolve-cli"
+	@echo "  make build        - Build bin/telesapr and bin/telesapr-cli"
 	@echo "  make install      - Install it with its desktop entry, icons and MIME type"
 	@echo "                      (PREFIX=$(PREFIX), DESTDIR for staging)"
 	@echo "  make uninstall    - Remove what install put in place"
@@ -42,7 +42,7 @@ test:
 # The GUI backend's tests open windows, so they run under Xvfb.
 test-gui:
 	@echo "==> GUI tests under Xvfb"
-	GOCACHE=$(PWD)/.gocache SPACESOLVE_GUI_TESTS=1 xvfb-run -a -s "-screen 0 1280x1024x24 -noreset" \
+	GOCACHE=$(PWD)/.gocache TELESAPR_GUI_TESTS=1 xvfb-run -a -s "-screen 0 1280x1024x24 -noreset" \
 		go test ./pkg/platform/tkgui/... ./pkg/render/gl/... -v
 
 # The packages whose loops run on several goroutines, and what loads
@@ -61,7 +61,7 @@ test-race:
 # OpenGL packages are only reached with an X server, so it runs under
 # Xvfb, with the GUI tests, where xvfb-run is installed; its display
 # numbers start apart from test-gui's, which make ci runs beside it.
-XVFB_COVERAGE := $(if $(shell command -v xvfb-run),xvfb-run -a -n 140 -s "-screen 0 1280x1024x24 -noreset" env SPACESOLVE_GUI_TESTS=1)
+XVFB_COVERAGE := $(if $(shell command -v xvfb-run),xvfb-run -a -n 140 -s "-screen 0 1280x1024x24 -noreset" env TELESAPR_GUI_TESTS=1)
 
 coverage:
 	@echo "==> tests with coverage"
@@ -69,7 +69,7 @@ coverage:
 
 # The fuzz targets, as package:target; go test fuzzes one at a time.
 FUZZTIME ?= 30s
-FUZZ_TARGETS = ./pkg/core:FuzzExpr ./pkg/persist/slvs:FuzzLoad ./pkg/persist/spcs:FuzzRead ./pkg/persist/step:FuzzStep
+FUZZ_TARGETS = ./pkg/core:FuzzExpr ./pkg/persist/slvs:FuzzLoad ./pkg/persist/tlspr:FuzzRead ./pkg/persist/step:FuzzStep
 
 fuzz:
 	@for t in $(FUZZ_TARGETS); do \
@@ -127,35 +127,35 @@ generate-check: generate
 	git diff --exit-code -- pkg/script/symbols
 
 build:
-	@echo "==> go build ./cmd/spacesolve ./cmd/spacesolve-cli"
-	GOCACHE=$(PWD)/.gocache go build -o bin/spacesolve ./cmd/spacesolve
-	GOCACHE=$(PWD)/.gocache go build -o bin/spacesolve-cli ./cmd/spacesolve-cli
+	@echo "==> go build ./cmd/telesapr ./cmd/telesapr-cli"
+	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr ./cmd/telesapr
+	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr-cli ./cmd/telesapr-cli
 
 # The desktop entry, icons and MIME type follow solvespace/res/CMakeLists.txt.
 install: build
-	install -Dm755 bin/spacesolve $(DESTDIR)$(BINDIR)/spacesolve
-	install -Dm755 bin/spacesolve-cli $(DESTDIR)$(BINDIR)/spacesolve-cli
-	sed 's|@BINDIR@|$(BINDIR)|' dist/freedesktop/spacesolve.desktop.in > bin/spacesolve.desktop
-	install -Dm644 bin/spacesolve.desktop $(DESTDIR)$(DATADIR)/applications/spacesolve.desktop
-	install -Dm644 dist/freedesktop/spacesolve-mime.xml $(DESTDIR)$(DATADIR)/mime/packages/spacesolve-mime.xml
+	install -Dm755 bin/telesapr $(DESTDIR)$(BINDIR)/telesapr
+	install -Dm755 bin/telesapr-cli $(DESTDIR)$(BINDIR)/telesapr-cli
+	sed 's|@BINDIR@|$(BINDIR)|' dist/freedesktop/telesapr.desktop.in > bin/telesapr.desktop
+	install -Dm644 bin/telesapr.desktop $(DESTDIR)$(DATADIR)/applications/telesapr.desktop
+	install -Dm644 dist/freedesktop/telesapr-mime.xml $(DESTDIR)$(DATADIR)/mime/packages/telesapr-mime.xml
 	install -Dm644 $(FREEDESKTOP)/solvespace-scalable.svg \
-		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/spacesolve.svg
+		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/telesapr.svg
 	install -Dm644 $(FREEDESKTOP)/solvespace-scalable.svg \
-		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/mimetypes/application-x-solvespace.svg
+		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/mimetypes/application-x-telesapr.svg
 	for s in $(ICON_SIZES); do \
 		install -Dm644 $(FREEDESKTOP)/solvespace-$$s.png \
-			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/spacesolve.png; \
+			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/telesapr.png; \
 		install -Dm644 $(FREEDESKTOP)/solvespace-$$s.png \
-			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-solvespace.png; \
+			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-telesapr.png; \
 	done
 
 uninstall:
-	rm -f $(DESTDIR)$(BINDIR)/spacesolve $(DESTDIR)$(BINDIR)/spacesolve-cli
-	rm -f $(DESTDIR)$(DATADIR)/applications/spacesolve.desktop
-	rm -f $(DESTDIR)$(DATADIR)/mime/packages/spacesolve-mime.xml
-	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/spacesolve.svg
-	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/mimetypes/application-x-solvespace.svg
+	rm -f $(DESTDIR)$(BINDIR)/telesapr $(DESTDIR)$(BINDIR)/telesapr-cli
+	rm -f $(DESTDIR)$(DATADIR)/applications/telesapr.desktop
+	rm -f $(DESTDIR)$(DATADIR)/mime/packages/telesapr-mime.xml
+	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/telesapr.svg
+	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/mimetypes/application-x-telesapr.svg
 	for s in $(ICON_SIZES); do \
-		rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/spacesolve.png \
-			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-solvespace.png; \
+		rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/telesapr.png \
+			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-telesapr.png; \
 	done

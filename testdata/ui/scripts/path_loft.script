@@ -1,6 +1,6 @@
-# The top square of loft_profiles.spcs lofted to the bottom one, picked
+# The top square of loft_profiles.tlspr lofted to the bottom one, picked
 # with the mouse; the same as path_loft.go makes (TestPathEquivalenceLoft).
-file $testdata/ui/loft_profiles.spcs
+file $testdata/ui/loft_profiles.tlspr
 menu File|Open...
 view default
 move 300 400

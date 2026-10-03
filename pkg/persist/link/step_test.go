@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 var stepShapes = filepath.Join("..", "..", "..", "testdata", "step", "shapes")
@@ -118,7 +118,7 @@ func TestReloadAllStep(t *testing.T) {
 	}
 	sk := &sketch.Sketch{}
 	sk.Groups = append(sk.Groups, sketch.Group{Type: sketch.GroupLinked, LinkFile: "part.STP"})
-	if !ReloadAll(sk, filepath.Join(dir, "model.spcs"), Options{}) {
+	if !ReloadAll(sk, filepath.Join(dir, "model.tlspr"), Options{}) {
 		t.Fatal("cancelled")
 	}
 	g := &sk.Groups[0]
@@ -127,7 +127,7 @@ func TestReloadAllStep(t *testing.T) {
 	}
 	// A file another loader reads reports nothing.
 	g.LinkFile = "missing.stl"
-	ReloadAll(sk, filepath.Join(dir, "model.spcs"), Options{Quiet: true})
+	ReloadAll(sk, filepath.Join(dir, "model.tlspr"), Options{Quiet: true})
 	if g.LinkInfo != nil || g.LinkProblem != "" {
 		t.Errorf("info %q problem %q left from before", g.LinkInfo, g.LinkProblem)
 	}

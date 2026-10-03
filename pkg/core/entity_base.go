@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/libm"
 )
 
 // This file ports solvespace/src/entity.cpp: the symbolic and numeric

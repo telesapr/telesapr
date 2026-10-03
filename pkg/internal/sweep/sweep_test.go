@@ -46,7 +46,7 @@ func TestNoSuchAxis(t *testing.T) {
 }
 
 func TestSampleAndAll(t *testing.T) {
-	t.Setenv("SPACESOLVE_SWEEP", "")
+	t.Setenv("TELESAPR_SWEEP", "")
 	g := grid()
 	var labels []string
 	r := g.Run(func(p Point) error { labels = append(labels, p.Label()); return nil })
@@ -69,7 +69,7 @@ func TestSampleAndAll(t *testing.T) {
 	if r := g.RunAll(func(Point) error { return nil }); r.Runs != 12 || !r.Full {
 		t.Errorf("all: %+v", r)
 	}
-	t.Setenv("SPACESOLVE_SWEEP", "1")
+	t.Setenv("TELESAPR_SWEEP", "1")
 	if r := g.Run(func(Point) error { return nil }); r.Runs != 12 || !r.Full {
 		t.Errorf("full: %+v", r)
 	}

@@ -5,18 +5,18 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/spacesolve/spacesolve/pkg/script"
-	"github.com/spacesolve/spacesolve/pkg/script/symbols"
+	"github.com/telesapr/telesapr/pkg/script"
+	"github.com/telesapr/telesapr/pkg/script/symbols"
 )
 
 // apiPath is the import path of the package scripts use.
-const apiPath = "github.com/spacesolve/spacesolve/pkg/script/api"
+const apiPath = "github.com/telesapr/telesapr/pkg/script/api"
 
 // Instructions is what a program is told when it connects: what the
 // tools are for and the order to use them in. Clients cut long
 // instructions short, so it stays under MaxInstructions; the rest is
 // in the Primer.
-const Instructions = `spacesolve is a parametric CAD program: sketches of lines, circles and arcs held by constraints, and solids made from them (extrude, lathe, revolve, sweep, loft, fillet, chamfer, shell, mirror, step and repeat). These tools work on the drawing the user has open, by running Go scripts on it.
+const Instructions = `TeleSAPR is a parametric CAD program: sketches of lines, circles and arcs held by constraints, and solids made from them (extrude, lathe, revolve, sweep, loft, fillet, chamfer, shell, mirror, step and repeat). These tools work on the drawing the user has open, by running Go scripts on it.
 
 To draw what the user asks for:
 1. Call api_help with no name, once, before the first script: it explains the scripting interface and lists every call. api_help with a name, as "Doc.Extrude" or "Group", says more.
@@ -32,9 +32,9 @@ Draw what was asked for and no more. Leave what the user drew as it is unless as
 const MaxInstructions = 2000
 
 // primerHead is the Primer before the list of calls.
-const primerHead = `# Scripting spacesolve
+const primerHead = `# Scripting TeleSAPR
 
-A script is Go, run by an interpreter inside spacesolve. In run_script, write statements as in the body of a function; nothing needs importing or declaring:
+A script is Go, run by an interpreter inside TeleSAPR. In run_script, write statements as in the body of a function; nothing needs importing or declaring:
 
     doc                  the drawing (type Doc); every call below is doc.Something(...)
     V(x, y, z)           a point or a direction, in mm

@@ -20,7 +20,7 @@ env:
 
 defaults:
   run:
-    working-directory: spacesolve
+    working-directory: telesapr
 
 jobs:
   test:
@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: spacesolve
+          path: telesapr
       - uses: actions/checkout@v4
         with:
           repository: msorc/takigo
@@ -40,8 +40,8 @@ jobs:
           token: ${{ secrets.TAKIGO_TOKEN }}
       - uses: actions/setup-go@v5
         with:
-          go-version-file: spacesolve/go.mod
-          cache-dependency-path: spacesolve/go.sum
+          go-version-file: telesapr/go.mod
+          cache-dependency-path: telesapr/go.sum
       - name: Install X11 development packages, Xvfb and a font
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
       - name: gofmt
@@ -61,7 +61,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: spacesolve/coverage.out
+          path: telesapr/coverage.out
 
   lint:
     # Reports only on lines the change touches: the existing code is not
@@ -71,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: spacesolve
+          path: telesapr
           fetch-depth: 0
       - uses: actions/checkout@v4
         with:
@@ -81,12 +81,12 @@ jobs:
           token: ${{ secrets.TAKIGO_TOKEN }}
       - uses: actions/setup-go@v5
         with:
-          go-version-file: spacesolve/go.mod
-          cache-dependency-path: spacesolve/go.sum
+          go-version-file: telesapr/go.mod
+          cache-dependency-path: telesapr/go.sum
       - name: Install X11 development packages
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
       - uses: golangci/golangci-lint-action@v8
         with:
           version: v2.13.2
-          working-directory: spacesolve
+          working-directory: telesapr
           only-new-issues: true

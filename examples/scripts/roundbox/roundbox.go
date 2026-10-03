@@ -2,17 +2,17 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/roundbox/roundbox.go [radius] [-]
+//	telesapr-cli run examples/scripts/roundbox/roundbox.go [radius] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/roundbox/roundbox.go
+//	telesapr --script examples/scripts/roundbox/roundbox.go
 //
 // Fillet Edges rounds edges that meet at corners: where three meet, a
 // sphere rounds the corner; where two meet, they are mitred. Here all
 // twelve edges of a 60 x 40 x 20 block, radius 4 unless given. The
 // script checks the solid against the volume worked out from the
-// radius, prints it, and saves roundbox.spcs, unless given "-".
+// radius, prints it, and saves roundbox.tlspr, unless given "-".
 package main
 
 import (
@@ -21,7 +21,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -76,7 +76,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("roundbox.spcs"); err != nil {
+		if err := doc.Save("roundbox.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

@@ -25,17 +25,17 @@ import (
 
 	"github.com/traefik/yaegi/interp"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/script/symbols"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/symbols"
 )
 
 // apiPath is the import path of the package scripts use.
-const apiPath = "github.com/spacesolve/spacesolve/pkg/script/api"
+const apiPath = "github.com/telesapr/telesapr/pkg/script/api"
 
 // showPath is the import path of a package that only the consoles of
 // this package use.
-const showPath = "github.com/spacesolve/spacesolve/pkg/script/console"
+const showPath = "github.com/telesapr/telesapr/pkg/script/console"
 
 // Options say what an Engine runs scripts on.
 type Options struct {
@@ -90,9 +90,9 @@ type Engine struct {
 // script that isn't a whole program: doc is the document, and the
 // names of package api need no prefix.
 const prelude = `import . "` + apiPath + `"
-import spacesolveConsole "` + showPath + `"
+import telesaprConsole "` + showPath + `"
 var doc = Current()
-func help(x ...any) { spacesolveConsole.Help(x...) }
+func help(x ...any) { telesaprConsole.Help(x...) }
 `
 
 // helpText is what help() prints.
@@ -121,7 +121,7 @@ Make solids, each a new group
     doc.SketchIn(doc.Workplane("XY"), name)  doc.Sketch3D(name)  g.SetCombine(Difference)
     g.Volume()  g.Bounds()  g.Check() says whether the solid is sound
 Files
-    doc.Save("part.spcs")  doc.Export("part.stl")  .step .svg .dxf .pdf .png
+    doc.Save("part.tlspr")  doc.Export("part.stl")  .step .svg .dxf .pdf .png
     doc.Undo()  doc.Redo()
 
 help(x) says what a value is and what it can do: help(doc), help(doc.Active()).
@@ -129,7 +129,7 @@ help("name") says what a package, a type, a function or a method is:
 help("api"), help("Group"), help("Group.Bounds"), help("strings.ToUpper").
 
 The packages fmt, math, strings, os and others of Go are there without an
-import. The whole of it is package github.com/spacesolve/spacesolve/pkg/script/api.
+import. The whole of it is package github.com/telesapr/telesapr/pkg/script/api.
 `
 
 // New makes an interpreter for a console or for a script given as
@@ -431,7 +431,7 @@ func (e *Engine) run(ctx context.Context, src string) error {
 	}
 
 	e.values = nil
-	const wrapper = "spacesolveConsole.Show("
+	const wrapper = "telesaprConsole.Show("
 	if _, derr := e.eval(ctx, wrapper+d.value+")"); derr != nil {
 		// What is wrong with the expression says more than that the
 		// definition couldn't be made; its place is counted from the
@@ -465,7 +465,7 @@ func (e *Engine) run(ctx context.Context, src string) error {
 		if _, derr := e.eval(ctx, "var "+name+" "+typ); derr != nil {
 			return derr
 		}
-		if _, derr := e.eval(ctx, fmt.Sprintf("%s = spacesolveConsole.Take(%d).(%s)", name, i, typ)); derr != nil {
+		if _, derr := e.eval(ctx, fmt.Sprintf("%s = telesaprConsole.Take(%d).(%s)", name, i, typ)); derr != nil {
 			return derr
 		}
 	}
@@ -638,7 +638,7 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 	// compile for a call without a value, which is then just run.
 	e.values = nil
 	e.panicAt.line = 0
-	_, err := e.i.EvalWithContext(ctx, "spacesolveConsole.Show("+src+")")
+	_, err := e.i.EvalWithContext(ctx, "telesaprConsole.Show("+src+")")
 	var p interp.Panic
 	switch {
 	case err == nil:

@@ -5,7 +5,7 @@
 # Analyze > Check Solid finds the frustum sound; [+1] turns the second
 # profile by one curve, a quarter turn, and the faces become saddles,
 # still sound; [-1] turns it back.
-file $testdata/ui/loft_profiles.spcs
+file $testdata/ui/loft_profiles.tlspr
 menu File|Open...
 view default
 answer ok

@@ -4,15 +4,15 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/history/history.go
+//	telesapr-cli run examples/scripts/history/history.go
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/history/history.go
+//	telesapr --script examples/scripts/history/history.go
 //
 // It makes a block with a boss on top and copies of the boss, then
 // edits that history and prints what each step did. It writes
-// history.spcs where it is run, before the last step deletes most of
+// history.tlspr where it is run, before the last step deletes most of
 // it, unless it is given "-".
 package main
 
@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func must(err error) {
@@ -84,7 +84,7 @@ func main() {
 	}
 
 	if len(os.Args) < 2 || os.Args[1] != "-" {
-		must(doc.Save("history.spcs"))
+		must(doc.Save("history.tlspr"))
 	}
 
 	// Deleting the block's sketch deletes what was built on it, and the

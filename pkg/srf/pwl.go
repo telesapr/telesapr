@@ -1,7 +1,7 @@
 package srf
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // chordTolMm and maxSegments mirror SS.ChordTolMm() and

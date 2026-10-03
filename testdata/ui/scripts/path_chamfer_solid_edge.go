@@ -1,14 +1,14 @@
 // The chamfer of path_chamfer_solid_edge.script, made by a script
 // (TestPathEquivalenceChamferSolidEdge): the edge where the notch of
-// testdata/topo/slot.spcs meets the front, by its name, at the distance
+// testdata/topo/slot.tlspr meets the front, by its name, at the distance
 // the menu starts with.
 package main
 
-import . "github.com/spacesolve/spacesolve/pkg/script/api"
+import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/topo/slot.spcs"); err != nil {
+	if err := doc.Load("../../testdata/topo/slot.tlspr"); err != nil {
 		panic(err)
 	}
 	edge := doc.Group("slot").Solid().Edge("edge 80030010 80050019 0")

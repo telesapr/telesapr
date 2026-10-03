@@ -3,7 +3,7 @@ package ui
 import (
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // menuHandler runs a menu command.

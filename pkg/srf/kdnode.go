@@ -3,7 +3,7 @@ package srf
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // This file ports the SKdNode part of solvespace/src/mesh.cpp: a

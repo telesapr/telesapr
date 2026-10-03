@@ -1,10 +1,10 @@
 # Fillet edges where a flat face meets a cone (an extension): the
-# frustum of testdata/topo/frustum.spcs (frustum.go), turned by a lathe;
+# frustum of testdata/topo/frustum.tlspr (frustum.go), turned by a lathe;
 # the circle its top's rim traces, picked on the turned view, is
 # rounded all round by New Group > Fillet Edges with a torus between the
 # top and the cone. Check Solid finds it sound, and again at a new
 # radius.
-file $testdata/topo/frustum.spcs
+file $testdata/topo/frustum.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit

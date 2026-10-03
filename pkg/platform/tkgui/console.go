@@ -14,8 +14,8 @@ import (
 	"github.com/msorc/takigo/widget/text"
 	"github.com/msorc/takigo/widget/toplevel"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // This file is the window scripts are typed in, which C++ SolveSpace

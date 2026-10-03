@@ -6,13 +6,13 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/gl"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/render/gl"
+	"github.com/telesapr/telesapr/pkg/render/soft"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // square is a mesh of one square face, facing +z, of half-size h.

@@ -5,9 +5,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // sphereLoopSet is the half disc of radius r on the z axis, in the

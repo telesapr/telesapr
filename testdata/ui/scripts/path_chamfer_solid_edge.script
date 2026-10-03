@@ -1,7 +1,7 @@
 # An edge of the solid that no entity draws, picked on the model and
 # chamfered; the same as path_chamfer_solid_edge.go makes
 # (TestPathEquivalenceChamferSolidEdge).
-file $testdata/topo/slot.spcs
+file $testdata/topo/slot.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit

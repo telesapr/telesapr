@@ -1,14 +1,14 @@
 // The loft of path_loft.script, made by a script
 // (TestPathEquivalenceLoft): the top square of
-// testdata/ui/loft_profiles.spcs, the active sketch, lofted to the
+// testdata/ui/loft_profiles.tlspr, the active sketch, lofted to the
 // bottom one.
 package main
 
-import . "github.com/spacesolve/spacesolve/pkg/script/api"
+import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/ui/loft_profiles.spcs"); err != nil {
+	if err := doc.Load("../../testdata/ui/loft_profiles.tlspr"); err != nil {
 		panic(err)
 	}
 	doc.Loft(doc.Group("top"), doc.Group("bottom"), "")

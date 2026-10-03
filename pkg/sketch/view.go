@@ -1,6 +1,6 @@
 package sketch
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // View is the map from model space to screen pixels that C++ keeps in
 // GraphicsWindow (offset, projRight, projUp, scale) and reads through

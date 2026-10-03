@@ -3,9 +3,9 @@ package ui
 import (
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // This file is an extension: C++ SolveSpace lists the constraints that

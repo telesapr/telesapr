@@ -1,6 +1,6 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // EdgeKind classifies edges emitted by SMesh::MakeOutlinesInto. The
 // classification drives which edges become visible outlines (drawn

@@ -4,8 +4,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // Fillets of several edges at once, with one radius, as one edit: every

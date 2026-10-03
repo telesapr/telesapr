@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
-	"github.com/spacesolve/spacesolve/pkg/srf"
-	"github.com/spacesolve/spacesolve/pkg/topo"
+	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // boxRing is the four edges of the 10 x 20 x 30 box at height z, each

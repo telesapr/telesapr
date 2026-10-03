@@ -7,13 +7,13 @@ import (
 	"net"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/script/agent"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/script/agent"
 )
 
 // This file lets a program that draws by writing scripts, such as an
 // AI model's, work on the drawing on screen: Script > Allow AI
-// Connections makes a socket that spacesolve-cli mcp connects to, and
+// Connections makes a socket that telesapr-cli mcp connects to, and
 // what comes through it runs in the script console, where the user
 // sees it.
 
@@ -89,7 +89,7 @@ var _ agent.Backend = consoleBackend{}
 
 // errLoopEnded is the error of a request that came as the application
 // closed.
-var errLoopEnded = errors.New("spacesolve is closing")
+var errLoopEnded = errors.New("TeleSAPR is closing")
 
 // agentPrompt stands before a script of a program in the console, as
 // the prompt does before what was typed.
@@ -151,7 +151,7 @@ func (b consoleBackend) Run(ctx context.Context, code string) (agent.Result, err
 			return err
 		}
 		if c.busy {
-			return errors.New("another script is running in spacesolve; wait for it to end, or ask the user to stop it with Script > Stop")
+			return errors.New("another script is running in TeleSAPR; wait for it to end, or ask the user to stop it with Script > Stop")
 		}
 		if !b.confirmed(code) {
 			c.print(platform.ConsoleInfo, "A script of an AI program was refused.\n")

@@ -1,18 +1,18 @@
-// Writes slot.spcs, the model of the topology tests: a 40 x 30 x 10
+// Writes slot.tlspr, the model of the topology tests: a 40 x 30 x 10
 // block with a notch 10 wide and 20 deep cut into its front, its left
 // side at x = slot, a parameter. The notch cuts the block's front in
 // two, so the top meets the front along two edges, and its rims are
 // edges no entity draws.
 //
-//	spacesolve-cli run testdata/topo/slot.go testdata/topo/slot.spcs
+//	telesapr-cli run testdata/topo/slot.go testdata/topo/slot.tlspr
 package main
 
 import (
 	"fmt"
 	"os"
 
-	. "github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	. "github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 func must(err error) {

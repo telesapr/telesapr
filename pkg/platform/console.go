@@ -1,6 +1,6 @@
 package platform
 
-import "github.com/spacesolve/spacesolve/pkg/core"
+import "github.com/telesapr/telesapr/pkg/core"
 
 // ConsoleKind is what a piece of a console's text is, which decides
 // how it looks.

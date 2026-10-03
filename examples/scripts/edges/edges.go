@@ -4,11 +4,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/edges/edges.go [-]
+//	telesapr-cli run examples/scripts/edges/edges.go [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/edges/edges.go
+//	telesapr --script examples/scripts/edges/edges.go
 //
 // A Boolean makes edges that no sketch entity draws, such as where the
 // notch's wall meets the block's front. Group.Solid gives the solid's
@@ -19,14 +19,14 @@
 // the chamfered edge is each time. Then it bores a hole through the
 // block: the hole's wall is one face of four patches, joined along
 // seams that are no edges, and its rims are one edge each, of four
-// pieces. It saves edges.spcs, unless given "-".
+// pieces. It saves edges.tlspr, unless given "-".
 package main
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func must(err error) {
@@ -89,5 +89,5 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "-" {
 		return
 	}
-	must(doc.Save("edges.spcs"))
+	must(doc.Save("edges.tlspr"))
 }

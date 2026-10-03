@@ -24,11 +24,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/persist/link"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/persist/link"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // ExportKind is what Export writes.
@@ -223,7 +223,7 @@ func (h *SketchHost) Redo() bool {
 // MmPerUnit is 1: with no interface, lengths are shown in mm.
 func (h *SketchHost) MmPerUnit() float64 { return h.sk.Units.MmPer() }
 
-// Load replaces the sketch by the one in a .spcs file.
+// Load replaces the sketch by the one in a .tlspr file.
 func (h *SketchHost) Load(path string) error {
 	doc, err := loadModel(path)
 	if err != nil {
@@ -234,14 +234,14 @@ func (h *SketchHost) Load(path string) error {
 	return nil
 }
 
-// loadModel opens a .spcs file. A .slvs file is refused, since it is
+// loadModel opens a .tlspr file. A .slvs file is refused, since it is
 // imported, and so is a file with parts this version doesn't know,
 // which a save would lose.
-func loadModel(path string) (*spcs.Document, error) {
+func loadModel(path string) (*tlspr.Document, error) {
 	if strings.EqualFold(filepath.Ext(path), ".slvs") {
 		return nil, fmt.Errorf("%s is a SolveSpace model; convert it with Import first", path)
 	}
-	doc, err := spcs.LoadFile(path)
+	doc, err := tlspr.LoadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -256,27 +256,27 @@ func loadModel(path string) (*spcs.Document, error) {
 	return doc, nil
 }
 
-// checkSavePath refuses to save anywhere but a .spcs file.
+// checkSavePath refuses to save anywhere but a .tlspr file.
 func checkSavePath(path string) error {
 	switch ext := filepath.Ext(path); {
-	case strings.EqualFold(ext, "."+spcs.Extension):
+	case strings.EqualFold(ext, "."+tlspr.Extension):
 		return nil
 	case strings.EqualFold(ext, ".slvs"):
-		return fmt.Errorf("can't save %s: spacesolve doesn't write SolveSpace models; save as .%s", path, spcs.Extension)
+		return fmt.Errorf("can't save %s: TeleSAPR doesn't write SolveSpace models; save as .%s", path, tlspr.Extension)
 	default:
-		return fmt.Errorf("can't save %s: a sketch is saved as a .%s file", path, spcs.Extension)
+		return fmt.Errorf("can't save %s: a sketch is saved as a .%s file", path, tlspr.Extension)
 	}
 }
 
-// Save writes the sketch to a .spcs file, its links made relative to
+// Save writes the sketch to a .tlspr file, its links made relative to
 // it.
 func (h *SketchHost) Save(path string) error {
 	if err := checkSavePath(path); err != nil {
 		return err
 	}
 	h.sk.GenerateAll()
-	err := spcs.SaveFile(h.sk, h.saveFile, path, spcs.Options{})
-	var le *spcs.LinkError
+	err := tlspr.SaveFile(h.sk, h.saveFile, path, tlspr.Options{})
+	var le *tlspr.LinkError
 	if errors.As(err, &le) {
 		return fmt.Errorf("the sketch links '%s', so it can only be saved on the same volume", le.Link)
 	}

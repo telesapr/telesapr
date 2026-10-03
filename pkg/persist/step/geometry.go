@@ -3,7 +3,7 @@ package step
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // Curve is the geometry of an edge, in millimetres.

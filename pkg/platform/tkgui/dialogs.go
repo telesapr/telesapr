@@ -20,7 +20,7 @@ import (
 	"github.com/msorc/takigo/widget/label"
 	"github.com/msorc/takigo/window"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // prepareTitle is the GTK backend's window title: the application's

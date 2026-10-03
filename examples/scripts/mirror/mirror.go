@@ -3,23 +3,23 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/mirror/mirror.go [-]
+//	telesapr-cli run examples/scripts/mirror/mirror.go [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/mirror/mirror.go
+//	telesapr --script examples/scripts/mirror/mirror.go
 //
 // The half is an L from the middle plane x = 0 out to x = 30, with a
 // hole in its foot; New Group > Mirror in the YZ workplane makes the
 // other half, hole and all, and joins it on, a T. The script prints what
-// Check Solid finds and saves bracket.spcs, unless given "-".
+// Check Solid finds and saves bracket.tlspr, unless given "-".
 package main
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "-" {
 		return
 	}
-	if err := doc.Save("bracket.spcs"); err != nil {
+	if err := doc.Save("bracket.tlspr"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}

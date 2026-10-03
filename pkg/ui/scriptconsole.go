@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/script"
-	"github.com/spacesolve/spacesolve/pkg/script/agent"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/script"
+	"github.com/telesapr/telesapr/pkg/script/agent"
 )
 
 // ScriptConsole is the application's console for scripts: the window

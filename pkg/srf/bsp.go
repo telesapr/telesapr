@@ -3,7 +3,7 @@ package srf
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // This file ports solvespace/src/bsp.cpp: binary space partitioning

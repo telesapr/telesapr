@@ -6,7 +6,7 @@ package dxfread
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/libm"
 )
 
 // ARAD converts radians to degrees (C++ ARAD).

@@ -1,10 +1,10 @@
 # Fillet edges meeting in an uneven mitre (an extension): the ramp of
-# testdata/topo/ramp.spcs (ramp.go), its top's front edge and its edge
+# testdata/topo/ramp.tlspr (ramp.go), its top's front edge and its edge
 # along the slope picked on the turned view; New Group > Fillet Edges
 # rounds them, the cylinder along the slope, which turns further, going
 # on past the mitre to where it meets the front. Check Solid finds it
 # sound, and again at a new radius.
-file $testdata/topo/ramp.spcs
+file $testdata/topo/ramp.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit

@@ -3,7 +3,7 @@ package sketch
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // This file holds whole-group suppression: a group left out of the

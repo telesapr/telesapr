@@ -3,7 +3,7 @@ package soft
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/res"
+	"github.com/telesapr/telesapr/pkg/res"
 )
 
 // depthFunc is the depth comparison in use (GL_LEQUAL or GL_GREATER).

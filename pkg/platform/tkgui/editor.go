@@ -8,7 +8,7 @@ import (
 	tkplatform "github.com/msorc/takigo/platform"
 	"github.com/msorc/takigo/widget/entry"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // editor is the text entry shown over the drawing area to edit a

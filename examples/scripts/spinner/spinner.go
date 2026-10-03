@@ -3,11 +3,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/spinner/spinner.go [radius] [-]
+//	telesapr-cli run examples/scripts/spinner/spinner.go [radius] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/spinner/spinner.go
+//	telesapr --script examples/scripts/spinner/spinner.go
 //
 // Fillet Edges and Chamfer Edges take circles where a flat face meets a
 // cone about the circle's axis, as a lathe's flat top meets its slanted
@@ -15,7 +15,7 @@
 // frustum 20 across its foot, 12 across its top and 8 high, its top's
 // rim rounded at 2 mm unless given and its foot chamfered at 1. The
 // script checks the solid against the volume Pappus gives, prints it,
-// and saves spinner.spcs, unless given "-".
+// and saves spinner.tlspr, unless given "-".
 package main
 
 import (
@@ -24,7 +24,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 // cut is the volume a fillet of radius r, or with flat a chamfer at
@@ -89,7 +89,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("spinner.spcs"); err != nil {
+		if err := doc.Save("spinner.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

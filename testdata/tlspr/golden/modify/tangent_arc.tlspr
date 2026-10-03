@@ -1,0 +1,453 @@
+telesapr 2
+
+units mm
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x5 line-segment {
+  group 0x2
+  workplane 0x80020000
+  construction
+}
+
+request 0x6 arc-of-circle {
+  group 0x2
+  workplane 0x80020000
+  construction
+}
+
+request 0x7 arc-of-circle {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x8 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x9 arc-of-circle {
+  group 0x2
+  workplane 0x80020000
+}
+
+constraint 0x1 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x50002
+  pt-b 0x60002
+}
+
+constraint 0x2 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x80001
+  pt-b 0x70003
+}
+
+constraint 0x3 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x80002
+  pt-b 0x50001
+}
+
+constraint 0x4 pt-on-line {
+  group 0x2
+  workplane 0x80020000
+  param 0x40000004
+  pt-a 0x80001
+  entity-a 0x50000
+}
+
+constraint 0x5 arc-line-tangent {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x70000
+  entity-b 0x80000
+  other
+}
+
+constraint 0x6 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x90001
+  pt-b 0x60001
+}
+
+constraint 0x7 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x90002
+  pt-b 0x70002
+}
+
+constraint 0x8 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x90003
+  pt-b 0x60003
+}
+
+constraint 0x9 curve-curve-tangent {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x70000
+  entity-b 0x90000
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 -5
+value 0x40011 5
+value 0x40013 5
+value 0x40014 5
+value 0x50010 -29.98802214345589
+value 0x50011 -14.992339469271927
+value 0x50013 -0.0038170908402154827
+value 0x50014 -0.0011111593102912072
+value 0x60010 0.0005782007100713839
+value 0x60011 19.999195463306066
+value 0x60013 -0.0038170908402154827
+value 0x60014 -0.0011111593102912072
+value 0x60016 20.00088529010183
+value 0x60017 20.00000000382494
+value 0x70010 2.0128855640047245
+value 0x70011 -7.856804372050013
+value 0x70013 1.4416379202622285
+value 0x70014 0.050871443430515216
+value 0x70016 -1.5325846772750928
+value 0x70017 -0.7654503799398861
+value 0x80010 -1.5325846772750928
+value 0x80011 -0.7654503799398861
+value 0x80013 -29.98802214345589
+value 0x80014 -14.992339469271927
+value 0x90010 0.0005782007100713839
+value 0x90011 19.999195463306066
+value 0x90013 1.4416379202622285
+value 0x90014 0.050871443430515216
+value 0x90016 20.00088529010183
+value 0x90017 20.00000000382494
+value 0x40000004 0.9490142365371292
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001 0x40002
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -5 5 0
+  act-visible
+}
+
+entity 0x40002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 5 5 0
+  act-visible
+}
+
+entity 0x50000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  construction
+  points 0x50001 0x50002
+  act-visible
+}
+
+entity 0x50001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  construction
+  act-point -29.98802214345589 -14.992339469271927 0
+  act-visible
+}
+
+entity 0x50002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  construction
+  act-point -0.0038170908402154827 -0.0011111593102912072 0
+  act-visible
+}
+
+entity 0x60000 arc-of-circle {
+  group 0x2
+  workplane 0x80020000
+  construction
+  points 0x60001 0x60002 0x60003
+  normal 0x60020
+  act-visible
+}
+
+entity 0x60001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  construction
+  act-point 0.0005782007100713839 19.999195463306066 0
+  act-visible
+}
+
+entity 0x60002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  construction
+  act-point -0.0038170908402154827 -0.0011111593102912072 0
+  act-visible
+}
+
+entity 0x60003 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  construction
+  act-point 20.00088529010183 20.00000000382494 0
+  act-visible
+}
+
+entity 0x60020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  construction
+  points 0x60001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x70000 arc-of-circle {
+  group 0x2
+  workplane 0x80020000
+  points 0x70001 0x70002 0x70003
+  normal 0x70020
+  act-visible
+}
+
+entity 0x70001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 2.0128855640047245 -7.856804372050013 0
+  act-visible
+}
+
+entity 0x70002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 1.4416379202622285 0.050871443430515216 0
+  act-visible
+}
+
+entity 0x70003 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -1.5325846772750928 -0.7654503799398861 0
+  act-visible
+}
+
+entity 0x70020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  points 0x70001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x80001 0x80002
+  act-visible
+}
+
+entity 0x80001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -1.5325846772750928 -0.7654503799398861 0
+  act-visible
+}
+
+entity 0x80002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -29.98802214345589 -14.992339469271927 0
+  act-visible
+}
+
+entity 0x90000 arc-of-circle {
+  group 0x2
+  workplane 0x80020000
+  points 0x90001 0x90002 0x90003
+  normal 0x90020
+  act-visible
+}
+
+entity 0x90001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 0.0005782007100713839 19.999195463306066 0
+  act-visible
+}
+
+entity 0x90002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 1.4416379202622285 0.050871443430515216 0
+  act-visible
+}
+
+entity 0x90003 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 20.00088529010183 20.00000000382494 0
+  act-visible
+}
+
+entity 0x90020 normal-in-2d {
+  group 0x2
+  workplane 0x80020000
+  points 0x90001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+  act-visible
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}

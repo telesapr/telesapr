@@ -3,8 +3,8 @@ package headless
 import (
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // ConsoleText is a piece of what a console shows.

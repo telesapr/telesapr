@@ -1,4 +1,4 @@
-module github.com/spacesolve/spacesolve
+module github.com/telesapr/telesapr
 
 go 1.27.0
 

@@ -2,11 +2,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/step/step.go [file.step]
+//	telesapr-cli run examples/scripts/step/step.go [file.step]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/step/step.go
+//	telesapr --script examples/scripts/step/step.go
 //
 // Given a STEP file, the script links it and prints what was read.
 // Given none, it makes one first: a plate with a hole, exported as
@@ -21,7 +21,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // MoveGroup moves group h one place earlier or later in the history,

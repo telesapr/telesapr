@@ -1,6 +1,6 @@
 package sketch
 
-import "github.com/spacesolve/spacesolve/pkg/core"
+import "github.com/telesapr/telesapr/pkg/core"
 
 // This file ports the sketch editing that C++ does in GraphicsWindow:
 // adding a request (mouse.cpp), deleting the selection

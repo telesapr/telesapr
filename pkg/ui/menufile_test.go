@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/convert"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/persist/convert"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 func newTestApp(t *testing.T) (*SolveSpaceUI, *headless.Platform) {
@@ -35,19 +35,19 @@ func copyFile(t *testing.T, from, to string) {
 }
 
 // TestSaveNewFile saves a new sketch through File > Save: the name the
-// user gives gets the .spcs extension.
+// user gives gets the .tlspr extension.
 func TestSaveNewFile(t *testing.T) {
 	ss, p := newTestApp(t)
 	path := filepath.Join(t.TempDir(), "a")
 	p.FilePaths = []string{path}
 	ss.MenuFile(CmdSave)
-	path += ".spcs"
+	path += ".tlspr"
 
 	got, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(string(got), "spacesolve 2\n\nunits mm\n") {
+	if !strings.HasPrefix(string(got), "telesapr 2\n\nunits mm\n") {
 		t.Errorf("saved file starts %.40q", got)
 	}
 	if ss.SaveFile != path || ss.SK.Unsaved {
@@ -75,7 +75,7 @@ func TestSaveNewFile(t *testing.T) {
 
 func TestModelFileName(t *testing.T) {
 	for in, want := range map[string]string{
-		"a.spcs": "a.spcs", "a.SPCS": "a.SPCS", "a.slvs": "a.spcs", "a": "a.spcs", "a.b": "a.b.spcs",
+		"a.tlspr": "a.tlspr", "a.TLSPR": "a.TLSPR", "a.slvs": "a.tlspr", "a": "a.tlspr", "a.b": "a.b.tlspr",
 	} {
 		if got := modelFileName(in); got != want {
 			t.Errorf("modelFileName(%q) = %q, want %q", in, got, want)
@@ -83,8 +83,8 @@ func TestModelFileName(t *testing.T) {
 	}
 }
 
-// importFixture converts a fixture to a .spcs file in a new temporary
-// directory, with the files beside it, and returns the .spcs file.
+// importFixture converts a fixture to a .tlspr file in a new temporary
+// directory, with the files beside it, and returns the .tlspr file.
 func importFixture(t *testing.T, fixture string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -99,7 +99,7 @@ func importFixture(t *testing.T, fixture string) string {
 		}
 	}
 	src := filepath.Join(dir, filepath.Base(fixture))
-	dst := withExtension(src, "spcs")
+	dst := withExtension(src, "tlspr")
 	if _, _, err := convert.File(src, dst, true); err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 		t.Fatal("linked mesh didn't load")
 	}
 
-	dst := filepath.Join(dir, "other", "deeper", "b.spcs")
+	dst := filepath.Join(dir, "other", "deeper", "b.tlspr")
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +241,7 @@ func TestAnalyzeVolume(t *testing.T) {
 // the load, or pick the file.
 func TestLoadMissingLinkAsks(t *testing.T) {
 	fixture := importFixture(t, "group/link/normal.slvs")
-	linked, err := filepath.Abs(filepath.Join(filepath.Dir(fixture), "rect_v20.spcs"))
+	linked, err := filepath.Abs(filepath.Join(filepath.Dir(fixture), "rect_v20.tlspr"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +260,7 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ss, p := newTestApp(t)
 			dir := t.TempDir()
-			path := filepath.Join(dir, "moved.spcs")
+			path := filepath.Join(dir, "moved.tlspr")
 			copyFile(t, fixture, path)
 			p.DialogResponses = tc.responses
 			p.FilePaths = tc.files
@@ -273,7 +273,7 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 				t.Fatalf("%d dialogs shown, want 1", len(p.DialogsShown))
 			}
 			d := p.DialogsShown[0]
-			if d.Message != "The linked file “rect_v20.spcs” is not present." || d.Type != platform.DialogQuestion {
+			if d.Message != "The linked file “rect_v20.tlspr” is not present." || d.Type != platform.DialogQuestion {
 				t.Errorf("dialog %q type %d", d.Message, d.Type)
 			}
 			if !tc.loaded {
@@ -302,7 +302,7 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 				if link.LinkFile != filepath.ToSlash(rel) {
 					t.Errorf("link file %q, want %q", link.LinkFile, filepath.ToSlash(rel))
 				}
-			} else if link.LinkFile != "rect_v20.spcs" {
+			} else if link.LinkFile != "rect_v20.tlspr" {
 				t.Errorf("link file %q changed", link.LinkFile)
 			}
 		})

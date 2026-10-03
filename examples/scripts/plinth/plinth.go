@@ -3,18 +3,18 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/plinth/plinth.go [top [foot]] [-]
+//	telesapr-cli run examples/scripts/plinth/plinth.go [top [foot]] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/plinth/plinth.go
+//	telesapr --script examples/scripts/plinth/plinth.go
 //
 // A fillet's edges may each have a radius of their own
 // (Group.SetEdgeRadius); edges that meet at a corner need one radius,
 // so here the top's four edges, mitred at the corners, take the
 // fillet's radius, 5 mm unless given, and the foot's four 1.5 mm unless
 // given. The script checks the solid against the volume by formula,
-// prints it, and saves plinth.spcs, unless given "-".
+// prints it, and saves plinth.tlspr, unless given "-".
 package main
 
 import (
@@ -23,7 +23,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -80,7 +80,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("plinth.spcs"); err != nil {
+		if err := doc.Save("plinth.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

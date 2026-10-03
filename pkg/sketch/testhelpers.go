@@ -1,6 +1,6 @@
 package sketch
 
-import "github.com/spacesolve/spacesolve/pkg/core"
+import "github.com/telesapr/telesapr/pkg/core"
 
 func coreParam(v uint32, val float64) core.Param {
 	return core.Param{H: core.HParam{V: v}, Val: val}

@@ -1,4 +1,4 @@
-// Writes boss.spcs, the model of the tests of faces of several patches
+// Writes boss.tlspr, the model of the tests of faces of several patches
 // (ROADMAP-JUMP.md, step 11.1): a 40 x 30 x 10 block with a round boss
 // of radius 8 and height 6 under it, centred at (20, 15), so that the
 // tests' turned view, which looks from below, sees it. The boss's side
@@ -6,14 +6,14 @@
 // Boolean joined it to the block, is one edge of four pieces that no
 // entity draws.
 //
-//	spacesolve-cli run testdata/topo/boss.go testdata/topo/boss.spcs
+//	telesapr-cli run testdata/topo/boss.go testdata/topo/boss.tlspr
 package main
 
 import (
 	"fmt"
 	"os"
 
-	. "github.com/spacesolve/spacesolve/pkg/script/api"
+	. "github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func must(err error) {

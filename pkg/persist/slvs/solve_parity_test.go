@@ -8,8 +8,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/solver"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/solver"
 )
 
 // TestParityGroupSolveVsCpp regenerates every fixture C++ can load and

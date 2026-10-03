@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
-	"github.com/spacesolve/spacesolve/pkg/ttf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/cfmt"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 // uiScriptRunner runs the scripts in testdata/ui/scripts on the headless
@@ -88,12 +88,12 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	// The save goes where the harness's mktemp -d puts its own, one
 	// folder under the temporary directory: a linked file is saved
 	// relative to it.
-	saveDir, err := os.MkdirTemp("", "spacesolve-ui-")
+	saveDir, err := os.MkdirTemp("", "telesapr-ui-")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.RemoveAll(saveDir) })
-	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.spcs")}
+	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.tlspr")}
 	r.p = headless.New()
 	r.p.FontFiles = []string{filepath.Join(root, "Gentium-R.ttf")}
 	r.p.PopUpHook = r.popUp
@@ -110,7 +110,7 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	r.ss = New(r.p)
 	r.ss.Init()
 	// A script that allows AI connections listens here, not where the
-	// user's own spacesolve does.
+	// user's own TeleSAPR does.
 	r.ss.AgentSocketDir = filepath.Join(saveDir, "agent")
 	t.Cleanup(func() { _ = r.ss.AllowAgent(false) })
 	// Animations jump to their end, so they don't depend on the clock.
@@ -530,7 +530,7 @@ func uiScripts(t *testing.T, prefix string) []string {
 }
 
 // linkRelToTestdata matches a saved link group's path up to testdata,
-// in a .slvs and in a .spcs file.
+// in a .slvs and in a .tlspr file.
 var linkRelToTestdata = regexp.MustCompile(`(?m)^(Group\.impFileRel=|  link ").*/testdata/`)
 
 // linkPathsFromTestdata makes the paths of the linked files in a save
@@ -545,7 +545,7 @@ func linkPathsFromTestdata(s string) string {
 // compareUIScripts runs the scripts with a prefix and compares each
 // output with its golden, testdata/ui/golden/<name>.goui, reporting the
 // first differing line. The goldens of the scripts that are not ext_
-// were first recorded from C++. SPACESOLVE_REGEN_GOLDEN=1 rewrites them
+// were first recorded from C++. TELESAPR_REGEN_GOLDEN=1 rewrites them
 // (scripts/regen-goui.sh); review the diff before committing.
 func compareUIScripts(t *testing.T, prefix string) {
 	names := uiScripts(t, prefix)
@@ -589,7 +589,7 @@ func firstDiffLine(got, want string) string {
 	return ""
 }
 
-// TestGoScripts replays the scripts of what only spacesolve has (ext_*).
+// TestGoScripts replays the scripts of what only TeleSAPR has (ext_*).
 func TestGoScripts(t *testing.T) { compareUIScripts(t, "ext_") }
 
 // TestMenuTable replays the main menu, and its states.
@@ -602,12 +602,12 @@ func TestHover(t *testing.T) { compareUIScripts(t, "hover_") }
 // what the interface shows and saves.
 func TestInteraction(t *testing.T) { compareUIScripts(t, "act_") }
 
-// TestUIScript prints the output of the script SPACESOLVE_UI_SCRIPT
+// TestUIScript prints the output of the script TELESAPR_UI_SCRIPT
 // names.
 func TestUIScript(t *testing.T) {
-	name := os.Getenv("SPACESOLVE_UI_SCRIPT")
+	name := os.Getenv("TELESAPR_UI_SCRIPT")
 	if name == "" {
-		t.Skip("set SPACESOLVE_UI_SCRIPT to a script name")
+		t.Skip("set TELESAPR_UI_SCRIPT to a script name")
 	}
 	fmt.Print(runUIScript(t, name))
 }

@@ -15,11 +15,11 @@ import (
 	"github.com/msorc/takigo/window"
 	"github.com/msorc/takigo/wm"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
-	"github.com/spacesolve/spacesolve/pkg/res"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/render/soft"
+	"github.com/telesapr/telesapr/pkg/res"
 )
 
 // Window is a toplevel with a menu bar, a drawing area, an editor over

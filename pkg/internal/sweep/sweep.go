@@ -5,7 +5,7 @@
 // "Definition of done"), and a sweep over it fails the test.
 //
 // By default a sweep runs an even sample of its grid, so that it fits
-// in the ordinary test run; SPACESOLVE_SWEEP=1 runs all of it.
+// in the ordinary test run; TELESAPR_SWEEP=1 runs all of it.
 package sweep
 
 import (
@@ -116,8 +116,8 @@ func (g Grid) At(i int) Point {
 }
 
 // Full reports whether sweeps run their whole grid: when
-// SPACESOLVE_SWEEP is set.
-func Full() bool { return os.Getenv("SPACESOLVE_SWEEP") != "" }
+// TELESAPR_SWEEP is set.
+func Full() bool { return os.Getenv("TELESAPR_SWEEP") != "" }
 
 // Failure is a point the function failed on, and why.
 type Failure struct {

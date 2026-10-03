@@ -12,10 +12,10 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/spacesolve/spacesolve/pkg/script"
-	"github.com/spacesolve/spacesolve/pkg/script/agent"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/script"
+	"github.com/telesapr/telesapr/pkg/script/agent"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // painter is a session whose pictures are made here: a sketch with no
@@ -91,7 +91,7 @@ func call(t *testing.T, cs *mcp.ClientSession, tool string, args map[string]any)
 func TestToolsAndInstructions(t *testing.T) {
 	cs, _ := connect(t)
 	init := cs.InitializeResult()
-	if init.Instructions != agent.Instructions || init.ServerInfo.Name != "spacesolve" || init.ServerInfo.Version != "1.2" {
+	if init.Instructions != agent.Instructions || init.ServerInfo.Name != "telesapr" || init.ServerInfo.Version != "1.2" {
 		t.Errorf("the server presents itself as %+v with instructions %q", init.ServerInfo, init.Instructions)
 	}
 	list, err := cs.ListTools(context.Background(), nil)

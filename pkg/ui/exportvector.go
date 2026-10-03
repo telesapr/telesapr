@@ -7,11 +7,11 @@ import (
 	"math"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
-	"github.com/spacesolve/spacesolve/pkg/libm"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/cfmt"
+	"github.com/telesapr/telesapr/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 var veryPositiveVector = geom.Vector{X: geom.VeryPositive, Y: geom.VeryPositive, Z: geom.VeryPositive}

@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // This file is Describe: the drawing in words, for a reader that
 // can't see it, such as a program that writes scripts.
 
-// unitNames are the units as a .spcs file names them.
+// unitNames are the units as a .tlspr file names them.
 var unitNames = map[core.Unit]string{
 	core.UnitMM:         "mm",
 	core.UnitInches:     "inch",

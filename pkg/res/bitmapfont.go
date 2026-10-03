@@ -1,6 +1,6 @@
 package res
 
-import "github.com/spacesolve/spacesolve/pkg/core"
+import "github.com/telesapr/telesapr/pkg/core"
 
 // BitmapGlyph is a glyph's width in 8-pixel cells and its slot in the
 // texture (C++ BitmapFont::Glyph).

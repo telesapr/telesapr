@@ -7,7 +7,7 @@ package main
 import (
 	"math"
 
-	. "github.com/spacesolve/spacesolve/pkg/script/api"
+	. "github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

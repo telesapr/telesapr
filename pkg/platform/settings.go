@@ -19,7 +19,7 @@ type JSONSettings struct {
 	values map[string]any
 }
 
-// DefaultSettingsPath is $XDG_CONFIG_HOME/spacesolve/settings.json, or
+// DefaultSettingsPath is $XDG_CONFIG_HOME/telesapr/settings.json, or
 // under ~/.config; empty if neither is known. It is not the C++
 // application's file, so the two don't overwrite each other's.
 func DefaultSettingsPath() string {
@@ -31,7 +31,7 @@ func DefaultSettingsPath() string {
 		}
 		dir = filepath.Join(home, ".config")
 	}
-	return filepath.Join(dir, "spacesolve", "settings.json")
+	return filepath.Join(dir, "telesapr", "settings.json")
 }
 
 // OpenJSONSettings loads the settings in path, if it exists; with an

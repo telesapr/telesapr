@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // TestImageAspectFromFile: as in C++, an image request takes its

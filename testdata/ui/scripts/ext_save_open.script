@@ -1,5 +1,5 @@
-# File > Save of a new sketch writes a spacesolve model: the name given
-# gets the .spcs extension. File > New, then File > Open of that file,
+# File > Save of a new sketch writes a TeleSAPR model: the name given
+# gets the .tlspr extension. File > New, then File > Open of that file,
 # brings the sketch back. Opening a SolveSpace model is refused with a
 # pointer to File > Import.
 key r
@@ -13,7 +13,7 @@ key esc
 file $tmp/part
 menu File|Save
 menu File|New
-file $tmp/part.spcs
+file $tmp/part.tlspr
 menu File|Open...
 dump
 save

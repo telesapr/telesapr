@@ -6,7 +6,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // B-spline curves and surfaces with knots, rational or not, of any

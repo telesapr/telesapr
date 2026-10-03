@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // profileLoopSet returns the rectangle r0 <= x <= r1, z0 <= z <= z1 in

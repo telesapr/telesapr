@@ -1,7 +1,7 @@
 // Package golden compares test output with recorded goldens. Most of
 // them were first recorded by the C++ SolveSpace harnesses this project
 // grew out of; since the C++ comparison was frozen (roadmap package
-// 5.1), Go writes them: SPACESOLVE_REGEN_GOLDEN=1, which
+// 5.1), Go writes them: TELESAPR_REGEN_GOLDEN=1, which
 // scripts/regen-golden.sh sets, makes Check, CheckDump and CheckDir
 // rewrite the golden instead of comparing with it.
 package golden
@@ -19,7 +19,7 @@ import (
 )
 
 // Regen reports whether goldens are being rewritten.
-func Regen() bool { return os.Getenv("SPACESOLVE_REGEN_GOLDEN") != "" }
+func Regen() bool { return os.Getenv("TELESAPR_REGEN_GOLDEN") != "" }
 
 // write rewrites a golden file, making its directory.
 func write(t testing.TB, path string, got []byte) {

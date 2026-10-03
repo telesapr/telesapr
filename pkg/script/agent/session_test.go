@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spacesolve/spacesolve/pkg/script"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/script/symbols"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/script"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/symbols"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // newSession is a session on a new sketch with no program around it.
@@ -51,7 +51,7 @@ func primerDocs(t *testing.T) *symbols.PackageDoc {
 // saved is the drawing as a file would hold it.
 func saved(t *testing.T, s *Session) []byte {
 	t.Helper()
-	file := filepath.Join(t.TempDir(), "state.spcs")
+	file := filepath.Join(t.TempDir(), "state.tlspr")
 	if err := s.Engine().Doc().Save(file); err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func TestPrimerAndInstructions(t *testing.T) {
 	}
 	primer := Primer()
 	for _, part := range []string{
-		"# Scripting spacesolve",
+		"# Scripting TeleSAPR",
 		primerExample,
 		"type api.Doc struct",
 		"Extrude(depth float64, name string) Group",
@@ -156,7 +156,7 @@ func TestSessionRun(t *testing.T) {
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() { fmt.Println(len(api.Current().Groups())) }

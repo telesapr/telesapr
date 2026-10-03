@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 func TestFindCommands(t *testing.T) {
@@ -234,7 +234,7 @@ func TestDocumentUnitsInterface(t *testing.T) {
 
 	// A new document starts in the last unit chosen; a file opens in
 	// its own.
-	path := filepath.Join(t.TempDir(), "inch.spcs")
+	path := filepath.Join(t.TempDir(), "inch.tlspr")
 	if !ss.SaveToFile(path) {
 		t.Fatal("save failed")
 	}

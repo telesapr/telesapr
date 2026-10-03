@@ -7,7 +7,7 @@ pkg/internal/sweep
 pkg/thread
 pkg/persist/convert
 pkg/persist/link
-pkg/persist/spcs
+pkg/persist/tlspr
 pkg/render/gl
 pkg/render/gl/glx
 pkg/persist/step

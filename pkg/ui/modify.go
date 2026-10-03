@@ -1,6 +1,6 @@
 package ui
 
-import "github.com/spacesolve/spacesolve/pkg/sketch"
+import "github.com/telesapr/telesapr/pkg/sketch"
 
 // selectionForEngine is the selection as the engine takes it.
 func (gw *GraphicsWindow) selectionForEngine() []sketch.Selection {

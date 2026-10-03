@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // copyFixtureDir copies the files of a testdata directory into a new
@@ -64,10 +64,10 @@ func TestSlvsNotOpenedOrSaved(t *testing.T) {
 	}
 }
 
-// TestLoadSpcsProblems: a file that doesn't decode is refused with the
+// TestLoadTlsprProblems: a file that doesn't decode is refused with the
 // place of the problem, one from a newer version names both versions,
 // and one with parts the reader doesn't know loads the rest and says so.
-func TestLoadSpcsProblems(t *testing.T) {
+func TestLoadTlsprProblems(t *testing.T) {
 	ss, p := newTestApp(t)
 	dir := t.TempDir()
 	write := func(name, data string) string {
@@ -81,9 +81,9 @@ func TestLoadSpcsProblems(t *testing.T) {
 		name, data, message string
 		loads               bool
 	}{
-		{"empty.spcs", "", "the file is empty", false},
-		{"syntax.spcs", "spacesolve 1\ngroup {\n", "2:1: block 'group' is not closed", false},
-		{"newer.spcs", "spacesolve 3\n", "This version reads files up to version 2", false},
+		{"empty.tlspr", "", "the file is empty", false},
+		{"syntax.tlspr", "telesapr 1\ngroup {\n", "2:1: block 'group' is not closed", false},
+		{"newer.tlspr", "telesapr 3\n", "This version reads files up to version 2", false},
 	} {
 		p.DialogResponses = []platform.Response{platform.ResponseOK}
 		if got := ss.LoadFromFile(write(c.name, c.data)); got != c.loads {
@@ -98,7 +98,7 @@ func TestLoadSpcsProblems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	future := write("future.spcs", string(good)+"\nhologram 0x1 {\n  shimmer\n}\n")
+	future := write("future.tlspr", string(good)+"\nhologram 0x1 {\n  shimmer\n}\n")
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
 	if !ss.LoadFromFile(future) || len(ss.SK.Groups) <= 2 {
 		t.Errorf("a file with an unknown block didn't load: %d groups", len(ss.SK.Groups))
@@ -109,19 +109,19 @@ func TestLoadSpcsProblems(t *testing.T) {
 	}
 
 	var many strings.Builder
-	many.WriteString("spacesolve 1\n")
+	many.WriteString("telesapr 1\n")
 	for range maxWarnings + 3 {
 		many.WriteString("odd\n")
 	}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	ss.LoadFromFile(write("many.spcs", many.String()))
+	ss.LoadFromFile(write("many.tlspr", many.String()))
 	if d := lastDialog(t, p); !strings.Contains(dialogText(d), "... and 3 more") {
 		t.Errorf("message %q", dialogText(d))
 	}
 }
 
 // TestImportSolveSpace imports a model through File > Import: it asks
-// where to save, shows the plan, writes the .spcs file and opens it.
+// where to save, shows the plan, writes the .tlspr file and opens it.
 func TestImportSolveSpace(t *testing.T) {
 	ss, p := newTestApp(t)
 	dir := copyFixtureDir(t, "group/translate_nd")
@@ -131,12 +131,12 @@ func TestImportSolveSpace(t *testing.T) {
 	p.FilePaths = []string{src, dst}
 	p.DialogResponses = []platform.Response{platform.ResponseYes}
 	ss.MenuFile(CmdImport)
-	dst += ".spcs"
+	dst += ".tlspr"
 	if ss.SaveFile != dst || ss.SK.Unsaved || len(ss.SK.Groups) <= 2 {
 		t.Fatalf("SaveFile %q, unsaved %v, %d groups", ss.SaveFile, ss.SK.Unsaved, len(ss.SK.Groups))
 	}
 	if len(p.FileDialogs) != 2 || p.FileDialogs[1].Title != "Save the Imported Model" ||
-		p.FileDialogs[1].Filename != dst[:len(dst)-len(".spcs")] {
+		p.FileDialogs[1].Filename != dst[:len(dst)-len(".tlspr")] {
 		t.Errorf("file dialogs %+v", p.FileDialogs)
 	}
 	d := lastDialog(t, p)
@@ -151,7 +151,7 @@ func TestImportSolveSpace(t *testing.T) {
 	}
 
 	// Cancelling at the save dialog or at the plan writes nothing.
-	other := filepath.Join(dir, "other.spcs")
+	other := filepath.Join(dir, "other.tlspr")
 	p.FilePaths = []string{""}
 	if ss.ImportSolveSpace(src) {
 		t.Error("imported after cancelling the save dialog")
@@ -192,8 +192,8 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 	ss, p := newTestApp(t)
 	dir := copyFixtureDir(t, "group/link")
 	src := filepath.Join(dir, "normal.slvs")
-	dst := filepath.Join(dir, "assembly.spcs")
-	linked := filepath.Join(dir, "rect_v20.spcs")
+	dst := filepath.Join(dir, "assembly.tlspr")
+	linked := filepath.Join(dir, "rect_v20.tlspr")
 
 	p.FilePaths = []string{dst}
 	p.DialogResponses = []platform.Response{platform.ResponseYes}
@@ -209,7 +209,7 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 			g = &ss.SK.Groups[i]
 		}
 	}
-	if g == nil || g.LinkFile != "rect_v20.spcs" || len(g.ImpEntity) == 0 {
+	if g == nil || g.LinkFile != "rect_v20.tlspr" || len(g.ImpEntity) == 0 {
 		t.Fatalf("link group %+v", g)
 	}
 
@@ -278,7 +278,7 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 		!strings.Contains(plan.Description, "rect_v20.slvs, linked from normal.slvs") {
 		t.Errorf("plan %+v", plan)
 	}
-	if locate == nil || locate.Message != "The linked file “rect_v20.spcs” is not present." {
+	if locate == nil || locate.Message != "The linked file “rect_v20.tlspr” is not present." {
 		t.Errorf("locate dialog %+v", locate)
 	}
 }
@@ -298,7 +298,7 @@ func TestImportSolveSpaceCycle(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	p.FilePaths = []string{filepath.Join(dir, "a.spcs")}
+	p.FilePaths = []string{filepath.Join(dir, "a.tlspr")}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
 	if ss.ImportSolveSpace(filepath.Join(dir, "a.slvs")) {
 		t.Error("imported a cycle")

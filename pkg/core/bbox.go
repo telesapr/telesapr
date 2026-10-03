@@ -3,7 +3,7 @@ package core
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 type BBox struct {

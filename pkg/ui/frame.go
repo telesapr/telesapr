@@ -5,8 +5,8 @@ import (
 	"image/png"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/res"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/res"
 )
 
 // bitmapFont is the text font the canvases share, since loading

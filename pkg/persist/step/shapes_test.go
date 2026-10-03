@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 var shapesDir = filepath.Join("..", "..", "..", "testdata", "step", "shapes")

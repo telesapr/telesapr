@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // TestImportDxf imports each DXF file in testdata/importdxf into a new
@@ -43,10 +43,10 @@ func TestImportDxf(t *testing.T) {
 	for _, f := range files {
 		for _, in3d := range []bool{false, true} {
 			name := f
-			want := strings.TrimSuffix(f, ".dxf") + ".spcs"
+			want := strings.TrimSuffix(f, ".dxf") + ".tlspr"
 			if in3d {
 				name += " in 3d"
-				want = strings.TrimSuffix(f, ".dxf") + ".3d.spcs"
+				want = strings.TrimSuffix(f, ".dxf") + ".3d.tlspr"
 			}
 			t.Run(name, func(t *testing.T) {
 				golden.Check(t, filepath.Join(root, "golden", want), importDxfFor(t, filepath.Join(root, f), in3d))
@@ -72,5 +72,5 @@ func importDxfFor(t testing.TB, path string, in3d bool) []byte {
 	ss.ScheduleShowTW()
 	// A save regenerates again.
 	ss.SK.GenerateAll()
-	return spcs.Encode(ss.SK, spcs.Options{})
+	return tlspr.Encode(ss.SK, tlspr.Options{})
 }

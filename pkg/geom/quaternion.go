@@ -3,7 +3,7 @@ package geom
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/libm"
 )
 
 var QuaternionIdentity = Quaternion{W: 1, X: 0, Y: 0, Z: 0}

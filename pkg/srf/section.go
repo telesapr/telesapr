@@ -1,7 +1,7 @@
 package srf
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // MakeSectionPolygonInto puts the section of the mesh by the plane of

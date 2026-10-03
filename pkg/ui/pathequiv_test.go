@@ -8,30 +8,30 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/script"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/script"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // requireSamePaths builds a model twice, through the interface and
 // through a script, and requires the same saved file from both: the
 // interface script testdata/ui/scripts/<uiScript>.script runs on the
 // headless platform, and the Go script testdata/ui/scripts/<goScript>.go
-// runs on a new sketch with no interface, as spacesolve-cli run does.
+// runs on a new sketch with no interface, as telesapr-cli run does.
 // Both paths must reach the same engine entry points, so neither can
 // drift from the other (ROADMAP-JUMP.md, "Definition of done").
 // The pairs are named path_*, and have no golden of their own: each
 // path is the other's judge. An interface script must not save: a save
 // regenerates, and the solver is not a fixed point, so a solved sketch
-// solved again can move by an ulp. SPACESOLVE_PATHEQUIV_DIR names a
+// solved again can move by an ulp. TELESAPR_PATHEQUIV_DIR names a
 // directory to write both saves to.
 func requireSamePaths(t *testing.T, uiScript, goScript string) (fromUI, fromScript *sketch.Sketch) {
 	t.Helper()
 	var r *uiScriptRunner
 	runUIScriptWith(t, uiScript, func(rr *uiScriptRunner) { r = rr })
-	savedUI := spcs.Encode(r.ss.SK, spcs.Options{})
+	savedUI := tlspr.Encode(r.ss.SK, tlspr.Options{})
 
 	path := filepath.Join("..", "..", "testdata", "ui", "scripts", goScript+".go")
 	src, err := os.ReadFile(path)
@@ -43,11 +43,11 @@ func requireSamePaths(t *testing.T, uiScript, goScript string) (fromUI, fromScri
 	if err := script.RunSource(context.Background(), opts, path, string(src)); err != nil {
 		t.Fatalf("%s: %v", goScript, err)
 	}
-	savedScript := spcs.Encode(doc.Host().Sketch(), spcs.Options{})
+	savedScript := tlspr.Encode(doc.Host().Sketch(), tlspr.Options{})
 
-	if dir := os.Getenv("SPACESOLVE_PATHEQUIV_DIR"); dir != "" {
+	if dir := os.Getenv("TELESAPR_PATHEQUIV_DIR"); dir != "" {
 		// Both saves, for a diff.
-		for name, data := range map[string][]byte{uiScript + ".ui.spcs": savedUI, goScript + ".go.spcs": savedScript} {
+		for name, data := range map[string][]byte{uiScript + ".ui.tlspr": savedUI, goScript + ".go.tlspr": savedScript} {
 			if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 				t.Fatal(err)
 			}

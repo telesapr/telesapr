@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
 )
 
 // paintFrame renders a fixture at 1920x1080 and returns a copy of the

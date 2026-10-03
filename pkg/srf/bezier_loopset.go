@@ -1,6 +1,6 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // SBezierLoopSet is a planar (closed) curve set: one outer
 // contour plus zero or more hole contours. The plane is described

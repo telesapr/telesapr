@@ -3,7 +3,7 @@ package geom
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/libm"
 )
 
 type Vector struct {

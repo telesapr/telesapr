@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // messageBox shows a message: the first sentence (up to a '.' or ':'

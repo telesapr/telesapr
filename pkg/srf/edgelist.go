@@ -3,7 +3,7 @@ package srf
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // AssemblePolygon assembles the edges into closed contours, using and

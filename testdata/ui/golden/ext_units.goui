@@ -15,7 +15,7 @@ counts 2 4 15 1 25
 editor 0 "1.6232699313" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
 save
-spacesolve 2
+telesapr 2
 
 units inch
 
@@ -207,7 +207,7 @@ counts 2 4 15 1 25
 editor 0 "1.6232699313" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
 save
-spacesolve 2
+telesapr 2
 
 units mm
 
@@ -399,7 +399,7 @@ counts 2 4 15 1 25
 editor 0 "1.6232699313" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
 save
-spacesolve 2
+telesapr 2
 
 units inch
 

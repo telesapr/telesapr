@@ -9,4 +9,4 @@
 {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"plate := doc.Extrude(thickness, \"plate\")\nplate.Check().Sound()"}}}
 {"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"render","arguments":{"view":"isometric","width":320,"height":240}}}
 {"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"get_drawing","arguments":{"group":"g002"}}}
-{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"doc.Save(\"mcp.spcs\")"}}}
+{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"doc.Save(\"mcp.tlspr\")"}}}

@@ -17,5 +17,5 @@ run='^(TestGoScripts|TestMenuTable|TestHover|TestInteraction)$'
 if [ $# -gt 0 ]; then
     run="$run/^($(IFS='|'; echo "$*"))\$"
 fi
-SPACESOLVE_REGEN_GOLDEN=1 go test ./pkg/ui -run "$run" -count=1
+TELESAPR_REGEN_GOLDEN=1 go test ./pkg/ui -run "$run" -count=1
 git status --short testdata/ui/golden

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // A shell hollows a solid, leaving walls of one thickness, open where

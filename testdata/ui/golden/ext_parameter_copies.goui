@@ -192,7 +192,7 @@ counts 3 4 28 1 27
 editor 0 "" 0 "4"
 tw 11 unsaved 1 cursor 0 tooltip ""
 save
-spacesolve 2
+telesapr 2
 
 units mm
 

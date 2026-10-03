@@ -3,11 +3,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/sweep/sweep.go [bend-radius]
+//	telesapr-cli run examples/scripts/sweep/sweep.go [bend-radius]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/sweep/sweep.go
+//	telesapr --script examples/scripts/sweep/sweep.go
 //
 // The path is drawn in the ZX workplane: up 30 mm from the origin, a
 // quarter bend of bend-radius mm (25 unless given), and 40 mm along x,
@@ -23,7 +23,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

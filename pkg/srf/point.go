@@ -1,6 +1,6 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // SPoint is a single vertex on a planar polygon. Used by SContour
 // during ear-clipping triangulation. The Tag field is preserved

@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/persist/convert"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/persist/convert"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // Vec is a point or a direction in space, in mm.
@@ -62,7 +62,7 @@ func New() *Doc {
 	return NewDoc(NewSketchHost(sk, ""))
 }
 
-// Open loads a sketch from a .spcs file. A SolveSpace model (.slvs) is
+// Open loads a sketch from a .tlspr file. A SolveSpace model (.slvs) is
 // converted with Import instead.
 func Open(path string) (*Doc, error) {
 	doc, err := loadModel(path)
@@ -72,9 +72,9 @@ func Open(path string) (*Doc, error) {
 	return NewDoc(NewSketchHost(doc.Sketch, path)), nil
 }
 
-// Import converts the SolveSpace model src (.slvs) to the spacesolve
-// model dst (.spcs), and opens it. Every SolveSpace model src links is
-// converted too, to a .spcs file beside it, and the links are pointed
+// Import converts the SolveSpace model src (.slvs) to the TeleSAPR
+// model dst (.tlspr), and opens it. Every SolveSpace model src links is
+// converted too, to a .tlspr file beside it, and the links are pointed
 // at those; a converted file that exists already is used as it is. The
 // .slvs files are not changed. It fails when a linked file is missing,
 // when the links form a cycle, or when a file can't be written.
@@ -128,13 +128,13 @@ func (d *Doc) change(fn func(sk *sketch.Sketch)) {
 	})
 }
 
-// Load replaces the sketch by the one in a .spcs file.
+// Load replaces the sketch by the one in a .tlspr file.
 func (d *Doc) Load(path string) (err error) {
 	d.h.Run(func() { err = d.h.Load(path) })
 	return err
 }
 
-// Save regenerates the sketch and writes it to a .spcs file. A
+// Save regenerates the sketch and writes it to a .tlspr file. A
 // SolveSpace model (.slvs) is not written.
 func (d *Doc) Save(path string) (err error) {
 	d.h.Run(func() { err = d.h.Save(path) })
@@ -504,7 +504,7 @@ func Commands() []string {
 
 // RunCommand runs a command of the main menu, as choosing it does:
 // "View > Zoom To Fit", or the entry's own name, "Zoom To Fit", when
-// only one entry has it. A host with no window, such as spacesolve-cli,
+// only one entry has it. A host with no window, such as telesapr-cli,
 // has no menu to run it from, and it is an error.
 func (d *Doc) RunCommand(label string) (err error) {
 	d.h.Run(func() { err = d.h.RunCommand(label) })

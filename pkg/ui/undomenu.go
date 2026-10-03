@@ -1,6 +1,6 @@
 package ui
 
-import "github.com/spacesolve/spacesolve/pkg/core"
+import "github.com/telesapr/telesapr/pkg/core"
 
 // UndoRemember records the state for undo (C++
 // SolveSpaceUI::UndoRemember).

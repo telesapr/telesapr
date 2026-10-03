@@ -4,7 +4,7 @@
 // foot edge the mouse picks filled at the radius the menu starts with.
 package main
 
-import . "github.com/spacesolve/spacesolve/pkg/script/api"
+import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()

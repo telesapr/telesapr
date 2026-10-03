@@ -155,7 +155,7 @@ func answer(ctx context.Context, b Backend, req request) response {
 
 // ErrNotRunning is the error of a Remote that finds no program to
 // talk to.
-var ErrNotRunning = errors.New("spacesolve isn't running, or Script > Allow AI Connections is off in it; ask the user to start spacesolve and turn that on")
+var ErrNotRunning = errors.New("TeleSAPR isn't running, or Script > Allow AI Connections is off in it; ask the user to start TeleSAPR and turn that on")
 
 // Remote is the Backend of another program, reached through a
 // connection that is made when first needed and again when it broke:
@@ -204,7 +204,7 @@ func (r *Remote) link() (net.Conn, error) {
 	// The two programs are installed together, but one may be older.
 	res, err := r.roundTrip(context.Background(), conn, request{Op: opHello, Protocol: Protocol})
 	if err == nil && res.Protocol != Protocol {
-		err = fmt.Errorf("spacesolve speaks version %d of the protocol and spacesolve-cli version %d; install the same version of both", res.Protocol, Protocol)
+		err = fmt.Errorf("TeleSAPR speaks version %d of the protocol and telesapr-cli version %d; install the same version of both", res.Protocol, Protocol)
 	}
 	if err != nil {
 		r.drop(conn)
@@ -252,7 +252,7 @@ func (r *Remote) drop(conn net.Conn) {
 
 // errBroken is the error of a request whose connection ended before
 // the answer came.
-var errBroken = errors.New("the connection to spacesolve ended")
+var errBroken = errors.New("the connection to TeleSAPR ended")
 
 // roundTrip sends a request over conn and waits for its response.
 func (r *Remote) roundTrip(ctx context.Context, conn net.Conn, req request) (response, error) {
@@ -344,7 +344,7 @@ func (r *Remote) Run(ctx context.Context, code string) (Result, error) {
 		return Result{}, err
 	}
 	if res.Result == nil {
-		return Result{}, errors.New("spacesolve answered a run with no result")
+		return Result{}, errors.New("TeleSAPR answered a run with no result")
 	}
 	return *res.Result, nil
 }

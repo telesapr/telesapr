@@ -1,5 +1,5 @@
 Lines to try in the console (Script > Show Console), or in
-"spacesolve-cli repl": doc is the drawing, lengths are in mm.
+"telesapr-cli repl": doc is the drawing, lengths are in mm.
 
     help()
 

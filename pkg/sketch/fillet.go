@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/srf"
-	"github.com/spacesolve/spacesolve/pkg/topo"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // A fillet rounds its edges of the solid so far with its radius, ValB,

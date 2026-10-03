@@ -3,8 +3,8 @@ package sketch
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/ttf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 type RequestType int

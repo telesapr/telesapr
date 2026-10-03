@@ -3,18 +3,18 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/tray/tray.go [radius] [-]
+//	telesapr-cli run examples/scripts/tray/tray.go [radius] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/tray/tray.go
+//	telesapr --script examples/scripts/tray/tray.go
 //
 // Fillet Edges takes edges that go in as well as edges that stick out:
 // those it fills. Here a 60 x 40 x 15 block with a 50 x 30 pocket 10
 // deep cut in its top, the pocket's floor edges and its upright edges
 // filled at 3 mm unless given; where three meet, in the pocket's
 // corners, a sphere fills the corner. The script checks the solid
-// against the volume by formula, prints it, and saves tray.spcs, unless
+// against the volume by formula, prints it, and saves tray.tlspr, unless
 // given "-".
 package main
 
@@ -24,7 +24,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("tray.spcs"); err != nil {
+		if err := doc.Save("tray.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

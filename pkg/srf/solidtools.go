@@ -3,8 +3,8 @@ package srf
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // WindingNumber is how many times the mesh wraps around p: the sum of

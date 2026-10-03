@@ -5,9 +5,9 @@ import (
 
 	"github.com/msorc/takigo/window"
 
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/gl"
-	"github.com/spacesolve/spacesolve/pkg/render/gl/glx"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/render/gl"
+	"github.com/telesapr/telesapr/pkg/render/gl/glx"
 )
 
 // The drawing area's OpenGL state. The context draws on the canvas's

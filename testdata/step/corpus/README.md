@@ -15,5 +15,5 @@ tolerance), or the failure the file is listed with.
 | `t20_data.step` | Gmsh tutorial 20 | GPL 2 or later |
 
 `external.txt` lists further files, by name, that can't be redistributed
-here. `SPACESOLVE_STEP_CORPUS=<dir>` makes the test look for them under that
+here. `TELESAPR_STEP_CORPUS=<dir>` makes the test look for them under that
 directory and check those it finds.

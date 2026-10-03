@@ -3,7 +3,7 @@ package sketch
 import (
 	"errors"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // This file ports the part of solvespace/src/constraint.cpp that makes

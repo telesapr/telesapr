@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // loadFixture loads a fixture as a fresh process would, or returns nil
@@ -65,7 +65,7 @@ type move struct{ h, before core.HGroup }
 // allowed move must also regenerate without pruning anything, which
 // would mean GroupDependencies missed a reference. Regenerating is
 // slow, so by default one allowed move per fixture regenerates, and
-// every one under SPACESOLVE_SWEEP=1.
+// every one under TELESAPR_SWEEP=1.
 func TestMoveGroupSweep(t *testing.T) {
 	allowed, refused, regenerated := 0, 0, 0
 	for fi, f := range invariantFixtures(t) {
@@ -76,7 +76,7 @@ func TestMoveGroupSweep(t *testing.T) {
 		if sk == nil {
 			continue
 		}
-		original := spcs.Encode(sk, spcs.Options{})
+		original := tlspr.Encode(sk, tlspr.Options{})
 		order := append([]core.HGroup(nil), sk.GroupOrder...)
 		var legal []move
 		for i, h := range order {
@@ -92,7 +92,7 @@ func TestMoveGroupSweep(t *testing.T) {
 				err := sk.MoveGroup(h, before)
 				if err != nil {
 					refused++
-					if got := spcs.Encode(sk, spcs.Options{}); !bytes.Equal(got, original) {
+					if got := tlspr.Encode(sk, tlspr.Options{}); !bytes.Equal(got, original) {
 						t.Fatalf("%s: the refused move of g%03x before g%03x (%v) changed the file", f, h.V, before.V, err)
 					}
 					if check := sk.CheckMoveGroup(h, before); check == nil || check.Error() != err.Error() {
@@ -105,7 +105,7 @@ func TestMoveGroupSweep(t *testing.T) {
 				if err := sk.MoveGroup(h, back); err != nil {
 					t.Fatalf("%s: can't move g%03x back: %v", f, h.V, err)
 				}
-				if got := spcs.Encode(sk, spcs.Options{}); !bytes.Equal(got, original) {
+				if got := tlspr.Encode(sk, tlspr.Options{}); !bytes.Equal(got, original) {
 					t.Fatalf("%s: moving g%03x before g%03x and back changed the file: %s",
 						f, h.V, before.V, firstLineDiff(original, got))
 				}
@@ -152,7 +152,7 @@ func firstLineDiff(a, b []byte) string {
 // that uses it, directly or not, and nothing else; brought back, the
 // fixture must save as it did, where it is a fixed point of the solver.
 // By default one group per fixture is tried, every one under
-// SPACESOLVE_SWEEP=1.
+// TELESAPR_SWEEP=1.
 func TestSuppressAllSweep(t *testing.T) {
 	tried, compared := 0, 0
 	for fi, f := range invariantFixtures(t) {
@@ -172,9 +172,9 @@ func TestSuppressAllSweep(t *testing.T) {
 			sk := loadFixture(t, f)
 			sk.Active = order[len(order)-1]
 			sk.GenerateAll()
-			before := spcs.Encode(sk, spcs.Options{})
+			before := tlspr.Encode(sk, tlspr.Options{})
 			sk.GenerateAll()
-			fixed := bytes.Equal(spcs.Encode(sk, spcs.Options{}), before)
+			fixed := bytes.Equal(tlspr.Encode(sk, tlspr.Options{}), before)
 			if len(sk.BrokenReferences) > 0 {
 				t.Errorf("%s: loading broke %v", f, sk.BrokenReferences)
 			}
@@ -219,7 +219,7 @@ func TestSuppressAllSweep(t *testing.T) {
 				continue
 			}
 			compared++
-			if got := spcs.Encode(sk, spcs.Options{}); !bytes.Equal(got, before) {
+			if got := tlspr.Encode(sk, tlspr.Options{}); !bytes.Equal(got, before) {
 				t.Errorf("%s: suppressing g%03x and bringing it back changed the file: %s",
 					f, h.V, firstLineDiff(before, got))
 			}

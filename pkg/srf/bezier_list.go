@@ -3,7 +3,7 @@ package srf
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // SBezierList is an ordered slice of SBezier curves. Used to

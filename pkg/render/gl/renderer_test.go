@@ -11,13 +11,13 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/gl/glx"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
-	"github.com/spacesolve/spacesolve/pkg/res"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/render/gl/glx"
+	"github.com/telesapr/telesapr/pkg/render/soft"
+	"github.com/telesapr/telesapr/pkg/res"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 var (
@@ -179,7 +179,7 @@ func diff(a, b *image.RGBA, tol int) int {
 }
 
 func dump(t *testing.T, name string, img *image.RGBA) {
-	dir := os.Getenv("SPACESOLVE_GL_DUMP")
+	dir := os.Getenv("TELESAPR_GL_DUMP")
 	if dir == "" {
 		return
 	}

@@ -11,8 +11,8 @@ import (
 
 	"github.com/msorc/takigo"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // Platform is a platform.Platform on takigo. It must be used from the

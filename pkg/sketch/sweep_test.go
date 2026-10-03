@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 // pipePath draws in ZX a line up from the origin by up, a quarter turn

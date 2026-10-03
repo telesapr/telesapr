@@ -4,11 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
 )
 
 // loadSlvs opens a .slvs fixture as the sketch being edited, as Load
-// opens a .spcs file, for the tests and scenarios whose goldens were
+// opens a .tlspr file, for the tests and scenarios whose goldens were
 // recorded from those fixtures. The product only imports .slvs files.
 func loadSlvs(t testing.TB, ss *SolveSpaceUI, path string) bool {
 	t.Helper()

@@ -3,7 +3,7 @@ package srf
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // lengthEps mirrors C++ LENGTH_EPS (defs.h:7).

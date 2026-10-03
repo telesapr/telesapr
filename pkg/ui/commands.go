@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 // This file is an extension: C++ SolveSpace has no command search. The

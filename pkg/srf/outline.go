@@ -1,6 +1,6 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // SOutline is an edge between two triangles of a mesh, with the normals
 // on its left and right (C++ SOutline).
