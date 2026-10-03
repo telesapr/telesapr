@@ -17,8 +17,9 @@ import (
 // 17.4): a large part takes seconds to triangulate, and the same file
 // at the same chord tolerance always gives the same mesh. The cache is
 // TELESAPR_CACHE_DIR, or the user's cache folder's telesapr/step; a
-// file is named by a hash of the STEP file's path, size, modification
-// time and the chord tolerance, and the format's version. What can't
+// file is named by a hash of the STEP file's contents, the chord
+// tolerance and the format's version, so that it holds wherever the
+// file is, as in a packed model (pkg/persist/pack). What can't
 // be read or written there is simply made again. Under go test, only
 // TELESAPR_CACHE_DIR is used.
 
@@ -46,14 +47,29 @@ func stepCacheDir() string {
 	return filepath.Join(d, "telesapr", "step")
 }
 
+// StepCacheName is the name the tessellation of a STEP file with
+// these contents, at chord tolerance pct, is kept under.
+func StepCacheName(contents []byte, pct float64) string {
+	sum := sha256.Sum256(contents)
+	h := sha256.Sum256([]byte(fmt.Sprintf("%d|%x|%g", stepDiskVersion, sum, pct)))
+	return hex.EncodeToString(h[:16]) + ".gob"
+}
+
+// StepCacheDir is the folder the tessellations are kept in, or "" for
+// none.
+func StepCacheDir() string { return stepCacheDir() }
+
 // stepDiskFile is the file the tessellation for key is kept in.
 func stepDiskFile(key stepKey) string {
 	dir := stepCacheDir()
 	if dir == "" {
 		return ""
 	}
-	h := sha256.Sum256([]byte(fmt.Sprintf("%d|%s|%d|%d|%g", stepDiskVersion, key.path, key.size, key.mtime.UnixNano(), key.pct)))
-	return filepath.Join(dir, hex.EncodeToString(h[:16])+".gob")
+	contents, err := os.ReadFile(key.path)
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, StepCacheName(contents, key.pct))
 }
 
 // readStepDisk is the kept tessellation for key, if there is one.

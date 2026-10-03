@@ -262,7 +262,7 @@ func loadModel(path string) (*tlspr.Document, error) {
 // checkSavePath refuses to save anywhere but a .tlspr file.
 func checkSavePath(path string) error {
 	switch ext := filepath.Ext(path); {
-	case strings.EqualFold(ext, "."+tlspr.Extension):
+	case strings.EqualFold(ext, "."+tlspr.Extension), strings.EqualFold(ext, "."+tlspr.PackedExtension):
 		return nil
 	case strings.EqualFold(ext, ".slvs"):
 		return fmt.Errorf("can't save %s: TeleSAPR doesn't write SolveSpace models; save as .%s", path, tlspr.Extension)

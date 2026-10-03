@@ -3918,7 +3918,8 @@
 					"Decode",
 					"DecodeTree",
 					"Load",
-					"LoadFile"
+					"LoadFile",
+					"LoadPacked"
 				]
 			},
 			"Error": {
@@ -4006,6 +4007,10 @@
 				"decl": "func FormatReal(v float64) string",
 				"text": "FormatReal writes v in the shortest form that reads back to the same bits: plain notation from 1e-6 up to 1e21, exponent notation outside."
 			},
+			"IsPacked": {
+				"decl": "func IsPacked(path string) bool",
+				"text": "IsPacked reports whether path names a packed model."
+			},
 			"Load": {
 				"decl": "func Load(data []byte, path string) (doc *Document, err error)",
 				"text": "Load is LoadFile for a file's contents, data, with links relative to path."
@@ -4013,6 +4018,14 @@
 			"LoadFile": {
 				"decl": "func LoadFile(path string) (*Document, error)",
 				"text": "LoadFile opens a document: it decodes the file, loads what the sketch links, asking through link.LocateMissingFile for a missing file, and regenerates the sketch without solving."
+			},
+			"LoadPacked": {
+				"decl": "func LoadPacked(path string) (*Document, error)",
+				"text": "LoadPacked opens a packed model: it is unpacked into a new folder of its own, and its model opened there, its links made absolute so that they hold wherever the model is saved."
+			},
+			"Pack": {
+				"decl": "func Pack(sk *sketch.Sketch, from, out string, o Options) error",
+				"text": "Pack writes sk, a model saved or opened at from (\"\" for a new one), as a packed model at path, with what it links."
 			},
 			"Parse": {
 				"decl": "func Parse(data []byte) (*File, error)",
@@ -4030,6 +4043,10 @@
 				"decl": "func String(s string) Value",
 				"text": "String makes a quoted value."
 			},
+			"Unpack": {
+				"decl": "func Unpack(in, dir string) (string, error)",
+				"text": "Unpack writes the files of the packed model at in into dir, and the tessellations it keeps into the STEP cache, and returns the path of its model."
+			},
 			"Word": {
 				"decl": "func Word(s string) Value",
 				"text": "Word makes an unquoted value."
@@ -4043,6 +4060,10 @@
 			"Extension": {
 				"decl": "const Extension",
 				"text": "Extension is the file extension of the format, without its dot."
+			},
+			"PackedExtension": {
+				"decl": "const PackedExtension",
+				"text": "PackedExtension is the packed model's file extension, without its dot."
 			},
 			"Version": {
 				"decl": "const Version",
@@ -7939,6 +7960,10 @@
 					"Clear": {
 						"decl": "func (s *SShell) Clear()",
 						"text": "Clear resets all data."
+					},
+					"Clone": {
+						"decl": "func (s *SShell) Clone() SShell",
+						"text": "Clone is a copy of the shell that shares nothing with it, to the bit: the surfaces with their trims, the curves with their points."
 					},
 					"CopyCurvesSplitAgainst": {
 						"decl": "func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell)",
