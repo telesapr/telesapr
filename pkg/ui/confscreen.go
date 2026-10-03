@@ -115,6 +115,13 @@ func (tw *TextWindow) ScreenChangeUseOpenGL(link int, v uint32) {
 	tw.ss.SetUseOpenGL(!tw.ss.UseGL())
 }
 
+// ScreenChangeAgentConfirm turns asking before each script of a
+// program that connected through Script > Allow AI Connections on or
+// off (an extension).
+func (tw *TextWindow) ScreenChangeAgentConfirm(link int, v uint32) {
+	tw.ss.AgentConfirm = !tw.ss.AgentConfirm
+}
+
 func (tw *TextWindow) ScreenChangeCameraNav(link int, v uint32) {
 	tw.ss.CameraNav = !tw.ss.CameraNav
 }
@@ -385,6 +392,8 @@ func (tw *TextWindow) ShowConfiguration() {
 		lf(tw.ScreenChangeShowFullFilePath), check(ss.ShowFullFilePath))
 	tw.Printf(false, "  %Fd%f%Ll%s  draw with OpenGL%E",
 		lf(tw.ScreenChangeUseOpenGL), check(ss.UseGL()))
+	tw.Printf(false, "  %Fd%f%Ll%s  ask before an AI program's script runs%E",
+		lf(tw.ScreenChangeAgentConfirm), check(ss.AgentConfirm))
 	tw.Printf(false, "")
 	tw.Printf(false, "%Ft autosave interval (in minutes)%E")
 	tw.Printf(false, "%Ba   %d %Fl%Ll%f[change]%E",

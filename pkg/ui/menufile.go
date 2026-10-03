@@ -346,6 +346,8 @@ func (ss *SolveSpaceUI) chooseLinkedImage() (string, bool) {
 // Exit saves the settings and quits (C++ SolveSpaceUI::Exit).
 func (ss *SolveSpaceUI) Exit() {
 	ss.SaveSettings()
+	// The socket goes with the program; the setting stays.
+	_ = ss.AllowAgent(false)
 	ss.Platform.Exit()
 }
 

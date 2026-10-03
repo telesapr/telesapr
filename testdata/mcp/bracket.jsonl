@@ -1,0 +1,12 @@
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"recorded","version":"1"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"api_help","arguments":{}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"get_drawing","arguments":{}}}
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"width, height, thickness, diameter := 60.0, 20.0, 4.0, 5.0\nholes := 3\nsides := doc.Rect(V(0, 0, 0), V(width, height, 0))\ndoc.Coincident(sides[0].Start(), doc.Origin())\ndoc.Length(sides[0], width)\ndoc.Length(sides[1], height)"}}}
+{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"stray := doc.Circle(V(5, 5, 0), 1)\ndoc.Diameter(stray, 2)\nstray.Start()"}}}
+{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"pitch := width / float64(holes+1)\nfor i := 1; i <= holes; i++ {\n\tx := pitch * float64(i)\n\thole := doc.Circle(V(x, height/2, 0), diameter/2)\n\tdoc.Diameter(hole, diameter)\n\tdoc.Distance(hole.Center(), sides[0], height/2)\n\tdoc.Distance(hole.Center(), sides[3], x)\n}\ndoc.Active().Dof()"}}}
+{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"plate := doc.Extrude(thickness, \"plate\")\nplate.Check().Sound()"}}}
+{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"render","arguments":{"view":"isometric","width":320,"height":240}}}
+{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"get_drawing","arguments":{"group":"g002"}}}
+{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"doc.Save(\"mcp.spcs\")"}}}

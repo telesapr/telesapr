@@ -145,6 +145,21 @@ func (h *SketchHost) Changing() {
 	}
 }
 
+// Rollback takes back what the script's last step changed, for good:
+// it can't be done again as what Undo takes back can. It is false if
+// the step changed nothing.
+func (h *SketchHost) Rollback() bool {
+	if !h.changed {
+		return false
+	}
+	h.changed = false
+	if !h.sk.UndoUndo() {
+		return false
+	}
+	h.sk.UndoClearStack(&h.sk.Redo)
+	return true
+}
+
 // Regenerate regenerates what is dirty.
 func (h *SketchHost) Regenerate() { h.sk.Refresh() }
 
@@ -192,11 +207,18 @@ func (h *SketchHost) Activate(hg core.HGroup) {
 }
 
 // Undo takes back the last step, and reports whether there was one.
-func (h *SketchHost) Undo() bool { return h.sk.UndoUndo() }
+func (h *SketchHost) Undo() bool {
+	// What the script's step did so far is gone with it.
+	h.changed = false
+	return h.sk.UndoUndo()
+}
 
 // Redo does again the last step undone, and reports whether there was
 // one.
-func (h *SketchHost) Redo() bool { return h.sk.UndoRedo() }
+func (h *SketchHost) Redo() bool {
+	h.changed = false
+	return h.sk.UndoRedo()
+}
 
 // MmPerUnit is 1: with no interface, lengths are shown in mm.
 func (h *SketchHost) MmPerUnit() float64 { return h.sk.Units.MmPer() }

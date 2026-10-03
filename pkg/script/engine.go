@@ -739,34 +739,66 @@ func RunSource(ctx context.Context, opts Options, name, src string) error {
 	}
 	// The whole script is one step, so each statement isn't one.
 	_, err = e.step(ctx, func(ctx context.Context) (reflect.Value, error) {
-		var chunk []string
-		start := 0
-		lines := strings.Split(src, "\n")
-		for n, line := range lines {
-			if len(chunk) == 0 {
-				if strings.TrimSpace(line) == "" || (n == 0 && strings.HasPrefix(line, "#!")) {
-					continue
-				}
-				start = n
-			}
-			chunk = append(chunk, line)
-			text := strings.Join(chunk, "\n")
-			last := n == len(lines)-1
-			if !last && unfinished(text) {
-				continue
-			}
-			err := e.run(ctx, text)
-			if !last && Incomplete(err, text) {
-				continue
-			}
-			if err != nil {
-				return reflect.Value{}, named(name, start, err)
-			}
-			chunk = nil
-		}
-		return reflect.Value{}, nil
+		_, err := e.statements(ctx, name, src, false)
+		return reflect.Value{}, err
 	})
 	return err
+}
+
+// statements runs source that is statements, one after the other, and
+// stops at the first that fails. With show, an expression's values are
+// taken as a console takes them, and those of the last statement
+// returned as it shows them.
+func (e *Engine) statements(ctx context.Context, name, src string, show bool) (shown string, err error) {
+	var chunk []string
+	start := 0
+	lines := strings.Split(src, "\n")
+	for n, line := range lines {
+		if len(chunk) == 0 {
+			if strings.TrimSpace(line) == "" || (n == 0 && strings.HasPrefix(line, "#!")) {
+				continue
+			}
+			start = n
+		}
+		chunk = append(chunk, line)
+		text := strings.Join(chunk, "\n")
+		last := n == len(lines)-1
+		if !last && unfinished(text) {
+			continue
+		}
+		var err error
+		if show {
+			shown, err = e.show(ctx, text)
+		} else {
+			err = e.run(ctx, text)
+		}
+		if !last && Incomplete(err, text) {
+			continue
+		}
+		if err != nil {
+			return "", named(name, start, err)
+		}
+		chunk = nil
+	}
+	return shown, nil
+}
+
+// Run runs source of several statements as one step, and so one step
+// of undo, on what the engine ran before: what was defined is there,
+// and what the source defines stays, as in a console. shown is the
+// value of its last statement, if that is an expression, as a console
+// shows it. Source that is a whole program, with a package clause and
+// a main function, runs as a file does: on the same sketch, but seeing
+// and leaving nothing. name is the source's name, for the errors.
+func (e *Engine) Run(ctx context.Context, name, src string) (shown string, err error) {
+	if isProgram(src) {
+		return "", RunSource(ctx, e.opts, name, src)
+	}
+	_, err = e.step(ctx, func(ctx context.Context) (reflect.Value, error) {
+		shown, err = e.statements(ctx, name, src, true)
+		return reflect.Value{}, err
+	})
+	return shown, err
 }
 
 // RunFile runs the script in a file.

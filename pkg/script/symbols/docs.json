@@ -4201,6 +4201,10 @@
 						"decl": "func (d *Doc) DeleteParameter(name string) (err error)",
 						"text": "DeleteParameter removes a parameter. One that an expression names\nis not removed, and the error says what names it."
 					},
+					"Describe": {
+						"decl": "func (d *Doc) Describe() (s string)",
+						"text": "Describe says what the drawing is, as text, for a reader that can't\nsee it: the document's unit, the parameters, every group in order\nwith how it solved, its degrees of freedom, what is wrong with it,\nand the volume and bounds of the model up to it, then the active\ngroup's requests and constraints as Group.Describe lists them, and\nwhat is selected. Lengths are in mm. The names it gives are the\nones Doc.Group, Doc.Request and Doc.Constraint take."
+					},
 					"Diameter": {
 						"decl": "func (d *Doc) Diameter(circle Entity, v float64) Constraint",
 						"text": "Diameter sets the diameter of a circle or an arc."
@@ -4654,6 +4658,10 @@
 						"decl": "func (g Group) DependsOn() (groups []Group)",
 						"text": "DependsOn lists the groups this group refers to, in history order:\nthe group it extrudes or copies, the workplane it is drawn in, and the\ngroups whose entities its sketch and constraints name. The references\nare left out."
 					},
+					"Describe": {
+						"decl": "func (g Group) Describe() (s string)",
+						"text": "Describe lists what the group holds, as text: how it solved, each\nrequest with where it is, in mm, and each constraint with its value\nand what it is on. The names it gives are the ones Doc.Request and\nDoc.Constraint take."
+					},
 					"Distance": {
 						"decl": "func (g Group) Distance() (mm float64)",
 						"text": "Distance is a chamfer's distance in mm."
@@ -4983,6 +4991,10 @@
 					"Render": {
 						"decl": "func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error",
 						"text": "Render fails: drawing needs the application around the sketch."
+					},
+					"Rollback": {
+						"decl": "func (h *SketchHost) Rollback() bool",
+						"text": "Rollback takes back what the script's last step changed, for good:\nit can't be done again as what Undo takes back can. It is false if\nthe step changed nothing."
 					},
 					"Run": {
 						"decl": "func (h *SketchHost) Run(fn func())",

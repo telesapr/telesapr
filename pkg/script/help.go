@@ -59,6 +59,19 @@ var funcNames = sync.OnceValue(func() map[uintptr][2]string {
 	return names
 })
 
+// Help writes what help("name") prints in a console: what the package,
+// type, function or method called name is, as "api", "Group",
+// "Group.Bounds" or "strings.ToUpper"; for "", the summary help()
+// prints. It is false if nothing is called that, and then nothing was
+// written.
+func Help(w io.Writer, name string) bool {
+	if name == "" {
+		_, _ = fmt.Fprint(w, helpText)
+		return true
+	}
+	return helpName(w, name)
+}
+
 // help writes what each of values is; with none, the summary.
 func (e *Engine) help(values ...any) {
 	w := e.opts.Stdout

@@ -95,6 +95,7 @@ File formats:
 		list(platform.Vector3dFileFilters), list(platform.MeshFileFilters),
 		list(platform.SurfaceFileFilters))
 	io.WriteString(w, scriptUsage)
+	_, _ = io.WriteString(w, mcpUsage)
 }
 
 // views are the camera directions --view names, as projRight and
@@ -449,6 +450,12 @@ func main() {
 	if isScriptCommand(args[1]) {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		status := runScript(ctx, args, os.Stdin, os.Stdout, os.Stderr)
+		stop()
+		os.Exit(status)
+	}
+	if args[1] == "mcp" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		status := runMCP(ctx, args, os.Stdin, os.Stdout, os.Stderr)
 		stop()
 		os.Exit(status)
 	}

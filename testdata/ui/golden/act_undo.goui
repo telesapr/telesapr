@@ -152,6 +152,8 @@ S&cript ind=0 en=1 act=0
   ---
   &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
   &Stop ind=0 en=1 act=0
+  ---
+  Allow &AI Connections ind=1 en=1 act=0
 &Help ind=0 en=1 act=0
   &Website / Manual ind=0 en=1 act=0
   &Go to GitHub commit ind=0 en=1 act=0
@@ -318,6 +320,8 @@ S&cript ind=0 en=1 act=0
   ---
   &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
   &Stop ind=0 en=1 act=0
+  ---
+  Allow &AI Connections ind=1 en=1 act=0
 &Help ind=0 en=1 act=0
   &Website / Manual ind=0 en=1 act=0
   &Go to GitHub commit ind=0 en=1 act=0

@@ -42,6 +42,11 @@ func main() {
 		}
 		ss.Load(files[len(files)-1])
 	}
+	if opts.agent {
+		if err := ss.AllowAgent(true); err != nil {
+			log.Printf("--agent: %v", err)
+		}
+	}
 	if scriptFile != "" {
 		// It runs once the event loop does, on the sketch just opened.
 		console := ss.Console()
@@ -58,13 +63,17 @@ type options struct {
 	renderer   string
 	scriptFile string
 	scriptArgs []string
+	// agent lets AI programs connect for this run, as Script > Allow
+	// AI Connections does.
+	agent bool
 }
 
 // parseArgs splits the command line into the sketch files to open, the
-// renderer to draw with for this run, and, after --script, a Go script
-// to run on the sketch with its arguments:
+// renderer to draw with for this run, whether AI programs may connect
+// (spacesolve-cli mcp), and, after --script, a Go script to run on the
+// sketch with its arguments:
 //
-//	spacesolve [--renderer opengl|software] [sketch.spcs] [--script script.go [argument...]]
+//	spacesolve [--renderer opengl|software] [--agent] [sketch.spcs] [--script script.go [argument...]]
 func parseArgs(args []string) (o options) {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -76,6 +85,8 @@ func parseArgs(args []string) (o options) {
 				log.Print("--script needs the script to run.")
 			}
 			return o
+		case arg == "--agent":
+			o.agent = true
 		case arg == "--renderer" || strings.HasPrefix(arg, "--renderer="):
 			value, ok := strings.CutPrefix(arg, "--renderer=")
 			if !ok {

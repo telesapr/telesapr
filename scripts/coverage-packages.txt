@@ -13,3 +13,5 @@ pkg/render/gl/glx
 pkg/persist/step
 pkg/internal/cdt
 pkg/topo
+pkg/script/agent
+pkg/mcpserver

@@ -167,6 +167,21 @@ func (h *ScriptHost) Changing() {
 	}
 }
 
+// Rollback takes back what the script's last step changed, for good:
+// it can't be done again as what Undo takes back can. It is false if
+// the step changed nothing.
+func (h *ScriptHost) Rollback() bool {
+	ss := h.ss
+	if !h.changed || ss.SK.Undo.Cnt <= 0 {
+		return false
+	}
+	h.changed = false
+	ss.UndoUndo()
+	ss.SK.UndoClearStack(&ss.SK.Redo)
+	ss.UndoEnableMenus()
+	return true
+}
+
 // Regenerate does now the regeneration that the event loop would get
 // to after the script.
 func (h *ScriptHost) Regenerate() {
