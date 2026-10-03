@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 11 are done and merged; the tier 4 items are sized and planned under step 11, "11.5: the tier 4 items opened". See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 11 and I7 are done and merged. What they left open, the items that never had a step and the tier 4 items are ordered as steps 12 to 22 under "Finishing the roadmap"; none is started. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -11,7 +11,7 @@ the kernel stays Go native. The parity record that `PORTING.md` held is in the g
 This document lists what the program lacks compared with current parametric CAD, sizes each
 item against the code as it stood on that date, and gives the order to do them in. The
 "Implementation plan" section breaks that order into work packages with the files they touch.
-The kernel items of steps 9 to 11 still need a spike and a design pass before coding.
+Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is left.
 
 ## Progress
 
@@ -28,6 +28,8 @@ The kernel items of steps 9 to 11 still need a spike and a design pass before co
 | 9. Topology and edge naming | done 2026-10-03, on derived topology (9.2 not taken), with follow-ups listed under the step | `6f60438` |
 | 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups 10.6 concave fillets, 10.7 smooth chains, 10.8 uneven mitres, 10.9 plane meeting cone, 10.10 a radius per edge; the rest listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0`, 10.7 `5a2239e`, 10.8 `f1cf92e`, 10.9 `e86d002`, 10.10 `47ff6e0` |
 | 11. General surface type | done 2026-10-03: 11.1 faces of several patches, 11.2 B-spline surfaces with knots, 11.3 degree up to 5, 11.4 STEP export of a face as one surface, 11.5 the tier 4 items sized and planned; follow-ups listed under the step | `a8a973b` |
+| I7. Drawing with an AI model (outside the steps) | done 2026-10-03; follow-ups listed under the item | `baaec8d` |
+| 12 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -98,6 +100,12 @@ The three paths, interface, script and file, must reach the same engine entry po
 | Continuous integration | `make ci` and `.github/workflows/ci.yml` were prepared on 2026-10-01 and pass locally. The workflow has not run on GitHub, since the repository has no remote yet. | Unchanged: passes locally, never run on GitHub. `make lint-new` now lints from the branch's merge base with `master`. |
 | Fuzzing | None. | `FuzzExpr`, `FuzzLoad` (`.slvs`) and `FuzzRead` (`.spcs`), `make fuzz`. |
 | Geometric invariant checks | Only inside C++ parity tests, as watertight and volume comparisons for Boolean fixtures. | `pkg/check`, Analyze > Check Solid, `Group.Check()`, and a baseline of 352 lines in `testdata/invariants.txt`. |
+
+On 2026-10-03, after step 11: 107 scenarios, 31 of them Go-only (`ext_*`) and 23 path pairs
+(`path_*`), with 84 `.goui` goldens; 21 example scripts, each run by a test; four fuzz targets
+(`FuzzExpr`, `FuzzLoad`, `FuzzRead`, `FuzzStep`); 34 benchmarks; 13 packages held to 85% in
+`scripts/coverage-packages.txt`. Continuous integration is as the table says: it passes
+locally and has never run on GitHub (package 12.4).
 
 ### Test infrastructure to build first
 
@@ -210,6 +218,7 @@ of on demand, which costs a rank computation per group. That needs measuring on 
 
 B1 and B2 were done in step 3 (3.5, 3.6). B1 does not run `MarkParamsFree`: a one-pass analysis
 of the Jacobian at the solved values costs 1.5 ms at about 600 unknowns, below the solve.
+B3 was in no tier and no step; it is package 16.11.
 
 ### C. History and the feature tree
 
@@ -460,7 +469,7 @@ version 2 since package 3.9.
 |---|---|---|
 | S1. Same record grammar, new header and extension | about 1 wk | Fork of the existing reader and writer. Cheap, but inherits a flat grammar that every later feature will fight. |
 | S2. New extensible text grammar | 2 to 2.5 wk | Reader, writer, version handling, import path, dialogs, backup and autosave names, command-line tool, script runner, fixture conversion, round-trip tests. Recommended. |
-| S3. Packed container variant | 1 wk more | Can wait until D2 STEP import. |
+| S3. Packed container variant | 1 wk more | Can wait until D2 STEP import. Not taken with step 8; it is package 17.5. |
 
 **Format decisions taken by the user (2026-10-01)**
 
@@ -503,47 +512,50 @@ developed in its own branch and merged into `master` when it is done, see "Rules
 1. **Done 2026-10-02.** **Test infrastructure T1 and T3 to T7, then the thread feature brought to the bar and merged.** About 5 weeks. Nothing else can be called done without it.
 2. **Done 2026-10-02.** **The `.spcs` format (S2) with `.slvs` import.** About 3 weeks, with a fuzz target for the reader and `Save`, `Open` and `Import` in the script API. Everything after this may add records to the format.
 3. **Done 2026-10-02, with document units as a follow-up.** **A1 named parameters, then B1, B2, I5, I4.** About 4.5 weeks. No kernel work, large change in feel. Scripts get parameters by name, constraint state per entity, and measurements.
-4. **C1 to C3 history editing.** About 4 weeks. Scripts get reorder, suppress and the list of broken references.
-5. **F1 raycast fix and F2 closed intersection loops, on by default.** About 3 weeks, most of the addition being sweeps. Remove the rotate-and-retry workaround in the thread feature afterwards.
+4. **Done 2026-10-02.** **C1 to C3 history editing.** About 4 weeks. Scripts get reorder, suppress and the list of broken references.
+5. **Done 2026-10-02.** **F1 raycast fix and F2 closed intersection loops, on by default.** About 3 weeks, most of the addition being sweeps. Remove the rotate-and-retry workaround in the thread feature afterwards.
 6. **Done 2026-10-02.** **I1 OpenGL backend, then I3 section view.** About 3.5 weeks. Goldens stay on the software renderer. Scripts get the section plane and a rendered image.
-7. **E1 mirror, E3 chamfer by Boolean, E9 sweep along lines and arcs.** About 6 weeks. First new solid features, all on existing machinery, each with a robustness sweep. The chamfer takes only edges that exist as entities until step 9.
+7. **Done 2026-10-03.** **E1 mirror, E3 chamfer by Boolean, E9 sweep along lines and arcs.** About 6 weeks. First new solid features, all on existing machinery, each with a robustness sweep. The chamfer takes only edges that exist as entities until step 9.
 8. **Done 2026-10-03.** **D2 STEP import as reference mesh.** About 4.5 weeks, with a corpus of real files and a fuzz target for the reader.
 9. **Done 2026-10-03, on derived topology.** **F3 topology as the primary representation, then F4 edge naming.** About 10 weeks. The first large kernel investment. Scripts get faces, edges and vertices to enumerate and select by, which later features need for their own API. The chamfer is extended to any edge of the solid.
-10. **E4 and E5 fillets on straight and circular edges, E11 restricted shell, E7 ruled loft.** About 20 weeks.
+10. **Done 2026-10-03, the shell for flat faces only.** **E4 and E5 fillets on straight and circular edges, E11 restricted shell, E7 ruled loft.** About 20 weeks.
 11. **Done 2026-10-03.** **F6 general surface type.** About 10 to 12 weeks. Then E6, E8, E10 and D3 become ordinary hard features instead of impossible ones; their plans are under step 11.
 
 Steps 1 to 8 are about 34 weeks at conventional pace and deliver most of the visible gap.
 Steps 9 to 11 are about 41 weeks, between 9 and 10 months, and are where the native kernel is
 actually built out.
 
+The order goes on with steps 12 to 22, under "Finishing the roadmap".
+
 ### Items outside the numbered steps
 
 The steps above cover about 75 of the 112 weeks in tiers 0 to 3. The remaining items are below.
 None blocks a step. Each can be taken between steps once its prerequisite has landed.
-Efforts include the 20%.
+Efforts include the 20%. None was taken between steps 1 and 11; the last column is the
+package that now holds each, under "Finishing the roadmap".
 
-| Item | Earliest slot | Prerequisite | Effort |
-|---|---|---|---|
-| A2 configurations | after step 3 | A1 | 1.2 wk |
-| A3 dimensions referenced by name | after step 3 | A1 | 0.6 wk |
-| G5 motion study | after step 3 | A1 | 1.8 wk |
-| C4 insert a group mid-history | after step 4 | C1 | 0.6 wk |
-| D1 3MF export | after step 2 | none | 0.6 wk |
-| D4 STL and OBJ reference import | after step 2 | none | 1.2 wk |
-| D5 STEP export with assembly structure | after step 2 | none | 1.2 wk |
-| G2 bill of materials | after step 2 | none | 0.6 wk |
-| G1 mate shortcuts | after step 2 | none | 2.4 wk |
-| G3 shell-based interference check | after step 5 | F1 | 1.2 wk |
-| F8 parallel `MergeCoincidentSurfaces` | after step 5 | goldens frozen | 1 wk |
-| F7 regeneration off the UI thread | after step 5 | goldens frozen | 3.6 wk |
-| E2 pattern along a curve | after step 7 | E9 path handling | 1.8 wk |
-| H1 drawing sheet | after step 6 | none | 3.6 wk |
-| H4 title block and templates | after H1 | H1 | 1.2 wk |
-| H3 section and detail views | after H1 | H1 | 2.4 wk |
-| I2 shader backend | after step 6 | I1 | 3.6 wk |
-| I6 appearance beyond colour | after I2 | I2 | 1.2 wk |
-| E13 draft angle | after step 9 | F3 | 4.2 wk |
-| H2 associative drawing dimensions | after step 9 | F4, H1 | 5.4 wk |
+| Item | Earliest slot | Prerequisite | Effort | Package |
+|---|---|---|---|---|
+| A2 configurations | after step 3 | A1 | 1.2 wk | 16.2 |
+| A3 dimensions referenced by name | after step 3 | A1 | 0.6 wk | 16.1 |
+| G5 motion study | after step 3 | A1 | 1.8 wk | 16.3 |
+| C4 insert a group mid-history | after step 4 | C1 | 0.6 wk | 16.4, since it exists but for its tests |
+| D1 3MF export | after step 2 | none | 0.6 wk | 16.5 |
+| D4 STL and OBJ reference import | after step 2 | none | 1.2 wk | 16.6, binary STL being there |
+| D5 STEP export with assembly structure | after step 2 | none | 1.2 wk | 16.8 |
+| G2 bill of materials | after step 2 | none | 0.6 wk | 16.7 |
+| G1 mate shortcuts | after step 2 | none | 2.4 wk | 16.9 |
+| G3 shell-based interference check | after step 5 | F1 | 1.2 wk | 16.10 |
+| F8 parallel `MergeCoincidentSurfaces` | after step 5 | goldens frozen | 1 wk | 17.2 |
+| F7 regeneration off the UI thread | after step 5 | goldens frozen | 3.6 wk | 17.3 |
+| E2 pattern along a curve | after step 7 | E9 path handling | 1.8 wk | 15.6 |
+| H1 drawing sheet | after step 6 | none | 3.6 wk | 18.1 |
+| H4 title block and templates | after H1 | H1 | 1.2 wk | 18.2 |
+| H3 section and detail views | after H1 | H1 | 2.4 wk | 18.3 |
+| I2 shader backend | after step 6 | I1 | 3.6 wk | 19.1 |
+| I6 appearance beyond colour | after I2 | I2 | 1.2 wk | 19.2 |
+| E13 draft angle | after step 9 | F3 | 4.2 wk | 15.4 |
+| H2 associative drawing dimensions | after step 9 | F4, H1 | 5.4 wk | 18.4 |
 
 About 39 weeks in total. A2, A3, C4, D1, D4 and G2 are each under a week and a half and are the
 natural fillers between the long steps.
@@ -582,14 +594,14 @@ No test calls a model: a conversation is a recorded list of tool calls.
 
 Follow-ups, none started:
 
-- A chat window inside the application, on the same `Backend`, for users without an MCP client.
-- `render` of the view as the window shows it, and of a chosen group.
-- A suite of English prompts run against a real model and judged by the invariants
+- [left out] A chat window inside the application, on the same `Backend`, for users without an MCP client.
+- [16.14] `render` of the view as the window shows it, and of a chosen group.
+- [left out] A suite of English prompts run against a real model and judged by the invariants
   (`make ai-eval`, outside CI), to measure whether a change to the primer helps.
-- A tool, or a field of `get_drawing`, for what the mouse hovers, so that "this edge" works
+- [16.14] A tool, or a field of `get_drawing`, for what the mouse hovers, so that "this edge" works
   without a selection.
-- MCP resources and prompts, and an HTTP transport for clients that take only a URL.
-- A sandboxed engine for a model's scripts, if the decision above is revisited.
+- [left out] MCP resources and prompts, and an HTTP transport for clients that take only a URL.
+- [left out] A sandboxed engine for a model's scripts, if the decision above is revisited.
 
 ## Implementation plan
 
@@ -597,6 +609,8 @@ This section turns the recommended order into work packages. A package is number
 so 3.2 is the second package of step 3. Paths and symbols were checked against `master` at
 commit `ce5bfe4` on 2026-10-01. Steps 1 to 5 are planned to the file level. Steps 6 to 8 are
 planned to the package level. Steps 9 to 11 are planned as phases, each opened by a spike.
+Under each step's follow-ups, square brackets hold the package of "Finishing the roadmap"
+that takes the follow-up, `[left out]` or `[closed]`, as the review of 2026-10-03 placed them.
 
 ### Rules for every package
 
@@ -704,15 +718,17 @@ Done when: both sweeps meet their rates and the invariant baseline shows no fixt
 
 Follow-ups from step 5, each a guard in its sweep's allowed rate until looked into:
 
-- **Cylinder through cylinder** (`TestCylinderThroughCylinderSweep`, `pkg/srf/closedloop_test.go`):
+- **Cylinder through cylinder** [13.2] (`TestCylinderThroughCylinderSweep`, `pkg/srf/closedloop_test.go`):
   19 of 54 fail, the same points before and after the step; mostly unions and steep crossings,
   as failed Booleans or leaky meshes. The curves come from the boundary-seeded marching.
-- **Sphere cap across the seams** (`TestSphereThroughFaceSweep`): the intersection at the largest
+  On 2026-10-03, after step 11, 11 of 54 fail; the guard still allows 19 (12.6).
+- **Sphere cap across the seams** [13.2] (`TestSphereThroughFaceSweep`): the intersection at the largest
   bulge (0.4 of the radius, radius 7) leaks at every position, nine of the ten failures; it failed
   before the step too. The tenth is a cap so small that it triangulates flat against the face.
-- **Threads at fine chord tolerance** (`TestThreadSweep`, `pkg/persist/slvs/thread_test.go`): 3 of
+- **Threads at fine chord tolerance** [closed] (`TestThreadSweep`, `pkg/persist/slvs/thread_test.go`): 3 of
   400 unsound, `nut_m6_down_lh` at 0.03% and `M3 tapped`, `M4 tapped` at 0.01%. Since `AddThread`
-  no longer turns its planes, such a thread is reported unsound to the user.
+  no longer turns its planes, such a thread is reported unsound to the user. On 2026-10-03,
+  after step 11, none of the 400 is unsound; the guard still allows 3 (12.6).
 
 ### Step 6. OpenGL and the section view
 
@@ -730,13 +746,13 @@ example the same with `--renderer opengl` and `software`.
 
 Follow-ups from step 6:
 
-- **Cap colour**: a fixed colour (`sectionCapColor` in `pkg/ui/section.go`); a style for it,
+- **Cap colour** [16.12]: a fixed colour (`sectionCapColor` in `pkg/ui/section.go`); a style for it,
   or a hatch, would let the user change it.
-- **Section in files**: the section is view state, as the camera is. If views are ever saved,
+- **Section in files** [left out]: the section is view state, as the camera is. If views are ever saved,
   it belongs with them.
-- **Face normals**: extrusion side faces carry normals that point into the solid. The section
+- **Face normals** [14.5]: extrusion side faces carry normals that point into the solid. The section
   turns them out using the mesh; anything else that relies on a face's normal may need the same.
-- **GL on other platforms**: only GLX exists; the takigo backends for Windows and macOS would
+- **GL on other platforms** [left out]: only GLX exists; the takigo backends for Windows and macOS would
   need their own context code.
 
 ### Step 7. First new solid features
@@ -757,18 +773,19 @@ eight goroutines. Their group values and edges went into format version 2 withou
 
 Follow-ups from step 7:
 
-- **Mirror of the whole solid**: a mirror reflects its source group, as step and repeat does;
+- **Mirror of the whole solid** [15.5]: a mirror reflects its source group, as step and repeat does;
   mirroring a body made of several groups means mirroring each, or a group of its own.
-- **A solid mirrored onto itself**: a part symmetric about the plane, mirrored with the
+- **A solid mirrored onto itself** [13.4]: a part symmetric about the plane, mirrored with the
   original kept, puts coincident faces through the Boolean, which fails (reported as a failed
   Boolean). The case is common enough to want handling.
-- **Two chamfer distances**, once step 9 names faces.
-- **Thin tori**: the solid check finds triangles of a thin tube's bend crossing their
+- **Two chamfer distances** [15.1], once step 9 names faces.
+- **Thin tori** [closed]: the solid check finds triangles of a thin tube's bend crossing their
   neighbours by about 2e-4 mm, in a sweep and in a Revolve alike (`sweepGridMaxFailRate`).
-- **Benchmarks**: `BenchmarkRegen150` reads about 6% slower on this branch, all of it inside
+  On 2026-10-03 `TestSweepGrid` has 0 of 72; the guard still allows 7 (12.6).
+- **Benchmarks** [left out]: `BenchmarkRegen150` reads about 6% slower on this branch, all of it inside
   the solver's QR, which the step doesn't touch; adding one file the benchmark never runs moves
   it by 3%, so it is code layout, not work.
-- **Untrimmed surfaces after a difference**: a Boolean keeps the cutter's surfaces it removed
+- **Untrimmed surfaces after a difference** [13.3]: a Boolean keeps the cutter's surfaces it removed
   whole, with no trims, so a chamfered block's shell has 11 surfaces for 7 faces.
 
 ### Step 8. STEP import as a reference mesh
@@ -787,21 +804,21 @@ none panics.
 
 Follow-ups from step 8:
 
-- **Knife edges**: a solid whose faces meet along an edge four times (the
+- **Knife edges** [13.5]: a solid whose faces meet along an edge four times (the
   `boolean_knife_edge` fixture, exported and read back) gives six naked edges.
-- **Open thread ends**: the knurled bolt's thread ends are faces bounded by a single loop
+- **Open thread ends** [left out]: the knurled bolt's thread ends are faces bounded by a single loop
   round a cylinder; they are closed straight across, as OpenCASCADE does, which leaves
   holes, as the file does (`external.txt` marks it open).
-- **Faces through both poles**, such as a whole sphere or a lune from pole to pole, are
+- **Faces through both poles** [13.5], such as a whole sphere or a lune from pole to pole, are
   triangulated in their parameters; only faces at one pole get the polar chart. They pass
   the tests, but a split at the equator would be safer.
-- **Tessellated STEP** (AP242 `TRIANGULATED_FACE` and the like) and CSG and swept solids are
-  reported, not read.
-- **Self-intersections in tiny parts**: `linkrods.step` (5 mm across) passes the volume check,
+- **Tessellated STEP** [21.6] (AP242 `TRIANGULATED_FACE` and the like) and CSG and swept solids
+  [left out] are reported, not read.
+- **Self-intersections in tiny parts** [13.5]: `linkrods.step` (5 mm across) passes the volume check,
   but Check Solid finds 24 crossing edges at the default tolerance.
-- **Placement of a new link**: a linked part is placed at the middle of the view, as every
+- **Placement of a new link** [16.13]: a linked part is placed at the middle of the view, as every
   link is; a STEP file is usually wanted where it was drawn.
-- **Performance**: the triangulator's adjacency is a map; a 10 MB file reads in about a
+- **Performance** [13.5]: the triangulator's adjacency is a map; a 10 MB file reads in about a
   second, of which the triangulator is most.
 
 ### Step 9. Topology and edge naming
@@ -823,18 +840,18 @@ reports no silent move of a chamfer to another edge.
 
 Follow-ups from step 9:
 
-- **9.2**, topology made by the kernel, if derived topology ever costs too much or a feature
+- **9.2** [left out], topology made by the kernel, if derived topology ever costs too much or a feature
   needs to keep identities through a Boolean.
-- **Origins shift**: a surface's `Origin` is its place among its group's surfaces, so an edit
+- **Origins shift** [14.2]: a surface's `Origin` is its place among its group's surfaces, so an edit
   that changes how many surfaces a group makes (a thread's length) renames the later ones.
-- **A face picked by the mouse** is still the entity of its `FaceID`; faces that only have an
+- **A face picked by the mouse** [14.1] is still the entity of its `FaceID`; faces that only have an
   `Origin` can't be selected as faces, only their edges.
-- **Hidden edges** are tested against the active group's display mesh with a ray per hover;
+- **Hidden edges** [14.4] are tested against the active group's display mesh with a ray per hover;
   a large mesh makes hovering slower.
-- **Non-manifold edges** (the knife edge) are reported as topology problems, not modelled.
-- **Ordinals** follow geometric order; an edit that reorders the edges between two faces along
+- **Non-manifold edges** [14.3] (the knife edge) are reported as topology problems, not modelled.
+- **Ordinals** [14.2] follow geometric order; an edit that reorders the edges between two faces along
   their spread can move a name, as the sweep's design keeps from happening but does not forbid.
-- **Loops through a vertex twice** choose the sharpest left turn, which no fixture exercises.
+- **Loops through a vertex twice** [14.3] choose the sharpest left turn, which no fixture exercises.
 
 ### Step 10. Fillets, shell and loft
 
@@ -858,37 +875,37 @@ phase starts.
 
 Follow-ups from step 10:
 
-- **Corners left**: corners of more than three faces (but the four where a lathe's quarters
+- **Corners left** [22.4, and 14.3 for the T-junction]: corners of more than three faces (but the four where a lathe's quarters
   meet along a smooth join), a circular edge meeting another rounded one at an angle, edges
   that go on straight through a vertex (a T-junction a Boolean left), convex and concave
   fillets meeting at a corner, and rounded edges of different radii meeting at a corner
   (variable-radius blends, setbacks) are refused.
-- **Chamfer group**: it cuts concave straight edges by its Boolean, which refuses them, and
+- **Chamfer group** [15.1]: it cuts concave straight edges by its Boolean, which refuses them, and
   takes no chains through smooth joins, its straight edges being cut by wedges.
-- **A chain stopped by its radius**: a fillet's radius at least a rounded outline's corner
+- **A chain stopped by its radius** [15.7]: a fillet's radius at least a rounded outline's corner
   radius stops the chain there, and the message speaks of the curved face it ends on rather
   than of the radius.
-- **Fillets between two curved faces** (a cylinder meeting a cone, a chamfer's cone meeting the
+- **Fillets between two curved faces** [22.2] (a cylinder meeting a cone, a chamfer's cone meeting the
   cylinder it was cut from).
-- **Small spheres at fine tolerances**: with the chord tolerance below about a thousandth of a
+- **Small spheres at fine tolerances** [13.1]: with the chord tolerance below about a thousandth of a
   corner's radius, the sphere's grid stops refining while its trims go on, and the strips
   between are ear-clipped into slivers that cross; tests set the tolerance from the radius.
-- **Strong twists**: a ruled face turned by a third of a turn or more meshes with false
+- **Strong twists** [13.1]: a ruled face turned by a third of a turn or more meshes with false
   self-intersections and about 1% error in volume; the mesher's grid stops refining a twist at
   16 rows (`MakeTriangulationGridInto`'s depth), and the rows along the trim are ear-clipped.
   A deeper cap fixes the triangles in the sweep but makes it four times slower and changes the
   meshes of cones.
-- **Chord loss after a Boolean**: a filleted block cut afterwards loses about 1 mm³ more than
+- **Chord loss after a Boolean** [13.3]: a filleted block cut afterwards loses about 1 mm³ more than
   the fillet's own mesh, the cylinder's trim being cut into coarser chords.
-- **Loft matching**: profiles must have as many curves; splitting curves to match counts, and
+- **Loft matching** [20.1]: profiles must have as many curves; splitting curves to match counts, and
   lofts through more than two profiles, are not done.
-- **Faces with only an Origin** (a loft's, a fillet's) can't be picked as faces, as for step 9;
+- **Faces with only an Origin** [14.1] (a loft's, a fillet's) can't be picked as faces, as for step 9;
   scripts reach them through `Solid.FaceAt` and `Doc.ShellSolid`.
-- **Shell of curved faces**: cylinders, and so filleted or lofted solids, are refused; a
+- **Shell of curved faces** [15.2 for cylinders; the rest left out with E12]: cylinders, and so filleted or lofted solids, are refused; a
   cylinder's offset is a cylinder, but its vertices are no longer where three planes meet.
-- **Shell vertices of four faces** that don't meet in one point once moved (an off-centre
+- **Shell vertices of four faces** [15.3] that don't meet in one point once moved (an off-centre
   pyramid's apex) are refused; the shell would need a new edge there.
-- **A Boolean's leftover surface**: a shell's inner face flush with a face taken away stays in
+- **A Boolean's leftover surface** [13.3]: a shell's inner face flush with a face taken away stays in
   the shell untrimmed, which the solid check counts as a face (Check Solid says 12 faces for an
   open box of 11), as step 7 noted for differences.
 
@@ -913,21 +930,21 @@ B-spline lids of 11.2: it did not, in three places, all fixed there.
 
 Follow-ups from step 11:
 
-- **Knot removal on export**: knots between patches are written at full multiplicity, so the
+- **Knot removal on export** [21.5]: knots between patches are written at full multiplicity, so the
   surface is C0 at each in its parameters though smooth in space. OpenCASCADE's volume of such
   a face is off by up to 0.3% (its meshes agree with ours to 2.5e-4); removing the knots where
   the patches join with matching derivatives would make the surfaces C1 or C2.
-- **Degree above 5**: `srf.MaxDegree` is 5, and the Horner form in `bernstein.go` is written
+- **Degree above 5** [21.2]: `srf.MaxDegree` is 5, and the Horner form in `bernstein.go` is written
   out for it (a compile-time check fails for any other). STEP files with degree 6 to 9 surfaces
   need degree reduction or approximation in D3.
-- **Faces whose patches make no grid**: a whole torus (closed both ways), a ring of two patches,
+- **Faces whose patches make no grid** [21.5]: a whole torus (closed both ways), a ring of two patches,
   and a face some of whose patches a Boolean removed entirely are written a patch at a time.
-- **A fillet's patches are faces of their own**: tori and cylinders built by `FilletNetwork` get
+- **A fillet's patches are faces of their own** [14.1]: tori and cylinders built by `FilletNetwork` get
   identities but no sheet key, so a circle's fillet is four faces, each with an edge between.
-- **Edges between faces with no entity** (a fillet's, a Boolean tool's) are hidden in the
+- **Edges between faces with no entity** [14.1] (a fillet's, a Boolean tool's) are hidden in the
   display mesh, which tells faces by entity (`STriMeta.Face` is 0 for both); the topology knows
   them.
-- **A face's name** is its first patch's identity; a script can't name a face of several
+- **A face's name** [14.1] is its first patch's identity; a script can't name a face of several
   patches by another patch's.
 
 ### 11.5: the tier 4 items opened
@@ -1011,7 +1028,8 @@ cones stay on step 10's exact construction; E6 is for the rest.
 
 E6 is 24 weeks of phases plus the interface and scripts, which the fillet group already has;
 the range of 5 to 7 months allows for E6.4, which is the part nobody gets right the first time.
-Tier 4's other items, E12 general shell, F5 tangent contact and G4, stay unplanned.
+Of tier 4's other items, G4 is package 17.4 and a first part of F5 is 13.4; E12 general shell
+and F5 in general are under "Left out". The four planned here are steps 20 to 22.
 
 ### Risks to the plan itself
 
@@ -1025,9 +1043,264 @@ Tier 4's other items, E12 general shell, F5 tangent contact and G4, stay unplann
   contributor need both repositories at matching commits. The workflow pins takigo's commit in
   `TAKIGO_REF`, which has to move whenever `pkg/platform/tkgui` follows a newer takigo.
 
+## Finishing the roadmap (plan of 2026-10-03)
+
+Steps 1 to 11 and I7 are merged. This section gathers everything the document still holds
+open: the follow-ups listed under each step, the items that never had a step, the tier 4 plans
+of 11.5, and what a review of `master` found that no list held. It orders them as steps 12 to
+22, under the rules of steps 1 to 11 ("Rules for every package") and the same definition of
+done.
+
+**The roadmap is finished** when every package below is done, or has been moved to "Left out"
+by a decision recorded there. Nothing else in this document is open: a follow-up above carries
+in square brackets the package that takes it, `[left out]`, or `[closed]`.
+
+### What the review found
+
+Every follow-up was checked against `master` at `4383cbd` on 2026-10-03.
+
+**The state of `master`.** `make ci` passes stage by stage. In the run of all stages at once
+`TestMenuBarKeyboard` (`pkg/platform/tkgui`) failed in the coverage stage, with the sweeps
+below running beside it; the stage alone passes. The test is sensitive to load, which steps 6 to 10 met too, and is package 12.5.
+
+**The guarded sweeps, run over their whole grids** (`SPACESOLVE_SWEEP=1`). Three of the four
+guards allow more than now fails, so three follow-ups had mended without anybody noticing:
+
+| Sweep | Guard allows | Fails on 2026-10-03 | Follow-up |
+|---|---|---|---|
+| `TestCylinderThroughCylinderSweep` | 19 of 54 | 11 of 54: ten unions that fail at 45 degrees and steeper, one difference that leaks | step 5, still open, 13.2 |
+| `TestSphereThroughFaceSweep` | 10 of 135 | 10 of 135, the same points: nine at the largest bulge, one tiny cap | step 5, still open, 13.2 |
+| `TestThreadSweep` | 3 of 400 | 0 of 400 | step 5, closed |
+| `TestSweepGrid` (thin tori) | 7 of 72 | 0 of 72 | step 7, closed |
+
+Which commit mended them was not looked for. The guards are tightened in 12.6, which also
+keeps a guard from going stale again.
+
+**Everything else listed as a follow-up is still open**: none of it was found done in the code.
+
+**Statements that had gone stale**, corrected in place: the Context said steps 9 to 11 still
+needed a spike; the recommended order did not mark steps 4, 5, 7 and 10 as done; "Decisions
+still open" asked a question step 9 had answered; 11.5 called G4 unplanned.
+
+**What no list held:**
+
+- **No licence file.** The About box says GPL version 3 or later, as SolveSpace's does; the
+  repository has no `LICENSE`.
+- **The program still calls itself SolveSpace in places.** `PackageVersion` in
+  `pkg/ui/menuanalyze.go` is SolveSpace's `3.2~cbff7a91`; the About box says "This is
+  SolveSpace version", and the VRML export writes "Exported from SolveSpace".
+- **The desktop files are step 2's leftovers.** `dist/freedesktop/spacesolve-mime.xml`
+  registers `*.slvs` as a SolveSpace model and nothing for `*.spcs`. `make install` takes its
+  icons from the ignored `solvespace/` checkout, so it fails in a fresh clone.
+- **The README** lists `pkg/persist/slvs` as the file format, runs scripts on `sketch.slvs`,
+  and lacks the packages added since (`topo`, `persist/spcs`, `persist/step`, `persist/convert`,
+  `persist/link`, `render/gl`, `script/agent`, `internal`).
+- **Lint debt.** `make lint` reports 99 findings (38 unchecked errors, 36 from staticcheck, 21
+  unused, 4 ineffectual assignments), all in code older than 2026-10-01; CI lints new lines only.
+- **No remote**, so package 1.8 is where it was: the workflow has never run. `TAKIGO_REF` in
+  it is takigo's head today (`e3bad2c`).
+- **B3, auto-constrain on draw**, is in the estimates and was in no tier and no step.
+- **S3, the packed container**, was to follow STEP import. Step 8 links a STEP file by path and
+  nothing is packed.
+- **C4 and half of D4 exist since the port.** A new group goes in after the active one, with
+  the later ones moved down (`Sketch.AddGroupAfterActive`), which is insertion in the middle of
+  the history. Binary STL files link as reference meshes (`pkg/persist/link/stl.go`); text STL
+  and OBJ do not.
+- **Two parallel modes remain.** `ParallelExact` is the default (`pkg/srf/parallel.go`), kept
+  for bits that no longer have a C++ to match.
+- **No user's guide.** `docs` holds the file format and the AI guide; the features of steps 3
+  to 10 are documented by their example scripts only. The examples cover no measurement,
+  freedom, conflict or unit call.
+- **Notes kept outside this document**, from before the roadmap: for threads, tapered and
+  variable pitch, run-out through a face, cosmetic threads, one parametric group in place of
+  four; for scripting, a startup script, `--watch`, menu items made by scripts, zoom to fit.
+  They are under "Left out".
+
+### The order
+
+| Step | Content | Effort | Risk | Needs |
+|---|---|---|---|---|
+| 12. Close the first eleven steps | licence, name, desktop files, README, CI's first run, guards, lint, an audit, a guide | 4.5 wk | Low | the user, for 12.1 and 12.4 |
+| 13. Kernel soundness | the mesher's grid, curved surfaces crossing, what a Boolean leaves, coincident faces, STEP meshes | 10 wk | High | 12.6 |
+| 14. Names, faces and picking | every face picked and seen, names that stay, topology's edge cases | 6 wk | Medium | none |
+| 15. Solid features completed | chamfer by local edit, shell with cylinders, draft, mirror of a body, pattern along a curve | 13.5 wk | High | 14.1, 14.2 |
+| 16. Small features | A2, A3, G5, C4, D1, D4, G2, D5, G1, G3, B3 and four follow-ups | 13.5 wk | Low | none |
+| 17. Regeneration | one parallel mode, F8, F7, G4, S3 | 11 wk | Medium | none |
+| 18. Drawings | H1, H4, H3, H2 | 12.5 wk | High for H2 | 14.2 for H2 |
+| 19. Shading | I2, I6 | 5 wk | Medium | none |
+| 20. Smooth lofts and sweeps | E8, E10 | 11 wk | High | 13 |
+| 21. STEP import as a solid | D3, and the export follow-ups of step 11 | 12 wk | High | 13 |
+| 22. General fillets | E6 | 24 to 30 wk | Very high | 20, 21 |
+
+About 126 weeks at the pace the estimates assume, with E6 at its middle. They are weights, as
+before: steps 1 to 11 were sized at about 75 weeks and were merged between 2026-10-01 and
+2026-10-03.
+
+Why this order. Step 12 is cheap, and nothing can be shown to anybody else before it. Step 13
+comes before any new kernel feature, since D3.3 and E6.5 measure their failure rates on the
+Boolean as it is, and a Boolean that fails 11 of 54 cylinder crossings would be measured into
+them. Steps 14 and 15 mend what users of the shipped features meet today. Steps 16 to 19 do not
+depend on each other or on the kernel, and may be taken in any order, or between the others,
+as the original plan meant its fillers to be. Steps 20 to 22 keep the order 11.5 gave: E8, E10,
+D3, E6.
+
+The estimates of steps 13 to 15 come from no spike. Each package of step 13 opens with a day
+of finding the cause, and its estimate is written into the table again after that day.
+
+### Step 12. Close the first eleven steps
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 12.1 Licence and notices | A `LICENSE` file: GPL version 3 or later, which the port inherits and the About box already states. A `NOTICE` for code ported from other libraries (`pkg/libm`, the QR of `pkg/solver`, `pkg/ttf`), each checked against its source's licence. Needs the user's word, see "Decisions still open". | 0.2 wk | not started |
+| 12.2 Name, version and desktop files | A version of spacesolve's own in one place, printed by the About box, the exports and `spacesolve-cli version`; no "SolveSpace" left in what the program says of itself, the origin and its authors kept. A MIME type for `*.spcs`; `.slvs` is no longer claimed, since it opens through Import only. Icons in `dist/freedesktop`, so `make install` works in a clone without `solvespace/`. | 0.4 wk | not started |
+| 12.3 README | The project structure as it is, `.spcs` throughout, what the program does that SolveSpace does not, and how to build beside a takigo checkout. | 0.2 wk | not started |
+| 12.4 Remote and CI's first run (1.8) | The user makes the GitHub repository and the `TAKIGO_TOKEN` secret. Then push, see the workflow run, and fix what the runner shows; the font package and Go 1.27 there are unverified. | 0.3 wk | not started |
+| 12.5 `TestMenuBarKeyboard` under load | The test waits on timing and fails when the machine is busy. It waits for the event instead, so that `make ci` passes whatever runs beside it. | 0.3 wk | not started |
+| 12.6 Guards as they are | The allowances set to what 2026-10-03 measured: cylinders 11 of 54, threads 0, sweep along a path 0. A run of a whole grid also fails when the grid does better than its allowance, so a guard cannot go stale. | 0.2 wk | not started |
+| 12.7 Lint debt | The 99 findings fixed, or annotated with the reason, in commits that change no golden. `make ci` and the workflow then run `lint` on everything in place of `lint-new`. | 1 wk | not started |
+| 12.8 Audit against the definition of done | One table, a feature of steps 1 to 11 by a row of the checklist: scenario, path pair, example, golden, sweep, benchmark, undo and round trip. Known gaps to start from: no example calls `Doc.Measure`, `Entity.Free`, `Group.Conflicts` or `Doc.SetUnits`. A gap is filled, or recorded as not applying, as for 11.2's B-spline faces, which have no user surface yet. | 0.8 wk | not started |
+| 12.9 User's guide | `docs/guide`, a page per area added since the port: parameters and units, history, section view, mirror, chamfer, fillet, shell, loft, sweep, threads, STEP links, Check Solid. Each is built on its example script and linked from the README. | 1 wk | not started |
+
+Done when: the workflow passes on GitHub, `make ci` passes on `master` with `lint` in it, a
+fresh clone builds and installs, and the audit's table has no empty cell.
+
+### Step 13. Kernel soundness
+
+Each package ends with its sweep's allowance at 0, or with the points that remain listed in
+the test with their cause. Goldens that move are regenerated in their own commit.
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 13.1 The mesher's grid | The grid of a curved patch stops refining at a fixed depth while its trims go on, and the strips between are ear-clipped into slivers: small spheres at fine tolerances and strong twists (step 10). Refinement by the sag in space in place of a cap of 16 rows, with the regeneration benchmarks as the guard, since a deeper cap alone made the loft sweep four times slower and moved the meshes of cones. | 2 wk | not started |
+| 13.2 Curved surfaces crossing | Cylinder through cylinder, 11 of 54, and the sphere cap across the seams, 10 of 135 (step 5). Both come from curves the marching intersector seeds at boundaries. | 3 wk | not started |
+| 13.3 What a Boolean leaves | A difference keeps the cutter's removed surfaces whole, with no trims, so a chamfered block's shell has 11 surfaces for 7 faces, and Check Solid says 12 faces for an open box of 11 (steps 7 and 10); they are dropped. A cut through a fillet loses about 1 mm³ to coarser chords of the cylinder's trim (step 10). | 1.5 wk | not started |
+| 13.4 Coincident faces, a first part of F5 | A part symmetric about a plane, mirrored with the original kept, puts coincident faces through the Boolean, which fails (step 7). That case and a sweep of it; further cases enter as they are found, each with a fixture. | 2 wk | not started |
+| 13.5 STEP reference meshes | Six naked edges at a knife edge, faces through both poles split at the equator, 24 crossing edges in a part 5 mm across, and the triangulator's adjacency as a map (step 8). | 1.5 wk | not started |
+
+Done when: the four guards of 12.6 and the sweeps of steps 7 and 10 stand at 0, or name what
+is left.
+
+### Step 14. Names, faces and picking
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 14.1 Every face can be picked and seen | A face that only has an `Origin` (a loft's, a fillet's, a Boolean tool's) is picked by the mouse as other faces are (steps 9 and 10). The display mesh tells such faces apart, so the edges between them are drawn (step 11). The patches of one fillet get a sheet key, so a circle's fillet is one face and not four (step 11). A face of several patches is named by any of them (step 11). | 2.5 wk | not started |
+| 14.2 Names that stay | A surface's `Origin` comes from what made it and not from its place among its group's surfaces, so a thread made longer does not rename what follows (step 9). A sweep that reorders the edges between two faces along their spread: a name reports and never moves (step 9). | 1.5 wk | not started |
+| 14.3 Topology's edge cases | A non-manifold edge is refused at its place or modelled (step 9, the knife edge). A fixture for a loop through a vertex twice (step 9). A fillet takes an edge that goes on straight through a vertex a Boolean left (step 10). | 1 wk | not started |
+| 14.4 Hover on large meshes | The hidden-edge test casts a ray at the display mesh on every hover (step 9); it gets a tree, or the answer is kept for the view. | 0.5 wk | not started |
+| 14.5 Face normals point out | The side faces of an extrusion carry normals that point into the solid; the section view turns them by the mesh (step 6). They are turned once, where the faces are made, for everything that reads them. | 0.5 wk | not started |
+
+Done when: every face of every golden solid is picked by a click in a scenario, and the naming
+sweep of 9.6 passes with a thread upstream whose length changes.
+
+### Step 15. Solid features completed
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 15.1 Chamfer by local edit | Straight edges go through the fillet's edit, as circular ones do since 10.3, in place of wedges and a Boolean. That brings concave edges, chains through smooth joins (step 10), and two distances, with the face that takes the first named (step 7). | 2.5 wk | not started |
+| 15.2 Shell with cylinders | E11 as it was sized: a cylinder's offset is a cylinder, and a vertex is where the offset surfaces meet, no longer three planes (step 10). Filleted and lofted solids stay refused until 22.1 gives offsets of other surfaces. | 3 wk | not started |
+| 15.3 Shell vertices of four faces | An apex whose faces do not meet in one point once moved gets a new edge (step 10). | 1 wk | not started |
+| 15.4 E13 draft angle | Side faces of an extrusion tilted about a neutral plane, by `ReplaceSurface` on flat faces; cylinders become cones. | 4.2 wk | not started |
+| 15.5 Mirror of a body | A mirror reflects its source group; an option reflects the solid so far (step 7). | 1 wk | not started |
+| 15.6 E2 pattern along a curve | Step and repeat along the path the sweep of 7.4 takes. | 1.8 wk | not started |
+| 15.7 The message of a stopped chain | A fillet whose radius stops its chain at a rounded corner says so, in place of naming the curved face (step 10). | 0.1 wk | not started |
+
+Done when: each has its sweep at a rate set before it starts, as in step 10.
+
+### Step 16. Small features
+
+None needs the kernel. Efforts include the 20%, as in "Items outside the numbered steps".
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 16.1 A3 dimensions by name | A constraint's value is read in an expression by the constraint's name. | 0.6 wk | not started |
+| 16.2 A2 configurations | Named sets of parameter values, one active. | 1.2 wk | not started |
+| 16.3 G5 motion study | One parameter driven through a range, with the frames exported. | 1.8 wk | not started |
+| 16.4 C4 insert a group mid-history | Exists since the port. Left: a scenario, a path pair, and a test that an inserted group can't be referred to by an earlier one, by step 4's dependency check. | 0.2 wk | not started |
+| 16.5 D1 3MF export | | 0.6 wk | not started |
+| 16.6 D4 text STL and OBJ as reference meshes | Binary STL links already. | 0.6 wk | not started |
+| 16.7 G2 bill of materials | From link groups, to the text window and a CSV file. | 0.6 wk | not started |
+| 16.8 D5 STEP export with assembly structure | A product per linked part, with its colour. | 1.2 wk | not started |
+| 16.9 G1 mate shortcuts | Concentric, flush and hinge, from existing constraints. | 2.4 wk | not started |
+| 16.10 G3 interference by shells | The check between linked parts uses their shells, not their triangles. | 1.2 wk | not started |
+| 16.11 B3 auto-constrain on draw | More inference than horizontal and vertical: coincident, tangent, parallel, perpendicular, equal. | 1.8 wk | not started |
+| 16.12 The section's cap | A style for it, with a hatch (step 6). | 0.4 wk | not started |
+| 16.13 A linked STEP file's place | Placed where it was drawn, not at the middle of the view (step 8). | 0.3 wk | not started |
+| 16.14 What an AI program sees | `render` of the view as the window shows it and of a chosen group; what the mouse hovers, in `get_drawing` (I7). | 0.6 wk | not started |
+
+### Step 17. Regeneration
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 17.1 One parallel mode | The fast mode becomes the only one; `ParallelExact` goes, and the tests that compare the two. Goldens that move in their last bits are regenerated in their own commit. | 0.3 wk | not started |
+| 17.2 F8 parallel `MergeCoincidentSurfaces` | No longer bound to the serial order. | 1 wk | not started |
+| 17.3 F7 regeneration off the UI thread | With cancel, and the window drawing the last good solid meanwhile. | 3.6 wk | not started |
+| 17.4 G4 large assemblies | Links that load a mesh and its points without regenerating the part, and meshes kept between sessions. It was in tier 4 unplanned; at L and medium risk it is sized like its neighbours. | 4.8 wk | not started |
+| 17.5 S3 packed container | A zip of the text model with its linked parts and imported geometry, which is also where 17.4's meshes are kept. | 1.2 wk | not started |
+
+### Step 18. Drawings
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 18.1 H1 sheet with standard views | | 3.6 wk | not started |
+| 18.2 H4 title block and templates | | 1.2 wk | not started |
+| 18.3 H3 section and detail views | With the hatch of 16.12. | 2.4 wk | not started |
+| 18.4 H2 associative dimensions | A dimension holds the names of the edges it measures (step 9's names, made stable by 14.2). | 5.4 wk | not started |
+
+### Step 19. Shading
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 19.1 I2 shader backend | | 3.6 wk | not started |
+| 19.2 I6 appearance beyond a colour | | 1.2 wk | not started |
+
+### Steps 20 to 22. The tier 4 items
+
+Their plans are under "11.5: the tier 4 items opened" and are not repeated. What the review
+adds to them:
+
+| Step | Packages | Added from the follow-ups | Effort |
+|---|---|---|---|
+| 20. Smooth lofts and sweeps | 20.1 to 20.4 are E8.1 to E8.4; 20.5 to 20.8 are E10.1 to E10.4 | 20.1 also splits curves so that profiles of unequal counts match (step 10, loft matching); lofts through more than two profiles are E8 itself, 0.5 wk | 11 wk |
+| 21. STEP import as a solid | 21.1 to 21.4 are D3.1 to D3.4 | 21.2 takes degree above 5 (step 11). 21.5: on export, knots removed where patches join with matching derivatives, and faces whose patches make no grid written as one surface where they can be (step 11), 1.5 wk. 21.6: tessellated STEP read as a reference mesh (step 8), 1 wk | 12 wk |
+| 22. General fillets | 22.1 to 22.5 are E6.1 to E6.5 | 22.2 closes fillets between two curved faces, and 22.4 the corners step 10 refuses: more than three faces, convex meeting concave, a circular edge meeting a rounded one at an angle, unequal radii | 24 to 30 wk |
+
+### Left out
+
+Proposed on 2026-10-03; the user decides. Each stays out until its reason stops holding.
+
+| Item | From | Reason |
+|---|---|---|
+| E12 general shell | tier 4 | Open ended. After 22.1 has offsets of curved surfaces, a part of it (faces whose offsets do not cross themselves) can be sized. |
+| F5 tangent and coincident contact in general | tier 4 | It never finishes. 13.4 takes the first case; each later one enters as a fixture with a sweep. |
+| 9.2 topology made by the kernel | step 9 | Derived topology costs 7 ms for 270 faces, and no feature has needed identities kept through a Boolean. |
+| OpenGL on Windows and macOS | step 6 | spacesolve has been built and tested on Linux only. takigo has backends for both; a port is a project of its own, and the GL context a small part of it. |
+| The section saved in files | step 6 | It is view state. It goes with saved views, which nothing plans. |
+| Open thread ends in STEP | step 8 | The file is open there; closing it would invent geometry. |
+| CSG and swept solids in STEP | step 8 | Reported by name. No vendor file in the corpus has them. |
+| Benchmarks moving with code layout | step 7 | An observation, not work. |
+| A chat window, MCP resources and prompts, an HTTP transport, a sandbox | I7 | "An MCP server, and nothing else" stands until a user needs otherwise. |
+| `make ai-eval` | I7 | It needs a model and an account, outside CI. Worth taking when the primer is next changed. |
+| Tolerances per edge and vertex | "Decisions taken" | 21.2 heals within a file's tolerance. More only if 21.3's measured rate asks for it. |
+| Generated entities left out of `.spcs` | the format's design | Possible behind the version number; no need has come up. |
+| Threads: tapered and variable pitch, run-out, cosmetic threads, one parametric group | notes of 2026-09-30 | Never asked for. |
+| Scripting: a startup script, `--watch`, menu items made by scripts, zoom to fit | notes of 2026-10-01 | Never asked for. |
+| The bit-exact scaffolding: `pkg/libm`, `CxxSort`, the FMA build rules | "Decisions taken" | Harmless where it is. Replacing it moves every golden for nothing. |
+| Sheet metal, direct modelling, tolerancing, CAM, simulation | J | Unchanged. |
+
 ## Decisions still open
 
-- **Topology first or surface type first** at step 9. Recommended: topology first, since fillets on planes and cylinders need it and do not need the new surface type.
+Topology first or surface type first, the one question here before, was taken as recommended:
+topology in step 9, the surface type in step 11. What is open now is the user's, and all of it
+comes from "Finishing the roadmap":
+
+- **The licence (12.1).** A port of SolveSpace inherits GPL version 3 or later, and the About
+  box says so. To confirm, before the repository is pushed anywhere.
+- **The remote (12.4).** Where the repository goes and whether it is public. CI was prepared
+  for GitHub, with takigo private beside it.
+- **A version number (12.2).** Proposed: 0.1.0 when step 12 is done.
+- **"Left out".** Every row is a proposal; a row the user wants back gets a package.
+- **What the review took in without being asked**: B3 (16.11), G4 (17.4) and S3 (17.5).
 
 ## How to check an estimate before committing to it
 
