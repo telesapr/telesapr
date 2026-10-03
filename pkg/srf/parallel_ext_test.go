@@ -9,10 +9,13 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// TestFixturesReachCurveRedo checks that the fixtures have Booleans in
-// which a surface's exact intersection curve follows another
-// surface's, so that TestParallelSameAsSerial (pkg/persist/slvs) covers
-// making such a curve over.
+// TestFixturesReachCurveRedo logs the fixtures in whose Booleans a
+// surface's exact intersection curve follows another surface's, which
+// TestParallelSameAsSerial (pkg/persist/slvs) then covers making over.
+// Since roadmap 13.3 drops the surfaces a Boolean leaves untrimmed,
+// which were what met the same curve twice, no fixture does; the
+// making over is covered by TestIntersectionCurvesAtOnceSameAsInOrder in
+// this package.
 func TestFixturesReachCurveRedo(t *testing.T) {
 	before := srf.SinkRedone()
 	err := filepath.WalkDir(filepath.Join("..", "..", "testdata"), func(path string, d fs.DirEntry, err error) error {
@@ -34,7 +37,5 @@ func TestFixturesReachCurveRedo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if srf.SinkRedone() == before {
-		t.Error("no fixture has an exact curve made over")
-	}
+	t.Logf("%d curves made over in all", srf.SinkRedone()-before)
 }

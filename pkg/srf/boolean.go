@@ -51,6 +51,46 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	// And clean up the piecewise linear things we made as a calculation aid
 	a.CleanupAfterBoolean()
 	b.CleanupAfterBoolean()
+
+	if !s.BooleanFailed {
+		s.dropUntrimmed()
+	}
+}
+
+// dropUntrimmed removes the surfaces a Boolean left with no trim, such
+// as the faces of a cutter that lie wholly outside what it cut, and the
+// curves on them that no trim left uses; a kept surface may be trimmed
+// by a curve whose other surface was dropped, where coincident faces
+// merged. C++ kept them: they mesh to nothing, but they counted as
+// faces, and an exporter of surfaces wrote them out whole (roadmap
+// 13.3).
+func (s *SShell) dropUntrimmed() {
+	dropped := map[core.HSSurface]bool{}
+	used := map[core.HSCurve]bool{}
+	kept := s.Surface[:0]
+	for _, sf := range s.Surface {
+		if sf.TrimBuilt && len(sf.Trim) == 0 {
+			dropped[sf.H] = true
+			continue
+		}
+		for _, t := range sf.Trim {
+			used[t.Curve] = true
+		}
+		kept = append(kept, sf)
+	}
+	if len(dropped) == 0 {
+		return
+	}
+	clear(s.Surface[len(kept):])
+	s.Surface = kept
+	keptc := s.Curve[:0]
+	for _, c := range s.Curve {
+		if used[c.H] || (!dropped[c.SurfA] && !dropped[c.SurfB]) {
+			keptc = append(keptc, c)
+		}
+	}
+	clear(s.Curve[len(keptc):])
+	s.Curve = keptc
 }
 
 // MakeFromAssemblyOf copies all the surfaces and curves from two

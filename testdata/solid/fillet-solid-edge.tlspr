@@ -1245,34 +1245,6 @@ shell {
     trim 0xc backward 20 0 0 20 0 10
     trim 0x9 forward 20 10 10 20 10 0
   }
-  surface 0x7 {
-    color 100 100 100 255
-    face 0x8005002c
-    degree 1 1
-    ctrl 0 0 5 -1 20 1
-    ctrl 0 1 15 -1 20 1
-    ctrl 1 0 5 4 20 1
-    ctrl 1 1 15 4 20 1
-  }
-  surface 0x8 {
-    color 100 100 100 255
-    face 0x8005002d
-    degree 1 1
-    ctrl 0 0 15 -1 0 1
-    ctrl 0 1 5 -1 0 1
-    ctrl 1 0 15 4 0 1
-    ctrl 1 1 5 4 0 1
-  }
-  surface 0x9 {
-    color 100 100 100 255
-    face 0x80050010
-    sheet 0x90000
-    degree 1 1
-    ctrl 0 0 5 -1 20 1
-    ctrl 0 1 5 -1 0 1
-    ctrl 1 0 15 -1 20 1
-    ctrl 1 1 15 -1 0 1
-  }
   surface 0xa {
     color 100 100 100 255
     face 0x80050019
@@ -1494,7 +1466,7 @@ shell {
   curve 0x11 {
     exact
     degree 1
-    surfaces 0x8 0xd
+    surfaces 0xd 0xa
     ctrl 0 5 -1 0 1
     ctrl 1 5 4 0 1
     vertex 5 -1 0
@@ -1514,7 +1486,7 @@ shell {
   curve 0x14 {
     exact
     degree 1
-    surfaces 0x8 0xd
+    surfaces 0xd 0xb
     ctrl 0 5 4 0 1
     ctrl 1 15 4 0 1
     vertex 5 4 0

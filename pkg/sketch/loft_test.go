@@ -139,10 +139,12 @@ func ngon(d *api.Doc, n int, r, z float64) {
 // Lofts between regular polygons, and circles, scaled and turned by a
 // curve either way, against twistedVolume: exactly when the sides are
 // flat, within the mesh's error when they are saddles or curved.
-// Triangles turned by a curve twist by a third of a turn, past what the
-// mesher follows (its grid stops refining a twist at 16 rows, and the
-// rows along the trim are ear-clipped), so they run unturned; see
-// ROADMAP-JUMP.md, step 10 follow-ups.
+// Triangles turned by a curve twist by a third of a turn. Since roadmap
+// 13.1 the mesher's grid follows a twist to 32 rows, and they are
+// sound; but their volume is allowed 2%, not 1%, since the grid has
+// only four columns along a side's straight edges, and on a side twisted
+// that far the diagonals of its quads bias the volume (+1.2% and -0.7%
+// for the two turns of the largest, which are mirror images).
 func TestLoftSweep(t *testing.T) {
 	loft := func(p sweep.Point) error {
 		n, c, h, turn := int(p.Float("sides")), p.Float("scale"), p.Float("height"), int(p.Float("turn"))
@@ -168,6 +170,9 @@ func TestLoftSweep(t *testing.T) {
 		if n == 0 || turn != 0 {
 			allow = 0.01 * want
 		}
+		if n == 3 && turn != 0 {
+			allow = 0.02 * want
+		}
 		switch {
 		case l.Problem() != "":
 			return fmt.Errorf("problem: %s", l.Problem())
@@ -185,7 +190,7 @@ func TestLoftSweep(t *testing.T) {
 		Sample:      20,
 	}.Run(loft).Require(t)
 	sweep.Grid{
-		Axes:        []sweep.Axis{sweep.Floats("sides", 3), scales, heights, sweep.Floats("turn", 0)},
+		Axes:        []sweep.Axis{sweep.Floats("sides", 3), scales, heights, sweep.Floats("turn", -1, 0, 1)},
 		MaxFailRate: 0,
 		Sample:      5,
 	}.Run(loft).Require(t)

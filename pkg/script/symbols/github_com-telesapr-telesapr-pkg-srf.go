@@ -79,6 +79,7 @@ func init() {
 		"STriangleFrom":               reflect.ValueOf(srf.STriangleFrom),
 		"STrimByEntireCurve":          reflect.ValueOf(srf.STrimByEntireCurve),
 		"STrimByEntireCurveFromShell": reflect.ValueOf(srf.STrimByEntireCurveFromShell),
+		"SameShell":                   reflect.ValueOf(srf.SameShell),
 		"SetChordTolMm":               reflect.ValueOf(srf.SetChordTolMm),
 		"SetExportMode":               reflect.ValueOf(srf.SetExportMode),
 		"SetMaxSegments":              reflect.ValueOf(srf.SetMaxSegments),

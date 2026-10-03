@@ -128,3 +128,21 @@ func BenchmarkReadNIST5(b *testing.B) {
 		}
 	}
 }
+
+// TestKnifeEdgeReadBack reads the export of the boolean_knife_edge
+// fixture, whose faces meet along an edge four times. One face's loop
+// has a vertex inside an edge its neighbour runs past, a T-junction the
+// Boolean left; the mesh is mended there and has no naked edge
+// (roadmap 13.5). The knife edge itself, shared by four faces, is what
+// the check still finds crossing.
+func TestKnifeEdgeReadBack(t *testing.T) {
+	path := filepath.Join("..", "..", "..", "testdata", "export", "group", "boolean_knife_edge", "normal", "surfaces.step")
+	res, err := ReadFile(path, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := check.Solid(nil, &res.Mesh)
+	if r.NakedEdges != 0 || math.Abs(r.Volume-1.83039) > 1e-4 {
+		t.Errorf("%d naked edges, volume %g", r.NakedEdges, r.Volume)
+	}
+}

@@ -150,9 +150,8 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 			sweep.Floats("dx", 0, 0.37, 1.9),
 			sweep.Floats("dy", 0, -0.61, 2.3),
 		},
-		MaxFailRate:       sphereFaceMaxFailRate,
-		Sample:            12,
-		SampleMaxFailRate: 1.0 / 12,
+		MaxFailRate: sphereFaceMaxFailRate,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		r := p.Float("r")
@@ -162,12 +161,15 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 }
 
 // sphereFaceMaxFailRate is the fraction of TestSphereThroughFaceSweep's
-// grid allowed to fail: what the whole grid gave on 2026-10-02 and
-// again on 2026-10-03, 10 of 135, against 99 before the closed loops were searched for. Nine are
-// the intersection at the largest bulge, whose cap crosses the sphere's
-// seams and which failed before as well; one is a cap so small that it
-// triangulates flat against the face. The sample of 12 had one.
-const sphereFaceMaxFailRate = 10.0 / 135
+// grid allowed to fail: 1 of 135 since roadmap 13.2, a cap so small
+// (bulge 0.02) that it triangulates flat against the face. The nine
+// intersections at the largest bulge that failed before laid a sliver
+// of the sphere's band flat on the plane's face: an ear of three
+// consecutive rim points, convex in the patch's uv, turned over in xyz
+// (folded in triangulate.go). It was 10 on 2026-10-02 and 2026-10-03,
+// and 99 before the closed loops were searched for. The sample of 12
+// has none.
+const sphereFaceMaxFailRate = 1.0 / 135
 
 // crossedCylinder is a solid cylinder of radius r, along x through the
 // point (0, dy, 0) turned by angle degrees about y, long enough to
@@ -209,6 +211,38 @@ func cylinderCase(r, dy, angle float64) error {
 	return nil
 }
 
+// TestSphereCapNoFold intersects a sphere with the box below a plane
+// that cuts it well above its middle: the band of sphere next to the
+// flat cap must not lay a triangle of three rim points flat on the
+// cap's face, which overlaps it (roadmap 13.2).
+func TestSphereCapNoFold(t *testing.T) {
+	sweepChordTol(t)
+	r := 7.0
+	box := extrudedBox(geom.Vector{X: -20, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: r * 0.6})
+	var out SShell
+	out.MakeFromBoolean(box, patchUpSphere(r, geom.Vector{}), SurfaceInter)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		t.Fatalf("failed %v, sound %v", out.BooleanFailed, meshIsSound(&out))
+	}
+}
+
+// TestCylinderAcrossEndSeam crosses the upright cylinder at 45 degrees
+// so that the ellipse where the crossed one meets the upright's flat
+// end runs across the seam between two quarters of that end. Each
+// quarter must get its own part of the curve, split at the seam, or
+// neither quarter's trim closes and the union fails (roadmap 13.2).
+func TestCylinderAcrossEndSeam(t *testing.T) {
+	sweepChordTol(t)
+	if err := cylinderCase(4, 0.7, 60); err != nil {
+		t.Fatal(err)
+	}
+	var out SShell
+	out.MakeFromBoolean(lathedTube(0, 5, 0, 20), crossedCylinder(4, 0.7, 45), SurfaceUnion)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		t.Fatalf("union: failed %v, sound %v", out.BooleanFailed, meshIsSound(&out))
+	}
+}
+
 // TestCylinderThroughCylinderSweep crosses cylinders over the second's
 // radius, its offset from the first's axis and its angle to the first.
 func TestCylinderThroughCylinderSweep(t *testing.T) {
@@ -221,7 +255,7 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 		},
 		MaxFailRate:       cylinderMaxFailRate,
 		Sample:            10,
-		SampleMaxFailRate: 2.0 / 10,
+		SampleMaxFailRate: 1.0 / 10,
 	}
 	grid.Run(func(p sweep.Point) error {
 		return cylinderCase(p.Float("r"), p.Float("dy"), p.Float("angle"))
@@ -229,13 +263,19 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 }
 
 // cylinderMaxFailRate is the fraction of TestCylinderThroughCylinderSweep's
-// grid allowed to fail: what the whole grid gave on 2026-10-03, 11 of
-// 54, ten unions at 45 degrees and steeper and one difference that
-// leaks. On 2026-10-02 it was 19, the same points before and after the
-// kernel fixes of roadmap step 5; which commit mended eight was not
-// looked for. Their curves are the ones the boundary-seeded marching
-// follows (roadmap 13.2). The sample of 10 has two.
-const cylinderMaxFailRate = 11.0 / 54
+// grid allowed to fail: 2 of 54 since roadmap 13.2, two differences
+// (r=4 at dy=0, 30 degrees, and dy=0.7, 45 degrees) where the crossed
+// cylinder's seam pierces the upright wall: the wall's strip next to
+// the hole is ear-clipped into a triangle the full height of the wall,
+// whose edge passes within a hair of that point, and the hole's edges
+// from it cross that triangle. The triangulation's, not the
+// intersection's (roadmap 13.1). The nine unions that
+// failed before, from 45 degrees up, had their curve leave a quarter
+// of the upright cylinder's flat end across the seam to the next
+// quarter unsplit, since a ray cast finds no crossing with a patch
+// the curve lies in (coplanarTrimCrossings). It was 11 on 2026-10-03
+// and 19 on 2026-10-02. The sample of 10 has one.
+const cylinderMaxFailRate = 2.0 / 54
 
 // sweepChordTol sets the chord tolerance the sweeps run at: fine enough
 // that the volumes of the meshes add up as the solids' do.

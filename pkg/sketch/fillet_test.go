@@ -226,6 +226,28 @@ func TestFilletThenBoolean(t *testing.T) {
 	}
 }
 
+// A cut through a fillet loses no more to its chords than the fillet's
+// own mesh does over what is left of it. At the default tolerance it
+// lost 0.34 mm³ more, a fiftieth of a percent, which a fine one takes
+// away: the chords of the arcs the cut makes on the cylinder, not a
+// fault of the Boolean (roadmap 13.3).
+func TestFilletCutChords(t *testing.T) {
+	d := api.New()
+	fineChordFillet(d)
+	ex := block(d, 0, 0, 20, 10, 10)
+	f := d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
+	a := 4 * (1 - math.Pi/4)
+	filletErr := f.Check().Volume - (2000 - 20*a)
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Rect(api.V(5, -1, 0), api.V(8, 4, 0))
+	g := d.Extrude(20, "")
+	g.SetCombine(api.Difference)
+	cutErr := g.Check().Volume - (2000 - 20*a - (120 - 3*a))
+	if extra := cutErr - filletErr*17/20; math.Abs(extra) > 0.005 {
+		t.Errorf("the cut loses %g mm³ more than the fillet's chords (fillet %g, cut %g)", extra, filletErr, cutErr)
+	}
+}
+
 // boxCornerLoss is what fillets of radius r take off a box: each edge its
 // cross section times its length, less at a corner where two meet the
 // part both count, and at one where three meet, the corner cube they

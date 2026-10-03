@@ -484,7 +484,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	c.removeTaggedPoints()
 
 	// Handle simple triangle fans all at once. This pass is optional.
-	if srf.DegM == 1 && srf.DegN == 1 {
+	if srf.flat() {
 		for i := range c.Points {
 			c.Points[i].Tag = 0
 		}
@@ -554,6 +554,8 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		ln := len(c.Points)
 		bestEar := -1
 		bestChordTol := geom.VeryPositive
+		// The first folded ear, taken when there is no other.
+		fallback := -1
 		// Alternate the starting position so we generate strip-like
 		// triangulations instead of fan-like
 		toggle = !toggle
@@ -571,7 +573,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 				}
 			}
 			if c.Points[ear].Ear == EarIsEar {
-				if srf.DegM == 1 && srf.DegN == 1 {
+				if srf.flat() {
 					// This is a plane; any ear is a good ear.
 					bestEar = ear
 					break
@@ -581,6 +583,12 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 				// surface.
 				prev := c.Points[wrapIdx(i+offset-1, ln)].P
 				next := c.Points[wrapIdx(i+offset+1, ln)].P
+				if folded(srf, prev, c.Points[ear].P, next) {
+					if fallback < 0 {
+						fallback = ear
+					}
+					continue
+				}
 				tol := srf.ChordToleranceForEdge(prev, next)
 				if tol < bestChordTol-scaledEps {
 					bestEar = ear
@@ -592,6 +600,9 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 			}
 		}
 		if bestEar < 0 {
+			bestEar = fallback
+		}
+		if bestEar < 0 {
 			// couldn't find an ear! fail
 			return
 		}
@@ -601,6 +612,49 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	if len(c.Points) == 3 {
 		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
+}
+
+// flat reports whether the surface is a plane: of degree 1 both ways,
+// its four corners in one plane. A patch of degree 1 both ways whose
+// corners are not, as a loft's side between two straight edges turned
+// against each other, is a twisted ruled face, and is meshed as curved
+// surfaces are: as a plane it would be two triangles whatever the
+// tolerance.
+func (s *SSurface) flat() bool {
+	if s.DegM != 1 || s.DegN != 1 {
+		return false
+	}
+	a, b, c, d := s.Ctrl[0][0], s.Ctrl[1][0], s.Ctrl[0][1], s.Ctrl[1][1]
+	n := b.Minus(a).Cross(c.Minus(a))
+	if n.Magnitude() < geom.LengthEps*geom.LengthEps {
+		n = b.Minus(d).Cross(c.Minus(d))
+		if n.Magnitude() < geom.LengthEps*geom.LengthEps {
+			return true
+		}
+	}
+	return math.Abs(d.Minus(a).Dot(n.WithMagnitude(1))) < geom.LengthEps
+}
+
+// folded reports whether the triangle a, b, c, in uv, turns over on the
+// surface: whether in xyz it faces against the surface's normal at its
+// middle, where the uv triangle's own turn says it should face along
+// it. Three points of one curved trim, consecutive on it, can make
+// such an ear, convex in uv where the curve bends one way and lying in
+// xyz on the far side of the chord, over the face beyond the trim: a
+// sphere's band cut by a plane would lay a sliver flat on the plane's
+// face.
+func folded(srf *SSurface, a, b, c geom.Vector) bool {
+	uvTurn := b.Minus(a).Cross(c.Minus(a)).Z
+	if math.Abs(uvTurn) < geom.LengthEps*geom.LengthEps {
+		return false
+	}
+	pa, pb, pc := srf.PointAt(a.X, a.Y), srf.PointAt(b.X, b.Y), srf.PointAt(c.X, c.Y)
+	n := pb.Minus(pa).Cross(pc.Minus(pa))
+	if n.Magnitude() < geom.LengthEps*geom.LengthEps {
+		return false
+	}
+	mid := a.Plus(b).Plus(c).ScaledBy(1.0 / 3)
+	return n.Dot(srf.NormalAt(mid.X, mid.Y))*uvTurn < 0
 }
 
 // ChordToleranceForEdge returns how far the surface deviates from the
@@ -680,7 +734,7 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 	}
 
 	step := 1.0 / float64(GetMaxSegments())
-	if ((vf-vs) < step || worst < ChordTolMm()) && (worstTwist > 0.999 || depth > 3) {
+	if ((vf-vs) < step || worst < ChordTolMm()) && (worstTwist > 0.999 || depth >= gridMaxTwistDepth) {
 		*l = append(*l, vf)
 	} else {
 		s.MakeTriangulationGridInto(l, vs, (vs+vf)/2, swapped, depth+1)
@@ -1006,3 +1060,11 @@ func (el *SEdgeList) AnyEdgeCrossings(a, b geom.Vector, ppi *geom.Vector, spl *S
 	}
 	return cnt
 }
+
+// gridMaxTwistDepth is how many times MakeTriangulationGridInto halves
+// a span for twist, so a twisted face gets up to 32 rows. C++ stopped
+// at 16 (depth > 3), which a ruled face turned by a third of a turn
+// outruns: the rows along its trims were ear-clipped into triangles
+// that cross (roadmap 13.1). Each level doubles the rows of every
+// twisted face, and with them the time to mesh it.
+const gridMaxTwistDepth = 5

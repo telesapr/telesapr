@@ -246,6 +246,10 @@ func FromModel(schema string, m *Model, o Options) *Result {
 			}
 		}
 	}
+	// Where one face's loop has a vertex on an edge that the next face
+	// runs past, as a Boolean can leave in the file it was exported
+	// from, the meshes meet at a T-junction (roadmap 13.5).
+	res.Mesh.SnapTJunctions()
 	rep.Triangles = len(res.Mesh.Triangles)
 	return res
 }

@@ -737,14 +737,6 @@ shell {
     trim 0xc backward 20 0 0 20 0 10
     trim 0x9 forward 20 10 10 20 10 0
   }
-  surface 0x7 {
-    color 100 100 100 255
-    degree 1 1
-    ctrl 0 0 1 1 10 1
-    ctrl 0 1 19 1 10 1
-    ctrl 1 0 1 9 10 1
-    ctrl 1 1 19 9 10 1
-  }
   surface 0x8 {
     color 100 100 100 255
     degree 1 1

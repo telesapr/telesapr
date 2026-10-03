@@ -1,6 +1,8 @@
 package srf
 
 import (
+	"math"
+
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/par"
@@ -354,6 +356,11 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 			}
 			il = kept
 		}
+		// The surfaces the segment lies in, as the next patch of a flat
+		// face does across a seam, are crossed nowhere AllPointsIntersecting
+		// can see; the segment is split where it crosses their trims.
+		il = coplanarTrimCrossings(il, c, agnstA, srfA, prev.P, p.P)
+		il = coplanarTrimCrossings(il, c, agnstB, srfB, prev.P, p.P)
 		// Now add any vertex that is on this segment
 		lineStart := prev.P
 		lineDirection := p.P.Minus(prev.P)
@@ -389,6 +396,117 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 		prev = p
 	}
 	return ret
+}
+
+// coplanarTrimCrossings appends to il the points where the segment
+// a-b of the intersection curve c, which trims own, a flat surface of
+// sh, crosses a trim of another flat surface of sh in the same plane,
+// facing the same way: another patch of the same face, as a lathe's
+// flat end is four. That patch is parallel to the segment, so a ray
+// cast finds no crossing; but where its trim, the seam, runs across
+// the segment, the curve must be split there for each patch to keep
+// its own part, or neither closes its trim. On an exact curve the
+// point is moved onto the curve, where it crosses the trim's line.
+func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a, b geom.Vector) []SInter {
+	if sh == nil || own == nil || own.DegM != 1 || own.DegN != 1 {
+		return il
+	}
+	// At the middle: a patch may be degenerate at a corner, as a
+	// quarter of a disc is at the centre.
+	n := own.NormalAt(0.5, 0.5)
+	if n.Magnitude() < geom.LengthEps {
+		return il
+	}
+	n = n.WithMagnitude(1)
+	d := n.Dot(own.PointAt(0, 0))
+	if math.Abs(n.Dot(a)-d) > splitEndTol || math.Abs(n.Dot(b)-d) > splitEndTol {
+		return il
+	}
+	// Only the patches of own's shell: a coplanar face of the other
+	// operand is the business of the coincident-surface handling.
+	mine := false
+	for i := range sh.Surface {
+		if &sh.Surface[i] == own {
+			mine = true
+			break
+		}
+	}
+	if !mine {
+		return il
+	}
+	ab := b.Minus(a)
+	for i := range sh.Surface {
+		ss := &sh.Surface[i]
+		if ss == own || ss.DegM != 1 || ss.DegN != 1 {
+			continue
+		}
+		sn := ss.NormalAt(0.5, 0.5)
+		if sn.Magnitude() < geom.LengthEps || sn.WithMagnitude(1).Dot(n) < 1-geom.LengthEps ||
+			math.Abs(n.Dot(ss.PointAt(0, 0))-d) > splitEndTol {
+			continue
+		}
+		for j := range ss.Trim {
+			tc := sh.FindCurve(ss.Trim[j].Curve)
+			if tc == nil {
+				continue
+			}
+			for k := 1; k < len(tc.Points); k++ {
+				q0, q1 := tc.Points[k-1].P, tc.Points[k].P
+				dq := q1.Minus(q0)
+				den := ab.Cross(dq).Dot(n)
+				if math.Abs(den) < geom.LengthEps*ab.Magnitude()*dq.Magnitude() {
+					continue
+				}
+				sa := q0.Minus(a).Cross(dq).Dot(n) / den
+				uq := q0.Minus(a).Cross(ab).Dot(n) / den
+				if uq < -geom.LengthEps || uq > 1+geom.LengthEps {
+					continue
+				}
+				p := a.Plus(ab.ScaledBy(sa))
+				if c.IsExact {
+					p = exactCrossing(&c.Exact, a, b, q0, dq, n)
+				}
+				if sa <= 0 || sa >= 1 || p.EqualsTol(a, splitEndTol) || p.EqualsTol(b, splitEndTol) {
+					continue
+				}
+				il = append(il, SInter{P: p, Srf: ss})
+			}
+		}
+	}
+	return il
+}
+
+// exactCrossing is where the exact curve sb, between its points nearest
+// a and b, crosses the line through q0 along dq in the plane of normal
+// n, found by bisection; the chord's crossing when the curve doesn't
+// change side there.
+func exactCrossing(sb *SBezier, a, b, q0, dq, n geom.Vector) geom.Vector {
+	side := func(t float64) float64 { return sb.PointAt(t).Minus(q0).Cross(dq).Dot(n) }
+	ta, _ := sb.ClosestPointTo(a, true)
+	tb, _ := sb.ClosestPointTo(b, true)
+	fa, fb := side(ta), side(tb)
+	if fa == 0 {
+		return sb.PointAt(ta)
+	}
+	if fa*fb > 0 {
+		// No change of side: the chord's crossing, by the same test.
+		ab := b.Minus(a)
+		s := q0.Minus(a).Cross(dq).Dot(n) / ab.Cross(dq).Dot(n)
+		return a.Plus(ab.ScaledBy(s))
+	}
+	for range 60 {
+		tm := (ta + tb) / 2
+		fm := side(tm)
+		if fm == 0 {
+			return sb.PointAt(tm)
+		}
+		if fm*fa < 0 {
+			tb = tm
+		} else {
+			ta, fa = tm, fm
+		}
+	}
+	return sb.PointAt((ta + tb) / 2)
 }
 
 // findVertsOnCurve appends to `out` every trim endpoint in `sh`

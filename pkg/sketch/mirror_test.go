@@ -36,14 +36,15 @@ func TestMirrorApart(t *testing.T) {
 }
 
 // A block touching the plane joins its reflection into one block of six
-// faces: each face across the plane is two patches, one per half, the
-// reflection's swept from the same line as the original's.
+// faces of one patch each. The two faces that met on the plane are
+// left by the union with no trim, and dropped (roadmap 13.3); before,
+// they made 8 patches for 6 faces.
 func TestMirrorTouching(t *testing.T) {
 	d := api.New()
 	block(d, 0, 0, 10, 10, 5)
 	m := d.Mirror(d.Workplane("YZ"), "")
 	r := m.Check()
-	if !r.Sound() || math.Abs(r.Volume-1000) > 1e-6 || r.Faces != 6 || r.Patches != 8 {
+	if !r.Sound() || math.Abs(r.Volume-1000) > 1e-6 || r.Faces != 6 || r.Patches != 6 {
 		t.Fatalf("mirror of a block on the plane: %s", r.String())
 	}
 	// Without the original, only the reflection is left.
@@ -251,4 +252,73 @@ func TestMirrorSweep(t *testing.T) {
 		}
 		return nil
 	}).Require(t)
+}
+
+// TestMirrorSymmetricSweep mirrors parts symmetric about the plane, with
+// the original kept: a circle on it, a block with a hole on it or a
+// pair either side, and a slot, over their sizes. Each reflection is
+// the part itself, which a union would put through as coincident
+// faces, curved ones too; the mirror keeps the part as it is. The rate
+// allowed, none, was set before (roadmap 13.4). An L whose bounding
+// box is symmetric but which is not, reflected, joins its reflection.
+func TestMirrorSymmetricSweep(t *testing.T) {
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Strings("shape", "circle", "hole", "holes", "slot"),
+			sweep.Floats("size", 1, 4, 15),
+			sweep.Floats("depth", 0.5, 5),
+			sweep.Strings("plane", "YZ", "ZX"),
+		},
+		MaxFailRate: 0,
+		Sample:      12,
+	}
+	grid.Run(func(p sweep.Point) error {
+		s, depth := p.Float("size"), p.Float("depth")
+		d := api.New()
+		fineChord(d)
+		// Symmetric about both x = 0 and y = 0.
+		var want float64
+		switch p.String("shape") {
+		case "circle":
+			d.Circle(api.V(0, 0, 0), s)
+			want = math.Pi * s * s
+		case "hole":
+			d.Rect(api.V(-2*s, -s, 0), api.V(2*s, s, 0))
+			d.Circle(api.V(0, 0, 0), s/2)
+			want = 8*s*s - math.Pi*s*s/4
+		case "holes":
+			d.Rect(api.V(-2*s, -s, 0), api.V(2*s, s, 0))
+			d.Circle(api.V(-s, 0, 0), s/2)
+			d.Circle(api.V(s, 0, 0), s/2)
+			want = 8*s*s - math.Pi*s*s/2
+		case "slot":
+			d.Rect(api.V(-2*s, -s, 0), api.V(2*s, s, 0))
+			d.Rect(api.V(-s, -s/2, 0), api.V(s, s/2, 0))
+			want = 8*s*s - 2*s*s
+		}
+		d.Extrude(depth, "")
+		want *= depth
+		m := d.Mirror(d.Workplane(p.String("plane")), "")
+		r := m.Check()
+		switch {
+		case m.Problem() != "":
+			return fmt.Errorf("problem: %s", m.Problem())
+		case !r.Sound():
+			return fmt.Errorf("unsound: %s", r.String())
+		case math.Abs(r.Volume-want) > 5e-3*want:
+			return fmt.Errorf("volume %g, want %g", r.Volume, want)
+		}
+		return nil
+	}).Require(t)
+
+	// An L in a square, symmetric only in its box: the reflection is
+	// another solid, and the two join, a U: the bottom strip, 10 by 3,
+	// and a side strip 3 by 7 either side.
+	d := api.New()
+	d.Polyline(true, api.V(-5, -5, 0), api.V(5, -5, 0), api.V(5, -2, 0), api.V(-2, -2, 0), api.V(-2, 5, 0), api.V(-5, 5, 0))
+	d.Extrude(3, "")
+	m := d.Mirror(d.Workplane("YZ"), "")
+	if r := m.Check(); !r.Sound() || math.Abs(r.Volume-3*(30+21+21)) > 1e-6 {
+		t.Errorf("the L and its reflection: %s, want volume %g", r.String(), 3.0*(30+21+21))
+	}
 }

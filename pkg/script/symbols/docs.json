@@ -7533,6 +7533,10 @@
 						"decl": "func (m *SMesh) Simplify(start int)",
 						"text": "Simplify replaces the triangles from start on, which must be coplanar, with fewer ones covering the same area: it pastes them together into convex polygons, merging collinear edges where it can, and triangulates those."
 					},
+					"SnapTJunctions": {
+						"decl": "func (m *SMesh) SnapTJunctions()",
+						"text": "SnapTJunctions mends the T-junctions of a mesh made face by face: where one face's boundary has a point that the next face's boundary runs past, both edges are naked, though the surface is closed."
+					},
 					"WindingNumber": {
 						"decl": "func (m *SMesh) WindingNumber(p geom.Vector) float64",
 						"text": "WindingNumber is how many times the mesh wraps around p: the sum of the solid angles its triangles subtend at p, over 4π (the formula of Van Oosterom and Strackee)."
@@ -8228,6 +8232,10 @@
 			},
 			"STrimByEntireCurveFromShell": {
 				"decl": "func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool) STrimBy"
+			},
+			"SameShell": {
+				"decl": "func SameShell(a, b *SShell) bool",
+				"text": "SameShell reports whether a and b bound the same solid patch for patch: each surface of b has a surface of a of its own with the same control points and weights, in any order, and trims that start and end at the same points."
 			},
 			"SetChordTolMm": {
 				"decl": "func SetChordTolMm(t float64)",
