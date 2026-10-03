@@ -4956,10 +4956,6 @@
 						"decl": "func (h *SketchHost) BeginEval()",
 						"text": "BeginEval starts a step of a script: its first change is remembered\nfor undo."
 					},
-					"Changed": {
-						"decl": "func (h *SketchHost) Changed() bool",
-						"text": "Changed reports whether the script's step, the one that runs or the\nlast, changed the sketch, and so left a step of undo."
-					},
 					"Changing": {
 						"decl": "func (h *SketchHost) Changing()",
 						"text": "Changing remembers the sketch for undo before the first change of\na script's step."
@@ -4995,6 +4991,10 @@
 					"Render": {
 						"decl": "func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error",
 						"text": "Render fails: drawing needs the application around the sketch."
+					},
+					"Rollback": {
+						"decl": "func (h *SketchHost) Rollback() bool",
+						"text": "Rollback takes back what the script's last step changed, for good:\nit can't be done again as what Undo takes back can. It is false if\nthe step changed nothing."
 					},
 					"Run": {
 						"decl": "func (h *SketchHost) Run(fn func())",

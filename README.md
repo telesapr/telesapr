@@ -14,6 +14,7 @@ pkg/
 ├── core/            # Handles, entities, constraints, expressions
 ├── geom/            # Geometric primitives and algorithms
 ├── libm/            # Bit-exact libm functions matching C++ output
+├── mcpserver/       # The drawing as tools for an MCP client (spacesolve-cli mcp)
 ├── persist/slvs/    # .slvs file load/save
 ├── platform/        # Windows, menus and dialogs (takigo, headless)
 ├── render/          # Canvas and the software renderer
@@ -62,6 +63,22 @@ from `api.Current()`, so it can also be compiled as it is; see
 `examples/scripts`. `pkg/script` is the interpreter around it, and
 `pkg/script/symbols` the generated tables of what scripts can import
 (`make generate` after changing what those packages export).
+
+## Drawing with an AI model
+
+An AI model can draw in the window you have open from what you say in
+plain English. spacesolve offers the drawing to any Model Context
+Protocol client, which brings the model; it has none of its own and
+needs no API key.
+
+- In the application, turn on `Script > Allow AI Connections`.
+- Tell the client to start `spacesolve-cli mcp`, for Claude Code with
+  `claude mcp add spacesolve -- spacesolve-cli mcp`.
+
+The model writes scripts against `pkg/script/api`, reads the drawing in
+words and looks at pictures of it. Each script shows in the script
+console and is one step of undo. `spacesolve-cli mcp --headless` does
+the same without a window. See `docs/ai.md`.
 
 ## Build
 

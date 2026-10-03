@@ -62,6 +62,10 @@ A drawing is a list of groups, built in order. A sketch group holds what is draw
     g.Volume()  g.Bounds()  g.Check().Sound()           the solid up to and with the group
     doc.Describe()                                      what get_drawing returns
 
+A sketch should have 0 degrees of freedom when it is done. An extrusion keeps 1, its depth, which nothing holds unless a dimension is put on it; that is as the program's own users leave it.
+
+get_drawing lists the requests and constraints of the active group only, which after an Extrude is the extrusion; ask for the sketch by name (get_drawing with group "g002") to see what is in it.
+
 A call that can't do what it is asked stops the script with an error that says why, and run_script then takes back what the script did.
 
 ## What the interpreter can't do

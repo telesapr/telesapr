@@ -547,6 +547,48 @@ Efforts include the 20%.
 About 39 weeks in total. A2, A3, C4, D1, D4 and G2 are each under a week and a half and are the
 natural fillers between the long steps.
 
+#### I7. Drawing with an AI model (added 2026-10-03)
+
+Asked for by the user on 2026-10-03: say in plain English what to draw. It was not in the
+estimates above. Decisions taken that day:
+
+- **An MCP server, and nothing else.** spacesolve has no model client, API key or chat window.
+  It offers the drawing to any Model Context Protocol client, which brings the model; that is
+  also what keeps it independent of a provider.
+- **The model writes scripts.** Its tools run Go against `pkg/script/api`, so every feature
+  that meets the definition of done is available to it with nothing added, and no second
+  command vocabulary exists to drift from the first.
+- **Applied at once, one undo step each**, with a setting that has the user asked first. A
+  script that fails is rolled back.
+- **No sandbox.** A model's script can do what a user's can.
+- **The protocol lives in `spacesolve-cli`.** The client starts `spacesolve-cli mcp`, which
+  passes each call to the application over a per-user Unix socket. The application does not
+  link the MCP SDK, and the connection is made at each call, so the two may start in either
+  order.
+
+Developed on the branch `mcp-server`, in a worktree, while step 11 was in progress on its own
+branch. `docs/ai.md` is the user's guide.
+
+| Package | Content | State |
+|---|---|---|
+| I7.1 what a model needs of the scripting engine | `Doc.Describe` and `Group.Describe`, the drawing in words with the names the lookups take. `Engine.Run`, several statements as one undo step on a console's state. `script.Help` by name. `Rollback` on both hosts, which takes a step back with nothing left to redo. | done 2026-10-03 (`91c5a73`). Example `examples/scripts/describe` |
+| I7.2 `pkg/script/agent` | `Backend` (run, describe, render, help), `Session` on an engine with the output captured and a failed script rolled back, the primer and the instructions a model reads, and `Serve`, `Remote`, `Listen`, `Connect` for the socket: JSON lines, a cancel request, a protocol version. The socket's directory is per platform. | done 2026-10-03 (`ce6a24f`). 91% covered, in `scripts/coverage-packages.txt` |
+| I7.3 `pkg/mcpserver` and `spacesolve-cli mcp` | Four tools, `run_script`, `get_drawing`, `render`, `api_help`, on `github.com/modelcontextprotocol/go-sdk` v1.6.0; instructions and each description under 2 KB, since clients cut them. `mcp` reaches the application's socket; `mcp --headless [sketch.spcs]` serves a drawing of its own. | done 2026-10-03 (`d3ad119`). `testdata/mcp/bracket.jsonl`, a recorded conversation with a mistake in it, saves the bytes `examples/scripts/bracket` saves |
+| I7.4 the application | Script > Allow AI Connections (setting `AgentAllowed`, off by default), `spacesolve --agent` for one run, scripts run through the script console with an `ai>` prompt and are stopped by Script > Stop, "ask before an AI program's script runs" on the configuration screen (`AgentConfirm`). | done 2026-10-03 (`11d176a`, goldens `9adeb82`). Scenario `ext_ai_connections`; `pkg/ui/agent_test.go` on a platform with an event loop |
+
+No test calls a model: a conversation is a recorded list of tool calls.
+
+Follow-ups, none started:
+
+- A chat window inside the application, on the same `Backend`, for users without an MCP client.
+- `render` of the view as the window shows it, and of a chosen group.
+- A suite of English prompts run against a real model and judged by the invariants
+  (`make ai-eval`, outside CI), to measure whether a change to the primer helps.
+- A tool, or a field of `get_drawing`, for what the mouse hovers, so that "this edge" works
+  without a selection.
+- MCP resources and prompts, and an HTTP transport for clients that take only a URL.
+- A sandboxed engine for a model's scripts, if the decision above is revisited.
+
 ## Implementation plan
 
 This section turns the recommended order into work packages. A package is numbered by step,
