@@ -59,14 +59,13 @@ func TestChainCurve(t *testing.T) {
 func TestSkin(t *testing.T) {
 	for _, k := range []int{2, 3, 4, 6} {
 		var secs []BSplineCurve
-		var loops [][]SBezier
 		for s := 0; s < k; s++ {
 			l := quarterArcs(4+float64(s*s%5), 3*float64(s)+float64(s*s)/4)
 			c, err := ChainCurve(l, 2)
 			if err != nil {
 				t.Fatal(err)
 			}
-			secs, loops = append(secs, c), append(loops, l)
+			secs = append(secs, c)
 		}
 		bs, ts, err := Skin(secs)
 		if err != nil {

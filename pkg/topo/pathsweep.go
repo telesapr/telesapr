@@ -210,18 +210,6 @@ func (sp *SweepPath) Rigid(s float64) srf.Rigid {
 	return srf.Rigid{Q: geom.QuaternionFromBasis(u, v), T: o}
 }
 
-// placed is the loop moved by m, its weights kept.
-func placed(loop []srf.SBezier, m func(geom.Vector) geom.Vector) []srf.SBezier {
-	out := make([]srf.SBezier, len(loop))
-	for i, sb := range loop {
-		for k := 0; k <= sb.Degree; k++ {
-			sb.Ctrl[k] = m(sb.Ctrl[k])
-		}
-		out[i] = sb
-	}
-	return out
-}
-
 // SweptSurfaces are the surfaces a profile, an outer loop and its
 // holes, sweeps along the path: for each loop, one for each piece of the
 // path, u along the loop, v along the piece. Pieces meet with their
