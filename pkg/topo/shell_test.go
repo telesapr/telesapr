@@ -173,30 +173,8 @@ func TestShellRefusals(t *testing.T) {
 	}
 	// Four faces meet at the apex of a pyramid over a rectangle, off
 	// centre, and moved in don't meet in one point.
-	pyr := &srf.SShell{}
 	base := []geom.Vector{v(0, 0, 0), v(0, 10, 0), v(20, 10, 0), v(20, 0, 0)}
-	apex := v(5, 3, 10)
-	faces := [][]geom.Vector{base}
-	for i := range base {
-		faces = append(faces, []geom.Vector{base[(i+1)%4], base[i], apex})
-	}
-	for _, f := range faces {
-		var l []srf.SBezier
-		for i := range f {
-			l = append(l, srf.SBezierFrom2(f[i], f[(i+1)%len(f)]))
-		}
-		// A plane over the face: a parallelogram on two of its sides,
-		// tripled about its first corner.
-		s := srf.FromPlane(f[0].Minus(f[1].Minus(f[0])).Minus(f[len(f)-1].Minus(f[0])),
-			f[len(f)-1].Minus(f[0]).ScaledBy(3), f[1].Minus(f[0]).ScaledBy(3))
-		if _, err := topo.AddFace(pyr, s, [][]srf.SBezier{l}); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// AddFace makes the faces face in; turned out, the pyramid is sound.
-	for i := range pyr.Surface {
-		pyr.Surface[i].Reverse()
-	}
+	pyr, faces := pyramid(t, base, v(5, 3, 10))
 	var pm srf.SMesh
 	pyr.TriangulateInto(&pm)
 	if pr := check.Solid(pyr, &pm); !pr.Sound() || math.Abs(pr.Volume-2000.0/3) > 1e-9 {
@@ -223,6 +201,91 @@ func TestShellRefusals(t *testing.T) {
 	if r.Volume < 0.4*area || r.Volume > 0.5*area {
 		t.Errorf("walls of %g mm³ for %g mm² of sides 0.5 thick", r.Volume, area)
 	}
+}
+
+// pyramid is the pyramid over base, a loop in z = 0 running clockwise
+// seen from above, to apex, and its faces' corners, the base first.
+func pyramid(t *testing.T, base []geom.Vector, apex geom.Vector) (*srf.SShell, [][]geom.Vector) {
+	t.Helper()
+	pyr := &srf.SShell{}
+	faces := [][]geom.Vector{base}
+	for i := range base {
+		faces = append(faces, []geom.Vector{base[(i+1)%len(base)], base[i], apex})
+	}
+	for _, f := range faces {
+		var l []srf.SBezier
+		for i := range f {
+			l = append(l, srf.SBezierFrom2(f[i], f[(i+1)%len(f)]))
+		}
+		// A plane over the face: a parallelogram on two of its sides,
+		// tripled about its first corner.
+		s := srf.FromPlane(f[0].Minus(f[1].Minus(f[0])).Minus(f[len(f)-1].Minus(f[0])),
+			f[len(f)-1].Minus(f[0]).ScaledBy(3), f[1].Minus(f[0]).ScaledBy(3))
+		if _, err := topo.AddFace(pyr, s, [][]srf.SBezier{l}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// AddFace makes the faces face in; turned out, the pyramid is sound.
+	for i := range pyr.Surface {
+		pyr.Surface[i].Reverse()
+	}
+	return pyr, faces
+}
+
+// Pyramids over a rectangle with their apex here and there, hollowed
+// open at the base: four faces meet at the apex, in one point once
+// moved in only when the apex is over the middle (roadmap 15.3). The
+// walls are sound, and hold about their area times the thickness, less
+// what the faces' corners take.
+func TestShellApexSweep(t *testing.T) {
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("x", 2, 10, 15, 25),
+			sweep.Floats("y", 1, 5, 8),
+			sweep.Floats("height", 3, 10, 30),
+			sweep.Floats("k", 0.02, 0.05, 0.1),
+		},
+		MaxFailRate: 0,
+		Sample:      30,
+	}
+	grid.Run(func(p sweep.Point) error {
+		base := []geom.Vector{v(0, 0, 0), v(0, 10, 0), v(20, 10, 0), v(20, 0, 0)}
+		h := p.Float("height")
+		thick := p.Float("k") * math.Min(h, 5)
+		pyr, faces := pyramid(t, base, v(p.Float("x"), p.Float("y"), h))
+		pt, err := topo.Build(pyr)
+		if err != nil {
+			return err
+		}
+		bottom := -1
+		for f := range pt.Faces {
+			if n := pyr.Surface[f].NormalAt(0.5, 0.5); n.Z < 0 && math.Abs(n.X)+math.Abs(n.Y) < 1e-9 {
+				bottom = f
+			}
+		}
+		out, err := topo.ShellSolid(pyr, []int{bottom}, thick, 1<<30)
+		if err != nil {
+			return err
+		}
+		var m srf.SMesh
+		out.TriangulateInto(&m)
+		r := check.Solid(out, &m)
+		ot, err := topo.Build(out)
+		if err != nil {
+			return err
+		}
+		if !r.Sound() || len(ot.Validate()) != 0 {
+			return fmt.Errorf("unsound: %s", r.String())
+		}
+		area := 0.0
+		for _, f := range faces[1:] {
+			area += f[1].Minus(f[0]).Cross(f[2].Minus(f[0])).Magnitude() / 2
+		}
+		if r.Volume < 0.5*area*thick || r.Volume > area*thick {
+			return fmt.Errorf("walls of %g mm³ for %g mm² of sides %g thick", r.Volume, area, thick)
+		}
+		return nil
+	}).Require(t)
 }
 
 // A block with a square hole through it, a Boolean's solid, open at the
