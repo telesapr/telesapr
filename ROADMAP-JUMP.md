@@ -39,6 +39,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 18. Drawings | done 2026-10-03: a sheet of the standard views with hidden edges, a title block, section and detail views, and dimensions that hold the names of the edges they measure | `2c41d13` |
 | 19. Shading | done 2026-10-03: a shader with smooth per-pixel lighting and highlights, and appearances (matte, plastic, glossy, metal) for solids and faces | `6462cc3` |
 | 20. Smooth lofts and sweeps | done 2026-10-03: lofts through any number of profiles by one smooth surface, profiles of unequal counts, sweeps along cubics in 3d with rotation-minimising frames, a twist, or frames held to an axis, fitted within a tenth of the chord tolerance | `dda4e0b` |
+| 21. STEP import as a solid | done 2026-10-04 but for 21.5: STEP files linked as exact solids that take part in Booleans, 5 of 9 vendor files and all 14 analytic shapes sound, the rest linked as meshes with the reason; tessellated STEP read; the export's bounds the STEP way round | MERGE21 |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
@@ -1337,6 +1338,22 @@ Follow-ups: the mesher grids twisted ruled faces with rows but no columns, so a 
 sweep's or loft's mesh volume is off by up to 2% (the surfaces are right); tangency set at a
 loft's end profiles, lofts along guide curves, sweeps along a step 9 edge chain, and paths with
 corners are not done.
+
+### Step 21. STEP import as a solid
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 21.1 D3.1 trimmed sheets | | 3 wk | done 2026-10-03 (`0aa0c3c`), not as `topo.AddTrimmedSheet` but inside the reader (`pkg/persist/step/solid.go`), which has the bounds in the surface's own parameters: each face's surface cut into a grid of cells along its knots (a quarter turn for a surface about an axis; a period's worth where it closes, from the bounds' widest gap; the bounds' extent and a margin elsewhere, B-splines reaching past their domain by their end pieces, `srf.SSurface.Sub`), each edge cut where any face crosses a line so that both faces share its pieces, and in each cell the runs of the bounds closed along its sides counter-clockwise; a run that starts where another ends is taken only if it turns least clockwise (seams), runs break at poles, cells no bound reaches take their neighbours' state. The 14 shapes of the analytic set sound and of their exact volumes |
+| 21.2 D3.2 from STEP to a shell | and degree above 5 | 3 wk | done 2026-10-04 (`8dfcf4d`) but for degree above 5, which is refused (the file then links as a mesh): planes, cones, spheres, tori, surfaces of revolution and extrusion, B-splines; lines, circles, ellipses, B-spline curves; faceted faces' polygons as shared lines; healing to the file's tolerance (a thousandth of a millimetre): cuts closer than it dropped, points that near a line on it, flat faces whose curves leave their plane by it (`topo.AddPlanarFaceWithin`), bounds a file runs the wrong way round turned; the mesh of a face from a file takes its edges' own points (`srf.SSurface.SnapToTrims`), so faces whose edges miss them meet. `srf.FromTransformationOf` now copies patches of degree 4 and 5 whole, which it cut at 3 |
+| 21.3 D3.3 Booleans on imported solids | | 2.5 wk | done 2026-10-04: measured first, the rates set from it. Of the corpus, 5 of 9 files read as sound solids at the reference volume (NIST 1, 3, 11, Gmsh's t20, the faceted assembly); NIST 5 and 6 have one face's edge along another face's seam, Schenkel and the OCC screw leave mesh gaps where edges miss their faces by more than the tolerance; they link as meshes. Of 28 cuts of the analytic set by a block and a cylinder, 10 fail, all on the kernel's own limits (a cylinder through a cylinder, a cone through its apex, a torus or a sphere's pole in the cutter); the rate is set at 10. Our own STEP export read back is exact |
+| 21.4 D3.4 interface and scripts | | 1 wk | done 2026-10-04 (`b61cdb6`): "read as reference mesh / solid" on a STEP link's screen (`LinkAsSolid`, file flag `link-as-solid`); `Doc.LinkStep`, `Group.SetLinkAsSolid`; a file that can't be read as a solid links as the mesh, the reason on the screen. The exporter's face bounds now run their loops backwards, as STEP's run counter-clockwise about the face (FreeCAD reads the export as one valid solid with outward faces; it had forgiven the old ones). `ext_link_step_solid`, `path_link_step_solid`, the example `stepsolid`, the guide |
+| 21.5 export: knots removed, faces as one surface | | 1.5 wk | not done: the export reads back exact as it is; left as a follow-up |
+| 21.6 tessellated STEP as a reference mesh | | 1 wk | done 2026-10-04 (`006a0ad`): AP242 triangulated faces and surface sets, plain or of strips and fans, alone or in tessellated shells and solids |
+
+State, 2026-10-04: done but for 21.5 and degree above 5, on branch `step-21-step-solids`.
+Benchmark: NIST_MBE_PMI_3 (120 faces) read as a solid in 0.18 s. Follow-ups: 21.5; degree above
+5 by reduction; edges further from their faces than the tolerance; the seam of one face along
+another face's edge (NIST 5, 6).
 
 ### Left out
 
