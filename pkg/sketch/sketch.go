@@ -33,6 +33,8 @@ type Sketch struct {
 	// (config.go).
 	Configurations      []Configuration
 	ActiveConfiguration string
+	// Drawing is the model's sheet of views, or nil (drawing.go).
+	Drawing *Drawing
 	// ExprErrors lists the stored expressions of constraints and
 	// groups that the last regeneration could not evaluate.
 	ExprErrors []ExprError

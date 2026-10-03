@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // Version is the major version of the format this package writes, and
@@ -96,6 +97,40 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 	}
 	if sk.ActiveConfiguration != "" {
 		add(field("active-configuration", String(sk.ActiveConfiguration)))
+	}
+	if d := sk.Drawing; d != nil {
+		n := block("drawing")
+		n.add(field("sheet", Word(d.Sheet)))
+		n.flag("portrait", d.Portrait)
+		if d.Scale != 0 {
+			n.add(field("scale", Word(FormatReal(d.Scale))))
+		}
+		n.flag("first-angle", d.FirstAngle)
+		n.flag("hidden", d.Hidden)
+		for _, v := range d.Views {
+			n.add(field("view", Word(v.Kind), Word(FormatReal(v.X)), Word(FormatReal(v.Y))))
+		}
+		for _, s := range d.Sections {
+			n.add(field("section", Word(s.View), Word(FormatReal(s.Offset)), Word(FormatReal(s.X)), Word(FormatReal(s.Y))))
+		}
+		for _, dm := range d.Dimensions {
+			c := block("dimension", Word(dm.View), Word(dm.Kind), Word(FormatReal(dm.Offset)))
+			for _, e := range dm.Edges {
+				c.add(solidEdgeField(e))
+			}
+			n.add(c)
+		}
+		for _, dt := range d.Details {
+			n.add(field("detail", Word(dt.View), Word(FormatReal(dt.CX)), Word(FormatReal(dt.CY)), Word(FormatReal(dt.R)),
+				Word(FormatReal(dt.Scale)), Word(FormatReal(dt.X)), Word(FormatReal(dt.Y))))
+		}
+		n.str("title", d.Title)
+		n.str("author", d.Author)
+		n.str("number", d.Number)
+		n.str("revision", d.Revision)
+		n.str("material", d.Material)
+		n.str("company", d.Company)
+		add(n)
 	}
 
 	groups := make([]*sketch.Group, len(sk.Groups))
@@ -272,12 +307,7 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		n.add(field("edges", args...))
 	}
 	for _, e := range g.SolidEdges {
-		if e.Of > 0 {
-			n.add(field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N)),
-				Word("of"), Word(strconv.Itoa(e.Of))))
-		} else {
-			n.add(field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N))))
-		}
+		n.add(solidEdgeField(e))
 	}
 	for _, f := range g.SolidFaces {
 		n.add(field("solid-face", hex(uint32(f))))
@@ -533,4 +563,14 @@ func encodeShell(s *srf.SShell) *Node {
 		n.add(b)
 	}
 	return n
+}
+
+// solidEdgeField is an edge of the solid by name: "solid-edge <face>
+// <face> <n> of <m>", or without the count.
+func solidEdgeField(e topo.Name) *Node {
+	if e.Of > 0 {
+		return field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N)),
+			Word("of"), Word(strconv.Itoa(e.Of)))
+	}
+	return field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N)))
 }

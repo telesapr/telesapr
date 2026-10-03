@@ -319,6 +319,27 @@ func (h *ScriptHost) Export(kind api.ExportKind, path string) error {
 	})
 }
 
+// MeasureDrawing measures the drawing's dimensions.
+func (h *ScriptHost) MeasureDrawing(d *sketch.Drawing) ([]float64, []error) {
+	rs := h.ss.DrawingDimensions(d)
+	values, errs := make([]float64, len(rs)), make([]error, len(rs))
+	for i, r := range rs {
+		values[i], errs[i] = r.Value, r.Err
+	}
+	return values, errs
+}
+
+// ExportDrawing writes the model's drawing to a vector file.
+func (h *ScriptHost) ExportDrawing(path string, d *sketch.Drawing) error {
+	defer h.leaveExportMode()
+	var derr error
+	err := h.collect(func() { derr = h.ss.ExportDrawingTo(path, d) })
+	if derr != nil {
+		return derr
+	}
+	return err
+}
+
 // Render draws the sketch into a file without disturbing the view on
 // screen.
 func (h *ScriptHost) Render(path string, width, height int, right, up geom.Vector) error {

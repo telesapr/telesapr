@@ -1,0 +1,26 @@
+# The drawing of ext_drawing set on its screen; the same as
+# path_drawing.go makes (TestPathEquivalenceDrawing).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+menu File|Drawing Sheet...
+twmove 307 105
+twdown L 307 105
+twup L 307 105
+twmove 325 145
+twdown L 325 145
+twup L 325 145
+edit 1:2
+twmove 172 165
+twdown L 172 165
+twup L 172 165
+twmove 181 355
+twdown L 181 355
+twup L 181 355
+edit PLATE

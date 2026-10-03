@@ -36,6 +36,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 15. Solid features completed | done 2026-10-03: chamfers by the fillet's edit (concave edges, chains; two distances not done), shells of prisms with round sides, apexes of four faces split, the draft angle on extrusions, the mirror of the whole solid, the pattern along a path, the stopped chain's message | `fb151c3` |
 | 16. Small features | done 2026-10-03: dimensions by name, configurations, motion study, groups inserted mid-history, 3MF export, text STL and OBJ links, bill of materials, STEP assemblies, mates, interference by shells, constraints inferred while drawing, the section's hatch, STEP links in place, what an AI program sees | `5e2d5be` |
 | 17. Regeneration | done 2026-10-03: one parallel mode, the coincident planes merged at once, solids made off the window's thread with cancel, linked files kept in memory and STEP meshes on disk, packed models | `978d25f` |
+| 18. Drawings | done 2026-10-03: a sheet of the standard views with hidden edges, a title block, section and detail views, and dimensions that hold the names of the edges they measure | MERGE18 |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
@@ -1286,10 +1287,13 @@ State, 2026-10-03: done, on branch `step-17-regeneration`.
 
 | Package | Content | Effort | State |
 |---|---|---|---|
-| 18.1 H1 sheet with standard views | | 3.6 wk | not started |
-| 18.2 H4 title block and templates | | 1.2 wk | not started |
-| 18.3 H3 section and detail views | With the hatch of 16.12. | 2.4 wk | not started |
-| 18.4 H2 associative dimensions | A dimension holds the names of the edges it measures (step 9's names, made stable by 14.2). | 5.4 wk | not started |
+| 18.1 H1 sheet with standard views | | 3.6 wk | done 2026-10-03 (`fafa332`): the model's drawing (sheet, scale fitted or given, third or first angle, hidden edges dashed), front, top, side and isometric laid out in a grid, each view's edges by hidden-line removal against the mesh; written by the vector writers on a canvas the sheet's size (PDF, SVG, DXF, ...); File > Drawing Sheet and Export Drawing, `telesapr-cli export-drawing`, `Doc.SetDrawing`/`ExportDrawing`. Not shown in the window |
+| 18.2 H4 title block and templates | | 1.2 wk | done 2026-10-03 with 18.1: a frame and a title block of title, company, material, number, revision, drawn by, and scale, sheet and projection filled in; one template |
+| 18.3 H3 section and detail views | With the hatch of 16.12. | 2.4 wk | done 2026-10-03 (`d23837a`): sections through a view's middle, offset, the half beyond with its cut face hatched and the plane drawn on the views that see it edge on; details as enlarged circles of a view; lettered, placed right of the views |
+| 18.4 H2 associative dimensions | A dimension holds the names of the edges it measures (step 9's names, made stable by 14.2). | 5.4 wk | done 2026-10-03 (`f3e8d48`): length, distance, diameter and radius of solid edges held by name, measured again on each export; one that can't be measured says why. Edges only, on the orthographic views |
+
+State, 2026-10-03: done, on branch `step-18-drawings`; each package checked by tests and by
+looking at the sheets rasterised, and the export read back by FreeCAD for 16.8 only.
 
 ### Step 19. Shading
 

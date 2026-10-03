@@ -154,6 +154,8 @@ func (d *decoder) file(f *File) {
 			d.configuration(n)
 		case "active-configuration":
 			sk.ActiveConfiguration = d.strField(n)
+		case "drawing":
+			sk.Drawing = d.drawing(n)
 		default:
 			d.warn(n.Pos, "unknown statement %q; skipped", n.Name)
 		}
@@ -295,6 +297,93 @@ type exprPlace struct {
 }
 
 // param reads "param <name> = <expression>".
+// solidEdge reads an edge of the solid by name: "solid-edge <face>
+// <face> <n> of <m>", or without the count.
+func (d *decoder) solidEdge(c *Node) topo.Name {
+	d.plain(c)
+	if len(c.Args) != 3 && len(c.Args) != 5 {
+		d.fail(c.Pos, "solid-edge takes two face handles, an ordinal, and 'of' with a count")
+	}
+	n := d.int(c.Args[2])
+	if n < 0 {
+		d.fail(c.Args[2].Pos, "an edge's ordinal is not negative")
+	}
+	name := topo.MakeName(srf.FaceID(d.handle(c.Args[0])), srf.FaceID(d.handle(c.Args[1])), n)
+	if len(c.Args) == 5 {
+		if d.word(c.Args[3]) != "of" {
+			d.fail(c.Args[3].Pos, "solid-edge's count follows the word 'of'")
+		}
+		name.Of = d.int(c.Args[4])
+		if name.Of <= n {
+			d.fail(c.Args[4].Pos, "an edge's ordinal is below the count of edges")
+		}
+	}
+	return name
+}
+
+// drawing reads the model's sheet.
+func (d *decoder) drawing(n *Node) *sketch.Drawing {
+	if !n.Block || len(n.Args) != 0 {
+		d.fail(n.Pos, "a drawing is written as 'drawing { ... }'")
+	}
+	dr := &sketch.Drawing{}
+	for _, f := range n.Children {
+		switch f.Name {
+		case "sheet":
+			dr.Sheet = d.word(d.fieldArgs(f, 1)[0])
+		case "portrait":
+			dr.Portrait = d.flag(f)
+		case "scale":
+			dr.Scale = d.realField(f)
+		case "first-angle":
+			dr.FirstAngle = d.flag(f)
+		case "hidden":
+			dr.Hidden = d.flag(f)
+		case "view":
+			a := d.fieldArgs(f, 3)
+			dr.Views = append(dr.Views, sketch.DrawingView{Kind: d.word(a[0]), X: d.real(a[1]), Y: d.real(a[2])})
+		case "dimension":
+			if !f.Block || len(f.Args) != 3 {
+				d.fail(f.Pos, "a drawing's dimension is written as 'dimension <view> <kind> <offset> { solid-edge ... }'")
+			}
+			dm := sketch.DrawingDimension{View: d.word(f.Args[0]), Kind: d.word(f.Args[1]), Offset: d.real(f.Args[2])}
+			for _, c := range f.Children {
+				if c.Name != "solid-edge" {
+					d.fail(c.Pos, "a drawing's dimension holds solid-edge lines")
+				}
+				dm.Edges = append(dm.Edges, d.solidEdge(c))
+			}
+			dr.Dimensions = append(dr.Dimensions, dm)
+		case "section":
+			a := d.fieldArgs(f, 4)
+			dr.Sections = append(dr.Sections, sketch.DrawingSection{View: d.word(a[0]), Offset: d.real(a[1]),
+				X: d.real(a[2]), Y: d.real(a[3])})
+		case "detail":
+			a := d.fieldArgs(f, 7)
+			dr.Details = append(dr.Details, sketch.DrawingDetail{View: d.word(a[0]), CX: d.real(a[1]), CY: d.real(a[2]),
+				R: d.real(a[3]), Scale: d.real(a[4]), X: d.real(a[5]), Y: d.real(a[6])})
+		case "title":
+			dr.Title = d.strField(f)
+		case "author":
+			dr.Author = d.strField(f)
+		case "number":
+			dr.Number = d.strField(f)
+		case "revision":
+			dr.Revision = d.strField(f)
+		case "material":
+			dr.Material = d.strField(f)
+		case "company":
+			dr.Company = d.strField(f)
+		default:
+			d.warn(f.Pos, "unknown field %q of a drawing; skipped", f.Name)
+		}
+	}
+	if err := dr.Check(); err != nil {
+		d.fail(n.Pos, "%v", err)
+	}
+	return dr
+}
+
 // configuration reads a configuration: its name, and a param line for
 // each of its expressions.
 func (d *decoder) configuration(n *Node) {
@@ -504,25 +593,7 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 				g.Edges = append(g.Edges, core.HEntity{V: d.handle(v)})
 			}
 		case "solid-edge":
-			d.plain(c)
-			if len(c.Args) != 3 && len(c.Args) != 5 {
-				d.fail(c.Pos, "solid-edge takes two face handles, an ordinal, and 'of' with a count")
-			}
-			n := d.int(c.Args[2])
-			if n < 0 {
-				d.fail(c.Args[2].Pos, "an edge's ordinal is not negative")
-			}
-			name := topo.MakeName(srf.FaceID(d.handle(c.Args[0])), srf.FaceID(d.handle(c.Args[1])), n)
-			if len(c.Args) == 5 {
-				if d.word(c.Args[3]) != "of" {
-					d.fail(c.Args[3].Pos, "solid-edge's count follows the word 'of'")
-				}
-				name.Of = d.int(c.Args[4])
-				if name.Of <= n {
-					d.fail(c.Args[4].Pos, "an edge's ordinal is below the count of edges")
-				}
-			}
-			g.SolidEdges = append(g.SolidEdges, name)
+			g.SolidEdges = append(g.SolidEdges, d.solidEdge(c))
 		case "edge-radius":
 			// "edge-radius <n> = <expression>": the fillet's n-th edge,
 			// counting its entities and then its solid edges.

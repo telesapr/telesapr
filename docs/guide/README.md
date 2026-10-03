@@ -29,6 +29,7 @@ time, and `help()` there lists what a script can call.
 | [Sweep](sweep.md) | A profile moved along a path | `sweep` |
 | [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
 | [Screw threads](threads.md) | Metric, unified and trapezoidal threads | `bolt` |
+| [Drawings](drawings.md) | A sheet of the standard views, sections and details with a title block, to PDF and DXF | `drawing` |
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference | `step` |
 | [Assemblies](bill-of-materials.md) | Mates; the parts counted, to a CSV file; interfering parts by their shells; STEP with its structure | `mates`, `bom` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |

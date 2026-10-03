@@ -156,6 +156,8 @@ const (
 	CmdMateConcentric
 	CmdMateFlush
 	CmdMateHinge
+	CmdDrawingSheet
+	CmdExportDrawing
 )
 
 // Pending is an operation to be completed by doing something with the

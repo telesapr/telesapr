@@ -79,6 +79,10 @@ type Host interface {
 	// Render draws the sketch, seen with right to the right and up
 	// up and fitted to the picture, into a PNG file.
 	Render(path string, width, height int, right, up geom.Vector) error
+	// ExportDrawing writes the drawing d of the model to a vector file.
+	ExportDrawing(path string, d *sketch.Drawing) error
+	// MeasureDrawing measures the drawing's dimensions.
+	MeasureDrawing(d *sketch.Drawing) ([]float64, []error)
 	// Selection is what is selected in the user interface, if any.
 	Selection() []sketch.Selection
 	Select(sel []sketch.Selection)
@@ -298,6 +302,21 @@ func (h *SketchHost) Export(kind ExportKind, path string) error {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
 	}
 	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(core.GetSettings()))
+}
+
+// ExportDrawing fails: drawing needs the application around the
+// sketch, or telesapr-cli export-drawing.
+func (h *SketchHost) ExportDrawing(path string, _ *sketch.Drawing) error {
+	return fmt.Errorf("drawing %s: %w", filepath.Base(path), errUnsupported)
+}
+
+// MeasureDrawing fails for each dimension, for the same reason.
+func (h *SketchHost) MeasureDrawing(d *sketch.Drawing) ([]float64, []error) {
+	errs := make([]error, len(d.Dimensions))
+	for i := range errs {
+		errs[i] = fmt.Errorf("drawing: %w", errUnsupported)
+	}
+	return make([]float64, len(d.Dimensions)), errs
 }
 
 // Render fails: drawing needs the application around the sketch.

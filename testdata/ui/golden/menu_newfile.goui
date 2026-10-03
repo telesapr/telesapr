@@ -9,6 +9,8 @@
   Export &Image... ind=0 en=1 act=0
   Export 2d &View... ind=0 en=1 act=0
   Export 2d &Section... ind=0 en=1 act=0
+  Drawing S&heet... ind=0 en=1 act=0
+  Export &Drawing... ind=0 en=1 act=0
   Export 3d &Wireframe... ind=0 en=1 act=0
   Export Triangle &Mesh... ind=0 en=1 act=0
   Export &Surfaces... ind=0 en=1 act=0

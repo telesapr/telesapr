@@ -68,6 +68,7 @@ const (
 	ScreenSection
 	ScreenBillOfMaterials
 	ScreenMotionStudy
+	ScreenDrawing
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -151,6 +152,12 @@ const (
 	EditMotionFrom      Edit = 916
 	EditMotionTo        Edit = 917
 	EditMotionSteps     Edit = 918
+	// For the drawing (an extension)
+	EditDrawingScale     Edit = 919
+	EditDrawingField     Edit = 921
+	EditDrawingSection   Edit = 922
+	EditDrawingDetail    Edit = 923
+	EditDrawingDimension Edit = 924
 	// For the command search (an extension)
 	EditCommandQuery Edit = 920
 	// For the section view (an extension)
@@ -782,6 +789,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowBillOfMaterials()
 		case ScreenMotionStudy:
 			tw.ShowMotionStudy()
+		case ScreenDrawing:
+			tw.ShowDrawing()
 		}
 	}
 	tw.Printf(false, "")

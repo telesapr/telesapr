@@ -38,27 +38,30 @@ func init() {
 		"V":               reflect.ValueOf(api.V),
 
 		// type definitions
-		"BrokenReference": reflect.ValueOf((*api.BrokenReference)(nil)),
-		"Constraint":      reflect.ValueOf((*api.Constraint)(nil)),
-		"Doc":             reflect.ValueOf((*api.Doc)(nil)),
-		"Entity":          reflect.ValueOf((*api.Entity)(nil)),
-		"ExportKind":      reflect.ValueOf((*api.ExportKind)(nil)),
-		"Group":           reflect.ValueOf((*api.Group)(nil)),
-		"Host":            reflect.ValueOf((*api.Host)(nil)),
-		"Interference":    reflect.ValueOf((*api.Interference)(nil)),
-		"MotionFrame":     reflect.ValueOf((*api.MotionFrame)(nil)),
-		"Param":           reflect.ValueOf((*api.Param)(nil)),
-		"Parameter":       reflect.ValueOf((*api.Parameter)(nil)),
-		"Request":         reflect.ValueOf((*api.Request)(nil)),
-		"Section":         reflect.ValueOf((*api.Section)(nil)),
-		"SketchHost":      reflect.ValueOf((*api.SketchHost)(nil)),
-		"Solid":           reflect.ValueOf((*api.Solid)(nil)),
-		"SolidEdge":       reflect.ValueOf((*api.SolidEdge)(nil)),
-		"SolidFace":       reflect.ValueOf((*api.SolidFace)(nil)),
-		"SolidVertex":     reflect.ValueOf((*api.SolidVertex)(nil)),
-		"SuppressMode":    reflect.ValueOf((*api.SuppressMode)(nil)),
-		"ThreadOptions":   reflect.ValueOf((*api.ThreadOptions)(nil)),
-		"Vec":             reflect.ValueOf((*api.Vec)(nil)),
+		"BrokenReference":  reflect.ValueOf((*api.BrokenReference)(nil)),
+		"Constraint":       reflect.ValueOf((*api.Constraint)(nil)),
+		"Doc":              reflect.ValueOf((*api.Doc)(nil)),
+		"Drawing":          reflect.ValueOf((*api.Drawing)(nil)),
+		"DrawingDimension": reflect.ValueOf((*api.DrawingDimension)(nil)),
+		"DrawingView":      reflect.ValueOf((*api.DrawingView)(nil)),
+		"Entity":           reflect.ValueOf((*api.Entity)(nil)),
+		"ExportKind":       reflect.ValueOf((*api.ExportKind)(nil)),
+		"Group":            reflect.ValueOf((*api.Group)(nil)),
+		"Host":             reflect.ValueOf((*api.Host)(nil)),
+		"Interference":     reflect.ValueOf((*api.Interference)(nil)),
+		"MotionFrame":      reflect.ValueOf((*api.MotionFrame)(nil)),
+		"Param":            reflect.ValueOf((*api.Param)(nil)),
+		"Parameter":        reflect.ValueOf((*api.Parameter)(nil)),
+		"Request":          reflect.ValueOf((*api.Request)(nil)),
+		"Section":          reflect.ValueOf((*api.Section)(nil)),
+		"SketchHost":       reflect.ValueOf((*api.SketchHost)(nil)),
+		"Solid":            reflect.ValueOf((*api.Solid)(nil)),
+		"SolidEdge":        reflect.ValueOf((*api.SolidEdge)(nil)),
+		"SolidFace":        reflect.ValueOf((*api.SolidFace)(nil)),
+		"SolidVertex":      reflect.ValueOf((*api.SolidVertex)(nil)),
+		"SuppressMode":     reflect.ValueOf((*api.SuppressMode)(nil)),
+		"ThreadOptions":    reflect.ValueOf((*api.ThreadOptions)(nil)),
+		"Vec":              reflect.ValueOf((*api.Vec)(nil)),
 
 		// interface wrapper definitions
 		"_Host": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_Host)(nil)),
@@ -73,8 +76,10 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	WChanging          func()
 	WDeleteGroup       func(hg core.HGroup)
 	WExport            func(kind api.ExportKind, path string) error
+	WExportDrawing     func(path string, d *sketch.Drawing) error
 	WHovered           func() sketch.Selection
 	WLoad              func(path string) error
+	WMeasureDrawing    func(d *sketch.Drawing) ([]float64, []error)
 	WMmPerUnit         func() float64
 	WRedo              func() bool
 	WRegenerate        func()
@@ -104,11 +109,17 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) DeleteGroup(hg core.H
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Export(kind api.ExportKind, path string) error {
 	return W.WExport(kind, path)
 }
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) ExportDrawing(path string, d *sketch.Drawing) error {
+	return W.WExportDrawing(path, d)
+}
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Hovered() sketch.Selection {
 	return W.WHovered()
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Load(path string) error {
 	return W.WLoad(path)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) MeasureDrawing(d *sketch.Drawing) ([]float64, []error) {
+	return W.WMeasureDrawing(d)
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) MmPerUnit() float64 {
 	return W.WMmPerUnit()
