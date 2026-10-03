@@ -751,66 +751,78 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36    force NURBS surfaces to triangle mesh
+row 38    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
 screen solve 5
 row 0  home   drawing / constraining in 3d
@@ -865,68 +877,80 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36    force NURBS surfaces to triangle mesh
+row 38    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
- 0-99 64 64 0
 row 61 
+ 0-99 64 64 0
+row 63 
  0-99 64 64 0
 screen group 6
 row 0  home   drawing / constraining in 3d
@@ -1139,64 +1163,76 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
 screen solve 7
 row 0  home   drawing / constraining in 3d
@@ -1251,66 +1287,78 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
- 0-99 64 64 0
 row 61 
+ 0-99 64 64 0
+row 63 
  0-99 64 64 0
 screen group 8
 row 0  home   drawing / constraining in 3d
@@ -1523,64 +1571,76 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
 screen solve 9
 row 0  home   drawing / constraining in 3d
@@ -1635,66 +1695,78 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
- 0-99 64 64 0
 row 61 
+ 0-99 64 64 0
+row 63 
  0-99 64 64 0
 screen group a
 row 0  home   drawing / constraining in 3d
@@ -1907,64 +1979,76 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
 screen solve b
 row 0  home   drawing / constraining in 3d
@@ -2019,66 +2103,78 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  constraints in group (1 DOF)
+row 57  constraints in group (1 DOF)
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
- 0-99 64 64 0
 row 61 
+ 0-99 64 64 0
+row 63 
  0-99 64 64 0
 screen variant 5 0
 row 0  home   drawing / constraining in 3d
@@ -2118,112 +2214,18 @@ row 18     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 20    color      (0.00, 0.00, 0.00) [change]
+row 20    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
- 3-10 74 64 0
- 11-12 64 7a 00000000 0
- 13-32 64 64 0
- 33-40 6c 64 102 14 1 0
- 41-99 64 64 0
-row 22    opacity 0.00 [change]
- 0-2 64 64 0
- 3-9 74 64 0
- 10-15 64 64 0
- 16-23 6c 64 102 0 1 0
- 24-99 64 64 0
-row 24      suppress this group's solid model
- 0-2 64 64 0
- 3-38 64 64 80 0 1 0
- 39-99 64 64 0
-row 26 
- 0-99 64 64 0
-row 28    show entities from this group
- 0-0 64 64 0
- 1-32 64 64 118 0 1 0
- 33-99 64 64 0
-row 30    suppress this group and the groups that use it
- 0-0 64 64 0
- 1-49 64 64 65 0 1 0
- 50-99 64 64 0
-row 32    force NURBS surfaces to triangle mesh
- 0-0 64 64 0
- 1-40 64 64 102 0 1 0
- 41-99 64 64 0
-row 35    relax constraints and dimensions
- 0-0 64 64 0
- 1-35 64 64 114 0 1 0
- 36-99 64 64 0
-row 37    allow redundant constraints
- 0-0 64 64 0
- 1-30 64 64 101 0 1 0
- 31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
- 0-0 64 64 0
- 1-57 64 64 68 0 1 0
- 58-99 64 64 0
-row 41    treat all dimensions as reference
- 0-0 64 64 0
- 1-36 64 64 100 0 1 0
- 37-99 64 64 0
-row 43 
- 0-99 64 64 0
-row 45  requests in group
- 0-99 74 64 0
-row 47    (none)
- 0-99 64 61 0
-row 49 
- 0-99 64 64 0
-row 51  constraints in group (1 DOF)
- 0-99 74 64 0
-row 53    (none)
- 0-99 64 61 0
-row 55 
- 0-99 64 64 0
-screen variant 5 1
-row 0  home   drawing / constraining in 3d
- 0-0 64 64 0
- 1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
-row 2 
- 0-99 64 64 0
-row 4 
- 0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
- 0-6 74 64 0
- 7-20 64 64 0
- 21-26 6c 64 108 5 1 0
- 27-27 64 64 0
- 28-30 6c 64 108 5 1 0
- 31-99 64 64 0
-row 10  revolve original sketch
- 0-0 64 64 0
- 1-23 74 64 0
- 24-99 64 64 0
-row 12     one-sided   two-sided
- 0-2 64 61 0
- 3-13 64 61 115 0 1 0
- 14-15 64 61 0
- 16-26 64 61 83 0 1 0
- 27-99 64 61 0
-row 14 
- 0-99 64 64 0
-row 16  solid model as
- 0-0 64 64 0
- 1-99 74 64 0
-row 18     union   assemble
- 0-2 64 61 0
- 3-9 64 61 99 0 1 0
- 10-11 64 61 0
- 12-21 64 61 99 2 1 0
- 22-99 64 61 0
-row 20     difference   intersection
- 0-2 64 61 0
- 3-14 64 61 99 1 1 0
- 15-16 64 61 0
- 17-30 64 61 99 3 1 0
- 31-99 64 61 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
 row 22    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
@@ -2285,6 +2287,124 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
+screen variant 5 1
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-extrude [rename/del]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 5 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 5 1 0
+ 31-99 64 64 0
+row 10  revolve original sketch
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12     one-sided   two-sided
+ 0-2 64 61 0
+ 3-13 64 61 115 0 1 0
+ 14-15 64 61 0
+ 16-26 64 61 83 0 1 0
+ 27-99 64 61 0
+row 14 
+ 0-99 64 64 0
+row 16  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 18     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 20     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 22    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 24    color      (0.00, 0.00, 0.00) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 00000000 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 18 1 0
+ 41-99 64 64 0
+row 26    opacity 0.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 28      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 30 
+ 0-99 64 64 0
+row 32    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 34    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 36    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 39    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 41    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 43    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 45    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 47 
+ 0-99 64 64 0
+row 49  requests in group
+ 0-99 74 64 0
+row 51    (none)
+ 0-99 64 61 0
+row 53 
+ 0-99 64 64 0
+row 55  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 57    (none)
+ 0-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen variant 5 2
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0
@@ -2344,66 +2464,78 @@ row 28     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 30    color      (0.00, 0.00, 0.00) [change]
+row 30    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 32    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 1e 1 0
+ 33-40 6c 64 102 20 1 0
  41-99 64 64 0
-row 32    opacity 0.00 [change]
+row 34    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 34      suppress this group's solid model
+row 36      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 36 
+row 38 
  0-99 64 64 0
-row 38    show entities from this group
+row 40    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    suppress this group and the groups that use it
+row 42    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 42    force NURBS surfaces to triangle mesh
+row 44    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 45    relax constraints and dimensions
+row 47    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 47    allow redundant constraints
+row 49    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 49    suppress dof calculation (improves solver performance)
+row 51    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 51    treat all dimensions as reference
+row 53    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  requests in group
+row 57  requests in group
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
-row 61  constraints in group (1 DOF)
+row 63  constraints in group (1 DOF)
  0-99 74 64 0
-row 63    (none)
+row 65    (none)
  0-99 64 61 0
-row 65 
+row 67 
  0-99 64 64 0
 screen variant 5 3
 row 0  home   drawing / constraining in 3d
@@ -2621,74 +2753,86 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36    force NURBS surfaces to triangle mesh
+row 38    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49 The Boolean operation failed. It may be
+row 51 The Boolean operation failed. It may be
  0-99 64 64 0
-row 51 possible to fix the problem by choosing
+row 53 possible to fix the problem by choosing
  0-99 64 64 0
-row 53 'force NURBS surfaces to triangle mesh'.
+row 55 'force NURBS surfaces to triangle mesh'.
  0-99 64 64 0
-row 55 
+row 57 
  0-99 64 64 0
-row 57  requests in group
+row 59  requests in group
  0-99 74 64 0
-row 59    (none)
+row 61    (none)
  0-99 64 61 0
-row 61 
+row 63 
  0-99 64 64 0
-row 63  constraints in group (1 DOF)
+row 65  constraints in group (1 DOF)
  0-99 74 64 0
-row 65    (none)
+row 67    (none)
  0-99 64 61 0
-row 67 
+row 69 
  0-99 64 64 0
 screen variant 7 0
 row 0  home   drawing / constraining in 3d
@@ -2728,110 +2872,18 @@ row 18     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 20    color      (0.00, 0.00, 0.00) [change]
+row 20    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
- 3-10 74 64 0
- 11-12 64 7a 00000000 0
- 13-32 64 64 0
- 33-40 6c 64 102 14 1 0
- 41-99 64 64 0
-row 22    opacity 0.00 [change]
- 0-2 64 64 0
- 3-9 74 64 0
- 10-15 64 64 0
- 16-23 6c 64 102 0 1 0
- 24-99 64 64 0
-row 24      suppress this group's solid model
- 0-2 64 64 0
- 3-38 64 64 80 0 1 0
- 39-99 64 64 0
-row 26 
- 0-99 64 64 0
-row 28    show entities from this group
- 0-0 64 64 0
- 1-32 64 64 118 0 1 0
- 33-99 64 64 0
-row 30    suppress this group and the groups that use it
- 0-0 64 64 0
- 1-49 64 64 65 0 1 0
- 50-99 64 64 0
-row 32  (model already forced to triangle mesh)
- 0-99 64 64 0
-row 35    relax constraints and dimensions
- 0-0 64 64 0
- 1-35 64 64 114 0 1 0
- 36-99 64 64 0
-row 37    allow redundant constraints
- 0-0 64 64 0
- 1-30 64 64 101 0 1 0
- 31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
- 0-0 64 64 0
- 1-57 64 64 68 0 1 0
- 58-99 64 64 0
-row 41    treat all dimensions as reference
- 0-0 64 64 0
- 1-36 64 64 100 0 1 0
- 37-99 64 64 0
-row 43 
- 0-99 64 64 0
-row 45  requests in group
- 0-99 74 64 0
-row 47    (none)
- 0-99 64 61 0
-row 49 
- 0-99 64 64 0
-row 51  constraints in group (1 DOF)
- 0-99 74 64 0
-row 53    (none)
- 0-99 64 61 0
-row 55 
- 0-99 64 64 0
-screen variant 7 1
-row 0  home   drawing / constraining in 3d
- 0-0 64 64 0
- 1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
-row 2 
- 0-99 64 64 0
-row 4 
- 0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
- 0-6 74 64 0
- 7-20 64 64 0
- 21-26 6c 64 108 7 1 0
- 27-27 64 64 0
- 28-30 6c 64 108 7 1 0
- 31-99 64 64 0
-row 10  revolve original sketch
- 0-0 64 64 0
- 1-23 74 64 0
- 24-99 64 64 0
-row 12     one-sided   two-sided
- 0-2 64 61 0
- 3-13 64 61 115 0 1 0
- 14-15 64 61 0
- 16-26 64 61 83 0 1 0
- 27-99 64 61 0
-row 14 
- 0-99 64 64 0
-row 16  solid model as
- 0-0 64 64 0
- 1-99 74 64 0
-row 18     union   assemble
- 0-2 64 61 0
- 3-9 64 61 99 0 1 0
- 10-11 64 61 0
- 12-21 64 61 99 2 1 0
- 22-99 64 61 0
-row 20     difference   intersection
- 0-2 64 61 0
- 3-14 64 61 99 1 1 0
- 15-16 64 61 0
- 17-30 64 61 99 3 1 0
- 31-99 64 61 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
 row 22    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
@@ -2890,6 +2942,122 @@ row 53  constraints in group (1 DOF)
 row 55    (none)
  0-99 64 61 0
 row 57 
+ 0-99 64 64 0
+screen variant 7 1
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g007-extrude [rename/del]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 7 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 7 1 0
+ 31-99 64 64 0
+row 10  revolve original sketch
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12     one-sided   two-sided
+ 0-2 64 61 0
+ 3-13 64 61 115 0 1 0
+ 14-15 64 61 0
+ 16-26 64 61 83 0 1 0
+ 27-99 64 61 0
+row 14 
+ 0-99 64 64 0
+row 16  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 18     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 20     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 22    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 24    color      (0.00, 0.00, 0.00) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 00000000 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 18 1 0
+ 41-99 64 64 0
+row 26    opacity 0.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 28      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 30 
+ 0-99 64 64 0
+row 32    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 34    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 36  (model already forced to triangle mesh)
+ 0-99 64 64 0
+row 39    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 41    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 43    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 45    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 47 
+ 0-99 64 64 0
+row 49  requests in group
+ 0-99 74 64 0
+row 51    (none)
+ 0-99 64 61 0
+row 53 
+ 0-99 64 64 0
+row 55  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 57    (none)
+ 0-99 64 61 0
+row 59 
  0-99 64 64 0
 screen variant 7 2
 row 0  home   drawing / constraining in 3d
@@ -2950,64 +3118,76 @@ row 28     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 30    color      (0.00, 0.00, 0.00) [change]
+row 30    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 32    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 1e 1 0
+ 33-40 6c 64 102 20 1 0
  41-99 64 64 0
-row 32    opacity 0.00 [change]
+row 34    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 34      suppress this group's solid model
+row 36      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 36 
+row 38 
  0-99 64 64 0
-row 38    show entities from this group
+row 40    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    suppress this group and the groups that use it
+row 42    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 42  (model already forced to triangle mesh)
+row 44  (model already forced to triangle mesh)
  0-99 64 64 0
-row 45    relax constraints and dimensions
+row 47    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 47    allow redundant constraints
+row 49    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 49    suppress dof calculation (improves solver performance)
+row 51    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 51    treat all dimensions as reference
+row 53    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  requests in group
+row 57  requests in group
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
-row 61  constraints in group (1 DOF)
+row 63  constraints in group (1 DOF)
  0-99 74 64 0
-row 63    (none)
+row 65    (none)
  0-99 64 61 0
-row 65 
+row 67 
  0-99 64 64 0
 screen variant 7 3
 row 0  home   drawing / constraining in 3d
@@ -3221,72 +3401,84 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49 The Boolean operation failed. It may be
+row 51 The Boolean operation failed. It may be
  0-99 64 64 0
-row 51 possible to fix the problem by choosing
+row 53 possible to fix the problem by choosing
  0-99 64 64 0
-row 53 'force NURBS surfaces to triangle mesh'.
+row 55 'force NURBS surfaces to triangle mesh'.
  0-99 64 64 0
-row 55 
+row 57 
  0-99 64 64 0
-row 57  requests in group
+row 59  requests in group
  0-99 74 64 0
-row 59    (none)
+row 61    (none)
  0-99 64 61 0
-row 61 
+row 63 
  0-99 64 64 0
-row 63  constraints in group (1 DOF)
+row 65  constraints in group (1 DOF)
  0-99 74 64 0
-row 65    (none)
+row 67    (none)
  0-99 64 61 0
-row 67 
+row 69 
  0-99 64 64 0
 screen variant 9 0
 row 0  home   drawing / constraining in 3d
@@ -3326,110 +3518,18 @@ row 18     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 20    color      (0.00, 0.00, 0.00) [change]
+row 20    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
- 3-10 74 64 0
- 11-12 64 7a 00000000 0
- 13-32 64 64 0
- 33-40 6c 64 102 14 1 0
- 41-99 64 64 0
-row 22    opacity 0.00 [change]
- 0-2 64 64 0
- 3-9 74 64 0
- 10-15 64 64 0
- 16-23 6c 64 102 0 1 0
- 24-99 64 64 0
-row 24      suppress this group's solid model
- 0-2 64 64 0
- 3-38 64 64 80 0 1 0
- 39-99 64 64 0
-row 26 
- 0-99 64 64 0
-row 28    show entities from this group
- 0-0 64 64 0
- 1-32 64 64 118 0 1 0
- 33-99 64 64 0
-row 30    suppress this group and the groups that use it
- 0-0 64 64 0
- 1-49 64 64 65 0 1 0
- 50-99 64 64 0
-row 32  (model already forced to triangle mesh)
- 0-99 64 64 0
-row 35    relax constraints and dimensions
- 0-0 64 64 0
- 1-35 64 64 114 0 1 0
- 36-99 64 64 0
-row 37    allow redundant constraints
- 0-0 64 64 0
- 1-30 64 64 101 0 1 0
- 31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
- 0-0 64 64 0
- 1-57 64 64 68 0 1 0
- 58-99 64 64 0
-row 41    treat all dimensions as reference
- 0-0 64 64 0
- 1-36 64 64 100 0 1 0
- 37-99 64 64 0
-row 43 
- 0-99 64 64 0
-row 45  requests in group
- 0-99 74 64 0
-row 47    (none)
- 0-99 64 61 0
-row 49 
- 0-99 64 64 0
-row 51  constraints in group (1 DOF)
- 0-99 74 64 0
-row 53    (none)
- 0-99 64 61 0
-row 55 
- 0-99 64 64 0
-screen variant 9 1
-row 0  home   drawing / constraining in 3d
- 0-0 64 64 0
- 1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
-row 2 
- 0-99 64 64 0
-row 4 
- 0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
- 0-6 74 64 0
- 7-20 64 64 0
- 21-26 6c 64 108 9 1 0
- 27-27 64 64 0
- 28-30 6c 64 108 9 1 0
- 31-99 64 64 0
-row 10  revolve original sketch
- 0-0 64 64 0
- 1-23 74 64 0
- 24-99 64 64 0
-row 12     one-sided   two-sided
- 0-2 64 61 0
- 3-13 64 61 115 0 1 0
- 14-15 64 61 0
- 16-26 64 61 83 0 1 0
- 27-99 64 61 0
-row 14 
- 0-99 64 64 0
-row 16  solid model as
- 0-0 64 64 0
- 1-99 74 64 0
-row 18     union   assemble
- 0-2 64 61 0
- 3-9 64 61 99 0 1 0
- 10-11 64 61 0
- 12-21 64 61 99 2 1 0
- 22-99 64 61 0
-row 20     difference   intersection
- 0-2 64 61 0
- 3-14 64 61 99 1 1 0
- 15-16 64 61 0
- 17-30 64 61 99 3 1 0
- 31-99 64 61 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
 row 22    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
@@ -3488,6 +3588,122 @@ row 53  constraints in group (1 DOF)
 row 55    (none)
  0-99 64 61 0
 row 57 
+ 0-99 64 64 0
+screen variant 9 1
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g009-extrude [rename/del]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 9 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 9 1 0
+ 31-99 64 64 0
+row 10  revolve original sketch
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12     one-sided   two-sided
+ 0-2 64 61 0
+ 3-13 64 61 115 0 1 0
+ 14-15 64 61 0
+ 16-26 64 61 83 0 1 0
+ 27-99 64 61 0
+row 14 
+ 0-99 64 64 0
+row 16  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 18     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 20     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 22    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 24    color      (0.00, 0.00, 0.00) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 00000000 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 18 1 0
+ 41-99 64 64 0
+row 26    opacity 0.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 28      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 30 
+ 0-99 64 64 0
+row 32    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 34    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 36  (model already forced to triangle mesh)
+ 0-99 64 64 0
+row 39    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 41    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 43    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 45    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 47 
+ 0-99 64 64 0
+row 49  requests in group
+ 0-99 74 64 0
+row 51    (none)
+ 0-99 64 61 0
+row 53 
+ 0-99 64 64 0
+row 55  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 57    (none)
+ 0-99 64 61 0
+row 59 
  0-99 64 64 0
 screen variant 9 2
 row 0  home   drawing / constraining in 3d
@@ -3548,64 +3764,76 @@ row 28     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 30    color      (0.00, 0.00, 0.00) [change]
+row 30    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 32    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 1e 1 0
+ 33-40 6c 64 102 20 1 0
  41-99 64 64 0
-row 32    opacity 0.00 [change]
+row 34    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 34      suppress this group's solid model
+row 36      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 36 
+row 38 
  0-99 64 64 0
-row 38    show entities from this group
+row 40    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    suppress this group and the groups that use it
+row 42    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 42  (model already forced to triangle mesh)
+row 44  (model already forced to triangle mesh)
  0-99 64 64 0
-row 45    relax constraints and dimensions
+row 47    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 47    allow redundant constraints
+row 49    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 49    suppress dof calculation (improves solver performance)
+row 51    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 51    treat all dimensions as reference
+row 53    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  requests in group
+row 57  requests in group
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
-row 61  constraints in group (1 DOF)
+row 63  constraints in group (1 DOF)
  0-99 74 64 0
-row 63    (none)
+row 65    (none)
  0-99 64 61 0
-row 65 
+row 67 
  0-99 64 64 0
 screen variant 9 3
 row 0  home   drawing / constraining in 3d
@@ -3819,72 +4047,84 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49 The Boolean operation failed. It may be
+row 51 The Boolean operation failed. It may be
  0-99 64 64 0
-row 51 possible to fix the problem by choosing
+row 53 possible to fix the problem by choosing
  0-99 64 64 0
-row 53 'force NURBS surfaces to triangle mesh'.
+row 55 'force NURBS surfaces to triangle mesh'.
  0-99 64 64 0
-row 55 
+row 57 
  0-99 64 64 0
-row 57  requests in group
+row 59  requests in group
  0-99 74 64 0
-row 59    (none)
+row 61    (none)
  0-99 64 61 0
-row 61 
+row 63 
  0-99 64 64 0
-row 63  constraints in group (1 DOF)
+row 65  constraints in group (1 DOF)
  0-99 74 64 0
-row 65    (none)
+row 67    (none)
  0-99 64 61 0
-row 67 
+row 69 
  0-99 64 64 0
 screen variant b 0
 row 0  home   drawing / constraining in 3d
@@ -3924,110 +4164,18 @@ row 18     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 20    color      (0.00, 0.00, 0.00) [change]
+row 20    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
- 3-10 74 64 0
- 11-12 64 7a 00000000 0
- 13-32 64 64 0
- 33-40 6c 64 102 14 1 0
- 41-99 64 64 0
-row 22    opacity 0.00 [change]
- 0-2 64 64 0
- 3-9 74 64 0
- 10-15 64 64 0
- 16-23 6c 64 102 0 1 0
- 24-99 64 64 0
-row 24      suppress this group's solid model
- 0-2 64 64 0
- 3-38 64 64 80 0 1 0
- 39-99 64 64 0
-row 26 
- 0-99 64 64 0
-row 28    show entities from this group
- 0-0 64 64 0
- 1-32 64 64 118 0 1 0
- 33-99 64 64 0
-row 30    suppress this group and the groups that use it
- 0-0 64 64 0
- 1-49 64 64 65 0 1 0
- 50-99 64 64 0
-row 32  (model already forced to triangle mesh)
- 0-99 64 64 0
-row 35    relax constraints and dimensions
- 0-0 64 64 0
- 1-35 64 64 114 0 1 0
- 36-99 64 64 0
-row 37    allow redundant constraints
- 0-0 64 64 0
- 1-30 64 64 101 0 1 0
- 31-99 64 64 0
-row 39    suppress dof calculation (improves solver performance)
- 0-0 64 64 0
- 1-57 64 64 68 0 1 0
- 58-99 64 64 0
-row 41    treat all dimensions as reference
- 0-0 64 64 0
- 1-36 64 64 100 0 1 0
- 37-99 64 64 0
-row 43 
- 0-99 64 64 0
-row 45  requests in group
- 0-99 74 64 0
-row 47    (none)
- 0-99 64 61 0
-row 49 
- 0-99 64 64 0
-row 51  constraints in group (1 DOF)
- 0-99 74 64 0
-row 53    (none)
- 0-99 64 61 0
-row 55 
- 0-99 64 64 0
-screen variant b 1
-row 0  home   drawing / constraining in 3d
- 0-0 64 64 0
- 1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
-row 2 
- 0-99 64 64 0
-row 4 
- 0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
- 0-6 74 64 0
- 7-20 64 64 0
- 21-26 6c 64 108 b 1 0
- 27-27 64 64 0
- 28-30 6c 64 108 b 1 0
- 31-99 64 64 0
-row 10  revolve original sketch
- 0-0 64 64 0
- 1-23 74 64 0
- 24-99 64 64 0
-row 12     one-sided   two-sided
- 0-2 64 61 0
- 3-13 64 61 115 0 1 0
- 14-15 64 61 0
- 16-26 64 61 83 0 1 0
- 27-99 64 61 0
-row 14 
- 0-99 64 64 0
-row 16  solid model as
- 0-0 64 64 0
- 1-99 74 64 0
-row 18     union   assemble
- 0-2 64 61 0
- 3-9 64 61 99 0 1 0
- 10-11 64 61 0
- 12-21 64 61 99 2 1 0
- 22-99 64 61 0
-row 20     difference   intersection
- 0-2 64 61 0
- 3-14 64 61 99 1 1 0
- 15-16 64 61 0
- 17-30 64 61 99 3 1 0
- 31-99 64 61 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
 row 22    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
@@ -4086,6 +4234,122 @@ row 53  constraints in group (1 DOF)
 row 55    (none)
  0-99 64 61 0
 row 57 
+ 0-99 64 64 0
+screen variant b 1
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g00b-extrude [rename/del]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 b 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 b 1 0
+ 31-99 64 64 0
+row 10  revolve original sketch
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12     one-sided   two-sided
+ 0-2 64 61 0
+ 3-13 64 61 115 0 1 0
+ 14-15 64 61 0
+ 16-26 64 61 83 0 1 0
+ 27-99 64 61 0
+row 14 
+ 0-99 64 64 0
+row 16  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 18     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 20     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 22    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 24    color      (0.00, 0.00, 0.00) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 00000000 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 18 1 0
+ 41-99 64 64 0
+row 26    opacity 0.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 28      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 30 
+ 0-99 64 64 0
+row 32    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 34    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 36  (model already forced to triangle mesh)
+ 0-99 64 64 0
+row 39    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 41    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 43    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 45    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 47 
+ 0-99 64 64 0
+row 49  requests in group
+ 0-99 74 64 0
+row 51    (none)
+ 0-99 64 61 0
+row 53 
+ 0-99 64 64 0
+row 55  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 57    (none)
+ 0-99 64 61 0
+row 59 
  0-99 64 64 0
 screen variant b 2
 row 0  home   drawing / constraining in 3d
@@ -4146,64 +4410,76 @@ row 28     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 30    color      (0.00, 0.00, 0.00) [change]
+row 30    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 32    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 1e 1 0
+ 33-40 6c 64 102 20 1 0
  41-99 64 64 0
-row 32    opacity 0.00 [change]
+row 34    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 34      suppress this group's solid model
+row 36      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 36 
+row 38 
  0-99 64 64 0
-row 38    show entities from this group
+row 40    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    suppress this group and the groups that use it
+row 42    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 42  (model already forced to triangle mesh)
+row 44  (model already forced to triangle mesh)
  0-99 64 64 0
-row 45    relax constraints and dimensions
+row 47    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 47    allow redundant constraints
+row 49    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 49    suppress dof calculation (improves solver performance)
+row 51    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 51    treat all dimensions as reference
+row 53    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  requests in group
+row 57  requests in group
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
-row 61  constraints in group (1 DOF)
+row 63  constraints in group (1 DOF)
  0-99 74 64 0
-row 63    (none)
+row 65    (none)
  0-99 64 61 0
-row 65 
+row 67 
  0-99 64 64 0
 screen variant b 3
 row 0  home   drawing / constraining in 3d
@@ -4417,72 +4693,84 @@ row 22     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    color      (0.00, 0.00, 0.00) [change]
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26    color      (0.00, 0.00, 0.00) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 00000000 0
  13-32 64 64 0
- 33-40 6c 64 102 18 1 0
+ 33-40 6c 64 102 1a 1 0
  41-99 64 64 0
-row 26    opacity 0.00 [change]
+row 28    opacity 0.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 28      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 32 
  0-99 64 64 0
-row 32    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36  (model already forced to triangle mesh)
+row 38  (model already forced to triangle mesh)
  0-99 64 64 0
-row 39    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49 The Boolean operation failed. It may be
+row 51 The Boolean operation failed. It may be
  0-99 64 64 0
-row 51 possible to fix the problem by choosing
+row 53 possible to fix the problem by choosing
  0-99 64 64 0
-row 53 'force NURBS surfaces to triangle mesh'.
+row 55 'force NURBS surfaces to triangle mesh'.
  0-99 64 64 0
-row 55 
+row 57 
  0-99 64 64 0
-row 57  requests in group
+row 59  requests in group
  0-99 74 64 0
-row 59    (none)
+row 61    (none)
  0-99 64 61 0
-row 61 
+row 63 
  0-99 64 64 0
-row 63  constraints in group (1 DOF)
+row 65  constraints in group (1 DOF)
  0-99 74 64 0
-row 65    (none)
+row 67    (none)
  0-99 64 61 0
-row 67 
+row 69 
  0-99 64 64 0
 screen configuration
 row 0  home   drawing / constraining in 3d
@@ -4711,67 +4999,71 @@ row 115     colour entities by constraint state
  0-1 64 64 0
  2-39 64 64 108 0 1 0
  40-99 64 64 0
-row 117     use camera mouse navigation
+row 117     shade solids by their appearance
+ 0-1 64 64 0
+ 2-36 64 64 108 0 1 0
+ 37-99 64 64 0
+row 119     use camera mouse navigation
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 119     use turntable mouse navigation
+row 121     use turntable mouse navigation
  0-1 64 64 0
  2-34 64 64 108 0 1 0
  35-99 64 64 0
-row 121     edit newly added dimensions
+row 123     edit newly added dimensions
  0-1 64 64 0
  2-31 64 64 108 0 1 0
  32-99 64 64 0
-row 123     arc default is diameter
+row 125     arc default is diameter
  0-1 64 64 0
  2-27 64 64 108 0 1 0
  28-99 64 64 0
-row 125     display the full path in the title bar
+row 127     display the full path in the title bar
  0-1 64 64 0
  2-42 64 64 108 0 1 0
  43-99 64 64 0
-row 127     draw with OpenGL
+row 129     draw with OpenGL
  0-1 64 64 0
  2-20 64 64 108 0 1 0
  21-99 64 64 0
-row 129     ask before an AI program's script runs
+row 131     ask before an AI program's script runs
  0-1 64 64 0
  2-42 64 64 108 0 1 0
  43-99 64 64 0
-row 131 
+row 133 
  0-99 64 64 0
-row 133  autosave interval (in minutes)
+row 135  autosave interval (in minutes)
  0-30 74 64 0
  31-99 64 64 0
-row 135    5 [change]
+row 137    5 [change]
  0-4 64 61 0
  5-12 6c 61 108 0 1 0
  13-99 64 61 0
-row 137 
+row 139 
  0-99 64 64 0
-row 139  redundant constraint timeout (in ms)
+row 141  redundant constraint timeout (in ms)
  0-36 74 64 0
  37-99 64 64 0
-row 141    1000 [change]
+row 143    1000 [change]
  0-7 64 61 0
  8-15 6c 61 108 0 1 0
  16-99 64 61 0
-row 143 
+row 145 
  0-99 64 64 0
-row 145  animation speed (in ms; 0 to disable)
+row 147  animation speed (in ms; 0 to disable)
  0-37 74 64 0
  38-99 64 64 0
-row 147    800 [change]
+row 149    800 [change]
  0-6 64 61 0
  7-14 6c 61 108 0 1 0
  15-99 64 61 0
-row 149 
+row 151 
  0-99 64 64 0
-row 151 (renderer)
 row 153 (renderer)
 row 155 (renderer)
-row 157 
+row 157 (renderer)
+row 159 
  0-99 64 64 0
 screen styles
 row 0  home   drawing / constraining in 3d

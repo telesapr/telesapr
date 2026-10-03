@@ -60,51 +60,63 @@ row 28     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 30      suppress this group's solid model
+row 30    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 32      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 32 
+row 34 
  0-99 64 64 0
-row 34    show entities from this group
+row 36    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 36    suppress this group and the groups that use it
+row 38    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 38  (model already forced to triangle mesh)
+row 40  (model already forced to triangle mesh)
  0-99 64 64 0
-row 41    relax constraints and dimensions
+row 43    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 43    allow redundant constraints
+row 45    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 45    suppress dof calculation (improves solver performance)
+row 47    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 47    treat all dimensions as reference
+row 49    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 49 
+row 51 
  0-99 64 64 0
-row 51  requests in group
+row 53  requests in group
  0-99 74 64 0
-row 53    (none)
+row 55    (none)
  0-99 64 61 0
-row 55 
+row 57 
  0-99 64 64 0
-row 57  constraints in group (6 DOF)
+row 59  constraints in group (6 DOF)
  0-99 74 64 0
-row 59    (none)
+row 61    (none)
  0-99 64 61 0
-row 61 
+row 63 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 0\nTriangles: 526\nVolume: 940.43 mm³\nCenter of mass: (0.0002, -0.00, 6.00)\nExtent: 10.00 x 10.00 x 12.00
 filedialog open
@@ -176,49 +188,61 @@ row 36     difference   intersection
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 38      suppress this group's solid model
+row 38    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 40      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 40 
+row 42 
  0-99 64 64 0
-row 42    show entities from this group
+row 44    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 44    suppress this group and the groups that use it
+row 46    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 46  (model already forced to triangle mesh)
+row 48  (model already forced to triangle mesh)
  0-99 64 64 0
-row 49    relax constraints and dimensions
+row 51    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 51    allow redundant constraints
+row 53    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 53    suppress dof calculation (improves solver performance)
+row 55    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 55    treat all dimensions as reference
+row 57    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 57 
+row 59 
  0-99 64 64 0
-row 59  requests in group
+row 61  requests in group
  0-99 74 64 0
-row 61    (none)
+row 63    (none)
  0-99 64 61 0
-row 63 
+row 65 
  0-99 64 64 0
-row 65  constraints in group (6 DOF)
+row 67  constraints in group (6 DOF)
  0-99 74 64 0
-row 67    (none)
+row 69    (none)
  0-99 64 61 0
-row 69 
+row 71 
  0-99 64 64 0
