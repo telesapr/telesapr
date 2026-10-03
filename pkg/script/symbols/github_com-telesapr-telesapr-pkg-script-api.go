@@ -71,6 +71,7 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	WChanging          func()
 	WDeleteGroup       func(hg core.HGroup)
 	WExport            func(kind api.ExportKind, path string) error
+	WHovered           func() sketch.Selection
 	WLoad              func(path string) error
 	WMmPerUnit         func() float64
 	WRedo              func() bool
@@ -100,6 +101,9 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) DeleteGroup(hg core.H
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Export(kind api.ExportKind, path string) error {
 	return W.WExport(kind, path)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Hovered() sketch.Selection {
+	return W.WHovered()
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Load(path string) error {
 	return W.WLoad(path)

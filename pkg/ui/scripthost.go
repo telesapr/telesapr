@@ -329,7 +329,13 @@ func (h *ScriptHost) Render(path string, width, height int, right, up geom.Vecto
 		ss.GenerateAll(sketch.GenerateAll)
 	}()
 	var werr error
-	err := h.collect(func() { werr = ss.WriteThumbnail(path, uint(width), uint(height), right, up) })
+	err := h.collect(func() {
+		if right == (geom.Vector{}) && up == (geom.Vector{}) {
+			werr = ss.WriteWindowPicture(path, uint(width), uint(height))
+			return
+		}
+		werr = ss.WriteThumbnail(path, uint(width), uint(height), right, up)
+	})
 	if werr != nil {
 		return werr
 	}
@@ -342,6 +348,12 @@ func (h *ScriptHost) Selection() []sketch.Selection {
 		out = append(out, sketch.Selection{Entity: s.Entity, Constraint: s.Constraint})
 	}
 	return out
+}
+
+// Hovered is what the mouse is over in the window.
+func (h *ScriptHost) Hovered() sketch.Selection {
+	hv := h.ss.GW.hover
+	return sketch.Selection{Entity: hv.Entity, Constraint: hv.Constraint, Edge: hv.Edge, Face: hv.Face}
 }
 
 func (h *ScriptHost) Select(sel []sketch.Selection) {

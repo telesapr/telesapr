@@ -3357,6 +3357,9 @@
 			"StyleOutline": {
 				"decl": "const StyleOutline"
 			},
+			"StyleSectionCap": {
+				"decl": "const StyleSectionCap"
+			},
 			"StyleSelected": {
 				"decl": "const StyleSelected"
 			},
@@ -4403,7 +4406,7 @@
 					},
 					"Render": {
 						"decl": "func (d *Doc) Render(path string, width, height int, view string) (err error)",
-						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"."
+						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"; or \"window\", as the application's\nwindow shows it, the same middle and as much of it across."
 					},
 					"Request": {
 						"decl": "func (d *Doc) Request(name string) (r Request)",
@@ -5015,6 +5018,10 @@
 					"Export": {
 						"decl": "func (h *SketchHost) Export(kind ExportKind, path string) error",
 						"text": "Export writes the mesh as STL; the other formats need the\napplication around the sketch."
+					},
+					"Hovered": {
+						"decl": "func (h *SketchHost) Hovered() sketch.Selection",
+						"text": "Hovered is nothing, for the same reason."
 					},
 					"Load": {
 						"decl": "func (h *SketchHost) Load(path string) error",

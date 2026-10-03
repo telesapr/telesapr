@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"context"
+	"github.com/telesapr/telesapr/pkg/core"
 	"image/png"
 	"net"
 	"os"
@@ -148,14 +149,41 @@ func TestAgentDraws(t *testing.T) {
 	if err != nil || !strings.Contains(text, "g003-plate, extrude: solved") {
 		t.Errorf("the drawing is described as %q, %v", text, err)
 	}
-	data, err := a.r.Render(ctx, "isometric", 200, 150)
-	if err != nil {
-		t.Fatal(err)
+	var active core.HGroup
+	a.on(func() { active = a.ss.SK.Active })
+	// The fitted view, the window's view, and the drawing up to the
+	// sketch, which leaves the plate active (roadmap 16.14).
+	for _, c := range [][2]string{{"isometric", ""}, {"window", ""}, {"front", "g002-sketch-in-plane"}} {
+		data, err := a.r.Render(ctx, c[0], c[1], 200, 150)
+		if err != nil {
+			t.Fatalf("%v: %v", c, err)
+		}
+		img, err := png.Decode(bytes.NewReader(data))
+		if err != nil || img.Bounds().Dx() != 200 || img.Bounds().Dy() != 150 {
+			t.Errorf("%v: the picture doesn't decode as 200 by 150: %v", c, err)
+		}
 	}
-	img, err := png.Decode(bytes.NewReader(data))
-	if err != nil || img.Bounds().Dx() != 200 || img.Bounds().Dy() != 150 {
-		t.Errorf("the picture doesn't decode as 200 by 150: %v", err)
+	var after core.HGroup
+	a.on(func() { after = a.ss.SK.Active })
+	if after != active {
+		t.Errorf("rendering a group left g%03x active, not g%03x", after.V, active.V)
 	}
+	if _, err := a.r.Render(ctx, "front", "g099", 20, 20); err == nil || !strings.Contains(err.Error(), "no group") {
+		t.Errorf("a render of no group: %v", err)
+	}
+	// What the mouse is over is in the description.
+	a.on(func() {
+		for _, e := range a.ss.SK.Entities {
+			if e.Type == core.EntityLineSegment && e.Group.V == 2 {
+				a.ss.GW.hover.Entity = e.H
+				break
+			}
+		}
+	})
+	if text, err := a.r.Describe(ctx, ""); err != nil || !strings.Contains(text, "under the mouse:\n    ") {
+		t.Errorf("the hovered line isn't described: %v\n%s", err, text)
+	}
+	a.on(func() { a.ss.GW.hover.Clear() })
 
 	// Each script was one step of undo: two take back the extrusion
 	// and the rectangle, and the failed one left none.

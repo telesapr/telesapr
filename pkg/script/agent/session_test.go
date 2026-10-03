@@ -281,13 +281,13 @@ func TestSessionDescribeHelpRender(t *testing.T) {
 
 	// A sketch with no program around it has no pictures; the sizes
 	// are checked before that is found out.
-	if _, err = s.Render(ctx, "", 0, 0); err == nil || !strings.Contains(err.Error(), "not available") {
+	if _, err = s.Render(ctx, "", "", 0, 0); err == nil || !strings.Contains(err.Error(), "not available") {
 		t.Errorf("a picture without the application: %v", err)
 	}
-	if _, err = s.Render(ctx, "front", MaxSide+1, 10); err == nil || !strings.Contains(err.Error(), "each side") {
+	if _, err = s.Render(ctx, "front", "", MaxSide+1, 10); err == nil || !strings.Contains(err.Error(), "each side") {
 		t.Errorf("a picture too wide: %v", err)
 	}
-	if _, err = s.Render(ctx, "sideways", 10, 10); err == nil || !strings.Contains(err.Error(), "no view") {
+	if _, err = s.Render(ctx, "sideways", "", 10, 10); err == nil || !strings.Contains(err.Error(), "no view") {
 		t.Errorf("a picture from nowhere: %v", err)
 	}
 }

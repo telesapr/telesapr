@@ -54,8 +54,8 @@ The model gets four tools.
 | Tool | What it does |
 |---|---|
 | `run_script` | Runs Go on the drawing, as the script console does. It returns what the script printed, the value of its last expression, and how the drawing solved afterwards. |
-| `get_drawing` | Describes the drawing in words: groups, requests with their positions, constraints, parameters, and what you have selected. |
-| `render` | Returns a picture of the drawing from a named view, so the model can check its work. |
+| `get_drawing` | Describes the drawing in words: groups, requests with their positions, constraints, parameters, what you have selected, and what your mouse is over, so that "this" can be pointed at. |
+| `render` | Returns a picture of the drawing from a named view, fitted, or as your window shows it (`window`), so the model can check its work; with a group, as the drawing is up to that group. |
 | `api_help` | Returns the documentation of the scripting interface: a primer, or one type or method. |
 
 A script can do whatever a script you type in the console can, which includes reading and
