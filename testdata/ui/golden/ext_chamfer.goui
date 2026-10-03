@@ -1,4 +1,4 @@
-dialog 3 Can't chamfer the selection.|Entity 8003002c of g003-extrude is neither a line segment nor a circle: a chamfer cuts straight and circular edges.\n\nChamfer Edges cuts edges of the solid so far. Select one or more of:\n\n    * line segments along edges between two flat faces, as the edges an extrusion makes\n    * circles where a flat face meets a cylinder, as an extruded circle's\n    * straight or circular edges of the solid, picked on the model\n
+dialog 3 Can't chamfer the selection.|Entity 8003002c of g003-extrude is neither a line segment nor a circle: a chamfer cuts straight and circular edges.\n\nChamfer Edges cuts edges of the solid so far. Select one or more of:\n\n    * line segments along edges between two flat faces, as the edges an extrusion makes\n    * circles where a flat face meets a cylinder or a cone, as an extruded circle's\n    * straight or circular edges of the solid, picked on the model\n
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0

@@ -485,3 +485,47 @@ func TestFilletUnevenMitre(t *testing.T) {
 		t.Fatalf("reopened: %s", br.String())
 	}
 }
+
+// A frustum turned by a lathe from a trapezoid in the ZX plane, its
+// top's circle, where the flat top meets the cone, rounded by name
+// through the group; the volume by Pappus.
+func TestFilletCone(t *testing.T) {
+	d := api.New()
+	d.SetChordTolerance(0.005)
+	d.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+	axis.SetConstruction(true)
+	d.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
+	lathe := d.Lathe(axis, "")
+	before := lathe.Check().Volume
+	step(d)
+	saveBefore := saved(t, d)
+	f := d.FilletSolid([]api.SolidEdge{lathe.Solid().EdgeAt(api.V(6*math.Cos(1), 6*math.Sin(1), 8))}, 1.5, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	// In the half plane through the axis: the top runs in, the cone out
+	// and down; the section's spandrel turned about the axis.
+	beta := math.Pi - math.Atan2(8, 4)
+	s := 1.5 / math.Tan(beta/2)
+	g := [2]float64{4 / math.Hypot(4, 8), -8 / math.Hypot(4, 8)}
+	bis := [2]float64{-1 + g[0], g[1]}
+	l := math.Hypot(bis[0], bis[1])
+	c := [2]float64{6 + bis[0]/l*1.5/math.Sin(beta/2), bis[1] / l * 1.5 / math.Sin(beta/2)}
+	kiteX := ((6 + 6 - s + c[0]) + (6 + c[0] + 6 + s*g[0])) / 6
+	alpha := (math.Pi - beta) / 2
+	sectorX := c[0] - bis[0]/l*2*1.5*math.Sin(alpha)/(3*alpha)
+	want := 2 * math.Pi * (1.5*s*kiteX - alpha*1.5*1.5*sectorX)
+	r := f.Check()
+	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.03*want {
+		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
+	}
+	undoRedo(t, d, saveBefore)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+	d.Regen()
+	r = f.Check()
+	back := roundTrip(t, d)
+	if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+		t.Fatalf("reopened: %s", br.String())
+	}
+}

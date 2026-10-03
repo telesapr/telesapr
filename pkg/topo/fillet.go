@@ -28,10 +28,12 @@ func filletErr(at geom.Vector, format string, args ...any) error {
 }
 
 // planarNormal is a face's outward normal when its surface is a plane,
-// which a SolveSpace surface's normal is.
+// which a SolveSpace surface's normal is: a patch of degree 1 both ways,
+// or of a higher degree with every control point on one plane, as a
+// lathe's flat faces are, quarters of a disc or a ring.
 func (t *Topology) planarNormal(f int) (geom.Vector, bool) {
 	s := t.Surface(f)
-	if s == nil || s.DegM != 1 || s.DegN != 1 {
+	if s == nil {
 		return geom.Vector{}, false
 	}
 	n := s.NormalAt(0.5, 0.5)
@@ -39,9 +41,8 @@ func (t *Topology) planarNormal(f int) (geom.Vector, bool) {
 		return geom.Vector{}, false
 	}
 	n = n.WithMagnitude(1)
-	// All four corners on one plane.
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 2; j++ {
+	for i := 0; i <= s.DegM; i++ {
+		for j := 0; j <= s.DegN; j++ {
 			if math.Abs(s.Ctrl[i][j].Minus(s.Ctrl[0][0]).Dot(n)) > geom.LengthEps {
 				return geom.Vector{}, false
 			}

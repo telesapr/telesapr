@@ -2,6 +2,7 @@ package sketch_test
 
 import (
 	"bytes"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -229,6 +230,7 @@ func TestSolidGoldens(t *testing.T) {
 		"fillet-pocket":  func(d *api.Doc) { filletPocket(d, 2) },
 		"fillet-outline": func(d *api.Doc) { filletOutline(t, d) },
 		"fillet-uneven":  func(d *api.Doc) { filletUneven(d) },
+		"fillet-cone":    func(d *api.Doc) { filletCone(d) },
 		"fillet-boss-foot": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
 			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
@@ -388,6 +390,22 @@ func filletUneven(d *api.Doc) {
 
 func BenchmarkFilletUneven(b *testing.B) {
 	benchRegen(b, filletUneven)
+}
+
+// filletCone is a frustum turned by a lathe, its top's rim rounded where
+// the top meets the cone, and its foot chamfered.
+func filletCone(d *api.Doc) {
+	d.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Line(api.V(0, 0, -2), api.V(0, 0, 10))
+	axis.SetConstruction(true)
+	d.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
+	s := d.Lathe(axis, "").Solid()
+	d.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(6*math.Cos(1), 6*math.Sin(1), 8))}, 1.5, "")
+	d.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(10*math.Cos(1), 10*math.Sin(1), 0))}, 1, "")
+}
+
+func BenchmarkFilletCone(b *testing.B) {
+	benchRegen(b, filletCone)
 }
 
 func BenchmarkShell(b *testing.B) {

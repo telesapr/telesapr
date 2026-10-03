@@ -220,7 +220,7 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"Chamfer Edges cuts edges of the solid so far. Select one or more of:\n\n"+
 				"    * line segments along edges between two flat faces, "+
 				"as the edges an extrusion makes\n"+
-				"    * circles where a flat face meets a cylinder, as an extruded circle's\n"+
+				"    * circles where a flat face meets a cylinder or a cone, as an extruded circle's\n"+
 				"    * straight or circular edges of the solid, picked on the model\n", capitalize(err.Error()))
 			return
 		}
@@ -233,7 +233,7 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"Fillet Edges rounds edges of the solid so far. Select one or more of:\n\n"+
 				"    * line segments along edges between two flat faces, "+
 				"as the edges an extrusion makes\n"+
-				"    * circles where a flat face meets a cylinder, as an extruded circle's\n"+
+				"    * circles where a flat face meets a cylinder or a cone, as an extruded circle's\n"+
 				"    * straight or circular edges of the solid, picked on the model\n\n"+
 				"Each ends at corners of three flat faces. An edge that sticks out is "+
 				"rounded off; one that goes in, as a pocket's or a boss's foot, is filled. "+

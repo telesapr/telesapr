@@ -1,0 +1,169 @@
+filedialog open
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 27.605832869761517 -1.3823220444950559 -2.1354598687464654 0.19063850611405675 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 5 8 82 4 41
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-fillet [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 5 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 5 1 0
+ 30-99 64 64 0
+row 10  round edges of the solid
+ 0-0 64 64 0
+ 1-24 74 64 0
+ 25-99 64 64 0
+row 12    radius 1.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-14 64 61 0
+ 15-22 6c 61 108 5 1 0
+ 23-99 64 61 0
+row 14    edges
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-99 64 61 0
+row 16      entity 80040022 of g004-frustum
+ 0-4 64 64 0
+ 5-35 6c 64 108 80040022 1 1
+ 36-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37  requests in group
+ 0-99 74 64 0
+row 39    (none)
+ 0-99 64 61 0
+row 41 
+ 0-99 64 64 0
+row 43  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 45    (none)
+ 0-99 64 61 0
+row 47 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 772\nVolume: 1.64 cm³\nCenter of mass: (-0.00, -0.00, 3.34)\nExtent: 20.00 x 20.00 x 8.00
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-fillet [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 5 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 5 1 0
+ 30-99 64 64 0
+row 10  round edges of the solid
+ 0-0 64 64 0
+ 1-24 74 64 0
+ 25-99 64 64 0
+row 12    radius 2.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-14 64 61 0
+ 15-22 6c 61 108 5 1 0
+ 23-99 64 61 0
+row 14    edges
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-99 64 61 0
+row 16      entity 80040022 of g004-frustum
+ 0-4 64 64 0
+ 5-35 6c 64 108 80040022 1 1
+ 36-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37  requests in group
+ 0-99 74 64 0
+row 39    (none)
+ 0-99 64 61 0
+row 41 
+ 0-99 64 64 0
+row 43  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 45    (none)
+ 0-99 64 61 0
+row 47 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 756\nVolume: 1.63 cm³\nCenter of mass: (-0.00, -0.00, 3.32)\nExtent: 20.00 x 20.00 x 8.00

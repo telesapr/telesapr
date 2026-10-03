@@ -77,8 +77,9 @@ func (g Group) mustBe(group *sketch.Group, t sketch.GroupType, what string) {
 // are square. An edge is a line segment that lies along an edge
 // between two flat faces and sticks out, as the copies of the sketch
 // at the ends of an extrusion and the lines along its sides do; or a
-// circle or arc where a flat face meets a cylinder square to it, as an
-// extruded circle's, which is cut all round by a cone. The new group
+// circle or arc where a flat face meets a cylinder or a cone about the
+// circle's axis, as an extruded circle's or a lathed frustum's, which is
+// cut all round by a cone. The new group
 // becomes active.
 func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {

@@ -12,7 +12,7 @@ import (
 
 // A fillet rounds its edges of the solid so far with its radius, ValB:
 // straight edges between two planar faces, or circles where a planar
-// face meets a cylinder, ending at corners of three faces
+// face meets a cylinder or a cone, ending at corners of three faces
 // (topo.FilletPicks); those that go in are filled. It edits a copy of
 // the solid so far, so its running shell is that solid rounded, with no
 // Boolean; the faces it puts in are named from the group (srf.OriginFor),

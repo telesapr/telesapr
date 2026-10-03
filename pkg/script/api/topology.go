@@ -372,7 +372,7 @@ func (v SolidVertex) Edges() (edges []SolidEdge) {
 // ChamferSolid cuts edges of the solid so far, by name, at distance mm
 // from each edge on both faces: any straight edge between two flat
 // faces, such as one a Boolean made, or a circular one where a flat
-// face meets a cylinder, picked from Solid. The chamfer
+// face meets a cylinder or a cone, picked from Solid. The chamfer
 // keeps the edges' names, so it follows them when the model upstream
 // changes, and reports when one no longer resolves. The new group
 // becomes active.
@@ -417,12 +417,13 @@ func (g Group) SolidEdges() (edges []SolidEdge) {
 // rounded off, and one that goes in, as a pocket's, is filled. Two
 // rounded edges that meet at a corner are mitred, their cylinders
 // meeting along an ellipse, the one that turns further going on past it
-// when the faces don't lie alike about them; three get a sphere. A circle or arc where a flat face meets a cylinder
-// square to it, as an extruded circle's, a hole's rim or a boss's foot,
-// is rounded all round by a torus. An edge takes with it the edges it
-// meets smoothly, as round a rectangle whose corners are rounded. The
-// faces a fillet makes are exact cylinders, spheres and tori, and their
-// edges have names. The new group becomes active.
+// when the faces don't lie alike about them; three get a sphere. A
+// circle or arc where a flat face meets a cylinder or a cone about the
+// circle's axis, as an extruded circle's, a hole's rim, a boss's foot or
+// a lathed frustum's top, is rounded all round by a torus. An edge
+// takes with it the edges it meets smoothly, as round a rectangle whose
+// corners are rounded. The faces a fillet makes are exact cylinders,
+// spheres and tori, and their edges have names. The new group becomes active.
 func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		hs := make([]core.HEntity, len(edges))
