@@ -144,10 +144,18 @@ func (s *SSurface) PointAt(u, v float64) geom.Vector {
 	num := geom.Vector{}
 	den := 0.0
 
+	// Each basis function once; the products are as they were.
+	var bu, bv [MaxDegree + 1]float64
+	for i := 0; i <= s.DegM; i++ {
+		bu[i] = bernstein(i, s.DegM, u)
+	}
+	for j := 0; j <= s.DegN; j++ {
+		bv[j] = bernstein(j, s.DegN, v)
+	}
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			Bi := bernstein(i, s.DegM, u)
-			Bj := bernstein(j, s.DegN, v)
+			Bi := bu[i]
+			Bj := bv[j]
 
 			num = num.Plus(s.Ctrl[i][j].ScaledBy(Bi * Bj * s.Weight[i][j]))
 			den += s.Weight[i][j] * Bi * Bj
@@ -183,12 +191,19 @@ func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
 	var num, numU, numV geom.Vector
 	var den, denU, denV float64
 
+	var bu, bv, bup, bvp [MaxDegree + 1]float64
+	for i := 0; i <= s.DegM; i++ {
+		bu[i], bup[i] = bernstein(i, s.DegM, u), bernsteinDerivative(i, s.DegM, u)
+	}
+	for j := 0; j <= s.DegN; j++ {
+		bv[j], bvp[j] = bernstein(j, s.DegN, v), bernsteinDerivative(j, s.DegN, v)
+	}
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
-			bi := bernstein(i, s.DegM, u)
-			bj := bernstein(j, s.DegN, v)
-			bip := bernsteinDerivative(i, s.DegM, u)
-			bjp := bernsteinDerivative(j, s.DegN, v)
+			bi := bu[i]
+			bj := bv[j]
+			bip := bup[i]
+			bjp := bvp[j]
 
 			num = num.Plus(s.Ctrl[i][j].ScaledBy(bi * bj * s.Weight[i][j]))
 			den += s.Weight[i][j] * bi * bj

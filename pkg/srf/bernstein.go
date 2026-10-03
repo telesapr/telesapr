@@ -59,33 +59,56 @@ var bernsteinDerivativeCoeff = [4][4][3]float64{
 	},
 }
 
-// bernstein evaluates B_{k,deg}(t): from the tables up to degree 3,
-// so those results stay what they were, and as C(deg, k) t^k
-// (1-t)^(deg-k) above.
-func bernstein(k, deg int, t float64) float64 {
-	if deg > 3 {
-		return bernsteinHigh(k, deg, t)
+// bernsteinPoly[deg][k] are the coefficients of B_{k,deg}(t) in
+// powers of t, for every degree up to MaxDegree: those of degree up to
+// 3 are bernsteinCoeff's, those above C(n,k) C(n-k,m-k) (-1)^(m-k) for
+// t^m. bernsteinPolyD are B'_{k,deg}(t)'s.
+var bernsteinPoly, bernsteinPolyD = func() (b [MaxDegree + 1][MaxDegree + 1][MaxDegree + 1]float64,
+	d [MaxDegree + 1][MaxDegree + 1][MaxDegree]float64) {
+	for n := 0; n <= MaxDegree; n++ {
+		for k := 0; k <= n; k++ {
+			for m := k; m <= n; m++ {
+				c := binomial[n][k] * binomial[n-k][m-k]
+				if (m-k)%2 == 1 {
+					c = -c
+				}
+				b[n][k][m] = c
+			}
+			if n <= 3 {
+				for m := 0; m <= 3; m++ {
+					b[n][k][m] = bernsteinCoeff[n][k][m]
+				}
+			}
+			for m := 0; m < MaxDegree; m++ {
+				d[n][k][m] = float64(m+1) * b[n][k][m+1]
+			}
+			if n <= 3 {
+				for m := 0; m <= 2; m++ {
+					d[n][k][m] = bernsteinDerivativeCoeff[n][k][m]
+				}
+			}
+		}
 	}
-	c := bernsteinCoeff[deg][k]
-	return ((c[3]*t+c[2])*t+c[1])*t + c[0]
+	return b, d
+}()
+
+// The Horner forms below are written out for MaxDegree 5; this fails
+// to compile for any other.
+var _ = [1]struct{}{}[MaxDegree-5]
+
+// bernstein evaluates B_{k,deg}(t), by Horner's rule in powers of t.
+// The coefficients above a polynomial's degree are zero, so for degrees
+// up to 3 every step adds exactly what the cubic form
+// ((c3 t + c2) t + c1) t + c0 does, and the results are those.
+func bernstein(k, deg int, t float64) float64 {
+	c := &bernsteinPoly[deg][k]
+	return ((((c[5]*t+c[4])*t+c[3])*t+c[2])*t+c[1])*t + c[0]
 }
 
 // bernsteinDerivative evaluates B'_{k,deg}(t).
 func bernsteinDerivative(k, deg int, t float64) float64 {
-	if deg > 3 {
-		// deg (B_{k-1,deg-1} - B_{k,deg-1}), a term outside 0..deg-1
-		// being 0.
-		d := 0.0
-		if k > 0 {
-			d += bernsteinHigh(k-1, deg-1, t)
-		}
-		if k < deg {
-			d -= bernsteinHigh(k, deg-1, t)
-		}
-		return float64(deg) * d
-	}
-	c := bernsteinDerivativeCoeff[deg][k]
-	return ((c[2]*t)+c[1])*t + c[0]
+	c := &bernsteinPolyD[deg][k]
+	return (((c[4]*t+c[3])*t+c[2])*t+c[1])*t + c[0]
 }
 
 // binomial[n][k] is C(n, k) for n up to MaxDegree.
@@ -101,15 +124,3 @@ var binomial = func() (b [MaxDegree + 1][MaxDegree + 1]float64) {
 	}
 	return b
 }()
-
-func bernsteinHigh(k, deg int, t float64) float64 {
-	r := binomial[deg][k]
-	s := 1 - t
-	for i := 0; i < k; i++ {
-		r *= t
-	}
-	for i := k; i < deg; i++ {
-		r *= s
-	}
-	return r
-}
