@@ -339,7 +339,6 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 			if m.Dot(rm) < 0 {
 				da = da.ScaledBy(-1)
 				dna = dna.ScaledBy(-1)
-				db = db.ScaledBy(-1)
 			}
 
 			bisect := da.WithMagnitude(1.0).ScaledBy(libm.Cos(thetaf / 2.0)).Plus(

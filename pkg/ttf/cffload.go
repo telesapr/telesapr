@@ -817,7 +817,6 @@ type cffCharset struct {
 // cffFDSelect is a CFF_FDSelectRec.
 type cffFDSelect struct {
 	format     byte
-	rangeCount uint32
 	data       []byte
 	cacheFirst uint32
 	cacheCount uint32
@@ -912,10 +911,7 @@ func (fs *cffFDSelect) get(glyphIndex uint32) byte {
 		p := fs.data
 		first := uint32(binary.BigEndian.Uint16(p))
 		i := 2
-		for {
-			if glyphIndex < first {
-				break
-			}
+		for glyphIndex >= first {
 			fd2 := p[i]
 			limit := uint32(binary.BigEndian.Uint16(p[i+1:]))
 			i += 3

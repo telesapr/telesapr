@@ -270,7 +270,8 @@ func (tf *Font) PlotString(str string, sbl *srf.SBezierList, kerning bool,
 			factor:  float32(1.0 / tf.CapHeight),
 			bx:      bx,
 		}
-		g.Outline.Decompose(OutlineFuncs{
+		// C++ only logs a failure, keeping what was decomposed.
+		_ = g.Outline.Decompose(OutlineFuncs{
 			MoveTo: func(p Vector) {
 				d.px, d.py = p.X, p.Y
 			},

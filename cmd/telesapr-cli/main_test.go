@@ -101,7 +101,7 @@ func TestThumbnail(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	img, err := png.DecodeConfig(f)
 	if err != nil || img.Width != 64 || img.Height != 48 {
 		t.Errorf("png %v, %v", img, err)

@@ -510,7 +510,6 @@ func reconstructGlyf(s *cffStream, glyfChecksum, locaChecksum *uint64, w *sfntBu
 			return errInvalidTable
 		}
 		overlapBitmapOffset = pos + offset
-		offset += overlapBitmapLength
 	}
 
 	locaValues := make([]uint64, int(numGlyphs)+1)
@@ -727,7 +726,6 @@ func reconstructGlyf(s *cffStream, glyfChecksum, locaChecksum *uint64, w *sfntBu
 			}
 			copy(glyphBuf[glyphSize:], b)
 			substreams[instructionStream].offset += uint64(instructionSize)
-			glyphSize += uint64(instructionSize)
 
 			if glyphSize, err = storePoints(points, nContours, instructionSize, haveOverlap,
 				glyphBuf); err != nil {
@@ -1104,8 +1102,8 @@ func woff2OpenFont(data []byte) ([]byte, error) {
 		return nil, errInvalidTable
 	}
 
-	numFonts := uint16(1)
-	headerVersion := uint32(0)
+	var numFonts uint16
+	var headerVersion uint32
 	type ttcFont struct {
 		flavor  uint32
 		indices []uint16

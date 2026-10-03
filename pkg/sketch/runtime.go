@@ -238,17 +238,6 @@ func (rt *Runtime) normalQuaternion(e *core.Entity) (geom.Quaternion, error) {
 	return numeric(e, func() geom.Quaternion { return e.NormalGetNum(rt.Sketch) })
 }
 
-func (rt *Runtime) paramValue(h core.HParam) (float64, error) {
-	if h == (core.HParam{}) {
-		return 0, nil
-	}
-	p, err := rt.Param(h)
-	if err != nil {
-		return 0, err
-	}
-	return p.Val, nil
-}
-
 // AlmostEqualVector reports whether two vectors are within tolerance.
 func AlmostEqualVector(a, b geom.Vector, tol float64) bool {
 	return a.DistanceTo(b) <= tol

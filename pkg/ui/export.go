@@ -574,7 +574,6 @@ func (ss *SolveSpaceUI) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierL
 					nb, pbj, auxA, auxB := sei.B, *pB(), sej.AuxA, sej.AuxB
 					sel.AddEdge(nb, pbj, auxA, auxB, 0)
 					sei = &sel.Edges[i]
-					sej = &sel.Edges[j]
 					*pB() = sei.A
 					continue
 				}
@@ -975,7 +974,7 @@ func (ss *SolveSpaceUI) ExportMeshTo(filename string) {
 		fMtl, err := os.Create(mtlFilename)
 		if err != nil {
 			ss.Error("Couldn't write to '%s'", filename)
-			f.Close()
+			_ = f.Close()
 			return
 		}
 
@@ -983,8 +982,10 @@ func (ss *SolveSpaceUI) ExportMeshTo(filename string) {
 		var mtl bytes.Buffer
 		ss.ExportMeshAsObjTo(&out, &mtl, m)
 
-		_, _ = fMtl.Write(mtl.Bytes())
-		fMtl.Close()
+		_, werr := fMtl.Write(mtl.Bytes())
+		if cerr := fMtl.Close(); werr != nil || cerr != nil {
+			ss.Error("Couldn't write to '%s'", mtlFilename)
+		}
 	case hasExtension(filename, "js"), hasExtension(filename, "html"):
 		e := &g.DisplayOutlines
 		ss.ExportMeshAsThreeJsTo(&out, filename, m, e)
@@ -995,8 +996,10 @@ func (ss *SolveSpaceUI) ExportMeshTo(filename string) {
 			"filename '%s'; try .stl, .obj, .js, .html.", filename)
 	}
 
-	_, _ = f.Write(out.Bytes())
-	f.Close()
+	_, werr := f.Write(out.Bytes())
+	if cerr := f.Close(); werr != nil || cerr != nil {
+		ss.Error("Couldn't write to '%s'", filename)
+	}
 
 	ss.JustExportedInfo.ShowOrigin = false
 	ss.JustExportedInfo.Draw = true
@@ -1199,7 +1202,7 @@ func (ss *SolveSpaceUI) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, 
 		"  colors: [\n")
 	// Output triangle colors.
 	for _, tr := range sm.Triangles {
-		pf("    0x%x,\n", tr.Meta.RgbaColor.ToARGB32())
+		pf("    0x%x,\n", tr.Meta.ToARGB32())
 	}
 
 	f.WriteString("  ],\n" +

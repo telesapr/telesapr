@@ -30,7 +30,7 @@ type psPrivate struct {
 	blueShift, blueFuzz                                               int32
 	standardWidth, standardHeight                                     [1]uint16
 	numSnapWidths, numSnapHeights                                     byte
-	forceBold, roundStemUp                                            byte
+	forceBold                                                         byte
 	snapWidths, snapHeights                                           [13]int16
 	expansionFactor                                                   int64
 	languageGroup, password                                           int64
@@ -592,7 +592,7 @@ func t1ParseEncoding(f *t1Font, l *t1Loader) {
 		table := newPSTable(arraySize)
 		l.encodingTable = table
 		for n := 0; n < arraySize; n++ {
-			table.add(n, []byte(".notdef\x00"))
+			_ = table.add(n, []byte(".notdef\x00")) // (void) in FreeType
 		}
 
 		n := 0

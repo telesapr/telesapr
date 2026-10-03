@@ -264,7 +264,7 @@ func (f *Face) cffFaceInit(sfntFormat bool) error {
 			}
 		} else {
 			if name, ok := cff.getSIDString(dict.cidFontName); ok {
-				family, hasFamily = name, true
+				family = name
 			}
 		}
 		if !hasStyle {

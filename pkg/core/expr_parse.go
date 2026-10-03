@@ -162,10 +162,7 @@ func (p *prattParser) parseExpr(minPrec int) (*Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	for {
-		if p.kind != tokOp {
-			break
-		}
+	for p.kind == tokOp {
 		prec, ok := binOpPrec(p.lit)
 		if !ok || prec < minPrec {
 			break

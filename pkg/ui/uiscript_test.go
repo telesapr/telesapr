@@ -65,7 +65,7 @@ func runUIScriptWith(t testing.TB, name string, setup func(r *uiScriptRunner)) s
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		line := sc.Text()
@@ -92,7 +92,7 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.RemoveAll(saveDir) })
+	t.Cleanup(func() { _ = os.RemoveAll(saveDir) })
 	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.tlspr")}
 	r.p = headless.New()
 	r.p.FontFiles = []string{filepath.Join(root, "Gentium-R.ttf")}

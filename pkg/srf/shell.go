@@ -54,19 +54,6 @@ const (
 	CurveSourceIntersection CurveSource = 4
 )
 
-// surfAFromB returns the surface handle of the original surface in
-// `parent` that is named `which` in `old`. Used by
-// SShell::CopyCurvesSplitAgainst / SShell::MakeIntersectionCurvesAgainst
-// to rewrite the newH back to a parent-relative source face. Mirrors
-// the helpers in srf/boolean.cpp that need to know which surface in the
-// original shell a curve came from.
-func surfAFromB(which core.HSSurface, a, b *SShell) core.HSSurface {
-	if a != nil && a.FindSurface(which) != nil {
-		return which
-	}
-	return which
-}
-
 // SShell is a watertight collection of trimmed surfaces and the
 // trim curves joining them. Used as the input to SShell::MakeFromBoolean
 // (Phase 4) and as the result of Group::GenerateShellAndMesh
@@ -845,14 +832,6 @@ func (srf *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
 			mesh.AddTriangle3(meta, p00, p10, p11)
 			mesh.AddTriangle3(meta, p00, p11, p01)
 		}
-	}
-}
-
-func snap(p geom.Vector, tol float64) geom.Vector {
-	return geom.Vector{
-		X: math.Round(p.X/tol) * tol,
-		Y: math.Round(p.Y/tol) * tol,
-		Z: math.Round(p.Z/tol) * tol,
 	}
 }
 

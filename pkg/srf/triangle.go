@@ -85,11 +85,8 @@ func (t *STriangle) ContainsPointProjd(n, p geom.Vector) bool {
 	}
 
 	noCA := n.Cross(ca)
-	if noCA.Dot(p) < noCA.Dot(t.C)-geom.LengthEps {
-		return false
-	}
-
-	return true
+	// Not >=, which a NaN would fail.
+	return !(noCA.Dot(p) < noCA.Dot(t.C)-geom.LengthEps)
 }
 
 // containsPointProjdWithin is ContainsPointProjd with its tolerance a

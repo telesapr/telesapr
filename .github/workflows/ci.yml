@@ -64,8 +64,7 @@ jobs:
           path: telesapr/coverage.out
 
   lint:
-    # Reports only on lines the change touches: the existing code is not
-    # lint-clean (about 100 findings on 2026-10-01).
+    # The whole tree, which is lint-clean since 2026-10-03.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -89,4 +88,3 @@ jobs:
         with:
           version: v2.13.2
           working-directory: telesapr
-          only-new-issues: true

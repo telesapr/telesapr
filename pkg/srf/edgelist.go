@@ -129,20 +129,5 @@ func ApproxEqualGeometry(a, b *SEdgeList, tol float64) bool {
 	return true
 }
 
-// polygonArea2 returns twice the signed area of a polygon in 2-D
-// (using x and z of the points). Helper used by ear-clipping.
-func polygonArea2(points []geom.Vector) float64 {
-	if len(points) < 3 {
-		return 0
-	}
-	sum := 0.0
-	for i := 0; i < len(points); i++ {
-		a := points[i]
-		b := points[(i+1)%len(points)]
-		sum += (b.X - a.X) * (b.Z + a.Z)
-	}
-	return sum / 2
-}
-
 // avoid unused import warnings if some helpers aren't used in this file.
 var _ = math.Pi

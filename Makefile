@@ -78,12 +78,11 @@ fuzz:
 		GOCACHE=$(PWD)/.gocache go test $$pkg -run '^$$' -fuzz "^$$name\$$" -fuzztime $(FUZZTIME) || exit 1; \
 	done
 
-# What .github/workflows/ci.yml runs. The existing code is not
-# lint-clean, so only what changed since LINT_BASE is linted.
+# What .github/workflows/ci.yml runs, the whole tree linted.
 # The checks that rewrite or read the sources first; then the rest side
 # by side, each target's output printed when it is done.
 ci: fmt-check vet generate-check
-	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint-new
+	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint
 
 fmt-check:
 	@echo "==> gofmt -l"
@@ -107,8 +106,8 @@ lint:
 	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
 
 # Where the branch left master, so that a branch's commits are linted
-# and not only what is uncommitted; on master that is HEAD. The GitHub
-# workflow lints with golangci-lint-action's only-new-issues instead.
+# and not only what is uncommitted; on master that is HEAD. A quicker
+# check while working; make ci lints everything.
 LINT_BASE ?= $(shell git merge-base HEAD master 2>/dev/null || echo HEAD)
 
 lint-new:

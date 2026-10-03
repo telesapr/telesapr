@@ -92,21 +92,21 @@ func (d *MessageDialog) RunModal() platform.Response {
 		platform.DialogInformation: "ℹ", platform.DialogQuestion: "?",
 		platform.DialogWarning: "⚠", platform.DialogError: "✖",
 	}[d.typ]
-	pack.Pack(label.New(dlg.Content, "icon", label.Text(icon), label.FontOpt("sans-serif 24 bold")),
+	_ = pack.Pack(label.New(dlg.Content, "icon", label.Text(icon), label.FontOpt("sans-serif 24 bold")),
 		pack.SideOpt(pack.Left), pack.Anchor(option.AnchorN), pack.PadX(12), pack.PadY(12))
 
 	text := newFrame(dlg.Content, "text")
-	pack.Pack(text, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillBoth), pack.Expand(true),
+	_ = pack.Pack(text, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillBoth), pack.Expand(true),
 		pack.PadXPair(0, 12), pack.PadY(12))
 	msgFont := "TkDefaultFont"
 	if d.description != "" {
 		msgFont = "TkHeadingFont"
 	}
-	pack.Pack(label.New(text, "msg", label.Text(d.message), label.FontOpt(msgFont),
+	_ = pack.Pack(label.New(text, "msg", label.Text(d.message), label.FontOpt(msgFont),
 		label.WrapLength(screenunit.In(4)), label.JustifyOpt(option.JustifyLeft), label.Anchor(option.AnchorW)),
 		pack.SideOpt(pack.Top), pack.Anchor(option.AnchorW))
 	if d.description != "" {
-		pack.Pack(label.New(text, "desc", label.Text(d.description),
+		_ = pack.Pack(label.New(text, "desc", label.Text(d.description),
 			label.WrapLength(screenunit.In(4)), label.JustifyOpt(option.JustifyLeft), label.Anchor(option.AnchorW)),
 			pack.SideOpt(pack.Top), pack.Anchor(option.AnchorW), pack.PadYPair(8, 0))
 	}
@@ -123,7 +123,7 @@ func (d *MessageDialog) RunModal() platform.Response {
 			button.Command(func() { dlg.Close(res) }))
 		btn.Underline = b.underline
 		underlineButton(btn)
-		pack.Pack(btn, pack.SideOpt(pack.Right), pack.PadX(5))
+		_ = pack.Pack(btn, pack.SideOpt(pack.Right), pack.PadX(5))
 		btns[i] = btn.Window()
 		if b.isDefault {
 			def = i

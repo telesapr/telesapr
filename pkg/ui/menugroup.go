@@ -384,8 +384,3 @@ func (ss *SolveSpaceUI) reloadAllLinked() {
 		ss.SK.ReloadAllLinked(ss.SK)
 	}
 }
-
-// groupExists is SolveSpaceUI::GroupExists.
-func (ss *SolveSpaceUI) groupExists(hg core.HGroup) bool {
-	return ss.SK.GetGroup(hg) != nil
-}

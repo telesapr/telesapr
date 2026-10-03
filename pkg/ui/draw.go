@@ -11,14 +11,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// selectionHasEndpoints is Selection::HasEndpoints.
-func (gw *GraphicsWindow) selectionHasEndpoints(s *Selection) bool {
-	if s.Entity.V == 0 {
-		return false
-	}
-	return gw.sk().GetEntity(s.Entity).HasEndpoints()
-}
-
 // drawSelection is Selection::Draw: highlighted, and when emphasized,
 // with thick lines from the top left of the screen to its reference
 // points.

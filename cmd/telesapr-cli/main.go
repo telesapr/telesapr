@@ -24,8 +24,8 @@ import (
 )
 
 func showUsage(w io.Writer, cmd string) {
-	fmt.Fprintf(w, "Usage: %s <command> <options> <filename> [filename...]", cmd)
-	io.WriteString(w, `
+	_, _ = fmt.Fprintf(w, "Usage: %s <command> <options> <filename> [filename...]", cmd)
+	_, _ = io.WriteString(w, `
     When run, performs an action specified by <command> on every <filename>.
 
 Common options:
@@ -93,7 +93,7 @@ File formats:
 `, list(platform.RasterFileFilters), list(platform.VectorFileFilters),
 		list(platform.Vector3dFileFilters), list(platform.MeshFileFilters),
 		list(platform.SurfaceFileFilters))
-	io.WriteString(w, scriptUsage)
+	_, _ = io.WriteString(w, scriptUsage)
 	_, _ = io.WriteString(w, mcpUsage)
 }
 

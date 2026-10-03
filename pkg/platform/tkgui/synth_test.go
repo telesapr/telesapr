@@ -26,10 +26,10 @@ func TestShiftedSymbolAccelerators(t *testing.T) {
 	// Zoom In takes '+', Show Snap Grid '>', Sketch In 3d Shift+3.
 	w.events.OnKeyboardEvent = func(e platform.KeyboardEvent) bool {
 		seen = append(seen, e)
-		switch {
-		case e.Chr == '+' || e.Chr == '>':
+		switch e.Chr {
+		case '+', '>':
 			return !e.ShiftDown
-		case e.Chr == '3':
+		case '3':
 			return e.ShiftDown
 		}
 		return false

@@ -30,10 +30,16 @@ func TestImageAspectFromFile(t *testing.T) {
 		[]byte("Request.aspectRatio=1.00000000000000000000"))
 	for name, withPng := range map[string]bool{"with.slvs": true, "sub/without.slvs": false} {
 		path := filepath.Join(dir, name)
-		os.MkdirAll(filepath.Dir(path), 0o755)
-		os.WriteFile(path, data, 0o644)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
 		if withPng {
-			os.WriteFile(filepath.Join(dir, "drawing.png"), png, 0o644)
+			if err := os.WriteFile(filepath.Join(dir, "drawing.png"), png, 0o644); err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		doc, err := LoadFile(path)

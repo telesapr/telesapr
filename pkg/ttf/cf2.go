@@ -36,7 +36,6 @@ var (
 	cf2ICFBottom   = cf2IntToFixed(-120)
 	cf2MinCounter  = cf2DoubleToFixed(0.5)
 	errStackOvfl   = errInvalidGlyphFmt
-	errCf2Invalid  = errInvalidGlyphFmt
 	errCf2TooBig   = errInvalidArg
 	cf2Darken07    = cf2DoubleToFixed(0.7)
 	cf2Darken03    = cf2DoubleToFixed(1.0 - 0.7)
@@ -1537,7 +1536,8 @@ func (font *cf2Font) setup(transform *cf2Matrix) {
 	if !font.isT1 && font.cff.vstore.dataCount != 0 {
 		lenNDV, ndv := font.cff.normalizedVector()
 		if subFont.blend.checkVector(subFont.privateDict.vsindex, lenNDV, ndv) {
-			font.cff.loadPrivateDict(subFont, lenNDV, ndv)
+			// FreeType's cf2_font_setup ignores the error too.
+			_ = font.cff.loadPrivateDict(subFont, lenNDV, ndv)
 			needExtraSetup = true
 		}
 		font.blend.font = subFont.blend.font
