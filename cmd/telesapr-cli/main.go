@@ -261,7 +261,7 @@ func runCommand(args []string, stderr io.Writer) bool {
 
 	switch args[1] {
 	case "version":
-		fmt.Fprintf(stderr, "TeleSAPR, based on SolveSpace version %s \n\n", version)
+		_, _ = fmt.Fprintf(stderr, "TeleSAPR, based on SolveSpace version %s \n\n", version)
 		return true
 	case "thumbnail":
 		accepted = []string{"--output", "--view", "--chord-tol", "--size"}
