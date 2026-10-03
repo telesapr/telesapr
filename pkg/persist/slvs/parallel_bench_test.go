@@ -15,10 +15,10 @@ func benchmarkRegenerate(b *testing.B, name string, copies map[uint32]float64) {
 	for _, mode := range []struct {
 		name string
 		mode srf.ParallelMode
-	}{{"off", srf.ParallelOff}, {"exact", srf.ParallelExact}, {"fast", srf.ParallelFast}} {
+	}{{"off", srf.ParallelOff}, {"on", srf.ParallelOn}} {
 		b.Run(mode.name, func(b *testing.B) {
 			srf.SetParallelMode(mode.mode)
-			defer srf.SetParallelMode(srf.ParallelExact)
+			defer srf.SetParallelMode(srf.ParallelOn)
 			srf.SetChordTolMm(0)
 			doc, err := LoadFile(fixture(name))
 			if err != nil {

@@ -18,30 +18,27 @@ import (
 // A loop whose iterations write only what they own just runs at once
 // (MakeClassifyingBsps, TriangulateInto). The loops of a Boolean over
 // one operand's curves and surfaces also write to the result shell,
-// which they do afterwards, in order, and to the closest-point caches
-// of the surfaces they project points on (SSurface.Cached), which
-// makes a projection depend on the one before it. Planes have no use
-// for the cache, so those loops run at once for operands made of
-// planes only; for others they run in order, unless the mode is
-// ParallelFast.
+// which they do afterwards, in order, and would read the closest-point
+// caches of the surfaces they project points on (SSurface.Cached),
+// which makes a projection depend on the one before it; so for
+// operands with curved surfaces the caches are off while they run.
+// Planes have no use for them. The loops run the same way on one
+// goroutine as on several, so the result is the same to the bit
+// whatever the number (roadmap 17.1: there was an exact mode, which ran
+// curved operands' loops in order with the caches on, for C++'s last
+// bits).
 
-// ParallelMode says which loops of a Boolean run on several goroutines.
+// ParallelMode says whether the loops run on several goroutines.
 type ParallelMode int
 
 const (
-	// ParallelExact runs at once the loops that give the bits of one
-	// goroutine.
-	ParallelExact ParallelMode = iota
-	// ParallelFast also runs at once the loops over operands with
-	// curved surfaces, with the surfaces' closest-point caches off
-	// meanwhile. The result doesn't depend on the number of goroutines
-	// or their timing, but its last bits aren't those of ParallelExact.
-	ParallelFast
+	// ParallelOn runs them on all the processors.
+	ParallelOn ParallelMode = iota
 	// ParallelOff runs everything on one goroutine.
 	ParallelOff
 )
 
-var parallelMode = ParallelExact
+var parallelMode = ParallelOn
 
 // SetParallelMode sets the mode; like the chord tolerance, not while
 // a sketch is generated.
@@ -54,19 +51,16 @@ func SetParallelMode(m ParallelMode) {
 	}
 }
 
-// SetParallelModeFromEnv takes TELESAPR_PARALLEL: "exact" (the
-// default) has the solids generated on all the processors where that
-// gives the bits of one; "fast" on all of them throughout, for other
-// last bits; "off" on one.
+// SetParallelModeFromEnv takes TELESAPR_PARALLEL: "on" (the default)
+// has the solids generated on all the processors, "off" on one; the
+// result is the same.
 func SetParallelModeFromEnv() {
 	switch v := os.Getenv("TELESAPR_PARALLEL"); v {
-	case "", "exact":
-	case "fast":
-		SetParallelMode(ParallelFast)
+	case "", "on":
 	case "off":
 		SetParallelMode(ParallelOff)
 	default:
-		log.Printf("TELESAPR_PARALLEL is '%s'; it can be exact, fast or off.", v)
+		log.Printf("TELESAPR_PARALLEL is '%s'; it can be on or off.", v)
 	}
 }
 
@@ -97,17 +91,11 @@ func (s *SShell) allPlanes() bool {
 }
 
 // booleanLoops says how to run a loop of the Boolean of a and b over
-// the curves or surfaces of one of them: at once or in order, and if
-// at once, whether that takes switching the closest-point caches of
-// their surfaces off.
+// the curves or surfaces of one of them: always at once (on as many
+// goroutines as there are, one when the mode is off), and whether that
+// takes switching the closest-point caches of their surfaces off.
 func booleanLoops(a, b *SShell) (atOnce, noCache bool) {
-	if parallelMode == ParallelOff {
-		return false, false
-	}
-	if a.allPlanes() && b.allPlanes() {
-		return true, false
-	}
-	return parallelMode == ParallelFast, true
+	return true, !(a.allPlanes() && b.allPlanes())
 }
 
 // setNoCache switches the closest-point caches of the shells' surfaces

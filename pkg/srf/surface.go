@@ -50,7 +50,7 @@ type SSurface struct {
 	Cached geom.Point2d
 	// noCache keeps ClosestPointTo off Cached while a loop run at once
 	// projects points on this surface from several goroutines (see
-	// ParallelFast).
+	// parallel.go).
 	noCache bool
 
 	// TrimBuilt is a Go-port-only marker (no C++ field mirrors it):

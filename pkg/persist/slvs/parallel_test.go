@@ -7,7 +7,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
@@ -103,7 +102,7 @@ func generatedCopiesWith(t *testing.T, mode srf.ParallelMode, workers int, path,
 	if mode != srf.ParallelOff {
 		par.SetWorkers(workers)
 	}
-	defer srf.SetParallelMode(srf.ParallelExact)
+	defer srf.SetParallelMode(srf.ParallelOn)
 	return generatedDump(t, path, stl, copies)
 }
 
@@ -138,7 +137,7 @@ func TestParallelSameAsSerial(t *testing.T) {
 		}
 		count++
 		for _, workers := range []int{1, 8} {
-			if !bytes.Equal(serial, generatedWith(t, srf.ParallelExact, workers, path, stl)) {
+			if !bytes.Equal(serial, generatedWith(t, srf.ParallelOn, workers, path, stl)) {
 				t.Errorf("%s: generated on %d goroutines differs from serial", path, workers)
 			}
 		}
@@ -159,74 +158,11 @@ func TestParallelSameAsSerialStepAndRepeat(t *testing.T) {
 	if bytes.Equal(serial, generatedWith(t, srf.ParallelOff, 1, path, stl)) {
 		t.Fatal("the numbers of copies didn't change")
 	}
-	for _, mode := range []srf.ParallelMode{srf.ParallelExact, srf.ParallelFast} {
-		for _, workers := range []int{1, 3, 8} {
-			if !bytes.Equal(serial, generatedCopiesWith(t, mode, workers, path, stl, copies)) {
-				t.Errorf("mode %d on %d goroutines differs from serial", mode, workers)
-			}
+	for _, workers := range []int{1, 3, 8} {
+		if !bytes.Equal(serial, generatedCopiesWith(t, srf.ParallelOn, workers, path, stl, copies)) {
+			t.Errorf("on %d goroutines differs from serial", workers)
 		}
 	}
-}
-
-// TestParallelFastSameOnAnyGoroutines generates every fixture in the
-// fast mode, whose result mustn't depend on the number of goroutines.
-func TestParallelFastSameOnAnyGoroutines(t *testing.T) {
-	stl := filepath.Join(t.TempDir(), "out.stl")
-	eachFixture(t, func(path string) {
-		one := generatedWith(t, srf.ParallelFast, 1, path, stl)
-		for _, workers := range []int{2, 8} {
-			if !bytes.Equal(one, generatedWith(t, srf.ParallelFast, workers, path, stl)) {
-				t.Errorf("%s: generated on %d goroutines differs from one", path, workers)
-			}
-		}
-	})
-}
-
-// generatedShape loads a fixture, generates it in the given mode, and
-// returns what shouldn't depend on the last bits: for every group,
-// whether its Boolean failed, the numbers of its surfaces, curves and
-// triangles, and its volume.
-func generatedShape(mode srf.ParallelMode, path string) (counts []int, volumes []float64) {
-	srf.SetParallelMode(mode)
-	defer srf.SetParallelMode(srf.ParallelExact)
-	srf.SetChordTolMm(0)
-	doc, err := LoadFile(path)
-	if err != nil {
-		return nil, nil
-	}
-	sk := doc.Sketch
-	sk.GenerateAllTyped(sketch.GenerateAll)
-	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
-		failed := 0
-		if g.BooleanFailed {
-			failed = 1
-		}
-		var m srf.SMesh
-		g.RunningShell.TriangulateInto(&m)
-		counts = append(counts, failed, len(g.RunningShell.Surface), len(g.RunningShell.Curve),
-			len(m.Triangles), len(g.RunningMesh.Triangles))
-		volumes = append(volumes, m.CalculateVolume(), g.RunningMesh.CalculateVolume())
-	}
-	return counts, volumes
-}
-
-// TestParallelFastSameShapeAsSerial requires of the fast mode the
-// solids of the serial one, up to the last bits.
-func TestParallelFastSameShapeAsSerial(t *testing.T) {
-	eachFixture(t, func(path string) {
-		wantN, wantV := generatedShape(srf.ParallelOff, path)
-		gotN, gotV := generatedShape(srf.ParallelFast, path)
-		if !slices.Equal(gotN, wantN) {
-			t.Errorf("%s: fast mode has\n%v, serial\n%v", path, gotN, wantN)
-			return
-		}
-		for i := range wantV {
-			if math.Abs(gotV[i]-wantV[i]) > 1e-9*math.Max(1, math.Abs(wantV[i])) {
-				t.Errorf("%s: fast mode has volume %v, serial %v", path, gotV[i], wantV[i])
-			}
-		}
-	})
 }
 
 // raceEvery is how many fixtures and cases make one that runs under the

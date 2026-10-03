@@ -7022,14 +7022,13 @@
 				]
 			},
 			"ParallelMode": {
-				"text": "ParallelMode says which loops of a Boolean run on several goroutines.",
+				"text": "ParallelMode says whether the loops run on several goroutines.",
 				"kind": "int",
 				"makers": [
 					"GetParallelMode"
 				],
 				"values": [
-					"ParallelExact",
-					"ParallelFast",
+					"ParallelOn",
 					"ParallelOff"
 				]
 			},
@@ -8476,7 +8475,7 @@
 			},
 			"SetParallelModeFromEnv": {
 				"decl": "func SetParallelModeFromEnv()",
-				"text": "SetParallelModeFromEnv takes TELESAPR_PARALLEL: \"exact\" (the default) has the solids generated on all the processors where that gives the bits of one; \"fast\" on all of them throughout, for other last bits; \"off\" on one."
+				"text": "SetParallelModeFromEnv takes TELESAPR_PARALLEL: \"on\" (the default) has the solids generated on all the processors, \"off\" on one; the result is the same."
 			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",
@@ -8581,14 +8580,11 @@
 				"decl": "const MaxDegree",
 				"text": "MaxDegree is the highest degree of a patch or a curve in either direction."
 			},
-			"ParallelExact": {
-				"decl": "const ParallelExact"
-			},
-			"ParallelFast": {
-				"decl": "const ParallelFast"
-			},
 			"ParallelOff": {
 				"decl": "const ParallelOff"
+			},
+			"ParallelOn": {
+				"decl": "const ParallelOn"
 			},
 			"RigidIdentity": {
 				"decl": "var RigidIdentity",
