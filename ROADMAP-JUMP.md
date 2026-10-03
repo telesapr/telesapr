@@ -35,7 +35,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 14. Names, faces and picking | done 2026-10-03: faces with only an Origin drawn apart and picked, a circle's fillet one face, names that count their edges and survive a longer thread, non-manifold edges reported where they are, hover on large meshes by a grid, Measure by outward normals | `f512ed1` |
 | 15. Solid features completed | done 2026-10-03: chamfers by the fillet's edit (concave edges, chains; two distances not done), shells of prisms with round sides, apexes of four faces split, the draft angle on extrusions, the mirror of the whole solid, the pattern along a path, the stopped chain's message | `fb151c3` |
 | 16. Small features | done 2026-10-03: dimensions by name, configurations, motion study, groups inserted mid-history, 3MF export, text STL and OBJ links, bill of materials, STEP assemblies, mates, interference by shells, constraints inferred while drawing, the section's hatch, STEP links in place, what an AI program sees | `5e2d5be` |
-| 17. Regeneration | done 2026-10-03: one parallel mode, the coincident planes merged at once, solids made off the window's thread with cancel, linked files kept in memory and STEP meshes on disk, packed models | MERGE17 |
+| 17. Regeneration | done 2026-10-03: one parallel mode, the coincident planes merged at once, solids made off the window's thread with cancel, linked files kept in memory and STEP meshes on disk, packed models | `978d25f` |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
