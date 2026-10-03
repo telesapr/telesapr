@@ -172,13 +172,9 @@ func TestShellRefusals(t *testing.T) {
 		t.Error("a negative thickness")
 	}
 	// A cylinder's side is curved.
-	var cyl srf.SShell
-	var ls srf.SBezierLoopSet
-	ls.Outer.Curves = circle(5, 0, 0)
-	ls.Normal = v(0, 0, 1)
-	cyl.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, 10), core.NewRgbaColor(100, 100, 100, 255))
-	ct := build(t, &cyl)
-	if _, err := topo.ShellSolid(&cyl, []int{faceAt(t, ct, v(0, 0, 10), v(0, 0, 1))}, 1, 1<<30); !errors.As(err, &se) {
+	cyl := cylinder(5, 10)
+	ct := build(t, cyl)
+	if _, err := topo.ShellSolid(cyl, []int{faceAt(t, ct, v(0, 0, 10), v(0, 0, 1))}, 1, 1<<30); !errors.As(err, &se) {
 		t.Errorf("a curved face: %v", err)
 	}
 	// Four faces meet at the apex of a pyramid over a rectangle, off

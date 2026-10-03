@@ -266,3 +266,97 @@ func TestFilletCorners(t *testing.T) {
 		}
 	}
 }
+
+// circleOf is the circle entity of an extrusion of a circle at height z.
+func circleOf(t *testing.T, ex api.Group, z float64) api.Entity {
+	t.Helper()
+	for _, e := range ex.Entities() {
+		if e.Kind() == "circle" && math.Abs(e.Center().Pos().Z-z) < 1e-9 {
+			return e
+		}
+	}
+	t.Fatalf("no circle of %s at z = %g", ex.Name(), z)
+	return api.Entity{}
+}
+
+// spandrelLoss is what a fillet of radius r takes from a circular edge
+// of radius rad, by Pappus: the area between the corner and the arc,
+// turned about the axis by its centroid, inside the circle for a boss
+// and outside it for a hole.
+func spandrelLoss(rad, r float64, hole bool) float64 {
+	a := r * r * (1 - math.Pi/4)
+	c := r * (10 - 3*math.Pi) / (12 - 3*math.Pi)
+	if hole {
+		return a * 2 * math.Pi * (rad + c)
+	}
+	return a * 2 * math.Pi * (rad - c)
+}
+
+// A cylinder's top circle rounded and chamfered, by its entity and by
+// one of its solid edges, through the groups; the loss by Pappus.
+func TestFilletCircle(t *testing.T) {
+	for _, flat := range []bool{false, true} {
+		for _, byName := range []bool{false, true} {
+			d := api.New()
+			d.SetChordTolerance(0.005)
+			d.Circle(api.V(0, 0, 0), 5)
+			ex := d.Extrude(10, "")
+			before := ex.Check().Volume
+			step(d)
+			saveBefore := saved(t, d)
+			var g api.Group
+			switch {
+			case flat && byName:
+				g = d.ChamferSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
+			case flat:
+				g = d.Chamfer([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+			case byName:
+				g = d.FilletSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
+			default:
+				g = d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+			}
+			if p := g.Problem(); p != "" {
+				t.Fatalf("flat %v by name %v: %s", flat, byName, p)
+			}
+			r := g.Check()
+			want := spandrelLoss(5, 2, false)
+			if flat {
+				want = 2 * 2 / 2.0 * 2 * math.Pi * (5 - 2/3.0)
+			}
+			if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
+				t.Fatalf("flat %v by name %v: %s, took %g, want %g", flat, byName, r.String(), before-r.Volume, want)
+			}
+			undoRedo(t, d, saveBefore)
+			// A reopened file meshes at the default tolerance.
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Regen()
+			r = g.Check()
+			back := roundTrip(t, d)
+			if br := back.Group(g.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+				t.Fatalf("flat %v by name %v reopened: %s", flat, byName, br.String())
+			}
+		}
+	}
+}
+
+// A boss on a block: its top circle and a top edge of the block
+// chamfered in one group, the circle by a cone, the edge by a wedge.
+func TestChamferCircleAndEdge(t *testing.T) {
+	d := api.New()
+	d.SetChordTolerance(0.005)
+	block(d, -10, -10, 10, 10, 5)
+	d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+	d.Circle(api.V(0, 0, 5), 4)
+	boss := d.Extrude(5, "")
+	before := boss.Check().Volume
+	edge := boss.Solid().EdgeAt(api.V(0, -10, 5))
+	c := d.ChamferSolid([]api.SolidEdge{boss.Solid().EdgeAt(api.V(4, 0, 10)), edge}, 1, "")
+	if p := c.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	r := c.Check()
+	want := 1.0/2*2*math.Pi*(4-1/3.0) + 1.0/2*20
+	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
+		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
+	}
+}

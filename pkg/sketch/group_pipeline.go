@@ -150,7 +150,10 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 			}
 		}
 	case GroupChamfer:
-		g.generateChamferShell(sk)
+		if g.generateChamferShell(sk) {
+			// Circular edges: it made the solid itself.
+			return
+		}
 	case GroupSweep:
 		g.generateSweepShell(sk)
 	case GroupLoft:

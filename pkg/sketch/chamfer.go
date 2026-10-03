@@ -64,8 +64,23 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, dista
 	}
 	var mesh srf.SMesh
 	solidMesh(solid, &mesh)
+	var arcs []topo.FilletPick
 	for _, seg := range segs {
+		if seg.arc {
+			arcs = append(arcs, seg.pick())
+			continue
+		}
 		if _, _, err := chamferWedge(&mesh, seg, distance); err != nil {
+			return g, err
+		}
+	}
+	if len(arcs) > 0 {
+		if solid.IsForcedToMesh(sk) || len(solid.RunningShell.Surface) == 0 {
+			return g, errors.New("the solid at the active group is a triangle mesh, which has no circular edges to cut")
+		}
+		var sh srf.SShell
+		sh.MakeFromCopyOf(&solid.RunningShell)
+		if err := topo.FilletPicks(&sh, arcs, distance, 1<<30, true); err != nil {
 			return g, err
 		}
 	}
@@ -74,11 +89,19 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, dista
 	return g, nil
 }
 
-// chamferSegment is a straight edge a chamfer cuts, from a to b, and
-// how messages name it.
+// chamferSegment is an edge a chamfer cuts or a fillet rounds: a
+// straight one from a to b, or a circular one through at, and how
+// messages name it.
 type chamferSegment struct {
 	a, b  geom.Vector
+	at    geom.Vector
+	arc   bool
 	label string
+}
+
+// pick is the segment as topo picks an edge.
+func (s chamferSegment) pick() topo.FilletPick {
+	return topo.FilletPick{A: s.a, B: s.b, At: s.at, Arc: s.arc}
 }
 
 // chamferSegments are the segments of a chamfer's edges, on the solid
@@ -91,8 +114,19 @@ func (sk *Sketch) chamferSegments(solid *Group, edges []core.HEntity, names []to
 		if e == nil {
 			return nil, fmt.Errorf("edge %s doesn't exist", sk.entityName(he))
 		}
+		if e.IsCircle() {
+			// A circle or an arc of one: a circular edge, by a point on it.
+			var sbl srf.SBezierList
+			GenerateEntityBeziers(e, &sbl, &Runtime{Sketch: sk})
+			if len(sbl.Curves) == 0 {
+				return nil, fmt.Errorf("%s has no curve", sk.entityName(he))
+			}
+			out = append(out, chamferSegment{at: sbl.Curves[0].PointAt(0.5), arc: true,
+				label: "circle " + sk.entityName(he)})
+			continue
+		}
 		if e.Type != core.EntityLineSegment {
-			return nil, fmt.Errorf("%s is not a line segment: a chamfer cuts straight edges", sk.entityName(he))
+			return nil, fmt.Errorf("%s is neither a line segment nor a circle: a chamfer cuts straight and circular edges", sk.entityName(he))
 		}
 		out = append(out, chamferSegment{
 			a:     sk.MustGetEntity(e.Point[0]).PointGetNum(sk),
@@ -112,10 +146,11 @@ func (sk *Sketch) chamferSegments(solid *Group, edges []core.HEntity, names []to
 		if err != nil {
 			return nil, fmt.Errorf("%s: %v", sk.SolidEdgeName(n), err)
 		}
-		if !tp.Straight(e) {
-			return nil, fmt.Errorf("%s is not straight: a chamfer cuts straight edges", sk.SolidEdgeName(n))
-		}
 		ed := &tp.Edges[e]
+		if !tp.Straight(e) {
+			out = append(out, chamferSegment{at: ed.Points[len(ed.Points)/2], arc: true, label: sk.SolidEdgeName(n)})
+			continue
+		}
 		out = append(out, chamferSegment{
 			a:     tp.Vertices[ed.V[0]].P,
 			b:     tp.Vertices[ed.V[1]].P,
@@ -269,48 +304,89 @@ func edgeFaceNormals(mesh *srf.SMesh, a, b geom.Vector) []geom.Vector {
 	return normals
 }
 
-// generateChamferShell joins the wedges of the group's edges into its
-// shell, which the pipeline takes from the solid so far.
-func (g *Group) generateChamferShell(sk *Sketch) {
+// generateChamferShell joins the wedges of the group's straight edges
+// into its shell, which the pipeline takes from the solid so far. With
+// circular edges it makes the solid itself, and says so: a copy of the
+// solid so far with those edges cut by cones (topo.FilletPicks), less
+// the wedges.
+func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	g.MeshCombine = CombineDifference
 	if len(g.Edges) == 0 && len(g.SolidEdges) == 0 {
 		g.setProblem(nil, "the chamfer has no edges")
-		return
+		return false
 	}
 	d := g.ValB
 	if d <= 0 {
 		g.setProblem(nil, "a chamfer's distance must be more than zero")
-		return
+		return false
 	}
 	prev := g.PreviousGroup(sk)
 	if prev == nil {
 		g.setProblem(nil, "there is no solid to chamfer")
-		return
+		return false
 	}
 	var mesh srf.SMesh
 	solidMesh(prev, &mesh)
 	if len(mesh.Triangles) == 0 {
 		g.setProblem(nil, "there is no solid to chamfer")
-		return
+		return false
 	}
 	segs, err := sk.chamferSegments(prev, g.Edges, g.SolidEdges)
 	if err != nil {
 		g.setProblem(nil, "%v", err)
-		return
+		return false
+	}
+	var arcs []topo.FilletPick
+	var straight []chamferSegment
+	for _, seg := range segs {
+		if seg.arc {
+			arcs = append(arcs, seg.pick())
+		} else {
+			straight = append(straight, seg)
+		}
 	}
 	var wedges []srf.SShell
-	for _, seg := range segs {
+	for _, seg := range straight {
 		tri, along, err := chamferWedge(&mesh, seg, d)
 		if err != nil {
 			m := seg.a.Plus(seg.b).ScaledBy(0.5)
 			g.setProblem(&m, "%v", err)
-			return
+			return false
 		}
 		var w srf.SShell
 		w.MakePrism(tri[:], geom.Vector{}, along, g.Color)
 		wedges = append(wedges, w)
 	}
-	g.ThisShell = unionAll(wedges)
+	if len(arcs) == 0 {
+		g.ThisShell = unionAll(wedges)
+		return false
+	}
+	g.RunningShell.MakeFromCopyOf(&prev.RunningShell)
+	if prev.IsForcedToMesh(sk) || len(prev.RunningShell.Surface) == 0 {
+		g.setProblem(nil, "the solid so far is a triangle mesh, which has no circular edges to cut")
+		return true
+	}
+	var sh srf.SShell
+	sh.MakeFromCopyOf(&prev.RunningShell)
+	if err := topo.FilletPicks(&sh, arcs, d, srf.OriginFor(g.H.V, 0), true); err != nil {
+		var fe *topo.FilletError
+		if errors.As(err, &fe) {
+			at := fe.At
+			g.setProblem(&at, "%v", err)
+		} else {
+			g.setProblem(nil, "%v", err)
+		}
+		return true
+	}
+	if len(wedges) > 0 {
+		cutter := unionAll(wedges)
+		var out srf.SShell
+		out.MakeFromDifferenceOf(&sh, &cutter)
+		sh = out
+	}
+	g.RunningShell = sh
+	g.ThisShell.MakeFromCopyOf(&sh)
+	return true
 }
 
 // unionAll joins shells a pair at a time.

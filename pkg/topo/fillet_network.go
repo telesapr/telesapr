@@ -10,34 +10,63 @@ import (
 
 // Fillets of several edges at once, with one radius, as one edit: every
 // face along a rounded edge, or at its end, is built again from its own
-// loops with the corners there replaced, and the cylinders, and the
-// spheres at corners, are put in. At a vertex, which must be a corner
-// of three flat faces, the rounded edges meet in one of three ways:
+// loops with the corners there replaced, and the rounded faces are put
+// in. An edge is straight, between two flat faces, and rounded by a
+// cylinder; or circular, where a flat face meets a cylinder square to it
+// (a boss's top, a hole's rim), and rounded by a torus, the edge's cross
+// section turned about the cylinder's axis. A chamfer is the same edit
+// with a flat cross section, which on a circular edge makes a cone.
+//
+// At a vertex, which must be a corner of three flat faces or a seam
+// along a circular edge, the rounded edges meet in one of these ways:
 //
 //   - one edge: it ends on the third face, cut along the arc where the
-//     cylinder meets it, as the end of a single fillet;
-//   - two edges: their cylinders meet along an ellipse in the plane that
-//     halves them, a mitre, when their tangent lines on the two other
-//     faces reach the unrounded edge at one point;
-//   - three edges: a sphere about the point r inside all three faces
-//     (a face's tangent point is that centre moved r out along its normal),
-//     which each cylinder meets along the arc where it ends.
+//     rounded face meets it, as the end of a single fillet;
+//   - two straight edges: their cylinders meet along an ellipse in the
+//     plane that halves them, a mitre, when their tangent lines on the
+//     two other faces reach the unrounded edge at one point;
+//   - three straight edges: a sphere about the point r inside all three
+//     faces (a face's tangent point is that centre moved r out along its
+//     normal), which each cylinder meets along the arc where it ends;
+//   - two pieces of one circular edge, at a seam of the cylinder: their
+//     tori meet along the cross section there.
+
+// FilletPick picks an edge to round: a straight edge by its ends, which
+// must be a whole edge's; a circular one by a point on it, and with it
+// the pieces of its circle it goes on into smoothly.
+type FilletPick struct {
+	A, B geom.Vector
+	At   geom.Vector
+	Arc  bool
+}
 
 // filletEdge is one edge to round and what follows from its faces.
 type filletEdge struct {
 	e      int
 	v      [2]int // its vertices, from start to end
 	f      [2]int // its faces
-	n      [2]geom.Vector
-	u      [2]geom.Vector // into each face, square to the edge
-	dir    geom.Vector    // from v[0] to v[1]
-	s, w   float64        // the tangent lines' distance from the edge, the arc's weight
+	u      [2]geom.Vector // into each face, square to the edge (straight edges)
+	dir    geom.Vector    // from v[0] to v[1] (straight edges)
+	s, w   float64        // the tangent curves' distance from the edge, the arc's weight
+	r      float64        // the radius, or a chamfer's distance
 	origin uint32
+
+	// A circular edge: its curve from v[0] to v[1], the cylinder's axis
+	// through centre along axis (the flat face's outward normal), its
+	// radius, which face is the flat one, and whether the solid lies
+	// outside the cylinder (a hole).
+	circ   bool
+	curve  srf.SBezier
+	centre geom.Vector
+	axis   geom.Vector
+	radius float64
+	flatK  int
+	hole   bool
 }
 
 // filletCorner is how the rounded edges meet at a vertex.
 type filletCorner struct {
-	kind int // the number of rounded edges there
+	kind int // the number of rounded edges there, or seam
 	// at is the point an edge's end moves to in a face.
 	at map[[2]int]geom.Vector
 	// For one edge: the face it ends on.
@@ -48,35 +77,88 @@ type filletCorner struct {
 	mitreN geom.Vector
 }
 
+// seam is the kind of a corner where two pieces of a circular edge meet.
+const seam = 4
+
 // FilletNetwork rounds the edges segs (each a whole straight edge
-// between two flat faces that sticks out) with radius r. The cylinders
-// get origins origin, origin+1, ..., and the spheres the origins after
-// them.
+// between two flat faces that sticks out) with radius r. The rounded
+// faces get origins origin, origin+1, ..., and the spheres the origins
+// after them.
 func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint32) error {
-	if len(segs) == 0 {
-		return filletErr(geom.Vector{}, "there are no edges to fillet")
+	picks := make([]FilletPick, len(segs))
+	for i, sg := range segs {
+		picks[i] = FilletPick{A: sg[0], B: sg[1]}
+	}
+	return FilletPicks(sh, picks, r, origin, false)
+}
+
+// FilletPicks rounds the picked edges with radius r, or with flat
+// chamfers them at distance r along both faces; a chamfer here takes
+// circular edges only.
+func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
+	what := "fillet"
+	if flat {
+		what = "chamfer"
+	}
+	if len(picks) == 0 {
+		return filletErr(geom.Vector{}, "there are no edges to %s", what)
+	}
+	at0 := picks[0].A
+	if picks[0].Arc {
+		at0 = picks[0].At
 	}
 	if !(r > 0) || math.IsInf(r, 0) {
-		return filletErr(segs[0][0], "a fillet's radius must be more than zero")
+		if flat {
+			return filletErr(at0, "a chamfer's distance must be more than zero")
+		}
+		return filletErr(at0, "a fillet's radius must be more than zero")
 	}
 	t, err := Build(sh)
 	if err != nil {
-		return filletErr(segs[0][0], "the solid's topology is broken: %v", err)
+		return filletErr(at0, "the solid's topology is broken: %v", err)
 	}
-	edges := make([]filletEdge, 0, len(segs))
+	var edges []filletEdge
 	byEdge := map[int]int{}
-	for i, sg := range segs {
-		fe, err := t.filletEdgeOf(sg[0], sg[1], r)
+	add := func(fe filletEdge) {
+		if _, dup := byEdge[fe.e]; dup {
+			// Two entities along one edge, as an extrusion's copies are.
+			return
+		}
+		fe.origin = origin + uint32(len(edges))
+		byEdge[fe.e] = len(edges)
+		edges = append(edges, fe)
+	}
+	for _, p := range picks {
+		var e int
+		if p.Arc {
+			if e = t.curvedEdgeAt(p.At); e < 0 {
+				return filletErr(p.At, "no edge of the solid runs there")
+			}
+		} else if e, err = t.wholeEdge(p.A, p.B); err != nil {
+			return err
+		}
+		fe, err := t.filletEdgeOf(e, r, flat)
 		if err != nil {
 			return err
 		}
-		if _, dup := byEdge[fe.e]; dup {
-			// Two entities along one edge, as an extrusion's copies are.
+		add(fe)
+	}
+	// A circular edge goes on into the pieces of its circle it meets
+	// smoothly.
+	for i := 0; i < len(edges); i++ {
+		if !edges[i].circ {
 			continue
 		}
-		fe.origin = origin + uint32(i)
-		byEdge[fe.e] = len(edges)
-		edges = append(edges, fe)
+		for _, v := range edges[i].v {
+			for _, x := range t.Vertices[v].Edges {
+				if _, ok := byEdge[x]; ok || t.Straight(x) {
+					continue
+				}
+				if fe, err := t.filletEdgeOf(x, r, flat); err == nil && fe.circ && sameCircle(&fe, &edges[i]) {
+					add(fe)
+				}
+			}
+		}
 	}
 
 	// How the edges meet at each vertex they touch.
@@ -117,7 +199,7 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 	}
 	var again []rebuilt
 	for _, f := range faces {
-		loops, err := t.filletLoops(f, edges, byEdge, corners)
+		loops, err := t.filletLoops(f, edges, byEdge, corners, flat)
 		if err != nil {
 			return err
 		}
@@ -125,37 +207,39 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 	}
 	color := t.Surface(edges[0].f[0]).Color
 
-	// The cylinders' loops and the spheres', while t still describes the
-	// solid.
+	// The rounded faces' loops and the spheres', while t still describes
+	// the solid.
 	type patch struct {
 		s    srf.SSurface
 		loop []srf.SBezier
 		at   geom.Vector
 	}
 	var patches []patch
-	for _, fe := range edges {
+	for i := range edges {
+		fe := &edges[i]
 		a, b := t.Vertices[fe.v[0]].P, t.Vertices[fe.v[1]].P
 		ca, cb := corners[fe.v[0]], corners[fe.v[1]]
 		start := [2]geom.Vector{ca.at[[2]int{fe.e, fe.f[0]}], ca.at[[2]int{fe.e, fe.f[1]}]}
 		end := [2]geom.Vector{cb.at[[2]int{fe.e, fe.f[0]}], cb.at[[2]int{fe.e, fe.f[1]}]}
-		for k := 0; k < 2; k++ {
-			if end[k].Minus(start[k]).Dot(fe.dir) < 10*geom.LengthEps {
-				return filletErr(a.Plus(b).ScaledBy(0.5), "the edge is too short for a fillet this large")
+		mid := a.Plus(b).ScaledBy(0.5)
+		if fe.circ {
+			mid = fe.curve.PointAt(0.5)
+		} else {
+			for k := 0; k < 2; k++ {
+				if end[k].Minus(start[k]).Dot(fe.dir) < 10*geom.LengthEps {
+					return filletErr(mid, "the edge is too short for a %s this large", what)
+				}
 			}
 		}
-		endArc := fe.connector(t, fe.v[1], cb, end[0], end[1])
-		startArc := fe.connector(t, fe.v[0], ca, start[1], start[0])
-		margin := fe.s + 2*r
-		l := b.Minus(a).Magnitude()
-		p0 := a.Minus(fe.dir.ScaledBy(margin))
-		section := arc(p0.Plus(fe.u[0].ScaledBy(fe.s)), p0, p0.Plus(fe.u[1].ScaledBy(fe.s)), fe.w)
-		cyl := srf.FromExtrusionOf(&section, geom.Vector{}, fe.dir.ScaledBy(l+2*margin))
-		cyl.Color = color
-		cyl.Origin = fe.origin
-		patches = append(patches, patch{cyl, []srf.SBezier{
-			srf.SBezierFrom2(start[0], end[0]), endArc,
-			srf.SBezierFrom2(end[1], start[1]), startArc,
-		}, a.Plus(b).ScaledBy(0.5)})
+		side0 := fe.tangentCurve(0, start[0], end[0])
+		side1 := fe.tangentCurve(1, start[1], end[1])
+		side1.Reverse()
+		endArc := fe.connector(t, fe.v[1], cb, end[0], end[1], flat)
+		startArc := fe.connector(t, fe.v[0], ca, start[1], start[0], flat)
+		s := fe.surface(a, b, flat)
+		s.Color = color
+		s.Origin = fe.origin
+		patches = append(patches, patch{s, []srf.SBezier{side0, endArc, side1, startArc}, mid})
 	}
 	next := origin + uint32(len(edges))
 	var vs []int
@@ -171,7 +255,7 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 		var loop []srf.SBezier
 		for _, x := range t.Vertices[v].Edges {
 			fe := &edges[byEdge[x]]
-			loop = append(loop, fe.connector(t, v, c, c.at[[2]int{x, fe.f[0]}], c.at[[2]int{x, fe.f[1]}]))
+			loop = append(loop, fe.connector(t, v, c, c.at[[2]int{x, fe.f[0]}], c.at[[2]int{x, fe.f[1]}], flat))
 		}
 		loop, err := chainCurves(loop)
 		if err != nil {
@@ -192,46 +276,75 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 	}
 	for _, p := range patches {
 		if _, err := AddFace(sh, p.s, [][]srf.SBezier{p.loop}); err != nil {
-			return filletErr(p.at, "the fillet's face can't be put in: %v", err)
+			return filletErr(p.at, "the %s's face can't be put in: %v", what, err)
 		}
 	}
 	if t, err = Build(sh); err != nil {
-		return filletErr(segs[0][0], "%v", err)
+		return filletErr(at0, "%v", err)
 	}
 	if probs := t.Validate(); len(probs) > 0 {
-		return filletErr(probs[0].At, "the fillet leaves the solid open: %s", probs[0].Msg)
+		return filletErr(probs[0].At, "the %s leaves the solid open: %s", what, probs[0].Msg)
 	}
 	return nil
 }
 
-// filletEdgeOf checks the edge from a to b and works out its fillet.
-func (t *Topology) filletEdgeOf(a, b geom.Vector, r float64) (filletEdge, error) {
-	var fe filletEdge
+// curvedEdgeAt is the edge through p, a point on the curve the edge's
+// points are chords of: within a twentieth of its longest chord, more
+// than the sag of a chord that turns by less than a fifth of a turn.
+func (t *Topology) curvedEdgeAt(p geom.Vector) int {
+	best, bestD := -1, math.Inf(1)
+	for e := range t.Edges {
+		pts := t.Edges[e].Points
+		longest := 0.0
+		for i := 1; i < len(pts); i++ {
+			longest = math.Max(longest, pts[i].Minus(pts[i-1]).Magnitude())
+		}
+		d := distanceToPolyline(p, pts)
+		if d <= math.Max(1e-3, 0.05*longest) && d < bestD {
+			best, bestD = e, d
+		}
+	}
+	return best
+}
+
+// wholeEdge is the edge from a to b, which must be a whole edge.
+func (t *Topology) wholeEdge(a, b geom.Vector) (int, error) {
 	m := a.Plus(b).ScaledBy(0.5)
 	e := t.edgeAtPoint(m)
 	if e < 0 {
-		return fe, filletErr(m, "no edge of the solid runs there")
+		return -1, filletErr(m, "no edge of the solid runs there")
 	}
 	va, vb := t.vertexNear(a), t.vertexNear(b)
 	ed := &t.Edges[e]
 	whole := ed.V[0] == va && ed.V[1] == vb || ed.V[0] == vb && ed.V[1] == va
 	if va < 0 || vb < 0 || !whole {
-		return fe, filletErr(m, "the segment is not a whole edge of the solid")
+		return -1, filletErr(m, "the segment is not a whole edge of the solid")
 	}
-	if !t.Straight(e) {
-		return fe, filletErr(m, "the edge is curved: a fillet here rounds straight edges")
-	}
+	return e, nil
+}
+
+// filletEdgeOf checks edge e and works out its fillet, or with flat its
+// chamfer.
+func (t *Topology) filletEdgeOf(e int, r float64, flat bool) (filletEdge, error) {
+	var fe filletEdge
+	ed := &t.Edges[e]
+	pa, pb := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
+	m := midpoint(ed.Points)
 	fs := t.EdgeFaces(e)
 	if fs[0] < 0 || fs[1] < 0 || len(ed.CoEdges) != 2 {
 		return fe, filletErr(m, "the edge is not between two faces")
+	}
+	if !t.Straight(e) {
+		return t.circularEdgeOf(e, r, flat)
+	}
+	if flat {
+		return fe, filletErr(m, "a chamfer here cuts circular edges; straight ones are cut by a Boolean")
 	}
 	n1, ok1 := t.planarNormal(fs[0])
 	n2, ok2 := t.planarNormal(fs[1])
 	if !ok1 || !ok2 {
 		return fe, filletErr(m, "a face at the edge is curved: a fillet here rounds edges between flat faces")
 	}
-	// The edge runs from its first vertex to its second.
-	pa, pb := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
 	u1 := t.intoFace(fs[0], pa, pb, n1)
 	u2 := t.intoFace(fs[1], pa, pb, n2)
 	if u1.Dot(n2) > -1e-9 || u2.Dot(n1) > -1e-9 {
@@ -239,10 +352,172 @@ func (t *Topology) filletEdgeOf(a, b geom.Vector, r float64) (filletEdge, error)
 	}
 	beta := math.Acos(math.Max(-1, math.Min(1, u1.Dot(u2))))
 	fe = filletEdge{
-		e: e, v: ed.V, f: fs, n: [2]geom.Vector{n1, n2}, u: [2]geom.Vector{u1, u2},
+		e: e, v: ed.V, f: fs, u: [2]geom.Vector{u1, u2}, r: r,
 		dir: pb.Minus(pa).WithMagnitude(1), s: r / math.Tan(beta/2), w: math.Sin(beta / 2),
 	}
 	return fe, nil
+}
+
+// circularEdgeOf checks a curved edge: an arc where a flat face meets a
+// cylinder square to it, the solid in the corner between them.
+func (t *Topology) circularEdgeOf(e int, r float64, flat bool) (filletEdge, error) {
+	var fe filletEdge
+	ed := &t.Edges[e]
+	m := midpoint(ed.Points)
+	fs := t.EdgeFaces(e)
+	what := "a fillet"
+	if flat {
+		what = "a chamfer"
+	}
+	flatK := -1
+	var np geom.Vector
+	for k, f := range fs {
+		if n, ok := t.planarNormal(f); ok {
+			flatK, np = k, n
+		}
+	}
+	if flatK < 0 {
+		return fe, filletErr(m, "the edge is curved and neither face at it is flat: %s rounds edges of flat faces and cylinders", what)
+	}
+	var axis, centre, start, finish geom.Vector
+	var rad float64
+	cyl := t.Surface(fs[1-flatK])
+	if !cyl.IsCylinder(&axis, &centre, &rad, &start, &finish) || axis.WithMagnitude(1).Cross(np).Magnitude() > 1e-9 {
+		return fe, filletErr(m, "the edge is curved, and the face beside the flat one is not a cylinder square to it")
+	}
+	pa, pb := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
+	c := t.shell.FindCurve(ed.Curve)
+	if c == nil || !c.IsExact {
+		return fe, filletErr(m, "the edge has no exact curve")
+	}
+	sb := c.Exact
+	switch {
+	case sb.Start().Equals(pa) && sb.Finish().Equals(pb):
+	case sb.Start().Equals(pb) && sb.Finish().Equals(pa):
+		sb.Reverse()
+	default:
+		return fe, filletErr(m, "the edge is part of a longer curve")
+	}
+	var cc geom.Vector
+	var cr float64
+	if !sb.IsCircle(np, &cc, &cr) || math.Abs(cr-rad) > geom.LengthEps {
+		return fe, filletErr(m, "the edge is not a circle of the cylinder")
+	}
+	fe = filletEdge{
+		e: e, v: ed.V, f: fs, s: r, r: r, w: math.Sqrt2 / 2,
+		circ: true, curve: sb, centre: cc, axis: np, radius: rad, flatK: flatK,
+	}
+	// Convex: the cylinder lies under the flat face, and the flat face on
+	// the side of the circle the solid is on.
+	below := false
+	for _, x := range t.FaceEdges(fs[1-flatK]) {
+		for _, p := range t.Edges[x].Points {
+			if p.Minus(m).Dot(np) < -10*geom.LengthEps {
+				below = true
+			}
+		}
+	}
+	step := 1e-3 * math.Min(rad, 1)
+	radial := fe.radial(m)
+	inside := t.inFace(fs[flatK], m.Minus(radial.ScaledBy(step)), np)
+	outside := t.inFace(fs[flatK], m.Plus(radial.ScaledBy(step)), np)
+	if !below || inside == outside {
+		return fe, filletErr(m, "the edge is concave: %s here rounds edges that stick out", what)
+	}
+	if inside && r >= rad-geom.LengthEps {
+		return fe, filletErr(m, "a radius this large is wider than the cylinder")
+	}
+	fe.hole = outside
+	return fe, nil
+}
+
+// sameCircle reports whether two circular edges lie on one circle, of
+// one flat face.
+func sameCircle(a, b *filletEdge) bool {
+	return a.centre.Equals(b.centre) && math.Abs(a.radius-b.radius) < geom.LengthEps &&
+		a.axis.Dot(b.axis) > 1-1e-9 && a.f[a.flatK] == b.f[b.flatK] && a.hole == b.hole
+}
+
+// radial is the direction from a circular edge's axis to p, square to
+// the axis.
+func (fe *filletEdge) radial(p geom.Vector) geom.Vector {
+	d := p.Minus(fe.centre)
+	return d.Minus(fe.axis.ScaledBy(d.Dot(fe.axis))).WithMagnitude(1)
+}
+
+// into is the direction at p, on the edge, square to it in face k and
+// into that face: for a circular edge's flat face towards the axis, or
+// away from it for a hole's, and down its cylinder.
+func (fe *filletEdge) into(k int, p geom.Vector) geom.Vector {
+	switch {
+	case !fe.circ:
+		return fe.u[k]
+	case k != fe.flatK:
+		return fe.axis.ScaledBy(-1)
+	case fe.hole:
+		return fe.radial(p)
+	}
+	return fe.radial(p).ScaledBy(-1)
+}
+
+// tangentCurve is the curve along which the rounded face meets face k,
+// from p (at the edge's start) to q (at its end): a line, or for a
+// circular edge its arc, turned to a new radius on the flat face or
+// moved down the cylinder.
+func (fe *filletEdge) tangentCurve(k int, p, q geom.Vector) srf.SBezier {
+	if !fe.circ {
+		return srf.SBezierFrom2(p, q)
+	}
+	sb := fe.curve
+	if k == fe.flatK {
+		d := p.Minus(fe.centre)
+		scale := d.Minus(fe.axis.ScaledBy(d.Dot(fe.axis))).Magnitude() / fe.radius
+		for i := 0; i <= sb.Degree; i++ {
+			sb.Ctrl[i] = fe.centre.Plus(sb.Ctrl[i].Minus(fe.centre).ScaledBy(scale))
+		}
+	} else {
+		for i := 0; i <= sb.Degree; i++ {
+			sb.Ctrl[i] = sb.Ctrl[i].Minus(fe.axis.ScaledBy(fe.s))
+		}
+	}
+	sb.Ctrl[0], sb.Ctrl[sb.Degree] = p, q
+	return sb
+}
+
+// section is the cross section of the rounded face at p on the edge,
+// from its point on face 0 to its point on face 1: an arc whose control
+// point is p, or with flat a line.
+func (fe *filletEdge) section(p geom.Vector, flat bool) srf.SBezier {
+	a := p.Plus(fe.into(0, p).ScaledBy(fe.s))
+	b := p.Plus(fe.into(1, p).ScaledBy(fe.s))
+	if flat {
+		return srf.SBezierFrom2(a, b)
+	}
+	return arc(a, p, b, fe.w)
+}
+
+// surface is the rounded face's surface: for a straight edge from a to
+// b, the cross section swept along it, with a margin; for a circular
+// one, the cross section at its start turned about the axis to its end.
+func (fe *filletEdge) surface(a, b geom.Vector, flat bool) srf.SSurface {
+	if !fe.circ {
+		margin := fe.s + 2*fe.r
+		l := b.Minus(a).Magnitude()
+		p0 := a.Minus(fe.dir.ScaledBy(margin))
+		section := fe.section(p0, flat)
+		return srf.FromExtrusionOf(&section, geom.Vector{}, fe.dir.ScaledBy(l+2*margin))
+	}
+	section := fe.section(fe.curve.Start(), flat)
+	// The angle from the arc's start to its end about the axis; an arc
+	// of degree 2 turns by less than half a turn.
+	ra, rb := fe.radial(fe.curve.Start()), fe.radial(fe.curve.Finish())
+	theta := math.Atan2(ra.Cross(rb).Dot(fe.axis), ra.Dot(rb))
+	// RotatedAroundAxis by a positive angle turns ra towards axis x ra,
+	// or the other way.
+	if ra.RotatedAroundAxis(fe.axis, 0.1).Dot(fe.axis.Cross(ra)) < 0 {
+		theta = -theta
+	}
+	return srf.FromRevolutionOf(&section, fe.centre, fe.axis, 0, theta, 0, 0)
 }
 
 // facesAt are the faces round vertex v, each once.
@@ -266,20 +541,48 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 	if len(t.Vertices[v].Edges) != 3 || len(t.facesAt(v)) != 3 {
 		return nil, filletErr(p, "the edge ends where %d edges meet; a fillet's end needs a corner of three faces", len(t.Vertices[v].Edges))
 	}
-	for _, f := range t.facesAt(v) {
-		if _, ok := t.planarNormal(f); !ok {
-			return nil, filletErr(p, "a face at the edge's end is curved")
-		}
-	}
 	var round, plain []int
+	circular := 0
 	for _, x := range t.Vertices[v].Edges {
-		if _, ok := byEdge[x]; ok {
+		if i, ok := byEdge[x]; ok {
 			round = append(round, x)
+			if edges[i].circ {
+				circular++
+			}
 		} else {
 			plain = append(plain, x)
 		}
 	}
 	c := &filletCorner{kind: len(round), at: map[[2]int]geom.Vector{}}
+	if circular > 0 && c.kind == 2 {
+		a, b := &edges[byEdge[round[0]]], &edges[byEdge[round[1]]]
+		if circular != 2 || !sameCircle(a, b) {
+			return nil, filletErr(p, "a circular edge's fillet meets another edge's here")
+		}
+		// A seam of the cylinder: both pieces share the cross section, and
+		// the seam is cut back down the cylinder.
+		c.kind = seam
+		for _, fe := range []*filletEdge{a, b} {
+			for k := 0; k < 2; k++ {
+				c.at[[2]int{fe.e, fe.f[k]}] = p.Plus(fe.into(k, p).ScaledBy(fe.s))
+			}
+		}
+		down := p.Plus(a.axis.ScaledBy(-a.s))
+		for _, f := range t.EdgeFaces(plain[0]) {
+			c.at[[2]int{plain[0], f}] = down
+		}
+		return c, nil
+	}
+	if circular > 0 && c.kind != 1 {
+		return nil, filletErr(p, "a circular edge's fillet meets other fillets here")
+	}
+	if circular == 0 {
+		for _, f := range t.facesAt(v) {
+			if _, ok := t.planarNormal(f); !ok {
+				return nil, filletErr(p, "a face at the edge's end is curved")
+			}
+		}
+	}
 	switch c.kind {
 	case 1:
 		fe := &edges[byEdge[round[0]]]
@@ -287,9 +590,16 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		if err != nil {
 			return nil, err
 		}
+		ne, ok := t.planarNormal(end)
+		if !ok {
+			return nil, filletErr(p, "the face at the edge's end is curved")
+		}
+		if fe.circ && (math.Abs(ne.Dot(fe.axis)) > 1e-9 || math.Abs(ne.Dot(fe.radial(p))) > 1e-9) {
+			return nil, filletErr(p, "a circular edge's fillet ends on a face that is not square to it")
+		}
 		c.end = end
 		for k := 0; k < 2; k++ {
-			q, err := t.pointAlong(along[k], v, fe.u[k], fe.s)
+			q, err := t.pointAlong(along[k], v, fe.into(k, p), fe.s)
 			if err != nil {
 				return nil, err
 			}
@@ -366,16 +676,19 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 	return c, nil
 }
 
-// connector is the curve across the edge's cylinder at vertex v, from
-// p to q: the arc it ends along.
-func (fe *filletEdge) connector(t *Topology, v int, c *filletCorner, p, q geom.Vector) srf.SBezier {
+// connector is the curve across the edge's rounded face at vertex v,
+// from p to q: the arc it ends along, or with flat a line.
+func (fe *filletEdge) connector(t *Topology, v int, c *filletCorner, p, q geom.Vector, flat bool) srf.SBezier {
 	vp := t.Vertices[v].P
+	if flat {
+		return srf.SBezierFrom2(p, q)
+	}
 	// The cross section's control point is where the section's plane
 	// meets the edge; across, the arc between the tangent points.
 	switch c.kind {
-	case 1:
-		// Projected along the edge onto the face it ends on, its control
-		// point the vertex.
+	case 1, seam:
+		// At the vertex, or projected along the edge onto the face it
+		// ends on: its control point the vertex.
 		return arc(p, vp, q, fe.w)
 	case 3:
 		x := vp.Plus(fe.dir.ScaledBy(c.centre.Minus(vp).Dot(fe.dir)))
@@ -395,9 +708,9 @@ func (fe *filletEdge) connector(t *Topology, v int, c *filletCorner, p, q geom.V
 
 // filletLoops are face f's loops with the corners the fillets reach
 // moved: each co-edge runs between the points its ends move to, a
-// rounded edge along its tangent line, and a face a fillet ends on
-// takes the arc between the two points it has at that vertex.
-func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, corners map[int]*filletCorner) ([][]srf.SBezier, error) {
+// rounded edge along its tangent curve, and a face a fillet ends on
+// takes the curve between the two points it has at that vertex.
+func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, corners map[int]*filletCorner, flat bool) ([][]srf.SBezier, error) {
 	point := func(x, v int) geom.Vector {
 		if c := corners[v]; c != nil {
 			if q, ok := c.at[[2]int{x, f}]; ok {
@@ -415,9 +728,22 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 			va, vb := t.Start(ce), t.End(ce)
 			a, b := point(x, va), point(x, vb)
 			moved := !a.Equals(t.Vertices[va].P) || !b.Equals(t.Vertices[vb].P)
-			_, round := byEdge[x]
+			ri, round := byEdge[x]
 			switch {
-			case round || t.Straight(x):
+			case round:
+				fe := &edges[ri]
+				k := 0
+				if fe.f[1] == f {
+					k = 1
+				}
+				if va == fe.v[0] {
+					loop = append(loop, fe.tangentCurve(k, a, b))
+				} else {
+					sb := fe.tangentCurve(k, b, a)
+					sb.Reverse()
+					loop = append(loop, sb)
+				}
+			case t.Straight(x):
 				loop = append(loop, srf.SBezierFrom2(a, b))
 			case moved:
 				return nil, filletErr(a, "a curved edge of a face at the fillet would have to be cut")
@@ -428,14 +754,14 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 				}
 				loop = append(loop, sb)
 			}
-			// At the vertex the co-edge ends at, an arc when the face is
-			// one a fillet ends on.
+			// At the vertex the co-edge ends at, the end of the rounded face
+			// when the face is one a fillet ends on.
 			nx := t.CoEdges[ces[(i+1)%len(ces)]].Edge
 			if c := corners[vb]; c != nil && c.kind == 1 && c.end == f {
 				p, q := point(x, vb), point(nx, vb)
 				for _, fe := range edges {
 					if fe.v[0] == vb || fe.v[1] == vb {
-						loop = append(loop, fe.connector(t, vb, c, p, q))
+						loop = append(loop, fe.connector(t, vb, c, p, q, flat))
 						break
 					}
 				}
