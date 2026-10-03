@@ -165,9 +165,14 @@ func (g *Group) generateMirrorShell(sk *Sketch, src *srf.SShell, out *srf.SShell
 	}
 	var orig srf.SShell
 	orig.MakeFromCopyOf(src)
-	if forWhat == CombineAssemble {
+	switch {
+	case forWhat == CombineAssemble:
 		out.MakeFromAssemblyOf(&orig, &m)
-	} else {
+	case srf.SameShell(&orig, &m):
+		// A part symmetric about the plane: its reflection is itself,
+		// and the union of the two would be all coincident faces.
+		*out = orig
+	default:
 		out.MakeFromUnionOf(&orig, &m)
 	}
 }

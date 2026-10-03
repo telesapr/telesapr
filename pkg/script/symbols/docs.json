@@ -8229,6 +8229,10 @@
 			"STrimByEntireCurveFromShell": {
 				"decl": "func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool) STrimBy"
 			},
+			"SameShell": {
+				"decl": "func SameShell(a, b *SShell) bool",
+				"text": "SameShell reports whether a and b bound the same solid patch for patch: each surface of b has a surface of a of its own with the same control points and weights, in any order, and trims that start and end at the same points."
+			},
 			"SetChordTolMm": {
 				"decl": "func SetChordTolMm(t float64)",
 				"text": "SetChordTolMm sets the absolute chord tolerance in mm."
