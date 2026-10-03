@@ -7162,7 +7162,8 @@
 					}
 				},
 				"makers": [
-					"Skin"
+					"Skin",
+					"SkinWithEnds"
 				]
 			},
 			"BspClass": {
@@ -8730,6 +8731,10 @@
 			"Skin": {
 				"decl": "func Skin(sections []BSplineCurve) (*BSplineSurface, []float64, error)",
 				"text": "Skin is the surface through sections, curves of one degree and knot vector: u runs along them, v across, from the first section at v = 0 to the last at v = 1."
+			},
+			"SkinWithEnds": {
+				"decl": "func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vector) (*BSplineSurface, error)",
+				"text": "SkinWithEnds is the cubic surface through sections, curves of one degree, knot vector and weights, at the parameters ts across, from 0 to 1, with the derivatives across at the first and the last given for each control point (Piegl and Tiller, 9.2.2): the interior knots are the sections' own parameters, and two more control points meet the derivatives."
 			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",
