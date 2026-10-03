@@ -226,6 +226,16 @@ func TestPathEquivalenceFilletCone(t *testing.T) {
 	}
 }
 
+// Two edges picked with the mouse and rounded, the second given its own
+// radius on the group's screen, and the same made by a script.
+func TestPathEquivalenceFilletRadii(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_fillet_radii", "path_fillet_radii")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.EdgeRadii) != 1 || g.EdgeRadii[0].Val != 3 {
+		t.Errorf("the fillet: type %d, problem %q, radii %+v", g.Type, g.Problem.Msg, g.EdgeRadii)
+	}
+}
+
 // A circle of an extrusion picked with the mouse and rounded, and the
 // same made by a script.
 func TestPathEquivalenceFilletCircle(t *testing.T) {

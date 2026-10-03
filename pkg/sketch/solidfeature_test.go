@@ -231,6 +231,7 @@ func TestSolidGoldens(t *testing.T) {
 		"fillet-outline": func(d *api.Doc) { filletOutline(t, d) },
 		"fillet-uneven":  func(d *api.Doc) { filletUneven(d) },
 		"fillet-cone":    func(d *api.Doc) { filletCone(d) },
+		"fillet-radii":   func(d *api.Doc) { filletRadii(t, d) },
 		"fillet-boss-foot": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
 			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
@@ -406,6 +407,27 @@ func filletCone(d *api.Doc) {
 
 func BenchmarkFilletCone(b *testing.B) {
 	benchRegen(b, filletCone)
+}
+
+// filletRadii is a block's top edges rounded at the fillet's radius and
+// its foot's at one of their own, in one group.
+func filletRadii(t *testing.T, d *api.Doc) {
+	ex := block(d, 0, 0, 20, 10, 10)
+	var edges []api.Entity
+	for _, z := range []float64{10, 0} {
+		edges = append(edges,
+			lineAlong(t, ex, api.V(0, 0, z), api.V(20, 0, z)), lineAlong(t, ex, api.V(20, 0, z), api.V(20, 10, z)),
+			lineAlong(t, ex, api.V(20, 10, z), api.V(0, 10, z)), lineAlong(t, ex, api.V(0, 10, z), api.V(0, 0, z)))
+	}
+	f := d.Fillet(edges, 2, "")
+	for i := 4; i < 8; i++ {
+		f.SetEdgeRadius(i, 1)
+	}
+}
+
+func BenchmarkFilletRadii(b *testing.B) {
+	t := &testing.T{}
+	benchRegen(b, func(d *api.Doc) { filletRadii(t, d) })
 }
 
 func BenchmarkShell(b *testing.B) {
