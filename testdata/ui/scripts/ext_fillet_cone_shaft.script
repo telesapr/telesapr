@@ -1,0 +1,14 @@
+# Fillet where a cone meets a cylinder (roadmap 22.2): a frustum turned
+# on a shaft; with the arc of the circle where they meet picked, Fillet
+# Edges rounds the circle by a torus, both faces cut back along their
+# tangent circles. Check Solid finds it sound.
+file $testdata/ui/fillet_cone_shaft.tlspr
+menu File|Open...
+view default
+move 295 245
+down L 295 245
+up L 295 245
+menu New Group|Fillet Edges
+tw
+answer ok
+menu Analyze|Check Solid

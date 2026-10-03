@@ -694,3 +694,83 @@ func TestFilletStoppedAtRoundedCorner(t *testing.T) {
 	}()
 	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 4, "")
 }
+
+// spandrelRevolved is the volume a fillet of radius r takes from (or
+// adds to) a corner at p, in the half plane through an axis as
+// (radius, height), between directions g0 and g1 along its two faces:
+// the kite p, the two tangent points and the arc's centre, less the
+// arc's sector, turned about the axis (Pappus).
+func spandrelRevolved(p, g0, g1 [2]float64, r float64) float64 {
+	norm := func(a [2]float64) [2]float64 { l := math.Hypot(a[0], a[1]); return [2]float64{a[0] / l, a[1] / l} }
+	g0, g1 = norm(g0), norm(g1)
+	beta := math.Acos(g0[0]*g1[0] + g0[1]*g1[1])
+	s := r / math.Tan(beta/2)
+	bis := norm([2]float64{g0[0] + g1[0], g0[1] + g1[1]})
+	c := [2]float64{p[0] + bis[0]*r/math.Sin(beta/2), p[1] + bis[1]*r/math.Sin(beta/2)}
+	t0 := [2]float64{p[0] + s*g0[0], p[1] + s*g0[1]}
+	t1 := [2]float64{p[0] + s*g1[0], p[1] + s*g1[1]}
+	tri := r * s / 2
+	kiteX := tri*(p[0]+t0[0]+c[0])/3 + tri*(p[0]+c[0]+t1[0])/3
+	phi := math.Pi - beta
+	sectorA := r * r * phi / 2
+	// The sector's centroid lies from c towards p.
+	sectorX := c[0] - bis[0]*2*r*math.Sin(phi/2)/(3*phi/2)
+	return 2 * math.Pi * (kiteX - sectorA*sectorX)
+}
+
+// A circle where a cone meets a cylinder about one axis (roadmap 22.2),
+// rounded by a torus: a frustum on a shaft, whose rim sticks out, and a
+// shaft from a cone's top, whose foot goes in; against Pappus, undone,
+// redone and reopened.
+func TestFilletConeOnCylinder(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		profile []api.Vec
+		edge    api.Vec
+		corner  [2]float64
+		g0, g1  [2]float64
+		convex  bool
+	}{
+		{"frustum on a shaft", []api.Vec{api.V(0, 0, 0), api.V(10, 0, 0), api.V(10, 0, 20), api.V(5, 0, 30), api.V(0, 0, 30)},
+			api.V(10*math.Cos(1), 10*math.Sin(1), 20), [2]float64{10, 20}, [2]float64{0, -1}, [2]float64{-5, 10}, true},
+		{"shaft from a cone", []api.Vec{api.V(0, 0, 0), api.V(10, 0, 0), api.V(5, 0, 10), api.V(5, 0, 20), api.V(0, 0, 20)},
+			api.V(5*math.Cos(1), 5*math.Sin(1), 10), [2]float64{5, 10}, [2]float64{5, -10}, [2]float64{0, 1}, false},
+	} {
+		d := api.New()
+		d.SetChordTolerance(0.001)
+		d.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Line(api.V(0, 0, -2), api.V(0, 0, 32))
+		axis.SetConstruction(true)
+		d.Polyline(true, c.profile...)
+		lathe := d.Lathe(axis, "")
+		before := lathe.Check().Volume
+		step(d)
+		saveBefore := saved(t, d)
+		f := d.FilletSolid([]api.SolidEdge{lathe.Solid().EdgeAt(c.edge)}, 3, "")
+		if p := f.Problem(); p != "" {
+			t.Fatalf("%s: %s", c.name, p)
+		}
+		want := spandrelRevolved(c.corner, c.g0, c.g1, 3)
+		if c.convex {
+			want = -want
+		}
+		r := f.Check()
+		if !r.Sound() || math.Abs(r.Volume-before-want) > 0.03*math.Abs(want) {
+			t.Fatalf("%s: %s, changed by %g, want %g", c.name, r.String(), r.Volume-before, want)
+		}
+		undoRedo(t, d, saveBefore)
+		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+		d.Regen()
+		r = f.Check()
+		back := roundTrip(t, d)
+		if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+			t.Fatalf("%s: reopened: %s", c.name, br.String())
+		}
+		// The same edge chamfered: a cone's band in place of the torus.
+		f.Delete()
+		ch := d.ChamferSolid([]api.SolidEdge{lathe.Solid().EdgeAt(c.edge)}, 3, "")
+		if r := ch.Check(); ch.Problem() != "" || !r.Sound() {
+			t.Fatalf("%s: chamfered: %s %s", c.name, r.String(), ch.Problem())
+		}
+	}
+}
