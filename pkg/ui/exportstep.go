@@ -1088,7 +1088,6 @@ func (ss *SolveSpaceUI) ExportSurfacesTo(filename string) {
 	}
 }
 
-
 // exportShellFaces writes the faces of shell, scaled by scale, adding
 // them to w.advancedFaces.
 func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {

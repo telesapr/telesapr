@@ -59,7 +59,7 @@ func TestExportStepAssembly(t *testing.T) {
 	if n := strings.Count(text, "NEXT_ASSEMBLY_USAGE_OCCURRENCE"); n != 3 {
 		t.Errorf("%d occurrences", n)
 	}
-	if n := strings.Count(text, " PRODUCT('")+strings.Count(text, "=PRODUCT('"); n != 3 {
+	if n := strings.Count(text, " PRODUCT('") + strings.Count(text, "=PRODUCT('"); n != 3 {
 		t.Errorf("%d products, the model's and two parts'", n)
 	}
 	if n := strings.Count(text, "MANIFOLD_SOLID_BREP"); n != 2 {
