@@ -781,7 +781,7 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 	}
 
 	start := len(mesh.Triangles)
-	if srf.DegM == 1 && srf.DegN == 1 {
+	if srf.flat() {
 		poly.UvTriangulateInto(mesh, srf)
 	} else {
 		poly.uvGridTriangulateInto(mesh, srf, &el)

@@ -81,10 +81,10 @@ func cornerLoss(r, length float64, mitres, spheres int) float64 {
 // mitre), three edges at a corner (a sphere), the four top edges (four
 // mitres), and all twelve (eight spheres).
 //
-// The chord tolerance is a part of the radius: finer than about a
-// thousandth of it, the sphere's grid stops refining while its trims
-// go on, and the strips between are ear-clipped into slivers that cross
-// (ROADMAP-JUMP.md, step 10 follow-ups).
+// The chord tolerance is a five-thousandth of the radius. Finer than a
+// thousandth, the strips between the sphere's grid and its trims were
+// ear-clipped into slivers that crossed, until the ear clipper stopped
+// taking ears that fold over (roadmap 13.1 and 13.2).
 func TestFilletCorners(t *testing.T) {
 	old := srf.ChordTolMm()
 	defer srf.SetChordTolMm(old)
@@ -112,7 +112,7 @@ func TestFilletCorners(t *testing.T) {
 		{"all", all, 240, 0, 8},
 	} {
 		for _, r := range []float64{1, 3} {
-			tol := 0.003 * r
+			tol := 0.0002 * r
 			srf.SetChordTolMm(tol)
 			sh := box()
 			if err := topo.FilletEdges(sh, c.segs, r, 1<<30); err != nil {
