@@ -193,6 +193,10 @@ func init() {
 		{1, "Lock Point Where &Dragged", CmdWhereDragged, ']', kn, mCon},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Comment", CmdComment, ';', kn, mCon},
+		{1, "", CmdNone, 0, kn, nil},
+		{1, "Mate &Concentric", CmdMateConcentric, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
+		{1, "Mate &Flush", CmdMateFlush, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
+		{1, "Mate &Hinge", CmdMateHinge, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
 
 		{0, "&Analyze", CmdNone, 0, kn, mAna},
 		{1, "Measure &Volume", CmdVolume, c_ | s_ | 'v', kn, mAna},

@@ -1,4 +1,35 @@
-# Bill of materials
+# Assemblies
+
+An assembly is a model of parts: files linked into it (New Group > Link / Assemble), or groups
+that combine as an assembly. This page is about putting them together, checking them and
+counting them.
+
+## Mates
+
+Example: [`examples/scripts/mates`](../../examples/scripts/mates/mates.go), a plate stacked on a
+copy of itself, flush and with the holes on one axis.
+
+A mate is a shortcut to the constraints that put two parts together. Select the first of the
+part that stays, then the second of the part the active group places (a link group places the
+part it links), and choose from the Constrain menu:
+
+- **Mate Concentric**, two circles or arcs: their axes parallel, and the second's centre on the
+  first's axis; the part may still turn about the axis and slide along it. In a workplane, the
+  centres on each other.
+- **Mate Flush**, two faces: parallel, with a point of the first lying on the second; the part may
+  still slide and turn on the face.
+- **Mate Hinge**, two line segments: the starts on each other and the second's end on the first's
+  line; the part may only turn about it.
+
+Each makes ordinary constraints, one step of undo, which are listed, edited and deleted as any;
+one that what is already there makes redundant is left out.
+
+```go
+doc.Flush(top, bottom)
+doc.Concentric(holeA, holeB)
+```
+
+## Bill of materials
 
 Example: [`examples/scripts/bom`](../../examples/scripts/bom/bom.go), which saves a plate and a
 bolt as part files, links them into an assembly with the bolt repeated, and writes the bill.

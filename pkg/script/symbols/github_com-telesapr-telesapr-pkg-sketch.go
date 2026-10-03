@@ -111,6 +111,7 @@ func init() {
 		"WriteBOMCSV":                  reflect.ValueOf(sketch.WriteBOMCSV),
 
 		// type definitions
+		"AssemblyPart":         reflect.ValueOf((*sketch.AssemblyPart)(nil)),
 		"BOMItem":              reflect.ValueOf((*sketch.BOMItem)(nil)),
 		"BrokenReference":      reflect.ValueOf((*sketch.BrokenReference)(nil)),
 		"Clipboard":            reflect.ValueOf((*sketch.Clipboard)(nil)),

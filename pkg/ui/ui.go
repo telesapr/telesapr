@@ -153,6 +153,9 @@ const (
 	CmdGroupPathPattern
 	CmdBillOfMaterials
 	CmdMotionStudy
+	CmdMateConcentric
+	CmdMateFlush
+	CmdMateHinge
 )
 
 // Pending is an operation to be completed by doing something with the

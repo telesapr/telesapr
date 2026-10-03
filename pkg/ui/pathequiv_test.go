@@ -263,6 +263,21 @@ func TestPathEquivalenceConfigurations(t *testing.T) {
 	}
 }
 
+// Two circles picked with the mouse and made a concentric mate, and the
+// same made by a script (roadmap 16.9).
+func TestPathEquivalenceMate(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_mate", "path_mate")
+	n := 0
+	for _, c := range ui.Constraints {
+		if c.Type == core.ConstraintPointsCoincident {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("%d coincident constraints", n)
+	}
+}
+
 // Two edges that meet at a corner picked with the mouse and rounded,
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {

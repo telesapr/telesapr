@@ -4212,6 +4212,10 @@
 						"decl": "func (d *Doc) Comment(at Vec, text string) Constraint",
 						"text": "Comment writes text on the drawing at a place."
 					},
+					"Concentric": {
+						"decl": "func (d *Doc) Concentric(a, b Entity) []Constraint",
+						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other."
+					},
 					"Configurations": {
 						"decl": "func (d *Doc) Configurations() (names []string)",
 						"text": "Configurations are the configurations' names, in the order they were\nmade."
@@ -4288,6 +4292,10 @@
 						"decl": "func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group",
 						"text": "FilletSolid rounds edges of the solid so far, by name, with radius\nmm, as Fillet does: any straight edge between two flat faces, such\nas one a Boolean made, or a circular one, picked from Solid. The fillet\nkeeps the names, so it follows the edges when the model upstream\nchanges. The new group becomes active."
 					},
+					"Flush": {
+						"decl": "func (d *Doc) Flush(faceA, faceB Entity) []Constraint",
+						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other."
+					},
 					"Free3D": {
 						"decl": "func (d *Doc) Free3D()",
 						"text": "Free3D draws freely in 3d, in no workplane, in the active group."
@@ -4303,6 +4311,10 @@
 					"Helix": {
 						"decl": "func (d *Doc) Helix(axis Entity, degrees, length float64, name string) Group",
 						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. The new group becomes active."
+					},
+					"Hinge": {
+						"decl": "func (d *Doc) Hinge(a, b Entity) []Constraint",
+						"text": "Hinge puts the start of line b on the start of line a, and the end of\nb on a's line: b may only turn about a, as on a pin."
 					},
 					"Horizontal": {
 						"decl": "func (d *Doc) Horizontal(lineOrPoints ...Entity) Constraint",
@@ -4612,6 +4624,14 @@
 					"End": {
 						"decl": "func (e Entity) End() (p Entity)",
 						"text": "End is the other end of a line segment, an arc or a cubic."
+					},
+					"FaceNormal": {
+						"decl": "func (e Entity) FaceNormal() (n Vec)",
+						"text": "FaceNormal is a face's normal, a unit vector."
+					},
+					"FacePoint": {
+						"decl": "func (e Entity) FacePoint() (p Vec)",
+						"text": "FacePoint is a point a face's plane passes through."
 					},
 					"Free": {
 						"decl": "func (e Entity) Free() (f sketch.Freedom)",
@@ -5373,6 +5393,10 @@
 	"github.com/telesapr/telesapr/pkg/sketch": {
 		"name": "sketch",
 		"types": {
+			"AssemblyPart": {
+				"text": "AssemblyPart is a part of an assembly as a STEP file gives it (roadmap 16.8): a linked file's solid in the file's own coordinates, placed by the link's rotation and offset, so that a file linked twice is one product placed twice; or another group's solid, where it is.",
+				"kind": "struct"
+			},
 			"BOMItem": {
 				"text": "BOMItem is a line of the bill of materials: the parts from one file.",
 				"kind": "struct"
@@ -5897,6 +5921,10 @@
 					"AddThread": {
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
+					},
+					"AssemblyParts": {
+						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
+						"text": "AssemblyParts are the parts of the model up to group upTo, as the interference check takes them (interference.go): the solid before the first group that combines as an assembly, and each such group."
 					},
 					"BillOfMaterials": {
 						"decl": "func (sk *Sketch) BillOfMaterials() []BOMItem",

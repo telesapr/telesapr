@@ -1,0 +1,26 @@
+# Two circles drawn, picked on their circumferences, and made a
+# concentric mate, which in a workplane puts their centres on each
+# other; the same as path_mate.go makes (TestPathEquivalenceMate).
+key c
+move 290 265
+down L 290 265
+up L 290 265
+move 340 265
+down L 340 265
+up L 340 265
+key esc
+key c
+move 400 265
+down L 400 265
+up L 400 265
+move 430 265
+down L 430 265
+up L 430 265
+key esc
+move 290 215
+down L 290 215
+up L 290 215
+move 400 235
+down L 400 235
+up L 400 235
+menu Constrain|Mate Concentric
