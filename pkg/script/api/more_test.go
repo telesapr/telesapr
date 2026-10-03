@@ -246,3 +246,31 @@ func TestMisuseMore(t *testing.T) {
 		}()
 	}
 }
+
+// A bare sketch keeps the chord tolerance a script sets, and meshes
+// finer for a finer one.
+func TestChordTolerance(t *testing.T) {
+	d := New()
+	d.Rect(V(0, 0, 0), V(10, 10, 0))
+	d.Extrude(10, "")
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Circle(V(5, 5, 0), 3)
+	cut := d.Extrude(10, "")
+	cut.SetCombine(Difference)
+	coarse := cut.Check().Triangles
+	d.SetChordTolerance(0.01)
+	if d.ChordTolerance() != 0.01 {
+		t.Fatalf("chord tolerance %g", d.ChordTolerance())
+	}
+	if fine := cut.Check().Triangles; fine <= coarse {
+		t.Errorf("%d triangles at 0.01%%, %d at the default", fine, coarse)
+	}
+	func() {
+		defer func() {
+			if err, ok := recover().(error); !ok || !strings.Contains(err.Error(), "more than zero") {
+				t.Errorf("a zero tolerance: %v", err)
+			}
+		}()
+		d.SetChordTolerance(0)
+	}()
+}

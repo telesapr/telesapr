@@ -92,6 +92,21 @@ func (t *STriangle) ContainsPointProjd(n, p geom.Vector) bool {
 	return true
 }
 
+// containsPointProjdWithin is ContainsPointProjd with its tolerance a
+// distance, LengthEps, from the triangle's sides: ContainsPointProjd's
+// is LengthEps over the product of n's length and a side's, which for
+// a triangle a hundredth of a millimetre across lets in points a
+// hundredth of its size outside it.
+func (t *STriangle) containsPointProjdWithin(n, p geom.Vector) bool {
+	for _, side := range [3][2]geom.Vector{{t.A, t.B}, {t.B, t.C}, {t.C, t.A}} {
+		out := n.Cross(side[1].Minus(side[0]))
+		if m := out.Magnitude(); m > 0 && out.Dot(p.Minus(side[0])) < -geom.LengthEps*m {
+			return false
+		}
+	}
+	return true
+}
+
 // Raytrace intersects the ray rayPoint + t*rayDir with the triangle,
 // which must face against the ray (C++ STriangle::Raytrace; the
 // Moeller-Trumbore algorithm).

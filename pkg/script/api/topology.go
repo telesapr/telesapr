@@ -371,7 +371,8 @@ func (v SolidVertex) Edges() (edges []SolidEdge) {
 
 // ChamferSolid cuts edges of the solid so far, by name, at distance mm
 // from each edge on both faces: any straight edge between two flat
-// faces, such as one a Boolean made, picked from Solid. The chamfer
+// faces, such as one a Boolean made, or a circular one where a flat
+// face meets a cylinder, picked from Solid. The chamfer
 // keeps the edges' names, so it follows them when the model upstream
 // changes, and reports when one no longer resolves. The new group
 // becomes active.
@@ -412,10 +413,13 @@ func (g Group) SolidEdges() (edges []SolidEdge) {
 // Fillet rounds edges of the solid so far with radius mm: line segments
 // along edges between two flat faces, as the copies of the sketch at
 // the ends of an extrusion and the lines along its sides are. Each edge
-// must stick out, and end at corners where it meets one more flat face;
-// edges that meet at a corner can't be rounded together yet. The face
-// a fillet makes is an exact cylinder, and its edges have names. The
-// new group becomes active.
+// must stick out, and end at corners of three flat faces. Two rounded
+// edges that meet at a corner are mitred, their cylinders meeting along
+// an ellipse, when the faces lie alike about them; three get a sphere.
+// A circle or arc where a flat face meets a cylinder square to it, as
+// an extruded circle's, or a hole's rim, is rounded all round by a
+// torus. The faces a fillet makes are exact cylinders, spheres and
+// tori, and their edges have names. The new group becomes active.
 func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		hs := make([]core.HEntity, len(edges))
@@ -432,7 +436,8 @@ func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group {
 
 // FilletSolid rounds edges of the solid so far, by name, with radius
 // mm, as Fillet does: any straight edge between two flat faces that
-// sticks out, such as one a Boolean made, picked from Solid. The fillet
+// sticks out, such as one a Boolean made, or a circular one, picked
+// from Solid. The fillet
 // keeps the names, so it follows the edges when the model upstream
 // changes. The new group becomes active.
 func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group {

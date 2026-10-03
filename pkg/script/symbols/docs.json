@@ -4155,11 +4155,15 @@
 					},
 					"Chamfer": {
 						"decl": "func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group",
-						"text": "Chamfer cuts edges of the solid so far, at distance mm from each\nedge on both faces that meet there, a 45 degree chamfer where they\nare square. An edge is a line segment that lies along an edge\nbetween two flat faces and sticks out, as the copies of the sketch\nat the ends of an extrusion and the lines along its sides do. The\nnew group becomes active."
+						"text": "Chamfer cuts edges of the solid so far, at distance mm from each\nedge on both faces that meet there, a 45 degree chamfer where they\nare square. An edge is a line segment that lies along an edge\nbetween two flat faces and sticks out, as the copies of the sketch\nat the ends of an extrusion and the lines along its sides do; or a\ncircle or arc where a flat face meets a cylinder square to it, as an\nextruded circle's, which is cut all round by a cone. The new group\nbecomes active."
 					},
 					"ChamferSolid": {
 						"decl": "func (d *Doc) ChamferSolid(edges []SolidEdge, distance float64, name string) Group",
-						"text": "ChamferSolid cuts edges of the solid so far, by name, at distance mm\nfrom each edge on both faces: any straight edge between two flat\nfaces, such as one a Boolean made, picked from Solid. The chamfer\nkeeps the edges' names, so it follows them when the model upstream\nchanges, and reports when one no longer resolves. The new group\nbecomes active."
+						"text": "ChamferSolid cuts edges of the solid so far, by name, at distance mm\nfrom each edge on both faces: any straight edge between two flat\nfaces, such as one a Boolean made, or a circular one where a flat\nface meets a cylinder, picked from Solid. The chamfer\nkeeps the edges' names, so it follows them when the model upstream\nchanges, and reports when one no longer resolves. The new group\nbecomes active."
+					},
+					"ChordTolerance": {
+						"decl": "func (d *Doc) ChordTolerance() (pct float64)",
+						"text": "ChordTolerance is how closely meshes follow curves, as a percentage\nof the model's size."
 					},
 					"Circle": {
 						"decl": "func (d *Doc) Circle(center Vec, radius float64) Entity",
@@ -4231,11 +4235,11 @@
 					},
 					"Fillet": {
 						"decl": "func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group",
-						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust stick out, and end at corners where it meets one more flat face;\nedges that meet at a corner can't be rounded together yet. The face\na fillet makes is an exact cylinder, and its edges have names. The\nnew group becomes active."
+						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust stick out, and end at corners of three flat faces. Two rounded\nedges that meet at a corner are mitred, their cylinders meeting along\nan ellipse, when the faces lie alike about them; three get a sphere.\nA circle or arc where a flat face meets a cylinder square to it, as\nan extruded circle's, or a hole's rim, is rounded all round by a\ntorus. The faces a fillet makes are exact cylinders, spheres and\ntori, and their edges have names. The new group becomes active."
 					},
 					"FilletSolid": {
 						"decl": "func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group",
-						"text": "FilletSolid rounds edges of the solid so far, by name, with radius\nmm, as Fillet does: any straight edge between two flat faces that\nsticks out, such as one a Boolean made, picked from Solid. The fillet\nkeeps the names, so it follows the edges when the model upstream\nchanges. The new group becomes active."
+						"text": "FilletSolid rounds edges of the solid so far, by name, with radius\nmm, as Fillet does: any straight edge between two flat faces that\nsticks out, such as one a Boolean made, or a circular one, picked\nfrom Solid. The fillet\nkeeps the names, so it follows the edges when the model upstream\nchanges. The new group becomes active."
 					},
 					"Free3D": {
 						"decl": "func (d *Doc) Free3D()",
@@ -4408,6 +4412,10 @@
 					"Selection": {
 						"decl": "func (d *Doc) Selection() (entities []Entity)",
 						"text": "Selection is what is selected on the drawing, but for the\nconstraints."
+					},
+					"SetChordTolerance": {
+						"decl": "func (d *Doc) SetChordTolerance(pct float64)",
+						"text": "SetChordTolerance sets how closely meshes follow curves, as a\npercentage of the model's size (0.1 unless set; smaller is finer and\nslower), and regenerates everything. In the application it is the\nsetting Configuration shows; scripts that check volumes against a\nformula use a fine one."
 					},
 					"SetParameter": {
 						"decl": "func (d *Doc) SetParameter(name, expr string) (err error)",
@@ -4983,6 +4991,10 @@
 					"Selection": {
 						"decl": "func (h *SketchHost) Selection() []sketch.Selection",
 						"text": "Selection is nothing: there is no interface to select in."
+					},
+					"SetChordTolerance": {
+						"decl": "func (h *SketchHost) SetChordTolerance(pct float64)",
+						"text": "SetChordTolerance sets the sketch's chord tolerance."
 					},
 					"Sketch": {
 						"decl": "func (h *SketchHost) Sketch() *sketch.Sketch",
@@ -5741,6 +5753,10 @@
 					"CheckThread": {
 						"decl": "func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error",
 						"text": "CheckThread reports why AddThread would refuse to make the thread, without changing anything."
+					},
+					"ChordTolPercent": {
+						"decl": "func (sk *Sketch) ChordTolPercent() float64",
+						"text": "ChordTolPercent is the chord tolerance in effect, as a percentage of the model's size."
 					},
 					"Clear": {
 						"decl": "func (s *Sketch) Clear()"

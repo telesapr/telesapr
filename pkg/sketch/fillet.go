@@ -6,7 +6,6 @@ import (
 	"math"
 
 	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/srf"
 	"github.com/spacesolve/spacesolve/pkg/topo"
 )
@@ -52,7 +51,7 @@ func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius
 	}
 	var sh srf.SShell
 	sh.MakeFromCopyOf(&solid.RunningShell)
-	if err := topo.FilletEdges(&sh, segmentPairs(segs), radius, 1<<30); err != nil {
+	if err := topo.FilletPicks(&sh, segmentPicks(segs), radius, 1<<30, false); err != nil {
 		return g, err
 	}
 	g.Edges = append([]core.HEntity(nil), edges...)
@@ -60,10 +59,10 @@ func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius
 	return g, nil
 }
 
-func segmentPairs(segs []chamferSegment) [][2]geom.Vector {
-	out := make([][2]geom.Vector, len(segs))
+func segmentPicks(segs []chamferSegment) []topo.FilletPick {
+	out := make([]topo.FilletPick, len(segs))
 	for i, s := range segs {
-		out[i] = [2]geom.Vector{s.a, s.b}
+		out[i] = s.pick()
 	}
 	return out
 }
@@ -97,7 +96,7 @@ func (g *Group) generateFilletShell(sk *Sketch) {
 	}
 	var sh srf.SShell
 	sh.MakeFromCopyOf(&prev.RunningShell)
-	if err := topo.FilletEdges(&sh, segmentPairs(segs), g.ValB, srf.OriginFor(g.H.V, 0)); err != nil {
+	if err := topo.FilletPicks(&sh, segmentPicks(segs), g.ValB, srf.OriginFor(g.H.V, 0), false); err != nil {
 		var fe *topo.FilletError
 		if errors.As(err, &fe) {
 			at := fe.At

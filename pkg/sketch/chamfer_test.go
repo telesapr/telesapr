@@ -96,7 +96,7 @@ func TestChamferRefused(t *testing.T) {
 		"concave":             {func() { d.Chamfer([]api.Entity{inner}, 1, "") }, "concave"},
 		"no edges":            {func() { d.Chamfer(nil, 1, "") }, "no edges"},
 		"zero distance":       {func() { d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
-		"a point":             {func() { d.Chamfer([]api.Entity{inner.Start()}, 1, "") }, "not a line segment"},
+		"a point":             {func() { d.Chamfer([]api.Entity{inner.Start()}, 1, "") }, "neither a line segment nor a circle"},
 		"twice":               {func() { e := lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5)); d.Chamfer([]api.Entity{e, e}, 1, "") }, "twice"},
 		"distance of extrude": {func() { ex.Distance() }, "chamfer"},
 	} {
