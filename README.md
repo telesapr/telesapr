@@ -51,7 +51,9 @@ packages, the GUI tests under Xvfb, and the linter.
 
 ## Using it
 
-`telesapr [file.tlspr]` opens the application. `telesapr-cli` works without a window:
+`telesapr [file.tlspr]` opens the application. Solids are made off the window's thread: while a
+change is being made into the solid, the window draws the solid as it was, and Esc stops it
+(`TELESAPR_BACKGROUND=off` makes them on the thread, as before). `telesapr-cli` works without a window:
 `telesapr-cli --help` lists its commands, which export views, meshes and surfaces, convert
 `.slvs` files (`telesapr-cli convert`), and run scripts.
 

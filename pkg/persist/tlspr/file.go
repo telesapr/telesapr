@@ -26,6 +26,9 @@ var ErrCancelled = link.ErrCancelled
 // are regenerated, not loaded. The sketch's ReloadAllLinked reloads its
 // links relative to path.
 func LoadFile(path string) (*Document, error) {
+	if IsPacked(path) {
+		return LoadPacked(path)
+	}
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
@@ -89,6 +92,9 @@ func loadLinked(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh,
 // was in (from, or "" for a new sketch) to path. When the write fails
 // the links are put back.
 func SaveFile(sk *sketch.Sketch, from, path string, o Options) error {
+	if IsPacked(path) {
+		return Pack(sk, from, path, o)
+	}
 	if bad, err := link.RebaseLinks(sk, from, path); err != nil {
 		return &LinkError{Link: bad, Err: err}
 	}

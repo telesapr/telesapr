@@ -16,7 +16,19 @@ triangulated to, and the entities it could not read, by name. A file with
 no solid that the reader supports links empty, and says so.
 
 The link keeps the file's path. On opening, and on undo and redo, the file is read again, so a
-changed file shows its changes.
+changed file shows its changes; one that hasn't changed (the same size and modification time) is
+taken from memory, so a part linked many times is read once. A STEP file's triangles are kept
+on disk too, in the user's cache folder (`telesapr/step`, or `TELESAPR_CACHE_DIR`), so the next
+session doesn't triangulate it again; deleting the folder only costs that time.
+
+## Packed models
+
+Saving a model as `.tlsprz` packs it: a zip of the model with what it links (and what those link,
+all in one folder), its pictures, and the kept triangles of its STEP files, so that it can be sent
+and opened elsewhere as it was. Opening one unpacks it into a folder of its own; its links then
+name the files there, so saving it packed again packs them again. Saving it as a `.tlspr` keeps
+those links, into that folder: to work on the parts, unpack it somewhere of your own first (a zip
+tool will do; the model is `model.tlspr`).
 
 From a script:
 

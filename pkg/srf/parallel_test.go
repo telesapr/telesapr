@@ -10,13 +10,14 @@ import (
 )
 
 // TestIntersectionCurvesAtOnceSameAsInOrder intersects two surfaces
-// that meet a third in the same line, up to LENGTH_EPS. In order, the
-// second's curve follows the pwl of the first's; at once it can't see
-// it, and has to be made over when the curves are added.
+// that meet a third in the same line, up to LENGTH_EPS. The second's
+// curve follows the pwl of the first's: run at once it can't see it,
+// and is made over when the curves are added, on one goroutine as on
+// eight.
 func TestIntersectionCurvesAtOnceSameAsInOrder(t *testing.T) {
 	run := func(mode ParallelMode) []SCurve {
 		SetParallelMode(mode)
-		defer SetParallelMode(ParallelExact)
+		defer SetParallelMode(ParallelOn)
 		if mode != ParallelOff {
 			par.SetWorkers(8)
 		}
@@ -35,17 +36,17 @@ func TestIntersectionCurvesAtOnceSameAsInOrder(t *testing.T) {
 		return into.Curve
 	}
 
+	redone := sinkRedone.Load()
 	want := run(ParallelOff)
 	if len(want) != 2 || want[0].Points[0].P != want[1].Points[0].P ||
 		want[0].Exact.Ctrl[0] == want[1].Exact.Ctrl[0] {
-		t.Fatalf("in order: want two curves with one pwl, got %+v", want)
-	}
-	redone := sinkRedone.Load()
-	got := run(ParallelExact)
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("at once: %+v\nin order: %+v", got, want)
+		t.Fatalf("on one goroutine: want two curves with one pwl, got %+v", want)
 	}
 	if sinkRedone.Load() != redone+1 {
-		t.Errorf("%d curves made over, want 1", sinkRedone.Load()-redone)
+		t.Errorf("%d curves made over on one goroutine, want 1", sinkRedone.Load()-redone)
+	}
+	got := run(ParallelOn)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("on eight: %+v\non one: %+v", got, want)
 	}
 }

@@ -126,7 +126,11 @@ func (ss *SolveSpaceUI) UpdateWindowTitles() {
 			ss.GW.window.SetTitle(filepath.Base(ss.SaveFile))
 		}
 	}
-	ss.TW.window.SetTitle("Property Browser")
+	if ss.SK != nil && ss.SK.AnyShellsStale() {
+		ss.TW.window.SetTitle("Property Browser (making the solid; Esc stops)")
+	} else {
+		ss.TW.window.SetTitle("Property Browser")
+	}
 }
 
 // LoadSketchForTest adopts an already loaded sketch as C++ does after

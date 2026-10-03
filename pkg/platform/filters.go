@@ -5,6 +5,7 @@ var (
 	// ModelFileFilters are the documents TeleSAPR opens and saves.
 	ModelFileFilters = []FileFilter{
 		{"TeleSAPR models", []string{"tlspr"}},
+		{"TeleSAPR packed models, with what they link", []string{"tlsprz"}},
 	}
 	// ScriptFileFilters are the scripts the application runs.
 	ScriptFileFilters = []FileFilter{

@@ -556,3 +556,14 @@ every linked `.slvs` file to a `.tlspr` file beside it and rewrites the links
 ## Autosave
 
 The autosave of `name.tlspr` is `name.tlspr~`, in the same format.
+
+## Packed models
+
+A packed model, `.tlsprz`, is a zip: the model as `model.tlspr`; the files it links, and those they
+link, in `parts/`, their links rewritten to name each other there (`parts/name` from the model,
+`name` from a part); its pictures in `images/`; and in `cache/step/` the tessellations of its STEP
+files, named by a hash of the file's contents, the chord tolerance and a version, which a reader
+may take into its cache. A name that repeats gets `-2`, `-3` before its extension. The entries'
+dates are fixed, so the same model packs to the same bytes. A reader refuses an entry that would
+be written outside the folder it unpacks into.
+

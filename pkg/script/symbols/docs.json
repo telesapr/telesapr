@@ -3918,7 +3918,8 @@
 					"Decode",
 					"DecodeTree",
 					"Load",
-					"LoadFile"
+					"LoadFile",
+					"LoadPacked"
 				]
 			},
 			"Error": {
@@ -4006,6 +4007,10 @@
 				"decl": "func FormatReal(v float64) string",
 				"text": "FormatReal writes v in the shortest form that reads back to the same bits: plain notation from 1e-6 up to 1e21, exponent notation outside."
 			},
+			"IsPacked": {
+				"decl": "func IsPacked(path string) bool",
+				"text": "IsPacked reports whether path names a packed model."
+			},
 			"Load": {
 				"decl": "func Load(data []byte, path string) (doc *Document, err error)",
 				"text": "Load is LoadFile for a file's contents, data, with links relative to path."
@@ -4013,6 +4018,14 @@
 			"LoadFile": {
 				"decl": "func LoadFile(path string) (*Document, error)",
 				"text": "LoadFile opens a document: it decodes the file, loads what the sketch links, asking through link.LocateMissingFile for a missing file, and regenerates the sketch without solving."
+			},
+			"LoadPacked": {
+				"decl": "func LoadPacked(path string) (*Document, error)",
+				"text": "LoadPacked opens a packed model: it is unpacked into a new folder of its own, and its model opened there, its links made absolute so that they hold wherever the model is saved."
+			},
+			"Pack": {
+				"decl": "func Pack(sk *sketch.Sketch, from, out string, o Options) error",
+				"text": "Pack writes sk, a model saved or opened at from (\"\" for a new one), as a packed model at path, with what it links."
 			},
 			"Parse": {
 				"decl": "func Parse(data []byte) (*File, error)",
@@ -4030,6 +4043,10 @@
 				"decl": "func String(s string) Value",
 				"text": "String makes a quoted value."
 			},
+			"Unpack": {
+				"decl": "func Unpack(in, dir string) (string, error)",
+				"text": "Unpack writes the files of the packed model at in into dir, and the tessellations it keeps into the STEP cache, and returns the path of its model."
+			},
 			"Word": {
 				"decl": "func Word(s string) Value",
 				"text": "Word makes an unquoted value."
@@ -4043,6 +4060,10 @@
 			"Extension": {
 				"decl": "const Extension",
 				"text": "Extension is the file extension of the format, without its dot."
+			},
+			"PackedExtension": {
+				"decl": "const PackedExtension",
+				"text": "PackedExtension is the packed model's file extension, without its dot."
 			},
 			"Version": {
 				"decl": "const Version",
@@ -5861,6 +5882,20 @@
 				"text": "Selection is a selected entity or constraint (C++ Selection).",
 				"kind": "struct"
 			},
+			"ShellJob": {
+				"text": "ShellJob is a regeneration of a copy of the sketch.",
+				"kind": "struct",
+				"methods": {
+					"Cancel": {
+						"decl": "func (j *ShellJob) Cancel()",
+						"text": "Cancel asks Run to stop at the next group."
+					},
+					"Run": {
+						"decl": "func (j *ShellJob) Run()",
+						"text": "Run regenerates the copy in full; it may run on any goroutine."
+					}
+				}
+			},
 			"Sketch": {
 				"kind": "struct",
 				"methods": {
@@ -5921,6 +5956,14 @@
 					"AddThread": {
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
+					},
+					"AnyShellsStale": {
+						"decl": "func (sk *Sketch) AnyShellsStale() bool",
+						"text": "AnyShellsStale reports whether a group's solid is out of date."
+					},
+					"Apply": {
+						"decl": "func (sk *Sketch) Apply(j *ShellJob) bool",
+						"text": "Apply moves the job's groups, with their solids, into the sketch if it is still defined as when the job was made and the job ran to the end, and reports whether it did."
 					},
 					"AssemblyParts": {
 						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
@@ -6217,6 +6260,10 @@
 					"NewShell": {
 						"decl": "func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Group, error)",
 						"text": "NewShell starts a shell at the active group, hollowing the solid so far to walls thick mm, open at faces."
+					},
+					"NewShellJob": {
+						"decl": "func (sk *Sketch) NewShellJob() *ShellJob",
+						"text": "NewShellJob copies what defines the sketch, for a job to regenerate."
 					},
 					"NewSweep": {
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
@@ -7022,14 +7069,13 @@
 				]
 			},
 			"ParallelMode": {
-				"text": "ParallelMode says which loops of a Boolean run on several goroutines.",
+				"text": "ParallelMode says whether the loops run on several goroutines.",
 				"kind": "int",
 				"makers": [
 					"GetParallelMode"
 				],
 				"values": [
-					"ParallelExact",
-					"ParallelFast",
+					"ParallelOn",
 					"ParallelOff"
 				]
 			},
@@ -7915,6 +7961,10 @@
 						"decl": "func (s *SShell) Clear()",
 						"text": "Clear resets all data."
 					},
+					"Clone": {
+						"decl": "func (s *SShell) Clone() SShell",
+						"text": "Clone is a copy of the shell that shares nothing with it, to the bit: the surfaces with their trims, the curves with their points."
+					},
 					"CopyCurvesSplitAgainst": {
 						"decl": "func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell)",
 						"text": "CopyCurvesSplitAgainst copies every curve of s into `into`, split so that a pwl segment never crosses a surface of agnst, and records each original curve's handle in `into` as its NewH (for rewriting the trims)."
@@ -8476,7 +8526,7 @@
 			},
 			"SetParallelModeFromEnv": {
 				"decl": "func SetParallelModeFromEnv()",
-				"text": "SetParallelModeFromEnv takes TELESAPR_PARALLEL: \"exact\" (the default) has the solids generated on all the processors where that gives the bits of one; \"fast\" on all of them throughout, for other last bits; \"off\" on one."
+				"text": "SetParallelModeFromEnv takes TELESAPR_PARALLEL: \"on\" (the default) has the solids generated on all the processors, \"off\" on one; the result is the same."
 			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",
@@ -8581,14 +8631,11 @@
 				"decl": "const MaxDegree",
 				"text": "MaxDegree is the highest degree of a patch or a curve in either direction."
 			},
-			"ParallelExact": {
-				"decl": "const ParallelExact"
-			},
-			"ParallelFast": {
-				"decl": "const ParallelFast"
-			},
 			"ParallelOff": {
 				"decl": "const ParallelOff"
+			},
+			"ParallelOn": {
+				"decl": "const ParallelOn"
 			},
 			"RigidIdentity": {
 				"decl": "var RigidIdentity",
