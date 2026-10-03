@@ -66,6 +66,7 @@ const (
 	ScreenCommands
 	ScreenBrokenReferences
 	ScreenSection
+	ScreenBillOfMaterials
 )
 
 // Edit is what the edit control is editing (C++ TextWindow::Edit).
@@ -765,6 +766,8 @@ func (tw *TextWindow) Show() {
 			tw.ShowBrokenReferences()
 		case ScreenSection:
 			tw.ShowSection()
+		case ScreenBillOfMaterials:
+			tw.ShowBillOfMaterials()
 		}
 	}
 	tw.Printf(false, "")

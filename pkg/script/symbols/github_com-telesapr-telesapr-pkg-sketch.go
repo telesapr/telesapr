@@ -32,6 +32,7 @@ func init() {
 		"DefaultVisibility":            reflect.ValueOf(sketch.DefaultVisibility),
 		"EdgeRadiusField":              reflect.ValueOf(sketch.EdgeRadiusField),
 		"EntityPointCount":             reflect.ValueOf(sketch.EntityPointCount),
+		"ExportMeshAs3mfTo":            reflect.ValueOf(sketch.ExportMeshAs3mfTo),
 		"ExportMeshAsStlTo":            reflect.ValueOf(sketch.ExportMeshAsStlTo),
 		"FreedomFixed":                 reflect.ValueOf(sketch.FreedomFixed),
 		"FreedomFree":                  reflect.ValueOf(sketch.FreedomFree),
@@ -107,8 +108,10 @@ func init() {
 		"SetConstraintValue":           reflect.ValueOf(sketch.SetConstraintValue),
 		"SplitNamedText":               reflect.ValueOf(sketch.SplitNamedText),
 		"ThawExportSettings":           reflect.ValueOf(sketch.ThawExportSettings),
+		"WriteBOMCSV":                  reflect.ValueOf(sketch.WriteBOMCSV),
 
 		// type definitions
+		"BOMItem":              reflect.ValueOf((*sketch.BOMItem)(nil)),
 		"BrokenReference":      reflect.ValueOf((*sketch.BrokenReference)(nil)),
 		"Clipboard":            reflect.ValueOf((*sketch.Clipboard)(nil)),
 		"ClipboardRequest":     reflect.ValueOf((*sketch.ClipboardRequest)(nil)),

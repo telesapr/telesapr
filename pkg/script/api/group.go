@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -706,7 +708,27 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 	})
 }
 
-// Link brings in another sketch file, a STEP file, or an STL file, as
+// BillOfMaterials is the parts the model places by linking files, one
+// item a file: each link group places one, and a step and repeat, a
+// mirror or a pattern of a link group its copies, but for one where the
+// part already is. Groups left out of the model place none.
+func (d *Doc) BillOfMaterials() (items []sketch.BOMItem) {
+	d.read(func(sk *sketch.Sketch) { items = sk.BillOfMaterials() })
+	return items
+}
+
+// ExportBOM writes the bill of materials to a CSV file: part, count,
+// file and the groups that place them.
+func (d *Doc) ExportBOM(path string) error {
+	var b bytes.Buffer
+	if err := sketch.WriteBOMCSV(&b, d.BillOfMaterials()); err != nil {
+		return err
+	}
+	return os.WriteFile(path, b.Bytes(), 0o644)
+}
+
+// Link brings in another sketch file, a STEP file, or a mesh file (STL
+// or OBJ), as
 // a group, named after the file if name is empty. The new group becomes
 // active. A STEP file comes in as a reference mesh, its faces
 // tessellated, with a point at each vertex and at the centre of each

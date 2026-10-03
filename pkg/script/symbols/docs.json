@@ -4157,6 +4157,10 @@
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
 					},
+					"BillOfMaterials": {
+						"decl": "func (d *Doc) BillOfMaterials() (items []sketch.BOMItem)",
+						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none."
+					},
 					"BrokenReferences": {
 						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
 						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Edit \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
@@ -4241,6 +4245,10 @@
 						"decl": "func (d *Doc) ExportAs(kind ExportKind, path string) (err error)",
 						"text": "ExportAs is Export for a format that can hold several things, such\nas a wireframe in a .dxf or a .step."
 					},
+					"ExportBOM": {
+						"decl": "func (d *Doc) ExportBOM(path string) error",
+						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them."
+					},
 					"ExprErrors": {
 						"decl": "func (d *Doc) ExprErrors() (errs []string)",
 						"text": "ExprErrors lists the expressions on constraints and group values\nthat the last regeneration could not evaluate, each with why; the\nvalues they drive keep their last good value."
@@ -4299,7 +4307,7 @@
 					},
 					"Link": {
 						"decl": "func (d *Doc) Link(path, name string) (g Group, err error)",
-						"text": "Link brings in another sketch file, a STEP file, or an STL file, as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
+						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
 					},
 					"Load": {
 						"decl": "func (d *Doc) Load(path string) (err error)",
@@ -5318,6 +5326,10 @@
 	"github.com/telesapr/telesapr/pkg/sketch": {
 		"name": "sketch",
 		"types": {
+			"BOMItem": {
+				"text": "BOMItem is a line of the bill of materials: the parts from one file.",
+				"kind": "struct"
+			},
 			"BrokenReference": {
 				"text": "BrokenReference is a request, constraint or group that a regeneration deleted, because something it referred to was gone.",
 				"kind": "struct",
@@ -5823,6 +5835,10 @@
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
 					},
+					"BillOfMaterials": {
+						"decl": "func (sk *Sketch) BillOfMaterials() []BOMItem",
+						"text": "BillOfMaterials is the model's parts, by file, in the order of the first group that places each."
+					},
 					"BumpOrderAfterActive": {
 						"decl": "func (sk *Sketch) BumpOrderAfterActive(g *Group)",
 						"text": "BumpOrderAfterActive gives g the order after the active group's and moves the groups after that one down."
@@ -5948,7 +5964,7 @@
 					},
 					"ExportMeshTo": {
 						"decl": "func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error",
-						"text": "ExportMeshTo writes the active group's mesh, regenerated at the export chord tolerance, to filename; the extension picks the format, and only STL is supported."
+						"text": "ExportMeshTo writes the active group's mesh, regenerated at the export chord tolerance, to filename; the extension picks the format, STL or 3MF."
 					},
 					"FaceName": {
 						"decl": "func (sk *Sketch) FaceName(id srf.FaceID) string",
@@ -6450,6 +6466,10 @@
 				"decl": "func EntityPointCount(entity core.EntityType, extraPoints int) (pts int, ok bool)",
 				"text": "EntityPointCount is how many points an entity of that type has (C++ EntReqTable::GetEntityInfo's pts); ok is false for a type no request makes."
 			},
+			"ExportMeshAs3mfTo": {
+				"decl": "func ExportMeshAs3mfTo(w io.Writer, m *srf.SMesh) error",
+				"text": "ExportMeshAs3mfTo writes m as a 3MF file."
+			},
 			"ExportMeshAsStlTo": {
 				"decl": "func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error",
 				"text": "ExportMeshAsStlTo writes m as a binary STL file, in export units of scale mm (C++ SolveSpaceUI::ExportMeshAsStlTo)."
@@ -6492,6 +6512,10 @@
 			"ThawExportSettings": {
 				"decl": "func ThawExportSettings(settings core.Settings) ExportSettings",
 				"text": "ThawExportSettings reads the export settings, with C++'s defaults (C++ SolveSpaceUI::Init)."
+			},
+			"WriteBOMCSV": {
+				"decl": "func WriteBOMCSV(w io.Writer, items []BOMItem) error",
+				"text": "WriteBOMCSV writes the bill of materials as CSV: a header, then a line for each part with its count, its file and the groups that place it."
 			}
 		},
 		"values": {

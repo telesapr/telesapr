@@ -170,6 +170,12 @@ func (ss *SolveSpaceUI) MenuAnalyze(id Command) {
 			ss.Error("Bad selection for trace; select a single point.")
 		}
 
+	case CmdBillOfMaterials:
+		gw.ClearSelection()
+		ss.TW.GoToScreen(ScreenBillOfMaterials)
+		gw.ForceTextWindowShown()
+		ss.ScheduleShowTW()
+
 	case CmdStopTracing:
 		if ss.Traced.Point.V == 0 {
 			break
