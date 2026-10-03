@@ -199,7 +199,7 @@ func TestSweepFitting(t *testing.T) {
 	path := helixPath(20, 15, 1.5, 10)
 	loops, _ := profileAcross(path, 0)
 	prev := 0
-	for _, tol := range []float64{1e-2, 1e-3, 1e-4} {
+	for _, tol := range []float64{1e-3, 1e-5, 1e-6} {
 		sp := newPath(t, path, topo.PathSweepOptions{Tol: tol})
 		surfs, pieces, err := sp.SweptSurfaces(loops)
 		if err != nil {
@@ -209,7 +209,7 @@ func TestSweepFitting(t *testing.T) {
 		for _, ss := range pieces {
 			sections += len(ss)
 		}
-		if sections < prev || (tol == 1e-4 && sections == prev) {
+		if sections < prev || (tol == 1e-6 && sections == prev) {
 			t.Errorf("tolerance %g took %d sections, against %d for the one before", tol, sections, prev)
 		}
 		prev = sections
@@ -256,6 +256,42 @@ func TestSweepFitting(t *testing.T) {
 		t.Logf("tolerance %g: %d sections, off by %.3g at most", tol, sections, worst)
 		if worst > 2*tol {
 			t.Errorf("tolerance %g: the surface is off the sweep by %g", tol, worst)
+		}
+	}
+}
+
+// The surfaces of a sweep's pieces meet tangent where the path is
+// smooth, as the true sweep does, so no edge is drawn between them: the
+// derivative across, from either side of a joint, points one way. That
+// holds where the curvature jumps, from the lead line onto the helix,
+// for frames that turn least and a profile across the path: the frames'
+// turn adds to the derivative only along the path. A twist adds to it
+// across the path, by as much on either side, so where the curvature
+// jumps, even by as little as between the cubics that make the helix,
+// the true sweep itself has a crease, and so has the fitted one.
+func TestSweepPiecesMeetTangent(t *testing.T) {
+	path := helixPath(15, 8, 1, 10)
+	loops, _ := profileAcross(path, 2)
+	sp := newPath(t, path, topo.PathSweepOptions{Tol: 2e-3})
+	surfs, _, err := sp.SweptSurfaces(loops)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for li := range surfs {
+		for i := 0; i+1 < len(surfs[li]); i++ {
+			a, b := surfs[li][i], surfs[li][i+1]
+			for k := 0; k < 40; k++ {
+				u := (float64(k) + 0.5) / 40
+				if !a.PointAt(u, 1).EqualsTol(b.PointAt(u, 0), 1e-9) {
+					t.Fatalf("loop %d: pieces %d and %d part at u %g", li, i, i+1, u)
+				}
+				da := a.PointAt(u, 1).Minus(a.PointAt(u, 1-1e-7))
+				db := b.PointAt(u, 1e-7).Minus(b.PointAt(u, 0))
+				if c := da.WithMagnitude(1).Dot(db.WithMagnitude(1)); c < 1-1e-9 {
+					t.Errorf("loop %d: pieces %d and %d meet at %.3g degrees at u %g",
+						li, i, i+1, math.Acos(c)*180/math.Pi, u)
+				}
+			}
 		}
 	}
 }

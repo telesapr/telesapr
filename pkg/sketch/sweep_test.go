@@ -8,6 +8,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // pipePath draws in ZX a line up from the origin by up, a quarter turn
@@ -80,7 +81,7 @@ func TestSweepProblems(t *testing.T) {
 		"apart":     {[]api.Entity{up, apart}, "not one chain"},
 		"flat":      {[]api.Entity{flat}, "along the profile's plane"},
 		"tight":     {[]api.Entity{up, tight}, "too tight"},
-		"circle":    {[]api.Entity{circle}, "not a line segment or an arc"},
+		"circle":    {[]api.Entity{circle}, "not a line segment, an arc or a cubic"},
 		"no path":   {nil, "no path"},
 		"branching": {[]api.Entity{up, corner, branch}, "branches"},
 	} {
@@ -171,3 +172,144 @@ func TestSweepGrid(t *testing.T) {
 // triangulation of thin tori, crossing a neighbouring row by about
 // 2e-4 mm.
 const sweepGridMaxFailRate = 0
+
+// cubicLength is the length of the cubic Bezier p0 p1 p2 p3, by
+// Simpson's rule on its speed.
+func cubicLength(p0, p1, p2, p3 api.Vec) float64 {
+	speed := func(t float64) float64 {
+		s := 1 - t
+		d := p1.Minus(p0).ScaledBy(3 * s * s).Plus(p2.Minus(p1).ScaledBy(6 * s * t)).Plus(p3.Minus(p2).ScaledBy(3 * t * t))
+		return d.Magnitude()
+	}
+	const n = 2000
+	sum := speed(0) + speed(1)
+	for k := 1; k < n; k++ {
+		w := 2.0
+		if k%2 == 1 {
+			w = 4
+		}
+		sum += w * speed(float64(k)/n)
+	}
+	return sum / (3 * n)
+}
+
+// A circle swept up a line and on along a cubic that leaves its plane
+// (roadmap 20.7): its surface is fitted, and the profile, centred on
+// the path, keeps its area times the path's length by the centroid
+// theorem. The end's copy of the profile faces along the path's end.
+func TestSweepAlongCubic(t *testing.T) {
+	d := api.New()
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
+	d.Sketch3D("path")
+	c := []api.Vec{api.V(0, 0, 10), api.V(0, 0, 20), api.V(6, 8, 28), api.V(16, 10, 30)}
+	path := []api.Entity{d.Line(api.V(0, 0, 0), c[0]), d.Cubic(c[0], c[1], c[2], c[3])}
+	d.SketchIn(d.Workplane("XY"), "profile")
+	d.Circle(api.V(0, 0, 0), 2)
+	step(d)
+	before := saved(t, d)
+	s := d.Sweep(path, "")
+	if p := s.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	want := math.Pi * 4 * (10 + cubicLength(c[0], c[1], c[2], c[3]))
+	r := s.Check()
+	if !r.Sound() || math.Abs(r.Volume-want) > 0.005*want {
+		t.Fatalf("along a cubic: %s, want volume %g", r.String(), want)
+	}
+	endDir := c[3].Minus(c[2]).WithMagnitude(1)
+	found := false
+	for _, e := range s.Entities() {
+		if e.Kind() == "circle" && e.Center().Pos().Minus(c[3]).Magnitude() < 1e-9 {
+			found = true
+			if n := e.Normal().Dir(); math.Abs(math.Abs(n.Dot(endDir))-1) > 1e-6 {
+				t.Errorf("the end circle's normal is %v, not along %v", n, endDir)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("no copy of the profile at the end of the path")
+	}
+	undoRedo(t, d, before)
+	// A file holds the curves' points at the chord tolerance, which it
+	// doesn't hold: the default's, for the round trip.
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	d.Regen()
+	roundTrip(t, d)
+}
+
+// A square swept along a line and twisted keeps its volume, its end
+// turned by the twist; a circle swept along a quarter of a helix with
+// its frames held to the axis keeps its area times the path's length,
+// as it does when they turn least, and both are saved.
+func TestSweepTwistAndUp(t *testing.T) {
+	d := api.New()
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
+	d.SketchIn(d.Workplane("ZX"), "path")
+	line := d.Line(api.V(0, 0, 0), api.V(0, 0, 30))
+	d.SketchIn(d.Workplane("XY"), "square")
+	d.Rect(api.V(-2, -2, 0), api.V(2, 2, 0))
+	bar := d.Sweep([]api.Entity{line}, "bar")
+	bar.SetTwist(45)
+	// Its sides are twisted ruled faces, which the mesher grids with
+	// rows but no columns: as a twisted loft's (TestLoftSweep), the
+	// diagonals of the quads bias the volume, here by 1.6%.
+	if r := bar.Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.02*480 || bar.Twist() != 45 {
+		t.Fatalf("a twisted bar: %s, twist %g", r.String(), bar.Twist())
+	}
+	for _, e := range bar.Entities() {
+		if e.Kind() != "point" {
+			continue
+		}
+		// The corners' copies at the end, not the copy of the sketch's
+		// origin on the axis.
+		if p := e.Pos(); math.Abs(p.Z-30) < 1e-9 && math.Hypot(p.X, p.Y) > 1e-9 {
+			if math.Abs(math.Hypot(p.X, p.Y)-math.Sqrt(8)) > 1e-6 || math.Min(math.Abs(p.X), math.Abs(p.Y)) > 1e-6 {
+				t.Errorf("an end corner of the bar at %v, not a corner turned by 45 degrees", p)
+			}
+		}
+	}
+
+	// A quarter of a helix of radius 20 rising 5, as a cubic.
+	h := api.New()
+	h.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
+	const rad, rise = 20.0, 5.0
+	k := 4.0 / 3 * math.Tan(math.Pi/8)
+	c := []api.Vec{api.V(rad, 0, 0), api.V(rad, rad*k, rise/3), api.V(rad*k, rad, 2*rise/3), api.V(0, rad, rise)}
+	h.Sketch3D("path")
+	helix := h.Cubic(c[0], c[1], c[2], c[3])
+	t0 := c[1].Minus(c[0]).WithMagnitude(1)
+	o := h.Point(c[0])
+	h.SketchAt(o, api.V(1, 0, 0), t0.Cross(api.V(1, 0, 0)), "profile")
+	h.Circle(c[0], 2)
+	s := h.Sweep([]api.Entity{helix}, "spring")
+	want := math.Pi * 4 * cubicLength(c[0], c[1], c[2], c[3])
+	least := s.Check()
+	s.SetSweepUp(api.V(0, 0, 3))
+	held := s.Check()
+	for name, r := range map[string]struct {
+		Sound  bool
+		Volume float64
+	}{"turning least": {least.Sound(), least.Volume}, "held up": {held.Sound(), held.Volume}} {
+		if !r.Sound || math.Abs(r.Volume-want) > 0.005*want {
+			t.Errorf("%s: sound %v, volume %g, want %g", name, r.Sound, r.Volume, want)
+		}
+	}
+	if up := s.SweepUp(); up != api.V(0, 0, 1) {
+		t.Errorf("held to %v", up)
+	}
+	h.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	h.Regen()
+	if back := roundTrip(t, h).Group("spring"); back.SweepUp() != api.V(0, 0, 1) {
+		t.Errorf("reopened held to %v", back.SweepUp())
+	}
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	d.Regen()
+	if back := roundTrip(t, d).Group("bar"); back.Twist() != 45 {
+		t.Errorf("reopened twisted by %g", back.Twist())
+	}
+	// Along a line held up its own way, the frames have no direction.
+	bar.SetSweepUp(api.V(0, 0, 1))
+	if bar.Problem() == "" {
+		t.Error("a sweep held up along its path has no problem")
+	}
+}

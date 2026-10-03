@@ -1,0 +1,41 @@
+# Sweep along a cubic (roadmap 20): with the cubic of a 3d sketch picked,
+# Sweep Along Path moves the active sketch's rectangle along it, its
+# surface fitted; the group screen lists the path, the twist and how the
+# frames turn. Analyze > Check Solid finds it sound; a twist of 90
+# degrees typed in turns the far end, still sound. Holding the frames to
+# z is a problem, since the path starts along z; held to x the sweep is
+# sound; undo twice lets them turn least again.
+file $testdata/ui/sweep_cubic.tlspr
+menu File|Open...
+view default
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+menu New Group|Sweep Along Path
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 154 165
+twdown L 154 165
+twup L 154 165
+edit 90
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 397 185
+twdown L 397 185
+twup L 397 185
+answer ok
+menu Analyze|Check Solid
+tw
+twmove 235 185
+twdown L 235 185
+twup L 235 185
+answer ok
+menu Analyze|Check Solid
+key z ctrl
+key z ctrl
+tw
+answer ok
+menu Analyze|Check Solid

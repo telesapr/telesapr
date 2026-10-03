@@ -325,7 +325,7 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		if err != nil {
 			ss.Error("Can't sweep along the selection. %s.\n\n"+
 				"Sweep Along Path moves the active group's sketch along a path. Select:\n\n"+
-				"    * the line segments and arcs of the path, joined end to end "+
+				"    * the line segments, arcs and cubics of the path, joined end to end "+
 				"and meeting tangent\n", capitalize(err.Error()))
 			return
 		}

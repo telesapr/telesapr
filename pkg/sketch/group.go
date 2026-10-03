@@ -212,6 +212,12 @@ type Group struct {
 	// SolidEdges are the edges of the solid a chamfer cuts, by name:
 	// any edge of the solid so far, as the topology names it.
 	SolidEdges []topo.Name
+	// SweepUp, when not zero, holds a sweep's frames to this direction
+	// rather than minimising their rotation (topo.PathSweepOptions.Up).
+	SweepUp geom.Vector
+	// fittedPath is a sweep's path when its surface is fitted, made
+	// with the group's shell.
+	fittedPath *topo.SweepPath
 	// LoftThrough are the profiles a smooth loft goes through between
 	// OpA and OpB, in order (roadmap E8).
 	LoftThrough []core.HGroup

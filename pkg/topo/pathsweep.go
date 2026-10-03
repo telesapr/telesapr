@@ -79,6 +79,9 @@ func NewSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (
 	}
 	r0 = r0.Minus(t0.ScaledBy(r0.Dot(t0)))
 	if r0.Magnitude() < 1e-9 {
+		if opts.Up.Magnitude() > 0 {
+			return nil, errors.New("the path starts along the direction the frames are held to")
+		}
 		return nil, errors.New("the frame's normal lies along the path's start")
 	}
 	f := frame{p: pieces[0].Start(), t: t0, r: r0.WithMagnitude(1)}
@@ -142,7 +145,7 @@ func (sp *SweepPath) step(f frame, s float64) (frame, error) {
 	if sp.opts.Up.Magnitude() > 0 {
 		r := sp.opts.Up.Minus(t1.ScaledBy(sp.opts.Up.Dot(t1)))
 		if r.Magnitude() < 1e-9 {
-			return f, fmt.Errorf("the path runs along the up direction at %v", x1)
+			return f, fmt.Errorf("the path runs along the direction the frames are held to, at %v", x1)
 		}
 		out.r = r.WithMagnitude(1)
 		return out, nil
@@ -196,6 +199,15 @@ func (sp *SweepPath) Motion(s float64) func(geom.Vector) geom.Vector {
 		x, y, z := d.Dot(f0.t), d.Dot(f0.r), d.Dot(b0)
 		return f.p.Plus(f.t.ScaledBy(x)).Plus(f.r.ScaledBy(y)).Plus(b.ScaledBy(z))
 	}
+}
+
+// Rigid is Motion(s) as a rotation and a translation.
+func (sp *SweepPath) Rigid(s float64) srf.Rigid {
+	m := sp.Motion(s)
+	o := m(geom.Vector{})
+	u := m(geom.Vector{X: 1}).Minus(o)
+	v := m(geom.Vector{Y: 1}).Minus(o)
+	return srf.Rigid{Q: geom.QuaternionFromBasis(u, v), T: o}
 }
 
 // placed is the loop moved by m, its weights kept.
@@ -296,15 +308,32 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 }
 
 // skins are the surfaces through the profile's loops placed at the
-// sections ss, and the sections' parameters across, which all of them
-// share.
+// sections ss of one piece of the path, its ends among them, and the
+// sections' parameters across, which all of them share: the path's
+// own, from 0 at the piece's start to 1 at its end. Each surface starts
+// and ends along the true sweep's derivative there, so that the pieces'
+// surfaces meet tangent where the true sweep is smooth.
 func (sp *SweepPath) skins(curves []srf.BSplineCurve, ss []float64) ([]*srf.BSplineSurface, []float64, error) {
+	s0, s1 := ss[0], ss[len(ss)-1]
+	ts := make([]float64, len(ss))
+	for k, s := range ss {
+		ts[k] = (s - s0) / (s1 - s0)
+	}
+	ts[0], ts[len(ts)-1] = 0, 1
 	motions := make([]func(geom.Vector) geom.Vector, len(ss))
 	for k, s := range ss {
 		motions[k] = sp.Motion(s)
 	}
+	// The derivatives at the ends by one-sided differences inside the
+	// piece, of second order, scaled to the parameter across.
+	const h = 1e-5
+	fwd := []func(geom.Vector) geom.Vector{motions[0], sp.Motion(s0 + h), sp.Motion(s0 + 2*h)}
+	back := []func(geom.Vector) geom.Vector{motions[len(ss)-1], sp.Motion(s1 - h), sp.Motion(s1 - 2*h)}
+	deriv := func(m []func(geom.Vector) geom.Vector, p geom.Vector, sign float64) geom.Vector {
+		d := m[0](p).ScaledBy(-3).Plus(m[1](p).ScaledBy(4)).Minus(m[2](p))
+		return d.ScaledBy(sign * (s1 - s0) / (2 * h))
+	}
 	var out []*srf.BSplineSurface
-	var ts []float64
 	for _, c := range curves {
 		secs := make([]srf.BSplineCurve, len(ss))
 		for k := range ss {
@@ -315,12 +344,14 @@ func (sp *SweepPath) skins(curves []srf.BSplineCurve, ss []float64) ([]*srf.BSpl
 			}
 			secs[k] = sc
 		}
-		bs, t, err := srf.Skin(secs)
+		start := make([]geom.Vector, len(c.Ctrl))
+		end := make([]geom.Vector, len(c.Ctrl))
+		for i, p := range c.Ctrl {
+			start[i], end[i] = deriv(fwd, p, 1), deriv(back, p, -1)
+		}
+		bs, err := srf.SkinWithEnds(secs, ts, start, end)
 		if err != nil {
 			return nil, nil, err
-		}
-		if ts == nil {
-			ts = t
 		}
 		out = append(out, bs)
 	}
@@ -386,12 +417,13 @@ func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RgbaColor, s
 // endFace.
 func closeSkins(chains [][]*srf.BSplineSurface, color core.RgbaColor, startFace, endFace, origin uint32) (*srf.SShell, error) {
 	sh := &srf.SShell{}
+	fa := NewFaceAdder(sh)
 	var first, last [][]srf.SBezier
 	id := origin
 	for _, chain := range chains {
 		sheet := id
 		for j, bs := range chain {
-			if _, err := AddBSplineFace(sh, bs, id, sheet, color); err != nil {
+			if _, err := fa.AddBSplineFace(bs, id, sheet, color); err != nil {
 				return nil, err
 			}
 			ps, err := bs.Patches()
@@ -419,10 +451,10 @@ func closeSkins(chains [][]*srf.BSplineSurface, color core.RgbaColor, startFace,
 			}
 		}
 	}
-	if _, err := AddPlanarFace(sh, first, startFace, color); err != nil {
+	if _, err := fa.AddPlanarFace(first, startFace, color); err != nil {
 		return nil, fmt.Errorf("the first profile's cap: %v", err)
 	}
-	if _, err := AddPlanarFace(sh, last, endFace, color); err != nil {
+	if _, err := fa.AddPlanarFace(last, endFace, color); err != nil {
 		return nil, fmt.Errorf("the last profile's cap: %v", err)
 	}
 	t, err := Build(sh)

@@ -4591,7 +4591,7 @@
 					},
 					"Sweep": {
 						"decl": "func (d *Doc) Sweep(path []Entity, name string) Group",
-						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments and arcs joined end to end and\nmeeting tangent, as a pipe follows its bends. The sweep starts at\nthe end of the path nearest the sketch's plane, with the sketch\nwhere it is drawn, and keeps its attitude to the path. The new group\nbecomes active."
+						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). The new group becomes\nactive."
 					},
 					"Symmetric": {
 						"decl": "func (d *Doc) Symmetric(a, b, about Entity) Constraint",
@@ -4966,6 +4966,10 @@
 						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
 						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
 					},
+					"SetSweepUp": {
+						"decl": "func (g Group) SetSweepUp(up Vec)",
+						"text": "SetSweepUp holds a sweep's frames to the direction up, as far as the\npath's tangent allows, rather than turning them as little as the path\nlets them: a profile swept along a helix with up its axis keeps\nfacing the axis, as a thread's does. The path must never run along\nup. Zero turns them least again."
+					},
 					"SetThickness": {
 						"decl": "func (g Group) SetThickness(mm float64)",
 						"text": "SetThickness sets a shell's wall thickness in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
@@ -4973,6 +4977,10 @@
 					"SetTurn": {
 						"decl": "func (g Group) SetTurn(n int)",
 						"text": "SetTurn turns a loft's second profile by n curves, which joins its\ncurves to others of the first: a square lofted to a square turned by\none twists by a quarter."
+					},
+					"SetTwist": {
+						"decl": "func (g Group) SetTwist(degrees float64)",
+						"text": "SetTwist turns a sweep's profile about the path by degrees over the\nwhole of it, evenly along its length: a square swept along a line and\ntwisted by 90 is a twisted bar. A twisted sweep's surface is fitted\nto the true one within a tenth of the chord tolerance, as a sweep\nalong a cubic is. SetExpr with sketch.GroupValC gives it an\nexpression."
 					},
 					"SetVisible": {
 						"decl": "func (g Group) SetVisible(visible bool)",
@@ -5002,6 +5010,10 @@
 						"decl": "func (g Group) Suppression() (mode SuppressMode)",
 						"text": "Suppression is the group's suppress mode, as SetSuppress set it."
 					},
+					"SweepUp": {
+						"decl": "func (g Group) SweepUp() (up Vec)",
+						"text": "SweepUp is the direction a sweep holds its frames to, or zero when\nthey turn as little as the path lets them."
+					},
 					"Thickness": {
 						"decl": "func (g Group) Thickness() (mm float64)",
 						"text": "Thickness is a shell's wall thickness in mm."
@@ -5013,6 +5025,10 @@
 					"Turn": {
 						"decl": "func (g Group) Turn() (n int)",
 						"text": "Turn is how many curves a loft turns its second profile by before\njoining curve by curve; a smooth loft turns each after the first."
+					},
+					"Twist": {
+						"decl": "func (g Group) Twist() (degrees float64)",
+						"text": "Twist is how far a sweep turns its profile about the path over the\nwhole of it, in degrees."
 					},
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",

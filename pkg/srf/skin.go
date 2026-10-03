@@ -216,3 +216,104 @@ func solveDense(a [][]float64, rhs [][]geom.Vector4) error {
 	}
 	return nil
 }
+
+// SkinWithEnds is the cubic surface through sections, curves of one
+// degree, knot vector and weights, at the parameters ts across, from 0
+// to 1, with the derivatives across at the first and the last given for
+// each control point (Piegl and Tiller, 9.2.2): the interior knots are
+// the sections' own parameters, and two more control points meet the
+// derivatives. Surfaces that end and start with one section and
+// derivatives along one another meet tangent there.
+func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vector) (*BSplineSurface, error) {
+	k := len(sections)
+	if k < 2 || len(ts) != k {
+		return nil, errors.New("srf: a skin needs two sections at least, each with its parameter")
+	}
+	first := sections[0]
+	if len(start) != len(first.Ctrl) || len(end) != len(first.Ctrl) {
+		return nil, errors.New("srf: a derivative for each control point at each end")
+	}
+	for i, c := range sections {
+		if c.Deg != first.Deg || len(c.Knots) != len(first.Knots) || len(c.Ctrl) != len(first.Ctrl) {
+			return nil, fmt.Errorf("srf: section %d has another degree or knot vector than the first", i)
+		}
+		for j := range c.Knots {
+			if c.Knots[j] != first.Knots[j] {
+				return nil, fmt.Errorf("srf: section %d has another knot vector than the first", i)
+			}
+		}
+		for j := range c.Weight {
+			if c.Weight[j] != first.Weight[j] {
+				return nil, fmt.Errorf("srf: section %d has other weights than the first", i)
+			}
+		}
+		if i > 0 && !(ts[i] > ts[i-1]) {
+			return nil, errors.New("srf: the sections' parameters must rise")
+		}
+	}
+	if ts[0] != 0 || ts[k-1] != 1 {
+		return nil, errors.New("srf: the sections' parameters run from 0 to 1")
+	}
+	const deg = 3
+	knots := []float64{0, 0, 0, 0}
+	knots = append(knots, ts[1:k-1]...)
+	knots = append(knots, 1, 1, 1, 1)
+	n := k + 2
+	a := make([][]float64, n)
+	for r := range a {
+		a[r] = make([]float64, n)
+	}
+	nb := make([]float64, deg+1)
+	row := 0
+	put := func(t float64) {
+		span := findSpan(deg, knots, t)
+		basisFuns(span, t, deg, knots, nb)
+		for c := 0; c <= deg; c++ {
+			a[row][span-deg+c] = nb[c]
+		}
+		row++
+	}
+	// The rows: the first section, the derivative at the start, the
+	// sections between, the derivative at the end, the last section.
+	put(0)
+	d0 := deg / knots[deg+1]
+	a[row][0], a[row][1] = -d0, d0
+	row++
+	for s := 1; s < k-1; s++ {
+		put(ts[s])
+	}
+	d1 := deg / (1 - knots[len(knots)-deg-2])
+	a[row][n-2], a[row][n-1] = -d1, d1
+	row++
+	put(1)
+	rhs := make([][]geom.Vector4, len(first.Ctrl))
+	for i := range rhs {
+		w := first.Weight[i]
+		col := make([]geom.Vector4, 0, n)
+		col = append(col, homogeneous(sections[0].Ctrl[i], w), geom.Vector4FromWeighted(w, start[i]))
+		for s := 1; s < k-1; s++ {
+			col = append(col, homogeneous(sections[s].Ctrl[i], w))
+		}
+		col = append(col, geom.Vector4FromWeighted(w, end[i]), homogeneous(sections[k-1].Ctrl[i], w))
+		// A derivative's weight is the weight's, which doesn't change.
+		col[1].W, col[n-2].W = 0, 0
+		rhs[i] = col
+	}
+	if err := solveDense(a, rhs); err != nil {
+		return nil, err
+	}
+	sf := &BSplineSurface{DegU: first.Deg, DegV: deg,
+		KnotsU: append([]float64(nil), first.Knots...), KnotsV: knots}
+	for i := range rhs {
+		r := make([]geom.Vector, n)
+		w := make([]float64, n)
+		for j, q := range rhs[i] {
+			r[j], w[j] = q.PerspectiveProject(), q.W
+		}
+		// The end sections exactly, as Skin keeps them.
+		r[0], r[n-1] = sections[0].Ctrl[i], sections[k-1].Ctrl[i]
+		sf.Ctrl = append(sf.Ctrl, r)
+		sf.Weight = append(sf.Weight, w)
+	}
+	return sf, sf.Check()
+}

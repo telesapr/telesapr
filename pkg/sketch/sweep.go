@@ -8,14 +8,21 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // A sweep moves the loops of its profile group along a path, a chain
-// of line segments and arcs that meet tangent, keeping the profile's
-// attitude to the path. It starts at the end of the chain nearest the
-// profile's plane, with the profile where it is drawn. Its entities
-// are copies of the profile at both ends, numeric like a lathe's, and
-// the faces of the two caps.
+// of line segments, arcs and cubics that meet tangent, keeping the
+// profile's attitude to the path. It starts at the end of the chain
+// nearest the profile's plane, with the profile where it is drawn. Its
+// entities are copies of the profile at both ends, numeric like a
+// lathe's, and the faces of the two caps.
+//
+// Along lines and arcs alone the surfaces are exact: each piece moves
+// the profile rigidly (srf.MakeFromSweepOf). Along a cubic, or with a
+// twist (ValC, in degrees, over the whole path) or the frames held to a
+// direction (SweepUp), the surface is fitted to the true sweep by
+// rotation-minimising frames (topo.MakePathSweep, roadmap E10).
 
 // sweepTol is how far apart two ends of the path may be and still
 // join.
@@ -62,17 +69,34 @@ type pathPiece struct {
 	center     geom.Vector
 	axis       geom.Vector // unit, turning from start to end by the right-hand rule
 	angle      float64
+	// curves are the piece's Beziers, in order along the chain; free
+	// marks a piece that is neither a line nor an arc.
+	curves []srf.SBezier
+	free   bool
 }
 
 func (p pathPiece) reversed() pathPiece {
 	p.start, p.end = p.end, p.start
 	p.axis = p.axis.ScaledBy(-1)
+	cs := make([]srf.SBezier, len(p.curves))
+	for i, c := range p.curves {
+		c.Reverse()
+		cs[len(cs)-1-i] = c
+	}
+	p.curves = cs
 	return p
 }
 
 // tangentAt is the piece's unit direction of travel at its start, or
 // with atEnd at its end.
 func (p pathPiece) tangentAt(atEnd bool) geom.Vector {
+	if p.free {
+		if atEnd {
+			c := p.curves[len(p.curves)-1]
+			return c.TangentAt(1).WithMagnitude(1)
+		}
+		return p.curves[0].TangentAt(0).WithMagnitude(1)
+	}
 	if !p.arc {
 		return p.end.Minus(p.start).WithMagnitude(1)
 	}
@@ -117,20 +141,28 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 	// Start at the end nearest the profile's plane.
 	chain, err := sk.pathChain(g.Edges, "sweep", func(x geom.Vector) float64 {
 		return math.Abs(x.Minus(onPlane).Dot(normal))
-	})
+	}, true)
 	if err != nil {
 		return nil, src, err
 	}
+	if math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
+		return nil, src, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
+	}
+	if g.sweepFitted(chain) {
+		sp, err := sweepPathOf(chain, g)
+		if err != nil {
+			return nil, src, pathErr(&chain[0].start, "%v", err)
+		}
+		g.fittedPath = sp
+		return nil, src, nil
+	}
+	g.fittedPath = nil
 
 	steps := make([]srf.SweepStep, len(chain))
 	for k, p := range chain {
 		steps[k] = p.step()
 	}
-	// The profile must cross the path, and stay clear of each turn's
-	// axis.
-	if math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
-		return nil, src, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
-	}
+	// The profile must stay clear of each turn's axis.
 	frame := srf.RigidIdentity
 	for k, p := range chain {
 		if p.arc {
@@ -159,13 +191,15 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 // pathChain reads the path entities into a chain of pieces end to end,
 // starting at the end where dist is least, and requires its pieces to
 // meet tangent; what names the feature in messages.
-func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Vector) float64) ([]pathPiece, error) {
+func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics bool) ([]pathPiece, error) {
 	var pieces []pathPiece
 	for _, he := range edges {
 		e := sk.GetEntity(he)
 		if e == nil {
 			return nil, pathErr(nil, "path entity %s doesn't exist", sk.entityName(he))
 		}
+		var sbl srf.SBezierList
+		GenerateEntityBeziers(e, &sbl, &Runtime{Sketch: sk})
 		switch e.Type {
 		case core.EntityLineSegment:
 			a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
@@ -173,15 +207,33 @@ func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Ve
 			if b.Minus(a).Magnitude() < sweepTol {
 				return nil, pathErr(&a, "line segment %s of the path has no length", sk.entityName(he))
 			}
-			pieces = append(pieces, pathPiece{h: he, start: a, end: b})
+			pieces = append(pieces, pathPiece{h: he, start: a, end: b, curves: sbl.Curves})
 		case core.EntityArcOfCircle:
 			c := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
 			a := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
 			b := sk.MustGetEntity(e.Point[2]).PointGetNum(sk)
 			_, _, dtheta := e.ArcGetAngles(sk)
 			n := sk.MustGetEntity(e.Normal).NormalN(sk).WithMagnitude(1)
-			pieces = append(pieces, pathPiece{h: he, start: a, end: b, arc: true, center: c, axis: n, angle: dtheta})
+			pp := pathPiece{h: he, start: a, end: b, arc: true, center: c, axis: n, angle: dtheta, curves: sbl.Curves}
+			if len(pp.curves) > 0 && pp.curves[0].Start().Minus(a).Magnitude() > sweepTol {
+				pp.curves = pp.reversed().curves
+			}
+			pieces = append(pieces, pp)
+		case core.EntityCubic:
+			if !cubics {
+				return nil, pathErr(nil, "%s is not a line segment or an arc: a %s's path is made of those",
+					sk.entityName(he), what)
+			}
+			if len(sbl.Curves) == 0 {
+				return nil, pathErr(nil, "cubic %s of the path has no curve", sk.entityName(he))
+			}
+			a, b := sbl.Curves[0].Start(), sbl.Curves[len(sbl.Curves)-1].Finish()
+			pieces = append(pieces, pathPiece{h: he, start: a, end: b, curves: sbl.Curves, free: true})
 		default:
+			if cubics {
+				return nil, pathErr(nil, "%s is not a line segment, an arc or a cubic: a path is made of those",
+					sk.entityName(he))
+			}
 			return nil, pathErr(nil, "%s is not a line segment or an arc: a path is made of those", sk.entityName(he))
 		}
 	}
@@ -267,6 +319,9 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 	end := srf.RigidIdentity
 	if steps, _, err := g.sweepPath(sk); err == nil {
 		end = srf.SweepEnd(steps)
+		if g.fittedPath != nil {
+			end = g.fittedPath.Rigid(g.fittedPath.End())
+		}
 	}
 	var pt core.HEntity
 	for i := 0; i < len(*entity); i++ {
@@ -337,7 +392,74 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 	}
 	start := srf.FaceID(g.RemapEntity(core.NoEntity, RemapBottom).V)
 	end := srf.FaceID(g.RemapEntity(core.NoEntity, RemapTop).V)
+	if g.fittedPath != nil {
+		g.generateFittedSweepShell(src, uint32(start), uint32(end))
+		return
+	}
 	for i := range src.BezierLoops.Sets {
 		g.ThisShell.MakeFromSweepOf(&src.BezierLoops.Sets[i], steps, g.Color, start, end)
+	}
+}
+
+// sweepFitted reports whether the sweep's surface is fitted along the
+// chain rather than exact: along a cubic, or twisted, or with its frames
+// held to a direction.
+func (g *Group) sweepFitted(chain []pathPiece) bool {
+	if g.ValC != 0 || g.SweepUp.Magnitude() > 0 {
+		return true
+	}
+	for _, p := range chain {
+		if p.free {
+			return true
+		}
+	}
+	return false
+}
+
+// sweepPathOf is the fitted sweep's path along the chain, twisted and
+// held as the group says.
+func sweepPathOf(chain []pathPiece, g *Group) (*topo.SweepPath, error) {
+	var curves []srf.SBezier
+	for _, p := range chain {
+		for _, c := range p.curves {
+			if n := len(curves); n > 0 {
+				// The pieces' ends meet within sweepTol; make them meet.
+				prev := curves[n-1].Finish()
+				c.Ctrl[0] = prev
+			}
+			curves = append(curves, c)
+		}
+	}
+	t0 := chain[0].tangentAt(false)
+	return topo.NewSweepPath(curves, t0.NormalDir(0), topo.PathSweepOptions{
+		Twist: g.ValC * math.Pi / 180,
+		Up:    g.SweepUp,
+	})
+}
+
+// generateFittedSweepShell sweeps each of the profile's loop sets along
+// the fitted path, the caps' identities start and end, the patches'
+// from the group's own.
+func (g *Group) generateFittedSweepShell(src *Group, start, end uint32) {
+	next := srf.OriginFor(g.H.V, 0)
+	for i := range src.BezierLoops.Sets {
+		set := &src.BezierLoops.Sets[i]
+		loops := [][]srf.SBezier{set.Outer.Curves}
+		for _, h := range set.Holes {
+			loops = append(loops, h.Curves)
+		}
+		sh, err := topo.MakePathSweep(g.fittedPath, loops, g.Color, start, end, next)
+		if err != nil {
+			g.setProblem(nil, "%v", err)
+			return
+		}
+		next += uint32(len(sh.Surface)) - 2
+		if i == 0 {
+			g.ThisShell = *sh
+			continue
+		}
+		var joined srf.SShell
+		joined.MakeFromUnionOf(&g.ThisShell, sh)
+		g.ThisShell = joined
 	}
 }

@@ -152,6 +152,7 @@ func (s *Sketch) definingState() *UndoState {
 			SolidEdges:             slices.Clone(src.SolidEdges),
 			SolidFaces:             slices.Clone(src.SolidFaces),
 			LoftThrough:            slices.Clone(src.LoftThrough),
+			SweepUp:                src.SweepUp,
 			EdgeRadii:              slices.Clone(src.EdgeRadii),
 			Name:                   src.Name,
 		}
