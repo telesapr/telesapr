@@ -29,11 +29,15 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 10. Fillets, shell and loft | done 2026-10-03: 10.1 fillets of straight edges, 10.2 corners (spheres, mitres), 10.3 circular edges (tori, cones), 10.4 shell (flat faces only), 10.5 ruled loft; follow-ups 10.6 concave fillets, 10.7 smooth chains, 10.8 uneven mitres, 10.9 plane meeting cone, 10.10 a radius per edge; the rest listed under the step | `e1ee516`, 10.4 `2fbc6d4`, 10.2 and 10.3 `8461b2b`, 10.6 `54b6cb0`, 10.7 `5a2239e`, 10.8 `f1cf92e`, 10.9 `e86d002`, 10.10 `47ff6e0` |
 | 11. General surface type | done 2026-10-03: 11.1 faces of several patches, 11.2 B-spline surfaces with knots, 11.3 degree up to 5, 11.4 STEP export of a face as one surface, 11.5 the tier 4 items sized and planned; follow-ups listed under the step | `a8a973b` |
 | I7. Drawing with an AI model (outside the steps) | done 2026-10-03; follow-ups listed under the item | `baaec8d` |
+| The name TeleSAPR (outside the steps) | done 2026-10-03: the project, until then spacesolve, is TeleSAPR; the module is `github.com/telesapr/telesapr`, the programs `telesapr` and `telesapr-cli`, the format `.tlspr` with the header `telesapr <version>`. It took the parts of 12.2 that are about the name | `74ff70b` |
 | 12 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
-by hand get an error on load and no other safeguard (2026-10-02).
+by hand get an error on load and no other safeguard (2026-10-02); with the name TeleSAPR the
+format's extension went from `.spcs` to `.tlspr` and its header from `spacesolve` to `telesapr`,
+and files with the old header are not read, the frozen corpus being renamed with the rest
+(2026-10-03).
 
 ## How to read the estimates
 
@@ -431,7 +435,7 @@ instead of worked around. That reshapes tier 3.
 Since OpenCASCADE is off the table, tier 4 is no longer "decide later". It is the long road
 this project is choosing, so the foundations should come earlier than first recommended.
 
-## Own file format `.tlspr` (proposed by the user as `.sps`, 2026-10-01)
+## Own file format `.tlspr` (proposed by the user as `.sps`, 2026-10-01; `.spcs` until 2026-10-03)
 
 Proposal: TeleSAPR saves only its own format, `.tlspr`. Upstream `.slvs` files are opened
 through File, Import, never through Open, and never written. This replaces T2.
@@ -1086,12 +1090,14 @@ still open" asked a question step 9 had answered; 11.5 called G4 unplanned.
 
 - **No licence file.** The About box says GPL version 3 or later, as SolveSpace's does; the
   repository has no `LICENSE`.
-- **The program still calls itself SolveSpace in places.** `PackageVersion` in
-  `pkg/ui/menuanalyze.go` is SolveSpace's `3.2~cbff7a91`; the About box says "This is
-  SolveSpace version", and the VRML export writes "Exported from SolveSpace".
-- **The desktop files are step 2's leftovers.** `dist/freedesktop/telesapr-mime.xml`
-  registers `*.slvs` as a SolveSpace model and nothing for `*.tlspr`. `make install` takes its
-  icons from the ignored `solvespace/` checkout, so it fails in a fresh clone.
+- **The program has no version of its own.** `PackageVersion` in `pkg/ui/menuanalyze.go` is
+  SolveSpace's `3.2~cbff7a91`. Since the rename the About box, `telesapr-cli version` and the
+  VRML export say "TeleSAPR, based on SolveSpace version"; the help links still open
+  `solvespace.com`.
+- **The icons are SolveSpace's.** `make install` takes them from the ignored `solvespace/`
+  checkout, so it fails in a fresh clone, and the window icon is `solvespace-48x48.png`. The
+  desktop entry and the MIME type (`application/x-telesapr` for `*.tlspr`) were set right with
+  the rename.
 - **The README** lists `pkg/persist/slvs` as the file format, runs scripts on `sketch.slvs`,
   and lacks the packages added since (`topo`, `persist/tlspr`, `persist/step`, `persist/convert`,
   `persist/link`, `render/gl`, `script/agent`, `internal`).
@@ -1120,7 +1126,7 @@ still open" asked a question step 9 had answered; 11.5 called G4 unplanned.
 
 | Step | Content | Effort | Risk | Needs |
 |---|---|---|---|---|
-| 12. Close the first eleven steps | licence, name, desktop files, README, CI's first run, guards, lint, an audit, a guide | 4.5 wk | Low | the user, for 12.1 and 12.4 |
+| 12. Close the first eleven steps | licence, version, icons, README, CI's first run, guards, lint, an audit, a guide | 4.5 wk | Low | the user, for 12.1 and 12.4 |
 | 13. Kernel soundness | the mesher's grid, curved surfaces crossing, what a Boolean leaves, coincident faces, STEP meshes | 10 wk | High | 12.6 |
 | 14. Names, faces and picking | every face picked and seen, names that stay, topology's edge cases | 6 wk | Medium | none |
 | 15. Solid features completed | chamfer by local edit, shell with cylinders, draft, mirror of a body, pattern along a curve | 13.5 wk | High | 14.1, 14.2 |
@@ -1152,7 +1158,7 @@ of finding the cause, and its estimate is written into the table again after tha
 | Package | Content | Effort | State |
 |---|---|---|---|
 | 12.1 Licence and notices | A `LICENSE` file: GPL version 3 or later, which the port inherits and the About box already states. A `NOTICE` for code ported from other libraries (`pkg/libm`, the QR of `pkg/solver`, `pkg/ttf`), each checked against its source's licence. Needs the user's word, see "Decisions still open". | 0.2 wk | not started |
-| 12.2 Name, version and desktop files | A version of TeleSAPR's own in one place, printed by the About box, the exports and `telesapr-cli version`; no "SolveSpace" left in what the program says of itself, the origin and its authors kept. A MIME type for `*.tlspr`; `.slvs` is no longer claimed, since it opens through Import only. Icons in `dist/freedesktop`, so `make install` works in a clone without `solvespace/`. | 0.4 wk | not started |
+| 12.2 Version and icons | A version of TeleSAPR's own in one place, printed by the About box, the exports and `telesapr-cli version` in place of "based on SolveSpace version"; the origin and its authors kept. Help links that do not open `solvespace.com`. Icons of TeleSAPR's own in `dist/freedesktop` and for the window, so `make install` works in a clone without `solvespace/`. The name, the MIME type for `*.tlspr` and `.slvs` no longer claimed were done with the rename (`74ff70b`). | 0.4 wk | not started |
 | 12.3 README | The project structure as it is, `.tlspr` throughout, what the program does that SolveSpace does not, and how to build beside a takigo checkout. | 0.2 wk | not started |
 | 12.4 Remote and CI's first run (1.8) | The user makes the GitHub repository and the `TAKIGO_TOKEN` secret. Then push, see the workflow run, and fix what the runner shows; the font package and Go 1.27 there are unverified. | 0.3 wk | not started |
 | 12.5 `TestMenuBarKeyboard` under load | The test waits on timing and fails when the machine is busy. It waits for the event instead, so that `make ci` passes whatever runs beside it. | 0.3 wk | not started |
@@ -1297,7 +1303,8 @@ comes from "Finishing the roadmap":
 - **The licence (12.1).** A port of SolveSpace inherits GPL version 3 or later, and the About
   box says so. To confirm, before the repository is pushed anywhere.
 - **The remote (12.4).** Where the repository goes and whether it is public. CI was prepared
-  for GitHub, with takigo private beside it.
+  for GitHub, with takigo private beside it. The module path is `github.com/telesapr/telesapr`,
+  so the repository belongs in a GitHub organisation `telesapr`, which the user has to hold.
 - **A version number (12.2).** Proposed: 0.1.0 when step 12 is done.
 - **"Left out".** Every row is a proposal; a row the user wants back gets a package.
 - **What the review took in without being asked**: B3 (16.11), G4 (17.4) and S3 (17.5).
