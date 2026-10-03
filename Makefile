@@ -32,7 +32,7 @@ help:
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
 DATADIR = $(PREFIX)/share
-FREEDESKTOP = solvespace/res/freedesktop
+FREEDESKTOP = dist/freedesktop
 ICON_SIZES = 16x16 24x24 32x32 48x48
 
 test:
@@ -131,21 +131,22 @@ build:
 	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr ./cmd/telesapr
 	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr-cli ./cmd/telesapr-cli
 
-# The desktop entry, icons and MIME type follow solvespace/res/CMakeLists.txt.
+# The desktop entry, icons and MIME type, from dist/freedesktop; the
+# layout follows SolveSpace's res/CMakeLists.txt.
 install: build
 	install -Dm755 bin/telesapr $(DESTDIR)$(BINDIR)/telesapr
 	install -Dm755 bin/telesapr-cli $(DESTDIR)$(BINDIR)/telesapr-cli
 	sed 's|@BINDIR@|$(BINDIR)|' dist/freedesktop/telesapr.desktop.in > bin/telesapr.desktop
 	install -Dm644 bin/telesapr.desktop $(DESTDIR)$(DATADIR)/applications/telesapr.desktop
 	install -Dm644 dist/freedesktop/telesapr-mime.xml $(DESTDIR)$(DATADIR)/mime/packages/telesapr-mime.xml
-	install -Dm644 $(FREEDESKTOP)/solvespace-scalable.svg \
+	install -Dm644 $(FREEDESKTOP)/telesapr.svg \
 		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/telesapr.svg
-	install -Dm644 $(FREEDESKTOP)/solvespace-scalable.svg \
+	install -Dm644 $(FREEDESKTOP)/telesapr.svg \
 		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/mimetypes/application-x-telesapr.svg
 	for s in $(ICON_SIZES); do \
-		install -Dm644 $(FREEDESKTOP)/solvespace-$$s.png \
+		install -Dm644 $(FREEDESKTOP)/telesapr-$$s.png \
 			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/telesapr.png; \
-		install -Dm644 $(FREEDESKTOP)/solvespace-$$s.png \
+		install -Dm644 $(FREEDESKTOP)/telesapr-$$s.png \
 			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-telesapr.png; \
 	done
 

@@ -20,9 +20,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/ui"
+	"github.com/telesapr/telesapr/pkg/version"
 )
-
-const version = "3.2"
 
 func showUsage(w io.Writer, cmd string) {
 	fmt.Fprintf(w, "Usage: %s <command> <options> <filename> [filename...]", cmd)
@@ -261,7 +260,7 @@ func runCommand(args []string, stderr io.Writer) bool {
 
 	switch args[1] {
 	case "version":
-		_, _ = fmt.Fprintf(stderr, "TeleSAPR, based on SolveSpace version %s \n\n", version)
+		_, _ = fmt.Fprintf(stderr, "TeleSAPR version %s\n", version.Version)
 		return true
 	case "thumbnail":
 		accepted = []string{"--output", "--view", "--chord-tol", "--size"}

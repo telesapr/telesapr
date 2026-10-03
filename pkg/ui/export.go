@@ -20,6 +20,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/version"
 )
 
 // ExportSectionTo exports the section of the solid model by a plane
@@ -1234,11 +1235,11 @@ func (ss *SolveSpaceUI) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm 
 	basename := fileStemIdentifier(filename)
 
 	pf("#VRML V2.0 utf8\n"+
-		"#Exported from TeleSAPR (based on SolveSpace %s)\n"+
+		"#Exported from TeleSAPR %s\n"+
 		"\n"+
 		"DEF %s Transform {\n"+
 		"  children [",
-		PackageVersion,
+		version.Version,
 		basename)
 
 	// The runs of triangles of each opacity, by opacity (C++'s

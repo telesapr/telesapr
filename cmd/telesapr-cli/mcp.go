@@ -12,6 +12,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/script"
 	"github.com/telesapr/telesapr/pkg/script/agent"
 	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/version"
 )
 
 // This file is the tool as a Model Context Protocol server: what an
@@ -110,7 +111,7 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 		backend = remote
 	}
 
-	server := mcpserver.New(backend, version)
+	server := mcpserver.New(backend, version.Version)
 	transport := &mcp.IOTransport{Reader: io.NopCloser(stdin), Writer: nopWriteCloser{stdout}}
 	if err := server.Run(ctx, transport); err != nil && ctx.Err() == nil {
 		_, _ = fmt.Fprintln(stderr, err)
