@@ -26,6 +26,11 @@ type Renderer struct {
 	camera   render.Camera
 	lighting render.Lighting
 
+	// The Shaded lighting's program, and what gives each face's
+	// material (shaded.go).
+	shaded    shadedProgram
+	materials func(face uint32) render.Material
+
 	// Cached GL state, to group consecutive draw calls.
 	cur struct {
 		drawing bool
@@ -649,6 +654,11 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 		materialRGBA(glapi.BACK, backColor)
 	} else {
 		glapi.LightModeli(glapi.LIGHT_MODEL_TWO_SIDE, 0)
+	}
+
+	if r.lighting.Shaded && r.drawMeshShaded(m, frontColor, backColor, hcfBack != 0) {
+		r.unSelectPrimitive()
+		return
 	}
 
 	var triangleColor core.RgbaColor

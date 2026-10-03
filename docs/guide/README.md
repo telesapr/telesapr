@@ -19,6 +19,7 @@ time, and `help()` there lists what a script can call.
 | [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `configurations`, `motion`, `dimensions`, `feedback` |
 | [Constraints while drawing](drawing.md) | Tangent, perpendicular, parallel and equal inferred as a line is drawn | (none) |
 | [History](history.md) | Moving a group, suppressing one with what uses it, broken references | `history` |
+| [Appearance and shading](appearance.md) | Matte, plastic, glossy and metal faces, lit by a shader | `appearance` |
 | [Section view](section-view.md) | Cutting the model open to look inside | `section` |
 | [Mirror](mirror.md) | A group reflected in a plane | `mirror` |
 | [Chamfer](chamfer.md) | Edges cut at a distance | `chamfer`, `edges` |

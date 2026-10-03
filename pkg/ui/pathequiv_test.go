@@ -287,6 +287,15 @@ func TestPathEquivalenceDrawing(t *testing.T) {
 	}
 }
 
+// An appearance set on the group screen, and the same set by a script
+// (roadmap 19.2).
+func TestPathEquivalenceAppearance(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_appearance", "path_appearance")
+	if g := ui.GetGroup(ui.Active); g.Appearance != "metal" {
+		t.Errorf("the extrusion's appearance %q", g.Appearance)
+	}
+}
+
 // Two edges that meet at a corner picked with the mouse and rounded,
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {

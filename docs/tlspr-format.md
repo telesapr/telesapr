@@ -213,6 +213,8 @@ group <handle> <type> <name> {
   color <colour>
   skip-first
   mirror-solid              # mirror: the whole solid so far, not op-a's own
+  appearance <name>         # matte, plastic, glossy or metal; left out for plastic
+  face-appearance <face> <name>  # a face's own appearance, by its identity; one line each
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given

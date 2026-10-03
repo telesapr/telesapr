@@ -154,4 +154,68 @@ type Lighting struct {
 	AmbientIntensity float64
 	LightIntensity   [2]float64
 	LightDirection   [2]geom.Vector
+	// Shaded lights meshes as roadmap 19.1 does, in place of GL's fixed
+	// function: the ambient light from the sky above more than from the
+	// ground below, each light's diffuse term, and a highlight by the
+	// faces' Material (see Shade).
+	Shaded bool
+}
+
+// Material is how a face takes light beyond its colour (roadmap 19.2):
+// how strong its highlight is, how tight (a Blinn-Phong exponent), and
+// how much it is a metal's, whose highlight takes the face's colour and
+// whose diffuse light is less.
+type Material struct {
+	Specular, Shininess, Metallic float64
+}
+
+// Materials are the appearances by name; "" is plastic.
+var Materials = map[string]Material{
+	"matte":   {Specular: 0, Shininess: 1},
+	"plastic": {Specular: 0.35, Shininess: 24},
+	"glossy":  {Specular: 0.7, Shininess: 80},
+	"metal":   {Specular: 0.8, Shininess: 48, Metallic: 1},
+}
+
+// MaterialNames are the appearances in the order the interface lists
+// them.
+var MaterialNames = []string{"matte", "plastic", "glossy", "metal"}
+
+// MaterialCanvas is a canvas that can light a mesh's faces by their
+// materials when the lighting is Shaded: of returns a face's, from the
+// face of its triangles.
+type MaterialCanvas interface {
+	SetMaterials(of func(face uint32) Material)
+}
+
+// Shade is the shaded lighting of a point of normal n, both in model
+// coordinates, of colour base (0 to 1): the ambient intensity weighted
+// three quarters to all of it from below to above (up), each light's
+// diffuse term, less for a metal, and a Blinn-Phong highlight toward
+// view, white or, for a metal, the colour. The software renderer
+// shades each vertex with it, the GL one each pixel.
+func Shade(n geom.Vector, base [3]float64, ambient float64, lights []geom.Vector, intensity []float64,
+	view, up geom.Vector, m Material) [3]float64 {
+	n = n.WithMagnitude(1)
+	var c [3]float64
+	sky := ambient * (0.75 + 0.25*n.Dot(up))
+	for k := range 3 {
+		c[k] = sky * base[k]
+	}
+	for i, l := range lights {
+		d := n.Dot(l)
+		if d <= 0 {
+			continue
+		}
+		h := l.Plus(view).WithMagnitude(1)
+		s := intensity[i] * m.Specular * math.Pow(math.Max(n.Dot(h), 0), m.Shininess)
+		for k := range 3 {
+			spec := 1 + (base[k]-1)*m.Metallic
+			c[k] += d*intensity[i]*base[k]*(1-0.5*m.Metallic) + s*spec
+		}
+	}
+	for k := range 3 {
+		c[k] = math.Max(0, math.Min(1, c[k]))
+	}
+	return c
 }

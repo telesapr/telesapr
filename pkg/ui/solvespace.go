@@ -72,6 +72,9 @@ type SolveSpaceUI struct {
 	// ColorByFreedom colours the active group's entities by how much
 	// of them their constraints fix (an extension).
 	ColorByFreedom bool
+	// Shaded lights the solid by the faces' appearances, through a
+	// shader with the GL renderer (roadmap 19.1).
+	Shaded bool
 	// UseOpenGL draws the windows with OpenGL where the platform has
 	// it (an extension; C++ chose at build time). RendererOverride,
 	// "opengl" or "software", is the command line's choice for this
@@ -241,6 +244,7 @@ func (ss *SolveSpaceUI) LoadSettings() {
 	ss.CheckClosedContour = core.ThawBool(s, "CheckClosedContour", true)
 	ss.AutomaticLineConstraints = core.ThawBool(s, "AutomaticLineConstraints", true)
 	ss.ColorByFreedom = core.ThawBool(s, "ColorByFreedom", true)
+	ss.Shaded = core.ThawBool(s, "Shaded", false)
 	ss.UseOpenGL = core.ThawBool(s, "UseOpenGL", true)
 	ss.ShowContourAreas = core.ThawBool(s, "ShowContourAreas", false)
 	ss.ExportShadedTriangles = core.ThawBool(s, "ExportShadedTriangles", true)
@@ -344,6 +348,7 @@ func (ss *SolveSpaceUI) SaveSettings() {
 	core.FreezeBool(s, "ImmediatelyEditDimension", ss.ImmediatelyEditDimension)
 	core.FreezeBool(s, "AutomaticLineConstraints", ss.AutomaticLineConstraints)
 	core.FreezeBool(s, "ColorByFreedom", ss.ColorByFreedom)
+	core.FreezeBool(s, "Shaded", ss.Shaded)
 	core.FreezeBool(s, "UseOpenGL", ss.UseOpenGL)
 	core.FreezeBool(s, "ExportShadedTriangles", ss.ExportShadedTriangles)
 	core.FreezeBool(s, "ExportPwlCurves", ss.ExportPwlCurves)

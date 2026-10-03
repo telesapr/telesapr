@@ -69,6 +69,9 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		// Draw the shaded solid into the depth buffer for hidden line
 		// removal, and if we're actually going to display it, to the
 		// color buffer too.
+		if mc, ok := canvas.(render.MaterialCanvas); ok && ss.Shaded {
+			mc.SetMaterials(ss.materialOf())
+		}
 		canvas.DrawMesh(&g.DisplayMesh, hcfFront, hcfBack)
 
 		// Draw mesh edges, for debugging.
@@ -299,4 +302,46 @@ func (gw *GraphicsWindow) drawContourAreaLabels(g *sketch.Group, canvas render.C
 		pos := mid.Minus(gr.ScaledBy(textWidth / 2.0)).Minus(gu.ScaledBy(textHeight / 2.0))
 		canvas.DrawVectorText(label, fontHeight, pos, gr, gu, canvas.GetStroke(stroke))
 	}
+}
+
+// materialOf gives each face's material by its appearance (roadmap
+// 19.2): its own, its group's, or plastic; it remembers what it found
+// for the frame.
+func (ss *SolveSpaceUI) materialOf() func(face uint32) render.Material {
+	seen := map[uint32]render.Material{}
+	return func(face uint32) render.Material {
+		if m, ok := seen[face]; ok {
+			return m
+		}
+		m, ok := render.Materials[ss.SK.AppearanceOf(srf.FaceID(face))]
+		if !ok {
+			m = render.Materials["plastic"]
+		}
+		seen[face] = m
+		return m
+	}
+}
+
+// appearanceIndex is an appearance's place in render.MaterialNames.
+func appearanceIndex(name string) int {
+	for i, n := range render.MaterialNames {
+		if n == name {
+			return i
+		}
+	}
+	return 0
+}
+
+// ScreenChangeAppearance gives the shown group the v-th appearance.
+func (tw *TextWindow) ScreenChangeAppearance(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.GetGroup(tw.shown.group)
+	if g == nil || int(v) >= len(render.MaterialNames) {
+		return
+	}
+	ss.UndoRemember()
+	g.Appearance = render.MaterialNames[v]
+	ss.SK.Unsaved = true
+	ss.GW.Invalidate(false)
+	ss.ScheduleShowTW()
 }

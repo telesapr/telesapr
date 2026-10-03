@@ -13,6 +13,7 @@ import (
 func init() {
 	Symbols["github.com/telesapr/telesapr/pkg/script/api/api"] = map[string]reflect.Value{
 		// function, constant and variable definitions
+		"Appearances":     reflect.ValueOf(api.Appearances),
 		"Assemble":        reflect.ValueOf(api.Assemble),
 		"Commands":        reflect.ValueOf(api.Commands),
 		"Current":         reflect.ValueOf(api.Current),

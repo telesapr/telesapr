@@ -1407,6 +1407,7 @@ func (gw *GraphicsWindow) GetLighting() render.Lighting {
 		AmbientIntensity: ss.AmbientIntensity,
 		LightIntensity:   ss.LightIntensity,
 		LightDirection:   ss.LightDir,
+		Shaded:           ss.Shaded,
 	}
 }
 
