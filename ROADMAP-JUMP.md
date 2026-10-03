@@ -40,7 +40,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 19. Shading | done 2026-10-03: a shader with smooth per-pixel lighting and highlights, and appearances (matte, plastic, glossy, metal) for solids and faces | `6462cc3` |
 | 20. Smooth lofts and sweeps | done 2026-10-03: lofts through any number of profiles by one smooth surface, profiles of unequal counts, sweeps along cubics in 3d with rotation-minimising frames, a twist, or frames held to an axis, fitted within a tenth of the chord tolerance | `dda4e0b` |
 | 21. STEP import as a solid | done 2026-10-04 but for 21.5: STEP files linked as exact solids that take part in Booleans, 5 of 9 vendor files and all 14 analytic shapes sound, the rest linked as meshes with the reason; tessellated STEP read; the export's bounds the STEP way round | `21abd88` |
-| 22. General fillets | in part 2026-10-04: offsets of patches fitted within a tolerance (22.1); fillets and chamfers of circles where cylinders and cones meet about one axis (22.2's first case); the rolling-ball blend between faces of any kind, its corners and its runs off a face not started | MERGE22 |
+| 22. General fillets | in part 2026-10-04: offsets of patches fitted within a tolerance (22.1); fillets and chamfers of circles where cylinders and cones meet about one axis (22.2's first case); the rolling-ball blend between faces of any kind, its corners and its runs off a face not started | `ddf8144` |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; 15 to 21 done, 22 in part, 12.4 waiting for the user | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
