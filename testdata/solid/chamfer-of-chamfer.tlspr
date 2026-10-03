@@ -91,7 +91,7 @@ group 0x5 chamfer "chamfer" {
   distance = 0.5
   color 100 100 100 255
   combine difference
-  solid-edge 0x40040003 0x80030010 0
+  solid-edge 0x40040003 0x80030010 0 of 1
   visible
 }
 

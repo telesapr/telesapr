@@ -239,7 +239,12 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		n.add(field("edges", args...))
 	}
 	for _, e := range g.SolidEdges {
-		n.add(field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N))))
+		if e.Of > 0 {
+			n.add(field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N)),
+				Word("of"), Word(strconv.Itoa(e.Of))))
+		} else {
+			n.add(field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N))))
+		}
 	}
 	for _, f := range g.SolidFaces {
 		n.add(field("solid-face", hex(uint32(f))))

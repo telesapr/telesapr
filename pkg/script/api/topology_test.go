@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 var slotModel = filepath.Join("..", "..", "..", "testdata", "topo", "slot.tlspr")
@@ -245,5 +247,99 @@ func TestSolidSheets(t *testing.T) {
 	want := math.Pi*100*5 - 2*math.Pi*(10-(10-3*math.Pi)/(12-3*math.Pi))*(1-math.Pi/4)
 	if r := f.Check(); !r.Sound() || math.Abs(r.Volume-want) > 1e-3*want {
 		t.Errorf("the fillet: %s, want volume %g", r.Summary(), want)
+	}
+}
+
+// An extruded circle's side is one face of four patches, and each
+// patch's identity names it (roadmap 14.1).
+func TestFaceByAnyPatch(t *testing.T) {
+	d := New()
+	d.Circle(V(0, 0, 0), 5)
+	ex := d.Extrude(10, "")
+	s := ex.Solid()
+	var side SolidFace
+	for _, f := range s.Faces() {
+		if f.Patches() == 4 {
+			side = f
+		}
+	}
+	if side.Patches() != 4 {
+		t.Fatal("no face of four patches")
+	}
+	var ids []uint32
+	d.read(func(sk *sketch.Sketch) {
+		tp := s.topology(sk)
+		_, sh := side.resolve(sk)
+		for _, pf := range tp.Sheets[sh].Faces {
+			ids = append(ids, uint32(tp.Faces[pf].ID))
+		}
+	})
+	if len(ids) != 4 || ids[0] == ids[1] {
+		t.Fatalf("patch identities %x", ids)
+	}
+	for _, id := range ids {
+		if f := s.Face(id); f.ID() != side.ID() {
+			t.Errorf("%#x names face %#x, not the side %#x", id, f.ID(), side.ID())
+		}
+	}
+	defer func() {
+		if _, ok := recover().(error); !ok {
+			t.Error("no face for an identity not in the solid")
+		}
+	}()
+	s.Face(0x12345)
+}
+
+// The naming of 9.6 with a thread upstream whose length changes: the
+// names of every edge of a threaded part, the helix's own among them,
+// still resolve once the thread is made longer, which gives the helix
+// more sections (roadmap 14.2); but for the edges where the last
+// section met the thread's end, which now meets a later one: those say
+// their faces no longer meet, and name no other edge.
+func TestNamesThroughThreadLength(t *testing.T) {
+	d := New()
+	d.Circle(V(0, 0, 0), 4)
+	d.Extrude(30, "shank")
+	var top Entity
+	for _, e := range d.Active().Entities() {
+		if e.Kind() == "circle" && e.Center().Pos().Z == 30 {
+			top = e
+		}
+	}
+	hel := d.Thread(top, ThreadOptions{Designation: "M8", Length: 8})
+	var names []string
+	for _, e := range hel.Solid().Edges() {
+		names = append(names, e.Name())
+	}
+	cs := hel.Constraints()
+	if len(cs) != 1 {
+		t.Fatalf("the helix has %d constraints", len(cs))
+	}
+	if err := cs[0].SetExpr(fmt.Sprint(cs[0].Value() * 2)); err != nil {
+		t.Fatal(err)
+	}
+	if r := hel.Check(); !r.Sound() {
+		t.Fatalf("the longer thread: %s", r.String())
+	}
+	s := hel.Solid()
+	resolved, gone := 0, 0
+	for _, name := range names {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					if err, ok := r.(error); ok && strings.Contains(err.Error(), "no longer meet") {
+						gone++
+						return
+					}
+					t.Errorf("%s: %v", name, r)
+				}
+			}()
+			s.Edge(name)
+			resolved++
+		}()
+	}
+	// One for each curve of the ridge's profile.
+	if gone > 4 || resolved+gone != len(names) {
+		t.Errorf("of %d names, %d resolve and %d are gone", len(names), resolved, gone)
 	}
 }

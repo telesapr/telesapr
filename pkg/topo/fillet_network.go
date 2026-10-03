@@ -64,6 +64,10 @@ type filletEdge struct {
 	s, w   float64        // the tangent curves' distance from the edge, the arc's weight
 	r      float64        // the radius, or a chamfer's distance
 	origin uint32
+	// sheet is the key the patches along one edge of the solid share,
+	// the pieces of a circle: its first piece's origin, so the fillet of
+	// a circle is one face, not four (roadmap 14.1).
+	sheet uint32
 	// concave: the edge goes in, and the fillet fills it.
 	concave bool
 
@@ -171,6 +175,9 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 			return
 		}
 		fe.origin = origin + uint32(len(edges))
+		if fe.sheet == 0 {
+			fe.sheet = fe.origin
+		}
 		byEdge[fe.e] = len(edges)
 		edges = append(edges, fe)
 	}
@@ -202,6 +209,9 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 					continue
 				}
 				if fe, err := t.filletEdgeOf(x, edges[i].r, flat); err == nil && t.smoothJoin(&edges[i], &fe, v) {
+					if t.Lead(x) == t.Lead(edges[i].e) {
+						fe.sheet = edges[i].sheet
+					}
 					add(fe)
 				}
 			}
@@ -288,6 +298,7 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		s := fe.surface(a, b, flat)
 		s.Color = color
 		s.Origin = fe.origin
+		s.Sheet = fe.sheet
 		patches = append(patches, patch{s, loop, mid})
 	}
 	next := origin + uint32(len(edges))

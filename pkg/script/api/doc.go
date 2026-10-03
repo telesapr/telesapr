@@ -518,7 +518,9 @@ func (d *Doc) RunCommand(label string) (err error) {
 // line segment (its length) or circle (its radius); two points; a point
 // and a circle, line segment or plane face; two lines, normals or
 // plane faces (their angle in degrees); or two points and a line to
-// project their distance on. Lengths are in mm.
+// project their distance on. Lengths are in mm. A face counts by its
+// outward normal: a point outside the solid is at a positive distance
+// from it, and two opposite faces are at 180 degrees.
 func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement) {
 	d.read(func(sk *sketch.Sketch) {
 		hs := make([]core.HEntity, len(entities))

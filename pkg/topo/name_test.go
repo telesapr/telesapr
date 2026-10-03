@@ -18,7 +18,7 @@ func TestNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n != topo.MakeName(tp.Faces[left].ID, tp.Faces[top].ID, 0) {
+	if want := topo.MakeName(tp.Faces[left].ID, tp.Faces[top].ID, 0); n.A != want.A || n.B != want.B || n.N != 0 || n.Of != 1 {
 		t.Errorf("name %v", n)
 	}
 	back, err := topo.ParseName(n.String())
@@ -44,6 +44,13 @@ func TestNames(t *testing.T) {
 		t.Fatal(err)
 	}
 	tp = build(t, sh)
+	// The name counted one edge between the two: now there are two, and
+	// it says so rather than take either (roadmap 14.2).
+	if _, err := tp.Resolve(n); err == nil || !strings.Contains(err.Error(), "not the 1 the name counted") {
+		t.Errorf("the counted name, after the split: %v", err)
+	}
+	// A name that doesn't count goes by its ordinal.
+	n.Of = 0
 	first, err := tp.Resolve(n)
 	if err != nil || first != edgeBetween(t, tp, v(0, 0, 30), v(0, 10, 30)) {
 		t.Errorf("ordinal 0 is edge %d, %v", first, err)
@@ -69,7 +76,8 @@ func TestNames(t *testing.T) {
 	if _, err := tp.Resolve(topo.MakeName(tp.Faces[left].ID, tp.Faces[right].ID, 0)); err == nil || !strings.Contains(err.Error(), "no longer meet") {
 		t.Errorf("faces apart: %v", err)
 	}
-	for _, s := range []string{"", "edge 1 2", "edge x 2 0", "edge 1 2 -1", "face 1 2 0"} {
+	for _, s := range []string{"", "edge 1 2", "edge x 2 0", "edge 1 2 -1", "face 1 2 0",
+		"edge 1 2 0 of", "edge 1 2 0 in 2", "edge 1 2 2 of 2", "edge 1 2 0 of x"} {
 		if _, err := topo.ParseName(s); err == nil {
 			t.Errorf("%q parsed", s)
 		}

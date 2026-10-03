@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 13 and I7 are done and merged, step 12 but for 12.4 (CI's first run on GitHub), which waits for the user. What steps 1 to 11 left open, the items that never had a step and the tier 4 items are ordered as steps 12 to 22 under "Finishing the roadmap"; 14 to 22 are not started. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 14 and I7 are done and merged, step 12 but for 12.4 (CI's first run on GitHub), which waits for the user. What steps 1 to 11 left open, the items that never had a step and the tier 4 items are ordered as steps 12 to 22 under "Finishing the roadmap"; 15 to 22 are not started. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -32,7 +32,8 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | The name TeleSAPR (outside the steps) | done 2026-10-03: the project, until then spacesolve, is TeleSAPR; the module is `github.com/telesapr/telesapr`, the programs `telesapr` and `telesapr-cli`, the format `.tlspr` with the header `telesapr <version>`. It took the parts of 12.2 that are about the name | `74ff70b` |
 | 12. Close the first eleven steps | done 2026-10-03 but for 12.4, which waits for the user: licence and notices, TeleSAPR 0.1.0 with its own icons, README, `TestMenuBarKeyboard` mended in the code, the guards set and kept from going stale, lint at 0 and run on everything, the audit in `docs/done-audit.md`, the user's guide in `docs/guide` | `f5c6971` |
 | 13. Kernel soundness | done 2026-10-03: curves split at the seams of flat faces, ears that fold over skipped, 32 rows of twist, untrimmed surfaces dropped after a Boolean, a symmetric part its own mirror image, STEP meshes mended at T-junctions; the sphere and cylinder guards at 1 and 2, with their causes named | `101f59e` |
-| 14 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
+| 14. Names, faces and picking | done 2026-10-03: faces with only an Origin drawn apart and picked, a circle's fillet one face, names that count their edges and survive a longer thread, non-manifold edges reported where they are, hover on large meshes by a grid, Measure by outward normals | MERGE14 |
+| 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -1204,14 +1205,19 @@ re-sized after the first day, as planned, since each package's cause was found w
 
 | Package | Content | Effort | State |
 |---|---|---|---|
-| 14.1 Every face can be picked and seen | A face that only has an `Origin` (a loft's, a fillet's, a Boolean tool's) is picked by the mouse as other faces are (steps 9 and 10). The display mesh tells such faces apart, so the edges between them are drawn (step 11). The patches of one fillet get a sheet key, so a circle's fillet is one face and not four (step 11). A face of several patches is named by any of them (step 11). | 2.5 wk | not started |
-| 14.2 Names that stay | A surface's `Origin` comes from what made it and not from its place among its group's surfaces, so a thread made longer does not rename what follows (step 9). A sweep that reorders the edges between two faces along their spread: a name reports and never moves (step 9). | 1.5 wk | not started |
-| 14.3 Topology's edge cases | A non-manifold edge is refused at its place or modelled (step 9, the knife edge). A fixture for a loop through a vertex twice (step 9). A fillet takes an edge that goes on straight through a vertex a Boolean left (step 10). | 1 wk | not started |
-| 14.4 Hover on large meshes | The hidden-edge test casts a ray at the display mesh on every hover (step 9); it gets a tree, or the answer is kept for the view. | 0.5 wk | not started |
-| 14.5 Face normals point out | The side faces of an extrusion carry normals that point into the solid; the section view turns them by the mesh (step 6). They are turned once, where the faces are made, for everything that reads them. | 0.5 wk | not started |
+| 14.1 Every face can be picked and seen | A face that only has an `Origin` (a loft's, a fillet's, a Boolean tool's) is picked by the mouse as other faces are (steps 9 and 10). The display mesh tells such faces apart, so the edges between them are drawn (step 11). The patches of one fillet get a sheet key, so a circle's fillet is one face and not four (step 11). A face of several patches is named by any of them (step 11). | 2.5 wk | done 2026-10-03 (`f055ba9`, `7b45aef`, `db3a4b7`, goldens `85429df`, `1cc89cf`): triangles of faces with only an Origin carry it, so the display draws the edges between faces where they meet smoothly too (`EdgeSharpOrFace`) and the mouse picks them (`Selection.Face`, which Shell Solid takes); a circle's fillet is one face (a sheet key per edge); `Solid.Face` finds a face by any patch's identity. `TestEveryFacePicked`: every face of every solid golden is picked, the bent pipe's inside through the section view |
+| 14.2 Names that stay | A surface's `Origin` comes from what made it and not from its place among its group's surfaces, so a thread made longer does not rename what follows (step 9). A sweep that reorders the edges between two faces along their spread: a name reports and never moves (step 9). | 1.5 wk | done 2026-10-03 (`0ff7354`, golden `4e9aaee`): a helix's surfaces take a local origin from curve and section, so a longer thread renames none (other groups' counts follow only their sketch and keep their places, which saved names use); names count the edges between their faces, `edge A B N of M`, and report rather than move when that count changes (format 2 gains `of <m>`, names without it read as before) |
+| 14.3 Topology's edge cases | A non-manifold edge is refused at its place or modelled (step 9, the knife edge). A fixture for a loop through a vertex twice (step 9). A fillet takes an edge that goes on straight through a vertex a Boolean left (step 10). | 1 wk | done 2026-10-03 (`de895d1`): a non-manifold edge is reported with where it lies and marked by Check Solid; two holes touching at a corner are the fixture, and of a loop through a vertex twice. A fillet along an edge that runs into a vertex where other edges meet is refused with a message naming the five edges, as 22.4's corners are; no case was found of an edge going on straight through a vertex with nothing else at it |
+| 14.4 Hover on large meshes | The hidden-edge test casts a ray at the display mesh on every hover (step 9); it gets a tree, or the answer is kept for the view. | 0.5 wk | done 2026-10-03 (`43d7ab1`): a grid of the display mesh's triangles by screen cell, kept for the view; 104 ns a hover on the triple-start thread against 3.8 µs, same answers (`TestHoverGridSameAsScan`); perspective views still scan |
+| 14.5 Face normals point out | The side faces of an extrusion carry normals that point into the solid; the section view turns them by the mesh (step 6). They are turned once, where the faces are made, for everything that reads them. | 0.5 wk | done 2026-10-03 (`62d59bb`), by another route: the face entities keep their sketch's normal, since a distance constraint on a face keeps its sign in the file and turning the normal would move its point in every saved model; `Sketch.OutwardFaceNormal`, the section's, is what Measure uses now |
 
 Done when: every face of every golden solid is picked by a click in a scenario, and the naming
 sweep of 9.6 passes with a thread upstream whose length changes.
+
+State, 2026-10-03: done, on branch `step-14-names-faces`. `TestEveryFacePicked` hovers every
+face of every solid golden into the selection, and `TestNamesThroughThreadLength` resolves every
+edge name of a threaded part after its thread is doubled, but for the four whose faces no longer
+meet, which say so.
 
 ### Step 15. Solid features completed
 

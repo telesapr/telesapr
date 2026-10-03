@@ -86,7 +86,7 @@ func (sk *Sketch) SectionCut() (keep srf.HalfSpace, origin geom.Vector, ok bool,
 		n = e.NormalEntity(sk).NormalN(sk)
 	case e.IsFace():
 		origin = e.FaceGetPointNum(sk)
-		n = sk.outwardFaceNormal(e)
+		n = sk.OutwardFaceNormal(e)
 	default:
 		return keep, origin, false, errors.New("the section's plane is not a plane")
 	}
@@ -105,10 +105,14 @@ func (sk *Sketch) SectionCut() (keep srf.HalfSpace, origin geom.Vector, ok bool,
 	return srf.HalfSpace{N: n, D: n.Dot(origin)}, origin, true, nil
 }
 
-// outwardFaceNormal is a face's normal, turned to point out of the
-// solid, as its triangles' do: a face entity's own normal follows the
-// sketch it came from, and points in on some faces of an extrusion.
-func (sk *Sketch) outwardFaceNormal(e *core.Entity) geom.Vector {
+// OutwardFaceNormal is a face's normal, turned to point out of the
+// solid, as its triangles' do. A face entity's own normal follows the
+// sketch it came from, and points in on some faces of an extrusion; it
+// stays so, since a constraint on a face, a distance from it, keeps its
+// sign in the file, and turning the normal would move the point to the
+// other side. What reports a direction to the user, the section view
+// and Measure, takes this one (roadmap 14.5).
+func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector {
 	n := e.FaceGetNormalNum(sk)
 	for _, hg := range []core.HGroup{sk.ActiveGroup(), e.Group} {
 		g := sk.GetGroup(hg)

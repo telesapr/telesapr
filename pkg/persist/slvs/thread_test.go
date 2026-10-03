@@ -349,6 +349,48 @@ func TestThreadAfterActiveGroup(t *testing.T) {
 
 // TestThreadLengthDimension changes the dimension that a thread's helix
 // group carries: the helix follows it, at the same pitch.
+// TestThreadOriginsStay lengthens a thread: the helix gets more
+// sections, and the surfaces of the sections it had keep their origins,
+// so the names of their edges stay; by their place among the group's
+// surfaces, those of every curve after the first would have moved
+// (roadmap 14.2).
+func TestThreadOriginsStay(t *testing.T) {
+	tc := threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 6}}
+	sk, _, res := tc.build(t, 0)
+	hel := res.Group
+	origins := func() map[uint32]geom.Vector {
+		out := map[uint32]geom.Vector{}
+		for _, s := range sk.GetGroup(hel).ThisShell.Surface {
+			if s.Face == 0 {
+				out[s.Origin] = s.PointAt(0.5, 0.5)
+			}
+		}
+		return out
+	}
+	short := origins()
+	var length *core.Constraint
+	for i := range sk.Constraints {
+		if c := &sk.Constraints[i]; c.Group == hel {
+			length = c
+		}
+	}
+	length.ValA = math.Copysign(12, length.ValA)
+	sk.MarkGroupDirty(hel, false)
+	sk.GenerateAllTyped(sketch.GenerateAll)
+	long := origins()
+	if len(short) == 0 || len(long) <= len(short) {
+		t.Fatalf("%d surfaces with origins, then %d", len(short), len(long))
+	}
+	// Each section spans the helix's angle over their count, so a
+	// section's surface moves a little along the helix; it is still the
+	// j-th of its curve, with the same origin.
+	for o, p := range short {
+		if q, ok := long[o]; !ok || q.Minus(p).Magnitude() > tc.radius {
+			t.Errorf("origin %#x was at %v, now %v (%v)", o, p, q, ok)
+		}
+	}
+}
+
 func TestThreadLengthDimension(t *testing.T) {
 	tc := threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 12}}
 	sk, _, res := tc.build(t, 0)

@@ -6,6 +6,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
@@ -195,18 +196,21 @@ type Selection struct {
 	Entity     core.HEntity
 	Constraint core.HConstraint
 	// Edge is an edge of the solid, by name, when its A is not zero.
-	Edge       topo.Name
+	Edge topo.Name
+	// Face is a face of the solid that no entity names, as a fillet's
+	// or a Boolean tool's, by its identity (roadmap 14.1).
+	Face       srf.FaceID
 	Emphasized bool
 }
 
 // Equals compares what is selected.
 func (s *Selection) Equals(b *Selection) bool {
-	return s.Entity == b.Entity && s.Constraint == b.Constraint && s.Edge == b.Edge
+	return s.Entity == b.Entity && s.Constraint == b.Constraint && s.Edge == b.Edge && s.Face == b.Face
 }
 
 // IsEmpty reports whether nothing is selected.
 func (s *Selection) IsEmpty() bool {
-	return s.Entity.V == 0 && s.Constraint.V == 0 && s.Edge.A == 0
+	return s.Entity.V == 0 && s.Constraint.V == 0 && s.Edge.A == 0 && s.Face == 0
 }
 
 // Clear selects nothing.
@@ -234,9 +238,10 @@ type groupedSelection struct {
 	vector     []core.HEntity
 	face       []core.HEntity
 	constraint []core.HConstraint
-	// solidEdge lists the edges of the solid selected, which n does
-	// not count.
+	// solidEdge lists the edges of the solid selected, and solidFace
+	// its faces that no entity names, which n does not count.
 	solidEdge []topo.Name
+	solidFace []srf.FaceID
 
 	points           int
 	entities         int
@@ -279,7 +284,9 @@ type pendingState struct {
 // GraphicsWindow is the window with the model and the toolbar (C++
 // GraphicsWindow).
 type GraphicsWindow struct {
-	ss *SolveSpaceUI
+	// hoverTris is the grid hiddenBySolid looks triangles up in.
+	hoverTris *hoverGrid
+	ss        *SolveSpaceUI
 
 	window platform.Window
 

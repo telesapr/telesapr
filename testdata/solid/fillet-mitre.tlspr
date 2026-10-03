@@ -737,6 +737,7 @@ shell {
   }
   surface 0x8 {
     color 100 100 100 255
+    sheet 0x40040000
     degree 2 1
     ctrl 0 0 26 0 8 1
     ctrl 0 1 -6 0 8 1
@@ -751,6 +752,7 @@ shell {
   }
   surface 0x9 {
     color 100 100 100 255
+    sheet 0x40040001
     degree 2 1
     ctrl 0 0 20 16 8 1
     ctrl 0 1 20 -6 8 1

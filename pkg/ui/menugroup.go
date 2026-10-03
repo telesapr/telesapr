@@ -251,6 +251,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		for i, he := range gs.face {
 			faces[i] = srf.FaceID(he.V)
 		}
+		// Faces no entity names, as a fillet's, picked on the model.
+		faces = append(faces, gs.solidFace...)
 		shg, err := sk.NewShell(faces, 1, "")
 		if err != nil {
 			ss.Error("Can't shell the solid. %s.\n\n"+

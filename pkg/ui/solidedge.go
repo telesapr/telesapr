@@ -6,6 +6,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -78,7 +79,10 @@ func segmentDistance2d(p, a, b geom.Point2d) (float64, float64) {
 }
 
 // hiddenBySolid reports whether a point of the solid's surface is
-// behind a face of the active group's mesh, as seen.
+// behind a face of the active group's mesh, as seen. In an orthographic
+// view the ray towards the viewer stays on the point's pixel, so only
+// the triangles over that pixel are tried (hoverGrid); a perspective
+// view tries them all.
 func (gw *GraphicsWindow) hiddenBySolid(p geom.Vector) bool {
 	g := gw.sk().GetGroup(gw.activeGroupH())
 	if g == nil {
@@ -93,12 +97,107 @@ func (gw *GraphicsWindow) hiddenBySolid(p geom.Vector) bool {
 		scale = 1e-6
 	}
 	start := p.Plus(towards.ScaledBy(10 * scale))
-	for i := range g.DisplayMesh.Triangles {
-		if rayHitsTriangle(start, towards, &g.DisplayMesh.Triangles[i]) {
+	tris := g.DisplayMesh.Triangles
+	gw.view.Tangent = gw.ss.CameraTangent()
+	if gw.view.Tangent != 0 {
+		for i := range tris {
+			if rayHitsTriangle(start, towards, &tris[i]) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, i := range gw.hoverGridFor(tris).at(gw.view.ProjectPoint(p)) {
+		if rayHitsTriangle(start, towards, &tris[i]) {
 			return true
 		}
 	}
 	return false
+}
+
+// hoverGrid buckets the triangles of a mesh by the pixels they cover in
+// one view, so that hiddenBySolid tries only those over its point
+// (roadmap 14.4). It is kept until the view or the mesh changes.
+type hoverGrid struct {
+	view  sketch.View
+	first *srf.STriangle
+	n     int
+	lo    geom.Point2d
+	cell  float64
+	nx    int
+	cells [][]int32
+}
+
+// hoverGridCells is how many cells the grid has along its longer side.
+const hoverGridCells = 64
+
+// hoverGridFor is the grid of tris in the current view, made again if
+// the view or the mesh changed.
+func (gw *GraphicsWindow) hoverGridFor(tris []srf.STriangle) *hoverGrid {
+	var first *srf.STriangle
+	if len(tris) > 0 {
+		first = &tris[0]
+	}
+	if h := gw.hoverTris; h != nil && h.view == gw.view && h.first == first && h.n == len(tris) {
+		return h
+	}
+	h := &hoverGrid{view: gw.view, first: first, n: len(tris)}
+	gw.hoverTris = h
+	if len(tris) == 0 {
+		return h
+	}
+	type box struct{ lo, hi geom.Point2d }
+	boxes := make([]box, len(tris))
+	lo := geom.Point2d{U: math.Inf(1), V: math.Inf(1)}
+	hi := geom.Point2d{U: math.Inf(-1), V: math.Inf(-1)}
+	for i := range tris {
+		b := box{lo: geom.Point2d{U: math.Inf(1), V: math.Inf(1)}, hi: geom.Point2d{U: math.Inf(-1), V: math.Inf(-1)}}
+		for _, v := range []geom.Vector{tris[i].A, tris[i].B, tris[i].C} {
+			q := gw.view.ProjectPoint(v)
+			b.lo.U, b.lo.V = math.Min(b.lo.U, q.U), math.Min(b.lo.V, q.V)
+			b.hi.U, b.hi.V = math.Max(b.hi.U, q.U), math.Max(b.hi.V, q.V)
+		}
+		boxes[i] = b
+		lo.U, lo.V = math.Min(lo.U, b.lo.U), math.Min(lo.V, b.lo.V)
+		hi.U, hi.V = math.Max(hi.U, b.hi.U), math.Max(hi.V, b.hi.V)
+	}
+	// A pixel of slack about every box, for points on an edge.
+	const slack = 1
+	h.lo = geom.Point2d{U: lo.U - slack, V: lo.V - slack}
+	h.cell = math.Max(hi.U-lo.U, hi.V-lo.V)/hoverGridCells + 2*slack
+	h.nx = int((hi.U-lo.U+2*slack)/h.cell) + 1
+	ny := int((hi.V-lo.V+2*slack)/h.cell) + 1
+	h.cells = make([][]int32, h.nx*ny)
+	for i, b := range boxes {
+		x0, y0 := h.index(geom.Point2d{U: b.lo.U - slack, V: b.lo.V - slack})
+		x1, y1 := h.index(geom.Point2d{U: b.hi.U + slack, V: b.hi.V + slack})
+		for y := y0; y <= y1; y++ {
+			for x := x0; x <= x1; x++ {
+				h.cells[y*h.nx+x] = append(h.cells[y*h.nx+x], int32(i))
+			}
+		}
+	}
+	return h
+}
+
+// index is the cell of a screen point, clamped to the grid.
+func (h *hoverGrid) index(p geom.Point2d) (int, int) {
+	ny := len(h.cells) / h.nx
+	x := min(max(int((p.U-h.lo.U)/h.cell), 0), h.nx-1)
+	y := min(max(int((p.V-h.lo.V)/h.cell), 0), ny-1)
+	return x, y
+}
+
+// at lists the triangles whose cell holds the screen point p.
+func (h *hoverGrid) at(p geom.Point2d) []int32 {
+	if len(h.cells) == 0 || p.U < h.lo.U || p.V < h.lo.V {
+		return nil
+	}
+	x, y := h.index(p)
+	if p.U > h.lo.U+float64(h.nx)*h.cell || p.V > h.lo.V+float64(len(h.cells)/h.nx)*h.cell {
+		return nil
+	}
+	return h.cells[y*h.nx+x]
 }
 
 // rayHitsTriangle is the Moller and Trumbore test, for t > 0.

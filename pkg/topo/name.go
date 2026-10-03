@@ -18,19 +18,27 @@ import (
 // that made it (srf.FaceID), which an edit upstream keeps; positions
 // are not names, since an edit moves them.
 //
-// A name stops resolving, visibly, when a face goes or when the faces
-// meet along fewer edges than its ordinal: it never moves to another
-// edge between other faces. An edit that reorders the edges between
-// the same two faces can move it, which the ordinal's geometric order
-// makes rare: edges keep their order along the line they spread on.
+// A name stops resolving, visibly, when a face goes, or when the faces
+// meet along another number of edges than they did when it was made:
+// it never moves to another edge between other faces, nor to another
+// piece where an edit split or joined the edges between the same two.
+// The geometric order keeps the rest from moving: edges between two
+// flat faces lie on one line, along which an edit keeps their order.
 type Name struct {
 	A, B srf.FaceID
 	N    int
+	// Of is how many edges the two faces met along when the name was
+	// made; 0 for a name made before names counted them, which
+	// resolves by its ordinal alone.
+	Of int
 }
 
-// String is the name as files and scripts write it: "edge A B N",
-// handles in hex.
+// String is the name as files and scripts write it: "edge A B N of M",
+// handles in hex, or "edge A B N" for a name that doesn't count.
 func (n Name) String() string {
+	if n.Of > 0 {
+		return fmt.Sprintf("edge %x %x %d of %d", uint32(n.A), uint32(n.B), n.N, n.Of)
+	}
 	return fmt.Sprintf("edge %x %x %d", uint32(n.A), uint32(n.B), n.N)
 }
 
@@ -42,22 +50,35 @@ func (a Name) Less(b Name) bool {
 	if a.B != b.B {
 		return a.B < b.B
 	}
-	return a.N < b.N
+	if a.N != b.N {
+		return a.N < b.N
+	}
+	return a.Of < b.Of
 }
 
 // ParseName reads a name as String writes it.
 func ParseName(s string) (Name, error) {
 	f := strings.Fields(s)
-	if len(f) != 4 || f[0] != "edge" {
-		return Name{}, fmt.Errorf("%q is not an edge name: it is \"edge\", two face handles and an ordinal", s)
+	bad := fmt.Errorf("%q is not an edge name: it is \"edge\", two face handles in hex, an ordinal "+
+		"and \"of\" with a count", s)
+	if (len(f) != 4 && len(f) != 6) || f[0] != "edge" {
+		return Name{}, bad
 	}
 	a, err1 := strconv.ParseUint(f[1], 16, 32)
 	b, err2 := strconv.ParseUint(f[2], 16, 32)
 	n, err3 := strconv.Atoi(f[3])
 	if err1 != nil || err2 != nil || err3 != nil || n < 0 {
-		return Name{}, fmt.Errorf("%q is not an edge name: it is \"edge\", two face handles in hex and an ordinal", s)
+		return Name{}, bad
 	}
-	return MakeName(srf.FaceID(a), srf.FaceID(b), n), nil
+	name := MakeName(srf.FaceID(a), srf.FaceID(b), n)
+	if len(f) == 6 {
+		of, err := strconv.Atoi(f[5])
+		if f[4] != "of" || err != nil || of <= n {
+			return Name{}, bad
+		}
+		name.Of = of
+	}
+	return name, nil
 }
 
 // MakeName is the name of ordinal n of the edges between faces a and
@@ -171,9 +192,10 @@ func (t *Topology) NameOf(e int) (Name, error) {
 	if !ok {
 		return Name{}, fmt.Errorf("edge %d does not lie between two faces that come from the sketch", e)
 	}
-	for i, x := range t.between(a, b) {
+	es := t.between(a, b)
+	for i, x := range es {
 		if x == e {
-			return Name{A: a, B: b, N: i}, nil
+			return Name{A: a, B: b, N: i, Of: len(es)}, nil
 		}
 	}
 	return Name{}, fmt.Errorf("edge %d is not between its own faces", e)
@@ -183,7 +205,7 @@ func (t *Topology) NameOf(e int) (Name, error) {
 // is none: a face gone, or fewer edges between the two faces.
 func (t *Topology) Resolve(n Name) (int, error) {
 	es := t.between(n.A, n.B)
-	if n.N < len(es) {
+	if n.N < len(es) && (n.Of == 0 || n.Of == len(es)) {
 		return es[n.N], nil
 	}
 	hasA, hasB := false, false
@@ -200,6 +222,9 @@ func (t *Topology) Resolve(n Name) (int, error) {
 		return -1, fmt.Errorf("face %x is no longer in the solid", uint32(n.B))
 	case len(es) == 0:
 		return -1, fmt.Errorf("faces %x and %x no longer meet", uint32(n.A), uint32(n.B))
+	case n.Of > 0:
+		return -1, fmt.Errorf("faces %x and %x now meet along %d edges, not the %d the name counted, "+
+			"so which of them it names is not known", uint32(n.A), uint32(n.B), len(es), n.Of)
 	}
 	return -1, fmt.Errorf("faces %x and %x now meet along %d edges, so there is no edge %d of them",
 		uint32(n.A), uint32(n.B), len(es), n.N)

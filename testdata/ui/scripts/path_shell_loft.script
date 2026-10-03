@@ -1,0 +1,14 @@
+# A loft's side, a face no entity names, picked with the mouse on the
+# model and taken away by Shell Solid; the same as path_shell_loft.go
+# makes (TestPathEquivalenceShellLoftFace).
+file $testdata/ui/loft_profiles.tlspr
+menu File|Open...
+view default
+move 300 400
+down L 300 400
+up L 300 400
+menu New Group|Loft To Selected Profile
+move 320 375
+down L 320 375
+up L 320 375
+menu New Group|Shell Solid

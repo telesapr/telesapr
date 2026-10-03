@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -415,5 +416,81 @@ func TestDocumentUnits(t *testing.T) {
 	}
 	if strings.Join(exprs, "; ") != "(w*2)*25.4; (1/4)*25.4" {
 		t.Errorf("expressions %v", exprs)
+	}
+}
+
+// Measuring from a face goes by the face's outward normal, however its
+// sketch was drawn: a point outside a side is at a positive distance,
+// and opposite sides are at 180 degrees (roadmap 14.5). Drawn one way
+// round, the face entities' own normals point into the block.
+func TestMeasureFacesOutward(t *testing.T) {
+	for _, reverse := range []bool{false, true} {
+		d := New()
+		corners := []Vec{V(0, 0, 0), V(10, 0, 0), V(10, 10, 0), V(0, 10, 0)}
+		if reverse {
+			corners = []Vec{V(0, 0, 0), V(0, 10, 0), V(10, 10, 0), V(10, 0, 0)}
+		}
+		d.Polyline(true, corners...)
+		ex := d.Extrude(5, "")
+		d.SketchIn(d.Workplane("XY"), "")
+		p := d.Point(V(20, 5, 0))
+		var dists []float64
+		var sides []Entity
+		for _, f := range ex.Faces() {
+			m := d.Measure(p, f)
+			dists = append(dists, math.Round(m.Value*1e6)/1e6)
+			if math.Abs(m.Value-10) < 1e-6 || math.Abs(m.Value+20) < 1e-6 {
+				sides = append(sides, f)
+			}
+		}
+		slices.Sort(dists)
+		if want := []float64{-20, -5, -5, -5, 0, 10}; !slices.Equal(dists, want) {
+			t.Errorf("reverse %v: distances %v, want %v", reverse, dists, want)
+		}
+		if len(sides) != 2 || !near(d.Measure(sides[0], sides[1]).Value, 180) {
+			t.Errorf("reverse %v: %d sides, angle %v", reverse, len(sides), d.Measure(sides[0], sides[1]).Value)
+		}
+	}
+}
+
+// Two square holes that touch at a corner: four faces meet along the
+// line there, and the solid is not a manifold. Check says so where it
+// is, and marks that edge (roadmap 14.3). The top and bottom faces'
+// loops pass through that corner twice, which the topology's sharpest
+// left turn sorts out: the edge is the only problem, every loop closes.
+func TestCheckTouchingHoles(t *testing.T) {
+	d := New()
+	d.Rect(V(0, 0, 0), V(20, 20, 0))
+	d.Rect(V(4, 4, 0), V(10, 10, 0))
+	d.Rect(V(10, 10, 0), V(16, 16, 0))
+	r := d.Extrude(5, "").Check()
+	if r.Sound() || r.TopologyProblems != 1 || !near(r.Volume, 1640) {
+		t.Fatalf("%s", r.String())
+	}
+	p := r.Topology[0]
+	if !strings.Contains(p.Msg, "4 faces meet along it, from (10, 10, 0) to (10, 10, 5)") &&
+		!strings.Contains(p.Msg, "4 faces meet along it, from (10, 10, 5) to (10, 10, 0)") {
+		t.Errorf("problem %q", p.Msg)
+	}
+	if len(r.TopologyEdges.Edges) != 1 {
+		t.Errorf("%d edges marked", len(r.TopologyEdges.Edges))
+	}
+}
+
+// The fillet round an extruded circle's top is one face, not one per
+// quarter of the circle: its patches share a sheet (roadmap 14.1).
+func TestFilletCircleOneFace(t *testing.T) {
+	d := New()
+	d.Circle(V(0, 0, 0), 10)
+	ex := d.Extrude(10, "")
+	var rim Entity
+	for _, e := range ex.Entities() {
+		if e.Kind() == "circle" && e.Center().Pos().Z == 10 {
+			rim = e
+		}
+	}
+	f := d.Fillet([]Entity{rim}, 2, "")
+	if r := f.Check(); !r.Sound() || r.Faces != 4 {
+		t.Errorf("faces %d: %s", r.Faces, r.String())
 	}
 }

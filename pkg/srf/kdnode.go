@@ -739,6 +739,10 @@ func (n *SKdNode) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind) {
 				if isSharp(tr, j, &info) {
 					tag = 1
 				}
+			case EdgeSharpOrFace:
+				if tr.Meta.Face != info.Tr.Meta.Face || isSharp(tr, j, &info) {
+					tag = 1
+				}
 			default:
 				panic("Unexpected edge kind")
 			}

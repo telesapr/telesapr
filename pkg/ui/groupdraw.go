@@ -99,6 +99,9 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		if he.V != 0 && sk.GetEntity(he).IsFace() {
 			faces = append(faces, he.V)
 		}
+		if gw.hover.Face != 0 {
+			faces = append(faces, uint32(gw.hover.Face))
+		}
 		unclip := gw.clipToSection(canvas)
 		canvas.DrawFaces(&g.DisplayMesh, faces, hcf)
 		unclip()
@@ -113,6 +116,9 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		var faces []uint32
 		for _, fc := range gw.gs.face {
 			faces = append(faces, fc.V)
+		}
+		for _, fc := range gw.gs.solidFace {
+			faces = append(faces, uint32(fc))
 		}
 		unclip := gw.clipToSection(canvas)
 		canvas.DrawFaces(&g.DisplayMesh, faces, hcf)

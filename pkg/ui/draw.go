@@ -307,6 +307,9 @@ func (gw *GraphicsWindow) GroupSelection() {
 		if s.Edge.A != 0 {
 			gs.solidEdge = append(gs.solidEdge, s.Edge)
 		}
+		if s.Face != 0 {
+			gs.solidFace = append(gs.solidFace, s.Face)
+		}
 		if s.Constraint.V != 0 {
 			gs.constraints++
 			gs.constraint = append(gs.constraint, s.Constraint)
@@ -490,7 +493,13 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 				keep = &h
 			}
 			if face := m.FirstIntersectionIn(rayPoint, rayDir, keep); face != 0 {
-				sel.Entity.V = face
+				// A face entity, or for a face no entity names its
+				// identity.
+				if sk.GetEntity(core.HEntity{V: face}) != nil {
+					sel.Entity.V = face
+				} else {
+					sel.Face = srf.FaceID(face)
+				}
 				gw.hoverList = append(gw.hoverList, Hover{Selection: sel})
 			}
 		}

@@ -179,9 +179,16 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 
 	// Surfaces no entity names get an identity from this group, so
 	// the edges of the faces they bound can be named.
+	// A constructor may have given one a local origin from what made
+	// it, which holds when the group makes more or fewer surfaces.
 	for i := range g.ThisShell.Surface {
-		if s := &g.ThisShell.Surface[i]; s.Face == 0 && s.Origin == 0 {
+		s := &g.ThisShell.Surface[i]
+		switch {
+		case s.Face != 0:
+		case s.Origin == 0:
 			s.Origin = srf.OriginFor(g.H.V, i)
+		case s.Origin&^0xffff == 0 && s.Origin&srf.LocalOriginBit != 0:
+			s.Origin = srf.OriginFor(g.H.V, int(s.Origin))
 		}
 	}
 
@@ -695,7 +702,10 @@ func (g *Group) generateOwnDisplayItems(sk *Sketch) {
 		// Triangle mesh only; no shell or emphasized edges.
 		g.RunningMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeEmphasized)
 	} else {
-		g.DisplayMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeSharp)
+		// The edges between faces too where they meet smoothly, as
+		// about a fillet; not the seams within a face, whose patches
+		// carry one face (SShell.displayFace).
+		g.DisplayMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeSharpOrFace)
 	}
 	var builder srf.PolylineBuilder
 	builder.MakeFromOutlines(&rawOutlines)

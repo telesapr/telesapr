@@ -4303,7 +4303,7 @@
 					},
 					"Measure": {
 						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
-						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm."
+						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm. A face counts by its\noutward normal: a point outside the solid is at a positive distance\nfrom it, and two opposite faces are at 180 degrees."
 					},
 					"Midpoint": {
 						"decl": "func (d *Doc) Midpoint(point, line Entity) Constraint",
@@ -5039,7 +5039,7 @@
 				"methods": {
 					"Edge": {
 						"decl": "func (s Solid) Edge(name string) (e SolidEdge)",
-						"text": "Edge is the edge a name, as SolidEdge.Name writes it, names; it fails\nwhen the name doesn't resolve, saying why."
+						"text": "Edge is the edge a name, as SolidEdge.Name writes it, names; it fails\nwhen the name doesn't resolve, saying why. A name may leave out the\ncount, \"edge A B N\" for \"edge A B N of M\"; the edge has it."
 					},
 					"EdgeAt": {
 						"decl": "func (s Solid) EdgeAt(p Vec) (e SolidEdge)",
@@ -5060,6 +5060,10 @@
 					"Euler": {
 						"decl": "func (s Solid) Euler() (chi int)",
 						"text": "Euler is the solid's Euler characteristic, V - E + F less the holes\nin faces: 2 for a solid with no hole through it, 0 for one with one."
+					},
+					"Face": {
+						"decl": "func (s Solid) Face(id uint32) (f SolidFace)",
+						"text": "Face is the face with identity id, as SolidFace.ID gives it: the\nface of which a patch has that identity, whichever patch it is, so a\nface of several patches can be named by any of theirs (an extruded\ncircle's side by any quarter's). It fails for an identity no patch\nof the solid has (roadmap 14.1)."
 					},
 					"FaceAt": {
 						"decl": "func (s Solid) FaceAt(p Vec) (f SolidFace)",
@@ -6038,6 +6042,10 @@
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
 						"text": "NewSweep starts a sweep of the active group's sketch along path, line segments and arcs joined end to end and meeting tangent."
 					},
+					"OutwardFaceNormal": {
+						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",
+						"text": "OutwardFaceNormal is a face's normal, turned to point out of the solid, as its triangles' do."
+					},
 					"Parameter": {
 						"decl": "func (sk *Sketch) Parameter(name string) *Parameter",
 						"text": "Parameter returns the parameter named name, or nil."
@@ -6761,7 +6769,8 @@
 					"EdgeSelfInter",
 					"EdgeTurning",
 					"EdgeEmphasized",
-					"EdgeSharp"
+					"EdgeSharp",
+					"EdgeSharpOrFace"
 				]
 			},
 			"EdgeOnInfo": {
@@ -8331,6 +8340,9 @@
 			"EdgeSharp": {
 				"decl": "const EdgeSharp"
 			},
+			"EdgeSharpOrFace": {
+				"decl": "const EdgeSharpOrFace"
+			},
 			"EdgeTurning": {
 				"decl": "const EdgeTurning"
 			},
@@ -8348,6 +8360,10 @@
 			},
 			"FaceKeepInsideOtherShell": {
 				"decl": "const FaceKeepInsideOtherShell"
+			},
+			"LocalOriginBit": {
+				"decl": "const LocalOriginBit",
+				"text": "LocalOriginBit marks an Origin that a shell constructor gave a surface from what made it, for its group to make its own with OriginFor in place of the surface's place in the shell."
 			},
 			"MaxDegree": {
 				"decl": "const MaxDegree",

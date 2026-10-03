@@ -57,6 +57,8 @@ type Report struct {
 	Euler int
 	// Topology lists the topology's problems, for showing.
 	Topology []topo.Problem
+	// TopologyEdges are the edges of the topology's problems, to mark.
+	TopologyEdges srf.SEdgeList
 
 	// Problems holds the naked and self-intersecting edges, for drawing.
 	Problems srf.SEdgeList
@@ -104,7 +106,7 @@ func Solid(shell *srf.SShell, mesh *srf.SMesh) Report {
 		tp, err := topo.Build(shell)
 		r.Topology = tp.Validate()
 		if err != nil && len(r.Topology) == 0 {
-			r.Topology = append(r.Topology, topo.Problem{Msg: err.Error()})
+			r.Topology = append(r.Topology, topo.Problem{Msg: err.Error(), Edge: -1})
 		}
 		r.Euler = tp.Euler()
 		if len(tp.Sheets) > 0 {
@@ -113,10 +115,19 @@ func Solid(shell *srf.SShell, mesh *srf.SMesh) Report {
 		if r.NakedEdges == 0 && len(r.Topology) == 0 {
 			if me := topo.MeshEuler(mesh); me != r.Euler {
 				r.Topology = append(r.Topology, topo.Problem{
-					Msg: fmt.Sprintf("the shell's Euler characteristic is %d, its mesh's %d", r.Euler, me)})
+					Msg: fmt.Sprintf("the shell's Euler characteristic is %d, its mesh's %d", r.Euler, me), Edge: -1})
 			}
 		}
 		r.TopologyProblems = len(r.Topology)
+		for _, p := range r.Topology {
+			if p.Edge < 0 || p.Edge >= len(tp.Edges) {
+				continue
+			}
+			pts := tp.Edges[p.Edge].Points
+			for k := 1; k < len(pts); k++ {
+				r.TopologyEdges.AddEdge(pts[k-1], pts[k], 0, 0, 0)
+			}
+		}
 	}
 	return r
 }

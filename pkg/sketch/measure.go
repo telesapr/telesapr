@@ -101,9 +101,9 @@ func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error) {
 
 	case n == 2 && len(points) == 1 && len(faces) == 1:
 		p := points[0].PointGetNum(sk)
-		nn := faces[0].FaceGetNormalNum(sk)
+		nn := sk.OutwardFaceNormal(faces[0]).WithMagnitude(1)
 		pl := faces[0].FaceGetPointNum(sk)
-		return Measurement{MeasureDistance, nn.Dot(pl) - nn.Dot(p), "point to plane", p}, nil
+		return Measurement{MeasureDistance, nn.Dot(p) - nn.Dot(pl), "point to plane", p}, nil
 
 	case n == 2 && len(points) == 1 && len(lines) == 1:
 		p := points[0].PointGetNum(sk)
@@ -111,7 +111,8 @@ func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error) {
 		return Measurement{MeasureDistance, p.DistanceToLine(a, b.Minus(a)), "point to line", p}, nil
 
 	case n == 2 && len(faces) == 2:
-		n0, n1 := faces[0].FaceGetNormalNum(sk), faces[1].FaceGetNormalNum(sk)
+		n0 := sk.OutwardFaceNormal(faces[0]).WithMagnitude(1)
+		n1 := sk.OutwardFaceNormal(faces[1]).WithMagnitude(1)
 		at := faces[0].FaceGetPointNum(sk)
 		return Measurement{MeasureAngle, libm.Acos(n0.Dot(n1)) * 180 / math.Pi, "angle", at}, nil
 

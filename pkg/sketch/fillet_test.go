@@ -642,3 +642,35 @@ func TestFilletEdgeRadii(t *testing.T) {
 		t.Errorf("a corner of two radii: %q", p)
 	}
 }
+
+// The lines where a fillet meets the faces it rounds are drawn, though
+// the faces meet smoothly there: their triangles carry other faces
+// (roadmap 14.1).
+func TestFilletBordersDrawn(t *testing.T) {
+	d := api.New()
+	ex := block(d, 0, 0, 20, 10, 10)
+	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
+	var top, front float64
+	d.With(func(sk *sketch.Sketch) {
+		g := sk.GetGroup(sk.Active)
+		g.GenerateDisplayItems(sk)
+		for _, o := range g.DisplayOutlines.Outlines {
+			if o.Tag == 0 {
+				continue
+			}
+			l := o.B.Minus(o.A).Magnitude()
+			switch {
+			case near(o.A.Y, 2) && near(o.B.Y, 2) && near(o.A.Z, 10) && near(o.B.Z, 10):
+				top += l
+			case near(o.A.Y, 0) && near(o.B.Y, 0) && near(o.A.Z, 8) && near(o.B.Z, 8):
+				front += l
+			}
+		}
+	})
+	if !near(top, 20) || !near(front, 20) {
+		t.Errorf("drawn along the fillet's borders: %g on the top, %g on the front; want 20 and 20", top, front)
+	}
+}
+
+// near reports whether a and b agree to a millionth of a millimetre.
+func near(a, b float64) bool { return math.Abs(a-b) < 1e-6 }

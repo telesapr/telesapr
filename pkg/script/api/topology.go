@@ -133,18 +133,43 @@ func (s Solid) Vertices() (vs []SolidVertex) {
 }
 
 // Edge is the edge a name, as SolidEdge.Name writes it, names; it fails
-// when the name doesn't resolve, saying why.
+// when the name doesn't resolve, saying why. A name may leave out the
+// count, "edge A B N" for "edge A B N of M"; the edge has it.
 func (s Solid) Edge(name string) (e SolidEdge) {
 	n, err := topo.ParseName(name)
 	if err != nil {
 		fail("%v", err)
 	}
 	s.d.read(func(sk *sketch.Sketch) {
-		if _, err := s.topology(sk).Resolve(n); err != nil {
+		tp := s.topology(sk)
+		i, err := tp.Resolve(n)
+		if err != nil {
 			fail("%s: %v", sk.SolidEdgeName(n), err)
+		}
+		// The edge's own name, which counts the edges between its faces
+		// as picking it does, whether or not the name given did.
+		if own, err := tp.NameOf(i); err == nil {
+			n = own
 		}
 	})
 	return SolidEdge{s: s, name: n}
+}
+
+// Face is the face with identity id, as SolidFace.ID gives it: the
+// face of which a patch has that identity, whichever patch it is, so a
+// face of several patches can be named by any of theirs (an extruded
+// circle's side by any quarter's). It fails for an identity no patch
+// of the solid has (roadmap 14.1).
+func (s Solid) Face(id uint32) (f SolidFace) {
+	s.d.read(func(sk *sketch.Sketch) {
+		tp := s.topology(sk)
+		for _, pf := range tp.FacesWithID(srf.FaceID(id)) {
+			f = s.face(tp, tp.SheetOf(pf))
+			return
+		}
+		fail("no face of the solid has the identity %#x", id)
+	})
+	return f
 }
 
 // EdgeAt is the edge nearest the point p, which must be within a
