@@ -358,6 +358,7 @@ func encodeConstraint(c *core.Constraint, mmPer float64) *Node {
 		v /= mmPer
 	}
 	n.expr("value", v, c.Expr)
+	n.str("name", c.Name)
 	n.handle("param", c.ValP.V)
 	n.handle("pt-a", c.PtA.V)
 	n.handle("pt-b", c.PtB.V)

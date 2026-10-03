@@ -57,6 +57,10 @@ func (ss *SolveSpaceUI) constraintLabel(c *core.Constraint) string {
 	if c.Reference {
 		result += " REF"
 	}
+	// A dimension expressions read by name shows it (roadmap 16.1).
+	if c.Name != "" && c.Type != core.ConstraintComment {
+		result = c.Name + " = " + result
+	}
 	return result
 }
 

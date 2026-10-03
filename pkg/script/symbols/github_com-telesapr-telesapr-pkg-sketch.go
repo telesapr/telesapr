@@ -105,6 +105,7 @@ func init() {
 		"RequestTTFText":               reflect.ValueOf(sketch.RequestTTFText),
 		"RequestWorkplane":             reflect.ValueOf(sketch.RequestWorkplane),
 		"SetConstraintValue":           reflect.ValueOf(sketch.SetConstraintValue),
+		"SplitNamedText":               reflect.ValueOf(sketch.SplitNamedText),
 		"ThawExportSettings":           reflect.ValueOf(sketch.ThawExportSettings),
 
 		// type definitions

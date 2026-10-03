@@ -153,7 +153,10 @@ type ConstraintBase struct {
 	// Expr is the expression ValA is evaluated from at each
 	// regeneration, in millimetres and degrees, or "" for a plain
 	// number (see Sketch.EvaluateParameters).
-	Expr    string
+	Expr string
+	// Name, when not "", is what expressions read the constraint's
+	// value by, as they read a parameter (Sketch.SetConstraintName).
+	Name    string
 	ValP    HParam
 	PtA     HEntity
 	PtB     HEntity
@@ -174,6 +177,7 @@ func (c *ConstraintBase) Equals(other *ConstraintBase) bool {
 		c.Workplane == other.Workplane &&
 		c.ValA == other.ValA &&
 		c.Expr == other.Expr &&
+		c.Name == other.Name &&
 		c.ValP == other.ValP &&
 		c.PtA == other.PtA &&
 		c.PtB == other.PtB &&

@@ -245,6 +245,15 @@ func TestPathEquivalenceInsertGroup(t *testing.T) {
 	}
 }
 
+// A dimension named in its label's editor and read by name in another
+// one's, and the same made by a script (roadmap 16.1).
+func TestPathEquivalenceDimensionName(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_dimension_name", "path_dimension_name")
+	if c := ui.NamedConstraint("width"); c == nil || c.ValA != 40 {
+		t.Errorf("the dimension named width: %+v", c)
+	}
+}
+
 // Two edges that meet at a corner picked with the mouse and rounded,
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {

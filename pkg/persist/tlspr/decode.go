@@ -663,6 +663,8 @@ func (d *decoder) constraint(n *Node) (core.Constraint, bool) {
 			c.Reference = d.flag(f)
 		case "comment":
 			c.Comment = d.strField(f)
+		case "name":
+			c.Name = d.strField(f)
 		case "label-offset":
 			c.Disp.Offset = d.vectorField(f)
 		case "label-style":

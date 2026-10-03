@@ -37,6 +37,26 @@ for _, p := range doc.Parameters() {
 `RenameParameter` and `DeleteParameter` do what the table does; `doc.ExprErrors()` lists
 expressions that do not evaluate.
 
+## Dimensions by name
+
+Example: [`examples/scripts/dimensions`](../../examples/scripts/dimensions/dimensions.go), a
+plate whose height and hole read its width dimension.
+
+A dimension can be named, and expressions read its value by the name, as they read a
+parameter. Double-click the dimension and type `width = 60`: the label shows
+`width = 60.00`, and another dimension can be `width*2/3`. The value read is the one the label
+shows, in the document's unit: a distance without the sign of its side, a diameter shown as a
+radius as the radius. Typing a new name renames every use; `= 60` takes the name away, which is
+refused while something uses it. Parameters and dimensions share the names. A reference
+dimension measures, and can't be named. Changing the document's unit keeps the lengths that
+read a named length.
+
+```go
+doc.Length(sides[0], 60).SetName("width")
+must(doc.Length(sides[1], 40).SetExpr("width*2/3"))
+must(doc.Dimension("width").SetExpr("90"))
+```
+
 ## The document's unit
 
 View > Dimension Units sets the unit the document is in: millimetres, metres, inches, or feet
@@ -65,5 +85,5 @@ text, as in `SetExpr("2")`, is in the document's unit.
 
 ## Not yet
 
-A constraint's value can't be read by the constraint's name (roadmap 16.1), and there are no
-named sets of parameter values (16.2).
+There are no named sets of parameter values (roadmap 16.2). A parameter that reads a named
+length changes with the document's unit; changing the unit lists it among the ones to check.

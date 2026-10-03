@@ -1371,6 +1371,12 @@ func (gw *GraphicsWindow) EditConstraint(constraint core.HConstraint) {
 		editPlaceholder = "10.000000"
 	}
 
+	// A named dimension is edited as "name = value"; the name may be
+	// changed, or taken away with "= value" (roadmap 16.1).
+	if c.Name != "" && c.Type != core.ConstraintComment {
+		editValue = c.Name + " = " + editValue
+	}
+
 	width, height := gw.window.GetContentSize()
 	hs := c.Disp.Style
 	if hs.V == 0 {
@@ -1412,11 +1418,17 @@ func (gw *GraphicsWindow) EditControlDone(s string) {
 		return
 	}
 
-	if e := ss.exprFromString(s, true); e != nil {
+	name, named, value := sketch.SplitNamedText(s)
+	if e := ss.exprFromString(value, true); e != nil {
 		// A length typed as a plain expression is in the view's unit;
 		// one that names a parameter is kept, in mm and degrees.
 		err := ss.SK.UndoRememberFor(func() error {
-			return ss.SK.SetConstraintText(gw.constraintBeingEdited, s)
+			if named {
+				if err := ss.SK.SetConstraintName(gw.constraintBeingEdited, name); err != nil {
+					return err
+				}
+			}
+			return ss.SK.SetConstraintText(gw.constraintBeingEdited, value)
 		})
 		if err != nil {
 			ss.Error("%s.", capitalize(err.Error()))
