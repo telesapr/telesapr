@@ -554,6 +554,8 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		ln := len(c.Points)
 		bestEar := -1
 		bestChordTol := geom.VeryPositive
+		// The first folded ear, taken when there is no other.
+		fallback := -1
 		// Alternate the starting position so we generate strip-like
 		// triangulations instead of fan-like
 		toggle = !toggle
@@ -581,6 +583,12 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 				// surface.
 				prev := c.Points[wrapIdx(i+offset-1, ln)].P
 				next := c.Points[wrapIdx(i+offset+1, ln)].P
+				if folded(srf, prev, c.Points[ear].P, next) {
+					if fallback < 0 {
+						fallback = ear
+					}
+					continue
+				}
 				tol := srf.ChordToleranceForEdge(prev, next)
 				if tol < bestChordTol-scaledEps {
 					bestEar = ear
@@ -592,6 +600,9 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 			}
 		}
 		if bestEar < 0 {
+			bestEar = fallback
+		}
+		if bestEar < 0 {
 			// couldn't find an ear! fail
 			return
 		}
@@ -601,6 +612,28 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	if len(c.Points) == 3 {
 		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
+}
+
+// folded reports whether the triangle a, b, c, in uv, turns over on the
+// surface: whether in xyz it faces against the surface's normal at its
+// middle, where the uv triangle's own turn says it should face along
+// it. Three points of one curved trim, consecutive on it, can make
+// such an ear, convex in uv where the curve bends one way and lying in
+// xyz on the far side of the chord, over the face beyond the trim: a
+// sphere's band cut by a plane would lay a sliver flat on the plane's
+// face.
+func folded(srf *SSurface, a, b, c geom.Vector) bool {
+	uvTurn := b.Minus(a).Cross(c.Minus(a)).Z
+	if math.Abs(uvTurn) < geom.LengthEps*geom.LengthEps {
+		return false
+	}
+	pa, pb, pc := srf.PointAt(a.X, a.Y), srf.PointAt(b.X, b.Y), srf.PointAt(c.X, c.Y)
+	n := pb.Minus(pa).Cross(pc.Minus(pa))
+	if n.Magnitude() < geom.LengthEps*geom.LengthEps {
+		return false
+	}
+	mid := a.Plus(b).Plus(c).ScaledBy(1.0 / 3)
+	return n.Dot(srf.NormalAt(mid.X, mid.Y))*uvTurn < 0
 }
 
 // ChordToleranceForEdge returns how far the surface deviates from the

@@ -150,9 +150,8 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 			sweep.Floats("dx", 0, 0.37, 1.9),
 			sweep.Floats("dy", 0, -0.61, 2.3),
 		},
-		MaxFailRate:       sphereFaceMaxFailRate,
-		Sample:            12,
-		SampleMaxFailRate: 1.0 / 12,
+		MaxFailRate: sphereFaceMaxFailRate,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		r := p.Float("r")
@@ -162,12 +161,15 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 }
 
 // sphereFaceMaxFailRate is the fraction of TestSphereThroughFaceSweep's
-// grid allowed to fail: what the whole grid gave on 2026-10-02 and
-// again on 2026-10-03, 10 of 135, against 99 before the closed loops were searched for. Nine are
-// the intersection at the largest bulge, whose cap crosses the sphere's
-// seams and which failed before as well; one is a cap so small that it
-// triangulates flat against the face. The sample of 12 had one.
-const sphereFaceMaxFailRate = 10.0 / 135
+// grid allowed to fail: 1 of 135 since roadmap 13.2, a cap so small
+// (bulge 0.02) that it triangulates flat against the face. The nine
+// intersections at the largest bulge that failed before laid a sliver
+// of the sphere's band flat on the plane's face: an ear of three
+// consecutive rim points, convex in the patch's uv, turned over in xyz
+// (folded in triangulate.go). It was 10 on 2026-10-02 and 2026-10-03,
+// and 99 before the closed loops were searched for. The sample of 12
+// has none.
+const sphereFaceMaxFailRate = 1.0 / 135
 
 // crossedCylinder is a solid cylinder of radius r, along x through the
 // point (0, dy, 0) turned by angle degrees about y, long enough to
@@ -207,6 +209,21 @@ func cylinderCase(r, dy, angle float64) error {
 		return fmt.Errorf("difference + intersection off by %.4g", d)
 	}
 	return nil
+}
+
+// TestSphereCapNoFold intersects a sphere with the box below a plane
+// that cuts it well above its middle: the band of sphere next to the
+// flat cap must not lay a triangle of three rim points flat on the
+// cap's face, which overlaps it (roadmap 13.2).
+func TestSphereCapNoFold(t *testing.T) {
+	sweepChordTol(t)
+	r := 7.0
+	box := extrudedBox(geom.Vector{X: -20, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: r * 0.6})
+	var out SShell
+	out.MakeFromBoolean(box, patchUpSphere(r, geom.Vector{}), SurfaceInter)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		t.Fatalf("failed %v, sound %v", out.BooleanFailed, meshIsSound(&out))
+	}
 }
 
 // TestCylinderAcrossEndSeam crosses the upright cylinder at 45 degrees
