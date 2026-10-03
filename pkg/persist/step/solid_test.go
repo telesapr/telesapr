@@ -213,3 +213,25 @@ func TestSolidBooleans(t *testing.T) {
 // a torus crossed by a cylinder, a sphere's pole inside the cutter
 // (self-crossing edges where the cut meets the pole's patches).
 const solidBooleanMaxFail = 10
+
+// Tessellated shapes (AP242, roadmap 21.6) read as meshes: a cube of
+// triangulated faces in a tessellated solid, a tetrahedron of strips
+// and fans; as solids they are refused, having no surfaces.
+func TestTessellated(t *testing.T) {
+	path := filepath.Join("..", "..", "..", "testdata", "step", "tessellated.step")
+	res, err := ReadFile(path, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := res.Report.Problem(); p != "" || res.Report.Shapes != 2 {
+		t.Fatalf("%d shapes, problem %q", res.Report.Shapes, p)
+	}
+	r := check.Solid(nil, &res.Mesh)
+	if want := 1000.0 + 36; r.NakedEdges != 0 || math.Abs(r.Volume-want) > 1e-9 || len(res.Mesh.Triangles) != 16 {
+		t.Errorf("%d triangles, %d naked edges, volume %g, want %g", len(res.Mesh.Triangles), r.NakedEdges, r.Volume, want)
+	}
+	m := readModel(t, path)
+	if _, err := m.ShellOf(0, 1); err == nil {
+		t.Error("a tessellated shape read as a solid")
+	}
+}

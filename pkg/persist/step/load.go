@@ -272,6 +272,29 @@ func shapePoints(sh *Shape) (verts, centers []geom.Vector) {
 			verts = append(verts, p)
 		}
 	}
+	if len(sh.Tris) > 0 {
+		// The corners of the triangles' box: a tessellation has no
+		// vertices of its own to tell.
+		lo, hi := sh.Tris[0][0], sh.Tris[0][0]
+		for _, t := range sh.Tris {
+			for _, p := range t {
+				growBox(p, &lo, &hi)
+			}
+		}
+		for i := 0; i < 8; i++ {
+			p := lo
+			if i&1 != 0 {
+				p.X = hi.X
+			}
+			if i&2 != 0 {
+				p.Y = hi.Y
+			}
+			if i&4 != 0 {
+				p.Z = hi.Z
+			}
+			add(p)
+		}
+	}
 	for _, f := range sh.Faces {
 		for _, b := range f.Bounds {
 			for _, p := range b.Poly {
@@ -293,6 +316,20 @@ func shapePoints(sh *Shape) (verts, centers []geom.Vector) {
 // tessellateShape tessellates each face of a shape, side by side,
 // keeping the faces' order. Faces that fail are counted in rep.
 func tessellateShape(sh *Shape, tol float64, rep *Report) shapeMesh {
+	if len(sh.Tris) > 0 {
+		// Triangles already: each flat, its normal its own.
+		tris := make([]meshTri, 0, len(sh.Tris))
+		for _, t := range sh.Tris {
+			n := t[1].Minus(t[0]).Cross(t[2].Minus(t[0]))
+			if n.Magnitude() == 0 {
+				continue
+			}
+			n = n.WithMagnitude(1)
+			tris = append(tris, meshTri{p: t, n: [3]geom.Vector{n, n, n}})
+		}
+		rep.Faces++
+		return shapeMesh{faces: [][]meshTri{tris}, colours: []core.RgbaColor{DefaultColor}}
+	}
 	sm := shapeMesh{faces: make([][]meshTri, len(sh.Faces)), colours: make([]core.RgbaColor, len(sh.Faces))}
 	errs := make([]error, len(sh.Faces))
 	var wg sync.WaitGroup

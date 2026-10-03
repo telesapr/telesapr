@@ -86,6 +86,9 @@ func buildSolid(shape *Shape, origin uint32) (sh *srf.SShell, err error) {
 			sh, err = nil, fmt.Errorf("step: %v", r)
 		}
 	}()
+	if len(shape.Tris) > 0 {
+		return nil, errUnsupported("a tessellated shape, triangles with no surfaces")
+	}
 	b := &solidBuilder{edges: map[*Edge]*solidEdge{}, turned: map[*Face]bool{}, sh: &srf.SShell{}, next: origin}
 	b.fa = topo.NewFaceAdder(b.sh)
 	shape = withPolygonEdges(shape)
