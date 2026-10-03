@@ -155,6 +155,23 @@ func (s Solid) Edge(name string) (e SolidEdge) {
 	return SolidEdge{s: s, name: n}
 }
 
+// Face is the face with identity id, as SolidFace.ID gives it: the
+// face of which a patch has that identity, whichever patch it is, so a
+// face of several patches can be named by any of theirs (an extruded
+// circle's side by any quarter's). It fails for an identity no patch
+// of the solid has (roadmap 14.1).
+func (s Solid) Face(id uint32) (f SolidFace) {
+	s.d.read(func(sk *sketch.Sketch) {
+		tp := s.topology(sk)
+		for _, pf := range tp.FacesWithID(srf.FaceID(id)) {
+			f = s.face(tp, tp.SheetOf(pf))
+			return
+		}
+		fail("no face of the solid has the identity %#x", id)
+	})
+	return f
+}
+
 // EdgeAt is the edge nearest the point p, which must be within a
 // hundredth of a millimetre of it.
 func (s Solid) EdgeAt(p Vec) (e SolidEdge) {

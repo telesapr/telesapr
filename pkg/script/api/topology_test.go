@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 var slotModel = filepath.Join("..", "..", "..", "testdata", "topo", "slot.tlspr")
@@ -246,4 +248,44 @@ func TestSolidSheets(t *testing.T) {
 	if r := f.Check(); !r.Sound() || math.Abs(r.Volume-want) > 1e-3*want {
 		t.Errorf("the fillet: %s, want volume %g", r.Summary(), want)
 	}
+}
+
+// An extruded circle's side is one face of four patches, and each
+// patch's identity names it (roadmap 14.1).
+func TestFaceByAnyPatch(t *testing.T) {
+	d := New()
+	d.Circle(V(0, 0, 0), 5)
+	ex := d.Extrude(10, "")
+	s := ex.Solid()
+	var side SolidFace
+	for _, f := range s.Faces() {
+		if f.Patches() == 4 {
+			side = f
+		}
+	}
+	if side.Patches() != 4 {
+		t.Fatal("no face of four patches")
+	}
+	var ids []uint32
+	d.read(func(sk *sketch.Sketch) {
+		tp := s.topology(sk)
+		_, sh := side.resolve(sk)
+		for _, pf := range tp.Sheets[sh].Faces {
+			ids = append(ids, uint32(tp.Faces[pf].ID))
+		}
+	})
+	if len(ids) != 4 || ids[0] == ids[1] {
+		t.Fatalf("patch identities %x", ids)
+	}
+	for _, id := range ids {
+		if f := s.Face(id); f.ID() != side.ID() {
+			t.Errorf("%#x names face %#x, not the side %#x", id, f.ID(), side.ID())
+		}
+	}
+	defer func() {
+		if _, ok := recover().(error); !ok {
+			t.Error("no face for an identity not in the solid")
+		}
+	}()
+	s.Face(0x12345)
 }

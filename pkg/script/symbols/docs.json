@@ -5061,6 +5061,10 @@
 						"decl": "func (s Solid) Euler() (chi int)",
 						"text": "Euler is the solid's Euler characteristic, V - E + F less the holes\nin faces: 2 for a solid with no hole through it, 0 for one with one."
 					},
+					"Face": {
+						"decl": "func (s Solid) Face(id uint32) (f SolidFace)",
+						"text": "Face is the face with identity id, as SolidFace.ID gives it: the\nface of which a patch has that identity, whichever patch it is, so a\nface of several patches can be named by any of theirs (an extruded\ncircle's side by any quarter's). It fails for an identity no patch\nof the solid has (roadmap 14.1)."
+					},
 					"FaceAt": {
 						"decl": "func (s Solid) FaceAt(p Vec) (f SolidFace)",
 						"text": "FaceAt is the face p lies on, within a hundredth of a millimetre."
