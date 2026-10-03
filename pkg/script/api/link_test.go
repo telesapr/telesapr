@@ -59,3 +59,33 @@ func TestLinkStep(t *testing.T) {
 		}()
 	}
 }
+
+// Linking a STEP file is one undo step: undo takes the link group and
+// its mesh away, and redo brings them back, loaded again.
+func TestLinkStepUndo(t *testing.T) {
+	d := New()
+	step := d.Host().(*SketchHost).BeginEval
+	step()
+	before := names(d.Groups())
+	g, err := d.Link(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "cylinder.step"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := names(d.Groups())
+	volume := g.Check().Volume
+	if !d.Undo() {
+		t.Fatal("no undo step")
+	}
+	if got := names(d.Groups()); got != before {
+		t.Fatalf("undo left %q, want %q", got, before)
+	}
+	if !d.Redo() {
+		t.Fatal("no redo step")
+	}
+	if got := names(d.Groups()); got != after {
+		t.Fatalf("redo gave %q, want %q", got, after)
+	}
+	if v := d.Active().Check().Volume; v != volume {
+		t.Errorf("after redo the link's volume is %g, was %g", v, volume)
+	}
+}

@@ -1,9 +1,11 @@
 package sketch_test
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -197,4 +199,56 @@ func TestMirrorChained(t *testing.T) {
 	if r := tr.Check(); !r.Sound() || math.Abs(r.Volume-4000) > 1e-6 {
 		t.Fatalf("translate of a mirror: %s", r.String())
 	}
+}
+
+// TestMirrorSweep mirrors a block, with a hole through it or not, in
+// the YZ plane, at gaps from the plane down to touching it, with the
+// original kept or not, and requires a sound solid of twice the
+// block's volume, or once without the original. The rate allowed, none,
+// was fixed before the sweep was run (roadmap 12.8); a mirror in a
+// plane of the solid's own, whose faces coincide, is 13.4's.
+func TestMirrorSweep(t *testing.T) {
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("gap", 0, 0.5, 5),
+			sweep.Floats("w", 1, 10),
+			sweep.Floats("h", 1, 10),
+			sweep.Floats("depth", 0.5, 5, 20),
+			sweep.Bools("hole"),
+			sweep.Bools("keep"),
+		},
+		MaxFailRate: 0,
+		Sample:      16,
+	}
+	grid.Run(func(p sweep.Point) error {
+		gap, w, h, depth := p.Float("gap"), p.Float("w"), p.Float("h"), p.Float("depth")
+		// The hole is in the block's profile: a mirror reflects its
+		// source group, the extrusion, and not the solid so far (15.5).
+		d := api.New()
+		fineChord(d)
+		d.Rect(api.V(gap, 0, 0), api.V(gap+w, h, 0))
+		want := w * h * depth
+		if p.Bool("hole") {
+			r := math.Min(w, h) / 4
+			d.Circle(api.V(gap+w/2, h/2, 0), r)
+			want -= math.Pi * r * r * depth
+		}
+		d.Extrude(depth, "")
+		m := d.Mirror(d.Workplane("YZ"), "")
+		if p.Bool("keep") {
+			want *= 2
+		} else {
+			m.SetKeepOriginal(false)
+		}
+		r := m.Check()
+		switch {
+		case m.Problem() != "":
+			return fmt.Errorf("problem: %s", m.Problem())
+		case !r.Sound():
+			return fmt.Errorf("unsound: %s", r.String())
+		case math.Abs(r.Volume-want) > 5e-3*want:
+			return fmt.Errorf("volume %g, want %g", r.Volume, want)
+		}
+		return nil
+	}).Require(t)
 }

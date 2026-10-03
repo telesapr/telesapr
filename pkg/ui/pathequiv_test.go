@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/script"
 	"github.com/telesapr/telesapr/pkg/script/api"
@@ -86,6 +87,15 @@ func TestPathEquivalenceMoveGroup(t *testing.T) {
 // A sketch suppressed whole through its group screen, and by a script.
 func TestPathEquivalenceSuppressAll(t *testing.T) {
 	requireSamePaths(t, "path_suppress_all", "path_suppress_all")
+}
+
+// An inch document made through View > Dimension Units, and by a
+// script: the file's units line comes from either.
+func TestPathEquivalenceUnits(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_units", "path_units")
+	if ui.Units != core.UnitInches {
+		t.Errorf("the interface's document is in %v", ui.Units)
+	}
 }
 
 // An extrusion deleted from its group screen, and by a script.
