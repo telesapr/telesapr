@@ -1,0 +1,34 @@
+# Fillet edges round a rounded outline (an extension): a rectangle with
+# a corner rounded by Sketch > Tangent Arc at Point, extruded; one top
+# side picked and New Group > Fillet Edges rounds it and goes on round
+# the arc and the next side, which it meets smoothly, ending at the
+# sharp corners. Check Solid finds it sound, and again at a new radius.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+move 380 330
+down L 380 330
+up L 380 330
+key a shift
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+menu New Group|Fillet Edges
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 150 125
+twdown L 150 125
+twup L 150 125
+edit 3
+tw
+answer ok
+menu Analyze|Check Solid

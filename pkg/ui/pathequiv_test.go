@@ -197,6 +197,16 @@ func TestPathEquivalenceFilletConcave(t *testing.T) {
 	}
 }
 
+// A side of a rectangle with a corner rounded by a tangent arc, extruded,
+// picked with the mouse and rounded on round the arc, and the same made
+// by a script.
+func TestPathEquivalenceFilletOutline(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_fillet_outline", "path_fillet_outline")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
+		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
 // A circle of an extrusion picked with the mouse and rounded, and the
 // same made by a script.
 func TestPathEquivalenceFilletCircle(t *testing.T) {
