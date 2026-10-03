@@ -1,0 +1,11 @@
+# The frustum of testdata/topo/frustum.spcs, the circle its top's rim
+# traces picked on the turned view and rounded; the same as
+# path_fillet_cone.go makes (TestPathEquivalenceFilletCone).
+file $testdata/topo/frustum.spcs
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+move 370 295
+down L 370 295
+up L 370 295
+menu New Group|Fillet Edges
