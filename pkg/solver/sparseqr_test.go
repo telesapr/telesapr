@@ -167,7 +167,7 @@ func TestSparseQRVsEigen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer want.Close()
+	defer func() { _ = want.Close() }()
 	sc := bufio.NewScanner(want)
 	line := func() string {
 		if !sc.Scan() {

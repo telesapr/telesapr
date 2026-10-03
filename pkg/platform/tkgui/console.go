@@ -100,28 +100,28 @@ func (p *Platform) CreateConsole(parent platform.Window) platform.Console {
 
 	// The line being typed, at the bottom, after its prompt.
 	bottom := frame.New(c.top, p.newName("entry"), frame.Background(consoleInputBg))
-	pack.Pack(bottom, pack.SideOpt(pack.Bottom), pack.FillOpt(pack.FillX))
+	_ = pack.Pack(bottom, pack.SideOpt(pack.Bottom), pack.FillOpt(pack.FillX))
 	c.prompt = label.New(bottom, p.newName("prompt"), label.Text(""),
 		label.Background(consoleInputBg), label.Foreground(consoleTags[platform.ConsoleInput].color),
 		label.FontOpt(consoleFont), label.Anchor(option.AnchorNW), label.BorderWidth(0),
 		label.PadX(0), label.PadY(0))
-	pack.Pack(c.prompt, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillY))
+	_ = pack.Pack(c.prompt, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillY))
 	c.input = text.New(bottom, p.newName("input"), text.Width(80), text.Height(3),
 		text.Background(consoleInputBg), text.Foreground("#ffffff"), text.FontOpt(consoleFont),
 		text.BorderWidthOpt(0), text.HighlightThickness(0), text.WrapModeOpt(text.WrapChar),
 		text.PadXOpt(0), text.PadYOpt(0))
-	pack.Pack(c.input, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillBoth), pack.Expand(true))
+	_ = pack.Pack(c.input, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillBoth), pack.Expand(true))
 
 	// Above it, everything so far.
 	c.scroll = scrollbar.New(c.top, p.newName("scroll"), scrollbar.OrientOpt(scrollbar.Vertical),
 		scrollbar.CommandOpt(c.scrolled))
-	pack.Pack(c.scroll, pack.SideOpt(pack.Right), pack.FillOpt(pack.FillY))
+	_ = pack.Pack(c.scroll, pack.SideOpt(pack.Right), pack.FillOpt(pack.FillY))
 	c.log = text.New(c.top, p.newName("log"), text.Width(80), text.Height(20),
 		text.Background(consoleBg), text.Foreground(consoleFg), text.FontOpt(consoleFont),
 		text.BorderWidthOpt(0), text.HighlightThickness(0), text.WrapModeOpt(text.WrapChar),
 		text.UndoOpt(false), text.ReadOnly(true),
 		text.YScrollCommand(func(first, last float64) { c.scroll.Set(first, last) }))
-	pack.Pack(c.log, pack.SideOpt(pack.Top), pack.FillOpt(pack.FillBoth), pack.Expand(true))
+	_ = pack.Pack(c.log, pack.SideOpt(pack.Top), pack.FillOpt(pack.FillBoth), pack.Expand(true))
 	for _, t := range consoleTags {
 		c.log.TagConfigure(t.tag, text.TagForeground(t.color))
 	}
@@ -168,10 +168,10 @@ func (c *Console) typed() string {
 
 // setTyped puts s in the box, with the cursor after it.
 func (c *Console) setTyped(s string) {
-	c.input.Delete("1.0", c.input.EndIndex())
-	c.input.Insert("1.0", s)
-	c.input.SetInsertPos(c.input.EndIndex())
-	c.input.See(c.input.EndIndex())
+	_ = c.input.Delete("1.0", c.input.EndIndex())
+	_ = c.input.Insert("1.0", s)
+	_ = c.input.SetInsertPos(c.input.EndIndex())
+	_ = c.input.See(c.input.EndIndex())
 }
 
 // onReturn enters what is in the box; with Shift it is left to the
@@ -244,9 +244,9 @@ func (c *Console) Print(kind platform.ConsoleKind, s string) {
 		return
 	}
 	start := c.log.EndIndex()
-	c.log.Insert(start, s)
-	c.log.TagAdd(consoleTags[kind].tag, start, c.log.EndIndex())
-	c.log.See(c.log.EndIndex())
+	_ = c.log.Insert(start, s)
+	_ = c.log.TagAdd(consoleTags[kind].tag, start, c.log.EndIndex())
+	_ = c.log.See(c.log.EndIndex())
 }
 
 // Text is everything the console shows.
@@ -255,7 +255,7 @@ func (c *Console) Text() string { return c.log.Get("1.0", c.log.EndIndex()) }
 // SetPrompt sets what stands before the box.
 func (c *Console) SetPrompt(prompt string) {
 	c.promptText = prompt
-	c.prompt.Configure(label.Text(prompt))
+	_ = c.prompt.Configure(label.Text(prompt))
 }
 
 // SetBusy says whether something runs; then Return enters nothing.
@@ -269,7 +269,7 @@ func (c *Console) SetBusy(busy bool) {
 }
 
 // Clear drops the text.
-func (c *Console) Clear() { c.log.Delete("1.0", c.log.EndIndex()) }
+func (c *Console) Clear() { _ = c.log.Delete("1.0", c.log.EndIndex()) }
 
 // IsVisible reports whether the console is shown.
 func (c *Console) IsVisible() bool { return c.frame.visible }

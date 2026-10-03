@@ -127,23 +127,6 @@ func (c *SContour) AnyEdgeMidpoint() geom.Vector {
 	return c.Points[0].P.Plus(c.Points[1].P).ScaledBy(0.5)
 }
 
-func wrapMod(a, n int) int {
-	r := a % n
-	if r < 0 {
-		r += n
-	}
-	return r
-}
-
-func containsVec(vs []geom.Vector, v geom.Vector) bool {
-	for i := range vs {
-		if vs[i].Equals(v) {
-			return true
-		}
-	}
-	return false
-}
-
 // CopyInto adds the contour's points to dest (C++ SContour::CopyInto).
 func (c *SContour) CopyInto(dest *SContour) {
 	for _, sp := range c.Points {

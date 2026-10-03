@@ -11,6 +11,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/version"
 )
 
 // lf makes a method value a LinkFunction for Printf.
@@ -142,10 +143,10 @@ func (tw *TextWindow) ScreenShowEditView(link int, v uint32) {
 	tw.GoToScreen(ScreenEditView)
 }
 
-// ScreenGoToWebsite opens the website (C++
+// ScreenGoToWebsite opens the project's home (C++
 // TextWindow::ScreenGoToWebsite).
 func (tw *TextWindow) ScreenGoToWebsite(link int, v uint32) {
-	tw.ss.Platform.OpenInBrowser("http://solvespace.com/txtlink")
+	tw.ss.Platform.OpenInBrowser(version.Repository)
 }
 
 // ShowListOfGroups is the home screen: every group in the sketch, with

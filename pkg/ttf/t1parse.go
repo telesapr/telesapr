@@ -590,51 +590,6 @@ func (p *psParser) toTokenArray(max int) ([]t1Token, int) {
 	return tokens, n
 }
 
-// psToCoordArray is ps_tocoordarray, counting only when coords is nil.
-func psToCoordArray(b []byte, cur *int, limit int, maxCoords int, coords []int16) int {
-	c := *cur
-	count := 0
-	defer func() { *cur = c }()
-	if c >= limit {
-		return count
-	}
-	var ender byte
-	if b[c] == '[' {
-		ender = ']'
-	} else if b[c] == '{' {
-		ender = '}'
-	}
-	if ender != 0 {
-		c++
-	}
-	for c < limit {
-		psSkipSpaces(b, &c, limit)
-		if c >= limit {
-			return count
-		}
-		if b[c] == ender {
-			c++
-			break
-		}
-		old := c
-		if coords != nil && count >= maxCoords {
-			break
-		}
-		v := int16(psConvToFixed(b, &c, limit, 0) >> 16)
-		if coords != nil {
-			coords[count] = v
-		}
-		if old == c {
-			return -1
-		}
-		count++
-		if ender == 0 {
-			break
-		}
-	}
-	return count
-}
-
 // psToFixedArray is ps_tofixedarray, counting only when values is nil.
 func psToFixedArray(b []byte, cur *int, limit int, maxValues int, values []int64, powerTen int64) int {
 	c := *cur

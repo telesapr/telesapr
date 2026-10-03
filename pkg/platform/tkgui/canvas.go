@@ -132,7 +132,7 @@ func makeCanvasWindow(win *window.Window) {
 }
 
 func (c *canvas) pack() {
-	pack.Pack(c, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillBoth), pack.Expand(true))
+	_ = pack.Pack(c, pack.SideOpt(pack.Left), pack.FillOpt(pack.FillBoth), pack.Expand(true))
 }
 
 // invalidate schedules one render at idle time.

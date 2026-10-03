@@ -72,12 +72,6 @@ func (ss *SolveSpaceUI) constrain(typ core.ConstraintType, ptA, ptB, entityA cor
 	return ss.SK.Constrain(typ, ptA, ptB, entityA, core.HEntity{}, false, false)
 }
 
-// constrainFull is Constraint::Constrain with all of its arguments.
-func (ss *SolveSpaceUI) constrainFull(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity,
-	other, other2 bool) core.HConstraint {
-	return ss.SK.Constrain(typ, ptA, ptB, entityA, entityB, other, other2)
-}
-
 // tryConstrain adds a constraint unless it would be redundant (C++
 // Constraint::TryConstrain).
 func (ss *SolveSpaceUI) tryConstrain(typ core.ConstraintType, ptA, ptB, entityA core.HEntity) core.HConstraint {

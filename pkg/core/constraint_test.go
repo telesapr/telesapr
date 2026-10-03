@@ -88,10 +88,11 @@ func TestConstraintBaseClear(t *testing.T) {
 			PtA:   HEntity{V: 0x1234},
 		},
 	}
+	// Clear is a no-op, as C++'s is; it must not panic or change c.
+	before := *c
 	c.Clear()
-	// Clear is currently a no-op stub. Verify no panic.
-	if c == nil {
-		t.Errorf("Clear should not nil out the constraint")
+	if c.ConstraintBase != before.ConstraintBase {
+		t.Errorf("Clear changed the constraint: %+v", c.ConstraintBase)
 	}
 }
 

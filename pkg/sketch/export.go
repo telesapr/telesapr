@@ -89,11 +89,11 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 	sk.ShowNakedEdges(true)
 	bw := bufio.NewWriter(f)
 	if err := write(bw); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	if err := bw.Flush(); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	return f.Close()

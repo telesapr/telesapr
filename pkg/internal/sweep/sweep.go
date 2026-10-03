@@ -10,6 +10,7 @@ package sweep
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -211,15 +212,26 @@ func call(fn func(p Point) error, p Point) (err error) {
 }
 
 // Require logs every failure and the summary, and fails t when more
-// failed than the grid allows.
+// failed than the grid allows. A run of the whole grid also fails t
+// when fewer failed than the grid allows, so that an allowance is
+// lowered as soon as the code does better, and cannot go stale.
 func (r Report) Require(t testing.TB) {
 	t.Helper()
 	for _, f := range r.Failed {
 		t.Logf("failed at %s: %v", f.Point.Label(), f.Err)
 	}
-	if r.FailRate() > r.MaxFailRate {
+	switch {
+	case r.FailRate() > r.MaxFailRate:
 		t.Errorf("sweep: %s", r)
-	} else {
+	case r.Full && len(r.Failed) < r.allowed():
+		t.Errorf("sweep: %s; the grid does better than it allows: lower the allowance to %d of %d",
+			r, len(r.Failed), r.Runs)
+	default:
 		t.Logf("sweep: %s", r)
 	}
+}
+
+// allowed is how many of the runs may fail.
+func (r Report) allowed() int {
+	return int(math.Floor(r.MaxFailRate*float64(r.Runs) + 1e-9))
 }

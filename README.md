@@ -1,48 +1,69 @@
 # TeleSAPR
 
-TeleSAPR is a parametric 2D/3D CAD tool written in Go. It started as a
-port of SolveSpace and is now a separate project: it no longer tracks
-SolveSpace's behaviour or file format.
+TeleSAPR is a parametric 2D/3D CAD program written in Go. It began as a port of
+[SolveSpace](https://solvespace.com) and is now a separate project: it no longer tracks
+SolveSpace's behaviour or file format. It saves its own text format, `.tlspr`, and imports
+SolveSpace's `.slvs`.
 
-## Project Structure
+It is version 0.1.0, built and tested on Linux. See [`ROADMAP-JUMP.md`](ROADMAP-JUMP.md) for
+where it is going.
 
+## What it adds to SolveSpace
+
+- **Solid features**: fillets (rounded and filled edges, corners, edges of their own radius),
+  chamfers, shell, ruled loft, sweep along a path, mirror, and screw threads.
+- **Edges by name**: any edge of a solid can be picked on the model, including edges no sketch
+  entity draws, and is saved by a name that holds when the model upstream changes.
+- **Parameters**: named values and expressions that drive dimensions; the document's own unit of
+  length.
+- **History**: groups moved in the history, suppressed with what uses them, and what a deletion
+  took listed.
+- **Sketch feedback**: entities coloured by how free they are, conflicting constraints marked,
+  measuring without a constraint, and a search over every command.
+- **Section view**, an OpenGL renderer, and **Check Solid**, which says whether a solid is sound.
+- **STEP files** linked as reference meshes, and STEP export with one surface per face.
+- **Scripting in Go**, and **drawing with an AI model** through MCP.
+
+The [user's guide](docs/guide/README.md) has a page for each, built on an example script.
+
+## Build
+
+TeleSAPR needs Go 1.27, X11 and OpenGL development files, and its windowing library
+[takigo](https://github.com/msorc/takigo), which is not published yet: `go.mod` replaces it with
+a checkout beside this one.
+
+```bash
+# Debian and Ubuntu; other distributions have the same libraries.
+sudo apt-get install libx11-dev libxft-dev libfontconfig1-dev libgl-dev
+
+git clone https://github.com/msorc/takigo        # beside telesapr/
+git clone https://github.com/telesapr/telesapr
+cd telesapr
+make build                                      # bin/telesapr and bin/telesapr-cli
+sudo make install                               # with the desktop entry, icons and MIME type
 ```
-cmd/telesapr/        # The GUI
-cmd/telesapr-cli/    # The command-line tool
-pkg/
-├── check/           # Invariants of a sound solid: the test oracle, Analyze > Check Solid
-├── core/            # Handles, entities, constraints, expressions
-├── geom/            # Geometric primitives and algorithms
-├── libm/            # Bit-exact libm functions matching C++ output
-├── mcpserver/       # The drawing as tools for an MCP client (telesapr-cli mcp)
-├── persist/slvs/    # .slvs file load/save
-├── platform/        # Windows, menus and dialogs (takigo, headless)
-├── render/          # Canvas and the software renderer
-├── sketch/          # Sketch, groups, requests, export, the screw thread
-├── script/          # Go scripts on a sketch: interpreter, and the api they use
-├── solver/          # Constraint solver (sparse QR, COLAMD)
-├── srf/             # Surfaces, curves, booleans, meshing
-├── thread/          # Screw thread standards and profiles
-├── ttf/             # TrueType/FreeType font loading and text outlines
-└── ui/              # Graphics and text windows, menus, screens
-```
 
-`cmd/telesapr` is the application, `cmd/telesapr-cli` the command line
-tool (`solvespace-cli`'s counterpart): `telesapr-cli --help` lists its
-commands. See `ROADMAP-JUMP.md` for where the project is going.
+`make help` lists the other targets. `make ci` runs what the GitHub workflow does: formatting,
+vet, the generated-symbol check, the tests with coverage, the race detector on the engine
+packages, the GUI tests under Xvfb, and the linter.
 
-## Scripting
+## Using it
 
-A sketch can be read and changed from Go scripts, run by an embedded
-interpreter ([yaegi](https://github.com/traefik/yaegi)):
+`telesapr [file.tlspr]` opens the application. `telesapr-cli` works without a window:
+`telesapr-cli --help` lists its commands, which export views, meshes and surfaces, convert
+`.slvs` files (`telesapr-cli convert`), and run scripts.
 
-- In the application, `Script > Show Console` opens a console where Go
-  is typed a line at a time and run on the drawing: `doc` is the sketch,
-  what a line draws shows at once, and each line is one step of undo.
-  `Script > Run File...` and `telesapr --script file.go` run a file.
-- Without a window, `telesapr-cli run [sketch.slvs] script.go [args]`
-  runs a file, `telesapr-cli repl` reads lines from standard input and
-  `telesapr-cli eval` takes them from the command line.
+### Scripting
+
+A sketch can be read and changed from Go scripts, run by an embedded interpreter
+([yaegi](https://github.com/traefik/yaegi)):
+
+- In the application, Script > Show Console opens a console where Go is typed a line at a time
+  and run on the drawing: `doc` is the sketch, what a line draws shows at once, and each line
+  is one step of undo. Script > Run File... and `telesapr --script file.go` run a file.
+- Without a window, `telesapr-cli run [model.tlspr] script.go [args]` runs a file,
+  `telesapr-cli repl` reads lines from standard input and `telesapr-cli eval` takes them from
+  the command line.
 
 ```go
 r := doc.Rect(V(0, 0, 0), V(40, 25, 0)) // mm, in the active workplane
@@ -54,38 +75,72 @@ fmt.Println(plate.Volume())
 doc.Export("plate.stl")
 ```
 
-What a script sees of the sketch is `pkg/script/api` (`go doc
-./pkg/script/api`). In a console `help()` lists the most used of it,
-`help(x)` says what a value is and what methods it has, and
-`help("Group.Bounds")` or `help("api")` looks a name up.
-A script file is a Go program that imports that package and starts
-from `api.Current()`, so it can also be compiled as it is; see
-`examples/scripts`. `pkg/script` is the interpreter around it, and
-`pkg/script/symbols` the generated tables of what scripts can import
-(`make generate` after changing what those packages export).
+What a script sees of the sketch is `pkg/script/api` (`go doc ./pkg/script/api`). In a console
+`help()` lists the most used of it, `help(x)` says what a value is and what methods it has, and
+`help("Group.Bounds")` or `help("api")` looks a name up. A script file is a Go program that
+imports that package and starts from `api.Current()`, so it can also be compiled as it is; see
+[`examples/scripts`](examples/scripts), each of which a test runs.
 
-## Drawing with an AI model
+### Drawing with an AI model
 
-An AI model can draw in the window you have open from what you say in
-plain English. TeleSAPR offers the drawing to any Model Context
-Protocol client, which brings the model; it has none of its own and
-needs no API key.
+An AI model can draw in the window you have open from what you say in plain English. TeleSAPR
+offers the drawing to any Model Context Protocol client, which brings the model; it has none of
+its own and needs no API key.
 
-- In the application, turn on `Script > Allow AI Connections`.
+- In the application, turn on Script > Allow AI Connections.
 - Tell the client to start `telesapr-cli mcp`, for Claude Code with
   `claude mcp add telesapr -- telesapr-cli mcp`.
 
-The model writes scripts against `pkg/script/api`, reads the drawing in
-words and looks at pictures of it. Each script shows in the script
-console and is one step of undo. `telesapr-cli mcp --headless` does
-the same without a window. See `docs/ai.md`.
+The model writes scripts against `pkg/script/api`, reads the drawing in words and looks at
+pictures of it. Each script shows in the script console and is one step of undo.
+`telesapr-cli mcp --headless` does the same without a window. See [`docs/ai.md`](docs/ai.md).
 
-## Build
+## Project structure
 
-```bash
-go build ./...
 ```
+cmd/telesapr/          The application
+cmd/telesapr-cli/      The command-line tool
+dist/freedesktop/      Desktop entry, icons and MIME type
+docs/                  The user's guide, the .tlspr format, the AI guide, the audit
+examples/scripts/      Example scripts, one or more per feature
+pkg/
+├── check/             Invariants of a sound solid: the test oracle, Analyze > Check Solid
+├── core/              Handles, entities, constraints, expressions
+├── dxf/               DXF writing
+├── geom/              Geometric primitives and algorithms
+├── internal/          The constrained Delaunay triangulator, C's printf, goldens,
+│                      parallel loops and robustness sweeps
+├── libm/              Bit-exact libm functions, as glibc computes them
+├── mcpserver/         The drawing as tools for an MCP client (telesapr-cli mcp)
+├── persist/
+│   ├── tlspr/         TeleSAPR's file format, .tlspr
+│   ├── slvs/          SolveSpace's .slvs, read for import
+│   ├── convert/       .slvs files and what they link imported as .tlspr
+│   ├── link/          Loading what link groups link: models, STL and STEP files
+│   └── step/          STEP (ISO 10303-21) reading and tessellation
+├── platform/          Windows, menus and dialogs (takigo, headless)
+├── render/            Canvas, the software renderer (soft) and the OpenGL one (gl)
+├── res/               Bundled icons and fonts
+├── script/            Go scripts on a sketch: the interpreter, the api they use, and
+│                      agent, for programs that draw by writing scripts
+├── sketch/            Sketch, groups and their regeneration, the solid features
+├── solver/            Constraint solver (sparse QR, COLAMD)
+├── srf/               Surfaces, curves, Booleans, meshing
+├── thread/            Screw thread standards and profiles
+├── topo/              Topology of a solid: faces, edges, names, local edits
+├── ttf/               TrueType and other font loading, text outlines
+├── ui/                Graphics and text windows, menus, screens
+└── version/           TeleSAPR's version
+testdata/              Fixtures and goldens
+```
+
+## Licence
+
+TeleSAPR is free software under the GNU General Public License, version 3 or later, as
+SolveSpace is; see [`LICENSE`](LICENSE). [`NOTICE`](NOTICE) credits the code it ports from other
+projects.
 
 ## Origin
 
-The code base was ported from SolveSpace's C++: https://github.com/solvespace/solvespace
+The code base was ported from SolveSpace's C++, by Jonathan Westhues and the other SolveSpace
+authors: https://github.com/solvespace/solvespace

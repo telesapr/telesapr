@@ -45,7 +45,9 @@ func TestStyleDefaults(t *testing.T) {
 		{"partial", partial, block("thin", "0.5")},
 	} {
 		path := filepath.Join(t.TempDir(), tc.name+".slvs")
-		os.WriteFile(path, tc.data, 0o644)
+		if err := os.WriteFile(path, tc.data, 0o644); err != nil {
+			t.Fatal(err)
+		}
 		doc, err := LoadFile(path)
 		if err != nil {
 			t.Fatal(err)

@@ -110,9 +110,8 @@ func TestSweepGrid(t *testing.T) {
 			sweep.Floats("up", 10, -10),
 			sweep.Floats("tilt", 0, 25),
 		},
-		MaxFailRate:       sweepGridMaxFailRate,
-		Sample:            12,
-		SampleMaxFailRate: 2.0 / 12,
+		MaxFailRate: sweepGridMaxFailRate,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		rho, r, up := p.Float("rho"), p.Float("r"), p.Float("up")
@@ -165,12 +164,10 @@ func TestSweepGrid(t *testing.T) {
 }
 
 // sweepGridMaxFailRate is the fraction of TestSweepGrid's grid allowed
-// to fail: what the whole grid gave on 2026-10-03, 7 of 72, all with
-// the thinnest tube (0.5 about bends of 5 and 10). Their meshes are
-// watertight and of the right volume, but the solid check finds edges
-// of the turn's triangulation crossing a neighbouring row by about
-// 2e-4 mm. The turn's triangles are the same as a Revolve's of the
-// same circle, and a Revolve of it shows the same at some chord
-// tolerances (0.02%, 30 degrees): the grid triangulation of thin tori,
-// not the sweep's joints.
-const sweepGridMaxFailRate = 7.0 / 72
+// to fail: none, as the whole grid gave in the review of 2026-10-03.
+// When the sweep was written, earlier that day, 7 of 72 failed, all
+// with the thinnest tube (0.5 about bends of 5 and 10): the solid
+// check found edges of the turn's triangulation, the grid
+// triangulation of thin tori, crossing a neighbouring row by about
+// 2e-4 mm.
+const sweepGridMaxFailRate = 0

@@ -219,8 +219,8 @@ func init() {
 		{1, "Allow &AI Connections", CmdScriptAgent, 0, kc, mScr},
 
 		{0, "&Help", CmdNone, 0, kn, mHelp},
-		{1, "&Website / Manual", CmdWebsite, 0, kn, mHelp},
-		{1, "&Go to GitHub commit", CmdGithub, 0, kn, mHelp},
+		{1, "&User's Guide", CmdWebsite, 0, kn, mHelp},
+		{1, "Go to &GitHub", CmdGithub, 0, kn, mHelp},
 		{1, "&About", CmdAbout, 0, kn, mHelp},
 	}
 }

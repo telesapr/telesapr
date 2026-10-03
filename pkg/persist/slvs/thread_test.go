@@ -418,9 +418,8 @@ func TestThreadSweep(t *testing.T) {
 			sweep.Floats("tol", 0.5, 0.3, 0.2, 0.1, 0.05, 0.03, 0.02, 0.01),
 			sweep.Strings("case", names...),
 		},
-		MaxFailRate:       threadSweepMaxFailRate,
-		Sample:            16,
-		SampleMaxFailRate: 1.0 / 16,
+		MaxFailRate: threadSweepMaxFailRate,
+		Sample:      16,
 	}
 	grid.Run(func(p sweep.Point) error {
 		_, _, res := byName[p.String("case")].build(t, p.Float("tol"))
@@ -432,12 +431,11 @@ func TestThreadSweep(t *testing.T) {
 }
 
 // threadSweepMaxFailRate is the fraction of TestThreadSweep's grid
-// allowed to be unsound: what the whole grid gave on 2026-10-02 after the
-// raycast fix, 3 of 400, at 0.03% and 0.01%, none at 0.05% or coarser.
-// Before it, AddThread turned the planes up to seven times and 24 were
-// unsound; generated once, without the fix, 68 were, 27 of them at 0.5%.
-// The sample of 16 had none.
-const threadSweepMaxFailRate = 3.0 / 400
+// allowed to be unsound: none, as the whole grid gave on 2026-10-03.
+// On 2026-10-02, after the raycast fix, it was 3 of 400, at 0.03% and
+// 0.01%; before that fix AddThread turned the planes up to seven times
+// and 24 were unsound, and generated once without it 68 were.
+const threadSweepMaxFailRate = 0
 
 // TestThreadGoldensSound checks the solid of every thread golden, the
 // .tlspr ones and the C++ saves, with the invariant oracle.

@@ -32,7 +32,7 @@ help:
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
 DATADIR = $(PREFIX)/share
-FREEDESKTOP = solvespace/res/freedesktop
+FREEDESKTOP = dist/freedesktop
 ICON_SIZES = 16x16 24x24 32x32 48x48
 
 test:
@@ -78,12 +78,11 @@ fuzz:
 		GOCACHE=$(PWD)/.gocache go test $$pkg -run '^$$' -fuzz "^$$name\$$" -fuzztime $(FUZZTIME) || exit 1; \
 	done
 
-# What .github/workflows/ci.yml runs. The existing code is not
-# lint-clean, so only what changed since LINT_BASE is linted.
+# What .github/workflows/ci.yml runs, the whole tree linted.
 # The checks that rewrite or read the sources first; then the rest side
 # by side, each target's output printed when it is done.
 ci: fmt-check vet generate-check
-	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint-new
+	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint
 
 fmt-check:
 	@echo "==> gofmt -l"
@@ -107,8 +106,8 @@ lint:
 	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
 
 # Where the branch left master, so that a branch's commits are linted
-# and not only what is uncommitted; on master that is HEAD. The GitHub
-# workflow lints with golangci-lint-action's only-new-issues instead.
+# and not only what is uncommitted; on master that is HEAD. A quicker
+# check while working; make ci lints everything.
 LINT_BASE ?= $(shell git merge-base HEAD master 2>/dev/null || echo HEAD)
 
 lint-new:
@@ -131,21 +130,22 @@ build:
 	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr ./cmd/telesapr
 	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr-cli ./cmd/telesapr-cli
 
-# The desktop entry, icons and MIME type follow solvespace/res/CMakeLists.txt.
+# The desktop entry, icons and MIME type, from dist/freedesktop; the
+# layout follows SolveSpace's res/CMakeLists.txt.
 install: build
 	install -Dm755 bin/telesapr $(DESTDIR)$(BINDIR)/telesapr
 	install -Dm755 bin/telesapr-cli $(DESTDIR)$(BINDIR)/telesapr-cli
 	sed 's|@BINDIR@|$(BINDIR)|' dist/freedesktop/telesapr.desktop.in > bin/telesapr.desktop
 	install -Dm644 bin/telesapr.desktop $(DESTDIR)$(DATADIR)/applications/telesapr.desktop
 	install -Dm644 dist/freedesktop/telesapr-mime.xml $(DESTDIR)$(DATADIR)/mime/packages/telesapr-mime.xml
-	install -Dm644 $(FREEDESKTOP)/solvespace-scalable.svg \
+	install -Dm644 $(FREEDESKTOP)/telesapr.svg \
 		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/telesapr.svg
-	install -Dm644 $(FREEDESKTOP)/solvespace-scalable.svg \
+	install -Dm644 $(FREEDESKTOP)/telesapr.svg \
 		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/mimetypes/application-x-telesapr.svg
 	for s in $(ICON_SIZES); do \
-		install -Dm644 $(FREEDESKTOP)/solvespace-$$s.png \
+		install -Dm644 $(FREEDESKTOP)/telesapr-$$s.png \
 			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/telesapr.png; \
-		install -Dm644 $(FREEDESKTOP)/solvespace-$$s.png \
+		install -Dm644 $(FREEDESKTOP)/telesapr-$$s.png \
 			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-telesapr.png; \
 	done
 

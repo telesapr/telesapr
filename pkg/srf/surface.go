@@ -80,32 +80,6 @@ func STrimByEntireCurve(c core.HSCurve) STrimBy {
 	return STrimBy{Curve: c, Start: 0, Finish: 1}
 }
 
-// trimIsClosedPolygon returns true if every consecutive pair of trim
-// endpoints matches (StartP/FinishP) and the final entry's FinishP is
-// the same as the first entry's StartP (within tol). Used by
-// CopySurvesTrimAgainst's accurate path to decide whether the
-// per-surface chain-finding succeeded. A non-closed (open) polygon
-// is treated as a pipeline failure for that surface; the caller
-// falls back to the bbox-keep heuristic.
-func (s *SSurface) trimIsClosedPolygon() bool {
-	const tol = 1e-7
-	if len(s.Trim) < 3 {
-		return false
-	}
-	firstStart := s.Trim[0].StartP
-	for i := 0; i < len(s.Trim); i++ {
-		cur := &s.Trim[i]
-		next := &s.Trim[(i+1)%len(s.Trim)]
-		if cur.FinishP.DistanceTo(next.StartP) > tol {
-			return false
-		}
-	}
-	if s.Trim[len(s.Trim)-1].FinishP.DistanceTo(firstStart) > tol {
-		return false
-	}
-	return true
-}
-
 // Clear drops the trims (C++ SSurface::Clear).
 func (s *SSurface) Clear() {
 	s.Trim = nil

@@ -76,17 +76,17 @@ func Help(w io.Writer, name string) bool {
 func (e *Engine) help(values ...any) {
 	w := e.opts.Stdout
 	if len(values) == 0 {
-		fmt.Fprint(w, helpText)
+		_, _ = fmt.Fprint(w, helpText)
 		return
 	}
 	for i, v := range values {
 		if i > 0 {
-			fmt.Fprintln(w)
+			_, _ = fmt.Fprintln(w)
 		}
 		if name, ok := v.(string); ok {
 			if !helpName(w, name) {
-				fmt.Fprintf(w, "%q is a string, and nothing help knows is called that.\n", name)
-				fmt.Fprintln(w, `Names are like "api", "Group", "Group.Bounds" or "strings.ToUpper".`)
+				_, _ = fmt.Fprintf(w, "%q is a string, and nothing help knows is called that.\n", name)
+				_, _ = fmt.Fprintln(w, `Names are like "api", "Group", "Group.Bounds" or "strings.ToUpper".`)
 			}
 			continue
 		}
@@ -131,7 +131,7 @@ func listed(w io.Writer, title string, docs map[string]symbols.Doc, names []stri
 		return
 	}
 	sort.Strings(names)
-	fmt.Fprintf(w, "\n%s:\n", title)
+	_, _ = fmt.Fprintf(w, "\n%s:\n", title)
 	for _, name := range names {
 		d := docs[name]
 		// What it is goes beside a short declaration, under a long
@@ -145,7 +145,7 @@ func listed(w io.Writer, title string, docs map[string]symbols.Doc, names []stri
 		default:
 			line += "\n" + strings.Repeat(" ", 4+column+1) + about
 		}
-		fmt.Fprintln(w, "    "+line)
+		_, _ = fmt.Fprintln(w, "    "+line)
 	}
 }
 
@@ -159,7 +159,7 @@ func keys[V any](m map[string]V) []string {
 
 // helpPackage writes what a package has.
 func helpPackage(w io.Writer, importPath string, p *symbols.PackageDoc) {
-	fmt.Fprintf(w, "package %s  // import %q\n", p.Name, importPath)
+	_, _ = fmt.Fprintf(w, "package %s  // import %q\n", p.Name, importPath)
 	if p.Text != "" {
 		fmt.Fprintln(w, indent(p.Text))
 	}

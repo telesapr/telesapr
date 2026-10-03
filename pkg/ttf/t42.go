@@ -174,7 +174,7 @@ func t42ParseEncoding(f *t1Font, l *t42Loader) {
 	table := newPSTable(count)
 	l.encodingTable = table
 	for n := 0; n < count; n++ {
-		table.add(n, []byte(".notdef\x00"))
+		_ = table.add(n, []byte(".notdef\x00")) // (void) in FreeType
 	}
 
 	// Read `charcode /charname' records, or only immediates for an

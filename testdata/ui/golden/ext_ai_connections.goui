@@ -155,8 +155,8 @@ S&cript ind=0 en=1 act=0
   ---
   Allow &AI Connections ind=1 en=1 act=1
 &Help ind=0 en=1 act=0
-  &Website / Manual ind=0 en=1 act=0
-  &Go to GitHub commit ind=0 en=1 act=0
+  &User's Guide ind=0 en=1 act=0
+  Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0
 row 0  home   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -891,8 +891,8 @@ S&cript ind=0 en=1 act=0
   ---
   Allow &AI Connections ind=1 en=1 act=0
 &Help ind=0 en=1 act=0
-  &Website / Manual ind=0 en=1 act=0
-  &Go to GitHub commit ind=0 en=1 act=0
+  &User's Guide ind=0 en=1 act=0
+  Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0
 &File ind=0 en=1 act=0
   &New [Ctrl+N] ind=0 en=1 act=0
@@ -1051,6 +1051,6 @@ S&cript ind=0 en=1 act=0
   ---
   Allow &AI Connections ind=1 en=1 act=1
 &Help ind=0 en=1 act=0
-  &Website / Manual ind=0 en=1 act=0
-  &Go to GitHub commit ind=0 en=1 act=0
+  &User's Guide ind=0 en=1 act=0
+  Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0

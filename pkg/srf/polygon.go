@@ -157,8 +157,3 @@ func (p *SPolygon) OffsetInto(dest *SPolygon, r float64) {
 		p.Contours[i].OffsetInto(&dest.Contours[len(dest.Contours)-1], r)
 	}
 }
-
-const (
-	mathInfPos = 1e18
-	mathInfNeg = -1e18
-)

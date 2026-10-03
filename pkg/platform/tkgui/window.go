@@ -545,7 +545,7 @@ func keySymToUnicode(k tkplatform.KeySym) rune {
 // window does with set_icon; takigo has no iconphoto, so this sets
 // _NET_WM_ICON (cardinals: width, height, then ARGB pixels) directly.
 func setWindowIcon(win *window.Window) {
-	icon := res.LoadPng("freedesktop/solvespace-48x48.png")
+	icon := res.LoadPng("freedesktop/telesapr-48x48.png")
 	bpp := icon.BytesPerPixel()
 	vals := make([]uint32, 0, 2+icon.Width*icon.Height)
 	vals = append(vals, uint32(icon.Width), uint32(icon.Height))

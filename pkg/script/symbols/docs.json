@@ -4395,7 +4395,7 @@
 					},
 					"RunCommand": {
 						"decl": "func (d *Doc) RunCommand(label string) (err error)",
-						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. A host with no window, such as telesapr-cli,\nhas no menu to run it from, and it is an error."
+						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. telesapr-cli runs scripts on the interface\nwithout a window, so commands run there too; a document of a Go\nprogram's own, from New, has no menu to run them from, and it is an\nerror."
 					},
 					"Save": {
 						"decl": "func (d *Doc) Save(path string) (err error)",

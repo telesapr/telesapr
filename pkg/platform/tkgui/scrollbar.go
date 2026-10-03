@@ -26,7 +26,7 @@ func newScrollbar(w *Window) *scrollbarAdapter {
 
 func (s *scrollbarAdapter) pack() {
 	if s.visible {
-		pack.Pack(s.sb, pack.SideOpt(pack.Right), pack.FillOpt(pack.FillY))
+		_ = pack.Pack(s.sb, pack.SideOpt(pack.Right), pack.FillOpt(pack.FillY))
 	}
 }
 

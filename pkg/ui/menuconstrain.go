@@ -681,7 +681,8 @@ func (ss *SolveSpaceUI) MenuConstrain(id Command) {
 	for _, nc := range newcons {
 		for i := range sk.Constraints {
 			cc := &sk.Constraints[i]
-			if nc.H != cc.H && nc.ConstraintBase.Equals(&cc.ConstraintBase) {
+			// The bases are compared, and not the label or the offset.
+			if nc.H != cc.H && nc.ConstraintBase.Equals(&cc.ConstraintBase) { //nolint:staticcheck // QF1008: the base is named on purpose
 				// Oops, we already have this exact constraint. Remove the
 				// one we just added.
 				sk.RemoveConstraint(nc.H)

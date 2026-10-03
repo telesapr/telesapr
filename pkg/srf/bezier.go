@@ -314,10 +314,8 @@ func (b *SBezier) PointOnNonparallelCurve(other *SBezier, p *geom.Vector) bool {
 	tb, _ := other.ClosestPointTo(*p, false)
 	da := b.TangentAt(ta).WithMagnitude(1)
 	db := other.TangentAt(tb).WithMagnitude(1)
-	if da.Cross(db).Magnitude() < lengthEps {
-		return false
-	}
-	return true
+	// Not >=, which a NaN would fail.
+	return !(da.Cross(db).Magnitude() < lengthEps)
 }
 
 // Equals returns true if two SBezier curves have identical degree,

@@ -45,7 +45,7 @@ func (rc *recordingCanvas) f(h render.HFill) {
 }
 
 func (rc *recordingCanvas) DrawLine(a, b geom.Vector, hcs render.HStroke) {
-	fmt.Fprint(rc.w, "line")
+	_, _ = fmt.Fprint(rc.w, "line")
 	rc.p(a)
 	rc.p(b)
 	rc.s(hcs)
@@ -57,7 +57,7 @@ func (rc *recordingCanvas) DrawEdges(el *srf.SEdgeList, hcs render.HStroke) {
 	rc.s(hcs)
 	fmt.Fprintln(rc.w)
 	for _, e := range el.Edges {
-		fmt.Fprint(rc.w, " e")
+		_, _ = fmt.Fprint(rc.w, " e")
 		rc.p(e.A)
 		rc.p(e.B)
 		fmt.Fprintln(rc.w)

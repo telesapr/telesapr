@@ -518,7 +518,7 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		buv := geom.Point2d{U: se.B.X, V: se.B.Y}
 		var surfN, pt, enin, enout geom.Vector
 		pt, enin, enout = ret.edgeNormalsWithinSurface(auv, buv, into, sha, shb, se.AuxA, &surfN)
-		var indirShell, outdirShell SShellClass = ShellOutside, ShellOutside
+		indirShell, outdirShell := ShellOutside, ShellOutside
 		agnst.classifyEdge(&indirShell, &outdirShell,
 			ret.PointAtUv(auv), ret.PointAtUv(buv),
 			pt, enin, enout, surfN)
@@ -543,9 +543,9 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		buv := geom.Point2d{U: se.B.X, V: se.B.Y}
 		var surfN, pt, enin, enout geom.Vector
 		pt, enin, enout = ret.edgeNormalsWithinSurface(auv, buv, into, sha, shb, se.AuxA, &surfN)
-		var indirShell, outdirShell SShellClass = ShellOutside, ShellOutside
-		var indirOrig, outdirOrig SShellClass = ShellInside, ShellOutside
-		var cThis BspUvClass = BspUvOutside
+		indirShell, outdirShell := ShellOutside, ShellOutside
+		indirOrig, outdirOrig := ShellInside, ShellOutside
+		cThis := BspUvOutside
 		if origBsp != nil {
 			cThis = origBsp.ClassifyEdge(auv, buv, ret)
 		}

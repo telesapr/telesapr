@@ -13,15 +13,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/version"
 )
-
-// PackageVersion is the SolveSpace version this program ports (C++
-// PACKAGE_VERSION, which names the commit).
-const PackageVersion = "3.2~cbff7a91"
-
-// gitHashURL is the commit of SolveSpace the port follows (C++
-// GIT_HASH_URL).
-const gitHashURL = "https://github.com/solvespace/solvespace/commit/cbff7a91"
 
 // MenuAnalyze runs an Analyze menu command (C++
 // SolveSpaceUI::MenuAnalyze).
@@ -311,13 +304,14 @@ func (ss *SolveSpaceUI) UpdateCenterOfMass() {
 func (ss *SolveSpaceUI) MenuHelp(id Command) {
 	switch id {
 	case CmdWebsite:
-		ss.Platform.OpenInBrowser("http://solvespace.com/helpmenu")
+		ss.Platform.OpenInBrowser(version.Guide)
 
 	case CmdAbout:
 		ss.Message(
-			"This is TeleSAPR, based on SolveSpace version %s.\n"+
+			"This is TeleSAPR version %s.\n"+
 				"\n"+
-				"For more information on SolveSpace, see http://solvespace.com/\n"+
+				"TeleSAPR began as a port of SolveSpace version %s;\n"+
+				"for SolveSpace, see https://solvespace.com/\n"+
 				"\n"+
 				"TeleSAPR is free software: you are free to modify\n"+
 				"and/or redistribute it under the terms of the GNU\n"+
@@ -326,11 +320,12 @@ func (ss *SolveSpaceUI) MenuHelp(id Command) {
 				"There is NO WARRANTY, to the extent permitted by\n"+
 				"law. For details, visit http://gnu.org/licenses/\n"+
 				"\n"+
-				"© 2008-%d Jonathan Westhues and other authors.\n",
-			PackageVersion, 2026)
+				"© 2008-%d Jonathan Westhues and the other SolveSpace\n"+
+				"authors, and the TeleSAPR authors.\n",
+			version.Version, version.SolveSpaceVersion, 2026)
 
 	case CmdGithub:
-		ss.Platform.OpenInBrowser(gitHashURL)
+		ss.Platform.OpenInBrowser(version.Repository)
 
 	default:
 		panic("ui: unexpected menu ID")

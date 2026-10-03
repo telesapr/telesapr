@@ -148,6 +148,26 @@ func TestFailures(t *testing.T) {
 	if r := g.RunAll(fails); r.MaxFailRate != 0.2 {
 		t.Errorf("full allowance %g", r.MaxFailRate)
 	}
+	// A whole grid that fails less than it allows is a stale allowance;
+	// a sample tells nothing about it.
+	g.MaxFailRate, g.SampleMaxFailRate = 0.5, 0
+	rec = &recorder{}
+	g.RunAll(fails).Require(rec)
+	if !rec.failed || !strings.Contains(rec.logs[len(rec.logs)-1], "lower the allowance to 3 of 12") {
+		t.Errorf("under the rate: failed %t, logs %v", rec.failed, rec.logs)
+	}
+	rec = &recorder{}
+	g.run(false, fails).Require(rec)
+	if rec.failed {
+		t.Errorf("a sample under the rate: logs %v", rec.logs)
+	}
+	// A rate that allows part of a failure allows none more.
+	g.MaxFailRate = 3.5 / 12
+	rec = &recorder{}
+	g.RunAll(fails).Require(rec)
+	if rec.failed {
+		t.Errorf("at the rate rounded down: logs %v", rec.logs)
+	}
 	if (Report{}).FailRate() != 0 {
 		t.Error("an empty report has failures")
 	}

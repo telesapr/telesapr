@@ -164,8 +164,8 @@ S&cript ind=0 en=1 act=0
   ---
   Allow &AI Connections ind=1 en=1 act=0
 &Help ind=0 en=1 act=0
-  &Website / Manual ind=0 en=1 act=0
-  &Go to GitHub commit ind=0 en=1 act=0
+  &User's Guide ind=0 en=1 act=0
+  Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0
@@ -497,8 +497,8 @@ S&cript ind=0 en=1 act=0
   ---
   Allow &AI Connections ind=1 en=1 act=0
 &Help ind=0 en=1 act=0
-  &Website / Manual ind=0 en=1 act=0
-  &Go to GitHub commit ind=0 en=1 act=0
+  &User's Guide ind=0 en=1 act=0
+  Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0

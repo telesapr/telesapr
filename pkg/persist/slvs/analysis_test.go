@@ -180,7 +180,7 @@ func orderLineSegments(doc *Document, pts []struct{ X, Y float64 }) ([]struct{ X
 	cur := start
 	for len(ordered) < len(pts) {
 		nexts := adj[cur]
-		var next int = -1
+		next := -1
 		for _, n := range nexts {
 			if n != prev {
 				next = n

@@ -41,7 +41,7 @@ func TestConsoleKeys(t *testing.T) {
 			// Shift+Return is a new line in the box, Return enters both.
 			c.setTyped("if a > 0 {")
 			key(tkplatform.XK_Return, tkplatform.ShiftMask)
-			c.input.Insert(c.input.EndIndex(), "}")
+			_ = c.input.Insert(c.input.EndIndex(), "}")
 			key(tkplatform.XK_Return, 0)
 		},
 		func() {

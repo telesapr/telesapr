@@ -60,7 +60,7 @@ func testDumpVsGolden(t *testing.T, fonts []string, strsFile, goldenFile string)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	zr, err := gzip.NewReader(f)
 	if err != nil {
 		t.Fatal(err)
