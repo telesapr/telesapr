@@ -1,4 +1,4 @@
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10, of 13 patches\nTriangles: 28\nVolume: 296 cm³\nCenter of mass: (30.77, 29.68, 40.00)\nExtent: 80.00 x 80.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 28\nVolume: 296 cm³\nCenter of mass: (30.77, 29.68, 40.00)\nExtent: 80.00 x 80.00 x 80.00
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
@@ -7,7 +7,7 @@ camera 6.75 -40 -40 0 1 0 0 0 1 0
 counts 5 12 137 0 63
 editor 0 "" 0 ""
 tw 0 unsaved 0 cursor 0 tooltip ""
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10, of 13 patches\nTriangles: 28\nVolume: 18.063 in³\nCenter of mass: (1.211, 1.169, 1.575)\nExtent: 3.150 x 3.150 x 3.150
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 28\nVolume: 18.063 in³\nCenter of mass: (1.211, 1.169, 1.575)\nExtent: 3.150 x 3.150 x 3.150
 dialog 3 The solid is NOT sound.|3 naked edges, so it is not closed\n\nThe problem edges are marked.\n\nFaces: 0\nTriangles: 87\nVolume: 0.97 mm³\nCenter of mass: (0.34, -0.68, -0.51)\nExtent: 1.00 x 2.00 x 1.00
 pending 0 0 "" 0 0 0 0
 hover 0 0 0

@@ -1,5 +1,5 @@
 dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
-dialog 0 The mesh is not self-intersecting (okay, valid).|The mesh is watertight (okay, valid).\n\nZero problematic edges, good.\n\nThe model contains 80 triangles, from 10 surfaces.
+dialog 0 The mesh is not self-intersecting (okay, valid).|The mesh is watertight (okay, valid).\n\nZero problematic edges, good.\n\nThe model contains 80 triangles, from 7 surfaces.
 dialog 0 The assembly does not interfere, good.|
 pending 0 0 "" 0 0 0 0
 hover 0 0 0

@@ -5256,24 +5256,6 @@ shell {
     trim 0xc backward 20 -20 0 20 -20 1
     trim 0x9 forward 20 15 1 20 15 0
   }
-  surface 0x7 {
-    color 100 100 100 255
-    face 0x8007000f
-    degree 1 1
-    ctrl 0 0 -10 5 1 1
-    ctrl 0 1 -5 5 1 1
-    ctrl 1 0 -10 10 1 1
-    ctrl 1 1 -5 10 1 1
-  }
-  surface 0x8 {
-    color 100 100 100 255
-    face 0x80070010
-    degree 1 1
-    ctrl 0 0 -5 5 0 1
-    ctrl 0 1 -10 5 0 1
-    ctrl 1 0 -5 10 0 1
-    ctrl 1 1 -10 10 0 1
-  }
   surface 0x9 {
     color 100 100 100 255
     face 0x8007009f
@@ -5329,24 +5311,6 @@ shell {
     trim 0x17 backward -5 5 0 -5 10 0
     trim 0x18 forward -5 5 1 -5 5 0
     trim 0x15 backward -5 10 0 -5 10 1
-  }
-  surface 0xd {
-    color 100 100 100 255
-    face 0x8007001f
-    degree 1 1
-    ctrl 0 0 0 5 1 1
-    ctrl 0 1 5 5 1 1
-    ctrl 1 0 0 10 1 1
-    ctrl 1 1 5 10 1 1
-  }
-  surface 0xe {
-    color 100 100 100 255
-    face 0x80070020
-    degree 1 1
-    ctrl 0 0 5 5 0 1
-    ctrl 0 1 0 5 0 1
-    ctrl 1 0 5 10 0 1
-    ctrl 1 1 0 10 0 1
   }
   surface 0xf {
     color 100 100 100 255
@@ -5404,24 +5368,6 @@ shell {
     trim 0x24 forward 5 5 1 5 5 0
     trim 0x21 backward 5 10 0 5 10 1
   }
-  surface 0x13 {
-    color 100 100 100 255
-    face 0x8007002f
-    degree 1 1
-    ctrl 0 0 10 5 1 1
-    ctrl 0 1 15 5 1 1
-    ctrl 1 0 10 10 1 1
-    ctrl 1 1 15 10 1 1
-  }
-  surface 0x14 {
-    color 100 100 100 255
-    face 0x80070030
-    degree 1 1
-    ctrl 0 0 15 5 0 1
-    ctrl 0 1 10 5 0 1
-    ctrl 1 0 15 10 0 1
-    ctrl 1 1 10 10 0 1
-  }
   surface 0x15 {
     color 100 100 100 255
     face 0x800700d9
@@ -5477,24 +5423,6 @@ shell {
     trim 0x2e forward 15 10 1 15 5 1
     trim 0x2d backward 15 10 0 15 10 1
     trim 0x30 forward 15 5 1 15 5 0
-  }
-  surface 0x19 {
-    color 100 100 100 255
-    face 0x8007003f
-    degree 1 1
-    ctrl 0 0 -10 -5 1 1
-    ctrl 0 1 -5 -5 1 1
-    ctrl 1 0 -10 0 1 1
-    ctrl 1 1 -5 0 1 1
-  }
-  surface 0x1a {
-    color 100 100 100 255
-    face 0x80070040
-    degree 1 1
-    ctrl 0 0 -5 -5 0 1
-    ctrl 0 1 -10 -5 0 1
-    ctrl 1 0 -5 0 0 1
-    ctrl 1 1 -10 0 0 1
   }
   surface 0x1b {
     color 100 100 100 255
@@ -5552,24 +5480,6 @@ shell {
     trim 0x3c forward -5 -5 1 -5 -5 0
     trim 0x39 backward -5 0 0 -5 0 1
   }
-  surface 0x1f {
-    color 100 100 100 255
-    face 0x8007004f
-    degree 1 1
-    ctrl 0 0 0 -5 1 1
-    ctrl 0 1 5 -5 1 1
-    ctrl 1 0 0 0 1 1
-    ctrl 1 1 5 0 1 1
-  }
-  surface 0x20 {
-    color 100 100 100 255
-    face 0x80070050
-    degree 1 1
-    ctrl 0 0 5 -5 0 1
-    ctrl 0 1 0 -5 0 1
-    ctrl 1 0 5 0 0 1
-    ctrl 1 1 0 0 0 1
-  }
   surface 0x21 {
     color 100 100 100 255
     face 0x80070119
@@ -5625,24 +5535,6 @@ shell {
     trim 0x47 backward 5 -5 0 5 0 0
     trim 0x48 forward 5 -5 1 5 -5 0
     trim 0x45 backward 5 0 0 5 0 1
-  }
-  surface 0x25 {
-    color 100 100 100 255
-    face 0x8007005f
-    degree 1 1
-    ctrl 0 0 10 -5 1 1
-    ctrl 0 1 15 -5 1 1
-    ctrl 1 0 10 0 1 1
-    ctrl 1 1 15 0 1 1
-  }
-  surface 0x26 {
-    color 100 100 100 255
-    face 0x80070060
-    degree 1 1
-    ctrl 0 0 15 -5 0 1
-    ctrl 0 1 10 -5 0 1
-    ctrl 1 0 15 0 0 1
-    ctrl 1 1 10 0 0 1
   }
   surface 0x27 {
     color 100 100 100 255
@@ -5700,24 +5592,6 @@ shell {
     trim 0x51 backward 15 0 0 15 0 1
     trim 0x54 forward 15 -5 1 15 -5 0
   }
-  surface 0x2b {
-    color 100 100 100 255
-    face 0x8007006f
-    degree 1 1
-    ctrl 0 0 -10 -15 1 1
-    ctrl 0 1 -5 -15 1 1
-    ctrl 1 0 -10 -10 1 1
-    ctrl 1 1 -5 -10 1 1
-  }
-  surface 0x2c {
-    color 100 100 100 255
-    face 0x80070070
-    degree 1 1
-    ctrl 0 0 -5 -15 0 1
-    ctrl 0 1 -10 -15 0 1
-    ctrl 1 0 -5 -10 0 1
-    ctrl 1 1 -10 -10 0 1
-  }
   surface 0x2d {
     color 100 100 100 255
     face 0x80070159
@@ -5774,24 +5648,6 @@ shell {
     trim 0x5d backward -5 -10 0 -5 -10 1
     trim 0x60 forward -5 -15 1 -5 -15 0
   }
-  surface 0x31 {
-    color 100 100 100 255
-    face 0x8007007f
-    degree 1 1
-    ctrl 0 0 0 -15 1 1
-    ctrl 0 1 5 -15 1 1
-    ctrl 1 0 0 -10 1 1
-    ctrl 1 1 5 -10 1 1
-  }
-  surface 0x32 {
-    color 100 100 100 255
-    face 0x80070080
-    degree 1 1
-    ctrl 0 0 5 -15 0 1
-    ctrl 0 1 0 -15 0 1
-    ctrl 1 0 5 -10 0 1
-    ctrl 1 1 0 -10 0 1
-  }
   surface 0x33 {
     color 100 100 100 255
     face 0x80070176
@@ -5847,24 +5703,6 @@ shell {
     trim 0x6a forward 5 -10 1 5 -15 1
     trim 0x69 backward 5 -10 0 5 -10 1
     trim 0x6c forward 5 -15 1 5 -15 0
-  }
-  surface 0x37 {
-    color 100 100 100 255
-    face 0x8007008f
-    degree 1 1
-    ctrl 0 0 10 -15 1 1
-    ctrl 0 1 15 -15 1 1
-    ctrl 1 0 10 -10 1 1
-    ctrl 1 1 15 -10 1 1
-  }
-  surface 0x38 {
-    color 100 100 100 255
-    face 0x80070090
-    degree 1 1
-    ctrl 0 0 15 -15 0 1
-    ctrl 0 1 10 -15 0 1
-    ctrl 1 0 15 -10 0 1
-    ctrl 1 1 10 -10 0 1
   }
   surface 0x39 {
     color 100 100 100 255

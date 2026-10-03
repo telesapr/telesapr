@@ -1290,15 +1290,6 @@ shell {
   }
   surface 0x7 {
     color 100 100 100 255
-    face 0x8006002d
-    degree 1 1
-    ctrl 0 0 5 5 10 1
-    ctrl 0 1 25 5 10 1
-    ctrl 1 0 5 15 10 1
-    ctrl 1 1 25 15 10 1
-  }
-  surface 0x8 {
-    color 100 100 100 255
     face 0x8003002c
     degree 1 1
     ctrl 0 0 0 20 10 1
@@ -1318,7 +1309,7 @@ shell {
     trim 0x13 forward 7 5 10 23 5 10
     trim 0x14 forward 23 5 10 25 7 10
   }
-  surface 0x9 {
+  surface 0x8 {
     color 100 100 100 255
     face 0x8006002c
     degree 1 1
@@ -1331,7 +1322,7 @@ shell {
     trim 0x17 forward 7 7 4 7 13 4
     trim 0x18 forward 7 13 4 23 13 4
   }
-  surface 0xa {
+  surface 0x9 {
     color 100 100 100 255
     face 0x80060010
     sheet 0xa0000
@@ -1345,7 +1336,7 @@ shell {
     trim 0x1a forward 7 5 6 23 5 6
     trim 0x1b forward 23 5 6 23 5 10
   }
-  surface 0xb {
+  surface 0xa {
     color 100 100 100 255
     face 0x80060019
     sheet 0xb0000
@@ -1359,7 +1350,7 @@ shell {
     trim 0x1d forward 5 13 6 5 7 6
     trim 0x1e forward 5 7 6 5 7 10
   }
-  surface 0xc {
+  surface 0xb {
     color 100 100 100 255
     face 0x80060022
     sheet 0xc0000
@@ -1373,7 +1364,7 @@ shell {
     trim 0x20 forward 23 15 6 7 15 6
     trim 0x21 forward 7 15 6 7 15 10
   }
-  surface 0xd {
+  surface 0xc {
     color 100 100 100 255
     face 0x80060007
     sheet 0x90000
@@ -1387,7 +1378,7 @@ shell {
     trim 0x23 forward 25 7 6 25 13 6
     trim 0x24 forward 25 13 6 25 13 10
   }
-  surface 0xe {
+  surface 0xd {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 31 5 6 1
@@ -1401,7 +1392,7 @@ shell {
     trim 0x26 forward 7 5 6 7 7 4
     trim 0x16 backward 7 7 4 23 7 4
   }
-  surface 0xf {
+  surface 0xe {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 5 7 16 1
@@ -1415,7 +1406,7 @@ shell {
     trim 0x27 forward 5 7 6 7 5 6
     trim 0x19 backward 7 5 6 7 5 10
   }
-  surface 0x10 {
+  surface 0xf {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 25 21 6 1
@@ -1429,7 +1420,7 @@ shell {
     trim 0x29 forward 25 7 6 23 7 4
     trim 0x15 backward 23 7 4 23 13 4
   }
-  surface 0x11 {
+  surface 0x10 {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 25 7 -2 1
@@ -1443,7 +1434,7 @@ shell {
     trim 0x14 backward 25 7 10 23 5 10
     trim 0x1b backward 23 5 10 23 5 6
   }
-  surface 0x12 {
+  surface 0x11 {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 -1 15 6 1
@@ -1457,7 +1448,7 @@ shell {
     trim 0x2c forward 23 15 6 23 13 4
     trim 0x18 backward 23 13 4 7 13 4
   }
-  surface 0x13 {
+  surface 0x12 {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 25 13 16 1
@@ -1471,7 +1462,7 @@ shell {
     trim 0x2d forward 25 13 6 23 15 6
     trim 0x1f backward 23 15 6 23 15 10
   }
-  surface 0x14 {
+  surface 0x13 {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 5 -1 6 1
@@ -1485,7 +1476,7 @@ shell {
     trim 0x2f forward 5 13 6 7 13 4
     trim 0x17 backward 7 13 4 7 7 4
   }
-  surface 0x15 {
+  surface 0x14 {
     color 100 100 100 255
     degree 2 1
     ctrl 0 0 7 15 16 1
@@ -1499,7 +1490,7 @@ shell {
     trim 0x30 forward 7 15 6 5 13 6
     trim 0x1c backward 5 13 6 5 13 10
   }
-  surface 0x16 {
+  surface 0x15 {
     color 100 100 100 255
     degree 2 2
     ctrl 0 0 21.90385177937193 14.001310638703217 4.659911912136493 1
@@ -1515,7 +1506,7 @@ shell {
     trim 0x2d backward 23 15 6 25 13 6
     trim 0x28 backward 25 13 6 23 13 4
   }
-  surface 0x17 {
+  surface 0x16 {
     color 100 100 100 255
     degree 2 2
     ctrl 0 0 22.932939702709596 7.101144055350047 4.003685196018757 1
@@ -1531,7 +1522,7 @@ shell {
     trim 0x2a backward 25 7 6 23 5 6
     trim 0x25 backward 23 5 6 23 7 4
   }
-  surface 0x18 {
+  surface 0x17 {
     color 100 100 100 255
     degree 2 2
     ctrl 0 0 5.998689361296782 5.659911912136495 7.096148220628071 1
@@ -1547,7 +1538,7 @@ shell {
     trim 0x27 backward 7 5 6 5 7 6
     trim 0x2e backward 5 7 6 7 7 4
   }
-  surface 0x19 {
+  surface 0x18 {
     color 100 100 100 255
     degree 2 2
     ctrl 0 0 5.003685196018757 12.9329397027096 6.101144055350045 1
@@ -1566,7 +1557,7 @@ shell {
   curve 0x1 {
     exact
     degree 1
-    surfaces 0x8 0x3
+    surfaces 0x7 0x3
     ctrl 0 30 0 10 1
     ctrl 1 0 0 10 1
     vertex 30 0 10
@@ -1593,7 +1584,7 @@ shell {
   curve 0x4 {
     exact
     degree 1
-    surfaces 0x8 0x4
+    surfaces 0x7 0x4
     ctrl 0 0 0 10 1
     ctrl 1 0 20 10 1
     vertex 0 0 10
@@ -1620,7 +1611,7 @@ shell {
   curve 0x7 {
     exact
     degree 1
-    surfaces 0x8 0x5
+    surfaces 0x7 0x5
     ctrl 0 0 20 10 1
     ctrl 1 30 20 10 1
     vertex 0 20 10
@@ -1647,7 +1638,7 @@ shell {
   curve 0xa {
     exact
     degree 1
-    surfaces 0x8 0x6
+    surfaces 0x7 0x6
     ctrl 0 30 20 10 1
     ctrl 1 30 0 10 1
     vertex 30 20 10
@@ -1674,7 +1665,7 @@ shell {
   curve 0xd {
     exact
     degree 1
-    surfaces 0x8 0xd
+    surfaces 0x7 0xc
     ctrl 0 25 7 10 1
     ctrl 1 25 13 10 1
     vertex 25 7 10
@@ -1683,7 +1674,7 @@ shell {
   curve 0xe {
     exact
     degree 2
-    surfaces 0x8 0x13
+    surfaces 0x7 0x12
     ctrl 0 25 13 10 1
     ctrl 1 25 15 10 0.7071067811865475
     ctrl 2 23 15 10 1
@@ -1700,7 +1691,7 @@ shell {
   curve 0xf {
     exact
     degree 1
-    surfaces 0x8 0xc
+    surfaces 0x7 0xb
     ctrl 0 23 15 10 1
     ctrl 1 7 15 10 1
     vertex 23 15 10
@@ -1709,7 +1700,7 @@ shell {
   curve 0x10 {
     exact
     degree 2
-    surfaces 0x8 0x15
+    surfaces 0x7 0x14
     ctrl 0 7 15 10 1
     ctrl 1 5 15 10 0.7071067811865475
     ctrl 2 5 13 10 1
@@ -1726,7 +1717,7 @@ shell {
   curve 0x11 {
     exact
     degree 1
-    surfaces 0x8 0xb
+    surfaces 0x7 0xa
     ctrl 0 5 13 10 1
     ctrl 1 5 7 10 1
     vertex 5 13 10
@@ -1735,7 +1726,7 @@ shell {
   curve 0x12 {
     exact
     degree 2
-    surfaces 0x8 0xf
+    surfaces 0x7 0xe
     ctrl 0 5 7 10 1
     ctrl 1 5 5 10 0.7071067811865475
     ctrl 2 7 5 10 1
@@ -1752,7 +1743,7 @@ shell {
   curve 0x13 {
     exact
     degree 1
-    surfaces 0x8 0xa
+    surfaces 0x7 0x9
     ctrl 0 7 5 10 1
     ctrl 1 23 5 10 1
     vertex 7 5 10
@@ -1761,7 +1752,7 @@ shell {
   curve 0x14 {
     exact
     degree 2
-    surfaces 0x8 0x11
+    surfaces 0x7 0x10
     ctrl 0 23 5 10 1
     ctrl 1 25 5 10 0.7071067811865475
     ctrl 2 25 7 10 1
@@ -1778,7 +1769,7 @@ shell {
   curve 0x15 {
     exact
     degree 1
-    surfaces 0x9 0x10
+    surfaces 0x8 0xf
     ctrl 0 23 13 4 1
     ctrl 1 23 7 4 1
     vertex 23 13 4
@@ -1787,7 +1778,7 @@ shell {
   curve 0x16 {
     exact
     degree 1
-    surfaces 0x9 0xe
+    surfaces 0x8 0xd
     ctrl 0 23 7 4 1
     ctrl 1 7 7 4 1
     vertex 23 7 4
@@ -1796,7 +1787,7 @@ shell {
   curve 0x17 {
     exact
     degree 1
-    surfaces 0x9 0x14
+    surfaces 0x8 0x13
     ctrl 0 7 7 4 1
     ctrl 1 7 13 4 1
     vertex 7 7 4
@@ -1805,7 +1796,7 @@ shell {
   curve 0x18 {
     exact
     degree 1
-    surfaces 0x9 0x12
+    surfaces 0x8 0x11
     ctrl 0 7 13 4 1
     ctrl 1 23 13 4 1
     vertex 7 13 4
@@ -1814,7 +1805,7 @@ shell {
   curve 0x19 {
     exact
     degree 1
-    surfaces 0xa 0xf
+    surfaces 0x9 0xe
     ctrl 0 7 5 10 1
     ctrl 1 7 5 6 1
     vertex 7 5 10
@@ -1823,7 +1814,7 @@ shell {
   curve 0x1a {
     exact
     degree 1
-    surfaces 0xa 0xe
+    surfaces 0x9 0xd
     ctrl 0 7 5 6 1
     ctrl 1 23 5 6 1
     vertex 7 5 6
@@ -1832,7 +1823,7 @@ shell {
   curve 0x1b {
     exact
     degree 1
-    surfaces 0xa 0x11
+    surfaces 0x9 0x10
     ctrl 0 23 5 6 1
     ctrl 1 23 5 10 1
     vertex 23 5 6
@@ -1841,7 +1832,7 @@ shell {
   curve 0x1c {
     exact
     degree 1
-    surfaces 0xb 0x15
+    surfaces 0xa 0x14
     ctrl 0 5 13 10 1
     ctrl 1 5 13 6 1
     vertex 5 13 10
@@ -1850,7 +1841,7 @@ shell {
   curve 0x1d {
     exact
     degree 1
-    surfaces 0xb 0x14
+    surfaces 0xa 0x13
     ctrl 0 5 13 6 1
     ctrl 1 5 7 6 1
     vertex 5 13 6
@@ -1859,7 +1850,7 @@ shell {
   curve 0x1e {
     exact
     degree 1
-    surfaces 0xb 0xf
+    surfaces 0xa 0xe
     ctrl 0 5 7 6 1
     ctrl 1 5 7 10 1
     vertex 5 7 6
@@ -1868,7 +1859,7 @@ shell {
   curve 0x1f {
     exact
     degree 1
-    surfaces 0xc 0x13
+    surfaces 0xb 0x12
     ctrl 0 23 15 10 1
     ctrl 1 23 15 6 1
     vertex 23 15 10
@@ -1877,7 +1868,7 @@ shell {
   curve 0x20 {
     exact
     degree 1
-    surfaces 0xc 0x12
+    surfaces 0xb 0x11
     ctrl 0 23 15 6 1
     ctrl 1 7 15 6 1
     vertex 23 15 6
@@ -1886,7 +1877,7 @@ shell {
   curve 0x21 {
     exact
     degree 1
-    surfaces 0xc 0x15
+    surfaces 0xb 0x14
     ctrl 0 7 15 6 1
     ctrl 1 7 15 10 1
     vertex 7 15 6
@@ -1895,7 +1886,7 @@ shell {
   curve 0x22 {
     exact
     degree 1
-    surfaces 0xd 0x11
+    surfaces 0xc 0x10
     ctrl 0 25 7 10 1
     ctrl 1 25 7 6 1
     vertex 25 7 10
@@ -1904,7 +1895,7 @@ shell {
   curve 0x23 {
     exact
     degree 1
-    surfaces 0xd 0x10
+    surfaces 0xc 0xf
     ctrl 0 25 7 6 1
     ctrl 1 25 13 6 1
     vertex 25 7 6
@@ -1913,7 +1904,7 @@ shell {
   curve 0x24 {
     exact
     degree 1
-    surfaces 0xd 0x13
+    surfaces 0xc 0x12
     ctrl 0 25 13 6 1
     ctrl 1 25 13 10 1
     vertex 25 13 6
@@ -1922,7 +1913,7 @@ shell {
   curve 0x25 {
     exact
     degree 2
-    surfaces 0xe 0x17
+    surfaces 0xd 0x16
     ctrl 0 23 7 4 1
     ctrl 1 23 5 4 0.7071067811865475
     ctrl 2 23 5 6 1
@@ -1939,7 +1930,7 @@ shell {
   curve 0x26 {
     exact
     degree 2
-    surfaces 0xe 0x18
+    surfaces 0xd 0x17
     ctrl 0 7 5 6 1
     ctrl 1 7 5 4 0.7071067811865475
     ctrl 2 7 7 4 1
@@ -1956,7 +1947,7 @@ shell {
   curve 0x27 {
     exact
     degree 2
-    surfaces 0xf 0x18
+    surfaces 0xe 0x17
     ctrl 0 5 7 6 1
     ctrl 1 5 5 6 0.7071067811865475
     ctrl 2 7 5 6 1
@@ -1973,7 +1964,7 @@ shell {
   curve 0x28 {
     exact
     degree 2
-    surfaces 0x10 0x16
+    surfaces 0xf 0x15
     ctrl 0 23 13 4 1
     ctrl 1 25 13 4 0.7071067811865475
     ctrl 2 25 13 6 1
@@ -1990,7 +1981,7 @@ shell {
   curve 0x29 {
     exact
     degree 2
-    surfaces 0x10 0x17
+    surfaces 0xf 0x16
     ctrl 0 25 7 6 1
     ctrl 1 25 7 4 0.7071067811865475
     ctrl 2 23 7 4 1
@@ -2007,7 +1998,7 @@ shell {
   curve 0x2a {
     exact
     degree 2
-    surfaces 0x11 0x17
+    surfaces 0x10 0x16
     ctrl 0 23 5 6 1
     ctrl 1 25 5 6 0.7071067811865475
     ctrl 2 25 7 6 1
@@ -2024,7 +2015,7 @@ shell {
   curve 0x2b {
     exact
     degree 2
-    surfaces 0x12 0x19
+    surfaces 0x11 0x18
     ctrl 0 7 13 4 1
     ctrl 1 7 15 4 0.7071067811865475
     ctrl 2 7 15 6 1
@@ -2041,7 +2032,7 @@ shell {
   curve 0x2c {
     exact
     degree 2
-    surfaces 0x12 0x16
+    surfaces 0x11 0x15
     ctrl 0 23 15 6 1
     ctrl 1 23 15 4 0.7071067811865475
     ctrl 2 23 13 4 1
@@ -2058,7 +2049,7 @@ shell {
   curve 0x2d {
     exact
     degree 2
-    surfaces 0x13 0x16
+    surfaces 0x12 0x15
     ctrl 0 25 13 6 1
     ctrl 1 25 15 6 0.7071067811865475
     ctrl 2 23 15 6 1
@@ -2075,7 +2066,7 @@ shell {
   curve 0x2e {
     exact
     degree 2
-    surfaces 0x14 0x18
+    surfaces 0x13 0x17
     ctrl 0 7 7 4 1
     ctrl 1 5 7 4 0.7071067811865475
     ctrl 2 5 7 6 1
@@ -2092,7 +2083,7 @@ shell {
   curve 0x2f {
     exact
     degree 2
-    surfaces 0x14 0x19
+    surfaces 0x13 0x18
     ctrl 0 5 13 6 1
     ctrl 1 5 13 4 0.7071067811865475
     ctrl 2 7 13 4 1
@@ -2109,7 +2100,7 @@ shell {
   curve 0x30 {
     exact
     degree 2
-    surfaces 0x15 0x19
+    surfaces 0x14 0x18
     ctrl 0 7 15 6 1
     ctrl 1 5 15 6 0.7071067811865475
     ctrl 2 5 13 6 1
