@@ -257,7 +257,8 @@ remap {
 | Sweep along a path | `sweep` |
 
 A mirror reflects its `op-a` in the plane `entity-b` of its `predef`, a workplane or a planar
-face; `skip-first` leaves the original out of its solid. A chamfer cuts its `edges` at its
+face; `skip-first` leaves the original out of its solid, and `mirror-solid` has it reflect the
+whole solid so far, up to its `op-a`, in place of `op-a`'s own. A chamfer cuts its `edges` at its
 `distance` from the solid so far, so its `combine` is always `difference`; and its
 `solid-edge`s, edges of the solid so far named by the identities of the two faces they lie
 between, lower first, their place among the edges between those faces in geometric order, and
@@ -514,6 +515,9 @@ Version 2 gained the group types `mirror`, `chamfer` and `sweep`, with the field
 
 Version 2 gained the chamfer field `solid-edge` on 2026-10-03. A reader from before skips it
 with a report.
+
+Version 2 gained the mirror field `mirror-solid` on 2026-10-03 (roadmap 15.5). A reader from
+before skips it with a report, and mirrors the source group alone.
 
 Version 2's `solid-edge` gained `of <m>`, the count of edges between its faces, on 2026-10-03
 (roadmap 14.2). A reader from before refuses such a line; a reader since reads lines without
