@@ -66,6 +66,13 @@ func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency {
 	if g == nil {
 		return nil
 	}
+	return sk.DependenciesOf(g)
+}
+
+// DependenciesOf is GroupDependencies of g, which need not be in the
+// sketch yet: a group about to be added has no requests or constraints.
+func (sk *Sketch) DependenciesOf(g *Group) []Dependency {
+	h := g.H
 	var deps []Dependency
 	seen := map[core.HGroup]bool{h: true}
 	add := func(on core.HGroup, why string) {
@@ -136,6 +143,30 @@ func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency {
 		return sk.groupOrderOf(deps[i].Group) < sk.groupOrderOf(deps[j].Group)
 	})
 	return deps
+}
+
+// LaterReference is the first group that group h refers to and that
+// comes after it in the history, as one made with an earlier group
+// active and then named by a group before it would: what a group refers
+// to must be made before it. ok is false when there is none.
+func (sk *Sketch) LaterReference(h core.HGroup) (dep Dependency, ok bool) {
+	at := sk.groupOrderOf(h)
+	for _, d := range sk.GroupDependencies(h) {
+		if sk.groupOrderOf(d.Group) > at {
+			return d, true
+		}
+	}
+	return Dependency{}, false
+}
+
+// EntityAfter reports whether entity he belongs to a group after group
+// h in the history, which h may not refer to; it gives that group.
+func (sk *Sketch) EntityAfter(he core.HEntity, h core.HGroup) (core.HGroup, bool) {
+	on := sk.entityGroup(he)
+	if on.V == 0 || on == h {
+		return on, false
+	}
+	return on, sk.groupOrderOf(on) > sk.groupOrderOf(h)
 }
 
 // groupOrderOf is the order of group h, and an order after every group

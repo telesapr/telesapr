@@ -72,12 +72,6 @@ func (ss *SolveSpaceUI) constrain(typ core.ConstraintType, ptA, ptB, entityA cor
 	return ss.SK.Constrain(typ, ptA, ptB, entityA, core.HEntity{}, false, false)
 }
 
-// tryConstrain adds a constraint unless it would be redundant (C++
-// Constraint::TryConstrain).
-func (ss *SolveSpaceUI) tryConstrain(typ core.ConstraintType, ptA, ptB, entityA core.HEntity) core.HConstraint {
-	return ss.SK.TryConstrain(typ, ptA, ptB, entityA, core.HEntity{}, false, false)
-}
-
 // constrainCoincident makes two points coincident.
 func (ss *SolveSpaceUI) constrainCoincident(ptA, ptB core.HEntity) core.HConstraint {
 	return ss.SK.ConstrainCoincident(ptA, ptB)

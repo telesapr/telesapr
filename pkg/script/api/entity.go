@@ -306,6 +306,30 @@ func (e Entity) Dir() (v Vec) {
 	return v
 }
 
+// FaceNormal is a face's normal, a unit vector.
+func (e Entity) FaceNormal() (n Vec) {
+	e.d.read(func(sk *sketch.Sketch) {
+		ent := e.get(sk)
+		if !ent.IsFace() {
+			fail("%s isn't a face", e.describe(sk))
+		}
+		n = ent.FaceGetNormalNum(sk).WithMagnitude(1)
+	})
+	return n
+}
+
+// FacePoint is a point a face's plane passes through.
+func (e Entity) FacePoint() (p Vec) {
+	e.d.read(func(sk *sketch.Sketch) {
+		ent := e.get(sk)
+		if !ent.IsFace() {
+			fail("%s isn't a face", e.describe(sk))
+		}
+		p = ent.FaceGetPointNum(sk)
+	})
+	return p
+}
+
 // Construction reports whether the entity is construction geometry,
 // which helps to draw but makes no part of the outline.
 func (e Entity) Construction() (construction bool) {

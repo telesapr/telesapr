@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -430,7 +432,18 @@ func (d *Doc) add(build func(sk *sketch.Sketch) sketch.Group, after func(sk *ske
 			sk = d.h.Sketch()
 		}
 		sk.Active = sk.ActiveGroup()
-		hg := d.h.AddGroup(build(sk))
+		ng := build(sk)
+		// A group refers only to what is made before it: one made with
+		// an earlier group active goes in after that one (roadmap 16.4).
+		if at := sk.GetGroup(sk.Active); at != nil {
+			for _, dep := range sk.DependenciesOf(&ng) {
+				if on := sk.GetGroup(dep.Group); on != nil && on.Order > at.Order {
+					fail("the new group would refer to %s (%s), which comes after the active group %s in the history",
+						sk.GroupName(dep.Group), dep.Why, sk.GroupName(at.H))
+				}
+			}
+		}
+		hg := d.h.AddGroup(ng)
 		sk = d.h.Sketch()
 		if after != nil {
 			after(sk, hg)
@@ -695,7 +708,27 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 	})
 }
 
-// Link brings in another sketch file, a STEP file, or an STL file, as
+// BillOfMaterials is the parts the model places by linking files, one
+// item a file: each link group places one, and a step and repeat, a
+// mirror or a pattern of a link group its copies, but for one where the
+// part already is. Groups left out of the model place none.
+func (d *Doc) BillOfMaterials() (items []sketch.BOMItem) {
+	d.read(func(sk *sketch.Sketch) { items = sk.BillOfMaterials() })
+	return items
+}
+
+// ExportBOM writes the bill of materials to a CSV file: part, count,
+// file and the groups that place them.
+func (d *Doc) ExportBOM(path string) error {
+	var b bytes.Buffer
+	if err := sketch.WriteBOMCSV(&b, d.BillOfMaterials()); err != nil {
+		return err
+	}
+	return os.WriteFile(path, b.Bytes(), 0o644)
+}
+
+// Link brings in another sketch file, a STEP file, or a mesh file (STL
+// or OBJ), as
 // a group, named after the file if name is empty. The new group becomes
 // active. A STEP file comes in as a reference mesh, its faces
 // tessellated, with a point at each vertex and at the centre of each

@@ -3357,6 +3357,9 @@
 			"StyleOutline": {
 				"decl": "const StyleOutline"
 			},
+			"StyleSectionCap": {
+				"decl": "const StyleSectionCap"
+			},
 			"StyleSelected": {
 				"decl": "const StyleSelected"
 			},
@@ -4075,6 +4078,10 @@
 						"decl": "func (c Constraint) Group() (g Group)",
 						"text": "Group is the group the constraint is in."
 					},
+					"Name": {
+						"decl": "func (c Constraint) Name() (name string)",
+						"text": "Name is what expressions read the constraint's value by, or \"\"."
+					},
 					"Other": {
 						"decl": "func (c Constraint) Other() (other bool)",
 						"text": "Other is whether an angle measures the supplementary angle, or an\nequal-angle constraint pairs the other angles."
@@ -4094,6 +4101,10 @@
 					"SetExpr": {
 						"decl": "func (c Constraint) SetExpr(expr string) (err error)",
 						"text": "SetExpr gives the constraint the value of text, as typing it in its\nlabel does: a length in the document's unit (Doc.Units), an angle in\ndegrees, a ratio. A plain number is stored as its value; any other\ntext, \"25.4/2\" or \"wall*4\" with a parameter (Doc.SetParameter), is\nkept and evaluated again at each regeneration."
+					},
+					"SetName": {
+						"decl": "func (c Constraint) SetName(name string)",
+						"text": "SetName names the constraint, so that expressions read its value by\nthe name as they read a parameter: the value its label shows, in the\ndocument's unit. Uses of an old name are renamed; \"\" takes the name\naway, which a name in use can't be. A reference dimension can't be\nnamed. Parameters and dimensions share the names."
 					},
 					"SetOther": {
 						"decl": "func (c Constraint) SetOther(other bool)",
@@ -4129,13 +4140,25 @@
 						"decl": "func (d *Doc) Activate(g Group)",
 						"text": "Activate makes g the group that is worked in."
 					},
+					"ActivateConfiguration": {
+						"decl": "func (d *Doc) ActivateConfiguration(name string) (err error)",
+						"text": "ActivateConfiguration writes the configuration's expressions into\nthe parameter table and makes it active; \"\" makes none active, and\nleaves the table as it is. The model regenerates."
+					},
 					"Active": {
 						"decl": "func (d *Doc) Active() (g Group)",
 						"text": "Active is the group that is worked in: what is drawn goes into it."
 					},
+					"ActiveConfiguration": {
+						"decl": "func (d *Doc) ActiveConfiguration() (name string)",
+						"text": "ActiveConfiguration is the active configuration's name, or \"\"."
+					},
 					"ActiveWorkplane": {
 						"decl": "func (d *Doc) ActiveWorkplane() (wp Entity)",
 						"text": "ActiveWorkplane is the workplane that is drawn in; it isn't Valid\nwhen drawing freely in 3d."
+					},
+					"AddConfiguration": {
+						"decl": "func (d *Doc) AddConfiguration(name string) (err error)",
+						"text": "AddConfiguration adds a configuration, a named set of the parameters'\nexpressions, from the table as it is, and makes it active: while it\nis, SetParameter changes it as well as the table."
 					},
 					"Angle": {
 						"decl": "func (d *Doc) Angle(a, b Entity, degrees float64) Constraint",
@@ -4148,6 +4171,10 @@
 					"Batch": {
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
+					},
+					"BillOfMaterials": {
+						"decl": "func (d *Doc) BillOfMaterials() (items []sketch.BOMItem)",
+						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none."
 					},
 					"BrokenReferences": {
 						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
@@ -4185,6 +4212,14 @@
 						"decl": "func (d *Doc) Comment(at Vec, text string) Constraint",
 						"text": "Comment writes text on the drawing at a place."
 					},
+					"Concentric": {
+						"decl": "func (d *Doc) Concentric(a, b Entity) []Constraint",
+						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other."
+					},
+					"Configurations": {
+						"decl": "func (d *Doc) Configurations() (names []string)",
+						"text": "Configurations are the configurations' names, in the order they were\nmade."
+					},
 					"Constrain": {
 						"decl": "func (d *Doc) Constrain(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint",
 						"text": "Constrain adds a constraint of any type, as the core package names\nthem, on up to two points and two other entities; see the solver's\ndocumentation for what each type takes. Give Entity{} for what a\ntype doesn't take."
@@ -4197,6 +4232,10 @@
 						"decl": "func (d *Doc) Cubic(p0, p1, p2, p3 Vec) Entity",
 						"text": "Cubic adds a cubic Bézier curve from p0 to p3, with the control\npoints p1 and p2."
 					},
+					"DeleteConfiguration": {
+						"decl": "func (d *Doc) DeleteConfiguration(name string) (err error)",
+						"text": "DeleteConfiguration removes a configuration; the table stays as it\nis."
+					},
 					"DeleteParameter": {
 						"decl": "func (d *Doc) DeleteParameter(name string) (err error)",
 						"text": "DeleteParameter removes a parameter. One that an expression names\nis not removed, and the error says what names it."
@@ -4208,6 +4247,10 @@
 					"Diameter": {
 						"decl": "func (d *Doc) Diameter(circle Entity, v float64) Constraint",
 						"text": "Diameter sets the diameter of a circle or an arc."
+					},
+					"Dimension": {
+						"decl": "func (d *Doc) Dimension(name string) (c Constraint)",
+						"text": "Dimension is the constraint named name."
 					},
 					"Distance": {
 						"decl": "func (d *Doc) Distance(a, b Entity, v float64) Constraint",
@@ -4229,6 +4272,10 @@
 						"decl": "func (d *Doc) ExportAs(kind ExportKind, path string) (err error)",
 						"text": "ExportAs is Export for a format that can hold several things, such\nas a wireframe in a .dxf or a .step."
 					},
+					"ExportBOM": {
+						"decl": "func (d *Doc) ExportBOM(path string) error",
+						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them."
+					},
 					"ExprErrors": {
 						"decl": "func (d *Doc) ExprErrors() (errs []string)",
 						"text": "ExprErrors lists the expressions on constraints and group values\nthat the last regeneration could not evaluate, each with why; the\nvalues they drive keep their last good value."
@@ -4244,6 +4291,10 @@
 					"FilletSolid": {
 						"decl": "func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group",
 						"text": "FilletSolid rounds edges of the solid so far, by name, with radius\nmm, as Fillet does: any straight edge between two flat faces, such\nas one a Boolean made, or a circular one, picked from Solid. The fillet\nkeeps the names, so it follows the edges when the model upstream\nchanges. The new group becomes active."
+					},
+					"Flush": {
+						"decl": "func (d *Doc) Flush(faceA, faceB Entity) []Constraint",
+						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other."
 					},
 					"Free3D": {
 						"decl": "func (d *Doc) Free3D()",
@@ -4261,6 +4312,10 @@
 						"decl": "func (d *Doc) Helix(axis Entity, degrees, length float64, name string) Group",
 						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. The new group becomes active."
 					},
+					"Hinge": {
+						"decl": "func (d *Doc) Hinge(a, b Entity) []Constraint",
+						"text": "Hinge puts the start of line b on the start of line a, and the end of\nb on a's line: b may only turn about a, as on a pin."
+					},
 					"Horizontal": {
 						"decl": "func (d *Doc) Horizontal(lineOrPoints ...Entity) Constraint",
 						"text": "Horizontal makes a line segment, or two points, horizontal in the\nactive workplane."
@@ -4272,6 +4327,10 @@
 					"Image": {
 						"decl": "func (d *Doc) Image(path string, at Vec, height float64) Entity",
 						"text": "Image adds a picture from a file in the active workplane, for\ntracing: its bottom left corner at at, height high and as wide as\nthe picture's proportions make it. It is construction, as the\ninterface makes it."
+					},
+					"Interferences": {
+						"decl": "func (d *Doc) Interferences() (found []Interference, meshOnly []Group)",
+						"text": "Interferences checks the parts of the assembly up to the active\ngroup against each other by their shells (Analyze \u003e Show Interfering\nParts): each group that combines as an assembly is a part, and so is\nthe solid made before the first of them. It lists the pairs that\noverlap, not those that only touch. A part with no shell, as a\nlinked mesh or STEP file, can't be checked so; meshOnly lists them."
 					},
 					"Lathe": {
 						"decl": "func (d *Doc) Lathe(axis Entity, name string) Group",
@@ -4287,7 +4346,7 @@
 					},
 					"Link": {
 						"decl": "func (d *Doc) Link(path, name string) (g Group, err error)",
-						"text": "Link brings in another sketch file, a STEP file, or an STL file, as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
+						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
 					},
 					"Load": {
 						"decl": "func (d *Doc) Load(path string) (err error)",
@@ -4316,6 +4375,10 @@
 					"MmPerUnit": {
 						"decl": "func (d *Doc) MmPerUnit() (mm float64)",
 						"text": "MmPerUnit is the size in mm of the unit the user interface shows\nlengths in."
+					},
+					"MotionStudy": {
+						"decl": "func (d *Doc) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error)",
+						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach (roadmap 16.3). With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
 					},
 					"NewWorkplane": {
 						"decl": "func (d *Doc) NewWorkplane(origin, u, v Vec) Entity",
@@ -4377,13 +4440,17 @@
 						"decl": "func (d *Doc) Regen()",
 						"text": "Regen regenerates the whole sketch and solves it."
 					},
+					"RenameConfiguration": {
+						"decl": "func (d *Doc) RenameConfiguration(from, to string) (err error)",
+						"text": "RenameConfiguration renames a configuration."
+					},
 					"RenameParameter": {
 						"decl": "func (d *Doc) RenameParameter(from, to string) (err error)",
 						"text": "RenameParameter renames a parameter, and rewrites every expression\nthat names it."
 					},
 					"Render": {
 						"decl": "func (d *Doc) Render(path string, width, height int, view string) (err error)",
-						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"."
+						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"; or \"window\", as the application's\nwindow shows it, the same middle and as much of it across."
 					},
 					"Request": {
 						"decl": "func (d *Doc) Request(name string) (r Request)",
@@ -4557,6 +4624,14 @@
 					"End": {
 						"decl": "func (e Entity) End() (p Entity)",
 						"text": "End is the other end of a line segment, an arc or a cubic."
+					},
+					"FaceNormal": {
+						"decl": "func (e Entity) FaceNormal() (n Vec)",
+						"text": "FaceNormal is a face's normal, a unit vector."
+					},
+					"FacePoint": {
+						"decl": "func (e Entity) FacePoint() (p Vec)",
+						"text": "FacePoint is a point a face's plane passes through."
 					},
 					"Free": {
 						"decl": "func (e Entity) Free() (f sketch.Freedom)",
@@ -4896,6 +4971,14 @@
 				"text": "Host owns a sketch on behalf of a Doc: it is the program around the\nsketch, with or without windows. All of it but Run must be called\ninside Run.",
 				"kind": "interface"
 			},
+			"Interference": {
+				"text": "Interference is two parts of an assembly that overlap, and the\nvolume they share in mm³.",
+				"kind": "struct"
+			},
+			"MotionFrame": {
+				"text": "MotionFrame is a step of a motion study: the parameter's value, the\nfile its frame went to, if any, whether every group solved, and the\nvolume of the solid up to the active group.",
+				"kind": "struct"
+			},
 			"Param": {
 				"text": "Param is one of the numbers the solver works out: a coordinate of a\npoint, a radius, the depth of an extrusion.",
 				"kind": "struct",
@@ -4995,6 +5078,10 @@
 					"Export": {
 						"decl": "func (h *SketchHost) Export(kind ExportKind, path string) error",
 						"text": "Export writes the mesh as STL; the other formats need the\napplication around the sketch."
+					},
+					"Hovered": {
+						"decl": "func (h *SketchHost) Hovered() sketch.Selection",
+						"text": "Hovered is nothing, for the same reason."
 					},
 					"Load": {
 						"decl": "func (h *SketchHost) Load(path string) error",
@@ -5306,6 +5393,14 @@
 	"github.com/telesapr/telesapr/pkg/sketch": {
 		"name": "sketch",
 		"types": {
+			"AssemblyPart": {
+				"text": "AssemblyPart is a part of an assembly as a STEP file gives it (roadmap 16.8): a linked file's solid in the file's own coordinates, placed by the link's rotation and offset, so that a file linked twice is one product placed twice; or another group's solid, where it is.",
+				"kind": "struct"
+			},
+			"BOMItem": {
+				"text": "BOMItem is a line of the bill of materials: the parts from one file.",
+				"kind": "struct"
+			},
 			"BrokenReference": {
 				"text": "BrokenReference is a request, constraint or group that a regeneration deleted, because something it referred to was gone.",
 				"kind": "struct",
@@ -5345,6 +5440,10 @@
 					"CombineAssemble",
 					"CombineIntersection"
 				]
+			},
+			"Configuration": {
+				"text": "Configuration is a named set of parameter expressions, by name.",
+				"kind": "struct"
 			},
 			"CopyAs": {
 				"text": "CopyAs is the transformation a copied entity gets (C++ Group::CopyAs).",
@@ -5615,6 +5714,10 @@
 				"text": "Image is a loaded image file (C++ Pixmap): its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
 				"kind": "struct"
 			},
+			"Interference": {
+				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
+				"kind": "struct"
+			},
 			"MeasureKind": {
 				"text": "MeasureKind is what a measurement is.",
 				"kind": "int",
@@ -5761,6 +5864,10 @@
 			"Sketch": {
 				"kind": "struct",
 				"methods": {
+					"ActivateConfiguration": {
+						"decl": "func (sk *Sketch) ActivateConfiguration(name string) error",
+						"text": "ActivateConfiguration makes the configuration called name active, writing its expressions into the table, or with \"\" none; the table stays as it is then."
+					},
 					"ActiveGroup": {
 						"decl": "func (sk *Sketch) ActiveGroup() core.HGroup",
 						"text": "ActiveGroup is the active group: Active if it exists, else the one C++ makes active after loading a file (GraphicsWindow::Init and EnsureValidActives): the last group, or the first that isn't the references."
@@ -5768,6 +5875,10 @@
 					"ActiveWorkplane": {
 						"decl": "func (sk *Sketch) ActiveWorkplane() core.HEntity",
 						"text": "ActiveWorkplane is the active group's workplane (C++ GraphicsWindow::ActiveWorkplane)."
+					},
+					"AddConfiguration": {
+						"decl": "func (sk *Sketch) AddConfiguration(name string) error",
+						"text": "AddConfiguration adds a configuration of the table's expressions as they are, and makes it active."
 					},
 					"AddConstraint": {
 						"decl": "func (s *Sketch) AddConstraint(c core.Constraint) core.HConstraint"
@@ -5811,6 +5922,14 @@
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
 					},
+					"AssemblyParts": {
+						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
+						"text": "AssemblyParts are the parts of the model up to group upTo, as the interference check takes them (interference.go): the solid before the first group that combines as an assembly, and each such group."
+					},
+					"BillOfMaterials": {
+						"decl": "func (sk *Sketch) BillOfMaterials() []BOMItem",
+						"text": "BillOfMaterials is the model's parts, by file, in the order of the first group that places each."
+					},
 					"BumpOrderAfterActive": {
 						"decl": "func (sk *Sketch) BumpOrderAfterActive(g *Group)",
 						"text": "BumpOrderAfterActive gives g the order after the active group's and moves the groups after that one down."
@@ -5845,6 +5964,10 @@
 					"ClearSection": {
 						"decl": "func (sk *Sketch) ClearSection()",
 						"text": "ClearSection turns the section view off."
+					},
+					"Configuration": {
+						"decl": "func (sk *Sketch) Configuration(name string) *Configuration",
+						"text": "Configuration is the configuration called name, or nil."
 					},
 					"Constrain": {
 						"decl": "func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity, other, other2 bool) core.HConstraint",
@@ -5890,6 +6013,10 @@
 						"decl": "func (sk *Sketch) DeleteAllConstraintsFor(typ core.ConstraintType, entityA, ptA core.HEntity)",
 						"text": "DeleteAllConstraintsFor deletes the constraints of the given type on entityA and ptA; used when auto-removing constraints that would become redundant (C++ Constraint::DeleteAllConstraintsFor)."
 					},
+					"DeleteConfiguration": {
+						"decl": "func (sk *Sketch) DeleteConfiguration(name string) error",
+						"text": "DeleteConfiguration removes a configuration; the table stays as it is."
+					},
 					"DeleteParameter": {
 						"decl": "func (sk *Sketch) DeleteParameter(name string) error",
 						"text": "DeleteParameter removes a parameter."
@@ -5902,6 +6029,10 @@
 						"decl": "func (sk *Sketch) DeleteTaggedRequests()",
 						"text": "DeleteTaggedRequests deletes the tagged requests, fixing up the point-coincident constraints on their points, and regenerates (C++ GraphicsWindow::DeleteTaggedRequests)."
 					},
+					"DependenciesOf": {
+						"decl": "func (sk *Sketch) DependenciesOf(g *Group) []Dependency",
+						"text": "DependenciesOf is GroupDependencies of g, which need not be in the sketch yet: a group about to be added has no requests or constraints."
+					},
 					"DistanceLabelOffset": {
 						"decl": "func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector",
 						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view (C++ GraphicsWindow::MenuConstrain)."
@@ -5909,6 +6040,10 @@
 					"EntitiesToMap": {
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
 						"text": "EntitiesToMap returns the entities indexed by their handle."
+					},
+					"EntityAfter": {
+						"decl": "func (sk *Sketch) EntityAfter(he core.HEntity, h core.HGroup) (core.HGroup, bool)",
+						"text": "EntityAfter reports whether entity he belongs to a group after group h in the history, which h may not refer to; it gives that group."
 					},
 					"EntityFreedom": {
 						"decl": "func (sk *Sketch) EntityFreedom(he core.HEntity) Freedom",
@@ -5928,7 +6063,7 @@
 					},
 					"ExportMeshTo": {
 						"decl": "func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error",
-						"text": "ExportMeshTo writes the active group's mesh, regenerated at the export chord tolerance, to filename; the extension picks the format, and only STL is supported."
+						"text": "ExportMeshTo writes the active group's mesh, regenerated at the export chord tolerance, to filename; the extension picks the format, STL or 3MF."
 					},
 					"FaceName": {
 						"decl": "func (sk *Sketch) FaceName(id srf.FaceID) string",
@@ -6003,6 +6138,14 @@
 						"decl": "func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool",
 						"text": "groupsInOrder reports whether before comes before after (C++ GroupsInOrder)."
 					},
+					"Interferences": {
+						"decl": "func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup)",
+						"text": "Interferences checks the parts of the model up to group upTo against each other."
+					},
+					"LaterReference": {
+						"decl": "func (sk *Sketch) LaterReference(h core.HGroup) (dep Dependency, ok bool)",
+						"text": "LaterReference is the first group that group h refers to and that comes after it in the history, as one made with an earlier group active and then named by a group before it would: what a group refers to must be made before it."
+					},
 					"LoadFactoryDefaults": {
 						"decl": "func (sk *Sketch) LoadFactoryDefaults()",
 						"text": "LoadFactoryDefaults resets the default styles to their factory settings (C++ Style::LoadFactoryDefaults; the background colour it also resets is the user interface's)."
@@ -6042,6 +6185,10 @@
 					"MustGetParam": {
 						"decl": "func (s *Sketch) MustGetParam(h core.HParam) *core.Param",
 						"text": "MustGetParam is GetParam for handles that must exist (C++ SK.GetParam, which asserts)."
+					},
+					"NamedConstraint": {
+						"decl": "func (sk *Sketch) NamedConstraint(name string) *core.Constraint",
+						"text": "NamedConstraint is the constraint named name, or nil."
 					},
 					"NewChamfer": {
 						"decl": "func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, distance float64, name string) (Group, error)",
@@ -6135,6 +6282,10 @@
 						"decl": "func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity)",
 						"text": "RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt (C++ GraphicsWindow::RemoveConstraintsForPointBeingDeleted)."
 					},
+					"RenameConfiguration": {
+						"decl": "func (sk *Sketch) RenameConfiguration(from, to string) error",
+						"text": "RenameConfiguration renames a configuration."
+					},
 					"RenameParameter": {
 						"decl": "func (sk *Sketch) RenameParameter(from, to string) error",
 						"text": "RenameParameter renames a parameter and every use of it, in other parameters, in constraints and in groups."
@@ -6154,6 +6305,10 @@
 					"SectionPlaneName": {
 						"decl": "func (sk *Sketch) SectionPlaneName() string",
 						"text": "SectionPlaneName names the section's plane for the user: a workplane by its request or group, a face by its group."
+					},
+					"SetConstraintName": {
+						"decl": "func (sk *Sketch) SetConstraintName(hc core.HConstraint, name string) error",
+						"text": "SetConstraintName names the constraint hc, renaming every use of an old name, or with \"\" takes its name away, which a name in use can't be."
 					},
 					"SetConstraintText": {
 						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
@@ -6190,6 +6345,10 @@
 					"ShowNakedEdges": {
 						"decl": "func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList",
 						"text": "ShowNakedEdges finds the active group's naked and self-intersecting edges, and reports them through Message; with reportOnlyWhenNotOkay, only if there are any."
+					},
+					"ShownValue": {
+						"decl": "func (sk *Sketch) ShownValue(c *core.Constraint) float64",
+						"text": "ShownValue is the value of a constraint as its label shows it, in the document's unit, which an expression reads by its name."
 					},
 					"SolidAt": {
 						"decl": "func (sk *Sketch) SolidAt(hg core.HGroup) *Group",
@@ -6414,6 +6573,10 @@
 				"decl": "func EntityPointCount(entity core.EntityType, extraPoints int) (pts int, ok bool)",
 				"text": "EntityPointCount is how many points an entity of that type has (C++ EntReqTable::GetEntityInfo's pts); ok is false for a type no request makes."
 			},
+			"ExportMeshAs3mfTo": {
+				"decl": "func ExportMeshAs3mfTo(w io.Writer, m *srf.SMesh) error",
+				"text": "ExportMeshAs3mfTo writes m as a 3MF file."
+			},
 			"ExportMeshAsStlTo": {
 				"decl": "func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error",
 				"text": "ExportMeshAsStlTo writes m as a binary STL file, in export units of scale mm (C++ SolveSpaceUI::ExportMeshAsStlTo)."
@@ -6449,9 +6612,17 @@
 				"decl": "func SetConstraintValue(c *core.Constraint, v float64)",
 				"text": "SetConstraintValue gives a constraint the value v that the user typed: in millimetres, degrees or a ratio, the magnitude the label shows."
 			},
+			"SplitNamedText": {
+				"decl": "func SplitNamedText(s string) (name string, named bool, value string)",
+				"text": "SplitNamedText splits what was typed in a dimension's label: \"name = value\" names it, \"= value\" takes its name away, and a value alone leaves the name as it is (named false)."
+			},
 			"ThawExportSettings": {
 				"decl": "func ThawExportSettings(settings core.Settings) ExportSettings",
 				"text": "ThawExportSettings reads the export settings, with C++'s defaults (C++ SolveSpaceUI::Init)."
+			},
+			"WriteBOMCSV": {
+				"decl": "func WriteBOMCSV(w io.Writer, items []BOMItem) error",
+				"text": "WriteBOMCSV writes the bill of materials as CSV: a header, then a line for each part with its count, its file and the groups that place it."
 			}
 		},
 		"values": {

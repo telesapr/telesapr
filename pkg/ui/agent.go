@@ -214,12 +214,12 @@ func (b consoleBackend) Describe(ctx context.Context, group string) (string, err
 	return s.Describe(ctx, group)
 }
 
-func (b consoleBackend) Render(ctx context.Context, view string, width, height int) ([]byte, error) {
+func (b consoleBackend) Render(ctx context.Context, view, group string, width, height int) ([]byte, error) {
 	s, err := b.session()
 	if err != nil {
 		return nil, err
 	}
-	return s.Render(ctx, view, width, height)
+	return s.Render(ctx, view, group, width, height)
 }
 
 func (b consoleBackend) Help(_ context.Context, name string) (string, error) {

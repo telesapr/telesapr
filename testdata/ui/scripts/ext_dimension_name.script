@@ -1,0 +1,55 @@
+# Dimensions by name (an extension): the bottom side's dimension named
+# width in its editor, as the file shows, and the right side's reads
+# it as width/2. Renamed to w in its editor, the right side's expression
+# follows; taking the name away while it is used is refused with a
+# message naming the user.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+move 290 330
+down L 290 330
+up L 290 330
+key d
+key esc
+move 380 265
+down L 380 265
+up L 380 265
+key d
+key esc
+move 290 370
+down L 290 370
+up L 290 370
+down L 290 370
+dbl L 290 370
+up L 290 370
+edit width = 40
+move 430 270
+down L 430 270
+up L 430 270
+down L 430 270
+dbl L 430 270
+up L 430 270
+edit width/2
+save
+move 290 370
+down L 290 370
+dbl L 290 370
+up L 290 370
+edit w = 40
+move 430 270
+down L 430 270
+dbl L 430 270
+up L 430 270
+edit w/2
+move 290 370
+down L 290 370
+dbl L 290 370
+up L 290 370
+answer ok
+edit = 40
+save

@@ -6,7 +6,11 @@ package ui
 // the same way.
 
 import (
+	"math"
+	"sort"
+
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -18,8 +22,13 @@ type clipCanvas interface {
 	SetClipPlane(h *srf.HalfSpace)
 }
 
-// sectionCapColor fills the cut.
+// sectionCapColor is the cap's colour by default: the SectionCap
+// style's, which the user can change.
 var sectionCapColor = core.NewRgbaColor(205, 100, 80, 255)
+
+// sectionHatchPixels is how far apart the cap's hatch lines are on the
+// screen.
+const sectionHatchPixels = 10
 
 // sectionCap is the cap last computed, kept while the mesh and the
 // plane stay the same.
@@ -79,9 +88,18 @@ func (gw *GraphicsWindow) drawSectionCap(g *sketch.Group, canvas render.Canvas) 
 	if len(c.poly.Contours) == 0 {
 		return
 	}
+	capStyle := gw.ss.styleStroke(hstyle(core.StyleSectionCap))
 	if gw.showShaded {
-		canvas.DrawPolygon(&c.poly, canvas.GetFill(render.Fill{Color: sectionCapColor}))
+		canvas.DrawPolygon(&c.poly, canvas.GetFill(render.Fill{Color: capStyle.Color}))
 	}
+	// The hatch: lines at 45 degrees across the cap, in the style's
+	// colour darkened, so that a cut reads as one in print too.
+	hatch := capStyle
+	hatch.Color = core.NewRgbaColor(capStyle.Color.Red/2, capStyle.Color.Green/2, capStyle.Color.Blue/2, 255)
+	hatch.ZIndex = 1
+	var hl srf.SEdgeList
+	hatchLines(&c.poly, keep.N, sectionHatchPixels/gw.view.Scale, &hl)
+	canvas.DrawEdges(&hl, canvas.GetStroke(hatch))
 	stroke := gw.ss.styleStroke(hstyle(core.StyleSolidEdge))
 	stroke.ZIndex = 1
 	hcs := canvas.GetStroke(stroke)
@@ -222,4 +240,53 @@ func (tw *TextWindow) EditControlDoneForSection(s string) bool {
 	}
 	tw.ss.GW.sectionChanged()
 	return true
+}
+
+// hatchLines adds to el the parts inside poly, a set of loops in a
+// plane of normal n, of lines at 45 degrees across it, spacing apart:
+// each line is cut where it crosses the loops, and kept between every
+// other crossing.
+func hatchLines(poly *srf.SPolygon, n geom.Vector, spacing float64, el *srf.SEdgeList) {
+	if spacing <= 0 || len(poly.Contours) == 0 {
+		return
+	}
+	n = n.WithMagnitude(1)
+	u := n.NormalDir(0).WithMagnitude(1)
+	v := n.Cross(u)
+	dir := u.Plus(v).WithMagnitude(1)
+	across := n.Cross(dir)
+	lo, hi := math.Inf(1), math.Inf(-1)
+	for _, c := range poly.Contours {
+		for _, p := range c.Points {
+			d := p.P.Dot(across)
+			lo, hi = math.Min(lo, d), math.Max(hi, d)
+		}
+	}
+	if hi-lo > 1e4*spacing {
+		spacing = (hi - lo) / 1e4
+	}
+	for d := math.Ceil(lo/spacing) * spacing; d <= hi; d += spacing {
+		var at []float64
+		var base geom.Vector
+		found := false
+		for _, c := range poly.Contours {
+			for i := range c.Points {
+				a, b := c.Points[i].P, c.Points[(i+1)%len(c.Points)].P
+				da, db := a.Dot(across)-d, b.Dot(across)-d
+				// Half open, so a crossing at a vertex counts once.
+				if (da < 0) == (db < 0) {
+					continue
+				}
+				p := a.Plus(b.Minus(a).ScaledBy(da / (da - db)))
+				if !found {
+					base, found = p, true
+				}
+				at = append(at, p.Minus(base).Dot(dir))
+			}
+		}
+		sort.Float64s(at)
+		for k := 0; k+1 < len(at); k += 2 {
+			el.AddEdge(base.Plus(dir.ScaledBy(at[k])), base.Plus(dir.ScaledBy(at[k+1])), 0, 0, 0)
+		}
+	}
 }

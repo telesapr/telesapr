@@ -193,6 +193,10 @@ func init() {
 		{1, "Lock Point Where &Dragged", CmdWhereDragged, ']', kn, mCon},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Comment", CmdComment, ';', kn, mCon},
+		{1, "", CmdNone, 0, kn, nil},
+		{1, "Mate &Concentric", CmdMateConcentric, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
+		{1, "Mate &Flush", CmdMateFlush, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
+		{1, "Mate &Hinge", CmdMateHinge, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
 
 		{0, "&Analyze", CmdNone, 0, kn, mAna},
 		{1, "Measure &Volume", CmdVolume, c_ | s_ | 'v', kn, mAna},
@@ -202,6 +206,7 @@ func init() {
 		{1, "Show &Naked Edges", CmdNakedEdges, c_ | s_ | 'n', kn, mAna},
 		{1, "Show &Center of Mass", CmdCenterOfMass, c_ | s_ | 'c', kn, mAna},
 		{1, "Check S&olid", CmdCheckSolid, c_ | s_ | 'o', kn, mAna},
+		{1, "&Bill of Materials", CmdBillOfMaterials, 0, kn, mAna},
 		{1, "Measure Se&lection", CmdMeasure, c_ | s_ | 'e', kc, func(ss *SolveSpaceUI, c Command) { ss.MenuMeasure() }},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Show &Underconstrained Points", CmdShowDOF, c_ | s_ | 'f', kn, mAna},
@@ -209,6 +214,7 @@ func init() {
 		{1, "&Trace Point", CmdTracePt, c_ | s_ | 't', kn, mAna},
 		{1, "&Stop Tracing...", CmdStopTracing, c_ | s_ | 's', kn, mAna},
 		{1, "Step &Dimension...", CmdStepDim, c_ | s_ | 'd', kn, mAna},
+		{1, "Motion St&udy...", CmdMotionStudy, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMotionStudy() }},
 
 		// C++ has no scripts; the menu is ours.
 		{0, "S&cript", CmdNone, 0, kn, mScr},

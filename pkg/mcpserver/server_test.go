@@ -23,13 +23,13 @@ import (
 type painter struct {
 	*agent.Session
 	asked struct {
-		view          string
+		view, group   string
 		width, height int
 	}
 }
 
-func (p *painter) Render(_ context.Context, view string, width, height int) ([]byte, error) {
-	p.asked.view, p.asked.width, p.asked.height = view, width, height
+func (p *painter) Render(_ context.Context, view, group string, width, height int) ([]byte, error) {
+	p.asked.view, p.asked.group, p.asked.width, p.asked.height = view, group, width, height
 	if view == "inside" {
 		return nil, errors.New("no view 'inside'")
 	}
@@ -185,7 +185,7 @@ func TestDescribeHelpRender(t *testing.T) {
 		t.Errorf("help of a name nothing has is no error")
 	}
 
-	res, _ = call(t, cs, ToolRender, map[string]any{"view": "front", "width": 320, "height": 200})
+	res, _ = call(t, cs, ToolRender, map[string]any{"view": "front", "group": "g002", "width": 320, "height": 200})
 	if res.IsError || len(res.Content) != 1 {
 		t.Fatalf("the picture's result is %+v", res)
 	}
@@ -197,7 +197,7 @@ func TestDescribeHelpRender(t *testing.T) {
 	if err != nil || decoded.Bounds().Dx() != 4 {
 		t.Errorf("the picture doesn't decode as the PNG that was made: %v", err)
 	}
-	if backend.asked.view != "front" || backend.asked.width != 320 || backend.asked.height != 200 {
+	if backend.asked.view != "front" || backend.asked.group != "g002" || backend.asked.width != 320 || backend.asked.height != 200 {
 		t.Errorf("the picture asked for was %+v", backend.asked)
 	}
 	if call(t, cs, ToolRender, nil); backend.asked.view != "" || backend.asked.width != 0 {

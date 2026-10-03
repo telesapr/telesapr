@@ -1,0 +1,36 @@
+# A rectangle whose bottom side's dimension is named width in its
+# editor, and whose right side is width/2, then extruded; the same model
+# as path_dimension_name.go makes (TestPathEquivalenceDimensionName).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+move 290 330
+down L 290 330
+up L 290 330
+key d
+key esc
+move 380 265
+down L 380 265
+up L 380 265
+key d
+key esc
+move 290 370
+down L 290 370
+up L 290 370
+down L 290 370
+dbl L 290 370
+up L 290 370
+edit width = 40
+move 430 270
+down L 430 270
+up L 430 270
+down L 430 270
+dbl L 430 270
+up L 430 270
+edit width/2
+key x shift

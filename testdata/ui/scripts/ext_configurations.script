@@ -1,0 +1,48 @@
+# Configurations (an extension): a parameter w drives a rectangle's
+# side; on the parameters screen a configuration "small" is added from
+# the table, then "large", in which w is changed to 50; choosing
+# "small" writes its w back, and the side follows, as the file shows.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+menu Edit|Parameters...
+twmove 51 130
+twdown L 51 130
+twup L 51 130
+edit w = 30
+move 290 330
+down L 290 330
+up L 290 330
+key d
+key esc
+move 290 370
+down L 290 370
+up L 290 370
+down L 290 370
+dbl L 290 370
+up L 290 370
+edit w
+menu Edit|Parameters...
+twmove 46 215
+twdown L 46 215
+twup L 46 215
+edit small
+twmove 46 235
+twdown L 46 235
+twup L 46 235
+edit large
+twmove 411 115
+twdown L 411 115
+twup L 411 115
+edit 50
+tw
+twmove 37 215
+twdown L 37 215
+twup L 37 215
+tw
+save

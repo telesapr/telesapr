@@ -120,6 +120,38 @@ func (c Constraint) Expr() (expr string) {
 	return expr
 }
 
+// Name is what expressions read the constraint's value by, or "".
+func (c Constraint) Name() (name string) {
+	c.d.read(func(sk *sketch.Sketch) { name = c.get(sk).Name })
+	return name
+}
+
+// SetName names the constraint, so that expressions read its value by
+// the name as they read a parameter: the value its label shows, in the
+// document's unit. Uses of an old name are renamed; "" takes the name
+// away, which a name in use can't be. A reference dimension can't be
+// named. Parameters and dimensions share the names.
+func (c Constraint) SetName(name string) {
+	c.d.change(func(sk *sketch.Sketch) {
+		c.get(sk)
+		if err := sk.SetConstraintName(c.H, name); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// Dimension is the constraint named name.
+func (d *Doc) Dimension(name string) (c Constraint) {
+	d.read(func(sk *sketch.Sketch) {
+		con := sk.NamedConstraint(name)
+		if con == nil {
+			fail("no dimension is named %q", name)
+		}
+		c = Constraint{d, con.H}
+	})
+	return c
+}
+
 // Reference reports whether the constraint is a reference dimension,
 // which measures and doesn't constrain.
 func (c Constraint) Reference() (reference bool) {
@@ -208,6 +240,14 @@ func (d *Doc) constrain(build func(sk *sketch.Sketch, c *core.Constraint)) (out 
 		c.Group = sk.Active
 		c.Workplane = sk.ActiveWorkplane()
 		build(sk, &c)
+		// A group refers only to what is made before it (roadmap 16.4).
+		for _, he := range []core.HEntity{c.PtA, c.PtB, c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
+			if on, later := sk.EntityAfter(he, c.Group); later {
+				fail("%s belongs to %s, which comes after the active group %s in the history; "+
+					"a constraint refers to what is made before it",
+					Entity{d, he}.describe(sk), sk.GroupName(on), sk.GroupName(c.Group))
+			}
+		}
 		for i := range sk.Constraints {
 			if c.Equals(&sk.Constraints[i].ConstraintBase) {
 				out = Constraint{d, sk.Constraints[i].H}

@@ -121,6 +121,13 @@ stroke-linecap:round;
 stroke-linejoin:round;
 fill:none;
 }
+.s10 {
+stroke:#cd6450;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
 ]]></style>
 <polygon points='23.096,5.000 15.349,7.265 23.645,5.044' stroke='#646464' fill='#646464'/>
 <polygon points='14.800,7.222 15.349,7.265 23.096,5.000' stroke='#646464' fill='#646464'/>

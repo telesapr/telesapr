@@ -676,8 +676,9 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 		var c core.Constraint
 		c.Group = gw.activeGroupH()
 		c.Workplane = gw.ActiveWorkplane()
-		c.Type = gw.pending.suggestion
-		c.EntityA = gw.pending.request.Entity(0)
+		c.Type = gw.pending.suggestion.Type
+		c.EntityA, c.EntityB = gw.pending.suggestion.A, gw.pending.suggestion.B
+		c.Other = gw.pending.suggestion.Other
 		gw.drawConstraint(&c, ConstraintDrawDefault, canvas)
 	}
 

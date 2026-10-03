@@ -142,6 +142,14 @@ digits and underscores, and is none of the constant and function names above. A 
 expression may name other parameters, in any order in the file; the writer keeps the order the
 user made them in. A second parameter of the same name is an error.
 
+A configuration lists expressions for parameters by name; the one `active-configuration` names
+is the one the parameter lines hold, written again inside it. A configuration may name a
+parameter the table no longer has.
+
+A constraint's `name` is read the same way: the value its label shows, in the document's unit,
+without the sign of a side, and a diameter shown as a radius as the radius. Parameters and
+named constraints share the names.
+
 What cannot be evaluated is not an error of the file: a cycle, a name that is no parameter, a
 value that is no number, or a group value out of its range (fewer than 1 or more than 999
 copies, a scale of 0). The reader keeps the text, so a save writes it back, and reports it with
@@ -165,7 +173,10 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 |---|---|
 | `telesapr <major>` | The header. |
 | `units <unit>` | `mm`, `inch`, `m` or `ft-in`: the document's unit, which typed lengths are in. A file without it is in `mm`. |
+| `active <handle>` | The group that was active, written only when it is not the last. What is shown, and so each entity's `act-visible`, follows it. A file without it opens with the last group active. |
 | `param <name> = <expression>` | A named parameter, see "Parameters". |
+| `configuration <string> { param <name> = <expression> ... }` | A configuration: a named set of the parameters' expressions, see "Parameters". |
+| `active-configuration <string>` | The configuration the table holds, if one does. |
 | `group <handle> <type> <name> { ... }` | A group. |
 | `request <handle> <type> { ... }` | A request, what the user drew. |
 | `constraint <handle> <type> { ... }` | A constraint. |
@@ -327,6 +338,7 @@ constraint <handle> <type> {
   group <handle>
   workplane <handle>
   value = <expression>      # a length in the document's unit, degrees for an angle, or a ratio
+  name <string>             # what expressions read the value by, as a parameter's name
   param <handle>            # the solver parameter of a constraint that has one
   pt-a <handle>
   pt-b <handle>

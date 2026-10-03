@@ -121,6 +121,13 @@ stroke-linecap:round;
 stroke-linejoin:round;
 fill:none;
 }
+.s10 {
+stroke:#cd6450;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
 ]]></style>
 
 </svg>

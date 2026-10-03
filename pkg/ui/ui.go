@@ -151,6 +151,11 @@ const (
 	CmdGroupShell
 	CmdScriptAgent
 	CmdGroupPathPattern
+	CmdBillOfMaterials
+	CmdMotionStudy
+	CmdMateConcentric
+	CmdMateFlush
+	CmdMateHinge
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -279,7 +284,7 @@ type pendingState struct {
 	filename    string
 
 	hasSuggestion bool
-	suggestion    core.ConstraintType
+	suggestion    lineSuggestion
 }
 
 // GraphicsWindow is the window with the model and the toolbar (C++

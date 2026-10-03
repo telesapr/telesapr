@@ -53,9 +53,11 @@ type Backend interface {
 	Describe(ctx context.Context, group string) (string, error)
 	// Render is a PNG picture of the drawing, width by height pixels,
 	// seen as view names: "top", "bottom", "left", "right", "front",
-	// "back" or "isometric". A zero size, or "" for the view, is the
-	// default: 800 by 600, isometric.
-	Render(ctx context.Context, view string, width, height int) ([]byte, error)
+	// "back", "isometric", or "window" for the view the window shows.
+	// A zero size, or "" for the view, is the default: 800 by 600,
+	// isometric. With group not "", the drawing is drawn as it is up to
+	// that group, as if it were active.
+	Render(ctx context.Context, view, group string, width, height int) ([]byte, error)
 	// Help is what the scripting interface's help says of name, as
 	// "Doc.Extrude" or "Group"; of "", the Primer.
 	Help(ctx context.Context, name string) (string, error)
@@ -263,7 +265,7 @@ func groupNames(doc *api.Doc) []string {
 }
 
 // Render is a picture of the drawing.
-func (s *Session) Render(_ context.Context, view string, width, height int) (png []byte, err error) {
+func (s *Session) Render(_ context.Context, view, group string, width, height int) (png []byte, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if view == "" {
@@ -282,7 +284,20 @@ func (s *Session) Render(_ context.Context, view string, width, height int) (png
 	defer func() { _ = os.RemoveAll(dir) }()
 	file := filepath.Join(dir, "view.png")
 	var rerr error
-	if err := try(func() { rerr = s.engine.Doc().Render(file, width, height, view) }); err != nil {
+	if err := try(func() {
+		doc := s.engine.Doc()
+		if group != "" {
+			g := doc.Group(group)
+			if !g.Valid() {
+				panic(fmt.Errorf("no group is called %q; the groups are %v", group, groupNames(doc)))
+			}
+			// Drawn as if active, and the active group put back.
+			was := doc.Active()
+			doc.Activate(g)
+			defer doc.Activate(was)
+		}
+		rerr = doc.Render(file, width, height, view)
+	}); err != nil {
 		return nil, err
 	}
 	if rerr != nil {

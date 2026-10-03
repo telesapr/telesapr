@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -226,6 +227,54 @@ func TestPathEquivalenceDraft(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_draft", "path_draft")
 	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupExtrude || g.ValC != 5 || g.Problem.Msg != "" {
 		t.Errorf("the extrusion: type %d, draft %g, problem %q", g.Type, g.ValC, g.Problem.Msg)
+	}
+}
+
+// A group made with an earlier group active, from the mouse and from a
+// script, goes into the history after that group, before the groups
+// that follow it (roadmap 16.4).
+func TestPathEquivalenceInsertGroup(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_insert_group", "path_insert_group")
+	var names []string
+	for _, hg := range ui.GroupOrder {
+		names = append(names, ui.GetGroup(hg).Name)
+	}
+	if got := strings.Join(names, " "); got != "#references sketch-in-plane extrude extrude" ||
+		ui.GetGroup(ui.GroupOrder[2]).H.V < ui.GetGroup(ui.GroupOrder[3]).H.V {
+		t.Errorf("the history: %s", got)
+	}
+}
+
+// A dimension named in its label's editor and read by name in another
+// one's, and the same made by a script (roadmap 16.1).
+func TestPathEquivalenceDimensionName(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_dimension_name", "path_dimension_name")
+	if c := ui.NamedConstraint("width"); c == nil || c.ValA != 40 {
+		t.Errorf("the dimension named width: %+v", c)
+	}
+}
+
+// Configurations made and chosen on the parameters screen, and the
+// same made by a script (roadmap 16.2).
+func TestPathEquivalenceConfigurations(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_configurations", "path_configurations")
+	if ui.ActiveConfiguration != "small" || len(ui.Configurations) != 2 {
+		t.Errorf("configurations %v, active %q", ui.Configurations, ui.ActiveConfiguration)
+	}
+}
+
+// Two circles picked with the mouse and made a concentric mate, and the
+// same made by a script (roadmap 16.9).
+func TestPathEquivalenceMate(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_mate", "path_mate")
+	n := 0
+	for _, c := range ui.Constraints {
+		if c.Type == core.ConstraintPointsCoincident {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("%d coincident constraints", n)
 	}
 }
 

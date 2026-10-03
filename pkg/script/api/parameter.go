@@ -123,3 +123,49 @@ func (g Group) Value(value sketch.GroupValue) (v float64) {
 	g.d.read(func(sk *sketch.Sketch) { val, _ := g.get(sk).Value(value); v = *val })
 	return v
 }
+
+// AddConfiguration adds a configuration, a named set of the parameters'
+// expressions, from the table as it is, and makes it active: while it
+// is, SetParameter changes it as well as the table.
+func (d *Doc) AddConfiguration(name string) (err error) {
+	d.change(func(sk *sketch.Sketch) { err = sk.AddConfiguration(name) })
+	return err
+}
+
+// ActivateConfiguration writes the configuration's expressions into
+// the parameter table and makes it active; "" makes none active, and
+// leaves the table as it is. The model regenerates.
+func (d *Doc) ActivateConfiguration(name string) (err error) {
+	d.change(func(sk *sketch.Sketch) { err = sk.ActivateConfiguration(name) })
+	return err
+}
+
+// ActiveConfiguration is the active configuration's name, or "".
+func (d *Doc) ActiveConfiguration() (name string) {
+	d.read(func(sk *sketch.Sketch) { name = sk.ActiveConfiguration })
+	return name
+}
+
+// Configurations are the configurations' names, in the order they were
+// made.
+func (d *Doc) Configurations() (names []string) {
+	d.read(func(sk *sketch.Sketch) {
+		for _, c := range sk.Configurations {
+			names = append(names, c.Name)
+		}
+	})
+	return names
+}
+
+// RenameConfiguration renames a configuration.
+func (d *Doc) RenameConfiguration(from, to string) (err error) {
+	d.change(func(sk *sketch.Sketch) { err = sk.RenameConfiguration(from, to) })
+	return err
+}
+
+// DeleteConfiguration removes a configuration; the table stays as it
+// is.
+func (d *Doc) DeleteConfiguration(name string) (err error) {
+	d.change(func(sk *sketch.Sketch) { err = sk.DeleteConfiguration(name) })
+	return err
+}

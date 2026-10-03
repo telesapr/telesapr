@@ -238,7 +238,7 @@ func (r *uiScriptRunner) dump() {
 	sk := r.ss.SK
 	pd := &gw.pending
 	fmt.Fprintf(&r.b, "pending %d %d \"%s\" %x %x %d %d\n", pd.operation, pd.command, pd.description,
-		pd.request.V, pd.point.V, b2i(pd.hasSuggestion), pd.suggestion)
+		pd.request.V, pd.point.V, b2i(pd.hasSuggestion), pd.suggestion.Type)
 	r.dumpHover()
 	fmt.Fprintf(&r.b, "selection %d", len(gw.selection))
 	for _, s := range gw.selection {
@@ -498,8 +498,18 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 		for _, m := range r.gw().MenuBar.(*headless.MenuBar).Menus {
 			dumpMenuItems(&r.b, []*headless.MenuItem{m}, 0)
 		}
+	case "cat":
+		// A file the script had written, as $tmp and $testdata.
+		data, err := os.ReadFile(r.expand(t[1]))
+		if err != nil {
+			fmt.Fprintf(&r.b, "cat %s: no file\n", t[1])
+			break
+		}
+		fmt.Fprintf(&r.b, "cat %s\n%s", t[1], r.unexpand(string(data)))
 	case "tw":
-		r.ss.TW.dumpRows(&r.b)
+		var rows strings.Builder
+		r.ss.TW.dumpRows(&rows)
+		r.b.WriteString(r.unexpand(rows.String()))
 	case "save":
 		if !r.ss.SaveToFile(r.savePath) {
 			fmt.Fprintf(&r.b, "save failed\n")

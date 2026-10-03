@@ -260,6 +260,24 @@ func (d *Doc) Describe() (s string) {
 			}
 			fmt.Fprintf(&b, "    %s\n", what)
 		}
+		// What the user points at, which "this" or "here" may mean.
+		hv := d.h.Hovered()
+		var over string
+		switch {
+		case hv.Entity.V != 0 && sk.GetEntity(hv.Entity) != nil:
+			over = Entity{d, hv.Entity}.describe(sk)
+		case hv.Constraint.V != 0:
+			if c := sk.GetConstraint(hv.Constraint); c != nil {
+				over = constraintDescription(c)
+			}
+		case hv.Edge.A != 0:
+			over = "the solid's " + hv.Edge.String()
+		case hv.Face != 0:
+			over = "the solid's face " + sk.FaceName(hv.Face)
+		}
+		if over != "" {
+			fmt.Fprintf(&b, "under the mouse:\n    %s\n", over)
+		}
 		s = b.String()
 	})
 	return s

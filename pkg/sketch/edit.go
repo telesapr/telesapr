@@ -1,6 +1,10 @@
 package sketch
 
-import "github.com/telesapr/telesapr/pkg/core"
+import (
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
+)
 
 // This file ports the sketch editing that C++ does in GraphicsWindow:
 // adding a request (mouse.cpp), deleting the selection
@@ -11,6 +15,10 @@ import "github.com/telesapr/telesapr/pkg/core"
 type Selection struct {
 	Entity     core.HEntity
 	Constraint core.HConstraint
+	// Edge is an edge of the solid by name, when its A is not zero,
+	// and Face a face no entity names: what the mouse can be over.
+	Edge topo.Name
+	Face srf.FaceID
 }
 
 // AddRequestOfType adds a request of the given type in the active group

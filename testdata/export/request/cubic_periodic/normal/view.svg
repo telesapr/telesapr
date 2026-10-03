@@ -121,6 +121,13 @@ stroke-linecap:round;
 stroke-linejoin:round;
 fill:none;
 }
+.s10 {
+stroke:#cd6450;
+stroke-width:0.100000;
+stroke-linecap:round;
+stroke-linejoin:round;
+fill:none;
+}
 ]]></style>
 <path d='M7.852 9.950 C5.000,12.679 7.592,15.915 13.036,16.422 C18.480,16.929 26.776,14.707 29.628,11.979 C32.479,9.250 29.887,6.014 24.443,5.507 C18.999,5.000 10.703,7.222 7.852,9.950  Z' class='s1' />
 

@@ -144,7 +144,7 @@ func (d *Doc) Save(path string) (err error) {
 // exportKinds says what each file extension holds; the ones that can
 // hold several kinds are exported as the first.
 var exportKinds = map[string]ExportKind{
-	".stl": ExportMesh, ".obj": ExportMesh, ".js": ExportMesh, ".html": ExportMesh, ".wrl": ExportMesh,
+	".stl": ExportMesh, ".3mf": ExportMesh, ".obj": ExportMesh, ".js": ExportMesh, ".html": ExportMesh, ".wrl": ExportMesh,
 	".svg": ExportView, ".dxf": ExportView, ".pdf": ExportView, ".eps": ExportView, ".ps": ExportView,
 	".plt": ExportView, ".hpgl": ExportView, ".ngc": ExportView, ".txt": ExportView,
 	".step": ExportSurfaces, ".stp": ExportSurfaces,
@@ -182,15 +182,18 @@ var views = map[string][2]Vec{
 	"front":     {{X: 1}, {Y: 1}},
 	"back":      {{X: -1}, {Y: 1}},
 	"isometric": {{X: 0.707, Z: -0.707}, {X: -0.408, Y: 0.816, Z: -0.408}},
+	// The window's own view, no direction: as the user sees it.
+	"window": {},
 }
 
 // Render draws the sketch into a PNG file of width by height pixels,
 // fitted to it and seen from "top", "bottom", "left", "right",
-// "front", "back" or "isometric".
+// "front", "back" or "isometric"; or "window", as the application's
+// window shows it, the same middle and as much of it across.
 func (d *Doc) Render(path string, width, height int, view string) (err error) {
 	v, ok := views[strings.ToLower(view)]
 	if !ok {
-		return fmt.Errorf("no view '%s': they are top, bottom, left, right, front, back and isometric", view)
+		return fmt.Errorf("no view '%s': they are top, bottom, left, right, front, back, isometric and window", view)
 	}
 	if width < 1 || height < 1 {
 		return fmt.Errorf("a picture of %d by %d pixels", width, height)

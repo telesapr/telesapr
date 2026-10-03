@@ -39,7 +39,7 @@ The names it gives (g003-plate, r004-line-segment, c00a-pt-pt-distance) are the 
 
 	renderDescription = `Returns a picture (PNG) of the drawing that is open in TeleSAPR, fitted to the picture: the solid shaded, with the sketch of the active group and its dimensions. Look at it to check that what was drawn is what was asked for.
 
-The view is "isometric" (the default), "front" (the XY plane, where a new drawing's first sketch is: x to the right, y up), "back", "top", "bottom", "left" or "right".`
+The view is "isometric" (the default), "front" (the XY plane, where a new drawing's first sketch is: x to the right, y up), "back", "top", "bottom", "left" or "right", fitted; or "window", the view the user has in the window, as they see it. With group, the drawing is drawn as it is up to that group, as if it were active.`
 
 	helpDescription = `Returns the documentation of TeleSAPR's scripting interface. With no name it is the primer: how scripts and drawings work, what the interpreter can't do, an example, and every call there is; read it once before writing the first script. With a name it is the documentation of that type, method or function: "Doc.Extrude", "Group", "Group.SetCombine", "Entity", "ThreadOptions", "math.Hypot".`
 )
@@ -56,7 +56,8 @@ type DescribeInput struct {
 
 // RenderInput is what render takes.
 type RenderInput struct {
-	View   string `json:"view,omitempty" jsonschema:"isometric (the default), front, back, top, bottom, left or right"`
+	View   string `json:"view,omitempty" jsonschema:"isometric (the default), front, back, top, bottom, left, right, or window for what the user sees"`
+	Group  string `json:"group,omitempty" jsonschema:"a group to draw the drawing up to, as if it were active, by its name or as g003; the active group if left out"`
 	Width  int    `json:"width,omitempty" jsonschema:"the picture's width in pixels, 800 if left out"`
 	Height int    `json:"height,omitempty" jsonschema:"the picture's height in pixels, 600 if left out"`
 }
@@ -140,7 +141,7 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: renderDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in RenderInput) (*mcp.CallToolResult, any, error) {
-		png, err := b.Render(ctx, in.View, in.Width, in.Height)
+		png, err := b.Render(ctx, in.View, in.Group, in.Width, in.Height)
 		if err != nil {
 			return nil, nil, err
 		}

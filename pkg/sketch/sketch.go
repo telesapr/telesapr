@@ -28,6 +28,11 @@ type Sketch struct {
 	// constraints and groups use, in the order the user made them.
 	// Not to be confused with Params, the solver's unknowns.
 	Parameters []Parameter
+	// Configurations are named sets of the parameters' expressions,
+	// and ActiveConfiguration the one the table holds now, or ""
+	// (config.go).
+	Configurations      []Configuration
+	ActiveConfiguration string
 	// ExprErrors lists the stored expressions of constraints and
 	// groups that the last regeneration could not evaluate.
 	ExprErrors []ExprError

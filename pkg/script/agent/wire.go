@@ -141,7 +141,7 @@ func answer(ctx context.Context, b Backend, req request) response {
 	case opDescribe:
 		res.Text, err = b.Describe(ctx, req.Group)
 	case opRender:
-		res.PNG, err = b.Render(ctx, req.View, req.Width, req.Height)
+		res.PNG, err = b.Render(ctx, req.View, req.Group, req.Width, req.Height)
 	case opHelp:
 		res.Text, err = b.Help(ctx, req.Name)
 	default:
@@ -354,8 +354,8 @@ func (r *Remote) Describe(ctx context.Context, group string) (string, error) {
 	return res.Text, err
 }
 
-func (r *Remote) Render(ctx context.Context, view string, width, height int) ([]byte, error) {
-	res, err := r.call(ctx, request{Op: opRender, View: view, Width: width, Height: height})
+func (r *Remote) Render(ctx context.Context, view, group string, width, height int) ([]byte, error) {
+	res, err := r.call(ctx, request{Op: opRender, View: view, Group: group, Width: width, Height: height})
 	return res.PNG, err
 }
 

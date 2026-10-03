@@ -1,0 +1,472 @@
+row 0  home   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 PARAMETERS
+ 0-9 74 64 0
+ 10-99 64 64 0
+row 9    name         value        expression
+ 0-42 74 64 0
+ 43-99 64 64 0
+row 11    w            50           50             [edit] [rename] [delete]
+ 0-43 64 61 0
+ 44-49 6c 61 101 0 1 0
+ 50-50 64 61 0
+ 51-58 6c 61 110 0 1 0
+ 59-59 64 61 0
+ 60-67 6c 61 120 0 1 0
+ 68-99 64 61 0
+row 14    [add a parameter]   (type: name = expression)
+ 0-2 64 64 0
+ 3-19 6c 64 97 0 1 0
+ 20-99 64 64 0
+row 17 CONFIGURATIONS   (each a set of the expressions above; one may be active)
+ 0-13 74 64 0
+ 14-99 64 64 0
+row 19     none   (the table changes alone)
+ 0-2 64 61 0
+ 3-8 6c 61 99 0 1 0
+ 9-99 64 61 0
+row 21     small [rename] [delete]
+ 0-2 64 64 0
+ 3-9 6c 64 99 1 1 0
+ 10-10 64 64 0
+ 11-18 6c 64 114 1 1 0
+ 19-19 64 64 0
+ 20-27 6c 64 120 1 1 0
+ 28-99 64 64 0
+row 23     large [rename] [delete]
+ 0-2 64 61 0
+ 3-9 6c 61 99 2 1 0
+ 10-10 64 61 0
+ 11-18 6c 61 114 2 1 0
+ 19-19 64 61 0
+ 20-27 6c 61 120 2 1 0
+ 28-99 64 61 0
+row 25    [add a configuration of the table as it is]   (type its name)
+ 0-2 64 64 0
+ 3-45 6c 64 65 0 1 0
+ 46-99 64 64 0
+row 27 
+ 0-99 64 64 0
+row 29    A parameter driving a length counts in the document's unit, mm;
+ 0-99 64 64 0
+row 31    one driving an angle, in degrees.
+ 0-99 64 64 0
+row 34 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 36 
+ 0-99 64 64 0
+row 0  home   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-17 74 64 0
+ 18-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 PARAMETERS
+ 0-9 74 64 0
+ 10-99 64 64 0
+row 9    name         value        expression
+ 0-42 74 64 0
+ 43-99 64 64 0
+row 11    w            30           30             [edit] [rename] [delete]
+ 0-43 64 61 0
+ 44-49 6c 61 101 0 1 0
+ 50-50 64 61 0
+ 51-58 6c 61 110 0 1 0
+ 59-59 64 61 0
+ 60-67 6c 61 120 0 1 0
+ 68-99 64 61 0
+row 14    [add a parameter]   (type: name = expression)
+ 0-2 64 64 0
+ 3-19 6c 64 97 0 1 0
+ 20-99 64 64 0
+row 17 CONFIGURATIONS   (each a set of the expressions above; one may be active)
+ 0-13 74 64 0
+ 14-99 64 64 0
+row 19     none   (the table changes alone)
+ 0-2 64 61 0
+ 3-8 6c 61 99 0 1 0
+ 9-99 64 61 0
+row 21     small [rename] [delete]
+ 0-2 64 64 0
+ 3-9 6c 64 99 1 1 0
+ 10-10 64 64 0
+ 11-18 6c 64 114 1 1 0
+ 19-19 64 64 0
+ 20-27 6c 64 120 1 1 0
+ 28-99 64 64 0
+row 23     large [rename] [delete]
+ 0-2 64 61 0
+ 3-9 6c 61 99 2 1 0
+ 10-10 64 61 0
+ 11-18 6c 61 114 2 1 0
+ 19-19 64 61 0
+ 20-27 6c 61 120 2 1 0
+ 28-99 64 61 0
+row 25    [add a configuration of the table as it is]   (type its name)
+ 0-2 64 64 0
+ 3-45 6c 64 65 0 1 0
+ 46-99 64 64 0
+row 27 
+ 0-99 64 64 0
+row 29    A parameter driving a length counts in the document's unit, mm;
+ 0-99 64 64 0
+row 31    one driving an angle, in degrees.
+ 0-99 64 64 0
+row 34 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 36 
+ 0-99 64 64 0
+save
+telesapr 2
+
+units mm
+
+param w = 30
+
+configuration "small" {
+  param w = 30
+}
+
+configuration "large" {
+  param w = 50
+}
+
+active-configuration "small"
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x5 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x6 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x7 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+constraint 0x1 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x40001
+  pt-b 0x50002
+}
+
+constraint 0x2 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x50001
+  pt-b 0x60002
+}
+
+constraint 0x3 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x60001
+  pt-b 0x70002
+}
+
+constraint 0x4 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x70001
+  pt-b 0x40002
+}
+
+constraint 0x5 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x40000
+}
+
+constraint 0x6 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x50000
+}
+
+constraint 0x7 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x60000
+}
+
+constraint 0x8 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x70000
+}
+
+constraint 0x9 pt-pt-distance {
+  group 0x2
+  workplane 0x80020000
+  value = w
+  pt-a 0x50001
+  pt-b 0x50002
+  label-offset 0 -10 0
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 13.000000000000002
+value 0x40011 -6
+value 0x40013 13.000000000000002
+value 0x40014 20
+value 0x50010 -17
+value 0x50011 -6
+value 0x50013 13.000000000000002
+value 0x50014 -6
+value 0x60010 -17
+value 0x60011 20
+value 0x60013 -17
+value 0x60014 -6
+value 0x70010 13.000000000000002
+value 0x70011 20
+value 0x70013 -17
+value 0x70014 20
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001 0x40002
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 13.000000000000002 -6 0
+  act-visible
+}
+
+entity 0x40002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 13.000000000000002 20 0
+  act-visible
+}
+
+entity 0x50000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x50001 0x50002
+  act-visible
+}
+
+entity 0x50001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -17 -6 0
+  act-visible
+}
+
+entity 0x50002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 13.000000000000002 -6 0
+  act-visible
+}
+
+entity 0x60000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x60001 0x60002
+  act-visible
+}
+
+entity 0x60001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -17 20 0
+  act-visible
+}
+
+entity 0x60002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -17 -6 0
+  act-visible
+}
+
+entity 0x70000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x70001 0x70002
+  act-visible
+}
+
+entity 0x70001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 13.000000000000002 20 0
+  act-visible
+}
+
+entity 0x70002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -17 20 0
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+  act-visible
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+end save

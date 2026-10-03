@@ -16,7 +16,8 @@ time, and `help()` there lists what a script can call.
 
 | Page | What it covers | Example |
 |---|---|---|
-| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; the document's unit of length; measuring | `plate`, `feedback` |
+| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `configurations`, `motion`, `dimensions`, `feedback` |
+| [Constraints while drawing](drawing.md) | Tangent, perpendicular, parallel and equal inferred as a line is drawn | (none) |
 | [History](history.md) | Moving a group, suppressing one with what uses it, broken references | `history` |
 | [Section view](section-view.md) | Cutting the model open to look inside | `section` |
 | [Mirror](mirror.md) | A group reflected in a plane | `mirror` |
@@ -28,7 +29,8 @@ time, and `help()` there lists what a script can call.
 | [Sweep](sweep.md) | A profile moved along a path | `sweep` |
 | [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
 | [Screw threads](threads.md) | Metric, unified and trapezoidal threads | `bolt` |
-| [STEP links](step-links.md) | A STEP file linked as a reference | `step` |
+| [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference | `step` |
+| [Assemblies](bill-of-materials.md) | Mates; the parts counted, to a CSV file; interfering parts by their shells; STEP with its structure | `mates`, `bom` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
 
 Files are saved as `.tlspr`, a text format described in [`docs/tlspr-format.md`](../tlspr-format.md).

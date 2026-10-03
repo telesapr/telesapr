@@ -4,7 +4,11 @@ Example: [`examples/scripts/step`](../../examples/scripts/step/step.go), which l
 file and prints what was read; given none, it exports a plate as STEP and links it back.
 
 New Group > Link / Assemble... (Shift+I) takes a STEP file (`.step`, `.stp`) as well as a
-TeleSAPR model or an STL mesh. A STEP file's solids are read and triangulated into a reference
+TeleSAPR model or a triangle mesh: an STL file, binary or text, or a Wavefront OBJ file, whose
+faces take the colours of the materials its `.mtl` file gives. A mesh links with a point at its
+origin, the corners of its bounding box, and a point at each vertex on its sharp edges. A STEP
+file or a mesh comes in where it was drawn, its coordinates the file's; a TeleSAPR model comes in
+off the middle of the view, beside what is drawn. A STEP file's solids are read and triangulated into a reference
 mesh, placed in the model, with a point at each vertex and at each circle's centre, so that
 the mesh can be constrained and measured against. The group's screen says what was read: the
 file's schema and unit, how many shapes, faces and triangles it gave, the chord tolerance it was

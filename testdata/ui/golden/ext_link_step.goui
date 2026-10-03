@@ -106,7 +106,7 @@ row 59    (none)
  0-99 64 61 0
 row 61 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 0\nTriangles: 526\nVolume: 940.43 mm³\nCenter of mass: (28.28, 28.28, 6.00)\nExtent: 10.00 x 10.00 x 12.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 0\nTriangles: 526\nVolume: 940.43 mm³\nCenter of mass: (0.0002, -0.00, 6.00)\nExtent: 10.00 x 10.00 x 12.00
 filedialog open
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0

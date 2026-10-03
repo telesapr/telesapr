@@ -65,6 +65,40 @@ func (ss *SolveSpaceUI) MenuAnalyze(id Command) {
 	case CmdInterference:
 		ss.NakedEdges.Clear()
 
+		// The parts by their shells (roadmap 16.10), unless one is a
+		// mesh with none: then the triangles, as C++ checks.
+		found, meshOnly := sk.Interferences(gw.activeGroupH())
+		if len(meshOnly) == 0 {
+			var lines []string
+			for _, f := range found {
+				if f.Failed {
+					lines = append(lines, fmt.Sprintf("    %s and %s: the Boolean failed",
+						sk.GroupName(f.A), sk.GroupName(f.B)))
+					continue
+				}
+				lines = append(lines, fmt.Sprintf("    %s and %s share %s",
+					sk.GroupName(f.A), sk.GroupName(f.B), ss.MmToStringSI(f.Volume, 3)))
+				for _, tr := range f.Mesh.Triangles {
+					ss.NakedEdges.AddEdge(tr.A, tr.B, 0, 0, 0)
+					ss.NakedEdges.AddEdge(tr.B, tr.C, 0, 0, 0)
+					ss.NakedEdges.AddEdge(tr.C, tr.A, 0, 0, 0)
+				}
+			}
+			gw.Invalidate(false)
+			switch len(lines) {
+			case 0:
+			case 1:
+				ss.Error("Two parts interfere, bad:\n\n%s", lines[0])
+			default:
+				ss.Error("%d pairs of parts interfere, bad:\n\n%s", len(lines), strings.Join(lines, "\n"))
+			}
+			if len(lines) > 0 {
+			} else {
+				ss.Message("The assembly does not interfere, good.")
+			}
+			break
+		}
+
 		m := &sk.GetGroup(gw.activeGroupH()).DisplayMesh
 		root := srf.SKdNodeFrom(m)
 		var inters, leaks bool
@@ -169,6 +203,12 @@ func (ss *SolveSpaceUI) MenuAnalyze(id Command) {
 		} else {
 			ss.Error("Bad selection for trace; select a single point.")
 		}
+
+	case CmdBillOfMaterials:
+		gw.ClearSelection()
+		ss.TW.GoToScreen(ScreenBillOfMaterials)
+		gw.ForceTextWindowShown()
+		ss.ScheduleShowTW()
 
 	case CmdStopTracing:
 		if ss.Traced.Point.V == 0 {

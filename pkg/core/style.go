@@ -54,7 +54,10 @@ const (
 	StyleDimSolid     = 13
 	StyleHiddenEdge   = 14
 	StyleOutline      = 15
-	StyleFirstCustom  = 0x100
+	// StyleSectionCap fills and hatches the cut of the section view
+	// (an extension).
+	StyleSectionCap  = 16
+	StyleFirstCustom = 0x100
 )
 
 type Style struct {
@@ -112,6 +115,7 @@ var StyleDefaults = []StyleDefault{
 	{HStyle{StyleDimSolid}, "DimSolid", rgbf(0.1, 0.1, 0.1), 1.0, 0, true, StippleContinuous},
 	{HStyle{StyleHiddenEdge}, "HiddenEdge", rgbf(0.8, 0.8, 0.8), 1.0, 1, true, StippleDash},
 	{HStyle{StyleOutline}, "Outline", rgbf(0.8, 0.8, 0.8), 3.0, 5, true, StippleContinuous},
+	{HStyle{StyleSectionCap}, "SectionCap", RgbaColor{Red: 205, Green: 100, Blue: 80, Alpha: 255}, 1.0, 1, true, StippleContinuous},
 }
 
 // FillDefaultStyle sets s to default style d, or to the active group's

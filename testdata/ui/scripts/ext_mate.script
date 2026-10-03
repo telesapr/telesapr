@@ -1,0 +1,33 @@
+# Mates (an extension): with nothing fitting selected, each says what to
+# select; two circles picked and made a concentric mate in a workplane
+# have their centres put on each other.
+answer ok
+menu Constrain|Mate Concentric
+answer ok
+menu Constrain|Mate Flush
+answer ok
+menu Constrain|Mate Hinge
+key c
+move 290 265
+down L 290 265
+up L 290 265
+move 340 265
+down L 340 265
+up L 340 265
+key esc
+key c
+move 400 265
+down L 400 265
+up L 400 265
+move 430 265
+down L 430 265
+up L 430 265
+key esc
+move 290 215
+down L 290 215
+up L 290 215
+move 400 235
+down L 400 235
+up L 400 235
+menu Constrain|Mate Concentric
+save

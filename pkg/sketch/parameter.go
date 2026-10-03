@@ -284,7 +284,7 @@ func (sk *Sketch) parseNamed(text string) (*core.Expr, []string, error) {
 	}
 	names := e.Variables()
 	for _, n := range names {
-		if sk.Parameter(n) == nil {
+		if sk.Parameter(n) == nil && sk.NamedConstraint(n) == nil {
 			return nil, nil, fmt.Errorf("unknown parameter %q", n)
 		}
 	}
@@ -297,8 +297,8 @@ func (sk *Sketch) AddParameter(name, expr string) error {
 	if !core.ValidVariableName(name) {
 		return fmt.Errorf("%q can't name a parameter: use a letter or underscore, then letters, digits and underscores, and no function or constant name", name)
 	}
-	if sk.Parameter(name) != nil {
-		return fmt.Errorf("there is already a parameter %q", name)
+	if err := sk.nameFree(name); err != nil {
+		return err
 	}
 	expr = cleanText(expr)
 	if _, _, err := sk.parseNamed(expr); err != nil {
@@ -312,6 +312,7 @@ func (sk *Sketch) AddParameter(name, expr string) error {
 		sk.applyParameters()
 		return err
 	}
+	sk.configParameterSet(name, expr)
 	return nil
 }
 
@@ -336,6 +337,7 @@ func (sk *Sketch) SetParameterExpr(name, expr string) error {
 		sk.applyParameters()
 		return err
 	}
+	sk.configParameterSet(name, expr)
 	return nil
 }
 
@@ -352,13 +354,14 @@ func (sk *Sketch) RenameParameter(from, to string) error {
 	if !core.ValidVariableName(to) {
 		return fmt.Errorf("%q can't name a parameter: use a letter or underscore, then letters, digits and underscores, and no function or constant name", to)
 	}
-	if sk.Parameter(to) != nil {
-		return fmt.Errorf("there is already a parameter %q", to)
+	if err := sk.nameFree(to); err != nil {
+		return err
 	}
 	p.Name = to
 	sk.forEachExpr(func(expr *string, _ string) {
 		*expr = core.RenameVariable(*expr, from, to)
 	})
+	sk.configParameterRenamed(from, to)
 	return nil
 }
 
@@ -368,7 +371,7 @@ func (sk *Sketch) DeleteParameter(name string) error {
 	if sk.Parameter(name) == nil {
 		return fmt.Errorf("no parameter %q", name)
 	}
-	if users := sk.ParameterUsers(name); len(users) > 0 {
+	if users := append(sk.ParameterUsers(name), sk.configurationUsers(name)...); len(users) > 0 {
 		return fmt.Errorf("parameter %q is used by %s", name, strings.Join(users, ", "))
 	}
 	for i := range sk.Parameters {
@@ -377,6 +380,7 @@ func (sk *Sketch) DeleteParameter(name string) error {
 			break
 		}
 	}
+	sk.configParameterDeleted(name)
 	return nil
 }
 
@@ -468,7 +472,7 @@ func (sk *Sketch) markDirtyFrom(hg core.HGroup) {
 // evaluate is EvaluateParameters without marking groups dirty; it
 // returns the groups whose values changed.
 func (sk *Sketch) evaluate() []core.HGroup {
-	vars := sk.evaluateTable()
+	vars, constraintErrs := sk.evaluateTable()
 	sk.ExprErrors = sk.ExprErrors[:0]
 	var changed []core.HGroup
 	mark := func(hg core.HGroup) {
@@ -502,7 +506,13 @@ func (sk *Sketch) evaluate() []core.HGroup {
 		if c.Expr == "" || c.Reference {
 			continue
 		}
-		v, err := eval(c.Expr)
+		var v float64
+		var err error
+		if msg, bad := constraintErrs[c.H]; bad {
+			err = errors.New(msg)
+		} else {
+			v, err = eval(c.Expr)
+		}
 		if err != nil {
 			sk.ExprErrors = append(sk.ExprErrors, ExprError{
 				Group: c.Group, Constraint: c.H, Field: "value", Expr: c.Expr, Err: err.Error()})
@@ -569,46 +579,70 @@ func (sk *Sketch) evaluate() []core.HGroup {
 	return changed
 }
 
-// evaluateTable evaluates every parameter after the ones it names, and
-// returns the values by name. A parameter in a cycle, or naming one
-// that does not exist, keeps its value and gets an Err.
-func (sk *Sketch) evaluateTable() map[string]float64 {
-	type node struct {
-		e     *core.Expr
-		names []string
-		state int // 0 unvisited, 1 on the stack, 2 done
+// evaluateTable evaluates every parameter and named constraint after
+// the ones it names, and returns the values by name. A parameter in a
+// cycle, or naming one that does not exist, keeps its value and gets an
+// Err; a named constraint's error is in the second map, by handle.
+func (sk *Sketch) evaluateTable() (map[string]float64, map[core.HConstraint]string) {
+	// An entry is a parameter or a named constraint: its expression,
+	// or none for a constraint's plain number, and where its value and
+	// error go.
+	type entry struct {
+		name   string
+		expr   string
+		value  float64
+		err    string
+		e      *core.Expr
+		names  []string
+		state  int // 0 unvisited, 1 on the stack, 2 done
+		param  *Parameter
+		constr *core.Constraint
 	}
-	nodes := make([]node, len(sk.Parameters))
-	index := make(map[string]int, len(sk.Parameters))
+	var entries []entry
 	for i := range sk.Parameters {
 		p := &sk.Parameters[i]
-		p.Err = ""
-		if _, dup := index[p.Name]; !dup {
-			index[p.Name] = i
+		entries = append(entries, entry{name: p.Name, expr: p.Expr, value: p.Value, param: p})
+	}
+	for i := range sk.Constraints {
+		c := &sk.Constraints[i]
+		// A reference dimension measures; read before the solve, its
+		// value would chase it.
+		if c.Name != "" && !c.Reference && !sk.allDimsReference(c.Group) {
+			entries = append(entries, entry{name: c.Name, expr: c.Expr, value: sk.ShownValue(c), constr: c})
 		}
 	}
-	for i := range sk.Parameters {
-		p := &sk.Parameters[i]
-		e, err := core.NewFromString(p.Expr)
-		if err != nil {
-			p.Err = err.Error()
+	index := make(map[string]int, len(entries))
+	for i := range entries {
+		en := &entries[i]
+		if _, dup := index[en.name]; !dup {
+			index[en.name] = i
+		}
+	}
+	for i := range entries {
+		en := &entries[i]
+		if en.constr != nil && en.expr == "" {
 			continue
 		}
-		nodes[i].e = e
-		nodes[i].names = e.Variables()
-		for _, n := range nodes[i].names {
+		e, err := core.NewFromString(en.expr)
+		if err != nil {
+			en.err = err.Error()
+			continue
+		}
+		en.e = e
+		en.names = e.Variables()
+		for _, n := range en.names {
 			if _, ok := index[n]; !ok {
-				p.Err = fmt.Sprintf("unknown parameter %q", n)
+				en.err = fmt.Sprintf("unknown parameter %q", n)
 				break
 			}
 		}
 	}
 
-	vars := make(map[string]float64, len(sk.Parameters))
+	vars := make(map[string]float64, len(entries))
 	var stack []int
 	var visit func(i int)
 	visit = func(i int) {
-		n := &nodes[i]
+		n := &entries[i]
 		if n.state == 2 {
 			return
 		}
@@ -619,7 +653,7 @@ func (sk *Sketch) evaluateTable() map[string]float64 {
 			if !ok {
 				continue
 			}
-			if nodes[j].state == 1 {
+			if entries[j].state == 1 {
 				// A cycle: from j's place on the stack to here.
 				k := len(stack) - 1
 				for stack[k] != j {
@@ -627,13 +661,13 @@ func (sk *Sketch) evaluateTable() map[string]float64 {
 				}
 				chain := make([]string, 0, len(stack)-k+1)
 				for _, m := range stack[k:] {
-					chain = append(chain, sk.Parameters[m].Name)
+					chain = append(chain, entries[m].name)
 				}
 				chain = append(chain, name)
 				msg := "cycle: " + strings.Join(chain, " -> ")
 				for _, m := range stack[k:] {
-					if sk.Parameters[m].Err == "" {
-						sk.Parameters[m].Err = msg
+					if entries[m].err == "" {
+						entries[m].err = msg
 					}
 				}
 				continue
@@ -642,25 +676,41 @@ func (sk *Sketch) evaluateTable() map[string]float64 {
 		}
 		stack = stack[:len(stack)-1]
 		n.state = 2
-		p := &sk.Parameters[i]
-		if p.Err == "" && n.e != nil {
+		if n.err == "" && n.e != nil {
 			v := n.e.Eval(nil, vars)
-			if math.IsNaN(v) || math.IsInf(v, 0) {
-				p.Err = "not a number"
-			} else {
-				p.Value = v
+			switch {
+			case math.IsNaN(v) || math.IsInf(v, 0):
+				n.err = "not a number"
+			case n.constr != nil:
+				n.value = shown(n.constr, v)
+			default:
+				n.value = v
 			}
 		}
-		vars[p.Name] = p.Value
+		vars[n.name] = n.value
 	}
-	for i := range nodes {
-		if _, ok := index[sk.Parameters[i].Name]; ok && index[sk.Parameters[i].Name] == i {
+	for i := range entries {
+		if index[entries[i].name] == i {
 			visit(i)
+		} else if entries[i].param != nil {
+			entries[i].err = fmt.Sprintf("a second parameter %q", entries[i].name)
 		} else {
-			sk.Parameters[i].Err = fmt.Sprintf("a second parameter %q", sk.Parameters[i].Name)
+			entries[i].err = fmt.Sprintf("a second name %q", entries[i].name)
 		}
 	}
-	return vars
+	errs := map[core.HConstraint]string{}
+	for i := range entries {
+		en := &entries[i]
+		if en.param != nil {
+			en.param.Err = en.err
+			if en.err == "" {
+				en.param.Value = en.value
+			}
+		} else if en.err != "" {
+			errs[en.constr.H] = en.err
+		}
+	}
+	return vars, errs
 }
 
 // signedValue reports whether a constraint's value has a sign, which
@@ -867,6 +917,11 @@ func (sk *Sketch) SetUnits(u core.Unit) []string {
 		if e, err := core.NewFromString(*expr); err == nil {
 			for _, n := range e.Variables() {
 				used[n] = true
+				// A named length is read in the new unit; its old
+				// value is what the expression was written for.
+				if c := sk.NamedConstraint(n); c != nil && IsLengthValue(c.Type) {
+					*expr = core.RenameVariable(*expr, n, "("+ConvertLengthExpr(n, u.MmPer(), from.MmPer())+")")
+				}
 			}
 		}
 		*expr = ConvertLengthExpr(*expr, from.MmPer(), u.MmPer())
@@ -902,6 +957,16 @@ func (sk *Sketch) SetUnits(u core.Unit) []string {
 					if !used[n] {
 						used[n], changed = true, true
 					}
+				}
+			}
+		}
+	}
+	// And what names a named length, whose value changes with the unit.
+	for _, p := range sk.Parameters {
+		if e, err := core.NewFromString(p.Expr); err == nil {
+			for _, n := range e.Variables() {
+				if c := sk.NamedConstraint(n); c != nil && IsLengthValue(c.Type) {
+					used[p.Name] = true
 				}
 			}
 		}

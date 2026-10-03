@@ -112,6 +112,8 @@ func (d *decoder) file(f *File) {
 			if u, ok := enumValue(d, docUnits, a[0]); ok {
 				d.doc.Units = u
 			}
+		case "active":
+			sk.Active = core.HGroup{V: d.handleField(n)}
 		case "group":
 			if g, ok := d.group(n); ok {
 				sk.Groups = append(sk.Groups, g)
@@ -148,6 +150,10 @@ func (d *decoder) file(f *File) {
 			d.fail(n.Pos, "a second header")
 		case "param":
 			d.param(n)
+		case "configuration":
+			d.configuration(n)
+		case "active-configuration":
+			sk.ActiveConfiguration = d.strField(n)
 		default:
 			d.warn(n.Pos, "unknown statement %q; skipped", n.Name)
 		}
@@ -289,6 +295,29 @@ type exprPlace struct {
 }
 
 // param reads "param <name> = <expression>".
+// configuration reads a configuration: its name, and a param line for
+// each of its expressions.
+func (d *decoder) configuration(n *Node) {
+	if !n.Block || len(n.Args) != 1 || !n.Args[0].Quoted {
+		d.fail(n.Pos, "a configuration is written as 'configuration <name> { param <name> = <expression> ... }'")
+	}
+	sk := d.doc.Sketch
+	c := sketch.Configuration{Name: n.Args[0].Text, Exprs: map[string]string{}}
+	if sk.Configuration(c.Name) != nil {
+		d.fail(n.Args[0].Pos, "a second configuration %q", c.Name)
+	}
+	for _, f := range n.Children {
+		if f.Name != "param" || !f.HasExpr || f.Block || len(f.Args) != 1 || f.Args[0].Quoted {
+			d.fail(f.Pos, "a configuration holds lines 'param <name> = <expression>'")
+		}
+		if _, err := core.NewFromString(f.Expr); err != nil {
+			d.fail(f.ExprPos, "%q is not a valid expression: %v", f.Expr, err)
+		}
+		c.Exprs[f.Args[0].Text] = f.Expr
+	}
+	sk.Configurations = append(sk.Configurations, c)
+}
+
 func (d *decoder) param(n *Node) {
 	if !n.HasExpr || n.Block || len(n.Args) != 1 || n.Args[0].Quoted {
 		d.fail(n.Pos, "a parameter is written as 'param <name> = <expression>'")
@@ -661,6 +690,8 @@ func (d *decoder) constraint(n *Node) (core.Constraint, bool) {
 			c.Reference = d.flag(f)
 		case "comment":
 			c.Comment = d.strField(f)
+		case "name":
+			c.Name = d.strField(f)
 		case "label-offset":
 			c.Disp.Offset = d.vectorField(f)
 		case "label-style":

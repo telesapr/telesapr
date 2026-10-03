@@ -46,8 +46,8 @@ func (es ExportSettings) ChordTolMm() float64 {
 }
 
 // ExportMeshTo writes the active group's mesh, regenerated at the export
-// chord tolerance, to filename; the extension picks the format, and only
-// STL is supported. Like C++, it reports a mesh that isn't watertight or
+// chord tolerance, to filename; the extension picks the format, STL or
+// 3MF. Like C++, it reports a mesh that isn't watertight or
 // self-intersects through Message, but still exports it (C++
 // SolveSpaceUI::ExportMeshTo). As in C++, regenerating in export mode
 // doesn't solve, so the sketch must have been generated since it was
@@ -74,12 +74,14 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 	switch {
 	case hasExtension(filename, "stl"):
 		write = func(w io.Writer) error { return ExportMeshAsStlTo(w, m, es.Scale) }
+	case hasExtension(filename, "3mf"):
+		write = func(w io.Writer) error { return ExportMeshAs3mfTo(w, m) }
 	case hasExtension(filename, "obj"), hasExtension(filename, "js"),
 		hasExtension(filename, "html"), hasExtension(filename, "wrl"):
-		return fmt.Errorf("Exporting a mesh to '%s' isn't supported; try .stl.", filename)
+		return fmt.Errorf("Exporting a mesh to '%s' isn't supported; try .stl or .3mf.", filename)
 	default:
 		return fmt.Errorf("Can't identify output file type from file extension of "+
-			"filename '%s'; try .stl, .obj, .js, .html.", filename)
+			"filename '%s'; try .stl, .3mf, .obj, .js, .html.", filename)
 	}
 
 	f, err := os.Create(filename)

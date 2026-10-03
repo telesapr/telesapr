@@ -200,3 +200,32 @@ func (d *Doc) Sweep(path []Entity, name string) Group {
 		return g
 	}, nil)
 }
+
+// Interference is two parts of an assembly that overlap, and the
+// volume they share in mm³.
+type Interference struct {
+	A, B   Group
+	Volume float64
+}
+
+// Interferences checks the parts of the assembly up to the active
+// group against each other by their shells (Analyze > Show Interfering
+// Parts): each group that combines as an assembly is a part, and so is
+// the solid made before the first of them. It lists the pairs that
+// overlap, not those that only touch. A part with no shell, as a
+// linked mesh or STEP file, can't be checked so; meshOnly lists them.
+func (d *Doc) Interferences() (found []Interference, meshOnly []Group) {
+	d.read(func(sk *sketch.Sketch) {
+		fs, mo := sk.Interferences(sk.ActiveGroup())
+		for _, f := range fs {
+			if f.Failed {
+				fail("the Boolean between %s and %s failed", sk.GroupName(f.A), sk.GroupName(f.B))
+			}
+			found = append(found, Interference{A: Group{d, f.A}, B: Group{d, f.B}, Volume: f.Volume})
+		}
+		for _, h := range mo {
+			meshOnly = append(meshOnly, Group{d, h})
+		}
+	})
+	return found, meshOnly
+}

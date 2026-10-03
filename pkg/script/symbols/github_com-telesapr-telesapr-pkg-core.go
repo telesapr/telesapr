@@ -205,6 +205,7 @@ func init() {
 		"StyleNoStyle":                reflect.ValueOf(constant.MakeFromLiteral("0", token.INT, 0)),
 		"StyleNormals":                reflect.ValueOf(constant.MakeFromLiteral("10", token.INT, 0)),
 		"StyleOutline":                reflect.ValueOf(constant.MakeFromLiteral("15", token.INT, 0)),
+		"StyleSectionCap":             reflect.ValueOf(constant.MakeFromLiteral("16", token.INT, 0)),
 		"StyleSelected":               reflect.ValueOf(constant.MakeFromLiteral("7", token.INT, 0)),
 		"StyleSolidEdge":              reflect.ValueOf(constant.MakeFromLiteral("5", token.INT, 0)),
 		"TextOriginBot":               reflect.ValueOf(core.TextOriginBot),

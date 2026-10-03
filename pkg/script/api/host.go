@@ -82,6 +82,9 @@ type Host interface {
 	// Selection is what is selected in the user interface, if any.
 	Selection() []sketch.Selection
 	Select(sel []sketch.Selection)
+	// Hovered is what the mouse is over in the user interface, if
+	// anything.
+	Hovered() sketch.Selection
 	// SetChordTolerance sets how closely meshes follow curves, as a
 	// percentage of the model's size: for the application, its setting,
 	// as Configuration sets it, which it gives every sketch it
@@ -291,7 +294,7 @@ func (h *SketchHost) Save(path string) error {
 // Export writes the mesh as STL; the other formats need the
 // application around the sketch.
 func (h *SketchHost) Export(kind ExportKind, path string) error {
-	if kind != ExportMesh || !strings.EqualFold(filepath.Ext(path), ".stl") {
+	if ext := filepath.Ext(path); kind != ExportMesh || !strings.EqualFold(ext, ".stl") && !strings.EqualFold(ext, ".3mf") {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
 	}
 	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(core.GetSettings()))
@@ -307,6 +310,9 @@ func (h *SketchHost) Selection() []sketch.Selection { return nil }
 
 // Select does nothing, for the same reason.
 func (h *SketchHost) Select([]sketch.Selection) {}
+
+// Hovered is nothing, for the same reason.
+func (h *SketchHost) Hovered() sketch.Selection { return sketch.Selection{} }
 
 // SetChordTolerance sets the sketch's chord tolerance.
 func (h *SketchHost) SetChordTolerance(pct float64) { h.sk.ChordTolPct = pct }

@@ -11,8 +11,21 @@ group that made the face.
 
 The arrows after a group's name in the group list move it one place; Edit > Move Group Earlier
 and Move Group Later move the active group. A move that would put a group ahead of a group it
-uses is refused, and the message names both. A new group goes in after the active one, so
-activating an earlier group and adding one inserts it in the middle of the history.
+uses is refused, and the message names both.
+
+## Inserting a group
+
+A new group goes in after the active one, so activating an earlier group (the radio button
+before its name on the home screen) and adding one inserts it in the middle of the history; the
+groups after it are regenerated on it. While an earlier group is active, what comes after it is
+hidden and can't be picked, so nothing new refers to it. A script is held to the same: a
+constraint on an entity of a later group, or a new group that would use one, is refused with a
+message naming the later group. The file keeps the active group.
+
+```go
+doc.Activate(block)
+doc.Chamfer(edges, 2, "")   // between block and what followed it
+```
 
 From a script:
 

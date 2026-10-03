@@ -84,7 +84,7 @@ func TestRemoteSession(t *testing.T) {
 	if _, err = r.Describe(ctx, "nothing"); err == nil || !strings.Contains(err.Error(), `no group is called "nothing"`) {
 		t.Errorf("describing a group that isn't there: %v", err)
 	}
-	if _, err = r.Render(ctx, "top", 40, 30); err == nil || !strings.Contains(err.Error(), "not available") {
+	if _, err = r.Render(ctx, "top", "", 40, 30); err == nil || !strings.Contains(err.Error(), "not available") {
 		t.Errorf("a picture of a sketch without the application: %v", err)
 	}
 	if text, err = r.Help(ctx, "Group.Dof"); err != nil || !strings.Contains(text, "func (g Group) Dof() (dof int)") {

@@ -1,0 +1,38 @@
+# Constraints inferred while drawing (an extension): a line, then one
+# from its end nearly square to it, which is made perpendicular; a line
+# elsewhere nearly parallel to the first, made parallel; and one at
+# another angle nearly as long as the first, made equal to it. The
+# mouse moves twice to each point, as a drag does: what is suggested is
+# worked out before the point follows the mouse.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 300 209
+move 300 210
+down L 300 210
+up L 300 210
+move 290 309
+move 290 310
+down L 290 310
+up L 290 310
+key esc
+key s
+move 200 330
+down L 200 330
+up L 200 330
+move 300 340
+move 300 341
+down L 300 341
+up L 300 341
+key esc
+key s
+move 400 100
+down L 400 100
+up L 400 100
+move 470 171
+move 470 172
+down L 470 172
+up L 470 172
+key esc
+save

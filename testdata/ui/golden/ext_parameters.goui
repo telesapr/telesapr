@@ -17,17 +17,28 @@ row 12    [add a parameter]   (type: name = expression)
  0-2 64 64 0
  3-19 6c 64 97 0 1 0
  20-99 64 64 0
-row 14 
+row 15 CONFIGURATIONS   (each a set of the expressions above; one may be active)
+ 0-13 74 64 0
+ 14-99 64 64 0
+row 17     none   (the table changes alone)
+ 0-2 64 61 0
+ 3-8 6c 61 99 0 1 0
+ 9-99 64 61 0
+row 19    [add a configuration of the table as it is]   (type its name)
+ 0-2 64 64 0
+ 3-45 6c 64 65 0 1 0
+ 46-99 64 64 0
+row 21 
  0-99 64 64 0
-row 16    A parameter driving a length counts in the document's unit, mm;
+row 23    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 18    one driving an angle, in degrees.
+row 25    one driving an angle, in degrees.
  0-99 64 64 0
-row 21 (back to the groups)
+row 28 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 23 
+row 30 
  0-99 64 64 0
 row 0  home   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -65,17 +76,28 @@ row 16    [add a parameter]   (type: name = expression)
  0-2 64 64 0
  3-19 6c 64 97 0 1 0
  20-99 64 64 0
-row 18 
+row 19 CONFIGURATIONS   (each a set of the expressions above; one may be active)
+ 0-13 74 64 0
+ 14-99 64 64 0
+row 21     none   (the table changes alone)
+ 0-2 64 61 0
+ 3-8 6c 61 99 0 1 0
+ 9-99 64 61 0
+row 23    [add a configuration of the table as it is]   (type its name)
+ 0-2 64 64 0
+ 3-45 6c 64 65 0 1 0
+ 46-99 64 64 0
+row 25 
  0-99 64 64 0
-row 20    A parameter driving a length counts in the document's unit, mm;
+row 27    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 22    one driving an angle, in degrees.
+row 29    one driving an angle, in degrees.
  0-99 64 64 0
-row 25 (back to the groups)
+row 32 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 27 
+row 34 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
@@ -157,17 +179,28 @@ row 16    [add a parameter]   (type: name = expression)
  0-2 64 64 0
  3-19 6c 64 97 0 1 0
  20-99 64 64 0
-row 18 
+row 19 CONFIGURATIONS   (each a set of the expressions above; one may be active)
+ 0-13 74 64 0
+ 14-99 64 64 0
+row 21     none   (the table changes alone)
+ 0-2 64 61 0
+ 3-8 6c 61 99 0 1 0
+ 9-99 64 61 0
+row 23    [add a configuration of the table as it is]   (type its name)
+ 0-2 64 64 0
+ 3-45 6c 64 65 0 1 0
+ 46-99 64 64 0
+row 25 
  0-99 64 64 0
-row 20    A parameter driving a length counts in the document's unit, mm;
+row 27    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 22    one driving an angle, in degrees.
+row 29    one driving an angle, in degrees.
  0-99 64 64 0
-row 25 (back to the groups)
+row 32 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 27 
+row 34 
  0-99 64 64 0
 save
 telesapr 2
