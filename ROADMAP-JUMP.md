@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 11 and I7 are done and merged. What they left open, the items that never had a step and the tier 4 items are ordered as steps 12 to 22 under "Finishing the roadmap"; none is started. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 12 and I7 are done and merged, step 12 but for 12.4 (CI's first run on GitHub), which waits for the user. What steps 1 to 11 left open, the items that never had a step and the tier 4 items are ordered as steps 12 to 22 under "Finishing the roadmap"; 13 to 22 are not started. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -30,7 +30,8 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 11. General surface type | done 2026-10-03: 11.1 faces of several patches, 11.2 B-spline surfaces with knots, 11.3 degree up to 5, 11.4 STEP export of a face as one surface, 11.5 the tier 4 items sized and planned; follow-ups listed under the step | `a8a973b` |
 | I7. Drawing with an AI model (outside the steps) | done 2026-10-03; follow-ups listed under the item | `baaec8d` |
 | The name TeleSAPR (outside the steps) | done 2026-10-03: the project, until then spacesolve, is TeleSAPR; the module is `github.com/telesapr/telesapr`, the programs `telesapr` and `telesapr-cli`, the format `.tlspr` with the header `telesapr <version>`. It took the parts of 12.2 that are about the name | `74ff70b` |
-| 12 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
+| 12. Close the first eleven steps | done 2026-10-03 but for 12.4, which waits for the user: licence and notices, TeleSAPR 0.1.0 with its own icons, README, `TestMenuBarKeyboard` mended in the code, the guards set and kept from going stale, lint at 0 and run on everything, the audit in `docs/done-audit.md`, the user's guide in `docs/guide` | MERGE12 |
+| 13 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -1157,18 +1158,23 @@ of finding the cause, and its estimate is written into the table again after tha
 
 | Package | Content | Effort | State |
 |---|---|---|---|
-| 12.1 Licence and notices | A `LICENSE` file: GPL version 3 or later, which the port inherits and the About box already states. A `NOTICE` for code ported from other libraries (`pkg/libm`, the QR of `pkg/solver`, `pkg/ttf`), each checked against its source's licence. Needs the user's word, see "Decisions still open". | 0.2 wk | not started |
-| 12.2 Version and icons | A version of TeleSAPR's own in one place, printed by the About box, the exports and `telesapr-cli version` in place of "based on SolveSpace version"; the origin and its authors kept. Help links that do not open `solvespace.com`. Icons of TeleSAPR's own in `dist/freedesktop` and for the window, so `make install` works in a clone without `solvespace/`. The name, the MIME type for `*.tlspr` and `.slvs` no longer claimed were done with the rename (`74ff70b`). | 0.4 wk | not started |
-| 12.3 README | The project structure as it is, `.tlspr` throughout, what the program does that SolveSpace does not, and how to build beside a takigo checkout. | 0.2 wk | not started |
-| 12.4 Remote and CI's first run (1.8) | The user makes the GitHub repository and the `TAKIGO_TOKEN` secret. Then push, see the workflow run, and fix what the runner shows; the font package and Go 1.27 there are unverified. | 0.3 wk | not started |
-| 12.5 `TestMenuBarKeyboard` under load | The test waits on timing and fails when the machine is busy. It waits for the event instead, so that `make ci` passes whatever runs beside it. | 0.3 wk | not started |
-| 12.6 Guards as they are | The allowances set to what 2026-10-03 measured: cylinders 11 of 54, threads 0, sweep along a path 0. A run of a whole grid also fails when the grid does better than its allowance, so a guard cannot go stale. | 0.2 wk | not started |
-| 12.7 Lint debt | The 99 findings fixed, or annotated with the reason, in commits that change no golden. `make ci` and the workflow then run `lint` on everything in place of `lint-new`. | 1 wk | not started |
-| 12.8 Audit against the definition of done | One table, a feature of steps 1 to 11 by a row of the checklist: scenario, path pair, example, golden, sweep, benchmark, undo and round trip. Known gaps to start from: no example calls `Doc.Measure`, `Entity.Free`, `Group.Conflicts` or `Doc.SetUnits`. A gap is filled, or recorded as not applying, as for 11.2's B-spline faces, which have no user surface yet. | 0.8 wk | not started |
-| 12.9 User's guide | `docs/guide`, a page per area added since the port: parameters and units, history, section view, mirror, chamfer, fillet, shell, loft, sweep, threads, STEP links, Check Solid. Each is built on its example script and linked from the README. | 1 wk | not started |
+| 12.1 Licence and notices | A `LICENSE` file: GPL version 3 or later, which the port inherits and the About box already states. A `NOTICE` for code ported from other libraries (`pkg/libm`, the QR of `pkg/solver`, `pkg/ttf`), each checked against its source's licence. Needs the user's word, see "Decisions still open". | 0.2 wk | done 2026-10-03 (`7a7dd1f`): the user chose GPL version 3 or later. `NOTICE` credits glibc's libm and fdlibm, Eigen's SparseQR and COLAMD, FreeType, the fonts, three.js and Hammer.js |
+| 12.2 Version and icons | A version of TeleSAPR's own in one place, printed by the About box, the exports and `telesapr-cli version` in place of "based on SolveSpace version"; the origin and its authors kept. Help links that do not open `solvespace.com`. Icons of TeleSAPR's own in `dist/freedesktop` and for the window, so `make install` works in a clone without `solvespace/`. The name, the MIME type for `*.tlspr` and `.slvs` no longer claimed were done with the rename (`74ff70b`). | 0.4 wk | done 2026-10-03 (`f48a98c`, goldens `e67f719`): `pkg/version`, 0.1.0 as the user chose; Help > User's Guide and Go to GitHub open the repository; icons in `dist/freedesktop`, and `make install` passed in a tree without `solvespace/` |
+| 12.3 README | The project structure as it is, `.tlspr` throughout, what the program does that SolveSpace does not, and how to build beside a takigo checkout. | 0.2 wk | done 2026-10-03 (`43b3c2a`) |
+| 12.4 Remote and CI's first run (1.8) | The user makes the GitHub repository and the `TAKIGO_TOKEN` secret. Then push, see the workflow run, and fix what the runner shows; the font package and Go 1.27 there are unverified. | 0.3 wk | open: waits for the user to make the repository and the secret |
+| 12.5 `TestMenuBarKeyboard` under load | The test waits on timing and fails when the machine is busy. It waits for the event instead, so that `make ci` passes whatever runs beside it. | 0.3 wk | done 2026-10-03 (`120fa55`): the cause was in the code, a menu opened by key could lose its first entry to a late Enter of its grab; 40 runs in a row passed with twice as many busy loops as cores |
+| 12.6 Guards as they are | The allowances set to what 2026-10-03 measured: cylinders 11 of 54, threads 0, sweep along a path 0. A run of a whole grid also fails when the grid does better than its allowance, so a guard cannot go stale. | 0.2 wk | done 2026-10-03 (`dc751ed`): sphere 10 of 135, cylinders 11, threads 0, sweep along a path 0; `Report.Require` fails a whole grid that does better |
+| 12.7 Lint debt | The 99 findings fixed, or annotated with the reason, in commits that change no golden. `make ci` and the workflow then run `lint` on everything in place of `lint-new`. | 1 wk | done 2026-10-03 (`96205a7`): golangci-lint's limits had hidden most of it, about 220 findings in all; fixed, or excluded in `.golangci.yml` with the reason (fmt.Fprint* in errcheck, ST1005, QF1001, QF1003); `make ci` and the workflow run `lint` |
+| 12.8 Audit against the definition of done | One table, a feature of steps 1 to 11 by a row of the checklist: scenario, path pair, example, golden, sweep, benchmark, undo and round trip. Known gaps to start from: no example calls `Doc.Measure`, `Entity.Free`, `Group.Conflicts` or `Doc.SetUnits`. A gap is filled, or recorded as not applying, as for 11.2's B-spline faces, which have no user surface yet. | 0.8 wk | done 2026-10-03 (`9437d39`): `docs/done-audit.md`, no empty cell; filled on the way: example `feedback`, `path_units`, `TestMirrorSweep` (0 of 144), `TestLinkStepUndo` |
+| 12.9 User's guide | `docs/guide`, a page per area added since the port: parameters and units, history, section view, mirror, chamfer, fillet, shell, loft, sweep, threads, STEP links, Check Solid. Each is built on its example script and linked from the README. | 1 wk | done 2026-10-03 (`43b3c2a`): `docs/guide`, twelve pages and an index |
 
 Done when: the workflow passes on GitHub, `make ci` passes on `master` with `lint` in it, a
 fresh clone builds and installs, and the audit's table has no empty cell.
+
+State, 2026-10-03: done but for 12.4, which waits for the user; merged into `master` from
+branch `step-12-close`. `make ci` passes with `lint` in it, `make install` works without
+`solvespace/`, and the audit has no empty cell. Whether a fresh clone builds is 12.4's to show,
+since takigo is cloned beside it.
 
 ### Step 13. Kernel soundness
 
@@ -1296,16 +1302,15 @@ Proposed on 2026-10-03; the user decides. Each stays out until its reason stops 
 
 ## Decisions still open
 
+Taken on 2026-10-03: the licence is GPL version 3 or later (12.1), and the version 0.1.0 (12.2).
+
 Topology first or surface type first, the one question here before, was taken as recommended:
 topology in step 9, the surface type in step 11. What is open now is the user's, and all of it
 comes from "Finishing the roadmap":
 
-- **The licence (12.1).** A port of SolveSpace inherits GPL version 3 or later, and the About
-  box says so. To confirm, before the repository is pushed anywhere.
 - **The remote (12.4).** Where the repository goes and whether it is public. CI was prepared
   for GitHub, with takigo private beside it. The module path is `github.com/telesapr/telesapr`,
   so the repository belongs in a GitHub organisation `telesapr`, which the user has to hold.
-- **A version number (12.2).** Proposed: 0.1.0 when step 12 is done.
 - **"Left out".** Every row is a proposal; a row the user wants back gets a package.
 - **What the review took in without being asked**: B3 (16.11), G4 (17.4) and S3 (17.5).
 
