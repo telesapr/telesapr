@@ -5,7 +5,8 @@ with its top edges cut, and [`examples/scripts/edges`](../../examples/scripts/ed
 an edge that no sketch entity draws, chamfered by its name.
 
 New Group > Chamfer Edges (Shift+Q) cuts edges of the solid so far at a distance, 1 mm to
-begin with. Select one or more of:
+begin with. An edge that goes in, as a pocket's floor, is filled; a chamfered edge goes on into
+the edges it meets smoothly, round a rounded rectangle's corners by cones. Select one or more of:
 
 - line segments along edges between two flat faces, as the edges an extrusion makes;
 - circles where a flat face meets a cylinder or a cone, as an extruded circle's rims;
@@ -34,5 +35,6 @@ find edges.
 
 ## Not yet
 
-A chamfer cuts each edge with a wedge, so it takes edges that stick out only; a chamfer at two
-distances, and one along a chain of edges that meet smoothly, are roadmap 15.1.
+A chamfer at two distances is not done. Where the edit that cuts a chamfer can't make a corner,
+as where a concave edge meets the cut, the chamfer falls back to a wedge and a Boolean, which
+take edges that stick out only.

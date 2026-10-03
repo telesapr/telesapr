@@ -418,9 +418,6 @@ func (t *Topology) filletEdgeOf(e int, r float64, flat bool) (filletEdge, error)
 	if !t.Straight(e) {
 		return t.circularEdgeOf(e, r, flat)
 	}
-	if flat {
-		return fe, filletErr(m, "a chamfer here cuts circular edges; straight ones are cut by a Boolean")
-	}
 	n1, ok1 := t.planarNormal(fs[0])
 	n2, ok2 := t.planarNormal(fs[1])
 	if !ok1 || !ok2 {
@@ -440,6 +437,10 @@ func (t *Topology) filletEdgeOf(e int, r float64, flat bool) (filletEdge, error)
 	fe = filletEdge{
 		e: e, v: ed.V, f: fs, u: [2]geom.Vector{u1, u2}, r: r, concave: c1 > 0,
 		dir: pb.Minus(pa).WithMagnitude(1), s: r / math.Tan(beta/2), w: math.Sin(beta / 2),
+	}
+	if flat {
+		// A chamfer cuts at its distance along both faces.
+		fe.s = r
 	}
 	return fe, nil
 }

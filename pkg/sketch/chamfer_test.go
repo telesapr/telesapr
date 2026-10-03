@@ -93,7 +93,6 @@ func TestChamferRefused(t *testing.T) {
 		fn   func()
 		want string
 	}{
-		"concave":             {func() { d.Chamfer([]api.Entity{inner}, 1, "") }, "concave"},
 		"no edges":            {func() { d.Chamfer(nil, 1, "") }, "no edges"},
 		"zero distance":       {func() { d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
 		"a point":             {func() { d.Chamfer([]api.Entity{inner.Start()}, 1, "") }, "neither a line segment nor a circle"},
@@ -111,6 +110,22 @@ func TestChamferRefused(t *testing.T) {
 		}()
 	}
 	_ = sketchLine
+}
+
+// The inner edge of an L, which goes in, is chamfered by the fillet's
+// edit, which fills it: the solid gains a prism of half the distance
+// squared along the edge (roadmap 15.1).
+func TestChamferConcave(t *testing.T) {
+	d := api.New()
+	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
+	ex := d.Extrude(5, "")
+	before := ex.Check().Volume
+	inner := lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5))
+	c := d.Chamfer([]api.Entity{inner}, 1, "")
+	r := c.Check()
+	if c.Problem() != "" || !r.Sound() || math.Abs(r.Volume-before-0.5*5) > 1e-6 {
+		t.Errorf("the concave chamfer: %q, %s, gained %g, want 2.5", c.Problem(), r.String(), r.Volume-before)
+	}
 }
 
 // An edge that stops being one, as when the solid under it is made
@@ -184,4 +199,29 @@ func TestChamferSweep(t *testing.T) {
 		}
 		return nil
 	}).Require(t)
+}
+
+// A chamfer of one side of a rounded rectangle's top goes on round the
+// rounded corners, as a fillet does, by cones there: all the way round
+// the top (roadmap 15.1).
+func TestChamferRoundedOutline(t *testing.T) {
+	d := api.New()
+	d.SetChordTolerance(0.005)
+	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	for _, s := range sides {
+		d.TangentArc(s.Start(), 4, true)
+	}
+	ex := d.Extrude(10, "")
+	before := ex.Check().Volume
+	c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 1, "")
+	r := c.Check()
+	// Half the distance squared along the straight runs, and round each
+	// corner the cone's ring: the triangle turned about the corner's
+	// axis, its centroid a third of the distance in from the rim.
+	straight := 0.5 * (2*22 + 2*12)
+	corners := 0.5 * 2 * math.Pi * (4 - 1.0/3)
+	want := straight + corners
+	if c.Problem() != "" || !r.Sound() || math.Abs(before-r.Volume-want) > 0.01*want {
+		t.Errorf("%q: %s, took %g, want %g", c.Problem(), r.String(), before-r.Volume, want)
+	}
 }

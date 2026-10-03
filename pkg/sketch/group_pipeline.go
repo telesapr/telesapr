@@ -142,7 +142,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		if !srcg.Suppress && g.checkMirror(sk) {
 			if !g.IsForcedToMesh(sk) {
 				src := &srcg.ThisShell
-				if g.MirrorSolid {
+				if g.mirrorsSolid(sk) {
 					src = &srcg.RunningShell
 				}
 				g.generateMirrorShell(sk, src, &g.ThisShell, srcg.MeshCombine)
@@ -220,7 +220,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 
 	// A mirror of the solid so far made the whole of it: no Boolean with
 	// what it already holds.
-	if g.Type == GroupMirror && g.MirrorSolid {
+	if g.Type == GroupMirror && g.mirrorsSolid(sk) {
 		switch {
 		case g.Suppress || srcg.Suppress:
 			g.RunningShell.MakeFromCopyOf(&srcg.RunningShell)

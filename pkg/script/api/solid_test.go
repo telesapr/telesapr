@@ -41,13 +41,15 @@ func TestSolidFeatures(t *testing.T) {
 		t.Fatalf("the chamfered post's volume is %g", v)
 	}
 
-	// A mirror reflects the active group: of the chamfer, its cut.
+	// A mirror reflects the active group; a chamfer edits the solid in
+	// place, so of the chamfer it reflects the solid so far: a second
+	// chamfered post (roadmap 15.1).
 	m := d.Mirror(d.Workplane("YZ"), "")
 	if m.Kind() != "mirror" || m.Plane().H != d.Workplane("YZ").H || !m.KeepOriginal() {
 		t.Fatalf("mirror %s", m.Kind())
 	}
-	if v := m.Volume(); math.Abs(v-(1000-20)) > 1e-6 {
-		t.Fatalf("the post with the mirrored cut has volume %g", v)
+	if v := m.Volume(); math.Abs(v-2*(1000-20)) > 1e-6 {
+		t.Fatalf("the chamfered post and its reflection have volume %g", v)
 	}
 	// Of the sweep, the post.
 	m.Delete()

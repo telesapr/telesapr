@@ -140,7 +140,6 @@ func TestFilletCircleRefused(t *testing.T) {
 		want string
 	}{
 		{v(5, 0, 15), 6, false, "wider than the cylinder"},
-		{v(20, 0, 5), 1, true, "straight ones are cut by a Boolean"},
 	} {
 		var cp srf.SShell
 		cp.MakeFromCopyOf(&sh)
@@ -154,6 +153,12 @@ func TestFilletCircleRefused(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%v: %v, want %q", c.at, err, c.want)
 		}
+	}
+	// A straight edge is chamfered by the same edit since roadmap 15.1.
+	var ch srf.SShell
+	ch.MakeFromCopyOf(&sh)
+	if err := topo.FilletPicks(&ch, []topo.FilletPick{{A: v(20, -20, 5), B: v(20, 20, 5)}}, 1, 1<<30, true); err != nil {
+		t.Errorf("a straight edge's chamfer: %v", err)
 	}
 	// The boss's top, on the union, rounds.
 	var cp srf.SShell
