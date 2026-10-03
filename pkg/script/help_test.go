@@ -95,7 +95,7 @@ func Inch(v float64) float64
 	mustContain(t, got, "package api  // import \"github.com/telesapr/telesapr/pkg/script/api\"\n    Package api is what a script sees",
 		"Types:\n    BrokenReference      BrokenReference is something a regeneration deleted",
 		"\n    Constraint           Constraint is a constraint of the sketch",
-		"Functions:\n    Commands() []string", "Constants and variables:\n    Assemble Difference",
+		"Functions:\n    Appearances() []string", "Constants and variables:\n    Assemble Difference",
 		"type api.Entity struct\n    Entity is something on the drawing",
 		"    Pos() (p Vec)                                Pos is where a point is.",
 		"package math  // import \"math\"", "    Sqrt(x float64) float64")
