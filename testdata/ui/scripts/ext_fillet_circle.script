@@ -1,0 +1,27 @@
+# Fillet edges of a circle (an extension): a circle extruded, its top
+# circle picked and New Group > Fillet Edges rounds the whole edge with a
+# torus; Check Solid finds it sound, and again at a new radius.
+key c
+move 290 265
+down L 290 265
+up L 290 265
+move 340 265
+down L 340 265
+up L 340 265
+key esc
+key x shift
+move 340 265
+down L 340 265
+up L 340 265
+menu New Group|Fillet Edges
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 150 125
+twdown L 150 125
+twup L 150 125
+edit 3
+tw
+answer ok
+menu Analyze|Check Solid

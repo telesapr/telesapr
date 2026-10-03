@@ -221,6 +221,19 @@ func TestSolidGoldens(t *testing.T) {
 				lineAlong(t, ex, api.V(20, 0, 0), api.V(20, 0, 10)),
 			}, 2, "")
 		},
+		"fillet-circle": func(d *api.Doc) {
+			d.Circle(api.V(0, 0, 0), 5)
+			ex := d.Extrude(10, "")
+			d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+		},
+		"chamfer-circle-and-edge": func(d *api.Doc) {
+			block(d, -10, -10, 10, 10, 5)
+			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Circle(api.V(0, 0, 5), 4)
+			boss := d.Extrude(5, "")
+			s := boss.Solid()
+			d.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(4, 0, 10)), s.EdgeAt(api.V(0, -10, 5))}, 1, "")
+		},
 		"shell-open-box": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
 			d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
@@ -296,6 +309,15 @@ func BenchmarkFilletBox(b *testing.B) {
 			}
 		}
 		d.Fillet(edges, 2, "")
+	})
+}
+
+func BenchmarkFilletCircle(b *testing.B) {
+	t := &testing.T{}
+	benchRegen(b, func(d *api.Doc) {
+		d.Circle(api.V(0, 0, 0), 5)
+		ex := d.Extrude(10, "")
+		d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 	})
 }
 

@@ -1,0 +1,16 @@
+# The top circle of an extruded circle, picked with the mouse and
+# rounded; the same as path_fillet_circle.go makes
+# (TestPathEquivalenceFilletCircle).
+key c
+move 290 265
+down L 290 265
+up L 290 265
+move 340 265
+down L 340 265
+up L 340 265
+key esc
+key x shift
+move 340 265
+down L 340 265
+up L 340 265
+menu New Group|Fillet Edges

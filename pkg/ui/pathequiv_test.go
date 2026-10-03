@@ -178,3 +178,12 @@ func TestPathEquivalenceFilletMitre(t *testing.T) {
 		t.Errorf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
 	}
 }
+
+// A circle of an extrusion picked with the mouse and rounded, and the
+// same made by a script.
+func TestPathEquivalenceFilletCircle(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_fillet_circle", "path_fillet_circle")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
+		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
