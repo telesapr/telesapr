@@ -4140,13 +4140,25 @@
 						"decl": "func (d *Doc) Activate(g Group)",
 						"text": "Activate makes g the group that is worked in."
 					},
+					"ActivateConfiguration": {
+						"decl": "func (d *Doc) ActivateConfiguration(name string) (err error)",
+						"text": "ActivateConfiguration writes the configuration's expressions into\nthe parameter table and makes it active; \"\" makes none active, and\nleaves the table as it is. The model regenerates."
+					},
 					"Active": {
 						"decl": "func (d *Doc) Active() (g Group)",
 						"text": "Active is the group that is worked in: what is drawn goes into it."
 					},
+					"ActiveConfiguration": {
+						"decl": "func (d *Doc) ActiveConfiguration() (name string)",
+						"text": "ActiveConfiguration is the active configuration's name, or \"\"."
+					},
 					"ActiveWorkplane": {
 						"decl": "func (d *Doc) ActiveWorkplane() (wp Entity)",
 						"text": "ActiveWorkplane is the workplane that is drawn in; it isn't Valid\nwhen drawing freely in 3d."
+					},
+					"AddConfiguration": {
+						"decl": "func (d *Doc) AddConfiguration(name string) (err error)",
+						"text": "AddConfiguration adds a configuration, a named set of the parameters'\nexpressions, from the table as it is, and makes it active: while it\nis, SetParameter changes it as well as the table."
 					},
 					"Angle": {
 						"decl": "func (d *Doc) Angle(a, b Entity, degrees float64) Constraint",
@@ -4200,6 +4212,10 @@
 						"decl": "func (d *Doc) Comment(at Vec, text string) Constraint",
 						"text": "Comment writes text on the drawing at a place."
 					},
+					"Configurations": {
+						"decl": "func (d *Doc) Configurations() (names []string)",
+						"text": "Configurations are the configurations' names, in the order they were\nmade."
+					},
 					"Constrain": {
 						"decl": "func (d *Doc) Constrain(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint",
 						"text": "Constrain adds a constraint of any type, as the core package names\nthem, on up to two points and two other entities; see the solver's\ndocumentation for what each type takes. Give Entity{} for what a\ntype doesn't take."
@@ -4211,6 +4227,10 @@
 					"Cubic": {
 						"decl": "func (d *Doc) Cubic(p0, p1, p2, p3 Vec) Entity",
 						"text": "Cubic adds a cubic Bézier curve from p0 to p3, with the control\npoints p1 and p2."
+					},
+					"DeleteConfiguration": {
+						"decl": "func (d *Doc) DeleteConfiguration(name string) (err error)",
+						"text": "DeleteConfiguration removes a configuration; the table stays as it\nis."
 					},
 					"DeleteParameter": {
 						"decl": "func (d *Doc) DeleteParameter(name string) (err error)",
@@ -4399,6 +4419,10 @@
 					"Regen": {
 						"decl": "func (d *Doc) Regen()",
 						"text": "Regen regenerates the whole sketch and solves it."
+					},
+					"RenameConfiguration": {
+						"decl": "func (d *Doc) RenameConfiguration(from, to string) (err error)",
+						"text": "RenameConfiguration renames a configuration."
 					},
 					"RenameParameter": {
 						"decl": "func (d *Doc) RenameParameter(from, to string) (err error)",
@@ -5377,6 +5401,10 @@
 					"CombineIntersection"
 				]
 			},
+			"Configuration": {
+				"text": "Configuration is a named set of parameter expressions, by name.",
+				"kind": "struct"
+			},
 			"CopyAs": {
 				"text": "CopyAs is the transformation a copied entity gets (C++ Group::CopyAs).",
 				"kind": "int",
@@ -5792,6 +5820,10 @@
 			"Sketch": {
 				"kind": "struct",
 				"methods": {
+					"ActivateConfiguration": {
+						"decl": "func (sk *Sketch) ActivateConfiguration(name string) error",
+						"text": "ActivateConfiguration makes the configuration called name active, writing its expressions into the table, or with \"\" none; the table stays as it is then."
+					},
 					"ActiveGroup": {
 						"decl": "func (sk *Sketch) ActiveGroup() core.HGroup",
 						"text": "ActiveGroup is the active group: Active if it exists, else the one C++ makes active after loading a file (GraphicsWindow::Init and EnsureValidActives): the last group, or the first that isn't the references."
@@ -5799,6 +5831,10 @@
 					"ActiveWorkplane": {
 						"decl": "func (sk *Sketch) ActiveWorkplane() core.HEntity",
 						"text": "ActiveWorkplane is the active group's workplane (C++ GraphicsWindow::ActiveWorkplane)."
+					},
+					"AddConfiguration": {
+						"decl": "func (sk *Sketch) AddConfiguration(name string) error",
+						"text": "AddConfiguration adds a configuration of the table's expressions as they are, and makes it active."
 					},
 					"AddConstraint": {
 						"decl": "func (s *Sketch) AddConstraint(c core.Constraint) core.HConstraint"
@@ -5881,6 +5917,10 @@
 						"decl": "func (sk *Sketch) ClearSection()",
 						"text": "ClearSection turns the section view off."
 					},
+					"Configuration": {
+						"decl": "func (sk *Sketch) Configuration(name string) *Configuration",
+						"text": "Configuration is the configuration called name, or nil."
+					},
 					"Constrain": {
 						"decl": "func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity, other, other2 bool) core.HConstraint",
 						"text": "Constrain adds a constraint of the given type in the active group and workplane (C++ Constraint::Constrain)."
@@ -5924,6 +5964,10 @@
 					"DeleteAllConstraintsFor": {
 						"decl": "func (sk *Sketch) DeleteAllConstraintsFor(typ core.ConstraintType, entityA, ptA core.HEntity)",
 						"text": "DeleteAllConstraintsFor deletes the constraints of the given type on entityA and ptA; used when auto-removing constraints that would become redundant (C++ Constraint::DeleteAllConstraintsFor)."
+					},
+					"DeleteConfiguration": {
+						"decl": "func (sk *Sketch) DeleteConfiguration(name string) error",
+						"text": "DeleteConfiguration removes a configuration; the table stays as it is."
 					},
 					"DeleteParameter": {
 						"decl": "func (sk *Sketch) DeleteParameter(name string) error",
@@ -6185,6 +6229,10 @@
 					"RemoveConstraintsForPointBeingDeleted": {
 						"decl": "func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity)",
 						"text": "RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt (C++ GraphicsWindow::RemoveConstraintsForPointBeingDeleted)."
+					},
+					"RenameConfiguration": {
+						"decl": "func (sk *Sketch) RenameConfiguration(from, to string) error",
+						"text": "RenameConfiguration renames a configuration."
 					},
 					"RenameParameter": {
 						"decl": "func (sk *Sketch) RenameParameter(from, to string) error",

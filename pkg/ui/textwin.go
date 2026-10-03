@@ -142,6 +142,9 @@ const (
 	EditParameterAdd  Edit = 910
 	EditParameterExpr Edit = 911
 	EditParameterName Edit = 912
+	// For configurations (an extension)
+	EditConfigurationAdd  Edit = 913
+	EditConfigurationName Edit = 914
 	// For the command search (an extension)
 	EditCommandQuery Edit = 920
 	// For the section view (an extension)

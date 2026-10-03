@@ -37,6 +37,26 @@ for _, p := range doc.Parameters() {
 `RenameParameter` and `DeleteParameter` do what the table does; `doc.ExprErrors()` lists
 expressions that do not evaluate.
 
+## Configurations
+
+Example: [`examples/scripts/configurations`](../../examples/scripts/configurations/configurations.go),
+one plate in three sizes.
+
+A configuration is a named set of the parameters' expressions: the same model small and large,
+from one table filled two ways. Under CONFIGURATIONS on the parameters screen,
+`[add a configuration of the table as it is]` makes one and makes it active; while it is active,
+a change to the table is a change to it too. Choosing another writes its expressions into the
+table, and the model follows; choosing `none` leaves the table as it is, and changes it alone. A
+parameter renamed is renamed in every configuration; one that an inactive configuration's
+expression uses can't be deleted. The file keeps the configurations and which is active.
+
+```go
+must(doc.AddConfiguration("small"))
+must(doc.AddConfiguration("large"))
+must(doc.SetParameter("w", "100"))   // large's w
+must(doc.ActivateConfiguration("small"))
+```
+
 ## Dimensions by name
 
 Example: [`examples/scripts/dimensions`](../../examples/scripts/dimensions/dimensions.go), a
@@ -85,5 +105,6 @@ text, as in `SetExpr("2")`, is in the document's unit.
 
 ## Not yet
 
-There are no named sets of parameter values (roadmap 16.2). A parameter that reads a named
-length changes with the document's unit; changing the unit lists it among the ones to check.
+A parameter that reads a named length changes with the document's unit; changing the unit lists
+it among the ones to check. A configuration holds parameters' expressions only, not group
+values or which groups are suppressed.

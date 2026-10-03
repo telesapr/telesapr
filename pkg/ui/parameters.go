@@ -63,6 +63,37 @@ func (tw *TextWindow) ScreenChangeParameter(link int, v uint32) {
 	}
 }
 
+// ScreenChangeConfiguration activates configuration v-1, or none for v
+// = 0 ('c'), renames ('r') or deletes it ('x'), or adds one ('A').
+func (tw *TextWindow) ScreenChangeConfiguration(link int, v uint32) {
+	ss := tw.ss
+	sk := ss.SK
+	if link == 'A' {
+		tw.ShowEditControl(3, "")
+		tw.edit.meaning = EditConfigurationAdd
+		return
+	}
+	if link == 'c' && v == 0 {
+		ss.parameterEdit(func() error { return sk.ActivateConfiguration("") })
+		return
+	}
+	i := int(v) - 1
+	if i < 0 || i >= len(sk.Configurations) {
+		return
+	}
+	name := sk.Configurations[i].Name
+	switch link {
+	case 'c':
+		ss.parameterEdit(func() error { return sk.ActivateConfiguration(name) })
+	case 'r':
+		tw.edit.i = i
+		tw.ShowEditControl(3, name)
+		tw.edit.meaning = EditConfigurationName
+	case 'x':
+		ss.parameterEdit(func() error { return sk.DeleteConfiguration(name) })
+	}
+}
+
 // parameterEdit runs an edit of the table as one undo step, and shows
 // why when it is refused.
 func (ss *SolveSpaceUI) parameterEdit(fn func() error) bool {
@@ -103,6 +134,13 @@ func (tw *TextWindow) EditControlDoneForParameters(s string) bool {
 	case EditParameterName:
 		n := name()
 		ss.parameterEdit(func() error { return sk.RenameParameter(n, strings.TrimSpace(s)) })
+	case EditConfigurationAdd:
+		ss.parameterEdit(func() error { return sk.AddConfiguration(strings.TrimSpace(s)) })
+	case EditConfigurationName:
+		if tw.edit.i < len(sk.Configurations) {
+			from := sk.Configurations[tw.edit.i].Name
+			ss.parameterEdit(func() error { return sk.RenameConfiguration(from, strings.TrimSpace(s)) })
+		}
 	default:
 		return false
 	}
@@ -133,6 +171,30 @@ func (tw *TextWindow) ShowParameters() {
 		}
 	}
 	tw.Printf(true, "   %Fl%La%f[add a parameter]%E   (type: name = expression)", lf(tw.ScreenChangeParameter))
+
+	// The configurations: the table filled one way or another (roadmap
+	// 16.2).
+	radio := func(b bool) string {
+		if b {
+			return radioTrue
+		}
+		return radioFalse
+	}
+	tw.Printf(true, "%FtCONFIGURATIONS%E   (each a set of the expressions above; one may be active)")
+	tw.Printf(false, "%Ba   %Fl%Lc%D%f%s none%E   (the table changes alone)",
+		0, lf(tw.ScreenChangeConfiguration), radio(sk.ActiveConfiguration == ""))
+	for i, c := range sk.Configurations {
+		bg := byte('d')
+		if i%2 == 1 {
+			bg = 'a'
+		}
+		tw.Printf(false, "%Bp   %Fl%Lc%D%f%s %s%E %Fl%Lr%D%f[rename]%E %Fl%Lx%D%f[delete]%E",
+			bg, i+1, lf(tw.ScreenChangeConfiguration), radio(sk.ActiveConfiguration == c.Name), c.Name,
+			i+1, lf(tw.ScreenChangeConfiguration),
+			i+1, lf(tw.ScreenChangeConfiguration))
+	}
+	tw.Printf(false, "   %Fl%LA%f[add a configuration of the table as it is]%E   (type its name)",
+		lf(tw.ScreenChangeConfiguration))
 
 	if len(sk.ExprErrors) > 0 {
 		tw.Printf(true, "%FtEXPRESSIONS THAT COULD NOT BE EVALUATED%E")

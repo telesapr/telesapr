@@ -71,6 +71,32 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 	for _, p := range sk.Parameters {
 		add(&Node{Name: "param", Args: []Value{Word(p.Name)}, HasExpr: true, Expr: p.Expr})
 	}
+	// Each configuration's expressions, in the table's order, then any
+	// of parameters the table no longer has.
+	for _, c := range sk.Configurations {
+		n := block("configuration", String(c.Name))
+		seen := map[string]bool{}
+		for _, p := range sk.Parameters {
+			if e, ok := c.Exprs[p.Name]; ok {
+				n.add(&Node{Name: "param", Args: []Value{Word(p.Name)}, HasExpr: true, Expr: e})
+				seen[p.Name] = true
+			}
+		}
+		var rest []string
+		for k := range c.Exprs {
+			if !seen[k] {
+				rest = append(rest, k)
+			}
+		}
+		sort.Strings(rest)
+		for _, k := range rest {
+			n.add(&Node{Name: "param", Args: []Value{Word(k)}, HasExpr: true, Expr: c.Exprs[k]})
+		}
+		add(n)
+	}
+	if sk.ActiveConfiguration != "" {
+		add(field("active-configuration", String(sk.ActiveConfiguration)))
+	}
 
 	groups := make([]*sketch.Group, len(sk.Groups))
 	for i := range sk.Groups {

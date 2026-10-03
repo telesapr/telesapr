@@ -16,7 +16,7 @@ time, and `help()` there lists what a script can call.
 
 | Page | What it covers | Example |
 |---|---|---|
-| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; dimensions read by name; the document's unit of length; measuring | `plate`, `dimensions`, `feedback` |
+| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; configurations; dimensions read by name; the document's unit of length; measuring | `plate`, `configurations`, `dimensions`, `feedback` |
 | [History](history.md) | Moving a group, suppressing one with what uses it, broken references | `history` |
 | [Section view](section-view.md) | Cutting the model open to look inside | `section` |
 | [Mirror](mirror.md) | A group reflected in a plane | `mirror` |

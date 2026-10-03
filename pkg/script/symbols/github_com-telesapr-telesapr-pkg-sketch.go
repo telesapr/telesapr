@@ -116,6 +116,7 @@ func init() {
 		"Clipboard":            reflect.ValueOf((*sketch.Clipboard)(nil)),
 		"ClipboardRequest":     reflect.ValueOf((*sketch.ClipboardRequest)(nil)),
 		"CombineAs":            reflect.ValueOf((*sketch.CombineAs)(nil)),
+		"Configuration":        reflect.ValueOf((*sketch.Configuration)(nil)),
 		"CopyAs":               reflect.ValueOf((*sketch.CopyAs)(nil)),
 		"Dependency":           reflect.ValueOf((*sketch.Dependency)(nil)),
 		"EdgeRadius":           reflect.ValueOf((*sketch.EdgeRadius)(nil)),

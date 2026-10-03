@@ -254,6 +254,15 @@ func TestPathEquivalenceDimensionName(t *testing.T) {
 	}
 }
 
+// Configurations made and chosen on the parameters screen, and the
+// same made by a script (roadmap 16.2).
+func TestPathEquivalenceConfigurations(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_configurations", "path_configurations")
+	if ui.ActiveConfiguration != "small" || len(ui.Configurations) != 2 {
+		t.Errorf("configurations %v, active %q", ui.Configurations, ui.ActiveConfiguration)
+	}
+}
+
 // Two edges that meet at a corner picked with the mouse and rounded,
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {

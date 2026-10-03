@@ -312,6 +312,7 @@ func (sk *Sketch) AddParameter(name, expr string) error {
 		sk.applyParameters()
 		return err
 	}
+	sk.configParameterSet(name, expr)
 	return nil
 }
 
@@ -336,6 +337,7 @@ func (sk *Sketch) SetParameterExpr(name, expr string) error {
 		sk.applyParameters()
 		return err
 	}
+	sk.configParameterSet(name, expr)
 	return nil
 }
 
@@ -359,6 +361,7 @@ func (sk *Sketch) RenameParameter(from, to string) error {
 	sk.forEachExpr(func(expr *string, _ string) {
 		*expr = core.RenameVariable(*expr, from, to)
 	})
+	sk.configParameterRenamed(from, to)
 	return nil
 }
 
@@ -368,7 +371,7 @@ func (sk *Sketch) DeleteParameter(name string) error {
 	if sk.Parameter(name) == nil {
 		return fmt.Errorf("no parameter %q", name)
 	}
-	if users := sk.ParameterUsers(name); len(users) > 0 {
+	if users := append(sk.ParameterUsers(name), sk.configurationUsers(name)...); len(users) > 0 {
 		return fmt.Errorf("parameter %q is used by %s", name, strings.Join(users, ", "))
 	}
 	for i := range sk.Parameters {
@@ -377,6 +380,7 @@ func (sk *Sketch) DeleteParameter(name string) error {
 			break
 		}
 	}
+	sk.configParameterDeleted(name)
 	return nil
 }
 
