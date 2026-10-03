@@ -127,8 +127,11 @@ func (t *Topology) endEdges(e, v int, fs [2]int) (along [2]int, end int, err err
 
 // pointAlong is the point of edge x, which leaves vertex v into a face,
 // at distance s from the filleted edge: into is the direction in the
-// face square to the filleted edge.
-func (t *Topology) pointAlong(x, v int, into geom.Vector, s float64) (geom.Vector, error) {
+// face square to the filleted edge. With back, the point may lie on the
+// edge's line behind v: a concave edge's fillet, filling, runs on past
+// a face that ends it on the outside of a corner, as a boss's foot does
+// at the boss's side.
+func (t *Topology) pointAlong(x, v int, into geom.Vector, s float64, back bool) (geom.Vector, error) {
 	ed := &t.Edges[x]
 	from := t.Vertices[v].P
 	to := t.Vertices[ed.V[1]].P
@@ -142,6 +145,9 @@ func (t *Topology) pointAlong(x, v int, into geom.Vector, s float64) (geom.Vecto
 	l := d.Magnitude()
 	d = d.ScaledBy(1 / l)
 	k := d.Dot(into)
+	if back && k < -1e-9 {
+		return from.Plus(d.ScaledBy(s / k)), nil
+	}
 	if k < 1e-9 {
 		return geom.Vector{}, filletErr(from, "an edge at the end of the fillet runs back along it")
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/script"
 	"github.com/spacesolve/spacesolve/pkg/script/api"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 // requireSamePaths builds a model twice, through the interface and
@@ -176,6 +177,23 @@ func TestPathEquivalenceFilletMitre(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_mitre", "path_fillet_mitre")
 	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 2 {
 		t.Errorf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+	}
+}
+
+// A block's foot edge on a block, which goes in, picked with the mouse
+// in a turned view and filled, and the same made by a script; the fill
+// adds to the solid.
+func TestPathEquivalenceFilletConcave(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_fillet_concave", "path_fillet_concave")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 1 {
+		t.Fatalf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+	}
+	var before, after srf.SMesh
+	g.PreviousGroup(ui).RunningShell.TriangulateInto(&before)
+	g.RunningShell.TriangulateInto(&after)
+	if gain := after.CalculateVolume() - before.CalculateVolume(); gain <= 0 {
+		t.Errorf("the fill adds %g", gain)
 	}
 }
 

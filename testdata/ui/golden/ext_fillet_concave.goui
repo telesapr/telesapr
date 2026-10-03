@@ -1,0 +1,168 @@
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 6 0
+camera 5 20 -20 -80 1 0 0 0 0.95105651629515364 -0.30901699437494745
+counts 6 11 125 16 59
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g006-fillet [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 6 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 6 1 0
+ 30-99 64 64 0
+row 10  round edges of the solid
+ 0-0 64 64 0
+ 1-24 74 64 0
+ 25-99 64 64 0
+row 12    radius 1.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-14 64 61 0
+ 15-22 6c 61 108 6 1 0
+ 23-99 64 61 0
+row 14    edges
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-99 64 61 0
+row 16      entity 8005000a of g005-extrude
+ 0-4 64 64 0
+ 5-35 6c 64 108 8005000a 1 1
+ 36-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37  requests in group
+ 0-99 74 64 0
+row 39    (none)
+ 0-99 64 61 0
+row 41 
+ 0-99 64 64 0
+row 43  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 45    (none)
+ 0-99 64 61 0
+row 47 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 13\nTriangles: 44\nVolume: 90.24 cm³\nCenter of mass: (-3.02, 7.51, 53.62)\nExtent: 36.00 x 26.00 x 160.00
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g006-fillet [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 6 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 6 1 0
+ 30-99 64 64 0
+row 10  round edges of the solid
+ 0-0 64 64 0
+ 1-24 74 64 0
+ 25-99 64 64 0
+row 12    radius 3.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-14 64 61 0
+ 15-22 6c 61 108 6 1 0
+ 23-99 64 61 0
+row 14    edges
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-99 64 61 0
+row 16      entity 8005000a of g005-extrude
+ 0-4 64 64 0
+ 5-35 6c 64 108 8005000a 1 1
+ 36-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37  requests in group
+ 0-99 74 64 0
+row 39    (none)
+ 0-99 64 61 0
+row 41 
+ 0-99 64 64 0
+row 43  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 45    (none)
+ 0-99 64 61 0
+row 47 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 13\nTriangles: 44\nVolume: 90.27 cm³\nCenter of mass: (-3.02, 7.51, 53.63)\nExtent: 36.00 x 26.00 x 160.00

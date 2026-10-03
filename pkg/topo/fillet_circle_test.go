@@ -127,7 +127,7 @@ func TestFilletHoleRim(t *testing.T) {
 }
 
 func TestFilletCircleRefused(t *testing.T) {
-	// A boss's foot on a plate is concave.
+	// A boss on a plate.
 	var plate, boss, sh srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 5),
 		core.NewRgbaColor(100, 100, 100, 255))
@@ -139,7 +139,6 @@ func TestFilletCircleRefused(t *testing.T) {
 		flat bool
 		want string
 	}{
-		{v(5, 0, 5), 1, false, "concave"},
 		{v(5, 0, 15), 6, false, "wider than the cylinder"},
 		{v(20, 0, 5), 1, true, "straight ones are cut by a Boolean"},
 	} {
