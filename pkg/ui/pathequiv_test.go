@@ -173,6 +173,17 @@ func TestPathEquivalenceLoft(t *testing.T) {
 	}
 }
 
+// A loft's side, a face no entity names, picked with the mouse on the
+// model and taken away by Shell Solid, and the same face by a script
+// (roadmap 14.1).
+func TestPathEquivalenceShellLoftFace(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_shell_loft", "path_shell_loft")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupShell || g.Problem.Msg != "" || len(g.SolidFaces) != 1 {
+		t.Errorf("the shell: type %d, problem %q, faces %v", g.Type, g.Problem.Msg, g.SolidFaces)
+	}
+}
+
 // A face of an extrusion picked with the mouse and the solid hollowed,
 // and the same made by a script.
 func TestPathEquivalenceShell(t *testing.T) {

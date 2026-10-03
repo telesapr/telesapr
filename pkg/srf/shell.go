@@ -806,7 +806,7 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 		poly.uvGridTriangulateInto(mesh, srf, &el)
 	}
 
-	meta := STriMeta{Face: srf.Face, RgbaColor: srf.Color}
+	meta := STriMeta{Face: shell.displayFace(srf), RgbaColor: srf.Color}
 	for i := start; i < len(mesh.Triangles); i++ {
 		t := &mesh.Triangles[i]
 		t.Meta = meta
@@ -820,6 +820,29 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 		// with the triangle direction (matches the C++ comment).
 		t.FlipNormal()
 	}
+}
+
+// displayFace is what the triangles of srf carry as their face: its
+// entity, or for a surface no entity names its Origin, the smallest of
+// its sheet's so that the patches of one face carry one. The edges
+// between two faces are drawn where their triangles' faces differ, and
+// a face is picked by it, so faces with only an Origin, a fillet's or
+// a Boolean tool's, are drawn apart and picked as others are (roadmap
+// 14.1).
+func (s *SShell) displayFace(srf *SSurface) FaceID {
+	if srf.Face != 0 || srf.Origin == 0 {
+		return srf.Face
+	}
+	o := srf.Origin
+	if srf.Sheet != 0 && s != nil {
+		for i := range s.Surface {
+			t := &s.Surface[i]
+			if t.Sheet == srf.Sheet && t.Face == 0 && t.Origin != 0 && t.Origin < o {
+				o = t.Origin
+			}
+		}
+	}
+	return FaceID(o)
 }
 
 // triangulateUntrimmedGrid samples the surface on a regular (u, v)

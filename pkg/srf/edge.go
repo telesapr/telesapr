@@ -13,6 +13,10 @@ const (
 	EdgeTurning          EdgeKind = 300
 	EdgeEmphasized       EdgeKind = 400
 	EdgeSharp            EdgeKind = 500
+	// EdgeSharpOrFace is a sharp edge, or one between two faces that
+	// meet smoothly, as a fillet meets the faces it rounds: where the
+	// triangles' faces differ (roadmap 14.1).
+	EdgeSharpOrFace EdgeKind = 600
 )
 
 // SEdge is a 3-D line segment used by SEdgeList for polygon assembly

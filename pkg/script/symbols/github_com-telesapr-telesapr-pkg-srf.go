@@ -39,6 +39,7 @@ func init() {
 		"EdgeNakedOrSelfInter":        reflect.ValueOf(srf.EdgeNakedOrSelfInter),
 		"EdgeSelfInter":               reflect.ValueOf(srf.EdgeSelfInter),
 		"EdgeSharp":                   reflect.ValueOf(srf.EdgeSharp),
+		"EdgeSharpOrFace":             reflect.ValueOf(srf.EdgeSharpOrFace),
 		"EdgeTurning":                 reflect.ValueOf(srf.EdgeTurning),
 		"ExportMode":                  reflect.ValueOf(srf.ExportMode),
 		"FaceAtLeastOneDiscarded":     reflect.ValueOf(srf.FaceAtLeastOneDiscarded),

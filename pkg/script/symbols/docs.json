@@ -6769,7 +6769,8 @@
 					"EdgeSelfInter",
 					"EdgeTurning",
 					"EdgeEmphasized",
-					"EdgeSharp"
+					"EdgeSharp",
+					"EdgeSharpOrFace"
 				]
 			},
 			"EdgeOnInfo": {
@@ -8338,6 +8339,9 @@
 			},
 			"EdgeSharp": {
 				"decl": "const EdgeSharp"
+			},
+			"EdgeSharpOrFace": {
+				"decl": "const EdgeSharpOrFace"
 			},
 			"EdgeTurning": {
 				"decl": "const EdgeTurning"

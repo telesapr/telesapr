@@ -702,7 +702,10 @@ func (g *Group) generateOwnDisplayItems(sk *Sketch) {
 		// Triangle mesh only; no shell or emphasized edges.
 		g.RunningMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeEmphasized)
 	} else {
-		g.DisplayMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeSharp)
+		// The edges between faces too where they meet smoothly, as
+		// about a fillet; not the seams within a face, whose patches
+		// carry one face (SShell.displayFace).
+		g.DisplayMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeSharpOrFace)
 	}
 	var builder srf.PolylineBuilder
 	builder.MakeFromOutlines(&rawOutlines)
