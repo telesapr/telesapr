@@ -4303,7 +4303,7 @@
 					},
 					"Measure": {
 						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
-						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm."
+						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm. A face counts by its\noutward normal: a point outside the solid is at a positive distance\nfrom it, and two opposite faces are at 180 degrees."
 					},
 					"Midpoint": {
 						"decl": "func (d *Doc) Midpoint(point, line Entity) Constraint",
@@ -6037,6 +6037,10 @@
 					"NewSweep": {
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
 						"text": "NewSweep starts a sweep of the active group's sketch along path, line segments and arcs joined end to end and meeting tangent."
+					},
+					"OutwardFaceNormal": {
+						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",
+						"text": "OutwardFaceNormal is a face's normal, turned to point out of the solid, as its triangles' do."
 					},
 					"Parameter": {
 						"decl": "func (sk *Sketch) Parameter(name string) *Parameter",

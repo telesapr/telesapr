@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"math"
+	"slices"
 	"os"
 	"path/filepath"
 	"strings"
@@ -415,5 +416,39 @@ func TestDocumentUnits(t *testing.T) {
 	}
 	if strings.Join(exprs, "; ") != "(w*2)*25.4; (1/4)*25.4" {
 		t.Errorf("expressions %v", exprs)
+	}
+}
+
+// Measuring from a face goes by the face's outward normal, however its
+// sketch was drawn: a point outside a side is at a positive distance,
+// and opposite sides are at 180 degrees (roadmap 14.5). Drawn one way
+// round, the face entities' own normals point into the block.
+func TestMeasureFacesOutward(t *testing.T) {
+	for _, reverse := range []bool{false, true} {
+		d := New()
+		corners := []Vec{V(0, 0, 0), V(10, 0, 0), V(10, 10, 0), V(0, 10, 0)}
+		if reverse {
+			corners = []Vec{V(0, 0, 0), V(0, 10, 0), V(10, 10, 0), V(10, 0, 0)}
+		}
+		d.Polyline(true, corners...)
+		ex := d.Extrude(5, "")
+		d.SketchIn(d.Workplane("XY"), "")
+		p := d.Point(V(20, 5, 0))
+		var dists []float64
+		var sides []Entity
+		for _, f := range ex.Faces() {
+			m := d.Measure(p, f)
+			dists = append(dists, math.Round(m.Value*1e6)/1e6)
+			if math.Abs(m.Value-10) < 1e-6 || math.Abs(m.Value+20) < 1e-6 {
+				sides = append(sides, f)
+			}
+		}
+		slices.Sort(dists)
+		if want := []float64{-20, -5, -5, -5, 0, 10}; !slices.Equal(dists, want) {
+			t.Errorf("reverse %v: distances %v, want %v", reverse, dists, want)
+		}
+		if len(sides) != 2 || !near(d.Measure(sides[0], sides[1]).Value, 180) {
+			t.Errorf("reverse %v: %d sides, angle %v", reverse, len(sides), d.Measure(sides[0], sides[1]).Value)
+		}
 	}
 }
