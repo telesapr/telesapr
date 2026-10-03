@@ -568,7 +568,8 @@ estimates above. Decisions taken that day:
   order.
 
 Developed on the branch `mcp-server`, in a worktree, while step 11 was in progress on its own
-branch. `docs/ai.md` is the user's guide.
+branch, and merged into `master` after step 11 as `baaec8d` on 2026-10-03. `docs/ai.md` is the
+user's guide.
 
 | Package | Content | State |
 |---|---|---|
