@@ -1,0 +1,105 @@
+TeleSAPR
+Copyright 2008-2026 Jonathan Westhues and the other SolveSpace authors,
+and the TeleSAPR authors.
+
+TeleSAPR began as a Go port of SolveSpace (https://solvespace.com), which is
+licensed under the GNU General Public License, version 3 or later. TeleSAPR is
+distributed under the same licence; its text is in LICENSE.
+
+Parts of TeleSAPR are ported from, or bundle, the works below. Each keeps the
+notice its source asks for. All of them allow distribution as part of a
+program under GPL version 3 or later.
+
+================================================================================
+pkg/libm: the GNU C Library's libm
+================================================================================
+
+sin, cos, tan, asin, acos and atan are ported from the GNU C Library's
+sysdeps/ieee754/dbl-64 (the IBM Accurate Mathematical Library), so that
+results match a glibc build bit for bit.
+
+  Copyright (C) 2001-2024 Free Software Foundation, Inc.
+  IBM Accurate Mathematical Library, written by International Business
+  Machines Corp.
+
+  Licensed under the GNU Lesser General Public License, version 2.1 or later.
+
+The range reduction for large arguments (e_rem_pio2.c, k_rem_pio2.c) comes
+from fdlibm:
+
+  Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+
+  Developed at SunSoft, a Sun Microsystems, Inc. business.
+  Permission to use, copy, modify, and distribute this software is freely
+  granted, provided that this notice is preserved.
+
+================================================================================
+pkg/solver: Eigen's SparseQR and COLAMD
+================================================================================
+
+The sparse QR factorisation and its column ordering are ported from Eigen 3.4
+(Eigen/src/SparseQR, Eigen/src/OrderingMethods/Eigen_Colamd.h).
+
+  Copyright (C) 2012-2014 Desire Nuentsa, Gael Guennebaud.
+  Licensed under the Mozilla Public License, version 2.0
+  (http://mozilla.org/MPL/2.0/).
+
+Eigen's COLAMD is modified from the colamd/symamd library:
+
+  The authors of the code itself are Stefan I. Larimore and Timothy A.
+  Davis (davis@cise.ufl.edu), University of Florida. The algorithm was
+  developed in collaboration with John Gilbert, Xerox PARC, and Esmond
+  Ng, Oak Ridge National Laboratory.
+
+  Copyright (c) 1998-2003 by the University of Florida.
+  All Rights Reserved.
+
+  THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+  EXPRESSED OR IMPLIED. ANY USE IS AT YOUR OWN RISK.
+
+  Permission is hereby granted to use, copy, modify, and/or distribute
+  this program, provided that the Copyright, this License, and the
+  Availability of the original version is retained on all copies and made
+  accessible to the end-user of any code or package that includes COLAMD
+  or any modified version of COLAMD.
+
+  Availability: the colamd/symamd library is available at
+  http://www.suitesparse.com
+
+================================================================================
+pkg/ttf: FreeType
+================================================================================
+
+The font loading, outline and hinting code is ported from FreeType 2, used
+under the FreeType License (FTL):
+
+  Portions of this software are copyright (C) 1996-2024 The FreeType
+  Project (https://freetype.org). All rights reserved.
+
+================================================================================
+Fonts and web viewer resources
+================================================================================
+
+pkg/ttf/fonts/BitstreamVeraSans-Roman-builtin.ttf: Bitstream Vera Sans.
+
+  Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera is
+  a trademark of Bitstream, Inc. Distributed under the Bitstream Vera Fonts
+  licence, which allows bundling the fonts with software; the full text is in
+  SolveSpace's THIRD_PARTIES.txt and at
+  https://www.gnome.org/fonts/
+
+pkg/res/data/fonts/unifont.hex.gz: GNU Unifont, by Roman Czyborra, Paul
+  Hardy and others; GNU General Public License, version 2 or later, with the
+  GNU font embedding exception.
+
+pkg/res/data/fonts/unicode.lff.gz: the LibreCAD vector font; GNU General
+  Public License, version 2 or later.
+
+pkg/res/data/threejs/three-r111.min.js.gz: three.js r111.
+  Copyright (c) 2010-2019 three.js authors. MIT License.
+
+pkg/res/data/threejs/hammer-2.0.8.js.gz: Hammer.js 2.0.8.
+  Copyright (c) 2016 Jorik Tangelder. MIT License.
+
+The icons and cursors under pkg/res/data come from SolveSpace and are
+covered by its licence, GPL version 3 or later.
