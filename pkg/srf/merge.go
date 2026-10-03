@@ -1,7 +1,9 @@
 package srf
 
 import (
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/par"
 )
 
 // Routines to merge multiple coincident surfaces (each with their own trim
@@ -11,54 +13,125 @@ import (
 // MergeCoincidentSurfaces merges coincident, same-color planes that
 // share an edge into one surface carrying all of their trims.
 // Mirrors C++ SShell::MergeCoincidentSurfaces.
+//
+// The planes are first put in classes, each the planes coincident with
+// its first and of its colour, in the surfaces' order; a surface only
+// ever merges with others of its class, so the classes are merged at
+// once, each in order (roadmap 17.2). The curves that named a merged
+// surface name the one it went into afterwards: making the edges of a
+// surface reads its trims and the curves' points, never which surfaces
+// a curve lies on, so the result is that of the serial loop.
 func (s *SShell) MergeCoincidentSurfaces() {
 	for i := range s.Surface {
 		s.Surface[i].Tag = 0
 	}
+	curveAt := make(map[core.HSCurve]*SCurve, len(s.Curve))
+	for i := range s.Curve {
+		if _, dup := curveAt[s.Curve[i].H]; !dup {
+			curveAt[s.Curve[i].H] = &s.Curve[i]
+		}
+	}
 
+	// The classes, by index, each in order.
+	var classes [][]int
+	classed := make([]bool, len(s.Surface))
 	for i := range s.Surface {
+		si := &s.Surface[i]
+		// Let someone else clean up the empty surfaces; we can certainly
+		// merge them, but we don't know how to calculate a reasonable
+		// bounding box. And for now we handle only coincident planes.
+		if classed[i] || len(si.Trim) == 0 || si.DegM != 1 || si.DegN != 1 {
+			continue
+		}
+		class := []int{i}
+		classed[i] = true
+		for j := i + 1; j < len(s.Surface); j++ {
+			sj := &s.Surface[j]
+			if !classed[j] && sj.CoincidentWith(si, true) && sj.Color.Equals(si.Color) {
+				class = append(class, j)
+				classed[j] = true
+			}
+		}
+		if len(class) > 1 {
+			classes = append(classes, class)
+		}
+	}
+
+	replaced := make([][]surfaceReplaced, len(classes))
+	par.For(len(classes), func(c int) {
+		replaced[c] = s.mergeClass(classes[c], curveAt)
+	})
+	to := map[core.HSSurface]core.HSSurface{}
+	for _, rs := range replaced {
+		for _, r := range rs {
+			to[r.from] = r.to
+		}
+	}
+	if len(to) > 0 {
+		for k := range s.Curve {
+			sc := &s.Curve[k]
+			if h, ok := to[sc.SurfA]; ok {
+				sc.SurfA = h
+			}
+			if h, ok := to[sc.SurfB]; ok {
+				sc.SurfB = h
+			}
+		}
+	}
+
+	kept := s.Surface[:0]
+	for _, ss := range s.Surface {
+		if ss.Tag == 0 {
+			kept = append(kept, ss)
+		}
+	}
+	s.Surface = kept
+}
+
+// surfaceReplaced is a surface merged into another.
+type surfaceReplaced struct{ from, to core.HSSurface }
+
+// edgesInto is MakeEdgesInto with the shell's curves by handle.
+func (srf *SSurface) edgesInto(curveAt map[core.HSCurve]*SCurve, sel *SEdgeList) {
+	for i := range srf.Trim {
+		stb := &srf.Trim[i]
+		if sc := curveAt[stb.Curve]; sc != nil {
+			srf.makeTrimEdgesInto(sel, false, sc, stb)
+		}
+	}
+}
+
+// mergeClass merges the coincident planes of one class, the indices of
+// its surfaces in order, as the serial loop does, and returns which
+// surface went into which.
+func (s *SShell) mergeClass(class []int, curveAt map[core.HSCurve]*SCurve) (replaced []surfaceReplaced) {
+	for ci, i := range class {
 		si := &s.Surface[i]
 		if si.Tag != 0 {
 			continue
 		}
-		// Let someone else clean up the empty surfaces; we can certainly merge
-		// them, but we don't know how to calculate a reasonable bounding box.
-		if len(si.Trim) == 0 {
-			continue
-		}
-		// And for now we handle only coincident planes, so no sense wasting
-		// time on other surfaces.
-		if si.DegM != 1 || si.DegN != 1 {
-			continue
-		}
 
 		var sel SEdgeList
-		si.MakeEdgesInto(s, &sel, false, nil)
+		si.edgesInto(curveAt, &sel)
 
 		merged := false
 		for {
 			mergedThisTime := false
 
-			for j := i + 1; j < len(s.Surface); j++ {
+			for _, j := range class[ci+1:] {
 				sj := &s.Surface[j]
 				if sj.Tag != 0 {
 					continue
 				}
-				if !sj.CoincidentWith(si, true) {
-					continue
-				}
-				if !sj.Color.Equals(si.Color) {
-					continue
-				}
-				// But we do merge surfaces with different face entities, since
-				// otherwise we'd hardly ever merge anything.
+				// But we do merge surfaces with different face entities,
+				// since otherwise we'd hardly ever merge anything.
 
-				// This surface is coincident. But let's not merge coincident
-				// surfaces if they contain disjoint contours; that just makes
-				// the bounding box tests less effective, and possibly things
-				// less robust.
+				// This surface is coincident. But let's not merge
+				// coincident surfaces if they contain disjoint contours;
+				// that just makes the bounding box tests less effective,
+				// and possibly things less robust.
 				var tel SEdgeList
-				sj.MakeEdgesInto(s, &tel, false, nil)
+				sj.edgesInto(curveAt, &tel)
 				if !sel.ContainsEdgeFrom(&tel) {
 					continue
 				}
@@ -66,25 +139,17 @@ func (s *SShell) MergeCoincidentSurfaces() {
 				sj.Tag = 1
 				merged = true
 				mergedThisTime = true
-				sj.MakeEdgesInto(s, &sel, false, nil)
+				sj.edgesInto(curveAt, &sel)
 				sj.Trim = nil
 
-				// All the references to this surface get replaced with the
-				// new srf
-				for k := range s.Curve {
-					sc := &s.Curve[k]
-					if sc.SurfA == sj.H {
-						sc.SurfA = si.H
-					}
-					if sc.SurfB == sj.H {
-						sc.SurfB = si.H
-					}
-				}
+				// All the references to this surface get replaced with
+				// the new srf, once every class is merged.
+				replaced = append(replaced, surfaceReplaced{sj.H, si.H})
 			}
 
-			// If this iteration merged a contour onto ours, then we have to
-			// go through the surfaces again; that might have made a new
-			// surface touch us.
+			// If this iteration merged a contour onto ours, then we have
+			// to go through the surfaces again; that might have made a
+			// new surface touch us.
 			if !mergedThisTime {
 				break
 			}
@@ -135,14 +200,7 @@ func (s *SShell) MergeCoincidentSurfaces() {
 			si.Ctrl[1][0] = geom.Vector{X: umax, Y: vmin, Z: nt}.ScaleOutOfCsys(u, v, n)
 		}
 	}
-
-	kept := s.Surface[:0]
-	for _, ss := range s.Surface {
-		if ss.Tag == 0 {
-			kept = append(kept, ss)
-		}
-	}
-	s.Surface = kept
+	return replaced
 }
 
 // CoincidentWith reports whether ss is a plane lying in the same plane
