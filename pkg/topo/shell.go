@@ -10,8 +10,9 @@ import (
 )
 
 // A shell hollows a solid, leaving walls of one thickness, open where
-// faces are taken away. This version takes solids of planar faces: the
-// inner solid has the outer one's topology, each face moved in by the
+// faces are taken away. It takes solids of planar faces, and prisms
+// whose sides are flat or extrusions of arcs (shellprism.go). Of flat
+// faces, the inner solid has the outer one's topology, each face moved in by the
 // thickness but those taken away, and each vertex where its faces'
 // moved planes meet. The shell is the solid less the inner one, by a
 // Boolean.
@@ -55,6 +56,9 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 	if len(opened) == len(t.Faces) {
 		return nil, errors.New("every face is taken away, which leaves no wall")
 	}
+	if out, ok, err := shellPrism(t, sh, opened, thick, origin); ok {
+		return out, err
+	}
 
 	// Each face's plane, moved in by the thickness.
 	normal := make([]geom.Vector, len(t.Faces))
@@ -62,7 +66,7 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 	for f := range t.Faces {
 		n, ok := t.planarNormal(f)
 		if !ok {
-			return nil, shellErr(t.faceAnchor(f), "a face of the solid is curved; a shell hollows solids of flat faces in this version")
+			return nil, shellErr(t.faceAnchor(f), "a face of the solid is curved; a shell hollows solids of flat faces, and prisms of lines and arcs")
 		}
 		// A face taken away stays where it is: the inside meets it, and
 		// the Boolean takes it away with the inside, as a cut flush with
@@ -77,7 +81,7 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 	}
 	for e := range t.Edges {
 		if !t.Straight(e) {
-			return nil, shellErr(t.Edges[e].Points[0], "an edge of the solid is curved; a shell hollows solids of flat faces in this version")
+			return nil, shellErr(t.Edges[e].Points[0], "an edge of the solid is curved; a shell hollows solids of flat faces, and prisms of lines and arcs")
 		}
 	}
 

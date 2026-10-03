@@ -11,7 +11,8 @@ import (
 
 // A shell hollows the solid so far to walls of its thickness, ValB,
 // open where its faces, SolidFaces, are taken away (topo.ShellSolid):
-// solids of flat faces in this version. It works on a copy of the solid
+// solids of flat faces, and prisms of lines and arcs open at their ends.
+// It works on a copy of the solid
 // so far, so its running shell is that solid hollowed, with the Boolean
 // done inside; the cavity's faces are named from the group
 // (srf.OriginFor). Its own shell is that solid too, so the check and the

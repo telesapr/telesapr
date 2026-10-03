@@ -104,18 +104,37 @@ func TestShellRefused(t *testing.T) {
 			c.fn()
 		}()
 	}
+	// A cylinder hollows into a cup, but not past its axis, nor open at
+	// its side (roadmap 15.2).
 	d2 := api.New()
 	d2.SketchIn(d2.Workplane("XY"), "")
 	d2.Circle(api.V(0, 0, 0), 5)
 	cyl := d2.Extrude(10, "")
-	func() {
-		defer func() {
-			if err, ok := recover().(error); !ok || !strings.Contains(err.Error(), "curved") {
-				t.Errorf("a cylinder: %v", err)
-			}
+	cup := d2.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
+	if r := cup.Check(); !r.Sound() || math.Abs(r.Volume-math.Pi*(250-16*9)) > 0.01*math.Pi*200 {
+		t.Errorf("the cup: %s", r.String())
+	}
+	for name, c := range map[string]struct {
+		fn   func()
+		want string
+	}{
+		"a side": {func() { d2.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(5, 0, 5))}, 1, "") }, "only at its ends"},
+	} {
+		func() {
+			defer func() {
+				err, ok := recover().(error)
+				if !ok || !strings.Contains(err.Error(), c.want) {
+					t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
+				}
+			}()
+			c.fn()
 		}()
-		d2.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
-	}()
+	}
+	// Walls past the axis are a problem on the group.
+	cup.SetThickness(5)
+	if p := cup.Problem(); !strings.Contains(p, "radius") {
+		t.Errorf("walls past the axis: problem %q", p)
+	}
 }
 
 // A shell whose walls stop fitting, as when the solid is made thinner,

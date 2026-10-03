@@ -211,6 +211,15 @@ func TestPathEquivalenceShell(t *testing.T) {
 	}
 }
 
+// The top of an extruded circle picked with the mouse and the cylinder
+// hollowed into a cup, and the same made by a script (roadmap 15.2).
+func TestPathEquivalenceShellCup(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_shell_cup", "path_shell_cup")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+		t.Errorf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
 // Two edges that meet at a corner picked with the mouse and rounded,
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {

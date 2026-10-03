@@ -171,12 +171,6 @@ func TestShellRefusals(t *testing.T) {
 	if _, err := topo.ShellSolid(sh, []int{top}, -1, 1<<30); err == nil {
 		t.Error("a negative thickness")
 	}
-	// A cylinder's side is curved.
-	cyl := cylinder(5, 10)
-	ct := build(t, cyl)
-	if _, err := topo.ShellSolid(cyl, []int{faceAt(t, ct, v(0, 0, 10), v(0, 0, 1))}, 1, 1<<30); !errors.As(err, &se) {
-		t.Errorf("a curved face: %v", err)
-	}
 	// Four faces meet at the apex of a pyramid over a rectangle, off
 	// centre, and moved in don't meet in one point.
 	pyr := &srf.SShell{}

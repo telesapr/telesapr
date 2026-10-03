@@ -437,6 +437,16 @@ func BenchmarkShell(b *testing.B) {
 	})
 }
 
+// A cylinder hollowed into a cup (roadmap 15.2).
+func BenchmarkShellCup(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 5)
+		cyl := d.Extrude(10, "")
+		d.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
+	})
+}
+
 func BenchmarkLoft(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		bottom := d.SketchIn(d.Workplane("XY"), "")

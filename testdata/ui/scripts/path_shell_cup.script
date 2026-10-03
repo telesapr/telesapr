@@ -1,0 +1,16 @@
+# The extruded circle of path_fillet_circle hollowed into a cup, open at
+# the top face picked with the mouse; the same as path_shell_cup.go
+# makes (TestPathEquivalenceShellCup).
+key c
+move 290 265
+down L 290 265
+up L 290 265
+move 340 265
+down L 340 265
+up L 340 265
+key esc
+key x shift
+move 320 285
+down L 320 285
+up L 320 285
+menu New Group|Shell Solid

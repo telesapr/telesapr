@@ -259,7 +259,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"Shell Solid hollows the solid so far to walls of one thickness, open where "+
 				"faces are taken away. Select one or more of:\n\n"+
 				"    * flat faces of the solid, to take away\n\n"+
-				"Every face of the solid must be flat, and the walls must not meet.", capitalize(err.Error()))
+				"The solid's faces must be flat, or the solid a prism of lines and arcs open only "+
+				"at its ends, and the walls must not meet.", capitalize(err.Error()))
 			return
 		}
 		g = shg
