@@ -56,8 +56,8 @@ const (
 	StyleOutline      = 15
 	// StyleSectionCap fills and hatches the cut of the section view
 	// (an extension).
-	StyleSectionCap = 16
-	StyleFirstCustom  = 0x100
+	StyleSectionCap  = 16
+	StyleFirstCustom = 0x100
 )
 
 type Style struct {
