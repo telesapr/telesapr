@@ -40,6 +40,7 @@ var groupTypes = newEnum("group type", map[sketch.GroupType]string{
 	sketch.GroupChamfer:          "chamfer",
 	sketch.GroupSweep:            "sweep",
 	sketch.GroupFillet:           "fillet",
+	sketch.GroupShell:            "shell",
 	sketch.GroupLoft:             "loft",
 })
 

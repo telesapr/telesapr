@@ -159,6 +159,11 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		// It edits the solid so far into its running shell; no Boolean.
 		g.generateFilletShell(sk)
 		return
+	case GroupShell:
+		// It hollows the solid so far into its running shell, by a
+		// Boolean of its own.
+		g.generateShellShell(sk)
+		return
 	case GroupExtrude:
 		g.generateExtrudeShell(sk)
 	case GroupLathe, GroupRevolve:

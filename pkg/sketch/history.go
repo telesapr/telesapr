@@ -92,6 +92,9 @@ func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency {
 		add(faceGroup(n.A), "solid edge "+n.String())
 		add(faceGroup(n.B), "solid edge "+n.String())
 	}
+	for _, id := range g.SolidFaces {
+		add(faceGroup(id), fmt.Sprintf("solid face %x", uint32(id)))
+	}
 
 	for i := range sk.Requests {
 		r := &sk.Requests[i]

@@ -1,0 +1,248 @@
+dialog 3 Can't shell the solid.|There are no faces to take away: a shell is open where faces are taken away.\n\nShell Solid hollows the solid so far to walls of one thickness, open where faces are taken away. Select one or more of:\n\n    * flat faces of the solid, to take away\n\nEvery face of the solid must be flat, and the walls must not meet.
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 4 7 67 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-shell [rename/del]
+ 0-6 74 64 0
+ 7-18 64 64 0
+ 19-24 6c 64 108 4 1 0
+ 25-25 64 64 0
+ 26-28 6c 64 108 4 1 0
+ 29-99 64 64 0
+row 10  hollow the solid to walls
+ 0-0 64 64 0
+ 1-25 74 64 0
+ 26-99 64 64 0
+row 12    thickness 1.00 [change]
+ 0-2 64 61 0
+ 3-11 74 61 0
+ 12-17 64 61 0
+ 18-25 6c 61 108 4 1 0
+ 26-99 64 61 0
+row 14    faces taken away
+ 0-2 64 64 0
+ 3-18 74 64 0
+ 19-99 64 64 0
+row 16      face entity 8003002c of g003-extrude
+ 0-99 64 61 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37  requests in group
+ 0-99 74 64 0
+row 39    (none)
+ 0-99 64 61 0
+row 41 
+ 0-99 64 64 0
+row 43  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 45    (none)
+ 0-99 64 61 0
+row 47 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 12\nTriangles: 28\nVolume: 10.42 cm³\nCenter of mass: (-2.00, 7.00, 36.91)\nExtent: 36.00 x 26.00 x 80.00
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-shell [rename/del]
+ 0-6 74 64 0
+ 7-18 64 64 0
+ 19-24 6c 64 108 4 1 0
+ 25-25 64 64 0
+ 26-28 6c 64 108 4 1 0
+ 29-99 64 64 0
+row 10  hollow the solid to walls
+ 0-0 64 64 0
+ 1-25 74 64 0
+ 26-99 64 64 0
+row 12    thickness 2.00 (= 1+1) [change]
+ 0-2 64 61 0
+ 3-11 74 61 0
+ 12-25 64 61 0
+ 26-33 6c 61 108 4 1 0
+ 34-99 64 61 0
+row 14    faces taken away
+ 0-2 64 64 0
+ 3-18 74 64 0
+ 19-99 64 64 0
+row 16      face entity 8003002c of g003-extrude
+ 0-99 64 61 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37  requests in group
+ 0-99 74 64 0
+row 39    (none)
+ 0-99 64 61 0
+row 41 
+ 0-99 64 64 0
+row 43  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 45    (none)
+ 0-99 64 61 0
+row 47 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 12\nTriangles: 28\nVolume: 19.97 cm³\nCenter of mass: (-2.00, 7.00, 37.25)\nExtent: 36.00 x 26.00 x 80.00
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-shell [rename/del]
+ 0-6 74 64 0
+ 7-18 64 64 0
+ 19-24 6c 64 108 4 1 0
+ 25-25 64 64 0
+ 26-28 6c 64 108 4 1 0
+ 29-99 64 64 0
+row 10  hollow the solid to walls
+ 0-0 64 64 0
+ 1-25 74 64 0
+ 26-99 64 64 0
+row 12    thickness 30.00 [change]
+ 0-2 64 61 0
+ 3-11 74 61 0
+ 12-18 64 61 0
+ 19-26 6c 61 108 4 1 0
+ 27-99 64 61 0
+row 14    faces taken away
+ 0-2 64 64 0
+ 3-18 74 64 0
+ 19-99 64 64 0
+row 16      face entity 8003002c of g003-extrude
+ 0-99 64 61 0
+row 18 
+ 0-99 64 64 0
+row 20    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 22    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 24    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 27    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 29    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 31    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 33    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 35 
+ 0-99 64 64 0
+row 37 The group adds no solid: a thickness of 30 makes the walls meet, closing up a face.
+ 0-82 78 64 0
+ 83-99 64 64 0
+row 39 
+ 0-99 64 64 0
+row 41  requests in group
+ 0-99 74 64 0
+row 43    (none)
+ 0-99 64 61 0
+row 45 
+ 0-99 64 64 0
+row 47  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 49    (none)
+ 0-99 64 61 0
+row 51 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 74.88 cm³\nCenter of mass: (-2.00, 7.00, 40.00)\nExtent: 36.00 x 26.00 x 80.00

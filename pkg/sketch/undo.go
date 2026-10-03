@@ -137,6 +137,7 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 			Predef:                 src.Predef,
 			Edges:                  slices.Clone(src.Edges),
 			SolidEdges:             slices.Clone(src.SolidEdges),
+			SolidFaces:             slices.Clone(src.SolidFaces),
 			Name:                   src.Name,
 		}
 		ut.Groups = append(ut.Groups, dest)

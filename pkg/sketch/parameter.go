@@ -98,6 +98,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupPitch && g.Type == GroupFillet {
 		return "radius"
 	}
+	if f == GroupPitch && g.Type == GroupShell {
+		return "thickness"
+	}
 	if f == GroupCopies && g.Type == GroupLoft {
 		return "turn"
 	}
@@ -157,6 +160,9 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 		}
 		if g.Type == GroupFillet && v <= 0 {
 			return errors.New("a fillet's radius must be more than zero")
+		}
+		if g.Type == GroupShell && v <= 0 {
+			return errors.New("a shell's thickness must be more than zero")
 		}
 	}
 	return nil

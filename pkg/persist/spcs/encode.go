@@ -241,6 +241,9 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	for _, e := range g.SolidEdges {
 		n.add(field("solid-edge", hex(uint32(e.A)), hex(uint32(e.B)), Word(strconv.Itoa(e.N))))
 	}
+	for _, f := range g.SolidFaces {
+		n.add(field("solid-face", hex(uint32(f))))
+	}
 
 	pd := block("predef")
 	pd.quaternion("q", g.Predef.Q)

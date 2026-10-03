@@ -59,6 +59,7 @@ func init() {
 		"GroupRevolve":                 reflect.ValueOf(sketch.GroupRevolve),
 		"GroupRotate":                  reflect.ValueOf(sketch.GroupRotate),
 		"GroupScale":                   reflect.ValueOf(sketch.GroupScale),
+		"GroupShell":                   reflect.ValueOf(sketch.GroupShell),
 		"GroupSweep":                   reflect.ValueOf(sketch.GroupSweep),
 		"GroupTranslate":               reflect.ValueOf(sketch.GroupTranslate),
 		"GroupTwoSided":                reflect.ValueOf(sketch.GroupTwoSided),

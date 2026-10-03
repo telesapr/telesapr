@@ -109,7 +109,7 @@ func (g Group) Type() (t sketch.GroupType) {
 
 // Kind names what the group is: "sketch-in-plane", "sketch-in-3d",
 // "extrude", "lathe", "revolve", "helix", "rotate", "translate",
-// "mirror", "chamfer", "sweep", "fillet", "loft" or "link".
+// "mirror", "chamfer", "sweep", "fillet", "loft", "shell" or "link".
 func (g Group) Kind() string { return kindName(g.Type()) }
 
 // kindName is the Kind of a group type.
@@ -141,6 +141,8 @@ func kindName(t sketch.GroupType) string {
 		return "fillet"
 	case sketch.GroupLoft:
 		return "loft"
+	case sketch.GroupShell:
+		return "shell"
 	case sketch.GroupLinked:
 		return "link"
 	}
