@@ -207,7 +207,8 @@ func FilletEdge(sh *srf.SShell, a, b geom.Vector, r float64, origin uint32) erro
 	}
 	va, vb := t.vertexNear(a), t.vertexNear(b)
 	ed := &t.Edges[e]
-	if va < 0 || vb < 0 || !(ed.V[0] == va && ed.V[1] == vb || ed.V[0] == vb && ed.V[1] == va) {
+	whole := ed.V[0] == va && ed.V[1] == vb || ed.V[0] == vb && ed.V[1] == va
+	if va < 0 || vb < 0 || !whole {
 		return filletErr(m, "the segment is not a whole edge of the solid")
 	}
 	if !t.Straight(e) {
