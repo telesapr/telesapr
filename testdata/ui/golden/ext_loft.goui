@@ -1,5 +1,5 @@
 filedialog open
-dialog 3 Can't loft.|Nothing of another sketch is selected.\n\nLoft To Selected Profile joins the active group's sketch, a closed loop in a workplane, to another one. Select:\n\n    * an entity of the other sketch, whose loop has as many curves as the active one's\n
+dialog 3 Can't loft.|Nothing of another sketch is selected.\n\nLoft To Selected Profile joins the active group's sketch, a closed loop in a workplane, to others. Select:\n\n    * an entity of another sketch, to join the two by ruled faces\n    * entities of two or more other sketches, to join them all by one smooth surface, in the order of the history from the active one\n
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
