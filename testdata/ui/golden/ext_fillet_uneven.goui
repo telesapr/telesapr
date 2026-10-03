@@ -1,0 +1,177 @@
+filedialog open
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 24.797959099696172 -7.6682410841322053 -3.707484897254683 -6.0957479066078895 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 5 7 70 4 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-fillet [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 5 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 5 1 0
+ 30-99 64 64 0
+row 10  round edges of the solid
+ 0-0 64 64 0
+ 1-24 74 64 0
+ 25-99 64 64 0
+row 12    radius 1.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-14 64 61 0
+ 15-22 6c 61 108 5 1 0
+ 23-99 64 61 0
+row 14    edges
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-99 64 61 0
+row 16      entity 8004001a of g004-ramp
+ 0-4 64 64 0
+ 5-32 6c 64 108 8004001a 1 1
+ 33-99 64 64 0
+row 18      entity 80040013 of g004-ramp
+ 0-4 64 61 0
+ 5-32 6c 61 108 80040013 1 1
+ 33-99 64 61 0
+row 20 
+ 0-99 64 64 0
+row 22    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 24    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 26    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 29    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 31    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 33    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 35    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 37 
+ 0-99 64 64 0
+row 39  requests in group
+ 0-99 74 64 0
+row 41    (none)
+ 0-99 64 61 0
+row 43 
+ 0-99 64 64 0
+row 45  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 47    (none)
+ 0-99 64 61 0
+row 49 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 54\nVolume: 1.75 cm³\nCenter of mass: (8.81, 5.01, 4.75)\nExtent: 20.00 x 10.00 x 10.00
+row 0  home   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-7 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-fillet [rename/del]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 5 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 5 1 0
+ 30-99 64 64 0
+row 10  round edges of the solid
+ 0-0 64 64 0
+ 1-24 74 64 0
+ 25-99 64 64 0
+row 12    radius 2.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-14 64 61 0
+ 15-22 6c 61 108 5 1 0
+ 23-99 64 61 0
+row 14    edges
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-99 64 61 0
+row 16      entity 8004001a of g004-ramp
+ 0-4 64 64 0
+ 5-32 6c 64 108 8004001a 1 1
+ 33-99 64 64 0
+row 18      entity 80040013 of g004-ramp
+ 0-4 64 61 0
+ 5-32 6c 61 108 80040013 1 1
+ 33-99 64 61 0
+row 20 
+ 0-99 64 64 0
+row 22    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 24    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 26    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 29    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 31    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 33    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 35    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 37 
+ 0-99 64 64 0
+row 39  requests in group
+ 0-99 74 64 0
+row 41    (none)
+ 0-99 64 61 0
+row 43 
+ 0-99 64 64 0
+row 45  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 47    (none)
+ 0-99 64 61 0
+row 49 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 64\nVolume: 1.73 cm³\nCenter of mass: (8.81, 5.03, 4.72)\nExtent: 20.00 x 10.00 x 10.00

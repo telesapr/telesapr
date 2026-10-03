@@ -228,6 +228,7 @@ func TestSolidGoldens(t *testing.T) {
 		},
 		"fillet-pocket":  func(d *api.Doc) { filletPocket(d, 2) },
 		"fillet-outline": func(d *api.Doc) { filletOutline(t, d) },
+		"fillet-uneven":  func(d *api.Doc) { filletUneven(d) },
 		"fillet-boss-foot": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
 			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
@@ -370,6 +371,23 @@ func filletOutline(t *testing.T, d *api.Doc) {
 func BenchmarkFilletOutline(b *testing.B) {
 	t := &testing.T{}
 	benchRegen(b, func(d *api.Doc) { filletOutline(t, d) })
+}
+
+// filletUneven is a ramp, its top's front edge and its edge along the
+// slope rounded: an uneven mitre.
+func filletUneven(d *api.Doc) {
+	d.SketchIn(d.Workplane("ZX"), "")
+	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
+	s := d.Extrude(10, "").Solid()
+	slope := s.EdgeAt(api.V(15, 5, 10))
+	if a, b := slope.Ends(); a.Y < -1 || b.Y < -1 {
+		slope = s.EdgeAt(api.V(15, -5, 10))
+	}
+	d.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(7, 0, 10)), slope}, 2, "")
+}
+
+func BenchmarkFilletUneven(b *testing.B) {
+	benchRegen(b, filletUneven)
 }
 
 func BenchmarkShell(b *testing.B) {

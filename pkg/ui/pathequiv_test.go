@@ -207,6 +207,15 @@ func TestPathEquivalenceFilletOutline(t *testing.T) {
 	}
 }
 
+// Two edges of a ramp picked with the mouse on the turned view and
+// rounded, meeting in an uneven mitre, and the same made by a script.
+func TestPathEquivalenceFilletUneven(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_fillet_uneven", "path_fillet_uneven")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 2 {
+		t.Errorf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+	}
+}
+
 // A circle of an extrusion picked with the mouse and rounded, and the
 // same made by a script.
 func TestPathEquivalenceFilletCircle(t *testing.T) {
