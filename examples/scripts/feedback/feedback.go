@@ -62,7 +62,7 @@ func main() {
 		fail("the right side should be fixed")
 	}
 
-	// A measurement adds no constraint, as Analyze > Measure.
+	// A measurement adds no constraint, as Analyze > Measure Selection.
 	m := doc.Measure(sides[0])
 	fmt.Printf("the bottom's %s: %.1f mm, %.3f in\n", m.What, m.Value, m.Value/25.4)
 	d := doc.Measure(sides[0].Start(), sides[2].Start())
