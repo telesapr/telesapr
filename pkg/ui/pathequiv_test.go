@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -242,5 +243,35 @@ func TestPathEquivalenceFilletCircle(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_circle", "path_fillet_circle")
 	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
 		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
+// The circle at a boss's foot, one edge of four pieces, picked on a
+// piece whose name is not the lowest and filled, and the same edge
+// filled by a script: both name it by its lowest piece, and the fill
+// goes all round.
+func TestPathEquivalenceFilletRim(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_fillet_rim", "path_fillet_rim")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.SolidEdges) != 1 {
+		t.Fatalf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.SolidEdges))
+	}
+	tp, _ := g.PreviousGroup(ui).Topology()
+	e, err := tp.Resolve(g.SolidEdges[0])
+	if err != nil || tp.Lead(e) != e || len(tp.Chain(e)) != 4 {
+		t.Errorf("the fillet's edge %v: %v, a chain of %d", g.SolidEdges[0], err, len(tp.Chain(e)))
+	}
+	// A torus all round fills the foot: the spandrel of radius 1 turned
+	// about the axis at 8 plus its centroid's distance out. The meshes
+	// are at the interface's chord tolerance, whose curves' points the
+	// shells keep, so this is a bound; TestFilletConcaveSweep in
+	// pkg/topo measures the fill exactly.
+	var before, after srf.SMesh
+	g.PreviousGroup(ui).RunningShell.TriangulateInto(&before)
+	g.RunningShell.TriangulateInto(&after)
+	c := (10 - 3*math.Pi) / (12 - 3*math.Pi)
+	want := 2 * math.Pi * (8 + c) * (1 - math.Pi/4)
+	if gain := after.CalculateVolume() - before.CalculateVolume(); math.Abs(gain-want) > 0.1*want {
+		t.Errorf("the fill adds %g, want %g", gain, want)
 	}
 }
