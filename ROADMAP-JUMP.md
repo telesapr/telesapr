@@ -34,6 +34,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 13. Kernel soundness | done 2026-10-03: curves split at the seams of flat faces, ears that fold over skipped, 32 rows of twist, untrimmed surfaces dropped after a Boolean, a symmetric part its own mirror image, STEP meshes mended at T-junctions; the sphere and cylinder guards at 1 and 2, with their causes named | `101f59e` |
 | 14. Names, faces and picking | done 2026-10-03: faces with only an Origin drawn apart and picked, a circle's fillet one face, names that count their edges and survive a longer thread, non-manifold edges reported where they are, hover on large meshes by a grid, Measure by outward normals | `f512ed1` |
 | 15. Solid features completed | done 2026-10-03: chamfers by the fillet's edit (concave edges, chains; two distances not done), shells of prisms with round sides, apexes of four faces split, the draft angle on extrusions, the mirror of the whole solid, the pattern along a path, the stopped chain's message | `fb151c3` |
+| 16. Small features | done 2026-10-03: dimensions by name, configurations, motion study, groups inserted mid-history, 3MF export, text STL and OBJ links, bill of materials, STEP assemblies, mates, interference by shells, constraints inferred while drawing, the section's hatch, STEP links in place, what an AI program sees | MERGE16 |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
@@ -1247,20 +1248,26 @@ None needs the kernel. Efforts include the 20%, as in "Items outside the numbere
 
 | Package | Content | Effort | State |
 |---|---|---|---|
-| 16.1 A3 dimensions by name | A constraint's value is read in an expression by the constraint's name. | 0.6 wk | not started |
-| 16.2 A2 configurations | Named sets of parameter values, one active. | 1.2 wk | not started |
-| 16.3 G5 motion study | One parameter driven through a range, with the frames exported. | 1.8 wk | not started |
-| 16.4 C4 insert a group mid-history | Exists since the port. Left: a scenario, a path pair, and a test that an inserted group can't be referred to by an earlier one, by step 4's dependency check. | 0.2 wk | not started |
-| 16.5 D1 3MF export | | 0.6 wk | not started |
-| 16.6 D4 text STL and OBJ as reference meshes | Binary STL links already. | 0.6 wk | not started |
-| 16.7 G2 bill of materials | From link groups, to the text window and a CSV file. | 0.6 wk | not started |
-| 16.8 D5 STEP export with assembly structure | A product per linked part, with its colour. | 1.2 wk | not started |
-| 16.9 G1 mate shortcuts | Concentric, flush and hinge, from existing constraints. | 2.4 wk | not started |
-| 16.10 G3 interference by shells | The check between linked parts uses their shells, not their triangles. | 1.2 wk | not started |
-| 16.11 B3 auto-constrain on draw | More inference than horizontal and vertical: coincident, tangent, parallel, perpendicular, equal. | 1.8 wk | not started |
-| 16.12 The section's cap | A style for it, with a hatch (step 6). | 0.4 wk | not started |
-| 16.13 A linked STEP file's place | Placed where it was drawn, not at the middle of the view (step 8). | 0.3 wk | not started |
-| 16.14 What an AI program sees | `render` of the view as the window shows it and of a chosen group; what the mouse hovers, in `get_drawing` (I7). | 0.6 wk | not started |
+| 16.1 A3 dimensions by name | A constraint's value is read in an expression by the constraint's name. | 0.6 wk | done 2026-10-03 (`35c7bed`): a constraint's `name`, read in expressions as the value its label shows in the document's unit; one namespace with parameters, cycles through both caught, renames followed, a used name kept, reference dimensions refused, unit changes kept right; the label shows `width = 40.00` and its editor takes `name = value` |
+| 16.2 A2 configurations | Named sets of parameter values, one active. | 1.2 wk | done 2026-10-03 (`b9bc95b`): named sets of the parameters' expressions, one active, whose expressions the table holds and whose changes it takes; file `configuration` and `active-configuration`; the parameters screen; `Doc.AddConfiguration` and the rest |
+| 16.3 G5 motion study | One parameter driven through a range, with the frames exported. | 1.8 wk | done 2026-10-03 (`01d0cfb`): `Doc.MotionStudy` drives a parameter through steps and gives each step's value, solve and volume, saving a picture of the window's view (.png, in the application) or a mesh of each; Analyze > Motion Study |
+| 16.4 C4 insert a group mid-history | Exists since the port. Left: a scenario, a path pair, and a test that an inserted group can't be referred to by an earlier one, by step 4's dependency check. | 0.2 wk | done 2026-10-03 (`a6e27ca`): path pair and scenario; scripts refused a constraint or group naming what comes after the active group (the regeneration had dropped such a group silently); the file keeps the active group (`active`), so a save with an earlier group active round-trips |
+| 16.5 D1 3MF export | | 0.6 wk | done 2026-10-03 (`7a722b9`): the mesh with shared vertices and a colour per triangle, in mm, the same bytes each time; Export Triangle Mesh, `telesapr-cli export-mesh`, `Doc.Export` |
+| 16.6 D4 text STL and OBJ as reference meshes | Binary STL links already. | 0.6 wk | done 2026-10-03 (`340d7be`): text STL told from binary by size, not by "solid"; OBJ with negative indices and `mtllib` colours |
+| 16.7 G2 bill of materials | From link groups, to the text window and a CSV file. | 0.6 wk | done 2026-10-03 (`b259aba`): counts by linked file, with the copies of repeats, mirrors and patterns but for one at the part's own place; Analyze > Bill of Materials and a CSV file; `Doc.BillOfMaterials`, `Doc.ExportBOM`. Nested links are not counted |
+| 16.8 D5 STEP export with assembly structure | A product per linked part, with its colour. | 1.2 wk | done 2026-10-03 (`46384eb`): a product a part, a linked file written once and placed by each link's transform; read back by `pkg/persist/step` and by FreeCAD |
+| 16.9 G1 mate shortcuts | Concentric, flush and hinge, from existing constraints. | 2.4 wk | done 2026-10-03 (`2271ff2`): Concentric (on one axis, free to turn and slide, by two zero distances across the axis), Flush, Hinge, in the Constrain menu and `Doc`; a redundant part left out |
+| 16.10 G3 interference by shells | The check between linked parts uses their shells, not their triangles. | 1.2 wk | done 2026-10-03 (`90dae39`): parts intersected by Booleans, the shared volume listed and outlined, touching parts not; faces on each other retried with a 1e-4 mm nudge; mesh-only parts fall back to triangles |
+| 16.11 B3 auto-constrain on draw | More inference than horizontal and vertical: coincident, tangent, parallel, perpendicular, equal. | 1.8 wk | done 2026-10-03 (`e8c0a2d`): after horizontal and vertical, tangent to an arc, perpendicular at the start, parallel to the nearest line, equal length; lines only |
+| 16.12 The section's cap | A style for it, with a hatch (step 6). | 0.4 wk | done 2026-10-03 (`f020288`): the built-in style SectionCap, its colour filling the cap, hatched at 45 degrees every 10 pixels |
+| 16.13 A linked STEP file's place | Placed where it was drawn, not at the middle of the view (step 8). | 0.3 wk | done 2026-10-03 (`9ec255f`): STEP files and meshes link at their own coordinates; models still beside what is drawn |
+| 16.14 What an AI program sees | `render` of the view as the window shows it and of a chosen group; what the mouse hovers, in `get_drawing` (I7). | 0.6 wk | done 2026-10-03 (`4fc8de4`): `render` takes the view `window` and a group; `get_drawing` says what the mouse is over |
+
+State, 2026-10-03: done, on branch `step-16-small-features`: every package with its scenario or
+path pair, tests, script calls, example where a script can show it, and guide section. Found on
+the way and mended: scripts could refer forward in the history, a save with an earlier group
+active did not round-trip, faces lying on each other left the interference Boolean empty, and
+the UI harness wrote machine paths in text-window dumps.
 
 ### Step 17. Regeneration
 
