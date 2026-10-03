@@ -10,6 +10,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
 	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/spacesolve/spacesolve/pkg/topo"
 )
 
 // fp is the coordinate precision: LENGTH_EPS is 1e-6, so five decimal
@@ -505,68 +506,20 @@ func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int 
 // ExportSurface writes a trimmed surface as advanced faces (C++
 // StepFileWriter::ExportSurface).
 func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
-	srfid := w.id
-
 	// Read the colour of the surface: use it to tell apart surfaces from
 	// different parts.
 	w.currentColor = ss.Color
 
 	// First, define the control points for the untrimmed surface, if
-	// they were not already defined.
-	for i := 0; i <= ss.DegM; i++ {
-		for j := 0; j <= ss.DegN; j++ {
-			if !w.HasCartesianPointAnAlias(srfid+1+j+i*(ss.DegN+1), ss.Ctrl[i][j], -1, nil) {
-				c := ss.Ctrl[i][j]
-				w.printf(stepCartesianPointFormat, srfid+1+j+i*(ss.DegN+1), c.X, c.Y, c.Z)
-			}
-		}
+	// they were not already defined. We always specify a rational
+	// B-spline surface (in fact, just a Bezier surface).
+	ctrl := make([][]geom.Vector, ss.DegM+1)
+	weight := make([][]float64, ss.DegM+1)
+	for i := range ctrl {
+		ctrl[i] = ss.Ctrl[i][:ss.DegN+1]
+		weight[i] = ss.Weight[i][:ss.DegN+1]
 	}
-
-	// Then, we create the untrimmed surface. We always specify a
-	// rational B-spline surface (in fact, just a Bezier surface).
-	w.printf("#%d=(\n", srfid)
-	w.printf("BOUNDED_SURFACE()\n")
-	w.printf("B_SPLINE_SURFACE(%d,%d,(", ss.DegM, ss.DegN)
-	for i := 0; i <= ss.DegM; i++ {
-		w.printf("(")
-		for j := 0; j <= ss.DegN; j++ {
-			w.printf("#%d", w.InsertPoint(srfid+1+j+i*(ss.DegN+1)))
-			if j != ss.DegN {
-				w.printf(",")
-			}
-		}
-		w.printf(")")
-		if i != ss.DegM {
-			w.printf(",")
-		}
-	}
-	w.printf("),.UNSPECIFIED.,.F.,.F.,.F.)\n")
-	w.printf("B_SPLINE_SURFACE_WITH_KNOTS((%d,%d),(%d,%d),",
-		ss.DegM+1, ss.DegM+1, ss.DegN+1, ss.DegN+1)
-	w.printf("(0.000,1.000),(0.000,1.000),.UNSPECIFIED.)\n")
-	w.printf("GEOMETRIC_REPRESENTATION_ITEM()\n")
-	w.printf("RATIONAL_B_SPLINE_SURFACE((")
-	for i := 0; i <= ss.DegM; i++ {
-		w.printf("(")
-		for j := 0; j <= ss.DegN; j++ {
-			w.printf("%.10f", ss.Weight[i][j])
-			if j != ss.DegN {
-				w.printf(",")
-			}
-		}
-		w.printf(")")
-		if i != ss.DegM {
-			w.printf(",")
-		}
-	}
-	w.printf("))\n")
-	w.printf("REPRESENTATION_ITEM('')\n")
-	w.printf("SURFACE()\n")
-	w.printf(");\n")
-
-	w.printf("\n")
-
-	w.id = srfid + 1 + (ss.DegM+1)*(ss.DegN+1)
+	srfid := w.writeSurface(ss.DegM, ss.DegN, nil, nil, ctrl, weight, false)
 
 	// Now we do the trim curves. We must group each outer loop
 	// separately along with its inner faces, so do that now.
@@ -585,63 +538,478 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// loop (the outer boundary), plus any inner loops associated with
 	// that outer loop.
 	for si := range sblss.Sets {
-		loops := loopsOf(&sblss.Sets[si])
+		w.writeFace(srfid, loopsOf(&sblss.Sets[si]), true, ss.Color)
+	}
+}
 
-		// Create the face outer boundary from the outer loop.
-		listOfLoops := []int{w.ExportCurveLoop(loops[0], false)}
+// stepKnot writes a knot: as C++ does for the ends of a Bezier
+// patch, and to ten places for others.
+func stepKnot(k float64) string {
+	if k == float64(int(k)) {
+		return cfmt.Sprintf("%.3f", k)
+	}
+	return cfmt.Sprintf("%.10f", k)
+}
 
-		// And create the face inner boundaries from any inner loops that
-		// lie within this contour.
-		for _, loop := range loops[1:] {
-			listOfLoops = append(listOfLoops, w.ExportCurveLoop(loop, true))
+// stepKnots are a knot vector's distinct knots and their
+// multiplicities, as B_SPLINE_*_WITH_KNOTS takes them; nil knots are
+// a Bezier's of degree deg.
+func stepKnots(deg int, knots []float64) (mults []int, distinct []float64) {
+	if knots == nil {
+		return []int{deg + 1, deg + 1}, []float64{0, 1}
+	}
+	for i, k := range knots {
+		if i > 0 && k == knots[i-1] {
+			mults[len(mults)-1]++
+			continue
 		}
+		mults = append(mults, 1)
+		distinct = append(distinct, k)
+	}
+	return mults, distinct
+}
 
-		// And now create the face that corresponds to this outer loop
-		// and all of its holes.
-		advFaceID := w.id
-		w.printf("#%d=ADVANCED_FACE('',(", advFaceID)
-		for i, fb := range listOfLoops {
-			w.printf("#%d", fb)
-			if i+1 < len(listOfLoops) {
+func stepList[T any](xs []T, f func(T) string) string {
+	var b bytes.Buffer
+	for i, x := range xs {
+		if i > 0 {
+			b.WriteString(",")
+		}
+		b.WriteString(f(x))
+	}
+	return b.String()
+}
+
+// writeSurface writes a rational B-spline surface, its control points
+// ctrl[i][j], i along u, and returns its id. Nil knots make it one
+// Bezier patch, as C++ writes every surface.
+func (w *stepFileWriter) writeSurface(du, dv int, knotsU, knotsV []float64, ctrl [][]geom.Vector, weight [][]float64, closedU bool) int {
+	srfid := w.id
+	nv := len(ctrl[0])
+	for i := range ctrl {
+		for j := range ctrl[i] {
+			if !w.HasCartesianPointAnAlias(srfid+1+j+i*nv, ctrl[i][j], -1, nil) {
+				c := ctrl[i][j]
+				w.printf(stepCartesianPointFormat, srfid+1+j+i*nv, c.X, c.Y, c.Z)
+			}
+		}
+	}
+
+	w.printf("#%d=(\n", srfid)
+	w.printf("BOUNDED_SURFACE()\n")
+	w.printf("B_SPLINE_SURFACE(%d,%d,(", du, dv)
+	for i := range ctrl {
+		w.printf("(")
+		for j := range ctrl[i] {
+			w.printf("#%d", w.InsertPoint(srfid+1+j+i*nv))
+			if j != nv-1 {
 				w.printf(",")
 			}
 		}
-
-		w.printf("),#%d,.T.);\n", srfid)
-		w.advancedFaces = append(w.advancedFaces, advFaceID)
-
-		// Export the surface color and transparency
-		// https://www.cax-if.org/documents/rec_prac_styling_org_v16.pdf sections 4.4.2 4.2.4 etc.
-		// https://tracker.dev.opencascade.org/view.php?id=31550
-		w.id++
-		w.printf("#%d=COLOUR_RGB('',%.2f,%.2f,%.2f);\n", w.id,
-			ss.Color.RedF(), ss.Color.GreenF(), ss.Color.BlueF())
-
-		// This works in Horison EDA but is more verbose.
-		w.id++
-		w.printf("#%d=FILL_AREA_STYLE_COLOUR('',#%d);\n", w.id, w.id-1)
-		w.id++
-		w.printf("#%d=FILL_AREA_STYLE('',(#%d));\n", w.id, w.id-1)
-		w.id++
-		w.printf("#%d=SURFACE_STYLE_FILL_AREA(#%d);\n", w.id, w.id-1)
-		w.id++
-		w.printf("#%d=SURFACE_STYLE_TRANSPARENT(%.2f);\n", w.id, 1.0-float64(ss.Color.AlphaF()))
-		w.id++
-		w.printf("#%d=SURFACE_STYLE_RENDERING_WITH_PROPERTIES(.NORMAL_SHADING.,#%d,(#%d));\n",
-			w.id, w.id-5, w.id-1)
-		w.id++
-		w.printf("#%d=SURFACE_SIDE_STYLE('',(#%d, #%d));\n", w.id, w.id-3, w.id-1)
-
-		w.id++
-		w.printf("#%d=SURFACE_STYLE_USAGE(.BOTH.,#%d);\n", w.id, w.id-1)
-		w.id++
-		w.printf("#%d=PRESENTATION_STYLE_ASSIGNMENT((#%d));\n", w.id, w.id-1)
-		w.id++
-		w.printf("#%d=STYLED_ITEM('',(#%d),#%d);\n", w.id, w.id-1, advFaceID)
-		w.printf("\n")
-
-		w.id++
+		w.printf(")")
+		if i != len(ctrl)-1 {
+			w.printf(",")
+		}
 	}
+	closed := ".F."
+	if closedU {
+		closed = ".T."
+	}
+	w.printf("),.UNSPECIFIED.,%s,.F.,.F.)\n", closed)
+	mu, ku := stepKnots(du, knotsU)
+	mv, kv := stepKnots(dv, knotsV)
+	itoa := func(n int) string { return cfmt.Sprintf("%d", n) }
+	w.printf("B_SPLINE_SURFACE_WITH_KNOTS((%s),(%s),", stepList(mu, itoa), stepList(mv, itoa))
+	w.printf("(%s),(%s),.UNSPECIFIED.)\n", stepList(ku, stepKnot), stepList(kv, stepKnot))
+	w.printf("GEOMETRIC_REPRESENTATION_ITEM()\n")
+	w.printf("RATIONAL_B_SPLINE_SURFACE((")
+	for i := range weight {
+		w.printf("(")
+		for j := range weight[i] {
+			w.printf("%.10f", weight[i][j])
+			if j != nv-1 {
+				w.printf(",")
+			}
+		}
+		w.printf(")")
+		if i != len(weight)-1 {
+			w.printf(",")
+		}
+	}
+	w.printf("))\n")
+	w.printf("REPRESENTATION_ITEM('')\n")
+	w.printf("SURFACE()\n")
+	w.printf(");\n")
+
+	w.printf("\n")
+
+	w.id = srfid + 1 + len(ctrl)*nv
+	return srfid
+}
+
+// writeFace writes an advanced face on surface srfid, bounded by
+// loops, the first its outer bound when firstOuter, and its colour.
+func (w *stepFileWriter) writeFace(srfid int, loops []*srf.SBezierLoop, firstOuter bool, color core.RgbaColor) {
+	var listOfLoops []int
+	for i, loop := range loops {
+		listOfLoops = append(listOfLoops, w.ExportCurveLoop(loop, i > 0 || !firstOuter))
+	}
+
+	// And now create the face that corresponds to this outer loop
+	// and all of its holes.
+	advFaceID := w.id
+	w.printf("#%d=ADVANCED_FACE('',(", advFaceID)
+	for i, fb := range listOfLoops {
+		w.printf("#%d", fb)
+		if i+1 < len(listOfLoops) {
+			w.printf(",")
+		}
+	}
+
+	w.printf("),#%d,.T.);\n", srfid)
+	w.advancedFaces = append(w.advancedFaces, advFaceID)
+
+	// Export the surface color and transparency
+	// https://www.cax-if.org/documents/rec_prac_styling_org_v16.pdf sections 4.4.2 4.2.4 etc.
+	// https://tracker.dev.opencascade.org/view.php?id=31550
+	w.id++
+	w.printf("#%d=COLOUR_RGB('',%.2f,%.2f,%.2f);\n", w.id,
+		color.RedF(), color.GreenF(), color.BlueF())
+
+	// This works in Horison EDA but is more verbose.
+	w.id++
+	w.printf("#%d=FILL_AREA_STYLE_COLOUR('',#%d);\n", w.id, w.id-1)
+	w.id++
+	w.printf("#%d=FILL_AREA_STYLE('',(#%d));\n", w.id, w.id-1)
+	w.id++
+	w.printf("#%d=SURFACE_STYLE_FILL_AREA(#%d);\n", w.id, w.id-1)
+	w.id++
+	w.printf("#%d=SURFACE_STYLE_TRANSPARENT(%.2f);\n", w.id, 1.0-float64(color.AlphaF()))
+	w.id++
+	w.printf("#%d=SURFACE_STYLE_RENDERING_WITH_PROPERTIES(.NORMAL_SHADING.,#%d,(#%d));\n",
+		w.id, w.id-5, w.id-1)
+	w.id++
+	w.printf("#%d=SURFACE_SIDE_STYLE('',(#%d, #%d));\n", w.id, w.id-3, w.id-1)
+
+	w.id++
+	w.printf("#%d=SURFACE_STYLE_USAGE(.BOTH.,#%d);\n", w.id, w.id-1)
+	w.id++
+	w.printf("#%d=PRESENTATION_STYLE_ASSIGNMENT((#%d));\n", w.id, w.id-1)
+	w.id++
+	w.printf("#%d=STYLED_ITEM('',(#%d),#%d);\n", w.id, w.id-1, advFaceID)
+	w.printf("\n")
+
+	w.id++
+}
+
+// stepOneSurfacePerFace makes STEP export write a face of several
+// patches as one surface; tests turn it off to compare.
+var stepOneSurfacePerFace = true
+
+// stepSheet is a face of several patches that STEP export writes as
+// one B-spline surface.
+type stepSheet struct {
+	grid    *topo.Grid
+	patches []core.HSSurface
+	// seamTrims are the trims, by surface and index, along the seams
+	// between the patches, which bound no face.
+	seamTrims map[core.HSSurface]map[int]bool
+}
+
+// stepSheets are the faces of several patches of the shell whose
+// patches make a grid, by the handles of their patches.
+func stepSheets(shell *srf.SShell) map[core.HSSurface]*stepSheet {
+	out := map[core.HSSurface]*stepSheet{}
+	tp, err := topo.Build(shell)
+	if err != nil {
+		return out
+	}
+	for s := range tp.Sheets {
+		if len(tp.Sheets[s].Faces) < 2 {
+			continue
+		}
+		grid, err := tp.SheetSpline(s)
+		if err != nil {
+			continue
+		}
+		sh := &stepSheet{grid: grid, seamTrims: map[core.HSSurface]map[int]bool{}}
+		inSheet := map[core.HSSurface]bool{}
+		for _, f := range tp.Sheets[s].Faces {
+			h := tp.Faces[f].Surface
+			if !inSheet[h] {
+				inSheet[h] = true
+				sh.patches = append(sh.patches, h)
+			}
+		}
+		// A trim is a seam's when every piece of it is.
+		mixed := map[core.HSSurface]map[int]bool{}
+		for ce := range tp.CoEdges {
+			c := &tp.CoEdges[ce]
+			if !inSheet[c.Surface] {
+				continue
+			}
+			m := sh.seamTrims
+			if !tp.Edges[c.Edge].Seam {
+				m = mixed
+			}
+			if m[c.Surface] == nil {
+				m[c.Surface] = map[int]bool{}
+			}
+			m[c.Surface][c.Trim] = true
+		}
+		for h, ts := range mixed {
+			for t := range ts {
+				delete(sh.seamTrims[h], t)
+			}
+		}
+		for _, h := range sh.patches {
+			out[h] = sh
+		}
+	}
+	return out
+}
+
+// ExportSheet writes a face of several patches as one advanced face on
+// one B-spline surface: the trims of all its patches but those along
+// its seams, joined into loops, each trim running as the face's
+// patches run it. When they don't join, it writes the patches one by
+// one after all.
+func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale float64) {
+	var pieces []srf.SBezier
+	var cols []int
+	column := map[core.HSSurface]int{}
+	for _, c := range sh.grid.Cells {
+		column[c.H] = c.I
+	}
+	var color core.RgbaColor
+	for k, h := range sh.patches {
+		p := shell.FindSurface(h)
+		if k == 0 {
+			color = p.Color
+		}
+		for ti := range p.Trim {
+			if sh.seamTrims[h][ti] {
+				continue
+			}
+			one := *p
+			one.Trim = p.Trim[ti : ti+1]
+			var sbl srf.SBezierList
+			one.MakeSectionEdgesInto(shell, nil, &sbl)
+			stb := &p.Trim[ti]
+			// The trim's pieces as it runs, from StartP to FinishP.
+			if len(sbl.Curves) > 0 && !sbl.Curves[0].Start().EqualsTol(stb.StartP, 10*geom.LengthEps) {
+				for i, j := 0, len(sbl.Curves)-1; i < j; i, j = i+1, j-1 {
+					sbl.Curves[i], sbl.Curves[j] = sbl.Curves[j], sbl.Curves[i]
+				}
+				for i := range sbl.Curves {
+					sbl.Curves[i].Reverse()
+				}
+			}
+			pieces = append(pieces, sbl.Curves...)
+			for range sbl.Curves {
+				cols = append(cols, column[h])
+			}
+		}
+	}
+	loops, ok := chainLoops(pieces, cols)
+	if ok && sh.grid.ClosedU {
+		loops, ok = sh.seamLoops(shell, loops)
+	}
+	if !ok {
+		for _, h := range sh.patches {
+			p := shell.FindSurface(h)
+			var sbl srf.SBezierList
+			p.MakeSectionEdgesInto(shell, nil, &sbl)
+			p.ScaleSelfBy(scale)
+			sbl.ScaleSelfBy(scale)
+			w.ExportSurface(p, &sbl)
+		}
+		return
+	}
+	w.currentColor = color
+	bs := sh.grid.Surface
+	ctrl := make([][]geom.Vector, len(bs.Ctrl))
+	for i := range ctrl {
+		ctrl[i] = make([]geom.Vector, len(bs.Ctrl[i]))
+		for j := range ctrl[i] {
+			ctrl[i][j] = bs.Ctrl[i][j].ScaledBy(scale)
+		}
+	}
+	srfid := w.writeSurface(bs.DegU, bs.DegV, bs.KnotsU, bs.KnotsV, ctrl, bs.Weight, sh.grid.ClosedU)
+	// STEP runs a bound with the face on its left, seen from outside;
+	// SolveSpace's trims run the other way.
+	var ls []*srf.SBezierLoop
+	for _, l := range loops {
+		var r srf.SBezierLoop
+		for i := len(l.curves) - 1; i >= 0; i-- {
+			c := l.curves[i]
+			c.Reverse()
+			c.ScaleSelfBy(scale)
+			r.Curves = append(r.Curves, c)
+		}
+		ls = append(ls, &r)
+	}
+	w.writeFace(srfid, ls, len(ls) == 1, color)
+}
+
+// stepLoop is a loop of a face's trims, as SolveSpace runs them, and
+// the column of the grid each comes from.
+type stepLoop struct {
+	curves []srf.SBezier
+	cols   []int
+}
+
+// chainLoops joins curves end to end into closed loops, or fails.
+func chainLoops(cs []srf.SBezier, cols []int) ([]stepLoop, bool) {
+	const tol = 10 * geom.LengthEps
+	used := make([]bool, len(cs))
+	var loops []stepLoop
+	for first := range cs {
+		if used[first] {
+			continue
+		}
+		used[first] = true
+		loop := stepLoop{curves: []srf.SBezier{cs[first]}, cols: []int{cols[first]}}
+		for !loop.curves[len(loop.curves)-1].Finish().EqualsTol(loop.curves[0].Start(), tol) {
+			end := loop.curves[len(loop.curves)-1].Finish()
+			next := -1
+			for k := range cs {
+				if !used[k] && cs[k].Start().EqualsTol(end, tol) {
+					next = k
+					break
+				}
+			}
+			if next < 0 {
+				return nil, false
+			}
+			used[next] = true
+			loop.curves = append(loop.curves, cs[next])
+			loop.cols = append(loop.cols, cols[next])
+		}
+		loops = append(loops, loop)
+	}
+	return loops, len(loops) > 0
+}
+
+// seamLoops joins the two loops of a ring's face that go round it,
+// as a cylinder's two circles do, into one, along the seam where the
+// surface's parameter u starts and ends, which the loop runs up and
+// back down: STEP readers cut a closed surface there, and mesh a face
+// with no seam badly. A loop goes round when it passes from the last
+// column of patches to the first, and meets the seam where it does.
+// Loops that don't go round, as a hole's, stay as they are.
+func (sh *stepSheet) seamLoops(shell *srf.SShell, loops []stepLoop) ([]stepLoop, bool) {
+	ni := 0
+	for _, c := range sh.grid.Cells {
+		ni = max(ni, c.I+1)
+	}
+	if ni < 3 {
+		// Which way a loop passes between two columns is not clear.
+		return nil, false
+	}
+	type crossing struct {
+		l, k int // the loop, and its curve that starts on the seam
+	}
+	var round []crossing
+	var others []stepLoop
+	for li, l := range loops {
+		var at []int
+		for k := range l.cols {
+			prev := l.cols[(k+len(l.cols)-1)%len(l.cols)]
+			if d := l.cols[k] - prev; d == ni-1 || d == 1-ni {
+				at = append(at, k)
+			}
+		}
+		switch len(at) {
+		case 0:
+			others = append(others, l)
+		case 1:
+			round = append(round, crossing{li, at[0]})
+		default:
+			return nil, false
+		}
+	}
+	if len(round) == 0 {
+		return loops, true
+	}
+	if len(round) != 2 {
+		return nil, false
+	}
+	// The seam: the sides at u = 0 of the first column's patches, from
+	// v = 0 up.
+	ps, err := sh.grid.Surface.Patches()
+	if err != nil {
+		return nil, false
+	}
+	var seam []srf.SBezier
+	for j := range ps[0] {
+		seam = append(seam, ps[0][j].EdgeCurve(3))
+	}
+	// Where along the seam a point is: its piece and parameter, as one
+	// number, piece plus parameter.
+	along := func(p geom.Vector) (float64, bool) {
+		for j := range seam {
+			t, _ := seam[j].ClosestPointTo(p, true)
+			if t >= -1e-9 && t <= 1+1e-9 && seam[j].PointAt(t).EqualsTol(p, 100*geom.LengthEps) {
+				return float64(j) + max(0, min(1, t)), true
+			}
+		}
+		return 0, false
+	}
+	pa := loops[round[0].l].curves[round[0].k].Start()
+	pb := loops[round[1].l].curves[round[1].k].Start()
+	ta, okA := along(pa)
+	tb, okB := along(pb)
+	if !okA || !okB || ta == tb {
+		return nil, false
+	}
+	if ta > tb {
+		round[0], round[1], pa, pb, ta, tb = round[1], round[0], pb, pa, tb, ta
+	}
+	// The seam from ta to tb, piece by piece.
+	var up []srf.SBezier
+	for j := int(ta); j < len(seam) && float64(j) < tb; j++ {
+		c := seam[j]
+		lo, hi := max(0, ta-float64(j)), min(1, tb-float64(j))
+		if hi-lo < 1e-12 {
+			continue
+		}
+		if hi < 1 {
+			var bef, aft srf.SBezier
+			c.SplitAt(hi, &bef, &aft)
+			c = bef
+			lo /= hi
+		}
+		if lo > 0 {
+			var bef, aft srf.SBezier
+			c.SplitAt(lo, &bef, &aft)
+			c = aft
+		}
+		up = append(up, c)
+	}
+	if len(up) == 0 {
+		return nil, false
+	}
+	up[0].Ctrl[0], up[len(up)-1].Ctrl[up[len(up)-1].Degree] = pa, pb
+	var down []srf.SBezier
+	for i := len(up) - 1; i >= 0; i-- {
+		c := up[i]
+		c.Reverse()
+		down = append(down, c)
+	}
+	rot := func(c crossing) []srf.SBezier {
+		l := loops[c.l].curves
+		return append(append([]srf.SBezier(nil), l[c.k:]...), l[:c.k]...)
+	}
+	// Round the lower loop from where it meets the seam, up the seam,
+	// round the upper loop, and down again: each round loop keeps its
+	// own direction, and the seam is run once each way.
+	var joined stepLoop
+	joined.curves = append(joined.curves, rot(round[0])...)
+	joined.curves = append(joined.curves, up...)
+	joined.curves = append(joined.curves, rot(round[1])...)
+	joined.curves = append(joined.curves, down...)
+	return append([]stepLoop{joined}, others...), true
 }
 
 // WriteFooter ends the file (C++ StepFileWriter::WriteFooter).
@@ -681,11 +1049,26 @@ func (ss *SolveSpaceUI) ExportSurfacesTo(filename string) {
 	w.WriteHeader()
 	w.WriteProductHeader()
 
+	sheets := map[core.HSSurface]*stepSheet{}
+	if stepOneSurfacePerFace {
+		sheets = stepSheets(shell)
+	}
 	for i := range shell.Surface {
 		// C++ ranges over the surfaces by reference, so the export scale
 		// below scales the shell itself.
 		srfc := &shell.Surface[i]
 		if len(srfc.Trim) == 0 {
+			continue
+		}
+		if sh, ok := sheets[srfc.H]; ok {
+			// A face of several patches, written as one surface where
+			// its first patch comes.
+			if sh != nil {
+				w.ExportSheet(shell, sh, 1.0/ss.ExportScale)
+				for _, h := range sh.patches {
+					sheets[h] = nil
+				}
+			}
 			continue
 		}
 

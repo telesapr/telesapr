@@ -2,6 +2,7 @@ package topo_test
 
 import (
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/spacesolve/spacesolve/pkg/srf"
@@ -204,4 +205,81 @@ func TestSheetsOfFixtures(t *testing.T) {
 		t.Errorf("%d patches made %d sheets: no seam anywhere", patches, sheets)
 	}
 	t.Logf("%d patches in %d sheets", patches, sheets)
+}
+
+// TestSheetSplines writes every face of several patches, of every
+// fixture solid, as one B-spline where its patches make a grid, and
+// checks the surface against its patches: their points on it, its
+// normal theirs.
+func TestSheetSplines(t *testing.T) {
+	merged, grids, rings := 0, 0, 0
+	reasons := map[string]int{}
+	for _, f := range fixtures(t) {
+		sk := load(t, f)
+		if sk == nil {
+			continue
+		}
+		for _, g := range solidGroups(sk) {
+			tp, err := topo.Build(&g.RunningShell)
+			if err != nil {
+				continue
+			}
+			for s := range tp.Sheets {
+				if len(tp.Sheets[s].Faces) < 2 {
+					continue
+				}
+				grids++
+				grid, err := tp.SheetSpline(s)
+				if err != nil {
+					msg := err.Error()
+					if i := strings.IndexAny(msg, "0123456789"); i > 0 {
+						msg = msg[:i]
+					}
+					reasons[msg]++
+					t.Logf("%s g%x sheet %d: %v", f, g.H.V, s, err)
+					continue
+				}
+				merged++
+				bs := grid.Surface
+				if grid.ClosedU {
+					rings++
+				}
+				u0, u1, v0, v1 := bs.Domain()
+				for _, fc := range tp.Sheets[s].Faces {
+					p := tp.Surface(fc)
+					for _, uv := range [][2]float64{{0.5, 0.5}, {0.1, 0.9}, {0.8, 0.3}} {
+						q := p.PointAt(uv[0], uv[1])
+						// The nearest point of the B-spline, by its
+						// patches.
+						ps, _ := bs.Patches()
+						best, bu, bv := math.Inf(1), 0.0, 0.0
+						var bp *srf.SSurface
+						for a := range ps {
+							for b := range ps[a] {
+								var u, v float64
+								ps[a][b].ClosestPointToUV(q, &u, &v, true)
+								if d := ps[a][b].PointAt(u, v).Minus(q).Magnitude(); d < best {
+									best, bu, bv, bp = d, u, v, &ps[a][b]
+								}
+							}
+						}
+						if best > 1e-6 {
+							t.Errorf("%s g%x sheet %d: a patch's point is %g off the surface", f, g.H.V, s, best)
+							continue
+						}
+						n1 := p.NormalAt(uv[0], uv[1]).WithMagnitude(1)
+						n2 := bp.NormalAt(bu, bv).WithMagnitude(1)
+						if n1.Dot(n2) < 1-1e-6 {
+							t.Errorf("%s g%x sheet %d: the surface's normal turns from its patch's (%v, %v)", f, g.H.V, s, n1, n2)
+						}
+					}
+				}
+				_, _, _, _ = u0, u1, v0, v1
+			}
+		}
+	}
+	t.Logf("%d faces of several patches, %d one B-spline (%d rings); not: %v", grids, merged, rings, reasons)
+	if merged == 0 {
+		t.Error("no face was written as one B-spline")
+	}
 }
