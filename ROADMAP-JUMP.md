@@ -38,6 +38,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 17. Regeneration | done 2026-10-03: one parallel mode, the coincident planes merged at once, solids made off the window's thread with cancel, linked files kept in memory and STEP meshes on disk, packed models | `978d25f` |
 | 18. Drawings | done 2026-10-03: a sheet of the standard views with hidden edges, a title block, section and detail views, and dimensions that hold the names of the edges they measure | `2c41d13` |
 | 19. Shading | done 2026-10-03: a shader with smooth per-pixel lighting and highlights, and appearances (matte, plastic, glossy, metal) for solids and faces | `6462cc3` |
+| 20. Smooth lofts and sweeps | done 2026-10-03: lofts through any number of profiles by one smooth surface, profiles of unequal counts, sweeps along cubics in 3d with rotation-minimising frames, a twist, or frames held to an axis, fitted within a tenth of the chord tolerance | MERGE20 |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
@@ -1316,6 +1317,26 @@ adds to them:
 | 20. Smooth lofts and sweeps | 20.1 to 20.4 are E8.1 to E8.4; 20.5 to 20.8 are E10.1 to E10.4 | 20.1 also splits curves so that profiles of unequal counts match (step 10, loft matching); lofts through more than two profiles are E8 itself, 0.5 wk | 11 wk |
 | 21. STEP import as a solid | 21.1 to 21.4 are D3.1 to D3.4 | 21.2 takes degree above 5 (step 11). 21.5: on export, knots removed where patches join with matching derivatives, and faces whose patches make no grid written as one surface where they can be (step 11), 1.5 wk. 21.6: tessellated STEP read as a reference mesh (step 8), 1 wk | 12 wk |
 | 22. General fillets | 22.1 to 22.5 are E6.1 to E6.5 | 22.2 closes fillets between two curved faces, and 22.4 the corners step 10 refuses: more than three faces, convex meeting concave, a circular edge meeting a rounded one at an angle, unequal radii | 24 to 30 wk |
+
+### Step 20. Smooth lofts and sweeps
+
+| Package | Content | Effort | State |
+|---|---|---|---|
+| 20.1 E8.1 compatible sections | and loops of unequal counts matched | 1.5 wk | done 2026-10-03 (`e525684`): `srf.ChainCurve` writes a closed loop as one B-spline, its pieces raised to one degree, a knot `degree` times at each joint, so every section has one knot vector by construction and none are merged; `topo.MatchCounts` splits the longest curves of a loop with fewer until the counts match, for the ruled loft as well (a triangle lofts to a square); each section turned to start nearest where the one before starts |
+| 20.2 E8.2 interpolation across | | 1.5 wk | done 2026-10-03 with 20.1: `srf.Skin`, a cubic (quadratic through three, ruled through two) by chord-length parameters and averaged knots, in homogeneous coordinates, so circles about one axis loft to a true surface of revolution; a dense solve, not the banded one, sections being few |
+| 20.3 E8.3 group, file, interface, scripts | | 1.5 wk | done 2026-10-03 (`19364f5`): `Group.LoftThrough`, file field `loft-through`; Loft To Selected Profile takes several sketches, in the order of the history from the active one, which is the first or the last; `Doc.LoftThrough`, `Group.Profiles`; `ext_loft_smooth`, `path_loft_smooth`, the example `vase`, the guide |
+| 20.4 E8.4 sweep | | 1 wk | done 2026-10-03 with 20.1: 48 lofts through 3 to 6 sections of polygons, circles and cubic blobs, alone, cut and joined by blocks and holed, against the divergence theorem on the surface; rate 0 |
+| 20.5 E10.1 paths and frames | | 1.5 wk | done 2026-10-03 (`bcf5e2e`): `topo.SweepPath` over any chain of Beziers, rotation-minimising frames by double reflection, 128 a piece and one more step between; a twist evenly by arc length; frames held to a direction (the fixed binormal mode). A step 9 edge chain as a path is not done |
+| 20.6 E10.2 fitting with an error bound | | 2 wk | done 2026-10-03 with 20.5: each piece of the path skinned on its own, with the true sweep's derivatives at its ends (`srf.SkinWithEnds`), so pieces meet tangent where the sweep is smooth; between sections the true sweep's points measured to the surface, sections halved until within a tenth of the chord tolerance, at most 400; holes sweep as faces of their own; the caps planar faces. `topo.FaceAdder` adds faces against an index of open edges instead of a topology built for each, 26 times faster on a sweep of hundreds of patches |
+| 20.7 E10.3 group, file, interface, scripts | | 1 wk | done 2026-10-03 (`fa6be8d`): cubics in a sweep's path; twist (`ValC`, file field `twist`) and frames held to x, y or z (`SweepUp`, `sweep-up`) on the group screen; lines and arcs alone keep their exact surfaces; `Group.SetTwist`, `SetSweepUp`; `ext_sweep_cubic`, `path_sweep_cubic`, the example `spring`, the guide |
+| 20.8 E10.4 sweep | | 1 wk | done 2026-10-03 with 20.5: 36 sweeps of circles, rectangles and squares with holes along helices and planar and climbing cubics, twisted and not, alone, joined to and cut by blocks, against the centroid theorem (area times length, which holds off the plane too for a profile about the path); rate 0 |
+
+State, 2026-10-03: done, on branch `step-20-smooth-lofts`. Benchmarks: a loft through four
+sections 2.8 ms, a sweep along a helix and a half with a holed profile 90 ms, both meshed.
+Follow-ups: the mesher grids twisted ruled faces with rows but no columns, so a twisted
+sweep's or loft's mesh volume is off by up to 2% (the surfaces are right); tangency set at a
+loft's end profiles, lofts along guide curves, sweeps along a step 9 edge chain, and paths with
+corners are not done.
 
 ### Left out
 
