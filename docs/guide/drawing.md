@@ -11,10 +11,9 @@ while a line segment is being drawn in a workplane, and in this order:
 - **equal length** to another line, when it is within half a percent of it.
 
 What would be added is drawn on the line as it follows the mouse, and is added when the point is
-placed, unless it would be redundant. "nearly" is an angle of about one degree, as for
-horizontal and vertical. Holding Ctrl while drawing offers nothing; the setting
-"automatically create horizontal / vertical constraints" on the configuration screen turns all
-of them off.
+placed, unless it would be redundant. "Nearly" is an angle of about one degree, as for
+horizontal and vertical. Holding Ctrl while drawing offers nothing; the setting "enable automatic
+line constraints" on the configuration screen turns all of them off.
 
 ## Not yet
 
