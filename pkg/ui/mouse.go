@@ -533,7 +533,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 	}
 
 	if gw.pending.operation == PendingDraggingNewLinePoint && gw.pending.hasSuggestion {
-		ss.tryConstrain(gw.pending.suggestion, core.HEntity{}, core.HEntity{}, gw.pending.request.Entity(0))
+		gw.applySuggestion(gw.pending.suggestion)
 	}
 
 	switch gw.pending.operation {
@@ -1223,7 +1223,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 		// Constrain the line segment horizontal or vertical if close
 		// enough
 		if hasConstraintSuggestion {
-			ss.tryConstrain(constraintSuggestion, core.HEntity{}, core.HEntity{}, gw.pending.request.Entity(0))
+			gw.applySuggestion(constraintSuggestion)
 		}
 
 		if doneDragging {

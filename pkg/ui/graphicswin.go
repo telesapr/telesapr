@@ -1269,30 +1269,109 @@ func (gw *GraphicsWindow) ToggleBool(v *bool) {
 	gw.ss.ScheduleShowTW()
 }
 
-// SuggestLineConstraint suggests horizontal or vertical for a new line
-// that is nearly so.
-func (gw *GraphicsWindow) SuggestLineConstraint(request core.HRequest) (core.ConstraintType, bool) {
+// lineSuggestion is a constraint a new line would get when it is
+// placed: horizontal or vertical, or (roadmap 16.11) with another entity
+// B: tangent to an arc it starts on (A the arc, Other the arc's end),
+// perpendicular to a line it starts on, parallel to a line, or as long.
+type lineSuggestion struct {
+	Type  core.ConstraintType
+	A, B  core.HEntity
+	Other bool
+}
+
+// SuggestLineConstraint suggests a constraint for a new line, the
+// request, as it is dragged: horizontal or vertical when it nearly is,
+// as C++ does; otherwise tangent to an arc it starts on, perpendicular
+// to a line it starts on, parallel to a line, or as long as one, in the
+// active group, each when it nearly is, in that order.
+func (gw *GraphicsWindow) SuggestLineConstraint(request core.HRequest) (lineSuggestion, bool) {
 	if !(gw.LockedInWorkplane() && gw.ss.AutomaticLineConstraints) {
-		return 0, false
+		return lineSuggestion{}, false
 	}
 	sk := gw.sk()
+	wp := gw.ActiveWorkplane()
 	ptA := sk.GetEntity(request.Entity(1))
 	ptB := sk.GetEntity(request.Entity(2))
 
-	au, av := ptA.PointGetExprsInWorkplaneUV(sk, gw.ActiveWorkplane())
-	bu, bv := ptB.PointGetExprsInWorkplaneUV(sk, gw.ActiveWorkplane())
+	au, av := ptA.PointGetExprsInWorkplaneUV(sk, wp)
+	bu, bv := ptB.PointGetExprsInWorkplaneUV(sk, wp)
 
 	rt := sketch.NewRuntime(sk)
 	du := au.Minus(bu).Eval(rt, nil)
 	dv := av.Minus(bv).Eval(rt, nil)
+	line := request.Entity(0)
 
 	const toleranceRatio = 0.02
 	if math.Abs(dv) > geom.LengthEps && math.Abs(du/dv) < toleranceRatio {
-		return core.ConstraintVertical, true
+		return lineSuggestion{Type: core.ConstraintVertical, A: line}, true
 	} else if math.Abs(du) > geom.LengthEps && math.Abs(dv/du) < toleranceRatio {
-		return core.ConstraintHorizontal, true
+		return lineSuggestion{Type: core.ConstraintHorizontal, A: line}, true
 	}
-	return 0, false
+
+	a, b := ptA.PointGetNum(sk), ptB.PointGetNum(sk)
+	length := b.Minus(a).Magnitude()
+	if length < geom.LengthEps {
+		return lineSuggestion{}, false
+	}
+	dir := b.Minus(a).ScaledBy(1 / length)
+	hg := gw.activeGroupH()
+	var tangent, perpendicular, parallel, equal lineSuggestion
+	nearest := math.Inf(1)
+	for i := range sk.Entities {
+		e := &sk.Entities[i]
+		if e.Group != hg || e.H.Request() == request || !e.H.IsFromRequest() {
+			continue
+		}
+		switch e.Type {
+		case core.EntityArcOfCircle:
+			if tangent.Type != 0 {
+				continue
+			}
+			c := sk.GetEntity(e.Point[0]).PointGetNum(sk)
+			for k, end := range []core.HEntity{e.Point[1], e.Point[2]} {
+				p := sk.GetEntity(end).PointGetNum(sk)
+				if !p.Equals(a) {
+					continue
+				}
+				if r := p.Minus(c); r.Magnitude() > geom.LengthEps && math.Abs(r.WithMagnitude(1).Dot(dir)) < toleranceRatio {
+					tangent = lineSuggestion{Type: core.ConstraintArcLineTangent, A: e.H, B: line, Other: k == 1}
+				}
+			}
+		case core.EntityLineSegment:
+			p0, p1 := sk.GetEntity(e.Point[0]).PointGetNum(sk), sk.GetEntity(e.Point[1]).PointGetNum(sk)
+			m := p1.Minus(p0).Magnitude()
+			if m < geom.LengthEps {
+				continue
+			}
+			o := p1.Minus(p0).ScaledBy(1 / m)
+			cos := math.Abs(o.Dot(dir))
+			starts := p0.Equals(a) || p1.Equals(a)
+			switch {
+			case starts && cos < toleranceRatio && perpendicular.Type == 0:
+				perpendicular = lineSuggestion{Type: core.ConstraintPerpendicular, A: line, B: e.H}
+			case !starts && 1-cos < toleranceRatio*toleranceRatio/2:
+				// The nearest of the parallel lines.
+				if d := p0.Plus(p1).ScaledBy(0.5).Minus(a.Plus(b).ScaledBy(0.5)).Magnitude(); d < nearest {
+					nearest = d
+					parallel = lineSuggestion{Type: core.ConstraintParallel, A: line, B: e.H}
+				}
+			case math.Abs(m-length) < toleranceRatio/2*length && equal.Type == 0:
+				equal = lineSuggestion{Type: core.ConstraintEqualLengthLines, A: line, B: e.H}
+			}
+		}
+	}
+	for _, s := range []lineSuggestion{tangent, perpendicular, parallel, equal} {
+		if s.Type != 0 {
+			return s, true
+		}
+	}
+	return lineSuggestion{}, false
+}
+
+// applySuggestion adds the suggested constraint, unless it would be
+// redundant.
+func (gw *GraphicsWindow) applySuggestion(s lineSuggestion) {
+	gw.sk().TryConstrain(s.Type, core.HEntity{}, core.HEntity{}, s.A, s.B, s.Other, false)
 }
 
 // GetCamera is the camera for the current view and window.

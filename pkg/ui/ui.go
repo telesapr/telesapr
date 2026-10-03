@@ -284,7 +284,7 @@ type pendingState struct {
 	filename    string
 
 	hasSuggestion bool
-	suggestion    core.ConstraintType
+	suggestion    lineSuggestion
 }
 
 // GraphicsWindow is the window with the model and the toolbar (C++

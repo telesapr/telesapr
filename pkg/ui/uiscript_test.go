@@ -238,7 +238,7 @@ func (r *uiScriptRunner) dump() {
 	sk := r.ss.SK
 	pd := &gw.pending
 	fmt.Fprintf(&r.b, "pending %d %d \"%s\" %x %x %d %d\n", pd.operation, pd.command, pd.description,
-		pd.request.V, pd.point.V, b2i(pd.hasSuggestion), pd.suggestion)
+		pd.request.V, pd.point.V, b2i(pd.hasSuggestion), pd.suggestion.Type)
 	r.dumpHover()
 	fmt.Fprintf(&r.b, "selection %d", len(gw.selection))
 	for _, s := range gw.selection {
