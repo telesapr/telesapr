@@ -109,34 +109,6 @@ func Skin(sections []BSplineCurve) (*BSplineSurface, []float64, error) {
 		ts[s] /= ts[k-1]
 	}
 	ts[k-1] = 1
-	deg := min(3, k-1)
-	// Averaged knots (Piegl and Tiller, 9.8), each inner one the mean of
-	// deg parameters, which keeps the system well posed.
-	knots := make([]float64, 0, k+deg+1)
-	for j := 0; j <= deg; j++ {
-		knots = append(knots, 0)
-	}
-	for j := 1; j <= k-1-deg; j++ {
-		s := 0.0
-		for i := j; i < j+deg; i++ {
-			s += ts[i]
-		}
-		knots = append(knots, s/float64(deg))
-	}
-	for j := 0; j <= deg; j++ {
-		knots = append(knots, 1)
-	}
-	// The basis at each section's parameter, a row each.
-	a := make([][]float64, k)
-	nb := make([]float64, deg+1)
-	for r := range a {
-		a[r] = make([]float64, k)
-		span := findSpan(deg, knots, ts[r])
-		basisFuns(span, ts[r], deg, knots, nb)
-		for c := 0; c <= deg; c++ {
-			a[r][span-deg+c] = nb[c]
-		}
-	}
 	// One solve for every column of control points, in homogeneous
 	// coordinates.
 	rhs := make([][]geom.Vector4, len(first.Ctrl))
@@ -146,7 +118,8 @@ func Skin(sections []BSplineCurve) (*BSplineSurface, []float64, error) {
 			rhs[i][s] = homogeneous(sections[s].Ctrl[i], sections[s].Weight[i])
 		}
 	}
-	if err := solveDense(a, rhs); err != nil {
+	deg, knots, err := interpolate(ts, rhs)
+	if err != nil {
 		return nil, nil, err
 	}
 	sf := &BSplineSurface{DegU: first.Deg, DegV: deg,
@@ -172,6 +145,44 @@ func Skin(sections []BSplineCurve) (*BSplineSurface, []float64, error) {
 		sf.Ctrl[i][k-1], sf.Weight[i][k-1] = last.Ctrl[i], last.Weight[i]
 	}
 	return sf, ts, sf.Check()
+}
+
+// interpolate turns each column of rhs, values at the parameters ts
+// (from 0 to 1, rising), into the control points of the B-spline of
+// degree min(3, len(ts)-1) through them, in place, with averaged knots
+// (Piegl and Tiller, 9.8), each inner one the mean of deg parameters,
+// which keeps the system well posed.
+func interpolate(ts []float64, rhs [][]geom.Vector4) (int, []float64, error) {
+	k := len(ts)
+	deg := min(3, k-1)
+	knots := make([]float64, 0, k+deg+1)
+	for j := 0; j <= deg; j++ {
+		knots = append(knots, 0)
+	}
+	for j := 1; j <= k-1-deg; j++ {
+		s := 0.0
+		for i := j; i < j+deg; i++ {
+			s += ts[i]
+		}
+		knots = append(knots, s/float64(deg))
+	}
+	for j := 0; j <= deg; j++ {
+		knots = append(knots, 1)
+	}
+	a := make([][]float64, k)
+	nb := make([]float64, deg+1)
+	for r := range a {
+		a[r] = make([]float64, k)
+		span := findSpan(deg, knots, ts[r])
+		basisFuns(span, ts[r], deg, knots, nb)
+		for c := 0; c <= deg; c++ {
+			a[r][span-deg+c] = nb[c]
+		}
+	}
+	if err := solveDense(a, rhs); err != nil {
+		return 0, nil, err
+	}
+	return deg, knots, nil
 }
 
 // solveDense solves a x = b for each right-hand side column in rhs, in
