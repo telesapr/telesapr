@@ -1227,9 +1227,9 @@ meet, which say so.
 | 15.2 Shell with cylinders | E11 as it was sized: a cylinder's offset is a cylinder, and a vertex is where the offset surfaces meet, no longer three planes (step 10). Filleted and lofted solids stay refused until 22.1 gives offsets of other surfaces. | 3 wk | not started |
 | 15.3 Shell vertices of four faces | An apex whose faces do not meet in one point once moved gets a new edge (step 10). | 1 wk | not started |
 | 15.4 E13 draft angle | Side faces of an extrusion tilted about a neutral plane, by `ReplaceSurface` on flat faces; cylinders become cones. | 4.2 wk | not started |
-| 15.5 Mirror of a body | A mirror reflects its source group; an option reflects the solid so far (step 7). | 1 wk | not started |
-| 15.6 E2 pattern along a curve | Step and repeat along the path the sweep of 7.4 takes. | 1.8 wk | not started |
-| 15.7 The message of a stopped chain | A fillet whose radius stops its chain at a rounded corner says so, in place of naming the curved face (step 10). | 0.1 wk | not started |
+| 15.5 Mirror of a body | A mirror reflects its source group; an option reflects the solid so far (step 7). | 1 wk | done 2026-10-03 (`3d73b15`, `bc01560`): `Group.MirrorSolid`, file field `mirror-solid`, the screen's "the whole solid so far", `Doc`/`Group.SetMirrorSolid`; the mirror example mirrors a bracket of two groups |
+| 15.6 E2 pattern along a curve | Step and repeat along the path the sweep of 7.4 takes. | 1.8 wk | done 2026-10-03 (`606d643`, goldens `9985efc`): group `pattern-path`, New Group > Pattern Along Path, `Doc.PatternAlongPath`, example `pattern`; sweep 0 of 36. The solid is repeated, not the entities; a closed path is refused |
+| 15.7 The message of a stopped chain | A fillet whose radius stops its chain at a rounded corner says so, in place of naming the curved face (step 10). | 0.1 wk | done 2026-10-03 (`519f19d`) |
 
 Done when: each has its sweep at a rate set before it starts, as in step 10.
 
