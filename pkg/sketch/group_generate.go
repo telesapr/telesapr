@@ -3,6 +3,8 @@ package sketch
 import (
 	"fmt"
 	"math"
+	"path/filepath"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -415,7 +417,13 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		return
 
 	case GroupLinked:
-		// The translation vector
+		// The translation vector. A model comes in beside what is
+		// drawn, off the middle of the view, as in C++; a STEP file or
+		// a mesh where it was drawn, so that its coordinates are the
+		// file's (roadmap 16.13).
+		if !g.linksModel() {
+			gp = geom.Vector{}
+		}
 		AddParam(param, h.Param(0), gp.X)
 		AddParam(param, h.Param(1), gp.Y)
 		AddParam(param, h.Param(2), gp.Z)
@@ -435,6 +443,13 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		return
 	}
 	panic(fmt.Sprintf("unexpected group type %d", g.Type))
+}
+
+// linksModel reports whether a link group links a model file, rather
+// than a STEP file, a mesh or a board.
+func (g *Group) linksModel() bool {
+	ext := strings.ToLower(filepath.Ext(g.LinkFile))
+	return ext == ".tlspr" || ext == ".slvs"
 }
 
 // stepOffset and stepRemap are the step-and-repeat timesApplied offset

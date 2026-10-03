@@ -74,3 +74,47 @@ func TestBillOfMaterials(t *testing.T) {
 		t.Errorf("an empty bill: %q, %v", b.String(), err)
 	}
 }
+
+// A STEP file or a mesh links where it was drawn, its coordinates the
+// file's; a model comes in off the middle of the view, as before
+// (roadmap 16.13).
+func TestLinkPlacedAsDrawn(t *testing.T) {
+	dir := t.TempDir()
+	src := api.New()
+	src.Rect(api.V(100, 0, 0), api.V(110, 10, 0))
+	src.Extrude(5, "")
+	model := filepath.Join(dir, "part.tlspr")
+	mesh := filepath.Join(dir, "part.stl")
+	if err := src.Save(model); err != nil {
+		t.Fatal(err)
+	}
+	if err := src.Export(mesh); err != nil {
+		t.Fatal(err)
+	}
+	// The highest corner of the points: a mesh's origin is one too.
+	highest := func(g api.Group) api.Vec {
+		hi := api.V(-1e9, -1e9, -1e9)
+		for _, e := range g.Entities() {
+			if e.Kind() == "point" {
+				p := e.Pos()
+				hi = api.V(max(hi.X, p.X), max(hi.Y, p.Y), max(hi.Z, p.Z))
+			}
+		}
+		return hi
+	}
+	d := api.New()
+	g, err := d.Link(mesh, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hi := highest(g); hi.Minus(api.V(110, 10, 5)).Magnitude() > 1e-4 {
+		t.Errorf("the mesh's highest corner is at %v", hi)
+	}
+	g, err = d.Link(model, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hi := highest(g); hi.Minus(api.V(110, 10, 5)).Magnitude() < 1 {
+		t.Errorf("the model came in where it was drawn, %v", hi)
+	}
+}
