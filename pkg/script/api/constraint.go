@@ -208,6 +208,14 @@ func (d *Doc) constrain(build func(sk *sketch.Sketch, c *core.Constraint)) (out 
 		c.Group = sk.Active
 		c.Workplane = sk.ActiveWorkplane()
 		build(sk, &c)
+		// A group refers only to what is made before it (roadmap 16.4).
+		for _, he := range []core.HEntity{c.PtA, c.PtB, c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
+			if on, later := sk.EntityAfter(he, c.Group); later {
+				fail("%s belongs to %s, which comes after the active group %s in the history; "+
+					"a constraint refers to what is made before it",
+					Entity{d, he}.describe(sk), sk.GroupName(on), sk.GroupName(c.Group))
+			}
+		}
 		for i := range sk.Constraints {
 			if c.Equals(&sk.Constraints[i].ConstraintBase) {
 				out = Constraint{d, sk.Constraints[i].H}

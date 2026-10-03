@@ -430,7 +430,18 @@ func (d *Doc) add(build func(sk *sketch.Sketch) sketch.Group, after func(sk *ske
 			sk = d.h.Sketch()
 		}
 		sk.Active = sk.ActiveGroup()
-		hg := d.h.AddGroup(build(sk))
+		ng := build(sk)
+		// A group refers only to what is made before it: one made with
+		// an earlier group active goes in after that one (roadmap 16.4).
+		if at := sk.GetGroup(sk.Active); at != nil {
+			for _, dep := range sk.DependenciesOf(&ng) {
+				if on := sk.GetGroup(dep.Group); on != nil && on.Order > at.Order {
+					fail("the new group would refer to %s (%s), which comes after the active group %s in the history",
+						sk.GroupName(dep.Group), dep.Why, sk.GroupName(at.H))
+				}
+			}
+		}
+		hg := d.h.AddGroup(ng)
 		sk = d.h.Sketch()
 		if after != nil {
 			after(sk, hg)

@@ -1,0 +1,20 @@
+# A rectangle extruded; then on the home screen its sketch made active,
+# and a second extrusion of it made there, which goes into the history
+# between the sketch and the first extrusion; the same as
+# path_insert_group.go makes (TestPathEquivalenceInsertGroup).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+twmove 28 135
+twdown L 28 135
+twup L 28 135
+key x shift

@@ -61,6 +61,12 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 	add := func(n *Node) { f.Nodes = append(f.Nodes, n) }
 	add(field("telesapr", Word(strconv.Itoa(Version))))
 	add(field("units", Word(enumName(docUnits, sk.Units))))
+	// The active group, when it is not the last: what is shown, and so
+	// each entity's act-visible, follows it.
+	if a := sk.Active; a.V != 0 && sk.GetGroup(a) != nil && len(sk.GroupOrder) > 0 &&
+		a != sk.GroupOrder[len(sk.GroupOrder)-1] {
+		add(field("active", hex(a.V)))
+	}
 	mmPer := sk.Units.MmPer()
 	for _, p := range sk.Parameters {
 		add(&Node{Name: "param", Args: []Value{Word(p.Name)}, HasExpr: true, Expr: p.Expr})

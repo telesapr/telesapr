@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -226,6 +227,21 @@ func TestPathEquivalenceDraft(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_draft", "path_draft")
 	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupExtrude || g.ValC != 5 || g.Problem.Msg != "" {
 		t.Errorf("the extrusion: type %d, draft %g, problem %q", g.Type, g.ValC, g.Problem.Msg)
+	}
+}
+
+// A group made with an earlier group active, from the mouse and from a
+// script, goes into the history after that group, before the groups
+// that follow it (roadmap 16.4).
+func TestPathEquivalenceInsertGroup(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_insert_group", "path_insert_group")
+	var names []string
+	for _, hg := range ui.GroupOrder {
+		names = append(names, ui.GetGroup(hg).Name)
+	}
+	if got := strings.Join(names, " "); got != "#references sketch-in-plane extrude extrude" ||
+		ui.GetGroup(ui.GroupOrder[2]).H.V < ui.GetGroup(ui.GroupOrder[3]).H.V {
+		t.Errorf("the history: %s", got)
 	}
 }
 

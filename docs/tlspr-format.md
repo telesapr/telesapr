@@ -165,6 +165,7 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 |---|---|
 | `telesapr <major>` | The header. |
 | `units <unit>` | `mm`, `inch`, `m` or `ft-in`: the document's unit, which typed lengths are in. A file without it is in `mm`. |
+| `active <handle>` | The group that was active, written only when it is not the last. What is shown, and so each entity's `act-visible`, follows it. A file without it opens with the last group active. |
 | `param <name> = <expression>` | A named parameter, see "Parameters". |
 | `group <handle> <type> <name> { ... }` | A group. |
 | `request <handle> <type> { ... }` | A request, what the user drew. |

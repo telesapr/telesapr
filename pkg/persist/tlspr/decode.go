@@ -112,6 +112,8 @@ func (d *decoder) file(f *File) {
 			if u, ok := enumValue(d, docUnits, a[0]); ok {
 				d.doc.Units = u
 			}
+		case "active":
+			sk.Active = core.HGroup{V: d.handleField(n)}
 		case "group":
 			if g, ok := d.group(n); ok {
 				sk.Groups = append(sk.Groups, g)

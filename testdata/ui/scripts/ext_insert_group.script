@@ -1,0 +1,27 @@
+# A group inserted mid-history (C4): a rectangle extruded, its sketch made
+# active on the home screen, and a second extrusion made there goes in
+# between the sketch and the first extrusion, as the home screen lists;
+# the later extrusion still regenerates, and Check Solid finds the solid
+# of the history up to the active group.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+twmove 28 135
+twdown L 28 135
+twup L 28 135
+key x shift
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+tw
+answer ok
+menu Analyze|Check Solid

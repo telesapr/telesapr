@@ -228,7 +228,10 @@ func (gw *GraphicsWindow) Init() {
 	if len(sk.GroupOrder) == 0 {
 		panic("ui: group order can't be empty since we will activate the last group")
 	}
-	gw.setActiveGroup(sk.GroupOrder[len(sk.GroupOrder)-1])
+	// A file may name the group that was active when it was saved.
+	if sk.Active.V == 0 || sk.GetGroup(sk.Active) == nil {
+		gw.setActiveGroup(sk.GroupOrder[len(sk.GroupOrder)-1])
+	}
 	gw.ss.groupActivate(sk.GetGroup(gw.activeGroupH()))
 
 	gw.show = sketch.Visibility{Points: true, Normals: true, Construction: true, Edges: true}
