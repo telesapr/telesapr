@@ -143,6 +143,8 @@ func kindName(t sketch.GroupType) string {
 		return "loft"
 	case sketch.GroupShell:
 		return "shell"
+	case sketch.GroupPathPattern:
+		return "pattern"
 	case sketch.GroupLinked:
 		return "link"
 	}
@@ -309,14 +311,26 @@ func (g Group) SetColor(red, green, blue int) {
 	})
 }
 
-// SetCopies is how many copies a step and repeat makes.
+// Copies is how many copies a step and repeat or a pattern makes.
+func (g Group) Copies() (n int) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate && group.Type != sketch.GroupPathPattern {
+			fail("%s isn't a step and repeat or a pattern", groupDescription(group))
+		}
+		n = int(group.ValA)
+	})
+	return n
+}
+
+// SetCopies is how many copies a step and repeat or a pattern makes.
 func (g Group) SetCopies(n int) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate {
-			fail("%s isn't a step and repeat", groupDescription(group))
+		if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate && group.Type != sketch.GroupPathPattern {
+			fail("%s isn't a step and repeat or a pattern", groupDescription(group))
 		}
-		if n < 1 || n > 999 {
+		if n < 1 || n > 999 || (group.Type == sketch.GroupPathPattern && n < 2) {
 			fail("can't repeat %d times", n)
 		}
 		group.ValA = float64(n)

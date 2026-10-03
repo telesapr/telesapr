@@ -256,6 +256,10 @@ remap {
 | Mirror | `mirror` |
 | Chamfer | `chamfer` |
 | Sweep along a path | `sweep` |
+| Fillet | `fillet` |
+| Shell | `shell` |
+| Loft | `loft` |
+| Pattern along a path | `pattern-path` |
 
 A mirror reflects its `op-a` in the plane `entity-b` of its `predef`, a workplane or a planar
 face; `skip-first` leaves the original out of its solid, and `mirror-solid` has it reflect the
@@ -516,6 +520,10 @@ Version 2 gained the group types `mirror`, `chamfer` and `sweep`, with the field
 
 Version 2 gained the chamfer field `solid-edge` on 2026-10-03. A reader from before skips it
 with a report.
+
+Version 2 gained the group type `pattern-path` on 2026-10-03 (roadmap 15.6): it repeats the
+solid of its `op-a` `copies` times along its `edges`, a path as a sweep's. A reader from before
+reports the unknown type.
 
 Version 2 gained the mirror field `mirror-solid` on 2026-10-03 (roadmap 15.5). A reader from
 before skips it with a report, and mirrors the source group alone.

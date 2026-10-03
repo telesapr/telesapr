@@ -25,6 +25,7 @@ time, and `help()` there lists what a script can call.
 | [Shell](shell.md) | A solid hollowed to walls | `shell` |
 | [Loft](loft.md) | Two profiles joined by ruled faces | `loft` |
 | [Sweep](sweep.md) | A profile moved along a path | `sweep` |
+| [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
 | [Screw threads](threads.md) | Metric, unified and trapezoidal threads | `bolt` |
 | [STEP links](step-links.md) | A STEP file linked as a reference | `step` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |

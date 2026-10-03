@@ -4345,6 +4345,10 @@
 						"decl": "func (d *Doc) Parameters() (params []Parameter)",
 						"text": "Parameters lists the parameter table, in the order the parameters\nwere made."
 					},
+					"PatternAlongPath": {
+						"decl": "func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group",
+						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as New Group \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
+					},
 					"Perpendicular": {
 						"decl": "func (d *Doc) Perpendicular(a, b Entity) Constraint",
 						"text": "Perpendicular makes two line segments or normals perpendicular."
@@ -4650,6 +4654,10 @@
 						"decl": "func (g Group) Constraints() (constraints []Constraint)",
 						"text": "Constraints are the group's constraints."
 					},
+					"Copies": {
+						"decl": "func (g Group) Copies() (n int)",
+						"text": "Copies is how many copies a step and repeat or a pattern makes."
+					},
 					"Delete": {
 						"decl": "func (g Group) Delete()",
 						"text": "Delete deletes the group and what depends on it."
@@ -4676,7 +4684,7 @@
 					},
 					"Edges": {
 						"decl": "func (g Group) Edges() (edges []Entity)",
-						"text": "Edges are the edges a chamfer cuts or a fillet rounds, or the path a\nsweep follows."
+						"text": "Edges are the edges a chamfer cuts or a fillet rounds, or the path a\nsweep or a pattern follows."
 					},
 					"Entities": {
 						"decl": "func (g Group) Entities() (entities []Entity)",
@@ -4760,7 +4768,7 @@
 					},
 					"SetCopies": {
 						"decl": "func (g Group) SetCopies(n int)",
-						"text": "SetCopies is how many copies a step and repeat makes."
+						"text": "SetCopies is how many copies a step and repeat or a pattern makes."
 					},
 					"SetDistance": {
 						"decl": "func (g Group) SetDistance(mm float64)",
@@ -5571,6 +5579,7 @@
 					"GroupFillet",
 					"GroupLoft",
 					"GroupShell",
+					"GroupPathPattern",
 					"GroupLinked"
 				]
 			},
@@ -6041,6 +6050,10 @@
 					"NewMirror": {
 						"decl": "func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error)",
 						"text": "NewMirror starts a mirror group that reflects the active group in plane, a workplane or a planar face."
+					},
+					"NewPathPattern": {
+						"decl": "func (sk *Sketch) NewPathPattern(path []core.HEntity, copies int, name string) (Group, error)",
+						"text": "NewPathPattern starts a pattern of the active group's solid along path, line segments and arcs joined end to end and meeting tangent, copies times in all."
 					},
 					"NewShell": {
 						"decl": "func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Group, error)",
@@ -6524,6 +6537,10 @@
 			"GroupOneSkewed": {
 				"decl": "const GroupOneSkewed"
 			},
+			"GroupPathPattern": {
+				"decl": "const GroupPathPattern",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
+			},
 			"GroupPitch": {
 				"decl": "const GroupPitch"
 			},
@@ -6617,6 +6634,10 @@
 			"RemapLineToFace": {
 				"decl": "const RemapLineToFace",
 				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+			},
+			"RemapPattern": {
+				"decl": "const RemapPattern",
+				"text": "RemapPattern is the remap copy number of a pattern's first copy."
 			},
 			"RemapPtToArc": {
 				"decl": "const RemapPtToArc",

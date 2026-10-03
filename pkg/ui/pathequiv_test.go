@@ -142,6 +142,15 @@ func TestPathEquivalenceMirrorSolid(t *testing.T) {
 	}
 }
 
+// A post repeated along a construction line picked with the mouse, and
+// by a script (roadmap 15.6).
+func TestPathEquivalencePathPattern(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_pattern_path", "path_pattern_path")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || g.ValA != 3 {
+		t.Errorf("the pattern: type %d, problem %q, copies %g", g.Type, g.Problem.Msg, g.ValA)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")

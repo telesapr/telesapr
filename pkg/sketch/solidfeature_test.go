@@ -491,3 +491,13 @@ func BenchmarkSweep(b *testing.B) {
 		d.Sweep(path, "")
 	})
 }
+
+func BenchmarkPathPattern(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		path := patternPath(d, 20, 10, 90)
+		d.SketchIn(d.Workplane("XY"), "post-sketch")
+		d.Circle(api.V(0, 0, 0), 1)
+		d.Extrude(5, "post")
+		d.PatternAlongPath(path, 7, "")
+	})
+}

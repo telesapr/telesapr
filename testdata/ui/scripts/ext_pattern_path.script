@@ -1,0 +1,36 @@
+# Pattern Along Path (an extension): with nothing selected it says what
+# to select; with the construction line of path_pattern_path picked, the
+# post is repeated three times along it, and the group screen lists the
+# copies and the path. Analyze > Check Solid finds the three posts.
+key c
+move 200 300
+down L 200 300
+up L 200 300
+move 210 300
+down L 210 300
+up L 210 300
+key esc
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 200
+down L 400 200
+up L 400 200
+key esc
+key esc
+move 300 200
+down L 300 200
+up L 300 200
+key g
+key esc
+key x shift
+answer ok
+menu New Group|Pattern Along Path
+move 300 200
+down L 300 200
+up L 300 200
+menu New Group|Pattern Along Path
+tw
+answer ok
+menu Analyze|Check Solid

@@ -394,7 +394,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		g.generateMirror(sk, entity, param)
 		return
 
-	case GroupChamfer, GroupFillet, GroupLoft, GroupShell:
+	case GroupChamfer, GroupFillet, GroupLoft, GroupShell, GroupPathPattern:
 		return
 
 	case GroupSweep:

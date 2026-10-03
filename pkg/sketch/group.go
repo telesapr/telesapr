@@ -55,6 +55,9 @@ const (
 	// GroupShell hollows the solid so far to walls ValB thick, open
 	// where its faces SolidFaces are taken away.
 	GroupShell
+	// GroupPathPattern repeats the solid of its source group (OpA) ValA
+	// times along the path Edges, as a sweep's (pattern.go).
+	GroupPathPattern
 )
 
 type GroupSubtype int
@@ -296,7 +299,8 @@ func (g *Group) IsMeshGroup() bool {
 		g.Type == GroupSweep ||
 		g.Type == GroupFillet ||
 		g.Type == GroupLoft ||
-		g.Type == GroupShell
+		g.Type == GroupShell ||
+		g.Type == GroupPathPattern
 }
 
 // IsCopyGroup reports whether the group copies its source group,
@@ -331,7 +335,7 @@ func (g *Group) RunningMeshGroup(sk *Sketch) *Group {
 	}
 
 	switch g.Type {
-	case GroupRotate, GroupTranslate, GroupMirror:
+	case GroupRotate, GroupTranslate, GroupMirror, GroupPathPattern:
 		opA := sk.GetGroup(g.OpA)
 		if opA == nil {
 			return nil

@@ -748,6 +748,11 @@ func (tw *TextWindow) ShowGroupInfo() {
 	case sketch.GroupSweep:
 		tw.Printf(true, " %Ftsweep plane sketch along path%E")
 		tw.showGroupEdges(g, "path")
+	case sketch.GroupPathPattern:
+		tw.Printf(true, " %Ftrepeat solid along path%E")
+		tw.Printf(false, "%Ba   %Ftcopies%E %d%s %Fl%Ll%D%f[change]%E",
+			int(g.ValA), exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
+		tw.showGroupEdges(g, "path")
 	case sketch.GroupLinked:
 		tw.Printf(true, " %Ftlink geometry from file%E")
 		tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))

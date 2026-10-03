@@ -286,6 +286,18 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 		}
 		g = lg
 
+	case CmdGroupPathPattern:
+		pg, err := sk.NewPathPattern(gs.entity, 3, "")
+		if err != nil {
+			ss.Error("Can't repeat along the selection. %s.\n\n"+
+				"Pattern Along Path repeats the active group's solid along a path, three times "+
+				"to begin with. Select:\n\n"+
+				"    * the line segments and arcs of the path, joined end to end "+
+				"and meeting tangent\n", capitalize(err.Error()))
+			return
+		}
+		g = pg
+
 	case CmdGroupSweep:
 		if !gw.LockedInWorkplane() {
 			ss.Error("Activate the workplane of the profile to sweep (Sketch -> In Workplane): " +
