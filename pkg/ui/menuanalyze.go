@@ -247,6 +247,7 @@ func (ss *SolveSpaceUI) CheckSolid() {
 	r := check.Group(sk, g)
 	ss.NakedEdges.Clear()
 	ss.NakedEdges.Edges = append(ss.NakedEdges.Edges, r.Problems.Edges...)
+	ss.NakedEdges.Edges = append(ss.NakedEdges.Edges, r.TopologyEdges.Edges...)
 	ss.GW.Invalidate(false)
 
 	if r.Empty() {

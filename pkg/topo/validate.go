@@ -12,6 +12,9 @@ import (
 type Problem struct {
 	Msg string
 	At  geom.Vector
+	// Edge is the edge at fault, -1 for none, for the user interface
+	// to mark it.
+	Edge int
 }
 
 // Validate lists what is wrong with the topology: an edge not used
@@ -27,10 +30,19 @@ func (t *Topology) Validate() []Problem {
 		case 2:
 			a, b := &t.CoEdges[e.CoEdges[0]], &t.CoEdges[e.CoEdges[1]]
 			if a.Reversed == b.Reversed {
-				out = append(out, Problem{fmt.Sprintf("edge %d is run the same way by both its faces", i), at})
+				out = append(out, Problem{fmt.Sprintf("edge %d is run the same way by both its faces", i), at, i})
 			}
+		case 0, 1:
+			out = append(out, Problem{fmt.Sprintf("edge %d is used by %d co-edges, not 2", i, len(e.CoEdges)), at, i})
 		default:
-			out = append(out, Problem{fmt.Sprintf("edge %d is used by %d co-edges, not 2", i, len(e.CoEdges)), at})
+			// Where two parts of a solid touch along a line, as two holes
+			// at a common corner do, or two blocks edge to edge: a
+			// non-manifold edge, which no feature can work on (roadmap
+			// 14.3).
+			b := t.Vertices[e.V[1]].P
+			out = append(out, Problem{fmt.Sprintf("edge %d is used by %d co-edges, not 2: %d faces meet along "+
+				"it, from (%.4g, %.4g, %.4g) to (%.4g, %.4g, %.4g), where two parts of the solid touch",
+				i, len(e.CoEdges), len(e.CoEdges), at.X, at.Y, at.Z, b.X, b.Y, b.Z), at, i})
 		}
 	}
 	for i := range t.Loops {
@@ -38,14 +50,14 @@ func (t *Topology) Validate() []Problem {
 		for k, ce := range l.CoEdges {
 			next := l.CoEdges[(k+1)%len(l.CoEdges)]
 			if t.End(ce) != t.Start(next) {
-				out = append(out, Problem{fmt.Sprintf("loop %d does not close", i), t.Vertices[t.End(ce)].P})
+				out = append(out, Problem{fmt.Sprintf("loop %d does not close", i), t.Vertices[t.End(ce)].P, -1})
 				break
 			}
 		}
 	}
 	for i := range t.CoEdges {
 		if t.CoEdges[i].Loop < 0 {
-			out = append(out, Problem{fmt.Sprintf("co-edge %d is in no loop", i), t.Vertices[t.Start(i)].P})
+			out = append(out, Problem{fmt.Sprintf("co-edge %d is in no loop", i), t.Vertices[t.Start(i)].P, -1})
 		}
 	}
 	return out

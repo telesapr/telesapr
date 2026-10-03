@@ -452,3 +452,27 @@ func TestMeasureFacesOutward(t *testing.T) {
 		}
 	}
 }
+
+// Two square holes that touch at a corner: four faces meet along the
+// line there, and the solid is not a manifold. Check says so where it
+// is, and marks that edge (roadmap 14.3). The top and bottom faces'
+// loops pass through that corner twice, which the topology's sharpest
+// left turn sorts out: the edge is the only problem, every loop closes.
+func TestCheckTouchingHoles(t *testing.T) {
+	d := New()
+	d.Rect(V(0, 0, 0), V(20, 20, 0))
+	d.Rect(V(4, 4, 0), V(10, 10, 0))
+	d.Rect(V(10, 10, 0), V(16, 16, 0))
+	r := d.Extrude(5, "").Check()
+	if r.Sound() || r.TopologyProblems != 1 || !near(r.Volume, 1640) {
+		t.Fatalf("%s", r.String())
+	}
+	p := r.Topology[0]
+	if !strings.Contains(p.Msg, "4 faces meet along it, from (10, 10, 0) to (10, 10, 5)") &&
+		!strings.Contains(p.Msg, "4 faces meet along it, from (10, 10, 5) to (10, 10, 0)") {
+		t.Errorf("problem %q", p.Msg)
+	}
+	if len(r.TopologyEdges.Edges) != 1 {
+		t.Errorf("%d edges marked", len(r.TopologyEdges.Edges))
+	}
+}
