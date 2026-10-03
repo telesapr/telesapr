@@ -402,7 +402,12 @@ func (c *SContour) ClipEarInto(m *SMesh, bp int, scaledEps float64) {
 	cp := wrapIdx(bp+1, ln)
 
 	tr := STriangle{A: c.Points[ap].P, B: c.Points[bp].P, C: c.Points[cp].P}
-	if tr.Normal().MagSquared() < scaledEps*scaledEps {
+	// The triangle's height over its longest side: C++ compares its
+	// doubled area with the square of the epsilon, which also culls
+	// thin triangles that are real, such as the sliver between a fine
+	// chord of a curve and the next, and leaves a hole there.
+	long := max(tr.B.Minus(tr.A).MagSquared(), tr.C.Minus(tr.B).MagSquared(), tr.A.Minus(tr.C).MagSquared())
+	if n := tr.Normal().MagSquared(); n < scaledEps*scaledEps*long || n == 0 {
 		// A vertex with more than two edges will cause us to generate
 		// zero-area triangles, which must be culled.
 	} else {
