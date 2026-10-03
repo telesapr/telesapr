@@ -64,7 +64,6 @@ func ends(g api.Group) (lo, hi api.Entity) {
 	return lo, hi
 }
 
-
 // The mates (roadmap 16.9): concentric puts the holes on one axis, by
 // parallel axes and two distances across it of zero; flush puts the second plate's bottom
 // in the plane of the first's top; a hinge puts one edge on another,
