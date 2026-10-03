@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 12 and I7 are done and merged, step 12 but for 12.4 (CI's first run on GitHub), which waits for the user. What steps 1 to 11 left open, the items that never had a step and the tier 4 items are ordered as steps 12 to 22 under "Finishing the roadmap"; 13 to 22 are not started. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
+Date: 2026-10-01, updated 2026-10-03. Status: steps 1 to 13 and I7 are done and merged, step 12 but for 12.4 (CI's first run on GitHub), which waits for the user. What steps 1 to 11 left open, the items that never had a step and the tier 4 items are ordered as steps 12 to 22 under "Finishing the roadmap"; 14 to 22 are not started. See "Progress" below and the State columns of the implementation plan. Read "Definition of done for every new feature" first.
 
 ## Context
 
@@ -31,7 +31,8 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | I7. Drawing with an AI model (outside the steps) | done 2026-10-03; follow-ups listed under the item | `baaec8d` |
 | The name TeleSAPR (outside the steps) | done 2026-10-03: the project, until then spacesolve, is TeleSAPR; the module is `github.com/telesapr/telesapr`, the programs `telesapr` and `telesapr-cli`, the format `.tlspr` with the header `telesapr <version>`. It took the parts of 12.2 that are about the name | `74ff70b` |
 | 12. Close the first eleven steps | done 2026-10-03 but for 12.4, which waits for the user: licence and notices, TeleSAPR 0.1.0 with its own icons, README, `TestMenuBarKeyboard` mended in the code, the guards set and kept from going stale, lint at 0 and run on everything, the audit in `docs/done-audit.md`, the user's guide in `docs/guide` | `f5c6971` |
-| 13 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
+| 13. Kernel soundness | done 2026-10-03: curves split at the seams of flat faces, ears that fold over skipped, 32 rows of twist, untrimmed surfaces dropped after a Boolean, a symmetric part its own mirror image, STEP meshes mended at T-junctions; the sphere and cylinder guards at 1 and 2, with their causes named | MERGE13 |
+| 14 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
 document and the format went to version 2 for it (2026-10-02, "Format decisions"); files broken
@@ -1183,14 +1184,21 @@ the test with their cause. Goldens that move are regenerated in their own commit
 
 | Package | Content | Effort | State |
 |---|---|---|---|
-| 13.1 The mesher's grid | The grid of a curved patch stops refining at a fixed depth while its trims go on, and the strips between are ear-clipped into slivers: small spheres at fine tolerances and strong twists (step 10). Refinement by the sag in space in place of a cap of 16 rows, with the regeneration benchmarks as the guard, since a deeper cap alone made the loft sweep four times slower and moved the meshes of cones. | 2 wk | not started |
-| 13.2 Curved surfaces crossing | Cylinder through cylinder, 11 of 54, and the sphere cap across the seams, 10 of 135 (step 5). Both come from curves the marching intersector seeds at boundaries. | 3 wk | not started |
-| 13.3 What a Boolean leaves | A difference keeps the cutter's removed surfaces whole, with no trims, so a chamfered block's shell has 11 surfaces for 7 faces, and Check Solid says 12 faces for an open box of 11 (steps 7 and 10); they are dropped. A cut through a fillet loses about 1 mm³ to coarser chords of the cylinder's trim (step 10). | 1.5 wk | not started |
-| 13.4 Coincident faces, a first part of F5 | A part symmetric about a plane, mirrored with the original kept, puts coincident faces through the Boolean, which fails (step 7). That case and a sweep of it; further cases enter as they are found, each with a fixture. | 2 wk | not started |
-| 13.5 STEP reference meshes | Six naked edges at a knife edge, faces through both poles split at the equator, 24 crossing edges in a part 5 mm across, and the triangulator's adjacency as a map (step 8). | 1.5 wk | not started |
+| 13.1 The mesher's grid | The grid of a curved patch stops refining at a fixed depth while its trims go on, and the strips between are ear-clipped into slivers: small spheres at fine tolerances and strong twists (step 10). Refinement by the sag in space in place of a cap of 16 rows, with the regeneration benchmarks as the guard, since a deeper cap alone made the loft sweep four times slower and moved the meshes of cones. | 2 wk | done 2026-10-03 (`12c98c2`, golden `55e53f9`): the grid follows a twist to 32 rows, not 16, at under 3% in the regeneration benchmarks; a bilinear patch whose corners are not in a plane is meshed as curved. Refinement by sag without the 1/20 floor was tried and made the loft sweep 7 times slower, so it was not taken. The small spheres were mended by 13.2's fold check: `TestFilletCorners` runs at a five-thousandth of the radius. Left: a strongly twisted side has four columns along its straight edges, so a triangle turned a third of a turn meshes within 2% (`TestLoftSweep`), and the two cylinder crossings of 13.2 |
+| 13.2 Curved surfaces crossing | Cylinder through cylinder, 11 of 54, and the sphere cap across the seams, 10 of 135 (step 5). Both come from curves the marching intersector seeds at boundaries. | 3 wk | done 2026-10-03 (`b4aa90f`, `7e22384`, golden `7487f06`): cylinders 11 → 2 of 54, a curve lying in a flat face is now split at the seams between its patches; spheres 10 → 1 of 135, the ear clipper of curved patches skips ears that fold over in xyz. Left, named in the guards: two differences where the crossed cylinder's seam pierces the wall beside a full-height strip triangle (`2bffa08`), and a cap so small its triangles lie flat in the face's plane |
+| 13.3 What a Boolean leaves | A difference keeps the cutter's removed surfaces whole, with no trims, so a chamfered block's shell has 11 surfaces for 7 faces, and Check Solid says 12 faces for an open box of 11 (steps 7 and 10); they are dropped. A cut through a fillet loses about 1 mm³ to coarser chords of the cylinder's trim (step 10). | 1.5 wk | done 2026-10-03 (`049f506`, goldens `1f34d3a`): a Boolean drops the surfaces it leaves with no trim, and the curves on them no trim uses; Check Solid counts 11 faces and 11 patches for the open box. The cut through a fillet loses 0.34 mm³ more at the default tolerance and nothing at a fine one, chord error rather than a fault (`f72f829`, `TestFilletCutChords`) |
+| 13.4 Coincident faces, a first part of F5 | A part symmetric about a plane, mirrored with the original kept, puts coincident faces through the Boolean, which fails (step 7). That case and a sweep of it; further cases enter as they are found, each with a fixture. | 2 wk | done 2026-10-03 (`73a5f88`): a part symmetric about the mirror plane is its own reflection (`srf.SameShell`), and the mirror keeps it as it is; `TestMirrorSymmetricSweep` 0 of 48, 10 of its sample of 12 failing before. Flat coincident faces came through already; curved ones in general stay F5's |
+| 13.5 STEP reference meshes | Six naked edges at a knife edge, faces through both poles split at the equator, 24 crossing edges in a part 5 mm across, and the triangulator's adjacency as a map (step 8). | 1.5 wk | done 2026-10-03 (`0167926`): the mesh is mended at T-junctions on its naked edges, so the knife edge read back has none; linkrods.step had no crossing edge before this step; faces through both poles fail nowhere and stay as they are; NIST_MBE_PMI_5 reads in 50 ms, as before, so the map stays |
 
 Done when: the four guards of 12.6 and the sweeps of steps 7 and 10 stand at 0, or name what
 is left.
+
+State, 2026-10-03: done, on branch `step-13-kernel-soundness`. Run over their whole grids, every
+sweep stands at 0 but two guards, which name what is left: the sphere through a face 1 of 135
+(10 before) and the cylinder through a cylinder 2 of 54 (11 before). Threads 0 of 400, the sweep
+along a path 0 of 72, and every sweep of steps 7 and 10 at 0; new sweeps: the mirror 0 of 144,
+the symmetric mirror 0 of 48, triangle lofts turned 0 of 27. The estimate of 10 weeks was not
+re-sized after the first day, as planned, since each package's cause was found within it.
 
 ### Step 14. Names, faces and picking
 
