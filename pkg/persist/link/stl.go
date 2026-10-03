@@ -1,10 +1,15 @@
 package link
 
 import (
+	"bytes"
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"math"
 	"os"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -13,7 +18,8 @@ import (
 )
 
 // This file ports solvespace/src/importmesh.cpp, which links a binary
-// STL triangle mesh.
+// STL triangle mesh, and reads text STL files too; obj.go reads OBJ
+// files into the same mesh and entities.
 
 const minPointDistance = 0.001
 
@@ -104,15 +110,53 @@ func newLine(el *[]core.Entity, id *int, p0, p1 core.HEntity) core.HEntity {
 	return en.H
 }
 
-// linkStl reads a binary STL file into mesh m, with entities for its
-// origin, its bounding box and the vertices on its edges (C++
-// LinkStl). A text STL isn't supported, and counts as a missing file.
+// linkStl reads an STL file, binary or text, into mesh m, with
+// entities for its origin, its bounding box and the vertices on its
+// edges (C++ LinkStl, which read binary files only; roadmap 16.6 reads
+// text ones too).
 func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bool {
 	*el = (*el)[:0]
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false
 	}
+	var tris []srf.STriangle
+	if isTextStl(data) {
+		if tris, err = textStlTriangles(data); err != nil {
+			if sk.Message != nil {
+				sk.Message(fmt.Sprintf("The STL file '%s' can't be read: %v.", path, err))
+			}
+			return false
+		}
+	} else {
+		tris = binaryStlTriangles(data)
+	}
+	linkMesh(tris, el, m)
+	return true
+}
+
+// meshGrey is the colour of a triangle a mesh file gives none.
+var meshGrey = core.RgbaColor{Red: 90, Green: 120, Blue: 140, Alpha: 255}
+
+// isTextStl reports whether an STL file is text: it starts with
+// "solid", and is not the size a binary file of the triangle count in
+// its header would be, since some binary files start so too.
+func isTextStl(data []byte) bool {
+	if !bytes.HasPrefix(bytes.TrimLeft(data, " \t\r\n"), []byte("solid")) {
+		return false
+	}
+	if len(data) >= 84 {
+		n := binary.LittleEndian.Uint32(data[80:84])
+		if uint64(len(data)) == 84+50*uint64(n) {
+			return false
+		}
+	}
+	return true
+}
+
+// binaryStlTriangles are the triangles of a binary STL file, with their
+// colours where the file gives them.
+func binaryStlTriangles(data []byte) []srf.STriangle {
 	// C++ reads a short file as zeros.
 	read := func(off, n int) []byte {
 		b := make([]byte, n)
@@ -121,16 +165,6 @@ func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bo
 		}
 		return b
 	}
-
-	if string(read(0, 5)) == "solid" {
-		// just returning false will trigger the warning that linked file
-		// is not present; best solution is to add an importer for text STL.
-		if sk.Message != nil {
-			sk.Message("Text-formated STL files are not currently supported")
-		}
-		return false
-	}
-
 	n := binary.LittleEndian.Uint32(read(80, 4))
 	off := 84
 	f32 := func() float64 {
@@ -144,8 +178,7 @@ func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bo
 		z := f32()
 		return geom.Vector{X: x, Y: y, Z: z}
 	}
-
-	var verts []stlVertex
+	var tris []srf.STriangle
 	for i := uint32(0); i < n; i++ {
 		tr := srf.STriangle{}
 
@@ -166,12 +199,80 @@ func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bo
 			tr.Meta.Blue = uint8(color << 3)
 			tr.Meta.Alpha = 255
 		} else {
-			tr.Meta.Red = 90
-			tr.Meta.Green = 120
-			tr.Meta.Blue = 140
-			tr.Meta.Alpha = 255
+			tr.Meta.RgbaColor = meshGrey
 		}
+		tris = append(tris, tr)
+	}
+	return tris
+}
 
+// textStlTriangles are the facets of a text STL file: "facet normal n
+// n n", "outer loop", a "vertex x y z" for each corner, "endloop",
+// "endfacet". A facet of more than three corners is cut into a fan.
+func textStlTriangles(data []byte) ([]srf.STriangle, error) {
+	var tris []srf.STriangle
+	var normal geom.Vector
+	var corners []geom.Vector
+	words := strings.Fields(string(data))
+	num := func(i int) (float64, error) {
+		if i >= len(words) {
+			return 0, errors.New("the file ends inside a facet")
+		}
+		return strconv.ParseFloat(words[i], 64)
+	}
+	vec := func(i int) (geom.Vector, error) {
+		x, err := num(i)
+		if err != nil {
+			return geom.Vector{}, err
+		}
+		y, err := num(i + 1)
+		if err != nil {
+			return geom.Vector{}, err
+		}
+		z, err := num(i + 2)
+		return geom.Vector{X: x, Y: y, Z: z}, err
+	}
+	for i := 0; i < len(words); i++ {
+		switch strings.ToLower(words[i]) {
+		case "facet":
+			corners = corners[:0]
+			normal = geom.Vector{}
+			if i+1 < len(words) && strings.EqualFold(words[i+1], "normal") {
+				n, err := vec(i + 2)
+				if err != nil {
+					return nil, fmt.Errorf("a facet's normal: %w", err)
+				}
+				normal = n
+				i += 4
+			}
+		case "vertex":
+			p, err := vec(i + 1)
+			if err != nil {
+				return nil, fmt.Errorf("a vertex: %w", err)
+			}
+			corners = append(corners, p)
+			i += 3
+		case "endfacet":
+			if len(corners) < 3 {
+				return nil, fmt.Errorf("a facet with %d corners", len(corners))
+			}
+			for k := 2; k < len(corners); k++ {
+				tris = append(tris, srf.STriangle{Meta: srf.STriMeta{RgbaColor: meshGrey},
+					A: corners[0], B: corners[k-1], C: corners[k], NA: normal, NB: normal, NC: normal})
+			}
+		}
+	}
+	if len(tris) == 0 {
+		return nil, errors.New("it has no facets")
+	}
+	return tris, nil
+}
+
+// linkMesh puts triangles into mesh m, with entities for the origin,
+// the bounding box and the vertices on the mesh's edges.
+func linkMesh(tris []srf.STriangle, el *[]core.Entity, m *srf.SMesh) {
+	var verts []stlVertex
+	for _, tr := range tris {
 		m.AddTriangle(tr)
 		normal := tr.Normal().WithMagnitude(1.0)
 		addUnique(&verts, tr.A, normal)
@@ -234,5 +335,4 @@ func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bo
 
 	// C++ keeps an EntityList sorted by handle.
 	sort.SliceStable(*el, func(i, j int) bool { return (*el)[i].H.V < (*el)[j].H.V })
-	return true
 }

@@ -13,11 +13,12 @@ var (
 	// LinkFileFilters are the files a link group links. SolveSpace
 	// models are not among them: they are imported first.
 	LinkFileFilters = []FileFilter{
-		{"ALL", []string{"tlspr", "step", "stp", "emn", "stl"}},
+		{"ALL", []string{"tlspr", "step", "stp", "emn", "stl", "obj"}},
 		{"TeleSAPR models", []string{"tlspr"}},
 		{"STEP model, as a reference mesh", []string{"step", "stp"}},
 		{"IDF circuit board", []string{"emn"}},
-		{"STL triangle mesh", []string{"stl"}},
+		{"STL triangle mesh, binary or text", []string{"stl"}},
+		{"Wavefront OBJ mesh", []string{"obj"}},
 	}
 	RasterFileFilters = []FileFilter{
 		{"PNG image", []string{"png"}},

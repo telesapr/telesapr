@@ -1,8 +1,8 @@
 // Package link loads what a sketch links: the files of its link groups
 // and the pictures of its image requests. It knows no document format
 // of its own: a format registers a Loader for its extension, as
-// pkg/persist/tlspr does for .tlspr. IDF boards (.emn), STL meshes
-// (.stl) and STEP files (.step, .stp, through pkg/persist/step) are
+// pkg/persist/tlspr does for .tlspr. IDF boards (.emn), STL and OBJ
+// meshes (.stl, .obj) and STEP files (.step, .stp, through pkg/persist/step) are
 // built in.
 //
 // It ports the linking half of solvespace/src/file.cpp:
@@ -44,6 +44,9 @@ var (
 		"emn": quiet(linkIDF),
 		"stl": func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, _ *srf.SShell, _ *Report) bool {
 			return linkStl(path, sk, le, m)
+		},
+		"obj": func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, _ *srf.SShell, _ *Report) bool {
+			return linkObj(path, sk, le, m)
 		},
 		"step": linkStep,
 		"stp":  linkStep,
