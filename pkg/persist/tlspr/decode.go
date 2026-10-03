@@ -474,15 +474,24 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 		case "solid-edge":
 			d.plain(c)
-			if len(c.Args) != 3 {
-				d.fail(c.Pos, "solid-edge takes two face handles and an ordinal")
+			if len(c.Args) != 3 && len(c.Args) != 5 {
+				d.fail(c.Pos, "solid-edge takes two face handles, an ordinal, and 'of' with a count")
 			}
 			n := d.int(c.Args[2])
 			if n < 0 {
 				d.fail(c.Args[2].Pos, "an edge's ordinal is not negative")
 			}
-			g.SolidEdges = append(g.SolidEdges, topo.MakeName(srf.FaceID(d.handle(c.Args[0])),
-				srf.FaceID(d.handle(c.Args[1])), n))
+			name := topo.MakeName(srf.FaceID(d.handle(c.Args[0])), srf.FaceID(d.handle(c.Args[1])), n)
+			if len(c.Args) == 5 {
+				if d.word(c.Args[3]) != "of" {
+					d.fail(c.Args[3].Pos, "solid-edge's count follows the word 'of'")
+				}
+				name.Of = d.int(c.Args[4])
+				if name.Of <= n {
+					d.fail(c.Args[4].Pos, "an edge's ordinal is below the count of edges")
+				}
+			}
+			g.SolidEdges = append(g.SolidEdges, name)
 		case "edge-radius":
 			// "edge-radius <n> = <expression>": the fillet's n-th edge,
 			// counting its entities and then its solid edges.

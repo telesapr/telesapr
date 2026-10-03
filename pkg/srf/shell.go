@@ -441,6 +441,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 	hs1 := s.addAndAssignSurfaceId(s1)
 
 	// Now we actually build and trim the swept surfaces. One loop at a time.
+	curve := 0 // the curves of the loops, counted from 1
 	for _, sbl := range sbls.loops() {
 		nc := len(sbl.Curves)
 		hsl := make([][]core.HSSurface, nc)
@@ -448,6 +449,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 		// This is where all the NURBS are created
 		for bi := range sbl.Curves {
 			sb := &sbl.Curves[bi]
+			curve++
 			revs := make([]core.HSSurface, sections)
 			for j := 0; j < sections; j++ {
 				if dist == 0 && isOnAxisLine(sb, pt, axis) {
@@ -462,6 +464,8 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 					ss.TrimBuilt = true
 					if face, ok := lineToFace(group, sb); ok {
 						ss.Face = face
+					} else {
+						ss.Origin = helixOrigin(curve, j)
 					}
 					revs[j] = s.addAndAssignSurfaceId(ss)
 				}
@@ -542,6 +546,21 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 		s.MakeFirstOrderRevolvedSurfaces(pt, axis, i0)
 	}
 }
+
+// helixOrigin is the local origin of the surface that section j of the
+// k-th curve sweeps, for a surface no entity names: the group makes it
+// its own with OriginFor. A helix has as many sections as its turns
+// take, so a surface's place among the group's surfaces moves when the
+// helix gets longer; this does not, and the names of its edges stay
+// (roadmap 14.2).
+func helixOrigin(k, j int) uint32 {
+	return LocalOriginBit | uint32(k&0x1f)<<10 | uint32(j&0x3ff)
+}
+
+// LocalOriginBit marks an Origin that a shell constructor gave a
+// surface from what made it, for its group to make its own with
+// OriginFor in place of the surface's place in the shell.
+const LocalOriginBit = 0x8000
 
 // MakeFromRevolutionOf revolves a planar BezierLoopSet a full turn
 // around the axis (pt, axis). Each curve becomes four 90-degree

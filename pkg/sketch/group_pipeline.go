@@ -179,9 +179,16 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 
 	// Surfaces no entity names get an identity from this group, so
 	// the edges of the faces they bound can be named.
+	// A constructor may have given one a local origin from what made
+	// it, which holds when the group makes more or fewer surfaces.
 	for i := range g.ThisShell.Surface {
-		if s := &g.ThisShell.Surface[i]; s.Face == 0 && s.Origin == 0 {
+		s := &g.ThisShell.Surface[i]
+		switch {
+		case s.Face != 0:
+		case s.Origin == 0:
 			s.Origin = srf.OriginFor(g.H.V, i)
+		case s.Origin&^0xffff == 0 && s.Origin&srf.LocalOriginBit != 0:
+			s.Origin = srf.OriginFor(g.H.V, int(s.Origin))
 		}
 	}
 

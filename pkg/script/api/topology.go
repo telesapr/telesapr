@@ -133,15 +133,23 @@ func (s Solid) Vertices() (vs []SolidVertex) {
 }
 
 // Edge is the edge a name, as SolidEdge.Name writes it, names; it fails
-// when the name doesn't resolve, saying why.
+// when the name doesn't resolve, saying why. A name may leave out the
+// count, "edge A B N" for "edge A B N of M"; the edge has it.
 func (s Solid) Edge(name string) (e SolidEdge) {
 	n, err := topo.ParseName(name)
 	if err != nil {
 		fail("%v", err)
 	}
 	s.d.read(func(sk *sketch.Sketch) {
-		if _, err := s.topology(sk).Resolve(n); err != nil {
+		tp := s.topology(sk)
+		i, err := tp.Resolve(n)
+		if err != nil {
 			fail("%s: %v", sk.SolidEdgeName(n), err)
+		}
+		// The edge's own name, which counts the edges between its faces
+		// as picking it does, whether or not the name given did.
+		if own, err := tp.NameOf(i); err == nil {
+			n = own
 		}
 	})
 	return SolidEdge{s: s, name: n}

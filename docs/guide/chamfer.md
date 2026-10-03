@@ -25,8 +25,9 @@ doc.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 2, 10))}, 1, "")
 
 ## Edge names
 
-An edge of the solid is saved by name: the two faces it lies between and its place among their
-edges, not by where it is. A chamfer on a named edge stays on that edge when the model upstream
+An edge of the solid is saved by name: the two faces it lies between, its place among their
+edges, and how many they had, not by where it is. Where an edit splits or joins the edges between
+those two faces, the name says so on the group rather than move to another piece. A chamfer on a named edge stays on that edge when the model upstream
 changes, as `edges` shows by moving a notch through a parameter. `Solid` gives a group's faces,
 edges and vertices; `Edge(name)`, `EdgeAt(point)`, `EdgesBetween(a, b)` and `EdgesAlong(dir)`
 find edges.

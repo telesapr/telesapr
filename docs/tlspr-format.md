@@ -203,7 +203,7 @@ group <handle> <type> <name> {
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
-  solid-edge <face> <face> <n>  # chamfer: an edge of the solid cut, by name; one line each
+  solid-edge <face> <face> <n> of <m>  # chamfer: an edge of the solid cut, by name; one line each
   predef { ... }
   visible
   suppress                  # the solid is left out
@@ -260,8 +260,10 @@ A mirror reflects its `op-a` in the plane `entity-b` of its `predef`, a workplan
 face; `skip-first` leaves the original out of its solid. A chamfer cuts its `edges` at its
 `distance` from the solid so far, so its `combine` is always `difference`; and its
 `solid-edge`s, edges of the solid so far named by the identities of the two faces they lie
-between, lower first, and their place among the edges between those faces in geometric order
-(`pkg/topo`, `Name`). A face's identity is the handle of the entity that made it, or, for a
+between, lower first, their place among the edges between those faces in geometric order, and
+how many edges those faces met along when it was named (`pkg/topo`, `Name`): where they now meet
+along another number, the name does not resolve. A `solid-edge` without `of <m>` goes by its
+place alone. A face's identity is the handle of the entity that made it, or, for a
 surface no entity names, bit 30 set with the handle of the group that made it and the surface's
 place among that group's surfaces. A sweep moves the
 loops of its `op-a`, a sketch in a workplane, along its `edges`, line segments and arcs that
@@ -512,6 +514,10 @@ Version 2 gained the group types `mirror`, `chamfer` and `sweep`, with the field
 
 Version 2 gained the chamfer field `solid-edge` on 2026-10-03. A reader from before skips it
 with a report.
+
+Version 2's `solid-edge` gained `of <m>`, the count of edges between its faces, on 2026-10-03
+(roadmap 14.2). A reader from before refuses such a line; a reader since reads lines without
+it as before.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 
