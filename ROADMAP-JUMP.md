@@ -38,7 +38,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 17. Regeneration | done 2026-10-03: one parallel mode, the coincident planes merged at once, solids made off the window's thread with cancel, linked files kept in memory and STEP meshes on disk, packed models | `978d25f` |
 | 18. Drawings | done 2026-10-03: a sheet of the standard views with hidden edges, a title block, section and detail views, and dimensions that hold the names of the edges they measure | `2c41d13` |
 | 19. Shading | done 2026-10-03: a shader with smooth per-pixel lighting and highlights, and appearances (matte, plastic, glossy, metal) for solids and faces | `6462cc3` |
-| 20. Smooth lofts and sweeps | done 2026-10-03: lofts through any number of profiles by one smooth surface, profiles of unequal counts, sweeps along cubics in 3d with rotation-minimising frames, a twist, or frames held to an axis, fitted within a tenth of the chord tolerance | MERGE20 |
+| 20. Smooth lofts and sweeps | done 2026-10-03: lofts through any number of profiles by one smooth surface, profiles of unequal counts, sweeps along cubics in 3d with rotation-minimising frames, a twist, or frames held to an axis, fitted within a tenth of the chord tolerance | `dda4e0b` |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
