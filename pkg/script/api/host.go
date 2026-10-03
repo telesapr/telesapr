@@ -82,6 +82,11 @@ type Host interface {
 	// Selection is what is selected in the user interface, if any.
 	Selection() []sketch.Selection
 	Select(sel []sketch.Selection)
+	// SetChordTolerance sets how closely meshes follow curves, as a
+	// percentage of the model's size: for the application, its setting,
+	// as Configuration sets it, which it gives every sketch it
+	// regenerates; for a bare sketch, the sketch's own.
+	SetChordTolerance(pct float64)
 }
 
 // errUnsupported is what a sketch without a program around it answers
@@ -280,6 +285,9 @@ func (h *SketchHost) Selection() []sketch.Selection { return nil }
 
 // Select does nothing, for the same reason.
 func (h *SketchHost) Select([]sketch.Selection) {}
+
+// SetChordTolerance sets the sketch's chord tolerance.
+func (h *SketchHost) SetChordTolerance(pct float64) { h.sk.ChordTolPct = pct }
 
 // RunCommand is an error: a sketch with no window has no menu.
 func (h *SketchHost) RunCommand(label string) error {

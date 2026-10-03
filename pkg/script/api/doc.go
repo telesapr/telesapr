@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -207,6 +208,32 @@ func (d *Doc) Regen() {
 		d.h.Sketch().ScheduleGenerateAll()
 		d.h.Regenerate()
 	})
+}
+
+// SetChordTolerance sets how closely meshes follow curves, as a
+// percentage of the model's size (0.1 unless set; smaller is finer and
+// slower), and regenerates everything. In the application it is the
+// setting Configuration shows; scripts that check volumes against a
+// formula use a fine one.
+func (d *Doc) SetChordTolerance(pct float64) {
+	if !(pct > 0) || math.IsInf(pct, 0) {
+		fail("a chord tolerance must be more than zero, not %g", pct)
+	}
+	d.h.Run(func() {
+		d.h.SetChordTolerance(pct)
+		for i := range d.h.Sketch().Groups {
+			d.h.Sketch().Groups[i].Clean = false
+		}
+		d.h.Sketch().ScheduleGenerateAll()
+		d.h.Regenerate()
+	})
+}
+
+// ChordTolerance is how closely meshes follow curves, as a percentage
+// of the model's size.
+func (d *Doc) ChordTolerance() (pct float64) {
+	d.read(func(sk *sketch.Sketch) { pct = sk.ChordTolPercent() })
+	return pct
 }
 
 // Undo takes back the last step: in a console, what the last line

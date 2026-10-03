@@ -658,6 +658,10 @@ func (sk *Sketch) chordTolPct() float64 {
 	return chordTolPct
 }
 
+// ChordTolPercent is the chord tolerance in effect, as a percentage of
+// the model's size.
+func (sk *Sketch) ChordTolPercent() float64 { return sk.chordTolPct() }
+
 // chordTolPct mirrors the default C++ "ChordTolerancePct" setting
 // (solvespace.cpp:50).
 const chordTolPct = 0.1

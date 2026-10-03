@@ -23,7 +23,6 @@ import (
 	"strconv"
 
 	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
 func main() {
@@ -36,7 +35,7 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
+	doc.SetChordTolerance(0.01)
 	doc.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
 	block := doc.Extrude(10, "block")
 

@@ -24,7 +24,6 @@ import (
 	"strconv"
 
 	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
 )
 
 func main() {
@@ -38,7 +37,7 @@ func main() {
 	}
 	const radius, side = 20.0, 30.0
 	doc := api.Current()
-	doc.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
+	doc.SetChordTolerance(0.01)
 
 	round := doc.SketchIn(doc.Workplane("XY"), "round")
 	doc.Circle(api.V(0, 0, 0), radius)

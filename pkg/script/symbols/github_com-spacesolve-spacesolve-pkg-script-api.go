@@ -65,24 +65,25 @@ func init() {
 
 // _github_com_spacesolve_spacesolve_pkg_script_api_Host is an interface wrapper for Host type
 type _github_com_spacesolve_spacesolve_pkg_script_api_Host struct {
-	IValue       interface{}
-	WActivate    func(hg core.HGroup)
-	WAddGroup    func(g sketch.Group) core.HGroup
-	WChanging    func()
-	WDeleteGroup func(hg core.HGroup)
-	WExport      func(kind api.ExportKind, path string) error
-	WLoad        func(path string) error
-	WMmPerUnit   func() float64
-	WRedo        func() bool
-	WRegenerate  func()
-	WRender      func(path string, width int, height int, right geom.Vector, up geom.Vector) error
-	WRun         func(fn func())
-	WRunCommand  func(label string) error
-	WSave        func(path string) error
-	WSelect      func(sel []sketch.Selection)
-	WSelection   func() []sketch.Selection
-	WSketch      func() *sketch.Sketch
-	WUndo        func() bool
+	IValue             interface{}
+	WActivate          func(hg core.HGroup)
+	WAddGroup          func(g sketch.Group) core.HGroup
+	WChanging          func()
+	WDeleteGroup       func(hg core.HGroup)
+	WExport            func(kind api.ExportKind, path string) error
+	WLoad              func(path string) error
+	WMmPerUnit         func() float64
+	WRedo              func() bool
+	WRegenerate        func()
+	WRender            func(path string, width int, height int, right geom.Vector, up geom.Vector) error
+	WRun               func(fn func())
+	WRunCommand        func(label string) error
+	WSave              func(path string) error
+	WSelect            func(sel []sketch.Selection)
+	WSelection         func() []sketch.Selection
+	WSetChordTolerance func(pct float64)
+	WSketch            func() *sketch.Sketch
+	WUndo              func() bool
 }
 
 func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) Activate(hg core.HGroup) {
@@ -129,6 +130,9 @@ func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) Select(sel []sket
 }
 func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) Selection() []sketch.Selection {
 	return W.WSelection()
+}
+func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) SetChordTolerance(pct float64) {
+	W.WSetChordTolerance(pct)
 }
 func (W _github_com_spacesolve_spacesolve_pkg_script_api_Host) Sketch() *sketch.Sketch {
 	return W.WSketch()

@@ -203,3 +203,19 @@ func TestScriptHostRunsOnLoop(t *testing.T) {
 		lines[0].Valid()
 	}()
 }
+
+// A script's chord tolerance is the application's setting, which the
+// regenerations after it keep: set on the sketch alone, the application
+// put its own back at the next one.
+func TestScriptHostChordTolerance(t *testing.T) {
+	ss, _ := newTestApp(t)
+	got := scriptConsole(t, ss,
+		`doc.SetChordTolerance(0.01)`,
+		`doc.Rect(V(0, 0, 0), V(30, 20, 0))`,
+		`doc.Extrude(10, "")`,
+		`doc.ChordTolerance()`,
+	)
+	if want := "0.01\n"; !strings.HasSuffix(got, want) || ss.ChordTol != 0.01 || ss.SK.ChordTolPct != 0.01 {
+		t.Errorf("the console showed %q; the setting is %g, the sketch's %g", got, ss.ChordTol, ss.SK.ChordTolPct)
+	}
+}

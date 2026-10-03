@@ -341,3 +341,10 @@ func (h *ScriptHost) Select(sel []sketch.Selection) {
 
 // RunCommand runs a menu command, as choosing it does.
 func (h *ScriptHost) RunCommand(label string) error { return h.ss.RunCommand(label) }
+
+// SetChordTolerance sets the application's chord tolerance, as
+// Configuration does; the next regeneration gives it to the sketch.
+func (h *ScriptHost) SetChordTolerance(pct float64) {
+	h.ss.ChordTol = pct
+	h.ss.applyEngineSettings()
+}
