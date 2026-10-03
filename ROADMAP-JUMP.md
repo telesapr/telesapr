@@ -37,7 +37,7 @@ Steps 1 to 11 of that order are done. "Finishing the roadmap" orders what is lef
 | 16. Small features | done 2026-10-03: dimensions by name, configurations, motion study, groups inserted mid-history, 3MF export, text STL and OBJ links, bill of materials, STEP assemblies, mates, interference by shells, constraints inferred while drawing, the section's hatch, STEP links in place, what an AI program sees | `5e2d5be` |
 | 17. Regeneration | done 2026-10-03: one parallel mode, the coincident planes merged at once, solids made off the window's thread with cancel, linked files kept in memory and STEP meshes on disk, packed models | `978d25f` |
 | 18. Drawings | done 2026-10-03: a sheet of the standard views with hidden edges, a title block, section and detail views, and dimensions that hold the names of the edges they measure | `2c41d13` |
-| 19. Shading | done 2026-10-03: a shader with smooth per-pixel lighting and highlights, and appearances (matte, plastic, glossy, metal) for solids and faces | MERGE19 |
+| 19. Shading | done 2026-10-03: a shader with smooth per-pixel lighting and highlights, and appearances (matte, plastic, glossy, metal) for solids and faces | `6462cc3` |
 | 15 to 22. Finishing the roadmap | planned 2026-10-03 from a review of every follow-up; not started | |
 
 Decisions taken while doing them, beyond those below: the unit of length belongs to the
