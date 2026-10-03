@@ -807,19 +807,54 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 	}
 
 	meta := STriMeta{Face: shell.displayFace(srf), RgbaColor: srf.Color}
+	off := srf.trimPointsOff(shell)
+	at := func(uv geom.Vector) geom.Vector {
+		if p, ok := off[[2]float64{uv.X, uv.Y}]; ok {
+			return p
+		}
+		return srf.PointAt(uv.X, uv.Y)
+	}
 	for i := start; i < len(mesh.Triangles); i++ {
 		t := &mesh.Triangles[i]
 		t.Meta = meta
 		t.NA = srf.NormalAt(t.A.X, t.A.Y)
 		t.NB = srf.NormalAt(t.B.X, t.B.Y)
 		t.NC = srf.NormalAt(t.C.X, t.C.Y)
-		t.A = srf.PointAt(t.A.X, t.A.Y)
-		t.B = srf.PointAt(t.B.X, t.B.Y)
-		t.C = srf.PointAt(t.C.X, t.C.Y)
+		t.A = at(t.A)
+		t.B = at(t.B)
+		t.C = at(t.C)
 		// Works out that the chosen contour direction is inconsistent
 		// with the triangle direction (matches the C++ comment).
 		t.FlipNormal()
 	}
+}
+
+// trimPointsOff are the points of the surface's trims that it misses
+// by more than LengthEps, or all of them for a surface that snaps to
+// them, by their parameters on it: a file's edges lie on their faces
+// only within its tolerance, and the mesh's vertices on a trim must be
+// the trim's own, which the face beyond it shares, or the two meshes
+// part there. Trims the kernel made lie on their surfaces, and none are
+// listed.
+func (srf *SSurface) trimPointsOff(shell *SShell) map[[2]float64]geom.Vector {
+	var out map[[2]float64]geom.Vector
+	for i := range srf.Trim {
+		sc := shell.FindCurve(srf.Trim[i].Curve)
+		if sc == nil {
+			continue
+		}
+		for _, cp := range sc.Points {
+			var u, v float64
+			srf.ClosestPointToUV(cp.P, &u, &v, true)
+			if srf.SnapToTrims || srf.PointAt(u, v).Minus(cp.P).Magnitude() > geom.LengthEps {
+				if out == nil {
+					out = map[[2]float64]geom.Vector{}
+				}
+				out[[2]float64{u, v}] = cp.P
+			}
+		}
+	}
+	return out
 }
 
 // displayFace is what the triangles of srf carry as their face: its

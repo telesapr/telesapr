@@ -33,6 +33,10 @@ type SSurface struct {
 	// of one Sheet that meet smoothly are one face of the solid, the
 	// edge between them a seam (pkg/topo, Sheet). 0 for none.
 	Sheet uint32
+	// SnapToTrims puts the mesh's vertices on the trims at the trims'
+	// own points, as a surface read from a file needs, whose edges lie
+	// on it only within the file's tolerance (trimPointsOff).
+	SnapToTrims bool
 
 	DegM, DegN int
 	Ctrl       [MaxDegree + 1][MaxDegree + 1]geom.Vector
@@ -335,16 +339,17 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 	}
 
 	s := SSurface{
-		H:      a.H,
-		Color:  a.Color,
-		Face:   a.Face,
-		Origin: a.Origin,
-		Sheet:  a.Sheet,
-		DegM:   a.DegM,
-		DegN:   a.DegN,
+		H:           a.H,
+		Color:       a.Color,
+		Face:        a.Face,
+		Origin:      a.Origin,
+		Sheet:       a.Sheet,
+		SnapToTrims: a.SnapToTrims,
+		DegM:        a.DegM,
+		DegN:        a.DegN,
 	}
-	for i := 0; i <= 3; i++ {
-		for j := 0; j <= 3; j++ {
+	for i := 0; i <= MaxDegree; i++ {
+		for j := 0; j <= MaxDegree; j++ {
 			s.Ctrl[i][j] = transform(a.Ctrl[i][j])
 			s.Weight[i][j] = a.Weight[i][j]
 		}

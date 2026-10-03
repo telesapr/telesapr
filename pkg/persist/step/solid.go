@@ -84,11 +84,9 @@ func buildSolid(shape *Shape, origin uint32) (sh *srf.SShell, err error) {
 	}()
 	b := &solidBuilder{edges: map[*Edge]*solidEdge{}, sh: &srf.SShell{}, next: origin}
 	b.fa = topo.NewFaceAdder(b.sh)
+	shape = withPolygonEdges(shape)
 	for _, f := range shape.Faces {
 		for _, bd := range f.Bounds {
-			if bd.Poly != nil {
-				return nil, errUnsupported("a face bounded by a polygon")
-			}
 			for _, oe := range bd.Edges {
 				if b.edges[oe.E] != nil {
 					continue
@@ -136,6 +134,54 @@ func buildSolid(shape *Shape, origin uint32) (sh *srf.SShell, err error) {
 	return b.sh, nil
 }
 
+// withPolygonEdges is the shape with each face bounded by polygons, as
+// a faceted solid's are, on its polygon's plane and bounded by lines,
+// one edge for each side, which the face beyond it shares.
+func withPolygonEdges(shape *Shape) *Shape {
+	poly := false
+	for _, f := range shape.Faces {
+		for _, bd := range f.Bounds {
+			poly = poly || bd.Poly != nil
+		}
+	}
+	if !poly {
+		return shape
+	}
+	type key struct{ a, b geom.Vector }
+	edges := map[key]*Edge{}
+	side := func(a, b geom.Vector) OrientedEdge {
+		if e, ok := edges[key{b, a}]; ok {
+			return OrientedEdge{E: e, Forward: false}
+		}
+		e := edges[key{a, b}]
+		if e == nil {
+			e = &Edge{ID: -len(edges) - 1, Start: a, End: b, Curve: &line{p: a, d: b.Minus(a)}, Sense: true}
+			edges[key{a, b}] = e
+		}
+		return OrientedEdge{E: e, Forward: true}
+	}
+	out := &Shape{ID: shape.ID, Kind: shape.Kind}
+	for _, f := range shape.Faces {
+		g := f
+		if pf, ok := polygonFace(f); ok {
+			g = pf
+			var bounds []*Bound
+			for _, bd := range f.Bounds {
+				nb := &Bound{}
+				for i, p := range bd.Poly {
+					nb.Edges = append(nb.Edges, side(p, bd.Poly[(i+1)%len(bd.Poly)]))
+				}
+				bounds = append(bounds, nb)
+			}
+			cp := *g
+			cp.Bounds = bounds
+			g = &cp
+		}
+		out.Faces = append(out.Faces, g)
+	}
+	return out
+}
+
 // loopsOf are a face's bounds as uses, each running with the face on
 // its left in the surface's parameters: as the file gives them when the
 // face's normal is the surface's, else turned round.
@@ -179,6 +225,15 @@ func (b *solidBuilder) beziersOf(u solidUse, split bool) []srf.SBezier {
 	return out
 }
 
+// fileTol is how far a file's curves may stray from the plane of the
+// face they bound, in millimetres: files are written to a tolerance.
+const fileTol = 1e-3
+
+// cutGap is the shortest piece an edge is cut into, in millimetres: a
+// file's tolerance; the mesher merges points much closer than that in a
+// patch's parameters, which would part it from the face beyond.
+const cutGap = fileTol
+
 // splitAtCuts cuts the edge's Beziers where faces asked, the pieces
 // sharing each cut's point exactly.
 func (se *solidEdge) splitAtCuts() {
@@ -186,10 +241,19 @@ func (se *solidEdge) splitAtCuts() {
 	for i, sb := range se.bez {
 		cs := append([]float64(nil), se.cuts[i]...)
 		sort.Float64s(cs)
+		// A cut closer than cutGap to an end or to the cut before
+		// would leave a sliver, as where a vertex misses a line of the
+		// grid by a file's tolerance: the vertex then counts as on it.
 		ts := []float64{0}
+		last := sb.Start()
 		for _, c := range cs {
-			if c > ts[len(ts)-1]+1e-9 && c < 1-1e-9 {
+			if !(c > 0 && c < 1) {
+				continue
+			}
+			p := sb.PointAt(c)
+			if p.Minus(last).Magnitude() > cutGap && p.Minus(sb.Finish()).Magnitude() > cutGap {
 				ts = append(ts, c)
+				last = p
 			}
 		}
 		ts = append(ts, 1)
@@ -245,6 +309,13 @@ func (g *faceGrid) sampleUV(sb srf.SBezier, prev *uvSample, n int) []uvSample {
 		}
 		q := g.s.point(p, guess)
 		smp := uvSample{t: t, p: p, u: q.u, v: q.v}
+		if k == 0 && prev != nil && prev.p.Equals(p) {
+			// The joint with the piece before: one point, one place.
+			smp.u, smp.v = prev.u, prev.v
+			out = append(out, smp)
+			guess = &[2]float64{q.u, q.v}
+			continue
+		}
 		if len(out) > 0 || prev != nil {
 			last := prev
 			if len(out) > 0 {
@@ -587,12 +658,8 @@ func (b *solidBuilder) planeFace(f *Face) error {
 	loops[0], loops[outer] = loops[outer], loops[0]
 	id := b.next
 	b.next++
-	h, err := b.fa.AddPlanarFace(loops, id, faceColor(f))
-	if err != nil {
-		return err
-	}
-	_ = h
-	return nil
+	_, err := b.fa.AddPlanarFaceWithin(loops, id, faceColor(f), pl.f.z, fileTol)
+	return err
 }
 
 // faceColor is the face's colour, or the default.
@@ -725,11 +792,12 @@ func (g *faceGrid) pieceCell(smps []uvSample) (i, j int, du, dv float64) {
 		} else {
 			i = wrapI(k)
 		}
+		// On the period's first line, the last cell's side is its end.
 		if i == nu-1 && g.pu > 0 && math.Abs(x-g.us[0]) <= g.epsU*1e3 {
-			du -= g.pu
+			du += g.pu
 		}
 		if i == 0 && g.pu > 0 && math.Abs(x-g.us[nu]) <= g.epsU*1e3 {
-			du += g.pu
+			du -= g.pu
 		}
 	case allOn(func(q uvSample) float64 { return q.v }, g.vs, g.pv, g.epsV*1e3):
 		y := mid.v + dv
@@ -740,10 +808,10 @@ func (g *faceGrid) pieceCell(smps []uvSample) (i, j int, du, dv float64) {
 			j = wrapJ(k - 1)
 		}
 		if j == nv-1 && g.pv > 0 && math.Abs(y-g.vs[0]) <= g.epsV*1e3 {
-			dv -= g.pv
+			dv += g.pv
 		}
 		if j == 0 && g.pv > 0 && math.Abs(y-g.vs[nv]) <= g.epsV*1e3 {
-			dv += g.pv
+			dv -= g.pv
 		}
 	}
 	return i, j, du, dv
@@ -775,7 +843,8 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 				for k := range smps {
 					smps[k].u += du
 					smps[k].v += dv
-					if !c.contains(smps[k].u, smps[k].v, 1e-6*(c.u1-c.u0), 1e-6*(c.v1-c.v0)) {
+					eu, ev := g.pointEps(smps[k], c)
+					if !c.contains(smps[k].u, smps[k].v, eu, ev) {
 						return fmt.Errorf("a bound leaves a cell between the points it was cut at, at %v", smps[k].p)
 					}
 				}
@@ -797,7 +866,8 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 			} else {
 				c := cells[ps[k].cell]
 				q := ps[k].smps[0]
-				if _, on := c.perimeter(q.u, q.v, g.epsU, g.epsV); on {
+				eu, ev := g.pointEps(q, c)
+				if _, on := c.perimeter(q.u, q.v, eu, ev); on {
 					breakAt[k] = true
 				}
 			}
@@ -977,7 +1047,7 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 			return err
 		}
 		s := *p
-		s.Origin, s.Sheet, s.Color = b.next, sheet, col
+		s.Origin, s.Sheet, s.Color, s.SnapToTrims = b.next, sheet, col, true
 		b.next++
 		var loops [][]srf.SBezier
 		for _, l := range r.loops {
@@ -1036,12 +1106,29 @@ func (b *solidBuilder) patchOf(g *faceGrid, c *gridCell) (*srf.SSurface, error) 
 	return c.patch, nil
 }
 
+// pointEps is how far, in u and in v, a point of a bound may lie from a
+// line of the grid and still be on it: twice cutGap along the surface,
+// a cut dropped as too near another leaving its piece's end that far
+// past the line; at least a millionth of the cell, at most a thousandth.
+func (g *faceGrid) pointEps(q uvSample, c *gridCell) (eu, ev float64) {
+	_, su, sv := g.s.Derivs(q.u, q.v)
+	wu, wv := c.u1-c.u0, c.v1-c.v0
+	eu, ev = 1e-3*wu, 1e-3*wv
+	if m := su.Magnitude(); m > 0 {
+		eu = math.Min(eu, 2*cutGap/m)
+	}
+	if m := sv.Magnitude(); m > 0 {
+		ev = math.Min(ev, 2*cutGap/m)
+	}
+	return math.Max(eu, 1e-6*wu), math.Max(ev, 1e-6*wv)
+}
+
 // perimeter is where (u, v), on the cell's side, lies round it counter-
 // clockwise from its corner (u0, v0), in [0, 4): a unit a side.
 func (c *gridCell) perimeter(u, v, epsU, epsV float64) (float64, bool) {
 	fu := (u - c.u0) / (c.u1 - c.u0)
 	fv := (v - c.v0) / (c.v1 - c.v0)
-	eu, ev := epsU/(c.u1-c.u0)*1e3, epsV/(c.v1-c.v0)*1e3
+	eu, ev := epsU/(c.u1-c.u0), epsV/(c.v1-c.v0)
 	switch {
 	case math.Abs(fv) <= ev:
 		return math.Max(0, math.Min(1, fu)), true
@@ -1249,8 +1336,10 @@ func (b *solidBuilder) walk(g *faceGrid, c *gridCell) ([]cellLoop, [4]bool, erro
 	starts, ends := make([]end, n), make([]end, n)
 	for k, ch := range c.open {
 		f, l := ch[0].smps[0], ch[len(ch)-1].smps[len(ch[len(ch)-1].smps)-1]
-		s0, ok0 := c.perimeter(f.u, f.v, g.epsU, g.epsV)
-		s1, ok1 := c.perimeter(l.u, l.v, g.epsU, g.epsV)
+		eu0, ev0 := g.pointEps(f, c)
+		eu1, ev1 := g.pointEps(l, c)
+		s0, ok0 := c.perimeter(f.u, f.v, eu0, ev0)
+		s1, ok1 := c.perimeter(l.u, l.v, eu1, ev1)
 		if !ok0 || !ok1 {
 			return nil, sides, fmt.Errorf("a bound stops inside a cell, at %v", f.p)
 		}
@@ -1290,10 +1379,16 @@ func (b *solidBuilder) walk(g *faceGrid, c *gridCell) ([]cellLoop, [4]bool, erro
 			hereBest, hereAngle := -1, clockwise(back, c.sideDir(e.s))
 			for m := range c.open {
 				d := starts[m].s - e.s
-				if math.Abs(d) <= 1e-9 {
+				if d > 2 {
+					d -= 4
+				} else if d < -2 {
+					d += 4
+				}
+				if math.Abs(d) <= 1e-6 && starts[m].p.Equals(e.p) {
 					// A run along the side itself ties with it, and
-					// is taken.
-					if a := clockwise(back, chainDir(c.open[m], false)); a <= hereAngle+1e-9 {
+					// is taken; its points come from projections, so
+					// the tie is to a ten-thousandth of a radian.
+					if a := clockwise(back, chainDir(c.open[m], false)); a <= hereAngle+1e-4 {
 						hereBest, hereAngle = m, a
 					}
 					d = 4

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
@@ -62,3 +63,153 @@ func TestSolidShapes(t *testing.T) {
 		}
 	}
 }
+
+// solidCorpusSound are the corpus files whose shapes read as sound
+// solids (2026-10-04); the others fall back to meshes: NIST_MBE_PMI_5
+// and _6 have an edge of one face along another face's seam, Schenkel
+// and screw leave gaps or crossings in the mesh where edges miss their
+// faces by more than the file's tolerance.
+var solidCorpusSound = map[string]bool{
+	"NIST_MBE_PMI_1.stp": true, "NIST_MBE_PMI_3.stp": true, "NIST_MBE_PMI_11.stp": true,
+	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true,
+}
+
+// TestSolidCorpus reads the vendor files as solids: each shape of those
+// listed sound built, sound, and the placed shapes' volume the
+// reference's within the mesh's tolerance.
+func TestSolidCorpus(t *testing.T) {
+	if testing.Short() {
+		t.Skip("the corpus")
+	}
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
+	sound := 0
+	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
+		if e.expect != "ok" {
+			continue
+		}
+		m := readModel(t, filepath.Join(dir, e.name))
+		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
+		fineMesh(t, tol)
+		vol := 0.0
+		var why string
+		for _, pl := range m.Placements {
+			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0))
+			if err != nil {
+				why = err.Error()
+				break
+			}
+			if r := solidReport(sh); !r.Sound() {
+				why = r.String()
+				break
+			}
+			sh2, _ := m.ShellOf(pl.Shape, srf.OriginFor(9, 0))
+			vol += solidReport(sh2).Volume
+		}
+		allow := e.area*tol + 1e-6*e.volume
+		ok := why == "" && math.Abs(vol-e.volume) <= allow
+		if ok {
+			sound++
+		}
+		switch {
+		case solidCorpusSound[e.name] && !ok:
+			t.Errorf("%s: not read as a sound solid: %s; volume %.6g, want %.6g within %.3g", e.name, why, vol, e.volume, allow)
+		case !solidCorpusSound[e.name] && ok:
+			t.Logf("%s: now read as a sound solid; list it", e.name)
+		}
+	}
+	t.Logf("%d sound", sound)
+}
+
+// cutters are a block through the middle of a box and a cylinder down
+// it, a little off the middle: the analytic shapes are symmetric about
+// their middles, where their patches meet, and a cut along a patch's
+// edge is coincident contact, which the kernel doesn't take in general
+// (roadmap F5).
+func cutters(lo, hi geom.Vector) []*srf.SShell {
+	col := DefaultColor
+	d := hi.Minus(lo)
+	c := lo.Plus(hi).ScaledBy(0.5).Plus(geom.Vector{X: 0.0731 * d.X, Y: 0.0419 * d.Y})
+	var block srf.SShell
+	x0, x1 := c.X, hi.X+d.X
+	y0, y1 := lo.Y-d.Y, hi.Y+d.Y
+	block.MakePrism([]geom.Vector{{X: x0, Y: y0, Z: lo.Z - d.Z}, {X: x1, Y: y0, Z: lo.Z - d.Z},
+		{X: x1, Y: y1, Z: lo.Z - d.Z}, {X: x0, Y: y1, Z: lo.Z - d.Z}}, geom.Vector{}, geom.Vector{Z: 3 * d.Z}, col)
+	r := 0.15 * math.Min(d.X, d.Y)
+	var ls srf.SBezierLoopSet
+	for k := 0; k < 4; k++ {
+		a0 := float64(k) * math.Pi / 2
+		at := func(a, s float64) geom.Vector {
+			return geom.Vector{X: c.X + r*s*math.Cos(a), Y: c.Y + r*s*math.Sin(a), Z: lo.Z - d.Z}
+		}
+		sb := srf.SBezierFrom3(at(a0, 1), at(a0+math.Pi/4, math.Sqrt2), at(a0+math.Pi/2, 1))
+		sb.Weight[1] = math.Sqrt2 / 2
+		ls.Outer.Curves = append(ls.Outer.Curves, sb)
+	}
+	ls.Normal = geom.Vector{Z: -1}
+	var cyl srf.SShell
+	cyl.MakeFromExtrusionOf(&ls, geom.Vector{}, geom.Vector{Z: 3 * d.Z}, col)
+	return []*srf.SShell{&block, &cyl}
+}
+
+// D3.3: shapes read as solids, cut by a block and a cylinder: the part
+// cut away and the part kept are sound and make up the whole. Rate:
+// see solidBooleanMaxFail.
+func TestSolidBooleans(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
+	const tol = 0.01
+	fineMesh(t, tol)
+	type part struct {
+		name string
+		sh   *srf.SShell
+	}
+	var parts []part
+	for _, e := range readShapes(t) {
+		m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
+		if sh, err := m.ShellOf(0, srf.OriginFor(9, 0)); err == nil {
+			parts = append(parts, part{e.name, sh})
+		}
+	}
+	points, failed := 0, 0
+	for _, p := range parts {
+		whole := solidReport(p.sh)
+		var lo, hi geom.Vector
+		var mm srf.SMesh
+		p.sh.TriangulateInto(&mm)
+		for i, tr := range mm.Triangles {
+			for k, q := range []geom.Vector{tr.A, tr.B, tr.C} {
+				if i == 0 && k == 0 {
+					lo, hi = q, q
+				}
+				growBox(q, &lo, &hi)
+			}
+		}
+		for ci, cut := range cutters(lo, hi) {
+			points++
+			var kept, gone srf.SShell
+			kept.MakeFromDifferenceOf(p.sh, cut)
+			gone.MakeFromIntersectionOf(p.sh, cut)
+			rk, rg := solidReport(&kept), solidReport(&gone)
+			sum := rk.Volume + rg.Volume
+			allow := 2e-3 * whole.Volume
+			if !rk.Sound() || !rg.Sound() || math.Abs(sum-whole.Volume) > allow {
+				failed++
+				t.Logf("%s, cutter %d: kept %s; cut %s; %.6g + %.6g against %.6g",
+					p.name, ci, rk.String(), rg.String(), rk.Volume, rg.Volume, whole.Volume)
+			}
+		}
+	}
+	t.Logf("%d points, %d failed", points, failed)
+	if failed > solidBooleanMaxFail {
+		t.Errorf("%d of %d failed, more than %d", failed, points, solidBooleanMaxFail)
+	}
+}
+
+// solidBooleanMaxFail is the failures allowed, set from the first
+// measurement (2026-10-04): 10 of 28, all the kernel's own limits on
+// these surfaces, whatever made them: a cylinder cut through a cylinder
+// (box_hole, sphere_bored; step 5 left those), a cone through its apex,
+// a torus crossed by a cylinder, a sphere's pole inside the cutter
+// (self-crossing edges where the cut meets the pole's patches).
+const solidBooleanMaxFail = 10
