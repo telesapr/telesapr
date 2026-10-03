@@ -1,8 +1,10 @@
 package topo
 
 import (
+	"errors"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -202,13 +204,22 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 	}
 	// A rounded edge goes on into the edges it meets smoothly: the other
 	// pieces of a circle, and the lines and arcs of a rounded outline.
+	// Where the next edge can't take the radius, as a rounded corner
+	// of a smaller radius, the chain stops, and the corner's check
+	// gives that reason (roadmap 15.7).
+	stopped := map[int]error{}
 	for i := 0; i < len(edges); i++ {
 		for _, v := range edges[i].v {
 			for _, x := range t.Vertices[v].Edges {
 				if _, ok := byEdge[x]; ok {
 					continue
 				}
-				if fe, err := t.filletEdgeOf(x, edges[i].r, flat); err == nil && t.smoothJoin(&edges[i], &fe, v) {
+				fe, err := t.filletEdgeOf(x, edges[i].r, flat)
+				var fx *FilletError
+				if err != nil && errors.As(err, &fx) && strings.HasPrefix(fx.Msg, "a radius this large is wider") {
+					stopped[v] = err
+				}
+				if err == nil && t.smoothJoin(&edges[i], &fe, v) {
 					if t.Lead(x) == t.Lead(edges[i].e) {
 						fe.sheet = edges[i].sheet
 					}
@@ -227,6 +238,16 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 			}
 			c, err := t.filletCornerAt(v, edges, byEdge)
 			if err != nil {
+				if why := stopped[v]; why != nil {
+					var fx *FilletError
+					errors.As(why, &fx)
+					what := "fillet"
+					if flat {
+						what = "chamfer"
+					}
+					return filletErr(t.Vertices[v].P, "the %s stops at a rounded corner it can't go on round: %s; "+
+						"make the %s smaller than the corner's radius", what, fx.Msg, map[bool]string{false: "radius", true: "distance"}[flat])
+				}
 				return err
 			}
 			corners[v] = c
