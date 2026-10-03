@@ -167,6 +167,10 @@ func (h *ScriptHost) Changing() {
 	}
 }
 
+// Changed reports whether the script's step, the one that runs or the
+// last, changed the sketch, and so left a step of undo.
+func (h *ScriptHost) Changed() bool { return h.changed }
+
 // Regenerate does now the regeneration that the event loop would get
 // to after the script.
 func (h *ScriptHost) Regenerate() {

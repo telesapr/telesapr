@@ -145,6 +145,10 @@ func (h *SketchHost) Changing() {
 	}
 }
 
+// Changed reports whether the script's step, the one that runs or the
+// last, changed the sketch, and so left a step of undo.
+func (h *SketchHost) Changed() bool { return h.changed }
+
 // Regenerate regenerates what is dirty.
 func (h *SketchHost) Regenerate() { h.sk.Refresh() }
 
@@ -192,11 +196,18 @@ func (h *SketchHost) Activate(hg core.HGroup) {
 }
 
 // Undo takes back the last step, and reports whether there was one.
-func (h *SketchHost) Undo() bool { return h.sk.UndoUndo() }
+func (h *SketchHost) Undo() bool {
+	// What the script's step did so far is gone with it.
+	h.changed = false
+	return h.sk.UndoUndo()
+}
 
 // Redo does again the last step undone, and reports whether there was
 // one.
-func (h *SketchHost) Redo() bool { return h.sk.UndoRedo() }
+func (h *SketchHost) Redo() bool {
+	h.changed = false
+	return h.sk.UndoRedo()
+}
 
 // MmPerUnit is 1: with no interface, lengths are shown in mm.
 func (h *SketchHost) MmPerUnit() float64 { return h.sk.Units.MmPer() }

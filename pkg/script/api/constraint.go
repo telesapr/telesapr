@@ -34,16 +34,10 @@ func (c Constraint) String() (s string) {
 		return "no constraint"
 	}
 	c.d.read(func(sk *sketch.Sketch) {
-		constraint := sk.GetConstraint(c.H)
-		switch {
-		case constraint == nil:
+		if constraint := sk.GetConstraint(c.H); constraint != nil {
+			s = constraintDescription(constraint)
+		} else {
 			s = fmt.Sprintf("deleted constraint c%03x", c.H.V)
-		case constraint.Type == core.ConstraintComment:
-			s = fmt.Sprintf("%s %q", constraint.DescriptionString(), constraint.Comment)
-		case constraint.HasLabel():
-			s = fmt.Sprintf("%s = %g", constraint.DescriptionString(), shownValue(constraint))
-		default:
-			s = constraint.DescriptionString()
 		}
 	})
 	return s
