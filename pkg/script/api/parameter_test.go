@@ -476,3 +476,21 @@ func TestCheckTouchingHoles(t *testing.T) {
 		t.Errorf("%d edges marked", len(r.TopologyEdges.Edges))
 	}
 }
+
+// The fillet round an extruded circle's top is one face, not one per
+// quarter of the circle: its patches share a sheet (roadmap 14.1).
+func TestFilletCircleOneFace(t *testing.T) {
+	d := New()
+	d.Circle(V(0, 0, 0), 10)
+	ex := d.Extrude(10, "")
+	var rim Entity
+	for _, e := range ex.Entities() {
+		if e.Kind() == "circle" && e.Center().Pos().Z == 10 {
+			rim = e
+		}
+	}
+	f := d.Fillet([]Entity{rim}, 2, "")
+	if r := f.Check(); !r.Sound() || r.Faces != 4 {
+		t.Errorf("faces %d: %s", r.Faces, r.String())
+	}
+}
