@@ -99,6 +99,8 @@ func init() {
 		"TransformedLoopSet":          reflect.ValueOf(srf.TransformedLoopSet),
 
 		// type definitions
+		"BSplineCurve":      reflect.ValueOf((*srf.BSplineCurve)(nil)),
+		"BSplineSurface":    reflect.ValueOf((*srf.BSplineSurface)(nil)),
 		"BspClass":          reflect.ValueOf((*srf.BspClass)(nil)),
 		"BspUvClass":        reflect.ValueOf((*srf.BspUvClass)(nil)),
 		"Class":             reflect.ValueOf((*srf.Class)(nil)),

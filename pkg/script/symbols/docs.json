@@ -6639,6 +6639,58 @@
 		"name": "srf",
 		"text": "Package srf mirrors the C++ srf/ module: NURBS/Bezier primitives, trimmed surfaces, watertight shells, BSP trees, and mesh boolean operations.",
 		"types": {
+			"BSplineCurve": {
+				"text": "BSplineCurve is a B-spline curve.",
+				"kind": "struct",
+				"methods": {
+					"Beziers": {
+						"decl": "func (c *BSplineCurve) Beziers() ([]SBezier, error)",
+						"text": "Beziers cuts the curve at its knots into Bezier curves, each running over one span of the domain from 0 to 1."
+					},
+					"Breaks": {
+						"decl": "func (c *BSplineCurve) Breaks() []float64",
+						"text": "Breaks are the knots that cut the curve into Bezier pieces, the domain's ends included."
+					},
+					"Check": {
+						"decl": "func (c *BSplineCurve) Check() error",
+						"text": "Check reports what is wrong with the curve, or nil."
+					},
+					"Domain": {
+						"decl": "func (c *BSplineCurve) Domain() (lo, hi float64)",
+						"text": "Domain is the curve's parameter range."
+					},
+					"PointAt": {
+						"decl": "func (c *BSplineCurve) PointAt(t float64) geom.Vector",
+						"text": "PointAt is the curve's point at t."
+					}
+				}
+			},
+			"BSplineSurface": {
+				"text": "BSplineSurface is a tensor product B-spline surface: Ctrl[i][j] is the control point i along u and j along v.",
+				"kind": "struct",
+				"methods": {
+					"Breaks": {
+						"decl": "func (s *BSplineSurface) Breaks() (us, vs []float64)",
+						"text": "Breaks are the knots that cut the surface into patches, along u and along v, the domain's ends included."
+					},
+					"Check": {
+						"decl": "func (s *BSplineSurface) Check() error",
+						"text": "Check reports what is wrong with the surface, or nil."
+					},
+					"Domain": {
+						"decl": "func (s *BSplineSurface) Domain() (u0, u1, v0, v1 float64)",
+						"text": "Domain is the surface's parameter ranges."
+					},
+					"Patches": {
+						"decl": "func (s *BSplineSurface) Patches() ([][]SSurface, error)",
+						"text": "Patches cuts the surface at its knots into Bezier patches: patches[a][b] runs over span a of the breaks along u and span b along v, its own parameters from 0 to 1 over them."
+					},
+					"PointAt": {
+						"decl": "func (s *BSplineSurface) PointAt(u, v float64) geom.Vector",
+						"text": "PointAt is the surface's point at (u, v)."
+					}
+				}
+			},
 			"BspClass": {
 				"text": "BspClass is the side of a BSP node's plane something is on (C++ BspClass).",
 				"kind": "uint32",
@@ -7805,6 +7857,10 @@
 					"DepartureFromCoplanar": {
 						"decl": "func (s *SSurface) DepartureFromCoplanar() float64",
 						"text": "DepartureFromCoplanar is how far the control points stray from the plane through three of them, chosen far apart (C++ SSurface::DepartureFromCoplanar)."
+					},
+					"EdgeCurve": {
+						"decl": "func (s *SSurface) EdgeCurve(side int) SBezier",
+						"text": "EdgeCurve is the patch's boundary curve along one side: v = 0 (side 0), u = 1 (1), v = 1 (2) or u = 0 (3), running with u or v."
 					},
 					"EdgeCurveIntersection": {
 						"decl": "func (s *SSurface) EdgeCurveIntersection(u, v *float64, curve *SBezier) bool",
