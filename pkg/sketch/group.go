@@ -37,7 +37,8 @@ const (
 const (
 	// GroupMirror reflects its source group (OpA), the entities and
 	// the solid, in a plane: Predef.EntityB, a workplane or a planar
-	// face. SkipFirst leaves the original out of the solid.
+	// face. SkipFirst leaves the original out of the solid; MirrorSolid
+	// reflects the whole solid so far, up to the source group.
 	GroupMirror GroupType = 5400 + iota
 	// GroupChamfer cuts the edges Edges of the solid so far, line
 	// segments between two planar faces, at the distance ValB.
@@ -123,6 +124,11 @@ type Group struct {
 
 	Subtype   GroupSubtype
 	SkipFirst bool
+	// MirrorSolid has a mirror reflect the whole solid so far, up to
+	// and with its source group, in place of the source group's own
+	// solid; its result is then the solid so far, the reflection with
+	// it or alone (roadmap 15.5).
+	MirrorSolid bool
 
 	BooleanFailed bool
 

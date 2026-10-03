@@ -133,6 +133,15 @@ func TestPathEquivalenceMirror(t *testing.T) {
 	requireSamePaths(t, "path_mirror", "path_mirror")
 }
 
+// A mirror set on its screen to reflect the whole solid so far, and by
+// a script (roadmap 15.5).
+func TestPathEquivalenceMirrorSolid(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_mirror_solid", "path_mirror_solid")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupMirror || !g.MirrorSolid || g.Problem.Msg != "" {
+		t.Errorf("the mirror: type %d, whole %v, problem %q", g.Type, g.MirrorSolid, g.Problem.Msg)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")

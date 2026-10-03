@@ -141,11 +141,20 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		srcg = sk.GetGroup(g.OpA)
 		if !srcg.Suppress && g.checkMirror(sk) {
 			if !g.IsForcedToMesh(sk) {
-				g.generateMirrorShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
+				src := &srcg.ThisShell
+				if g.MirrorSolid {
+					src = &srcg.RunningShell
+				}
+				g.generateMirrorShell(sk, src, &g.ThisShell, srcg.MeshCombine)
 			} else {
 				var prevm srf.SMesh
-				prevm.MakeFromCopyOf(&srcg.ThisMesh)
-				srcg.ThisShell.TriangulateInto(&prevm)
+				if g.MirrorSolid {
+					prevm.MakeFromCopyOf(&srcg.RunningMesh)
+					srcg.RunningShell.TriangulateInto(&prevm)
+				} else {
+					prevm.MakeFromCopyOf(&srcg.ThisMesh)
+					srcg.ThisShell.TriangulateInto(&prevm)
+				}
 				g.generateMirrorMesh(sk, &prevm, &g.ThisMesh, srcg.MeshCombine)
 			}
 		}
@@ -200,6 +209,23 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	// the previous group's mesh or shell with the requested Boolean, and
 	// we're done.
 	prevg := srcg.RunningMeshGroup(sk)
+
+	// A mirror of the solid so far made the whole of it: no Boolean with
+	// what it already holds.
+	if g.Type == GroupMirror && g.MirrorSolid {
+		switch {
+		case g.Suppress || srcg.Suppress:
+			g.RunningShell.MakeFromCopyOf(&srcg.RunningShell)
+			g.RunningMesh.MakeFromCopyOf(&srcg.RunningMesh)
+		case !g.IsForcedToMesh(sk):
+			g.RunningShell.MakeFromCopyOf(&g.ThisShell)
+			g.RunningShell.MergeCoincidentSurfaces()
+			g.BooleanFailed = g.RunningShell.BooleanFailed
+		default:
+			g.combineMeshes(nil, CombineUnion)
+		}
+		return
+	}
 
 	if !g.IsForcedToMesh(sk) {
 		var prevs srf.SShell

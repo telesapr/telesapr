@@ -227,6 +227,7 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	n.expr("val-c", g.ValC, g.ExprC)
 	n.color("color", g.Color)
 	n.flag("skip-first", g.SkipFirst)
+	n.flag("mirror-solid", g.MirrorSolid)
 	if g.MeshCombine != sketch.CombineUnion {
 		n.add(field("combine", Word(enumName(combines, g.MeshCombine))))
 	}

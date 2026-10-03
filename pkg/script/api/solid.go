@@ -46,6 +46,31 @@ func (g Group) SetKeepOriginal(keep bool) {
 	})
 }
 
+// MirrorSolid reports whether a mirror reflects the whole solid so far,
+// up to and with its source group, rather than the source group's own
+// solid.
+func (g Group) MirrorSolid() (whole bool) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupMirror, "MirrorSolid")
+		whole = group.MirrorSolid
+	})
+	return whole
+}
+
+// SetMirrorSolid has a mirror reflect the whole solid so far, as a body
+// made of several groups needs, or only its source group's solid. With
+// the whole solid, the mirror's result is the solid so far: with its
+// reflection when it keeps the original, or the reflection alone.
+func (g Group) SetMirrorSolid(whole bool) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupMirror, "SetMirrorSolid")
+		group.MirrorSolid = whole
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // Plane is the workplane or face a mirror reflects in.
 func (g Group) Plane() (plane Entity) {
 	g.d.read(func(sk *sketch.Sketch) {

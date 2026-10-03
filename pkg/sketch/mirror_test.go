@@ -322,3 +322,38 @@ func TestMirrorSymmetricSweep(t *testing.T) {
 		t.Errorf("the L and its reflection: %s, want volume %g", r.String(), 3.0*(30+21+21))
 	}
 }
+
+// A mirror of the whole solid so far: a block and a hole cut in it by
+// a later group, mirrored from the cut, reflects both, where a mirror
+// of the cut alone would not (roadmap 15.5); kept, the two halves; not
+// kept, the reflection alone. One undo step each way, and a round trip.
+func TestMirrorSolidSoFar(t *testing.T) {
+	d := api.New()
+	block(d, 5, 0, 15, 10, 5)
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Circle(api.V(10, 5, 0), 2)
+	cut := d.Extrude(5, "")
+	cut.SetCombine(api.Difference)
+	half := 500 - math.Pi*4*5
+	m := d.Mirror(d.Workplane("YZ"), "")
+	step(d)
+	before := saved(t, d)
+	m.SetMirrorSolid(true)
+	if !m.MirrorSolid() {
+		t.Fatal("not set")
+	}
+	r := m.Check()
+	if m.Problem() != "" || !r.Sound() || math.Abs(r.Volume-2*half) > 1e-2*half || math.Abs(r.Min.X+15) > 1e-9 {
+		t.Fatalf("the whole solid mirrored: %s, want %g", r.String(), 2*half)
+	}
+	undoRedo(t, d, before)
+	back := roundTrip(t, d)
+	if br := back.Group(m.Name()).Check(); math.Abs(br.Volume-r.Volume) > 1e-9*r.Volume {
+		t.Errorf("reopened: %s", br.String())
+	}
+	m.SetKeepOriginal(false)
+	r = m.Check()
+	if !r.Sound() || math.Abs(r.Volume-half) > 1e-2*half || r.Max.X > 1e-9 {
+		t.Errorf("the reflection alone: %s, want %g", r.String(), half)
+	}
+}

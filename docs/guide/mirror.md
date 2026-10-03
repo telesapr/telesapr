@@ -10,8 +10,10 @@ the solid. Select first:
 - a flat face of the solid.
 
 The reflection follows its group: change the half and the other half changes with it. The
-group's screen names the plane and has the box "solid with original": cleared, only the
-reflection is kept. Entities are reflected too, so a circle's copy can be constrained and
+group's screen names the plane, and has "solid with original" or "reflection only", and the box
+"the whole solid so far". A mirror reflects its source group, the active one when it was made;
+with that box checked it reflects the whole solid up to it, as a body made of several groups
+needs: a hole cut by a later group is reflected too. Entities are reflected too, so a circle's copy can be constrained and
 measured.
 
 From a script:
@@ -20,11 +22,10 @@ From a script:
 half := doc.Extrude(8, "half")
 m := doc.Mirror(doc.Workplane("YZ"), "bracket")
 m.SetKeepOriginal(false) // only the reflection
+m.SetMirrorSolid(true)   // the whole solid so far
 ```
 
 ## Not yet
 
-A mirror reflects its source group, the active one when it was made, and not the whole solid so
-far: a hole cut by a later group is not reflected unless it is in the mirrored group's own
-sketch. Reflecting the solid so far is roadmap 15.5. A part mirrored in a plane of its own,
-whose faces then coincide with the reflection's, is roadmap 13.4.
+A part symmetric about the plane is kept as it is (it is its own reflection); one that only
+partly coincides with its reflection, a face here and there, can fail as a Boolean (F5).

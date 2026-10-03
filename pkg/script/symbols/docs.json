@@ -4714,6 +4714,10 @@
 						"decl": "func (g Group) Mesh() (m *srf.SMesh)",
 						"text": "Mesh is the triangle mesh of the model up to and with this group.\nIt is the sketch's own, and is replaced when the sketch\nregenerates."
 					},
+					"MirrorSolid": {
+						"decl": "func (g Group) MirrorSolid() (whole bool)",
+						"text": "MirrorSolid reports whether a mirror reflects the whole solid so far,\nup to and with its source group, rather than the source group's own\nsolid."
+					},
 					"MoveBefore": {
 						"decl": "func (g Group) MoveBefore(other Group) error",
 						"text": "MoveBefore moves the group in the history to just before other, as\none undo step. A move that would put a group ahead of a group it\nuses is refused with an error naming both, and nothing changes:\nan extrusion can't move before its sketch, nor a sketch after its\nextrusion. The references stay first."
@@ -4777,6 +4781,10 @@
 					"SetKeepOriginal": {
 						"decl": "func (g Group) SetKeepOriginal(keep bool)",
 						"text": "SetKeepOriginal has a mirror's solid keep the original beside the\nreflection, or not, which leaves the reflection alone."
+					},
+					"SetMirrorSolid": {
+						"decl": "func (g Group) SetMirrorSolid(whole bool)",
+						"text": "SetMirrorSolid has a mirror reflect the whole solid so far, as a body\nmade of several groups needs, or only its source group's solid. With\nthe whole solid, the mirror's result is the solid so far: with its\nreflection when it keeps the original, or the reflection alone."
 					},
 					"SetName": {
 						"decl": "func (g Group) SetName(name string)",

@@ -386,6 +386,9 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 		g.SkipFirst = true
 	case 'K':
 		g.SkipFirst = false
+	case 'm':
+		// A mirror of the whole solid so far, or of its source alone.
+		g.MirrorSolid = !g.MirrorSolid
 
 	case 'c':
 		as := sketch.CombineAs(v)
@@ -712,6 +715,8 @@ func (tw *TextWindow) ShowGroupInfo() {
 			"%f%Lk%Fd%s reflection only%E",
 			lf(tw.ScreenChangeGroupOption), radio(!g.SkipFirst),
 			lf(tw.ScreenChangeGroupOption), radio(g.SkipFirst))
+		tw.Printf(false, "%Ba   %f%Lm%Fd%s the whole solid so far%E",
+			lf(tw.ScreenChangeGroupOption), check(g.MirrorSolid))
 	case sketch.GroupChamfer:
 		tw.Printf(true, " %Ftchamfer edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",

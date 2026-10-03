@@ -463,6 +463,8 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.Color = d.colorField(c)
 		case "skip-first":
 			g.SkipFirst = d.flag(c)
+		case "mirror-solid":
+			g.MirrorSolid = d.flag(c)
 		case "combine":
 			enumField(d, combines, c, &g.MeshCombine)
 		case "force-to-mesh":
