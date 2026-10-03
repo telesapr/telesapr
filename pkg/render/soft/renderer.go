@@ -12,11 +12,11 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/res"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/res"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // glLight is a light's state, which persists across frames as GL's
@@ -213,7 +213,7 @@ func (r *Renderer) ReadFrame() *image.RGBA { return r.frame }
 
 // GetIdent names the renderer.
 func (r *Renderer) GetIdent() (vendor, renderer, version string) {
-	return "spacesolve", "software (OpenGL 1 semantics)", "1"
+	return "TeleSAPR", "software (OpenGL 1 semantics)", "1"
 }
 
 // Clear forgets the strokes and fills.

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // cubeMesh is the closed, outward-facing cube [o, o+s]^3 as twelve

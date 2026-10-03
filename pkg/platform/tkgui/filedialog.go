@@ -9,8 +9,8 @@ import (
 	"github.com/msorc/takigo/widget"
 	"github.com/msorc/takigo/widget/frame"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // FileDialog asks for a file to open or save (C++ FileDialogImplGtk).

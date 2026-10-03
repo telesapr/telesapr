@@ -5,8 +5,8 @@ import (
 	"os"
 	"sync/atomic"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/par"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/par"
 )
 
 // This file has what lets the loops C++ marks "#pragma omp parallel
@@ -54,19 +54,19 @@ func SetParallelMode(m ParallelMode) {
 	}
 }
 
-// SetParallelModeFromEnv takes SPACESOLVE_PARALLEL: "exact" (the
+// SetParallelModeFromEnv takes TELESAPR_PARALLEL: "exact" (the
 // default) has the solids generated on all the processors where that
 // gives the bits of one; "fast" on all of them throughout, for other
 // last bits; "off" on one.
 func SetParallelModeFromEnv() {
-	switch v := os.Getenv("SPACESOLVE_PARALLEL"); v {
+	switch v := os.Getenv("TELESAPR_PARALLEL"); v {
 	case "", "exact":
 	case "fast":
 		SetParallelMode(ParallelFast)
 	case "off":
 		SetParallelMode(ParallelOff)
 	default:
-		log.Printf("SPACESOLVE_PARALLEL is '%s'; it can be exact, fast or off.", v)
+		log.Printf("TELESAPR_PARALLEL is '%s'; it can be exact, fast or off.", v)
 	}
 }
 

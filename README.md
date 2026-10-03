@@ -1,20 +1,20 @@
-# spacesolve
+# TeleSAPR
 
-spacesolve is a parametric 2D/3D CAD tool written in Go. It started as a
+TeleSAPR is a parametric 2D/3D CAD tool written in Go. It started as a
 port of SolveSpace and is now a separate project: it no longer tracks
 SolveSpace's behaviour or file format.
 
 ## Project Structure
 
 ```
-cmd/spacesolve/      # The GUI
-cmd/spacesolve-cli/  # The command-line tool
+cmd/telesapr/        # The GUI
+cmd/telesapr-cli/    # The command-line tool
 pkg/
 ├── check/           # Invariants of a sound solid: the test oracle, Analyze > Check Solid
 ├── core/            # Handles, entities, constraints, expressions
 ├── geom/            # Geometric primitives and algorithms
 ├── libm/            # Bit-exact libm functions matching C++ output
-├── mcpserver/       # The drawing as tools for an MCP client (spacesolve-cli mcp)
+├── mcpserver/       # The drawing as tools for an MCP client (telesapr-cli mcp)
 ├── persist/slvs/    # .slvs file load/save
 ├── platform/        # Windows, menus and dialogs (takigo, headless)
 ├── render/          # Canvas and the software renderer
@@ -27,8 +27,8 @@ pkg/
 └── ui/              # Graphics and text windows, menus, screens
 ```
 
-`cmd/spacesolve` is the application, `cmd/spacesolve-cli` the command line
-tool (`solvespace-cli`'s counterpart): `spacesolve-cli --help` lists its
+`cmd/telesapr` is the application, `cmd/telesapr-cli` the command line
+tool (`solvespace-cli`'s counterpart): `telesapr-cli --help` lists its
 commands. See `ROADMAP-JUMP.md` for where the project is going.
 
 ## Scripting
@@ -39,10 +39,10 @@ interpreter ([yaegi](https://github.com/traefik/yaegi)):
 - In the application, `Script > Show Console` opens a console where Go
   is typed a line at a time and run on the drawing: `doc` is the sketch,
   what a line draws shows at once, and each line is one step of undo.
-  `Script > Run File...` and `spacesolve --script file.go` run a file.
-- Without a window, `spacesolve-cli run [sketch.slvs] script.go [args]`
-  runs a file, `spacesolve-cli repl` reads lines from standard input and
-  `spacesolve-cli eval` takes them from the command line.
+  `Script > Run File...` and `telesapr --script file.go` run a file.
+- Without a window, `telesapr-cli run [sketch.slvs] script.go [args]`
+  runs a file, `telesapr-cli repl` reads lines from standard input and
+  `telesapr-cli eval` takes them from the command line.
 
 ```go
 r := doc.Rect(V(0, 0, 0), V(40, 25, 0)) // mm, in the active workplane
@@ -67,17 +67,17 @@ from `api.Current()`, so it can also be compiled as it is; see
 ## Drawing with an AI model
 
 An AI model can draw in the window you have open from what you say in
-plain English. spacesolve offers the drawing to any Model Context
+plain English. TeleSAPR offers the drawing to any Model Context
 Protocol client, which brings the model; it has none of its own and
 needs no API key.
 
 - In the application, turn on `Script > Allow AI Connections`.
-- Tell the client to start `spacesolve-cli mcp`, for Claude Code with
-  `claude mcp add spacesolve -- spacesolve-cli mcp`.
+- Tell the client to start `telesapr-cli mcp`, for Claude Code with
+  `claude mcp add telesapr -- telesapr-cli mcp`.
 
 The model writes scripts against `pkg/script/api`, reads the drawing in
 words and looks at pictures of it. Each script shows in the script
-console and is one step of undo. `spacesolve-cli mcp --headless` does
+console and is one step of undo. `telesapr-cli mcp --headless` does
 the same without a window. See `docs/ai.md`.
 
 ## Build

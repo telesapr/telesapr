@@ -94,7 +94,7 @@ func TestEngineRunProgram(t *testing.T) {
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

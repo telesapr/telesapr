@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"github.com/spacesolve/spacesolve/pkg/persist/convert"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/srf"
-	"github.com/spacesolve/spacesolve/pkg/ttf"
+	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
+	"github.com/telesapr/telesapr/pkg/persist/convert"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 var testdata = filepath.Join("..", "..", "..", "testdata")
@@ -119,25 +119,25 @@ func firstDiff(a, b []byte) string {
 	return fmt.Sprintf("%d lines, then %d", len(al), len(bl))
 }
 
-// goldenPath is the .spcs golden of a fixture: its import, which is
+// goldenPath is the .tlspr golden of a fixture: its import, which is
 // what loading and regenerating it gives. For the fixtures C++ saved,
 // that was C++'s own save of them, byte for byte, until the C++
 // comparison was frozen (ROADMAP-JUMP.md, package 5.1).
 func goldenPath(rel string) string {
-	return filepath.Join(testdata, "spcs", "golden", filepath.FromSlash(strings.TrimSuffix(rel, ".slvs"))+".spcs")
+	return filepath.Join(testdata, "tlspr", "golden", filepath.FromSlash(strings.TrimSuffix(rel, ".slvs"))+".tlspr")
 }
 
 // TestFixturesRoundTrip imports every fixture and requires:
 //
-//   - decoding the .spcs file and encoding it again gives the same
+//   - decoding the .tlspr file and encoding it again gives the same
 //     bytes, so the format loses nothing;
 //   - loading it, regenerating and saving gives the same bytes, except
 //     for the fixtures in notFixedPoints;
 //   - every group's check report matches testdata/invariants.txt, the
 //     baseline the .slvs loader recorded;
-//   - each fixture imports to its golden in testdata/spcs/golden.
-//     SPACESOLVE_REGEN_GOLDEN=1 rewrites the goldens
-//     (scripts/regen-spcs-golden.sh).
+//   - each fixture imports to its golden in testdata/tlspr/golden.
+//     TELESAPR_REGEN_GOLDEN=1 rewrites the goldens
+//     (scripts/regen-tlspr-golden.sh).
 func TestFixturesRoundTrip(t *testing.T) {
 	baseline, _, err := check.ReadBaseline(filepath.Join(testdata, "invariants.txt"))
 	if err != nil {
@@ -177,7 +177,7 @@ func TestFixturesRoundTrip(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			doc, err := spcs.Decode(saved)
+			doc, err := tlspr.Decode(saved)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -189,13 +189,13 @@ func TestFixturesRoundTrip(t *testing.T) {
 			}
 
 			srf.SetChordTolMm(0)
-			loaded, err := spcs.LoadFile(dst)
+			loaded, err := tlspr.LoadFile(dst)
 			if err != nil {
 				t.Fatal(err)
 			}
 			sk := loaded.Sketch
 			sk.GenerateAll()
-			resaved := spcs.Encode(sk, spcs.Options{})
+			resaved := tlspr.Encode(sk, tlspr.Options{})
 			if notFixedPoints[rel] == "" && !bytes.Equal(resaved, saved) {
 				t.Errorf("load, regenerate and save changed the file: %s", firstDiff(saved, resaved))
 			}

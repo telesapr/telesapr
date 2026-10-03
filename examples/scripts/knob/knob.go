@@ -3,17 +3,17 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/knob/knob.go [radius] [-]
+//	telesapr-cli run examples/scripts/knob/knob.go [radius] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/knob/knob.go
+//	telesapr --script examples/scripts/knob/knob.go
 //
 // Fillet Edges and Chamfer Edges take circles where a flat face meets a
 // cylinder: the fillet is a torus all round, the chamfer a cone. Here a
 // cylinder of radius 15 and height 20, its top rounded at 4 mm unless
 // given and its foot chamfered at 1. The script checks the solid against
-// the volume Pappus gives, prints it, and saves knob.spcs, unless given
+// the volume Pappus gives, prints it, and saves knob.tlspr, unless given
 // "-".
 package main
 
@@ -23,7 +23,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -76,7 +76,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("knob.spcs"); err != nil {
+		if err := doc.Save("knob.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

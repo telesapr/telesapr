@@ -3,8 +3,8 @@ package sketch
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // This file ports solvespace/src/clipboard.cpp: the clipboard that Cut,

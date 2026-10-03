@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // The renderer setting: the command line's choice wins until the box

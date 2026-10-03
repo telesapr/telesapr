@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // copyTestdata copies the files of a testdata directory into a new
@@ -38,7 +38,7 @@ func copyTestdata(t *testing.T, dir string) string {
 // and opens the result.
 func TestImport(t *testing.T) {
 	dir := copyTestdata(t, "group/translate_nd")
-	d, err := Import(filepath.Join(dir, "normal.slvs"), filepath.Join(dir, "part.spcs"))
+	d, err := Import(filepath.Join(dir, "normal.slvs"), filepath.Join(dir, "part.tlspr"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestImport(t *testing.T) {
 	}
 
 	// Saved elsewhere and loaded again, it is the same model.
-	other := filepath.Join(t.TempDir(), "again.spcs")
+	other := filepath.Join(t.TempDir(), "again.tlspr")
 	if err := d.Save(other); err != nil {
 		t.Fatal(err)
 	}
@@ -56,11 +56,11 @@ func TestImport(t *testing.T) {
 	}
 
 	asm := copyTestdata(t, "group/link")
-	d, err = Import(filepath.Join(asm, "normal.slvs"), filepath.Join(asm, "assembly.spcs"))
+	d, err = Import(filepath.Join(asm, "normal.slvs"), filepath.Join(asm, "assembly.tlspr"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(asm, "rect_v20.spcs")); err != nil {
+	if _, err := os.Stat(filepath.Join(asm, "rect_v20.tlspr")); err != nil {
 		t.Errorf("the linked model wasn't converted: %v", err)
 	}
 	linked := false
@@ -74,10 +74,10 @@ func TestImport(t *testing.T) {
 	if err := os.Remove(filepath.Join(asm, "rect_v20.slvs")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(filepath.Join(asm, "rect_v20.spcs")); err != nil {
+	if err := os.Remove(filepath.Join(asm, "rect_v20.tlspr")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Import(filepath.Join(asm, "normal.slvs"), filepath.Join(asm, "again.spcs")); err == nil ||
+	if _, err := Import(filepath.Join(asm, "normal.slvs"), filepath.Join(asm, "again.tlspr")); err == nil ||
 		!strings.Contains(err.Error(), "missing linked files") || !strings.Contains(err.Error(), "rect_v20.slvs") {
 		t.Errorf("missing link: %v", err)
 	}
@@ -91,9 +91,9 @@ func TestFileMisuse(t *testing.T) {
 	d := New()
 
 	for path, want := range map[string]string{
-		filepath.Join(dir, "a.slvs"):       "doesn't write SolveSpace models",
-		filepath.Join(dir, "a.txt"):        "a sketch is saved as a .spcs file",
-		filepath.Join(dir, "no", "a.spcs"): "no such file",
+		filepath.Join(dir, "a.slvs"):        "doesn't write SolveSpace models",
+		filepath.Join(dir, "a.txt"):         "a sketch is saved as a .tlspr file",
+		filepath.Join(dir, "no", "a.tlspr"): "no such file",
 	} {
 		if err := d.Save(path); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("Save(%s): %v, want %q", path, err, want)
@@ -106,11 +106,11 @@ func TestFileMisuse(t *testing.T) {
 	if err := d.Load(fixture); err == nil || !strings.Contains(err.Error(), "convert it with Import first") {
 		t.Errorf("Load of a .slvs file: %v", err)
 	}
-	if _, err := Open(filepath.Join(dir, "none.spcs")); err == nil {
+	if _, err := Open(filepath.Join(dir, "none.tlspr")); err == nil {
 		t.Error("opened a missing file")
 	}
 
-	future := filepath.Join(dir, "future.spcs")
+	future := filepath.Join(dir, "future.tlspr")
 	if err := d.Save(future); err != nil {
 		t.Fatal(err)
 	}
@@ -127,10 +127,10 @@ func TestFileMisuse(t *testing.T) {
 	}
 
 	for _, c := range []struct{ src, dst, want string }{
-		{fixture, filepath.Join(dir, "x.txt"), "is not a spacesolve file"},
-		{future, filepath.Join(dir, "x.spcs"), "is not a SolveSpace model"},
-		{filepath.Join(dir, "none.slvs"), filepath.Join(dir, "x.spcs"), "no such file"},
-		{fixture, filepath.Join(dir, "no", "x.spcs"), "no such file"},
+		{fixture, filepath.Join(dir, "x.txt"), "is not a TeleSAPR file"},
+		{future, filepath.Join(dir, "x.tlspr"), "is not a SolveSpace model"},
+		{filepath.Join(dir, "none.slvs"), filepath.Join(dir, "x.tlspr"), "no such file"},
+		{fixture, filepath.Join(dir, "no", "x.tlspr"), "no such file"},
 	} {
 		if _, err := Import(c.src, c.dst); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("Import(%s, %s): %v, want %q", c.src, c.dst, err, c.want)

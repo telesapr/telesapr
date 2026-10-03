@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
+	"github.com/telesapr/telesapr/pkg/internal/cfmt"
 )
 
 // Version is the libdxfrw version the files name (C++ DRW_VERSION).

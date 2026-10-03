@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // TestParityAnalysisFixtures asserts that every analysis_* fixture

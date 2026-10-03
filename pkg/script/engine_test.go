@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 func newHost() *api.SketchHost {
@@ -119,7 +119,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -150,7 +150,7 @@ func TestRunProgram(t *testing.T) {
 
 func TestRunStatements(t *testing.T) {
 	var out bytes.Buffer
-	src := `#!/usr/bin/env spacesolve-cli run
+	src := `#!/usr/bin/env telesapr-cli run
 // A plate, as statements.
 w, h := 40.0, 25.0
 

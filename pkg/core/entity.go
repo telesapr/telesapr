@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 type EntityType int

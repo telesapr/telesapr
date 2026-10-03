@@ -5,7 +5,7 @@
 // default. The bottom side is sides[0] and the right one sides[1].
 package main
 
-import . "github.com/spacesolve/spacesolve/pkg/script/api"
+import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func must(err error) {
 	if err != nil {

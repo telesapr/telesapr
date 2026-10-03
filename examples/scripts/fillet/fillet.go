@@ -2,18 +2,18 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/fillet/fillet.go [radius] [-]
+//	telesapr-cli run examples/scripts/fillet/fillet.go [radius] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/fillet/fillet.go
+//	telesapr --script examples/scripts/fillet/fillet.go
 //
 // Fillet Edges rounds straight edges between flat faces with an exact
 // cylinder, by cutting the faces back along the lines where it touches
 // them and putting its face in: here the four upright edges of a 60 x
 // 40 x 10 block, radius 8 unless given. The script checks the solid
 // against the volume worked out from the radius, prints it, and saves
-// fillet.spcs, unless given "-".
+// fillet.tlspr, unless given "-".
 package main
 
 import (
@@ -22,7 +22,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -66,7 +66,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("fillet.spcs"); err != nil {
+		if err := doc.Save("fillet.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

@@ -7,22 +7,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
-	"github.com/spacesolve/spacesolve/pkg/persist/step"
-	"github.com/spacesolve/spacesolve/pkg/topo"
+	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/persist/step"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // TestExportStepSheets writes solids whose faces are several patches
 // to STEP, a face as one B-spline surface (step 11.4), and reads them
 // back with the STEP importer: one face per face of the solid, none
 // left out or with bounds that cross, a closed mesh, and the solid's
-// volume. SPACESOLVE_STEP_OUT=dir keeps the files, written both ways,
+// volume. TELESAPR_STEP_OUT=dir keeps the files, written both ways,
 // for checking in another reader, as FreeCAD.
 func TestExportStepSheets(t *testing.T) {
 	for _, model := range []string{
-		"topo/boss.spcs", "topo/frustum.spcs", "solid/fillet-circle.spcs", "solid/sweep-pipe.spcs",
-		"solid/fillet-cone.spcs", "solid/chamfer-circle-and-edge.spcs",
-		"solid/fillet-boss-foot.spcs", "solid/sweep-ring-down.spcs",
+		"topo/boss.tlspr", "topo/frustum.tlspr", "solid/fillet-circle.tlspr", "solid/sweep-pipe.tlspr",
+		"solid/fillet-cone.tlspr", "solid/chamfer-circle-and-edge.tlspr",
+		"solid/fillet-boss-foot.tlspr", "solid/sweep-ring-down.tlspr",
 	} {
 		t.Run(model, func(t *testing.T) {
 			r := newUIScriptRunner(t)
@@ -58,7 +58,7 @@ func TestExportStepSheets(t *testing.T) {
 				return res, string(data)
 			}
 			res, data := read()
-			if d := os.Getenv("SPACESOLVE_STEP_OUT"); d != "" {
+			if d := os.Getenv("TELESAPR_STEP_OUT"); d != "" {
 				if err := os.WriteFile(filepath.Join(d, strings.ReplaceAll(model, "/", "_")+".faces.step"), []byte(data), 0o644); err != nil {
 					t.Fatal(err)
 				}
@@ -78,7 +78,7 @@ func TestExportStepSheets(t *testing.T) {
 			stepOneSurfacePerFace = false
 			res2, data2 := read()
 			stepOneSurfacePerFace = true
-			if d := os.Getenv("SPACESOLVE_STEP_OUT"); d != "" {
+			if d := os.Getenv("TELESAPR_STEP_OUT"); d != "" {
 				if err := os.WriteFile(filepath.Join(d, strings.ReplaceAll(model, "/", "_")+".patches.step"), []byte(data2), 0o644); err != nil {
 					t.Fatal(err)
 				}

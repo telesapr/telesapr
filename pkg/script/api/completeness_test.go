@@ -4,8 +4,8 @@ package api_test
 // (ROADMAP-JUMP.md, "Definition of done"): these tests fail when a
 // group type or a creating menu command has no API method, or when an
 // exported API name has no doc comment, which help() shows. That every
-// example runs is tested where spacesolve-cli run is, in
-// cmd/spacesolve-cli.
+// example runs is tested where telesapr-cli run is, in
+// cmd/telesapr-cli.
 
 import (
 	"go/ast"
@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/ui"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/ui"
 )
 
 // creatingMenus are the menus whose entries make or change the model.
@@ -242,7 +242,7 @@ func TestEveryExportedNameHasADoc(t *testing.T) {
 		}
 		files = append(files, f)
 	}
-	p, err := doc.NewFromFiles(fset, files, "github.com/spacesolve/spacesolve/pkg/script/api")
+	p, err := doc.NewFromFiles(fset, files, "github.com/telesapr/telesapr/pkg/script/api")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/convert"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/persist/convert"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // linkFixture is a model that links rect_v20.slvs, read from testdata.
@@ -55,7 +55,7 @@ func TestPlanAndRun(t *testing.T) {
 	root := filepath.Join(dir, "asm.slvs")
 	writeLinking(t, root, "parts/rect.slvs")
 	writeRect(t, filepath.Join(dir, "parts", "rect.slvs"))
-	dst := filepath.Join(dir, "out", "asm.spcs")
+	dst := filepath.Join(dir, "out", "asm.tlspr")
 	if err := os.Mkdir(filepath.Join(dir, "out"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestPlanAndRun(t *testing.T) {
 	}
 	rect := filepath.Join(dir, "parts", "rect.slvs")
 	want := []convert.Item{
-		{Src: rect, Dst: filepath.Join(dir, "parts", "rect.spcs"), LinkedFrom: root},
+		{Src: rect, Dst: filepath.Join(dir, "parts", "rect.tlspr"), LinkedFrom: root},
 		{Src: root, Dst: dst, Root: true},
 	}
 	if !reflect.DeepEqual(p.Items, want) {
@@ -85,12 +85,12 @@ func TestPlanAndRun(t *testing.T) {
 	}
 	// The root moved to another folder: its link is rewritten from
 	// there.
-	doc, err := spcs.LoadFile(dst)
+	doc, err := tlspr.LoadFile(dst)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, g := range doc.Sketch.Groups {
-		if g.Type == sketch.GroupLinked && (g.LinkFile != "../parts/rect.spcs" || len(g.ImpEntity) == 0) {
+		if g.Type == sketch.GroupLinked && (g.LinkFile != "../parts/rect.tlspr" || len(g.ImpEntity) == 0) {
 			t.Errorf("link %q with %d entities", g.LinkFile, len(g.ImpEntity))
 		}
 	}
@@ -120,7 +120,7 @@ func TestPlanErrors(t *testing.T) {
 	writeLinking(t, filepath.Join(dir, "b.slvs"), "c.slvs")
 	writeLinking(t, filepath.Join(dir, "c.slvs"), "b.slvs")
 
-	_, err := convert.MakePlan(root, filepath.Join(dir, "a.spcs"))
+	_, err := convert.MakePlan(root, filepath.Join(dir, "a.tlspr"))
 	var ce *convert.CycleError
 	if !errors.As(err, &ce) {
 		t.Fatalf("cycle: %v", err)
@@ -139,11 +139,11 @@ func TestPlanErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range []struct{ src, dst, want string }{
-		{filepath.Join(dir, "a.spcs"), filepath.Join(dir, "x.spcs"), "is not a SolveSpace model"},
-		{root, filepath.Join(dir, "x.slvs"), "is not a spacesolve file"},
-		{filepath.Join(dir, "none.slvs"), filepath.Join(dir, "x.spcs"), "no such file"},
-		{empty, filepath.Join(dir, "x.spcs"), "the file is empty"},
-		{broken, filepath.Join(dir, "x.spcs"), "group missing handle"},
+		{filepath.Join(dir, "a.tlspr"), filepath.Join(dir, "x.tlspr"), "is not a SolveSpace model"},
+		{root, filepath.Join(dir, "x.slvs"), "is not a TeleSAPR file"},
+		{filepath.Join(dir, "none.slvs"), filepath.Join(dir, "x.tlspr"), "no such file"},
+		{empty, filepath.Join(dir, "x.tlspr"), "the file is empty"},
+		{broken, filepath.Join(dir, "x.tlspr"), "group missing handle"},
 	} {
 		if _, err := convert.MakePlan(c.src, c.dst); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("MakePlan(%s, %s): %v, want %q", filepath.Base(c.src), filepath.Base(c.dst), err, c.want)
@@ -158,7 +158,7 @@ func TestMissingLink(t *testing.T) {
 	dir := t.TempDir()
 	root := filepath.Join(dir, "asm.slvs")
 	writeLinking(t, root, "gone.slvs")
-	p, err := convert.MakePlan(root, filepath.Join(dir, "asm.spcs"))
+	p, err := convert.MakePlan(root, filepath.Join(dir, "asm.tlspr"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,12 +170,12 @@ func TestMissingLink(t *testing.T) {
 	if err != nil || len(r.Written) != 1 {
 		t.Fatalf("%v %+v", err, r)
 	}
-	doc, err := spcs.LoadFile(r.Written[0])
+	doc, err := tlspr.LoadFile(r.Written[0])
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, g := range doc.Sketch.Groups {
-		if g.Type == sketch.GroupLinked && g.LinkFile != "gone.spcs" {
+		if g.Type == sketch.GroupLinked && g.LinkFile != "gone.tlspr" {
 			t.Errorf("link %q", g.LinkFile)
 		}
 	}
@@ -197,12 +197,12 @@ func TestReadOnlyDirectory(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
 
-	p, r, err := convert.File(root, filepath.Join(dir, "asm.spcs"), false)
+	p, r, err := convert.File(root, filepath.Join(dir, "asm.tlspr"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	copyPath := filepath.Join(locked, "rect.spcs")
-	if len(p.Items) != 2 || r.Failed[copyPath] == nil || !reflect.DeepEqual(r.Written, []string{filepath.Join(dir, "asm.spcs")}) {
+	copyPath := filepath.Join(locked, "rect.tlspr")
+	if len(p.Items) != 2 || r.Failed[copyPath] == nil || !reflect.DeepEqual(r.Written, []string{filepath.Join(dir, "asm.tlspr")}) {
 		t.Errorf("plan %+v, result %+v", p.Items, r)
 	}
 
@@ -226,7 +226,7 @@ func TestLoadErrorWarns(t *testing.T) {
 	if err := os.WriteFile(root, append(data, "Nonsense\n"...), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, r, err := convert.File(root, filepath.Join(dir, "odd.spcs"), false)
+	_, r, err := convert.File(root, filepath.Join(dir, "odd.tlspr"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,11 +246,11 @@ func TestUnregenerable(t *testing.T) {
 	if err := os.WriteFile(root, []byte(model), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, _, err := convert.File(root, filepath.Join(dir, "bad.spcs"), false)
+	_, _, err := convert.File(root, filepath.Join(dir, "bad.tlspr"), false)
 	if err == nil || !strings.Contains(err.Error(), "can't regenerate") {
 		t.Errorf("error %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "bad.spcs")); err == nil {
+	if _, err := os.Stat(filepath.Join(dir, "bad.tlspr")); err == nil {
 		t.Error("an unregenerable model was written")
 	}
 }

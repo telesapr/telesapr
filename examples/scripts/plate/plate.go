@@ -2,16 +2,16 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/plate/plate.go [width]
+//	telesapr-cli run examples/scripts/plate/plate.go [width]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/plate/plate.go
+//	telesapr --script examples/scripts/plate/plate.go
 //
 // The plate's width, height, thickness and hole come from the
 // parameter table (Edit > Parameters), so changing "width" there, or
 // with doc.SetParameter, resizes everything that depends on it. It
-// writes plate.spcs where it is run, unless it is given "-" as a
+// writes plate.tlspr where it is run, unless it is given "-" as a
 // second argument.
 package main
 
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func must(err error) {
@@ -72,6 +72,6 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		must(doc.Save("plate.spcs"))
+		must(doc.Save("plate.tlspr"))
 	}
 }

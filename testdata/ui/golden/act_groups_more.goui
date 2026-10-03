@@ -108,7 +108,7 @@ counts 4 8 69 8 46
 editor 0 "" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
 save
-spacesolve 2
+telesapr 2
 
 units mm
 

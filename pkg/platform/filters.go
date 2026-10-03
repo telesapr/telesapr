@@ -1,10 +1,10 @@
 package platform
 
-// The file types spacesolve reads and writes (after C++ gui.cpp).
+// The file types TeleSAPR reads and writes (after C++ gui.cpp).
 var (
-	// ModelFileFilters are the documents spacesolve opens and saves.
+	// ModelFileFilters are the documents TeleSAPR opens and saves.
 	ModelFileFilters = []FileFilter{
-		{"spacesolve models", []string{"spcs"}},
+		{"TeleSAPR models", []string{"tlspr"}},
 	}
 	// ScriptFileFilters are the scripts the application runs.
 	ScriptFileFilters = []FileFilter{
@@ -13,8 +13,8 @@ var (
 	// LinkFileFilters are the files a link group links. SolveSpace
 	// models are not among them: they are imported first.
 	LinkFileFilters = []FileFilter{
-		{"ALL", []string{"spcs", "step", "stp", "emn", "stl"}},
-		{"spacesolve models", []string{"spcs"}},
+		{"ALL", []string{"tlspr", "step", "stp", "emn", "stl"}},
+		{"TeleSAPR models", []string{"tlspr"}},
 		{"STEP model, as a reference mesh", []string{"step", "stp"}},
 		{"IDF circuit board", []string{"emn"}},
 		{"STL triangle mesh", []string{"stl"}},

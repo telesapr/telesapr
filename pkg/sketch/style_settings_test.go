@@ -3,7 +3,7 @@ package sketch
 import (
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // mapSettings keeps settings in memory.

@@ -1686,7 +1686,7 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/check": {
+	"github.com/telesapr/telesapr/pkg/check": {
 		"name": "check",
 		"text": "Package check judges the solid a group makes by invariants that hold for any sound solid, whatever produced it: the mesh is closed and does not cross itself, the Boolean that built the shell succeeded, and the volume, centre of mass and extent are those expected.",
 		"types": {
@@ -1746,7 +1746,7 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/core": {
+	"github.com/telesapr/telesapr/pkg/core": {
 		"name": "core",
 		"types": {
 			"BBox": {
@@ -3410,7 +3410,7 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/geom": {
+	"github.com/telesapr/telesapr/pkg/geom": {
 		"name": "geom",
 		"types": {
 			"BandedMatrix": {
@@ -3823,9 +3823,9 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/persist/convert": {
+	"github.com/telesapr/telesapr/pkg/persist/convert": {
 		"name": "convert",
-		"text": "Package convert imports SolveSpace .slvs files as .spcs documents.",
+		"text": "Package convert imports SolveSpace .slvs files as .tlspr documents.",
 		"types": {
 			"CycleError": {
 				"text": "CycleError is the error for files that link each other in a ring.",
@@ -3850,7 +3850,7 @@
 				"methods": {
 					"Existing": {
 						"decl": "func (p *Plan) Existing() []Item",
-						"text": "Existing lists the linked files whose .spcs copy exists already, for which the user chooses reuse or overwrite once."
+						"text": "Existing lists the linked files whose .tlspr copy exists already, for which the user chooses reuse or overwrite once."
 					},
 					"Missing": {
 						"decl": "func (p *Plan) Missing() []Item",
@@ -3888,7 +3888,7 @@
 			},
 			"SiblingPath": {
 				"decl": "func SiblingPath(src string) string",
-				"text": "SiblingPath is where a linked .slvs file's .spcs copy goes: beside it, with the extension changed."
+				"text": "SiblingPath is where a linked .slvs file's .tlspr copy goes: beside it, with the extension changed."
 			}
 		},
 		"values": {
@@ -3898,9 +3898,9 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs": {
-		"name": "spcs",
-		"text": "Package spcs reads and writes spacesolve's own file format, .spcs, described in docs/spcs-format.md.",
+	"github.com/telesapr/telesapr/pkg/persist/tlspr": {
+		"name": "tlspr",
+		"text": "Package tlspr reads and writes TeleSAPR's own file format, .tlspr, described in docs/tlspr-format.md.",
 		"types": {
 			"Document": {
 				"text": "Document is a decoded file.",
@@ -4047,7 +4047,7 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/script/api": {
+	"github.com/telesapr/telesapr/pkg/script/api": {
 		"name": "api",
 		"text": "Package api is what a script sees of a sketch: a Doc and the groups,\nrequests, entities, constraints and parameters in it. Those are held\nby handle, so they stay valid when the sketch regenerates, and are\nlooked up again at every call; a Doc therefore always shows the\ndrawing as it is.\n\nLengths and coordinates are in millimetres, whatever the document's\nunit, and angles in degrees. Only text typed for a value, as the\nSetExpr methods take, is in the document's unit (Doc.Units), as it\nis in the user interface.\n\nA call that can't do what it was asked, because of what it was given\nor of the sketch's state, panics with an error; the interpreter\nreports it and goes on. What reads or writes files returns an error\ninstead.\n\nThe package is plain Go: a script that works can be compiled as it\nis.",
 		"types": {
@@ -4291,7 +4291,7 @@
 					},
 					"Load": {
 						"decl": "func (d *Doc) Load(path string) (err error)",
-						"text": "Load replaces the sketch by the one in a .spcs file."
+						"text": "Load replaces the sketch by the one in a .tlspr file."
 					},
 					"Lock": {
 						"decl": "func (d *Doc) Lock(point Entity) Constraint",
@@ -4395,11 +4395,11 @@
 					},
 					"RunCommand": {
 						"decl": "func (d *Doc) RunCommand(label string) (err error)",
-						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. A host with no window, such as spacesolve-cli,\nhas no menu to run it from, and it is an error."
+						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. A host with no window, such as telesapr-cli,\nhas no menu to run it from, and it is an error."
 					},
 					"Save": {
 						"decl": "func (d *Doc) Save(path string) (err error)",
-						"text": "Save regenerates the sketch and writes it to a .spcs file. A\nSolveSpace model (.slvs) is not written."
+						"text": "Save regenerates the sketch and writes it to a .tlspr file. A\nSolveSpace model (.slvs) is not written."
 					},
 					"Section": {
 						"decl": "func (d *Doc) Section() (s Section)",
@@ -4974,7 +4974,7 @@
 					},
 					"Load": {
 						"decl": "func (h *SketchHost) Load(path string) error",
-						"text": "Load replaces the sketch by the one in a .spcs file."
+						"text": "Load replaces the sketch by the one in a .tlspr file."
 					},
 					"MmPerUnit": {
 						"decl": "func (h *SketchHost) MmPerUnit() float64",
@@ -5006,7 +5006,7 @@
 					},
 					"Save": {
 						"decl": "func (h *SketchHost) Save(path string) error",
-						"text": "Save writes the sketch to a .spcs file, its links made relative to\nit."
+						"text": "Save writes the sketch to a .tlspr file, its links made relative to\nit."
 					},
 					"Select": {
 						"decl": "func (h *SketchHost) Select([]sketch.Selection)",
@@ -5193,7 +5193,7 @@
 			},
 			"Import": {
 				"decl": "func Import(src, dst string) (*Doc, error)",
-				"text": "Import converts the SolveSpace model src (.slvs) to the spacesolve\nmodel dst (.spcs), and opens it. Every SolveSpace model src links is\nconverted too, to a .spcs file beside it, and the links are pointed\nat those; a converted file that exists already is used as it is. The\n.slvs files are not changed. It fails when a linked file is missing,\nwhen the links form a cycle, or when a file can't be written."
+				"text": "Import converts the SolveSpace model src (.slvs) to the TeleSAPR\nmodel dst (.tlspr), and opens it. Every SolveSpace model src links is\nconverted too, to a .tlspr file beside it, and the links are pointed\nat those; a converted file that exists already is used as it is. The\n.slvs files are not changed. It fails when a linked file is missing,\nwhen the links form a cycle, or when a file can't be written."
 			},
 			"Inch": {
 				"decl": "func Inch(v float64) float64",
@@ -5213,7 +5213,7 @@
 			},
 			"Open": {
 				"decl": "func Open(path string) (*Doc, error)",
-				"text": "Open loads a sketch from a .spcs file. A SolveSpace model (.slvs) is\nconverted with Import instead."
+				"text": "Open loads a sketch from a .tlspr file. A SolveSpace model (.slvs) is\nconverted with Import instead."
 			},
 			"SetCommandList": {
 				"decl": "func SetCommandList(list func() []string)",
@@ -5275,7 +5275,7 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/sketch": {
+	"github.com/telesapr/telesapr/pkg/sketch": {
 		"name": "sketch",
 		"types": {
 			"BrokenReference": {
@@ -6647,7 +6647,7 @@
 			}
 		}
 	},
-	"github.com/spacesolve/spacesolve/pkg/srf": {
+	"github.com/telesapr/telesapr/pkg/srf": {
 		"name": "srf",
 		"text": "Package srf mirrors the C++ srf/ module: NURBS/Bezier primitives, trimmed surfaces, watertight shells, BSP trees, and mesh boolean operations.",
 		"types": {
@@ -8247,7 +8247,7 @@
 			},
 			"SetParallelModeFromEnv": {
 				"decl": "func SetParallelModeFromEnv()",
-				"text": "SetParallelModeFromEnv takes SPACESOLVE_PARALLEL: \"exact\" (the default) has the solids generated on all the processors where that gives the bits of one; \"fast\" on all of them throughout, for other last bits; \"off\" on one."
+				"text": "SetParallelModeFromEnv takes TELESAPR_PARALLEL: \"exact\" (the default) has the solids generated on all the processors where that gives the bits of one; \"fast\" on all of them throughout, for other last bits; \"off\" on one."
 			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",

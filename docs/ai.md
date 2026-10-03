@@ -1,20 +1,20 @@
 # Drawing with an AI model
 
-spacesolve can be driven by an AI model: you say in plain English what to draw, and the model
-draws it in the window you have open. spacesolve has no model of its own and needs no API key.
+TeleSAPR can be driven by an AI model: you say in plain English what to draw, and the model
+draws it in the window you have open. TeleSAPR has no model of its own and needs no API key.
 It offers the drawing to any program that speaks the Model Context Protocol (MCP), such as
 Claude Code or Claude Desktop, and that program brings the model.
 
 ## Setting up
 
-1. In spacesolve, turn on **Script > Allow AI Connections**. The setting is kept. To allow
-   connections for one run only, start it as `spacesolve --agent`.
-2. Tell your MCP client to start `spacesolve-cli mcp`. You never run that command yourself.
+1. In TeleSAPR, turn on **Script > Allow AI Connections**. The setting is kept. To allow
+   connections for one run only, start it as `telesapr --agent`.
+2. Tell your MCP client to start `telesapr-cli mcp`. You never run that command yourself.
 
    Claude Code:
 
    ```bash
-   claude mcp add spacesolve -- spacesolve-cli mcp
+   claude mcp add telesapr -- telesapr-cli mcp
    ```
 
    Claude Desktop, and most other clients, in their MCP configuration file:
@@ -22,16 +22,16 @@ Claude Code or Claude Desktop, and that program brings the model.
    ```json
    {
      "mcpServers": {
-       "spacesolve": { "command": "spacesolve-cli", "args": ["mcp"] }
+       "telesapr": { "command": "telesapr-cli", "args": ["mcp"] }
      }
    }
    ```
 
-   Give the full path of `spacesolve-cli` if it is not on the `PATH`.
+   Give the full path of `telesapr-cli` if it is not on the `PATH`.
 3. Ask for something: "draw a 60 by 20 mm plate, 4 mm thick, with three 5 mm holes in a row".
 
-The order of starting does not matter. The client may be started before spacesolve, and
-spacesolve may be closed and opened again in the middle of a conversation.
+The order of starting does not matter. The client may be started before TeleSAPR, and
+TeleSAPR may be closed and opened again in the middle of a conversation.
 
 ## What you see
 
@@ -44,7 +44,7 @@ spacesolve may be closed and opened again in the middle of a conversation.
   model is told so that it can correct the script.
 - **Script > Stop** stops a script that runs.
 - With **ask before an AI program's script runs** checked on the configuration screen,
-  spacesolve shows each script and runs it only if you agree. Most clients also ask before
+  TeleSAPR shows each script and runs it only if you agree. Most clients also ask before
   they call a tool.
 
 ## What the model can do
@@ -63,13 +63,13 @@ writing files with your permissions. The model is told not to save, export or lo
 ask for it. Turn on the confirmation setting if you want to read every script first.
 
 Only programs running as you can connect. The application listens on a socket file in a
-directory that is yours alone: `$XDG_RUNTIME_DIR/spacesolve` on Linux, `$TMPDIR/spacesolve`
-on macOS, `%LOCALAPPDATA%\spacesolve` on Windows. Nothing listens on the network.
+directory that is yours alone: `$XDG_RUNTIME_DIR/telesapr` on Linux, `$TMPDIR/telesapr`
+on macOS, `%LOCALAPPDATA%\telesapr` on Windows. Nothing listens on the network.
 
 ## Without a window
 
 ```bash
-spacesolve-cli mcp --headless [sketch.spcs]
+telesapr-cli mcp --headless [sketch.tlspr]
 ```
 
 serves a drawing of its own instead of the application's: the sketch file, or a new sketch.
@@ -78,23 +78,23 @@ the model to save.
 
 ## If it does not work
 
-- **"spacesolve isn't running, or Script > Allow AI Connections is off"**: start spacesolve and
-  check the menu item. With several spacesolve windows open, the one started last is used;
-  `spacesolve-cli mcp --socket <path>` names another.
+- **"TeleSAPR isn't running, or Script > Allow AI Connections is off"**: start TeleSAPR and
+  check the menu item. With several TeleSAPR windows open, the one started last is used;
+  `telesapr-cli mcp --socket <path>` names another.
 - **"another script is running"**: a script of yours runs in the console. Wait, or stop it.
-- **The client shows no spacesolve tools**: check that the client can find `spacesolve-cli`;
-  run `spacesolve-cli mcp --headless` in a terminal to see whether it starts. It then waits for
+- **The client shows no TeleSAPR tools**: check that the client can find `telesapr-cli`;
+  run `telesapr-cli mcp --headless` in a terminal to see whether it starts. It then waits for
   a client on standard input, which is what it should do.
-- **"install the same version of both"**: `spacesolve` and `spacesolve-cli` come from different
+- **"install the same version of both"**: `telesapr` and `telesapr-cli` come from different
   builds. Build or install them together.
 
 ## How it is built
 
 ```
-MCP client ──stdin/stdout, MCP──> spacesolve-cli mcp ──socket file, JSON lines──> spacesolve
+MCP client ──stdin/stdout, MCP──> telesapr-cli mcp ──socket file, JSON lines──> telesapr
 ```
 
-`spacesolve-cli mcp` speaks MCP (`pkg/mcpserver`, on the official Go SDK) and passes each
+`telesapr-cli mcp` speaks MCP (`pkg/mcpserver`, on the official Go SDK) and passes each
 call to the application over the socket (`pkg/script/agent`), where it runs in the script
 console's interpreter (`pkg/ui/agent.go`). The model writes scripts against the same
 `pkg/script/api` that scripts and the console use, so every feature with a scripting method

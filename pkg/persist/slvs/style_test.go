@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 )
 
 // TestStyleDefaults: a style block fills the fields it leaves out with
@@ -50,7 +50,7 @@ func TestStyleDefaults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if saved := string(spcs.Encode(doc.Sketch, spcs.Options{})); !strings.Contains(saved, tc.want) {
+		if saved := string(tlspr.Encode(doc.Sketch, tlspr.Options{})); !strings.Contains(saved, tc.want) {
 			t.Errorf("%s: saved style isn't the one C++ wrote:\n%s", tc.name, saved[strings.Index(saved, "\nstyle "):])
 		}
 	}

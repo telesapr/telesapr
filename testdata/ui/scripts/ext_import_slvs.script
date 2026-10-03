@@ -8,6 +8,6 @@ menu File|Import...
 dump
 save
 file $testdata/group/translate_nd/normal.slvs
-file $tmp/imported.spcs
+file $tmp/imported.tlspr
 answer cancel
 menu File|Import...

@@ -12,7 +12,7 @@ import (
 	"github.com/msorc/takigo/widget/menu"
 	"github.com/msorc/takigo/window"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // prepareMnemonics drops the '&' that marks a label's mnemonic and

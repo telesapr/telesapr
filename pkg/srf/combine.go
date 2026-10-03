@@ -7,7 +7,7 @@
 // `_classify.go` to keep individual files readable.
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/core"
+import "github.com/telesapr/telesapr/pkg/core"
 
 // SurfaceCombineAs is the boolean operation selector used by
 // SSurface::MakeFromBoolean and the SShell/SMesh constructors that

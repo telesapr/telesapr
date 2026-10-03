@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/spacesolve/spacesolve/pkg/script/symbols"
+	"github.com/telesapr/telesapr/pkg/script/symbols"
 )
 
 // This file is help(x) of a console: what a value is and what can be
@@ -19,13 +19,13 @@ import (
 // helpOrder is where a name without a package is looked for first.
 var helpOrder = []string{
 	apiPath,
-	"github.com/spacesolve/spacesolve/pkg/geom",
-	"github.com/spacesolve/spacesolve/pkg/core",
-	"github.com/spacesolve/spacesolve/pkg/sketch",
-	"github.com/spacesolve/spacesolve/pkg/srf",
-	"github.com/spacesolve/spacesolve/pkg/check",
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs",
-	"github.com/spacesolve/spacesolve/pkg/persist/convert",
+	"github.com/telesapr/telesapr/pkg/geom",
+	"github.com/telesapr/telesapr/pkg/core",
+	"github.com/telesapr/telesapr/pkg/sketch",
+	"github.com/telesapr/telesapr/pkg/srf",
+	"github.com/telesapr/telesapr/pkg/check",
+	"github.com/telesapr/telesapr/pkg/persist/tlspr",
+	"github.com/telesapr/telesapr/pkg/persist/convert",
 }
 
 // helpPackages are the import paths help knows, helpOrder first.

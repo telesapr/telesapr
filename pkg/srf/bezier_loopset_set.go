@@ -1,6 +1,6 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // SBezierLoopSetSet is the top-level container for an entire sketch:
 // a list of SBezierLoopSet (one per outer contour) plus an optional

@@ -1,7 +1,7 @@
 package srf
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // Routines to merge multiple coincident surfaces (each with their own trim

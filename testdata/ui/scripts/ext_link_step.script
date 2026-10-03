@@ -3,7 +3,7 @@
 # reference mesh, a point at each vertex and circle centre, and its group
 # screen says what was read. A file with no solid this reader supports
 # links empty, its screen naming the entities it could not read.
-file $testdata/step/host.spcs
+file $testdata/step/host.tlspr
 menu File|Open...
 file $testdata/step/shapes/cylinder.step
 menu New Group|Link / Assemble...

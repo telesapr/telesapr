@@ -1,6 +1,6 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // SBezierLoop is an ordered list of SBezier forming one closed
 // (or open) loop. The closing point is implicit (last curve's

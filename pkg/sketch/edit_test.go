@@ -3,7 +3,7 @@ package sketch_test
 import (
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 // A point drawn in a 3d sketch is free in 3d as its file reads back,

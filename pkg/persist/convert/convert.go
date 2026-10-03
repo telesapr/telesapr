@@ -1,8 +1,8 @@
-// Package convert imports SolveSpace .slvs files as .spcs documents.
+// Package convert imports SolveSpace .slvs files as .tlspr documents.
 //
-// A .slvs file may link other .slvs files, and a .spcs document links
-// only .spcs files, so an import converts the whole link tree: each
-// linked a.slvs becomes a.spcs beside it, and the links are rewritten.
+// A .slvs file may link other .slvs files, and a .tlspr document links
+// only .tlspr files, so an import converts the whole link tree: each
+// linked a.slvs becomes a.tlspr beside it, and the links are rewritten.
 // Plan walks the tree and lists what would be written without writing
 // anything; Run writes it. The .slvs files are never modified.
 package convert
@@ -14,16 +14,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/persist/link"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/persist/link"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // Item is one file of a plan.
 type Item struct {
-	// Src is the .slvs file, and Dst the .spcs file made of it.
+	// Src is the .slvs file, and Dst the .tlspr file made of it.
 	Src, Dst string
 	// Root is set for the file the import started from.
 	Root bool
@@ -57,10 +57,10 @@ func (e *CycleError) Error() string {
 	return "the linked files form a cycle: " + strings.Join(e.Chain, " -> ")
 }
 
-// SiblingPath is where a linked .slvs file's .spcs copy goes: beside
+// SiblingPath is where a linked .slvs file's .tlspr copy goes: beside
 // it, with the extension changed.
 func SiblingPath(src string) string {
-	return strings.TrimSuffix(src, filepath.Ext(src)) + "." + spcs.Extension
+	return strings.TrimSuffix(src, filepath.Ext(src)) + "." + tlspr.Extension
 }
 
 // isSlvs reports whether path names a .slvs file.
@@ -81,8 +81,8 @@ func MakePlan(root, dst string) (*Plan, error) {
 	if !isSlvs(rootAbs) {
 		return nil, fmt.Errorf("%s is not a SolveSpace model (.slvs)", root)
 	}
-	if !strings.EqualFold(filepath.Ext(dstAbs), "."+spcs.Extension) {
-		return nil, fmt.Errorf("%s is not a spacesolve file (.%s)", dst, spcs.Extension)
+	if !strings.EqualFold(filepath.Ext(dstAbs), "."+tlspr.Extension) {
+		return nil, fmt.Errorf("%s is not a TeleSAPR file (.%s)", dst, tlspr.Extension)
 	}
 
 	p := &Plan{}
@@ -187,7 +187,7 @@ func (p *Plan) Missing() []Item {
 	return out
 }
 
-// Existing lists the linked files whose .spcs copy exists already, for
+// Existing lists the linked files whose .tlspr copy exists already, for
 // which the user chooses reuse or overwrite once.
 func (p *Plan) Existing() []Item {
 	var out []Item
@@ -204,7 +204,7 @@ func (p *Plan) Root() Item { return p.Items[len(p.Items)-1] }
 
 // Options say how Run treats what is there already.
 type Options struct {
-	// Overwrite rewrites a linked file's .spcs copy that exists
+	// Overwrite rewrites a linked file's .tlspr copy that exists
 	// already; without it the copy is reused as it is.
 	Overwrite bool
 	// Units is the document unit of the files written.
@@ -216,11 +216,11 @@ type Options struct {
 
 // Result is what Run did.
 type Result struct {
-	// Written and Reused are the .spcs files written and those left as
+	// Written and Reused are the .tlspr files written and those left as
 	// they were, in plan order.
 	Written, Reused []string
 	// Failed holds the files that could not be converted or written,
-	// by .spcs path. Files linking them open with a missing link.
+	// by .tlspr path. Files linking them open with a missing link.
 	Failed map[string]error
 	// Warnings are about the files written: links that were declined
 	// and what regeneration removed with them.
@@ -261,8 +261,8 @@ func Run(p *Plan, o Options) (*Result, error) {
 	return r, nil
 }
 
-// convertOne reads one .slvs file and returns it as a .spcs document to be
-// saved at dst, with its .slvs links pointing at their .spcs copies
+// convertOne reads one .slvs file and returns it as a .tlspr document to be
+// saved at dst, with its .slvs links pointing at their .tlspr copies
 // and every link loaded from there. The caller writes it.
 func convertOne(it Item, o Options) (data []byte, warnings []string, err error) {
 	doc, err := parse(it.Src)
@@ -276,14 +276,14 @@ func convertOne(it Item, o Options) (data []byte, warnings []string, err error) 
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
 		if g.Type == sketch.GroupLinked && isSlvs(g.LinkFile) {
-			g.LinkFile = strings.TrimSuffix(g.LinkFile, filepath.Ext(g.LinkFile)) + "." + spcs.Extension
+			g.LinkFile = strings.TrimSuffix(g.LinkFile, filepath.Ext(g.LinkFile)) + "." + tlspr.Extension
 		}
 	}
 	if _, err := link.RebaseLinks(sk, it.Src, it.Dst); err != nil {
 		return nil, warnings, err
 	}
 
-	// As spcs.LoadFile: the saved entities are regenerated.
+	// As tlspr.LoadFile: the saved entities are regenerated.
 	sk.Entities = sk.Entities[:0]
 	if !link.ReloadAll(sk, it.Dst, link.Options{CanCancel: !o.Quiet, Quiet: o.Quiet}) {
 		return nil, warnings, ErrCancelled
@@ -305,7 +305,7 @@ func convertOne(it Item, o Options) (data []byte, warnings []string, err error) 
 	// The model is in millimetres; the unit only says what typed
 	// lengths are in, and an imported model has none typed yet.
 	sk.Units = o.Units
-	return spcs.Encode(sk, spcs.Options{}), warnings, nil
+	return tlspr.Encode(sk, tlspr.Options{}), warnings, nil
 }
 
 // File converts root and what it links to dst without asking anything:

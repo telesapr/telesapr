@@ -1,7 +1,7 @@
-# The frustum of testdata/topo/frustum.spcs, the circle its top's rim
+# The frustum of testdata/topo/frustum.tlspr, the circle its top's rim
 # traces picked on the turned view and rounded; the same as
 # path_fillet_cone.go makes (TestPathEquivalenceFilletCone).
-file $testdata/topo/frustum.spcs
+file $testdata/topo/frustum.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit

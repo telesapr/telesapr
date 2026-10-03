@@ -6,10 +6,10 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
 )
 
 // TestLargeDimensionsConstraintFixture verifies that the
@@ -110,7 +110,7 @@ func TestLargeDimensionsRoundTripPreservesBlockCount(t *testing.T) {
 		t.Fatalf("LoadFile: %v", err)
 	}
 	original := len(doc.Blocks)
-	out := spcs.Encode(doc.Sketch, spcs.Options{})
+	out := tlspr.Encode(doc.Sketch, tlspr.Options{})
 	if len(out) == 0 {
 		t.Fatalf("Save returned empty bytes")
 	}
@@ -132,8 +132,8 @@ func TestLargeDimensionsSaveProducesHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadFile: %v", err)
 	}
-	out := spcs.Encode(doc.Sketch, spcs.Options{})
-	if !bytes.HasPrefix(out, []byte("spacesolve ")) || !bytes.Contains(out, []byte("\ngroup ")) {
+	out := tlspr.Encode(doc.Sketch, tlspr.Options{})
+	if !bytes.HasPrefix(out, []byte("telesapr ")) || !bytes.Contains(out, []byte("\ngroup ")) {
 		t.Errorf("output should start with the header and hold groups")
 	}
 }

@@ -85,7 +85,7 @@ group 1 0 0 0 1
 group 2 0 0 1 1
 group 3 0 6 1 1
 save
-spacesolve 2
+telesapr 2
 
 units mm
 

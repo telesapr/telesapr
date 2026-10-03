@@ -1,10 +1,10 @@
 package ui
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/render/soft"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // WriteThumbnail renders the sketch seen along the projection vectors,

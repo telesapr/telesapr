@@ -3,7 +3,7 @@
 // and (16, -6), and the interface extrudes 80 mm by default.
 package main
 
-import . "github.com/spacesolve/spacesolve/pkg/script/api"
+import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()

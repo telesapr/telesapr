@@ -7,7 +7,7 @@ import (
 	"github.com/msorc/takigo/event"
 	tkplatform "github.com/msorc/takigo/platform"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // TestConsoleKeys types in a console: Return enters the box's text,

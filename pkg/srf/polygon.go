@@ -1,6 +1,6 @@
 package srf
 
-import "github.com/spacesolve/spacesolve/pkg/geom"
+import "github.com/telesapr/telesapr/pkg/geom"
 
 // SPolygon is a set of SContour on a common plane. Together with the
 // SShell that wraps it, SPolygon is what gets triangulated into an

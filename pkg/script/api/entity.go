@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // Entity is something on the drawing: a point, a line segment, a

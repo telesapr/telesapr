@@ -6,10 +6,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/solver"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/solver"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // GenerateAll regenerates the whole model: every group's entities

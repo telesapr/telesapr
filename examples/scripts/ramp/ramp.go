@@ -2,11 +2,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/ramp/ramp.go [radius] [-]
+//	telesapr-cli run examples/scripts/ramp/ramp.go [radius] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/ramp/ramp.go
+//	telesapr --script examples/scripts/ramp/ramp.go
 //
 // A trapezoid drawn upright, 20 along its foot, 15 along its top and 10
 // high, extruded 10: its top meets its front and back square and its
@@ -16,7 +16,7 @@
 // the edges, so the cylinder along the slope, which turns further, goes
 // on past the ellipse to where it meets the front. The script checks
 // the solid, compares its volume with OpenCASCADE's for a radius of 1,
-// 2 or 3, prints it, and saves ramp.spcs, unless given "-".
+// 2 or 3, prints it, and saves ramp.tlspr, unless given "-".
 package main
 
 import (
@@ -25,7 +25,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -77,7 +77,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("ramp.spcs"); err != nil {
+		if err := doc.Save("ramp.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

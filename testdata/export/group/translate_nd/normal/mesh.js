@@ -1,4 +1,4 @@
-var solvespace_model_mesh = {
+var telesapr_model_mesh = {
   bounds: {
     x: 35.000000, y: 35.000000, near: 1.000000, far: 70.000000, z: 35.000000, edgeBias: 0.140000
   },

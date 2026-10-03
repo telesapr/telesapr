@@ -4,8 +4,8 @@ package ui
 // text window screens (C++ style.cpp from Style::CreateCustomStyle on).
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // wrapSymmetric brings v into (-n/2, n/2] (C++ WRAP_SYMMETRIC).

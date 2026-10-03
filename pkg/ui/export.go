@@ -13,13 +13,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/cfmt"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/res"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/cfmt"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/res"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // ExportSectionTo exports the section of the solid model by a plane
@@ -1072,7 +1072,7 @@ const threeJsHTMLBegin = `
 <html lang="en">
   <head>
     <meta charset="utf-8"></meta>
-    <title>Three.js Solvespace Mesh</title>
+    <title>Three.js TeleSAPR Mesh</title>
     <script id="%s">%s</script>
     <script id="%s">%s</script>
     <script id="%s">%s</script>
@@ -1085,7 +1085,7 @@ const threeJsHTMLBegin = `
 `
 
 const threeJsHTMLEnd = `
-    document.body.appendChild(solvespace(solvespace_model_%s, {
+    document.body.appendChild(telesapr(telesapr_model_%s, {
         scale: %g,
         offset: new THREE.Vector3(%g, %g, %g),
         projUp: new THREE.Vector3(%g, %g, %g),
@@ -1102,7 +1102,7 @@ func (ss *SolveSpaceUI) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, 
 	sol *srf.SOutlineList) {
 	const threeFn = "three-r111.min.js"
 	const hammerFn = "hammer-2.0.8.js"
-	const controlsFn = "SolveSpaceControls.js"
+	const controlsFn = "TeleSAPRControls.js"
 	pf := func(format string, args ...any) { f.WriteString(cfmt.Sprintf(format, args...)) }
 
 	// A default three.js viewer with OrthographicTrackballControls is
@@ -1133,7 +1133,7 @@ func (ss *SolveSpaceUI) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, 
 			controlsFn, res.LoadString("threejs/"+controlsFn))
 	}
 
-	pf("var solvespace_model_%s = {\n"+
+	pf("var telesapr_model_%s = {\n"+
 		"  bounds: {\n"+
 		"    x: %f, y: %f, near: %f, far: %f, z: %f, edgeBias: %f\n"+
 		"  },\n",
@@ -1234,7 +1234,7 @@ func (ss *SolveSpaceUI) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm 
 	basename := fileStemIdentifier(filename)
 
 	pf("#VRML V2.0 utf8\n"+
-		"#Exported from SolveSpace %s\n"+
+		"#Exported from TeleSAPR (based on SolveSpace %s)\n"+
 		"\n"+
 		"DEF %s Transform {\n"+
 		"  children [",

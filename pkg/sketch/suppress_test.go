@@ -5,11 +5,11 @@ import (
 	"math"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // translateND loads a fixture that is a fixed point of the solver: g002
@@ -36,7 +36,7 @@ func TestSuppressAll(t *testing.T) {
 	sk := translateND(t)
 	sk.Active = hg(7)
 	sk.GenerateAll()
-	saved := spcs.Encode(sk, spcs.Options{})
+	saved := tlspr.Encode(sk, tlspr.Options{})
 	r, c, g, e := len(sk.Requests), len(sk.Constraints), len(sk.Groups), len(sk.Entities)
 	head := volume(sk, hg(3))
 
@@ -83,8 +83,8 @@ func TestSuppressAll(t *testing.T) {
 
 	// Saved, loaded and brought back, the model is what it was, once
 	// the group that was active is again.
-	data := spcs.Encode(sk, spcs.Options{})
-	doc, err := spcs.Decode(data)
+	data := tlspr.Encode(sk, tlspr.Options{})
+	doc, err := tlspr.Decode(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestSuppressAll(t *testing.T) {
 		}
 		back.Active = hg(7)
 		back.GenerateAll()
-		if got := spcs.Encode(back, spcs.Options{}); !bytes.Equal(got, saved) {
+		if got := tlspr.Encode(back, tlspr.Options{}); !bytes.Equal(got, saved) {
 			t.Fatalf("suppressing and bringing back changed the file (%d)", i)
 		}
 	}

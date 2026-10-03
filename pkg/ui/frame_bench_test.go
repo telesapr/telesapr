@@ -8,12 +8,12 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
-	"github.com/spacesolve/spacesolve/pkg/render"
-	"github.com/spacesolve/spacesolve/pkg/render/gl"
-	"github.com/spacesolve/spacesolve/pkg/render/gl/glx"
-	"github.com/spacesolve/spacesolve/pkg/render/soft"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/render/gl"
+	"github.com/telesapr/telesapr/pkg/render/gl/glx"
+	"github.com/telesapr/telesapr/pkg/render/soft"
 )
 
 // frameModels are the models BenchmarkFrame orbits, from small to the

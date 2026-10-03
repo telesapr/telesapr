@@ -3,8 +3,8 @@ package api
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // Section is the state of the section view, as its screen shows it,

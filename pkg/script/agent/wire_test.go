@@ -246,16 +246,16 @@ func TestSockets(t *testing.T) {
 		t.Errorf("listening on a name too long: %v", err)
 	}
 
-	if got, err := SocketDir(); err != nil || !strings.Contains(got, "spacesolve") {
+	if got, err := SocketDir(); err != nil || !strings.Contains(got, "telesapr") {
 		t.Errorf("the sockets' directory is %q, %v", got, err)
 	}
 	if runtime.GOOS == "linux" {
 		t.Setenv("XDG_RUNTIME_DIR", "/run/user/1")
-		if got, _ := SocketDir(); got != "/run/user/1/spacesolve" {
+		if got, _ := SocketDir(); got != "/run/user/1/telesapr" {
 			t.Errorf("with XDG_RUNTIME_DIR the sockets' directory is %q", got)
 		}
 		t.Setenv("XDG_RUNTIME_DIR", "")
-		if got, _ := SocketDir(); !strings.HasPrefix(filepath.Base(got), "spacesolve-") {
+		if got, _ := SocketDir(); !strings.HasPrefix(filepath.Base(got), "telesapr-") {
 			t.Errorf("without XDG_RUNTIME_DIR the sockets' directory is %q", got)
 		}
 	}

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // TestParityConstraintFixtures walks every non-boolean constraint

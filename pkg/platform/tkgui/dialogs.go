@@ -20,12 +20,12 @@ import (
 	"github.com/msorc/takigo/widget/label"
 	"github.com/msorc/takigo/window"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
 // prepareTitle is the GTK backend's window title: the application's
 // name after the window's own (C++ PrepareTitle).
-func prepareTitle(title string) string { return title + " — SolveSpace" }
+func prepareTitle(title string) string { return title + " — TeleSAPR" }
 
 func (p *Platform) parentOf(w platform.Window) widget.Caregiver {
 	if tw, ok := w.(*Window); ok && tw != nil {

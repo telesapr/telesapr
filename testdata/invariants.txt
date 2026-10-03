@@ -1,5 +1,5 @@
 # Invariant baseline: one line per fixture and group, from TestInvariants
-# in pkg/persist/slvs. Regenerate with SPACESOLVE_REGEN_INVARIANTS=1.
+# in pkg/persist/slvs. Regenerate with TELESAPR_REGEN_INVARIANTS=1.
 analysis/contour_area/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 analysis/contour_area/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 constraint/angle/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false

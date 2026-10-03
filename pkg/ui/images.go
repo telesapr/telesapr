@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/res"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/res"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // imagePixmap is the pixmap of an image request's file, or nil if it

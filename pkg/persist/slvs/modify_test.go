@@ -3,16 +3,16 @@ package slvs
 import (
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // TestModifyTools runs the tangent arc and split tools on sketches built
-// on a fixture, and requires the goldens in testdata/spcs/golden/modify.
+// on a fixture, and requires the goldens in testdata/tlspr/golden/modify.
 // Until the C++ comparison was frozen, the saves were those C++ wrote
 // after the same steps (testdata/edit, from a C++ harness).
 func TestModifyTools(t *testing.T) {
@@ -87,7 +87,7 @@ func TestModifyTools(t *testing.T) {
 			sk.GenerateAllTyped(sketch.GenerateAll)
 			// As a save regenerates again.
 			sk.GenerateAll()
-			golden.Check(t, fixture("spcs/golden/modify/"+tc.name+".spcs"), spcs.Encode(doc.Sketch, spcs.Options{}))
+			golden.Check(t, fixture("tlspr/golden/modify/"+tc.name+".tlspr"), tlspr.Encode(doc.Sketch, tlspr.Options{}))
 		})
 	}
 }

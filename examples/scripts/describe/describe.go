@@ -1,15 +1,15 @@
 // A drawing in words: what Doc.Describe and Group.Describe say of a
 // plate with a hole, which is what an AI program reads of a drawing
-// before it writes a script for it (spacesolve-cli mcp, docs/ai.md).
+// before it writes a script for it (telesapr-cli mcp, docs/ai.md).
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/describe/describe.go
+//	telesapr-cli run examples/scripts/describe/describe.go
 //
 // In the application, on the sketch that is open: Script > Run File,
 // or
 //
-//	spacesolve --script examples/scripts/describe/describe.go
+//	telesapr --script examples/scripts/describe/describe.go
 //
 // It writes nothing.
 package main
@@ -19,7 +19,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

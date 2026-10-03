@@ -1,8 +1,8 @@
 package srf
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // SShellClass mirrors the C++ SShell::Class enum (srf/surface.h:420).

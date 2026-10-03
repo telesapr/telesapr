@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 )
 
 // TestTTF requires the font list, cap heights, aspect ratios and

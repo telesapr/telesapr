@@ -3,8 +3,8 @@ package topo
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // Problem is a way the topology falls short of a closed, manifold

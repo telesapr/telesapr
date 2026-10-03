@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/persist/slvs"
 )
 
 // TestPhase7AllFixturesLoad walks every .slvs fixture in testdata/

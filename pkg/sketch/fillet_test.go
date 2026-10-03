@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // chordLoss bounds how much less a mesh holds than a fillet's exact
@@ -85,7 +85,7 @@ func TestFilletOneEdge(t *testing.T) {
 
 // A Boolean's edge, by name; and two parallel edges at once.
 func TestFilletSolidEdges(t *testing.T) {
-	d, err := api.Open("../../testdata/topo/slot.spcs")
+	d, err := api.Open("../../testdata/topo/slot.tlspr")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -591,7 +591,7 @@ func TestFilletEdgeRadii(t *testing.T) {
 	if math.Abs(f.EdgeRadius(3)-2) > 1e-9 || math.Abs(f.EdgeRadius(2)-1) > 1e-9 {
 		t.Fatalf("in inches: radii %g %g", f.EdgeRadius(2), f.EdgeRadius(3))
 	}
-	file := filepath.Join(t.TempDir(), "inches.spcs")
+	file := filepath.Join(t.TempDir(), "inches.tlspr")
 	if err := d.Save(file); err != nil {
 		t.Fatal(err)
 	}

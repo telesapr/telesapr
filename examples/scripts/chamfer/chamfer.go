@@ -2,11 +2,11 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/chamfer/chamfer.go [distance]
+//	telesapr-cli run examples/scripts/chamfer/chamfer.go [distance]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/chamfer/chamfer.go
+//	telesapr --script examples/scripts/chamfer/chamfer.go
 //
 // The four edges round the top of a 40 x 30 x 10 block are cut, as New
 // Group > Chamfer Edges does with them selected, at distance mm (2
@@ -21,7 +21,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

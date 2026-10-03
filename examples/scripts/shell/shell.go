@@ -3,17 +3,17 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/shell/shell.go [thickness] [-]
+//	telesapr-cli run examples/scripts/shell/shell.go [thickness] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/shell/shell.go
+//	telesapr --script examples/scripts/shell/shell.go
 //
 // Shell Solid hollows the solid so far to walls of one thickness, open
 // where faces are taken away: here a 60 x 40 x 25 block, open at its
 // top, walls 2 mm thick unless given. The top face is found by a point
 // on it. The script checks the solid against the volume of the walls,
-// prints it, and saves shell.spcs, unless given "-".
+// prints it, and saves shell.tlspr, unless given "-".
 package main
 
 import (
@@ -21,7 +21,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("shell.spcs"); err != nil {
+		if err := doc.Save("shell.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

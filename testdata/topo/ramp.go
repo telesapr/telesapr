@@ -1,16 +1,16 @@
-// Writes ramp.spcs, a model for the uneven mitre's scenario: a
+// Writes ramp.tlspr, a model for the uneven mitre's scenario: a
 // trapezoid drawn upright, 20 along its foot, 15 along its top and 10
 // high, extruded 10, so its top meets its front square and its slope at
 // 116.6 degrees.
 //
-//	spacesolve-cli run testdata/topo/ramp.go testdata/topo/ramp.spcs
+//	telesapr-cli run testdata/topo/ramp.go testdata/topo/ramp.tlspr
 package main
 
 import (
 	"fmt"
 	"os"
 
-	. "github.com/spacesolve/spacesolve/pkg/script/api"
+	. "github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

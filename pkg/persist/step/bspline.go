@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // basis is a B-spline basis: a degree and a knot vector with every

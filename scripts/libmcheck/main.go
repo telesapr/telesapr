@@ -31,7 +31,7 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/spacesolve/spacesolve/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/libm"
 )
 
 const n = 1 << 20

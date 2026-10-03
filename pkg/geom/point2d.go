@@ -3,7 +3,7 @@ package geom
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/libm"
+	"github.com/telesapr/telesapr/pkg/libm"
 )
 
 // LengthEps and VeryPositive mirror C++ LENGTH_EPS and VERY_POSITIVE

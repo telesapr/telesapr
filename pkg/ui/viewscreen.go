@@ -3,7 +3,7 @@ package ui
 // The screen with the view's parameters (C++ view.cpp).
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // ShowEditView is the screen with the view's parameters (C++

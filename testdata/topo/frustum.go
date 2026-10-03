@@ -1,16 +1,16 @@
-// Writes frustum.spcs, a model for the cone fillet's scenario: a
+// Writes frustum.tlspr, a model for the cone fillet's scenario: a
 // trapezoid in the ZX plane, 10 along its foot, 6 along its top and 8
 // high, turned by a lathe about the z axis, so its flat top meets a
 // cone.
 //
-//	spacesolve-cli run testdata/topo/frustum.go testdata/topo/frustum.spcs
+//	telesapr-cli run testdata/topo/frustum.go testdata/topo/frustum.tlspr
 package main
 
 import (
 	"fmt"
 	"os"
 
-	. "github.com/spacesolve/spacesolve/pkg/script/api"
+	. "github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

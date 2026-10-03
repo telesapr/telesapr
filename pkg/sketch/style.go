@@ -3,7 +3,7 @@ package sketch
 import (
 	"sort"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // This file ports the sketch side of solvespace/src/style.cpp; the

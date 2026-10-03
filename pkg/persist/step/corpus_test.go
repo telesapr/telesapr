@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
+	"github.com/telesapr/telesapr/pkg/check"
 )
 
 // corpusEntry is a line of testdata/step/corpus/reference.txt.
@@ -90,11 +90,11 @@ func TestCorpus(t *testing.T) {
 }
 
 // TestExternalCorpus reads the files external.txt lists that it finds
-// under $SPACESOLVE_STEP_CORPUS.
+// under $TELESAPR_STEP_CORPUS.
 func TestExternalCorpus(t *testing.T) {
-	root := os.Getenv("SPACESOLVE_STEP_CORPUS")
+	root := os.Getenv("TELESAPR_STEP_CORPUS")
 	if root == "" {
-		t.Skip("SPACESOLVE_STEP_CORPUS is not set")
+		t.Skip("TELESAPR_STEP_CORPUS is not set")
 	}
 	found := map[string]string{}
 	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {

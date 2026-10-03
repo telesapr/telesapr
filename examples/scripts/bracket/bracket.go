@@ -2,14 +2,14 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/bracket/bracket.go [width [holes]]
+//	telesapr-cli run examples/scripts/bracket/bracket.go [width [holes]]
 //
 // In the application, on the sketch that is open: Script > Run File,
 // or
 //
-//	spacesolve --script examples/scripts/bracket/bracket.go
+//	telesapr --script examples/scripts/bracket/bracket.go
 //
-// It writes bracket.spcs, bracket.stl, bracket.step and bracket.png
+// It writes bracket.tlspr, bracket.stl, bracket.step and bracket.png
 // where it is run, unless it is given "-" as a third argument.
 package main
 
@@ -18,7 +18,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -59,7 +59,7 @@ func main() {
 	if !write {
 		return
 	}
-	if err := doc.Save("bracket.spcs"); err != nil {
+	if err := doc.Save("bracket.tlspr"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

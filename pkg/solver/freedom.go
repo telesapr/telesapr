@@ -3,7 +3,7 @@ package solver
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // This file is not a port: C++ SolveSpace finds the free params only

@@ -1,7 +1,7 @@
 package ui
 
 // File > Import of a SolveSpace model: the .slvs file, and the .slvs
-// files it links, converted to spacesolve models (pkg/persist/convert).
+// files it links, converted to TeleSAPR models (pkg/persist/convert).
 
 import (
 	"errors"
@@ -10,12 +10,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/persist/convert"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/persist/convert"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
-// ImportSolveSpace converts the SolveSpace model src to a spacesolve
+// ImportSolveSpace converts the SolveSpace model src to a TeleSAPR
 // model and opens it. It asks where to save the converted model, then
 // shows every file the import will write before it writes any, and,
 // when converted copies of linked models exist already, asks once
@@ -31,7 +31,7 @@ func (ss *SolveSpaceUI) ImportSolveSpace(src string) bool {
 	dialog.SetTitle("Save the Imported Model")
 	dialog.AddFilters(platform.ModelFileFilters)
 	dialog.ThawChoices(ss.Settings, "Sketch")
-	dialog.SetFilename(withExtension(src, spcs.Extension))
+	dialog.SetFilename(withExtension(src, tlspr.Extension))
 	if !dialog.RunModal() {
 		return false
 	}

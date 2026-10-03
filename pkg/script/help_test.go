@@ -92,7 +92,7 @@ func Inch(v float64) float64
 	}
 
 	got = helped(t, `help("api")`, `help("Entity")`, `help("math")`)
-	mustContain(t, got, "package api  // import \"github.com/spacesolve/spacesolve/pkg/script/api\"\n    Package api is what a script sees",
+	mustContain(t, got, "package api  // import \"github.com/telesapr/telesapr/pkg/script/api\"\n    Package api is what a script sees",
 		"Types:\n    BrokenReference      BrokenReference is something a regeneration deleted",
 		"\n    Constraint           Constraint is a constraint of the sketch",
 		"Functions:\n    Commands() []string", "Constants and variables:\n    Assemble Difference",

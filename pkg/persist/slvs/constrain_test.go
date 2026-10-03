@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // TestTryConstrain adds constraints to a free line the way C++'s

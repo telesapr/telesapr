@@ -9,16 +9,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/internal/golden"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 
-	"github.com/spacesolve/spacesolve/pkg/check"
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/geom"
-	"github.com/spacesolve/spacesolve/pkg/internal/sweep"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/srf"
-	"github.com/spacesolve/spacesolve/pkg/thread"
+	"github.com/telesapr/telesapr/pkg/check"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/thread"
 )
 
 // threadCase is a round part, extruded from a circle in the XY plane,
@@ -251,10 +251,10 @@ var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "s
 	"lead_tr20", "screw_unc", "triple_m12"}
 
 // TestThreadGoldens saves the file a thread makes, opens it and saves
-// it again, and requires the golden, testdata/thread/<name>.spcs. Until
+// it again, and requires the golden, testdata/thread/<name>.tlspr. Until
 // the C++ comparison was frozen, the same steps gave the bytes C++
 // saved after opening the file (testdata/thread/<name>.slvs, now plain
-// fixtures). SPACESOLVE_REGEN_GOLDEN=1 rewrites the goldens.
+// fixtures). TELESAPR_REGEN_GOLDEN=1 rewrites the goldens.
 func TestThreadGoldens(t *testing.T) {
 	for _, tc := range raceSample(threadCases) {
 		if !slices.Contains(threadGoldens, tc.name) {
@@ -264,19 +264,19 @@ func TestThreadGoldens(t *testing.T) {
 			sk, _, _ := tc.build(t, 0)
 			// Saved, which regenerates first.
 			sk.GenerateAll()
-			path := filepath.Join(t.TempDir(), tc.name+".spcs")
-			if err := spcs.SaveFile(sk, "", path, spcs.Options{}); err != nil {
+			path := filepath.Join(t.TempDir(), tc.name+".tlspr")
+			if err := tlspr.SaveFile(sk, "", path, tlspr.Options{}); err != nil {
 				t.Fatal(err)
 			}
 			srf.SetChordTolMm(0)
-			doc, err := spcs.LoadFile(path)
+			doc, err := tlspr.LoadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
 			// Opened, then saved: each regenerates.
 			doc.Sketch.GenerateAll()
 			doc.Sketch.GenerateAll()
-			golden.Check(t, fixture("thread/"+tc.name+".spcs"), spcs.Encode(doc.Sketch, spcs.Options{}))
+			golden.Check(t, fixture("thread/"+tc.name+".tlspr"), tlspr.Encode(doc.Sketch, tlspr.Options{}))
 		})
 	}
 }
@@ -401,7 +401,7 @@ func threadSweepCases() []threadCase {
 // TestThreadSweep makes threads of many kinds and sizes at chord
 // tolerances from coarse to fine, and requires a sound solid from
 // nearly all: an even sample by default, the whole grid with
-// SPACESOLVE_SWEEP=1 (two minutes). AddThread generates each thread
+// TELESAPR_SWEEP=1 (two minutes). AddThread generates each thread
 // once, in the first placement of its sketch planes; the target fixed
 // for package 5.3 of ROADMAP-JUMP.md was no unsound solid at the
 // default chord tolerance (0.1%) or at five times it.
@@ -440,7 +440,7 @@ func TestThreadSweep(t *testing.T) {
 const threadSweepMaxFailRate = 3.0 / 400
 
 // TestThreadGoldensSound checks the solid of every thread golden, the
-// .spcs ones and the C++ saves, with the invariant oracle.
+// .tlspr ones and the C++ saves, with the invariant oracle.
 func TestThreadGoldensSound(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join("..", "..", "..", "testdata", "thread", "*.s[lp]?s"))
 	if err != nil || len(files) == 0 {
@@ -449,8 +449,8 @@ func TestThreadGoldensSound(t *testing.T) {
 	for _, f := range files {
 		t.Run(filepath.Base(f), func(t *testing.T) {
 			var sk *sketch.Sketch
-			if strings.HasSuffix(f, ".spcs") {
-				doc, err := spcs.LoadFile(f)
+			if strings.HasSuffix(f, ".tlspr") {
+				doc, err := tlspr.LoadFile(f)
 				if err != nil {
 					t.Fatal(err)
 				}

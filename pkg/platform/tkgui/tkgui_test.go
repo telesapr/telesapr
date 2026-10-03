@@ -11,16 +11,16 @@ import (
 	"github.com/msorc/takigo/event"
 	tkplatform "github.com/msorc/takigo/platform"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform"
 )
 
-// requireGUI skips unless SPACESOLVE_GUI_TESTS is set (make test-gui
+// requireGUI skips unless TELESAPR_GUI_TESTS is set (make test-gui
 // sets it and runs these under Xvfb), so that go test doesn't open
 // windows on the desktop.
 func requireGUI(t *testing.T) *Platform {
 	t.Helper()
-	if os.Getenv("SPACESOLVE_GUI_TESTS") == "" {
-		t.Skip("set SPACESOLVE_GUI_TESTS=1 (make test-gui) to run GUI tests")
+	if os.Getenv("TELESAPR_GUI_TESTS") == "" {
+		t.Skip("set TELESAPR_GUI_TESTS=1 (make test-gui) to run GUI tests")
 	}
 	p, err := New("")
 	if err != nil {

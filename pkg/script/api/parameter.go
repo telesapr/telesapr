@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // Parameter is a named value of the document's parameter table, which

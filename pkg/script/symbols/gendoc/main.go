@@ -25,7 +25,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/script/symbols"
+	"github.com/telesapr/telesapr/pkg/script/symbols"
 )
 
 func main() {

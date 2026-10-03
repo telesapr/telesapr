@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var slotModel = filepath.Join("..", "..", "..", "testdata", "topo", "slot.spcs")
+var slotModel = filepath.Join("..", "..", "..", "testdata", "topo", "slot.tlspr")
 
 func openSlot(t *testing.T) *Doc {
 	t.Helper()

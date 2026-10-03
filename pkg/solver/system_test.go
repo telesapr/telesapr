@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 func TestQRRankAndDeadColumns(t *testing.T) {

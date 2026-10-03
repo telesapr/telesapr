@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // Mirror, Chamfer and Sweep, and what each reads and changes.

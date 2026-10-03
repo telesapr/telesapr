@@ -9,7 +9,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // PixmapFormat is the layout of a pixmap's pixels (C++ Pixmap::Format).

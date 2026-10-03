@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/platform/headless"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
 )
 
 // shownConsole opens the console from the menu and returns its
@@ -124,7 +124,7 @@ func TestScriptConsoleRunFile(t *testing.T) {
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {

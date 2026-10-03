@@ -84,7 +84,7 @@ row 21   parameters
 row 23 
  0-99 64 64 0
 save
-spacesolve 2
+telesapr 2
 
 units mm
 

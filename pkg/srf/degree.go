@@ -3,7 +3,7 @@ package srf
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // Degree elevation: a Bezier curve or patch written again with one

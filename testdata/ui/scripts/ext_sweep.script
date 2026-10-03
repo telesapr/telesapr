@@ -3,7 +3,7 @@
 # line of the path picked, the active sketch's circle is swept along
 # them, and the group screen lists the path. Analyze > Check Solid
 # finds the pipe sound.
-file $testdata/ui/sweep_path.spcs
+file $testdata/ui/sweep_path.tlspr
 menu File|Open...
 view other
 answer ok

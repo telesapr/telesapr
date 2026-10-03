@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/x-telesapr">
+        <comment xml:lang="en">TeleSAPR model</comment>
+        <generic-icon name="telesapr"/>
+        <glob pattern="*.tlspr"/>
+    </mime-type>
+</mime-info>

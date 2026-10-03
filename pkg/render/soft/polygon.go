@@ -4,7 +4,7 @@ import (
 	"math"
 	"slices"
 
-	"github.com/spacesolve/spacesolve/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // fillPlanarPolygon fills a planar polygon of any number of contours

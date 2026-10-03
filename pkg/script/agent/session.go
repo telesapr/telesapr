@@ -1,5 +1,5 @@
 // Package agent is what a program that draws by writing scripts needs
-// of spacesolve, such as an AI model behind an MCP client: it runs a
+// of TeleSAPR, such as an AI model behind an MCP client: it runs a
 // script and says what came of it, describes the drawing in words,
 // renders a picture of it, and gives the scripting interface's help. A
 // Backend does those four things; a Session does them on a script
@@ -18,8 +18,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/spacesolve/spacesolve/pkg/script"
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 // Result is what came of running a script.
@@ -177,7 +177,7 @@ func (s *Session) Run(ctx context.Context, code string) (Result, error) {
 	case err == nil:
 	case errors.Is(err, script.ErrBusy):
 		s.out.Stop()
-		return Result{}, errors.New("another script is running in spacesolve; wait for it to end, or stop it")
+		return Result{}, errors.New("another script is running in TeleSAPR; wait for it to end, or stop it")
 	case errors.As(err, &exit) && exit == 0:
 		// A script that exits with success has just ended.
 	default:
@@ -275,7 +275,7 @@ func (s *Session) Render(_ context.Context, view string, width, height int) (png
 	if width < 1 || height < 1 || width > MaxSide || height > MaxSide {
 		return nil, fmt.Errorf("a picture of %d by %d pixels; each side is from 1 to %d", width, height, MaxSide)
 	}
-	dir, err := os.MkdirTemp("", "spacesolve-render")
+	dir, err := os.MkdirTemp("", "telesapr-render")
 	if err != nil {
 		return nil, err
 	}

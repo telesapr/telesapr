@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // plate draws a plate whose width, height and hole come from three
@@ -114,7 +114,7 @@ func TestParameters(t *testing.T) {
 
 	// The table and the expressions come back from a file, and a save
 	// of the reopened file is the same.
-	path := filepath.Join(t.TempDir(), "plate.spcs")
+	path := filepath.Join(t.TempDir(), "plate.tlspr")
 	if err := d.Save(path); err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestParameters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	again := filepath.Join(t.TempDir(), "again.spcs")
+	again := filepath.Join(t.TempDir(), "again.tlspr")
 	if err := e.Save(again); err != nil {
 		t.Fatal(err)
 	}
@@ -383,12 +383,12 @@ func TestDocumentUnits(t *testing.T) {
 	if !near(a.Length(), 25.4) || !near(b.Length(), 6.35) || !near(c.Value(), 10) {
 		t.Fatalf("lengths %v %v %v", a.Length(), b.Length(), c.Value())
 	}
-	path := filepath.Join(t.TempDir(), "inch.spcs")
+	path := filepath.Join(t.TempDir(), "inch.tlspr")
 	if err := d.Save(path); err != nil {
 		t.Fatal(err)
 	}
 	data, _ := os.ReadFile(path)
-	for _, want := range []string{"spacesolve 2\n", "units inch\n", "value = w*2\n", "value = 1/4\n", "value = 0.3937007874015748\n"} {
+	for _, want := range []string{"telesapr 2\n", "units inch\n", "value = w*2\n", "value = 1/4\n", "value = 0.3937007874015748\n"} {
 		if !bytes.Contains(data, []byte(want)) {
 			t.Errorf("the file has no %q", want)
 		}

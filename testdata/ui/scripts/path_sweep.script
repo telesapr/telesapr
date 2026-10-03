@@ -1,6 +1,6 @@
 # A circle swept along a line, a bend and a line, the path picked with
 # the mouse; the same as path_sweep.go makes (TestPathEquivalenceSweep).
-file $testdata/ui/sweep_path.spcs
+file $testdata/ui/sweep_path.tlspr
 menu File|Open...
 view other
 move 307.5 247.5

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/spacesolve/spacesolve/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/geom"
 )
 
 // boxMesh is the closed, outward-facing box from lo to hi.

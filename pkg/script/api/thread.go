@@ -3,8 +3,8 @@ package api
 import (
 	"math"
 
-	"github.com/spacesolve/spacesolve/pkg/sketch"
-	"github.com/spacesolve/spacesolve/pkg/thread"
+	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/thread"
 )
 
 // ThreadOptions are what New Group > Screw Thread asks for. The zero

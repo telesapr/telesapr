@@ -3,7 +3,7 @@ package sketch
 import (
 	"fmt"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // This file records what a regeneration deletes because what it refers

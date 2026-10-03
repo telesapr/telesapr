@@ -2,18 +2,18 @@
 //
 // Without a window:
 //
-//	spacesolve-cli run examples/scripts/loft/loft.go [height] [-]
+//	telesapr-cli run examples/scripts/loft/loft.go [height] [-]
 //
 // In the application: Script > Run File, or
 //
-//	spacesolve --script examples/scripts/loft/loft.go
+//	telesapr --script examples/scripts/loft/loft.go
 //
 // Loft joins the closed loop of one sketch in a workplane to that of
 // another by ruled faces, curve by curve: here a circle of radius 20 in
 // XY, which counts as four arcs, to a square of side 30 in a workplane
 // 40 mm above unless given. Its solid lies between the lofts of the
 // circle's inscribed and circumscribed squares to the square, which the
-// script checks; it prints the volume and saves loft.spcs, unless given
+// script checks; it prints the volume and saves loft.tlspr, unless given
 // "-".
 package main
 
@@ -23,7 +23,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/spacesolve/spacesolve/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
@@ -64,7 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("loft.spcs"); err != nil {
+		if err := doc.Save("loft.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

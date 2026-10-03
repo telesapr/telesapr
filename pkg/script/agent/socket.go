@@ -30,21 +30,21 @@ func SocketDir() (string, error) {
 	case "windows":
 		// The profile is the user's own; mode bits mean nothing here.
 		if dir := os.Getenv("LOCALAPPDATA"); dir != "" {
-			return filepath.Join(dir, "spacesolve"), nil
+			return filepath.Join(dir, "telesapr"), nil
 		}
 		dir, err := os.UserCacheDir()
 		if err != nil {
 			return "", err
 		}
-		return filepath.Join(dir, "spacesolve"), nil
+		return filepath.Join(dir, "telesapr"), nil
 	case "darwin":
 		// TMPDIR is each user's own there.
-		return filepath.Join(os.TempDir(), "spacesolve"), nil
+		return filepath.Join(os.TempDir(), "telesapr"), nil
 	}
 	if dir := os.Getenv("XDG_RUNTIME_DIR"); dir != "" {
-		return filepath.Join(dir, "spacesolve"), nil
+		return filepath.Join(dir, "telesapr"), nil
 	}
-	return filepath.Join(os.TempDir(), "spacesolve-"+strconv.Itoa(os.Getuid())), nil
+	return filepath.Join(os.TempDir(), "telesapr-"+strconv.Itoa(os.Getuid())), nil
 }
 
 const (

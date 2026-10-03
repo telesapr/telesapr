@@ -1,7 +1,7 @@
 package sketch
 
 import (
-	"github.com/spacesolve/spacesolve/pkg/core"
+	"github.com/telesapr/telesapr/pkg/core"
 )
 
 // This file is not a port: C++ SolveSpace shows which points are free

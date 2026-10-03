@@ -11,15 +11,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spacesolve/spacesolve/pkg/core"
-	"github.com/spacesolve/spacesolve/pkg/persist/link"
-	"github.com/spacesolve/spacesolve/pkg/persist/spcs"
-	"github.com/spacesolve/spacesolve/pkg/platform"
-	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/persist/link"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // backupExt is the autosave file extension (C++ BACKUP_EXT).
-const backupExt = spcs.Extension + "~"
+const backupExt = tlspr.Extension + "~"
 
 // maxWarnings is how many of a file's warnings a message lists.
 const maxWarnings = 8
@@ -111,15 +111,15 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 		return false
 	}
 	if hasExtension(filename, "slvs") {
-		ss.Error("'%s' is a SolveSpace model. Use File > Import, or spacesolve-cli "+
-			"convert, to convert it to a spacesolve model, which can then be opened.", filename)
+		ss.Error("'%s' is a SolveSpace model. Use File > Import, or telesapr-cli "+
+			"convert, to convert it to a TeleSAPR model, which can then be opened.", filename)
 		return false
 	}
 
-	doc, err := spcs.LoadFile(filename)
-	var ve *spcs.VersionError
+	doc, err := tlspr.LoadFile(filename)
+	var ve *tlspr.VersionError
 	switch {
-	case errors.Is(err, spcs.ErrCancelled):
+	case errors.Is(err, tlspr.ErrCancelled):
 		// The user gave up at a missing linked file.
 		return false
 	case errors.As(err, &ve):
@@ -147,8 +147,8 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 // SaveToFile writes the sketch to filename (C++ SolveSpaceUI::SaveToFile).
 func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 	if hasExtension(filename, "slvs") {
-		ss.Error("spacesolve doesn't write SolveSpace models; save the sketch as a " +
-			".spcs file.")
+		ss.Error("TeleSAPR doesn't write SolveSpace models; save the sketch as a " +
+			".tlspr file.")
 		return false
 	}
 
@@ -157,8 +157,8 @@ func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 	ss.ScheduleShowTW()
 	ss.GenerateAll(sketch.GenerateAll)
 
-	err := spcs.SaveFile(ss.SK, ss.SaveFile, filename, spcs.Options{})
-	var le *spcs.LinkError
+	err := tlspr.SaveFile(ss.SK, ss.SaveFile, filename, tlspr.Options{})
+	var le *tlspr.LinkError
 	switch {
 	case errors.As(err, &le):
 		ss.Error("This sketch links the sketch '%s'; it can only be saved "+
@@ -217,16 +217,16 @@ func (ss *SolveSpaceUI) GetFilenameAndSave(saveAs bool) bool {
 }
 
 // modelFileName is the file a sketch is saved in when the user chose
-// name: name with the .spcs extension, in place of a .slvs extension or
+// name: name with the .tlspr extension, in place of a .slvs extension or
 // added to another.
 func modelFileName(name string) string {
 	switch {
-	case hasExtension(name, spcs.Extension):
+	case hasExtension(name, tlspr.Extension):
 		return name
 	case hasExtension(name, "slvs"):
-		return withExtension(name, spcs.Extension)
+		return withExtension(name, tlspr.Extension)
 	default:
-		return name + "." + spcs.Extension
+		return name + "." + tlspr.Extension
 	}
 }
 
