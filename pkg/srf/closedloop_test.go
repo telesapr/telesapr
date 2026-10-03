@@ -264,9 +264,12 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 
 // cylinderMaxFailRate is the fraction of TestCylinderThroughCylinderSweep's
 // grid allowed to fail: 2 of 54 since roadmap 13.2, two differences
-// whose hole leaks where the crossed cylinder's seam runs along it
-// (r=4 at dy=0, 30 degrees, and dy=0.7, 45 degrees): the triangulation
-// of the hole's patches, not the intersection. The nine unions that
+// (r=4 at dy=0, 30 degrees, and dy=0.7, 45 degrees) where the crossed
+// cylinder's seam pierces the upright wall: the wall's strip next to
+// the hole is ear-clipped into a triangle the full height of the wall,
+// whose edge passes within a hair of that point, and the hole's edges
+// from it cross that triangle. The triangulation's, not the
+// intersection's (roadmap 13.1). The nine unions that
 // failed before, from 45 degrees up, had their curve leave a quarter
 // of the upright cylinder's flat end across the seam to the next
 // quarter unsplit, since a ray cast finds no crossing with a patch
