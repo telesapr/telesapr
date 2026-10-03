@@ -2,6 +2,7 @@ package topo
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -178,6 +179,27 @@ func (t *Topology) offsetLoop(f, l int, n geom.Vector, d float64) ([]srf.SBezier
 		}
 		pieces = append(pieces, p)
 	}
+	keep, corner, err := offsetProfile(pieces, n, d, fmt.Sprintf("a thickness of %g", d))
+	if err != nil {
+		return nil, err
+	}
+	var out []srf.SBezier
+	for j, i := range keep {
+		curves, err := movedCurves(pieces[i], corner[j], corner[(j+1)%len(keep)], n, 0)
+		if err != nil {
+			return nil, shellErr(pieces[i].a, "a thickness of %g makes the walls meet, closing up the inside", d)
+		}
+		out = append(out, curves...)
+	}
+	return out, nil
+}
+
+// offsetProfile moves the closed loop of pieces into its material by d,
+// in the plane of normal n: keep are the pieces that stay, in order, an
+// arc whose material lies inside it, of radius d or less, going to a
+// sharp corner, and corner[j] is where piece keep[j] starts, moved.
+// what names d for messages.
+func offsetProfile(pieces []profilePiece, n geom.Vector, d float64, what string) (keep []int, corner []geom.Vector, err error) {
 	k := len(pieces)
 	// The moved copy of each piece: a line through a point, along a
 	// direction, or a circle.
@@ -194,10 +216,7 @@ func (t *Topology) offsetLoop(f, l int, n geom.Vector, d float64) ([]srf.SBezier
 		}
 		return q
 	}
-	// An arc whose material lies inside it, thinner than the walls,
-	// goes: its neighbours meet in a sharp corner.
 	mv := make([]profilePiece, k)
-	var keep []int
 	for i, p := range pieces {
 		mv[i] = moved(p)
 		if !p.arc || mv[i].r > geom.LengthEps {
@@ -205,51 +224,55 @@ func (t *Topology) offsetLoop(f, l int, n geom.Vector, d float64) ([]srf.SBezier
 		}
 	}
 	if len(keep) < 2 {
-		return nil, shellErr(pieces[0].a, "a thickness of %g is more than the radius of the solid's end, %g", d, pieces[0].r)
+		return nil, nil, shellErr(pieces[0].a, "%s is more than the radius of the outline, %g", what, pieces[0].r)
 	}
 	// Where the kept piece before meets each kept piece, moved.
-	corner := make(map[int]geom.Vector, len(keep))
+	corner = make([]geom.Vector, len(keep))
 	for j, i := range keep {
 		prev := keep[(j+len(keep)-1)%len(keep)]
 		v := pieces[i].a
 		if back := (i + k - 1) % k; back != prev {
 			v = pieces[back].centre
 		}
-		c, err := meetMoved(mv[prev], mv[i], v, pieces[prev], pieces[i], d, n)
+		c, err := meetMoved(mv[prev], mv[i], v, pieces[prev], pieces[i], d, n, what)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		corner[i] = c
+		corner[j] = c
 	}
-	var out []srf.SBezier
-	for j, i := range keep {
-		p := pieces[i]
-		a, b := corner[i], corner[keep[(j+1)%len(keep)]]
-		if !p.arc {
-			if b.Minus(a).Dot(p.b.Minus(p.a)) <= 0 {
-				return nil, shellErr(p.a, "a thickness of %g makes the walls meet, closing up the inside", d)
-			}
-			out = append(out, srf.SBezierFrom2(a, b))
-			continue
+	return keep, corner, nil
+}
+
+// movedCurves is piece p moved to run from a to b, as a line or an arc
+// about its centre, the arc in quarters (in parts at least if parts > 0).
+// It fails when the piece has turned round.
+func movedCurves(p profilePiece, a, b, n geom.Vector, parts int) ([]srf.SBezier, error) {
+	if !p.arc {
+		if b.Minus(a).Dot(p.b.Minus(p.a)) <= 0 {
+			return nil, errors.New("turned round")
 		}
-		ra, rb := a.Minus(p.centre), b.Minus(p.centre)
-		angle := math.Atan2(ra.Cross(rb).Dot(n), ra.Dot(rb))
-		if math.Signbit(angle) != math.Signbit(p.angle) && math.Abs(angle) > 1e-9 {
-			angle += math.Copysign(2*math.Pi, p.angle)
-		}
-		if math.Abs(angle) < 1e-9 || math.Abs(angle-p.angle) > math.Pi {
-			return nil, shellErr(p.a, "a thickness of %g makes the walls meet, closing up the inside", d)
-		}
-		out = append(out, arcPieces(p.centre, a, angle, n)...)
+		return []srf.SBezier{srf.SBezierFrom2(a, b)}, nil
 	}
-	return out, nil
+	ra, rb := a.Minus(p.centre), b.Minus(p.centre)
+	angle := math.Atan2(ra.Cross(rb).Dot(n), ra.Dot(rb))
+	if math.Signbit(angle) != math.Signbit(p.angle) && math.Abs(angle) > 1e-9 {
+		angle += math.Copysign(2*math.Pi, p.angle)
+	}
+	// A whole circle, from its start round to it.
+	if a.Equals(b) && math.Abs(math.Abs(p.angle)-2*math.Pi) < 1e-6 {
+		angle = p.angle
+	}
+	if math.Abs(angle) < 1e-9 || math.Abs(angle-p.angle) > math.Pi {
+		return nil, errors.New("turned round")
+	}
+	return arcPieces(p.centre, a, angle, n, parts), nil
 }
 
 // meetMoved is where the moved pieces p and q, which met at v before
 // they moved, meet now: where they meet smoothly, v moved square to
 // both; otherwise the crossing of their lines and circles nearest v.
-func meetMoved(p, q profilePiece, v geom.Vector, p0, q0 profilePiece, d float64, n geom.Vector) (geom.Vector, error) {
-	tp, tq := pieceTangent(p0, false), pieceTangent(q0, true)
+func meetMoved(p, q profilePiece, v geom.Vector, p0, q0 profilePiece, d float64, n geom.Vector, what string) (geom.Vector, error) {
+	tp, tq := pieceTangent(p0, false, n), pieceTangent(q0, true, n)
 	if tp.Cross(tq).Magnitude() < 1e-9 && tp.Dot(tq) > 0 {
 		into := q0.into
 		if q0.arc {
@@ -266,7 +289,7 @@ func meetMoved(p, q profilePiece, v geom.Vector, p0, q0 profilePiece, d float64,
 		dp, dq := p.b.Minus(p.a), q.b.Minus(q.a)
 		den := dp.Cross(dq).Dot(n)
 		if math.Abs(den) < 1e-12 {
-			return v, shellErr(v, "two edges of the solid's end run on one line")
+			return v, shellErr(v, "two edges of the outline run on one line")
 		}
 		s := q.a.Minus(p.a).Cross(dq).Dot(n) / den
 		cands = append(cands, p.a.Plus(dp.ScaledBy(s)))
@@ -278,7 +301,7 @@ func meetMoved(p, q profilePiece, v geom.Vector, p0, q0 profilePiece, d float64,
 		cands = lineCircle(p.a, p.b.Minus(p.a), q.centre, q.r)
 	}
 	if len(cands) == 0 {
-		return v, shellErr(v, "a thickness of %g makes the walls meet at a corner of the solid's end", d)
+		return v, shellErr(v, "%s makes the sides meet at a corner of the outline", what)
 	}
 	best := cands[0]
 	for _, c := range cands[1:] {
@@ -290,8 +313,8 @@ func meetMoved(p, q profilePiece, v geom.Vector, p0, q0 profilePiece, d float64,
 }
 
 // pieceTangent is a piece's direction of travel at its end, or with
-// atStart at its start.
-func pieceTangent(p profilePiece, atStart bool) geom.Vector {
+// atStart at its start, in the plane of normal n.
+func pieceTangent(p profilePiece, atStart bool, n geom.Vector) geom.Vector {
 	if !p.arc {
 		return p.b.Minus(p.a).WithMagnitude(1)
 	}
@@ -299,15 +322,9 @@ func pieceTangent(p profilePiece, atStart bool) geom.Vector {
 	if atStart {
 		at = p.a
 	}
-	n := at.Minus(p.centre).WithMagnitude(1)
-	// Turning by a positive angle about the normal goes along
-	// normal x radial; the sign of the angle gives the way.
-	axis := p.a.Minus(p.centre).Cross(p.b.Minus(p.centre))
-	if axis.Magnitude() < 1e-12 {
-		return n
-	}
-	t := axis.WithMagnitude(1).Cross(n)
-	if math.Abs(p.angle) > math.Pi {
+	// Turning by a positive angle about n goes along n x radial.
+	t := n.WithMagnitude(1).Cross(at.Minus(p.centre).WithMagnitude(1))
+	if p.angle < 0 {
 		t = t.ScaledBy(-1)
 	}
 	return t
@@ -359,11 +376,12 @@ func circleCircle(c1 geom.Vector, r1 float64, c2 geom.Vector, r2 float64, n geom
 }
 
 // arcPieces is the arc about centre from a turning by angle about n, in
-// pieces of at most a quarter turn, each a rational quadratic Bezier.
-func arcPieces(centre, a geom.Vector, angle float64, n geom.Vector) []srf.SBezier {
-	k := int(math.Ceil(math.Abs(angle)/(math.Pi/2) - 1e-9))
-	if k < 1 {
-		k = 1
+// pieces of at most a quarter turn, or in parts pieces when parts > 0,
+// each a rational quadratic Bezier.
+func arcPieces(centre, a geom.Vector, angle float64, n geom.Vector, parts int) []srf.SBezier {
+	k := quarters(angle)
+	if parts > 0 {
+		k = parts
 	}
 	step := angle / float64(k)
 	var out []srf.SBezier
@@ -378,4 +396,10 @@ func arcPieces(centre, a geom.Vector, angle float64, n geom.Vector) []srf.SBezie
 		p = q
 	}
 	return out
+}
+
+// quarters is how many pieces of at most a quarter turn an arc of angle
+// takes.
+func quarters(angle float64) int {
+	return max(1, int(math.Ceil(math.Abs(angle)/(math.Pi/2)-1e-9)))
 }

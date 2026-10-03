@@ -18,21 +18,7 @@ import (
 // roundedBox is a w x h x high box about the origin whose upright edges
 // are rounded to radius r.
 func roundedBox(w, h, r, high float64) *srf.SShell {
-	var l []srf.SBezier
-	x, y := w/2-r, h/2-r
-	corners := []geom.Vector{v(x, y, 0), v(-x, y, 0), v(-x, -y, 0), v(x, -y, 0)}
-	for k, c := range corners {
-		a0 := float64(k) * math.Pi / 2
-		p0 := c.Plus(v(r*math.Cos(a0), r*math.Sin(a0), 0))
-		p1 := c.Plus(v(r*math.Cos(a0+math.Pi/2), r*math.Sin(a0+math.Pi/2), 0))
-		mid := c.Plus(v(r*math.Sqrt2*math.Cos(a0+math.Pi/4), r*math.Sqrt2*math.Sin(a0+math.Pi/4), 0))
-		sb := srf.SBezierFrom3(p0, mid, p1)
-		sb.Weight[1] = math.Sqrt2 / 2
-		l = append(l, sb)
-		next := corners[(k+1)%4]
-		a1 := a0 + math.Pi/2
-		l = append(l, srf.SBezierFrom2(p1, next.Plus(v(r*math.Cos(a1), r*math.Sin(a1), 0))))
-	}
+	l := roundedLoop(w, h, r)
 	var sh srf.SShell
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = l

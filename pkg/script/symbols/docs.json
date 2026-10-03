@@ -4678,6 +4678,10 @@
 						"decl": "func (g Group) Dof() (dof int)",
 						"text": "Dof is how many degrees of freedom the group's constraints leave."
 					},
+					"Draft": {
+						"decl": "func (g Group) Draft() (degrees float64)",
+						"text": "Draft is an extrusion's draft in degrees: its sides lean into the\nsolid by that much from the sketch's plane, out when it is negative."
+					},
 					"EdgeRadius": {
 						"decl": "func (g Group) EdgeRadius(i int) (mm float64)",
 						"text": "EdgeRadius is the radius in mm a fillet gives its edge i, counting\nthe entities Edges gives and then the edges SolidEdges gives, from 0:\nthe edge's own, or the fillet's."
@@ -4773,6 +4777,10 @@
 					"SetDistance": {
 						"decl": "func (g Group) SetDistance(mm float64)",
 						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
+					"SetDraft": {
+						"decl": "func (g Group) SetDraft(degrees float64)",
+						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs, each arc meeting its neighbours tangent. A\ndraft at which the sides meet is a problem on the group, and the\nextrusion is made without it. SetExpr with sketch.GroupValC gives it\nan expression."
 					},
 					"SetEdgeRadius": {
 						"decl": "func (g Group) SetEdgeRadius(i int, mm float64)",
@@ -5462,6 +5470,10 @@
 					"GenerateShellAndMesh": {
 						"decl": "func (g *Group) GenerateShellAndMesh(sk *Sketch)",
 						"text": "GenerateShellAndMesh builds this group's shell (by extrusion, revolution, step and repeat, or linking), and combines it with the previous group's running shell by the group's Boolean (C++ Group::GenerateShellAndMesh)."
+					},
+					"HasDraft": {
+						"decl": "func (g *Group) HasDraft() bool",
+						"text": "HasDraft reports whether the group is an extrusion with a draft."
 					},
 					"IsCopyGroup": {
 						"decl": "func (g *Group) IsCopyGroup() bool",

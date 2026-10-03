@@ -220,6 +220,15 @@ func TestPathEquivalenceShellCup(t *testing.T) {
 	}
 }
 
+// An extrusion's draft set on its group screen, and the same set by a
+// script (roadmap 15.4).
+func TestPathEquivalenceDraft(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_draft", "path_draft")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupExtrude || g.ValC != 5 || g.Problem.Msg != "" {
+		t.Errorf("the extrusion: type %d, draft %g, problem %q", g.Type, g.ValC, g.Problem.Msg)
+	}
+}
+
 // Two edges that meet at a corner picked with the mouse and rounded,
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {

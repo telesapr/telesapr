@@ -486,6 +486,13 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 	} else {
 		tbot, ttop = translate.ScaledBy(-1), translate.ScaledBy(1)
 	}
+	if g.HasDraft() && len(src.BezierLoops.Sets) > 0 {
+		if g.generateDraftShell(src, tbot, ttop) {
+			g.annotateDraftFaces(sk, src.BezierLoops.Sets[0].Point, tbot, ttop)
+			return
+		}
+		g.ThisShell.Clear()
+	}
 
 	for k := range src.BezierLoops.Sets {
 		sbls := &src.BezierLoops.Sets[k]

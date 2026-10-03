@@ -197,7 +197,7 @@ group <handle> <type> <name> {
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
-  val-c = <expression>      # spare value, unused by every group today
+  draft = <expression>      # extrude: the sides' lean into the solid, in degrees (the field val-c, unused by other groups)
   color <colour>
   skip-first
   mirror-solid              # mirror: the whole solid so far, not op-a's own

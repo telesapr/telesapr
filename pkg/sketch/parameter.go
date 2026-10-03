@@ -69,7 +69,7 @@ const (
 	// GroupPitch is a helix's fixed pitch in millimetres, 0 when the
 	// pitch is free, or a chamfer's distance (ValB).
 	GroupPitch
-	// GroupValC is the spare value no group uses today (ValC).
+	// GroupValC is an extrusion's draft in degrees (ValC).
 	GroupValC
 	// GroupScale is a link group's scale (Scale).
 	GroupScale
@@ -101,6 +101,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	}
 	if f == GroupPitch && g.Type == GroupShell {
 		return "thickness"
+	}
+	if f == GroupValC && g.Type == GroupExtrude {
+		return "draft"
 	}
 	if f == GroupCopies && g.Type == GroupLoft {
 		return "turn"
@@ -243,6 +246,10 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 	case GroupScale:
 		if math.Abs(v) < 1e-6 {
 			return errors.New("scale cannot be zero")
+		}
+	case GroupValC:
+		if g.Type == GroupExtrude && math.Abs(v) >= 90 {
+			return fmt.Errorf("a draft is between -90 and 90 degrees, not %g", v)
 		}
 	case GroupPitch:
 		if g.Type == GroupChamfer && v <= 0 {

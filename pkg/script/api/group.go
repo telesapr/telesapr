@@ -541,6 +541,36 @@ func (d *Doc) Extrude(depth float64, name string) Group {
 	})
 }
 
+// Draft is an extrusion's draft in degrees: its sides lean into the
+// solid by that much from the sketch's plane, out when it is negative.
+func (g Group) Draft() (degrees float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "Draft")
+		degrees = group.ValC
+	})
+	return degrees
+}
+
+// SetDraft leans an extrusion's sides into the solid by degrees from
+// the sketch's plane, so that the far end is smaller (larger when
+// negative), as a moulded part's; 0 takes the draft away. The profile
+// must be of lines and arcs, each arc meeting its neighbours tangent. A
+// draft at which the sides meet is a problem on the group, and the
+// extrusion is made without it. SetExpr with sketch.GroupValC gives it
+// an expression.
+func (g Group) SetDraft(degrees float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "SetDraft")
+		if math.IsNaN(degrees) || math.Abs(degrees) >= 90 {
+			fail("a draft is between -90 and 90 degrees, not %g", degrees)
+		}
+		group.ValC, group.ExprC = degrees, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // axisOf is the point and the direction a line segment gives to turn
 // about.
 func axisOf(sk *sketch.Sketch, axis Entity, what string) (origin, dir core.HEntity) {

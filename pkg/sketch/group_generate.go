@@ -147,15 +147,28 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			he := e.H
 			// As soon as I call CopyEntity, e may become invalid! That
 			// adds entities, which may cause a realloc.
+			n0 := len(*entity)
 			g.CopyEntity(sk, entity, sk.MustGetEntity(he), ai, RemapBottom,
 				h.Param(0), h.Param(1), h.Param(2),
 				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 				CopyAsNTrans)
+			n1 := len(*entity)
 			g.CopyEntity(sk, entity, sk.MustGetEntity(he), af, RemapTop,
 				h.Param(0), h.Param(1), h.Param(2),
 				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 				CopyAsNTrans)
 			g.MakeExtrusionLines(sk, entity, he)
+			// A draft moves the far end and the sides off where these
+			// are (draft.go), and both ends of a two-sided extrusion.
+			if g.HasDraft() {
+				from := n1
+				if ai != 0 {
+					from = n0
+				}
+				for i := from; i < len(*entity); i++ {
+					(*entity)[i].ForceHidden = true
+				}
+			}
 		}
 		// Remapped versions of that arbitrary point will be used to
 		// provide points on the plane faces.

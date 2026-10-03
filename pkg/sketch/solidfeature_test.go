@@ -447,6 +447,16 @@ func BenchmarkShellCup(b *testing.B) {
 	})
 }
 
+// A ring extruded with a draft: cones inside and out (roadmap 15.4).
+func BenchmarkDraft(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 10)
+		d.Circle(api.V(0, 0, 0), 4)
+		d.Extrude(10, "").SetDraft(3)
+	})
+}
+
 func BenchmarkLoft(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		bottom := d.SketchIn(d.Workplane("XY"), "")

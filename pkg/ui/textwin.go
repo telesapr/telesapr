@@ -131,6 +131,8 @@ const (
 	EditHelixPitch Edit = 802
 	// For a fillet's edge's own radius (an extension)
 	EditEdgeRadius Edit = 803
+	// For an extrusion's draft (an extension)
+	EditGroupDraft Edit = 804
 	// For the screw thread (an extension)
 	EditThreadDesignation Edit = 900
 	EditThreadLength      Edit = 901
