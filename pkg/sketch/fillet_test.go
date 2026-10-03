@@ -123,7 +123,9 @@ func TestFilletRefused(t *testing.T) {
 		fn   func()
 		want string
 	}{
-		"concave":           {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5))}, 1, "") }, "concave"},
+		"convex and concave": {func() {
+			d.Fillet([]api.Entity{lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5)), lineAlong(t, ex, api.V(5, 5, 5), api.V(20, 5, 5))}, 1, "")
+		}, "a convex edge's fillet meets a concave"},
 		"no edges":          {func() { d.Fillet(nil, 1, "") }, "no edges"},
 		"zero":              {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
 		"too large":         {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 50, "") }, "wider than a face"},
@@ -358,5 +360,58 @@ func TestChamferCircleAndEdge(t *testing.T) {
 	want := 1.0/2*2*math.Pi*(4-1/3.0) + 1.0/2*20
 	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
 		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
+	}
+}
+
+// Edges that go in, filled through the group: a square boss's foot on a
+// block, its four edges by name meeting in mitres outside its corners,
+// and a round boss's foot by its circle entity, a torus by Pappus.
+func TestFilletConcave(t *testing.T) {
+	for _, round := range []bool{false, true} {
+		d := api.New()
+		d.SetChordTolerance(0.005)
+		block(d, -10, -10, 10, 10, 5)
+		d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		if round {
+			d.Circle(api.V(0, 0, 5), 4)
+		} else {
+			d.Rect(api.V(-4, -4, 5), api.V(4, 4, 5))
+		}
+		boss := d.Extrude(5, "")
+		before := boss.Check().Volume
+		step(d)
+		saveBefore := saved(t, d)
+		var f api.Group
+		var want float64
+		if round {
+			f = d.Fillet([]api.Entity{circleOf(t, boss, 5)}, 1.5, "")
+			a := 1.5 * 1.5 * (1 - math.Pi/4)
+			c := 1.5 * (10 - 3*math.Pi) / (12 - 3*math.Pi)
+			want = a * 2 * math.Pi * (4 + c)
+		} else {
+			var edges []api.SolidEdge
+			for _, p := range []api.Vec{api.V(0, -4, 5), api.V(4, 0, 5), api.V(0, 4, 5), api.V(-4, 0, 5)} {
+				edges = append(edges, boss.Solid().EdgeAt(p))
+			}
+			f = d.FilletSolid(edges, 1.5, "")
+			// The strips run on past the boss's corners to the mitres: as a
+			// box's mitres, counted the other way.
+			want = boxCornerLoss(1.5, 32, -4, 0)
+		}
+		if p := f.Problem(); p != "" {
+			t.Fatalf("round %v: %s", round, p)
+		}
+		r := f.Check()
+		if !r.Sound() || math.Abs(r.Volume-before-want) > 0.02*want {
+			t.Fatalf("round %v: %s, added %g, want %g", round, r.String(), r.Volume-before, want)
+		}
+		undoRedo(t, d, saveBefore)
+		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+		d.Regen()
+		r = f.Check()
+		back := roundTrip(t, d)
+		if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+			t.Fatalf("round %v reopened: %s", round, br.String())
+		}
 	}
 }
