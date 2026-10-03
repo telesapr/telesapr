@@ -146,7 +146,18 @@ type SolveSpaceUI struct {
 	scriptHost  *ScriptHost
 	messageSink func(text string, isError bool)
 	// console is the window scripts are typed in, see Console.
-	console       *ScriptConsole
+	console *ScriptConsole
+	// AgentAllowed is the setting of Script > Allow AI Connections: a
+	// program that draws by writing scripts, such as an AI model's, may
+	// connect (see AllowAgent). AgentConfirm has the user asked before
+	// each script of such a program runs. AgentSocketDir is where the
+	// socket is made, the user's own directory for them if "".
+	AgentAllowed   bool
+	AgentConfirm   bool
+	AgentSocketDir string
+	// agent is what listens for such programs, nil when none may
+	// connect.
+	agent         *agentServer
 	autosaveTimer platform.Timer
 
 	// bitmapFont is the text font the canvases share.
@@ -242,6 +253,8 @@ func (ss *SolveSpaceUI) LoadSettings() {
 	ss.GCode.Feed = s.ThawFloat("GCode_Feed", 10.0)
 	ss.GCode.PlungeFeed = s.ThawFloat("GCode_PlungeFeed", 10.0)
 	ss.ShowToolbar = core.ThawBool(s, "ShowToolbar", true)
+	ss.AgentAllowed = core.ThawBool(s, "AgentAllowed", false)
+	ss.AgentConfirm = core.ThawBool(s, "AgentConfirm", false)
 	ss.RecentFiles = nil
 	for i := range MaxRecent {
 		if raw := s.ThawString("RecentFile_"+strconv.Itoa(i), ""); raw != "" {
@@ -341,6 +354,8 @@ func (ss *SolveSpaceUI) SaveSettings() {
 	s.FreezeFloat("GCode_Feed", ss.GCode.Feed)
 	s.FreezeFloat("GCode_PlungeFeed", ss.GCode.PlungeFeed)
 	core.FreezeBool(s, "ShowToolbar", ss.ShowToolbar)
+	core.FreezeBool(s, "AgentAllowed", ss.AgentAllowed)
+	core.FreezeBool(s, "AgentConfirm", ss.AgentConfirm)
 	s.FreezeInt("AutosaveInterval", uint32(ss.AutosaveInterval))
 
 	// And the default styles, colours and line widths and such.

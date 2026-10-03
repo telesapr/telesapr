@@ -148,6 +148,7 @@ const (
 	CmdGroupFillet
 	CmdGroupLoft
 	CmdGroupShell
+	CmdScriptAgent
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -297,6 +298,7 @@ type GraphicsWindow struct {
 	showToolbarMenuItem     platform.MenuItem
 	showTextWndMenuItem     platform.MenuItem
 	scriptConsoleMenuItem   platform.MenuItem
+	scriptAgentMenuItem     platform.MenuItem
 	fullScreenMenuItem      platform.MenuItem
 
 	unitsMmMenuItem         platform.MenuItem

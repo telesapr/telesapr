@@ -145,6 +145,8 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 				gw.showTextWndMenuItem = item
 			case CmdScriptConsole:
 				gw.scriptConsoleMenuItem = item
+			case CmdScriptAgent:
+				gw.scriptAgentMenuItem = item
 			case CmdFullScreen:
 				gw.fullScreenMenuItem = item
 			case CmdUnitsMm:

@@ -41,6 +41,13 @@ func (ss *SolveSpaceUI) Init() {
 		ss.GW.window.SetVisible(true)
 		ss.GW.window.Focus()
 	}
+
+	// The command-line tool has no drawing on screen to offer.
+	if ss.AgentAllowed && !ss.Windowless {
+		if err := ss.AllowAgent(true); err != nil {
+			ss.Error("AI connections can't be allowed: %v", err)
+		}
+	}
 }
 
 // setSketch makes sk the sketch the application edits, wired to the

@@ -109,6 +109,10 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	}
 	r.ss = New(r.p)
 	r.ss.Init()
+	// A script that allows AI connections listens here, not where the
+	// user's own spacesolve does.
+	r.ss.AgentSocketDir = filepath.Join(saveDir, "agent")
+	t.Cleanup(func() { _ = r.ss.AllowAgent(false) })
 	// Animations jump to their end, so they don't depend on the clock.
 	r.ss.AnimationSpeed = 0
 	r.settle()

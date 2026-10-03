@@ -1,0 +1,22 @@
+# AI connections (an extension): Script > Allow AI Connections checks
+# its item while a program may connect, and the configuration screen's
+# "ask before an AI program's script runs" box sets whether the user is
+# asked first. The command search finds the menu item too.
+menu Script|Allow AI Connections
+menus
+twmove 217 202
+twdown L 217 202
+twup L 217 202
+twmove 28 1300
+twdown L 28 1300
+twup L 28 1300
+tw
+twmove 28 1300
+twdown L 28 1300
+twup L 28 1300
+tw
+menu Script|Allow AI Connections
+menus
+key k ctrl
+edit AI connections
+menus

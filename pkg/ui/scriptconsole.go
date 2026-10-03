@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/spacesolve/spacesolve/pkg/core"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/script"
+	"github.com/spacesolve/spacesolve/pkg/script/agent"
 )
 
 // ScriptConsole is the application's console for scripts: the window
@@ -25,6 +27,12 @@ type ScriptConsole struct {
 	// busy is whether something runs, and cancel stops it.
 	busy   bool
 	cancel context.CancelFunc
+
+	// session runs the scripts of a program that draws by writing
+	// them, in the console's engine; capture keeps what such a script
+	// writes, to return it to the program.
+	session *agent.Session
+	capture *agent.Capture
 }
 
 const (
@@ -46,7 +54,7 @@ func (ss *SolveSpaceUI) Console() *ScriptConsole {
 	if ss.console != nil {
 		return ss.console
 	}
-	c := &ScriptConsole{ss: ss}
+	c := &ScriptConsole{ss: ss, capture: &agent.Capture{}}
 	ss.console = c
 	c.poster, _ = ss.Platform.(platform.LoopPoster)
 	if host, ok := ss.Platform.(platform.ConsoleHost); ok {
@@ -70,6 +78,7 @@ type consoleWriter struct {
 }
 
 func (w consoleWriter) Write(p []byte) (int, error) {
+	_, _ = w.c.capture.Write(p)
 	text := string(p)
 	w.c.onLoop(func() { w.c.print(w.kind, text) })
 	return len(p), nil
@@ -179,17 +188,28 @@ func (c *ScriptConsole) showError(err error) {
 	}
 }
 
+// ensureEngine makes the console's interpreter when it is first
+// needed.
+func (c *ScriptConsole) ensureEngine() error {
+	if c.engine != nil {
+		return nil
+	}
+	e, err := script.New(c.options(nil))
+	if err != nil {
+		return err
+	}
+	c.engine = e
+	c.session = agent.NewSession(e, c.capture)
+	return nil
+}
+
 // Submit takes what was entered in the console, one line or several:
 // each line is run once it, with the lines before it, makes something
 // complete, and the first error stops the rest.
 func (c *ScriptConsole) Submit(text string) {
-	if c.engine == nil {
-		e, err := script.New(c.options(nil))
-		if err != nil {
-			c.showError(err)
-			return
-		}
-		c.engine = e
+	if err := c.ensureEngine(); err != nil {
+		c.showError(err)
+		return
 	}
 	c.start(func(ctx context.Context) func() {
 		more := false
@@ -272,6 +292,15 @@ func (ss *SolveSpaceUI) MenuScript(id Command) {
 
 	case CmdScriptStop:
 		c.Stop()
+
+	case CmdScriptAgent:
+		allow := !ss.AgentListening()
+		if err := ss.AllowAgent(allow); err != nil {
+			ss.Error("AI connections can't be allowed: %v", err)
+			break
+		}
+		ss.AgentAllowed = allow
+		core.FreezeBool(ss.Settings, "AgentAllowed", allow)
 
 	default:
 		panic("ui: unexpected menu ID")

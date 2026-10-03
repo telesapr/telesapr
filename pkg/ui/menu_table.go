@@ -215,6 +215,8 @@ func init() {
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "&Run File...", CmdScriptRun, c_ | s_ | 'r', kn, mScr},
 		{1, "&Stop", CmdScriptStop, 0, kn, mScr},
+		{1, "", CmdNone, 0, kn, nil},
+		{1, "Allow &AI Connections", CmdScriptAgent, 0, kc, mScr},
 
 		{0, "&Help", CmdNone, 0, kn, mHelp},
 		{1, "&Website / Manual", CmdWebsite, 0, kn, mHelp},
