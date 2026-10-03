@@ -47,6 +47,46 @@ func run(p *Platform, steps ...func()) {
 	p.Run()
 }
 
+// step is an action and the state it brings about, which runWaiting
+// waits for before the next step, so that a busy machine slows a test
+// down and does not fail it.
+type step struct {
+	do   func()
+	done func() bool
+}
+
+// runWaiting runs the event loop, with each step run once the one
+// before it is done, then quits. A step not done within stepTimeout
+// fails the test.
+func runWaiting(t *testing.T, p *Platform, steps ...step) {
+	t.Helper()
+	const stepTimeout = 20 * time.Second
+	i := 0
+	var deadline time.Time
+	var poll func()
+	poll = func() {
+		if i > 0 && !steps[i-1].done() {
+			if time.Now().After(deadline) {
+				t.Errorf("step %d not done after %v", i-1, stepTimeout)
+				p.Exit()
+				return
+			}
+			p.app.After(10*time.Millisecond, poll)
+			return
+		}
+		if i == len(steps) {
+			p.Exit()
+			return
+		}
+		steps[i].do()
+		i++
+		deadline = time.Now().Add(stepTimeout)
+		p.app.After(10*time.Millisecond, poll)
+	}
+	p.app.After(10*time.Millisecond, poll)
+	p.Run()
+}
+
 func TestWindowRendersAndReportsInput(t *testing.T) {
 	p := requireGUI(t)
 	w := p.CreateWindow(platform.WindowToplevel, nil).(*Window)
@@ -168,20 +208,21 @@ func TestMenuBarKeyboard(t *testing.T) {
 		p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType,
 			Window: m.m.Window().PlatformID, KeySym: sym})
 	}
+	// Each key waits for the menus it posts, and the step after it
+	// records them.
 	var got []string
-	run(p,
-		func() { w.Focus() },
-		func() { w.key(platform.KeyPress, synthKey('e', tkplatform.Mod1Mask)) },
-		func() { got = append(got, posted()); key(edit, tkplatform.XK_Right) },
-		func() { got = append(got, posted()); key(view, tkplatform.XK_Right) },
-		func() { got = append(got, posted()); key(file, tkplatform.XK_Left) },
-		func() { got = append(got, posted()); key(view, tkplatform.XK_Return) },
-		func() {
-			got = append(got, posted())
-			w.key(platform.KeyPress, synthKey(xkF10, 0))
-		},
-		func() { got = append(got, posted()); key(file, tkplatform.XK_Escape) },
-		func() { got = append(got, posted()) },
+	record := func() { got = append(got, posted()) }
+	postedIs := func(want string) func() bool { return func() bool { return posted() == want } }
+	runWaiting(t, p,
+		step{func() { w.Focus() }, func() bool { return w.mapped }},
+		step{func() { w.key(platform.KeyPress, synthKey('e', tkplatform.Mod1Mask)) }, postedIs("Undo")},
+		step{func() { record(); key(edit, tkplatform.XK_Right) }, postedIs("Zoom In")},
+		step{func() { record(); key(view, tkplatform.XK_Right) }, postedIs("New")},
+		step{func() { record(); key(file, tkplatform.XK_Left) }, postedIs("Zoom In")},
+		step{func() { record(); key(view, tkplatform.XK_Return) }, func() bool { return posted() == "" && len(invoked) > 0 }},
+		step{func() { record(); w.key(platform.KeyPress, synthKey(xkF10, 0)) }, postedIs("New")},
+		step{func() { record(); key(file, tkplatform.XK_Escape) }, postedIs("")},
+		step{record, func() bool { return true }},
 	)
 	want := []string{"Undo", "Zoom In", "New", "Zoom In", "", "New", ""}
 	if !slices.Equal(got, want) {

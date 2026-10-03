@@ -176,6 +176,9 @@ type MenuBar struct {
 	menus []barMenu
 	bar   *menu.Menubar
 	w     *Window
+	// keyPosted is the menu postByKey opened, until its first entry is
+	// made active.
+	keyPosted *menu.Menu
 }
 
 type barMenu struct {
@@ -260,6 +263,13 @@ func (b *MenuBar) bindTraversal(m *Menu) {
 		next(-1)
 		return true
 	})
+	// After takigo's own Enter, which activates the entry under the
+	// pointer, or none.
+	b.p.app.Dispatcher().Bind(win.PlatformID, event.EnterMask, func(ev *event.Event) {
+		if ev.Type == event.EnterType && b.keyPosted == m.m {
+			b.activateFirst()
+		}
+	})
 	b.p.app.Dispatcher().Bind(win.PlatformID, event.KeyPressMask, func(ev *event.Event) {
 		if ev.Type != event.KeyPressType || ev.KeySym != tkplatform.XK_Right || b.bar == nil {
 			return
@@ -277,25 +287,41 @@ func (b *MenuBar) bindTraversal(m *Menu) {
 // menubar posts its menus only for a click, so it is given one on the
 // menu's label; Down then activates the first entry (Tk's
 // tk::MenuFirst).
+//
+// Down waits for the Enter that the menu's pointer grab sends it, since
+// takigo's Enter activates the entry under the pointer, or none. The
+// events are read on another goroutine, so on a busy machine that Enter
+// can come after the loop has gone idle. When the pointer is already in
+// the menu no Enter comes, and a timer sends Down instead.
 func (b *MenuBar) postByKey(i int) {
 	x, y, ok := b.entryCenter(i)
 	if !ok {
 		return
 	}
 	win := b.bar.Window()
-	disp := b.p.app.Dispatcher()
 	rx, ry := win.Display.Server.TranslateCoordinates(win.PlatformID, win.Display.RootWindow, x, y)
-	disp.Dispatch(&event.Event{Type: event.ButtonPressType, Window: win.PlatformID,
+	b.p.app.Dispatcher().Dispatch(&event.Event{Type: event.ButtonPressType, Window: win.PlatformID,
 		X: x, Y: y, RootX: rx, RootY: ry, Button: 1})
-	// After the crossing events of the menu's grab, whose Leave
-	// deactivates its entries.
 	sub := b.menus[i].menu.m
-	b.p.app.DoWhenIdle(func() {
-		if sub.IsPosted() {
-			disp.Dispatch(&event.Event{Type: event.KeyPressType, Window: sub.Window().PlatformID,
-				KeySym: tkplatform.XK_Down})
+	b.keyPosted = sub
+	b.p.app.After(keyPostTimeout, func() {
+		if b.keyPosted == sub {
+			b.activateFirst()
 		}
 	})
+}
+
+// keyPostTimeout is how long postByKey waits for the grab's Enter.
+const keyPostTimeout = 300 * time.Millisecond
+
+// activateFirst activates the first entry of the menu postByKey opened.
+func (b *MenuBar) activateFirst() {
+	sub := b.keyPosted
+	b.keyPosted = nil
+	if sub.IsPosted() {
+		b.p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType, Window: sub.Window().PlatformID,
+			KeySym: tkplatform.XK_Down})
+	}
 }
 
 // entryCenter is the middle of the label of menu i in the menubar,
