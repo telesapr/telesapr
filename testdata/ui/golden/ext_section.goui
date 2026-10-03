@@ -158,6 +158,7 @@ tw 1 unsaved 1 cursor 0 tooltip ""
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
   &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
+  Motion St&udy... ind=0 en=1 act=0
 S&cript ind=0 en=1 act=0
   Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
   ---
@@ -493,6 +494,7 @@ row 21
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
   &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
+  Motion St&udy... ind=0 en=1 act=0
 S&cript ind=0 en=1 act=0
   Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
   ---
