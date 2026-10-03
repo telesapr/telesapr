@@ -4425,6 +4425,14 @@
 						"decl": "func (d *Doc) SetWorkplane(wp Entity)",
 						"text": "SetWorkplane makes wp the workplane that is drawn in, in the active\ngroup."
 					},
+					"Shell": {
+						"decl": "func (d *Doc) Shell(faces []Entity, thick float64, name string) Group",
+						"text": "Shell hollows the solid so far to walls thick mm, open where the faces\nare taken away: face entities, as Group.Faces gives an extrusion's.\nThis version hollows solids of flat faces, and refuses a thickness at\nwhich walls meet. The faces of the cavity have names. The new group\nbecomes active."
+					},
+					"ShellSolid": {
+						"decl": "func (d *Doc) ShellSolid(faces []SolidFace, thick float64, name string) Group",
+						"text": "ShellSolid hollows the solid so far as Shell does, taking away faces\npicked from Solid, such as one a Boolean or a loft made."
+					},
 					"Sketch3D": {
 						"decl": "func (d *Doc) Sketch3D(name string) Group",
 						"text": "Sketch3D adds a group to draw in freely in 3d, and makes it active."
@@ -4668,7 +4676,7 @@
 					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
-						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\",\n\"mirror\", \"chamfer\", \"sweep\", \"fillet\", \"loft\" or \"link\"."
+						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\",\n\"mirror\", \"chamfer\", \"sweep\", \"fillet\", \"loft\", \"shell\" or \"link\"."
 					},
 					"LeftOut": {
 						"decl": "func (g Group) LeftOut() (why string)",
@@ -4754,6 +4762,10 @@
 						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
 						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
 					},
+					"SetThickness": {
+						"decl": "func (g Group) SetThickness(mm float64)",
+						"text": "SetThickness sets a shell's wall thickness in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
 					"SetTurn": {
 						"decl": "func (g Group) SetTurn(n int)",
 						"text": "SetTurn turns a loft's second profile by n curves, which joins its\ncurves to others of the first: a square lofted to a square turned by\none twists by a quarter."
@@ -4785,6 +4797,10 @@
 					"Suppression": {
 						"decl": "func (g Group) Suppression() (mode SuppressMode)",
 						"text": "Suppression is the group's suppress mode, as SetSuppress set it."
+					},
+					"Thickness": {
+						"decl": "func (g Group) Thickness() (mm float64)",
+						"text": "Thickness is a shell's wall thickness in mm."
 					},
 					"Triangles": {
 						"decl": "func (g Group) Triangles() (n int)",
@@ -5008,6 +5024,10 @@
 					"Euler": {
 						"decl": "func (s Solid) Euler() (chi int)",
 						"text": "Euler is the solid's Euler characteristic, V - E + F less the holes\nin faces: 2 for a solid with no hole through it, 0 for one with one."
+					},
+					"FaceAt": {
+						"decl": "func (s Solid) FaceAt(p Vec) (f SolidFace)",
+						"text": "FaceAt is the face p lies on, within a hundredth of a millimetre."
 					},
 					"Faces": {
 						"decl": "func (s Solid) Faces() (faces []SolidFace)",
@@ -5486,6 +5506,7 @@
 					"GroupSweep",
 					"GroupFillet",
 					"GroupLoft",
+					"GroupShell",
 					"GroupLinked"
 				]
 			},
@@ -5952,6 +5973,10 @@
 					"NewMirror": {
 						"decl": "func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error)",
 						"text": "NewMirror starts a mirror group that reflects the active group in plane, a workplane or a planar face."
+					},
+					"NewShell": {
+						"decl": "func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Group, error)",
+						"text": "NewShell starts a shell at the active group, hollowing the solid so far to walls thick mm, open at faces."
 					},
 					"NewSweep": {
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
@@ -6430,6 +6455,10 @@
 			},
 			"GroupScale": {
 				"decl": "const GroupScale"
+			},
+			"GroupShell": {
+				"decl": "const GroupShell",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
 			},
 			"GroupSweep": {
 				"decl": "const GroupSweep",

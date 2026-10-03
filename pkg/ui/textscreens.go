@@ -727,6 +727,18 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
 			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 		tw.showGroupEdges(g, "edges")
+	case sketch.GroupShell:
+		tw.Printf(true, " %Fthollow the solid to walls%E")
+		tw.Printf(false, "%Ba   %Ftthickness%E %s%s %Fl%Ll%f%D[change]%E",
+			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+		tw.Printf(false, "%Bd   %Ftfaces taken away%E")
+		for i, id := range g.SolidFaces {
+			bg := byte('a')
+			if i%2 == 1 {
+				bg = 'd'
+			}
+			tw.Printf(false, "%Bp     %s", bg, sk.FaceName(id))
+		}
 	case sketch.GroupSweep:
 		tw.Printf(true, " %Ftsweep plane sketch along path%E")
 		tw.showGroupEdges(g, "path")

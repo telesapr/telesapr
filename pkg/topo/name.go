@@ -185,6 +185,37 @@ func (t *Topology) EdgeAt(p geom.Vector) (int, float64) {
 	return best, bestD
 }
 
+// FaceAt is the face nearest p that p lies over, its closest point on
+// the face's surface inside the face's outer loop and outside its
+// holes, and that distance; -1 when p lies over no face.
+func (t *Topology) FaceAt(p geom.Vector) (int, float64) {
+	best, bestD := -1, math.Inf(1)
+	for f := range t.Faces {
+		s := t.Surface(f)
+		if s == nil {
+			continue
+		}
+		var u, v float64
+		s.ClosestPointToUV(p, &u, &v, true)
+		d := s.PointAt(u, v).Minus(p).Magnitude()
+		if d >= bestD {
+			continue
+		}
+		uv := geom.Vector{X: u, Y: v}
+		inside := true
+		for _, l := range t.Faces[f].Loops {
+			if pointInPolygon(uv, t.loopUV(s, t.Loops[l].CoEdges)) != t.Loops[l].Outer {
+				inside = false
+				break
+			}
+		}
+		if inside {
+			best, bestD = f, d
+		}
+	}
+	return best, bestD
+}
+
 // Straight reports whether an edge is a line segment.
 func (t *Topology) Straight(e int) bool {
 	pts := t.Edges[e].Points

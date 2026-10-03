@@ -150,6 +150,19 @@ func (s Solid) EdgeAt(p Vec) (e SolidEdge) {
 	return e
 }
 
+// FaceAt is the face p lies on, within a hundredth of a millimetre.
+func (s Solid) FaceAt(p Vec) (f SolidFace) {
+	s.d.read(func(sk *sketch.Sketch) {
+		tp := s.topology(sk)
+		i, d := tp.FaceAt(p)
+		if i < 0 || d > 0.01 {
+			fail("no face of the solid passes through (%g, %g, %g)", p.X, p.Y, p.Z)
+		}
+		f = s.face(sk, tp, i)
+	})
+	return f
+}
+
 // EdgesBetween are the edges where faces a and b meet, in the order
 // their names number them.
 func (s Solid) EdgesBetween(a, b SolidFace) (edges []SolidEdge) {
@@ -454,6 +467,69 @@ func (g Group) SetRadius(mm float64) {
 		g.mustBe(group, sketch.GroupFillet, "SetRadius")
 		if mm <= 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
 			fail("a fillet's radius must be more than zero, not %g", mm)
+		}
+		group.ValB, group.ExprB = mm, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
+// Shell hollows the solid so far to walls thick mm, open where the faces
+// are taken away: face entities, as Group.Faces gives an extrusion's.
+// This version hollows solids of flat faces, and refuses a thickness at
+// which walls meet. The faces of the cavity have names. The new group
+// becomes active.
+func (d *Doc) Shell(faces []Entity, thick float64, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		ids := make([]srf.FaceID, len(faces))
+		for i, f := range faces {
+			e := f.get(sk)
+			if !e.IsFace() {
+				fail("entity %x is not a face", e.H.V)
+			}
+			ids[i] = srf.FaceID(e.H.V)
+		}
+		g, err := sk.NewShell(ids, thick, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// ShellSolid hollows the solid so far as Shell does, taking away faces
+// picked from Solid, such as one a Boolean or a loft made.
+func (d *Doc) ShellSolid(faces []SolidFace, thick float64, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		ids := make([]srf.FaceID, len(faces))
+		for i, f := range faces {
+			ids[i] = f.id
+		}
+		g, err := sk.NewShell(ids, thick, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// Thickness is a shell's wall thickness in mm.
+func (g Group) Thickness() (mm float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupShell, "Thickness")
+		mm = group.ValB
+	})
+	return mm
+}
+
+// SetThickness sets a shell's wall thickness in mm; SetExpr with
+// sketch.GroupPitch gives it an expression in the document's unit.
+func (g Group) SetThickness(mm float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupShell, "SetThickness")
+		if mm <= 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
+			fail("a shell's thickness must be more than zero, not %g", mm)
 		}
 		group.ValB, group.ExprB = mm, ""
 		sk.MarkGroupDirty(group.H, false)

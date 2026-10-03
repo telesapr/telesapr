@@ -10,6 +10,7 @@ import (
 	"github.com/spacesolve/spacesolve/pkg/geom"
 	"github.com/spacesolve/spacesolve/pkg/platform"
 	"github.com/spacesolve/spacesolve/pkg/sketch"
+	"github.com/spacesolve/spacesolve/pkg/srf"
 )
 
 // MenuGroup makes a new group from the selection; linkFile is the file
@@ -239,6 +240,22 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 			return
 		}
 		g = fg
+
+	case CmdGroupShell:
+		faces := make([]srf.FaceID, len(gs.face))
+		for i, he := range gs.face {
+			faces[i] = srf.FaceID(he.V)
+		}
+		shg, err := sk.NewShell(faces, 1, "")
+		if err != nil {
+			ss.Error("Can't shell the solid. %s.\n\n"+
+				"Shell Solid hollows the solid so far to walls of one thickness, open where "+
+				"faces are taken away. Select one or more of:\n\n"+
+				"    * flat faces of the solid, to take away\n\n"+
+				"Every face of the solid must be flat, and the walls must not meet.", capitalize(err.Error()))
+			return
+		}
+		g = shg
 
 	case CmdGroupLoft:
 		var to core.HGroup

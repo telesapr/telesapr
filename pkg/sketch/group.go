@@ -51,6 +51,9 @@ const (
 	// GroupLoft joins the closed loops of two sketches in workplanes,
 	// OpA and OpB, by ruled patches, the second turned by ValA curves.
 	GroupLoft
+	// GroupShell hollows the solid so far to walls ValB thick, open
+	// where its faces SolidFaces are taken away.
+	GroupShell
 )
 
 type GroupSubtype int
@@ -188,6 +191,9 @@ type Group struct {
 	// SolidEdges are the edges of the solid a chamfer cuts, by name:
 	// any edge of the solid so far, as the topology names it.
 	SolidEdges []topo.Name
+	// SolidFaces are the faces of the solid a shell takes away, by
+	// identity (srf.FaceID).
+	SolidFaces []srf.FaceID
 
 	// topology caches the topology of RunningShell, built on first use
 	// after a regeneration (Topology).
@@ -280,7 +286,8 @@ func (g *Group) IsMeshGroup() bool {
 		g.Type == GroupChamfer ||
 		g.Type == GroupSweep ||
 		g.Type == GroupFillet ||
-		g.Type == GroupLoft
+		g.Type == GroupLoft ||
+		g.Type == GroupShell
 }
 
 // IsCopyGroup reports whether the group copies its source group,

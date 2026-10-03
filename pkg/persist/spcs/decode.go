@@ -452,7 +452,7 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.OpB = core.HGroup{V: d.handleField(c)}
 		case "copies", "turn":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "pitch", "distance", "radius":
+		case "pitch", "distance", "radius", "thickness":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "val-c":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
@@ -480,6 +480,12 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 			g.SolidEdges = append(g.SolidEdges, topo.MakeName(srf.FaceID(d.handle(c.Args[0])),
 				srf.FaceID(d.handle(c.Args[1])), n))
+		case "solid-face":
+			d.plain(c)
+			if len(c.Args) != 1 {
+				d.fail(c.Pos, "solid-face takes a face handle")
+			}
+			g.SolidFaces = append(g.SolidFaces, srf.FaceID(d.handle(c.Args[0])))
 		case "predef":
 			d.head(c, 0)
 			for _, p := range c.Children {
