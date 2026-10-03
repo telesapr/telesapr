@@ -864,6 +864,7 @@ shell {
   surface 0x3 {
     color 100 100 100 255
     face 0x80030010
+    sheet 0x50000
     degree 1 1
     ctrl 0 0 16 -6 80 1
     ctrl 0 1 16 -6 0 1
@@ -877,6 +878,7 @@ shell {
   surface 0x4 {
     color 100 100 100 255
     face 0x80030019
+    sheet 0x60000
     degree 1 1
     ctrl 0 0 -20 -6 80 1
     ctrl 0 1 -20 -6 0 1
@@ -890,6 +892,7 @@ shell {
   surface 0x5 {
     color 100 100 100 255
     face 0x80030022
+    sheet 0x70000
     degree 1 1
     ctrl 0 0 -20 20 80 1
     ctrl 0 1 -20 20 0 1
@@ -903,6 +906,7 @@ shell {
   surface 0x6 {
     color 100 100 100 255
     face 0x80030007
+    sheet 0x40000
     degree 1 1
     ctrl 0 0 16 20 80 1
     ctrl 0 1 16 20 0 1
