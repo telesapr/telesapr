@@ -1,7 +1,6 @@
 package topo_test
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -66,20 +65,6 @@ func TestFilletRefusals(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: %v", c.name, err)
 		}
-	}
-	// Two of three edges at a corner whose faces don't lie alike about
-	// them can't be mitred: a wedge's top edges, its sides leaning
-	// differently.
-	var wedge srf.SShell
-	wedge.MakePrism([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10, 10, 0), v(0, 10, 0)}, v(0, 0, 0), v(3, 0, 10),
-		core.NewRgbaColor(100, 100, 100, 255))
-	err := topo.FilletEdges(&wedge, [][2]geom.Vector{{v(3, 0, 10), v(13, 0, 10)}, {v(13, 0, 10), v(13, 10, 10)}}, 1, 0)
-	if err == nil || !strings.Contains(err.Error(), "lie alike") {
-		t.Errorf("an uneven mitre: %v", err)
-	}
-	var fe *topo.FilletError
-	if !errors.As(err, &fe) || !fe.At.Equals(v(13, 0, 10)) {
-		t.Errorf("where: %+v", fe)
 	}
 }
 
@@ -331,6 +316,106 @@ func TestFilletCornerSweep(t *testing.T) {
 		case len(tp.Validate()) > 0:
 			return fmt.Errorf("topology: %s", tp.Validate()[0].Msg)
 		case math.Abs(rep.Volume-w[1]) > allow:
+			return fmt.Errorf("volume %g, OpenCASCADE's %g, %g allowed", rep.Volume, w[1], allow)
+		}
+		return nil
+	}).Require(t)
+}
+
+// TestFilletUnevenMitreSweep rounds two top edges at a corner, or every
+// top edge, of leaning prisms of regular polygons, whose side faces
+// don't lie alike about the top edges, so their corners are uneven
+// mitres, over the polygon, the lean, its direction and the radius,
+// against the volumes OpenCASCADE gives in
+// testdata/topo/fillet-mitres.txt (scripts/fillet-mitre-fixtures.py);
+// the rate allowed, 0, was set before. OpenCASCADE's own result is
+// exact for 62 of the 96: in the rest a spline it fits where two
+// cylinders meet strays from them, by up to 0.15 mm, or the shape is
+// invalid, while the curve this makes lies on both (exported to STEP,
+// these solids measure as OpenCASCADE's where its are exact, to 1e-4
+// mm³). Those are checked for soundness only. The mesh is fine and its
+// segments many, so the chords lose little.
+func TestFilletUnevenMitreSweep(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "topo", "fillet-mitres.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	type key struct {
+		n     int
+		lean  float64
+		dir   string
+		k     float64
+		edges string
+	}
+	want := map[key][3]float64{}
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		var c key
+		var r, vol, exact float64
+		if _, err := fmt.Sscan(line, &c.n, &c.lean, &c.dir, &c.k, &c.edges, &r, &vol, &exact); err != nil {
+			t.Fatalf("%q: %v", line, err)
+		}
+		want[c] = [3]float64{r, vol, exact}
+	}
+	old := srf.ChordTolMm()
+	defer srf.SetChordTolMm(old)
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("sides", 3, 4, 5, 6),
+			sweep.Floats("lean", 2, 5),
+			sweep.Strings("dir", "x", "xy"),
+			sweep.Floats("k", 0.2, 0.5, 0.8),
+			sweep.Strings("edges", "pair", "top"),
+		},
+		MaxFailRate: 0,
+		Sample:      16,
+	}
+	grid.Run(func(p sweep.Point) error {
+		c := key{int(p.Float("sides")), p.Float("lean"), p.String("dir"), p.Float("k"), p.String("edges")}
+		w, ok := want[c]
+		if !ok {
+			return fmt.Errorf("no volume for %+v in the fixture", c)
+		}
+		r := w[0]
+		pts := regular(c.n, 10)
+		d := v(c.lean, 0, 10)
+		if c.dir == "xy" {
+			d.Y = c.lean / 2
+		}
+		var sh srf.SShell
+		sh.MakePrism(pts, v(0, 0, 0), d, core.NewRgbaColor(100, 100, 100, 255))
+		var segs [][2]geom.Vector
+		first := v(10, 0, 0).Plus(d)
+		for i := range pts {
+			a, b := pts[i].Plus(d), pts[(i+1)%c.n].Plus(d)
+			if c.edges == "top" || a.Equals(first) || b.Equals(first) {
+				segs = append(segs, [2]geom.Vector{a, b})
+			}
+		}
+		tol := 0.0003 * r
+		srf.SetMaxSegments(400)
+		defer srf.SetMaxSegments(20)
+		srf.SetChordTolMm(tol)
+		if err := topo.FilletEdges(&sh, segs, r, 1<<30); err != nil {
+			return err
+		}
+		tp, err := topo.Build(&sh)
+		if err != nil {
+			return err
+		}
+		var m srf.SMesh
+		sh.TriangulateInto(&m)
+		rep := check.Solid(&sh, &m)
+		length := 0.0
+		for _, sg := range segs {
+			length += sg[1].Minus(sg[0]).Magnitude()
+		}
+		allow := tol * math.Pi * r * (length + 4*r*float64(c.n))
+		switch {
+		case !rep.Sound():
+			return fmt.Errorf("unsound: %s", rep.String())
+		case len(tp.Validate()) > 0:
+			return fmt.Errorf("topology: %s", tp.Validate()[0].Msg)
+		case w[2] == 1 && math.Abs(rep.Volume-w[1]) > allow:
 			return fmt.Errorf("volume %g, OpenCASCADE's %g, %g allowed", rep.Volume, w[1], allow)
 		}
 		return nil

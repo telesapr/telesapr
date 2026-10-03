@@ -1,0 +1,15 @@
+# The ramp of testdata/topo/ramp.spcs, its top's front edge and its edge
+# along the slope picked on the turned view and rounded, meeting in an
+# uneven mitre; the same as path_fillet_uneven.go makes
+# (TestPathEquivalenceFilletUneven).
+file $testdata/topo/ramp.spcs
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+move 445 145
+down L 445 145
+up L 445 145
+move 445 265
+down L 445 265
+up L 445 265
+menu New Group|Fillet Edges
