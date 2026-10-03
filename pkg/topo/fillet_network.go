@@ -71,7 +71,8 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 			return err
 		}
 		if _, dup := byEdge[fe.e]; dup {
-			return filletErr(sg[0], "an edge is given twice")
+			// Two entities along one edge, as an extrusion's copies are.
+			continue
 		}
 		fe.origin = origin + uint32(i)
 		byEdge[fe.e] = len(edges)

@@ -206,6 +206,21 @@ func TestSolidGoldens(t *testing.T) {
 			d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
 			d.Loft(bottom, top, "")
 		},
+		"fillet-mitre": func(d *api.Doc) {
+			ex := block(d, 0, 0, 20, 10, 10)
+			d.Fillet([]api.Entity{
+				lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
+				lineAlong(t, ex, api.V(20, 0, 10), api.V(20, 10, 10)),
+			}, 2, "")
+		},
+		"fillet-corner-sphere": func(d *api.Doc) {
+			ex := block(d, 0, 0, 20, 10, 10)
+			d.Fillet([]api.Entity{
+				lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
+				lineAlong(t, ex, api.V(20, 0, 10), api.V(20, 10, 10)),
+				lineAlong(t, ex, api.V(20, 0, 0), api.V(20, 0, 10)),
+			}, 2, "")
+		},
 		"shell-open-box": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
 			d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
@@ -268,6 +283,20 @@ func benchRegen(b *testing.B, build func(d *api.Doc)) {
 		})
 		d.Regen()
 	}
+}
+
+// BenchmarkFilletBox rounds all twelve edges of a block: eight spheres.
+func BenchmarkFilletBox(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		ex := block(d, 0, 0, 20, 10, 10)
+		var edges []api.Entity
+		for _, e := range ex.Entities() {
+			if e.Kind() == "line" {
+				edges = append(edges, e)
+			}
+		}
+		d.Fillet(edges, 2, "")
+	})
 }
 
 func BenchmarkShell(b *testing.B) {
