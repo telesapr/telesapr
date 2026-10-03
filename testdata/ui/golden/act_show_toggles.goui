@@ -193,6 +193,8 @@ telesapr 2
 
 units mm
 
+active 0x2
+
 group 0x1 sketch-3d "#references" {
   color 0 0 0 0
 }
