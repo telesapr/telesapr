@@ -11,17 +11,19 @@ where it is going.
 ## What it adds to SolveSpace
 
 - **Solid features**: fillets (rounded and filled edges, corners, edges of their own radius),
-  chamfers, shell, ruled loft, sweep along a path, mirror, and screw threads.
+  chamfers, shell, draft, ruled loft, sweep along a path, patterns along a path, mirror, and
+  screw threads.
 - **Edges by name**: any edge of a solid can be picked on the model, including edges no sketch
   entity draws, and is saved by a name that holds when the model upstream changes.
-- **Parameters**: named values and expressions that drive dimensions; the document's own unit of
-  length.
+- **Parameters**: named values and expressions that drive dimensions, and dimensions read by
+  name; the document's own unit of length.
 - **History**: groups moved in the history, suppressed with what uses them, and what a deletion
   took listed.
 - **Sketch feedback**: entities coloured by how free they are, conflicting constraints marked,
   measuring without a constraint, and a search over every command.
 - **Section view**, an OpenGL renderer, and **Check Solid**, which says whether a solid is sound.
-- **STEP files** linked as reference meshes, and STEP export with one surface per face.
+- **STEP files** linked as reference meshes, and STEP export with one surface per face; 3MF
+  export of the mesh with its colours.
 - **Scripting in Go**, and **drawing with an AI model** through MCP.
 
 The [user's guide](docs/guide/README.md) has a page for each, built on an example script.

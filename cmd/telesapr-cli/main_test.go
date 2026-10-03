@@ -1,8 +1,11 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
+	"encoding/binary"
 	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,6 +76,38 @@ func TestExportMesh(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("STL differs from the golden")
+	}
+}
+
+// TestExportMesh3mf exports the same model as 3MF (roadmap 16.5): a zip
+// whose model has as many triangles as the STL.
+func TestExportMesh3mf(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"mesh.stl", "mesh.3mf"} {
+		if ok, msg := run(t, "export-mesh", "--chord-tol", "0.1", "-o", filepath.Join(dir, name),
+			model(t, "group/boolean_knife_edge/normal.slvs")); !ok {
+			t.Fatalf("%s: %s", name, msg)
+		}
+	}
+	stl, err := os.ReadFile(filepath.Join(dir, "mesh.stl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	zr, err := zip.OpenReader(filepath.Join(dir, "mesh.3mf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = zr.Close() }()
+	var model []byte
+	for _, f := range zr.File {
+		if f.Name == "3D/3dmodel.model" {
+			r, _ := f.Open()
+			model, _ = io.ReadAll(r)
+			_ = r.Close()
+		}
+	}
+	if got, want := bytes.Count(model, []byte("<triangle ")), int(binary.LittleEndian.Uint32(stl[80:84])); got != want {
+		t.Errorf("%d triangles in the 3MF, %d in the STL", got, want)
 	}
 }
 

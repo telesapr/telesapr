@@ -969,6 +969,8 @@ func (ss *SolveSpaceUI) ExportMeshTo(filename string) {
 	switch {
 	case hasExtension(filename, "stl"):
 		_ = sketch.ExportMeshAsStlTo(&out, m, ss.ExportScale)
+	case hasExtension(filename, "3mf"):
+		_ = sketch.ExportMeshAs3mfTo(&out, m)
 	case hasExtension(filename, "obj"):
 		mtlFilename := withExtension(filename, "mtl")
 		fMtl, err := os.Create(mtlFilename)
@@ -993,7 +995,7 @@ func (ss *SolveSpaceUI) ExportMeshTo(filename string) {
 		ss.ExportMeshAsVrmlTo(&out, filename, m)
 	default:
 		ss.Error("Can't identify output file type from file extension of "+
-			"filename '%s'; try .stl, .obj, .js, .html.", filename)
+			"filename '%s'; try .stl, .3mf, .obj, .js, .html.", filename)
 	}
 
 	_, werr := f.Write(out.Bytes())

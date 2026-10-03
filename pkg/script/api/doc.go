@@ -144,7 +144,7 @@ func (d *Doc) Save(path string) (err error) {
 // exportKinds says what each file extension holds; the ones that can
 // hold several kinds are exported as the first.
 var exportKinds = map[string]ExportKind{
-	".stl": ExportMesh, ".obj": ExportMesh, ".js": ExportMesh, ".html": ExportMesh, ".wrl": ExportMesh,
+	".stl": ExportMesh, ".3mf": ExportMesh, ".obj": ExportMesh, ".js": ExportMesh, ".html": ExportMesh, ".wrl": ExportMesh,
 	".svg": ExportView, ".dxf": ExportView, ".pdf": ExportView, ".eps": ExportView, ".ps": ExportView,
 	".plt": ExportView, ".hpgl": ExportView, ".ngc": ExportView, ".txt": ExportView,
 	".step": ExportSurfaces, ".stp": ExportSurfaces,
