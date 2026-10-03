@@ -98,7 +98,7 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 		now := moved[ed.V[1]].Minus(moved[ed.V[0]])
 		if now.Magnitude() < geom.LengthEps || now.Dot(was) <= 0 {
 			return nil, shellErr(t.Vertices[ed.V[0]].P,
-				"a thickness of %g closes up a face near %v: the walls meet there", thick, t.Vertices[ed.V[0]].P)
+				"a thickness of %g makes the walls meet, closing up a face", thick)
 		}
 	}
 
@@ -184,7 +184,7 @@ func (t *Topology) movedVertex(v int, normal []geom.Vector, offset []float64) (g
 		a, b := fs[0], fs[1]
 		along := normal[a].Cross(normal[b])
 		if along.Magnitude() < 1e-9 {
-			return p, shellErr(p, "two faces meet at %v in one plane", p)
+			return p, shellErr(p, "two faces meet at a vertex in one plane")
 		}
 		return meet3(normal[a], offset[a], normal[b], offset[b], along.WithMagnitude(1), along.WithMagnitude(1).Dot(p)), nil
 	}
@@ -202,12 +202,12 @@ func (t *Topology) movedVertex(v int, normal []geom.Vector, offset []float64) (g
 		}
 	}
 	if best < 1e-9 {
-		return p, shellErr(p, "the faces at %v don't meet in a point", p)
+		return p, shellErr(p, "the faces at a vertex don't meet in a point")
 	}
 	q := meet3(normal[bi[0]], offset[bi[0]], normal[bi[1]], offset[bi[1]], normal[bi[2]], offset[bi[2]])
 	for _, f := range fs {
 		if math.Abs(normal[f].Dot(q)-offset[f]) > 10*geom.LengthEps {
-			return p, shellErr(p, "%d faces meet at %v and, moved in, don't meet in one point; a shell needs vertices of three faces there", len(fs), p)
+			return p, shellErr(p, "%d faces meet at a vertex and, moved in, don't meet in one point; a shell needs vertices of three faces", len(fs))
 		}
 	}
 	return q, nil

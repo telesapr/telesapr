@@ -206,6 +206,20 @@ func TestSolidGoldens(t *testing.T) {
 			d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
 			d.Loft(bottom, top, "")
 		},
+		"shell-open-box": func(d *api.Doc) {
+			ex := block(d, 0, 0, 20, 10, 10)
+			d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
+		},
+		"shell-holed-block": func(d *api.Doc) {
+			block(d, 0, 0, 30, 30, 10)
+			d.SketchIn(d.Workplane("XY"), "")
+			d.Rect(api.V(10, 10, 0), api.V(20, 20, 0))
+			cut := d.Extrude(10, "")
+			cut.SetCombine(api.Difference)
+			// Open at the top and at a side.
+			s := cut.Solid()
+			d.ShellSolid([]api.SolidFace{s.FaceAt(api.V(5, 5, 10)), s.FaceAt(api.V(15, 0, 5))}, 1.5, "")
+		},
 		"sweep-pipe": func(d *api.Doc) {
 			path := pipePath(d, 10, 8, 12)
 			d.SketchIn(d.Workplane("XY"), "profile")
@@ -254,6 +268,13 @@ func benchRegen(b *testing.B, build func(d *api.Doc)) {
 		})
 		d.Regen()
 	}
+}
+
+func BenchmarkShell(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		ex := block(d, 0, 0, 20, 10, 10)
+		d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
+	})
 }
 
 func BenchmarkLoft(b *testing.B) {

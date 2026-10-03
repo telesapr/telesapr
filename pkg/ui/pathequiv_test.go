@@ -160,3 +160,12 @@ func TestPathEquivalenceLoft(t *testing.T) {
 		t.Errorf("the loft: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
+
+// A face of an extrusion picked with the mouse and the solid hollowed,
+// and the same made by a script.
+func TestPathEquivalenceShell(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_shell", "path_shell")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+		t.Errorf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}

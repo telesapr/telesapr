@@ -1,0 +1,39 @@
+# Shell Solid (an extension): with nothing selected, New Group > Shell
+# Solid says what to select; with the top face of the extrusion of
+# path_extrude picked, the solid is hollowed to walls 1 mm thick, open
+# there, and the group screen lists the face. Analyze > Check Solid
+# finds it sound; the thickness takes an expression, and one that makes
+# the walls meet is a problem on the group, the solid passing through.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+answer ok
+menu New Group|Shell Solid
+move 290 265
+down L 290 265
+up L 290 265
+menu New Group|Shell Solid
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 181 125
+twdown L 181 125
+twup L 181 125
+edit 1+1
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 253 125
+twdown L 253 125
+twup L 253 125
+edit 30
+tw
+answer ok
+menu Analyze|Check Solid
