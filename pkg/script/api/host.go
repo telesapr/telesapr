@@ -145,9 +145,20 @@ func (h *SketchHost) Changing() {
 	}
 }
 
-// Changed reports whether the script's step, the one that runs or the
-// last, changed the sketch, and so left a step of undo.
-func (h *SketchHost) Changed() bool { return h.changed }
+// Rollback takes back what the script's last step changed, for good:
+// it can't be done again as what Undo takes back can. It is false if
+// the step changed nothing.
+func (h *SketchHost) Rollback() bool {
+	if !h.changed {
+		return false
+	}
+	h.changed = false
+	if !h.sk.UndoUndo() {
+		return false
+	}
+	h.sk.UndoClearStack(&h.sk.Redo)
+	return true
+}
 
 // Regenerate regenerates what is dirty.
 func (h *SketchHost) Regenerate() { h.sk.Refresh() }
