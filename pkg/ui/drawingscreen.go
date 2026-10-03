@@ -84,6 +84,25 @@ func (tw *TextWindow) ShowDrawing() {
 		lf(tw.ScreenChangeDrawing), radio(!d.FirstAngle), lf(tw.ScreenChangeDrawing), radio(d.FirstAngle))
 	tw.Printf(false, "%Ba   %f%Lh%Fd%s hidden edges, dashed%E", lf(tw.ScreenChangeDrawing), check(d.Hidden))
 
+	// The section and detail views (roadmap 18.3), lettered in order.
+	tw.Printf(true, "%Ft   sections and details%E")
+	n := 0
+	num := func(v float64) string { return strconv.FormatFloat(v, 'g', -1, 64) }
+	for i, sec := range d.Sections {
+		tw.Printf(false, "%Bp   %s: section of the %s view, %s mm toward it %Fl%Lx%D%f[delete]%E",
+			byte('a'+n%2*3), sketch.Letter(n), sec.View, num(sec.Offset), i, lf(tw.ScreenChangeDrawing))
+		n++
+	}
+	for i, dt := range d.Details {
+		tw.Printf(false, "%Bp   %s: detail of the %s view at %s, %s, radius %s, %s times %Fl%LX%D%f[delete]%E",
+			byte('a'+n%2*3), sketch.Letter(n), dt.View, num(dt.CX), num(dt.CY), num(dt.R), num(dt.Scale),
+			i, lf(tw.ScreenChangeDrawing))
+		n++
+	}
+	tw.Printf(false, "   %Fl%La%f[add a section]%E   (type: view offset, as front 0)", lf(tw.ScreenChangeDrawing))
+	tw.Printf(false, "   %Fl%Ld%f[add a detail]%E   (type: view x y radius times, as front 10 5 8 2)",
+		lf(tw.ScreenChangeDrawing))
+
 	tw.Printf(true, "%Ft   title block%E")
 	fields := []struct {
 		link  int
@@ -144,6 +163,24 @@ func (tw *TextWindow) ScreenChangeDrawing(link int, v uint32) {
 		}
 		tw.ShowEditControl(12, text)
 		tw.edit.meaning = EditDrawingScale
+	case 'x':
+		change(func(d *sketch.Drawing) {
+			if int(v) < len(d.Sections) {
+				d.Sections = append(d.Sections[:v], d.Sections[v+1:]...)
+			}
+		})
+	case 'X':
+		change(func(d *sketch.Drawing) {
+			if int(v) < len(d.Details) {
+				d.Details = append(d.Details[:v], d.Details[v+1:]...)
+			}
+		})
+	case 'a':
+		tw.ShowEditControl(18, "front 0")
+		tw.edit.meaning = EditDrawingSection
+	case 'd':
+		tw.ShowEditControl(18, "front 0 0 10 2")
+		tw.edit.meaning = EditDrawingDetail
 	case '1', '2', '3', '4', '5', '6':
 		d := ss.drawing()
 		text := []string{d.Title, d.Author, d.Number, d.Revision, d.Material, d.Company}[link-'1']
@@ -178,6 +215,37 @@ func (tw *TextWindow) editDrawing(s string) bool {
 		}
 		ss.UndoRemember()
 		ss.drawing().Scale = scale
+	case EditDrawingSection, EditDrawingDetail:
+		f := strings.Fields(s)
+		var nums []float64
+		for _, w := range f[min(1, len(f)):] {
+			x, err := strconv.ParseFloat(w, 64)
+			if err != nil {
+				nums = nil
+				break
+			}
+			nums = append(nums, x)
+		}
+		d := ss.drawing().Clone()
+		if tw.edit.meaning == EditDrawingSection {
+			if len(f) != 2 || len(nums) != 1 {
+				ss.Error("A section is typed as its view and its offset, as front 0.")
+				return true
+			}
+			d.Sections = append(d.Sections, sketch.DrawingSection{View: f[0], Offset: nums[0]})
+		} else {
+			if len(f) != 5 || len(nums) != 4 {
+				ss.Error("A detail is typed as its view, the x and y of its middle, its radius and how many times larger, as front 10 5 8 2.")
+				return true
+			}
+			d.Details = append(d.Details, sketch.DrawingDetail{View: f[0], CX: nums[0], CY: nums[1], R: nums[2], Scale: nums[3]})
+		}
+		if err := d.Check(); err != nil {
+			ss.Error("%s.", capitalize(err.Error()))
+			return true
+		}
+		ss.UndoRemember()
+		ss.SK.Drawing = d
 	case EditDrawingField:
 		ss.UndoRemember()
 		d := ss.drawing()

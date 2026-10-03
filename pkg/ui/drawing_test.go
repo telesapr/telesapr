@@ -116,3 +116,65 @@ func TestExportDrawing(t *testing.T) {
 		t.Errorf("%d hidden edges, %d edges of the frame and the title block's box", hidden, frame)
 	}
 }
+
+// A section of the top view through the hole, and a detail of the hole
+// in the front view, twice its size (roadmap 18.3): the section's cut
+// face is hatched, its plane drawn dashed on the front and right views,
+// the detail's circle on the front view and about the detail.
+func TestDrawingSectionDetail(t *testing.T) {
+	ss, _ := drawingModel(t)
+	plain := &sketch.Drawing{Sheet: "A2", Hidden: false}
+	base, _, _, err := ss.DrawingSheet(plain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withSection := plain.Clone()
+	withSection.Sections = []sketch.DrawingSection{{View: "top"}}
+	sec, _, scale, err := ss.DrawingSheet(withSection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dashed := 0
+	for _, e := range sec.Edges {
+		if e.AuxA == core.StyleHiddenEdge {
+			dashed++
+		}
+	}
+	// No hidden edges are drawn: the two cutting planes are what is
+	// dashed.
+	if dashed != 2 {
+		t.Errorf("%d dashed edges, want the plane on the front and the right view", dashed)
+	}
+	// The hatch: the cut face, 120 x 40 less the hole's 16, every 3 mm
+	// at 45 degrees, is many lines.
+	if added := len(sec.Edges) - len(base.Edges); added < 40 {
+		t.Errorf("the section adds %d edges", added)
+	}
+	if scale != 1 {
+		t.Errorf("scale %g", scale)
+	}
+
+	withDetail := plain.Clone()
+	withDetail.Details = []sketch.DrawingDetail{{View: "front", CX: -30, CY: 0, R: 15, Scale: 2}}
+	det, _, _, err := ss.DrawingSheet(withDetail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dashed = 0
+	for _, e := range det.Edges {
+		if e.AuxA == core.StyleHiddenEdge {
+			dashed++
+		}
+	}
+	if dashed != 72 {
+		t.Errorf("%d dashed edges, want the detail's circle on the front view", dashed)
+	}
+	for name, bad := range map[string]*sketch.Drawing{
+		"section of iso": {Sheet: "A3", Sections: []sketch.DrawingSection{{View: "iso"}}},
+		"detail of none": {Sheet: "A3", Details: []sketch.DrawingDetail{{View: "front", R: 0, Scale: 2}}},
+	} {
+		if _, _, _, err := ss.DrawingSheet(bad); err == nil {
+			t.Errorf("%s: no error", name)
+		}
+	}
+}

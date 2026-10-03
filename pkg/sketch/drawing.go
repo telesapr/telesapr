@@ -20,6 +20,24 @@ type DrawingView struct {
 	X, Y float64
 }
 
+// DrawingSection is a section view (roadmap 18.3): the solid cut by
+// the plane square to View's direction through the solid's middle,
+// moved Offset mm toward the viewer, the half beyond seen, the cut face
+// hatched; at X, Y on the sheet, or placed when both are 0.
+type DrawingSection struct {
+	View         string
+	Offset, X, Y float64
+}
+
+// DrawingDetail is a detail view (roadmap 18.3): the part of View
+// within R mm of the point CX, CY (mm right and up from the view's
+// middle, on the model), enlarged Scale times the sheet's scale; at X,
+// Y on the sheet, or placed when both are 0.
+type DrawingDetail struct {
+	View                   string
+	CX, CY, R, Scale, X, Y float64
+}
+
 // Drawing is the model's sheet.
 type Drawing struct {
 	// Sheet is A4 to A0, Letter or Tabloid; Portrait turns it.
@@ -37,6 +55,10 @@ type Drawing struct {
 	Views []DrawingView
 	// Hidden draws the hidden edges of the orthographic views, dashed.
 	Hidden bool
+	// Sections and Details are the section and detail views, lettered
+	// A, B, ... in that order.
+	Sections []DrawingSection
+	Details  []DrawingDetail
 	// The title block (roadmap 18.2).
 	Title, Author, Number, Revision, Material, Company string
 }
@@ -85,6 +107,19 @@ func (d *Drawing) Check() error {
 	for _, v := range d.Views {
 		if _, _, ok := ViewDirection(v.Kind); !ok {
 			return fmt.Errorf("no view %q: the views are front, back, top, bottom, left, right and iso", v.Kind)
+		}
+	}
+	for _, s := range d.Sections {
+		if _, _, ok := ViewDirection(s.View); !ok || s.View == "iso" {
+			return fmt.Errorf("no section of %q: a section is of front, back, top, bottom, left or right", s.View)
+		}
+	}
+	for _, dt := range d.Details {
+		if _, _, ok := ViewDirection(dt.View); !ok {
+			return fmt.Errorf("no detail of %q: the views are front, back, top, bottom, left, right and iso", dt.View)
+		}
+		if !(dt.R > 0) || !(dt.Scale > 0) {
+			return fmt.Errorf("a detail's radius and scale are more than zero, not %g and %g", dt.R, dt.Scale)
 		}
 	}
 	return nil
@@ -207,6 +242,8 @@ func (d *Drawing) Clone() *Drawing {
 	}
 	c := *d
 	c.Views = append([]DrawingView(nil), d.Views...)
+	c.Sections = append([]DrawingSection(nil), d.Sections...)
+	c.Details = append([]DrawingDetail(nil), d.Details...)
 	return &c
 }
 
@@ -214,4 +251,50 @@ func (d *Drawing) Clone() *Drawing {
 // landscape, fitted, third-angle, with hidden edges.
 func DefaultDrawing() *Drawing {
 	return &Drawing{Sheet: "A3", Hidden: true}
+}
+
+// Letter is the letter of the n-th section or detail view: A, B, ...,
+// Z, AA, AB, ...
+func Letter(n int) string {
+	if n < 26 {
+		return string(rune('A' + n))
+	}
+	return Letter(n/26-1) + Letter(n%26)
+}
+
+// PlaceExtras places the sections and details that have no place, in
+// columns to the right of the views, from the top down, given each
+// one's size on the sheet in mm, the sections' first; right is where
+// the views end. It returns where each goes, the sections' first.
+func (d *Drawing) PlaceExtras(right float64, sizes [][2]float64) [][2]float64 {
+	w, h := d.Size()
+	top := h - SheetBorder - viewGap
+	x, y, colW := right+viewGap, top, 0.0
+	given := func(i int) (float64, float64, bool) {
+		if i < len(d.Sections) {
+			s := d.Sections[i]
+			return s.X, s.Y, s.X != 0 || s.Y != 0
+		}
+		dt := d.Details[i-len(d.Sections)]
+		return dt.X, dt.Y, dt.X != 0 || dt.Y != 0
+	}
+	out := make([][2]float64, len(sizes))
+	for i, sz := range sizes {
+		if gx, gy, ok := given(i); ok {
+			out[i] = [2]float64{gx, gy}
+			continue
+		}
+		// The next column when this one is full, down to the title
+		// block.
+		if y-sz[1]-10 < SheetBorder+TitleBlockHeight && y != top {
+			x, y, colW = x+colW+viewGap, top, 0
+		}
+		if x+sz[0] > w-SheetBorder {
+			x = w - SheetBorder - sz[0]
+		}
+		out[i] = [2]float64{x + sz[0]/2, y - sz[1]/2}
+		y -= sz[1] + viewGap + 7
+		colW = math.Max(colW, sz[0])
+	}
+	return out
 }

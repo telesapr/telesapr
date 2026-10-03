@@ -19,6 +19,20 @@ File > Drawing Sheet shows its screen:
 - the **title block**: title, drawn by, drawing number, revision, material and company; the scale,
   sheet and projection are filled in.
 
+Under **sections and details**:
+
+- `[add a section]` takes a view and an offset, `top 0`: the solid is cut by the plane square to
+  that view's direction through its middle, moved the offset in mm toward the viewer; the half
+  beyond is drawn, its cut face hatched every 3 mm on the sheet, labelled SECTION A-A, and the
+  plane is drawn dashed and lettered on the views that see it edge on;
+- `[add a detail]` takes a view, the point it enlarges (mm right and up from the view's middle),
+  a radius and how many times larger, `front 10 5 8 2`: what of the view is within the circle,
+  enlarged, in a circle, labelled DETAIL B with its scale, the circle drawn dashed and lettered
+  on the view.
+
+They are lettered A, B, ... in that order and placed in columns right of the views, unless a
+script gives them a place (`X`, `Y`).
+
 File > Export Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
 sheet's size in millimetres. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
 without a window.
@@ -33,11 +47,13 @@ doc.SetDrawing(d)
 must(doc.ExportDrawing("bracket.pdf"))   // in the application
 ```
 
-`d.Views` places views where you want them, by kind and the sheet position of their middle in
+`d.Sections` and `d.Details` hold the section and detail views; `d.Views` places views where you
+want them, by kind and the sheet position of their middle in
 millimetres from the bottom left; empty, the standard ones are placed.
 
 ## Not yet
 
-Section and detail views (roadmap 18.3), and dimensions on the views (18.4). The drawing is not
+Dimensions on the views (roadmap 18.4). A section's half beyond is drawn with hidden edges as the
+drawing has them; a section is of the whole solid, not a broken-out or offset section. The drawing is not
 shown in the window, only written. The text is the vector font's, which has no colon: the title
 block writes a scale of 1:2 as 1/2.

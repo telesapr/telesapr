@@ -109,6 +109,13 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 		for _, v := range d.Views {
 			n.add(field("view", Word(v.Kind), Word(FormatReal(v.X)), Word(FormatReal(v.Y))))
 		}
+		for _, s := range d.Sections {
+			n.add(field("section", Word(s.View), Word(FormatReal(s.Offset)), Word(FormatReal(s.X)), Word(FormatReal(s.Y))))
+		}
+		for _, dt := range d.Details {
+			n.add(field("detail", Word(dt.View), Word(FormatReal(dt.CX)), Word(FormatReal(dt.CY)), Word(FormatReal(dt.R)),
+				Word(FormatReal(dt.Scale)), Word(FormatReal(dt.X)), Word(FormatReal(dt.Y))))
+		}
 		n.str("title", d.Title)
 		n.str("author", d.Author)
 		n.str("number", d.Number)

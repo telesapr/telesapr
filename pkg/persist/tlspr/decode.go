@@ -318,6 +318,14 @@ func (d *decoder) drawing(n *Node) *sketch.Drawing {
 		case "view":
 			a := d.fieldArgs(f, 3)
 			dr.Views = append(dr.Views, sketch.DrawingView{Kind: d.word(a[0]), X: d.real(a[1]), Y: d.real(a[2])})
+		case "section":
+			a := d.fieldArgs(f, 4)
+			dr.Sections = append(dr.Sections, sketch.DrawingSection{View: d.word(a[0]), Offset: d.real(a[1]),
+				X: d.real(a[2]), Y: d.real(a[3])})
+		case "detail":
+			a := d.fieldArgs(f, 7)
+			dr.Details = append(dr.Details, sketch.DrawingDetail{View: d.word(a[0]), CX: d.real(a[1]), CY: d.real(a[2]),
+				R: d.real(a[3]), Scale: d.real(a[4]), X: d.real(a[5]), Y: d.real(a[6])})
 		case "title":
 			dr.Title = d.strField(f)
 		case "author":

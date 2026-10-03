@@ -153,8 +153,10 @@ const (
 	EditMotionTo        Edit = 917
 	EditMotionSteps     Edit = 918
 	// For the drawing (an extension)
-	EditDrawingScale Edit = 919
-	EditDrawingField Edit = 921
+	EditDrawingScale   Edit = 919
+	EditDrawingField   Edit = 921
+	EditDrawingSection Edit = 922
+	EditDrawingDetail  Edit = 923
 	// For the command search (an extension)
 	EditCommandQuery Edit = 920
 	// For the section view (an extension)

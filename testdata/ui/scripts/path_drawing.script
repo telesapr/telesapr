@@ -20,7 +20,7 @@ edit 1:2
 twmove 172 165
 twdown L 172 165
 twup L 172 165
-twmove 181 235
-twdown L 181 235
-twup L 181 235
+twmove 181 305
+twdown L 181 305
+twup L 181 305
 edit PLATE

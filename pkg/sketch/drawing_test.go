@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // The drawing is part of the model (roadmap 18.1, 18.2): set, it goes
@@ -19,12 +20,15 @@ func TestDrawingSaved(t *testing.T) {
 	dr.Sheet, dr.Portrait, dr.Scale, dr.FirstAngle = "A2", true, 0.5, true
 	dr.Title, dr.Author, dr.Number, dr.Material = "Plate", "M. S.", "TS-7", "steel"
 	dr.Views = []api.DrawingView{{Kind: "front", X: 100, Y: 200}, {Kind: "iso", X: 300, Y: 400}}
+	dr.Sections = []sketch.DrawingSection{{View: "top", Offset: 2.5}}
+	dr.Details = []sketch.DrawingDetail{{View: "front", CX: 1, CY: 2, R: 3, Scale: 4, X: 50, Y: 60}}
 	d.SetDrawing(dr)
 	undoRedo(t, d, before)
 	back := roundTrip(t, d)
 	got := back.Drawing()
 	if got.Sheet != "A2" || !got.Portrait || got.Scale != 0.5 || !got.FirstAngle || got.Title != "Plate" ||
-		got.Material != "steel" || len(got.Views) != 2 || got.Views[1].Kind != "iso" || got.Views[1].Y != 400 {
+		got.Material != "steel" || len(got.Views) != 2 || got.Views[1].Kind != "iso" || got.Views[1].Y != 400 ||
+		len(got.Sections) != 1 || got.Sections[0].Offset != 2.5 || len(got.Details) != 1 || got.Details[0].Scale != 4 {
 		t.Errorf("reopened: %+v", got)
 	}
 	if !strings.Contains(string(saved(t, d)), "drawing {") {
