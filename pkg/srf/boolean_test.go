@@ -67,12 +67,12 @@ func TestSShellDifferenceEmpty(t *testing.T) {
 // TestSShellIntersectionOverlappingBoxes verifies intersection of
 // two overlapping boxes is non-empty.
 func TestSShellIntersectionOverlappingBoxes(t *testing.T) {
-	a := makeBoxShellForTest(geom.NewVector(0, 0, 0), geom.NewVector(2, 2, 2))
-	b := makeBoxShellForTest(geom.NewVector(1, 1, 1), geom.NewVector(3, 3, 3))
+	a := extrudedBox(geom.NewVector(0, 0, 0), geom.NewVector(2, 2, 2))
+	b := extrudedBox(geom.NewVector(1, 1, 1), geom.NewVector(3, 3, 3))
 	var out SShell
 	out.MakeFromIntersectionOf(a, b)
-	if len(out.Surface) == 0 {
-		t.Fatalf("intersection of overlapping boxes is empty")
+	if len(out.Surface) != 6 || math.Abs(shellVolume(&out)-1) > 1e-9 {
+		t.Fatalf("intersection of overlapping boxes: %d surfaces, volume %g", len(out.Surface), shellVolume(&out))
 	}
 }
 

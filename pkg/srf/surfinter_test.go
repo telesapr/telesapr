@@ -105,11 +105,15 @@ func TestIntersectionBranchesVsCpp(t *testing.T) {
 		curves    int
 		triangles int
 	}{
+		// The volumes and triangles are C++'s. A difference has fewer
+		// surfaces and curves than C++ left: the cutter's faces wholly
+		// outside are dropped, with the curves on them no trim uses
+		// (roadmap 13.3).
 		{"coaxial-union", coaxial, SurfaceUnion, 8481.244959586, 12, 30, 268},
-		{"coaxial-difference", coaxial, SurfaceDiff, 2237.031816644, 12, 30, 132},
+		{"coaxial-difference", coaxial, SurfaceDiff, 2237.031816644, 8, 19, 132},
 		{"crossing-union", crossing, SurfaceUnion, 14851.665950403, 12, 32, 364},
-		{"crossing-difference", crossing, SurfaceDiff, 10379.745820200, 12, 32, 232},
-		{"seam-difference", seam, SurfaceDiff, 4.591632342, 22, 60, 76},
+		{"crossing-difference", crossing, SurfaceDiff, 10379.745820200, 10, 24, 232},
+		{"seam-difference", seam, SurfaceDiff, 4.591632342, 9, 36, 76},
 	} {
 		a, b := tc.shells()
 		var r SShell
@@ -119,7 +123,7 @@ func TestIntersectionBranchesVsCpp(t *testing.T) {
 		vol := m.CalculateVolume()
 		if r.BooleanFailed || math.Abs(vol/tc.vol-1) > 1e-6 ||
 			len(r.Surface) != tc.surfaces || len(r.Curve) != tc.curves || len(m.Triangles) != tc.triangles {
-			t.Errorf("%s: vol %.9f failed %v surfaces %d curves %d triangles %d; C++ vol %.9f surfaces %d curves %d triangles %d",
+			t.Errorf("%s: vol %.9f failed %v surfaces %d curves %d triangles %d; want vol %.9f surfaces %d curves %d triangles %d",
 				tc.name, vol, r.BooleanFailed, len(r.Surface), len(r.Curve), len(m.Triangles),
 				tc.vol, tc.surfaces, tc.curves, tc.triangles)
 		}
