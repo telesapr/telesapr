@@ -209,6 +209,23 @@ func cylinderCase(r, dy, angle float64) error {
 	return nil
 }
 
+// TestCylinderAcrossEndSeam crosses the upright cylinder at 45 degrees
+// so that the ellipse where the crossed one meets the upright's flat
+// end runs across the seam between two quarters of that end. Each
+// quarter must get its own part of the curve, split at the seam, or
+// neither quarter's trim closes and the union fails (roadmap 13.2).
+func TestCylinderAcrossEndSeam(t *testing.T) {
+	sweepChordTol(t)
+	if err := cylinderCase(4, 0.7, 60); err != nil {
+		t.Fatal(err)
+	}
+	var out SShell
+	out.MakeFromBoolean(lathedTube(0, 5, 0, 20), crossedCylinder(4, 0.7, 45), SurfaceUnion)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		t.Fatalf("union: failed %v, sound %v", out.BooleanFailed, meshIsSound(&out))
+	}
+}
+
 // TestCylinderThroughCylinderSweep crosses cylinders over the second's
 // radius, its offset from the first's axis and its angle to the first.
 func TestCylinderThroughCylinderSweep(t *testing.T) {
@@ -221,7 +238,7 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 		},
 		MaxFailRate:       cylinderMaxFailRate,
 		Sample:            10,
-		SampleMaxFailRate: 2.0 / 10,
+		SampleMaxFailRate: 1.0 / 10,
 	}
 	grid.Run(func(p sweep.Point) error {
 		return cylinderCase(p.Float("r"), p.Float("dy"), p.Float("angle"))
@@ -229,13 +246,16 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 }
 
 // cylinderMaxFailRate is the fraction of TestCylinderThroughCylinderSweep's
-// grid allowed to fail: what the whole grid gave on 2026-10-03, 11 of
-// 54, ten unions at 45 degrees and steeper and one difference that
-// leaks. On 2026-10-02 it was 19, the same points before and after the
-// kernel fixes of roadmap step 5; which commit mended eight was not
-// looked for. Their curves are the ones the boundary-seeded marching
-// follows (roadmap 13.2). The sample of 10 has two.
-const cylinderMaxFailRate = 11.0 / 54
+// grid allowed to fail: 2 of 54 since roadmap 13.2, two differences
+// whose hole leaks where the crossed cylinder's seam runs along it
+// (r=4 at dy=0, 30 degrees, and dy=0.7, 45 degrees): the triangulation
+// of the hole's patches, not the intersection. The nine unions that
+// failed before, from 45 degrees up, had their curve leave a quarter
+// of the upright cylinder's flat end across the seam to the next
+// quarter unsplit, since a ray cast finds no crossing with a patch
+// the curve lies in (coplanarTrimCrossings). It was 11 on 2026-10-03
+// and 19 on 2026-10-02. The sample of 10 has one.
+const cylinderMaxFailRate = 2.0 / 54
 
 // sweepChordTol sets the chord tolerance the sweeps run at: fine enough
 // that the volumes of the meshes add up as the solids' do.
