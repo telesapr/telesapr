@@ -825,6 +825,49 @@ func (d *Doc) Link(path, name string) (g Group, err error) {
 	}, nil), nil
 }
 
+// LinkStep links a STEP file as Link does, as a solid when asSolid is
+// set: its faces exact, so the solid takes part in Booleans, fillets
+// and the rest as a solid made here does. A file that can't be read as
+// a solid comes in as a reference mesh, and LinkProblem says why.
+func (d *Doc) LinkStep(path, name string, asSolid bool) (Group, error) {
+	g, err := d.Link(path, name)
+	if err != nil || !asSolid {
+		return g, err
+	}
+	g.SetLinkAsSolid(true)
+	return g, nil
+}
+
+// LinkAsSolid reports whether a link group reads its STEP file as a
+// solid rather than as a reference mesh.
+func (g Group) LinkAsSolid() (on bool) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLinked, "LinkAsSolid")
+		on = group.LinkAsSolid
+	})
+	return on
+}
+
+// SetLinkAsSolid reads a link group's STEP file as a solid, or as a
+// reference mesh, and reads it again.
+func (g Group) SetLinkAsSolid(on bool) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLinked, "SetLinkAsSolid")
+		group.LinkAsSolid = on
+		if sk.ReloadAllLinked != nil {
+			sk.ReloadAllLinked(sk)
+		}
+		// A mesh forces its group to one; a solid that was one no
+		// longer.
+		if on && len(group.ImpShell.Surface) > 0 {
+			group.ForceToMesh = false
+		}
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // LinkInfo describes the file a link group links, a line each, as the
 // group's screen shows it: for a STEP file its schema and unit, how
 // many shapes, faces and triangles it gave, and the chord tolerance it

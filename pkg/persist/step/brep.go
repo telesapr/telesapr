@@ -32,11 +32,13 @@ type Placement struct {
 	T     Transform
 }
 
-// Shape is a solid or a shell: a list of faces.
+// Shape is a solid or a shell: a list of faces, or for a tessellated
+// one (AP242) its triangles.
 type Shape struct {
 	ID    int
 	Kind  string
 	Faces []*Face
+	Tris  [][3]geom.Vector
 }
 
 // Face is one face of a shape: a surface trimmed by its bounds. Sense
@@ -1210,6 +1212,14 @@ func (r *reader) shellFaces(in *Instance, flip bool, skip map[string]int, errs m
 // shapeRoots are the entities that hold a shape this reader maps.
 var shapeRoots = []string{
 	"MANIFOLD_SOLID_BREP", "BREP_WITH_VOIDS", "FACETED_BREP", "SHELL_BASED_SURFACE_MODEL",
+	"TESSELLATED_SOLID", "TESSELLATED_SHELL", "TRIANGULATED_SURFACE_SET", "COMPLEX_TRIANGULATED_SURFACE_SET",
+	"TRIANGULATED_FACE", "COMPLEX_TRIANGULATED_FACE",
+}
+
+// tessellatedItems are the shape roots of triangles; TESSELLATED_SOLID
+// and TESSELLATED_SHELL hold others.
+var tessellatedItems = []string{
+	"TRIANGULATED_SURFACE_SET", "COMPLEX_TRIANGULATED_SURFACE_SET", "TRIANGULATED_FACE", "COMPLEX_TRIANGULATED_FACE",
 }
 
 // otherShapes are shape items that this reader names as unsupported
@@ -1217,14 +1227,200 @@ var shapeRoots = []string{
 var otherShapes = []string{
 	"CSG_SOLID", "EXTRUDED_AREA_SOLID", "REVOLVED_AREA_SOLID", "SWEPT_DISK_SOLID",
 	"BOOLEAN_RESULT", "BLOCK", "RIGHT_CIRCULAR_CYLINDER", "RIGHT_CIRCULAR_CONE", "SPHERE",
-	"TORUS", "RIGHT_ANGULAR_WEDGE", "HALF_SPACE_SOLID", "TESSELLATED_SOLID",
-	"TESSELLATED_SHELL", "TRIANGULATED_FACE", "COMPLEX_TRIANGULATED_SURFACE_SET",
-	"TRIANGULATED_SURFACE_SET", "GEOMETRIC_CURVE_SET", "GEOMETRIC_SET",
+	"TORUS", "RIGHT_ANGULAR_WEDGE", "HALF_SPACE_SOLID", "GEOMETRIC_CURVE_SET", "GEOMETRIC_SET",
+}
+
+// tessellated reads the triangles of a tessellated item: a triangulated
+// face or surface set, plain or of strips and fans, or a tessellated
+// shell or solid of them.
+func (r *reader) tessellated(in *Instance, sh *Shape) error {
+	if err := r.enter(); err != nil {
+		return err
+	}
+	defer r.leave()
+	name := in.Records[0].Name
+	ps := params(in, name)
+	if in.Is("TESSELLATED_SOLID") || in.Is("TESSELLATED_SHELL") {
+		items, err := r.list(in, ps, 1)
+		if err != nil {
+			return err
+		}
+		for _, v := range items {
+			if v.Kind != KindRef || r.f.Get(v.Ref) == nil {
+				return r.bad(in, "an item is not a reference")
+			}
+			t := r.f.Get(v.Ref)
+			ok := false
+			for _, n := range tessellatedItems {
+				ok = ok || t.Is(n)
+			}
+			if !ok {
+				// Edges and vertices of the tessellation hold no area.
+				continue
+			}
+			if err := r.tessellated(t, sh); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	cl, err := r.ref(in, ps, 1)
+	if err != nil {
+		return err
+	}
+	if !cl.Is("COORDINATES_LIST") {
+		return r.bad(in, "its coordinates are not a COORDINATES_LIST")
+	}
+	cps := params(cl, "COORDINATES_LIST")
+	rows, err := r.list(cl, cps, 2)
+	if err != nil {
+		return err
+	}
+	coords := make([]geom.Vector, len(rows))
+	for i, row := range rows {
+		if row.Kind != KindList || len(row.List) != 3 {
+			return r.bad(cl, "point %d is not three numbers", i+1)
+		}
+		var c [3]float64
+		for k := range c {
+			x, ok := num(row.List[k])
+			if !ok {
+				return r.bad(cl, "point %d is not three numbers", i+1)
+			}
+			c[k] = x * r.scale
+		}
+		coords[i] = geom.Vector{X: c[0], Y: c[1], Z: c[2]}
+	}
+	// The faces have a geometric link before their index, the sets
+	// not.
+	face := in.Is("TRIANGULATED_FACE") || in.Is("COMPLEX_TRIANGULATED_FACE")
+	at := 4
+	if face {
+		at = 5
+	}
+	var pnindex []int
+	if l, err := r.list(in, ps, at); err == nil {
+		for _, v := range l {
+			x, ok := num(v)
+			if !ok {
+				return r.bad(in, "its point index is not numbers")
+			}
+			pnindex = append(pnindex, int(x))
+		}
+	}
+	point := func(k int) (geom.Vector, error) {
+		if len(pnindex) > 0 {
+			if k < 1 || k > len(pnindex) {
+				return geom.Vector{}, r.bad(in, "point %d is out of its index", k)
+			}
+			k = pnindex[k-1]
+		}
+		if k < 1 || k > len(coords) {
+			return geom.Vector{}, r.bad(in, "point %d is out of its coordinates", k)
+		}
+		return coords[k-1], nil
+	}
+	tri := func(a, b, c int) error {
+		pa, err := point(a)
+		if err != nil {
+			return err
+		}
+		pb, err := point(b)
+		if err != nil {
+			return err
+		}
+		pc, err := point(c)
+		if err != nil {
+			return err
+		}
+		sh.Tris = append(sh.Tris, [3]geom.Vector{pa, pb, pc})
+		return nil
+	}
+	ints := func(v Value) ([]int, error) {
+		if v.Kind != KindList {
+			return nil, r.bad(in, "a list of points is not a list")
+		}
+		out := make([]int, len(v.List))
+		for i, x := range v.List {
+			n, ok := num(x)
+			if !ok {
+				return nil, r.bad(in, "a point is not a number")
+			}
+			out[i] = int(n)
+		}
+		return out, nil
+	}
+	if in.Is("TRIANGULATED_FACE") || in.Is("TRIANGULATED_SURFACE_SET") {
+		l, err := r.list(in, ps, at+1)
+		if err != nil {
+			return err
+		}
+		for _, v := range l {
+			t, err := ints(v)
+			if err != nil {
+				return err
+			}
+			if len(t) != 3 {
+				return r.bad(in, "a triangle has %d points", len(t))
+			}
+			if err := tri(t[0], t[1], t[2]); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	// Strips, each triangle turning the way of the first, then fans.
+	strips, err := r.list(in, ps, at+1)
+	if err != nil {
+		return err
+	}
+	for _, v := range strips {
+		s, err := ints(v)
+		if err != nil {
+			return err
+		}
+		for i := 0; i+2 < len(s); i++ {
+			a, b := s[i], s[i+1]
+			if i%2 == 1 {
+				a, b = b, a
+			}
+			if err := tri(a, b, s[i+2]); err != nil {
+				return err
+			}
+		}
+	}
+	fans, err := r.list(in, ps, at+2)
+	if err != nil {
+		return err
+	}
+	for _, v := range fans {
+		f, err := ints(v)
+		if err != nil {
+			return err
+		}
+		for i := 1; i+1 < len(f); i++ {
+			if err := tri(f[0], f[i], f[i+1]); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // shape reads a shape root.
 func (r *reader) shape(in *Instance, skip map[string]int, errs map[string]string) (*Shape, error) {
 	sh := &Shape{ID: in.ID, Kind: in.Records[0].Name}
+	for _, n := range append([]string{"TESSELLATED_SOLID", "TESSELLATED_SHELL"}, tessellatedItems...) {
+		if in.Is(n) {
+			if err := r.tessellated(in, sh); err != nil {
+				return nil, err
+			}
+			if len(sh.Tris) == 0 {
+				return nil, r.bad(in, "holds no triangles")
+			}
+			return sh, nil
+		}
+	}
 	add := func(t *Instance, flip bool) error {
 		faces, err := r.shellFaces(t, flip, skip, errs)
 		if err != nil {
@@ -1876,8 +2072,25 @@ func ReadModel(f *File) *Model {
 	units := map[int]bool{}
 	readers := map[[2]float64]*reader{}
 	errs := map[string]string{}
+	// The items of a tessellated shell or solid are read with it.
+	inner := map[int]bool{}
 	for _, id := range f.Order {
 		in := f.Get(id)
+		if in.Is("TESSELLATED_SOLID") || in.Is("TESSELLATED_SHELL") {
+			if ps := params(in, in.Records[0].Name); len(ps) > 1 && ps[1].Kind == KindList {
+				for _, v := range ps[1].List {
+					if v.Kind == KindRef {
+						inner[v.Ref] = true
+					}
+				}
+			}
+		}
+	}
+	for _, id := range f.Order {
+		in := f.Get(id)
+		if inner[id] {
+			continue
+		}
 		isRoot := false
 		for _, n := range shapeRoots {
 			if in.Is(n) {

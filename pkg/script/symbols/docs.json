@@ -4389,6 +4389,10 @@
 						"decl": "func (d *Doc) Link(path, name string) (g Group, err error)",
 						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
 					},
+					"LinkStep": {
+						"decl": "func (d *Doc) LinkStep(path, name string, asSolid bool) (Group, error)",
+						"text": "LinkStep links a STEP file as Link does, as a solid when asSolid is\nset: its faces exact, so the solid takes part in Booleans, fillets\nand the rest as a solid made here does. A file that can't be read as\na solid comes in as a reference mesh, and LinkProblem says why."
+					},
 					"Load": {
 						"decl": "func (d *Doc) Load(path string) (err error)",
 						"text": "Load replaces the sketch by the one in a .tlspr file."
@@ -4858,6 +4862,10 @@
 						"decl": "func (g Group) LeftOut() (why string)",
 						"text": "LeftOut says why the group is left out of the model, or \"\" if it is\nin: \"suppressed\" for a group suppressed whole, or \"uses g004-sketch,\nwhich is suppressed\" for one that uses such a group. A group left out\nhas no entities and no solid of its own, and can't be made active."
 					},
+					"LinkAsSolid": {
+						"decl": "func (g Group) LinkAsSolid() (on bool)",
+						"text": "LinkAsSolid reports whether a link group reads its STEP file as a\nsolid rather than as a reference mesh."
+					},
 					"LinkInfo": {
 						"decl": "func (g Group) LinkInfo() (lines []string)",
 						"text": "LinkInfo describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
@@ -4949,6 +4957,10 @@
 					"SetKeepOriginal": {
 						"decl": "func (g Group) SetKeepOriginal(keep bool)",
 						"text": "SetKeepOriginal has a mirror's solid keep the original beside the\nreflection, or not, which leaves the reflection alone."
+					},
+					"SetLinkAsSolid": {
+						"decl": "func (g Group) SetLinkAsSolid(on bool)",
+						"text": "SetLinkAsSolid reads a link group's STEP file as a solid, or as a\nreference mesh, and reads it again."
 					},
 					"SetMirrorSolid": {
 						"decl": "func (g Group) SetMirrorSolid(whole bool)",
@@ -7432,6 +7444,10 @@
 						"decl": "func (b *SBezier) Start() geom.Vector",
 						"text": "Start returns the first control point."
 					},
+					"Sub": {
+						"decl": "func (b *SBezier) Sub(t0, t1 float64) SBezier",
+						"text": "Sub is the curve's polynomial over [t0, t1], run from 0 to 1: the piece between them, or reaching past its ends."
+					},
 					"TangentAt": {
 						"decl": "func (b *SBezier) TangentAt(t float64) geom.Vector",
 						"text": "TangentAt is the derivative of the curve at t (C++ SBezier::TangentAt)."
@@ -8440,6 +8456,10 @@
 					"SplitInHalf": {
 						"decl": "func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface)",
 						"text": "SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa and sb, by de Casteljau's algorithm in projective space (C++ SSurface::SplitInHalf, for any degree)."
+					},
+					"Sub": {
+						"decl": "func (s *SSurface) Sub(u0, u1, v0, v1 float64) SSurface",
+						"text": "Sub is the patch's polynomial over [u0, u1] by [v0, v1], run from 0 to 1 each way."
 					},
 					"TangentsAt": {
 						"decl": "func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool)",

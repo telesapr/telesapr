@@ -84,6 +84,15 @@ func AddPlanarFace(sh *srf.SShell, loops [][]srf.SBezier, id uint32, color core.
 
 // AddPlanarFace is AddPlanarFace by the adder.
 func (fa *FaceAdder) AddPlanarFace(loops [][]srf.SBezier, id uint32, color core.RgbaColor) (core.HSSurface, error) {
+	return fa.AddPlanarFaceWithin(loops, id, color, geom.Vector{}, geom.LengthEps)
+}
+
+// AddPlanarFaceWithin is AddPlanarFace for curves that lie in a plane
+// only within tol, as a file's do within its tolerance: normal n, when
+// not zero, is the plane's, else the outer loop's. With tol past
+// LengthEps the face's mesh takes the curves' own points on its edges
+// (srf.SSurface.SnapToTrims).
+func (fa *FaceAdder) AddPlanarFaceWithin(loops [][]srf.SBezier, id uint32, color core.RgbaColor, n geom.Vector, tol float64) (core.HSSurface, error) {
 	if len(loops) == 0 || len(loops[0]) == 0 {
 		return core.HSSurface{}, errors.New("topo: a face needs a loop")
 	}
@@ -100,17 +109,36 @@ func (fa *FaceAdder) AddPlanarFace(loops [][]srf.SBezier, id uint32, color core.
 			}
 		}
 	}
-	n := newellOf(poly)
-	if n.Magnitude() < geom.LengthEps {
+	nl := newellOf(poly)
+	if nl.Magnitude() < geom.LengthEps {
 		return core.HSSurface{}, errors.New("topo: the outer loop of a flat face encloses no area")
 	}
+	if n.Magnitude() == 0 {
+		n = nl
+	} else if n.Dot(nl) < 0 {
+		// The plane's side is the loop's, as AddFace turns it by them.
+		n = n.ScaledBy(-1)
+	}
 	n = n.WithMagnitude(1)
+	// The plane through the middle of the curves' spread from it.
+	lo, hi := 0.0, 0.0
 	for _, p := range pts {
-		if d := p.Minus(pts[0]).Dot(n); d > geom.LengthEps || d < -geom.LengthEps {
-			return core.HSSurface{}, fmt.Errorf("topo: a flat face's curves leave its plane by %g", d)
-		}
+		d := p.Minus(pts[0]).Dot(n)
+		lo, hi = min(lo, d), max(hi, d)
+	}
+	if hi-lo > 2*tol {
+		return core.HSSurface{}, fmt.Errorf("topo: a flat face's curves leave its plane by %g", hi-lo)
 	}
 	s := planeOver(pts, n)
+	// Curves off the plane are a file's: its mesh takes their points.
+	s.SnapToTrims = tol > geom.LengthEps
+	if mid := (lo + hi) / 2; mid != 0 {
+		for i := 0; i <= s.DegM; i++ {
+			for j := 0; j <= s.DegN; j++ {
+				s.Ctrl[i][j] = s.Ctrl[i][j].Plus(n.ScaledBy(mid))
+			}
+		}
+	}
 	s.Origin, s.Color = id, color
 	return fa.Add(s, loops)
 }

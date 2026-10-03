@@ -165,6 +165,16 @@ func TestPathEquivalenceLinkStep(t *testing.T) {
 	}
 }
 
+// A STEP file linked and read as a solid on its group screen, and the
+// same linked as a solid by a script (roadmap 21.4).
+func TestPathEquivalenceLinkStepSolid(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_link_step_solid", "path_link_step_solid")
+	g := ui.GetGroup(ui.Active)
+	if !g.LinkAsSolid || len(g.ImpShell.Surface) == 0 || g.ForceToMesh {
+		t.Errorf("the link: as solid %v, %d surfaces, forced to mesh %v", g.LinkAsSolid, len(g.ImpShell.Surface), g.ForceToMesh)
+	}
+}
+
 // An edge of the solid picked on the model and chamfered, and the same
 // edge chamfered by its name in a script.
 func TestPathEquivalenceChamferSolidEdge(t *testing.T) {

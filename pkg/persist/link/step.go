@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -147,4 +148,36 @@ func plural(n int, what string) string {
 		return "1 " + what
 	}
 	return fmt.Sprintf("%d %ss", n, what)
+}
+
+// IsStep reports whether path names a STEP file, by its extension.
+func IsStep(path string) bool {
+	switch strings.ToLower(strings.TrimPrefix(filepath.Ext(path), ".")) {
+	case "step", "stp":
+		return true
+	}
+	return false
+}
+
+// linkStepSolid reads a STEP file as a solid (roadmap D3): its points
+// as linkStep gives them, and its shapes as one exact shell; a file
+// that can't be read as one links as linkStep links it, with the reason
+// in the report.
+func linkStepSolid(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool {
+	if !linkStep(path, sk, el, m, sh, rep) {
+		return false
+	}
+	solid, faces, err := step.SolidFile(path)
+	if err != nil {
+		why := fmt.Sprintf("read as a mesh, not a solid: %v", err)
+		if rep.Problem != "" {
+			why = rep.Problem + "; " + why
+		}
+		rep.Problem = why
+		return true
+	}
+	m.Clear()
+	*sh = *solid
+	rep.Info = append(rep.Info, fmt.Sprintf("read as a solid, %s exact", plural(faces, "face")))
+	return true
 }

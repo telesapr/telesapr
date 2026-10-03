@@ -232,6 +232,7 @@ group <handle> <type> <name> {
   all-dims-reference
   scale <real>              # left out when 1, or 0, which is no scale; "scale = <expression>" for an expression
   link <string>             # linked file, relative to this file, with / separators
+  link-as-solid             # a linked STEP file read as a solid, not a reference mesh
   remap { ... }
 }
 ```

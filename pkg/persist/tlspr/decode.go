@@ -681,6 +681,8 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 		case "link":
 			g.LinkFile = d.strField(c)
+		case "link-as-solid":
+			g.LinkAsSolid = d.flag(c)
 		case "remap":
 			d.head(c, 0)
 			for _, m := range c.Children {

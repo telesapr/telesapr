@@ -11,6 +11,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/persist/link"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/version"
@@ -526,6 +527,27 @@ func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
+// ScreenChangeLinkAsSolid reads a linked STEP file as a solid ('s') or
+// as a reference mesh, and reads it again.
+func (tw *TextWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.GetGroup(tw.shown.group)
+	if g == nil || g.Type != sketch.GroupLinked || g.LinkAsSolid == (link == 's') {
+		return
+	}
+	ss.UndoRemember()
+	g.LinkAsSolid = link == 's'
+	if ss.SK.ReloadAllLinked != nil {
+		ss.SK.ReloadAllLinked(ss.SK)
+	}
+	// A mesh forces its group to one; a solid that was one no longer.
+	if g.LinkAsSolid && len(g.ImpShell.Surface) > 0 {
+		g.ForceToMesh = false
+	}
+	ss.SK.MarkGroupDirty(g.H, false)
+	ss.GW.ClearSuper()
+}
+
 // ScreenChangeSweepUp holds a sweep's frames to an axis, by the link's
 // letter, or ('n') lets them turn least.
 func (tw *TextWindow) ScreenChangeSweepUp(link int, v uint32) {
@@ -827,6 +849,11 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))
 		tw.Printf(false, "%Bd   %Ftscaled by%E %#%s %Fl%Ll%f%D[change]%E",
 			g.Scale, exprNote(g.ExprScale), lf(tw.ScreenChangeGroupScale), g.H.V)
+		if link.IsStep(g.LinkFile) {
+			tw.Printf(false, "%Ba   %Ftread as%E %f%Lm%Fd%s reference mesh%E  %f%Ls%Fd%s solid%E",
+				lf(tw.ScreenChangeLinkAsSolid), radio(!g.LinkAsSolid),
+				lf(tw.ScreenChangeLinkAsSolid), radio(g.LinkAsSolid))
+		}
 		for _, line := range g.LinkInfo {
 			tw.Printf(false, "   %Fd%s%E", line)
 		}
