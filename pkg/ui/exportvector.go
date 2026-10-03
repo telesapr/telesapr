@@ -79,7 +79,7 @@ func cppInt(f float64) int {
 func (w *epsFileWriter) StartFile() {
 	w.printf(
 		"%%!PS-Adobe-2.0\r\n"+
-			"%%%%Creator: SolveSpace\r\n"+
+			"%%%%Creator: TeleSAPR\r\n"+
 			"%%%%Title: title\r\n"+
 			"%%%%Pages: 0\r\n"+
 			"%%%%PageOrder: Ascend\r\n"+
@@ -326,7 +326,7 @@ func (w *pdfFileWriter) FinishAndCloseFile() {
 
 	w.xref[9] = w.ftell()
 	w.printf("9 0 obj\r\n" +
-		"  << /Creator (SolveSpace)\r\n" +
+		"  << /Creator (TeleSAPR)\r\n" +
 		"  >>\r\n")
 
 	xrefStart := w.ftell()

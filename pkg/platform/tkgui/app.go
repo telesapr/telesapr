@@ -37,7 +37,7 @@ var _ platform.Platform = (*Platform)(nil)
 // New opens the display. Settings are kept in settingsPath (see
 // platform.DefaultSettingsPath); empty keeps them in memory only.
 func New(settingsPath string) (*Platform, error) {
-	app, err := takigo.NewApp(takigo.Title("SolveSpace"), takigo.Size(910, 680))
+	app, err := takigo.NewApp(takigo.Title("TeleSAPR"), takigo.Size(910, 680))
 	if err != nil {
 		return nil, err
 	}

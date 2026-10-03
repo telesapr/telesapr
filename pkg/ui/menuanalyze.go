@@ -315,11 +315,11 @@ func (ss *SolveSpaceUI) MenuHelp(id Command) {
 
 	case CmdAbout:
 		ss.Message(
-			"This is SolveSpace version %s.\n"+
+			"This is TeleSAPR, based on SolveSpace version %s.\n"+
 				"\n"+
-				"For more information, see http://solvespace.com/\n"+
+				"For more information on SolveSpace, see http://solvespace.com/\n"+
 				"\n"+
-				"SolveSpace is free software: you are free to modify\n"+
+				"TeleSAPR is free software: you are free to modify\n"+
 				"and/or redistribute it under the terms of the GNU\n"+
 				"General Public License (GPL) version 3 or later.\n"+
 				"\n"+

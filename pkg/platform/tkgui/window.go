@@ -72,7 +72,7 @@ func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window
 		w.topWin = p.app.Window()
 		w.wmInfo = p.app.WmInfo()
 	} else {
-		opts := []toplevel.ToplevelOption{toplevel.Title("SolveSpace")}
+		opts := []toplevel.ToplevelOption{toplevel.Title("TeleSAPR")}
 		if pw, ok := parent.(*Window); ok && pw != nil {
 			opts = append(opts, toplevel.TransientFor(pw.topWin))
 		}

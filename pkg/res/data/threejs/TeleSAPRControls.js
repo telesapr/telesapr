@@ -1,9 +1,9 @@
 window.devicePixelRatio = window.devicePixelRatio || 1;
 
-SolvespaceCamera = function(renderWidth, renderHeight, scale, up, right, offset) {
+TelesaprCamera = function(renderWidth, renderHeight, scale, up, right, offset) {
     THREE.Camera.call(this);
 
-    this.type = 'SolvespaceCamera';
+    this.type = 'TelesaprCamera';
 
     this.renderWidth = renderWidth;
     this.renderHeight = renderHeight;
@@ -16,9 +16,9 @@ SolvespaceCamera = function(renderWidth, renderHeight, scale, up, right, offset)
     this.updateProjectionMatrix();
 };
 
-SolvespaceCamera.prototype = Object.create(THREE.Camera.prototype);
-SolvespaceCamera.prototype.constructor = SolvespaceCamera;
-SolvespaceCamera.prototype.updateProjectionMatrix = function() {
+TelesaprCamera.prototype = Object.create(THREE.Camera.prototype);
+TelesaprCamera.prototype.constructor = TelesaprCamera;
+TelesaprCamera.prototype.updateProjectionMatrix = function() {
     var temp = new THREE.Matrix4();
     var offset = new THREE.Matrix4().makeTranslation(this.offset.x, this.offset.y, this.offset.z);
     // Convert to right handed- do up cross right instead.
@@ -27,7 +27,7 @@ SolvespaceCamera.prototype.updateProjectionMatrix = function() {
     rotate.transpose();
     /* Transpose of rotation matrix == inverse. Rotating the camera by a
        basis is equivalent to rotating an object by the inverse of the
-       basis. To mimic Solvespace's behavior, we pan relative to the camera.
+       basis. To mimic TeleSAPR's behavior, we pan relative to the camera.
        So we need to be rotated to where the camera is pointing before panning.
        See: https://en.wikipedia.org/wiki/Change_of_basis#Two_dimensions */
 
@@ -43,7 +43,7 @@ SolvespaceCamera.prototype.updateProjectionMatrix = function() {
     this.projectionMatrix.copy(temp);
 };
 
-SolvespaceCamera.prototype.NormalizeProjectionVectors = function() {
+TelesaprCamera.prototype.NormalizeProjectionVectors = function() {
     /* After rotating, up and right may no longer be orthogonal.
     However, their cross product will produce the correct
     rotated plane, and we can recover an orthogonal basis. */
@@ -53,7 +53,7 @@ SolvespaceCamera.prototype.NormalizeProjectionVectors = function() {
     this.up.normalize();
 };
 
-SolvespaceCamera.prototype.rotate = function(right, up) {
+TelesaprCamera.prototype.rotate = function(right, up) {
     var oldRight = new THREE.Vector3().copy(this.right).normalize();
     var oldUp = new THREE.Vector3().copy(this.up).normalize();
     this.up.applyAxisAngle(oldRight, up);
@@ -61,7 +61,7 @@ SolvespaceCamera.prototype.rotate = function(right, up) {
     this.NormalizeProjectionVectors();
 };
 
-SolvespaceCamera.prototype.offsetProj = function(right, up) {
+TelesaprCamera.prototype.offsetProj = function(right, up) {
     var shift = new THREE.Vector3(right * this.right.x + up * this.up.x,
         right * this.right.y + up * this.up.y,
         right * this.right.z + up * this.up.z);
@@ -71,7 +71,7 @@ SolvespaceCamera.prototype.offsetProj = function(right, up) {
 /* Calculate the offset in terms of up and right projection vectors
 that will preserve the world coordinates of the current mouse position after
 the zoom. */
-SolvespaceCamera.prototype.zoomTo = function(x, y, delta) {
+TelesaprCamera.prototype.zoomTo = function(x, y, delta) {
     // Get offset components in world coordinates, in terms of up/right.
     var projOffsetX = this.offset.dot(this.right);
     var projOffsetY = this.offset.dot(this.up);
@@ -101,7 +101,7 @@ SolvespaceCamera.prototype.zoomTo = function(x, y, delta) {
     this.offset.addScaledVector(this.up, centerUpF - centerUpI);
 };
 
-SolvespaceControls = function(object, domElement) {
+TelesaprControls = function(object, domElement) {
     var _this = this;
     this.object = object;
     this.domElement = ( domElement !== undefined ) ? domElement : document;
@@ -321,11 +321,11 @@ SolvespaceControls = function(object, domElement) {
     this.touchControls.on('panaftertapend', panaftertapend);
 };
 
-SolvespaceControls.prototype = Object.create(THREE.EventDispatcher.prototype);
-SolvespaceControls.prototype.constructor = SolvespaceControls;
+TelesaprControls.prototype = Object.create(THREE.EventDispatcher.prototype);
+TelesaprControls.prototype.constructor = TelesaprControls;
 
 
-solvespace = function(obj, params) {
+telesapr = function(obj, params) {
     var scene, edgeScene, camera, edgeCamera, renderer;
     var geometry, controls, material, mesh, edges;
     var width, height, scale, offset, projRight, projUp;
@@ -379,7 +379,7 @@ solvespace = function(obj, params) {
         scene = new THREE.Scene();
         edgeScene = new THREE.Scene();
 
-        camera = new SolvespaceCamera(width, height, scale, projUp, projRight, offset);
+        camera = new TelesaprCamera(width, height, scale, projUp, projRight, offset);
         camera.NormalizeProjectionVectors();
 
         mesh = createMesh(obj);
@@ -408,7 +408,7 @@ solvespace = function(obj, params) {
             "width:  " + width  + "px;" +
             "height: " + height + "px;";
 
-        controls = new SolvespaceControls(camera, renderer.domElement);
+        controls = new TelesaprControls(camera, renderer.domElement);
         controls.addEventListener("change", render);
         controls.addEventListener("change", lightUpdate);
 

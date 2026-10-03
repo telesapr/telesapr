@@ -42,7 +42,7 @@ func newCanvas(w *Window) *canvas {
 	makeCanvasWindow(win)
 	c := &canvas{w: w}
 	widget.InitBase(&c.Base, win, app)
-	win.Class = "SolveSpaceCanvas"
+	win.Class = "TeleSAPRCanvas"
 	win.Flags |= window.FlagFocusable
 	win.ReqWidth, win.ReqHeight = 300, 200
 

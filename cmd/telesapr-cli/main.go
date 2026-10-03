@@ -48,10 +48,10 @@ Common options:
 
 Commands:
     version
-        Prints the current solvespace version.
+        Prints the current TeleSAPR version.
     thumbnail --output <pattern> --size <size> --view <direction>
               [--chord-tol <tolerance>]
-        Outputs a rendered view of the sketch, like the SolveSpace GUI would.
+        Outputs a rendered view of the sketch, like the TeleSAPR GUI would.
         <size> is <width>x<height>, in pixels. The output is drawn in
         software, and may look slightly different from the GUI.
     export-view --output <pattern> --view <direction> [--chord-tol <tolerance>]
@@ -261,7 +261,7 @@ func runCommand(args []string, stderr io.Writer) bool {
 
 	switch args[1] {
 	case "version":
-		fmt.Fprintf(stderr, "SolveSpace version %s \n\n", version)
+		fmt.Fprintf(stderr, "TeleSAPR, based on SolveSpace version %s \n\n", version)
 		return true
 	case "thumbnail":
 		accepted = []string{"--output", "--view", "--chord-tol", "--size"}

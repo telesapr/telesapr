@@ -296,7 +296,7 @@ func (w *stepFileWriter) WriteHeader() {
 			"    '2009-06-07T17:44:47-07:00',\n"+
 			"    (''),\n"+
 			"    (''),\n"+
-			"    'SolveSpace',\n"+
+			"    'TeleSAPR',\n"+
 			"    '',\n"+
 			"    ''\n"+
 			");\n"+
