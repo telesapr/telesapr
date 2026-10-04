@@ -58,6 +58,22 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
 - ui: CmdLoftGuides "Guide Loft by Selected Curves"; loft screen row "guides".
 - Trap: in api.SketchHost a whole script is one undo step, so Undo removes the loft too.
 
-## Next (step 28b)
+## 28.2 two arcs (step 28b)
 
-28.4 sweep corners beside arcs/curves and on fitted sweeps; then 28.2 two arcs at a corner.
+- topo/draftsides.go arcArcSeam: piecewise quintics (Chebyshev-Lobatto nodes) through the
+  circle-circle crossing at each height, split 1,2,4.. until within seamTol = 1e-6 of both
+  cones; seams are chains ([]SBezier) now. ebe6610, golden c444c8e.
+
+## 28.4 corners beside arcs: tried, not done
+
+Tried (reverted): cut the path into runs at corners beside arcs, sweep each run carried
+straight on past the corner, cut each by a half-space box at the mitre plane, union the runs.
+The cuts work (run volumes exact), the union's volume is right, but the joined shell fails any
+later Boolean (even with an empty shell): the two mitre faces are coplanar but not the same
+outline, since one run meets the plane in its straight extension and the other in its arc
+(plane-torus curve), so the union leaves a partial coplanar face with curved trims, which the
+kernel can't take; with a round profile 188 naked edges. Coplanar unions with equal outlines
+(boxes) are fine. A real fix needs the mitre inside MakeFromSweepOf for arc pieces: trims of the
+arc's revolved side surfaces by the mitre plane (plane-torus curves, e.g. fitted as arcArcSeam
+does), i.e. srf work. Fitted sweeps with corners: not started (needs the end frame of a fitted
+run and twist split by length).
