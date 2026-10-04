@@ -1,7 +1,7 @@
 # Prints the volumes OpenCASCADE's makeFillet takes from STEP solids
-# read as solids, for the edges TestFilletOnOtherSolidsVolumes in
-# pkg/script/api fillets at radius 1: each edge found as the one nearest
-# a point on it. Run with FreeCAD's command line:
+# read as solids, for the edges TestFilletOnOtherSolidsVolumes and
+# TestFilletEndsOnCurvedFace in pkg/script/api fillet at radius 1:
+# each edge found as the one nearest a point on it. Run with FreeCAD's command line:
 #
 #     FreeCADCmd scripts/fillet-step-volumes.py
 #
@@ -19,6 +19,10 @@ cases = [
     ("shapes/vase_revolved.step", (4.33049372, -4.15214177, 0)),
     ("shapes/vase_revolved.step", (5.05224268, -4.8441654, 14)),
     ("degree/lid_degree7.step", (20.3125, 0, 9.59580796)),
+    ("degree/lid_degree7.step", (0, 0, 5)),
+    ("degree/lid_degree7.step", (40, 0, 5)),
+    ("degree/lid_degree7.step", (40, 30, 5)),
+    ("degree/lid_degree7.step", (0, 30, 4)),
     ("shapes/blob_extruded.step", (0, 0, 2.5)),
 ]
 for f, at in cases:

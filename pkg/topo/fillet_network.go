@@ -225,6 +225,21 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 // (filletInStages).
 func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
 	err := filletPicks(sh, picks, r, origin, flat, nil)
+	if curvedEndRefusal(err) && len(picks) == 1 && !flat {
+		// An edge between flat faces that ends on a curved one: the
+		// rolling ball, whose end follows the curved face (roadmap 22.5).
+		// Chamfers there are not made yet.
+		var cp srf.SShell
+		cp.MakeFromCopyOf(sh)
+		rerr := filletOnCurvedEnd(&cp, picks[0], r, origin, flat)
+		if rerr == nil {
+			*sh = cp
+			return nil
+		}
+		if !errors.Is(rerr, errNotRolling) {
+			return rerr
+		}
+	}
 	if err == nil || !mixedCorner(err) && !setbackRefusal(err) {
 		return err
 	}
@@ -258,6 +273,33 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		why = sx.Msg
 	}
 	return filletErr(fx.At, "%s, and rounded one radius at a time they don't go on round each other's corners: %s", fx.Msg, why)
+}
+
+// curvedEndRefusal reports whether err is step 10's refusal of an edge
+// that ends at a curved face.
+func curvedEndRefusal(err error) bool {
+	var fx *FilletError
+	return errors.As(err, &fx) && fx.Msg == "a face at the edge's end is curved"
+}
+
+// filletOnCurvedEnd rounds the one picked edge p by the rolling ball.
+func filletOnCurvedEnd(sh *srf.SShell, p FilletPick, r float64, origin uint32, flat bool) error {
+	t, err := Build(sh)
+	if err != nil {
+		return err
+	}
+	var e int
+	if p.Arc {
+		if e = t.curvedEdgeAt(p.At); e < 0 {
+			return filletErr(p.At, "no edge of the solid runs there")
+		}
+	} else if e, err = t.wholeEdge(p.A, p.B); err != nil {
+		return err
+	}
+	if p.R != 0 {
+		r = p.R
+	}
+	return rollingBallFillet(sh, t, e, r, origin, flat)
 }
 
 // filletPicks is FilletPicks in one stage. A rounded edge's chain does
