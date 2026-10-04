@@ -1,4 +1,4 @@
-# Step 28 working notes (branch step-28-solid-features)
+# Step 28 working notes (branch step-28b-solid-features, the rest of step 28)
 
 Kept so a resumed session starts cheaply. Delete when step 28 merges.
 
@@ -10,7 +10,7 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
 | 28.5 pattern along a closed path | done | 6fee564, 30883da (goldens) |
 | 28.2 drafts: chosen sides, neutral plane, sharp arc/line corners | done, see below | WIP 2c6fe81 + final |
 | 28.4 sweeps along solid edges, paths with corners | done: mitres between lines; edges by name | WIP + final |
-| 28.3 smooth lofts: end tangency, guide curves | end tangency done; guide curves not started | |
+| 28.3 smooth lofts: end tangency, guide curves | done; guides 03a3003, 18d69d8 (goldens) | |
 
 ## 28.2 design
 
@@ -47,8 +47,17 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
   ValB, and the encoder/decoder now follow IsLength for ValB). Screen rows, Group.Tangency /
   SetTangency, example nozzle.
 
-## Next
+## 28.3 guides (step 28b)
 
-Guide curves (28.3's rest): a sketch curve from the first profile to the last; plan was to
-sample the free loft's iso-sections, move each so its matched vertex lies on the guide, and skin
-through them (translation only, exact at the samples). Not started.
+- topo/guidedloft.go: GuidedLoftSurface samples base.surface.IsoV at 12 per span, finds each
+  guide's point where it crosses the section's plane (Newell normal), guideMove (1 guide shift,
+  2 similarity about the plane normal), SkinThrough with end derivatives = base's plus the
+  guides' shift rate (not where an end is set square). Guides must pass every profile (1e-3).
+- sketch: Group.Edges are the loft's guides (save, undo, prune, deps came free); loftguide.go
+  chains Beziers into guides; SetLoftGuides refuses entities drawn after the loft.
+- ui: CmdLoftGuides "Guide Loft by Selected Curves"; loft screen row "guides".
+- Trap: in api.SketchHost a whole script is one undo step, so Undo removes the loft too.
+
+## Next (step 28b)
+
+28.4 sweep corners beside arcs/curves and on fitted sweeps; then 28.2 two arcs at a corner.
