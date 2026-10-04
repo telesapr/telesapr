@@ -179,3 +179,36 @@ func TestRunOffSweep(t *testing.T) {
 		return nil
 	}).Require(t)
 }
+
+// A slot cut from the cone, its side's edge on the cone chamfered: the
+// chamfer's edge on the slot's flat wall runs nearly straight, and the
+// wall's mesher, finding no corner of what was left there convex enough
+// to clip at its tolerance, left it out: naked edges along the whole
+// edge (11 to 63). Sound now at sizes 1 to 2.5, each taking material
+// away; at 3 six naked edges stay where the chamfer reaches the slot's
+// floor.
+func TestChamferSlotOnCone(t *testing.T) {
+	for _, r := range []float64{1, 1.5, 2, 2.5} {
+		d := New()
+		d.SetChordTolerance(0.003)
+		d.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Line(V(0, 0, -2), V(0, 0, 32))
+		axis.SetConstruction(true)
+		d.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+		d.Lathe(axis, "")
+		d.SketchIn(d.Workplane("XY"), "")
+		d.Rect(V(6, -3, 0), V(20, 3, 0))
+		slot := d.Extrude(22, "slot")
+		slot.SetCombine(Difference)
+		before := slot.Check().Volume
+		g := d.ChamferSolid([]SolidEdge{slot.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
+		if p := g.Problem(); p != "" {
+			t.Errorf("chamfer of %g: %s", r, p)
+			continue
+		}
+		rep := g.Check()
+		if !rep.Sound() || rep.Volume >= before {
+			t.Errorf("chamfer of %g: %s, volume %g, before %g", r, rep.Summary(), rep.Volume, before)
+		}
+	}
+}
