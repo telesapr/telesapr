@@ -249,11 +249,16 @@ var constraintNames = map[ConstraintType]string{
 }
 
 // DescriptionString names the constraint, e.g. "c002-horizontal" (C++
-// Constraint::DescriptionString, untranslated).
+// Constraint::DescriptionString, untranslated). A diameter shown as a
+// radius is named "radius", so that its name and the value it shows
+// agree.
 func (c *ConstraintBase) DescriptionString() string {
 	s, ok := constraintNames[c.Type]
 	if !ok {
 		s = "???"
+	}
+	if c.Type == ConstraintDiameter && c.Other {
+		s = "radius"
 	}
 	return fmt.Sprintf("c%03x-%s", c.H.V, s)
 }
