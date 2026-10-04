@@ -1,4 +1,4 @@
-dialog 3 Can't repeat along the selection.|There is no path to repeat along.\n\nPattern Along Path repeats the active group's solid along a path, three times to begin with. Select:\n\n    * the line segments and arcs of the path, joined end to end and meeting tangent\n
+dialog 3 Can't repeat along the selection.|There is no path to repeat along.\n\nPattern Along Path repeats the active group's solid along a path, three times to begin with. Select:\n\n    * the line segments and arcs of the path, joined end to end and meeting tangent; a path that closes, the copies shared out round it\n    * a circle, the copies shared out round it\n
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
