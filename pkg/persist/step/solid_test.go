@@ -209,15 +209,17 @@ func TestSolidBooleans(t *testing.T) {
 	}
 }
 
-// solidBooleanMaxFail is the failures allowed: 1 of 28 since roadmap
-// 24.2, a sphere's pole inside the cylinder cutter. At the first
+// solidBooleanMaxFail is the failures allowed: none since roadmap 24.1's
+// rest, where a half sphere's patch beside the cylinder's hole was
+// clipped by a chord grazing the hole's rim (SContour.grazed); 1 of 28
+// from 24.2 to then. At the first
 // measurement (2026-10-04) 10 failed: four block cuts of spheres and a
 // vase had the curved patches join two points of the block's planar
 // cut by an edge lying in the block's face (splitTrimDiagonals, 24.1);
 // three were this test's, the cylinder's caps lying at z = 0 in the
 // shapes' faces; the cone cut through its apex had its patches'
 // outlines run across them to the apex (openPoles, 24.2).
-const solidBooleanMaxFail = 1
+const solidBooleanMaxFail = 0
 
 // Tessellated shapes (AP242, roadmap 21.6) read as meshes: a cube of
 // triangulated faces in a tessellated solid, a tetrahedron of strips

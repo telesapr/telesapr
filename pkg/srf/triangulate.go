@@ -550,12 +550,14 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		c.removeTaggedPoints()
 	} // end optional fan creation pass
 
-	// Near a pole every point is near on the surface, so grazing says
-	// nothing there.
-	poled := false
+	// The sides of the patch folded to a pole: every point there is
+	// one point on the surface, so grazing says nothing about them.
+	var poles []int
 	if !srf.flat() {
 		for side := range 4 {
-			poled = poled || srf.foldsSide(side)
+			if srf.foldsSide(side) {
+				poles = append(poles, side)
+			}
 		}
 	}
 	toggle := false
@@ -602,7 +604,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					continue
 				}
 				tol := srf.ChordToleranceForEdge(prev, next)
-				if !poled && c.grazed(srf, wrapIdx(i+offset-1, ln), ear, wrapIdx(i+offset+1, ln)) {
+				if c.grazed(srf, poles, wrapIdx(i+offset-1, ln), ear, wrapIdx(i+offset+1, ln)) {
 					if tol < bestGrazedTol {
 						bestGrazed, bestGrazedTol = ear, tol
 					}
@@ -644,8 +646,23 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 // cylinder's wall strip beside the point where a crossed cylinder's
 // seam pierces it was clipped into a sliver the height of the wall
 // (roadmap 24.1).
-func (c *SContour) grazed(srf *SSurface, ap, bp, cp int) bool {
+// grazeShare is how far off a chord in uv, as a share of its length, a
+// point may be and still graze it.
+const grazeShare = 0.02
+
+func (c *SContour) grazed(srf *SSurface, poles []int, ap, bp, cp int) bool {
 	a, b := c.Points[ap].P, c.Points[cp].P
+	atPole := func(p geom.Vector) bool {
+		for _, side := range poles {
+			if math.Abs([]float64{p.X, p.X - 1, p.Y, p.Y - 1}[side]) < 1e-6 {
+				return true
+			}
+		}
+		return false
+	}
+	if atPole(a) || atPole(b) {
+		return false
+	}
 	ab := b.Minus(a)
 	l2 := ab.X*ab.X + ab.Y*ab.Y
 	if l2 < geom.LengthEps*geom.LengthEps {
@@ -658,11 +675,17 @@ func (c *SContour) grazed(srf *SSurface, ap, bp, cp int) bool {
 			continue
 		}
 		p := c.Points[i].P
-		if p.EqualsExactly(a) || p.EqualsExactly(b) {
+		if p.EqualsExactly(a) || p.EqualsExactly(b) || atPole(p) {
 			continue
 		}
 		t := ((p.X-a.X)*ab.X + (p.Y-a.Y)*ab.Y) / l2
 		if t <= 0 || t >= 1 {
+			continue
+		}
+		// Off the chord in uv by a small share of its length, which
+		// leaves out points near a pole: far apart in uv, one in xyz.
+		off := a.Plus(ab.ScaledBy(t)).Minus(p)
+		if off.X*off.X+off.Y*off.Y > grazeShare*grazeShare*l2 {
 			continue
 		}
 		// The chord's point at t, in xyz, against the point's own.
