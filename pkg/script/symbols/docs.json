@@ -4920,7 +4920,7 @@
 					},
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
-						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too."
+						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where."
 					},
 					"Profiles": {
 						"decl": "func (g Group) Profiles() (out []Group)",

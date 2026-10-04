@@ -88,10 +88,24 @@ func (g Group) Plane() (plane Entity) {
 // nothing. A group with a problem adds no solid. A sketch says what is
 // wrong with its contours only when a solid is made from it, since a
 // sweep's path may be open and not flat; the group making the solid
-// says it too.
+// says it too. It also says when the Boolean that joins the group's
+// solid to the solid so far failed: the group's solid is then
+// unsound, and Check says where.
 func (g Group) Problem() (msg string) {
-	g.d.read(func(sk *sketch.Sketch) { msg = g.get(sk).Problem.Msg })
+	g.d.read(func(sk *sketch.Sketch) { msg = problemOf(g.get(sk)) })
 	return msg
+}
+
+// problemOf is the group's problem, or that its Boolean failed.
+func problemOf(group *sketch.Group) string {
+	switch {
+	case group.Problem.Msg != "":
+		return group.Problem.Msg
+	case group.BooleanFailed:
+		return "the Boolean with the solid so far failed, so the solid is unsound; " +
+			"the option to force NURBS surfaces to triangle mesh may join them as meshes"
+	}
+	return ""
 }
 
 // mustBe fails unless the group is of type t.
