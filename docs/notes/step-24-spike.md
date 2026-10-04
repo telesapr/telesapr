@@ -137,3 +137,43 @@ Traps: `TELESAPR_SWEEP=1` runs the full grids; `TELESAPR_REGEN_INVARIANTS=1`
 regenerates `testdata/invariants.txt` (not in `regen-golden.sh`); a
 probe at chord tolerance 0.0005 mm with sag-driven refinement takes
 minutes per loft.
+
+## The curved-face mesher's fans (branch mesher-fans)
+
+- **Run-off chamfers on a cone (TestRunOffSweep), 10 of 36 failing to
+  4.** The cone's patch is ruled one way and gets no grid there (`li`
+  is `[0 1]`), so a trimmed quarter of it is ear-clipped from its
+  outline; where the chamfer's trim runs nearly along the rulings the
+  clipper fanned from a far point of the trim, each new chord, straight
+  in xyz where its uv image bends by its sag, passing on the wrong side
+  of trim points cut off before. `cutOff.crosses` takes such an ear
+  only when no clean one is left, on patches ruled one way only: on
+  faces curved both ways it turned down ears the mesh needed and the
+  replacements crossed (spheres, a smooth loft, a draft). 2 chamfers of
+  3 still cross (1 edge each): by the end only crossing ears are left,
+  the good points used up early; a fix would need points inside the
+  strip. Rejected: grid lines across the rulings of trimmed ruled
+  patches (8 to 2 failing, but meshes 2x at the default tolerance and
+  5-7x at fine ones, and crossed cylinders' volumes further from the
+  fine reference), demoting ears leaning off the tangent plane (no
+  change: every ear left leans).
+- **NIST_MBE_PMI_6's two crossings, and _5's three, were the checker's.**
+  `FindEdgeOn` tested the edge's line projected along itself, whose
+  LengthEps tolerance is the in-plane miss times the sine of the angle
+  between edge and plane: a disc's 40 mm fan edge passed a sliver of the
+  next face, all but in the disc's plane, millimetres off; an edge's end
+  1.6e-6 off a sliver's plane and 3 mm outside it. The crossing point
+  is now also required within LengthEps of the triangle in its plane
+  (`STriangle.edgeCrossesWithin`; both tests, so no new crossings: the
+  overlapping boxes of translate_asy keep C++'s 11). _5 reads sound,
+  corpus 7 of 9; _6 keeps its pole topology problem (Euler off by 6).
+- **The twisted swept bar, 1.6%: not fixed.** One inner column across
+  its sides' rulings (`[0 1/3 2/3 1]`) takes it to 0.33% (132 to 452
+  triangles), four lines to 0.25%; threads no longer cross with them.
+  But the bar's side cell and a thread flank's cell have the same twist
+  (diagonal sag about 0.05 mm at the default tolerance), so no rule by
+  aspect or sag gives the bar columns and not the threads, and columns
+  on every twisted face doubled thread meshes while moving 2 of 3 thread
+  volumes further from their fine-tolerance values (lead_tr20 9987.7 to
+  9986.0 against about 10023). A fix that keeps the triangle count would
+  alternate the fans' diagonals so the twist's bias cancels.
