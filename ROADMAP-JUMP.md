@@ -52,6 +52,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 24 (rest) | Cylinder through cylinder (2 to 0 of 54), the last analytic STEP cut (1 to 0 of 28), bands over a lathe seam (8 to 0 of 108), twisted lofts meshed within 0.55% | `2fcfbae` |
 | 28 (rest) | Loft guide curves (one or two), drafts of two arcs meeting at a corner | `fd137dc` |
 | 25 (rest), 26 (part) | Rolling-ball fillets ending on flat faces, chamfers between curved faces, fillets on lofts, sweeps and STEP solids 32 to 40 of 59, run-offs refused at the point | `add3da7` |
+| Leftovers | Schenkel's naked edges (40 to 0), one of NIST_MBE_PMI_6's poles meshed clean | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -82,7 +83,7 @@ Step 24 is merged but for these. Notes: `docs/notes/step-24-spike.md`.
 |---|---|---|
 | A bore whose cap lies in a lathed tip's plane, off axis | Fails 40 of 80: coincident contact (F5, under "Left out") | open |
 | A twisted swept bar | Its flat sides mesh within 1.6% (lofts now within 0.55%). Four grid lines across its sides bring it to 0.16% but make three threads' surfaces cross | open |
-| NIST_MBE_PMI_6 as a solid | Two crossings (a fan edge on a flat disc, a thin triangle at a curved patch's corner) and one topology problem; `TestSolidSeamEdges` allows them | open |
+| NIST_MBE_PMI_6 as a solid | Two crossings (a fan edge on a flat disc, a thin triangle at a curved patch's corner) and a topology problem: the mesh's Euler number 6 off the shell's (was 8; one of three poles clean since `poleSliver`), where earlier ears used up every other ear; `TestSolidSeamEdges` allows them | open |
 
 ### Steps 25 and 26: the rest of step 22, general fillets, branch `step-22-general-fillets`
 
@@ -110,7 +111,7 @@ surfaces and parabolas, hyperbolas (27.5). Corpus: 6 of 9 sound.
 
 | Package | Content | State |
 |---|---|---|
-| 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 (3 crossings), _6 (2) cross by about 1e-4 where faces meet tangentially along an edge, whose edges are within tolerance: this is F5 (tangent contact), not edge tolerance. Schenkel: 40 naked edges along a curve at y = 4, cause not found. NIST_MBE_PMI_6 also has pole slivers since 24.2, with step 24's remainder | partly done |
+| 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 (3 crossings), _6 (2) cross by about 1e-4 where faces meet tangentially along an edge, whose edges are within tolerance: this is F5 (tangent contact), not edge tolerance. Schenkel: its 40 naked edges are gone (a pole's parameter along its folded side was arbitrary, turning a wedge-to-pole patch inside out; `surfaceLoopUV`), but its shell's Euler number is -34 against the mesh's -6, cause not found, so it is not counted sound | partly done |
 
 ### Step 28, what is left: solid features
 
@@ -121,7 +122,7 @@ State and the plan for guide curves: `docs/notes/step-28.md`.
 
 | Package | Content | State |
 |---|---|---|
-| 28.4 sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred. Runs cut at the mitre plane and joined by a union came out right but failed every later Boolean (and a round profile left 188 naked edges): the mitre belongs inside the arc sweep, kernel work. See `docs/notes/step-28.md` | open |
+| 28.4 sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred. Two runs joined by a union fail where they touch, on the halving plane and along the turn's axis, for corners between lines too: coincident contact (F5). The joint must be built in one shell, with surface intersection inside the sweep builder. See `docs/notes/step-28.md` | open |
 
 Shells of other curved solids (step 10, 15.2: prisms only; filleted, lofted and revolved solids
 are refused) stay with E12 under "Left out"; 22.1's offsets are the first part.
