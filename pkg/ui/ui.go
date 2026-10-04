@@ -158,6 +158,7 @@ const (
 	CmdMateHinge
 	CmdDrawingSheet
 	CmdExportDrawing
+	CmdMoveGroupToEnd
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -363,6 +364,10 @@ type GraphicsWindow struct {
 	context struct{ active bool }
 
 	animateTimer platform.Timer
+	// animating is set while AnimateOnto turns the view, which ends at
+	// animateEnd.
+	animating  bool
+	animateEnd func()
 
 	pending pendingState
 

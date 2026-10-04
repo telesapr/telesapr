@@ -82,9 +82,13 @@ func (g Group) Plane() (plane Entity) {
 }
 
 // Problem says what the last regeneration found wrong with the
-// group's input, as an edge a chamfer can't cut or a sweep path with
-// a corner, or "" when there is nothing; a group with a problem adds
-// no solid.
+// group's input, as an edge a chamfer can't cut, a sweep path with
+// a corner, or a sketch that crosses itself, is open, is not flat or
+// has a curve of no length, with the point where; or "" when there is
+// nothing. A group with a problem adds no solid. A sketch says what is
+// wrong with its contours only when a solid is made from it, since a
+// sweep's path may be open and not flat; the group making the solid
+// says it too.
 func (g Group) Problem() (msg string) {
 	g.d.read(func(sk *sketch.Sketch) { msg = g.get(sk).Problem.Msg })
 	return msg

@@ -195,17 +195,22 @@ row 47    treat all dimensions as reference
  37-99 64 64 0
 row 49 
  0-99 64 64 0
-row 51  requests in group
- 0-99 74 64 0
-row 53    (none)
- 0-99 64 61 0
-row 55 
+row 51 The group adds no solid: the sketch g002-sketch-in-plane has a curve of zero length at (0.1, 0, 0).
+ 0-98 78 64 0
+ 99-99 64 64 0
+row 53 
  0-99 64 64 0
-row 57  constraints in group (1 DOF)
+row 55  requests in group
  0-99 74 64 0
-row 59    (none)
+row 57    (none)
  0-99 64 61 0
-row 61 
+row 59 
+ 0-99 64 64 0
+row 61  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 63    (none)
+ 0-99 64 61 0
+row 65 
  0-99 64 64 0
 save
 telesapr 2

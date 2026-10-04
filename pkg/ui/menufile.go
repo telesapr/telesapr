@@ -256,6 +256,12 @@ func (ss *SolveSpaceUI) OkayToStartNewFile() bool {
 	if !ss.SK.Unsaved {
 		return true
 	}
+	if ss.messageSink != nil {
+		// A script runs: a dialog would stop the loop under it, and
+		// nobody is there to answer. The changes stay.
+		ss.Error("The drawing has unsaved changes, which this would lose. A script saves them first with doc.Save, or lets them go with doc.ForgetChanges().")
+		return false
+	}
 
 	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
 	dialog.SetType(platform.DialogQuestion)
