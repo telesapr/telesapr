@@ -65,10 +65,10 @@ func TestSolidShapes(t *testing.T) {
 }
 
 // solidCorpusSound are the corpus files whose shapes read as sound
-// solids (2026-10-04); the others fall back to meshes: NIST_MBE_PMI_5
-// and _6 have an edge of one face along another face's seam, Schenkel
-// and screw leave gaps or crossings in the mesh where edges miss their
-// faces by more than the file's tolerance.
+// solids (2026-10-04); the others fall back to meshes: Schenkel and
+// screw leave gaps or crossings in the mesh where edges miss their
+// faces by more than the file's tolerance, and NIST_MBE_PMI_5 and _6,
+// which close since package 27.3 (TestSolidSeamEdges), crossings.
 var solidCorpusSound = map[string]bool{
 	"NIST_MBE_PMI_1.stp": true, "NIST_MBE_PMI_3.stp": true, "NIST_MBE_PMI_11.stp": true,
 	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true,
@@ -118,6 +118,62 @@ func TestSolidCorpus(t *testing.T) {
 		}
 	}
 	t.Logf("%d sound", sound)
+}
+
+// TestSolidSeamEdges reads the two NIST files whose faces meet along
+// another face's seam or a line of its grid (package 27.3): an edge
+// along a sphere-like face's knot line, within the file's tolerance of
+// it but not on it, and two halves of such a face bounded by meridians
+// through its poles. They close now: no naked edges, every edge between
+// two faces running it opposite ways, and the volume FreeCAD gives
+// within the mesh's tolerance. Where their edges miss their faces by
+// more than the file's tolerance the meshes still cross (package 27.4).
+func TestSolidSeamEdges(t *testing.T) {
+	if testing.Short() {
+		t.Skip("the corpus")
+	}
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
+	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
+		if e.name != "NIST_MBE_PMI_5.stp" && e.name != "NIST_MBE_PMI_6.stp" {
+			continue
+		}
+		m := readModel(t, filepath.Join(dir, e.name))
+		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
+		fineMesh(t, tol)
+		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0))
+		if err != nil {
+			t.Errorf("%s: %v", e.name, err)
+			continue
+		}
+		r := solidReport(sh)
+		allow := e.area*tol + 1e-6*e.volume
+		if r.NakedEdges != 0 || r.TopologyProblems != 0 || math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s; want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		}
+	}
+}
+
+// TestTurnedLoopsAtPole: a bound through a pole of a closed surface is
+// taken as the file runs it, whichever way round its layout goes.
+func TestTurnedLoopsAtPole(t *testing.T) {
+	half := math.Pi / 2
+	// Up a meridian at u = pi to the pole, down another at u = 0: laid
+	// out clockwise when the second comes out at 2 pi.
+	var l []uvSample
+	for k := 0; k <= 4; k++ {
+		l = append(l, uvSample{u: math.Pi, v: -half + float64(k)*half/2})
+	}
+	for k := 0; k <= 4; k++ {
+		l = append(l, uvSample{u: 2 * math.Pi, v: half - float64(k)*half/2})
+	}
+	pole := func(q uvSample) bool { return math.Abs(math.Abs(q.v)-half) < 1e-12 }
+	none := func(uvSample) bool { return false }
+	if !turnedLoops([][]uvSample{l}, 2*math.Pi, 0, none) {
+		t.Error("a clockwise bound not taken as turned")
+	}
+	if turnedLoops([][]uvSample{l}, 2*math.Pi, 0, pole) {
+		t.Error("a bound through a pole taken as turned")
+	}
 }
 
 // cutters are a block through the middle of a box and a cylinder down

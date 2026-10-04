@@ -48,8 +48,19 @@ type solidEdge struct {
 	bez  []srf.SBezier
 	cuts [][]float64
 	// split is bez cut at cuts, each piece's ends shared exactly with
-	// its neighbours'.
+	// its neighbours'; from is the Bezier of bez each came from.
 	split []srf.SBezier
+	from  []int
+	// along are, by Bezier of bez, the line of a face's grid it runs
+	// along, when it does (package 27.3).
+	along map[int]alongLine
+}
+
+// alongLine is a line of a face's grid, of u (byU) or v, at ln.
+type alongLine struct {
+	g   *faceGrid
+	byU bool
+	ln  float64
 }
 
 // uvSample is a point of a bound with its parameters on the face's
@@ -119,6 +130,7 @@ func buildSolid(shape *Shape, origin uint32) (sh *srf.SShell, err error) {
 	}
 	for _, se := range b.edges {
 		se.splitAtCuts()
+		se.onLines()
 	}
 	for i, f := range shape.Faces {
 		var err error
@@ -261,7 +273,7 @@ const cutGap = fileTol
 // splitAtCuts cuts the edge's Beziers where faces asked, the pieces
 // sharing each cut's point exactly.
 func (se *solidEdge) splitAtCuts() {
-	se.split = nil
+	se.split, se.from = nil, nil
 	for i, sb := range se.bez {
 		cs := append([]float64(nil), se.cuts[i]...)
 		sort.Float64s(cs)
@@ -283,11 +295,13 @@ func (se *solidEdge) splitAtCuts() {
 		ts = append(ts, 1)
 		if len(ts) == 2 {
 			se.split = append(se.split, sb)
+			se.from = append(se.from, i)
 			continue
 		}
 		first := len(se.split)
 		for k := 0; k+1 < len(ts); k++ {
 			se.split = append(se.split, sb.Sub(ts[k], ts[k+1]))
+			se.from = append(se.from, i)
 		}
 		pieces := se.split[first:]
 		pieces[0].Ctrl[0] = sb.Ctrl[0]
@@ -298,6 +312,89 @@ func (se *solidEdge) splitAtCuts() {
 			pieces[k].Ctrl[0] = p
 		}
 	}
+}
+
+// onLines puts each piece of the edge that runs along a line of a
+// face's grid on that line: the surface's own curve there, between the
+// piece's ends, where it lies within fileTol of the file's curve. Both
+// faces then meet along a curve of the surface that has the line in its
+// grid, which a file's curve, strayed from it by its tolerance, is not:
+// meshed, two faces tangent along it would cross (package 27.3).
+func (se *solidEdge) onLines() {
+	for k := range se.split {
+		al, ok := se.along[se.from[k]]
+		if !ok {
+			continue
+		}
+		if iso, ok := al.g.isoCurve(se.split[k], al.byU, al.ln); ok {
+			se.split[k] = iso
+		}
+	}
+}
+
+// isoCurve is the grid's line of u (byU) or v at ln, as a curve of its
+// surface, from the start of piece to its end, when it lies within
+// fileTol of the piece all along.
+func (g *faceGrid) isoCurve(piece srf.SBezier, byU bool, ln float64) (srf.SBezier, bool) {
+	a, z := piece.Start(), piece.Finish()
+	mid := piece.PointAt(0.5)
+	q := g.s.point(mid, nil)
+	// The cell beside the line at the piece's middle, and its side on it.
+	u, v := q.u, q.v
+	if byU {
+		u = snapTo(u, ln, g.pu)
+	} else {
+		v = snapTo(v, ln, g.pv)
+	}
+	i, j, du, dv := g.cellIndex(u, v)
+	u, v = u+du, v+dv
+	u0, u1, v0, v1 := g.us[i], g.us[i+1], g.vs[j], g.vs[j+1]
+	p, err := g.cells.patch(u0, u1, v0, v1)
+	if err != nil {
+		return srf.SBezier{}, false
+	}
+	near := func(x, y float64) bool { return math.Abs(x-y) <= 1e-9*(1+math.Abs(x)+math.Abs(y)) }
+	side := -1
+	switch {
+	case byU && near(u, u0):
+		side = 3
+	case byU && near(u, u1):
+		side = 1
+	case !byU && near(v, v0):
+		side = 0
+	case !byU && near(v, v1):
+		side = 2
+	}
+	if side < 0 {
+		return srf.SBezier{}, false
+	}
+	c := p.EdgeCurve(side)
+	ta, _ := c.ClosestPointTo(a, true)
+	tz, _ := c.ClosestPointTo(z, true)
+	if ta == tz {
+		return srf.SBezier{}, false
+	}
+	var out srf.SBezier
+	if ta < tz {
+		out = c.Sub(ta, tz)
+	} else {
+		out = c.Sub(tz, ta)
+		out.Reverse()
+	}
+	out.Ctrl[0], out.Ctrl[out.Degree] = a, z
+	for k := 0; k <= 16; k++ {
+		t := float64(k) / 16
+		if out.PointAt(t).Minus(piece.PointAt(t)).Magnitude() > fileTol {
+			// Compare by nearest points, the curves' parameters running
+			// at different speeds.
+			pt := piece.PointAt(t)
+			s, _ := out.ClosestPointTo(pt, true)
+			if out.PointAt(s).Minus(pt).Magnitude() > fileTol {
+				return srf.SBezier{}, false
+			}
+		}
+	}
+	return out, true
 }
 
 // faceGrid is a face's surface cut into cells.
@@ -424,7 +521,10 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	if s.scale == 0 {
 		s.scale = 1
 	}
-	b.turned[f] = turnedLoops(loopSmps, s.pu, s.pv)
+	b.turned[f] = turnedLoops(loopSmps, s.pu, s.pv, func(q uvSample) bool {
+		pt := s.point(q.p, &[2]float64{q.u, q.v})
+		return (pt.singU && s.pu > 0) || (pt.singV && s.pv > 0)
+	})
 	// The grid along each parameter: a period's worth where the surface
 	// closes on itself, from where the bounds leave the widest gap; else
 	// the bounds' extent and a little more, but not past a pole.
@@ -496,6 +596,34 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	g.epsU = 1e-9 * (1 + math.Abs(g.us[0]) + math.Abs(g.us[len(g.us)-1]-g.us[0]))
 	g.epsV = 1e-9 * (1 + math.Abs(g.vs[0]) + math.Abs(g.vs[len(g.vs)-1]-g.vs[0]))
 
+	// A Bezier along a line crosses none of it: on it, and so are its
+	// neighbours' ends where they meet it.
+	var ends []uvSample
+	for _, a := range all {
+		byU, ln, ok := g.alongLine(a.smps)
+		if !ok {
+			continue
+		}
+		g.snapAlong(a.smps)
+		ends = append(ends, a.smps[0], a.smps[len(a.smps)-1])
+		se := b.edges[a.use.e]
+		if se.along == nil {
+			se.along = map[int]alongLine{}
+		}
+		if _, had := se.along[a.bez]; !had {
+			se.along[a.bez] = alongLine{g: g, byU: byU, ln: ln}
+		}
+	}
+	for _, a := range all {
+		for _, k := range []int{0, len(a.smps) - 1} {
+			for _, e := range ends {
+				if a.smps[k].p.Equals(e.p) {
+					a.smps[k].u, a.smps[k].v = snapTo(a.smps[k].u, e.u, g.pu), snapTo(a.smps[k].v, e.v, g.pv)
+				}
+			}
+		}
+	}
+
 	// Where each Bezier crosses a line, on the exact curve.
 	for _, a := range all {
 		sb := b.beziersOf(a.use, false)
@@ -529,8 +657,11 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 // surface's parameters, run the wrong way: the largest clockwise, where
 // the face on their left would have it counter-clockwise. Bounds that go
 // round a closed surface have no inside to tell by, and are taken as
-// the file gives them.
-func turnedLoops(loops [][]uvSample, pu, pv float64) bool {
+// the file gives them; so are bounds through a pole of a closed surface,
+// where they may turn by any part of a period and go either way round
+// (package 27.3: two halves of a sphere-like face, each bounded by two
+// meridians from pole to pole). atPole tells such a point.
+func turnedLoops(loops [][]uvSample, pu, pv float64, atPole func(uvSample) bool) bool {
 	best, area := -1.0, 0.0
 	for _, l := range loops {
 		if len(l) < 3 {
@@ -539,6 +670,11 @@ func turnedLoops(loops [][]uvSample, pu, pv float64) bool {
 		a, z := l[0], l[len(l)-1]
 		if (pu > 0 && math.Abs(z.u-a.u) > pu/2) || (pv > 0 && math.Abs(z.v-a.v) > pv/2) {
 			return false
+		}
+		for _, q := range l {
+			if atPole(q) {
+				return false
+			}
 		}
 		poly := make([]geom.Vector, len(l))
 		for i, q := range l {
@@ -573,6 +709,84 @@ func widestGap(vals []float64, period, start float64) float64 {
 		}
 	}
 	return at
+}
+
+// alongLine reports whether a piece of a bound, laid out in samples,
+// runs along one line of the grid: every sample within fileTol of it on
+// the surface, as an edge of the file along another face's seam or a
+// knot line of its surface is, though its parameters stray from the
+// line by more than rounding (package 27.3). byU is set for a line of
+// u; ln is the line, shifted by whole periods to lie by the samples.
+func (g *faceGrid) alongLine(smps []uvSample) (byU bool, ln float64, ok bool) {
+	if len(smps) < 2 || smps[0].p.Minus(smps[len(smps)-1].p).Magnitude() < fileTol {
+		return false, 0, false
+	}
+	try := func(get func(uvSample) float64, lines []float64, period float64, u bool) (float64, bool) {
+		mid := get(smps[len(smps)/2])
+		best, bestD := 0.0, math.Inf(1)
+		for _, l := range lines {
+			d := mid - l
+			if period > 0 {
+				d -= math.Round(d/period) * period
+			}
+			if math.Abs(d) < bestD {
+				best, bestD = mid-d, math.Abs(d)
+			}
+		}
+		if math.IsInf(bestD, 1) {
+			return 0, false
+		}
+		for _, q := range smps {
+			d := get(q) - best
+			if period > 0 {
+				d -= math.Round(d/period) * period
+			}
+			if d == 0 {
+				continue
+			}
+			_, su, sv := g.s.Derivs(q.u, q.v)
+			m := sv.Magnitude()
+			if u {
+				m = su.Magnitude()
+			}
+			if m*math.Abs(d) > fileTol {
+				return 0, false
+			}
+		}
+		return best, true
+	}
+	if l, ok := try(func(q uvSample) float64 { return q.u }, g.us, g.pu, true); ok {
+		return true, l, true
+	}
+	if l, ok := try(func(q uvSample) float64 { return q.v }, g.vs, g.pv, false); ok {
+		return false, l, true
+	}
+	return false, 0, false
+}
+
+// snapAlong puts a piece's samples that run along a line of the grid on
+// it, by whole periods where it wraps, and reports whether it did.
+func (g *faceGrid) snapAlong(smps []uvSample) bool {
+	byU, ln, ok := g.alongLine(smps)
+	if !ok {
+		return false
+	}
+	for k := range smps {
+		if byU {
+			smps[k].u = ln
+		} else {
+			smps[k].v = ln
+		}
+	}
+	return true
+}
+
+// snapTo is y, by whole periods the nearest to x.
+func snapTo(x, y, period float64) float64 {
+	if period > 0 {
+		return y + math.Round((x-y)/period)*period
+	}
+	return y
 }
 
 // crossed are the lines of the grid (shifted by whole periods when it
@@ -872,6 +1086,7 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 		for _, u := range l {
 			for _, sb := range b.beziersOf(u, true) {
 				smps := g.sampleUV(sb, prev, 8)
+				g.snapAlong(smps)
 				prev = &smps[len(smps)-1]
 				i, j, du, dv := g.pieceCell(smps)
 				c := cells[i*nv+j]
