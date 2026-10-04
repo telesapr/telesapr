@@ -82,6 +82,27 @@ func TestFilletStagesScript(t *testing.T) {
 		t.Errorf("the radii the other way round: %q", p)
 	} else if r := other.Check(); !r.Sound() || r.Volume >= w*l*h {
 		t.Errorf("the radii the other way round: %s, volume %g", r.Summary(), r.Volume)
+	} else {
+		// The same after saving and loading, and gone with one undo.
+		path := filepath.Join(t.TempDir(), "setback.tlspr")
+		if err := f.Save(path); err != nil {
+			t.Fatal(err)
+		}
+		e := New()
+		if err := e.Load(path); err != nil {
+			t.Fatal(err)
+		}
+		e.SetChordTolerance(0.002)
+		g := e.Groups()
+		if r2 := g[len(g)-1].Check(); !r2.Sound() || math.Abs(r2.Volume-r.Volume) > 1e-6*r.Volume {
+			t.Errorf("set back, loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, r.Volume)
+		}
+		if !f.Undo() {
+			t.Fatal("no undo")
+		}
+		if g := f.Groups(); g[len(g)-1].Name() == "rounded" {
+			t.Error("the set back fillet is still there after undo")
+		}
 	}
 
 	// Two top edges of different radii over an upright left sharp.
