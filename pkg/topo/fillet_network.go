@@ -214,8 +214,33 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 
 // FilletPicks rounds the picked edges with radius r, or with flat
 // chamfers them at distance r along both faces; a chamfer here takes
-// circular edges only.
+// circular edges only. Where edges of different radii, or convex and
+// concave ones, meet at a corner, they are rounded in stages
+// (filletInStages).
 func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
+	err := filletPicks(sh, picks, r, origin, flat, nil)
+	if err == nil || !mixedCorner(err) {
+		return err
+	}
+	// The corners are checked before the shell is changed, so it is
+	// still the solid as it was.
+	staged, serr := filletInStages(sh, picks, r, origin, flat)
+	if serr != nil {
+		var fx, sx *FilletError
+		errors.As(err, &fx)
+		why := serr.Error()
+		if errors.As(serr, &sx) {
+			why = sx.Msg
+		}
+		return filletErr(fx.At, "%s, and rounded one radius at a time they don't go on round each other's corners: %s", fx.Msg, why)
+	}
+	*sh = staged
+	return nil
+}
+
+// filletPicks is FilletPicks in one stage. A rounded edge's chain does
+// not go on into an edge forbid reports.
+func filletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool) error {
 	what := "fillet"
 	if flat {
 		what = "chamfer"
@@ -307,6 +332,9 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		for _, v := range edges[i].v {
 			for _, x := range t.Vertices[v].Edges {
 				if _, ok := byEdge[x]; ok {
+					continue
+				}
+				if forbid != nil && forbid(t, x) {
 					continue
 				}
 				fe, err := t.filletEdgeOf(x, edges[i].r, flat)
@@ -954,7 +982,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 			return nil, filletErr(p, "a convex edge's fillet meets a concave one's here")
 		}
 		if n > 0 && math.Abs(fe.r-r) > geom.LengthEps {
-			return nil, filletErr(p, "fillets of radius %g and %g meet here; where rounded edges meet, their radii must be one", r, fe.r)
+			return nil, filletErr(p, "fillets of radius %g and %g meet here", r, fe.r)
 		}
 		sg, r, n = fe.sign(), fe.r, n+1
 	}

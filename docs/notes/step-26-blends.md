@@ -103,6 +103,22 @@ but name.
 - More refinement rounds for the STEP cylinder at chord 0.002%: the misfit
   floors at 2.6e-5 whatever the rounds; not found why.
 
+## 22.4 corners of different radii, or convex and concave: in stages
+
+Plan (2026-10-04, second agent): where rounded edges of different radii
+(or convex and concave ones) meet, round them in stages, one radius and
+kind at a time, so that the later edges go on round the corners the
+earlier ones rounded: a box's vertical edges at R, then its top ring at
+r < R, the ring a chain of lines and the arcs the vertical fillets cut
+in the top face, rounded by cylinders and tori (exact); a boss's convex
+vertical edges, then its concave foot. A stage may not round an edge of
+the solid that no one picked (the chain of a later stage stops there),
+so a mitre of two radii is still refused: its chain would go on down the
+third, unpicked edge.
+
+Sweep rate fixed before building: 0 failures allowed on the grid of
+box (vertical R, top ring r) and boss (vertical R, foot r), r < R.
+
 ## Next
 
 - 22.3: the blend going on onto the next face (three faces at once).

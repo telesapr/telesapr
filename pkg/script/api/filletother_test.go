@@ -14,7 +14,7 @@ import (
 // seams with no corner to round, are left out and counted apart.
 type filletTally struct {
 	sound, unsound, refused, smooth int
-	reasons                 map[string]int
+	reasons                         map[string]int
 }
 
 // filletEveryEdge fillets each of the edges of the solid build makes,

@@ -22,7 +22,15 @@ What it makes:
 - Where two rounded edges meet, they are mitred; where three meet at a corner of a block, a
   sphere rounds the corner.
 - The group's screen lists the edges; each has an "[own radius]" link that gives it a radius
-  of its own, where it meets no other rounded edge.
+  of its own.
+- Where edges of different radii meet, or edges that stick out meet edges that go in, the
+  fillet rounds them one radius and kind at a time, the larger first, and the later edges go
+  on round the corners the earlier ones rounded. A block's upright edges at 8 mm and its top's
+  at 3 mm: the top's fillet follows the arcs the upright fillets cut in the top face, with a
+  torus at each. A boss's sides and the foot that joins it to a plate work the same way. A
+  corner where the later edges can't go on round, as a top ring larger than the upright
+  edges, or two top edges of different radii over an upright edge left sharp, is refused,
+  saying why.
 
 The radius takes an expression. A radius too large for the faces is a problem on the group,
 named on its screen, and the solid passes through unrounded.
