@@ -351,7 +351,17 @@ func (gw *GraphicsWindow) AnimateOnto(quatf geom.Quaternion, offsetf geom.Vector
 	if gw.animateTimer == nil {
 		gw.animateTimer = gw.ss.Platform.CreateTimer()
 	}
+	gw.animating = true
+	gw.animateEnd = func() {
+		gw.animating = false
+		gw.view.ProjRight = quatf.RotationU()
+		gw.view.ProjUp = quatf.RotationV()
+		gw.view.Offset = offsetf
+	}
 	gw.animateTimer.SetOnTimeout(func() {
+		if !gw.animating {
+			return
+		}
 		tn := time.Since(t0).Milliseconds()
 		if tn < int64(dt) {
 			gw.animateTimer.RunAfterNextFrame()
@@ -363,13 +373,19 @@ func (gw *GraphicsWindow) AnimateOnto(quatf geom.Quaternion, offsetf geom.Vector
 			gw.view.ProjRight = quat.RotationU()
 			gw.view.ProjUp = quat.RotationV()
 		} else {
-			gw.view.ProjRight = quatf.RotationU()
-			gw.view.ProjUp = quatf.RotationV()
-			gw.view.Offset = offsetf
+			gw.animateEnd()
 		}
 		gw.window.Invalidate()
 	})
 	gw.animateTimer.RunAfterNextFrame()
+}
+
+// FinishAnimation puts the view where a turn AnimateOnto started ends,
+// at once, so that what reads the view sees where it is going.
+func (gw *GraphicsWindow) FinishAnimation() {
+	if gw.animating {
+		gw.animateEnd()
+	}
 }
 
 func (gw *GraphicsWindow) handlePointForZoomToFit(p geom.Vector, pmax, pmin *geom.Point2d,

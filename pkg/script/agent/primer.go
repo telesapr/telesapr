@@ -40,7 +40,7 @@ A script is Go, run by an interpreter inside TeleSAPR. In run_script, write stat
     V(x, y, z)           a point or a direction, in mm
     fmt, math, strings, sort, strconv, os, time and others of Go's library
 
-A variable defined in one run_script call is there in the next. The value of the last statement, if it is an expression, is returned, as are the things printed with fmt.Println.
+A variable defined in one run_script call is there in the next, until the program (or telesapr-cli mcp) is restarted: opening or starting another drawing doesn't clear the names. Defining one again with := gives it a new value and type; inside a loop or an if, := makes a variable of the block's own, as in Go. The value of the last statement, if it is an expression, is returned, as are the things printed with fmt.Println.
 
 ## How a drawing is built
 
@@ -73,6 +73,7 @@ A call that can't do what it is asked stops the script with an error that says w
 - No "for i := range 10" over a number; write "for i := 0; i < 10; i++".
 - No generic functions without their type arguments; slices.Sort, slices.Max and maps.Clone are missing (sort.Ints and slices.Contains work).
 - A name that isn't defined is reported as "constant definition loop, or a name that isn't defined".
+- math.Pi and math's other float constants are float64: 2.0 * math.Pi works, a float32 needs float32(math.Pi).
 
 ## Example
 

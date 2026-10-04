@@ -158,6 +158,7 @@ const (
 	CmdMateHinge
 	CmdDrawingSheet
 	CmdExportDrawing
+	CmdMoveGroupToEnd
 	CmdShowDrawingSheet
 )
 
@@ -369,6 +370,10 @@ type GraphicsWindow struct {
 	context struct{ active bool }
 
 	animateTimer platform.Timer
+	// animating is set while AnimateOnto turns the view, which ends at
+	// animateEnd.
+	animating  bool
+	animateEnd func()
 
 	pending pendingState
 

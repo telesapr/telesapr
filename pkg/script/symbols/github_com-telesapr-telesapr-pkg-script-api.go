@@ -85,6 +85,7 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	WMmPerUnit         func() float64
 	WRedo              func() bool
 	WRegenerate        func()
+	WRemembered        func(n int)
 	WRender            func(path string, width int, height int, right geom.Vector, up geom.Vector) error
 	WRun               func(fn func())
 	WRunCommand        func(label string) error
@@ -135,6 +136,9 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Redo() bool {
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Regenerate() {
 	W.WRegenerate()
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Remembered(n int) {
+	W.WRemembered(n)
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Render(path string, width int, height int, right geom.Vector, up geom.Vector) error {
 	return W.WRender(path, width, height, right, up)

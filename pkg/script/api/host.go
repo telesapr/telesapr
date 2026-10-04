@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -57,6 +58,11 @@ type Host interface {
 	// Changing is called before each change to the sketch, so that the
 	// first one in a script's step can be remembered for undo.
 	Changing()
+	// Remembered says that a change remembered n states for undo
+	// itself, as a menu command does: the first change of a script's
+	// step keeps the first of them, a later one keeps none, so that
+	// the step stays one step of undo and can be rolled back whole.
+	Remembered(n int)
 	// Regenerate regenerates what is dirty, now.
 	Regenerate()
 	// AddGroup adds g after the active group, activates it and
@@ -157,6 +163,20 @@ func (h *SketchHost) Changing() {
 	}
 }
 
+// Remembered folds the n steps of undo a change remembered itself into
+// the script's step: the first of them is the step if the step has
+// none yet.
+func (h *SketchHost) Remembered(n int) {
+	if n <= 0 {
+		return
+	}
+	if !h.changed {
+		h.changed = true
+		n--
+	}
+	h.sk.UndoDropNewest(n)
+}
+
 // Rollback takes back what the script's last step changed, for good:
 // it can't be done again as what Undo takes back can. It is false if
 // the step changed nothing.
@@ -194,10 +214,13 @@ func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup {
 	return hg
 }
 
-// DeleteGroup deletes a group, activating the one before it if it was
-// active, and regenerates.
+// DeleteGroup deletes a group, and regenerates. When the active group
+// goes, with it or as it used it, the last group before it that is
+// left is made active.
 func (h *SketchHost) DeleteGroup(hg core.HGroup) {
 	sk := h.sk
+	order := slices.Clone(sk.GroupOrder)
+	was := sk.Active
 	if hg == sk.Active {
 		if prev := sk.GetGroup(hg).PreviousGroup(sk); prev != nil {
 			sk.Active = prev.H
@@ -210,6 +233,7 @@ func (h *SketchHost) DeleteGroup(hg core.HGroup) {
 		}
 	}
 	sk.GenerateAll()
+	sk.ActivateSurvivor(order, was)
 }
 
 // Activate makes a group the active one.

@@ -191,3 +191,122 @@ func TestMoveGroupSameOrders(t *testing.T) {
 		seen[g.Order] = true
 	}
 }
+
+// A group moves with the groups only it needs; refusals name the
+// reference and move nothing.
+func TestMoveGroupWithSources(t *testing.T) {
+	sk := bolt(t)
+	sk.GenerateAll()
+	if got := sk.OwnSources(hg(3)); !reflect.DeepEqual(got, []core.HGroup{hg(2), hg(3)}) {
+		t.Fatalf("the head's own sources are %v", got)
+	}
+	// The shank sketch is the shank's own; the shank is used by the
+	// thread, so it is no one's but its own.
+	if got := sk.OwnSources(hg(5)); !reflect.DeepEqual(got, []core.HGroup{hg(4), hg(5)}) {
+		t.Fatalf("the shank's own sources are %v", got)
+	}
+	if sk.OwnSources(hg(0x99)) != nil {
+		t.Fatal("a missing group has sources")
+	}
+	before := orderOf(sk)
+	for _, c := range []struct {
+		h, before uint32
+		msg       string
+	}{
+		{5, 0, "g005-shank can't move after g006-M8-blank, which uses g005-shank (origin)"},
+		{3, 2, "g003-head can't move before g002-sketch-in-plane, which moves with it"},
+		{1, 0, "the references group stays first"},
+		{3, 1, "the references group stays first"},
+		{0x99, 0, "no group g099"},
+		{3, 0x99, "no group g099"},
+	} {
+		if err := sk.CheckMoveGroupWithSources(hg(c.h), hg(c.before)); err == nil || err.Error() != c.msg {
+			t.Errorf("checking g%03x before g%03x: %v, want %q", c.h, c.before, err, c.msg)
+		}
+		if _, err := sk.MoveGroupWithSources(hg(c.h), hg(c.before)); err == nil || err.Error() != c.msg {
+			t.Errorf("moving g%03x before g%03x: %v, want %q", c.h, c.before, err, c.msg)
+		}
+		if got := orderOf(sk); !reflect.DeepEqual(got, before) {
+			t.Fatalf("refused move changed the order to %v", got)
+		}
+	}
+	// A move to where they are changes nothing.
+	if _, err := sk.MoveGroupWithSources(hg(9), hg(0)); err != nil {
+		t.Fatal(err)
+	}
+	moved, err := sk.MoveGroupWithSources(hg(3), hg(0))
+	if err != nil || !reflect.DeepEqual(moved, []core.HGroup{hg(2), hg(3)}) {
+		t.Fatalf("moved %v, %v", moved, err)
+	}
+	if got, want := orderOf(sk), []uint32{1, 4, 5, 6, 7, 8, 9, 2, 3}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("order %v, want %v", got, want)
+	}
+	if _, err := sk.MoveGroupWithSources(hg(3), hg(4)); err != nil {
+		t.Fatal(err)
+	}
+	if got := orderOf(sk); !reflect.DeepEqual(got, before) {
+		t.Fatalf("moving back gave %v, want %v", got, before)
+	}
+}
+
+// After groups are deleted, the active group is the one that was, if
+// it is left, else the nearest one before it that is.
+func TestActivateSurvivor(t *testing.T) {
+	sk := bolt(t)
+	order := append([]core.HGroup(nil), sk.GroupOrder...)
+	sk.Active = hg(9)
+	if sk.ActivateSurvivor(order, hg(9)) || sk.Active != hg(9) {
+		t.Fatal("a group that is left changed")
+	}
+	sk.Active = hg(2)
+	if !sk.ActivateSurvivor(order, hg(9)) || sk.Active != hg(9) {
+		t.Fatalf("active %v, want the one that was", sk.Active)
+	}
+	keep := func(hs ...uint32) {
+		var gs []sketch.Group
+		for _, g := range sk.Groups {
+			for _, h := range hs {
+				if g.H.V == h {
+					gs = append(gs, g)
+				}
+			}
+		}
+		sk.Groups = gs
+	}
+	keep(1, 2, 3, 4, 9)
+	if !sk.ActivateSurvivor(order, hg(8)) || sk.Active != hg(4) {
+		t.Fatalf("active %v, want g004", sk.Active)
+	}
+	keep(1, 9)
+	if !sk.ActivateSurvivor(order, hg(3)) || sk.Active != hg(9) {
+		t.Fatalf("active %v, want g009, the first left after it", sk.Active)
+	}
+	keep(1)
+	if sk.ActivateSurvivor(order, hg(3)) {
+		t.Fatal("activated the references")
+	}
+}
+
+// Steps of undo that a change remembered itself fold into the one
+// before them.
+func TestUndoDropNewest(t *testing.T) {
+	sk := bolt(t)
+	write := sk.Undo.Write
+	sk.UndoRemember()
+	sk.UndoRemember()
+	if n := sk.UndoPushedSince(write); n != 2 {
+		t.Fatalf("%d pushed, want 2", n)
+	}
+	sk.UndoDropNewest(1)
+	if sk.Undo.Cnt != 1 || sk.UndoPushedSince(write) != 1 {
+		t.Fatalf("%d steps", sk.Undo.Cnt)
+	}
+	sk.UndoUndo()
+	if n := sk.UndoPushedSince(write + 1); n != 0 {
+		t.Fatalf("an undo counts as %d pushed", n)
+	}
+	sk.UndoDropNewest(5)
+	if sk.Undo.Cnt != 0 {
+		t.Fatal("dropped below empty")
+	}
+}

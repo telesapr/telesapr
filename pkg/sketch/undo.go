@@ -55,13 +55,33 @@ func (s *Sketch) UndoRemember() {
 func (s *Sketch) UndoRememberFor(fn func() error) error {
 	s.PushFromCurrentOnto(&s.Undo)
 	if err := fn(); err != nil {
-		s.Undo.Cnt--
-		s.Undo.Write = wrapUndo(s.Undo.Write - 1)
-		s.UndoClearState(&s.Undo.D[s.Undo.Write])
+		s.UndoDropNewest(1)
 		return err
 	}
 	s.UndoClearStack(&s.Redo)
 	return nil
+}
+
+// UndoDropNewest forgets the n states remembered last for undo,
+// leaving the sketch as it is: what they would take back joins the
+// step remembered before them.
+func (s *Sketch) UndoDropNewest(n int) {
+	for ; n > 0 && s.Undo.Cnt > 0; n-- {
+		s.Undo.Cnt--
+		s.Undo.Write = wrapUndo(s.Undo.Write - 1)
+		s.UndoClearState(&s.Undo.D[s.Undo.Write])
+	}
+}
+
+// UndoPushedSince is how many states were remembered for undo since
+// the stack's write position was write, for a change that remembers
+// its own steps; 0 when the position went back, as an undo moves it.
+func (s *Sketch) UndoPushedSince(write int) int {
+	n := wrapUndo(s.Undo.Write - write)
+	if n > MaxUndo/2 {
+		return 0
+	}
+	return n
 }
 
 // UndoUndo restores the last remembered state, keeping the current one

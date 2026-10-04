@@ -340,7 +340,10 @@ func (g Group) SetCopies(n int) {
 	})
 }
 
-// Delete deletes the group and what depends on it.
+// Delete deletes the group and what depends on it. If the active
+// group goes, being this one or one that used it, the last group
+// before it that is left becomes active, so that new groups come
+// where the history ends; Doc.Active says which it is.
 func (g Group) Delete() {
 	g.d.change(func(sk *sketch.Sketch) {
 		g.get(sk)
@@ -403,8 +406,10 @@ func (g Group) Bounds() (min, max Vec) {
 // reports naked and self-intersecting edges, whether the Boolean
 // failed, the face and triangle counts, and the volume, centre of mass
 // and bounding box, in mm. Report.Sound() says whether the solid is
-// closed, does not cross itself, and came from a Boolean that worked;
-// Report.Summary() says it in words. Analyze > Check Solid shows the
+// closed, does not cross itself, and came from a Boolean that worked,
+// and is false too when the group added no solid for a Problem (as an
+// extrusion of a sketch that crosses itself), which Report.Problem
+// holds; Report.Summary() says it in words. Analyze > Check Solid shows the
 // same report.
 func (g Group) Check() (r check.Report) {
 	g.d.read(func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })
@@ -957,9 +962,62 @@ func (g Group) MoveBefore(other Group) error {
 }
 
 // MoveToEnd moves the group to the end of the history, as MoveBefore
-// does.
+// does. Only this group moves: the sketches it uses stay where they
+// are, as they come before it already. MoveToEndWithSources moves them
+// along.
 func (g Group) MoveToEnd() error {
 	return g.move(core.HGroup{})
+}
+
+// OwnSources lists the group with the groups only it needs, in history
+// order: those it uses, directly or through each other, that no other
+// group uses, as an extrusion's sketch. These are what
+// MoveToEndWithSources moves.
+func (g Group) OwnSources() (groups []Group) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		for _, h := range sk.OwnSources(g.H) {
+			groups = append(groups, Group{g.d, h})
+		}
+	})
+	return groups
+}
+
+// MoveToEndWithSources moves the group to the end of the history
+// together with its OwnSources, keeping their order, as one undo step:
+// an extrusion moves with its sketch. It returns the groups moved, in
+// their new order. A move that would put one of them ahead of a group
+// it uses, or another group ahead of one of them that it uses, is
+// refused with an error naming both, and nothing changes.
+func (g Group) MoveToEndWithSources() ([]Group, error) {
+	return g.moveWithSources(core.HGroup{})
+}
+
+// MoveWithSourcesBefore moves the group with its OwnSources to just
+// before other, as MoveToEndWithSources moves them to the end.
+func (g Group) MoveWithSourcesBefore(other Group) ([]Group, error) {
+	if other.H.V == 0 {
+		fail("no group to move before")
+	}
+	other.d = g.d
+	g.d.read(func(sk *sketch.Sketch) { other.get(sk) })
+	return g.moveWithSources(other.H)
+}
+
+func (g Group) moveWithSources(before core.HGroup) (moved []Group, err error) {
+	g.d.read(func(sk *sketch.Sketch) {
+		g.get(sk)
+		err = sk.CheckMoveGroupWithSources(g.H, before)
+	})
+	if err != nil {
+		return nil, err
+	}
+	var hs []core.HGroup
+	g.d.change(func(sk *sketch.Sketch) { hs, err = sk.MoveGroupWithSources(g.H, before) })
+	for _, h := range hs {
+		moved = append(moved, Group{g.d, h})
+	}
+	return moved, err
 }
 
 func (g Group) move(before core.HGroup) (err error) {
