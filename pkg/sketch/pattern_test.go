@@ -3,6 +3,7 @@ package sketch_test
 import (
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
@@ -118,6 +119,155 @@ func TestPathPatternSweep(t *testing.T) {
 			return fmt.Errorf("unsound: %s", r.String())
 		case r.Volume > float64(n)*one*(1+1e-6) || r.Volume < one:
 			return fmt.Errorf("volume %g for %d posts of %g", r.Volume, n, one)
+		}
+		return nil
+	}).Require(t)
+}
+
+// A pattern round a circle (roadmap 28.5): the copies share the circle
+// out, each turned with it, the one after the last being the first.
+func TestPathPatternCircle(t *testing.T) {
+	d := api.New()
+	d.SketchIn(d.Workplane("XY"), "ring")
+	ring := d.Circle(api.V(0, 0, 0), 20)
+	d.SketchIn(d.Workplane("XY"), "post-sketch")
+	// A square post, which shows its turn: its sides along x and y.
+	d.Rect(api.V(19, -1, 0), api.V(21, 1, 0))
+	post := d.Extrude(5, "post")
+	one := post.Check().Volume
+	p := d.PatternAlongPath([]api.Entity{ring}, 4, "")
+	r := p.Check()
+	if p.Problem() != "" || !r.Sound() || math.Abs(r.Volume-4*one) > 1e-6*one {
+		t.Fatalf("four posts round a ring: %q, %s, want %g", p.Problem(), r.String(), 4*one)
+	}
+	// At 0, 90, 180 and 270 degrees, each turned a quarter more: the
+	// whole stays inside the square of half side 21.
+	for _, c := range []struct{ got, want float64 }{{r.Max.X, 21}, {r.Max.Y, 21}, {r.Min.X, -21}, {r.Min.Y, -21}} {
+		if math.Abs(c.got-c.want) > 1e-6 {
+			t.Errorf("bounds %v to %v, want ±21", r.Min, r.Max)
+			break
+		}
+	}
+	step(d)
+	before := saved(t, d)
+	p.SetCopies(6)
+	if !near(p.Check().Volume, 6*one) {
+		t.Errorf("six posts: %g", p.Check().Volume)
+	}
+	undoRedo(t, d, before)
+	roundTrip(t, d)
+}
+
+// A pattern round a rounded rectangle, a closed chain of lines and
+// arcs: the copies are spaced by length all round it.
+func TestPathPatternClosedChain(t *testing.T) {
+	d := api.New()
+	d.SketchIn(d.Workplane("XY"), "track")
+	sides := d.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
+	for _, s := range sides {
+		d.TangentArc(s.Start(), 5, true)
+	}
+	var path []api.Entity
+	for _, e := range d.Active().Entities() {
+		if k := e.Kind(); k == "line" || k == "arc" {
+			path = append(path, e)
+		}
+	}
+	d.SketchIn(d.Workplane("XY"), "post-sketch")
+	d.Circle(api.V(20, 0, 0), 1)
+	post := d.Extrude(3, "post")
+	one := post.Check().Volume
+	// The perimeter: 2*(30+10) of straight runs and a circle of 5.
+	perimeter := 2*(30+10) + 2*math.Pi*5
+	n := 8
+	p := d.PatternAlongPath(path, n, "")
+	r := p.Check()
+	if p.Problem() != "" || !r.Sound() || math.Abs(r.Volume-float64(n)*one) > 1e-6*float64(n)*one {
+		t.Fatalf("posts round a track: %q, %s, want %g", p.Problem(), r.String(), float64(n)*one)
+	}
+	// The posts lie on the track: within the rectangle grown by a post's
+	// radius, and touching each side of it.
+	if r.Max.X > 41+1e-6 || r.Min.X < -1-1e-6 || r.Max.Y > 21+1e-6 || r.Min.Y < -1-1e-6 {
+		t.Errorf("posts off the track: %v to %v (perimeter %g)", r.Min, r.Max, perimeter)
+	}
+}
+
+// A closed path with a corner, and a circle with another piece.
+func TestPathPatternClosedRefused(t *testing.T) {
+	d := api.New()
+	d.SketchIn(d.Workplane("XY"), "square")
+	sq := d.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	d.SketchIn(d.Workplane("XY"), "ring")
+	ring := d.Circle(api.V(0, 0, 0), 20)
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Circle(api.V(0, 0, 0), 1)
+	d.Extrude(5, "post")
+	for name, c := range map[string]struct {
+		path []api.Entity
+		want string
+	}{
+		"corner":           {sq, "corner"},
+		"circle and lines": {append([]api.Entity{ring}, sq[0]), "closes on itself"},
+	} {
+		func() {
+			defer func() {
+				err, ok := recover().(error)
+				if !ok || !strings.Contains(err.Error(), c.want) {
+					t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
+				}
+			}()
+			d.PatternAlongPath(c.path, 3, "")
+		}()
+	}
+}
+
+// TestPathPatternClosedSweep repeats a post round circles and rounded
+// rectangles of several sizes and counts, and requires a sound solid of
+// n posts' volume. The rate allowed was fixed at none before the
+// closed path was written.
+func TestPathPatternClosedSweep(t *testing.T) {
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("copies", 2, 3, 5, 12),
+			sweep.Floats("size", 6, 20, 100),
+			sweep.Strings("path", "circle", "track"),
+		},
+		MaxFailRate: 0,
+		Sample:      24,
+	}
+	grid.Run(func(p sweep.Point) error {
+		n, size := int(p.Float("copies")), p.Float("size")
+		d := api.New()
+		d.SketchIn(d.Workplane("XY"), "path")
+		var path []api.Entity
+		var at api.Vec
+		if p.String("path") == "circle" {
+			path = []api.Entity{d.Circle(api.V(0, 0, 0), size)}
+			at = api.V(0, -size, 0)
+		} else {
+			sides := d.Rect(api.V(0, 0, 0), api.V(2*size, size, 0))
+			for _, s := range sides {
+				d.TangentArc(s.Start(), size/4, true)
+			}
+			for _, e := range d.Active().Entities() {
+				if k := e.Kind(); k == "line" || k == "arc" {
+					path = append(path, e)
+				}
+			}
+			at = api.V(size/3, 0, 0)
+		}
+		d.SketchIn(d.Workplane("XY"), "post-sketch")
+		d.Circle(at, 1)
+		one := d.Extrude(2, "post").Check().Volume
+		g := d.PatternAlongPath(path, n, "")
+		r := g.Check()
+		switch {
+		case g.Problem() != "":
+			return fmt.Errorf("problem: %s", g.Problem())
+		case !r.Sound():
+			return fmt.Errorf("unsound: %s", r.String())
+		case math.Abs(r.Volume-float64(n)*one) > 1e-6*float64(n)*one:
+			return fmt.Errorf("volume %g, want %g", r.Volume, float64(n)*one)
 		}
 		return nil
 	}).Require(t)

@@ -310,7 +310,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"Pattern Along Path repeats the active group's solid along a path, three times "+
 				"to begin with. Select:\n\n"+
 				"    * the line segments and arcs of the path, joined end to end "+
-				"and meeting tangent\n", capitalize(err.Error()))
+				"and meeting tangent; a path that closes, the copies shared out round it\n"+
+				"    * a circle, the copies shared out round it\n", capitalize(err.Error()))
 			return
 		}
 		g = pg

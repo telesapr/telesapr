@@ -4459,7 +4459,7 @@
 					},
 					"PatternAlongPath": {
 						"decl": "func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group",
-						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as New Group \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
+						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as New Group \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. A path that closes, a circle alone or pieces\nthat come back to their start meeting it tangent, has the copies\nshared out evenly round it, starting at its point nearest the\nsolid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
 					},
 					"Perpendicular": {
 						"decl": "func (d *Doc) Perpendicular(a, b Entity) Constraint",

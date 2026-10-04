@@ -152,6 +152,16 @@ func TestPathEquivalencePathPattern(t *testing.T) {
 	}
 }
 
+// A post repeated round a circle picked with the mouse, and by a
+// script (roadmap 28.5).
+func TestPathEquivalencePatternRing(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_pattern_ring", "path_pattern_ring")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || g.ValA != 3 {
+		t.Errorf("the pattern: type %d, problem %q, copies %g", g.Type, g.Problem.Msg, g.ValA)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")

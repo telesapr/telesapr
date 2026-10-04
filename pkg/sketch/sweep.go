@@ -192,20 +192,62 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 // starting at the end where dist is least, and requires its pieces to
 // meet tangent; what names the feature in messages.
 func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics bool) ([]pathPiece, error) {
+	chain, _, err := sk.pathChainOf(edges, what, dist, cubics, false)
+	return chain, err
+}
+
+// pathChainOf is pathChain, and with closed a path that closes too: a
+// circle, or pieces that come back to where they began, which then
+// starts at the joint where dist is least, or for a circle alone at its
+// point where dist is least (roadmap 28.5). It says whether the path
+// closes.
+func (sk *Sketch) pathChainOf(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed bool) ([]pathPiece, bool, error) {
+	chain, isClosed, err := sk.pathChainAny(edges, what, dist, cubics, closed)
+	if err != nil {
+		return nil, false, err
+	}
+	return chain, isClosed, nil
+}
+
+func (sk *Sketch) pathChainAny(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed bool) ([]pathPiece, bool, error) {
 	var pieces []pathPiece
 	for _, he := range edges {
 		e := sk.GetEntity(he)
 		if e == nil {
-			return nil, pathErr(nil, "path entity %s doesn't exist", sk.entityName(he))
+			return nil, false, pathErr(nil, "path entity %s doesn't exist", sk.entityName(he))
 		}
 		var sbl srf.SBezierList
 		GenerateEntityBeziers(e, &sbl, &Runtime{Sketch: sk})
+		if e.Type == core.EntityCircle && closed {
+			if len(edges) > 1 {
+				return nil, false, pathErr(nil, "circle %s closes on itself: a path with a circle has nothing else", sk.entityName(he))
+			}
+			c := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
+			n := sk.MustGetEntity(e.Normal).NormalN(sk).WithMagnitude(1)
+			r := e.CircleGetRadiusNum(sk)
+			if r < sweepTol {
+				return nil, false, pathErr(&c, "circle %s of the path has no size", sk.entityName(he))
+			}
+			// Start where dist is least, as near as the circle's points
+			// at a degree apart find it.
+			var u geom.Vector
+			best := math.Inf(1)
+			ref := n.NormalDir(0).WithMagnitude(1)
+			for k := 0; k < 360; k++ {
+				d := ref.RotatedAroundAxis(n, float64(k)*math.Pi/180)
+				if x := dist(c.Plus(d.ScaledBy(r))); x < best-sweepTol {
+					best, u = x, d
+				}
+			}
+			a := c.Plus(u.ScaledBy(r))
+			return []pathPiece{{h: he, start: a, end: a, arc: true, center: c, axis: n, angle: 2 * math.Pi}}, true, nil
+		}
 		switch e.Type {
 		case core.EntityLineSegment:
 			a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
 			b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
 			if b.Minus(a).Magnitude() < sweepTol {
-				return nil, pathErr(&a, "line segment %s of the path has no length", sk.entityName(he))
+				return nil, false, pathErr(&a, "line segment %s of the path has no length", sk.entityName(he))
 			}
 			pieces = append(pieces, pathPiece{h: he, start: a, end: b, curves: sbl.Curves})
 		case core.EntityArcOfCircle:
@@ -221,24 +263,24 @@ func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Ve
 			pieces = append(pieces, pp)
 		case core.EntityCubic:
 			if !cubics {
-				return nil, pathErr(nil, "%s is not a line segment or an arc: a %s's path is made of those",
+				return nil, false, pathErr(nil, "%s is not a line segment or an arc: a %s's path is made of those",
 					sk.entityName(he), what)
 			}
 			if len(sbl.Curves) == 0 {
-				return nil, pathErr(nil, "cubic %s of the path has no curve", sk.entityName(he))
+				return nil, false, pathErr(nil, "cubic %s of the path has no curve", sk.entityName(he))
 			}
 			a, b := sbl.Curves[0].Start(), sbl.Curves[len(sbl.Curves)-1].Finish()
 			pieces = append(pieces, pathPiece{h: he, start: a, end: b, curves: sbl.Curves, free: true})
 		default:
 			if cubics {
-				return nil, pathErr(nil, "%s is not a line segment, an arc or a cubic: a path is made of those",
+				return nil, false, pathErr(nil, "%s is not a line segment, an arc or a cubic: a path is made of those",
 					sk.entityName(he))
 			}
-			return nil, pathErr(nil, "%s is not a line segment or an arc: a path is made of those", sk.entityName(he))
+			return nil, false, pathErr(nil, "%s is not a line segment or an arc: a path is made of those", sk.entityName(he))
 		}
 	}
 	if len(pieces) == 0 {
-		return nil, errors.New("there is no path")
+		return nil, false, errors.New("there is no path")
 	}
 
 	// Each end must meet at most one other.
@@ -263,12 +305,19 @@ func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Ve
 				ends = append(ends, x)
 			case 2:
 			default:
-				return nil, pathErr(&x, "the path branches at (%g, %g, %g)", x.X, x.Y, x.Z)
+				return nil, false, pathErr(&x, "the path branches at (%g, %g, %g)", x.X, x.Y, x.Z)
 			}
 		}
 	}
-	if len(ends) == 0 {
-		return nil, pathErr(&pieces[0].start, "the path is closed: a %s needs a path with two ends", what)
+	isClosed := len(ends) == 0
+	if isClosed && !closed {
+		return nil, false, pathErr(&pieces[0].start, "the path is closed: a %s needs a path with two ends", what)
+	}
+	if isClosed {
+		// Every joint is a place to start: the one where dist is least.
+		for _, p := range pieces {
+			ends = append(ends, p.start)
+		}
 	}
 	start := ends[0]
 	for _, x := range ends[1:] {
@@ -299,18 +348,22 @@ func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Ve
 			break
 		}
 		if !found {
-			return nil, pathErr(&at, "the path is not one chain: it breaks at (%g, %g, %g)", at.X, at.Y, at.Z)
+			return nil, false, pathErr(&at, "the path is not one chain: it breaks at (%g, %g, %g)", at.X, at.Y, at.Z)
 		}
 	}
 
-	for k := 1; k < len(chain); k++ {
-		if chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) < sweepTangentCos {
-			x := chain[k].start
-			return nil, pathErr(&x, "the path has a corner at (%g, %g, %g): a %s needs its pieces to meet tangent",
+	for k := 1; k <= len(chain); k++ {
+		if k == len(chain) && !isClosed {
+			break
+		}
+		next := chain[k%len(chain)]
+		if chain[k-1].tangentAt(true).Dot(next.tangentAt(false)) < sweepTangentCos {
+			x := next.start
+			return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g): a %s needs its pieces to meet tangent",
 				x.X, x.Y, x.Z, what)
 		}
 	}
-	return chain, nil
+	return chain, isClosed, nil
 }
 
 // generateSweep copies the profile's entities to both ends of the

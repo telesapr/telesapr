@@ -1,0 +1,31 @@
+# A post and a construction circle through it drawn in one sketch, the
+# post extruded, and repeated round the circle, picked with the mouse;
+# the same as path_pattern_ring.go makes (TestPathEquivalencePatternRing,
+# roadmap 28.5).
+key c
+move 450 350
+down L 450 350
+up L 450 350
+move 460 350
+down L 460 350
+up L 460 350
+key esc
+key c
+move 350 350
+down L 350 350
+up L 350 350
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+key esc
+move 250 350
+down L 250 350
+up L 250 350
+key g
+key esc
+key x shift
+move 250 350
+down L 250 350
+up L 250 350
+menu New Group|Pattern Along Path

@@ -180,6 +180,16 @@ func TestSolidGoldens(t *testing.T) {
 			}, 1, "")
 			c.SetSecondDistance(2)
 		},
+		"pattern-ring": func(d *api.Doc) {
+			d.SketchIn(d.Workplane("XY"), "ring")
+			ring := d.Circle(api.V(0, 0, 0), 20)
+			d.SketchIn(d.Workplane("XY"), "")
+			// Beside the ring, not on it: the ring's line over a post's
+			// bottom would take the hover from it (TestEveryFacePicked).
+			d.Rect(api.V(21, -1, 0), api.V(23, 1, 0))
+			d.Extrude(5, "post")
+			d.PatternAlongPath([]api.Entity{ring}, 5, "")
+		},
 		"chamfer-of-chamfer": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 10)
 			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 2, "")
@@ -532,5 +542,33 @@ func BenchmarkPathPattern(b *testing.B) {
 		d.Circle(api.V(0, 0, 0), 1)
 		d.Extrude(5, "post")
 		d.PatternAlongPath(path, 7, "")
+	})
+}
+
+// Twelve posts round a ring (roadmap 28.5).
+func BenchmarkPathPatternRing(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "ring")
+		ring := d.Circle(api.V(0, 0, 0), 20)
+		d.SketchIn(d.Workplane("XY"), "post-sketch")
+		d.Circle(api.V(20, 0, 0), 1)
+		d.Extrude(5, "post")
+		d.PatternAlongPath([]api.Entity{ring}, 12, "")
+	})
+}
+
+// The top edges of a block chamfered by two distances (roadmap 28.1):
+// their corners are cut by wedges.
+func BenchmarkChamferTwo(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+		ex := d.Extrude(10, "")
+		var top []api.Entity
+		for _, e := range ex.Entities() {
+			if e.Kind() == "line" && e.Start().Pos().Z == 10 && e.End().Pos().Z == 10 {
+				top = append(top, e)
+			}
+		}
+		d.Chamfer(top, 1, "").SetSecondDistance(2)
 	})
 }
