@@ -626,16 +626,52 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		if bestEar < 0 {
 			bestEar = fallback
 		}
+		eps := scaledEps
+		if bestEar < 0 && srf.flat() && c.simple() {
+			// No ear at the tolerance: what is left is a sliver, points
+			// along a trim that runs nearly straight against the chord
+			// that cut them off, every corner within the tolerance of
+			// collinear (a chamfer's edge on a slot's flat wall). Its
+			// corners are still convex or reflex, and it has ears: take
+			// one at no tolerance, and keep its triangle, or the points
+			// along the trim, which the face beyond keeps, are left out
+			// and the mesh has a hole there.
+			eps = math.SmallestNonzeroFloat64
+			for i := range ln {
+				c.Points[i].Ear = EarUnknown
+				if c.IsEar(i, eps) {
+					bestEar = i
+					break
+				}
+			}
+			for i := range ln {
+				c.Points[i].Ear = EarUnknown
+			}
+		}
 		if bestEar < 0 {
 			// couldn't find an ear! fail
 			return
 		}
-		c.clipEarInto(m, bestEar, scaledEps, srf)
+		c.clipEarInto(m, bestEar, eps, srf)
 	}
 
 	if len(c.Points) == 3 {
 		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
+}
+
+// simple reports whether no two of the contour's points are one: a
+// contour with a bridge to a hole, or one that touches itself, has
+// corners that are not ears however convex.
+func (c *SContour) simple() bool {
+	seen := make(map[geom.Vector]bool, len(c.Points))
+	for _, p := range c.Points {
+		if seen[p.P] {
+			return false
+		}
+		seen[p.P] = true
+	}
+	return true
 }
 
 // poleSliver reports whether the ear a, b, c, in uv, has a corner on a
