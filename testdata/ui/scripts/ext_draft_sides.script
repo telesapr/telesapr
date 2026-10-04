@@ -1,6 +1,7 @@
 # Draft of chosen sides from another plane (roadmap 28.2): the extrusion of
 # path_extrude drafted 5 degrees, its screen showing the plane the sides
-# lean from and which sides; then one side picked and drafted alone.
+# lean from and which sides; then two sides picked and drafted alone by
+# New Group > Draft Selected Sides, and the plane moved to the far end.
 key r
 move 200 200
 down L 200 200
@@ -21,9 +22,7 @@ up L 382.5 232.5
 move 247.5 202.5
 down L 247.5 202.5
 up L 247.5 202.5
-twmove 130 185
-twdown L 130 185
-twup L 130 185
+menu New Group|Draft Selected Sides
 tw
 twmove 272 165
 twdown L 272 165

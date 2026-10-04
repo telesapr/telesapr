@@ -162,6 +162,15 @@ func TestPathEquivalencePatternRing(t *testing.T) {
 	}
 }
 
+// A draft's sides chosen by the menu and its neutral plane set on its
+// screen, and by a script (roadmap 28.2).
+func TestPathEquivalenceDraftSides(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_draft_sides", "path_draft_sides")
+	if g := ui.GetGroup(ui.Active); len(g.DraftFaces) != 2 || g.ValB != 10 || g.Problem.Msg != "" {
+		t.Errorf("the draft: %d sides, neutral %g, problem %q", len(g.DraftFaces), g.ValB, g.Problem.Msg)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")

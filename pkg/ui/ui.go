@@ -158,6 +158,7 @@ const (
 	CmdMateHinge
 	CmdDrawingSheet
 	CmdExportDrawing
+	CmdDraftSelectedSides
 )
 
 // Pending is an operation to be completed by doing something with the

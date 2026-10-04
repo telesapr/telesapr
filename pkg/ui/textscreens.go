@@ -630,12 +630,17 @@ func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
-// ScreenDraftSelectedSides makes an extrusion's draft lean only the
-// sides of the selected curves of its sketch, or of the selected faces
-// (roadmap 28.2).
-func (tw *TextWindow) ScreenDraftSelectedSides(link int, v uint32) {
-	ss := tw.ss
+// draftSelectedSides makes the active extrusion's draft lean only the
+// sides of the selected curves of its sketch, their copies at its ends,
+// or the selected faces of the sides (New Group > Draft Selected Sides,
+// roadmap 28.2).
+func (ss *SolveSpaceUI) draftSelectedSides() {
 	gw := ss.GW
+	g := ss.SK.GetGroup(gw.activeGroupH())
+	if g == nil || g.Type != sketch.GroupExtrude || g.ValC == 0 && g.ExprC == "" {
+		ss.Error("Activate a drafted extrusion first: Draft Selected Sides chooses which of its sides the draft leans.")
+		return
+	}
 	gw.GroupSelection()
 	if len(gw.gs.entity) == 0 {
 		ss.Error("Select the sides to draft: the lines, arcs and circles of the extruded sketch, " +
@@ -643,7 +648,7 @@ func (tw *TextWindow) ScreenDraftSelectedSides(link int, v uint32) {
 		return
 	}
 	err := ss.SK.UndoRememberFor(func() error {
-		return ss.SK.SetDraftFaces(core.HGroup{V: v}, gw.gs.entity)
+		return ss.SK.SetDraftFaces(g.H, gw.gs.entity)
 	})
 	if err != nil {
 		ss.Error("Can't draft those sides: %s.", err)
@@ -826,12 +831,12 @@ func (tw *TextWindow) ShowGroupInfo() {
 				// Roadmap 28.2: the plane the sides lean from, and which.
 				tw.Printf(false, "%Ba   %Ftfrom the plane%E %s along%s %Fl%Ll%f%D[change]%E",
 					ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+				// Which: New Group > Draft Selected Sides chooses them.
 				if len(g.DraftFaces) == 0 {
-					tw.Printf(false, "%Bd   %Ftsides%E all %Fl%Ll%f%D[only the selected]%E",
-						lf(tw.ScreenDraftSelectedSides), g.H.V)
+					tw.Printf(false, "%Bd   %Ftsides%E all")
 				} else {
-					tw.Printf(false, "%Bd   %Ftsides%E %d of the sketch's %Fl%Ll%f%D[only the selected]%E %Fl%Ll%f%D[all]%E",
-						len(g.DraftFaces), lf(tw.ScreenDraftSelectedSides), g.H.V, lf(tw.ScreenDraftAllSides), g.H.V)
+					tw.Printf(false, "%Bd   %Ftsides%E %d of the sketch's %Fl%Ll%f%D[all]%E",
+						len(g.DraftFaces), lf(tw.ScreenDraftAllSides), g.H.V)
 				}
 			}
 		} else {

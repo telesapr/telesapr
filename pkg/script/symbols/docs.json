@@ -4830,6 +4830,14 @@
 						"decl": "func (g Group) Draft() (degrees float64)",
 						"text": "Draft is an extrusion's draft in degrees: its sides lean into the\nsolid by that much from the sketch's plane, out when it is negative."
 					},
+					"DraftFaces": {
+						"decl": "func (g Group) DraftFaces() (curves []Entity)",
+						"text": "DraftFaces are the curves of an extrusion's sketch whose sides its\ndraft leans, or none when it leans every side."
+					},
+					"DraftNeutral": {
+						"decl": "func (g Group) DraftNeutral() (mm float64)",
+						"text": "DraftNeutral is how far along an extrusion, from the sketch's plane,\nits draft's neutral plane lies, in mm: where the solid has the\nprofile's outline."
+					},
 					"EdgeRadius": {
 						"decl": "func (g Group) EdgeRadius(i int) (mm float64)",
 						"text": "EdgeRadius is the radius in mm a fillet gives its edge i, counting\nthe entities Edges gives and then the edges SolidEdges gives, from 0:\nthe edge's own, or the fillet's."
@@ -4944,7 +4952,15 @@
 					},
 					"SetDraft": {
 						"decl": "func (g Group) SetDraft(degrees float64)",
-						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs, each arc meeting its neighbours tangent. A\ndraft at which the sides meet is a problem on the group, and the\nextrusion is made without it. SetExpr with sketch.GroupValC gives it\nan expression."
+						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs; an arc may meet a line at a sharp corner,\nbut arcs meet each other tangent. A draft at which the sides meet is\na problem on the group, and the extrusion is made without it. SetExpr\nwith sketch.GroupValC gives it an expression. SetDraftFaces leans\nonly some sides, and SetDraftNeutral leans them from another plane."
+					},
+					"SetDraftFaces": {
+						"decl": "func (g Group) SetDraftFaces(curves []Entity)",
+						"text": "SetDraftFaces makes an extrusion's draft lean the sides of curves\nonly, the rest staying upright; none leans every side again. A curve\nis a line, arc or circle of the extruded sketch, or its copy at an end\nof the extrusion, or the face of its side."
+					},
+					"SetDraftNeutral": {
+						"decl": "func (g Group) SetDraftNeutral(mm float64)",
+						"text": "SetDraftNeutral leans an extrusion's drafted sides from the plane mm\nalong it from the sketch's plane, negative towards a two-sided\nextrusion's other end: there the solid has the profile's outline, and\nit narrows going away from it both ways, as a moulded part does from\nits parting line. 0 is the sketch's plane. A plane off the extrusion\nis a problem on the group. SetExpr with sketch.GroupPitch gives it an\nexpression in the document's unit."
 					},
 					"SetEdgeRadius": {
 						"decl": "func (g Group) SetEdgeRadius(i int, mm float64)",
@@ -5711,6 +5727,10 @@
 					"DescriptionString": {
 						"decl": "func (g *Group) DescriptionString() string",
 						"text": "DescriptionString names the group as the property browser does: \"g003-extrude\"."
+					},
+					"DraftNeutral": {
+						"decl": "func (g *Group) DraftNeutral() float64",
+						"text": "DraftNeutral is how far along the extrusion, from the sketch's plane, the neutral plane of its draft lies, in mm."
 					},
 					"EdgeRadius": {
 						"decl": "func (g *Group) EdgeRadius(i int) (float64, string, bool)",
@@ -6537,6 +6557,10 @@
 					"SetConstraintText": {
 						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
 						"text": "SetConstraintText gives a constraint the value of what the user typed for its label, a length in the document's unit (Units)."
+					},
+					"SetDraftFaces": {
+						"decl": "func (sk *Sketch) SetDraftFaces(hg core.HGroup, es []core.HEntity) error",
+						"text": "SetDraftFaces makes the extrusion hg's draft lean the sides of the curves es of its sketch only, or every side when es is empty."
 					},
 					"SetEdgeRadiusText": {
 						"decl": "func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error",

@@ -180,6 +180,17 @@ func TestSolidGoldens(t *testing.T) {
 			}, 1, "")
 			c.SetSecondDistance(2)
 		},
+		"draft-sides": func(d *api.Doc) {
+			ex := block(d, 0, 0, 20, 10, 10)
+			ex.SetDraft(8)
+			ex.SetDraftNeutral(10)
+			ex.SetDraftFaces([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0))})
+		},
+		"draft-sharp-arc": func(d *api.Doc) {
+			d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
+			d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
+			d.Extrude(8, "").SetDraft(6)
+		},
 		"pattern-ring": func(d *api.Doc) {
 			d.SketchIn(d.Workplane("XY"), "ring")
 			ring := d.Circle(api.V(0, 0, 0), 20)
@@ -570,5 +581,16 @@ func BenchmarkChamferTwo(b *testing.B) {
 			}
 		}
 		d.Chamfer(top, 1, "").SetSecondDistance(2)
+	})
+}
+
+// A D drafted all round: cones and planes meeting in conics (roadmap
+// 28.2).
+func BenchmarkDraftSharpArc(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "")
+		d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
+		d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
+		d.Extrude(8, "").SetDraft(6)
 	})
 }
