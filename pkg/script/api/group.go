@@ -403,8 +403,10 @@ func (g Group) Bounds() (min, max Vec) {
 // reports naked and self-intersecting edges, whether the Boolean
 // failed, the face and triangle counts, and the volume, centre of mass
 // and bounding box, in mm. Report.Sound() says whether the solid is
-// closed, does not cross itself, and came from a Boolean that worked;
-// Report.Summary() says it in words. Analyze > Check Solid shows the
+// closed, does not cross itself, and came from a Boolean that worked,
+// and is false too when the group added no solid for a Problem (as an
+// extrusion of a sketch that crosses itself), which Report.Problem
+// holds; Report.Summary() says it in words. Analyze > Check Solid shows the
 // same report.
 func (g Group) Check() (r check.Report) {
 	g.d.read(func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })

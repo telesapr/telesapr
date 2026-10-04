@@ -1700,7 +1700,7 @@
 					},
 					"Sound": {
 						"decl": "func (r *Report) Sound() bool",
-						"text": "Sound reports whether the solid is closed, does not cross itself, and came from a Boolean that succeeded."
+						"text": "Sound reports whether the solid is closed, does not cross itself, and came from a Boolean that succeeded, and the group made its part of it (no Problem)."
 					},
 					"String": {
 						"decl": "func (r *Report) String() string",
@@ -1727,7 +1727,7 @@
 				"text": "CompareBaseline compares two baseline lines field by field and says what differs, or returns \"\"."
 			},
 			"Group": {
-				"decl": "func Group(sk *sketch.Sketch, g *sketch.Group) Report",
+				"decl": "func Group(sk *sketch.Sketch, g *sketch.Group) (r Report)",
 				"text": "Group checks the solid a group's regeneration left, which is the solid of every group up to it: the shell of the last group that contributed solid model, and the mesh shown for g."
 			},
 			"ReadBaseline": {
@@ -4792,7 +4792,7 @@
 					},
 					"Check": {
 						"decl": "func (g Group) Check() (r check.Report)",
-						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked;\nReport.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
+						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked,\nand is false too when the group added no solid for a Problem (as an\nextrusion of a sketch that crosses itself), which Report.Problem\nholds; Report.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
 					},
 					"Conflicts": {
 						"decl": "func (g Group) Conflicts() (constraints []Constraint)",
@@ -4904,7 +4904,7 @@
 					},
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
-						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut or a sweep path with\na corner, or \"\" when there is nothing; a group with a problem adds\nno solid."
+						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too."
 					},
 					"Profiles": {
 						"decl": "func (g Group) Profiles() (out []Group)",
@@ -5792,6 +5792,14 @@
 					"MakeRevolveEndFaces": {
 						"decl": "func (g *Group) MakeRevolveEndFaces(sk *Sketch, el *[]core.Entity, pt core.HEntity, ai, af int)",
 						"text": "For Revolve and Helix groups the end faces are remapped from an arbitrary point on the sketch."
+					},
+					"MakesSolidFromSketch": {
+						"decl": "func (g *Group) MakesSolidFromSketch() bool",
+						"text": "MakesSolidFromSketch reports whether the group makes a solid from the contours of a sketch: an extrusion, lathe, revolve, helix or sweep, or a loft."
+					},
+					"PolyProblem": {
+						"decl": "func (g *Group) PolyProblem() (msg string, at geom.Vector, ok bool)",
+						"text": "PolyProblem says what is wrong with a sketch's contours, as GenerateLoops found it, and where: an open end, a point off the plane of the rest, where the contour crosses itself, or a curve of no length."
 					},
 					"PreviousGroup": {
 						"decl": "func (g *Group) PreviousGroup(sk *Sketch) *Group"

@@ -57,6 +57,13 @@ type Report struct {
 	Euler int
 	// Topology lists the topology's problems, for showing.
 	Topology []topo.Problem
+	// Problem is what the group's regeneration found wrong with its
+	// input (Group.Problem), so that it added no solid, for a group
+	// that makes one from a sketch (sketch.Group.MakesSolidFromSketch),
+	// as an extrusion of a sketch that crosses itself; "" when there is
+	// nothing, and for other groups, which pass the solid so far
+	// through when they have a problem.
+	Problem string
 	// TopologyEdges are the edges of the topology's problems, to mark.
 	TopologyEdges srf.SEdgeList
 
@@ -68,9 +75,11 @@ type Report struct {
 func (r *Report) Empty() bool { return r.Triangles == 0 }
 
 // Sound reports whether the solid is closed, does not cross itself, and
-// came from a Boolean that succeeded. An empty solid is sound.
+// came from a Boolean that succeeded, and the group made its part of
+// it (no Problem). An empty solid is sound when nothing was asked of it.
 func (r *Report) Sound() bool {
-	return r.NakedEdges == 0 && r.SelfIntersecting == 0 && !r.BooleanFailed && r.TopologyProblems == 0
+	return r.NakedEdges == 0 && r.SelfIntersecting == 0 && !r.BooleanFailed && r.TopologyProblems == 0 &&
+		r.Problem == ""
 }
 
 // Solid checks a shell and the mesh made from it. shell may be nil, for
@@ -136,7 +145,13 @@ func Solid(shell *srf.SShell, mesh *srf.SMesh) Report {
 // solid of every group up to it: the shell of the last group that
 // contributed solid model, and the mesh shown for g. Regenerate the
 // sketch first; Group makes the display mesh if it is out of date.
-func Group(sk *sketch.Sketch, g *sketch.Group) Report {
+func Group(sk *sketch.Sketch, g *sketch.Group) (r Report) {
+	defer func() {
+		// A draft left out is a problem too, on a solid made.
+		if g.MakesSolidFromSketch() && len(g.ThisShell.Surface) == 0 && len(g.ThisMesh.Triangles) == 0 {
+			r.Problem = g.Problem.Msg
+		}
+	}()
 	g.GenerateDisplayItems(sk)
 	src := g
 	for len(src.ThisMesh.Triangles) == 0 && len(src.ThisShell.Surface) == 0 {
@@ -175,12 +190,21 @@ func (r *Report) String() string {
 // Summary is the report for a person, in millimetres.
 func (r *Report) Summary() string {
 	if r.Empty() {
+		if r.Problem != "" {
+			return "The group has no solid: " + r.Problem + "."
+		}
 		return "The group has no solid."
 	}
 	var b strings.Builder
-	if r.Sound() {
+	if r.Problem != "" {
+		b.WriteString("The group added no solid: " + r.Problem + ".\n\n")
+	}
+	switch {
+	case r.Sound():
 		b.WriteString("The solid is sound: closed, not self-intersecting, and its Boolean succeeded.\n\n")
-	} else {
+	case r.NakedEdges == 0 && r.SelfIntersecting == 0 && !r.BooleanFailed && r.TopologyProblems == 0:
+		b.WriteString("The solid so far is closed, not self-intersecting, and its Boolean succeeded.\n\n")
+	default:
 		b.WriteString("The solid is NOT sound:\n")
 		if r.NakedEdges > 0 {
 			fmt.Fprintf(&b, "    %d naked edges, so it is not closed\n", r.NakedEdges)
