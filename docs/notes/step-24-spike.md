@@ -103,6 +103,36 @@ Written 2026-10-04.
   is at a folded side of that patch, so `openPoles` is not the cause
   there. Not mended.
 
+## Kernel leftovers (after steps 24 to 28)
+
+- **NIST_MBE_PMI_6, the topology problem**: the mesh's Euler number was
+  off by 8 from the shell's because, at two or three poles, a trim runs up
+  a meridian into the pole and the mesher, out of other ears, joins the
+  trim's points to the pole: slivers in the meridian's plane, and the face
+  beyond lays the same ones, so edges are used four times. `poleSliver`
+  (an ear with a corner on a folded side and flat by `flatEar`) is now a
+  fallback ear: one pole clean, off by 6. The other two have no other ear
+  left by then, because the ears before fanned the last grid row to one
+  trim point; a chord from a trim point to the pole counted as grazing
+  (dropping the pole-end exemption in `grazed`) changes nothing for the
+  same reason. Needs grid points in the band below the pole, or an ear
+  order that keeps a row point for the meridian's top. The two crossings
+  are as above.
+- **Schenkel's 40 naked edges**: a wedge of a sphere from a circle of
+  latitude up to its pole (a patch with its pole at v = 1, the face between
+  a meridian inside the patch and the patch's side). `FaceAdder.Add` turns
+  a patch over when its outer loop runs counter-clockwise in its
+  parameters, and the pole's parameter along the folded side, from
+  `ClosestPointToUV`, is any: the outline came out turned and the patch
+  was turned over, meshing it inside out. `surfaceLoopUV` now opens a
+  pole along its side, at its neighbours' parameters (as `openPoles` does
+  for the mesher's trims), there and in `Topology.loopUV`. Dropping the
+  pole point instead broke a cone's triangle (apex plus one line) in
+  NIST_MBE_PMI_1 and _5. Schenkel's mesh is closed and doesn't cross
+  itself (`TestSolidSchenkelClosed`); its shell's Euler number is -34
+  against its mesh's -6, cause not found, so it is not counted sound.
+- **The twisted swept bar** (1.6%): not attempted again.
+
 Traps: `TELESAPR_SWEEP=1` runs the full grids; `TELESAPR_REGEN_INVARIANTS=1`
 regenerates `testdata/invariants.txt` (not in `regen-golden.sh`); a
 probe at chord tolerance 0.0005 mm with sag-driven refinement takes

@@ -597,7 +597,8 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 				// surface.
 				prev := c.Points[wrapIdx(i+offset-1, ln)].P
 				next := c.Points[wrapIdx(i+offset+1, ln)].P
-				if folded(srf, prev, c.Points[ear].P, next) || srf.AvoidFlatEars && flatEar(srf, prev, c.Points[ear].P, next) {
+				if folded(srf, prev, c.Points[ear].P, next) || srf.AvoidFlatEars && flatEar(srf, prev, c.Points[ear].P, next) ||
+					poleSliver(srf, poles, prev, c.Points[ear].P, next) {
 					if fallback < 0 {
 						fallback = ear
 					}
@@ -635,6 +636,31 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	if len(c.Points) == 3 {
 		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
+}
+
+// poleSliver reports whether the ear a, b, c, in uv, has a corner on a
+// side of the patch folded to a pole and is flat on the surface, as
+// flatEar finds: the pole joined to two points of a trim running up a
+// meridian into it, all three on that meridian, which lays a sliver in
+// the meridian's plane over the face beyond it, as the face beyond
+// lays its own (a half of a sphere bounded by meridians through its
+// poles, as NIST_MBE_PMI_6 has).
+func poleSliver(srf *SSurface, poles []int, a, b, c geom.Vector) bool {
+	if len(poles) == 0 {
+		return false
+	}
+	on := func(p geom.Vector) bool {
+		for _, side := range poles {
+			if math.Abs([]float64{p.X, p.X - 1, p.Y, p.Y - 1}[side]) < 1e-9 {
+				return true
+			}
+		}
+		return false
+	}
+	if !on(a) && !on(b) && !on(c) {
+		return false
+	}
+	return flatEar(srf, a, b, c)
 }
 
 // grazeShare is how far off a chord in uv, as a share of its length, a
