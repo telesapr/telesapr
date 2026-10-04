@@ -58,6 +58,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 26 (run-offs) | Corner-filling blends that run off onto a flat face, band-on-cone chamfers and fillets | `b6d7045` |
 | 26 (slot) | Chamfers where a slot meets a cone: a flat face's nearly straight contour meshed | `bbbb561` |
 | 26 (curved ends) | Fillets of edges between flat faces that end on a curved face | `31e0672` |
+| Mesher | No fans from a far trim point on patches ruled one way (run-off sweep 10 to 4 of 36); crossings counted where an edge meets a triangle (NIST_MBE_PMI_5 sound, corpus 7 of 9) | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -87,8 +88,8 @@ Step 24 is merged but for these. Notes: `docs/notes/step-24-spike.md`.
 | Item | Content | State |
 |---|---|---|
 | A bore whose cap lies in a lathed tip's plane, off axis | Fails 40 of 80: coincident contact (F5, under "Left out") | open |
-| A twisted swept bar | Its flat sides mesh within 1.6% (lofts now within 0.55%). Four grid lines across its sides bring it to 0.16% but make three threads' surfaces cross | open |
-| NIST_MBE_PMI_6 as a solid | Two crossings (a fan edge on a flat disc, a thin triangle at a curved patch's corner) and a topology problem: the mesh's Euler number 6 off the shell's (was 8; one of three poles clean since `poleSliver`), where earlier ears used up every other ear; `TestSolidSeamEdges` allows them | open |
+| A twisted swept bar | Its flat sides mesh within 1.6% (lofts now within 0.55%). Four grid lines across its sides bring it to 0.16% but make three threads' surfaces cross: a bar cell and a thread flank's are twisted alike, so no rule adds columns to one alone. Untried: fan diagonals alternated so the bias cancels | open |
+| NIST_MBE_PMI_6 as a solid | Its crossings were the checker's (an edge nearly in a triangle's plane counted by its line, not its point; fixed, `edgeCrossesWithin`). Left: the topology problem at its poles, the mesh's Euler number 6 off the shell's, where earlier ears used up every other ear | open |
 
 ### Steps 25 and 26: the rest of step 22, general fillets, branch `step-22-general-fillets`
 
@@ -103,7 +104,7 @@ is 22.3 to 22.5.
 | Step | Package | Content | Effort | State |
 |---|---|---|---|---|
 | 25 | 22.2 one edge, two curved faces | Done (`pkg/topo/rollingball.go`, `rollingend.go`; notes `docs/notes/step-25-rolling-ball.md`, `step-26-blends.md`): closed edges between curved faces, chains that end on a flat face (on an exact conic, the flat face grown where a face goes on past it), chamfers between curved faces; sweep 2 of 108. Left: a band-on-cone fillet at r 1 and 0.001% leaves 2 crossing mesh edges where it meets the cone tangentially; the teapot's handle (its union is unsound before any fillet) | 6 wk | done but those |
-| 26 | 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | in part: a corner-filling blend whose end runs off onto a flat face is cut by that face's plane, both faces grown (`rollingrunoff.go`); band on cone, chamfers and fillets 2 to 3 made (within 1.5% of OpenCASCADE). Sweep 10 of 36 fail (26 refused before): 8 chamfers whose meshes cross the cone mid-edge (slivers along the contact curve; shells closed), 2 unfittable. Left: run-offs of blends that take material away (refused), run-offs onto curved faces, chains ending on a curved face. The 8 crossing chamfers come from the curved-face mesher laying a fan of thin triangles from a far trim point, a mesher weakness. A chamfer where a slot cut from a cone meets the cone is sound at sizes 1 to 2.5 (the flat wall's nearly straight contour now meshed); at 3, 6 naked edges where it reaches the slot's floor |
+| 26 | 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | in part: a corner-filling blend whose end runs off onto a flat face is cut by that face's plane, both faces grown (`rollingrunoff.go`); band on cone, chamfers and fillets 2 to 3 made (within 1.5% of OpenCASCADE). Sweep 4 of 36 fail (26 refused before): 2 unfittable, 2 chamfers of 3 crossing the cone by one edge (the fans from a far trim point on patches ruled one way are gone, `cutOff.crosses`). Left: run-offs of blends that take material away (refused), run-offs onto curved faces, chains ending on a curved face. A chamfer where a slot cut from a cone meets the cone is sound at sizes 1 to 2.5 (the flat wall's nearly straight contour now meshed); at 3, 6 naked edges where it reaches the slot's floor |
 | 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | in part: corners of different radii and convex meeting concave rounded in stages (`fillet_stages.go`); a setback corner patch of quintic quads with tangency built in (`fillet_setback.go`, G1 within about 1e-4 rad) makes a top ring larger than the uprights, three radii at a corner, four edges at an apex; sweep 0 of 36 to 3:1 radii, 4 of 36 refused cleanly to 6:1. Refused: a mitre of two radii over an edge left sharp (it would need a crease) |
 | 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | measured: every edge of a loft, a sweep and six STEP solids filleted alone, 32 of 59 sound before, 40 of 59 after the first fixes, none made unsound; smooth edges left out (`SolidEdge.Smooth`); volumes on seven STEP edges within 0.6% of exact or OpenCASCADE but a vase's foot (-2.8%). Open chains between flat faces that end on a curved face are made (the lid's uprights: 40 to 44 of 59, within 0.2% of OpenCASCADE; their sweep refuses 8 of 40 where one degree-5 end can't follow the dome). Left: chamfers so, and the loft's and the blob's edges (other reasons, in the notes) |
 
@@ -112,11 +113,11 @@ is 22.3 to 22.5.
 Step 27 merged in part: knots removed where patches join smoothly (27.1; every face of the
 fixtures and examples makes a grid, so no face needed one surface), edges along another face's
 seam (27.3: NIST_MBE_PMI_5 and _6 close), degree above 5 rewritten at degree 5 (27.2), offset
-surfaces and parabolas, hyperbolas (27.5). Corpus: 6 of 9 sound.
+surfaces and parabolas, hyperbolas (27.5). Corpus: 7 of 9 sound.
 
 | Package | Content | State |
 |---|---|---|
-| 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 (3 crossings), _6 (2) cross by about 1e-4 where faces meet tangentially along an edge, whose edges are within tolerance: this is F5 (tangent contact), not edge tolerance. Schenkel: its 40 naked edges are gone (a pole's parameter along its folded side was arbitrary, turning a wedge-to-pole patch inside out; `surfaceLoopUV`), but its shell's Euler number is -34 against the mesh's -6, cause not found, so it is not counted sound | partly done |
+| 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 reads sound since the checker's false crossings were mended (corpus 7 of 9); _6 has a topology problem at its poles (step 24's rest). Schenkel: its 40 naked edges are gone (a pole's parameter along its folded side was arbitrary, turning a wedge-to-pole patch inside out; `surfaceLoopUV`), but its shell's Euler number is -34 against the mesh's -6, cause not found, so it is not counted sound | partly done |
 
 ### Step 28, what is left: solid features
 
