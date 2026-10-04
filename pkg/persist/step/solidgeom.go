@@ -30,6 +30,25 @@ func (c *bsplineCurve) srfCurve() *srf.BSplineCurve {
 	return out
 }
 
+// lowDegreeTol is how far, in millimetres, a curve or surface of a
+// degree above srf.MaxDegree may move when the solid importer writes it
+// at degree srf.MaxDegree (package 27.2): a tenth of a file's
+// tolerance.
+const lowDegreeTol = fileTol / 10
+
+// kernel is the curve as the kernel's, at degree srf.MaxDegree within
+// lowDegreeTol when its own is above.
+func (c *bsplineCurve) kernel() (*srf.BSplineCurve, error) {
+	c.low.once.Do(func() {
+		bc := c.srfCurve()
+		c.low.c, c.low.err = bc.LowDegree(lowDegreeTol)
+		if c.low.err != nil {
+			c.low.err = errUnsupported(fmt.Sprintf("a curve of degree %d (%v)", bc.Deg, c.low.err))
+		}
+	})
+	return c.low.c, c.low.err
+}
+
 // srfSurface is a STEP B-spline surface as the kernel's.
 func (s *bsplineSurface) srfSurface() *srf.BSplineSurface {
 	out := &srf.BSplineSurface{DegU: s.bu.deg, DegV: s.bv.deg,
@@ -76,6 +95,11 @@ func curveBreaks(c Curve, lo, hi float64) []float64 {
 	var out []float64
 	switch cc := c.(type) {
 	case *bsplineCurve:
+		bc, err := cc.kernel()
+		if err != nil {
+			// curvePiece says so.
+			bc = cc.srfCurve()
+		}
 		per := cc.Period()
 		shifts := []float64{0}
 		if per > 0 {
@@ -86,7 +110,7 @@ func curveBreaks(c Curve, lo, hi float64) []float64 {
 		}
 		seen := map[float64]bool{}
 		for _, sh := range shifts {
-			for _, k := range cc.Breaks() {
+			for _, k := range bc.Breaks() {
 				if k+sh > lo && k+sh < hi && !seen[k+sh] {
 					seen[k+sh] = true
 					out = append(out, k+sh)
@@ -97,8 +121,36 @@ func curveBreaks(c Curve, lo, hi float64) []float64 {
 	case *ellipse:
 		q := quarterSplits(lo, hi)
 		out = q[1 : len(q)-1]
+	case *conic:
+		if cc.hyperbola {
+			// Pieces of a hyperbola no longer than one in its parameter,
+			// each one rational quadratic, cut at whole numbers, so that
+			// an edge and the extrusion of the same curve are cut alike.
+			for k := math.Floor(lo) + 1; k < hi; k++ {
+				out = append(out, k)
+			}
+		}
 	}
 	return out
+}
+
+// conicPiece is a parabola's or hyperbola's arc from ta to tb as one
+// Bezier, exactly (package 27.5): a parabola's quadratic, through the
+// point where the tangents at the ends meet; a hyperbola's rational
+// quadratic, its middle point there too, of weight the hyperbolic
+// cosine of half the arc's parameter.
+func conicPiece(c *conic, ta, tb float64) srf.SBezier {
+	if !c.hyperbola {
+		p0, p2 := c.Eval(ta), c.Eval(tb)
+		p1 := p0.Plus(c.Deriv(ta).ScaledBy((tb - ta) / 2))
+		return srf.SBezierFrom3(p0, p1, p2)
+	}
+	m, h := (ta+tb)/2, (tb-ta)/2
+	ch := math.Cosh(h)
+	p1 := c.f.at(c.a*math.Cosh(m)/ch, c.b*math.Sinh(m)/ch, 0)
+	sb := srf.SBezierFrom3(c.Eval(ta), p1, c.Eval(tb))
+	sb.Weight[1] = ch
+	return sb
 }
 
 // curvePiece is the Bezier of curve c from parameter ta to tb, which
@@ -113,10 +165,12 @@ func curvePiece(c Curve, ta, tb float64) (srf.SBezier, error) {
 			return srf.SBezier{}, fmt.Errorf("an arc of %g radians in one piece", tb-ta)
 		}
 		return arcBezier(cc.f, cc.a, cc.b, ta, tb), nil
+	case *conic:
+		return conicPiece(cc, ta, tb), nil
 	case *bsplineCurve:
-		bc := cc.srfCurve()
-		if bc.Deg > srf.MaxDegree {
-			return srf.SBezier{}, errUnsupported(fmt.Sprintf("a curve of degree %d", bc.Deg))
+		bc, err := cc.kernel()
+		if err != nil {
+			return srf.SBezier{}, err
 		}
 		pieces, err := bc.Beziers()
 		if err != nil {
@@ -330,10 +384,15 @@ func cellsOf(s Surface) (*surfaceCells, error) {
 				}
 				return p, nil
 			}}, nil
+	case *offset:
+		if eq, ok := ss.analytic(); ok {
+			return cellsOf(eq)
+		}
+		return offsetCells(ss)
 	case *bsplineSurface:
-		bs := ss.srfSurface()
-		if bs.DegU > srf.MaxDegree || bs.DegV > srf.MaxDegree {
-			return nil, errUnsupported(fmt.Sprintf("a surface of degree %d by %d", bs.DegU, bs.DegV))
+		bs, err := ss.srfSurface().LowDegree(lowDegreeTol)
+		if err != nil {
+			return nil, errUnsupported(fmt.Sprintf("a surface of degree %d by %d (%v)", ss.bu.deg, ss.bv.deg, err))
 		}
 		ps, err := bs.Patches()
 		if err != nil {
@@ -369,4 +428,132 @@ func cellsOf(s Surface) (*surfaceCells, error) {
 			}}, nil
 	}
 	return nil, errUnsupported(fmt.Sprintf("a surface of kind %T", s))
+}
+
+// analytic is an offset of a plane, a cone or cylinder, a sphere or a
+// torus as the surface of the same kind it is (package 27.5), its
+// parameters perhaps shifted, which the importer finds again by
+// projecting; ok is false for another base, or an offset through the
+// base's axis or centre.
+func (s *offset) analytic() (Surface, bool) {
+	// The side the offset goes: the base's normal, su x sv, at a point,
+	// against the way out from its axis or centre.
+	side := func(out geom.Vector) float64 {
+		_, su, sv := s.base.Derivs(0.3, 0.2)
+		if su.Cross(sv).Dot(out) < 0 {
+			return -1
+		}
+		return 1
+	}
+	switch b := s.base.(type) {
+	case *plane:
+		n := b.f.x.Cross(b.f.y).WithMagnitude(1)
+		f := b.f
+		f.o = f.o.Plus(n.ScaledBy(s.d))
+		return &plane{f: f}, true
+	case *cone:
+		beta := math.Atan(b.tan)
+		p := b.Eval(0.3, 0.2)
+		axial := b.f.z
+		radial := p.Minus(b.f.o).Minus(axial.ScaledBy(p.Minus(b.f.o).Dot(axial))).WithMagnitude(1)
+		out := radial.ScaledBy(math.Cos(beta)).Minus(axial.ScaledBy(math.Sin(beta)))
+		r := b.r + side(out)*s.d/math.Cos(beta)
+		if !(math.Abs(r) > 0) || b.tan == 0 && r < 0 {
+			return nil, false
+		}
+		return &cone{f: b.f, r: r, tan: b.tan}, true
+	case *sphere:
+		r := b.r + side(b.Eval(0.3, 0.2).Minus(b.f.o))*s.d
+		if !(r > 0) {
+			return nil, false
+		}
+		return &sphere{f: b.f, r: r}, true
+	case *torus:
+		p := b.Eval(0.3, 0.2)
+		tube := b.f.o.Plus(b.f.x.ScaledBy(b.major * math.Cos(0.3))).Plus(b.f.y.ScaledBy(b.major * math.Sin(0.3)))
+		r := b.r + side(p.Minus(tube))*s.d
+		if !(r > 0) {
+			return nil, false
+		}
+		return &torus{f: b.f, major: b.major, r: r}, true
+	}
+	return nil, false
+}
+
+// offsetCells is the grid of an offset of a surface of another kind:
+// its base's lines, and between them more where a curve of degree
+// srf.MaxDegree through the offset's points at Chebyshev-Lobatto points
+// strays from it along a line across, by halving; on each cell a patch
+// of that degree through such points, when it lies within lowDegreeTol
+// of the offset; else the face is one the importer can't hold.
+func offsetCells(s *offset) (*surfaceCells, error) {
+	base, err := cellsOf(s.base)
+	if err != nil {
+		return nil, err
+	}
+	u0, u1, v0, v1 := s.base.Domain()
+	across := func(lo, hi float64) []float64 {
+		if math.IsInf(lo, 0) || math.IsInf(hi, 0) {
+			lo, hi = -1, 1
+		}
+		return []float64{lo, lo + (hi-lo)/4, (lo + hi) / 2, hi - (hi-lo)/4, hi}
+	}
+	vs, us := across(v0, v1), across(u0, u1)
+	nodes := make([]float64, srf.MaxDegree+1)
+	for k := range nodes {
+		nodes[k] = (1 - math.Cos(float64(k)*math.Pi/srf.MaxDegree)) / 2
+	}
+	// fits reports whether the offset along one way, from a to b, at
+	// each of the others, is a curve of degree MaxDegree within a tenth
+	// of the tolerance.
+	fits := func(a, b float64, at func(t, o float64) geom.Vector, others []float64) bool {
+		for _, o := range others {
+			var pts []geom.Vector
+			for _, x := range nodes {
+				pts = append(pts, at(a+(b-a)*x, o))
+			}
+			c := srf.InterpolatedCurve(pts)
+			for k := 0; k <= 16; k++ {
+				x := float64(k) / 16
+				if c.PointAt(x).Minus(at(a+(b-a)*x, o)).Magnitude() > lowDegreeTol/10 {
+					return false
+				}
+			}
+		}
+		return true
+	}
+	refine := func(br func(lo, hi float64) []float64, at func(t, o float64) geom.Vector, others []float64) func(lo, hi float64) []float64 {
+		return func(lo, hi float64) []float64 {
+			lines := append(append([]float64{lo}, br(lo, hi)...), hi)
+			var out []float64
+			var split func(a, b float64, depth int)
+			split = func(a, b float64, depth int) {
+				if depth < 6 && !fits(a, b, at, others) {
+					m := (a + b) / 2
+					split(a, m, depth+1)
+					out = append(out, m)
+					split(m, b, depth+1)
+				}
+			}
+			for i := 0; i+1 < len(lines); i++ {
+				if i > 0 {
+					out = append(out, lines[i])
+				}
+				split(lines[i], lines[i+1], 0)
+			}
+			return out
+		}
+	}
+	return &surfaceCells{
+		breaksU: refine(base.breaksU, func(t, o float64) geom.Vector { return s.Eval(t, o) }, vs),
+		breaksV: refine(base.breaksV, func(t, o float64) geom.Vector { return s.Eval(o, t) }, us),
+		patch: func(ua, ub, va, vb float64) (srf.SSurface, error) {
+			p, err := srf.InterpolatedPatch(srf.MaxDegree, srf.MaxDegree, func(x, y float64) geom.Vector {
+				return s.Eval(ua+(ub-ua)*x, va+(vb-va)*y)
+			}, lowDegreeTol)
+			if err != nil {
+				return srf.SSurface{}, errUnsupported("an offset surface that no patch of degree 5 follows")
+			}
+			return p, nil
+		}}, nil
 }

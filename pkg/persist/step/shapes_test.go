@@ -24,7 +24,13 @@ type shapeExpect struct {
 
 func readShapes(t *testing.T) []shapeExpect {
 	t.Helper()
-	f, err := os.Open(filepath.Join(shapesDir, "expected.txt"))
+	return readExpected(t, shapesDir)
+}
+
+// readExpected reads a directory's expected.txt.
+func readExpected(t *testing.T, dir string) []shapeExpect {
+	t.Helper()
+	f, err := os.Open(filepath.Join(dir, "expected.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -64,12 +64,134 @@ func TestSolidShapes(t *testing.T) {
 	}
 }
 
+// TestSolidHighDegree reads shapes whose curves and surfaces are of a
+// degree above 5 as solids (package 27.2): a lid of degree 7 by 6 and a
+// surface of revolution of a curve of degree 8, written at degree 5
+// within lowDegreeTol. Each is sound and its volume the exact one
+// within the mesh's tolerance; read as a mesh, the same.
+func TestSolidHighDegree(t *testing.T) {
+	const tol = 0.005
+	fineMesh(t, tol)
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "degree")
+	for _, e := range readExpected(t, dir) {
+		path := filepath.Join(dir, e.name+".step")
+		m := readModel(t, path)
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0))
+		if err != nil {
+			t.Errorf("%s: %v", e.name, err)
+			continue
+		}
+		r := solidReport(sh)
+		allow := e.area*tol + 1e-9*e.volume
+		if !r.Sound() || math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s, want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		}
+		res, err := ReadFile(path, Options{ChordTol: tol})
+		if err != nil {
+			t.Fatal(err)
+		}
+		mr := check.Solid(nil, &res.Mesh)
+		if !mr.Sound() || math.Abs(mr.Volume-e.volume) > allow {
+			t.Errorf("%s as a mesh: %s, want volume %.6g within %.3g", e.name, mr.String(), e.volume, allow)
+		}
+	}
+}
+
+// TestSolidOffsetsConics reads shapes with offset surfaces, and with
+// edges and extrusions of parabolas and hyperbolas, as solids (package
+// 27.5): offsets of a cylinder and a sphere, read as the cylinder and
+// sphere they are, and segments of a parabola and a hyperbola extruded,
+// their curves exact Beziers. Each is sound and its volume the expected one
+// within the mesh's tolerance.
+func TestSolidOffsetsConics(t *testing.T) {
+	const tol = 0.005
+	fineMesh(t, tol)
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "offset")
+	for _, e := range readExpected(t, dir) {
+		m := readModel(t, filepath.Join(dir, e.name+".step"))
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0))
+		if err != nil {
+			t.Errorf("%s: %v", e.name, err)
+			continue
+		}
+		r := solidReport(sh)
+		allow := e.area*tol + 1e-9*e.volume
+		if !r.Sound() || math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s, want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		}
+	}
+}
+
+// TestOffsetCells lays an offset of a surface of no kind it can turn
+// into, an extruded B-spline outline with a tight bend, out in patches
+// of degree 5 (package 27.5): its lines refined where the base's are too
+// far apart for one patch, each patch within lowDegreeTol of the offset
+// at points between its own, and neighbours sharing their sides. A base
+// that closes with a crease has an offset that doesn't.
+func TestOffsetCells(t *testing.T) {
+	pts := []geom.Vector{{X: 0, Y: 0}, {X: 5, Y: 3}, {X: 10, Y: 0}, {X: 12, Y: 6}, {X: 8, Y: 10}, {X: 2, Y: 9}, {X: 0, Y: 0}}
+	knots := []float64{0, 0, 0, 0, 1, 2, 3, 4, 4, 4, 4}
+	ws := make([]float64, len(pts))
+	for i := range ws {
+		ws[i] = 1
+	}
+	c, err := newBsplineCurve(3, knots, pts, ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &offset{base: &extrusion{c: c, d: geom.Vector{Z: 1}}, d: 0.8}
+	if pu, _ := s.Period(); pu != 0 {
+		if bu, _ := s.base.Period(); bu > 0 {
+			t.Errorf("an offset of an outline closed with a crease closes, period %g", pu)
+		}
+	}
+	cells, err := offsetCells(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	us := append(append([]float64{0}, cells.breaksU(0, 4)...), 4)
+	vs := append(append([]float64{0}, cells.breaksV(0, 5)...), 5)
+	if len(us) <= 5 {
+		t.Errorf("the base's lines not refined: %v", us)
+	}
+	if len(vs) != 2 {
+		t.Errorf("lines along a straight extrusion: %v", vs)
+	}
+	var prev *srf.SSurface
+	for i := 0; i+1 < len(us); i++ {
+		p, err := cells.patch(us[i], us[i+1], vs[0], vs[1])
+		if err != nil {
+			t.Fatalf("cell %g..%g: %v", us[i], us[i+1], err)
+		}
+		for k := 0; k <= 20; k++ {
+			for m := 0; m <= 4; m++ {
+				x, y := float64(k)/20, float64(m)/4
+				want := s.Eval(us[i]+(us[i+1]-us[i])*x, vs[0]+(vs[1]-vs[0])*y)
+				if d := p.PointAt(x, y).Minus(want).Magnitude(); d > lowDegreeTol {
+					t.Errorf("cell %g..%g: %g off at (%g, %g)", us[i], us[i+1], d, x, y)
+				}
+			}
+		}
+		if prev != nil {
+			a, b := prev.EdgeCurve(1), p.EdgeCurve(3)
+			for k := 0; k <= b.Degree; k++ {
+				if !a.Ctrl[k].Equals(b.Ctrl[k]) {
+					t.Errorf("cells at %g don't share their side", us[i])
+					break
+				}
+			}
+		}
+		prev = &p
+	}
+}
+
 // solidCorpusSound are the corpus files whose shapes read as sound
-// solids; the others fall back to meshes: NIST_MBE_PMI_5 and _6 have
-// an edge of one face along another face's seam, Schenkel leaves gaps
-// or crossings in the mesh where edges miss their faces by more than
-// the file's tolerance. screw.step reads since roadmap 24.2: its
-// cones' outlines ran across their patches to the apex.
+// solids (2026-10-04); the others fall back to meshes: Schenkel leaves
+// gaps or crossings in the mesh where edges miss their faces by more
+// than the file's tolerance, and NIST_MBE_PMI_5 and _6, which close
+// since package 27.3 (TestSolidSeamEdges), crossings where faces meet
+// tangentially. screw.step reads since roadmap 24.2: its cones'
+// outlines ran across their patches to the apex.
 var solidCorpusSound = map[string]bool{
 	"NIST_MBE_PMI_1.stp": true, "NIST_MBE_PMI_3.stp": true, "NIST_MBE_PMI_11.stp": true,
 	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true, "screw.step": true,
@@ -119,6 +241,69 @@ func TestSolidCorpus(t *testing.T) {
 		}
 	}
 	t.Logf("%d sound", sound)
+}
+
+// TestSolidSeamEdges reads the two NIST files whose faces meet along
+// another face's seam or a line of its grid (package 27.3): an edge
+// along a sphere-like face's knot line, within the file's tolerance of
+// it but not on it, and two halves of such a face bounded by meridians
+// through its poles. They close now: no naked edges, every edge between
+// two faces running it opposite ways, and the volume FreeCAD gives
+// within the mesh's tolerance. Where their edges miss their faces by
+// more than the file's tolerance the meshes still cross (package 27.4).
+func TestSolidSeamEdges(t *testing.T) {
+	if testing.Short() {
+		t.Skip("the corpus")
+	}
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
+	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
+		if e.name != "NIST_MBE_PMI_5.stp" && e.name != "NIST_MBE_PMI_6.stp" {
+			continue
+		}
+		m := readModel(t, filepath.Join(dir, e.name))
+		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
+		fineMesh(t, tol)
+		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0))
+		if err != nil {
+			t.Errorf("%s: %v", e.name, err)
+			continue
+		}
+		r := solidReport(sh)
+		allow := e.area*tol + 1e-6*e.volume
+		// NIST_MBE_PMI_6's mesh has slivers in the meridian plane at
+		// its two poles since roadmap 24.2 put a pole at both top
+		// corners of a cell a trim runs along (step 24, what is left).
+		topo := 0
+		if e.name == "NIST_MBE_PMI_6.stp" {
+			topo = 1
+		}
+		if r.NakedEdges != 0 || r.TopologyProblems > topo || math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s; want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		}
+	}
+}
+
+// TestTurnedLoopsAtPole: a bound through a pole of a closed surface is
+// taken as the file runs it, whichever way round its layout goes.
+func TestTurnedLoopsAtPole(t *testing.T) {
+	half := math.Pi / 2
+	// Up a meridian at u = pi to the pole, down another at u = 0: laid
+	// out clockwise when the second comes out at 2 pi.
+	var l []uvSample
+	for k := 0; k <= 4; k++ {
+		l = append(l, uvSample{u: math.Pi, v: -half + float64(k)*half/2})
+	}
+	for k := 0; k <= 4; k++ {
+		l = append(l, uvSample{u: 2 * math.Pi, v: half - float64(k)*half/2})
+	}
+	pole := func(q uvSample) bool { return math.Abs(math.Abs(q.v)-half) < 1e-12 }
+	none := func(uvSample) bool { return false }
+	if !turnedLoops([][]uvSample{l}, 2*math.Pi, 0, none) {
+		t.Error("a clockwise bound not taken as turned")
+	}
+	if turnedLoops([][]uvSample{l}, 2*math.Pi, 0, pole) {
+		t.Error("a bound through a pole taken as turned")
+	}
 }
 
 // cutters are a block through the middle of a box and a cylinder down
