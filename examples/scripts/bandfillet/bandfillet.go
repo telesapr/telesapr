@@ -16,8 +16,11 @@
 // faces both: the fillet there ends in their planes, and above the
 // band's end the cone goes on, so the end face grows by the fillet's
 // section. The fillet's radius is 1 mm unless given; the chamfer's
-// distance the same. The script checks the solid sound after each,
-// prints what each adds, and saves bandfillet.tlspr, unless given "-".
+// distance twice that, wide enough that at its end on the band's end
+// face it runs off the band's side past the band's top: it goes on to
+// the top, which cuts it too and grows by its end. The script checks the
+// solid sound after each, prints what each adds, and saves
+// bandfillet.tlspr, unless given "-".
 package main
 
 import (
@@ -59,12 +62,12 @@ func main() {
 		before := last.Check().Volume
 		edge := last.Solid().EdgeAt(api.V(math.Sqrt(64-9), side, 10))
 		var g api.Group
-		what := "filled round"
+		what, size := "filled round", radius
 		if side > 0 {
-			g = doc.FilletSolid([]api.SolidEdge{edge}, radius, "")
+			g = doc.FilletSolid([]api.SolidEdge{edge}, size, "")
 		} else {
-			what = "chamfered"
-			g = doc.ChamferSolid([]api.SolidEdge{edge}, radius, "")
+			what, size = "chamfered", 2*radius
+			g = doc.ChamferSolid([]api.SolidEdge{edge}, size, "")
 		}
 		if p := g.Problem(); p != "" {
 			fmt.Fprintln(os.Stderr, p)
@@ -72,7 +75,7 @@ func main() {
 		}
 		r := g.Check()
 		added := r.Volume - before
-		fmt.Printf("the band's side at y = %g %s at %g mm: %s, %.3f mm³ added\n", side, what, radius,
+		fmt.Printf("the band's side at y = %g %s at %g mm: %s, %.3f mm³ added\n", side, what, size,
 			map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], added)
 		if !r.Sound() || added <= 0 {
 			os.Exit(1)
