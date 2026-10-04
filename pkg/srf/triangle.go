@@ -104,6 +104,22 @@ func (t *STriangle) containsPointProjdWithin(n, p geom.Vector) bool {
 	return true
 }
 
+// edgeCrossesWithin reports whether the segment from a to b, whose ends
+// lie on either side of the triangle's plane (unit normal nn, offset d),
+// crosses the plane within LengthEps of the triangle, measured in the
+// plane at the crossing point. containsPointProjdWithin along the
+// segment measures that distance across the segment instead, which for
+// a segment nearly in the triangle's plane is the in-plane distance
+// times the sine of their angle: a long edge of a flat face passing a
+// sliver of the next face, all but in its plane, was taken to cross it
+// millimetres away (NIST_MBE_PMI_5 and _6). The mesh checker asks both,
+// so that it counts no crossing it didn't before (the boxes of
+// translate_asy, which do cross, keep C++'s count).
+func (t *STriangle) edgeCrossesWithin(nn geom.Vector, d float64, a, b geom.Vector) bool {
+	p := geom.AtIntersectionOfPlaneAndLine(nn, d, a, b)
+	return t.containsPointProjdWithin(nn, p)
+}
+
 // Raytrace intersects the ray rayPoint + t*rayDir with the triangle,
 // which must face against the ray (C++ STriangle::Raytrace; the
 // Moeller-Trumbore algorithm).
