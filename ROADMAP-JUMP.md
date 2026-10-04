@@ -58,7 +58,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 26 (run-offs) | Corner-filling blends that run off onto a flat face, band-on-cone chamfers and fillets | `b6d7045` |
 | 26 (slot) | Chamfers where a slot meets a cone: a flat face's nearly straight contour meshed | `bbbb561` |
 | 26 (curved ends) | Fillets of edges between flat faces that end on a curved face | `31e0672` |
-| Mesher | No fans from a far trim point on patches ruled one way (run-off sweep 10 to 4 of 36); crossings counted where an edge meets a triangle (NIST_MBE_PMI_5 sound, corpus 7 of 9) | MERGE |
+| Mesher | No fans from a far trim point on patches ruled one way (run-off sweep 10 to 4 of 36); crossings counted where an edge meets a triangle (NIST_MBE_PMI_5 sound, corpus 7 of 9) | `7b3b32a` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
