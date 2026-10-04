@@ -550,6 +550,14 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		c.removeTaggedPoints()
 	} // end optional fan creation pass
 
+	// Near a pole every point is near on the surface, so grazing says
+	// nothing there.
+	poled := false
+	if !srf.flat() {
+		for side := range 4 {
+			poled = poled || srf.foldsSide(side)
+		}
+	}
 	toggle := false
 	for len(c.Points) > 3 {
 		ln := len(c.Points)
@@ -557,6 +565,9 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		bestChordTol := geom.VeryPositive
 		// The first folded ear, taken when there is no other.
 		fallback := -1
+		// The ear of least chord tolerance among those that graze a
+		// point, taken before a folded one.
+		bestGrazed, bestGrazedTol := -1, geom.VeryPositive
 		// Alternate the starting position so we generate strip-like
 		// triangulations instead of fan-like
 		toggle = !toggle
@@ -591,6 +602,12 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					continue
 				}
 				tol := srf.ChordToleranceForEdge(prev, next)
+				if !poled && c.grazed(srf, wrapIdx(i+offset-1, ln), ear, wrapIdx(i+offset+1, ln)) {
+					if tol < bestGrazedTol {
+						bestGrazed, bestGrazedTol = ear, tol
+					}
+					continue
+				}
 				if tol < bestChordTol-scaledEps {
 					bestEar = ear
 					bestChordTol = tol
@@ -599,6 +616,9 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					break
 				}
 			}
+		}
+		if bestEar < 0 {
+			bestEar = bestGrazed
 		}
 		if bestEar < 0 {
 			bestEar = fallback
@@ -613,6 +633,45 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	if len(c.Points) == 3 {
 		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
+}
+
+// grazed reports whether the chord from ap to cp, which clipping the
+// ear at bp would add, passes a point of the contour, the ear's own
+// included, closer on the surface than twice the chord's sag. In uv the
+// point is off the chord, but in xyz the chord dips below the surface,
+// so the ear can be a sliver that turns over, or the edges from that
+// point, on the other face that meets there, can cross its triangle: a
+// cylinder's wall strip beside the point where a crossed cylinder's
+// seam pierces it was clipped into a sliver the height of the wall
+// (roadmap 24.1).
+func (c *SContour) grazed(srf *SSurface, ap, bp, cp int) bool {
+	a, b := c.Points[ap].P, c.Points[cp].P
+	ab := b.Minus(a)
+	l2 := ab.X*ab.X + ab.Y*ab.Y
+	if l2 < geom.LengthEps*geom.LengthEps {
+		return false
+	}
+	near := 2*srf.ChordToleranceForEdge(a, b) + geom.LengthEps
+	pa, pb := srf.PointAt(a.X, a.Y), srf.PointAt(b.X, b.Y)
+	for i := range c.Points {
+		if i == ap || i == cp {
+			continue
+		}
+		p := c.Points[i].P
+		if p.EqualsExactly(a) || p.EqualsExactly(b) {
+			continue
+		}
+		t := ((p.X-a.X)*ab.X + (p.Y-a.Y)*ab.Y) / l2
+		if t <= 0 || t >= 1 {
+			continue
+		}
+		// The chord's point at t, in xyz, against the point's own.
+		q := pa.Plus(pb.Minus(pa).ScaledBy(t))
+		if srf.PointAt(p.X, p.Y).Minus(q).Magnitude() < near {
+			return true
+		}
+	}
+	return false
 }
 
 // flat reports whether the surface is a plane: of degree 1 both ways,
