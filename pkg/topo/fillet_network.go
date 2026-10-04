@@ -127,13 +127,13 @@ func (t *Topology) twoDistances(fe *filletEdge, d1, d2 float64, first srf.FaceID
 	}
 	id0, id1 := t.Faces[fe.f[0]].ID, t.Faces[fe.f[1]].ID
 	k := 0
-	switch {
-	case first == 0:
+	switch first {
+	case 0:
 		if id1 < id0 {
 			k = 1
 		}
-	case first == id0:
-	case first == id1:
+	case id0:
+	case id1:
 		k = 1
 	default:
 		return filletErr(m, "the face the chamfer's first distance is on is not at the edge")

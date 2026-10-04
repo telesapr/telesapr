@@ -268,19 +268,13 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 	return steps, src, nil
 }
 
-// pathChain reads the path entities into a chain of pieces end to end,
-// starting at the end where dist is least, and requires its pieces to
-// meet tangent; what names the feature in messages.
-func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics bool) ([]pathPiece, error) {
-	chain, _, err := sk.pathChainOf(edges, what, dist, cubics, false)
-	return chain, err
-}
-
-// pathChainOf is pathChain, and with closed a path that closes too: a
-// circle, or pieces that come back to where they began, which then
-// starts at the joint where dist is least, or for a circle alone at its
-// point where dist is least (roadmap 28.5). It says whether the path
-// closes.
+// pathChainOf reads the path entities into a chain of pieces end to
+// end, starting at the end where dist is least, and requires its
+// pieces to meet tangent; what names the feature in messages. With
+// closed a path that closes is taken too: a circle, or pieces that come
+// back to where they began, which then starts at the joint where dist
+// is least, or for a circle alone at its point where dist is least
+// (roadmap 28.5). It says whether the path closes.
 func (sk *Sketch) pathChainOf(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed bool) ([]pathPiece, bool, error) {
 	chain, isClosed, err := sk.pathChainAny(edges, nil, what, dist, cubics, closed, false)
 	if err != nil {
