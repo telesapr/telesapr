@@ -1,5 +1,5 @@
 filedialog open
-dialog 3 Can't sweep along the selection.|There is no path to sweep along.\n\nSweep Along Path moves the active group's sketch along a path. Select:\n\n    * the line segments, arcs and cubics of the path, joined end to end and meeting tangent\n
+dialog 3 Can't sweep along the selection.|There is no path to sweep along.\n\nSweep Along Path moves the active group's sketch along a path. Select:\n\n    * the line segments, arcs and cubics of the path, joined end to end and meeting tangent, or line segments meeting at a corner, which is mitred\n    * edges of the solid, picked on the model, as part of the path\n
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
