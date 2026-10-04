@@ -310,7 +310,8 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"Pattern Along Path repeats the active group's solid along a path, three times "+
 				"to begin with. Select:\n\n"+
 				"    * the line segments and arcs of the path, joined end to end "+
-				"and meeting tangent\n", capitalize(err.Error()))
+				"and meeting tangent; a path that closes, the copies shared out round it\n"+
+				"    * a circle, the copies shared out round it\n", capitalize(err.Error()))
 			return
 		}
 		g = pg
@@ -321,12 +322,13 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"the active group's sketch is moved along the path.")
 			return
 		}
-		wg, err := sk.NewSweep(gs.entity, "")
+		wg, err := sk.NewSweepAlong(gs.entity, gs.solidEdge, "")
 		if err != nil {
 			ss.Error("Can't sweep along the selection. %s.\n\n"+
 				"Sweep Along Path moves the active group's sketch along a path. Select:\n\n"+
 				"    * the line segments, arcs and cubics of the path, joined end to end "+
-				"and meeting tangent\n", capitalize(err.Error()))
+				"and meeting tangent, or line segments meeting at a corner, which is mitred\n"+
+				"    * edges of the solid, picked on the model, as part of the path\n", capitalize(err.Error()))
 			return
 		}
 		g = wg

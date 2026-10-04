@@ -158,24 +158,34 @@ row 14    draft 5 deg [change]
  8-14 64 64 0
  15-22 6c 64 108 3 1 0
  23-99 64 64 0
-row 16 
+row 16    from the plane 0.00 along [change]
+ 0-2 64 61 0
+ 3-16 74 61 0
+ 17-28 64 61 0
+ 29-36 6c 61 108 3 1 0
+ 37-99 64 61 0
+row 18    sides all
+ 0-2 64 64 0
+ 3-7 74 64 0
+ 8-99 64 64 0
+row 20 
  0-99 64 64 0
-row 18  solid model as
+row 22  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 20     union   assemble
+row 24     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 22     difference   intersection
+row 26     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    appearance   matte   plastic   glossy   metal
+row 28    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -187,66 +197,66 @@ row 24    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 26    color      (0.39, 0.39, 0.39) [change]
+row 30    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 646464ff 0
  13-32 64 64 0
- 33-40 6c 64 102 1a 1 0
+ 33-40 6c 64 102 1e 1 0
  41-99 64 64 0
-row 28    opacity 1.00 [change]
+row 32    opacity 1.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 30      suppress this group's solid model
+row 34      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 32 
+row 36 
  0-99 64 64 0
-row 34    show entities from this group
+row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 36    suppress this group and the groups that use it
+row 40    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 38    force NURBS surfaces to triangle mesh
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 41    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 43    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 45    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 47    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 49 
+row 53 
  0-99 64 64 0
-row 51  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 53    (none)
+row 57    (none)
  0-99 64 61 0
-row 55 
+row 59 
  0-99 64 64 0
-row 57  constraints in group (1 DOF)
+row 61  constraints in group (1 DOF)
  0-99 74 64 0
-row 59    (none)
+row 63    (none)
  0-99 64 61 0
-row 61 
+row 65 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 45.39 cm³\nCenter of mass: (-2.00, 7.00, 32.10)\nExtent: 36.00 x 26.00 x 80.00
 row 0  home   drawing / constraining in 3d
@@ -284,24 +294,34 @@ row 14    draft 6 deg (= 2*3) [change]
  8-22 64 64 0
  23-30 6c 64 108 3 1 0
  31-99 64 64 0
-row 16 
+row 16    from the plane 0.00 along [change]
+ 0-2 64 61 0
+ 3-16 74 61 0
+ 17-28 64 61 0
+ 29-36 6c 61 108 3 1 0
+ 37-99 64 61 0
+row 18    sides all
+ 0-2 64 64 0
+ 3-7 74 64 0
+ 8-99 64 64 0
+row 20 
  0-99 64 64 0
-row 18  solid model as
+row 22  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 20     union   assemble
+row 24     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 22     difference   intersection
+row 26     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    appearance   matte   plastic   glossy   metal
+row 28    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -313,66 +333,66 @@ row 24    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 26    color      (0.39, 0.39, 0.39) [change]
+row 30    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 646464ff 0
  13-32 64 64 0
- 33-40 6c 64 102 1a 1 0
+ 33-40 6c 64 102 1e 1 0
  41-99 64 64 0
-row 28    opacity 1.00 [change]
+row 32    opacity 1.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 30      suppress this group's solid model
+row 34      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 32 
+row 36 
  0-99 64 64 0
-row 34    show entities from this group
+row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 36    suppress this group and the groups that use it
+row 40    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 38    force NURBS surfaces to triangle mesh
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 41    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 43    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 45    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 47    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 49 
+row 53 
  0-99 64 64 0
-row 51  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 53    (none)
+row 57    (none)
  0-99 64 61 0
-row 55 
+row 59 
  0-99 64 64 0
-row 57  constraints in group (1 DOF)
+row 61  constraints in group (1 DOF)
  0-99 74 64 0
-row 59    (none)
+row 63    (none)
  0-99 64 61 0
-row 61 
+row 65 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 40.72 cm³\nCenter of mass: (-2.00, 7.00, 30.05)\nExtent: 36.00 x 26.00 x 80.00
 row 0  home   drawing / constraining in 3d
@@ -410,24 +430,34 @@ row 14    draft 6 deg (= 2*3) [change]
  8-22 64 64 0
  23-30 6c 64 108 3 1 0
  31-99 64 64 0
-row 16 
+row 16    from the plane 0.00 along [change]
+ 0-2 64 61 0
+ 3-16 74 61 0
+ 17-28 64 61 0
+ 29-36 6c 61 108 3 1 0
+ 37-99 64 61 0
+row 18    sides all
+ 0-2 64 64 0
+ 3-7 74 64 0
+ 8-99 64 64 0
+row 20 
  0-99 64 64 0
-row 18  solid model as
+row 22  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 20     union   assemble
+row 24     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 22     difference   intersection
+row 26     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    appearance   matte   plastic   glossy   metal
+row 28    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -439,66 +469,66 @@ row 24    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 26    color      (0.39, 0.39, 0.39) [change]
+row 30    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 646464ff 0
  13-32 64 64 0
- 33-40 6c 64 102 1a 1 0
+ 33-40 6c 64 102 1e 1 0
  41-99 64 64 0
-row 28    opacity 1.00 [change]
+row 32    opacity 1.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 30      suppress this group's solid model
+row 34      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 32 
+row 36 
  0-99 64 64 0
-row 34    show entities from this group
+row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 36    suppress this group and the groups that use it
+row 40    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 38    force NURBS surfaces to triangle mesh
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 41    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 43    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 45    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 47    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 49 
+row 53 
  0-99 64 64 0
-row 51  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 53    (none)
+row 57    (none)
  0-99 64 61 0
-row 55 
+row 59 
  0-99 64 64 0
-row 57  constraints in group (1 DOF)
+row 61  constraints in group (1 DOF)
  0-99 74 64 0
-row 59    (none)
+row 63    (none)
  0-99 64 61 0
-row 61 
+row 65 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 20\nVolume: 55.91 cm³\nCenter of mass: (-2.00, 7.00, -0.00)\nExtent: 36.00 x 26.00 x 80.00
 row 0  home   drawing / constraining in 3d
@@ -536,24 +566,34 @@ row 14    draft 60 deg [change]
  8-15 64 64 0
  16-23 6c 64 108 3 1 0
  24-99 64 64 0
-row 16 
+row 16    from the plane 0.00 along [change]
+ 0-2 64 61 0
+ 3-16 74 61 0
+ 17-28 64 61 0
+ 29-36 6c 61 108 3 1 0
+ 37-99 64 61 0
+row 18    sides all
+ 0-2 64 64 0
+ 3-7 74 64 0
+ 8-99 64 64 0
+row 20 
  0-99 64 64 0
-row 18  solid model as
+row 22  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 20     union   assemble
+row 24     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 22     difference   intersection
+row 26     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 24    appearance   matte   plastic   glossy   metal
+row 28    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -565,70 +605,70 @@ row 24    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 26    color      (0.39, 0.39, 0.39) [change]
+row 30    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 646464ff 0
  13-32 64 64 0
- 33-40 6c 64 102 1a 1 0
+ 33-40 6c 64 102 1e 1 0
  41-99 64 64 0
-row 28    opacity 1.00 [change]
+row 32    opacity 1.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 30      suppress this group's solid model
+row 34      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 32 
+row 36 
  0-99 64 64 0
-row 34    show entities from this group
+row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 36    suppress this group and the groups that use it
+row 40    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 38    force NURBS surfaces to triangle mesh
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 41    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 43    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 45    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 47    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 49 
- 0-99 64 64 0
-row 51 The draft is left out: a draft of 60° over 40 makes the sides meet, closing up the far end.
- 0-90 78 64 0
- 91-99 64 64 0
 row 53 
  0-99 64 64 0
-row 55  requests in group
- 0-99 74 64 0
-row 57    (none)
- 0-99 64 61 0
-row 59 
+row 55 The draft is left out: the draft makes the sides meet, closing up the far end.
+ 0-77 78 64 0
+ 78-99 64 64 0
+row 57 
  0-99 64 64 0
-row 61  constraints in group (1 DOF)
+row 59  requests in group
  0-99 74 64 0
-row 63    (none)
+row 61    (none)
  0-99 64 61 0
-row 65 
+row 63 
+ 0-99 64 64 0
+row 65  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 67    (none)
+ 0-99 64 61 0
+row 69 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 74.88 cm³\nCenter of mass: (-2.00, 7.00, 0.00)\nExtent: 36.00 x 26.00 x 80.00

@@ -1,0 +1,26 @@
+# The chamfer of path_chamfer given a second distance of 2 on its group
+# screen and its distances swapped; the same as path_chamfer_two.go
+# makes (TestPathEquivalenceChamferTwo, roadmap 28.1).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu New Group|Chamfer Edges
+twmove 263 145
+twdown L 263 145
+twup L 263 145
+edit 2
+twmove 310 145
+twdown L 310 145
+twup L 310 145

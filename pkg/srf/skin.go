@@ -229,7 +229,7 @@ func solveDense(a [][]float64, rhs [][]geom.Vector4) error {
 }
 
 // SkinWithEnds is the cubic surface through sections, curves of one
-// degree, knot vector and weights, at the parameters ts across, from 0
+// degree and knot vector, their weights their own, at the parameters ts across, from 0
 // to 1, with the derivatives across at the first and the last given for
 // each control point (Piegl and Tiller, 9.2.2): the interior knots are
 // the sections' own parameters, and two more control points meet the
@@ -251,11 +251,6 @@ func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vecto
 		for j := range c.Knots {
 			if c.Knots[j] != first.Knots[j] {
 				return nil, fmt.Errorf("srf: section %d has another knot vector than the first", i)
-			}
-		}
-		for j := range c.Weight {
-			if c.Weight[j] != first.Weight[j] {
-				return nil, fmt.Errorf("srf: section %d has other weights than the first", i)
 			}
 		}
 		if i > 0 && !(ts[i] > ts[i-1]) {
@@ -299,14 +294,16 @@ func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vecto
 	put(1)
 	rhs := make([][]geom.Vector4, len(first.Ctrl))
 	for i := range rhs {
-		w := first.Weight[i]
+		// Each section with its own weights; the weight's derivative
+		// across is 0 at the ends, so there the homogeneous derivative is
+		// the weight times the point's.
+		w0, w1 := sections[0].Weight[i], sections[k-1].Weight[i]
 		col := make([]geom.Vector4, 0, n)
-		col = append(col, homogeneous(sections[0].Ctrl[i], w), geom.Vector4FromWeighted(w, start[i]))
+		col = append(col, homogeneous(sections[0].Ctrl[i], w0), geom.Vector4FromWeighted(w0, start[i]))
 		for s := 1; s < k-1; s++ {
-			col = append(col, homogeneous(sections[s].Ctrl[i], w))
+			col = append(col, homogeneous(sections[s].Ctrl[i], sections[s].Weight[i]))
 		}
-		col = append(col, geom.Vector4FromWeighted(w, end[i]), homogeneous(sections[k-1].Ctrl[i], w))
-		// A derivative's weight is the weight's, which doesn't change.
+		col = append(col, geom.Vector4FromWeighted(w1, end[i]), homogeneous(sections[k-1].Ctrl[i], w1))
 		col[1].W, col[n-2].W = 0, 0
 		rhs[i] = col
 	}

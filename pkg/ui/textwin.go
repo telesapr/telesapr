@@ -136,6 +136,8 @@ const (
 	EditEdgeRadius Edit = 803
 	// For an extrusion's draft (an extension)
 	EditGroupDraft Edit = 804
+	// For a chamfer's second distance (an extension)
+	EditChamferDistance2 Edit = 805
 	// For the screw thread (an extension)
 	EditThreadDesignation Edit = 900
 	EditThreadLength      Edit = 901

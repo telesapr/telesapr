@@ -1,0 +1,34 @@
+# Pattern Along Path round a closed path (roadmap 28.5): a post and a
+# construction circle through it, the post extruded and repeated three
+# times round the circle; the group screen, then the solid checked.
+key c
+move 450 350
+down L 450 350
+up L 450 350
+move 460 350
+down L 460 350
+up L 460 350
+key esc
+key c
+move 350 350
+down L 350 350
+up L 350 350
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+key esc
+move 250 350
+down L 250 350
+up L 250 350
+key g
+key esc
+key x shift
+move 250 350
+down L 250 350
+up L 250 350
+menu New Group|Pattern Along Path
+tw
+answer ok
+menu Analyze|Check Solid
+dump

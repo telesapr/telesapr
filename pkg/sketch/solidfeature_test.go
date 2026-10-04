@@ -167,6 +167,61 @@ func TestSolidGoldens(t *testing.T) {
 			// Where the notch's side meets the top: no entity draws it.
 			d.ChamferSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 2, 10))}, 1, "")
 		},
+		"chamfer-two-distances": func(d *api.Doc) {
+			ex := block(d, 0, 0, 10, 10, 5)
+			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
+			c.SetSecondDistance(2)
+		},
+		"chamfer-two-distances-corner": func(d *api.Doc) {
+			ex := block(d, 0, 0, 10, 10, 10)
+			c := d.Chamfer([]api.Entity{
+				lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10)),
+				lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
+			}, 1, "")
+			c.SetSecondDistance(2)
+		},
+		"draft-sides": func(d *api.Doc) {
+			ex := block(d, 0, 0, 20, 10, 10)
+			ex.SetDraft(8)
+			ex.SetDraftNeutral(10)
+			ex.SetDraftFaces([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0))})
+		},
+		"draft-sharp-arc": func(d *api.Doc) {
+			d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
+			d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
+			d.Extrude(8, "").SetDraft(6)
+		},
+		"sweep-corner": func(d *api.Doc) {
+			path := cornerPath(d, 10, 12, 60)
+			d.SketchIn(d.Workplane("XY"), "profile")
+			d.Circle(api.V(0, 0, 0), 2)
+			d.Sweep(path, "")
+		},
+		"sweep-solid-edges": func(d *api.Doc) {
+			block(d, 0, 0, 20, 10, 5)
+			s := d.Active().Solid()
+			front, right := s.EdgeAt(api.V(10, 0, 5)), s.EdgeAt(api.V(20, 5, 5))
+			d.SketchIn(d.Workplane("YZ"), "profile")
+			d.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
+			d.SweepEdges([]api.SolidEdge{front, right}, nil, "")
+		},
+		"loft-tangency": func(d *api.Doc) {
+			bottom, top := twoProfiles(d, 10, 4, 6)
+			d.Loft(bottom, top, "").SetTangency(1, 0.5)
+			// The file keeps no chord tolerance (twoProfiles sets one).
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Regen()
+		},
+		"pattern-ring": func(d *api.Doc) {
+			d.SketchIn(d.Workplane("XY"), "ring")
+			ring := d.Circle(api.V(0, 0, 0), 20)
+			d.SketchIn(d.Workplane("XY"), "")
+			// Beside the ring, not on it: the ring's line over a post's
+			// bottom would take the hover from it (TestEveryFacePicked).
+			d.Rect(api.V(21, -1, 0), api.V(23, 1, 0))
+			d.Extrude(5, "post")
+			d.PatternAlongPath([]api.Entity{ring}, 5, "")
+		},
 		"chamfer-of-chamfer": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 10)
 			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 2, "")
@@ -519,5 +574,72 @@ func BenchmarkPathPattern(b *testing.B) {
 		d.Circle(api.V(0, 0, 0), 1)
 		d.Extrude(5, "post")
 		d.PatternAlongPath(path, 7, "")
+	})
+}
+
+// Twelve posts round a ring (roadmap 28.5).
+func BenchmarkPathPatternRing(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "ring")
+		ring := d.Circle(api.V(0, 0, 0), 20)
+		d.SketchIn(d.Workplane("XY"), "post-sketch")
+		d.Circle(api.V(20, 0, 0), 1)
+		d.Extrude(5, "post")
+		d.PatternAlongPath([]api.Entity{ring}, 12, "")
+	})
+}
+
+// The top edges of a block chamfered by two distances (roadmap 28.1):
+// their corners are cut by wedges.
+func BenchmarkChamferTwo(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+		ex := d.Extrude(10, "")
+		var top []api.Entity
+		for _, e := range ex.Entities() {
+			if e.Kind() == "line" && e.Start().Pos().Z == 10 && e.End().Pos().Z == 10 {
+				top = append(top, e)
+			}
+		}
+		d.Chamfer(top, 1, "").SetSecondDistance(2)
+	})
+}
+
+// A D drafted all round: cones and planes meeting in conics (roadmap
+// 28.2).
+func BenchmarkDraftSharpArc(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("XY"), "")
+		d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
+		d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
+		d.Extrude(8, "").SetDraft(6)
+	})
+}
+
+// A rectangle swept round three mitred corners (roadmap 28.4).
+func BenchmarkSweepCorners(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("ZX"), "path")
+		path := []api.Entity{
+			d.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+			d.Line(api.V(0, 0, 10), api.V(10, 0, 15)),
+			d.Line(api.V(10, 0, 15), api.V(20, 0, 10)),
+			d.Line(api.V(20, 0, 10), api.V(20, 0, 0)),
+		}
+		d.SketchIn(d.Workplane("XY"), "profile")
+		d.Circle(api.V(0, 0, 0), 1)
+		d.Sweep(path, "")
+	})
+}
+
+// A square lofted to a square, square to both ends: one cubic surface
+// (roadmap 28.3).
+func BenchmarkLoftTangency(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		bottom := d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 5)
+		top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+		d.Loft(bottom, top, "").SetTangency(1, 1)
 	})
 }

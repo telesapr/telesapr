@@ -41,6 +41,22 @@ circles about one axis loft to a true surface of revolution. The surface passes 
 profile exactly; where a profile has a corner, the surface has a crease there that fades out
 toward smooth profiles, and the window draws it as an edge.
 
+## Square to the ends
+
+A loft's screen says how it *leaves the first* profile and *reaches the last*: free, shaped by
+the profiles alone, or square to the profile's plane, by a number. With a number the surface
+leaves the profile along its normal, its slope across there that many times the loft's length:
+1 is a natural curve, more holds the normal longer. A loft of two profiles with an end set is
+one smooth surface, not ruled patches. Example:
+[`examples/scripts/nozzle`](../../examples/scripts/nozzle/nozzle.go), a square duct turning
+into a round one, square to both.
+
+```go
+loft.SetTangency(1, 1) // square to both ends
+loft.SetTangency(0, 0) // free again
+```
+
 ## Not yet
 
-Lofts along a guide curve, and tangency set at the end profiles, are not done.
+Lofts along a guide curve are not done; nor is tangency set at a profile between the ends, or
+to the faces of a solid a loft meets.

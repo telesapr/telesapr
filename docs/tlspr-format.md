@@ -210,6 +210,7 @@ group <handle> <type> <name> {
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
+  second-distance = <expression>  # chamfer: the distance on each edge's second face (the one of the higher identity), a length; left out for the same as distance (the field val-c under another name)
   draft = <expression>      # extrude: the sides' lean into the solid, in degrees (the field val-c, unused by other groups)
   twist = <expression>      # sweep: the profile's turn about the path over its whole length, in degrees (the field val-c)
   sweep-up <x> <y> <z>      # sweep: the direction its frames are held to, rather than turning least; left out when none
@@ -221,7 +222,11 @@ group <handle> <type> <name> {
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
-  solid-edge <face> <face> <n> of <m>  # chamfer: an edge of the solid cut, by name; one line each
+  start-tangency = <expression>  # loft: how square it leaves its first profile, a number; 0 or left out for free
+  end-tangency = <expression>    # loft: how square it reaches its last profile
+  draft-faces <handle> ...  # extrusion: the curves of its sketch whose sides the draft leans; left out for all
+  draft-neutral = <expression>  # extrusion: where along it, from the sketch's plane, the draft's neutral plane lies, a length (the field pitch under another name)
+  solid-edge <face> <face> <n> of <m>  # chamfer, fillet: an edge of the solid cut; sweep: an edge of its path; by name, one line each
   predef { ... }
   visible
   suppress                  # the solid is left out
@@ -554,6 +559,16 @@ it as before.
 Version 2's drawing `dimension` gained `solid-face <handle>` lines, and views named by a
 section's or detail's letter or `iso`, on 2026-10-04 (roadmap 29.2). A reader from before
 refuses such a dimension.
+
+Version 2 gained the chamfer field `second-distance` on 2026-10-04 (roadmap 28.1). A reader
+from before skips it with a report, and cuts at `distance` on both faces.
+
+Version 2 gained the extrusion fields `draft-faces` and `draft-neutral` on 2026-10-04 (roadmap
+28.2). A reader from before skips them with a report, and drafts every side from the sketch's
+plane.
+
+Version 2 gained the loft fields `start-tangency` and `end-tangency` on 2026-10-04 (roadmap
+28.3), plain numbers. A reader from before skips them with a report, and leaves the ends free.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

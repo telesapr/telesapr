@@ -462,7 +462,12 @@ func (d *decoder) lengths() {
 	}
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
-		length(&g.ValB, &g.ExprB)
+		if g.IsLength(sketch.GroupPitch) {
+			length(&g.ValB, &g.ExprB)
+		}
+		if g.IsLength(sketch.GroupValC) {
+			length(&g.ValC, &g.ExprC)
+		}
 		for k := range g.EdgeRadii {
 			length(&g.EdgeRadii[k].Val, &g.EdgeRadii[k].Expr)
 		}
@@ -589,9 +594,9 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 		case "copies", "turn":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "pitch", "distance", "radius", "thickness":
+		case "pitch", "distance", "radius", "thickness", "draft-neutral", "start-tangency":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "val-c", "draft", "twist":
+		case "val-c", "draft", "twist", "second-distance", "end-tangency":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "color":
 			g.Color = d.colorField(c)
@@ -607,6 +612,11 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			d.plain(c)
 			for _, v := range c.Args {
 				g.Edges = append(g.Edges, core.HEntity{V: d.handle(v)})
+			}
+		case "draft-faces":
+			d.plain(c)
+			for _, v := range c.Args {
+				g.DraftFaces = append(g.DraftFaces, core.HEntity{V: d.handle(v)})
 			}
 		case "solid-edge":
 			g.SolidEdges = append(g.SolidEdges, d.solidEdge(c))

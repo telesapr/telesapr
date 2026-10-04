@@ -164,7 +164,9 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			// are (draft.go), and both ends of a two-sided extrusion.
 			if g.HasDraft() {
 				from := n1
-				if ai != 0 {
+				if ai != 0 || g.ValB != 0 {
+					// Two-sided, or leaning from another plane: both ends
+					// move.
 					from = n0
 				}
 				for i := from; i < len(*entity); i++ {
