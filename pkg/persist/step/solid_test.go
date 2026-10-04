@@ -145,7 +145,9 @@ func cutters(lo, hi geom.Vector) []*srf.SShell {
 		sb.Weight[1] = math.Sqrt2 / 2
 		ls.Outer.Curves = append(ls.Outer.Curves, sb)
 	}
-	ls.Normal = geom.Vector{Z: -1}
+	// The caps lie in the plane through Point: at the loop, below the
+	// shape, not at z = 0 where they would lie in a face of it.
+	ls.Normal, ls.Point = geom.Vector{Z: -1}, ls.Outer.Curves[0].Start()
 	var cyl srf.SShell
 	cyl.MakeFromExtrusionOf(&ls, geom.Vector{}, geom.Vector{Z: 3 * d.Z}, col)
 	return []*srf.SShell{&block, &cyl}
@@ -206,16 +208,17 @@ func TestSolidBooleans(t *testing.T) {
 	}
 }
 
-// solidBooleanMaxFail is the failures allowed: 6 of 28 since roadmap
-// 24.1, all where the cylinder cuts: a cylinder through a cylinder
-// (box_hole, sphere_bored), a cone through its apex (both cutters), a
-// torus crossed by a cylinder, a sphere's pole inside the cutter. The
-// four block cuts of a sphere and a vase that failed before had the
-// curved patches join two points of the block's planar cut by an edge,
-// which lay in the block's face and crossed its triangles
-// (splitTrimDiagonals). It was 10 at the first measurement
-// (2026-10-04).
-const solidBooleanMaxFail = 6
+// solidBooleanMaxFail is the failures allowed: 3 of 28 since roadmap
+// 24.2, all at a pole or an apex: a cone cut through its apex (both
+// cutters), a sphere's pole inside the cylinder. Of the 10 that failed
+// at the first measurement (2026-10-04), four block cuts of spheres and
+// a vase had the curved patches join two points of the block's planar
+// cut by an edge lying in the block's face (splitTrimDiagonals, 24.1);
+// three were this test's: the cylinder's caps lay at z = 0, in the
+// bottom faces of the box and the bored sphere and across the torus,
+// coincident contact, since a loop set's caps lie in the plane through
+// its Point, which was left at the origin.
+const solidBooleanMaxFail = 3
 
 // Tessellated shapes (AP242, roadmap 21.6) read as meshes: a cube of
 // triangulated faces in a tessellated solid, a tetrahedron of strips
