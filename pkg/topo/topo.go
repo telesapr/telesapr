@@ -625,21 +625,19 @@ func (t *Topology) makeFaces(s *srf.SSurface, loops [][]int) {
 	}
 }
 
-// loopUV is a loop's points in the surface's parameters.
+// loopUV is a loop's points in the surface's parameters, opened along
+// the side at a pole (surfaceLoopUV).
 func (t *Topology) loopUV(s *srf.SSurface, loop []int) []geom.Vector {
-	var out []geom.Vector
+	var all []geom.Vector
 	for _, ce := range loop {
 		pts := t.Edges[t.CoEdges[ce].Edge].Points
 		if t.CoEdges[ce].Reversed {
 			pts = reversed(pts)
 		}
-		for k := 0; k+1 < len(pts); k++ {
-			var u, v float64
-			s.ClosestPointToUV(pts[k], &u, &v, true)
-			out = append(out, geom.Vector{X: u, Y: v})
-		}
+		all = append(all, pts[:len(pts)-1]...)
 	}
-	return out
+	// At a pole the parameter along the folded side is any.
+	return surfaceLoopUV(s, all)
 }
 
 func pointInPolygon(p geom.Vector, poly []geom.Vector) bool {

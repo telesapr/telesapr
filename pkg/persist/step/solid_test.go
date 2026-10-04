@@ -291,6 +291,37 @@ func TestSolidSeamEdges(t *testing.T) {
 	}
 }
 
+// TestSolidSchenkelClosed reads Schenkel as a solid: its mesh closes and
+// doesn't cross itself, at FreeCAD's volume within the mesh's tolerance.
+// A wedge of a sphere from a circle of latitude up to its pole was
+// turned over, its pole's parameter along the folded side being any,
+// which left 40 naked edges round it. The shell's Euler characteristic
+// still differs from its mesh's (-34 against -6), cause not found, so
+// it is not counted sound (roadmap 27.4).
+func TestSolidSchenkelClosed(t *testing.T) {
+	if testing.Short() {
+		t.Skip("the corpus")
+	}
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
+	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
+		if e.name != "Schenkel.stp" {
+			continue
+		}
+		m := readModel(t, filepath.Join(dir, e.name))
+		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
+		fineMesh(t, tol)
+		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := solidReport(sh)
+		allow := e.area*tol + 1e-6*e.volume
+		if r.NakedEdges != 0 || r.SelfIntersecting != 0 || math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s; want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		}
+	}
+}
+
 // TestTurnedLoopsAtPole: a bound through a pole of a closed surface is
 // taken as the file runs it, whichever way round its layout goes.
 func TestTurnedLoopsAtPole(t *testing.T) {
