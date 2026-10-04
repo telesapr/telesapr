@@ -45,6 +45,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 22 (part) | Offsets of patches (22.1), coaxial cylinder/cone fillets and chamfers (22.2's first case) | `ddf8144` |
 | 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | `d92c5f8` |
 | 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
+| 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -67,22 +68,19 @@ not depend on each other. Efforts are the earlier plan's where it gave one; the 
 | What to take back from "Left out" | | | Every row there is a proposal |
 | What the review took in without being asked | | | B3 (16.11), G4 (17.4) and S3 (17.5): all done; the user may still disown them |
 
-### Step 24: Booleans on curved surfaces (~6 wk), branch `step-24-kernel-robustness`
+### Step 24, what is left: Booleans on curved surfaces, branch `step-24b-kernel-robustness`
 
-Begins with a two-day spike on the hardest fixture, to learn whether these share a cause (seams
-and poles in the intersector and in trim splitting). The failure counts to reach are fixed
-before the work starts.
+Step 24 merged in part: edges inside a planar cut, trims along cone apexes and sphere poles
+(analytic STEP cuts failing 10 to 1 of 28, corpus sound 5 to 6 of 9, sphere cap 1 to 0 of 135),
+failed Booleans named in `Problem()`, perspective hover on the grid. The spike's notes are in
+`docs/notes/step-24-spike.md`.
 
-| Package | From | Content | State |
-|---|---|---|---|
-| 24.1 cylinder through cylinder, sphere cap | step 5, 13.2 | 2 of 54 in the guard: differences where the crossed cylinder's seam pierces the wall beside a full-height strip triangle. 1 of 135: a sphere cap too small, its triangles lie flat in the face's plane | not started |
-| 24.2 cylinders, cones through their apex, tori, spheres' poles | 21.3 | 10 of 28 cuts of the analytic STEP set fail on these, whatever made the solid (`solidBooleanMaxFail`); the same limits as 24.1 | not started |
-| 24.3 lathe seams and pole discs | MCP notes | A union fails where an extruded band's arcs cross a lathed cone at a shallow angle, over the lathe's seam (a line 0.76 or 1.0 mm inside a 3 mm wall, arcs of 6 to 8 mm; the angle alone doesn't separate failing from working); `Problem()` was "" though the Boolean failed. A cut whose end cap lies in a lathed end face's plane (a disc of four patches with a pole) leaves naked edges: a bore along a lathed spout's axis ending at its tip, 32 naked edges, not flagged; 3 mm past the tip is sound, and the same with a swept spout was sound. Both must also set `Problem()` | not started |
-| 24.4 twisted ruled faces mesh with rows, no columns | 13.1, step 20 | A triangle loft turned a third of a turn meshes within 2% (`TestLoftSweep`), a twisted sweep's flat sides within about 2%; the surfaces are right. Refinement by sag alone made the loft sweep 7 times slower; the benchmark gates the fix | not started |
-| 24.5 hover in perspective views | 14.4 | Scans the mesh; orthographic views use the grid | not started |
-
-Tangent and coincident contact in general (F5, 13.4) stays under "Left out"; a cut along a
-patch's own edge is the case 21.3's cutters avoid.
+| Package | Content | State |
+|---|---|---|
+| 24.1 cylinder through cylinder | 2 of 54 in the guard: differences where the crossed cylinder's seam pierces the wall beside a full-height strip triangle | open |
+| 24.2 the last analytic STEP cut | A sphere's pole inside the cylinder cutter; 1 of 28 | open |
+| 24.3 lathe seams and pole discs | A band over a lathe seam fails 8 of 108 (was 14): the inner wall's trims beside the seam get mixed with the neighbour patch's. A bore whose cap lies in a lathed tip's plane, off axis, fails 40 of 80: coincident contact (F5) | partly done |
+| 24.4 twisted ruled faces mesh with rows, no columns | A triangle loft turned a third of a turn meshes within 2% (`TestLoftSweep`), a twisted sweep's flat sides within about 2%; the surfaces are right. Refinement by sag alone made the loft sweep 7 times slower; the benchmark gates the fix. Splitting edges where the mesh strays, applied to every curved patch, made lofts and sweeps self-intersect | open |
 
 ### Steps 25 and 26: the rest of step 22, general fillets, branch `step-22-general-fillets`
 
