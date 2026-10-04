@@ -108,6 +108,10 @@ func (s *SSurface) IsCylinder(axis, center *geom.Vector, r *float64, start, fini
 
 // surfInter is a (u, v) line-surface intersection candidate. Mirrors
 // C++ SSurface::Inter.
+// offPatchTol is how far from the line's own hit the closest point on
+// a cylinder's patch may be and still count as that hit.
+const offPatchTol = 1e3 * lengthEps
+
 type surfInter struct {
 	tag int
 	p   geom.Point2d
@@ -249,6 +253,15 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 
 			var inter surfInter
 			s.ClosestPointTo(p, &inter.p, true)
+			// A hit on the cylinder beyond the patch's straight sides
+			// projects onto the nearest side, off the line, where the
+			// trim may well take it in: a band's arc, a patch of a
+			// cylinder across y, made a seed half a millimetre past
+			// its side from a lathed wall's bottom circle (roadmap
+			// 24.3).
+			if s.PointAt(inter.p.U, inter.p.V).Minus(p).Magnitude() > offPatchTol {
+				continue
+			}
 			inters = append(inters, inter)
 		}
 	} else {

@@ -60,9 +60,8 @@ func TestBandOverLatheSeamSweep(t *testing.T) {
 			sweep.Floats("r", 6, 7, 8),
 			sweep.Floats("angle", -30, 0, 30),
 		},
-		MaxFailRate:       latheSeamMaxFailRate,
-		Sample:            20,
-		SampleMaxFailRate: 3.0 / 20,
+		MaxFailRate: latheSeamMaxFailRate,
+		Sample:      20,
 	}
 	grid.Run(func(p sweep.Point) error {
 		pot := lathedProfile([]geom.Vector{{X: 5}, {X: 8}, {X: 4, Z: 30}, {X: 1, Z: 30}})
@@ -78,12 +77,14 @@ func TestBandOverLatheSeamSweep(t *testing.T) {
 }
 
 // latheSeamMaxFailRate is the fraction of TestBandOverLatheSeamSweep's
-// grid allowed to fail: 8 of 108 at the first measurement (roadmap
-// 24.3, after 24.1 and 24.2; 14 before them), all with the band low on
-// the pot, where it also crosses the pot's flat bottom and meets the
-// inner wall at the seam. Not mended: the trims of the inner wall's
-// patch beside the seam come out mixed with its neighbour's.
-const latheSeamMaxFailRate = 8.0 / 108
+// grid allowed to fail: none since 24.3's rest. The 8 of 108 left after
+// 24.1 and 24.2 (14 before them), all with the band low on the pot, had
+// a marching seed half a millimetre past the band's side: the lathed
+// wall's bottom circle met the band's arc, a cylinder, beyond its
+// patch, and the hit, projected onto the patch's side, passed its trim
+// (offPatchTol). The march from it took the curve's own seed, and the
+// wall's trims did not close.
+const latheSeamMaxFailRate = 0
 
 // TestBoreToLathedTipSweep bores a lathed spout along its axis, a
 // little off it or not, with the bore's end cap in the plane of the
