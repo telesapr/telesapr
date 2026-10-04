@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/parser"
 	"go/scanner"
 	"go/token"
@@ -182,11 +183,11 @@ func newEngine(opts Options) (*Engine, error) {
 func (e *Engine) exports() interp.Exports {
 	exports := make(interp.Exports, len(symbols.Symbols))
 	for path, pkg := range symbols.Symbols {
-		exports[path] = pkg
+		exports[path] = typedFloats(pkg)
 	}
 	key := apiPath + "/api"
 	pkg := make(map[string]reflect.Value, len(symbols.Symbols[key]))
-	for name, v := range symbols.Symbols[key] {
+	for name, v := range exports[key] {
 		pkg[name] = v
 	}
 	pkg["Current"] = reflect.ValueOf(func() *api.Doc { return e.doc })
@@ -230,6 +231,34 @@ func (e *Engine) exports() interp.Exports {
 		"Help": reflect.ValueOf(e.help),
 	}
 	return exports
+}
+
+// typedFloats returns a package's symbols with its untyped float
+// constants, such as math.Pi, made float64 values. The interpreter
+// gives such a constant the type "untyped float64", which it won't mix
+// with a literal: 2.0 * math.Pi fails to compile. As float64 it mixes
+// with literals; the interpreter still takes it in a const declaration
+// and in float32(math.Pi), but no longer in var r float32 = math.Pi.
+func typedFloats(pkg map[string]reflect.Value) map[string]reflect.Value {
+	var out map[string]reflect.Value
+	for name, v := range pkg {
+		c, ok := v.Interface().(constant.Value)
+		if !ok || c.Kind() != constant.Float {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]reflect.Value, len(pkg))
+			for name, v := range pkg {
+				out[name] = v
+			}
+		}
+		f, _ := constant.Float64Val(c)
+		out[name] = reflect.ValueOf(f)
+	}
+	if out == nil {
+		return pkg
+	}
+	return out
 }
 
 // Doc is the document scripts run on.
@@ -309,6 +338,9 @@ type definition struct {
 	names []string
 	typ   string
 	value string
+	// call is whether the value is one call, which may have several
+	// values.
+	call bool
 	// line and col are where the expression starts in the statement,
 	// from 1.
 	line, col int
@@ -329,21 +361,28 @@ func parseDefinition(src string) (d definition, ok bool) {
 	text := func(n ast.Node) string {
 		return src[fset.Position(n.Pos()).Offset-len(prefix) : fset.Position(n.End()).Offset-len(prefix)]
 	}
+	// values is the text of the expressions, one or one to a name, as
+	// "a, b := s[0], s[1]" has.
+	values := func(xs []ast.Expr) string {
+		return src[fset.Position(xs[0].Pos()).Offset-len(prefix) : fset.Position(xs[len(xs)-1].End()).Offset-len(prefix)]
+	}
 	var lhs []ast.Expr
 	switch stmt := body[0].(type) {
 	case *ast.AssignStmt:
-		if stmt.Tok != token.DEFINE || len(stmt.Rhs) != 1 {
+		if stmt.Tok != token.DEFINE || (len(stmt.Rhs) != 1 && len(stmt.Rhs) != len(stmt.Lhs)) {
 			return d, false
 		}
 		lhs = stmt.Lhs
-		d.value = text(stmt.Rhs[0])
+		d.value = values(stmt.Rhs)
+		_, d.call = stmt.Rhs[0].(*ast.CallExpr)
+		d.call = d.call && len(stmt.Rhs) == 1
 	case *ast.DeclStmt:
 		decl, isGen := stmt.Decl.(*ast.GenDecl)
 		if !isGen || decl.Tok != token.VAR || len(decl.Specs) != 1 {
 			return d, false
 		}
 		spec := decl.Specs[0].(*ast.ValueSpec)
-		if len(spec.Values) != 1 {
+		if len(spec.Values) != 1 && (len(spec.Values) != len(spec.Names) || spec.Type != nil) {
 			return d, false
 		}
 		for _, name := range spec.Names {
@@ -352,7 +391,9 @@ func parseDefinition(src string) (d definition, ok bool) {
 		if spec.Type != nil {
 			d.typ = text(spec.Type)
 		}
-		d.value = text(spec.Values[0])
+		d.value = values(spec.Values)
+		_, d.call = spec.Values[0].(*ast.CallExpr)
+		d.call = d.call && len(spec.Values) == 1
 	default:
 		return d, false
 	}
@@ -410,9 +451,25 @@ func typeName(t reflect.Type) (string, bool) {
 // value itself: the expression is evaluated, the variable declared
 // with the type the value has, and the value assigned.
 func (e *Engine) run(ctx context.Context, src string) error {
+	if inBlocks(src) {
+		return e.inFunc(ctx, src)
+	}
+	if d, ok := parseDefinition(src); ok && d.call {
+		if err := e.tooMany(d); err != nil {
+			return err
+		}
+	}
 	_, err := e.eval(ctx, src)
 	if err == nil || e.ran || Incomplete(err, src) {
 		return err
+	}
+	if parts, ok := split(src, err); ok {
+		for _, p := range parts {
+			if err := e.run(ctx, p.src); err != nil {
+				return p.place(err)
+			}
+		}
+		return nil
 	}
 	d, ok := parseDefinition(src)
 	if !ok {
@@ -470,6 +527,123 @@ func (e *Engine) run(ctx context.Context, src string) error {
 		}
 	}
 	return nil
+}
+
+// tooMany says when a definition from one call has fewer names than
+// the call has values. The interpreter would quietly take the first
+// values, as in "x := g.Bounds()", which Go refuses. A function that
+// is never called is compiled, to see whether the call gives one value
+// more than there are names; nothing is run.
+func (e *Engine) tooMany(d definition) error {
+	blanks := strings.Repeat("_, ", len(d.names)) + "_"
+	logged := log.Writer()
+	log.SetOutput(io.Discard)
+	_, err := e.i.Eval("_ = func() { " + blanks + " = " + d.value + " }")
+	log.SetOutput(logged)
+	if err != nil {
+		return nil
+	}
+	return &Error{Line: d.line, Col: d.col, Err: fmt.Errorf(
+		"assignment mismatch: %d variable(s) but %s has more values; name each, as in \"lo, hi := g.Bounds()\"",
+		len(d.names), d.value)}
+}
+
+// parseBody parses src as the statements of a function's body. at
+// gives the offset in src of a position of the result.
+func parseBody(src string) (body []ast.Stmt, at func(token.Pos) int, ok bool) {
+	const prefix = "package p\nfunc _() {\n"
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "", prefix+src+"\n}", 0)
+	if err != nil {
+		return nil, nil, false
+	}
+	at = func(p token.Pos) int { return fset.Position(p).Offset - len(prefix) }
+	return f.Decls[0].(*ast.FuncDecl).Body.List, at, true
+}
+
+// inBlocks reports whether src is statements that only have blocks of
+// their own, such as loops and ifs, and define nothing outside them.
+func inBlocks(src string) bool {
+	body, _, ok := parseBody(src)
+	if !ok || len(body) == 0 {
+		return false
+	}
+	for _, s := range body {
+		if l, ok := s.(*ast.LabeledStmt); ok {
+			s = l.Stmt
+		}
+		switch s.(type) {
+		case *ast.BlockStmt, *ast.IfStmt, *ast.ForStmt, *ast.RangeStmt, *ast.SwitchStmt,
+			*ast.TypeSwitchStmt, *ast.SelectStmt:
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// inFunc runs statements that only have blocks of their own in a
+// function. Run where the interpreter runs a console's statements, a
+// name defined in such a block is the variable of that name defined
+// before, and it panics when the types differ: "p := 1.5" and then
+// "for ... { p := "x" }" sets the first p. In a function the block's p
+// is a variable of its own, as in Go. The source must not start with
+// "func": the interpreter would take it for a declaration first, and
+// then run the call again with each later source.
+func (e *Engine) inFunc(ctx context.Context, src string) error {
+	_, err := e.eval(ctx, "_ = 0; func() {\n"+src+"\n}()")
+	var serr *Error
+	if errors.As(err, &serr) && serr.Line > 0 {
+		// The first line is the function's.
+		if serr.Line--; serr.Line < 1 {
+			serr.Line, serr.Col = 1, 1
+		}
+	}
+	return err
+}
+
+// part is a statement of source of several.
+type part struct {
+	src string
+	// line and col are where it starts in the source, from 1.
+	line, col int
+}
+
+// place counts the place of an error of the part from the start of
+// the source.
+func (p part) place(err error) error {
+	var serr *Error
+	if errors.As(err, &serr) && serr.Line > 0 {
+		if serr.Line == 1 {
+			serr.Col += p.col - 1
+		}
+		serr.Line += p.line - 1
+	}
+	return err
+}
+
+// split divides source that failed with err into its statements, when
+// the interpreter took it for declarations because it starts with one,
+// as "const n = 3; fmt.Println(n)" does: the interpreter wants only
+// declarations after a first one.
+func split(src string, err error) ([]part, bool) {
+	if err == nil || !strings.Contains(err.Error(), "expected declaration") {
+		return nil, false
+	}
+	body, at, ok := parseBody(src)
+	if !ok || len(body) < 2 {
+		return nil, false
+	}
+	parts := make([]part, len(body))
+	for i, s := range body {
+		start := at(s.Pos())
+		parts[i] = part{
+			src:  src[start:at(s.End())],
+			line: 1 + strings.Count(src[:start], "\n"),
+			col:  start - strings.LastIndex(src[:start], "\n"),
+		}
+	}
+	return parts, true
 }
 
 // panicFilter takes the line the interpreter writes about a panic out
