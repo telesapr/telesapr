@@ -39,18 +39,25 @@ doc.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
 ## Between two curved faces
 
 Where two curved faces meet along an edge that is no circle about their common axis (a branch
-pipe on a pipe, a spout on a pot, a rod through a ball), the fillet rolls a ball of its radius
-along the edge, touching both faces, and the rounded face is the surface it sweeps: fitted
-through the ball's arcs to within a tenth of the chord tolerance, the faces cut back along the
-curves it touches them on. The edge must close on itself, as such joints do, and be picked alone.
-Where the ball can't touch both faces (the radius too large for the room beside a hole, or the
-fillet running off a face), the fillet is refused at the place. Example:
-[`examples/scripts/tee`](../../examples/scripts/tee/tee.go).
+pipe on a pipe, a spout on a pot, a rod through a ball, a band's side on a cone), the fillet rolls
+a ball of its radius along the edge, touching both faces, and the rounded face is the surface it
+sweeps: fitted through the ball's arcs to within a tenth of the chord tolerance, the faces cut
+back along the curves it touches them on. A chamfer is made the same way, its sections straight
+between the points at its distance along each face from the edge. The edge must be picked alone.
+
+The edge may close on itself, as such joints do, or end where it meets a flat face at each end, as
+a band's side on a cone ends at the base and at the band's end. There the fillet ends in the flat
+face's plane, in the curve where that plane cuts the surface the ball sweeps, and the flat face
+takes that curve as its edge; where one of the faces goes on past the flat face's plane (the cone
+above the band's end), the flat face grows by the fillet's section up to where the plane cuts that
+face. Where the ball can't touch both faces (the radius too large for the room beside a hole), or
+the fillet's end runs off a face past the end of its edge with the flat face, the fillet is refused
+at the place. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
+[`examples/scripts/bandfillet`](../../examples/scripts/bandfillet/bandfillet.go).
 
 ## Not yet
 
-Fillets between curved faces along an edge that ends at a corner (as where a flat band meets a
-cone), chamfers between curved faces, and corners where more than three rounded edges meet, or
-where convex meets concave at a vertex, are refused with a message; they are the rest of roadmap
-22. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
+Fillets between curved faces along an edge that ends at a curved face, and corners where more
+than three rounded edges meet, or where convex meets concave at a vertex, are refused with a
+message; they are the rest of roadmap 22. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
 saying so (15.7).
