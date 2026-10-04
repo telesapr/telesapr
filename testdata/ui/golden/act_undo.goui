@@ -91,6 +91,7 @@
   &Shell Solid [Shift+G] ind=0 en=1 act=0
   Pattern Along Pat&h ind=0 en=1 act=0
   &Draft Selected Sides ind=0 en=1 act=0
+  Guide Loft by Selected &Curves ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0
@@ -271,6 +272,7 @@ tw 0 unsaved 1 cursor 0 tooltip ""
   &Shell Solid [Shift+G] ind=0 en=1 act=0
   Pattern Along Pat&h ind=0 en=1 act=0
   &Draft Selected Sides ind=0 en=1 act=0
+  Guide Loft by Selected &Curves ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0

@@ -199,6 +199,26 @@ func (c *BSplineCurve) PointAt(t float64) geom.Vector {
 	return p.ScaledBy(1 / w)
 }
 
+// IsoV is the surface's curve at v, along u: its control points the
+// columns' points at v, combined in homogeneous coordinates, of the
+// surface's degree and knot vector along u.
+func (s *BSplineSurface) IsoV(v float64) BSplineCurve {
+	sv := findSpan(s.DegV, s.KnotsV, v)
+	nv := make([]float64, s.DegV+1)
+	basisFuns(sv, v, s.DegV, s.KnotsV, nv)
+	c := BSplineCurve{Deg: s.DegU, Knots: append([]float64(nil), s.KnotsU...),
+		Ctrl: make([]geom.Vector, len(s.Ctrl)), Weight: make([]float64, len(s.Ctrl))}
+	for i := range s.Ctrl {
+		var q geom.Vector4
+		for b := 0; b <= s.DegV; b++ {
+			j := sv - s.DegV + b
+			q = q.Plus(homogeneous(s.Ctrl[i][j], s.Weight[i][j]).ScaledBy(nv[b]))
+		}
+		c.Ctrl[i], c.Weight[i] = q.PerspectiveProject(), q.W
+	}
+	return c
+}
+
 // PointAt is the surface's point at (u, v).
 func (s *BSplineSurface) PointAt(u, v float64) geom.Vector {
 	su := findSpan(s.DegU, s.KnotsU, u)

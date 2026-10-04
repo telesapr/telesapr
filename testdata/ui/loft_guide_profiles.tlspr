@@ -1,0 +1,360 @@
+telesapr 2
+
+units mm
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+group 0x3 sketch-in-plane "bottom" {
+  order 2
+  subtype point-ortho
+  workplane 0x80030000
+  color 100 100 100 255
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+group 0x4 sketch-3d "guide" {
+  order 3
+  color 100 100 100 255
+  visible
+}
+
+group 0x5 sketch-3d "sketch-in-3d" {
+  order 4
+  color 100 100 100 255
+  visible
+}
+
+group 0x6 sketch-in-plane "top" {
+  order 5
+  subtype point-ortho
+  workplane 0x80060000
+  color 100 100 100 255
+  predef {
+    q 1 0 0 0
+    origin 0x60000
+  }
+  visible
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 circle {
+  group 0x3
+  workplane 0x80030000
+}
+
+request 0x5 cubic {
+  group 0x4
+}
+
+request 0x6 datum-point {
+  group 0x5
+}
+
+request 0x7 circle {
+  group 0x6
+  workplane 0x80060000
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 0
+value 0x40011 0
+value 0x40040 10
+value 0x50010 10
+value 0x50011 0
+value 0x50012 0
+value 0x50013 18
+value 0x50014 0
+value 0x50015 13
+value 0x50016 18
+value 0x50017 0
+value 0x50018 27
+value 0x50019 10
+value 0x5001a 0
+value 0x5001b 40
+value 0x60010 0
+value 0x60011 0
+value 0x60012 40
+value 0x70010 0
+value 0x70011 0
+value 0x70040 10
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 circle {
+  group 0x3
+  workplane 0x80030000
+  points 0x40001
+  normal 0x40020
+  distance 0x40040
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x3
+  workplane 0x80030000
+  act-visible
+}
+
+entity 0x40020 normal-in-2d {
+  group 0x3
+  workplane 0x80030000
+  points 0x40001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x40040 distance {
+  group 0x3
+  workplane 0x80030000
+  act-distance 10
+  act-visible
+}
+
+entity 0x50000 cubic {
+  group 0x4
+  workplane 0xffffffff
+  points 0x50001 0x50002 0x50003 0x50004
+  act-visible
+}
+
+entity 0x50001 point-in-3d {
+  group 0x4
+  workplane 0xffffffff
+  act-point 10 0 0
+  act-visible
+}
+
+entity 0x50002 point-in-3d {
+  group 0x4
+  workplane 0xffffffff
+  act-point 18 0 13
+  act-visible
+}
+
+entity 0x50003 point-in-3d {
+  group 0x4
+  workplane 0xffffffff
+  act-point 18 0 27
+  act-visible
+}
+
+entity 0x50004 point-in-3d {
+  group 0x4
+  workplane 0xffffffff
+  act-point 10 0 40
+  act-visible
+}
+
+entity 0x60000 point-in-3d {
+  group 0x5
+  workplane 0xffffffff
+  act-point 0 0 40
+  act-visible
+}
+
+entity 0x70000 circle {
+  group 0x6
+  workplane 0x80060000
+  points 0x70001
+  normal 0x70020
+  distance 0x70040
+  act-visible
+}
+
+entity 0x70001 point-in-2d {
+  group 0x6
+  workplane 0x80060000
+  act-point 0 0 40
+  act-visible
+}
+
+entity 0x70020 normal-in-2d {
+  group 0x6
+  workplane 0x80060000
+  points 0x70001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x70040 distance {
+  group 0x6
+  workplane 0x80060000
+  act-distance 10
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+
+entity 0x80030000 workplane {
+  group 0x3
+  points 0x80030002
+  normal 0x80030001
+}
+
+entity 0x80030001 normal-n-copy {
+  group 0x3
+  points 0x80030002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80030002 point-n-copy {
+  group 0x3
+  construction
+  act-visible
+}
+
+entity 0x80060000 workplane {
+  group 0x6
+  points 0x80060002
+  normal 0x80060001
+  act-visible
+}
+
+entity 0x80060001 normal-n-copy {
+  group 0x6
+  points 0x80060002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80060002 point-n-copy {
+  group 0x6
+  construction
+  act-point 0 0 40
+  act-visible
+}

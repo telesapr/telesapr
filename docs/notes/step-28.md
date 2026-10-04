@@ -1,4 +1,4 @@
-# Step 28 working notes (branch step-28-solid-features)
+# Step 28 working notes (branch step-28b-solid-features, the rest of step 28)
 
 Kept so a resumed session starts cheaply. Delete when step 28 merges.
 
@@ -10,7 +10,7 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
 | 28.5 pattern along a closed path | done | 6fee564, 30883da (goldens) |
 | 28.2 drafts: chosen sides, neutral plane, sharp arc/line corners | done, see below | WIP 2c6fe81 + final |
 | 28.4 sweeps along solid edges, paths with corners | done: mitres between lines; edges by name | WIP + final |
-| 28.3 smooth lofts: end tangency, guide curves | end tangency done; guide curves not started | |
+| 28.3 smooth lofts: end tangency, guide curves | done; guides 03a3003, 18d69d8 (goldens) | |
 
 ## 28.2 design
 
@@ -47,8 +47,33 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
   ValB, and the encoder/decoder now follow IsLength for ValB). Screen rows, Group.Tangency /
   SetTangency, example nozzle.
 
-## Next
+## 28.3 guides (step 28b)
 
-Guide curves (28.3's rest): a sketch curve from the first profile to the last; plan was to
-sample the free loft's iso-sections, move each so its matched vertex lies on the guide, and skin
-through them (translation only, exact at the samples). Not started.
+- topo/guidedloft.go: GuidedLoftSurface samples base.surface.IsoV at 12 per span, finds each
+  guide's point where it crosses the section's plane (Newell normal), guideMove (1 guide shift,
+  2 similarity about the plane normal), SkinThrough with end derivatives = base's plus the
+  guides' shift rate (not where an end is set square). Guides must pass every profile (1e-3).
+- sketch: Group.Edges are the loft's guides (save, undo, prune, deps came free); loftguide.go
+  chains Beziers into guides; SetLoftGuides refuses entities drawn after the loft.
+- ui: CmdLoftGuides "Guide Loft by Selected Curves"; loft screen row "guides".
+- Trap: in api.SketchHost a whole script is one undo step, so Undo removes the loft too.
+
+## 28.2 two arcs (step 28b)
+
+- topo/draftsides.go arcArcSeam: piecewise quintics (Chebyshev-Lobatto nodes) through the
+  circle-circle crossing at each height, split 1,2,4.. until within seamTol = 1e-6 of both
+  cones; seams are chains ([]SBezier) now. ebe6610, golden c444c8e.
+
+## 28.4 corners beside arcs: tried, not done
+
+Tried (reverted): cut the path into runs at corners beside arcs, sweep each run carried
+straight on past the corner, cut each by a half-space box at the mitre plane, union the runs.
+The cuts work (run volumes exact), the union's volume is right, but the joined shell fails any
+later Boolean (even with an empty shell): the two mitre faces are coplanar but not the same
+outline, since one run meets the plane in its straight extension and the other in its arc
+(plane-torus curve), so the union leaves a partial coplanar face with curved trims, which the
+kernel can't take; with a round profile 188 naked edges. Coplanar unions with equal outlines
+(boxes) are fine. A real fix needs the mitre inside MakeFromSweepOf for arc pieces: trims of the
+arc's revolved side surfaces by the mitre plane (plane-torus curves, e.g. fitted as arcArcSeam
+does), i.e. srf work. Fitted sweeps with corners: not started (needs the end frame of a fitted
+run and twist split by length).

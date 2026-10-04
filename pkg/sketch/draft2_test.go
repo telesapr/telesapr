@@ -90,6 +90,46 @@ func TestDraftSharpArc(t *testing.T) {
 	}
 }
 
+// A lens, two arcs meeting at sharp corners, drafted (roadmap 28.2):
+// the cones meet in curves of degree four; the lens at height z is
+// where two discs of radius 5 - z tan 4° overlap. Undo and a round trip
+// keep it.
+func TestDraftSharpArcs(t *testing.T) {
+	d := api.New()
+	d.SetChordTolerance(0.002)
+	d.Arc(api.V(0, 0, 0), api.V(5, 0, 0), api.V(0, 5, 0))
+	d.Arc(api.V(5, 5, 0), api.V(0, 5, 0), api.V(5, 0, 0))
+	ex := d.Extrude(6, "")
+	step(d)
+	before := saved(t, d)
+	ex.SetDraft(4)
+	overlap := func(r, dist float64) float64 {
+		x := dist / 2
+		return 2 * (r*r*math.Acos(x/r) - x*math.Sqrt(r*r-x*x))
+	}
+	tan := math.Tan(4 * math.Pi / 180)
+	want := 0.0
+	const n = 400
+	for i := 0; i <= n; i++ {
+		z := 6 * float64(i) / n
+		w := 1.0
+		if i > 0 && i < n {
+			w = float64(2 + 2*(i%2))
+		}
+		want += w * overlap(5-z*tan, 5*math.Sqrt2)
+	}
+	want *= 6.0 / n / 3
+	r := ex.Check()
+	if ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.003*want {
+		t.Fatalf("a drafted lens: %q, %s, want %g", ex.Problem(), r.String(), want)
+	}
+	undoRedo(t, d, before)
+	// The file keeps no chord tolerance.
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	d.Regen()
+	roundTrip(t, d)
+}
+
 // The neutral plane elsewhere: at the far end the block narrows towards
 // its foot; in the middle it narrows both ways; off the extrusion it is
 // a problem.

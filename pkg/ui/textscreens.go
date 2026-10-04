@@ -661,6 +661,48 @@ func (ss *SolveSpaceUI) draftSelectedSides() {
 	gw.ClearSuper()
 }
 
+// loftGuidesFromSelection holds the active loft to the selected line
+// segments, arcs and cubics as its guide curves (New Group > Guide Loft
+// by Selected Curves, roadmap 28.3).
+func (ss *SolveSpaceUI) loftGuidesFromSelection() {
+	gw := ss.GW
+	g := ss.SK.GetGroup(gw.activeGroupH())
+	if g == nil || g.Type != sketch.GroupLoft {
+		ss.Error("Activate a loft first: Guide Loft by Selected Curves holds it to guide curves.")
+		return
+	}
+	gw.GroupSelection()
+	if len(gw.gs.entity) == 0 {
+		ss.Error("Select the guide curves: line segments, arcs and cubics drawn before the loft, " +
+			"each guide running from a point of the first profile through every profile to the last.")
+		return
+	}
+	err := ss.SK.UndoRememberFor(func() error {
+		return ss.SK.SetLoftGuides(g.H, gw.gs.entity)
+	})
+	if err != nil {
+		ss.Error("Can't guide the loft by those: %s.", err)
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	gw.ClearSelection()
+	gw.ClearSuper()
+}
+
+// ScreenLoftNoGuides takes a loft's guide curves away.
+func (tw *TextWindow) ScreenLoftNoGuides(link int, v uint32) {
+	ss := tw.ss
+	err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetLoftGuides(core.HGroup{V: v}, nil) })
+	if err != nil {
+		ss.Error("%s.", capitalize(err.Error()))
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	ss.GW.ClearSuper()
+}
+
 // ScreenDraftAllSides makes an extrusion's draft lean every side again.
 func (tw *TextWindow) ScreenDraftAllSides(link int, v uint32) {
 	ss := tw.ss
@@ -687,6 +729,17 @@ func (tw *TextWindow) showLoftEnds(g *sketch.Group) {
 		end(g.ValB), exprNote(g.ExprB), lf(tw.ScreenChangeLoftStart), g.H.V)
 	tw.Printf(false, "%Ba   %Ftreaches the last%E %s%s %Fl%Ll%f%D[change]%E",
 		end(g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+	// Its guides: New Group > Guide Loft by Selected Curves sets them.
+	if len(g.Edges) == 0 {
+		tw.Printf(false, "%Bd   %Ftguides%E none")
+	} else {
+		curves := "curves"
+		if len(g.Edges) == 1 {
+			curves = "curve"
+		}
+		tw.Printf(false, "%Bd   %Ftguides%E %d %s %Fl%Ll%f%D[none]%E",
+			len(g.Edges), curves, lf(tw.ScreenLoftNoGuides), g.H.V)
+	}
 }
 
 // ScreenChangeLoftStart edits how square a loft leaves its first

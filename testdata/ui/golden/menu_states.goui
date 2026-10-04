@@ -92,6 +92,7 @@ dialog 0 No workplane is active, so the grid will not appear.|
   &Shell Solid [Shift+G] ind=0 en=1 act=0
   Pattern Along Pat&h ind=0 en=1 act=0
   &Draft Selected Sides ind=0 en=1 act=0
+  Guide Loft by Selected &Curves ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0
@@ -273,6 +274,7 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   &Shell Solid [Shift+G] ind=0 en=1 act=0
   Pattern Along Pat&h ind=0 en=1 act=0
   &Draft Selected Sides ind=0 en=1 act=0
+  Guide Loft by Selected &Curves ind=0 en=1 act=0
   ---
   Link / Assemble... [Shift+I] ind=0 en=1 act=0
   Link Recent ind=0 en=1 act=0

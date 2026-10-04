@@ -56,7 +56,28 @@ loft.SetTangency(1, 1) // square to both ends
 loft.SetTangency(0, 0) // free again
 ```
 
+## Guide curves
+
+A loft can be held to guide curves: line segments, arcs and cubics drawn in a sketch before the
+loft, each chain of them that joins end to end one guide, running from a point of the first
+profile through every profile to the last. Activate the loft, select the curves and choose
+New Group > Guide Loft by Selected Curves; the loft's screen says how many curves guide it, and
+[none] takes them away.
+
+One guide moves the loft's sections across, each within its own plane, so that the loft runs
+along the guide where it would have run straight; two move, turn and scale them, so that the
+loft widens and narrows between them. The surface holds the guides at a dozen sections between
+each two profiles and closely between them, and still goes through every profile. A guide that
+misses a profile, or doesn't start or end on the end profiles, is the loft's problem, with how
+far it is off. Example: [`examples/scripts/horn`](../../examples/scripts/horn/horn.go), a horn
+flared by two guides.
+
+```go
+loft.SetGuides([]api.Entity{right, left}) // two guides
+loft.SetGuides(nil)                       // none again
+```
+
 ## Not yet
 
-Lofts along a guide curve are not done; nor is tangency set at a profile between the ends, or
-to the faces of a solid a loft meets.
+Three guides or more are refused; nor is tangency set at a profile between the ends, or to the
+faces of a solid a loft meets.

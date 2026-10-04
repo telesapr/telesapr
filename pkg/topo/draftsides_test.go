@@ -109,10 +109,6 @@ func TestDraftedPrismAngles(t *testing.T) {
 func TestDraftedPrismAnglesRefused(t *testing.T) {
 	color := core.NewRgbaColor(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
-	// Two arcs at a sharp corner: a lens.
-	lens := []srf.SBezier{circle(10, 0, 0)[0], circle(10, 0, 0)[0]}
-	lens[1].Ctrl[0], lens[1].Ctrl[2] = lens[0].Ctrl[2], lens[0].Ctrl[0]
-	lens[1].Ctrl[1] = v(0, 0, 0)
 	rounded := roundedLoop(20, 10, 3)
 	uneven := uniform([][]srf.SBezier{rounded}, rad(5))
 	uneven[0][1] = rad(2)
@@ -130,7 +126,6 @@ func TestDraftedPrismAnglesRefused(t *testing.T) {
 			t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
 		}
 	}
-	_ = lens
 }
 
 // TestDraftAnglesSweep drafts a D and a block a side at a time over

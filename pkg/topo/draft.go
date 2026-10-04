@@ -18,8 +18,8 @@ import (
 // arc's a cone about the arc's axis. Each piece of the profile is joined
 // to its offset copy by a ruled patch, and the ends close it, face by
 // face, with no Boolean. Where an arc meets a line at a sharp corner,
-// their sides meet in a conic (draftsides.go); two arcs must meet
-// tangent.
+// their sides meet in a conic, and where two arcs do, in a curve of
+// degree four that a quintic follows (draftsides.go).
 
 // DraftedPrism is the solid of a profile, loops in one plane square to
 // along, the first the outer one and the rest holes, extruded by along
