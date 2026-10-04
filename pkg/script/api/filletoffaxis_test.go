@@ -139,10 +139,12 @@ func TestChamferRunsOffBand(t *testing.T) {
 // two heights, blends of three sizes. Measured on the first run, after
 // the code was written (not before, as the rule asks): 2 of 36 refused
 // (a fillet of 3 on the narrowest band, its surface can't be fitted),
-// and 8 chamfers made whose meshes cross where the chamfer meets the
-// cone, the cone's mesh taking slivers of only its trim's points there
-// (the mesher's, as the fillet of 1's crossing in TestFilletFlatOnCone;
-// the shells are sound). A shell made unsound fails outright.
+// and 8 chamfers made whose meshes crossed where the chamfer meets the
+// cone, the cone's mesh fanning from a far point of the trim over the
+// points it cut off. The cone's ears keep their chords off those points
+// now (srf's cutOff.crosses): 2 of those 8 still cross, the chamfers of
+// 3 on the widest band, where the ear clipping is left with no other
+// ear (the shells are sound). A shell made unsound fails outright.
 func TestRunOffSweep(t *testing.T) {
 	g := sweep.Grid{
 		Axes: []sweep.Axis{
@@ -151,7 +153,7 @@ func TestRunOffSweep(t *testing.T) {
 			sweep.Strings("kind", "chamfer", "fillet"),
 			sweep.Floats("r", 2, 2.5, 3),
 		},
-		MaxFailRate: 10.0 / 36,
+		MaxFailRate: 4.0 / 36,
 		Sample:      7,
 		// The sample's points, measured: one refused.
 		SampleMaxFailRate: 1.0 / 7,

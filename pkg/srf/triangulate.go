@@ -560,6 +560,16 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 			}
 		}
 	}
+	// The contour as it was, by each point's place on it, for ears
+	// whose chord passes points clipped before (cutOff.crosses): on a
+	// patch ruled one way, a cone's or a cylinder's, where a trim can
+	// run nearly along the rulings and the patch has no grid lines
+	// across them. On faces curved both ways the test turned ears down
+	// that the mesh needed, and the ears taken instead crossed.
+	var cut *cutOff
+	if !srf.flat() && (srf.DegM == 1) != (srf.DegN == 1) {
+		cut = newCutOff(c)
+	}
 	toggle := false
 	for len(c.Points) > 3 {
 		ln := len(c.Points)
@@ -605,7 +615,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					continue
 				}
 				tol := srf.ChordToleranceForEdge(prev, next)
-				if c.grazed(srf, poles, wrapIdx(i+offset-1, ln), ear, wrapIdx(i+offset+1, ln)) {
+				if c.grazed(srf, poles, wrapIdx(i+offset-1, ln), ear, wrapIdx(i+offset+1, ln)) || cut.crosses(srf, prev, next) {
 					if tol < bestGrazedTol {
 						bestGrazed, bestGrazedTol = ear, tol
 					}
@@ -658,6 +668,74 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	if len(c.Points) == 3 {
 		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
+}
+
+// cutOff is a contour's points as they were before ear clipping, with
+// each point's place among them, or -1 for a point the contour holds
+// twice.
+type cutOff struct {
+	pts []geom.Vector
+	at  map[geom.Vector]int
+}
+
+func newCutOff(c *SContour) *cutOff {
+	co := &cutOff{pts: make([]geom.Vector, len(c.Points)), at: make(map[geom.Vector]int, len(c.Points))}
+	for i, p := range c.Points {
+		co.pts[i] = p.P
+		if _, ok := co.at[p.P]; ok {
+			co.at[p.P] = -1
+		} else {
+			co.at[p.P] = i
+		}
+	}
+	return co
+}
+
+// crosses reports whether the chord from a to c, in uv, which clipping
+// an ear between them would add, passes in xyz on the far side of a
+// point of the contour as it was between them, one that ears clipped
+// before have cut off (or the ear's own tip): in uv every such point
+// lies on the tip's side of the chord, but in xyz the chord is straight
+// where its image in uv bends by its sag, and where the contour runs
+// nearly straight, as a trim along a cone's rulings does, the sag
+// carries it past them. The face beyond keeps those points, and its
+// triangles cross the chord's (a chamfer where a band meets a cone,
+// fanned from a far point of the trim; roadmap 26).
+func (co *cutOff) crosses(srf *SSurface, a, c geom.Vector) bool {
+	if co == nil {
+		return false
+	}
+	ia, ok := co.at[a]
+	ic, okc := co.at[c]
+	if !ok || !okc || ia < 0 || ic < 0 {
+		return false
+	}
+	n := len(co.pts)
+	ac := c.Minus(a)
+	l2 := ac.X*ac.X + ac.Y*ac.Y
+	if l2 == 0 {
+		return false
+	}
+	pa, pc := srf.PointAt(a.X, a.Y), srf.PointAt(c.X, c.Y)
+	chord := pc.Minus(pa)
+	for k := wrapIdx(ia+1, n); k != ic; k = wrapIdx(k+1, n) {
+		q := co.pts[k]
+		su := ac.X*(q.Y-a.Y) - ac.Y*(q.X-a.X)
+		// Only a point as near the chord in uv as grazed's: farther
+		// off, the sag doesn't carry the chord past it.
+		if su == 0 || su*su > grazeShare*grazeShare*l2*l2 {
+			continue
+		}
+		nq := srf.NormalAt(q.X, q.Y)
+		if nq.Magnitude() < lengthEps {
+			continue
+		}
+		sx := chord.Cross(srf.PointAt(q.X, q.Y).Minus(pa)).Dot(nq)
+		if sx*su <= 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // simple reports whether no two of the contour's points are one: a
