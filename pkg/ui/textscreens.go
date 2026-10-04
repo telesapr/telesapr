@@ -964,9 +964,12 @@ func (tw *TextWindow) ShowGroupInfo() {
 
 	if g.Problem.Msg != "" {
 		tw.Printf(false, "")
-		if g.HasDraft() {
+		switch {
+		case g.HasDraft():
 			tw.Printf(false, "%FxThe draft is left out: %s.%E", g.Problem.Msg)
-		} else {
+		case g.Type == sketch.GroupDrawing3D || g.Type == sketch.GroupDrawingWorkplane:
+			tw.Printf(false, "%FxNo solid can be made from it: %s.%E", g.Problem.Msg)
+		default:
 			tw.Printf(false, "%FxThe group adds no solid: %s.%E", g.Problem.Msg)
 		}
 	}
