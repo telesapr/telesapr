@@ -46,6 +46,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | `d92c5f8` |
 | 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
 | 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | `c4137f3` |
+| 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -99,15 +100,16 @@ once 22.2 is merged, a new one.
 | 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | not started |
 | 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | not started |
 
-### Step 27: STEP (~5 wk), branch `step-27-step`
+### Step 27, what is left: STEP
 
-| Package | From | Content | Effort | State |
-|---|---|---|---|---|
-| 27.1 export: knots removed, one surface per face | 21.5, step 11 | Knots removed where patches join smoothly, faces whose patches make no grid as one surface. The export reads back exact as it is; OpenCASCADE's volume of a face written at full multiplicity is off by up to 0.3% | 1.5 wk | not started |
-| 27.2 degree above 5 | 21.2, step 11 | Surfaces and curves of degree above 5 are refused, so the file links as a mesh; needs degree reduction or approximation | ~1 wk | not started |
-| 27.3 one face's edge along another face's seam | 21.3 | NIST_MBE_PMI_5 and _6 fail to close for it and link as meshes | ~0.5 wk | not started |
-| 27.4 edges further from their faces than the file's tolerance | 21.3 | Schenkel and the OpenCASCADE screw leave mesh gaps or crossings and link as meshes; 5 of the 9 vendor files read as sound solids | ~1 wk | not started |
-| 27.5 offset surfaces and conics as solids | 21.2 | Offset surfaces (by 22.1) and parabolas, hyperbolas are refused; the file links as a mesh | ~1 wk | not started |
+Step 27 merged in part: knots removed where patches join smoothly (27.1; every face of the
+fixtures and examples makes a grid, so no face needed one surface), edges along another face's
+seam (27.3: NIST_MBE_PMI_5 and _6 close), degree above 5 rewritten at degree 5 (27.2), offset
+surfaces and parabolas, hyperbolas (27.5). Corpus: 6 of 9 sound.
+
+| Package | Content | State |
+|---|---|---|
+| 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 (3 crossings), _6 (2) cross by about 1e-4 where faces meet tangentially along an edge, whose edges are within tolerance: this is F5 (tangent contact), not edge tolerance. Schenkel: 40 naked edges along a curve at y = 4, cause not found. NIST_MBE_PMI_6 also has pole slivers since 24.2, with step 24's remainder | partly done |
 
 ### Step 28: solid features (~5 wk), branch `step-28-solid-features`
 
