@@ -2,6 +2,7 @@ package api
 
 import (
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -49,5 +50,35 @@ func TestFilletFlatOnConeOffAxis(t *testing.T) {
 		if !r.Sound() || added < lo || added > hi {
 			t.Errorf("%s of the band's edge on the cone: %s, added %g, want %g to %g", what, r.Summary(), added, lo, hi)
 		}
+	}
+}
+
+// A chamfer of 2 on the band's edge on the cone would run off the band's
+// side past its top, at its end on the band's end face: refused there
+// (roadmap 22.3), and nothing changed.
+func TestChamferRunsOffBand(t *testing.T) {
+	d := New()
+	d.SetChordTolerance(0.003)
+	d.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Line(V(0, 0, -2), V(0, 0, 32))
+	axis.SetConstruction(true)
+	d.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+	d.Lathe(axis, "")
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Rect(V(6, -3, 0), V(20, 3, 0))
+	band := d.Extrude(25, "band")
+	n := len(d.Groups())
+	edge := band.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))
+	func() {
+		defer func() {
+			err, _ := recover().(error)
+			if err == nil || !strings.Contains(err.Error(), "runs off the face on side 2 here, past the end of its edge") {
+				t.Errorf("a chamfer of 2: %v", err)
+			}
+		}()
+		d.ChamferSolid([]SolidEdge{edge}, 2, "")
+	}()
+	if len(d.Groups()) != n {
+		t.Errorf("%d groups after the refusal, %d before", len(d.Groups()), n)
 	}
 }
