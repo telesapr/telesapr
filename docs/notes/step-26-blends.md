@@ -355,6 +355,12 @@ while the chamfer's mesh keeps them all. Fillets there are refused
   the ring across a crease that is smooth at that vertex; blendNext
   takes only edges smooth all along). Not done: run-offs onto curved
   faces; the size-3 slot chamfer.
+- The slot chamfer at 2.75 is sound, at 3 6 naked edges, at 3.25 10: the
+  chamfer's end on the slot's end wall (x 6) comes down towards the
+  floor (its corner with the side wall at z 3.46, 2.25, 1.04), leaving
+  the side wall a thin triangle (6, 3, 0)-(6.47, 3, 0)-(6, 3, 2.25) at
+  3; the topology lists every edge, so the naked ones are the meshes'
+  (the end wall's or that triangle's), not traced further.
 
 ## Next
 
