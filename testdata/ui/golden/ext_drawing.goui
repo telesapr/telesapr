@@ -53,10 +53,10 @@ row 25    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
 row 28    dimensions
  0-12 74 64 0
  13-99 64 64 0
-row 30    [dimension the selected edges]   (type: view kind, as front length)
+row 30    [dimension the selected edges or faces]   (type: view kind, as front length)
  0-2 64 64 0
- 3-32 6c 64 109 0 1 0
- 33-99 64 64 0
+ 3-41 6c 64 109 0 1 0
+ 42-99 64 64 0
 row 33    title block
  0-13 74 64 0
  14-99 64 64 0
@@ -90,7 +90,7 @@ row 48 (back to the groups)
  19-99 64 64 0
 row 50 
  0-99 64 64 0
-dialog 3 Select one edge of the solid for a length, a diameter or a radius, or two for the distance between them, then dimension them on a view of the drawing.|
+dialog 3 Select one edge of the solid for a length, one edge or face for a diameter or a radius, or two edges or flat faces for the distance between them, then dimension them on a view of the drawing, a section or a detail.|
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -154,10 +154,10 @@ row 29    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
 row 32    dimensions
  0-12 74 64 0
  13-99 64 64 0
-row 34    [dimension the selected edges]   (type: view kind, as front length)
+row 34    [dimension the selected edges or faces]   (type: view kind, as front length)
  0-2 64 64 0
- 3-32 6c 64 109 0 1 0
- 33-99 64 64 0
+ 3-41 6c 64 109 0 1 0
+ 42-99 64 64 0
 row 37    title block
  0-13 74 64 0
  14-99 64 64 0
