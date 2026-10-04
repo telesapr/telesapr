@@ -524,7 +524,7 @@ func (n *SKdNode) FindEdgeOn(a, b geom.Vector, cnt int, coplanarIsInter bool, in
 				pa*pb < 0 {
 				// The edge crosses the plane of the triangle; now see if
 				// it crosses inside the triangle.
-				if tr.containsPointProjdWithin(b.Minus(a), a) {
+				if tr.containsPointProjdWithin(b.Minus(a), a) && tr.edgeCrossesWithin(nn, d, a, b) {
 					if coplanarIsInter {
 						info.IntersectsMesh = true
 					} else {

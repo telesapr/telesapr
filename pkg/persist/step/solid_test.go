@@ -187,15 +187,19 @@ func TestOffsetCells(t *testing.T) {
 }
 
 // solidCorpusSound are the corpus files whose shapes read as sound
-// solids (2026-10-04); the others fall back to meshes: Schenkel leaves
-// gaps or crossings in the mesh where edges miss their faces by more
-// than the file's tolerance, and NIST_MBE_PMI_5 and _6, which close
-// since package 27.3 (TestSolidSeamEdges), crossings where faces meet
-// tangentially. screw.step reads since roadmap 24.2: its cones'
-// outlines ran across their patches to the apex.
+// solids (2026-10-04); the others fall back to meshes: Schenkel's mesh
+// and shell disagree on its Euler characteristic, and NIST_MBE_PMI_6,
+// which closes since package 27.3 (TestSolidSeamEdges), has a topology
+// problem at its poles. screw.step reads since roadmap 24.2: its cones'
+// outlines ran across their patches to the apex. NIST_MBE_PMI_5 reads
+// since the mesh checker measures an edge's crossing in the plane of
+// the triangle it crosses (STriangle.edgeCrossesWithin): its crossings,
+// where faces meet tangentially, were edges nearly in a sliver's plane
+// taken to cross it far outside it.
 var solidCorpusSound = map[string]bool{
 	"NIST_MBE_PMI_1.stp": true, "NIST_MBE_PMI_3.stp": true, "NIST_MBE_PMI_11.stp": true,
 	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true, "screw.step": true,
+	"NIST_MBE_PMI_5.stp": true,
 }
 
 // TestSolidCorpus reads the vendor files as solids: each shape of those
@@ -250,8 +254,7 @@ func TestSolidCorpus(t *testing.T) {
 // it but not on it, and two halves of such a face bounded by meridians
 // through its poles. They close now: no naked edges, every edge between
 // two faces running it opposite ways, and the volume FreeCAD gives
-// within the mesh's tolerance. Where their edges miss their faces by
-// more than the file's tolerance the meshes still cross (package 27.4).
+// within the mesh's tolerance, and no mesh edge crossing a triangle.
 func TestSolidSeamEdges(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the corpus")
@@ -280,11 +283,13 @@ func TestSolidSeamEdges(t *testing.T) {
 		// lie on each other (step 24, what is left). Since the mesher
 		// passes over such ears where it has others, the third pole is
 		// clean: the mesh's Euler characteristic is off by 6, was 8.
+		// Neither mesh crosses itself: the two crossings each had were
+		// the checker's (STriangle.edgeCrossesWithin).
 		topos, euler := 0, 0
 		if e.name == "NIST_MBE_PMI_6.stp" {
 			topos, euler = 1, 6
 		}
-		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.TopologyProblems > topos || d > euler || d < -euler ||
+		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.SelfIntersecting != 0 || r.TopologyProblems > topos || d > euler || d < -euler ||
 			math.Abs(r.Volume-e.volume) > allow {
 			t.Errorf("%s: %s, mesh Euler off by %d; want volume %.6g within %.3g", e.name, r.String(), d, e.volume, allow)
 		}
