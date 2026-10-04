@@ -206,7 +206,7 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 						"faces, which is made on its own: pick it alone (%v)", err)
 				}
 				rerr := rollingBallFillet(sh, t, e, pr, origin, flat)
-				if rerr != nil && strings.Contains(err.Error(), "large") {
+				if errors.Is(rerr, errNotRolling) || rerr != nil && strings.Contains(err.Error(), "large") {
 					// Step 10's reason, of size, says more.
 					return err
 				}

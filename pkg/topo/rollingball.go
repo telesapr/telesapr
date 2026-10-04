@@ -1,6 +1,7 @@
 package topo
 
 import (
+	"errors"
 	"math"
 	"sort"
 
@@ -34,6 +35,10 @@ import (
 //
 // The edge must be a closed chain of edges between the two faces,
 // across their seams, as where a spout meets a pot or one pipe another.
+
+// errNotRolling says that the rolling ball doesn't take the edge at
+// all, so that the reason step 10's construction gave stands.
+var errNotRolling = errors.New("topo: not an edge for a rolling ball")
 
 // rbFoot is the point of a face (a patch) nearest a point: the patch,
 // its parameters there, the point and the face's outward normal.
@@ -173,9 +178,7 @@ func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, er
 	at := midpoint(t.Edges[e].Points)
 	pieces, verts, closed := t.blendChain(e)
 	if !closed {
-		end := t.Vertices[verts[len(verts)-1]].P
-		return nil, filletErr(end, "the edge between the two curved faces ends at a corner here: a fillet between "+
-			"curved faces goes round a closed edge, as where a spout meets a pot")
+		return nil, errNotRolling
 	}
 	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts}
 	// Each piece's faces, side by side with the first's.
@@ -634,8 +637,7 @@ type rbCrossing struct {
 func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uint32, flat bool) error {
 	at := midpoint(t.Edges[e].Points)
 	if flat {
-		return filletErr(at, "a chamfer rounds edges of flat faces, cylinders and cones about one axis; "+
-			"between these faces only a fillet can be made")
+		return errNotRolling
 	}
 	rb, err := t.newRollingBall(e, r, flat)
 	if err != nil {
