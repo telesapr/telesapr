@@ -12,15 +12,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # go.mod replaces github.com/msorc/takigo with ../takigo, so takigo is
-  # checked out beside this repository, at the commit this was last
-  # built against. Move it when tkgui follows a newer takigo.
-  TAKIGO_REF: e3bad2ce0ae1e72bb1a0971ba7f3094413be4319
+  # takigo is private: go fetches it from GitHub using TAKIGO_TOKEN,
+  # a token with read access to its contents.
+  GOPRIVATE: github.com/msorc/takigo
   X11_PACKAGES: libx11-dev libxft-dev libfontconfig1-dev libgl-dev
-
-defaults:
-  run:
-    working-directory: telesapr
 
 jobs:
   test:
@@ -29,19 +24,12 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: telesapr
-      - uses: actions/checkout@v4
-        with:
-          repository: msorc/takigo
-          ref: ${{ env.TAKIGO_REF }}
-          path: takigo
-          # takigo is private: a token with read access to its contents.
-          token: ${{ secrets.TAKIGO_TOKEN }}
+      - name: Let go fetch the private takigo
+        run: git config --global url."https://x-access-token:${{ secrets.TAKIGO_TOKEN }}@github.com/".insteadOf https://github.com/
       - uses: actions/setup-go@v5
         with:
-          go-version-file: telesapr/go.mod
-          cache-dependency-path: telesapr/go.sum
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
       - name: Install X11 development packages, Xvfb and a font
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
       - name: gofmt
@@ -61,7 +49,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: telesapr/coverage.out
+          path: coverage.out
 
   lint:
     # The whole tree, which is lint-clean since 2026-10-03.
@@ -70,21 +58,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: telesapr
           fetch-depth: 0
-      - uses: actions/checkout@v4
-        with:
-          repository: msorc/takigo
-          ref: ${{ env.TAKIGO_REF }}
-          path: takigo
-          token: ${{ secrets.TAKIGO_TOKEN }}
+      - name: Let go fetch the private takigo
+        run: git config --global url."https://x-access-token:${{ secrets.TAKIGO_TOKEN }}@github.com/".insteadOf https://github.com/
       - uses: actions/setup-go@v5
         with:
-          go-version-file: telesapr/go.mod
-          cache-dependency-path: telesapr/go.sum
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
       - name: Install X11 development packages
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
       - uses: golangci/golangci-lint-action@v8
         with:
           version: v2.13.2
-          working-directory: telesapr

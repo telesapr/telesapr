@@ -6,7 +6,7 @@ require (
 	github.com/andybalholm/brotli v1.2.0
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 	github.com/modelcontextprotocol/go-sdk v1.6.0
-	github.com/msorc/takigo v0.0.0
+	github.com/msorc/takigo v0.0.0-20261001140539-e3bad2ce0ae1
 	github.com/traefik/yaegi v0.16.1
 )
 
@@ -18,9 +18,5 @@ require (
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 )
-
-// takigo isn't published yet; it is checked out next to this repository
-// (../takigo, branch master).
-replace github.com/msorc/takigo => ../takigo
 
 tool github.com/traefik/yaegi/cmd/yaegi
