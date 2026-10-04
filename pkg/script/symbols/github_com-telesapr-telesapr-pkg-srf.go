@@ -92,6 +92,7 @@ func init() {
 		"ShellInside":                 reflect.ValueOf(srf.ShellInside),
 		"ShellOutside":                reflect.ValueOf(srf.ShellOutside),
 		"Skin":                        reflect.ValueOf(srf.Skin),
+		"SkinThrough":                 reflect.ValueOf(srf.SkinThrough),
 		"SkinWithEnds":                reflect.ValueOf(srf.SkinWithEnds),
 		"SurfCoincOpp":                reflect.ValueOf(srf.SurfCoincOpp),
 		"SurfCoincSame":               reflect.ValueOf(srf.SurfCoincSame),

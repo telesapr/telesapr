@@ -198,6 +198,20 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		}
 		fe, err := t.filletEdgeOf(e, pr, flat)
 		if err != nil {
+			if t.generalBlendEdge(e) {
+				// Between two faces step 10's construction doesn't take: the
+				// rolling ball (roadmap 22.2), an edit of its own.
+				if len(picks) > 1 {
+					return filletErr(midpoint(t.Edges[e].Points), "this edge's fillet rolls a ball between curved "+
+						"faces, which is made on its own: pick it alone (%v)", err)
+				}
+				rerr := rollingBallFillet(sh, t, e, pr, origin, flat)
+				if rerr != nil && strings.Contains(err.Error(), "large") {
+					// Step 10's reason, of size, says more.
+					return err
+				}
+				return rerr
+			}
 			return err
 		}
 		add(fe)
