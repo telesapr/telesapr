@@ -79,40 +79,51 @@ func segmentDistance2d(p, a, b geom.Point2d) (float64, float64) {
 }
 
 // hiddenBySolid reports whether a point of the solid's surface is
-// behind a face of the active group's mesh, as seen. In an orthographic
-// view the ray towards the viewer stays on the point's pixel, so only
-// the triangles over that pixel are tried (hoverGrid); a perspective
-// view tries them all.
+// behind a face of the active group's mesh, as seen: whether the ray
+// from it towards the viewer meets a triangle before the viewer. That
+// ray stays on the point's pixel, along the view direction in an
+// orthographic view and towards the eye in a perspective one, so only
+// the triangles over that pixel are tried (hoverGrid).
 func (gw *GraphicsWindow) hiddenBySolid(p geom.Vector) bool {
 	g := gw.sk().GetGroup(gw.activeGroupH())
 	if g == nil {
 		return false
 	}
-	// From just in front of the point, towards the viewer.
-	eye := gw.view.UnProjectPoint3(geom.Vector{X: 0, Y: 0, Z: 0})
-	far := gw.view.UnProjectPoint3(geom.Vector{X: 0, Y: 0, Z: 1})
-	towards := eye.Minus(far).WithMagnitude(1)
+	gw.view.Tangent = gw.ss.CameraTangent()
+	towards, reach := gw.towardsViewer(p)
 	scale := 1e-3 / gw.view.Scale
 	if scale < 1e-6 {
 		scale = 1e-6
 	}
+	// From just in front of the point.
 	start := p.Plus(towards.ScaledBy(10 * scale))
 	tris := g.DisplayMesh.Triangles
-	gw.view.Tangent = gw.ss.CameraTangent()
-	if gw.view.Tangent != 0 {
-		for i := range tris {
-			if rayHitsTriangle(start, towards, &tris[i]) {
+	h := gw.hoverGridFor(tris)
+	for _, list := range [][]int32{h.at(gw.view.ProjectPoint(p)), h.behind} {
+		for _, i := range list {
+			if t, ok := rayHit(start, towards, &tris[i]); ok && t < reach {
 				return true
 			}
 		}
-		return false
-	}
-	for _, i := range gw.hoverGridFor(tris).at(gw.view.ProjectPoint(p)) {
-		if rayHitsTriangle(start, towards, &tris[i]) {
-			return true
-		}
 	}
 	return false
+}
+
+// towardsViewer is the direction from p towards the viewer, and how
+// far the viewer is: along the view direction without end in an
+// orthographic view, towards the eye in a perspective one, which is
+// where ProjectPoint4's w is zero.
+func (gw *GraphicsWindow) towardsViewer(p geom.Vector) (geom.Vector, float64) {
+	v := &gw.view
+	if v.Tangent == 0 {
+		eye := v.UnProjectPoint3(geom.Vector{X: 0, Y: 0, Z: 0})
+		far := v.UnProjectPoint3(geom.Vector{X: 0, Y: 0, Z: 1})
+		return eye.Minus(far).WithMagnitude(1), math.Inf(1)
+	}
+	n := v.ProjUp.Cross(v.ProjRight)
+	eye := v.Offset.ScaledBy(-1).Plus(n.ScaledBy(-1 / (v.Tangent * v.Scale)))
+	d := eye.Minus(p)
+	return d.WithMagnitude(1), d.Magnitude()
 }
 
 // hoverGrid buckets the triangles of a mesh by the pixels they cover in
@@ -126,6 +137,10 @@ type hoverGrid struct {
 	cell  float64
 	nx    int
 	cells [][]int32
+	// behind are the triangles that reach behind the eye of a
+	// perspective view, whose projected corners don't bound them on
+	// the screen; they are tried at every point.
+	behind []int32
 }
 
 // hoverGridCells is how many cells the grid has along its longer side.
@@ -153,6 +168,11 @@ func (gw *GraphicsWindow) hoverGridFor(tris []srf.STriangle) *hoverGrid {
 	for i := range tris {
 		b := box{lo: geom.Point2d{U: math.Inf(1), V: math.Inf(1)}, hi: geom.Point2d{U: math.Inf(-1), V: math.Inf(-1)}}
 		for _, v := range []geom.Vector{tris[i].A, tris[i].B, tris[i].C} {
+			if _, w := gw.view.ProjectPoint4(v); w <= 0 {
+				h.behind = append(h.behind, int32(i))
+				b = box{lo: geom.Point2d{U: math.Inf(1), V: math.Inf(1)}, hi: geom.Point2d{U: math.Inf(-1), V: math.Inf(-1)}}
+				break
+			}
 			q := gw.view.ProjectPoint(v)
 			b.lo.U, b.lo.V = math.Min(b.lo.U, q.U), math.Min(b.lo.V, q.V)
 			b.hi.U, b.hi.V = math.Max(b.hi.U, q.U), math.Max(b.hi.V, q.V)
@@ -169,6 +189,9 @@ func (gw *GraphicsWindow) hoverGridFor(tris []srf.STriangle) *hoverGrid {
 	ny := int((hi.V-lo.V+2*slack)/h.cell) + 1
 	h.cells = make([][]int32, h.nx*ny)
 	for i, b := range boxes {
+		if math.IsInf(b.lo.U, 1) {
+			continue
+		}
 		x0, y0 := h.index(geom.Point2d{U: b.lo.U - slack, V: b.lo.V - slack})
 		x1, y1 := h.index(geom.Point2d{U: b.hi.U + slack, V: b.hi.V + slack})
 		for y := y0; y <= y1; y++ {
@@ -200,26 +223,28 @@ func (h *hoverGrid) at(p geom.Point2d) []int32 {
 	return h.cells[y*h.nx+x]
 }
 
-// rayHitsTriangle is the Moller and Trumbore test, for t > 0.
-func rayHitsTriangle(o, d geom.Vector, t *srf.STriangle) bool {
+// rayHit is the Moller and Trumbore test, for t > 0: whether the ray
+// o + t d meets the triangle, and at what t.
+func rayHit(o, d geom.Vector, t *srf.STriangle) (float64, bool) {
 	e1, e2 := t.B.Minus(t.A), t.C.Minus(t.A)
 	p := d.Cross(e2)
 	det := e1.Dot(p)
 	if math.Abs(det) < 1e-12 {
-		return false
+		return 0, false
 	}
 	inv := 1 / det
 	s := o.Minus(t.A)
 	u := s.Dot(p) * inv
 	if u < 0 || u > 1 {
-		return false
+		return 0, false
 	}
 	q := s.Cross(e1)
 	v := d.Dot(q) * inv
 	if v < 0 || u+v > 1 {
-		return false
+		return 0, false
 	}
-	return e2.Dot(q)*inv > 0
+	at := e2.Dot(q) * inv
+	return at, at > 0
 }
 
 // drawSolidEdge draws an edge of the solid hovered or selected, all of
