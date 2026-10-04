@@ -85,6 +85,46 @@ blend going on onto the next face is not built: the ball then rolls
 between three faces for a while, which is 22.4's corner patch in all
 but name.
 
+### Volumes against exact values and OpenCASCADE (second agent)
+
+`TestFilletOnOtherSolidsVolumes` (chord 0.002) fillets seven edges of the
+STEP solids at r 1 and compares the volume taken: a box edge (exact,
++0.15%), the hole's rim (Pappus, +0.53%), the blob's upright corner
+between two B-spline walls (the section found in the plane times the
+height, 5.31575: ours -0.05%; OpenCASCADE takes 4.3015, a fifth less, and
+says its shape is valid), the bored sphere's rim (OCC, -0.12%), the
+vase's lip (OCC, +0.07%) and foot (OCC 0.3955, ours -2.8%, 0.011 mm³: not
+checked further), the lid's wall-to-dome edge (OCC, +0.13%). OCC's
+values: `scripts/fillet-step-volumes.py`. At chord 0.005 the hole's rim
+is +2% and converges by 0.002; between 0.002 and 0.001 it stays at
++0.5-0.6%.
+
+Smooth edges are left out of the count (`SolidEdge.Smooth`); none of the
+measured solids lists one: the loft's four "tangent" refusals are
+creases that fade out along the edge (the square foot's corners turning
+into the circles), which the refusal rightly names.
+
+### What a setback vertex blend would take (design, not built)
+
+At a corner of three flat faces whose edges have radii r1, r2, r3, the
+two fillets on a face F (edges i, j) touch F along lines Li, Lj that
+cross at X_F; a single sphere fits only when the radii are one. A
+setback corner cuts each fillet i at the plane square to its edge at
+d_i = the larger of the distances along the edge to X on its two faces,
+so on one face the fillet ends at X and on the other further out. The
+hole left is six-sided: the three fillets' end arcs and, on each face,
+a curve from one fillet's end to the other's, along which the patch must
+be tangent to the face. Fill: six quads about a middle point (each a
+half of two neighbouring sides and two inner curves), bicubic or
+quintic with the cross-boundary derivatives of the cylinder or plane
+beside it and matched across the inner curves (G1 within the seam
+tolerance, `seamCos`); trims are the exact arcs and face curves, so
+each quad's boundary must lie within the chord tolerance of them (half
+arcs as cubics: about 4e-6 r). The same patch, with a ball touching
+three faces at once, is what 22.3's run-offs need. A two-edge corner of
+two radii over a sharp upright edge needs it too: the edges' cylinders
+meet tangentially where both touch the top face.
+
 ## Tried and taken back
 
 - Open chains ending at a curved face: the end section as the conic
@@ -93,15 +133,46 @@ but name.
   ball runs off the extrapolated B-spline faces; the band's top would
   stand out of a curved end face, which planeCut can't follow off a
   plane), so it was not kept.
+- The band-on-cone r 1 crossing at 0.001%: checking across the oblique
+  sections at 1.5 or 2 times the tolerance instead of 3 changes nothing;
+  fitting to a twentieth of the chord tolerance moves the crossing to
+  0.002%. It is the meshes of two tangent faces crossing, not the fit.
+- The ball's foot chosen by trims among every patch holding it, not only
+  those sharing the nearest one's surface: a sphere_bored.step fillet
+  came out unsound (39 of 59), so the shared-surface rule stays.
 - More refinement rounds for the STEP cylinder at chord 0.002%: the misfit
   floors at 2.6e-5 whatever the rounds; not found why.
+
+## 22.4 corners of different radii, or convex and concave: in stages
+
+Plan (2026-10-04, second agent): where rounded edges of different radii
+(or convex and concave ones) meet, round them in stages, one radius and
+kind at a time, so that the later edges go on round the corners the
+earlier ones rounded: a box's vertical edges at R, then its top ring at
+r < R, the ring a chain of lines and the arcs the vertical fillets cut
+in the top face, rounded by cylinders and tori (exact); a boss's convex
+vertical edges, then its concave foot. A stage may not round an edge of
+the solid that no one picked (the chain of a later stage stops there),
+so a mitre of two radii is still refused: its chain would go on down the
+third, unpicked edge.
+
+Sweep rate fixed before building: 0 failures allowed on the grid of
+box (vertical R, top ring r) and boss (vertical R, foot r), r < R.
 
 ## Next
 
 - 22.3: the blend going on onto the next face (three faces at once).
-- 22.4: vertex blends (setback corner patches); also the loft's foot
-  corners and the lid's corners of 22.5's measurement.
-- 22.5: OpenCASCADE volumes on the measured solids; box_hole.step's one
+- 22.4: corners of different radii are done in stages where the later
+  edges go on round the earlier ones' arcs (box top ring smaller than
+  its uprights, a boss's foot round its sides). Not done: a true
+  setback vertex blend (an n-sided patch), needed for a mitre of two
+  radii over a sharp upright, a ring larger than its uprights, three
+  different radii at one corner, and the loft's foot and lid corners
+  where an open chain ends on a curved face.
+- 22.5: the loft's 4 "tangent" refusals are seams between its patches,
+  which no fillet should take: the measurement should leave smooth edges
+  out (no script call tells them yet). OpenCASCADE volumes on the
+  measured solids; box_hole.step's one
   edge whose ball skips a face cut from a shared patch between two scan
   samples' faces (faces 7, 9, 8 round the hole).
 - The band on cone, fillet r 1 at chord 0.001%: 2 mesh edges cross where

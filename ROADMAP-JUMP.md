@@ -53,6 +53,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 28 (rest) | Loft guide curves (one or two), drafts of two arcs meeting at a corner | `fd137dc` |
 | 25 (rest), 26 (part) | Rolling-ball fillets ending on flat faces, chamfers between curved faces, fillets on lofts, sweeps and STEP solids 32 to 40 of 59, run-offs refused at the point | `add3da7` |
 | Leftovers | Schenkel's naked edges (40 to 0), one of NIST_MBE_PMI_6's poles meshed clean | `ed03d3b` |
+| 26 (more) | Fillet corners of different radii and convex meeting concave, in stages; fillet volumes checked against OpenCASCADE | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -99,8 +100,8 @@ is 22.3 to 22.5.
 |---|---|---|---|---|
 | 25 | 22.2 one edge, two curved faces | Done (`pkg/topo/rollingball.go`, `rollingend.go`; notes `docs/notes/step-25-rolling-ball.md`, `step-26-blends.md`): closed edges between curved faces, chains that end on a flat face (on an exact conic, the flat face grown where a face goes on past it), chamfers between curved faces; sweep 2 of 108. Left: a band-on-cone fillet at r 1 and 0.001% leaves 2 crossing mesh edges where it meets the cone tangentially; the teapot's handle (its union is unsound before any fillet) | 6 wk | done but those |
 | 26 | 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | refused with the point; the blend onto the next face not built |
-| 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | not started |
-| 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | measured: every edge of a loft, a sweep and six STEP solids filleted alone, 32 of 59 sound before, 40 of 59 after the first fixes, none made unsound |
+| 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | in part: corners of different radii, and convex meeting concave, rounded in stages (`pkg/topo/fillet_stages.go`), exact cylinders and tori with tangent seams, sweep 0 of 18. Refused, with the corner marked: a mitre of two radii over a sharp edge, a top ring larger than the uprights, three radii at one corner; these and 22.3 need the setback corner patch designed in `docs/notes/step-26-blends.md` |
+| 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | measured: every edge of a loft, a sweep and six STEP solids filleted alone, 32 of 59 sound before, 40 of 59 after the first fixes, none made unsound; smooth edges left out (`SolidEdge.Smooth`); volumes on seven STEP edges within 0.6% of exact or OpenCASCADE but a vase's foot (-2.8%). Left: open chains ending on a curved face (the loft's foot, the lid's corners) |
 
 ### Step 27, what is left: STEP
 

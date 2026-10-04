@@ -119,6 +119,11 @@ func (t *Topology) smoothEdge(x int) bool {
 	return true
 }
 
+// Smooth reports whether edge e is a seam where its two faces go on
+// into each other without a crease, as the patches of a loft or of a
+// file's face cut along its cells do: no fillet or chamfer rounds it.
+func (t *Topology) Smooth(e int) bool { return t.smoothEdge(e) }
+
 // blendNext is the edge that goes on from e at vertex v as one edge of
 // the solid between the same two faces: the only edge there, other than
 // e, that is not smooth; -1 when there is none.

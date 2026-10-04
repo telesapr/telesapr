@@ -10,10 +10,11 @@ import (
 )
 
 // filletTally is how fillets of every edge of a solid fared: made and
-// sound, made but not sound, or refused, with the reasons.
+// sound, made but not sound, or refused, with the reasons; smooth edges,
+// seams with no corner to round, are left out and counted apart.
 type filletTally struct {
-	sound, unsound, refused int
-	reasons                 map[string]int
+	sound, unsound, refused, smooth int
+	reasons                         map[string]int
 }
 
 // filletEveryEdge fillets each of the edges of the solid build makes,
@@ -22,6 +23,7 @@ type filletTally struct {
 func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, max int) filletTally {
 	tl := filletTally{reasons: map[string]int{}}
 	n := 0
+	var smooth []bool
 	{
 		d := New()
 		d.SetChordTolerance(0.01)
@@ -30,8 +32,15 @@ func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, max int)
 			t.Fatal(p)
 		}
 		n = min(len(g.Solid().Edges()), max)
+		for _, e := range g.Solid().Edges()[:n] {
+			smooth = append(smooth, e.Smooth())
+		}
 	}
 	for i := 0; i < n; i++ {
+		if smooth[i] {
+			tl.smooth++
+			continue
+		}
 		func() {
 			defer func() {
 				if x := recover(); x != nil {
@@ -72,7 +81,7 @@ func (tl filletTally) String() string {
 		rs = append(rs, fmt.Sprintf("%d× %s", n, r))
 	}
 	sort.Strings(rs)
-	return fmt.Sprintf("%d sound, %d unsound, %d refused [%s]", tl.sound, tl.unsound, tl.refused, strings.Join(rs, "; "))
+	return fmt.Sprintf("%d sound, %d unsound, %d refused, %d smooth left out [%s]", tl.sound, tl.unsound, tl.refused, tl.smooth, strings.Join(rs, "; "))
 }
 
 // Fillets on lofts, sweeps and imported solids (roadmap 22.5): every edge
@@ -166,5 +175,34 @@ func TestFilletStepCylinder(t *testing.T) {
 	want := 2 * math.Pi * (rad - fr*(10-3*math.Pi)/(12-3*math.Pi)) * fr * fr * (1 - math.Pi/4)
 	if took := before - r.Volume; !r.Sound() || math.Abs(took-want) > 0.01*want {
 		t.Errorf("%s: took %g, want %g", r.Summary(), took, want)
+	}
+}
+
+// An extruded outline whose corner is rounded by a tangent arc has
+// smooth edges where the arc's face goes on into the lines' faces, and
+// creased ones round its top and foot.
+func TestSolidEdgeSmooth(t *testing.T) {
+	d := New()
+	d.SketchIn(d.Workplane("XY"), "outline")
+	lines := d.Polyline(true, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0))
+	d.TangentArc(lines[0].End(), 5, true)
+	g := d.Extrude(10, "block")
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	smooth, creased := 0, 0
+	for _, e := range g.Solid().Edges() {
+		if e.Smooth() {
+			smooth++
+			a, b := e.Ends()
+			if !e.Straight() || !near(a.X, b.X) || !near(a.Y, b.Y) {
+				t.Errorf("%s is smooth but doesn't run up the side", e.Describe())
+			}
+		} else {
+			creased++
+		}
+	}
+	if smooth != 2 {
+		t.Errorf("%d smooth edges, want the 2 where the arc meets the lines (%d creased)", smooth, creased)
 	}
 }
