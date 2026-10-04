@@ -1,0 +1,15 @@
+# Edit > Move Group to End moves the active group with the groups only
+# it needs (an extension): the bolt's head goes to the end of the
+# history with its sketch, or the move is refused, naming the group in
+# the way. Undo takes the move back as one step.
+load thread/bolt_m8x30.slvs
+tw
+# Activate the head with its radio button.
+twmove 24 160
+twdown L 24 160
+twup L 24 160
+menu Edit|Move Group to End
+tw
+key z ctrl
+tw
+dump

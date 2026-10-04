@@ -6,6 +6,7 @@ package ui
 import (
 	"math"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -601,18 +602,26 @@ func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
 // ScreenDeleteGroup deletes the shown group (C++
 // TextWindow::ScreenDeleteGroup).
 func (tw *TextWindow) ScreenDeleteGroup(link int, v uint32) {
-	ss := tw.ss
-	sk := ss.SK
-	ss.UndoRemember()
+	tw.ss.UndoRemember()
+	tw.ss.deleteGroup(tw.shown.group)
+}
 
-	hg := tw.shown.group
-	if hg == ss.GW.activeGroupH() {
-		sk.Active = sk.GetGroup(sk.Active).PreviousGroup(sk).H
+// deleteGroup deletes group hg, and with it what used it. When the
+// active group goes, the last group before it that is left is made
+// active, rather than the first one.
+func (ss *SolveSpaceUI) deleteGroup(hg core.HGroup) {
+	sk := ss.SK
+	order := slices.Clone(sk.GroupOrder)
+	was := ss.GW.activeGroupH()
+	if hg == was {
+		if prev := sk.GetGroup(hg).PreviousGroup(sk); prev != nil {
+			sk.Active = prev.H
+		}
 	}
 
 	// Reset the text window, since we're displaying information about
 	// the group that's about to get deleted.
-	tw.ClearSuper()
+	ss.TW.ClearSuper()
 
 	// This is a major change, so let's re-solve everything.
 	for i := range sk.Groups {
@@ -622,6 +631,9 @@ func (tw *TextWindow) ScreenDeleteGroup(link int, v uint32) {
 		}
 	}
 	ss.GenerateAll(sketch.GenerateAll)
+	if sk.ActivateSurvivor(order, was) {
+		ss.groupActivate(sk.GetGroup(sk.Active))
+	}
 
 	// Reset the graphics window. This will also recreate the default
 	// group if it was removed.

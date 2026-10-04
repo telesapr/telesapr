@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -229,6 +230,13 @@ func (sk *Sketch) MoveGroup(h, before core.HGroup) error {
 	if err != nil || newOrder == nil {
 		return err
 	}
+	sk.applyOrder(newOrder)
+	return nil
+}
+
+// applyOrder puts the groups in newOrder, a permutation of the
+// history, giving them the set of order numbers they had.
+func (sk *Sketch) applyOrder(newOrder []core.HGroup) {
 	order := sk.orderedGroups()
 	vals := make([]int, len(order))
 	for i, hg := range order {
@@ -251,7 +259,165 @@ func (sk *Sketch) MoveGroup(h, before core.HGroup) error {
 			break
 		}
 	}
-	return nil
+}
+
+// OwnSources is group h with the groups only it needs: those it refers
+// to, directly or through each other, that no group outside them uses,
+// as an extrusion's sketch and that sketch's own workplane. The
+// references are never among them. They are in history order.
+func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup {
+	if sk.GetGroup(h) == nil {
+		return nil
+	}
+	in := map[core.HGroup]bool{h: true}
+	for grew := true; grew; {
+		grew = false
+		for _, hg := range sk.orderedGroups() {
+			if !in[hg] {
+				continue
+			}
+			for _, d := range sk.GroupDependencies(hg) {
+				if in[d.Group] || d.Group.V == core.HGroupReferences {
+					continue
+				}
+				own := true
+				for _, user := range sk.GroupDependents(d.Group) {
+					if !in[user] {
+						own = false
+						break
+					}
+				}
+				if own {
+					in[d.Group] = true
+					grew = true
+				}
+			}
+		}
+	}
+	var out []core.HGroup
+	for _, hg := range sk.orderedGroups() {
+		if in[hg] {
+			out = append(out, hg)
+		}
+	}
+	return out
+}
+
+// MoveGroupWithSources moves group h, with its OwnSources in their
+// order, to just before group before, or to the end for the zero
+// handle, as MoveGroup moves one group: a move that would put a group
+// ahead of one it refers to is refused with a *MoveError, and nothing
+// moves. It returns the groups moved, in their new order.
+func (sk *Sketch) MoveGroupWithSources(h, before core.HGroup) ([]core.HGroup, error) {
+	moved, newOrder, err := sk.movedOrderWithSources(h, before)
+	if err != nil || newOrder == nil {
+		return moved, err
+	}
+	sk.applyOrder(newOrder)
+	return moved, nil
+}
+
+// CheckMoveGroupWithSources reports the error MoveGroupWithSources
+// would give, without moving anything.
+func (sk *Sketch) CheckMoveGroupWithSources(h, before core.HGroup) error {
+	_, _, err := sk.movedOrderWithSources(h, before)
+	return err
+}
+
+func (sk *Sketch) movedOrderWithSources(h, before core.HGroup) (moved, newOrder []core.HGroup, err error) {
+	if sk.GetGroup(h) == nil {
+		return nil, nil, fmt.Errorf("no group g%03x", h.V)
+	}
+	if before.V != 0 && sk.GetGroup(before) == nil {
+		return nil, nil, fmt.Errorf("no group g%03x", before.V)
+	}
+	if h.V == core.HGroupReferences || before.V == core.HGroupReferences {
+		return nil, nil, fmt.Errorf("the references group stays first")
+	}
+	moved = sk.OwnSources(h)
+	in := map[core.HGroup]bool{}
+	for _, hg := range moved {
+		in[hg] = true
+	}
+	if in[before] {
+		return moved, nil, fmt.Errorf("%s can't move before %s, which moves with it",
+			sk.groupName(h), sk.groupName(before))
+	}
+	order := sk.orderedGroups()
+	newOrder = make([]core.HGroup, 0, len(order))
+	for _, hg := range order {
+		if hg == before {
+			newOrder = append(newOrder, moved...)
+		}
+		if !in[hg] {
+			newOrder = append(newOrder, hg)
+		}
+	}
+	if before.V == 0 {
+		newOrder = append(newOrder, moved...)
+	}
+	if slices.Equal(order, newOrder) {
+		return moved, nil, nil
+	}
+	pos := make(map[core.HGroup]int, len(newOrder))
+	for i, hg := range newOrder {
+		pos[hg] = i
+	}
+	for i, hg := range newOrder {
+		for _, d := range sk.GroupDependencies(hg) {
+			// Only references into or out of what moves can change.
+			at, ok := pos[d.Group]
+			if !ok || at < i || in[hg] == in[d.Group] {
+				continue
+			}
+			e := &MoveError{Moved: h, Group: hg, On: d.Group, Why: d.Why}
+			if in[hg] {
+				e.msg = fmt.Sprintf("%s can't move before %s, which %s uses (%s)",
+					sk.groupName(h), sk.groupName(d.Group), sk.groupName(hg), d.Why)
+			} else {
+				e.msg = fmt.Sprintf("%s can't move after %s, which uses %s (%s)",
+					sk.groupName(h), sk.groupName(hg), sk.groupName(d.Group), d.Why)
+			}
+			return moved, nil, e
+		}
+	}
+	return moved, newOrder, nil
+}
+
+// ActivateSurvivor makes the right group active after a change that
+// deleted groups, as deleting one deletes what used it: was, the group
+// that was active before, if it is still there; else, of order, the
+// history before the change, the nearest group before was that is left
+// and isn't the references, so that new groups still come where the
+// history ends. It changes nothing if no such group is left. It is true
+// if it changed the active group.
+func (sk *Sketch) ActivateSurvivor(order []core.HGroup, was core.HGroup) bool {
+	pick := func(h core.HGroup) bool {
+		if sk.Active == h {
+			return false
+		}
+		sk.Active = h
+		return true
+	}
+	if was.V != core.HGroupReferences && sk.GetGroup(was) != nil {
+		return pick(was)
+	}
+	at := slices.Index(order, was)
+	if at < 0 {
+		at = len(order) - 1
+	}
+	for i := at; i >= 0; i-- {
+		if order[i].V != core.HGroupReferences && sk.GetGroup(order[i]) != nil {
+			return pick(order[i])
+		}
+	}
+	// Nothing before it survived: the first group after it that did.
+	for i := at + 1; i < len(order); i++ {
+		if order[i].V != core.HGroupReferences && sk.GetGroup(order[i]) != nil {
+			return pick(order[i])
+		}
+	}
+	return false
 }
 
 // CheckMoveGroup reports the error MoveGroup(h, before) would give,

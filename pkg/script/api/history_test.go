@@ -207,3 +207,128 @@ func TestBrokenReferences(t *testing.T) {
 		t.Fatalf("undo left %s", names(d.Groups()))
 	}
 }
+
+// Deleting the active group, or a group it uses, leaves the last group
+// before it that is left active, so new groups come at the end.
+func TestDeleteActiveGroup(t *testing.T) {
+	d := New()
+	first := d.Active()
+	d.Rect(V(0, 0, 0), V(10, 10, 0))
+	box := d.Extrude(5, "box")
+	second := d.SketchIn(first.Workplane(), "second")
+	d.Circle(V(20, 20, 0), 3)
+	d.Extrude(5, "pin")
+
+	// The pin goes with its sketch; the box is what is left before it.
+	second.Delete()
+	if d.Active().H != box.H {
+		t.Fatalf("after deleting the active group's sketch, %v is active, want %v", d.Active(), box)
+	}
+	d.Sketch3D("after")
+	if got, want := names(d.Groups()), "g002-sketch-in-plane g003-box g004-after"; got != want {
+		t.Fatalf("groups %q, want %q", got, want)
+	}
+
+	// Deleting the active group itself activates the one before.
+	d.Active().Delete()
+	if d.Active().H != box.H {
+		t.Fatalf("after deleting the active group, %v is active, want %v", d.Active(), box)
+	}
+	// A group that isn't active and isn't used leaves the active one.
+	other := d.Sketch3D("other")
+	d.Activate(box)
+	other.Delete()
+	if d.Active().H != box.H {
+		t.Fatalf("deleting another group made %v active", d.Active())
+	}
+}
+
+// An extrusion moves to the end with its own sketch; a sketch that
+// another group uses too stays.
+func TestMoveWithSources(t *testing.T) {
+	d := New()
+	first := d.Active()
+	d.Rect(V(0, 0, 0), V(10, 10, 0))
+	box := d.Extrude(5, "box")
+	pinSketch := d.SketchIn(first.Workplane(), "pin-sketch")
+	d.Circle(V(20, 20, 0), 3)
+	pin := d.Extrude(5, "pin")
+	in3d := d.Sketch3D("free")
+	d.Line(V(0, 0, 0), V(5, 5, 5))
+
+	if got := names(pin.OwnSources()); got != "g004-pin-sketch g005-pin" {
+		t.Fatalf("the pin's own sources are %q", got)
+	}
+	// The first sketch's workplane is the references'; the box's
+	// sketch is its own.
+	if got := names(box.OwnSources()); got != "g002-sketch-in-plane g003-box" {
+		t.Fatalf("the box's own sources are %q", got)
+	}
+	step := d.Host().(*SketchHost).BeginEval
+
+	step()
+	if err := in3d.MoveBefore(pinSketch); err != nil {
+		t.Fatal(err)
+	}
+	before := names(d.Groups())
+	if before != "g002-sketch-in-plane g003-box g006-free g004-pin-sketch g005-pin" {
+		t.Fatalf("groups %q", before)
+	}
+	// Moving the pin alone leaves its sketch behind; with its sources
+	// both go.
+	step()
+	moved, err := pin.MoveWithSourcesBefore(in3d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := names(moved); got != "g004-pin-sketch g005-pin" {
+		t.Fatalf("moved %q", got)
+	}
+	if got, want := names(d.Groups()), "g002-sketch-in-plane g003-box g004-pin-sketch g005-pin g006-free"; got != want {
+		t.Fatalf("groups %q, want %q", got, want)
+	}
+	step()
+	if _, err := pin.MoveToEndWithSources(); err != nil {
+		t.Fatal(err)
+	}
+	if got := names(d.Groups()); got != before {
+		t.Fatalf("groups %q, want %q", got, before)
+	}
+	if v := pin.Check().Volume; v < 638 || v > 642 { // the box and the pin
+		t.Fatalf("the pin after the move has volume %v", v)
+	}
+	if !d.Undo() || names(d.Groups()) != "g002-sketch-in-plane g003-box g004-pin-sketch g005-pin g006-free" {
+		t.Fatalf("undo left %q", names(d.Groups()))
+	}
+
+	// Refused: a group after them uses one of them, or the place is
+	// among them.
+	step()
+	var corner Entity
+	for _, e := range pin.Entities() {
+		if e.Kind() == "point" {
+			corner = e
+			break
+		}
+	}
+	d.SketchAt(corner, V(1, 0, 0), V(0, 1, 0), "on-pin")
+	if _, err := pin.MoveToEndWithSources(); err == nil || !strings.Contains(err.Error(), "can't move after") {
+		t.Fatalf("moving the pin after a sketch on its face: %v", err)
+	}
+	if _, err := pin.MoveWithSourcesBefore(pinSketch); err == nil || !strings.Contains(err.Error(), "moves with it") {
+		t.Fatalf("moving the pin before its own sketch: %v", err)
+	}
+	for name, fn := range map[string]func(){
+		"move with sources before no group": func() { _, _ = pin.MoveWithSourcesBefore(Group{}) },
+		"own sources of no group":           func() { Group{d: d, H: in3d.H}.OwnSources(); Group{d: d}.OwnSources() },
+	} {
+		func() {
+			defer func() {
+				if _, ok := recover().(error); !ok {
+					t.Errorf("%s: no error", name)
+				}
+			}()
+			fn()
+		}()
+	}
+}
