@@ -4193,13 +4193,17 @@
 						"decl": "func (d *Doc) Arc(center, start, end Vec) Entity",
 						"text": "Arc adds an arc of a circle around center, from start\ncounter-clockwise to end, in the active workplane. The end is put\nat the start's distance from the centre."
 					},
+					"AutoConstrain": {
+						"decl": "func (d *Doc) AutoConstrain(e Entity) (c Constraint, ok bool)",
+						"text": "AutoConstrain adds to a line, an arc or a circle of the active group\nthe constraint the window adds when one is drawn nearly so (Settings,\n\"auto-constrain while drawing\"): a line horizontal or vertical, else\ntangent to an arc or perpendicular to a line it starts on, parallel to\na line, or as long as one; an arc tangent at an end to a line or arc\nthat ends there, else the same radius as an arc or circle; a circle\nthe same radius as one. It is false, with no constraint, when the\nentity is none of these nearly, or the constraint would be redundant.\nLines and arcs get one only in a workplane."
+					},
 					"Batch": {
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
 					},
 					"BillOfMaterials": {
 						"decl": "func (d *Doc) BillOfMaterials() (items []sketch.BOMItem)",
-						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none."
+						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\"."
 					},
 					"BrokenReferences": {
 						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
@@ -6118,6 +6122,10 @@
 						"decl": "func (sk *Sketch) Apply(j *ShellJob) bool",
 						"text": "Apply moves the job's groups, with their solids, into the sketch if it is still defined as when the job was made and the job ran to the end, and reports whether it did."
 					},
+					"ApplySuggestion": {
+						"decl": "func (sk *Sketch) ApplySuggestion(s Suggestion) core.HConstraint",
+						"text": "ApplySuggestion adds the suggested constraint to the active group, unless it would be redundant; it returns the constraint, or none."
+					},
 					"AssemblyParts": {
 						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
 						"text": "AssemblyParts are the parts of the model up to group upTo, as the interference check takes them (interference.go): the solid before the first group that combines as an assembly, and each such group."
@@ -6125,6 +6133,10 @@
 					"BillOfMaterials": {
 						"decl": "func (sk *Sketch) BillOfMaterials() []BOMItem",
 						"text": "BillOfMaterials is the model's parts, by file, in the order of the first group that places each."
+					},
+					"BillOfMaterialsAsRead": {
+						"decl": "func (sk *Sketch) BillOfMaterialsAsRead() []BOMItem",
+						"text": "BillOfMaterialsAsRead is BillOfMaterials for a sketch read from a file and not regenerated, as a linked model's is when the bill of the model linking it counts what it places: which groups are left out is worked out first."
 					},
 					"BumpOrderAfterActive": {
 						"decl": "func (sk *Sketch) BumpOrderAfterActive(g *Group)",
@@ -6622,6 +6634,10 @@
 						"decl": "func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64",
 						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm (C++ Style::Width)."
 					},
+					"SuggestConstraint": {
+						"decl": "func (sk *Sketch) SuggestConstraint(request core.HRequest, wp core.HEntity, group core.HGroup) (Suggestion, bool)",
+						"text": "SuggestConstraint suggests a constraint for the entity of request as it is drawn in workplane wp and group, when it nearly meets one; none in 3d, where nothing is drawn locked to a plane, but for circles."
+					},
 					"SuppressedReason": {
 						"decl": "func (sk *Sketch) SuppressedReason(h core.HGroup) string",
 						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
@@ -6673,6 +6689,10 @@
 			},
 			"SketchDiagnostic": {
 				"text": "SketchDiagnostic captures transient per-group errors during Sketch::GenerateAll.",
+				"kind": "struct"
+			},
+			"Suggestion": {
+				"text": "Suggestion is a constraint an entity being drawn would get when it is placed (roadmap 16.11 for lines, 29.4 for arcs and circles): its type, its entities, and which ends of curves it takes.",
 				"kind": "struct"
 			},
 			"TangentArcSettings": {

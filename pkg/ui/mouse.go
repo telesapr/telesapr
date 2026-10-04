@@ -312,7 +312,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 	case PendingDraggingNewLinePoint, PendingDraggingNewPoint:
 		if gw.pending.operation == PendingDraggingNewLinePoint {
 			if !ctrlDown {
-				gw.pending.suggestion, gw.pending.hasSuggestion = gw.SuggestLineConstraint(gw.pending.request)
+				gw.pending.suggestion, gw.pending.hasSuggestion = gw.SuggestConstraint(gw.pending.request)
 			} else {
 				gw.pending.hasSuggestion = false
 			}
@@ -419,6 +419,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		center := ona.Plus(onb).ScaledBy(0.5)
 
 		sk.GetEntity(hr.Entity(1)).PointForceTo(sk, center)
+		gw.suggestFor(hr, ctrlDown)
 
 		gw.orig.mouse = mp
 		sk.MarkGroupDirtyByEntity(gw.pending.point)
@@ -429,6 +430,9 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		c2 := gw.ProjectPoint(center)
 		r := c2.DistanceTo(mp) / v.Scale
 		sk.GetEntity(circle.Distance).DistanceForceTo(sk, r)
+		if gw.pending.operation == PendingDraggingNewRadius {
+			gw.suggestFor(gw.pending.circle.Request(), ctrlDown)
+		}
 
 		sk.MarkGroupDirtyByEntity(gw.pending.circle)
 		ss.ScheduleShowTW()
@@ -532,8 +536,11 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 		return
 	}
 
-	if gw.pending.operation == PendingDraggingNewLinePoint && gw.pending.hasSuggestion {
-		gw.applySuggestion(gw.pending.suggestion)
+	switch gw.pending.operation {
+	case PendingDraggingNewLinePoint, PendingDraggingNewArcPoint, PendingDraggingNewRadius:
+		if gw.pending.hasSuggestion {
+			gw.applySuggestion(gw.pending.suggestion)
+		}
 	}
 
 	switch gw.pending.operation {
@@ -1155,7 +1162,11 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 		gw.ClearPending(true)
 
 	case PendingDraggingNewPoint, PendingDraggingNewArcPoint:
+		arc := gw.pending.operation == PendingDraggingNewArcPoint
 		gw.ConstrainPointByHovered(gw.pending.point, &mouse)
+		if arc && hasConstraintSuggestion {
+			gw.applySuggestion(constraintSuggestion)
+		}
 		gw.ClearPending(true)
 
 	case PendingDraggingNewCubicPoint:
@@ -1251,6 +1262,9 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 		gw.pending.description = "click next point of line, or press Esc"
 
 	default:
+		if gw.pending.operation == PendingDraggingNewRadius && hasConstraintSuggestion {
+			gw.applySuggestion(constraintSuggestion)
+		}
 		gw.ClearPending(true)
 		if !gw.hover.IsEmpty() {
 			if !ctrlDown {
