@@ -118,3 +118,85 @@ func TestLinkPlacedAsDrawn(t *testing.T) {
 		t.Errorf("the model came in where it was drawn, %v", hi)
 	}
 }
+
+// A linked model's own links count too (roadmap 29.3): a bracket that
+// links a bolt and repeats it, linked and repeated in turn, places
+// four bolts; the bill survives saving, opening and undo; and a file
+// that links itself, by way of another, is counted without looping.
+func TestBillOfMaterialsNested(t *testing.T) {
+	dir := t.TempDir()
+	save := func(d *api.Doc, name string) string {
+		path := filepath.Join(dir, name+".tlspr")
+		if err := d.Save(path); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	link := func(d *api.Doc, path string) api.Group {
+		g, err := d.Link(path, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return g
+	}
+	part := api.New()
+	part.Rect(api.V(0, 0, 0), api.V(2, 2, 0))
+	part.Extrude(2, "")
+	bolt := save(part, "bolt")
+
+	bracket := api.New()
+	link(bracket, bolt)
+	bracket.Translate(2, api.V(10, 0, 0), "")
+	save(bracket, "bracket")
+
+	top := api.New()
+	link(top, filepath.Join(dir, "bracket.tlspr"))
+	top.Translate(2, api.V(0, 30, 0), "")
+	counts := func(d *api.Doc) map[string]int {
+		got := map[string]int{}
+		for _, it := range d.BillOfMaterials() {
+			got[it.Part] = it.Count
+		}
+		return got
+	}
+	check := func(when string, got map[string]int) {
+		t.Helper()
+		if len(got) != 2 || got["bracket"] != 2 || got["bolt"] != 4 {
+			t.Errorf("%s: %v, want 2 brackets and 4 bolts", when, got)
+		}
+	}
+	check("linked", counts(top))
+	for _, it := range top.BillOfMaterials() {
+		if it.Part == "bolt" && (len(it.Groups) != 2 || !strings.Contains(it.Groups[0], " > ")) {
+			t.Errorf("bolts placed by %q", it.Groups)
+		}
+	}
+	path := save(top, "top")
+	opened, err := api.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("opened", counts(opened))
+	opened.Translate(3, api.V(0, 0, 40), "")
+	if c := counts(opened); c["bracket"] != 6 || c["bolt"] != 12 {
+		t.Errorf("a repeat of the repeat: %v", c)
+	}
+	opened.Undo()
+	check("undone", counts(opened))
+
+	// a links b, which links a.
+	b := api.New()
+	b.Rect(api.V(0, 0, 0), api.V(1, 1, 0))
+	bPath := save(b, "b")
+	a := api.New()
+	link(a, bPath)
+	aPath := save(a, "a")
+	b2 := api.New()
+	link(b2, aPath)
+	save(b2, "b")
+	loop := api.New()
+	link(loop, aPath)
+	if c := counts(loop); c["a"] < 1 || c["b"] != 1 {
+		t.Errorf("a loop of links: %v", c)
+	}
+}

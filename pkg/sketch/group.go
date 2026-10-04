@@ -162,6 +162,11 @@ type Group struct {
 	// saved; reloading the links fills them.
 	LinkInfo    []string
 	LinkProblem string
+	// LinkParts is the bill of materials of a linked model: the parts
+	// it places by linking files in turn, each File named relative to
+	// the file holding this sketch (roadmap 29.3). Not saved; reloading
+	// the links fills it.
+	LinkParts []BOMItem
 
 	Color core.RgbaColor
 

@@ -771,7 +771,9 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 // BillOfMaterials is the parts the model places by linking files, one
 // item a file: each link group places one, and a step and repeat, a
 // mirror or a pattern of a link group its copies, but for one where the
-// part already is. Groups left out of the model place none.
+// part already is. Groups left out of the model place none. The parts a
+// linked model links in turn count too, once for each place the model
+// is, their groups named "here > there".
 func (d *Doc) BillOfMaterials() (items []sketch.BOMItem) {
 	d.read(func(sk *sketch.Sketch) { items = sk.BillOfMaterials() })
 	return items
