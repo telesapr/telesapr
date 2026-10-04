@@ -3,6 +3,7 @@ package srf
 import (
 	"math"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
@@ -658,8 +659,9 @@ func folded(srf *SSurface, a, b, c geom.Vector) bool {
 }
 
 // splitTrimDiagonals splits, at its middle in uv, each edge inside the
-// triangles from start on in m (in uv) that joins two points of one
-// curve of the trim el and that the surface leaves at its middle by more than
+// triangles from start on in m (in uv) that joins two points of the
+// trim el along one face beyond, of one curve or of two meeting there,
+// and that the surface leaves at its middle by more than
 // trimSplitOff, with the two triangles on it. A curved face cut by a
 // plane has its trim in that plane, so an edge between two points of
 // that trim that are not neighbours on it lies in the plane's face, inside its
@@ -668,12 +670,12 @@ func folded(srf *SSurface, a, b, c geom.Vector) bool {
 // grid keeps clear of a trim near a pole. The middle is a point of the
 // surface off the plane; splitting both triangles on the edge keeps
 // the mesh closed (roadmap 24.1).
-func (s *SSurface) splitTrimDiagonals(m *SMesh, start int, el *SEdgeList) {
+func (s *SSurface) splitTrimDiagonals(shell *SShell, m *SMesh, start int, el *SEdgeList) {
 	type key struct{ x, y float64 }
 	type pair struct{ a, b key }
-	// The curves each trim point is on: one, or two at a corner. Two
-	// curves' ends at a corner may differ in uv by a rounding, so the
-	// points are found to within a nanometre of uv.
+	// The faces beyond the curves each trim point is on: one, or two
+	// at a corner. Two curves' ends at a corner may differ in uv by a
+	// rounding, so the points are found to within a nanometre of uv.
 	near := func(v geom.Vector) key {
 		return key{math.Round(v.X * 1e9), math.Round(v.Y * 1e9)}
 	}
@@ -688,12 +690,27 @@ func (s *SSurface) splitTrimDiagonals(m *SMesh, start int, el *SEdgeList) {
 			curves[near(p)] = cs
 		}
 	}
+	beyond := map[int]int{}
 	for _, e := range el.Edges {
-		add(e.A, e.AuxA)
-		add(e.B, e.AuxA)
+		b, ok := beyond[e.AuxA]
+		if !ok {
+			b = -e.AuxA - 1
+			if sc := shell.FindCurve(core.HSCurve{V: uint32(e.AuxA)}); sc != nil {
+				switch s.H {
+				case sc.SurfA:
+					b = int(sc.SurfB.V)
+				case sc.SurfB:
+					b = int(sc.SurfA.V)
+				}
+			}
+			beyond[e.AuxA] = b
+		}
+		add(e.A, b)
+		add(e.B, b)
 	}
 	k := func(v geom.Vector) key { return key{v.X, v.Y} }
-	// sameCurve is whether a and b are points of one trim curve.
+	// sameCurve is whether a and b are points of trim curves along one
+	// face beyond.
 	sameCurve := func(a, b geom.Vector) bool {
 		ca, oka := curves[near(a)]
 		cb, okb := curves[near(b)]

@@ -161,15 +161,15 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 }
 
 // sphereFaceMaxFailRate is the fraction of TestSphereThroughFaceSweep's
-// grid allowed to fail: 1 of 135 since roadmap 13.2, a cap so small
-// (bulge 0.02) that it triangulates flat against the face. The nine
-// intersections at the largest bulge that failed before laid a sliver
-// of the sphere's band flat on the plane's face: an ear of three
-// consecutive rim points, convex in the patch's uv, turned over in xyz
-// (folded in triangulate.go). It was 10 on 2026-10-02 and 2026-10-03,
-// and 99 before the closed loops were searched for. The sample of 12
-// has none.
-const sphereFaceMaxFailRate = 1.0 / 135
+// grid allowed to fail: none since roadmap 24.1. The last, a cap so
+// small (bulge 0.02) that its patch's grid kept clear of it, joined
+// two points of the cut on either side of a patch's seam by an edge
+// lying in the box's face (splitTrimDiagonals). It was 1 of 135 after
+// roadmap 13.2, which mended nine intersections whose band of sphere
+// laid a sliver flat on the plane's face (folded in triangulate.go);
+// 10 on 2026-10-02 and 2026-10-03, and 99 before the closed loops were
+// searched for.
+const sphereFaceMaxFailRate = 0
 
 // crossedCylinder is a solid cylinder of radius r, along x through the
 // point (0, dy, 0) turned by angle degrees about y, long enough to
