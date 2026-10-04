@@ -314,6 +314,48 @@ while the chamfer's mesh keeps them all. Fillets there are refused
 - Open chains ending on a curved face and run-offs onto curved faces:
   not attempted in this round.
 
+## Sixth agent: fillets ending on a curved face
+
+- Edges between two flat faces whose end face is curved (the lid's four
+  upright edges under its degree-7 dome) were step 10's "a face at the
+  edge's end is curved". `FilletPicks` now sends a single picked
+  fillet refused so to the rolling ball, on a copy of the shell
+  (`filletOnCurvedEnd`); chamfers there are still refused (the chamfer
+  path came out with 134 naked edges and edges run the same way: not
+  traced).
+- `rbEnd.curved`: `rbEndAt` takes a curved end face, `endHeight` is the
+  signed height over its surface (nearestOnWithin, 0.5 past the patch);
+  the roots for the feet and the arc's middle use it. The conic in the
+  plane through the three is the start; the end section is then the
+  quintic fitted to where the swept surface meets the face at 8 of the
+  ball's arc parameters (`curvedEndSection`): ends at the feet, end legs
+  along face x side (G1 with the sides), the ball's arc weights raised,
+  linear least squares, then each point's parameter the nearest, ten
+  rounds. Every section of such a fillet is raised to degree 5
+  (`raised`, `elevateH`), the ends' derivatives too. The curve must keep
+  to the points and the face within half the chord tolerance (the meshes'
+  own budget), else "make it smaller". A side's face going on past a
+  curved end face is refused (no `planeCut` off a plane).
+- First try, the conic alone: 0.0016 to 0.0043 mm off the dome at r 1:
+  fine at coarse chord tolerances only. A polynomial (weights 1) quintic
+  fitted worse than the ball's weights.
+- Lid: 8 of 12 to 12 of 12; 22.5 40 to 44 of 59. Volumes against
+  OpenCASCADE's makeFillet on the file (`scripts/fillet-step-volumes.py`):
+  2.1765/2.1733, 2.2962/2.2929, 2.0287/2.0258, 1.8069/1.8042 at chord
+  0.002 (0.15% over). `TestFilletEndsOnCurvedFaceSweep` (4 edges, r 0.5
+  to 2.5, chord 0.002 and 0.005): 0 allowed before the run, 8 of 40
+  refused at r 1.5 to 2.5: the dome's height round the corner is no
+  quintic within the tolerance (degree 5 in the angle misses by 3e-4,
+  6 by 2e-5); pieces would need a section of several Beziers.
+- Loft (12 refused) and blob (2) moved on to other refusals: the loft's
+  foot edges, ending on a side face across a crease, now get "the ball
+  ... doesn't touch the face" (the side's B-spline carried past its
+  patch); the top ring's edges end where the creases fade to tangent:
+  "meets the flat face almost along it" (the chain should go on round
+  the ring across a crease that is smooth at that vertex; blendNext
+  takes only edges smooth all along). Not done: run-offs onto curved
+  faces; the size-3 slot chamfer.
+
 ## Next
 
 - 22.3: a fillet that takes material away running off; a run-off onto a

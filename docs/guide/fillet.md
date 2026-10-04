@@ -72,12 +72,20 @@ fillet goes on to that face: its plane cuts the fillet too, and both the end fac
 grow by the fillet's end. Where the ball can't touch both faces (the radius too large for the
 room beside a hole), where the fillet's end runs off onto a curved face or off both faces, or
 where a fillet that takes material away runs off onto the next face, the fillet is refused at the
-place. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
+place.
+
+The end face may be curved too, as a box's upright edge between flat walls ends at the top on a
+domed lid: the ball's sweep is cut by the dome, and the fillet's end is a curve of degree 5
+fitted to where the two meet, the dome's edge too, keeping to both within half the chord
+tolerance; where the dome bends too much across a wide fillet for one such curve, the fillet is
+refused at the place ("make it smaller"). A chamfer there is not made yet, and a face that goes
+on past the curved face, so that the fillet's end would stand out of it, is refused. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
 [`examples/scripts/bandfillet`](../../examples/scripts/bandfillet/bandfillet.go).
 
 ## Not yet
 
-Fillets between curved faces along an edge that ends at a curved face, corners where convex
+Fillets between curved faces along an edge that ends at a curved face the side faces go on
+past, chamfers of an edge that ends at a curved face, corners where convex
 meets concave at a vertex that the stages can't round, setback corners of chamfers, and a
 blend that runs off its face onto a curved face, or that takes material away and runs off onto
 the next face, are refused with a message; they are the rest

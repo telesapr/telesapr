@@ -38,15 +38,18 @@ import (
 // meets the plane, from the vertex to the point the fillet touches,
 // which both faces then share.
 
-// rbEnd is the flat face an open chain ends at, at vertex v: its plane,
-// its normal n pointing on past the end, and its edges from v with side
-// k's face, a[k].
+// rbEnd is the face an open chain ends at, at vertex v: its plane, its
+// normal n pointing on past the end, and its edges from v with side k's
+// face, a[k]. A curved end face (curved) has n its normal at v, and
+// sign turns its surface's normal to point on past the end.
 type rbEnd struct {
-	v, f int
-	n    geom.Vector
-	d    float64
-	a    [2]int
-	face [2]int
+	v, f   int
+	n      geom.Vector
+	d      float64
+	a      [2]int
+	face   [2]int
+	curved bool
+	sign   float64
 }
 
 // rbEndAt is the flat face the chain, through edge at vertex v between
@@ -87,12 +90,38 @@ func (t *Topology) rbEndAt(v int, faces [2]int, edge int) (*rbEnd, error) {
 	}
 	n, ok := t.planarNormal(end.f)
 	if !ok {
-		return nil, filletErr(t.Vertices[v].P, "the edge ends where it meets a curved face: a fillet between curved "+
-			"faces ends where its edge meets a flat face")
+		// A curved end face: the fillet ends where the surface the ball
+		// sweeps meets it (curvedEnd).
+		s := t.Surface(end.f)
+		if s == nil {
+			return nil, errNotRolling
+		}
+		_, _, p := nearestOnWithin(s, t.Vertices[v].P, 0)
+		var u, w float64
+		s.ClosestPointToUV(p, &u, &w, false)
+		if n = s.NormalAt(u, w); n.Magnitude() == 0 {
+			return nil, filletErr(t.Vertices[v].P, "the curved face the edge ends at has no normal here")
+		}
+		end.curved, end.sign = true, 1
 	}
 	end.n = n.WithMagnitude(1)
 	end.d = end.n.Dot(t.Vertices[v].P)
 	return end, nil
+}
+
+// endHeight is how far p lies on past end's face, along its normal at
+// the point of it nearest p: for a flat face its height over the plane.
+func (rb *rollingBall) endHeight(end *rbEnd, p geom.Vector) float64 {
+	if !end.curved {
+		return end.n.Dot(p) - end.d
+	}
+	s := rb.t.Surface(end.f)
+	u, v, q := nearestOnWithin(s, p, 0.5)
+	n := s.NormalAt(u, v)
+	if n.Magnitude() == 0 {
+		return end.n.Dot(p.Minus(q))
+	}
+	return end.sign * n.WithMagnitude(1).Dot(p.Minus(q))
 }
 
 // rbSpec is one of the fillet's sections: the ball's at arc length s
@@ -224,18 +253,38 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	var ss [3]float64
 	var feet [2]rbFoot
 	for i := 0; i < 2; i++ {
-		s, sec, err := rb.planeRoot(func(x rbSection) float64 { return nrm.Dot(x.foot[i].p) - d }, s0, dir, at)
+		s, sec, err := rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.foot[i].p) }, s0, dir, at)
 		if err != nil {
 			return rbSection{}, 0, err
 		}
 		ss[i], feet[i] = s, sec.foot[i]
 	}
-	sm, msec, err := rb.planeRoot(func(x rbSection) float64 { return nrm.Dot(x.arc.PointAt(0.5)) - d }, s0, dir, at)
+	sm, msec, err := rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(0.5)) }, s0, dir, at)
 	if err != nil {
 		return rbSection{}, 0, err
 	}
 	ss[2] = sm
-	sec, err := rb.conicIn(nrm, d, feet, msec.arc.PointAt(0.5))
+	m := msec.arc.PointAt(0.5)
+	if end.curved {
+		// On a curved face the three points lie on its surface, and the
+		// end is the conic in the plane through them, as the sections
+		// further in are: it must keep to the face within the tolerance.
+		nrm = feet[1].p.Minus(feet[0].p).Cross(m.Minus(feet[0].p))
+		if rb.flat {
+			// A chamfer's three lie on a line: the plane through it nearest
+			// the face's.
+			e := feet[1].p.Minus(feet[0].p).WithMagnitude(1)
+			nrm = end.n.Minus(e.ScaledBy(end.n.Dot(e)))
+		}
+		if nrm.Magnitude() < 1e-12 {
+			return rbSection{}, 0, filletErr(m, "the fillet's end on the curved face its edge ends at folds here")
+		}
+		if nrm = nrm.WithMagnitude(1); nrm.Dot(end.n) < 0 {
+			nrm = nrm.ScaledBy(-1)
+		}
+		d = nrm.Dot(feet[0].p)
+	}
+	sec, err := rb.conicIn(nrm, d, feet, m)
 	if err != nil {
 		return sec, 0, err
 	}
@@ -321,7 +370,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	var at0 [2]rbSection
 	for k, end := range rb.ends {
 		if end.n.Dot(beyond[k]) < 0 {
-			end.n, end.d = end.n.ScaledBy(-1), -end.d
+			end.n, end.d, end.sign = end.n.ScaledBy(-1), -end.d, -end.sign
 		}
 		if end.n.Dot(beyond[k]) < 0.05 {
 			return nil, nil, nil, filletErr(rb.t.Vertices[end.v].P, "the edge meets the flat face it ends at almost "+
@@ -350,10 +399,14 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	}
 	r0, r1 := lo+ramp[0], hi-ramp[1]
 	rb.target = [2]float64{r0, r1}
+	quartic := rb.anyCurvedEnd()
 	for k := range rb.ends {
 		var err error
 		if deriv[k], err = rb.endDerivative(k); err != nil {
 			return nil, nil, nil, err
+		}
+		if quartic {
+			deriv[k] = elevateH(deriv[k])
 		}
 	}
 	if r1 < r0 {
@@ -414,6 +467,13 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		} else {
 			sec, _, err = rb.endSection(sp.end, sp.lam)
 		}
+		if err == nil && quartic {
+			if sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].curved {
+				sec, err = rb.curvedEndSection(sp.end, sec)
+			} else {
+				sec.arc = raised(sec.arc)
+			}
+		}
 		if err == nil {
 			cache[sp] = sec
 		}
@@ -440,7 +500,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			}
 		}
 		ts[0], ts[len(ts)-1] = 0, 1
-		d0, d1 := make([]geom.Vector4, 3), make([]geom.Vector4, 3)
+		d0, d1 := make([]geom.Vector4, len(deriv[0])), make([]geom.Vector4, len(deriv[1]))
 		for i := range d0 {
 			d0[i], d1[i] = deriv[0][i].ScaledBy(s1-s0), deriv[1][i].ScaledBy(s1-s0)
 		}
@@ -536,6 +596,10 @@ func (rb *rollingBall) cutEnd(sh *srf.SShell, end *rbEnd, arc srf.BSplineCurve) 
 			cut.off = ro
 			continue
 		case -1:
+			if end.curved {
+				return cut, filletErr(q, "the face on side %d goes on past the curved face the edge ends at here, "+
+					"and the fillet's end would stand out of it", k+1)
+			}
 			c, err := rb.planeCut(end, k, v, q)
 			if err != nil {
 				return cut, err
@@ -763,4 +827,250 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 	}
 	forget(fs)
 	return nil
+}
+
+// The end of a fillet on a curved face (roadmap 22.5) is not planar, as
+// the curve the face's surface cuts from the surface the ball sweeps
+// bows out of any plane, and a conic can only keep to the face as far as
+// the face is flat across the fillet. So where an end is curved every
+// section is raised to degree 5, which keeps the conics' shapes exactly,
+// and that end's section is the quintic fitted to where the swept
+// surface meets the face: its ends where the ball touches the faces
+// there, its tangents there along the face and each side's, and its
+// middle points on the swept surface and the face within the fit's
+// tolerance.
+
+// endDeg is the degree of the sections of a fillet with a curved end.
+const endDeg = 5
+
+// anyCurvedEnd reports whether an end of the chain is on a curved face.
+func (rb *rollingBall) anyCurvedEnd() bool {
+	for _, end := range rb.ends {
+		if end != nil && end.curved {
+			return true
+		}
+	}
+	return false
+}
+
+// elevateH raises a quadratic's homogeneous control points, or their
+// derivatives, to degree endDeg.
+func elevateH(h []geom.Vector4) []geom.Vector4 {
+	for deg := len(h) - 1; deg < endDeg; deg++ {
+		out := make([]geom.Vector4, deg+2)
+		out[0], out[deg+1] = h[0], h[deg]
+		for i := 1; i <= deg; i++ {
+			a := float64(i) / float64(deg+1)
+			out[i] = h[i-1].ScaledBy(a).Plus(h[i].ScaledBy(1 - a))
+		}
+		h = out
+	}
+	return h
+}
+
+// fromHomog is the Bezier curve of homogeneous control points h.
+func fromHomog(h []geom.Vector4) srf.BSplineCurve {
+	n := len(h) - 1
+	c := srf.BSplineCurve{Deg: n}
+	for i := 0; i <= n; i++ {
+		c.Knots = append(c.Knots, 0)
+	}
+	for i := 0; i <= n; i++ {
+		c.Knots = append(c.Knots, 1)
+	}
+	for _, x := range h {
+		c.Ctrl = append(c.Ctrl, x.PerspectiveProject())
+		c.Weight = append(c.Weight, x.W)
+	}
+	return c
+}
+
+// raised is a section's arc at degree endDeg.
+func raised(c srf.BSplineCurve) srf.BSplineCurve {
+	if c.Deg >= endDeg {
+		return c
+	}
+	return fromHomog(elevateH(homog(c)))
+}
+
+// curvedEndSection is end k's section on its curved face: sec, the
+// conic through where the swept surface meets the face at the two sides
+// and the middle, refitted as a quartic of the conic's raised weights.
+func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error) {
+	end := rb.ends[k]
+	at := sec.arc.PointAt(0.5)
+	c := raised(sec.arc)
+	// The ball's own arcs' weights, at the ball's own parameters: where
+	// the sides' faces are flat the swept surface is a tube, its arcs
+	// circles, and only the height along it is left to fit.
+	ball, err := rb.section(sec.s)
+	if err != nil {
+		return sec, err
+	}
+	w := raised(ball.arc).Weight
+	c.Weight = w
+	q0, q1 := c.Ctrl[0], c.Ctrl[endDeg]
+	// The curve's way at its ends: along the face and the side's.
+	s := rb.t.Surface(end.f)
+	tanAt := func(q, n, toward geom.Vector) geom.Vector {
+		u, v, _ := nearestOnWithin(s, q, 0.5)
+		t := s.NormalAt(u, v).Cross(n)
+		if t.Magnitude() == 0 {
+			return toward.Minus(q)
+		}
+		if t.Dot(toward.Minus(q)) < 0 {
+			t = t.ScaledBy(-1)
+		}
+		return t.WithMagnitude(1)
+	}
+	t0 := tanAt(q0, sec.foot[0].n, c.Ctrl[1])
+	t1 := tanAt(q1, sec.foot[1].n, c.Ctrl[endDeg-1])
+	// Where the swept surface meets the face, along the ball's arcs.
+	dir := endDir(k)
+	const nPts = 9
+	var ts []float64
+	var xs []geom.Vector
+	for j := 1; j < nPts; j++ {
+		tj := float64(j) / nPts
+		_, xsec, err := rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(tj)) }, sec.s, dir, at)
+		if err != nil {
+			return sec, err
+		}
+		ts = append(ts, tj)
+		xs = append(xs, xsec.arc.PointAt(tj))
+	}
+	bern := func(u float64) []float64 {
+		b := make([]float64, endDeg+1)
+		for i := range b {
+			b[i] = binomial(endDeg, i) * math.Pow(u, float64(i)) * math.Pow(1-u, float64(endDeg-i))
+		}
+		return b
+	}
+	// Unknowns: P1 = q0 + a t0, P(n-1) = q1 + b t1, and the points between;
+	// fixed weights, so the weighted residual is linear in them. Each
+	// point's parameter is then the nearest on the curve, and the fit
+	// again.
+	const n = endDeg
+	nu := 2 + 3*(n-3)
+	us := append([]float64(nil), ts...)
+	fit := c
+	for round := 0; round < 10; round++ {
+		ata := make([][]float64, nu)
+		for r := range ata {
+			ata[r] = make([]float64, nu)
+		}
+		atb := make([]float64, nu)
+		for j, x := range xs {
+			b := bern(us[j])
+			wt := 0.0
+			for i := range b {
+				wt += w[i] * b[i]
+			}
+			fixed := q0.ScaledBy(w[0]*b[0] + w[1]*b[1]).Plus(q1.ScaledBy(w[n-1]*b[n-1] + w[n]*b[n]))
+			rhs := x.ScaledBy(wt).Minus(fixed)
+			cols := []geom.Vector{t0.ScaledBy(w[1] * b[1]), t1.ScaledBy(w[n-1] * b[n-1])}
+			for i := 2; i <= n-2; i++ {
+				f := w[i] * b[i]
+				cols = append(cols, geom.Vector{X: f}, geom.Vector{Y: f}, geom.Vector{Z: f})
+			}
+			for r := 0; r < nu; r++ {
+				for q := 0; q < nu; q++ {
+					ata[r][q] += cols[r].Dot(cols[q])
+				}
+				atb[r] += cols[r].Dot(rhs)
+			}
+		}
+		x, ok := solveDense(ata, atb)
+		if !ok {
+			return sec, filletErr(at, "the fillet's end on the curved face its edge ends at can't be fitted here")
+		}
+		ctrl := []geom.Vector{q0, q0.Plus(t0.ScaledBy(x[0]))}
+		for i := 2; i <= n-2; i++ {
+			o := 2 + 3*(i-2)
+			ctrl = append(ctrl, geom.Vector{X: x[o], Y: x[o+1], Z: x[o+2]})
+		}
+		fit.Ctrl = append(ctrl, q1.Plus(t1.ScaledBy(x[1])), q1)
+		for j, p := range xs {
+			us[j] = nearestParam(&fit, p, us[j])
+		}
+	}
+	// The curve is both faces' edge: it keeps to them as their meshes do,
+	// within half the chord tolerance.
+	tol := math.Max(srf.ChordTolMm()/2, 1e-6)
+	for j, p := range xs {
+		if d := fit.PointAt(us[j]).Minus(p).Magnitude(); d > tol {
+			return sec, filletErr(p, "the fillet's end on the curved face its edge ends at can't be fitted within "+
+				"%.3g mm here (%.3g): make it smaller", tol, d)
+		}
+	}
+	for _, u := range []float64{0.0625, 0.1875, 0.3125, 0.4375, 0.5625, 0.6875, 0.8125, 0.9375} {
+		p := fit.PointAt(u)
+		if h := math.Abs(rb.endHeight(end, p)); h > tol {
+			return sec, filletErr(p, "the fillet's end strays %.3g mm from the curved face its edge ends at "+
+				"here: make it smaller", h)
+		}
+	}
+	sec.arc = fit
+	return sec, nil
+}
+
+// nearestParam is the parameter of curve c's point nearest p, from u.
+func nearestParam(c *srf.BSplineCurve, p geom.Vector, u float64) float64 {
+	h := 1e-4
+	for it := 0; it < 20; it++ {
+		a, b := math.Max(0, u-h), math.Min(1, u+h)
+		d := c.PointAt(b).Minus(c.PointAt(a)).ScaledBy(1 / (b - a))
+		if d.MagSquared() == 0 {
+			break
+		}
+		step := p.Minus(c.PointAt(u)).Dot(d) / d.MagSquared()
+		u = math.Max(0, math.Min(1, u+step))
+		if math.Abs(step) < 1e-12 {
+			break
+		}
+	}
+	return u
+}
+
+// binomial is n choose k.
+func binomial(n, k int) float64 {
+	b := 1.0
+	for i := 1; i <= k; i++ {
+		b = b * float64(n-k+i) / float64(i)
+	}
+	return b
+}
+
+// solveDense solves a x = b by elimination with partial pivoting.
+func solveDense(a [][]float64, b []float64) ([]float64, bool) {
+	n := len(b)
+	x := make([]float64, n)
+	for c := 0; c < n; c++ {
+		p := c
+		for r := c + 1; r < n; r++ {
+			if math.Abs(a[r][c]) > math.Abs(a[p][c]) {
+				p = r
+			}
+		}
+		if math.Abs(a[p][c]) < 1e-300 {
+			return x, false
+		}
+		a[c], a[p] = a[p], a[c]
+		b[c], b[p] = b[p], b[c]
+		for r := c + 1; r < n; r++ {
+			f := a[r][c] / a[c][c]
+			for q := c; q < n; q++ {
+				a[r][q] -= f * a[c][q]
+			}
+			b[r] -= f * b[c]
+		}
+	}
+	for r := n - 1; r >= 0; r-- {
+		s := b[r]
+		for q := r + 1; q < n; q++ {
+			s -= a[r][q] * x[q]
+		}
+		x[r] = s / a[r][r]
+	}
+	return x, true
 }
