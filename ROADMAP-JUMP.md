@@ -57,7 +57,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 26 (setback) | Setback corner patches where three or more fillets meet: rings larger than the uprights, three radii, four edges at an apex | `e51869a` |
 | 26 (run-offs) | Corner-filling blends that run off onto a flat face, band-on-cone chamfers and fillets | `b6d7045` |
 | 26 (slot) | Chamfers where a slot meets a cone: a flat face's nearly straight contour meshed | `bbbb561` |
-| 26 (curved ends) | Fillets of edges between flat faces that end on a curved face | MERGE |
+| 26 (curved ends) | Fillets of edges between flat faces that end on a curved face | `31e0672` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
