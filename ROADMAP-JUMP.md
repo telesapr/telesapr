@@ -91,7 +91,7 @@ Step 24 is merged but for these. Notes: `docs/notes/step-24-spike.md`.
 | A twisted swept bar | Its flat sides mesh within 1.6% (lofts now within 0.55%). Four grid lines across its sides bring it to 0.16% but make three threads' surfaces cross: a bar cell and a thread flank's are twisted alike, so no rule adds columns to one alone. Untried: fan diagonals alternated so the bias cancels | open |
 | NIST_MBE_PMI_6 as a solid | Its crossings were the checker's (an edge nearly in a triangle's plane counted by its line, not its point; fixed, `edgeCrossesWithin`). Left: the topology problem at its poles, the mesh's Euler number 6 off the shell's, where earlier ears used up every other ear | open |
 
-### Steps 25 and 26: the rest of step 22, general fillets, branch `step-22-general-fillets`
+### Steps 25 and 26, what is left: general fillets
 
 The rolling-ball blend between two faces of any kind: its spine is where the two faces'
 offsets by the radius (22.1) meet, marched as the intersector marches; each cross section is a
