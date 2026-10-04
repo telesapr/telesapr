@@ -139,16 +139,26 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 	}
 	normal, onPlane := sbls.Sets[0].Normal, sbls.Sets[0].Point
 	// Start at the end nearest the profile's plane.
-	chain, err := sk.pathChain(g.Edges, "sweep", func(x geom.Vector) float64 {
+	chain, _, err := sk.pathChainAny(g.Edges, "sweep", func(x geom.Vector) float64 {
 		return math.Abs(x.Minus(onPlane).Dot(normal))
-	}, true)
+	}, true, false, true)
 	if err != nil {
 		return nil, src, err
+	}
+	cornerAt := func(k int) bool {
+		return k > 0 && chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) < sweepTangentCos
 	}
 	if math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
 		return nil, src, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
 	}
 	if g.sweepFitted(chain) {
+		for k := range chain {
+			if cornerAt(k) {
+				x := chain[k].start
+				return nil, src, pathErr(&x, "a twisted sweep, one held to a direction, or one along a curve takes no corners; "+
+					"the path has one at (%g, %g, %g)", x.X, x.Y, x.Z)
+			}
+		}
 		sp, err := sweepPathOf(chain, g)
 		if err != nil {
 			return nil, src, pathErr(&chain[0].start, "%v", err)
@@ -158,13 +168,66 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 	}
 	g.fittedPath = nil
 
-	steps := make([]srf.SweepStep, len(chain))
+	var steps []srf.SweepStep
 	for k, p := range chain {
-		steps[k] = p.step()
+		if cornerAt(k) {
+			d1, d2 := chain[k-1].tangentAt(true), p.tangentAt(false)
+			steps = append(steps, srf.SweepStep{Corner: true, Center: p.start,
+				Axis: d1.Cross(d2).WithMagnitude(1), Angle: math.Acos(math.Max(-1, math.Min(1, d1.Dot(d2))))})
+		}
+		steps = append(steps, p.step())
 	}
-	// The profile must stay clear of each turn's axis.
+	// The profile must stay clear of each turn's axis, and between two
+	// mitres the sections must not cross.
 	frame := srf.RigidIdentity
+	ctrls := func(f func(q geom.Vector) error) error {
+		for si := range sbls.Sets {
+			for _, l := range sbls.Sets[si].Loops() {
+				for ci := range l.Curves {
+					for _, q := range l.Curves[ci].Ctrl[:l.Curves[ci].Degree+1] {
+						if err := f(q); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+		return nil
+	}
 	for k, p := range chain {
+		if cornerAt(k) {
+			d1, d2 := chain[k-1].tangentAt(true), p.tangentAt(false)
+			frame = frame.Then(srf.SweepStep{Corner: true, Center: p.start, Axis: d1.Cross(d2).WithMagnitude(1),
+				Angle: math.Acos(math.Max(-1, math.Min(1, d1.Dot(d2))))}.Motion())
+		}
+		if !p.arc && !p.free && (cornerAt(k) || k+1 < len(chain) && cornerAt(k+1)) {
+			d := p.end.Minus(p.start)
+			length := d.Magnitude()
+			d = d.ScaledBy(1 / length)
+			at := func(c geom.Vector, q geom.Vector, prev, next geom.Vector) float64 {
+				m := prev.Plus(next).WithMagnitude(1)
+				return c.Minus(q).Dot(m) / d.Dot(m)
+			}
+			err := ctrls(func(q geom.Vector) error {
+				x := frame.Apply(q)
+				ts, te := 0.0, length
+				if cornerAt(k) {
+					ts = at(p.start, x, chain[k-1].tangentAt(true), d)
+				}
+				if k+1 < len(chain) && cornerAt(k+1) {
+					te = length + at(p.end, x.Plus(d.ScaledBy(length)), d, chain[k+1].tangentAt(false))
+				}
+				if te-ts <= sweepTol {
+					m := p.start.Plus(p.end).ScaledBy(0.5)
+					return pathErr(&m, "line segment %s of the path is too short for the corners at its ends: "+
+						"the mitres cross on it", sk.entityName(p.h))
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, src, err
+			}
+		}
 		if p.arc {
 			pathRadial := p.start.Minus(p.center)
 			for si := range sbls.Sets {
@@ -183,7 +246,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 				}
 			}
 		}
-		frame = frame.Then(steps[k].Motion())
+		frame = frame.Then(p.step().Motion())
 	}
 	return steps, src, nil
 }
@@ -202,14 +265,14 @@ func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Ve
 // point where dist is least (roadmap 28.5). It says whether the path
 // closes.
 func (sk *Sketch) pathChainOf(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed bool) ([]pathPiece, bool, error) {
-	chain, isClosed, err := sk.pathChainAny(edges, what, dist, cubics, closed)
+	chain, isClosed, err := sk.pathChainAny(edges, what, dist, cubics, closed, false)
 	if err != nil {
 		return nil, false, err
 	}
 	return chain, isClosed, nil
 }
 
-func (sk *Sketch) pathChainAny(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed bool) ([]pathPiece, bool, error) {
+func (sk *Sketch) pathChainAny(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed, corners bool) ([]pathPiece, bool, error) {
 	var pieces []pathPiece
 	for _, he := range edges {
 		e := sk.GetEntity(he)
@@ -357,8 +420,20 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, what string, dist func(geom
 			break
 		}
 		next := chain[k%len(chain)]
-		if chain[k-1].tangentAt(true).Dot(next.tangentAt(false)) < sweepTangentCos {
+		if dot := chain[k-1].tangentAt(true).Dot(next.tangentAt(false)); dot < sweepTangentCos {
 			x := next.start
+			if corners && !chain[k-1].arc && !chain[k-1].free && !next.arc && !next.free {
+				if dot < -1+1e-6 {
+					return nil, false, pathErr(&x, "the path turns back on itself at (%g, %g, %g)", x.X, x.Y, x.Z)
+				}
+				// A corner between two lines: mitred (roadmap 28.4).
+				continue
+			}
+			if corners {
+				return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g) next to an arc or a curve: "+
+					"a %s's corners are between line segments, and its arcs and curves meet their neighbours tangent",
+					x.X, x.Y, x.Z, what)
+			}
 			return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g): a %s needs its pieces to meet tangent",
 				x.X, x.Y, x.Z, what)
 		}

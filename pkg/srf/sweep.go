@@ -16,6 +16,11 @@ type SweepStep struct {
 	Center geom.Vector
 	Axis   geom.Vector
 	Angle  float64
+	// Corner turns the profile where it is, about Axis through Center by
+	// Angle, between two straight pieces that meet at an angle there: the
+	// pieces are mitred, each cut by the plane that halves the corner
+	// (roadmap 28.4).
+	Corner bool
 }
 
 // Rigid is the rigid motion p -> Q p + T.
@@ -37,7 +42,7 @@ func (r Rigid) Then(s Rigid) Rigid {
 
 // Motion is the rigid motion of the step.
 func (st SweepStep) Motion() Rigid {
-	if !st.Arc {
+	if !st.Arc && !st.Corner {
 		return Rigid{Q: geom.QuaternionIdentity, T: st.Along}
 	}
 	q := geom.QuaternionFromAxisAngle(st.Axis.WithMagnitude(1), st.Angle)
@@ -79,6 +84,12 @@ func TransformedLoopSet(sbls *SBezierLoopSet, r Rigid) *SBezierLoopSet {
 func sweepSections(steps []SweepStep) []SweepStep {
 	var out []SweepStep
 	for _, st := range steps {
+		if st.Corner {
+			if st.Angle > 1e-12 {
+				out = append(out, st)
+			}
+			continue
+		}
 		if !st.Arc {
 			if st.Along.Magnitude() > lengthEps {
 				out = append(out, st)
@@ -140,13 +151,63 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 		startFace, endFace = endFace, startFace
 	}
 
-	// The frames: where each piece starts, and where the last ends.
-	frames := make([]Rigid, len(steps)+1)
-	frames[0] = RigidIdentity
-	for k, st := range steps {
-		frames[k+1] = frames[k].Then(st.Motion())
+	// The frames: where each piece starts, and where the last ends. A
+	// corner is no piece: it turns the frame where the profile is.
+	frames := make([]Rigid, 0, len(steps)+1)
+	var pieces []SweepStep
+	// mitre[k] is the plane piece k's start is cut by, after a corner;
+	// mitre[k+1] its end's.
+	type plane struct {
+		at, n geom.Vector
+		ok    bool
 	}
+	var mitre []plane
+	f := RigidIdentity
+	var pending plane
+	for _, st := range steps {
+		if st.Corner {
+			pending = plane{at: st.Center, ok: true}
+			f = f.Then(st.Motion())
+			continue
+		}
+		frames = append(frames, f)
+		mitre = append(mitre, pending)
+		pending = plane{}
+		pieces = append(pieces, st)
+		f = f.Then(st.Motion())
+	}
+	frames = append(frames, f)
+	mitre = append(mitre, plane{})
+	for k := range mitre {
+		if !mitre[k].ok {
+			continue
+		}
+		// The plane halving the corner between the piece before and this.
+		d1 := pieces[k-1].Along.WithMagnitude(1)
+		d2 := pieces[k].Along.WithMagnitude(1)
+		mitre[k].n = d1.Plus(d2).WithMagnitude(1)
+	}
+	steps = pieces
 	end := frames[len(steps)]
+	// section is curve c at joint j: moved by the frame there, or where
+	// a mitre cuts there, the curve as the piece before carries it
+	// projected along that piece onto the mitre's plane.
+	section := func(c *SBezier, j int) SBezier {
+		if !mitre[j].ok {
+			return transformedCopy(c, frames[j].T, frames[j].Q, 1)
+		}
+		before := frames[j-1].Then(steps[j-1].Motion())
+		b := transformedCopy(c, before.T, before.Q, 1)
+		return projectedAlong(b, steps[j-1].Along.WithMagnitude(1), mitre[j].at, mitre[j].n)
+	}
+	// The point p's place at joint j, as section moves it.
+	pointAt := func(p geom.Vector, j int) geom.Vector {
+		if !mitre[j].ok {
+			return frames[j].Apply(p)
+		}
+		before := frames[j-1].Then(steps[j-1].Motion())
+		return projectPoint(before.Apply(p), steps[j-1].Along.WithMagnitude(1), mitre[j].at, mitre[j].n)
+	}
 
 	// The caps, in the csys of the sketch as an extrusion's are.
 	n := sbls.Normal.ScaledBy(-1)
@@ -184,12 +245,29 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 			for i := range loop.Curves {
 				b := transformedCopy(&loop.Curves[i], frames[k].T, frames[k].Q, 1)
 				var ss SSurface
+				mitred := mitre[k].ok || mitre[k+1].ok
 				if st.Arc {
 					ss = FromRevolutionOf(&b, st.Center, st.Axis, 0, st.Angle, 0, 0)
+				} else if mitred {
+					// Past each mitre, whose section leans out of the piece:
+					// the surface reaches over the whole of it.
+					ext := 1.0
+					if mitre[k].ok {
+						ext = math.Max(ext, mitreReach(&b, st.Along, mitre[k].at, mitre[k].n))
+					}
+					if mitre[k+1].ok {
+						e := translatedCopy(b, st.Along)
+						ext = math.Max(ext, mitreReach(&e, st.Along, mitre[k+1].at, mitre[k+1].n))
+					}
+					d := st.Along.WithMagnitude(ext)
+					ss = FromExtrusionOf(&b, d.ScaledBy(-1), st.Along.Plus(d))
 				} else {
 					ss = FromExtrusionOf(&b, geom.Vector{}, st.Along)
 				}
 				ss.Color, ss.TrimBuilt = color, true
+				// A mitre trims the side across its rulings, along a
+				// curve in the mitre's plane.
+				ss.AvoidFlatEars = mitred
 				srfs[k][i] = s.addAndAssignSurfaceId(ss)
 			}
 			if st.Arc {
@@ -212,7 +290,7 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 			// The curve where each piece starts and the last ends,
 			// shared by the surfaces either side, or a cap.
 			for j := 0; j <= len(steps); j++ {
-				sc := SCurve{IsExact: true, Exact: transformedCopy(&loop.Curves[i], frames[j].T, frames[j].Q, 1)}
+				sc := SCurve{IsExact: true, Exact: section(&loop.Curves[i], j)}
 				if tValues == nil {
 					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
 				}
@@ -250,8 +328,11 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 					sc.SurfB = srfs[k][ip]
 					s.addCurveTrimming(sc, false)
 				} else {
-					p := frames[k].Apply(loop.Curves[i].Start())
-					sc = SCurve{IsExact: true, Exact: SBezierFrom2(p, p.Plus(st.Along))}
+					p, q := pointAt(loop.Curves[i].Start(), k), pointAt(loop.Curves[i].Start(), k+1)
+					if !mitre[k+1].ok {
+						q = frames[k].Apply(loop.Curves[i].Start()).Plus(st.Along)
+					}
+					sc = SCurve{IsExact: true, Exact: SBezierFrom2(p, q)}
 					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
 					sc.SurfA = srfs[k][ip]
 					sc.SurfB = srfs[k][i]
@@ -264,4 +345,43 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	for _, t := range turns {
 		s.makeFirstOrderRevolvedRange(t.center, t.axis, t.from, t.to)
 	}
+}
+
+// projectPoint is p moved along d onto the plane through at of normal
+// n.
+func projectPoint(p, d, at, n geom.Vector) geom.Vector {
+	t := at.Minus(p).Dot(n) / d.Dot(n)
+	return p.Plus(d.ScaledBy(t))
+}
+
+// projectedAlong is b moved along d onto the plane through at of normal
+// n, point by point: an affine map, so its control points with the
+// same weights.
+func projectedAlong(b SBezier, d, at, n geom.Vector) SBezier {
+	for i := 0; i <= b.Degree; i++ {
+		b.Ctrl[i] = projectPoint(b.Ctrl[i], d, at, n)
+	}
+	return b
+}
+
+// mitreReach is how far along a straight piece's direction the
+// control points of b, a section square to it, move onto the plane
+// through at of normal n, and a millimetre more: how far past that end
+// the piece's surface must reach to hold the mitred section.
+func mitreReach(b *SBezier, along, at, n geom.Vector) float64 {
+	d := along.WithMagnitude(1)
+	reach := 0.0
+	for i := 0; i <= b.Degree; i++ {
+		t := at.Minus(b.Ctrl[i]).Dot(n) / d.Dot(n)
+		reach = math.Max(reach, math.Abs(t))
+	}
+	return reach + 1
+}
+
+// translatedCopy is b moved by by.
+func translatedCopy(b SBezier, by geom.Vector) SBezier {
+	for i := 0; i <= b.Degree; i++ {
+		b.Ctrl[i] = b.Ctrl[i].Plus(by)
+	}
+	return b
 }

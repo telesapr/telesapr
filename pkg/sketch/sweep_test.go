@@ -71,13 +71,16 @@ func TestSweepProblems(t *testing.T) {
 	flat := d.Line(api.V(0, 0, 0), api.V(10, 0, 0))
 	tight := d.Arc(api.V(1, 0, 10), api.V(0, 0, 10), api.V(1, 0, 11))
 	branch := d.Line(api.V(0, 0, 10), api.V(0, 0, 20))
+	back := d.Line(api.V(0, 0, 10), api.V(0, 0, 5))
 	d.SketchIn(d.Workplane("XY"), "profile")
 	circle := d.Circle(api.V(0, 0, 0), 2)
 	for name, c := range map[string]struct {
 		path []api.Entity
 		want string
 	}{
-		"corner":    {[]api.Entity{up, corner}, "corner"},
+		// A corner between two lines is mitred (roadmap 28.4); one
+		// between a line and the tight arc is refused.
+		"corner":    {[]api.Entity{up, back}, "turns back"},
 		"apart":     {[]api.Entity{up, apart}, "not one chain"},
 		"flat":      {[]api.Entity{flat}, "along the profile's plane"},
 		"tight":     {[]api.Entity{up, tight}, "too tight"},
