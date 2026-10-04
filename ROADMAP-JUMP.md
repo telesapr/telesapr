@@ -49,6 +49,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
 | 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
 | 25 (part) | Rolling-ball fillets on closed edges between two curved faces: cylinders at an angle, cylinder and cone, cylinder and sphere | `8707d1f` |
+| 24 (rest) | Cylinder through cylinder (2 to 0 of 54), the last analytic STEP cut (1 to 0 of 28), bands over a lathe seam (8 to 0 of 108), twisted lofts meshed within 0.55% | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -71,19 +72,15 @@ not depend on each other. Efforts are the earlier plan's where it gave one; the 
 | What to take back from "Left out" | | | Every row there is a proposal |
 | What the review took in without being asked | | | B3 (16.11), G4 (17.4) and S3 (17.5): all done; the user may still disown them |
 
-### Step 24, what is left: Booleans on curved surfaces, branch `step-24b-kernel-robustness`
+### Step 24, what is left: Booleans on curved surfaces
 
-Step 24 merged in part: edges inside a planar cut, trims along cone apexes and sphere poles
-(analytic STEP cuts failing 10 to 1 of 28, corpus sound 5 to 6 of 9, sphere cap 1 to 0 of 135),
-failed Booleans named in `Problem()`, perspective hover on the grid. The spike's notes are in
-`docs/notes/step-24-spike.md`.
+Step 24 is merged but for these. Notes: `docs/notes/step-24-spike.md`.
 
-| Package | Content | State |
+| Item | Content | State |
 |---|---|---|
-| 24.1 cylinder through cylinder | 2 of 54 in the guard: differences where the crossed cylinder's seam pierces the wall beside a full-height strip triangle | open |
-| 24.2 the last analytic STEP cut | A sphere's pole inside the cylinder cutter; 1 of 28 | open |
-| 24.3 lathe seams and pole discs | A band over a lathe seam fails 8 of 108 (was 14): the inner wall's trims beside the seam get mixed with the neighbour patch's. A bore whose cap lies in a lathed tip's plane, off axis, fails 40 of 80: coincident contact (F5) | partly done |
-| 24.4 twisted ruled faces mesh with rows, no columns | A triangle loft turned a third of a turn meshes within 2% (`TestLoftSweep`), a twisted sweep's flat sides within about 2%; the surfaces are right. Refinement by sag alone made the loft sweep 7 times slower; the benchmark gates the fix. Splitting edges where the mesh strays, applied to every curved patch, made lofts and sweeps self-intersect | open |
+| A bore whose cap lies in a lathed tip's plane, off axis | Fails 40 of 80: coincident contact (F5, under "Left out") | open |
+| A twisted swept bar | Its flat sides mesh within 1.6% (lofts now within 0.55%). Four grid lines across its sides bring it to 0.16% but make three threads' surfaces cross | open |
+| NIST_MBE_PMI_6 as a solid | Two crossings (a fan edge on a flat disc, a thin triangle at a curved patch's corner) and one topology problem; `TestSolidSeamEdges` allows them | open |
 
 ### Steps 25 and 26: the rest of step 22, general fillets, branch `step-22-general-fillets`
 
