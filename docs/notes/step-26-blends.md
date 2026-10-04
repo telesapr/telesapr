@@ -104,6 +104,27 @@ measured solids lists one: the loft's four "tangent" refusals are
 creases that fade out along the edge (the square foot's corners turning
 into the circles), which the refusal rightly names.
 
+### What a setback vertex blend would take (design, not built)
+
+At a corner of three flat faces whose edges have radii r1, r2, r3, the
+two fillets on a face F (edges i, j) touch F along lines Li, Lj that
+cross at X_F; a single sphere fits only when the radii are one. A
+setback corner cuts each fillet i at the plane square to its edge at
+d_i = the larger of the distances along the edge to X on its two faces,
+so on one face the fillet ends at X and on the other further out. The
+hole left is six-sided: the three fillets' end arcs and, on each face,
+a curve from one fillet's end to the other's, along which the patch must
+be tangent to the face. Fill: six quads about a middle point (each a
+half of two neighbouring sides and two inner curves), bicubic or
+quintic with the cross-boundary derivatives of the cylinder or plane
+beside it and matched across the inner curves (G1 within the seam
+tolerance, `seamCos`); trims are the exact arcs and face curves, so
+each quad's boundary must lie within the chord tolerance of them (half
+arcs as cubics: about 4e-6 r). The same patch, with a ball touching
+three faces at once, is what 22.3's run-offs need. A two-edge corner of
+two radii over a sharp upright edge needs it too: the edges' cylinders
+meet tangentially where both touch the top face.
+
 ## Tried and taken back
 
 - Open chains ending at a curved face: the end section as the conic
