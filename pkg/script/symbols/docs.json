@@ -4994,6 +4994,10 @@
 						"decl": "func (g Group) SetTwist(degrees float64)",
 						"text": "SetTwist turns a sweep's profile about the path by degrees over the\nwhole of it, evenly along its length: a square swept along a line and\ntwisted by 90 is a twisted bar. A twisted sweep's surface is fitted\nto the true one within a tenth of the chord tolerance, as a sweep\nalong a cubic is. SetExpr with sketch.GroupValC gives it an\nexpression."
 					},
+					"SetTwoSided": {
+						"decl": "func (g Group) SetTwoSided(two bool)",
+						"text": "SetTwoSided makes an extrusion, step and repeat, revolve or helix go\nboth ways from its sketch, or one way when two is false, as the text\nwindow's \"two-sided\" and \"one-sided\" do. An extrusion keeps its whole\ndepth: Extrude(10, ...) then SetTwoSided(true) runs from -5 to 5\nalong the normal, the sketch in the middle. Copies of a step and\nrepeat are laid on both sides of the original; a revolve turns as far\neach way."
+					},
 					"SetVisible": {
 						"decl": "func (g Group) SetVisible(visible bool)",
 						"text": "SetVisible shows or hides the group."
@@ -5041,6 +5045,10 @@
 					"Twist": {
 						"decl": "func (g Group) Twist() (degrees float64)",
 						"text": "Twist is how far a sweep turns its profile about the path over the\nwhole of it, in degrees."
+					},
+					"TwoSided": {
+						"decl": "func (g Group) TwoSided() (two bool)",
+						"text": "TwoSided reports whether an extrusion, step and repeat, revolve or\nhelix goes both ways from its sketch, as the text window's\n\"two-sided\" says."
 					},
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",
