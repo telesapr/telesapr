@@ -673,6 +673,34 @@ func (tw *TextWindow) ScreenDraftAllSides(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
+// showLoftEnds shows how a loft leaves its first profile and reaches
+// its last (roadmap 28.3).
+func (tw *TextWindow) showLoftEnds(g *sketch.Group) {
+	end := func(v float64) string {
+		if v == 0 {
+			return "free"
+		}
+		return sprintf("square to it, %g", v)
+	}
+	tw.Printf(false, "%Bd   %Ftleaves the first%E %s%s %Fl%Ll%f%D[change]%E",
+		end(g.ValB), exprNote(g.ExprB), lf(tw.ScreenChangeLoftStart), g.H.V)
+	tw.Printf(false, "%Ba   %Ftreaches the last%E %s%s %Fl%Ll%f%D[change]%E",
+		end(g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+}
+
+// ScreenChangeLoftStart edits how square a loft leaves its first
+// profile, 0 for free.
+func (tw *TextWindow) ScreenChangeLoftStart(link int, v uint32) {
+	g := tw.ss.SK.GetGroup(tw.shown.group)
+	text := g.ExprB
+	if text == "" {
+		text = sprintf("%g", g.ValB)
+	}
+	tw.ShowEditControl(3, text)
+	tw.edit.meaning = EditHelixPitch
+	tw.edit.group = core.HGroup{V: v}
+}
+
 // ScreenChangePitchOption fixes or frees a helix's pitch (C++
 // TextWindow::ScreenChangePitchOption).
 func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
@@ -900,6 +928,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 			tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
 			tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
 				int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+			tw.showLoftEnds(g)
 			break
 		}
 		tw.Printf(true, " %Ftsmooth loft through %d profiles%E", len(g.LoftThrough)+2)
@@ -916,6 +945,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 		}
 		tw.Printf(false, "%Bp   %Ftturn those after the first by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
 			bg, int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+		tw.showLoftEnds(g)
 	case sketch.GroupFillet:
 		tw.Printf(true, " %Ftround edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",

@@ -10,7 +10,7 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
 | 28.5 pattern along a closed path | done | 6fee564, 30883da (goldens) |
 | 28.2 drafts: chosen sides, neutral plane, sharp arc/line corners | done, see below | WIP 2c6fe81 + final |
 | 28.4 sweeps along solid edges, paths with corners | done: mitres between lines; edges by name | WIP + final |
-| 28.3 smooth lofts: end tangency, guide curves | not started | |
+| 28.3 smooth lofts: end tangency, guide curves | end tangency done; guide curves not started | |
 
 ## 28.2 design
 
@@ -37,7 +37,18 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
   Group.SolidEdges for sweeps; solidEdgePieces via topo.EdgeCurve; NewSweepAlong, Doc.SweepEdges.
 - Not done: corners beside arcs (torus/plane trims), closed sweeps.
 
+## 28.3 design
+
+- topo.LoftEnds / MakeSmoothLoftEnds / SmoothLoftSurfaceEnds: srf.SkinWithEnds with the end
+  derivatives the profile's normal times tangency times the loft's length; a free end takes the
+  free skin's own derivative. SkinWithEnds now takes sections of differing weights (a square to
+  a circle): the weight's derivative is 0 at the ends.
+- Loft group ValB/ValC (start-tangency, end-tangency; not lengths: Group.IsLength excludes loft
+  ValB, and the encoder/decoder now follow IsLength for ValB). Screen rows, Group.Tangency /
+  SetTangency, example nozzle.
+
 ## Next
 
-28.3: topo/smoothloft.go SkinWithEnds takes end derivatives; guide curves need a skin through
-sections constrained to curves.
+Guide curves (28.3's rest): a sketch curve from the first profile to the last; plan was to
+sample the free loft's iso-sections, move each so its matched vertex lies on the guide, and skin
+through them (translation only, exact at the samples). Not started.

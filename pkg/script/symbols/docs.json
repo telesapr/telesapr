@@ -5010,6 +5010,10 @@
 						"decl": "func (g Group) SetSweepUp(up Vec)",
 						"text": "SetSweepUp holds a sweep's frames to the direction up, as far as the\npath's tangent allows, rather than turning them as little as the path\nlets them: a profile swept along a helix with up its axis keeps\nfacing the axis, as a thread's does. The path must never run along\nup. Zero turns them least again."
 					},
+					"SetTangency": {
+						"decl": "func (g Group) SetTangency(start, end float64)",
+						"text": "SetTangency makes a loft leave its first profile square to its plane\nand reach its last square to its, the surface's slope across there\nstart and end times the loft's length; 0 leaves an end free, shaped\nby the profiles alone. A loft of two profiles with an end set is one\nsmooth surface, not ruled patches. SetExpr with sketch.GroupPitch and\nsketch.GroupValC gives them expressions."
+					},
 					"SetThickness": {
 						"decl": "func (g Group) SetThickness(mm float64)",
 						"text": "SetThickness sets a shell's wall thickness in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
@@ -5057,6 +5061,10 @@
 					"SweepUp": {
 						"decl": "func (g Group) SweepUp() (up Vec)",
 						"text": "SweepUp is the direction a sweep holds its frames to, or zero when\nthey turn as little as the path lets them."
+					},
+					"Tangency": {
+						"decl": "func (g Group) Tangency() (start, end float64)",
+						"text": "Tangency is how square a loft leaves its first profile and reaches\nits last, 0 for an end left free (see SetTangency)."
 					},
 					"Thickness": {
 						"decl": "func (g Group) Thickness() (mm float64)",
@@ -5808,6 +5816,10 @@
 					},
 					"IsVisible": {
 						"decl": "func (g *Group) IsVisible() bool"
+					},
+					"LoftEnds": {
+						"decl": "func (g *Group) LoftEnds() topo.LoftEnds",
+						"text": "LoftEnds is how the loft leaves its first profile and reaches its last: ValB and ValC, square to each profile by that much, 0 free (roadmap 28.3)."
 					},
 					"LoftProfiles": {
 						"decl": "func (g *Group) LoftProfiles() []core.HGroup",
@@ -8810,7 +8822,7 @@
 			},
 			"SkinWithEnds": {
 				"decl": "func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vector) (*BSplineSurface, error)",
-				"text": "SkinWithEnds is the cubic surface through sections, curves of one degree, knot vector and weights, at the parameters ts across, from 0 to 1, with the derivatives across at the first and the last given for each control point (Piegl and Tiller, 9.2.2): the interior knots are the sections' own parameters, and two more control points meet the derivatives."
+				"text": "SkinWithEnds is the cubic surface through sections, curves of one degree and knot vector, their weights their own, at the parameters ts across, from 0 to 1, with the derivatives across at the first and the last given for each control point (Piegl and Tiller, 9.2.2): the interior knots are the sections' own parameters, and two more control points meet the derivatives."
 			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",

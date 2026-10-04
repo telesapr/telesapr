@@ -180,6 +180,14 @@ func TestPathEquivalenceSweepCorner(t *testing.T) {
 	}
 }
 
+// A loft's ends set on its screen, and by a script (roadmap 28.3).
+func TestPathEquivalenceLoftTangency(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_tangency", "path_loft_tangency")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupLoft || g.ValB != 1 || g.ValC != 0.5 || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, ends %g and %g, problem %q", g.Type, g.ValB, g.ValC, g.Problem.Msg)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")

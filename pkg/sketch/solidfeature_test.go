@@ -205,6 +205,13 @@ func TestSolidGoldens(t *testing.T) {
 			d.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
 			d.SweepEdges([]api.SolidEdge{front, right}, nil, "")
 		},
+		"loft-tangency": func(d *api.Doc) {
+			bottom, top := twoProfiles(d, 10, 4, 6)
+			d.Loft(bottom, top, "").SetTangency(1, 0.5)
+			// The file keeps no chord tolerance (twoProfiles sets one).
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Regen()
+		},
 		"pattern-ring": func(d *api.Doc) {
 			d.SketchIn(d.Workplane("XY"), "ring")
 			ring := d.Circle(api.V(0, 0, 0), 20)
@@ -622,5 +629,17 @@ func BenchmarkSweepCorners(b *testing.B) {
 		d.SketchIn(d.Workplane("XY"), "profile")
 		d.Circle(api.V(0, 0, 0), 1)
 		d.Sweep(path, "")
+	})
+}
+
+// A square lofted to a square, square to both ends: one cubic surface
+// (roadmap 28.3).
+func BenchmarkLoftTangency(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		bottom := d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 5)
+		top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+		d.Loft(bottom, top, "").SetTangency(1, 1)
 	})
 }

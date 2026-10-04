@@ -457,7 +457,9 @@ func (d *decoder) lengths() {
 	}
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
-		length(&g.ValB, &g.ExprB)
+		if g.IsLength(sketch.GroupPitch) {
+			length(&g.ValB, &g.ExprB)
+		}
 		if g.IsLength(sketch.GroupValC) {
 			length(&g.ValC, &g.ExprC)
 		}
@@ -587,9 +589,9 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 		case "copies", "turn":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "pitch", "distance", "radius", "thickness", "draft-neutral":
+		case "pitch", "distance", "radius", "thickness", "draft-neutral", "start-tangency":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "val-c", "draft", "twist", "second-distance":
+		case "val-c", "draft", "twist", "second-distance", "end-tangency":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "color":
 			g.Color = d.colorField(c)

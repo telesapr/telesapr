@@ -300,7 +300,11 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		n.add(field("loft-through", args...))
 	}
 	n.expr(g.FieldName(sketch.GroupCopies), g.ValA, g.ExprA)
-	n.expr(g.FieldName(sketch.GroupPitch), g.ValB/mmPer, g.ExprB)
+	valB := g.ValB
+	if g.IsLength(sketch.GroupPitch) {
+		valB /= mmPer
+	}
+	n.expr(g.FieldName(sketch.GroupPitch), valB, g.ExprB)
 	valC := g.ValC
 	if g.IsLength(sketch.GroupValC) {
 		valC /= mmPer

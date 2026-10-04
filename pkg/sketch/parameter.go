@@ -114,6 +114,12 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupCopies && g.Type == GroupLoft {
 		return "turn"
 	}
+	if f == GroupPitch && g.Type == GroupLoft {
+		return "start-tangency"
+	}
+	if f == GroupValC && g.Type == GroupLoft {
+		return "end-tangency"
+	}
 	if f == GroupValC && g.Type == GroupSweep {
 		return "twist"
 	}
@@ -123,7 +129,7 @@ func (g *Group) FieldName(f GroupValue) string {
 // IsLength reports whether the group's value f is a length, which the
 // interface shows in its unit: a helix's pitch, a chamfer's distances.
 func (g *Group) IsLength(f GroupValue) bool {
-	return f == GroupPitch || f == GroupValC && g.Type == GroupChamfer
+	return f == GroupPitch && g.Type != GroupLoft || f == GroupValC && g.Type == GroupChamfer
 }
 
 // Value returns the field's number and its expression, both
