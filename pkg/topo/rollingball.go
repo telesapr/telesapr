@@ -79,6 +79,8 @@ type rollingBall struct {
 	// target, where the ball's own sections take over from the conics.
 	endS   [2][3]float64
 	target [2]float64
+	// uvLoops are faces' trims in their patches' (u, v).
+	uvLoops map[int][][]geom.Vector
 	// The edge, densely, on both faces, with the arc length along it.
 	pts    []geom.Vector
 	tan    []geom.Vector
@@ -205,11 +207,20 @@ func (t *Topology) joinedAt(v, a, b int) bool {
 	return false
 }
 
-// generalBlendEdge reports whether edge e is curved, a rolling ball's
-// to round when step 10's construction doesn't take it.
+// generalBlendEdge reports whether edge e is curved, or straight with a
+// curved face at it, a rolling ball's to round when step 10's
+// construction doesn't take it.
 func (t *Topology) generalBlendEdge(e int) bool {
 	fs := t.EdgeFaces(e)
-	return fs[0] >= 0 && fs[1] >= 0 && len(t.Edges[e].CoEdges) == 2 && !t.Straight(e)
+	if fs[0] < 0 || fs[1] < 0 || len(t.Edges[e].CoEdges) != 2 {
+		return false
+	}
+	if !t.Straight(e) {
+		return true
+	}
+	_, flat0 := t.planarNormal(fs[0])
+	_, flat1 := t.planarNormal(fs[1])
+	return !flat0 || !flat1
 }
 
 // newRollingBall works out the chain through edge e and its sides.
@@ -295,15 +306,32 @@ func (rb *rollingBall) foot(k int, x geom.Vector) rbFoot {
 	if !rb.closed {
 		ext = 1
 	}
+	inside := 0
 	for _, f := range rb.side[k] {
 		s := rb.t.Surface(f)
 		u, v, p := nearestOnWithin(s, x, ext)
 		out := math.Max(math.Max(-u, u-1), math.Max(-v, v-1))
 		out = math.Max(0, out-1e-9)
 		d := p.Minus(x).Magnitude()
+		if out == 0 {
+			inside++
+		}
 		if out < bestOut-1e-12 || out <= bestOut+1e-12 && d < bestD {
 			bestD, bestOut = d, out
 			best = rbFoot{f: f, u: u, v: v, p: p}
+		}
+	}
+	if inside > 1 {
+		// Faces that share a patch, trimmed apart, as a file's are cut
+		// along its cells: the one whose trims hold the point.
+		for _, f := range rb.side[k] {
+			if f == best.f || rb.t.Surface(f) != rb.t.Surface(best.f) && !sameSurface(rb.t.Surface(f), rb.t.Surface(best.f)) {
+				continue
+			}
+			if !rb.onFaceUV(best.f, best.u, best.v) && rb.onFaceUV(f, best.u, best.v) {
+				best.f = f
+				break
+			}
 		}
 	}
 	s := rb.t.Surface(best.f)
@@ -330,6 +358,45 @@ func (rb *rollingBall) into(k, i int, n geom.Vector) geom.Vector {
 		}
 	}
 	return d
+}
+
+// onFaceUV reports whether (u, v) of face f's patch lies inside the
+// face's trims, their loops in (u, v) found once.
+func (rb *rollingBall) onFaceUV(f int, u, v float64) bool {
+	if rb.uvLoops == nil {
+		rb.uvLoops = map[int][][]geom.Vector{}
+	}
+	loops, ok := rb.uvLoops[f]
+	if !ok {
+		s := rb.t.Surface(f)
+		for _, l := range rb.t.Faces[f].Loops {
+			loops = append(loops, rb.t.loopUV(s, rb.t.Loops[l].CoEdges))
+		}
+		rb.uvLoops[f] = loops
+	}
+	in := false
+	for _, uv := range loops {
+		if len(uv) > 2 && pointInPolygon(geom.Vector{X: u, Y: v}, uv) {
+			in = !in
+		}
+	}
+	return in
+}
+
+// sameSurface reports whether two patches are the same surface: of one
+// degree, their control points and weights equal.
+func sameSurface(a, b *srf.SSurface) bool {
+	if a.DegM != b.DegM || a.DegN != b.DegN {
+		return false
+	}
+	for i := 0; i <= a.DegM; i++ {
+		for j := 0; j <= a.DegN; j++ {
+			if !a.Ctrl[i][j].Equals(b.Ctrl[i][j]) || a.Weight[i][j] != b.Weight[i][j] {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // onFace reports whether p, on face f's surface, lies inside the face.
@@ -921,6 +988,14 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	}
 	isChain := map[int]bool{}
 	chainCurve := map[core.HSCurve]bool{}
+	onChainLine := func(p geom.Vector) bool {
+		for _, pc := range rb.pieces {
+			if distanceToPolyline(p, t.Edges[pc.Edge].Points) < 10*geom.LengthEps {
+				return true
+			}
+		}
+		return false
+	}
 	for _, pc := range rb.pieces {
 		isChain[pc.Edge] = true
 		ed := &t.Edges[pc.Edge]
@@ -956,11 +1031,16 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 		// The seam between the two patches from a vertex of the edge, the
 		// one nearest the crossing: two patches may meet along two seams,
 		// either side of a hole.
+		// The seam may end at a vertex of the chain, or part way along one
+		// of its edges, as a file's patches' seams do on a whole circle.
 		x, v, near := -1, -1, math.Inf(1)
-		for cv := range onChain {
-			for _, y := range t.Vertices[cv].Edges {
-				fs := t.EdgeFaces(y)
-				if isChain[y] || !(fs[0] == c.faces[0] && fs[1] == c.faces[1] || fs[0] == c.faces[1] && fs[1] == c.faces[0]) {
+		for y := range t.Edges {
+			fs := t.EdgeFaces(y)
+			if isChain[y] || !(fs[0] == c.faces[0] && fs[1] == c.faces[1] || fs[0] == c.faces[1] && fs[1] == c.faces[0]) {
+				continue
+			}
+			for _, cv := range t.Edges[y].V {
+				if !onChain[cv] && !onChainLine(t.Vertices[cv].P) {
 					continue
 				}
 				if d := distanceToPolyline(q, t.Edges[y].Points); d < near {

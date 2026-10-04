@@ -41,8 +41,42 @@ the fillet r 1 at 0.001% (2 self-intersecting mesh edges where the fillet
 meets the cone tangentially) and the chamfer r 2 (runs off the band's top:
 refused, 22.3).
 
+## 22.5 fillets on lofts, sweeps and imported solids (measured, first fixes)
+
+`TestFilletOnOtherSolids` (pkg/script/api) fillets each edge (up to 16)
+of a smooth loft (vase), a swept square bar, and STEP solids read as
+solids, alone, in a document of its own; a fillet made must be sound,
+and each solid's count may only rise.
+
+| solid | before | after |
+|---|---|---|
+| loft (square foot to circles) | 0 of 12 | 0 of 12 |
+| swept bar | 12 of 12 | 12 of 12 |
+| box_hole.step | 12 of 14 | 13 of 14 |
+| cylinder.step | 0 of 2 | 2 of 2 |
+| blob_extruded.step | 0 of 3 | 1 of 3 |
+| sphere_bored.step | 0 of 2 | 2 of 2 |
+| vase_revolved.step | 0 of 2 | 2 of 2 |
+| lid_degree7.step | 8 of 12 | 8 of 12 |
+| all | 32 of 59 (54%) | 40 of 59 (68%) |
+
+Fixes: straight edges with a curved face at them go to the rolling ball
+(`generalBlendEdge`); seams that end part way along a chain edge count
+(a file's whole circle is one edge); `foot` picks, among faces sharing a
+patch (a file's cells trim one patch into several faces), the one whose
+trims hold the point (`onFaceUV`, `sameSurface`). `TestFilletStepCylinder`:
+Pappus within 1% at chord 0.005% (at 0.002% the fit stalls at 2.7e-5
+against 2.4e-5: a floor not found).
+
+What is left there: the loft's foot edges and the blob end where they
+meet a curved face (an open chain's end must be flat: 22.4's corners);
+the loft's seams between its patches are tangent (no fillet there, but
+they are listed as edges); the lid's corners where the edge's end face is
+curved (step 10's corners, 22.4); one box_hole edge's seam.
+
 ## Next
 
 - 22.3: runs off a face (as the chamfer r 2 above, past the band's top).
 - 22.4 vertex blends.
-- 22.5 lofts, sweeps, STEP solids against OpenCASCADE.
+- 22.5: comparison against OpenCASCADE's fillets on the same solids
+  (volumes); ends of open chains at curved faces.
