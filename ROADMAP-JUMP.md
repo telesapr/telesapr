@@ -51,7 +51,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 25 (part) | Rolling-ball fillets on closed edges between two curved faces: cylinders at an angle, cylinder and cone, cylinder and sphere | `8707d1f` |
 | 24 (rest) | Cylinder through cylinder (2 to 0 of 54), the last analytic STEP cut (1 to 0 of 28), bands over a lathe seam (8 to 0 of 108), twisted lofts meshed within 0.55% | `2fcfbae` |
 | 28 (rest) | Loft guide curves (one or two), drafts of two arcs meeting at a corner | `fd137dc` |
-| 25 (rest), 26 (part) | Rolling-ball fillets ending on flat faces, chamfers between curved faces, fillets on lofts, sweeps and STEP solids 32 to 40 of 59, run-offs refused at the point | MERGE |
+| 25 (rest), 26 (part) | Rolling-ball fillets ending on flat faces, chamfers between curved faces, fillets on lofts, sweeps and STEP solids 32 to 40 of 59, run-offs refused at the point | `add3da7` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
