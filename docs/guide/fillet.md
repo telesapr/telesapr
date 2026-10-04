@@ -27,10 +27,18 @@ What it makes:
   fillet rounds them one radius and kind at a time, the larger first, and the later edges go
   on round the corners the earlier ones rounded. A block's upright edges at 8 mm and its top's
   at 3 mm: the top's fillet follows the arcs the upright fillets cut in the top face, with a
-  torus at each. A boss's sides and the foot that joins it to a plate work the same way. A
-  corner where the later edges can't go on round, as a top ring larger than the upright
-  edges, or two top edges of different radii over an upright edge left sharp, is refused,
-  saying why.
+  torus at each. A boss's sides and the foot that joins it to a plate work the same way.
+- Where the later edges can't go on round, as a top ring larger than the upright edges, or
+  three edges of three radii at a corner, or more than three rounded edges at a corner (a
+  pyramid's apex), each fillet is cut short of the corner, set back, and the hole is filled
+  by patches tangent to the fillets and the faces round it. The setback is half the largest
+  radius past where the fillets' tangent lines cross. Corners of radii up to about 3 to 1
+  are always filled; where radii 5 or 6 to 1 sit side by side the patches can fold, and the
+  corner is refused at its point. Example:
+  [`examples/scripts/setback`](../../examples/scripts/setback/setback.go).
+- Two top edges of different radii over an upright edge left sharp are refused, naming the
+  radii: the blend would need a crease. Round the upright edge too, or give the two one
+  radius.
 
 The radius takes an expression. A radius too large for the faces is a problem on the group,
 named on its screen, and the solid passes through unrounded.
@@ -65,7 +73,8 @@ at the place. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.
 
 ## Not yet
 
-Fillets between curved faces along an edge that ends at a curved face, and corners where more
-than three rounded edges meet, or where convex meets concave at a vertex, are refused with a
-message; they are the rest of roadmap 22. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
+Fillets between curved faces along an edge that ends at a curved face, corners where convex
+meets concave at a vertex that the stages can't round, setback corners of chamfers, and a
+blend that runs off its face onto the next one are refused with a message; they are the rest
+of roadmap 22. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
 saying so (15.7).
