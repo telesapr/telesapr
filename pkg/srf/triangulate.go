@@ -658,18 +658,20 @@ func folded(srf *SSurface, a, b, c geom.Vector) bool {
 	return n.Dot(srf.NormalAt(mid.X, mid.Y))*uvTurn < 0
 }
 
-// splitTrimDiagonals splits, at its middle in uv, each edge inside the
-// triangles from start on in m (in uv) that joins two points of the
-// trim el along one face beyond, of one curve or of two meeting there,
-// and that the surface leaves at its middle by more than
-// trimSplitOff, with the two triangles on it. A curved face cut by a
-// plane has its trim in that plane, so an edge between two points of
-// that trim that are not neighbours on it lies in the plane's face, inside its
-// own outline, and the triangles that meet there cross the face's own:
-// a small cap with too few grid points inside, or a band where the
-// grid keeps clear of a trim near a pole. The middle is a point of the
-// surface off the plane; splitting both triangles on the edge keeps
-// the mesh closed (roadmap 24.1).
+// splitTrimDiagonals splits, at its middle in uv, edges inside the
+// triangles from start on in m (in uv) that join two points of the
+// trim el, with the two triangles on each, so that the mesh stays
+// closed. An edge along one face beyond (its points on one curve, or
+// on two meeting there) is split where the surface leaves it at all,
+// by more than trimSplitOff: a curved face cut by a plane has its trim
+// in that plane, so an edge between two points of that trim that are
+// not neighbours on it lies in the plane's face, inside its outline,
+// and the triangles that meet there cross the face's own (a small cap
+// with too few grid points inside, or a band where the grid keeps
+// clear of a trim near a pole; roadmap 24.1). On a patch folded to a
+// pole, an edge between trim points, or points split here, is split
+// where the surface leaves it by more than the chord tolerance, over
+// trimSplitRounds rounds (roadmap 24.2).
 func (s *SSurface) splitTrimDiagonals(shell *SShell, m *SMesh, start int, el *SEdgeList) {
 	type key struct{ x, y float64 }
 	type pair struct{ a, b key }
@@ -731,71 +733,125 @@ func (s *SSurface) splitTrimDiagonals(shell *SShell, m *SMesh, start int, el *SE
 		}
 		return pair{ka, kb}
 	}
-	// Edges inside the mesh are in two of its triangles.
-	count := map[pair]int{}
-	for i := start; i < len(m.Triangles); i++ {
-		t := &m.Triangles[i]
-		for _, e := range [][2]geom.Vector{{t.A, t.B}, {t.B, t.C}, {t.C, t.A}} {
-			if sameCurve(e[0], e[1]) {
-				count[edge(e[0], e[1])]++
+	// The trim's edges in xyz, to keep new points clear of.
+	trimXyz := make([][2]geom.Vector, len(el.Edges))
+	for i, e := range el.Edges {
+		trimXyz[i] = [2]geom.Vector{s.PointAt(e.A.X, e.A.Y), s.PointAt(e.B.X, e.B.Y)}
+	}
+	clear := func(p geom.Vector, d float64) bool {
+		for _, e := range trimXyz {
+			if distanceToSegment(p, e[0], e[1]) < d {
+				return false
 			}
 		}
+		return true
 	}
-	mids := map[pair]geom.Vector{}
-	for e, n := range count {
-		if n != 2 {
-			continue
-		}
-		a, b := geom.Vector{X: e.a.x, Y: e.a.y}, geom.Vector{X: e.b.x, Y: e.b.y}
-		mid := a.Plus(b).ScaledBy(0.5)
-		pa, pb := s.PointAt(a.X, a.Y), s.PointAt(b.X, b.Y)
-		if s.PointAt(mid.X, mid.Y).Minus(pa.Plus(pb).ScaledBy(0.5)).Magnitude() > trimSplitOff {
-			mids[e] = mid
+	// A point on a side of the patch folded to a pole has no one
+	// parameter along it, so an edge from it is no straight line in uv
+	// of the surface; such edges, rulings to a cone's apex, are left.
+	var folds []int
+	for side := range 4 {
+		if s.foldsSide(side) {
+			folds = append(folds, side)
 		}
 	}
-	if len(mids) == 0 {
-		return
-	}
-	end := len(m.Triangles)
-	for i := start; i < end; i++ {
-		t := m.Triangles[i]
-		v := [3]geom.Vector{t.A, t.B, t.C}
-		var mid [3]geom.Vector
-		var split [3]bool
-		n := 0
-		for j := range 3 {
-			mid[j], split[j] = mids[edge(v[j], v[(j+1)%3])]
-			if split[j] {
-				n++
+	atPole := func(p geom.Vector) bool {
+		for _, side := range folds {
+			c := []float64{p.X, p.X - 1, p.Y, p.Y - 1}[side]
+			if math.Abs(c) < 1e-9 {
+				return true
 			}
 		}
-		if n == 0 {
-			continue
+		return false
+	}
+	// Points made here, which edges between trim points split.
+	made := map[key]bool{}
+	tol := ChordTolMm()
+	for round := 0; round < trimSplitRounds; round++ {
+		// Edges inside the mesh are in two of its triangles.
+		count := map[pair]int{}
+		for i := start; i < len(m.Triangles); i++ {
+			t := &m.Triangles[i]
+			for _, e := range [][2]geom.Vector{{t.A, t.B}, {t.B, t.C}, {t.C, t.A}} {
+				if ok0, ok1 := curves[near(e[0])] != [2]int{} || made[k(e[0])], curves[near(e[1])] != [2]int{} || made[k(e[1])]; ok0 && ok1 {
+					count[edge(e[0], e[1])]++
+				}
+			}
 		}
-		// Turn so that edge 0 (v0 to v1) is split, and with two split,
-		// edge 1 as well.
-		for r := 0; r < 3 && !(split[0] && (n != 2 || split[1])); r++ {
-			v = [3]geom.Vector{v[1], v[2], v[0]}
-			mid = [3]geom.Vector{mid[1], mid[2], mid[0]}
-			split = [3]bool{split[1], split[2], split[0]}
+		mids := map[pair]geom.Vector{}
+		for e, n := range count {
+			if n != 2 {
+				continue
+			}
+			a, b := geom.Vector{X: e.a.x, Y: e.a.y}, geom.Vector{X: e.b.x, Y: e.b.y}
+			if atPole(a) || atPole(b) {
+				continue
+			}
+			mid := a.Plus(b).ScaledBy(0.5)
+			pa, pb := s.PointAt(a.X, a.Y), s.PointAt(b.X, b.Y)
+			pm := s.PointAt(mid.X, mid.Y)
+			off := pm.Minus(pa.Plus(pb).ScaledBy(0.5)).Magnitude()
+			// Along one face beyond, any rise splits the edge (it lies in
+			// that face's plane). On a patch folded to a pole, which
+			// has no grid along its straight lines, an edge that strays
+			// from the surface by more than the chord tolerance, across
+			// it, does too, where its middle is clear of the trim: a cone
+			// cut through near its apex was meshed by chords across it.
+			if (round == 0 && sameCurve(a, b) && off > trimSplitOff) || (len(folds) > 0 && off > tol && clear(pm, tol)) {
+				mids[e] = mid
+			}
 		}
-		var out []STriangle
-		switch n {
-		case 1:
-			out = []STriangle{{A: v[0], B: mid[0], C: v[2]}, {A: mid[0], B: v[1], C: v[2]}}
-		case 2:
-			out = []STriangle{{A: v[0], B: mid[0], C: v[2]}, {A: mid[0], B: v[1], C: mid[1]},
-				{A: mid[0], B: mid[1], C: v[2]}}
-		default:
-			out = []STriangle{{A: v[0], B: mid[0], C: mid[2]}, {A: mid[0], B: v[1], C: mid[1]},
-				{A: mid[2], B: mid[1], C: v[2]}, {A: mid[0], B: mid[1], C: mid[2]}}
+		if len(mids) == 0 {
+			return
 		}
-		m.Triangles[i] = out[0]
-		for _, o := range out[1:] {
-			m.AddTriangle(o)
+		for _, mid := range mids {
+			made[k(mid)] = true
+		}
+		end := len(m.Triangles)
+		for i := start; i < end; i++ {
+			t := m.Triangles[i]
+			v := [3]geom.Vector{t.A, t.B, t.C}
+			var mid [3]geom.Vector
+			var split [3]bool
+			n := 0
+			for j := range 3 {
+				mid[j], split[j] = mids[edge(v[j], v[(j+1)%3])]
+				if split[j] {
+					n++
+				}
+			}
+			if n == 0 {
+				continue
+			}
+			// Turn so that edge 0 (v0 to v1) is split, and with two split,
+			// edge 1 as well.
+			for r := 0; r < 3 && !(split[0] && (n != 2 || split[1])); r++ {
+				v = [3]geom.Vector{v[1], v[2], v[0]}
+				mid = [3]geom.Vector{mid[1], mid[2], mid[0]}
+				split = [3]bool{split[1], split[2], split[0]}
+			}
+			var out []STriangle
+			switch n {
+			case 1:
+				out = []STriangle{{A: v[0], B: mid[0], C: v[2]}, {A: mid[0], B: v[1], C: v[2]}}
+			case 2:
+				out = []STriangle{{A: v[0], B: mid[0], C: v[2]}, {A: mid[0], B: v[1], C: mid[1]},
+					{A: mid[0], B: mid[1], C: v[2]}}
+			default:
+				out = []STriangle{{A: v[0], B: mid[0], C: mid[2]}, {A: mid[0], B: v[1], C: mid[1]},
+					{A: mid[2], B: mid[1], C: v[2]}, {A: mid[0], B: mid[1], C: mid[2]}}
+			}
+			m.Triangles[i] = out[0]
+			for _, o := range out[1:] {
+				m.AddTriangle(o)
+			}
 		}
 	}
 }
+
+// trimSplitRounds is how many times splitTrimDiagonals goes over the
+// edges it made.
+const trimSplitRounds = 6
 
 // trimSplitOff is how far, in mm, the surface may leave an edge
 // between two trim points at its middle and the edge stay whole: a

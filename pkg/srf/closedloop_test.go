@@ -309,3 +309,60 @@ func sweepChordTol(t *testing.T) {
 	SetChordTolMm(0.01)
 	t.Cleanup(func() { SetChordTolMm(old) })
 }
+
+// lathedCone is the solid cone of base radius r on z = 0 and apex at
+// height h on the z axis, lathed from a triangle: its curved patches
+// fold to a point at the apex.
+func lathedCone(r, h float64) *SShell {
+	p := []geom.Vector{{}, {X: r}, {Z: h}}
+	sbls := &SBezierLoopSet{Normal: geom.Vector{Y: 1}, Point: p[0]}
+	for i := range p {
+		sbls.Outer.Curves = append(sbls.Outer.Curves, SBezierFrom2(p[i], p[(i+1)%3]))
+	}
+	var sh SShell
+	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+	return &sh
+}
+
+// coneSegment is the volume of the part of the cone of base radius r
+// and height h beyond the plane x = d.
+func coneSegment(r, h, d float64) float64 {
+	const n = 20000
+	v := 0.0
+	for i := range n {
+		z := (float64(i) + 0.5) * h / n
+		if rz := r * (1 - z/h); rz > d {
+			v += (rz*rz*math.Acos(d/rz) - d*math.Sqrt(rz*rz-d*d)) * h / n
+		}
+	}
+	return v
+}
+
+// TestConeCutNearApex cuts a cone by planes parallel to its axis,
+// near it: the cut runs up close to the apex, where the curved patches
+// fold to a point. Each patch's outline in uv must run along the
+// folded side, not across the patch on a diagonal to one corner of
+// it, or the Boolean drops part of the cut; and the patch, which has
+// no grid along its straight lines, must not be meshed by chords
+// across the cone (roadmap 24.2).
+func TestConeCutNearApex(t *testing.T) {
+	sweepChordTol(t)
+	const r, h = 6.0, 9.0
+	cone := lathedCone(r, h)
+	whole := math.Pi * r * r * h / 3
+	for _, d := range []float64{0.4, 0.8772, 2} {
+		box := extrudedBox(geom.Vector{X: d, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20})
+		want := map[SurfaceCombineAs]float64{SurfaceDiff: whole - coneSegment(r, h, d), SurfaceInter: coneSegment(r, h, d)}
+		for _, op := range []SurfaceCombineAs{SurfaceDiff, SurfaceInter} {
+			var out SShell
+			out.MakeFromBoolean(cone, box, op)
+			if out.BooleanFailed || !meshIsSound(&out) {
+				t.Errorf("d = %g, %v: failed %v, sound %v", d, op, out.BooleanFailed, meshIsSound(&out))
+				continue
+			}
+			if got := shellVolume(&out); math.Abs(got-want[op]) > 5e-3*whole {
+				t.Errorf("d = %g, %v: volume %.4f, want %.4f", d, op, got, want[op])
+			}
+		}
+	}
+}

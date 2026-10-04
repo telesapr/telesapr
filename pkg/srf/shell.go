@@ -828,6 +828,17 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 		// with the triangle direction (matches the C++ comment).
 		t.FlipNormal()
 	}
+	// A trim along a pole (openPoles) has two corners at one point:
+	// the triangles on it have no area and would join the pole to
+	// itself.
+	kept := mesh.Triangles[:start]
+	for _, t := range mesh.Triangles[start:] {
+		if t.A.Equals(t.B) || t.B.Equals(t.C) || t.C.Equals(t.A) {
+			continue
+		}
+		kept = append(kept, t)
+	}
+	mesh.Triangles = kept
 }
 
 // trimPointsOff are the points of the surface's trims that it misses
@@ -929,6 +940,12 @@ func (s *SShell) MakeEdgesInto(el *SEdgeList) {
 // split against any intersecting surfaces (and the originals aren't).
 // Mirrors C++ SSurface::MakeEdgesInto (surface.cpp).
 func (srf *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCurvesFrom *SShell) {
+	start := len(sel.Edges)
+	defer func() {
+		if asUV {
+			srf.openPoles(sel, start)
+		}
+	}()
 	for i := range srf.Trim {
 		stb := &srf.Trim[i]
 		sc := shell.FindCurve(stb.Curve)
@@ -945,6 +962,113 @@ func (srf *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, use
 
 		srf.makeTrimEdgesInto(sel, asUV, sc, stb)
 	}
+}
+
+// openPoles mends the uv trim edges from start on in sel where they
+// meet a pole: a side of the patch that the surface folds to one
+// point, as a cone's apex or a sphere's pole. The point's parameters
+// there are any along that side, and the closest point the search
+// finds puts every trim through it at one end of the side, so that a
+// trim running up to the pole crosses the patch's uv square on a
+// diagonal and the outline cuts off part of the face. Each edge's end
+// at a pole takes, along the side, the parameter of the edge's other
+// end, as the curve reaches the pole; a trim that leaves the pole
+// where another came in is joined to it by an edge along the side,
+// of no length on the surface (roadmap 24.2).
+func (srf *SSurface) openPoles(sel *SEdgeList, start int) {
+	if srf.DegM < 1 || srf.DegN < 1 {
+		return
+	}
+	// side is the side of the uv square (0 to 3: u = 0, u = 1, v = 0,
+	// v = 1) that p lies on and that the surface folds to a point, or -1.
+	folds := [4]int{-1, -1, -1, -1}
+	var side func(p geom.Vector) int
+	side = func(p geom.Vector) int {
+		const eps = 1e-9
+		k := -1
+		switch {
+		case math.Abs(p.X) < eps:
+			k = 0
+		case math.Abs(p.X-1) < eps:
+			k = 1
+		case math.Abs(p.Y) < eps:
+			k = 2
+		case math.Abs(p.Y-1) < eps:
+			k = 3
+		}
+		if k < 0 {
+			return -1
+		}
+		if folds[k] < 0 {
+			folds[k] = 0
+			if srf.foldsSide(k) {
+				folds[k] = 1
+			}
+		}
+		if folds[k] == 1 {
+			return k
+		}
+		// A corner: the other side through it may fold.
+		if k < 2 && (math.Abs(p.Y) < eps || math.Abs(p.Y-1) < eps) {
+			return side(geom.Vector{X: 0.5, Y: p.Y})
+		}
+		return -1
+	}
+	// along sets p's parameter along side k to q's.
+	along := func(p *geom.Vector, q geom.Vector, k int) {
+		if k < 2 {
+			p.Y = q.Y
+		} else {
+			p.X = q.X
+		}
+	}
+	type end struct {
+		i  int
+		ok bool
+	}
+	var in, out [4]end
+	var many [4]bool
+	n := len(sel.Edges)
+	for i := start; i < n; i++ {
+		e := &sel.Edges[i]
+		ka, kb := side(e.A), side(e.B)
+		if ka >= 0 && kb >= 0 {
+			continue
+		}
+		if ka >= 0 {
+			along(&e.A, e.B, ka)
+			many[ka] = many[ka] || out[ka].ok
+			out[ka] = end{i, true}
+		}
+		if kb >= 0 {
+			along(&e.B, e.A, kb)
+			many[kb] = many[kb] || in[kb].ok
+			in[kb] = end{i, true}
+		}
+	}
+	for k := range 4 {
+		if many[k] || !in[k].ok || !out[k].ok {
+			continue
+		}
+		a, b := sel.Edges[in[k].i], sel.Edges[out[k].i]
+		if !a.B.Equals(b.A) {
+			sel.AddEdge(a.B, b.A, a.AuxA, a.AuxB, 0)
+		}
+	}
+}
+
+// foldsSide reports whether the surface folds side k of its uv square
+// (0 to 3: u = 0, u = 1, v = 0, v = 1) to one point.
+func (srf *SSurface) foldsSide(k int) bool {
+	var a, b, c geom.Vector
+	if k < 2 {
+		u := float64(k)
+		a, b, c = srf.PointAt(u, 0), srf.PointAt(u, 0.5), srf.PointAt(u, 1)
+	} else {
+		v := float64(k - 2)
+		a, b, c = srf.PointAt(0, v), srf.PointAt(0.5, v), srf.PointAt(1, v)
+	}
+	return a.Equals(b) && a.Equals(c)
 }
 
 // makeTrimEdgesInto walks sc's pwl from stb's start to its finish

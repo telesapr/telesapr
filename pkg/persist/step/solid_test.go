@@ -65,13 +65,14 @@ func TestSolidShapes(t *testing.T) {
 }
 
 // solidCorpusSound are the corpus files whose shapes read as sound
-// solids (2026-10-04); the others fall back to meshes: NIST_MBE_PMI_5
-// and _6 have an edge of one face along another face's seam, Schenkel
-// and screw leave gaps or crossings in the mesh where edges miss their
-// faces by more than the file's tolerance.
+// solids; the others fall back to meshes: NIST_MBE_PMI_5 and _6 have
+// an edge of one face along another face's seam, Schenkel leaves gaps
+// or crossings in the mesh where edges miss their faces by more than
+// the file's tolerance. screw.step reads since roadmap 24.2: its
+// cones' outlines ran across their patches to the apex.
 var solidCorpusSound = map[string]bool{
 	"NIST_MBE_PMI_1.stp": true, "NIST_MBE_PMI_3.stp": true, "NIST_MBE_PMI_11.stp": true,
-	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true,
+	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true, "screw.step": true,
 }
 
 // TestSolidCorpus reads the vendor files as solids: each shape of those
@@ -208,17 +209,15 @@ func TestSolidBooleans(t *testing.T) {
 	}
 }
 
-// solidBooleanMaxFail is the failures allowed: 3 of 28 since roadmap
-// 24.2, all at a pole or an apex: a cone cut through its apex (both
-// cutters), a sphere's pole inside the cylinder. Of the 10 that failed
-// at the first measurement (2026-10-04), four block cuts of spheres and
-// a vase had the curved patches join two points of the block's planar
+// solidBooleanMaxFail is the failures allowed: 1 of 28 since roadmap
+// 24.2, a sphere's pole inside the cylinder cutter. At the first
+// measurement (2026-10-04) 10 failed: four block cuts of spheres and a
+// vase had the curved patches join two points of the block's planar
 // cut by an edge lying in the block's face (splitTrimDiagonals, 24.1);
-// three were this test's: the cylinder's caps lay at z = 0, in the
-// bottom faces of the box and the bored sphere and across the torus,
-// coincident contact, since a loop set's caps lie in the plane through
-// its Point, which was left at the origin.
-const solidBooleanMaxFail = 3
+// three were this test's, the cylinder's caps lying at z = 0 in the
+// shapes' faces; the cone cut through its apex had its patches'
+// outlines run across them to the apex (openPoles, 24.2).
+const solidBooleanMaxFail = 1
 
 // Tessellated shapes (AP242, roadmap 21.6) read as meshes: a cube of
 // triangulated faces in a tessellated solid, a tetrahedron of strips
