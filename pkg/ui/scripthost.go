@@ -352,6 +352,10 @@ func (h *ScriptHost) Render(path string, width, height int, right, up geom.Vecto
 	var werr error
 	err := h.collect(func() {
 		if right == (geom.Vector{}) && up == (geom.Vector{}) {
+			// A turn of the view that is still going on (Align View
+			// to Workplane) is drawn where it ends.
+			ss.GW.FinishAnimation()
+			view = ss.GW.view
 			werr = ss.WriteWindowPicture(path, uint(width), uint(height))
 			return
 		}
