@@ -258,6 +258,21 @@ func (d *Doc) Unsaved() (unsaved bool) {
 	return unsaved
 }
 
+// ForgetChanges lets the changes made since the sketch was saved go, as
+// "Don't Save" does when the application asks: File > New, Open and
+// the others that replace the drawing refuse to run from a script while
+// it has unsaved changes, so that nothing is lost unasked. The
+// drawing itself stays as it is until such a command replaces it.
+func (d *Doc) ForgetChanges() {
+	d.h.Run(func() {
+		if f, ok := d.h.(interface{ ForgetChanges() }); ok {
+			f.ForgetChanges()
+			return
+		}
+		d.h.Sketch().Unsaved = false
+	})
+}
+
 // MmPerUnit is the size in mm of the unit the user interface shows
 // lengths in.
 func (d *Doc) MmPerUnit() (mm float64) {
@@ -510,7 +525,9 @@ func Commands() []string {
 // only one entry has it. telesapr-cli runs scripts on the interface
 // without a window, so commands run there too; a document of a Go
 // program's own, from New, has no menu to run them from, and it is an
-// error.
+// error. What the command says went wrong is the error too: a command
+// that would replace a drawing with unsaved changes, as File > New,
+// refuses; see ForgetChanges.
 func (d *Doc) RunCommand(label string) (err error) {
 	d.h.Run(func() { err = d.h.RunCommand(label) })
 	return err

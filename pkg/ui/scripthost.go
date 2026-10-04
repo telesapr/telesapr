@@ -387,8 +387,23 @@ func (h *ScriptHost) Select(sel []sketch.Selection) {
 	gw.Invalidate(false)
 }
 
-// RunCommand runs a menu command, as choosing it does.
-func (h *ScriptHost) RunCommand(label string) error { return h.ss.RunCommand(label) }
+// RunCommand runs a menu command, as choosing it does; what the
+// command says went wrong is the error.
+func (h *ScriptHost) RunCommand(label string) error {
+	var err error
+	if cerr := h.collect(func() { err = h.ss.RunCommand(label) }); err == nil {
+		err = cerr
+	}
+	return err
+}
+
+// ForgetChanges lets the sketch's unsaved changes go, as "Don't Save"
+// does.
+func (h *ScriptHost) ForgetChanges() {
+	h.ss.SK.Unsaved = false
+	h.ss.RemoveAutosave()
+	h.ss.UpdateWindowTitles()
+}
 
 // SetChordTolerance sets the application's chord tolerance, as
 // Configuration does; the next regeneration gives it to the sketch.
