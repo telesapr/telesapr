@@ -24,14 +24,14 @@ import (
 	"os"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	. "github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func main() {
 	write := len(os.Args) < 2 || os.Args[1] != "-"
-	doc := Current()
+	doc := api.Current()
 	ok := true
-	expect := func(what string, e Entity, want core.ConstraintType) {
+	expect := func(what string, e api.Entity, want core.ConstraintType) {
 		c, made := doc.AutoConstrain(e)
 		fmt.Printf("%-12s %v\n", what, c)
 		if !made || c.Type() != want {
@@ -39,19 +39,19 @@ func main() {
 		}
 	}
 
-	bottom := doc.Line(V(0, 0, 0), V(40, 0.4, 0))
+	bottom := doc.Line(api.V(0, 0, 0), api.V(40, 0.4, 0))
 	expect("bottom", bottom, core.ConstraintHorizontal)
 	doc.Regen()
 	p := bottom.End().Pos()
 	// A half circle from the bottom's end, about a centre square above it.
-	end := doc.Arc(p.Plus(V(0, 10, 0)), p, p.Plus(V(0, 20, 0)))
+	end := doc.Arc(p.Plus(api.V(0, 10, 0)), p, p.Plus(api.V(0, 20, 0)))
 	doc.Coincident(end.Start(), bottom.End())
 	expect("end", end, core.ConstraintArcLineTangent)
 
-	holes := []Entity{doc.Circle(V(10, 10, 0), 3)}
-	holes = append(holes, doc.Circle(V(20, 10, 0), 3.02))
+	holes := []api.Entity{doc.Circle(api.V(10, 10, 0), 3)}
+	holes = append(holes, doc.Circle(api.V(20, 10, 0), 3.02))
 	expect("second hole", holes[1], core.ConstraintEqualRadius)
-	holes = append(holes, doc.Circle(V(30, 10, 0), 2.99))
+	holes = append(holes, doc.Circle(api.V(30, 10, 0), 2.99))
 	expect("third hole", holes[2], core.ConstraintEqualRadius)
 
 	doc.Regen()
