@@ -5443,6 +5443,10 @@
 						"decl": "func (e SolidEdge) Points() (pts []Vec)",
 						"text": "Points are points along the edge, from one end to the other."
 					},
+					"Smooth": {
+						"decl": "func (e SolidEdge) Smooth() (ok bool)",
+						"text": "Smooth reports whether the edge is a seam where its two faces go on\ninto each other without a crease, as the patches of a loft or a\nsurface's pieces do: there is no corner there for a fillet or a\nchamfer to round."
+					},
 					"Straight": {
 						"decl": "func (e SolidEdge) Straight() (ok bool)",
 						"text": "Straight reports whether the edge is a line segment."

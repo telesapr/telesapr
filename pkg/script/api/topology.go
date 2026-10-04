@@ -418,6 +418,18 @@ func (e SolidEdge) Straight() (ok bool) {
 	return ok
 }
 
+// Smooth reports whether the edge is a seam where its two faces go on
+// into each other without a crease, as the patches of a loft or a
+// surface's pieces do: there is no corner there for a fillet or a
+// chamfer to round.
+func (e SolidEdge) Smooth() (ok bool) {
+	e.s.d.read(func(sk *sketch.Sketch) {
+		tp, i := e.resolve(sk)
+		ok = tp.Smooth(i)
+	})
+	return ok
+}
+
 // Pos is the vertex's position.
 func (v SolidVertex) Pos() Vec { return v.p }
 
