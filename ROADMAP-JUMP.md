@@ -48,6 +48,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | `c4137f3` |
 | 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
 | 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
+| 25 (part) | Rolling-ball fillets on closed edges between two curved faces: cylinders at an angle, cylinder and cone, cylinder and sphere | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -91,12 +92,12 @@ offsets by the radius (22.1) meet, marched as the intersector marches; each cros
 circular arc between the contact points; the blend is fitted through those arcs by step 20's
 fitting, and the two faces are cut along the contact curves (step 21's trimming, since the
 faces are often of several patches). Fillets between planes, cylinders and cones stay on
-step 10's exact construction. Step 25 is 22.2; step 26 is 22.3 to 22.5, on the same branch or,
-once 22.2 is merged, a new one.
+step 10's exact construction. Step 25 is 22.2, on branch `step-25-rolling-ball` (the step-22 branch name was taken); step 26
+is 22.3 to 22.5.
 
 | Step | Package | Content | Effort | State |
 |---|---|---|---|---|
-| 25 | 22.2 one edge, two curved faces | The blend along one smooth chain between two faces of any kind, ending where the chain meets a flat face; the faces cut back along the contact curves. Covers a cylinder meeting a cylinder at an angle, spheres, tori, B-spline faces, a chamfer's cone meeting the cylinder it was cut from. The teapot's spout (a cylinder meeting a cone at 48 degrees) and handle are ready tests | 6 wk, less the coaxial case done | coaxial case done (`ddf8144`) |
+| 25 | 22.2 one edge, two curved faces | The blend along one smooth chain between two faces of any kind, ending where the chain meets a flat face; the faces cut back along the contact curves. Done for closed edges between two curved faces (`pkg/topo/rollingball.go`; notes in `docs/notes/step-25-rolling-ball.md`): tees of cylinders at 90 to 55 degrees, the teapot's spout, a rod through a ball; sweep 3 of 108. Left: chains that end at a flat face, chamfers between curved faces, the teapot's handle (its union is unsound before any fillet) | 6 wk | closed edges done |
 | 26 | 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | not started |
 | 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | not started |
 | 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | not started |

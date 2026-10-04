@@ -7359,6 +7359,7 @@
 				},
 				"makers": [
 					"Skin",
+					"SkinThrough",
 					"SkinWithEnds"
 				]
 			},
@@ -8949,6 +8950,10 @@
 			"Skin": {
 				"decl": "func Skin(sections []BSplineCurve) (*BSplineSurface, []float64, error)",
 				"text": "Skin is the surface through sections, curves of one degree and knot vector: u runs along them, v across, from the first section at v = 0 to the last at v = 1."
+			},
+			"SkinThrough": {
+				"decl": "func SkinThrough(sections []BSplineCurve, ts []float64, start, end []geom.Vector4) (*BSplineSurface, error)",
+				"text": "SkinThrough is SkinWithEnds for sections whose weights may differ, as arcs of different angles do: the derivatives across at the ends are given in homogeneous coordinates, (w p)' and w', for each control point."
 			},
 			"SkinWithEnds": {
 				"decl": "func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vector) (*BSplineSurface, error)",

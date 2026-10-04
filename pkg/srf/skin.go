@@ -236,6 +236,38 @@ func solveDense(a [][]float64, rhs [][]geom.Vector4) error {
 // derivatives. Surfaces that end and start with one section and
 // derivatives along one another meet tangent there.
 func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vector) (*BSplineSurface, error) {
+	if len(sections) < 2 || len(ts) != len(sections) {
+		return nil, errors.New("srf: a skin needs two sections at least, each with its parameter")
+	}
+	first := sections[0]
+	if len(start) != len(first.Ctrl) || len(end) != len(first.Ctrl) {
+		return nil, errors.New("srf: a derivative for each control point at each end")
+	}
+	last := sections[len(sections)-1]
+	for i, c := range sections {
+		if len(c.Weight) != len(first.Weight) {
+			return nil, fmt.Errorf("srf: section %d has another degree or knot vector than the first", i)
+		}
+	}
+	// Each end section with its own weights; the weight's derivative
+	// across is 0 at the ends, so there the homogeneous derivative is the
+	// weight times the point's.
+	hs, he := make([]geom.Vector4, len(start)), make([]geom.Vector4, len(end))
+	for i := range start {
+		hs[i] = geom.Vector4FromWeighted(first.Weight[i], start[i])
+		he[i] = geom.Vector4FromWeighted(last.Weight[i], end[i])
+		hs[i].W, he[i].W = 0, 0
+	}
+	return SkinThrough(sections, ts, hs, he)
+}
+
+// SkinThrough is SkinWithEnds for sections whose weights may differ,
+// as arcs of different angles do: the derivatives across at the ends
+// are given in homogeneous coordinates, (w p)' and w', for each control
+// point. Surfaces that end and start with one section and the same
+// homogeneous derivatives, each scaled by its own parameter's length,
+// meet tangent there.
+func SkinThrough(sections []BSplineCurve, ts []float64, start, end []geom.Vector4) (*BSplineSurface, error) {
 	k := len(sections)
 	if k < 2 || len(ts) != k {
 		return nil, errors.New("srf: a skin needs two sections at least, each with its parameter")
@@ -294,17 +326,12 @@ func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vecto
 	put(1)
 	rhs := make([][]geom.Vector4, len(first.Ctrl))
 	for i := range rhs {
-		// Each section with its own weights; the weight's derivative
-		// across is 0 at the ends, so there the homogeneous derivative is
-		// the weight times the point's.
-		w0, w1 := sections[0].Weight[i], sections[k-1].Weight[i]
 		col := make([]geom.Vector4, 0, n)
-		col = append(col, homogeneous(sections[0].Ctrl[i], w0), geom.Vector4FromWeighted(w0, start[i]))
+		col = append(col, homogeneous(sections[0].Ctrl[i], sections[0].Weight[i]), start[i])
 		for s := 1; s < k-1; s++ {
 			col = append(col, homogeneous(sections[s].Ctrl[i], sections[s].Weight[i]))
 		}
-		col = append(col, geom.Vector4FromWeighted(w1, end[i]), homogeneous(sections[k-1].Ctrl[i], w1))
-		col[1].W, col[n-2].W = 0, 0
+		col = append(col, end[i], homogeneous(sections[k-1].Ctrl[i], sections[k-1].Weight[i]))
 		rhs[i] = col
 	}
 	if err := solveDense(a, rhs); err != nil {
@@ -316,10 +343,14 @@ func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vecto
 		r := make([]geom.Vector, n)
 		w := make([]float64, n)
 		for j, q := range rhs[i] {
+			if q.W <= 0 {
+				return nil, errors.New("srf: the sections' weights interpolate to below zero")
+			}
 			r[j], w[j] = q.PerspectiveProject(), q.W
 		}
 		// The end sections exactly, as Skin keeps them.
-		r[0], r[n-1] = sections[0].Ctrl[i], sections[k-1].Ctrl[i]
+		r[0], w[0] = sections[0].Ctrl[i], sections[0].Weight[i]
+		r[n-1], w[n-1] = sections[k-1].Ctrl[i], sections[k-1].Weight[i]
 		sf.Ctrl = append(sf.Ctrl, r)
 		sf.Weight = append(sf.Weight, w)
 	}
