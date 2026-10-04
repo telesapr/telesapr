@@ -46,7 +46,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | `d92c5f8` |
 | 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
 | 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | `c4137f3` |
-| 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | MERGE |
+| 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
