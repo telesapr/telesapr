@@ -253,8 +253,9 @@ func (d *Doc) Image(path string, at Vec, height float64) Entity {
 	})
 }
 
-// edit runs one of the engine's edits of the drawing, which keeps its
-// own undo step, and fails with what it says.
+// edit runs one of the engine's edits of the drawing, which remembers
+// its own undo step (folded into the script's), and fails with what it
+// says.
 func (d *Doc) edit(fn func(sk *sketch.Sketch) error) {
 	d.h.Run(func() {
 		if d.h.Sketch().RegenerationPending() {
@@ -264,8 +265,9 @@ func (d *Doc) edit(fn func(sk *sketch.Sketch) error) {
 		sk.Active = sk.ActiveGroup()
 		undo := sk.Undo.Write
 		err := fn(sk)
-		if sk.Undo.Write != undo {
+		if n := sk.UndoPushedSince(undo); n > 0 {
 			sk.Unsaved = true
+			d.h.Remembered(n)
 		}
 		if err != nil {
 			fail("%s", err.Error())
@@ -277,8 +279,7 @@ func (d *Doc) edit(fn func(sk *sketch.Sketch) error) {
 // arcs of the active workplane meet, with an arc tangent to both, as
 // Sketch > Tangent Arc at Point does. radius 0 lets the program choose
 // it. With trim, the two are cut back to the arc; without, they become
-// construction and trimmed copies are added. It is its own step of
-// undo.
+// construction and trimmed copies are added.
 func (d *Doc) TangentArc(point Entity, radius float64, trim bool) {
 	if radius < 0 {
 		fail("a tangent arc can't have the radius %g", radius)
@@ -291,7 +292,7 @@ func (d *Doc) TangentArc(point Entity, radius float64, trim bool) {
 
 // Split cuts two curves where they cross, or a curve at a point on it,
 // as Sketch > Split Curves at Intersection does. Of several crossings
-// it takes the one nearest near. It is its own step of undo.
+// it takes the one nearest near.
 func (d *Doc) Split(a, b Entity, near Vec) {
 	d.edit(func(sk *sketch.Sketch) error {
 		a.get(sk)

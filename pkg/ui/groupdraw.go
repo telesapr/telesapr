@@ -221,8 +221,10 @@ func (gw *GraphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
 	// Otherwise the contours will get filled in DrawFilledPaths.
 
 	// A problem with the group's input, as an edge a chamfer can't
-	// cut, is marked where it is.
-	if p := g.Problem; p.Msg != "" && p.HasPoint {
+	// cut, is marked where it is; a sketch's own contour error is drawn
+	// above.
+	drawn := g.Type == sketch.GroupDrawingWorkplane && core.PolyError(g.PolyError.How) != core.PolyGood
+	if p := g.Problem; p.Msg != "" && p.HasPoint && !drawn {
 		s := 6 / camera.Scale
 		r, u := camera.ProjRight.ScaledBy(s), camera.ProjUp.ScaledBy(s)
 		canvas.DrawLine(p.At.Minus(r).Minus(u), p.At.Plus(r).Plus(u), hcsError)

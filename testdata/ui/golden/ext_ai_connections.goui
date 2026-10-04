@@ -42,6 +42,7 @@
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
   Move Group Earl&ier ind=0 en=1 act=0
   Move Gr&oup Later ind=0 en=1 act=0
+  Move Group to E&nd ind=0 en=1 act=0
   Bro&ken References... ind=0 en=1 act=0
 &View ind=0 en=1 act=0
   Zoom &In [+] ind=0 en=1 act=0
@@ -795,6 +796,7 @@ row 159
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
   Move Group Earl&ier ind=0 en=1 act=0
   Move Gr&oup Later ind=0 en=1 act=0
+  Move Group to E&nd ind=0 en=1 act=0
   Bro&ken References... ind=0 en=1 act=0
 &View ind=0 en=1 act=0
   Zoom &In [+] ind=0 en=1 act=0
@@ -964,6 +966,7 @@ S&cript ind=0 en=1 act=0
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
   Move Group Earl&ier ind=0 en=1 act=0
   Move Gr&oup Later ind=0 en=1 act=0
+  Move Group to E&nd ind=0 en=1 act=0
   Bro&ken References... ind=0 en=1 act=0
 &View ind=0 en=1 act=0
   Zoom &In [+] ind=0 en=1 act=0

@@ -219,3 +219,30 @@ func TestScriptHostChordTolerance(t *testing.T) {
 		t.Errorf("the console showed %q; the setting is %g, the sketch's %g", got, ss.ChordTol, ss.SK.ChordTolPct)
 	}
 }
+
+// Deleting the sketch of the active extrusion takes the extrusion with
+// it; the group before them becomes active, not the first sketch, so
+// that new groups come at the end. A tangent arc in a step is part of
+// the step's undo.
+func TestScriptHostDeleteActiveAndUndo(t *testing.T) {
+	ss, _ := newTestApp(t)
+	got := scriptConsole(t, ss,
+		`first := doc.Active()`,
+		`doc.Rect(V(0, 0, 0), V(10, 10, 0)); box := doc.Extrude(5, "box")`,
+		`second := doc.SketchIn(first.Workplane(), "second"); doc.Circle(V(20, 20, 0), 3); doc.Extrude(5, "pin")`,
+		`second.Delete()`,
+		`doc.Active() == box`,
+		`doc.SketchIn(first.Workplane(), "third"); ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0)); doc.TangentArc(ls[0].End(), 5, true)`,
+	)
+	if !strings.HasSuffix(got, "Choose Edit -> Undo to undelete all elements.\ntrue\n") {
+		t.Fatalf("the console showed %q", got)
+	}
+	n := ss.SK.Undo.Cnt
+	if n != 4 {
+		t.Errorf("%d steps of undo, want 4: the box, the pin, the delete and the rounded corner", n)
+	}
+	ss.UndoUndo()
+	if g := ss.SK.GetGroup(ss.SK.Active); g == nil || g.Name != "box" {
+		t.Fatalf("one undo after the rounded corner leaves %+v active, want the box", g)
+	}
+}
