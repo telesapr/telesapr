@@ -49,7 +49,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
 | 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
 | 25 (part) | Rolling-ball fillets on closed edges between two curved faces: cylinders at an angle, cylinder and cone, cylinder and sphere | `8707d1f` |
-| 24 (rest) | Cylinder through cylinder (2 to 0 of 54), the last analytic STEP cut (1 to 0 of 28), bands over a lathe seam (8 to 0 of 108), twisted lofts meshed within 0.55% | MERGE |
+| 24 (rest) | Cylinder through cylinder (2 to 0 of 54), the last analytic STEP cut (1 to 0 of 28), bands over a lathe seam (8 to 0 of 108), twisted lofts meshed within 0.55% | `2fcfbae` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
