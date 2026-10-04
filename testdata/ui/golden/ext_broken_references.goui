@@ -260,12 +260,12 @@ row 59    c012-horizontal
 row 61 
  0-99 64 64 0
 dialog 0 Additional sketch elements were deleted, because they depend on the element that was just deleted explicitly.|These include: \n     4 requests\n     8 constraints\n     3 groups\n\nChoose Edit -> Undo to undelete all elements.
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
  5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -285,7 +285,7 @@ row 11          ok  g001-#references
  13-13 64 61 0
  14-29 6c 61 108 1 1 0
  30-99 64 61 0
-row 13         4   g002-sketch-in-plane  ↑ ↓
+row 13         4   g002-sketch-in-plane  ↑ ↓
  0-0 64 64 0
  1-3 62 64 108 2 1 0
  4-4 64 64 0
@@ -299,11 +299,11 @@ row 13         4   g002-sketch-in-plane  ↑ ↓
  37-37 64 64 0
  38-38 6c 64 100 2 1 0
  39-99 64 64 0
-row 15      -   ok  g003-extrude  ↑ ↓
+row 15         ok  g003-extrude  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 3 1 0
  4-4 64 61 0
- 5-7 62 61 0
+ 5-7 62 61 108 3 1 0
  8-9 64 61 0
  10-12 73 61 0
  13-13 64 61 0
@@ -342,17 +342,17 @@ row 27
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
-active 2 80020000
+active 3 0
 camera 15.428571428571429 -2.5 2.5 0 1 0 0 0 1 0
 counts 3 7 67 9 40
 editor 0 "" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
  5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -382,12 +382,12 @@ row 18 (back to the groups)
  19-99 64 64 0
 row 20 
  0-99 64 64 0
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
  5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 8-35 74 64 0
+ 36-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
