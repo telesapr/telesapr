@@ -291,8 +291,8 @@ func (ss *SolveSpaceUI) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch
 		w := res.BuiltinVectorFont().GetWidth(3, label)
 		sheetText(&sheet, label, 3, geom.Vector{X: v.X - w/2, Y: v.Y - scale*sizes[v.Kind][1]/2 - 7})
 	}
-	ss.drawExtras(&sheet, g, d, views, scale, edges, sizes, mids)
-	ss.drawDimensions(&sheet, g, d, views, scale, mids)
+	extras := ss.drawExtras(&sheet, g, d, views, scale, edges, sizes, mids)
+	ss.drawDimensions(&sheet, g, d, views, scale, mids, extras)
 	ss.sheetFrame(&sheet, d, scale)
 	return sheet, views, scale, nil
 }
@@ -307,11 +307,12 @@ func label(el *srf.SEdgeList, text string, x, y, height float64) {
 // drawExtras adds the section and detail views (roadmap 18.3): each
 // placed by the drawing or in columns right of the views, lettered, a
 // section's cutting plane drawn on the views that see it edge on, a
-// detail's circle on its view.
+// detail's circle on its view. It returns where each went, as
+// dimensions on it need (roadmap 29.2), the sections' first.
 func (ss *SolveSpaceUI) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
-	scale float64, edges map[string]srf.SEdgeList, sizes map[string][2]float64, mids map[string]geom.Vector) {
+	scale float64, edges map[string]srf.SEdgeList, sizes map[string][2]float64, mids map[string]geom.Vector) []dimView {
 	if len(d.Sections)+len(d.Details) == 0 {
-		return
+		return nil
 	}
 	placed := map[string]sketch.DrawingView{}
 	right := sketch.SheetBorder
@@ -344,8 +345,20 @@ func (ss *SolveSpaceUI) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *ske
 		sizesOn[i] = e.size
 	}
 	at := d.PlaceExtras(right, sizesOn)
+	out := make([]dimView, len(extras))
 	for i, e := range extras {
 		p := geom.Vector{X: at[i][0], Y: at[i][1]}
+		kind := ""
+		if i < len(d.Sections) {
+			kind = d.Sections[i].View
+		} else {
+			kind = d.Details[i-len(d.Sections)].View
+		}
+		r, u, _ := sketch.ViewDirection(kind)
+		out[i] = dimView{right: vec(r), up: vec(u), mid: e.mid, at: p, scale: e.k, pictorial: kind == "iso"}
+		if i >= len(d.Sections) {
+			out[i].clip, out[i].clipR = true, d.Details[i-len(d.Sections)].R
+		}
 		for _, ed := range e.el.Edges {
 			a := ed.A.Minus(e.mid).ScaledBy(e.k).Plus(p)
 			b := ed.B.Minus(e.mid).ScaledBy(e.k).Plus(p)
@@ -368,6 +381,7 @@ func (ss *SolveSpaceUI) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *ske
 			sheetText(sheet, letter, 3.5, c.Plus(geom.Vector{X: scale*dt.R*0.75 + 1, Y: scale*dt.R*0.75 + 1}))
 		}
 	}
+	return out
 }
 
 // edgesOf is a copy of a view's edges.

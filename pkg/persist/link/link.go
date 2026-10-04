@@ -182,7 +182,7 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 		g.ImpEntity = nil
 		g.ImpMesh.Clear()
 		g.ImpShell.Clear()
-		g.LinkInfo, g.LinkProblem = nil, ""
+		g.LinkInfo, g.LinkProblem, g.LinkParts = nil, "", nil
 
 		if found, ok := linkMap[g.LinkFile]; ok {
 			g.LinkFile = found
@@ -201,6 +201,7 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 			var rep Report
 			if load != nil && cachedLoadAs(load, linkFile, solid, sk, &g.ImpEntity, &g.ImpMesh, &g.ImpShell, &rep) {
 				g.LinkInfo, g.LinkProblem = rep.Info, rep.Problem
+				g.LinkParts = LinkedParts(saveFile, linkFile)
 				// We loaded the data, good. Now import its dependencies
 				// as well.
 				for j := range g.ImpEntity {

@@ -1,0 +1,21 @@
+# The drawing sheet shown in the window (an extension, roadmap 29.1):
+# the extrusion of path_extrude; View > Show Drawing Sheet shows its
+# sheet in place of the model, the drawing's screen offers to show the
+# model again, and choosing it does.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+menu View|Show Drawing Sheet
+menu File|Drawing Sheet...
+tw
+twmove 455 75
+twdown L 455 75
+twup L 455 75
+tw
+save

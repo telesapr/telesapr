@@ -4183,7 +4183,15 @@
 					},
 					"AddDrawingDimension": {
 						"decl": "func (d *Doc) AddDrawingDimension(view, kind string, offset float64, edges ...SolidEdge)",
-						"text": "AddDrawingDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes."
+						"text": "AddDrawingDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes.\nThe view is front, back, top, bottom, left, right or iso, where a\nlength is the edge's in the model, not as foreshortened, or a section\nor a detail by its letter (A, B, ...: the sections first)."
+					},
+					"AddDrawingEdgeFaceDistance": {
+						"decl": "func (d *Doc) AddDrawingEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace)",
+						"text": "AddDrawingEdgeFaceDistance adds to the drawing's view the distance\nfrom a straight edge to a flat face it runs parallel to, as\nAddDrawingDimension does between edges."
+					},
+					"AddDrawingFaceDimension": {
+						"decl": "func (d *Doc) AddDrawingFaceDimension(view, kind string, offset float64, faces ...SolidFace)",
+						"text": "AddDrawingFaceDimension adds a dimension of faces to the drawing's\nview, as AddDrawingDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
 					},
 					"Angle": {
 						"decl": "func (d *Doc) Angle(a, b Entity, degrees float64) Constraint",
@@ -4193,13 +4201,17 @@
 						"decl": "func (d *Doc) Arc(center, start, end Vec) Entity",
 						"text": "Arc adds an arc of a circle around center, from start\ncounter-clockwise to end, in the active workplane. The end is put\nat the start's distance from the centre."
 					},
+					"AutoConstrain": {
+						"decl": "func (d *Doc) AutoConstrain(e Entity) (c Constraint, ok bool)",
+						"text": "AutoConstrain adds to a line, an arc or a circle of the active group\nthe constraint the window adds when one is drawn nearly so (Settings,\n\"auto-constrain while drawing\"): a line horizontal or vertical, else\ntangent to an arc or perpendicular to a line it starts on, parallel to\na line, or as long as one; an arc tangent at an end to a line or arc\nthat ends there, else the same radius as an arc or circle; a circle\nthe same radius as one. It is false, with no constraint, when the\nentity is none of these nearly, or the constraint would be redundant.\nLines and arcs get one only in a workplane."
+					},
 					"Batch": {
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
 					},
 					"BillOfMaterials": {
 						"decl": "func (d *Doc) BillOfMaterials() (items []sketch.BOMItem)",
-						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none."
+						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\"."
 					},
 					"BrokenReferences": {
 						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
@@ -4288,6 +4300,10 @@
 					"DrawingDimensions": {
 						"decl": "func (d *Doc) DrawingDimensions() (values []float64, errs []error)",
 						"text": "DrawingDimensions measures the drawing's dimensions on the solid as\nit is: each one's value in mm, and an error for one that can't be\nmeasured, as for an edge no longer in the solid. It needs the\napplication, or a view of it."
+					},
+					"DrawingSheetShown": {
+						"decl": "func (d *Doc) DrawingSheetShown() (shown bool)",
+						"text": "DrawingSheetShown reports whether the window shows the drawing sheet."
 					},
 					"Entity": {
 						"decl": "func (d *Doc) Entity(h uint32) Entity",
@@ -4576,6 +4592,10 @@
 					"ShellSolid": {
 						"decl": "func (d *Doc) ShellSolid(faces []SolidFace, thick float64, name string) Group",
 						"text": "ShellSolid hollows the solid so far as Shell does, taking away faces\npicked from Solid, such as one a Boolean or a loft made."
+					},
+					"ShowDrawingSheet": {
+						"decl": "func (d *Doc) ShowDrawingSheet(show bool) (err error)",
+						"text": "ShowDrawingSheet shows the drawing sheet in the window in place of\nthe model, as View \u003e Show Drawing Sheet does, or the model again; it\nis view state, not saved. It is an error for a bare sketch with no\napplication around it (New), or when the sheet can't be made, as when\nthe active group has no solid. With the sheet shown, Render with the view\n\"window\" pictures the sheet."
 					},
 					"Sketch3D": {
 						"decl": "func (d *Doc) Sketch3D(name string) Group",
@@ -5200,6 +5220,10 @@
 						"decl": "func (h *SketchHost) DeleteGroup(hg core.HGroup)",
 						"text": "DeleteGroup deletes a group, and regenerates. When the active group\ngoes, with it or as it used it, the last group before it that is\nleft is made active."
 					},
+					"DrawingSheetShown": {
+						"decl": "func (h *SketchHost) DrawingSheetShown() bool",
+						"text": "DrawingSheetShown is false: there is no window."
+					},
 					"EndEval": {
 						"decl": "func (h *SketchHost) EndEval()",
 						"text": "EndEval ends a step of a script: what it changed is regenerated."
@@ -5271,6 +5295,10 @@
 					"SetChordTolerance": {
 						"decl": "func (h *SketchHost) SetChordTolerance(pct float64)",
 						"text": "SetChordTolerance sets the sketch's chord tolerance."
+					},
+					"ShowDrawingSheet": {
+						"decl": "func (h *SketchHost) ShowDrawingSheet(bool) error",
+						"text": "ShowDrawingSheet fails: there is no window to show the sheet in."
 					},
 					"Sketch": {
 						"decl": "func (h *SketchHost) Sketch() *sketch.Sketch",
@@ -5616,6 +5644,10 @@
 					"Clone": {
 						"decl": "func (d *Drawing) Clone() *Drawing",
 						"text": "Clone is a copy of the drawing that shares nothing with it; nil for none."
+					},
+					"DimensionView": {
+						"decl": "func (d *Drawing) DimensionView(view string) (n int, ok bool)",
+						"text": "DimensionView is what a dimension's view names: a view kind (front, ..., iso), or the n-th section or detail by its letter, sections first; n is -1 for a view kind, and ok false when it names none."
 					},
 					"Layout": {
 						"decl": "func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64)",
@@ -6158,6 +6190,10 @@
 						"decl": "func (sk *Sketch) Apply(j *ShellJob) bool",
 						"text": "Apply moves the job's groups, with their solids, into the sketch if it is still defined as when the job was made and the job ran to the end, and reports whether it did."
 					},
+					"ApplySuggestion": {
+						"decl": "func (sk *Sketch) ApplySuggestion(s Suggestion) core.HConstraint",
+						"text": "ApplySuggestion adds the suggested constraint to the active group, unless it would be redundant; it returns the constraint, or none."
+					},
 					"AssemblyParts": {
 						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
 						"text": "AssemblyParts are the parts of the model up to group upTo, as the interference check takes them (interference.go): the solid before the first group that combines as an assembly, and each such group."
@@ -6165,6 +6201,10 @@
 					"BillOfMaterials": {
 						"decl": "func (sk *Sketch) BillOfMaterials() []BOMItem",
 						"text": "BillOfMaterials is the model's parts, by file, in the order of the first group that places each."
+					},
+					"BillOfMaterialsAsRead": {
+						"decl": "func (sk *Sketch) BillOfMaterialsAsRead() []BOMItem",
+						"text": "BillOfMaterialsAsRead is BillOfMaterials for a sketch read from a file and not regenerated, as a linked model's is when the bill of the model linking it counts what it places: which groups are left out is worked out first."
 					},
 					"BumpOrderAfterActive": {
 						"decl": "func (sk *Sketch) BumpOrderAfterActive(g *Group)",
@@ -6674,6 +6714,10 @@
 						"decl": "func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64",
 						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm (C++ Style::Width)."
 					},
+					"SuggestConstraint": {
+						"decl": "func (sk *Sketch) SuggestConstraint(request core.HRequest, wp core.HEntity, group core.HGroup) (Suggestion, bool)",
+						"text": "SuggestConstraint suggests a constraint for the entity of request as it is drawn in workplane wp and group, when it nearly meets one; none in 3d, where nothing is drawn locked to a plane, but for circles."
+					},
 					"SuppressedReason": {
 						"decl": "func (sk *Sketch) SuppressedReason(h core.HGroup) string",
 						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
@@ -6733,6 +6777,10 @@
 			},
 			"SketchDiagnostic": {
 				"text": "SketchDiagnostic captures transient per-group errors during Sketch::GenerateAll.",
+				"kind": "struct"
+			},
+			"Suggestion": {
+				"text": "Suggestion is a constraint an entity being drawn would get when it is placed (roadmap 16.11 for lines, 29.4 for arcs and circles): its type, its entities, and which ends of curves it takes.",
 				"kind": "struct"
 			},
 			"TangentArcSettings": {

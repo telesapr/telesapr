@@ -1,0 +1,35 @@
+# Dimensions of faces on a drawing (an extension, roadmap 29.2): a
+# circle extruded into a cylinder; its end face picked with the mouse,
+# then dimensioned on the front view of the drawing by its diameter,
+# from the Drawing Sheet screen, which stays as it is picked; then
+# picked again and dimensioned by its length, which a face has none
+# of, and a message says so.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 285 315
+down L 285 315
+up L 285 315
+menu File|Drawing Sheet...
+tw
+twmove 46 305
+twdown L 46 305
+twup L 46 305
+edit front diameter
+tw
+move 285 315
+down L 285 315
+up L 285 315
+twmove 46 325
+twdown L 46 325
+twup L 46 325
+answer ok
+edit front length
+tw
+save

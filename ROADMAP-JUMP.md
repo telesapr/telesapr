@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, compacted 2026-10-04. Status: steps 1 to 21, 23 and I7 are done and merged, but
+Date: 2026-10-01, compacted 2026-10-04. Status: steps 1 to 21, 23, 29 and I7 are done and merged, but
 for 12.4 (CI's first run on GitHub), which waits for the user, and 21.5; step 22 is merged in
 part. The open work is planned as steps 23 to 29. Read "Definition of done for every new
 feature" first.
@@ -44,6 +44,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 21 | STEP import as an exact solid in Booleans, tessellated STEP; not 21.5 | `21abd88` |
 | 22 (part) | Offsets of patches (22.1), coaxial cylinder/cone fillets and chamfers (22.2's first case) | `ddf8144` |
 | 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | `d92c5f8` |
+| 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -122,15 +123,6 @@ once 22.2 is merged, a new one.
 
 Shells of other curved solids (step 10, 15.2: prisms only; filleted, lofted and revolved solids
 are refused) stay with E12 under "Left out"; 22.1's offsets are the first part.
-
-### Step 29: drawings and small features (~3 wk), branch `step-29-drawings`
-
-| Package | From | Content | State |
-|---|---|---|---|
-| 29.1 the drawing sheet shown in the window | 18.1 | written to files only | not started |
-| 29.2 associative dimensions on section, detail and isometric views, and of faces | 18.4 | edges only, on the orthographic views | not started |
-| 29.3 nested links in the bill of materials | 16.7 | a link inside a linked file is not counted | not started |
-| 29.4 auto-constrain while drawing arcs and other entities | 16.11 | lines only | not started |
 
 ## Definition of done for every new feature
 
