@@ -55,3 +55,55 @@ trimming near seams and poles, not in the intersector:
 The debug patch used for Boolean trimming (per-chain classification
 prints) is not kept. Re-create it by adding prints after `keepEdge` in
 `makeCopyTrimAgainst`.
+
+## The rest of step 24 (branch `step-24b-kernel-robustness`)
+
+Written 2026-10-04.
+
+- **24.1, cylinder through cylinder: 2 → 0 of 54.** Not the strip
+  triangle's height as such: the ear clipper took an ear whose new chord
+  passed a hair (under 0.001 mm) from the crossed seam's pierce point,
+  the ear's own vertex. In xyz the chord dips below the surface by its
+  sag, so the sliver turned over. `SContour.grazed` (triangulate.go)
+  ranks such ears after every clean one and before a folded one: a
+  point, the ear's own included, closer to the new chord on the surface
+  than twice the chord's sag, and off it in uv by under 2% of its length
+  (`grazeShare`). The uv condition keeps points near a cone's apex out:
+  far apart in uv, near in xyz only because the patch folds there
+  (TestConeCutNearApex failed without it). Points at a pole are skipped.
+- **24.2, the last analytic STEP cut: 1 → 0 of 28.** The same grazing,
+  on a half sphere's patch beside the cylinder cutter's hole: a chord
+  from the patch's seam to the hole's rim passed inside the hole.
+- **24.3, band over a lathe seam: 8 → 0 of 108.** A seed for marching
+  half a millimetre past the band's side: the lathed wall's bottom
+  circle met the band's arc, a cylinder patch across y, beyond the
+  patch; `AllPointsIntersecting`'s cylinder branch projected the hit
+  onto the patch's side, off the line, and the trim took it in. The
+  march from it took the curve's own seed and the wall's trims did not
+  close. Hits whose projection lies more than `offPatchTol` (1e-3 mm)
+  from the line's own are dropped now.
+- **24.3, bore with its cap in a lathed tip's plane: still 40 of 80.**
+  Coincident contact across the tip's flat patches (F5); not touched.
+- **24.4, twisted ruled faces.** The bias was not in the grid's
+  interior (a bilinear cell's two triangles have its volume exactly)
+  but in its outer cells, which the ear clipper fans from the trim's
+  few points (a straight edge has two). `SSurface.twisted` tells a
+  twisted ruled face (normal turning along the straight lines) and
+  `refineTwistedGrid` halves its outer cells: loft volume worst 1.23% →
+  0.55%. Forcing four grid lines across rulings where the grid has none
+  (a swept bar's sides, 1.6% over) brought the bar to 0.16%, but made
+  three threads' flanks cross, so it is not done; the bar stays at
+  1.6%. A refinement by each cell's sag at the diagonals, to the chord
+  tolerance, ran for minutes: rejected.
+- **NIST_MBE_PMI_6** (from step 27): still `inter=2` with `topo=1`
+  allowed, as on master. One crossing is a fan edge on a flat disc at
+  y = 31.75 to its centre, the other a sliver at a corner of a 2x2
+  patch (ctrl[2][2] = (107.95, 34.925, 43.18)) whose two curved sides
+  meet there, its v = 1 side almost straight near the corner. Neither
+  is at a folded side of that patch, so `openPoles` is not the cause
+  there. Not mended.
+
+Traps: `TELESAPR_SWEEP=1` runs the full grids; `TELESAPR_REGEN_INVARIANTS=1`
+regenerates `testdata/invariants.txt` (not in `regen-golden.sh`); a
+probe at chord tolerance 0.0005 mm with sag-driven refinement takes
+minutes per loft.

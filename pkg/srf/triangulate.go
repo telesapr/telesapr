@@ -550,6 +550,16 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		c.removeTaggedPoints()
 	} // end optional fan creation pass
 
+	// The sides of the patch folded to a pole: every point there is
+	// one point on the surface, so grazing says nothing about them.
+	var poles []int
+	if !srf.flat() {
+		for side := range 4 {
+			if srf.foldsSide(side) {
+				poles = append(poles, side)
+			}
+		}
+	}
 	toggle := false
 	for len(c.Points) > 3 {
 		ln := len(c.Points)
@@ -557,6 +567,9 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		bestChordTol := geom.VeryPositive
 		// The first folded ear, taken when there is no other.
 		fallback := -1
+		// The ear of least chord tolerance among those that graze a
+		// point, taken before a folded one.
+		bestGrazed, bestGrazedTol := -1, geom.VeryPositive
 		// Alternate the starting position so we generate strip-like
 		// triangulations instead of fan-like
 		toggle = !toggle
@@ -591,6 +604,12 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					continue
 				}
 				tol := srf.ChordToleranceForEdge(prev, next)
+				if c.grazed(srf, poles, wrapIdx(i+offset-1, ln), ear, wrapIdx(i+offset+1, ln)) {
+					if tol < bestGrazedTol {
+						bestGrazed, bestGrazedTol = ear, tol
+					}
+					continue
+				}
 				if tol < bestChordTol-scaledEps {
 					bestEar = ear
 					bestChordTol = tol
@@ -599,6 +618,9 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					break
 				}
 			}
+		}
+		if bestEar < 0 {
+			bestEar = bestGrazed
 		}
 		if bestEar < 0 {
 			bestEar = fallback
@@ -613,6 +635,66 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	if len(c.Points) == 3 {
 		c.clipEarInto(m, 0, scaledEps, srf) // add the last triangle
 	}
+}
+
+// grazeShare is how far off a chord in uv, as a share of its length, a
+// point may be and still graze it.
+const grazeShare = 0.02
+
+// grazed reports whether the chord from ap to cp, which clipping the
+// ear at bp would add, passes a point of the contour, the ear's own
+// included, closer on the surface than twice the chord's sag. In uv the
+// point is off the chord, but in xyz the chord dips below the surface,
+// so the ear can be a sliver that turns over, or the edges from that
+// point, on the other face that meets there, can cross its triangle: a
+// cylinder's wall strip beside the point where a crossed cylinder's
+// seam pierces it was clipped into a sliver the height of the wall
+// (roadmap 24.1).
+func (c *SContour) grazed(srf *SSurface, poles []int, ap, bp, cp int) bool {
+	a, b := c.Points[ap].P, c.Points[cp].P
+	atPole := func(p geom.Vector) bool {
+		for _, side := range poles {
+			if math.Abs([]float64{p.X, p.X - 1, p.Y, p.Y - 1}[side]) < 1e-6 {
+				return true
+			}
+		}
+		return false
+	}
+	if atPole(a) || atPole(b) {
+		return false
+	}
+	ab := b.Minus(a)
+	l2 := ab.X*ab.X + ab.Y*ab.Y
+	if l2 < geom.LengthEps*geom.LengthEps {
+		return false
+	}
+	near := 2*srf.ChordToleranceForEdge(a, b) + geom.LengthEps
+	pa, pb := srf.PointAt(a.X, a.Y), srf.PointAt(b.X, b.Y)
+	for i := range c.Points {
+		if i == ap || i == cp {
+			continue
+		}
+		p := c.Points[i].P
+		if p.EqualsExactly(a) || p.EqualsExactly(b) || atPole(p) {
+			continue
+		}
+		t := ((p.X-a.X)*ab.X + (p.Y-a.Y)*ab.Y) / l2
+		if t <= 0 || t >= 1 {
+			continue
+		}
+		// Off the chord in uv by a small share of its length, which
+		// leaves out points near a pole: far apart in uv, one in xyz.
+		off := a.Plus(ab.ScaledBy(t)).Minus(p)
+		if off.X*off.X+off.Y*off.Y > grazeShare*grazeShare*l2 {
+			continue
+		}
+		// The chord's point at t, in xyz, against the point's own.
+		q := pa.Plus(pb.Minus(pa).ScaledBy(t))
+		if srf.PointAt(p.X, p.Y).Minus(q).Magnitude() < near {
+			return true
+		}
+	}
+	return false
 }
 
 // flatEar reports whether the triangle a, b, c, in uv, is an ear the
@@ -1006,6 +1088,9 @@ func (p *SPolygon) uvGridTriangulateInto(mesh *SMesh, srf *SSurface, trim *SEdge
 	if len(lj) < 5 && srf.DegN > 1 { // 4 segments minimum
 		lj = append([]float64(nil), v...)
 	}
+	if srf.twisted() {
+		li, lj = srf.refineTwistedGrid(li, lj)
+	}
 
 	if len(li) > 3 && len(lj) > 3 {
 		// Now iterate over each quad in the grid. If it's outside the polygon,
@@ -1286,6 +1371,69 @@ func (el *SEdgeList) AnyEdgeCrossings(a, b geom.Vector, ppi *geom.Vector, spl *S
 	}
 	return cnt
 }
+
+// twisted reports whether the surface is a twisted ruled face: straight
+// one way, as an extrusion's sides are, but with its normal turning
+// along those straight lines, as a cylinder's does not.
+func (s *SSurface) twisted() bool {
+	if (s.DegM != 1 && s.DegN != 1) || s.flat() {
+		return false
+	}
+	for k := 0; k <= 4; k++ {
+		t := float64(k) / 4
+		var a, b geom.Vector
+		if s.DegM == 1 {
+			a, b = s.NormalAt(1.0/3, t), s.NormalAt(2.0/3, t)
+		} else {
+			a, b = s.NormalAt(t, 1.0/3), s.NormalAt(t, 2.0/3)
+		}
+		if a.Magnitude() < lengthEps || b.Magnitude() < lengthEps {
+			continue
+		}
+		if a.WithMagnitude(1).Dot(b.WithMagnitude(1)) < 1-twistedMinTurn {
+			return true
+		}
+	}
+	return false
+}
+
+// twistedMinTurn is how far (1 - cos) a ruled face's normal must turn
+// along its straight lines for twisted to take it for twisted.
+const twistedMinTurn = 1e-6
+
+// refineTwistedGrid adds lines to the grid li (in u) by lj (in v) of a
+// twisted ruled surface, a loft's side between edges turned against
+// each other, near its sides. The grid's first and last cells each way
+// are left to the ear clipper, which fans them from the trim's points,
+// and a side's straight edges have points at their ends only: on a
+// twisted face such a fan, a cell wide and the side long, strays from
+// the surface by the twist over the cell, and biased the volume by up
+// to 1.2% (roadmap 24.4). Halving the outer cells leaves the fans a
+// strip half a cell wide, and 0.55% at most; halving them again took
+// that to 0.51% for a quarter more time. The lines are
+// inside the face, so its edges, shared with the faces beside it, keep
+// their points.
+func (s *SSurface) refineTwistedGrid(li, lj []float64) ([]float64, []float64) {
+	edges := func(l []float64) []float64 {
+		// A face with no grid line across its rulings, as a swept
+		// bar's sides, gets none here: four forced ones made three
+		// threads' flanks cross each other.
+		if len(l) < 3 {
+			return l
+		}
+		for range twistEdgeHalvings {
+			n := len(l)
+			out := append([]float64{l[0], (l[0] + l[1]) / 2}, l[1:n-1]...)
+			l = append(out, (l[n-2]+l[n-1])/2, l[n-1])
+		}
+		return l
+	}
+	return edges(li), edges(lj)
+}
+
+// twistEdgeHalvings is how many times refineTwistedGrid halves the
+// outer cells of a twisted ruled surface's grid.
+const twistEdgeHalvings = 1
 
 // gridMaxTwistDepth is how many times MakeTriangulationGridInto halves
 // a span for twist, so a twisted face gets up to 32 rows. C++ stopped

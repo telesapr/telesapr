@@ -141,13 +141,14 @@ func ngon(d *api.Doc, n int, r, z float64) {
 
 // Lofts between regular polygons, and circles, scaled and turned by a
 // curve either way, against twistedVolume: exactly when the sides are
-// flat, within the mesh's error when they are saddles or curved.
+// flat, within the mesh's error when they are saddles or curved, 1%.
 // Triangles turned by a curve twist by a third of a turn. Since roadmap
 // 13.1 the mesher's grid follows a twist to 32 rows, and they are
-// sound; but their volume is allowed 2%, not 1%, since the grid has
-// only four columns along a side's straight edges, and on a side twisted
-// that far the diagonals of its quads bias the volume (+1.2% and -0.7%
-// for the two turns of the largest, which are mirror images).
+// sound; their volume needed 2% until 24.4, the strips along the
+// sides' edges, left to the ear clipper, fanning from the trim's few
+// points across a whole cell of twisted surface (+1.2% and -0.7% for
+// the two turns of the largest). The outer cells are halved since, and
+// the worst is 0.55%.
 func TestLoftSweep(t *testing.T) {
 	loft := func(p sweep.Point) error {
 		n, c, h, turn := int(p.Float("sides")), p.Float("scale"), p.Float("height"), int(p.Float("turn"))
@@ -172,9 +173,6 @@ func TestLoftSweep(t *testing.T) {
 		allow := 1e-9 * want
 		if n == 0 || turn != 0 {
 			allow = 0.01 * want
-		}
-		if n == 3 && turn != 0 {
-			allow = 0.02 * want
 		}
 		switch {
 		case l.Problem() != "":

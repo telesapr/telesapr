@@ -278,9 +278,8 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 			sweep.Floats("dy", 0, 0.7, 2.9),
 			sweep.Floats("angle", 0, 15, 30, 45, 60, 75),
 		},
-		MaxFailRate:       cylinderMaxFailRate,
-		Sample:            10,
-		SampleMaxFailRate: 1.0 / 10,
+		MaxFailRate: cylinderMaxFailRate,
+		Sample:      10,
 	}
 	grid.Run(func(p sweep.Point) error {
 		return cylinderCase(p.Float("r"), p.Float("dy"), p.Float("angle"))
@@ -288,19 +287,14 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 }
 
 // cylinderMaxFailRate is the fraction of TestCylinderThroughCylinderSweep's
-// grid allowed to fail: 2 of 54 since roadmap 13.2, two differences
-// (r=4 at dy=0, 30 degrees, and dy=0.7, 45 degrees) where the crossed
-// cylinder's seam pierces the upright wall: the wall's strip next to
-// the hole is ear-clipped into a triangle the full height of the wall,
-// whose edge passes within a hair of that point, and the hole's edges
-// from it cross that triangle. The triangulation's, not the
-// intersection's (roadmap 13.1). The nine unions that
-// failed before, from 45 degrees up, had their curve leave a quarter
-// of the upright cylinder's flat end across the seam to the next
-// quarter unsplit, since a ray cast finds no crossing with a patch
-// the curve lies in (coplanarTrimCrossings). It was 11 on 2026-10-03
-// and 19 on 2026-10-02. The sample of 10 has one.
-const cylinderMaxFailRate = 2.0 / 54
+// grid allowed to fail: none since roadmap 24.1. The last two, from
+// 13.2 to 24.1, were differences (r=4 at dy=0, 30 degrees, and dy=0.7,
+// 45 degrees) where the crossed cylinder's seam pierces the upright
+// wall: the wall's strip there was ear-clipped into a sliver the full
+// height of the wall with the pierce point a hair off its long edge,
+// which turned over in xyz (SContour.grazed). It was 2 from 13.2 to
+// 24.1, 11 on 2026-10-03 and 19 on 2026-10-02.
+const cylinderMaxFailRate = 0
 
 // sweepChordTol sets the chord tolerance the sweeps run at: fine enough
 // that the volumes of the meshes add up as the solids' do.
