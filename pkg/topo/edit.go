@@ -505,16 +505,18 @@ func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface,
 			ps = append(ps, pc)
 		}
 		if li == 0 {
-			// Clockwise in the surface's parameters, or turn it over.
+			// Clockwise in the surface's parameters, or turn it over. A
+			// point at a pole, a side of the patch folded to one point,
+			// has any parameter along that side, which can turn the
+			// outline over (a wedge of a sphere from a circle of latitude
+			// up to its pole, Schenkel): it is opened along the side
+			// (openPoleUV).
 			area := 0.0
-			var uv []geom.Vector
+			var pts []geom.Vector
 			for _, pc := range ps {
-				for _, p := range pc.points[:len(pc.points)-1] {
-					var u, v float64
-					s.ClosestPointToUV(p, &u, &v, true)
-					uv = append(uv, geom.Vector{X: u, Y: v})
-				}
+				pts = append(pts, pc.points[:len(pc.points)-1]...)
 			}
+			uv := surfaceLoopUV(&s, pts)
 			for k := range uv {
 				p, q := uv[k], uv[(k+1)%len(uv)]
 				area += (p.X*q.Y - q.X*p.Y) / 2
@@ -582,4 +584,88 @@ func ReplaceSurface(sh *srf.SShell, t *Topology, f int, s srf.SSurface) error {
 	old.Ctrl, old.Weight = s.Ctrl, s.Weight
 	forget(old)
 	return nil
+}
+
+// poleSide is the side of the patch (0 to 3: u = 0, u = 1, v = 0,
+// v = 1) that (u, v) lies on and that the surface folds to one point,
+// as a sphere's pole or a cone's apex, or -1.
+func poleSide(s *srf.SSurface, u, v float64) int {
+	const eps = 1e-6
+	folds := func(at func(t float64) geom.Vector) bool {
+		a := at(0)
+		return a.Equals(at(0.5)) && a.Equals(at(1))
+	}
+	switch {
+	case u < eps && folds(func(t float64) geom.Vector { return s.PointAt(0, t) }):
+		return 0
+	case u > 1-eps && folds(func(t float64) geom.Vector { return s.PointAt(1, t) }):
+		return 1
+	case v < eps && folds(func(t float64) geom.Vector { return s.PointAt(t, 0) }):
+		return 2
+	case v > 1-eps && folds(func(t float64) geom.Vector { return s.PointAt(t, 1) }):
+		return 3
+	}
+	return -1
+}
+
+// surfaceLoopUV is a closed loop of points of s in its parameters, a
+// run of points at a pole opened along the folded side: it becomes two
+// points there, at the parameters along the side of the points before
+// and after it, as the curves reach the pole, so that the outline goes
+// along the side between them.
+func surfaceLoopUV(s *srf.SSurface, pts []geom.Vector) []geom.Vector {
+	n := len(pts)
+	uv := make([]geom.Vector, n)
+	side := make([]int, n)
+	for k, p := range pts {
+		var u, v float64
+		s.ClosestPointToUV(p, &u, &v, true)
+		uv[k] = geom.Vector{X: u, Y: v}
+		side[k] = poleSide(s, u, v)
+	}
+	onSide := func(q geom.Vector, k int) geom.Vector {
+		switch k {
+		case 0:
+			q.X = 0
+		case 1:
+			q.X = 1
+		case 2:
+			q.Y = 0
+		case 3:
+			q.Y = 1
+		}
+		return q
+	}
+	var out []geom.Vector
+	for k := 0; k < n; k++ {
+		if side[k] < 0 {
+			out = append(out, uv[k])
+			continue
+		}
+		// The points before and after the run at the pole.
+		prev, next := -1, -1
+		for d := 1; d < n; d++ {
+			if j := (k - d + n) % n; side[j] < 0 {
+				prev = j
+				break
+			}
+		}
+		end := k
+		for end+1 < n && side[end+1] == side[k] {
+			end++
+		}
+		for d := 1; d < n; d++ {
+			if j := (end + d) % n; side[j] < 0 {
+				next = j
+				break
+			}
+		}
+		if prev < 0 || next < 0 {
+			out = append(out, uv[k])
+			continue
+		}
+		out = append(out, onSide(uv[prev], side[k]), onSide(uv[next], side[k]))
+		k = end
+	}
+	return out
 }

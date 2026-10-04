@@ -77,3 +77,29 @@ kernel can't take; with a round profile 188 naked edges. Coplanar unions with eq
 arc's revolved side surfaces by the mitre plane (plane-torus curves, e.g. fitted as arcArcSeam
 does), i.e. srf work. Fitted sweeps with corners: not started (needs the end frame of a fitted
 run and twist split by length).
+
+## 28.4 corners beside arcs: second attempt (kernel leftovers), not done
+
+Why a plain mitre can't work: on the outside of the turn both pieces, carried straight on past
+the corner, meet the halving plane M in the same outline (reflection across M maps one section
+onto the other and one direction onto the other), but on the inside M cuts into the arc's
+revolved sides, whose section there is not the straight piece's. So the only clean joint with
+planar cuts is "bent caps": each run cut on the outside by M and on the inside by its own
+section at the corner (the two cuts meet along the turn's axis a through the corner), then the
+runs joined by a union, which overlaps on the inside and touches on the outside.
+
+Tried (srf.makeSweepInRuns, reverted): each run swept with a straight extension past the
+corner and cut by a bent prism (polygon (0,Y),(0,0),(Y tan(θ/2),-Y),(X,-Y),(X,Y) in (d, inside)
+coordinates, extruded along a). The cut runs are sound with the right volumes (round profile,
+line + arc of radius 8 at 60°), but the union fails in trimming, always on the faces that
+touch: the two M faces (coplanar, opposite, equal outlines up to sampling) and a run's inside
+cap, whose straight edge lies on the other run's bent edge along a. It fails the same way
+forced onto a corner between two lines, round or square profile, while a plain union of two
+flush boxes in an L works. So this is coincident contact along an edge plus a face (F5), not
+the arc. What would work: building both runs and the joint in one shell with shared exact
+curves (no union), which needs the inside sides' mutual intersection (line prism side against
+arc revolve side), i.e. surface-surface intersection inside the sweep builder. Not started.
+
+A test of the bent-cap joint's volume by integrating the exact union on a grid, and a sweep
+over profiles, angles, bend direction and radius, is kept outside the tree for whoever picks
+this up.
