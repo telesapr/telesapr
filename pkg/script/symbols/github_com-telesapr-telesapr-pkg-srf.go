@@ -55,6 +55,8 @@ func init() {
 		"FromTransformationOfSCurve":  reflect.ValueOf(srf.FromTransformationOfSCurve),
 		"GetMaxSegments":              reflect.ValueOf(srf.GetMaxSegments),
 		"GetParallelMode":             reflect.ValueOf(srf.GetParallelMode),
+		"InterpolatedCurve":           reflect.ValueOf(srf.InterpolatedCurve),
+		"InterpolatedPatch":           reflect.ValueOf(srf.InterpolatedPatch),
 		"LocalOriginBit":              reflect.ValueOf(constant.MakeFromLiteral("32768", token.INT, 0)),
 		"MaxDegree":                   reflect.ValueOf(constant.MakeFromLiteral("5", token.INT, 0)),
 		"NewMeshMeta":                 reflect.ValueOf(srf.NewMeshMeta),

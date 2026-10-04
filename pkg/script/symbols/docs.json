@@ -7247,6 +7247,10 @@
 						"decl": "func (c *BSplineCurve) Domain() (lo, hi float64)",
 						"text": "Domain is the curve's parameter range."
 					},
+					"LowDegree": {
+						"decl": "func (c *BSplineCurve) LowDegree(tol float64) (*BSplineCurve, error)",
+						"text": "LowDegree is the curve, or one within tol of it of degree MaxDegree made of Bezier pieces, when its degree is above MaxDegree."
+					},
 					"PointAt": {
 						"decl": "func (c *BSplineCurve) PointAt(t float64) geom.Vector",
 						"text": "PointAt is the curve's point at t."
@@ -7272,6 +7276,10 @@
 						"decl": "func (s *BSplineSurface) Domain() (u0, u1, v0, v1 float64)",
 						"text": "Domain is the surface's parameter ranges."
 					},
+					"LowDegree": {
+						"decl": "func (s *BSplineSurface) LowDegree(tol float64) (*BSplineSurface, error)",
+						"text": "LowDegree is the surface, or one within tol of it of degree at most MaxDegree each way, made of Bezier patches, when a degree is above MaxDegree."
+					},
 					"Patches": {
 						"decl": "func (s *BSplineSurface) Patches() ([][]SSurface, error)",
 						"text": "Patches cuts the surface at its knots into Bezier patches: patches[a][b] runs over span a of the breaks along u and span b along v, its own parameters from 0 to 1 over them."
@@ -7279,6 +7287,10 @@
 					"PointAt": {
 						"decl": "func (s *BSplineSurface) PointAt(u, v float64) geom.Vector",
 						"text": "PointAt is the surface's point at (u, v)."
+					},
+					"RemoveKnots": {
+						"decl": "func (s *BSplineSurface) RemoveKnots(tol float64) int",
+						"text": "RemoveKnots takes out of the surface's knots inside its domain every copy it can without moving the surface more than tol, along u and then along v, and reports how many it took."
 					}
 				},
 				"makers": [
@@ -7567,6 +7579,7 @@
 					}
 				},
 				"makers": [
+					"InterpolatedCurve",
 					"SBezierFrom2",
 					"SBezierFrom3",
 					"SBezierFrom4",
@@ -8595,7 +8608,8 @@
 					"FromExtrusionOf",
 					"FromPlane",
 					"FromRevolutionOf",
-					"FromTransformationOf"
+					"FromTransformationOf",
+					"InterpolatedPatch"
 				]
 			},
 			"STriMeta": {
@@ -8755,6 +8769,14 @@
 			"GetParallelMode": {
 				"decl": "func GetParallelMode() ParallelMode",
 				"text": "GetParallelMode returns the mode."
+			},
+			"InterpolatedCurve": {
+				"decl": "func InterpolatedCurve(pts []geom.Vector) SBezier",
+				"text": "InterpolatedCurve is the Bezier of degree len(pts)-1, at most MaxDegree, through pts at the Chebyshev-Lobatto points of [0, 1]."
+			},
+			"InterpolatedPatch": {
+				"decl": "func InterpolatedPatch(du, dv int, f func(x, y float64) geom.Vector, tol float64) (SSurface, error)",
+				"text": "InterpolatedPatch is the patch of degree du by dv through f's points at Chebyshev-Lobatto points of [0, 1] each way, its corners and sides' ends among them, or an error when it strays from f by more than tol."
 			},
 			"NewMeshMeta": {
 				"decl": "func NewMeshMeta(face FaceID, color core.RgbaColor) MeshMeta",
