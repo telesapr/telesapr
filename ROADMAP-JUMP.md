@@ -43,7 +43,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 20 | Smooth lofts through any number of profiles, sweeps along 3D cubics with frames and twist | `dda4e0b` |
 | 21 | STEP import as an exact solid in Booleans, tessellated STEP; not 21.5 | `21abd88` |
 | 22 (part) | Offsets of patches (22.1), coaxial cylinder/cone fillets and chamfers (22.2's first case) | `ddf8144` |
-| 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | MERGE |
+| 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | `d92c5f8` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
