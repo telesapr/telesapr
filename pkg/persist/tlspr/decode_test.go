@@ -11,6 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // fullDocument is a document with every field the format stores set,
@@ -105,6 +106,14 @@ func fullDocument() *Document {
 	}
 	sc.Points = []srf.SCurvePt{{Vertex: true, P: geom.Vector{X: 0}}, {P: geom.Vector{X: 1}}, {Vertex: true, P: geom.Vector{X: 2}}}
 	doc.Shell.Curve = []srf.SCurve{sc, {H: core.HSCurve{V: 3}, Exact: srf.SBezier{Degree: 1}}}
+	sk.Drawing = &sketch.Drawing{Sheet: "A2", Scale: 0.5, Hidden: true,
+		Sections: []sketch.DrawingSection{{View: "top", Offset: 2}},
+		Dimensions: []sketch.DrawingDimension{
+			{View: "front", Kind: "length", Edges: []topo.Name{{A: 0x10, B: 0x20, N: 1, Of: 2}}, Offset: 10},
+			{View: "A", Kind: "distance", Edges: []topo.Name{{A: 0x10, B: 0x30}}, Faces: []srf.FaceID{0x80030011}},
+			{View: "iso", Kind: "distance", Faces: []srf.FaceID{0x40, 0x50}, Offset: -4},
+		},
+		Title: "ALL"}
 	return doc
 }
 
@@ -137,6 +146,7 @@ func TestEveryFieldRoundTrips(t *testing.T) {
 		{"entities", have.Entities, want.Entities},
 		{"mesh", got.Mesh, doc.Mesh},
 		{"shell", got.Shell, doc.Shell},
+		{"drawing", have.Drawing, want.Drawing},
 	} {
 		if !reflect.DeepEqual(c.got, c.want) {
 			t.Errorf("%s:\n got %+v\nwant %+v", c.what, c.got, c.want)

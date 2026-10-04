@@ -2,6 +2,8 @@ package api
 
 import (
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // Drawing is the model's sheet of views (roadmap step 18): its size,
@@ -53,6 +55,9 @@ type DrawingDimension = sketch.DrawingDimension
 // in sheet mm, out from the view's middle (0 for 10; negative, in toward
 // it). The dimension holds
 // the edges' names, so it measures them again as the model changes.
+// The view is front, back, top, bottom, left, right or iso, where a
+// length is the edge's in the model, not as foreshortened, or a section
+// or a detail by its letter (A, B, ...: the sections first).
 func (d *Doc) AddDrawingDimension(view, kind string, offset float64, edges ...SolidEdge) {
 	dr := d.Drawing()
 	dm := DrawingDimension{View: view, Kind: kind, Offset: offset}
@@ -71,4 +76,30 @@ func (d *Doc) DrawingDimensions() (values []float64, errs []error) {
 	dr := d.Drawing()
 	d.read(func(*sketch.Sketch) { values, errs = d.h.MeasureDrawing(&dr) })
 	return values, errs
+}
+
+// AddDrawingFaceDimension adds a dimension of faces to the drawing's
+// view, as AddDrawingDimension does of edges: "distance" between two
+// parallel flat faces, "diameter" or "radius" of a face's circular
+// edge, the largest, as a cylinder's or a round end's. The dimension
+// holds the faces' identities, so it measures them again as the model
+// changes.
+func (d *Doc) AddDrawingFaceDimension(view, kind string, offset float64, faces ...SolidFace) {
+	dr := d.Drawing()
+	dm := DrawingDimension{View: view, Kind: kind, Offset: offset}
+	for _, f := range faces {
+		dm.Faces = append(dm.Faces, f.id)
+	}
+	dr.Dimensions = append(dr.Dimensions, dm)
+	d.SetDrawing(dr)
+}
+
+// AddDrawingEdgeFaceDistance adds to the drawing's view the distance
+// from a straight edge to a flat face it runs parallel to, as
+// AddDrawingDimension does between edges.
+func (d *Doc) AddDrawingEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace) {
+	dr := d.Drawing()
+	dr.Dimensions = append(dr.Dimensions, DrawingDimension{View: view, Kind: "distance", Offset: offset,
+		Edges: []topo.Name{edge.name}, Faces: []srf.FaceID{face.id}})
+	d.SetDrawing(dr)
 }

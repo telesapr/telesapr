@@ -4183,7 +4183,15 @@
 					},
 					"AddDrawingDimension": {
 						"decl": "func (d *Doc) AddDrawingDimension(view, kind string, offset float64, edges ...SolidEdge)",
-						"text": "AddDrawingDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes."
+						"text": "AddDrawingDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes.\nThe view is front, back, top, bottom, left, right or iso, where a\nlength is the edge's in the model, not as foreshortened, or a section\nor a detail by its letter (A, B, ...: the sections first)."
+					},
+					"AddDrawingEdgeFaceDistance": {
+						"decl": "func (d *Doc) AddDrawingEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace)",
+						"text": "AddDrawingEdgeFaceDistance adds to the drawing's view the distance\nfrom a straight edge to a flat face it runs parallel to, as\nAddDrawingDimension does between edges."
+					},
+					"AddDrawingFaceDimension": {
+						"decl": "func (d *Doc) AddDrawingFaceDimension(view, kind string, offset float64, faces ...SolidFace)",
+						"text": "AddDrawingFaceDimension adds a dimension of faces to the drawing's\nview, as AddDrawingDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
 					},
 					"Angle": {
 						"decl": "func (d *Doc) Angle(a, b Entity, degrees float64) Constraint",
@@ -5592,6 +5600,10 @@
 					"Clone": {
 						"decl": "func (d *Drawing) Clone() *Drawing",
 						"text": "Clone is a copy of the drawing that shares nothing with it; nil for none."
+					},
+					"DimensionView": {
+						"decl": "func (d *Drawing) DimensionView(view string) (n int, ok bool)",
+						"text": "DimensionView is what a dimension's view names: a view kind (front, ..., iso), or the n-th section or detail by its letter, sections first; n is -1 for a view kind, and ok false when it names none."
 					},
 					"Layout": {
 						"decl": "func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64)",

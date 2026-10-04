@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -25,8 +26,8 @@ func (ss *SolveSpaceUI) drawing() *sketch.Drawing {
 }
 
 // MenuDrawingSheet shows the drawing's screen.
+// What is selected stays, for dimensions.
 func (ss *SolveSpaceUI) MenuDrawingSheet() {
-	ss.GW.ClearSelection()
 	ss.TW.GoToScreen(ScreenDrawing)
 	ss.GW.ForceTextWindowShown()
 	ss.ScheduleShowTW()
@@ -103,7 +104,7 @@ func (tw *TextWindow) ShowDrawing() {
 	tw.Printf(false, "   %Fl%Ld%f[add a detail]%E   (type: view x y radius times, as front 10 5 8 2)",
 		lf(tw.ScreenChangeDrawing))
 
-	// The dimensions (roadmap 18.4), measured as the solid is.
+	// The dimensions (roadmap 18.4, 29.2), measured as the solid is.
 	tw.Printf(true, "%Ft   dimensions%E")
 	var results []DimensionResult
 	if len(d.Dimensions) > 0 {
@@ -115,15 +116,30 @@ func (tw *TextWindow) ShowDrawing() {
 		if i < len(results) && results[i].Err == nil {
 			value = formatValue(results[i].Value)
 		}
-		tw.Printf(false, "%Bp   %s of %d edge%s on the %s view: %s %Fl%Lr%D%f[delete]%E",
-			bg, dm.Kind, len(dm.Edges), map[bool]string{true: "s"}[len(dm.Edges) > 1], dm.View, value,
-			i, lf(tw.ScreenChangeDrawing))
+		var of []string
+		if len(dm.Edges) > 0 {
+			of = append(of, fmt.Sprintf("%d edge%s", len(dm.Edges), map[bool]string{true: "s"}[len(dm.Edges) > 1]))
+		}
+		if len(dm.Faces) > 0 {
+			of = append(of, fmt.Sprintf("%d face%s", len(dm.Faces), map[bool]string{true: "s"}[len(dm.Faces) > 1]))
+		}
+		on := "the " + dm.View + " view"
+		if n, _ := d.DimensionView(dm.View); n >= 0 {
+			on = "view " + dm.View
+		}
+		tw.Printf(false, "%Bp   %s of %s on %s: %s %Fl%Lr%D%f[delete]%E",
+			bg, dm.Kind, strings.Join(of, " and "), on, value, i, lf(tw.ScreenChangeDrawing))
 		if i < len(results) && results[i].Err != nil {
 			tw.Printf(false, "%Bp     %Fx%s%E", bg, results[i].Err.Error())
 		}
 	}
-	tw.Printf(false, "   %Fl%Lm%f[dimension the selected edges]%E   (type: view kind, as front length)",
+	tw.Printf(false, "   %Fl%Lm%f[dimension the selected edges or faces]%E   (type: view kind, as front length)",
 		lf(tw.ScreenChangeDrawing))
+	tw.ss.GW.GroupSelection()
+	if ne, nf := len(tw.ss.GW.gs.solidEdge), len(tw.ss.GW.selectedFaceIDs()); ne+nf > 0 {
+		tw.Printf(false, "     %Fd%d edge%s and %d face%s selected%E", ne, map[bool]string{true: "s"}[ne != 1],
+			nf, map[bool]string{true: "s"}[nf != 1])
+	}
 
 	tw.Printf(true, "%Ft   title block%E")
 	fields := []struct {
@@ -205,9 +221,10 @@ func (tw *TextWindow) ScreenChangeDrawing(link int, v uint32) {
 		})
 	case 'm':
 		ss.GW.GroupSelection()
-		if n := len(ss.GW.gs.solidEdge); n < 1 || n > 2 {
-			ss.Error("Select one edge of the solid for a length, a diameter or a radius, or two for the " +
-				"distance between them, then dimension them on a view of the drawing.")
+		if n := len(ss.GW.gs.solidEdge) + len(ss.GW.selectedFaceIDs()); n < 1 || n > 2 {
+			ss.Error("Select one edge of the solid for a length, one edge or face for a diameter or a radius, " +
+				"or two edges or flat faces for the distance between them, then dimension them on a view " +
+				"of the drawing, a section or a detail.")
 			return
 		}
 		tw.ShowEditControl(18, "front length")
@@ -300,6 +317,7 @@ func (tw *TextWindow) editDrawing(s string) bool {
 		}
 		ss.GW.GroupSelection()
 		dm.Edges = append(dm.Edges, ss.GW.gs.solidEdge...)
+		dm.Faces = ss.GW.selectedFaceIDs()
 		d := ss.drawing().Clone()
 		d.Dimensions = append(d.Dimensions, dm)
 		if err := d.Check(); err != nil {
