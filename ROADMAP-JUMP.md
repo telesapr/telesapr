@@ -114,6 +114,33 @@ they stay out until the user takes one back.
 | Nested links in the bill of materials | 16.7 | not sized | a link inside a linked file is not counted |
 | Auto-constrain while drawing arcs and other entities | 16.11 | not sized | lines only |
 
+### Scripting and the MCP server
+
+From two notes of 2026-10-03, written while drawing a teapot through the MCP server, folded in
+here on 2026-10-04 (the notes' own files are gone). None was checked again since, but the first,
+which step 20's example scripts met again. Order the notes suggested: the silent no-solid first,
+then the rollback and the active group after a delete, then the render fit, then the
+interpreter, then the kernel's two.
+
+| Item | From | Effort | State |
+|---|---|---|---|
+| A float literal beside a library constant fails: `2.0 * math.Pi`, `math.Pi + 0.5` give "mismatched types untyped float and untyped float64"; `math.Pi / 180.0`, `12 * math.Pi`, a variable and `float64(math.Pi)` work | teapot note | not sized | Read from the error, not traced: yaegi v0.16.1's stdlib tables make `math`'s constants "untyped float64". Ways to weigh: a newer yaegi; our own symbols for `math`'s untyped constants; else rewrite the error in `pkg/script/engine.go` ("write 2 * math.Pi or float64(math.Pi)") and say it in the primer's "What the interpreter can't do". Tests: a case per failing form in `engine_test.go` |
+| `eval` of code that starts with `const` or `var` and goes on with a statement fails to parse ("expected declaration") | teapot note | not sized | Taken for a program's top level; check `run_script` too |
+| A sketch that crosses itself makes no solid and nothing says so | teapot note, item 3 | not sized | The status, `get_drawing`, `Group.Problem()` and `Check().Sound()` (true, with no faces) all say well; only `PolyError` knows. Wanted: a sketch's `PolyError` (open, not coplanar, crossing, zero length) with its point in `Problem()`, `get_drawing` and the status; a solid group whose source has one says why it made no solid; `Sound()` false for a solid group with no solid. The MCP instructions' 'a "problem" means a group made no solid' then holds |
+| A failed script that called `TangentArc` is not all taken back | teapot note, item 2 | not sized | The arc and its trimmed lines stayed though the message said everything was taken back; guess: `TangentArc` pushes an undo step of its own inside the script |
+| Deleting the active group puts later new groups after the first sketch; `MoveToEnd` moved an extrusion but not its two sketch groups, silently | teapot note, item 6 | not sized | Wanted: the last remaining group active after such a delete, or the script told which; `MoveToEnd` moves or says why not |
+| `render` with no view (isometric) or "front" doesn't fit the model: zoomed in and pushed down, at every picture size | teapot note, item 1 | not sized | "window" after Zoom To Fit is right. Entry: `Doc.Render`, `pkg/script/api/doc.go` |
+| yaegi: a short declaration of several names from index expressions (`a, b, c := s[0], s[1], s[2]`) fails as "constant definition loop" | teapot note, item 4 | not sized | One per line works; the smallest failing form not found. Mend, or put it in the primer |
+| yaegi: names kept between `run_script` calls collide with a block's `:=` of another type (panic in `reflect.Set`), and `p, q := e.Ends()` in a loop left `p` undefined | teapot note, item 5 | not sized | Wanted: a block's `:=` shadows as in Go; the primer says whether a new file or MCP session clears the names |
+| A union fails where an extruded band's arcs cross a lathed cone at a shallow angle, over the lathe's seam | teapot note, item 7 | not sized | Rows that fail and work are tabulated in the note's terms: a line 0.76 or 1.0 mm inside a 3 mm wall, arcs of 6 to 8 mm; the angle alone doesn't separate them. `Problem()` was "" though the Boolean failed |
+| A cut whose end cap lies in a lathed end face's plane (a disc of four patches with a pole) leaves naked edges | teapot note, item 8 | not sized | A bore along a lathed spout's axis ending at its tip: 32 naked edges, not flagged; 3 mm past the tip is sound, and the same with a swept spout was sound |
+| Fillets where a cylinder meets a cone askew, and where a flat band meets a cone | teapot note, item 9 | in 22.2 | The teapot's spout (48 degrees to the base) and handle are ready tests for 22.2's general case. The refusal for the band could say that the edge is a flat face meeting a cone off its axis |
+| Texts: `fmt.Println(g.Bounds())` fails plainly only in Go's words; a `Radius` constraint reads `c085-diameter = 6` with value 6 the radius | teapot note, item 10 | not sized | The constraint's name and value disagree |
+| A two-sided extrusion from scripts | teapot note, item 10 | not sized | The group has the subtype; `Doc.Extrude` goes one way only |
+| `render` "window" right after Align View to Workplane catches the view mid-animation | teapot note, item 11 | not sized | Wait for the animation or finish it |
+| `doc.RunCommand("File > New")` on unsaved changes returned nil and discarded them, as far as a script could see | teapot note, item 11 | not sized | Check a script or the MCP server can't drop unsaved work without the question (`OkayToStartNewFile`) |
+| A group's volume changes when later groups make the model larger | teapot note, item 11 | | Expected, the chord tolerance being a share of the model's size; worth a line in the guide |
+
 ## How to read the estimates
 
 - **Effort** is focused weeks for one developer who already knows this codebase,
