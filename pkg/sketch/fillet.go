@@ -64,7 +64,7 @@ func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius
 func segmentPicks(segs []chamferSegment) []topo.FilletPick {
 	out := make([]topo.FilletPick, len(segs))
 	for i, s := range segs {
-		out[i] = s.pick()
+		out[i] = s.pick(0)
 	}
 	return out
 }

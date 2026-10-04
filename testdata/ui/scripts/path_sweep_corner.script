@@ -1,0 +1,13 @@
+# A rectangle swept along two lines that meet at a corner, mitred, the
+# path picked with the mouse; the same as path_sweep_corner.go makes
+# (TestPathEquivalenceSweepCorner, roadmap 28.4).
+file $testdata/ui/sweep_corner.tlspr
+menu File|Open...
+view other
+move 347.5 217.5
+down L 347.5 217.5
+up L 347.5 217.5
+move 377.5 202.5
+down L 377.5 202.5
+up L 377.5 202.5
+menu New Group|Sweep Along Path

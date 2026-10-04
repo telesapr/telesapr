@@ -47,6 +47,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
 | 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | `c4137f3` |
 | 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
+| 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -111,15 +112,18 @@ surfaces and parabolas, hyperbolas (27.5). Corpus: 6 of 9 sound.
 |---|---|---|
 | 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 (3 crossings), _6 (2) cross by about 1e-4 where faces meet tangentially along an edge, whose edges are within tolerance: this is F5 (tangent contact), not edge tolerance. Schenkel: 40 naked edges along a curve at y = 4, cause not found. NIST_MBE_PMI_6 also has pole slivers since 24.2, with step 24's remainder | partly done |
 
-### Step 28: solid features (~5 wk), branch `step-28-solid-features`
+### Step 28, what is left: solid features
 
-| Package | From | Content | State |
-|---|---|---|---|
-| 28.1 chamfers of two distances | step 7, 15.1 | The edit's corners need their setback on each face apart | not started |
-| 28.2 drafts of chosen faces, about another plane, of an arc meeting a line at a corner | 15.4 | Only an extrusion's sides, about the sketch's plane, arcs tangent to their neighbours | not started |
-| 28.3 smooth lofts: tangency set at the end profiles, guide curves | step 20 | not done | not started |
-| 28.4 sweeps along a chain of the solid's edges (step 9's names), and paths with corners | 20.5, step 7 | A corner is a diagnostic today | not started |
-| 28.5 pattern along a closed path | 15.6 | refused | not started |
+Step 28 merged in part: chamfers of two distances, drafts of chosen sides with their own angles
+about a neutral plane and of an arc meeting a line at a corner, sweeps with mitred corners and
+along named edges of the solid, patterns along a closed path, lofts with tangency at the ends.
+State and the plan for guide curves: `docs/notes/step-28.md`.
+
+| Package | Content | State |
+|---|---|---|
+| 28.2 drafts of two arcs meeting at a corner | refused | open |
+| 28.3 smooth lofts: guide curves | end tangency done; guide curves not started | partly done |
+| 28.4 sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred | open |
 
 Shells of other curved solids (step 10, 15.2: prisms only; filleted, lofted and revolved solids
 are refused) stay with E12 under "Left out"; 22.1's offsets are the first part.

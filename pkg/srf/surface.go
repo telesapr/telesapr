@@ -37,6 +37,10 @@ type SSurface struct {
 	// own points, as a surface read from a file needs, whose edges lie
 	// on it only within the file's tolerance (trimPointsOff).
 	SnapToTrims bool
+	// AvoidFlatEars meshes the surface with no ear that lies flat in the
+	// plane of a planar trim (flatEar): a cone trimmed by the conic where
+	// a drafted plane meets it (topo.DraftedPrismAngles).
+	AvoidFlatEars bool
 
 	DegM, DegN int
 	Ctrl       [MaxDegree + 1][MaxDegree + 1]geom.Vector
@@ -339,14 +343,15 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 	}
 
 	s := SSurface{
-		H:           a.H,
-		Color:       a.Color,
-		Face:        a.Face,
-		Origin:      a.Origin,
-		Sheet:       a.Sheet,
-		SnapToTrims: a.SnapToTrims,
-		DegM:        a.DegM,
-		DegN:        a.DegN,
+		H:             a.H,
+		Color:         a.Color,
+		Face:          a.Face,
+		Origin:        a.Origin,
+		Sheet:         a.Sheet,
+		SnapToTrims:   a.SnapToTrims,
+		AvoidFlatEars: a.AvoidFlatEars,
+		DegM:          a.DegM,
+		DegN:          a.DegN,
 	}
 	for i := 0; i <= MaxDegree; i++ {
 		for j := 0; j <= MaxDegree; j++ {

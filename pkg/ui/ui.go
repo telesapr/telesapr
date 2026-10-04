@@ -160,6 +160,7 @@ const (
 	CmdExportDrawing
 	CmdMoveGroupToEnd
 	CmdShowDrawingSheet
+	CmdDraftSelectedSides
 )
 
 // Pending is an operation to be completed by doing something with the

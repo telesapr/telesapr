@@ -152,9 +152,54 @@ func TestPathEquivalencePathPattern(t *testing.T) {
 	}
 }
 
+// A post repeated round a circle picked with the mouse, and by a
+// script (roadmap 28.5).
+func TestPathEquivalencePatternRing(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_pattern_ring", "path_pattern_ring")
+	g := ui.GetGroup(ui.Active)
+	if g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || g.ValA != 3 {
+		t.Errorf("the pattern: type %d, problem %q, copies %g", g.Type, g.Problem.Msg, g.ValA)
+	}
+}
+
+// A draft's sides chosen by the menu and its neutral plane set on its
+// screen, and by a script (roadmap 28.2).
+func TestPathEquivalenceDraftSides(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_draft_sides", "path_draft_sides")
+	if g := ui.GetGroup(ui.Active); len(g.DraftFaces) != 2 || g.ValB != 10 || g.Problem.Msg != "" {
+		t.Errorf("the draft: %d sides, neutral %g, problem %q", len(g.DraftFaces), g.ValB, g.Problem.Msg)
+	}
+}
+
+// A sweep round a corner, picked with the mouse, and by a script
+// (roadmap 28.4).
+func TestPathEquivalenceSweepCorner(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sweep_corner", "path_sweep_corner")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 2 {
+		t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+	}
+}
+
+// A loft's ends set on its screen, and by a script (roadmap 28.3).
+func TestPathEquivalenceLoftTangency(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_tangency", "path_loft_tangency")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupLoft || g.ValB != 1 || g.ValC != 0.5 || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, ends %g and %g, problem %q", g.Type, g.ValB, g.ValC, g.Problem.Msg)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")
+}
+
+// A chamfer given a second distance and swapped on its screen, and by
+// a script (roadmap 28.1).
+func TestPathEquivalenceChamferTwo(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_chamfer_two", "path_chamfer_two")
+	if g := ui.GetGroup(ui.Active); g.ValB != 2 || g.ValC != 1 {
+		t.Errorf("the chamfer's distances are %g and %g, want 2 and 1", g.ValB, g.ValC)
+	}
 }
 
 // A STEP file linked from the menu, and by a script.

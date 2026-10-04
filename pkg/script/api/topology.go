@@ -464,12 +464,12 @@ func (d *Doc) ChamferSolid(edges []SolidEdge, distance float64, name string) Gro
 	}, nil)
 }
 
-// SolidEdges are the edges of the solid a chamfer cuts or a fillet
-// rounds by name.
+// SolidEdges are the edges of the solid a chamfer cuts, a fillet rounds
+// or a sweep follows, by name.
 func (g Group) SolidEdges() (edges []SolidEdge) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		if group.Type != sketch.GroupFillet {
+		if group.Type != sketch.GroupFillet && group.Type != sketch.GroupSweep {
 			g.mustBe(group, sketch.GroupChamfer, "SolidEdges")
 		}
 		prev := group.PreviousGroup(sk)
@@ -725,6 +725,38 @@ func (g Group) Turn() (n int) {
 		n = int(group.ValA)
 	})
 	return n
+}
+
+// Tangency is how square a loft leaves its first profile and reaches
+// its last, 0 for an end left free (see SetTangency).
+func (g Group) Tangency() (start, end float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "Tangency")
+		start, end = group.ValB, group.ValC
+	})
+	return start, end
+}
+
+// SetTangency makes a loft leave its first profile square to its plane
+// and reach its last square to its, the surface's slope across there
+// start and end times the loft's length; 0 leaves an end free, shaped
+// by the profiles alone. A loft of two profiles with an end set is one
+// smooth surface, not ruled patches. SetExpr with sketch.GroupPitch and
+// sketch.GroupValC gives them expressions.
+func (g Group) SetTangency(start, end float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "SetTangency")
+		for _, x := range []float64{start, end} {
+			if math.IsNaN(x) || math.IsInf(x, 0) {
+				fail("a loft's tangency is a number, not %g", x)
+			}
+		}
+		group.ValB, group.ExprB = start, ""
+		group.ValC, group.ExprC = end, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
 }
 
 // SetTurn turns a loft's second profile by n curves, which joins its

@@ -78,6 +78,11 @@ func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, err
 	return g, nil
 }
 
+// LoftEnds is how the loft leaves its first profile and reaches its
+// last: ValB and ValC, square to each profile by that much, 0 free
+// (roadmap 28.3).
+func (g *Group) LoftEnds() topo.LoftEnds { return topo.LoftEnds{Start: g.ValB, End: g.ValC} }
+
 // LoftProfiles are the groups a loft joins, in order: OpA, LoftThrough
 // and OpB.
 func (g *Group) LoftProfiles() []core.HGroup {
@@ -107,8 +112,8 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 		}
 		loops = append(loops, l)
 	}
-	if len(loops) > 2 {
-		return topo.MakeSmoothLoft(loops, int(g.ValA), g.Color, origin)
+	if ends := g.LoftEnds(); len(loops) > 2 || ends != (topo.LoftEnds{}) {
+		return topo.MakeSmoothLoftEnds(loops, int(g.ValA), ends, g.Color, origin)
 	}
 	loops = topo.MatchCounts(loops)
 	a, b := loops[0], loops[1]

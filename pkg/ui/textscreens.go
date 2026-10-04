@@ -585,6 +585,123 @@ func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
+// ScreenChangeChamferDistance2 edits a chamfer's second distance, on
+// each edge's second face (roadmap 28.1).
+func (tw *TextWindow) ScreenChangeChamferDistance2(link int, v uint32) {
+	g := tw.ss.SK.GetGroup(tw.shown.group)
+	text := g.ExprC
+	if text == "" {
+		d := g.ValC
+		if d == 0 {
+			d = g.ValB
+		}
+		text = sprintf("%.8f", d/tw.ss.MmPerUnit())
+	}
+	tw.ShowEditControl(3, text)
+	tw.edit.meaning = EditChamferDistance2
+	tw.edit.group = core.HGroup{V: v}
+}
+
+// ScreenSwapChamferDistances swaps a chamfer's two distances, which
+// chamfers each edge the other way round.
+func (tw *TextWindow) ScreenSwapChamferDistances(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.GetGroup(core.HGroup{V: v})
+	if g == nil || g.Type != sketch.GroupChamfer || g.ValC == 0 && g.ExprC == "" {
+		return
+	}
+	ss.UndoRemember()
+	g.ValB, g.ValC = g.ValC, g.ValB
+	g.ExprB, g.ExprC = g.ExprC, g.ExprB
+	ss.SK.MarkGroupDirty(g.H, false)
+	ss.GW.ClearSuper()
+}
+
+// ScreenSameChamferDistances makes a chamfer's second distance its first
+// again.
+func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.GetGroup(core.HGroup{V: v})
+	if g == nil || g.Type != sketch.GroupChamfer {
+		return
+	}
+	ss.UndoRemember()
+	g.ValC, g.ExprC = 0, ""
+	ss.SK.MarkGroupDirty(g.H, false)
+	ss.GW.ClearSuper()
+}
+
+// draftSelectedSides makes the active extrusion's draft lean only the
+// sides of the selected curves of its sketch, their copies at its ends,
+// or the selected faces of the sides (New Group > Draft Selected Sides,
+// roadmap 28.2).
+func (ss *SolveSpaceUI) draftSelectedSides() {
+	gw := ss.GW
+	g := ss.SK.GetGroup(gw.activeGroupH())
+	if g == nil || g.Type != sketch.GroupExtrude || g.ValC == 0 && g.ExprC == "" {
+		ss.Error("Activate a drafted extrusion first: Draft Selected Sides chooses which of its sides the draft leans.")
+		return
+	}
+	gw.GroupSelection()
+	if len(gw.gs.entity) == 0 {
+		ss.Error("Select the sides to draft: the lines, arcs and circles of the extruded sketch, " +
+			"their copies at the extrusion's ends, or the faces of the sides.")
+		return
+	}
+	err := ss.SK.UndoRememberFor(func() error {
+		return ss.SK.SetDraftFaces(g.H, gw.gs.entity)
+	})
+	if err != nil {
+		ss.Error("Can't draft those sides: %s.", err)
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	gw.ClearSelection()
+	gw.ClearSuper()
+}
+
+// ScreenDraftAllSides makes an extrusion's draft lean every side again.
+func (tw *TextWindow) ScreenDraftAllSides(link int, v uint32) {
+	ss := tw.ss
+	err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetDraftFaces(core.HGroup{V: v}, nil) })
+	if err != nil {
+		ss.Error("%s.", capitalize(err.Error()))
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	ss.GW.ClearSuper()
+}
+
+// showLoftEnds shows how a loft leaves its first profile and reaches
+// its last (roadmap 28.3).
+func (tw *TextWindow) showLoftEnds(g *sketch.Group) {
+	end := func(v float64) string {
+		if v == 0 {
+			return "free"
+		}
+		return sprintf("square to it, %g", v)
+	}
+	tw.Printf(false, "%Bd   %Ftleaves the first%E %s%s %Fl%Ll%f%D[change]%E",
+		end(g.ValB), exprNote(g.ExprB), lf(tw.ScreenChangeLoftStart), g.H.V)
+	tw.Printf(false, "%Ba   %Ftreaches the last%E %s%s %Fl%Ll%f%D[change]%E",
+		end(g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+}
+
+// ScreenChangeLoftStart edits how square a loft leaves its first
+// profile, 0 for free.
+func (tw *TextWindow) ScreenChangeLoftStart(link int, v uint32) {
+	g := tw.ss.SK.GetGroup(tw.shown.group)
+	text := g.ExprB
+	if text == "" {
+		text = sprintf("%g", g.ValB)
+	}
+	tw.ShowEditControl(3, text)
+	tw.edit.meaning = EditHelixPitch
+	tw.edit.group = core.HGroup{V: v}
+}
+
 // ScreenChangePitchOption fixes or frees a helix's pitch (C++
 // TextWindow::ScreenChangePitchOption).
 func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
@@ -750,6 +867,18 @@ func (tw *TextWindow) ShowGroupInfo() {
 				lf(tw.ScreenChangeGroupOption), check(skew))
 			tw.Printf(false, "%Bd   %Ftdraft%E %s deg%s %Fl%Ll%f%D[change]%E",
 				sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+			if g.ValC != 0 || g.ExprC != "" {
+				// Roadmap 28.2: the plane the sides lean from, and which.
+				tw.Printf(false, "%Ba   %Ftfrom the plane%E %s along%s %Fl%Ll%f%D[change]%E",
+					ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+				// Which: New Group > Draft Selected Sides chooses them.
+				if len(g.DraftFaces) == 0 {
+					tw.Printf(false, "%Bd   %Ftsides%E all")
+				} else {
+					tw.Printf(false, "%Bd   %Ftsides%E %d of the sketch's %Fl%Ll%f%D[all]%E",
+						len(g.DraftFaces), lf(tw.ScreenDraftAllSides), g.H.V)
+				}
+			}
 		} else {
 			tw.Printf(false,
 				"%Ba   %f%Ls%Fd%s one-sided%E  "+
@@ -795,6 +924,14 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(true, " %Ftchamfer edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
 			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+		if g.ValC == 0 && g.ExprC == "" {
+			tw.Printf(false, "%Bd   %Ftsecond distance%E the same %Fl%Ll%f%D[change]%E",
+				lf(tw.ScreenChangeChamferDistance2), g.H.V)
+		} else {
+			tw.Printf(false, "%Bd   %Ftsecond distance%E %s%s %Fl%Ll%f%D[change]%E %Fl%Ll%f%D[swap]%E %Fl%Ll%f%D[same]%E",
+				ss.MmToString(g.ValC, false), exprNote(g.ExprC), lf(tw.ScreenChangeChamferDistance2), g.H.V,
+				lf(tw.ScreenSwapChamferDistances), g.H.V, lf(tw.ScreenSameChamferDistances), g.H.V)
+		}
 		tw.showGroupEdges(g, "edges")
 	case sketch.GroupLoft:
 		if len(g.LoftThrough) == 0 {
@@ -803,6 +940,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 			tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
 			tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
 				int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+			tw.showLoftEnds(g)
 			break
 		}
 		tw.Printf(true, " %Ftsmooth loft through %d profiles%E", len(g.LoftThrough)+2)
@@ -819,6 +957,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 		}
 		tw.Printf(false, "%Bp   %Ftturn those after the first by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
 			bg, int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+		tw.showLoftEnds(g)
 	case sketch.GroupFillet:
 		tw.Printf(true, " %Ftround edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
@@ -1533,7 +1672,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
 		}
 
-	case EditGroupDraft:
+	case EditGroupDraft, EditChamferDistance2:
 		if e := ss.exprFromString(s, true); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupValC, s)
 		}

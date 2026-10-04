@@ -54,6 +54,12 @@ type FilletPick struct {
 	At   geom.Vector
 	Arc  bool
 	R    float64
+	// D2 is a chamfer's distance on its second face, or 0 for the same
+	// as on the first (roadmap 28.1). The first face is the one whose
+	// identity is First, or with First 0 the face of the lower identity,
+	// the one an edge's name gives first.
+	D2    float64
+	First srf.FaceID
 }
 
 // filletEdge is one edge to round and what follows from its faces.
@@ -63,7 +69,8 @@ type filletEdge struct {
 	f      [2]int         // its faces
 	u      [2]geom.Vector // into each face, square to the edge (straight edges)
 	dir    geom.Vector    // from v[0] to v[1] (straight edges)
-	s, w   float64        // the tangent curves' distance from the edge, the arc's weight
+	ss     [2]float64     // the tangent curves' distance from the edge on each face
+	w      float64        // the arc's weight
 	r      float64        // the radius, or a chamfer's distance
 	origin uint32
 	// sheet is the key the patches along one edge of the solid share,
@@ -88,6 +95,75 @@ type filletEdge struct {
 	// half plane through the axis: along the radius and along the axis.
 	gen [2][2]float64
 }
+
+// fits checks that a circular edge's tangent curves lie on their faces:
+// that no setback reaches past the axis.
+func (fe *filletEdge) fits(m geom.Vector) error {
+	if !fe.circ {
+		return nil
+	}
+	for k := 0; k < 2; k++ {
+		if fe.radius+fe.ss[k]*fe.gen[k][0] < geom.LengthEps {
+			gen := fe.gen[k]
+			if fe.flatK >= 0 {
+				// The flat face is named by the curved one beside it.
+				gen = fe.gen[1-fe.flatK]
+			}
+			return filletErr(m, "a radius this large is wider than the %s", fe.kindName(gen))
+		}
+	}
+	return nil
+}
+
+// twoDistances gives a chamfer's edge distance d1 on its first face and
+// d2 on the other (FilletPick.D2, First).
+func (t *Topology) twoDistances(fe *filletEdge, d1, d2 float64, first srf.FaceID) error {
+	m := t.Vertices[fe.v[0]].P.Plus(t.Vertices[fe.v[1]].P).ScaledBy(0.5)
+	if fe.circ {
+		m = fe.curve.PointAt(0.5)
+	}
+	if !(d2 > 0) || math.IsInf(d2, 0) {
+		return filletErr(m, "a chamfer's second distance must be more than zero")
+	}
+	id0, id1 := t.Faces[fe.f[0]].ID, t.Faces[fe.f[1]].ID
+	k := 0
+	switch first {
+	case 0:
+		if id1 < id0 {
+			k = 1
+		}
+	case id0:
+	case id1:
+		k = 1
+	default:
+		return filletErr(m, "the face the chamfer's first distance is on is not at the edge")
+	}
+	fe.ss[k], fe.ss[1-k] = d1, d2
+	return fe.fits(m)
+}
+
+// FirstFaceNormal is the outward normal of the first face, as
+// FilletPick.First of 0 takes it, at the straight edge through a and b:
+// the flat face of the lower identity. It is false when no edge runs
+// there or that face is curved.
+func (t *Topology) FirstFaceNormal(a, b geom.Vector) (geom.Vector, bool) {
+	e := t.edgeAtPoint(a.Plus(b).ScaledBy(0.5))
+	if e < 0 {
+		return geom.Vector{}, false
+	}
+	fs := t.EdgeFaces(e)
+	if fs[0] < 0 || fs[1] < 0 {
+		return geom.Vector{}, false
+	}
+	f := fs[0]
+	if t.Faces[fs[1]].ID < t.Faces[fs[0]].ID {
+		f = fs[1]
+	}
+	return t.planarNormal(f)
+}
+
+// even reports whether the edge is set back alike on both faces.
+func (fe *filletEdge) even() bool { return math.Abs(fe.ss[0]-fe.ss[1]) <= geom.LengthEps }
 
 // sign is 1 for a convex edge, whose fillet's centres lie inside the
 // solid, and -1 for a concave one.
@@ -214,6 +290,11 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 			}
 			return err
 		}
+		if flat && p.D2 != 0 {
+			if err := t.twoDistances(&fe, pr, p.D2, p.First); err != nil {
+				return err
+			}
+		}
 		add(fe)
 	}
 	// A rounded edge goes on into the edges it meets smoothly: the other
@@ -232,6 +313,21 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 				var fx *FilletError
 				if err != nil && errors.As(err, &fx) && strings.HasPrefix(fx.Msg, "a radius this large is wider") {
 					stopped[v] = err
+				}
+				if err == nil && !edges[i].even() {
+					// The setbacks go on with the faces they lie on: try both
+					// ways round, smoothJoin pairs the faces.
+					var joined bool
+					for _, sw := range []int{0, 1} {
+						fe.ss = [2]float64{edges[i].ss[sw], edges[i].ss[1-sw]}
+						if fe.fits(t.Vertices[v].P) == nil && t.smoothJoin(&edges[i], &fe, v) {
+							joined = true
+							break
+						}
+					}
+					if !joined {
+						continue
+					}
 				}
 				if err == nil && t.smoothJoin(&edges[i], &fe, v) {
 					if t.Lead(x) == t.Lead(edges[i].e) {
@@ -450,11 +546,12 @@ func (t *Topology) filletEdgeOf(e int, r float64, flat bool) (filletEdge, error)
 	beta := math.Acos(math.Max(-1, math.Min(1, u1.Dot(u2))))
 	fe = filletEdge{
 		e: e, v: ed.V, f: fs, u: [2]geom.Vector{u1, u2}, r: r, concave: c1 > 0,
-		dir: pb.Minus(pa).WithMagnitude(1), s: r / math.Tan(beta/2), w: math.Sin(beta / 2),
+		dir: pb.Minus(pa).WithMagnitude(1), w: math.Sin(beta / 2),
 	}
+	fe.ss = [2]float64{r / math.Tan(beta/2), r / math.Tan(beta/2)}
 	if flat {
 		// A chamfer cuts at its distance along both faces.
-		fe.s = r
+		fe.ss = [2]float64{r, r}
 	}
 	return fe, nil
 }
@@ -542,15 +639,13 @@ func (t *Topology) circularEdgeOf(e int, r float64, flat bool) (filletEdge, erro
 	// foot. The section's angle is between the two directions.
 	fe.concave = gen[1] > 0
 	beta := math.Acos(math.Max(-1, math.Min(1, fe.gen[0][0]*fe.gen[1][0]+fe.gen[0][1]*fe.gen[1][1])))
-	fe.s, fe.w = r/math.Tan(beta/2), math.Sin(beta/2)
+	fe.ss, fe.w = [2]float64{r / math.Tan(beta/2), r / math.Tan(beta/2)}, math.Sin(beta/2)
 	if flat {
 		// A chamfer cuts at its distance along both faces.
-		fe.s = r
+		fe.ss = [2]float64{r, r}
 	}
-	for k := 0; k < 2; k++ {
-		if rad+fe.s*fe.gen[k][0] < geom.LengthEps {
-			return fe, filletErr(m, "a radius this large is wider than the %s", fe.kindName(gen))
-		}
+	if err := fe.fits(m); err != nil {
+		return fe, err
 	}
 	return fe, nil
 }
@@ -634,14 +729,12 @@ func (t *Topology) coaxialEdgeOf(e int, r float64, flat bool, n geom.Vector) (fi
 	}
 	fe.concave = c0 > 0
 	beta := math.Acos(math.Max(-1, math.Min(1, dot(fe.gen[0], fe.gen[1]))))
-	fe.s, fe.w = r/math.Tan(beta/2), math.Sin(beta/2)
+	fe.ss, fe.w = [2]float64{r / math.Tan(beta/2), r / math.Tan(beta/2)}, math.Sin(beta/2)
 	if flat {
-		fe.s = r
+		fe.ss = [2]float64{r, r}
 	}
-	for k := 0; k < 2; k++ {
-		if rad+fe.s*fe.gen[k][0] < geom.LengthEps {
-			return fe, filletErr(m, "a radius this large is wider than the %s", fe.kindName(fe.gen[k]))
-		}
+	if err := fe.fits(m); err != nil {
+		return fe, err
 	}
 	return fe, nil
 }
@@ -737,7 +830,7 @@ func (t *Topology) generator(fe *filletEdge, f int) ([2]float64, bool) {
 // faces pair off, the same face or two that go on into each other at
 // the vertex, as a lathe's quarters of a disc do.
 func (t *Topology) smoothJoin(a, b *filletEdge, v int) bool {
-	if a.e == b.e || a.concave != b.concave || math.Abs(a.s-b.s) > geom.LengthEps || math.Abs(a.w-b.w) > 1e-9 {
+	if a.e == b.e || a.concave != b.concave || math.Abs(a.w-b.w) > 1e-9 {
 		return false
 	}
 	if (a.v[0] != v && a.v[1] != v) || (b.v[0] != v && b.v[1] != v) {
@@ -749,7 +842,7 @@ func (t *Topology) smoothJoin(a, b *filletEdge, v int) bool {
 		for ka := 0; ka < 2; ka++ {
 			kb := ka ^ swap
 			da, db := a.into(ka, p), b.into(kb, p)
-			if !da.Equals(db) && da.Minus(db).Magnitude() > 1e-9 {
+			if !da.Equals(db) && da.Minus(db).Magnitude() > 1e-9 || math.Abs(a.ss[ka]-b.ss[kb]) > geom.LengthEps {
 				ok = false
 			}
 		}
@@ -786,8 +879,8 @@ func (fe *filletEdge) tangentCurve(k int, p, q geom.Vector) srf.SBezier {
 		return srf.SBezierFrom2(p, q)
 	}
 	sb := fe.curve
-	scale := (fe.radius + fe.s*fe.gen[k][0]) / fe.radius
-	lift := fe.axis.ScaledBy(fe.s * fe.gen[k][1])
+	scale := (fe.radius + fe.ss[k]*fe.gen[k][0]) / fe.radius
+	lift := fe.axis.ScaledBy(fe.ss[k] * fe.gen[k][1])
 	for i := 0; i <= sb.Degree; i++ {
 		sb.Ctrl[i] = fe.centre.Plus(sb.Ctrl[i].Minus(fe.centre).ScaledBy(scale)).Plus(lift)
 	}
@@ -799,8 +892,8 @@ func (fe *filletEdge) tangentCurve(k int, p, q geom.Vector) srf.SBezier {
 // from its point on face 0 to its point on face 1: an arc whose control
 // point is p, or with flat a line.
 func (fe *filletEdge) section(p geom.Vector, flat bool) srf.SBezier {
-	a := p.Plus(fe.into(0, p).ScaledBy(fe.s))
-	b := p.Plus(fe.into(1, p).ScaledBy(fe.s))
+	a := p.Plus(fe.into(0, p).ScaledBy(fe.ss[0]))
+	b := p.Plus(fe.into(1, p).ScaledBy(fe.ss[1]))
 	if flat {
 		return srf.SBezierFrom2(a, b)
 	}
@@ -812,7 +905,7 @@ func (fe *filletEdge) section(p geom.Vector, flat bool) srf.SBezier {
 // one, the cross section at its start turned about the axis to its end.
 func (fe *filletEdge) surface(a, b geom.Vector, flat bool) srf.SSurface {
 	if !fe.circ {
-		margin := fe.s + 2*fe.r
+		margin := math.Max(fe.ss[0], fe.ss[1]) + 2*fe.r
 		l := b.Minus(a).Magnitude()
 		p0 := a.Minus(fe.dir.ScaledBy(margin))
 		section := fe.section(p0, flat)
@@ -898,7 +991,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 		c.kind = seam
 		for _, fe := range []*filletEdge{a, b} {
 			for k := 0; k < 2; k++ {
-				c.at[[2]int{fe.e, fe.f[k]}] = p.Plus(fe.into(k, p).ScaledBy(fe.s))
+				c.at[[2]int{fe.e, fe.f[k]}] = p.Plus(fe.into(k, p).ScaledBy(fe.ss[k]))
 			}
 		}
 		// Each other edge is cut back to the tangent point on its faces,
@@ -910,7 +1003,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 			for _, fe := range []*filletEdge{a, b} {
 				for k := 0; k < 2; k++ {
 					if fe.f[k] == fx[0] || fe.f[k] == fx[1] {
-						q, found = p.Plus(fe.into(k, p).ScaledBy(fe.s)), true
+						q, found = p.Plus(fe.into(k, p).ScaledBy(fe.ss[k])), true
 					}
 				}
 			}
@@ -922,6 +1015,14 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 			}
 		}
 		return c, nil
+	}
+	if c.kind >= 2 {
+		for _, x := range round {
+			if fe := &edges[byEdge[x]]; !fe.even() {
+				return nil, filletErr(p, "a chamfer of two distances meets another chamfered edge here; "+
+					"at a corner of chamfers the distances must be one")
+			}
+		}
 	}
 	if circular > 0 && c.kind == 2 {
 		return nil, filletErr(p, "a circular edge's fillet meets another's at an angle; they must meet smoothly")
@@ -952,7 +1053,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 		}
 		c.end = end
 		for k := 0; k < 2; k++ {
-			q, err := t.pointAlong(along[k], v, fe.into(k, p), fe.s, fe.concave)
+			q, err := t.pointAlong(along[k], v, fe.into(k, p), fe.ss[k], fe.concave)
 			if err != nil {
 				return nil, err
 			}
@@ -1003,7 +1104,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 			}
 			side[i] = fe.f[k]
 			var err error
-			if q[i], err = t.pointAlong(z, v, fe.u[k], fe.s, false); err != nil {
+			if q[i], err = t.pointAlong(z, v, fe.u[k], fe.ss[k], false); err != nil {
 				return nil, err
 			}
 		}

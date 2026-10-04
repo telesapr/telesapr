@@ -229,7 +229,7 @@ func solveDense(a [][]float64, rhs [][]geom.Vector4) error {
 }
 
 // SkinWithEnds is the cubic surface through sections, curves of one
-// degree, knot vector and weights, at the parameters ts across, from 0
+// degree and knot vector, their weights their own, at the parameters ts across, from 0
 // to 1, with the derivatives across at the first and the last given for
 // each control point (Piegl and Tiller, 9.2.2): the interior knots are
 // the sections' own parameters, and two more control points meet the
@@ -243,21 +243,19 @@ func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vecto
 	if len(start) != len(first.Ctrl) || len(end) != len(first.Ctrl) {
 		return nil, errors.New("srf: a derivative for each control point at each end")
 	}
+	last := sections[len(sections)-1]
 	for i, c := range sections {
 		if len(c.Weight) != len(first.Weight) {
 			return nil, fmt.Errorf("srf: section %d has another degree or knot vector than the first", i)
 		}
-		for j := range c.Weight {
-			if c.Weight[j] != first.Weight[j] {
-				return nil, fmt.Errorf("srf: section %d has other weights than the first", i)
-			}
-		}
 	}
-	// A derivative's weight is the weight's, which doesn't change.
+	// Each end section with its own weights; the weight's derivative
+	// across is 0 at the ends, so there the homogeneous derivative is the
+	// weight times the point's.
 	hs, he := make([]geom.Vector4, len(start)), make([]geom.Vector4, len(end))
 	for i := range start {
-		w := first.Weight[i]
-		hs[i], he[i] = geom.Vector4FromWeighted(w, start[i]), geom.Vector4FromWeighted(w, end[i])
+		hs[i] = geom.Vector4FromWeighted(first.Weight[i], start[i])
+		he[i] = geom.Vector4FromWeighted(last.Weight[i], end[i])
 		hs[i].W, he[i].W = 0, 0
 	}
 	return SkinThrough(sections, ts, hs, he)

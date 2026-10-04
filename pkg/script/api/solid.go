@@ -5,6 +5,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // Mirror reflects the active group in plane, a workplane or a planar
@@ -143,7 +144,10 @@ func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group {
 // path, copies times in all: the first where the solid is and the last
 // at the far end of the path, spaced evenly along it, each turned with
 // it, as New Group > Pattern Along Path does. The path starts at its
-// end nearest the solid. Copies and SetCopies read and change the
+// end nearest the solid. A path that closes, a circle alone or pieces
+// that come back to their start meeting it tangent, has the copies
+// shared out evenly round it, starting at its point nearest the
+// solid. Copies and SetCopies read and change the
 // count; the sketch's entities are not copied.
 func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
@@ -199,6 +203,52 @@ func (g Group) SetDistance(mm float64) {
 	})
 }
 
+// SecondDistance is a chamfer's distance in mm on each edge's second
+// face, or 0 when it is the first distance on both faces. An edge's
+// first face is the one of the lower identity (SolidFace.ID), the one
+// its name gives first.
+func (g Group) SecondDistance() (mm float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupChamfer, "SecondDistance")
+		mm = group.ValC
+	})
+	return mm
+}
+
+// SetSecondDistance makes a chamfer of two distances: Distance on each
+// edge's first face and mm on the second; 0 makes it a chamfer of one
+// distance again. SetExpr with sketch.GroupValC gives it an expression
+// in the document's unit. A chamfer of two distances can't have edges
+// that meet at a corner it cuts by its local edit; there it cuts each
+// straight edge by a wedge instead, and a circular edge not at all.
+func (g Group) SetSecondDistance(mm float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupChamfer, "SetSecondDistance")
+		if mm < 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
+			fail("a chamfer's second distance must be more than zero, or zero for the first again, not %g", mm)
+		}
+		group.ValC, group.ExprC = mm, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
+// SwapDistances swaps a chamfer's two distances, which chamfers each
+// edge the other way round. It fails for a chamfer of one distance.
+func (g Group) SwapDistances() {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupChamfer, "SwapDistances")
+		if group.ValC == 0 && group.ExprC == "" {
+			fail("%s has one distance; SetSecondDistance gives it a second", groupDescription(group))
+		}
+		group.ValB, group.ValC = group.ValC, group.ValB
+		group.ExprB, group.ExprC = group.ExprC, group.ExprB
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // Sweep moves the closed loops of the active group, a sketch in a
 // workplane, along path, line segments, arcs and cubics joined end to
 // end and meeting tangent, as a pipe follows its bends. The sweep
@@ -206,8 +256,9 @@ func (g Group) SetDistance(mm float64) {
 // sketch where it is drawn, and keeps its attitude to the path, turning
 // as little as the path lets it. Along lines and arcs its surfaces are
 // exact; along cubics they are fitted within a tenth of the chord
-// tolerance (see also SetTwist and SetSweepUp). The new group becomes
-// active.
+// tolerance (see also SetTwist and SetSweepUp). Two line segments may
+// meet at a corner, where the sweep is mitred: each piece cut by the
+// plane that halves the corner. The new group becomes active.
 func (d *Doc) Sweep(path []Entity, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		hs := make([]core.HEntity, len(path))
@@ -215,6 +266,29 @@ func (d *Doc) Sweep(path []Entity, name string) Group {
 			hs[i] = e.get(sk).H
 		}
 		g, err := sk.NewSweep(hs, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// SweepEdges is Sweep along a chain of edges of the solid so far, by
+// name (Solid, SolidEdge), and the line segments, arcs and cubics of
+// path with them, one chain: a straight edge is a line, a circular one
+// an arc, any other a curve as a cubic is. The sweep keeps the edges'
+// names, so it follows them when the model upstream changes.
+func (d *Doc) SweepEdges(edges []SolidEdge, path []Entity, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		hs := make([]core.HEntity, len(path))
+		for i, e := range path {
+			hs[i] = e.get(sk).H
+		}
+		names := make([]topo.Name, len(edges))
+		for i, e := range edges {
+			names[i] = e.name
+		}
+		g, err := sk.NewSweepAlong(hs, names, name)
 		if err != nil {
 			fail("%v", err)
 		}

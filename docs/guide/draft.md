@@ -26,10 +26,33 @@ boss.SetDraft(3)
 boss.SetExpr(sketch.GroupValC, "angle")
 ```
 
+## Chosen sides and the neutral plane
+
+A draft may lean only some sides: select them, as lines, arcs or circles of the extruded sketch,
+their copies at the extrusion's ends, or the faces of the sides, with the extrusion active, and
+choose New Group > Draft Selected Sides. The group's screen says how many sides are drafted, and
+*[all]* drafts every side again. The rest stay upright.
+
+The sides lean from the sketch's plane to begin with. The screen's *from the plane* row moves that
+plane, the neutral one, along the extrusion: there the solid has the sketch's outline, and it
+narrows going away from it both ways, as a moulded part does from its parting line. At the far
+end, the foot is the smaller end. A plane off the extrusion is a problem on the group.
+
+Where an arc meets a line at a sharp corner, as a D's arc meets its flat side, the arc's cone and
+the line's plane meet in a conic, which the solid follows exactly. Example:
+[`examples/scripts/parting`](../../examples/scripts/parting/parting.go).
+
+From a script:
+
+```go
+boss.SetDraft(3)
+boss.SetDraftNeutral(8)                // lean from the plane 8 up
+boss.SetDraftFaces([]api.Entity{arc})  // only the arc's side
+```
+
 ## Not yet
 
-The sketch must be of lines and arcs, each arc meeting its neighbours tangent, as a rounded
-rectangle's corners or a circle's quarters do; where an arc meets a line at a corner, the drafted
-sides meet in a curve, and the draft is refused. Splines and text are refused. The far end's
-entities are not moved onto the solid. A draft on chosen faces only, and a neutral plane other
-than the sketch's, are not done (roadmap E13 as sized).
+The sketch must be of lines and arcs. Two arcs that meet at a sharp corner are refused: their
+cones meet in a curve of degree four. Sides that meet tangent must lean alike. Splines and text
+are refused. The far end's entities are not moved onto the solid. A draft about a plane that is
+not square to the extrusion is not done.

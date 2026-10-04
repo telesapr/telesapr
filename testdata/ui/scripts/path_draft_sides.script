@@ -1,0 +1,27 @@
+# The draft of path_draft given two chosen sides by New Group > Draft
+# Selected Sides and its neutral plane at 10 on its screen; the same as
+# path_draft_sides.go makes (TestPathEquivalenceDraftSides, roadmap 28.2).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+twmove 163 145
+twdown L 163 145
+twup L 163 145
+edit 5
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu New Group|Draft Selected Sides
+twmove 272 165
+twdown L 272 165
+twup L 272 165
+edit 10
