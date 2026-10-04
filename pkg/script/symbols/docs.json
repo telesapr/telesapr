@@ -4886,6 +4886,10 @@
 						"decl": "func (g Group) Faces() (faces []Entity)",
 						"text": "Faces are the planar faces this group made, which constraints and\nthe section view can refer to."
 					},
+					"Guides": {
+						"decl": "func (g Group) Guides() (curves []Entity)",
+						"text": "Guides are a loft's guide curves, the line segments, arcs and cubics\nthat hold it (see SetGuides), or none."
+					},
 					"KeepOriginal": {
 						"decl": "func (g Group) KeepOriginal() (keep bool)",
 						"text": "KeepOriginal reports whether a mirror's solid has the original as\nwell as the reflection."
@@ -5013,6 +5017,10 @@
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
 						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (Doc.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
+					},
+					"SetGuides": {
+						"decl": "func (g Group) SetGuides(curves []Entity)",
+						"text": "SetGuides holds a loft to guide curves: line segments, arcs and\ncubics drawn before it, each chain of them that joins end to end one\nguide, from a point of the first profile through every profile to\nthe last. One guide moves the loft's sections across so that it runs\nalong the guide; two move, turn and scale them, so that the loft\nwidens and narrows between them. None takes the guides away. A guide\nthat misses a profile is the group's problem, with how far."
 					},
 					"SetKeepOriginal": {
 						"decl": "func (g Group) SetKeepOriginal(keep bool)",
@@ -6686,6 +6694,10 @@
 						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error",
 						"text": "SetGroupText gives a group value what the user typed, as SetConstraintText does for a constraint: a pitch is in the document's unit."
 					},
+					"SetLoftGuides": {
+						"decl": "func (sk *Sketch) SetLoftGuides(hg core.HGroup, es []core.HEntity) error",
+						"text": "SetLoftGuides makes the line segments, arcs and cubics es the guide curves of the loft hg, or takes its guides away when es is empty."
+					},
 					"SetParameterExpr": {
 						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
 						"text": "SetParameterExpr gives a parameter a new expression."
@@ -7339,6 +7351,10 @@
 					"Domain": {
 						"decl": "func (s *BSplineSurface) Domain() (u0, u1, v0, v1 float64)",
 						"text": "Domain is the surface's parameter ranges."
+					},
+					"IsoV": {
+						"decl": "func (s *BSplineSurface) IsoV(v float64) BSplineCurve",
+						"text": "IsoV is the surface's curve at v, along u: its control points the columns' points at v, combined in homogeneous coordinates, of the surface's degree and knot vector along u."
 					},
 					"LowDegree": {
 						"decl": "func (s *BSplineSurface) LowDegree(tol float64) (*BSplineSurface, error)",

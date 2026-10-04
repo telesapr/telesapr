@@ -50,6 +50,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
 | 25 (part) | Rolling-ball fillets on closed edges between two curved faces: cylinders at an angle, cylinder and cone, cylinder and sphere | `8707d1f` |
 | 24 (rest) | Cylinder through cylinder (2 to 0 of 54), the last analytic STEP cut (1 to 0 of 28), bands over a lathe seam (8 to 0 of 108), twisted lofts meshed within 0.55% | `2fcfbae` |
+| 28 (rest) | Loft guide curves (one or two), drafts of two arcs meeting at a corner | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -119,9 +120,7 @@ State and the plan for guide curves: `docs/notes/step-28.md`.
 
 | Package | Content | State |
 |---|---|---|
-| 28.2 drafts of two arcs meeting at a corner | refused | open |
-| 28.3 smooth lofts: guide curves | end tangency done; guide curves not started | partly done |
-| 28.4 sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred | open |
+| 28.4 sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred. Runs cut at the mitre plane and joined by a union came out right but failed every later Boolean (and a round profile left 188 naked edges): the mitre belongs inside the arc sweep, kernel work. See `docs/notes/step-28.md` | open |
 
 Shells of other curved solids (step 10, 15.2: prisms only; filleted, lofted and revolved solids
 are refused) stay with E12 under "Left out"; 22.1's offsets are the first part.

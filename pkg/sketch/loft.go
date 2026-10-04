@@ -16,7 +16,8 @@ import (
 // counts have their longest curves split until they match
 // (topo.MatchCounts). With profiles LoftThrough between the two, the
 // loft is one smooth surface through them all, in order (topo.
-// MakeSmoothLoft), each profile after the first turned by ValA. Its
+// MakeSmoothLoft), each profile after the first turned by ValA; guide
+// curves Edges hold it (loftguide.go). Its
 // solid joins the solid so far by its combine, as an extrusion's does.
 
 // loftLoop is the one closed loop of a profile group, or why there is
@@ -112,6 +113,13 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 		}
 		loops = append(loops, l)
 	}
+	guides, err := g.loftGuides(sk)
+	if err != nil {
+		return nil, err
+	}
+	if len(guides) > 0 {
+		return topo.MakeGuidedLoft(loops, int(g.ValA), g.LoftEnds(), guides, g.Color, origin)
+	}
 	if ends := g.LoftEnds(); len(loops) > 2 || ends != (topo.LoftEnds{}) {
 		return topo.MakeSmoothLoftEnds(loops, int(g.ValA), ends, g.Color, origin)
 	}
@@ -126,7 +134,12 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 func (g *Group) generateLoftShell(sk *Sketch) {
 	sh, err := g.loftShell(sk, srf.OriginFor(g.H.V, 0))
 	if err != nil {
-		g.setProblem(nil, "%v", err)
+		var pe *pathError
+		if errors.As(err, &pe) {
+			g.setProblem(pe.at, "%s", pe.msg)
+		} else {
+			g.setProblem(nil, "%v", err)
+		}
 		return
 	}
 	g.ThisShell = *sh

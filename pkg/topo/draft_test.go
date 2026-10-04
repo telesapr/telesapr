@@ -111,12 +111,6 @@ func TestDraftedPrism(t *testing.T) {
 
 func TestDraftRefused(t *testing.T) {
 	square := polyLoop(v(0, 0, 0), v(20, 0, 0), v(20, 10, 0), v(0, 10, 0))
-	// A lens: two arcs meeting at sharp corners, whose cones would meet
-	// in a curve of degree four.
-	up, down := circle(5, 0, 0)[0], circle(5, 0, 0)[0]
-	down.Ctrl[0], down.Ctrl[2] = up.Ctrl[2], up.Ctrl[0]
-	down.Ctrl[1] = v(0, 0, 0)
-	d := []srf.SBezier{up, down}
 	spline := []srf.SBezier{srf.SBezierFrom4(v(0, 0, 0), v(5, 5, 0), v(10, 5, 0), v(15, 0, 0)), srf.SBezierFrom2(v(15, 0, 0), v(0, 0, 0))}
 	color := core.NewRgbaColor(100, 100, 100, 255)
 	for name, c := range map[string]struct {
@@ -127,7 +121,6 @@ func TestDraftRefused(t *testing.T) {
 	}{
 		"sides meet":      {[][]srf.SBezier{square}, v(0, 0, 60), 5, "meet"},
 		"cone to a point": {[][]srf.SBezier{circle(5, 0, 0)}, v(0, 0, 60), 10, "takes an arc"},
-		"sharp arcs":      {[][]srf.SBezier{d}, v(0, 0, 5), 5, "sharp corner"},
 		"a spline":        {[][]srf.SBezier{spline}, v(0, 0, 5), 5, "neither a line nor an arc"},
 		"skewed":          {[][]srf.SBezier{square}, v(1, 0, 5), 5, "square"},
 		"flat":            {[][]srf.SBezier{square}, v(0, 0, 5), 90, "flat"},
@@ -137,7 +130,7 @@ func TestDraftRefused(t *testing.T) {
 			t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
 		}
 		var se *topo.ShellError
-		if name == "sharp arcs" && !errors.As(err, &se) {
+		if name == "cone to a point" && !errors.As(err, &se) {
 			t.Errorf("%s: %v has no place", name, err)
 		}
 	}

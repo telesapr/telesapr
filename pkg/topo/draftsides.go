@@ -17,9 +17,10 @@ import (
 // plane of the line's meet in a conic, which a rational quadratic
 // follows exactly: the arc's side is the cone over enough of its turn
 // to hold both ends of that curve, trimmed by it, and the plane is
-// trimmed by it too. Two arcs at a sharp corner would meet in a curve
-// of degree four, and are refused; pieces that meet tangent must lean
-// alike, or the sides would part there.
+// trimmed by it too. Two arcs at a sharp corner meet in a curve of
+// degree four, which quintics through points of it follow within
+// seamTol (arcArcSeam); pieces that meet tangent must lean alike, or
+// the sides would part there.
 
 // DraftedPrismAngles is DraftedPrism with angles[k][i] the angle in
 // radians of the side of loop k's curve i.
@@ -118,21 +119,12 @@ func DraftedPrismAngles(loops [][]srf.SBezier, angles [][]float64, along geom.Ve
 	return sh, nil
 }
 
-// draftPieces are loopPieces, but arcs may meet lines at sharp corners.
+// draftPieces are loopPieces, but arcs may meet lines and arcs at sharp
+// corners.
 func draftPieces(loop []srf.SBezier, n geom.Vector) ([]profilePiece, error) {
 	pieces, err := loopPieces(loop, n)
 	if err != nil {
 		return nil, err
-	}
-	for i, q := range pieces {
-		p := pieces[(i+len(pieces)-1)%len(pieces)]
-		if !p.arc || !q.arc {
-			continue
-		}
-		if !smoothCorner(p, q, n) {
-			return nil, shellErr(q.a, "two arcs of the profile meet at a sharp corner; "+
-				"a draft takes arcs that meet arcs tangent")
-		}
 	}
 	return pieces, nil
 }
@@ -232,7 +224,7 @@ func draftLoopOf(pieces []profilePiece, ds []float64, along, n geom.Vector) (dra
 		}
 		corner[i] = c
 	}
-	seams := make([]srf.SBezier, k)
+	seams := make([][]srf.SBezier, k)
 	for i := range pieces {
 		prev := (i + k - 1) % k
 		s, err := draftSeam(pieces[prev], pieces[i], moved[prev], moved[i], pieces[i].a, corner[i].Plus(along), ds[prev], ds[i], along, n)
@@ -247,8 +239,7 @@ func draftLoopOf(pieces []profilePiece, ds []float64, along, n geom.Vector) (dra
 		ta, tb := corner[i].Plus(along), corner[next].Plus(along)
 		start := seams[i]  // bottom a to top ta
 		end := seams[next] // bottom b to top tb
-		startDown := start
-		startDown.Reverse()
+		startDown := reversedChain(start)
 		if !p.arc {
 			if tb.Minus(ta).Dot(b.Minus(a)) <= 0 {
 				return dl, shellErr(a, "the draft makes the sides meet, closing up the far end")
@@ -258,7 +249,8 @@ func draftLoopOf(pieces []profilePiece, ds []float64, along, n geom.Vector) (dra
 			rtp.Reverse()
 			dl.bottom = append(dl.bottom, bot)
 			dl.top = append(dl.top, tp)
-			dl.faces = append(dl.faces, draftFace{ruledPatch(bot, tp), []srf.SBezier{bot, end, rtp, startDown}})
+			trims := append(append(append([]srf.SBezier{bot}, end...), rtp), startDown...)
+			dl.faces = append(dl.faces, draftFace{ruledPatch(bot, tp), trims})
 			continue
 		}
 		faces, bot, tp, err := draftArcSides(p, moved[i], ta, tb, start, end, along, n)
@@ -324,7 +316,7 @@ func (f arcFrame) arcFromTo(a, b, r float64, lift geom.Vector) srf.SBezier {
 // top tb): the cone over the turns that hold both, in parts of at most
 // a quarter turn, each trimmed to the side; and the side's bottom and
 // top curves.
-func draftArcSides(p, moved profilePiece, ta, tb geom.Vector, start, end srf.SBezier, along, n geom.Vector) ([]draftFace, []srf.SBezier, []srf.SBezier, error) {
+func draftArcSides(p, moved profilePiece, ta, tb geom.Vector, start, end []srf.SBezier, along, n geom.Vector) ([]draftFace, []srf.SBezier, []srf.SBezier, error) {
 	f := frameOf(p, n)
 	turn := math.Abs(p.angle)
 	pa, pb := 0.0, turn
@@ -384,19 +376,19 @@ func draftArcSides(p, moved profilePiece, ta, tb geom.Vector, start, end srf.SBe
 		}
 		rtp := tp
 		rtp.Reverse()
-		var right, left srf.SBezier
+		var right, left []srf.SBezier
 		if j == parts-1 {
 			right = end
 		} else {
-			right = srf.SBezierFrom2(f.point(x1, rb, geom.Vector{}), f.point(x1, rt, along))
+			right = []srf.SBezier{srf.SBezierFrom2(f.point(x1, rb, geom.Vector{}), f.point(x1, rt, along))}
 		}
 		if j == 0 {
 			left = start
 		} else {
-			left = srf.SBezierFrom2(f.point(x0, rb, geom.Vector{}), f.point(x0, rt, along))
+			left = []srf.SBezier{srf.SBezierFrom2(f.point(x0, rb, geom.Vector{}), f.point(x0, rt, along))}
 		}
-		left.Reverse()
-		faces = append(faces, draftFace{surf, []srf.SBezier{bot, right, rtp, left}})
+		trims := append(append(append([]srf.SBezier{bot}, right...), rtp), reversedChain(left)...)
+		faces = append(faces, draftFace{surf, trims})
 		bottom = append(bottom, bot)
 		top = append(top, tp)
 	}
@@ -408,13 +400,13 @@ func draftArcSides(p, moved profilePiece, ta, tb geom.Vector, start, end srf.SBe
 // planes, or along a generator where the sides meet smoothly; where a
 // line meets an arc at a sharp corner, the conic where the plane meets
 // the cone.
-func draftSeam(p, q, pm, qm profilePiece, v, tv geom.Vector, dp, dq float64, along, n geom.Vector) (srf.SBezier, error) {
-	line := srf.SBezierFrom2(v, tv)
+func draftSeam(p, q, pm, qm profilePiece, v, tv geom.Vector, dp, dq float64, along, n geom.Vector) ([]srf.SBezier, error) {
+	line := []srf.SBezier{srf.SBezierFrom2(v, tv)}
 	if (!p.arc && !q.arc) || smoothCorner(p, q, n) {
 		return line, nil
 	}
 	if p.arc && q.arc {
-		return line, shellErr(v, "two arcs of the profile meet at a sharp corner")
+		return arcArcSeam(p, q, pm, qm, v, tv, along, n)
 	}
 	ln, ar, arm := p, q, qm
 	if p.arc {
@@ -484,7 +476,17 @@ func draftSeam(p, q, pm, qm profilePiece, v, tv geom.Vector, dp, dq float64, alo
 			return line, shellErr(x, "the draft's seam at a corner of an arc leaves the cone by %g", math.Abs(rad-(rb+(rt-rb)*hz)))
 		}
 	}
-	return sb, nil
+	return []srf.SBezier{sb}, nil
+}
+
+// reversedChain is a chain of curves run the other way.
+func reversedChain(ch []srf.SBezier) []srf.SBezier {
+	out := make([]srf.SBezier, len(ch))
+	for i, sb := range ch {
+		sb.Reverse()
+		out[len(ch)-1-i] = sb
+	}
+	return out
 }
 
 // lineMeetIn is where the lines through a along da and b along db meet,
@@ -531,4 +533,151 @@ func elevateRuling(s srf.SSurface) srf.SSurface {
 		out.Weight[1][j] = (w0 + w1) / 2
 	}
 	return out
+}
+
+// seamTol is how far off either cone the seam two drafted arcs meet in
+// may run.
+const seamTol = 1e-6
+
+// arcArcSeam is the curve where the cones of two drafted arcs p and q
+// meet at a sharp corner, from v at the bottom to tv at the top (pm and
+// qm the arcs at the far end): at each height the point where the two
+// circles there cross, nearest the one below. The true curve is of
+// degree four; quintic Beziers, each through six points of it at
+// Chebyshev-Lobatto heights, follow it in one, two, four or more pieces
+// up the height, as many as keep each within seamTol of both cones.
+func arcArcSeam(p, q, pm, qm profilePiece, v, tv, along, n geom.Vector) ([]srf.SBezier, error) {
+	h := along.Magnitude()
+	nz := along.ScaledBy(1 / h)
+	at := func(t float64, near geom.Vector) (geom.Vector, bool) {
+		lift := along.ScaledBy(t)
+		c := circleCircle(p.centre.Plus(lift), p.r+(pm.r-p.r)*t, q.centre.Plus(lift), q.r+(qm.r-q.r)*t, n)
+		if len(c) == 0 {
+			return geom.Vector{}, false
+		}
+		if c[1].Minus(near).Magnitude() < c[0].Minus(near).Magnitude() {
+			return c[1], true
+		}
+		return c[0], true
+	}
+	off := func(x geom.Vector, a, am profilePiece) float64 {
+		d := x.Minus(a.centre)
+		hz := d.Dot(nz) / h
+		rad := d.Minus(nz.ScaledBy(d.Dot(nz))).Magnitude()
+		return math.Abs(rad - (a.r + (am.r-a.r)*hz))
+	}
+	worst := 0.0
+	var worstAt geom.Vector
+	for pieces := 1; pieces <= 32; pieces *= 2 {
+		var out []srf.SBezier
+		from, near := v, v
+		worst = 0
+		ok := true
+		for k := 0; k < pieces && ok; k++ {
+			t0, t1 := float64(k)/float64(pieces), float64(k+1)/float64(pieces)
+			to := tv
+			if k+1 < pieces {
+				x, found := at(t1, near)
+				if !found {
+					return nil, shellErr(v, "the draft's sides part at a corner of two arcs")
+				}
+				to = x
+			}
+			sb, found := quinticThrough(func(t float64, near geom.Vector) (geom.Vector, bool) {
+				return at(t0+(t1-t0)*t, near)
+			}, from, to)
+			if !found {
+				return nil, shellErr(v, "the draft's sides part at a corner of two arcs")
+			}
+			for j := 1; j < 20; j++ {
+				x := sb.PointAt(float64(j) / 20)
+				if e := math.Max(off(x, p, pm), off(x, q, qm)); e > worst {
+					worst, worstAt = e, x
+				}
+			}
+			out = append(out, sb)
+			from, near = to, to
+			ok = worst <= seamTol
+		}
+		if ok {
+			return out, nil
+		}
+	}
+	return nil, shellErr(worstAt, "the draft's seam at a corner of two arcs leaves their cones by %g", worst)
+}
+
+// quinticThrough is the quintic Bezier from a to b through the points
+// at(t) of a curve at Chebyshev-Lobatto parameters in between, each
+// found nearest the one before.
+func quinticThrough(at func(t float64, near geom.Vector) (geom.Vector, bool), a, b geom.Vector) (srf.SBezier, bool) {
+	const deg = 5
+	var ts [deg + 1]float64
+	for i := range ts {
+		ts[i] = (1 - math.Cos(float64(i)*math.Pi/deg)) / 2
+	}
+	var pts [deg + 1]geom.Vector
+	pts[0], pts[deg] = a, b
+	prev := a
+	for i := 1; i < deg; i++ {
+		x, ok := at(ts[i], prev)
+		if !ok {
+			return srf.SBezier{}, false
+		}
+		pts[i], prev = x, x
+	}
+	// Bernstein's matrix at ts, solved for each coordinate.
+	var sb srf.SBezier
+	sb.Degree = deg
+	for axis := 0; axis < 3; axis++ {
+		var m [deg + 1][deg + 2]float64
+		for i := 0; i <= deg; i++ {
+			for j := 0; j <= deg; j++ {
+				m[i][j] = bernstein(deg, j, ts[i])
+			}
+			m[i][deg+1] = [3]float64{pts[i].X, pts[i].Y, pts[i].Z}[axis]
+		}
+		for col := 0; col <= deg; col++ {
+			piv := col
+			for r := col + 1; r <= deg; r++ {
+				if math.Abs(m[r][col]) > math.Abs(m[piv][col]) {
+					piv = r
+				}
+			}
+			m[col], m[piv] = m[piv], m[col]
+			for r := 0; r <= deg; r++ {
+				if r == col {
+					continue
+				}
+				f := m[r][col] / m[col][col]
+				for c := col; c <= deg+1; c++ {
+					m[r][c] -= f * m[col][c]
+				}
+			}
+		}
+		for j := 0; j <= deg; j++ {
+			x := m[j][deg+1] / m[j][j]
+			switch axis {
+			case 0:
+				sb.Ctrl[j].X = x
+			case 1:
+				sb.Ctrl[j].Y = x
+			default:
+				sb.Ctrl[j].Z = x
+			}
+		}
+	}
+	for j := 0; j <= deg; j++ {
+		sb.Weight[j] = 1
+	}
+	sb.Ctrl[0], sb.Ctrl[deg] = a, b
+	return sb, true
+}
+
+// bernstein is the Bernstein polynomial j of degree n at t.
+func bernstein(n, j int, t float64) float64 {
+	c := 1.0
+	for k := 1; k <= j; k++ {
+		c = c * float64(n-j+k) / float64(k)
+	}
+	return c * math.Pow(t, float64(j)) * math.Pow(1-t, float64(n-j))
 }

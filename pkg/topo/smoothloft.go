@@ -181,14 +181,34 @@ func SmoothLoftSurfaceEnds(loops [][]srf.SBezier, turn int, ends LoftEnds) (*srf
 	if ends.Start == 0 && ends.End == 0 {
 		return SmoothLoftSurface(loops, turn)
 	}
+	b, err := smoothLoftBase(loops, turn, ends)
+	if err != nil {
+		return nil, err
+	}
+	return b.surface, nil
+}
+
+// loftBase is a smooth loft's surface with what made it: the loops as
+// SmoothLoftSections takes them, each as one curve, and the parameter
+// across of each.
+type loftBase struct {
+	loops   [][]srf.SBezier
+	curves  []srf.BSplineCurve
+	surface *srf.BSplineSurface
+	ts      []float64
+}
+
+// smoothLoftBase is the smooth loft through loops with its ends set by
+// ends, free or not.
+func smoothLoftBase(loops [][]srf.SBezier, turn int, ends LoftEnds) (loftBase, error) {
 	for _, x := range []float64{ends.Start, ends.End} {
 		if math.IsNaN(x) || math.IsInf(x, 0) {
-			return nil, fmt.Errorf("a loft's tangency at an end is a number, not %g", x)
+			return loftBase{}, fmt.Errorf("a loft's tangency at an end is a number, not %g", x)
 		}
 	}
 	loops, err := SmoothLoftSections(loops, turn)
 	if err != nil {
-		return nil, err
+		return loftBase{}, err
 	}
 	deg := 1
 	for _, l := range loops {
@@ -199,13 +219,17 @@ func SmoothLoftSurfaceEnds(loops [][]srf.SBezier, turn int, ends LoftEnds) (*srf
 	curves := make([]srf.BSplineCurve, len(loops))
 	for i, l := range loops {
 		if curves[i], err = srf.ChainCurve(l, deg); err != nil {
-			return nil, err
+			return loftBase{}, err
 		}
 	}
 	// The free surface gives the parameters and the free ends.
 	free, ts, err := srf.Skin(curves)
 	if err != nil {
-		return nil, err
+		return loftBase{}, err
+	}
+	b := loftBase{loops: loops, curves: curves, surface: free, ts: ts}
+	if ends.Start == 0 && ends.End == 0 {
+		return b, nil
 	}
 	length := 0.0
 	for i := 1; i < len(loops); i++ {
@@ -232,5 +256,8 @@ func SmoothLoftSurfaceEnds(loops [][]srf.SBezier, turn int, ends LoftEnds) (*srf
 			end[i] = n1.ScaledBy(ends.End * length)
 		}
 	}
-	return srf.SkinWithEnds(curves, ts, start, end)
+	if b.surface, err = srf.SkinWithEnds(curves, ts, start, end); err != nil {
+		return loftBase{}, err
+	}
+	return b, nil
 }

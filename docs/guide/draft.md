@@ -52,7 +52,8 @@ boss.SetDraftFaces([]api.Entity{arc})  // only the arc's side
 
 ## Not yet
 
-The sketch must be of lines and arcs. Two arcs that meet at a sharp corner are refused: their
-cones meet in a curve of degree four. Sides that meet tangent must lean alike. Splines and text
+The sketch must be of lines and arcs. Where two arcs meet at a sharp corner, their cones meet in
+a curve of degree four, which the solid follows within a millionth of a millimetre. Sides that
+meet tangent must lean alike. Splines and text
 are refused. The far end's entities are not moved onto the solid. A draft about a plane that is
 not square to the extrusion is not done.

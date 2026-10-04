@@ -759,6 +759,40 @@ func (g Group) SetTangency(start, end float64) {
 	})
 }
 
+// Guides are a loft's guide curves, the line segments, arcs and cubics
+// that hold it (see SetGuides), or none.
+func (g Group) Guides() (curves []Entity) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "Guides")
+		for _, he := range group.Edges {
+			curves = append(curves, Entity{d: g.d, H: he})
+		}
+	})
+	return curves
+}
+
+// SetGuides holds a loft to guide curves: line segments, arcs and
+// cubics drawn before it, each chain of them that joins end to end one
+// guide, from a point of the first profile through every profile to
+// the last. One guide moves the loft's sections across so that it runs
+// along the guide; two move, turn and scale them, so that the loft
+// widens and narrows between them. None takes the guides away. A guide
+// that misses a profile is the group's problem, with how far.
+func (g Group) SetGuides(curves []Entity) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "SetGuides")
+		hs := make([]core.HEntity, len(curves))
+		for i, e := range curves {
+			hs[i] = e.get(sk).H
+		}
+		if err := sk.SetLoftGuides(group.H, hs); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
 // SetTurn turns a loft's second profile by n curves, which joins its
 // curves to others of the first: a square lofted to a square turned by
 // one twists by a quarter.

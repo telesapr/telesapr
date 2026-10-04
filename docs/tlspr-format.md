@@ -221,7 +221,7 @@ group <handle> <type> <name> {
   face-appearance <face> <name>  # a face's own appearance, by its identity; one line each
   combine <combine>
   force-to-mesh
-  edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
+  edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given; loft: its guide curves
   start-tangency = <expression>  # loft: how square it leaves its first profile, a number; 0 or left out for free
   end-tangency = <expression>    # loft: how square it reaches its last profile
   draft-faces <handle> ...  # extrusion: the curves of its sketch whose sides the draft leans; left out for all
@@ -569,6 +569,11 @@ plane.
 
 Version 2 gained the loft fields `start-tangency` and `end-tangency` on 2026-10-04 (roadmap
 28.3), plain numbers. A reader from before skips them with a report, and leaves the ends free.
+
+A loft's `edges` are its guide curves since 2026-10-04 (roadmap 28.3): line segments, arcs and
+cubics drawn before it, each chain of them that joins end to end one guide from the first
+profile through every profile to the last, two at most. A reader from before reads the field
+and ignores it, so the loft is made without its guides.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

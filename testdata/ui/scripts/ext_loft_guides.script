@@ -1,0 +1,27 @@
+# A loft held to a guide curve (roadmap 28.3): the top circle of
+# loft_guide_profiles.tlspr lofted to the bottom one, picked with the
+# mouse; the cubic of the guide sketch picked and made its guide by New
+# Group > Guide Loft by Selected Curves; its screen showing one guide;
+# the solid checked; the guide taken away again on the screen; and the
+# menu again with nothing selected.
+file $testdata/ui/loft_guide_profiles.tlspr
+menu File|Open...
+view iso
+move 252.5 272.5
+down L 252.5 272.5
+up L 252.5 272.5
+menu New Group|Loft To Selected Profile
+move 337.5 267.5
+down L 337.5 267.5
+up L 337.5 267.5
+menu New Group|Guide Loft by Selected Curves
+tw
+answer ok
+menu Analyze|Check Solid
+dump
+twmove 172 225
+twdown L 172 225
+twup L 172 225
+tw
+answer ok
+menu New Group|Guide Loft by Selected Curves
