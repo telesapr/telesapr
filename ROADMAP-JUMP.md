@@ -1,6 +1,6 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, compacted 2026-10-04. Status: steps 1 to 21 and I7 are done and merged, but
+Date: 2026-10-01, compacted 2026-10-04. Status: steps 1 to 21, 23 and I7 are done and merged, but
 for 12.4 (CI's first run on GitHub), which waits for the user, and 21.5; step 22 is merged in
 part. The open work is planned as steps 23 to 29. Read "Definition of done for every new
 feature" first.
@@ -43,6 +43,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 20 | Smooth lofts through any number of profiles, sweeps along 3D cubics with frames and twist | `dda4e0b` |
 | 21 | STEP import as an exact solid in Booleans, tessellated STEP; not 21.5 | `21abd88` |
 | 22 (part) | Offsets of patches (22.1), coaxial cylinder/cone fillets and chamfers (22.2's first case) | `ddf8144` |
+| 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | MERGE |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -64,22 +65,6 @@ not depend on each other. Efforts are the earlier plan's where it gave one; the 
 | The remote and CI's first run | 12.4 | 0.3 wk | The GitHub repository (organisation `telesapr`, for the module path) and the `TAKIGO_TOKEN` secret; then push, watch the workflow and fix what its runner shows. Until then no fresh clone has been shown to build. Best done before the next merge, blocks nothing |
 | What to take back from "Left out" | | | Every row there is a proposal |
 | What the review took in without being asked | | | B3 (16.11), G4 (17.4) and S3 (17.5): all done; the user may still disown them |
-
-### Step 23: scripting and the MCP server (~2.5 wk), branch `step-23-scripting-fixes`
-
-From two notes of 2026-10-03, written while drawing a teapot through the MCP server. None was
-checked again since, but 23.5's first form, which step 20's example scripts met again. Each item
-starts with a failing test (`pkg/script/engine_test.go`, `pkg/script/api`, the MCP tests). The
-two kernel findings of the same notes are in step 24.
-
-| Package | Content | State |
-|---|---|---|
-| 23.1 a sketch that crosses itself makes no solid and nothing says so | The status, `get_drawing`, `Group.Problem()` and `Check().Sound()` (true, with no faces) all say well; only `PolyError` knows. Wanted: a sketch's `PolyError` (open, not coplanar, crossing, zero length) with its point in `Problem()`, `get_drawing` and the status, and marked on the canvas; a solid group whose source has one says why it made no solid; `Sound()` false for a solid group with no solid | not started |
-| 23.2 a failed script that called `TangentArc` is not all taken back | The arc and its trimmed lines stayed though the message said everything was taken back; guess: `TangentArc` pushes an undo step of its own inside the script | not started |
-| 23.3 the active group after a delete, and `MoveToEnd` | Deleting the active group puts later new groups after the first sketch; `MoveToEnd` moved an extrusion but not its two sketch groups, silently. Wanted: the last remaining group active after such a delete, or the script told which; `MoveToEnd` moves (with step 4's dependency checks) or says why not | not started |
-| 23.4 `render` fits the model | With no view (isometric) or "front" it is zoomed in and pushed down, at every picture size; "window" after Zoom To Fit is right. Entry: `Doc.Render`, `pkg/script/api/doc.go`. Also: "window" right after Align View to Workplane catches the view mid-animation; wait for the animation or finish it | not started |
-| 23.5 the interpreter | (a) A float literal beside a library constant fails: `2.0 * math.Pi`, `math.Pi + 0.5` give "mismatched types untyped float and untyped float64"; `math.Pi / 180.0`, `12 * math.Pi`, a variable and `float64(math.Pi)` work. Read from the error, not traced: yaegi v0.16.1's stdlib tables make `math`'s constants "untyped float64". (b) `eval` of code that starts with `const` or `var` and goes on with a statement fails to parse ("expected declaration"), taken for a program's top level; check `run_script` too. (c) `a, b, c := s[0], s[1], s[2]` fails as "constant definition loop"; one per line works. (d) Names kept between `run_script` calls collide with a block's `:=` of another type (panic in `reflect.Set`), and `p, q := e.Ends()` in a loop left `p` undefined; a block's `:=` should shadow as in Go, and the primer says whether a new file or MCP session clears the names. Order: a one-day spike on a newer yaegi; else our own symbols for `math`'s untyped constants, errors rewritten in `pkg/script/engine.go` ("write 2 * math.Pi or float64(math.Pi)"), and what stays in the primer's "What the interpreter can't do". A test case per failing form in `engine_test.go` | not started |
-| 23.6 small ones | `fmt.Println(g.Bounds())` fails plainly only in Go's words; a `Radius` constraint reads `c085-diameter = 6` with value 6 the radius (name and value disagree); a two-sided extrusion from scripts (`Doc.Extrude` goes one way only, the group has the subtype); `doc.RunCommand("File > New")` on unsaved changes returned nil and discarded them as far as a script could see (check it goes through `OkayToStartNewFile`); the refusal of a fillet where a flat band meets a cone could say the edge is a flat face meeting a cone off its axis; a line in the guide that a group's volume changes when later groups make the model larger, the chord tolerance being a share of the model's size | not started |
 
 ### Step 24: Booleans on curved surfaces (~6 wk), branch `step-24-kernel-robustness`
 
