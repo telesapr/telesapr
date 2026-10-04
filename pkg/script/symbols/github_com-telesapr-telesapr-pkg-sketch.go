@@ -164,6 +164,7 @@ func init() {
 		"ShellJob":             reflect.ValueOf((*sketch.ShellJob)(nil)),
 		"Sketch":               reflect.ValueOf((*sketch.Sketch)(nil)),
 		"SketchDiagnostic":     reflect.ValueOf((*sketch.SketchDiagnostic)(nil)),
+		"Suggestion":           reflect.ValueOf((*sketch.Suggestion)(nil)),
 		"TangentArcSettings":   reflect.ValueOf((*sketch.TangentArcSettings)(nil)),
 		"ThreadOptions":        reflect.ValueOf((*sketch.ThreadOptions)(nil)),
 		"ThreadResult":         reflect.ValueOf((*sketch.ThreadResult)(nil)),

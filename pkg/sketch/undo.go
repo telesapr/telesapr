@@ -167,6 +167,7 @@ func (s *Sketch) definingState() *UndoState {
 			Remap:                  maps.Clone(src.Remap),
 			LinkFile:               src.LinkFile,
 			LinkAsSolid:            src.LinkAsSolid,
+			LinkParts:              slices.Clone(src.LinkParts),
 			Color:                  src.Color,
 			Predef:                 src.Predef,
 			Edges:                  slices.Clone(src.Edges),

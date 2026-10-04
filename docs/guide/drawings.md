@@ -33,14 +33,30 @@ Under **sections and details**:
 They are lettered A, B, ... in that order and placed in columns right of the views, unless a
 script gives them a place (`X`, `Y`).
 
-Under **dimensions**: select one or two edges of the solid in the model (a length, a diameter or a
-radius of one; the distance between two), then `[dimension the selected edges]` and type the view
-and kind, `front length` or `front distance 15` with how far out in mm. A dimension holds the
-edges' names, so each time the drawing is made it finds them in the solid as it is and measures
-them as the view shows them: a length along the view, the distance from the first edge, which must
-be straight, to the second square to it, a circle's diameter (DIA) or radius (R) with a leader
-when it faces the view, or across it when it is seen edge on. The screen lists each with what it
-measures now; one whose edge is gone, or seen end on, says why and isn't drawn.
+Under **dimensions**: with the screen shown, select one or two edges or faces of the solid in the
+model (the screen stays, and counts what is selected), then `[dimension the selected edges or
+faces]` and type the view and kind, `front length` or `front distance 15` with how far out in mm.
+The view is front, back, top, bottom, left, right or iso, or a section or detail by its letter,
+`A diameter`. A dimension holds the edges' names and the faces' identities, so each time the
+drawing is made it finds them in the solid as it is and measures them:
+
+- a **length** of a straight edge, along the view; on the isometric, the edge's own length, not
+  as it looks foreshortened;
+- a **distance** from a straight edge to another edge, square to the first, as the view shows
+  it; or, with a face, between two parallel flat faces, or from a straight edge to a flat face it
+  runs parallel to, drawn out to the side of what it measures;
+- a **diameter** (DIA) or **radius** (R) of a circular edge, or of a face's largest circular edge,
+  as a hole's wall or a cylinder's end, with a leader when it faces the view, or across it when it
+  is seen edge on.
+
+The screen lists each with what it measures now; one whose edge or face is gone, seen end on or at
+a slant, outside its detail, or of faces that aren't parallel, says why and isn't drawn.
+
+View > Show Drawing Sheet, or `[show it in the window]` on the drawing's screen, shows the sheet in
+the window in place of the model, fitted to it, until it is chosen again (`[show the model]`). It
+follows each change made on the drawing's screen and to the model; while it is shown the mouse
+picks nothing in the model. It is a view, not saved with the file. From a script,
+`doc.ShowDrawingSheet(true)`, and `doc.Render(path, w, h, "window")` pictures it.
 
 File > Export Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
 sheet's size in millimetres. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
@@ -56,16 +72,19 @@ doc.SetDrawing(d)
 must(doc.ExportDrawing("bracket.pdf"))   // in the application
 ```
 
-`doc.AddDrawingDimension("front", "length", 10, edge)` adds a dimension by solid edges and
-`doc.DrawingDimensions()` measures them. `d.Sections` and `d.Details` hold the section and detail
+`doc.AddDrawingDimension("front", "length", 10, edge)` adds a dimension by solid edges,
+`doc.AddDrawingFaceDimension("top", "distance", 10, upper, lower)` one by faces, and
+`doc.AddDrawingEdgeFaceDistance("top", 10, edge, face)` the distance from an edge to a face;
+`doc.DrawingDimensions()` measures them. The example
+[`examples/scripts/drawing`](../../examples/scripts/drawing/drawing.go) dimensions faces and the
+isometric. `d.Sections` and `d.Details` hold the section and detail
 views; `d.Views` places views where you
 want them, by kind and the sheet position of their middle in
 millimetres from the bottom left; empty, the standard ones are placed.
 
 ## Not yet
 
-Dimensions are of edges only: not of vertices, angles, or on the isometric, a section or a
-detail. A section's half beyond is drawn with hidden edges as the
-drawing has them; a section is of the whole solid, not a broken-out or offset section. The drawing is not
-shown in the window, only written. The text is the vector font's, which has no colon: the title
+Dimensions are not of vertices or angles, nor between curved faces; a distance from a face to a
+curved edge is refused. A section's half beyond is drawn with hidden edges as the
+drawing has them; a section is of the whole solid, not a broken-out or offset section. The text is the vector font's, which has no colon: the title
 block writes a scale of 1:2 as 1/2.

@@ -9,11 +9,13 @@
 //	telesapr --script examples/scripts/bom/bom.go
 //
 // The script makes two parts, a plate and a bolt, saves each as a file
-// in a folder "parts" where it runs, and links them into an assembly:
-// the plate once, the bolt once and then repeated along the plate, four
-// in all unless given. Analyze > Bill of Materials lists what the model
-// places, by file; here Doc.BillOfMaterials gives it and Doc.ExportBOM
-// writes bom.csv, unless given "-". The script checks the counts.
+// in a folder "parts" where it runs, and links them into a bracket, saved
+// there too: the plate once, the bolt once and then repeated along the
+// plate, four in all unless given. The model links the bracket and
+// repeats it, two brackets; the parts a linked file links count too.
+// Analyze > Bill of Materials lists what the model places, by file; here
+// Doc.BillOfMaterials gives it and Doc.ExportBOM writes bom.csv, unless
+// given "-". The script checks the counts.
 package main
 
 import (
@@ -55,36 +57,42 @@ func main() {
 	plate := part("plate", 100, 20, 5)
 	bolt := part("bolt", 4, 4, 20)
 
-	doc := api.Current()
-	_, err := doc.Link(plate, "")
+	bracket := api.New()
+	_, err := bracket.Link(plate, "")
 	must(err)
-	_, err = doc.Link(bolt, "")
+	_, err = bracket.Link(bolt, "")
 	must(err)
-	doc.Translate(bolts, api.V(20, 0, 0), "bolts")
-
-	items := doc.BillOfMaterials()
-	ok := len(items) == 2
-	for _, it := range items {
-		fmt.Printf("%3d  %s\n", it.Count, it.Part)
-		switch it.Part {
-		case "plate":
-			ok = ok && it.Count == 1
-		case "bolt":
-			ok = ok && it.Count == bolts
-		}
-	}
-	if !ok {
-		fmt.Fprintln(os.Stderr, "the counts are wrong")
-		os.Exit(1)
-	}
+	bracket.Translate(bolts, api.V(20, 0, 0), "bolts")
 	// The bolt stands in the plate, as one through a hole would; the
 	// check by shells says by how much each part overlaps another.
-	found, _ := doc.Interferences()
+	found, _ := bracket.Interferences()
 	for _, f := range found {
 		fmt.Printf("%s and %s share %.1f mm³\n", f.A, f.B, f.Volume)
 	}
 	if len(found) == 0 {
 		fmt.Fprintln(os.Stderr, "the bolt doesn't meet the plate")
+		os.Exit(1)
+	}
+	must(bracket.Save(filepath.Join("parts", "bracket.tlspr")))
+
+	doc := api.Current()
+	_, err = doc.Link(filepath.Join("parts", "bracket.tlspr"), "")
+	must(err)
+	doc.Translate(2, api.V(0, 50, 0), "brackets")
+
+	items := doc.BillOfMaterials()
+	ok := len(items) == 3
+	for _, it := range items {
+		fmt.Printf("%3d  %s\n", it.Count, it.Part)
+		switch it.Part {
+		case "bracket", "plate":
+			ok = ok && it.Count == 2
+		case "bolt":
+			ok = ok && it.Count == 2*bolts
+		}
+	}
+	if !ok {
+		fmt.Fprintln(os.Stderr, "the counts are wrong")
 		os.Exit(1)
 	}
 	if write {
