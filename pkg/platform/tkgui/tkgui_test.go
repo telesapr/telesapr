@@ -314,22 +314,22 @@ func TestTooltipStaysWhilePointerRests(t *testing.T) {
 		w.tooltip.motion(w.canvas, &event.Event{Type: event.MotionType, X: x, Y: y, RootX: x, RootY: y})
 	}
 	var early, rested, kept, left bool
-	run(p,
-		func() {
+	shown := func() bool { return w.tooltip.shown }
+	runWaiting(t, p,
+		step{func() {
 			w.SetTooltip("Sketch line segment", 10, 10, 32, 32)
 			motion(20, 20)
 			early = w.tooltip.shown
-		},
-		func() {}, func() {}, func() {}, func() {},
-		func() { rested = w.tooltip.shown },
-		func() {
+		}, shown},
+		step{func() { rested = w.tooltip.shown }, func() bool { return true }},
+		step{func() {
 			motion(25, 22)
 			// Redrawing the frame, as hovering a button does, keeps it.
 			w.SetTooltip("Sketch line segment", 10, 10, 32, 32)
 			w.Invalidate()
-		},
-		func() { kept = w.tooltip.shown && w.tooltip.win != nil },
-		func() { motion(100, 100); left = !w.tooltip.shown },
+		}, func() bool { return w.tooltip.win != nil }},
+		step{func() { kept = w.tooltip.shown && w.tooltip.win != nil }, func() bool { return true }},
+		step{func() { motion(100, 100); left = !w.tooltip.shown }, func() bool { return true }},
 	)
 	if early {
 		t.Error("tooltip shown before the pointer rested")
