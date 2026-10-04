@@ -224,7 +224,7 @@ group <handle> <type> <name> {
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
   draft-faces <handle> ...  # extrusion: the curves of its sketch whose sides the draft leans; left out for all
   draft-neutral = <expression>  # extrusion: where along it, from the sketch's plane, the draft's neutral plane lies, a length (the field pitch under another name)
-  solid-edge <face> <face> <n> of <m>  # chamfer: an edge of the solid cut, by name; one line each
+  solid-edge <face> <face> <n> of <m>  # chamfer, fillet: an edge of the solid cut; sweep: an edge of its path; by name, one line each
   predef { ... }
   visible
   suppress                  # the solid is left out

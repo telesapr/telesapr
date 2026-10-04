@@ -49,7 +49,24 @@ rows along the path but no columns across: their mesh's volume is off by up to a
 twisted loft's is; the surface itself is right. Where the path's curvature jumps, as where a
 line meets an arc, a twisted sweep has a crease, since the true one has.
 
+## Corners and edges of the solid
+
+Two line segments of the path may meet at an angle: there the sweep is mitred, each piece cut by
+the plane that halves the corner, as a picture frame's moulding is. A corner next to an arc or a
+cubic is refused, as is a twisted sweep or one held to a direction with a corner, and a piece
+too short for the mitres at its ends.
+
+The path may be edges of the solid so far, picked on the model, alone or with sketch entities:
+a straight edge is a line, a circular one an arc, any other a curve. The sweep keeps the edges'
+names, so it follows them when the model upstream changes. Example:
+[`examples/scripts/bead`](../../examples/scripts/bead/bead.go), a bead along two top edges of a
+block.
+
+```go
+bead := doc.SweepEdges([]api.SolidEdge{front, right}, nil, "bead")
+```
+
 ## Not yet
 
-Paths with corners, and a step 9 chain of the solid's edges as a path, are not done. Repeating
-a solid along a path is [Pattern Along Path](pattern.md).
+A corner beside an arc, and a closed path, are not done. Repeating a solid along a path is
+[Pattern Along Path](pattern.md).

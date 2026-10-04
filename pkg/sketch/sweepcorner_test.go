@@ -137,3 +137,37 @@ func TestSweepCornerSweep(t *testing.T) {
 		return nil
 	}).Require(t)
 }
+
+// A sweep along edges of the solid by name (roadmap 28.4): a bead along
+// the top edges of a block, round its corner, by their names.
+func TestSweepSolidEdges(t *testing.T) {
+	d := api.New()
+	block(d, 0, 0, 20, 10, 5)
+	s := d.Active().Solid()
+	front := s.EdgeAt(api.V(10, 0, 5))
+	right := s.EdgeAt(api.V(20, 5, 5))
+	// The profile: a small square on the block's left end, across the
+	// front top edge's start.
+	d.SketchIn(d.Workplane("YZ"), "profile")
+	d.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
+	step(d)
+	before := saved(t, d)
+	g := d.SweepEdges([]api.SolidEdge{right, front}, nil, "")
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	if len(g.SolidEdges()) != 2 {
+		t.Errorf("the path's edges: %v", g.SolidEdges())
+	}
+	r := g.Check()
+	// The block and the bead, mitred at the corner: the bead lies a
+	// quarter in the block along each edge, a quarter of its 1 by 1
+	// section, so it adds three quarters of a square mm per mm, along
+	// 30 mm of path less the overlap at the corner (a quarter square's
+	// worth either way).
+	if !r.Sound() || r.Volume < 1000+0.75*30-1 || r.Volume > 1000+0.75*30+1 {
+		t.Fatalf("a bead along two edges: %s", r.String())
+	}
+	undoRedo(t, d, before)
+	roundTrip(t, d)
+}

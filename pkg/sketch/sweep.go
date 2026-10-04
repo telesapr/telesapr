@@ -36,6 +36,13 @@ const sweepTangentCos = 1 - 1.5e-6
 // segments and arcs joined end to end and meeting tangent. It is what
 // the interface and scripts add with AddGroupAfterActive.
 func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error) {
+	return sk.NewSweepAlong(path, nil, name)
+}
+
+// NewSweepAlong is NewSweep along path and edges of the solid so far,
+// by name, together one chain (roadmap 28.4): straight and circular
+// edges, and curved ones as cubics are.
+func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, name string) (Group, error) {
 	g := NewGroup()
 	g.Type = GroupSweep
 	g.Name = name
@@ -49,11 +56,12 @@ func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error) {
 	if src.PolyError.How != int(core.PolyGood) || len(src.BezierLoops.Sets) == 0 {
 		return g, errors.New("the active sketch must be closed loops to sweep")
 	}
-	if len(path) == 0 {
+	if len(path) == 0 && len(solidEdges) == 0 {
 		return g, errors.New("there is no path to sweep along")
 	}
 	g.OpA = src.H
 	g.Edges = append([]core.HEntity(nil), path...)
+	g.SolidEdges = append([]topo.Name(nil), solidEdges...)
 	if _, _, err := g.sweepPath(sk); err != nil {
 		return g, err
 	}
@@ -139,7 +147,16 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 	}
 	normal, onPlane := sbls.Sets[0].Normal, sbls.Sets[0].Point
 	// Start at the end nearest the profile's plane.
-	chain, _, err := sk.pathChainAny(g.Edges, "sweep", func(x geom.Vector) float64 {
+	before := g.PreviousGroup(sk)
+	if before == nil {
+		// A sweep being made comes after the active group.
+		before = sk.GetGroup(sk.Active)
+	}
+	solidPieces, err := sk.solidEdgePieces(before, g.SolidEdges)
+	if err != nil {
+		return nil, src, err
+	}
+	chain, _, err := sk.pathChainAny(g.Edges, solidPieces, "sweep", func(x geom.Vector) float64 {
 		return math.Abs(x.Minus(onPlane).Dot(normal))
 	}, true, false, true)
 	if err != nil {
@@ -265,15 +282,15 @@ func (sk *Sketch) pathChain(edges []core.HEntity, what string, dist func(geom.Ve
 // point where dist is least (roadmap 28.5). It says whether the path
 // closes.
 func (sk *Sketch) pathChainOf(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed bool) ([]pathPiece, bool, error) {
-	chain, isClosed, err := sk.pathChainAny(edges, what, dist, cubics, closed, false)
+	chain, isClosed, err := sk.pathChainAny(edges, nil, what, dist, cubics, closed, false)
 	if err != nil {
 		return nil, false, err
 	}
 	return chain, isClosed, nil
 }
 
-func (sk *Sketch) pathChainAny(edges []core.HEntity, what string, dist func(geom.Vector) float64, cubics, closed, corners bool) ([]pathPiece, bool, error) {
-	var pieces []pathPiece
+func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what string, dist func(geom.Vector) float64, cubics, closed, corners bool) ([]pathPiece, bool, error) {
+	pieces := append([]pathPiece(nil), extra...)
 	for _, he := range edges {
 		e := sk.GetEntity(he)
 		if e == nil {
@@ -590,4 +607,64 @@ func (g *Group) generateFittedSweepShell(src *Group, start, end uint32) {
 		joined.MakeFromUnionOf(&g.ThisShell, sh)
 		g.ThisShell = joined
 	}
+}
+
+// solidEdgePieces are the path's pieces that are edges of the solid at
+// group at, by name: a line or an arc where the edge is one, else a
+// curve.
+func (sk *Sketch) solidEdgePieces(at *Group, names []topo.Name) ([]pathPiece, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	var solid *Group
+	if at != nil {
+		solid = sk.solidAt(at.H)
+	}
+	if solid == nil || solid.IsForcedToMesh(sk) || len(solid.RunningShell.Surface) == 0 {
+		return nil, errors.New("there is no solid whose edges the path follows")
+	}
+	tp, err := solid.Topology()
+	if err != nil {
+		return nil, fmt.Errorf("the solid's topology is broken: %v", err)
+	}
+	var out []pathPiece
+	for _, n := range names {
+		e, err := tp.Resolve(n)
+		if err != nil {
+			return nil, pathErr(nil, "%s: %v", sk.SolidEdgeName(n), err)
+		}
+		ed := &tp.Edges[e]
+		a, b := tp.Vertices[ed.V[0]].P, tp.Vertices[ed.V[1]].P
+		if tp.Straight(e) {
+			out = append(out, pathPiece{start: a, end: b, curves: []srf.SBezier{srf.SBezierFrom2(a, b)}})
+			continue
+		}
+		sb, ok := tp.EdgeCurve(e)
+		if !ok {
+			m := ed.Points[len(ed.Points)/2]
+			return nil, pathErr(&m, "%s has no exact curve to sweep along", sk.SolidEdgeName(n))
+		}
+		if a.Equals(b) {
+			m := ed.Points[len(ed.Points)/2]
+			return nil, pathErr(&m, "%s closes on itself: a sweep's path has two ends", sk.SolidEdgeName(n))
+		}
+		if sb.Degree == 2 {
+			nrm := sb.Ctrl[1].Minus(sb.Ctrl[0]).Cross(sb.Ctrl[2].Minus(sb.Ctrl[0]))
+			var c geom.Vector
+			var r float64
+			if nrm.Magnitude() > 1e-12 && sb.IsCircle(nrm.WithMagnitude(1), &c, &r) {
+				axis := a.Minus(c).Cross(sb.PointAt(0.5).Minus(c)).WithMagnitude(1)
+				ra, rb := a.Minus(c), b.Minus(c)
+				angle := math.Atan2(ra.Cross(rb).Dot(axis), ra.Dot(rb))
+				if angle < 0 {
+					angle += 2 * math.Pi
+				}
+				out = append(out, pathPiece{start: a, end: b, arc: true, center: c, axis: axis, angle: angle,
+					curves: []srf.SBezier{sb}})
+				continue
+			}
+		}
+		out = append(out, pathPiece{start: a, end: b, curves: []srf.SBezier{sb}, free: true})
+	}
+	return out, nil
 }

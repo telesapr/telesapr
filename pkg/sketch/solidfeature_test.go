@@ -191,6 +191,20 @@ func TestSolidGoldens(t *testing.T) {
 			d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
 			d.Extrude(8, "").SetDraft(6)
 		},
+		"sweep-corner": func(d *api.Doc) {
+			path := cornerPath(d, 10, 12, 60)
+			d.SketchIn(d.Workplane("XY"), "profile")
+			d.Circle(api.V(0, 0, 0), 2)
+			d.Sweep(path, "")
+		},
+		"sweep-solid-edges": func(d *api.Doc) {
+			block(d, 0, 0, 20, 10, 5)
+			s := d.Active().Solid()
+			front, right := s.EdgeAt(api.V(10, 0, 5)), s.EdgeAt(api.V(20, 5, 5))
+			d.SketchIn(d.Workplane("YZ"), "profile")
+			d.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
+			d.SweepEdges([]api.SolidEdge{front, right}, nil, "")
+		},
 		"pattern-ring": func(d *api.Doc) {
 			d.SketchIn(d.Workplane("XY"), "ring")
 			ring := d.Circle(api.V(0, 0, 0), 20)
@@ -592,5 +606,21 @@ func BenchmarkDraftSharpArc(b *testing.B) {
 		d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
 		d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
 		d.Extrude(8, "").SetDraft(6)
+	})
+}
+
+// A rectangle swept round three mitred corners (roadmap 28.4).
+func BenchmarkSweepCorners(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.SketchIn(d.Workplane("ZX"), "path")
+		path := []api.Entity{
+			d.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+			d.Line(api.V(0, 0, 10), api.V(10, 0, 15)),
+			d.Line(api.V(10, 0, 15), api.V(20, 0, 10)),
+			d.Line(api.V(20, 0, 10), api.V(20, 0, 0)),
+		}
+		d.SketchIn(d.Workplane("XY"), "profile")
+		d.Circle(api.V(0, 0, 0), 1)
+		d.Sweep(path, "")
 	})
 }

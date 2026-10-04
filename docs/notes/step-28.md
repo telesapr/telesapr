@@ -9,7 +9,7 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
 | 28.1 chamfers of two distances | done | f526098, be7cd87 (goldens) |
 | 28.5 pattern along a closed path | done | 6fee564, 30883da (goldens) |
 | 28.2 drafts: chosen sides, neutral plane, sharp arc/line corners | done, see below | WIP 2c6fe81 + final |
-| 28.4 sweeps along solid edges, paths with corners | not started | |
+| 28.4 sweeps along solid edges, paths with corners | done: mitres between lines; edges by name | WIP + final |
 | 28.3 smooth lofts: end tangency, guide curves | not started | |
 
 ## 28.2 design
@@ -27,9 +27,17 @@ Kept so a resumed session starts cheaply. Delete when step 28 merges.
   (CmdDraftSelectedSides) chooses sides, because a selection replaces the group screen.
 - Two arcs at a sharp corner are refused (cone/cone is quartic).
 
+## 28.4 design
+
+- srf.SweepStep.Corner: a rotation in place between two straight pieces; MakeFromSweepOf cuts
+  both pieces by the plane of normal d1+d2 (sections projected along the piece, an affine map),
+  extends the side surfaces past it (mitreReach) and flags them AvoidFlatEars.
+- sketch: pathChainAny(edges, extra pieces, ..., corners) allows corners between line pieces;
+  sweepPath inserts Corner steps, refuses corners for fitted sweeps, checks mitres don't cross.
+  Group.SolidEdges for sweeps; solidEdgePieces via topo.EdgeCurve; NewSweepAlong, Doc.SweepEdges.
+- Not done: corners beside arcs (torus/plane trims), closed sweeps.
+
 ## Next
 
-28.4: sketch/sweep.go pathChain (pathChainAny has a closed opt-in). Sweeps along a chain of the
-solid's edges by name (Group.SolidEdges, topo.Name) and paths with corners (mitred joints).
 28.3: topo/smoothloft.go SkinWithEnds takes end derivatives; guide curves need a skin through
 sections constrained to curves.

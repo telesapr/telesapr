@@ -349,3 +349,26 @@ func (t *Topology) FacesWithID(id srf.FaceID) []int {
 	}
 	return out
 }
+
+// EdgeCurve is edge e's exact curve from its V[0] to its V[1], or for a
+// Boolean's curve with no exact one, the arc through its points when
+// they lie on one; false when there is neither.
+func (t *Topology) EdgeCurve(e int) (srf.SBezier, bool) {
+	ed := &t.Edges[e]
+	a, b := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
+	if c := t.shell.FindCurve(ed.Curve); c != nil && c.IsExact {
+		sb := c.Exact
+		switch {
+		case sb.Start().Equals(a) && sb.Finish().Equals(b):
+			return sb, true
+		case sb.Start().Equals(b) && sb.Finish().Equals(a):
+			sb.Reverse()
+			return sb, true
+		}
+		return srf.SBezier{}, false
+	}
+	if n, ok := planeNormalOf(ed.Points); ok {
+		return arcThrough(ed.Points, n)
+	}
+	return srf.SBezier{}, false
+}

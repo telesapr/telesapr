@@ -4595,7 +4595,11 @@
 					},
 					"Sweep": {
 						"decl": "func (d *Doc) Sweep(path []Entity, name string) Group",
-						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). The new group becomes\nactive."
+						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). Two line segments may\nmeet at a corner, where the sweep is mitred: each piece cut by the\nplane that halves the corner. The new group becomes active."
+					},
+					"SweepEdges": {
+						"decl": "func (d *Doc) SweepEdges(edges []SolidEdge, path []Entity, name string) Group",
+						"text": "SweepEdges is Sweep along a chain of edges of the solid so far, by\nname (Solid, SolidEdge), and the line segments, arcs and cubics of\npath with them, one chain: a straight edge is a line, a circular one\nan arc, any other a curve as a cubic is. The sweep keeps the edges'\nnames, so it follows them when the model upstream changes."
 					},
 					"Symmetric": {
 						"decl": "func (d *Doc) Symmetric(a, b, about Entity) Constraint",
@@ -5032,7 +5036,7 @@
 					},
 					"SolidEdges": {
 						"decl": "func (g Group) SolidEdges() (edges []SolidEdge)",
-						"text": "SolidEdges are the edges of the solid a chamfer cuts or a fillet\nrounds by name."
+						"text": "SolidEdges are the edges of the solid a chamfer cuts, a fillet rounds\nor a sweep follows, by name."
 					},
 					"Solved": {
 						"decl": "func (g Group) Solved() (ok bool)",
@@ -6465,6 +6469,10 @@
 					"NewSweep": {
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
 						"text": "NewSweep starts a sweep of the active group's sketch along path, line segments and arcs joined end to end and meeting tangent."
+					},
+					"NewSweepAlong": {
+						"decl": "func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, name string) (Group, error)",
+						"text": "NewSweepAlong is NewSweep along path and edges of the solid so far, by name, together one chain (roadmap 28.4): straight and circular edges, and curved ones as cubics are."
 					},
 					"OutwardFaceNormal": {
 						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",

@@ -171,6 +171,15 @@ func TestPathEquivalenceDraftSides(t *testing.T) {
 	}
 }
 
+// A sweep round a corner, picked with the mouse, and by a script
+// (roadmap 28.4).
+func TestPathEquivalenceSweepCorner(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sweep_corner", "path_sweep_corner")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 2 {
+		t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")

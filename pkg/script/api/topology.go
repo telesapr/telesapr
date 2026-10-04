@@ -464,12 +464,12 @@ func (d *Doc) ChamferSolid(edges []SolidEdge, distance float64, name string) Gro
 	}, nil)
 }
 
-// SolidEdges are the edges of the solid a chamfer cuts or a fillet
-// rounds by name.
+// SolidEdges are the edges of the solid a chamfer cuts, a fillet rounds
+// or a sweep follows, by name.
 func (g Group) SolidEdges() (edges []SolidEdge) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		if group.Type != sketch.GroupFillet {
+		if group.Type != sketch.GroupFillet && group.Type != sketch.GroupSweep {
 			g.mustBe(group, sketch.GroupChamfer, "SolidEdges")
 		}
 		prev := group.PreviousGroup(sk)

@@ -322,12 +322,13 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 				"the active group's sketch is moved along the path.")
 			return
 		}
-		wg, err := sk.NewSweep(gs.entity, "")
+		wg, err := sk.NewSweepAlong(gs.entity, gs.solidEdge, "")
 		if err != nil {
 			ss.Error("Can't sweep along the selection. %s.\n\n"+
 				"Sweep Along Path moves the active group's sketch along a path. Select:\n\n"+
 				"    * the line segments, arcs and cubics of the path, joined end to end "+
-				"and meeting tangent\n", capitalize(err.Error()))
+				"and meeting tangent, or line segments meeting at a corner, which is mitred\n"+
+				"    * edges of the solid, picked on the model, as part of the path\n", capitalize(err.Error()))
 			return
 		}
 		g = wg

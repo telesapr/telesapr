@@ -5,6 +5,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // Mirror reflects the active group in plane, a workplane or a planar
@@ -237,8 +238,9 @@ func (g Group) SwapDistances() {
 // sketch where it is drawn, and keeps its attitude to the path, turning
 // as little as the path lets it. Along lines and arcs its surfaces are
 // exact; along cubics they are fitted within a tenth of the chord
-// tolerance (see also SetTwist and SetSweepUp). The new group becomes
-// active.
+// tolerance (see also SetTwist and SetSweepUp). Two line segments may
+// meet at a corner, where the sweep is mitred: each piece cut by the
+// plane that halves the corner. The new group becomes active.
 func (d *Doc) Sweep(path []Entity, name string) Group {
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		hs := make([]core.HEntity, len(path))
@@ -246,6 +248,29 @@ func (d *Doc) Sweep(path []Entity, name string) Group {
 			hs[i] = e.get(sk).H
 		}
 		g, err := sk.NewSweep(hs, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// SweepEdges is Sweep along a chain of edges of the solid so far, by
+// name (Solid, SolidEdge), and the line segments, arcs and cubics of
+// path with them, one chain: a straight edge is a line, a circular one
+// an arc, any other a curve as a cubic is. The sweep keeps the edges'
+// names, so it follows them when the model upstream changes.
+func (d *Doc) SweepEdges(edges []SolidEdge, path []Entity, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		hs := make([]core.HEntity, len(path))
+		for i, e := range path {
+			hs[i] = e.get(sk).H
+		}
+		names := make([]topo.Name, len(edges))
+		for i, e := range edges {
+			names[i] = e.name
+		}
+		g, err := sk.NewSweepAlong(hs, names, name)
 		if err != nil {
 			fail("%v", err)
 		}
