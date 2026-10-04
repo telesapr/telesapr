@@ -231,6 +231,7 @@ func TestSolidGoldens(t *testing.T) {
 		"fillet-outline": func(d *api.Doc) { filletOutline(t, d) },
 		"fillet-uneven":  func(d *api.Doc) { filletUneven(d) },
 		"fillet-cone":    func(d *api.Doc) { filletCone(d) },
+		"fillet-tee":     func(d *api.Doc) { filletTee(d) },
 		"fillet-radii":   func(d *api.Doc) { filletRadii(t, d) },
 		"fillet-boss-foot": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
@@ -407,6 +408,34 @@ func filletCone(d *api.Doc) {
 
 func BenchmarkFilletCone(b *testing.B) {
 	benchRegen(b, filletCone)
+}
+
+// filletTee is a branch pipe joined to a pipe, the closed edge between
+// the two cylinders filled round by a rolling ball (roadmap 22.2).
+func filletTee(d *api.Doc) {
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Circle(api.V(0, 0, 0), 10)
+	d.Extrude(40, "")
+	d.SketchIn(d.Workplane("YZ"), "")
+	d.Circle(api.V(0, 0, 20), 5)
+	s := d.Extrude(25, "").Solid()
+	// The edge where they meet, the one whose points all lie between x 8
+	// and 10: at the default chord tolerance its chords pass too far
+	// from a point on it for EdgeAt.
+	for _, e := range s.Edges() {
+		in := true
+		for _, p := range e.Points() {
+			in = in && p.X > 8 && p.X < 10.01
+		}
+		if in {
+			d.FilletSolid([]api.SolidEdge{e}, 2, "")
+			return
+		}
+	}
+}
+
+func BenchmarkFilletTee(b *testing.B) {
+	benchRegen(b, filletTee)
 }
 
 // filletRadii is a block's top edges rounded at the fillet's radius and
