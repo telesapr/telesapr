@@ -45,49 +45,61 @@ row 16    turn the second by 0 [-1] [+1]
  28-28 64 61 0
  29-32 6c 61 108 1 1 0
  33-99 64 61 0
-row 18 
+row 18    leaves the first free [change]
+ 0-2 64 64 0
+ 3-18 74 64 0
+ 19-24 64 64 0
+ 25-32 6c 64 108 6 1 0
+ 33-99 64 64 0
+row 20    reaches the last free [change]
+ 0-2 64 61 0
+ 3-18 74 61 0
+ 19-24 64 61 0
+ 25-32 6c 61 108 6 1 0
+ 33-99 64 61 0
+row 22 
  0-99 64 64 0
-row 20    show entities from this group
+row 24    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    suppress this group and the groups that use it
+row 26    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 24    force NURBS surfaces to triangle mesh
+row 28    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 27    relax constraints and dimensions
+row 31    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 29    allow redundant constraints
+row 33    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 31    suppress dof calculation (improves solver performance)
+row 35    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 33    treat all dimensions as reference
+row 37    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 35 
+row 39 
  0-99 64 64 0
-row 37  requests in group
+row 41  requests in group
  0-99 74 64 0
-row 39    (none)
+row 43    (none)
  0-99 64 61 0
-row 41 
+row 45 
  0-99 64 64 0
-row 43  constraints in group (0 DOF)
+row 47  constraints in group (0 DOF)
  0-99 74 64 0
-row 45    (none)
+row 49    (none)
  0-99 64 61 0
-row 47 
+row 51 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 28 cm³\nCenter of mass: (-0.00, -0.00, 11.79)\nExtent: 40.00 x 40.00 x 30.00
 row 0  home   drawing / constraining in 3d
@@ -127,49 +139,61 @@ row 16    turn the second by 1 [-1] [+1]
  28-28 64 61 0
  29-32 6c 61 108 1 1 0
  33-99 64 61 0
-row 18 
+row 18    leaves the first free [change]
+ 0-2 64 64 0
+ 3-18 74 64 0
+ 19-24 64 64 0
+ 25-32 6c 64 108 6 1 0
+ 33-99 64 64 0
+row 20    reaches the last free [change]
+ 0-2 64 61 0
+ 3-18 74 61 0
+ 19-24 64 61 0
+ 25-32 6c 61 108 6 1 0
+ 33-99 64 61 0
+row 22 
  0-99 64 64 0
-row 20    show entities from this group
+row 24    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    suppress this group and the groups that use it
+row 26    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 24    force NURBS surfaces to triangle mesh
+row 28    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 27    relax constraints and dimensions
+row 31    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 29    allow redundant constraints
+row 33    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 31    suppress dof calculation (improves solver performance)
+row 35    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 33    treat all dimensions as reference
+row 37    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 35 
+row 39 
  0-99 64 64 0
-row 37  requests in group
+row 41  requests in group
  0-99 74 64 0
-row 39    (none)
+row 43    (none)
  0-99 64 61 0
-row 41 
+row 45 
  0-99 64 64 0
-row 43  constraints in group (0 DOF)
+row 47  constraints in group (0 DOF)
  0-99 74 64 0
-row 45    (none)
+row 49    (none)
  0-99 64 61 0
-row 47 
+row 51 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 3140\nVolume: 20.02 cm³\nCenter of mass: (0.00, 0.00, 10.50)\nExtent: 40.00 x 40.00 x 30.00
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 28 cm³\nCenter of mass: (-0.00, -0.00, 11.79)\nExtent: 40.00 x 40.00 x 30.00

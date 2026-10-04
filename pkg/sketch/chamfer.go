@@ -26,6 +26,14 @@ import (
 // planar faces; at distance mm from each edge on both faces. It is
 // what the interface and scripts add with AddGroupAfterActive.
 func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, distance float64, name string) (Group, error) {
+	return sk.NewChamferTwo(edges, solidEdges, distance, 0, name)
+}
+
+// NewChamferTwo is NewChamfer with two distances (roadmap 28.1): d1 on
+// each edge's first face, d2 on the other. The first face is the one of
+// the lower identity, the one the edge's name gives first; swapping the
+// distances chamfers the other way round. A d2 of 0 is d1 again.
+func (sk *Sketch) NewChamferTwo(edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, name string) (Group, error) {
 	g := NewGroup()
 	g.Type = GroupChamfer
 	g.Name = name
@@ -34,11 +42,15 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, dista
 	}
 	g.MeshCombine = CombineDifference
 	g.ValB = distance
+	g.ValC = d2
 	if len(edges) == 0 && len(solidEdges) == 0 {
 		return g, errors.New("there are no edges to chamfer")
 	}
 	if distance <= 0 || math.IsNaN(distance) || math.IsInf(distance, 0) {
 		return g, fmt.Errorf("a chamfer's distance must be more than zero, not %g", distance)
+	}
+	if d2 < 0 || math.IsNaN(d2) || math.IsInf(d2, 0) {
+		return g, fmt.Errorf("a chamfer's second distance must be more than zero, or zero for the first again, not %g", d2)
 	}
 	solid := sk.solidAt(sk.Active)
 	if solid == nil {
@@ -63,7 +75,7 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, dista
 		return g, err
 	}
 	if !solid.IsForcedToMesh(sk) && len(solid.RunningShell.Surface) > 0 {
-		if _, err := chamferByEdit(&solid.RunningShell, segs, distance, 1<<30); err == nil {
+		if _, err := chamferByEdit(&solid.RunningShell, segs, distance, d2, 1<<30); err == nil {
 			g.Edges = append([]core.HEntity(nil), edges...)
 			g.SolidEdges = append([]topo.Name(nil), solidEdges...)
 			return g, nil
@@ -71,13 +83,17 @@ func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, dista
 	}
 	var mesh srf.SMesh
 	solidMesh(solid, &mesh)
+	first, err := firstFaces(solid, segs, d2)
+	if err != nil {
+		return g, err
+	}
 	var arcs []topo.FilletPick
-	for _, seg := range segs {
+	for i, seg := range segs {
 		if seg.arc {
-			arcs = append(arcs, seg.pick())
+			arcs = append(arcs, seg.pick(d2))
 			continue
 		}
-		if _, _, err := chamferWedge(&mesh, seg, distance); err != nil {
+		if _, _, err := chamferWedge(&mesh, seg, distance, d2, first[i]); err != nil {
 			return g, err
 		}
 	}
@@ -106,9 +122,38 @@ type chamferSegment struct {
 	label string
 }
 
-// pick is the segment as topo picks an edge.
-func (s chamferSegment) pick() topo.FilletPick {
-	return topo.FilletPick{A: s.a, B: s.b, At: s.at, Arc: s.arc}
+// pick is the segment as topo picks an edge, with a chamfer's second
+// distance d2, or 0.
+func (s chamferSegment) pick(d2 float64) topo.FilletPick {
+	return topo.FilletPick{A: s.a, B: s.b, At: s.at, Arc: s.arc, D2: d2}
+}
+
+// firstFaces is, for each straight segment of a chamfer of two
+// distances, the outward normal of the face its first distance lies on
+// (topo.Topology.FirstFaceNormal); nil for a chamfer of one.
+func firstFaces(solid *Group, segs []chamferSegment, d2 float64) ([]geom.Vector, error) {
+	out := make([]geom.Vector, len(segs))
+	if d2 == 0 {
+		return out, nil
+	}
+	if len(solid.RunningShell.Surface) == 0 {
+		return nil, errors.New("a chamfer of two distances needs the solid's faces, and the solid so far is a triangle mesh")
+	}
+	tp, err := solid.Topology()
+	if err != nil {
+		return nil, fmt.Errorf("the solid's topology is broken: %v", err)
+	}
+	for i, seg := range segs {
+		if seg.arc {
+			continue
+		}
+		n, ok := tp.FirstFaceNormal(seg.a, seg.b)
+		if !ok {
+			return nil, fmt.Errorf("%s is not an edge between two flat faces of the solid", seg.label)
+		}
+		out[i] = n
+	}
+	return out, nil
 }
 
 // chamferSegments are the segments of a chamfer's edges, on the solid
@@ -215,8 +260,9 @@ func solidMesh(g *Group, m *srf.SMesh) {
 
 // chamferWedge is the wedge that cuts edge he of the solid whose
 // triangles are in mesh, at distance d: a triangle at the start of
-// the edge and the vector it is swept along.
-func chamferWedge(mesh *srf.SMesh, seg chamferSegment, d float64) (tri [3]geom.Vector, along geom.Vector, err error) {
+// the edge and the vector it is swept along. With a second distance d2,
+// d lies on the face whose outward normal is first and d2 on the other.
+func chamferWedge(mesh *srf.SMesh, seg chamferSegment, d, d2 float64, first geom.Vector) (tri [3]geom.Vector, along geom.Vector, err error) {
 	a, b := seg.a, seg.b
 	length := b.Minus(a).Magnitude()
 	if length < core.LengthEps {
@@ -250,20 +296,32 @@ func chamferWedge(mesh *srf.SMesh, seg chamferSegment, d float64) (tri [3]geom.V
 	}
 	// Face 1 goes on from the edge against w2, face 2 against w1.
 	u1, u2 := w2.WithMagnitude(1).ScaledBy(-1), w1.WithMagnitude(1).ScaledBy(-1)
-	// The chamfer's lines on the faces must be on them: just under
-	// each is solid, just over it is not.
-	for _, f := range []struct{ u, n geom.Vector }{{u1, n1}, {u2, n2}} {
-		q := m.Plus(f.u.ScaledBy(d))
-		if !inside(q.Minus(f.n.ScaledBy(probe))) || inside(q.Plus(f.n.ScaledBy(probe))) {
-			return tri, along, fmt.Errorf("a distance of %g is wider than a face at %s", d, seg.label)
+	d1, dd2 := d, d
+	if d2 != 0 {
+		// The first distance on the first face.
+		if n1.Dot(first) > n2.Dot(first) {
+			dd2 = d2
+		} else {
+			d1 = d2
 		}
 	}
-	ext := 2 * d
+	// The chamfer's lines on the faces must be on them: just under
+	// each is solid, just over it is not.
+	for _, f := range []struct {
+		u, n geom.Vector
+		d    float64
+	}{{u1, n1, d1}, {u2, n2, dd2}} {
+		q := m.Plus(f.u.ScaledBy(f.d))
+		if !inside(q.Minus(f.n.ScaledBy(probe))) || inside(q.Plus(f.n.ScaledBy(probe))) {
+			return tri, along, fmt.Errorf("a distance of %g is wider than a face at %s", f.d, seg.label)
+		}
+	}
+	ext := 2 * math.Max(d1, dd2)
 	p := a.Minus(ed.ScaledBy(ext))
 	tri = [3]geom.Vector{
-		p.Plus(u1.ScaledBy(d)),
-		p.Plus(u2.ScaledBy(d)),
-		p.Minus(u1.Plus(u2).ScaledBy(d)),
+		p.Plus(u1.ScaledBy(d1)),
+		p.Plus(u2.ScaledBy(dd2)),
+		p.Minus(u1.ScaledBy(d1).Plus(u2.ScaledBy(dd2))),
 	}
 	return tri, ed.ScaledBy(length + 2*ext), nil
 }
@@ -322,9 +380,13 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 		g.setProblem(nil, "the chamfer has no edges")
 		return false
 	}
-	d := g.ValB
+	d, d2 := g.ValB, g.ValC
 	if d <= 0 {
 		g.setProblem(nil, "a chamfer's distance must be more than zero")
+		return false
+	}
+	if d2 < 0 {
+		g.setProblem(nil, "a chamfer's second distance must be more than zero, or zero for the first again")
 		return false
 	}
 	prev := g.PreviousGroup(sk)
@@ -350,24 +412,31 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	// forced to a mesh, which has no faces to edit, straight edges are
 	// cut by wedges and a Boolean, as before.
 	if !prev.IsForcedToMesh(sk) && len(prev.RunningShell.Surface) > 0 {
-		if sh, err := chamferByEdit(&prev.RunningShell, segs, d, srf.OriginFor(g.H.V, 0)); err == nil {
+		if sh, err := chamferByEdit(&prev.RunningShell, segs, d, d2, srf.OriginFor(g.H.V, 0)); err == nil {
 			g.RunningShell = sh
 			g.ThisShell.MakeFromCopyOf(&sh)
 			return true
 		}
 	}
+	first, err := firstFaces(prev, segs, d2)
+	if err != nil {
+		g.setProblem(nil, "%v", err)
+		return false
+	}
 	var arcs []topo.FilletPick
 	var straight []chamferSegment
-	for _, seg := range segs {
+	var firstOf []geom.Vector
+	for i, seg := range segs {
 		if seg.arc {
-			arcs = append(arcs, seg.pick())
+			arcs = append(arcs, seg.pick(d2))
 		} else {
 			straight = append(straight, seg)
+			firstOf = append(firstOf, first[i])
 		}
 	}
 	var wedges []srf.SShell
-	for _, seg := range straight {
-		tri, along, err := chamferWedge(&mesh, seg, d)
+	for i, seg := range straight {
+		tri, along, err := chamferWedge(&mesh, seg, d, d2, firstOf[i])
 		if err != nil {
 			m := seg.a.Plus(seg.b).ScaledBy(0.5)
 			g.setProblem(&m, "%v", err)
@@ -409,12 +478,13 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	return true
 }
 
-// chamferByEdit cuts every segment of a copy of solid at distance d by
-// the fillet's edit, flat.
-func chamferByEdit(solid *srf.SShell, segs []chamferSegment, d float64, origin uint32) (srf.SShell, error) {
+// chamferByEdit cuts every segment of a copy of solid at distance d,
+// and d2 on the second face when it is not 0, by the fillet's edit,
+// flat.
+func chamferByEdit(solid *srf.SShell, segs []chamferSegment, d, d2 float64, origin uint32) (srf.SShell, error) {
 	picks := make([]topo.FilletPick, len(segs))
 	for i, seg := range segs {
-		picks[i] = seg.pick()
+		picks[i] = seg.pick(d2)
 	}
 	var sh srf.SShell
 	sh.MakeFromCopyOf(solid)

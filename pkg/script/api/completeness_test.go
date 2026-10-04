@@ -48,6 +48,7 @@ var menuMethods = map[string]string{
 	"New Group/Loft To Selected Profile":  "Doc.Loft",
 	"New Group/Shell Solid":               "Doc.Shell",
 	"New Group/Pattern Along Path":        "Doc.PatternAlongPath",
+	"New Group/Draft Selected Sides":      "Group.SetDraftFaces",
 	"Sketch/In Workplane":                 "Doc.SetWorkplane",
 	"Sketch/Anywhere In 3d":               "Doc.Free3D",
 	"Sketch/Datum Point":                  "Doc.Point",

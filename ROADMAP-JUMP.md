@@ -47,6 +47,8 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
 | 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | `c4137f3` |
 | 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
+| 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
+| 25 (part) | Rolling-ball fillets on closed edges between two curved faces: cylinders at an angle, cylinder and cone, cylinder and sphere | `8707d1f` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
@@ -90,12 +92,12 @@ offsets by the radius (22.1) meet, marched as the intersector marches; each cros
 circular arc between the contact points; the blend is fitted through those arcs by step 20's
 fitting, and the two faces are cut along the contact curves (step 21's trimming, since the
 faces are often of several patches). Fillets between planes, cylinders and cones stay on
-step 10's exact construction. Step 25 is 22.2; step 26 is 22.3 to 22.5, on the same branch or,
-once 22.2 is merged, a new one.
+step 10's exact construction. Step 25 is 22.2, on branch `step-25-rolling-ball` (the step-22 branch name was taken); step 26
+is 22.3 to 22.5.
 
 | Step | Package | Content | Effort | State |
 |---|---|---|---|---|
-| 25 | 22.2 one edge, two curved faces | The blend along one smooth chain between two faces of any kind, ending where the chain meets a flat face; the faces cut back along the contact curves. Covers a cylinder meeting a cylinder at an angle, spheres, tori, B-spline faces, a chamfer's cone meeting the cylinder it was cut from. The teapot's spout (a cylinder meeting a cone at 48 degrees) and handle are ready tests | 6 wk, less the coaxial case done | coaxial case done (`ddf8144`) |
+| 25 | 22.2 one edge, two curved faces | The blend along one smooth chain between two faces of any kind, ending where the chain meets a flat face; the faces cut back along the contact curves. Done for closed edges between two curved faces (`pkg/topo/rollingball.go`; notes in `docs/notes/step-25-rolling-ball.md`): tees of cylinders at 90 to 55 degrees, the teapot's spout, a rod through a ball; sweep 3 of 108. Left: chains that end at a flat face, chamfers between curved faces, the teapot's handle (its union is unsound before any fillet) | 6 wk | closed edges done |
 | 26 | 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | not started |
 | 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | not started |
 | 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | not started |
@@ -111,15 +113,18 @@ surfaces and parabolas, hyperbolas (27.5). Corpus: 6 of 9 sound.
 |---|---|---|
 | 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 (3 crossings), _6 (2) cross by about 1e-4 where faces meet tangentially along an edge, whose edges are within tolerance: this is F5 (tangent contact), not edge tolerance. Schenkel: 40 naked edges along a curve at y = 4, cause not found. NIST_MBE_PMI_6 also has pole slivers since 24.2, with step 24's remainder | partly done |
 
-### Step 28: solid features (~5 wk), branch `step-28-solid-features`
+### Step 28, what is left: solid features
 
-| Package | From | Content | State |
-|---|---|---|---|
-| 28.1 chamfers of two distances | step 7, 15.1 | The edit's corners need their setback on each face apart | not started |
-| 28.2 drafts of chosen faces, about another plane, of an arc meeting a line at a corner | 15.4 | Only an extrusion's sides, about the sketch's plane, arcs tangent to their neighbours | not started |
-| 28.3 smooth lofts: tangency set at the end profiles, guide curves | step 20 | not done | not started |
-| 28.4 sweeps along a chain of the solid's edges (step 9's names), and paths with corners | 20.5, step 7 | A corner is a diagnostic today | not started |
-| 28.5 pattern along a closed path | 15.6 | refused | not started |
+Step 28 merged in part: chamfers of two distances, drafts of chosen sides with their own angles
+about a neutral plane and of an arc meeting a line at a corner, sweeps with mitred corners and
+along named edges of the solid, patterns along a closed path, lofts with tangency at the ends.
+State and the plan for guide curves: `docs/notes/step-28.md`.
+
+| Package | Content | State |
+|---|---|---|
+| 28.2 drafts of two arcs meeting at a corner | refused | open |
+| 28.3 smooth lofts: guide curves | end tangency done; guide curves not started | partly done |
+| 28.4 sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred | open |
 
 Shells of other curved solids (step 10, 15.2: prisms only; filleted, lofted and revolved solids
 are refused) stay with E12 under "Left out"; 22.1's offsets are the first part.

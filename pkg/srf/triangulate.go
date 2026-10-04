@@ -597,7 +597,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 				// surface.
 				prev := c.Points[wrapIdx(i+offset-1, ln)].P
 				next := c.Points[wrapIdx(i+offset+1, ln)].P
-				if folded(srf, prev, c.Points[ear].P, next) {
+				if folded(srf, prev, c.Points[ear].P, next) || srf.AvoidFlatEars && flatEar(srf, prev, c.Points[ear].P, next) {
 					if fallback < 0 {
 						fallback = ear
 					}
@@ -637,6 +637,10 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	}
 }
 
+// grazeShare is how far off a chord in uv, as a share of its length, a
+// point may be and still graze it.
+const grazeShare = 0.02
+
 // grazed reports whether the chord from ap to cp, which clipping the
 // ear at bp would add, passes a point of the contour, the ear's own
 // included, closer on the surface than twice the chord's sag. In uv the
@@ -646,10 +650,6 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 // cylinder's wall strip beside the point where a crossed cylinder's
 // seam pierces it was clipped into a sliver the height of the wall
 // (roadmap 24.1).
-// grazeShare is how far off a chord in uv, as a share of its length, a
-// point may be and still graze it.
-const grazeShare = 0.02
-
 func (c *SContour) grazed(srf *SSurface, poles []int, ap, bp, cp int) bool {
 	a, b := c.Points[ap].P, c.Points[cp].P
 	atPole := func(p geom.Vector) bool {
@@ -695,6 +695,30 @@ func (c *SContour) grazed(srf *SSurface, poles []int, ap, bp, cp int) bool {
 		}
 	}
 	return false
+}
+
+// flatEar reports whether the triangle a, b, c, in uv, is an ear the
+// mesher should not take on a surface trimmed by a planar curve
+// (SSurface.AvoidFlatEars): one that is a sliver in xyz, far thinner
+// than it is long, or that leans off the surface's tangent plane at its
+// middle by more than 30 degrees. Three points along a planar trim make
+// such an ear: it lies in the trim's plane, over the face on the trim's
+// other side, and the chord test likes it, since the surface lies close
+// to its long side.
+func flatEar(srf *SSurface, a, b, c geom.Vector) bool {
+	pa, pb, pc := srf.PointAt(a.X, a.Y), srf.PointAt(b.X, b.Y), srf.PointAt(c.X, c.Y)
+	long := max(pb.Minus(pa).MagSquared(), pc.Minus(pb).MagSquared(), pa.Minus(pc).MagSquared())
+	n := pb.Minus(pa).Cross(pc.Minus(pa))
+	// Twice the area over the longest side is the height.
+	if n.MagSquared() < 1e-6*long*long {
+		return true
+	}
+	m := a.Plus(b).Plus(c).ScaledBy(1.0 / 3)
+	sn := srf.NormalAt(m.X, m.Y)
+	if sn.Magnitude() == 0 {
+		return false
+	}
+	return math.Abs(n.WithMagnitude(1).Dot(sn.WithMagnitude(1))) < math.Cos(30*math.Pi/180)
 }
 
 // flat reports whether the surface is a plane: of degree 1 both ways,

@@ -4479,7 +4479,7 @@
 					},
 					"PatternAlongPath": {
 						"decl": "func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group",
-						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as New Group \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
+						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as New Group \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. A path that closes, a circle alone or pieces\nthat come back to their start meeting it tangent, has the copies\nshared out evenly round it, starting at its point nearest the\nsolid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
 					},
 					"Perpendicular": {
 						"decl": "func (d *Doc) Perpendicular(a, b Entity) Constraint",
@@ -4619,7 +4619,11 @@
 					},
 					"Sweep": {
 						"decl": "func (d *Doc) Sweep(path []Entity, name string) Group",
-						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). The new group becomes\nactive."
+						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). Two line segments may\nmeet at a corner, where the sweep is mitred: each piece cut by the\nplane that halves the corner. The new group becomes active."
+					},
+					"SweepEdges": {
+						"decl": "func (d *Doc) SweepEdges(edges []SolidEdge, path []Entity, name string) Group",
+						"text": "SweepEdges is Sweep along a chain of edges of the solid so far, by\nname (Solid, SolidEdge), and the line segments, arcs and cubics of\npath with them, one chain: a straight edge is a line, a circular one\nan arc, any other a curve as a cubic is. The sweep keeps the edges'\nnames, so it follows them when the model upstream changes."
 					},
 					"Symmetric": {
 						"decl": "func (d *Doc) Symmetric(a, b, about Entity) Constraint",
@@ -4854,6 +4858,14 @@
 						"decl": "func (g Group) Draft() (degrees float64)",
 						"text": "Draft is an extrusion's draft in degrees: its sides lean into the\nsolid by that much from the sketch's plane, out when it is negative."
 					},
+					"DraftFaces": {
+						"decl": "func (g Group) DraftFaces() (curves []Entity)",
+						"text": "DraftFaces are the curves of an extrusion's sketch whose sides its\ndraft leans, or none when it leans every side."
+					},
+					"DraftNeutral": {
+						"decl": "func (g Group) DraftNeutral() (mm float64)",
+						"text": "DraftNeutral is how far along an extrusion, from the sketch's plane,\nits draft's neutral plane lies, in mm: where the solid has the\nprofile's outline."
+					},
 					"EdgeRadius": {
 						"decl": "func (g Group) EdgeRadius(i int) (mm float64)",
 						"text": "EdgeRadius is the radius in mm a fillet gives its edge i, counting\nthe entities Edges gives and then the edges SolidEdges gives, from 0:\nthe edge's own, or the fillet's."
@@ -4954,6 +4966,10 @@
 						"decl": "func (g Group) Requests() (requests []Request)",
 						"text": "Requests are what was drawn in the group."
 					},
+					"SecondDistance": {
+						"decl": "func (g Group) SecondDistance() (mm float64)",
+						"text": "SecondDistance is a chamfer's distance in mm on each edge's second\nface, or 0 when it is the first distance on both faces. An edge's\nfirst face is the one of the lower identity (SolidFace.ID), the one\nits name gives first."
+					},
 					"SetAppearance": {
 						"decl": "func (g Group) SetAppearance(name string)",
 						"text": "SetAppearance gives the group's solid an appearance: matte, plastic,\nglossy or metal, or \"\" for the default. Its colour stays."
@@ -4976,7 +4992,15 @@
 					},
 					"SetDraft": {
 						"decl": "func (g Group) SetDraft(degrees float64)",
-						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs, each arc meeting its neighbours tangent. A\ndraft at which the sides meet is a problem on the group, and the\nextrusion is made without it. SetExpr with sketch.GroupValC gives it\nan expression."
+						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs; an arc may meet a line at a sharp corner,\nbut arcs meet each other tangent. A draft at which the sides meet is\na problem on the group, and the extrusion is made without it. SetExpr\nwith sketch.GroupValC gives it an expression. SetDraftFaces leans\nonly some sides, and SetDraftNeutral leans them from another plane."
+					},
+					"SetDraftFaces": {
+						"decl": "func (g Group) SetDraftFaces(curves []Entity)",
+						"text": "SetDraftFaces makes an extrusion's draft lean the sides of curves\nonly, the rest staying upright; none leans every side again. A curve\nis a line, arc or circle of the extruded sketch, or its copy at an end\nof the extrusion, or the face of its side."
+					},
+					"SetDraftNeutral": {
+						"decl": "func (g Group) SetDraftNeutral(mm float64)",
+						"text": "SetDraftNeutral leans an extrusion's drafted sides from the plane mm\nalong it from the sketch's plane, negative towards a two-sided\nextrusion's other end: there the solid has the profile's outline, and\nit narrows going away from it both ways, as a moulded part does from\nits parting line. 0 is the sketch's plane. A plane off the extrusion\nis a problem on the group. SetExpr with sketch.GroupPitch gives it an\nexpression in the document's unit."
 					},
 					"SetEdgeRadius": {
 						"decl": "func (g Group) SetEdgeRadius(i int, mm float64)",
@@ -5010,6 +5034,10 @@
 						"decl": "func (g Group) SetRadius(mm float64)",
 						"text": "SetRadius sets a fillet's radius in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
 					},
+					"SetSecondDistance": {
+						"decl": "func (g Group) SetSecondDistance(mm float64)",
+						"text": "SetSecondDistance makes a chamfer of two distances: Distance on each\nedge's first face and mm on the second; 0 makes it a chamfer of one\ndistance again. SetExpr with sketch.GroupValC gives it an expression\nin the document's unit. A chamfer of two distances can't have edges\nthat meet at a corner it cuts by its local edit; there it cuts each\nstraight edge by a wedge instead, and a circular edge not at all."
+					},
 					"SetSuppress": {
 						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
 						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
@@ -5017,6 +5045,10 @@
 					"SetSweepUp": {
 						"decl": "func (g Group) SetSweepUp(up Vec)",
 						"text": "SetSweepUp holds a sweep's frames to the direction up, as far as the\npath's tangent allows, rather than turning them as little as the path\nlets them: a profile swept along a helix with up its axis keeps\nfacing the axis, as a thread's does. The path must never run along\nup. Zero turns them least again."
+					},
+					"SetTangency": {
+						"decl": "func (g Group) SetTangency(start, end float64)",
+						"text": "SetTangency makes a loft leave its first profile square to its plane\nand reach its last square to its, the surface's slope across there\nstart and end times the loft's length; 0 leaves an end free, shaped\nby the profiles alone. A loft of two profiles with an end set is one\nsmooth surface, not ruled patches. SetExpr with sketch.GroupPitch and\nsketch.GroupValC gives them expressions."
 					},
 					"SetThickness": {
 						"decl": "func (g Group) SetThickness(mm float64)",
@@ -5048,7 +5080,7 @@
 					},
 					"SolidEdges": {
 						"decl": "func (g Group) SolidEdges() (edges []SolidEdge)",
-						"text": "SolidEdges are the edges of the solid a chamfer cuts or a fillet\nrounds by name."
+						"text": "SolidEdges are the edges of the solid a chamfer cuts, a fillet rounds\nor a sweep follows, by name."
 					},
 					"Solved": {
 						"decl": "func (g Group) Solved() (ok bool)",
@@ -5062,9 +5094,17 @@
 						"decl": "func (g Group) Suppression() (mode SuppressMode)",
 						"text": "Suppression is the group's suppress mode, as SetSuppress set it."
 					},
+					"SwapDistances": {
+						"decl": "func (g Group) SwapDistances()",
+						"text": "SwapDistances swaps a chamfer's two distances, which chamfers each\nedge the other way round. It fails for a chamfer of one distance."
+					},
 					"SweepUp": {
 						"decl": "func (g Group) SweepUp() (up Vec)",
 						"text": "SweepUp is the direction a sweep holds its frames to, or zero when\nthey turn as little as the path lets them."
+					},
+					"Tangency": {
+						"decl": "func (g Group) Tangency() (start, end float64)",
+						"text": "Tangency is how square a loft leaves its first profile and reaches\nits last, 0 for an end left free (see SetTangency)."
 					},
 					"Thickness": {
 						"decl": "func (g Group) Thickness() (mm float64)",
@@ -5760,6 +5800,10 @@
 						"decl": "func (g *Group) DescriptionString() string",
 						"text": "DescriptionString names the group as the property browser does: \"g003-extrude\"."
 					},
+					"DraftNeutral": {
+						"decl": "func (g *Group) DraftNeutral() float64",
+						"text": "DraftNeutral is how far along the extrusion, from the sketch's plane, the neutral plane of its draft lies, in mm."
+					},
 					"EdgeRadius": {
 						"decl": "func (g *Group) EdgeRadius(i int) (float64, string, bool)",
 						"text": "EdgeRadius is the radius a fillet gives its edge i, counting Edges and then SolidEdges, and its expression: the edge's own, or the group's."
@@ -5812,6 +5856,10 @@
 						"decl": "func (g *Group) IsForcedToMeshBySource(sk *Sketch) bool",
 						"text": "IsForcedToMeshBySource reports whether the group combines with a group forced to a mesh (C++ Group::IsForcedToMeshBySource)."
 					},
+					"IsLength": {
+						"decl": "func (g *Group) IsLength(f GroupValue) bool",
+						"text": "IsLength reports whether the group's value f is a length, which the interface shows in its unit: a helix's pitch, a chamfer's distances."
+					},
 					"IsMeshGroup": {
 						"decl": "func (g *Group) IsMeshGroup() bool"
 					},
@@ -5828,6 +5876,10 @@
 					},
 					"IsVisible": {
 						"decl": "func (g *Group) IsVisible() bool"
+					},
+					"LoftEnds": {
+						"decl": "func (g *Group) LoftEnds() topo.LoftEnds",
+						"text": "LoftEnds is how the loft leaves its first profile and reaches its last: ValB and ValC, square to each profile by that much, 0 free (roadmap 28.3)."
 					},
 					"LoftProfiles": {
 						"decl": "func (g *Group) LoftProfiles() []core.HGroup",
@@ -6478,6 +6530,10 @@
 						"decl": "func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, distance float64, name string) (Group, error)",
 						"text": "NewChamfer starts a chamfer at the active group, of edges of the solid so far: line segments along edges between two planar faces, and edges of the solid itself, by name, straight and between two planar faces; at distance mm from each edge on both faces."
 					},
+					"NewChamferTwo": {
+						"decl": "func (sk *Sketch) NewChamferTwo(edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, name string) (Group, error)",
+						"text": "NewChamferTwo is NewChamfer with two distances (roadmap 28.1): d1 on each edge's first face, d2 on the other."
+					},
 					"NewFile": {
 						"decl": "func (sk *Sketch) NewFile()",
 						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group (C++ SolveSpaceUI::NewFile)."
@@ -6513,6 +6569,10 @@
 					"NewSweep": {
 						"decl": "func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error)",
 						"text": "NewSweep starts a sweep of the active group's sketch along path, line segments and arcs joined end to end and meeting tangent."
+					},
+					"NewSweepAlong": {
+						"decl": "func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, name string) (Group, error)",
+						"text": "NewSweepAlong is NewSweep along path and edges of the solid so far, by name, together one chain (roadmap 28.4): straight and circular edges, and curved ones as cubics are."
 					},
 					"OutwardFaceNormal": {
 						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",
@@ -6609,6 +6669,10 @@
 					"SetConstraintText": {
 						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
 						"text": "SetConstraintText gives a constraint the value of what the user typed for its label, a length in the document's unit (Units)."
+					},
+					"SetDraftFaces": {
+						"decl": "func (sk *Sketch) SetDraftFaces(hg core.HGroup, es []core.HEntity) error",
+						"text": "SetDraftFaces makes the extrusion hg's draft lean the sides of the curves es of its sketch only, or every side when es is empty."
 					},
 					"SetEdgeRadiusText": {
 						"decl": "func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error",
@@ -7295,6 +7359,7 @@
 				},
 				"makers": [
 					"Skin",
+					"SkinThrough",
 					"SkinWithEnds"
 				]
 			},
@@ -8886,9 +8951,13 @@
 				"decl": "func Skin(sections []BSplineCurve) (*BSplineSurface, []float64, error)",
 				"text": "Skin is the surface through sections, curves of one degree and knot vector: u runs along them, v across, from the first section at v = 0 to the last at v = 1."
 			},
+			"SkinThrough": {
+				"decl": "func SkinThrough(sections []BSplineCurve, ts []float64, start, end []geom.Vector4) (*BSplineSurface, error)",
+				"text": "SkinThrough is SkinWithEnds for sections whose weights may differ, as arcs of different angles do: the derivatives across at the ends are given in homogeneous coordinates, (w p)' and w', for each control point."
+			},
 			"SkinWithEnds": {
 				"decl": "func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vector) (*BSplineSurface, error)",
-				"text": "SkinWithEnds is the cubic surface through sections, curves of one degree, knot vector and weights, at the parameters ts across, from 0 to 1, with the derivatives across at the first and the last given for each control point (Piegl and Tiller, 9.2.2): the interior knots are the sections' own parameters, and two more control points meet the derivatives."
+				"text": "SkinWithEnds is the cubic surface through sections, curves of one degree and knot vector, their weights their own, at the parameters ts across, from 0 to 1, with the derivatives across at the first and the last given for each control point (Piegl and Tiller, 9.2.2): the interior knots are the sections' own parameters, and two more control points meet the derivatives."
 			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",

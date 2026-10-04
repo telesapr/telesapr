@@ -1,0 +1,35 @@
+# A chamfer of two distances (roadmap 28.1): path_chamfer's chamfer,
+# its second distance set on the group screen, which then offers to
+# swap the distances or make them one again; then swapped, and the
+# solid checked.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu New Group|Chamfer Edges
+tw
+twmove 263 145
+twdown L 263 145
+twup L 263 145
+edit 2
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 310 145
+twdown L 310 145
+twup L 310 145
+tw
+answer ok
+menu Analyze|Check Solid
+dump

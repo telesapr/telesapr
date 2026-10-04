@@ -1,8 +1,9 @@
 # Chamfer
 
 Examples: [`examples/scripts/chamfer`](../../examples/scripts/chamfer/chamfer.go), a block
-with its top edges cut, and [`examples/scripts/edges`](../../examples/scripts/edges/edges.go),
-an edge that no sketch entity draws, chamfered by its name.
+with its top edges cut, [`examples/scripts/edges`](../../examples/scripts/edges/edges.go),
+an edge that no sketch entity draws, chamfered by its name, and
+[`examples/scripts/bevel`](../../examples/scripts/bevel/bevel.go), a bevel of two distances.
 
 New Group > Chamfer Edges (Shift+Q) cuts edges of the solid so far at a distance, 1 mm to
 begin with. An edge that goes in, as a pocket's floor, is filled; a chamfered edge goes on into
@@ -15,11 +16,22 @@ the edges it meets smoothly, round a rounded rectangle's corners by cones. Selec
 
 The group's screen lists the edges and takes a new distance, as a number or an expression.
 
+## Two distances
+
+A chamfer may cut back further on one face than on the other: its screen's *second distance*
+row, "the same" to begin with, takes a distance for each edge's second face. An edge's first
+face is the one of the lower identity, the one its name gives first; where that comes out the
+wrong way round, *[swap]* exchanges the two distances, and *[same]* makes the chamfer one of a
+single distance again. Where chamfers of two distances meet at a corner, the edit can't make it,
+and straight edges are cut by wedges instead.
+
 From a script:
 
 ```go
 c := doc.Chamfer([]api.Entity{edge}, 2, "")
 c.SetDistance(1.5)
+c.SetSecondDistance(3) // 1.5 on the first face, 3 on the second
+c.SwapDistances()      // 3 on the first, 1.5 on the second
 s := doc.Active().Solid()
 doc.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 2, 10))}, 1, "")
 ```
@@ -35,6 +47,7 @@ find edges.
 
 ## Not yet
 
-A chamfer at two distances is not done. Where the edit that cuts a chamfer can't make a corner,
+A chamfer by a distance and an angle is not done, and a chamfer of two distances can't take
+circular edges that meet other chamfered edges at a corner. Where the edit that cuts a chamfer can't make a corner,
 as where a concave edge meets the cut, the chamfer falls back to a wedge and a Boolean, which
 take edges that stick out only.
