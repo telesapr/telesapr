@@ -4515,7 +4515,7 @@
 					},
 					"RunCommand": {
 						"decl": "func (d *Doc) RunCommand(label string) (err error)",
-						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. telesapr-cli runs scripts on the interface\nwithout a window, so commands run there too; a document of a Go\nprogram's own, from New, has no menu to run them from, and it is an\nerror."
+						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. telesapr-cli runs scripts on the interface\nwithout a window, so commands run there too; a document of a Go\nprogram's own, from New, has no menu to run them from, and it is an\nerror. What the command changes is part of the script's step of\nundo."
 					},
 					"Save": {
 						"decl": "func (d *Doc) Save(path string) (err error)",
@@ -4587,7 +4587,7 @@
 					},
 					"Split": {
 						"decl": "func (d *Doc) Split(a, b Entity, near Vec)",
-						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near. It is its own step of undo."
+						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near."
 					},
 					"String": {
 						"decl": "func (d *Doc) String() (s string)",
@@ -4607,7 +4607,7 @@
 					},
 					"TangentArc": {
 						"decl": "func (d *Doc) TangentArc(point Entity, radius float64, trim bool)",
-						"text": "TangentArc rounds the corner at a point where two line segments or\narcs of the active workplane meet, with an arc tangent to both, as\nSketch \u003e Tangent Arc at Point does. radius 0 lets the program choose\nit. With trim, the two are cut back to the arc; without, they become\nconstruction and trimmed copies are added. It is its own step of\nundo."
+						"text": "TangentArc rounds the corner at a point where two line segments or\narcs of the active workplane meet, with an arc tangent to both, as\nSketch \u003e Tangent Arc at Point does. radius 0 lets the program choose\nit. With trim, the two are cut back to the arc; without, they become\nconstruction and trimmed copies are added."
 					},
 					"Text": {
 						"decl": "func (d *Doc) Text(text, font string, at Vec, height float64) Entity",
@@ -4808,7 +4808,7 @@
 					},
 					"Delete": {
 						"decl": "func (g Group) Delete()",
-						"text": "Delete deletes the group and what depends on it."
+						"text": "Delete deletes the group and what depends on it. If the active\ngroup goes, being this one or one that used it, the last group\nbefore it that is left becomes active, so that new groups come\nwhere the history ends; Doc.Active says which it is."
 					},
 					"DependsOn": {
 						"decl": "func (g Group) DependsOn() (groups []Group)",
@@ -4888,11 +4888,23 @@
 					},
 					"MoveToEnd": {
 						"decl": "func (g Group) MoveToEnd() error",
-						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes."
+						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes. Only this group moves: the sketches it uses stay where they\nare, as they come before it already. MoveToEndWithSources moves them\nalong."
+					},
+					"MoveToEndWithSources": {
+						"decl": "func (g Group) MoveToEndWithSources() ([]Group, error)",
+						"text": "MoveToEndWithSources moves the group to the end of the history\ntogether with its OwnSources, keeping their order, as one undo step:\nan extrusion moves with its sketch. It returns the groups moved, in\ntheir new order. A move that would put one of them ahead of a group\nit uses, or another group ahead of one of them that it uses, is\nrefused with an error naming both, and nothing changes."
+					},
+					"MoveWithSourcesBefore": {
+						"decl": "func (g Group) MoveWithSourcesBefore(other Group) ([]Group, error)",
+						"text": "MoveWithSourcesBefore moves the group with its OwnSources to just\nbefore other, as MoveToEndWithSources moves them to the end."
 					},
 					"Name": {
 						"decl": "func (g Group) Name() (name string)",
 						"text": "Name is the group's name."
+					},
+					"OwnSources": {
+						"decl": "func (g Group) OwnSources() (groups []Group)",
+						"text": "OwnSources lists the group with the groups only it needs, in history\norder: those it uses, directly or through each other, that no other\ngroup uses, as an extrusion's sketch. These are what\nMoveToEndWithSources moves."
 					},
 					"Param": {
 						"decl": "func (g Group) Param(i int) Param",
@@ -5174,7 +5186,7 @@
 					},
 					"DeleteGroup": {
 						"decl": "func (h *SketchHost) DeleteGroup(hg core.HGroup)",
-						"text": "DeleteGroup deletes a group, activating the one before it if it was\nactive, and regenerates."
+						"text": "DeleteGroup deletes a group, and regenerates. When the active group\ngoes, with it or as it used it, the last group before it that is\nleft is made active."
 					},
 					"EndEval": {
 						"decl": "func (h *SketchHost) EndEval()",
@@ -5211,6 +5223,10 @@
 					"Regenerate": {
 						"decl": "func (h *SketchHost) Regenerate()",
 						"text": "Regenerate regenerates what is dirty."
+					},
+					"Remembered": {
+						"decl": "func (h *SketchHost) Remembered(n int)",
+						"text": "Remembered folds the n steps of undo a change remembered itself into\nthe script's step: the first of them is the step if the step has\nnone yet."
 					},
 					"Render": {
 						"decl": "func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error",
@@ -6052,6 +6068,10 @@
 						"decl": "func (sk *Sketch) ActivateConfiguration(name string) error",
 						"text": "ActivateConfiguration makes the configuration called name active, writing its expressions into the table, or with \"\" none; the table stays as it is then."
 					},
+					"ActivateSurvivor": {
+						"decl": "func (sk *Sketch) ActivateSurvivor(order []core.HGroup, was core.HGroup) bool",
+						"text": "ActivateSurvivor makes the right group active after a change that deleted groups, as deleting one deletes what used it: was, the group that was active before, if it is still there; else, of order, the history before the change, the nearest group before was that is left and isn't the references, so that new groups still come where the history ends."
+					},
 					"ActiveGroup": {
 						"decl": "func (sk *Sketch) ActiveGroup() core.HGroup",
 						"text": "ActiveGroup is the active group: Active if it exists, else the one C++ makes active after loading a file (GraphicsWindow::Init and EnsureValidActives): the last group, or the first that isn't the references."
@@ -6137,6 +6157,10 @@
 					"CheckMoveGroup": {
 						"decl": "func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error",
 						"text": "CheckMoveGroup reports the error MoveGroup(h, before) would give, without moving anything."
+					},
+					"CheckMoveGroupWithSources": {
+						"decl": "func (sk *Sketch) CheckMoveGroupWithSources(h, before core.HGroup) error",
+						"text": "CheckMoveGroupWithSources reports the error MoveGroupWithSources would give, without moving anything."
 					},
 					"CheckThread": {
 						"decl": "func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error",
@@ -6374,6 +6398,10 @@
 						"decl": "func (sk *Sketch) MoveGroup(h, before core.HGroup) error",
 						"text": "MoveGroup moves group h to just before group before in the history, or to the end for the zero handle."
 					},
+					"MoveGroupWithSources": {
+						"decl": "func (sk *Sketch) MoveGroupWithSources(h, before core.HGroup) ([]core.HGroup, error)",
+						"text": "MoveGroupWithSources moves group h, with its OwnSources in their order, to just before group before, or to the end for the zero handle, as MoveGroup moves one group: a move that would put a group ahead of one it refers to is refused with a *MoveError, and nothing moves."
+					},
 					"MustGetEntity": {
 						"decl": "func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity",
 						"text": "MustGetEntity is GetEntity for handles that must exist (C++ SK.GetEntity, which asserts)."
@@ -6429,6 +6457,10 @@
 					"OutwardFaceNormal": {
 						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",
 						"text": "OutwardFaceNormal is a face's normal, turned to point out of the solid, as its triangles' do."
+					},
+					"OwnSources": {
+						"decl": "func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup",
+						"text": "OwnSources is group h with the groups only it needs: those it refers to, directly or through each other, that no group outside them uses, as an extrusion's sketch and that sketch's own workplane."
 					},
 					"Parameter": {
 						"decl": "func (sk *Sketch) Parameter(name string) *Parameter",
@@ -6641,6 +6673,14 @@
 					"UndoClearState": {
 						"decl": "func (s *Sketch) UndoClearState(ut *UndoState)",
 						"text": "UndoClearState forgets one state (C++ SolveSpaceUI::UndoClearState)."
+					},
+					"UndoDropNewest": {
+						"decl": "func (s *Sketch) UndoDropNewest(n int)",
+						"text": "UndoDropNewest forgets the n states remembered last for undo, leaving the sketch as it is: what they would take back joins the step remembered before them."
+					},
+					"UndoPushedSince": {
+						"decl": "func (s *Sketch) UndoPushedSince(write int) int",
+						"text": "UndoPushedSince is how many states were remembered for undo since the stack's write position was write, for a change that remembers its own steps; 0 when the position went back, as an undo moves it."
 					},
 					"UndoRedo": {
 						"decl": "func (s *Sketch) UndoRedo() bool",

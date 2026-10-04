@@ -44,6 +44,25 @@ func (ss *SolveSpaceUI) MoveGroup(h core.HGroup, later bool) {
 	ss.ScheduleShowTW()
 }
 
+// MoveGroupToEnd moves group h to the end of the history with the
+// groups only it needs, as an extrusion's sketch, as one undo step, or
+// says why it can't (Edit > Move Group to End).
+func (ss *SolveSpaceUI) MoveGroupToEnd(h core.HGroup) {
+	sk := ss.SK
+	if sk.GetGroup(h) == nil {
+		return
+	}
+	if err := sk.CheckMoveGroupWithSources(h, core.HGroup{}); err != nil {
+		ss.Error("Can't move the group: %v.", err)
+		return
+	}
+	ss.UndoRemember()
+	if _, err := sk.MoveGroupWithSources(h, core.HGroup{}); err != nil {
+		ss.Error("Can't move the group: %v.", err)
+	}
+	ss.ScheduleShowTW()
+}
+
 // ScreenMoveGroup moves a group of the group list earlier ('u') or
 // later ('d').
 func (tw *TextWindow) ScreenMoveGroup(link int, v uint32) {

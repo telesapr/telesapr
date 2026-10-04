@@ -213,6 +213,50 @@ func TestSessionRollback(t *testing.T) {
 	}
 }
 
+// A failed script is taken back whole though it called what remembers
+// its own step of undo, as TangentArc and Split do, before or after
+// its first other change.
+func TestSessionRollbackOwnUndoSteps(t *testing.T) {
+	for name, code := range map[string]string{
+		"after a change":  "ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))\ndoc.TangentArc(ls[0].End(), 5, true)\nls[0].Radius()",
+		"first change":    "doc.TangentArc(corner[0].End(), 5, true)\ndoc.Circle(V(0, 0, 0), 1)\ndoc.Group(\"nothing\").Name()",
+		"only change":     "doc.TangentArc(corner[0].End(), 5, false)\ndoc.Group(\"nothing\").Name()",
+		"twice":           "ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0))\ndoc.TangentArc(ls[0].End(), 5, true)\ndoc.TangentArc(ls[1].End(), 5, true)\ndoc.Group(\"nothing\").Name()",
+		"split then fail": "a := doc.Line(V(0, -5, 0), V(0, 5, 0))\nb := doc.Line(V(-5, 0, 0), V(5, 0, 0))\ndoc.Split(a, b, V(0, 0, 0))\ndoc.Group(\"nothing\").Name()",
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := newSession(t)
+			run(t, s, "corner := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))")
+			before := saved(t, s)
+			res := run(t, s, code)
+			if !res.RolledBack || res.Error == "" {
+				t.Fatalf("the failing script gave %+v", res)
+			}
+			if after := saved(t, s); !bytes.Equal(before, after) {
+				t.Errorf("the drawing changed over a script that failed:\n%s\nwas\n%s", after, before)
+			}
+			doc := s.Engine().Doc()
+			if doc.Redo() {
+				t.Errorf("what the failed script did can be redone")
+			}
+			// What was drawn before is one step of undo away.
+			if !doc.Undo() || len(doc.Active().Requests()) != 0 {
+				t.Errorf("undo after the rollback leaves %d requests, want none", len(doc.Active().Requests()))
+			}
+		})
+	}
+
+	// A script that succeeds is one step of undo, whatever it called.
+	s := newSession(t)
+	if res := run(t, s, "ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))\ndoc.TangentArc(ls[0].End(), 5, true)"); res.Error != "" {
+		t.Fatalf("the script gave %+v", res)
+	}
+	doc := s.Engine().Doc()
+	if !doc.Undo() || len(doc.Active().Requests()) != 0 {
+		t.Errorf("one undo after the script leaves %d requests, want none", len(doc.Active().Requests()))
+	}
+}
+
 // A script that is stopped is rolled back like one that failed; one
 // that runs elsewhere in the engine is in the way.
 func TestSessionStopAndBusy(t *testing.T) {

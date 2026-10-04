@@ -510,9 +510,17 @@ func Commands() []string {
 // only one entry has it. telesapr-cli runs scripts on the interface
 // without a window, so commands run there too; a document of a Go
 // program's own, from New, has no menu to run them from, and it is an
-// error.
+// error. What the command changes is part of the script's step of
+// undo.
 func (d *Doc) RunCommand(label string) (err error) {
-	d.h.Run(func() { err = d.h.RunCommand(label) })
+	d.h.Run(func() {
+		sk := d.h.Sketch()
+		undo := sk.Undo.Write
+		err = d.h.RunCommand(label)
+		if d.h.Sketch() == sk {
+			d.h.Remembered(sk.UndoPushedSince(undo))
+		}
+	})
 	return err
 }
 

@@ -167,6 +167,20 @@ func (h *ScriptHost) Changing() {
 	}
 }
 
+// Remembered folds the n steps of undo a change remembered itself, as
+// a menu command does, into the script's step.
+func (h *ScriptHost) Remembered(n int) {
+	if n <= 0 {
+		return
+	}
+	if !h.changed {
+		h.changed = true
+		n--
+	}
+	h.ss.SK.UndoDropNewest(n)
+	h.ss.UndoEnableMenus()
+}
+
 // Rollback takes back what the script's last step changed, for good:
 // it can't be done again as what Undo takes back can. It is false if
 // the step changed nothing.
@@ -200,22 +214,7 @@ func (h *ScriptHost) AddGroup(g sketch.Group) core.HGroup {
 
 // DeleteGroup is TextWindow.ScreenDeleteGroup for any group.
 func (h *ScriptHost) DeleteGroup(hg core.HGroup) {
-	ss := h.ss
-	sk := ss.SK
-	if hg == ss.GW.activeGroupH() {
-		if prev := sk.GetGroup(sk.Active).PreviousGroup(sk); prev != nil {
-			sk.Active = prev.H
-		}
-	}
-	ss.TW.ClearSuper()
-	for i := range sk.Groups {
-		if sk.Groups[i].H == hg {
-			sk.Groups = append(sk.Groups[:i], sk.Groups[i+1:]...)
-			break
-		}
-	}
-	ss.GenerateAll(sketch.GenerateAll)
-	ss.GW.ClearSuper()
+	h.ss.deleteGroup(hg)
 }
 
 func (h *ScriptHost) Activate(hg core.HGroup) {
