@@ -159,7 +159,89 @@ third, unpicked edge.
 Sweep rate fixed before building: 0 failures allowed on the grid of
 box (vertical R, top ring r) and boss (vertical R, foot r), r < R.
 
+## 22.4 setback corners (third agent, done)
+
+Code: `pkg/topo/fillet_setback.go`, a corner kind (`setbackCorner`) in
+`fillet_network.go`, reached from `FilletPicks` after the stages
+(`filletPicksSetback`); `forceSetback` (tests) puts one where a sphere
+would go.
+
+- Each fillet is cut at `setbackShare` (0.5) times the corner's largest
+  radius past where its tangent lines cross on its faces. The hole's
+  sides alternate: a fillet's section (a polynomial quintic within a few
+  millionths of the radius, `quinticArc`, and the fillet's face is cut
+  along it) and a face's curve (the parabola through where the tangent
+  lines cross, raised to degree 5).
+- Patches: quintic quads with tangency written into the control points.
+  Along a face's curve the second row lies in the plane; along a section
+  the second row is the first moved by tau(t) e + sigma(t) T(t) (tau of
+  degree 5, sigma linear, e the cylinder's axis): exactly in the
+  cylinder's tangent plane, and at the hole's corners any vector in the
+  face, so corners never conflict. Across a curve between two patches:
+  opposite derivatives plus beta(t) T(t), beta linear, 1 at a hole
+  corner (the curve leaves along the sum of the two legs), -1 at another
+  hole corner, 1 at a middle point (legs summing to nothing). What is
+  left is fair by a thin-plate energy at 7 x 7 points of each patch, plus
+  a soft pull of each side's second row into the hole.
+- Layout: an odd number of fillets (3, 5) a star from every other corner
+  to a middle point (odd valence: the twist equations round it are
+  solvable); an even number (4) a ladder of rungs, each rung's ends
+  corners of two quads only. Every starting corner is tried; a layout is
+  kept only if no normal turns away from the corner's facing (sum of the
+  face normals), tangency holds within 1e-3 rad on every side and within
+  1e-2 rad 1e-3 inside it; the least-turning one wins, else refused
+  "the patches that would fill it fold".
+- Solved at unit size about the hole's middle, then scaled back and the
+  sides' points snapped exact: the penalty weights (1e6 hard) against the
+  fairness made larger corners lose precision in the free points and
+  fold (a (2, 5, 5) corner folded where (1, 2.5, 2.5) didn't).
+
+Tested: `TestFilletSetback` (ring 3 over uprights 1, three radii; sound,
+seams within 1e-4 rad), `TestFilletSetbackApex` (four edges at a
+pyramid's apex, seams 2e-5 rad), `TestFilletSetbackAgainstSphere` (one
+radius: within 0.3 r^3 of the sphere's volume, the mesh's error at that
+tolerance being about that size), `TestFilletSetbackSweep` (radii up to
+3:1, 0 of 36 failed, 0 allowed, fixed before the first run),
+`TestFilletSetbackExtremeSweep` (up to 6:1: 4 of 36 refused as folding,
+none made bad; 12% allowed, set after the run). Script round trip and
+undo in `TestFilletStagesScript`; example `setback`. 22.5 unchanged, 40
+of 59 (its refusals are curved end faces and run-offs).
+
+Tried and given up:
+- One fitted patch over the whole hole (a height field over the plane
+  square to the corner, fitted to a side-blending transfinite surface
+  that is itself tangent at the sides): even at degree 9 the normals are
+  0.1 rad off at the sides. Hence constructed patches.
+- A fan of quads from one corner: with more than two quads at a corner
+  the curves' end legs must satisfy L(s0) + L(s_last) = 0. Hence the
+  ladder.
+- A star for an even number of fillets: valence 4 at the middle, the
+  twist equations singular; 0.12 rad seams.
+- Stronger pulls of the second rows into the hole (10x, 100x): more
+  folds. Larger setbacks (0.75, 1 of the radius): no fewer.
+- Net second differences as the fairness: they pull the interior to even
+  spacing against bunched boundary points, and fold.
+
+Left: a mitre of two radii over an upright edge left sharp (refused,
+naming the radii: the blend needs a crease); radii 5-6:1 side by side
+(refused as folding: more patches, or a smaller setback for the small
+fillets, might do); chamfers (no setback); convex meeting concave at one
+vertex beyond what the stages round.
+
 ## Next
+
+- 22.3: the blend going on onto the next face. The setback patch is the
+  piece it lacked: where the ball runs off a face, cut the fillet there
+  as a setback is cut and fill the hole between it, the next face's
+  fillet (or the face) and the faces round with the same patches,
+  their sides a section, face curves and the next fillet's section.
+- Open chains ending on a curved face (the loft's foot, the lid's
+  corners): the same, the end face's curve no longer planar: its side
+  rule becomes the curved face's tangent plane along the curve, which
+  the tau/sigma form (with the face's normal field) gives exactly only
+  for ruled faces; a fitted rule otherwise.
+
+## Earlier next
 
 - 22.3: the blend going on onto the next face (three faces at once).
 - 22.4: corners of different radii are done in stages where the later
