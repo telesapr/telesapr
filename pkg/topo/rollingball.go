@@ -33,8 +33,12 @@ import (
 // cross it, each seam cut where the curve crosses it, and the fillet's
 // patches go in, one between each two sections.
 //
-// The edge must be a closed chain of edges between the two faces,
-// across their seams, as where a spout meets a pot or one pipe another.
+// The edge is a chain of edges between the two faces, across their
+// seams: closed, as where a spout meets a pot or one pipe another, or
+// open, ending at each end where it meets a flat face, as a band's side
+// on a cone ends at the band's end and at the base (rollingend.go). A
+// chamfer is made the same way, its sections straight from the points
+// at its distance along each face, in the plane square to the edge.
 
 // errNotRolling says that the rolling ball doesn't take the edge at
 // all, so that the reason step 10's construction gave stands.
@@ -66,6 +70,15 @@ type rollingBall struct {
 	pieces []ChainPiece
 	verts  []int // the chain's vertices, verts[i] where piece i starts
 	side   [2][]int
+	closed bool
+	// For an open chain, the flat faces it ends at, at its start and its
+	// end.
+	ends [2]*rbEnd
+	// endS are the arc lengths where the points the ball touches each
+	// face and its arc's middle lie in each end's flat face's plane;
+	// target, where the ball's own sections take over from the conics.
+	endS   [2][3]float64
+	target [2]float64
 	// The edge, densely, on both faces, with the arc length along it.
 	pts    []geom.Vector
 	tan    []geom.Vector
@@ -151,6 +164,32 @@ func (t *Topology) blendChain(e int) ([]ChainPiece, []int, bool) {
 	return pieces, verts, false
 }
 
+// blendChainBack goes on with an open chain before its first piece, as
+// far as it goes as one edge between the same two faces.
+func (t *Topology) blendChainBack(pieces []ChainPiece, verts []int) ([]ChainPiece, []int) {
+	seen := map[int]bool{}
+	for _, pc := range pieces {
+		seen[pc.Edge] = true
+	}
+	cur, v := pieces[0].Edge, verts[0]
+	for {
+		nx := t.blendNext(cur, v)
+		if nx < 0 || seen[nx] {
+			return pieces, verts
+		}
+		seen[nx] = true
+		// The piece runs into v from w.
+		rev := t.Edges[nx].V[0] == v
+		w := t.Edges[nx].V[0]
+		if rev {
+			w = t.Edges[nx].V[1]
+		}
+		pieces = append([]ChainPiece{{Edge: nx, Reversed: rev}}, pieces...)
+		verts = append([]int{w}, verts...)
+		cur, v = nx, w
+	}
+}
+
 // joinedAt reports whether faces a and b are one face at vertex v, or
 // two patches of one meeting smoothly there.
 func (t *Topology) joinedAt(v, a, b int) bool {
@@ -178,11 +217,13 @@ func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, er
 	at := midpoint(t.Edges[e].Points)
 	pieces, verts, closed := t.blendChain(e)
 	if !closed {
-		return nil, errNotRolling
+		// Walk back from e's start too: the chain may go on before it.
+		pieces, verts = t.blendChainBack(pieces, verts)
 	}
-	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts}
+	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts, closed: closed}
 	// Each piece's faces, side by side with the first's.
-	fs := t.EdgeFaces(e)
+	fs := t.EdgeFaces(pieces[0].Edge)
+	first := fs
 	cur := fs
 	seen := [2]map[int]bool{{}, {}}
 	for i, pc := range pieces {
@@ -213,13 +254,28 @@ func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, er
 		}
 	}
 	rb.tol = math.Max(srf.ChordTolMm()/10, 1e-6)
+	if !closed {
+		for k, at := range []struct {
+			v     int
+			faces [2]int
+			edge  int
+		}{{verts[0], first, pieces[0].Edge}, {verts[len(verts)-1], cur, pieces[len(pieces)-1].Edge}} {
+			end, err := t.rbEndAt(at.v, at.faces, at.edge)
+			if err != nil {
+				return nil, err
+			}
+			rb.ends[k] = end
+		}
+	}
 	if err := rb.trace(); err != nil {
 		return nil, err
 	}
-	// Convex when face 0 runs away from face 1's outside.
-	p := rb.pts[0]
+	// Convex when face 0 runs away from face 1's outside, seen at the
+	// middle of the edge, away from an open chain's ends.
+	mi := len(rb.pts) / 2
+	p := rb.pts[mi]
 	a, b := rb.foot(0, p), rb.foot(1, p)
-	d0 := rb.into(0, 0, a.n)
+	d0 := rb.into(0, mi, a.n)
 	rb.sigma = 1
 	if d0.Dot(b.n) > 0 {
 		rb.sigma = -1
@@ -227,15 +283,26 @@ func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, er
 	return rb, nil
 }
 
-// foot is the point of side k's faces nearest x.
+// foot is the point of side k's faces nearest x. Past an open chain's
+// ends the ball runs on outside the solid, on the faces' surfaces
+// carried on past their patches' sides: a patch that holds the point
+// within its own (u, v) is taken first, else the one it lies least
+// outside of.
 func (rb *rollingBall) foot(k int, x geom.Vector) rbFoot {
 	best := rbFoot{f: -1}
-	bestD := math.Inf(1)
+	bestD, bestOut := math.Inf(1), math.Inf(1)
+	ext := 0.0
+	if !rb.closed {
+		ext = 1
+	}
 	for _, f := range rb.side[k] {
 		s := rb.t.Surface(f)
-		u, v, p := nearestOn(s, x)
-		if d := p.Minus(x).Magnitude(); d < bestD {
-			bestD = d
+		u, v, p := nearestOnWithin(s, x, ext)
+		out := math.Max(math.Max(-u, u-1), math.Max(-v, v-1))
+		out = math.Max(0, out-1e-9)
+		d := p.Minus(x).Magnitude()
+		if out < bestOut-1e-12 || out <= bestOut+1e-12 && d < bestD {
+			bestD, bestOut = d, out
 			best = rbFoot{f: f, u: u, v: v, p: p}
 		}
 	}
@@ -311,19 +378,39 @@ func (rb *rollingBall) trace() error {
 		}
 		raw = append(raw, pts[:len(pts)-1]...)
 	}
+	segs := len(raw)
+	if !rb.closed {
+		last := rb.pieces[len(rb.pieces)-1]
+		pts := t.Edges[last.Edge].Points
+		if last.Reversed {
+			pts = reversed(pts)
+		}
+		raw = append(raw, pts[len(pts)-1])
+	}
 	total := 0.0
-	for i := range raw {
+	for i := 0; i < segs; i++ {
 		total += raw[(i+1)%len(raw)].Minus(raw[i]).Magnitude()
 	}
 	// Pieces short against the radius and the edge, so that the edge's
 	// tangent turns little from one to the next.
 	h := math.Min(rb.r/4, total/256)
-	for i := range raw {
-		a, b := raw[i], raw[(i+1)%len(raw)]
+	for i := 0; i <= segs; i++ {
+		a, b := raw[i%len(raw)], raw[(i+1)%len(raw)]
 		n := int(math.Ceil(b.Minus(a).Magnitude() / h))
+		if i == segs {
+			if rb.closed {
+				break
+			}
+			// An open edge's last point, its tangent the last piece's.
+			a, b = raw[i-1], raw[i]
+			n = 1
+		}
 		d := b.Minus(a).WithMagnitude(1)
 		for j := 0; j < n; j++ {
 			x := a.Plus(b.Minus(a).ScaledBy(float64(j) / float64(n)))
+			if i == segs {
+				x = b
+			}
 			p, fa, fb, ok := rb.onEdge(x, d)
 			if !ok {
 				return filletErr(x, "the faces meet tangent here: a fillet rounds an edge where they meet at an angle")
@@ -345,12 +432,26 @@ func (rb *rollingBall) trace() error {
 		rb.arcl[i+1] = rb.arcl[i] + rb.pts[(i+1)%len(rb.pts)].Minus(rb.pts[i]).Magnitude()
 	}
 	rb.length = rb.arcl[len(rb.pts)]
+	if !rb.closed {
+		// Open, the edge runs from its first point to its last.
+		rb.length = rb.arcl[len(rb.pts)-1]
+	}
 	return nil
 }
 
 // along is the point and tangent of the dense edge at arc length s,
 // taken round the closed edge.
 func (rb *rollingBall) along(s float64) (geom.Vector, geom.Vector) {
+	if !rb.closed {
+		// Past an open edge's ends, on along the tangent there.
+		n := len(rb.pts)
+		switch {
+		case s <= 0:
+			return rb.pts[0].Plus(rb.tan[0].ScaledBy(s)), rb.tan[0]
+		case s >= rb.length:
+			return rb.pts[n-1].Plus(rb.tan[n-1].ScaledBy(s - rb.length)), rb.tan[n-1]
+		}
+	}
 	s = math.Mod(s, rb.length)
 	if s < 0 {
 		s += rb.length
@@ -372,6 +473,9 @@ func (rb *rollingBall) along(s float64) (geom.Vector, geom.Vector) {
 // section is the ball at arc length s along the edge: in the plane
 // square to the edge there, touching both faces.
 func (rb *rollingBall) section(s float64) (rbSection, error) {
+	if rb.flat {
+		return rb.chamferSection(s)
+	}
 	x, d := rb.along(s)
 	p, a, b, ok := rb.onEdge(x, d)
 	sec := rbSection{s: s}
@@ -408,9 +512,63 @@ func (rb *rollingBall) section(s float64) (rbSection, error) {
 	return sec, nil
 }
 
+// chamferSection is a chamfer's section at arc length s along the edge:
+// in the plane square to the edge there, the line between the points of
+// each face at the chamfer's distance from the edge.
+func (rb *rollingBall) chamferSection(s float64) (rbSection, error) {
+	x, d := rb.along(s)
+	p, a, b, ok := rb.onEdge(x, d)
+	sec := rbSection{s: s}
+	if !ok {
+		return sec, filletErr(x, "the faces meet tangent here: a chamfer cuts an edge where they meet at an angle")
+	}
+	at := [2]rbFoot{a, b}
+	for k := 0; k < 2; k++ {
+		dir := d.Cross(at[k].n)
+		if dir.Magnitude() < 1e-12 {
+			return sec, filletErr(x, "the faces meet tangent here: a chamfer cuts an edge where they meet at an angle")
+		}
+		dir = dir.WithMagnitude(1)
+		// Into face k: away from the other face's outside at a convex
+		// edge, towards it at a concave one.
+		if rb.sigma*dir.Dot(at[1-k].n) > 0 {
+			dir = dir.ScaledBy(-1)
+		}
+		q := p.Plus(dir.ScaledBy(rb.r))
+		converged := false
+		for it := 0; it < 100; it++ {
+			f := rb.foot(k, q)
+			y := f.p.Minus(d.ScaledBy(d.Dot(f.p.Minus(p))))
+			if y.Minus(p).Magnitude() < 1e-12 {
+				break
+			}
+			qn := p.Plus(y.Minus(p).WithMagnitude(rb.r))
+			moved := qn.Minus(q).Magnitude()
+			q = qn
+			if moved < 1e-11*math.Max(1, rb.r) {
+				converged = true
+				break
+			}
+		}
+		f := rb.foot(k, q)
+		if !converged || f.p.Minus(q).Magnitude() > 1e-6*math.Max(1, rb.r) {
+			return sec, filletErr(q, "the chamfer's cut doesn't reach the face on side %d here: the chamfer runs off "+
+				"the face, or its distance is too large for the face's curve", k+1)
+		}
+		sec.foot[k] = f
+	}
+	sec.c = sec.foot[0].p.Plus(sec.foot[1].p).ScaledBy(0.5)
+	sec.arc = rb.arcOf(sec.c, sec.foot[0].p, sec.foot[1].p)
+	return sec, nil
+}
+
 // arcOf is the section from f0 to f1 about c, as a B-spline curve: the
 // arc of the circle, or for a chamfer the line.
 func (rb *rollingBall) arcOf(c, f0, f1 geom.Vector) srf.BSplineCurve {
+	if rb.flat {
+		return srf.BSplineCurve{Deg: 2, Knots: []float64{0, 0, 0, 1, 1, 1},
+			Ctrl: []geom.Vector{f0, f0.Plus(f1).ScaledBy(0.5), f1}, Weight: []float64{1, 1, 1}}
+	}
 	da, db := f0.Minus(c), f1.Minus(c)
 	cosT := da.Dot(db) / (da.Magnitude() * db.Magnitude())
 	theta := math.Acos(math.Max(-1, math.Min(1, cosT)))
@@ -456,8 +614,12 @@ func (rb *rollingBall) crossings(scan []rbSection) ([]float64, [][2]int, []int, 
 	var pairs [][2]int
 	var sides []int
 	n := len(scan)
+	pairsN := n
+	if !rb.closed {
+		pairsN = n - 1
+	}
 	for k := 0; k < 2; k++ {
-		for i := 0; i < n; i++ {
+		for i := 0; i < pairsN; i++ {
 			a, b := scan[i], scan[(i+1)%n]
 			fa, fb := a.foot[k].f, b.foot[k].f
 			if fa == fb {
@@ -479,7 +641,10 @@ func (rb *rollingBall) crossings(scan []rbSection) ([]float64, [][2]int, []int, 
 					hi = m
 				}
 			}
-			s := math.Mod((lo+hi)/2, rb.length)
+			s := (lo + hi) / 2
+			if rb.closed {
+				s = math.Mod(s, rb.length)
+			}
 			at = append(at, s)
 			pairs = append(pairs, [2]int{fa, fb})
 			sides = append(sides, k)
@@ -526,18 +691,99 @@ func (rb *rollingBall) fit(ss []float64) (*srf.BSplineSurface, []rbSection, []fl
 	return sf, secs, ts, nil
 }
 
-// misfit is how far the surface strays, between two of its sections,
-// from the faces it should touch and from the ball.
-func (rb *rollingBall) misfit(sf *srf.BSplineSurface, sec rbSection, t float64) float64 {
+// misfit is how far the surface strays at t, between two of its
+// sections, from the faces it should touch and from the ball (for a
+// chamfer, the line) at arc length s, and where. With near, the ball is
+// the one nearest the surface's middle point about s, as between an
+// oblique end section and the next.
+func (rb *rollingBall) misfit(sf *srf.BSplineSurface, t, s float64, near bool) (float64, geom.Vector) {
 	p0, p1, pm := sf.PointAt(0, t), sf.PointAt(1, t), sf.PointAt(0.5, t)
 	e := rb.foot(0, p0).p.Minus(p0).Magnitude()
 	e = math.Max(e, rb.foot(1, p1).p.Minus(p1).Magnitude())
-	return math.Max(e, math.Abs(pm.Minus(sec.c).Magnitude()-rb.r))
+	where := pm
+	if near && rb.flat {
+		// Near the ends a chamfer's rulings run between the points its
+		// oblique sections touch the faces: flat across.
+		for _, u := range []float64{0.25, 0.5, 0.75} {
+			p := sf.PointAt(u, t)
+			if d := distanceToPolyline(p, []geom.Vector{p0, p1}); d > e {
+				e, where = d, p
+			}
+		}
+		return e, where
+	}
+	across := []float64{0.5}
+	if near {
+		// Between oblique sections the surface is checked across too,
+		// against the conics' own fit to the balls, a few times the
+		// tolerance.
+		across = []float64{0.25, 0.5, 0.75}
+	}
+	for _, u := range across {
+		p := sf.PointAt(u, t)
+		su := s
+		if near {
+			su = rb.nearestSection(p, s)
+		}
+		sec, err := rb.section(su)
+		if err != nil {
+			return math.Inf(1), p
+		}
+		var d float64
+		if rb.flat {
+			d = distanceToPolyline(p, []geom.Vector{sec.foot[0].p, sec.foot[1].p})
+		} else {
+			d = math.Abs(p.Minus(sec.c).Magnitude() - rb.r)
+		}
+		if near {
+			d /= 3
+		}
+		if d > e {
+			e, where = d, sec.c
+		}
+	}
+	return e, where
+}
+
+// nearestSection is the arc length, from s, of the section whose ball's
+// centre (for a chamfer, its line) is nearest p: by parabolas through
+// three.
+func (rb *rollingBall) nearestSection(p geom.Vector, s float64) float64 {
+	dist := func(s float64) float64 {
+		sec, err := rb.section(s)
+		if err != nil {
+			return math.Inf(1)
+		}
+		if rb.flat {
+			d := distanceToPolyline(p, []geom.Vector{sec.foot[0].p, sec.foot[1].p})
+			return d * d
+		}
+		return sec.c.Minus(p).MagSquared()
+	}
+	h := 0.05 * rb.r
+	for it := 0; it < 6; it++ {
+		a, b, c := dist(s-h), dist(s), dist(s+h)
+		den := a - 2*b + c
+		if math.IsInf(a+b+c, 0) || !(den > 0) {
+			break
+		}
+		step := h * (a - c) / (2 * den)
+		step = math.Max(-2*h, math.Min(2*h, step))
+		s += step
+		if math.Abs(step) < 1e-9*math.Max(1, rb.r) {
+			break
+		}
+		h = math.Max(math.Abs(step), 1e-6*rb.r)
+	}
+	return s
 }
 
 // blend is the fillet's surface, its sections, and the arc lengths of
 // the crossings of seams among them.
 func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, error) {
+	if !rb.closed {
+		return rb.blendOpen()
+	}
 	n := int(math.Min(2000, math.Max(64, 4*rb.length/rb.r)))
 	scan := make([]rbSection, n)
 	for i := range scan {
@@ -600,14 +846,13 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 		worst, where := 0.0, geom.Vector{}
 		for i := 0; i+1 < len(secs); i++ {
 			sm := (secs[i].s + secs[i+1].s) / 2
-			sec, err := rb.section(sm)
-			if err != nil {
+			if _, err := rb.section(sm); err != nil {
 				return nil, nil, nil, err
 			}
-			if e := rb.misfit(sf, sec, (ts[i]+ts[i+1])/2); e > rb.tol {
+			if e, at := rb.misfit(sf, (ts[i]+ts[i+1])/2, sm, false); e > rb.tol {
 				more = append(more, sm)
 				if e > worst {
-					worst, where = e, sec.c
+					worst, where = e, at
 				}
 			}
 		}
@@ -636,9 +881,6 @@ type rbCrossing struct {
 // fillet's patches get origin as their origin and sheet.
 func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uint32, flat bool) error {
 	at := midpoint(t.Edges[e].Points)
-	if flat {
-		return errNotRolling
-	}
 	rb, err := t.newRollingBall(e, r, flat)
 	if err != nil {
 		return err
@@ -666,6 +908,9 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			i = row[0].DegM
 		}
 		if j == m {
+			if !rb.closed {
+				return row[m-1].Ctrl[i][row[m-1].DegN]
+			}
 			j = 0
 		}
 		return row[j].Ctrl[i][0]
@@ -691,10 +936,15 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	var drop []pair
 	for _, c := range cross {
 		j, best := -1, 1e-5*rb.length
-		for i := range secs[:m] {
+		for i := range secs {
+			if rb.closed && i == m {
+				continue
+			}
 			d := math.Abs(secs[i].s - c.s)
-			// Round the closed edge: a crossing just before the start's.
-			d = math.Min(d, math.Abs(d-rb.length))
+			if rb.closed {
+				// Round the closed edge: a crossing just before the start's.
+				d = math.Min(d, math.Abs(d-rb.length))
+			}
 			if d < best {
 				j, best = i, d
 			}
@@ -727,6 +977,29 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			return filletErr(q, "the fillet is wider than a patch of the face here: make it smaller")
 		}
 		drop = append(drop, pair{q, t.Vertices[v].P})
+	}
+
+	// An open chain's ends: each side's face cut back along the flat
+	// face's edge to where the fillet's end meets it, and that piece of
+	// the edge gone from the flat face too, which takes the fillet's end.
+	var endCuts []rbEndCut
+	if !rb.closed {
+		for k, end := range rb.ends {
+			sec := secs[0]
+			if k == 1 {
+				sec = secs[len(secs)-1]
+			}
+			cut, err := rb.cutEnd(sh, end, sec.arc)
+			if err != nil {
+				return err
+			}
+			for i := 0; i < 2; i++ {
+				if cut.goes[i] == nil {
+					drop = append(drop, pair{cut.q[i], t.Vertices[end.v].P})
+				}
+			}
+			endCuts = append(endCuts, cut)
+		}
 	}
 
 	// The faces at the edge, cut back along the fillet's edges.
@@ -789,6 +1062,11 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			}
 			s.Trim = kept
 			forget(s)
+		}
+	}
+	for _, cut := range endCuts {
+		if err := rb.closeEnd(sh, cut, &nextH); err != nil {
+			return err
 		}
 	}
 	dropUnusedCurves(sh)
@@ -854,9 +1132,15 @@ func (rb *rollingBall) forward(sh *srf.SShell, s *srf.SSurface, chainCurve map[c
 }
 
 // splitNearest splits the shell's curve nearest p, of those running
-// through p and v, at p, with every trim along it.
+// through p and v, at p, with every trim along it; and any other curve
+// along the same edge, as a Boolean leaves one for each face.
 func splitNearest(sh *srf.SShell, p, v geom.Vector) error {
-	best, bestD := core.HSCurve{}, math.Inf(1)
+	bestD := math.Inf(1)
+	type cand struct {
+		h core.HSCurve
+		d float64
+	}
+	var cands []cand
 	for i := range sh.Curve {
 		c := &sh.Curve[i]
 		if pointIndex(c, v) < 0 {
@@ -866,23 +1150,36 @@ func splitNearest(sh *srf.SShell, p, v geom.Vector) error {
 		for j := range c.Points {
 			pts[j] = c.Points[j].P
 		}
-		if d := distanceToPolyline(p, pts); d < bestD {
-			best, bestD = c.H, d
-		}
+		d := distanceToPolyline(p, pts)
+		cands = append(cands, cand{c.H, d})
+		bestD = math.Min(bestD, d)
 	}
-	if best.V == 0 {
+	if len(cands) == 0 {
 		return ErrNotOnEdge
 	}
-	return splitCurve(sh, best, p)
+	for _, c := range cands {
+		if c.d <= bestD+geom.LengthEps {
+			if err := splitCurve(sh, c.h, p); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // nearestOn is the point of patch s nearest x, within the patch: from
 // the kernel's guess, by Gauss-Newton steps, which the kernel's own
 // first-order steps leave short of for a point off the surface.
 func nearestOn(s *srf.SSurface, x geom.Vector) (float64, float64, geom.Vector) {
+	return nearestOnWithin(s, x, 0)
+}
+
+// nearestOnWithin is nearestOn on the patch carried on by ext past each
+// of its sides in (u, v).
+func nearestOnWithin(s *srf.SSurface, x geom.Vector, ext float64) (float64, float64, geom.Vector) {
 	var u, v float64
 	s.ClosestPointToUV(x, &u, &v, false)
-	clamp := func(a float64) float64 { return math.Max(0, math.Min(1, a)) }
+	clamp := func(a float64) float64 { return math.Max(-ext, math.Min(1+ext, a)) }
 	u, v = clamp(u), clamp(v)
 	for it := 0; it < 80; it++ {
 		p := s.PointAt(u, v)

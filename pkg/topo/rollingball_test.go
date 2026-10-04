@@ -177,7 +177,7 @@ func TestRollingBallSphere(t *testing.T) {
 }
 
 // What the rolling ball refuses, with the place: a radius the hole's
-// rim has no room for, and a chamfer, which keeps step 10's reason.
+// rim has no room for, and an edge picked with another.
 func TestRollingBallRefusals(t *testing.T) {
 	sh, at := branched(0.5, math.Pi/2, 0, true)
 	err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, 3, 1<<30, false)
@@ -186,11 +186,6 @@ func TestRollingBallRefusals(t *testing.T) {
 		t.Errorf("a fillet too large for the hole's rim: %v", err)
 	} else if fe.At.Magnitude() < 5 {
 		t.Errorf("the refusal is placed at %v, not on the rim", fe.At)
-	}
-	sh, at = branched(0.5, math.Pi/2, 0, false)
-	err = topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, 1, 1<<30, true)
-	if err == nil || !strings.Contains(err.Error(), "chamfer") {
-		t.Errorf("a chamfer between two cylinders: %v", err)
 	}
 	// With another edge picked too, the ball's edge must be picked alone.
 	sh, at = branched(0.5, math.Pi/2, 0, false)
@@ -206,8 +201,9 @@ func TestRollingBallRefusals(t *testing.T) {
 // joined or cut, and the radius as a share of the room it has: each solid
 // sound and the volume added or taken on the right side of zero. The
 // rate allowed, 10%, was set before the general fillet was built, and
-// holds for a sample; the whole grid fails 3 of 108 (TELESAPR_SWEEP=1):
-// a large branch at 55 degrees with the largest radius.
+// holds for a sample; the whole grid fails 2 of 108 (TELESAPR_SWEEP=1):
+// a large branch at 55 degrees with the largest radius, whose ball runs
+// off the branch.
 func TestRollingBallSweep(t *testing.T) {
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
@@ -217,7 +213,7 @@ func TestRollingBallSweep(t *testing.T) {
 			sweep.Floats("off", 0, 0.2),
 			sweep.Floats("k", 0.1, 0.25, 0.4),
 		},
-		MaxFailRate:       3.5 / 108,
+		MaxFailRate:       2.5 / 108,
 		SampleMaxFailRate: 0.10,
 		Sample:            16,
 	}
@@ -257,4 +253,24 @@ func TestRollingBallSweep(t *testing.T) {
 		}
 		return nil
 	}).Require(t)
+}
+
+// A chamfer where a branch meets a pipe at right angles: the same edge
+// as the fillet's, its sections straight from the points at its
+// distance along each face. Where the faces meet square it takes r²/2
+// across the edge against the fillet's r²(1 - π/4), and the corner
+// opens wider round the edge, so it adds between that ratio and twice
+// the fillet's volume times it.
+func TestRollingBallChamferTee(t *testing.T) {
+	fine(t, 0.002)
+	sh, at := branched(0.5, math.Pi/2, 0, false)
+	before := meshVolume(sh)
+	if err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, 1, 1<<30, true); err != nil {
+		t.Fatal(err)
+	}
+	added := sound(t, sh) - before
+	ratio := 0.5 / (1 - math.Pi/4)
+	if fillet := 3.9617; added < 0.5*ratio*fillet || added > 2*ratio*fillet {
+		t.Errorf("added %g, want about %g", added, ratio*fillet)
+	}
 }
