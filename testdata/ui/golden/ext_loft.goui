@@ -171,5 +171,5 @@ row 45    (none)
  0-99 64 61 0
 row 47 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 2532\nVolume: 20.04 cm³\nCenter of mass: (0.00, 0.00, 10.51)\nExtent: 40.00 x 40.00 x 30.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 3140\nVolume: 20.02 cm³\nCenter of mass: (0.00, 0.00, 10.50)\nExtent: 40.00 x 40.00 x 30.00
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 28 cm³\nCenter of mass: (-0.00, -0.00, 11.79)\nExtent: 40.00 x 40.00 x 30.00
