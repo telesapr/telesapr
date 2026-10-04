@@ -144,7 +144,10 @@ func TestRevolveParityCpp(t *testing.T) {
 	}{
 		{0, math.Pi / 3, 0, 0, 1.56630902883},
 		{0, -2.5, 0, 0, 3.73472309685},
-		{-math.Pi, math.Pi, -1, 1, 9.38597257969},
+		// A whole turn's helical faces are twisted ruled faces, whose
+		// grid has its outer cells halved since roadmap 24.4: C++ had
+		// 9.38597257969.
+		{-math.Pi, math.Pi, -1, 1, 9.37728875643},
 	} {
 		var sh SShell
 		sh.MakeFromHelicalRevolutionOf(profileLoopSet(1, 2, 0, 1), geom.Vector{}, geom.Vector{Z: 1},
