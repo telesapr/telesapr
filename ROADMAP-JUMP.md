@@ -2,7 +2,8 @@
 
 Date: 2026-10-01, compacted 2026-10-04. Status: steps 1 to 21 and I7 are done and merged, but
 for 12.4 (CI's first run on GitHub), which waits for the user, and 21.5; step 22 is merged in
-part. Read "Definition of done for every new feature" first.
+part. The open work is planned as steps 23 to 29. Read "Definition of done for every new
+feature" first.
 
 TeleSAPR began as a Go port of SolveSpace, bit-identical with the C++. Since 2026-10-01 it is a
 separate project: no parity or file compatibility with SolveSpace, a Go-native kernel, its own
@@ -47,103 +48,104 @@ Decisions taken along the way: the unit belongs to the document (format 2); file
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
 not read.
 
-## Open work and follow-ups
+## Open work: steps 23 to 29
 
-Efforts are the plan's where it gave one, "not sized" where it never did.
+Planned on 2026-10-04 from the open items left at the compaction. The order: the scripting and
+MCP fixes first (small, found in real use, and they ease every later step's scripts); then the
+Booleans on curved surfaces, since the rolling ball of step 25 needs the same intersections and
+trims they fail on; then the rest of step 22; then STEP, solid features and drawings, which do
+not depend on each other. Efforts are the earlier plan's where it gave one; the others, marked
+"~", are first guesses of 2026-10-04. Each step is one branch as the rules below say.
 
 ### Waiting for the user
 
 | Item | From | Effort | State |
 |---|---|---|---|
-| The remote and CI's first run | 12.4 | 0.3 wk | The GitHub repository (organisation `telesapr`, for the module path) and the `TAKIGO_TOKEN` secret; then push, watch the workflow and fix what its runner shows. Until then no fresh clone has been shown to build |
+| The remote and CI's first run | 12.4 | 0.3 wk | The GitHub repository (organisation `telesapr`, for the module path) and the `TAKIGO_TOKEN` secret; then push, watch the workflow and fix what its runner shows. Until then no fresh clone has been shown to build. Best done before the next merge, blocks nothing |
 | What to take back from "Left out" | | | Every row there is a proposal |
 | What the review took in without being asked | | | B3 (16.11), G4 (17.4) and S3 (17.5): all done; the user may still disown them |
 
-### The rest of step 22, general fillets
+### Step 23: scripting and the MCP server (~2.5 wk), branch `step-23-scripting-fixes`
+
+From two notes of 2026-10-03, written while drawing a teapot through the MCP server. None was
+checked again since, but 23.5's first form, which step 20's example scripts met again. Each item
+starts with a failing test (`pkg/script/engine_test.go`, `pkg/script/api`, the MCP tests). The
+two kernel findings of the same notes are in step 24.
+
+| Package | Content | State |
+|---|---|---|
+| 23.1 a sketch that crosses itself makes no solid and nothing says so | The status, `get_drawing`, `Group.Problem()` and `Check().Sound()` (true, with no faces) all say well; only `PolyError` knows. Wanted: a sketch's `PolyError` (open, not coplanar, crossing, zero length) with its point in `Problem()`, `get_drawing` and the status, and marked on the canvas; a solid group whose source has one says why it made no solid; `Sound()` false for a solid group with no solid | not started |
+| 23.2 a failed script that called `TangentArc` is not all taken back | The arc and its trimmed lines stayed though the message said everything was taken back; guess: `TangentArc` pushes an undo step of its own inside the script | not started |
+| 23.3 the active group after a delete, and `MoveToEnd` | Deleting the active group puts later new groups after the first sketch; `MoveToEnd` moved an extrusion but not its two sketch groups, silently. Wanted: the last remaining group active after such a delete, or the script told which; `MoveToEnd` moves (with step 4's dependency checks) or says why not | not started |
+| 23.4 `render` fits the model | With no view (isometric) or "front" it is zoomed in and pushed down, at every picture size; "window" after Zoom To Fit is right. Entry: `Doc.Render`, `pkg/script/api/doc.go`. Also: "window" right after Align View to Workplane catches the view mid-animation; wait for the animation or finish it | not started |
+| 23.5 the interpreter | (a) A float literal beside a library constant fails: `2.0 * math.Pi`, `math.Pi + 0.5` give "mismatched types untyped float and untyped float64"; `math.Pi / 180.0`, `12 * math.Pi`, a variable and `float64(math.Pi)` work. Read from the error, not traced: yaegi v0.16.1's stdlib tables make `math`'s constants "untyped float64". (b) `eval` of code that starts with `const` or `var` and goes on with a statement fails to parse ("expected declaration"), taken for a program's top level; check `run_script` too. (c) `a, b, c := s[0], s[1], s[2]` fails as "constant definition loop"; one per line works. (d) Names kept between `run_script` calls collide with a block's `:=` of another type (panic in `reflect.Set`), and `p, q := e.Ends()` in a loop left `p` undefined; a block's `:=` should shadow as in Go, and the primer says whether a new file or MCP session clears the names. Order: a one-day spike on a newer yaegi; else our own symbols for `math`'s untyped constants, errors rewritten in `pkg/script/engine.go` ("write 2 * math.Pi or float64(math.Pi)"), and what stays in the primer's "What the interpreter can't do". A test case per failing form in `engine_test.go` | not started |
+| 23.6 small ones | `fmt.Println(g.Bounds())` fails plainly only in Go's words; a `Radius` constraint reads `c085-diameter = 6` with value 6 the radius (name and value disagree); a two-sided extrusion from scripts (`Doc.Extrude` goes one way only, the group has the subtype); `doc.RunCommand("File > New")` on unsaved changes returned nil and discarded them as far as a script could see (check it goes through `OkayToStartNewFile`); the refusal of a fillet where a flat band meets a cone could say the edge is a flat face meeting a cone off its axis; a line in the guide that a group's volume changes when later groups make the model larger, the chord tolerance being a share of the model's size | not started |
+
+### Step 24: Booleans on curved surfaces (~6 wk), branch `step-24-kernel-robustness`
+
+Begins with a two-day spike on the hardest fixture, to learn whether these share a cause (seams
+and poles in the intersector and in trim splitting). The failure counts to reach are fixed
+before the work starts.
+
+| Package | From | Content | State |
+|---|---|---|---|
+| 24.1 cylinder through cylinder, sphere cap | step 5, 13.2 | 2 of 54 in the guard: differences where the crossed cylinder's seam pierces the wall beside a full-height strip triangle. 1 of 135: a sphere cap too small, its triangles lie flat in the face's plane | not started |
+| 24.2 cylinders, cones through their apex, tori, spheres' poles | 21.3 | 10 of 28 cuts of the analytic STEP set fail on these, whatever made the solid (`solidBooleanMaxFail`); the same limits as 24.1 | not started |
+| 24.3 lathe seams and pole discs | MCP notes | A union fails where an extruded band's arcs cross a lathed cone at a shallow angle, over the lathe's seam (a line 0.76 or 1.0 mm inside a 3 mm wall, arcs of 6 to 8 mm; the angle alone doesn't separate failing from working); `Problem()` was "" though the Boolean failed. A cut whose end cap lies in a lathed end face's plane (a disc of four patches with a pole) leaves naked edges: a bore along a lathed spout's axis ending at its tip, 32 naked edges, not flagged; 3 mm past the tip is sound, and the same with a swept spout was sound. Both must also set `Problem()` | not started |
+| 24.4 twisted ruled faces mesh with rows, no columns | 13.1, step 20 | A triangle loft turned a third of a turn meshes within 2% (`TestLoftSweep`), a twisted sweep's flat sides within about 2%; the surfaces are right. Refinement by sag alone made the loft sweep 7 times slower; the benchmark gates the fix | not started |
+| 24.5 hover in perspective views | 14.4 | Scans the mesh; orthographic views use the grid | not started |
+
+Tangent and coincident contact in general (F5, 13.4) stays under "Left out"; a cut along a
+patch's own edge is the case 21.3's cutters avoid.
+
+### Steps 25 and 26: the rest of step 22, general fillets, branch `step-22-general-fillets`
 
 The rolling-ball blend between two faces of any kind: its spine is where the two faces'
 offsets by the radius (22.1) meet, marched as the intersector marches; each cross section is a
 circular arc between the contact points; the blend is fitted through those arcs by step 20's
 fitting, and the two faces are cut along the contact curves (step 21's trimming, since the
 faces are often of several patches). Fillets between planes, cylinders and cones stay on
-step 10's exact construction.
+step 10's exact construction. Step 25 is 22.2; step 26 is 22.3 to 22.5, on the same branch or,
+once 22.2 is merged, a new one.
 
-| Package | Content | Effort | State |
+| Step | Package | Content | Effort | State |
+|---|---|---|---|---|
+| 25 | 22.2 one edge, two curved faces | The blend along one smooth chain between two faces of any kind, ending where the chain meets a flat face; the faces cut back along the contact curves. Covers a cylinder meeting a cylinder at an angle, spheres, tori, B-spline faces, a chamfer's cone meeting the cylinder it was cut from. The teapot's spout (a cylinder meeting a cone at 48 degrees) and handle are ready tests | 6 wk, less the coaxial case done | coaxial case done (`ddf8144`) |
+| 26 | 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | not started |
+| 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | not started |
+| 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | not started |
+
+### Step 27: STEP (~5 wk), branch `step-27-step`
+
+| Package | From | Content | Effort | State |
+|---|---|---|---|---|
+| 27.1 export: knots removed, one surface per face | 21.5, step 11 | Knots removed where patches join smoothly, faces whose patches make no grid as one surface. The export reads back exact as it is; OpenCASCADE's volume of a face written at full multiplicity is off by up to 0.3% | 1.5 wk | not started |
+| 27.2 degree above 5 | 21.2, step 11 | Surfaces and curves of degree above 5 are refused, so the file links as a mesh; needs degree reduction or approximation | ~1 wk | not started |
+| 27.3 one face's edge along another face's seam | 21.3 | NIST_MBE_PMI_5 and _6 fail to close for it and link as meshes | ~0.5 wk | not started |
+| 27.4 edges further from their faces than the file's tolerance | 21.3 | Schenkel and the OpenCASCADE screw leave mesh gaps or crossings and link as meshes; 5 of the 9 vendor files read as sound solids | ~1 wk | not started |
+| 27.5 offset surfaces and conics as solids | 21.2 | Offset surfaces (by 22.1) and parabolas, hyperbolas are refused; the file links as a mesh | ~1 wk | not started |
+
+### Step 28: solid features (~5 wk), branch `step-28-solid-features`
+
+| Package | From | Content | State |
 |---|---|---|---|
-| 22.2 one edge, two curved faces | The blend along one smooth chain between two faces of any kind, ending where the chain meets a flat face; the faces cut back along the contact curves. Covers a cylinder meeting a cylinder at an angle, spheres, tori, B-spline faces, a chamfer's cone meeting the cylinder it was cut from | 6 wk, less the coaxial case done | coaxial case done |
-| 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | not started |
-| 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | not started |
-| 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | not started |
+| 28.1 chamfers of two distances | step 7, 15.1 | The edit's corners need their setback on each face apart | not started |
+| 28.2 drafts of chosen faces, about another plane, of an arc meeting a line at a corner | 15.4 | Only an extrusion's sides, about the sketch's plane, arcs tangent to their neighbours | not started |
+| 28.3 smooth lofts: tangency set at the end profiles, guide curves | step 20 | not done | not started |
+| 28.4 sweeps along a chain of the solid's edges (step 9's names), and paths with corners | 20.5, step 7 | A corner is a diagnostic today | not started |
+| 28.5 pattern along a closed path | 15.6 | refused | not started |
 
-The teapot's spout (a cylinder meeting a cone at 48 degrees) and handle are ready tests for
-22.2's general case.
+Shells of other curved solids (step 10, 15.2: prisms only; filleted, lofted and revolved solids
+are refused) stay with E12 under "Left out"; 22.1's offsets are the first part.
 
-### Kernel
+### Step 29: drawings and small features (~3 wk), branch `step-29-drawings`
 
-| Item | From | Effort | State |
+| Package | From | Content | State |
 |---|---|---|---|
-| Cylinder through cylinder | step 5, 13.2 | not sized | 2 of 54 in the guard: differences where the crossed cylinder's seam pierces the wall beside a full-height strip triangle |
-| A sphere cap too small | step 5, 13.2 | not sized | 1 of 135 in the guard: its triangles lie flat in the face's plane |
-| Twisted ruled faces mesh with rows, no columns | 13.1, step 20 | not sized | A triangle loft turned a third of a turn meshes within 2% (`TestLoftSweep`), a twisted sweep's flat sides within about 2%; the surfaces are right. Refinement by sag alone made the loft sweep 7 times slower |
-| Booleans on cylinders, cones through their apex, tori, spheres' poles | 21.3 | not sized | 10 of 28 cuts of the analytic STEP set fail on these, whatever made the solid (`solidBooleanMaxFail`); the same limits as the two guards above |
-| Tangent and coincident contact in general | F5, 13.4 | | under "Left out"; a cut along a patch's own edge is the case 21.3's cutters avoid |
-| Hover in perspective views | 14.4 | not sized | Scans the mesh; orthographic views use the grid |
-
-### Solid features
-
-| Item | From | Effort | State |
-|---|---|---|---|
-| Chamfers of two distances | step 7, 15.1 | not sized | The edit's corners would need their setback on each face apart |
-| Drafts of chosen faces, about another plane, of an arc meeting a line at a corner | 15.4 | not sized | Only an extrusion's sides, about the sketch's plane, arcs tangent to their neighbours |
-| Shells of other curved solids | step 10, 15.2 | | Prisms only; filleted, lofted and revolved solids are refused. With E12 under "Left out"; 22.1's offsets are the first part |
-| Smooth lofts: tangency set at the end profiles, guide curves | step 20 | not sized | not done |
-| Sweeps along a chain of the solid's edges (step 9's names), and paths with corners | 20.5, step 7 | not sized | not done; a corner is a diagnostic |
-| Pattern along a closed path | 15.6 | not sized | refused |
-
-### STEP
-
-| Item | From | Effort | State |
-|---|---|---|---|
-| Export: knots removed where patches join smoothly, faces whose patches make no grid as one surface | 21.5, step 11 | 1.5 wk | not done; the export reads back exact as it is. OpenCASCADE's volume of a face written at full multiplicity is off by up to 0.3% |
-| Surfaces and curves of degree above 5 | 21.2, step 11 | not sized | refused, so the file links as a mesh; needs degree reduction or approximation |
-| One face's edge along another face's seam | 21.3 | not sized | NIST_MBE_PMI_5 and _6 fail to close for it and link as meshes |
-| Edges further from their faces than the file's tolerance | 21.3 | not sized | Schenkel and the OpenCASCADE screw leave mesh gaps or crossings and link as meshes; 5 of the 9 vendor files read as sound solids |
-| Offset surfaces and conics (parabola, hyperbola) as solids | 21.2 | not sized | refused; the file links as a mesh |
-
-### Drawings and small features
-
-| Item | From | Effort | State |
-|---|---|---|---|
-| The drawing sheet shown in the window | 18.1 | not sized | written to files only |
-| Associative dimensions on section, detail and isometric views, and of faces | 18.4 | not sized | edges only, on the orthographic views |
-| Nested links in the bill of materials | 16.7 | not sized | a link inside a linked file is not counted |
-| Auto-constrain while drawing arcs and other entities | 16.11 | not sized | lines only |
-
-### Scripting and the MCP server
-
-From two notes of 2026-10-03, written while drawing a teapot through the MCP server. None was
-checked again since, but the first, which step 20's example scripts met again. Suggested order:
-the silent no-solid first, then the rollback and the active group after a delete, then the
-render fit, then the interpreter, then the kernel's two.
-
-| Item | Effort | State |
-|---|---|---|
-| A float literal beside a library constant fails: `2.0 * math.Pi`, `math.Pi + 0.5` give "mismatched types untyped float and untyped float64"; `math.Pi / 180.0`, `12 * math.Pi`, a variable and `float64(math.Pi)` work | not sized | Read from the error, not traced: yaegi v0.16.1's stdlib tables make `math`'s constants "untyped float64". Ways to weigh: a newer yaegi; our own symbols for `math`'s untyped constants; else rewrite the error in `pkg/script/engine.go` ("write 2 * math.Pi or float64(math.Pi)") and say it in the primer's "What the interpreter can't do". Tests: a case per failing form in `engine_test.go` |
-| `eval` of code that starts with `const` or `var` and goes on with a statement fails to parse ("expected declaration") | not sized | Taken for a program's top level; check `run_script` too |
-| A sketch that crosses itself makes no solid and nothing says so | not sized | The status, `get_drawing`, `Group.Problem()` and `Check().Sound()` (true, with no faces) all say well; only `PolyError` knows. Wanted: a sketch's `PolyError` (open, not coplanar, crossing, zero length) with its point in `Problem()`, `get_drawing` and the status; a solid group whose source has one says why it made no solid; `Sound()` false for a solid group with no solid |
-| A failed script that called `TangentArc` is not all taken back | not sized | The arc and its trimmed lines stayed though the message said everything was taken back; guess: `TangentArc` pushes an undo step of its own inside the script |
-| Deleting the active group puts later new groups after the first sketch; `MoveToEnd` moved an extrusion but not its two sketch groups, silently | not sized | Wanted: the last remaining group active after such a delete, or the script told which; `MoveToEnd` moves or says why not |
-| `render` with no view (isometric) or "front" doesn't fit the model: zoomed in and pushed down, at every picture size | not sized | "window" after Zoom To Fit is right. Entry: `Doc.Render`, `pkg/script/api/doc.go` |
-| yaegi: `a, b, c := s[0], s[1], s[2]` fails as "constant definition loop" | not sized | One per line works; the smallest failing form not found. Mend, or put it in the primer |
-| yaegi: names kept between `run_script` calls collide with a block's `:=` of another type (panic in `reflect.Set`), and `p, q := e.Ends()` in a loop left `p` undefined | not sized | Wanted: a block's `:=` shadows as in Go; the primer says whether a new file or MCP session clears the names |
-| A union fails where an extruded band's arcs cross a lathed cone at a shallow angle, over the lathe's seam | not sized | A line 0.76 or 1.0 mm inside a 3 mm wall, arcs of 6 to 8 mm; the angle alone doesn't separate failing from working. `Problem()` was "" though the Boolean failed |
-| A cut whose end cap lies in a lathed end face's plane (a disc of four patches with a pole) leaves naked edges | not sized | A bore along a lathed spout's axis ending at its tip: 32 naked edges, not flagged; 3 mm past the tip is sound, and the same with a swept spout was sound |
-| A fillet where a flat band meets a cone is refused unhelpfully | in 22.2 | The refusal could say that the edge is a flat face meeting a cone off its axis |
-| Texts: `fmt.Println(g.Bounds())` fails plainly only in Go's words; a `Radius` constraint reads `c085-diameter = 6` with value 6 the radius | not sized | The constraint's name and value disagree |
-| A two-sided extrusion from scripts | not sized | The group has the subtype; `Doc.Extrude` goes one way only |
-| `render` "window" right after Align View to Workplane catches the view mid-animation | not sized | Wait for the animation or finish it |
-| `doc.RunCommand("File > New")` on unsaved changes returned nil and discarded them, as far as a script could see | not sized | Check a script or the MCP server can't drop unsaved work without the question (`OkayToStartNewFile`) |
-| A group's volume changes when later groups make the model larger | | Expected, the chord tolerance being a share of the model's size; worth a line in the guide |
+| 29.1 the drawing sheet shown in the window | 18.1 | written to files only | not started |
+| 29.2 associative dimensions on section, detail and isometric views, and of faces | 18.4 | edges only, on the orthographic views | not started |
+| 29.3 nested links in the bill of materials | 16.7 | a link inside a linked file is not counted | not started |
+| 29.4 auto-constrain while drawing arcs and other entities | 16.11 | lines only | not started |
 
 ## Definition of done for every new feature
 
