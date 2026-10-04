@@ -47,7 +47,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
 | 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | `c4137f3` |
 | 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
-| 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | MERGE |
+| 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
