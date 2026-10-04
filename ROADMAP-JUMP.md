@@ -54,7 +54,7 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 25 (rest), 26 (part) | Rolling-ball fillets ending on flat faces, chamfers between curved faces, fillets on lofts, sweeps and STEP solids 32 to 40 of 59, run-offs refused at the point | `add3da7` |
 | Leftovers | Schenkel's naked edges (40 to 0), one of NIST_MBE_PMI_6's poles meshed clean | `ed03d3b` |
 | 26 (more) | Fillet corners of different radii and convex meeting concave, in stages; fillet volumes checked against OpenCASCADE | `07afe66` |
-| 26 (setback) | Setback corner patches where three or more fillets meet: rings larger than the uprights, three radii, four edges at an apex | MERGE |
+| 26 (setback) | Setback corner patches where three or more fillets meet: rings larger than the uprights, three radii, four edges at an apex | `e51869a` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
