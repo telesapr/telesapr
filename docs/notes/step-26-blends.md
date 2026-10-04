@@ -74,9 +74,35 @@ the loft's seams between its patches are tangent (no fillet there, but
 they are listed as edges); the lid's corners where the edge's end face is
 curved (step 10's corners, 22.4); one box_hole edge's seam.
 
+## 22.3 blends that run off a face
+
+Refusal with the place is in: an open fillet's end whose foot lies past
+the far end of its side's edge with the end face ("runs off the face on
+side k here, past the end of its edge", `alongFrom` = 1;
+`TestChamferRunsOffBand`), and a closed or open ball that stops touching a
+face mid-edge ("the ball the fillet rolls doesn't touch the face"). The
+blend going on onto the next face is not built: the ball then rolls
+between three faces for a while, which is 22.4's corner patch in all
+but name.
+
+## Tried and taken back
+
+- Open chains ending at a curved face: the end section as the conic
+  through the roots on the face's surface, accepted only within half the
+  chord tolerance of it. No measured case gained (the loft's corners: the
+  ball runs off the extrapolated B-spline faces; the band's top would
+  stand out of a curved end face, which planeCut can't follow off a
+  plane), so it was not kept.
+- More refinement rounds for the STEP cylinder at chord 0.002%: the misfit
+  floors at 2.6e-5 whatever the rounds; not found why.
+
 ## Next
 
-- 22.3: runs off a face (as the chamfer r 2 above, past the band's top).
-- 22.4 vertex blends.
-- 22.5: comparison against OpenCASCADE's fillets on the same solids
-  (volumes); ends of open chains at curved faces.
+- 22.3: the blend going on onto the next face (three faces at once).
+- 22.4: vertex blends (setback corner patches); also the loft's foot
+  corners and the lid's corners of 22.5's measurement.
+- 22.5: OpenCASCADE volumes on the measured solids; box_hole.step's one
+  edge whose ball skips a face cut from a shared patch between two scan
+  samples' faces (faces 7, 9, 8 round the hole).
+- The band on cone, fillet r 1 at chord 0.001%: 2 mesh edges cross where
+  the fillet meets the cone tangentially (fine elsewhere).
