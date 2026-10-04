@@ -210,6 +210,7 @@ group <handle> <type> <name> {
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
+  second-distance = <expression>  # chamfer: the distance on each edge's second face (the one of the higher identity), a length; left out for the same as distance (the field val-c under another name)
   draft = <expression>      # extrude: the sides' lean into the solid, in degrees (the field val-c, unused by other groups)
   twist = <expression>      # sweep: the profile's turn about the path over its whole length, in degrees (the field val-c)
   sweep-up <x> <y> <z>      # sweep: the direction its frames are held to, rather than turning least; left out when none
@@ -550,6 +551,9 @@ before skips it with a report, and mirrors the source group alone.
 Version 2's `solid-edge` gained `of <m>`, the count of edges between its faces, on 2026-10-03
 (roadmap 14.2). A reader from before refuses such a line; a reader since reads lines without
 it as before.
+
+Version 2 gained the chamfer field `second-distance` on 2026-10-04 (roadmap 28.1). A reader
+from before skips it with a report, and cuts at `distance` on both faces.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

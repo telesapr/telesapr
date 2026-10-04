@@ -157,6 +157,15 @@ func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")
 }
 
+// A chamfer given a second distance and swapped on its screen, and by
+// a script (roadmap 28.1).
+func TestPathEquivalenceChamferTwo(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_chamfer_two", "path_chamfer_two")
+	if g := ui.GetGroup(ui.Active); g.ValB != 2 || g.ValC != 1 {
+		t.Errorf("the chamfer's distances are %g and %g, want 2 and 1", g.ValB, g.ValC)
+	}
+}
+
 // A STEP file linked from the menu, and by a script.
 func TestPathEquivalenceLinkStep(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_link_step", "path_link_step")

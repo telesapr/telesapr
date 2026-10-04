@@ -584,6 +584,52 @@ func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
+// ScreenChangeChamferDistance2 edits a chamfer's second distance, on
+// each edge's second face (roadmap 28.1).
+func (tw *TextWindow) ScreenChangeChamferDistance2(link int, v uint32) {
+	g := tw.ss.SK.GetGroup(tw.shown.group)
+	text := g.ExprC
+	if text == "" {
+		d := g.ValC
+		if d == 0 {
+			d = g.ValB
+		}
+		text = sprintf("%.8f", d/tw.ss.MmPerUnit())
+	}
+	tw.ShowEditControl(3, text)
+	tw.edit.meaning = EditChamferDistance2
+	tw.edit.group = core.HGroup{V: v}
+}
+
+// ScreenSwapChamferDistances swaps a chamfer's two distances, which
+// chamfers each edge the other way round.
+func (tw *TextWindow) ScreenSwapChamferDistances(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.GetGroup(core.HGroup{V: v})
+	if g == nil || g.Type != sketch.GroupChamfer || g.ValC == 0 && g.ExprC == "" {
+		return
+	}
+	ss.UndoRemember()
+	g.ValB, g.ValC = g.ValC, g.ValB
+	g.ExprB, g.ExprC = g.ExprC, g.ExprB
+	ss.SK.MarkGroupDirty(g.H, false)
+	ss.GW.ClearSuper()
+}
+
+// ScreenSameChamferDistances makes a chamfer's second distance its first
+// again.
+func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.GetGroup(core.HGroup{V: v})
+	if g == nil || g.Type != sketch.GroupChamfer {
+		return
+	}
+	ss.UndoRemember()
+	g.ValC, g.ExprC = 0, ""
+	ss.SK.MarkGroupDirty(g.H, false)
+	ss.GW.ClearSuper()
+}
+
 // ScreenChangePitchOption fixes or frees a helix's pitch (C++
 // TextWindow::ScreenChangePitchOption).
 func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
@@ -783,6 +829,14 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(true, " %Ftchamfer edges of the solid%E")
 		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
 			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+		if g.ValC == 0 && g.ExprC == "" {
+			tw.Printf(false, "%Bd   %Ftsecond distance%E the same %Fl%Ll%f%D[change]%E",
+				lf(tw.ScreenChangeChamferDistance2), g.H.V)
+		} else {
+			tw.Printf(false, "%Bd   %Ftsecond distance%E %s%s %Fl%Ll%f%D[change]%E %Fl%Ll%f%D[swap]%E %Fl%Ll%f%D[same]%E",
+				ss.MmToString(g.ValC, false), exprNote(g.ExprC), lf(tw.ScreenChangeChamferDistance2), g.H.V,
+				lf(tw.ScreenSwapChamferDistances), g.H.V, lf(tw.ScreenSameChamferDistances), g.H.V)
+		}
 		tw.showGroupEdges(g, "edges")
 	case sketch.GroupLoft:
 		if len(g.LoftThrough) == 0 {
@@ -1518,7 +1572,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
 		}
 
-	case EditGroupDraft:
+	case EditGroupDraft, EditChamferDistance2:
 		if e := ss.exprFromString(s, true); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupValC, s)
 		}

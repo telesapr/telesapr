@@ -301,7 +301,11 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	}
 	n.expr(g.FieldName(sketch.GroupCopies), g.ValA, g.ExprA)
 	n.expr(g.FieldName(sketch.GroupPitch), g.ValB/mmPer, g.ExprB)
-	n.expr(g.FieldName(sketch.GroupValC), g.ValC, g.ExprC)
+	valC := g.ValC
+	if g.IsLength(sketch.GroupValC) {
+		valC /= mmPer
+	}
+	n.expr(g.FieldName(sketch.GroupValC), valC, g.ExprC)
 	n.color("color", g.Color)
 	n.flag("skip-first", g.SkipFirst)
 	n.flag("mirror-solid", g.MirrorSolid)

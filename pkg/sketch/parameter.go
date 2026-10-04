@@ -105,6 +105,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupValC && g.Type == GroupExtrude {
 		return "draft"
 	}
+	if f == GroupValC && g.Type == GroupChamfer {
+		return "second-distance"
+	}
 	if f == GroupCopies && g.Type == GroupLoft {
 		return "turn"
 	}
@@ -114,9 +117,11 @@ func (g *Group) FieldName(f GroupValue) string {
 	return f.Field()
 }
 
-// isLength reports whether the value is a length, which the
-// interface shows in its unit.
-func (f GroupValue) isLength() bool { return f == GroupPitch }
+// IsLength reports whether the group's value f is a length, which the
+// interface shows in its unit: a helix's pitch, a chamfer's distances.
+func (g *Group) IsLength(f GroupValue) bool {
+	return f == GroupPitch || f == GroupValC && g.Type == GroupChamfer
+}
 
 // Value returns the field's number and its expression, both
 // addressable.
@@ -253,6 +258,9 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 	case GroupValC:
 		if g.Type == GroupExtrude && math.Abs(v) >= 90 {
 			return fmt.Errorf("a draft is between -90 and 90 degrees, not %g", v)
+		}
+		if g.Type == GroupChamfer && v < 0 {
+			return errors.New("a chamfer's second distance must be more than zero, or zero for the first again")
 		}
 	case GroupPitch:
 		if g.Type == GroupChamfer && v <= 0 {
@@ -541,7 +549,7 @@ func (sk *Sketch) evaluate() []core.HGroup {
 			}
 			v, err := eval(*expr)
 			if err == nil {
-				if f.isLength() {
+				if g.IsLength(f) {
 					v *= sk.Units.MmPer()
 				}
 				err = checkGroupValue(g, f, v)
@@ -862,7 +870,7 @@ func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error 
 	}
 	val, expr := g.Value(f)
 	if v, plain := plainNumber(text, names); plain {
-		if f.isLength() {
+		if g.IsLength(f) {
 			v *= sk.Units.MmPer()
 		}
 		if err := checkGroupValue(g, f, v); err != nil {
@@ -938,7 +946,7 @@ func (sk *Sketch) SetUnits(u core.Unit) []string {
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
 		for _, f := range groupValues {
-			if f.isLength() {
+			if g.IsLength(f) {
 				_, expr := g.Value(f)
 				convert(expr)
 			}

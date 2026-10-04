@@ -458,6 +458,9 @@ func (d *decoder) lengths() {
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
 		length(&g.ValB, &g.ExprB)
+		if g.IsLength(sketch.GroupValC) {
+			length(&g.ValC, &g.ExprC)
+		}
 		for k := range g.EdgeRadii {
 			length(&g.EdgeRadii[k].Val, &g.EdgeRadii[k].Expr)
 		}
@@ -586,7 +589,7 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "pitch", "distance", "radius", "thickness":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "val-c", "draft", "twist":
+		case "val-c", "draft", "twist", "second-distance":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "color":
 			g.Color = d.colorField(c)

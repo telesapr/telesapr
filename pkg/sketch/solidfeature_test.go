@@ -167,6 +167,19 @@ func TestSolidGoldens(t *testing.T) {
 			// Where the notch's side meets the top: no entity draws it.
 			d.ChamferSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 2, 10))}, 1, "")
 		},
+		"chamfer-two-distances": func(d *api.Doc) {
+			ex := block(d, 0, 0, 10, 10, 5)
+			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
+			c.SetSecondDistance(2)
+		},
+		"chamfer-two-distances-corner": func(d *api.Doc) {
+			ex := block(d, 0, 0, 10, 10, 10)
+			c := d.Chamfer([]api.Entity{
+				lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10)),
+				lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
+			}, 1, "")
+			c.SetSecondDistance(2)
+		},
 		"chamfer-of-chamfer": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 10)
 			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 2, "")

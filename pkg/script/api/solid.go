@@ -181,6 +181,52 @@ func (g Group) SetDistance(mm float64) {
 	})
 }
 
+// SecondDistance is a chamfer's distance in mm on each edge's second
+// face, or 0 when it is the first distance on both faces. An edge's
+// first face is the one of the lower identity (SolidFace.ID), the one
+// its name gives first.
+func (g Group) SecondDistance() (mm float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupChamfer, "SecondDistance")
+		mm = group.ValC
+	})
+	return mm
+}
+
+// SetSecondDistance makes a chamfer of two distances: Distance on each
+// edge's first face and mm on the second; 0 makes it a chamfer of one
+// distance again. SetExpr with sketch.GroupValC gives it an expression
+// in the document's unit. A chamfer of two distances can't have edges
+// that meet at a corner it cuts by its local edit; there it cuts each
+// straight edge by a wedge instead, and a circular edge not at all.
+func (g Group) SetSecondDistance(mm float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupChamfer, "SetSecondDistance")
+		if mm < 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
+			fail("a chamfer's second distance must be more than zero, or zero for the first again, not %g", mm)
+		}
+		group.ValC, group.ExprC = mm, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
+// SwapDistances swaps a chamfer's two distances, which chamfers each
+// edge the other way round. It fails for a chamfer of one distance.
+func (g Group) SwapDistances() {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupChamfer, "SwapDistances")
+		if group.ValC == 0 && group.ExprC == "" {
+			fail("%s has one distance; SetSecondDistance gives it a second", groupDescription(group))
+		}
+		group.ValB, group.ValC = group.ValC, group.ValB
+		group.ExprB, group.ExprC = group.ExprC, group.ExprB
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // Sweep moves the closed loops of the active group, a sketch in a
 // workplane, along path, line segments, arcs and cubics joined end to
 // end and meeting tangent, as a pipe follows its bends. The sweep
