@@ -52,7 +52,7 @@ const (
 	// GroupLoft joins the closed loops of two sketches in workplanes,
 	// OpA and OpB, by ruled patches, the second turned by ValA curves;
 	// or, through the sketches LoftThrough between them, by one smooth
-	// surface.
+	// surface, held to the guide curves Edges if it has any.
 	GroupLoft
 	// GroupShell hollows the solid so far to walls ValB thick, open
 	// where its faces SolidFaces are taken away.
@@ -219,8 +219,9 @@ type Group struct {
 	Appearance      string
 	FaceAppearances []FaceAppearance
 
-	// Edges are the entities a chamfer cuts, or the path a sweep
-	// follows, in the order the user gave them.
+	// Edges are the entities a chamfer cuts, the path a sweep
+	// follows, or a loft's guide curves, in the order the user gave
+	// them.
 	Edges []core.HEntity
 	// SolidEdges are the edges of the solid a chamfer cuts, by name:
 	// any edge of the solid so far, as the topology names it.

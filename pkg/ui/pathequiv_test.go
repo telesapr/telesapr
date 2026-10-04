@@ -188,6 +188,15 @@ func TestPathEquivalenceLoftTangency(t *testing.T) {
 	}
 }
 
+// A loft's guide picked with the mouse and set by New Group > Guide
+// Loft by Selected Curves, and by a script (roadmap 28.3).
+func TestPathEquivalenceLoftGuides(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_guides", "path_loft_guides")
+	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupLoft || len(g.Edges) != 1 || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, guides %v, problem %q", g.Type, g.Edges, g.Problem.Msg)
+	}
+}
+
 // Two edges picked with the mouse and chamfered, and by a script.
 func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")

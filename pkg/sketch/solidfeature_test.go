@@ -212,6 +212,19 @@ func TestSolidGoldens(t *testing.T) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 			d.Regen()
 		},
+		"loft-guides": func(d *api.Doc) {
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
+			bottom := d.SketchIn(d.Workplane("XY"), "bottom")
+			d.Circle(api.V(0, 0, 0), 5)
+			d.Sketch3D("guides")
+			a := d.Cubic(api.V(5, 0, 0), api.V(9, 0, 4), api.V(9, 0, 8), api.V(5, 0, 12))
+			b := d.Cubic(api.V(-5, 0, 0), api.V(-6, 0, 4), api.V(-6, 0, 8), api.V(-5, 0, 12))
+			top := d.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "top")
+			d.Circle(api.V(0, 0, 12), 5)
+			d.Loft(bottom, top, "").SetGuides([]api.Entity{a, b})
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Regen()
+		},
 		"pattern-ring": func(d *api.Doc) {
 			d.SketchIn(d.Workplane("XY"), "ring")
 			ring := d.Circle(api.V(0, 0, 0), 20)
@@ -658,6 +671,21 @@ func BenchmarkSweepCorners(b *testing.B) {
 		d.SketchIn(d.Workplane("XY"), "profile")
 		d.Circle(api.V(0, 0, 0), 1)
 		d.Sweep(path, "")
+	})
+}
+
+// A circle lofted to a circle held to two guides that widen it: the
+// loft's sections moved and scaled, then skinned (roadmap 28.3).
+func BenchmarkLoftGuides(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		bottom := d.SketchIn(d.Workplane("XY"), "")
+		d.Circle(api.V(0, 0, 0), 5)
+		d.Sketch3D("")
+		g1 := d.Cubic(api.V(5, 0, 0), api.V(9, 0, 4), api.V(9, 0, 8), api.V(5, 0, 12))
+		g2 := d.Cubic(api.V(-5, 0, 0), api.V(-6, 0, 4), api.V(-6, 0, 8), api.V(-5, 0, 12))
+		top := d.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Circle(api.V(0, 0, 12), 5)
+		d.Loft(bottom, top, "").SetGuides([]api.Entity{g1, g2})
 	})
 }
 
