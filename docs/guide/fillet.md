@@ -66,15 +66,20 @@ a band's side on a cone ends at the base and at the band's end. There the fillet
 face's plane, in the curve where that plane cuts the surface the ball sweeps, and the flat face
 takes that curve as its edge; where one of the faces goes on past the flat face's plane (the cone
 above the band's end), the flat face grows by the fillet's section up to where the plane cuts that
-face. Where the ball can't touch both faces (the radius too large for the room beside a hole), or
-the fillet's end runs off a face past the end of its edge with the flat face, the fillet is refused
-at the place. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
+face. Where the fillet's end runs off one face past the end of its edge with the flat face, as a
+wide chamfer of the band's side does past the band's top, and the face it runs onto is flat, the
+fillet goes on to that face: its plane cuts the fillet too, and both the end face and that face
+grow by the fillet's end. Where the ball can't touch both faces (the radius too large for the
+room beside a hole), where the fillet's end runs off onto a curved face or off both faces, or
+where a fillet that takes material away runs off onto the next face, the fillet is refused at the
+place. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
 [`examples/scripts/bandfillet`](../../examples/scripts/bandfillet/bandfillet.go).
 
 ## Not yet
 
 Fillets between curved faces along an edge that ends at a curved face, corners where convex
 meets concave at a vertex that the stages can't round, setback corners of chamfers, and a
-blend that runs off its face onto the next one are refused with a message; they are the rest
+blend that runs off its face onto a curved face, or that takes material away and runs off onto
+the next face, are refused with a message; they are the rest
 of roadmap 22. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
 saying so (15.7).

@@ -1079,11 +1079,41 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 				return err
 			}
 			for i := 0; i < 2; i++ {
-				if cut.goes[i] == nil {
+				if cut.goes[i] == nil && (cut.off == nil || cut.off.j != i) {
 					drop = append(drop, pair{cut.q[i], t.Vertices[end.v].P})
 				}
 			}
+			if ro := cut.off; ro != nil {
+				if err := rb.runOffCuts(sh, row, k, end, ro); err != nil {
+					return err
+				}
+				w := t.Vertices[ro.w].P
+				drop = append(drop, pair{t.Vertices[end.v].P, w}, pair{w, ro.p2})
+			}
 			endCuts = append(endCuts, cut)
+		}
+	}
+	// The fillet's patches an end that runs off cuts, as loops, and the
+	// curves across them in the next face's plane.
+	loops := map[int][]srf.SBezier{}
+	var across [2][]srf.SBezier
+	for k, cut := range endCuts {
+		ro := cut.off
+		if ro == nil {
+			continue
+		}
+		for b := ro.first; b < ro.after; b++ {
+			if _, ok := loops[b]; ok {
+				return filletErr(at, "the fillet runs off faces at both its ends: make it smaller")
+			}
+			l, a, err := clipPatch(&row[b], ro, math.Max(srf.ChordTolMm()/10, 1e-6))
+			if err != nil {
+				return err
+			}
+			snapEnds(l, ro.p1At, ro.p1)
+			snapEnds(a, ro.p1At, ro.p1)
+			loops[b] = l
+			across[k] = append(across[k], a...)
 		}
 	}
 
@@ -1091,10 +1121,6 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	color := t.Surface(rb.side[0][0]).Color
 	nextH := newCurveHandle(sh)
 	for k := 0; k < 2; k++ {
-		ui := 3
-		if k == 1 {
-			ui = 1
-		}
 		pieces := map[int][]int{}
 		for b := 0; b < m; b++ {
 			sec, err := rb.section((secs[b].s + secs[b+1].s) / 2)
@@ -1129,7 +1155,10 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 				return filletErr(at, "a face the fillet touches is not along the edge")
 			}
 			for _, b := range pieces[f] {
-				sb := row[b].EdgeCurve(ui)
+				sb, ok := rb.contactPiece(row, endCuts, k, b)
+				if !ok {
+					continue
+				}
 				var pts []geom.Vector
 				sb.MakePwlIntoPoints(&pts, 0, 0)
 				pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
@@ -1149,7 +1178,29 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			forget(s)
 		}
 	}
-	for _, cut := range endCuts {
+	for k, cut := range endCuts {
+		if ro := cut.off; ro != nil {
+			// The end section's part under the next face's plane, from side
+			// 1-j's cut to p1.
+			endP, endSide := 0, 0
+			if k == 1 {
+				endP, endSide = m-1, 2
+			}
+			sec := row[endP].EdgeCurve(endSide)
+			tp := bezierRoot(&sec, ro.h, 0, 1)
+			var part srf.SBezier
+			if ro.j == 1 {
+				part = sec.Sub(0, tp)
+				part.Ctrl[0], part.Ctrl[part.Degree] = sec.Start(), ro.p1
+			} else {
+				part = sec.Sub(tp, 1)
+				part.Ctrl[0], part.Ctrl[part.Degree] = ro.p1, sec.Finish()
+			}
+			if err := rb.closeRunOff(sh, cut, part, across[k], &nextH); err != nil {
+				return err
+			}
+			continue
+		}
 		if err := rb.closeEnd(sh, cut, &nextH); err != nil {
 			return err
 		}
@@ -1160,14 +1211,18 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	fa := NewFaceAdder(sh)
 	for b := 0; b < m; b++ {
 		p := row[b]
-		e0, e1, e2, e3 := p.EdgeCurve(0), p.EdgeCurve(1), p.EdgeCurve(2), p.EdgeCurve(3)
-		e2.Reverse()
-		e3.Reverse()
+		loop := patchLoop(&p)
+		if l, ok := loops[b]; ok {
+			if len(l) == 0 {
+				continue
+			}
+			loop = l
+		}
 		p.Color = color
 		p.Origin = origin
 		p.Sheet = origin
-		if _, err := fa.Add(p, [][]srf.SBezier{{e0, e1, e2, e3}}); err != nil {
-			return filletErr(e0.Start(), "the fillet's face can't be put in: %v", err)
+		if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
+			return filletErr(loop[0].Start(), "the fillet's face can't be put in: %v", err)
 		}
 	}
 	t2, err := Build(sh)

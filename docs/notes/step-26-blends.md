@@ -228,9 +228,69 @@ naming the radii: the blend needs a crease); radii 5-6:1 side by side
 fillets, might do); chamfers (no setback); convex meeting concave at one
 vertex beyond what the stages round.
 
+## 22.3 run-offs onto a flat next face (fourth agent, in part)
+
+Code: `pkg/topo/rollingrunoff.go`; `cutEnd` records the run-off
+(`rbEndCut.off`) instead of refusing, `rollingBallFillet` cuts and
+closes it.
+
+- Where an open end's foot on side j lies past the far end w of that
+  side's edge with the end face, the face n at w (the third there, which
+  must be flat and meet both side j's face and the end face) cuts the
+  fillet too (`runOffAt`). The fillet is fitted as before (the side's
+  surface carried on past n); p1 is where n's plane cuts the end
+  section, p2 where it cuts side j's contact curve, searched in from the
+  end patch by patch (`runOffCuts`).
+- Only a fillet that fills a corner is made: there p1 lies on past w
+  along the line the end face and n meet on, so both grow, sharing the
+  line p1-w; n's edge with side j's face is split at p2 and its piece
+  from w goes, as does side j's edge with the end face. A fillet that
+  takes material away (p1 on the end face's edge with n) is refused: no
+  case of one running off was found to test it (a slot cut from the cone
+  never got that far; see below).
+- The patches n's plane crosses are put in with a loop cut by the plane
+  (`clipPatch`: their sides split where they cross it, kept where under
+  it, joined by cubics in the plane within a tenth of the chord
+  tolerance of the patch, `acrossPatch`); n takes those same cubics.
+  Side j's contact curve stops at p2 (`contactPiece`). The end face
+  takes the end section up to p1, side 1-j's curve in its plane where
+  that face goes on past it (the cone above the band), and the line
+  (`closeRunOff`).
+- p1 within 100 LengthEps of w is taken as w (no line): a line of 3.5e-5
+  left naked mesh edges (the mesher merges points that near in (u, v)).
+  Moving it further (the chord tolerance, 7e-4 in one case) broke the
+  edge matching of the moved curves; hence the small threshold.
+
+Tested: `TestChamferRunsOffBand` (chamfers and fillets of 2 and 2.5 on
+the band's edge: sound, the fillets within 1.5% of OpenCASCADE's
+makeFillet on the same edge (4.579, 6.798; ours 4.625, 6.757 at chord
+0.003%, 4.604 at 0.001%), chamfers about 7.9 per size squared; save,
+load, undo), `TestRunOffSweep` (band half-widths 2, 2.5, 3, heights 22
+and 25, chamfer and fillet, 2, 2.5, 3: 36). Before this, 26 of the 36
+were refused as running off. Now 10 of 36 fail, allowance set after the
+first run (not before, as the rule asks): 2 refused (a fillet of 3 on the
+narrowest band can't be fitted, as before) and 8 chamfers whose meshes
+cross where the chamfer meets the cone, mid-edge, nowhere near the end:
+the cone's mesh takes ears of only its trim's points along the nearly
+straight contact curve, slivers that cross the chamfer beside it (the
+same as the fillet of 1's crossing below; `AvoidFlatEars` on the cut
+faces doesn't change it: the slivers are thicker than its test). The
+shells are sound; a made shell that isn't closed fails the sweep
+outright, and none is. `bandfillet`'s chamfer is now 2, a run-off.
+
+Found, not mine: a slot cut from the cone (the band as a Difference),
+its side's edge on the cone chamfered at 1 to 3, is made with naked mesh
+edges along the contact curve on the slot's flat wall (11 to 63), as on
+master: the wall's mesh joins trim points far apart along the curve
+while the chamfer's mesh keeps them all. Fillets there are refused
+(fitting, or the ball not touching).
+
 ## Next
 
-- 22.3: the blend going on onto the next face. The setback patch is the
+- 22.3: a fillet that takes material away running off; a run-off onto a
+  curved face (the setback patch's work); both ends running off.
+- The slot chamfer's naked edges (above): a made shell that isn't sound.
+- 22.3 (earlier note): the blend going on onto the next face. The setback patch is the
   piece it lacked: where the ball runs off a face, cut the fillet there
   as a setback is cut and fill the hole between it, the next face's
   fillet (or the face) and the faces round with the same patches,

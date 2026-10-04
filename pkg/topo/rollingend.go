@@ -511,6 +511,9 @@ type rbEndCut struct {
 	q    [2]geom.Vector
 	arc  srf.BSplineCurve
 	goes [2][]srf.SBezier
+	// off is where the end runs off a side's face onto the next face
+	// (roadmap 22.3), or nil.
+	off *rbRunOff
 }
 
 // cutEnd splits each side's edge with the flat face where the fillet's
@@ -524,8 +527,14 @@ func (rb *rollingBall) cutEnd(sh *srf.SShell, end *rbEnd, arc srf.BSplineCurve) 
 		q := cut.q[k]
 		switch alongFrom(q, v, t.Edges[end.a[k]].Points) {
 		case 1:
-			return cut, filletErr(q, "the fillet's end runs off the face on side %d here, past the end of its edge with "+
-				"the flat face the edge ends at: make it smaller", k+1)
+			ro, err := rb.runOffAt(end, k)
+			if err != nil || cut.off != nil {
+				return cut, filletErr(q, "the fillet's end runs off the face on side %d here, past the end of its edge with "+
+					"the flat face the edge ends at, and the face there is curved or meets the others otherwise: make it smaller",
+					k+1)
+			}
+			cut.off = ro
+			continue
 		case -1:
 			c, err := rb.planeCut(end, k, v, q)
 			if err != nil {
