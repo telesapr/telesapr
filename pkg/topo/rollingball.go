@@ -1247,15 +1247,10 @@ func splitNearest(sh *srf.SShell, p, v geom.Vector) error {
 	return nil
 }
 
-// nearestOn is the point of patch s nearest x, within the patch: from
-// the kernel's guess, by Gauss-Newton steps, which the kernel's own
-// first-order steps leave short of for a point off the surface.
-func nearestOn(s *srf.SSurface, x geom.Vector) (float64, float64, geom.Vector) {
-	return nearestOnWithin(s, x, 0)
-}
-
-// nearestOnWithin is nearestOn on the patch carried on by ext past each
-// of its sides in (u, v).
+// nearestOnWithin is the point of patch s nearest x, within the patch
+// carried on by ext past each of its sides in (u, v): from the kernel's
+// guess, by Gauss-Newton steps, which the kernel's own first-order
+// steps leave short of for a point off the surface.
 func nearestOnWithin(s *srf.SSurface, x geom.Vector, ext float64) (float64, float64, geom.Vector) {
 	var u, v float64
 	s.ClosestPointToUV(x, &u, &v, false)
