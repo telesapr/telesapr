@@ -1,19 +1,20 @@
 # Roadmap: from a SolveSpace port to a modern CAD
 
-Date: 2026-10-01, compacted 2026-10-04. Status: steps 1 to 21, 23, 29 and I7 are done and merged, but
-for 12.4 (CI's first run on GitHub), which waits for the user, and 21.5; step 22 is merged in
-part. The open work is planned as steps 23 to 29. Read "Definition of done for every new
-feature" first.
+Date: 2026-10-01, compacted 2026-10-04 twice. Status: steps 1 to 29 and I7 are merged. Steps
+23 and 29 are complete; steps 22 and 24 to 28 are merged with the follow-ups listed under "Open
+work", all of them kernel work. 12.4 (CI's first run on GitHub) waits for the user. Read
+"Definition of done for every new feature" first.
 
 TeleSAPR began as a Go port of SolveSpace, bit-identical with the C++. Since 2026-10-01 it is a
 separate project: no parity or file compatibility with SolveSpace, a Go-native kernel, its own
 `.tlspr` format (`docs/tlspr-format.md`), and `.slvs` files read by File > Import only.
 
-This document was compacted on 2026-10-04. The full plan, with each step's packages, the
-estimates by area, the review of 2026-10-03 and the design notes, is this file at commit
-`2ec37e4`; comments in the code that cite a package (as "package 5.1") refer to that version.
-User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
-`docs/done-audit.md`.
+This document was compacted on 2026-10-04, twice. The full plan to step 22, with each step's
+packages, the estimates by area, the review of 2026-10-03 and the design notes, is this file at
+commit `2ec37e4`; the plan of steps 23 to 29, with each package's merge, is this file at
+`7a32dca`. Comments in the code that cite a package (as "package 5.1" or "roadmap 24.2") refer
+to those versions. User-facing documentation of what was built is in `docs/guide`, `docs/ai.md`
+and `docs/done-audit.md`; the kernel's working notes are in `docs/notes`.
 
 ## Done
 
@@ -41,97 +42,64 @@ User-facing documentation of what was built is in `docs/guide`, `docs/ai.md` and
 | 18 | Drawing sheets: standard views, title block, section and detail views, associative dimensions | `2c41d13` |
 | 19 | Shading: GLSL lighting, appearances | `6462cc3` |
 | 20 | Smooth lofts through any number of profiles, sweeps along 3D cubics with frames and twist | `dda4e0b` |
-| 21 | STEP import as an exact solid in Booleans, tessellated STEP; not 21.5 | `21abd88` |
-| 22 (part) | Offsets of patches (22.1), coaxial cylinder/cone fillets and chamfers (22.2's first case) | `ddf8144` |
+| 21 | STEP import as an exact solid in Booleans, tessellated STEP | `21abd88` |
+| 22 | Offsets of patches (22.1), coaxial cylinder/cone fillets and chamfers (22.2's first case); the rest of 22 is steps 25 and 26 | `ddf8144` |
 | 23 | Scripting and MCP fixes: contour problems reported on a sketch and its solid, one undo step per script, the active group after a delete and moves with sources, renders that fit, the interpreter's forms, two-sided groups from scripts, no silent File > New | `d92c5f8` |
+| 24 | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, false intersection starts dropped, grazing ears avoided, no fans on patches ruled one way; cylinder through cylinder 2 to 0 of 54, analytic STEP cuts 10 to 0 of 28, bands over a lathe seam 14 to 0 of 108, twisted lofts meshed within 0.55%; failed Booleans named in `Problem()`; hover in perspective on the grid; crossings counted where an edge meets a triangle | `c4137f3`, `2fcfbae`, `7b3b32a` |
+| 25 | Rolling-ball fillets and chamfers between two curved faces (22.2): closed edges (tees of cylinders, the teapot's spout, a rod through a ball), chains ending on a flat face; within 0.5% of OpenCASCADE; sweep 2 of 108 | `8707d1f`, `add3da7` |
+| 26 | General fillets (22.3 to 22.5) in part: corner-filling blends that run off onto a flat face; corners of different radii and convex meeting concave in stages; setback corner patches where three or more fillets meet (G1 within about 1e-4 rad); chains between flat faces ending on a curved face; fillets on lofts, sweeps and STEP solids 32 to 44 of 59 sound, volumes against OpenCASCADE; chamfers where a slot meets a cone | `add3da7` to `31e0672` |
+| 27 | STEP: knots removed on export where patches join smoothly, edges along another face's seam, degree above 5 rewritten at 5, offset surfaces and conics as solids, poles opened in uv rather than dropped; corpus 5 to 7 of 9 sound | `adc3224`, `ed03d3b`, `7b3b32a` |
+| 28 | Chamfers of two distances; drafts of chosen sides about a neutral plane, of an arc or two arcs meeting at a corner; sweeps with mitred corners and along named edges; patterns along a closed path; lofts with end tangency and one or two guide curves | `359cc18`, `fd137dc` |
 | 29 | Drawing sheet shown in the window, associative dimensions on isometric, section and detail views and of faces, nested links in the bill of materials, auto-constrain for arcs and circles | `9fcca23` |
-| 24 (part) | Booleans on curved surfaces: no edges inside a planar cut, trims along apexes and poles, failed Booleans named, hover in perspective on the grid | `c4137f3` |
-| 27 (part) | STEP: knot removal on export, edges along seams, degree above 5, offset surfaces and conics as solids | `adc3224` |
-| 28 (part) | Chamfers of two distances, drafts of chosen sides about a neutral plane, sweeps with mitred corners and along edges, patterns along a closed path, loft end tangency | `359cc18` |
-| 25 (part) | Rolling-ball fillets on closed edges between two curved faces: cylinders at an angle, cylinder and cone, cylinder and sphere | `8707d1f` |
-| 24 (rest) | Cylinder through cylinder (2 to 0 of 54), the last analytic STEP cut (1 to 0 of 28), bands over a lathe seam (8 to 0 of 108), twisted lofts meshed within 0.55% | `2fcfbae` |
-| 28 (rest) | Loft guide curves (one or two), drafts of two arcs meeting at a corner | `fd137dc` |
-| 25 (rest), 26 (part) | Rolling-ball fillets ending on flat faces, chamfers between curved faces, fillets on lofts, sweeps and STEP solids 32 to 40 of 59, run-offs refused at the point | `add3da7` |
-| Leftovers | Schenkel's naked edges (40 to 0), one of NIST_MBE_PMI_6's poles meshed clean | `ed03d3b` |
-| 26 (more) | Fillet corners of different radii and convex meeting concave, in stages; fillet volumes checked against OpenCASCADE | `07afe66` |
-| 26 (setback) | Setback corner patches where three or more fillets meet: rings larger than the uprights, three radii, four edges at an apex | `e51869a` |
-| 26 (run-offs) | Corner-filling blends that run off onto a flat face, band-on-cone chamfers and fillets | `b6d7045` |
-| 26 (slot) | Chamfers where a slot meets a cone: a flat face's nearly straight contour meshed | `bbbb561` |
-| 26 (curved ends) | Fillets of edges between flat faces that end on a curved face | `31e0672` |
-| Mesher | No fans from a far trim point on patches ruled one way (run-off sweep 10 to 4 of 36); crossings counted where an edge meets a triangle (NIST_MBE_PMI_5 sound, corpus 7 of 9) | `7b3b32a` |
 
 Decisions taken along the way: the unit belongs to the document (format 2); files broken by
 hand get an error on load and no other safeguard; files with the old `spacesolve` header are
 not read.
 
-## Open work: steps 23 to 29
+## Open work and follow-ups
 
-Planned on 2026-10-04 from the open items left at the compaction. The order: the scripting and
-MCP fixes first (small, found in real use, and they ease every later step's scripts); then the
-Booleans on curved surfaces, since the rolling ball of step 25 needs the same intersections and
-trims they fail on; then the rest of step 22; then STEP, solid features and drawings, which do
-not depend on each other. Efforts are the earlier plan's where it gave one; the others, marked
-"~", are first guesses of 2026-10-04. Each step is one branch as the rules below say.
+Every item left is kernel work, unsized. A two-day spike on the hardest fixture comes before
+any of them is planned as a step. The notes in `docs/notes` hold the attempts that failed and
+why.
 
 ### Waiting for the user
 
-| Item | From | Effort | State |
-|---|---|---|---|
-| The remote and CI's first run | 12.4 | 0.3 wk | The GitHub repository (organisation `telesapr`, for the module path) and the `TAKIGO_TOKEN` secret; then push, watch the workflow and fix what its runner shows. Until then no fresh clone has been shown to build. Best done before the next merge, blocks nothing |
-| What to take back from "Left out" | | | Every row there is a proposal |
-| What the review took in without being asked | | | B3 (16.11), G4 (17.4) and S3 (17.5): all done; the user may still disown them |
-
-### Step 24, what is left: Booleans on curved surfaces
-
-Step 24 is merged but for these. Notes: `docs/notes/step-24-spike.md`.
-
-| Item | Content | State |
+| Item | From | State |
 |---|---|---|
-| A bore whose cap lies in a lathed tip's plane, off axis | Fails 40 of 80: coincident contact (F5, under "Left out") | open |
-| A twisted swept bar | Its flat sides mesh within 1.6% (lofts now within 0.55%). Four grid lines across its sides bring it to 0.16% but make three threads' surfaces cross: a bar cell and a thread flank's are twisted alike, so no rule adds columns to one alone. Untried: fan diagonals alternated so the bias cancels | open |
-| NIST_MBE_PMI_6 as a solid | Its crossings were the checker's (an edge nearly in a triangle's plane counted by its line, not its point; fixed, `edgeCrossesWithin`). Left: the topology problem at its poles, the mesh's Euler number 6 off the shell's, where earlier ears used up every other ear | open |
+| The remote and CI's first run | 12.4 | The GitHub repository (organisation `telesapr`, for the module path) and the `TAKIGO_TOKEN` secret; then push, watch the workflow and fix what its runner shows. Until then no fresh clone has been shown to build. Effort 0.3 wk |
+| What to take back from "Left out" | | Every row there is a proposal. F5 now blocks two items below |
+| What the review took in without being asked | | B3 (16.11), G4 (17.4) and S3 (17.5): all done; the user may still disown them |
 
-### Steps 25 and 26, what is left: general fillets
+### Fillets (steps 25 and 26; notes `docs/notes/step-25-rolling-ball.md`, `step-26-blends.md`)
 
-The rolling-ball blend between two faces of any kind: its spine is where the two faces'
-offsets by the radius (22.1) meet, marched as the intersector marches; each cross section is a
-circular arc between the contact points; the blend is fitted through those arcs by step 20's
-fitting, and the two faces are cut along the contact curves (step 21's trimming, since the
-faces are often of several patches). Fillets between planes, cylinders and cones stay on
-step 10's exact construction. Step 25 is 22.2, on branch `step-25-rolling-ball` (the step-22 branch name was taken); step 26
-is 22.3 to 22.5.
+| Item | State |
+|---|---|
+| Run-offs onto a curved face, and of blends that take material away | refused with the point; the setback patch is the likely means |
+| A mitre of two radii over an edge left sharp | refused, naming the radii: the blend would need a crease |
+| Chamfers of edges between flat faces that end on a curved face | refused; routed like the fillets they left 134 naked edges |
+| The loft's and the blob's edges in the 22.5 measurement | refused, for reasons in the notes; 44 of 59 sound |
+| Ends on a dome that one degree-5 curve can't follow | the curved-end sweep refuses 8 of 40, radii 1.5 to 2.5 |
+| The run-off sweep's last failures | 4 of 36: 2 unfittable, 2 chamfers of 3 crossing the cone by one edge |
+| A chamfer of 3 where a slot meets a cone | 6 naked edges where it reaches the slot's floor (sound to 2.75) |
+| A band-on-cone fillet at r 1 and 0.001% | 2 crossing mesh edges where it meets the cone tangentially; not checked again since the mesher fix of `7b3b32a` |
+| The teapot's handle | its union is unsound before any fillet |
+| Sweep allowances set after the first run | the 6:1 setback sweep (12%), the run-off sweep, the curved-end sweep; the rule wants them fixed before. Fix them now and keep them |
 
-| Step | Package | Content | Effort | State |
-|---|---|---|---|---|
-| 25 | 22.2 one edge, two curved faces | Done (`pkg/topo/rollingball.go`, `rollingend.go`; notes `docs/notes/step-25-rolling-ball.md`, `step-26-blends.md`): closed edges between curved faces, chains that end on a flat face (on an exact conic, the flat face grown where a face goes on past it), chamfers between curved faces; sweep 2 of 108. Left: a band-on-cone fillet at r 1 and 0.001% leaves 2 crossing mesh edges where it meets the cone tangentially; the teapot's handle (its union is unsound before any fillet) | 6 wk | done but those |
-| 26 | 22.3 blends that run off a face | A contact curve that leaves its face: the blend continues onto the next face, or the edit is refused with the point | 4 wk | in part: a corner-filling blend whose end runs off onto a flat face is cut by that face's plane, both faces grown (`rollingrunoff.go`); band on cone, chamfers and fillets 2 to 3 made (within 1.5% of OpenCASCADE). Sweep 4 of 36 fail (26 refused before): 2 unfittable, 2 chamfers of 3 crossing the cone by one edge (the fans from a far trim point on patches ruled one way are gone, `cutOff.crosses`). Left: run-offs of blends that take material away (refused), run-offs onto curved faces, chains ending on a curved face. A chamfer where a slot cut from a cone meets the cone is sound at sizes 1 to 2.5 (the flat wall's nearly straight contour now meshed); at 3, 6 naked edges where it reaches the slot's floor |
-| 26 | 22.4 vertex blends, and the corners step 10 refuses | Three or more blends at a vertex: a setback corner patch fitted to the blends' ends with G1 seams. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave, rounded edges of different radii (setbacks, variable radius) | 8 wk | in part: corners of different radii and convex meeting concave rounded in stages (`fillet_stages.go`); a setback corner patch of quintic quads with tangency built in (`fillet_setback.go`, G1 within about 1e-4 rad) makes a top ring larger than the uprights, three radii at a corner, four edges at an apex; sweep 0 of 36 to 3:1 radii, 4 of 36 refused cleanly to 6:1. Refused: a mitre of two radii over an edge left sharp (it would need a crease) |
-| 26 | 22.5 fillets on lofts, sweeps and imported solids | Against OpenCASCADE where its fillet is exact, the failure rate measured first | 3 wk | measured: every edge of a loft, a sweep and six STEP solids filleted alone, 32 of 59 sound before, 40 of 59 after the first fixes, none made unsound; smooth edges left out (`SolidEdge.Smooth`); volumes on seven STEP edges within 0.6% of exact or OpenCASCADE but a vase's foot (-2.8%). Open chains between flat faces that end on a curved face are made (the lid's uprights: 40 to 44 of 59, within 0.2% of OpenCASCADE; their sweep refuses 8 of 40 where one degree-5 end can't follow the dome). Left: chamfers so, and the loft's and the blob's edges (other reasons, in the notes) |
+### Booleans and meshing (step 24; notes `docs/notes/step-24-spike.md`)
 
-### Step 27, what is left: STEP
+| Item | State |
+|---|---|
+| A bore whose cap lies in a lathed tip's plane, off axis | fails 40 of 80: coincident contact (F5) |
+| A twisted swept bar | its flat sides mesh within 1.6%. Grid columns bring it to 0.33% but a bar cell and a thread flank are twisted alike, and columns on both moved thread volumes the wrong way. Untried: fan diagonals alternated so the bias cancels |
+| NIST_MBE_PMI_6 as a solid | the topology problem at its poles: the mesh's Euler number 6 off the shell's, where earlier ears used up every other ear |
+| Schenkel as a solid | no naked edges since `ed03d3b`, but its shell's Euler number is -34 against the mesh's -6, cause not found; corpus 7 of 9 |
 
-Step 27 merged in part: knots removed where patches join smoothly (27.1; every face of the
-fixtures and examples makes a grid, so no face needed one surface), edges along another face's
-seam (27.3: NIST_MBE_PMI_5 and _6 close), degree above 5 rewritten at degree 5 (27.2), offset
-surfaces and parabolas, hyperbolas (27.5). Corpus: 7 of 9 sound.
+### Solid features (step 28; notes `docs/notes/step-28.md`)
 
-| Package | Content | State |
-|---|---|---|
-| 27.4 the corpus files that still mesh | NIST_MBE_PMI_5 reads sound since the checker's false crossings were mended (corpus 7 of 9); _6 has a topology problem at its poles (step 24's rest). Schenkel: its 40 naked edges are gone (a pole's parameter along its folded side was arbitrary, turning a wedge-to-pole patch inside out; `surfaceLoopUV`), but its shell's Euler number is -34 against the mesh's -6, cause not found, so it is not counted sound | partly done |
-
-### Step 28, what is left: solid features
-
-Step 28 merged in part: chamfers of two distances, drafts of chosen sides with their own angles
-about a neutral plane and of an arc meeting a line at a corner, sweeps with mitred corners and
-along named edges of the solid, patterns along a closed path, lofts with tangency at the ends.
-State and the plan for guide curves: `docs/notes/step-28.md`.
-
-| Package | Content | State |
-|---|---|---|
-| 28.4 sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred. Two runs joined by a union fail where they touch, on the halving plane and along the turn's axis, for corners between lines too: coincident contact (F5). The joint must be built in one shell, with surface intersection inside the sweep builder. See `docs/notes/step-28.md` | open |
-
-Shells of other curved solids (step 10, 15.2: prisms only; filleted, lofted and revolved solids
-are refused) stay with E12 under "Left out"; 22.1's offsets are the first part.
+| Item | State |
+|---|---|
+| Sweep corners next to an arc or curve, on twisted or fitted sweeps | refused; corners between two lines are mitred. Two runs joined by a union fail where they touch, for corners between lines too: coincident contact (F5). The joint must be built in one shell, with surface intersection inside the sweep builder |
+| Shells of other curved solids | prisms only; filleted, lofted and revolved solids are refused. With E12 under "Left out"; 22.1's offsets are the first part |
 
 ## Definition of done for every new feature
 
