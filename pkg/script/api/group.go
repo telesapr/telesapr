@@ -568,10 +568,11 @@ func (g Group) Draft() (degrees float64) {
 // SetDraft leans an extrusion's sides into the solid by degrees from
 // the sketch's plane, so that the far end is smaller (larger when
 // negative), as a moulded part's; 0 takes the draft away. The profile
-// must be of lines and arcs, each arc meeting its neighbours tangent. A
-// draft at which the sides meet is a problem on the group, and the
-// extrusion is made without it. SetExpr with sketch.GroupValC gives it
-// an expression.
+// must be of lines and arcs; an arc may meet a line at a sharp corner,
+// but arcs meet each other tangent. A draft at which the sides meet is
+// a problem on the group, and the extrusion is made without it. SetExpr
+// with sketch.GroupValC gives it an expression. SetDraftFaces leans
+// only some sides, and SetDraftNeutral leans them from another plane.
 func (g Group) SetDraft(degrees float64) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
@@ -580,6 +581,68 @@ func (g Group) SetDraft(degrees float64) {
 			fail("a draft is between -90 and 90 degrees, not %g", degrees)
 		}
 		group.ValC, group.ExprC = degrees, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
+// DraftFaces are the curves of an extrusion's sketch whose sides its
+// draft leans, or none when it leans every side.
+func (g Group) DraftFaces() (curves []Entity) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "DraftFaces")
+		for _, he := range group.DraftFaces {
+			curves = append(curves, Entity{d: g.d, H: he})
+		}
+	})
+	return curves
+}
+
+// SetDraftFaces makes an extrusion's draft lean the sides of curves
+// only, the rest staying upright; none leans every side again. A curve
+// is a line, arc or circle of the extruded sketch, or its copy at an end
+// of the extrusion, or the face of its side.
+func (g Group) SetDraftFaces(curves []Entity) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "SetDraftFaces")
+		hs := make([]core.HEntity, len(curves))
+		for i, e := range curves {
+			hs[i] = e.get(sk).H
+		}
+		if err := sk.SetDraftFaces(group.H, hs); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// DraftNeutral is how far along an extrusion, from the sketch's plane,
+// its draft's neutral plane lies, in mm: where the solid has the
+// profile's outline.
+func (g Group) DraftNeutral() (mm float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "DraftNeutral")
+		mm = group.ValB
+	})
+	return mm
+}
+
+// SetDraftNeutral leans an extrusion's drafted sides from the plane mm
+// along it from the sketch's plane, negative towards a two-sided
+// extrusion's other end: there the solid has the profile's outline, and
+// it narrows going away from it both ways, as a moulded part does from
+// its parting line. 0 is the sketch's plane. A plane off the extrusion
+// is a problem on the group. SetExpr with sketch.GroupPitch gives it an
+// expression in the document's unit.
+func (g Group) SetDraftNeutral(mm float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "SetDraftNeutral")
+		if math.IsNaN(mm) || math.IsInf(mm, 0) {
+			fail("a draft's neutral plane is a distance, not %g", mm)
+		}
+		group.ValB, group.ExprB = mm, ""
 		sk.MarkGroupDirty(group.H, false)
 	})
 }

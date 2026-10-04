@@ -587,7 +587,7 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 		case "copies", "turn":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
-		case "pitch", "distance", "radius", "thickness":
+		case "pitch", "distance", "radius", "thickness", "draft-neutral":
 			g.ValB, g.ExprB = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "val-c", "draft", "twist", "second-distance":
 			g.ValC, g.ExprC = d.expr(c, exprPlace{group: g.H, field: c.Name})
@@ -605,6 +605,11 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			d.plain(c)
 			for _, v := range c.Args {
 				g.Edges = append(g.Edges, core.HEntity{V: d.handle(v)})
+			}
+		case "draft-faces":
+			d.plain(c)
+			for _, v := range c.Args {
+				g.DraftFaces = append(g.DraftFaces, core.HEntity{V: d.handle(v)})
 			}
 		case "solid-edge":
 			g.SolidEdges = append(g.SolidEdges, d.solidEdge(c))

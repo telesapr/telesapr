@@ -1,0 +1,35 @@
+# Draft of chosen sides from another plane (roadmap 28.2): the extrusion of
+# path_extrude drafted 5 degrees, its screen showing the plane the sides
+# lean from and which sides; then one side picked and drafted alone.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+twmove 163 145
+twdown L 163 145
+twup L 163 145
+edit 5
+tw
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+twmove 130 185
+twdown L 130 185
+twup L 130 185
+tw
+twmove 272 165
+twdown L 272 165
+twup L 272 165
+edit 10
+tw
+answer ok
+menu Analyze|Check Solid
+dump

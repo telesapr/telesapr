@@ -222,6 +222,8 @@ group <handle> <type> <name> {
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given
+  draft-faces <handle> ...  # extrusion: the curves of its sketch whose sides the draft leans; left out for all
+  draft-neutral = <expression>  # extrusion: where along it, from the sketch's plane, the draft's neutral plane lies, a length (the field pitch under another name)
   solid-edge <face> <face> <n> of <m>  # chamfer: an edge of the solid cut, by name; one line each
   predef { ... }
   visible
@@ -554,6 +556,10 @@ it as before.
 
 Version 2 gained the chamfer field `second-distance` on 2026-10-04 (roadmap 28.1). A reader
 from before skips it with a report, and cuts at `distance` on both faces.
+
+Version 2 gained the extrusion fields `draft-faces` and `draft-neutral` on 2026-10-04 (roadmap
+28.2). A reader from before skips them with a report, and drafts every side from the sketch's
+plane.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

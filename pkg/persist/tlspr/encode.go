@@ -320,6 +320,13 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		}
 		n.add(field("edges", args...))
 	}
+	if len(g.DraftFaces) > 0 {
+		args := make([]Value, len(g.DraftFaces))
+		for i, he := range g.DraftFaces {
+			args[i] = hex(he.V)
+		}
+		n.add(field("draft-faces", args...))
+	}
 	for _, e := range g.SolidEdges {
 		n.add(solidEdgeField(e))
 	}

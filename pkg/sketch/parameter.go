@@ -105,6 +105,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupValC && g.Type == GroupExtrude {
 		return "draft"
 	}
+	if f == GroupPitch && g.Type == GroupExtrude {
+		return "draft-neutral"
+	}
 	if f == GroupValC && g.Type == GroupChamfer {
 		return "second-distance"
 	}

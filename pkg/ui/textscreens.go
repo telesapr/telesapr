@@ -630,6 +630,44 @@ func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
+// ScreenDraftSelectedSides makes an extrusion's draft lean only the
+// sides of the selected curves of its sketch, or of the selected faces
+// (roadmap 28.2).
+func (tw *TextWindow) ScreenDraftSelectedSides(link int, v uint32) {
+	ss := tw.ss
+	gw := ss.GW
+	gw.GroupSelection()
+	if len(gw.gs.entity) == 0 {
+		ss.Error("Select the sides to draft: the lines, arcs and circles of the extruded sketch, " +
+			"their copies at the extrusion's ends, or the faces of the sides.")
+		return
+	}
+	err := ss.SK.UndoRememberFor(func() error {
+		return ss.SK.SetDraftFaces(core.HGroup{V: v}, gw.gs.entity)
+	})
+	if err != nil {
+		ss.Error("Can't draft those sides: %s.", err)
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	gw.ClearSelection()
+	gw.ClearSuper()
+}
+
+// ScreenDraftAllSides makes an extrusion's draft lean every side again.
+func (tw *TextWindow) ScreenDraftAllSides(link int, v uint32) {
+	ss := tw.ss
+	err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetDraftFaces(core.HGroup{V: v}, nil) })
+	if err != nil {
+		ss.Error("%s.", capitalize(err.Error()))
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	ss.GW.ClearSuper()
+}
+
 // ScreenChangePitchOption fixes or frees a helix's pitch (C++
 // TextWindow::ScreenChangePitchOption).
 func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
@@ -784,6 +822,18 @@ func (tw *TextWindow) ShowGroupInfo() {
 				lf(tw.ScreenChangeGroupOption), check(skew))
 			tw.Printf(false, "%Bd   %Ftdraft%E %s deg%s %Fl%Ll%f%D[change]%E",
 				sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+			if g.ValC != 0 || g.ExprC != "" {
+				// Roadmap 28.2: the plane the sides lean from, and which.
+				tw.Printf(false, "%Ba   %Ftfrom the plane%E %s along%s %Fl%Ll%f%D[change]%E",
+					ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+				if len(g.DraftFaces) == 0 {
+					tw.Printf(false, "%Bd   %Ftsides%E all %Fl%Ll%f%D[only the selected]%E",
+						lf(tw.ScreenDraftSelectedSides), g.H.V)
+				} else {
+					tw.Printf(false, "%Bd   %Ftsides%E %d of the sketch's %Fl%Ll%f%D[only the selected]%E %Fl%Ll%f%D[all]%E",
+						len(g.DraftFaces), lf(tw.ScreenDraftSelectedSides), g.H.V, lf(tw.ScreenDraftAllSides), g.H.V)
+				}
+			}
 		} else {
 			tw.Printf(false,
 				"%Ba   %f%Ls%Fd%s one-sided%E  "+

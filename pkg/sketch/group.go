@@ -134,6 +134,10 @@ type Group struct {
 	// solid; its result is then the solid so far, the reflection with
 	// it or alone (roadmap 15.5).
 	MirrorSolid bool
+	// DraftFaces are the curves of an extrusion's sketch (OpA) whose
+	// sides its draft leans, line segments, arcs and circles; none for
+	// every side (roadmap 28.2).
+	DraftFaces []core.HEntity
 
 	BooleanFailed bool
 
