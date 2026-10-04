@@ -285,6 +285,35 @@ master: the wall's mesh joins trim points far apart along the curve
 while the chamfer's mesh keeps them all. Fillets there are refused
 (fitting, or the ball not touching).
 
+## Fifth agent: the slot chamfer, the run-off slivers
+
+- The slot chamfer's naked edges (sizes 1 to 2.5) were the flat wall's
+  mesher giving up: the chamfer's edge on the wall runs nearly straight,
+  the ear clipping cut it off with one chord, and the sliver left had no
+  corner convex enough at `scaledEps` (`IsEar` compares the doubled uv
+  area with it, so a chain turning by under about 1e-3 rad per point is
+  "collinear" throughout), so `UvTriangulateInto` returned with a hole.
+  Now a flat face's contour that doesn't touch itself (`simple`) takes an
+  ear at no tolerance there and keeps its triangle
+  (`TestChamferSlotOnCone`). Doing the same for every contour broke the
+  corpus (screw.step 22 naked edges): contours with bridges to holes have
+  corners that are not ears. At size 3 six naked edges stay where the
+  chamfer reaches the slot's floor at (6, 3, 0): not traced.
+- The run-off chamfers' crossings (8 of 36, unchanged): the cone's mesh
+  fans from a far trim point over the nearly straight chamfer edge; by
+  the time the last ears are chosen only folded or grazing ones are
+  left, and the fan's long side passes a trim point on the wrong side by
+  a few micrometres, through the chamfer's triangle (y 3, r 3: the edge
+  (6.143, 5.568, 8.546)-(6.709, 5.613, 6.265) through the chamfer's
+  triangle at the trim point (6.708, 5.613, 6.270)). Choosing, before a
+  grazing or folded ear, a clean ear at no tolerance changed nothing:
+  the fan is laid earlier, when its ears were clean. A fix has to keep
+  the fan from forming (interior points along the trim on curved faces,
+  or a strip rule for chains of trim points), which is the mesher's
+  general weakness, not the fillet's.
+- Open chains ending on a curved face and run-offs onto curved faces:
+  not attempted in this round.
+
 ## Next
 
 - 22.3: a fillet that takes material away running off; a run-off onto a
