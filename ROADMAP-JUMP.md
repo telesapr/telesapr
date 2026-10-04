@@ -50,6 +50,70 @@ format's extension went from `.spcs` to `.tlspr` and its header from `spacesolve
 and files with the old header are not read, the frozen corpus being renamed with the rest
 (2026-10-03).
 
+## Open work and follow-ups (gathered 2026-10-04)
+
+Everything this document still holds open after steps 1 to 22, in one place. Each row names
+where it comes from; the step's own section has the detail. Efforts are the plan's where it
+gave one, and "not sized" where it never did. The proposals under "Left out" are not repeated:
+they stay out until the user takes one back.
+
+### Waiting for the user
+
+| Item | From | Effort | State |
+|---|---|---|---|
+| The remote and CI's first run | 12.4 (1.8) | 0.3 wk | The GitHub repository (organisation `telesapr`, for the module path) and the `TAKIGO_TOKEN` secret; then push, watch the workflow and fix what its runner shows. Until then no fresh clone has been shown to build |
+| What to take back from "Left out" | "Decisions still open" | | Every row there is a proposal |
+
+### The rest of step 22, general fillets
+
+| Item | From | Effort | State |
+|---|---|---|---|
+| The rolling-ball blend between faces of any kind | 22.2 (E6.2), steps 10 and 11 | 6 wk, less the coaxial case done | Spine where the two faces' offsets (22.1) meet, cross-section arcs skinned as in step 20, the faces cut back along the contact curves. Covers a cylinder meeting a cylinder at an angle, spheres, tori, B-spline faces, a chamfer's cone meeting the cylinder it was cut from |
+| Blends that run off a face | 22.3 (E6.3) | 4 wk | not started |
+| Vertex blends, and the corners step 10 refuses | 22.4 (E6.4), step 10 "Corners left" | 8 wk | not started. Refused today: corners of more than three faces (but a lathe's quarters meeting smoothly), a circular edge meeting another rounded edge at an angle, convex meeting concave at a corner, rounded edges of different radii at a corner (setbacks, variable radius) |
+| Fillets on lofts, sweeps and imported solids, against OpenCASCADE | 22.5 (E6.5) | 3 wk | not started; the failure rate measured first |
+
+### Kernel
+
+| Item | From | Effort | State |
+|---|---|---|---|
+| Cylinder through cylinder | step 5, 13.2 | not sized | 2 of 54 in the guard: differences where the crossed cylinder's seam pierces the wall beside a full-height strip triangle |
+| A sphere cap too small | step 5, 13.2 | not sized | 1 of 135 in the guard: its triangles lie flat in the face's plane |
+| Twisted ruled faces mesh with rows, no columns | 13.1, step 20 | not sized | A triangle loft turned a third of a turn meshes within 2% (`TestLoftSweep`), a twisted sweep's flat sides within about 2%; the surfaces are right. Refinement by sag alone made the loft sweep 7 times slower |
+| Booleans on cylinders, cones through their apex, tori, spheres' poles | 21.3 | not sized | 10 of 28 cuts of the analytic STEP set fail on these, whatever made the solid (`solidBooleanMaxFail`); the same limits as the two guards above |
+| Tangent and coincident contact in general | F5, 13.4 | | under "Left out"; a cut along a patch's own edge is the case 21.3's cutters avoid |
+| Hover in perspective views | 14.4 | not sized | Scans the mesh; orthographic views use the grid |
+
+### Solid features
+
+| Item | From | Effort | State |
+|---|---|---|---|
+| Chamfers of two distances | step 7, 15.1 | not sized | The edit's corners would need their setback on each face apart |
+| Drafts of chosen faces, about another plane, of an arc meeting a line at a corner | 15.4 | not sized | Only an extrusion's sides, about the sketch's plane, arcs tangent to their neighbours |
+| Shells of other curved solids | step 10, 15.2 | | Prisms only; filleted, lofted and revolved solids are refused. With E12 under "Left out"; 22.1's offsets are the first part |
+| Smooth lofts: tangency set at the end profiles, guide curves | step 20 | not sized | not done |
+| Sweeps along a chain of the solid's edges (step 9's names), and paths with corners | 20.5, step 7 | not sized | not done; a corner is a diagnostic |
+| Pattern along a closed path | 15.6 | not sized | refused |
+
+### STEP
+
+| Item | From | Effort | State |
+|---|---|---|---|
+| Export: knots removed where patches join smoothly, faces whose patches make no grid as one surface | 21.5, step 11 | 1.5 wk | not done; the export reads back exact as it is. OpenCASCADE's volume of a face written at full multiplicity is off by up to 0.3% |
+| Surfaces and curves of degree above 5 | 21.2, step 11 | not sized | refused, so the file links as a mesh; needs degree reduction or approximation |
+| One face's edge along another face's seam | 21.3 | not sized | NIST_MBE_PMI_5 and _6 fail to close for it and link as meshes |
+| Edges further from their faces than the file's tolerance | 21.3 | not sized | Schenkel and the OpenCASCADE screw leave mesh gaps or crossings and link as meshes; 5 of the 9 vendor files read as sound solids |
+| Offset surfaces and conics (parabola, hyperbola) as solids | 21.2 | not sized | refused; the file links as a mesh |
+
+### Drawings and small features
+
+| Item | From | Effort | State |
+|---|---|---|---|
+| The drawing sheet shown in the window | 18.1 | not sized | written to files only |
+| Associative dimensions on section, detail and isometric views, and of faces | 18.4 | not sized | edges only, on the orthographic views |
+| Nested links in the bill of materials | 16.7 | not sized | a link inside a linked file is not counted |
+| Auto-constrain while drawing arcs and other entities | 16.11 | not sized | lines only |
+
 ## How to read the estimates
 
 - **Effort** is focused weeks for one developer who already knows this codebase,
