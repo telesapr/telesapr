@@ -69,16 +69,23 @@ func newCanvas(w *Window) *canvas {
 		w.buttonPress(ev)
 	})
 	disp.Bind(win.PlatformID, event.ButtonReleaseMask, func(ev *event.Event) {
-		if ev.Type != event.ButtonReleaseType || ev.Button == 4 || ev.Button == 5 {
+		if ev.Type != event.ButtonReleaseType {
 			return
 		}
 		w.mouse(platform.MouseRelease, ev, ev.Button, 0)
+	})
+	disp.Bind(win.PlatformID, event.MouseWheelMask, func(ev *event.Event) {
+		if ev.Type != event.MouseWheelType {
+			return
+		}
+		w.tooltip.hide(c)
+		w.wheel(ev)
 	})
 	disp.Bind(win.PlatformID, event.MotionMask, func(ev *event.Event) {
 		if ev.Type != event.MotionType {
 			return
 		}
-		w.tooltip.motion(c, ev.X, ev.Y)
+		w.tooltip.motion(c, ev)
 		w.mouse(platform.MouseMotion, ev, 0, 0)
 	})
 	disp.Bind(win.PlatformID, event.LeaveMask, func(ev *event.Event) {
@@ -181,7 +188,6 @@ func (c *canvas) present(frame *image.RGBA) {
 		d := c.w.p.app.Server()
 		d.PutImageRGBA(win.Drawable(), win.GC, win.Depth, frame.Pix, frame.Stride, b.Dx(), b.Dy(),
 			x0, y0, x0, y0, x1-x0, y1-y0, 0)
-		c.w.tooltip.draw(c)
 		d.Flush()
 	}
 }
@@ -227,7 +233,7 @@ func changedRect(prev, next []byte, width, height int) (x0, y0, x1, y1 int, ok b
 	return x0, y0, x1, y1, true
 }
 
-// blit copies the whole frame to the window, and the tooltip over it.
+// blit copies the whole frame to the window.
 // With GL, whose back buffer is gone after a swap, it renders anew.
 func (c *canvas) blit() {
 	if c.glr != nil {
@@ -250,18 +256,22 @@ func (c *canvas) blit() {
 		c.shown = append(c.shown[:0], f.Pix...)
 		c.shownW, c.shownH = b.Dx(), b.Dy()
 	}
-	c.w.tooltip.draw(c)
 	d.Flush()
 }
 
-// tooltip is drawn over the frame after the pointer rests in its area,
-// since takigo has no tooltips (the C++ backends use the toolkit's).
+// tooltip is a small window of its own shown under the pointer after
+// it rests in its area, since takigo has no tooltips (the C++ backends
+// use the toolkit's). A window, not pixels drawn over the frame: with
+// OpenGL the next buffer swap, sent on another connection, would wipe
+// those out at once.
 type tooltip struct {
 	text       string
 	x, y, w, h float64
 	shown      bool
 	cancel     func() bool
-	px, py     int
+	px, py     int // pointer in the canvas
+	rx, ry     int // pointer on the screen
+	win        *window.Window
 }
 
 // SetTooltip sets the text shown while the pointer rests in the area.
@@ -289,18 +299,18 @@ func (t *tooltip) arm(c *canvas) {
 	t.cancel = c.w.p.app.After(500*time.Millisecond, func() {
 		t.cancel = nil
 		if t.text != "" && t.inside(t.px, t.py) {
-			t.shown = true
-			c.blit()
+			t.show(c)
 		}
 	})
 }
 
-func (t *tooltip) motion(c *canvas, x, y int) {
-	t.px, t.py = x, y
+func (t *tooltip) motion(c *canvas, ev *event.Event) {
+	t.px, t.py = ev.X, ev.Y
+	t.rx, t.ry = ev.RootX, ev.RootY
 	if t.text == "" {
 		return
 	}
-	if !t.inside(x, y) {
+	if !t.inside(t.px, t.py) {
 		t.hide(c)
 		return
 	}
@@ -316,39 +326,81 @@ func (t *tooltip) hide(c *canvas) {
 	}
 	if t.shown {
 		t.shown = false
-		c.blit()
+		if t.win != nil && !t.win.IsDestroyed() && t.win.PlatformID != 0 {
+			d := c.w.p.app.Server()
+			d.UnmapWindow(t.win.PlatformID)
+			d.Flush()
+		}
 	}
 }
 
-func (t *tooltip) draw(c *canvas) {
-	if !t.shown || t.text == "" {
+// font is the tooltip's font, or nil.
+func (t *tooltip) font(c *canvas) font.Font {
+	f, err := c.w.p.app.FontRegistry().Get(font.TkTooltipFont)
+	if err != nil {
+		return nil
+	}
+	if _, ok := f.(tkplatform.DrawableFont); !ok {
+		return nil
+	}
+	return f
+}
+
+// show maps the tooltip's window below and right of the pointer, kept
+// on the screen and never under the pointer, where it would take the
+// pointer from the canvas and so hide itself.
+func (t *tooltip) show(c *canvas) {
+	f := t.font(c)
+	if f == nil {
 		return
 	}
 	app := c.w.p.app
-	f, err := app.FontRegistry().Get(font.TkTooltipFont)
-	if err != nil {
-		return
-	}
-	df, ok := f.(tkplatform.DrawableFont)
-	if !ok {
-		return
-	}
-	bg, err1 := app.ColorCache().Get("#ffffe0")
-	fg, err2 := app.ColorCache().Get("#000000")
-	if err1 != nil || err2 != nil {
-		return
+	if t.win == nil || t.win.IsDestroyed() {
+		t.win = window.NewTopLevelWindow(c.w.top.Window(), c.w.p.newName("tooltip"), window.TopLevelSpec{
+			Width: 1, Height: 1, BorderWidth: 1, OverrideRedirect: true,
+			EventMask: int64(tkplatform.ExposureMask),
+		})
+		if bg, err := app.ColorCache().Get("#ffffe0"); err == nil {
+			t.win.SetBackgroundPixel(bg.Pixel)
+		}
+		app.Dispatcher().Bind(t.win.PlatformID, event.ExposureMask, func(ev *event.Event) {
+			if ev.ExposeCount == 0 {
+				t.draw(c)
+			}
+		})
 	}
 	m := f.Metrics()
 	tw := f.MeasureString(t.text) + 8
 	th := m.Linespace() + 4
-	x := min(t.px+12, c.Win.Width-tw-1)
-	y := min(t.py+20, c.Win.Height-th-1)
-	x, y = max(x, 0), max(y, 0)
 	d := app.Server()
-	gc := c.Win.GC
-	d.SetForeground(gc, bg.Pixel)
-	d.FillRectangle(c.Win.Drawable(), gc, x, y, uint(tw), uint(th))
-	d.SetForeground(gc, fg.Pixel)
-	d.DrawRectangle(c.Win.Drawable(), gc, x, y, uint(tw-1), uint(th-1))
-	df.DrawString(c.Win.Drawable(), x+4, y+2+m.Ascent, t.text, fg.Pixel, fg.Red, fg.Green, fg.Blue)
+	screen := d.DefaultScreen()
+	sw, sh := d.ScreenWidth(screen), d.ScreenHeight(screen)
+	x := max(min(t.rx+12, sw-tw-2), 0)
+	y := t.ry + 20
+	if y+th+2 > sh {
+		y = max(t.ry-th-8, 0)
+	}
+	d.MoveResizeWindow(t.win.PlatformID, x, y, uint(tw), uint(th))
+	t.win.Width, t.win.Height = tw, th
+	d.MapRaised(t.win.PlatformID)
+	d.Flush()
+	t.shown = true
+}
+
+func (t *tooltip) draw(c *canvas) {
+	if !t.shown || t.text == "" || t.win == nil || t.win.IsDestroyed() {
+		return
+	}
+	f := t.font(c)
+	if f == nil {
+		return
+	}
+	app := c.w.p.app
+	fg, err := app.ColorCache().Get("#000000")
+	if err != nil {
+		return
+	}
+	f.(tkplatform.DrawableFont).DrawString(t.win.Drawable(), 4, 2+f.Metrics().Ascent, t.text,
+		fg.Pixel, fg.Red, fg.Green, fg.Blue)
+	app.Server().Flush()
 }

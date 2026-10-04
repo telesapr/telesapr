@@ -118,7 +118,7 @@ func TestWindowRendersAndReportsInput(t *testing.T) {
 				w.buttonPress(synthButton(1, 10, 20))
 				w.mouse(platform.MouseRelease, synthButton(1, 10, 20), 1, 0)
 			}
-			w.buttonPress(synthButton(4, 10, 20))
+			w.wheel(&event.Event{Type: event.MouseWheelType, Delta: 120, X: 10, Y: 20})
 			w.key(platform.KeyPress, synthKey('A', 1))
 			w.key(platform.KeyPress, synthKey(0xffbf, 0))
 		},
@@ -270,5 +270,77 @@ func TestMessageDialogKeys(t *testing.T) {
 		platform.ResponseYes, platform.ResponseNone}
 	if !slices.Equal(got, want) {
 		t.Errorf("responses %v, want %v", got, want)
+	}
+}
+
+// TestWheelScrolls checks that takigo's wheel events, which replace
+// presses of buttons 4 and 5, reach the window as vertical scrolls.
+func TestWheelScrolls(t *testing.T) {
+	p := requireGUI(t)
+	w := p.CreateWindow(platform.WindowToplevel, nil).(*Window)
+	var deltas []float64
+	w.Events().OnMouseEvent = func(e platform.MouseEvent) bool {
+		if e.Type == platform.MouseScrollVert {
+			deltas = append(deltas, e.ScrollDelta)
+		}
+		return true
+	}
+	w.SetVisible(true)
+	run(p, func() {
+		for _, d := range []int{120, -120, 30} {
+			p.app.Dispatcher().DispatchWindow(&event.Event{Type: event.MouseWheelType,
+				Window: w.canvas.Win.PlatformID, Delta: d, X: 10, Y: 20})
+		}
+	})
+	if !slices.Equal(deltas, []float64{1, -1, 0.25}) {
+		t.Errorf("scroll deltas %v, want [1 -1 0.25]", deltas)
+	}
+}
+
+// TestTooltipStaysWhilePointerRests checks that a tooltip, a window of
+// its own, shows after the pointer rests in its area, stays while the
+// pointer moves within it and frames are drawn, and goes once it
+// leaves.
+func TestTooltipStaysWhilePointerRests(t *testing.T) {
+	p := requireGUI(t)
+	w := p.CreateWindow(platform.WindowToplevel, nil).(*Window)
+	w.SetMinContentSize(320, 240)
+	w.Events().OnRender = func() {
+		width, height := w.GetContentSize()
+		w.canvas.present(image.NewRGBA(image.Rect(0, 0, int(width), int(height))))
+	}
+	w.SetVisible(true)
+	motion := func(x, y int) {
+		w.tooltip.motion(w.canvas, &event.Event{Type: event.MotionType, X: x, Y: y, RootX: x, RootY: y})
+	}
+	var early, rested, kept, left bool
+	run(p,
+		func() {
+			w.SetTooltip("Sketch line segment", 10, 10, 32, 32)
+			motion(20, 20)
+			early = w.tooltip.shown
+		},
+		func() {}, func() {}, func() {}, func() {},
+		func() { rested = w.tooltip.shown },
+		func() {
+			motion(25, 22)
+			// Redrawing the frame, as hovering a button does, keeps it.
+			w.SetTooltip("Sketch line segment", 10, 10, 32, 32)
+			w.Invalidate()
+		},
+		func() { kept = w.tooltip.shown && w.tooltip.win != nil },
+		func() { motion(100, 100); left = !w.tooltip.shown },
+	)
+	if early {
+		t.Error("tooltip shown before the pointer rested")
+	}
+	if !rested {
+		t.Error("tooltip not shown after the pointer rested")
+	}
+	if !kept {
+		t.Error("tooltip gone while the pointer stays over the button")
+	}
+	if !left {
+		t.Error("tooltip still shown after the pointer left its area")
 	}
 }

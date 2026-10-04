@@ -51,15 +51,12 @@ func (c *canvas) dropGL() {
 	c.glCtx, c.glr = nil, nil
 }
 
-// presentGL shows the frame the GL renderer drew, then the tooltip
-// over it on takigo's connection.
+// presentGL shows the frame the GL renderer drew.
 func (c *canvas) presentGL() {
 	if c.Destroyed || c.Win.PlatformID == 0 {
 		return
 	}
 	c.glCtx.SwapBuffers()
-	c.w.tooltip.draw(c)
-	c.w.p.app.Server().Flush()
 }
 
 // glFailed reports, once per run, why the windows draw in software.

@@ -70,8 +70,7 @@ func TestGLWindowRendersFace(t *testing.T) {
 	run(p,
 		func() { w.Invalidate() },
 		func() {
-			// A tooltip shown over a GL frame makes it render again.
-			w.tooltip.text, w.tooltip.shown = "tip", true
+			// An expose over a GL frame makes it render again.
 			w.canvas.blit()
 		},
 		func() {},
@@ -80,7 +79,7 @@ func TestGLWindowRendersFace(t *testing.T) {
 		t.Fatalf("renderer %T, want OpenGL", r)
 	}
 	if renders < 2 {
-		t.Errorf("%d renders, want one more after the tooltip", renders)
+		t.Errorf("%d renders, want one more after the expose", renders)
 	}
 	if centre != [3]byte{red.Red, red.Green, red.Blue} {
 		t.Errorf("centre pixel %v, want the face colour %v", centre, red)

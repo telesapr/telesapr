@@ -136,6 +136,9 @@ func (w *Window) SetVisible(v bool) {
 		return
 	}
 	w.visible = v
+	if !v {
+		w.tooltip.hide(w.canvas)
+	}
 	if w.toolTop != nil {
 		if v {
 			w.toolTop.Show()
@@ -382,17 +385,17 @@ func (w *Window) mouse(typ platform.MouseEventType, ev *event.Event, button uint
 	})
 }
 
+// wheel delivers a wheel turn as a vertical scroll of one per notch,
+// positive up; a high-resolution wheel's smaller steps give fractions,
+// as GTK's smooth scroll deltas do. takigo reports the wheel as its own
+// event, never as presses of buttons 4 and 5.
+func (w *Window) wheel(ev *event.Event) {
+	w.mouse(platform.MouseScrollVert, ev, 0, float64(ev.Delta)/120)
+}
+
 // buttonPress delivers a press, or for the second of two quick clicks
 // a double press instead, as the GTK backend does.
 func (w *Window) buttonPress(ev *event.Event) {
-	switch ev.Button {
-	case 4:
-		w.mouse(platform.MouseScrollVert, ev, 0, 1)
-		return
-	case 5:
-		w.mouse(platform.MouseScrollVert, ev, 0, -1)
-		return
-	}
 	now := time.Now()
 	lp := &w.lastPress
 	if lp.button == ev.Button && now.Sub(lp.time) < doubleClickTime &&
