@@ -1,10 +1,12 @@
 package sketch
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
 
+	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
@@ -47,10 +49,19 @@ type DrawingDetail struct {
 // is how far, in sheet mm, the dimension line stands off what it
 // measures, out from the view's middle (in toward it when negative; 0
 // for 10).
+//
+// Since roadmap 29.2 a dimension may also measure faces, by their
+// identity: the distance between two flat faces, or between a flat face
+// and a straight edge, and the diameter or radius of a face's circular
+// edge, as a cylinder's or a hole's; what it measures is its Edges, then
+// its Faces. Its View may be the isometric, where it gives the length
+// in the model, not as foreshortened, or a section or a detail by its
+// letter.
 type DrawingDimension struct {
 	View   string
 	Kind   string
 	Edges  []topo.Name
+	Faces  []srf.FaceID
 	Offset float64
 }
 
@@ -145,18 +156,38 @@ func (d *Drawing) Check() error {
 		}
 	}
 	for _, dm := range d.Dimensions {
-		if _, _, ok := ViewDirection(dm.View); !ok || dm.View == "iso" {
-			return fmt.Errorf("no dimension on %q: dimensions are on front, back, top, bottom, left or right", dm.View)
+		if _, ok := d.DimensionView(dm.View); !ok {
+			return fmt.Errorf("no dimension on %q: dimensions are on front, back, top, bottom, left, right or iso, "+
+				"or on a section or detail by its letter", dm.View)
 		}
 		n, ok := DimensionKinds[dm.Kind]
 		if !ok {
 			return fmt.Errorf("no dimension %q: they are length, distance, diameter and radius", dm.Kind)
 		}
-		if len(dm.Edges) != n {
-			return fmt.Errorf("a %s dimension measures %d edge%s, not %d", dm.Kind, n, map[bool]string{true: "s"}[n > 1], len(dm.Edges))
+		if got := len(dm.Edges) + len(dm.Faces); got != n {
+			return fmt.Errorf("a %s dimension measures %d edge%s or face%s, not %d", dm.Kind, n,
+				map[bool]string{true: "s"}[n > 1], map[bool]string{true: "s"}[n > 1], got)
+		}
+		if dm.Kind == "length" && len(dm.Faces) > 0 {
+			return errors.New("a length is of an edge, not of a face")
 		}
 	}
 	return nil
+}
+
+// DimensionView is what a dimension's view names: a view kind (front,
+// ..., iso), or the n-th section or detail by its letter, sections
+// first; n is -1 for a view kind, and ok false when it names none.
+func (d *Drawing) DimensionView(view string) (n int, ok bool) {
+	if _, _, ok := ViewDirection(view); ok {
+		return -1, true
+	}
+	for i := range len(d.Sections) + len(d.Details) {
+		if Letter(i) == view {
+			return i, true
+		}
+	}
+	return -1, false
 }
 
 // ViewDirection is what is to the right and what is up in a view.
@@ -281,6 +312,7 @@ func (d *Drawing) Clone() *Drawing {
 	c.Dimensions = nil
 	for _, dm := range d.Dimensions {
 		dm.Edges = append([]topo.Name(nil), dm.Edges...)
+		dm.Faces = append([]srf.FaceID(nil), dm.Faces...)
 		c.Dimensions = append(c.Dimensions, dm)
 	}
 	return &c

@@ -32,14 +32,18 @@ doc.Concentric(holeA, holeB)
 ## Bill of materials
 
 Example: [`examples/scripts/bom`](../../examples/scripts/bom/bom.go), which saves a plate and a
-bolt as part files, links them into an assembly with the bolt repeated, and writes the bill.
+bolt as part files, links them into a bracket with the bolt repeated, links the bracket twice
+into the model, and writes the bill.
 
 Analyze > Bill of Materials lists the parts the model places by linking files, one line a file:
 how many, the part's name (the file's, without its folder and extension), the file, and the
 groups that place them. Each link group places one part. A step and repeat, a mirror or a
 pattern along a path of a link group places its copies too, but for a copy at the place of the
 part it copies; a mirror that leaves the original out places none more; a repeat of a repeat
-counts the copies of what it repeats. Groups left out of the model place none. The screen's
+counts the copies of what it repeats. Groups left out of the model place none. A linked model
+is a part, a sub-assembly, and the parts it links in turn count too, once for each place the
+model is, at any depth: their groups read as `g003-bracket > g004-bolt`, the group here and the
+group in the linked file. A file that links itself, by way of others, is followed once. The screen's
 `[export to a CSV file...]` writes the list with the columns `part`, `count`, `file` and
 `groups`.
 
@@ -78,6 +82,5 @@ interference check takes. A model with no assembled parts is written as one soli
 
 ## Not yet
 
-Only the files the model links are counted, not the files those link in turn; a part linked
-from two paths to one file counts as two parts. A copy made by a group whose source is not a
+A part linked from two paths to one file counts as two parts. A copy made by a group whose source is not a
 link group, such as a translate of the whole model, is not counted.

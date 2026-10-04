@@ -177,7 +177,7 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 | `param <name> = <expression>` | A named parameter, see "Parameters". |
 | `configuration <string> { param <name> = <expression> ... }` | A configuration: a named set of the parameters' expressions, see "Parameters". |
 | `active-configuration <string>` | The configuration the table holds, if one does. |
-| `drawing { ... }` | The model's drawing: `sheet <name>`, `portrait`, `scale <real>` (0 or left out to fit), `first-angle`, `hidden`, a `view <kind> <x> <y>` for each placed view (none for the standard ones), a `section <view> <offset> <x> <y>` for each section view and a `detail <view> <cx> <cy> <r> <scale> <x> <y>` for each detail view (`x`, `y` 0 to place it), a `dimension <view> <kind> <offset> { solid-edge ... }` block for each dimension, `kind` length, distance, diameter or radius, its edges by name as a chamfer's are, and `title`, `author`, `number`, `revision`, `material`, `company` strings. |
+| `drawing { ... }` | The model's drawing: `sheet <name>`, `portrait`, `scale <real>` (0 or left out to fit), `first-angle`, `hidden`, a `view <kind> <x> <y>` for each placed view (none for the standard ones), a `section <view> <offset> <x> <y>` for each section view and a `detail <view> <cx> <cy> <r> <scale> <x> <y>` for each detail view (`x`, `y` 0 to place it), a `dimension <view> <kind> <offset> { solid-edge ... solid-face ... }` block for each dimension, `view` a view kind or a section's or detail's letter, `kind` length, distance, diameter or radius, its edges by name as a chamfer's are, then its faces by identity, `solid-face <handle>`, and `title`, `author`, `number`, `revision`, `material`, `company` strings. |
 | `group <handle> <type> <name> { ... }` | A group. |
 | `request <handle> <type> { ... }` | A request, what the user drew. |
 | `constraint <handle> <type> { ... }` | A constraint. |
@@ -550,6 +550,10 @@ before skips it with a report, and mirrors the source group alone.
 Version 2's `solid-edge` gained `of <m>`, the count of edges between its faces, on 2026-10-03
 (roadmap 14.2). A reader from before refuses such a line; a reader since reads lines without
 it as before.
+
+Version 2's drawing `dimension` gained `solid-face <handle>` lines, and views named by a
+section's or detail's letter or `iso`, on 2026-10-04 (roadmap 29.2). A reader from before
+refuses such a dimension.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

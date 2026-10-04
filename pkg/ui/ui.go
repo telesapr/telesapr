@@ -158,6 +158,8 @@ const (
 	CmdMateHinge
 	CmdDrawingSheet
 	CmdExportDrawing
+	CmdMoveGroupToEnd
+	CmdShowDrawingSheet
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -286,7 +288,7 @@ type pendingState struct {
 	filename    string
 
 	hasSuggestion bool
-	suggestion    lineSuggestion
+	suggestion    sketch.Suggestion
 }
 
 // GraphicsWindow is the window with the model and the toolbar (C++
@@ -306,6 +308,11 @@ type GraphicsWindow struct {
 	measureMenuItem       platform.MenuItem
 	sectionMenuItem       platform.MenuItem
 	sectionMenuOn         bool
+	// sheetShown shows the drawing sheet in place of the model (roadmap
+	// 29.1); sheet is the sheet last made for it.
+	sheetShown    bool
+	sheet         sheetCache
+	sheetMenuItem platform.MenuItem
 	// sectionCap is the section view's cap, as last computed.
 	sectionCap              sectionCap
 	perspectiveProjMenuItem platform.MenuItem
@@ -363,6 +370,10 @@ type GraphicsWindow struct {
 	context struct{ active bool }
 
 	animateTimer platform.Timer
+	// animating is set while AnimateOnto turns the view, which ends at
+	// animateEnd.
+	animating  bool
+	animateEnd func()
 
 	pending pendingState
 

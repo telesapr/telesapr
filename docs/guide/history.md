@@ -13,6 +13,15 @@ The arrows after a group's name in the group list move it one place; Edit > Move
 and Move Group Later move the active group. A move that would put a group ahead of a group it
 uses is refused, and the message names both.
 
+Edit > Move Group to End moves the active group to the end of the history together with the
+groups only it needs, keeping their order: an extrusion goes with its sketch, and that sketch's
+own workplane with it. A sketch that another group uses too stays where it is. Scripts do the
+same with `Group.MoveToEndWithSources` and `Group.MoveWithSourcesBefore`; `Group.MoveToEnd`
+moves the one group.
+
+Deleting the active group, or a group it uses (which deletes it too), makes active the last
+group before it that is left, so that the next new group still comes at the end of the history.
+
 ## Inserting a group
 
 A new group goes in after the active one, so activating an earlier group (the radio button

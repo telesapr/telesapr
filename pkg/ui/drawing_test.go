@@ -245,3 +245,103 @@ func TestDrawingDimensions(t *testing.T) {
 		t.Errorf("without the hole: %v", errs)
 	}
 }
+
+// Dimensions on the isometric, a section and a detail, and of faces
+// (roadmap 29.2): the top edge's length on the isometric is its own,
+// 120, not as foreshortened; the block's height between its top and
+// bottom faces, and from its top edge to its bottom face, on the top
+// view; the hole's diameter from its wall, on the top view and on a
+// section of it; the rim's diameter on a detail of the front view, and
+// an edge outside the detail refused. Faces seen face on, and faces not
+// parallel, are refused too. The faces are saved and read back.
+func TestDrawingDimensionsViewsFaces(t *testing.T) {
+	ss, doc := drawingModel(t)
+	var hole api.Group
+	for _, g := range doc.Groups() {
+		if g.Name() == "hole" {
+			hole = g
+		}
+	}
+	solid := hole.Solid()
+	var top, rim api.SolidEdge
+	for _, e := range solid.Edges() {
+		a, b := e.Ends()
+		switch {
+		case e.Straight() && a.Z == 40 && b.Z == 40 && a.Y == 60 && b.Y == 60:
+			top = e
+		case !e.Straight() && a.Z == 40 && rim.Name() == "edge 0 0 0":
+			rim = e
+		}
+	}
+	upper := solid.FaceAt(api.V(100, 50, 40))
+	lower := solid.FaceAt(api.V(100, 50, 0))
+	side := solid.FaceAt(api.V(100, 0, 20))
+	wall := solid.FaceAt(api.V(38, 30, 20))
+	for name, f := range map[string]api.SolidFace{"upper": upper, "lower": lower, "side": side, "wall": wall} {
+		if f.ID() == 0 {
+			t.Fatalf("no %s face", name)
+		}
+	}
+	dr := doc.Drawing()
+	dr.Sheet = "A2"
+	dr.Sections = []sketch.DrawingSection{{View: "top"}}
+	dr.Details = []sketch.DrawingDetail{{View: "front", CX: -30, CY: 0, R: 15, Scale: 2}}
+	doc.SetDrawing(dr)
+	doc.AddDrawingDimension("iso", "length", 10, top)
+	doc.AddDrawingFaceDimension("top", "distance", 10, upper, lower)
+	doc.AddDrawingEdgeFaceDistance("top", -10, top, lower)
+	doc.AddDrawingFaceDimension("top", "diameter", 0, wall)
+	doc.AddDrawingFaceDimension("A", "diameter", 0, wall)
+	doc.AddDrawingDimension("B", "diameter", 0, rim)
+	doc.AddDrawingDimension("B", "length", 0, top)
+	doc.AddDrawingFaceDimension("front", "distance", 0, upper, lower)
+	doc.AddDrawingFaceDimension("top", "distance", 0, upper, side)
+	values, errs := doc.DrawingDimensions()
+	want := []float64{120, 40, 40, 16, 16, 16}
+	for i := range want {
+		if errs[i] != nil || math.Abs(values[i]-want[i]) > 1e-6 {
+			t.Errorf("dimension %d: %g, %v, want %g", i, values[i], errs[i], want[i])
+		}
+	}
+	for i, msg := range []string{"outside the detail", "end on", "not parallel"} {
+		if e := errs[len(want)+i]; e == nil || !strings.Contains(e.Error(), msg) {
+			t.Errorf("dimension %d: %v, want %q", len(want)+i, e, msg)
+		}
+	}
+	if sheet, _, _, err := ss.DrawingSheet(ss.SK.Drawing); err != nil || len(sheet.Edges) == 0 {
+		t.Fatal(err)
+	}
+
+	// Saved and read back, with the faces and the views by letter.
+	path := filepath.Join(t.TempDir(), "dims.tlspr")
+	if err := doc.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	back, err := api.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, saved := back.Drawing().Dimensions, doc.Drawing().Dimensions
+	if len(got) != len(saved) {
+		t.Fatalf("%d dimensions read back, want %d", len(got), len(saved))
+	}
+	for i := range got {
+		if got[i].View != saved[i].View || len(got[i].Faces) != len(saved[i].Faces) ||
+			(len(got[i].Faces) > 0 && got[i].Faces[0] != saved[i].Faces[0]) {
+			t.Errorf("dimension %d read back as %+v, saved %+v", i, got[i], saved[i])
+		}
+	}
+
+	// A view letter with no section or detail, and a length of a face.
+	for name, bad := range map[string]sketch.DrawingDimension{
+		"no view C":      {View: "C", Kind: "length", Edges: saved[0].Edges},
+		"length of face": {View: "top", Kind: "length", Faces: saved[1].Faces[:1]},
+		"three for two":  {View: "top", Kind: "distance", Edges: saved[0].Edges, Faces: saved[1].Faces},
+	} {
+		d := doc.Drawing()
+		d.Dimensions = append(d.Dimensions, bad)
+		if err := d.Check(); err == nil {
+			t.Errorf("%s: no error", name)
+		}
+	}
+}

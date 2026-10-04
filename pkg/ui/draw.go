@@ -641,6 +641,11 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	if !ss.AllConsistent {
 		return
 	}
+	// The drawing sheet in place of the model (roadmap 29.1).
+	if gw.sheetShown {
+		gw.drawSheet(canvas)
+		return
+	}
 
 	// The snap grid, and all the things that don't change when we
 	// rotate.
@@ -672,13 +677,14 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 
 	// Draw the "pending" constraint, i.e. a constraint that would be
 	// placed on a line that is almost horizontal or vertical.
-	if gw.pending.operation == PendingDraggingNewLinePoint && gw.pending.hasSuggestion {
+	if (gw.pending.operation == PendingDraggingNewLinePoint || gw.pending.operation == PendingDraggingNewArcPoint ||
+		gw.pending.operation == PendingDraggingNewRadius) && gw.pending.hasSuggestion {
 		var c core.Constraint
 		c.Group = gw.activeGroupH()
 		c.Workplane = gw.ActiveWorkplane()
 		c.Type = gw.pending.suggestion.Type
 		c.EntityA, c.EntityB = gw.pending.suggestion.A, gw.pending.suggestion.B
-		c.Other = gw.pending.suggestion.Other
+		c.Other, c.Other2 = gw.pending.suggestion.Other, gw.pending.suggestion.Other2
 		gw.drawConstraint(&c, ConstraintDrawDefault, canvas)
 	}
 

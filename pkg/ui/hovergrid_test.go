@@ -27,13 +27,12 @@ func threadWindow(t testing.TB) *SolveSpaceUI {
 // hiddenByScan is hiddenBySolid trying every triangle.
 func (gw *GraphicsWindow) hiddenByScan(p geom.Vector) bool {
 	g := gw.sk().GetGroup(gw.activeGroupH())
-	eye := gw.view.UnProjectPoint3(geom.Vector{})
-	far := gw.view.UnProjectPoint3(geom.Vector{Z: 1})
-	towards := eye.Minus(far).WithMagnitude(1)
+	gw.view.Tangent = gw.ss.CameraTangent()
+	towards, reach := gw.towardsViewer(p)
 	scale := max(1e-3/gw.view.Scale, 1e-6)
 	start := p.Plus(towards.ScaledBy(10 * scale))
 	for i := range g.DisplayMesh.Triangles {
-		if rayHitsTriangle(start, towards, &g.DisplayMesh.Triangles[i]) {
+		if t, ok := rayHit(start, towards, &g.DisplayMesh.Triangles[i]); ok && t < reach {
 			return true
 		}
 	}
@@ -41,7 +40,8 @@ func (gw *GraphicsWindow) hiddenByScan(p geom.Vector) bool {
 }
 
 // The grid finds the same hidden points as trying every triangle, at
-// every point of every edge of the thread, in two views.
+// every point of every edge of the thread, in two views, orthographic
+// and in perspective (roadmap 24.5).
 func TestHoverGridSameAsScan(t *testing.T) {
 	ss := threadWindow(t)
 	gw := ss.GW
@@ -49,7 +49,11 @@ func TestHoverGridSameAsScan(t *testing.T) {
 	if tp == nil {
 		t.Fatal("no topology")
 	}
-	for turn := 0; turn < 2; turn++ {
+	for turn := 0; turn < 4; turn++ {
+		if turn == 2 {
+			ss.UsePerspectiveProj = true
+			gw.view.ProjRight, gw.view.ProjUp = geom.Vector{X: 1}, geom.Vector{Y: 1}
+		}
 		hidden, n := 0, 0
 		for _, e := range tp.Edges {
 			for _, p := range e.Points {

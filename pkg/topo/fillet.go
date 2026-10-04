@@ -51,6 +51,10 @@ func (t *Topology) planarNormal(f int) (geom.Vector, bool) {
 	return n, true
 }
 
+// PlaneOf is face f's outward normal when its surface is a plane, as
+// planarNormal finds it.
+func (t *Topology) PlaneOf(f int) (geom.Vector, bool) { return t.planarNormal(f) }
+
 // intoFace is the direction, square to the edge and in face f's plane,
 // that goes from the edge into the face.
 func (t *Topology) intoFace(f int, a, b, n geom.Vector) geom.Vector {

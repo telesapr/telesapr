@@ -1,0 +1,21 @@
+# Two circles, the second drawn nearly as big as the first and made
+# the same size as it is placed (roadmap 29.4); the same as
+# path_auto_constrain.go makes (TestPathEquivalenceAutoConstrain).
+key c
+move 450 200
+down L 450 200
+up L 450 200
+move 490 200
+move 490 200
+down L 490 200
+up L 490 200
+key esc
+key c
+move 450 350
+down L 450 350
+up L 450 350
+move 490 349
+move 490 351
+down L 490 351
+up L 490 351
+key esc

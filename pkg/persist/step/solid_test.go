@@ -186,13 +186,15 @@ func TestOffsetCells(t *testing.T) {
 }
 
 // solidCorpusSound are the corpus files whose shapes read as sound
-// solids (2026-10-04); the others fall back to meshes: Schenkel and
-// screw leave gaps or crossings in the mesh where edges miss their
-// faces by more than the file's tolerance, and NIST_MBE_PMI_5 and _6,
-// which close since package 27.3 (TestSolidSeamEdges), crossings.
+// solids (2026-10-04); the others fall back to meshes: Schenkel leaves
+// gaps or crossings in the mesh where edges miss their faces by more
+// than the file's tolerance, and NIST_MBE_PMI_5 and _6, which close
+// since package 27.3 (TestSolidSeamEdges), crossings where faces meet
+// tangentially. screw.step reads since roadmap 24.2: its cones'
+// outlines ran across their patches to the apex.
 var solidCorpusSound = map[string]bool{
 	"NIST_MBE_PMI_1.stp": true, "NIST_MBE_PMI_3.stp": true, "NIST_MBE_PMI_11.stp": true,
-	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true,
+	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true, "screw.step": true,
 }
 
 // TestSolidCorpus reads the vendor files as solids: each shape of those
@@ -322,7 +324,9 @@ func cutters(lo, hi geom.Vector) []*srf.SShell {
 		sb.Weight[1] = math.Sqrt2 / 2
 		ls.Outer.Curves = append(ls.Outer.Curves, sb)
 	}
-	ls.Normal = geom.Vector{Z: -1}
+	// The caps lie in the plane through Point: at the loop, below the
+	// shape, not at z = 0 where they would lie in a face of it.
+	ls.Normal, ls.Point = geom.Vector{Z: -1}, ls.Outer.Curves[0].Start()
 	var cyl srf.SShell
 	cyl.MakeFromExtrusionOf(&ls, geom.Vector{}, geom.Vector{Z: 3 * d.Z}, col)
 	return []*srf.SShell{&block, &cyl}
@@ -383,13 +387,15 @@ func TestSolidBooleans(t *testing.T) {
 	}
 }
 
-// solidBooleanMaxFail is the failures allowed, set from the first
-// measurement (2026-10-04): 10 of 28, all the kernel's own limits on
-// these surfaces, whatever made them: a cylinder cut through a cylinder
-// (box_hole, sphere_bored; step 5 left those), a cone through its apex,
-// a torus crossed by a cylinder, a sphere's pole inside the cutter
-// (self-crossing edges where the cut meets the pole's patches).
-const solidBooleanMaxFail = 10
+// solidBooleanMaxFail is the failures allowed: 1 of 28 since roadmap
+// 24.2, a sphere's pole inside the cylinder cutter. At the first
+// measurement (2026-10-04) 10 failed: four block cuts of spheres and a
+// vase had the curved patches join two points of the block's planar
+// cut by an edge lying in the block's face (splitTrimDiagonals, 24.1);
+// three were this test's, the cylinder's caps lying at z = 0 in the
+// shapes' faces; the cone cut through its apex had its patches'
+// outlines run across them to the apex (openPoles, 24.2).
+const solidBooleanMaxFail = 1
 
 // Tessellated shapes (AP242, roadmap 21.6) read as meshes: a cube of
 // triangulated faces in a tessellated solid, a tetrahedron of strips

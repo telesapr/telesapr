@@ -30,12 +30,17 @@ type DimensionResult struct {
 }
 
 // dimView is what a dimension needs of its view: its directions, its
-// middle in the view's coordinates, and where it is on the sheet.
+// middle in the view's coordinates, and where it is on the sheet. A
+// pictorial view (the isometric) measures in the model, not as it
+// shows; a detail (clip) shows only what is within clipR of its middle.
 type dimView struct {
 	right, up geom.Vector
 	mid       geom.Vector
 	at        geom.Vector
 	scale     float64
+	pictorial bool
+	clip      bool
+	clipR     float64
 }
 
 func (v dimView) toView(p geom.Vector) geom.Vector {
@@ -77,18 +82,102 @@ func circleOf(pts []geom.Vector) (c geom.Vector, r float64, n geom.Vector, ok bo
 	return c, r, n, true
 }
 
-// measureDimension measures dm on view v of the solid's topology, and
-// adds what draws it to el (when el isn't nil).
-func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, el *srf.SEdgeList) (float64, error) {
-	var pts [][]geom.Vector
-	var straight []bool
+// dimElem is what a dimension measures: an edge, or the patches of a
+// face with one identity.
+type dimElem struct {
+	what string
+	// pts are the edge's points, or those of the face's edges.
+	pts      []geom.Vector
+	straight bool
+	// A flat face: its outward normal.
+	plane bool
+	n     geom.Vector
+	// circle is the edge's points when it is a circle, or a face's
+	// largest circular edge's.
+	circle []geom.Vector
+}
+
+// dimElems resolves what dm measures in the solid's topology: its
+// edges, then its faces.
+func dimElems(tp *topo.Topology, dm sketch.DrawingDimension) ([]dimElem, error) {
+	var out []dimElem
 	for _, n := range dm.Edges {
 		e, err := tp.Resolve(n)
 		if err != nil {
-			return 0, fmt.Errorf("%s: %v", n.String(), err)
+			return nil, fmt.Errorf("%s: %v", n.String(), err)
 		}
-		pts = append(pts, tp.Edges[e].Points)
-		straight = append(straight, tp.Straight(e))
+		el := dimElem{what: "the edge", pts: tp.Edges[e].Points, straight: tp.Straight(e)}
+		if _, _, _, ok := circleOf(el.pts); ok {
+			el.circle = el.pts
+		}
+		out = append(out, el)
+	}
+	for _, id := range dm.Faces {
+		fs := tp.FacesWithID(id)
+		if len(fs) == 0 {
+			return nil, fmt.Errorf("face %x is no longer in the solid", uint32(id))
+		}
+		el := dimElem{what: "the face"}
+		best := -1.0
+		for _, f := range fs {
+			if n, ok := tp.PlaneOf(f); ok && !el.plane {
+				el.plane, el.n = true, n
+			}
+			for _, e := range tp.FaceEdges(f) {
+				pts := tp.Edges[e].Points
+				el.pts = append(el.pts, pts...)
+				if _, r, _, ok := circleOf(pts); ok && r > best {
+					best, el.circle = r, pts
+				}
+			}
+		}
+		if len(fs) > 1 && el.plane {
+			// Patches joined smoothly: flat only if all are, on one plane.
+			for _, f := range fs {
+				if n, ok := tp.PlaneOf(f); !ok || n.Dot(el.n) < 1-1e-9 {
+					el.plane = false
+				}
+			}
+		}
+		out = append(out, el)
+	}
+	return out, nil
+}
+
+// mean is the middle of the points.
+func mean(pts []geom.Vector) geom.Vector {
+	var m geom.Vector
+	for _, p := range pts {
+		m = m.Plus(p)
+	}
+	return m.ScaledBy(1 / float64(len(pts)))
+}
+
+// inDetail reports whether any of the points shows in v's detail.
+func (v dimView) inDetail(pts []geom.Vector) bool {
+	if !v.clip {
+		return true
+	}
+	for _, p := range pts {
+		q := v.toView(p).Minus(v.mid)
+		if math.Hypot(q.X, q.Y) <= v.clipR {
+			return true
+		}
+	}
+	return false
+}
+
+// measureDimension measures dm on view v of the solid's topology, and
+// adds what draws it to el (when el isn't nil).
+func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, el *srf.SEdgeList) (float64, error) {
+	elems, err := dimElems(tp, dm)
+	if err != nil {
+		return 0, err
+	}
+	for _, e := range elems {
+		if !v.inDetail(e.pts) {
+			return 0, fmt.Errorf("%s is outside the detail", e.what)
+		}
 	}
 	off := dm.Offset
 	if off == 0 {
@@ -96,51 +185,53 @@ func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, 
 	}
 	switch dm.Kind {
 	case "length":
-		if !straight[0] {
+		if !elems[0].straight {
 			return 0, errors.New("the length is of a straight edge")
 		}
-		a, b := v.toView(pts[0][0]), v.toView(pts[0][len(pts[0])-1])
+		pts := elems[0].pts
+		a3, b3 := pts[0], pts[len(pts)-1]
+		a, b := v.toView(a3), v.toView(b3)
 		l := b.Minus(a).Magnitude()
 		if l < geom.LengthEps {
 			return 0, errors.New("the edge is seen end on in this view")
+		}
+		if v.pictorial {
+			l = b3.Minus(a3).Magnitude()
 		}
 		if el != nil {
 			linearDim(el, v.toSheet(a), v.toSheet(b), off, formatValue(l), v.at)
 		}
 		return l, nil
 	case "distance":
-		if !straight[0] {
-			return 0, errors.New("a distance is from a straight edge")
+		if len(dm.Faces) == 0 && !v.pictorial {
+			return edgeDistance(elems, v, off, el)
 		}
-		a, b := v.toView(pts[0][0]), v.toView(pts[0][len(pts[0])-1])
-		d := b.Minus(a)
-		if d.Magnitude() < geom.LengthEps {
-			return 0, errors.New("the first edge is seen end on in this view")
-		}
-		d = d.WithMagnitude(1)
-		var m geom.Vector
-		for _, p := range pts[1] {
-			m = m.Plus(v.toView(p))
-		}
-		m = m.ScaledBy(1 / float64(len(pts[1])))
-		foot := a.Plus(d.ScaledBy(m.Minus(a).Dot(d)))
-		dist := m.Minus(foot).Magnitude()
-		if el != nil && dist > geom.LengthEps {
-			linearDim(el, v.toSheet(foot), v.toSheet(m), off, formatValue(dist), v.at)
-		}
-		return dist, nil
+		return elemDistance(elems, v, off, el)
 	case "diameter", "radius":
-		c, r, n, ok := circleOf(pts[0])
-		if !ok {
+		pts := elems[0].circle
+		if pts == nil && len(dm.Faces) > 0 {
+			return 0, errors.New("the face has no circular edge")
+		} else if pts == nil {
 			return 0, errors.New("the edge is not a circle")
 		}
+		c, r, n, _ := circleOf(pts)
 		value := r
 		text := "R " + formatValue(r)
 		if dm.Kind == "diameter" {
 			value, text = 2*r, "DIA "+formatValue(2*r)
 		}
-		facing := math.Abs(n.Dot(v.right.Cross(v.up)))
+		look := v.right.Cross(v.up)
+		facing := math.Abs(n.Dot(look))
 		switch {
+		case v.pictorial:
+			// A leader from the point of the circle seen at its widest.
+			u := n.Cross(look)
+			if u.Magnitude() < 1e-9 {
+				u = v.right
+			}
+			if el != nil {
+				leader(el, v.toSheet(v.toView(c.Plus(u.WithMagnitude(r)))), off, text)
+			}
 		case facing > 0.99:
 			if el != nil {
 				cv := v.toView(c)
@@ -149,7 +240,7 @@ func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, 
 			}
 		case facing < 0.01:
 			// Seen edge on: its width across.
-			across := n.Cross(v.right.Cross(v.up)).WithMagnitude(r)
+			across := n.Cross(look).WithMagnitude(r)
 			a, b := v.toView(c.Minus(across)), v.toView(c.Plus(across))
 			if el != nil {
 				if dm.Kind == "radius" {
@@ -163,6 +254,103 @@ func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, 
 		return value, nil
 	}
 	return 0, fmt.Errorf("no dimension %q", dm.Kind)
+}
+
+// edgeDistance is the distance between two edges as an orthographic
+// view shows it: from the first, straight, to the second's middle,
+// square to the first in the view (roadmap 18.4).
+func edgeDistance(elems []dimElem, v dimView, off float64, el *srf.SEdgeList) (float64, error) {
+	if !elems[0].straight {
+		return 0, errors.New("a distance is from a straight edge")
+	}
+	pts := elems[0].pts
+	a, b := v.toView(pts[0]), v.toView(pts[len(pts)-1])
+	d := b.Minus(a)
+	if d.Magnitude() < geom.LengthEps {
+		return 0, errors.New("the first edge is seen end on in this view")
+	}
+	d = d.WithMagnitude(1)
+	var m geom.Vector
+	for _, p := range elems[1].pts {
+		m = m.Plus(v.toView(p))
+	}
+	m = m.ScaledBy(1 / float64(len(elems[1].pts)))
+	foot := a.Plus(d.ScaledBy(m.Minus(a).Dot(d)))
+	dist := m.Minus(foot).Magnitude()
+	if el != nil && dist > geom.LengthEps {
+		linearDim(el, v.toSheet(foot), v.toSheet(m), off, formatValue(dist), v.at)
+	}
+	return dist, nil
+}
+
+// elemDistance is the distance in the model between two straight edges
+// or flat faces (roadmap 29.2): from the first edge to the second's
+// middle square to it; between parallel faces; from an edge to a face
+// it runs parallel to. An orthographic view must show it at its length.
+func elemDistance(elems []dimElem, v dimView, off float64, el *srf.SEdgeList) (float64, error) {
+	a, b := elems[0], elems[1]
+	if !a.straight && !a.plane {
+		return 0, errors.New("a distance is from a straight edge or a flat face")
+	}
+	var from, to geom.Vector // the dimension's ends, in the model
+	switch {
+	case a.plane && b.plane:
+		if math.Abs(a.n.Dot(b.n)) < 1-1e-6 {
+			return 0, errors.New("the faces are not parallel")
+		}
+		to = mean(b.pts)
+		from = to.Minus(a.n.ScaledBy(to.Minus(a.pts[0]).Dot(a.n)))
+	case a.plane || b.plane:
+		line, face := a, b
+		if a.plane {
+			line, face = b, a
+		}
+		if !line.straight {
+			return 0, errors.New("a distance from a face is to a flat face or a straight edge")
+		}
+		p, q := line.pts[0], line.pts[len(line.pts)-1]
+		if math.Abs(q.Minus(p).WithMagnitude(1).Dot(face.n)) > 1e-6 {
+			return 0, errors.New("the edge is not parallel to the face")
+		}
+		to = p.Plus(q).ScaledBy(0.5)
+		from = to.Minus(face.n.ScaledBy(to.Minus(face.pts[0]).Dot(face.n)))
+	default:
+		p, q := a.pts[0], a.pts[len(a.pts)-1]
+		d := q.Minus(p).WithMagnitude(1)
+		to = mean(b.pts)
+		from = p.Plus(d.ScaledBy(to.Minus(p).Dot(d)))
+	}
+	dist := to.Minus(from).Magnitude()
+	P, Q := v.toView(from), v.toView(to)
+	shown := Q.Minus(P).Magnitude()
+	switch {
+	case dist < geom.LengthEps:
+		return 0, nil
+	case shown < geom.LengthEps:
+		return 0, errors.New("the distance is seen end on in this view")
+	case !v.pictorial && math.Abs(shown-dist) > 1e-6*math.Max(1, dist):
+		return 0, errors.New("the distance is seen at a slant in this view")
+	}
+	if el != nil {
+		if off > 0 {
+			// Moved across, out from the view's middle, to the side of
+			// what it measures, so that it stands clear of the view.
+			d := Q.Minus(P).WithMagnitude(1)
+			across := geom.Vector{X: -d.Y, Y: d.X}
+			if across.Dot(P.Plus(Q).ScaledBy(0.5).Minus(v.mid)) < 0 {
+				across = across.ScaledBy(-1)
+			}
+			shift := 0.0
+			for _, e := range elems {
+				for _, p := range e.pts {
+					shift = math.Max(shift, v.toView(p).Minus(P).Dot(across))
+				}
+			}
+			P, Q = P.Plus(across.ScaledBy(shift)), Q.Plus(across.ScaledBy(shift))
+		}
+		linearDim(el, v.toSheet(P), v.toSheet(Q), off, formatValue(dist), v.at)
+	}
+	return dist, nil
 }
 
 // arrow adds an arrowhead at p pointing along t to el.
@@ -239,30 +427,39 @@ func (ss *SolveSpaceUI) DrawingDimensions(d *sketch.Drawing) []DimensionResult {
 	return ss.lastDimensions
 }
 
-// drawDimensions measures and draws the dimensions on the placed views,
+// drawDimensions measures and draws the dimensions on the placed views
+// and on the sections and details (extras, where drawExtras put them),
 // keeping what each gave in ss.lastDimensions.
 func (ss *SolveSpaceUI) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
-	scale float64, mids map[string]geom.Vector) {
+	scale float64, mids map[string]geom.Vector, extras []dimView) {
 	ss.lastDimensions = make([]DimensionResult, len(d.Dimensions))
 	if len(d.Dimensions) == 0 {
 		return
 	}
 	tp, terr := g.Topology()
 	for i, dm := range d.Dimensions {
-		var placed *sketch.DrawingView
-		for k := range views {
-			if views[k].Kind == dm.View {
-				placed = &views[k]
+		var dv dimView
+		found := false
+		if n, _ := d.DimensionView(dm.View); n >= 0 {
+			if n < len(extras) {
+				dv, found = extras[n], true
+			}
+		} else {
+			for k := range views {
+				if views[k].Kind == dm.View {
+					r, u, _ := sketch.ViewDirection(dm.View)
+					dv = dimView{right: vec(r), up: vec(u), mid: mids[dm.View], at: geom.Vector{X: views[k].X, Y: views[k].Y},
+						scale: scale, pictorial: dm.View == "iso"}
+					found = true
+				}
 			}
 		}
 		switch {
-		case placed == nil:
+		case !found:
 			ss.lastDimensions[i].Err = fmt.Errorf("the %s view isn't on the sheet", dm.View)
 		case terr != nil:
 			ss.lastDimensions[i].Err = terr
 		default:
-			r, u, _ := sketch.ViewDirection(dm.View)
-			dv := dimView{right: vec(r), up: vec(u), mid: mids[dm.View], at: geom.Vector{X: placed.X, Y: placed.Y}, scale: scale}
 			// Drawn only when measured: what isn't goes on no sheet.
 			var el srf.SEdgeList
 			v, err := measureDimension(tp, dm, dv, &el)
@@ -272,4 +469,14 @@ func (ss *SolveSpaceUI) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d 
 			}
 		}
 	}
+}
+
+// selectedFaceIDs are the identities of the selected faces of the
+// solid, whether an entity names them or not, after GroupSelection.
+func (gw *GraphicsWindow) selectedFaceIDs() []srf.FaceID {
+	var out []srf.FaceID
+	for _, h := range gw.gs.face {
+		out = append(out, srf.FaceID(h.V))
+	}
+	return append(out, gw.gs.solidFace...)
 }

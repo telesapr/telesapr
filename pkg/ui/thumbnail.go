@@ -24,6 +24,9 @@ func (ss *SolveSpaceUI) WriteThumbnail(filename string, width, height uint, proj
 
 	gw.view.ProjUp = projUp
 	gw.view.ProjRight = projRight
+	// zoomToFit moves the offset by where the model falls with none,
+	// so it starts from none, not from wherever the window looks.
+	gw.view.Offset = geom.Vector{}
 	gw.view.Scale = gw.zoomToFit(&camera, false, false)
 	camera.Scale = gw.view.Scale
 	camera.Offset = gw.view.Offset
