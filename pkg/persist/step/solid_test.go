@@ -97,6 +97,94 @@ func TestSolidHighDegree(t *testing.T) {
 	}
 }
 
+// TestSolidOffsetsConics reads shapes with offset surfaces, and with
+// edges and extrusions of parabolas and hyperbolas, as solids (package
+// 27.5): offsets of a cylinder and a sphere, read as the cylinder and
+// sphere they are, and segments of a parabola and a hyperbola extruded,
+// their curves exact Beziers. Each is sound and its volume the expected one
+// within the mesh's tolerance.
+func TestSolidOffsetsConics(t *testing.T) {
+	const tol = 0.005
+	fineMesh(t, tol)
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "offset")
+	for _, e := range readExpected(t, dir) {
+		m := readModel(t, filepath.Join(dir, e.name+".step"))
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0))
+		if err != nil {
+			t.Errorf("%s: %v", e.name, err)
+			continue
+		}
+		r := solidReport(sh)
+		allow := e.area*tol + 1e-9*e.volume
+		if !r.Sound() || math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s, want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		}
+	}
+}
+
+// TestOffsetCells lays an offset of a surface of no kind it can turn
+// into, an extruded B-spline outline with a tight bend, out in patches
+// of degree 5 (package 27.5): its lines refined where the base's are too
+// far apart for one patch, each patch within lowDegreeTol of the offset
+// at points between its own, and neighbours sharing their sides. A base
+// that closes with a crease has an offset that doesn't.
+func TestOffsetCells(t *testing.T) {
+	pts := []geom.Vector{{X: 0, Y: 0}, {X: 5, Y: 3}, {X: 10, Y: 0}, {X: 12, Y: 6}, {X: 8, Y: 10}, {X: 2, Y: 9}, {X: 0, Y: 0}}
+	knots := []float64{0, 0, 0, 0, 1, 2, 3, 4, 4, 4, 4}
+	ws := make([]float64, len(pts))
+	for i := range ws {
+		ws[i] = 1
+	}
+	c, err := newBsplineCurve(3, knots, pts, ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &offset{base: &extrusion{c: c, d: geom.Vector{Z: 1}}, d: 0.8}
+	if pu, _ := s.Period(); pu != 0 {
+		if bu, _ := s.base.Period(); bu > 0 {
+			t.Errorf("an offset of an outline closed with a crease closes, period %g", pu)
+		}
+	}
+	cells, err := offsetCells(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	us := append(append([]float64{0}, cells.breaksU(0, 4)...), 4)
+	vs := append(append([]float64{0}, cells.breaksV(0, 5)...), 5)
+	if len(us) <= 5 {
+		t.Errorf("the base's lines not refined: %v", us)
+	}
+	if len(vs) != 2 {
+		t.Errorf("lines along a straight extrusion: %v", vs)
+	}
+	var prev *srf.SSurface
+	for i := 0; i+1 < len(us); i++ {
+		p, err := cells.patch(us[i], us[i+1], vs[0], vs[1])
+		if err != nil {
+			t.Fatalf("cell %g..%g: %v", us[i], us[i+1], err)
+		}
+		for k := 0; k <= 20; k++ {
+			for m := 0; m <= 4; m++ {
+				x, y := float64(k)/20, float64(m)/4
+				want := s.Eval(us[i]+(us[i+1]-us[i])*x, vs[0]+(vs[1]-vs[0])*y)
+				if d := p.PointAt(x, y).Minus(want).Magnitude(); d > lowDegreeTol {
+					t.Errorf("cell %g..%g: %g off at (%g, %g)", us[i], us[i+1], d, x, y)
+				}
+			}
+		}
+		if prev != nil {
+			a, b := prev.EdgeCurve(1), p.EdgeCurve(3)
+			for k := 0; k <= b.Degree; k++ {
+				if !a.Ctrl[k].Equals(b.Ctrl[k]) {
+					t.Errorf("cells at %g don't share their side", us[i])
+					break
+				}
+			}
+		}
+		prev = &p
+	}
+}
+
 // solidCorpusSound are the corpus files whose shapes read as sound
 // solids (2026-10-04); the others fall back to meshes: Schenkel and
 // screw leave gaps or crossings in the mesh where edges miss their

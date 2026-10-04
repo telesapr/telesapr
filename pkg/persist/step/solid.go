@@ -270,6 +270,12 @@ const fileTol = 1e-3
 // patch's parameters, which would part it from the face beyond.
 const cutGap = fileTol
 
+// alongTol is how far a bound may lie from a line of a face's grid and
+// still run along it, in millimetres: a file's tolerance. (Ten times it
+// let bounds that cross a line at a shallow angle in NIST_MBE_PMI_6
+// count as along it.)
+const alongTol = fileTol
+
 // splitAtCuts cuts the edge's Beziers where faces asked, the pieces
 // sharing each cut's point exactly.
 func (se *solidEdge) splitAtCuts() {
@@ -712,7 +718,7 @@ func widestGap(vals []float64, period, start float64) float64 {
 }
 
 // alongLine reports whether a piece of a bound, laid out in samples,
-// runs along one line of the grid: every sample within fileTol of it on
+// runs along one line of the grid: every sample within alongTol of it on
 // the surface, as an edge of the file along another face's seam or a
 // knot line of its surface is, though its parameters stray from the
 // line by more than rounding (package 27.3). byU is set for a line of
@@ -724,6 +730,11 @@ func (g *faceGrid) alongLine(smps []uvSample) (byU bool, ln float64, ok bool) {
 	try := func(get func(uvSample) float64, lines []float64, period float64, u bool) (float64, bool) {
 		mid := get(smps[len(smps)/2])
 		best, bestD := 0.0, math.Inf(1)
+		if period == 0 {
+			// The ends of a grid that doesn't wrap lie a margin past the
+			// bounds, none along them.
+			lines = lines[1 : len(lines)-1]
+		}
 		for _, l := range lines {
 			d := mid - l
 			if period > 0 {
@@ -749,7 +760,7 @@ func (g *faceGrid) alongLine(smps []uvSample) (byU bool, ln float64, ok bool) {
 			if u {
 				m = su.Magnitude()
 			}
-			if m*math.Abs(d) > fileTol {
+			if m*math.Abs(d) > alongTol {
 				return 0, false
 			}
 		}
@@ -1095,7 +1106,12 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 					smps[k].v += dv
 					eu, ev := g.pointEps(smps[k], c)
 					if !c.contains(smps[k].u, smps[k].v, eu, ev) {
-						return fmt.Errorf("a bound leaves a cell between the points it was cut at, at %v", smps[k].p)
+						return fmt.Errorf("a bound leaves a cell between the points it was cut at, at %v DEBUG cell %v %v %v %v us %v all %v", smps[k].p, c.u0, c.u1, c.v0, c.v1, g.us, func() (o [][2]float64) {
+							for _, q := range smps {
+								o = append(o, [2]float64{q.u, q.v})
+							}
+							return
+						}())
 					}
 				}
 				ps = append(ps, gridPiece{sb: sb, smps: smps, cell: i*nv + j})

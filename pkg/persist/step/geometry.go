@@ -2,6 +2,7 @@ package step
 
 import (
 	"math"
+	"sync"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 )
@@ -537,6 +538,9 @@ func (s *revolution) Project(p geom.Vector, guess *[2]float64) (u, v float64) {
 type offset struct {
 	base Surface
 	d    float64
+
+	period     sync.Once
+	perU, perV float64
 }
 
 func (s *offset) normal(u, v float64) (p, n geom.Vector) {
@@ -562,10 +566,101 @@ func (s *offset) Derivs(u, v float64) (p, su, sv geom.Vector) {
 }
 
 func (s *offset) Domain() (u0, u1, v0, v1 float64) { return s.base.Domain() }
-func (s *offset) Period() (pu, pv float64)         { return s.base.Period() }
-func (s *offset) Pole(side int) (float64, bool)    { return s.base.Pole(side) }
+
+// Period is the base's, along a way where the offset closes up too: a
+// base that closes with a crease, as a closed outline with a corner
+// where it starts, has an offset that doesn't (package 27.5).
+func (s *offset) Period() (pu, pv float64) {
+	s.period.Do(func() { s.perU, s.perV = s.closingPeriods() })
+	return s.perU, s.perV
+}
+
+func (s *offset) closingPeriods() (pu, pv float64) {
+	pu, pv = s.base.Period()
+	u0, u1, v0, v1 := s.base.Domain()
+	closes := func(at func(k int) (geom.Vector, geom.Vector)) bool {
+		for k := 0; k <= 4; k++ {
+			a, b := at(k)
+			if a.Minus(b).Magnitude() > 1e-6*(1+math.Abs(s.d)) {
+				return false
+			}
+		}
+		return true
+	}
+	finite := func(lo, hi float64) (float64, float64) {
+		if math.IsInf(lo, 0) || math.IsInf(hi, 0) {
+			return -1, 1
+		}
+		return lo, hi
+	}
+	if pu > 0 {
+		a, b := finite(v0, v1)
+		if !closes(func(k int) (geom.Vector, geom.Vector) {
+			v := a + (b-a)*float64(k)/4
+			return s.Eval(u0, v), s.Eval(u0+pu, v)
+		}) {
+			pu = 0
+		}
+	}
+	if pv > 0 {
+		a, b := finite(u0, u1)
+		if !closes(func(k int) (geom.Vector, geom.Vector) {
+			u := a + (b-a)*float64(k)/4
+			return s.Eval(u, v0), s.Eval(u, v0+pv)
+		}) {
+			pv = 0
+		}
+	}
+	return pu, pv
+}
+func (s *offset) Pole(side int) (float64, bool) { return s.base.Pole(side) }
 func (s *offset) Project(p geom.Vector, guess *[2]float64) (u, v float64) {
-	return s.base.Project(p, guess)
+	u, v = s.base.Project(p, guess)
+	// The base's nearest point is the offset's foot only where the
+	// offset is less than the base's radius of curvature; near a crease
+	// or a tight bend, Newton's steps on the offset itself from there,
+	// and from the guess, find it (package 27.5).
+	best := math.Inf(1)
+	try := func(a, b float64) {
+		a, b = newtonOnSurface(s, p, [2]float64{a, b})
+		if d := s.Eval(a, b).Minus(p).Magnitude(); d < best {
+			best, u, v = d, a, b
+		}
+	}
+	bu0, bv0 := u, v
+	try(bu0, bv0)
+	if guess != nil {
+		try(guess[0], guess[1])
+	}
+	// Where the base closes with a crease, its parameter at the crease
+	// is either end; the offset's is the end whose point is p's.
+	bu, bv := s.base.Period()
+	ou, ov := s.Period()
+	u0, u1, v0, v1 := s.base.Domain()
+	// Near either end, the nearer to p of the parameter found, the same
+	// a period on or back, and the ends.
+	pick := func(t, lo, hi, period float64, at func(float64) geom.Vector) float64 {
+		if math.Min(math.Abs(t-lo), math.Abs(hi-t)) > 1e-3*period {
+			return t
+		}
+		best, bd := t, at(t).Minus(p).Magnitude()
+		for _, c := range []float64{lo, hi, t + period, t - period} {
+			if c < lo || c > hi {
+				continue
+			}
+			if d := at(c).Minus(p).Magnitude(); d < bd {
+				best, bd = c, d
+			}
+		}
+		return best
+	}
+	if bu > 0 && ou == 0 {
+		u = pick(u, u0, u1, bu, func(t float64) geom.Vector { return s.Eval(t, v) })
+	}
+	if bv > 0 && ov == 0 {
+		v = pick(v, v0, v1, bv, func(t float64) geom.Vector { return s.Eval(u, t) })
+	}
+	return u, v
 }
 
 // ---- projection onto a general surface ----

@@ -343,3 +343,72 @@ func patchWithin(pts [][]geom.Vector4, f func(x, y float64) geom.Vector4, tol fl
 	}
 	return true
 }
+
+// InterpolatedPatch is the patch of degree du by dv through f's points
+// at Chebyshev-Lobatto points of [0, 1] each way, its corners and sides'
+// ends among them, or an error when it strays from f by more than tol.
+// f maps the patch's parameters to space.
+func InterpolatedPatch(du, dv int, f func(x, y float64) geom.Vector, tol float64) (SSurface, error) {
+	var p SSurface
+	if du < 1 || dv < 1 || du > MaxDegree || dv > MaxDegree {
+		return p, errors.New("srf: a patch's degree out of range")
+	}
+	nu, nv := lobatto(du), lobatto(dv)
+	invU, invV := bernsteinInverse(du, nu), bernsteinInverse(dv, nv)
+	vals := make([][]geom.Vector, du+1)
+	for i, x := range nu {
+		vals[i] = make([]geom.Vector, dv+1)
+		for j, y := range nv {
+			vals[i][j] = f(x, y)
+		}
+	}
+	tmp := make([][]geom.Vector, du+1)
+	for i := range tmp {
+		tmp[i] = make([]geom.Vector, dv+1)
+		for j := range tmp[i] {
+			for k := range nv {
+				tmp[i][j] = tmp[i][j].Plus(vals[i][k].ScaledBy(invV[j][k]))
+			}
+		}
+	}
+	p.DegM, p.DegN = du, dv
+	for i := 0; i <= du; i++ {
+		for j := 0; j <= dv; j++ {
+			var q geom.Vector
+			for k := range nu {
+				q = q.Plus(tmp[k][j].ScaledBy(invU[i][k]))
+			}
+			p.Ctrl[i][j], p.Weight[i][j] = q, 1
+		}
+	}
+	// The corners exactly, as neighbours share them.
+	p.Ctrl[0][0], p.Ctrl[du][0], p.Ctrl[0][dv], p.Ctrl[du][dv] = vals[0][0], vals[du][0], vals[0][dv], vals[du][dv]
+	const samples = 12
+	for k := 0; k <= samples; k++ {
+		for m := 0; m <= samples; m++ {
+			x, y := float64(m)/samples, float64(k)/samples
+			if p.PointAt(x, y).Minus(f(x, y)).Magnitude() > tol {
+				return p, errors.New("srf: the patch strays from the surface")
+			}
+		}
+	}
+	return p, nil
+}
+
+// InterpolatedCurve is the Bezier of degree len(pts)-1, at most
+// MaxDegree, through pts at the Chebyshev-Lobatto points of [0, 1].
+func InterpolatedCurve(pts []geom.Vector) SBezier {
+	d := len(pts) - 1
+	inv := bernsteinInverse(d, lobatto(d))
+	var b SBezier
+	b.Degree = d
+	for i := 0; i <= d; i++ {
+		var q geom.Vector
+		for k := range pts {
+			q = q.Plus(pts[k].ScaledBy(inv[i][k]))
+		}
+		b.Ctrl[i], b.Weight[i] = q, 1
+	}
+	b.Ctrl[0], b.Ctrl[d] = pts[0], pts[d]
+	return b
+}
