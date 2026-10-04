@@ -64,6 +64,39 @@ func TestSolidShapes(t *testing.T) {
 	}
 }
 
+// TestSolidHighDegree reads shapes whose curves and surfaces are of a
+// degree above 5 as solids (package 27.2): a lid of degree 7 by 6 and a
+// surface of revolution of a curve of degree 8, written at degree 5
+// within lowDegreeTol. Each is sound and its volume the exact one
+// within the mesh's tolerance; read as a mesh, the same.
+func TestSolidHighDegree(t *testing.T) {
+	const tol = 0.005
+	fineMesh(t, tol)
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "degree")
+	for _, e := range readExpected(t, dir) {
+		path := filepath.Join(dir, e.name+".step")
+		m := readModel(t, path)
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0))
+		if err != nil {
+			t.Errorf("%s: %v", e.name, err)
+			continue
+		}
+		r := solidReport(sh)
+		allow := e.area*tol + 1e-9*e.volume
+		if !r.Sound() || math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s, want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		}
+		res, err := ReadFile(path, Options{ChordTol: tol})
+		if err != nil {
+			t.Fatal(err)
+		}
+		mr := check.Solid(nil, &res.Mesh)
+		if !mr.Sound() || math.Abs(mr.Volume-e.volume) > allow {
+			t.Errorf("%s as a mesh: %s, want volume %.6g within %.3g", e.name, mr.String(), e.volume, allow)
+		}
+	}
+}
+
 // solidCorpusSound are the corpus files whose shapes read as sound
 // solids (2026-10-04); the others fall back to meshes: Schenkel and
 // screw leave gaps or crossings in the mesh where edges miss their

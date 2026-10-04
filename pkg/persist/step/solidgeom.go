@@ -30,6 +30,25 @@ func (c *bsplineCurve) srfCurve() *srf.BSplineCurve {
 	return out
 }
 
+// lowDegreeTol is how far, in millimetres, a curve or surface of a
+// degree above srf.MaxDegree may move when the solid importer writes it
+// at degree srf.MaxDegree (package 27.2): a tenth of a file's
+// tolerance.
+const lowDegreeTol = fileTol / 10
+
+// kernel is the curve as the kernel's, at degree srf.MaxDegree within
+// lowDegreeTol when its own is above.
+func (c *bsplineCurve) kernel() (*srf.BSplineCurve, error) {
+	c.low.once.Do(func() {
+		bc := c.srfCurve()
+		c.low.c, c.low.err = bc.LowDegree(lowDegreeTol)
+		if c.low.err != nil {
+			c.low.err = errUnsupported(fmt.Sprintf("a curve of degree %d (%v)", bc.Deg, c.low.err))
+		}
+	})
+	return c.low.c, c.low.err
+}
+
 // srfSurface is a STEP B-spline surface as the kernel's.
 func (s *bsplineSurface) srfSurface() *srf.BSplineSurface {
 	out := &srf.BSplineSurface{DegU: s.bu.deg, DegV: s.bv.deg,
@@ -76,6 +95,11 @@ func curveBreaks(c Curve, lo, hi float64) []float64 {
 	var out []float64
 	switch cc := c.(type) {
 	case *bsplineCurve:
+		bc, err := cc.kernel()
+		if err != nil {
+			// curvePiece says so.
+			bc = cc.srfCurve()
+		}
 		per := cc.Period()
 		shifts := []float64{0}
 		if per > 0 {
@@ -86,7 +110,7 @@ func curveBreaks(c Curve, lo, hi float64) []float64 {
 		}
 		seen := map[float64]bool{}
 		for _, sh := range shifts {
-			for _, k := range cc.Breaks() {
+			for _, k := range bc.Breaks() {
 				if k+sh > lo && k+sh < hi && !seen[k+sh] {
 					seen[k+sh] = true
 					out = append(out, k+sh)
@@ -114,9 +138,9 @@ func curvePiece(c Curve, ta, tb float64) (srf.SBezier, error) {
 		}
 		return arcBezier(cc.f, cc.a, cc.b, ta, tb), nil
 	case *bsplineCurve:
-		bc := cc.srfCurve()
-		if bc.Deg > srf.MaxDegree {
-			return srf.SBezier{}, errUnsupported(fmt.Sprintf("a curve of degree %d", bc.Deg))
+		bc, err := cc.kernel()
+		if err != nil {
+			return srf.SBezier{}, err
 		}
 		pieces, err := bc.Beziers()
 		if err != nil {
@@ -331,9 +355,9 @@ func cellsOf(s Surface) (*surfaceCells, error) {
 				return p, nil
 			}}, nil
 	case *bsplineSurface:
-		bs := ss.srfSurface()
-		if bs.DegU > srf.MaxDegree || bs.DegV > srf.MaxDegree {
-			return nil, errUnsupported(fmt.Sprintf("a surface of degree %d by %d", bs.DegU, bs.DegV))
+		bs, err := ss.srfSurface().LowDegree(lowDegreeTol)
+		if err != nil {
+			return nil, errUnsupported(fmt.Sprintf("a surface of degree %d by %d (%v)", ss.bu.deg, ss.bv.deg, err))
 		}
 		ps, err := bs.Patches()
 		if err != nil {

@@ -32,9 +32,9 @@ import (
 //     the edges of one face's patches seams of one sheet.
 //
 // A plane needs no grid: its face is one, bounded by the curves. What
-// the importer can't hold exactly, an offset surface or a curve of
-// degree above 5 say, makes the shape an error, and the caller falls
-// back to the mesh.
+// the importer can't hold exactly, an offset surface say, makes the
+// shape an error, and the caller falls back to the mesh; a curve or
+// surface of a degree above 5 is held within lowDegreeTol.
 
 // solidUse is an edge as a bound of a face runs along it.
 type solidUse struct {

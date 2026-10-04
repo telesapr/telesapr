@@ -36,18 +36,18 @@ tool will do; the model is `model.tlspr`).
 
 The group's screen of a STEP link has "read as reference mesh / solid". Read as a solid, the
 file's faces are exact: planes, cylinders, cones, spheres, tori, surfaces of revolution and of
-extrusion, and B-splines up to degree 5, each cut into the kernel's patches along its knots (a
-quarter turn for one that turns about an axis) and trimmed by its edges. The linked part then
+extrusion, and B-splines, each cut into the kernel's patches along its knots (a quarter turn for
+one that turns about an axis) and trimmed by its edges. A curve or surface of a degree above 5,
+the kernel's highest, is written at degree 5 in pieces, within a ten-thousandth of a millimetre. The linked part then
 takes part in Booleans, so a later group can cut it or join it, as a solid made here does; the
 screen says "read as a solid, n faces exact". A file that can't be read as one comes in as the
 reference mesh, and the screen says why, as "read as a mesh, not a solid: ...".
 
 Files are written to a tolerance, and edges miss their faces by up to it: the reader takes a
 thousandth of a millimetre, and the mesh of a face from a file puts its edges' points where the
-edges are, so faces that meet in the file meet in the mesh. What it can't take yet: offset
-surfaces, curves and surfaces of degree above 5, a face's bound that runs along the line where
-the pieces of its surface meet, one face's edge along another face's seam, and edges further from
-their faces than the tolerance. Of the files TeleSAPR is tested on, the 14 shapes made in
+edges are, so faces that meet in the file meet in the mesh. An edge that runs along the line where
+the pieces of a face's surface meet, within the tolerance of it, is put on that line. What it
+can't take yet: offset surfaces, and edges further from their faces than the tolerance. Of the files TeleSAPR is tested on, the 14 shapes made in
 FreeCAD and 5 of 9 from other systems read as sound solids.
 
 ## From a script

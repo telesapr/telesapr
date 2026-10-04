@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // basis is a B-spline basis: a degree and a knot vector with every
@@ -240,6 +241,15 @@ type bsplineCurve struct {
 	ctrl []hpoint
 	// closed is set when the curve ends where it starts.
 	closed bool
+	// low is the curve as the kernel's, of degree at most srf.MaxDegree,
+	// made on first use for the solid importer.
+	low lowCurve
+}
+
+type lowCurve struct {
+	once sync.Once
+	c    *srf.BSplineCurve
+	err  error
 }
 
 func newBsplineCurve(deg int, knots []float64, pts []geom.Vector, weights []float64) (*bsplineCurve, error) {
