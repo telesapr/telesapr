@@ -93,6 +93,13 @@ but name.
   ball runs off the extrapolated B-spline faces; the band's top would
   stand out of a curved end face, which planeCut can't follow off a
   plane), so it was not kept.
+- The band-on-cone r 1 crossing at 0.001%: checking across the oblique
+  sections at 1.5 or 2 times the tolerance instead of 3 changes nothing;
+  fitting to a twentieth of the chord tolerance moves the crossing to
+  0.002%. It is the meshes of two tangent faces crossing, not the fit.
+- The ball's foot chosen by trims among every patch holding it, not only
+  those sharing the nearest one's surface: a sphere_bored.step fillet
+  came out unsound (39 of 59), so the shared-surface rule stays.
 - More refinement rounds for the STEP cylinder at chord 0.002%: the misfit
   floors at 2.6e-5 whatever the rounds; not found why.
 
@@ -101,7 +108,10 @@ but name.
 - 22.3: the blend going on onto the next face (three faces at once).
 - 22.4: vertex blends (setback corner patches); also the loft's foot
   corners and the lid's corners of 22.5's measurement.
-- 22.5: OpenCASCADE volumes on the measured solids; box_hole.step's one
+- 22.5: the loft's 4 "tangent" refusals are seams between its patches,
+  which no fillet should take: the measurement should leave smooth edges
+  out (no script call tells them yet). OpenCASCADE volumes on the
+  measured solids; box_hole.step's one
   edge whose ball skips a face cut from a shared patch between two scan
   samples' faces (faces 7, 9, 8 round the hole).
 - The band on cone, fillet r 1 at chord 0.001%: 2 mesh edges cross where
