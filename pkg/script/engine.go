@@ -530,6 +530,10 @@ func (e *Error) Error() string {
 
 var positioned = regexp.MustCompile(`^(\d+):(\d+): (.*)$`)
 
+// severalValues is the interpreter's error for a call of several
+// results passed beside other arguments; it names the call's type.
+var severalValues = regexp.MustCompile(`^cannot use func\(.*?\) \((.+, .+)\) as type interface \{\}$`)
+
 // locate makes what the interpreter returns for src an Error: a
 // panic becomes what it carried, without the interpreter's own stack,
 // and a place counts from the start of src.
@@ -573,6 +577,10 @@ func (e *Engine) locate(err error, src string) error {
 		// What the interpreter says of a name it doesn't know in a
 		// definition.
 		out.Err = errors.New("constant definition loop, or a name that isn't defined")
+	}
+	if m := severalValues.FindStringSubmatch(out.Err.Error()); m != nil {
+		// As fmt.Println("box", g.Bounds()).
+		out.Err = fmt.Errorf("a call that gives several values (%s) can't stand beside other arguments; name them first, as lo, hi := g.Bounds()", m[1])
 	}
 	return out
 }
