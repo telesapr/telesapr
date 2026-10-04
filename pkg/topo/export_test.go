@@ -20,3 +20,12 @@ func RollingBallAlong(sh *srf.SShell, a, b geom.Vector, r float64, flat bool) er
 	}
 	return rollingBallFillet(sh, t, e, r, 1<<30, flat)
 }
+
+// FilletPicksSetback rounds the picks as FilletPicks does, but with a
+// setback at every corner of three rounded edges, even of one radius,
+// where FilletPicks puts a sphere.
+func FilletPicksSetback(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) error {
+	forceSetback = true
+	defer func() { forceSetback = false }()
+	return filletPicksSetback(sh, picks, r, origin)
+}

@@ -12,8 +12,10 @@ import (
 // A block's upright edges rounded at one radius and its top edges at a
 // smaller one, in one fillet with radii per edge (roadmap 22.4): the
 // corners are rounded in stages, sound and of the volume by formula; one
-// step of undo; the same after saving and loading; and the radii the
-// other way round refused, saying why, marked at the corner.
+// step of undo; the same after saving and loading. The radii the other
+// way round are set back at the corners (roadmap 22.4), sound; two top
+// edges of different radii over an upright left sharp are refused,
+// saying why, marked at the corner.
 func TestFilletStagesScript(t *testing.T) {
 	const w, l, h, upright, top = 30.0, 20.0, 15.0, 5.0, 2.0
 	build := func(d *Doc) (Group, []SolidEdge, int) {
@@ -69,16 +71,37 @@ func TestFilletStagesScript(t *testing.T) {
 		t.Fatal("the fillet is still there after undo")
 	}
 
-	// The top larger than the uprights it would go round.
+	// The top larger than the uprights it would go round: set back.
 	f := New()
 	_, edges, n = build(f)
-	wrong := f.FilletSolid(edges, top, "rounded")
+	other := f.FilletSolid(edges, top, "rounded")
 	for i := n; i < len(edges); i++ {
-		wrong.SetEdgeRadius(i, upright)
+		other.SetEdgeRadius(i, upright)
 	}
-	p := wrong.Problem()
-	if !strings.Contains(p, "one radius at a time") {
+	if p := other.Problem(); p != "" {
 		t.Errorf("the radii the other way round: %q", p)
+	} else if r := other.Check(); !r.Sound() || r.Volume >= w*l*h {
+		t.Errorf("the radii the other way round: %s, volume %g", r.Summary(), r.Volume)
+	}
+
+	// Two top edges of different radii over an upright left sharp.
+	g2 := New()
+	_, edges, n = build(g2)
+	var two []SolidEdge
+	for _, e := range edges[n:] {
+		a, b := e.Ends()
+		if near(a.Y, 0) && near(b.Y, 0) || near(a.X, w) && near(b.X, w) {
+			two = append(two, e)
+		}
+	}
+	if len(two) != 2 {
+		t.Fatalf("%d top edges at the corner", len(two))
+	}
+	wrong := g2.FilletSolid(two, top, "rounded")
+	wrong.SetEdgeRadius(1, upright)
+	p := wrong.Problem()
+	if !strings.Contains(p, "left sharp") {
+		t.Errorf("a mitre of two radii: %q", p)
 	}
 	wrong.d.read(func(sk *sketch.Sketch) {
 		if pr := wrong.get(sk).Problem; !pr.HasPoint || !near(pr.At.Z, h) {

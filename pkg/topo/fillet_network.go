@@ -195,6 +195,12 @@ type filletCorner struct {
 	shared  srf.SBezier
 	conic   srf.SBezier
 	cutFace int
+	// For a setback corner: each fillet's section where it is cut, by
+	// edge; each face's curve between two fillets, by face; and the
+	// patches that fill the hole.
+	arcs       map[int]srf.SBezier
+	faceCurves map[int]srf.SBezier
+	quads      []srf.SSurface
 }
 
 // seam is the kind of a corner where two pieces of a circular edge meet.
@@ -219,28 +225,54 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 // (filletInStages).
 func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
 	err := filletPicks(sh, picks, r, origin, flat, nil)
-	if err == nil || !mixedCorner(err) {
+	if err == nil || !mixedCorner(err) && !setbackRefusal(err) {
 		return err
 	}
 	// The corners are checked before the shell is changed, so it is
 	// still the solid as it was.
-	staged, serr := filletInStages(sh, picks, r, origin, flat)
-	if serr != nil {
-		var fx, sx *FilletError
-		errors.As(err, &fx)
-		why := serr.Error()
-		if errors.As(serr, &sx) {
-			why = sx.Msg
+	var serr error
+	if mixedCorner(err) {
+		staged, e := filletInStages(sh, picks, r, origin, flat)
+		if e == nil {
+			*sh = staged
+			return nil
 		}
-		return filletErr(fx.At, "%s, and rounded one radius at a time they don't go on round each other's corners: %s", fx.Msg, why)
+		serr = e
 	}
-	*sh = staged
-	return nil
+	// Else each corner the stages can't round gets a setback, the hole
+	// filled by patches (roadmap 22.4), which says why where it can't.
+	if !flat {
+		berr := filletPicksSetback(sh, picks, r, origin)
+		if berr == nil {
+			return nil
+		}
+		return berr
+	}
+	if serr == nil {
+		return err
+	}
+	var fx, sx *FilletError
+	errors.As(err, &fx)
+	why := serr.Error()
+	if errors.As(serr, &sx) {
+		why = sx.Msg
+	}
+	return filletErr(fx.At, "%s, and rounded one radius at a time they don't go on round each other's corners: %s", fx.Msg, why)
 }
 
 // filletPicks is FilletPicks in one stage. A rounded edge's chain does
 // not go on into an edge forbid reports.
 func filletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool) error {
+	return filletPicksWith(sh, picks, r, origin, flat, forbid, false)
+}
+
+// filletPicksSetback is filletPicks with setback corners where no
+// sphere fits.
+func filletPicksSetback(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) error {
+	return filletPicksWith(sh, picks, r, origin, false, nil, true)
+}
+
+func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool, setback bool) error {
 	what := "fillet"
 	if flat {
 		what = "chamfer"
@@ -375,6 +407,12 @@ func filletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 				continue
 			}
 			c, err := t.filletCornerAt(v, edges, byEdge)
+			if setback && forceSetback && err == nil && c.kind == 3 {
+				c, err = t.setbackCornerAt(v, edges, byEdge)
+			}
+			if err != nil && setback && setbackRefusal(err) {
+				c, err = t.setbackCornerAt(v, edges, byEdge)
+			}
 			if err != nil {
 				if why := stopped[v]; why != nil {
 					var fx *FilletError
@@ -485,6 +523,22 @@ func filletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		sphere.Origin = next
 		next++
 		patches = append(patches, patch{sphere, loop, t.Vertices[v].P})
+	}
+
+	for _, v := range vs {
+		c := corners[v]
+		if c.kind != setbackCorner {
+			continue
+		}
+		for _, q := range c.quads {
+			e0, e1, e2, e3 := q.EdgeCurve(0), q.EdgeCurve(1), q.EdgeCurve(2), q.EdgeCurve(3)
+			e2.Reverse()
+			e3.Reverse()
+			q.Color = color
+			q.Origin = next
+			next++
+			patches = append(patches, patch{q, []srf.SBezier{e0, e1, e2, e3}, t.Vertices[v].P})
+		}
 	}
 
 	RemoveFaces(sh, t, faces)
@@ -1270,6 +1324,13 @@ func lineMeet(a, da, b, db geom.Vector) (geom.Vector, bool) {
 // from p to q: one, but for the strip that goes on past an uneven
 // mitre, which runs along the mitre and then the conic.
 func (fe *filletEdge) connectors(t *Topology, v int, c *filletCorner, p, q geom.Vector, flat bool) []srf.SBezier {
+	if c.kind == setbackCorner {
+		sb := c.arcs[fe.e]
+		if !sb.Start().Equals(p) {
+			sb.Reverse()
+		}
+		return []srf.SBezier{sb}
+	}
 	if c.kind != 2 || c.long != fe.e || flat {
 		return []srf.SBezier{fe.connector(t, v, c, p, q, flat)}
 	}
@@ -1371,6 +1432,17 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 					sb.Reverse()
 				}
 				if !p.Equals(q) {
+					loop = append(loop, sb)
+				}
+			}
+			if c := corners[vb]; c != nil && c.kind == setbackCorner {
+				// The face's curve between the two fillets, where the hole's
+				// patches meet it.
+				p, q := point(x, vb), point(nx, vb)
+				if sb, ok := c.faceCurves[f]; ok && !p.Equals(q) {
+					if !sb.Start().Equals(p) {
+						sb.Reverse()
+					}
 					loop = append(loop, sb)
 				}
 			}

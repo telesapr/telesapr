@@ -91,20 +91,15 @@ func TestFilletStages(t *testing.T) {
 	}
 }
 
-// What the stages can't round is refused, saying why: two top edges of
-// different radii mitred over an upright edge left sharp, whose fillet
-// would have to go on down it; a top ring larger than the uprights it
-// would go round.
+// What neither the stages nor a setback rounds is refused, saying why:
+// two top edges of different radii mitred over an upright edge left
+// sharp, where the blend would need a crease. A top ring larger than
+// the uprights it would go round is set back (TestFilletSetback).
 func TestFilletStagesRefused(t *testing.T) {
 	picks := []topo.FilletPick{{A: v(0, 0, 30), B: v(10, 0, 30), R: 2}, {A: v(10, 0, 30), B: v(10, 20, 30)}}
 	err := topo.FilletPicks(box(), picks, 1, 1<<30, false)
-	if err == nil || !strings.Contains(err.Error(), "radius 1 and 2 meet") || !strings.Contains(err.Error(), "one radius at a time") {
+	if err == nil || !strings.Contains(err.Error(), "left sharp") {
 		t.Errorf("a mitre of two radii: %v", err)
-	}
-	sh := box()
-	err = topo.FilletPicks(sh, append(boxUprights(1), boxRing(30, 3)...), 1, 1<<30, false)
-	if err == nil || !strings.Contains(err.Error(), "one radius at a time") {
-		t.Errorf("a ring larger than its corners: %v", err)
 	}
 	var fx *topo.FilletError
 	if !errors.As(err, &fx) || fx.At.Z != 30 {
