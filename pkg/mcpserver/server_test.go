@@ -222,3 +222,22 @@ func TestRunText(t *testing.T) {
 		}
 	}
 }
+
+// A sketch that crosses itself makes no solid, and the status and the
+// drawing say why and where (roadmap 23.1).
+func TestSketchProblemShown(t *testing.T) {
+	cs, _ := connect(t)
+	res, text := call(t, cs, ToolRun, map[string]any{
+		"code": "doc.Polyline(true, V(0, 0, 0), V(10, 10, 0), V(10, 0, 0), V(0, 10, 0))\ndoc.Extrude(5, \"bow\")",
+	})
+	if res.IsError || !strings.Contains(text, "active group g003-bow, extrude: solved, 1 DOF, problem: the sketch g002-sketch-in-plane crosses itself at (5, 5, 0)") ||
+		!strings.Contains(text, "in trouble: g002-sketch-in-plane, sketch-in-plane: solved, 8 DOF, problem: the sketch crosses itself at (5, 5, 0)") {
+		t.Errorf("the status reads\n%s", text)
+	}
+	if _, text = call(t, cs, ToolDescribe, nil); !strings.Contains(text, "problem: the sketch g002-sketch-in-plane crosses itself") {
+		t.Errorf("the drawing is described as\n%s", text)
+	}
+	if _, text = call(t, cs, ToolRun, map[string]any{"code": "doc.Active().Check().Sound()"}); !strings.Contains(text, "value: false") {
+		t.Errorf("the solid that isn't there is sound:\n%s", text)
+	}
+}

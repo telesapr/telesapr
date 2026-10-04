@@ -3,6 +3,7 @@ package topo
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -184,8 +185,6 @@ func GridSpline(ps []srf.SSurface) (*Grid, error) {
 			lenV[j] += lv / float64(ni)
 		}
 	}
-	bs.KnotsU = fullKnots(du, lenU)
-	bs.KnotsV = fullKnots(dv, lenV)
 	nu, nv := ni*du+1, nj*dv+1
 	bs.Ctrl = make([][]geom.Vector, nu)
 	bs.Weight = make([][]float64, nu)
@@ -204,6 +203,11 @@ func GridSpline(ps []srf.SSurface) (*Grid, error) {
 			}
 		}
 	}
+	// Where the patches join smoothly, spans in the proportion they
+	// join in, so that the surface is smooth in its parameters too, and
+	// then the knots between them out as often as they go (package 27.1).
+	bs.KnotsU = fullKnots(du, smoothSpans(lenU, func(s int) float64 { return joinRatio(bs, true, s) }))
+	bs.KnotsV = fullKnots(dv, smoothSpans(lenV, func(s int) float64 { return joinRatio(bs, false, s) }))
 	g := &Grid{Surface: bs, ClosedU: closedU}
 	for k, c := range placed {
 		g.Cells = append(g.Cells, Cell{H: ps[k].H, I: c.i - i0, J: c.j - j0})
@@ -211,7 +215,103 @@ func GridSpline(ps []srf.SSurface) (*Grid, error) {
 	if err := bs.Check(); err != nil {
 		return nil, err
 	}
+	bs.RemoveKnots(KnotRemovalTol)
+	if err := bs.Check(); err != nil {
+		return nil, err
+	}
 	return g, nil
+}
+
+// KnotRemovalTol is how far, in mm, taking a knot out of a face's
+// B-spline may move it: no more than the patches' own points agree
+// where they meet.
+var KnotRemovalTol = 0.1 * geom.LengthEps
+
+// smoothSpans are the lengths of the spans of a grid along one way:
+// lengths as given, but through each run of spans that join smoothly,
+// in the proportion ratio(s) between span s+1 and span s, as long in
+// all as the run's lengths given. ratio is 0 where span s and s+1 meet
+// at a crease.
+func smoothSpans(lengths []float64, ratio func(s int) float64) []float64 {
+	out := append([]float64(nil), lengths...)
+	for a := 0; a < len(lengths); {
+		b := a
+		rel := []float64{1}
+		for b+1 < len(lengths) {
+			r := ratio(b)
+			if r <= 0 {
+				break
+			}
+			rel = append(rel, rel[len(rel)-1]*r)
+			b++
+		}
+		if b > a {
+			given, sum := 0.0, 0.0
+			for k := a; k <= b; k++ {
+				given += lengths[k]
+				sum += rel[k-a]
+			}
+			if given > 0 && sum > 0 && !math.IsInf(sum, 0) {
+				for k := a; k <= b; k++ {
+					out[k] = rel[k-a] * given / sum
+				}
+			}
+		}
+		a = b + 1
+	}
+	return out
+}
+
+// joinRatio is, where span s of the grid's surface meets span s+1
+// along u (or v), the ratio of the lengths their parameters must have
+// for the surface to be smooth in them there: the ratio of the steps of
+// its homogeneous control points on either side of the join, when every
+// row of them steps on the same way in the same ratio; else 0, a
+// crease.
+func joinRatio(bs *srf.BSplineSurface, alongU bool, s int) float64 {
+	deg, rows := bs.DegV, len(bs.Ctrl)
+	if alongU {
+		deg, rows = bs.DegU, len(bs.Ctrl[0])
+	}
+	c := (s + 1) * deg
+	at := func(row, k int) geom.Vector4 {
+		if alongU {
+			return geom.Vector4FromWeighted(bs.Weight[k][row], bs.Ctrl[k][row])
+		}
+		return geom.Vector4FromWeighted(bs.Weight[row][k], bs.Ctrl[row][k])
+	}
+	ratio, size := 0.0, 0.0
+	for row := 0; row < rows; row++ {
+		size = max(size, len4(at(row, c)))
+	}
+	tiny := 1e-9 * max(size, 1)
+	for row := 0; row < rows; row++ {
+		a := at(row, c).Minus(at(row, c-1))
+		b := at(row, c+1).Minus(at(row, c))
+		la, lb := len4(a), len4(b)
+		if la <= tiny && lb <= tiny {
+			// A pole: both sides shrink to the point.
+			continue
+		}
+		if la <= tiny || lb <= tiny {
+			return 0
+		}
+		r := lb / la
+		if len4(b.Minus(a.ScaledBy(r))) > 1e-9*lb {
+			return 0
+		}
+		if ratio != 0 && math.Abs(r-ratio) > 1e-7*ratio {
+			return 0
+		}
+		if ratio == 0 {
+			ratio = r
+		}
+	}
+	return ratio
+}
+
+func len4(v geom.Vector4) float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z + v.W*v.W)
 }
 
 // fullKnots is a clamped knot vector of spans of the lengths given,

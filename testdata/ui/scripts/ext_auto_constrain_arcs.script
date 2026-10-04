@@ -1,0 +1,42 @@
+# Constraints inferred while drawing arcs and circles (an extension,
+# roadmap 29.4): a line, then an arc from its end with the chord square
+# to it, which is made tangent to the line; a circle, then another
+# nearly as big, which is made the same size. The mouse moves twice to
+# each point, as a drag does.
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 300 200
+move 300 200
+down L 300 200
+up L 300 200
+key esc
+key a
+move 300 200
+down L 300 200
+up L 300 200
+move 300 259
+move 300 260
+down L 300 260
+up L 300 260
+key esc
+key c
+move 450 200
+down L 450 200
+up L 450 200
+move 490 200
+move 490 200
+down L 490 200
+up L 490 200
+key esc
+key c
+move 450 350
+down L 450 350
+up L 450 350
+move 490 349
+move 490 351
+down L 490 351
+up L 490 351
+key esc
+save

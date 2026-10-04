@@ -118,6 +118,9 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 			for _, e := range dm.Edges {
 				c.add(solidEdgeField(e))
 			}
+			for _, f := range dm.Faces {
+				c.add(field("solid-face", hex(uint32(f))))
+			}
 			n.add(c)
 		}
 		for _, dt := range d.Details {

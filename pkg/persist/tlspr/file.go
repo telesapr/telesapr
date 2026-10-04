@@ -14,7 +14,24 @@ import (
 // Extension is the file extension of the format, without its dot.
 const Extension = "tlspr"
 
-func init() { link.Register(Extension, loadLinked) }
+func init() {
+	link.Register(Extension, loadLinked)
+	link.RegisterSketchReader(Extension, readLinkedSketch)
+}
+
+// readLinkedSketch reads a linked file's sketch, for the parts it
+// links in turn.
+func readLinkedSketch(path string) (*sketch.Sketch, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := Decode(data)
+	if err != nil {
+		return nil, err
+	}
+	return doc.Sketch, nil
+}
 
 // ErrCancelled is LoadFile's error when the user cancelled loading at
 // a missing linked file.

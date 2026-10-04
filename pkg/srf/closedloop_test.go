@@ -161,15 +161,15 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 }
 
 // sphereFaceMaxFailRate is the fraction of TestSphereThroughFaceSweep's
-// grid allowed to fail: 1 of 135 since roadmap 13.2, a cap so small
-// (bulge 0.02) that it triangulates flat against the face. The nine
-// intersections at the largest bulge that failed before laid a sliver
-// of the sphere's band flat on the plane's face: an ear of three
-// consecutive rim points, convex in the patch's uv, turned over in xyz
-// (folded in triangulate.go). It was 10 on 2026-10-02 and 2026-10-03,
-// and 99 before the closed loops were searched for. The sample of 12
-// has none.
-const sphereFaceMaxFailRate = 1.0 / 135
+// grid allowed to fail: none since roadmap 24.1. The last, a cap so
+// small (bulge 0.02) that its patch's grid kept clear of it, joined
+// two points of the cut on either side of a patch's seam by an edge
+// lying in the box's face (splitTrimDiagonals). It was 1 of 135 after
+// roadmap 13.2, which mended nine intersections whose band of sphere
+// laid a sliver flat on the plane's face (folded in triangulate.go);
+// 10 on 2026-10-02 and 2026-10-03, and 99 before the closed loops were
+// searched for.
+const sphereFaceMaxFailRate = 0
 
 // crossedCylinder is a solid cylinder of radius r, along x through the
 // point (0, dy, 0) turned by angle degrees about y, long enough to
@@ -223,6 +223,31 @@ func TestSphereCapNoFold(t *testing.T) {
 	out.MakeFromBoolean(box, patchUpSphere(r, geom.Vector{}), SurfaceInter)
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatalf("failed %v, sound %v", out.BooleanFailed, meshIsSound(&out))
+	}
+}
+
+// TestSphereCutAlongAxis cuts a lathed sphere by a plane parallel to
+// its axis, a little off it, so that the circle of the cut runs near
+// both poles: the sphere's patches there must not join two points of
+// that circle by an edge, which lies in the plane's face, inside its
+// outline, and crosses its triangles (roadmap 24.1).
+func TestSphereCutAlongAxis(t *testing.T) {
+	sweepChordTol(t)
+	const r = 7.0
+	sphere := func() *SShell {
+		var sh SShell
+		sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+		return &sh
+	}
+	for _, x := range []float64{0.146 * r, 0.3 * r, 0.6 * r} {
+		box := extrudedBox(geom.Vector{X: x, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20})
+		for _, op := range []SurfaceCombineAs{SurfaceDiff, SurfaceInter} {
+			var out SShell
+			out.MakeFromBoolean(sphere(), box, op)
+			if out.BooleanFailed || !meshIsSound(&out) {
+				t.Errorf("x = %g, %v: failed %v, sound %v", x, op, out.BooleanFailed, meshIsSound(&out))
+			}
+		}
 	}
 }
 
@@ -283,4 +308,61 @@ func sweepChordTol(t *testing.T) {
 	old := ChordTolMm()
 	SetChordTolMm(0.01)
 	t.Cleanup(func() { SetChordTolMm(old) })
+}
+
+// lathedCone is the solid cone of base radius r on z = 0 and apex at
+// height h on the z axis, lathed from a triangle: its curved patches
+// fold to a point at the apex.
+func lathedCone(r, h float64) *SShell {
+	p := []geom.Vector{{}, {X: r}, {Z: h}}
+	sbls := &SBezierLoopSet{Normal: geom.Vector{Y: 1}, Point: p[0]}
+	for i := range p {
+		sbls.Outer.Curves = append(sbls.Outer.Curves, SBezierFrom2(p[i], p[(i+1)%3]))
+	}
+	var sh SShell
+	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+	return &sh
+}
+
+// coneSegment is the volume of the part of the cone of base radius r
+// and height h beyond the plane x = d.
+func coneSegment(r, h, d float64) float64 {
+	const n = 20000
+	v := 0.0
+	for i := range n {
+		z := (float64(i) + 0.5) * h / n
+		if rz := r * (1 - z/h); rz > d {
+			v += (rz*rz*math.Acos(d/rz) - d*math.Sqrt(rz*rz-d*d)) * h / n
+		}
+	}
+	return v
+}
+
+// TestConeCutNearApex cuts a cone by planes parallel to its axis,
+// near it: the cut runs up close to the apex, where the curved patches
+// fold to a point. Each patch's outline in uv must run along the
+// folded side, not across the patch on a diagonal to one corner of
+// it, or the Boolean drops part of the cut; and the patch, which has
+// no grid along its straight lines, must not be meshed by chords
+// across the cone (roadmap 24.2).
+func TestConeCutNearApex(t *testing.T) {
+	sweepChordTol(t)
+	const r, h = 6.0, 9.0
+	cone := lathedCone(r, h)
+	whole := math.Pi * r * r * h / 3
+	for _, d := range []float64{0.4, 0.8772, 2} {
+		box := extrudedBox(geom.Vector{X: d, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20})
+		want := map[SurfaceCombineAs]float64{SurfaceDiff: whole - coneSegment(r, h, d), SurfaceInter: coneSegment(r, h, d)}
+		for _, op := range []SurfaceCombineAs{SurfaceDiff, SurfaceInter} {
+			var out SShell
+			out.MakeFromBoolean(cone, box, op)
+			if out.BooleanFailed || !meshIsSound(&out) {
+				t.Errorf("d = %g, %v: failed %v, sound %v", d, op, out.BooleanFailed, meshIsSound(&out))
+				continue
+			}
+			if got := shellVolume(&out); math.Abs(got-want[op]) > 5e-3*whole {
+				t.Errorf("d = %g, %v: volume %.4f, want %.4f", d, op, got, want[op])
+			}
+		}
+	}
 }

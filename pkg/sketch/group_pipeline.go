@@ -121,6 +121,10 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		return
 	}
 
+	// A sketch that is no good as a profile says so, as does a solid
+	// made from it.
+	g.reportPolyProblem(sk)
+
 	switch g.Type {
 	case GroupTranslate, GroupRotate:
 		// A step and repeat gets merged against the group's previous group,

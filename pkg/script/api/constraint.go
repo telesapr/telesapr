@@ -599,3 +599,43 @@ func (d *Doc) Comment(at Vec, text string) Constraint {
 		c.Comment = text
 	})
 }
+
+// AutoConstrain adds to a line, an arc or a circle of the active group
+// the constraint the window adds when one is drawn nearly so (Settings,
+// "auto-constrain while drawing"): a line horizontal or vertical, else
+// tangent to an arc or perpendicular to a line it starts on, parallel to
+// a line, or as long as one; an arc tangent at an end to a line or arc
+// that ends there, else the same radius as an arc or circle; a circle
+// the same radius as one. It is false, with no constraint, when the
+// entity is none of these nearly, or the constraint would be redundant.
+// Lines and arcs get one only in a workplane.
+func (d *Doc) AutoConstrain(e Entity) (c Constraint, ok bool) {
+	d.change(func(sk *sketch.Sketch) {
+		if sk.RegenerationPending() {
+			d.h.Regenerate()
+			sk = d.h.Sketch()
+		}
+		en := e.get(sk)
+		if !en.H.IsFromRequest() || en.H != en.H.Request().Entity(0) {
+			fail("%s isn't a line, an arc or a circle drawn in the sketch", e.describe(sk))
+		}
+		r := sk.GetRequest(en.H.Request())
+		switch r.Type {
+		case sketch.RequestLineSegment, sketch.RequestArcOfCircle, sketch.RequestCircle:
+		default:
+			fail("%s isn't a line, an arc or a circle", e.describe(sk))
+		}
+		sk.Active = sk.ActiveGroup()
+		if r.Group != sk.Active {
+			fail("%s isn't in the active group %s", e.describe(sk), sk.GroupName(sk.Active))
+		}
+		s, found := sk.SuggestConstraint(r.H, r.Workplane, r.Group)
+		if !found {
+			return
+		}
+		if hc := sk.ApplySuggestion(s); hc.V != 0 {
+			c, ok = Constraint{d, hc}, true
+		}
+	})
+	return c, ok
+}

@@ -99,6 +99,7 @@ func init() {
 		{1, "Para&meters...", CmdParameters, c_ | s_ | 'm', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuParameters() }},
 		{1, "Move Group Earl&ier", CmdMoveGroupEarlier, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), false) }},
 		{1, "Move Gr&oup Later", CmdMoveGroupLater, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), true) }},
+		{1, "Move Group to E&nd", CmdMoveGroupToEnd, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroupToEnd(ss.GW.activeGroupH()) }},
 		{1, "Bro&ken References...", CmdBrokenReferences, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuBrokenReferences() }},
 
 		{0, "&View", CmdNone, 0, kn, mView},
@@ -116,6 +117,7 @@ func init() {
 		{1, "Use &Perspective Projection", CmdPerspectiveProj, '`', kc, mView},
 		{1, "Show E&xploded View", CmdExplodeSketch, '\\', kc, mView},
 		{1, "&Section View", CmdSectionView, c_ | s_ | 'x', kc, func(ss *SolveSpaceUI, c Command) { ss.GW.MenuSectionView() }},
+		{1, "Show Drawing S&heet", CmdShowDrawingSheet, 0, kc, func(ss *SolveSpaceUI, c Command) { ss.GW.MenuShowDrawingSheet() }},
 		{1, "Dimension &Units", CmdNone, 0, kn, nil},
 		{2, "Dimensions in &Millimeters", CmdUnitsMm, 0, kr, mView},
 		{2, "Dimensions in M&eters", CmdUnitsMeters, 0, kr, mView},

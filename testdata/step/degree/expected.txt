@@ -1,0 +1,4 @@
+# name volume area (mm3, mm2): volumes worked out from the control points.
+# Written by scripts/step-fixtures-degree.py.
+lid_degree7 12332.1421 3826.47962
+vase_degree8 2308.50512 955.812452

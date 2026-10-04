@@ -13,6 +13,11 @@ Analyze > Check Solid (Ctrl+Shift+O) reports on the active group's solid:
   wall is;
 - **volume, centre of mass and bounding box**, in the document's unit.
 
+The volume is the mesh's, made of chords within the chord tolerance (Configuration), which is a
+share of the whole model's size. A group's volume can therefore change a little when a later group
+makes the model larger: its curved faces are cut into coarser chords. Set the chord tolerance
+smaller, or compare volumes once the model is whole, when the last digits matter.
+
 What is wrong is listed by kind, and the edges at fault are drawn on the model, as Analyze > Show
 Naked Edges draws naked ones.
 

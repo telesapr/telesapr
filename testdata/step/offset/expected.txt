@@ -1,0 +1,6 @@
+# name volume area (mm3, mm2): volumes worked out from the dimensions;
+# a measured one is marked m. Written by scripts/step-fixtures-offset.py.
+cylinder_offset 1539.3804 747.699052
+sphere_offset 1436.75504 615.75216
+parabola_extruded 18 59.0903549
+hyperbola_extruded 9.19868764 28.8989442

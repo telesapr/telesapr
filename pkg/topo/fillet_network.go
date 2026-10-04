@@ -590,13 +590,13 @@ func (t *Topology) circularEdgeOf(e int, r float64, flat bool) (filletEdge, erro
 		// arc through them, when they lie on one.
 		var ok bool
 		if sb, ok = arcThrough(ed.Points, np); !ok {
-			return fe, filletErr(m, "the edge has no exact curve, and its points are not on an arc of a circle")
+			return fe, t.offAxisErr(m, fs[1-flatK], what)
 		}
 	}
 	var cc geom.Vector
 	var rad float64
 	if !sb.IsCircle(np, &cc, &rad) {
-		return fe, filletErr(m, "the edge is curved but not an arc of a circle in the flat face")
+		return fe, t.offAxisErr(m, fs[1-flatK], what)
 	}
 	fe = filletEdge{e: e, v: ed.V, f: fs, r: r, circ: true, curve: sb, centre: cc, axis: np, radius: rad, flatK: flatK}
 	// The other face's generator: the line, in the half plane through the
@@ -604,7 +604,7 @@ func (t *Topology) circularEdgeOf(e int, r float64, flat bool) (filletEdge, erro
 	// the line it turns about the axis.
 	gen, ok := t.generator(&fe, fs[1-flatK])
 	if !ok {
-		return fe, filletErr(m, "the edge is curved, and the face beside the flat one is not a cylinder or a cone about the circle's axis")
+		return fe, t.offAxisErr(m, fs[1-flatK], what)
 	}
 	// The flat face on one side of the circle.
 	step := 1e-3 * math.Min(rad, 1)

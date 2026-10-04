@@ -42,6 +42,7 @@
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
   Move Group Earl&ier ind=0 en=1 act=0
   Move Gr&oup Later ind=0 en=1 act=0
+  Move Group to E&nd ind=0 en=1 act=0
   Bro&ken References... ind=0 en=1 act=0
 &View ind=0 en=1 act=0
   Zoom &In [+] ind=0 en=1 act=0
@@ -58,6 +59,7 @@
   Use &Perspective Projection [`] ind=1 en=1 act=0
   Show E&xploded View [\] ind=1 en=1 act=0
   &Section View [Ctrl+Shift+X] ind=1 en=1 act=0
+  Show Drawing S&heet ind=1 en=1 act=0
   Dimension &Units ind=0 en=1 act=0
     Dimensions in &Millimeters ind=2 en=1 act=1
     Dimensions in M&eters ind=2 en=1 act=0

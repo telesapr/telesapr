@@ -348,10 +348,15 @@ func (d *decoder) drawing(n *Node) *sketch.Drawing {
 			}
 			dm := sketch.DrawingDimension{View: d.word(f.Args[0]), Kind: d.word(f.Args[1]), Offset: d.real(f.Args[2])}
 			for _, c := range f.Children {
-				if c.Name != "solid-edge" {
-					d.fail(c.Pos, "a drawing's dimension holds solid-edge lines")
+				switch c.Name {
+				case "solid-edge":
+					dm.Edges = append(dm.Edges, d.solidEdge(c))
+				case "solid-face":
+					a := d.fieldArgs(c, 1)
+					dm.Faces = append(dm.Faces, srf.FaceID(d.handle(a[0])))
+				default:
+					d.fail(c.Pos, "a drawing's dimension holds solid-edge and solid-face lines")
 				}
-				dm.Edges = append(dm.Edges, d.solidEdge(c))
 			}
 			dr.Dimensions = append(dr.Dimensions, dm)
 		case "section":

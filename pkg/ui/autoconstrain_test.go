@@ -6,6 +6,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // What a line being drawn is offered (roadmap 16.11): tangent to an arc
@@ -20,10 +21,10 @@ func TestSuggestLineConstraint(t *testing.T) {
 	doc.Arc(api.V(0, 0, 0), api.V(r, r, 0), api.V(-10, 0, 0))
 	base := doc.Line(api.V(30, 0, 0), api.V(50, 3, 0))
 	doc.Regen()
-	suggest := func(a, b api.Vec) lineSuggestion {
+	suggest := func(a, b api.Vec) sketch.Suggestion {
 		l := doc.Line(a, b)
 		doc.Regen()
-		s, _ := ss.GW.SuggestLineConstraint(l.H.Request())
+		s, _ := ss.GW.SuggestConstraint(l.H.Request())
 		l.Delete()
 		doc.Regen()
 		return s

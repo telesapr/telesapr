@@ -18,8 +18,9 @@ import (
 // but for a copy where the part already is, and a mirror that leaves
 // the original out none more. A repeat of a repeat counts
 // the copies of what it repeats. Groups left out of the model count
-// none. Only the files this model links are counted, not the files
-// those link in turn.
+// none. A linked model counts as a part, and the parts it places in
+// turn (Group.LinkParts, roadmap 29.3) count too, once for each place
+// the model is.
 
 // BOMItem is a line of the bill of materials: the parts from one file.
 type BOMItem struct {
@@ -40,7 +41,7 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 	placed := map[core.HGroup]map[string]int{}
 	var items []BOMItem
 	index := map[string]int{}
-	add := func(file string, n int, g *Group) {
+	addAs := func(file string, n int, by string) {
 		i, ok := index[file]
 		if !ok {
 			i = len(items)
@@ -49,11 +50,12 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 			items = append(items, BOMItem{Part: strings.TrimSuffix(base, filepath.Ext(base)), File: file})
 		}
 		items[i].Count += n
-		items[i].Groups = append(items[i].Groups, g.DescriptionString())
+		items[i].Groups = append(items[i].Groups, by)
 	}
+	add := func(file string, n int, g *Group) { addAs(file, n, g.DescriptionString()) }
 	for _, hg := range sk.GroupOrder {
 		g := sk.GetGroup(hg)
-		if g == nil || g.Suppress || sk.SuppressedReason(hg) != "" {
+		if g == nil || g.Suppress || g.SuppressAll || sk.SuppressedReason(hg) != "" {
 			continue
 		}
 		var src map[string]int
@@ -64,8 +66,15 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 			if g.LinkFile == "" {
 				continue
 			}
-			placed[hg] = map[string]int{g.LinkFile: 1}
+			mine := map[string]int{g.LinkFile: 1}
 			add(g.LinkFile, 1, g)
+			// What the linked model places in turn, named by the group
+			// here and the groups there.
+			for _, it := range g.LinkParts {
+				mine[it.File] += it.Count
+				addAs(it.File, it.Count, g.DescriptionString()+" > "+strings.Join(it.Groups, ", "))
+			}
+			placed[hg] = mine
 			continue
 		case GroupTranslate, GroupRotate:
 			src = placed[g.OpA]
@@ -135,4 +144,13 @@ func WriteBOMCSV(w io.Writer, items []BOMItem) error {
 	}
 	cw.Flush()
 	return cw.Error()
+}
+
+// BillOfMaterialsAsRead is BillOfMaterials for a sketch read from a
+// file and not regenerated, as a linked model's is when the bill of
+// the model linking it counts what it places: which groups are left
+// out is worked out first.
+func (sk *Sketch) BillOfMaterialsAsRead() []BOMItem {
+	sk.markSuppressed()
+	return sk.BillOfMaterials()
 }

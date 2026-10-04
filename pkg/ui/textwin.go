@@ -742,7 +742,10 @@ func (tw *TextWindow) Show() {
 		tw.Printf(false, "")
 		tw.Printf(false, "%s", gw.pending.description)
 		tw.Printf(true, "%Fl%f%Ll(cancel operation)%E", LinkFunction(tw.ScreenUnselectAll))
-	} else if (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != ScreenPasteTransformed {
+	} else if (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != ScreenPasteTransformed &&
+		tw.shown.screen != ScreenDrawing {
+		// The drawing's screen stays while edges and faces are picked
+		// for its dimensions (roadmap 29.2).
 		if tw.edit.meaning != EditTTFText {
 			tw.HideEditControl()
 		}

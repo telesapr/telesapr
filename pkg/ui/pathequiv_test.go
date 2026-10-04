@@ -474,3 +474,18 @@ func TestPathEquivalenceFilletRim(t *testing.T) {
 		t.Errorf("the fill adds %g, want %g", gain, want)
 	}
 }
+
+// A circle made as big as another as it is drawn, and by a script
+// through Doc.AutoConstrain (roadmap 29.4).
+func TestPathEquivalenceAutoConstrain(t *testing.T) {
+	requireSamePaths(t, "path_auto_constrain", "path_auto_constrain")
+}
+
+// A face's diameter on the drawing, the face picked with the mouse on
+// the drawing's screen, and by a script (roadmap 29.2).
+func TestPathEquivalenceDrawingFaces(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_drawing_faces", "path_drawing_faces")
+	if ui.Drawing == nil || len(ui.Drawing.Dimensions) != 1 || len(ui.Drawing.Dimensions[0].Faces) != 1 {
+		t.Errorf("the interface's drawing: %+v", ui.Drawing)
+	}
+}

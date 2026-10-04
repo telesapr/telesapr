@@ -167,6 +167,20 @@ func (h *ScriptHost) Changing() {
 	}
 }
 
+// Remembered folds the n steps of undo a change remembered itself, as
+// a menu command does, into the script's step.
+func (h *ScriptHost) Remembered(n int) {
+	if n <= 0 {
+		return
+	}
+	if !h.changed {
+		h.changed = true
+		n--
+	}
+	h.ss.SK.UndoDropNewest(n)
+	h.ss.UndoEnableMenus()
+}
+
 // Rollback takes back what the script's last step changed, for good:
 // it can't be done again as what Undo takes back can. It is false if
 // the step changed nothing.
@@ -200,22 +214,7 @@ func (h *ScriptHost) AddGroup(g sketch.Group) core.HGroup {
 
 // DeleteGroup is TextWindow.ScreenDeleteGroup for any group.
 func (h *ScriptHost) DeleteGroup(hg core.HGroup) {
-	ss := h.ss
-	sk := ss.SK
-	if hg == ss.GW.activeGroupH() {
-		if prev := sk.GetGroup(sk.Active).PreviousGroup(sk); prev != nil {
-			sk.Active = prev.H
-		}
-	}
-	ss.TW.ClearSuper()
-	for i := range sk.Groups {
-		if sk.Groups[i].H == hg {
-			sk.Groups = append(sk.Groups[:i], sk.Groups[i+1:]...)
-			break
-		}
-	}
-	ss.GenerateAll(sketch.GenerateAll)
-	ss.GW.ClearSuper()
+	h.ss.deleteGroup(hg)
 }
 
 func (h *ScriptHost) Activate(hg core.HGroup) {
@@ -319,6 +318,13 @@ func (h *ScriptHost) Export(kind api.ExportKind, path string) error {
 	})
 }
 
+// ShowDrawingSheet shows the drawing sheet in the window, or the model
+// again.
+func (h *ScriptHost) ShowDrawingSheet(show bool) error { return h.ss.GW.ShowSheet(show) }
+
+// DrawingSheetShown reports whether the window shows the sheet.
+func (h *ScriptHost) DrawingSheetShown() bool { return h.ss.GW.sheetShown }
+
 // MeasureDrawing measures the drawing's dimensions.
 func (h *ScriptHost) MeasureDrawing(d *sketch.Drawing) ([]float64, []error) {
 	rs := h.ss.DrawingDimensions(d)
@@ -352,6 +358,10 @@ func (h *ScriptHost) Render(path string, width, height int, right, up geom.Vecto
 	var werr error
 	err := h.collect(func() {
 		if right == (geom.Vector{}) && up == (geom.Vector{}) {
+			// A turn of the view that is still going on (Align View
+			// to Workplane) is drawn where it ends.
+			ss.GW.FinishAnimation()
+			view = ss.GW.view
 			werr = ss.WriteWindowPicture(path, uint(width), uint(height))
 			return
 		}
@@ -387,8 +397,23 @@ func (h *ScriptHost) Select(sel []sketch.Selection) {
 	gw.Invalidate(false)
 }
 
-// RunCommand runs a menu command, as choosing it does.
-func (h *ScriptHost) RunCommand(label string) error { return h.ss.RunCommand(label) }
+// RunCommand runs a menu command, as choosing it does; what the
+// command says went wrong is the error.
+func (h *ScriptHost) RunCommand(label string) error {
+	var err error
+	if cerr := h.collect(func() { err = h.ss.RunCommand(label) }); err == nil {
+		err = cerr
+	}
+	return err
+}
+
+// ForgetChanges lets the sketch's unsaved changes go, as "Don't Save"
+// does.
+func (h *ScriptHost) ForgetChanges() {
+	h.ss.SK.Unsaved = false
+	h.ss.RemoveAutosave()
+	h.ss.UpdateWindowTitles()
+}
 
 // SetChordTolerance sets the application's chord tolerance, as
 // Configuration does; the next regeneration gives it to the sketch.

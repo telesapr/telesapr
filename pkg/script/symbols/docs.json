@@ -1700,7 +1700,7 @@
 					},
 					"Sound": {
 						"decl": "func (r *Report) Sound() bool",
-						"text": "Sound reports whether the solid is closed, does not cross itself, and came from a Boolean that succeeded."
+						"text": "Sound reports whether the solid is closed, does not cross itself, and came from a Boolean that succeeded, and the group made its part of it (no Problem)."
 					},
 					"String": {
 						"decl": "func (r *Report) String() string",
@@ -1727,7 +1727,7 @@
 				"text": "CompareBaseline compares two baseline lines field by field and says what differs, or returns \"\"."
 			},
 			"Group": {
-				"decl": "func Group(sk *sketch.Sketch, g *sketch.Group) Report",
+				"decl": "func Group(sk *sketch.Sketch, g *sketch.Group) (r Report)",
 				"text": "Group checks the solid a group's regeneration left, which is the solid of every group up to it: the shell of the last group that contributed solid model, and the mesh shown for g."
 			},
 			"ReadBaseline": {
@@ -4183,7 +4183,15 @@
 					},
 					"AddDrawingDimension": {
 						"decl": "func (d *Doc) AddDrawingDimension(view, kind string, offset float64, edges ...SolidEdge)",
-						"text": "AddDrawingDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes."
+						"text": "AddDrawingDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes.\nThe view is front, back, top, bottom, left, right or iso, where a\nlength is the edge's in the model, not as foreshortened, or a section\nor a detail by its letter (A, B, ...: the sections first)."
+					},
+					"AddDrawingEdgeFaceDistance": {
+						"decl": "func (d *Doc) AddDrawingEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace)",
+						"text": "AddDrawingEdgeFaceDistance adds to the drawing's view the distance\nfrom a straight edge to a flat face it runs parallel to, as\nAddDrawingDimension does between edges."
+					},
+					"AddDrawingFaceDimension": {
+						"decl": "func (d *Doc) AddDrawingFaceDimension(view, kind string, offset float64, faces ...SolidFace)",
+						"text": "AddDrawingFaceDimension adds a dimension of faces to the drawing's\nview, as AddDrawingDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
 					},
 					"Angle": {
 						"decl": "func (d *Doc) Angle(a, b Entity, degrees float64) Constraint",
@@ -4193,13 +4201,17 @@
 						"decl": "func (d *Doc) Arc(center, start, end Vec) Entity",
 						"text": "Arc adds an arc of a circle around center, from start\ncounter-clockwise to end, in the active workplane. The end is put\nat the start's distance from the centre."
 					},
+					"AutoConstrain": {
+						"decl": "func (d *Doc) AutoConstrain(e Entity) (c Constraint, ok bool)",
+						"text": "AutoConstrain adds to a line, an arc or a circle of the active group\nthe constraint the window adds when one is drawn nearly so (Settings,\n\"auto-constrain while drawing\"): a line horizontal or vertical, else\ntangent to an arc or perpendicular to a line it starts on, parallel to\na line, or as long as one; an arc tangent at an end to a line or arc\nthat ends there, else the same radius as an arc or circle; a circle\nthe same radius as one. It is false, with no constraint, when the\nentity is none of these nearly, or the constraint would be redundant.\nLines and arcs get one only in a workplane."
+					},
 					"Batch": {
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
 					},
 					"BillOfMaterials": {
 						"decl": "func (d *Doc) BillOfMaterials() (items []sketch.BOMItem)",
-						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none."
+						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\"."
 					},
 					"BrokenReferences": {
 						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
@@ -4289,6 +4301,10 @@
 						"decl": "func (d *Doc) DrawingDimensions() (values []float64, errs []error)",
 						"text": "DrawingDimensions measures the drawing's dimensions on the solid as\nit is: each one's value in mm, and an error for one that can't be\nmeasured, as for an edge no longer in the solid. It needs the\napplication, or a view of it."
 					},
+					"DrawingSheetShown": {
+						"decl": "func (d *Doc) DrawingSheetShown() (shown bool)",
+						"text": "DrawingSheetShown reports whether the window shows the drawing sheet."
+					},
 					"Entity": {
 						"decl": "func (d *Doc) Entity(h uint32) Entity",
 						"text": "Entity is the entity with a handle."
@@ -4336,6 +4352,10 @@
 					"Flush": {
 						"decl": "func (d *Doc) Flush(faceA, faceB Entity) []Constraint",
 						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other."
+					},
+					"ForgetChanges": {
+						"decl": "func (d *Doc) ForgetChanges()",
+						"text": "ForgetChanges lets the changes made since the sketch was saved go, as\n\"Don't Save\" does when the application asks: File \u003e New, Open and\nthe others that replace the drawing refuse to run from a script while\nit has unsaved changes, so that nothing is lost unasked. The\ndrawing itself stays as it is until such a command replaces it."
 					},
 					"Free3D": {
 						"decl": "func (d *Doc) Free3D()",
@@ -4515,7 +4535,7 @@
 					},
 					"RunCommand": {
 						"decl": "func (d *Doc) RunCommand(label string) (err error)",
-						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. telesapr-cli runs scripts on the interface\nwithout a window, so commands run there too; a document of a Go\nprogram's own, from New, has no menu to run them from, and it is an\nerror."
+						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. telesapr-cli runs scripts on the interface\nwithout a window, so commands run there too; a document of a Go\nprogram's own, from New, has no menu to run them from, and it is an\nerror. What the command says went wrong is the error too: a command\nthat would replace a drawing with unsaved changes, as File \u003e New,\nrefuses; see ForgetChanges. What the command changes is part of the\nscript's step of undo."
 					},
 					"Save": {
 						"decl": "func (d *Doc) Save(path string) (err error)",
@@ -4573,6 +4593,10 @@
 						"decl": "func (d *Doc) ShellSolid(faces []SolidFace, thick float64, name string) Group",
 						"text": "ShellSolid hollows the solid so far as Shell does, taking away faces\npicked from Solid, such as one a Boolean or a loft made."
 					},
+					"ShowDrawingSheet": {
+						"decl": "func (d *Doc) ShowDrawingSheet(show bool) (err error)",
+						"text": "ShowDrawingSheet shows the drawing sheet in the window in place of\nthe model, as View \u003e Show Drawing Sheet does, or the model again; it\nis view state, not saved. It is an error for a bare sketch with no\napplication around it (New), or when the sheet can't be made, as when\nthe active group has no solid. With the sheet shown, Render with the view\n\"window\" pictures the sheet."
+					},
 					"Sketch3D": {
 						"decl": "func (d *Doc) Sketch3D(name string) Group",
 						"text": "Sketch3D adds a group to draw in freely in 3d, and makes it active."
@@ -4587,7 +4611,7 @@
 					},
 					"Split": {
 						"decl": "func (d *Doc) Split(a, b Entity, near Vec)",
-						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near. It is its own step of undo."
+						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near."
 					},
 					"String": {
 						"decl": "func (d *Doc) String() (s string)",
@@ -4611,7 +4635,7 @@
 					},
 					"TangentArc": {
 						"decl": "func (d *Doc) TangentArc(point Entity, radius float64, trim bool)",
-						"text": "TangentArc rounds the corner at a point where two line segments or\narcs of the active workplane meet, with an arc tangent to both, as\nSketch \u003e Tangent Arc at Point does. radius 0 lets the program choose\nit. With trim, the two are cut back to the arc; without, they become\nconstruction and trimmed copies are added. It is its own step of\nundo."
+						"text": "TangentArc rounds the corner at a point where two line segments or\narcs of the active workplane meet, with an arc tangent to both, as\nSketch \u003e Tangent Arc at Point does. radius 0 lets the program choose\nit. With trim, the two are cut back to the arc; without, they become\nconstruction and trimmed copies are added."
 					},
 					"Text": {
 						"decl": "func (d *Doc) Text(text, font string, at Vec, height float64) Entity",
@@ -4796,7 +4820,7 @@
 					},
 					"Check": {
 						"decl": "func (g Group) Check() (r check.Report)",
-						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked;\nReport.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
+						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked,\nand is false too when the group added no solid for a Problem (as an\nextrusion of a sketch that crosses itself), which Report.Problem\nholds; Report.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
 					},
 					"Conflicts": {
 						"decl": "func (g Group) Conflicts() (constraints []Constraint)",
@@ -4812,7 +4836,7 @@
 					},
 					"Delete": {
 						"decl": "func (g Group) Delete()",
-						"text": "Delete deletes the group and what depends on it."
+						"text": "Delete deletes the group and what depends on it. If the active\ngroup goes, being this one or one that used it, the last group\nbefore it that is left becomes active, so that new groups come\nwhere the history ends; Doc.Active says which it is."
 					},
 					"DependsOn": {
 						"decl": "func (g Group) DependsOn() (groups []Group)",
@@ -4900,11 +4924,23 @@
 					},
 					"MoveToEnd": {
 						"decl": "func (g Group) MoveToEnd() error",
-						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes."
+						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes. Only this group moves: the sketches it uses stay where they\nare, as they come before it already. MoveToEndWithSources moves them\nalong."
+					},
+					"MoveToEndWithSources": {
+						"decl": "func (g Group) MoveToEndWithSources() ([]Group, error)",
+						"text": "MoveToEndWithSources moves the group to the end of the history\ntogether with its OwnSources, keeping their order, as one undo step:\nan extrusion moves with its sketch. It returns the groups moved, in\ntheir new order. A move that would put one of them ahead of a group\nit uses, or another group ahead of one of them that it uses, is\nrefused with an error naming both, and nothing changes."
+					},
+					"MoveWithSourcesBefore": {
+						"decl": "func (g Group) MoveWithSourcesBefore(other Group) ([]Group, error)",
+						"text": "MoveWithSourcesBefore moves the group with its OwnSources to just\nbefore other, as MoveToEndWithSources moves them to the end."
 					},
 					"Name": {
 						"decl": "func (g Group) Name() (name string)",
 						"text": "Name is the group's name."
+					},
+					"OwnSources": {
+						"decl": "func (g Group) OwnSources() (groups []Group)",
+						"text": "OwnSources lists the group with the groups only it needs, in history\norder: those it uses, directly or through each other, that no other\ngroup uses, as an extrusion's sketch. These are what\nMoveToEndWithSources moves."
 					},
 					"Param": {
 						"decl": "func (g Group) Param(i int) Param",
@@ -4916,7 +4952,7 @@
 					},
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
-						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut or a sweep path with\na corner, or \"\" when there is nothing; a group with a problem adds\nno solid."
+						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where."
 					},
 					"Profiles": {
 						"decl": "func (g Group) Profiles() (out []Group)",
@@ -5026,6 +5062,10 @@
 						"decl": "func (g Group) SetTwist(degrees float64)",
 						"text": "SetTwist turns a sweep's profile about the path by degrees over the\nwhole of it, evenly along its length: a square swept along a line and\ntwisted by 90 is a twisted bar. A twisted sweep's surface is fitted\nto the true one within a tenth of the chord tolerance, as a sweep\nalong a cubic is. SetExpr with sketch.GroupValC gives it an\nexpression."
 					},
+					"SetTwoSided": {
+						"decl": "func (g Group) SetTwoSided(two bool)",
+						"text": "SetTwoSided makes an extrusion, step and repeat, revolve or helix go\nboth ways from its sketch, or one way when two is false, as the text\nwindow's \"two-sided\" and \"one-sided\" do. An extrusion keeps its whole\ndepth: Extrude(10, ...) then SetTwoSided(true) runs from -5 to 5\nalong the normal, the sketch in the middle. Copies of a step and\nrepeat are laid on both sides of the original; a revolve turns as far\neach way."
+					},
 					"SetVisible": {
 						"decl": "func (g Group) SetVisible(visible bool)",
 						"text": "SetVisible shows or hides the group."
@@ -5081,6 +5121,10 @@
 					"Twist": {
 						"decl": "func (g Group) Twist() (degrees float64)",
 						"text": "Twist is how far a sweep turns its profile about the path over the\nwhole of it, in degrees."
+					},
+					"TwoSided": {
+						"decl": "func (g Group) TwoSided() (two bool)",
+						"text": "TwoSided reports whether an extrusion, step and repeat, revolve or\nhelix goes both ways from its sketch, as the text window's\n\"two-sided\" says."
 					},
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",
@@ -5214,7 +5258,11 @@
 					},
 					"DeleteGroup": {
 						"decl": "func (h *SketchHost) DeleteGroup(hg core.HGroup)",
-						"text": "DeleteGroup deletes a group, activating the one before it if it was\nactive, and regenerates."
+						"text": "DeleteGroup deletes a group, and regenerates. When the active group\ngoes, with it or as it used it, the last group before it that is\nleft is made active."
+					},
+					"DrawingSheetShown": {
+						"decl": "func (h *SketchHost) DrawingSheetShown() bool",
+						"text": "DrawingSheetShown is false: there is no window."
 					},
 					"EndEval": {
 						"decl": "func (h *SketchHost) EndEval()",
@@ -5252,6 +5300,10 @@
 						"decl": "func (h *SketchHost) Regenerate()",
 						"text": "Regenerate regenerates what is dirty."
 					},
+					"Remembered": {
+						"decl": "func (h *SketchHost) Remembered(n int)",
+						"text": "Remembered folds the n steps of undo a change remembered itself into\nthe script's step: the first of them is the step if the step has\nnone yet."
+					},
 					"Render": {
 						"decl": "func (h *SketchHost) Render(path string, _, _ int, _, _ geom.Vector) error",
 						"text": "Render fails: drawing needs the application around the sketch."
@@ -5283,6 +5335,10 @@
 					"SetChordTolerance": {
 						"decl": "func (h *SketchHost) SetChordTolerance(pct float64)",
 						"text": "SetChordTolerance sets the sketch's chord tolerance."
+					},
+					"ShowDrawingSheet": {
+						"decl": "func (h *SketchHost) ShowDrawingSheet(bool) error",
+						"text": "ShowDrawingSheet fails: there is no window to show the sheet in."
 					},
 					"Sketch": {
 						"decl": "func (h *SketchHost) Sketch() *sketch.Sketch",
@@ -5629,6 +5685,10 @@
 						"decl": "func (d *Drawing) Clone() *Drawing",
 						"text": "Clone is a copy of the drawing that shares nothing with it; nil for none."
 					},
+					"DimensionView": {
+						"decl": "func (d *Drawing) DimensionView(view string) (n int, ok bool)",
+						"text": "DimensionView is what a dimension's view names: a view kind (front, ..., iso), or the n-th section or detail by its letter, sections first; n is -1 for a view kind, and ok false when it names none."
+					},
 					"Layout": {
 						"decl": "func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64)",
 						"text": "Layout places the views: the drawing's own, or the standard ones, front, top, a side and the isometric, by the projection's convention, given each view's width and height on the model in mm (sizes, by kind)."
@@ -5844,6 +5904,14 @@
 					"MakeRevolveEndFaces": {
 						"decl": "func (g *Group) MakeRevolveEndFaces(sk *Sketch, el *[]core.Entity, pt core.HEntity, ai, af int)",
 						"text": "For Revolve and Helix groups the end faces are remapped from an arbitrary point on the sketch."
+					},
+					"MakesSolidFromSketch": {
+						"decl": "func (g *Group) MakesSolidFromSketch() bool",
+						"text": "MakesSolidFromSketch reports whether the group makes a solid from the contours of a sketch: an extrusion, lathe, revolve, helix or sweep, or a loft."
+					},
+					"PolyProblem": {
+						"decl": "func (g *Group) PolyProblem() (msg string, at geom.Vector, ok bool)",
+						"text": "PolyProblem says what is wrong with a sketch's contours, as GenerateLoops found it, and where: an open end, a point off the plane of the rest, where the contour crosses itself, or a curve of no length."
 					},
 					"PreviousGroup": {
 						"decl": "func (g *Group) PreviousGroup(sk *Sketch) *Group"
@@ -6104,6 +6172,10 @@
 						"decl": "func (sk *Sketch) ActivateConfiguration(name string) error",
 						"text": "ActivateConfiguration makes the configuration called name active, writing its expressions into the table, or with \"\" none; the table stays as it is then."
 					},
+					"ActivateSurvivor": {
+						"decl": "func (sk *Sketch) ActivateSurvivor(order []core.HGroup, was core.HGroup) bool",
+						"text": "ActivateSurvivor makes the right group active after a change that deleted groups, as deleting one deletes what used it: was, the group that was active before, if it is still there; else, of order, the history before the change, the nearest group before was that is left and isn't the references, so that new groups still come where the history ends."
+					},
 					"ActiveGroup": {
 						"decl": "func (sk *Sketch) ActiveGroup() core.HGroup",
 						"text": "ActiveGroup is the active group: Active if it exists, else the one C++ makes active after loading a file (GraphicsWindow::Init and EnsureValidActives): the last group, or the first that isn't the references."
@@ -6170,6 +6242,10 @@
 						"decl": "func (sk *Sketch) Apply(j *ShellJob) bool",
 						"text": "Apply moves the job's groups, with their solids, into the sketch if it is still defined as when the job was made and the job ran to the end, and reports whether it did."
 					},
+					"ApplySuggestion": {
+						"decl": "func (sk *Sketch) ApplySuggestion(s Suggestion) core.HConstraint",
+						"text": "ApplySuggestion adds the suggested constraint to the active group, unless it would be redundant; it returns the constraint, or none."
+					},
 					"AssemblyParts": {
 						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
 						"text": "AssemblyParts are the parts of the model up to group upTo, as the interference check takes them (interference.go): the solid before the first group that combines as an assembly, and each such group."
@@ -6177,6 +6253,10 @@
 					"BillOfMaterials": {
 						"decl": "func (sk *Sketch) BillOfMaterials() []BOMItem",
 						"text": "BillOfMaterials is the model's parts, by file, in the order of the first group that places each."
+					},
+					"BillOfMaterialsAsRead": {
+						"decl": "func (sk *Sketch) BillOfMaterialsAsRead() []BOMItem",
+						"text": "BillOfMaterialsAsRead is BillOfMaterials for a sketch read from a file and not regenerated, as a linked model's is when the bill of the model linking it counts what it places: which groups are left out is worked out first."
 					},
 					"BumpOrderAfterActive": {
 						"decl": "func (sk *Sketch) BumpOrderAfterActive(g *Group)",
@@ -6189,6 +6269,10 @@
 					"CheckMoveGroup": {
 						"decl": "func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error",
 						"text": "CheckMoveGroup reports the error MoveGroup(h, before) would give, without moving anything."
+					},
+					"CheckMoveGroupWithSources": {
+						"decl": "func (sk *Sketch) CheckMoveGroupWithSources(h, before core.HGroup) error",
+						"text": "CheckMoveGroupWithSources reports the error MoveGroupWithSources would give, without moving anything."
 					},
 					"CheckThread": {
 						"decl": "func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error",
@@ -6426,6 +6510,10 @@
 						"decl": "func (sk *Sketch) MoveGroup(h, before core.HGroup) error",
 						"text": "MoveGroup moves group h to just before group before in the history, or to the end for the zero handle."
 					},
+					"MoveGroupWithSources": {
+						"decl": "func (sk *Sketch) MoveGroupWithSources(h, before core.HGroup) ([]core.HGroup, error)",
+						"text": "MoveGroupWithSources moves group h, with its OwnSources in their order, to just before group before, or to the end for the zero handle, as MoveGroup moves one group: a move that would put a group ahead of one it refers to is refused with a *MoveError, and nothing moves."
+					},
 					"MustGetEntity": {
 						"decl": "func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity",
 						"text": "MustGetEntity is GetEntity for handles that must exist (C++ SK.GetEntity, which asserts)."
@@ -6489,6 +6577,10 @@
 					"OutwardFaceNormal": {
 						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",
 						"text": "OutwardFaceNormal is a face's normal, turned to point out of the solid, as its triangles' do."
+					},
+					"OwnSources": {
+						"decl": "func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup",
+						"text": "OwnSources is group h with the groups only it needs: those it refers to, directly or through each other, that no group outside them uses, as an extrusion's sketch and that sketch's own workplane."
 					},
 					"Parameter": {
 						"decl": "func (sk *Sketch) Parameter(name string) *Parameter",
@@ -6686,6 +6778,10 @@
 						"decl": "func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64",
 						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm (C++ Style::Width)."
 					},
+					"SuggestConstraint": {
+						"decl": "func (sk *Sketch) SuggestConstraint(request core.HRequest, wp core.HEntity, group core.HGroup) (Suggestion, bool)",
+						"text": "SuggestConstraint suggests a constraint for the entity of request as it is drawn in workplane wp and group, when it nearly meets one; none in 3d, where nothing is drawn locked to a plane, but for circles."
+					},
 					"SuppressedReason": {
 						"decl": "func (sk *Sketch) SuppressedReason(h core.HGroup) string",
 						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
@@ -6705,6 +6801,14 @@
 					"UndoClearState": {
 						"decl": "func (s *Sketch) UndoClearState(ut *UndoState)",
 						"text": "UndoClearState forgets one state (C++ SolveSpaceUI::UndoClearState)."
+					},
+					"UndoDropNewest": {
+						"decl": "func (s *Sketch) UndoDropNewest(n int)",
+						"text": "UndoDropNewest forgets the n states remembered last for undo, leaving the sketch as it is: what they would take back joins the step remembered before them."
+					},
+					"UndoPushedSince": {
+						"decl": "func (s *Sketch) UndoPushedSince(write int) int",
+						"text": "UndoPushedSince is how many states were remembered for undo since the stack's write position was write, for a change that remembers its own steps; 0 when the position went back, as an undo moves it."
 					},
 					"UndoRedo": {
 						"decl": "func (s *Sketch) UndoRedo() bool",
@@ -6737,6 +6841,10 @@
 			},
 			"SketchDiagnostic": {
 				"text": "SketchDiagnostic captures transient per-group errors during Sketch::GenerateAll.",
+				"kind": "struct"
+			},
+			"Suggestion": {
+				"text": "Suggestion is a constraint an entity being drawn would get when it is placed (roadmap 16.11 for lines, 29.4 for arcs and circles): its type, its entities, and which ends of curves it takes.",
 				"kind": "struct"
 			},
 			"TangentArcSettings": {
@@ -7203,6 +7311,10 @@
 						"decl": "func (c *BSplineCurve) Domain() (lo, hi float64)",
 						"text": "Domain is the curve's parameter range."
 					},
+					"LowDegree": {
+						"decl": "func (c *BSplineCurve) LowDegree(tol float64) (*BSplineCurve, error)",
+						"text": "LowDegree is the curve, or one within tol of it of degree MaxDegree made of Bezier pieces, when its degree is above MaxDegree."
+					},
 					"PointAt": {
 						"decl": "func (c *BSplineCurve) PointAt(t float64) geom.Vector",
 						"text": "PointAt is the curve's point at t."
@@ -7228,6 +7340,10 @@
 						"decl": "func (s *BSplineSurface) Domain() (u0, u1, v0, v1 float64)",
 						"text": "Domain is the surface's parameter ranges."
 					},
+					"LowDegree": {
+						"decl": "func (s *BSplineSurface) LowDegree(tol float64) (*BSplineSurface, error)",
+						"text": "LowDegree is the surface, or one within tol of it of degree at most MaxDegree each way, made of Bezier patches, when a degree is above MaxDegree."
+					},
 					"Patches": {
 						"decl": "func (s *BSplineSurface) Patches() ([][]SSurface, error)",
 						"text": "Patches cuts the surface at its knots into Bezier patches: patches[a][b] runs over span a of the breaks along u and span b along v, its own parameters from 0 to 1 over them."
@@ -7235,6 +7351,10 @@
 					"PointAt": {
 						"decl": "func (s *BSplineSurface) PointAt(u, v float64) geom.Vector",
 						"text": "PointAt is the surface's point at (u, v)."
+					},
+					"RemoveKnots": {
+						"decl": "func (s *BSplineSurface) RemoveKnots(tol float64) int",
+						"text": "RemoveKnots takes out of the surface's knots inside its domain every copy it can without moving the surface more than tol, along u and then along v, and reports how many it took."
 					}
 				},
 				"makers": [
@@ -7522,6 +7642,7 @@
 					}
 				},
 				"makers": [
+					"InterpolatedCurve",
 					"SBezierFrom2",
 					"SBezierFrom3",
 					"SBezierFrom4",
@@ -8550,7 +8671,8 @@
 					"FromExtrusionOf",
 					"FromPlane",
 					"FromRevolutionOf",
-					"FromTransformationOf"
+					"FromTransformationOf",
+					"InterpolatedPatch"
 				]
 			},
 			"STriMeta": {
@@ -8710,6 +8832,14 @@
 			"GetParallelMode": {
 				"decl": "func GetParallelMode() ParallelMode",
 				"text": "GetParallelMode returns the mode."
+			},
+			"InterpolatedCurve": {
+				"decl": "func InterpolatedCurve(pts []geom.Vector) SBezier",
+				"text": "InterpolatedCurve is the Bezier of degree len(pts)-1, at most MaxDegree, through pts at the Chebyshev-Lobatto points of [0, 1]."
+			},
+			"InterpolatedPatch": {
+				"decl": "func InterpolatedPatch(du, dv int, f func(x, y float64) geom.Vector, tol float64) (SSurface, error)",
+				"text": "InterpolatedPatch is the patch of degree du by dv through f's points at Chebyshev-Lobatto points of [0, 1] each way, its corners and sides' ends among them, or an error when it strays from f by more than tol."
 			},
 			"NewMeshMeta": {
 				"decl": "func NewMeshMeta(face FaceID, color core.RgbaColor) MeshMeta",
