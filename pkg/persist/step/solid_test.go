@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // readModel parses a STEP file into its model.
@@ -268,17 +269,24 @@ func TestSolidSeamEdges(t *testing.T) {
 			t.Errorf("%s: %v", e.name, err)
 			continue
 		}
-		r := solidReport(sh)
+		var mesh srf.SMesh
+		sh.TriangulateInto(&mesh)
+		r := check.Solid(sh, &mesh)
 		allow := e.area*tol + 1e-6*e.volume
 		// NIST_MBE_PMI_6's mesh has slivers in the meridian plane at
-		// its two poles since roadmap 24.2 put a pole at both top
-		// corners of a cell a trim runs along (step 24, what is left).
-		topo := 0
+		// two of its three poles, where a trim runs up a meridian into
+		// the pole: the mesher, out of other ears, joins the trim's
+		// points to the pole, as the face beyond does, so the slivers
+		// lie on each other (step 24, what is left). Since the mesher
+		// passes over such ears where it has others, the third pole is
+		// clean: the mesh's Euler characteristic is off by 6, was 8.
+		topos, euler := 0, 0
 		if e.name == "NIST_MBE_PMI_6.stp" {
-			topo = 1
+			topos, euler = 1, 6
 		}
-		if r.NakedEdges != 0 || r.TopologyProblems > topo || math.Abs(r.Volume-e.volume) > allow {
-			t.Errorf("%s: %s; want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.TopologyProblems > topos || d > euler || d < -euler ||
+			math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s, mesh Euler off by %d; want volume %.6g within %.3g", e.name, r.String(), d, e.volume, allow)
 		}
 	}
 }
