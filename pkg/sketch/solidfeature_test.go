@@ -191,6 +191,11 @@ func TestSolidGoldens(t *testing.T) {
 			d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
 			d.Extrude(8, "").SetDraft(6)
 		},
+		"draft-lens": func(d *api.Doc) {
+			d.Arc(api.V(0, 0, 0), api.V(5, 0, 0), api.V(0, 5, 0))
+			d.Arc(api.V(5, 5, 0), api.V(0, 5, 0), api.V(5, 0, 0))
+			d.Extrude(6, "").SetDraft(4)
+		},
 		"sweep-corner": func(d *api.Doc) {
 			path := cornerPath(d, 10, 12, 60)
 			d.SketchIn(d.Workplane("XY"), "profile")
