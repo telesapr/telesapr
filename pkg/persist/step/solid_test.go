@@ -206,13 +206,16 @@ func TestSolidBooleans(t *testing.T) {
 	}
 }
 
-// solidBooleanMaxFail is the failures allowed, set from the first
-// measurement (2026-10-04): 10 of 28, all the kernel's own limits on
-// these surfaces, whatever made them: a cylinder cut through a cylinder
-// (box_hole, sphere_bored; step 5 left those), a cone through its apex,
-// a torus crossed by a cylinder, a sphere's pole inside the cutter
-// (self-crossing edges where the cut meets the pole's patches).
-const solidBooleanMaxFail = 10
+// solidBooleanMaxFail is the failures allowed: 6 of 28 since roadmap
+// 24.1, all where the cylinder cuts: a cylinder through a cylinder
+// (box_hole, sphere_bored), a cone through its apex (both cutters), a
+// torus crossed by a cylinder, a sphere's pole inside the cutter. The
+// four block cuts of a sphere and a vase that failed before had the
+// curved patches join two points of the block's planar cut by an edge,
+// which lay in the block's face and crossed its triangles
+// (splitTrimDiagonals). It was 10 at the first measurement
+// (2026-10-04).
+const solidBooleanMaxFail = 6
 
 // Tessellated shapes (AP242, roadmap 21.6) read as meshes: a cube of
 // triangulated faces in a tessellated solid, a tetrahedron of strips

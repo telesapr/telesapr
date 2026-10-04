@@ -226,6 +226,31 @@ func TestSphereCapNoFold(t *testing.T) {
 	}
 }
 
+// TestSphereCutAlongAxis cuts a lathed sphere by a plane parallel to
+// its axis, a little off it, so that the circle of the cut runs near
+// both poles: the sphere's patches there must not join two points of
+// that circle by an edge, which lies in the plane's face, inside its
+// outline, and crosses its triangles (roadmap 24.1).
+func TestSphereCutAlongAxis(t *testing.T) {
+	sweepChordTol(t)
+	const r = 7.0
+	sphere := func() *SShell {
+		var sh SShell
+		sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+		return &sh
+	}
+	for _, x := range []float64{0.146 * r, 0.3 * r, 0.6 * r} {
+		box := extrudedBox(geom.Vector{X: x, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20})
+		for _, op := range []SurfaceCombineAs{SurfaceDiff, SurfaceInter} {
+			var out SShell
+			out.MakeFromBoolean(sphere(), box, op)
+			if out.BooleanFailed || !meshIsSound(&out) {
+				t.Errorf("x = %g, %v: failed %v, sound %v", x, op, out.BooleanFailed, meshIsSound(&out))
+			}
+		}
+	}
+}
+
 // TestCylinderAcrossEndSeam crosses the upright cylinder at 45 degrees
 // so that the ellipse where the crossed one meets the upright's flat
 // end runs across the seam between two quarters of that end. Each

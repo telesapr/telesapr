@@ -804,6 +804,7 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 		poly.UvTriangulateInto(mesh, srf)
 	} else {
 		poly.uvGridTriangulateInto(mesh, srf, &el)
+		srf.splitTrimDiagonals(mesh, start, &el)
 	}
 
 	meta := STriMeta{Face: shell.displayFace(srf), RgbaColor: srf.Color}
