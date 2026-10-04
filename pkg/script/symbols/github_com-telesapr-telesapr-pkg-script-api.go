@@ -76,6 +76,7 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	WAddGroup          func(g sketch.Group) core.HGroup
 	WChanging          func()
 	WDeleteGroup       func(hg core.HGroup)
+	WDrawingSheetShown func() bool
 	WExport            func(kind api.ExportKind, path string) error
 	WExportDrawing     func(path string, d *sketch.Drawing) error
 	WHovered           func() sketch.Selection
@@ -91,6 +92,7 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	WSelect            func(sel []sketch.Selection)
 	WSelection         func() []sketch.Selection
 	WSetChordTolerance func(pct float64)
+	WShowDrawingSheet  func(show bool) error
 	WSketch            func() *sketch.Sketch
 	WUndo              func() bool
 }
@@ -106,6 +108,9 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Changing() {
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) DeleteGroup(hg core.HGroup) {
 	W.WDeleteGroup(hg)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) DrawingSheetShown() bool {
+	return W.WDrawingSheetShown()
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Export(kind api.ExportKind, path string) error {
 	return W.WExport(kind, path)
@@ -151,6 +156,9 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Selection() []sketch.
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) SetChordTolerance(pct float64) {
 	W.WSetChordTolerance(pct)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) ShowDrawingSheet(show bool) error {
+	return W.WShowDrawingSheet(show)
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Sketch() *sketch.Sketch {
 	return W.WSketch()

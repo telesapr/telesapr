@@ -83,6 +83,11 @@ type Host interface {
 	ExportDrawing(path string, d *sketch.Drawing) error
 	// MeasureDrawing measures the drawing's dimensions.
 	MeasureDrawing(d *sketch.Drawing) ([]float64, []error)
+	// ShowDrawingSheet shows the drawing sheet in the window in place of
+	// the model, or the model again; an error with no window.
+	ShowDrawingSheet(show bool) error
+	// DrawingSheetShown reports whether the window shows the sheet.
+	DrawingSheetShown() bool
 	// Selection is what is selected in the user interface, if any.
 	Selection() []sketch.Selection
 	Select(sel []sketch.Selection)
@@ -309,6 +314,14 @@ func (h *SketchHost) Export(kind ExportKind, path string) error {
 func (h *SketchHost) ExportDrawing(path string, _ *sketch.Drawing) error {
 	return fmt.Errorf("drawing %s: %w", filepath.Base(path), errUnsupported)
 }
+
+// ShowDrawingSheet fails: there is no window to show the sheet in.
+func (h *SketchHost) ShowDrawingSheet(bool) error {
+	return fmt.Errorf("showing the drawing sheet: %w", errUnsupported)
+}
+
+// DrawingSheetShown is false: there is no window.
+func (h *SketchHost) DrawingSheetShown() bool { return false }
 
 // MeasureDrawing fails for each dimension, for the same reason.
 func (h *SketchHost) MeasureDrawing(d *sketch.Drawing) ([]float64, []error) {

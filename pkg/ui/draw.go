@@ -641,6 +641,11 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	if !ss.AllConsistent {
 		return
 	}
+	// The drawing sheet in place of the model (roadmap 29.1).
+	if gw.sheetShown {
+		gw.drawSheet(canvas)
+		return
+	}
 
 	// The snap grid, and all the things that don't change when we
 	// rotate.

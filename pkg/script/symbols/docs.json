@@ -4301,6 +4301,10 @@
 						"decl": "func (d *Doc) DrawingDimensions() (values []float64, errs []error)",
 						"text": "DrawingDimensions measures the drawing's dimensions on the solid as\nit is: each one's value in mm, and an error for one that can't be\nmeasured, as for an edge no longer in the solid. It needs the\napplication, or a view of it."
 					},
+					"DrawingSheetShown": {
+						"decl": "func (d *Doc) DrawingSheetShown() (shown bool)",
+						"text": "DrawingSheetShown reports whether the window shows the drawing sheet."
+					},
 					"Entity": {
 						"decl": "func (d *Doc) Entity(h uint32) Entity",
 						"text": "Entity is the entity with a handle."
@@ -4584,6 +4588,10 @@
 					"ShellSolid": {
 						"decl": "func (d *Doc) ShellSolid(faces []SolidFace, thick float64, name string) Group",
 						"text": "ShellSolid hollows the solid so far as Shell does, taking away faces\npicked from Solid, such as one a Boolean or a loft made."
+					},
+					"ShowDrawingSheet": {
+						"decl": "func (d *Doc) ShowDrawingSheet(show bool) (err error)",
+						"text": "ShowDrawingSheet shows the drawing sheet in the window in place of\nthe model, as View \u003e Show Drawing Sheet does, or the model again; it\nis view state, not saved. It is an error for a bare sketch with no\napplication around it (New), or when the sheet can't be made, as when\nthe active group has no solid. With the sheet shown, Render with the view\n\"window\" pictures the sheet."
 					},
 					"Sketch3D": {
 						"decl": "func (d *Doc) Sketch3D(name string) Group",
@@ -5188,6 +5196,10 @@
 						"decl": "func (h *SketchHost) DeleteGroup(hg core.HGroup)",
 						"text": "DeleteGroup deletes a group, activating the one before it if it was\nactive, and regenerates."
 					},
+					"DrawingSheetShown": {
+						"decl": "func (h *SketchHost) DrawingSheetShown() bool",
+						"text": "DrawingSheetShown is false: there is no window."
+					},
 					"EndEval": {
 						"decl": "func (h *SketchHost) EndEval()",
 						"text": "EndEval ends a step of a script: what it changed is regenerated."
@@ -5255,6 +5267,10 @@
 					"SetChordTolerance": {
 						"decl": "func (h *SketchHost) SetChordTolerance(pct float64)",
 						"text": "SetChordTolerance sets the sketch's chord tolerance."
+					},
+					"ShowDrawingSheet": {
+						"decl": "func (h *SketchHost) ShowDrawingSheet(bool) error",
+						"text": "ShowDrawingSheet fails: there is no window to show the sheet in."
 					},
 					"Sketch": {
 						"decl": "func (h *SketchHost) Sketch() *sketch.Sketch",

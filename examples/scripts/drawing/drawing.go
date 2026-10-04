@@ -16,7 +16,8 @@
 // dimensions: the foot's thickness between its faces on the right view,
 // the hole's diameter from its wall on the top view, and the foot's
 // length on the isometric, as long as it is, not as it looks. The
-// script saves drawing.tlspr, unless given "-"; in the application it
+// script saves drawing.tlspr and a picture of the sheet shown in the
+// window, sheet.png, unless given "-"; in the application it
 // also writes drawing.pdf (File > Export Drawing does the same), and
 // without one telesapr-cli export-drawing writes it from the file.
 package main
@@ -84,6 +85,11 @@ func main() {
 		return
 	}
 	must(doc.Save("drawing.tlspr"))
+	// The sheet in the window, in place of the model, pictured.
+	if err := doc.ShowDrawingSheet(true); err == nil {
+		must(doc.Render("sheet.png", 800, 566, "window"))
+		must(doc.ShowDrawingSheet(false))
+	}
 	if err := doc.ExportDrawing("drawing.pdf"); err != nil {
 		fmt.Println("no window to draw in; write the sheet with: telesapr-cli export-drawing -o drawing.pdf drawing.tlspr")
 	}

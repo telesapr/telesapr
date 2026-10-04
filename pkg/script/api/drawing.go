@@ -103,3 +103,20 @@ func (d *Doc) AddDrawingEdgeFaceDistance(view string, offset float64, edge Solid
 		Edges: []topo.Name{edge.name}, Faces: []srf.FaceID{face.id}})
 	d.SetDrawing(dr)
 }
+
+// ShowDrawingSheet shows the drawing sheet in the window in place of
+// the model, as View > Show Drawing Sheet does, or the model again; it
+// is view state, not saved. It is an error for a bare sketch with no
+// application around it (New), or when the sheet can't be made, as when
+// the active group has no solid. With the sheet shown, Render with the view
+// "window" pictures the sheet.
+func (d *Doc) ShowDrawingSheet(show bool) (err error) {
+	d.read(func(*sketch.Sketch) { err = d.h.ShowDrawingSheet(show) })
+	return err
+}
+
+// DrawingSheetShown reports whether the window shows the drawing sheet.
+func (d *Doc) DrawingSheetShown() (shown bool) {
+	d.read(func(*sketch.Sketch) { shown = d.h.DrawingSheetShown() })
+	return shown
+}

@@ -319,6 +319,13 @@ func (h *ScriptHost) Export(kind api.ExportKind, path string) error {
 	})
 }
 
+// ShowDrawingSheet shows the drawing sheet in the window, or the model
+// again.
+func (h *ScriptHost) ShowDrawingSheet(show bool) error { return h.ss.GW.ShowSheet(show) }
+
+// DrawingSheetShown reports whether the window shows the sheet.
+func (h *ScriptHost) DrawingSheetShown() bool { return h.ss.GW.sheetShown }
+
 // MeasureDrawing measures the drawing's dimensions.
 func (h *ScriptHost) MeasureDrawing(d *sketch.Drawing) ([]float64, []error) {
 	rs := h.ss.DrawingDimensions(d)

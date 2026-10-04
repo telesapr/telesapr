@@ -951,6 +951,11 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			return
 		}
 	}
+	// Nothing in the model is picked or drawn on while the drawing
+	// sheet is shown in its place.
+	if gw.sheetShown {
+		return
+	}
 
 	// This will be clobbered by MouseMoved below.
 	hasConstraintSuggestion := gw.pending.hasSuggestion

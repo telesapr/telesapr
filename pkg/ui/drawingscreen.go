@@ -70,7 +70,11 @@ func (tw *TextWindow) ShowDrawing() {
 		}
 		return checkFalse
 	}
-	tw.Printf(true, "%FtDRAWING%E   (File > Export Drawing writes it)")
+	show := "[show it in the window]"
+	if tw.ss.GW.sheetShown {
+		show = "[show the model]"
+	}
+	tw.Printf(true, "%FtDRAWING%E   (File > Export Drawing writes it)  %Fl%Lw%f%s%E", lf(tw.ScreenChangeDrawing), show)
 	w, h := d.Size()
 	tw.Printf(true, "%Ba   %Ftsheet%E      %s, %s x %s mm %Fl%Ls%f[next]%E",
 		d.Sheet, strconv.FormatFloat(w, 'g', -1, 64), strconv.FormatFloat(h, 'g', -1, 64), lf(tw.ScreenChangeDrawing))
@@ -177,6 +181,9 @@ func (tw *TextWindow) ScreenChangeDrawing(link int, v uint32) {
 		ss.ScheduleShowTW()
 	}
 	switch link {
+	case 'w':
+		ss.GW.MenuShowDrawingSheet()
+		ss.ScheduleShowTW()
 	case 's':
 		change(func(d *sketch.Drawing) {
 			i := 0

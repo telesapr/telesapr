@@ -52,6 +52,12 @@ drawing is made it finds them in the solid as it is and measures them:
 The screen lists each with what it measures now; one whose edge or face is gone, seen end on or at
 a slant, outside its detail, or of faces that aren't parallel, says why and isn't drawn.
 
+View > Show Drawing Sheet, or `[show it in the window]` on the drawing's screen, shows the sheet in
+the window in place of the model, fitted to it, until it is chosen again (`[show the model]`). It
+follows each change made on the drawing's screen and to the model; while it is shown the mouse
+picks nothing in the model. It is a view, not saved with the file. From a script,
+`doc.ShowDrawingSheet(true)`, and `doc.Render(path, w, h, "window")` pictures it.
+
 File > Export Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
 sheet's size in millimetres. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
 without a window.
@@ -80,6 +86,5 @@ millimetres from the bottom left; empty, the standard ones are placed.
 
 Dimensions are not of vertices or angles, nor between curved faces; a distance from a face to a
 curved edge is refused. A section's half beyond is drawn with hidden edges as the
-drawing has them; a section is of the whole solid, not a broken-out or offset section. The drawing is not
-shown in the window, only written. The text is the vector font's, which has no colon: the title
+drawing has them; a section is of the whole solid, not a broken-out or offset section. The text is the vector font's, which has no colon: the title
 block writes a scale of 1:2 as 1/2.

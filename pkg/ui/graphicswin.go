@@ -135,6 +135,9 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 			case CmdSectionView:
 				gw.sectionMenuItem = item
 				gw.sectionMenuOn = false
+			case CmdShowDrawingSheet:
+				gw.sheetMenuItem = item
+				item.SetActive(gw.sheetShown)
 			case CmdPerspectiveProj:
 				gw.perspectiveProjMenuItem = item
 			case CmdExplodeSketch:
