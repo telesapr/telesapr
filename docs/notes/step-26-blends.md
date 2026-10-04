@@ -85,6 +85,25 @@ blend going on onto the next face is not built: the ball then rolls
 between three faces for a while, which is 22.4's corner patch in all
 but name.
 
+### Volumes against exact values and OpenCASCADE (second agent)
+
+`TestFilletOnOtherSolidsVolumes` (chord 0.002) fillets seven edges of the
+STEP solids at r 1 and compares the volume taken: a box edge (exact,
++0.15%), the hole's rim (Pappus, +0.53%), the blob's upright corner
+between two B-spline walls (the section found in the plane times the
+height, 5.31575: ours -0.05%; OpenCASCADE takes 4.3015, a fifth less, and
+says its shape is valid), the bored sphere's rim (OCC, -0.12%), the
+vase's lip (OCC, +0.07%) and foot (OCC 0.3955, ours -2.8%, 0.011 mm³: not
+checked further), the lid's wall-to-dome edge (OCC, +0.13%). OCC's
+values: `scripts/fillet-step-volumes.py`. At chord 0.005 the hole's rim
+is +2% and converges by 0.002; between 0.002 and 0.001 it stays at
++0.5-0.6%.
+
+Smooth edges are left out of the count (`SolidEdge.Smooth`); none of the
+measured solids lists one: the loft's four "tangent" refusals are
+creases that fade out along the edge (the square foot's corners turning
+into the circles), which the refusal rightly names.
+
 ## Tried and taken back
 
 - Open chains ending at a curved face: the end section as the conic
@@ -122,8 +141,13 @@ box (vertical R, top ring r) and boss (vertical R, foot r), r < R.
 ## Next
 
 - 22.3: the blend going on onto the next face (three faces at once).
-- 22.4: vertex blends (setback corner patches); also the loft's foot
-  corners and the lid's corners of 22.5's measurement.
+- 22.4: corners of different radii are done in stages where the later
+  edges go on round the earlier ones' arcs (box top ring smaller than
+  its uprights, a boss's foot round its sides). Not done: a true
+  setback vertex blend (an n-sided patch), needed for a mitre of two
+  radii over a sharp upright, a ring larger than its uprights, three
+  different radii at one corner, and the loft's foot and lid corners
+  where an open chain ends on a curved face.
 - 22.5: the loft's 4 "tangent" refusals are seams between its patches,
   which no fillet should take: the measurement should leave smooth edges
   out (no script call tells them yet). OpenCASCADE volumes on the
