@@ -351,9 +351,6 @@ func (ss *Application) MenuHelp(id Command) {
 		ss.Message(
 			"This is TeleSAPR version %s.\n"+
 				"\n"+
-				"TeleSAPR began as a port of SolveSpace version %s;\n"+
-				"for SolveSpace, see https://solvespace.com/\n"+
-				"\n"+
 				"TeleSAPR is free software: you are free to modify\n"+
 				"and/or redistribute it under the terms of the GNU\n"+
 				"General Public License (GPL) version 3 or later.\n"+
@@ -361,8 +358,13 @@ func (ss *Application) MenuHelp(id Command) {
 				"There is NO WARRANTY, to the extent permitted by\n"+
 				"law. For details, visit http://gnu.org/licenses/\n"+
 				"\n"+
+				"TeleSAPR began as a port of SolveSpace with the\n"+
+				"last version referred %s.\n"+
+				"For SolveSpace, see https://solvespace.com/\n"+
+				"\n"+
 				"© 2008-%d Jonathan Westhues and the other SolveSpace\n"+
-				"authors, and the TeleSAPR authors.\n",
+				"authors.\n"+
+				"© 2025-2026 Mikhail Sorochan and the TeleSAPR authors.\n",
 			version.Version, version.SolveSpaceVersion, 2026)
 
 	case CmdGithub:
