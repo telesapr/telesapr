@@ -510,6 +510,73 @@ func TestFilletUnevenMitre(t *testing.T) {
 	}
 }
 
+// A bracket's rib, its foot filled all round: each side's fillet runs
+// along the floor, round the bend as a torus and up the wall, and at
+// the rib's four corners meets the fillet across an end of the rib's
+// top below an edge of the top that is left sharp and sticks out, where
+// the two go in. They meet in an uneven mitre outside the rib, the top
+// growing out to it. What the corners hold beyond the sides' fillets
+// and the ends', each made alone, is the least of the two fillets'
+// heights less the side's fillet as the top's plane cuts it, summed
+// over the floor beside the rib (pkg/topo's TestFilletRibFootSweep sums
+// the like): 0.0600158 mm³ a corner at 2 mm under a top at 35 degrees.
+func TestFilletRibFoot(t *testing.T) {
+	volume := func(sides, ends bool) float64 {
+		d := api.New()
+		d.SetChordTolerance(0.001)
+		f := filletRib(d, 2, sides, ends)
+		if p := f.Problem(); p != "" {
+			t.Fatalf("sides %v, ends %v: %s", sides, ends, p)
+		}
+		r := f.Check()
+		if !r.Sound() {
+			t.Fatalf("sides %v, ends %v: %s", sides, ends, r.String())
+		}
+		return r.Volume
+	}
+	d := api.New()
+	d.SetChordTolerance(0.001)
+	rib, edges := ribbed(d)
+	bare := rib.Volume()
+	step(d)
+	saveBefore := saved(t, d)
+	f := d.FilletSolid(edges(rib.Solid(), true, true), 2, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	r := f.Check()
+	corners := r.Volume - volume(true, false) - volume(false, true) + bare
+	if want := 4 * 0.0600158; !r.Sound() || math.Abs(corners-want) > 0.1*want {
+		t.Fatalf("%s: the corners hold %g, want %g", r.String(), corners, want)
+	}
+	// The ends' fillets alone, by their section: the top meets the floor
+	// and the wall at 145 degrees outside the rib.
+	if got, want := volume(false, true)-bare, 2*filletLoss(2, 145*math.Pi/180, 10); math.Abs(got-want) > 0.01 {
+		t.Fatalf("the ends' fillets hold %g, want %g", got, want)
+	}
+	undoRedo(t, d, saveBefore)
+
+	// A slot cut down through a side's fillet where it ends on the top,
+	// which grew there: the Boolean finds the grown face.
+	step(d)
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Rect(api.V(24, 10.5, 0), api.V(25, 14, 0))
+	slot := d.Extrude(30, "slot")
+	slot.SetTwoSided(true)
+	slot.SetCombine(api.Difference)
+	d.Regen()
+	if sr := slot.Check(); slot.Problem() != "" || !sr.Sound() || sr.Volume > r.Volume-1 {
+		t.Fatalf("the slot: %s %s", sr.String(), slot.Problem())
+	}
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
+	d.Regen()
+	sr := slot.Check()
+	back := roundTrip(t, d)
+	if br := back.Group("slot").Check(); !br.Sound() || math.Abs(br.Volume-sr.Volume) > 1e-6*sr.Volume {
+		t.Fatalf("reopened: %s", br.String())
+	}
+}
+
 // A frustum turned by a lathe from a trapezoid in the ZX plane, its
 // top's circle, where the flat top meets the cone, rounded by name
 // through the group; the volume by Pappus.

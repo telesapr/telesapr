@@ -303,6 +303,7 @@ func TestSolidGoldens(t *testing.T) {
 		"fillet-pocket":  func(d *api.Doc) { filletPocket(d, 2) },
 		"fillet-outline": func(d *api.Doc) { filletOutline(t, d) },
 		"fillet-uneven":  func(d *api.Doc) { filletUneven(d) },
+		"fillet-rib":     func(d *api.Doc) { filletRib(d, 3, true, true) },
 		"fillet-cone":    func(d *api.Doc) { filletCone(d) },
 		"fillet-tee":     func(d *api.Doc) { filletTee(d) },
 		"fillet-radii":   func(d *api.Doc) { filletRadii(t, d) },
@@ -465,6 +466,74 @@ func filletUneven(d *api.Doc) {
 
 func BenchmarkFilletUneven(b *testing.B) {
 	benchRegen(b, filletUneven)
+}
+
+// ribbed is a bracket, a plate 10 thick bent up by 110 degrees round an
+// arc of radius 20 and 42 wide, with a rib 10 thick across the bend, a
+// triangle from the floor to the wall; and the edges of the rib's foot:
+// along each side the floor's, the bend's and the wall's, and the two
+// ends of its sloping top.
+func ribbed(d *api.Doc) (rib api.Group, edges func(s api.Solid, sides, ends bool) []api.SolidEdge) {
+	const thick, bend, reach = 10.0, 20.0, 26.0
+	up := api.V(math.Cos(110*math.Pi/180), math.Sin(110*math.Pi/180), 0)
+	along := func(p api.Vec, k float64) api.Vec { return api.V(p.X+k*up.X, p.Y+k*up.Y, 0) }
+	outer := along(api.V(0, 0, 0), 45)
+	corner := api.V(thick*up.Y+(thick+thick*up.X)/up.Y*up.X, thick, 0)
+	tangent := bend / math.Tan(55*math.Pi/180)
+	onFloor, onWall := api.V(corner.X+tangent, thick, 0), along(corner, tangent)
+	inner := api.V(outer.X+thick*up.Y, outer.Y-thick*up.X, 0)
+	midBend := api.V(onFloor.X+bend*math.Cos(235*math.Pi/180), thick+bend+bend*math.Sin(235*math.Pi/180), 0)
+	lines := []api.Entity{
+		d.Line(outer, api.V(0, 0, 0)),
+		d.Line(api.V(0, 0, 0), api.V(50, 0, 0)),
+		d.Line(api.V(50, 0, 0), api.V(50, thick, 0)),
+		d.Line(api.V(50, thick, 0), onFloor),
+	}
+	arc := d.Arc(api.V(onFloor.X, thick+bend, 0), onWall, onFloor)
+	lines = append(lines, d.Line(onWall, inner), d.Line(inner, outer))
+	for i := 0; i+1 < 4; i++ {
+		d.Coincident(lines[i].End(), lines[i+1].Start())
+	}
+	d.Coincident(lines[3].End(), arc.End())
+	d.Coincident(arc.Start(), lines[4].Start())
+	d.Coincident(lines[4].End(), lines[5].Start())
+	d.Coincident(lines[5].End(), lines[0].Start())
+	d.Extrude(42, "").SetTwoSided(true)
+	foot, top := api.V(reach, thick, 0), along(corner, reach-corner.X)
+	d.SketchIn(d.Workplane("XY"), "")
+	d.Polyline(true, top, corner, foot)
+	rib = d.Extrude(thick, "")
+	rib.SetTwoSided(true)
+	d.Regen()
+	edges = func(s api.Solid, sides, ends bool) []api.SolidEdge {
+		var out []api.SolidEdge
+		for _, z := range []float64{thick / 2, -thick / 2} {
+			if !sides {
+				break
+			}
+			a := along(onWall, 0.5)
+			out = append(out, s.EdgeAt(api.V(onFloor.X+0.5, thick, z)), s.EdgeAt(api.V(midBend.X, midBend.Y, z)),
+				s.EdgeAt(api.V(a.X, a.Y, z)))
+		}
+		if ends {
+			out = append(out, s.EdgeAt(foot), s.EdgeAt(top))
+		}
+		return out
+	}
+	return rib, edges
+}
+
+// filletRib is the ribbed bracket with the rib's foot filled: along its
+// sides, across its ends, or all round, where a side's fillet meets an
+// end's below a sharp edge of the rib's top, in an uneven mitre that
+// lies outside the rib.
+func filletRib(d *api.Doc, r float64, sides, ends bool) api.Group {
+	rib, edges := ribbed(d)
+	return d.FilletSolid(edges(rib.Solid(), sides, ends), r, "")
+}
+
+func BenchmarkFilletRib(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) { filletRib(d, 3, true, true) })
 }
 
 // filletCone is a frustum turned by a lathe, its top's rim rounded where
