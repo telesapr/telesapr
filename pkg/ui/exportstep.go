@@ -52,7 +52,7 @@ type stepOrientedEdgeAlias struct {
 
 // stepFileWriter writes STEP (C++ StepFileWriter).
 type stepFileWriter struct {
-	ss *SolveSpaceUI
+	ss *Application
 
 	curves        []int
 	advancedFaces []int
@@ -1025,7 +1025,7 @@ func (w *stepFileWriter) WriteFooter() {
 
 // ExportSurfacesTo writes the active group's shell as STEP (C++
 // StepFileWriter::ExportSurfacesTo).
-func (ss *SolveSpaceUI) ExportSurfacesTo(filename string) {
+func (ss *Application) ExportSurfacesTo(filename string) {
 	g := ss.SK.GetGroup(ss.GW.activeGroupH())
 	shell := &g.RunningShell
 

@@ -25,7 +25,7 @@ import (
 
 // ExportSectionTo exports the section of the solid model by a plane
 // (C++ SolveSpaceUI::ExportSectionTo).
-func (ss *SolveSpaceUI) ExportSectionTo(filename string) {
+func (ss *Application) ExportSectionTo(filename string) {
 	sk := ss.SK
 	gw := ss.GW
 	gn := gw.view.ProjRight.Cross(gw.view.ProjUp)
@@ -210,7 +210,7 @@ func (c *getEdgesCanvas) InvalidatePixmap(pm *res.Pixmap) { panic("ui: not imple
 
 // ExportViewOrWireframeTo exports the view as 2d vector art, or the
 // wireframe in 3d (C++ SolveSpaceUI::ExportViewOrWireframeTo).
-func (ss *SolveSpaceUI) ExportViewOrWireframeTo(filename string, exportWireframe bool) {
+func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe bool) {
 	sk := ss.SK
 	gw := ss.GW
 	var edges srf.SEdgeList
@@ -310,7 +310,7 @@ func (ss *SolveSpaceUI) ExportViewOrWireframeTo(filename string, exportWireframe
 
 // ExportWireframeCurves writes the edges and curves in 3d (C++
 // SolveSpaceUI::ExportWireframeCurves).
-func (ss *SolveSpaceUI) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, out vectorFileWriter) {
+func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, out vectorFileWriter) {
 	var sblss srf.SBezierLoopSetSet
 	for _, se := range sel.Edges {
 		sb := srf.SBezierFrom2(se.A.ScaledBy(1.0/ss.ExportScale), se.B.ScaledBy(1.0/ss.ExportScale))
@@ -328,7 +328,7 @@ func (ss *SolveSpaceUI) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezi
 // ExportLinesAndMesh projects the edges, curves and mesh, removes the
 // hidden lines, and writes what's left (C++
 // SolveSpaceUI::ExportLinesAndMesh).
-func (ss *SolveSpaceUI) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierList, sm *srf.SMesh,
+func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierList, sm *srf.SMesh,
 	u, v, n, origin geom.Vector, cameraTan float64, out vectorFileWriter) {
 	sk := ss.SK
 	gw := ss.GW
@@ -710,7 +710,7 @@ type vectorFileWriter interface {
 // fields and non-virtual methods). The file is written when it's
 // finished.
 type vectorWriter struct {
-	ss   *SolveSpaceUI
+	ss   *Application
 	self vectorFileWriter
 
 	u, v, n, origin  geom.Vector
@@ -758,7 +758,7 @@ func MmToPts(mm float64) float64 {
 
 // vectorFileWriterFor picks the writer for a file's extension and opens
 // the file (C++ VectorFileWriter::ForFile).
-func (ss *SolveSpaceUI) vectorFileWriterFor(filename string) vectorFileWriter {
+func (ss *Application) vectorFileWriterFor(filename string) vectorFileWriter {
 	var ret vectorFileWriter
 	needOpen := true
 	switch {
@@ -957,7 +957,7 @@ func (w *vectorWriter) BezierAsNonrationalCubic(sb *srf.SBezier, depth int) {
 
 // ExportMeshTo exports the active group's mesh (C++
 // SolveSpaceUI::ExportMeshTo).
-func (ss *SolveSpaceUI) ExportMeshTo(filename string) {
+func (ss *Application) ExportMeshTo(filename string) {
 	sk := ss.SK
 	ss.ExportMode = true
 	ss.GenerateAll(sketch.GenerateAll)
@@ -1022,7 +1022,7 @@ func (ss *SolveSpaceUI) ExportMeshTo(filename string) {
 
 // ExportMeshAsObjTo writes the mesh as Wavefront OBJ, with its
 // materials (C++ SolveSpaceUI::ExportMeshAsObjTo).
-func (ss *SolveSpaceUI) ExportMeshAsObjTo(fObj, fMtl *bytes.Buffer, sm *srf.SMesh) {
+func (ss *Application) ExportMeshAsObjTo(fObj, fMtl *bytes.Buffer, sm *srf.SMesh) {
 	colors := map[uint32]string{}
 	var colorKeys []core.RgbaColor
 	for _, t := range sm.Triangles {
@@ -1116,7 +1116,7 @@ const threeJsHTMLEnd = `
 
 // ExportMeshAsThreeJsTo writes the mesh as a script for three.js, or a
 // page with it (C++ SolveSpaceUI::ExportMeshAsThreeJsTo).
-func (ss *SolveSpaceUI) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, sm *srf.SMesh,
+func (ss *Application) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, sm *srf.SMesh,
 	sol *srf.SOutlineList) {
 	const threeFn = "three-r111.min.js"
 	const hammerFn = "hammer-2.0.8.js"
@@ -1247,7 +1247,7 @@ func (ss *SolveSpaceUI) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, 
 
 // ExportMeshAsVrmlTo writes the mesh as VRML (C++
 // SolveSpaceUI::ExportMeshAsVrmlTo).
-func (ss *SolveSpaceUI) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm *srf.SMesh) {
+func (ss *Application) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm *srf.SMesh) {
 	pf := func(format string, args ...any) { f.WriteString(cfmt.Sprintf(format, args...)) }
 	basename := fileStemIdentifier(filename)
 
@@ -1370,7 +1370,7 @@ func (ss *SolveSpaceUI) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm 
 
 // ExportAsPngTo saves the view as an image at the next redraw (C++
 // SolveSpaceUI::ExportAsPngTo).
-func (ss *SolveSpaceUI) ExportAsPngTo(filename string) {
+func (ss *Application) ExportAsPngTo(filename string) {
 	ss.ScreenshotFile = filename
 	// The rest of the work is done in the next redraw.
 	ss.GW.Invalidate(false)

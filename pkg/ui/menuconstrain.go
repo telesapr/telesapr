@@ -9,7 +9,7 @@ import (
 
 // MenuConstrain makes a constraint of the selection (C++
 // Constraint::MenuConstrain).
-func (ss *SolveSpaceUI) MenuConstrain(id Command) {
+func (ss *Application) MenuConstrain(id Command) {
 	gw := ss.GW
 	sk := ss.SK
 	var newcons []*core.Constraint

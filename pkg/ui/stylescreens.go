@@ -21,7 +21,7 @@ func wrapSymmetric(v, n float64) float64 {
 
 // CreateCustomStyle adds a custom style and returns its handle (C++
 // Style::CreateCustomStyle).
-func (ss *SolveSpaceUI) CreateCustomStyle(rememberForUndo bool) uint32 {
+func (ss *Application) CreateCustomStyle(rememberForUndo bool) uint32 {
 	if rememberForUndo {
 		ss.UndoRemember()
 	}
@@ -37,7 +37,7 @@ func (ss *SolveSpaceUI) CreateCustomStyle(rememberForUndo bool) uint32 {
 
 // AssignSelectionToStyle gives the selected entities and constraints
 // style v, or no style for 0 (C++ Style::AssignSelectionToStyle).
-func (ss *SolveSpaceUI) AssignSelectionToStyle(v uint32) {
+func (ss *Application) AssignSelectionToStyle(v uint32) {
 	sk := ss.SK
 	gw := ss.GW
 	showError := false
@@ -86,7 +86,7 @@ func (ss *SolveSpaceUI) AssignSelectionToStyle(v uint32) {
 
 // LoadFactoryDefaultStyles resets the default styles and the
 // background colour (C++ Style::LoadFactoryDefaults).
-func (ss *SolveSpaceUI) LoadFactoryDefaultStyles() {
+func (ss *Application) LoadFactoryDefaultStyles() {
 	ss.SK.LoadFactoryDefaults()
 	ss.BackgroundColor = rgbi(0, 0, 0)
 }

@@ -11,7 +11,7 @@ import (
 
 // clickText clicks the first place the text window shows s, as the
 // mouse would; it fails the test if s isn't shown.
-func clickText(t *testing.T, ss *SolveSpaceUI, s string) {
+func clickText(t *testing.T, ss *Application, s string) {
 	t.Helper()
 	tw := ss.TW
 	for r := 0; r < tw.rows; r++ {

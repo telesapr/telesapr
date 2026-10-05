@@ -13,7 +13,7 @@ func (gw *GraphicsWindow) selectionForEngine() []sketch.Selection {
 
 // afterEngineEdit updates what an engine edit that may have remembered
 // an undo state leaves stale: the unsaved flag and the undo menus.
-func (ss *SolveSpaceUI) afterEngineEdit(undoBefore int) {
+func (ss *Application) afterEngineEdit(undoBefore int) {
 	if ss.SK.Undo.Write != undoBefore {
 		ss.SK.Unsaved = true
 	}

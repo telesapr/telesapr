@@ -12,7 +12,7 @@ import (
 
 // Init loads the settings, makes a new file and opens the windows (C++
 // SolveSpaceUI::Init).
-func (ss *SolveSpaceUI) Init() {
+func (ss *Application) Init() {
 	ss.LoadSettings()
 	// A missing linked file is looked for through the dialogs.
 	link.LocateMissingFile = ss.locateMissingFile
@@ -52,7 +52,7 @@ func (ss *SolveSpaceUI) Init() {
 
 // setSketch makes sk the sketch the application edits, wired to the
 // view, the show flags and the event loop.
-func (ss *SolveSpaceUI) setSketch(sk *sketch.Sketch) {
+func (ss *Application) setSketch(sk *sketch.Sketch) {
 	ss.SK = sk
 	ss.ViewUnits = sk.Units
 	sk.View = &ss.GW.view
@@ -68,7 +68,7 @@ func (ss *SolveSpaceUI) setSketch(sk *sketch.Sketch) {
 }
 
 // NewFile starts a new sketch (C++ SolveSpaceUI::NewFile).
-func (ss *SolveSpaceUI) NewFile() {
+func (ss *Application) NewFile() {
 	sk := sketch.NewSketch()
 	sk.NewFile()
 	sk.Units = ss.DefaultUnits
@@ -77,7 +77,7 @@ func (ss *SolveSpaceUI) NewFile() {
 
 // AfterNewFile generates a new or loaded sketch and resets the windows
 // to it (C++ SolveSpaceUI::AfterNewFile).
-func (ss *SolveSpaceUI) AfterNewFile() {
+func (ss *Application) AfterNewFile() {
 	// Clear out the traced point, which is no longer valid
 	ss.Traced.Point = core.HEntity{}
 	ss.Traced.Path.Points = nil
@@ -112,7 +112,7 @@ func (ss *SolveSpaceUI) AfterNewFile() {
 }
 
 // UpdateWindowTitles names the file in the window title.
-func (ss *SolveSpaceUI) UpdateWindowTitles() {
+func (ss *Application) UpdateWindowTitles() {
 	if ss.GW.window == nil || ss.TW.window == nil {
 		return
 	}
@@ -135,7 +135,7 @@ func (ss *SolveSpaceUI) UpdateWindowTitles() {
 
 // LoadSketchForTest adopts an already loaded sketch as C++ does after
 // LoadFromFile, then AfterNewFile.
-func (ss *SolveSpaceUI) LoadSketchForTest(sk *sketch.Sketch, saveFile string) {
+func (ss *Application) LoadSketchForTest(sk *sketch.Sketch, saveFile string) {
 	ss.SaveFile = saveFile
 	ss.setSketch(sk)
 	ss.AfterNewFile()
@@ -144,7 +144,7 @@ func (ss *SolveSpaceUI) LoadSketchForTest(sk *sketch.Sketch, saveFile string) {
 // MarkDraggedParams lists the params of what the graphics window is
 // dragging: its pending points, circle and normal (C++
 // SolveSpaceUI::MarkDraggedParams).
-func (ss *SolveSpaceUI) MarkDraggedParams() []core.HParam {
+func (ss *Application) MarkDraggedParams() []core.HParam {
 	sk := ss.SK
 	pd := &ss.GW.pending
 	var dragged []core.HParam
@@ -185,7 +185,7 @@ func (ss *SolveSpaceUI) MarkDraggedParams() []core.HParam {
 
 // onGenerated is the user interface's part of the end of C++
 // GenerateAll.
-func (ss *SolveSpaceUI) onGenerated(requests, constraints, groups int) {
+func (ss *Application) onGenerated(requests, constraints, groups int) {
 	sk := ss.SK
 	// Make sure the point that we're tracing exists.
 	if ss.Traced.Point.V != 0 && sk.GetEntity(ss.Traced.Point) == nil {

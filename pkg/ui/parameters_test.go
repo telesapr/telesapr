@@ -13,7 +13,7 @@ import (
 )
 
 // shows reports whether the text window shows s.
-func shows(ss *SolveSpaceUI, s string) bool {
+func shows(ss *Application, s string) bool {
 	tw := ss.TW
 	for r := 0; r < tw.rows; r++ {
 		if strings.Contains(string(tw.lines[r].text[:]), s) {

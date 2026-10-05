@@ -22,7 +22,7 @@ import (
 type agentApp struct {
 	t  *testing.T
 	p  *loopPlatform
-	ss *SolveSpaceUI
+	ss *Application
 	w  *headless.Console
 	r  *agent.Remote
 }

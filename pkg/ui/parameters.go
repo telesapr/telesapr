@@ -15,7 +15,7 @@ func (tw *TextWindow) ScreenShowParameters(link int, v uint32) {
 }
 
 // MenuParameters shows the parameter table, from the menu.
-func (ss *SolveSpaceUI) MenuParameters() {
+func (ss *Application) MenuParameters() {
 	ss.GW.ClearSelection()
 	ss.TW.GoToScreen(ScreenParameters)
 	ss.GW.ForceTextWindowShown()
@@ -96,7 +96,7 @@ func (tw *TextWindow) ScreenChangeConfiguration(link int, v uint32) {
 
 // parameterEdit runs an edit of the table as one undo step, and shows
 // why when it is refused.
-func (ss *SolveSpaceUI) parameterEdit(fn func() error) bool {
+func (ss *Application) parameterEdit(fn func() error) bool {
 	if err := ss.SK.UndoRememberFor(fn); err != nil {
 		ss.Error("%s.", capitalize(err.Error()))
 		return false

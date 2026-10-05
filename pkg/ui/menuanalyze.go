@@ -18,7 +18,7 @@ import (
 
 // MenuAnalyze runs an Analyze menu command (C++
 // SolveSpaceUI::MenuAnalyze).
-func (ss *SolveSpaceUI) MenuAnalyze(id Command) {
+func (ss *Application) MenuAnalyze(id Command) {
 	settings := ss.Settings
 	sk := ss.SK
 	gw := ss.GW
@@ -244,7 +244,7 @@ func (ss *SolveSpaceUI) MenuAnalyze(id Command) {
 // ShowNakedEdges finds the naked and self-intersecting edges of the
 // active group's mesh and reports them (C++
 // SolveSpaceUI::ShowNakedEdges).
-func (ss *SolveSpaceUI) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
+func (ss *Application) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 	ss.NakedEdges.Clear()
 
 	g := ss.SK.GetGroup(ss.GW.activeGroupH())
@@ -281,7 +281,7 @@ func (ss *SolveSpaceUI) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 // CheckSolid checks the active group's solid with check.Group, marks
 // its naked and self-intersecting edges, and reports what it found in
 // the view units.
-func (ss *SolveSpaceUI) CheckSolid() {
+func (ss *Application) CheckSolid() {
 	sk := ss.SK
 	g := sk.GetGroup(ss.GW.activeGroupH())
 	r := check.Group(sk, g)
@@ -335,14 +335,14 @@ func (ss *SolveSpaceUI) CheckSolid() {
 
 // UpdateCenterOfMass finds the center of mass of the active group's
 // mesh (C++ SolveSpaceUI::UpdateCenterOfMass).
-func (ss *SolveSpaceUI) UpdateCenterOfMass() {
+func (ss *Application) UpdateCenterOfMass() {
 	m := &ss.SK.GetGroup(ss.GW.activeGroupH()).DisplayMesh
 	ss.CenterOfMass.Position = m.GetCenterOfMass()
 	ss.CenterOfMass.Dirty = false
 }
 
 // MenuHelp runs a Help menu command (C++ SolveSpaceUI::MenuHelp).
-func (ss *SolveSpaceUI) MenuHelp(id Command) {
+func (ss *Application) MenuHelp(id Command) {
 	switch id {
 	case CmdWebsite:
 		ss.Platform.OpenInBrowser(version.Guide)

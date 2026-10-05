@@ -74,7 +74,7 @@ func (b *showHideButton) Click()            { b.gw.ToggleBool(b.variable) }
 
 // triStateButton cycles through three modes (C++ TriStateButton).
 type triStateButton struct {
-	ss        *SolveSpaceUI
+	ss        *Application
 	get       func() uint32
 	set       func(uint32)
 	states    [3]uint32
@@ -129,7 +129,7 @@ func (b *triStateButton) Click() {
 }
 
 // newTextButtons makes the icons (C++ buttons[]).
-func newTextButtons(ss *SolveSpaceUI) []textButton {
+func newTextButtons(ss *Application) []textButton {
 	gw := ss.GW
 	spacer := &spacerButton{}
 	sh := func(v *bool, icon, tooltip string) *showHideButton {

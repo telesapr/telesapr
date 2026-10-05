@@ -15,7 +15,7 @@ import (
 
 // drawingModel is a 120 x 60 x 40 block with a hole down through it,
 // in a new application.
-func drawingModel(t *testing.T) (*SolveSpaceUI, *api.Doc) {
+func drawingModel(t *testing.T) (*Application, *api.Doc) {
 	t.Helper()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())

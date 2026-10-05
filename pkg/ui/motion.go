@@ -26,7 +26,7 @@ type motionStudy struct {
 
 // MenuMotionStudy shows the motion study's screen, starting from the
 // first parameter, from its value to twice it.
-func (ss *SolveSpaceUI) MenuMotionStudy() {
+func (ss *Application) MenuMotionStudy() {
 	tw := ss.TW
 	m := &tw.motion
 	if ss.SK.Parameter(m.param) == nil {

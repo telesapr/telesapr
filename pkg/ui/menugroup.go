@@ -16,7 +16,7 @@ import (
 
 // MenuGroup makes a new group from the selection; linkFile is the file
 // to link for a link group, or "" to ask (C++ Group::MenuGroup).
-func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
+func (ss *Application) MenuGroup(id Command, linkFile string) {
 	gw := ss.GW
 	sk := ss.SK
 
@@ -367,7 +367,7 @@ func (ss *SolveSpaceUI) MenuGroup(id Command, linkFile string) {
 
 // addNewGroup adds g after the active group, activates it and
 // regenerates, as the end of C++ Group::MenuGroup does.
-func (ss *SolveSpaceUI) addNewGroup(g sketch.Group, rememberForUndo bool) core.HGroup {
+func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HGroup {
 	gw := ss.GW
 	sk := ss.SK
 
@@ -412,7 +412,7 @@ func abs(v float64) float64 {
 }
 
 // reloadAllLinked reloads the linked files relative to the save file.
-func (ss *SolveSpaceUI) reloadAllLinked() {
+func (ss *Application) reloadAllLinked() {
 	if ss.SK.ReloadAllLinked != nil {
 		ss.SK.ReloadAllLinked(ss.SK)
 	}

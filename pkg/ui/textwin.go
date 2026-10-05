@@ -227,7 +227,7 @@ func (row *textRow) clear() {
 
 // TextWindow is the property browser (C++ TextWindow).
 type TextWindow struct {
-	ss *SolveSpaceUI
+	ss *Application
 
 	window platform.Window
 	canvas render.ViewportCanvas
@@ -284,7 +284,7 @@ type TextWindow struct {
 	buttons []textButton
 }
 
-func newTextWindow(ss *SolveSpaceUI) *TextWindow {
+func newTextWindow(ss *Application) *TextWindow {
 	tw := &TextWindow{ss: ss}
 	tw.buttons = newTextButtons(ss)
 	return tw

@@ -217,7 +217,7 @@ func outputFor(pattern, input string) string {
 // session is a fresh application without windows, in which one file is
 // loaded and run on.
 type session struct {
-	ss      *ui.SolveSpaceUI
+	ss      *ui.Application
 	errored bool
 }
 

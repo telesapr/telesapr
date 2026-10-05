@@ -22,7 +22,7 @@ func getMilliseconds() int64 { return time.Since(processStart).Milliseconds() }
 var processStart = time.Now()
 
 // evalExpr evaluates an expression the user typed (C++ Expr::Eval).
-func (ss *SolveSpaceUI) evalExpr(e *core.Expr) float64 {
+func (ss *Application) evalExpr(e *core.Expr) float64 {
 	return e.Eval(sketch.NewRuntime(ss.SK), nil)
 }
 

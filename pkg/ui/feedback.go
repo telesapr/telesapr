@@ -20,7 +20,7 @@ var colorConflict = rgbi(255, 60, 60)
 
 // isConflicting reports whether constraint c is one the active group's
 // failed solve blames: one of those that could be removed to fix it.
-func (ss *SolveSpaceUI) isConflicting(c *core.Constraint) bool {
+func (ss *Application) isConflicting(c *core.Constraint) bool {
 	g := ss.SK.GetGroup(ss.GW.activeGroupH())
 	if g == nil || c.Group != g.H || g.IsSolvedOkay() {
 		return false
@@ -60,7 +60,7 @@ func (tw *TextWindow) ScreenShowConstraint(link int, v uint32) {
 // MenuMeasure turns the measure mode on or off: while it is on, the
 // canvas labels what the selection measures, as the description of the
 // selection does, without adding a constraint (an extension).
-func (ss *SolveSpaceUI) MenuMeasure() {
+func (ss *Application) MenuMeasure() {
 	gw := ss.GW
 	gw.measuring = !gw.measuring
 	if gw.measureMenuItem != nil {
@@ -72,7 +72,7 @@ func (ss *SolveSpaceUI) MenuMeasure() {
 // measureLabel is the label of what the selection measures, and where
 // it goes; false when the mode is off or the selection measures
 // nothing.
-func (ss *SolveSpaceUI) measureLabel() (string, geom.Vector, bool) {
+func (ss *Application) measureLabel() (string, geom.Vector, bool) {
 	gw := ss.GW
 	if !gw.measuring {
 		return "", geom.Vector{}, false
@@ -101,7 +101,7 @@ func (ss *SolveSpaceUI) measureLabel() (string, geom.Vector, bool) {
 // and typed in, keeping every size, as one undo step; new documents
 // start in it too. When lengths are computed from parameters, the user
 // is told that those now count in u.
-func (ss *SolveSpaceUI) SetDocumentUnits(u core.Unit) {
+func (ss *Application) SetDocumentUnits(u core.Unit) {
 	defer func() {
 		ss.ViewUnits = ss.SK.Units
 		ss.ScheduleShowTW()

@@ -10,7 +10,7 @@ import (
 // loadSlvs opens a .slvs fixture as the sketch being edited, as Load
 // opens a .tlspr file, for the tests and scenarios whose goldens were
 // recorded from those fixtures. The product only imports .slvs files.
-func loadSlvs(t testing.TB, ss *SolveSpaceUI, path string) bool {
+func loadSlvs(t testing.TB, ss *Application, path string) bool {
 	t.Helper()
 	doc, err := slvs.LoadFile(path)
 	if err != nil {

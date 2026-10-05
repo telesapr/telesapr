@@ -64,7 +64,7 @@ type importBlock struct {
 // dxfImport makes requests and constraints from a DXF file's entities
 // (C++ DxfImport).
 type dxfImport struct {
-	ss *SolveSpaceUI
+	ss *Application
 
 	blockX, blockY, blockZ, blockT geom.Vector
 
@@ -81,7 +81,7 @@ type dxfImport struct {
 	points map[uint64][]importPoint
 }
 
-func newDxfImport(ss *SolveSpaceUI) *dxfImport {
+func newDxfImport(ss *Application) *dxfImport {
 	return &dxfImport{
 		ss:     ss,
 		styles: map[string]core.HStyle{},
@@ -1236,7 +1236,7 @@ func (d *dxfCheck3D) AddDimension(data *dxfread.Dimension) {
 
 // ImportDxf imports a DXF file into the active group (C++ ImportDxf and
 // ImportDwgDxf).
-func (ss *SolveSpaceUI) ImportDxf(filename string) {
+func (ss *Application) ImportDxf(filename string) {
 	fileType := strings.ToUpper(strings.TrimPrefix(filepath.Ext(filename), "."))
 
 	data, err := os.ReadFile(filename)
@@ -1275,6 +1275,6 @@ func (ss *SolveSpaceUI) ImportDxf(filename string) {
 
 // ImportDwg would import a DWG file (C++ ImportDwg); reading DWG isn't
 // ported.
-func (ss *SolveSpaceUI) ImportDwg(filename string) {
+func (ss *Application) ImportDwg(filename string) {
 	ss.Error("DWG import is not supported; save the drawing as DXF.")
 }

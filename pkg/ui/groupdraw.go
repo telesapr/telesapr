@@ -22,7 +22,7 @@ const (
 
 // groupActivate makes g the group the user works in (C++
 // Group::Activate).
-func (ss *SolveSpaceUI) groupActivate(g *sketch.Group) {
+func (ss *Application) groupActivate(g *sketch.Group) {
 	gw := ss.GW
 	if g.Type == sketch.GroupDrawingWorkplane || g.Type == sketch.GroupDrawing3D {
 		gw.showFaces = gw.showFacesDrawing
@@ -309,7 +309,7 @@ func (gw *GraphicsWindow) drawContourAreaLabels(g *sketch.Group, canvas render.C
 // materialOf gives each face's material by its appearance (roadmap
 // 19.2): its own, its group's, or plastic; it remembers what it found
 // for the frame.
-func (ss *SolveSpaceUI) materialOf() func(face uint32) render.Material {
+func (ss *Application) materialOf() func(face uint32) render.Material {
 	seen := map[uint32]render.Material{}
 	return func(face uint32) render.Material {
 		if m, ok := seen[face]; ok {

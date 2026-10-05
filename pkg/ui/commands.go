@@ -90,7 +90,7 @@ func findCommands(query string) []commandEntry {
 // RunCommand runs the menu entry with the label given, "Menu > Entry"
 // as CommandLabels lists it, or the entry's own name when only one
 // entry has it; case and mnemonics are ignored.
-func (ss *SolveSpaceUI) RunCommand(label string) error {
+func (ss *Application) RunCommand(label string) error {
 	want := strings.ToLower(strings.TrimSpace(label))
 	var byName []commandEntry
 	for _, e := range commandEntries() {
@@ -124,7 +124,7 @@ type commandScreen struct {
 }
 
 // MenuFindCommand shows the command search with its editor open.
-func (ss *SolveSpaceUI) MenuFindCommand() {
+func (ss *Application) MenuFindCommand() {
 	ss.GW.ClearSelection()
 	tw := ss.TW
 	tw.shown.commands = commandScreen{}

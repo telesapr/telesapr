@@ -635,7 +635,7 @@ func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
 // sides of the selected curves of its sketch, their copies at its ends,
 // or the selected faces of the sides (New Group > Draft Selected Sides,
 // roadmap 28.2).
-func (ss *SolveSpaceUI) draftSelectedSides() {
+func (ss *Application) draftSelectedSides() {
 	gw := ss.GW
 	g := ss.SK.GetGroup(gw.activeGroupH())
 	if g == nil || g.Type != sketch.GroupExtrude || g.ValC == 0 && g.ExprC == "" {
@@ -664,7 +664,7 @@ func (ss *SolveSpaceUI) draftSelectedSides() {
 // loftGuidesFromSelection holds the active loft to the selected line
 // segments, arcs and cubics as its guide curves (New Group > Guide Loft
 // by Selected Curves, roadmap 28.3).
-func (ss *SolveSpaceUI) loftGuidesFromSelection() {
+func (ss *Application) loftGuidesFromSelection() {
 	gw := ss.GW
 	g := ss.SK.GetGroup(gw.activeGroupH())
 	if g == nil || g.Type != sketch.GroupLoft {
@@ -779,7 +779,7 @@ func (tw *TextWindow) ScreenDeleteGroup(link int, v uint32) {
 // deleteGroup deletes group hg, and with it what used it. When the
 // active group goes, the last group before it that is left is made
 // active, rather than the first one.
-func (ss *SolveSpaceUI) deleteGroup(hg core.HGroup) {
+func (ss *Application) deleteGroup(hg core.HGroup) {
 	sk := ss.SK
 	order := slices.Clone(sk.GroupOrder)
 	was := ss.GW.activeGroupH()
@@ -812,7 +812,7 @@ func (ss *SolveSpaceUI) deleteGroup(hg core.HGroup) {
 
 // relativePath names path relative to the folder of the sketch's file,
 // or "" when it can't (C++ Path::RelativeTo(saveFile.Parent())).
-func (ss *SolveSpaceUI) relativePath(path string) string {
+func (ss *Application) relativePath(path string) string {
 	if path == "" || ss.SaveFile == "" || !filepath.IsAbs(path) {
 		return ""
 	}
@@ -826,7 +826,7 @@ func (ss *SolveSpaceUI) relativePath(path string) string {
 // linkDisplayPath is how a group or image names its file: the engine
 // keeps what the file said, relative to the sketch, and the UI the
 // absolute paths it chose; C++ shows them relative when it can.
-func (ss *SolveSpaceUI) linkDisplayPath(path string) string {
+func (ss *Application) linkDisplayPath(path string) string {
 	if rel := ss.relativePath(path); rel != "" {
 		return rel
 	}
@@ -1259,7 +1259,7 @@ func (tw *TextWindow) ScreenResetEdgeRadius(link int, v uint32) {
 
 // setEdgeRadiusText gives a fillet's edge its own radius from typed
 // text, or "" the fillet's, as one step of undo.
-func (ss *SolveSpaceUI) setEdgeRadiusText(hg core.HGroup, i int, s string) bool {
+func (ss *Application) setEdgeRadiusText(hg core.HGroup, i int, s string) bool {
 	err := ss.SK.UndoRememberFor(func() error {
 		return ss.SK.SetEdgeRadiusText(hg, i, s)
 	})
@@ -1662,7 +1662,7 @@ func exprNote(expr string) string {
 
 // setGroupText gives a group value typed text, as one undo step, and
 // reports whether it was taken; a refusal is shown as C++ shows its own.
-func (ss *SolveSpaceUI) setGroupText(hg core.HGroup, f sketch.GroupValue, s string) bool {
+func (ss *Application) setGroupText(hg core.HGroup, f sketch.GroupValue, s string) bool {
 	err := ss.SK.UndoRememberFor(func() error {
 		return ss.SK.SetGroupText(hg, f, s)
 	})

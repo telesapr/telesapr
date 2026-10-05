@@ -35,7 +35,7 @@ func constraintStyle(c *core.Constraint) core.HStyle {
 }
 
 // constraintLabel is Constraint::Label.
-func (ss *SolveSpaceUI) constraintLabel(c *core.Constraint) string {
+func (ss *Application) constraintLabel(c *core.Constraint) string {
 	var result string
 	switch c.Type {
 	case core.ConstraintAngle:

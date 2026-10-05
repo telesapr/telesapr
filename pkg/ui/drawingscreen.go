@@ -18,7 +18,7 @@ import (
 var sheetNames = []string{"A4", "A3", "A2", "A1", "A0", "Letter", "Tabloid"}
 
 // drawing is the model's drawing, made the default one if it has none.
-func (ss *SolveSpaceUI) drawing() *sketch.Drawing {
+func (ss *Application) drawing() *sketch.Drawing {
 	if ss.SK.Drawing == nil {
 		ss.SK.Drawing = sketch.DefaultDrawing()
 	}
@@ -27,14 +27,14 @@ func (ss *SolveSpaceUI) drawing() *sketch.Drawing {
 
 // MenuDrawingSheet shows the drawing's screen.
 // What is selected stays, for dimensions.
-func (ss *SolveSpaceUI) MenuDrawingSheet() {
+func (ss *Application) MenuDrawingSheet() {
 	ss.TW.GoToScreen(ScreenDrawing)
 	ss.GW.ForceTextWindowShown()
 	ss.ScheduleShowTW()
 }
 
 // MenuExportDrawing asks where, and writes the drawing there.
-func (ss *SolveSpaceUI) MenuExportDrawing() {
+func (ss *Application) MenuExportDrawing() {
 	dialog := ss.Platform.CreateSaveFileDialog(ss.GW.window)
 	dialog.AddFilters(platform.VectorFileFilters)
 	dialog.ThawChoices(ss.Settings, "ExportDrawing")
