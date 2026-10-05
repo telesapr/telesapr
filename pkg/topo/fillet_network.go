@@ -36,7 +36,10 @@ import (
 //     plane that halves them, a mitre; when the faces don't lie alike
 //     about them, the one whose section turns further goes on past the
 //     ellipse, cut by the other's side face along a conic, to where its
-//     tangent line meets the unrounded edge;
+//     tangent line meets the unrounded edge; where the unrounded edge
+//     is of the other kind, as a rib's sharp edge above its filled foot,
+//     the ellipse lies outside both side faces, and the face cut by the
+//     conic grows to it instead;
 //   - three straight edges: a sphere about the point r inside all three
 //     faces, or outside them for concave edges (a face's tangent point
 //     is that centre moved r back to the face along its normal), which
@@ -499,7 +502,7 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 		if err != nil {
 			return err
 		}
-		again = append(again, rebuilt{*t.Surface(f), loops})
+		again = append(again, rebuilt{t.planeUnder(f, loops), loops})
 	}
 	color := t.Surface(edges[0].f[0]).Color
 
@@ -601,6 +604,49 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 		return filletErr(probs[0].At, "the %s leaves the solid open: %s", what, probs[0].Msg)
 	}
 	return nil
+}
+
+// planeUnder is face f's surface for the loops it is built again from:
+// its own, but for a flat face the loops reach past, as the face a
+// concave fillet runs on to at its end, or the one that grows to a
+// mitre outside it. There the plane is laid again under the loops, for
+// a plane must cover its face (planeOver), or a later Boolean doesn't
+// find what meets the part that grew.
+func (t *Topology) planeUnder(f int, loops [][]srf.SBezier) srf.SSurface {
+	s := *t.Surface(f)
+	n, flat := t.planarNormal(f)
+	if !flat || s.DegM != 1 || s.DegN != 1 {
+		return s
+	}
+	o := s.Ctrl[0][0]
+	eu, ev := s.Ctrl[0][1].Minus(o), s.Ctrl[1][0].Minus(o)
+	uu, uv, vv := eu.Dot(eu), eu.Dot(ev), ev.Dot(ev)
+	det := uu*vv - uv*uv
+	if det < 1e-18 {
+		return s
+	}
+	pts := []geom.Vector{s.Ctrl[0][0], s.Ctrl[0][1], s.Ctrl[1][0], s.Ctrl[1][1]}
+	grown := false
+	for _, loop := range loops {
+		for _, sb := range loop {
+			for k := 0; k <= 8; k++ {
+				q := sb.PointAt(float64(k) / 8)
+				d := q.Minus(o)
+				a := (d.Dot(eu)*vv - d.Dot(ev)*uv) / det
+				b := (d.Dot(ev)*uu - d.Dot(eu)*uv) / det
+				if a < -1e-9 || a > 1+1e-9 || b < -1e-9 || b > 1+1e-9 {
+					grown = true
+				}
+				pts = append(pts, q)
+			}
+		}
+	}
+	if !grown {
+		return s
+	}
+	over := planeOver(pts, n)
+	s.Ctrl, s.Weight = over.Ctrl, over.Weight
+	return s
 }
 
 // curvedEdgeAt is the edge through p, a point on the curve the edge's
@@ -1265,6 +1311,9 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 // that turns less, A, reaches its side face's tangent line there before
 // the other, B, does. B goes on past the ellipse, cut by A's side face
 // along a conic, to where its own tangent line meets the third edge.
+// The third edge may be of the other kind than the two, as where the
+// fillets at a rib's foot meet below its sharp edge: the ellipse then
+// lies outside both side faces, and A's grows to it (roadmap 22.4).
 // q are where each edge's tangent line on its side face meets the third
 // edge; sr is the radius, negative for concave edges.
 func (t *Topology) unevenMitre(c *filletCorner, v int, fes [2]*filletEdge, top int, side [2]int, q [2]geom.Vector, sr float64) error {
@@ -1295,7 +1344,18 @@ func (t *Topology) unevenMitre(c *filletCorner, v int, fes [2]*filletEdge, top i
 	la := c.centre.Plus(na.ScaledBy(sr))
 	qa := la.Plus(A.dir.ScaledBy(c.centre.Minus(la).Dot(c.mitreN) / A.dir.Dot(c.mitreN)))
 	w := q[ib]
-	if qa.Minus(q[ia]).Dot(away(A)) < 10*geom.LengthEps {
+	// Where the third edge is of the fillets' kind, the mitre lies over
+	// the two side faces, and A's side face is cut back to qa, short of
+	// where its tangent line meets the third edge. Where it is of the
+	// other kind, as the sharp edge of a rib whose foot is filled, the
+	// mitre lies outside them both: qa is past the third edge, and A's
+	// side face grows out to it, B's strip ending on the face along the
+	// conic as before.
+	inside := qa.Minus(q[ia]).Dot(away(A))
+	if t.otherKind(c.plainEdge(t, v, A.e, B.e), A) {
+		inside = -inside
+	}
+	if inside < 10*geom.LengthEps {
 		return filletErr(p, "two fillets meet at a corner whose faces lie too unlike about them for a mitre")
 	}
 	// The conic in A's side face on B's cylinder, from qa to w: tangent at
@@ -1339,6 +1399,14 @@ func (t *Topology) unevenMitre(c *filletCorner, v int, fes [2]*filletEdge, top i
 	}
 	c.shared = A.connector(t, v, c, tt, qa, false)
 	return nil
+}
+
+// otherKind reports whether edge x, the one left sharp at a corner of
+// two fillets, is of the other kind than the rounded edge fe: convex
+// where the fillets fill, or concave where they cut.
+func (t *Topology) otherKind(x int, fe *filletEdge) bool {
+	xe, err := t.filletEdgeOf(x, fe.r, false)
+	return err == nil && xe.concave != fe.concave
 }
 
 // plainEdge is the edge at vertex v other than a and b.

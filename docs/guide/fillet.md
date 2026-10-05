@@ -3,8 +3,8 @@
 Examples: [`examples/scripts/fillet`](../../examples/scripts/fillet/fillet.go), a block with
 its upright edges rounded; [`roundbox`](../../examples/scripts/roundbox),
 [`tray`](../../examples/scripts/tray), [`ramp`](../../examples/scripts/ramp),
-[`plinth`](../../examples/scripts/plinth) and [`spinner`](../../examples/scripts/spinner) for
-corners, filled edges and edges of their own radius.
+[`plinth`](../../examples/scripts/plinth), [`spinner`](../../examples/scripts/spinner) and
+[`rib`](../../examples/scripts/rib) for corners, filled edges and edges of their own radius.
 
 New Group > Fillet Edges (Shift+F) rounds edges of the solid so far, 1 mm to begin with. It
 takes the same selection as a chamfer:
@@ -21,6 +21,10 @@ What it makes:
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred; where three meet at a corner of a block, a
   sphere rounds the corner.
+- The foot of a rib or a boss with sharp edges can be filled all round. Where two of the foot's
+  fillets meet below a sharp edge that sticks out, they are mitred outside the rib, beyond that
+  edge, and where they turn by different angles, as below a sloping top, the face that slopes
+  grows out to the mitre. The sharp edge is shortened to where the fillets reach up it.
 - The group's screen lists the edges; each has an "[own radius]" link that gives it a radius
   of its own.
 - Where edges of different radii meet, or edges that stick out meet edges that go in, the
@@ -84,8 +88,9 @@ on past the curved face, so that the fillet's end would stand out of it, is refu
 
 ## Not yet
 
-Fillets between curved faces along an edge that ends at a curved face the side faces go on
-past, chamfers of an edge that ends at a curved face, corners where convex
+A rib rounded all over, the edges of its top rounded as well as its foot filled (round the
+foot alone, or the top's edges alone), fillets between curved faces along an edge that ends at
+a curved face the side faces go on past, chamfers of an edge that ends at a curved face, corners where convex
 meets concave at a vertex that the stages can't round, setback corners of chamfers, and a
 blend that runs off its face onto a curved face, or that takes material away and runs off onto
 the next face, are refused with a message; they are the rest

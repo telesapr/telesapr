@@ -76,6 +76,7 @@ why.
 |---|---|
 | Run-offs onto a curved face, and of blends that take material away | refused with the point; the setback patch is the likely means |
 | A mitre of two radii over an edge left sharp | refused, naming the radii: the blend would need a crease |
+| A rib rounded all over: its top's edges rounded as well as its foot filled | refused. A foot filled all round below sharp edges of the top is made (`fillet-mixed-corners`: the uneven mitre outside the rib). With the top's edges rounded first, the foot's chain meets the arc where the floor cuts a leaning cylinder, which only the rolling ball rounds, and that edge must be picked alone; with the foot first, the top's edge ends on the foot's fillet and the grown top |
 | Chamfers of edges between flat faces that end on a curved face | refused; routed like the fillets they left 134 naked edges |
 | The loft's and the blob's edges in the 22.5 measurement | refused, for reasons in the notes; 44 of 59 sound |
 | Ends on a dome that one degree-5 curve can't follow | the curved-end sweep refuses 8 of 40, radii 1.5 to 2.5 |
@@ -90,6 +91,7 @@ why.
 | Item | State |
 |---|---|
 | A bore whose cap lies in a lathed tip's plane, off axis | fails 40 of 80: coincident contact (F5) |
+| A wedge on a plate, its sloping top's foot in the plate's top face, its width leaning back along the foot | the union fails for every lean that way and for none the other way (`TestFilletRibFootSweep` keeps to the one that works): an edge of one solid in a face of the other, likely F5 |
 | A twisted swept bar | its flat sides mesh within 1.6%. Grid columns bring it to 0.33% but a bar cell and a thread flank are twisted alike, and columns on both moved thread volumes the wrong way. Untried: fan diagonals alternated so the bias cancels |
 | NIST_MBE_PMI_6 as a solid | the topology problem at its poles: the mesh's Euler number 6 off the shell's, where earlier ears used up every other ear |
 | Schenkel as a solid | no naked edges since `ed03d3b`, but its shell's Euler number is -34 against the mesh's -6, cause not found; corpus 7 of 9 |
