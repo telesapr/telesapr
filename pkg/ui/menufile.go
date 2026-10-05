@@ -59,7 +59,7 @@ func errorStrings[E error](errs []E) []string {
 
 // LoadAutosaveFor offers to load filename's autosave file instead, and
 // loads it when the user agrees (C++ SolveSpaceUI::LoadAutosaveFor).
-func (ss *SolveSpaceUI) LoadAutosaveFor(filename string) bool {
+func (ss *Application) LoadAutosaveFor(filename string) bool {
 	autosaveFile := withExtension(filename, backupExt)
 	if _, err := os.Stat(autosaveFile); err != nil {
 		return false
@@ -85,7 +85,7 @@ func (ss *SolveSpaceUI) LoadAutosaveFor(filename string) bool {
 
 // Load opens filename, or its autosave, as the sketch being edited (C++
 // SolveSpaceUI::Load).
-func (ss *SolveSpaceUI) Load(filename string) bool {
+func (ss *Application) Load(filename string) bool {
 	autosaveLoaded := ss.LoadAutosaveFor(filename)
 	fileLoaded := autosaveLoaded || ss.LoadFromFile(filename)
 	if fileLoaded {
@@ -103,7 +103,7 @@ func (ss *SolveSpaceUI) Load(filename string) bool {
 // LoadFromFile reads filename into a new sketch (C++
 // SolveSpaceUI::LoadFromFile). A linked file that is missing counts as
 // declined rather than prompting for its new place.
-func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
+func (ss *Application) LoadFromFile(filename string) bool {
 	ss.AllConsistent = false
 
 	if _, err := os.Stat(filename); err != nil {
@@ -145,7 +145,7 @@ func (ss *SolveSpaceUI) LoadFromFile(filename string) bool {
 }
 
 // SaveToFile writes the sketch to filename (C++ SolveSpaceUI::SaveToFile).
-func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
+func (ss *Application) SaveToFile(filename string) bool {
 	if hasExtension(filename, "slvs") {
 		ss.Error("TeleSAPR doesn't write SolveSpace models; save the sketch as a " +
 			".tlspr file.")
@@ -173,7 +173,7 @@ func (ss *SolveSpaceUI) SaveToFile(filename string) bool {
 
 // AddToRecentList puts filename first in the recent files (C++
 // SolveSpaceUI::AddToRecentList).
-func (ss *SolveSpaceUI) AddToRecentList(filename string) {
+func (ss *Application) AddToRecentList(filename string) {
 	for i, p := range ss.RecentFiles {
 		if p == filename {
 			ss.RecentFiles = append(ss.RecentFiles[:i], ss.RecentFiles[i+1:]...)
@@ -189,7 +189,7 @@ func (ss *SolveSpaceUI) AddToRecentList(filename string) {
 
 // GetFilenameAndSave saves the sketch, asking for a file name for a new
 // sketch or for Save As (C++ SolveSpaceUI::GetFilenameAndSave).
-func (ss *SolveSpaceUI) GetFilenameAndSave(saveAs bool) bool {
+func (ss *Application) GetFilenameAndSave(saveAs bool) bool {
 	newSaveFile := ss.SaveFile
 
 	if saveAs || newSaveFile == "" {
@@ -232,7 +232,7 @@ func modelFileName(name string) string {
 
 // Autosave saves a backup of an unsaved sketch next to its file (C++
 // SolveSpaceUI::Autosave).
-func (ss *SolveSpaceUI) Autosave() {
+func (ss *Application) Autosave() {
 	ss.ScheduleAutosave()
 
 	if ss.SaveFile != "" && ss.SK.Unsaved {
@@ -242,7 +242,7 @@ func (ss *SolveSpaceUI) Autosave() {
 
 // RemoveAutosave deletes the sketch's autosave file (C++
 // SolveSpaceUI::RemoveAutosave).
-func (ss *SolveSpaceUI) RemoveAutosave() {
+func (ss *Application) RemoveAutosave() {
 	if ss.SaveFile == "" {
 		return
 	}
@@ -252,7 +252,7 @@ func (ss *SolveSpaceUI) RemoveAutosave() {
 // OkayToStartNewFile asks whether to save unsaved changes, and reports
 // whether the sketch may be replaced (C++
 // SolveSpaceUI::OkayToStartNewFile).
-func (ss *SolveSpaceUI) OkayToStartNewFile() bool {
+func (ss *Application) OkayToStartNewFile() bool {
 	if !ss.SK.Unsaved {
 		return true
 	}
@@ -291,7 +291,7 @@ func (ss *SolveSpaceUI) OkayToStartNewFile() bool {
 // locateMissingFile asks whether to find a linked file that couldn't be
 // read, and where it is (C++ LocateImportedFile, and the file dialogs
 // of ReloadAllLinked and ReloadLinkedImage).
-func (ss *SolveSpaceUI) locateMissingFile(name string, isImage, canCancel bool) (string, link.LocateResponse) {
+func (ss *Application) locateMissingFile(name string, isImage, canCancel bool) (string, link.LocateResponse) {
 	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
 	dialog.SetType(platform.DialogQuestion)
 	dialog.SetTitle("Missing File")
@@ -334,7 +334,7 @@ func (ss *SolveSpaceUI) locateMissingFile(name string, isImage, canCancel bool) 
 
 // chooseLinkedImage asks for a picture for a new image request and
 // loads it (C++ SolveSpaceUI::ReloadLinkedImage with an empty name).
-func (ss *SolveSpaceUI) chooseLinkedImage() (string, bool) {
+func (ss *Application) chooseLinkedImage() (string, bool) {
 	dialog := ss.Platform.CreateOpenFileDialog(ss.GW.window)
 	dialog.AddFilters(platform.RasterFileFilters)
 	dialog.ThawChoices(ss.Settings, "LinkImage")
@@ -350,7 +350,7 @@ func (ss *SolveSpaceUI) chooseLinkedImage() (string, bool) {
 }
 
 // Exit saves the settings and quits (C++ SolveSpaceUI::Exit).
-func (ss *SolveSpaceUI) Exit() {
+func (ss *Application) Exit() {
 	ss.SaveSettings()
 	// The socket goes with the program; the setting stays.
 	_ = ss.AllowAgent(false)
@@ -358,7 +358,7 @@ func (ss *SolveSpaceUI) Exit() {
 }
 
 // MenuFile runs a File menu command (C++ SolveSpaceUI::MenuFile).
-func (ss *SolveSpaceUI) MenuFile(id Command) {
+func (ss *Application) MenuFile(id Command) {
 	settings := ss.Settings
 
 	switch id {
@@ -407,7 +407,7 @@ func (ss *SolveSpaceUI) MenuFile(id Command) {
 
 // menuExport runs the File menu's export and import commands (those
 // cases of C++ SolveSpaceUI::MenuFile).
-func (ss *SolveSpaceUI) menuExport(id Command) {
+func (ss *Application) menuExport(id Command) {
 	settings := ss.Settings
 	gw := ss.GW
 

@@ -298,7 +298,7 @@ type pendingState struct {
 type GraphicsWindow struct {
 	// hoverTris is the grid hiddenBySolid looks triangles up in.
 	hoverTris *hoverGrid
-	ss        *SolveSpaceUI
+	ss        *Application
 
 	window platform.Window
 
@@ -423,7 +423,7 @@ type GraphicsWindow struct {
 // maxSelectableFaces limits the faces selected at once.
 const maxSelectableFaces = 3
 
-func newGraphicsWindow(ss *SolveSpaceUI) *GraphicsWindow {
+func newGraphicsWindow(ss *Application) *GraphicsWindow {
 	gw := &GraphicsWindow{ss: ss}
 	gw.view = sketch.DefaultView()
 	// What GraphicsWindow::Init sets; the sketch reads the show flags

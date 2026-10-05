@@ -25,9 +25,9 @@ const ModelColors = 8
 // MaxRecent is how many recent files are remembered.
 const MaxRecent = 8
 
-// SolveSpaceUI is the application: the sketch, its two windows and the
+// Application is the application: the sketch, its two windows and the
 // user's configuration (C++ SolveSpaceUI, the SS global).
-type SolveSpaceUI struct {
+type Application struct {
 	Platform platform.Platform
 	Settings core.Settings
 
@@ -185,8 +185,8 @@ type SolveSpaceUI struct {
 
 // New makes the application on a platform; Init loads the settings and
 // opens the windows.
-func New(p platform.Platform) *SolveSpaceUI {
-	ss := &SolveSpaceUI{Platform: p, Settings: p.GetSettings()}
+func New(p platform.Platform) *Application {
+	ss := &Application{Platform: p, Settings: p.GetSettings()}
 	ss.GW = newGraphicsWindow(ss)
 	ss.TW = newTextWindow(ss)
 	return ss
@@ -194,7 +194,7 @@ func New(p platform.Platform) *SolveSpaceUI {
 
 // LoadSettings reads the configuration (the first part of C++
 // SolveSpaceUI::Init).
-func (ss *SolveSpaceUI) LoadSettings() {
+func (ss *Application) LoadSettings() {
 	s := ss.Settings
 	ss.TangentArcRadius = 10.0
 	ss.ExplodeDistance = 1.0
@@ -278,7 +278,7 @@ func (ss *SolveSpaceUI) LoadSettings() {
 }
 
 // applyEngineSettings passes the settings the engine reads on.
-func (ss *SolveSpaceUI) applyEngineSettings() {
+func (ss *Application) applyEngineSettings() {
 	core.SetSettings(ss.Settings)
 	srf.SetMaxSegments(ss.MaxSegments)
 	srf.SetExportMode(ss.ExportMode, ss.ExportChordTolMm(), ss.ExportMaxSegments)
@@ -290,7 +290,7 @@ func (ss *SolveSpaceUI) applyEngineSettings() {
 
 // SaveSettings writes the configuration (C++ SolveSpaceUI::Exit, less
 // the exit).
-func (ss *SolveSpaceUI) SaveSettings() {
+func (ss *Application) SaveSettings() {
 	s := ss.Settings
 	if ss.GW.window != nil {
 		ss.GW.window.FreezePosition(s, "GraphicsWindow")
@@ -381,7 +381,7 @@ func rgbi(r, g, b uint8) core.RgbaColor { return core.NewRgbaColor(r, g, b, 255)
 
 // Refresh regenerates what was scheduled, then shows the text window
 // (C++ SolveSpaceUI::Refresh).
-func (ss *SolveSpaceUI) Refresh() {
+func (ss *Application) Refresh() {
 	// GenerateAll must happen before updating displays.
 	if ss.scheduledGenerateAll {
 		ss.scheduledGenerateAll = false
@@ -405,11 +405,11 @@ func (ss *SolveSpaceUI) Refresh() {
 
 // ScheduleGenerateAll regenerates the dirty groups once events are
 // handled.
-func (ss *SolveSpaceUI) ScheduleGenerateAll() {
+func (ss *Application) ScheduleGenerateAll() {
 	ss.SK.ScheduleGenerateAll()
 }
 
-func (ss *SolveSpaceUI) onScheduleGenerateAll() {
+func (ss *Application) onScheduleGenerateAll() {
 	ss.scheduledGenerateAll = true
 	if ss.refreshTimer != nil {
 		ss.refreshTimer.RunAfterProcessingEvents()
@@ -417,7 +417,7 @@ func (ss *SolveSpaceUI) onScheduleGenerateAll() {
 }
 
 // ScheduleShowTW shows the text window again once events are handled.
-func (ss *SolveSpaceUI) ScheduleShowTW() {
+func (ss *Application) ScheduleShowTW() {
 	ss.scheduledShowTW = true
 	if ss.refreshTimer != nil {
 		ss.refreshTimer.RunAfterProcessingEvents()
@@ -425,7 +425,7 @@ func (ss *SolveSpaceUI) ScheduleShowTW() {
 }
 
 // ScheduleAutosave arms the autosave timer.
-func (ss *SolveSpaceUI) ScheduleAutosave() {
+func (ss *Application) ScheduleAutosave() {
 	if ss.autosaveTimer != nil {
 		ss.autosaveTimer.RunAfter(ss.AutosaveInterval * 60 * 1000)
 	}
@@ -433,7 +433,7 @@ func (ss *SolveSpaceUI) ScheduleAutosave() {
 
 // GenerateAll regenerates the sketch, then updates the display state
 // that depends on it (C++ SolveSpaceUI::GenerateAll).
-func (ss *SolveSpaceUI) GenerateAll(t sketch.GenerateType) {
+func (ss *Application) GenerateAll(t sketch.GenerateType) {
 	ss.applyEngineSettings()
 	ss.SK.GenerateAllTyped(t)
 	ss.afterGenerate()
@@ -441,14 +441,14 @@ func (ss *SolveSpaceUI) GenerateAll(t sketch.GenerateType) {
 
 // GenerateAllFindFree is GenerateAll with andFindFree, marking the free
 // parameters.
-func (ss *SolveSpaceUI) GenerateAllFindFree(t sketch.GenerateType) {
+func (ss *Application) GenerateAllFindFree(t sketch.GenerateType) {
 	ss.applyEngineSettings()
 	ss.SK.GenerateAllFindFree(t)
 	ss.afterGenerate()
 }
 
 // afterGenerate is the end of C++ GenerateAll.
-func (ss *SolveSpaceUI) afterGenerate() {
+func (ss *Application) afterGenerate() {
 	ss.AllConsistent = true
 	ss.GW.persistentDirty = true
 	ss.CenterOfMass.Dirty = true
@@ -458,7 +458,7 @@ func (ss *SolveSpaceUI) afterGenerate() {
 
 // ActiveGroupsOkay reports whether every group up to the active one
 // solved (C++ SolveSpaceUI::ActiveGroupsOkay).
-func (ss *SolveSpaceUI) ActiveGroupsOkay() bool {
+func (ss *Application) ActiveGroupsOkay() bool {
 	for _, hg := range ss.SK.GroupOrder {
 		g := ss.SK.GetGroup(hg)
 		if !g.IsSolvedOkay() {
@@ -472,7 +472,7 @@ func (ss *SolveSpaceUI) ActiveGroupsOkay() bool {
 }
 
 // MmPerUnit is the size of the view unit in mm.
-func (ss *SolveSpaceUI) MmPerUnit() float64 {
+func (ss *Application) MmPerUnit() float64 {
 	switch ss.ViewUnits {
 	case core.UnitInches, core.UnitFeetInches:
 		// For feet and inches, the 'unit' is still inches.
@@ -484,7 +484,7 @@ func (ss *SolveSpaceUI) MmPerUnit() float64 {
 }
 
 // UnitName is the view unit's abbreviation.
-func (ss *SolveSpaceUI) UnitName() string {
+func (ss *Application) UnitName() string {
 	switch ss.ViewUnits {
 	case core.UnitInches, core.UnitFeetInches:
 		return "in"
@@ -499,7 +499,7 @@ func (ss *SolveSpaceUI) UnitName() string {
 // MmToString formats a length in the view units; editable gives plain
 // inches instead of feet and inches, which can't be parsed back (C++
 // SolveSpaceUI::MmToString).
-func (ss *SolveSpaceUI) MmToString(v float64, editable bool) string {
+func (ss *Application) MmToString(v float64, editable bool) string {
 	v /= ss.MmPerUnit()
 	if ss.ViewUnits == core.UnitFeetInches && !editable {
 		// Now convert v from inches to 64'ths of an inch, to make
@@ -619,7 +619,7 @@ func selectSIPrefixInch(deg int) (int, string) {
 // MmToStringSI formats a measure of dimension dim with an SI prefix;
 // dim 0 is a length, with SI prefixes only if the user wants them (C++
 // SolveSpaceUI::MmToStringSI).
-func (ss *SolveSpaceUI) MmToStringSI(v float64, dim int) string {
+func (ss *Application) MmToStringSI(v float64, dim int) string {
 	compact := false
 	if dim == 0 {
 		if !ss.UseSIPrefixes {
@@ -658,7 +658,7 @@ func (ss *SolveSpaceUI) MmToStringSI(v float64, dim int) string {
 }
 
 // DegreeToString formats an angle in degrees.
-func (ss *SolveSpaceUI) DegreeToString(v float64) string {
+func (ss *Application) DegreeToString(v float64) string {
 	if math.Abs(v-math.Floor(v)) > 1e-10 {
 		return cFixed(ss.AfterDecimalDegree, v)
 	}
@@ -666,24 +666,24 @@ func (ss *SolveSpaceUI) DegreeToString(v float64) string {
 }
 
 // ExprToMm evaluates an expression in view units to mm.
-func (ss *SolveSpaceUI) ExprToMm(e *core.Expr) float64 {
+func (ss *Application) ExprToMm(e *core.Expr) float64 {
 	return e.Eval(sketch.NewRuntime(ss.SK), nil) * ss.MmPerUnit()
 }
 
 // StringToMm parses a number in view units to mm (std::stod).
-func (ss *SolveSpaceUI) StringToMm(s string) float64 {
+func (ss *Application) StringToMm(s string) float64 {
 	v, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
 	return v * ss.MmPerUnit()
 }
 
 // ChordTolMm is the chord tolerance in mm in use.
-func (ss *SolveSpaceUI) ChordTolMm() float64 { return srf.ChordTolMm() }
+func (ss *Application) ChordTolMm() float64 { return srf.ChordTolMm() }
 
 // ExportChordTolMm is the chord tolerance for exported curves.
-func (ss *SolveSpaceUI) ExportChordTolMm() float64 { return ss.ExportChordTol / ss.ExportScale }
+func (ss *Application) ExportChordTolMm() float64 { return ss.ExportChordTol / ss.ExportScale }
 
 // UnitDigitsAfterDecimal is how many decimals the view unit shows.
-func (ss *SolveSpaceUI) UnitDigitsAfterDecimal() int {
+func (ss *Application) UnitDigitsAfterDecimal() int {
 	if ss.ViewUnits == core.UnitInches || ss.ViewUnits == core.UnitFeetInches {
 		return ss.AfterDecimalInch
 	}
@@ -691,7 +691,7 @@ func (ss *SolveSpaceUI) UnitDigitsAfterDecimal() int {
 }
 
 // SetUnitDigitsAfterDecimal sets how many decimals the view unit shows.
-func (ss *SolveSpaceUI) SetUnitDigitsAfterDecimal(v int) {
+func (ss *Application) SetUnitDigitsAfterDecimal(v int) {
 	if ss.ViewUnits == core.UnitInches || ss.ViewUnits == core.UnitFeetInches {
 		ss.AfterDecimalInch = v
 	} else {
@@ -700,7 +700,7 @@ func (ss *SolveSpaceUI) SetUnitDigitsAfterDecimal(v int) {
 }
 
 // CameraTangent is the perspective, or zero for orthographic.
-func (ss *SolveSpaceUI) CameraTangent() float64 {
+func (ss *Application) CameraTangent() float64 {
 	if !ss.UsePerspectiveProj {
 		return 0
 	}
@@ -708,7 +708,7 @@ func (ss *SolveSpaceUI) CameraTangent() float64 {
 }
 
 // Fonts is the TrueType fonts the sketch can use.
-func (ss *SolveSpaceUI) Fonts() *ttf.FontList { return &ttf.Fonts }
+func (ss *Application) Fonts() *ttf.FontList { return &ttf.Fonts }
 
 // cFormatG is C's "%.*g": a negative precision means the default, 6.
 func cFormatG(prec int, v float64) string {
@@ -723,7 +723,7 @@ func cFormatG(prec int, v float64) string {
 
 // UseGL reports whether the windows are to be drawn with OpenGL: the
 // command line's choice if it made one, else the setting.
-func (ss *SolveSpaceUI) UseGL() bool {
+func (ss *Application) UseGL() bool {
 	switch ss.RendererOverride {
 	case "opengl":
 		return true
@@ -735,7 +735,7 @@ func (ss *SolveSpaceUI) UseGL() bool {
 
 // SetUseOpenGL changes the renderer setting and makes both windows
 // draw with the renderer it picks from the next frame on.
-func (ss *SolveSpaceUI) SetUseOpenGL(on bool) {
+func (ss *Application) SetUseOpenGL(on bool) {
 	ss.UseOpenGL = on
 	ss.RendererOverride = ""
 	if gw := ss.GW; gw.window != nil {

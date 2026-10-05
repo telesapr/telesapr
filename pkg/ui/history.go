@@ -7,7 +7,7 @@ import (
 // MoveGroup moves group h one place earlier or later in the history,
 // as one undo step, or says why it can't (Group > Move Group Earlier
 // and Later, and the arrows of the group list).
-func (ss *SolveSpaceUI) MoveGroup(h core.HGroup, later bool) {
+func (ss *Application) MoveGroup(h core.HGroup, later bool) {
 	sk := ss.SK
 	order := sk.GroupOrder
 	i := -1
@@ -47,7 +47,7 @@ func (ss *SolveSpaceUI) MoveGroup(h core.HGroup, later bool) {
 // MoveGroupToEnd moves group h to the end of the history with the
 // groups only it needs, as an extrusion's sketch, as one undo step, or
 // says why it can't (Edit > Move Group to End).
-func (ss *SolveSpaceUI) MoveGroupToEnd(h core.HGroup) {
+func (ss *Application) MoveGroupToEnd(h core.HGroup) {
 	sk := ss.SK
 	if sk.GetGroup(h) == nil {
 		return
@@ -70,7 +70,7 @@ func (tw *TextWindow) ScreenMoveGroup(link int, v uint32) {
 }
 
 // MenuBrokenReferences shows what regenerations deleted, from the menu.
-func (ss *SolveSpaceUI) MenuBrokenReferences() {
+func (ss *Application) MenuBrokenReferences() {
 	ss.GW.ClearSelection()
 	ss.TW.GoToScreen(ScreenBrokenReferences)
 	ss.GW.ForceTextWindowShown()

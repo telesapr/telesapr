@@ -27,10 +27,10 @@ type agentServer struct {
 }
 
 // AgentListening reports whether a program may connect now.
-func (ss *SolveSpaceUI) AgentListening() bool { return ss.agent != nil }
+func (ss *Application) AgentListening() bool { return ss.agent != nil }
 
 // AgentSocket is the socket programs connect to, "" when none may.
-func (ss *SolveSpaceUI) AgentSocket() string {
+func (ss *Application) AgentSocket() string {
 	if ss.agent == nil {
 		return ""
 	}
@@ -41,7 +41,7 @@ func (ss *SolveSpaceUI) AgentSocket() string {
 // with false stops listening for them and ends the connections there
 // are; a script of theirs that runs is stopped. It doesn't change the
 // setting, which is the menu's to keep.
-func (ss *SolveSpaceUI) AllowAgent(allow bool) error {
+func (ss *Application) AllowAgent(allow bool) error {
 	if allow == (ss.agent != nil) {
 		return nil
 	}

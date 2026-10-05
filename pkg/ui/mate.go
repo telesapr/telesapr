@@ -7,7 +7,7 @@ import (
 // MenuMate makes a mate of the selection (roadmap 16.9): the
 // constraints api.Doc.Concentric, Flush or Hinge make, as one step of
 // undo, in the active group.
-func (ss *SolveSpaceUI) MenuMate(id Command) {
+func (ss *Application) MenuMate(id Command) {
 	gw := ss.GW
 	gw.GroupSelection()
 	gs := &gw.gs

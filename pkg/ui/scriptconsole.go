@@ -19,7 +19,7 @@ import (
 // so the windows stay alive under a script that takes long; one runs
 // at a time.
 type ScriptConsole struct {
-	ss     *SolveSpaceUI
+	ss     *Application
 	window platform.Console
 	poster platform.LoopPoster
 	engine *script.Engine
@@ -50,7 +50,7 @@ help() says more.
 
 // Console is the application's console for scripts, made when first
 // asked for. Its window is nil on a platform without consoles.
-func (ss *SolveSpaceUI) Console() *ScriptConsole {
+func (ss *Application) Console() *ScriptConsole {
 	if ss.console != nil {
 		return ss.console
 	}
@@ -273,7 +273,7 @@ func (c *ScriptConsole) Stop() {
 }
 
 // MenuScript runs a command of the Script menu.
-func (ss *SolveSpaceUI) MenuScript(id Command) {
+func (ss *Application) MenuScript(id Command) {
 	c := ss.Console()
 	switch id {
 	case CmdScriptConsole:

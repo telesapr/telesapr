@@ -13,7 +13,7 @@ import (
 
 // shownConsole opens the console from the menu and returns its
 // window.
-func shownConsole(t *testing.T, ss *SolveSpaceUI, p *headless.Platform) *headless.Console {
+func shownConsole(t *testing.T, ss *Application, p *headless.Platform) *headless.Console {
 	t.Helper()
 	item := p.MainMenu.Find("Script", "Show Console")
 	if item == nil {
@@ -184,7 +184,7 @@ func TestScriptConsoleOnLoop(t *testing.T) {
 		})
 		<-ran
 	}
-	var ss *SolveSpaceUI
+	var ss *Application
 	var w *headless.Console
 	on(func() {
 		ss = New(p)

@@ -15,7 +15,7 @@ import (
 
 // scriptConsole runs lines on the application as a console does, and
 // returns what it showed.
-func scriptConsole(t *testing.T, ss *SolveSpaceUI, lines ...string) string {
+func scriptConsole(t *testing.T, ss *Application, lines ...string) string {
 	t.Helper()
 	var out bytes.Buffer
 	host := ss.ScriptHost()
@@ -146,7 +146,7 @@ func (p *loopPlatform) LoopDone() <-chan struct{} { return p.done }
 func TestScriptHostRunsOnLoop(t *testing.T) {
 	p := &loopPlatform{Platform: headless.New(), posted: make(chan func(), 16), done: make(chan struct{})}
 	stopped := make(chan struct{})
-	var ss *SolveSpaceUI
+	var ss *Application
 	go func() {
 		defer close(stopped)
 		for fn := range p.posted {

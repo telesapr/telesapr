@@ -7,19 +7,19 @@ import (
 )
 
 // menuHandler runs a menu command.
-type menuHandler func(ss *SolveSpaceUI, cmd Command)
+type menuHandler func(ss *Application, cmd Command)
 
 var (
-	mView menuHandler = func(ss *SolveSpaceUI, c Command) { ss.GW.MenuView(c) }
-	mEdit menuHandler = func(ss *SolveSpaceUI, c Command) { ss.GW.MenuEdit(c) }
-	mClip menuHandler = func(ss *SolveSpaceUI, c Command) { ss.GW.MenuClipboard(c) }
-	mReq  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.GW.MenuRequest(c) }
-	mCon  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuConstrain(c) }
-	mFile menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuFile(c) }
-	mGrp  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuGroup(c, "") }
-	mAna  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuAnalyze(c) }
-	mHelp menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuHelp(c) }
-	mScr  menuHandler = func(ss *SolveSpaceUI, c Command) { ss.MenuScript(c) }
+	mView menuHandler = func(ss *Application, c Command) { ss.GW.MenuView(c) }
+	mEdit menuHandler = func(ss *Application, c Command) { ss.GW.MenuEdit(c) }
+	mClip menuHandler = func(ss *Application, c Command) { ss.GW.MenuClipboard(c) }
+	mReq  menuHandler = func(ss *Application, c Command) { ss.GW.MenuRequest(c) }
+	mCon  menuHandler = func(ss *Application, c Command) { ss.MenuConstrain(c) }
+	mFile menuHandler = func(ss *Application, c Command) { ss.MenuFile(c) }
+	mGrp  menuHandler = func(ss *Application, c Command) { ss.MenuGroup(c, "") }
+	mAna  menuHandler = func(ss *Application, c Command) { ss.MenuAnalyze(c) }
+	mHelp menuHandler = func(ss *Application, c Command) { ss.MenuHelp(c) }
+	mScr  menuHandler = func(ss *Application, c Command) { ss.MenuScript(c) }
 )
 
 // Accelerator modifier bits in menuEntry.accel.
@@ -65,8 +65,8 @@ func init() {
 		{1, "Export &Image...", CmdExportImage, 0, kn, mFile},
 		{1, "Export 2d &View...", CmdExportView, 0, kn, mFile},
 		{1, "Export 2d &Section...", CmdExportSection, 0, kn, mFile},
-		{1, "Drawing S&heet...", CmdDrawingSheet, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuDrawingSheet() }},
-		{1, "Export &Drawing...", CmdExportDrawing, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuExportDrawing() }},
+		{1, "Drawing S&heet...", CmdDrawingSheet, 0, kn, func(ss *Application, c Command) { ss.MenuDrawingSheet() }},
+		{1, "Export &Drawing...", CmdExportDrawing, 0, kn, func(ss *Application, c Command) { ss.MenuExportDrawing() }},
 		{1, "Export 3d &Wireframe...", CmdExportWireframe, 0, kn, mFile},
 		{1, "Export Triangle &Mesh...", CmdExportMesh, 0, kn, mFile},
 		{1, "Export &Surfaces...", CmdExportSurfaces, 0, kn, mFile},
@@ -95,12 +95,12 @@ func init() {
 		{1, "&Line Styles...", CmdEditLineStyles, 0, kn, mEdit},
 		{1, "&View Projection...", CmdViewProjection, 0, kn, mEdit},
 		{1, "Con&figuration...", CmdConfiguration, 0, kn, mEdit},
-		{1, "Find Comman&d...", CmdFindCommand, c_ | 'k', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuFindCommand() }},
-		{1, "Para&meters...", CmdParameters, c_ | s_ | 'm', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuParameters() }},
-		{1, "Move Group Earl&ier", CmdMoveGroupEarlier, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), false) }},
-		{1, "Move Gr&oup Later", CmdMoveGroupLater, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), true) }},
-		{1, "Move Group to E&nd", CmdMoveGroupToEnd, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MoveGroupToEnd(ss.GW.activeGroupH()) }},
-		{1, "Bro&ken References...", CmdBrokenReferences, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuBrokenReferences() }},
+		{1, "Find Comman&d...", CmdFindCommand, c_ | 'k', kn, func(ss *Application, c Command) { ss.MenuFindCommand() }},
+		{1, "Para&meters...", CmdParameters, c_ | s_ | 'm', kn, func(ss *Application, c Command) { ss.MenuParameters() }},
+		{1, "Move Group Earl&ier", CmdMoveGroupEarlier, 0, kn, func(ss *Application, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), false) }},
+		{1, "Move Gr&oup Later", CmdMoveGroupLater, 0, kn, func(ss *Application, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), true) }},
+		{1, "Move Group to E&nd", CmdMoveGroupToEnd, 0, kn, func(ss *Application, c Command) { ss.MoveGroupToEnd(ss.GW.activeGroupH()) }},
+		{1, "Bro&ken References...", CmdBrokenReferences, 0, kn, func(ss *Application, c Command) { ss.MenuBrokenReferences() }},
 
 		{0, "&View", CmdNone, 0, kn, mView},
 		{1, "Zoom &In", CmdZoomIn, '+', kn, mView},
@@ -116,8 +116,8 @@ func init() {
 		{1, "Darken Inactive Solids", CmdDimSolidModel, 0, kc, mView},
 		{1, "Use &Perspective Projection", CmdPerspectiveProj, '`', kc, mView},
 		{1, "Show E&xploded View", CmdExplodeSketch, '\\', kc, mView},
-		{1, "&Section View", CmdSectionView, c_ | s_ | 'x', kc, func(ss *SolveSpaceUI, c Command) { ss.GW.MenuSectionView() }},
-		{1, "Show Drawing S&heet", CmdShowDrawingSheet, 0, kc, func(ss *SolveSpaceUI, c Command) { ss.GW.MenuShowDrawingSheet() }},
+		{1, "&Section View", CmdSectionView, c_ | s_ | 'x', kc, func(ss *Application, c Command) { ss.GW.MenuSectionView() }},
+		{1, "Show Drawing S&heet", CmdShowDrawingSheet, 0, kc, func(ss *Application, c Command) { ss.GW.MenuShowDrawingSheet() }},
 		{1, "Dimension &Units", CmdNone, 0, kn, nil},
 		{2, "Dimensions in &Millimeters", CmdUnitsMm, 0, kr, mView},
 		{2, "Dimensions in M&eters", CmdUnitsMeters, 0, kr, mView},
@@ -140,7 +140,7 @@ func init() {
 		{1, "&Helix", CmdGroupHelix, s_ | 'h', kn, mGrp},
 		{1, "&Lathe", CmdGroupLathe, s_ | 'l', kn, mGrp},
 		{1, "Re&volve", CmdGroupRevolve, s_ | 'v', kn, mGrp},
-		{1, "Screw Thr&ead...", CmdGroupThread, s_ | 'e', kn, func(ss *SolveSpaceUI, c Command) { ss.MenuThread() }},
+		{1, "Screw Thr&ead...", CmdGroupThread, s_ | 'e', kn, func(ss *Application, c Command) { ss.MenuThread() }},
 		{1, "Swee&p Along Path", CmdGroupSweep, s_ | 'u', kn, mGrp},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "&Mirror", CmdGroupMirror, s_ | 'y', kn, mGrp},
@@ -149,8 +149,8 @@ func init() {
 		{1, "Loft To Selected Pr&ofile", CmdGroupLoft, s_ | 'o', kn, mGrp},
 		{1, "&Shell Solid", CmdGroupShell, s_ | 'g', kn, mGrp},
 		{1, "Pattern Along Pat&h", CmdGroupPathPattern, 0, kn, mGrp},
-		{1, "&Draft Selected Sides", CmdDraftSelectedSides, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.draftSelectedSides() }},
-		{1, "Guide Loft by Selected &Curves", CmdLoftGuides, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.loftGuidesFromSelection() }},
+		{1, "&Draft Selected Sides", CmdDraftSelectedSides, 0, kn, func(ss *Application, c Command) { ss.draftSelectedSides() }},
+		{1, "Guide Loft by Selected &Curves", CmdLoftGuides, 0, kn, func(ss *Application, c Command) { ss.loftGuidesFromSelection() }},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Link / Assemble...", CmdGroupLink, s_ | 'i', kn, mGrp},
 		{1, "Link Recent", CmdGroupRecent, 0, kn, mGrp},
@@ -200,9 +200,9 @@ func init() {
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Comment", CmdComment, ';', kn, mCon},
 		{1, "", CmdNone, 0, kn, nil},
-		{1, "Mate &Concentric", CmdMateConcentric, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
-		{1, "Mate &Flush", CmdMateFlush, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
-		{1, "Mate &Hinge", CmdMateHinge, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMate(c) }},
+		{1, "Mate &Concentric", CmdMateConcentric, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
+		{1, "Mate &Flush", CmdMateFlush, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
+		{1, "Mate &Hinge", CmdMateHinge, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
 
 		{0, "&Analyze", CmdNone, 0, kn, mAna},
 		{1, "Measure &Volume", CmdVolume, c_ | s_ | 'v', kn, mAna},
@@ -213,14 +213,14 @@ func init() {
 		{1, "Show &Center of Mass", CmdCenterOfMass, c_ | s_ | 'c', kn, mAna},
 		{1, "Check S&olid", CmdCheckSolid, c_ | s_ | 'o', kn, mAna},
 		{1, "&Bill of Materials", CmdBillOfMaterials, 0, kn, mAna},
-		{1, "Measure Se&lection", CmdMeasure, c_ | s_ | 'e', kc, func(ss *SolveSpaceUI, c Command) { ss.MenuMeasure() }},
+		{1, "Measure Se&lection", CmdMeasure, c_ | s_ | 'e', kc, func(ss *Application, c Command) { ss.MenuMeasure() }},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "Show &Underconstrained Points", CmdShowDOF, c_ | s_ | 'f', kn, mAna},
 		{1, "", CmdNone, 0, kn, nil},
 		{1, "&Trace Point", CmdTracePt, c_ | s_ | 't', kn, mAna},
 		{1, "&Stop Tracing...", CmdStopTracing, c_ | s_ | 's', kn, mAna},
 		{1, "Step &Dimension...", CmdStepDim, c_ | s_ | 'd', kn, mAna},
-		{1, "Motion St&udy...", CmdMotionStudy, 0, kn, func(ss *SolveSpaceUI, c Command) { ss.MenuMotionStudy() }},
+		{1, "Motion St&udy...", CmdMotionStudy, 0, kn, func(ss *Application, c Command) { ss.MenuMotionStudy() }},
 
 		// C++ has no scripts; the menu is ours.
 		{0, "S&cript", CmdNone, 0, kn, mScr},

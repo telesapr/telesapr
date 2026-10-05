@@ -4,14 +4,14 @@ import "github.com/telesapr/telesapr/pkg/core"
 
 // UndoRemember records the state for undo (C++
 // SolveSpaceUI::UndoRemember).
-func (ss *SolveSpaceUI) UndoRemember() {
+func (ss *Application) UndoRemember() {
 	ss.SK.Unsaved = true
 	ss.SK.UndoRemember()
 	ss.UndoEnableMenus()
 }
 
 // UndoUndo restores the last remembered state.
-func (ss *SolveSpaceUI) UndoUndo() {
+func (ss *Application) UndoUndo() {
 	if !ss.SK.UndoUndo() {
 		return
 	}
@@ -20,7 +20,7 @@ func (ss *SolveSpaceUI) UndoUndo() {
 }
 
 // UndoRedo restores the last undone state.
-func (ss *SolveSpaceUI) UndoRedo() {
+func (ss *Application) UndoRedo() {
 	if !ss.SK.UndoRedo() {
 		return
 	}
@@ -31,7 +31,7 @@ func (ss *SolveSpaceUI) UndoRedo() {
 // afterUndoPop resets the rest of the program after the sketch changed
 // a lot (the end of C++ PopOntoCurrentFrom; the engine already reloaded
 // the linked files and regenerated).
-func (ss *SolveSpaceUI) afterUndoPop() {
+func (ss *Application) afterUndoPop() {
 	ss.ViewUnits = ss.SK.Units
 	ss.afterGenerate()
 	ss.GW.ClearSuper()
@@ -44,7 +44,7 @@ func (ss *SolveSpaceUI) afterUndoPop() {
 }
 
 // UndoEnableMenus greys out Undo and Redo when there's nothing to do.
-func (ss *SolveSpaceUI) UndoEnableMenus() {
+func (ss *Application) UndoEnableMenus() {
 	if ss.GW.undoMenuItem == nil {
 		return
 	}
@@ -54,12 +54,12 @@ func (ss *SolveSpaceUI) UndoEnableMenus() {
 
 // GroupsInOrder reports whether group before comes before group after
 // (C++ SolveSpaceUI::GroupsInOrder).
-func (ss *SolveSpaceUI) GroupsInOrder(before, after core.HGroup) bool {
+func (ss *Application) GroupsInOrder(before, after core.HGroup) bool {
 	return ss.SK.GroupsInOrder(before, after)
 }
 
 // addConstraint adds a constraint (C++ Constraint::AddConstraint).
-func (ss *SolveSpaceUI) addConstraint(c *core.Constraint, rememberForUndo bool) core.HConstraint {
+func (ss *Application) addConstraint(c *core.Constraint, rememberForUndo bool) core.HConstraint {
 	if rememberForUndo {
 		ss.UndoRemember()
 	}
@@ -68,11 +68,11 @@ func (ss *SolveSpaceUI) addConstraint(c *core.Constraint, rememberForUndo bool) 
 
 // constrain adds a constraint in the active group and workplane (C++
 // Constraint::Constrain).
-func (ss *SolveSpaceUI) constrain(typ core.ConstraintType, ptA, ptB, entityA core.HEntity) core.HConstraint {
+func (ss *Application) constrain(typ core.ConstraintType, ptA, ptB, entityA core.HEntity) core.HConstraint {
 	return ss.SK.Constrain(typ, ptA, ptB, entityA, core.HEntity{}, false, false)
 }
 
 // constrainCoincident makes two points coincident.
-func (ss *SolveSpaceUI) constrainCoincident(ptA, ptB core.HEntity) core.HConstraint {
+func (ss *Application) constrainCoincident(ptA, ptB core.HEntity) core.HConstraint {
 	return ss.SK.ConstrainCoincident(ptA, ptB)
 }

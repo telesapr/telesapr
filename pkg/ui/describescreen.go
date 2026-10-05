@@ -106,7 +106,7 @@ func (tw *TextWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
 }
 
 // projectInto projects p into workplane wrkpl (C++ Vector::ProjectInto).
-func (ss *SolveSpaceUI) projectInto(p geom.Vector, wrkpl core.HEntity) geom.Vector {
+func (ss *Application) projectInto(p geom.Vector, wrkpl core.HEntity) geom.Vector {
 	w := ss.SK.MustGetEntity(wrkpl)
 	p0 := w.WorkplaneGetOffset(ss.SK)
 

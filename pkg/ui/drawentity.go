@@ -50,7 +50,7 @@ func (gw *GraphicsWindow) entityCache(e *core.Entity) *entityDrawCache {
 }
 
 // entityDescription is C++ Entity::DescriptionString.
-func (ss *SolveSpaceUI) entityDescription(e *core.Entity) string {
+func (ss *Application) entityDescription(e *core.Entity) string {
 	if e.H.IsFromRequest() {
 		return ss.SK.GetRequest(e.H.Request()).DescriptionString()
 	}
@@ -601,7 +601,7 @@ var (
 // freedomColor is the colour for an entity of the active group by how
 // much of it its constraints fix, when the setting is on and the
 // entity is not fixed.
-func (ss *SolveSpaceUI) freedomColor(e *core.Entity) (core.RgbaColor, bool) {
+func (ss *Application) freedomColor(e *core.Entity) (core.RgbaColor, bool) {
 	if !ss.ColorByFreedom {
 		return core.RgbaColor{}, false
 	}

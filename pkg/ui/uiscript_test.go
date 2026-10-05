@@ -26,7 +26,7 @@ import (
 type uiScriptRunner struct {
 	t        testing.TB
 	p        *headless.Platform
-	ss       *SolveSpaceUI
+	ss       *Application
 	b        strings.Builder
 	dir      string // the directory script paths are relative to
 	tmp      string // a temporary directory, $tmp in a script's paths

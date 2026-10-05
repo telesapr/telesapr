@@ -22,7 +22,7 @@ import (
 // whether to reuse or overwrite them. A linked model that is missing is
 // asked for as when a model is opened. It reports whether the model
 // was imported and opened.
-func (ss *SolveSpaceUI) ImportSolveSpace(src string) bool {
+func (ss *Application) ImportSolveSpace(src string) bool {
 	if !ss.OkayToStartNewFile() {
 		return false
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-func newTestApp(t *testing.T) (*SolveSpaceUI, *headless.Platform) {
+func newTestApp(t *testing.T) (*Application, *headless.Platform) {
 	t.Helper()
 	p := headless.New()
 	ss := New(p)

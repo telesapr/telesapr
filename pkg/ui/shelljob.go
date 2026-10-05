@@ -26,7 +26,7 @@ const pollMillis = 20
 
 // startShellJob starts a job for the sketch as it is, stopping the one
 // running.
-func (ss *SolveSpaceUI) startShellJob() {
+func (ss *Application) startShellJob() {
 	sj := &ss.shellJobs
 	if sj.job != nil {
 		sj.job.Cancel()
@@ -51,7 +51,7 @@ func (ss *SolveSpaceUI) startShellJob() {
 
 // pollShellJob takes the jobs that ended: the current one's solids go
 // in if they still fit the sketch, and if they don't, another starts.
-func (ss *SolveSpaceUI) pollShellJob() {
+func (ss *Application) pollShellJob() {
 	sj := &ss.shellJobs
 	for {
 		select {
@@ -79,7 +79,7 @@ func (ss *SolveSpaceUI) pollShellJob() {
 
 // stopShellJob stops the running job, if there is one, and reports
 // whether there was.
-func (ss *SolveSpaceUI) stopShellJob() bool {
+func (ss *Application) stopShellJob() bool {
 	sj := &ss.shellJobs
 	if sj.job == nil {
 		return false

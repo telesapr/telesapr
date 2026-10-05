@@ -21,7 +21,7 @@ type threadScreen struct {
 
 // MenuThread starts a screw thread on the selected circle or arc: it
 // fills the thread screen in from the circle and shows it.
-func (ss *SolveSpaceUI) MenuThread() {
+func (ss *Application) MenuThread() {
 	gw := ss.GW
 	sk := ss.SK
 	gw.GroupSelection()

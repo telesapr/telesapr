@@ -12,7 +12,7 @@ import (
 // messageBox shows a message: the first sentence (up to a '.' or ':'
 // followed by white space) as the message, the rest as its description
 // (C++ MessageBox, util.cpp).
-func (ss *SolveSpaceUI) messageBox(text string, isError bool, onDismiss func()) {
+func (ss *Application) messageBox(text string, isError bool, onDismiss func()) {
 	if ss.messageSink != nil {
 		// A script is running: a dialog would run the event loop under
 		// it, so the script takes the message.
@@ -90,17 +90,17 @@ func isSpace(c byte) bool {
 }
 
 // Error shows an error message (C++ Error).
-func (ss *SolveSpaceUI) Error(format string, args ...any) {
+func (ss *Application) Error(format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), true, nil)
 }
 
 // Message shows an informational message (C++ Message).
-func (ss *SolveSpaceUI) Message(format string, args ...any) {
+func (ss *Application) Message(format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), false, nil)
 }
 
 // MessageAndRun shows a message, then runs onDismiss (C++
 // MessageAndRun).
-func (ss *SolveSpaceUI) MessageAndRun(onDismiss func(), format string, args ...any) {
+func (ss *Application) MessageAndRun(onDismiss func(), format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), false, onDismiss)
 }

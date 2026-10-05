@@ -22,7 +22,7 @@ import (
 // stay alive while it does; whatever it does to the sketch, it does
 // through Run, on the event loop's goroutine.
 type ScriptHost struct {
-	ss *SolveSpaceUI
+	ss *Application
 
 	// Messages is where what the application would tell the user in a
 	// dialog goes while a script runs; nil drops it.
@@ -48,7 +48,7 @@ var _ api.Host = (*ScriptHost)(nil)
 var ErrLoopEnded = errors.New("the application is closing")
 
 // ScriptHost is the application's host for scripts.
-func (ss *SolveSpaceUI) ScriptHost() *ScriptHost {
+func (ss *Application) ScriptHost() *ScriptHost {
 	if ss.scriptHost == nil {
 		ss.scriptHost = &ScriptHost{ss: ss}
 		ss.scriptHost.poster, _ = ss.Platform.(platform.LoopPoster)

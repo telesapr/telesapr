@@ -416,7 +416,7 @@ func leader(el *srf.SEdgeList, p geom.Vector, off float64, text string) {
 
 // DrawingDimensions measures the drawing's dimensions as they would be
 // drawn, each with its value or why it has none.
-func (ss *SolveSpaceUI) DrawingDimensions(d *sketch.Drawing) []DimensionResult {
+func (ss *Application) DrawingDimensions(d *sketch.Drawing) []DimensionResult {
 	if _, _, _, err := ss.DrawingSheet(d); err != nil {
 		out := make([]DimensionResult, len(d.Dimensions))
 		for i := range out {
@@ -430,7 +430,7 @@ func (ss *SolveSpaceUI) DrawingDimensions(d *sketch.Drawing) []DimensionResult {
 // drawDimensions measures and draws the dimensions on the placed views
 // and on the sections and details (extras, where drawExtras put them),
 // keeping what each gave in ss.lastDimensions.
-func (ss *SolveSpaceUI) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
+func (ss *Application) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
 	scale float64, mids map[string]geom.Vector, extras []dimView) {
 	ss.lastDimensions = make([]DimensionResult, len(d.Dimensions))
 	if len(d.Dimensions) == 0 {

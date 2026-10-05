@@ -11,7 +11,7 @@ import (
 // zoomed to fit a width by height viewport, and saves it as a PNG (the
 // thumbnail command of C++ solvespace-cli). It draws without a window,
 // with the software renderer.
-func (ss *SolveSpaceUI) WriteThumbnail(filename string, width, height uint, projRight, projUp geom.Vector) error {
+func (ss *Application) WriteThumbnail(filename string, width, height uint, projRight, projUp geom.Vector) error {
 	gw := ss.GW
 	camera := render.Camera{
 		PixelRatio: 1,
@@ -37,7 +37,7 @@ func (ss *SolveSpaceUI) WriteThumbnail(filename string, width, height uint, proj
 // WriteWindowPicture draws a PNG of width by height pixels of the view
 // the window shows: its direction and middle, scaled so that as much of
 // the model goes across the picture as across the window.
-func (ss *SolveSpaceUI) WriteWindowPicture(filename string, width, height uint) error {
+func (ss *Application) WriteWindowPicture(filename string, width, height uint) error {
 	gw := ss.GW
 	camera := gw.GetCamera()
 	scale := camera.Scale
@@ -52,7 +52,7 @@ func (ss *SolveSpaceUI) WriteWindowPicture(filename string, width, height uint) 
 }
 
 // writePicture draws the model with camera into a PNG file.
-func (ss *SolveSpaceUI) writePicture(filename string, camera render.Camera) error {
+func (ss *Application) writePicture(filename string, camera render.Camera) error {
 	gw := ss.GW
 	canvas := soft.New()
 	gw.shareBitmapFont(canvas)

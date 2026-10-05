@@ -23,7 +23,7 @@ import (
 // viewEdges are the edges of the solid seen with right and up as the
 // view's x and y, in model mm about the origin, visible ones in the
 // SolidEdge style and, with hidden, hidden ones in HiddenEdge.
-func (ss *SolveSpaceUI) viewEdges(g *sketch.Group, right, up geom.Vector, hidden bool) srf.SEdgeList {
+func (ss *Application) viewEdges(g *sketch.Group, right, up geom.Vector, hidden bool) srf.SEdgeList {
 	g.GenerateDisplayItems(ss.SK)
 	var sel srf.SEdgeList
 	g.DisplayOutlines.ListTaggedInto(&sel, core.StyleSolidEdge, 0)
@@ -34,7 +34,7 @@ func (ss *SolveSpaceUI) viewEdges(g *sketch.Group, right, up geom.Vector, hidden
 // coordinates, with right and up as x and y, adds the outlines where
 // m's curved faces turn away, and splits each edge where m hides it:
 // the hidden parts in the HiddenEdge style, or left out without hidden.
-func (ss *SolveSpaceUI) hiddenLineEdges(sel srf.SEdgeList, m *srf.SMesh, right, up geom.Vector, hidden bool) srf.SEdgeList {
+func (ss *Application) hiddenLineEdges(sel srf.SEdgeList, m *srf.SMesh, right, up geom.Vector, hidden bool) srf.SEdgeList {
 	n := right.Cross(up)
 	for i := range sel.Edges {
 		e := &sel.Edges[i]
@@ -152,7 +152,7 @@ func clipEdges(el *srf.SEdgeList, keep srf.HalfSpace) srf.SEdgeList {
 // up by the plane offset mm toward the viewer from the solid's middle,
 // as viewEdges gives a view's: the half beyond, with the cut face's
 // outline and a hatch every hatch mm across it, which nothing hides.
-func (ss *SolveSpaceUI) sectionEdges(g *sketch.Group, right, up geom.Vector, offset, hatch float64, hidden bool) srf.SEdgeList {
+func (ss *Application) sectionEdges(g *sketch.Group, right, up geom.Vector, offset, hatch float64, hidden bool) srf.SEdgeList {
 	g.GenerateDisplayItems(ss.SK)
 	keep := sectionPlane(&g.DisplayMesh, right, up, offset)
 	var outlines srf.SEdgeList
@@ -257,7 +257,7 @@ func rect(el *srf.SEdgeList, lo, hi geom.Vector, style int) {
 // DrawingSheet is the drawing of the active group's solid: the edges of
 // the sheet in mm from its bottom left, the views placed and the scale
 // used.
-func (ss *SolveSpaceUI) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.DrawingView, float64, error) {
+func (ss *Application) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.DrawingView, float64, error) {
 	var sheet srf.SEdgeList
 	if err := d.Check(); err != nil {
 		return sheet, nil, 0, err
@@ -309,7 +309,7 @@ func label(el *srf.SEdgeList, text string, x, y, height float64) {
 // section's cutting plane drawn on the views that see it edge on, a
 // detail's circle on its view. It returns where each went, as
 // dimensions on it need (roadmap 29.2), the sections' first.
-func (ss *SolveSpaceUI) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
+func (ss *Application) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
 	scale float64, edges map[string]srf.SEdgeList, sizes map[string][2]float64, mids map[string]geom.Vector) []dimView {
 	if len(d.Sections)+len(d.Details) == 0 {
 		return nil
@@ -393,7 +393,7 @@ func edgesOf(edges map[string]srf.SEdgeList, kind string) srf.SEdgeList {
 
 // cuttingPlane draws a section's plane, dashed and lettered at its
 // ends, on each placed view that sees it edge on.
-func (ss *SolveSpaceUI) cuttingPlane(sheet *srf.SEdgeList, g *sketch.Group, sec sketch.DrawingSection, letter string,
+func (ss *Application) cuttingPlane(sheet *srf.SEdgeList, g *sketch.Group, sec sketch.DrawingSection, letter string,
 	placed map[string]sketch.DrawingView, scale float64, sizes map[string][2]float64, mids map[string]geom.Vector) {
 	r, u, _ := sketch.ViewDirection(sec.View)
 	keep := sectionPlane(&g.DisplayMesh, vec(r), vec(u), sec.Offset)
@@ -436,7 +436,7 @@ func (ss *SolveSpaceUI) cuttingPlane(sheet *srf.SEdgeList, g *sketch.Group, sec 
 }
 
 // sheetFrame adds the frame and the title block (roadmap 18.2).
-func (ss *SolveSpaceUI) sheetFrame(el *srf.SEdgeList, d *sketch.Drawing, scale float64) {
+func (ss *Application) sheetFrame(el *srf.SEdgeList, d *sketch.Drawing, scale float64) {
 	w, h := d.Size()
 	b := sketch.SheetBorder
 	rect(el, geom.Vector{X: b, Y: b}, geom.Vector{X: w - b, Y: h - b}, core.StyleOutline)
@@ -480,7 +480,7 @@ func (ss *SolveSpaceUI) sheetFrame(el *srf.SEdgeList, d *sketch.Drawing, scale f
 // ExportDrawingTo writes the drawing to a vector file: PDF, SVG, DXF,
 // EPS and the others Export 2d View writes, on a canvas the size of the
 // sheet.
-func (ss *SolveSpaceUI) ExportDrawingTo(filename string, d *sketch.Drawing) error {
+func (ss *Application) ExportDrawingTo(filename string, d *sketch.Drawing) error {
 	ss.ExportMode = true
 	ss.GenerateAll(sketch.GenerateAll)
 	sheet, _, _, err := ss.DrawingSheet(d)

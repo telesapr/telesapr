@@ -9,7 +9,7 @@ import (
 )
 
 // waitShells runs the headless timers until the job running ends.
-func waitShells(t *testing.T, ss *SolveSpaceUI, p interface{ RunDueTimers(int) int }) {
+func waitShells(t *testing.T, ss *Application, p interface{ RunDueTimers(int) int }) {
 	t.Helper()
 	for range 5000 {
 		if ss.shellJobs.job == nil {

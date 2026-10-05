@@ -1478,7 +1478,7 @@ func (gw *GraphicsWindow) MouseLeave() {
 
 // exprFromString parses an expression, telling the user if it doesn't
 // (C++ Expr::From).
-func (ss *SolveSpaceUI) exprFromString(input string, popUpError bool) *core.Expr {
+func (ss *Application) exprFromString(input string, popUpError bool) *core.Expr {
 	e, err := core.NewFromString(input)
 	if err != nil {
 		if popUpError {

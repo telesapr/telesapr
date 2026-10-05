@@ -10,7 +10,7 @@ import (
 
 // threadWindow is the triple-start M12 thread, opened in a window of
 // 1920 by 1080 and zoomed to fit.
-func threadWindow(t testing.TB) *SolveSpaceUI {
+func threadWindow(t testing.TB) *Application {
 	ss := New(headless.New())
 	ss.Init()
 	if !ss.LoadFromFile(filepath.Join("..", "..", "testdata", "thread", "triple_m12.tlspr")) {
