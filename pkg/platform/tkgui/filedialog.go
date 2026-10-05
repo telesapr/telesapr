@@ -4,10 +4,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/msorc/takigo/dialog"
-	tkplatform "github.com/msorc/takigo/platform"
-	"github.com/msorc/takigo/widget"
-	"github.com/msorc/takigo/widget/frame"
+	"github.com/takigo/takigo/dialog"
+	tkplatform "github.com/takigo/takigo/platform"
+	"github.com/takigo/takigo/widget"
+	"github.com/takigo/takigo/widget/frame"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform"

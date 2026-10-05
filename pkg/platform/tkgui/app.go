@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/msorc/takigo"
+	"github.com/takigo/takigo"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform"

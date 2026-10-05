@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/msorc/takigo/event"
-	tkplatform "github.com/msorc/takigo/platform"
+	"github.com/takigo/takigo/event"
+	tkplatform "github.com/takigo/takigo/platform"
 
 	"github.com/telesapr/telesapr/pkg/platform"
 )

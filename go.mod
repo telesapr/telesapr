@@ -6,7 +6,7 @@ require (
 	github.com/andybalholm/brotli v1.2.0
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 	github.com/modelcontextprotocol/go-sdk v1.6.0
-	github.com/msorc/takigo v0.0.0-20261001140539-e3bad2ce0ae1
+	github.com/takigo/takigo v0.0.0-20261005190836-924c0deff230
 	github.com/traefik/yaegi v0.16.1
 )
 

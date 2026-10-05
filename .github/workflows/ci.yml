@@ -14,7 +14,7 @@ concurrency:
 env:
   # takigo is private: go fetches it from GitHub using TAKIGO_TOKEN,
   # a token with read access to its contents.
-  GOPRIVATE: github.com/msorc/takigo
+  GOPRIVATE: github.com/takigo/takigo
   X11_PACKAGES: libx11-dev libxft-dev libfontconfig1-dev libgl-dev
 
 jobs:

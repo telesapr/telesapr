@@ -31,14 +31,13 @@ The [user's guide](docs/guide/README.md) has a page for each, built on an exampl
 ## Build
 
 TeleSAPR needs Go 1.27, X11 and OpenGL development files, and its windowing library
-[takigo](https://github.com/msorc/takigo), which is not published yet: `go.mod` replaces it with
-a checkout beside this one.
+[takigo](https://github.com/takigo/takigo), which is private: set `GOPRIVATE=github.com/takigo/takigo`
+and make sure git can authenticate to GitHub.
 
 ```bash
 # Debian and Ubuntu; other distributions have the same libraries.
 sudo apt-get install libx11-dev libxft-dev libfontconfig1-dev libgl-dev
 
-git clone https://github.com/msorc/takigo        # beside telesapr/
 git clone https://github.com/telesapr/telesapr
 cd telesapr
 make build                                      # bin/telesapr and bin/telesapr-cli

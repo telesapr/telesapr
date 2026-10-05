@@ -3,10 +3,10 @@ package tkgui
 import (
 	"fmt"
 
-	"github.com/msorc/takigo/event"
-	"github.com/msorc/takigo/geometry/place"
-	tkplatform "github.com/msorc/takigo/platform"
-	"github.com/msorc/takigo/widget/entry"
+	"github.com/takigo/takigo/event"
+	"github.com/takigo/takigo/geometry/place"
+	tkplatform "github.com/takigo/takigo/platform"
+	"github.com/takigo/takigo/widget/entry"
 
 	"github.com/telesapr/telesapr/pkg/platform"
 )

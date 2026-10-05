@@ -5,12 +5,12 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/msorc/takigo/bind"
-	"github.com/msorc/takigo/event"
-	tkplatform "github.com/msorc/takigo/platform"
-	"github.com/msorc/takigo/widget"
-	"github.com/msorc/takigo/widget/menu"
-	"github.com/msorc/takigo/window"
+	"github.com/takigo/takigo/bind"
+	"github.com/takigo/takigo/event"
+	tkplatform "github.com/takigo/takigo/platform"
+	"github.com/takigo/takigo/widget"
+	"github.com/takigo/takigo/widget/menu"
+	"github.com/takigo/takigo/window"
 
 	"github.com/telesapr/telesapr/pkg/platform"
 )

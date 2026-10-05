@@ -3,7 +3,7 @@ package tkgui
 import (
 	"log"
 
-	"github.com/msorc/takigo/window"
+	"github.com/takigo/takigo/window"
 
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/render/gl"
