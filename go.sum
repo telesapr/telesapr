@@ -22,6 +22,8 @@ github.com/segmentio/encoding v0.5.4 h1:OW1VRern8Nw6ITAtwSZ7Idrl3MXCFwXHPgqESYfv
 github.com/segmentio/encoding v0.5.4/go.mod h1:HS1ZKa3kSN32ZHVZ7ZLPLXWvOVIiZtyJnO1gPH1sKt0=
 github.com/takigo/takigo v0.0.0-20261005190836-924c0deff230 h1:TNWOe9oG+2SeQbLpiZ+l/4hVjMW/v0zmOeMdx7EcCOE=
 github.com/takigo/takigo v0.0.0-20261005190836-924c0deff230/go.mod h1:MfgAhDCn6trKHCMO4b329no8UH1xztC9aVNIrylSMEI=
+github.com/takigo/takigo v0.0.0-20261006173359-c5bed8427ad2 h1:ENpSZ0iP4wQGDQ87GP7CeJpb9WPpDFoE/AwJgeIB74A=
+github.com/takigo/takigo v0.0.0-20261006173359-c5bed8427ad2/go.mod h1:MfgAhDCn6trKHCMO4b329no8UH1xztC9aVNIrylSMEI=
 github.com/traefik/yaegi v0.16.1 h1:f1De3DVJqIDKmnasUF6MwmWv1dSEEat0wcpXhD2On3E=
 github.com/traefik/yaegi v0.16.1/go.mod h1:4eVhbPb3LnD2VigQjhYbEJ69vDRFdT2HQNrXx8eEwUY=
 github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZqKjWU=
