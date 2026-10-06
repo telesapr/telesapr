@@ -25,9 +25,11 @@ help:
 	@echo "  make install      - Install it with its desktop entry, icons and MIME type"
 	@echo "                      (PREFIX=$(PREFIX), DESTDIR for staging)"
 	@echo "  make uninstall    - Remove what install put in place"
+	@echo "  make clean        - Remove bin/ and coverage.out"
+	@echo "  make distclean    - clean, plus the Go build, test and module caches"
 	@echo ""
 
-.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy lint lint-new generate generate-check build install uninstall
+.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy lint lint-new generate generate-check build install uninstall clean distclean
 
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
@@ -159,3 +161,13 @@ uninstall:
 		rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/telesapr.png \
 			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-telesapr.png; \
 	done
+
+# Build output only; dist/ holds tracked sources and .gocache is kept.
+clean:
+	rm -rf bin coverage.out
+
+# clean, and the caches: the project's .gocache and .golangci-lint, and
+# Go's default build, test and fuzz caches. The module cache is kept.
+distclean: clean
+	rm -rf .gocache .golangci-lint
+	go clean -cache -testcache -fuzzcache
