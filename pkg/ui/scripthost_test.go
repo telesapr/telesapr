@@ -129,6 +129,39 @@ func TestScriptHostSelection(t *testing.T) {
 	}
 }
 
+// Edges and faces of the solid, which no entity need draw, selected
+// by a script as picking them on the model does: the menu's fillet
+// takes the edges, the menu's shell the face, and the script reads the
+// selection back.
+func TestScriptHostSelectsSolid(t *testing.T) {
+	ss, _ := newTestApp(t)
+	got := scriptConsole(t, ss,
+		`sides := doc.Rect(V(0, 0, 0), V(20, 10, 0))`,
+		`ex := doc.Extrude(10, "block")`,
+		`s := ex.Solid()`,
+		`doc.SelectEdges(s.EdgeAt(V(10, 0, 10)), s.EdgeAt(V(20, 5, 10)))`,
+		`len(doc.Selection()) + len(doc.SelectedFaces())`,
+		`doc.SelectedEdges()[1].Describe()`,
+		`doc.RunCommand("New Group > Fillet Edges")`,
+		`doc.Active().Kind() + " " + doc.Active().Problem()`,
+		`len(doc.SelectedEdges())`,
+		`doc.Undo()`,
+		`doc.SelectFaces(s.FaceAt(V(10, 5, 10)))`,
+		`doc.SelectedFaces()[0].Name()`,
+		`doc.RunCommand("New Group > Shell Solid")`,
+		`doc.Active().Kind() + " " + doc.Active().Problem()`,
+		`len(sides)`,
+	)
+	want := "0\n" +
+		"\"the edge between face entity 80030007 of g003-block and face entity 8003002c of g003-block\"\n" +
+		"nil\n\"fillet \"\n0\ntrue\n" +
+		"\"face entity 8003002c of g003-block\"\n" +
+		"nil\n\"shell \"\n4\n"
+	if got != want {
+		t.Errorf("the console showed:\n%s\nwant:\n%s", got, want)
+	}
+}
+
 // loopPlatform is a headless platform with an event loop on another
 // goroutine, as the windowed one has.
 type loopPlatform struct {

@@ -12,6 +12,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/persist/convert"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // Vec is a point or a direction in space, in mm.
@@ -490,6 +491,75 @@ func (d *Doc) Select(entities ...Entity) {
 		}
 		d.h.Select(sel)
 	})
+}
+
+// SelectEdges selects edges of the solid on the drawing, and nothing
+// else, as picking them on the model does: for a fillet or a chamfer
+// made from the menu. The edges must be of the solid at the active
+// group, which such a group is made after.
+func (d *Doc) SelectEdges(edges ...SolidEdge) {
+	d.read(func(sk *sketch.Sketch) {
+		sel := make([]sketch.Selection, 0, len(edges))
+		for _, e := range edges {
+			e.resolve(sk)
+			sel = append(sel, sketch.Selection{Edge: e.name})
+		}
+		d.h.Select(sel)
+	})
+}
+
+// SelectFaces selects faces of the solid on the drawing, and nothing
+// else, as picking them on the model does: for a shell made from the
+// menu, or a face to draw on. A face an entity made is selected by its
+// entity, one that no entity names by its identity.
+func (d *Doc) SelectFaces(faces ...SolidFace) {
+	d.read(func(sk *sketch.Sketch) {
+		sel := make([]sketch.Selection, 0, len(faces))
+		for _, f := range faces {
+			h := core.HEntity{V: uint32(f.id)}
+			if sk.GetEntity(h) != nil {
+				sel = append(sel, sketch.Selection{Entity: h})
+			} else {
+				sel = append(sel, sketch.Selection{Face: f.id})
+			}
+		}
+		d.h.Select(sel)
+	})
+}
+
+// SelectedEdges are the edges of the solid selected on the drawing,
+// picked on the model or by SelectEdges, as edges of the solid at the
+// active group.
+func (d *Doc) SelectedEdges() (edges []SolidEdge) {
+	d.read(func(sk *sketch.Sketch) {
+		for _, s := range d.h.Selection() {
+			if s.Edge.A != 0 {
+				edges = append(edges, SolidEdge{s: Solid{d: d, g: sk.ActiveGroup()}, name: s.Edge})
+			}
+		}
+	})
+	return edges
+}
+
+// SelectedFaces are the faces of the solid selected on the drawing,
+// picked on the model or by SelectFaces, as faces of the solid at the
+// active group: a face entity's, or a face no entity names by its
+// identity. A face is given as the first with its identity.
+func (d *Doc) SelectedFaces() (faces []SolidFace) {
+	d.read(func(sk *sketch.Sketch) {
+		s := Solid{d: d, g: sk.ActiveGroup()}
+		for _, x := range d.h.Selection() {
+			switch {
+			case x.Face != 0:
+				faces = append(faces, SolidFace{s: s, id: x.Face})
+			case x.Entity.V != 0:
+				if e := sk.GetEntity(x.Entity); e != nil && e.IsFace() {
+					faces = append(faces, SolidFace{s: s, id: srf.FaceID(x.Entity.V)})
+				}
+			}
+		}
+	})
+	return faces
 }
 
 // String describes the document.
