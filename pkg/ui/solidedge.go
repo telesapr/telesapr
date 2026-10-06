@@ -116,9 +116,8 @@ func (gw *GraphicsWindow) hiddenBySolid(p geom.Vector) bool {
 func (gw *GraphicsWindow) towardsViewer(p geom.Vector) (geom.Vector, float64) {
 	v := &gw.view
 	if v.Tangent == 0 {
-		eye := v.UnProjectPoint3(geom.Vector{X: 0, Y: 0, Z: 0})
-		far := v.UnProjectPoint3(geom.Vector{X: 0, Y: 0, Z: 1})
-		return eye.Minus(far).WithMagnitude(1), math.Inf(1)
+		// A projected point's z grows towards the viewer.
+		return v.ProjRight.Cross(v.ProjUp).WithMagnitude(1), math.Inf(1)
 	}
 	n := v.ProjUp.Cross(v.ProjRight)
 	eye := v.Offset.ScaledBy(-1).Plus(n.ScaledBy(-1 / (v.Tangent * v.Scale)))

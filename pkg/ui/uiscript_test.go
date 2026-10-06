@@ -374,6 +374,10 @@ func (r *uiScriptRunner) setView(name string) {
 		v.Offset = geom.Vector{X: -4.5, Y: 2.25, Z: 1.5}
 		v.ProjRight = geom.Vector{X: 0.8, Y: -0.5, Z: 0.2}
 		v.ProjUp = geom.Vector{X: 0.3, Y: 0.6, Z: 0.75}
+		if name == "under" {
+			// The rotated view turned over: the viewer below.
+			v.ProjUp = v.ProjUp.ScaledBy(-1)
+		}
 		r.ss.GW.NormalizeProjectionVectors()
 	}
 	r.ss.GW.Invalidate(false)

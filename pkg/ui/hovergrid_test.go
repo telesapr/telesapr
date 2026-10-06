@@ -93,3 +93,37 @@ func BenchmarkHoverHiddenScan(b *testing.B) {
 		ss.GW.hiddenByScan(p)
 	}
 }
+
+// An edge of the solid on the side the viewer sees hovers, and one on
+// the far side, behind the solid, doesn't: a block seen from above and
+// in front, in an orthographic view and in perspective. (The
+// orthographic ray once went away from the viewer, and an edge on a
+// face facing the viewer counted as hidden behind the solid.)
+func TestSolidEdgeHoverFacesViewer(t *testing.T) {
+	ss, _ := newTestApp(t)
+	scriptConsole(t, ss, `doc.Rect(V(0, 0, 0), V(20, 10, 0))`, `doc.Extrude(10, "block")`)
+	gw := ss.GW
+	w := gw.window.(*headless.Window)
+	w.Width, w.Height = 1200, 900
+	for _, perspective := range []bool{false, true} {
+		ss.UsePerspectiveProj = perspective
+		toward := geom.Vector{X: 0.3, Y: -0.5, Z: 0.8}.WithMagnitude(1)
+		gw.view.ProjRight = geom.Vector{Z: 1}.Cross(toward).WithMagnitude(1)
+		gw.view.ProjUp = toward.Cross(gw.view.ProjRight).WithMagnitude(1)
+		gw.ZoomToFit(false, false)
+		w.Render()
+		for _, c := range []struct {
+			p      geom.Vector
+			hidden bool
+		}{{geom.Vector{X: 10, Y: 0, Z: 10}, false}, {geom.Vector{X: 20, Y: 5, Z: 10}, false}, {geom.Vector{X: 10, Y: 10, Z: 0}, true}} {
+			if got := gw.hiddenBySolid(c.p); got != c.hidden {
+				t.Errorf("perspective %v: %v hidden %v, want %v", perspective, c.p, got, c.hidden)
+			}
+			// The block's lines lie along its edges and win the hover;
+			// the edge of the solid is what hovers where there is none.
+			if n, ok := gw.hoverSolidEdge(gw.ProjectPoint(c.p)); ok == c.hidden {
+				t.Errorf("perspective %v: at %v the edge hovered is %v, %v", perspective, c.p, n, ok)
+			}
+		}
+	}
+}

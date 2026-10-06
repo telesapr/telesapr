@@ -71,34 +71,44 @@ func TestEveryFacePicked(t *testing.T) {
 				faces[uint32(tr.Meta.Face)] = true
 			}
 			delete(faces, 0)
-			for _, v := range pickViews() {
-				gw.view.ProjRight, gw.view.ProjUp = v[0], v[1]
-				gw.ZoomToFit(false, false)
-				w.Render()
-				// The largest triangles of each face on the screen; the
-				// first eight are tried, a face's largest may lie behind
-				// another or under an entity.
-				type cand struct {
-					p geom.Vector
-					a float64
-				}
-				cands := map[uint32][]cand{}
-				for _, tr := range g.DisplayMesh.Triangles {
-					f := uint32(tr.Meta.Face)
-					if f == 0 || picked[f] {
-						continue
+			// Fitted to the window, then zoomed in four times on each face
+			// still unpicked: a narrow face, as a fillet's strip, hovers
+			// only once its edges are more than their pick radius apart.
+			for _, zoom := range []float64{1, 4} {
+				for _, v := range pickViews() {
+					gw.view.ProjRight, gw.view.ProjUp = v[0], v[1]
+					gw.ZoomToFit(false, false)
+					gw.view.Scale *= zoom
+					w.Render()
+					// The largest triangles of each face on the screen; the
+					// first eight are tried, a face's largest may lie behind
+					// another or under an entity.
+					type cand struct {
+						p geom.Vector
+						a float64
 					}
-					a, b, c := gw.ProjectPoint(tr.A), gw.ProjectPoint(tr.B), gw.ProjectPoint(tr.C)
-					s := math.Abs((b.U-a.U)*(c.V-a.V)-(c.U-a.U)*(b.V-a.V)) / 2
-					cands[f] = append(cands[f], cand{tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0 / 3), s})
-				}
-				for f, cs := range cands {
-					sort.Slice(cs, func(i, j int) bool { return cs[i].a > cs[j].a })
-					for k := 0; k < len(cs) && k < 8 && !picked[f]; k++ {
-						q := gw.ProjectPoint(cs[k].p)
-						w.Mouse(platform.MouseEvent{Type: platform.MouseMotion, X: w.Width/2 + q.U, Y: w.Height/2 - q.V})
-						if gw.hover.Entity.V == f || uint32(gw.hover.Face) == f {
-							picked[f] = true
+					cands := map[uint32][]cand{}
+					for _, tr := range g.DisplayMesh.Triangles {
+						f := uint32(tr.Meta.Face)
+						if f == 0 || picked[f] {
+							continue
+						}
+						a, b, c := gw.ProjectPoint(tr.A), gw.ProjectPoint(tr.B), gw.ProjectPoint(tr.C)
+						s := math.Abs((b.U-a.U)*(c.V-a.V)-(c.U-a.U)*(b.V-a.V)) / 2
+						cands[f] = append(cands[f], cand{tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0 / 3), s})
+					}
+					for f, cs := range cands {
+						sort.Slice(cs, func(i, j int) bool { return cs[i].a > cs[j].a })
+						for k := 0; k < len(cs) && k < 8 && !picked[f]; k++ {
+							if zoom != 1 {
+								gw.view.Offset = cs[k].p.ScaledBy(-1)
+								w.Render()
+							}
+							q := gw.ProjectPoint(cs[k].p)
+							w.Mouse(platform.MouseEvent{Type: platform.MouseMotion, X: w.Width/2 + q.U, Y: w.Height/2 - q.V})
+							if gw.hover.Entity.V == f || uint32(gw.hover.Face) == f {
+								picked[f] = true
+							}
 						}
 					}
 				}

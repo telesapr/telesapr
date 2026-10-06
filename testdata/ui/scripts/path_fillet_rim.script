@@ -1,13 +1,14 @@
 # The boss under the block of testdata/topo/boss.tlspr: the circle at its
 # foot, which the Boolean made and no entity draws, is one edge of four
-# pieces. The mouse picks it on a piece whose name is not the lowest,
-# and the fillet names the edge by its lowest piece all the same; the
-# same as path_fillet_rim.go makes (TestPathEquivalenceFilletRim).
+# pieces. The mouse picks it from below, where the block doesn't hide
+# it, on a piece whose name is not the lowest, and the fillet names the
+# edge by its lowest piece all the same; the same as path_fillet_rim.go
+# makes (TestPathEquivalenceFilletRim).
 file $testdata/topo/boss.tlspr
 menu File|Open...
-view rotated
+view under
 menu View|Zoom To Fit
-move 337 277
-down L 337 277
-up L 337 277
+move 371 276
+down L 371 276
+up L 371 276
 menu New Group|Fillet Edges
