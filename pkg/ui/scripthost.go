@@ -376,7 +376,7 @@ func (h *ScriptHost) Render(path string, width, height int, right, up geom.Vecto
 func (h *ScriptHost) Selection() []sketch.Selection {
 	var out []sketch.Selection
 	for _, s := range h.ss.GW.selection {
-		out = append(out, sketch.Selection{Entity: s.Entity, Constraint: s.Constraint})
+		out = append(out, sketch.Selection{Entity: s.Entity, Constraint: s.Constraint, Edge: s.Edge, Face: s.Face})
 	}
 	return out
 }
@@ -391,7 +391,7 @@ func (h *ScriptHost) Select(sel []sketch.Selection) {
 	gw := h.ss.GW
 	gw.ClearSelection()
 	for _, s := range sel {
-		gw.MakeSelected(&Selection{Entity: s.Entity, Constraint: s.Constraint})
+		gw.MakeSelected(&Selection{Entity: s.Entity, Constraint: s.Constraint, Edge: s.Edge, Face: s.Face})
 	}
 	h.ss.ScheduleShowTW()
 	gw.Invalidate(false)

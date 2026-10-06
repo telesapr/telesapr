@@ -4549,9 +4549,25 @@
 						"decl": "func (d *Doc) Select(entities ...Entity)",
 						"text": "Select selects entities on the drawing, and nothing else."
 					},
+					"SelectEdges": {
+						"decl": "func (d *Doc) SelectEdges(edges ...SolidEdge)",
+						"text": "SelectEdges selects edges of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a fillet or a chamfer\nmade from the menu. The edges must be of the solid at the active\ngroup, which such a group is made after."
+					},
+					"SelectFaces": {
+						"decl": "func (d *Doc) SelectFaces(faces ...SolidFace)",
+						"text": "SelectFaces selects faces of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a shell made from the\nmenu, or a face to draw on. A face an entity made is selected by its\nentity, one that no entity names by its identity."
+					},
 					"SelectedConstraints": {
 						"decl": "func (d *Doc) SelectedConstraints() (constraints []Constraint)",
 						"text": "SelectedConstraints are the constraints selected on the drawing."
+					},
+					"SelectedEdges": {
+						"decl": "func (d *Doc) SelectedEdges() (edges []SolidEdge)",
+						"text": "SelectedEdges are the edges of the solid selected on the drawing,\npicked on the model or by SelectEdges, as edges of the solid at the\nactive group."
+					},
+					"SelectedFaces": {
+						"decl": "func (d *Doc) SelectedFaces() (faces []SolidFace)",
+						"text": "SelectedFaces are the faces of the solid selected on the drawing,\npicked on the model or by SelectFaces, as faces of the solid at the\nactive group: a face entity's, or a face no entity names by its\nidentity. A face is given as the first with its identity."
 					},
 					"Selection": {
 						"decl": "func (d *Doc) Selection() (entities []Entity)",
