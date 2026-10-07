@@ -197,7 +197,7 @@ func (w *epsFileWriter) Bezier(sb *srf.SBezier) {
 		p0, p1 := sb.Ctrl[0], sb.Ctrl[2]
 		theta0 := libm.Atan2(p0.Y-c.Y, p0.X-c.X)
 		theta1 := libm.Atan2(p1.Y-c.Y, p1.X-c.X)
-		dtheta := wrapSymmetric(theta1-theta0, 2*math.Pi)
+		dtheta := srf.WrapSymmetric(theta1-theta0, 2*math.Pi)
 		w.maybeMoveTo(p0, p1)
 		dir := "arc"
 		if dtheta < 0 {
@@ -576,7 +576,7 @@ func (w *svgFileWriter) Bezier(sb *srf.SBezier) {
 		p0, p1 := sb.Ctrl[0], sb.Ctrl[2]
 		theta0 := libm.Atan2(p0.Y-c.Y, p0.X-c.X)
 		theta1 := libm.Atan2(p1.Y-c.Y, p1.X-c.X)
-		dtheta := wrapSymmetric(theta1-theta0, 2*math.Pi)
+		dtheta := srf.WrapSymmetric(theta1-theta0, 2*math.Pi)
 		// The arc must be less than 180 degrees, or else it couldn't
 		// have been represented as a single rational Bezier. So
 		// large-arc-flag must be false. sweep-flag is determined by the

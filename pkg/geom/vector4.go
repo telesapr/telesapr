@@ -1,5 +1,7 @@
 package geom
 
+import "math"
+
 // Vector4 is a point in homogeneous coordinates (w*x, w*y, w*z, w)
 // (C++ Vector4).
 type Vector4 struct {
@@ -28,6 +30,11 @@ func (v Vector4) Plus(b Vector4) Vector4 {
 
 func (v Vector4) Minus(b Vector4) Vector4 {
 	return Vector4From(v.W-b.W, v.X-b.X, v.Y-b.Y, v.Z-b.Z)
+}
+
+// Magnitude is the length of v in four dimensions.
+func (v Vector4) Magnitude() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z + v.W*v.W)
 }
 
 func (v Vector4) ScaledBy(s float64) Vector4 {

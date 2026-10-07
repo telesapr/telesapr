@@ -278,7 +278,7 @@ func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, 
 		DegN:  2,
 		Sheet: sb.Sheet,
 	}
-	dtheta := math.Abs(wrapSymmetric(thetaf-thetas, 2*math.Pi))
+	dtheta := math.Abs(WrapSymmetric(thetaf-thetas, 2*math.Pi))
 	w := libm.Cos(dtheta / 2)
 	if w == 0 {
 		w = 1e-12
@@ -305,8 +305,8 @@ func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, 
 	return s
 }
 
-func wrapSymmetric(v, n float64) float64 {
-	// Clamp it to the range (-n/2, n/2]. Mirrors C++ WRAP_SYMMETRIC.
+// WrapSymmetric brings v into (-n/2, n/2] by whole periods of n.
+func WrapSymmetric(v, n float64) float64 {
 	for v > n/2 {
 		v -= n
 	}

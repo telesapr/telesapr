@@ -487,7 +487,7 @@ func (d *dxfWriteInterface) writeBezier(sb *srf.SBezier) {
 		// Circle perpendicular to camera
 		theta0 := libm.Atan2(sb.Ctrl[0].Y-c.Y, sb.Ctrl[0].X-c.X)
 		theta1 := libm.Atan2(sb.Ctrl[2].Y-c.Y, sb.Ctrl[2].X-c.X)
-		dtheta := wrapSymmetric(theta1-theta0, 2.0*math.Pi)
+		dtheta := srf.WrapSymmetric(theta1-theta0, 2.0*math.Pi)
 		if dtheta < 0.0 {
 			theta0, theta1 = theta1, theta0
 		}

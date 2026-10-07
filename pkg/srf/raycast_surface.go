@@ -242,8 +242,8 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			// This is a point on the circle; but is it on the arc?
 			pp := ap.Plus(bp.Minus(ap).ScaledBy(t))
 			theta := libm.Atan2(pp.V, pp.U)
-			dp := wrapSymmetric(theta-thetas, 2*math.Pi)
-			df := wrapSymmetric(thetaf-thetas, 2*math.Pi)
+			dp := WrapSymmetric(theta-thetas, 2*math.Pi)
+			df := WrapSymmetric(thetaf-thetas, 2*math.Pi)
 			tol := geom.LengthEps / radius
 
 			if (df > 0 && ((dp < -tol) || (dp > df+tol))) ||

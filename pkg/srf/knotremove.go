@@ -12,10 +12,6 @@ import (
 // join smoothly, the knot is taken out as many times as the surface
 // lets it, so that readers see the surface as smooth as it is.
 
-func len4(v geom.Vector4) float64 {
-	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z + v.W*v.W)
-}
-
 // removeKnotOnce takes knots[r], the last of its s copies, out of a
 // curve of degree deg over homogeneous points pts once, when the curve
 // moves no more than tol, homogeneous, for it; ok reports whether it
@@ -51,14 +47,14 @@ func removeKnotOnce(deg int, knots []float64, pts []geom.Vector4, r, s int, tol 
 		jj--
 	}
 	if j-i < 0 {
-		ok = len4(temp[ii-1].Minus(temp[jj+1])) <= tol
+		ok = temp[ii-1].Minus(temp[jj+1]).Magnitude() <= tol
 	} else {
 		di := knots[i+ord] - knots[i]
 		if di == 0 {
 			return nil, nil, false
 		}
 		ai := (u - knots[i]) / di
-		ok = len4(pts[i].Minus(temp[ii+1].ScaledBy(ai).Plus(temp[ii-1].ScaledBy(1-ai)))) <= tol
+		ok = pts[i].Minus(temp[ii+1].ScaledBy(ai).Plus(temp[ii-1].ScaledBy(1-ai))).Magnitude() <= tol
 	}
 	if !ok {
 		return nil, nil, false

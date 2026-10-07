@@ -6,6 +6,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // DeleteSelection deletes the selected requests and constraints (C++
@@ -105,7 +106,7 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 		if e == nil {
 			break
 		}
-		tw.shown.paste.theta = wrapSymmetric(ss.evalExpr(e)*math.Pi/180, 2*math.Pi)
+		tw.shown.paste.theta = srf.WrapSymmetric(ss.evalExpr(e)*math.Pi/180, 2*math.Pi)
 
 	case EditPasteScale:
 		e := ss.exprFromString(s)

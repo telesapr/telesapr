@@ -8,18 +8,8 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
-
-// wrapSymmetric brings v into (-n/2, n/2] (C++ WRAP_SYMMETRIC).
-func wrapSymmetric(v, n float64) float64 {
-	for v > n/2 {
-		v -= n
-	}
-	for v <= -n/2 {
-		v += n
-	}
-	return v
-}
 
 // CreateCustomStyle adds a custom style and returns its handle (C++
 // Style::CreateCustomStyle).
@@ -377,7 +367,7 @@ func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
 	case EditStyleTextAngle:
 		ss.UndoRemember()
 		s := ss.SK.StyleGet(tw.edit.style)
-		s.TextAngle = wrapSymmetric(atof(str), 360)
+		s.TextAngle = srf.WrapSymmetric(atof(str), 360)
 
 	case EditBackgroundColor, EditStyleFillColor, EditStyleColor:
 		if x, y, z, ok := scanVector3(str); ok {

@@ -280,13 +280,13 @@ func joinRatio(bs *srf.BSplineSurface, alongU bool, s int) float64 {
 	}
 	ratio, size := 0.0, 0.0
 	for row := range rows {
-		size = max(size, len4(at(row, c)))
+		size = max(size, at(row, c).Magnitude())
 	}
 	tiny := 1e-9 * max(size, 1)
 	for row := range rows {
 		a := at(row, c).Minus(at(row, c-1))
 		b := at(row, c+1).Minus(at(row, c))
-		la, lb := len4(a), len4(b)
+		la, lb := a.Magnitude(), b.Magnitude()
 		if la <= tiny && lb <= tiny {
 			// A pole: both sides shrink to the point.
 			continue
@@ -295,7 +295,7 @@ func joinRatio(bs *srf.BSplineSurface, alongU bool, s int) float64 {
 			return 0
 		}
 		r := lb / la
-		if len4(b.Minus(a.ScaledBy(r))) > 1e-9*lb {
+		if b.Minus(a.ScaledBy(r)).Magnitude() > 1e-9*lb {
 			return 0
 		}
 		if ratio != 0 && math.Abs(r-ratio) > 1e-7*ratio {
@@ -306,10 +306,6 @@ func joinRatio(bs *srf.BSplineSurface, alongU bool, s int) float64 {
 		}
 	}
 	return ratio
-}
-
-func len4(v geom.Vector4) float64 {
-	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z + v.W*v.W)
 }
 
 // fullKnots is a clamped knot vector of spans of the lengths given,

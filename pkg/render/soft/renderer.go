@@ -361,25 +361,10 @@ func (r *Renderer) batchLines(draw func()) {
 	wg.Wait()
 }
 
-// endcapCircle is cos and sin of (pi*i/10 + pi/2), for i from 0 to 10.
-var endcapCircle = [11][2]float64{
-	{0.0000, 1.0000},
-	{-0.3090, 0.9511},
-	{-0.5878, 0.8090},
-	{-0.8090, 0.5878},
-	{-0.9511, 0.3090},
-	{-1.0000, 0.0000},
-	{-0.9511, -0.3090},
-	{-0.8090, -0.5878},
-	{-0.5878, -0.8090},
-	{-0.3090, -0.9511},
-	{0.0000, -1.0000},
-}
-
 // doFatLineEndcap is a semicircle fan (C++ DoFatLineEndcap).
 func (r *Renderer) doFatLineEndcap(p, u, v geom.Vector) {
-	vs := make([]cvert, 0, len(endcapCircle))
-	for _, pc := range endcapCircle {
+	vs := make([]cvert, 0, len(render.EndcapCircle))
+	for _, pc := range render.EndcapCircle {
 		vs = append(vs, r.clip(p.Plus(u.ScaledBy(pc[0])).Plus(v.ScaledBy(pc[1]))))
 	}
 	r.drawPolygonClip(vs, fragSolid)
