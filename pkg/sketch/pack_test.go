@@ -110,3 +110,74 @@ func TestPackedModelOutside(t *testing.T) {
 		t.Errorf("unpacked a file outside: %v", err)
 	}
 }
+
+// A pack whose file declares more than MaxPackedFile is refused before
+// anything is read, and one that inflates to more than it declares is
+// refused by the zip reader when it is.
+func TestPackedModelTooLarge(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "big.tlsprz")
+	var b bytes.Buffer
+	zw := zip.NewWriter(&b)
+	w, _ := zw.CreateHeader(&zip.FileHeader{Name: "model.tlspr", Method: zip.Deflate})
+	_, _ = w.Write([]byte("telesapr 2\n"))
+	_ = zw.Close()
+	data := b.Bytes()
+	// The central directory's record of the uncompressed size is the
+	// last of the three sizes after the file's name there.
+	cd := bytes.LastIndex(data, []byte("model.tlspr"))
+	cd = bytes.LastIndex(data[:cd], []byte{0x50, 0x4b, 0x01, 0x02})
+	if cd < 0 {
+		t.Fatal("no central directory")
+	}
+	declared := data[cd+24 : cd+28]
+	copy(declared, []byte{0, 0, 0, 0x40}) // 1 GiB
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tlspr.Unpack(path, t.TempDir()); err == nil || !strings.Contains(err.Error(), "more than") {
+		t.Errorf("unpacked a file declared too large: %v", err)
+	}
+	copy(declared, []byte{1, 0, 0, 0}) // one byte, less than it holds
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tlspr.Unpack(path, t.TempDir()); err == nil {
+		t.Error("unpacked a file larger than declared")
+	}
+}
+
+// A pack's tessellations go into the STEP cache only when the pack
+// holds a model, and only by a plain name.
+func TestPackedModelCacheNeedsModel(t *testing.T) {
+	cache := t.TempDir()
+	t.Setenv("TELESAPR_CACHE_DIR", cache)
+	pack := func(names ...string) string {
+		var b bytes.Buffer
+		zw := zip.NewWriter(&b)
+		for _, n := range names {
+			w, _ := zw.Create(n)
+			_, _ = w.Write([]byte("telesapr 2\n"))
+		}
+		_ = zw.Close()
+		path := filepath.Join(t.TempDir(), "p.tlsprz")
+		if err := os.WriteFile(path, b.Bytes(), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	if _, err := tlspr.Unpack(pack("cache/step/orphan.mesh"), t.TempDir()); err == nil {
+		t.Error("unpacked a pack without a model")
+	}
+	if _, err := os.Stat(filepath.Join(cache, "step", "orphan.mesh")); err == nil {
+		t.Error("a pack without a model wrote into the STEP cache")
+	}
+	if _, err := tlspr.Unpack(pack("model.tlspr", "cache/step/kept.mesh", "cache/step/sub/deep.mesh"), t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(cache, "step", "kept.mesh")); err != nil {
+		t.Error("the pack's tessellation was not kept:", err)
+	}
+	if _, err := os.Stat(filepath.Join(cache, "step", "sub", "deep.mesh")); err == nil {
+		t.Error("a tessellation in a folder was written")
+	}
+}

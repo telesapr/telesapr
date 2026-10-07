@@ -204,38 +204,52 @@ func Pack(sk *sketch.Sketch, from, out string, o Options) error {
 	return os.WriteFile(out, b.Bytes(), 0o644)
 }
 
+// The bounds on a packed model as it is read, so that a small file
+// that declares or inflates to a huge one cannot exhaust memory: a
+// file of the pack, the pack as a whole, and how many files it holds.
+// A model with its parts, pictures and tessellations is megabytes.
+const (
+	MaxPackedFile  = 256 << 20
+	MaxPackedTotal = 1 << 30
+	MaxPackedFiles = 10000
+)
+
 // Unpack writes the files of the packed model at in into dir, and the
 // tessellations it keeps into the STEP cache, and returns the path of
-// its model.
+// its model. It refuses a pack over the bounds above, or one whose
+// files would be written outside dir; the tessellations are kept only
+// when the pack holds a model.
 func Unpack(in, dir string) (string, error) {
 	zr, err := zip.OpenReader(in)
 	if err != nil {
 		return "", err
 	}
 	defer func() { _ = zr.Close() }()
+	if len(zr.File) > MaxPackedFiles {
+		return "", fmt.Errorf("%s: the packed model holds %d files, more than the %d allowed", in, len(zr.File), MaxPackedFiles)
+	}
 	model := ""
+	var total uint64
+	var cached []*zip.File
 	for _, f := range zr.File {
 		name := filepath.FromSlash(f.Name)
 		if !filepath.IsLocal(name) {
 			return "", fmt.Errorf("%s: the packed file %q would be written outside the folder", in, f.Name)
 		}
-		r, err := f.Open()
-		if err != nil {
-			return "", err
+		if f.UncompressedSize64 > MaxPackedFile {
+			return "", fmt.Errorf("%s: the packed file %q is %d bytes, more than the %d allowed", in, f.Name, f.UncompressedSize64, MaxPackedFile)
 		}
-		data, err := io.ReadAll(r)
-		_ = r.Close()
-		if err != nil {
-			return "", err
+		total += f.UncompressedSize64
+		if total > MaxPackedTotal {
+			return "", fmt.Errorf("%s: the packed model is over %d bytes unpacked", in, MaxPackedTotal)
 		}
-		if rest, ok := strings.CutPrefix(f.Name, "cache/step/"); ok {
-			if cache := link.StepCacheDir(); cache != "" && filepath.IsLocal(rest) {
-				dst := filepath.Join(cache, rest)
-				if _, err := os.Stat(dst); err != nil && os.MkdirAll(cache, 0o755) == nil {
-					_ = os.WriteFile(dst, data, 0o644)
-				}
-			}
+		if strings.HasPrefix(f.Name, "cache/step/") {
+			cached = append(cached, f)
 			continue
+		}
+		data, err := readPacked(f)
+		if err != nil {
+			return "", fmt.Errorf("%s: %w", in, err)
 		}
 		dst := filepath.Join(dir, name)
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
@@ -251,7 +265,41 @@ func Unpack(in, dir string) (string, error) {
 	if model == "" {
 		return "", errors.New(in + ": no model.tlspr in the packed model")
 	}
+	cache := link.StepCacheDir()
+	for _, f := range cached {
+		rest := strings.TrimPrefix(f.Name, "cache/step/")
+		if cache == "" || !filepath.IsLocal(rest) || strings.ContainsRune(rest, '/') {
+			continue
+		}
+		dst := filepath.Join(cache, rest)
+		if _, err := os.Stat(dst); err == nil {
+			continue
+		}
+		data, err := readPacked(f)
+		if err != nil || os.MkdirAll(cache, 0o755) != nil {
+			continue
+		}
+		_ = os.WriteFile(dst, data, 0o644)
+	}
 	return model, nil
+}
+
+// readPacked reads one file of a pack, and refuses one that inflates
+// to more than it declares (the zip reader does too, once read past).
+func readPacked(f *zip.File) ([]byte, error) {
+	r, err := f.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = r.Close() }()
+	data, err := io.ReadAll(io.LimitReader(r, int64(f.UncompressedSize64)+1))
+	if err != nil {
+		return nil, err
+	}
+	if uint64(len(data)) > f.UncompressedSize64 {
+		return nil, fmt.Errorf("the packed file %q is larger than it declares", f.Name)
+	}
+	return data, nil
 }
 
 // LoadPacked opens a packed model: it is unpacked into a new folder of
