@@ -10,6 +10,7 @@ func almostEq(a, b, eps float64) bool {
 }
 
 func TestVectorDotCross(t *testing.T) {
+	t.Parallel()
 	x := Vector{1, 0, 0}
 	y := Vector{0, 1, 0}
 	if x.Dot(y) != 0 {
@@ -22,6 +23,7 @@ func TestVectorDotCross(t *testing.T) {
 }
 
 func TestVectorRotatedAbout(t *testing.T) {
+	t.Parallel()
 	v := Vector{1, 0, 0}
 	rotated := v.RotatedAbout(Vector{}, Vector{0, 0, 1}, math.Pi/2)
 	if rotated.DistanceTo(Vector{0, 1, 0}) > 1e-9 {
@@ -30,6 +32,7 @@ func TestVectorRotatedAbout(t *testing.T) {
 }
 
 func TestVectorProject2d(t *testing.T) {
+	t.Parallel()
 	u := Vector{1, 0, 0}
 	v := Vector{0, 1, 0}
 	p := Vector{3, 4, 5}.Project2d(u, v)
@@ -39,6 +42,7 @@ func TestVectorProject2d(t *testing.T) {
 }
 
 func TestVectorBoundingBoxIntersectsLine(t *testing.T) {
+	t.Parallel()
 	amax := Vector{2, 2, 2}
 	amin := Vector{0, 0, 0}
 	a := Vector{-1, 1, 1}
@@ -49,6 +53,7 @@ func TestVectorBoundingBoxIntersectsLine(t *testing.T) {
 }
 
 func TestVectorClosestPointOnLine(t *testing.T) {
+	t.Parallel()
 	v := Vector{5, 5, 0}
 	p0 := Vector{0, 0, 0}
 	dp := Vector{10, 0, 0}
@@ -59,6 +64,7 @@ func TestVectorClosestPointOnLine(t *testing.T) {
 }
 
 func TestQuaternionFromBasis(t *testing.T) {
+	t.Parallel()
 	u := Vector{1, 0, 0}
 	v := Vector{0, 1, 0}
 	q := QuaternionFromBasis(u, v)
@@ -71,6 +77,7 @@ func TestQuaternionFromBasis(t *testing.T) {
 }
 
 func TestQuaternionToThe(t *testing.T) {
+	t.Parallel()
 	q := QuaternionFromAxisAngle(Vector{0, 0, 1}, math.Pi/4)
 	q2 := q.ToThe(2.0)
 	if q2.RotationN().DistanceTo(q.RotationN()) > 1e-9 {
@@ -79,6 +86,7 @@ func TestQuaternionToThe(t *testing.T) {
 }
 
 func TestQuaternionInverse(t *testing.T) {
+	t.Parallel()
 	q := QuaternionFromAxisAngle(Vector{0, 1, 0}, math.Pi/3)
 	v := Vector{1, 0, 0}
 	rotated := q.Rotate(v)
@@ -89,6 +97,7 @@ func TestQuaternionInverse(t *testing.T) {
 }
 
 func TestPoint2d(t *testing.T) {
+	t.Parallel()
 	p := Point2d{3, 4}.ScaledBy(2)
 	if p.U != 6 || p.V != 8 {
 		t.Fatalf("scaled = %v", p)
@@ -96,6 +105,7 @@ func TestPoint2d(t *testing.T) {
 }
 
 func TestVector4Blend(t *testing.T) {
+	t.Parallel()
 	a := Vector4{X: 0, Y: 0, Z: 0, W: 1}
 	b := Vector4{X: 2, Y: 2, Z: 2, W: 1}
 	mid := Vector4Blend(a, b, 0.5)
@@ -105,6 +115,7 @@ func TestVector4Blend(t *testing.T) {
 }
 
 func TestVectorAtIntersectionOfPlanes(t *testing.T) {
+	t.Parallel()
 	// Plane XY (z=0): n=(0,0,1), d=0
 	// Plane XZ (y=0): n=(0,1,0), d=0
 	// Plane YZ (x=0): n=(1,0,0), d=0
@@ -121,6 +132,7 @@ func TestVectorAtIntersectionOfPlanes(t *testing.T) {
 
 // TestVectorRotatedAboutPoint verifies rotation around a point+axis.
 func TestVectorRotatedAboutPoint(t *testing.T) {
+	t.Parallel()
 	v := Vector{X: 1, Y: 0}
 	rot := v.RotatedAbout(Vector{}, Vector{Z: 1}, math.Pi/2)
 	if math.Abs(rot.X) > 1e-9 || math.Abs(rot.Y-1) > 1e-9 {
@@ -130,6 +142,7 @@ func TestVectorRotatedAboutPoint(t *testing.T) {
 
 // TestVectorRotatedAroundAxis verifies axis-only rotation.
 func TestVectorRotatedAroundAxis(t *testing.T) {
+	t.Parallel()
 	v := Vector{Y: 1}
 	rot := v.RotatedAroundAxis(Vector{X: 1}, math.Pi)
 	// 180° around X-axis flips Y to -1.
@@ -140,6 +153,7 @@ func TestVectorRotatedAroundAxis(t *testing.T) {
 
 // TestVectorProjectXy verifies projection onto XY plane.
 func TestVectorProjectXy(t *testing.T) {
+	t.Parallel()
 	v := Vector{X: 3, Y: 4, Z: 5}
 	p := v.ProjectXy()
 	if p.U != 3 || p.V != 4 {
@@ -149,6 +163,7 @@ func TestVectorProjectXy(t *testing.T) {
 
 // TestVectorProject4d verifies projection to Vector4 (homogeneous).
 func TestVectorProject4d(t *testing.T) {
+	t.Parallel()
 	v := Vector{X: 1, Y: 2, Z: 3}
 	v4 := v.Project4d()
 	if v4.W != 1 {
@@ -161,6 +176,7 @@ func TestVectorProject4d(t *testing.T) {
 
 // TestVectorClampWithin verifies clamping.
 func TestVectorClampWithin(t *testing.T) {
+	t.Parallel()
 	v := Vector{X: 5, Y: -5, Z: 0}
 	c := v.ClampWithin(0, 2)
 	if c.X != 2 || c.Y != 0 || c.Z != 0 {
@@ -170,6 +186,7 @@ func TestVectorClampWithin(t *testing.T) {
 
 // TestVectorDirectionCosineWith verifies dot/(|a||b|).
 func TestVectorDirectionCosineWith(t *testing.T) {
+	t.Parallel()
 	a := Vector{X: 1}
 	b := Vector{Y: 1}
 	cos := a.DirectionCosineWith(b)
@@ -180,6 +197,7 @@ func TestVectorDirectionCosineWith(t *testing.T) {
 
 // TestVectorEqualsExactly vs Equals verifies exact-equality check.
 func TestVectorEqualsExactly(t *testing.T) {
+	t.Parallel()
 	a := Vector{X: 1.0}
 	b := Vector{X: 1.0 + 1e-15}
 	if !a.Equals(b) {
@@ -195,6 +213,7 @@ func TestVectorEqualsExactly(t *testing.T) {
 
 // TestAtIntersectionOfPlaneAndLine verifies the plane/line intersection.
 func TestAtIntersectionOfPlaneAndLine(t *testing.T) {
+	t.Parallel()
 	// Plane z = 5, line from (0,0,0) along (0,0,1).
 	n := Vector{Z: 1}
 	d := 5.0
@@ -208,6 +227,7 @@ func TestAtIntersectionOfPlaneAndLine(t *testing.T) {
 
 // TestClosestPointBetweenLines verifies line-line proximity.
 func TestClosestPointBetweenLines(t *testing.T) {
+	t.Parallel()
 	// Two skew lines: a is x-axis, b is parallel at z=1.
 	a0, da := Vector{}, Vector{X: 1}
 	b0, db := Vector{Z: 1}, Vector{X: 1}
@@ -219,6 +239,7 @@ func TestClosestPointBetweenLines(t *testing.T) {
 
 // TestVectorBoundingBoxesDisjoint verifies bbox overlap check.
 func TestVectorBoundingBoxesDisjoint(t *testing.T) {
+	t.Parallel()
 	amax := Vector{X: 1, Y: 1, Z: 1}
 	amin := Vector{X: 0, Y: 0, Z: 0}
 	bmax := Vector{X: 2, Y: 2, Z: 2}
@@ -235,6 +256,7 @@ func TestVectorBoundingBoxesDisjoint(t *testing.T) {
 
 // TestVectorOnLineSegment verifies point-on-segment check.
 func TestVectorOnLineSegment(t *testing.T) {
+	t.Parallel()
 	mid := Vector{X: 0.5}
 	if !mid.OnLineSegment(Vector{}, Vector{X: 1}, 1e-9) {
 		t.Errorf("(0.5,0,0) should be on segment (0,0,0)-(1,0,0)")
@@ -248,6 +270,7 @@ func TestVectorOnLineSegment(t *testing.T) {
 // TestVectorCsys checks DotInToCsys and ScaleOutOfCsys as C++ defines
 // them: components along u, v, n, and the combination of u, v, n.
 func TestVectorCsys(t *testing.T) {
+	t.Parallel()
 	u := Vector{Y: 2}
 	w := Vector{Z: 1}
 	n := Vector{X: 3}
@@ -262,6 +285,7 @@ func TestVectorCsys(t *testing.T) {
 
 // TestVectorElement verifies Element accessor.
 func TestVectorElement(t *testing.T) {
+	t.Parallel()
 	v := Vector{X: 1, Y: 2, Z: 3}
 	if v.Element(0) != 1 || v.Element(1) != 2 || v.Element(2) != 3 {
 		t.Errorf("Element = (%v, %v, %v), want (1, 2, 3)",
@@ -271,6 +295,7 @@ func TestVectorElement(t *testing.T) {
 
 // TestVectorOutsideAndNotOn verifies AABB-miss check.
 func TestVectorOutsideAndNotOn(t *testing.T) {
+	t.Parallel()
 	v := Vector{X: 5, Y: 5, Z: 5}
 	if !v.OutsideAndNotOn(Vector{X: 10}, Vector{}) {
 		t.Errorf("v inside should not be outside-and-not-on")
@@ -279,6 +304,7 @@ func TestVectorOutsideAndNotOn(t *testing.T) {
 
 // TestVectorBoundingBoxIntersectsLineThroughOrigin verifies bbox/line overlap.
 func TestVectorBoundingBoxIntersectsLineThroughOrigin(t *testing.T) {
+	t.Parallel()
 	amax := Vector{X: 1, Y: 1, Z: 1}
 	amin := Vector{}
 	a := Vector{}
@@ -290,6 +316,7 @@ func TestVectorBoundingBoxIntersectsLineThroughOrigin(t *testing.T) {
 
 // TestVectorRotatedAboutTranslation verifies rotation around a non-origin point.
 func TestVectorRotatedAboutTranslation(t *testing.T) {
+	t.Parallel()
 	v := Vector{X: 1, Y: 0}
 	rot := v.RotatedAbout(Vector{X: 5, Y: 5}, Vector{Z: 1}, math.Pi/2)
 	// Rotate (1,0) around (5,5) by 90 degrees = (5, 6)

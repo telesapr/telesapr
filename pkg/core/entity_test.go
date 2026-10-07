@@ -5,6 +5,7 @@ import (
 )
 
 func TestEntityTypePredicates(t *testing.T) {
+	t.Parallel()
 	point := &Entity{Type: EntityPointIn3D}
 	if !point.IsPoint() || point.IsNormal() || point.IsDistance() || point.IsFace() {
 		t.Fatal("point entity predicate mismatch")
@@ -46,6 +47,7 @@ func TestEntityTypePredicates(t *testing.T) {
 }
 
 func TestEntityListAdd(t *testing.T) {
+	t.Parallel()
 	var list EntityList
 	e := Entity{Type: EntityPointIn3D}
 	list.Add(e)
@@ -56,6 +58,7 @@ func TestEntityListAdd(t *testing.T) {
 
 // TestEntityEmptyEntity verifies the zero-value Entity.
 func TestEntityEmptyEntity(t *testing.T) {
+	t.Parallel()
 	var e Entity
 	if e.Type != 0 {
 		t.Errorf("zero Entity should have Type=0")
@@ -67,6 +70,7 @@ func TestEntityEmptyEntity(t *testing.T) {
 
 // TestEntityPointIsPoint verifies the IsPoint check.
 func TestEntityPointIsPoint(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		t    EntityType
 		want bool
@@ -88,6 +92,7 @@ func TestEntityPointIsPoint(t *testing.T) {
 
 // TestEntityNormalIsNormal verifies the IsNormal check.
 func TestEntityNormalIsNormal(t *testing.T) {
+	t.Parallel()
 	e := Entity{Type: EntityNormalIn3D}
 	if !e.IsNormal() {
 		t.Errorf("EntityNormalIn3D should be a normal")
@@ -100,6 +105,7 @@ func TestEntityNormalIsNormal(t *testing.T) {
 
 // TestEntityIsWorkplane verifies the IsWorkplane check.
 func TestEntityIsWorkplane(t *testing.T) {
+	t.Parallel()
 	e := Entity{Type: EntityWorkplane}
 	if !e.IsWorkplane() {
 		t.Errorf("EntityWorkplane should be a workplane")
@@ -112,6 +118,7 @@ func TestEntityIsWorkplane(t *testing.T) {
 
 // TestEntityIsFace verifies the IsFace check.
 func TestEntityIsFace(t *testing.T) {
+	t.Parallel()
 	e := Entity{Type: EntityFaceNormalPt}
 	if !e.IsFace() {
 		t.Errorf("EntityFaceNormalPt should be a face")
@@ -124,6 +131,7 @@ func TestEntityIsFace(t *testing.T) {
 
 // TestEntityHasEndpoints verifies the HasEndpoints check.
 func TestEntityHasEndpoints(t *testing.T) {
+	t.Parallel()
 	e := Entity{Type: EntityLineSegment}
 	if !e.HasEndpoints() {
 		t.Errorf("EntityLineSegment should have endpoints")
@@ -136,6 +144,7 @@ func TestEntityHasEndpoints(t *testing.T) {
 
 // TestEntityIsCircle verifies the IsCircle check.
 func TestEntityIsCircle(t *testing.T) {
+	t.Parallel()
 	e := Entity{Type: EntityCircle}
 	if !e.IsCircle() {
 		t.Errorf("EntityCircle should be a circle")

@@ -7,6 +7,7 @@ import (
 )
 
 func TestNewFromStringNumber(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want float64
@@ -33,6 +34,7 @@ func TestNewFromStringNumber(t *testing.T) {
 }
 
 func TestNewFromStringBinary(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want float64
@@ -61,6 +63,7 @@ func TestNewFromStringBinary(t *testing.T) {
 }
 
 func TestNewFromStringConstants(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want float64
@@ -84,6 +87,7 @@ func TestNewFromStringConstants(t *testing.T) {
 }
 
 func TestNewFromStringFunctions(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want float64
@@ -129,6 +133,7 @@ func TestNewFromStringFunctions(t *testing.T) {
 }
 
 func TestNewFromStringVariables(t *testing.T) {
+	t.Parallel()
 	e, err := NewFromString("2*pi*r")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -142,6 +147,7 @@ func TestNewFromStringVariables(t *testing.T) {
 }
 
 func TestNewFromStringNested(t *testing.T) {
+	t.Parallel()
 	e, err := NewFromString("sqrt(sq(3) + sq(4))")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -153,6 +159,7 @@ func TestNewFromStringNested(t *testing.T) {
 }
 
 func TestNewFromStringErrors(t *testing.T) {
+	t.Parallel()
 	bad := []string{
 		"1 +",         // trailing op
 		"(1",          // unclosed paren
@@ -168,6 +175,7 @@ func TestNewFromStringErrors(t *testing.T) {
 }
 
 func TestNewFromStringFoldConstants(t *testing.T) {
+	t.Parallel()
 	e, _ := NewFromString("2 + 3*4")
 	folded := e.FoldConstants()
 	if folded.Op != OpConstant || folded.Value != 14 {
@@ -178,6 +186,7 @@ func TestNewFromStringFoldConstants(t *testing.T) {
 // TestNewFromStringErrorMessages verifies Goal Item 9: parse
 // errors include the position and the offending token.
 func TestNewFromStringErrorMessages(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in       string
 		contains string
@@ -201,6 +210,7 @@ func TestNewFromStringErrorMessages(t *testing.T) {
 }
 
 func TestVariables(t *testing.T) {
+	t.Parallel()
 	e, err := NewFromString("a*2 + max(b, a) - sin(c)/pi")
 	if err != nil {
 		t.Fatal(err)
@@ -215,6 +225,7 @@ func TestVariables(t *testing.T) {
 }
 
 func TestRenameVariable(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ in, from, to, want string }{
 		{"wall*2", "wall", "w", "w*2"},
 		{"wall * wall2 + wall", "wall", "t", "t * wall2 + t"},
@@ -234,6 +245,7 @@ func TestRenameVariable(t *testing.T) {
 }
 
 func TestValidVariableName(t *testing.T) {
+	t.Parallel()
 	for _, ok := range []string{"a", "wall", "_x", "x2", "Wall_3"} {
 		if !ValidVariableName(ok) {
 			t.Errorf("%q should be valid", ok)
@@ -247,6 +259,7 @@ func TestValidVariableName(t *testing.T) {
 }
 
 func TestOperatorBeforeBracketOrSign(t *testing.T) {
+	t.Parallel()
 	for in, want := range map[string]float64{
 		"2*(3)": 6, "2*-3": -6, "-(4)": -4, "2^-1": 0.5, "10/(2+3)": 2, "1--1": 2,
 	} {

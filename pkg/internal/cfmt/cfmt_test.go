@@ -10,6 +10,7 @@ import (
 // TestSprintfVsGlibc compares Sprintf with glibc on the cases
 // scripts/cfmt-glibc.c prints.
 func TestSprintfVsGlibc(t *testing.T) {
+	t.Parallel()
 	nan := math.NaN()
 	vals := []float64{0, math.Copysign(0, -1), 1, -1, 0.5, 1e-5, 123456789, 1.0 / 3, 2.5, 3.5, -2.675, 1e21, 1e-300, nan, math.Copysign(nan, -1), math.Inf(1), math.Inf(-1), 0.000123456, 99999.95, 12.3456789}
 	fmts := []string{"%f", "%.3f", "%.10f", "%g", "%.6g", "%e", "%.2e", "%10.3f", "%-10.3f|", "%+.2f", "% .2f", "%.0f", "%#.3g", "%lg"}

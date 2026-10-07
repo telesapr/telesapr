@@ -3,6 +3,7 @@ package core
 import "testing"
 
 func TestIdListBasicAddFind(t *testing.T) {
+	t.Parallel()
 	type item struct{ V int }
 	var list IDList[HEntity, item]
 	list.Add(HEntity{V: 1}, item{V: 10})
@@ -19,6 +20,7 @@ func TestIdListBasicAddFind(t *testing.T) {
 }
 
 func TestIdListMoveSelfInto(t *testing.T) {
+	t.Parallel()
 	type item struct{ V int }
 	src := NewIDList[HEntity, item](2)
 	src.Add(HEntity{V: 1}, item{V: 10})
@@ -39,6 +41,7 @@ func TestIdListMoveSelfInto(t *testing.T) {
 }
 
 func TestIdListIDsInInsertionOrder(t *testing.T) {
+	t.Parallel()
 	type item struct{ V int }
 	var list IDList[HEntity, item]
 	list.Add(HEntity{V: 5}, item{})
@@ -66,6 +69,7 @@ func TestIdListIDsInInsertionOrder(t *testing.T) {
 
 // TestIdListClear verifies Clear empties the list.
 func TestIdListClear(t *testing.T) {
+	t.Parallel()
 	list := NewIDList[int, string](0)
 	list.Add(1, "one")
 	list.Add(2, "two")
@@ -77,6 +81,7 @@ func TestIdListClear(t *testing.T) {
 
 // TestIdListEmptyAdd verifies adding to empty list works.
 func TestIdListEmptyAdd(t *testing.T) {
+	t.Parallel()
 	list := NewIDList[int, string](0)
 	idx := list.Add(42, "hello")
 	if idx != 0 {
@@ -89,6 +94,7 @@ func TestIdListEmptyAdd(t *testing.T) {
 
 // TestIdListFindById verifies FindById.
 func TestIdListFindById(t *testing.T) {
+	t.Parallel()
 	list := NewIDList[int, string](0)
 	list.Add(1, "one")
 	list.Add(2, "two")
@@ -104,6 +110,7 @@ func TestIdListFindById(t *testing.T) {
 
 // TestIdListSortedHandles verifies SortedHandles ordering.
 func TestIdListSortedHandles(t *testing.T) {
+	t.Parallel()
 	list := NewIDList[int, string](0)
 	list.Add(3, "three")
 	list.Add(1, "one")
@@ -117,6 +124,7 @@ func TestIdListSortedHandles(t *testing.T) {
 // TestIdListIDs verifies the IDs accessor returns every handle that
 // was added. IDs is map-iteration-ordered so we only check membership.
 func TestIdListIDs(t *testing.T) {
+	t.Parallel()
 	list := NewIDList[int, string](0)
 	list.Add(10, "ten")
 	list.Add(20, "twenty")
@@ -140,6 +148,7 @@ func TestIdListIDs(t *testing.T) {
 
 // TestIdListReverseOrder verifies items preserve insertion order.
 func TestIdListReverseOrder(t *testing.T) {
+	t.Parallel()
 	list := NewIDList[int, string](0)
 	list.Add(1, "first")
 	list.Add(2, "second")
@@ -151,6 +160,7 @@ func TestIdListReverseOrder(t *testing.T) {
 
 // TestIdListReserve verifies Reserve doesn't break length.
 func TestIdListReserve(t *testing.T) {
+	t.Parallel()
 	list := NewIDList[int, string](0)
 	list.Reserve(100)
 	if list.Len() != 0 {

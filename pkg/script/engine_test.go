@@ -35,6 +35,7 @@ func console(t *testing.T, host api.Host, lines ...string) string {
 }
 
 func TestConsole(t *testing.T) {
+	t.Parallel()
 	host := newHost()
 	got := console(t, host,
 		`1 + 2`,
@@ -94,6 +95,7 @@ nil
 
 // Each line of a console is one step of undo, if it changed anything.
 func TestConsoleUndo(t *testing.T) {
+	t.Parallel()
 	host := newHost()
 	console(t, host,
 		`a := doc.Line(V(0, 0, 0), V(10, 0, 0))`,
@@ -134,6 +136,7 @@ func main() {
 `
 
 func TestRunProgram(t *testing.T) {
+	t.Parallel()
 	var out bytes.Buffer
 	host := newHost()
 	err := RunSource(context.Background(), Options{Host: host, Stdout: &out, Stderr: &out,
@@ -150,6 +153,7 @@ func TestRunProgram(t *testing.T) {
 }
 
 func TestRunStatements(t *testing.T) {
+	t.Parallel()
 	var out bytes.Buffer
 	src := `#!/usr/bin/env telesapr-cli run
 // A plate, as statements.
@@ -200,6 +204,7 @@ doc.Circle(V(1, 1, 0), 2).Pos()
 }
 
 func TestExitAndCancel(t *testing.T) {
+	t.Parallel()
 	var out bytes.Buffer
 	opts := Options{Host: newHost(), Stdout: &out, Stderr: &out}
 	err := RunSource(context.Background(), opts, "exit.go", "fmt.Println(\"bye\")\nos.Exit(3)\nfmt.Println(\"not reached\")\n")
@@ -239,6 +244,7 @@ func TestExitAndCancel(t *testing.T) {
 
 // A script's other documents come from the engine's options.
 func TestOpenThroughOptions(t *testing.T) {
+	t.Parallel()
 	var out bytes.Buffer
 	opened := ""
 	opts := Options{Host: newHost(), Stdout: &out, Stderr: &out,
@@ -260,6 +266,7 @@ func TestOpenThroughOptions(t *testing.T) {
 // server (package 23.5): each is run as run_script runs code, in
 // steps on one engine, and shows what Go would.
 func TestInterpreterForms(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name  string
 		steps []string
@@ -310,6 +317,7 @@ func TestInterpreterForms(t *testing.T) {
 // a loop, is placed in the source as given; a definition with fewer
 // names than its call has values fails, as in Go.
 func TestInterpreterFormErrors(t *testing.T) {
+	t.Parallel()
 	for src, want := range map[string]string{
 		"g := doc.Active()\nx := g.Bounds()":                       `script:2:6: assignment mismatch: 1 variable(s) but g.Bounds() has more values; name each, as in "lo, hi := g.Bounds()"`,
 		"var n = strconv.Atoi(\"3\")":                              `script:1:9: assignment mismatch: 1 variable(s) but strconv.Atoi("3") has more values; name each, as in "lo, hi := g.Bounds()"`,
@@ -329,6 +337,7 @@ func TestInterpreterFormErrors(t *testing.T) {
 // A variable defined from a value whose type the interpreter can't
 // work out beforehand is defined all the same, once, with that type.
 func TestDefinitionsOfProgramTypes(t *testing.T) {
+	t.Parallel()
 	host := newHost()
 	got := console(t, host,
 		`a := doc.Groups()[0]`,

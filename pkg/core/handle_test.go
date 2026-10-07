@@ -3,6 +3,7 @@ package core
 import "testing"
 
 func TestHGroupDerivedHandles(t *testing.T) {
+	t.Parallel()
 	group := HGroup{V: 0x1234}
 
 	entity := group.Entity(5)
@@ -34,6 +35,7 @@ func TestHGroupDerivedHandles(t *testing.T) {
 }
 
 func TestHRequestDerivedHandles(t *testing.T) {
+	t.Parallel()
 	req := HRequest{V: 0x55}
 
 	entity := req.Entity(3)
@@ -66,6 +68,7 @@ func TestHRequestDerivedHandles(t *testing.T) {
 }
 
 func TestHConstraintHandles(t *testing.T) {
+	t.Parallel()
 	constraint := HConstraint{V: 0x2345}
 
 	param := constraint.Param(4)
@@ -88,6 +91,7 @@ func TestHConstraintHandles(t *testing.T) {
 }
 
 func TestHParamRequest(t *testing.T) {
+	t.Parallel()
 	h := HParam{V: 0xABCD1234}
 	if got := h.Request(); got.V != (h.V >> 16) {
 		t.Fatalf("Request handle: got %#x want %#x", got.V, h.V>>16)
@@ -96,6 +100,7 @@ func TestHParamRequest(t *testing.T) {
 
 // TestHandleEquality verifies Handle equality.
 func TestHandleEquality(t *testing.T) {
+	t.Parallel()
 	h1 := HEntity{V: 0x12345678}
 	h2 := HEntity{V: 0x12345678}
 	h3 := HEntity{V: 0x87654321}
@@ -109,6 +114,7 @@ func TestHandleEquality(t *testing.T) {
 
 // TestHandleZeroIsZeroValue verifies the zero Handle.
 func TestHandleZeroIsZeroValue(t *testing.T) {
+	t.Parallel()
 	var h HEntity
 	if h.V != 0 {
 		t.Errorf("zero HEntity should have V=0, got %d", h.V)
@@ -117,6 +123,7 @@ func TestHandleZeroIsZeroValue(t *testing.T) {
 
 // TestHandleGroupEquality verifies HGroup equality.
 func TestHandleGroupEquality(t *testing.T) {
+	t.Parallel()
 	g1 := HGroup{V: 42}
 	g2 := HGroup{V: 42}
 	g3 := HGroup{V: 43}
@@ -130,6 +137,7 @@ func TestHandleGroupEquality(t *testing.T) {
 
 // TestHandleConstraintEquality verifies HConstraint equality.
 func TestHandleConstraintEquality(t *testing.T) {
+	t.Parallel()
 	c1 := HConstraint{V: 0x80000001}
 	c2 := HConstraint{V: 0x80000001}
 	c3 := HConstraint{V: 0x80000002}

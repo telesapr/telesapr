@@ -19,6 +19,7 @@ func rankOf(a [][]float64, m, n int) int {
 // fix one unknown, equalities between two, and rows that repeat a
 // combination of others.
 func TestRrefFixedColumnsVsRank(t *testing.T) {
+	t.Parallel()
 	rng := rand.New(rand.NewSource(1))
 	for trial := range 20000 {
 		n := 1 + rng.Intn(12)

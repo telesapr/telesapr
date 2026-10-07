@@ -89,6 +89,7 @@ func call(t *testing.T, cs *mcp.ClientSession, tool string, args map[string]any)
 // A client is told what the server is for, and offered the four
 // tools, each described within what clients keep.
 func TestToolsAndInstructions(t *testing.T) {
+	t.Parallel()
 	cs, _ := connect(t)
 	init := cs.InitializeResult()
 	if init.Instructions != agent.Instructions || init.ServerInfo.Name != "telesapr" || init.ServerInfo.Version != "1.2" {
@@ -128,6 +129,7 @@ func TestToolsAndInstructions(t *testing.T) {
 }
 
 func TestRunScript(t *testing.T) {
+	t.Parallel()
 	cs, _ := connect(t)
 	res, text := call(t, cs, ToolRun, map[string]any{
 		"code": "c := doc.Circle(V(0, 0, 0), 5)\nfmt.Println(\"drawn\")\nc.Radius()",
@@ -161,6 +163,7 @@ func TestRunScript(t *testing.T) {
 }
 
 func TestDescribeHelpRender(t *testing.T) {
+	t.Parallel()
 	cs, backend := connect(t)
 	call(t, cs, ToolRun, map[string]any{"code": "doc.Circle(V(0, 0, 0), 5)\ndoc.Extrude(3, \"disc\")"})
 
@@ -209,6 +212,7 @@ func TestDescribeHelpRender(t *testing.T) {
 }
 
 func TestRunText(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		res  agent.Result
 		want string
@@ -226,6 +230,7 @@ func TestRunText(t *testing.T) {
 // A sketch that crosses itself makes no solid, and the status and the
 // drawing say why and where (roadmap 23.1).
 func TestSketchProblemShown(t *testing.T) {
+	t.Parallel()
 	cs, _ := connect(t)
 	res, text := call(t, cs, ToolRun, map[string]any{
 		"code": "doc.Polyline(true, V(0, 0, 0), V(10, 10, 0), V(10, 0, 0), V(0, 10, 0))\ndoc.Extrude(5, \"bow\")",

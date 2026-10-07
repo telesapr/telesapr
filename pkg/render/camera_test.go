@@ -16,6 +16,7 @@ import (
 // with the golden, bit for bit (testdata/render/camera.golden, first
 // recorded from C++ render.cpp).
 func TestCamera(t *testing.T) {
+	t.Parallel()
 	var cams [3]Camera
 	cams[0].LoadIdentity()
 	cams[0].Width, cams[0].Height, cams[0].PixelRatio, cams[0].Scale = 600, 600, 1, 5
@@ -88,6 +89,7 @@ func TestCamera(t *testing.T) {
 // its diffuse term, and a highlight along the half way to the viewer,
 // white for plastic, the colour's for metal, none for matte.
 func TestShade(t *testing.T) {
+	t.Parallel()
 	up := geom.Vector{Y: 1}
 	base := [3]float64{0.5, 0.25, 0}
 	if c := Shade(up, base, 1, nil, nil, geom.Vector{Z: 1}, up, Materials["matte"]); c[0] != 0.5 || c[1] != 0.25 {

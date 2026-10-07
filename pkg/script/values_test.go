@@ -5,6 +5,7 @@ import "testing"
 // A call of two results beside other arguments is said in the
 // script's words, not the interpreter's; alone it prints both.
 func TestSeveralValuesBesideArguments(t *testing.T) {
+	t.Parallel()
 	got := console(t, newHost(),
 		`fmt.Println(doc.Active().Bounds())`,
 		`fmt.Println("box", doc.Active().Bounds())`,

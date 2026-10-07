@@ -12,6 +12,7 @@ import (
 // line of length 2. ModifyToSatisfy must recover each value from the
 // equation, and the equation must then hold.
 func TestArcLengthConstraints(t *testing.T) {
+	t.Parallel()
 	sk := newTestSketch()
 	var next uint32 = 0x100
 	point := func(x, y float64) HEntity {

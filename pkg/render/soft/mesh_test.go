@@ -58,6 +58,7 @@ func drawMeshScene(r *Renderer, m *srf.SMesh, ol *srf.SOutlineList) {
 }
 
 func TestSoftMesh(t *testing.T) {
+	t.Parallel()
 	m, ol := fixtureDisplay(t, "group/boolean_tangent_fillet/normal.slvs")
 	r := New()
 	cam := fitCamera(isoCamera(300, 240), m)

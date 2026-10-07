@@ -3,6 +3,7 @@ package core
 import "testing"
 
 func TestConstraintTypeString(t *testing.T) {
+	t.Parallel()
 	tests := map[ConstraintType]string{
 		ConstraintPointsCoincident: "PointsCoincident",
 		ConstraintPtPtDistance:     "PtPtDistance",
@@ -19,6 +20,7 @@ func TestConstraintTypeString(t *testing.T) {
 }
 
 func TestConstraintBaseEquals(t *testing.T) {
+	t.Parallel()
 	a := &ConstraintBase{
 		Type:      ConstraintAngle,
 		Group:     HGroup{V: 1},
@@ -50,6 +52,7 @@ func TestConstraintBaseEquals(t *testing.T) {
 
 // TestConstraintZeroValue verifies the zero-value Constraint.
 func TestConstraintZeroValue(t *testing.T) {
+	t.Parallel()
 	var c Constraint
 	if c.Type != 0 {
 		t.Errorf("zero Constraint should have Type=0")
@@ -61,6 +64,7 @@ func TestConstraintZeroValue(t *testing.T) {
 
 // TestConstraintTypeStringRoundtrip verifies the Type.String method.
 func TestConstraintTypeStringRoundtrip(t *testing.T) {
+	t.Parallel()
 	// Spot-check a few types
 	cases := []ConstraintType{
 		ConstraintPointsCoincident,
@@ -79,6 +83,7 @@ func TestConstraintTypeStringRoundtrip(t *testing.T) {
 
 // TestConstraintBaseClear verifies Clear resets all fields.
 func TestConstraintBaseClear(t *testing.T) {
+	t.Parallel()
 	c := &Constraint{
 		H:     HConstraint{V: 5},
 		Type:  ConstraintPtPtDistance,
@@ -96,6 +101,7 @@ func TestConstraintBaseClear(t *testing.T) {
 
 // TestConstraintBaseEquality checks ConstraintBase.Equals.
 func TestConstraintBaseEquality(t *testing.T) {
+	t.Parallel()
 	c1 := ConstraintBase{Type: ConstraintPointsCoincident, ValA: 1.0}
 	c2 := ConstraintBase{Type: ConstraintPointsCoincident, ValA: 1.0}
 	c3 := ConstraintBase{Type: ConstraintPointsCoincident, ValA: 2.0}

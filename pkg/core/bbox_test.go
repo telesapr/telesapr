@@ -7,6 +7,7 @@ import (
 )
 
 func TestBBoxConstructionAndInclude(t *testing.T) {
+	t.Parallel()
 	p0 := geom.Vector{X: 5, Y: -1, Z: 3}
 	p1 := geom.Vector{X: -2, Y: 4, Z: 1}
 
@@ -45,6 +46,7 @@ func TestBBoxConstructionAndInclude(t *testing.T) {
 }
 
 func TestBBoxOverlaps(t *testing.T) {
+	t.Parallel()
 	a := NewBBox(geom.Vector{X: 0, Y: 0, Z: 0}, geom.Vector{X: 1, Y: 1, Z: 1})
 	b := NewBBox(geom.Vector{X: 0.5, Y: 0.5, Z: 0.5}, geom.Vector{X: 2, Y: 2, Z: 2})
 	c := NewBBox(geom.Vector{X: 2, Y: 2, Z: 2}, geom.Vector{X: 3, Y: 3, Z: 3})

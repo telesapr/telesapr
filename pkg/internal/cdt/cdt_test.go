@@ -47,6 +47,7 @@ func circle(cx, cy, r float64, n int, cw bool) []Point {
 }
 
 func TestSquareWithHole(t *testing.T) {
+	t.Parallel()
 	var pts []Point
 	var segs [][2]int
 	loop(&pts, &segs, []Point{{0, 0}, {10, 0}, {10, 10}, {0, 10}})
@@ -68,6 +69,7 @@ func TestSquareWithHole(t *testing.T) {
 }
 
 func TestOrientationDoesNotMatter(t *testing.T) {
+	t.Parallel()
 	// Even-odd: a clockwise outer loop and a hole either way round.
 	for _, cw := range []bool{false, true} {
 		var pts []Point
@@ -88,6 +90,7 @@ func TestOrientationDoesNotMatter(t *testing.T) {
 }
 
 func TestSteinerPointsAndCollinear(t *testing.T) {
+	t.Parallel()
 	var pts []Point
 	var segs [][2]int
 	// A square whose sides carry collinear points, filled with a grid.
@@ -134,6 +137,7 @@ func TestSteinerPointsAndCollinear(t *testing.T) {
 }
 
 func TestDoubledSegmentsCancel(t *testing.T) {
+	t.Parallel()
 	// A square with a slit into it along a doubled segment: the slit
 	// leaves the area whole.
 	pts := []Point{{0, 0}, {4, 0}, {4, 4}, {0, 4}, {2, 2}}
@@ -148,6 +152,7 @@ func TestDoubledSegmentsCancel(t *testing.T) {
 }
 
 func TestDuplicatePointsMerge(t *testing.T) {
+	t.Parallel()
 	pts := []Point{{0, 0}, {1, 0}, {1, 1}, {0, 1}, {1, 1}}
 	segs := [][2]int{{0, 1}, {1, 4}, {2, 3}, {3, 0}}
 	tris, err := Triangulate(pts, segs)
@@ -160,6 +165,7 @@ func TestDuplicatePointsMerge(t *testing.T) {
 }
 
 func TestDelaunayWithoutSegments(t *testing.T) {
+	t.Parallel()
 	// Random points inside a triangle that is the only boundary: every
 	// triangle's circumcircle is empty, as no inner segment constrains
 	// it.
@@ -192,6 +198,7 @@ func TestDelaunayWithoutSegments(t *testing.T) {
 }
 
 func TestRandomPolygons(t *testing.T) {
+	t.Parallel()
 	// Star-shaped polygons with many vertices and a grid inside: the
 	// area must be the polygon's.
 	r := rand.New(rand.NewSource(7))
@@ -228,6 +235,7 @@ func TestRandomPolygons(t *testing.T) {
 }
 
 func TestCrossingSegments(t *testing.T) {
+	t.Parallel()
 	// A bow tie: its segments cross, which is reported.
 	pts := []Point{{0, 0}, {2, 2}, {2, 0}, {0, 2}}
 	segs := [][2]int{{0, 1}, {1, 2}, {2, 3}, {3, 0}}
@@ -237,6 +245,7 @@ func TestCrossingSegments(t *testing.T) {
 }
 
 func TestDegenerateInput(t *testing.T) {
+	t.Parallel()
 	if tris, err := Triangulate(nil, nil); tris != nil || err != nil {
 		t.Error("empty input")
 	}
@@ -255,6 +264,7 @@ func TestDegenerateInput(t *testing.T) {
 }
 
 func TestExactPredicates(t *testing.T) {
+	t.Parallel()
 	// Points on a line, off by less than rounding.
 	a, b := Point{0.1, 0.1}, Point{0.3, 0.3}
 	c := Point{0.2, 0.2}
@@ -288,6 +298,7 @@ func BenchmarkGrid(b *testing.B) {
 }
 
 func TestSegmentThroughVertex(t *testing.T) {
+	t.Parallel()
 	// A diagonal segment, twice so it cancels, runs through an inner
 	// point: it is split there and the area stays whole.
 	pts := []Point{{0, 0}, {4, 0}, {4, 4}, {0, 4}, {2, 2}, {1, 3}, {3, 1}}

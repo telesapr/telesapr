@@ -57,6 +57,9 @@ conventions, for people and for coding agents alike (`AGENTS.md` is the same fil
 A feature is done when it is tested, has a user interface and has scripting support, and all
 three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the table.
 
+- Tests of a package whose tests touch no process-wide state call `t.Parallel()`; a test that
+  sets `srf.DefaultTolerance`, `ttf.DefaultFonts`, an environment variable or the working
+  directory cannot, and says why in a comment where it is not obvious.
 - Tests sit beside the code. A new package holds at least 85% statement coverage and no exported
   function at 0% (`scripts/coverage-packages.txt`, `make coverage`). Solids are checked with the
   oracle `pkg/check` (watertight, no naked edges, volume where closed-form).

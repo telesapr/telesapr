@@ -108,6 +108,7 @@ func frame(r *Renderer, cam render.Camera, draw func()) *image.RGBA {
 func v(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 
 func TestSoftLayers(t *testing.T) {
+	t.Parallel()
 	r := New()
 	img := frame(r, testCamera(200, 160), func() {
 		near := r.InternFill(render.Fill{Layer: render.LayerNormal, Color: red})
@@ -138,6 +139,7 @@ func TestSoftLayers(t *testing.T) {
 }
 
 func TestSoftLines(t *testing.T) {
+	t.Parallel()
 	r := New()
 	img := frame(r, testCamera(240, 200), func() {
 		y := 18.0
@@ -164,6 +166,7 @@ func TestSoftLines(t *testing.T) {
 }
 
 func TestSoftText(t *testing.T) {
+	t.Parallel()
 	r := New()
 	r.SetBitmapFont(sharedBitmapFont())
 	cam := testCamera(260, 90)
@@ -183,6 +186,7 @@ func TestSoftText(t *testing.T) {
 }
 
 func TestSoftPolygon(t *testing.T) {
+	t.Parallel()
 	r := New()
 	img := frame(r, isoCamera(200, 160), func() {
 		var p srf.SPolygon
@@ -270,6 +274,7 @@ func BenchmarkSoftEdges1080p(b *testing.B) {
 // planar polygons, in parallel and in perspective, and follows the
 // camera it is drawn with.
 func TestSoftClipPlane(t *testing.T) {
+	t.Parallel()
 	for _, tangent := range []float64{0, 0.003} {
 		cam := testCamera(200, 160)
 		cam.Tangent = tangent

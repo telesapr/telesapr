@@ -9,6 +9,7 @@ import (
 )
 
 func TestQRRankAndDeadColumns(t *testing.T) {
+	t.Parallel()
 	// Column 2 is column 0 plus column 1, so it's dead.
 	a := [][]float64{
 		{1, 0, 1},
@@ -74,6 +75,7 @@ func p(h core.HParam) *core.Expr { return core.NewParam(h) }
 func c(v float64) *core.Expr     { return core.NewConstant(v) }
 
 func TestSolveSubstitutionAndAlone(t *testing.T) {
+	t.Parallel()
 	sk := testSketch{}
 	a, b := sk.param(1, 0), sk.param(2, 0)
 	// a = b, and b^2 = 25 (solved alone, from b = 1 it goes to 5).
@@ -101,6 +103,7 @@ func TestSolveSubstitutionAndAlone(t *testing.T) {
 }
 
 func TestSolveUnderdeterminedMinimumNorm(t *testing.T) {
+	t.Parallel()
 	sk := testSketch{}
 	x, y := sk.param(1, 0), sk.param(2, 0)
 	g := testGroup([][]*core.Expr{{p(x).Plus(p(y)).Minus(c(2))}})
@@ -120,6 +123,7 @@ func TestSolveUnderdeterminedMinimumNorm(t *testing.T) {
 }
 
 func TestSolveKnownParamIsConstant(t *testing.T) {
+	t.Parallel()
 	sk := testSketch{}
 	x := sk.param(1, 0)
 	k := sk.param(2, 7)
@@ -138,6 +142,7 @@ func TestSolveKnownParamIsConstant(t *testing.T) {
 }
 
 func TestSolveRedundantFindsConstraints(t *testing.T) {
+	t.Parallel()
 	sk := testSketch{}
 	x, y := sk.param(1, 0), sk.param(2, 0)
 	// Constraints 1 and 2 say the same thing; constraint 3 fixes y.
@@ -164,6 +169,7 @@ func TestSolveRedundantFindsConstraints(t *testing.T) {
 }
 
 func TestSolveInconsistentDoesNotConverge(t *testing.T) {
+	t.Parallel()
 	sk := testSketch{}
 	x, y := sk.param(1, 0), sk.param(2, 0)
 	g := testGroup([][]*core.Expr{

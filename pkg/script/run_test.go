@@ -11,6 +11,7 @@ import (
 // Run takes several statements at once, keeps what they define for
 // the next run, shows the last expression, and is one step of undo.
 func TestEngineRun(t *testing.T) {
+	t.Parallel()
 	host := newHost()
 	var out bytes.Buffer
 	e, err := New(Options{Host: host, Stdout: &out, Stderr: &out})
@@ -79,6 +80,7 @@ plate.Kind()
 // A whole program given to Run runs as a file does: on the sketch,
 // without what the engine defined.
 func TestEngineRunProgram(t *testing.T) {
+	t.Parallel()
 	host := newHost()
 	var out bytes.Buffer
 	e, err := New(Options{Host: host, Stdout: &out, Stderr: &out})
@@ -121,6 +123,7 @@ func main() {
 }
 
 func TestHelpByName(t *testing.T) {
+	t.Parallel()
 	var out bytes.Buffer
 	if !Help(&out, "") || out.String() != helpText {
 		t.Errorf("Help of no name wrote %q, want the summary", out.String())

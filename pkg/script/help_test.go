@@ -23,6 +23,7 @@ func mustContain(t *testing.T, got string, wants ...string) {
 // help of a value says what it is and what it can do, with the
 // parameters' names and the comments of the source.
 func TestHelpOfValues(t *testing.T) {
+	t.Parallel()
 	got := helped(t, `help(doc.Active())`)
 	mustContain(t, got,
 		"g002-sketch-in-plane\n\ntype api.Group struct\n    Group is a group of the sketch",
@@ -58,6 +59,7 @@ func TestHelpOfValues(t *testing.T) {
 // A function of a package is told from its value; a method isn't,
 // and is named instead. A type a script made shows its fields.
 func TestHelpOfFunctionsAndScriptTypes(t *testing.T) {
+	t.Parallel()
 	got := helped(t, `help(V)`, `help(strings.ToUpper)`, `help(doc.Line)`)
 	mustContain(t, got, "func V(x, y, z float64) Vec\n    V is the vector (x, y, z).",
 		"func ToUpper(s string) string\n    ToUpper returns s with all Unicode letters",
@@ -71,6 +73,7 @@ func TestHelpOfFunctionsAndScriptTypes(t *testing.T) {
 // help of a name looks it up: a package, a type, a function, a
 // method, a constant, with or without its package.
 func TestHelpOfNames(t *testing.T) {
+	t.Parallel()
 	got := helped(t, `help("Group.Bounds")`, `help("api.Doc.Line")`, `help("geom.Vector.Plus")`,
 		`help("strings.ToUpper")`, `help("Union")`, `help("Inch")`)
 	want := `func (g Group) Bounds() (lo, hi Vec)
@@ -108,6 +111,7 @@ func Inch(v float64) float64
 // Every package a script can import has its declarations in the
 // table, which is generated: this fails when "make generate" is due.
 func TestHelpCoversThePackages(t *testing.T) {
+	t.Parallel()
 	got := helped(t, `help("api")`)
 	for _, name := range []string{"Current", "New", "Open", "V", "Inch"} {
 		if !strings.Contains(got, "    "+name+"(") {

@@ -153,6 +153,7 @@ func readLeastSquaresCases(t *testing.T, path string) []lsCase {
 // C++ gets from Eigen, bit for bit. Set SPARSEQR_GEN=1 to rewrite
 // cases.txt; eigen.txt then has to be regenerated with the harness.
 func TestSparseQRVsEigen(t *testing.T) {
+	t.Parallel()
 	casesPath := filepath.Join(sparseQRDir, "cases.txt")
 	if os.Getenv("SPARSEQR_GEN") != "" {
 		if err := os.MkdirAll(sparseQRDir, 0o755); err != nil {

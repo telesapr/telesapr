@@ -47,6 +47,7 @@ func evalVector(t *testing.T, sk *testSketch, v ExprVector) geom.Vector {
 // type's numeric accessor matches its symbolic one evaluated at the
 // same parameters, and spot-checks the numeric values.
 func TestEntityNumAndExprsAgree(t *testing.T) {
+	t.Parallel()
 	sk := newTestSketch()
 
 	// A workplane whose normal is rotated about z by 90 degrees, with
@@ -152,6 +153,7 @@ func TestEntityNumAndExprsAgree(t *testing.T) {
 }
 
 func TestEntityPointForceToRoundTrips(t *testing.T) {
+	t.Parallel()
 	sk := newTestSketch()
 	sk.add(Entity{H: HEntity{V: 0x10}, Type: EntityPointIn3D,
 		Param: [8]HParam{sk.param(1, 1), sk.param(2, 2), sk.param(3, 3)}})
@@ -176,6 +178,7 @@ func TestEntityPointForceToRoundTrips(t *testing.T) {
 }
 
 func TestEntityArcGetAngles(t *testing.T) {
+	t.Parallel()
 	sk := newTestSketch()
 	pt := func(v uint32, x, y float64) HEntity {
 		h := HEntity{V: v}

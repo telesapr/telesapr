@@ -56,6 +56,7 @@ func (r *Renderer) rasterLineFullScan(a, b *rvert, width float64) {
 // TestRasterLineSameAsFullScan draws lines of every slope, length and
 // sub-pixel position, some reaching off the frame, both ways.
 func TestRasterLineSameAsFullScan(t *testing.T) {
+	t.Parallel()
 	r := New()
 	cam := testCamera(160, 120)
 	rng := rand.New(rand.NewPCG(1, 2))
@@ -108,6 +109,7 @@ func TestRasterLineSameAsFullScan(t *testing.T) {
 // drawn in bands at once, gives the frame one thread gives, with
 // overlapping, blended and stippled lines.
 func TestDrawEdgesParallelSameAsSerial(t *testing.T) {
+	t.Parallel()
 	if runtime.GOMAXPROCS(0) < 2 {
 		t.Skip("needs two threads")
 	}

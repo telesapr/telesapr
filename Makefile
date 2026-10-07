@@ -55,7 +55,8 @@ test-gui:
 # minutes each under the detector and wait for WP2 of the review plan
 # (docs/adr, 2026-10-07), which lets their tests run in parallel.
 RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
-	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render/soft ./cmd/...
+	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render ./pkg/render/soft ./cmd/... \
+	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo
 
 # The slow packages' tests run as several processes side by side
 # (scripts/go-test.sh), and the fixture loops take a sample under the

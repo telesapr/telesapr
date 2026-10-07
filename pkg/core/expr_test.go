@@ -15,6 +15,7 @@ func (s stubParamProvider) ParamValue(h HParam) (float64, bool) {
 }
 
 func TestExprEvalAndDerivative(t *testing.T) {
+	t.Parallel()
 	p1 := HParam{V: 0x00010001}
 	p2 := HParam{V: 0x00010002}
 
@@ -40,6 +41,7 @@ func TestExprEvalAndDerivative(t *testing.T) {
 }
 
 func TestExprQuaternionRotate(t *testing.T) {
+	t.Parallel()
 	angle := math.Pi / 2
 	q := ExprQuaternion{
 		W: NewConstant(math.Cos(angle / 2)),
@@ -65,6 +67,7 @@ func TestExprQuaternionRotate(t *testing.T) {
 
 // TestExprConstantArithmetic verifies basic constant arithmetic.
 func TestExprConstantArithmetic(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	// (2 + 3) * 4 = 20
 	e := NewConstant(2).Plus(NewConstant(3)).Times(NewConstant(4))
@@ -85,6 +88,7 @@ func TestExprConstantArithmetic(t *testing.T) {
 
 // TestExprNegate verifies negation.
 func TestExprNegate(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	if v := NewConstant(5).Negate().Eval(ctx, nil); v != -5 {
 		t.Errorf("-(5) = %v, want -5", v)
@@ -96,6 +100,7 @@ func TestExprNegate(t *testing.T) {
 
 // TestExprSqrtAndSquare verifies sqrt and square.
 func TestExprSqrtAndSquare(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	if v := NewConstant(16).Sqrt().Eval(ctx, nil); v != 4 {
 		t.Errorf("sqrt(16) = %v, want 4", v)
@@ -107,6 +112,7 @@ func TestExprSqrtAndSquare(t *testing.T) {
 
 // TestExprAbsFloorCeilRound verifies abs, floor, ceil, round.
 func TestExprAbsFloorCeilRound(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	if v := NewConstant(-5).Abs().Eval(ctx, nil); v != 5 {
 		t.Errorf("abs(-5) = %v, want 5", v)
@@ -124,6 +130,7 @@ func TestExprAbsFloorCeilRound(t *testing.T) {
 
 // TestExprLnExp verifies natural log and exponential.
 func TestExprLnExp(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	if v := NewConstant(1).Ln().Eval(ctx, nil); v != 0 {
 		t.Errorf("ln(1) = %v, want 0", v)
@@ -135,6 +142,7 @@ func TestExprLnExp(t *testing.T) {
 
 // TestExprPower verifies power function.
 func TestExprPower(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	if v := NewConstant(2).Pow(NewConstant(10)).Eval(ctx, nil); v != 1024 {
 		t.Errorf("2^10 = %v, want 1024", v)
@@ -143,6 +151,7 @@ func TestExprPower(t *testing.T) {
 
 // TestExprHypot verifies hypot function.
 func TestExprHypot(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	if v := NewConstant(3).Hypot(NewConstant(4)).Eval(ctx, nil); v != 5 {
 		t.Errorf("hypot(3,4) = %v, want 5", v)
@@ -151,6 +160,7 @@ func TestExprHypot(t *testing.T) {
 
 // TestExprArctrig verifies inverse trig functions.
 func TestExprArctrig(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	if v := NewConstant(1).ASin().Eval(ctx, nil); math.Abs(v-math.Pi/2) > 1e-9 {
 		t.Errorf("asin(1) = %v, want pi/2", v)
@@ -162,6 +172,7 @@ func TestExprArctrig(t *testing.T) {
 
 // TestExprVectorMagnitude verifies vector magnitude.
 func TestExprVectorMagnitude(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	tests := []struct{ x, y, z, want float64 }{
 		{3, 0, 0, 3},
@@ -182,6 +193,7 @@ func TestExprVectorMagnitude(t *testing.T) {
 
 // TestExprVectorDotAndCross verifies dot and cross products.
 func TestExprVectorDotAndCross(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	a := ExprVector{X: NewConstant(1), Y: NewConstant(2), Z: NewConstant(3)}
 	b := ExprVector{X: NewConstant(4), Y: NewConstant(5), Z: NewConstant(6)}
@@ -196,6 +208,7 @@ func TestExprVectorDotAndCross(t *testing.T) {
 
 // TestExprVectorPlusMinus verifies vector arithmetic.
 func TestExprVectorPlusMinus(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	a := ExprVector{X: NewConstant(5), Y: NewConstant(3), Z: NewConstant(0)}
 	b := ExprVector{X: NewConstant(2), Y: NewConstant(1), Z: NewConstant(0)}
@@ -214,6 +227,7 @@ func TestExprVectorPlusMinus(t *testing.T) {
 
 // TestExprQuaternionRotateIdentity checks identity rotation.
 func TestExprQuaternionRotateIdentity(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	q := ExprQuaternion{W: NewConstant(1), X: NewConstant(0), Y: NewConstant(0), Z: NewConstant(0)}
 	v := q.Rotate(ExprVector{X: NewConstant(1), Y: NewConstant(2), Z: NewConstant(3)})
@@ -224,6 +238,7 @@ func TestExprQuaternionRotateIdentity(t *testing.T) {
 
 // TestExprQuaternionRotate180AroundZ checks 180-degree rotation around Z.
 func TestExprQuaternionRotate180AroundZ(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	q := ExprQuaternion{W: NewConstant(0), X: NewConstant(0), Y: NewConstant(0), Z: NewConstant(1)}
 	v := q.Rotate(ExprVector{X: NewConstant(1), Y: NewConstant(0), Z: NewConstant(0)})
@@ -234,6 +249,7 @@ func TestExprQuaternionRotate180AroundZ(t *testing.T) {
 
 // TestExprQuaternionRotate90AroundZ checks 90-degree rotation around Z.
 func TestExprQuaternionRotate90AroundZ(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	// Quaternion for 90-degree rotation around Z axis: (cos45, 0, 0, sin45).
 	q := ExprQuaternion{
@@ -253,6 +269,7 @@ func TestExprQuaternionRotate90AroundZ(t *testing.T) {
 
 // TestExprSinCosSumToOne checks sin^2 + cos^2 = 1.
 func TestExprSinCosSumToOne(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	s := NewConstant(0.7).Sin().Square()
 	c := NewConstant(0.7).Cos().Square()
@@ -264,6 +281,7 @@ func TestExprSinCosSumToOne(t *testing.T) {
 // TestExprDivByZero verifies that division by zero produces
 // infinity (not panic). The behavior depends on Go's float semantics.
 func TestExprDivByZero(t *testing.T) {
+	t.Parallel()
 	ctx := stubParamProvider{values: map[HParam]float64{}}
 	v := NewConstant(1).Div(NewConstant(0)).Eval(ctx, nil)
 	if !isInf(v) {
@@ -277,6 +295,7 @@ func isInf(f float64) bool {
 
 // TestExprConstantAddConstant verifies Constant + Constant.
 func TestExprConstantAddConstant(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(3)
 	b := NewConstant(4)
 	sum := a.Plus(b)
@@ -287,6 +306,7 @@ func TestExprConstantAddConstant(t *testing.T) {
 
 // TestExprConstantMinusConstant verifies subtraction.
 func TestExprConstantMinusConstant(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(10)
 	b := NewConstant(3)
 	diff := a.Minus(b)
@@ -297,6 +317,7 @@ func TestExprConstantMinusConstant(t *testing.T) {
 
 // TestExprConstantTimesConstant verifies multiplication.
 func TestExprConstantTimesConstant(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(6)
 	b := NewConstant(7)
 	prod := a.Times(b)
@@ -307,6 +328,7 @@ func TestExprConstantTimesConstant(t *testing.T) {
 
 // TestExprConstantDivConstant verifies division.
 func TestExprConstantDivConstant(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(20)
 	b := NewConstant(4)
 	q := a.Div(b)
@@ -317,6 +339,7 @@ func TestExprConstantDivConstant(t *testing.T) {
 
 // TestExprConstantNegate verifies negation.
 func TestExprConstantNegate(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(5)
 	neg := a.Negate()
 	if neg.Eval(nil, nil) != -5 {
@@ -326,6 +349,7 @@ func TestExprConstantNegate(t *testing.T) {
 
 // TestExprConstantAbs verifies absolute value.
 func TestExprConstantAbs(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(-7)
 	abs := a.Abs()
 	if abs.Eval(nil, nil) != 7 {
@@ -335,6 +359,7 @@ func TestExprConstantAbs(t *testing.T) {
 
 // TestExprConstantSqrt verifies square root.
 func TestExprConstantSqrt(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(16)
 	sqrt := a.Sqrt()
 	if sqrt.Eval(nil, nil) != 4 {
@@ -344,6 +369,7 @@ func TestExprConstantSqrt(t *testing.T) {
 
 // TestExprConstantSquare verifies square.
 func TestExprConstantSquare(t *testing.T) {
+	t.Parallel()
 	a := NewConstant(5)
 	sq := a.Square()
 	if sq.Eval(nil, nil) != 25 {

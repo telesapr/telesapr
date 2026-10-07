@@ -27,6 +27,7 @@ var fontTestCodepoints = []rune{'A', ' ', 'g', 0xE000, 0xE003, 0xE007, 0x00B0, 0
 // metrics, widths and traced strokes bit for bit, and each bitmap
 // glyph's texture slot and pixels.
 func TestFonts(t *testing.T) {
+	t.Parallel()
 	var b strings.Builder
 	vf := BuiltinVectorFont()
 	fmt.Fprintf(&b, "vector cap %x asc %x desc %x rsb %x\n", vf.CapHeight, vf.Ascender, vf.Descender, vf.RightSideBearing)

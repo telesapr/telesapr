@@ -44,6 +44,7 @@ func box(lo, hi geom.Vector) *srf.SMesh {
 func near(a, b float64) bool { return math.Abs(a-b) <= 1e-12*math.Max(1, math.Abs(b)) }
 
 func TestSolidBox(t *testing.T) {
+	t.Parallel()
 	m := box(geom.Vector{X: 1, Y: 2, Z: 3}, geom.Vector{X: 3, Y: 5, Z: 7})
 	r := Solid(nil, m)
 	if !r.Sound() || r.Empty() {
@@ -68,6 +69,7 @@ func TestSolidBox(t *testing.T) {
 }
 
 func TestSolidOpen(t *testing.T) {
+	t.Parallel()
 	m := box(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
 	m.Triangles = m.Triangles[1:]
 	r := Solid(nil, m)
@@ -83,6 +85,7 @@ func TestSolidOpen(t *testing.T) {
 }
 
 func TestSolidSelfIntersecting(t *testing.T) {
+	t.Parallel()
 	// Two boxes that overlap, each closed: no naked edge, but edges of
 	// each pass through the other.
 	a := box(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2})
@@ -101,6 +104,7 @@ func TestSolidSelfIntersecting(t *testing.T) {
 }
 
 func TestSolidShell(t *testing.T) {
+	t.Parallel()
 	sh := &srf.SShell{Surface: make([]srf.SSurface, 6), BooleanFailed: true}
 	r := Solid(sh, box(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1}))
 	if r.Faces != 6 || !r.BooleanFailed || r.Sound() {
@@ -112,6 +116,7 @@ func TestSolidShell(t *testing.T) {
 }
 
 func TestSolidEmpty(t *testing.T) {
+	t.Parallel()
 	r := Solid(nil, &srf.SMesh{})
 	if !r.Empty() || !r.Sound() {
 		t.Errorf("empty: %s", r.String())
@@ -125,6 +130,7 @@ func TestSolidEmpty(t *testing.T) {
 }
 
 func TestStringReadsBack(t *testing.T) {
+	t.Parallel()
 	r := Solid(nil, box(geom.Vector{X: 0.1, Y: 0.2, Z: 0.3}, geom.Vector{X: 1, Y: 1, Z: 1}))
 	want := "tri=12 faces=0 naked=0 inter=0 failed=false vol=" + g17(r.Volume) +
 		" com=" + v17(r.CenterOfMass) + " min=0.10000000000000001,0.20000000000000001,0.29999999999999999 max=1,1,1"

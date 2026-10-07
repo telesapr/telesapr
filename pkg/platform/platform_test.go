@@ -6,6 +6,7 @@ import (
 )
 
 func TestAcceleratorDescription(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		ev   KeyboardEvent
 		want string
@@ -26,6 +27,7 @@ func TestAcceleratorDescription(t *testing.T) {
 }
 
 func TestJSONSettingsRoundTrip(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "sub", "settings.json")
 	s := OpenJSONSettings(path)
 	s.FreezeInt("Color", 0xff804020)

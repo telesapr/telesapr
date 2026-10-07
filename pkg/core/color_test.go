@@ -6,6 +6,7 @@ import (
 )
 
 func TestRgbaColorFromFloatAndAccessors(t *testing.T) {
+	t.Parallel()
 	c := RGBAFromFloat(0.5, 0.25, 1.0, 0.0)
 
 	if c.Red != 127 || c.Green != 63 || c.Blue != 255 || c.Alpha != 0 {
@@ -27,6 +28,7 @@ func TestRgbaColorFromFloatAndAccessors(t *testing.T) {
 }
 
 func TestRgbaColorPacking(t *testing.T) {
+	t.Parallel()
 	c := NewRGBA(10, 20, 30, 40)
 
 	if c.IsEmpty() {
@@ -55,6 +57,7 @@ func TestRgbaColorPacking(t *testing.T) {
 }
 
 func TestRgbaColorEqualsAndWithAlpha(t *testing.T) {
+	t.Parallel()
 	c := NewRGBA(5, 6, 7, 0)
 
 	if !c.IsEmpty() {
@@ -75,6 +78,7 @@ func TestRgbaColorEqualsAndWithAlpha(t *testing.T) {
 
 // TestRgbaColorFromFloat verifies float-to-byte conversion.
 func TestRgbaColorFromFloat(t *testing.T) {
+	t.Parallel()
 	c := RGBAFromFloat(0.5, 0.0, 1.0, 1.0)
 	if c.Red != 127 || c.Red > 128 {
 		// 255.1 * 0.5 = 127.55 → uint8 = 127
@@ -92,6 +96,7 @@ func TestRgbaColorFromFloat(t *testing.T) {
 
 // TestRgbaColorFloatAccessors verify float accessors.
 func TestRgbaColorFloatAccessors(t *testing.T) {
+	t.Parallel()
 	c := NewRGBA(255, 128, 0, 255)
 	if c.RedF() != 1.0 {
 		t.Errorf("RedF = %v, want 1.0", c.RedF())
@@ -109,6 +114,7 @@ func TestRgbaColorFloatAccessors(t *testing.T) {
 
 // TestRgbaColorIsEmpty verifies IsEmpty.
 func TestRgbaColorIsEmpty(t *testing.T) {
+	t.Parallel()
 	transparent := NewRGBA(0, 0, 0, 0)
 	if !transparent.IsEmpty() {
 		t.Errorf("transparent color should be IsEmpty")

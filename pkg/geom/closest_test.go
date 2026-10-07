@@ -6,6 +6,7 @@ import (
 )
 
 func TestClosestPointBetweenLinesParallel(t *testing.T) {
+	t.Parallel()
 	a0 := Vector{0, 0, 0}
 	da := Vector{1, 0, 0}
 	b0 := Vector{0, 0, 1}
@@ -18,6 +19,7 @@ func TestClosestPointBetweenLinesParallel(t *testing.T) {
 }
 
 func TestClosestPointBetweenLinesPerpendicular(t *testing.T) {
+	t.Parallel()
 	// Line A goes from (0,0,0) along +X; Line B goes from (5,5,0) along +Y.
 	// Closest points are (5,0,0) on A (ta=5) and (5,0,0) on B (tb=-5).
 	// Going backward on B by 5 from (5,5,0) along (0,1,0) reaches (5,0,0).
@@ -35,6 +37,7 @@ func TestClosestPointBetweenLinesPerpendicular(t *testing.T) {
 }
 
 func TestClosestPointBetweenLinesSkew(t *testing.T) {
+	t.Parallel()
 	// Line A from (0,0,0) along X; Line B from (3,0,3) along Y.
 	// Closest point on A is (3,0,0) at ta=3; on B is (3,0,3) at tb=0.
 	a0 := Vector{0, 0, 0}

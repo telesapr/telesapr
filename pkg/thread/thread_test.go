@@ -9,6 +9,7 @@ import (
 // tables of ISO 724 (metric), ASME B1.1 (unified) and ISO 2904
 // (trapezoidal).
 func TestBasicDimensions(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name                 string
 		pitch, minor, tol    float64
@@ -71,6 +72,7 @@ func TestBasicDimensions(t *testing.T) {
 // TestProfileClearance checks that the clearance moves the profile
 // away from the mating thread without changing its shape.
 func TestProfileClearance(t *testing.T) {
+	t.Parallel()
 	s := Spec{Diameter: 8, Pitch: 1.25}
 	for _, internal := range []bool{false, true} {
 		p, c := s.Profile(internal, 0), s.Profile(internal, 0.1)
@@ -91,6 +93,7 @@ func TestProfileClearance(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
+	t.Parallel()
 	const in = mmPerInch
 	for _, tc := range []struct {
 		text string
@@ -141,6 +144,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseErrors(t *testing.T) {
+	t.Parallel()
 	for _, text := range []string{
 		"", "M", "Mx1", "M9", "M8x", "M8x0", "M8x-1", "M8x20", "M0", "M-8", "M8xPh3", "M16xPh4P1.5",
 		"Tr9", "Tr20x", "Tr20x8(P3)", "bolt", "1/4", "1/0-20", "#3/4", "#99-20", "1/4-0", "1/4-x",
@@ -155,6 +159,7 @@ func TestParseErrors(t *testing.T) {
 // TestStringRoundTrip checks that a designation reads back as the
 // thread it was written for, and is written the way it is usually read.
 func TestStringRoundTrip(t *testing.T) {
+	t.Parallel()
 	for _, text := range []string{
 		"M8", "M8x1", "M8-LH", "M9x1.25", "M2.5", "M16xPh3P1.5", "M16xPh4.5P1.5-LH",
 		"Tr20x4", "Tr20x4-LH", "Tr40x14(P7)", "Tr9x2",
@@ -200,6 +205,7 @@ func TestStringRoundTrip(t *testing.T) {
 // TestTablesAreValid checks every standard size for a possible thread,
 // and the tables for their order.
 func TestTablesAreValid(t *testing.T) {
+	t.Parallel()
 	for i, m := range metricCoarse {
 		if err := (Spec{Diameter: m.d, Pitch: m.pitch}).Validate(); err != nil {
 			t.Errorf("M%g: %v", m.d, err)
@@ -225,6 +231,7 @@ func TestTablesAreValid(t *testing.T) {
 }
 
 func TestNearest(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		d    float64
 		want string

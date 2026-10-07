@@ -8,6 +8,7 @@ import (
 )
 
 func TestCompareBaseline(t *testing.T) {
+	t.Parallel()
 	base := "a.slvs g4 tri=12 faces=6 naked=0 inter=0 failed=false vol=24 com=1,2,3 min=0,0,0 max=2,3,4"
 	for _, c := range []struct {
 		got  string
@@ -34,6 +35,7 @@ func TestCompareBaseline(t *testing.T) {
 }
 
 func TestReadBaseline(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "b.txt")
 	if _, _, err := ReadBaseline(path); err == nil {
 		t.Error("read a missing file")

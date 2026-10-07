@@ -13,6 +13,7 @@ import (
 // over each function's branches, and for special values
 // (testdata/libm/glibc.txt, from scripts/regen-libm-golden.sh).
 func TestLibmVsGlibc(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "libm", "glibc.txt"))
 	if err != nil {
 		t.Fatal(err)
@@ -71,6 +72,7 @@ func mulAdd(x, y, z float64) float64 { return x*y + z }
 // does for GOAMD64=v3 and on arm64: the ports (and the whole engine)
 // round every product where C++ does, and use math.FMA where it fuses.
 func TestNoFusedMultiplyAdd(t *testing.T) {
+	t.Parallel()
 	if got := mulAdd(1+0x1p-30, 1-0x1p-30, -1); got != 0 {
 		t.Errorf("x*y + z = %g, want 0: this build fuses multiply-adds (build with GOAMD64=v1 or v2)", got)
 	}
