@@ -3,6 +3,7 @@ package ttf
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
 	"sort"
 
@@ -177,7 +178,7 @@ func woff2Decompress(dstSize uint64, src []byte) ([]byte, error) {
 			return nil, errInvalidTable
 		}
 		dst = append(dst, buf[:n]...)
-		if err == io.EOF || (err != nil && err.Error() == "brotli: excessive input") {
+		if errors.Is(err, io.EOF) || (err != nil && err.Error() == "brotli: excessive input") {
 			break
 		}
 		if err != nil {
@@ -289,7 +290,7 @@ func putShort(p []byte, v int32) { binary.BigEndian.PutUint16(p, uint16(v)) }
 func storePoints(points []woff2Point, nContours, instructionLen uint16, haveOverlap bool,
 	dst []byte) (uint64, error) {
 	dstSize := uint32(len(dst))
-	flagOffset := uint32(10 + 2*uint32(nContours) + 2 + uint32(instructionLen))
+	flagOffset := 10 + 2*uint32(nContours) + 2 + uint32(instructionLen)
 	lastFlag := byte(0xFF)
 	repeatCount := byte(0)
 	var lastX, lastY int32

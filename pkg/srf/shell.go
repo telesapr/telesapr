@@ -357,12 +357,11 @@ func isOnAxisLine(sb *SBezier, pt, axis geom.Vector) bool {
 		sb.Ctrl[1].DistanceToLine(pt, axis) < lengthEps
 }
 
-// transformedCopy returns sb transformed by (t, q, scale), leaving sb
-// alone. Mirrors the C++ `SBezier::TransformedBy`, which returns a
-// copy.
-func transformedCopy(sb *SBezier, t geom.Vector, q geom.Quaternion, scale float64) SBezier {
+// transformedCopy returns sb moved by t and turned by q, leaving sb
+// alone.
+func transformedCopy(sb *SBezier, t geom.Vector, q geom.Quaternion) SBezier {
 	ret := *sb
-	ret.TransformedBy(t, q, scale)
+	ret.TransformedBy(t, q, 1)
 	return ret
 }
 
@@ -492,7 +491,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 				// If this input curve generated a surface, then trim that
 				// surface with the rotated version of the input curve.
 				if revs[0].V != 0 { // not revs[j] because crash on j==sections
-					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs, 1.0)}
+					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs)}
 					// make the PWL for the curve based on t value list
 					for x, t := range tValues {
 						sc.Points = append(sc.Points, SCurvePt{
@@ -514,7 +513,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 					}
 					s.addCurveTrimming(sc, true)
 				} else if j == 0 { // curve was on the rotation axis and is shared by the end caps.
-					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs, 1.0)}
+					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs)}
 					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
 					sc.SurfA = hs1 // end cap
 					sc.SurfB = hs0 // staring cap
@@ -614,7 +613,7 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 				// If this input curve generate a surface, then trim that
 				// surface with the rotated version of the input curve.
 				if revs[j].V != 0 {
-					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs, 1.0)}
+					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs)}
 					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
 					sc.SurfA = revs[j]
 					sc.SurfB = revs[(j+3)%4]

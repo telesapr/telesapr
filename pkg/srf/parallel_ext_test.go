@@ -25,7 +25,7 @@ func TestFixturesReachCurveRedo(t *testing.T) {
 		srf.SetChordTolMm(0)
 		doc, err := slvs.LoadFile(path)
 		if err != nil {
-			return nil // not a valid file
+			return nil //nolint:nilerr // a file that isn't a model is skipped
 		}
 		n := srf.SinkRedone()
 		doc.Sketch.GenerateAll()

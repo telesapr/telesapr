@@ -781,7 +781,7 @@ func checkType1Format(data []byte, header string) error {
 func newT1Parser(data []byte) (*t1Parser, error) {
 	p := &t1Parser{data: data}
 	if err := checkType1Format(data, "%!PS-AdobeFont"); err != nil {
-		if err != errUnknownFormat {
+		if !errors.Is(err, errUnknownFormat) {
 			return nil, err
 		}
 		if err := checkType1Format(data, "%!FontType"); err != nil {

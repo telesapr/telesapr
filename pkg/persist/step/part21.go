@@ -15,6 +15,7 @@
 package step
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -680,7 +681,8 @@ done:
 	// are.
 	fl, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		if ne, ok := err.(*strconv.NumError); ok && ne.Err == strconv.ErrRange {
+		var ne *strconv.NumError
+		if errors.As(err, &ne) && errors.Is(ne.Err, strconv.ErrRange) {
 			return Value{Kind: KindReal, Num: fl}, nil
 		}
 		return Value{}, p.errorf("bad number %q", text)

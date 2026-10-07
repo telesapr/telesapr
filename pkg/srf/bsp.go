@@ -297,7 +297,7 @@ func (u *bspUtil) classifyConvexVertices(vertex []geom.Vector, insertEdges bool)
 		} else if inters == 0 && u.onc == 2 {
 			// We already handled this on-plane existing edge
 		} else {
-			return false //triangulate;
+			return false // triangulate;
 		}
 	}
 	if len(u.vneg) < 3 || len(u.vpos) < 3 {

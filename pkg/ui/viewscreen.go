@@ -124,7 +124,7 @@ func (tw *TextWindow) EditControlDoneForView(s string) bool {
 	view := &ss.GW.view
 	switch tw.edit.meaning {
 	case EditViewScale:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			v := ss.evalExpr(e) / ss.MmPerUnit()
 			if v > core.LengthEps {
 				view.Scale = v

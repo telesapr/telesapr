@@ -62,7 +62,7 @@ func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, nam
 	g.OpA = src.H
 	g.Edges = append([]core.HEntity(nil), path...)
 	g.SolidEdges = append([]topo.Name(nil), solidEdges...)
-	if _, _, err := g.sweepPath(sk); err != nil {
+	if _, err := g.sweepPath(sk); err != nil {
 		return g, err
 	}
 	return g, nil
@@ -135,15 +135,15 @@ func pathErr(at *geom.Vector, format string, args ...any) error {
 }
 
 // sweepPath orders the group's path into a chain starting nearest the
-// profile, and returns its steps and the profile's loops.
-func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
+// profile, and returns its steps.
+func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 	src := sk.GetGroup(g.OpA)
 	if src == nil {
-		return nil, nil, errors.New("the profile group is gone")
+		return nil, errors.New("the profile group is gone")
 	}
 	sbls := &src.BezierLoops
 	if len(sbls.Sets) == 0 {
-		return nil, src, errors.New("the profile has no closed loops")
+		return nil, errors.New("the profile has no closed loops")
 	}
 	normal, onPlane := sbls.Sets[0].Normal, sbls.Sets[0].Point
 	// Start at the end nearest the profile's plane.
@@ -154,34 +154,34 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 	}
 	solidPieces, err := sk.solidEdgePieces(before, g.SolidEdges)
 	if err != nil {
-		return nil, src, err
+		return nil, err
 	}
 	chain, _, err := sk.pathChainAny(g.Edges, solidPieces, "sweep", func(x geom.Vector) float64 {
 		return math.Abs(x.Minus(onPlane).Dot(normal))
 	}, true, false, true)
 	if err != nil {
-		return nil, src, err
+		return nil, err
 	}
 	cornerAt := func(k int) bool {
 		return k > 0 && chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) < sweepTangentCos
 	}
 	if math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
-		return nil, src, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
+		return nil, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
 	}
 	if g.sweepFitted(chain) {
 		for k := range chain {
 			if cornerAt(k) {
 				x := chain[k].start
-				return nil, src, pathErr(&x, "a twisted sweep, one held to a direction, or one along a curve takes no corners; "+
+				return nil, pathErr(&x, "a twisted sweep, one held to a direction, or one along a curve takes no corners; "+
 					"the path has one at (%g, %g, %g)", x.X, x.Y, x.Z)
 			}
 		}
 		sp, err := sweepPathOf(chain, g)
 		if err != nil {
-			return nil, src, pathErr(&chain[0].start, "%v", err)
+			return nil, pathErr(&chain[0].start, "%v", err)
 		}
 		g.fittedPath = sp
-		return nil, src, nil
+		return nil, nil
 	}
 	g.fittedPath = nil
 
@@ -242,7 +242,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 				return nil
 			})
 			if err != nil {
-				return nil, src, err
+				return nil, err
 			}
 		}
 		if p.arc {
@@ -255,7 +255,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 							r = r.Minus(p.axis.ScaledBy(r.Dot(p.axis)))
 							if r.Dot(pathRadial) <= sweepTol {
 								x := p.center
-								return nil, src, pathErr(&x, "the profile reaches the axis of arc %s: the bend is too tight for it",
+								return nil, pathErr(&x, "the profile reaches the axis of arc %s: the bend is too tight for it",
 									sk.entityName(p.h))
 							}
 						}
@@ -265,7 +265,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, *Group, error) {
 		}
 		frame = frame.Then(p.step().Motion())
 	}
-	return steps, src, nil
+	return steps, nil
 }
 
 // pathChainOf reads the path entities into a chain of pieces end to
@@ -456,7 +456,7 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what str
 // path, and makes the faces of the two caps.
 func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 	end := srf.RigidIdentity
-	if steps, _, err := g.sweepPath(sk); err == nil {
+	if steps, err := g.sweepPath(sk); err == nil {
 		end = srf.SweepEnd(steps)
 		if g.fittedPath != nil {
 			end = g.fittedPath.Rigid(g.fittedPath.End())
@@ -473,12 +473,12 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		}
 		e.CalculateNumerical(sk, false)
 		he := e.H
-		g.copyEntityScaled(sk, entity, sk.MustGetEntity(he), 0, RemapBottom,
+		g.copyEntityScaled(entity, sk.MustGetEntity(he), 0, RemapBottom,
 			core.NoParam, core.NoParam, core.NoParam,
 			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 			CopyAsNumeric, 1)
 		n := len(*entity)
-		g.copyEntityScaled(sk, entity, sk.MustGetEntity(he), 0, RemapTop,
+		g.copyEntityScaled(entity, sk.MustGetEntity(he), 0, RemapTop,
 			core.NoParam, core.NoParam, core.NoParam,
 			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 			CopyAsNumeric, 1)
@@ -519,7 +519,7 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 		g.setProblem(nil, "the profile is not closed loops")
 		return
 	}
-	steps, _, err := g.sweepPath(sk)
+	steps, err := g.sweepPath(sk)
 	if err != nil {
 		var pe *pathError
 		if errors.As(err, &pe) {
@@ -619,7 +619,7 @@ func (sk *Sketch) solidEdgePieces(at *Group, names []topo.Name) ([]pathPiece, er
 	}
 	tp, err := solid.Topology()
 	if err != nil {
-		return nil, fmt.Errorf("the solid's topology is broken: %v", err)
+		return nil, fmt.Errorf("the solid's topology is broken: %w", err)
 	}
 	var out []pathPiece
 	for _, n := range names {

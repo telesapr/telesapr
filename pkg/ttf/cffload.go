@@ -2143,10 +2143,8 @@ func loadCFFFont(s *cffStream, faceIndex int, pureCFF, cff2 bool) (*cffFont, err
 			return nil, errInvalidArg
 		}
 		f.numFaces = f.nameIndex.count
-	} else {
-		if f.nameIndex != nil && f.nameIndex.count > 1 {
-			return nil, errInvalidFormat
-		}
+	} else if f.nameIndex != nil && f.nameIndex.count > 1 {
+		return nil, errInvalidFormat
 	}
 
 	code := uint32(cffCodeTopDict)

@@ -1,6 +1,7 @@
 package topo_test
 
 import (
+	"errors"
 	"math"
 	"testing"
 
@@ -110,10 +111,10 @@ func TestSplitEdge(t *testing.T) {
 		t.Errorf("V %d E %d", len(tp.Vertices), len(tp.Edges))
 	}
 	solid(t, sh, tp, 6000)
-	if err := topo.SplitEdge(sh, tp, edgeBetween(t, tp, v(0, 0, 0), v(0, 0, 12)), v(5, 5, 5)); err != topo.ErrNotOnEdge {
+	if err := topo.SplitEdge(sh, tp, edgeBetween(t, tp, v(0, 0, 0), v(0, 0, 12)), v(5, 5, 5)); !errors.Is(err, topo.ErrNotOnEdge) {
 		t.Errorf("split off the edge: %v", err)
 	}
-	if err := topo.SplitEdge(sh, tp, edgeBetween(t, tp, v(0, 0, 0), v(0, 0, 12)), v(0, 0, 0)); err != topo.ErrNotOnEdge {
+	if err := topo.SplitEdge(sh, tp, edgeBetween(t, tp, v(0, 0, 0), v(0, 0, 12)), v(0, 0, 0)); !errors.Is(err, topo.ErrNotOnEdge) {
 		t.Errorf("split at an end: %v", err)
 	}
 }

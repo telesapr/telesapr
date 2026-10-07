@@ -1,6 +1,7 @@
 package cdt
 
 import (
+	"errors"
 	"math"
 	"math/rand"
 	"testing"
@@ -230,7 +231,7 @@ func TestCrossingSegments(t *testing.T) {
 	// A bow tie: its segments cross, which is reported.
 	pts := []Point{{0, 0}, {2, 2}, {2, 0}, {0, 2}}
 	segs := [][2]int{{0, 1}, {1, 2}, {2, 3}, {3, 0}}
-	if _, err := Triangulate(pts, segs); err != ErrCrossing {
+	if _, err := Triangulate(pts, segs); !errors.Is(err, ErrCrossing) {
 		t.Errorf("error %v, want ErrCrossing", err)
 	}
 }

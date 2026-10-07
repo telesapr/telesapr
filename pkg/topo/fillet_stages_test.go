@@ -26,18 +26,18 @@ func boxUprights(r float64) []topo.FilletPick {
 }
 
 // boxStaged is the volume of the box with its upright edges rounded at
-// R and its top ring at r < R round them: the ring's section along the
+// rb and its top ring at r < rb round them: the ring's section along the
 // lines left between the arcs, and a quarter turn of it about each arc's
 // axis at its centroid (Pappus).
-func boxStaged(R, r float64) float64 {
+func boxStaged(rb, r float64) float64 {
 	a, c := spandrel(r)
-	return 6000 - 4*30*R*R*(1-math.Pi/4) - a*(2*(10-2*R)+2*(20-2*R)) - a*2*math.Pi*(R-c)
+	return 6000 - 4*30*rb*rb*(1-math.Pi/4) - a*(2*(10-2*rb)+2*(20-2*rb)) - a*2*math.Pi*(rb-c)
 }
 
 // squareBoss is a 40 x 30 x 10 block with a 20 x 10 boss 10 high on its
-// top, and the picks of the boss's upright edges at radius R and of its
+// top, and the picks of the boss's upright edges at radius rb and of its
 // foot's edges at r.
-func squareBoss(R, r float64) (*srf.SShell, []topo.FilletPick) {
+func squareBoss(rb, r float64) (*srf.SShell, []topo.FilletPick) {
 	var block, boss, sh srf.SShell
 	block.MakePrism([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 10),
 		core.NewRgbaColor(100, 100, 100, 255))
@@ -48,19 +48,19 @@ func squareBoss(R, r float64) (*srf.SShell, []topo.FilletPick) {
 	cs := [][2]float64{{10, 10}, {30, 10}, {30, 20}, {10, 20}}
 	for i, c := range cs {
 		n := cs[(i+1)%4]
-		picks = append(picks, topo.FilletPick{A: v(c[0], c[1], 10), B: v(c[0], c[1], 20), R: R},
+		picks = append(picks, topo.FilletPick{A: v(c[0], c[1], 10), B: v(c[0], c[1], 20), R: rb},
 			topo.FilletPick{A: v(c[0], c[1], 10), B: v(n[0], n[1], 10), R: r})
 	}
 	return &sh, picks
 }
 
 // bossStaged is the square boss's volume with its upright edges rounded
-// at R, convex, and its foot filled at r round them: the foot's section
+// at rb, convex, and its foot filled at r round them: the foot's section
 // along the lines and a quarter turn of it about each upright's axis, on
 // the far side of the wall.
-func bossStaged(R, r float64) float64 {
+func bossStaged(rb, r float64) float64 {
 	a, c := spandrel(r)
-	return 14000 - 4*10*R*R*(1-math.Pi/4) + a*(2*(20-2*R)+2*(10-2*R)) + a*2*math.Pi*(R+c)
+	return 14000 - 4*10*rb*rb*(1-math.Pi/4) + a*(2*(20-2*rb)+2*(10-2*rb)) + a*2*math.Pi*(rb+c)
 }
 
 // Corners where rounded edges of different radii, or convex and concave

@@ -53,7 +53,7 @@ func TestStyleDefaults(t *testing.T) {
 			t.Fatal(err)
 		}
 		if saved := string(tlspr.Encode(doc.Sketch, tlspr.Options{})); !strings.Contains(saved, tc.want) {
-			t.Errorf("%s: saved style isn't the one C++ wrote:\n%s", tc.name, saved[strings.Index(saved, "\nstyle "):])
+			t.Errorf("%s: saved style isn't the one C++ wrote:\n%s", tc.name, saved[max(0, strings.Index(saved, "\nstyle ")):])
 		}
 	}
 }

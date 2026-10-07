@@ -1,11 +1,24 @@
 version: "2"
 
 run:
-  timeout: 10m
+  timeout: 20m
 
 linters:
-  # errcheck, govet, ineffassign, staticcheck and unused.
+  # errcheck, govet, ineffassign, staticcheck and unused, and:
   default: standard
+  enable:
+    - bodyclose
+    - copyloopvar
+    - errorlint
+    - gocritic
+    - misspell
+    - nilerr
+    - revive
+    - unconvert
+    - unparam
+    # intrange and modernize report what WP1 of the 2026-10-07 review
+    # plan rewrites (C-style loops, hand-rolled min and max, loops
+    # that slices and maps do); they are turned on when it lands.
   settings:
     errcheck:
       # What a command, help() or a test's recording prints to its
@@ -14,6 +27,24 @@ linters:
         - fmt.Fprint
         - fmt.Fprintf
         - fmt.Fprintln
+    gocritic:
+      disabled-checks:
+        # if-else chains become switches in WP1, with the comments
+        # beside them rewritten.
+        - ifElseChain
+    revive:
+      rules:
+        - name: unused-parameter
+          # The parameters of a callback or an interface's method are
+          # part of its signature whether a given implementation reads
+          # them or not.
+          disabled: true
+        - name: redefines-builtin-id
+          # Parameters named cap, len, min, max, new and any are
+          # renamed in WP1.
+          disabled: true
+    unparam:
+      check-exported: false
     staticcheck:
       checks:
         # golangci-lint's default set.
@@ -25,10 +56,22 @@ linters:
         - -ST1021
         - -ST1022
         # The errors that the interface shows the user in a message box
-        # are sentences, capitalised and punctuated, as C++'s were.
+        # are sentences, capitalised and punctuated. They become plain
+        # errors, with the sentence made where the box is, in WP3.
         - -ST1005
-        # De Morgan's law, and if-else chains as switches: the
-        # conditions keep the shape of the C++ or the C they were
-        # ported from, where they can be checked against it.
+        # De Morgan's law and if-else chains as switches: WP1, with
+        # ifElseChain above.
         - -QF1001
         - -QF1003
+
+  exclusions:
+    rules:
+      # A test's helper takes the fixed arguments its cases share.
+      - path: _test\.go
+        linters:
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

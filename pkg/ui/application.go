@@ -506,7 +506,7 @@ func (ss *Application) MmToString(v float64, editable bool) string {
 		// rounding easier.
 		v = math.Floor((v + (1.0 / 128.0)) * 64.0)
 		feet := int(v / (12.0 * 64.0))
-		v = v - (float64(feet) * 12.0 * 64.0)
+		v -= float64(feet) * 12.0 * 64.0
 		// v is now the feet-less remainder in 1/64 inches
 		inches := int(v / 64.0)
 		numerator := int(v - (float64(inches) * 64.0))

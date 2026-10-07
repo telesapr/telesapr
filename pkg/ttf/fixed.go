@@ -129,12 +129,12 @@ func trigPseudoPolarize(x, y int64) (int64, int64) {
 	for i, k := 1, 0; i < trigMaxIter; i, b, k = i+1, b<<1, k+1 {
 		if y > 0 {
 			xtemp := x + ((y + b) >> i)
-			y = y - ((x + b) >> i)
+			y -= (x + b) >> i
 			x = xtemp
 			theta += trigArctanTable[k]
 		} else {
 			xtemp := x - ((y + b) >> i)
-			y = y + ((x + b) >> i)
+			y += (x + b) >> i
 			x = xtemp
 			theta -= trigArctanTable[k]
 		}

@@ -291,7 +291,7 @@ func (f *Face) cffFaceInit(sfntFormat bool) error {
 		return cff.getSIDString(uint32(cff.charset.sids[n]))
 	})
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // a font without Unicode names has no such charmap, which is no error
 	}
 	f.charmaps = append(f.charmaps, &charmap{
 		platformID: platformMicrosoft,

@@ -538,7 +538,7 @@ func (g *Group) MakeLatheCircles(sk *Sketch, el *[]core.Entity, in core.HEntity,
 		// A point gets revolved to form an arc.
 		en.Point[0] = g.RemapEntity(ep.H, RemapLatheArcCenter)
 		en.Point[1] = g.RemapEntity(ep.H, RemapLatheStart)
-		en.Point[2] = en.Point[1] //Remap(ep->h, REMAP_LATHE_END);
+		en.Point[2] = en.Point[1] // Remap(ep->h, REMAP_LATHE_END);
 
 		// Get arc center and point on arc.
 		pc := sk.MustGetEntity(en.Point[0])
@@ -683,12 +683,12 @@ func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity,
 	ep *core.Entity, timesApplied, remap int,
 	dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam,
 	as CopyAs) {
-	g.copyEntityScaled(sk, el, ep, timesApplied, remap, dx, dy, dz, qw, qvx, qvy, qvz, dist, as, g.Scale)
+	g.copyEntityScaled(el, ep, timesApplied, remap, dx, dy, dz, qw, qvx, qvy, qvz, dist, as, g.Scale)
 }
 
 // copyEntityScaled is CopyEntity scaling by scale instead of the
 // group's Scale: a mirror copies at -1 without being a scaled group.
-func (g *Group) copyEntityScaled(sk *Sketch, el *[]core.Entity,
+func (g *Group) copyEntityScaled(el *[]core.Entity,
 	ep *core.Entity, timesApplied, remap int,
 	dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam,
 	as CopyAs, scale float64) {
@@ -844,7 +844,7 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 		*l = append(*l, core.Equation{H: g.H.Equation(index), Expr: expr})
 	}
 	ep := func(i int) *core.Expr { return core.NewParam(g.H.Param(i)) }
-	ec := func(v float64) *core.Expr { return core.NewConstant(v) }
+	ec := core.NewConstant
 
 	switch {
 	case g.Type == GroupLinked:

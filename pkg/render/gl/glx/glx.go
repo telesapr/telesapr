@@ -137,7 +137,7 @@ func NewForWindow(window uint64) (*Context, error) {
 	c := &Context{dpy: dpy, double: true}
 	prev := C.glxTrapStart()
 	var attrs C.XWindowAttributes
-	ok := C.XGetWindowAttributes(dpy, C.Window(window), &attrs) != 0
+	ok := C.XGetWindowAttributes(dpy, C.Window(window), &attrs) != 0 //nolint:gocritic // cgo expands the call; the comparison is not duplicated
 	if code := C.glxTrapEnd(dpy, prev); code != 0 || !ok {
 		C.XCloseDisplay(dpy)
 		return nil, fmt.Errorf("glx: no X window 0x%x (error %d)", window, int(code))

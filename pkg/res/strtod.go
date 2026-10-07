@@ -1,6 +1,9 @@
 package res
 
-import "strconv"
+import (
+	"errors"
+	"strconv"
+)
 
 // parseDecimalPrefix parses the longest decimal number at the start of
 // s, after leading white space, as strtod does for decimal input; n is
@@ -44,7 +47,8 @@ func parseDecimalPrefix(s string) (n int, v float64) {
 	v, err := strconv.ParseFloat(s[start:i], 64)
 	if err != nil {
 		// Out of range: strtod returns ±HUGE_VAL or 0, as ParseFloat does.
-		if ne, ok := err.(*strconv.NumError); !ok || ne.Err != strconv.ErrRange {
+		var ne *strconv.NumError
+		if !errors.As(err, &ne) || !errors.Is(ne.Err, strconv.ErrRange) {
 			return 0, 0
 		}
 	}

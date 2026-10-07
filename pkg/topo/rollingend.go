@@ -989,7 +989,8 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 			o := 2 + 3*(i-2)
 			ctrl = append(ctrl, geom.Vector{X: x[o], Y: x[o+1], Z: x[o+2]})
 		}
-		fit.Ctrl = append(ctrl, q1.Plus(t1.ScaledBy(x[1])), q1)
+		ctrl = append(ctrl, q1.Plus(t1.ScaledBy(x[1])), q1)
+		fit.Ctrl = ctrl
 		for j, p := range xs {
 			us[j] = nearestParam(&fit, p, us[j])
 		}

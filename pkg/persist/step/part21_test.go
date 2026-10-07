@@ -1,6 +1,7 @@
 package step
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,9 +104,10 @@ func TestParseErrors(t *testing.T) {
 		"huge number":           head + "#99999999999999999999=A();\n" + tail,
 	}
 	for name, text := range cases {
+		var se *SyntaxError
 		if _, err := Parse([]byte(text)); err == nil {
 			t.Errorf("%s: no error", name)
-		} else if se, ok := err.(*SyntaxError); ok && se.Line < 1 {
+		} else if errors.As(err, &se) && se.Line < 1 {
 			t.Errorf("%s: line %d", name, se.Line)
 		}
 	}

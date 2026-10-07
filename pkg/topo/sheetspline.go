@@ -119,9 +119,7 @@ func GridSpline(ps []srf.SSurface) (*Grid, error) {
 				if prev, ok := at[[2]int{ni, nj}]; ok {
 					return nil, fmt.Errorf("topo: patches %d and %d both lie at %d,%d", prev, r, ni, nj)
 				}
-				if err := matchWeights(&cand, &c.p, side); err != nil {
-					return nil, err
-				}
+				matchWeights(&cand, &c.p, side)
 				placed[r] = &cell{i: ni, j: nj, p: cand}
 				at[[2]int{ni, nj}] = r
 				queue = append(queue, r)
@@ -419,16 +417,15 @@ func sameCurve(a, b srf.SBezier) bool {
 // matchWeights scales the weights of p, whose side opposite side meets
 // q's side side, to q's along that side, which leaves p the same
 // surface.
-func matchWeights(p, q *srf.SSurface, side int) error {
+func matchWeights(p, q *srf.SSurface, side int) {
 	a, b := q.EdgeCurve(side), p.EdgeCurve((side+2)%4)
 	k := a.Weight[0] / b.Weight[0]
 	if k == 1 {
-		return nil
+		return
 	}
 	for i := 0; i <= p.DegM; i++ {
 		for j := 0; j <= p.DegN; j++ {
 			p.Weight[i][j] *= k
 		}
 	}
-	return nil
 }

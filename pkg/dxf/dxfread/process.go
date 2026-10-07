@@ -213,24 +213,24 @@ func (d *dxfRW) parseLType(code int) bool {
 // processTable reads a table whose entries SolveSpace ignores (C++
 // dxfRW::processLType, processTextStyle and so on); a table's return
 // value is ignored, as in C++.
-func (d *dxfRW) processTable(entry string, parse func(code int) bool) bool {
+func (d *dxfRW) processTable(entry string, parse func(code int) bool) {
 	r := d.r
 	reading := false
 	for {
 		code, ok := r.readRec()
 		if !ok {
-			return false
+			return
 		}
 		if code == 0 {
 			switch r.getString() {
 			case entry:
 				reading = true
 			case "ENDTAB":
-				return true
+				return
 			}
 		} else if reading && parse != nil {
 			if !parse(code) {
-				return false
+				return
 			}
 		}
 	}

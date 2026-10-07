@@ -121,7 +121,7 @@ func TestToolsAndInstructions(t *testing.T) {
 	}
 	// Each tool the instructions name is one there is.
 	for name := range readOnly {
-		if !strings.Contains(agent.Instructions, name) {
+		if !strings.Contains(agent.Instructions, name) { //nolint:gocritic // the instructions are the haystack
 			t.Errorf("the instructions don't say when to call %s", name)
 		}
 	}

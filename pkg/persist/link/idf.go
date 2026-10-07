@@ -215,7 +215,7 @@ func idfNewDistance(el *[]core.Entity, id *int, distance float64) core.HEntity {
 	return en.H
 }
 
-func idfNewCircle(el *[]core.Entity, id *int, p0, hdist, hnorm core.HEntity, keepout bool) core.HEntity {
+func idfNewCircle(el *[]core.Entity, id *int, p0, hdist, hnorm core.HEntity, keepout bool) {
 	en := core.Entity{}
 	en.Type = core.EntityCircle
 	en.Point[0] = p0
@@ -229,7 +229,6 @@ func idfNewCircle(el *[]core.Entity, id *int, p0, hdist, hnorm core.HEntity, kee
 	*id++
 	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
 	*el = append(*el, en)
-	return en.H
 }
 
 // arcCenter is the centre of the arc from p0 to p1 through angle
@@ -288,7 +287,7 @@ func createIDFEntity(el *[]core.Entity, id *int, h0, h1, hnorm core.HEntity,
 // makeBeziersForArcs adds the arc about center from pa through angle
 // degrees, as Entity::GenerateBezierCurves would (C++
 // MakeBeziersForArcs).
-func makeBeziersForArcs(sbl *srf.SBezierList, center, pa, pb geom.Vector,
+func makeBeziersForArcs(sbl *srf.SBezierList, center, pa geom.Vector,
 	q geom.Quaternion, angle float64) {
 	u, v := q.RotationU(), q.RotationV()
 	r := pa.Minus(center).Magnitude()
@@ -477,10 +476,10 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 						} else if ang != 360.0 {
 							// Arcs
 							c := arcCenter(pprev, point, ang)
-							makeBeziersForArcs(&sbl, c, pprev, point, normal, ang)
+							makeBeziersForArcs(&sbl, c, pprev, normal, ang)
 						} else {
 							// circles
-							makeBeziersForArcs(&sbl, point, pprev, pprev, normal, ang)
+							makeBeziersForArcs(&sbl, point, pprev, normal, ang)
 						}
 					}
 					// next create the entities; only curves and points at
@@ -536,7 +535,7 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 				idfNewCircle(el, &entityCount, hcent, hdist, hnorm, false)
 				// create the curves for the extrusion
 				pt := geom.Vector{X: x + d/2, Y: y}
-				makeBeziersForArcs(&sbl, cent, pt, pt, normal, 360.0)
+				makeBeziersForArcs(&sbl, cent, pt, normal, 360.0)
 			}
 
 		case idfNotes, idfComponentPlacement:

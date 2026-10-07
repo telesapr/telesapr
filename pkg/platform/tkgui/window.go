@@ -369,12 +369,12 @@ func translateButton(button, state uint) platform.MouseButton {
 	return platform.ButtonNone
 }
 
-func (w *Window) mouse(typ platform.MouseEventType, ev *event.Event, button uint, delta float64) bool {
+func (w *Window) mouse(typ platform.MouseEventType, ev *event.Event, button uint, delta float64) {
 	w.p.pointerX, w.p.pointerY = ev.RootX, ev.RootY
 	if w.events.OnMouseEvent == nil {
-		return false
+		return
 	}
-	return w.events.OnMouseEvent(platform.MouseEvent{
+	w.events.OnMouseEvent(platform.MouseEvent{
 		Type:        typ,
 		X:           float64(ev.X),
 		Y:           float64(ev.Y),

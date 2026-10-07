@@ -90,7 +90,7 @@ func SmoothLoftSections(loops [][]srf.SBezier, turn int) ([][]srf.SBezier, error
 	}
 	for i, l := range loops {
 		if err := checkLoop(l); err != nil {
-			return nil, fmt.Errorf("profile %d: %v", i+1, err)
+			return nil, fmt.Errorf("profile %d: %w", i+1, err)
 		}
 		if newell(l).Magnitude() < geom.LengthEps {
 			return nil, fmt.Errorf("profile %d encloses no area", i+1)

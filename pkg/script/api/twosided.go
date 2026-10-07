@@ -4,7 +4,7 @@ import "github.com/telesapr/telesapr/pkg/sketch"
 
 // mustBeSided fails unless the group is one the text window offers
 // one-sided and two-sided for.
-func mustBeSided(g Group, group *sketch.Group, what string) {
+func mustBeSided(group *sketch.Group, what string) {
 	switch group.Type {
 	case sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve, sketch.GroupHelix:
 		return
@@ -19,7 +19,7 @@ func mustBeSided(g Group, group *sketch.Group, what string) {
 func (g Group) TwoSided() (two bool) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		mustBeSided(g, group, "TwoSided")
+		mustBeSided(group, "TwoSided")
 		two = group.Subtype == sketch.GroupTwoSided || group.Subtype == sketch.GroupTwoSkewed
 	})
 	return two
@@ -35,7 +35,7 @@ func (g Group) TwoSided() (two bool) {
 func (g Group) SetTwoSided(two bool) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		mustBeSided(g, group, "SetTwoSided")
+		mustBeSided(group, "SetTwoSided")
 		switch {
 		case two && group.Subtype == sketch.GroupOneSided:
 			group.Subtype = sketch.GroupTwoSided

@@ -141,7 +141,7 @@ func firstFaces(solid *Group, segs []chamferSegment, d2 float64) ([]geom.Vector,
 	}
 	tp, err := solid.Topology()
 	if err != nil {
-		return nil, fmt.Errorf("the solid's topology is broken: %v", err)
+		return nil, fmt.Errorf("the solid's topology is broken: %w", err)
 	}
 	for i, seg := range segs {
 		if seg.arc {
@@ -196,7 +196,7 @@ func (sk *Sketch) chamferSegments(solid *Group, edges []core.HEntity, names []to
 	for _, n := range names {
 		e, err := tp.Resolve(n)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %v", sk.SolidEdgeName(n), err)
+			return nil, fmt.Errorf("%s: %w", sk.SolidEdgeName(n), err)
 		}
 		ed := &tp.Edges[e]
 		if !tp.Straight(e) {

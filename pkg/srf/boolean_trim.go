@@ -345,14 +345,13 @@ func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha,
 // Result: returns true if classification succeeded and writes
 // shell classification into *indir and *outdir.
 func (s *SShell) classifyEdge(indir, outdir *SShellClass,
-	ea, eb, p, edgeNIn, edgeNOut, surfN geom.Vector) bool {
+	ea, eb, p, edgeNIn, edgeNOut, surfN geom.Vector) {
 	var inDir, outDir Class
 	if !s.ClassifyEdge(&inDir, &outDir, ea, eb, p, edgeNIn, edgeNOut, surfN) {
-		return false
+		return
 	}
 	*indir = shellClassFromClass(inDir)
 	*outdir = shellClassFromClass(outDir)
-	return true
 }
 
 // makeCopyTrimAgainst is the per-surface counterpart of
@@ -372,7 +371,7 @@ func (s *SShell) classifyEdge(indir, outdir *SShellClass,
 // The copy is written to ret, which the caller owns: a surface is too
 // large to hand back by value in this loop.
 func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
-	t SurfaceCombineAs, dbgIndex int, ret *SSurface) (failed bool) {
+	t SurfaceCombineAs, ret *SSurface) (failed bool) {
 	*ret = *srf
 	// The copy is this call's own, so it can use its closest-point cache
 	// whatever goes for the operands' surfaces.

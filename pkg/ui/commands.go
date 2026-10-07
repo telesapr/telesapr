@@ -167,8 +167,7 @@ func (tw *TextWindow) EditControlDoneForCommands(s string) bool {
 	again := strings.TrimSpace(s) == strings.TrimSpace(c.query) && len(c.found) > 0
 	c.query = s
 	c.found = findCommands(s)
-	switch {
-	case len(c.found) == 1 || (again && len(c.found) > 0):
+	if len(c.found) == 1 || (again && len(c.found) > 0) {
 		tw.runFound(c.found[0])
 		return true
 	}

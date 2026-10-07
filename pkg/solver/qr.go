@@ -429,7 +429,7 @@ func (f *sparseQR) applyQt(b []float64) {
 		if tau == 0 {
 			continue
 		}
-		tau = tau * f.hcoeffs[k]
+		tau *= f.hcoeffs[k]
 		for i, iq := range f.q.idx[k] {
 			b[iq] -= tau * f.q.val[k][i]
 		}

@@ -226,7 +226,7 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 	var curves []srf.BSplineCurve
 	for i, l := range loops {
 		if err := checkLoop(l); err != nil {
-			return nil, nil, fmt.Errorf("profile loop %d: %v", i+1, err)
+			return nil, nil, fmt.Errorf("profile loop %d: %w", i+1, err)
 		}
 		n := newell(l)
 		if math.Abs(n.WithMagnitude(1).Dot(t0)) < 1e-3 {
@@ -440,10 +440,10 @@ func closeSkins(chains [][]*srf.BSplineSurface, color core.RgbaColor, startFace,
 		}
 	}
 	if _, err := fa.AddPlanarFace(first, startFace, color); err != nil {
-		return nil, fmt.Errorf("the first profile's cap: %v", err)
+		return nil, fmt.Errorf("the first profile's cap: %w", err)
 	}
 	if _, err := fa.AddPlanarFace(last, endFace, color); err != nil {
-		return nil, fmt.Errorf("the last profile's cap: %v", err)
+		return nil, fmt.Errorf("the last profile's cap: %w", err)
 	}
 	t, err := Build(sh)
 	if err != nil {

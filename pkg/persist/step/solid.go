@@ -640,18 +640,12 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 		curve := sb[k]
 		for i := 0; i+1 < len(a.smps); i++ {
 			p, q := a.smps[i], a.smps[i+1]
-			for _, ln := range g.crossed(p.u, q.u, g.us, g.pu, g.epsU) {
-				t, err := g.refine(curve, p, q, ln, true)
-				if err != nil {
-					return nil, err
-				}
+			for _, ln := range g.crossed(p.u, q.u, g.us, g.pu) {
+				t := g.refine(curve, p, q, ln, true)
 				b.cut(a.use, a.bez, t)
 			}
-			for _, ln := range g.crossed(p.v, q.v, g.vs, g.pv, g.epsV) {
-				t, err := g.refine(curve, p, q, ln, false)
-				if err != nil {
-					return nil, err
-				}
+			for _, ln := range g.crossed(p.v, q.v, g.vs, g.pv) {
+				t := g.refine(curve, p, q, ln, false)
 				b.cut(a.use, a.bez, t)
 			}
 		}
@@ -776,11 +770,11 @@ func (g *faceGrid) alongLine(smps []uvSample) (byU bool, ln float64, ok bool) {
 }
 
 // snapAlong puts a piece's samples that run along a line of the grid on
-// it, by whole periods where it wraps, and reports whether it did.
-func (g *faceGrid) snapAlong(smps []uvSample) bool {
+// it, by whole periods where it wraps.
+func (g *faceGrid) snapAlong(smps []uvSample) {
 	byU, ln, ok := g.alongLine(smps)
 	if !ok {
-		return false
+		return
 	}
 	for k := range smps {
 		if byU {
@@ -789,7 +783,6 @@ func (g *faceGrid) snapAlong(smps []uvSample) bool {
 			smps[k].v = ln
 		}
 	}
-	return true
 }
 
 // snapTo is y, by whole periods the nearest to x.
@@ -803,7 +796,7 @@ func snapTo(x, y, period float64) float64 {
 // crossed are the lines of the grid (shifted by whole periods when it
 // wraps) that the step from a to b crosses: a point on a line counts as
 // past it, so each crossing is found once, at a sample on it too.
-func (g *faceGrid) crossed(a, b float64, lines []float64, period, eps float64) []float64 {
+func (g *faceGrid) crossed(a, b float64, lines []float64, period float64) []float64 {
 	if a == b {
 		return nil
 	}
@@ -832,7 +825,7 @@ func (g *faceGrid) crossed(a, b float64, lines []float64, period, eps float64) [
 // refine is the parameter of the curve between samples p and q where
 // it crosses the line at ln of u (byU) or v, by bisection on the
 // surface's parameters of the curve's points.
-func (g *faceGrid) refine(c srf.SBezier, p, q uvSample, ln float64, byU bool) (float64, error) {
+func (g *faceGrid) refine(c srf.SBezier, p, q uvSample, ln float64, byU bool) float64 {
 	val := func(s uvSample) float64 {
 		if byU {
 			return s.u
@@ -864,7 +857,7 @@ func (g *faceGrid) refine(c srf.SBezier, p, q uvSample, ln float64, byU bool) (f
 			break
 		}
 	}
-	return (ta + tb) / 2, nil
+	return (ta + tb) / 2
 }
 
 // cut asks for the use's Bezier bez (counted along the edge) to be cut

@@ -382,12 +382,12 @@ func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierLi
 
 			// And calculate lighting for the triangle
 			n := tt.Normal().WithMagnitude(1)
-			lighting := cppMin(1.0, ss.AmbientIntensity+
-				cppMax(0.0, ss.LightIntensity[0]*n.Dot(l0))+
-				cppMax(0.0, ss.LightIntensity[1]*n.Dot(l1)))
-			r := cppMin(1.0, float64(tt.Meta.RedF())*lighting)
-			g := cppMin(1.0, float64(tt.Meta.GreenF())*lighting)
-			b := cppMin(1.0, float64(tt.Meta.BlueF())*lighting)
+			lighting := min(1.0, ss.AmbientIntensity+
+				max(0.0, ss.LightIntensity[0]*n.Dot(l0))+
+				max(0.0, ss.LightIntensity[1]*n.Dot(l1)))
+			r := min(1.0, float64(tt.Meta.RedF())*lighting)
+			g := min(1.0, float64(tt.Meta.GreenF())*lighting)
+			b := min(1.0, float64(tt.Meta.BlueF())*lighting)
 			tt.Meta.RgbaColor = core.RgbaColorFromFloat(float32(r), float32(g), float32(b), 1)
 			smp.AddTriangle(tt)
 		}
@@ -671,23 +671,6 @@ func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh,
 
 	// Now write the lines and triangles to the output file
 	out.vw().OutputLinesAndMesh(&sblss, sms)
-}
-
-// cppMin is std::min, which keeps the first argument unless the second
-// is less.
-func cppMin(a, b float64) float64 {
-	if b < a {
-		return b
-	}
-	return a
-}
-
-// cppMax is std::max, which keeps the first argument when they're equal.
-func cppMax(a, b float64) float64 {
-	if a < b {
-		return b
-	}
-	return a
 }
 
 // vectorFileWriter is a 2d vector file format (C++ VectorFileWriter).
@@ -1139,8 +1122,8 @@ func (ss *Application) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, s
 	// origin.
 
 	bndh, bndl := sm.GetBounding()
-	largerBoundXY := cppMax(bndh.X-bndl.X, bndh.Y-bndl.Y)
-	largerBoundZ := cppMax(largerBoundXY, bndh.Z-bndl.Z+1)
+	largerBoundXY := max(bndh.X-bndl.X, bndh.Y-bndl.Y)
+	largerBoundZ := max(largerBoundXY, bndh.Z-bndl.Z+1)
 
 	basename := fileStemIdentifier(filename)
 

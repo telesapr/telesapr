@@ -158,14 +158,13 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 	plane := func(angle float64) geom.Quaternion {
 		return geom.QuaternionFromBasis(q.RotationU().RotatedAroundAxis(q.RotationN(), angle), v)
 	}
-	addSketch := func(what string, angle float64) core.HGroup {
+	addSketch := func(what string, angle float64) {
 		g := Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByPointOrtho, Name: name + "-" + what}
 		g.Predef.Q = plane(angle)
 		g.Predef.Origin = center
 		u = g.Predef.Q.RotationU()
 		gg := sk.addGroupAfterActive(g)
 		gg.ActiveWorkplane = gg.H.Entity(0)
-		return gg.H
 	}
 	addSolid := func(g Group, what string, how CombineAs) *Group {
 		g.Name = name + "-" + what

@@ -816,7 +816,7 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 	}
 	loops, ok := chainLoops(pieces, cols)
 	if ok && sh.grid.ClosedU {
-		loops, ok = sh.seamLoops(shell, loops)
+		loops, ok = sh.seamLoops(loops)
 	}
 	if !ok {
 		for _, h := range sh.patches {
@@ -901,7 +901,7 @@ func chainLoops(cs []srf.SBezier, cols []int) ([]stepLoop, bool) {
 // with no seam badly. A loop goes round when it passes from the last
 // column of patches to the first, and meets the seam where it does.
 // Loops that don't go round, as a hole's, stay as they are.
-func (sh *stepSheet) seamLoops(shell *srf.SShell, loops []stepLoop) ([]stepLoop, bool) {
+func (sh *stepSheet) seamLoops(loops []stepLoop) ([]stepLoop, bool) {
 	ni := 0
 	for _, c := range sh.grid.Cells {
 		ni = max(ni, c.I+1)

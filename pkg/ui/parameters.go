@@ -39,8 +39,7 @@ func pad(s string, n int) string {
 func (tw *TextWindow) ScreenChangeParameter(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
-	switch link {
-	case 'a':
+	if link == 'a' {
 		tw.ShowEditControl(3, "")
 		tw.edit.meaning = EditParameterAdd
 		return
@@ -96,16 +95,15 @@ func (tw *TextWindow) ScreenChangeConfiguration(link int, v uint32) {
 
 // parameterEdit runs an edit of the table as one undo step, and shows
 // why when it is refused.
-func (ss *Application) parameterEdit(fn func() error) bool {
+func (ss *Application) parameterEdit(fn func() error) {
 	if err := ss.SK.UndoRememberFor(fn); err != nil {
 		ss.Error("%s.", capitalize(err.Error()))
-		return false
+		return
 	}
 	ss.SK.Unsaved = true
 	ss.UndoEnableMenus()
 	ss.SK.ScheduleGenerateAll()
 	ss.ScheduleShowTW()
-	return true
 }
 
 // EditControlDoneForParameters takes an edit of the parameter table,

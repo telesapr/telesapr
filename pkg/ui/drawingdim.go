@@ -104,7 +104,7 @@ func dimElems(tp *topo.Topology, dm sketch.DrawingDimension) ([]dimElem, error) 
 	for _, n := range dm.Edges {
 		e, err := tp.Resolve(n)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %v", n.String(), err)
+			return nil, fmt.Errorf("%s: %w", n.String(), err)
 		}
 		el := dimElem{what: "the edge", pts: tp.Edges[e].Points, straight: tp.Straight(e)}
 		if _, _, _, ok := circleOf(el.pts); ok {

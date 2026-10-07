@@ -61,7 +61,7 @@ func (tw *TextWindow) EditControlDoneForThread(s string) bool {
 		t.options.Spec = spec
 
 	case EditThreadLength:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			if v := ss.ExprToMm(e); v < core.LengthEps {
 				ss.Error("Length cannot be zero or negative.")
 			} else {
@@ -70,7 +70,7 @@ func (tw *TextWindow) EditControlDoneForThread(s string) bool {
 		}
 
 	case EditThreadClearance:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			t.options.Clearance = ss.ExprToMm(e)
 		}
 

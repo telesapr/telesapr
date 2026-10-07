@@ -352,7 +352,7 @@ func (b *SBezier) InPerspective(u, v, n, origin geom.Vector, cameraTan float64) 
 		//    ((x/w)/(1 - (z/w)*cameraTan, ...
 		//  = (x/(w - z*cameraTan), ...
 		// so we want to let w' = w - z*cameraTan
-		ct.W = ct.W - ct.Z*cameraTan
+		ct.W -= ct.Z * cameraTan
 		ret.Ctrl[i] = ct.PerspectiveProject()
 		ret.Weight[i] = ct.W
 	}

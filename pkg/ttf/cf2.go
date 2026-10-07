@@ -241,9 +241,7 @@ func (s *cf2Stack) roll(count, shift int32) {
 		} else if idx < 0 {
 			idx += count
 		}
-		tmp := s.buffer[idx]
-		s.buffer[idx] = last
-		last = tmp
+		s.buffer[idx], last = last, s.buffer[idx]
 	}
 }
 
@@ -1362,7 +1360,7 @@ func (o *cf2Outline) closeContour() {
 	}
 }
 
-func (o *cf2Outline) moveTo(params *cf2CallbackParams) {
+func (o *cf2Outline) moveTo(params *cf2CallbackParams) { //nolint:unparam // the callbacks share one signature
 	o.closeContour()
 	o.pathBegun = false
 }
@@ -2424,8 +2422,8 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 				case escDIV:
 					var divisor, dividend cf2Fixed
 					if font.isT1 && largeInt {
-						divisor = cf2Fixed(opStack.popInt())
-						dividend = cf2Fixed(opStack.popInt())
+						divisor = opStack.popInt()
+						dividend = opStack.popInt()
 						largeInt = false
 					} else {
 						divisor = opStack.popFixed()

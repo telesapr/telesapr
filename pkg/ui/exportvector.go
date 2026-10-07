@@ -115,7 +115,7 @@ func (w *epsFileWriter) Background(color core.RgbaColor) {
 		MmToPts(0), MmToPts(height))
 
 	// same issue with cracks, stroke it to avoid them
-	sw := cppMax(width, height) / 1000
+	sw := max(width, height) / 1000
 	w.printf(
 		"1 setlinejoin\r\n"+
 			"1 setlinecap\r\n"+
@@ -175,7 +175,7 @@ func (w *epsFileWriter) Triangle(tr *srf.STriangle) {
 		MmToPts(tr.C.X-w.ptMin.X), MmToPts(tr.C.Y-w.ptMin.Y))
 
 	// same issue with cracks, stroke it to avoid them
-	sw := cppMax(w.ptMax.X-w.ptMin.X, w.ptMax.Y-w.ptMin.Y) / 1000
+	sw := max(w.ptMax.X-w.ptMin.X, w.ptMax.Y-w.ptMin.Y) / 1000
 	w.printf(
 		"1 setlinejoin\r\n"+
 			"1 setlinecap\r\n"+
@@ -355,7 +355,7 @@ func (w *pdfFileWriter) FinishAndCloseFile() {
 func (w *pdfFileWriter) Background(color core.RgbaColor) {
 	width := w.ptMax.X - w.ptMin.X
 	height := w.ptMax.Y - w.ptMin.Y
-	sw := cppMax(width, height) / 1000
+	sw := max(width, height) / 1000
 
 	w.printf("1 J 1 j\r\n"+
 		"%.3f %.3f %.3f RG\r\n"+
@@ -411,7 +411,7 @@ func (w *pdfFileWriter) maybeMoveTo(st, fi geom.Vector) {
 }
 
 func (w *pdfFileWriter) Triangle(tr *srf.STriangle) {
-	sw := cppMax(w.ptMax.X-w.ptMin.X, w.ptMax.Y-w.ptMin.Y) / 1000
+	sw := max(w.ptMax.X-w.ptMin.X, w.ptMax.Y-w.ptMin.Y) / 1000
 	c := tr.Meta.RgbaColor
 
 	w.printf("1 J 1 j\r\n"+
@@ -479,7 +479,7 @@ func (w *svgFileWriter) StartFile() {
 	// crispEdges turns of anti-aliasing, which tends to cause hairline
 	// cracks between triangles; but there still is some cracking, so
 	// specify a stroke width too, hope for around a pixel
-	sw := cppMax(w.ptMax.X-w.ptMin.X, w.ptMax.Y-w.ptMin.Y) / 1000
+	sw := max(w.ptMax.X-w.ptMin.X, w.ptMax.Y-w.ptMin.Y) / 1000
 	w.printf("stroke-width:%f;\r\n", sw)
 	w.printf("}\r\n")
 

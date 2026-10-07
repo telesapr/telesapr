@@ -99,7 +99,7 @@ func (g *Group) generateMirror(sk *Sketch, entity *[]core.Entity, param *[]core.
 			continue
 		}
 		e.CalculateNumerical(sk, false)
-		g.copyEntityScaled(sk, entity, e, 0, 0,
+		g.copyEntityScaled(entity, e, 0, 0,
 			h.Param(0), h.Param(1), h.Param(2),
 			h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
 			CopyAsNRotTrans, -1)

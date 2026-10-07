@@ -141,7 +141,7 @@ func (tw *TextWindow) editMotion(s string) bool {
 	m := &tw.motion
 	s = strings.TrimSpace(s)
 	number := func() (float64, bool) {
-		e := ss.exprFromString(s, true)
+		e := ss.exprFromString(s)
 		if e == nil {
 			return 0, false
 		}

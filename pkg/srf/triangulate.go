@@ -28,7 +28,7 @@ func wrapIdx(v, n int) int {
 // closed, holes oriented opposite to outer contours) and adds the
 // triangles, still in uv, to m. Mirrors C++ SPolygon::UvTriangulateInto.
 func (p *SPolygon) UvTriangulateInto(m *SMesh, srf *SSurface) {
-	if len(p.Contours) <= 0 {
+	if len(p.Contours) == 0 {
 		return
 	}
 
@@ -615,7 +615,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					continue
 				}
 				tol := srf.ChordToleranceForEdge(prev, next)
-				if c.grazed(srf, poles, wrapIdx(i+offset-1, ln), ear, wrapIdx(i+offset+1, ln)) || cut.crosses(srf, prev, next) {
+				if c.grazed(srf, poles, wrapIdx(i+offset-1, ln), wrapIdx(i+offset+1, ln)) || cut.crosses(srf, prev, next) {
 					if tol < bestGrazedTol {
 						bestGrazed, bestGrazedTol = ear, tol
 					}
@@ -790,7 +790,7 @@ const grazeShare = 0.02
 // cylinder's wall strip beside the point where a crossed cylinder's
 // seam pierces it was clipped into a sliver the height of the wall
 // (roadmap 24.1).
-func (c *SContour) grazed(srf *SSurface, poles []int, ap, bp, cp int) bool {
+func (c *SContour) grazed(srf *SSurface, poles []int, ap, cp int) bool {
 	a, b := c.Points[ap].P, c.Points[cp].P
 	atPole := func(p geom.Vector) bool {
 		for _, side := range poles {
@@ -1564,7 +1564,8 @@ func (s *SSurface) refineTwistedGrid(li, lj []float64) ([]float64, []float64) {
 		for range twistEdgeHalvings {
 			n := len(l)
 			out := append([]float64{l[0], (l[0] + l[1]) / 2}, l[1:n-1]...)
-			l = append(out, (l[n-2]+l[n-1])/2, l[n-1])
+			out = append(out, (l[n-2]+l[n-1])/2, l[n-1])
+			l = out
 		}
 		return l
 	}

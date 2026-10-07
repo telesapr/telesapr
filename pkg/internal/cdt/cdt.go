@@ -178,7 +178,7 @@ func hilbert(x, y uint32) uint64 {
 	return d
 }
 
-func (t *triangulation) addTri(a, b, c int32) int32 {
+func (t *triangulation) addTri(a, b, c int32) {
 	i := int32(len(t.tris))
 	t.tris = append(t.tris, tri{v: [3]int32{a, b, c}})
 	t.edges[edge{a, b}] = i
@@ -186,7 +186,6 @@ func (t *triangulation) addTri(a, b, c int32) int32 {
 	t.edges[edge{c, a}] = i
 	t.near[a], t.near[b], t.near[c] = i, i, i
 	t.last = i
-	return i
 }
 
 func (t *triangulation) killTri(i int32) {

@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"context"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -228,7 +229,7 @@ func TestScriptHostRunsOnLoop(t *testing.T) {
 	close(p.done)
 	func() {
 		defer func() {
-			if r := recover(); r != ErrLoopEnded {
+			if r, _ := recover().(error); !errors.Is(r, ErrLoopEnded) {
 				t.Errorf("a call after the loop ended panicked with %v", r)
 			}
 		}()

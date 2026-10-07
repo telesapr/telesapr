@@ -64,7 +64,7 @@ func (c *Camera) UnProjectPoint(p geom.Point2d) geom.Vector {
 
 // UnProjectPoint3 inverts ProjectPoint3.
 func (c *Camera) UnProjectPoint3(p geom.Vector) geom.Vector {
-	p.Z = p.Z / (c.Scale - p.Z*c.Tangent*c.Scale)
+	p.Z /= c.Scale - p.Z*c.Tangent*c.Scale
 	w := 1 + p.Z*c.Tangent*c.Scale
 	p.X *= w / c.Scale
 	p.Y *= w / c.Scale
@@ -114,7 +114,7 @@ func (c *Camera) ProjectBezier(b srf.SBezier) srf.SBezier {
 		// The desired curve, before perspective, is (x/w, y/w, z/w),
 		// and after it ((x/w)/(1 - (z/w)*tangent), ...) = (x/(w -
 		// z*tangent), ...), so w' = w - z*tangent.
-		ct.W = ct.W - ct.Z*c.Tangent
+		ct.W -= ct.Z * c.Tangent
 		b.Ctrl[i] = ct.PerspectiveProject()
 		b.Weight[i] = ct.W
 	}

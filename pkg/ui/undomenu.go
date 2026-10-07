@@ -68,11 +68,11 @@ func (ss *Application) addConstraint(c *core.Constraint, rememberForUndo bool) c
 
 // constrain adds a constraint in the active group and workplane (C++
 // Constraint::Constrain).
-func (ss *Application) constrain(typ core.ConstraintType, ptA, ptB, entityA core.HEntity) core.HConstraint {
-	return ss.SK.Constrain(typ, ptA, ptB, entityA, core.HEntity{}, false, false)
+func (ss *Application) constrain(typ core.ConstraintType, ptA, ptB, entityA core.HEntity) {
+	ss.SK.Constrain(typ, ptA, ptB, entityA, core.HEntity{}, false, false)
 }
 
 // constrainCoincident makes two points coincident.
-func (ss *Application) constrainCoincident(ptA, ptB core.HEntity) core.HConstraint {
-	return ss.SK.ConstrainCoincident(ptA, ptB)
+func (ss *Application) constrainCoincident(ptA, ptB core.HEntity) {
+	ss.SK.ConstrainCoincident(ptA, ptB)
 }

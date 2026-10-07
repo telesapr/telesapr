@@ -360,7 +360,7 @@ func comp(v geom.Vector, d int) float64 {
 
 // bernsteinD is the m-th derivative, m at most 2, of the Bernstein
 // polynomial i of degree n at t.
-func bernsteinD(n, i int, t float64, m int) float64 {
+func bernsteinD(n, i int, t float64, m int) float64 { //nolint:unparam // n is the degree, as bernstein takes it; the patches are all of one degree
 	b := func(k, j int) float64 {
 		if j < 0 || j > k {
 			return 0

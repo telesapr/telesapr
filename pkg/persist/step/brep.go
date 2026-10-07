@@ -1,6 +1,7 @@
 package step
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -418,8 +419,8 @@ func (r *reader) placement(in *Instance) (frame, error) {
 	return frame{}, r.unsupported(in)
 }
 
-func (r *reader) placementRef(in *Instance, ps []Value, i int) (frame, error) {
-	t, err := r.ref(in, ps, i)
+func (r *reader) placementRef(in *Instance, ps []Value) (frame, error) {
+	t, err := r.ref(in, ps, 1)
 	if err != nil {
 		return frame{}, err
 	}
@@ -478,7 +479,7 @@ func (r *reader) readCurve(in *Instance) (Curve, error) {
 		return &line{p: p, d: d}, nil
 	case in.Is("CIRCLE"):
 		ps := params(in, "CIRCLE")
-		f, err := r.placementRef(in, ps, 1)
+		f, err := r.placementRef(in, ps)
 		if err != nil {
 			return nil, err
 		}
@@ -492,7 +493,7 @@ func (r *reader) readCurve(in *Instance) (Curve, error) {
 		return &ellipse{f: f, a: rad, b: rad}, nil
 	case in.Is("ELLIPSE"):
 		ps := params(in, "ELLIPSE")
-		f, err := r.placementRef(in, ps, 1)
+		f, err := r.placementRef(in, ps)
 		if err != nil {
 			return nil, err
 		}
@@ -511,7 +512,7 @@ func (r *reader) readCurve(in *Instance) (Curve, error) {
 	case in.Is("PARABOLA"), in.Is("HYPERBOLA"):
 		hyp := in.Is("HYPERBOLA")
 		ps := params(in, in.Records[0].Name)
-		f, err := r.placementRef(in, ps, 1)
+		f, err := r.placementRef(in, ps)
 		if err != nil {
 			return nil, err
 		}
@@ -735,14 +736,14 @@ func (r *reader) surface(in *Instance) (Surface, error) {
 func (r *reader) readSurface(in *Instance) (Surface, error) {
 	switch {
 	case in.Is("PLANE"):
-		f, err := r.placementRef(in, params(in, "PLANE"), 1)
+		f, err := r.placementRef(in, params(in, "PLANE"))
 		if err != nil {
 			return nil, err
 		}
 		return &plane{f: f}, nil
 	case in.Is("CYLINDRICAL_SURFACE"):
 		ps := params(in, "CYLINDRICAL_SURFACE")
-		f, err := r.placementRef(in, ps, 1)
+		f, err := r.placementRef(in, ps)
 		if err != nil {
 			return nil, err
 		}
@@ -756,7 +757,7 @@ func (r *reader) readSurface(in *Instance) (Surface, error) {
 		return &cone{f: f, r: rad}, nil
 	case in.Is("CONICAL_SURFACE"):
 		ps := params(in, "CONICAL_SURFACE")
-		f, err := r.placementRef(in, ps, 1)
+		f, err := r.placementRef(in, ps)
 		if err != nil {
 			return nil, err
 		}
@@ -775,7 +776,7 @@ func (r *reader) readSurface(in *Instance) (Surface, error) {
 		return &cone{f: f, r: rad, tan: math.Tan(a)}, nil
 	case in.Is("SPHERICAL_SURFACE"):
 		ps := params(in, "SPHERICAL_SURFACE")
-		f, err := r.placementRef(in, ps, 1)
+		f, err := r.placementRef(in, ps)
 		if err != nil {
 			return nil, err
 		}
@@ -792,7 +793,7 @@ func (r *reader) readSurface(in *Instance) (Surface, error) {
 		if rec := in.Record("TOROIDAL_SURFACE"); rec != nil && len(in.Records) > 1 {
 			ps = rec.Params
 		}
-		f, err := r.placementRef(in, ps, 1)
+		f, err := r.placementRef(in, ps)
 		if err != nil {
 			return nil, err
 		}
@@ -1190,7 +1191,8 @@ func (r *reader) shellFaces(in *Instance, flip bool, skip map[string]int, errs m
 		f, err := r.face(r.f.Get(v.Ref))
 		if err != nil {
 			reason := "bad face"
-			if ee, ok := err.(*entityError); ok {
+			var ee *entityError
+			if errors.As(err, &ee) {
 				reason = ee.reason()
 			}
 			skip[reason]++
@@ -2121,7 +2123,8 @@ func ReadModel(f *File) *Model {
 		}
 		if err != nil {
 			reason := "bad " + in.Name()
-			if ee, ok := err.(*entityError); ok {
+			var ee *entityError
+			if errors.As(err, &ee) {
 				reason = ee.reason()
 			}
 			m.unsupported[reason]++

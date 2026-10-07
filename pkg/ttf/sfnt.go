@@ -203,14 +203,14 @@ func NewFace(data []byte) (*Face, error) {
 	f, err := ttFaceInit(data)
 	if err == nil {
 		return f, nil
-	} else if err != errUnknownFormat || f == nil {
+	} else if !errors.Is(err, errUnknownFormat) || f == nil {
 		return nil, err
 	}
 
 	// the Type 1 driver (T1_Face_Init)
 	if t1f, err := t1FaceInit(f.data); err == nil {
 		return t1f, nil
-	} else if err != errUnknownFormat {
+	} else if !errors.Is(err, errUnknownFormat) {
 		return nil, err
 	}
 
@@ -222,14 +222,14 @@ func NewFace(data []byte) (*Face, error) {
 	}
 	if err := f.cffFaceInit(sfntErr == nil); err == nil {
 		return f, nil
-	} else if err != errUnknownFormat {
+	} else if !errors.Is(err, errUnknownFormat) {
 		return nil, err
 	}
 
 	// the PFR driver (pfr_face_init)
 	if pf, err := pfrFaceInit(f.data); err == nil {
 		return pf, nil
-	} else if err != errUnknownFormat {
+	} else if !errors.Is(err, errUnknownFormat) {
 		return nil, err
 	}
 

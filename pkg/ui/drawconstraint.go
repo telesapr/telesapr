@@ -288,11 +288,14 @@ func (d *constraintDrawer) doLineTrimmedAgainstBoxWith(hcs render.HStroke, ref, 
 	return 0
 }
 
-func (d *constraintDrawer) doArrow(hcs render.HStroke, p, dir, n geom.Vector, width, angle, da float64) {
-	dir = dir.WithMagnitude(width / libm.Cos(angle))
+// arrowAngle is the half-angle of an arrowhead.
+const arrowAngle = 18 * math.Pi / 180
+
+func (d *constraintDrawer) doArrow(hcs render.HStroke, p, dir, n geom.Vector, width, da float64) {
+	dir = dir.WithMagnitude(width / libm.Cos(arrowAngle))
 	dir = dir.RotatedAroundAxis(n, da)
-	d.doLine(hcs, p, p.Plus(dir.RotatedAroundAxis(n, angle)))
-	d.doLine(hcs, p, p.Plus(dir.RotatedAroundAxis(n, -angle)))
+	d.doLine(hcs, p, p.Plus(dir.RotatedAroundAxis(n, arrowAngle)))
+	d.doLine(hcs, p, p.Plus(dir.RotatedAroundAxis(n, -arrowAngle)))
 }
 
 // doLineWithArrows draws a dimension line: the length from a to b,
@@ -320,8 +323,7 @@ func (d *constraintDrawer) doLineWithArrows(hcs render.HStroke, ref, a, b geom.V
 
 	within := d.doLineTrimmedAgainstBox(hcs, ref, ae, be, true)
 
-	// Arrow heads are 13 pixels long, with an 18 degree half-angle.
-	theta := 18 * math.Pi / 180
+	// Arrow heads are 13 pixels long.
 	arrow := be.Minus(ae).WithMagnitude(13 * pixels)
 
 	if within != 0 {
@@ -335,8 +337,8 @@ func (d *constraintDrawer) doLineWithArrows(hcs render.HStroke, ref, a, b geom.V
 		}
 	}
 
-	d.doArrow(hcs, ae, arrow, n, 13.0*pixels, theta, 0.0)
-	d.doArrow(hcs, be, arrow.Negated(), n, 13.0*pixels, theta, 0.0)
+	d.doArrow(hcs, ae, arrow, n, 13.0*pixels, 0.0)
+	d.doArrow(hcs, be, arrow.Negated(), n, 13.0*pixels, 0.0)
 }
 
 func (d *constraintDrawer) doEqualLenTicks(hcs render.HStroke, a, b, gn geom.Vector, refp *geom.Vector) {
@@ -382,7 +384,7 @@ func (d *constraintDrawer) doEqualRadiusTicks(hcs render.HStroke, he core.HEntit
 
 // doLineExtend draws the projection of pt onto the line p0-p1, and the
 // line's extension to it if pt is beyond the line's ends.
-func (d *constraintDrawer) doLineExtend(hcs render.HStroke, p0, p1, pt geom.Vector, salient float64) bool {
+func (d *constraintDrawer) doLineExtend(hcs render.HStroke, p0, p1, pt geom.Vector, salient float64) {
 	dir := p1.Minus(p0)
 	k := dir.Dot(pt.Minus(p0)) / dir.Dot(dir)
 	ptOnLine := p0.Plus(dir.ScaledBy(k))
@@ -400,11 +402,10 @@ func (d *constraintDrawer) doLineExtend(hcs render.HStroke, p0, p1, pt geom.Vect
 	case k > 1.0:
 		from, to = p1, ptOnLine.Plus(sd)
 	default:
-		return false
+		return
 	}
 	// Draw extension line.
 	d.doLine(hcs, from, to)
-	return true
 }
 
 // doArcForAngle draws the arc of an angle dimension between the lines
@@ -480,7 +481,6 @@ func (d *constraintDrawer) doArcForAngle(hcs render.HStroke, a0, da, b0, db, off
 		apb := da.ScaledBy(r * libm.Cos(thetaf)).Plus(dna.ScaledBy(r * libm.Sin(thetaf))).Plus(pi)
 
 		arrowW := 13 * pixels
-		arrowA := 18.0 * math.Pi / 180.0
 		arrowVisible := apb.Minus(apa).Magnitude() > 2.5*arrowW
 		// Arrow reversing indicator
 		arrowRev := false
@@ -547,8 +547,8 @@ func (d *constraintDrawer) doArcForAngle(hcs render.HStroke, a0, da, b0, db, off
 				dna = dna.ScaledBy(-1.0)
 				angleCorr = -angleCorr
 			}
-			d.doArrow(hcs, apa, dna, norm, arrowW, arrowA, angleCorr)
-			d.doArrow(hcs, apb, dna, norm, arrowW, arrowA, thetaf+math.Pi-angleCorr)
+			d.doArrow(hcs, apa, dna, norm, arrowW, angleCorr)
+			d.doArrow(hcs, apb, dna, norm, arrowW, thetaf+math.Pi-angleCorr)
 		}
 	} else {
 		// The lines are skew; no wonderful way to illustrate that.

@@ -2570,7 +2570,7 @@ func (exc *ttExecContext) runIns() error {
 		}
 
 		if exc.err != nil {
-			if exc.err == errInvalidOpcode {
+			if errors.Is(exc.err, errInvalidOpcode) {
 				found := false
 				for i := uint32(0); i < exc.numIDefs; i++ {
 					def := &exc.IDefs[i]
@@ -2656,7 +2656,7 @@ func (exc *ttExecContext) runContext(size *ttSize) error {
 	exc.zp1 = exc.pts
 	exc.zp2 = exc.pts
 
-	numTwilightPoints := uint64(2 * (uint64(exc.pts.nPoints) + exc.cvtSize))
+	numTwilightPoints := 2 * (uint64(exc.pts.nPoints) + exc.cvtSize)
 	if numTwilightPoints < 30 {
 		numTwilightPoints = 30
 	}
@@ -2670,7 +2670,7 @@ func (exc *ttExecContext) runContext(size *ttSize) error {
 	exc.loopcallCounter = 0
 	exc.negJumpCounter = 0
 	if exc.pts.nPoints != 0 {
-		a := uint64(10 * uint64(exc.pts.nPoints))
+		a := 10 * uint64(exc.pts.nPoints)
 		if a < 50 {
 			a = 50
 		}

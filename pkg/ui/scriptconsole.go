@@ -140,12 +140,12 @@ func (c *ScriptConsole) Busy() bool { return c.busy }
 
 // start runs job as the console's script, on its own goroutine if
 // there is an event loop to keep alive; job returns what is to be
-// done on the loop when it is over, such as showing its result. It is
-// false if a script already runs.
-func (c *ScriptConsole) start(job func(ctx context.Context) (done func())) bool {
+// done on the loop when it is over, such as showing its result. It
+// refuses if a script already runs.
+func (c *ScriptConsole) start(job func(ctx context.Context) (done func())) {
 	if c.busy {
 		c.print(platform.ConsoleInfo, "A script is running; stop it first.\n")
-		return false
+		return
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	c.busy, c.cancel = true, cancel
@@ -170,7 +170,6 @@ func (c *ScriptConsole) start(job func(ctx context.Context) (done func())) bool 
 	} else {
 		run()
 	}
-	return true
 }
 
 // showError shows the error of a script, if it is one to show.

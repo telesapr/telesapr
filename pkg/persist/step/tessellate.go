@@ -237,10 +237,7 @@ func tessellateFace(f *Face, tol float64) ([]meshTri, error) {
 
 	var contours []contour
 	for _, b := range f.Bounds {
-		c, err := s.loop(b, polys, uses, f.Sense)
-		if err != nil {
-			return nil, err
-		}
+		c := s.loop(b, polys, uses, f.Sense)
 		if len(c.pts) >= 2 {
 			contours = append(contours, c)
 		}
@@ -290,7 +287,7 @@ func polygonFace(f *Face) (*Face, bool) {
 }
 
 // loop lays out a bound in parameter space.
-func (s *faceSurface) loop(b *Bound, polys map[*Edge][]geom.Vector, uses map[*Edge]int, sense bool) (contour, error) {
+func (s *faceSurface) loop(b *Bound, polys map[*Edge][]geom.Vector, uses map[*Edge]int, sense bool) contour {
 	var pieces []piece
 	if b.Poly != nil {
 		var pc piece
@@ -325,7 +322,7 @@ func (s *faceSurface) loop(b *Bound, polys map[*Edge][]geom.Vector, uses map[*Ed
 		pieces = append(pieces, pc)
 	}
 	if len(pieces) == 0 {
-		return contour{}, nil
+		return contour{}
 	}
 	for i := range pieces {
 		s.unwrapPiece(&pieces[i])
@@ -398,7 +395,7 @@ func (s *faceSurface) loop(b *Bound, polys map[*Edge][]geom.Vector, uses map[*Ed
 		}
 	}
 	if len(c.pts) < 2 {
-		return c, nil
+		return c
 	}
 	head, tail := c.pts[0], c.pts[len(c.pts)-1]
 	if s.pu > 0 && !head.singU && !tail.singU {
@@ -413,7 +410,7 @@ func (s *faceSurface) loop(b *Bound, polys map[*Edge][]geom.Vector, uses map[*Ed
 		// The end is the start one period on: kept implicit.
 		c.pts = c.pts[:len(c.pts)-1]
 	}
-	return c, nil
+	return c
 }
 
 // acrossPole is the shift, in whole periods of u, that puts the start

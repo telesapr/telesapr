@@ -1259,18 +1259,17 @@ func (tw *TextWindow) ScreenResetEdgeRadius(link int, v uint32) {
 
 // setEdgeRadiusText gives a fillet's edge its own radius from typed
 // text, or "" the fillet's, as one step of undo.
-func (ss *Application) setEdgeRadiusText(hg core.HGroup, i int, s string) bool {
+func (ss *Application) setEdgeRadiusText(hg core.HGroup, i int, s string) {
 	err := ss.SK.UndoRememberFor(func() error {
 		return ss.SK.SetEdgeRadiusText(hg, i, s)
 	})
 	if err != nil {
 		ss.Error("%s.", capitalize(err.Error()))
-		return false
+		return
 	}
 	ss.SK.Unsaved = true
 	ss.UndoEnableMenus()
 	ss.GW.Invalidate(false)
-	return true
 }
 
 // showGroupItems lists a group's requests and constraints (the
@@ -1684,7 +1683,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 
 	switch tw.edit.meaning {
 	case EditTimesRepeated:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			g := sk.GetGroup(tw.edit.group)
 			if !ss.setGroupText(g.H, sketch.GroupCopies, s) {
 				break
@@ -1716,22 +1715,22 @@ func (tw *TextWindow) EditControlDone(s string) {
 		}
 
 	case EditGroupScale:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupScale, s)
 		}
 
 	case EditHelixPitch: // stored in valB
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
 		}
 
 	case EditGroupDraft, EditChamferDistance2:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupValC, s)
 		}
 
 	case EditEdgeRadius:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.setEdgeRadiusText(tw.edit.group, tw.edit.i, s)
 		}
 
@@ -1753,7 +1752,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 		}
 
 	case EditGroupOpacity:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			alpha := ss.evalExpr(e)
 			if alpha < 0 || alpha > 1 {
 				ss.Error("Opacity must be between zero and one.")
@@ -1773,7 +1772,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 		}
 
 	case EditStepDimFinish:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			if tw.stepDim.isDistance {
 				tw.stepDim.finish = ss.ExprToMm(e)
 			} else {
@@ -1785,7 +1784,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 		tw.stepDim.steps = min(300, max(1, atoi(s)))
 
 	case EditTangentArcRadius:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			if ss.evalExpr(e) < core.LengthEps {
 				ss.Error("Radius cannot be zero or negative.")
 				break

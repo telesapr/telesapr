@@ -79,7 +79,7 @@ func sqrtNear1(z float64, asin bool) (y, cc, p float64) {
 	k := hi(z)
 	t := inroot[(k&0x001fffff)>>14] * powtwo[511-(k>>21)]
 	r := math.FMA(-(t * t), z, 1.0)
-	t = t * math.FMA(r, math.FMA(r, math.FMA(r, rt3, rt2), rt1), rt0)
+	t *= math.FMA(r, math.FMA(r, math.FMA(r, rt3, rt2), rt1), rt0)
 	c := t * z
 	// t = c*(1.5 - 0.5*t*c) is only used in t + y, so it's fused there.
 	h := math.FMA(-(0.5 * t), c, 1.5)

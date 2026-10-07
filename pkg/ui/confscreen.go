@@ -497,7 +497,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 			ss.GW.Invalidate(false)
 		}
 	case EditExportScale:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ev := ss.evalExpr(e)
 			if math.Abs(ev) < 0.001 || isUnreasonable(ev) {
 				ss.Error("Export scale must not be zero!")
@@ -506,7 +506,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 			}
 		}
 	case EditExportOffset:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ev := ss.ExprToMm(e)
 			if isUnreasonable(ev) || ev < 0 {
 				ss.Error("Cutter radius offset must not be negative!")
@@ -515,7 +515,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 			}
 		}
 	case EditCanvasSize:
-		e := ss.exprFromString(s, true)
+		e := ss.exprFromString(s)
 		if e == nil {
 			break
 		}
@@ -540,24 +540,24 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 			ss.ExportCanvas.Dy = d
 		}
 	case EditGCodeDepth:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.Depth = toF32(ss.ExprToMm(e))
 		}
 	case EditGCodeSafeHeight:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.SafeHeight = toF32(ss.ExprToMm(e))
 		}
 	case EditGCodePasses:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.Passes = int(ss.evalExpr(e))
 		}
 		ss.GCode.Passes = max(1, min(1000, ss.GCode.Passes))
 	case EditGCodeFeed:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.Feed = toF32(ss.ExprToMm(e))
 		}
 	case EditGCodePlungeFeed:
-		if e := ss.exprFromString(s, true); e != nil {
+		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.PlungeFeed = toF32(ss.ExprToMm(e))
 		}
 	case EditAutosaveInterval:

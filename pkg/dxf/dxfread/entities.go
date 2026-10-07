@@ -19,9 +19,9 @@ type Coord struct{ X, Y, Z float64 }
 func (c *Coord) unitize() {
 	dist := libm.Hypot(libm.Hypot(c.X, c.Y), c.Z)
 	if dist > 0.0 {
-		c.X = c.X / dist
-		c.Y = c.Y / dist
-		c.Z = c.Z / dist
+		c.X /= dist
+		c.Y /= dist
+		c.Z /= dist
 	}
 }
 
@@ -338,7 +338,7 @@ func (in *Insert) parseInsert(code int, r *reader) bool {
 		in.ZScale = r.getDouble()
 	case 50:
 		in.Angle = r.getDouble()
-		in.Angle = in.Angle / ARAD // convert to radian
+		in.Angle /= ARAD // convert to radian
 	case 70:
 		in.ColCount = r.getInt32()
 	case 71:

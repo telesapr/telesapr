@@ -541,7 +541,7 @@ func (e *Engine) tooMany(d definition) error {
 	_, err := e.i.Eval("_ = func() { " + blanks + " = " + d.value + " }")
 	log.SetOutput(logged)
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // the probe failing means the count fits, which is no error
 	}
 	return &Error{Line: d.line, Col: d.col, Err: fmt.Errorf(
 		"assignment mismatch: %d variable(s) but %s has more values; name each, as in \"lo, hi := g.Bounds()\"",

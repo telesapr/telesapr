@@ -1,11 +1,13 @@
 package tlspr
 
 import (
+	"errors"
 	"fmt"
-	"github.com/telesapr/telesapr/pkg/topo"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/telesapr/telesapr/pkg/topo"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -248,7 +250,7 @@ func (d *decoder) real(v Value) float64 {
 func (d *decoder) parseReal(pos Pos, s string) float64 {
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		if ne, ok := err.(*strconv.NumError); !ok || ne.Err != strconv.ErrRange {
+		if !isRangeError(err) {
 			d.fail(pos, "expected a number, not %q", s)
 		}
 	}
@@ -283,8 +285,8 @@ func (d *decoder) expr(n *Node, where exprPlace) (float64, string) {
 }
 
 func isRangeError(err error) bool {
-	ne, ok := err.(*strconv.NumError)
-	return ok && ne.Err == strconv.ErrRange
+	var ne *strconv.NumError
+	return errors.As(err, &ne) && errors.Is(ne.Err, strconv.ErrRange)
 }
 
 // exprPlace is where a stored expression is: a parameter by name, a
@@ -951,10 +953,10 @@ func (d *decoder) surface(n *Node) srf.SSurface {
 			sf.Sheet = d.handleField(c)
 		case "degree":
 			da := d.fieldArgs(c, 2)
-			sf.DegM, sf.DegN = d.degree(da[0], len(sf.Ctrl)-1), d.degree(da[1], len(sf.Ctrl[0])-1)
+			sf.DegM, sf.DegN = d.degree(da[0]), d.degree(da[1])
 		case "ctrl":
 			ca := d.fieldArgs(c, 6)
-			i, j := d.degree(ca[0], len(sf.Ctrl)-1), d.degree(ca[1], len(sf.Ctrl[0])-1)
+			i, j := d.degree(ca[0]), d.degree(ca[1])
 			sf.Ctrl[i][j] = d.vector(ca[2:5])
 			sf.Weight[i][j] = d.real(ca[5])
 		case "trim":
@@ -984,13 +986,13 @@ func (d *decoder) curve(n *Node) srf.SCurve {
 		case "exact":
 			sc.IsExact = d.flag(c)
 		case "degree":
-			sc.Exact.Degree = d.degree(d.fieldArgs(c, 1)[0], len(sc.Exact.Ctrl)-1)
+			sc.Exact.Degree = d.degree(d.fieldArgs(c, 1)[0])
 		case "surfaces":
 			sa := d.fieldArgs(c, 2)
 			sc.SurfA, sc.SurfB = core.HSSurface{V: d.handle(sa[0])}, core.HSSurface{V: d.handle(sa[1])}
 		case "ctrl":
 			ca := d.fieldArgs(c, 5)
-			i := d.degree(ca[0], len(sc.Exact.Ctrl)-1)
+			i := d.degree(ca[0])
 			sc.Exact.Ctrl[i] = d.vector(ca[1:4])
 			sc.Exact.Weight[i] = d.real(ca[4])
 		case "point", "vertex":
@@ -1002,11 +1004,11 @@ func (d *decoder) curve(n *Node) srf.SCurve {
 	return sc
 }
 
-// degree reads an index or degree from 0 to max.
-func (d *decoder) degree(v Value, max int) int {
+// degree reads an index or degree from 0 to srf.MaxDegree.
+func (d *decoder) degree(v Value) int {
 	i := d.int(v)
-	if i < 0 || i > max {
-		d.fail(v.Pos, "%d is out of range 0 to %d", i, max)
+	if i < 0 || i > srf.MaxDegree {
+		d.fail(v.Pos, "%d is out of range 0 to %d", i, srf.MaxDegree)
 	}
 	return i
 }

@@ -1084,7 +1084,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 				}
 			}
 			if ro := cut.off; ro != nil {
-				if err := rb.runOffCuts(sh, row, k, end, ro); err != nil {
+				if err := rb.runOffCuts(sh, row, k, ro); err != nil {
 					return err
 				}
 				w := t.Vertices[ro.w].P

@@ -1438,7 +1438,7 @@ func (gw *GraphicsWindow) EditControlDone(s string) {
 	}
 
 	name, named, value := sketch.SplitNamedText(s)
-	if e := ss.exprFromString(value, true); e != nil {
+	if e := ss.exprFromString(value); e != nil {
 		// A length typed as a plain expression is in the view's unit;
 		// one that names a parameter is kept, in mm and degrees.
 		err := ss.SK.UndoRememberFor(func() error {
@@ -1478,12 +1478,10 @@ func (gw *GraphicsWindow) MouseLeave() {
 
 // exprFromString parses an expression, telling the user if it doesn't
 // (C++ Expr::From).
-func (ss *Application) exprFromString(input string, popUpError bool) *core.Expr {
+func (ss *Application) exprFromString(input string) *core.Expr {
 	e, err := core.NewFromString(input)
 	if err != nil {
-		if popUpError {
-			ss.Error("Not a valid number or expression: '%s'.\n%s.", input, err.Error())
-		}
+		ss.Error("Not a valid number or expression: '%s'.\n%s.", input, err.Error())
 		return nil
 	}
 	return e

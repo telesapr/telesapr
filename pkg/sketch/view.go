@@ -70,7 +70,7 @@ func (v *View) UnProjectPoint(p geom.Point2d) geom.Vector {
 // UnProjectPoint3 inverts ProjectPoint3 (C++
 // GraphicsWindow::UnProjectPoint3).
 func (v *View) UnProjectPoint3(p geom.Vector) geom.Vector {
-	p.Z = p.Z / (v.Scale - p.Z*v.Tangent*v.Scale)
+	p.Z /= v.Scale - p.Z*v.Tangent*v.Scale
 	w := 1 + p.Z*v.Tangent*v.Scale
 	p.X *= w / v.Scale
 	p.Y *= w / v.Scale

@@ -109,7 +109,7 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 	ssn := into.Surface[first:]
 	failed := make([]bool, len(s.Surface))
 	loop(atOnce, len(s.Surface), func(i int) {
-		failed[i] = s.Surface[i].makeCopyTrimAgainst(s, sha, shb, into, op, i, &ssn[i])
+		failed[i] = s.Surface[i].makeCopyTrimAgainst(s, sha, shb, into, op, &ssn[i])
 	})
 	for i := range s.Surface {
 		ssn[i].H = core.HSSurface{V: maxV + 1 + uint32(i)}

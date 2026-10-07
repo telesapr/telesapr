@@ -186,7 +186,6 @@ func (gw *GraphicsWindow) populateMenuWithPathnames(menu platform.Menu, pathname
 		return
 	}
 	for _, pathname := range pathnames {
-		pathname := pathname
 		menu.AddItem(pathname, func() {
 			if _, err := os.Stat(pathname); err == nil {
 				onTrigger(pathname)

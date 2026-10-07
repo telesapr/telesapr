@@ -22,11 +22,9 @@ func (ss *Application) MenuConstrain(id Command) {
 	gs := &gw.gs
 
 	// add is Constraint::AddConstraint on a copy of c, kept in newcons.
-	add := func(nc core.Constraint, remember bool) *core.Constraint {
+	add := func(nc core.Constraint, remember bool) {
 		ss.addConstraint(&nc, remember)
-		p := &nc
-		newcons = append(newcons, p)
-		return p
+		newcons = append(newcons, &nc)
 	}
 	errorf := func(msg string) { ss.Error("%s", msg) }
 

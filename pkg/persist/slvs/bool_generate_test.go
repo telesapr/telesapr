@@ -3,10 +3,11 @@ package slvs
 import (
 	"math"
 
-	"github.com/telesapr/telesapr/pkg/srf"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // boolFixtureStats holds the actual stats we compute per fixture.

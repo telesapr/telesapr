@@ -104,7 +104,7 @@ func addVertex(el *[]core.Entity, v geom.Vector) {
 	}
 }
 
-func newNormal(el *[]core.Entity, id *int, normal geom.Quaternion, p core.HEntity) core.HEntity {
+func newNormal(el *[]core.Entity, id *int, normal geom.Quaternion, p core.HEntity) {
 	en := core.Entity{}
 	en.Type = core.EntityNormalNCopy
 	en.Group = core.HGroup{V: 472}
@@ -117,10 +117,9 @@ func newNormal(el *[]core.Entity, id *int, normal geom.Quaternion, p core.HEntit
 	*id++
 	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
 	*el = append(*el, en)
-	return en.H
 }
 
-func newLine(el *[]core.Entity, id *int, p0, p1 core.HEntity) core.HEntity {
+func newLine(el *[]core.Entity, id *int, p0, p1 core.HEntity) {
 	en := core.Entity{}
 	en.Type = core.EntityLineSegment
 	en.Point[0] = p0
@@ -133,7 +132,6 @@ func newLine(el *[]core.Entity, id *int, p0, p1 core.HEntity) core.HEntity {
 	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
 	*id++
 	*el = append(*el, en)
-	return en.H
 }
 
 // linkStl reads an STL file, binary or text, into mesh m, with

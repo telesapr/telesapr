@@ -68,7 +68,7 @@ func TransformedLoopSet(sbls *SBezierLoopSet, r Rigid) *SBezierLoopSet {
 	move := func(l *SBezierLoop) SBezierLoop {
 		var m SBezierLoop
 		for i := range l.Curves {
-			m.Curves = append(m.Curves, transformedCopy(&l.Curves[i], r.T, r.Q, 1))
+			m.Curves = append(m.Curves, transformedCopy(&l.Curves[i], r.T, r.Q))
 		}
 		return m
 	}
@@ -194,10 +194,10 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	// projected along that piece onto the mitre's plane.
 	section := func(c *SBezier, j int) SBezier {
 		if !mitre[j].ok {
-			return transformedCopy(c, frames[j].T, frames[j].Q, 1)
+			return transformedCopy(c, frames[j].T, frames[j].Q)
 		}
 		before := frames[j-1].Then(steps[j-1].Motion())
-		b := transformedCopy(c, before.T, before.Q, 1)
+		b := transformedCopy(c, before.T, before.Q)
 		return projectedAlong(b, steps[j-1].Along.WithMagnitude(1), mitre[j].at, mitre[j].n)
 	}
 	// The point p's place at joint j, as section moves it.
@@ -243,7 +243,7 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 			srfs[k] = make([]core.HSSurface, nc)
 			from := len(s.Surface)
 			for i := range loop.Curves {
-				b := transformedCopy(&loop.Curves[i], frames[k].T, frames[k].Q, 1)
+				b := transformedCopy(&loop.Curves[i], frames[k].T, frames[k].Q)
 				var ss SSurface
 				mitred := mitre[k].ok || mitre[k+1].ok
 				if st.Arc {

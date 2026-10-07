@@ -97,7 +97,7 @@ func GuidedLoftSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []
 				}
 				move, err := guideMove(from, to, n)
 				if err != nil {
-					return nil, fmt.Errorf("%v between profiles %d and %d", err, i, i+1)
+					return nil, fmt.Errorf("%w between profiles %d and %d", err, i, i+1)
 				}
 				d := make([]geom.Vector, len(c.Ctrl))
 				for j, q := range c.Ctrl {

@@ -371,11 +371,11 @@ func newBsplineSurface(du, dv int, ku, kv []float64, pts [][]geom.Vector, weight
 	}
 	bu, err := newBasis(du, ku, nu)
 	if err != nil {
-		return nil, fmt.Errorf("along u: %v", err)
+		return nil, fmt.Errorf("along u: %w", err)
 	}
 	bv, err := newBasis(dv, kv, nv)
 	if err != nil {
-		return nil, fmt.Errorf("along v: %v", err)
+		return nil, fmt.Errorf("along v: %w", err)
 	}
 	if weights != nil {
 		if len(weights) != nu {

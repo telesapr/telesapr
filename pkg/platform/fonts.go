@@ -33,7 +33,7 @@ func SystemFontFiles() []string {
 	for _, dir := range dirs {
 		_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
-				return nil
+				return nil //nolint:nilerr // an entry that can't be read is skipped, the walk goes on
 			}
 			switch strings.ToLower(filepath.Ext(path)) {
 			case ".ttf", ".otf", ".ttc", ".pfa", ".pfb", ".woff", ".woff2":

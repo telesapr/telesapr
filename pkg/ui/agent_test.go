@@ -3,7 +3,6 @@ package ui
 import (
 	"bytes"
 	"context"
-	"github.com/telesapr/telesapr/pkg/core"
 	"image/png"
 	"net"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/telesapr/telesapr/pkg/core"
 
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"

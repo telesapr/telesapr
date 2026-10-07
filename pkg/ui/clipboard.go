@@ -88,7 +88,7 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
 	case EditPasteTimesRepeated:
-		e := ss.exprFromString(s, true)
+		e := ss.exprFromString(s)
 		if e == nil {
 			break
 		}
@@ -100,14 +100,14 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 		}
 
 	case EditPasteAngle:
-		e := ss.exprFromString(s, true)
+		e := ss.exprFromString(s)
 		if e == nil {
 			break
 		}
 		tw.shown.paste.theta = wrapSymmetric(ss.evalExpr(e)*math.Pi/180, 2*math.Pi)
 
 	case EditPasteScale:
-		e := ss.exprFromString(s, true)
+		e := ss.exprFromString(s)
 		if e == nil {
 			// C++ dereferences the null expression here.
 			break

@@ -138,7 +138,7 @@ func bezierRoot(sb *srf.SBezier, h func(geom.Vector) float64, a, b float64) floa
 // face's plane cuts, where it cuts the end section (p1) and side j's
 // contact curve (p2), and splits the next face's edges with the end face
 // and with side j's face there.
-func (rb *rollingBall) runOffCuts(sh *srf.SShell, row []srf.SSurface, k int, end *rbEnd, ro *rbRunOff) error {
+func (rb *rollingBall) runOffCuts(sh *srf.SShell, row []srf.SSurface, k int, ro *rbRunOff) error {
 	t := rb.t
 	m := len(row)
 	w := t.Vertices[ro.w].P

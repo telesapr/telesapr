@@ -1,6 +1,9 @@
 package ttf
 
-import "bytes"
+import (
+	"bytes"
+	"errors"
+)
 
 // FreeType's Type 42 driver (type42's t42parse.c and t42objs.c): a
 // TrueType font wrapped in a PostScript font dictionary. The dictionary
@@ -841,7 +844,7 @@ func t42FaceInit(data []byte) (*Face, error) {
 			encoding:   encodingUnicode,
 			synthetic:  u,
 		})
-	} else if uerr != errNoUnicodeGlyphName {
+	} else if !errors.Is(uerr, errNoUnicodeGlyphName) {
 		return nil, uerr
 	}
 	if type1.encodingType == t1EncodingISOLatin1 && uerr != nil {

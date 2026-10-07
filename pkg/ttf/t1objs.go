@@ -1,5 +1,7 @@
 package ttf
 
+import "errors"
+
 // FreeType's Type 1 driver faces and glyphs (type1's t1objs.c and
 // t1gload.c, and psaux's t1_make_subfont), with the charstrings run by
 // the cf2 engine in its Type 1 mode.
@@ -94,7 +96,7 @@ func t1FaceInit(data []byte) (*Face, error) {
 			encoding:   encodingUnicode,
 			synthetic:  u,
 		})
-	} else if uerr != errNoUnicodeGlyphName {
+	} else if !errors.Is(uerr, errNoUnicodeGlyphName) {
 		return nil, uerr
 	}
 	if t1.encodingType == t1EncodingISOLatin1 && uerr != nil {

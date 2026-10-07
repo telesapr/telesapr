@@ -1,6 +1,9 @@
 package ttf
 
-import "bytes"
+import (
+	"bytes"
+	"errors"
+)
 
 // FreeType's Type 1 font loader (type1's t1load.c, with its keyword
 // table t1tokens.h and the multiple-master parsing): the font and
@@ -1169,7 +1172,7 @@ func t1ParseDict(f *t1Font, l *t1Loader, base []byte) error {
 					if l.keywordsEncountered&t1FontdirAfterPrivate == 0 || kw.ident == "CharStrings" {
 						p.err = t1LoadKeyword(f, l, kw)
 						if p.err != nil {
-							if p.err == errIgnore {
+							if errors.Is(p.err, errIgnore) {
 								p.err = nil
 							} else {
 								return p.err
