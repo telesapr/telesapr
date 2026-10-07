@@ -15,6 +15,8 @@ help:
 	@echo "  make fmt-check    - Fail if gofmt would change a tracked file"
 	@echo "  make vet          - Run go vet"
 	@echo "  make tidy         - Tidy go.mod"
+	@echo "  make tidy-check   - Fail if go.mod or go.sum is not tidy"
+	@echo "  make vuln         - Run govulncheck"
 	@echo "  make lint         - Run linter"
 	@echo "  make lint-new     - Run linter on what changed since LINT_BASE ($(LINT_BASE))"
 	@echo "  make generate     - Regenerate what scripts can import (pkg/script/symbols)"
@@ -29,7 +31,7 @@ help:
 	@echo "  make distclean    - clean, plus the Go build, test and module caches"
 	@echo ""
 
-.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy lint lint-new generate generate-check build install uninstall clean distclean
+.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean
 
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
@@ -39,7 +41,7 @@ ICON_SIZES = 16x16 24x24 32x32 48x48
 
 test:
 	@echo "==> go test ./..."
-	GOCACHE=$(PWD)/.gocache go test ./... -v
+	GOCACHE=$(PWD)/.gocache go test ./...
 
 # The GUI backend's tests open windows, so they run under Xvfb.
 test-gui:
@@ -47,9 +49,13 @@ test-gui:
 	GOCACHE=$(PWD)/.gocache TELESAPR_GUI_TESTS=1 xvfb-run -a -s "-screen 0 1280x1024x24 -noreset" \
 		go test ./pkg/platform/tkgui/... ./pkg/render/gl/... -v
 
-# The packages whose loops run on several goroutines, and what loads
-# and regenerates through them.
-RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/...
+# The packages whose loops run on several goroutines, what loads and
+# regenerates through them, and the servers and platforms that hand
+# work between goroutines. pkg/ui and pkg/script/api take over ten
+# minutes each under the detector and wait for WP2 of the review plan
+# (docs/adr, 2026-10-07), which lets their tests run in parallel.
+RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
+	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render/soft ./cmd/...
 
 # The slow packages' tests run as several processes side by side
 # (scripts/go-test.sh), and the fixture loops take a sample under the
@@ -83,8 +89,8 @@ fuzz:
 # What .github/workflows/ci.yml runs, the whole tree linted.
 # The checks that rewrite or read the sources first; then the rest side
 # by side, each target's output printed when it is done.
-ci: fmt-check vet generate-check
-	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint
+ci: fmt-check vet tidy-check generate-check
+	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint vuln
 
 fmt-check:
 	@echo "==> gofmt -l"
@@ -102,6 +108,16 @@ fmt:
 tidy:
 	@echo "==> go mod tidy"
 	go mod tidy
+
+tidy-check:
+	@echo "==> go mod tidy -diff"
+	go mod tidy -diff
+
+# govulncheck is pinned in go.mod's tool block; it reports only the
+# vulnerabilities the binaries can reach.
+vuln:
+	@echo "==> govulncheck ./..."
+	GOCACHE=$(PWD)/.gocache go tool govulncheck ./...
 
 lint:
 	@echo "==> golangci-lint run"

@@ -36,6 +36,8 @@ jobs:
         run: make fmt-check
       - name: Vet
         run: make vet
+      - name: go.mod and go.sum are tidy
+        run: make tidy-check
       - name: Build
         run: make build
       - name: Generated script symbols are up to date
@@ -46,6 +48,8 @@ jobs:
         run: make test-race
       - name: GUI tests under Xvfb
         run: make test-gui
+      - name: Known vulnerabilities reachable from the binaries
+        run: make vuln
       - uses: actions/upload-artifact@v7
         with:
           name: coverage
