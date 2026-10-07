@@ -25,19 +25,6 @@ func (NoSettings) ThawFloat(_ string, defaultValue float64) float64 { return def
 func (NoSettings) FreezeString(string, string)                      {}
 func (NoSettings) ThawString(_, defaultValue string) string         { return defaultValue }
 
-var settings Settings = NoSettings{}
-
-// GetSettings is the settings store (C++ Platform::GetSettings).
-func GetSettings() Settings { return settings }
-
-// SetSettings makes s the settings store; nil restores NoSettings.
-func SetSettings(s Settings) {
-	if s == nil {
-		s = NoSettings{}
-	}
-	settings = s
-}
-
 // FreezeBool, ThawBool, FreezeColor and ThawColor store through the
 // integer settings (C++ Settings::FreezeBool and so on).
 func FreezeBool(s Settings, key string, value bool) {

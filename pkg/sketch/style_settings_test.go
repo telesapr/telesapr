@@ -44,8 +44,6 @@ func (m *mapSettings) ThawString(k, d string) string {
 // LoadFactoryDefaults restores the factory settings.
 func TestDefaultStylesFromSettings(t *testing.T) {
 	st := newMapSettings()
-	core.SetSettings(st)
-	defer core.SetSettings(nil)
 
 	red := core.NewRGBA(255, 0, 0, 255)
 	core.FreezeColor(st, core.CnfColor("ActiveGrp"), red)
@@ -54,6 +52,7 @@ func TestDefaultStylesFromSettings(t *testing.T) {
 	core.FreezeBool(st, core.CnfExportable("ActiveGrp"), false)
 
 	sk := NewSketch()
+	sk.Settings = st
 	s := sk.StyleGet(core.HStyle{V: core.StyleActiveGrp})
 	if !s.Color.Equals(red) || s.Width != 2.5 || s.StippleType != core.StippleDashDot || s.Exportable {
 		t.Fatalf("style from settings: %+v", *s)

@@ -279,8 +279,8 @@ func (ss *Application) LoadSettings() {
 
 // applyEngineSettings passes the settings the engine reads on.
 func (ss *Application) applyEngineSettings() {
-	core.SetSettings(ss.Settings)
 	if ss.SK != nil {
+		ss.SK.Settings = ss.Settings
 		// A linked solid keeps the tolerance it was read at: when the
 		// chord tolerance in effect changes, the links are read again.
 		was := ss.SK.ChordTolPercent()

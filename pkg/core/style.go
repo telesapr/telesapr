@@ -120,9 +120,11 @@ var StyleDefaults = []StyleDefault{
 
 // FillDefaultStyle sets s to default style d, or to the active group's
 // style for nil: its factory settings if factory, else the user's
-// settings for it (C++ Style::FillDefaultStyle).
-func FillDefaultStyle(s *Style, d *StyleDefault, factory bool) {
-	settings := GetSettings()
+// settings for it, from settings (nil for none).
+func FillDefaultStyle(s *Style, d *StyleDefault, factory bool, settings Settings) {
+	if settings == nil {
+		settings = NoSettings{}
+	}
 
 	if d == nil {
 		d = &StyleDefaults[0]

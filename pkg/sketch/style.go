@@ -46,12 +46,12 @@ func (sk *Sketch) CreateDefaultStyle(h core.HStyle) {
 
 	ns := core.Style{}
 	if d != nil {
-		core.FillDefaultStyle(&ns, d, false)
+		core.FillDefaultStyle(&ns, d, false, sk.SettingsStore())
 		ns.Name = core.CnfPrefixToName(d.CnfPrefix)
 	} else {
 		// Not a default style; so just create it the same as our default
 		// active group entity style.
-		core.FillDefaultStyle(&ns, nil, false)
+		core.FillDefaultStyle(&ns, nil, false, sk.SettingsStore())
 		ns.Name = "new-custom-style"
 	}
 	ns.H = h
@@ -110,7 +110,7 @@ func (sk *Sketch) LoadFactoryDefaults() {
 	for i := range core.StyleDefaults {
 		d := &core.StyleDefaults[i]
 		s := sk.StyleGet(d.H)
-		core.FillDefaultStyle(s, d, true)
+		core.FillDefaultStyle(s, d, true, sk.SettingsStore())
 	}
 }
 

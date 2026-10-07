@@ -705,6 +705,14 @@ func (sk *Sketch) SegmentLimit() int {
 	return 20
 }
 
+// SettingsStore is Settings, or a store that keeps nothing.
+func (sk *Sketch) SettingsStore() core.Settings {
+	if sk.Settings == nil {
+		return core.NoSettings{}
+	}
+	return sk.Settings
+}
+
 // Tol is the tolerance the last regeneration followed curves and
 // surfaces at: the export one while Exporting is set, otherwise one
 // from the model's size and ChordTolPct.

@@ -2640,10 +2640,7 @@
 			},
 			"Settings": {
 				"text": "Settings is the user's persistent settings (C++ Platform::Settings).",
-				"kind": "interface",
-				"makers": [
-					"GetSettings"
-				]
+				"kind": "interface"
 			},
 			"SolveResult": {
 				"kind": "int",
@@ -2758,8 +2755,8 @@
 				"text": "EvalExpr evaluates expr at the sketch's current param values (C++ Expr::Eval)."
 			},
 			"FillDefaultStyle": {
-				"decl": "func FillDefaultStyle(s *Style, d *StyleDefault, factory bool)",
-				"text": "FillDefaultStyle sets s to default style d, or to the active group's style for nil: its factory settings if factory, else the user's settings for it (C++ Style::FillDefaultStyle)."
+				"decl": "func FillDefaultStyle(s *Style, d *StyleDefault, factory bool, settings Settings)",
+				"text": "FillDefaultStyle sets s to default style d, or to the active group's style for nil: its factory settings if factory, else the user's settings for it, from settings (nil for none)."
 			},
 			"FreezeBool": {
 				"decl": "func FreezeBool(s Settings, key string, value bool)",
@@ -2771,10 +2768,6 @@
 			"FromVector": {
 				"decl": "func FromVector(v geom.Vector) ExprVector",
 				"text": "FromVector returns an ExprVector from a numeric vector."
-			},
-			"GetSettings": {
-				"decl": "func GetSettings() Settings",
-				"text": "GetSettings is the settings store (C++ Platform::GetSettings)."
 			},
 			"IsFreeIn3D": {
 				"decl": "func IsFreeIn3D(wrkpl HEntity) bool",
@@ -2863,10 +2856,6 @@
 			"RewriteColor": {
 				"decl": "func RewriteColor(rgbin RGBA, fixExportColors bool) RGBA",
 				"text": "RewriteColor turns an almost-white colour black when fixExportColors, so it doesn't vanish on a light background (C++ Style::RewriteColor, with SS.fixExportColors as an argument)."
-			},
-			"SetSettings": {
-				"decl": "func SetSettings(s Settings)",
-				"text": "SetSettings makes s the settings store; nil restores NoSettings."
 			},
 			"StipplePatternDashes": {
 				"decl": "func StipplePatternDashes(p StipplePattern) []float64",
@@ -5372,7 +5361,7 @@
 					},
 					"SetChordTolerance": {
 						"decl": "func (h *SketchHost) SetChordTolerance(pct float64)",
-						"text": "SetChordTolerance sets the sketch's chord tolerance."
+						"text": "SetChordTolerance sets the sketch's chord tolerance. The linked\nsolids are read again at it: a solid keeps the tolerance it was\nread at."
 					},
 					"ShowDrawingSheet": {
 						"decl": "func (h *SketchHost) ShowDrawingSheet(bool) error",
@@ -6702,6 +6691,10 @@
 						"decl": "func (sk *Sketch) SectionPlaneName() string",
 						"text": "SectionPlaneName names the section's plane for the user: a workplane by its request or group, a face by its group."
 					},
+					"SegmentLimit": {
+						"decl": "func (sk *Sketch) SegmentLimit() int",
+						"text": "SegmentLimit is MaxSegments, or its default."
+					},
 					"SetConstraintName": {
 						"decl": "func (sk *Sketch) SetConstraintName(hc core.HConstraint, name string) error",
 						"text": "SetConstraintName names the constraint hc, renaming every use of an old name, or with \"\" takes its name away, which a name in use can't be."
@@ -6745,6 +6738,10 @@
 					"SetUnits": {
 						"decl": "func (sk *Sketch) SetUnits(u core.Unit) []string",
 						"text": "SetUnits makes u the document's unit, keeping every size: a plain value is a number of millimetres and does not change, and a stored expression of a length is rewritten to give the same length in u, \"(1/4)*25.4\" from \"1/4\" in inches to millimetres, or back again without the factor."
+					},
+					"SettingsStore": {
+						"decl": "func (sk *Sketch) SettingsStore() core.Settings",
+						"text": "SettingsStore is Settings, or a store that keeps nothing."
 					},
 					"ShowNakedEdges": {
 						"decl": "func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList",
@@ -7601,7 +7598,7 @@
 				"kind": "struct",
 				"methods": {
 					"AllIntersectionsWith": {
-						"decl": "func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList)",
+						"decl": "func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList, tol Tolerance)",
 						"text": "AllIntersectionsWith adds to spl the points where this curve crosses sbb: their pwls' crossings, refined onto both curves."
 					},
 					"BoundingProjd": {
@@ -7713,7 +7710,7 @@
 						"decl": "func (l *SBezierList) Add(b SBezier)"
 					},
 					"AllIntersectionsWith": {
-						"decl": "func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList)",
+						"decl": "func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList, tol Tolerance)",
 						"text": "AllIntersectionsWith adds to spl the points where any curve of this list crosses any of other (C++ SBezierList::AllIntersectionsWith)."
 					},
 					"BoundingProjd": {

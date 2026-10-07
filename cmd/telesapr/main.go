@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/tkgui"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -27,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	core.SetSettings(p.Settings())
 
 	opts := parseArgs(os.Args[1:])
 	files, scriptFile, scriptArgs := opts.files, opts.scriptFile, opts.scriptArgs

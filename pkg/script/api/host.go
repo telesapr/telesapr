@@ -329,7 +329,7 @@ func (h *SketchHost) Export(kind ExportKind, path string) error {
 	if ext := filepath.Ext(path); kind != ExportMesh || !strings.EqualFold(ext, ".stl") && !strings.EqualFold(ext, ".3mf") {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
 	}
-	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(core.GetSettings()))
+	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(h.sk.SettingsStore()))
 }
 
 // ExportDrawing fails: drawing needs the application around the

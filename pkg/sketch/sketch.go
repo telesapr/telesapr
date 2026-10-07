@@ -82,6 +82,10 @@ type Sketch struct {
 	// model's size (C++ SS.chordTol); 0 is the default, 0.1.
 	ChordTolPct float64
 
+	// Settings is the user's settings store, which the default styles
+	// are read from and saved to; nil for none.
+	Settings core.Settings
+
 	// MaxSegments is the most segments a curve is cut into for the
 	// display; 0 is the default, 20.
 	MaxSegments int
