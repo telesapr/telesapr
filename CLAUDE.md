@@ -27,6 +27,9 @@ conventions, for people and for coding agents alike (`AGENTS.md` is the same fil
   success, no panic for anything a file or a user can cause; `panic` is for a programmer error
   only. Error strings are lowercase fragments; the user-facing sentence is made where the dialog
   is (`pkg/ui`).
+- `srf.CxxSort` and `pkg/libm` stay as they are: the order of a mesh's triangles and the last
+  bits of the kernel's arithmetic are what the goldens and the exports record (a stable sort in
+  CxxSort's place moves nine of them; tried 2026-10-07).
 - No process-wide mutable state. What a computation needs, it is given (a `Sketch`, an options
   struct). Package-level `var` is for tables and sentinels that nothing writes after
   initialisation. `init()` only for `runtime.LockOSThread` in `cmd/telesapr` and generated code.
@@ -40,6 +43,10 @@ conventions, for people and for coding agents alike (`AGENTS.md` is the same fil
 - Comments say why, in terms of this code. They do not describe the code by reference to
   SolveSpace's C++ (`docs/adr/0001-separate-from-solvespace.md`).
 - Lint is `golangci-lint` with `.golangci.yml`; the tree is clean. A `//nolint` carries a reason.
+  `golangci-lint run --fix` is not run over `examples/`: the scripts there run in yaegi, which
+  has no range over an integer or a function, so they keep the older forms. A range loop over a
+  slice fixes its bound once; a loop that walks a slice while appending to it keeps its counting
+  form, with a `//nolint:intrange` saying so.
 
 ## Tests and the definition of done
 
