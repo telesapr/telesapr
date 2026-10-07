@@ -122,7 +122,7 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 	allClosed, allCoplanar := false, false
 	var notClosed srf.SEdge
 	var notCoplanar geom.Vector
-	sets.FindOuterFacesFrom(&sbl, &poly, nil, srf.ChordTolMm(), &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
+	sets.FindOuterFacesFrom(&sbl, &poly, nil, sh.Tol, &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
 	if !allClosed || !allCoplanar || len(sets.Sets) == 0 {
 		return nil, true, errors.New("the inside's outline, offset from the solid's end, does not close")
 	}

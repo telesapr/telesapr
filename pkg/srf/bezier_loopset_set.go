@@ -33,7 +33,7 @@ func (s *SBezierLoopSetSet) AddOpenPath(b SBezier) {
 // loops go to openContours (when non-nil). Mirrors C++
 // SBezierLoopSetSet::FindOuterFacesFrom (curve.cpp:575).
 func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon,
-	srfuv *SSurface, chordTol float64,
+	srfuv *SSurface, tol Tolerance,
 	allClosed *bool, notClosedAt *SEdge,
 	allCoplanar *bool, notCoplanarAt *geom.Vector,
 	openContours *[]SBezierLoop) {
@@ -60,7 +60,7 @@ func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon
 	// Assemble the Bezier trim curves into closed loops; we also get the
 	// piecewise linearization of the curves (in the SPolygon spxyz), as a
 	// calculation aid for the loop direction.
-	sbls, _, _ := sBezierLoopSetFrom(sbl, spxyz, chordTol, allClosed, notClosedAt, openContours)
+	sbls, _, _ := sBezierLoopSetFrom(sbl, spxyz, tol, allClosed, notClosedAt, openContours)
 	if len(sbls) != len(spxyz.Contours) {
 		return
 	}

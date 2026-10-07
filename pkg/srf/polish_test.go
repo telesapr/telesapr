@@ -32,7 +32,7 @@ func TestFindOuterFacesFromChaining(t *testing.T) {
 	var allClosed, allCoplanar bool
 	var notClosedAt SEdge
 	var notCoplanarAt geom.Vector
-	outer.FindOuterFacesFrom(bl, &poly, nil, 0.1, &allClosed, &notClosedAt,
+	outer.FindOuterFacesFrom(bl, &poly, nil, Tol(0.1, MaxSegments()), &allClosed, &notClosedAt,
 		&allCoplanar, &notCoplanarAt, &opens)
 	if !allClosed || !allCoplanar {
 		t.Fatalf("allClosed=%v allCoplanar=%v", allClosed, allCoplanar)

@@ -42,6 +42,10 @@ type SSurface struct {
 	// a drafted plane meets it (topo.DraftedPrismAngles).
 	AvoidFlatEars bool
 
+	// Tol is the tolerance the surface's trims and mesh are followed
+	// at: its shell's.
+	Tol Tolerance
+
 	DegM, DegN int
 	Ctrl       [MaxDegree + 1][MaxDegree + 1]geom.Vector
 	Weight     [MaxDegree + 1][MaxDegree + 1]float64

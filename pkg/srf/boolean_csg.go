@@ -165,7 +165,7 @@ func (c *SCurve) SurfaceB(a, b *SShell) *SSurface {
 // SCurve::RemoveShortSegments (curve.cpp:806). When both surfaces are
 // nil (a Go-only case) it does nothing.
 func (c *SCurve) RemoveShortSegments(sA, sB *SSurface) {
-	c.RemoveShortSegmentsWithChordTol(sA, sB, ChordTolMm())
+	c.RemoveShortSegmentsWithChordTol(sA, sB, tolOf(sA).ChordTolMm())
 }
 
 // RemoveShortSegmentsWithChordTol is RemoveShortSegments with an
@@ -319,7 +319,7 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 					if pi.Srf.Bsp != nil {
 						d = pi.Srf.Bsp.MinimumDistanceToEdge(puv, pi.Srf)
 					}
-					if d > ChordTolMm() {
+					if d > tolOf(srfA).ChordTolMm() {
 						continue
 					}
 				}

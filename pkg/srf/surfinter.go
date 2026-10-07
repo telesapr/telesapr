@@ -44,7 +44,7 @@ func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 		}
 		split = sc
 	} else {
-		sc.Points = makePwlSCurvePoints(sb, 0)
+		sc.Points = makePwlSCurvePoints(sb, s.Tol, 0)
 		// and split the line where it intersects our existing surfaces
 		split = sc.MakeCopySplitAgainst(agnstA, agnstB, s, srfB)
 	}
@@ -358,7 +358,7 @@ func (s *SSurface) intersectCoaxialExtrusions(b *SSurface, oft *SBezier, alongt 
 	axis1 := axis.ScaledBy(abAxis1)
 	axisc := axis0.Plus(axis1).ScaledBy(0.5)
 
-	oft.MakePwlIntoPoints(&lv, 0, 0)
+	oft.MakePwlIntoPoints(&lv, s.Tol, 0)
 
 	for i := range len(lv) - 1 {
 		pa, pb := lv[i], lv[i+1]
@@ -464,8 +464,8 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		}
 
 		// Our chord tolerance is whatever the user specified
-		maxtol := ChordTolMm()
-		maxsteps := max(300, MaxSegments()*3)
+		maxtol := s.Tol.ChordTolMm()
+		maxsteps := max(300, s.Tol.MaxSegments()*3)
 
 		// The curve starts at our starting point.
 		padd := SCurvePt{Vertex: true, P: start}
@@ -514,7 +514,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 
 			for k := range spl.Points {
 				sp := &spl.Points[k]
-				if sp.P.OnLineSegment(start, npc, 2*ChordTolMm()) {
+				if sp.P.OnLineSegment(start, npc, 2*s.Tol.ChordTolMm()) {
 					sp.Tag = 1
 					a = maxsteps
 					npc = sp.P
@@ -558,7 +558,7 @@ const loopDepth = 6
 // marches from it until it comes back to where it started.
 func (s *SSurface) intersectClosedLoops(b *SSurface, agnstA, agnstB *SShell, into *curveSink,
 	marched [][]SCurvePt) {
-	maxtol := ChordTolMm()
+	maxtol := s.Tol.ChordTolMm()
 	near := func(p geom.Vector, d float64) bool {
 		for _, pts := range marched {
 			for k := 1; k < len(pts); k++ {
@@ -688,8 +688,8 @@ func (s *SSurface) seedOnIntersection(b *SSurface, p geom.Vector) (geom.Vector, 
 // intersectByMarching does, and returns its points if it comes back to
 // start without leaving either trim.
 func (s *SSurface) marchLoop(b *SSurface, start geom.Vector) ([]SCurvePt, bool) {
-	maxtol := ChordTolMm()
-	maxsteps := max(300, MaxSegments()*3)
+	maxtol := s.Tol.ChordTolMm()
+	maxsteps := max(300, s.Tol.MaxSegments()*3)
 	pts := []SCurvePt{{Vertex: true, P: start}}
 	at := start
 	step := maxtol

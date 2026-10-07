@@ -295,7 +295,7 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 			for j := 0; j <= len(steps); j++ {
 				sc := SCurve{IsExact: true, Exact: section(&loop.Curves[i], j)}
 				if tValues == nil {
-					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
 				}
 				for x, t := range tValues {
 					sc.Points = append(sc.Points, SCurvePt{P: sc.Exact.PointAt(t), Vertex: x == 0 || x == len(tValues)-1})
@@ -326,7 +326,7 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 					if sc.Exact.Degree > 1 {
 						maxDt = 0.125
 					}
-					sc.Points = makePwlSCurvePoints(&sc.Exact, maxDt)
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, maxDt)
 					sc.SurfA = srfs[k][i]
 					sc.SurfB = srfs[k][ip]
 					s.addCurveTrimming(sc, false)
@@ -336,7 +336,7 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 						q = frames[k].Apply(loop.Curves[i].Start()).Plus(st.Along)
 					}
 					sc = SCurve{IsExact: true, Exact: SBezierFrom2(p, q)}
-					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
 					sc.SurfA = srfs[k][ip]
 					sc.SurfB = srfs[k][i]
 					s.addCurveTrimming(sc, true)

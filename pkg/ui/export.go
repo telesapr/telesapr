@@ -664,7 +664,7 @@ func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh,
 	for i := range sbl.Curves {
 		sbl.Curves[i].Tag = 0
 	}
-	sblss.FindOuterFacesFrom(sbl, &spxyz, &plane, chordTol,
+	sblss.FindOuterFacesFrom(sbl, &spxyz, &plane, srf.Tol(chordTol, srf.MaxSegments()),
 		&allClosed, &notClosedAt, nil, nil, &leftovers)
 	if len(leftovers) > 0 {
 		sblss.Sets = append(sblss.Sets, srf.SBezierLoopSet{Outer: leftovers[0], Holes: leftovers[1:]})
@@ -893,7 +893,7 @@ func (w *vectorWriter) OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.
 // VectorFileWriter::BezierAsPwl).
 func (w *vectorWriter) BezierAsPwl(sb *srf.SBezier) {
 	var lv []geom.Vector
-	sb.MakePwlIntoPoints(&lv, w.ss.ExportChordTolMm(), 0)
+	sb.MakePwlIntoPoints(&lv, srf.Tol(w.ss.ExportChordTolMm(), w.ss.ExportMaxSegments), 0)
 
 	for i := 1; i < len(lv); i++ {
 		sb := srf.SBezierFrom2(lv[i-1], lv[i])

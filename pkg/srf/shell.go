@@ -62,6 +62,11 @@ type SShell struct {
 	Curve   []SCurve
 	Surface []SSurface
 
+	// Tol is the tolerance the shell's curves and surfaces are followed
+	// at; unset, it is the tolerance of the shells it is made from, or
+	// the process-wide setting.
+	Tol Tolerance
+
 	BooleanFailed bool
 }
 
@@ -142,9 +147,9 @@ func (s *SShell) addAndAssignCurveID(sc SCurve) core.HSCurve {
 // SCurvePt form, marking the first and last samples as vertices.
 // Mirrors the C++ `SBezier::MakePwlInto(List<SCurvePt> *l, ...)`
 // overload (ratpoly.cpp).
-func makePwlSCurvePoints(b *SBezier, maxDt float64) []SCurvePt {
+func makePwlSCurvePoints(b *SBezier, tol Tolerance, maxDt float64) []SCurvePt {
 	var raw []geom.Vector
-	b.MakePwlIntoPoints(&raw, 0, maxDt)
+	b.MakePwlIntoPoints(&raw, tol, maxDt)
 	pts := make([]SCurvePt, len(raw))
 	for i, p := range raw {
 		pts[i] = SCurvePt{P: p, Vertex: i == 0 || i == len(raw)-1}
@@ -238,7 +243,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			hc0 := s.addAndAssignCurveID(SCurve{
 				IsExact: true,
 				Exact:   bt0,
-				Points:  makePwlSCurvePoints(&bt0, 0),
+				Points:  makePwlSCurvePoints(&bt0, s.Tol, 0),
 				SurfA:   hs0,
 				SurfB:   hsext,
 			})
@@ -248,7 +253,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			hc1 := s.addAndAssignCurveID(SCurve{
 				IsExact: true,
 				Exact:   bt1,
-				Points:  makePwlSCurvePoints(&bt1, 0),
+				Points:  makePwlSCurvePoints(&bt1, s.Tol, 0),
 				SurfA:   hs1,
 				SurfB:   hsext,
 			})
@@ -269,7 +274,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			hl := s.addAndAssignCurveID(SCurve{
 				IsExact: true,
 				Exact:   lineBez,
-				Points:  makePwlSCurvePoints(&lineBez, 0),
+				Points:  makePwlSCurvePoints(&lineBez, s.Tol, 0),
 			})
 			// save this for later
 			trimLines = append(trimLines, shellTrimLine{hc: hl, hs: hsext})
@@ -297,6 +302,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 // largest in use), leaving its Face alone. Mirrors C++
 // IdList::AddAndAssignId for surfaces.
 func (s *SShell) addSurfaceAssignID(ss SSurface) core.HSSurface {
+	ss.Tol = ss.Tol.Or(s.Tol)
 	var maxV uint32
 	for i := range s.Surface {
 		if s.Surface[i].H.V > maxV {
@@ -514,7 +520,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 					s.addCurveTrimming(sc, true)
 				} else if j == 0 { // curve was on the rotation axis and is shared by the end caps.
 					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs)}
-					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
 					sc.SurfA = hs1 // end cap
 					sc.SurfB = hs0 // staring cap
 					s.addCurveTrimming(sc, true)
@@ -532,7 +538,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 					if sc.Exact.Degree > 1 {
 						maxDt = 0.125
 					}
-					sc.Points = makePwlSCurvePoints(&sc.Exact, maxDt)
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, maxDt)
 					sc.SurfA = revs[j]
 					sc.SurfB = revsp[j]
 					s.addCurveTrimming(sc, false)
@@ -614,7 +620,7 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 				// surface with the rotated version of the input curve.
 				if revs[j].V != 0 {
 					sc := SCurve{IsExact: true, Exact: transformedCopy(sb, ts, qs)}
-					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
 					sc.SurfA = revs[j]
 					sc.SurfB = revs[(j+3)%4]
 					s.addCurveTrimming(sc, true)
@@ -628,7 +634,7 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 
 					sc := SCurve{IsExact: true, Exact: SBezierFrom3(ss.Ctrl[0][0], ss.Ctrl[0][1], ss.Ctrl[0][2])}
 					sc.Exact.Weight[1] = ss.Weight[0][1]
-					sc.Points = makePwlSCurvePoints(&sc.Exact, 0)
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
 					sc.SurfA = revs[j]
 					sc.SurfB = revsp[j]
 					s.addCurveTrimming(sc, false)
@@ -737,6 +743,7 @@ func (s *SShell) makeFirstOrderRevolvedRange(pt, axis geom.Vector, i0, i1 int) {
 // SShell::MakeFromTransformationOf).
 func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quaternion, scale float64) {
 	s.BooleanFailed = false
+	s.Tol = s.Tol.Or(a.Tol)
 	for i := range a.Surface {
 		s.Surface = append(s.Surface, FromTransformationOf(&a.Surface[i], t, q, scale, true))
 	}
@@ -1223,7 +1230,7 @@ func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBez
 						p := sc.Points[i].P
 						t, _ := sb.ClosestPointTo(p, false)
 						pp := sb.PointAt(t)
-						if pp.Minus(p).Magnitude() > ChordTolMm()/2 {
+						if pp.Minus(p).Magnitude() > s.Tol.ChordTolMm()/2 {
 							tooFar = true
 							break
 						}

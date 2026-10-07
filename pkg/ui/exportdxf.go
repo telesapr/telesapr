@@ -436,7 +436,7 @@ func (d *dxfWriteInterface) writeArc(c geom.Vector, r, sa, ea float64, hs core.H
 
 func (d *dxfWriteInterface) writeBezierAsPwl(sb *srf.SBezier) {
 	var lv []geom.Vector
-	sb.MakePwlIntoPoints(&lv, d.writer.ss.ExportChordTolMm(), 0)
+	sb.MakePwlIntoPoints(&lv, srf.Tol(d.writer.ss.ExportChordTolMm(), d.writer.ss.ExportMaxSegments), 0)
 	hs := hstyle(uint32(sb.AuxA))
 	var polyline dxf.Polyline
 	d.assignEntityDefaults(&polyline.Entity, hs)

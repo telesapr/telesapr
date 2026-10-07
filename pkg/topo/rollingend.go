@@ -768,7 +768,7 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 	}
 	add := func(s *srf.SSurface, other core.HSSurface, sb srf.SBezier, fwd bool) {
 		var pts []geom.Vector
-		sb.MakePwlIntoPoints(&pts, 0, 0)
+		sb.MakePwlIntoPoints(&pts, srf.Tolerance{}, 0)
 		pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
 		nc := srf.SCurve{H: *h, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H, SurfB: other}
 		h.V++

@@ -572,7 +572,7 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 
 	var sblss srf.SBezierLoopSetSet
 	sblss.FindOuterFacesFrom(&sbl, &polyLoops, nil,
-		100.0, &allClosed, &errorAt,
+		srf.Tol(100.0, srf.MaxSegments()), &allClosed, &errorAt,
 		&allCoplanar, &errorPointAt, nil)
 
 	// hack for when there is no sketch yet and the first group is a

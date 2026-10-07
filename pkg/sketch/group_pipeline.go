@@ -53,7 +53,7 @@ func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, a
 	// bezierLoops, with the outer loops grouped with their holes. The
 	// leftovers, if any, go in bezierOpens.
 	g.BezierLoops.FindOuterFacesFrom(&sbl, &g.PolyLoops, nil,
-		srf.ChordTolMm(),
+		srf.Tolerance{},
 		&allClosed, &g.PolyError.NotClosed,
 		&allCoplanar, &g.PolyError.ErrorPoint,
 		&g.BezierOpens)

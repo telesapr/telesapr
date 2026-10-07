@@ -47,7 +47,7 @@ func loopsOf(sbl *SBezierList) *SBezierLoopSetSet {
 	var allClosed, allCoplanar bool
 	var notClosed SEdge
 	var notCoplanar geom.Vector
-	sblss.FindOuterFacesFrom(sbl, &poly, nil, 0.1, &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
+	sblss.FindOuterFacesFrom(sbl, &poly, nil, Tol(0.1, MaxSegments()), &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
 	return &sblss
 }
 

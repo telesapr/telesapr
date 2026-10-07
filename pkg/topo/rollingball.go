@@ -1161,7 +1161,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 					continue
 				}
 				var pts []geom.Vector
-				sb.MakePwlIntoPoints(&pts, 0, 0)
+				sb.MakePwlIntoPoints(&pts, srf.Tolerance{}, 0)
 				pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
 				nc := srf.SCurve{H: nextH, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H}
 				nextH.V++

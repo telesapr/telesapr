@@ -266,7 +266,7 @@ func (gw *GraphicsWindow) drawFilledPaths(g *sketch.Group, canvas render.Canvas)
 		hcf := canvas.InternFill(fill)
 
 		var sp srf.SPolygon
-		sbls.MakePwlInto(&sp)
+		sbls.MakePwlInto(&sp, srf.Tolerance{})
 		canvas.DrawPolygon(&sp, hcf)
 	}
 }

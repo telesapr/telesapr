@@ -314,7 +314,7 @@ func (s *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha, s
 	// model would otherwise evaluate them far away, or even extrapolate
 	// them outside their domain, and misclassify.
 	ab := s.PointAtUv(auv).Minus(s.PointAtUv(buv))
-	enxyz := ab.Cross(*surfN).WithMagnitude(geom.Min(ChordTolMm(), ab.Magnitude()/10))
+	enxyz := ab.Cross(*surfN).WithMagnitude(geom.Min(s.Tol.ChordTolMm(), ab.Magnitude()/10))
 	// And based on that, compute the edge's inner normal in uv space. This
 	// vector is perpendicular to the edge in xyz, but not necessarily in uv.
 	var tu, tv geom.Vector

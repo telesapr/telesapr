@@ -623,7 +623,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 					bestEar = ear
 					bestChordTol = tol
 				}
-				if bestChordTol < 0.1*ChordTolMm() {
+				if bestChordTol < 0.1*tolOf(srf).ChordTolMm() {
 					break
 				}
 			}
@@ -1010,7 +1010,7 @@ func (s *SSurface) splitTrimDiagonals(shell *SShell, m *SMesh, start int, el *SE
 	}
 	// Points made here, which edges between trim points split.
 	made := map[key]bool{}
-	tol := ChordTolMm()
+	tol := s.Tol.ChordTolMm()
 	for round := range trimSplitRounds {
 		// Edges inside the mesh are in two of its triangles.
 		count := map[pair]int{}
@@ -1179,8 +1179,8 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 		worst = geom.Max(worst, pm2.DistanceToLine(ps, pf.Minus(ps)))
 	}
 
-	step := 1.0 / float64(MaxSegments())
-	if ((vf-vs) < step || worst < ChordTolMm()) && (worstTwist > 0.999 || depth >= gridMaxTwistDepth) {
+	step := 1.0 / float64(s.Tol.MaxSegments())
+	if ((vf-vs) < step || worst < s.Tol.ChordTolMm()) && (worstTwist > 0.999 || depth >= gridMaxTwistDepth) {
 		*l = append(*l, vf)
 	} else {
 		s.MakeTriangulationGridInto(l, vs, (vs+vf)/2, swapped, depth+1)
@@ -1352,7 +1352,7 @@ func gridNearTrim(srf *SSurface, el *SEdgeList, li, lj []float64) [][]bool {
 		phi := (turn(k, prev, okp) + turn(k, next, okn)) / 2
 		// A circular arc turning by phi per chord of length L sags by
 		// about L phi / 8; take twice that.
-		tol[k] = math.Max(ChordTolMm(), xyzB[k].Minus(xyzA[k]).Magnitude()*phi/4)
+		tol[k] = math.Max(tolOf(srf).ChordTolMm(), xyzB[k].Minus(xyzA[k]).Magnitude()*phi/4)
 	}
 	near := make([][]bool, len(li))
 	for i := range li {

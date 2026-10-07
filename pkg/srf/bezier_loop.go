@@ -14,19 +14,19 @@ type SBezierLoop struct {
 func (l *SBezierLoop) Len() int { return len(l.Curves) }
 
 // MakePwlInto emits the polyline approximation of this loop into
-// el, with a chord tolerance of chordTol.
-func (l *SBezierLoop) MakePwlInto(el *SEdgeList, chordTol float64) {
+// el, at the tolerance tol.
+func (l *SBezierLoop) MakePwlInto(el *SEdgeList, tol Tolerance) {
 	for i := range l.Curves {
-		l.Curves[i].MakePwlInto(el, chordTol, 0)
+		l.Curves[i].MakePwlInto(el, tol, 0)
 	}
 }
 
 // MakePwlIntoContour appends the loop's pwl approximation to sc,
 // without doubled points at the joins, and closes it exactly. Mirrors
 // C++ SBezierLoop::MakePwlInto(SContour *, double) (curve.cpp:468).
-func (l *SBezierLoop) MakePwlIntoContour(sc *SContour, chordTol float64) {
+func (l *SBezierLoop) MakePwlIntoContour(sc *SContour, tol Tolerance) {
 	for i := range l.Curves {
-		l.Curves[i].MakePwlIntoContour(sc, chordTol, 0)
+		l.Curves[i].MakePwlIntoContour(sc, tol, 0)
 		// Avoid double points at join between Beziers; except that
 		// first and last points should be identical.
 		if i+1 < len(l.Curves) {

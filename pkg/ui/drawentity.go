@@ -86,7 +86,7 @@ func (gw *GraphicsWindow) generateEdges(e *core.Entity, el *srf.SEdgeList) {
 	for i := range sbl.Curves {
 		sb := &sbl.Curves[i]
 		var lv []geom.Vector
-		sb.MakePwlIntoPoints(&lv, 0, 0)
+		sb.MakePwlIntoPoints(&lv, srf.Tolerance{}, 0)
 		for j := 1; j < len(lv); j++ {
 			el.AddEdge(lv[j-1], lv[j], int(style.V), i, 0)
 		}

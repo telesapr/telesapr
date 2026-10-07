@@ -372,7 +372,7 @@ func rayDirection(i int) geom.Vector {
 // raycastClass classifies p by the nearest surface along rays, and
 // returns how many directions it tried.
 func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
-	tol := ChordTolMm() + lengthEps
+	tol := s.Tol.ChordTolMm() + lengthEps
 	best, bestClear := SurfOutside, -1.0
 	for try := range raycastTries {
 		ray := rayDirection(try)

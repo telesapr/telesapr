@@ -134,7 +134,7 @@ func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *
 
 	// If we might intersect, and the surface is small, then switch to Newton
 	// iterations.
-	if s.DepartureFromCoplanar() < 0.2*ChordTolMm() {
+	if s.DepartureFromCoplanar() < 0.2*s.Tol.ChordTolMm() {
 		p := s.Ctrl[0][0].Plus(s.Ctrl[0][s.DegN]).Plus(s.Ctrl[s.DegM][0]).
 			Plus(s.Ctrl[s.DegM][s.DegN]).ScaledBy(0.25)
 		var inter surfInter

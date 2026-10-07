@@ -529,7 +529,7 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// don't want it to give us any open contours. The polygon and chord
 	// tolerance are required, because they are used to calculate the
 	// contour directions and determine inner vs. outer contours.
-	sblss.FindOuterFacesFrom(sbl, &spxyz, ss, w.ss.ExportChordTolMm(),
+	sblss.FindOuterFacesFrom(sbl, &spxyz, ss, srf.Tol(w.ss.ExportChordTolMm(), w.ss.ExportMaxSegments),
 		&allClosed, &notClosedAt, nil, nil, nil)
 
 	// So in our list of SBezierLoopSet, each set contains at least one

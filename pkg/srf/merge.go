@@ -184,7 +184,7 @@ func (s *SShell) mergeClass(class []int, curveAt map[core.HSCurve]*SCurve) (repl
 			// in that case. So give a bit of extra room; in theory just
 			// a chord tolerance, but more can't hurt.
 			muv := geom.Max(umax-umin, vmax-vmin)
-			tol := muv/50 + 3*ChordTolMm()
+			tol := muv/50 + 3*s.Tol.ChordTolMm()
 			umax += tol
 			vmax += tol
 			umin -= tol

@@ -12,6 +12,7 @@ import (
 // Mirrors C++ SShell::MakeFromBoolean (boolean.cpp).
 func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	s.BooleanFailed = false
+	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
 
 	a.MakeClassifyingBsps(nil)
 	b.MakeClassifyingBsps(nil)
@@ -101,6 +102,7 @@ func (s *SShell) dropUntrimmed() {
 // SShell::MakeFromAssemblyOf).
 func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 	s.BooleanFailed = false
+	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
 
 	t := geom.Vector{}
 	q := geom.QuaternionIdentity

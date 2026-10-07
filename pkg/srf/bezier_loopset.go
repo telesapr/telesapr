@@ -34,10 +34,10 @@ func (s *SBezierLoopSet) loops() []*SBezierLoop {
 
 // MakePwlInto adds one contour to sp for each loop, outer loop first
 // (C++ SBezierLoopSet::MakePwlInto).
-func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon) {
+func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon, tol Tolerance) {
 	for _, l := range s.loops() {
 		sp.AddEmptyContour()
-		l.MakePwlIntoContour(&sp.Contours[len(sp.Contours)-1], 0)
+		l.MakePwlIntoContour(&sp.Contours[len(sp.Contours)-1], tol)
 	}
 }
 
@@ -47,7 +47,7 @@ func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon) {
 // polygon's normal and a point on it. Mirrors C++
 // SBezierLoopSet::From (curve.cpp:497), whose result is a flat list of
 // loops not yet grouped into outer + holes.
-func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, chordTol float64,
+func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, tol Tolerance,
 	allClosed *bool, errorAt *SEdge, openContours *[]SBezierLoop) (loops []SBezierLoop, normal, point geom.Vector) {
 
 	*allClosed = true
@@ -63,7 +63,7 @@ func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, chordTol float64,
 		} else {
 			loops = append(loops, loop)
 			poly.AddEmptyContour()
-			loop.MakePwlIntoContour(&poly.Contours[len(poly.Contours)-1], chordTol)
+			loop.MakePwlIntoContour(&poly.Contours[len(poly.Contours)-1], tol)
 		}
 	}
 
@@ -80,7 +80,7 @@ func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, chordTol float64,
 func (s *SBezierLoopSet) SignedArea() float64 {
 	if s.Area == 0.0 {
 		var sp SPolygon
-		s.MakePwlInto(&sp)
+		s.MakePwlInto(&sp, Tolerance{})
 		sp.Normal = sp.ComputeNormal()
 		s.Area = sp.SignedArea()
 	}

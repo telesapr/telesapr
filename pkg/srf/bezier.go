@@ -237,8 +237,8 @@ func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
 func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList) {
 	var splRaw SPointList
 	var sea, seb SEdgeList
-	b.MakePwlInto(&sea, 0, 0)
-	sbb.MakePwlInto(&seb, 0, 0)
+	b.MakePwlInto(&sea, Tolerance{}, 0)
+	sbb.MakePwlInto(&seb, Tolerance{}, 0)
 	for k := range sea.Edges {
 		se := &sea.Edges[k]
 		// This isn't quite correct, since AnyEdgeCrossings doesn't count
