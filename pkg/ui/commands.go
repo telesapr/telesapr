@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/platform"
-	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 // This file is an extension: C++ SolveSpace has no command search. The
@@ -51,8 +50,6 @@ func CommandLabels() []string {
 	}
 	return out
 }
-
-func init() { api.SetCommandList(CommandLabels) }
 
 // findCommands returns the entries whose label holds every word of
 // query, ignoring case: an entry whose own name starts with the query

@@ -295,15 +295,11 @@ func TestRunCommandWithoutWindow(t *testing.T) {
 	if err := d.RunCommand("View > Zoom To Fit"); err == nil || !strings.Contains(err.Error(), "no window") {
 		t.Errorf("RunCommand: %v", err)
 	}
-	saved := commandList
-	t.Cleanup(func() { commandList = saved })
-	SetCommandList(nil)
 	if c := Commands(); c != nil {
 		t.Errorf("commands %v with no interface", c)
 	}
-	SetCommandList(func() []string { return []string{"A > B"} })
-	if c := Commands(); len(c) != 1 || c[0] != "A > B" {
-		t.Errorf("commands %v", c)
+	if c := d.Host().Commands(); c != nil {
+		t.Errorf("the bare host has commands %v", c)
 	}
 }
 

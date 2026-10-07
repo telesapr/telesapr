@@ -572,23 +572,11 @@ func (d *Doc) String() (s string) {
 	return s
 }
 
-// commandList lists the interface's commands, when the program has
-// one (SetCommandList).
-var commandList func() []string
-
-// SetCommandList is how the user interface tells this package its
-// commands; scripts don't call it.
-func SetCommandList(list func() []string) { commandList = list }
-
 // Commands lists the commands of the main menu as the command search
-// (Edit > Find Command) shows them, "Menu > Entry", for RunCommand;
-// none in a program without the interface.
-func Commands() []string {
-	if commandList == nil {
-		return nil
-	}
-	return commandList()
-}
+// (Edit > Find Command) shows them, "Menu > Entry", for RunCommand.
+// In a script the interpreter binds it to the host's; a program
+// compiled on its own has no interface, and none.
+func Commands() []string { return nil }
 
 // RunCommand runs a command of the main menu, as choosing it does:
 // "View > Zoom To Fit", or the entry's own name, "Zoom To Fit", when

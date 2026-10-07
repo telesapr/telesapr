@@ -190,6 +190,12 @@ func (e *Engine) exports() interp.Exports {
 	pkg := make(map[string]reflect.Value, len(symbols.Symbols[key]))
 	maps.Copy(pkg, exports[key])
 	pkg["Current"] = reflect.ValueOf(func() *api.Doc { return e.doc })
+	pkg["Commands"] = reflect.ValueOf(func() []string {
+		if e.opts.Host == nil {
+			return nil
+		}
+		return e.opts.Host.Commands()
+	})
 	if e.opts.Open != nil {
 		pkg["Open"] = reflect.ValueOf(func(path string) (*api.Doc, error) {
 			h, err := e.opts.Open(path)

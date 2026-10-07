@@ -5283,6 +5283,10 @@
 						"decl": "func (h *SketchHost) Changing()",
 						"text": "Changing remembers the sketch for undo before the first change of\na script's step."
 					},
+					"Commands": {
+						"decl": "func (h *SketchHost) Commands() []string",
+						"text": "Commands is empty: a sketch with no window has no menu."
+					},
 					"DeleteGroup": {
 						"decl": "func (h *SketchHost) DeleteGroup(hg core.HGroup)",
 						"text": "DeleteGroup deletes a group, and regenerates. When the active group\ngoes, with it or as it used it, the last group before it that is\nleft is made active."
@@ -5544,7 +5548,7 @@
 			},
 			"Commands": {
 				"decl": "func Commands() []string",
-				"text": "Commands lists the commands of the main menu as the command search\n(Edit \u003e Find Command) shows them, \"Menu \u003e Entry\", for RunCommand;\nnone in a program without the interface."
+				"text": "Commands lists the commands of the main menu as the command search\n(Edit \u003e Find Command) shows them, \"Menu \u003e Entry\", for RunCommand.\nIn a script the interpreter binds it to the host's; a program\ncompiled on its own has no interface, and none."
 			},
 			"Current": {
 				"decl": "func Current() *Doc",
@@ -5573,10 +5577,6 @@
 			"Open": {
 				"decl": "func Open(path string) (*Doc, error)",
 				"text": "Open loads a sketch from a .tlspr file. A SolveSpace model (.slvs) is\nconverted with Import instead."
-			},
-			"SetCommandList": {
-				"decl": "func SetCommandList(list func() []string)",
-				"text": "SetCommandList is how the user interface tells this package its\ncommands; scripts don't call it."
 			},
 			"SetCurrent": {
 				"decl": "func SetCurrent(d *Doc)",

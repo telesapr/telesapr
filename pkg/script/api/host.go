@@ -74,6 +74,9 @@ type Host interface {
 	Activate(hg core.HGroup)
 	Undo() bool
 	Redo() bool
+	// Commands lists the menu's commands, "Menu > Entry", as RunCommand
+	// takes them; none on a host without a window.
+	Commands() []string
 	// RunCommand runs a menu command by its label; an error on a host
 	// with no window.
 	RunCommand(label string) error
@@ -379,6 +382,9 @@ func (h *SketchHost) SetChordTolerance(pct float64) {
 		h.sk.ReloadAllLinked(h.sk)
 	}
 }
+
+// Commands is empty: a sketch with no window has no menu.
+func (h *SketchHost) Commands() []string { return nil }
 
 // RunCommand is an error: a sketch with no window has no menu.
 func (h *SketchHost) RunCommand(label string) error {

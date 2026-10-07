@@ -700,10 +700,6 @@ func (w *stepFileWriter) writeFace(srfid int, loops []*srf.SBezierLoop, firstOut
 	w.id++
 }
 
-// stepOneSurfacePerFace makes STEP export write a face of several
-// patches as one surface; tests turn it off to compare.
-var stepOneSurfacePerFace = true
-
 // stepSheet is a face of several patches that STEP export writes as
 // one B-spline surface.
 type stepSheet struct {
@@ -1090,7 +1086,7 @@ func (ss *Application) ExportSurfacesTo(filename string) {
 // them to w.advancedFaces.
 func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
 	sheets := map[core.HSSurface]*stepSheet{}
-	if stepOneSurfacePerFace {
+	if w.ss.StepOneSurfacePerFace {
 		sheets = stepSheets(shell)
 	}
 	for i := range shell.Surface {

@@ -29,7 +29,6 @@ func init() {
 		"NewDoc":          reflect.ValueOf(api.NewDoc),
 		"NewSketchHost":   reflect.ValueOf(api.NewSketchHost),
 		"Open":            reflect.ValueOf(api.Open),
-		"SetCommandList":  reflect.ValueOf(api.SetCommandList),
 		"SetCurrent":      reflect.ValueOf(api.SetCurrent),
 		"SuppressSolid":   reflect.ValueOf(api.SuppressSolid),
 		"SuppressWhole":   reflect.ValueOf(api.SuppressWhole),
@@ -75,6 +74,7 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	WActivate          func(hg core.HGroup)
 	WAddGroup          func(g sketch.Group) core.HGroup
 	WChanging          func()
+	WCommands          func() []string
 	WDeleteGroup       func(hg core.HGroup)
 	WDrawingSheetShown func() bool
 	WExport            func(kind api.ExportKind, path string) error
@@ -106,6 +106,9 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) AddGroup(g sketch.Gro
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Changing() {
 	W.WChanging()
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Commands() []string {
+	return W.WCommands()
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) DeleteGroup(hg core.HGroup) {
 	W.WDeleteGroup(hg)

@@ -260,7 +260,7 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 	// Else each corner the stages can't round gets a setback, the hole
 	// filled by patches (roadmap 22.4), which says why where it can't.
 	if !flat {
-		berr := filletPicksSetback(sh, picks, r, origin)
+		berr := filletPicksSetback(sh, picks, r, origin, false)
 		if berr == nil {
 			return nil
 		}
@@ -308,16 +308,16 @@ func filletOnCurvedEnd(sh *srf.SShell, p FilletPick, r float64, origin uint32, f
 // filletPicks is FilletPicks in one stage. A rounded edge's chain does
 // not go on into an edge forbid reports.
 func filletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool) error {
-	return filletPicksWith(sh, picks, r, origin, flat, forbid, false)
+	return filletPicksWith(sh, picks, r, origin, flat, forbid, false, false)
 }
 
 // filletPicksSetback is filletPicks with setback corners where no
 // sphere fits.
-func filletPicksSetback(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) error {
-	return filletPicksWith(sh, picks, r, origin, false, nil, true)
+func filletPicksSetback(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, forceSetback bool) error {
+	return filletPicksWith(sh, picks, r, origin, false, nil, true, forceSetback)
 }
 
-func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool, setback bool) error {
+func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool, setback, forceSetback bool) error {
 	what := "fillet"
 	if flat {
 		what = "chamfer"

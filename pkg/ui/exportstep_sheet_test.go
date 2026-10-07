@@ -75,9 +75,9 @@ func TestExportStepSheets(t *testing.T) {
 			// and the solid's own mesh, at its coarser one. (The reader
 			// meshes the frustum written a patch at a time 7e-4 under its
 			// volume, and as one face per face 2e-4 under.)
-			stepOneSurfacePerFace = false
+			ss.StepOneSurfacePerFace = false
 			res2, data2 := read()
-			stepOneSurfacePerFace = true
+			ss.StepOneSurfacePerFace = true
 			if d := os.Getenv("TELESAPR_STEP_OUT"); d != "" {
 				if err := os.WriteFile(filepath.Join(d, strings.ReplaceAll(model, "/", "_")+".patches.step"), []byte(data2), 0o644); err != nil {
 					t.Fatal(err)

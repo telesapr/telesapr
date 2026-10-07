@@ -43,10 +43,6 @@ import (
 // millionths of the radius of the circle, and the fillet's face is cut
 // along it, so the patches and the fillets meet on one curve.
 
-// forceSetback makes every corner of three rounded edges a setback one,
-// for tests that compare it with the sphere.
-var forceSetback bool
-
 // setbackCorner is the kind of a corner filled by setback patches.
 const setbackCorner = 5
 

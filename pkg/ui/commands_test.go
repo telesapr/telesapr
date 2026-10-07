@@ -9,7 +9,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
-	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -23,8 +22,8 @@ func TestFindCommands(t *testing.T) {
 			t.Errorf("label %q", l)
 		}
 	}
-	if got := api.Commands(); len(got) != len(labels) {
-		t.Errorf("api.Commands has %d, want %d", len(got), len(labels))
+	if got := (&ScriptHost{}).Commands(); len(got) != len(labels) {
+		t.Errorf("the script host has %d commands, want %d", len(got), len(labels))
 	}
 	names := func(q string) string {
 		var out []string

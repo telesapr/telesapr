@@ -88,6 +88,9 @@ type Application struct {
 	ExportPwlCurves       bool
 	ExportCanvasSizeAuto  bool
 	ExportMode            bool
+	// StepOneSurfacePerFace has STEP export write a face of several
+	// patches as one surface; the tests turn it off to compare.
+	StepOneSurfacePerFace bool
 	// Windowless makes the graphics window behave as C++'s headless
 	// build, which has none: the view is never fitted to it and the
 	// camera is 297 by 210. The command-line tool sets it.
@@ -188,7 +191,7 @@ type Application struct {
 // New makes the application on a platform; Init loads the settings and
 // opens the windows.
 func New(p platform.Platform) *Application {
-	ss := &Application{Platform: p, Settings: p.Settings()}
+	ss := &Application{Platform: p, Settings: p.Settings(), StepOneSurfacePerFace: true}
 	ss.GW = newGraphicsWindow(ss)
 	ss.TW = newTextWindow(ss)
 	return ss
