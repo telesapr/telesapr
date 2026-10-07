@@ -108,7 +108,8 @@ Requirement set by the user on 2026-10-01: a new feature is well tested, has a u
 and has scripting support. A feature that lacks one of the three is not done and does not merge.
 The three paths, interface, script and file, must reach the same engine entry point in
 `pkg/sketch`, so none of them can drift from the others. `docs/done-audit.md` holds the table
-of every feature against this list.
+of every feature against this list. The conventions of the code itself, and the environment
+variables the tests read, are in `CLAUDE.md`.
 
 ### Tests
 

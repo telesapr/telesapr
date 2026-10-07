@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Generate pkg/dxf/dxfread's code page tables from libdxfrw's headers
-(solvespace/extlib/libdxfrw/intern/drw_cptable*.h): the single-byte
+(extlib/libdxfrw/intern/drw_cptable*.h in a SolveSpace source tree): the single-byte
 pages as Go source (cptables.go), the double-byte ones (932, 936, 949,
 950) as a gzipped blob (cpdbcs.bin.gz) of, for each page in that order,
 a uint32 count and that many lead-table entries, then a uint32 count and

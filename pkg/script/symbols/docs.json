@@ -1748,6 +1748,7 @@
 	},
 	"github.com/telesapr/telesapr/pkg/core": {
 		"name": "core",
+		"text": "Package core holds what a sketch is made of, below the groups that make it: entities, parameters, constraints and their equations, expressions, styles, colours, bounding boxes, and the handles that name them.",
 		"types": {
 			"BBox": {
 				"kind": "struct",
@@ -3415,6 +3416,7 @@
 	},
 	"github.com/telesapr/telesapr/pkg/geom": {
 		"name": "geom",
+		"text": "Package geom is the vector algebra the kernel is written in: vectors in two, three and four dimensions, quaternions, and a banded matrix, with the tolerances that decide when two of them are the same.",
 		"types": {
 			"BandedMatrix": {
 				"text": "BandedMatrix solves a banded linear system with two extra dense right-hand columns (for periodic splines), without pivoting.",
@@ -4060,6 +4062,18 @@
 			"Extension": {
 				"decl": "const Extension",
 				"text": "Extension is the file extension of the format, without its dot."
+			},
+			"MaxPackedFile": {
+				"decl": "const MaxPackedFile",
+				"text": "The bounds on a packed model as it is read, so that a small file that declares or inflates to a huge one cannot exhaust memory: a file of the pack, the pack as a whole, and how many files it holds."
+			},
+			"MaxPackedFiles": {
+				"decl": "const MaxPackedFiles",
+				"text": "The bounds on a packed model as it is read, so that a small file that declares or inflates to a huge one cannot exhaust memory: a file of the pack, the pack as a whole, and how many files it holds."
+			},
+			"MaxPackedTotal": {
+				"decl": "const MaxPackedTotal",
+				"text": "The bounds on a packed model as it is read, so that a small file that declares or inflates to a huge one cannot exhaust memory: a file of the pack, the pack as a whole, and how many files it holds."
 			},
 			"PackedExtension": {
 				"decl": "const PackedExtension",
@@ -5633,6 +5647,7 @@
 	},
 	"github.com/telesapr/telesapr/pkg/sketch": {
 		"name": "sketch",
+		"text": "Package sketch is the model: the groups of a part's history, with their requests, constraints and solids, and what regenerates them.",
 		"types": {
 			"AssemblyPart": {
 				"text": "AssemblyPart is a part of an assembly as a STEP file gives it (roadmap 16.8): a linked file's solid in the file's own coordinates, placed by the link's rotation and offset, so that a file linked twice is one product placed twice; or another group's solid, where it is.",
