@@ -234,11 +234,11 @@ func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
 // sbb: their pwls' crossings, refined onto both curves. It misses
 // tangencies, and crossings where two pwl vertices meet (C++
 // SBezier::AllIntersectionsWith).
-func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList) {
+func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList, tol Tolerance) {
 	var splRaw SPointList
 	var sea, seb SEdgeList
-	b.MakePwlInto(&sea, Tolerance{}, 0)
-	sbb.MakePwlInto(&seb, Tolerance{}, 0)
+	b.MakePwlInto(&sea, tol, 0)
+	sbb.MakePwlInto(&seb, tol, 0)
 	for k := range sea.Edges {
 		se := &sea.Edges[k]
 		// This isn't quite correct, since AnyEdgeCrossings doesn't count

@@ -481,7 +481,7 @@ func (ss *Application) sheetFrame(el *srf.SEdgeList, d *sketch.Drawing, scale fl
 // EPS and the others Export 2d View writes, on a canvas the size of the
 // sheet.
 func (ss *Application) ExportDrawingTo(filename string, d *sketch.Drawing) error {
-	ss.enterExportMode()
+	ss.EnterExportMode()
 	ss.GenerateAll(sketch.GenerateAll)
 	sheet, _, _, err := ss.DrawingSheet(d)
 	if err != nil {

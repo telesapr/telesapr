@@ -345,7 +345,7 @@ func runCommand(args []string, stderr io.Writer) bool {
 		o.outputPattern = "%.tlspr"
 		runner = func(s *session, output string) error {
 			s.ss.ExportChordTol = o.chordTol
-			s.ss.ExportMode = true
+			s.ss.EnterExportMode()
 			if !s.ss.SaveToFile(output) {
 				return fmt.Errorf("cannot save")
 			}

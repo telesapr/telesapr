@@ -10,7 +10,6 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/persist/slvs"
-	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // invariantsPath is the baseline TestInvariants compares with.
@@ -48,7 +47,6 @@ func invariantLines(fixture string) []string {
 	// As in a fresh process, whose chord tolerance starts at 0; linking
 	// an IDF file uses it, so it must not be what the fixture before
 	// left.
-	srf.SetChordTolMm(0)
 	doc, err := slvs.LoadFile(filepath.Join("..", "..", "..", "testdata", filepath.FromSlash(fixture)))
 	if err != nil {
 		return []string{fmt.Sprintf("%s error %q", fixture, err.Error())}

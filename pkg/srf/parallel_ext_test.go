@@ -22,7 +22,6 @@ func TestFixturesReachCurveRedo(t *testing.T) {
 		if err != nil || d.IsDir() || filepath.Ext(path) != ".slvs" {
 			return err
 		}
-		srf.SetChordTolMm(0)
 		doc, err := slvs.LoadFile(path)
 		if err != nil {
 			return nil //nolint:nilerr // a file that isn't a model is skipped

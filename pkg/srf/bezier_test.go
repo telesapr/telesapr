@@ -187,7 +187,7 @@ func TestSBezierAllIntersectionsWith(t *testing.T) {
 	circle := circleCurves(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1}, 1)
 	line := &SBezierList{Curves: []SBezier{SBezierFrom2(geom.Vector{X: -2, Y: 0.5}, geom.Vector{X: 2, Y: 0.5})}}
 	var spl SPointList
-	circle.AllIntersectionsWith(line, &spl)
+	circle.AllIntersectionsWith(line, &spl, Tolerance{})
 	if len(spl.Points) != 2 {
 		t.Fatalf("%d intersections, want 2: %v", len(spl.Points), spl.Points)
 	}

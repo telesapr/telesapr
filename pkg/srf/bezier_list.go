@@ -25,10 +25,10 @@ func (l *SBezierList) Add(b SBezier) {
 
 // AllIntersectionsWith adds to spl the points where any curve of this
 // list crosses any of other (C++ SBezierList::AllIntersectionsWith).
-func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList) {
+func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList, tol Tolerance) {
 	for i := range l.Curves {
 		for j := range other.Curves {
-			other.Curves[j].AllIntersectionsWith(&l.Curves[i], spl)
+			other.Curves[j].AllIntersectionsWith(&l.Curves[i], spl, tol)
 		}
 	}
 }

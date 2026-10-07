@@ -113,6 +113,7 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 	})
 	for i := range s.Surface {
 		ssn[i].H = core.HSSurface{V: maxV + 1 + uint32(i)}
+		ssn[i].Tol = into.Tol.Or(ssn[i].Tol)
 		s.Surface[i].NewH = ssn[i].H
 		if failed[i] {
 			into.BooleanFailed = true

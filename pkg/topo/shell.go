@@ -118,7 +118,7 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 		}
 	}
 
-	inner := &srf.SShell{}
+	inner := &srf.SShell{Tol: sh.Tol}
 	for f := range t.Faces {
 		var loops [][]srf.SBezier
 		var pts []geom.Vector
@@ -155,7 +155,7 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 		return nil, shellErr(probs[0].At, "the inner surface is not closed: %s", probs[0].Msg)
 	}
 
-	out := &srf.SShell{}
+	out := &srf.SShell{Tol: sh.Tol}
 	out.MakeFromDifferenceOf(sh, inner)
 	if out.BooleanFailed {
 		return nil, errors.New("the Boolean that takes the inside away failed")

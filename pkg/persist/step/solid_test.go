@@ -49,7 +49,7 @@ func TestSolidShapes(t *testing.T) {
 	fineMesh(t, tol)
 	for _, e := range readShapes(t) {
 		m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
-		sh, err := m.ShellOf(0, srf.OriginFor(9, 0))
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{})
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -77,7 +77,7 @@ func TestSolidHighDegree(t *testing.T) {
 	for _, e := range readExpected(t, dir) {
 		path := filepath.Join(dir, e.name+".step")
 		m := readModel(t, path)
-		sh, err := m.ShellOf(0, srf.OriginFor(9, 0))
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{})
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -110,7 +110,7 @@ func TestSolidOffsetsConics(t *testing.T) {
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "offset")
 	for _, e := range readExpected(t, dir) {
 		m := readModel(t, filepath.Join(dir, e.name+".step"))
-		sh, err := m.ShellOf(0, srf.OriginFor(9, 0))
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{})
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -221,7 +221,7 @@ func TestSolidCorpus(t *testing.T) {
 		vol := 0.0
 		var why string
 		for _, pl := range m.Placements {
-			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0))
+			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), srf.Tolerance{})
 			if err != nil {
 				why = err.Error()
 				break
@@ -230,7 +230,7 @@ func TestSolidCorpus(t *testing.T) {
 				why = r.String()
 				break
 			}
-			sh2, _ := m.ShellOf(pl.Shape, srf.OriginFor(9, 0))
+			sh2, _ := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), srf.Tolerance{})
 			vol += solidReport(sh2).Volume
 		}
 		allow := e.area*tol + 1e-6*e.volume
@@ -267,7 +267,7 @@ func TestSolidSeamEdges(t *testing.T) {
 		m := readModel(t, filepath.Join(dir, e.name))
 		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
 		fineMesh(t, tol)
-		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0))
+		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), srf.Tolerance{})
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -315,7 +315,7 @@ func TestSolidSchenkelClosed(t *testing.T) {
 		m := readModel(t, filepath.Join(dir, e.name))
 		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
 		fineMesh(t, tol)
-		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0))
+		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), srf.Tolerance{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -399,7 +399,7 @@ func TestSolidBooleans(t *testing.T) {
 	var parts []part
 	for _, e := range readShapes(t) {
 		m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
-		if sh, err := m.ShellOf(0, srf.OriginFor(9, 0)); err == nil {
+		if sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{}); err == nil {
 			parts = append(parts, part{e.name, sh})
 		}
 	}
@@ -467,7 +467,7 @@ func TestTessellated(t *testing.T) {
 		t.Errorf("%d triangles, %d naked edges, volume %g, want %g", len(res.Mesh.Triangles), r.NakedEdges, r.Volume, want)
 	}
 	m := readModel(t, path)
-	if _, err := m.ShellOf(0, 1); err == nil {
+	if _, err := m.ShellOf(0, 1, srf.Tolerance{}); err == nil {
 		t.Error("a tessellated shape read as a solid")
 	}
 }
@@ -482,7 +482,7 @@ func BenchmarkSolidNIST3(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		if _, _, err := ReadModel(f).Solid(); err != nil {
+		if _, _, err := ReadModel(f).Solid(srf.Tolerance{}); err != nil {
 			b.Fatal(err)
 		}
 	}

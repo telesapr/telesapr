@@ -442,7 +442,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 			g.setProblem(&m, "%v", err)
 			return false
 		}
-		var w srf.SShell
+		w := srf.SShell{Tol: sk.tol}
 		w.MakePrism(tri[:], geom.Vector{}, along, g.Color)
 		wedges = append(wedges, w)
 	}

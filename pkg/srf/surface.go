@@ -720,6 +720,7 @@ func (s *SSurface) BlendRowOrCol(row bool, thisIJ int, a *SSurface, aIJ int, b *
 func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface) {
 	sa.DegM, sb.DegM = s.DegM, s.DegM
 	sa.DegN, sb.DegN = s.DegN, s.DegN
+	sa.Tol, sb.Tol = s.Tol, s.Tol
 
 	deg, lines := s.DegN, s.DegM
 	if byU {

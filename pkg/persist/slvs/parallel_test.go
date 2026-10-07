@@ -24,7 +24,6 @@ import (
 // of copies that step and repeat groups are to make instead of the
 // fixture's.
 func generatedDump(t *testing.T, path, stl string, copies map[uint32]float64) []byte {
-	srf.SetChordTolMm(0)
 	doc, err := LoadFile(path)
 	if err != nil {
 		return nil

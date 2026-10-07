@@ -126,7 +126,7 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 	if !allClosed || !allCoplanar || len(sets.Sets) == 0 {
 		return nil, true, errors.New("the inside's outline, offset from the solid's end, does not close")
 	}
-	inner := &srf.SShell{}
+	inner := &srf.SShell{Tol: sh.Tol}
 	color := t.Surface(bottom[0]).Color
 	for i := range sets.Sets {
 		inner.MakeFromExtrusionOf(&sets.Sets[i], axis.ScaledBy(z0-lo), axis.ScaledBy(z1-lo), color)
@@ -134,7 +134,7 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 	for i := range inner.Surface {
 		inner.Surface[i].Origin = origin + uint32(i)
 	}
-	out = &srf.SShell{}
+	out = &srf.SShell{Tol: sh.Tol}
 	out.MakeFromDifferenceOf(sh, inner)
 	if out.BooleanFailed {
 		return nil, true, errors.New("the Boolean that takes the inside away failed")

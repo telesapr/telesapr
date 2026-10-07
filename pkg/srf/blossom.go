@@ -57,7 +57,7 @@ func (b *SBezier) Sub(t0, t1 float64) SBezier {
 // Sub is the patch's polynomial over [u0, u1] by [v0, v1], run from 0
 // to 1 each way. Its trims are dropped.
 func (s *SSurface) Sub(u0, u1, v0, v1 float64) SSurface {
-	out := SSurface{DegM: s.DegM, DegN: s.DegN, Color: s.Color, Face: s.Face, Origin: s.Origin, Sheet: s.Sheet}
+	out := SSurface{Tol: s.Tol, DegM: s.DegM, DegN: s.DegN, Color: s.Color, Face: s.Face, Origin: s.Origin, Sheet: s.Sheet}
 	var h [MaxDegree + 1][MaxDegree + 1]geom.Vector4
 	for i := 0; i <= s.DegM; i++ {
 		row := make([]geom.Vector4, s.DegN+1)

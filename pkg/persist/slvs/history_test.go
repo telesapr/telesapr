@@ -12,14 +12,12 @@ import (
 	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // loadFixture loads a fixture as a fresh process would, or returns nil
 // for the one that does not load on purpose.
 func loadFixture(t *testing.T, fixture string) *sketch.Sketch {
 	t.Helper()
-	srf.SetChordTolMm(0)
 	doc, err := slvs.LoadFile(filepath.Join("..", "..", "..", "testdata", filepath.FromSlash(fixture)))
 	if err != nil {
 		return nil

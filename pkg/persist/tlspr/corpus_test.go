@@ -13,7 +13,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
@@ -69,7 +68,6 @@ func corpus(t *testing.T, version, lo int) {
 				sameLengths(t, doc.Sketch, v2.Sketch)
 				return
 			}
-			srf.SetChordTolMm(0)
 			loaded, err := tlspr.LoadFile(path)
 			if err != nil {
 				t.Fatal(err)

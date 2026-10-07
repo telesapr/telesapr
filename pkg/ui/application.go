@@ -281,10 +281,16 @@ func (ss *Application) LoadSettings() {
 func (ss *Application) applyEngineSettings() {
 	core.SetSettings(ss.Settings)
 	if ss.SK != nil {
+		// A linked solid keeps the tolerance it was read at: when the
+		// chord tolerance in effect changes, the links are read again.
+		was := ss.SK.ChordTolPercent()
 		ss.SK.ChordTolPct = ss.ChordTol
 		ss.SK.MaxSegments = ss.MaxSegments
 		ss.SK.CheckClosedContour = ss.CheckClosedContour
 		ss.SK.Exporting = ss.exportTolerance()
+		if ss.SK.ChordTolPercent() != was && ss.SK.ReloadAllLinked != nil {
+			ss.SK.ReloadAllLinked(ss.SK)
+		}
 	}
 }
 
@@ -297,15 +303,15 @@ func (ss *Application) exportTolerance() srf.Tolerance {
 	return srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments)
 }
 
-// enterExportMode has the regenerations that follow use the export
+// EnterExportMode has the regenerations that follow use the export
 // tolerance, until leaveExportMode.
-func (ss *Application) enterExportMode() {
+func (ss *Application) EnterExportMode() {
 	ss.ExportMode = true
 	ss.SK.Exporting = ss.exportTolerance()
 }
 
-// leaveExportMode returns the regenerations to the display tolerance.
-func (ss *Application) leaveExportMode() {
+// LeaveExportMode returns the regenerations to the display tolerance.
+func (ss *Application) LeaveExportMode() {
 	ss.ExportMode = false
 	ss.SK.Exporting = srf.Tolerance{}
 }

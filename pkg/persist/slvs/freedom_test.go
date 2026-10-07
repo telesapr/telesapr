@@ -7,7 +7,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // TestFreedomVsShowDof compares Sketch.GroupFreedom, which finds the
@@ -22,7 +21,6 @@ import (
 func TestFreedomVsShowDof(t *testing.T) {
 	var groups, params, cppFreeOnly, oursFreeOnly int
 	for _, fixture := range invariantFixtures(t) {
-		srf.SetChordTolMm(0)
 		doc, err := slvs.LoadFile(filepath.Join("..", "..", "..", "testdata", filepath.FromSlash(fixture)))
 		if err != nil {
 			continue
@@ -61,7 +59,6 @@ func TestFreedomVsShowDof(t *testing.T) {
 func largestGroup(b *testing.B) (string, core.HGroup) {
 	best, bestFile, bestGroup := 0, "", core.HGroup{}
 	for _, fixture := range invariantFixtures(&testing.T{}) {
-		srf.SetChordTolMm(0)
 		doc, err := slvs.LoadFile(filepath.Join("..", "..", "..", "testdata", filepath.FromSlash(fixture)))
 		if err != nil {
 			continue

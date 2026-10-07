@@ -681,7 +681,7 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 		// ... and then compute the points where they intersect, based on
 		// those curves.
 		var inters srf.SPointList
-		sbla.AllIntersectionsWith(&sblb, &inters)
+		sbla.AllIntersectionsWith(&sblb, &inters, sk.tol)
 
 		// If there's multiple points, then take the one closest to the
 		// mouse pointer.

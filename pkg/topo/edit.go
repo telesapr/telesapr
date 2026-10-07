@@ -268,6 +268,7 @@ func SplitFace(sh *srf.SShell, t *Topology, f int, cut srf.SBezier) (core.HSSurf
 	forget(s)
 	ns.TrimBuilt = true
 	sh.Curve = append(sh.Curve, nc)
+	ns.Tol = sh.Tol
 	sh.Surface = append(sh.Surface, ns)
 	return ns.H, nil
 }
@@ -554,6 +555,7 @@ func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface,
 			}
 		}
 	}
+	s.Tol = sh.Tol
 	sh.Surface = append(sh.Surface, s)
 	return s.H, nil
 }

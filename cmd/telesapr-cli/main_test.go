@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/persist/convert"
-	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 func testdata(name string) string { return filepath.Join("..", "..", "testdata", name) }
@@ -41,7 +40,6 @@ func model(t *testing.T, fixture string) string {
 	}
 	src := filepath.Join(dir, filepath.Base(fixture))
 	dst := convert.SiblingPath(src)
-	srf.SetChordTolMm(0)
 	if _, _, err := convert.File(src, dst, true); err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +49,6 @@ func model(t *testing.T, fixture string) string {
 func run(t *testing.T, args ...string) (bool, string) {
 	t.Helper()
 	var stderr bytes.Buffer
-	srf.SetChordTolMm(0)
 	ok := runCommand(append([]string{"telesapr-cli"}, args...), &stderr)
 	return ok, stderr.String()
 }

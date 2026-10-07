@@ -369,8 +369,16 @@ func (h *SketchHost) Select([]sketch.Selection) {}
 // Hovered is nothing, for the same reason.
 func (h *SketchHost) Hovered() sketch.Selection { return sketch.Selection{} }
 
-// SetChordTolerance sets the sketch's chord tolerance.
-func (h *SketchHost) SetChordTolerance(pct float64) { h.sk.ChordTolPct = pct }
+// SetChordTolerance sets the sketch's chord tolerance. The linked
+// solids are read again at it: a solid keeps the tolerance it was
+// read at.
+func (h *SketchHost) SetChordTolerance(pct float64) {
+	was := h.sk.ChordTolPercent()
+	h.sk.ChordTolPct = pct
+	if h.sk.ChordTolPercent() != was && h.sk.ReloadAllLinked != nil {
+		h.sk.ReloadAllLinked(h.sk)
+	}
+}
 
 // RunCommand is an error: a sketch with no window has no menu.
 func (h *SketchHost) RunCommand(label string) error {

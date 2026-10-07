@@ -167,7 +167,14 @@ func linkStepSolid(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMe
 	if !linkStep(path, sk, el, m, sh, rep) {
 		return false
 	}
-	solid, faces, err := step.SolidFile(path)
+	// At the tolerance the mesh was made at: from the part's own size
+	// and the sketch's chord tolerance, so that it is the same whenever
+	// the part is read.
+	res, err := readStep(path, sk.ChordTolPct)
+	if err != nil {
+		return false
+	}
+	solid, faces, err := step.SolidFile(path, srf.Tol(res.Report.ChordTol, sk.SegmentLimit()))
 	if err != nil {
 		why := fmt.Sprintf("read as a mesh, not a solid: %v", err)
 		if rep.Problem != "" {

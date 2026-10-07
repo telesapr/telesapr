@@ -302,7 +302,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 // largest in use), leaving its Face alone. Mirrors C++
 // IdList::AddAndAssignId for surfaces.
 func (s *SShell) addSurfaceAssignID(ss SSurface) core.HSSurface {
-	ss.Tol = ss.Tol.Or(s.Tol)
+	ss.Tol = s.Tol.Or(ss.Tol)
 	var maxV uint32
 	for i := range s.Surface {
 		if s.Surface[i].H.V > maxV {
@@ -745,7 +745,9 @@ func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quate
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol)
 	for i := range a.Surface {
-		s.Surface = append(s.Surface, FromTransformationOf(&a.Surface[i], t, q, scale, true))
+		ss := FromTransformationOf(&a.Surface[i], t, q, scale, true)
+		ss.Tol = s.Tol
+		s.Surface = append(s.Surface, ss)
 	}
 
 	for i := range a.Curve {

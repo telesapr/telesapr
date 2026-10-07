@@ -19,7 +19,6 @@ func benchmarkRegenerate(b *testing.B, name string, copies map[uint32]float64) {
 		b.Run(mode.name, func(b *testing.B) {
 			srf.SetParallelMode(mode.mode)
 			defer srf.SetParallelMode(srf.ParallelOn)
-			srf.SetChordTolMm(0)
 			doc, err := LoadFile(fixture(name))
 			if err != nil {
 				b.Fatal(err)

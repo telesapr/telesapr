@@ -8,7 +8,6 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // TestExportStl exports the mesh of every fixture that has one, at a
@@ -29,7 +28,6 @@ func TestExportStl(t *testing.T) {
 		src := name[:i] + "/" + name[i+1:j] + "/" + name[j+1:] + ".slvs"
 		t.Run(src, func(t *testing.T) {
 			// As in a fresh C++ process.
-			srf.SetChordTolMm(0)
 			doc, err := LoadFile(fixture(src))
 			if err != nil {
 				t.Fatal(err)

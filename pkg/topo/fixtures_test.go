@@ -11,7 +11,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
@@ -52,7 +51,6 @@ func fixtures(t *testing.T) []string {
 
 // load reads and regenerates a fixture.
 func load(t *testing.T, rel string) *sketch.Sketch {
-	srf.SetChordTolMm(0)
 	path := filepath.Join(testdata, filepath.FromSlash(rel))
 	var sk *sketch.Sketch
 	if strings.HasSuffix(rel, ".slvs") {

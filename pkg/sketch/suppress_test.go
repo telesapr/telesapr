@@ -17,7 +17,6 @@ import (
 // g007 step translating.
 func translateND(t *testing.T) *sketch.Sketch {
 	t.Helper()
-	srf.SetChordTolMm(0)
 	doc, err := slvs.LoadFile(fixturesPath(t, "group", "translate_nd", "normal.slvs"))
 	if err != nil {
 		t.Fatal(err)

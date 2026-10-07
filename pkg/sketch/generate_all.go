@@ -84,7 +84,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
-		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.maxSegments())
+		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.SegmentLimit())
 	}
 
 	// Remove any requests or constraints that refer to a nonexistent
@@ -697,8 +697,8 @@ func (sk *Sketch) chordTolPct() float64 {
 // the model's size.
 func (sk *Sketch) ChordTolPercent() float64 { return sk.chordTolPct() }
 
-// maxSegments is MaxSegments, or its default.
-func (sk *Sketch) maxSegments() int {
+// SegmentLimit is MaxSegments, or its default.
+func (sk *Sketch) SegmentLimit() int {
 	if sk.MaxSegments > 0 {
 		return sk.MaxSegments
 	}

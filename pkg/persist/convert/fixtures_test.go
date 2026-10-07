@@ -14,7 +14,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/persist/convert"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
-	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
@@ -158,7 +157,6 @@ func TestFixturesRoundTrip(t *testing.T) {
 
 			// The fixtures were saved in a fresh process, whose chord
 			// tolerance starts at 0; linking an IDF file uses it.
-			srf.SetChordTolMm(0)
 			_, res, err := convert.File(src, dst, true)
 			if rel == invalidFixture {
 				if err == nil {
@@ -188,7 +186,6 @@ func TestFixturesRoundTrip(t *testing.T) {
 				t.Errorf("decode and encode changed the file: %s", firstDiff(saved, again))
 			}
 
-			srf.SetChordTolMm(0)
 			loaded, err := tlspr.LoadFile(dst)
 			if err != nil {
 				t.Fatal(err)

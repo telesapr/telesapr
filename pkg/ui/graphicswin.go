@@ -938,7 +938,7 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 			sk.Params[i].Free = false
 		}
 		if ss.ExportMode {
-			ss.leaveExportMode()
+			ss.LeaveExportMode()
 			ss.GenerateAll(sketch.GenerateAll)
 		}
 		gw.persistentDirty = true

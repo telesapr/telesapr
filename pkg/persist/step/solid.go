@@ -85,14 +85,14 @@ type solidBuilder struct {
 
 // ShellOf is shape i of the model as a solid, faces' identities from
 // origin. It fails for anything it can't hold exactly or close.
-func (m *Model) ShellOf(i int, origin uint32) (*srf.SShell, error) {
+func (m *Model) ShellOf(i int, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	if i < 0 || i >= len(m.Shapes) {
 		return nil, fmt.Errorf("no shape %d", i)
 	}
-	return buildSolid(m.Shapes[i], origin)
+	return buildSolid(m.Shapes[i], origin, tol)
 }
 
-func buildSolid(shape *Shape, origin uint32) (sh *srf.SShell, err error) {
+func buildSolid(shape *Shape, origin uint32, tol srf.Tolerance) (sh *srf.SShell, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			sh, err = nil, fmt.Errorf("step: %v", r)
@@ -101,7 +101,7 @@ func buildSolid(shape *Shape, origin uint32) (sh *srf.SShell, err error) {
 	if len(shape.Tris) > 0 {
 		return nil, errUnsupported("a tessellated shape, triangles with no surfaces")
 	}
-	b := &solidBuilder{edges: map[*Edge]*solidEdge{}, turned: map[*Face]bool{}, sh: &srf.SShell{}, next: origin}
+	b := &solidBuilder{edges: map[*Edge]*solidEdge{}, turned: map[*Face]bool{}, sh: &srf.SShell{Tol: tol}, next: origin}
 	b.fa = topo.NewFaceAdder(b.sh)
 	shape = withPolygonEdges(shape)
 	for _, f := range shape.Faces {
@@ -1687,7 +1687,7 @@ func (b *solidBuilder) walk(g *faceGrid, c *gridCell) ([]cellLoop, [4]bool, erro
 
 // SolidFile reads a STEP file's shapes, placed, as one shell of solids,
 // or says why a shape can't be read as one: the caller keeps the mesh.
-func SolidFile(path string) (sh *srf.SShell, faces int, err error) {
+func SolidFile(path string, tol srf.Tolerance) (sh *srf.SShell, faces int, err error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, 0, err
@@ -1703,23 +1703,23 @@ func SolidFile(path string) (sh *srf.SShell, faces int, err error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	return ReadModel(f).Solid()
+	return ReadModel(f).Solid(tol)
 }
 
 // Solid is the model's placed shapes as one shell of solids, each
 // shape's faces given identities of their own, and the faces read.
-func (m *Model) Solid() (*srf.SShell, int, error) {
+func (m *Model) Solid(tol srf.Tolerance) (*srf.SShell, int, error) {
 	if len(m.Placements) == 0 {
 		return nil, 0, errors.New("the file holds no solid or shell that can be read")
 	}
 	shapes := map[int]*srf.SShell{}
-	out := &srf.SShell{}
+	out := &srf.SShell{Tol: tol}
 	faces := 0
 	for k, pl := range m.Placements {
 		sh := shapes[pl.Shape]
 		if sh == nil {
 			var err error
-			if sh, err = m.ShellOf(pl.Shape, srf.OriginFor(uint32(pl.Shape+1), 0)); err != nil {
+			if sh, err = m.ShellOf(pl.Shape, srf.OriginFor(uint32(pl.Shape+1), 0), tol); err != nil {
 				return nil, 0, fmt.Errorf("shape %d: %w", pl.Shape+1, err)
 			}
 			shapes[pl.Shape] = sh

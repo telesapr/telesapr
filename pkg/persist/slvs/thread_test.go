@@ -268,7 +268,6 @@ func TestThreadGoldens(t *testing.T) {
 			if err := tlspr.SaveFile(sk, "", path, tlspr.Options{}); err != nil {
 				t.Fatal(err)
 			}
-			srf.SetChordTolMm(0)
 			doc, err := tlspr.LoadFile(path)
 			if err != nil {
 				t.Fatal(err)
