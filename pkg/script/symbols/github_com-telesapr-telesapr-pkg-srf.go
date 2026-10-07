@@ -105,6 +105,7 @@ func init() {
 		"SurfaceUnion":                reflect.ValueOf(srf.SurfaceUnion),
 		"SweepEnd":                    reflect.ValueOf(srf.SweepEnd),
 		"TransformedLoopSet":          reflect.ValueOf(srf.TransformedLoopSet),
+		"WrapSymmetric":               reflect.ValueOf(srf.WrapSymmetric),
 
 		// type definitions
 		"BSplineCurve":      reflect.ValueOf((*srf.BSplineCurve)(nil)),

@@ -3704,6 +3704,10 @@
 				"text": "Vector4 is a point in homogeneous coordinates (w*x, w*y, w*z, w) (C++ Vector4).",
 				"kind": "struct",
 				"methods": {
+					"Magnitude": {
+						"decl": "func (v Vector4) Magnitude() float64",
+						"text": "Magnitude is the length of v in four dimensions."
+					},
 					"Minus": {
 						"decl": "func (v Vector4) Minus(b Vector4) Vector4"
 					},
@@ -8635,7 +8639,7 @@
 						"text": "MakeEdgesInto emits the pwl edges of every trim curve of srf, in uv space (asUV) or xyz."
 					},
 					"MakeSectionEdgesInto": {
-						"decl": "func (srf *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBezierList)",
+						"decl": "func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBezierList)",
 						"text": "MakeSectionEdgesInto reports our trim curves."
 					},
 					"MakeTriangulationGridInto": {
@@ -9013,6 +9017,10 @@
 			"TransformedLoopSet": {
 				"decl": "func TransformedLoopSet(sbls *SBezierLoopSet, r Rigid) *SBezierLoopSet",
 				"text": "TransformedLoopSet is a copy of sbls moved by r."
+			},
+			"WrapSymmetric": {
+				"decl": "func WrapSymmetric(v, n float64) float64",
+				"text": "WrapSymmetric brings v into (-n/2, n/2] by whole periods of n."
 			}
 		},
 		"values": {
