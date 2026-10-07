@@ -85,8 +85,6 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
 		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.maxSegments())
-		// Until every reader has a tolerance of its own.
-		srf.SetChordTolMm(sk.tol.ChordTolMm())
 	}
 
 	// Remove any requests or constraints that refer to a nonexistent

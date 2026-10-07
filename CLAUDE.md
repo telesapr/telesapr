@@ -33,6 +33,10 @@ conventions, for people and for coding agents alike (`AGENTS.md` is the same fil
 - No process-wide mutable state. What a computation needs, it is given (a `Sketch`, an options
   struct). Package-level `var` is for tables and sentinels that nothing writes after
   initialisation. `init()` only for `runtime.LockOSThread` in `cmd/telesapr` and generated code.
+  The tolerance a solid is followed at is `srf.Tolerance`, carried by every shell and surface
+  and computed by the sketch per regeneration (`Sketch.Tol`); `srf.DefaultTolerance` is what a
+  shell with none resolves to, and only tests set it. `TELESAPR_PARALLEL` is read once at
+  startup by the binaries (`srf.SetParallelModeFromEnv`) and nowhere else.
 - `context.Context` first where a call can be cancelled (scripts, agent, background
   regeneration). Every goroutine has an owner that waits for it; fan-out goes through
   `pkg/internal/par`, which bounds it.

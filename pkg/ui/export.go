@@ -476,7 +476,7 @@ func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierLi
 	}
 
 	cleanExportEdges(sk, sel)
-	writeExportCurves(sel, sbl, &sms, ss.ExportChordTolMm(), out)
+	writeExportCurves(sel, sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
 }
 
 // cleanExportEdges removes from sel the segments with no length once
@@ -634,7 +634,7 @@ func cleanExportEdges(sk *sketch.Sketch, sel *srf.SEdgeList) {
 // writeExportCurves writes the projected edges and curves, assembled
 // into loops where they close, and the mesh, to out (the end of C++
 // ExportLinesAndMesh).
-func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh, chordTol float64, out vectorFileWriter) {
+func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh, tol srf.Tolerance, out vectorFileWriter) {
 	// We kept the line segments and Beziers separate until now; but put
 	// them all together, and also project everything into the xy plane,
 	// since not all export targets ignore the z component of the points.
@@ -664,7 +664,7 @@ func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh,
 	for i := range sbl.Curves {
 		sbl.Curves[i].Tag = 0
 	}
-	sblss.FindOuterFacesFrom(sbl, &spxyz, &plane, srf.Tol(chordTol, srf.MaxSegments()),
+	sblss.FindOuterFacesFrom(sbl, &spxyz, &plane, tol,
 		&allClosed, &notClosedAt, nil, nil, &leftovers)
 	if len(leftovers) > 0 {
 		sblss.Sets = append(sblss.Sets, srf.SBezierLoopSet{Outer: leftovers[0], Holes: leftovers[1:]})

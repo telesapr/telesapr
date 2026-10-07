@@ -31,6 +31,7 @@ func init() {
 		"CurveSourceOrigB":            reflect.ValueOf(srf.CurveSourceOrigB),
 		"CurveSourceSplitA":           reflect.ValueOf(srf.CurveSourceSplitA),
 		"CurveSourceSplitB":           reflect.ValueOf(srf.CurveSourceSplitB),
+		"DefaultTolerance":            reflect.ValueOf(&srf.DefaultTolerance).Elem(),
 		"DoBounding":                  reflect.ValueOf(srf.DoBounding),
 		"DotProductTol":               reflect.ValueOf(constant.MakeFromLiteral("9.999999999999999999948913325368725010799941799177759094163775444e-06", token.FLOAT, 0)),
 		"EarIsEar":                    reflect.ValueOf(srf.EarIsEar),
@@ -42,7 +43,6 @@ func init() {
 		"EdgeSharp":                   reflect.ValueOf(srf.EdgeSharp),
 		"EdgeSharpOrFace":             reflect.ValueOf(srf.EdgeSharpOrFace),
 		"EdgeTurning":                 reflect.ValueOf(srf.EdgeTurning),
-		"ExportMode":                  reflect.ValueOf(srf.ExportMode),
 		"FaceAtLeastOneDiscarded":     reflect.ValueOf(srf.FaceAtLeastOneDiscarded),
 		"FaceFlipNormal":              reflect.ValueOf(srf.FaceFlipNormal),
 		"FaceIsTransparent":           reflect.ValueOf(srf.FaceIsTransparent),
@@ -85,7 +85,6 @@ func init() {
 		"STrimByEntireCurveFromShell": reflect.ValueOf(srf.STrimByEntireCurveFromShell),
 		"SameShell":                   reflect.ValueOf(srf.SameShell),
 		"SetChordTolMm":               reflect.ValueOf(srf.SetChordTolMm),
-		"SetExportMode":               reflect.ValueOf(srf.SetExportMode),
 		"SetMaxSegments":              reflect.ValueOf(srf.SetMaxSegments),
 		"SetParallelMode":             reflect.ValueOf(srf.SetParallelMode),
 		"SetParallelModeFromEnv":      reflect.ValueOf(srf.SetParallelModeFromEnv),
@@ -104,6 +103,7 @@ func init() {
 		"SurfaceInter":                reflect.ValueOf(srf.SurfaceInter),
 		"SurfaceUnion":                reflect.ValueOf(srf.SurfaceUnion),
 		"SweepEnd":                    reflect.ValueOf(srf.SweepEnd),
+		"Tol":                         reflect.ValueOf(srf.Tol),
 		"TransformedLoopSet":          reflect.ValueOf(srf.TransformedLoopSet),
 		"WrapSymmetric":               reflect.ValueOf(srf.WrapSymmetric),
 
@@ -158,6 +158,7 @@ func init() {
 		"ShellGroup":        reflect.ValueOf((*srf.ShellGroup)(nil)),
 		"SurfaceCombineAs":  reflect.ValueOf((*srf.SurfaceCombineAs)(nil)),
 		"SweepStep":         reflect.ValueOf((*srf.SweepStep)(nil)),
+		"Tolerance":         reflect.ValueOf((*srf.Tolerance)(nil)),
 
 		// interface wrapper definitions
 		"_ShellGroup": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_srf_ShellGroup)(nil)),

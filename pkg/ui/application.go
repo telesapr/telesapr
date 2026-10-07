@@ -280,8 +280,6 @@ func (ss *Application) LoadSettings() {
 // applyEngineSettings passes the settings the engine reads on.
 func (ss *Application) applyEngineSettings() {
 	core.SetSettings(ss.Settings)
-	srf.SetMaxSegments(ss.MaxSegments)
-	srf.SetExportMode(ss.ExportMode, ss.ExportChordTolMm(), ss.ExportMaxSegments)
 	if ss.SK != nil {
 		ss.SK.ChordTolPct = ss.ChordTol
 		ss.SK.MaxSegments = ss.MaxSegments
@@ -304,14 +302,12 @@ func (ss *Application) exportTolerance() srf.Tolerance {
 func (ss *Application) enterExportMode() {
 	ss.ExportMode = true
 	ss.SK.Exporting = ss.exportTolerance()
-	srf.SetExportMode(true, ss.ExportChordTolMm(), ss.ExportMaxSegments)
 }
 
 // leaveExportMode returns the regenerations to the display tolerance.
 func (ss *Application) leaveExportMode() {
 	ss.ExportMode = false
 	ss.SK.Exporting = srf.Tolerance{}
-	srf.SetExportMode(false, 0, 0)
 }
 
 // SaveSettings writes the configuration (C++ SolveSpaceUI::Exit, less

@@ -500,6 +500,6 @@ func (ss *Application) ExportDrawingTo(filename string, d *sketch.Drawing) error
 	out.vw().SetModelviewProjection(geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1}, geom.Vector{}, 0, 1)
 	var sbl srf.SBezierList
 	var sms srf.SMesh
-	writeExportCurves(&sheet, &sbl, &sms, ss.ExportChordTolMm(), out)
+	writeExportCurves(&sheet, &sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
 	return nil
 }

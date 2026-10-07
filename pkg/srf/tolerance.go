@@ -4,8 +4,7 @@ package srf
 // follow the curves and surfaces they are made from: the chord
 // tolerance, in mm, and the most segments one curve is cut into. The
 // zero value is unset: a shell made with it takes the tolerance of the
-// shells it is made from, and one with none at all the process-wide
-// setting (SetChordTolMm, SetMaxSegments).
+// shells it is made from, and one with none at all DefaultTolerance.
 type Tolerance struct {
 	chordTolMm  float64
 	maxSegments int
@@ -29,12 +28,40 @@ func (t Tolerance) Or(o Tolerance) Tolerance {
 	return o
 }
 
-// resolved is t, or the process-wide setting when t is unset.
+// DefaultTolerance is what an unset tolerance resolves to: 0.1 mm and
+// 20 segments, as a new document's display tolerance would be. A
+// sketch gives every shell it builds a tolerance of its own, so the
+// program never writes this; tests that build shells with none set it
+// through SetChordTolMm and SetMaxSegments, and so cannot run in
+// parallel.
+var DefaultTolerance = Tol(0.1, 20)
+
+// ChordTolMm is DefaultTolerance's chord tolerance in mm.
+func ChordTolMm() float64 { return DefaultTolerance.chordTolMm }
+
+// MaxSegments is DefaultTolerance's segment limit.
+func MaxSegments() int { return DefaultTolerance.maxSegments }
+
+// SetChordTolMm sets DefaultTolerance's chord tolerance; for tests.
+func SetChordTolMm(t float64) { DefaultTolerance = Tol(t, DefaultTolerance.maxSegments) }
+
+// SetMaxSegments sets DefaultTolerance's segment limit; for tests.
+func SetMaxSegments(n int) { DefaultTolerance = Tol(DefaultTolerance.chordTolMm, n) }
+
+// resolved is t, or DefaultTolerance when t is unset.
 func (t Tolerance) resolved() Tolerance {
 	if t.set {
 		return t
 	}
-	return Tol(ChordTolMm(), MaxSegments())
+	return DefaultTolerance
+}
+
+// SetTolerance gives the shell and its surfaces the tolerance t.
+func (s *SShell) SetTolerance(t Tolerance) {
+	s.Tol = t
+	for i := range s.Surface {
+		s.Surface[i].Tol = t
+	}
 }
 
 // ChordTolMm is the chord tolerance in mm.

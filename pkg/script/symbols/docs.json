@@ -6837,6 +6837,10 @@
 						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult",
 						"text": "TestRankForGroup reports whether group hg would be redundantly constrained, and its rank (C++ SolveSpaceUI::TestRankForGroup)."
 					},
+					"Tol": {
+						"decl": "func (sk *Sketch) Tol() srf.Tolerance",
+						"text": "Tol is the tolerance the last regeneration followed curves and surfaces at: the export one while Exporting is set, otherwise one from the model's size and ChordTolPct."
+					},
 					"TryConstrain": {
 						"decl": "func (sk *Sketch) TryConstrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity, other, other2 bool) core.HConstraint",
 						"text": "TryConstrain is Constrain, except that a constraint that would be redundant isn't added; it then returns no constraint (C++ Constraint::TryConstrain)."
@@ -7641,16 +7645,16 @@
 						"text": "IsRational reports whether a weight differs from 1 (C++ SBezier::IsRational)."
 					},
 					"MakePwlInto": {
-						"decl": "func (b *SBezier) MakePwlInto(sel *SEdgeList, chordTol, maxDt float64)",
+						"decl": "func (b *SBezier) MakePwlInto(sel *SEdgeList, tol Tolerance, maxDt float64)",
 						"text": "MakePwlInto emits the pwl approximation as edges."
 					},
 					"MakePwlIntoContour": {
-						"decl": "func (b *SBezier) MakePwlIntoContour(sc *SContour, chordTol, maxDt float64)",
+						"decl": "func (b *SBezier) MakePwlIntoContour(sc *SContour, tol Tolerance, maxDt float64)",
 						"text": "MakePwlIntoContour appends the pwl approximation to sc."
 					},
 					"MakePwlIntoPoints": {
-						"decl": "func (b *SBezier) MakePwlIntoPoints(l *[]geom.Vector, chordTol, maxDt float64)",
-						"text": "MakePwlIntoPoints splits the curve into piecewise linear segments that don't deviate from it by more than chordTol (0 means the default)."
+						"decl": "func (b *SBezier) MakePwlIntoPoints(l *[]geom.Vector, tol Tolerance, maxDt float64)",
+						"text": "MakePwlIntoPoints splits the curve into piecewise linear segments that don't deviate from it by more than tol's chord tolerance, and into no more than its segment limit."
 					},
 					"PointAt": {
 						"decl": "func (b *SBezier) PointAt(t float64) geom.Vector",
@@ -7752,11 +7756,11 @@
 						"decl": "func (l *SBezierLoop) Len() int"
 					},
 					"MakePwlInto": {
-						"decl": "func (l *SBezierLoop) MakePwlInto(el *SEdgeList, chordTol float64)",
-						"text": "MakePwlInto emits the polyline approximation of this loop into el, with a chord tolerance of chordTol."
+						"decl": "func (l *SBezierLoop) MakePwlInto(el *SEdgeList, tol Tolerance)",
+						"text": "MakePwlInto emits the polyline approximation of this loop into el, at the tolerance tol."
 					},
 					"MakePwlIntoContour": {
-						"decl": "func (l *SBezierLoop) MakePwlIntoContour(sc *SContour, chordTol float64)",
+						"decl": "func (l *SBezierLoop) MakePwlIntoContour(sc *SContour, tol Tolerance)",
 						"text": "MakePwlIntoContour appends the loop's pwl approximation to sc, without doubled points at the joins, and closes it exactly."
 					},
 					"Reverse": {
@@ -7784,7 +7788,7 @@
 						"text": "loops returns the set's loops in C++ order: the outer loop first, then the holes."
 					},
 					"MakePwlInto": {
-						"decl": "func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon)",
+						"decl": "func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon, tol Tolerance)",
 						"text": "MakePwlInto adds one contour to sp for each loop, outer loop first (C++ SBezierLoopSet::MakePwlInto)."
 					},
 					"SignedArea": {
@@ -7813,7 +7817,7 @@
 						"decl": "func (s *SBezierLoopSetSet) Clear()"
 					},
 					"FindOuterFacesFrom": {
-						"decl": "func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon, srfuv *SSurface, chordTol float64, allClosed *bool, notClosedAt *SEdge, allCoplanar *bool, notCoplanarAt *geom.Vector, openContours *[]SBezierLoop)",
+						"decl": "func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon, srfuv *SSurface, tol Tolerance, allClosed *bool, notClosedAt *SEdge, allCoplanar *bool, notCoplanarAt *geom.Vector, openContours *[]SBezierLoop)",
 						"text": "FindOuterFacesFrom assembles the curves of sbl into closed loops and groups each outer loop with its holes into one SBezierLoopSet."
 					}
 				}
@@ -8518,6 +8522,10 @@
 						"decl": "func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell)",
 						"text": "RewriteSurfaceHandlesForCurves points every curve's SurfA/SurfB at the new handles of its surfaces in s."
 					},
+					"SetTolerance": {
+						"decl": "func (s *SShell) SetTolerance(t Tolerance)",
+						"text": "SetTolerance gives the shell and its surfaces the tolerance t."
+					},
 					"TriangulateInto": {
 						"decl": "func (s *SShell) TriangulateInto(mesh *SMesh)",
 						"text": "TriangulateInto triangulates every surface in the shell and appends the resulting triangles to mesh."
@@ -8822,6 +8830,31 @@
 						"text": "Motion is the rigid motion of the step."
 					}
 				}
+			},
+			"Tolerance": {
+				"text": "Tolerance is how closely the piecewise-linear and triangulated forms follow the curves and surfaces they are made from: the chord tolerance, in mm, and the most segments one curve is cut into.",
+				"kind": "struct",
+				"methods": {
+					"ChordTolMm": {
+						"decl": "func (t Tolerance) ChordTolMm() float64",
+						"text": "ChordTolMm is the chord tolerance in mm."
+					},
+					"IsSet": {
+						"decl": "func (t Tolerance) IsSet() bool",
+						"text": "IsSet reports whether t was made with Tol."
+					},
+					"MaxSegments": {
+						"decl": "func (t Tolerance) MaxSegments() int",
+						"text": "MaxSegments is the most segments one curve is cut into."
+					},
+					"Or": {
+						"decl": "func (t Tolerance) Or(o Tolerance) Tolerance",
+						"text": "Or is t if it is set, and o otherwise."
+					}
+				},
+				"makers": [
+					"Tol"
+				]
 			}
 		},
 		"funcs": {
@@ -8839,7 +8872,7 @@
 			},
 			"ChordTolMm": {
 				"decl": "func ChordTolMm() float64",
-				"text": "ChordTolMm returns the absolute chord tolerance in mm: the export one in export mode (C++ SS.ChordTolMm)."
+				"text": "ChordTolMm is DefaultTolerance's chord tolerance in mm."
 			},
 			"CombineAsFromGroup": {
 				"decl": "func CombineAsFromGroup(c int) (SurfaceCombineAs, bool)",
@@ -8852,10 +8885,6 @@
 			"DoBounding": {
 				"decl": "func DoBounding(v geom.Vector, vmax, vmin *geom.Vector)",
 				"text": "DoBounding extends (vmax, vmin) to include v (C++ SMesh::DoBounding)."
-			},
-			"ExportMode": {
-				"decl": "func ExportMode() bool",
-				"text": "ExportMode reports whether export mode is on."
 			},
 			"FromExtrusionOf": {
 				"decl": "func FromExtrusionOf(spc *SBezier, t0, t1 geom.Vector) SSurface",
@@ -8891,7 +8920,7 @@
 			},
 			"MaxSegments": {
 				"decl": "func MaxSegments() int",
-				"text": "MaxSegments returns the maximum number of pwl segments per curve: the export one in export mode (C++ SS.MaxSegments)."
+				"text": "MaxSegments is DefaultTolerance's segment limit."
 			},
 			"NewMeshMeta": {
 				"decl": "func NewMeshMeta(face FaceID, color core.RGBA) MeshMeta",
@@ -8980,15 +9009,11 @@
 			},
 			"SetChordTolMm": {
 				"decl": "func SetChordTolMm(t float64)",
-				"text": "SetChordTolMm sets the absolute chord tolerance in mm."
-			},
-			"SetExportMode": {
-				"decl": "func SetExportMode(on bool, chordTolMm float64, maxSegments int)",
-				"text": "SetExportMode turns export mode on, with the given chord tolerance in mm and segment limit, or off (C++ SS.exportMode)."
+				"text": "SetChordTolMm sets DefaultTolerance's chord tolerance; for tests."
 			},
 			"SetMaxSegments": {
 				"decl": "func SetMaxSegments(n int)",
-				"text": "SetMaxSegments sets the maximum number of pwl segments per curve outside export mode (C++ SS.maxSegments)."
+				"text": "SetMaxSegments sets DefaultTolerance's segment limit; for tests."
 			},
 			"SetParallelMode": {
 				"decl": "func SetParallelMode(m ParallelMode)",
@@ -9013,6 +9038,10 @@
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",
 				"text": "SweepEnd is where the steps take the profile."
+			},
+			"Tol": {
+				"decl": "func Tol(chordTolMm float64, maxSegments int) Tolerance",
+				"text": "Tol is the tolerance of chordTolMm and maxSegments."
 			},
 			"TransformedLoopSet": {
 				"decl": "func TransformedLoopSet(sbls *SBezierLoopSet, r Rigid) *SBezierLoopSet",
@@ -9062,6 +9091,10 @@
 			},
 			"CurveSourceSplitB": {
 				"decl": "const CurveSourceSplitB"
+			},
+			"DefaultTolerance": {
+				"decl": "var DefaultTolerance",
+				"text": "DefaultTolerance is what an unset tolerance resolves to: 0.1 mm and 20 segments, as a new document's display tolerance would be."
 			},
 			"DotProductTol": {
 				"decl": "const DotProductTol",

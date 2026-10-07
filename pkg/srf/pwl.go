@@ -1,75 +1,8 @@
 package srf
 
 import (
-	"math"
-	"sync/atomic"
-
 	"github.com/telesapr/telesapr/pkg/geom"
 )
-
-// chordTolMm and maxSegments mirror SS.ChordTolMm() and
-// SS.GetMaxSegments(). The C++ computes chordTolCalculated in
-// SolveSpaceUI::GenerateAll from the entity bounding box
-// (generate.cpp:225); sketch.GenerateAll does the same via
-// SetChordTolMm.
-// The chord tolerance is atomic: a sketch generated on another
-// goroutine (the solids made off the interface's thread, roadmap 17.3)
-// sets it to the value the interface's own generation does.
-var chordTolBits atomic.Uint64
-
-func init() { chordTolBits.Store(math.Float64bits(0.1)) }
-
-var (
-	maxSegments = 20
-
-	// While exporting, the export tolerance and segment limit apply
-	// instead (C++ SS.exportMode, ExportChordTolMm, exportMaxSegments).
-	exportMode        bool
-	exportChordTolMm  float64
-	exportMaxSegments int
-)
-
-// ChordTolMm returns the absolute chord tolerance in mm: the export
-// one in export mode (C++ SS.ChordTolMm).
-func ChordTolMm() float64 {
-	if exportMode {
-		return exportChordTolMm
-	}
-	return math.Float64frombits(chordTolBits.Load())
-}
-
-// SetExportMode turns export mode on, with the given chord tolerance in
-// mm and segment limit, or off (C++ SS.exportMode).
-func SetExportMode(on bool, chordTolMm float64, maxSegments int) {
-	exportMode = on
-	exportChordTolMm = chordTolMm
-	exportMaxSegments = maxSegments
-}
-
-// ExportMode reports whether export mode is on.
-func ExportMode() bool { return exportMode }
-
-// SetChordTolMm sets the absolute chord tolerance in mm. Like C++
-// chordTolCalculated it can be 0, for a sketch whose entities all sit
-// at one point; the pwl routines are then bounded by maxSegments.
-func SetChordTolMm(t float64) {
-	chordTolBits.Store(math.Float64bits(t))
-}
-
-// SetMaxSegments sets the maximum number of pwl segments per curve
-// outside export mode (C++ SS.maxSegments).
-func SetMaxSegments(n int) {
-	maxSegments = n
-}
-
-// MaxSegments returns the maximum number of pwl segments per curve:
-// the export one in export mode (C++ SS.MaxSegments).
-func MaxSegments() int {
-	if exportMode {
-		return exportMaxSegments
-	}
-	return maxSegments
-}
 
 // MakePwlIntoPoints splits the curve into piecewise linear segments that
 // don't deviate from it by more than tol's chord tolerance, and into

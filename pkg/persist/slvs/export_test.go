@@ -65,7 +65,7 @@ func TestExportMeshToErrors(t *testing.T) {
 		!strings.Contains(err.Error(), "nothing to export") {
 		t.Errorf("empty mesh: %v", err)
 	}
-	if srf.ExportMode() {
+	if doc.Sketch.Exporting.IsSet() {
 		t.Errorf("export mode left on")
 	}
 
