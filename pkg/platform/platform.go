@@ -199,11 +199,11 @@ type WindowEvents struct {
 type Window interface {
 	Events() *WindowEvents
 
-	// GetPixelDensity is the physical DPI; GetDevicePixelRatio the size
+	// PixelDensity is the physical DPI; GetDevicePixelRatio the size
 	// of a logical pixel in physical ones.
-	GetPixelDensity() float64
-	GetDevicePixelRatio() float64
-	GetDeviceFontScale() float64
+	PixelDensity() float64
+	DevicePixelRatio() float64
+	DeviceFontScale() float64
 
 	IsVisible() bool
 	SetVisible(bool)
@@ -219,8 +219,8 @@ type Window interface {
 
 	SetMenuBar(MenuBar)
 
-	// GetContentSize is the drawing area's size in logical pixels.
-	GetContentSize() (width, height float64)
+	// ContentSize is the drawing area's size in logical pixels.
+	ContentSize() (width, height float64)
 	SetMinContentSize(width, height float64)
 
 	FreezePosition(s core.Settings, key string)
@@ -236,8 +236,8 @@ type Window interface {
 	HideEditor()
 
 	SetScrollbarVisible(bool)
-	ConfigureScrollbar(min, max, pageSize float64)
-	GetScrollbarPosition() float64
+	ConfigureScrollbar(lo, hi, pageSize float64)
+	ScrollbarPosition() float64
 	SetScrollbarPosition(pos float64)
 
 	// Invalidate asks for OnRender to be called soon.
@@ -297,7 +297,7 @@ type FileDialog interface {
 	SetTitle(string)
 	// SetCurrentName sets the file name, without its folder.
 	SetCurrentName(string)
-	GetFilename() string
+	Filename() string
 	SetFilename(string)
 	// SuggestFilename sets the folder and name, with the extension of
 	// the first filter.
@@ -312,18 +312,18 @@ type FileDialog interface {
 // Platform creates the platform's objects and runs its event loop
 // (the C++ free functions of gui.h).
 type Platform interface {
-	GetSettings() core.Settings
+	Settings() core.Settings
 	CreateTimer() Timer
 	CreateMenu() Menu
-	// GetOrCreateMainMenu returns the menu bar; unique is true on
+	// MainMenu returns the menu bar; unique is true on
 	// platforms with one application-wide menu bar.
-	GetOrCreateMainMenu() (bar MenuBar, unique bool)
+	MainMenu() (bar MenuBar, unique bool)
 	CreateWindow(kind WindowKind, parent Window) Window
 	CreateMessageDialog(parent Window) MessageDialog
 	CreateOpenFileDialog(parent Window) FileDialog
 	CreateSaveFileDialog(parent Window) FileDialog
 
-	GetFontFiles() []string
+	FontFiles() []string
 	OpenInBrowser(url string)
 
 	// Run runs the event loop until Exit.

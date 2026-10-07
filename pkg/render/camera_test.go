@@ -62,9 +62,9 @@ func TestCamera(t *testing.T) {
 		}
 		b.WriteString("\n")
 
-		op := &ObjectPicker{Camera: *c, SelRadius: 10}
-		hcs := op.GetStroke(Stroke{Width: 3, ZIndex: 2, Unit: UnitPX})
-		hcf := op.GetFill(Fill{ZIndex: 1})
+		op := &ObjectPicker{Cam: *c, SelRadius: 10}
+		hcs := op.InternStroke(Stroke{Width: 3, ZIndex: 2, Unit: UnitPX})
+		hcf := op.InternFill(Fill{ZIndex: 1})
 		for i := range 6 {
 			op.Point = geom.Point2d{U: -40.0 + 17.5*float64(i), V: 25.0 - 11.25*float64(i)}
 			hit := op.Pick(func() {

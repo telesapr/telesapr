@@ -92,7 +92,7 @@ func (gw *GraphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 
 // PopulateMainMenu builds the menu bar from the menu table.
 func (gw *GraphicsWindow) PopulateMainMenu() {
-	mainMenu, unique := gw.ss.Platform.GetOrCreateMainMenu()
+	mainMenu, unique := gw.ss.Platform.MainMenu()
 	if unique {
 		mainMenu.Clear()
 	}
@@ -231,10 +231,10 @@ func (gw *GraphicsWindow) Init() {
 		panic("ui: group order can't be empty since we will activate the last group")
 	}
 	// A file may name the group that was active when it was saved.
-	if sk.Active.V == 0 || sk.GetGroup(sk.Active) == nil {
+	if sk.Active.V == 0 || sk.Group(sk.Active) == nil {
 		gw.setActiveGroup(sk.GroupOrder[len(sk.GroupOrder)-1])
 	}
-	gw.ss.groupActivate(sk.GetGroup(gw.activeGroupH()))
+	gw.ss.groupActivate(sk.Group(gw.activeGroupH()))
 
 	gw.show = sketch.Visibility{Points: true, Normals: true, Construction: true, Edges: true}
 	gw.showConstraints = SCMShowAll
@@ -286,7 +286,7 @@ func (gw *GraphicsWindow) AnimateOntoWorkplane() {
 		return
 	}
 	sk := gw.sk()
-	w := sk.GetEntity(gw.ActiveWorkplane())
+	w := sk.Entity(gw.ActiveWorkplane())
 	quatf := w.NormalEntity(sk).NormalGetNum(sk)
 
 	// Get Z pointing vertical, if we're on turntable nav mode:
@@ -303,7 +303,7 @@ func (gw *GraphicsWindow) AnimateOntoWorkplane() {
 		}
 	}
 
-	offsetf := sk.GetEntity(w.Point[0]).PointGetNum(sk).ScaledBy(-1)
+	offsetf := sk.Entity(w.Point[0]).PointGetNum(sk).ScaledBy(-1)
 
 	// If the view screen is open, then we need to refresh it.
 	gw.ss.ScheduleShowTW()
@@ -415,8 +415,8 @@ func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []
 			// Lots of entities can extend outside the bbox of their
 			// points, but circles are particularly bad.
 			r := e.CircleGetRadiusNum(sk)
-			c := sk.GetEntity(e.Point[0]).PointGetNum(sk)
-			q := sk.GetEntity(e.Normal).NormalGetNum(sk)
+			c := sk.Entity(e.Point[0]).PointGetNum(sk)
+			q := sk.Entity(e.Normal).NormalGetNum(sk)
 			for j := range 4 {
 				var p geom.Vector
 				switch j {
@@ -438,7 +438,7 @@ func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []
 				if e.Point[i].V == 0 {
 					break
 				}
-				p := sk.GetEntity(e.Point[i]).PointGetNum(sk)
+				p := sk.Entity(e.Point[i]).PointGetNum(sk)
 				gw.handlePointForZoomToFit(p, pmax, pmin, wmin, usePerspective, camera)
 			}
 		}
@@ -454,7 +454,7 @@ func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []
 		return
 	}
 
-	g := sk.GetGroup(gw.activeGroupH())
+	g := sk.Group(gw.activeGroupH())
 	g.GenerateDisplayItems(sk)
 	for i := range g.DisplayMesh.Triangles {
 		tr := &g.DisplayMesh.Triangles[i]
@@ -490,7 +490,7 @@ func (gw *GraphicsWindow) ZoomToFit(includingInvisibles, useSelection bool) {
 	if gw.window == nil || gw.ss.Windowless {
 		return
 	}
-	camera := gw.GetCamera()
+	camera := gw.Camera()
 	gw.view.Scale = gw.zoomToFit(&camera, includingInvisibles, useSelection)
 }
 
@@ -504,7 +504,7 @@ func (gw *GraphicsWindow) zoomToFit(camera *render.Camera, includingInvisibles, 
 		for i := range gw.selection {
 			s := &gw.selection[i]
 			if s.Entity.V != 0 {
-				e := sk.GetEntity(s.Entity)
+				e := sk.Entity(s.Entity)
 				if e.IsFace() {
 					faces = append(faces, e.H)
 					continue
@@ -512,7 +512,7 @@ func (gw *GraphicsWindow) zoomToFit(camera *render.Camera, includingInvisibles, 
 				entities = append(entities, e)
 			}
 			if s.Constraint.V != 0 {
-				constraints = append(constraints, sk.GetConstraint(s.Constraint))
+				constraints = append(constraints, sk.Constraint(s.Constraint))
 			}
 		}
 	}
@@ -709,7 +709,7 @@ func (gw *GraphicsWindow) MenuView(id Command) {
 		if gw.gs.n == 1 && gw.gs.points == 1 {
 			// Offset is the selected point, quaternion is same as before
 			sk := gw.sk()
-			pt := sk.GetEntity(gw.gs.point[0]).PointGetNum(sk)
+			pt := sk.Entity(gw.gs.point[0]).PointGetNum(sk)
 			quat0 := geom.QuaternionFromBasis(gw.view.ProjRight, gw.view.ProjUp)
 			gw.ClearSelection()
 			gw.AnimateOnto(quat0, pt.ScaledBy(-1))
@@ -747,7 +747,7 @@ func (gw *GraphicsWindow) EnsureValidActives() {
 	sk := gw.sk()
 	change := false
 	// The active group must exist, and not be the references.
-	g := sk.GetGroup(gw.activeGroupH())
+	g := sk.Group(gw.activeGroupH())
 	if g == nil || g.H.V == core.HGroupReferences {
 		i := 0
 		for ; i < len(sk.GroupOrder); i++ {
@@ -767,13 +767,13 @@ func (gw *GraphicsWindow) EnsureValidActives() {
 		} else {
 			gw.setActiveGroup(sk.GroupOrder[i])
 		}
-		ss.groupActivate(sk.GetGroup(gw.activeGroupH()))
+		ss.groupActivate(sk.Group(gw.activeGroupH()))
 		change = true
 	}
 
 	// The active coordinate system must also exist.
 	if gw.LockedInWorkplane() {
-		if e := sk.GetEntity(gw.ActiveWorkplane()); e != nil {
+		if e := sk.Entity(gw.ActiveWorkplane()); e != nil {
 			hgw := e.Group
 			if hgw != gw.activeGroupH() && ss.GroupsInOrder(gw.activeGroupH(), hgw) {
 				// The active workplane is in a group that comes after the
@@ -830,12 +830,12 @@ func (gw *GraphicsWindow) EnsureValidActives() {
 // SetWorkplaneFreeIn3d draws the active group in 3d.
 func (gw *GraphicsWindow) SetWorkplaneFreeIn3d() {
 	// Entity::FREE_IN_3D, which is no entity.
-	gw.sk().GetGroup(gw.activeGroupH()).ActiveWorkplane = core.HEntity{}
+	gw.sk().Group(gw.activeGroupH()).ActiveWorkplane = core.HEntity{}
 }
 
 // ActiveWorkplane is the active group's workplane, or FreeIn3D.
 func (gw *GraphicsWindow) ActiveWorkplane() core.HEntity {
-	if g := gw.sk().GetGroup(gw.activeGroupH()); g != nil {
+	if g := gw.sk().Group(gw.activeGroupH()); g != nil {
 		return g.ActiveWorkplane
 	}
 	return core.HEntity{}
@@ -883,9 +883,9 @@ func (gw *GraphicsWindow) SnapToGrid(p geom.Vector) geom.Vector {
 		return p
 	}
 	sk := gw.sk()
-	wrkpl := sk.GetEntity(gw.ActiveWorkplane())
+	wrkpl := sk.Entity(gw.ActiveWorkplane())
 	norm := wrkpl.NormalEntity(sk)
-	wo := sk.GetEntity(wrkpl.Point[0]).PointGetNum(sk)
+	wo := sk.Entity(wrkpl.Point[0]).PointGetNum(sk)
 	wu, wv, wn := norm.NormalU(sk), norm.NormalV(sk), norm.NormalN(sk)
 
 	pp := p.Minus(wo).DotInToCsys(wu, wv, wn)
@@ -912,7 +912,7 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 		// cancel, then perhaps they want to return to the home screen in
 		// the text window.
 		if gw.gs.n == 0 && gw.gs.constraints == 0 && gw.pending.operation == PendingNone {
-			if !(ss.TW.window.IsEditorVisible() || gw.window.IsEditorVisible()) {
+			if !ss.TW.window.IsEditorVisible() && !gw.window.IsEditorVisible() {
 				if ss.TW.shown.screen == ScreenStyleInfo {
 					ss.TW.GoToScreen(ScreenListOfStyles)
 				} else {
@@ -987,7 +987,7 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 						alreadySelected = true
 						continue
 					}
-					se := sk.GetEntity(s.Entity)
+					se := sk.Entity(s.Entity)
 					if !se.HasEndpoints() {
 						continue
 					}
@@ -1016,9 +1016,9 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 		gw.GroupSelection()
 		var e *core.Entity
 		if gw.gs.n == 1 && gw.gs.points == 1 {
-			e = sk.GetEntity(gw.gs.point[0])
+			e = sk.Entity(gw.gs.point[0])
 		} else if gw.gs.n == 1 && gw.gs.entities == 1 {
-			e = sk.GetEntity(gw.gs.entity[0])
+			e = sk.Entity(gw.gs.entity[0])
 		}
 		gw.ClearSelection()
 
@@ -1026,7 +1026,7 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 		if e != nil {
 			hg = e.Group
 		}
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g.Type != sketch.GroupLinked {
 			ss.Error("To use this command, select a point or other " +
 				"entity from an linked part, or make a link " +
@@ -1067,7 +1067,7 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 			s := &gw.selection[i]
 			if s.Entity.V != 0 {
 				hp := s.Entity
-				ep := sk.GetEntity(hp)
+				ep := sk.Entity(hp)
 				if !ep.IsPoint() {
 					continue
 				}
@@ -1076,8 +1076,8 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 				gw.pending.points = append(gw.pending.points, hp)
 				sk.MarkGroupDirty(ep.Group, false)
 			} else if s.Constraint.V != 0 {
-				c := sk.GetConstraint(s.Constraint)
-				camera := gw.GetCamera()
+				c := sk.Constraint(s.Constraint)
+				camera := gw.Camera()
 				refs := gw.constraintReferencePoints(c, &camera)
 				c.Disp.Offset = c.Disp.Offset.Plus(gw.SnapToGrid(refs[0]).Minus(refs[0]))
 			}
@@ -1126,7 +1126,7 @@ func (gw *GraphicsWindow) MenuRequest(id Command) {
 	switch id {
 	case CmdSelWorkplane:
 		gw.GroupSelection()
-		g := sk.GetGroup(gw.activeGroupH())
+		g := sk.Group(gw.activeGroupH())
 
 		switch {
 		case gw.gs.n == 1 && gw.gs.workplanes == 1:
@@ -1208,7 +1208,7 @@ func (gw *GraphicsWindow) MenuRequest(id Command) {
 		case PendingDraggingNewPoint, PendingDraggingNewLinePoint, PendingDraggingNewArcPoint,
 			PendingDraggingNewCubicPoint, PendingDraggingNewRadius:
 			for _, hr := range gw.pending.requests {
-				r := sk.GetRequest(hr)
+				r := sk.Request(hr)
 				r.Construction = !r.Construction
 				sk.MarkGroupDirty(r.Group, false)
 			}
@@ -1226,7 +1226,7 @@ func (gw *GraphicsWindow) MenuRequest(id Command) {
 			if !he.IsFromRequest() {
 				continue
 			}
-			r := sk.GetRequest(he.Request())
+			r := sk.Request(he.Request())
 			r.Construction = !r.Construction
 			sk.MarkGroupDirty(r.Group, false)
 		}
@@ -1274,7 +1274,7 @@ func (gw *GraphicsWindow) ToggleBool(v *bool) {
 	// generated, and if we are going to show them, we need to generate
 	// them first.
 	sk := gw.sk()
-	g := sk.GetGroup(gw.activeGroupH())
+	g := sk.Group(gw.activeGroupH())
 	if *v && len(g.DisplayOutlines.Outlines) == 0 && (v == &gw.show.Edges || v == &gw.show.Outlines) {
 		gw.ss.GenerateAll(sketch.GenerateUntilActive)
 	}
@@ -1322,13 +1322,13 @@ func (gw *GraphicsWindow) applySuggestion(s sketch.Suggestion) {
 	gw.sk().ApplySuggestion(s)
 }
 
-// GetCamera is the camera for the current view and window.
-func (gw *GraphicsWindow) GetCamera() render.Camera {
+// Camera is the camera for the current view and window.
+func (gw *GraphicsWindow) Camera() render.Camera {
 	var c render.Camera
 	if gw.window != nil && !gw.ss.Windowless {
-		c.Width, c.Height = gw.window.GetContentSize()
-		c.PixelRatio = gw.window.GetDevicePixelRatio()
-		c.GridFit = gw.window.GetDevicePixelRatio() == 1
+		c.Width, c.Height = gw.window.ContentSize()
+		c.PixelRatio = gw.window.DevicePixelRatio()
+		c.GridFit = gw.window.DevicePixelRatio() == 1
 	} else {
 		c.Width = 297.0 // A4? Whatever...
 		c.Height = 210.0
@@ -1343,8 +1343,8 @@ func (gw *GraphicsWindow) GetCamera() render.Camera {
 	return c
 }
 
-// GetLighting is the lighting from the settings.
-func (gw *GraphicsWindow) GetLighting() render.Lighting {
+// Lighting is the lighting from the settings.
+func (gw *GraphicsWindow) Lighting() render.Lighting {
 	ss := gw.ss
 	return render.Lighting{
 		BackgroundColor:  ss.BackgroundColor,

@@ -67,7 +67,7 @@ func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 			break
 		}
 	}
-	if !(withinA && withinB) {
+	if !withinA || !withinB {
 		// Intersection curve lies entirely outside one of the surfaces, so
 		// it's fake.
 		into.putExact(nil, ex)
@@ -90,8 +90,8 @@ func (s *SSurface) IntersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *S
 
 func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *curveSink) {
 	var amax, amin, bmax, bmin geom.Vector
-	s.GetAxisAlignedBounding(&amax, &amin)
-	b.GetAxisAlignedBounding(&bmax, &bmin)
+	s.AxisAlignedBounding(&amax, &amin)
+	b.AxisAlignedBounding(&bmax, &bmin)
 
 	if amax.BoundingBoxesDisjoint(amax, amin, bmax, bmin) {
 		// They cannot possibly intersect, no curves to generate
@@ -103,16 +103,22 @@ func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *c
 	isExtdt := s.IsExtrusion(&oft, &alongt)
 	isExtdb := b.IsExtrusion(&ofb, &alongb)
 
-	if s.DegM == 1 && s.DegN == 1 && b.DegM == 1 && b.DegN == 1 {
+	switch {
+	case s.DegM == 1 && s.DegN == 1 && b.DegM == 1 && b.DegN == 1:
 		s.intersectPlanes(b, agnstA, agnstB, into)
-	} else if (s.DegM == 1 && s.DegN == 1 && isExtdb) ||
-		(b.DegM == 1 && b.DegN == 1 && isExtdt) {
+
+	case (s.DegM == 1 && s.DegN == 1 && isExtdb) ||
+		(b.DegM == 1 && b.DegN == 1 && isExtdt):
+
 		s.intersectPlaneAndExtrusion(b, agnstA, agnstB, into)
-	} else if isExtdt && isExtdb &&
+
+	case isExtdt && isExtdb &&
 		math.Sqrt(math.Abs(alongt.Dot(alongb))) >
-			math.Sqrt(alongt.Magnitude()*alongb.Magnitude())-lengthEps {
+			math.Sqrt(alongt.Magnitude()*alongb.Magnitude())-lengthEps:
+
 		s.intersectCoaxialExtrusions(b, &oft, alongt, agnstA, agnstB, into)
-	} else {
+
+	default:
 		if (s.DegM == 1 && s.DegN == 1) || (b.DegM == 1 && b.DegN == 1) {
 			// we should only be here if just one surface is a plane because the
 			// plane-plane case was already handled above. Need to check the other
@@ -190,23 +196,29 @@ func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *cu
 
 		// so u = up + t*ud
 		//    v = vp + t*vd
-		if ud > lengthEps {
+		switch {
+		case ud > lengthEps:
 			tmin = geom.Max(tmin, -up/ud)
 			tmax = geom.Min(tmax, (1-up)/ud)
-		} else if ud < -lengthEps {
+
+		case ud < -lengthEps:
 			tmax = geom.Min(tmax, -up/ud)
 			tmin = geom.Max(tmin, (1-up)/ud)
-		} else if up < -lengthEps || up > 1+lengthEps {
+
+		case up < -lengthEps || up > 1+lengthEps:
 			// u is constant, and outside [0, 1]
 			tmax = veryNegative
 		}
-		if vd > lengthEps {
+		switch {
+		case vd > lengthEps:
 			tmin = geom.Max(tmin, -vp/vd)
 			tmax = geom.Min(tmax, (1-vp)/vd)
-		} else if vd < -lengthEps {
+
+		case vd < -lengthEps:
 			tmax = geom.Min(tmax, -vp/vd)
 			tmin = geom.Max(tmin, (1-vp)/vd)
-		} else if vp < -lengthEps || vp > 1+lengthEps {
+
+		case vp < -lengthEps || vp > 1+lengthEps:
 			// v is constant, and outside [0, 1]
 			tmax = veryNegative
 		}
@@ -348,7 +360,7 @@ func (s *SSurface) intersectCoaxialExtrusions(b *SSurface, oft *SBezier, alongt 
 
 	oft.MakePwlIntoPoints(&lv, 0, 0)
 
-	for i := 0; i < len(lv)-1; i++ {
+	for i := range len(lv) - 1 {
 		pa, pb := lv[i], lv[i+1]
 		pa = pa.Minus(axis.ScaledBy(pa.Dot(axis)))
 		pb = pb.Minus(axis.ScaledBy(pb.Dot(axis)))
@@ -453,7 +465,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 
 		// Our chord tolerance is whatever the user specified
 		maxtol := ChordTolMm()
-		maxsteps := max(300, GetMaxSegments()*3)
+		maxsteps := max(300, MaxSegments()*3)
 
 		// The curve starts at our starting point.
 		padd := SCurvePt{Vertex: true, P: start}
@@ -561,8 +573,8 @@ func (s *SSurface) intersectClosedLoops(b *SSurface, agnstA, agnstB *SShell, int
 	var visit func(pa, pb *SSurface, depth int)
 	visit = func(pa, pb *SSurface, depth int) {
 		var amax, amin, bmax, bmin geom.Vector
-		pa.GetAxisAlignedBounding(&amax, &amin)
-		pb.GetAxisAlignedBounding(&bmax, &bmin)
+		pa.AxisAlignedBounding(&amax, &amin)
+		pb.AxisAlignedBounding(&bmax, &bmin)
 		if amax.BoundingBoxesDisjoint(amax, amin, bmax, bmin) {
 			return
 		}
@@ -630,7 +642,7 @@ func splitLoop(pts []SCurvePt, n int) [][]SCurvePt {
 	segs := len(pts) - 1
 	n = min(n, segs)
 	var out [][]SCurvePt
-	for k := 0; k < n; k++ {
+	for k := range n {
 		from, to := k*segs/n, (k+1)*segs/n
 		piece := append([]SCurvePt(nil), pts[from:to+1]...)
 		piece[0].Vertex = true
@@ -677,7 +689,7 @@ func (s *SSurface) seedOnIntersection(b *SSurface, p geom.Vector) (geom.Vector, 
 // start without leaving either trim.
 func (s *SSurface) marchLoop(b *SSurface, start geom.Vector) ([]SCurvePt, bool) {
 	maxtol := ChordTolMm()
-	maxsteps := max(300, GetMaxSegments()*3)
+	maxsteps := max(300, MaxSegments()*3)
 	pts := []SCurvePt{{Vertex: true, P: start}}
 	at := start
 	step := maxtol

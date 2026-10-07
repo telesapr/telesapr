@@ -62,10 +62,10 @@ func (l *SBezierLoop) IsClosed() bool {
 	return s.Equals(f)
 }
 
-// GetBoundingProjd extends the axis-aligned bounding box.
-func (l *SBezierLoop) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
+// BoundingProjd extends the axis-aligned bounding box.
+func (l *SBezierLoop) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 	for i := range l.Curves {
-		l.Curves[i].GetBoundingProjd(u, orig, pmin, pmax)
+		l.Curves[i].BoundingProjd(u, orig, pmin, pmax)
 	}
 }
 

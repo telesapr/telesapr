@@ -55,7 +55,7 @@ func TestInchUnit(t *testing.T) {
 	if v := volumeOf(res); math.Abs(v-want) > 1e-6*want {
 		t.Errorf("volume %g, want %g", v, want)
 	}
-	hi, _ := res.Mesh.GetBounding()
+	hi, _ := res.Mesh.Bounding()
 	if math.Abs(hi.Z-30*25.4) > 1e-9 {
 		t.Errorf("top at %g", hi.Z)
 	}
@@ -197,12 +197,12 @@ func TestColours(t *testing.T) {
 #1017 = DRAUGHTING_PRE_DEFINED_COLOUR('red');
 `)
 	res := mustRead(t, text)
-	count := map[core.RgbaColor]int{}
+	count := map[core.RGBA]int{}
 	for _, tr := range res.Mesh.Triangles {
-		count[tr.Meta.RgbaColor]++
+		count[tr.Meta.RGBA]++
 	}
-	red := core.NewRgbaColor(255, 0, 0, 255)
-	blue := core.NewRgbaColor(51, 102, 153, 255)
+	red := core.NewRGBA(255, 0, 0, 255)
+	blue := core.NewRGBA(51, 102, 153, 255)
 	if count[red] != 2 || count[blue] != 10 || len(count) != 2 {
 		t.Errorf("colours %v", count)
 	}

@@ -20,7 +20,7 @@ func (c Constraint) get(sk *sketch.Sketch) *core.Constraint {
 	if c.d == nil || c.H.V == 0 {
 		fail("no constraint")
 	}
-	constraint := sk.GetConstraint(c.H)
+	constraint := sk.Constraint(c.H)
 	if constraint == nil {
 		fail("constraint c%03x doesn't exist any more", c.H.V)
 	}
@@ -34,7 +34,7 @@ func (c Constraint) String() (s string) {
 		return "no constraint"
 	}
 	c.d.read(func(sk *sketch.Sketch) {
-		if constraint := sk.GetConstraint(c.H); constraint != nil {
+		if constraint := sk.Constraint(c.H); constraint != nil {
 			s = constraintDescription(constraint)
 		} else {
 			s = fmt.Sprintf("deleted constraint c%03x", c.H.V)
@@ -59,7 +59,7 @@ func (c Constraint) Valid() (ok bool) {
 	if c.d == nil || c.H.V == 0 {
 		return false
 	}
-	c.d.read(func(sk *sketch.Sketch) { ok = sk.GetConstraint(c.H) != nil })
+	c.d.read(func(sk *sketch.Sketch) { ok = sk.Constraint(c.H) != nil })
 	return ok
 }
 
@@ -278,8 +278,8 @@ func hasVector(e *core.Entity) bool { return e.HasVector() }
 func dimension(sk *sketch.Sketch, c *core.Constraint, v float64) {
 	if c.Type == core.ConstraintPtPtDistance || c.Type == core.ConstraintProjPtDistance {
 		// Where the interface puts the label.
-		c.Disp.Offset = sk.DistanceLabelOffset(sk.MustGetEntity(c.PtA).PointGetNum(sk),
-			sk.MustGetEntity(c.PtB).PointGetNum(sk))
+		c.Disp.Offset = sk.DistanceLabelOffset(sk.MustEntity(c.PtA).PointGetNum(sk),
+			sk.MustEntity(c.PtB).PointGetNum(sk))
 	}
 	c.ValA = 0
 	c.ModifyToSatisfy(sk)
@@ -357,7 +357,7 @@ func (d *Doc) Distance(a, b Entity, v float64) Constraint {
 // Length sets the length of a line segment.
 func (d *Doc) Length(line Entity, v float64) Constraint {
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		l := sk.MustGetEntity(line.must(sk, "a line segment", isLine))
+		l := sk.MustEntity(line.must(sk, "a line segment", isLine))
 		c.Type = core.ConstraintPtPtDistance
 		c.PtA, c.PtB = l.Point[0], l.Point[1]
 		dimension(sk, c, v)
@@ -468,11 +468,11 @@ func (d *Doc) Angle(a, b Entity, degrees float64) Constraint {
 		c.EntityB = b.must(sk, "a line segment or a normal", hasVector)
 		ea, eb := a.get(sk), b.get(sk)
 		if isLine(ea) && isLine(eb) {
-			a0 := sk.MustGetEntity(ea.Point[0]).PointGetNum(sk)
-			a1 := sk.MustGetEntity(ea.Point[1]).PointGetNum(sk)
-			b0 := sk.MustGetEntity(eb.Point[0]).PointGetNum(sk)
-			b1 := sk.MustGetEntity(eb.Point[1]).PointGetNum(sk)
-			if !(a0.Equals(b0) || a1.Equals(b1)) && (a0.Equals(b1) || a1.Equals(b0)) {
+			a0 := sk.MustEntity(ea.Point[0]).PointGetNum(sk)
+			a1 := sk.MustEntity(ea.Point[1]).PointGetNum(sk)
+			b0 := sk.MustEntity(eb.Point[0]).PointGetNum(sk)
+			b1 := sk.MustEntity(eb.Point[1]).PointGetNum(sk)
+			if (!a0.Equals(b0) && !a1.Equals(b1)) && (a0.Equals(b1) || a1.Equals(b0)) {
 				// The lines run in opposite senses from the corner.
 				c.Other = true
 			}
@@ -573,8 +573,8 @@ func (d *Doc) Symmetric(a, b, about Entity) Constraint {
 		if core.IsFreeIn3D(c.Workplane) {
 			fail("symmetry about nothing is about an axis of the workplane, and none is active")
 		}
-		dp := sk.MustGetEntity(c.PtA).PointGetNum(sk).Minus(sk.MustGetEntity(c.PtB).PointGetNum(sk))
-		norm := sk.MustGetEntity(c.Workplane).NormalEntity(sk)
+		dp := sk.MustEntity(c.PtA).PointGetNum(sk).Minus(sk.MustEntity(c.PtB).PointGetNum(sk))
+		norm := sk.MustEntity(c.Workplane).NormalEntity(sk)
 		if math.Abs(dp.Dot(norm.NormalU(sk))) > math.Abs(dp.Dot(norm.NormalV(sk))) {
 			c.Type = core.ConstraintSymmetricHoriz
 		} else {
@@ -619,7 +619,7 @@ func (d *Doc) AutoConstrain(e Entity) (c Constraint, ok bool) {
 		if !en.H.IsFromRequest() || en.H != en.H.Request().Entity(0) {
 			fail("%s isn't a line, an arc or a circle drawn in the sketch", e.describe(sk))
 		}
-		r := sk.GetRequest(en.H.Request())
+		r := sk.Request(en.H.Request())
 		switch r.Type {
 		case sketch.RequestLineSegment, sketch.RequestArcOfCircle, sketch.RequestCircle:
 		default:

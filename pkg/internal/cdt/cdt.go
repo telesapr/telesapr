@@ -227,7 +227,7 @@ func (t *triangulation) locate(p Point) int32 {
 			}
 		}
 	}
-	for steps := 0; steps < 4*len(t.tris)+16; steps++ {
+	for range 4*len(t.tris) + 16 {
 		tr := t.tris[i].v
 		start := int(t.random() % 3)
 		moved := false

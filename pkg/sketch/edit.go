@@ -31,7 +31,7 @@ func (sk *Sketch) AddRequestOfType(typ RequestType, rememberForUndo bool) core.H
 
 	r := Request{}
 	r.Group = sk.ActiveGroup()
-	g := sk.GetGroup(r.Group)
+	g := sk.Group(r.Group)
 	if g.Type == GroupDrawing3D || g.Type == GroupDrawingWorkplane || typ == RequestDatumPoint {
 		r.Construction = false
 	} else {
@@ -72,7 +72,7 @@ func (sk *Sketch) DeleteSelection(selection []Selection) {
 			r = s.Entity.Request()
 		}
 		if r.V != 0 && !r.IsFromReferences() {
-			if req := sk.GetRequest(r); req != nil {
+			if req := sk.Request(r); req != nil {
 				req.Tag = 1
 			}
 		}
@@ -165,7 +165,7 @@ func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity) {
 // through a point of request hr, which is being deleted, coincident
 // (C++ GraphicsWindow::FixConstraintsForRequestBeingDeleted).
 func (sk *Sketch) FixConstraintsForRequestBeingDeleted(hr core.HRequest) {
-	r := sk.GetRequest(hr)
+	r := sk.Request(hr)
 	if r.Group != sk.ActiveGroup() {
 		return
 	}

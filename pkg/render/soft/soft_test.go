@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	red   = core.NewRgbaColor(220, 40, 40, 255)
-	green = core.NewRgbaColor(40, 200, 40, 255)
-	blue  = core.NewRgbaColor(40, 80, 230, 255)
-	white = core.NewRgbaColor(255, 255, 255, 255)
-	black = core.NewRgbaColor(0, 0, 0, 255)
+	red   = core.NewRGBA(220, 40, 40, 255)
+	green = core.NewRGBA(40, 200, 40, 255)
+	blue  = core.NewRGBA(40, 80, 230, 255)
+	white = core.NewRGBA(255, 255, 255, 255)
+	black = core.NewRGBA(0, 0, 0, 255)
 )
 
 func testCamera(w, h float64) render.Camera {
@@ -110,27 +110,27 @@ func v(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 func TestSoftLayers(t *testing.T) {
 	r := New()
 	img := frame(r, testCamera(200, 160), func() {
-		near := r.GetFill(render.Fill{Layer: render.LayerNormal, Color: red})
-		far := r.GetFill(render.Fill{Layer: render.LayerNormal, Color: blue})
-		back := r.GetFill(render.Fill{Layer: render.LayerBack, Color: core.NewRgbaColor(60, 60, 60, 255)})
+		near := r.InternFill(render.Fill{Layer: render.LayerNormal, Color: red})
+		far := r.InternFill(render.Fill{Layer: render.LayerNormal, Color: blue})
+		back := r.InternFill(render.Fill{Layer: render.LayerBack, Color: core.NewRGBA(60, 60, 60, 255)})
 		// Drawn last, but behind everything.
 		r.DrawQuad(v(-18, -14, 0), v(-18, 14, 0), v(18, 14, 0), v(18, -14, 0), back)
 		r.DrawQuad(v(-12, -8, 10), v(-12, 8, 10), v(6, 8, 10), v(6, -8, 10), near)
 		// Behind the red quad (z is toward the viewer).
 		r.DrawQuad(v(-4, -12, -10), v(-4, 4, -10), v(14, 4, -10), v(14, -12, -10), far)
 
-		occluded := r.GetStroke(render.Stroke{Layer: render.LayerOccluded, Color: green, Width: 2, Unit: render.UnitPX,
+		occluded := r.InternStroke(render.Stroke{Layer: render.LayerOccluded, Color: green, Width: 2, Unit: render.UnitPX,
 			StipplePattern: core.StippleDash, StippleScale: 4})
 		r.DrawLine(v(-16, 2, -20), v(16, 2, -20), occluded)
-		front := r.GetStroke(render.Stroke{Layer: render.LayerFront, Color: white, Width: 1, Unit: render.UnitPX})
+		front := r.InternStroke(render.Stroke{Layer: render.LayerFront, Color: white, Width: 1, Unit: render.UnitPX})
 		r.DrawLine(v(-16, -2, -50), v(16, -2, -50), front)
 		// An invisible quad that hides later lines in front of it.
-		depthOnly := r.GetFill(render.Fill{Layer: render.LayerDepthOnly, Color: white})
+		depthOnly := r.InternFill(render.Fill{Layer: render.LayerDepthOnly, Color: white})
 		r.DrawQuad(v(8, 6, 20), v(8, 12, 20), v(16, 12, 20), v(16, 6, 20), depthOnly)
-		normal := r.GetStroke(render.Stroke{Layer: render.LayerNormal, ZIndex: 1, Color: white, Width: 1.5, Unit: render.UnitPX})
+		normal := r.InternStroke(render.Stroke{Layer: render.LayerNormal, ZIndex: 1, Color: white, Width: 1.5, Unit: render.UnitPX})
 		r.DrawLine(v(-16, 9, 15), v(16, 9, 15), normal)
 		// Translucent, checkered.
-		glass := r.GetFill(render.Fill{Layer: render.LayerNormal, ZIndex: 2, Color: core.NewRgbaColor(255, 255, 0, 128),
+		glass := r.InternFill(render.Fill{Layer: render.LayerNormal, ZIndex: 2, Color: core.NewRGBA(255, 255, 0, 128),
 			Pattern: render.FillCheckeredA})
 		r.DrawQuad(v(-16, -13, 30), v(-16, -9, 30), v(-8, -9, 30), v(-8, -13, 30), glass)
 	})
@@ -142,19 +142,19 @@ func TestSoftLines(t *testing.T) {
 	img := frame(r, testCamera(240, 200), func() {
 		y := 18.0
 		for _, w := range []float64{0.5, 1, 1.5, 2, 3, 5, 9} {
-			hcs := r.GetStroke(render.Stroke{Color: white, Width: w, Unit: render.UnitPX})
+			hcs := r.InternStroke(render.Stroke{Color: white, Width: w, Unit: render.UnitPX})
 			r.DrawLine(v(-22, y, 0), v(-2, y-3, 0), hcs)
 			y -= 5
 		}
 		y = 18.0
 		for p := core.StippleShortDash; p <= core.StippleFreehand; p++ {
-			hcs := r.GetStroke(render.Stroke{Color: green, Width: 1.5, Unit: render.UnitPX, StipplePattern: p, StippleScale: 6})
+			hcs := r.InternStroke(render.Stroke{Color: green, Width: 1.5, Unit: render.UnitPX, StipplePattern: p, StippleScale: 6})
 			r.DrawLine(v(2, y, 0), v(22, y, 0), hcs)
 			y -= 5
 		}
-		pt := r.GetStroke(render.Stroke{Color: red, Width: 7, Unit: render.UnitPX})
+		pt := r.InternStroke(render.Stroke{Color: red, Width: 7, Unit: render.UnitPX})
 		r.DrawPoint(v(-15, -18, 0), pt)
-		mm := r.GetStroke(render.Stroke{Color: blue, Width: 0.8, Unit: render.UnitMM})
+		mm := r.InternStroke(render.Stroke{Color: blue, Width: 0.8, Unit: render.UnitMM})
 		var el srf.SEdgeList
 		el.AddEdge(v(-10, -18, 0), v(0, -12, 0), 0, 0, 0)
 		el.AddEdge(v(0, -12, 0), v(10, -18, 0), 0, 0, 0)
@@ -169,14 +169,14 @@ func TestSoftText(t *testing.T) {
 	cam := testCamera(260, 90)
 	cam.GridFit = true
 	img := frame(r, cam, func() {
-		hcs := r.GetStroke(render.Stroke{Color: white, Width: 1, Unit: render.UnitPX})
+		hcs := r.InternStroke(render.Stroke{Color: white, Width: 1, Unit: render.UnitPX})
 		r.DrawVectorText("SolveSpace 3.2", 2.5, v(-24, 2, 0), v(1, 0, 0), v(0, 1, 0), hcs)
 
 		ui := render.CameraForPixels(r.camera)
 		r.SetCamera(ui)
-		u := &render.UiCanvas{Canvas: r, Flip: true}
-		u.DrawRect(4, 120, 60, 84, core.NewRgbaColor(30, 30, 90, 255), white, 0)
-		u.DrawBitmapText("Aa  日本", 8, 64, core.NewRgbaColor(255, 255, 0, 255), 1)
+		u := &render.UICanvas{Canvas: r, Flip: true}
+		u.DrawRect(4, 120, 60, 84, core.NewRGBA(30, 30, 90, 255), white, 0)
+		u.DrawBitmapText("Aa  日本", 8, 64, core.NewRGBA(255, 255, 0, 255), 1)
 		u.DrawPixmap(res.LoadPng("icons/graphics-window/line.png"), 200, 50, 0)
 	})
 	checkGolden(t, "text", img)
@@ -196,9 +196,9 @@ func TestSoftPolygon(t *testing.T) {
 			hole.Points = append(hole.Points, srf.SPoint{P: q})
 		}
 		p.Contours = []srf.SContour{outer, hole}
-		hcf := r.GetFill(render.Fill{Color: core.NewRgbaColor(0, 180, 180, 160)})
+		hcf := r.InternFill(render.Fill{Color: core.NewRGBA(0, 180, 180, 160)})
 		r.DrawPolygon(&p, hcf)
-		chk := r.GetFill(render.Fill{ZIndex: 1, Color: red, Pattern: render.FillCheckeredB})
+		chk := r.InternFill(render.Fill{ZIndex: 1, Color: red, Pattern: render.FillCheckeredB})
 		r.DrawQuad(v(-4, -4, 0), v(4, -4, 0), v(4, 4, 0), v(-4, 4, 0), chk)
 	})
 	checkGolden(t, "polygon", img)
@@ -228,7 +228,7 @@ func benchmarkSoftLines(b *testing.B, length float64) {
 	}
 	for b.Loop() {
 		frame(r, cam, func() {
-			hs := r.GetStroke(render.Stroke{Layer: render.LayerNormal, Color: core.NewRgbaColor(255, 255, 255, 255),
+			hs := r.InternStroke(render.Stroke{Layer: render.LayerNormal, Color: core.NewRGBA(255, 255, 255, 255),
 				Width: 1, Unit: render.UnitPX})
 			for _, l := range lines {
 				r.DrawLine(l[0], l[1], hs)
@@ -259,7 +259,7 @@ func BenchmarkSoftEdges1080p(b *testing.B) {
 	}
 	for b.Loop() {
 		frame(r, cam, func() {
-			hs := r.GetStroke(render.Stroke{Layer: render.LayerNormal, Color: core.NewRgbaColor(255, 255, 255, 255),
+			hs := r.InternStroke(render.Stroke{Layer: render.LayerNormal, Color: core.NewRGBA(255, 255, 255, 255),
 				Width: 1, Unit: render.UnitPX})
 			r.DrawEdges(&el, hs)
 		})
@@ -279,7 +279,7 @@ func TestSoftClipPlane(t *testing.T) {
 		img := frame(r, testCamera(10, 10), func() {
 			r.SetClipPlane(&keep)
 			r.SetCamera(cam)
-			fill := r.GetFill(render.Fill{Color: red})
+			fill := r.InternFill(render.Fill{Color: red})
 			r.DrawQuad(v(-18, -14, 10), v(-18, 0, 10), v(18, 0, 10), v(18, -14, 10), fill)
 			var p srf.SPolygon
 			p.Normal = v(0, 0, 1)
@@ -287,8 +287,8 @@ func TestSoftClipPlane(t *testing.T) {
 			for _, q := range []geom.Vector{v(-18, 2, 10), v(18, 2, 10), v(18, 10, 10), v(-18, 10, 10), v(-18, 2, 10)} {
 				p.Contours[0].AddPoint(q)
 			}
-			r.DrawPolygon(&p, r.GetFill(render.Fill{Color: green}))
-			fat := r.GetStroke(render.Stroke{Color: white, Width: 5, Unit: render.UnitPX})
+			r.DrawPolygon(&p, r.InternFill(render.Fill{Color: green}))
+			fat := r.InternStroke(render.Stroke{Color: white, Width: 5, Unit: render.UnitPX})
 			r.DrawLine(v(-18, 13, 10), v(18, 13, 10), fat)
 			r.SetClipPlane(nil)
 			r.DrawLine(v(-18, -1, 10), v(18, -1, 10), fat)
@@ -298,7 +298,7 @@ func TestSoftClipPlane(t *testing.T) {
 		row := func(y float64) int { return int(math.Round(80 - cam.ProjectPoint(v(0, y, 10)).V)) }
 		for _, c := range []struct {
 			y    float64
-			want core.RgbaColor
+			want core.RGBA
 		}{{-7, red}, {6, green}, {13, white}} {
 			y := row(c.y)
 			in, out := img.RGBAAt(ex-4, y), img.RGBAAt(ex+4, y)

@@ -120,7 +120,7 @@ func collectBoolStats(path string) (boolFixtureStats, error) {
 		stats.TotalVol += v
 		stats.Volume = v
 		if len(mesh.Triangles) > 0 {
-			vmax, vmin := mesh.GetBounding()
+			vmax, vmin := mesh.Bounding()
 			stats.VMax = [3]float64{vmax.X, vmax.Y, vmax.Z}
 			stats.VMin = [3]float64{vmin.X, vmin.Y, vmin.Z}
 		}

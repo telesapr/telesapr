@@ -35,7 +35,7 @@ func (sk *Sketch) NewPathPattern(path []core.HEntity, copies int, name string) (
 	if name == "" {
 		g.Name = "pattern"
 	}
-	src := sk.GetGroup(sk.Active)
+	src := sk.Group(sk.Active)
 	if src == nil || len(src.ThisShell.Surface) == 0 {
 		return g, errors.New("the active group makes no solid to repeat")
 	}
@@ -58,7 +58,7 @@ func (sk *Sketch) NewPathPattern(path []core.HEntity, copies int, name string) (
 // patternMotions are the rigid motions that take the source to each
 // copy, the first none.
 func (g *Group) patternMotions(sk *Sketch) ([]srf.Rigid, error) {
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	if src == nil {
 		return nil, errors.New("the group to repeat is gone")
 	}
@@ -70,7 +70,7 @@ func (g *Group) patternMotions(sk *Sketch) ([]srf.Rigid, error) {
 	lo := hi.ScaledBy(-1)
 	for i := range src.ThisShell.Surface {
 		var smax, smin geom.Vector
-		src.ThisShell.Surface[i].GetAxisAlignedBounding(&smax, &smin)
+		src.ThisShell.Surface[i].AxisAlignedBounding(&smax, &smin)
 		smax.MakeMaxMin(&hi, &lo)
 		smin.MakeMaxMin(&hi, &lo)
 	}

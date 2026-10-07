@@ -57,7 +57,7 @@ type Stroke struct {
 	H              HStroke
 	Layer          Layer
 	ZIndex         int
-	Color          core.RgbaColor
+	Color          core.RGBA
 	Width          float64
 	Unit           Unit
 	StipplePattern core.StipplePattern
@@ -118,7 +118,7 @@ type Fill struct {
 	H       HFill
 	Layer   Layer
 	ZIndex  int
-	Color   core.RgbaColor
+	Color   core.RGBA
 	Pattern FillPattern
 	Texture *res.Pixmap
 }
@@ -131,14 +131,14 @@ func (f *Fill) Equals(o *Fill) bool {
 
 // Canvas is something geometry can be drawn onto (C++ Canvas).
 type Canvas interface {
-	GetCamera() *Camera
+	Camera() *Camera
 
-	// GetStroke and GetFill intern a style; Stroke and Fill look one up.
-	GetStroke(Stroke) HStroke
-	GetFill(Fill) HFill
+	// InternStroke and GetFill intern a style; Stroke and Fill look one up.
+	InternStroke(Stroke) HStroke
+	InternFill(Fill) HFill
 	Stroke(HStroke) *Stroke
 	Fill(HFill) *Fill
-	GetBitmapFont() *res.BitmapFont
+	BitmapFont() *res.BitmapFont
 
 	DrawLine(a, b geom.Vector, hcs HStroke)
 	DrawEdges(el *srf.SEdgeList, hcs HStroke)
@@ -180,7 +180,7 @@ type ViewportCanvas interface {
 	// ReadFrame is the rendered frame, top row first.
 	ReadFrame() *image.RGBA
 
-	GetIdent() (vendor, renderer, version string)
+	Ident() (vendor, renderer, version string)
 }
 
 // BatchCanvas records view-independent geometry to draw later (C++
@@ -199,9 +199,9 @@ type CanvasBase struct {
 	bitmapFont *res.BitmapFont
 }
 
-// GetStroke interns s, returning the handle of an equal stroke if there
-// is one (C++ Canvas::GetStroke).
-func (cb *CanvasBase) GetStroke(s Stroke) HStroke {
+// InternStroke interns s, returning the handle of an equal stroke if there
+// is one (C++ Canvas::InternStroke).
+func (cb *CanvasBase) InternStroke(s Stroke) HStroke {
 	for i := range cb.strokes {
 		if cb.strokes[i].Equals(&s) {
 			return cb.strokes[i].H
@@ -212,8 +212,8 @@ func (cb *CanvasBase) GetStroke(s Stroke) HStroke {
 	return s.H
 }
 
-// GetFill interns f (C++ Canvas::GetFill).
-func (cb *CanvasBase) GetFill(f Fill) HFill {
+// InternFill interns f (C++ Canvas::InternFill).
+func (cb *CanvasBase) InternFill(f Fill) HFill {
 	for i := range cb.fills {
 		if cb.fills[i].Equals(&f) {
 			return cb.fills[i].H
@@ -246,9 +246,9 @@ func (cb *CanvasBase) Strokes() []Stroke { return cb.strokes }
 // Fills lists the interned fills, in handle order.
 func (cb *CanvasBase) Fills() []Fill { return cb.fills }
 
-// GetBitmapFont returns the canvas's bitmap font, loading it the first
-// time (C++ Canvas::GetBitmapFont).
-func (cb *CanvasBase) GetBitmapFont() *res.BitmapFont {
+// BitmapFont returns the canvas's bitmap font, loading it the first
+// time (C++ Canvas::BitmapFont).
+func (cb *CanvasBase) BitmapFont() *res.BitmapFont {
 	if cb.bitmapFont.IsEmpty() {
 		cb.bitmapFont = res.NewBitmapFont()
 	}

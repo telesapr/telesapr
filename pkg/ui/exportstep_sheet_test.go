@@ -29,7 +29,7 @@ func TestExportStepSheets(t *testing.T) {
 			r.step("file $testdata/" + model)
 			r.step("menu File|Open...")
 			ss := r.ss
-			g := ss.SK.GetGroup(ss.GW.activeGroupH())
+			g := ss.SK.Group(ss.GW.activeGroupH())
 			tp, err := topo.Build(&g.RunningShell)
 			if err != nil {
 				t.Fatal(err)

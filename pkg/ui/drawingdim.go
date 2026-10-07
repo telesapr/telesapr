@@ -366,7 +366,7 @@ func arrow(el *srf.SEdgeList, p, t geom.Vector) {
 func textAlong(el *srf.SEdgeList, text string, o, u geom.Vector) {
 	u = u.WithMagnitude(1)
 	v := geom.Vector{X: -u.Y, Y: u.X}
-	w := res.BuiltinVectorFont().GetWidth(3, text)
+	w := res.BuiltinVectorFont().Width(3, text)
 	start := o.Minus(u.ScaledBy(w / 2))
 	res.BuiltinVectorFont().Trace(3, start, u, v, text, func(a, b geom.Vector) {
 		el.AddEdge(a, b, core.StyleSolidEdge, 0, 0)
@@ -408,7 +408,7 @@ func leader(el *srf.SEdgeList, p geom.Vector, off float64, text string) {
 	q := p.Plus(t.ScaledBy(math.Abs(off)))
 	el.AddEdge(p, q, core.StyleSolidEdge, 0, 0)
 	arrow(el, p, t.ScaledBy(-1))
-	w := res.BuiltinVectorFont().GetWidth(3, text)
+	w := res.BuiltinVectorFont().Width(3, text)
 	shelf := q.Plus(geom.Vector{X: w + 2})
 	el.AddEdge(q, shelf, core.StyleSolidEdge, 0, 0)
 	sheetText(el, text, 3, q.Plus(geom.Vector{X: 1, Y: 1}))

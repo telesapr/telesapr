@@ -95,7 +95,7 @@ func (w *epsFileWriter) StartFile() {
 		MmToPts(w.ptMax.Y-w.ptMin.Y))
 }
 
-func (w *epsFileWriter) Background(color core.RgbaColor) {
+func (w *epsFileWriter) Background(color core.RGBA) {
 	width := w.ptMax.X - w.ptMin.X
 	height := w.ptMax.Y - w.ptMin.Y
 
@@ -124,14 +124,14 @@ func (w *epsFileWriter) Background(color core.RgbaColor) {
 		MmToPts(sw))
 }
 
-func (w *epsFileWriter) StartPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool,
-	fillRgb core.RgbaColor, hs core.HStyle) {
+func (w *epsFileWriter) StartPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
+	fillRgb core.RGBA, hs core.HStyle) {
 	w.printf("newpath\r\n")
 	w.prevPt = veryPositiveVector
 }
 
-func (w *epsFileWriter) FinishPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool,
-	fillRgb core.RgbaColor, hs core.HStyle, closed bool) {
+func (w *epsFileWriter) FinishPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
+	fillRgb core.RGBA, hs core.HStyle, closed bool) {
 	ss := w.ss
 	pattern := ss.SK.StylePatternType(hs)
 	stippleScale := MmToPts(ss.styleStippleScaleMm(hs))
@@ -160,7 +160,7 @@ func (w *epsFileWriter) maybeMoveTo(st, fi geom.Vector) {
 }
 
 func (w *epsFileWriter) Triangle(tr *srf.STriangle) {
-	c := tr.Meta.RgbaColor
+	c := tr.Meta.RGBA
 	w.printf(
 		"%.3f %.3f %.3f setrgbcolor\r\n"+
 			"newpath\r\n"+
@@ -352,7 +352,7 @@ func (w *pdfFileWriter) FinishAndCloseFile() {
 	w.closeFile()
 }
 
-func (w *pdfFileWriter) Background(color core.RgbaColor) {
+func (w *pdfFileWriter) Background(color core.RGBA) {
 	width := w.ptMax.X - w.ptMin.X
 	height := w.ptMax.Y - w.ptMin.Y
 	sw := max(width, height) / 1000
@@ -375,8 +375,8 @@ func (w *pdfFileWriter) Background(color core.RgbaColor) {
 		MmToPts(0), MmToPts(height))
 }
 
-func (w *pdfFileWriter) StartPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool,
-	fillRgb core.RgbaColor, hs core.HStyle) {
+func (w *pdfFileWriter) StartPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
+	fillRgb core.RGBA, hs core.HStyle) {
 	ss := w.ss
 	pattern := ss.SK.StylePatternType(hs)
 	stippleScale := MmToPts(ss.styleStippleScaleMm(hs))
@@ -394,8 +394,8 @@ func (w *pdfFileWriter) StartPath(strokeRgb core.RgbaColor, lineWidth float64, f
 	w.prevPt = veryPositiveVector
 }
 
-func (w *pdfFileWriter) FinishPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool,
-	fillRgb core.RgbaColor, hs core.HStyle, closed bool) {
+func (w *pdfFileWriter) FinishPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
+	fillRgb core.RGBA, hs core.HStyle, closed bool) {
 	if filled {
 		w.printf("b\r\n")
 	} else {
@@ -412,7 +412,7 @@ func (w *pdfFileWriter) maybeMoveTo(st, fi geom.Vector) {
 
 func (w *pdfFileWriter) Triangle(tr *srf.STriangle) {
 	sw := max(w.ptMax.X-w.ptMin.X, w.ptMax.Y-w.ptMin.Y) / 1000
-	c := tr.Meta.RgbaColor
+	c := tr.Meta.RGBA
 
 	w.printf("1 J 1 j\r\n"+
 		"%.3f %.3f %.3f RG\r\n"+
@@ -516,7 +516,7 @@ func (w *svgFileWriter) StartFile() {
 	w.printf("]]></style>\r\n")
 }
 
-func (w *svgFileWriter) Background(color core.RgbaColor) {
+func (w *svgFileWriter) Background(color core.RGBA) {
 	w.printf("<style><![CDATA[\r\n"+
 		"svg {\r\n"+
 		"background-color:#%02x%02x%02x;\r\n"+
@@ -525,14 +525,14 @@ func (w *svgFileWriter) Background(color core.RgbaColor) {
 		color.Red, color.Green, color.Blue)
 }
 
-func (w *svgFileWriter) StartPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool,
-	fillRgb core.RgbaColor, hs core.HStyle) {
+func (w *svgFileWriter) StartPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
+	fillRgb core.RGBA, hs core.HStyle) {
 	w.printf("<path d='")
 	w.prevPt = veryPositiveVector
 }
 
-func (w *svgFileWriter) FinishPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool,
-	fillRgb core.RgbaColor, hs core.HStyle, closed bool) {
+func (w *svgFileWriter) FinishPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
+	fillRgb core.RGBA, hs core.HStyle, closed bool) {
 	if closed {
 		w.printf(" Z")
 	}
@@ -553,7 +553,7 @@ func (w *svgFileWriter) maybeMoveTo(st, fi geom.Vector) {
 }
 
 func (w *svgFileWriter) Triangle(tr *srf.STriangle) {
-	c := tr.Meta.RgbaColor
+	c := tr.Meta.RGBA
 	w.printf("<polygon points='%.3f,%.3f %.3f,%.3f %.3f,%.3f' "+
 		"stroke='#%02x%02x%02x' "+
 		"fill='#%02x%02x%02x'/>\r\n",
@@ -630,10 +630,10 @@ func (w *hpglFileWriter) StartFile() {
 	w.printf("SP1;\r\n")
 }
 
-func (w *hpglFileWriter) Background(core.RgbaColor) {}
-func (w *hpglFileWriter) StartPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle) {
+func (w *hpglFileWriter) Background(core.RGBA) {}
+func (w *hpglFileWriter) StartPath(core.RGBA, float64, bool, core.RGBA, core.HStyle) {
 }
-func (w *hpglFileWriter) FinishPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle, bool) {
+func (w *hpglFileWriter) FinishPath(core.RGBA, float64, bool, core.RGBA, core.HStyle, bool) {
 }
 func (w *hpglFileWriter) Triangle(*srf.STriangle) {}
 
@@ -667,10 +667,10 @@ func (w *gcodeFileWriter) CanOutputMesh() bool { return false }
 func (w *gcodeFileWriter) StartFile() {
 	w.sel = srf.SEdgeList{}
 }
-func (w *gcodeFileWriter) StartPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle) {
+func (w *gcodeFileWriter) StartPath(core.RGBA, float64, bool, core.RGBA, core.HStyle) {
 }
-func (w *gcodeFileWriter) Background(core.RgbaColor) {}
-func (w *gcodeFileWriter) FinishPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle, bool) {
+func (w *gcodeFileWriter) Background(core.RGBA) {}
+func (w *gcodeFileWriter) FinishPath(core.RGBA, float64, bool, core.RGBA, core.HStyle, bool) {
 }
 func (w *gcodeFileWriter) Triangle(*srf.STriangle) {}
 
@@ -730,11 +730,11 @@ func (w *step2dFileWriter) StartFile() {
 	w.sfw.WriteHeader()
 }
 
-func (w *step2dFileWriter) Background(core.RgbaColor) {}
-func (w *step2dFileWriter) Triangle(*srf.STriangle)   {}
-func (w *step2dFileWriter) StartPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle) {
+func (w *step2dFileWriter) Background(core.RGBA)    {}
+func (w *step2dFileWriter) Triangle(*srf.STriangle) {}
+func (w *step2dFileWriter) StartPath(core.RGBA, float64, bool, core.RGBA, core.HStyle) {
 }
-func (w *step2dFileWriter) FinishPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle, bool) {
+func (w *step2dFileWriter) FinishPath(core.RGBA, float64, bool, core.RGBA, core.HStyle, bool) {
 }
 
 func (w *step2dFileWriter) Bezier(sb *srf.SBezier) {

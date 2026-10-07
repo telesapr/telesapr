@@ -34,7 +34,7 @@ func TestMakePrism(t *testing.T) {
 	for _, pts := range [][]geom.Vector{tri, rev} {
 		for _, dz := range []float64{4, -4} {
 			var s SShell
-			s.MakePrism(pts, geom.Vector{}, geom.Vector{Z: dz}, core.RgbaColor{})
+			s.MakePrism(pts, geom.Vector{}, geom.Vector{Z: dz}, core.RGBA{})
 			var m SMesh
 			s.TriangulateInto(&m)
 			if v := m.CalculateVolume(); math.Abs(v-12) > 1e-9 {

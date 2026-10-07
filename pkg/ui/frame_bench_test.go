@@ -94,6 +94,6 @@ func benchmarkFrame(b *testing.B, path, renderer string) {
 	}
 	b.StopTimer()
 	// After the loop: ResetTimer drops metrics reported before it.
-	g := ss.SK.GetGroup(ss.GW.activeGroupH())
+	g := ss.SK.Group(ss.GW.activeGroupH())
 	b.ReportMetric(float64(len(g.DisplayMesh.Triangles)), "triangles")
 }

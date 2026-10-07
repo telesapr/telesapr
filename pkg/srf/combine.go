@@ -73,10 +73,10 @@ const (
 // SMesh or to one surface of an SShell. Equivalent to C++ STriMeta.
 type MeshMeta struct {
 	Face FaceID
-	core.RgbaColor
+	core.RGBA
 }
 
 // NewMeshMeta constructs a MeshMeta with the given face id and color.
-func NewMeshMeta(face FaceID, color core.RgbaColor) MeshMeta {
-	return MeshMeta{Face: face, RgbaColor: color}
+func NewMeshMeta(face FaceID, color core.RGBA) MeshMeta {
+	return MeshMeta{Face: face, RGBA: color}
 }

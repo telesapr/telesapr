@@ -49,28 +49,31 @@ type parametricCurve struct {
 
 func (sk *Sketch) makeParametricCurve(he core.HEntity, reverse bool) parametricCurve {
 	pc := parametricCurve{}
-	e := sk.MustGetEntity(he)
-	if e.Type == core.EntityLineSegment {
+	e := sk.MustEntity(he)
+	switch e.Type {
+	case core.EntityLineSegment:
 		pc.isLine = true
 		pc.p0 = e.EndpointStart(sk)
 		pc.p1 = e.EndpointFinish(sk)
 		if reverse {
 			pc.p0, pc.p1 = pc.p1, pc.p0
 		}
-	} else if e.Type == core.EntityArcOfCircle {
+
+	case core.EntityArcOfCircle:
 		pc.isLine = false
-		pc.p0 = sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-		pe := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+		pc.p0 = sk.MustEntity(e.Point[0]).PointGetNum(sk)
+		pe := sk.MustEntity(e.Point[1]).PointGetNum(sk)
 		pc.r = pe.Minus(pc.p0).Magnitude()
 		pc.theta0, pc.theta1, pc.dtheta = e.ArcGetAngles(sk)
 		if reverse {
 			pc.theta0, pc.theta1 = pc.theta1, pc.theta0
 			pc.dtheta = -pc.dtheta
 		}
-		wrkpln := sk.MustGetEntity(e.Workplane).NormalEntity(sk)
+		wrkpln := sk.MustEntity(e.Workplane).NormalEntity(sk)
 		pc.u = wrkpln.NormalU(sk)
 		pc.v = wrkpln.NormalV(sk)
-	} else {
+
+	default:
 		panic("Unexpected entity type")
 	}
 	return pc
@@ -113,18 +116,18 @@ func (sk *Sketch) createRequestTrimmedTo(pc *parametricCurve, t float64,
 	var e *core.Entity
 	if pc.isLine {
 		if reuseOrig {
-			e = sk.MustGetEntity(orig)
+			e = sk.MustEntity(orig)
 			i := 0
 			if pointf {
 				i = 1
 			}
-			sk.MustGetEntity(e.Point[i]).PointForceTo(sk, pc.pointAt(t))
+			sk.MustEntity(e.Point[i]).PointForceTo(sk, pc.pointAt(t))
 			sk.constrainPointIfCoincident(e.Point[i])
 		} else {
 			hr := sk.AddRequestOfType(RequestLineSegment, false)
-			e = sk.MustGetEntity(hr.Entity(0))
-			sk.MustGetEntity(e.Point[0]).PointForceTo(sk, pc.pointAt(t))
-			sk.MustGetEntity(e.Point[1]).PointForceTo(sk, pc.pointAt(1))
+			e = sk.MustEntity(hr.Entity(0))
+			sk.MustEntity(e.Point[0]).PointForceTo(sk, pc.pointAt(t))
+			sk.MustEntity(e.Point[1]).PointForceTo(sk, pc.pointAt(1))
 			sk.constrainPointIfCoincident(e.Point[0])
 			sk.constrainPointIfCoincident(e.Point[1])
 			sk.Constrain(core.ConstraintPtOnLine,
@@ -135,23 +138,23 @@ func (sk *Sketch) createRequestTrimmedTo(pc *parametricCurve, t float64,
 			arc, e.H, arcFinish, false)
 	} else {
 		if reuseOrig {
-			e = sk.MustGetEntity(orig)
+			e = sk.MustEntity(orig)
 			i := 1
 			if pointf {
 				i = 2
 			}
-			sk.MustGetEntity(e.Point[i]).PointForceTo(sk, pc.pointAt(t))
+			sk.MustEntity(e.Point[i]).PointForceTo(sk, pc.pointAt(t))
 			sk.constrainPointIfCoincident(e.Point[i])
 		} else {
 			hr := sk.AddRequestOfType(RequestArcOfCircle, false)
-			e = sk.MustGetEntity(hr.Entity(0))
-			sk.MustGetEntity(e.Point[0]).PointForceTo(sk, pc.p0)
+			e = sk.MustEntity(hr.Entity(0))
+			sk.MustEntity(e.Point[0]).PointForceTo(sk, pc.p0)
 			if pc.dtheta > 0 {
-				sk.MustGetEntity(e.Point[1]).PointForceTo(sk, pc.pointAt(t))
-				sk.MustGetEntity(e.Point[2]).PointForceTo(sk, pc.pointAt(1))
+				sk.MustEntity(e.Point[1]).PointForceTo(sk, pc.pointAt(t))
+				sk.MustEntity(e.Point[2]).PointForceTo(sk, pc.pointAt(1))
 			} else {
-				sk.MustGetEntity(e.Point[2]).PointForceTo(sk, pc.pointAt(t))
-				sk.MustGetEntity(e.Point[1]).PointForceTo(sk, pc.pointAt(1))
+				sk.MustEntity(e.Point[2]).PointForceTo(sk, pc.pointAt(t))
+				sk.MustEntity(e.Point[1]).PointForceTo(sk, pc.pointAt(1))
 			}
 			sk.constrainPointIfCoincident(e.Point[0])
 			sk.constrainPointIfCoincident(e.Point[1])
@@ -169,7 +172,7 @@ func (sk *Sketch) createRequestTrimmedTo(pc *parametricCurve, t float64,
 // group and workplane that is numerically coincident with it, if one
 // exists (C++ ParametricCurve::ConstrainPointIfCoincident).
 func (sk *Sketch) constrainPointIfCoincident(hpt core.HEntity) {
-	pt := sk.MustGetEntity(hpt)
+	pt := sk.MustEntity(hpt)
 	ptv := pt.PointGetNum(sk)
 
 	// C++ walks the entities in handle order and takes the first.
@@ -212,7 +215,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 	}
 
 	// The point corresponding to the vertex to be rounded.
-	pshared := sk.MustGetEntity(hpt).PointGetNum(sk)
+	pshared := sk.MustEntity(hpt).PointGetNum(sk)
 
 	// First, find two requests (that are not construction, and that are
 	// in our group and workplane) that generate entities that have an
@@ -236,7 +239,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 			continue
 		}
 
-		e := sk.MustGetEntity(r.H.Entity(0))
+		e := sk.MustEntity(r.H.Entity(0))
 		ps := e.EndpointStart(sk)
 		pf := e.EndpointFinish(sk)
 
@@ -258,7 +261,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 			"workplane join.")
 	}
 
-	wrkpl := sk.MustGetEntity(sk.ActiveWorkplane())
+	wrkpl := sk.MustEntity(sk.ActiveWorkplane())
 	wn := wrkpl.NormalEntity(sk).NormalN(sk)
 
 	// Based on these two entities, we make the objects that we'll use to
@@ -357,7 +360,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 			if cs.Group == sk.ActiveGroup() &&
 				cs.Workplane == sk.ActiveWorkplane() &&
 				cs.Type == core.ConstraintPointsCoincident &&
-				sk.MustGetEntity(cs.PtA).PointGetNum(sk).Equals(pshared) {
+				sk.MustEntity(cs.PtA).PointGetNum(sk).Equals(pshared) {
 				continue
 			}
 			kept = append(kept, cs)
@@ -366,18 +369,18 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 	} else {
 		// Make the original entities construction, or delete them
 		// entirely, according to user preference.
-		sk.GetRequest(hreq[0]).Construction = true
-		sk.GetRequest(hreq[1]).Construction = true
+		sk.Request(hreq[0]).Construction = true
+		sk.Request(hreq[1]).Construction = true
 	}
 
 	// Create and position the new tangent arc.
 	harc := sk.AddRequestOfType(RequestArcOfCircle, false)
-	earc := sk.MustGetEntity(harc.Entity(0))
+	earc := sk.MustEntity(harc.Entity(0))
 	hearc := earc.H
 
-	sk.MustGetEntity(earc.Point[0]).PointForceTo(sk, center)
-	sk.MustGetEntity(earc.Point[a]).PointForceTo(sk, pc[0].pointAt(t[0]))
-	sk.MustGetEntity(earc.Point[b]).PointForceTo(sk, pc[1].pointAt(t[1]))
+	sk.MustEntity(earc.Point[0]).PointForceTo(sk, center)
+	sk.MustEntity(earc.Point[a]).PointForceTo(sk, pc[0].pointAt(t[0]))
+	sk.MustEntity(earc.Point[b]).PointForceTo(sk, pc[1].pointAt(t[1]))
 
 	// Modify or duplicate the original entities and connect them to the
 	// tangent arc.
@@ -393,10 +396,10 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
 	// Save the original endpoints, since we're about to delete this
 	// entity.
-	e01 := sk.MustGetEntity(he)
+	e01 := sk.MustEntity(he)
 	hep0, hep1 := e01.Point[0], e01.Point[1]
-	p0 := sk.MustGetEntity(hep0).PointGetNum(sk)
-	p1 := sk.MustGetEntity(hep1).PointGetNum(sk)
+	p0 := sk.MustEntity(hep0).PointGetNum(sk)
+	p1 := sk.MustEntity(hep1).PointGetNum(sk)
 
 	if p0.Equals(pinter) {
 		return hep0
@@ -410,14 +413,14 @@ func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
 	r0i := sk.AddRequestOfType(RequestLineSegment, false)
 	ri1 := sk.AddRequestOfType(RequestLineSegment, false)
 
-	e0i := sk.MustGetEntity(r0i.Entity(0))
-	ei1 := sk.MustGetEntity(ri1.Entity(0))
+	e0i := sk.MustEntity(r0i.Entity(0))
+	ei1 := sk.MustEntity(ri1.Entity(0))
 	e0iPt, ei1Pt := e0i.Point, ei1.Point
 
-	sk.MustGetEntity(e0iPt[0]).PointForceTo(sk, p0)
-	sk.MustGetEntity(e0iPt[1]).PointForceTo(sk, pinter)
-	sk.MustGetEntity(ei1Pt[0]).PointForceTo(sk, pinter)
-	sk.MustGetEntity(ei1Pt[1]).PointForceTo(sk, p1)
+	sk.MustEntity(e0iPt[0]).PointForceTo(sk, p0)
+	sk.MustEntity(e0iPt[1]).PointForceTo(sk, pinter)
+	sk.MustEntity(ei1Pt[0]).PointForceTo(sk, pinter)
+	sk.MustEntity(ei1Pt[1]).PointForceTo(sk, p1)
 
 	sk.ReplacePointInConstraints(hep0, e0iPt[0])
 	sk.ReplacePointInConstraints(hep1, ei1Pt[1])
@@ -429,18 +432,18 @@ func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
 // degree arc, an arc into two. It returns the point at the split (C++
 // GraphicsWindow::SplitCircle).
 func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity {
-	circle := sk.MustGetEntity(he)
+	circle := sk.MustEntity(he)
 	if circle.Type == core.EntityCircle {
 		// Start with an unbroken circle, split it into a 360 degree arc.
-		center := sk.MustGetEntity(circle.Point[0]).PointGetNum(sk)
+		center := sk.MustEntity(circle.Point[0]).PointGetNum(sk)
 
 		hr := sk.AddRequestOfType(RequestArcOfCircle, false)
 
-		arcPt := sk.MustGetEntity(hr.Entity(0)).Point
+		arcPt := sk.MustEntity(hr.Entity(0)).Point
 
-		sk.MustGetEntity(arcPt[0]).PointForceTo(sk, center)
-		sk.MustGetEntity(arcPt[1]).PointForceTo(sk, pinter)
-		sk.MustGetEntity(arcPt[2]).PointForceTo(sk, pinter)
+		sk.MustEntity(arcPt[0]).PointForceTo(sk, center)
+		sk.MustEntity(arcPt[1]).PointForceTo(sk, pinter)
+		sk.MustEntity(arcPt[2]).PointForceTo(sk, pinter)
 
 		sk.ConstrainCoincident(arcPt[1], arcPt[2])
 		return arcPt[1]
@@ -448,23 +451,23 @@ func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity 
 
 	// Start with an arc, break it in to two arcs
 	hc, hs, hf := circle.Point[0], circle.Point[1], circle.Point[2]
-	center := sk.MustGetEntity(hc).PointGetNum(sk)
-	start := sk.MustGetEntity(hs).PointGetNum(sk)
-	finish := sk.MustGetEntity(hf).PointGetNum(sk)
+	center := sk.MustEntity(hc).PointGetNum(sk)
+	start := sk.MustEntity(hs).PointGetNum(sk)
+	finish := sk.MustEntity(hf).PointGetNum(sk)
 
 	hr0 := sk.AddRequestOfType(RequestArcOfCircle, false)
 	hr1 := sk.AddRequestOfType(RequestArcOfCircle, false)
 
-	arc0Pt := sk.MustGetEntity(hr0.Entity(0)).Point
-	arc1Pt := sk.MustGetEntity(hr1.Entity(0)).Point
+	arc0Pt := sk.MustEntity(hr0.Entity(0)).Point
+	arc1Pt := sk.MustEntity(hr1.Entity(0)).Point
 
-	sk.MustGetEntity(arc0Pt[0]).PointForceTo(sk, center)
-	sk.MustGetEntity(arc0Pt[1]).PointForceTo(sk, start)
-	sk.MustGetEntity(arc0Pt[2]).PointForceTo(sk, pinter)
+	sk.MustEntity(arc0Pt[0]).PointForceTo(sk, center)
+	sk.MustEntity(arc0Pt[1]).PointForceTo(sk, start)
+	sk.MustEntity(arc0Pt[2]).PointForceTo(sk, pinter)
 
-	sk.MustGetEntity(arc1Pt[0]).PointForceTo(sk, center)
-	sk.MustGetEntity(arc1Pt[1]).PointForceTo(sk, pinter)
-	sk.MustGetEntity(arc1Pt[2]).PointForceTo(sk, finish)
+	sk.MustEntity(arc1Pt[0]).PointForceTo(sk, center)
+	sk.MustEntity(arc1Pt[1]).PointForceTo(sk, pinter)
+	sk.MustEntity(arc1Pt[2]).PointForceTo(sk, finish)
 
 	sk.ReplacePointInConstraints(hs, arc0Pt[1])
 	sk.ReplacePointInConstraints(hf, arc1Pt[2])
@@ -477,7 +480,7 @@ func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity 
 func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 	// Save the original endpoints, since we're about to delete this
 	// entity.
-	e01 := sk.MustGetEntity(he)
+	e01 := sk.MustEntity(he)
 	var sbl srf.SBezierList
 	GenerateEntityBeziers(e01, &sbl, &Runtime{Sketch: sk})
 
@@ -504,14 +507,14 @@ func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 			r0i := sk.AddRequestOfType(RequestCubic, false)
 			ri1 := sk.AddRequestOfType(RequestCubic, false)
 
-			e0iPt := sk.MustGetEntity(r0i.Entity(0)).Point
-			ei1Pt := sk.MustGetEntity(ri1.Entity(0)).Point
+			e0iPt := sk.MustEntity(r0i.Entity(0)).Point
+			ei1Pt := sk.MustEntity(ri1.Entity(0)).Point
 
 			for j := range 4 {
-				sk.MustGetEntity(e0iPt[j]).PointForceTo(sk, b0i.Ctrl[j])
+				sk.MustEntity(e0iPt[j]).PointForceTo(sk, b0i.Ctrl[j])
 			}
 			for j := range 4 {
-				sk.MustGetEntity(ei1Pt[j]).PointForceTo(sk, bi1.Ctrl[j])
+				sk.MustEntity(ei1Pt[j]).PointForceTo(sk, bi1.Ctrl[j])
 			}
 
 			sk.ConstrainCoincident(e0iPt[3], ei1Pt[0])
@@ -522,10 +525,10 @@ func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 			hepin = e0iPt[3]
 		} else {
 			r := sk.AddRequestOfType(RequestCubic, false)
-			ePt := sk.MustGetEntity(r.Entity(0)).Point
+			ePt := sk.MustEntity(r.Entity(0)).Point
 
 			for j := range 4 {
-				sk.MustGetEntity(ePt[j]).PointForceTo(sk, sb.Ctrl[j])
+				sk.MustEntity(ePt[j]).PointForceTo(sk, sb.Ctrl[j])
 			}
 
 			if i == 0 {
@@ -545,16 +548,20 @@ func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 // group), and returns the point at the split (C++
 // GraphicsWindow::SplitEntity).
 func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity, error) {
-	e := sk.MustGetEntity(he)
+	e := sk.MustEntity(he)
 
 	var ret core.HEntity
-	if e.IsCircle() {
+	switch {
+	case e.IsCircle():
 		ret = sk.SplitCircle(he, pinter)
-	} else if e.Type == core.EntityLineSegment {
+
+	case e.Type == core.EntityLineSegment:
 		ret = sk.SplitLine(he, pinter)
-	} else if e.Type == core.EntityCubic || e.Type == core.EntityCubicPeriodic {
+
+	case e.Type == core.EntityCubic || e.Type == core.EntityCubicPeriodic:
 		ret = sk.SplitCubic(he, pinter)
-	} else {
+
+	default:
 		return core.NoEntity, errors.New("Couldn't split this entity; lines, circles, or cubics only.")
 	}
 
@@ -564,7 +571,7 @@ func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity
 		// Only delete the original request if we actually made a split
 		// (i.e. the split point is not from the original request)
 		if hr != ret.Request() {
-			r := sk.GetRequest(hr)
+			r := sk.Request(hr)
 			// If the user wants to keep the old entities around, they can
 			// just mark them construction first.
 			if r.Group == sk.ActiveGroup() && !r.Construction {
@@ -594,7 +601,7 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 		if s.Entity.V == 0 {
 			continue
 		}
-		e := sk.MustGetEntity(s.Entity)
+		e := sk.MustEntity(s.Entity)
 		if e.IsPoint() {
 			points++
 			point = append(point, s.Entity)
@@ -627,8 +634,8 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 		hb = entity[1]
 	}
 
-	ea := sk.MustGetEntity(ha)
-	eb := sk.MustGetEntity(hb)
+	ea := sk.MustEntity(ha)
+	eb := sk.MustEntity(hb)
 	var pi geom.Vector
 
 	// First, decide the point where we're going to make the split.
@@ -651,7 +658,7 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 			c := &sk.Constraints[i]
 			if c.PtA.Request() == hb.Request() &&
 				c.EntityA.Request() == ha.Request() {
-				pi = sk.MustGetEntity(c.PtA).PointGetNum(sk)
+				pi = sk.MustEntity(c.PtA).PointGetNum(sk)
 
 				if ea.Type == core.EntityLineSegment && !pi.OnLineSegment(p0, p1, geom.LengthEps) {
 					// The point isn't between line endpoints, so there

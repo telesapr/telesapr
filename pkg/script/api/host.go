@@ -134,7 +134,7 @@ func (h *SketchHost) adopt(sk *sketch.Sketch) {
 	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAllLinked(sk, h.saveFile) }
 	sk.GenerateAll()
 	sk.Active = sk.ActiveGroup()
-	if g := sk.GetGroup(sk.Active); g != nil && g.Type == sketch.GroupDrawingWorkplane &&
+	if g := sk.Group(sk.Active); g != nil && g.Type == sketch.GroupDrawingWorkplane &&
 		g.ActiveWorkplane.V == 0 {
 		g.ActiveWorkplane = g.H.Entity(0)
 	}
@@ -200,14 +200,14 @@ func (h *SketchHost) Regenerate() { h.sk.Refresh() }
 func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup {
 	sk := h.sk
 	hg := sk.AddGroupAfterActive(g)
-	gg := sk.GetGroup(hg)
+	gg := sk.Group(hg)
 	if gg.Type == sketch.GroupLinked && sk.ReloadAllLinked != nil {
 		sk.ReloadAllLinked(sk)
 	}
 	gg.Clean = false
 	sk.Active = hg
 	sk.GenerateAll()
-	gg = sk.GetGroup(hg)
+	gg = sk.Group(hg)
 	if gg != nil && gg.Type == sketch.GroupDrawingWorkplane {
 		gg.ActiveWorkplane = gg.H.Entity(0)
 	}
@@ -222,7 +222,7 @@ func (h *SketchHost) DeleteGroup(hg core.HGroup) {
 	order := slices.Clone(sk.GroupOrder)
 	was := sk.Active
 	if hg == sk.Active {
-		if prev := sk.GetGroup(hg).PreviousGroup(sk); prev != nil {
+		if prev := sk.Group(hg).PreviousGroup(sk); prev != nil {
 			sk.Active = prev.H
 		}
 	}

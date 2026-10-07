@@ -1757,16 +1757,16 @@
 						"decl": "func (b BBox) Contains(p geom.Point2d, r float64) bool",
 						"text": "Contains reports whether p, in x and y, lies within r of the box (C++ BBox::Contains)."
 					},
-					"GetExtents": {
-						"decl": "func (b BBox) GetExtents() geom.Vector",
-						"text": "GetExtents is half the box's size (C++ BBox::GetExtents)."
-					},
-					"GetOrigin": {
-						"decl": "func (b BBox) GetOrigin() geom.Vector",
-						"text": "GetOrigin is the box's centre (C++ BBox::GetOrigin)."
+					"Extents": {
+						"decl": "func (b BBox) Extents() geom.Vector",
+						"text": "Extents is half the box's size (C++ BBox::Extents)."
 					},
 					"Include": {
 						"decl": "func (b *BBox) Include(v geom.Vector, r float64)"
+					},
+					"Origin": {
+						"decl": "func (b BBox) Origin() geom.Vector",
+						"text": "Origin is the box's centre (C++ BBox::Origin)."
 					},
 					"Overlaps": {
 						"decl": "func (b BBox) Overlaps(b1 BBox) bool",
@@ -1873,6 +1873,12 @@
 						"decl": "func (e *Entity) ArcGetAngles(sk EntitySketch) (thetaa, thetab, dtheta float64)",
 						"text": "ArcGetAngles returns the start angle, finish angle and swept angle of an arc, in its normal's (u, v) basis."
 					},
+					"AxisAngleQuaternion": {
+						"decl": "func (e *Entity) AxisAngleQuaternion(sk EntitySketch, param0 int) geom.Quaternion"
+					},
+					"AxisAngleQuaternionExprs": {
+						"decl": "func (e *Entity) AxisAngleQuaternionExprs(param0 int) ExprQuaternion"
+					},
 					"CalculateNumerical": {
 						"decl": "func (e *Entity) CalculateNumerical(sk EntitySketch, forExport bool)",
 						"text": "CalculateNumerical caches the entity's numeric state in its Act* fields (C++ Entity::CalculateNumerical, drawentity.cpp)."
@@ -1934,12 +1940,6 @@
 					"GenerateEquations": {
 						"decl": "func (e *Entity) GenerateEquations(sk EntitySketch, constraints []Constraint, l *[]Equation)",
 						"text": "GenerateEquations appends the equations this entity imposes (C++ EntityBase::GenerateEquations)."
-					},
-					"GetAxisAngleQuaternion": {
-						"decl": "func (e *Entity) GetAxisAngleQuaternion(sk EntitySketch, param0 int) geom.Quaternion"
-					},
-					"GetAxisAngleQuaternionExprs": {
-						"decl": "func (e *Entity) GetAxisAngleQuaternionExprs(param0 int) ExprQuaternion"
 					},
 					"HasEndpoints": {
 						"decl": "func (e *Entity) HasEndpoints() bool"
@@ -2457,65 +2457,61 @@
 			"HStyle": {
 				"kind": "struct"
 			},
-			"IdList": {
-				"text": "IdList is a Go analogue of the C++ IdList\u003cT, H\u003e: a handle-keyed container that preserves insertion order and supports efficient lookup by handle.",
+			"IDList": {
+				"text": "IDList is a Go analogue of the C++ IDList\u003cT, H\u003e: a handle-keyed container that preserves insertion order and supports efficient lookup by handle.",
 				"kind": "struct",
 				"methods": {
 					"Add": {
-						"decl": "func (l *IdList[H, T]) Add(h H, v T) int",
+						"decl": "func (l *IDList[H, T]) Add(h H, v T) int",
 						"text": "Add appends an item to the list, with the caller-supplied handle."
 					},
 					"At": {
-						"decl": "func (l *IdList[H, T]) At(i int) T",
+						"decl": "func (l *IDList[H, T]) At(i int) T",
 						"text": "At returns the item at index i without bounds checking."
 					},
 					"Clear": {
-						"decl": "func (l *IdList[H, T]) Clear()",
+						"decl": "func (l *IDList[H, T]) Clear()",
 						"text": "Clear removes all items."
 					},
-					"FindById": {
-						"decl": "func (l *IdList[H, T]) FindById(h H) (T, bool)",
-						"text": "FindById returns the item for handle h and true, or zero/false if absent."
+					"FindByID": {
+						"decl": "func (l *IDList[H, T]) FindByID(h H) (T, bool)",
+						"text": "FindByID returns the item for handle h and true, or zero/false if absent."
 					},
-					"FindByIdNoOops": {
-						"decl": "func (l *IdList[H, T]) FindByIdNoOops(h H) (T, bool)",
-						"text": "FindByIdNoOops is the \"no_oops\" variant: returns zero/false if absent."
-					},
-					"FindByIdPtr": {
-						"decl": "func (l *IdList[H, T]) FindByIdPtr(h H) *T",
-						"text": "FindByIdPtr returns a pointer to the item for handle h, or nil if absent."
+					"FindByIDPtr": {
+						"decl": "func (l *IDList[H, T]) FindByIDPtr(h H) *T",
+						"text": "FindByIDPtr returns a pointer to the item for handle h, or nil if absent."
 					},
 					"IDs": {
-						"decl": "func (l *IdList[H, T]) IDs() []H",
+						"decl": "func (l *IDList[H, T]) IDs() []H",
 						"text": "IDs returns all handles that have been added."
 					},
 					"Len": {
-						"decl": "func (l *IdList[H, T]) Len() int",
+						"decl": "func (l *IDList[H, T]) Len() int",
 						"text": "Len reports the number of items in the list."
 					},
 					"MoveSelfInto": {
-						"decl": "func (l *IdList[H, T]) MoveSelfInto(dst *IdList[H, T])",
+						"decl": "func (l *IDList[H, T]) MoveSelfInto(dst *IDList[H, T])",
 						"text": "MoveSelfInto transfers ownership of all items from src into dst, clearing src."
 					},
 					"Reserve": {
-						"decl": "func (l *IdList[H, T]) Reserve(n int)",
+						"decl": "func (l *IDList[H, T]) Reserve(n int)",
 						"text": "Reserve ensures the underlying slice has capacity for at least n more items."
 					},
 					"ReserveMore": {
-						"decl": "func (l *IdList[H, T]) ReserveMore(n int)",
+						"decl": "func (l *IDList[H, T]) ReserveMore(n int)",
 						"text": "ReserveMore ensures capacity for at least n total items."
 					},
 					"Set": {
-						"decl": "func (l *IdList[H, T]) Set(i int, v T)",
+						"decl": "func (l *IDList[H, T]) Set(i int, v T)",
 						"text": "Set overwrites the item at index i."
 					},
 					"SortedHandles": {
-						"decl": "func (l *IdList[H, T]) SortedHandles(less func(a, b H) bool) []H",
+						"decl": "func (l *IDList[H, T]) SortedHandles(less func(a, b H) bool) []H",
 						"text": "SortedHandles returns all handles in insertion order."
 					}
 				},
 				"makers": [
-					"NewIdList"
+					"NewIDList"
 				]
 			},
 			"NoSettings": {
@@ -2603,42 +2599,42 @@
 					"PolyZeroLenEdge"
 				]
 			},
-			"RgbaColor": {
+			"RGBA": {
 				"kind": "struct",
 				"methods": {
 					"AlphaF": {
-						"decl": "func (c RgbaColor) AlphaF() float32"
+						"decl": "func (c RGBA) AlphaF() float32"
 					},
 					"BlueF": {
-						"decl": "func (c RgbaColor) BlueF() float32"
+						"decl": "func (c RGBA) BlueF() float32"
 					},
 					"Equals": {
-						"decl": "func (c RgbaColor) Equals(other RgbaColor) bool"
+						"decl": "func (c RGBA) Equals(other RGBA) bool"
 					},
 					"GreenF": {
-						"decl": "func (c RgbaColor) GreenF() float32"
+						"decl": "func (c RGBA) GreenF() float32"
 					},
 					"IsEmpty": {
-						"decl": "func (c RgbaColor) IsEmpty() bool"
+						"decl": "func (c RGBA) IsEmpty() bool"
 					},
 					"RedF": {
-						"decl": "func (c RgbaColor) RedF() float32"
+						"decl": "func (c RGBA) RedF() float32"
 					},
 					"ToARGB32": {
-						"decl": "func (c RgbaColor) ToARGB32() uint32"
+						"decl": "func (c RGBA) ToARGB32() uint32"
 					},
 					"ToPackedInt": {
-						"decl": "func (c RgbaColor) ToPackedInt() uint32"
+						"decl": "func (c RGBA) ToPackedInt() uint32"
 					},
 					"WithAlpha": {
-						"decl": "func (c RgbaColor) WithAlpha(alpha uint8) RgbaColor"
+						"decl": "func (c RGBA) WithAlpha(alpha uint8) RGBA"
 					}
 				},
 				"makers": [
-					"NewRgbaColor",
+					"NewRGBA",
+					"RGBAFromFloat",
+					"RGBAFromPackedInt",
 					"RewriteColor",
-					"RgbaColorFromFloat",
-					"RgbaColorFromPackedInt",
 					"ThawColor"
 				]
 			},
@@ -2770,7 +2766,7 @@
 				"text": "FreezeBool, ThawBool, FreezeColor and ThawColor store through the integer settings (C++ Settings::FreezeBool and so on)."
 			},
 			"FreezeColor": {
-				"decl": "func FreezeColor(s Settings, key string, value RgbaColor)"
+				"decl": "func FreezeColor(s Settings, key string, value RGBA)"
 			},
 			"FromVector": {
 				"decl": "func FromVector(v geom.Vector) ExprVector",
@@ -2815,9 +2811,9 @@
 				"decl": "func NewFromString(s string) (*Expr, error)",
 				"text": "NewFromString parses a textual expression and returns the equivalent *Expr."
 			},
-			"NewIdList": {
-				"decl": "func NewIdList[H comparable, T any](cap int) IdList[H, T]",
-				"text": "NewIdList returns an empty IdList with optional capacity hints."
+			"NewIDList": {
+				"decl": "func NewIDList[H comparable, T any](n int) IDList[H, T]",
+				"text": "NewIDList returns an empty IDList with optional capacity hints."
 			},
 			"NewParam": {
 				"decl": "func NewParam(h HParam) *Expr",
@@ -2827,8 +2823,8 @@
 				"decl": "func NewParamPtr(p *Param) *Expr",
 				"text": "NewParamPtr returns an Expr referencing a parameter by pointer."
 			},
-			"NewRgbaColor": {
-				"decl": "func NewRgbaColor(r, g, b, a uint8) RgbaColor"
+			"NewRGBA": {
+				"decl": "func NewRGBA(r, g, b, a uint8) RGBA"
 			},
 			"NewVariable": {
 				"decl": "func NewVariable(id string) *Expr",
@@ -2850,6 +2846,12 @@
 				"decl": "func ProjectVectorInto(sk EntitySketch, v geom.Vector, wrkpl HEntity) geom.Vector",
 				"text": "ProjectVectorInto projects v into the plane of workplane wrkpl (C++ Vector::ProjectVectorInto)."
 			},
+			"RGBAFromFloat": {
+				"decl": "func RGBAFromFloat(r, g, b, a float32) RGBA"
+			},
+			"RGBAFromPackedInt": {
+				"decl": "func RGBAFromPackedInt(rgba uint32) RGBA"
+			},
 			"ReadUTF8": {
 				"decl": "func ReadUTF8(str string) []uint32",
 				"text": "ReadUTF8 decodes str as C++'s utf8_iterator does, which doesn't check the encoding; the byte after the string reads as 0, like a C string's terminator."
@@ -2859,14 +2861,8 @@
 				"text": "RenameVariable rewrites the expression text s with every use of the name from replaced by to, leaving the rest of the text as it was: function names and other names are untouched."
 			},
 			"RewriteColor": {
-				"decl": "func RewriteColor(rgbin RgbaColor, fixExportColors bool) RgbaColor",
+				"decl": "func RewriteColor(rgbin RGBA, fixExportColors bool) RGBA",
 				"text": "RewriteColor turns an almost-white colour black when fixExportColors, so it doesn't vanish on a light background (C++ Style::RewriteColor, with SS.fixExportColors as an argument)."
-			},
-			"RgbaColorFromFloat": {
-				"decl": "func RgbaColorFromFloat(r, g, b, a float32) RgbaColor"
-			},
-			"RgbaColorFromPackedInt": {
-				"decl": "func RgbaColorFromPackedInt(rgba uint32) RgbaColor"
 			},
 			"SetSettings": {
 				"decl": "func SetSettings(s Settings)",
@@ -2892,7 +2888,7 @@
 				"decl": "func ThawBool(s Settings, key string, defaultValue bool) bool"
 			},
 			"ThawColor": {
-				"decl": "func ThawColor(s Settings, key string, defaultValue RgbaColor) RgbaColor"
+				"decl": "func ThawColor(s Settings, key string, defaultValue RGBA) RGBA"
 			},
 			"ValidVariableName": {
 				"decl": "func ValidVariableName(name string) bool",
@@ -4845,7 +4841,7 @@
 						"text": "Appearance is the group's solid's appearance, \"\" for the default,\nplastic."
 					},
 					"Bounds": {
-						"decl": "func (g Group) Bounds() (min, max Vec)",
+						"decl": "func (g Group) Bounds() (lo, hi Vec)",
 						"text": "Bounds are the corners of the box around the model up to and with\nthis group."
 					},
 					"Check": {
@@ -6364,6 +6360,9 @@
 						"decl": "func (sk *Sketch) ConstrainCurveCurveTangent(c *core.Constraint, eA, eB, epA, epB *core.Entity) error",
 						"text": "ConstrainCurveCurveTangent sets at which ends c makes curves eA and eB tangent: the ends they share, else epA and epB (C++ Constraint::ConstrainCurveCurveTangent)."
 					},
+					"Constraint": {
+						"decl": "func (s *Sketch) Constraint(h core.HConstraint) *core.Constraint"
+					},
 					"CopySelection": {
 						"decl": "func (sk *Sketch) CopySelection(selection []Selection)",
 						"text": "CopySelection copies the selected entities that requests generate (not workplanes), the selected comments, and the constraints among the copied entities (C++ GraphicsWindow::CopySelection)."
@@ -6415,6 +6414,9 @@
 					"EntitiesToMap": {
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
 						"text": "EntitiesToMap returns the entities indexed by their handle."
+					},
+					"Entity": {
+						"decl": "func (s *Sketch) Entity(h core.HEntity) *core.Entity"
 					},
 					"EntityAfter": {
 						"decl": "func (sk *Sketch) EntityAfter(he core.HEntity, h core.HGroup) (core.HGroup, bool)",
@@ -6472,26 +6474,8 @@
 						"decl": "func (sk *Sketch) GenerateAllTyped(t GenerateType)",
 						"text": "GenerateAllTyped is GenerateAll with a GenerateType."
 					},
-					"GetConstraint": {
-						"decl": "func (s *Sketch) GetConstraint(h core.HConstraint) *core.Constraint"
-					},
-					"GetEntity": {
-						"decl": "func (s *Sketch) GetEntity(h core.HEntity) *core.Entity"
-					},
-					"GetGroup": {
-						"decl": "func (s *Sketch) GetGroup(h core.HGroup) *Group"
-					},
-					"GetParam": {
-						"decl": "func (s *Sketch) GetParam(h core.HParam) *core.Param"
-					},
-					"GetRequest": {
-						"decl": "func (s *Sketch) GetRequest(h core.HRequest) *Request"
-					},
-					"GetRunningMeshGroupFor": {
-						"decl": "func (s *Sketch) GetRunningMeshGroupFor(h core.HGroup) *Group"
-					},
-					"GetStyle": {
-						"decl": "func (s *Sketch) GetStyle(h core.HStyle) *core.Style"
+					"Group": {
+						"decl": "func (s *Sketch) Group(h core.HGroup) *Group"
 					},
 					"GroupDependencies": {
 						"decl": "func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency",
@@ -6557,13 +6541,13 @@
 						"decl": "func (sk *Sketch) MoveGroupWithSources(h, before core.HGroup) ([]core.HGroup, error)",
 						"text": "MoveGroupWithSources moves group h, with its OwnSources in their order, to just before group before, or to the end for the zero handle, as MoveGroup moves one group: a move that would put a group ahead of one it refers to is refused with a *MoveError, and nothing moves."
 					},
-					"MustGetEntity": {
-						"decl": "func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity",
-						"text": "MustGetEntity is GetEntity for handles that must exist (C++ SK.GetEntity, which asserts)."
+					"MustEntity": {
+						"decl": "func (s *Sketch) MustEntity(h core.HEntity) *core.Entity",
+						"text": "MustEntity is GetEntity for handles that must exist (C++ SK.GetEntity, which asserts)."
 					},
-					"MustGetParam": {
-						"decl": "func (s *Sketch) MustGetParam(h core.HParam) *core.Param",
-						"text": "MustGetParam is GetParam for handles that must exist (C++ SK.GetParam, which asserts)."
+					"MustParam": {
+						"decl": "func (s *Sketch) MustParam(h core.HParam) *core.Param",
+						"text": "MustParam is GetParam for handles that must exist (C++ SK.GetParam, which asserts)."
 					},
 					"NamedConstraint": {
 						"decl": "func (sk *Sketch) NamedConstraint(name string) *core.Constraint",
@@ -6624,6 +6608,9 @@
 					"OwnSources": {
 						"decl": "func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup",
 						"text": "OwnSources is group h with the groups only it needs: those it refers to, directly or through each other, that no group outside them uses, as an extrusion's sketch and that sketch's own workplane."
+					},
+					"Param": {
+						"decl": "func (s *Sketch) Param(h core.HParam) *core.Param"
 					},
 					"Parameter": {
 						"decl": "func (sk *Sketch) Parameter(name string) *Parameter",
@@ -6692,6 +6679,12 @@
 					"ReplacePointInConstraints": {
 						"decl": "func (sk *Sketch) ReplacePointInConstraints(oldpt, newpt core.HEntity)",
 						"text": "ReplacePointInConstraints moves the constraints on oldpt to newpt (C++ GraphicsWindow::ReplacePointInConstraints)."
+					},
+					"Request": {
+						"decl": "func (s *Sketch) Request(h core.HRequest) *Request"
+					},
+					"RunningMeshGroupFor": {
+						"decl": "func (s *Sketch) RunningMeshGroupFor(h core.HGroup) *Group"
 					},
 					"ScheduleGenerateAll": {
 						"decl": "func (sk *Sketch) ScheduleGenerateAll()",
@@ -6789,8 +6782,11 @@
 						"decl": "func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) error",
 						"text": "SplitLinesOrCurves splits the selected entities where they intersect: two lines, circles, arcs or cubics, or one of them and a point on it."
 					},
+					"Style": {
+						"decl": "func (s *Sketch) Style(h core.HStyle) *core.Style"
+					},
 					"StyleColor": {
-						"decl": "func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) core.RgbaColor",
+						"decl": "func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA",
 						"text": "StyleColor is style h's stroke colour, rewritten for export as RewriteColor says (C++ Style::Color)."
 					},
 					"StyleExportable": {
@@ -6798,7 +6794,7 @@
 						"text": "StyleExportable reports whether lines of style h go in exported files: if it's both shown and exportable (C++ Style::Exportable)."
 					},
 					"StyleFillColor": {
-						"decl": "func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool) core.RgbaColor",
+						"decl": "func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA",
 						"text": "StyleFillColor is style h's fill colour (C++ Style::FillColor)."
 					},
 					"StyleForEntity": {
@@ -7600,6 +7596,10 @@
 						"decl": "func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList)",
 						"text": "AllIntersectionsWith adds to spl the points where this curve crosses sbb: their pwls' crossings, refined onto both curves."
 					},
+					"BoundingProjd": {
+						"decl": "func (b *SBezier) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
+						"text": "BoundingProjd extends (pmin, pmax) with the projection of every control point onto the axis (orig + t * u)."
+					},
 					"ClosestPointTo": {
 						"decl": "func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, bool)",
 						"text": "ClosestPointTo is the parameter t of the point on the curve closest to p: the closest of a few samples, refined by Newton's method."
@@ -7619,10 +7619,6 @@
 					"Finish": {
 						"decl": "func (b *SBezier) Finish() geom.Vector",
 						"text": "Finish returns the last control point."
-					},
-					"GetBoundingProjd": {
-						"decl": "func (b *SBezier) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
-						"text": "GetBoundingProjd extends (pmin, pmax) with the projection of every control point onto the axis (orig + t * u)."
 					},
 					"InPerspective": {
 						"decl": "func (b *SBezier) InPerspective(u, v, n, origin geom.Vector, cameraTan float64) SBezier",
@@ -7712,6 +7708,10 @@
 						"decl": "func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList)",
 						"text": "AllIntersectionsWith adds to spl the points where any curve of this list crosses any of other (C++ SBezierList::AllIntersectionsWith)."
 					},
+					"BoundingProjd": {
+						"decl": "func (l *SBezierList) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
+						"text": "BoundingProjd extends the box (min, max) to contain the projection of every control point onto the axis through orig in direction u."
+					},
 					"Clear": {
 						"decl": "func (l *SBezierList) Clear()"
 					},
@@ -7719,16 +7719,12 @@
 						"decl": "func (l *SBezierList) CullIdenticalBeziers(both bool)",
 						"text": "CullIdenticalBeziers removes the curves identical to an earlier one, either way round, and with both the earlier one too (C++ SBezierList::CullIdenticalBeziers)."
 					},
-					"GetBoundingProjd": {
-						"decl": "func (l *SBezierList) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
-						"text": "GetBoundingProjd extends the box (min, max) to contain the projection of every control point onto the axis through orig in direction u."
-					},
-					"GetPlaneContainingBeziers": {
-						"decl": "func (l *SBezierList) GetPlaneContainingBeziers(p, u, v *geom.Vector, notCoplanarAt *geom.Vector) bool",
-						"text": "GetPlaneContainingBeziers finds a plane that contains all the curves in this list."
-					},
 					"Len": {
 						"decl": "func (l *SBezierList) Len() int"
+					},
+					"PlaneContainingBeziers": {
+						"decl": "func (l *SBezierList) PlaneContainingBeziers(p, u, v *geom.Vector, notCoplanarAt *geom.Vector) bool",
+						"text": "PlaneContainingBeziers finds a plane that contains all the curves in this list."
 					},
 					"ScaleSelfBy": {
 						"decl": "func (l *SBezierList) ScaleSelfBy(s float64)",
@@ -7740,9 +7736,9 @@
 				"text": "SBezierLoop is an ordered list of SBezier forming one closed (or open) loop.",
 				"kind": "struct",
 				"methods": {
-					"GetBoundingProjd": {
-						"decl": "func (l *SBezierLoop) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
-						"text": "GetBoundingProjd extends the axis-aligned bounding box."
+					"BoundingProjd": {
+						"decl": "func (l *SBezierLoop) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
+						"text": "BoundingProjd extends the axis-aligned bounding box."
 					},
 					"IsClosed": {
 						"decl": "func (l *SBezierLoop) IsClosed() bool",
@@ -7772,12 +7768,12 @@
 				"text": "SBezierLoopSet is a planar (closed) curve set: one outer contour plus zero or more hole contours.",
 				"kind": "struct",
 				"methods": {
+					"BoundingProjd": {
+						"decl": "func (s *SBezierLoopSet) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
+						"text": "BoundingProjd extends the axis-aligned bounding box from every contour in the set."
+					},
 					"Clear": {
 						"decl": "func (s *SBezierLoopSet) Clear()"
-					},
-					"GetBoundingProjd": {
-						"decl": "func (s *SBezierLoopSet) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
-						"text": "GetBoundingProjd extends the axis-aligned bounding box from every contour in the set."
 					},
 					"Loops": {
 						"decl": "func (s *SBezierLoopSet) Loops() []*SBezierLoop",
@@ -7979,17 +7975,9 @@
 				"text": "SCurve is a trim curve in the shell: the exact SBezier form plus the polyline approximation, and references to the two surfaces it trims.",
 				"kind": "struct",
 				"methods": {
-					"GetAxisAlignedBounding": {
-						"decl": "func (c *SCurve) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector)",
-						"text": "GetAxisAlignedBounding computes the xyz bounding box of this SCurve's exact Bezier."
-					},
-					"GetSurfaceA": {
-						"decl": "func (c *SCurve) GetSurfaceA(a, b *SShell) *SSurface",
-						"text": "GetSurfaceA returns the surface named by SurfA, looked up in the operand the curve came from."
-					},
-					"GetSurfaceB": {
-						"decl": "func (c *SCurve) GetSurfaceB(a, b *SShell) *SSurface",
-						"text": "GetSurfaceB returns the surface named by SurfB, looked up in the operand the curve came from."
+					"AxisAlignedBounding": {
+						"decl": "func (c *SCurve) AxisAlignedBounding(ptMax, ptMin *geom.Vector)",
+						"text": "AxisAlignedBounding computes the xyz bounding box of this SCurve's exact Bezier."
 					},
 					"MakeCopySplitAgainst": {
 						"decl": "func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurface) SCurve",
@@ -8002,6 +7990,14 @@
 					"RemoveShortSegmentsWithChordTol": {
 						"decl": "func (c *SCurve) RemoveShortSegmentsWithChordTol(sA, sB *SSurface, chordTolMm float64)",
 						"text": "RemoveShortSegmentsWithChordTol is RemoveShortSegments with an explicit chord tolerance in place of ChordTolMm()."
+					},
+					"SurfaceA": {
+						"decl": "func (c *SCurve) SurfaceA(a, b *SShell) *SSurface",
+						"text": "SurfaceA returns the surface named by SurfA, looked up in the operand the curve came from."
+					},
+					"SurfaceB": {
+						"decl": "func (c *SCurve) SurfaceB(a, b *SShell) *SSurface",
+						"text": "SurfaceB returns the surface named by SurfB, looked up in the operand the curve came from."
 					}
 				},
 				"makers": [
@@ -8166,6 +8162,10 @@
 						"decl": "func (m *SMesh) AddTriangleN(meta STriMeta, n, a, b, c geom.Vector)",
 						"text": "AddTriangleN adds the triangle a, b, c, wound so its normal points along n; a (nearly) collinear one is dropped (C++ SMesh::AddTriangle(meta, n, a, b, c))."
 					},
+					"Bounding": {
+						"decl": "func (m *SMesh) Bounding() (vmax, vmin geom.Vector)",
+						"text": "Bounding is the mesh's bounding box (C++ SMesh::Bounding)."
+					},
 					"CalculateSurfaceArea": {
 						"decl": "func (m *SMesh) CalculateSurfaceArea(faces []uint32) float64",
 						"text": "CalculateSurfaceArea is the area of the triangles on the given faces (C++ SMesh::CalculateSurfaceArea)."
@@ -8173,6 +8173,10 @@
 					"CalculateVolume": {
 						"decl": "func (m *SMesh) CalculateVolume() float64",
 						"text": "CalculateVolume is the volume the mesh encloses, integrated under each triangle (C++ SMesh::CalculateVolume)."
+					},
+					"CenterOfMass": {
+						"decl": "func (m *SMesh) CenterOfMass() geom.Vector",
+						"text": "CenterOfMass is the centroid of the volume the mesh encloses (C++ SMesh::CenterOfMass)."
 					},
 					"Clear": {
 						"decl": "func (m *SMesh) Clear()",
@@ -8185,14 +8189,6 @@
 					"FirstIntersectionWith": {
 						"decl": "func (m *SMesh) FirstIntersectionWith(rayPoint, rayDir geom.Vector) uint32",
 						"text": "FirstIntersectionWith is the face of the farthest-along triangle, with a face, that the ray rayPoint + t*rayDir hits; 0 if none."
-					},
-					"GetBounding": {
-						"decl": "func (m *SMesh) GetBounding() (vmax, vmin geom.Vector)",
-						"text": "GetBounding is the mesh's bounding box (C++ SMesh::GetBounding)."
-					},
-					"GetCenterOfMass": {
-						"decl": "func (m *SMesh) GetCenterOfMass() geom.Vector",
-						"text": "GetCenterOfMass is the centroid of the volume the mesh encloses (C++ SMesh::GetCenterOfMass)."
 					},
 					"IsEmpty": {
 						"decl": "func (m *SMesh) IsEmpty() bool"
@@ -8467,11 +8463,11 @@
 						"text": "MakeFromDifferenceOf dispatches to MakeFromBoolean(DIFFERENCE)."
 					},
 					"MakeFromExtrusionOf": {
-						"decl": "func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RgbaColor)",
+						"decl": "func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RGBA)",
 						"text": "MakeFromExtrusionOf extrudes a planar BezierLoopSet from t0 to t1."
 					},
 					"MakeFromHelicalRevolutionOf": {
-						"decl": "func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor, group ShellGroup, angles, anglef, dists, distf float64)",
+						"decl": "func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RGBA, group ShellGroup, angles, anglef, dists, distf float64)",
 						"text": "MakeFromHelicalRevolutionOf sweeps a planar BezierLoopSet around the axis (pt, axis) from angle angles to anglef while translating along the axis from dists to distf."
 					},
 					"MakeFromIntersectionOf": {
@@ -8479,11 +8475,11 @@
 						"text": "MakeFromIntersectionOf dispatches to MakeFromBoolean(INTERSECTION)."
 					},
 					"MakeFromRevolutionOf": {
-						"decl": "func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor, group ShellGroup)",
+						"decl": "func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RGBA, group ShellGroup)",
 						"text": "MakeFromRevolutionOf revolves a planar BezierLoopSet a full turn around the axis (pt, axis)."
 					},
 					"MakeFromSweepOf": {
-						"decl": "func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RgbaColor, startFace, endFace FaceID)",
+						"decl": "func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA, startFace, endFace FaceID)",
 						"text": "MakeFromSweepOf adds the solid the planar loop set sbls sweeps through as it moves along steps, a chain whose pieces meet tangent: one side surface per curve and piece, an extrusion for a straight piece and a surface of revolution for each quarter of a turn, and a cap at each end, startFace at the profile and endFace where the steps take it."
 					},
 					"MakeFromTransformationOf": {
@@ -8499,7 +8495,7 @@
 						"text": "MakeIntersectionCurvesAgainst computes the surface-surface intersection curves between every pair of surfaces (one from `s`, one from `agnst`) and appends them to into.Curve."
 					},
 					"MakePrism": {
-						"decl": "func (s *SShell) MakePrism(pts []geom.Vector, t0, t1 geom.Vector, color core.RgbaColor)",
+						"decl": "func (s *SShell) MakePrism(pts []geom.Vector, t0, t1 geom.Vector, color core.RGBA)",
 						"text": "MakePrism adds the prism of the plane polygon pts swept from t0 to t1, which must not lie in the polygon's plane."
 					},
 					"MakeSectionEdgesInto": {
@@ -8549,6 +8545,10 @@
 					"AllPointsIntersectingUntrimmed": {
 						"decl": "func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *int, l *[]surfInter, asSegment bool, sorig *SSurface)",
 						"text": "AllPointsIntersectingUntrimmed recursively subdivides the surface until each piece is nearly flat, then refines with Newton."
+					},
+					"AxisAlignedBounding": {
+						"decl": "func (s *SSurface) AxisAlignedBounding(ptMax, ptMin *geom.Vector)",
+						"text": "AxisAlignedBounding extends (ptMin, ptMax) to include every control point of the surface."
 					},
 					"BlendRowOrCol": {
 						"decl": "func (s *SSurface) BlendRowOrCol(row bool, thisIJ int, a *SSurface, aIJ int, b *SSurface, bIJ int)",
@@ -8611,12 +8611,8 @@
 						"text": "ElevatedTo is the patch raised to degrees m and n, at least its own."
 					},
 					"ExactSurfaceTangentAt": {
-						"decl": "func (srf *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector",
+						"decl": "func (s *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector",
 						"text": "ExactSurfaceTangentAt is the direction, at p, of the curve where srfA meets srfB, pointing along dir (C++ SSurface::ExactSurfaceTangentAt)."
-					},
-					"GetAxisAlignedBounding": {
-						"decl": "func (s *SSurface) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector)",
-						"text": "GetAxisAlignedBounding extends (ptMin, ptMax) to include every control point of the surface."
 					},
 					"IntersectAgainst": {
 						"decl": "func (s *SSurface) IntersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *SShell)",
@@ -8635,7 +8631,7 @@
 						"text": "LineEntirelyOutsideBbox returns true if the line (a, b) does not cross the surface's bounding box."
 					},
 					"MakeEdgesInto": {
-						"decl": "func (srf *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCurvesFrom *SShell)",
+						"decl": "func (s *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCurvesFrom *SShell)",
 						"text": "MakeEdgesInto emits the pwl edges of every trim curve of srf, in uv space (asUV) or xyz."
 					},
 					"MakeSectionEdgesInto": {
@@ -8707,7 +8703,7 @@
 						"text": "TangentsAt computes the partial derivatives dP/du and dP/dv at (u, v) (C++ SSurface::TangentsAt)."
 					},
 					"TriangulateInto": {
-						"decl": "func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh)",
+						"decl": "func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh)",
 						"text": "TriangulateInto is the per-surface version."
 					},
 					"UnWeightControlPoints": {
@@ -8877,10 +8873,6 @@
 				"decl": "func FromTransformationOfSCurve(a *SCurve, t geom.Vector, q geom.Quaternion, scale float64) SCurve",
 				"text": "FromTransformationOfSCurve is a copy of a scaled, then rotated, then translated; like C++ it keeps only the handle, the exact form, the surfaces and the pwl (C++ SCurve::FromTransformationOf)."
 			},
-			"GetMaxSegments": {
-				"decl": "func GetMaxSegments() int",
-				"text": "GetMaxSegments returns the maximum number of pwl segments per curve: the export one in export mode (C++ SS.GetMaxSegments)."
-			},
 			"GetParallelMode": {
 				"decl": "func GetParallelMode() ParallelMode",
 				"text": "GetParallelMode returns the mode."
@@ -8893,12 +8885,16 @@
 				"decl": "func InterpolatedPatch(du, dv int, f func(x, y float64) geom.Vector, tol float64) (SSurface, error)",
 				"text": "InterpolatedPatch is the patch of degree du by dv through f's points at Chebyshev-Lobatto points of [0, 1] each way, its corners and sides' ends among them, or an error when it strays from f by more than tol."
 			},
+			"MaxSegments": {
+				"decl": "func MaxSegments() int",
+				"text": "MaxSegments returns the maximum number of pwl segments per curve: the export one in export mode (C++ SS.MaxSegments)."
+			},
 			"NewMeshMeta": {
-				"decl": "func NewMeshMeta(face FaceID, color core.RgbaColor) MeshMeta",
+				"decl": "func NewMeshMeta(face FaceID, color core.RGBA) MeshMeta",
 				"text": "NewMeshMeta constructs a MeshMeta with the given face id and color."
 			},
 			"NewSTriMeta": {
-				"decl": "func NewSTriMeta(face FaceID, color core.RgbaColor) STriMeta",
+				"decl": "func NewSTriMeta(face FaceID, color core.RGBA) STriMeta",
 				"text": "NewSTriMeta constructs an STriMeta with the given face id and color."
 			},
 			"OriginFor": {

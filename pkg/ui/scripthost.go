@@ -220,7 +220,7 @@ func (h *ScriptHost) DeleteGroup(hg core.HGroup) {
 func (h *ScriptHost) Activate(hg core.HGroup) {
 	ss := h.ss
 	ss.SK.Active = hg
-	ss.groupActivate(ss.SK.GetGroup(hg))
+	ss.groupActivate(ss.SK.Group(hg))
 	ss.GW.ClearSuper()
 }
 

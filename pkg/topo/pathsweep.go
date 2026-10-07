@@ -389,7 +389,7 @@ func (sp *SweepPath) strays(curves []srf.BSplineCurve, surfs []*srf.BSplineSurfa
 // patches (SweptSurfaces), and the profile's planes at both ends. The
 // start cap takes identity startFace, the end endFace, and the surfaces'
 // patches identities from origin on.
-func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RgbaColor, startFace, endFace, origin uint32) (*srf.SShell, error) {
+func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startFace, endFace, origin uint32) (*srf.SShell, error) {
 	surfs, _, err := sp.SweptSurfaces(loops)
 	if err != nil {
 		return nil, err
@@ -403,7 +403,7 @@ func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RgbaColor, s
 // and last loops at both ends. Each chain is one face of its own sheet,
 // its patches' identities on from origin; the caps take startFace and
 // endFace.
-func closeSkins(chains [][]*srf.BSplineSurface, color core.RgbaColor, startFace, endFace, origin uint32) (*srf.SShell, error) {
+func closeSkins(chains [][]*srf.BSplineSurface, color core.RGBA, startFace, endFace, origin uint32) (*srf.SShell, error) {
 	sh := &srf.SShell{}
 	fa := NewFaceAdder(sh)
 	var first, last [][]srf.SBezier

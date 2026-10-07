@@ -37,11 +37,11 @@ func FromTransformationOfSCurve(a *SCurve, t geom.Vector, q geom.Quaternion, sca
 	return ret
 }
 
-// GetAxisAlignedBounding computes the xyz bounding box of this
-// SCurve's exact Bezier. Mirrors SCurve::GetAxisAlignedBounding in
+// AxisAlignedBounding computes the xyz bounding box of this
+// SCurve's exact Bezier. Mirrors SCurve::AxisAlignedBounding in
 // srf/curve.cpp:25. Used by FindVertsOnCurve to quickly reject
 // trim endpoints that lie outside the curve's box.
-func (c *SCurve) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector) {
+func (c *SCurve) AxisAlignedBounding(ptMax, ptMin *geom.Vector) {
 	negInf := geom.Vector{X: -1e30, Y: -1e30, Z: -1e30}
 	posInf := geom.Vector{X: 1e30, Y: 1e30, Z: 1e30}
 	*ptMax = negInf

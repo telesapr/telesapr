@@ -38,9 +38,9 @@ func TestExportStepAssembly(t *testing.T) {
 	}
 	sk := ss.SK
 	// The second bar turned a quarter about z and moved.
-	sk.MustGetParam(b.H.Param(0)).Val = -20
-	sk.MustGetParam(b.H.Param(3)).Val = math.Sqrt2 / 2
-	sk.MustGetParam(b.H.Param(6)).Val = math.Sqrt2 / 2
+	sk.MustParam(b.H.Param(0)).Val = -20
+	sk.MustParam(b.H.Param(3)).Val = math.Sqrt2 / 2
+	sk.MustParam(b.H.Param(6)).Val = math.Sqrt2 / 2
 	doc.Regen()
 	want := doc.Active().Check()
 

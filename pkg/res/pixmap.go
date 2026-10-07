@@ -58,26 +58,26 @@ func (pm *Pixmap) BytesPerPixel() int {
 	panic("res: unexpected pixmap format")
 }
 
-// GetPixel is the pixel at x, y (C++ Pixmap::GetPixel).
-func (pm *Pixmap) GetPixel(x, y int) core.RgbaColor {
+// Pixel is the pixel at x, y (C++ Pixmap::Pixel).
+func (pm *Pixmap) Pixel(x, y int) core.RGBA {
 	p := pm.Data[y*pm.Stride+x*pm.BytesPerPixel():]
 	switch pm.Format {
 	case FormatRGBA:
-		return core.NewRgbaColor(p[0], p[1], p[2], p[3])
+		return core.NewRGBA(p[0], p[1], p[2], p[3])
 	case FormatRGB:
-		return core.NewRgbaColor(p[0], p[1], p[2], 255)
+		return core.NewRGBA(p[0], p[1], p[2], 255)
 	case FormatBGRA:
-		return core.NewRgbaColor(p[2], p[1], p[0], p[3])
+		return core.NewRGBA(p[2], p[1], p[0], p[3])
 	case FormatBGR:
-		return core.NewRgbaColor(p[2], p[1], p[0], 255)
+		return core.NewRGBA(p[2], p[1], p[0], 255)
 	case FormatA:
-		return core.NewRgbaColor(255, 255, 255, p[0])
+		return core.NewRGBA(255, 255, 255, p[0])
 	}
 	panic("res: unexpected pixmap format")
 }
 
 // SetPixel sets the pixel at x, y (C++ Pixmap::SetPixel).
-func (pm *Pixmap) SetPixel(x, y int, c core.RgbaColor) {
+func (pm *Pixmap) SetPixel(x, y int, c core.RGBA) {
 	p := pm.Data[y*pm.Stride+x*pm.BytesPerPixel():]
 	switch pm.Format {
 	case FormatRGBA:
@@ -184,13 +184,13 @@ func FromImage(img image.Image, flip bool) *Pixmap {
 			dy = pm.Height - y - 1
 		}
 		for x := range pm.Width {
-			var c core.RgbaColor
+			var c core.RGBA
 			if n, ok := img.(*image.NRGBA); ok {
 				i := n.PixOffset(b.Min.X+x, b.Min.Y+y)
-				c = core.NewRgbaColor(n.Pix[i], n.Pix[i+1], n.Pix[i+2], n.Pix[i+3])
+				c = core.NewRGBA(n.Pix[i], n.Pix[i+1], n.Pix[i+2], n.Pix[i+3])
 			} else {
 				nc := color.NRGBA64Model.Convert(img.At(b.Min.X+x, b.Min.Y+y)).(color.NRGBA64)
-				c = core.NewRgbaColor(scale16(uint32(nc.R)), scale16(uint32(nc.G)),
+				c = core.NewRGBA(scale16(uint32(nc.R)), scale16(uint32(nc.G)),
 					scale16(uint32(nc.B)), scale16(uint32(nc.A)))
 			}
 			pm.SetPixel(x, dy, c)
@@ -204,7 +204,7 @@ func (pm *Pixmap) ToNRGBA() *image.NRGBA {
 	img := image.NewNRGBA(image.Rect(0, 0, pm.Width, pm.Height))
 	for y := range pm.Height {
 		for x := range pm.Width {
-			c := pm.GetPixel(x, y)
+			c := pm.Pixel(x, y)
 			i := img.PixOffset(x, y)
 			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = c.Red, c.Green, c.Blue, c.Alpha
 		}
@@ -227,7 +227,7 @@ func (pm *Pixmap) WritePng(w io.Writer, flip bool) error {
 		r := image.NewRGBA(image.Rect(0, 0, pm.Width, pm.Height))
 		for y := range pm.Height {
 			for x := range pm.Width {
-				c := pm.GetPixel(x, y)
+				c := pm.Pixel(x, y)
 				i := r.PixOffset(x, y)
 				r.Pix[i], r.Pix[i+1], r.Pix[i+2], r.Pix[i+3] = c.Red, c.Green, c.Blue, 255
 			}

@@ -68,10 +68,10 @@ func model3mf(m *srf.SMesh) []byte {
  <resources>
   <basematerials id="1">
 `)
-	colors := map[core.RgbaColor]int{}
-	var order []core.RgbaColor
+	colors := map[core.RGBA]int{}
+	var order []core.RGBA
 	for i := range m.Triangles {
-		c := m.Triangles[i].Meta.RgbaColor
+		c := m.Triangles[i].Meta.RGBA
 		if _, ok := colors[c]; !ok {
 			colors[c] = len(order)
 			order = append(order, c)
@@ -108,7 +108,7 @@ func model3mf(m *srf.SMesh) []byte {
 			continue
 		}
 		fmt.Fprintf(&b, "     <triangle v1=\"%d\" v2=\"%d\" v3=\"%d\" pid=\"1\" p1=\"%d\"/>\n",
-			t[0], t[1], t[2], colors[m.Triangles[i].Meta.RgbaColor])
+			t[0], t[1], t[2], colors[m.Triangles[i].Meta.RGBA])
 	}
 	b.WriteString("    </triangles>\n   </mesh>\n  </object>\n </resources>\n <build>\n  <item objectid=\"2\"/>\n </build>\n</model>\n")
 	return b.Bytes()

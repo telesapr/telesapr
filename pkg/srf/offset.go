@@ -59,7 +59,7 @@ func (s *SSurface) OffsetSurface(d, tol float64, maxGrid int) (*BSplineSurface, 
 		// middles of the cells and of their sides.
 		splitU := make([]bool, len(us)-1)
 		splitV := make([]bool, len(vs)-1)
-		any := false
+		found := false
 		for i := 0; i+1 < len(us); i++ {
 			for j := 0; j+1 < len(vs); j++ {
 				for _, f := range [][2]float64{{0.5, 0.5}, {0.5, 0}, {0, 0.5}, {0.25, 0.75}, {0.75, 0.25}} {
@@ -76,12 +76,12 @@ func (s *SSurface) OffsetSurface(d, tol float64, maxGrid int) (*BSplineSurface, 
 						if f[1] != 0 {
 							splitV[j] = true
 						}
-						any = true
+						found = true
 					}
 				}
 			}
 		}
-		if !any {
+		if !found {
 			return bs, nil
 		}
 		nu, nv := refine(us, splitU), refine(vs, splitV)

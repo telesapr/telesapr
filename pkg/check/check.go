@@ -108,9 +108,9 @@ func Solid(shell *srf.SShell, mesh *srf.SMesh) Report {
 
 	r.Volume = mesh.CalculateVolume()
 	if r.Volume != 0 {
-		r.CenterOfMass = mesh.GetCenterOfMass()
+		r.CenterOfMass = mesh.CenterOfMass()
 	}
-	r.Max, r.Min = mesh.GetBounding()
+	r.Max, r.Min = mesh.Bounding()
 	if shell != nil && len(shell.Surface) > 0 {
 		tp, err := topo.Build(shell)
 		r.Topology = tp.Validate()

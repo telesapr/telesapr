@@ -32,10 +32,10 @@ func TestGroupGenerateExtrude(t *testing.T) {
 			Point: [core.MaxPointsInEntity]core.HEntity{pa, pb}},
 	)
 
-	g := sk.GetGroup(extrH)
+	g := sk.Group(extrH)
 	g.Generate(sk, &sk.Entities, &sk.Params)
 	for _, k := range []int{0, 1, 2} {
-		p := sk.GetParam(extrH.Param(k))
+		p := sk.Param(extrH.Param(k))
 		if p == nil {
 			t.Fatalf("extrusion param %d not added", k)
 		}
@@ -71,7 +71,7 @@ func TestGroupGenerateExtrude(t *testing.T) {
 			t.Errorf("remap %v = %d, want %d", w.key, got.V, w.id)
 			continue
 		}
-		e := sk.GetEntity(extrH.Entity(int(w.id)))
+		e := sk.Entity(extrH.Entity(int(w.id)))
 		if e == nil {
 			t.Errorf("entity for remap %v missing", w.key)
 			continue
@@ -87,7 +87,7 @@ func TestGroupGenerateExtrude(t *testing.T) {
 	}
 
 	// The side face of the line lies in the plane y = 0.
-	face := sk.GetEntity(extrH.Entity(9))
+	face := sk.Entity(extrH.Entity(9))
 	if n := face.FaceGetNormalNum(sk); !n.Equals(geom.Vector{Y: -1}) && !n.Equals(geom.Vector{Y: 1}) {
 		t.Errorf("side face normal %v, want +-y", n)
 	}

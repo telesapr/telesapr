@@ -72,9 +72,9 @@ type Style struct {
 	TextHeightAs UnitsAs
 	TextOrigin   TextOrigin
 	TextAngle    float64
-	Color        RgbaColor
+	Color        RGBA
 	Filled       bool
-	FillColor    RgbaColor
+	FillColor    RGBA
 	Visible      bool
 	Exportable   bool
 	StippleType  StipplePattern
@@ -89,14 +89,14 @@ type StyleList []Style
 type StyleDefault struct {
 	H           HStyle
 	CnfPrefix   string
-	Color       RgbaColor
+	Color       RGBA
 	Width       float64
 	ZIndex      int
 	Exportable  bool
 	StippleType StipplePattern
 }
 
-func rgbf(r, g, b float32) RgbaColor { return RgbaColorFromFloat(r, g, b, 1.0) }
+func rgbf(r, g, b float32) RGBA { return RGBAFromFloat(r, g, b, 1.0) }
 
 // StyleDefaults are the default styles (C++ Style::Defaults).
 var StyleDefaults = []StyleDefault{
@@ -115,7 +115,7 @@ var StyleDefaults = []StyleDefault{
 	{HStyle{StyleDimSolid}, "DimSolid", rgbf(0.1, 0.1, 0.1), 1.0, 0, true, StippleContinuous},
 	{HStyle{StyleHiddenEdge}, "HiddenEdge", rgbf(0.8, 0.8, 0.8), 1.0, 1, true, StippleDash},
 	{HStyle{StyleOutline}, "Outline", rgbf(0.8, 0.8, 0.8), 3.0, 5, true, StippleContinuous},
-	{HStyle{StyleSectionCap}, "SectionCap", RgbaColor{Red: 205, Green: 100, Blue: 80, Alpha: 255}, 1.0, 1, true, StippleContinuous},
+	{HStyle{StyleSectionCap}, "SectionCap", RGBA{Red: 205, Green: 100, Blue: 80, Alpha: 255}, 1.0, 1, true, StippleContinuous},
 }
 
 // FillDefaultStyle sets s to default style d, or to the active group's
@@ -244,7 +244,7 @@ func StipplePatternName(p StipplePattern) string {
 // RewriteColor turns an almost-white colour black when fixExportColors,
 // so it doesn't vanish on a light background (C++ Style::RewriteColor,
 // with SS.fixExportColors as an argument).
-func RewriteColor(rgbin RgbaColor, fixExportColors bool) RgbaColor {
+func RewriteColor(rgbin RGBA, fixExportColors bool) RGBA {
 	dr := float64(rgbin.RedF()) - 1
 	dg := float64(rgbin.GreenF()) - 1
 	db := float64(rgbin.BlueF()) - 1
@@ -253,7 +253,7 @@ func RewriteColor(rgbin RgbaColor, fixExportColors bool) RgbaColor {
 		// good for the default on-screen view (black bg) but probably
 		// not desired in the exported files, which typically are shown
 		// against white backgrounds.
-		return NewRgbaColor(0, 0, 0, 255)
+		return NewRGBA(0, 0, 0, 255)
 	}
 	return rgbin
 }

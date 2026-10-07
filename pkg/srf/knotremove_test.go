@@ -146,7 +146,7 @@ func TestRemoveKnotsCircle(t *testing.T) {
 	if n := s.RemoveKnots(1e-7); n != 0 {
 		t.Errorf("%d knots taken out of a circle: %v", n, s.KnotsU)
 	}
-	for k := 0; k <= 40; k++ {
+	for k := range 41 {
 		p := s.PointAt(4*float64(k)/40, 0.5)
 		if d := math.Abs(math.Hypot(p.X, p.Y) - 10); d > 1e-9 {
 			t.Errorf("off the circle by %g", d)

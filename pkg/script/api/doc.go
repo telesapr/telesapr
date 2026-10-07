@@ -356,7 +356,7 @@ func (d *Doc) Group(name string) (g Group) {
 				return
 			}
 		}
-		if v, ok := handleOf(name, 'g'); ok && sk.GetGroup(core.HGroup{V: v}) != nil {
+		if v, ok := handleOf(name, 'g'); ok && sk.Group(core.HGroup{V: v}) != nil {
 			g.H = core.HGroup{V: v}
 		}
 	})
@@ -368,7 +368,7 @@ func (d *Doc) Group(name string) (g Group) {
 func (d *Doc) Request(name string) (r Request) {
 	d.read(func(sk *sketch.Sketch) {
 		r.d = d
-		if v, ok := handleOf(name, 'r'); ok && sk.GetRequest(core.HRequest{V: v}) != nil {
+		if v, ok := handleOf(name, 'r'); ok && sk.Request(core.HRequest{V: v}) != nil {
 			r.H = core.HRequest{V: v}
 		}
 	})
@@ -380,7 +380,7 @@ func (d *Doc) Request(name string) (r Request) {
 func (d *Doc) Constraint(name string) (c Constraint) {
 	d.read(func(sk *sketch.Sketch) {
 		c.d = d
-		if v, ok := handleOf(name, 'c'); ok && sk.GetConstraint(core.HConstraint{V: v}) != nil {
+		if v, ok := handleOf(name, 'c'); ok && sk.Constraint(core.HConstraint{V: v}) != nil {
 			c.H = core.HConstraint{V: v}
 		}
 	})
@@ -429,14 +429,14 @@ func (d *Doc) SetWorkplane(wp Entity) {
 		if !wp.get(sk).IsWorkplane() {
 			fail("%s isn't a workplane", wp.describe(sk))
 		}
-		sk.GetGroup(sk.ActiveGroup()).ActiveWorkplane = wp.H
+		sk.Group(sk.ActiveGroup()).ActiveWorkplane = wp.H
 	})
 }
 
 // Free3D draws freely in 3d, in no workplane, in the active group.
 func (d *Doc) Free3D() {
 	d.read(func(sk *sketch.Sketch) {
-		sk.GetGroup(sk.ActiveGroup()).ActiveWorkplane = core.HEntity{}
+		sk.Group(sk.ActiveGroup()).ActiveWorkplane = core.HEntity{}
 	})
 }
 
@@ -447,7 +447,7 @@ func (d *Doc) UV(u, v float64) (p Vec) {
 		if core.IsFreeIn3D(h) {
 			fail("UV needs a workplane to be active")
 		}
-		wp := sk.MustGetEntity(h)
+		wp := sk.MustEntity(h)
 		n := wp.NormalEntity(sk)
 		p = wp.WorkplaneGetOffset(sk).
 			Plus(n.NormalU(sk).ScaledBy(u)).
@@ -517,7 +517,7 @@ func (d *Doc) SelectFaces(faces ...SolidFace) {
 		sel := make([]sketch.Selection, 0, len(faces))
 		for _, f := range faces {
 			h := core.HEntity{V: uint32(f.id)}
-			if sk.GetEntity(h) != nil {
+			if sk.Entity(h) != nil {
 				sel = append(sel, sketch.Selection{Entity: h})
 			} else {
 				sel = append(sel, sketch.Selection{Face: f.id})
@@ -553,7 +553,7 @@ func (d *Doc) SelectedFaces() (faces []SolidFace) {
 			case x.Face != 0:
 				faces = append(faces, SolidFace{s: s, id: x.Face})
 			case x.Entity.V != 0:
-				if e := sk.GetEntity(x.Entity); e != nil && e.IsFace() {
+				if e := sk.Entity(x.Entity); e != nil && e.IsFace() {
 					faces = append(faces, SolidFace{s: s, id: srf.FaceID(x.Entity.V)})
 				}
 			}
@@ -567,7 +567,7 @@ func (d *Doc) String() (s string) {
 	d.read(func(sk *sketch.Sketch) {
 		s = fmt.Sprintf("sketch: %d groups, %d requests, %d constraints; active %s",
 			len(sk.Groups)-1, len(sk.Requests)-3, len(sk.Constraints),
-			groupDescription(sk.GetGroup(sk.ActiveGroup())))
+			groupDescription(sk.Group(sk.ActiveGroup())))
 	})
 	return s
 }

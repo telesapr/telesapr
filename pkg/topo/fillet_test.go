@@ -196,7 +196,7 @@ func TestFilletSweep(t *testing.T) {
 		r := p.Float("k") * 10 * math.Min(d1.Dot(u1), d2.Dot(u2)) * math.Tan(half)
 		var sh srf.SShell
 		sh.MakePrism([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10*math.Cos(th), 10*math.Sin(th), 0)},
-			v(0, 0, 0), lean, core.NewRgbaColor(100, 100, 100, 255))
+			v(0, 0, 0), lean, core.NewRGBA(100, 100, 100, 255))
 		if err := topo.FilletEdge(&sh, v(0, 0, 0), lean, r, 1<<30); err != nil {
 			return err
 		}
@@ -272,7 +272,7 @@ func TestFilletCornerSweep(t *testing.T) {
 		r := w[0]
 		pts := regular(c.n, 10)
 		var sh srf.SShell
-		sh.MakePrism(pts, v(0, 0, 0), v(0, 0, c.h), core.NewRgbaColor(100, 100, 100, 255))
+		sh.MakePrism(pts, v(0, 0, 0), v(0, 0, c.h), core.NewRGBA(100, 100, 100, 255))
 		var segs [][2]geom.Vector
 		first := v(10, 0, c.h)
 		for i := range pts {
@@ -382,7 +382,7 @@ func TestFilletUnevenMitreSweep(t *testing.T) {
 			d.Y = c.lean / 2
 		}
 		var sh srf.SShell
-		sh.MakePrism(pts, v(0, 0, 0), d, core.NewRgbaColor(100, 100, 100, 255))
+		sh.MakePrism(pts, v(0, 0, 0), d, core.NewRGBA(100, 100, 100, 255))
 		var segs [][2]geom.Vector
 		first := v(10, 0, 0).Plus(d)
 		for i := range pts {

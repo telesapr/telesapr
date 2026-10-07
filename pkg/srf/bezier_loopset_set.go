@@ -41,7 +41,7 @@ func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon
 	var srfPlane SSurface
 	if srfuv == nil {
 		var p, u, v geom.Vector
-		*allCoplanar = sbl.GetPlaneContainingBeziers(&p, &u, &v, notCoplanarAt)
+		*allCoplanar = sbl.PlaneContainingBeziers(&p, &u, &v, notCoplanarAt)
 		if !*allCoplanar {
 			// Don't even try to assemble them into loops if they're not
 			// all coplanar.

@@ -44,7 +44,7 @@ func (d *Doc) Concentric(a, b Entity) []Constraint {
 				continue
 			}
 			if len(across) == 1 {
-				u := sk.GetEntity(across[0]).VectorGetNum(sk).WithMagnitude(1)
+				u := sk.Entity(across[0]).VectorGetNum(sk).WithMagnitude(1)
 				if u.Cross(v.WithMagnitude(1)).Magnitude() < 0.1 {
 					continue
 				}
@@ -127,8 +127,8 @@ func (d *Doc) Hinge(a, b Entity) []Constraint {
 // addUnlessRedundant adds the constraint make makes to out, unless the
 // active group no longer solves with it, as when what it asks holds
 // already: then it is deleted again.
-func (d *Doc) addUnlessRedundant(out []Constraint, make func() Constraint) []Constraint {
-	c := make()
+func (d *Doc) addUnlessRedundant(out []Constraint, build func() Constraint) []Constraint {
+	c := build()
 	d.Regen()
 	if d.Active().Solved() {
 		return append(out, c)

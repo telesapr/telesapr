@@ -29,7 +29,7 @@ func jobModel(t *testing.T) (*api.Doc, *sketch.Sketch, api.Group) {
 // A sketch changed since, or a job cancelled, applies nothing.
 func TestShellJob(t *testing.T) {
 	d, sk, cut := jobModel(t)
-	want := sk.GetGroup(cut.H).RunningShell
+	want := sk.Group(cut.H).RunningShell
 
 	// The hole moved: the entities follow, the solid waits.
 	for i := range sk.Groups {
@@ -57,7 +57,7 @@ func TestShellJob(t *testing.T) {
 	if sk.AnyShellsStale() {
 		t.Error("stale after the job")
 	}
-	if got := sk.GetGroup(cut.H).RunningShell; !reflect.DeepEqual(got, want) {
+	if got := sk.Group(cut.H).RunningShell; !reflect.DeepEqual(got, want) {
 		t.Error("the job's solid differs from a regeneration in full")
 	}
 	if v := cut.Check().Volume; v <= 0 {

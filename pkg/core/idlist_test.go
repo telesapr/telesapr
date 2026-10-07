@@ -4,15 +4,15 @@ import "testing"
 
 func TestIdListBasicAddFind(t *testing.T) {
 	type item struct{ V int }
-	var list IdList[HEntity, item]
+	var list IDList[HEntity, item]
 	list.Add(HEntity{V: 1}, item{V: 10})
 	list.Add(HEntity{V: 2}, item{V: 20})
 
-	got, ok := list.FindById(HEntity{V: 1})
+	got, ok := list.FindByID(HEntity{V: 1})
 	if !ok || got.V != 10 {
 		t.Fatalf("FindById(1) = %v,%v; want {10},true", got, ok)
 	}
-	_, ok = list.FindById(HEntity{V: 99})
+	_, ok = list.FindByID(HEntity{V: 99})
 	if ok {
 		t.Fatalf("FindById(99) should miss")
 	}
@@ -20,11 +20,11 @@ func TestIdListBasicAddFind(t *testing.T) {
 
 func TestIdListMoveSelfInto(t *testing.T) {
 	type item struct{ V int }
-	src := NewIdList[HEntity, item](2)
+	src := NewIDList[HEntity, item](2)
 	src.Add(HEntity{V: 1}, item{V: 10})
 	src.Add(HEntity{V: 2}, item{V: 20})
 
-	var dst IdList[HEntity, item]
+	var dst IDList[HEntity, item]
 	src.MoveSelfInto(&dst)
 
 	if dst.Len() != 2 {
@@ -33,14 +33,14 @@ func TestIdListMoveSelfInto(t *testing.T) {
 	if src.Len() != 0 {
 		t.Fatalf("src should be empty, has %d", src.Len())
 	}
-	if got, _ := dst.FindById(HEntity{V: 1}); got.V != 10 {
+	if got, _ := dst.FindByID(HEntity{V: 1}); got.V != 10 {
 		t.Fatalf("dst.FindById(1) = %v", got)
 	}
 }
 
 func TestIdListIDsInInsertionOrder(t *testing.T) {
 	type item struct{ V int }
-	var list IdList[HEntity, item]
+	var list IDList[HEntity, item]
 	list.Add(HEntity{V: 5}, item{})
 	list.Add(HEntity{V: 3}, item{})
 	list.Add(HEntity{V: 8}, item{})
@@ -66,7 +66,7 @@ func TestIdListIDsInInsertionOrder(t *testing.T) {
 
 // TestIdListClear verifies Clear empties the list.
 func TestIdListClear(t *testing.T) {
-	list := NewIdList[int, string](0)
+	list := NewIDList[int, string](0)
 	list.Add(1, "one")
 	list.Add(2, "two")
 	list.Clear()
@@ -77,7 +77,7 @@ func TestIdListClear(t *testing.T) {
 
 // TestIdListEmptyAdd verifies adding to empty list works.
 func TestIdListEmptyAdd(t *testing.T) {
-	list := NewIdList[int, string](0)
+	list := NewIDList[int, string](0)
 	idx := list.Add(42, "hello")
 	if idx != 0 {
 		t.Errorf("first Add idx = %d, want 0", idx)
@@ -89,14 +89,14 @@ func TestIdListEmptyAdd(t *testing.T) {
 
 // TestIdListFindById verifies FindById.
 func TestIdListFindById(t *testing.T) {
-	list := NewIdList[int, string](0)
+	list := NewIDList[int, string](0)
 	list.Add(1, "one")
 	list.Add(2, "two")
-	v, ok := list.FindById(1)
+	v, ok := list.FindByID(1)
 	if !ok || v != "one" {
 		t.Errorf("FindById(1) = (%v, %v), want (one, true)", v, ok)
 	}
-	_, ok = list.FindById(99)
+	_, ok = list.FindByID(99)
 	if ok {
 		t.Errorf("FindById(99) should not find")
 	}
@@ -104,7 +104,7 @@ func TestIdListFindById(t *testing.T) {
 
 // TestIdListSortedHandles verifies SortedHandles ordering.
 func TestIdListSortedHandles(t *testing.T) {
-	list := NewIdList[int, string](0)
+	list := NewIDList[int, string](0)
 	list.Add(3, "three")
 	list.Add(1, "one")
 	list.Add(2, "two")
@@ -117,7 +117,7 @@ func TestIdListSortedHandles(t *testing.T) {
 // TestIdListIDs verifies the IDs accessor returns every handle that
 // was added. IDs is map-iteration-ordered so we only check membership.
 func TestIdListIDs(t *testing.T) {
-	list := NewIdList[int, string](0)
+	list := NewIDList[int, string](0)
 	list.Add(10, "ten")
 	list.Add(20, "twenty")
 	ids := list.IDs()
@@ -140,7 +140,7 @@ func TestIdListIDs(t *testing.T) {
 
 // TestIdListReverseOrder verifies items preserve insertion order.
 func TestIdListReverseOrder(t *testing.T) {
-	list := NewIdList[int, string](0)
+	list := NewIDList[int, string](0)
 	list.Add(1, "first")
 	list.Add(2, "second")
 	list.Add(3, "third")
@@ -151,7 +151,7 @@ func TestIdListReverseOrder(t *testing.T) {
 
 // TestIdListReserve verifies Reserve doesn't break length.
 func TestIdListReserve(t *testing.T) {
-	list := NewIdList[int, string](0)
+	list := NewIDList[int, string](0)
 	list.Reserve(100)
 	if list.Len() != 0 {
 		t.Errorf("Reserve shouldn't add items, Len = %d", list.Len())

@@ -51,7 +51,7 @@ func (tw *TextWindow) ScreenExportBOM(link int, v uint32) {
 		ss.Error("%s.", capitalize(err.Error()))
 		return
 	}
-	if err := os.WriteFile(dialog.GetFilename(), b.Bytes(), 0o644); err != nil {
-		ss.Error("Couldn't write to '%s'", dialog.GetFilename())
+	if err := os.WriteFile(dialog.Filename(), b.Bytes(), 0o644); err != nil {
+		ss.Error("Couldn't write to '%s'", dialog.Filename())
 	}
 }

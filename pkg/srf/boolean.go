@@ -28,7 +28,7 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 
 	for i := range s.Curve {
 		sc := &s.Curve[i]
-		sc.RemoveShortSegments(sc.GetSurfaceA(a, b), sc.GetSurfaceB(a, b))
+		sc.RemoveShortSegments(sc.SurfaceA(a, b), sc.SurfaceB(a, b))
 	}
 
 	// And clean up the piecewise linear things we made as a calculation aid
@@ -118,7 +118,7 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 			}
 			// surfA and surfB are wrong now, and we can't fix them until
 			// we've assigned IDs to the surfaces. So we'll get that later.
-			c.NewH = s.addAndAssignCurveId(cn)
+			c.NewH = s.addAndAssignCurveID(cn)
 		}
 	}
 
@@ -132,7 +132,7 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 			for m := range sn.Trim {
 				sn.Trim[m].Curve = ab.FindCurve(sn.Trim[m].Curve).NewH
 			}
-			ss.NewH = s.addSurfaceAssignId(sn)
+			ss.NewH = s.addSurfaceAssignID(sn)
 		}
 	}
 

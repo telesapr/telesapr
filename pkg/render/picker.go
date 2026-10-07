@@ -13,7 +13,7 @@ import (
 // ObjectPicker).
 type ObjectPicker struct {
 	CanvasBase
-	Camera Camera
+	Cam Camera
 	// Configuration.
 	Point     geom.Point2d
 	SelRadius float64
@@ -26,8 +26,8 @@ type ObjectPicker struct {
 
 var _ Canvas = (*ObjectPicker)(nil)
 
-// GetCamera returns the picker's camera.
-func (op *ObjectPicker) GetCamera() *Camera { return &op.Camera }
+// Camera returns the picker's camera.
+func (op *ObjectPicker) Camera() *Camera { return &op.Cam }
 
 // DoCompare records a candidate at the given distance.
 func (op *ObjectPicker) DoCompare(depth, distance float64, zIndex int, comparePosition uint32) {
@@ -46,10 +46,10 @@ func (op *ObjectPicker) DoCompare(depth, distance float64, zIndex int, comparePo
 // edge.
 func (op *ObjectPicker) DoQuad(a, b, c, d geom.Vector, zIndex int, comparePosition uint32) {
 	corners := [4]geom.Point2d{
-		op.Camera.ProjectPoint(a),
-		op.Camera.ProjectPoint(b),
-		op.Camera.ProjectPoint(c),
-		op.Camera.ProjectPoint(d),
+		op.Cam.ProjectPoint(a),
+		op.Cam.ProjectPoint(b),
+		op.Cam.ProjectPoint(c),
+		op.Cam.ProjectPoint(d),
 	}
 	minNegative, maxPositive := veryNegative, veryPositive
 	for i := range 4 {
@@ -80,10 +80,10 @@ const (
 // DrawLine records a segment.
 func (op *ObjectPicker) DrawLine(a, b geom.Vector, hcs HStroke) {
 	stroke := op.Stroke(hcs)
-	ap := op.Camera.ProjectPoint(a)
-	bp := op.Camera.ProjectPoint(b)
+	ap := op.Cam.ProjectPoint(a)
+	bp := op.Cam.ProjectPoint(b)
 	distance := op.Point.DistanceToLine(ap, bp.Minus(ap), true)
-	depth := 0.5 * (op.Camera.ProjectPoint3(a).Z + op.Camera.ProjectPoint3(b).Z)
+	depth := 0.5 * (op.Cam.ProjectPoint3(a).Z + op.Cam.ProjectPoint3(b).Z)
 	op.DoCompare(depth, distance-stroke.Width/2.0, stroke.ZIndex, 0)
 }
 
@@ -91,10 +91,10 @@ func (op *ObjectPicker) DrawLine(a, b geom.Vector, hcs HStroke) {
 func (op *ObjectPicker) DrawEdges(el *srf.SEdgeList, hcs HStroke) {
 	stroke := op.Stroke(hcs)
 	for _, e := range el.Edges {
-		ap := op.Camera.ProjectPoint(e.A)
-		bp := op.Camera.ProjectPoint(e.B)
+		ap := op.Cam.ProjectPoint(e.A)
+		bp := op.Cam.ProjectPoint(e.B)
 		distance := op.Point.DistanceToLine(ap, bp.Minus(ap), true)
-		depth := 0.5 * (op.Camera.ProjectPoint3(e.A).Z + op.Camera.ProjectPoint3(e.B).Z)
+		depth := 0.5 * (op.Cam.ProjectPoint3(e.A).Z + op.Cam.ProjectPoint3(e.B).Z)
 		op.DoCompare(depth, distance-stroke.Width/2.0, stroke.ZIndex, uint32(e.AuxB))
 	}
 }
@@ -111,8 +111,8 @@ func (op *ObjectPicker) DrawOutlines(*srf.SOutlineList, HStroke, DrawOutlinesAs)
 func (op *ObjectPicker) DrawVectorText(text string, height float64, o, u, v geom.Vector, hcs HStroke) {
 	stroke := op.Stroke(hcs)
 	vf := res.BuiltinVectorFont()
-	w := vf.GetWidth(height, text)
-	h := vf.GetHeight(height)
+	w := vf.Width(height, text)
+	h := vf.Height(height)
 	op.DoQuad(o,
 		o.Plus(v.ScaledBy(h)),
 		o.Plus(u.ScaledBy(w)).Plus(v.ScaledBy(h)),
@@ -128,8 +128,8 @@ func (op *ObjectPicker) DrawQuad(a, b, c, d geom.Vector, hcf HFill) {
 // DrawPoint records a point.
 func (op *ObjectPicker) DrawPoint(o geom.Vector, hcs HStroke) {
 	stroke := op.Stroke(hcs)
-	distance := op.Point.DistanceTo(op.Camera.ProjectPoint(o)) - stroke.Width/2
-	depth := op.Camera.ProjectPoint3(o).Z
+	distance := op.Point.DistanceTo(op.Cam.ProjectPoint(o)) - stroke.Width/2
+	depth := op.Cam.ProjectPoint3(o).Z
 	op.DoCompare(depth, distance, stroke.ZIndex, 0)
 }
 

@@ -39,7 +39,7 @@ func (ss *Application) WriteThumbnail(filename string, width, height uint, projR
 // the model goes across the picture as across the window.
 func (ss *Application) WriteWindowPicture(filename string, width, height uint) error {
 	gw := ss.GW
-	camera := gw.GetCamera()
+	camera := gw.Camera()
 	scale := camera.Scale
 	if camera.Width > 0 {
 		scale *= float64(width) / camera.Width
@@ -56,7 +56,7 @@ func (ss *Application) writePicture(filename string, camera render.Camera) error
 	gw := ss.GW
 	canvas := soft.New()
 	gw.shareBitmapFont(canvas)
-	lighting := gw.GetLighting()
+	lighting := gw.Lighting()
 	gw.lighting = lighting
 	canvas.SetLighting(lighting)
 	canvas.SetCamera(camera)

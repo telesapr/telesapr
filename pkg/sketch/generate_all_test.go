@@ -57,7 +57,7 @@ func TestGenerateAllNewSketch(t *testing.T) {
 		HRequestReferenceZX: {W: 0.5, X: -0.5, Y: -0.5, Z: -0.5},
 	}
 	for hr, q := range wants {
-		wp := sk.GetEntity(hr.Entity(0))
+		wp := sk.Entity(hr.Entity(0))
 		if wp == nil || wp.Type != core.EntityWorkplane {
 			t.Fatalf("reference workplane %v missing", hr)
 		}
@@ -67,7 +67,7 @@ func TestGenerateAllNewSketch(t *testing.T) {
 		if got := wp.NormalEntity(sk).NormalGetNum(sk); !got.Equals(q) {
 			t.Errorf("reference %v normal %v, want %v", hr, got, q)
 		}
-		if !sk.GetEntity(wp.Point[0]).Construction {
+		if !sk.Entity(wp.Point[0]).Construction {
 			t.Errorf("reference %v origin should be construction", hr)
 		}
 	}

@@ -18,7 +18,7 @@ import (
 func boxMesh() *srf.SMesh {
 	var sh srf.SShell
 	sh.MakePrism([]geom.Vector{{}, {X: 10}, {X: 10, Y: 20}, {Y: 20}}, geom.Vector{}, geom.Vector{Z: 30},
-		core.NewRgbaColor(1, 2, 3, 255))
+		core.NewRGBA(1, 2, 3, 255))
 	var m srf.SMesh
 	sh.TriangulateInto(&m)
 	return &m
@@ -115,10 +115,10 @@ func TestLinkMeshFiles(t *testing.T) {
 		if name == "box.obj" {
 			red, blue := 0, 0
 			for _, tr := range got.Triangles {
-				switch tr.Meta.RgbaColor {
-				case core.RgbaColor{Red: 255, Alpha: 255}:
+				switch tr.Meta.RGBA {
+				case core.RGBA{Red: 255, Alpha: 255}:
 					red++
-				case core.RgbaColor{Blue: 255, Alpha: 128}:
+				case core.RGBA{Blue: 255, Alpha: 128}:
 					blue++
 				}
 			}

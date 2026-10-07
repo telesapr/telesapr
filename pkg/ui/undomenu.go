@@ -38,7 +38,7 @@ func (ss *Application) afterUndoPop() {
 	ss.TW.ClearSuper()
 	ss.ScheduleShowTW()
 	// Activate the group that was active before.
-	if g := ss.SK.GetGroup(ss.GW.activeGroupH()); g != nil {
+	if g := ss.SK.Group(ss.GW.activeGroupH()); g != nil {
 		ss.groupActivate(g)
 	}
 }

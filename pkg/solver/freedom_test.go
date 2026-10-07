@@ -31,8 +31,8 @@ func TestRrefFixedColumnsVsRank(t *testing.T) {
 				a[i][rng.Intn(n)] = rng.NormFloat64()
 			case k == 1 && n > 1:
 				x, y := rng.Intn(n), rng.Intn(n)
-				a[i][x] += 1
-				a[i][y] -= 1
+				a[i][x]++
+				a[i][y]--
 			case k == 2 && i >= 2:
 				for j := range a[i] {
 					a[i][j] = 2*a[i-1][j] - 0.5*a[i-2][j]

@@ -184,9 +184,9 @@ func (d *dxfImport) createBulge(p0, p1 geom.Vector, bulge float64) core.HRequest
 
 	sk := d.sk()
 	hr := d.ss.GW.AddRequest(sketch.RequestArcOfCircle, false)
-	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, center)
-	sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, p0)
-	sk.MustGetEntity(hr.Entity(3)).PointForceTo(sk, p1)
+	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, center)
+	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, p0)
+	sk.MustEntity(hr.Entity(3)).PointForceTo(sk, p1)
 	d.processPoint(hr.Entity(1))
 	d.processPoint(hr.Entity(2))
 	d.processPoint(hr.Entity(3))
@@ -357,7 +357,7 @@ func (d *dxfImport) invisibleStyle() core.HStyle {
 // dxfColor is a colour index's colour. C++ indexes the palette with
 // whatever the file says; a layer that is off has its colour negated,
 // so that is read as the colour, and anything else out of range as 7.
-func dxfColor(col int) core.RgbaColor {
+func dxfColor(col int) core.RGBA {
 	if col < 0 {
 		col = -col
 	}
@@ -365,7 +365,7 @@ func dxfColor(col int) core.RgbaColor {
 		col = 7
 	}
 	c := dxf.Colors[col]
-	return core.NewRgbaColor(c[0], c[1], c[2], 255)
+	return core.NewRGBA(c[0], c[1], c[2], 255)
 }
 
 // styleFor is the custom style for an entity's colour, width, line type
@@ -459,7 +459,7 @@ func (d *dxfImport) styleFor(e *dxfread.Entity, text *dxfread.Text) core.HStyle 
 }
 
 func (d *dxfImport) configureRequest(hr core.HRequest, hs core.HStyle) {
-	r := d.sk().GetRequest(hr)
+	r := d.sk().Request(hr)
 	r.Construction = d.asConstruction
 	r.Style = hs
 }
@@ -480,7 +480,7 @@ func (d *dxfImport) addPoint(p geom.Vector, he core.HEntity) {
 
 func (d *dxfImport) processPoint(he core.HEntity) {
 	sk := d.sk()
-	pos := sk.MustGetEntity(he).PointGetNum(sk)
+	pos := sk.MustEntity(he).PointGetNum(sk)
 	p := d.findPoint(pos)
 	if p == he {
 		return
@@ -502,7 +502,7 @@ func (d *dxfImport) createOrGetPoint(p geom.Vector) core.HEntity {
 	sk := d.sk()
 	hr := d.ss.GW.AddRequest(sketch.RequestDatumPoint, false)
 	he := hr.Entity(0)
-	sk.MustGetEntity(he).PointForceTo(sk, p)
+	sk.MustEntity(he).PointForceTo(sk, p)
 	d.addPoint(p, he)
 	return he
 }
@@ -514,8 +514,8 @@ func (d *dxfImport) createLine(p0, p1 geom.Vector, style core.HStyle, constrainH
 	sk := d.sk()
 	gw := d.ss.GW
 	hr := gw.AddRequest(sketch.RequestLineSegment, false)
-	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, p0)
-	sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, p1)
+	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, p0)
+	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, p1)
 	d.processPoint(hr.Entity(1))
 	d.processPoint(hr.Entity(2))
 
@@ -541,9 +541,9 @@ func (d *dxfImport) createLine(p0, p1 geom.Vector, style core.HStyle, constrainH
 func (d *dxfImport) createWorkplane(p geom.Vector, q geom.Quaternion) core.HEntity {
 	sk := d.sk()
 	hr := d.ss.GW.AddRequest(sketch.RequestWorkplane, false)
-	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, p)
+	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, p)
 	d.processPoint(hr.Entity(1))
-	sk.MustGetEntity(hr.Entity(32)).NormalForceTo(sk, q)
+	sk.MustEntity(hr.Entity(32)).NormalForceTo(sk, q)
 	return hr.Entity(0)
 }
 
@@ -553,8 +553,8 @@ func (d *dxfImport) findOrCreateWorkplane(p geom.Vector, q geom.Quaternion) core
 	for i := range sk.Requests {
 		r := &sk.Requests[i]
 		if r.Type == sketch.RequestWorkplane && r.Group == d.ss.GW.activeGroupH() {
-			wp := sk.MustGetEntity(r.H.Entity(1)).PointGetNum(sk)
-			wz := sk.MustGetEntity(r.H.Entity(32)).NormalN(sk)
+			wp := sk.MustEntity(r.H.Entity(1)).PointGetNum(sk)
+			wz := sk.MustEntity(r.H.Entity(32)).NormalN(sk)
 
 			if p.DistanceToPlane(wz, wp) < core.LengthEps && z.Equals(wz) {
 				return r.H.Entity(0)
@@ -566,17 +566,17 @@ func (d *dxfImport) findOrCreateWorkplane(p geom.Vector, q geom.Quaternion) core
 }
 
 func (d *dxfImport) activateWorkplane(he core.HEntity) {
-	g := d.sk().GetGroup(d.ss.GW.activeGroupH())
+	g := d.sk().Group(d.ss.GW.activeGroupH())
 	g.ActiveWorkplane = he
 }
 
 func (d *dxfImport) createCircle(c geom.Vector, q geom.Quaternion, r float64, style core.HStyle) core.HEntity {
 	sk := d.sk()
 	hr := d.ss.GW.AddRequest(sketch.RequestCircle, false)
-	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, c)
+	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, c)
 	d.processPoint(hr.Entity(1))
-	sk.MustGetEntity(hr.Entity(32)).NormalForceTo(sk, q)
-	sk.MustGetEntity(hr.Entity(64)).DistanceForceTo(sk, r)
+	sk.MustEntity(hr.Entity(32)).NormalForceTo(sk, q)
+	sk.MustEntity(hr.Entity(64)).DistanceForceTo(sk, r)
 	d.configureRequest(hr, style)
 	return hr.Entity(0)
 }
@@ -612,7 +612,7 @@ func (d *dxfImport) AddPoint(data *dxfread.Point) {
 
 	sk := d.sk()
 	hr := d.ss.GW.AddRequest(sketch.RequestDatumPoint, false)
-	sk.MustGetEntity(hr.Entity(0)).PointForceTo(sk, d.toVector(data.BasePoint))
+	sk.MustEntity(hr.Entity(0)).PointForceTo(sk, d.toVector(data.BasePoint))
 	d.processPoint(hr.Entity(0))
 }
 
@@ -666,9 +666,9 @@ func (d *dxfImport) AddArc(data *dxfread.Arc) {
 
 	d.blockTransformArc(&c, &rvs, &rve)
 
-	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, c)
-	sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, rvs)
-	sk.MustGetEntity(hr.Entity(3)).PointForceTo(sk, rve)
+	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, c)
+	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, rvs)
+	sk.MustEntity(hr.Entity(3)).PointForceTo(sk, rve)
 	d.processPoint(hr.Entity(1))
 	d.processPoint(hr.Entity(2))
 	d.processPoint(hr.Entity(3))
@@ -801,7 +801,7 @@ func (d *dxfImport) AddSpline(data *dxfread.Spline) {
 	sk := d.sk()
 	hr := d.ss.GW.AddRequest(sketch.RequestCubic, false)
 	for i := range 4 {
-		sk.MustGetEntity(hr.Entity(i+1)).PointForceTo(sk, d.toVector(*data.Controls[i]))
+		sk.MustEntity(hr.Entity(i+1)).PointForceTo(sk, d.toVector(*data.Controls[i]))
 		d.processPoint(hr.Entity(i + 1))
 	}
 	d.configureRequest(hr, d.styleFor(&data.Entity, nil))
@@ -919,7 +919,7 @@ func (d *dxfImport) addDimAlign(data *dxfread.Dimension) {
 	ptA := d.createOrGetPoint(p0)
 	hc := sk.Constrain(core.ConstraintPtPtDistance, ptA, ptB, core.NoEntity, core.NoEntity, false, false)
 
-	c := sk.GetConstraint(hc)
+	c := sk.Constraint(hc)
 	if data.HasMeasureValue {
 		c.ValA = data.MeasureValue
 	} else {
@@ -961,7 +961,7 @@ func (d *dxfImport) addDimLinear(data *dxfread.Dimension) {
 	pt := d.createOrGetPoint(p0)
 	hc := sk.Constrain(core.ConstraintPtLineDistance, pt, core.NoEntity, line, core.NoEntity, false, false)
 
-	c := sk.GetConstraint(hc)
+	c := sk.Constraint(hc)
 	if data.HasMeasureValue {
 		c.ValA = data.MeasureValue
 	} else {
@@ -994,7 +994,7 @@ func (d *dxfImport) dimAngular(fl1, fl2, sl1, sl2 dxfread.Coord, data *dxfread.D
 	lineA := d.createLine(l0p0, l0p1, d.invisibleStyle(), false)
 	hc := sk.Constrain(core.ConstraintAngle, core.NoEntity, core.NoEntity, lineA, lineB, false, false)
 
-	c := sk.GetConstraint(hc)
+	c := sk.Constraint(hc)
 	c.ModifyToSatisfy(sk)
 	if data.HasMeasureValue {
 		actual := data.MeasureValue / math.Pi * 180.0
@@ -1018,7 +1018,7 @@ func (d *dxfImport) createDiametric(cp geom.Vector, q geom.Quaternion, r float64
 	hc := sk.Constrain(core.ConstraintDiameter, core.NoEntity, core.NoEntity, he, core.NoEntity,
 		false, false)
 
-	c := sk.GetConstraint(hc)
+	c := sk.Constraint(hc)
 	if actual > 0.0 {
 		if asRadius {
 			c.ValA = actual * 2.0

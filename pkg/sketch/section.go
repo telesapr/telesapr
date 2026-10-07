@@ -29,7 +29,7 @@ type Section struct {
 // workplane or a planar face, offset (typed, in the document's unit;
 // "" is zero) along its normal, away from the side flip picks.
 func (sk *Sketch) SetSection(plane core.HEntity, offset string, flip bool) error {
-	e := sk.GetEntity(plane)
+	e := sk.Entity(plane)
 	if e == nil {
 		return fmt.Errorf("no entity %08x", plane.V)
 	}
@@ -76,7 +76,7 @@ func (sk *Sketch) SectionCut() (keep srf.HalfSpace, origin geom.Vector, ok bool,
 	if s == nil {
 		return keep, origin, false, nil
 	}
-	e := sk.GetEntity(s.Plane)
+	e := sk.Entity(s.Plane)
 	var n geom.Vector
 	switch {
 	case e == nil:
@@ -115,7 +115,7 @@ func (sk *Sketch) SectionCut() (keep srf.HalfSpace, origin geom.Vector, ok bool,
 func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector {
 	n := e.FaceGetNormalNum(sk)
 	for _, hg := range []core.HGroup{sk.ActiveGroup(), e.Group} {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g == nil {
 			continue
 		}
@@ -141,7 +141,7 @@ func (sk *Sketch) SectionPlaneName() string {
 	if s == nil {
 		return ""
 	}
-	e := sk.GetEntity(s.Plane)
+	e := sk.Entity(s.Plane)
 	switch {
 	case e == nil:
 		return sk.entityName(s.Plane)

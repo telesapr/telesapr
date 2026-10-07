@@ -45,7 +45,7 @@ func (sk *Sketch) nameFree(name string) error {
 // old name, or with "" takes its name away, which a name in use can't
 // be.
 func (sk *Sketch) SetConstraintName(hc core.HConstraint, name string) error {
-	c := sk.GetConstraint(hc)
+	c := sk.Constraint(hc)
 	if c == nil {
 		return fmt.Errorf("no constraint %08x", hc.V)
 	}
@@ -106,7 +106,7 @@ func shown(c *core.Constraint, v float64) float64 {
 // allDimsReference reports whether group hg makes all its dimensions
 // reference ones.
 func (sk *Sketch) allDimsReference(hg core.HGroup) bool {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	return g != nil && g.AllDimsReference
 }
 

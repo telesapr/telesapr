@@ -94,7 +94,7 @@ func loadLinked(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh,
 	for _, st := range doc.Sketch.Styles {
 		// Linked file contains a style that we don't have yet, so
 		// import it.
-		if sk.GetStyle(st.H) == nil {
+		if sk.Style(st.H) == nil {
 			sk.Styles = append(sk.Styles, st)
 		}
 	}

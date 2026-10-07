@@ -39,7 +39,7 @@ func TestGroupDependenciesOnFixtures(t *testing.T) {
 		groups := 0
 		for _, g := range sk.Groups {
 			for _, d := range sk.GroupDependencies(g.H) {
-				dg := sk.GetGroup(d.Group)
+				dg := sk.Group(d.Group)
 				if dg == nil {
 					t.Errorf("%s: %s depends on missing g%03x (%s)", f, g.DescriptionString(), d.Group.V, d.Why)
 					continue
@@ -199,7 +199,7 @@ func TestSuppressAllSweep(t *testing.T) {
 				t.Errorf("%s: suppressing g%03x pruned %v", f, h.V, sk.BrokenReferences)
 			}
 			for _, hg := range order {
-				if got := sk.GetGroup(hg).SuppressedBy.V != 0; got != out[hg] {
+				if got := sk.Group(hg).SuppressedBy.V != 0; got != out[hg] {
 					t.Errorf("%s: suppressing g%03x, g%03x left out %v", f, h.V, hg.V, got)
 				}
 			}

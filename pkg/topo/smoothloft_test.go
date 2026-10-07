@@ -163,7 +163,7 @@ func TestSmoothLoftThroughSections(t *testing.T) {
 		if i > 0 {
 			vz = vAtHeight(bs, z)
 		}
-		for k := 0; k <= 40; k++ {
+		for k := range 41 {
 			p := bs.PointAt(float64(k)/40, vz)
 			best := math.Inf(1)
 			for _, sb := range l {
@@ -205,7 +205,7 @@ func TestSmoothLoftCircles(t *testing.T) {
 	if got := loftVolumeBelow(bs, loops[0], zs[len(zs)-1]); math.Abs(got-rev) > 1e-6*rev {
 		t.Errorf("the quadrature gives %.9f, the volume of revolution %.9f", got, rev)
 	}
-	for k := 0; k <= 20; k++ {
+	for k := range 21 {
 		vv := float64(k) / 20
 		r0 := math.Hypot(bs.PointAt(0, vv).X, bs.PointAt(0, vv).Y)
 		for j := 1; j <= 16; j++ {
@@ -218,7 +218,7 @@ func TestSmoothLoftCircles(t *testing.T) {
 }
 
 func TestSmoothLoftRefusals(t *testing.T) {
-	col := core.NewRgbaColor(100, 100, 100, 255)
+	col := core.NewRGBA(100, 100, 100, 255)
 	for _, c := range []struct {
 		name  string
 		loops [][]srf.SBezier
@@ -279,12 +279,12 @@ func TestSmoothLoftSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old, oldSegs := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
 	srf.SetChordTolMm(0.005)
 	srf.SetMaxSegments(100)
 	defer func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) }()
 	r := rand.New(rand.NewSource(20))
-	col := core.NewRgbaColor(100, 100, 100, 255)
+	col := core.NewRGBA(100, 100, 100, 255)
 	points, failed := 0, 0
 	for c := range 12 {
 		loops := smoothLoftCase(r)
@@ -347,7 +347,7 @@ func TestSmoothLoftSweep(t *testing.T) {
 func BenchmarkSmoothLoft(b *testing.B) {
 	loops := [][]srf.SBezier{circleAt(10, 0, 0, 0), circleAt(14, 2, 0, 10), polygonAt(4, 9, 0, 1, 20, 0.3),
 		blobAt(12, 8, 6, 0, 0, 32)}
-	col := core.NewRgbaColor(100, 100, 100, 255)
+	col := core.NewRGBA(100, 100, 100, 255)
 	for b.Loop() {
 		sh, err := topo.MakeSmoothLoft(loops, 0, col, 1<<30)
 		if err != nil {

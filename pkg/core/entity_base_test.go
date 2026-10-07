@@ -16,8 +16,8 @@ func newTestSketch() *testSketch {
 	return &testSketch{entities: map[HEntity]*Entity{}, params: map[HParam]*Param{}}
 }
 
-func (s *testSketch) GetEntity(h HEntity) *Entity { return s.entities[h] }
-func (s *testSketch) GetParam(h HParam) *Param    { return s.params[h] }
+func (s *testSketch) Entity(h HEntity) *Entity { return s.entities[h] }
+func (s *testSketch) Param(h HParam) *Param    { return s.params[h] }
 
 func (s *testSketch) ParamValue(h HParam) (float64, bool) {
 	p, ok := s.params[h]
@@ -93,11 +93,11 @@ func TestEntityNumAndExprsAgree(t *testing.T) {
 	}
 
 	// POINT_IN_2D: origin + u*5 + v*7, with u = +y and v = -x.
-	if got := sk.GetEntity(HEntity{V: 0x20}).PointGetNum(sk); !got.EqualsTol(geom.Vector{X: 1 - 7, Y: 2 + 5, Z: 3}, 1e-12) {
+	if got := sk.Entity(HEntity{V: 0x20}).PointGetNum(sk); !got.EqualsTol(geom.Vector{X: 1 - 7, Y: 2 + 5, Z: 3}, 1e-12) {
 		t.Errorf("POINT_IN_2D = %v", got)
 	}
 	// POINT_N_TRANS: numPoint + 2*trans.
-	if got := sk.GetEntity(HEntity{V: 0x21}).PointGetNum(sk); !got.EqualsTol(geom.Vector{X: 5, Y: -4, Z: 5}, 1e-12) {
+	if got := sk.Entity(HEntity{V: 0x21}).PointGetNum(sk); !got.EqualsTol(geom.Vector{X: 5, Y: -4, Z: 5}, 1e-12) {
 		t.Errorf("POINT_N_TRANS = %v", got)
 	}
 

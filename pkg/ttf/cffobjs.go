@@ -19,12 +19,12 @@ func removeSubsetPrefix(name string) string {
 		ok := true
 		for range 6 {
 			c := at(i)
-			if !('A' <= c) {
+			if 'A' > c {
 				ok = false
 				break
 			}
 			i++
-			if !(c <= 'Z') {
+			if c > 'Z' {
 				ok = false
 				break
 			}
@@ -88,7 +88,7 @@ func (f *Face) fvarAxes() uint16 {
 		return 0
 	}
 	if version != 0x00010000 || axisSize != 20 || numAxes == 0 || numAxes > 0x3FFE ||
-		!(uint32(instanceSize) == 4+4*uint32(numAxes) || uint32(instanceSize) == 6+4*uint32(numAxes)) ||
+		(uint32(instanceSize) != 4+4*uint32(numAxes) && uint32(instanceSize) != 6+4*uint32(numAxes)) ||
 		numInstances > 0x7EFF ||
 		offset+uint32(axisSize)*uint32(numAxes)+uint32(instanceSize)*uint32(numInstances) > uint32(len(fvar)) {
 		return 0
@@ -402,7 +402,7 @@ func (d *cffDecoder) t1LookupGlyphByStdCharcode(charcode int32) int32 {
 		return -1
 	}
 	glyphName, _ := standardString(uint(t1StandardEncoding[charcode]))
-	for n := uint32(0); n < uint32(d.t1.numGlyphs); n++ {
+	for n := range uint32(d.t1.numGlyphs) {
 		if name := d.t1.glyphNames[n]; name != nil && *name == glyphName {
 			return int32(n)
 		}
@@ -416,16 +416,16 @@ func (d *cffDecoder) t1SeacComponent(glyphIndex int32) *cf2Buffer {
 }
 
 // lookupGlyphByStdCharcode is cff_lookup_glyph_by_stdcharcode.
-func (cff *cffFont) lookupGlyphByStdCharcode(charcode int32) int32 {
-	if cff.charset.sids == nil {
+func (f *cffFont) lookupGlyphByStdCharcode(charcode int32) int32 {
+	if f.charset.sids == nil {
 		return -1
 	}
 	if charcode < 0 || charcode > 255 {
 		return -1
 	}
 	glyphSID := cffStandardEncoding[charcode]
-	for n := uint32(0); n < cff.numGlyphs; n++ {
-		if cff.charset.sids[n] == glyphSID {
+	for n := range f.numGlyphs {
+		if f.charset.sids[n] == glyphSID {
 			return int32(n)
 		}
 	}

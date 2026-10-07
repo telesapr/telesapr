@@ -43,7 +43,7 @@ func EncodeTree(sk *sketch.Sketch, o Options) *File {
 	var m *srf.SMesh
 	var sh *srf.SShell
 	if len(sk.GroupOrder) > 0 {
-		if g := sk.GetGroup(sk.GroupOrder[len(sk.GroupOrder)-1]); g != nil {
+		if g := sk.Group(sk.GroupOrder[len(sk.GroupOrder)-1]); g != nil {
 			m, sh = &g.RunningMesh, &g.RunningShell
 		}
 	}
@@ -65,7 +65,7 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 	add(field("units", Word(enumName(docUnits, sk.Units))))
 	// The active group, when it is not the last: what is shown, and so
 	// each entity's act-visible, follows it.
-	if a := sk.Active; a.V != 0 && sk.GetGroup(a) != nil && len(sk.GroupOrder) > 0 &&
+	if a := sk.Active; a.V != 0 && sk.Group(a) != nil && len(sk.GroupOrder) > 0 &&
 		a != sk.GroupOrder[len(sk.GroupOrder)-1] {
 		add(field("active", hex(a.V)))
 	}
@@ -248,7 +248,7 @@ func (n *Node) quaternion(name string, q geom.Quaternion) {
 	}
 }
 
-func (n *Node) color(name string, c core.RgbaColor) {
+func (n *Node) color(name string, c core.RGBA) {
 	n.add(field(name, colorArgs(c)...))
 }
 
@@ -258,7 +258,7 @@ func hex(v uint32) Value { return Word("0x" + strconv.FormatUint(uint64(v), 16))
 
 func num(v float64) Value { return Word(FormatReal(v)) }
 
-func colorArgs(c core.RgbaColor) []Value {
+func colorArgs(c core.RGBA) []Value {
 	return []Value{
 		Word(strconv.Itoa(int(c.Red))), Word(strconv.Itoa(int(c.Green))),
 		Word(strconv.Itoa(int(c.Blue))), Word(strconv.Itoa(int(c.Alpha))),
@@ -539,7 +539,7 @@ func encodeMesh(m *srf.SMesh) *Node {
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
 		args := []Value{hex(uint32(tr.Meta.Face))}
-		args = append(args, colorArgs(tr.Meta.RgbaColor)...)
+		args = append(args, colorArgs(tr.Meta.RGBA)...)
 		for _, v := range []geom.Vector{tr.A, tr.B, tr.C} {
 			args = append(args, num(v.X), num(v.Y), num(v.Z))
 		}

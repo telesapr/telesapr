@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,7 +79,16 @@ func sockets(dir string) []string {
 		}
 		found = append(found, socket{filepath.Join(dir, name), info.ModTime()})
 	}
-	sort.SliceStable(found, func(i, j int) bool { return found[i].made.After(found[j].made) })
+	slices.SortStableFunc(found, func(a, b socket) int {
+		less := func(a, b socket) bool { return a.made.After(b.made) }
+		switch {
+		case less(a, b):
+			return -1
+		case less(b, a):
+			return 1
+		}
+		return 0
+	})
 	paths := make([]string, len(found))
 	for i, s := range found {
 		paths[i] = s.path

@@ -36,7 +36,7 @@ func (ss *Application) ImportSolveSpace(src string) bool {
 		return false
 	}
 	dialog.FreezeChoices(ss.Settings, "Sketch")
-	dst := modelFileName(dialog.GetFilename())
+	dst := modelFileName(dialog.Filename())
 
 	plan, err := convert.MakePlan(src, dst)
 	if err != nil {

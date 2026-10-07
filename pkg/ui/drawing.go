@@ -159,18 +159,18 @@ func (ss *Application) sectionEdges(g *sketch.Group, right, up geom.Vector, offs
 	g.DisplayOutlines.ListTaggedInto(&outlines, core.StyleSolidEdge, 0)
 	sel := clipEdges(&outlines, keep)
 	m := clipMesh(&g.DisplayMesh, keep)
-	var cap srf.SPolygon
-	g.DisplayMesh.MakeSectionPolygonInto(keep, &cap)
+	var capPoly srf.SPolygon
+	g.DisplayMesh.MakeSectionPolygonInto(keep, &capPoly)
 	// The cut face hides what is beyond it.
 	var capMesh srf.SMesh
-	cap.TriangulateInto(&capMesh)
+	capPoly.TriangulateInto(&capMesh)
 	m.Triangles = append(m.Triangles, capMesh.Triangles...)
 	out := ss.hiddenLineEdges(sel, &m, right, up, hidden)
 
 	n := right.Cross(up)
 	var front srf.SEdgeList
-	cap.MakeEdgesInto(&front)
-	hatchLines(&cap, keep.N, hatch, &front)
+	capPoly.MakeEdgesInto(&front)
+	hatchLines(&capPoly, keep.N, hatch, &front)
 	for _, e := range front.Edges {
 		out.AddEdge(e.A.InPerspective(right, up, n, geom.Vector{}, 0), e.B.InPerspective(right, up, n, geom.Vector{}, 0),
 			core.StyleSolidEdge, 0, 0)
@@ -262,7 +262,7 @@ func (ss *Application) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.
 	if err := d.Check(); err != nil {
 		return sheet, nil, 0, err
 	}
-	g := ss.SK.GetGroup(ss.GW.activeGroupH())
+	g := ss.SK.Group(ss.GW.activeGroupH())
 	if g == nil || len(g.RunningShell.Surface) == 0 && len(g.RunningMesh.Triangles) == 0 {
 		return sheet, nil, 0, errors.New("the active group has no solid to draw")
 	}
@@ -288,7 +288,7 @@ func (ss *Application) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.
 		// The view's name below it.
 		label := map[string]string{"front": "FRONT", "back": "BACK", "top": "TOP", "bottom": "BOTTOM",
 			"left": "LEFT", "right": "RIGHT", "iso": "ISOMETRIC"}[v.Kind]
-		w := res.BuiltinVectorFont().GetWidth(3, label)
+		w := res.BuiltinVectorFont().Width(3, label)
 		sheetText(&sheet, label, 3, geom.Vector{X: v.X - w/2, Y: v.Y - scale*sizes[v.Kind][1]/2 - 7})
 	}
 	extras := ss.drawExtras(&sheet, g, d, views, scale, edges, sizes, mids)
@@ -300,7 +300,7 @@ func (ss *Application) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.
 // label writes text centred under a view whose box on the sheet is
 // height high about y.
 func label(el *srf.SEdgeList, text string, x, y, height float64) {
-	w := res.BuiltinVectorFont().GetWidth(3, text)
+	w := res.BuiltinVectorFont().Width(3, text)
 	sheetText(el, text, 3, geom.Vector{X: x - w/2, Y: y - height/2 - 7})
 }
 

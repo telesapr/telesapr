@@ -29,7 +29,7 @@ func fullDocument() *Document {
 		MeshCombine: sketch.CombineIntersection, ForceToMesh: true,
 		Remap:    core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
 		LinkFile: "dir/part.tlspr",
-		Color:    core.RgbaColor{Red: 1, Green: 2, Blue: 3, Alpha: 4},
+		Color:    core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}
 	g.Predef.Origin = core.HEntity{V: 0x10001}
@@ -62,7 +62,7 @@ func fullDocument() *Document {
 		H: core.HStyle{V: 0x100}, Name: "custom", Width: 2, WidthAs: core.UnitsMM,
 		TextHeight: 11, TextHeightAs: core.UnitsMM, TextAngle: 30,
 		TextOrigin: core.TextOriginLeft | core.TextOriginTop,
-		Color:      core.RgbaColor{Red: 255, Alpha: 255}, FillColor: core.RgbaColor{Blue: 9, Alpha: 128},
+		Color:      core.RGBA{Red: 255, Alpha: 255}, FillColor: core.RGBA{Blue: 9, Alpha: 128},
 		Filled: true, Visible: true, Exportable: true, StippleType: core.StippleDashDot, StippleScale: 15,
 	})
 
@@ -86,7 +86,7 @@ func fullDocument() *Document {
 	doc := &Document{Sketch: sk, Version: Version, Units: core.UnitInches}
 	doc.Mesh.AddTriangle3(srf.STriMeta{Face: 0x1234, Red: 10, Alpha: 255},
 		geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1})
-	sf := srf.SSurface{H: core.HSSurface{V: 1}, Color: core.RgbaColor{Green: 7}, Face: 0x99, DegM: 1, DegN: 3, TrimBuilt: true}
+	sf := srf.SSurface{H: core.HSSurface{V: 1}, Color: core.RGBA{Green: 7}, Face: 0x99, DegM: 1, DegN: 3, TrimBuilt: true}
 	for i := 0; i <= sf.DegM; i++ {
 		for j := 0; j <= sf.DegN; j++ {
 			sf.Ctrl[i][j] = geom.Vector{X: float64(i), Y: float64(j), Z: 0.1}
@@ -297,7 +297,7 @@ shell {
 		t.Errorf("kept %d groups, %d requests, %d constraints, %d entities",
 			len(sk.Groups), len(sk.Requests), len(sk.Constraints), len(sk.Entities))
 	}
-	if st := sk.GetStyle(core.HStyle{V: 0x100}); st == nil || st.TextOrigin != core.TextOriginLeft {
+	if st := sk.Style(core.HStyle{V: 0x100}); st == nil || st.TextOrigin != core.TextOriginLeft {
 		t.Errorf("style %+v", st)
 	}
 }
@@ -442,19 +442,19 @@ constraint 0x2 angle {
 	if len(sk.Parameters) != 3 || sk.Parameter("bore").Value != 10 {
 		t.Fatalf("parameters %+v", sk.Parameters)
 	}
-	g := sk.GetGroup(core.HGroup{V: 1})
+	g := sk.Group(core.HGroup{V: 1})
 	if g.ValA != 4 || g.ExprA != "n+1" || g.ValB != 1.25 || g.ExprB != "wall/2" ||
 		g.ValC != 7 || g.ExprC != "" || g.Scale != 2 || g.ExprScale != "bore/5" {
 		t.Fatalf("group values %+v", g)
 	}
-	if g := sk.GetGroup(core.HGroup{V: 2}); g.Scale != 3 || g.ExprScale != "" {
+	if g := sk.Group(core.HGroup{V: 2}); g.Scale != 3 || g.ExprScale != "" {
 		t.Fatalf("plain scale %v %q", g.Scale, g.ExprScale)
 	}
-	c := sk.GetConstraint(core.HConstraint{V: 1})
+	c := sk.Constraint(core.HConstraint{V: 1})
 	if c.ValA != 10 || c.Expr != "bore" {
 		t.Fatalf("constraint %q = %v", c.Expr, c.ValA)
 	}
-	if c := sk.GetConstraint(core.HConstraint{V: 2}); c.ValA != 30 || c.Expr != "" {
+	if c := sk.Constraint(core.HConstraint{V: 2}); c.ValA != 30 || c.Expr != "" {
 		t.Fatalf("plain value %q = %v", c.Expr, c.ValA)
 	}
 	if got := string(doc.Encode()); got != src {
@@ -504,7 +504,7 @@ constraint 0x1 pt-pt-distance {
 	if len(doc.Warnings) > 0 {
 		t.Errorf("warnings %v", doc.Warnings)
 	}
-	if g := doc.Sketch.GetGroup(core.HGroup{V: 1}); g.ValA != 1 {
+	if g := doc.Sketch.Group(core.HGroup{V: 1}); g.ValA != 1 {
 		t.Errorf("copies %v, want the default 1", g.ValA)
 	}
 	if got := string(doc.Encode()); got != src {
@@ -569,8 +569,8 @@ constraint 0x3 angle {
 		t.Fatal(err)
 	}
 	sk := v2.Sketch
-	g := sk.GetGroup(core.HGroup{V: 1})
-	c := func(h uint32) *core.Constraint { return sk.GetConstraint(core.HConstraint{V: h}) }
+	g := sk.Group(core.HGroup{V: 1})
+	c := func(h uint32) *core.Constraint { return sk.Constraint(core.HConstraint{V: h}) }
 	if sk.Units != core.UnitInches || g.ValB != 6.35 || g.ValA != 3 || g.Scale != 2 ||
 		c(1).ValA != 203.2 || c(2).ValA != 50.8 || c(3).ValA != 30 {
 		t.Fatalf("version 2: units %v pitch %v copies %v scale %v values %v %v %v",
@@ -585,7 +585,7 @@ constraint 0x3 angle {
 		t.Fatal(err)
 	}
 	sk = v1.Sketch
-	g = sk.GetGroup(core.HGroup{V: 1})
+	g = sk.Group(core.HGroup{V: 1})
 	// The same lengths but for the rounding of /25.4*25.4.
 	near := func(a, b float64) bool { return math.Abs(a-b) < 1e-12 }
 	if !near(g.ValB, 0.25) || g.ExprB != "(1/4)/25.4" || !near(c(1).ValA, 8) || c(1).Expr != "(wall*4)/25.4" ||

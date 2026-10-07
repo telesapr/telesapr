@@ -37,16 +37,16 @@ func TestBackgroundShells(t *testing.T) {
 	}
 
 	// An edit the interface schedules.
-	c := ss.SK.GetConstraint(width.H)
+	c := ss.SK.Constraint(width.H)
 	c.ValA = 30
 	ss.SK.MarkGroupDirty(c.Group, false)
 	ss.Refresh()
-	g := ss.SK.GetGroup(block.H)
+	g := ss.SK.Group(block.H)
 	if !g.ShellsStale || ss.shellJobs.job == nil {
 		t.Fatalf("stale %v, job %v after a scheduled regeneration", g.ShellsStale, ss.shellJobs.job)
 	}
 	waitShells(t, ss, p)
-	g = ss.SK.GetGroup(block.H)
+	g = ss.SK.Group(block.H)
 	if g.ShellsStale {
 		t.Fatal("still stale after the job")
 	}
@@ -55,7 +55,7 @@ func TestBackgroundShells(t *testing.T) {
 	}
 
 	// Esc stops the next one.
-	c = ss.SK.GetConstraint(width.H)
+	c = ss.SK.Constraint(width.H)
 	c.ValA = 40
 	ss.SK.MarkGroupDirty(c.Group, false)
 	ss.Refresh()
@@ -63,7 +63,7 @@ func TestBackgroundShells(t *testing.T) {
 		t.Fatal("no job to stop")
 	}
 	p.RunDueTimers(10)
-	if !ss.SK.GetGroup(block.H).ShellsStale {
+	if !ss.SK.Group(block.H).ShellsStale {
 		t.Error("a stopped job's solid isn't out of date")
 	}
 }

@@ -76,7 +76,7 @@ func TestClosestPointToCurvedSurface(t *testing.T) {
 // makeBoxShellForTest is a test helper that builds a closed box shell
 // (smaller, non-allocating version of makeBoxShell in boolean_test.go
 // that we duplicate here to avoid cross-test file imports).
-func makeBoxShellForTest(min, max geom.Vector) *SShell {
+func makeBoxShellForTest(lo, hi geom.Vector) *SShell {
 	sh := &SShell{}
 	bilinear := func(p00, p10, p01, p11 geom.Vector) [MaxDegree + 1][MaxDegree + 1]geom.Vector {
 		return [MaxDegree + 1][MaxDegree + 1]geom.Vector{
@@ -87,12 +87,12 @@ func makeBoxShellForTest(min, max geom.Vector) *SShell {
 		}
 	}
 	bw := [MaxDegree + 1][MaxDegree + 1]float64{{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}}
-	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: min.Y, Z: min.Z}, geom.Vector{X: max.X, Y: min.Y, Z: min.Z}, geom.Vector{X: min.X, Y: max.Y, Z: min.Z}, geom.Vector{X: max.X, Y: max.Y, Z: min.Z}), Weight: bw})
-	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: min.Y, Z: max.Z}, geom.Vector{X: min.X, Y: max.Y, Z: max.Z}, geom.Vector{X: max.X, Y: min.Y, Z: max.Z}, geom.Vector{X: max.X, Y: max.Y, Z: max.Z}), Weight: bw})
-	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: min.Y, Z: min.Z}, geom.Vector{X: min.X, Y: min.Y, Z: max.Z}, geom.Vector{X: max.X, Y: min.Y, Z: min.Z}, geom.Vector{X: max.X, Y: min.Y, Z: max.Z}), Weight: bw})
-	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: max.Y, Z: min.Z}, geom.Vector{X: max.X, Y: max.Y, Z: min.Z}, geom.Vector{X: min.X, Y: max.Y, Z: max.Z}, geom.Vector{X: max.X, Y: max.Y, Z: max.Z}), Weight: bw})
-	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: min.X, Y: min.Y, Z: min.Z}, geom.Vector{X: min.X, Y: min.Y, Z: max.Z}, geom.Vector{X: min.X, Y: max.Y, Z: min.Z}, geom.Vector{X: min.X, Y: max.Y, Z: max.Z}), Weight: bw})
-	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: max.X, Y: min.Y, Z: min.Z}, geom.Vector{X: max.X, Y: max.Y, Z: min.Z}, geom.Vector{X: max.X, Y: min.Y, Z: max.Z}, geom.Vector{X: max.X, Y: max.Y, Z: max.Z}), Weight: bw})
+	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: lo.X, Y: lo.Y, Z: lo.Z}, geom.Vector{X: hi.X, Y: lo.Y, Z: lo.Z}, geom.Vector{X: lo.X, Y: hi.Y, Z: lo.Z}, geom.Vector{X: hi.X, Y: hi.Y, Z: lo.Z}), Weight: bw})
+	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: lo.X, Y: lo.Y, Z: hi.Z}, geom.Vector{X: lo.X, Y: hi.Y, Z: hi.Z}, geom.Vector{X: hi.X, Y: lo.Y, Z: hi.Z}, geom.Vector{X: hi.X, Y: hi.Y, Z: hi.Z}), Weight: bw})
+	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: lo.X, Y: lo.Y, Z: lo.Z}, geom.Vector{X: lo.X, Y: lo.Y, Z: hi.Z}, geom.Vector{X: hi.X, Y: lo.Y, Z: lo.Z}, geom.Vector{X: hi.X, Y: lo.Y, Z: hi.Z}), Weight: bw})
+	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: lo.X, Y: hi.Y, Z: lo.Z}, geom.Vector{X: hi.X, Y: hi.Y, Z: lo.Z}, geom.Vector{X: lo.X, Y: hi.Y, Z: hi.Z}, geom.Vector{X: hi.X, Y: hi.Y, Z: hi.Z}), Weight: bw})
+	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: lo.X, Y: lo.Y, Z: lo.Z}, geom.Vector{X: lo.X, Y: lo.Y, Z: hi.Z}, geom.Vector{X: lo.X, Y: hi.Y, Z: lo.Z}, geom.Vector{X: lo.X, Y: hi.Y, Z: hi.Z}), Weight: bw})
+	sh.Surface = append(sh.Surface, SSurface{DegM: 1, DegN: 1, Ctrl: bilinear(geom.Vector{X: hi.X, Y: lo.Y, Z: lo.Z}, geom.Vector{X: hi.X, Y: hi.Y, Z: lo.Z}, geom.Vector{X: hi.X, Y: lo.Y, Z: hi.Z}, geom.Vector{X: hi.X, Y: hi.Y, Z: hi.Z}), Weight: bw})
 	for i := range sh.Surface {
 		sh.Surface[i].Face = FaceID(uint32(i + 1))
 	}

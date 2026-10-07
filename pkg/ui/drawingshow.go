@@ -94,7 +94,7 @@ func (gw *GraphicsWindow) drawSheet(canvas render.Canvas) {
 	if !ok {
 		return
 	}
-	vc.SetCamera(gw.sheetCamera(*canvas.GetCamera()))
+	vc.SetCamera(gw.sheetCamera(*canvas.Camera()))
 	w, h := ss.drawing().Size()
 	var paper srf.SEdgeList
 	rect(&paper, geom.Vector{}, geom.Vector{X: w, Y: h}, core.StyleSolidEdge)
@@ -109,8 +109,8 @@ func (gw *GraphicsWindow) drawSheet(canvas render.Canvas) {
 	}
 	strokeSolid := ss.styleStroke(hstyle(core.StyleSolidEdge))
 	strokeSolid.Layer = render.LayerFront
-	canvas.DrawEdges(&solid, canvas.GetStroke(strokeSolid))
+	canvas.DrawEdges(&solid, canvas.InternStroke(strokeSolid))
 	strokeHidden := ss.styleStroke(hstyle(core.StyleHiddenEdge))
 	strokeHidden.Layer = render.LayerFront
-	canvas.DrawEdges(&hidden, canvas.GetStroke(strokeHidden))
+	canvas.DrawEdges(&hidden, canvas.InternStroke(strokeHidden))
 }

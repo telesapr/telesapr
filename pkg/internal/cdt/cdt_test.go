@@ -280,7 +280,7 @@ func BenchmarkGrid(b *testing.B) {
 		}
 	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		if _, err := Triangulate(pts, segs); err != nil {
 			b.Fatal(err)
 		}

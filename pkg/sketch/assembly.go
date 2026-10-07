@@ -39,7 +39,7 @@ func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart {
 	var before *Group
 	assembled := false
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g != nil && !g.Suppress && sk.SuppressedReason(hg) == "" {
 			solid := g.IsMeshGroup() || g.Type == GroupLinked || g.Type == GroupMirror
 			switch {

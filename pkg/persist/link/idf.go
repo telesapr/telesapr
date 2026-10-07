@@ -1,11 +1,12 @@
 package link
 
 import (
+	"cmp"
 	"fmt"
 	"math"
 	"os"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -36,7 +37,8 @@ func splitIDFString(line string) []string {
 
 	for i := range len(line) {
 		c := line[i]
-		if inQuotes {
+		switch {
+		case inQuotes:
 			if c != '"' {
 				s += string(c)
 			} else {
@@ -45,7 +47,8 @@ func splitIDFString(line string) []string {
 				inString = false
 				s = ""
 			}
-		} else if inString {
+
+		case inString:
 			if c != ' ' {
 				s += string(c)
 			} else {
@@ -53,10 +56,12 @@ func splitIDFString(line string) []string {
 				inString = false
 				s = ""
 			}
-		} else if c == '"' {
+
+		case c == '"':
 			inString = true
 			inQuotes = true
-		} else if c != ' ' {
+
+		case c != ' ':
 			s = string(c)
 			inString = true
 		}
@@ -251,7 +256,8 @@ func arcCenter(p0, p1 geom.Vector, angle float64) geom.Vector {
 // circle centred at p0 through p1 (C++ CreateEntity).
 func createIDFEntity(el *[]core.Entity, id *int, h0, h1, hnorm core.HEntity,
 	p0, p1 geom.Vector, angle float64, keepout bool) {
-	if math.Abs(angle) < 0.1 {
+	switch {
+	case math.Abs(angle) < 0.1:
 		// line
 		if p0.Equals(p1) {
 			return
@@ -259,13 +265,13 @@ func createIDFEntity(el *[]core.Entity, id *int, h0, h1, hnorm core.HEntity,
 
 		idfNewLine(el, id, h0, h1, keepout)
 
-	} else if angle == 360.0 {
+	case angle == 360.0:
 		// circle
 		d := p1.Minus(p0).Magnitude()
 		hd := idfNewDistance(el, id, d)
 		idfNewCircle(el, id, h1, hd, hnorm, keepout)
 
-	} else {
+	default:
 		// arc
 		if angle < 0.0 {
 			p0, p1 = p1, p0
@@ -304,13 +310,17 @@ func makeBeziersForArcs(sbl *srf.SBezierList, center, pa geom.Vector,
 	dtheta = angle * math.Pi / 180
 
 	var n int
-	if dtheta > (3*math.Pi/2 + 0.01) {
+	switch {
+	case dtheta > (3*math.Pi/2 + 0.01):
 		n = 4
-	} else if dtheta > (geom.Pi + 0.01) {
+
+	case dtheta > (geom.Pi + 0.01):
 		n = 3
-	} else if dtheta > (math.Pi/2 + 0.01) {
+
+	case dtheta > (math.Pi/2 + 0.01):
 		n = 2
-	} else {
+
+	default:
 		n = 1
 	}
 	dtheta /= float64(n)
@@ -398,16 +408,20 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 		}
 		switch section {
 		case idfNone:
-			if strings.HasPrefix(line, ".HEADER") {
+			switch {
+			case strings.HasPrefix(line, ".HEADER"):
 				section = idfHeader
 				recordNumber = 1
-			} else if strings.HasPrefix(line, ".BOARD_OUTLINE") {
+
+			case strings.HasPrefix(line, ".BOARD_OUTLINE"):
 				section = idfBoardOutline
 				recordNumber = 1
-			} else if strings.HasPrefix(line, ".ROUTE_KEEPOUT") {
+
+			case strings.HasPrefix(line, ".ROUTE_KEEPOUT"):
 				section = idfRoutingKeepout
 				recordNumber = 1
-			} else if strings.HasPrefix(line, ".DRILLED_HOLES") {
+
+			case strings.HasPrefix(line, ".DRILLED_HOLES"):
 				section = idfDrilledHoles
 				recordNumber = 1
 			}
@@ -423,7 +437,8 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 
 		case idfRoutingKeepout, idfBoardOutline:
 			if recordNumber == 2 {
-				if section == idfBoardOutline {
+				switch section {
+				case idfBoardOutline:
 					topEntities = true
 					bottomEntities = true
 					t, err := stod(line)
@@ -431,7 +446,7 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 						return false
 					}
 					boardThickness = t * scale
-				} else if section == idfRoutingKeepout {
+				case idfRoutingKeepout:
 					topEntities = false
 					bottomEntities = false
 					if strings.HasPrefix(line, "TOP") || strings.HasPrefix(line, "BOTH") {
@@ -470,14 +485,17 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 				} else {
 					if section == idfBoardOutline {
 						// create a bezier for the extrusion
-						if ang == 0 {
+						switch {
+						case ang == 0:
 							// straight lines
 							sbl.Add(srf.SBezierFrom2(pprev, point))
-						} else if ang != 360.0 {
+
+						case ang != 360.0:
 							// Arcs
 							c := arcCenter(pprev, point, ang)
 							makeBeziersForArcs(&sbl, c, pprev, normal, ang)
-						} else {
+
+						default:
 							// circles
 							makeBeziersForArcs(&sbl, point, pprev, normal, ang)
 						}
@@ -503,7 +521,6 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 			}
 
 		case idfOtherOutline, idfRoutingOutline, idfPlacementOutline, idfViaKeepout, idfPlacementGroup:
-
 		case idfDrilledHoles:
 			values := splitIDFString(line)
 			if len(values) < 6 {
@@ -539,7 +556,6 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 			}
 
 		case idfNotes, idfComponentPlacement:
-
 		default:
 			section = idfNone
 		}
@@ -570,12 +586,12 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 	if len(sblss.Sets) > 0 {
 		sh.MakeFromExtrusionOf(&sblss.Sets[0], geom.Vector{},
 			geom.Vector{Z: boardThickness},
-			core.NewRgbaColor(0, 180, 0, 255))
+			core.NewRGBA(0, 180, 0, 255))
 	}
 	srf.SetChordTolMm(ctc)
 	sh.BooleanFailed = false
 
 	// C++ keeps an EntityList sorted by handle.
-	sort.SliceStable(*el, func(i, j int) bool { return (*el)[i].H.V < (*el)[j].H.V })
+	slices.SortStableFunc(*el, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
 	return true
 }

@@ -1,9 +1,10 @@
 package link
 
 import (
+	"cmp"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -78,7 +79,7 @@ func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sket
 		*sh = e.shell.Clone()
 		*rep = Report{Info: append([]string(nil), e.rep.Info...), Problem: e.rep.Problem}
 		for _, st := range e.styles {
-			if sk.GetStyle(st.H) == nil {
+			if sk.Style(st.H) == nil {
 				sk.Styles = append(sk.Styles, st)
 			}
 		}
@@ -106,7 +107,7 @@ func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sket
 		for k := range loadCache {
 			keys = append(keys, k)
 		}
-		sort.Slice(keys, func(i, j int) bool { return loadCache[keys[i]].use < loadCache[keys[j]].use })
+		slices.SortFunc(keys, func(a, b loadKey) int { return cmp.Compare(loadCache[a].use, loadCache[b].use) })
 		delete(loadCache, keys[0])
 	}
 	return true

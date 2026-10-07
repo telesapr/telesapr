@@ -31,7 +31,7 @@ func TestFonts(t *testing.T) {
 	vf := BuiltinVectorFont()
 	fmt.Fprintf(&b, "vector cap %x asc %x desc %x rsb %x\n", vf.CapHeight, vf.Ascender, vf.Descender, vf.RightSideBearing)
 	for _, s := range fontTestStrings {
-		fmt.Fprintf(&b, "string %d width %x height %x\n", len(s), vf.GetWidth(3.5, s), vf.GetHeight(3.5))
+		fmt.Fprintf(&b, "string %d width %x height %x\n", len(s), vf.Width(3.5, s), vf.Height(3.5))
 		vf.Trace(3.5, geom.Vector{X: 1, Y: 2, Z: 3}, geom.Vector{X: 1, Y: 0.5}, geom.Vector{Y: 0.25, Z: 1}, s,
 			func(a, c geom.Vector) {
 				fmt.Fprintf(&b, "%x %x %x %x %x %x\n", a.X, a.Y, a.Z, c.X, c.Y, c.Z)
@@ -41,7 +41,7 @@ func TestFonts(t *testing.T) {
 	bf := NewBitmapFont()
 	for _, cp := range fontTestCodepoints {
 		s0, t0, s1, t1, w, h := bf.LocateGlyph(cp)
-		fmt.Fprintf(&b, "glyph %x width %d loc %x %x %x %x %d %d\n", cp, bf.GetWidth(cp), s0, t0, s1, t1, w, h)
+		fmt.Fprintf(&b, "glyph %x width %d loc %x %x %x %x %d %d\n", cp, bf.Width(cp), s0, t0, s1, t1, w, h)
 		x0, y0 := int(s0*float64(bf.Texture.Width)), int(t0*float64(bf.Texture.Height))
 		for y := range h {
 			for x := range w {

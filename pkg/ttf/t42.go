@@ -133,7 +133,7 @@ func t42ParseEncoding(f *t1Font, l *t42Loader) {
 		p.err = errInvalidFileFormat
 		return
 	}
-	if !(isPSDigit(b[cur]) || b[cur] == '[') {
+	if !isPSDigit(b[cur]) && b[cur] != '[' {
 		switch {
 		case cur+17 < limit && bytes.HasPrefix(b[cur:], []byte("StandardEncoding")):
 			f.encodingType = t1EncodingStandard
@@ -431,7 +431,8 @@ func t42ParseCharstrings(f *t1Font, l *t42Loader) {
 		p.err = errInvalidFileFormat
 		return
 	}
-	if isPSDigit(b[p.cursor]) {
+	switch {
+	case isPSDigit(b[p.cursor]):
 		l.numGlyphs = int32(p.toInt())
 		if p.err != nil {
 			return
@@ -444,7 +445,8 @@ func t42ParseCharstrings(f *t1Font, l *t42Loader) {
 		if int64(l.numGlyphs) > int64(limit-p.cursor)>>2 {
 			l.numGlyphs = int32((limit - p.cursor) >> 2)
 		}
-	} else if b[p.cursor] == '<' {
+
+	case b[p.cursor] == '<':
 		// `<< ... >>': count the `/'s in the dictionary for its size
 		count := int32(0)
 		p.skipPSToken()
@@ -467,7 +469,8 @@ func t42ParseCharstrings(f *t1Font, l *t42Loader) {
 			}
 			p.skipSpaces()
 		}
-	} else {
+
+	default:
 		p.err = errInvalidFileFormat
 		return
 	}
@@ -798,7 +801,7 @@ func t42FaceInit(data []byte) (*Face, error) {
 				return 0
 			}
 			for i, j := 0, 0; i < len(full); {
-				if full[i] == famAt(j) {
+				if full[i] == famAt(j) { //nolint:gocritic // a branch breaks out of the loop
 					i++
 					j++
 				} else if full[i] == ' ' || full[i] == '-' {

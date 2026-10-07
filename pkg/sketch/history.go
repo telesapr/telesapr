@@ -1,6 +1,7 @@
 package sketch
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"sort"
@@ -40,7 +41,7 @@ func (sk *Sketch) entityGroup(he core.HEntity) core.HGroup {
 		return core.HGroup{}
 	}
 	if he.IsFromRequest() {
-		if r := sk.GetRequest(he.Request()); r != nil {
+		if r := sk.Request(he.Request()); r != nil {
 			return r.Group
 		}
 		return core.HGroup{}
@@ -63,7 +64,7 @@ func faceGroup(id srf.FaceID) core.HGroup {
 // entities, the entities its requests and constraints name, and the
 // sources of its copied entities. A group never depends on itself.
 func (sk *Sketch) GroupDependencies(h core.HGroup) []Dependency {
-	g := sk.GetGroup(h)
+	g := sk.Group(h)
 	if g == nil {
 		return nil
 	}
@@ -143,9 +144,7 @@ func (sk *Sketch) DependenciesOf(g *Group) []Dependency {
 		}
 	}
 
-	sort.SliceStable(deps, func(i, j int) bool {
-		return sk.groupOrderOf(deps[i].Group) < sk.groupOrderOf(deps[j].Group)
-	})
+	slices.SortStableFunc(deps, func(a, b Dependency) int { return cmp.Compare(sk.groupOrderOf(a.Group), sk.groupOrderOf(b.Group)) })
 	return deps
 }
 
@@ -176,7 +175,7 @@ func (sk *Sketch) EntityAfter(he core.HEntity, h core.HGroup) (core.HGroup, bool
 // groupOrderOf is the order of group h, and an order after every group
 // for one that doesn't exist.
 func (sk *Sketch) groupOrderOf(h core.HGroup) int {
-	if g := sk.GetGroup(h); g != nil {
+	if g := sk.Group(h); g != nil {
 		return g.Order
 	}
 	return int(^uint(0) >> 1)
@@ -200,7 +199,7 @@ func (sk *Sketch) GroupDependents(h core.HGroup) []core.HGroup {
 // groupName describes group h for a message, or names its handle if
 // it doesn't exist.
 func (sk *Sketch) groupName(h core.HGroup) string {
-	if g := sk.GetGroup(h); g != nil {
+	if g := sk.Group(h); g != nil {
 		return g.DescriptionString()
 	}
 	return fmt.Sprintf("g%03x", h.V)
@@ -240,7 +239,7 @@ func (sk *Sketch) applyOrder(newOrder []core.HGroup) {
 	order := sk.orderedGroups()
 	vals := make([]int, len(order))
 	for i, hg := range order {
-		vals[i] = sk.GetGroup(hg).Order
+		vals[i] = sk.Group(hg).Order
 	}
 	// A file may give two groups one order; make them distinct, or
 	// the sort could undo the move.
@@ -250,7 +249,7 @@ func (sk *Sketch) applyOrder(newOrder []core.HGroup) {
 		}
 	}
 	for i, hg := range newOrder {
-		sk.GetGroup(hg).Order = vals[i]
+		sk.Group(hg).Order = vals[i]
 	}
 	sk.GroupOrder = append(sk.GroupOrder[:0], newOrder...)
 	for i := range newOrder {
@@ -266,7 +265,7 @@ func (sk *Sketch) applyOrder(newOrder []core.HGroup) {
 // as an extrusion's sketch and that sketch's own workplane. The
 // references are never among them. They are in history order.
 func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup {
-	if sk.GetGroup(h) == nil {
+	if sk.Group(h) == nil {
 		return nil
 	}
 	in := map[core.HGroup]bool{h: true}
@@ -325,10 +324,10 @@ func (sk *Sketch) CheckMoveGroupWithSources(h, before core.HGroup) error {
 }
 
 func (sk *Sketch) movedOrderWithSources(h, before core.HGroup) (moved, newOrder []core.HGroup, err error) {
-	if sk.GetGroup(h) == nil {
+	if sk.Group(h) == nil {
 		return nil, nil, fmt.Errorf("no group g%03x", h.V)
 	}
-	if before.V != 0 && sk.GetGroup(before) == nil {
+	if before.V != 0 && sk.Group(before) == nil {
 		return nil, nil, fmt.Errorf("no group g%03x", before.V)
 	}
 	if h.V == core.HGroupReferences || before.V == core.HGroupReferences {
@@ -399,7 +398,7 @@ func (sk *Sketch) ActivateSurvivor(order []core.HGroup, was core.HGroup) bool {
 		sk.Active = h
 		return true
 	}
-	if was.V != core.HGroupReferences && sk.GetGroup(was) != nil {
+	if was.V != core.HGroupReferences && sk.Group(was) != nil {
 		return pick(was)
 	}
 	at := slices.Index(order, was)
@@ -407,13 +406,13 @@ func (sk *Sketch) ActivateSurvivor(order []core.HGroup, was core.HGroup) bool {
 		at = len(order) - 1
 	}
 	for i := at; i >= 0; i-- {
-		if order[i].V != core.HGroupReferences && sk.GetGroup(order[i]) != nil {
+		if order[i].V != core.HGroupReferences && sk.Group(order[i]) != nil {
 			return pick(order[i])
 		}
 	}
 	// Nothing before it survived: the first group after it that did.
 	for i := at + 1; i < len(order); i++ {
-		if order[i].V != core.HGroupReferences && sk.GetGroup(order[i]) != nil {
+		if order[i].V != core.HGroupReferences && sk.Group(order[i]) != nil {
 			return pick(order[i])
 		}
 	}
@@ -430,10 +429,10 @@ func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error {
 // movedOrder is the history with group h moved before group before, or
 // nil if the move changes nothing.
 func (sk *Sketch) movedOrder(h, before core.HGroup) ([]core.HGroup, error) {
-	if sk.GetGroup(h) == nil {
+	if sk.Group(h) == nil {
 		return nil, fmt.Errorf("no group g%03x", h.V)
 	}
-	if before.V != 0 && sk.GetGroup(before) == nil {
+	if before.V != 0 && sk.Group(before) == nil {
 		return nil, fmt.Errorf("no group g%03x", before.V)
 	}
 	if h.V == core.HGroupReferences || before.V == core.HGroupReferences {

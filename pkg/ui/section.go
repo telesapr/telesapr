@@ -24,7 +24,7 @@ type clipCanvas interface {
 
 // sectionCapColor is the cap's colour by default: the SectionCap
 // style's, which the user can change.
-var sectionCapColor = core.NewRgbaColor(205, 100, 80, 255)
+var sectionCapColor = core.NewRGBA(205, 100, 80, 255)
 
 // sectionHatchPixels is how far apart the cap's hatch lines are on the
 // screen.
@@ -90,19 +90,19 @@ func (gw *GraphicsWindow) drawSectionCap(g *sketch.Group, canvas render.Canvas) 
 	}
 	capStyle := gw.ss.styleStroke(hstyle(core.StyleSectionCap))
 	if gw.showShaded {
-		canvas.DrawPolygon(&c.poly, canvas.GetFill(render.Fill{Color: capStyle.Color}))
+		canvas.DrawPolygon(&c.poly, canvas.InternFill(render.Fill{Color: capStyle.Color}))
 	}
 	// The hatch: lines at 45 degrees across the cap, in the style's
 	// colour darkened, so that a cut reads as one in print too.
 	hatch := capStyle
-	hatch.Color = core.NewRgbaColor(capStyle.Color.Red/2, capStyle.Color.Green/2, capStyle.Color.Blue/2, 255)
+	hatch.Color = core.NewRGBA(capStyle.Color.Red/2, capStyle.Color.Green/2, capStyle.Color.Blue/2, 255)
 	hatch.ZIndex = 1
 	var hl srf.SEdgeList
 	hatchLines(&c.poly, keep.N, sectionHatchPixels/gw.view.Scale, &hl)
-	canvas.DrawEdges(&hl, canvas.GetStroke(hatch))
+	canvas.DrawEdges(&hl, canvas.InternStroke(hatch))
 	stroke := gw.ss.styleStroke(hstyle(core.StyleSolidEdge))
 	stroke.ZIndex = 1
-	hcs := canvas.GetStroke(stroke)
+	hcs := canvas.InternStroke(stroke)
 	var el srf.SEdgeList
 	c.poly.MakeEdgesInto(&el)
 	canvas.DrawEdges(&el, hcs)
@@ -190,7 +190,7 @@ func (tw *TextWindow) ShowSection() {
 	tw.Printf(false, "%Ba   %Fd%f%Ll%s  keep the other side%E", lf(tw.ScreenChangeSectionFlip), check(s.Flip))
 	if _, _, ok, err := sk.SectionCut(); !ok && err != nil {
 		tw.Printf(true, "%FxThe section can't cut: %s.%E", err.Error())
-	} else if g := sk.GetGroup(ss.GW.activeGroupH()); g != nil && ss.GW.sectionCap.mesh == &g.DisplayMesh &&
+	} else if g := sk.Group(ss.GW.activeGroupH()); g != nil && ss.GW.sectionCap.mesh == &g.DisplayMesh &&
 		len(ss.GW.sectionCap.poly.Contours) > 0 && !ss.GW.sectionCap.closed {
 		tw.Printf(true, "%FxThe solid is not closed where it is cut, so the cap may be partial.%E")
 	}

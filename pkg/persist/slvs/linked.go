@@ -55,7 +55,7 @@ func loadEntitiesFromSlvs(path string, sk *sketch.Sketch, le *[]core.Entity, m *
 	for _, st := range linked.Sketch.Styles {
 		// Linked file contains a style that we don't have yet,
 		// so import it.
-		if sk.GetStyle(st.H) == nil {
+		if sk.Style(st.H) == nil {
 			sk.Styles = append(sk.Styles, st)
 		}
 	}
@@ -74,12 +74,12 @@ func parseShellLines(lines []string, m *srf.SMesh, sh *srf.SShell) error {
 		switch {
 		case f[0] == "Triangle" && len(f) == 12:
 			m.AddTriangle3(srf.STriMeta{
-				Face:      srf.FaceID(parseHexUint32(f[1])),
-				RgbaColor: core.RgbaColorFromPackedInt(parseHexUint32(f[2])),
+				Face: srf.FaceID(parseHexUint32(f[1])),
+				RGBA: core.RGBAFromPackedInt(parseHexUint32(f[2])),
 			}, vec(3), vec(6), vec(9))
 		case f[0] == "Surface" && len(f) == 6:
 			sf.H = core.HSSurface{V: parseHexUint32(f[1])}
-			sf.Color = core.RgbaColorFromPackedInt(parseHexUint32(f[2]))
+			sf.Color = core.RGBAFromPackedInt(parseHexUint32(f[2]))
 			sf.Face = srf.FaceID(parseHexUint32(f[3]))
 			sf.DegM, sf.DegN = parseInt(f[4]), parseInt(f[5])
 		case f[0] == "SCtrl" && len(f) == 8:

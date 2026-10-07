@@ -49,7 +49,7 @@ func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, nam
 	if name == "" {
 		g.Name = "sweep"
 	}
-	src := sk.GetGroup(sk.Active)
+	src := sk.Group(sk.Active)
 	if src == nil || src.Type != GroupDrawingWorkplane {
 		return g, errors.New("the active group must be a sketch in a workplane: its loops are the profile swept")
 	}
@@ -137,7 +137,7 @@ func pathErr(at *geom.Vector, format string, args ...any) error {
 // sweepPath orders the group's path into a chain starting nearest the
 // profile, and returns its steps.
 func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	if src == nil {
 		return nil, errors.New("the profile group is gone")
 	}
@@ -150,7 +150,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 	before := g.PreviousGroup(sk)
 	if before == nil {
 		// A sweep being made comes after the active group.
-		before = sk.GetGroup(sk.Active)
+		before = sk.Group(sk.Active)
 	}
 	solidPieces, err := sk.solidEdgePieces(before, g.SolidEdges)
 	if err != nil {
@@ -286,7 +286,7 @@ func (sk *Sketch) pathChainOf(edges []core.HEntity, what string, dist func(geom.
 func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what string, dist func(geom.Vector) float64, cubics, closed, corners bool) ([]pathPiece, bool, error) {
 	pieces := append([]pathPiece(nil), extra...)
 	for _, he := range edges {
-		e := sk.GetEntity(he)
+		e := sk.Entity(he)
 		if e == nil {
 			return nil, false, pathErr(nil, "path entity %s doesn't exist", sk.entityName(he))
 		}
@@ -296,8 +296,8 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what str
 			if len(edges) > 1 {
 				return nil, false, pathErr(nil, "circle %s closes on itself: a path with a circle has nothing else", sk.entityName(he))
 			}
-			c := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-			n := sk.MustGetEntity(e.Normal).NormalN(sk).WithMagnitude(1)
+			c := sk.MustEntity(e.Point[0]).PointGetNum(sk)
+			n := sk.MustEntity(e.Normal).NormalN(sk).WithMagnitude(1)
 			r := e.CircleGetRadiusNum(sk)
 			if r < sweepTol {
 				return nil, false, pathErr(&c, "circle %s of the path has no size", sk.entityName(he))
@@ -318,18 +318,18 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what str
 		}
 		switch e.Type {
 		case core.EntityLineSegment:
-			a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-			b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+			a := sk.MustEntity(e.Point[0]).PointGetNum(sk)
+			b := sk.MustEntity(e.Point[1]).PointGetNum(sk)
 			if b.Minus(a).Magnitude() < sweepTol {
 				return nil, false, pathErr(&a, "line segment %s of the path has no length", sk.entityName(he))
 			}
 			pieces = append(pieces, pathPiece{h: he, start: a, end: b, curves: sbl.Curves})
 		case core.EntityArcOfCircle:
-			c := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-			a := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
-			b := sk.MustGetEntity(e.Point[2]).PointGetNum(sk)
+			c := sk.MustEntity(e.Point[0]).PointGetNum(sk)
+			a := sk.MustEntity(e.Point[1]).PointGetNum(sk)
+			b := sk.MustEntity(e.Point[2]).PointGetNum(sk)
 			_, _, dtheta := e.ArcGetAngles(sk)
-			n := sk.MustGetEntity(e.Normal).NormalN(sk).WithMagnitude(1)
+			n := sk.MustEntity(e.Normal).NormalN(sk).WithMagnitude(1)
 			pp := pathPiece{h: he, start: a, end: b, arc: true, center: c, axis: n, angle: dtheta, curves: sbl.Curves}
 			if len(pp.curves) > 0 && pp.curves[0].Start().Minus(a).Magnitude() > sweepTol {
 				pp.curves = pp.reversed().curves
@@ -463,7 +463,7 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		}
 	}
 	var pt core.HEntity
-	for i := 0; i < len(*entity); i++ {
+	for i := range len(*entity) {
 		e := &(*entity)[i]
 		if e.Group != g.OpA {
 			continue
@@ -473,12 +473,12 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		}
 		e.CalculateNumerical(sk, false)
 		he := e.H
-		g.copyEntityScaled(entity, sk.MustGetEntity(he), 0, RemapBottom,
+		g.copyEntityScaled(entity, sk.MustEntity(he), 0, RemapBottom,
 			core.NoParam, core.NoParam, core.NoParam,
 			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 			CopyAsNumeric, 1)
 		n := len(*entity)
-		g.copyEntityScaled(entity, sk.MustGetEntity(he), 0, RemapTop,
+		g.copyEntityScaled(entity, sk.MustEntity(he), 0, RemapTop,
 			core.NoParam, core.NoParam, core.NoParam,
 			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 			CopyAsNumeric, 1)
@@ -514,7 +514,7 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 // generateSweepShell sweeps each of the profile's loop sets along the
 // path.
 func (g *Group) generateSweepShell(sk *Sketch) {
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	if src == nil || src.PolyError.How != int(core.PolyGood) {
 		g.setProblem(nil, "the profile is not closed loops")
 		return

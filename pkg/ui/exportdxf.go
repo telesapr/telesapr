@@ -37,13 +37,13 @@ func (w *dxfFileWriter) StartFile() {
 	w.paths = nil
 }
 
-func (w *dxfFileWriter) Background(core.RgbaColor) {}
+func (w *dxfFileWriter) Background(core.RGBA) {}
 
-func (w *dxfFileWriter) StartPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle) {
+func (w *dxfFileWriter) StartPath(core.RGBA, float64, bool, core.RGBA, core.HStyle) {
 	w.paths = append(w.paths, nil)
 }
 
-func (w *dxfFileWriter) FinishPath(core.RgbaColor, float64, bool, core.RgbaColor, core.HStyle, bool) {
+func (w *dxfFileWriter) FinishPath(core.RGBA, float64, bool, core.RGBA, core.HStyle, bool) {
 }
 
 func (w *dxfFileWriter) Triangle(*srf.STriangle) {}
@@ -250,17 +250,17 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 		}
 		switch c.Type {
 		case core.ConstraintPtPtDistance:
-			ap := sk.MustGetEntity(c.PtA).PointGetNum(sk)
-			bp := sk.MustGetEntity(c.PtB).PointGetNum(sk)
+			ap := sk.MustEntity(c.PtA).PointGetNum(sk)
+			bp := sk.MustEntity(c.PtB).PointGetNum(sk)
 			ref := ap.Plus(bp).ScaledBy(0.5).Plus(c.Disp.Offset)
 			d.writeAlignedDimension(d.xfrm(ap), d.xfrm(bp), d.xfrm(ref),
 				d.xfrm(ref), ss.constraintLabel(c), constraintStyle(c), c.ValA)
 
 		case core.ConstraintPtLineDistance:
-			pt := sk.MustGetEntity(c.PtA).PointGetNum(sk)
-			line := sk.MustGetEntity(c.EntityA)
-			lA := sk.MustGetEntity(line.Point[0]).PointGetNum(sk)
-			lB := sk.MustGetEntity(line.Point[1]).PointGetNum(sk)
+			pt := sk.MustEntity(c.PtA).PointGetNum(sk)
+			line := sk.MustEntity(c.EntityA)
+			lA := sk.MustEntity(line.Point[0]).PointGetNum(sk)
+			lB := sk.MustEntity(line.Point[1]).PointGetNum(sk)
 			dl := lB.Minus(lA)
 
 			closest := pt.ClosestPointOnLine(lA, dl)
@@ -289,9 +289,9 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 				constraintStyle(c), c.ValA)
 
 		case core.ConstraintDiameter:
-			circle := sk.MustGetEntity(c.EntityA)
-			center := sk.MustGetEntity(circle.Point[0]).PointGetNum(sk)
-			q := sk.MustGetEntity(circle.Normal).NormalGetNum(sk)
+			circle := sk.MustEntity(c.EntityA)
+			center := sk.MustEntity(circle.Point[0]).PointGetNum(sk)
+			q := sk.MustEntity(circle.Normal).NormalGetNum(sk)
 			n := q.RotationN().WithMagnitude(1)
 			r := circle.CircleGetRadiusNum(sk)
 
@@ -309,8 +309,8 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 			}
 
 		case core.ConstraintAngle:
-			a := sk.MustGetEntity(c.EntityA)
-			b := sk.MustGetEntity(c.EntityB)
+			a := sk.MustEntity(c.EntityA)
+			b := sk.MustEntity(c.EntityB)
 
 			a0 := a.VectorGetStartPoint(sk)
 			b0 := b.VectorGetStartPoint(sk)
@@ -370,12 +370,12 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 
 // findDxfColor is the nearest colour in the DXF palette (C++
 // DxfWriteInterface::findDxfColor).
-func findDxfColor(src core.RgbaColor) int {
+func findDxfColor(src core.RGBA) int {
 	best := 0
 	minDist := geom.VeryPositive
 	srcv := vec3(float64(src.RedF()), float64(src.GreenF()), float64(src.BlueF()))
 	for i := 1; i < 256; i++ {
-		dst := core.NewRgbaColor(dxf.Colors[i][0], dxf.Colors[i][1], dxf.Colors[i][2], 255)
+		dst := core.NewRGBA(dxf.Colors[i][0], dxf.Colors[i][1], dxf.Colors[i][2], 255)
 		dstv := vec3(float64(dst.RedF()), float64(dst.GreenF()), float64(dst.BlueF()))
 		dist := srcv.Minus(dstv).Magnitude()
 		if dist < minDist || best == 0 {
@@ -388,7 +388,7 @@ func findDxfColor(src core.RgbaColor) int {
 
 // toPackedIntBGRA is C++ RgbaColor::ToPackedIntBGRA, as the int
 // libdxfrw keeps it in.
-func toPackedIntBGRA(c core.RgbaColor) int {
+func toPackedIntBGRA(c core.RGBA) int {
 	return int(int32(uint32(c.Blue) | uint32(c.Green)<<8 | uint32(c.Red)<<16 | uint32(255-c.Alpha)<<24))
 }
 

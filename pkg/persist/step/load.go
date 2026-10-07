@@ -35,7 +35,7 @@ type Options struct {
 }
 
 // DefaultColor is the colour of faces the file gives none.
-var DefaultColor = core.NewRgbaColor(90, 120, 140, 255)
+var DefaultColor = core.NewRGBA(90, 120, 140, 255)
 
 // Result is a file read into a mesh.
 type Result struct {
@@ -146,7 +146,7 @@ func Read(data []byte, o Options) (res *Result, err error) {
 // shapeMesh is a shape tessellated once, in its own space.
 type shapeMesh struct {
 	faces   [][]meshTri
-	colours []core.RgbaColor
+	colours []core.RGBA
 }
 
 // FromModel tessellates a model.
@@ -205,7 +205,7 @@ func FromModel(schema string, m *Model, o Options) *Result {
 		sm := meshes[pl.Shape]
 		mirror := pl.T.Det() < 0
 		for fi, tris := range sm.faces {
-			meta := srf.STriMeta{RgbaColor: sm.colours[fi]}
+			meta := srf.STriMeta{RGBA: sm.colours[fi]}
 			for _, t := range tris {
 				if len(res.Mesh.Triangles) >= maxTriangles {
 					rep.Reasons["past the limit of triangles"]++
@@ -328,9 +328,9 @@ func tessellateShape(sh *Shape, tol float64, rep *Report) shapeMesh {
 			tris = append(tris, meshTri{p: t, n: [3]geom.Vector{n, n, n}})
 		}
 		rep.Faces++
-		return shapeMesh{faces: [][]meshTri{tris}, colours: []core.RgbaColor{DefaultColor}}
+		return shapeMesh{faces: [][]meshTri{tris}, colours: []core.RGBA{DefaultColor}}
 	}
-	sm := shapeMesh{faces: make([][]meshTri, len(sh.Faces)), colours: make([]core.RgbaColor, len(sh.Faces))}
+	sm := shapeMesh{faces: make([][]meshTri, len(sh.Faces)), colours: make([]core.RGBA, len(sh.Faces))}
 	errs := make([]error, len(sh.Faces))
 	var wg sync.WaitGroup
 	next := make(chan int)

@@ -151,7 +151,7 @@ func sphereShell(rad float64) *srf.SShell {
 	a2.Weight[1] = w
 	ls.Outer.Curves = []srf.SBezier{a1, a2, srf.SBezierFrom2(v(0, 0, rad), v(0, 0, -rad))}
 	ls.Normal = v(0, 1, 0)
-	sh.MakeFromRevolutionOf(&ls, v(0, 0, 0), v(0, 0, 1), core.NewRgbaColor(100, 100, 100, 255), nil)
+	sh.MakeFromRevolutionOf(&ls, v(0, 0, 0), v(0, 0, 1), core.NewRGBA(100, 100, 100, 255), nil)
 	return &sh
 }
 

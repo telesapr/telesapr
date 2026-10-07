@@ -56,7 +56,7 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) string {
 	}
 	if !isDrawing(group.Type) {
 		if m := displayMesh(sk, group); !m.IsEmpty() {
-			hi, lo := m.GetBounding()
+			hi, lo := m.Bounding()
 			parts = append(parts, "volume "+shortNum(m.CalculateVolume())+" mm³",
 				"bounds "+shortVec(lo)+" to "+shortVec(hi))
 		}
@@ -66,12 +66,12 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) string {
 
 // requestGeometry says where what a request drew is.
 func requestGeometry(sk *sketch.Sketch, req *sketch.Request) string {
-	ent := sk.GetEntity(req.H.Entity(0))
+	ent := sk.Entity(req.H.Entity(0))
 	if ent == nil {
 		return "not generated"
 	}
 	at := func(h core.HEntity) string {
-		if p := sk.GetEntity(h); p != nil && p.IsPoint() {
+		if p := sk.Entity(h); p != nil && p.IsPoint() {
 			return shortVec(p.PointGetNum(sk))
 		}
 		return "(?)"
@@ -226,7 +226,7 @@ func (d *Doc) Describe() (s string) {
 		active := sk.ActiveGroup()
 		b.WriteString("groups, in the order the model is built:\n")
 		for _, hg := range sk.GroupOrder {
-			group := sk.GetGroup(hg)
+			group := sk.Group(hg)
 			if hg.V == core.HGroupReferences || group == nil {
 				continue
 			}
@@ -236,7 +236,7 @@ func (d *Doc) Describe() (s string) {
 			}
 			b.WriteString("\n")
 		}
-		if group := sk.GetGroup(active); group != nil {
+		if group := sk.Group(active); group != nil {
 			b.WriteString("active group " + describeGroup(sk, group))
 		}
 
@@ -247,7 +247,7 @@ func (d *Doc) Describe() (s string) {
 			case sel.Entity.V != 0:
 				what = Entity{d, sel.Entity}.describe(sk)
 			case sel.Constraint.V != 0:
-				if c := sk.GetConstraint(sel.Constraint); c != nil {
+				if c := sk.Constraint(sel.Constraint); c != nil {
 					what = constraintDescription(c)
 				}
 			}
@@ -264,10 +264,10 @@ func (d *Doc) Describe() (s string) {
 		hv := d.h.Hovered()
 		var over string
 		switch {
-		case hv.Entity.V != 0 && sk.GetEntity(hv.Entity) != nil:
+		case hv.Entity.V != 0 && sk.Entity(hv.Entity) != nil:
 			over = Entity{d, hv.Entity}.describe(sk)
 		case hv.Constraint.V != 0:
-			if c := sk.GetConstraint(hv.Constraint); c != nil {
+			if c := sk.Constraint(hv.Constraint); c != nil {
 				over = constraintDescription(c)
 			}
 		case hv.Edge.A != 0:

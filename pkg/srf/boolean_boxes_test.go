@@ -23,7 +23,7 @@ func boxLoopSet(x0, y0, x1, y1, z0 float64) *SBezierLoopSet {
 func extrudedBox(lo, hi geom.Vector) *SShell {
 	sh := &SShell{}
 	sh.MakeFromExtrusionOf(boxLoopSet(lo.X, lo.Y, hi.X, hi.Y, 0),
-		geom.Vector{Z: lo.Z}, geom.Vector{Z: hi.Z}, core.RgbaColor{})
+		geom.Vector{Z: lo.Z}, geom.Vector{Z: hi.Z}, core.RGBA{})
 	return sh
 }
 

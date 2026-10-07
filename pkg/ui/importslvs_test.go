@@ -136,7 +136,7 @@ func TestImportSolveSpace(t *testing.T) {
 		t.Fatalf("SaveFile %q, unsaved %v, %d groups", ss.SaveFile, ss.SK.Unsaved, len(ss.SK.Groups))
 	}
 	if len(p.FileDialogs) != 2 || p.FileDialogs[1].Title != "Save the Imported Model" ||
-		p.FileDialogs[1].Filename != dst[:len(dst)-len(".tlspr")] {
+		p.FileDialogs[1].Path != dst[:len(dst)-len(".tlspr")] {
 		t.Errorf("file dialogs %+v", p.FileDialogs)
 	}
 	d := lastDialog(t, p)

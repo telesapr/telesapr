@@ -16,9 +16,8 @@ linters:
     - revive
     - unconvert
     - unparam
-    # intrange and modernize report what WP1 of the 2026-10-07 review
-    # plan rewrites (C-style loops, hand-rolled min and max, loops
-    # that slices and maps do); they are turned on when it lands.
+    - intrange
+    - modernize
   settings:
     errcheck:
       # What a command, help() or a test's recording prints to its
@@ -27,24 +26,41 @@ linters:
         - fmt.Fprint
         - fmt.Fprintf
         - fmt.Fprintln
-    gocritic:
-      disabled-checks:
-        # if-else chains become switches in WP1, with the comments
-        # beside them rewritten.
-        - ifElseChain
     revive:
+      # golangci-lint's default set of revive's rules, but for
+      # unused-parameter: the parameters of a callback or an
+      # interface's method are part of its signature whether a given
+      # implementation reads them or not.
       rules:
-        - name: unused-parameter
-          # The parameters of a callback or an interface's method are
-          # part of its signature whether a given implementation reads
-          # them or not.
-          disabled: true
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        # error-strings is off until WP3, with staticcheck's ST1005
+        # below.
+        - name: errorf
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
         - name: redefines-builtin-id
-          # Parameters named cap, len, min, max, new and any are
-          # renamed in WP1.
-          disabled: true
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: var-declaration
+        - name: var-naming
     unparam:
       check-exported: false
+    modernize:
+      # embedlit's rewrite of a literal that sets a promoted field
+      # through its embedded struct does not compile.
+      disable:
+        - embedlit
     staticcheck:
       checks:
         # golangci-lint's default set.
@@ -59,10 +75,9 @@ linters:
         # are sentences, capitalised and punctuated. They become plain
         # errors, with the sentence made where the box is, in WP3.
         - -ST1005
-        # De Morgan's law and if-else chains as switches: WP1, with
-        # ifElseChain above.
+        # De Morgan's law applied by rote reads worse than the
+        # negation of what is meant.
         - -QF1001
-        - -QF1003
 
   exclusions:
     rules:
@@ -70,6 +85,12 @@ linters:
       - path: _test\.go
         linters:
           - unparam
+      # The example scripts run in yaegi, which has no range over a
+      # function or an integer, so they keep the older forms.
+      - path: ^examples/
+        linters:
+          - intrange
+          - modernize
 
 formatters:
   enable:

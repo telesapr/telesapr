@@ -227,7 +227,7 @@ func (r *Renderer) texel(s, t float64, frag [4]float64) [4]float64 {
 	j := int(math.Floor(t * float64(pm.Height)))
 	i = min(max(i, 0), pm.Width-1)
 	j = min(max(j, 0), pm.Height-1)
-	c := pm.GetPixel(i, j)
+	c := pm.Pixel(i, j)
 	switch pm.Format {
 	case res.FormatA:
 		return [4]float64{frag[0], frag[1], frag[2], float64(c.Alpha) / 255}

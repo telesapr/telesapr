@@ -36,7 +36,7 @@ func (g Group) get(sk *sketch.Sketch) *sketch.Group {
 	if g.d == nil || g.H.V == 0 {
 		fail("no group")
 	}
-	group := sk.GetGroup(g.H)
+	group := sk.Group(g.H)
 	if group == nil {
 		fail("group g%03x doesn't exist any more", g.H.V)
 	}
@@ -71,7 +71,7 @@ func (g Group) String() (s string) {
 		return "no group"
 	}
 	g.d.read(func(sk *sketch.Sketch) {
-		if group := sk.GetGroup(g.H); group != nil {
+		if group := sk.Group(g.H); group != nil {
 			s = groupDescription(group)
 		} else {
 			s = fmt.Sprintf("deleted group g%03x", g.H.V)
@@ -85,7 +85,7 @@ func (g Group) Valid() (ok bool) {
 	if g.d == nil || g.H.V == 0 {
 		return false
 	}
-	g.d.read(func(sk *sketch.Sketch) { ok = sk.GetGroup(g.H) != nil })
+	g.d.read(func(sk *sketch.Sketch) { ok = sk.Group(g.H) != nil })
 	return ok
 }
 
@@ -308,7 +308,7 @@ func (g Group) SetCombine(how sketch.CombineAs) {
 // 0 to 255.
 func (g Group) SetColor(red, green, blue int) {
 	g.d.change(func(sk *sketch.Sketch) {
-		g.get(sk).Color = core.NewRgbaColor(uint8(red), uint8(green), uint8(blue), 255)
+		g.get(sk).Color = core.NewRGBA(uint8(red), uint8(green), uint8(blue), 255)
 		sk.MarkGroupDirty(g.H, false)
 	})
 }
@@ -391,15 +391,15 @@ func (g Group) Triangles() (n int) {
 
 // Bounds are the corners of the box around the model up to and with
 // this group.
-func (g Group) Bounds() (min, max Vec) {
+func (g Group) Bounds() (lo, hi Vec) {
 	g.d.read(func(sk *sketch.Sketch) {
 		m := displayMesh(sk, g.get(sk))
 		if m.IsEmpty() {
 			return
 		}
-		max, min = m.GetBounding()
+		hi, lo = m.Bounding()
 	})
-	return min, max
+	return lo, hi
 }
 
 // Check checks the solid of the model up to and with this group: it
@@ -440,9 +440,9 @@ func (d *Doc) add(build func(sk *sketch.Sketch) sketch.Group, after func(sk *ske
 		ng := build(sk)
 		// A group refers only to what is made before it: one made with
 		// an earlier group active goes in after that one (roadmap 16.4).
-		if at := sk.GetGroup(sk.Active); at != nil {
+		if at := sk.Group(sk.Active); at != nil {
 			for _, dep := range sk.DependenciesOf(&ng) {
-				if on := sk.GetGroup(dep.Group); on != nil && on.Order > at.Order {
+				if on := sk.Group(dep.Group); on != nil && on.Order > at.Order {
 					fail("the new group would refer to %s (%s), which comes after the active group %s in the history",
 						sk.GroupName(dep.Group), dep.Why, sk.GroupName(at.H))
 				}
@@ -481,10 +481,10 @@ func (d *Doc) SketchIn(wp Entity, name string) Group {
 		if wp.H.IsFromRequest() {
 			g.Subtype = sketch.GroupWorkplaneByPointOrtho
 			g.Predef.Origin = ent.Point[0]
-			g.Predef.Q = sk.MustGetEntity(ent.Normal).NormalGetNum(sk)
+			g.Predef.Q = sk.MustEntity(ent.Normal).NormalGetNum(sk)
 			return g
 		}
-		from := sk.GetGroup(wp.H.Group())
+		from := sk.Group(wp.H.Group())
 		g.Subtype = from.Subtype
 		g.Predef.Origin = from.Predef.Origin
 		switch from.Subtype {
@@ -534,7 +534,7 @@ func workplaneNormal(sk *sketch.Sketch, what string) (core.HEntity, Vec) {
 	if core.IsFreeIn3D(wp) {
 		fail("%s needs a workplane to be active: the sketch is made into a solid square to it", what)
 	}
-	return wp, sk.MustGetEntity(wp).NormalEntity(sk).NormalN(sk)
+	return wp, sk.MustEntity(wp).NormalEntity(sk).NormalN(sk)
 }
 
 // Extrude makes a solid of the active group's sketch by extruding it
@@ -553,9 +553,9 @@ func (d *Doc) Extrude(depth float64, name string) Group {
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		// The parameters are the vector to the middle of the extrusion.
 		v := n.ScaledBy(depth / 2)
-		sk.MustGetParam(hg.Param(0)).Val = v.X
-		sk.MustGetParam(hg.Param(1)).Val = v.Y
-		sk.MustGetParam(hg.Param(2)).Val = v.Z
+		sk.MustParam(hg.Param(0)).Val = v.X
+		sk.MustParam(hg.Param(1)).Val = v.Y
+		sk.MustParam(hg.Param(2)).Val = v.Z
 	})
 }
 
@@ -748,7 +748,7 @@ func (d *Doc) Revolve(axis Entity, degrees float64, name string) Group {
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		// The group turns its copies twice by twice the parameter.
-		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
+		sk.MustParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
 	})
 }
 
@@ -768,8 +768,8 @@ func (d *Doc) Helix(axis Entity, degrees, length float64, name string) Group {
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		// As for Revolve, and the copies move twice by the distance.
-		sk.MustGetParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
-		sk.MustGetParam(hg.Param(7)).Val = length / 2
+		sk.MustParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
+		sk.MustParam(hg.Param(7)).Val = length / 2
 	})
 }
 
@@ -788,9 +788,9 @@ func (d *Doc) Translate(n int, delta Vec, name string) Group {
 		g.ActiveWorkplane = sk.ActiveWorkplane()
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
-		sk.MustGetParam(hg.Param(0)).Val = delta.X
-		sk.MustGetParam(hg.Param(1)).Val = delta.Y
-		sk.MustGetParam(hg.Param(2)).Val = delta.Z
+		sk.MustParam(hg.Param(0)).Val = delta.X
+		sk.MustParam(hg.Param(1)).Val = delta.Y
+		sk.MustParam(hg.Param(2)).Val = delta.Z
 	})
 }
 
@@ -814,7 +814,7 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 		g.Predef.Origin = center.H
 		if axis.H.V == 0 {
 			wp, normal := workplaneNormal(sk, "Rotate about a point alone")
-			g.Predef.EntityB = sk.MustGetEntity(wp).NormalEntity(sk).H
+			g.Predef.EntityB = sk.MustEntity(wp).NormalEntity(sk).H
 			g.ActiveWorkplane = wp
 			dir = normal
 		} else {
@@ -831,7 +831,7 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		for i, v := range []float64{at.X, at.Y, at.Z, degrees * math.Pi / 180, dir.X, dir.Y, dir.Z} {
-			sk.MustGetParam(hg.Param(i)).Val = v
+			sk.MustParam(hg.Param(i)).Val = v
 		}
 	})
 }
@@ -974,7 +974,7 @@ func (g Group) Conflicts() (constraints []Constraint) {
 			return
 		}
 		for _, hc := range group.Solved.Remove {
-			if sk.GetConstraint(hc) != nil {
+			if sk.Constraint(hc) != nil {
 				constraints = append(constraints, Constraint{g.d, hc})
 			}
 		}

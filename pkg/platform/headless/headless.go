@@ -15,11 +15,11 @@ import (
 
 // Platform is a headless platform.Platform.
 type Platform struct {
-	Settings core.Settings
-	Timers   []*Timer
-	Windows  []*Window
-	MainMenu *MenuBar
-	Menus    []*Menu
+	Store       core.Settings
+	Timers      []*Timer
+	Windows     []*Window
+	MainMenuBar *MenuBar
+	Menus       []*Menu
 	// Consoles are the consoles made, see console.go.
 	Consoles []*Console
 	// DialogResponses answer message dialogs, in order; DialogsShown
@@ -29,7 +29,7 @@ type Platform struct {
 	// FilePaths answer file dialogs, in order: "" cancels.
 	FilePaths    []string
 	FileDialogs  []*FileDialog
-	FontFiles    []string
+	Fonts        []string
 	OpenedURLs   []string
 	ExitRequests int
 
@@ -46,11 +46,11 @@ var _ platform.Platform = (*Platform)(nil)
 
 // New returns a headless platform with in-memory settings.
 func New() *Platform {
-	return &Platform{Settings: platform.NewMemorySettings()}
+	return &Platform{Store: platform.NewMemorySettings()}
 }
 
-// GetSettings returns the settings.
-func (p *Platform) GetSettings() core.Settings { return p.Settings }
+// Settings returns the settings.
+func (p *Platform) Settings() core.Settings { return p.Store }
 
 // CreateTimer returns a timer RunTimers fires.
 func (p *Platform) CreateTimer() platform.Timer {
@@ -113,17 +113,17 @@ func (p *Platform) CreateMenu() platform.Menu {
 	return m
 }
 
-// GetOrCreateMainMenu returns the recording menu bar.
-func (p *Platform) GetOrCreateMainMenu() (platform.MenuBar, bool) {
-	if p.MainMenu == nil {
-		p.MainMenu = &MenuBar{platform: p}
+// MainMenu returns the recording menu bar.
+func (p *Platform) MainMenu() (platform.MenuBar, bool) {
+	if p.MainMenuBar == nil {
+		p.MainMenuBar = &MenuBar{platform: p}
 	}
-	return p.MainMenu, false
+	return p.MainMenuBar, false
 }
 
 // CreateWindow returns a recording window of 600x600 pixels.
 func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window) platform.Window {
-	w := &Window{Kind: kind, Width: 600, Height: 600, PixelDensity: 96, DevicePixelRatio: 1}
+	w := &Window{Kind: kind, Width: 600, Height: 600, DPI: 96, PixelRatio: 1}
 	if pw, ok := parent.(*Window); ok {
 		w.Parent = pw
 	}
@@ -152,8 +152,8 @@ func (p *Platform) CreateSaveFileDialog(platform.Window) platform.FileDialog {
 	return d
 }
 
-// GetFontFiles returns FontFiles.
-func (p *Platform) GetFontFiles() []string { return p.FontFiles }
+// FontFiles returns FontFiles.
+func (p *Platform) FontFiles() []string { return p.Fonts }
 
 // OpenInBrowser records the URL.
 func (p *Platform) OpenInBrowser(url string) { p.OpenedURLs = append(p.OpenedURLs, url) }
@@ -304,13 +304,13 @@ func (b *MenuBar) Find(path ...string) *MenuItem {
 type Window struct {
 	events platform.WindowEvents
 
-	Kind             platform.WindowKind
-	Parent           *Window
-	Width, Height    float64
-	MinWidth         float64
-	MinHeight        float64
-	PixelDensity     float64
-	DevicePixelRatio float64
+	Kind          platform.WindowKind
+	Parent        *Window
+	Width, Height float64
+	MinWidth      float64
+	MinHeight     float64
+	DPI           float64
+	PixelRatio    float64
 
 	Visible    bool
 	Focused    bool
@@ -345,10 +345,10 @@ type Window struct {
 var _ platform.Window = (*Window)(nil)
 
 func (w *Window) Events() *platform.WindowEvents { return &w.events }
-func (w *Window) GetPixelDensity() float64       { return w.PixelDensity }
-func (w *Window) GetDevicePixelRatio() float64   { return w.DevicePixelRatio }
-func (w *Window) GetDeviceFontScale() float64 {
-	return w.PixelDensity / w.DevicePixelRatio / 96.0
+func (w *Window) PixelDensity() float64          { return w.DPI }
+func (w *Window) DevicePixelRatio() float64      { return w.PixelRatio }
+func (w *Window) DeviceFontScale() float64 {
+	return w.DPI / w.PixelRatio / 96.0
 }
 func (w *Window) IsVisible() bool      { return w.Visible }
 func (w *Window) SetVisible(v bool)    { w.Visible = v }
@@ -360,7 +360,7 @@ func (w *Window) SetTitleForFilename(string) bool {
 	return false
 }
 func (w *Window) SetMenuBar(mb platform.MenuBar) { w.MenuBar = mb }
-func (w *Window) GetContentSize() (float64, float64) {
+func (w *Window) ContentSize() (float64, float64) {
 	return w.Width, w.Height
 }
 func (w *Window) SetMinContentSize(width, height float64) {
@@ -382,10 +382,10 @@ func (w *Window) ShowEditor(x, y, fontHeight, minWidth float64, isMonospace bool
 }
 func (w *Window) HideEditor()                { w.EditorVisible = false }
 func (w *Window) SetScrollbarVisible(v bool) { w.ScrollbarVisible = v }
-func (w *Window) ConfigureScrollbar(min, max, pageSize float64) {
-	w.ScrollMin, w.ScrollMax, w.ScrollPage = min, max, pageSize
+func (w *Window) ConfigureScrollbar(lo, hi, pageSize float64) {
+	w.ScrollMin, w.ScrollMax, w.ScrollPage = lo, hi, pageSize
 }
-func (w *Window) GetScrollbarPosition() float64  { return w.ScrollPos }
+func (w *Window) ScrollbarPosition() float64     { return w.ScrollPos }
 func (w *Window) SetScrollbarPosition(p float64) { w.ScrollPos = p }
 func (w *Window) Invalidate()                    { w.Invalidated++ }
 
@@ -477,16 +477,16 @@ type FileDialog struct {
 	platform *Platform
 	Save     bool
 	Title    string
-	Filename string
+	Path     string
 	Filters  []platform.FileFilter
 }
 
 func (d *FileDialog) SetTitle(s string)       { d.Title = s }
-func (d *FileDialog) SetCurrentName(s string) { d.Filename = s }
-func (d *FileDialog) GetFilename() string     { return d.Filename }
-func (d *FileDialog) SetFilename(s string)    { d.Filename = s }
+func (d *FileDialog) SetCurrentName(s string) { d.Path = s }
+func (d *FileDialog) Filename() string        { return d.Path }
+func (d *FileDialog) SetFilename(s string)    { d.Path = s }
 func (d *FileDialog) SuggestFilename(s string) {
-	d.Filename = s
+	d.Path = s
 }
 func (d *FileDialog) AddFilter(f platform.FileFilter)     { d.Filters = append(d.Filters, f) }
 func (d *FileDialog) AddFilters(fs []platform.FileFilter) { d.Filters = append(d.Filters, fs...) }
@@ -507,6 +507,6 @@ func (d *FileDialog) RunModal() bool {
 	if path == "" {
 		return false
 	}
-	d.Filename = path
+	d.Path = path
 	return true
 }

@@ -161,7 +161,7 @@ func NewSketch() *Sketch {
 	}
 }
 
-func (s *Sketch) GetConstraint(h core.HConstraint) *core.Constraint {
+func (s *Sketch) Constraint(h core.HConstraint) *core.Constraint {
 	for i := range s.Constraints {
 		if s.Constraints[i].H == h {
 			return &s.Constraints[i]
@@ -170,7 +170,7 @@ func (s *Sketch) GetConstraint(h core.HConstraint) *core.Constraint {
 	return nil
 }
 
-func (s *Sketch) GetEntity(h core.HEntity) *core.Entity {
+func (s *Sketch) Entity(h core.HEntity) *core.Entity {
 	if i, ok := s.entityIndex[h]; ok && i < len(s.Entities) && s.Entities[i].H == h {
 		return &s.Entities[i]
 	}
@@ -184,27 +184,27 @@ func (s *Sketch) GetEntity(h core.HEntity) *core.Entity {
 	return nil
 }
 
-// MustGetEntity is GetEntity for handles that must exist (C++
+// MustEntity is GetEntity for handles that must exist (C++
 // SK.GetEntity, which asserts).
-func (s *Sketch) MustGetEntity(h core.HEntity) *core.Entity {
-	e := s.GetEntity(h)
+func (s *Sketch) MustEntity(h core.HEntity) *core.Entity {
+	e := s.Entity(h)
 	if e == nil {
 		panic(fmt.Sprintf("entity %08x not found", h.V))
 	}
 	return e
 }
 
-// MustGetParam is GetParam for handles that must exist (C++
+// MustParam is GetParam for handles that must exist (C++
 // SK.GetParam, which asserts).
-func (s *Sketch) MustGetParam(h core.HParam) *core.Param {
-	p := s.GetParam(h)
+func (s *Sketch) MustParam(h core.HParam) *core.Param {
+	p := s.Param(h)
 	if p == nil {
 		panic(fmt.Sprintf("param %08x not found", h.V))
 	}
 	return p
 }
 
-func (s *Sketch) GetParam(h core.HParam) *core.Param {
+func (s *Sketch) Param(h core.HParam) *core.Param {
 	if i, ok := s.paramIndex[h]; ok && i < len(s.Params) && s.Params[i].H == h {
 		return &s.Params[i]
 	}
@@ -218,7 +218,7 @@ func (s *Sketch) GetParam(h core.HParam) *core.Param {
 	return nil
 }
 
-func (s *Sketch) GetRequest(h core.HRequest) *Request {
+func (s *Sketch) Request(h core.HRequest) *Request {
 	for i := range s.Requests {
 		if s.Requests[i].H == h {
 			return &s.Requests[i]
@@ -227,7 +227,7 @@ func (s *Sketch) GetRequest(h core.HRequest) *Request {
 	return nil
 }
 
-func (s *Sketch) GetGroup(h core.HGroup) *Group {
+func (s *Sketch) Group(h core.HGroup) *Group {
 	for i := range s.Groups {
 		if s.Groups[i].H == h {
 			return &s.Groups[i]
@@ -236,7 +236,7 @@ func (s *Sketch) GetGroup(h core.HGroup) *Group {
 	return nil
 }
 
-func (s *Sketch) GetStyle(h core.HStyle) *core.Style {
+func (s *Sketch) Style(h core.HStyle) *core.Style {
 	for i := range s.Styles {
 		if s.Styles[i].H == h {
 			return &s.Styles[i]
@@ -275,61 +275,61 @@ func (s *Sketch) AddReferences() {
 // the largest in use, as C++ IdList::AddAndAssignId does.
 
 func (s *Sketch) AddGroup(g Group) core.HGroup {
-	var max uint32
+	var top uint32
 	for i := range s.Groups {
-		max = maxU32(max, s.Groups[i].H.V)
+		top = maxU32(top, s.Groups[i].H.V)
 	}
-	g.H.V = max + 1
+	g.H.V = top + 1
 	s.Groups = append(s.Groups, g)
 	return g.H
 }
 
 func (s *Sketch) AddRequest(r Request) core.HRequest {
-	var max uint32
+	var top uint32
 	for i := range s.Requests {
-		max = maxU32(max, s.Requests[i].H.V)
+		top = maxU32(top, s.Requests[i].H.V)
 	}
-	r.H.V = max + 1
+	r.H.V = top + 1
 	s.Requests = append(s.Requests, r)
 	return r.H
 }
 
 func (s *Sketch) AddEntity(e core.Entity) core.HEntity {
-	var max uint32
+	var top uint32
 	for i := range s.Entities {
-		max = maxU32(max, s.Entities[i].H.V)
+		top = maxU32(top, s.Entities[i].H.V)
 	}
-	e.H.V = max + 1
+	e.H.V = top + 1
 	s.Entities = append(s.Entities, e)
 	return e.H
 }
 
 func (s *Sketch) AddParam(p core.Param) core.HParam {
-	var max uint32
+	var top uint32
 	for i := range s.Params {
-		max = maxU32(max, s.Params[i].H.V)
+		top = maxU32(top, s.Params[i].H.V)
 	}
-	p.H.V = max + 1
+	p.H.V = top + 1
 	s.Params = append(s.Params, p)
 	return p.H
 }
 
 func (s *Sketch) AddConstraint(c core.Constraint) core.HConstraint {
-	var max uint32
+	var top uint32
 	for i := range s.Constraints {
-		max = maxU32(max, s.Constraints[i].H.V)
+		top = maxU32(top, s.Constraints[i].H.V)
 	}
-	c.H.V = max + 1
+	c.H.V = top + 1
 	s.Constraints = append(s.Constraints, c)
 	return c.H
 }
 
 func (s *Sketch) AddStyle(st core.Style) core.HStyle {
-	var max uint32
+	var top uint32
 	for i := range s.Styles {
-		max = maxU32(max, s.Styles[i].H.V)
+		top = maxU32(top, s.Styles[i].H.V)
 	}
-	st.H.V = max + 1
+	st.H.V = top + 1
 	s.Styles = append(s.Styles, st)
 	return st.H
 }
@@ -390,7 +390,7 @@ func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox {
 
 		// arc center point shouldn't be included in bounding box calculation
 		if e.IsPoint() && e.H.IsFromRequest() {
-			r := s.GetRequest(e.H.Request())
+			r := s.Request(e.H.Request())
 			if r.Type == RequestArcOfCircle && e.H == r.H.Entity(1) {
 				continue
 			}
@@ -420,8 +420,8 @@ func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox {
 	return box
 }
 
-func (s *Sketch) GetRunningMeshGroupFor(h core.HGroup) *Group {
-	for g := s.GetGroup(h); g != nil; g = g.PreviousGroup(s) {
+func (s *Sketch) RunningMeshGroupFor(h core.HGroup) *Group {
+	for g := s.Group(h); g != nil; g = g.PreviousGroup(s) {
 		if g.IsMeshGroup() {
 			return g
 		}

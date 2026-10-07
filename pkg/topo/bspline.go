@@ -21,12 +21,12 @@ import (
 // the patches are faces of their own. A boundary that shrinks to a
 // point, a pole, makes no edge. The patches' handles come back, by span
 // along u, then along v.
-func AddBSplineFace(sh *srf.SShell, bs *srf.BSplineSurface, id, sheet uint32, color core.RgbaColor) ([][]core.HSSurface, error) {
+func AddBSplineFace(sh *srf.SShell, bs *srf.BSplineSurface, id, sheet uint32, color core.RGBA) ([][]core.HSSurface, error) {
 	return NewFaceAdder(sh).AddBSplineFace(bs, id, sheet, color)
 }
 
 // AddBSplineFace is AddBSplineFace by the adder.
-func (fa *FaceAdder) AddBSplineFace(bs *srf.BSplineSurface, id, sheet uint32, color core.RgbaColor) ([][]core.HSSurface, error) {
+func (fa *FaceAdder) AddBSplineFace(bs *srf.BSplineSurface, id, sheet uint32, color core.RGBA) ([][]core.HSSurface, error) {
 	ps, err := bs.Patches()
 	if err != nil {
 		return nil, err
@@ -78,12 +78,12 @@ func pole(c *srf.SBezier) bool {
 // that covers them (a surface's control net must cover its face; see
 // planeOver). The face takes identity id. The curves must lie in one
 // plane.
-func AddPlanarFace(sh *srf.SShell, loops [][]srf.SBezier, id uint32, color core.RgbaColor) (core.HSSurface, error) {
+func AddPlanarFace(sh *srf.SShell, loops [][]srf.SBezier, id uint32, color core.RGBA) (core.HSSurface, error) {
 	return NewFaceAdder(sh).AddPlanarFace(loops, id, color)
 }
 
 // AddPlanarFace is AddPlanarFace by the adder.
-func (fa *FaceAdder) AddPlanarFace(loops [][]srf.SBezier, id uint32, color core.RgbaColor) (core.HSSurface, error) {
+func (fa *FaceAdder) AddPlanarFace(loops [][]srf.SBezier, id uint32, color core.RGBA) (core.HSSurface, error) {
 	return fa.AddPlanarFaceWithin(loops, id, color, geom.Vector{}, geom.LengthEps)
 }
 
@@ -92,7 +92,7 @@ func (fa *FaceAdder) AddPlanarFace(loops [][]srf.SBezier, id uint32, color core.
 // not zero, is the plane's, else the outer loop's. With tol past
 // LengthEps the face's mesh takes the curves' own points on its edges
 // (srf.SSurface.SnapToTrims).
-func (fa *FaceAdder) AddPlanarFaceWithin(loops [][]srf.SBezier, id uint32, color core.RgbaColor, n geom.Vector, tol float64) (core.HSSurface, error) {
+func (fa *FaceAdder) AddPlanarFaceWithin(loops [][]srf.SBezier, id uint32, color core.RGBA, n geom.Vector, tol float64) (core.HSSurface, error) {
 	if len(loops) == 0 || len(loops[0]) == 0 {
 		return core.HSSurface{}, errors.New("topo: a face needs a loop")
 	}

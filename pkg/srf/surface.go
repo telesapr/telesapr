@@ -21,7 +21,7 @@ type SSurface struct {
 	H    core.HSSurface
 	NewH core.HSSurface
 
-	Color core.RgbaColor
+	Color core.RGBA
 	Face  FaceID
 	// Origin identifies a surface that no sketch entity names (Face is
 	// 0), such as a thread's or a Boolean tool's: the group that made
@@ -96,7 +96,7 @@ func (s *SSurface) Clear() {
 // Reverse flips the first parameter direction, which flips the normal,
 // and reverses the trims to match. Mirrors C++ SSurface::Reverse.
 func (s *SSurface) Reverse() {
-	for i := 0; i < (s.DegM+1)/2; i++ {
+	for i := range (s.DegM + 1) / 2 {
 		for j := 0; j <= s.DegN; j++ {
 			ii := s.DegM - i
 			s.Ctrl[i][j], s.Ctrl[ii][j] = s.Ctrl[ii][j], s.Ctrl[i][j]
@@ -213,9 +213,9 @@ func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
 	}
 }
 
-// GetAxisAlignedBounding extends (ptMin, ptMax) to include every
+// AxisAlignedBounding extends (ptMin, ptMax) to include every
 // control point of the surface.
-func (s *SSurface) GetAxisAlignedBounding(ptMax, ptMin *geom.Vector) {
+func (s *SSurface) AxisAlignedBounding(ptMax, ptMin *geom.Vector) {
 	*ptMax = geom.Vector{X: veryNegative, Y: veryNegative, Z: veryNegative}
 	*ptMin = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
 
@@ -448,8 +448,8 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 	if max(s.DegM, s.DegN) == 2 {
 		res = 7
 	}
-	for i := 0; i < res; i++ {
-		for j := 0; j < res; j++ {
+	for i := range res {
+		for j := range res {
 			tryu, tryv := (float64(i)+0.5)/float64(res), (float64(j)+0.5)/float64(res)
 
 			tryp := s.PointAt(tryu, tryv)
@@ -482,7 +482,7 @@ func (s *SSurface) closestPointNewton(p geom.Vector, u, v *float64, mustConverge
 	if mustConverge {
 		iters = 25
 	}
-	for i := 0; i < iters; i++ {
+	for range iters {
 		p0 := s.PointAt(*u, *v)
 		if mustConverge {
 			if p0.EqualsTol(p, ratPolyEps) {
@@ -642,7 +642,7 @@ func (s *SSurface) CoincidentWithPlane(n geom.Vector, d float64) bool {
 func (s *SSurface) LineEntirelyOutsideBbox(a, b geom.Vector, asSegment bool) bool {
 	// Mirrors C++ SSurface::LineEntirelyOutsideBbox.
 	var amax, amin geom.Vector
-	s.GetAxisAlignedBounding(&amax, &amin)
+	s.AxisAlignedBounding(&amax, &amin)
 	if !geom.BoundingBoxIntersectsLine(amax, amin, a, b, asSegment) {
 		// The line segment could fail to intersect the bbox, but lie entirely
 		// within it and intersect the surface.

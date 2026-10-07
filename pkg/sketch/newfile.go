@@ -13,7 +13,7 @@ func (sk *Sketch) ClearExisting() {
 	sk.UndoClearStack(&sk.Undo)
 
 	for _, hg := range sk.GroupOrder {
-		if g := sk.GetGroup(hg); g != nil {
+		if g := sk.Group(hg); g != nil {
 			g.Clear()
 		}
 	}
@@ -31,7 +31,7 @@ func (sk *Sketch) CreateDefaultDrawingGroup() core.HGroup {
 		Subtype: GroupWorkplaneByPointOrtho,
 		Order:   1,
 	})
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	g.Predef.Q = geom.Quaternion{W: 1}
 	g.Predef.Origin = HRequestReferenceXY.Entity(1)
 	g.ActiveWorkplane = hg.Entity(0)

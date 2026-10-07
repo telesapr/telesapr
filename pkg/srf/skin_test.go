@@ -33,7 +33,7 @@ func TestChainCurve(t *testing.T) {
 		if len(c.Ctrl) != 4*deg+1 || c.Ctrl[len(c.Ctrl)-1] != c.Ctrl[0] {
 			t.Errorf("degree %d: %d control points, closed %v", deg, len(c.Ctrl), c.Ctrl[len(c.Ctrl)-1] == c.Ctrl[0])
 		}
-		for i := 0; i <= 100; i++ {
+		for i := range 101 {
 			u := float64(i) / 100
 			piece := min(int(u*4), 3)
 			want := chain[piece].PointAt(u*4 - float64(piece))
@@ -75,7 +75,7 @@ func TestSkin(t *testing.T) {
 			t.Errorf("%d sections: degree %d across, parameters %v", k, bs.DegV, ts)
 		}
 		for s := range secs {
-			for i := 0; i <= 40; i++ {
+			for i := range 41 {
 				u := float64(i) / 40
 				if got, want := bs.PointAt(u, ts[s]), secs[s].PointAt(u); !got.EqualsTol(want, 1e-9) {
 					t.Fatalf("%d sections: section %d at %.3f is %v, want %v", k, s, u, got, want)
@@ -118,7 +118,7 @@ func TestSkinWithEnds(t *testing.T) {
 			t.Fatal(err)
 		}
 		for s := range secs {
-			for i := 0; i <= 20; i++ {
+			for i := range 21 {
 				u := float64(i) / 20
 				if got, want := bs.PointAt(u, ts[s]), secs[s].PointAt(u); !got.EqualsTol(want, 1e-9) {
 					t.Fatalf("%d sections: section %d at %.2f is %v, want %v", k, s, u, got, want)

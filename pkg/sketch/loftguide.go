@@ -23,14 +23,14 @@ const guideSteps = 64
 // SetLoftGuides makes the line segments, arcs and cubics es the guide
 // curves of the loft hg, or takes its guides away when es is empty.
 func (sk *Sketch) SetLoftGuides(hg core.HGroup, es []core.HEntity) error {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g == nil || g.Type != GroupLoft {
 		return errors.New("only a loft has guide curves")
 	}
 	var out []core.HEntity
 	seen := map[core.HEntity]bool{}
 	for _, he := range es {
-		e := sk.GetEntity(he)
+		e := sk.Entity(he)
 		if e == nil {
 			return fmt.Errorf("entity %s doesn't exist", sk.entityName(he))
 		}
@@ -60,7 +60,7 @@ func (g *Group) loftGuides(sk *Sketch) ([]topo.LoftGuide, error) {
 	}
 	var curves []srf.SBezier
 	for _, he := range g.Edges {
-		e := sk.GetEntity(he)
+		e := sk.Entity(he)
 		if e == nil {
 			return nil, fmt.Errorf("guide curve %s doesn't exist", sk.entityName(he))
 		}

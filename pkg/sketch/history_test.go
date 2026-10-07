@@ -67,7 +67,7 @@ func TestGroupDependencies(t *testing.T) {
 	}
 
 	// A copy's remap names its source, even without an operand.
-	g := sk.GetGroup(hg(3))
+	g := sk.Group(hg(3))
 	g.OpA, g.Predef.EntityB = core.HGroup{}, core.HEntity{}
 	if deps := sk.GroupDependencies(hg(3)); len(deps) == 0 || deps[len(deps)-1].Why != "copied entity" {
 		t.Fatalf("the head without its operand depends on %v", deps)
@@ -97,7 +97,7 @@ func TestMoveGroup(t *testing.T) {
 	if got, want := orderOf(sk), []uint32{1, 4, 2, 3, 5, 6, 7, 8, 9}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("order %v, want %v", got, want)
 	}
-	if sk.GetGroup(hg(4)).Clean || sk.GetGroup(hg(9)).Clean || !sk.GetGroup(hg(1)).Clean {
+	if sk.Group(hg(4)).Clean || sk.Group(hg(9)).Clean || !sk.Group(hg(1)).Clean {
 		t.Fatal("the move should dirty the groups from where the history changed")
 	}
 	if !sk.Unsaved {
@@ -172,7 +172,7 @@ func TestMoveGroupRefused(t *testing.T) {
 // two groups one order number.
 func TestMoveGroupSameOrders(t *testing.T) {
 	sk := bolt(t)
-	sk.GetGroup(hg(4)).Order = sk.GetGroup(hg(2)).Order
+	sk.Group(hg(4)).Order = sk.Group(hg(2)).Order
 	if got, want := orderOf(sk), []uint32{1, 2, 4, 3, 5, 6, 7, 8, 9}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("order %v, want %v", got, want)
 	}

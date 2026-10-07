@@ -198,7 +198,7 @@ type shownState struct {
 // does (C++ TextWindow::meta).
 type cellMeta struct {
 	fg, bg byte
-	bgRgb  core.RgbaColor
+	bgRgb  core.RGBA
 	link   int
 	data   uint32
 	f, h   LinkFunction
@@ -259,7 +259,7 @@ type TextWindow struct {
 		col     int
 
 		colorPicker struct {
-			rgb            core.RgbaColor
+			rgb            core.RGBA
 			h, s, v        float64
 			show           bool
 			picker1dActive bool
@@ -295,7 +295,7 @@ func newTextWindow(ss *Application) *TextWindow {
 var (
 	fgColors = []struct {
 		c     byte
-		color core.RgbaColor
+		color core.RGBA
 	}{
 		{'d', rgbi(255, 255, 255)}, // Default   : white
 		{'l', rgbi(100, 200, 255)}, // links     : blue
@@ -311,7 +311,7 @@ var (
 	}
 	bgColors = []struct {
 		c     byte
-		color core.RgbaColor
+		color core.RGBA
 	}{
 		{'d', rgbi(0, 0, 0)}, // Default   : black
 		{'t', rgbi(34, 15, 15)},
@@ -332,8 +332,8 @@ var fgColorTable, bgColorTable = func() (fg, bg [256][3]float32) {
 	return
 }()
 
-func colorFromTable(t *[256][3]float32, c byte) core.RgbaColor {
-	return core.RgbaColorFromFloat(t[c][0], t[c][1], t[c][2], 1)
+func colorFromTable(t *[256][3]float32, c byte) core.RGBA {
+	return core.RGBAFromFloat(t[c][0], t[c][1], t[c][2], 1)
 }
 
 // Init opens the window the first time, and resets it (C++
@@ -373,7 +373,7 @@ func (tw *TextWindow) Init() {
 						}
 					}
 					offset := lineHeight / 2 * event.ScrollDelta
-					tw.ScrollbarEvent(tw.window.GetScrollbarPosition() - offset)
+					tw.ScrollbarEvent(tw.window.ScrollbarPosition() - offset)
 				}
 				return false
 			}
@@ -435,14 +435,14 @@ func (tw *TextWindow) ShowEditControl(col int, str string, halfRow ...int) {
 	if tw.window == nil {
 		return
 	}
-	width, _ := tw.window.GetContentSize()
+	width, _ := tw.window.ContentSize()
 	tw.window.ShowEditor(float64(x), float64(y+lineHeight-2), lineHeight-4,
 		width-float64(x), true, str)
 }
 
 // ShowEditControlWithColorPicker shows the edit box with a colour
 // picker under it (C++ TextWindow::ShowEditControlWithColorPicker).
-func (tw *TextWindow) ShowEditControlWithColorPicker(col int, rgb core.RgbaColor) {
+func (tw *TextWindow) ShowEditControlWithColorPicker(col int, rgb core.RGBA) {
 	tw.ss.ScheduleShowTW()
 
 	tw.editControl.colorPicker.show = true
@@ -573,11 +573,14 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 
 	r := tw.rows
 	row := tw.addRow()
-	if r == 0 {
+	switch {
+	case r == 0:
 		row.top = 0
-	} else if halfLine {
+
+	case halfLine:
 		row.top = tw.lines[r-1].top + 3
-	} else {
+
+	default:
 		row.top = tw.lines[r-1].top + 2
 	}
 	tw.rows++
@@ -647,12 +650,12 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 					return // truncated directive
 				}
 				cc := format[i+1] // color code
-				var rgbPtr *core.RgbaColor
+				var rgbPtr *core.RGBA
 				switch cc {
 				case 'p':
 					cc = byte(intArg(next()))
 				case 'z':
-					rgbPtr = next().(*core.RgbaColor)
+					rgbPtr = next().(*core.RGBA)
 				}
 				if format[i] == 'F' {
 					fg = cc
@@ -694,7 +697,7 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 
 		fid := funcID(f)
 		for _, ch := range buf {
-			for k := range font.GetWidth(ch) {
+			for k := range font.Width(ch) {
 				if c >= MaxCols {
 					return
 				}
@@ -734,7 +737,8 @@ func (tw *TextWindow) Show() {
 
 	// Make sure these tests agree with test used to draw indicator line
 	// on main list of groups screen.
-	if gw.pending.description != "" {
+	switch {
+	case gw.pending.description != "":
 		// A pending operation (that must be completed with the mouse in
 		// the graphics window) will preempt our usual display.
 		tw.HideEditControl()
@@ -742,8 +746,10 @@ func (tw *TextWindow) Show() {
 		tw.Printf(false, "")
 		tw.Printf(false, "%s", gw.pending.description)
 		tw.Printf(true, "%Fl%f%Ll(cancel operation)%E", LinkFunction(tw.ScreenUnselectAll))
-	} else if (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != ScreenPasteTransformed &&
-		tw.shown.screen != ScreenDrawing {
+
+	case (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != ScreenPasteTransformed &&
+		tw.shown.screen != ScreenDrawing:
+
 		// The drawing's screen stays while edges and faces are picked
 		// for its dimensions (roadmap 29.2).
 		if tw.edit.meaning != EditTTFText {
@@ -751,7 +757,8 @@ func (tw *TextWindow) Show() {
 		}
 		tw.ShowHeader(false)
 		tw.DescribeSelection()
-	} else {
+
+	default:
 		if tw.edit.meaning == EditTTFText {
 			tw.HideEditControl()
 		}
@@ -818,7 +825,7 @@ func (tw *TextWindow) Show() {
 
 // Resize fits the scrollbar to the window (C++ TextWindow::Resize).
 func (tw *TextWindow) Resize() {
-	_, height := tw.window.GetContentSize()
+	_, height := tw.window.ContentSize()
 
 	tw.halfRows = int(height) / (lineHeight / 2)
 
@@ -834,15 +841,15 @@ func (tw *TextWindow) Resize() {
 
 // DrawOrHitTestIcons draws the icons at the top, or finds the one under
 // the mouse (C++ TextWindow::DrawOrHitTestIcons).
-func (tw *TextWindow) DrawOrHitTestIcons(uiCanvas *render.UiCanvas, how drawOrHitHow, mx, my float64) {
-	width, _ := tw.window.GetContentSize()
+func (tw *TextWindow) DrawOrHitTestIcons(uiCanvas *render.UICanvas, how drawOrHitHow, mx, my float64) {
+	width, _ := tw.window.ContentSize()
 
 	x, y := 20, 33+lineHeight
 	y -= tw.scrollPos * (lineHeight / 2)
 
 	if how == howPaint {
 		top, bot := y-28, y+4
-		uiCanvas.DrawRect(0, int(width), top, bot, core.NewRgbaColor(30, 30, 30, 255), core.RgbaColor{}, 0)
+		uiCanvas.DrawRect(0, int(width), top, bot, core.NewRGBA(30, 30, 30, 255), core.RGBA{}, 0)
 	}
 
 	oldHovered := tw.hoveredButton
@@ -945,9 +952,9 @@ func rgbToHsv(rgb geom.Vector) geom.Vector {
 
 func hsvPattern2d(w, h int) *res.Pixmap {
 	pixmap := res.NewPixmap(res.FormatRGB, w, h)
-	for j := 0; j < pixmap.Height; j++ {
+	for j := range pixmap.Height {
 		p := pixmap.Stride * j
-		for i := 0; i < pixmap.Width; i++ {
+		for i := range pixmap.Width {
 			hsv := geom.Vector{X: 6.0 * float64(i) / float64(pixmap.Width-1),
 				Y: 1.0 * float64(j) / float64(pixmap.Height-1), Z: 1}
 			rgb := hsvToRgb(hsv).ScaledBy(255)
@@ -962,9 +969,9 @@ func hsvPattern2d(w, h int) *res.Pixmap {
 
 func hsvPattern1d(hue, sat float64, w, h int) *res.Pixmap {
 	pixmap := res.NewPixmap(res.FormatRGB, w, h)
-	for i := 0; i < pixmap.Height; i++ {
+	for i := range pixmap.Height {
 		p := i * pixmap.Stride
-		for j := 0; j < pixmap.Width; j++ {
+		for j := range pixmap.Width {
 			hsv := geom.Vector{X: 6 * hue, Y: sat,
 				Z: 1.0 * float64(pixmap.Width-1-j) / float64(pixmap.Width)}
 			rgb := hsvToRgb(hsv).ScaledBy(255)
@@ -984,7 +991,7 @@ func (tw *TextWindow) ColorPickerDone() {
 	tw.EditControlDone(fmt.Sprintf("%.2f, %.2f, %.3f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
 }
 
-var pickerBaseColor = [12]core.RgbaColor{
+var pickerBaseColor = [12]core.RGBA{
 	rgbi(255, 0, 0),
 	rgbi(0, 255, 0),
 	rgbi(0, 0, 255),
@@ -1001,14 +1008,14 @@ var pickerBaseColor = [12]core.RgbaColor{
 	rgbi(0, 127, 255),
 }
 
-func rgbfVec(rgb geom.Vector) core.RgbaColor {
-	return core.RgbaColorFromFloat(float32(rgb.X), float32(rgb.Y), float32(rgb.Z), 1)
+func rgbfVec(rgb geom.Vector) core.RGBA {
+	return core.RGBAFromFloat(float32(rgb.X), float32(rgb.Y), float32(rgb.Z), 1)
 }
 
 // DrawOrHitTestColorPicker draws the colour picker, or handles the
 // mouse on it; it reports whether the picker is shown and has the
 // mouse (C++ TextWindow::DrawOrHitTestColorPicker).
-func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how drawOrHitHow,
+func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UICanvas, how drawOrHitHow,
 	leftDown bool, x, y float64) bool {
 	cp := &tw.editControl.colorPicker
 	mousePointerAsHand := false
@@ -1025,7 +1032,7 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 		tw.window.Invalidate()
 	}
 
-	width, _ := tw.window.GetContentSize()
+	width, _ := tw.window.ContentSize()
 
 	px := leftMargin + charWidth*tw.editControl.col
 	py := (tw.editControl.halfRow - tw.ss.TW.scrollPos) * (lineHeight / 2)
@@ -1042,9 +1049,9 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 
 	bw := 6
 	if how == howPaint {
-		uiCanvas.DrawRect(px, pxm+bw, py, pym+bw, core.NewRgbaColor(50, 50, 50, 255), core.RgbaColor{}, 1)
+		uiCanvas.DrawRect(px, pxm+bw, py, pym+bw, core.NewRGBA(50, 50, 50, 255), core.RGBA{}, 1)
 		uiCanvas.DrawRect(px+(bw/2), pxm+(bw/2), py+(bw/2), pym+(bw/2),
-			core.NewRgbaColor(0, 0, 0, 255), core.RgbaColor{}, 1)
+			core.NewRGBA(0, 0, 0, 255), core.RGBA{}, 1)
 	} else if x < float64(px) || x > float64(pxm+(bw/2)) || y < float64(py) || y > float64(pym+(bw/2)) {
 		return false
 	}
@@ -1070,18 +1077,20 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 				rgb = geom.Vector{X: float64(d.RedF()), Y: float64(d.GreenF()), Z: float64(d.BlueF())}
 				if i >= 2 && i <= 4 {
 					a := 0.4
-					if i == 2 {
+					switch i {
+					case 2:
 						a = 0.2
-					} else if i == 3 {
+					case 3:
 						a = 0.3
 					}
 					rgb = rgb.Plus(geom.Vector{X: a, Y: a, Z: a})
 				}
 				if i >= 5 && i <= 7 {
 					a := 0.18
-					if i == 5 {
+					switch i {
+					case 5:
 						a = 0.7
-					} else if i == 6 {
+					case 6:
 						a = 0.4
 					}
 					rgb = rgb.ScaledBy(a)
@@ -1093,7 +1102,7 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 
 			switch how {
 			case howPaint:
-				uiCanvas.DrawRect(sx, sx+size, sy, sy+size, rgbfVec(rgb), core.RgbaColor{}, 2)
+				uiCanvas.DrawRect(sx, sx+size, sy, sy+size, rgbfVec(rgb), core.RGBA{}, 2)
 			case howClick:
 				if in(sx, sy, sx+size, sy+size) {
 					cp.rgb = rgbfVec(rgb)
@@ -1112,7 +1121,7 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 	hym := hy + pitch*2 + size
 	switch how {
 	case howPaint:
-		uiCanvas.DrawRect(hx, hxm, hy, hym, cp.rgb, core.RgbaColor{}, 2)
+		uiCanvas.DrawRect(hx, hxm, hy, hym, cp.rgb, core.RGBA{}, 2)
 	case howClick:
 		if in(hx, hy, hxm, hym) {
 			tw.ColorPickerDone()
@@ -1134,7 +1143,7 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 		cx := hx + int(float64(hxm-hx)*(1.0-cp.v))
 		// C++ passes the fill and outline colours of DrawRect to
 		// DrawLine: the outline becomes a width of 0.
-		uiCanvas.DrawLine(cx, hy, cx, hym, core.NewRgbaColor(0, 0, 0, 255), 0, 3)
+		uiCanvas.DrawLine(cx, hy, cx, hym, core.NewRGBA(0, 0, 0, 255), 0, 3)
 	} else if how == howClick || (how == howHover && leftDown && cp.picker1dActive) {
 		if in(hx, hy, hxm, hym) {
 			cp.v = 1 - (x-float64(hx))/float64(hxm-hx)
@@ -1156,8 +1165,8 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 
 		cx := hx + int(float64(hxm-hx)*cp.h)
 		cy := hy + int(float64(hym-hy)*cp.s)
-		uiCanvas.DrawLine(cx-5, cy, cx+5, cy, core.NewRgbaColor(255, 255, 255, 255), 0, 3)
-		uiCanvas.DrawLine(cx, cy-5, cx, cy+5, core.NewRgbaColor(255, 255, 255, 255), 0, 3)
+		uiCanvas.DrawLine(cx-5, cy, cx+5, cy, core.NewRGBA(255, 255, 255, 255), 0, 3)
+		uiCanvas.DrawLine(cx, cy-5, cx, cy+5, core.NewRGBA(255, 255, 255, 255), 0, 3)
 	} else if how == howClick || (how == howHover && leftDown && cp.picker2dActive) {
 		if in(hx, hy, hxm, hym) {
 			h := (x - float64(hx)) / float64(hxm-hx)
@@ -1187,7 +1196,7 @@ func (tw *TextWindow) Paint() {
 	}
 	ss := tw.ss
 
-	width, height := tw.window.GetContentSize()
+	width, height := tw.window.ContentSize()
 	if tw.halfRows != int(height)/(lineHeight/2) {
 		tw.Resize()
 	}
@@ -1195,8 +1204,8 @@ func (tw *TextWindow) Paint() {
 	var camera render.Camera
 	camera.Width = width
 	camera.Height = height
-	camera.PixelRatio = tw.window.GetDevicePixelRatio()
-	camera.GridFit = tw.window.GetDevicePixelRatio() == 1
+	camera.PixelRatio = tw.window.DevicePixelRatio()
+	camera.GridFit = tw.window.DevicePixelRatio() == 1
 	camera.LoadIdentity()
 	camera.Offset.X = -camera.Width / 2.0
 	camera.Offset.Y = -camera.Height / 2.0
@@ -1210,11 +1219,11 @@ func (tw *TextWindow) Paint() {
 	canvas.SetCamera(camera)
 	canvas.StartFrame()
 
-	uiCanvas := &render.UiCanvas{Canvas: canvas, Flip: true}
+	uiCanvas := &render.UICanvas{Canvas: canvas, Flip: true}
 
 	cols := min(int(width)/charWidth+1, MaxCols)
 	for a := range 2 {
-		for r := 0; r < tw.rows; r++ {
+		for r := range tw.rows {
 			ltop := tw.lineTop(r)
 			if ltop < tw.scrollPos-1 {
 				continue
@@ -1246,7 +1255,7 @@ func (tw *TextWindow) Paint() {
 					if bg != 'd' {
 						// Move the quad down a bit, so that the
 						// descenders still have the correct background.
-						uiCanvas.DrawRect(x, x+charWidth, y+adj, y+adj+bh, bgRgb, core.RgbaColor{}, 0)
+						uiCanvas.DrawRect(x, x+charWidth, y+adj, y+adj+bh, bgRgb, core.RGBA{}, 0)
 					}
 				} else {
 					fgRgb := colorFromTable(&fgColorTable, fg)
@@ -1360,7 +1369,7 @@ func (tw *TextWindow) MouseEvent(leftClick, leftDown bool, x, y float64) {
 	hh := float64(lineHeight / 2)
 	y += float64(tw.scrollPos) * hh
 	r := 0
-	for r = 0; r < tw.rows; r++ {
+	for r = 0; r < tw.rows; r++ { //nolint:intrange // r is read after the loop
 		if y >= float64(tw.lineTop(r))*hh && y <= float64(tw.lineTop(r)+2)*hh {
 			break
 		}

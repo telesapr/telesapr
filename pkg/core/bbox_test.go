@@ -17,10 +17,10 @@ func TestBBoxConstructionAndInclude(t *testing.T) {
 	if b.MaxP != (geom.Vector{X: 5, Y: 4, Z: 3}) {
 		t.Fatalf("MaxP unexpected: %+v", b.MaxP)
 	}
-	if origin := b.GetOrigin(); origin != (geom.Vector{X: 1.5, Y: 1.5, Z: 2}) {
+	if origin := b.Origin(); origin != (geom.Vector{X: 1.5, Y: 1.5, Z: 2}) {
 		t.Fatalf("GetOrigin is the centre, got %+v", origin)
 	}
-	if extents := b.GetExtents(); extents != (geom.Vector{X: 3.5, Y: 2.5, Z: 1}) {
+	if extents := b.Extents(); extents != (geom.Vector{X: 3.5, Y: 2.5, Z: 1}) {
 		t.Fatalf("GetExtents unexpected: %+v", extents)
 	}
 

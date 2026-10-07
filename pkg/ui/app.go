@@ -17,7 +17,7 @@ func (ss *Application) Init() {
 	// A missing linked file is looked for through the dialogs.
 	link.LocateMissingFile = ss.locateMissingFile
 	link.ImageCorrupted = func(file string) { ss.Error("The image '%s' is corrupted.", file) }
-	ttf.SetFontFiles(ss.Platform.GetFontFiles())
+	ttf.SetFontFiles(ss.Platform.FontFiles())
 
 	ss.refreshTimer = ss.Platform.CreateTimer()
 	ss.refreshTimer.SetOnTimeout(ss.Refresh)
@@ -159,7 +159,7 @@ func (ss *Application) MarkDraggedParams() []core.HParam {
 		// The pending point could be one in a group that has not yet
 		// been processed, in which case the lookup will fail; but
 		// that's not an error.
-		if pt := sk.GetEntity(hp); pt != nil {
+		if pt := sk.Entity(hp); pt != nil {
 			switch pt.Type {
 			case core.EntityPointNTrans, core.EntityPointIn3D, core.EntityPointNRotAxisTrans:
 				dragged = append(dragged, pt.Param[0], pt.Param[1], pt.Param[2])
@@ -169,14 +169,14 @@ func (ss *Application) MarkDraggedParams() []core.HParam {
 		}
 	}
 	if pd.circle.V != 0 {
-		if circ := sk.GetEntity(pd.circle); circ != nil {
-			if dist := sk.MustGetEntity(circ.Distance); dist.Type == core.EntityDistance {
+		if circ := sk.Entity(pd.circle); circ != nil {
+			if dist := sk.MustEntity(circ.Distance); dist.Type == core.EntityDistance {
 				dragged = append(dragged, dist.Param[0])
 			}
 		}
 	}
 	if pd.normal.V != 0 {
-		if norm := sk.GetEntity(pd.normal); norm != nil && norm.Type == core.EntityNormalIn3D {
+		if norm := sk.Entity(pd.normal); norm != nil && norm.Type == core.EntityNormalIn3D {
 			dragged = append(dragged, norm.Param[0], norm.Param[1], norm.Param[2], norm.Param[3])
 		}
 	}
@@ -188,12 +188,12 @@ func (ss *Application) MarkDraggedParams() []core.HParam {
 func (ss *Application) onGenerated(requests, constraints, groups int) {
 	sk := ss.SK
 	// Make sure the point that we're tracing exists.
-	if ss.Traced.Point.V != 0 && sk.GetEntity(ss.Traced.Point) == nil {
+	if ss.Traced.Point.V != 0 && sk.Entity(ss.Traced.Point) == nil {
 		ss.Traced.Point = core.HEntity{}
 	}
 	// And if we're tracing a point, add its new value to the path
 	if ss.Traced.Point.V != 0 {
-		ss.Traced.Path.AddPoint(sk.MustGetEntity(ss.Traced.Point).PointGetNum(sk))
+		ss.Traced.Path.AddPoint(sk.MustEntity(ss.Traced.Point).PointGetNum(sk))
 	}
 
 	ss.GW.Invalidate(false)

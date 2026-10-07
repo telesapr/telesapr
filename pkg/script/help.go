@@ -114,7 +114,7 @@ func indent(text string) string {
 }
 
 // signature is a function's declaration without "func" and, for a
-// method, its receiver: "Bounds() (min, max Vec)".
+// method, its receiver: "Bounds() (lo, hi Vec)".
 func signature(decl string) string {
 	decl = strings.TrimPrefix(decl, "func ")
 	if strings.HasPrefix(decl, "(") {
@@ -207,7 +207,7 @@ func helpFields(w io.Writer, t reflect.Type) {
 	}
 	var lines []string
 	for f := range t.Fields() {
-		if f := f; f.IsExported() {
+		if f.IsExported() {
 			lines = append(lines, fmt.Sprintf("    %-20s %s", f.Name, f.Type))
 		}
 	}
@@ -384,7 +384,6 @@ func helpOfType(w io.Writer, t reflect.Type, shown string) {
 	var methods []string
 	for _, mt := range []reflect.Type{reflect.PointerTo(named), named} {
 		for m := range mt.Methods() {
-			m := m
 			sig := strings.TrimPrefix(m.Type.String(), "func")
 			// Without the receiver, which is the first parameter.
 			if i := strings.IndexAny(sig, ",)"); i >= 0 {

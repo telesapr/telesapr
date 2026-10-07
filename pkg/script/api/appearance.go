@@ -36,7 +36,7 @@ func (g Group) SetAppearance(name string) {
 func (d *Doc) SetFaceAppearance(face SolidFace, name string) {
 	checkAppearance(name)
 	d.change(func(sk *sketch.Sketch) {
-		g := sk.GetGroup(sketch.FaceGroup(face.id))
+		g := sk.Group(sketch.FaceGroup(face.id))
 		if g == nil {
 			fail("no group made face %x", uint32(face.id))
 		}

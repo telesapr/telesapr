@@ -48,7 +48,7 @@ func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnl
 		p.lo = p.hi.ScaledBy(-1)
 		for i := range sh.Surface {
 			var smax, smin geom.Vector
-			sh.Surface[i].GetAxisAlignedBounding(&smax, &smin)
+			sh.Surface[i].AxisAlignedBounding(&smax, &smin)
 			smax.MakeMaxMin(&p.hi, &p.lo)
 			smin.MakeMaxMin(&p.hi, &p.lo)
 		}
@@ -60,7 +60,7 @@ func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnl
 	var before *Group // the last group before the first assembled one
 	assembled := false
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g == nil || g.Suppress || sk.SuppressedReason(hg) != "" {
 			if hg == upTo {
 				break

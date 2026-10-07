@@ -129,7 +129,7 @@ func sweepStartDirection(st SweepStep, p geom.Vector) geom.Vector {
 // steps take it. The joints between pieces are shared curves, so no
 // Boolean is needed. The profile must cross the path, and stay off the
 // axis of every turn.
-func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RgbaColor, startFace, endFace FaceID) {
+func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA, startFace, endFace FaceID) {
 	if sbls == nil {
 		return
 	}
@@ -215,9 +215,9 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	v := n.NormalDir(1)
 	orig := sbls.Point
 	umin, umax := math.Inf(1), math.Inf(-1)
-	sbls.GetBoundingProjd(u, orig, &umin, &umax)
+	sbls.BoundingProjd(u, orig, &umin, &umax)
 	vmin, vmax := math.Inf(1), math.Inf(-1)
-	sbls.GetBoundingProjd(v, orig, &vmin, &vmax)
+	sbls.BoundingProjd(v, orig, &vmin, &vmax)
 	orig = orig.Plus(u.ScaledBy(umin)).Plus(v.ScaledBy(vmin))
 	u = u.ScaledBy(umax - umin)
 	v = v.ScaledBy(vmax - vmin)
@@ -226,8 +226,8 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	s0.Color, s0.TrimBuilt, s0.Face = color, true, startFace
 	s1 := FromPlane(end.Apply(orig.Plus(u)), end.Q.Rotate(u.ScaledBy(-1)), end.Q.Rotate(v))
 	s1.Color, s1.TrimBuilt, s1.Face = color, true, endFace
-	hs0 := s.addAndAssignSurfaceId(s0)
-	hs1 := s.addAndAssignSurfaceId(s1)
+	hs0 := s.addAndAssignSurfaceID(s0)
+	hs1 := s.addAndAssignSurfaceID(s1)
 
 	type turn struct {
 		center, axis geom.Vector
@@ -246,9 +246,11 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 				b := transformedCopy(&loop.Curves[i], frames[k].T, frames[k].Q)
 				var ss SSurface
 				mitred := mitre[k].ok || mitre[k+1].ok
-				if st.Arc {
+				switch {
+				case st.Arc:
 					ss = FromRevolutionOf(&b, st.Center, st.Axis, 0, st.Angle, 0, 0)
-				} else if mitred {
+
+				case mitred:
 					// Past each mitre, whose section leans out of the piece:
 					// the surface reaches over the whole of it.
 					ext := 1.0
@@ -261,14 +263,15 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 					}
 					d := st.Along.WithMagnitude(ext)
 					ss = FromExtrusionOf(&b, d.ScaledBy(-1), st.Along.Plus(d))
-				} else {
+
+				default:
 					ss = FromExtrusionOf(&b, geom.Vector{}, st.Along)
 				}
 				ss.Color, ss.TrimBuilt = color, true
 				// A mitre trims the side across its rulings, along a
 				// curve in the mitre's plane.
 				ss.AvoidFlatEars = mitred
-				srfs[k][i] = s.addAndAssignSurfaceId(ss)
+				srfs[k][i] = s.addAndAssignSurfaceID(ss)
 			}
 			if st.Arc {
 				turns = append(turns, turn{st.Center, st.Axis, from, len(s.Surface)})

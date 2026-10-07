@@ -58,12 +58,12 @@ func segment(r, c float64) float64 {
 // arc at sharp corners, drafted all round, along the diameter only and
 // along the arc only.
 func TestDraftedPrismAngles(t *testing.T) {
-	old, oldSeg := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSeg := srf.ChordTolMm(), srf.MaxSegments()
 	defer srf.SetChordTolMm(old)
 	defer srf.SetMaxSegments(oldSeg)
 	srf.SetChordTolMm(0.001)
 	srf.SetMaxSegments(200)
-	color := core.NewRgbaColor(100, 100, 100, 255)
+	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	square := polyLoop(v(0, 0, 0), v(20, 0, 0), v(20, 10, 0), v(0, 10, 0))
 	tanOf := func(deg float64) float64 { return math.Tan(rad(deg)) }
@@ -107,7 +107,7 @@ func TestDraftedPrismAngles(t *testing.T) {
 }
 
 func TestDraftedPrismAnglesRefused(t *testing.T) {
-	color := core.NewRgbaColor(100, 100, 100, 255)
+	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	rounded := roundedLoop(20, 10, 3)
 	uneven := uniform([][]srf.SBezier{rounded}, rad(5))
@@ -132,12 +132,12 @@ func TestDraftedPrismAnglesRefused(t *testing.T) {
 // several angles and heights. The rate allowed was fixed at none before
 // the sides were written.
 func TestDraftAnglesSweep(t *testing.T) {
-	old, oldSeg := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSeg := srf.ChordTolMm(), srf.MaxSegments()
 	defer srf.SetChordTolMm(old)
 	defer srf.SetMaxSegments(oldSeg)
 	srf.SetChordTolMm(0.001)
 	srf.SetMaxSegments(200)
-	color := core.NewRgbaColor(100, 100, 100, 255)
+	color := core.NewRGBA(100, 100, 100, 255)
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("which", "all", "diameter", "arc"),

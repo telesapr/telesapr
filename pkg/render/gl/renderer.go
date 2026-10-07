@@ -68,8 +68,8 @@ func (r *Renderer) makeCurrent() {
 	_ = r.ctx.MakeCurrent()
 }
 
-// GetCamera returns the current camera.
-func (r *Renderer) GetCamera() *render.Camera { return &r.camera }
+// Camera returns the current camera.
+func (r *Renderer) Camera() *render.Camera { return &r.camera }
 
 // SetCamera sets the camera and the projection, and clears the depth
 // buffer (C++ SetCamera).
@@ -222,8 +222,8 @@ func (r *Renderer) ReadFrame() *image.RGBA {
 	return img
 }
 
-// GetIdent is GL's vendor, renderer and version strings.
-func (r *Renderer) GetIdent() (vendor, renderer, version string) {
+// Ident is GL's vendor, renderer and version strings.
+func (r *Renderer) Ident() (vendor, renderer, version string) {
 	r.makeCurrent()
 	str := func(name uint32) string {
 		p := glapi.GetString(name)
@@ -267,11 +267,11 @@ func (r *Renderer) unSelectPrimitive() {
 func vertex(v geom.Vector) { glapi.Vertex3d(v.X, v.Y, v.Z) }
 func normal(n geom.Vector) { glapi.Normal3d(n.X, n.Y, n.Z) }
 
-func colorRGBA(c core.RgbaColor) {
+func colorRGBA(c core.RGBA) {
 	glapi.Color4d(float64(c.RedF()), float64(c.GreenF()), float64(c.BlueF()), float64(c.AlphaF()))
 }
 
-func materialRGBA(side uint32, c core.RgbaColor) {
+func materialRGBA(side uint32, c core.RGBA) {
 	m := [4]float32{c.RedF(), c.GreenF(), c.BlueF(), c.AlphaF()}
 	glapi.Materialfv(side, glapi.AMBIENT_AND_DIFFUSE, &m[0])
 }
@@ -491,7 +491,7 @@ func (r *Renderer) doStippledLine(a, b geom.Vector, hcs render.HStroke, phase fl
 
 	curPhase := 0.0
 	curDash := 0
-	for curDash = 0; curDash < len(dashes); curDash++ {
+	for curDash = 0; curDash < len(dashes); curDash++ { //nolint:intrange // curDash is read after the loop
 		curPhase += dashes[curDash] * scale
 		if phase < curPhase {
 			break
@@ -583,7 +583,7 @@ func (r *Renderer) DrawQuad(a, b, c, d geom.Vector, hcf render.HFill) {
 // DrawPoint draws a point as a square of the stroke's width.
 func (r *Renderer) DrawPoint(o geom.Vector, hcs render.HStroke) {
 	s := r.selectStroke(hcs)
-	hcf := r.GetFill(render.Fill{Layer: s.Layer, ZIndex: s.ZIndex, Color: s.Color})
+	hcf := r.InternFill(render.Fill{Layer: s.Layer, ZIndex: s.ZIndex, Color: s.Color})
 	rr := r.camera.ProjRight.ScaledBy(s.Width / 2.0 / r.camera.Scale)
 	u := r.camera.ProjUp.ScaledBy(s.Width / 2.0 / r.camera.Scale)
 	r.DrawQuad(o.Plus(rr).Plus(u), o.Plus(rr).Minus(u), o.Minus(rr).Minus(u), o.Minus(rr).Plus(u), hcf)
@@ -638,7 +638,7 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 
 	front := r.selectFill(hcfFront)
 	frontColor := front.Color
-	var backColor core.RgbaColor
+	var backColor core.RGBA
 
 	materialRGBA(glapi.FRONT, frontColor)
 	if hcfBack != 0 {
@@ -661,14 +661,14 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 		return
 	}
 
-	var triangleColor core.RgbaColor
+	var triangleColor core.RGBA
 	glapi.Enable(glapi.LIGHTING)
 	glapi.Begin(glapi.TRIANGLES)
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
 		if frontColor.IsEmpty() || backColor.IsEmpty() {
-			if triangleColor.IsEmpty() || !triangleColor.Equals(tr.Meta.RgbaColor) {
-				triangleColor = tr.Meta.RgbaColor
+			if triangleColor.IsEmpty() || !triangleColor.Equals(tr.Meta.RGBA) {
+				triangleColor = tr.Meta.RGBA
 				if frontColor.IsEmpty() {
 					materialRGBA(glapi.FRONT, triangleColor)
 				}

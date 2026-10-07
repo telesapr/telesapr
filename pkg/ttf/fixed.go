@@ -21,10 +21,10 @@ func moveSign(x int64, s int) (uint64, int) {
 }
 
 // divFix is FT_DivFix: (a*0x10000) / b, rounded.
-func divFix(a_, b_ int64) int64 {
+func divFix(a0, b0 int64) int64 {
 	s := 1
-	a, s := moveSign(a_, s)
-	b, s := moveSign(b_, s)
+	a, s := moveSign(a0, s)
+	b, s := moveSign(b0, s)
 	var q uint64 = 0x7FFFFFFF
 	if b > 0 {
 		q = ((a << 16) + (b >> 1)) / b
@@ -36,11 +36,11 @@ func divFix(a_, b_ int64) int64 {
 }
 
 // mulDiv is FT_MulDiv: (a*b) / c, rounded.
-func mulDiv(a_, b_, c_ int64) int64 {
+func mulDiv(a0, b0, c0 int64) int64 {
 	s := 1
-	a, s := moveSign(a_, s)
-	b, s := moveSign(b_, s)
-	c, s := moveSign(c_, s)
+	a, s := moveSign(a0, s)
+	b, s := moveSign(b0, s)
+	c, s := moveSign(c0, s)
 	var d uint64 = 0x7FFFFFFF
 	if c > 0 {
 		d = (a*b + (c >> 1)) / c

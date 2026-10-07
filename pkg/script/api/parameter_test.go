@@ -203,8 +203,8 @@ func TestParameterMisuse(t *testing.T) {
 		t.Errorf("errors %v", errs)
 	}
 	d.With(func(sk *sketch.Sketch) {
-		sk.GetConstraint(length.H).Expr = "gone"
-		sk.MarkGroupDirty(sk.GetConstraint(length.H).Group, false)
+		sk.Constraint(length.H).Expr = "gone"
+		sk.MarkGroupDirty(sk.Constraint(length.H).Group, false)
 	})
 	if errs := d.ExprErrors(); len(errs) != 1 || !strings.Contains(errs[0], `unknown parameter "gone"`) {
 		t.Errorf("errors %v", errs)

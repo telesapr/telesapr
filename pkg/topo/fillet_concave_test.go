@@ -22,7 +22,7 @@ func notch(beta float64, lean geom.Vector) *srf.SShell {
 	b := v(10*math.Cos(math.Pi/2+beta/2), 10*math.Sin(math.Pi/2+beta/2), 0)
 	var sh srf.SShell
 	sh.MakePrism([]geom.Vector{v(0, 0, 0), b, v(b.X, -10, 0), v(a.X, -10, 0), a}, v(0, 0, 0), lean,
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
 
@@ -31,9 +31,9 @@ func notch(beta float64, lean geom.Vector) *srf.SShell {
 func pocketed() *srf.SShell {
 	var block, pocket, out srf.SShell
 	block.MakePrism([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 20),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	pocket.MakePrism([]geom.Vector{v(10, 10, 8), v(30, 10, 8), v(30, 20, 8), v(10, 20, 8)}, v(0, 0, 0), v(0, 0, 13),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	out.MakeFromDifferenceOf(&block, &pocket)
 	return &out
 }
@@ -43,7 +43,7 @@ func pocketed() *srf.SShell {
 func bossOnPlate(rad, h float64) *srf.SShell {
 	var plate, boss, out srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 5),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	boss.MakeFromTransformationOf(cylinder(rad, h+1), v(0, 0, 4), geom.QuaternionIdentity, 1)
 	out.MakeFromUnionOf(&plate, &boss)
 	return &out
@@ -54,7 +54,7 @@ func bossOnPlate(rad, h float64) *srf.SShell {
 func blindHole(rad, deep float64) *srf.SShell {
 	var plate, hole, out srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	hole.MakeFromTransformationOf(cylinder(rad, deep+1), v(0, 0, 10-deep), geom.QuaternionIdentity, 1)
 	out.MakeFromDifferenceOf(&plate, &hole)
 	return &out
@@ -259,9 +259,9 @@ func TestFilletConcaveSweep(t *testing.T) {
 			r := k * 5
 			var block, boss srf.SShell
 			block.MakePrism([]geom.Vector{v(-40, -40, 0), v(40, -40, 0), v(40, 40, 0), v(-40, 40, 0)}, v(0, 0, 0), v(0, 0, 10),
-				core.NewRgbaColor(100, 100, 100, 255))
+				core.NewRGBA(100, 100, 100, 255))
 			boss.MakePrism([]geom.Vector{v(0, 0, 9), v(l, 0, 9), v(l, 6, 9), v(0, 6, 9)}, v(0, 0, 0), v(0, 0, 6+6*lean),
-				core.NewRgbaColor(100, 100, 100, 255))
+				core.NewRGBA(100, 100, 100, 255))
 			sh = &srf.SShell{}
 			sh.MakeFromUnionOf(&block, &boss)
 			tol = 0.002 * r
@@ -351,9 +351,9 @@ func TestFilletBossFootEdge(t *testing.T) {
 	srf.SetChordTolMm(0.002)
 	var block, boss, sh srf.SShell
 	block.MakePrism([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 10),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	boss.MakePrism([]geom.Vector{v(10, 10, 9), v(30, 10, 9), v(30, 20, 9), v(10, 20, 9)}, v(0, 0, 0), v(0, 0, 11),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	sh.MakeFromUnionOf(&block, &boss)
 	before := meshVolume(&sh)
 	for _, r := range []float64{1, 4} {

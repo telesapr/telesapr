@@ -54,7 +54,7 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 	}
 	add := func(file string, n int, g *Group) { addAs(file, n, g.DescriptionString()) }
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g == nil || g.Suppress || g.SuppressAll || sk.SuppressedReason(hg) != "" {
 			continue
 		}

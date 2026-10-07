@@ -35,7 +35,7 @@ const suggestTolerance = 0.02
 //
 // Only entities of the group's requests are looked at.
 func (sk *Sketch) SuggestConstraint(request core.HRequest, wp core.HEntity, group core.HGroup) (Suggestion, bool) {
-	r := sk.GetRequest(request)
+	r := sk.Request(request)
 	if r == nil {
 		return Suggestion{}, false
 	}
@@ -77,12 +77,12 @@ func (sk *Sketch) others(request core.HRequest, group core.HGroup, f func(e *cor
 }
 
 func (sk *Sketch) pointNum(h core.HEntity) geom.Vector {
-	return sk.MustGetEntity(h).PointGetNum(sk)
+	return sk.MustEntity(h).PointGetNum(sk)
 }
 
 func (sk *Sketch) suggestForLine(request core.HRequest, wp core.HEntity, group core.HGroup) (Suggestion, bool) {
-	ptA := sk.MustGetEntity(request.Entity(1))
-	ptB := sk.MustGetEntity(request.Entity(2))
+	ptA := sk.MustEntity(request.Entity(1))
+	ptB := sk.MustEntity(request.Entity(2))
 
 	au, av := ptA.PointGetExprsInWorkplaneUV(sk, wp)
 	bu, bv := ptB.PointGetExprsInWorkplaneUV(sk, wp)
@@ -156,7 +156,7 @@ func (sk *Sketch) suggestForLine(request core.HRequest, wp core.HEntity, group c
 // suggestArcTangent is a tangent at an end of the arc of request to a
 // line or another arc that ends where it does, when the two nearly are.
 func (sk *Sketch) suggestArcTangent(request core.HRequest, group core.HGroup) (Suggestion, bool) {
-	arc := sk.MustGetEntity(request.Entity(0))
+	arc := sk.MustEntity(request.Entity(0))
 	c := sk.pointNum(arc.Point[0])
 	var found Suggestion
 	for k, end := range []core.HEntity{arc.Point[1], arc.Point[2]} {
@@ -207,7 +207,7 @@ func (sk *Sketch) suggestArcTangent(request core.HRequest, group core.HGroup) (S
 // group's arcs and circles, when the circle or arc of request nearly has
 // it.
 func (sk *Sketch) suggestEqualRadius(request core.HRequest, group core.HGroup) (Suggestion, bool) {
-	e := sk.MustGetEntity(request.Entity(0))
+	e := sk.MustEntity(request.Entity(0))
 	r := e.CircleGetRadiusNum(sk)
 	if r < geom.LengthEps {
 		return Suggestion{}, false

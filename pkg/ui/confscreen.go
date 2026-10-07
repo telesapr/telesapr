@@ -286,7 +286,7 @@ func (tw *TextWindow) ShowConfiguration() {
 	tw.Printf(false, "%Ft chord tolerance (in percents)%E")
 	tw.Printf(false, "%Ba   %@ %% %Fl%Ll%f%D[change]%E; %@ mm, %d triangles",
 		ss.ChordTol, lf(tw.ScreenChangeChordTolerance), 0, ss.ChordTolMm(),
-		len(ss.SK.GetGroup(ss.GW.activeGroupH()).DisplayMesh.Triangles))
+		len(ss.SK.Group(ss.GW.activeGroupH()).DisplayMesh.Triangles))
 	tw.Printf(false, "%Ft max piecewise linear segments%E")
 	tw.Printf(false, "%Ba   %d %Fl%Ll%f[change]%E",
 		ss.MaxSegments, lf(tw.ScreenChangeMaxSegments))
@@ -418,7 +418,7 @@ func (tw *TextWindow) ShowConfiguration() {
 		ss.AnimationSpeed, lf(tw.ScreenChangeAnimationSpeed))
 
 	if tw.canvas != nil {
-		vendor, renderer, version := tw.canvas.GetIdent()
+		vendor, renderer, version := tw.canvas.Ident()
 		tw.Printf(false, "")
 		tw.Printf(false, " %Ftgl vendor   %E%s", vendor)
 		tw.Printf(false, " %Ft   renderer %E%s", renderer)

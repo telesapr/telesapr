@@ -7,11 +7,11 @@ package ui
 
 import (
 	"bytes"
+	"cmp"
 	"math"
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -32,7 +32,7 @@ func (ss *Application) ExportSectionTo(filename string) {
 	gn := gw.view.ProjRight.Cross(gw.view.ProjUp)
 	gn = gn.WithMagnitude(1)
 
-	g := sk.GetGroup(gw.activeGroupH())
+	g := sk.Group(gw.activeGroupH())
 	g.GenerateDisplayItems(sk)
 	if g.DisplayMesh.IsEmpty() {
 		ss.Error("No solid model present; draw one with extrudes and revolves, " +
@@ -48,14 +48,14 @@ func (ss *Application) ExportSectionTo(filename string) {
 	gs := &gw.gs
 	switch {
 	case gs.n == 0 && !core.IsFreeIn3D(g.ActiveWorkplane):
-		wrkpl := sk.MustGetEntity(g.ActiveWorkplane)
+		wrkpl := sk.MustEntity(g.ActiveWorkplane)
 		origin = wrkpl.WorkplaneGetOffset(sk)
-		normal := sk.MustGetEntity(wrkpl.Normal)
+		normal := sk.MustEntity(wrkpl.Normal)
 		n = normal.NormalN(sk)
 		u = normal.NormalU(sk)
 		v = normal.NormalV(sk)
 	case gs.n == 1 && gs.faces == 1:
-		face := sk.MustGetEntity(gs.entity[0])
+		face := sk.MustEntity(gs.entity[0])
 		origin = face.FaceGetPointNum(sk)
 		n = face.FaceGetNormalNum(sk)
 		if n.Dot(gn) < 0 {
@@ -64,8 +64,8 @@ func (ss *Application) ExportSectionTo(filename string) {
 		u = n.NormalDir(0)
 		v = n.NormalDir(1)
 	case gs.n == 3 && gs.vectors == 2 && gs.points == 1:
-		ut := sk.MustGetEntity(gs.entity[0]).VectorGetNum(sk)
-		vt := sk.MustGetEntity(gs.entity[1]).VectorGetNum(sk)
+		ut := sk.MustEntity(gs.entity[0]).VectorGetNum(sk)
+		vt := sk.MustEntity(gs.entity[1]).VectorGetNum(sk)
 		ut = ut.WithMagnitude(1)
 		vt = vt.WithMagnitude(1)
 
@@ -79,7 +79,7 @@ func (ss *Application) ExportSectionTo(filename string) {
 			vt = vt.ScaledBy(-1)
 		}
 
-		origin = sk.MustGetEntity(gs.point[0]).PointGetNum(sk)
+		origin = sk.MustEntity(gs.point[0]).PointGetNum(sk)
 		n = ut.Cross(vt)
 		u = ut.WithMagnitude(1)
 		v = n.Cross(u).WithMagnitude(1)
@@ -167,7 +167,7 @@ type getEdgesCanvas struct {
 	edges  *srf.SEdgeList
 }
 
-func (c *getEdgesCanvas) GetCamera() *render.Camera { return &c.camera }
+func (c *getEdgesCanvas) Camera() *render.Camera { return &c.camera }
 
 func (c *getEdgesCanvas) DrawLine(a, b geom.Vector, hcs render.HStroke) {
 	c.edges.AddEdge(a, b, core.StyleConstraint, 0, 0)
@@ -227,7 +227,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 
 	var sm *srf.SMesh
 	if gw.showShaded || gw.drawOccludedAs != OccludedVisible {
-		g := sk.GetGroup(gw.activeGroupH())
+		g := sk.Group(gw.activeGroupH())
 		g.GenerateDisplayItems(sk)
 		sm = &g.DisplayMesh
 	}
@@ -252,7 +252,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 	}
 
 	if gw.show.Edges || gw.show.Outlines {
-		g := sk.GetGroup(gw.activeGroupH())
+		g := sk.Group(gw.activeGroupH())
 		g.GenerateDisplayItems(sk)
 		if gw.show.Edges {
 			g.DisplayOutlines.ListTaggedInto(&edges, core.StyleSolidEdge, 0)
@@ -261,7 +261,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 
 	if gw.showConstraints != SCMNoShow {
 		if !out.OutputConstraints(&sk.Constraints) {
-			canvas := &getEdgesCanvas{camera: gw.GetCamera(), edges: &edges}
+			canvas := &getEdgesCanvas{camera: gw.Camera(), edges: &edges}
 
 			// The output format cannot represent constraints directly,
 			// so convert them to edges.
@@ -389,7 +389,7 @@ func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierLi
 			r := min(1.0, float64(tt.Meta.RedF())*lighting)
 			g := min(1.0, float64(tt.Meta.GreenF())*lighting)
 			b := min(1.0, float64(tt.Meta.BlueF())*lighting)
-			tt.Meta.RgbaColor = core.RgbaColorFromFloat(float32(r), float32(g), float32(b), 1)
+			tt.Meta.RGBA = core.RGBAFromFloat(float32(r), float32(g), float32(b), 1)
 			smp.AddTriangle(tt)
 		}
 	}
@@ -677,13 +677,13 @@ func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh,
 // vectorFileWriter is a 2d vector file format (C++ VectorFileWriter).
 type vectorFileWriter interface {
 	vw() *vectorWriter
-	StartPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool, fillRgb core.RgbaColor, hs core.HStyle)
-	FinishPath(strokeRgb core.RgbaColor, lineWidth float64, filled bool, fillRgb core.RgbaColor,
+	StartPath(strokeRgb core.RGBA, lineWidth float64, filled bool, fillRgb core.RGBA, hs core.HStyle)
+	FinishPath(strokeRgb core.RGBA, lineWidth float64, filled bool, fillRgb core.RGBA,
 		hs core.HStyle, closed bool)
 	Bezier(sb *srf.SBezier)
 	Triangle(tr *srf.STriangle)
 	OutputConstraints(constraints *[]core.Constraint) bool
-	Background(color core.RgbaColor)
+	Background(color core.RGBA)
 	StartFile()
 	FinishAndCloseFile()
 	HasCanvasSize() bool
@@ -946,7 +946,7 @@ func (ss *Application) ExportMeshTo(filename string) {
 	ss.ExportMode = true
 	ss.GenerateAll(sketch.GenerateAll)
 
-	g := sk.GetGroup(ss.GW.activeGroupH())
+	g := sk.Group(ss.GW.activeGroupH())
 	g.GenerateDisplayItems(sk)
 
 	m := &g.DisplayMesh
@@ -1008,9 +1008,9 @@ func (ss *Application) ExportMeshTo(filename string) {
 // materials (C++ SolveSpaceUI::ExportMeshAsObjTo).
 func (ss *Application) ExportMeshAsObjTo(fObj, fMtl *bytes.Buffer, sm *srf.SMesh) {
 	colors := map[uint32]string{}
-	var colorKeys []core.RgbaColor
+	var colorKeys []core.RGBA
 	for _, t := range sm.Triangles {
-		color := t.Meta.RgbaColor
+		color := t.Meta.RGBA
 		if _, ok := colors[color.ToARGB32()]; !ok {
 			id := cfmt.Sprintf("h%02x%02x%02x", color.Red, color.Green, color.Blue)
 			colors[color.ToARGB32()] = id
@@ -1023,9 +1023,7 @@ func (ss *Application) ExportMeshAsObjTo(fObj, fMtl *bytes.Buffer, sm *srf.SMesh
 	}
 
 	// std::map orders the colours by their ARGB value.
-	sort.SliceStable(colorKeys, func(i, j int) bool {
-		return colorKeys[i].ToARGB32() < colorKeys[j].ToARGB32()
-	})
+	slices.SortStableFunc(colorKeys, func(a, b core.RGBA) int { return cmp.Compare(a.ToARGB32(), b.ToARGB32()) })
 	for _, c := range colorKeys {
 		fMtl.WriteString(cfmt.Sprintf("newmtl %s\n", colors[c.ToARGB32()]))
 		fMtl.WriteString(cfmt.Sprintf("Kd %.3f %.3f %.3f\n", c.RedF(), c.GreenF(), c.BlueF()))
@@ -1038,10 +1036,10 @@ func (ss *Application) ExportMeshAsObjTo(fObj, fMtl *bytes.Buffer, sm *srf.SMesh
 		}
 	}
 
-	var currentColor core.RgbaColor
+	var currentColor core.RGBA
 	for i, t := range sm.Triangles {
-		if !currentColor.Equals(t.Meta.RgbaColor) {
-			currentColor = t.Meta.RgbaColor
+		if !currentColor.Equals(t.Meta.RGBA) {
+			currentColor = t.Meta.RGBA
 			fObj.WriteString(cfmt.Sprintf("usemtl %s\n", colors[currentColor.ToARGB32()]))
 		}
 
@@ -1062,7 +1060,7 @@ func fileStemIdentifier(filename string) string {
 	b := []byte(base)
 	for i, c := range b {
 		isAlnum := (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-		if !(isAlnum || c >= 0x80) {
+		if !isAlnum && c < 0x80 {
 			b[i] = '_'
 		}
 	}
@@ -1122,7 +1120,7 @@ func (ss *Application) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, s
 	// defaults are fine for a model which only rotates about the world
 	// origin.
 
-	bndh, bndl := sm.GetBounding()
+	bndh, bndl := sm.Bounding()
 	largerBoundXY := max(bndh.X-bndl.X, bndh.Y-bndl.Y)
 	largerBoundZ := max(largerBoundXY, bndh.Z-bndl.Z+1)
 
@@ -1315,12 +1313,12 @@ func (ss *Application) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm *
 			"        color Color { color [\n")
 		// Output triangle colors.
 		var triangleColourIDs []int
-		var coloursPresent []core.RgbaColor
+		var coloursPresent []core.RGBA
 		for _, sp := range spans {
 			for _, tr := range sm.Triangles[sp.first:sp.pastLast] {
 				found := -1
 				for ci, c := range coloursPresent {
-					if c.Equals(tr.Meta.RgbaColor) {
+					if c.Equals(tr.Meta.RGBA) {
 						found = ci
 						break
 					}
@@ -1329,7 +1327,7 @@ func (ss *Application) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm *
 					pf("          %.10f %.10f %.10f,\n",
 						tr.Meta.RedF(), tr.Meta.GreenF(), tr.Meta.BlueF())
 					triangleColourIDs = append(triangleColourIDs, len(coloursPresent))
-					coloursPresent = append(coloursPresent, tr.Meta.RgbaColor)
+					coloursPresent = append(coloursPresent, tr.Meta.RGBA)
 				} else {
 					triangleColourIDs = append(triangleColourIDs, found)
 				}

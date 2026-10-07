@@ -174,7 +174,7 @@ func basisFuns(i int, t float64, deg int, knots []float64, out []float64) {
 		left[j] = t - knots[i+1-j]
 		right[j] = knots[i+j] - t
 		saved := 0.0
-		for r := 0; r < j; r++ {
+		for r := range j {
 			tmp := out[r] / (right[r+1] + left[j-r])
 			out[r] = saved + right[r+1]*tmp
 			saved = left[j-r] * tmp

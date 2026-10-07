@@ -279,11 +279,11 @@ func joinRatio(bs *srf.BSplineSurface, alongU bool, s int) float64 {
 		return geom.Vector4FromWeighted(bs.Weight[row][k], bs.Ctrl[row][k])
 	}
 	ratio, size := 0.0, 0.0
-	for row := 0; row < rows; row++ {
+	for row := range rows {
 		size = max(size, len4(at(row, c)))
 	}
 	tiny := 1e-9 * max(size, 1)
-	for row := 0; row < rows; row++ {
+	for row := range rows {
 		a := at(row, c).Minus(at(row, c-1))
 		b := at(row, c+1).Minus(at(row, c))
 		la, lb := len4(a), len4(b)

@@ -22,7 +22,7 @@ var colorConflict = rgbi(255, 60, 60)
 // isConflicting reports whether constraint c is one the active group's
 // failed solve blames: one of those that could be removed to fix it.
 func (ss *Application) isConflicting(c *core.Constraint) bool {
-	g := ss.SK.GetGroup(ss.GW.activeGroupH())
+	g := ss.SK.Group(ss.GW.activeGroupH())
 	if g == nil || c.Group != g.H || g.IsSolvedOkay() {
 		return false
 	}
@@ -35,14 +35,14 @@ func (tw *TextWindow) ScreenShowConstraint(link int, v uint32) {
 	ss := tw.ss
 	gw := ss.GW
 	sk := ss.SK
-	c := sk.GetConstraint(core.HConstraint{V: v})
+	c := sk.Constraint(core.HConstraint{V: v})
 	if c == nil {
 		return
 	}
 	gw.ClearSelection()
 	gw.MakeSelectedConstraint(c.H)
 	for _, he := range []core.HEntity{c.PtA, c.PtB, c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
-		if he.V != 0 && sk.GetEntity(he) != nil {
+		if he.V != 0 && sk.Entity(he) != nil {
 			gw.MakeSelectedEntity(he)
 		}
 	}

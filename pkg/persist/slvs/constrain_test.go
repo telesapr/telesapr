@@ -37,7 +37,7 @@ func TestTryConstrain(t *testing.T) {
 	if hc.V == 0 {
 		t.Fatal("horizontal constraint not added")
 	}
-	if c := sk.GetConstraint(hc); c.DescriptionString() != "c001-horizontal" {
+	if c := sk.Constraint(hc); c.DescriptionString() != "c001-horizontal" {
 		t.Errorf("description %q", c.DescriptionString())
 	}
 	if again := sk.TryConstrain(core.ConstraintHorizontal, core.NoEntity, core.NoEntity, hl, core.NoEntity, false, false); again.V != 0 {
@@ -48,12 +48,12 @@ func TestTryConstrain(t *testing.T) {
 	}
 
 	sk.Refresh()
-	a := sk.MustGetEntity(p0).PointGetNum(sk)
-	b := sk.MustGetEntity(p1).PointGetNum(sk)
+	a := sk.MustEntity(p0).PointGetNum(sk)
+	b := sk.MustEntity(p1).PointGetNum(sk)
 	if math.Abs(a.Y-b.Y) > 1e-9 {
 		t.Errorf("line not level after solving: %v %v", a, b)
 	}
-	if g := sk.GetGroup(sk.ActiveGroup()); g.Solved.How != core.SolveOkay || g.Solved.Dof != 3 {
+	if g := sk.Group(sk.ActiveGroup()); g.Solved.How != core.SolveOkay || g.Solved.Dof != 3 {
 		t.Errorf("solve %v dof %d, want OKAY 3", g.Solved.How, g.Solved.Dof)
 	}
 

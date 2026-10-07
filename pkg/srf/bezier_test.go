@@ -96,7 +96,7 @@ func TestSShellExtrusion(t *testing.T) {
 	set := &SBezierLoopSet{}
 	set.Outer.Curves = []SBezier{profile}
 	shell := &SShell{}
-	shell.MakeFromExtrusionOf(set, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{Red: 255})
+	shell.MakeFromExtrusionOf(set, geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{Red: 255})
 	// 1 side surface + 2 caps = 3 surfaces.
 	if len(shell.Surface) != 3 {
 		t.Fatalf("expected 3 surfaces, got %d", len(shell.Surface))
@@ -297,7 +297,7 @@ func TestSBezierListGetPlaneContainingBeziersCoplanar(t *testing.T) {
 	list.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2}))
 	list.Add(SBezierFrom2(geom.Vector{X: 3, Y: 1}, geom.Vector{X: 4, Y: 1}))
 	var p, u, v geom.Vector
-	ok := list.GetPlaneContainingBeziers(&p, &u, &v, nil)
+	ok := list.PlaneContainingBeziers(&p, &u, &v, nil)
 	if !ok {
 		t.Errorf("colinear curves should report coplanar=true")
 	}
@@ -307,7 +307,7 @@ func TestSBezierListGetPlaneContainingBeziersCoplanar(t *testing.T) {
 func TestSBezierListGetPlaneContainingBeziersEmpty(t *testing.T) {
 	list := &SBezierList{}
 	var p, u, v geom.Vector
-	ok := list.GetPlaneContainingBeziers(&p, &u, &v, nil)
+	ok := list.PlaneContainingBeziers(&p, &u, &v, nil)
 	if !ok {
 		t.Errorf("empty list should return true (trivially coplanar)")
 	}
@@ -324,7 +324,7 @@ func TestSBezierListGetPlaneContainingBeziers3D(t *testing.T) {
 	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{Y: 1}))
 	list.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{Y: 1}))
 	var p, u, v geom.Vector
-	ok := list.GetPlaneContainingBeziers(&p, &u, &v, nil)
+	ok := list.PlaneContainingBeziers(&p, &u, &v, nil)
 	if !ok {
 		t.Errorf("XY-plane curves should report coplanar=true")
 	}

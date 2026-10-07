@@ -22,7 +22,7 @@ func lathed(pts []geom.Vector) *srf.SShell {
 		ls.Outer.Curves = append(ls.Outer.Curves, srf.SBezierFrom2(pts[i], pts[(i+1)%len(pts)]))
 	}
 	ls.Normal = v(0, 1, 0)
-	sh.MakeFromRevolutionOf(&ls, v(0, 0, 0), v(0, 0, 1), core.NewRgbaColor(100, 100, 100, 255), nil)
+	sh.MakeFromRevolutionOf(&ls, v(0, 0, 0), v(0, 0, 1), core.NewRGBA(100, 100, 100, 255), nil)
 	return &sh
 }
 
@@ -36,7 +36,7 @@ func frustum(r0, r1, h float64) *srf.SShell {
 func countersunk(r0, r1 float64) *srf.SShell {
 	var plate, out srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	// The tool runs past the plate along the same cone.
 	k := (r1 - r0) / 10
 	tool := lathed([]geom.Vector{v(0, 0, -1), v(r0-k, 0, -1), v(r1+k, 0, 11), v(0, 0, 11)})
@@ -123,7 +123,7 @@ func TestFilletCone(t *testing.T) {
 func onPlate(r0, r1, h float64) *srf.SShell {
 	var plate, cone, out srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 5),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	// From under the plate's top, along the same cone.
 	k := (r1 - r0) / h
 	cone.MakeFromTransformationOf(frustum(r0-k, r1, h+1), v(0, 0, 4), geom.QuaternionIdentity, 1)

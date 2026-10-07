@@ -33,7 +33,7 @@ func TestRendererSetting(t *testing.T) {
 		t.Error("the windows kept their renderers")
 	}
 	ss.SaveSettings()
-	if core.ThawBool(p.GetSettings(), "UseOpenGL", true) {
+	if core.ThawBool(p.Settings(), "UseOpenGL", true) {
 		t.Error("the setting was not saved")
 	}
 	ss.LoadSettings()

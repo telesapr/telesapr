@@ -40,7 +40,7 @@ func TestGridSplineSmooth(t *testing.T) {
 			// must keep at full multiplicity.
 			for b := range ps[0] {
 				for j := 0; j <= dv; j++ {
-					ps[0][b].Ctrl[du-1][j].Z += 1
+					ps[0][b].Ctrl[du-1][j].Z++
 				}
 			}
 			wantU += du - 1

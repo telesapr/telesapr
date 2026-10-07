@@ -54,7 +54,7 @@ var errMeasure = errors.New("can't measure that; select a line segment, a circle
 func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error) {
 	var es []*core.Entity
 	for _, h := range entities {
-		e := sk.GetEntity(h)
+		e := sk.Entity(h)
 		if e == nil {
 			return Measurement{}, errors.New("no such entity")
 		}
@@ -77,7 +77,7 @@ func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error) {
 			vectors = append(vectors, e)
 		}
 	}
-	pt := func(h core.HEntity) geom.Vector { return sk.MustGetEntity(h).PointGetNum(sk) }
+	pt := func(h core.HEntity) geom.Vector { return sk.MustEntity(h).PointGetNum(sk) }
 	n := len(es)
 	switch {
 	case n == 1 && len(lines) == 1:

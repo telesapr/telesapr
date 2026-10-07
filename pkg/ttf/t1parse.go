@@ -172,11 +172,14 @@ func psConvToFixed(b []byte, cursor *int, limit int, powerTen int64) int64 {
 		if curp == p {
 			return 0
 		}
-		if exponent > 1000 {
+		switch {
+		case exponent > 1000:
 			overflow = true
-		} else if exponent < -1000 {
+
+		case exponent < -1000:
 			underflow = true
-		} else {
+
+		default:
 			powerTen += exponent
 		}
 	}
@@ -347,7 +350,7 @@ func psSkipLiteralString(b []byte, cur *int, limit int) error {
 	for c < limit {
 		ch := b[c]
 		c++
-		if ch == '\\' {
+		if ch == '\\' { //nolint:gocritic // a branch breaks out of the loop
 			if c == limit {
 				break
 			}
@@ -356,7 +359,7 @@ func psSkipLiteralString(b []byte, cur *int, limit int) error {
 				c++
 			default:
 				for i := 0; i < 3 && c < limit; i++ {
-					if !('0' <= b[c] && b[c] <= '7') {
+					if '0' > b[c] || b[c] > '7' {
 						break
 					}
 					c++
@@ -566,7 +569,7 @@ func (p *psParser) toToken() t1Token {
 
 // toTokenArray is ps_parser_to_token_array: the elements of an array
 // token, up to max stored, and their count (-1 for no array).
-func (p *psParser) toTokenArray(max int) ([]t1Token, int) {
+func (p *psParser) toTokenArray(limit int) ([]t1Token, int) {
 	master := p.toToken()
 	if master.typ != t1TokenArray {
 		return nil, -1
@@ -581,7 +584,7 @@ func (p *psParser) toTokenArray(max int) ([]t1Token, int) {
 		if tok.typ == t1TokenNone {
 			break
 		}
-		if n < max {
+		if n < limit {
 			tokens = append(tokens, tok)
 		}
 		n++
@@ -599,9 +602,10 @@ func psToFixedArray(b []byte, cur *int, limit int, maxValues int, values []int64
 		return count
 	}
 	var ender byte
-	if b[c] == '[' {
+	switch b[c] {
+	case '[':
 		ender = ']'
-	} else if b[c] == '{' {
+	case '{':
 		ender = '}'
 	}
 	if ender != 0 {
@@ -663,9 +667,9 @@ func (p *psParser) toFixed(powerTen int64) int64 {
 }
 
 // toFixedArray is ps_parser_to_fixed_array.
-func (p *psParser) toFixedArray(max int, values []int64, powerTen int64) int {
+func (p *psParser) toFixedArray(limit int, values []int64, powerTen int64) int {
 	p.skipSpaces()
-	return psToFixedArray(p.base, &p.cursor, p.limit, max, values, powerTen)
+	return psToFixedArray(p.base, &p.cursor, p.limit, limit, values, powerTen)
 }
 
 // toBytes is ps_parser_to_bytes without delimiters.

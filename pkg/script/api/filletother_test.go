@@ -23,7 +23,7 @@ type filletTally struct {
 // filletEveryEdge fillets each of the edges of the solid build makes,
 // up to max, alone in a document of its own, with radius r, and tallies
 // how they fare.
-func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, max int) filletTally {
+func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit int) filletTally {
 	tl := filletTally{reasons: map[string]int{}}
 	n := 0
 	var smooth []bool
@@ -34,7 +34,7 @@ func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, max int)
 		if p := g.Problem(); p != "" {
 			t.Fatal(p)
 		}
-		n = min(len(g.Solid().Edges()), max)
+		n = min(len(g.Solid().Edges()), limit)
 		for _, e := range g.Solid().Edges()[:n] {
 			smooth = append(smooth, e.Smooth())
 		}

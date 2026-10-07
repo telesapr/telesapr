@@ -61,7 +61,7 @@ func (g *Group) draftAngles(loops [][]srf.SBezier, angle float64) [][]float64 {
 // may be named by its entity in the sketch, by its copies at the
 // extrusion's ends, or by its side's face.
 func (sk *Sketch) SetDraftFaces(hg core.HGroup, es []core.HEntity) error {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g == nil || g.Type != GroupExtrude {
 		return errors.New("only an extrusion has a draft")
 	}
@@ -86,7 +86,7 @@ func (sk *Sketch) SetDraftFaces(hg core.HGroup, es []core.HEntity) error {
 // curve itself, a copy of it at an end, or its side's face.
 func (sk *Sketch) draftCurve(g *Group, he core.HEntity) (core.HEntity, bool) {
 	curve := func(h core.HEntity) bool {
-		e := sk.GetEntity(h)
+		e := sk.Entity(h)
 		return e != nil && e.Group == g.OpA && !e.Construction &&
 			(e.Type == core.EntityLineSegment || e.Type == core.EntityArcOfCircle || e.Type == core.EntityCircle)
 	}
@@ -186,8 +186,8 @@ func (g *Group) annotateDraftFaces(sk *Sketch, onOrig, tbot, ttop geom.Vector) {
 			if e.Group != g.OpA || e.Type != core.EntityLineSegment {
 				continue
 			}
-			a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-			b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+			a := sk.MustEntity(e.Point[0]).PointGetNum(sk)
+			b := sk.MustEntity(e.Point[1]).PointGetNum(sk)
 			if math.Abs(n.Dot(a)-d) < core.LengthEps && math.Abs(n.Dot(b)-d) < core.LengthEps {
 				ss.Face = srf.FaceID(g.RemapEntity(e.H, RemapLineToFace).V)
 				break

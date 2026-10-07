@@ -367,13 +367,16 @@ func psLoadField(p *psParser, field *t1Field, typ int, elem int, objects []any, 
 				break
 			}
 			n := limit - cur
-			if tok.typ == t1TokenKey {
+			switch tok.typ {
+			case t1TokenKey:
 				n--
 				cur++
-			} else if tok.typ == t1TokenString {
+
+			case t1TokenString:
 				cur++
 				n -= 2
-			} else {
+
+			default:
 				return errInvalidFileFormat
 			}
 			if n < 0 {
@@ -431,7 +434,7 @@ func psLoadFieldTable(p *psParser, field *t1Field, objects []any, maxObjects int
 		field.setCount(objects[0], byte(numElements))
 	}
 	var err error
-	for i := 0; i < numElements; i++ {
+	for i := range numElements {
 		p.cursor = elements[i].start
 		p.limit = elements[i].limit
 		if err = psLoadField(p, field, t1FieldTypeInteger, i, objects, maxObjects); err != nil {
@@ -591,7 +594,7 @@ func t1ParseEncoding(f *t1Font, l *t1Loader) {
 		f.encoding.charName = make([]string, arraySize)
 		table := newPSTable(arraySize)
 		l.encodingTable = table
-		for n := 0; n < arraySize; n++ {
+		for n := range arraySize {
 			_ = table.add(n, []byte(".notdef\x00")) // (void) in FreeType
 		}
 
@@ -1240,7 +1243,7 @@ func t1OpenFace(data []byte) (*t1Font, error) {
 		f.doneBlend()
 	}
 	if blend := f.blend; blend != nil {
-		for i := uint32(0); i < blend.numAxis; i++ {
+		for i := range blend.numAxis {
 			if blend.designMap[i].numPoints == 0 {
 				f.doneBlend()
 				break
@@ -1292,14 +1295,14 @@ func t1OpenFace(data []byte) (*t1Font, error) {
 	if f.encodingType == t1EncodingArray {
 		minChar, maxChar := 0, 0
 		table := l.encodingTable
-		for charcode := 0; charcode < table.maxElems; charcode++ {
+		for charcode := range table.maxElems {
 			f.encoding.charIndex[charcode] = 0
 			f.encoding.charName[charcode] = ".notdef"
 			if table.elements[charcode] == nil {
 				continue
 			}
 			charName := cstr(table.elements[charcode])
-			for idx := 0; idx < int(f.numGlyphs); idx++ {
+			for idx := range int(f.numGlyphs) {
 				glyphName := f.glyphNames[idx]
 				if glyphName != nil && charName == *glyphName {
 					f.encoding.charIndex[charcode] = uint16(idx)

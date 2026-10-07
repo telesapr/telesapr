@@ -92,7 +92,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 		}
 		dtheta /= float64(n)
 
-		for i := 0; i < n; i++ {
+		for range n {
 			c, s := libm.Cos(thetaa), libm.Sin(thetaa)
 			// The start point of the curve, and the tangent vector at
 			// that start point.
@@ -263,7 +263,7 @@ func computeInterpolatingSpline(e *core.Entity, sbl *srf.SBezierList, rt EntityB
 		var bm geom.BandedMatrix
 		bm.N = n
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			var im, it, ip int
 			if periodic {
 				im = wrapInt(i-1, n)
@@ -324,7 +324,7 @@ func computeInterpolatingSpline(e *core.Entity, sbl *srf.SBezierList, rt EntityB
 		return geom.Vector{X: X[0][i], Y: X[1][i], Z: X[2][i]}
 	}
 
-	for i := 0; i < pts-1; i++ {
+	for i := range pts - 1 {
 		var p0, p1, p2, p3 geom.Vector
 		switch {
 		case periodic:

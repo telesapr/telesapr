@@ -143,7 +143,7 @@ func (c *SContour) BridgeToContour(sc *SContour, avoidEdges *SEdgeList, avoidPts
 	// Start looking for a bridge on our new hole near its leftmost (min x)
 	// point.
 	sco := 0
-	for i := 0; i < scn-1; i++ {
+	for i := range scn - 1 {
 		if sc.Points[i].P.EqualsExactly(sc.XMinPt) {
 			sco = i
 		}
@@ -153,7 +153,7 @@ func (c *SContour) BridgeToContour(sc *SContour, avoidEdges *SEdgeList, avoidPts
 	// to the leftmost point of the new segment.
 	thiso := 0
 	dmin := 1e10
-	for i := 0; i < ln-1; i++ {
+	for i := range ln - 1 {
 		d := c.Points[i].P.Minus(sc.XMinPt).MagSquared()
 		if d < dmin {
 			dmin = d
@@ -185,7 +185,7 @@ shared:
 			continue
 		}
 
-		for j := 0; j < scn-1; j++ {
+		for j := range scn - 1 {
 			scp = wrapIdx(j+sco, scn-1)
 			b = sc.Points[scp].P
 
@@ -208,7 +208,7 @@ shared:
 				continue
 			}
 
-			for j := 0; j < scn-1; j++ {
+			for j := range scn - 1 {
 				scp = wrapIdx(j+sco, scn-1)
 				b = sc.Points[scp].P
 
@@ -216,9 +216,8 @@ shared:
 					continue
 				}
 
-				if avoidEdges.AnyEdgeCrossings(a, b, nil, nil) > 0 {
-					// doesn't work, bridge crosses an existing edge
-				} else {
+				// A bridge that crosses an existing edge doesn't work.
+				if avoidEdges.AnyEdgeCrossings(a, b, nil, nil) == 0 {
 					found = true
 					break bridge
 				}
@@ -427,10 +426,9 @@ func (c *SContour) clipEarInto(m *SMesh, bp int, scaledEps float64, srf *SSurfac
 		x := STriangle{A: srf.PointAt(tr.A.X, tr.A.Y), B: srf.PointAt(tr.B.X, tr.B.Y), C: srf.PointAt(tr.C.X, tr.C.Y)}
 		cull = thin(x, geom.LengthEps)
 	}
-	if cull {
-		// A vertex with more than two edges will cause us to generate
-		// zero-area triangles, which must be culled.
-	} else {
+	// A vertex with more than two edges will cause us to generate
+	// zero-area triangles, which must be culled.
+	if !cull {
 		m.AddTriangle(tr)
 	}
 
@@ -533,7 +531,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 			if end { // triangulate the fan and tag the vertices
 				if j > 3 {
 					center := c.Points[pstart+1].P.Plus(c.Points[pstart+j-1].P).ScaledBy(0.5)
-					for x := 0; x < j; x++ {
+					for x := range j {
 						m.AddTriangle(STriangle{A: center, B: c.Points[pstart+x].P, C: c.Points[pstart+x+1].P})
 					}
 					for x := 1; x < j; x++ {
@@ -984,7 +982,7 @@ func (s *SSurface) splitTrimDiagonals(shell *SShell, m *SMesh, start int, el *SE
 	for i, e := range el.Edges {
 		trimXyz[i] = [2]geom.Vector{s.PointAt(e.A.X, e.A.Y), s.PointAt(e.B.X, e.B.Y)}
 	}
-	clear := func(p geom.Vector, d float64) bool {
+	isClear := func(p geom.Vector, d float64) bool {
 		for _, e := range trimXyz {
 			if distanceToSegment(p, e[0], e[1]) < d {
 				return false
@@ -1043,7 +1041,7 @@ func (s *SSurface) splitTrimDiagonals(shell *SShell, m *SMesh, start int, el *SE
 			// from the surface by more than the chord tolerance, across
 			// it, does too, where its middle is clear of the trim: a cone
 			// cut through near its apex was meshed by chords across it.
-			if (round == 0 && sameCurve(a, b) && off > trimSplitOff) || (len(folds) > 0 && off > tol && clear(pm, tol)) {
+			if (round == 0 && sameCurve(a, b) && off > trimSplitOff) || (len(folds) > 0 && off > tol && isClear(pm, tol)) {
 				mids[e] = mid
 			}
 		}
@@ -1151,7 +1149,7 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 	// Try piecewise linearizing four curves, at u = 0, 1/3, 2/3, 1; choose
 	// the worst chord tolerance of any of those.
 	worstTwist := 1.0
-	for i := 0; i <= 3; i++ {
+	for i := range 4 {
 		u := float64(i) / 3.0
 
 		// This chord test should be identical to the one in SBezier::MakePwl
@@ -1181,7 +1179,7 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 		worst = geom.Max(worst, pm2.DistanceToLine(ps, pf.Minus(ps)))
 	}
 
-	step := 1.0 / float64(GetMaxSegments())
+	step := 1.0 / float64(MaxSegments())
 	if ((vf-vs) < step || worst < ChordTolMm()) && (worstTwist > 0.999 || depth >= gridMaxTwistDepth) {
 		*l = append(*l, vf)
 	} else {
@@ -1519,7 +1517,7 @@ func (s *SSurface) twisted() bool {
 	if (s.DegM != 1 && s.DegN != 1) || s.flat() {
 		return false
 	}
-	for k := 0; k <= 4; k++ {
+	for k := range 5 {
 		t := float64(k) / 4
 		var a, b geom.Vector
 		if s.DegM == 1 {

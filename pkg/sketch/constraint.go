@@ -32,10 +32,10 @@ func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool
 	}
 
 	c.H = sk.AddConstraint(*c)
-	GenerateConstraint(sk.GetConstraint(c.H), &sk.Params)
+	GenerateConstraint(sk.Constraint(c.H), &sk.Params)
 
 	sk.MarkGroupDirty(c.Group, false)
-	sk.GetGroup(c.Group).DofCheckOk = false
+	sk.Group(c.Group).DofCheckOk = false
 	return c.H
 }
 
@@ -100,27 +100,34 @@ func (sk *Sketch) ConstrainCoincident(ptA, ptB core.HEntity) core.HConstraint {
 // Constraint::ConstrainArcLineTangent, which reports the error to the
 // user).
 func (sk *Sketch) ConstrainArcLineTangent(c *core.Constraint, line, arc, arcEndpoint *core.Entity) error {
-	l0 := sk.MustGetEntity(line.Point[0]).PointGetNum(sk)
-	l1 := sk.MustGetEntity(line.Point[1]).PointGetNum(sk)
-	a1 := sk.MustGetEntity(arc.Point[1]).PointGetNum(sk)
-	a2 := sk.MustGetEntity(arc.Point[2]).PointGetNum(sk)
-	if l0.Equals(a1) || l1.Equals(a1) {
+	l0 := sk.MustEntity(line.Point[0]).PointGetNum(sk)
+	l1 := sk.MustEntity(line.Point[1]).PointGetNum(sk)
+	a1 := sk.MustEntity(arc.Point[1]).PointGetNum(sk)
+	a2 := sk.MustEntity(arc.Point[2]).PointGetNum(sk)
+	switch {
+	case l0.Equals(a1) || l1.Equals(a1):
 		c.Other = false
-	} else if l0.Equals(a2) || l1.Equals(a2) {
+
+	case l0.Equals(a2) || l1.Equals(a2):
 		c.Other = true
-	} else if arcEndpoint != nil {
+
+	case arcEndpoint != nil:
 		p := arcEndpoint.PointGetNum(sk)
-		if a1.Equals(p) {
+		switch {
+		case a1.Equals(p):
 			c.Other = false
-		} else if a2.Equals(p) {
+
+		case a2.Equals(p):
 			c.Other = true
-		} else {
+
+		default:
 			return errors.New("The point you selected does not belong to the arc. " +
 				"The arc and line segment do not share an end point.\n\n" +
 				"Select the end point of the arc at which you want " +
 				"it to be tangent to the line.")
 		}
-	} else {
+
+	default:
 		return errors.New("The tangent arc and line segment must share an " +
 			"endpoint. Constrain them with Constrain -> " +
 			"On Point before constraining tangent.\n\n" +
@@ -133,28 +140,35 @@ func (sk *Sketch) ConstrainArcLineTangent(c *core.Constraint, line, arc, arcEndp
 // ConstrainCubicLineTangent sets which end of cubic c makes tangent to
 // line (C++ Constraint::ConstrainCubicLineTangent).
 func (sk *Sketch) ConstrainCubicLineTangent(c *core.Constraint, line, cubic, curveEndpoint *core.Entity) error {
-	l0 := sk.MustGetEntity(line.Point[0]).PointGetNum(sk)
-	l1 := sk.MustGetEntity(line.Point[1]).PointGetNum(sk)
+	l0 := sk.MustEntity(line.Point[0]).PointGetNum(sk)
+	l1 := sk.MustEntity(line.Point[1]).PointGetNum(sk)
 	as := cubic.CubicGetStartNum(sk)
 	af := cubic.CubicGetFinishNum(sk)
 
-	if l0.Equals(as) || l1.Equals(as) {
+	switch {
+	case l0.Equals(as) || l1.Equals(as):
 		c.Other = false
-	} else if l0.Equals(af) || l1.Equals(af) {
+
+	case l0.Equals(af) || l1.Equals(af):
 		c.Other = true
-	} else if curveEndpoint != nil {
+
+	case curveEndpoint != nil:
 		p := curveEndpoint.PointGetNum(sk)
-		if as.Equals(p) {
+		switch {
+		case as.Equals(p):
 			c.Other = false
-		} else if af.Equals(p) {
+
+		case af.Equals(p):
 			c.Other = true
-		} else {
+
+		default:
 			return errors.New("The point you selected is not an end point of the cubic spline. " +
 				"The spline and line segment do not share an end point.\n\n" +
 				"Select the end point of the spline at which you want " +
 				"it to be tangent to the line.")
 		}
-	} else {
+
+	default:
 		return errors.New("The tangent cubic spline and line segment must share an " +
 			"endpoint. Constrain them with Constrain -> " +
 			"On Point before constraining tangent.\n\n" +
@@ -170,31 +184,42 @@ func (sk *Sketch) ConstrainCubicLineTangent(c *core.Constraint, line, cubic, cur
 func (sk *Sketch) ConstrainCurveCurveTangent(c *core.Constraint, eA, eB, epA, epB *core.Entity) error {
 	as, af := eA.EndpointStart(sk), eA.EndpointFinish(sk)
 	bs, bf := eB.EndpointStart(sk), eB.EndpointFinish(sk)
-	if as.Equals(bs) {
+	switch {
+	case as.Equals(bs):
 		c.Other, c.Other2 = false, false
-	} else if as.Equals(bf) {
+
+	case as.Equals(bf):
 		c.Other, c.Other2 = false, true
-	} else if af.Equals(bs) {
+
+	case af.Equals(bs):
 		c.Other, c.Other2 = true, false
-	} else if af.Equals(bf) {
+
+	case af.Equals(bf):
 		c.Other, c.Other2 = true, true
-	} else if epA != nil && epB != nil {
+
+	case epA != nil && epB != nil:
 		pa, pb := epA.PointGetNum(sk), epB.PointGetNum(sk)
-		if (as.Equals(pa) && bs.Equals(pb)) || (as.Equals(pb) && bs.Equals(pa)) {
+		switch {
+		case (as.Equals(pa) && bs.Equals(pb)) || (as.Equals(pb) && bs.Equals(pa)):
 			c.Other, c.Other2 = false, false
-		} else if (as.Equals(pa) && bf.Equals(pb)) || (as.Equals(pb) && bf.Equals(pa)) {
+
+		case (as.Equals(pa) && bf.Equals(pb)) || (as.Equals(pb) && bf.Equals(pa)):
 			c.Other, c.Other2 = false, true
-		} else if (af.Equals(pa) && bs.Equals(pb)) || (af.Equals(pb) && bs.Equals(pa)) {
+
+		case (af.Equals(pa) && bs.Equals(pb)) || (af.Equals(pb) && bs.Equals(pa)):
 			c.Other, c.Other2 = true, false
-		} else if (af.Equals(pa) && bf.Equals(pb)) || (af.Equals(pb) && bf.Equals(pa)) {
+
+		case (af.Equals(pa) && bf.Equals(pb)) || (af.Equals(pb) && bf.Equals(pa)):
 			c.Other, c.Other2 = true, true
-		} else {
+
+		default:
 			return errors.New("The points you selected are not end points of the two curves. " +
 				"The curves do not share an end point.\n\n" +
 				"Select the end points of both curves at which you want " +
 				"them to be tangent to each other.")
 		}
-	} else {
+
+	default:
 		return errors.New("The curves must share an endpoint. Constrain them " +
 			"with Constrain -> On Point before constraining " +
 			"tangent.\n\n" +

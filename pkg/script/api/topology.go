@@ -2,7 +2,7 @@ package api
 
 import (
 	"math"
-	"sort"
+	"slices"
 	"strconv"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -51,7 +51,7 @@ func (g Group) Solid() Solid {
 // topology is the solid's topology; it fails when there is no solid
 // with surfaces.
 func (s Solid) topology(sk *sketch.Sketch) *topo.Topology {
-	g := sk.GetGroup(s.g)
+	g := sk.Group(s.g)
 	if g == nil {
 		fail("the group of the solid is gone")
 	}
@@ -221,7 +221,16 @@ func (s Solid) EdgesBetween(a, b SolidFace) (edges []SolidEdge) {
 				}
 			}
 		}
-		sort.Slice(found, func(i, j int) bool { return found[i].Less(found[j]) })
+		slices.SortFunc(found, func(a, b topo.Name) int {
+			less := func(a, b topo.Name) bool { return a.Less(b) }
+			switch {
+			case less(a, b):
+				return -1
+			case less(b, a):
+				return 1
+			}
+			return 0
+		})
 		for _, n := range found {
 			edges = append(edges, SolidEdge{s: s, name: n})
 		}
@@ -308,7 +317,7 @@ func (f SolidFace) ID() uint32 { return uint32(f.id) }
 func (f SolidFace) Entity() (e Entity) {
 	f.s.d.read(func(sk *sketch.Sketch) {
 		h := core.HEntity{V: uint32(f.id)}
-		if sk.GetEntity(h) == nil {
+		if sk.Entity(h) == nil {
 			fail("%s has no entity", sk.FaceName(f.id))
 		}
 		e = Entity{d: f.s.d, H: h}

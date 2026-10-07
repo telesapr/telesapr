@@ -1,8 +1,10 @@
 package topo
 
 import (
+	"cmp"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,17 +45,17 @@ func (n Name) String() string {
 }
 
 // Less orders names by their faces' identities, then their ordinals.
-func (a Name) Less(b Name) bool {
-	if a.A != b.A {
-		return a.A < b.A
+func (n Name) Less(b Name) bool {
+	if n.A != b.A {
+		return n.A < b.A
 	}
-	if a.B != b.B {
-		return a.B < b.B
+	if n.B != b.B {
+		return n.B < b.B
 	}
-	if a.N != b.N {
-		return a.N < b.N
+	if n.N != b.N {
+		return n.N < b.N
 	}
-	return a.Of < b.Of
+	return n.Of < b.Of
 }
 
 // ParseName reads a name as String writes it.
@@ -158,7 +160,7 @@ func (t *Topology) sortBetween(es []int) []int {
 	span := hi.Minus(lo)
 	// The axes by spread, widest first.
 	axes := []int{0, 1, 2}
-	sort.SliceStable(axes, func(i, j int) bool { return span.Element(axes[i]) > span.Element(axes[j]) })
+	slices.SortStableFunc(axes, func(a, b int) int { return cmp.Compare(span.Element(b), span.Element(a)) })
 	tol := 1e-6 * (1 + span.Magnitude())
 	order := make([]int, len(es))
 	for i := range order {

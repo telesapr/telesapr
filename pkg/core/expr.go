@@ -111,22 +111,22 @@ func (e *Expr) DeepCopy() *Expr {
 	if e == nil {
 		return nil
 	}
-	copy := e.clone()
+	dup := e.clone()
 	if e.Left != nil {
-		copy.Left = e.Left.DeepCopy()
+		dup.Left = e.Left.DeepCopy()
 	}
 	if e.Right != nil {
-		copy.Right = e.Right.DeepCopy()
+		dup.Right = e.Right.DeepCopy()
 	}
 	if len(e.Args) > 0 {
-		copy.Args = make([]*Expr, len(e.Args))
+		dup.Args = make([]*Expr, len(e.Args))
 		for i, a := range e.Args {
 			if a != nil {
-				copy.Args[i] = a.DeepCopy()
+				dup.Args[i] = a.DeepCopy()
 			}
 		}
 	}
-	return copy
+	return dup
 }
 
 // EvalParamProvider supplies parameter values for expression evaluation.

@@ -48,7 +48,7 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 	ss.UndoRemember()
 	for i := range gw.gs.entities {
 		he := gw.gs.entity[i]
-		e := sk.MustGetEntity(he)
+		e := sk.MustEntity(he)
 		if !entityIsStylable(e) {
 			continue
 		}
@@ -58,12 +58,12 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 			continue
 		}
 
-		r := sk.GetRequest(he.Request())
+		r := sk.Request(he.Request())
 		r.Style = core.HStyle{V: v}
 		sk.MarkGroupDirty(r.Group, false)
 	}
 	for i := range gw.gs.constraints {
-		c := sk.GetConstraint(gw.gs.constraint[i])
+		c := sk.Constraint(gw.gs.constraint[i])
 		if !constraintIsStylable(c) {
 			continue
 		}
@@ -259,7 +259,7 @@ func (tw *TextWindow) ScreenChangeStyleColor(link int, v uint32) {
 	s := tw.ss.SK.StyleGet(hs)
 	// Same function used for stroke and fill colors
 	var em Edit
-	var rgb core.RgbaColor
+	var rgb core.RGBA
 	switch link {
 	case 's':
 		em = EditStyleColor

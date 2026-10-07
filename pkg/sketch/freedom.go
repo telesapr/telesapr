@@ -55,7 +55,7 @@ func (sk *Sketch) GroupFreedom(hg core.HGroup) map[core.HParam]bool {
 			return c.free
 		}
 	}
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	var free map[core.HParam]bool
 	if g != nil && g.IsSolvedOkay() && hg.V != HGroupReferences {
 		_ = catchPanic(func() {
@@ -77,7 +77,7 @@ func (sk *Sketch) GroupFreedom(hg core.HGroup) map[core.HParam]bool {
 // group solves for, can move. Params from earlier groups, such as a
 // workplane's, are fixed in this group and don't count.
 func (sk *Sketch) EntityFreedom(he core.HEntity) Freedom {
-	e := sk.GetEntity(he)
+	e := sk.Entity(he)
 	if e == nil {
 		return FreedomUnknown
 	}
@@ -123,7 +123,7 @@ func (sk *Sketch) entityParams(e *core.Entity, out *[]core.HParam, seen map[core
 		if h.V == 0 {
 			return
 		}
-		if se := sk.GetEntity(h); se != nil {
+		if se := sk.Entity(h); se != nil {
 			sk.entityParams(se, out, seen)
 		}
 	}

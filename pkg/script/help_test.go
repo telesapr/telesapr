@@ -27,7 +27,7 @@ func TestHelpOfValues(t *testing.T) {
 	mustContain(t, got,
 		"g002-sketch-in-plane\n\ntype api.Group struct\n    Group is a group of the sketch",
 		"Fields:\n    H                    core.HGroup",
-		"    Bounds() (min, max Vec)                      Bounds are the corners of the box",
+		"    Bounds() (lo, hi Vec)                        Bounds are the corners of the box",
 		"    SetColor(red, green, blue int)               SetColor colours the group's solid",
 		`help("Group.Method") says more about one.`)
 
@@ -73,7 +73,7 @@ func TestHelpOfFunctionsAndScriptTypes(t *testing.T) {
 func TestHelpOfNames(t *testing.T) {
 	got := helped(t, `help("Group.Bounds")`, `help("api.Doc.Line")`, `help("geom.Vector.Plus")`,
 		`help("strings.ToUpper")`, `help("Union")`, `help("Inch")`)
-	want := `func (g Group) Bounds() (min, max Vec)
+	want := `func (g Group) Bounds() (lo, hi Vec)
     Bounds are the corners of the box around the model up to and with
     this group.
 func (d *Doc) Line(a, b Vec) Entity

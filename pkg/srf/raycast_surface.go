@@ -186,7 +186,8 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 	// cases that we can quickly solve in closed form, or general numerical.
 	var center, axis, start, finish geom.Vector
 	var radius float64
-	if s.DegM == 1 && s.DegN == 1 {
+	switch {
+	case s.DegM == 1 && s.DegN == 1:
 		// Against a plane, easy.
 		n := s.NormalAt(0, 0).WithMagnitude(1)
 		d := n.Dot(s.PointAt(0, 0))
@@ -200,7 +201,8 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			s.ClosestPointTo(p, &inter.p, true)
 			inters = append(inters, inter)
 		}
-	} else if s.IsCylinder(&axis, &center, &radius, &start, &finish) {
+
+	case s.IsCylinder(&axis, &center, &radius, &start, &finish):
 		// This one can be solved in closed form too.
 		ab := b.Minus(a)
 		if axis.Cross(ab).Magnitude() < geom.LengthEps {
@@ -264,7 +266,8 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			}
 			inters = append(inters, inter)
 		}
-	} else {
+
+	default:
 		// General numerical solution by subdivision, fallback
 		cnt, level := 0, 0
 		s.AllPointsIntersectingUntrimmed(a, b, &cnt, &level, &inters, asSegment, s)

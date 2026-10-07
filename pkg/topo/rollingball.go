@@ -479,7 +479,7 @@ func (rb *rollingBall) trace() error {
 			n = 1
 		}
 		d := b.Minus(a).WithMagnitude(1)
-		for j := 0; j < n; j++ {
+		for j := range n {
 			x := a.Plus(b.Minus(a).ScaledBy(float64(j) / float64(n)))
 			if i == segs {
 				x = b
@@ -692,7 +692,7 @@ func (rb *rollingBall) crossings(scan []rbSection) ([]float64, [][2]int, []int, 
 		pairsN = n - 1
 	}
 	for k := range 2 {
-		for i := 0; i < pairsN; i++ {
+		for i := range pairsN {
 			a, b := scan[i], scan[(i+1)%n]
 			fa, fb := a.foot[k].f, b.foot[k].f
 			if fa == fb {
@@ -1042,7 +1042,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 		x, v, near := -1, -1, math.Inf(1)
 		for y := range t.Edges {
 			fs := t.EdgeFaces(y)
-			if isChain[y] || !(fs[0] == c.faces[0] && fs[1] == c.faces[1] || fs[0] == c.faces[1] && fs[1] == c.faces[0]) {
+			if isChain[y] || ((fs[0] != c.faces[0] || fs[1] != c.faces[1]) && (fs[0] != c.faces[1] || fs[1] != c.faces[0])) {
 				continue
 			}
 			for _, cv := range t.Edges[y].V {

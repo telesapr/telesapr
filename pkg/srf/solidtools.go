@@ -50,7 +50,7 @@ func PolygonLoopSet(pts []geom.Vector, n geom.Vector) *SBezierLoopSet {
 
 // MakePrism adds the prism of the plane polygon pts swept from t0 to
 // t1, which must not lie in the polygon's plane.
-func (s *SShell) MakePrism(pts []geom.Vector, t0, t1 geom.Vector, color core.RgbaColor) {
+func (s *SShell) MakePrism(pts []geom.Vector, t0, t1 geom.Vector, color core.RGBA) {
 	n := pts[1].Minus(pts[0]).Cross(pts[2].Minus(pts[0]))
 	s.MakeFromExtrusionOf(PolygonLoopSet(pts, n), t0, t1, color)
 }

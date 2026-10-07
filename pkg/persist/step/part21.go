@@ -641,7 +641,7 @@ func (p *parser) number() (Value, error) {
 	if p.src[p.pos] == '+' || p.src[p.pos] == '-' {
 		p.pos++
 	}
-	real := false
+	isReal := false
 	digits := 0
 	for p.pos < len(p.src) {
 		c := p.src[p.pos]
@@ -649,9 +649,9 @@ func (p *parser) number() (Value, error) {
 		case c >= '0' && c <= '9':
 			digits++
 		case c == '.':
-			real = true
+			isReal = true
 		case c == 'E' || c == 'e':
-			real = true
+			isReal = true
 			if p.pos+1 < len(p.src) && (p.src[p.pos+1] == '+' || p.src[p.pos+1] == '-') {
 				p.pos++
 			}
@@ -665,7 +665,7 @@ done:
 	if digits == 0 {
 		return Value{}, p.errorf("bad number %q", text)
 	}
-	if !real {
+	if !isReal {
 		n, err := strconv.ParseInt(text, 10, 64)
 		if err != nil {
 			// Too long for an integer: keep it as a real.

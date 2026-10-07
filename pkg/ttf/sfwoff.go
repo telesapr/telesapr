@@ -2,11 +2,12 @@ package ttf
 
 import (
 	"bytes"
+	"cmp"
 	"compress/gzip"
 	"compress/zlib"
 	"encoding/binary"
 	"io"
-	"sort"
+	"slices"
 )
 
 // WOFF files (sfwoff.c's woff_open_font): the SFNT is rebuilt in memory,
@@ -83,7 +84,7 @@ func woffOpenFont(data []byte) ([]byte, error) {
 	}
 	// glibc's qsort is a merge sort; the offsets are distinct anyway
 	// once they pass the checks below.
-	sort.SliceStable(indices, func(i, j int) bool { return indices[i].offset < indices[j].offset })
+	slices.SortStableFunc(indices, func(a, b *woffTable) int { return cmp.Compare(a.offset, b.offset) })
 
 	woffOffset := 44 + uint64(numTables)*20
 	sfntOffset := 12 + uint64(numTables)*16

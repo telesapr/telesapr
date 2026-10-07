@@ -26,7 +26,7 @@ import (
 // with its sides leaning in by angle radians (out when negative). The
 // faces get color and origins from origin up, 0 leaving them to the
 // caller.
-func DraftedPrism(loops [][]srf.SBezier, along geom.Vector, angle float64, color core.RgbaColor, origin uint32) (*srf.SShell, error) {
+func DraftedPrism(loops [][]srf.SBezier, along geom.Vector, angle float64, color core.RGBA, origin uint32) (*srf.SShell, error) {
 	if math.IsNaN(angle) || math.Abs(angle) >= math.Pi/2-1e-6 {
 		return nil, fmt.Errorf("a draft of %.6g° leans the sides flat", angle*180/math.Pi)
 	}

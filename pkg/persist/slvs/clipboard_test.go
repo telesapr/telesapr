@@ -26,7 +26,7 @@ func TestCopyPasteDelete(t *testing.T) {
 	}
 	sk.Constrain(core.ConstraintHorizontal, core.NoEntity, core.NoEntity, line.H, core.NoEntity, false, false)
 	sk.Refresh()
-	pt := func(h core.HEntity) geom.Vector { return sk.MustGetEntity(h).PointGetNum(sk) }
+	pt := func(h core.HEntity) geom.Vector { return sk.MustEntity(h).PointGetNum(sk) }
 	a, b := pt(line.Point[0]), pt(line.Point[1])
 
 	sk.CopySelection([]sketch.Selection{{Entity: line.H}})
@@ -71,8 +71,8 @@ func TestCopyPasteDelete(t *testing.T) {
 	sk.Message = func(m string) { msg = m }
 	n := len(sk.Constraints)
 	sk.DeleteSelection([]sketch.Selection{{Entity: line.H}})
-	if sk.GetEntity(line.H) != nil || len(sk.Constraints) != n-1 {
-		t.Errorf("after delete: line %v, %d constraints (want %d)", sk.GetEntity(line.H) != nil, len(sk.Constraints), n-1)
+	if sk.Entity(line.H) != nil || len(sk.Constraints) != n-1 {
+		t.Errorf("after delete: line %v, %d constraints (want %d)", sk.Entity(line.H) != nil, len(sk.Constraints), n-1)
 	}
 	if msg != "" {
 		t.Errorf("a pruned horizontal constraint isn't worth a message, got %q", msg)

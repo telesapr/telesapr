@@ -116,14 +116,14 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 			continue
 		}
 		r := make([]float64, n)
-		any := false
+		found := false
 		for j, v := range a[i] {
 			if v != 0 {
 				r[find(j)] += v
-				any = true
+				found = true
 			}
 		}
-		if any {
+		if found {
 			rows = append(rows, r)
 		}
 	}
@@ -156,14 +156,14 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 	var rest [][]float64
 	for _, r := range rows {
 		rr := make([]float64, len(open))
-		any := false
+		found := false
 		for k, j := range open {
 			rr[k] = r[j]
 			if math.Abs(r[j]) > tol {
-				any = true
+				found = true
 			}
 		}
-		if any {
+		if found {
 			rest = append(rest, rr)
 		}
 	}

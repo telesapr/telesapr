@@ -43,7 +43,7 @@ func TestDraftSharpArcs(t *testing.T) {
 	old := srf.ChordTolMm()
 	srf.SetChordTolMm(0.001)
 	defer srf.SetChordTolMm(old)
-	color := core.NewRgbaColor(100, 100, 100, 255)
+	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	d := 5 * math.Sqrt2
 	for _, c := range []struct{ a, b, h float64 }{
@@ -71,7 +71,7 @@ func TestDraftSharpArcsSweep(t *testing.T) {
 	old := srf.ChordTolMm()
 	srf.SetChordTolMm(0.002)
 	defer srf.SetChordTolMm(old)
-	color := core.NewRgbaColor(100, 100, 100, 255)
+	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{

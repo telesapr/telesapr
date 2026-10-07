@@ -27,7 +27,7 @@ func rbCylinder(rad, h float64) *srf.SShell {
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = out
 	ls.Normal = rbv(0, 0, -1)
-	sh.MakeFromExtrusionOf(&ls, rbv(0, 0, 0), rbv(0, 0, h), core.NewRgbaColor(100, 100, 100, 255))
+	sh.MakeFromExtrusionOf(&ls, rbv(0, 0, 0), rbv(0, 0, h), core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
 
@@ -82,8 +82,8 @@ func TestRollingBallOnEnvelope(t *testing.T) {
 			t.Fatal(err)
 		}
 		worst := 0.0
-		for i := 0; i <= 8; i++ {
-			for j := 0; j <= 200; j++ {
+		for i := range 9 {
+			for j := range 201 {
 				worst = math.Max(worst, math.Abs(off(sf.PointAt(float64(i)/8, float64(j)/200))))
 			}
 		}

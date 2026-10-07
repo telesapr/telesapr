@@ -158,7 +158,7 @@ func drawCallsFor(t testing.TB, path string) string {
 	draw := func(name string) {
 		fmt.Fprintf(&b, "view %s\n", name)
 		rc := newRecordingCanvas(&b)
-		rc.camera = ss.GW.GetCamera()
+		rc.camera = ss.GW.Camera()
 		rc.SetBitmapFont(ss.GW.bitmapFont())
 		ss.GW.Draw(rc)
 	}

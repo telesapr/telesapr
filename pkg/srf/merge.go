@@ -92,11 +92,11 @@ func (s *SShell) MergeCoincidentSurfaces() {
 type surfaceReplaced struct{ from, to core.HSSurface }
 
 // edgesInto is MakeEdgesInto with the shell's curves by handle.
-func (srf *SSurface) edgesInto(curveAt map[core.HSCurve]*SCurve, sel *SEdgeList) {
-	for i := range srf.Trim {
-		stb := &srf.Trim[i]
+func (s *SSurface) edgesInto(curveAt map[core.HSCurve]*SCurve, sel *SEdgeList) {
+	for i := range s.Trim {
+		stb := &s.Trim[i]
 		if sc := curveAt[stb.Curve]; sc != nil {
-			srf.makeTrimEdgesInto(sel, false, sc, stb)
+			s.makeTrimEdgesInto(sel, false, sc, stb)
 		}
 	}
 }

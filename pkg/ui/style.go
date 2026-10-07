@@ -26,7 +26,7 @@ func (ss *Application) styleStroke(hs core.HStyle) render.Stroke {
 }
 
 // styleColor is a style's colour on screen (C++ Style::Color).
-func (ss *Application) styleColor(hs core.HStyle) core.RgbaColor {
+func (ss *Application) styleColor(hs core.HStyle) core.RGBA {
 	return ss.SK.StyleColor(hs, false, false)
 }
 
@@ -68,10 +68,10 @@ func (ss *Application) styleStippleScaleMm(hs core.HStyle) float64 {
 // styleExportColor and styleExportFillColor are a style's colours for
 // export, near-white rewritten to black if the user asks (C++
 // Style::Color and FillColor with forExport).
-func (ss *Application) styleExportColor(hs core.HStyle) core.RgbaColor {
+func (ss *Application) styleExportColor(hs core.HStyle) core.RGBA {
 	return ss.SK.StyleColor(hs, true, ss.FixExportColors)
 }
 
-func (ss *Application) styleExportFillColor(hs core.HStyle) core.RgbaColor {
+func (ss *Application) styleExportFillColor(hs core.HStyle) core.RGBA {
 	return ss.SK.StyleFillColor(hs, true, ss.FixExportColors)
 }

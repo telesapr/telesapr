@@ -71,7 +71,7 @@ func (d *Doc) Section() (s Section) {
 			return
 		}
 		s.Normal, s.Point = keep.N, point
-		g := sk.GetGroup(sk.ActiveGroup())
+		g := sk.Group(sk.ActiveGroup())
 		if g == nil {
 			return
 		}

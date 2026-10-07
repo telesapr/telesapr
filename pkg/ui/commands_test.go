@@ -160,7 +160,7 @@ func TestMeasureMode(t *testing.T) {
 	}
 	var b strings.Builder
 	rc := newRecordingCanvas(&b)
-	rc.camera = ss.GW.GetCamera()
+	rc.camera = ss.GW.Camera()
 	rc.SetBitmapFont(ss.GW.bitmapFont())
 	ss.GW.Draw(rc)
 	if !strings.Contains(b.String(), label) {
@@ -220,7 +220,7 @@ func TestDocumentUnitsInterface(t *testing.T) {
 	if !strings.Contains(last.Message+last.Description, "w") || !strings.Contains(last.Message+last.Description, "mm") {
 		t.Errorf("message %q %q", last.Message, last.Description)
 	}
-	if got := sk.GetConstraint(hc).Expr; got != "(w*2)*25.4" {
+	if got := sk.Constraint(hc).Expr; got != "(w*2)*25.4" {
 		t.Errorf("expression %q", got)
 	}
 	ss.UndoUndo()

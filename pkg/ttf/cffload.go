@@ -302,7 +302,7 @@ func (idx *cffIndex) accessElement(s *cffStream, element uint32) ([]byte, error)
 				if off2, err = idx.readOffset(s); err != nil {
 					return nil, err
 				}
-				if !(off2 == 0 && element < idx.count) {
+				if off2 != 0 || element >= idx.count {
 					break
 				}
 			}
@@ -313,7 +313,7 @@ func (idx *cffIndex) accessElement(s *cffStream, element uint32) ([]byte, error)
 			for {
 				element++
 				off2 = idx.offsets[element]
-				if !(off2 == 0 && element < idx.count) {
+				if off2 != 0 || element >= idx.count {
 					break
 				}
 			}
@@ -436,7 +436,7 @@ func parseReal(d []byte, powerTen int64, scaling *int64) int64 {
 		if !nibble() {
 			return 0 // Bad
 		}
-		if nib == 0xE {
+		if nib == 0xE { //nolint:gocritic // a branch breaks out of the loop
 			sign = true
 		} else if nib > 9 {
 			break
@@ -1128,7 +1128,7 @@ func loadVStore(vs *cffVStore, s *cffStream, baseOffset int64, offset uint64) (e
 	if err != nil {
 		return err
 	}
-	for i := 0; i < int(regionCount); i++ {
+	for range int(regionCount) {
 		axes := make([]cffAxisCoords, vs.axisCount)
 		vs.varRegionList = append(vs.varRegionList, axes)
 		vs.regionCount++
@@ -1148,7 +1148,7 @@ func loadVStore(vs *cffVStore, s *cffStream, baseOffset int64, offset uint64) (e
 			axes[j] = cffAxisCoords{fdot14ToFixed(start), fdot14ToFixed(peak), fdot14ToFixed(end)}
 		}
 	}
-	for i := 0; i < int(dataCount); i++ {
+	for i := range int(dataCount) {
 		if err := s.seek(vsOffset + int64(dataOffsets[i])); err != nil {
 			return err
 		}
@@ -1173,7 +1173,7 @@ func loadVStore(vs *cffVStore, s *cffStream, baseOffset int64, offset uint64) (e
 
 // buildVector is cff_blend_build_vector.
 func (b *cffBlend) buildVector(vsindex, lenNDV uint32, ndv []int64) error {
-	if !(lenNDV == 0 || ndv != nil) {
+	if lenNDV != 0 && ndv == nil {
 		return errInvalidFormat
 	}
 	b.builtBV = false
@@ -1207,7 +1207,7 @@ func (b *cffBlend) buildVector(vsindex, lenNDV uint32, ndv []int64) error {
 		b.bv[master] = 0x10000
 		for j := range lenNDV {
 			axis := &varRegion[j]
-			if axis.peakCoord == ndv[j] || axis.peakCoord == 0 {
+			if axis.peakCoord == ndv[j] || axis.peakCoord == 0 { //nolint:gocritic // a branch breaks out of the loop
 				continue
 			} else if ndv[j] <= axis.startCoord || ndv[j] >= axis.endCoord {
 				b.bv[master] = 0
@@ -1325,11 +1325,11 @@ func (ps *cffParser) field(code uint32) (bool, error) {
 	num := func() int64 { return parseNum(ps.stack[0]) }
 	// need is the table's argument check for a non-delta field.
 	need := func() bool { return numArgs >= 1 }
-	delta := func(arr []int64, count *byte, max int, fixed bool) {
-		n := min(numArgs, max)
+	delta := func(arr []int64, count *byte, limit int, fixed bool) {
+		n := min(numArgs, limit)
 		*count = byte(n)
 		var val int64
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if fixed {
 				val += parseFixed(ps.stack[i])
 			} else {
@@ -1527,10 +1527,7 @@ func (ps *cffParser) field(code uint32) (bool, error) {
 		if !need() {
 			return false, errInvalidArg
 		}
-		top.maxstack = min(uint32(int32(num())), cff2MaxStack)
-		if top.maxstack < cff2DefaultStack {
-			top.maxstack = cff2DefaultStack
-		}
+		top.maxstack = max(min(uint32(int32(num())), cff2MaxStack), cff2DefaultStack)
 
 	// Private DICT (CFF and CFF2)
 	case 6 | cffCodePrivate, 6 | cff2CodePrivate:
@@ -1997,7 +1994,7 @@ func loadEncoding(enc *cffEncoding, cs *cffCharset, numGlyphs uint32, s *cffStre
 			if err != nil {
 				return err
 			}
-			for j := 0; j < int(count); j++ {
+			for range int(count) {
 				glyphCode, err := s.readByte()
 				if err != nil {
 					return err
@@ -2171,7 +2168,7 @@ func loadCFFFont(s *cffStream, faceIndex int, pureCFF, cff2 bool) (*cffFont, err
 			if cff2 {
 				code = cff2CodeFontDict
 			}
-			for i := uint32(0); i < fdIndex.count; i++ {
+			for i := range fdIndex.count {
 				if err := f.loadSubfont(f.subfonts[i], fdIndex, i, baseOffset, code); err != nil {
 					return nil, err
 				}

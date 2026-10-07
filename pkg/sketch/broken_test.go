@@ -82,7 +82,7 @@ func TestBrokenReferencesDeleteRequest(t *testing.T) {
 		Type: core.ConstraintPointsCoincident, Group: hg(4),
 		PtA: shank.Entity(1), PtB: line.Entity(1)})
 	sk.GenerateAll()
-	if sk.GetConstraint(hc) == nil || len(sk.BrokenReferences) != 0 {
+	if sk.Constraint(hc) == nil || len(sk.BrokenReferences) != 0 {
 		t.Fatalf("the constraint didn't take: %s", brokenLines(sk))
 	}
 	for i := range sk.Requests {
@@ -116,7 +116,7 @@ func TestBrokenReferencesNames(t *testing.T) {
 	} {
 		sk := translateND(t)
 		// The sketch on the face gets an origin that never was.
-		sk.GetGroup(hg(4)).Predef.Origin = c.origin
+		sk.Group(hg(4)).Predef.Origin = c.origin
 		sk.GenerateAll()
 		if got := brokenLines(sk); !strings.HasPrefix(got, c.want+"\n") || len(sk.BrokenReferences) != 4 {
 			t.Fatalf("broken:\n%s\nwant first: %s", got, c.want)

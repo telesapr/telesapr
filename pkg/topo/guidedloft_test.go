@@ -28,7 +28,7 @@ func guideXZ(x func(z float64) float64) topo.LoftGuide {
 // volume.
 func guidedSolid(t *testing.T, loops [][]srf.SBezier, ends topo.LoftEnds, guides ...topo.LoftGuide) float64 {
 	t.Helper()
-	sh, err := topo.MakeGuidedLoft(loops, 0, ends, guides, core.NewRgbaColor(100, 100, 100, 255), 1<<30)
+	sh, err := topo.MakeGuidedLoft(loops, 0, ends, guides, core.NewRGBA(100, 100, 100, 255), 1<<30)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestGuidedLoftOneGuide(t *testing.T) {
 		p := v(5+6*z/20+3*math.Sin(math.Pi*z/20), 0, z)
 		c := bs.IsoV(vAtHeight(bs, z))
 		best := math.Inf(1)
-		for i := 0; i <= 4000; i++ {
+		for i := range 4001 {
 			best = math.Min(best, c.PointAt(float64(i)/4000).Minus(p).Magnitude())
 		}
 		worst = math.Max(worst, best)
@@ -181,7 +181,7 @@ func TestGuidedLoftSweep(t *testing.T) {
 		}
 		at := func(side float64) topo.LoftGuide {
 			var g topo.LoftGuide
-			for i := 0; i <= 600; i++ {
+			for i := range 601 {
 				z := h * float64(i) / 600
 				g = append(g, v(centre(z)+side*(4+bow*math.Sin(k*z)), 0, z))
 			}
@@ -196,7 +196,7 @@ func TestGuidedLoftSweep(t *testing.T) {
 		}
 		e := p.Float("ends")
 		sh, err := topo.MakeGuidedLoft(loops, 0, topo.LoftEnds{Start: e, End: e}, guides,
-			core.NewRgbaColor(1, 1, 1, 255), 1<<30)
+			core.NewRGBA(1, 1, 1, 255), 1<<30)
 		if err != nil {
 			return err
 		}

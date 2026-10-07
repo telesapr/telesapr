@@ -34,7 +34,7 @@ type stepPointAlias struct {
 type stepCurveAlias struct {
 	alias        stepAlias
 	memberPoints []int
-	color        core.RgbaColor
+	color        core.RGBA
 }
 
 type stepEdgeCurveAlias struct {
@@ -42,7 +42,7 @@ type stepEdgeCurveAlias struct {
 	prevFinish int
 	thisFinish int
 	curveID    int
-	color      core.RgbaColor
+	color      core.RGBA
 }
 
 type stepOrientedEdgeAlias struct {
@@ -65,7 +65,7 @@ type stepFileWriter struct {
 	curveAliases        []stepCurveAlias
 	orientedEdgeAliases []stepOrientedEdgeAlias
 	exportParts         bool
-	currentColor        core.RgbaColor
+	currentColor        core.RGBA
 }
 
 func (w *stepFileWriter) printf(format string, args ...any) {
@@ -647,7 +647,7 @@ func (w *stepFileWriter) writeSurface(du, dv int, knotsU, knotsV []float64, ctrl
 
 // writeFace writes an advanced face on surface srfid, bounded by
 // loops, the first its outer bound when firstOuter, and its colour.
-func (w *stepFileWriter) writeFace(srfid int, loops []*srf.SBezierLoop, firstOuter bool, color core.RgbaColor) {
+func (w *stepFileWriter) writeFace(srfid int, loops []*srf.SBezierLoop, firstOuter bool, color core.RGBA) {
 	var listOfLoops []int
 	for i, loop := range loops {
 		listOfLoops = append(listOfLoops, w.ExportCurveLoop(loop, i > 0 || !firstOuter))
@@ -779,7 +779,7 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 	for _, c := range sh.grid.Cells {
 		column[c.H] = c.I
 	}
-	var color core.RgbaColor
+	var color core.RGBA
 	for k, h := range sh.patches {
 		p := shell.FindSurface(h)
 		if k == 0 {
@@ -1021,7 +1021,7 @@ func (w *stepFileWriter) WriteFooter() {
 // ExportSurfacesTo writes the active group's shell as STEP (C++
 // StepFileWriter::ExportSurfacesTo).
 func (ss *Application) ExportSurfacesTo(filename string) {
-	g := ss.SK.GetGroup(ss.GW.activeGroupH())
+	g := ss.SK.Group(ss.GW.activeGroupH())
 	shell := &g.RunningShell
 
 	if len(shell.Surface) == 0 {

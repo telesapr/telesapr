@@ -26,7 +26,7 @@ func benchmarkRegenerate(b *testing.B, name string, copies map[uint32]float64) {
 			}
 			sk := doc.Sketch
 			for h, n := range copies {
-				sk.GetGroup(core.HGroup{V: h}).ValA = n
+				sk.Group(core.HGroup{V: h}).ValA = n
 			}
 			sk.GenerateAllTyped(sketch.GenerateAll)
 			b.ResetTimer()

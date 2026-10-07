@@ -155,19 +155,22 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 						best = i
 					}
 				}
-				if best >= 0 && flat[best] {
+				switch {
+				case best >= 0 && flat[best]:
 					if surfN.Dot(interSurfN[best]) > 0 {
 						*dirs[s] = SurfCoincSame
 					} else {
 						*dirs[s] = SurfCoincOpp
 					}
-				} else if best >= 0 {
+
+				case best >= 0:
 					if dev[best]*surfN.Dot(interSurfN[best]) > 0 {
 						*dirs[s] = SurfInside
 					} else {
 						*dirs[s] = SurfOutside
 					}
-				} else {
+
+				default:
 					nr := 0
 					if math.Abs(dev[1]) < math.Abs(dev[0]) {
 						nr = 1
@@ -193,7 +196,8 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		// the bug surfaces as every chain on the cutter
 		// classifying as `SurfOutside` and getting discarded.
 		dirs := [2]*Class{indir, outdir}
-		if math.Abs(dotp[0]) < DotProductTol && dotp[1] > DotProductTol {
+		switch {
+		case math.Abs(dotp[0]) < DotProductTol && dotp[1] > DotProductTol:
 			if edgeNOut.Dot(interEdgeN[0]) > 0 {
 				*dirs[0] = towards0
 				*dirs[1] = SurfOutside
@@ -201,7 +205,8 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 				*dirs[0] = SurfInside
 				*dirs[1] = towards0
 			}
-		} else if math.Abs(dotp[0]) < DotProductTol && dotp[1] < -DotProductTol {
+
+		case math.Abs(dotp[0]) < DotProductTol && dotp[1] < -DotProductTol:
 			if edgeNOut.Dot(interEdgeN[0]) > 0 {
 				*dirs[0] = towards0
 				*dirs[1] = SurfInside
@@ -209,13 +214,16 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 				*dirs[0] = SurfOutside
 				*dirs[1] = towards0
 			}
-		} else if dotp[0] > DotProductTol && dotp[1] > DotProductTol {
+
+		case dotp[0] > DotProductTol && dotp[1] > DotProductTol:
 			*indir = SurfInside
 			*outdir = SurfOutside
-		} else if dotp[0] < -DotProductTol && dotp[1] < -DotProductTol {
+
+		case dotp[0] < -DotProductTol && dotp[1] < -DotProductTol:
 			*indir = SurfOutside
 			*outdir = SurfInside
-		} else {
+
+		default:
 			// Our edge is tangent to the shell at the shell's
 			// edge: the two faces meeting at the shell's edge
 			// lie on the same side of our surface, so the regions
@@ -392,20 +400,20 @@ func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
 			}
 		}
 		// How far the hit is from where its surface's trim could be
-		// wrong; a ray that meets nothing is clear.
-		clear := veryPositive
+		// wrong; a ray that meets nothing is clearance.
+		clearance := veryPositive
 		switch {
 		case nearest == nil || !nearest.OnEdge:
 		case nearest.nearTrim:
-			clear = distanceToEdges(nearest.P, &nearest.Srf.Edges)
+			clearance = distanceToEdges(nearest.P, &nearest.Srf.Edges)
 		default:
-			clear = 0
+			clearance = 0
 		}
-		if clear >= tol {
+		if clearance >= tol {
 			return c, try + 1
 		}
-		if clear > bestClear {
-			best, bestClear = c, clear
+		if clearance > bestClear {
+			best, bestClear = c, clearance
 		}
 	}
 	return best, raycastTries

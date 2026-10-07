@@ -198,13 +198,13 @@ func projectOnCurve(c Curve, p geom.Vector) float64 {
 			per = 4
 		}
 		for i := 0; i+1 < len(br); i++ {
-			for k := 0; k < per; k++ {
+			for k := range per {
 				ts = append(ts, br[i]+(br[i+1]-br[i])*float64(k)/float64(per))
 			}
 		}
 		ts = append(ts, hi)
 	} else {
-		for k := 0; k <= 32; k++ {
+		for k := range 33 {
 			ts = append(ts, lo+(hi-lo)*float64(k)/32)
 		}
 	}
@@ -579,7 +579,7 @@ func (s *offset) closingPeriods() (pu, pv float64) {
 	pu, pv = s.base.Period()
 	u0, u1, v0, v1 := s.base.Domain()
 	closes := func(at func(k int) (geom.Vector, geom.Vector)) bool {
-		for k := 0; k <= 4; k++ {
+		for k := range 5 {
 			a, b := at(k)
 			if a.Minus(b).Magnitude() > 1e-6*(1+math.Abs(s.d)) {
 				return false
@@ -765,7 +765,7 @@ func newSurfaceGrid(s Surface) *surfaceGrid {
 		}
 		var out []float64
 		for i := 0; i+step < len(br); i += step {
-			for k := 0; k < per; k++ {
+			for k := range per {
 				out = append(out, br[i]+(br[i+step]-br[i])*float64(k)/float64(per))
 			}
 		}

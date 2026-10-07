@@ -94,7 +94,7 @@ func lidVolume(s *srf.BSplineSurface) float64 {
 func lid(t testing.TB, s *srf.BSplineSurface) *srf.SShell {
 	t.Helper()
 	sh := &srf.SShell{}
-	col := core.NewRgbaColor(100, 100, 100, 255)
+	col := core.NewRGBA(100, 100, 100, 255)
 	if _, err := topo.AddBSplineFace(sh, s, srf.OriginFor(9, 100), 0x777, col); err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func heightAt(s *srf.BSplineSurface, x, y float64) float64 {
 }
 
 func TestBSplineLid(t *testing.T) {
-	old, oldSegs := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
 	srf.SetChordTolMm(0.002)
 	srf.SetMaxSegments(100)
 	defer func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) }()
@@ -265,7 +265,7 @@ func TestBSplineLid(t *testing.T) {
 // block through its top, and unites a cylinder that crosses its knot
 // lines, against the volumes under the surface by quadrature.
 func TestBSplineLidBooleans(t *testing.T) {
-	old, oldSegs := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
 	srf.SetChordTolMm(0.005)
 	srf.SetMaxSegments(100)
 	defer func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) }()
@@ -296,7 +296,7 @@ func TestBSplineLidBooleans(t *testing.T) {
 		})
 		var blk srf.SShell
 		blk.MakePrism([]geom.Vector{{X: 8, Y: 6, Z: 4}, {X: 28, Y: 6, Z: 4}, {X: 28, Y: 22, Z: 4}, {X: 8, Y: 22, Z: 4}},
-			geom.Vector{}, geom.Vector{Z: 16}, core.NewRgbaColor(100, 100, 100, 255))
+			geom.Vector{}, geom.Vector{Z: 16}, core.NewRGBA(100, 100, 100, 255))
 		var joined srf.SShell
 		joined.MakeFromUnionOf(lid(t, s), &blk)
 		checkSolid(t, name+" with a block", &joined, vol+above, 2e-4)
@@ -332,12 +332,12 @@ func TestBSplineSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old, oldSegs := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
 	srf.SetChordTolMm(0.005)
 	srf.SetMaxSegments(100)
 	defer func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) }()
 	r := rand.New(rand.NewSource(21))
-	col := core.NewRgbaColor(100, 100, 100, 255)
+	col := core.NewRGBA(100, 100, 100, 255)
 	points, failed := 0, 0
 	for _, deg := range [][2]int{{2, 2}, {3, 3}, {4, 3}, {srf.MaxDegree, srf.MaxDegree}} {
 		for _, mult := range []int{1, 2} {

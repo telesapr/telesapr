@@ -38,7 +38,7 @@ type model3mfXML struct {
 // and the same bytes every time.
 func TestExport3mf(t *testing.T) {
 	var a, b srf.SShell
-	red, blue := core.NewRgbaColor(200, 0, 0, 255), core.NewRgbaColor(0, 0, 200, 255)
+	red, blue := core.NewRGBA(200, 0, 0, 255), core.NewRGBA(0, 0, 200, 255)
 	a.MakePrism([]geom.Vector{{}, {X: 10}, {X: 10, Y: 20}, {Y: 20}}, geom.Vector{}, geom.Vector{Z: 30}, red)
 	b.MakePrism([]geom.Vector{{X: 20}, {X: 25}, {X: 25, Y: 5}, {X: 20, Y: 5}}, geom.Vector{}, geom.Vector{Z: 5}, blue)
 	var m srf.SMesh

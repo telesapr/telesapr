@@ -62,9 +62,9 @@ func SetMaxSegments(n int) {
 	maxSegments = n
 }
 
-// GetMaxSegments returns the maximum number of pwl segments per curve:
-// the export one in export mode (C++ SS.GetMaxSegments).
-func GetMaxSegments() int {
+// MaxSegments returns the maximum number of pwl segments per curve:
+// the export one in export mode (C++ SS.MaxSegments).
+func MaxSegments() int {
 	if exportMode {
 		return exportMaxSegments
 	}
@@ -108,7 +108,7 @@ func (b *SBezier) makePwlWorker(l *[]geom.Vector, ta, tb, chordTol, maxDt float6
 	pm := b.PointAt((ta + tb) / 2.0)
 	d := pm.DistanceToLine(pa, pb.Minus(pa))
 
-	step := 1.0 / float64(GetMaxSegments())
+	step := 1.0 / float64(MaxSegments())
 	if ((tb-ta) < step || d < chordTol) && (tb-ta) <= maxDt {
 		// A previous call has already added the beginning of our interval.
 		*l = append(*l, pb)
@@ -135,7 +135,7 @@ func (b *SBezier) makePwlInitialWorker(l *[]geom.Vector, ta, tb, chordTol, maxDt
 	d := geom.Max(pm1.DistanceToLine(pa, dir),
 		geom.Max(pm2.DistanceToLine(pa, dir), pm3.DistanceToLine(pa, dir)))
 
-	step := 1.0 / float64(GetMaxSegments())
+	step := 1.0 / float64(MaxSegments())
 	if ((tb-ta) < step || d < chordTol) && (tb-ta) <= maxDt {
 		// A previous call has already added the beginning of our interval.
 		*l = append(*l, pb)

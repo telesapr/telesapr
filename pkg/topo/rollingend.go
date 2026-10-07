@@ -1,9 +1,9 @@
 package topo
 
 import (
+	"cmp"
 	"math"
 	"slices"
-	"sort"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -559,7 +559,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 				return nil, nil, nil, err
 			}
 		}
-		sort.SliceStable(specs, func(i, j int) bool { return cache[specs[i]].s < cache[specs[j]].s })
+		slices.SortStableFunc(specs, func(a, b rbSpec) int { return cmp.Compare(cache[a].s, cache[b].s) })
 	}
 }
 

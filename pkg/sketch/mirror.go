@@ -19,7 +19,7 @@ import (
 // MirrorPlaneOK reports whether he can be the plane of a mirror: a
 // workplane or a planar face.
 func (sk *Sketch) MirrorPlaneOK(he core.HEntity) bool {
-	e := sk.GetEntity(he)
+	e := sk.Entity(he)
 	return e != nil && (e.IsWorkplane() || e.IsFace())
 }
 
@@ -47,7 +47,7 @@ func (g *Group) mirrorPlane(sk *Sketch) *core.Entity {
 	if !sk.MirrorPlaneOK(g.Predef.EntityB) {
 		return nil
 	}
-	return sk.GetEntity(g.Predef.EntityB)
+	return sk.Entity(g.Predef.EntityB)
 }
 
 // NewMirror starts a mirror group that reflects the active group in
@@ -60,7 +60,7 @@ func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error) {
 	if name == "" {
 		g.Name = "mirror"
 	}
-	src := sk.GetGroup(sk.Active)
+	src := sk.Group(sk.Active)
 	if src == nil || src.H.V == HGroupReferences {
 		return g, errors.New("activate the group to mirror first: the active group is the one mirrored")
 	}
@@ -77,7 +77,7 @@ func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error) {
 // of its source group's entities.
 func (g *Group) generateMirror(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
 	h := g.H
-	if src := sk.GetGroup(g.OpA); src != nil {
+	if src := sk.Group(g.OpA); src != nil {
 		g.MeshCombine = src.MeshCombine
 	}
 	o, n := geom.Vector{}, geom.Vector{Z: 1}
@@ -150,7 +150,7 @@ func (g *Group) mirrorsSolid(sk *Sketch) bool {
 	if g.MirrorSolid {
 		return true
 	}
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	if src == nil || src.IsForcedToMesh(sk) {
 		return false
 	}

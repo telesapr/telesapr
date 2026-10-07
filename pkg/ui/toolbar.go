@@ -64,14 +64,14 @@ var toolbar = []toolIcon{
 }
 
 // ToolbarDraw draws the toolbar.
-func (gw *GraphicsWindow) ToolbarDraw(canvas *render.UiCanvas) {
+func (gw *GraphicsWindow) ToolbarDraw(canvas *render.UICanvas) {
 	gw.toolbarDrawOrHitTest(0, 0, canvas)
 }
 
 // ToolbarMouseMoved highlights the button under the mouse and sets its
 // tooltip; it reports whether the mouse is over the toolbar.
 func (gw *GraphicsWindow) ToolbarMouseMoved(x, y int) bool {
-	width, height := gw.window.GetContentSize()
+	width, height := gw.window.ContentSize()
 	x += int(width) / 2
 	y += int(height) / 2
 
@@ -103,7 +103,7 @@ func (gw *GraphicsWindow) ToolbarMouseMoved(x, y int) bool {
 // ToolbarMouseDown runs the button clicked; it reports whether the
 // click was on the toolbar.
 func (gw *GraphicsWindow) ToolbarMouseDown(x, y int) bool {
-	width, height := gw.window.GetContentSize()
+	width, height := gw.window.ContentSize()
 	x += int(width) / 2
 	y += int(height) / 2
 
@@ -116,8 +116,8 @@ func (gw *GraphicsWindow) ToolbarMouseDown(x, y int) bool {
 
 // toolbarDrawOrHitTest draws the toolbar, or with a nil canvas finds
 // the button at mx, my (C++ ToolbarDrawOrHitTest).
-func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UiCanvas) (within bool, hitCommand Command, hitX, hitY int) {
-	_, height := gw.window.GetContentSize()
+func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanvas) (within bool, hitCommand Command, hitX, hitY int) {
+	_, height := gw.window.ContentSize()
 
 	x, y := 17, int(height-21) // 20 is the menu bar height
 
@@ -147,7 +147,7 @@ func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UiCanv
 	}
 
 	if canvas != nil {
-		canvas.DrawRect(aleft, aright, atop, abot, core.NewRgbaColor(30, 30, 30, 255), core.RgbaColor{}, 0)
+		canvas.DrawRect(aleft, aright, atop, abot, core.NewRGBA(30, 30, 30, 255), core.RGBA{}, 0)
 	}
 
 	leftpos := true
@@ -165,7 +165,7 @@ func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UiCanv
 				// Draw a separator bar in a slightly different color.
 				divw, divh := 30, 2
 				canvas.DrawRect(x+16+divw, x+16-divw, y+24+divh, y+24-divh,
-					core.NewRgbaColor(45, 45, 45, 255), core.RgbaColor{}, 0)
+					core.NewRGBA(45, 45, 45, 255), core.RGBA{}, 0)
 			}
 			continue
 		}
@@ -182,7 +182,7 @@ func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UiCanv
 				// Highlight the hovered or pending item.
 				const boxhw = 15
 				canvas.DrawRect(x+boxhw, x-boxhw, y+boxhw, y-boxhw,
-					core.NewRgbaColor(255, 255, 0, 75), core.RgbaColor{}, 0)
+					core.NewRGBA(255, 255, 0, 75), core.RGBA{}, 0)
 			}
 		} else {
 			const boxhw = 16

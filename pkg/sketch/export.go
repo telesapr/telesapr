@@ -62,7 +62,7 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 	}()
 	sk.GenerateAllTyped(GenerateAll)
 
-	g := sk.GetGroup(sk.ActiveGroup())
+	g := sk.Group(sk.ActiveGroup())
 	g.GenerateDisplayItems(sk)
 
 	m := &g.DisplayMesh
@@ -152,7 +152,7 @@ func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error {
 func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList {
 	var nakedEdges srf.SEdgeList
 
-	g := sk.GetGroup(sk.ActiveGroup())
+	g := sk.Group(sk.ActiveGroup())
 	m := &g.DisplayMesh
 	root := srf.SKdNodeFrom(m)
 	var inters, leaks bool

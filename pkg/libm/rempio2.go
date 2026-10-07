@@ -97,21 +97,24 @@ func kernelRemPio2(x, y []float64, e0, nx, prec int, ipio2 []int32) int32 {
 		n = int32(z)
 		z -= float64(n)
 		ih = 0
-		if q0 > 0 {
+		switch {
+		case q0 > 0:
 			i := iq[jz-1] >> (24 - q0)
 			n += i
 			iq[jz-1] -= i << (24 - q0)
 			ih = iq[jz-1] >> (23 - q0)
-		} else if q0 == 0 {
+
+		case q0 == 0:
 			ih = iq[jz-1] >> 23
-		} else if z >= 0.5 {
+
+		case z >= 0.5:
 			ih = 2
 		}
 
 		if ih > 0 {
 			n++
 			carry := int32(0)
-			for i := 0; i < jz; i++ {
+			for i := range jz {
 				j := iq[i]
 				if carry == 0 {
 					if j != 0 {

@@ -1,10 +1,11 @@
 package slvs
 
 import (
+	"cmp"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -23,7 +24,7 @@ func TestParityConstraintFixtures(t *testing.T) {
 	if err != nil {
 		t.Fatalf("readDir: %v", err)
 	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	slices.SortFunc(entries, func(a, b os.DirEntry) int { return cmp.Compare(a.Name(), b.Name()) })
 
 	var solved, notSolved, skipped int
 	var failing []string

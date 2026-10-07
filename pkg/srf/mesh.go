@@ -67,8 +67,8 @@ func DoBounding(v geom.Vector, vmax, vmin *geom.Vector) {
 	vmin.Z = geom.Min(vmin.Z, v.Z)
 }
 
-// GetBounding is the mesh's bounding box (C++ SMesh::GetBounding).
-func (m *SMesh) GetBounding() (vmax, vmin geom.Vector) {
+// Bounding is the mesh's bounding box (C++ SMesh::Bounding).
+func (m *SMesh) Bounding() (vmax, vmin geom.Vector) {
 	vmin = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
 	vmax = geom.Vector{X: veryNegative, Y: veryNegative, Z: veryNegative}
 	for i := range m.Triangles {
@@ -170,13 +170,17 @@ func (m *SMesh) Simplify(start int) {
 						continue
 					}
 
-					if tr.A.Equals(d) && tr.B.Equals(b) {
+					switch {
+					case tr.A.Equals(d) && tr.B.Equals(b):
 						c = tr.C
-					} else if tr.B.Equals(d) && tr.C.Equals(b) {
+
+					case tr.B.Equals(d) && tr.C.Equals(b):
 						c = tr.A
-					} else if tr.C.Equals(d) && tr.A.Equals(b) {
+
+					case tr.C.Equals(d) && tr.A.Equals(b):
 						c = tr.B
-					} else {
+
+					default:
 						continue
 					}
 					// The vertex at C must be convex; but the others must
@@ -192,18 +196,23 @@ func (m *SMesh) Simplify(start int) {
 					bDot /= geom.Min(ab.Magnitude(), bc.Magnitude())
 					dDot /= geom.Min(cd.Magnitude(), de.Magnitude())
 
-					if math.Abs(bDot) < geom.LengthEps && math.Abs(dDot) < geom.LengthEps {
+					switch {
+					case math.Abs(bDot) < geom.LengthEps && math.Abs(dDot) < geom.LengthEps:
 						conv[wrap(j+1, convc)] = c
 						// and remove the vertex at j, which is a dup
 						conv = append(conv[:j], conv[j+1:]...)
-					} else if math.Abs(bDot) < geom.LengthEps && dDot > 0 {
+
+					case math.Abs(bDot) < geom.LengthEps && dDot > 0:
 						conv[j] = c
-					} else if math.Abs(dDot) < geom.LengthEps && bDot > 0 {
+
+					case math.Abs(dDot) < geom.LengthEps && bDot > 0:
 						conv[wrap(j+1, convc)] = c
-					} else if bDot > 0 && dDot > 0 {
+
+					case bDot > 0 && dDot > 0:
 						// conv[j] is unchanged, conv[j+1] goes to [j+2]
 						conv = append(conv[:j+1], append([]geom.Vector{c}, conv[j+1:]...)...)
-					} else {
+
+					default:
 						continue
 					}
 
@@ -220,7 +229,7 @@ func (m *SMesh) Simplify(start int) {
 		// I need to debug why this is required; sometimes the above code
 		// still generates a convex polygon
 		convc := len(conv)
-		for i = 0; i < convc; i++ {
+		for i := range convc {
 			a := conv[wrap(i-1, convc)]
 			b := conv[i]
 			c := conv[wrap(i+1, convc)]
@@ -234,7 +243,7 @@ func (m *SMesh) Simplify(start int) {
 			}
 		}
 
-		for i = 0; i < convc-2; i++ {
+		for i := range convc - 2 {
 			tr := STriangleFrom(meta, conv[0], conv[i+1], conv[i+2])
 			if tr.MinAltitude() > geom.LengthEps {
 				tout = append(tout, tr)
@@ -388,9 +397,9 @@ func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) 
 	return face
 }
 
-// GetCenterOfMass is the centroid of the volume the mesh encloses (C++
-// SMesh::GetCenterOfMass).
-func (m *SMesh) GetCenterOfMass() geom.Vector {
+// CenterOfMass is the centroid of the volume the mesh encloses (C++
+// SMesh::CenterOfMass).
+func (m *SMesh) CenterOfMass() geom.Vector {
 	center := geom.Vector{}
 	vol := 0.0
 	for i := range m.Triangles {
@@ -408,7 +417,7 @@ func (m *SMesh) GetCenterOfMass() geom.Vector {
 // SMesh::PrecomputeTransparency).
 func (m *SMesh) PrecomputeTransparency() {
 	CxxSort(m.Triangles, func(sta, stb *STriangle) bool {
-		colora, colorb := sta.Meta.RgbaColor, stb.Meta.RgbaColor
+		colora, colorb := sta.Meta.RGBA, stb.Meta.RGBA
 		opaquea := colora.IsEmpty() || colora.Alpha == 255
 		opaqueb := colorb.IsEmpty() || colorb.Alpha == 255
 

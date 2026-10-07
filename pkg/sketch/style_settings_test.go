@@ -47,7 +47,7 @@ func TestDefaultStylesFromSettings(t *testing.T) {
 	core.SetSettings(st)
 	defer core.SetSettings(nil)
 
-	red := core.NewRgbaColor(255, 0, 0, 255)
+	red := core.NewRGBA(255, 0, 0, 255)
 	core.FreezeColor(st, core.CnfColor("ActiveGrp"), red)
 	st.FreezeFloat(core.CnfWidth("ActiveGrp"), 2.5)
 	st.FreezeString(core.CnfStippleType("ActiveGrp"), "dashdot")

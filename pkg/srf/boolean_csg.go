@@ -32,7 +32,7 @@ func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 		}
 	})
 	for i := range scn {
-		hsc := into.addAndAssignCurveId(scn[i])
+		hsc := into.addAndAssignCurveID(scn[i])
 		// And note the new ID so that we can rewrite the trims appropriately
 		s.Curve[i].NewH = hsc
 	}
@@ -126,8 +126,8 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell) {
 	for i := range s.Curve {
 		sc := &s.Curve[i]
-		sA := sc.GetSurfaceA(a, b)
-		sB := sc.GetSurfaceB(a, b)
+		sA := sc.SurfaceA(a, b)
+		sB := sc.SurfaceB(a, b)
 		if sA != nil {
 			sc.SurfA = sA.NewH
 		}
@@ -137,9 +137,9 @@ func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell) {
 	}
 }
 
-// GetSurfaceA returns the surface named by SurfA, looked up in the
-// operand the curve came from. Mirrors C++ SCurve::GetSurfaceA.
-func (c *SCurve) GetSurfaceA(a, b *SShell) *SSurface {
+// SurfaceA returns the surface named by SurfA, looked up in the
+// operand the curve came from. Mirrors C++ SCurve::SurfaceA.
+func (c *SCurve) SurfaceA(a, b *SShell) *SSurface {
 	switch c.Source {
 	case CurveSourceOrigB:
 		return b.FindSurface(c.SurfA)
@@ -148,9 +148,9 @@ func (c *SCurve) GetSurfaceA(a, b *SShell) *SSurface {
 	}
 }
 
-// GetSurfaceB returns the surface named by SurfB, looked up in the
-// operand the curve came from. Mirrors C++ SCurve::GetSurfaceB.
-func (c *SCurve) GetSurfaceB(a, b *SShell) *SSurface {
+// SurfaceB returns the surface named by SurfB, looked up in the
+// operand the curve came from. Mirrors C++ SCurve::SurfaceB.
+func (c *SCurve) SurfaceB(a, b *SShell) *SSurface {
 	switch c.Source {
 	case CurveSourceOrigA:
 		return a.FindSurface(c.SurfB)
@@ -526,7 +526,7 @@ func findVertsOnCurve(out *[]geom.Vector, curve *SCurve, sh *SShell) {
 		return
 	}
 	var amax, amin geom.Vector
-	curve.GetAxisAlignedBounding(&amax, &amin)
+	curve.AxisAlignedBounding(&amax, &amin)
 	for i := range sh.Surface {
 		ss := &sh.Surface[i]
 		for j := range ss.Trim {

@@ -56,8 +56,8 @@ func (p *Platform) newName(prefix string) string {
 	return fmt.Sprintf("%s%d", prefix, p.names)
 }
 
-// GetSettings returns the settings store.
-func (p *Platform) GetSettings() core.Settings { return p.settings }
+// Settings returns the settings store.
+func (p *Platform) Settings() core.Settings { return p.settings }
 
 // Run runs the event loop until Exit.
 func (p *Platform) Run() { p.app.Run() }
@@ -79,9 +79,9 @@ func (p *Platform) OpenInBrowser(url string) {
 	_ = cmd.Start()
 }
 
-// GetFontFiles lists the font files in the usual font directories, as
+// FontFiles lists the font files in the usual font directories, as
 // the GTK build lists the ones fontconfig knows.
-func (p *Platform) GetFontFiles() []string { return platform.SystemFontFiles() }
+func (p *Platform) FontFiles() []string { return platform.SystemFontFiles() }
 
 // CreateTimer returns a timer on the event loop (C++ TimerImplGtk).
 func (p *Platform) CreateTimer() platform.Timer { return &Timer{p: p} }

@@ -74,19 +74,19 @@ func (f *BitmapFont) AddGlyph(codepoint rune, pm *Pixmap) {
 	g := BitmapGlyph{AdvanceCells: uint8(pm.Width / 8), Position: f.nextPosition}
 	f.nextPosition++
 	f.glyphs[codepoint] = g
-	for y := 0; y < pm.Height; y++ {
+	for y := range pm.Height {
 		row := f.textureRow(g.Position, y)
-		for x := 0; x < pm.Width; x++ {
-			if pm.GetPixel(x, y).ToPackedInt()&0xffffff != 0 {
+		for x := range pm.Width {
+			if pm.Pixel(x, y).ToPackedInt()&0xffffff != 0 {
 				row[x] = 255
 			}
 		}
 	}
 }
 
-// GetGlyph returns the glyph, rendering it into the texture the first
-// time; a missing one is U+FFFD (C++ BitmapFont::GetGlyph).
-func (f *BitmapFont) GetGlyph(codepoint rune) BitmapGlyph {
+// Glyph returns the glyph, rendering it into the texture the first
+// time; a missing one is U+FFFD (C++ BitmapFont::Glyph).
+func (f *BitmapFont) Glyph(codepoint rune) BitmapGlyph {
 	if g, ok := f.glyphs[codepoint]; ok {
 		return g
 	}
@@ -166,13 +166,13 @@ func (f *BitmapFont) GetGlyph(codepoint rune) BitmapGlyph {
 	if codepoint == 0xfffd {
 		panic("res: cannot parse replacement glyph")
 	}
-	return f.GetGlyph(0xfffd)
+	return f.Glyph(0xfffd)
 }
 
 // LocateGlyph returns where the glyph is in the texture, as texture
 // coordinates, and its size in pixels (C++ BitmapFont::LocateGlyph).
 func (f *BitmapFont) LocateGlyph(codepoint rune) (s0, t0, s1, t1 float64, w, h int) {
-	g := f.GetGlyph(codepoint)
+	g := f.Glyph(codepoint)
 	w = int(g.AdvanceCells) * 8
 	h = 16
 	perRow := uint16(f.Texture.Width / 16)
@@ -183,22 +183,22 @@ func (f *BitmapFont) LocateGlyph(codepoint rune) (s0, t0, s1, t1 float64, w, h i
 	return
 }
 
-// GetWidth is the glyph's width in cells; the private checkboxes and
+// Width is the glyph's width in cells; the private checkboxes and
 // radio buttons count as one, since Printf pads them (C++
-// BitmapFont::GetWidth).
-func (f *BitmapFont) GetWidth(codepoint rune) int {
+// BitmapFont::Width).
+func (f *BitmapFont) Width(codepoint rune) int {
 	if codepoint >= 0xe000 && codepoint <= 0xefff {
 		return 1
 	}
-	return int(f.GetGlyph(codepoint).AdvanceCells)
+	return int(f.Glyph(codepoint).AdvanceCells)
 }
 
-// GetStringWidth is the string's width in cells (C++
+// StringWidth is the string's width in cells (C++
 // BitmapFont::GetWidth(const std::string &)).
-func (f *BitmapFont) GetStringWidth(str string) int {
+func (f *BitmapFont) StringWidth(str string) int {
 	w := 0
 	for _, c := range core.ReadUTF8(str) {
-		w += f.GetWidth(rune(c))
+		w += f.Width(rune(c))
 	}
 	return w
 }

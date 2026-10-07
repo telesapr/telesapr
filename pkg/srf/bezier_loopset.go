@@ -87,11 +87,11 @@ func (s *SBezierLoopSet) SignedArea() float64 {
 	return s.Area
 }
 
-// GetBoundingProjd extends the axis-aligned bounding box from
+// BoundingProjd extends the axis-aligned bounding box from
 // every contour in the set.
-func (s *SBezierLoopSet) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
-	s.Outer.GetBoundingProjd(u, orig, pmin, pmax)
+func (s *SBezierLoopSet) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
+	s.Outer.BoundingProjd(u, orig, pmin, pmax)
 	for i := range s.Holes {
-		s.Holes[i].GetBoundingProjd(u, orig, pmin, pmax)
+		s.Holes[i].BoundingProjd(u, orig, pmin, pmax)
 	}
 }

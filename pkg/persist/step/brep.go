@@ -49,7 +49,7 @@ type Face struct {
 	Surf   Surface
 	Sense  bool
 	Bounds []*Bound
-	Color  core.RgbaColor
+	Color  core.RGBA
 	// HasColor is set when the file gave the face, or its shape, a
 	// colour.
 	HasColor bool
@@ -203,10 +203,10 @@ type reader struct {
 	surfs   map[int]Surface
 	points  map[int]geom.Vector
 	depth   int
-	colours map[int]core.RgbaColor
+	colours map[int]core.RGBA
 }
 
-func newReader(f *File, scale, ang float64, colours map[int]core.RgbaColor) *reader {
+func newReader(f *File, scale, ang float64, colours map[int]core.RGBA) *reader {
 	return &reader{
 		f: f, scale: scale, angle: ang,
 		edges: map[int]*Edge{}, curves: map[int]Curve{}, surfs: map[int]Surface{},
@@ -1935,13 +1935,13 @@ func (a *assembly) placements(rep int) []Transform {
 
 // readColours maps styled items (faces, shells, solids) to the surface
 // colour their style gives.
-func readColours(f *File) map[int]core.RgbaColor {
-	out := map[int]core.RgbaColor{}
-	var colourIn func(id, depth int) (core.RgbaColor, bool)
-	colourIn = func(id, depth int) (core.RgbaColor, bool) {
+func readColours(f *File) map[int]core.RGBA {
+	out := map[int]core.RGBA{}
+	var colourIn func(id, depth int) (core.RGBA, bool)
+	colourIn = func(id, depth int) (core.RGBA, bool) {
 		in := f.Get(id)
 		if in == nil || depth > 12 {
-			return core.RgbaColor{}, false
+			return core.RGBA{}, false
 		}
 		if rec := in.Record("COLOUR_RGB"); rec != nil {
 			ps := rec.Params
@@ -1951,24 +1951,24 @@ func readColours(f *File) map[int]core.RgbaColor {
 				bv, ok3 := num(ps[3])
 				if ok1 && ok2 && ok3 {
 					c := func(x float64) uint8 { return uint8(math.Round(math.Max(0, math.Min(1, x)) * 255)) }
-					return core.NewRgbaColor(c(rv), c(gv), c(bv), 255), true
+					return core.NewRGBA(c(rv), c(gv), c(bv), 255), true
 				}
 			}
-			return core.RgbaColor{}, false
+			return core.RGBA{}, false
 		}
 		if rec := in.Record("DRAUGHTING_PRE_DEFINED_COLOUR"); rec != nil && len(rec.Params) > 0 {
 			if c, ok := predefinedColours[strings.ToLower(rec.Params[0].Str)]; ok {
 				return c, true
 			}
-			return core.RgbaColor{}, false
+			return core.RGBA{}, false
 		}
 		// Follow references depth first, in the order written.
 		for _, rec := range in.Records {
 			if rec.Name == "CURVE_STYLE" || rec.Name == "POINT_STYLE" || rec.Name == "TEXT_STYLE" {
 				continue
 			}
-			var visit func(vs []Value) (core.RgbaColor, bool)
-			visit = func(vs []Value) (core.RgbaColor, bool) {
+			var visit func(vs []Value) (core.RGBA, bool)
+			visit = func(vs []Value) (core.RGBA, bool) {
 				for _, v := range vs {
 					switch v.Kind {
 					case KindRef:
@@ -1981,13 +1981,13 @@ func readColours(f *File) map[int]core.RgbaColor {
 						}
 					}
 				}
-				return core.RgbaColor{}, false
+				return core.RGBA{}, false
 			}
 			if c, ok := visit(rec.Params); ok {
 				return c, true
 			}
 		}
-		return core.RgbaColor{}, false
+		return core.RGBA{}, false
 	}
 	for _, id := range f.Order {
 		in := f.Get(id)
@@ -2040,7 +2040,7 @@ func readColours(f *File) map[int]core.RgbaColor {
 	return out
 }
 
-var predefinedColours = map[string]core.RgbaColor{
+var predefinedColours = map[string]core.RGBA{
 	"red":     {Red: 255, Alpha: 255},
 	"green":   {Green: 255, Alpha: 255},
 	"blue":    {Blue: 255, Alpha: 255},

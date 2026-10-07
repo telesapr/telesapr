@@ -50,7 +50,7 @@ func TestScriptHostDraws(t *testing.T) {
 	if got := sk.Undo.Cnt; got != 3 {
 		t.Errorf("%d steps of undo, want 3: the rectangle, its length and the extrusion", got)
 	}
-	if g := sk.GetGroup(sk.Active); g == nil || g.Name != "box" || g.Type != sketch.GroupExtrude {
+	if g := sk.Group(sk.Active); g == nil || g.Name != "box" || g.Type != sketch.GroupExtrude {
 		t.Errorf("the active group is %+v, want the extrusion", g)
 	}
 	if !sk.Unsaved {
@@ -67,7 +67,7 @@ func TestScriptHostDraws(t *testing.T) {
 	p.RunDueTimers(100)
 
 	ss.UndoUndo()
-	if g := ss.SK.GetGroup(ss.SK.Active); g == nil || g.Type != sketch.GroupDrawingWorkplane {
+	if g := ss.SK.Group(ss.SK.Active); g == nil || g.Type != sketch.GroupDrawingWorkplane {
 		t.Errorf("after undo the active group is %+v, want the sketch", g)
 	}
 	if n := len(ss.SK.Groups); n != 2 {
@@ -276,7 +276,7 @@ func TestScriptHostDeleteActiveAndUndo(t *testing.T) {
 		t.Errorf("%d steps of undo, want 4: the box, the pin, the delete and the rounded corner", n)
 	}
 	ss.UndoUndo()
-	if g := ss.SK.GetGroup(ss.SK.Active); g == nil || g.Name != "box" {
+	if g := ss.SK.Group(ss.SK.Active); g == nil || g.Name != "box" {
 		t.Fatalf("one undo after the rounded corner leaves %+v active, want the box", g)
 	}
 }

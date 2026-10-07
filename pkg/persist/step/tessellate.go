@@ -225,8 +225,8 @@ func tessellateFace(f *Face, tol float64) ([]meshTri, error) {
 	s.scale = hi.Minus(lo).Magnitude()
 	if s.scale == 0 && !math.IsInf(s.u0, 0) && !math.IsInf(s.u1, 0) && !math.IsInf(s.v0, 0) && !math.IsInf(s.v1, 0) {
 		// No edges, as on a whole sphere: size the surface itself.
-		for i := 0; i <= 4; i++ {
-			for j := 0; j <= 4; j++ {
+		for i := range 5 {
+			for j := range 5 {
 				grow(s.Eval(s.u0+(s.u1-s.u0)*float64(i)/4, s.v0+(s.v1-s.v0)*float64(j)/4))
 			}
 		}
@@ -481,7 +481,7 @@ func (s *faceSurface) seamOf(pts []uvPoint) int {
 		if period <= 0 {
 			return false
 		}
-		any := false
+		found := false
 		for _, q := range pts {
 			x, sing := get(q)
 			if sing {
@@ -490,9 +490,9 @@ func (s *faceSurface) seamOf(pts []uvPoint) int {
 			if !on(x, lo, period) {
 				return false
 			}
-			any = true
+			found = true
 		}
-		return any
+		return found
 	}
 	if check(func(q uvPoint) (float64, bool) { return q.u, q.singU }, s.u0, s.pu) {
 		return 1
@@ -762,7 +762,7 @@ func (s *faceSurface) bridge(a, b contour) contour {
 	c.pts = append(c.pts, move(a0, sa))
 	// b from best round to best again, its travel being minus a's.
 	sb := float64(b.wrap[dir]) * period
-	for k := 0; k < len(b.pts); k++ {
+	for k := range len(b.pts) {
 		j := best + k
 		wraps := 0.0
 		if j >= len(b.pts) {

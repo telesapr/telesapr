@@ -122,11 +122,11 @@ func TestDrawEdgesParallelSameAsSerial(t *testing.T) {
 		r := New()
 		img := frame(r, testCamera(400, 300), func() {
 			for _, s := range []render.Stroke{
-				{Layer: render.LayerNormal, Color: core.NewRgbaColor(255, 200, 100, 180), Width: 1.5, Unit: render.UnitPX},
-				{Layer: render.LayerNormal, Color: core.NewRgbaColor(100, 255, 100, 255), Width: 1, Unit: render.UnitPX,
+				{Layer: render.LayerNormal, Color: core.NewRGBA(255, 200, 100, 180), Width: 1.5, Unit: render.UnitPX},
+				{Layer: render.LayerNormal, Color: core.NewRGBA(100, 255, 100, 255), Width: 1, Unit: render.UnitPX,
 					StipplePattern: core.StippleDash, StippleScale: 4},
 			} {
-				r.DrawEdges(&el, r.GetStroke(s))
+				r.DrawEdges(&el, r.InternStroke(s))
 			}
 		})
 		return bytes.Clone(img.Pix)

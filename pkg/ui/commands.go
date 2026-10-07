@@ -2,7 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/platform"
@@ -81,8 +81,15 @@ func findCommands(query string) []commandEntry {
 		l := strings.ToLower(e.label)
 		return l[strings.LastIndex(l, " > ")+3:]
 	}
-	sort.SliceStable(found, func(i, j int) bool {
-		return strings.HasPrefix(name(found[i]), q) && !strings.HasPrefix(name(found[j]), q)
+	slices.SortStableFunc(found, func(a, b commandEntry) int {
+		less := func(a, b commandEntry) bool { return strings.HasPrefix(name(a), q) && !strings.HasPrefix(name(b), q) }
+		switch {
+		case less(a, b):
+			return -1
+		case less(b, a):
+			return 1
+		}
+		return 0
 	})
 	return found
 }

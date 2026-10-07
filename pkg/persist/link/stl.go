@@ -2,12 +2,13 @@ package link
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
 	"os"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -160,7 +161,7 @@ func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bo
 }
 
 // meshGrey is the colour of a triangle a mesh file gives none.
-var meshGrey = core.RgbaColor{Red: 90, Green: 120, Blue: 140, Alpha: 255}
+var meshGrey = core.RGBA{Red: 90, Green: 120, Blue: 140, Alpha: 255}
 
 // isTextStl reports whether an STL file is text: it starts with
 // "solid", and is not the size a binary file of the triangle count in
@@ -223,7 +224,7 @@ func binaryStlTriangles(data []byte) []srf.STriangle {
 			tr.Meta.Blue = uint8(color << 3)
 			tr.Meta.Alpha = 255
 		} else {
-			tr.Meta.RgbaColor = meshGrey
+			tr.Meta.RGBA = meshGrey
 		}
 		tris = append(tris, tr)
 	}
@@ -281,7 +282,7 @@ func textStlTriangles(data []byte) ([]srf.STriangle, error) {
 				return nil, fmt.Errorf("a facet with %d corners", len(corners))
 			}
 			for k := 2; k < len(corners); k++ {
-				tris = append(tris, srf.STriangle{Meta: srf.STriMeta{RgbaColor: meshGrey},
+				tris = append(tris, srf.STriangle{Meta: srf.STriMeta{RGBA: meshGrey},
 					A: corners[0], B: corners[k-1], C: corners[k], NA: normal, NB: normal, NC: normal})
 			}
 		}
@@ -359,5 +360,5 @@ func linkMesh(tris []srf.STriangle, el *[]core.Entity, m *srf.SMesh) {
 	}
 
 	// C++ keeps an EntityList sorted by handle.
-	sort.SliceStable(*el, func(i, j int) bool { return (*el)[i].H.V < (*el)[j].H.V })
+	slices.SortStableFunc(*el, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
 }

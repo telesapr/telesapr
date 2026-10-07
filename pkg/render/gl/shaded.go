@@ -131,7 +131,7 @@ func (r *Renderer) SetMaterials(of func(face uint32) render.Material) { r.materi
 // drawMeshShaded draws a mesh with the shaded program, a batch for
 // each material, and reports false when the program can't be had, for
 // the fixed function to draw it instead.
-func (r *Renderer) drawMeshShaded(m *srf.SMesh, frontColor, backColor core.RgbaColor, twoSide bool) bool {
+func (r *Renderer) drawMeshShaded(m *srf.SMesh, frontColor, backColor core.RGBA, twoSide bool) bool {
 	p, err := r.program()
 	if err != nil {
 		return false
@@ -186,7 +186,7 @@ func (r *Renderer) drawMeshShaded(m *srf.SMesh, frontColor, backColor core.RgbaC
 			tr := &m.Triangles[i]
 			c := frontColor
 			if c.IsEmpty() {
-				c = tr.Meta.RgbaColor
+				c = tr.Meta.RGBA
 			}
 			colorRGBA(c)
 			if tr.NA.EqualsExactly(geom.Vector{}) {

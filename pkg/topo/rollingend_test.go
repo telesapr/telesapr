@@ -15,7 +15,7 @@ import (
 func prism(by geom.Vector) *srf.SShell {
 	var sh srf.SShell
 	sh.MakePrism([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10, 20, 0), v(0, 20, 0)}, v(0, 0, 0), by,
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
 

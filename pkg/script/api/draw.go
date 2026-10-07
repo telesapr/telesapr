@@ -16,7 +16,7 @@ import (
 func (d *Doc) request(typ sketch.RequestType, check func(sk *sketch.Sketch),
 	place func(sk *sketch.Sketch, hr core.HRequest)) (e Entity) {
 	d.change(func(sk *sketch.Sketch) {
-		if g := sk.GetGroup(sk.ActiveGroup()); g == nil ||
+		if g := sk.Group(sk.ActiveGroup()); g == nil ||
 			(g.Type != sketch.GroupDrawing3D && g.Type != sketch.GroupDrawingWorkplane) {
 			fail("%s isn't a group to draw in; make one with SketchIn or Sketch3D, or Activate one",
 				groupDescription(g))
@@ -46,7 +46,7 @@ func needWorkplane(what string) func(sk *sketch.Sketch) {
 }
 
 func forceTo(sk *sketch.Sketch, h core.HEntity, p Vec) {
-	sk.MustGetEntity(h).PointForceTo(sk, p)
+	sk.MustEntity(h).PointForceTo(sk, p)
 }
 
 // Point adds a datum point at p.
@@ -73,10 +73,10 @@ func (d *Doc) Circle(center Vec, radius float64) Entity {
 	}
 	return d.request(sketch.RequestCircle, nil, func(sk *sketch.Sketch, hr core.HRequest) {
 		forceTo(sk, hr.Entity(1), center)
-		if normal := sk.MustGetEntity(hr.Entity(32)); normal.Type == core.EntityNormalIn3D {
+		if normal := sk.MustEntity(hr.Entity(32)); normal.Type == core.EntityNormalIn3D {
 			normal.NormalForceTo(sk, geom.QuaternionFromBasis(V(1, 0, 0), V(0, 1, 0)))
 		}
-		sk.MustGetEntity(hr.Entity(64)).DistanceForceTo(sk, radius)
+		sk.MustEntity(hr.Entity(64)).DistanceForceTo(sk, radius)
 	})
 }
 
@@ -116,7 +116,7 @@ func (d *Doc) NewWorkplane(origin, u, v Vec) Entity {
 		}
 	}, func(sk *sketch.Sketch, hr core.HRequest) {
 		forceTo(sk, hr.Entity(1), origin)
-		sk.MustGetEntity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(u, v))
+		sk.MustEntity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(u, v))
 	})
 }
 
@@ -199,7 +199,7 @@ func (d *Doc) Rect(a, b Vec) (lines []Entity) {
 // bottom left corner at, height up the active workplane's v axis, and
 // as wide as aspect says.
 func box(sk *sketch.Sketch, hr core.HRequest, at Vec, height, aspect float64) {
-	n := sk.MustGetEntity(sk.ActiveWorkplane()).NormalEntity(sk)
+	n := sk.MustEntity(sk.ActiveWorkplane()).NormalEntity(sk)
 	up, right := n.NormalV(sk).ScaledBy(height), n.NormalU(sk).ScaledBy(height*aspect)
 	// The points are the top left, the bottom left, the bottom right
 	// and the top right corners.
@@ -220,7 +220,7 @@ func (d *Doc) Text(text, font string, at Vec, height float64) Entity {
 		font = ttf.EmbeddedFont
 	}
 	return d.request(sketch.RequestTTFText, needWorkplane("text"), func(sk *sketch.Sketch, hr core.HRequest) {
-		r := sk.GetRequest(hr)
+		r := sk.Request(hr)
 		r.Str, r.Font = text, font
 		aspect := ttf.Fonts.AspectRatio(font, text, false)
 		if aspect == 0 {
@@ -247,7 +247,7 @@ func (d *Doc) Image(path string, at Vec, height float64) Entity {
 			fail("can't read the image '%s'", path)
 		}
 		img := sk.Images[abs]
-		r := sk.GetRequest(hr)
+		r := sk.Request(hr)
 		r.File, r.Construction = abs, true
 		box(sk, hr, at, height, float64(img.Width)/float64(img.Height))
 	})

@@ -37,7 +37,7 @@ func TestCorpus(t *testing.T) {
 	}
 }
 
-func corpus(t *testing.T, version, min int) {
+func corpus(t *testing.T, version, lo int) {
 	root := filepath.Join(testdata, "tlspr", fmt.Sprintf("v%d", version))
 	n := 0
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -99,7 +99,7 @@ func corpus(t *testing.T, version, min int) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n < min {
+	if n < lo {
 		t.Errorf("only %d files", n)
 	}
 }

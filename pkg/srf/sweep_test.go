@@ -21,7 +21,7 @@ func squareAt(cx, cy, a float64) *SBezierLoopSet {
 func sweepCheck(t *testing.T, name string, sbls *SBezierLoopSet, steps []SweepStep, want float64) *SShell {
 	t.Helper()
 	var s SShell
-	s.MakeFromSweepOf(sbls, steps, core.RgbaColor{}, 0, 0)
+	s.MakeFromSweepOf(sbls, steps, core.RGBA{}, 0, 0)
 	if !meshIsSound(&s) {
 		t.Errorf("%s: the sweep is not watertight", name)
 	}

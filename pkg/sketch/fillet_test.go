@@ -719,7 +719,7 @@ func TestFilletBordersDrawn(t *testing.T) {
 	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
 	var top, front float64
 	d.With(func(sk *sketch.Sketch) {
-		g := sk.GetGroup(sk.Active)
+		g := sk.Group(sk.Active)
 		g.GenerateDisplayItems(sk)
 		for _, o := range g.DisplayOutlines.Outlines {
 			if o.Tag == 0 {

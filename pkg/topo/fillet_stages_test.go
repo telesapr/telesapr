@@ -40,9 +40,9 @@ func boxStaged(rb, r float64) float64 {
 func squareBoss(rb, r float64) (*srf.SShell, []topo.FilletPick) {
 	var block, boss, sh srf.SShell
 	block.MakePrism([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 10),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	boss.MakePrism([]geom.Vector{v(10, 10, 9), v(30, 10, 9), v(30, 20, 9), v(10, 20, 9)}, v(0, 0, 0), v(0, 0, 11),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	sh.MakeFromUnionOf(&block, &boss)
 	var picks []topo.FilletPick
 	cs := [][2]float64{{10, 10}, {30, 10}, {30, 20}, {10, 20}}

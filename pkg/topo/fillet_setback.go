@@ -710,8 +710,8 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 					}
 					for d := range 3 {
 						co := map[int]float64{}
-						co[pv(o[0], ia1, ja1, d)] += 1
-						co[pv(q, ib1, jb1, d)] += 1
+						co[pv(o[0], ia1, ja1, d)]++
+						co[pv(q, ib1, jb1, d)]++
 						co[pv(o[0], ia, ja, d)] -= 2
 						if k < n {
 							f := float64(n-k) / n

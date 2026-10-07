@@ -56,12 +56,12 @@ func ThawBool(s Settings, key string, defaultValue bool) bool {
 	return s.ThawInt(key, v) != 0
 }
 
-func FreezeColor(s Settings, key string, value RgbaColor) {
+func FreezeColor(s Settings, key string, value RGBA) {
 	s.FreezeInt(key, value.ToPackedInt())
 }
 
-func ThawColor(s Settings, key string, defaultValue RgbaColor) RgbaColor {
-	return RgbaColorFromPackedInt(s.ThawInt(key, defaultValue.ToPackedInt()))
+func ThawColor(s Settings, key string, defaultValue RGBA) RGBA {
+	return RGBAFromPackedInt(s.ThawInt(key, defaultValue.ToPackedInt()))
 }
 
 // The settings keys of a default style (C++ Style::CnfColor and so on).

@@ -14,8 +14,8 @@ func TestSShellAssembly(t *testing.T) {
 	b := &SShell{}
 	s1 := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	s2 := FromPlane(geom.Vector{Z: 10}, geom.Vector{X: 1}, geom.Vector{Y: 1})
-	s1.Color = core.RgbaColor{Red: 255}
-	s2.Color = core.RgbaColor{Green: 255}
+	s1.Color = core.RGBA{Red: 255}
+	s2.Color = core.RGBA{Green: 255}
 	a.Surface = append(a.Surface, s1)
 	b.Surface = append(b.Surface, s2)
 	combined := &SShell{}

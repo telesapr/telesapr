@@ -1,6 +1,8 @@
 package srf
 
 import (
+	"cmp"
+	"slices"
 	"sort"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -40,7 +42,7 @@ func (m *SMesh) SnapTJunctions() {
 		return
 	}
 	// Sorted by x, to find the ends near an edge quickly.
-	sort.Slice(ends, func(i, j int) bool { return ends[i].X < ends[j].X })
+	slices.SortFunc(ends, func(a, b geom.Vector) int { return cmp.Compare(a.X, b.X) })
 	inside := func(a, b geom.Vector) []geom.Vector {
 		lo, hi := min(a.X, b.X)-geom.LengthEps, max(a.X, b.X)+geom.LengthEps
 		k := sort.Search(len(ends), func(i int) bool { return ends[i].X >= lo })
@@ -52,7 +54,7 @@ func (m *SMesh) SnapTJunctions() {
 			}
 		}
 		d := b.Minus(a)
-		sort.Slice(on, func(i, j int) bool { return on[i].Minus(a).Dot(d) < on[j].Minus(a).Dot(d) })
+		slices.SortFunc(on, func(p, q geom.Vector) int { return cmp.Compare(p.Minus(a).Dot(d), q.Minus(a).Dot(d)) })
 		return on
 	}
 	out := make([]STriangle, 0, len(m.Triangles))

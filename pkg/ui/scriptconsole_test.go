@@ -15,7 +15,7 @@ import (
 // window.
 func shownConsole(t *testing.T, ss *Application, p *headless.Platform) *headless.Console {
 	t.Helper()
-	item := p.MainMenu.Find("Script", "Show Console")
+	item := p.MainMenuBar.Find("Script", "Show Console")
 	if item == nil {
 		t.Fatal("no Script > Show Console in the menu")
 	}
@@ -44,7 +44,7 @@ func TestScriptConsole(t *testing.T) {
 	if w.Prompt != ">>> " || !strings.HasPrefix(w.Text(), "Go on the sketch") {
 		t.Fatalf("the console starts with the prompt %q and %q", w.Prompt, w.Text())
 	}
-	if item := p.MainMenu.Find("Script", "Show Console"); !item.Active {
+	if item := p.MainMenuBar.Find("Script", "Show Console"); !item.Active {
 		t.Error("the menu item isn't checked while the console shows")
 	}
 	n := len(w.Texts)
@@ -108,7 +108,7 @@ func TestScriptConsole(t *testing.T) {
 
 	// Closing the window hides it and unchecks the menu item.
 	w.Events().OnClose()
-	if w.Visible || p.MainMenu.Find("Script", "Show Console").Active {
+	if w.Visible || p.MainMenuBar.Find("Script", "Show Console").Active {
 		t.Error("the console is still shown, or checked, after closing")
 	}
 }
@@ -140,7 +140,7 @@ func main() {
 		t.Fatal(err)
 	}
 	p.FilePaths = append(p.FilePaths, file)
-	p.MainMenu.Find("Script", "Run File...").OnTrigger()
+	p.MainMenuBar.Find("Script", "Run File...").OnTrigger()
 	if len(p.Consoles) != 1 || !p.Consoles[0].Visible {
 		t.Fatal("running a file didn't open the console")
 	}

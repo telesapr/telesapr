@@ -66,8 +66,8 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		var q geom.Quaternion
 		switch g.Subtype {
 		case GroupWorkplaneByLineSegments:
-			u := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
-			v := sk.MustGetEntity(g.Predef.EntityC).VectorGetNum(sk)
+			u := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
+			v := sk.MustEntity(g.Predef.EntityC).VectorGetNum(sk)
 			u = u.WithMagnitude(1)
 			n := u.Cross(v)
 			v = n.Cross(u).WithMagnitude(1)
@@ -86,7 +86,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			// Already given, numerically.
 			q = g.Predef.Q
 		case GroupWorkplaneByPointNormal:
-			q = sk.MustGetEntity(g.Predef.EntityB).NormalGetNum(sk)
+			q = sk.MustEntity(g.Predef.EntityB).NormalGetNum(sk)
 		default:
 			panic(fmt.Sprintf("unexpected workplane subtype %d", g.Subtype))
 		}
@@ -101,7 +101,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 
 		point := core.Entity{
 			Type:         core.EntityPointNCopy,
-			NumPoint:     sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk),
+			NumPoint:     sk.MustEntity(g.Predef.Origin).PointGetNum(sk),
 			Construction: true,
 			Group:        h,
 			H:            h.Entity(2)}
@@ -150,12 +150,12 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			// As soon as I call CopyEntity, e may become invalid! That
 			// adds entities, which may cause a realloc.
 			n0 := len(*entity)
-			g.CopyEntity(sk, entity, sk.MustGetEntity(he), ai, RemapBottom,
+			g.CopyEntity(sk, entity, sk.MustEntity(he), ai, RemapBottom,
 				h.Param(0), h.Param(1), h.Param(2),
 				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 				CopyAsNTrans)
 			n1 := len(*entity)
-			g.CopyEntity(sk, entity, sk.MustGetEntity(he), af, RemapTop,
+			g.CopyEntity(sk, entity, sk.MustEntity(he), af, RemapTop,
 				h.Param(0), h.Param(1), h.Param(2),
 				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 				CopyAsNTrans)
@@ -180,10 +180,10 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		return
 
 	case GroupLathe:
-		axisPos := sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
-		axisDir := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+		axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+		axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
 
-		for i := 0; i < len(*entity); i++ {
+		for i := range len(*entity) {
 			e := &(*entity)[i]
 			if e.Group != g.OpA {
 				continue
@@ -196,7 +196,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			// adds entities, which may cause a realloc.
 
 			// this is the regular copy of all entities
-			g.CopyEntity(sk, entity, sk.MustGetEntity(he), 0, RemapLatheStart,
+			g.CopyEntity(sk, entity, sk.MustEntity(he), 0, RemapLatheStart,
 				core.NoParam, core.NoParam, core.NoParam,
 				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 				CopyAsNumeric)
@@ -204,7 +204,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			e = &(*entity)[i] // because we copied.
 			if e.IsPoint() {
 				// for points this copy is used for the circle centers
-				g.CopyEntity(sk, entity, sk.MustGetEntity(he), 0, RemapLatheArcCenter,
+				g.CopyEntity(sk, entity, sk.MustEntity(he), 0, RemapLatheArcCenter,
 					core.NoParam, core.NoParam, core.NoParam,
 					core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 					CopyAsNumeric)
@@ -216,8 +216,8 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 
 	case GroupRevolve:
 		// this was borrowed from LATHE and ROTATE
-		axisPos := sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
-		axisDir := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+		axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+		axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
 
 		// The center of rotation
 		AddParam(param, h.Param(0), axisPos.X)
@@ -237,7 +237,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		if g.Subtype == GroupTwoSided {
 			ai, af = -1, 1
 		}
-		for i := 0; i < len(*entity); i++ {
+		for i := range len(*entity) {
 			e := &(*entity)[i]
 			if e.Group != g.OpA {
 				continue
@@ -268,8 +268,8 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		return
 
 	case GroupHelix:
-		axisPos := sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
-		axisDir := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+		axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+		axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
 
 		// The center of rotation
 		AddParam(param, h.Param(0), axisPos.X)
@@ -292,7 +292,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			ai, af = -1, 1
 		}
 
-		for i := 0; i < len(*entity); i++ {
+		for i := range len(*entity) {
 			e := &(*entity)[i]
 			if e.Group != g.OpA && e.H != g.Predef.Origin {
 				continue
@@ -319,7 +319,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			if e.IsPoint() {
 				check := e.PointGetNum(sk).Minus(axisPos).Cross(axisDir)
 				if check.Dot(check) < core.LengthEps {
-					ep := sk.MustGetEntity(e.H)
+					ep := sk.MustEntity(e.H)
 					en := core.Entity{}
 					// A point gets extruded to form a line segment
 					en.Point[0] = g.RemapEntity(ep.H, RemapLatheStart)
@@ -338,7 +338,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 
 	case GroupTranslate:
 		// inherit meshCombine from source group
-		srcg := sk.GetGroup(g.OpA)
+		srcg := sk.Group(g.OpA)
 		g.MeshCombine = srcg.MeshCombine
 		// The translation vector
 		AddParam(param, h.Param(0), gp.X)
@@ -352,7 +352,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		}
 
 		for a := a0; a < n; a++ {
-			for i := 0; i < len(*entity); i++ {
+			for i := range len(*entity) {
 				e := &(*entity)[i]
 				if e.Group != g.OpA {
 					continue
@@ -371,7 +371,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 
 	case GroupRotate:
 		// inherit meshCombine from source group
-		srcg := sk.GetGroup(g.OpA)
+		srcg := sk.Group(g.OpA)
 		g.MeshCombine = srcg.MeshCombine
 		// The center of rotation
 		AddParam(param, h.Param(0), gc.X)
@@ -390,7 +390,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		}
 
 		for a := a0; a < n; a++ {
-			for i := 0; i < len(*entity); i++ {
+			for i := range len(*entity) {
 				e := &(*entity)[i]
 				if e.Group != g.OpA {
 					continue
@@ -435,7 +435,7 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		AddParam(param, h.Param(5), 0)
 		AddParam(param, h.Param(6), 0)
 
-		for i := 0; i < len(g.ImpEntity); i++ {
+		for i := range len(g.ImpEntity) {
 			ie := &g.ImpEntity[i]
 			g.CopyEntity(sk, entity, ie, 0, 0,
 				h.Param(0), h.Param(1), h.Param(2),
@@ -493,7 +493,7 @@ func (g *Group) RemapEntity(in core.HEntity, copyNumber int) core.HEntity {
 }
 
 func (g *Group) MakeExtrusionLines(sk *Sketch, el *[]core.Entity, in core.HEntity) {
-	ep := sk.MustGetEntity(in)
+	ep := sk.MustEntity(in)
 
 	en := core.Entity{}
 	if ep.IsPoint() {
@@ -509,8 +509,8 @@ func (g *Group) MakeExtrusionLines(sk *Sketch, el *[]core.Entity, in core.HEntit
 	} else if ep.Type == core.EntityLineSegment {
 		// A line gets extruded to form a plane face; an endpoint of the
 		// original line is a point in the plane, and the line is in the plane.
-		a := sk.MustGetEntity(ep.Point[0]).PointGetNum(sk)
-		b := sk.MustGetEntity(ep.Point[1]).PointGetNum(sk)
+		a := sk.MustEntity(ep.Point[0]).PointGetNum(sk)
+		b := sk.MustEntity(ep.Point[1]).PointGetNum(sk)
 		ab := b.Minus(a)
 
 		en.Param[0] = g.H.Param(0)
@@ -531,7 +531,7 @@ func (g *Group) MakeExtrusionLines(sk *Sketch, el *[]core.Entity, in core.HEntit
 }
 
 func (g *Group) MakeLatheCircles(sk *Sketch, el *[]core.Entity, in core.HEntity, pt, axis geom.Vector) {
-	ep := sk.MustGetEntity(in)
+	ep := sk.MustEntity(in)
 
 	en := core.Entity{}
 	if ep.IsPoint() {
@@ -541,8 +541,8 @@ func (g *Group) MakeLatheCircles(sk *Sketch, el *[]core.Entity, in core.HEntity,
 		en.Point[2] = en.Point[1] // Remap(ep->h, REMAP_LATHE_END);
 
 		// Get arc center and point on arc.
-		pc := sk.MustGetEntity(en.Point[0])
-		pp := sk.MustGetEntity(en.Point[1])
+		pc := sk.MustEntity(en.Point[0])
+		pp := sk.MustEntity(en.Point[1])
 
 		// Project arc point to the revolution axis and use it for arc center.
 		k := pp.NumPoint.Minus(pt).Dot(axis) / axis.Dot(axis)
@@ -578,13 +578,13 @@ func (g *Group) MakeLatheCircles(sk *Sketch, el *[]core.Entity, in core.HEntity,
 }
 
 func (g *Group) MakeLatheSurfacesSelectable(sk *Sketch, el *[]core.Entity, in core.HEntity, axis geom.Vector) {
-	ep := sk.MustGetEntity(in)
+	ep := sk.MustEntity(in)
 
 	en := core.Entity{}
 	if ep.Type == core.EntityLineSegment {
 		// An axis-perpendicular line gets revolved to form a face.
-		a := sk.MustGetEntity(ep.Point[0]).PointGetNum(sk)
-		b := sk.MustGetEntity(ep.Point[1]).PointGetNum(sk)
+		a := sk.MustEntity(ep.Point[0]).PointGetNum(sk)
+		b := sk.MustEntity(ep.Point[1]).PointGetNum(sk)
 		u := b.Minus(a).WithMagnitude(1.0)
 
 		// Check for perpendicularity: calculate cosine of the angle
@@ -613,13 +613,13 @@ func (g *Group) MakeLatheSurfacesSelectable(sk *Sketch, el *[]core.Entity, in co
 // back to its workplane's normal, for the end faces of extrusions and
 // revolutions.
 func (g *Group) sourceLoopNormal(sk *Sketch) geom.Vector {
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	n := src.PolyLoops.Normal
 
 	// When there is no loop normal (e.g. if the loop is broken), use normal of workplane
 	// as fallback, to avoid breaking constraints depending on the faces.
 	if n.Equals(geom.Vector{}) && src.Type == GroupDrawingWorkplane {
-		n = sk.MustGetEntity(src.H.Entity(0)).NormalEntity(sk).NormalN(sk)
+		n = sk.MustEntity(src.H.Entity(0)).NormalEntity(sk).NormalN(sk)
 	}
 	return n
 }
@@ -712,19 +712,21 @@ func (g *Group) copyEntityScaled(el *[]core.Entity,
 	case core.EntityPointNCopy, core.EntityPointNTrans, core.EntityPointNRotTrans,
 		core.EntityPointNRotAA, core.EntityPointNRotAxisTrans,
 		core.EntityPointIn3D, core.EntityPointIn2D:
-		if as == CopyAsNTrans {
+		switch as {
+		case CopyAsNTrans:
 			en.Type = core.EntityPointNTrans
 			en.Param[0] = dx
 			en.Param[1] = dy
 			en.Param[2] = dz
-		} else if as == CopyAsNumeric {
+		case CopyAsNumeric:
 			en.Type = core.EntityPointNCopy
-		} else {
-			if as == CopyAsNRotAA {
+		default:
+			switch as {
+			case CopyAsNRotAA:
 				en.Type = core.EntityPointNRotAA
-			} else if as == CopyAsNRotAxisTrans {
+			case CopyAsNRotAxisTrans:
 				en.Type = core.EntityPointNRotAxisTrans
-			} else {
+			default:
 				en.Type = core.EntityPointNRotTrans
 			}
 			en.Param[0] = dx
@@ -769,14 +771,17 @@ func (g *Group) copyEntityScaled(el *[]core.Entity,
 	case core.EntityFaceNormalPt, core.EntityFaceXProd, core.EntityFaceNRotTrans,
 		core.EntityFaceNTrans, core.EntityFaceNRotAA, core.EntityFaceRotNormalPt,
 		core.EntityFaceNRotAxisTrans:
-		if as == CopyAsNTrans {
+		switch as {
+		case CopyAsNTrans:
 			en.Type = core.EntityFaceNTrans
 			en.Param[0] = dx
 			en.Param[1] = dy
 			en.Param[2] = dz
-		} else if as == CopyAsNumeric {
+
+		case CopyAsNumeric:
 			en.Type = core.EntityFaceNormalPt
-		} else if as == CopyAsNRotAxisTrans {
+
+		case CopyAsNRotAxisTrans:
 			en.Type = core.EntityFaceNRotAxisTrans
 			en.Param[0] = dx
 			en.Param[1] = dy
@@ -786,7 +791,8 @@ func (g *Group) copyEntityScaled(el *[]core.Entity,
 			en.Param[5] = qvy
 			en.Param[6] = qvz
 			en.Param[7] = dist
-		} else {
+
+		default:
 			if as == CopyAsNRotAA {
 				en.Type = core.EntityFaceNRotAA
 			} else {
@@ -854,12 +860,12 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 
 	case g.Type == GroupRotate || g.Type == GroupRevolve || g.Type == GroupHelix:
 		// The axis and center of rotation are specified numerically
-		orig := sk.MustGetEntity(g.Predef.Origin).PointGetExprs(sk)
+		orig := sk.MustEntity(g.Predef.Origin).PointGetExprs(sk)
 		addEq(orig.X.Minus(ep(0)), 0)
 		addEq(orig.Y.Minus(ep(1)), 1)
 		addEq(orig.Z.Minus(ep(2)), 2)
 		// param 3 is the angle, which is free
-		axis := sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+		axis := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
 		axis = axis.WithMagnitude(1)
 		addEq(ec(axis.X).Minus(ep(4)), 3)
 		addEq(ec(axis.Y).Minus(ep(5)), 4)
@@ -875,7 +881,7 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 		if !core.IsFreeIn3D(g.Predef.EntityB) {
 			// The extrusion path is locked along a line, normal to the
 			// specified workplane. Don't constrain for skewed extrusions.
-			w := sk.MustGetEntity(g.Predef.EntityB)
+			w := sk.MustEntity(g.Predef.EntityB)
 			u := w.NormalEntity(sk).NormalExprsU(sk)
 			v := w.NormalEntity(sk).NormalExprsV(sk)
 			extruden := core.ExprVector{X: ep(0), Y: ep(1), Z: ep(2)}
@@ -889,7 +895,7 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 
 	case g.Type == GroupTranslate:
 		if !core.IsFreeIn3D(g.Predef.EntityB) {
-			w := sk.MustGetEntity(g.Predef.EntityB)
+			w := sk.MustEntity(g.Predef.EntityB)
 			n := w.NormalEntity(sk).NormalExprsN(sk)
 			trans := core.ExprVector{X: ep(0), Y: ep(1), Z: ep(2)}
 

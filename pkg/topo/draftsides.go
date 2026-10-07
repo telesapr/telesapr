@@ -24,7 +24,7 @@ import (
 
 // DraftedPrismAngles is DraftedPrism with angles[k][i] the angle in
 // radians of the side of loop k's curve i.
-func DraftedPrismAngles(loops [][]srf.SBezier, angles [][]float64, along geom.Vector, color core.RgbaColor, origin uint32) (*srf.SShell, error) {
+func DraftedPrismAngles(loops [][]srf.SBezier, angles [][]float64, along geom.Vector, color core.RGBA, origin uint32) (*srf.SShell, error) {
 	h := along.Magnitude()
 	if h < geom.LengthEps {
 		return nil, errors.New("the extrusion has no length")

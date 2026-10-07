@@ -23,7 +23,7 @@ import (
 // loftLoop is the one closed loop of a profile group, or why there is
 // none.
 func (sk *Sketch) loftLoop(hg core.HGroup) ([]srf.SBezier, error) {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g == nil {
 		return nil, fmt.Errorf("group %s is gone", sk.anyGroupName(hg))
 	}
@@ -60,7 +60,7 @@ func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, err
 		g.Name = "loft"
 	}
 	g.MeshCombine = CombineUnion
-	g.Color = core.NewRgbaColor(100, 100, 100, 255)
+	g.Color = core.NewRGBA(100, 100, 100, 255)
 	if len(profiles) < 2 {
 		return g, errors.New("a loft joins two profiles at least")
 	}

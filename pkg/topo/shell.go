@@ -250,7 +250,7 @@ func (t *Topology) movedVertex(v int, normal []geom.Vector, offset []float64) (m
 	// The three most independent planes fix the point; the rest must
 	// pass through it.
 	best, bi := 0.0, [3]int{}
-	for i := range len(fs) {
+	for i := range fs {
 		for j := i + 1; j < len(fs); j++ {
 			for k := j + 1; k < len(fs); k++ {
 				d := math.Abs(normal[fs[i]].Dot(normal[fs[j]].Cross(normal[fs[k]])))

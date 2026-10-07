@@ -34,7 +34,7 @@ func TestSmoothLoftEnds(t *testing.T) {
 			}
 		}
 	}
-	sh, err := topo.MakeSmoothLoftEnds(loops, 0, topo.LoftEnds{Start: 1, End: 1}, core.NewRgbaColor(1, 1, 1, 255), 1<<30)
+	sh, err := topo.MakeSmoothLoftEnds(loops, 0, topo.LoftEnds{Start: 1, End: 1}, core.NewRGBA(1, 1, 1, 255), 1<<30)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestSmoothLoftEnds(t *testing.T) {
 	// A square to a circle: sections of other weights.
 	sq := polyLoop(v(-4, -4, 0), v(4, -4, 0), v(4, 4, 0), v(-4, 4, 0))
 	sh, err = topo.MakeSmoothLoftEnds([][]srf.SBezier{sq, circleAt(4, 3, 0, 15)}, 0, topo.LoftEnds{Start: 1, End: 1},
-		core.NewRgbaColor(1, 1, 1, 255), 1<<30)
+		core.NewRGBA(1, 1, 1, 255), 1<<30)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestSmoothLoftEndsSweep(t *testing.T) {
 			loops = append(loops, circleAt(4, aside*f*f, 0, 15*f))
 		}
 		sh, err := topo.MakeSmoothLoftEnds(loops, 0, topo.LoftEnds{Start: p.Float("start"), End: p.Float("end")},
-			core.NewRgbaColor(1, 1, 1, 255), 1<<30)
+			core.NewRGBA(1, 1, 1, 255), 1<<30)
 		if err != nil {
 			return err
 		}

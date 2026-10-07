@@ -259,13 +259,13 @@ func validate4(table []byte) (int, error) {
 		}
 		if offset != 0 && offset != 0xFFFF {
 			p := offsets + 2*n + offset
-			if n != numSegs-1 || !(start == 0xFFFF && end == 0xFFFF) {
+			if n != numSegs-1 || (start != 0xFFFF || end != 0xFFFF) {
 				if p < glyphIDs || p+(end-start+1)*2 > len(table) {
 					return 0, errInvalidCmap
 				}
 			}
 		} else if offset == 0xFFFF {
-			if n != numSegs-1 || !(start == 0xFFFF && end == 0xFFFF) {
+			if n != numSegs-1 || (start != 0xFFFF || end != 0xFFFF) {
 				return 0, errInvalidCmap
 			}
 		}
@@ -455,11 +455,14 @@ func (f *Face) cmap4Binary(cm *charmap, charcode uint32) uint32 {
 		p += 2 + numSegs2
 		start := int(peek16(data, p))
 
-		if charcode < uint32(start) {
+		switch {
+		case charcode < uint32(start):
 			hi = mid
-		} else if charcode > uint32(end) {
+
+		case charcode > uint32(end):
 			lo = mid + 1
-		} else {
+
+		default:
 			p += numSegs2
 			delta := int(int16(peek16(data, p)))
 			p += numSegs2
@@ -474,11 +477,11 @@ func (f *Face) cmap4Binary(cm *charmap, charcode uint32) uint32 {
 
 			if cm.flags&cmapFlagOverlapping != 0 {
 				// Search the first segment containing charcode.
-				max := mid
+				hi := mid
 				if offset == 0xFFFF {
-					mid = max + 1
+					mid = hi + 1
 				}
-				i := max
+				i := hi
 				for ; i > 0; i-- {
 					oldP := p
 					p = 14 + (i-1)*2
@@ -499,9 +502,9 @@ func (f *Face) cmap4Binary(cm *charmap, charcode uint32) uint32 {
 					}
 				}
 
-				if mid == max+1 {
-					if i != max {
-						p = 14 + max*2
+				if mid == hi+1 {
+					if i != hi {
+						p = 14 + hi*2
 						end = int(peek16(data, p))
 						p += 2 + numSegs2
 						start = int(peek16(data, p))
@@ -510,8 +513,8 @@ func (f *Face) cmap4Binary(cm *charmap, charcode uint32) uint32 {
 						p += numSegs2
 						offset = int(peek16(data, p))
 					}
-					mid = max
-					for i = max + 1; i < numSegs; i++ {
+					mid = hi
+					for i = hi + 1; i < numSegs; i++ {
 						p = 14 + i*2
 						nextEnd := int(peek16(data, p))
 						p += 2 + numSegs2
@@ -530,7 +533,7 @@ func (f *Face) cmap4Binary(cm *charmap, charcode uint32) uint32 {
 						}
 					}
 					i--
-					if mid == max {
+					if mid == hi {
 						// Still no luck.
 						return 0
 					}
@@ -571,11 +574,14 @@ func cmap12CharIndex(cm *charmap, charcode uint32) uint32 {
 		p := 16 + 12*int(mid)
 		start := peek32(data, p)
 		end := peek32(data, p+4)
-		if charcode < start {
+		switch {
+		case charcode < start:
 			hi = mid
-		} else if charcode > end {
+
+		case charcode > end:
 			lo = mid + 1
-		} else {
+
+		default:
 			id := peek32(data, p+8)
 			if cm.format == 13 {
 				return id

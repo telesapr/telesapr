@@ -65,7 +65,7 @@ func newAgentApp(t *testing.T) *agentApp {
 		a.ss.AgentSocketDir = dir
 		a.ss.Console().SetVisible(true)
 		a.w = a.p.Consoles[0]
-		a.p.MainMenu.Find("Script", "Allow AI Connections").OnTrigger()
+		a.p.MainMenuBar.Find("Script", "Allow AI Connections").OnTrigger()
 	})
 	a.r = &agent.Remote{Connect: func() (net.Conn, error) { return agent.Connect(dir) }, CancelWait: 10 * time.Second}
 	t.Cleanup(func() {
@@ -86,7 +86,7 @@ func TestAgentDraws(t *testing.T) {
 	var listening, checked bool
 	a.on(func() {
 		listening = a.ss.AgentListening() && a.ss.AgentSocket() != ""
-		checked = a.p.MainMenu.Find("Script", "Allow AI Connections").Active
+		checked = a.p.MainMenuBar.Find("Script", "Allow AI Connections").Active
 	})
 	if !listening || !checked || !a.ss.AgentAllowed {
 		t.Fatalf("after the menu: listening %v, checked %v, the setting %v", listening, checked, a.ss.AgentAllowed)
@@ -282,7 +282,7 @@ func TestAgentBusyStopAndOff(t *testing.T) {
 			}
 			time.Sleep(time.Millisecond)
 		}
-		a.on(func() { a.p.MainMenu.Find("Script", "Stop").OnTrigger() })
+		a.on(func() { a.p.MainMenuBar.Find("Script", "Stop").OnTrigger() })
 	}()
 	res, err := a.r.Run(ctx, "doc.Circle(V(0, 0, 0), 1)\nos.WriteFile(\""+filepath.ToSlash(drawn)+"\", nil, 0o644)\nfor {\n\ttime.Sleep(time.Millisecond)\n}")
 	if err != nil || res.Error != "the script was stopped" || !res.RolledBack {
@@ -294,12 +294,12 @@ func TestAgentBusyStopAndOff(t *testing.T) {
 	socket := ""
 	a.on(func() {
 		socket = a.ss.AgentSocket()
-		a.p.MainMenu.Find("Script", "Allow AI Connections").OnTrigger()
+		a.p.MainMenuBar.Find("Script", "Allow AI Connections").OnTrigger()
 	})
 	var listening, checked bool
 	a.on(func() {
 		listening = a.ss.AgentListening()
-		checked = a.p.MainMenu.Find("Script", "Allow AI Connections").Active
+		checked = a.p.MainMenuBar.Find("Script", "Allow AI Connections").Active
 	})
 	if listening || checked || a.ss.AgentAllowed {
 		t.Errorf("after the menu again: listening %v, checked %v, the setting %v", listening, checked, a.ss.AgentAllowed)
@@ -323,7 +323,7 @@ func TestAgentSettings(t *testing.T) {
 
 	ss, p := newTestApp(t)
 	ss.AgentSocketDir = dir
-	p.MainMenu.Find("Script", "Allow AI Connections").OnTrigger()
+	p.MainMenuBar.Find("Script", "Allow AI Connections").OnTrigger()
 	ss.TW.ScreenChangeAgentConfirm(0, 0)
 	if !ss.AgentListening() || !ss.AgentConfirm {
 		t.Fatalf("listening %v, confirm %v", ss.AgentListening(), ss.AgentConfirm)

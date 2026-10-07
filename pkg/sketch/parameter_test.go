@@ -20,8 +20,8 @@ func lineSketch(t *testing.T) (*Sketch, core.HRequest, core.HConstraint) {
 	sk.Active = hg
 	hr := sk.AddRequest(Request{Type: RequestLineSegment, Group: hg, Workplane: hg.Entity(0)})
 	sk.GenerateAll()
-	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, geom.Vector{})
-	sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, geom.Vector{X: 5, Y: 1})
+	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, geom.Vector{})
+	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, geom.Vector{X: 5, Y: 1})
 	hc := sk.AddConstraint(core.Constraint{
 		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: hg.Entity(0),
 		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 10})
@@ -30,8 +30,8 @@ func lineSketch(t *testing.T) (*Sketch, core.HRequest, core.HConstraint) {
 }
 
 func lineLength(sk *Sketch, hr core.HRequest) float64 {
-	a := sk.MustGetEntity(hr.Entity(1)).PointGetNum(sk)
-	b := sk.MustGetEntity(hr.Entity(2)).PointGetNum(sk)
+	a := sk.MustEntity(hr.Entity(1)).PointGetNum(sk)
+	b := sk.MustEntity(hr.Entity(2)).PointGetNum(sk)
 	return a.Minus(b).Magnitude()
 }
 
@@ -52,7 +52,7 @@ func TestParameterDrivesDimension(t *testing.T) {
 	if got := lineLength(sk, hr); math.Abs(got-11) > 1e-9 {
 		t.Fatalf("line is %v long, want 11 from len = wall*4+1", got)
 	}
-	if c := sk.GetConstraint(hc); c.Expr != "len" || c.ValA != 11 {
+	if c := sk.Constraint(hc); c.Expr != "len" || c.ValA != 11 {
 		t.Fatalf("constraint holds %q = %v", c.Expr, c.ValA)
 	}
 
@@ -60,7 +60,7 @@ func TestParameterDrivesDimension(t *testing.T) {
 	if err := sk.SetParameterExpr("wall", "3"); err != nil {
 		t.Fatal(err)
 	}
-	if !sk.GetGroup(sk.GetConstraint(hc).Group).Clean == false {
+	if !sk.Group(sk.Constraint(hc).Group).Clean == false {
 		t.Fatal("the dimension's group should be dirty after the parameter changed")
 	}
 	sk.GenerateAll()
@@ -78,7 +78,7 @@ func TestParameterDrivesDimension(t *testing.T) {
 	if err := sk.RenameParameter("len", "length"); err != nil {
 		t.Fatal(err)
 	}
-	if got := sk.GetConstraint(hc).Expr; got != "length" {
+	if got := sk.Constraint(hc).Expr; got != "length" {
 		t.Fatalf("constraint expression %q after the rename", got)
 	}
 
@@ -86,7 +86,7 @@ func TestParameterDrivesDimension(t *testing.T) {
 	if err := sk.SetConstraintText(hc, "20"); err != nil {
 		t.Fatal(err)
 	}
-	if c := sk.GetConstraint(hc); c.Expr != "" || c.ValA != 20 {
+	if c := sk.Constraint(hc); c.Expr != "" || c.ValA != 20 {
 		t.Fatalf("constraint holds %q = %v after a number", c.Expr, c.ValA)
 	}
 	// Any other text is kept, in the document's unit.
@@ -94,14 +94,14 @@ func TestParameterDrivesDimension(t *testing.T) {
 	if err := sk.SetConstraintText(hc, "1/2"); err != nil {
 		t.Fatal(err)
 	}
-	if c := sk.GetConstraint(hc); c.Expr != "1/2" || c.ValA != 12.7 {
+	if c := sk.Constraint(hc); c.Expr != "1/2" || c.ValA != 12.7 {
 		t.Fatalf("constraint holds %q = %v after 1/2 inch", c.Expr, c.ValA)
 	}
 	// A plain number is in the document's unit too.
 	if err := sk.SetConstraintText(hc, "2"); err != nil {
 		t.Fatal(err)
 	}
-	if c := sk.GetConstraint(hc); c.Expr != "" || c.ValA != 50.8 {
+	if c := sk.Constraint(hc); c.Expr != "" || c.ValA != 50.8 {
 		t.Fatalf("constraint holds %q = %v after 2 inches", c.Expr, c.ValA)
 	}
 }
@@ -131,16 +131,16 @@ func TestSetUnits(t *testing.T) {
 	must(sk.SetGroupText(hg, GroupPitch, "w+1"))
 	must(sk.SetGroupText(hg, GroupCopies, "n"))
 	angle := sk.AddConstraint(core.Constraint{
-		Type: core.ConstraintAngle, Group: sk.GetConstraint(hc).Group, ValA: 30, Expr: "n*10"})
+		Type: core.ConstraintAngle, Group: sk.Constraint(hc).Group, ValA: 30, Expr: "n*10"})
 
 	check := sk.SetUnits(core.UnitMM)
 	if strings.Join(check, ",") != "w,k" {
 		t.Errorf("parameters to check %v", check)
 	}
-	g := sk.GetGroup(hg)
-	if c := sk.GetConstraint(hc); c.Expr != "(k)*25.4" || g.ExprB != "(w+1)*25.4" || g.ExprA != "n" ||
-		sk.GetConstraint(angle).Expr != "n*10" {
-		t.Fatalf("after the change: %q %q %q %q", c.Expr, g.ExprB, g.ExprA, sk.GetConstraint(angle).Expr)
+	g := sk.Group(hg)
+	if c := sk.Constraint(hc); c.Expr != "(k)*25.4" || g.ExprB != "(w+1)*25.4" || g.ExprA != "n" ||
+		sk.Constraint(angle).Expr != "n*10" {
+		t.Fatalf("after the change: %q %q %q %q", c.Expr, g.ExprB, g.ExprA, sk.Constraint(angle).Expr)
 	}
 	// The angle constrains nothing, so it can't regenerate.
 	sk.Constraints = sk.Constraints[:len(sk.Constraints)-1]
@@ -148,18 +148,18 @@ func TestSetUnits(t *testing.T) {
 	if got := lineLength(sk, hr); math.Abs(got-12.7) > 1e-9 {
 		t.Fatalf("line %v after the change, want 12.7", got)
 	}
-	if g := sk.GetGroup(hg); math.Abs(g.ValB-31.75) > 1e-9 || g.ValA != 3 {
+	if g := sk.Group(hg); math.Abs(g.ValB-31.75) > 1e-9 || g.ValA != 3 {
 		t.Fatalf("pitch %v copies %v", g.ValB, g.ValA)
 	}
 
 	// Back to inches: the factor comes off.
 	sk.SetUnits(core.UnitInches)
-	if c := sk.GetConstraint(hc); c.Expr != "k" || sk.GetGroup(hg).ExprB != "w+1" {
-		t.Fatalf("back: %q %q", c.Expr, sk.GetGroup(hg).ExprB)
+	if c := sk.Constraint(hc); c.Expr != "k" || sk.Group(hg).ExprB != "w+1" {
+		t.Fatalf("back: %q %q", c.Expr, sk.Group(hg).ExprB)
 	}
 	// To metres from inches: a factor below 1 divides.
 	sk.SetUnits(core.UnitMeters)
-	if c := sk.GetConstraint(hc); c.Expr != "(k)/39.37007874015748" {
+	if c := sk.Constraint(hc); c.Expr != "(k)/39.37007874015748" {
 		t.Fatalf("to metres: %q", c.Expr)
 	}
 	if sk.SetUnits(core.UnitMeters) != nil {
@@ -168,7 +168,7 @@ func TestSetUnits(t *testing.T) {
 	// Feet and inches count in inches, so no factor.
 	sk.SetUnits(core.UnitInches)
 	sk.SetUnits(core.UnitFeetInches)
-	if c := sk.GetConstraint(hc); c.Expr != "k" {
+	if c := sk.Constraint(hc); c.Expr != "k" {
 		t.Fatalf("to feet and inches: %q", c.Expr)
 	}
 	if got := ConvertLengthExpr("(a)*2+(b)*2", 2, 1); got != "((a)*2+(b)*2)*2" {
@@ -294,7 +294,7 @@ func TestStoredExpressionErrors(t *testing.T) {
 	if err := sk.SetConstraintText(hc, "w/0"); err == nil {
 		t.Fatal("a value that is not a number was accepted")
 	}
-	if c := sk.GetConstraint(hc); c.Expr != "w*3" || c.ValA != 12 {
+	if c := sk.Constraint(hc); c.Expr != "w*3" || c.ValA != 12 {
 		t.Fatalf("refused text changed the constraint: %q = %v", c.Expr, c.ValA)
 	}
 	if err := sk.SetConstraintText(core.HConstraint{V: 0x999}, "1"); err == nil {
@@ -302,7 +302,7 @@ func TestStoredExpressionErrors(t *testing.T) {
 	}
 
 	// A file edited by hand: the expression keeps the value it had.
-	sk.GetConstraint(hc).Expr = "q+1"
+	sk.Constraint(hc).Expr = "q+1"
 	sk.GenerateAll()
 	if len(sk.ExprErrors) != 1 || !strings.Contains(sk.ExprErrors[0].Error(), "unknown parameter \"q\"") {
 		t.Fatalf("ExprErrors = %v", sk.ExprErrors)
@@ -310,11 +310,11 @@ func TestStoredExpressionErrors(t *testing.T) {
 	if got := sk.ExprErrors[0].Error(); !strings.HasPrefix(got, "constraint c001 = q+1") {
 		t.Fatalf("error reads %q", got)
 	}
-	if c := sk.GetConstraint(hc); c.ValA != 12 {
+	if c := sk.Constraint(hc); c.ValA != 12 {
 		t.Fatalf("broken expression changed the value to %v", c.ValA)
 	}
 	// A reference dimension ignores its expression.
-	sk.GetConstraint(hc).Reference = true
+	sk.Constraint(hc).Reference = true
 	sk.GenerateAll()
 	if len(sk.ExprErrors) != 0 {
 		t.Fatalf("reference dimension evaluated: %v", sk.ExprErrors)
@@ -332,14 +332,14 @@ func TestSignedAndRadiusText(t *testing.T) {
 	add := func(typ core.ConstraintType, v float64, other bool) *core.Constraint {
 		hc := sk.AddConstraint(core.Constraint{
 			Type: typ, Group: hg, ValA: v, Other: other})
-		return sk.GetConstraint(hc)
+		return sk.Constraint(hc)
 	}
 
 	far := add(core.ConstraintPtLineDistance, -3, false)
 	if err := sk.SetConstraintText(far.H, "d"); err != nil {
 		t.Fatal(err)
 	}
-	far = sk.GetConstraint(far.H)
+	far = sk.Constraint(far.H)
 	if far.Expr != "-(d)" || far.ValA != -6 {
 		t.Fatalf("far side: %q = %v", far.Expr, far.ValA)
 	}
@@ -355,7 +355,7 @@ func TestSignedAndRadiusText(t *testing.T) {
 	if err := sk.SetConstraintText(radius.H, "d/2"); err != nil {
 		t.Fatal(err)
 	}
-	radius = sk.GetConstraint(radius.H)
+	radius = sk.Constraint(radius.H)
 	if radius.Expr != "2*(d/2)" || radius.ValA != 6 {
 		t.Fatalf("radius: %q = %v", radius.Expr, radius.ValA)
 	}
@@ -377,7 +377,7 @@ func TestSignedAndRadiusText(t *testing.T) {
 	if err := sk.SetConstraintText(angle.H, "-d*10"); err != nil {
 		t.Fatal(err)
 	}
-	if a := sk.GetConstraint(angle.H); a.ValA != 60 {
+	if a := sk.Constraint(angle.H); a.ValA != 60 {
 		t.Fatalf("angle = %v", a.ValA)
 	}
 	if got := ConstraintText(&core.Constraint{}); got != "" {
@@ -412,7 +412,7 @@ func TestGroupText(t *testing.T) {
 		}
 	}
 	must(sk.SetGroupText(hg, GroupCopies, "n+1"))
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g.ValA != 5 || g.ExprA != "n+1" {
 		t.Fatalf("copies %q = %v", g.ExprA, g.ValA)
 	}
@@ -433,7 +433,7 @@ func TestGroupText(t *testing.T) {
 			t.Errorf("SetGroupText(%v, %q) = %v, want %q", tc.f.Field(), tc.text, err, tc.want)
 		}
 	}
-	if g := sk.GetGroup(hg); g.ValA != 5 || g.ExprA != "n+1" {
+	if g := sk.Group(hg); g.ValA != 5 || g.ExprA != "n+1" {
 		t.Fatalf("refused text changed copies: %q = %v", g.ExprA, g.ValA)
 	}
 	sk.Units = core.UnitInches
@@ -441,7 +441,7 @@ func TestGroupText(t *testing.T) {
 	sk.Units = core.UnitMM
 	must(sk.SetGroupText(hg, GroupScale, "n/2"))
 	must(sk.SetGroupText(hg, GroupValC, "n"))
-	g = sk.GetGroup(hg)
+	g = sk.Group(hg)
 	if g.ValB != 50.8 || g.ExprB != "" || g.Scale != 2 || g.ExprScale != "n/2" || g.ValC != 4 {
 		t.Fatalf("values: pitch %q=%v scale %q=%v c %q=%v", g.ExprB, g.ValB, g.ExprScale, g.Scale, g.ExprC, g.ValC)
 	}
@@ -456,12 +456,12 @@ func TestGroupText(t *testing.T) {
 	// The parameter drives the group and dirties it.
 	g.Clean = true
 	must(sk.SetParameterExpr("n", "9"))
-	if g := sk.GetGroup(hg); g.ValA != 10 || g.Clean {
+	if g := sk.Group(hg); g.ValA != 10 || g.Clean {
 		t.Fatalf("copies %v clean %v after n = 9", g.ValA, g.Clean)
 	}
 	// Then a value that the group refuses leaves it as it was.
 	must(sk.SetParameterExpr("n", "2000"))
-	if g := sk.GetGroup(hg); g.ValA != 10 {
+	if g := sk.Group(hg); g.ValA != 10 {
 		t.Fatalf("copies %v after n = 2000", g.ValA)
 	}
 	if len(sk.ExprErrors) != 1 || sk.ExprErrors[0].Field != "copies" ||
@@ -488,15 +488,15 @@ func TestParameterUndo(t *testing.T) {
 		t.Fatalf("line %v", got)
 	}
 	sk.UndoUndo()
-	if len(sk.Parameters) != 0 || sk.GetConstraint(hc).Expr != "" {
-		t.Fatalf("undo left %v and %q", sk.Parameters, sk.GetConstraint(hc).Expr)
+	if len(sk.Parameters) != 0 || sk.Constraint(hc).Expr != "" {
+		t.Fatalf("undo left %v and %q", sk.Parameters, sk.Constraint(hc).Expr)
 	}
 	if got := lineLength(sk, hr); math.Abs(got-10) > 1e-9 {
 		t.Fatalf("line %v after undo", got)
 	}
 	sk.UndoRedo()
-	if len(sk.Parameters) != 1 || sk.GetConstraint(hc).Expr != "w" {
-		t.Fatalf("redo gave %v and %q", sk.Parameters, sk.GetConstraint(hc).Expr)
+	if len(sk.Parameters) != 1 || sk.Constraint(hc).Expr != "w" {
+		t.Fatalf("redo gave %v and %q", sk.Parameters, sk.Constraint(hc).Expr)
 	}
 	if got := lineLength(sk, hr); math.Abs(got-7) > 1e-9 {
 		t.Fatalf("line %v after redo", got)
@@ -508,11 +508,11 @@ func TestParameterUndo(t *testing.T) {
 		t.Fatal(err)
 	}
 	sk.UndoUndo()
-	if g := sk.GetGroup(hg); g.ExprA != "" || g.ValA != 3 {
+	if g := sk.Group(hg); g.ExprA != "" || g.ValA != 3 {
 		t.Fatalf("undo left copies %q = %v", g.ExprA, g.ValA)
 	}
 	sk.UndoRedo()
-	if g := sk.GetGroup(hg); g.ExprA != "w" || g.ValA != 7 {
+	if g := sk.Group(hg); g.ExprA != "w" || g.ValA != 7 {
 		t.Fatalf("redo gave copies %q = %v", g.ExprA, g.ValA)
 	}
 }

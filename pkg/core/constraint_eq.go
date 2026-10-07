@@ -18,7 +18,7 @@ type sketchParams struct {
 }
 
 func (s sketchParams) ParamValue(h HParam) (float64, bool) {
-	p := s.sk.GetParam(h)
+	p := s.sk.Param(h)
 	if p == nil {
 		return 0, false
 	}
@@ -221,13 +221,16 @@ func arcLengthExprs(sk EntitySketch, arc *Entity) (r, theta *Expr) {
 	sintheta := aof.Dot(v).Div(r)
 
 	_, _, dtheta := arc.ArcGetAngles(sk)
-	if dtheta < 3*math.Pi/4 {
+	switch {
+	case dtheta < 3*math.Pi/4:
 		theta = costheta.ACos()
-	} else if dtheta < 5*math.Pi/4 {
+
+	case dtheta < 5*math.Pi/4:
 		// As the angle crosses pi, cos theta is not invertible;
 		// so use the sine to stop blowing up
 		theta = NewConstant(math.Pi).Minus(sintheta.ASin())
-	} else {
+
+	default:
 		theta = NewConstant(2 * math.Pi).Minus(costheta.ACos())
 	}
 	return r, theta
@@ -719,7 +722,8 @@ func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forRefere
 			}
 			e := mustEntity(sk, he)
 
-			if e.Type == EntityArcOfCircle {
+			switch e.Type {
+			case EntityArcOfCircle:
 				center := mustEntity(sk, e.Point[0]).PointGetExprs(sk)
 				pt := e.Point[1]
 				if oth {
@@ -731,13 +735,13 @@ func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forRefere
 				// an endpoint; so that's normal to the tangent, not
 				// parallel.
 				parallel = !parallel
-			} else if e.Type == EntityCubic {
+			case EntityCubic:
 				if oth {
 					dir[i] = e.CubicGetFinishTangentExprs(sk)
 				} else {
 					dir[i] = e.CubicGetStartTangentExprs(sk)
 				}
-			} else {
+			default:
 				panic("Unexpected entity types for CURVE_CURVE_TANGENT")
 			}
 		}

@@ -40,19 +40,22 @@ func QuaternionFromBasis(u, v Vector) Quaternion {
 		q.Y = (n.X - u.Z) / s
 		q.Z = (u.Y - v.X) / s
 	} else {
-		if u.X > v.Y && u.X > n.Z {
+		switch {
+		case u.X > v.Y && u.X > n.Z:
 			s := 2 * math.Sqrt(1+u.X-v.Y-n.Z)
 			q.W = (v.Z - n.Y) / s
 			q.X = s / 4
 			q.Y = (u.Y + v.X) / s
 			q.Z = (n.X + u.Z) / s
-		} else if v.Y > n.Z {
+
+		case v.Y > n.Z:
 			s := 2 * math.Sqrt(1-u.X+v.Y-n.Z)
 			q.W = (n.X - u.Z) / s
 			q.X = (u.Y + v.X) / s
 			q.Y = s / 4
 			q.Z = (v.Z + n.Y) / s
-		} else {
+
+		default:
 			s := 2 * math.Sqrt(1-u.X-v.Y+n.Z)
 			q.W = (u.Y - v.X) / s
 			q.X = (n.X + u.Z) / s

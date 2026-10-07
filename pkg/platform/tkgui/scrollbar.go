@@ -83,15 +83,15 @@ func (w *Window) SetScrollbarVisible(v bool) {
 }
 
 // ConfigureScrollbar sets the range and page size, keeping the value.
-func (w *Window) ConfigureScrollbar(min, max, pageSize float64) {
+func (w *Window) ConfigureScrollbar(lo, hi, pageSize float64) {
 	s := w.scrollbar
-	s.min, s.max, s.pageSize = min, max, pageSize
+	s.min, s.max, s.pageSize = lo, hi, pageSize
 	s.value = s.clamp(s.value)
 	s.update()
 }
 
-// GetScrollbarPosition is the scrollbar's value.
-func (w *Window) GetScrollbarPosition() float64 { return w.scrollbar.value }
+// ScrollbarPosition is the scrollbar's value.
+func (w *Window) ScrollbarPosition() float64 { return w.scrollbar.value }
 
 // SetScrollbarPosition sets the value, reporting it as GTK does.
 func (w *Window) SetScrollbarPosition(pos float64) {

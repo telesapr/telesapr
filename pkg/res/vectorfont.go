@@ -136,9 +136,9 @@ func VectorFontFrom(lffData string) *VectorFont {
 		}
 	}
 
-	_, _, _, f.CapHeight = glyphBBox(f.GetGlyph('A'))
-	_, _, _, f.Ascender = glyphBBox(f.GetGlyph('h'))
-	_, _, f.Descender, _ = glyphBBox(f.GetGlyph('p'))
+	_, _, _, f.CapHeight = glyphBBox(f.Glyph('A'))
+	_, _, _, f.Ascender = glyphBBox(f.Glyph('h'))
+	_, _, f.Descender, _ = glyphBBox(f.Glyph('p'))
 	return f
 }
 
@@ -168,9 +168,9 @@ func BuiltinVectorFont() *VectorFont {
 // IsEmpty reports whether the font has no data (C++ IsEmpty).
 func (f *VectorFont) IsEmpty() bool { return f == nil || f.lffData == "" }
 
-// GetGlyph returns the glyph, parsing it the first time; a missing one
-// is U+FFFD (C++ VectorFont::GetGlyph).
-func (f *VectorFont) GetGlyph(codepoint rune) *VectorGlyph {
+// Glyph returns the glyph, parsing it the first time; a missing one
+// is U+FFFD (C++ VectorFont::Glyph).
+func (f *VectorFont) Glyph(codepoint rune) *VectorGlyph {
 	if g, ok := f.glyphs[codepoint]; ok {
 		return g
 	}
@@ -229,7 +229,7 @@ func (f *VectorFont) GetGlyph(codepoint rune) *VectorGlyph {
 			}
 			if r.tryChar('C') {
 				// Another character is referenced in this one.
-				base := f.GetGlyph(rune(r.read16HexBits()))
+				base := f.Glyph(rune(r.read16HexBits()))
 				for _, c := range base.Contours {
 					g.Contours = append(g.Contours, VectorContour{Points: append([]geom.Point2d(nil), c.Points...)})
 				}
@@ -266,34 +266,34 @@ func (f *VectorFont) GetGlyph(codepoint rune) *VectorGlyph {
 	if codepoint == 0xfffd {
 		panic("res: cannot parse replacement glyph")
 	}
-	return f.GetGlyph(0xfffd)
+	return f.Glyph(0xfffd)
 }
 
 // GetCapHeight is the cap height text of that cap height has (C++
 // VectorFont::GetCapHeight).
 func (f *VectorFont) GetCapHeight(forCapHeight float64) float64 { return forCapHeight }
 
-// GetHeight is the full height of text with that cap height (C++
-// VectorFont::GetHeight).
-func (f *VectorFont) GetHeight(forCapHeight float64) float64 {
+// Height is the full height of text with that cap height (C++
+// VectorFont::Height).
+func (f *VectorFont) Height(forCapHeight float64) float64 {
 	return (f.Ascender - f.Descender) * (forCapHeight / f.CapHeight)
 }
 
-// GetWidth is the width of str at that cap height (C++
-// VectorFont::GetWidth).
-func (f *VectorFont) GetWidth(forCapHeight float64, str string) float64 {
+// Width is the width of str at that cap height (C++
+// VectorFont::Width).
+func (f *VectorFont) Width(forCapHeight float64, str string) float64 {
 	width := 0.0
 	for _, c := range core.ReadUTF8(str) {
-		width += f.GetGlyph(rune(c)).AdvanceWidth
+		width += f.Glyph(rune(c)).AdvanceWidth
 	}
 	width -= f.RightSideBearing
 	return width * (forCapHeight / f.CapHeight)
 }
 
-// GetExtents is the width and height of str (C++
-// VectorFont::GetExtents).
-func (f *VectorFont) GetExtents(forCapHeight float64, str string) geom.Vector {
-	return geom.Vector{X: f.GetWidth(forCapHeight, str), Y: f.GetHeight(forCapHeight)}
+// Extents is the width and height of str (C++
+// VectorFont::Extents).
+func (f *VectorFont) Extents(forCapHeight float64, str string) geom.Vector {
+	return geom.Vector{X: f.Width(forCapHeight, str), Y: f.Height(forCapHeight)}
 }
 
 // Trace calls traceEdge for every stroke of str, laid out from o along
@@ -304,7 +304,7 @@ func (f *VectorFont) Trace(forCapHeight float64, o, u, v geom.Vector, str string
 	v = v.ScaledBy(scale)
 
 	for _, cp := range core.ReadUTF8(str) {
-		g := f.GetGlyph(rune(cp))
+		g := f.Glyph(rune(cp))
 		for _, c := range g.Contours {
 			var prevp geom.Vector
 			penUp := true
@@ -337,7 +337,7 @@ func (f *VectorFont) TraceAligned(forCapHeight float64, o, u, v geom.Vector, str
 	v = v.ScaledBy(scale)
 
 	for _, cp := range core.ReadUTF8(str) {
-		g := f.GetGlyph(rune(cp))
+		g := f.Glyph(rune(cp))
 		actualWidth := geom.Max(1.0, g.BoundingWidth)
 
 		// Align (o+lsb), (o+lsb+u) and (o+lsb+v) to pixel grid.

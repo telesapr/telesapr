@@ -37,7 +37,7 @@ func (ss *Application) MenuConstrain(id Command) {
 			c.PtB = gs.point[1]
 		case gs.lineSegments == 1 && gs.n == 1:
 			c.Type = core.ConstraintPtPtDistance
-			e := sk.GetEntity(gs.entity[0])
+			e := sk.Entity(gs.entity[0])
 			c.PtA = e.Point[0]
 			c.PtB = e.Point[1]
 		case gs.vectors == 1 && gs.points == 2 && gs.n == 3:
@@ -60,7 +60,7 @@ func (ss *Application) MenuConstrain(id Command) {
 		case gs.circlesOrArcs == 1 && gs.n == 1:
 			c.Type = core.ConstraintDiameter
 			c.EntityA = gs.entity[0]
-			arc := sk.GetEntity(gs.entity[0])
+			arc := sk.Entity(gs.entity[0])
 			if arc.Type == core.EntityArcOfCircle && !ss.ArcDimDefaultDiameter {
 				c.Other = true
 			}
@@ -77,8 +77,8 @@ func (ss *Application) MenuConstrain(id Command) {
 			return
 		}
 		if c.Type == core.ConstraintPtPtDistance || c.Type == core.ConstraintProjPtDistance {
-			a := sk.GetEntity(c.PtA).PointGetNum(sk)
-			b := sk.GetEntity(c.PtB).PointGetNum(sk)
+			a := sk.Entity(c.PtA).PointGetNum(sk)
+			b := sk.Entity(c.PtB).PointGetNum(sk)
 			c.Disp.Offset = sk.DistanceLabelOffset(a, b)
 		} else {
 			c.Disp.Offset = geom.Vector{}
@@ -177,7 +177,7 @@ func (ss *Application) MenuConstrain(id Command) {
 			}
 		case gs.arcs == 1 && gs.lineSegments == 1 && gs.n == 2:
 			c.Type = core.ConstraintEqualLineArcLen
-			if sk.GetEntity(gs.entity[0]).Type == core.EntityArcOfCircle {
+			if sk.Entity(gs.entity[0]).Type == core.EntityArcOfCircle {
 				c.EntityA = gs.entity[1]
 				c.EntityB = gs.entity[0]
 			} else {
@@ -201,10 +201,10 @@ func (ss *Application) MenuConstrain(id Command) {
 		for _, nc := range pending {
 			if nc.Type == core.ConstraintEqualAngle {
 				// Infer the nearest supplementary angle from the sketch.
-				a1 := sk.GetEntity(c.EntityA).VectorGetNum(sk)
-				b1 := sk.GetEntity(c.EntityB).VectorGetNum(sk)
-				a2 := sk.GetEntity(c.EntityC).VectorGetNum(sk)
-				b2 := sk.GetEntity(c.EntityD).VectorGetNum(sk)
+				a1 := sk.Entity(c.EntityA).VectorGetNum(sk)
+				b1 := sk.Entity(c.EntityB).VectorGetNum(sk)
+				a2 := sk.Entity(c.EntityC).VectorGetNum(sk)
+				b2 := sk.Entity(c.EntityD).VectorGetNum(sk)
 				if a1.Dot(b1)*a2.Dot(b2) < 0 {
 					nc.Other = true
 				}
@@ -234,7 +234,7 @@ func (ss *Application) MenuConstrain(id Command) {
 			if ratio {
 				c.Type = core.ConstraintArcLineLenRatio
 			}
-			if sk.GetEntity(gs.entity[0]).Type == core.EntityArcOfCircle {
+			if sk.Entity(gs.entity[0]).Type == core.EntityArcOfCircle {
 				c.EntityA = gs.entity[1]
 				c.EntityB = gs.entity[0]
 			} else {
@@ -271,7 +271,7 @@ func (ss *Application) MenuConstrain(id Command) {
 		case gs.lineSegments == 1 && gs.workplanes == 1 && gs.n == 2:
 			c.Type = core.ConstraintAtMidpoint
 			i := 0
-			if sk.GetEntity(gs.entity[0]).IsWorkplane() {
+			if sk.Entity(gs.entity[0]).IsWorkplane() {
 				i = 1
 			}
 			c.EntityA = gs.entity[i]
@@ -296,18 +296,18 @@ func (ss *Application) MenuConstrain(id Command) {
 			c.Type = core.ConstraintSymmetric
 		case gs.lineSegments == 1 && ((gs.workplanes == 1 && gs.n == 2) || gs.n == 1):
 			var line *core.Entity
-			if sk.GetEntity(gs.entity[0]).IsWorkplane() {
-				line = sk.GetEntity(gs.entity[1])
+			if sk.Entity(gs.entity[0]).IsWorkplane() {
+				line = sk.Entity(gs.entity[1])
 				c.EntityA = gs.entity[0]
 			} else {
-				line = sk.GetEntity(gs.entity[0])
+				line = sk.Entity(gs.entity[0])
 			}
 			c.PtA = line.Point[0]
 			c.PtB = line.Point[1]
 			c.Type = core.ConstraintSymmetric
 		case gw.LockedInWorkplane() && gs.lineSegments == 2 && gs.n == 2:
-			l0 := sk.GetEntity(gs.entity[0])
-			l1 := sk.GetEntity(gs.entity[1])
+			l0 := sk.Entity(gs.entity[0])
+			l1 := sk.Entity(gs.entity[1])
 			if l1.Group != gw.activeGroupH() || (l1.Construction && !l0.Construction) {
 				l0, l1 = l1, l0
 			}
@@ -340,10 +340,10 @@ func (ss *Application) MenuConstrain(id Command) {
 					"symmetric without an explicit symmetry plane.")
 				return
 			}
-			pa := sk.GetEntity(c.PtA).PointGetNum(sk)
-			pb := sk.GetEntity(c.PtB).PointGetNum(sk)
+			pa := sk.Entity(c.PtA).PointGetNum(sk)
+			pb := sk.Entity(c.PtB).PointGetNum(sk)
 			dp := pa.Minus(pb)
-			norm := sk.GetEntity(c.Workplane).NormalEntity(sk)
+			norm := sk.Entity(c.Workplane).NormalEntity(sk)
 			u, v := norm.NormalU(sk), norm.NormalV(sk)
 			if math.Abs(dp.Dot(u)) > math.Abs(dp.Dot(v)) {
 				c.Type = core.ConstraintSymmetricHoriz
@@ -412,8 +412,8 @@ func (ss *Application) MenuConstrain(id Command) {
 		}
 		ss.UndoRemember()
 
-		nfree := sk.GetEntity(c.EntityA)
-		nref := sk.GetEntity(c.EntityB)
+		nfree := sk.Entity(c.EntityA)
+		nref := sk.Entity(c.EntityB)
 		if nref.Group == gw.activeGroupH() {
 			nref, nfree = nfree, nref
 		}
@@ -445,17 +445,17 @@ func (ss *Application) MenuConstrain(id Command) {
 
 	case CmdOtherAngle:
 		if gs.constraints == 1 && gs.n == 0 {
-			cc := sk.GetConstraint(gs.constraint[0])
+			cc := sk.Constraint(gs.constraint[0])
 			if cc.Type == core.ConstraintAngle {
 				ss.UndoRemember()
-				cc = sk.GetConstraint(gs.constraint[0])
+				cc = sk.Constraint(gs.constraint[0])
 				cc.Other = !cc.Other
 				cc.ModifyToSatisfy(sk)
 				break
 			}
 			if cc.Type == core.ConstraintEqualAngle {
 				ss.UndoRemember()
-				cc = sk.GetConstraint(gs.constraint[0])
+				cc = sk.Constraint(gs.constraint[0])
 				cc.Other = !cc.Other
 				sk.MarkGroupDirty(cc.Group, false)
 				break
@@ -466,10 +466,10 @@ func (ss *Application) MenuConstrain(id Command) {
 
 	case CmdReference:
 		if gs.constraints == 1 && gs.n == 0 {
-			cc := sk.GetConstraint(gs.constraint[0])
+			cc := sk.Constraint(gs.constraint[0])
 			if cc.HasLabel() && cc.Type != core.ConstraintComment {
 				ss.UndoRemember()
-				cc = sk.GetConstraint(gs.constraint[0])
+				cc = sk.Constraint(gs.constraint[0])
 				cc.Reference = !cc.Reference
 				sk.MarkGroupDirty(cc.Group, true)
 				break
@@ -512,13 +512,13 @@ func (ss *Application) MenuConstrain(id Command) {
 			return
 		}
 
-		ea := sk.GetEntity(c.EntityA)
-		eb := sk.GetEntity(c.EntityB)
+		ea := sk.Entity(c.EntityA)
+		eb := sk.Entity(c.EntityB)
 		if ea.Type == core.EntityLineSegment && eb.Type == core.EntityLineSegment {
-			a0 := sk.GetEntity(ea.Point[0]).PointGetNum(sk)
-			a1 := sk.GetEntity(ea.Point[1]).PointGetNum(sk)
-			b0 := sk.GetEntity(eb.Point[0]).PointGetNum(sk)
-			b1 := sk.GetEntity(eb.Point[1]).PointGetNum(sk)
+			a0 := sk.Entity(ea.Point[0]).PointGetNum(sk)
+			a1 := sk.Entity(ea.Point[1]).PointGetNum(sk)
+			b0 := sk.Entity(eb.Point[0]).PointGetNum(sk)
+			b1 := sk.Entity(eb.Point[1]).PointGetNum(sk)
 			switch {
 			case a0.Equals(b0) || a1.Equals(b1):
 				// okay, vectors should be drawn in same sense
@@ -551,14 +551,14 @@ func (ss *Application) MenuConstrain(id Command) {
 				pending = append(pending, c)
 			}
 		case gs.lineSegments == 1 && gs.arcs == 1 && (gs.n == 2 || (gs.points == 1 && gs.n == 3)):
-			line := sk.GetEntity(gs.entity[0])
-			arc := sk.GetEntity(gs.entity[1])
+			line := sk.Entity(gs.entity[0])
+			arc := sk.Entity(gs.entity[1])
 			if line.Type == core.EntityArcOfCircle {
 				line, arc = arc, line
 			}
 			var ep *core.Entity
 			if gs.points == 1 {
-				ep = sk.GetEntity(gs.point[0])
+				ep = sk.Entity(gs.point[0])
 			}
 			if err := sk.ConstrainArcLineTangent(&c, line, arc, ep); err != nil {
 				ss.Error("%s", err.Error())
@@ -569,14 +569,14 @@ func (ss *Application) MenuConstrain(id Command) {
 			c.EntityB = line.H
 			pending = append(pending, c)
 		case gs.lineSegments == 1 && gs.cubics == 1 && (gs.n == 2 || (gs.points == 1 && gs.n == 3)):
-			line := sk.GetEntity(gs.entity[0])
-			cubic := sk.GetEntity(gs.entity[1])
+			line := sk.Entity(gs.entity[0])
+			cubic := sk.Entity(gs.entity[1])
 			if line.Type == core.EntityCubic {
 				line, cubic = cubic, line
 			}
 			var ep *core.Entity
 			if gs.points == 1 {
-				ep = sk.GetEntity(gs.point[0])
+				ep = sk.Entity(gs.point[0])
 			}
 			if err := sk.ConstrainCubicLineTangent(&c, line, cubic, ep); err != nil {
 				ss.Error("%s", err.Error())
@@ -591,12 +591,12 @@ func (ss *Application) MenuConstrain(id Command) {
 				errorf("Curve-curve tangency must apply in workplane.")
 				return
 			}
-			eA := sk.GetEntity(gs.entity[0])
-			eB := sk.GetEntity(gs.entity[1])
+			eA := sk.Entity(gs.entity[0])
+			eB := sk.Entity(gs.entity[1])
 			var epA, epB *core.Entity
 			if gs.points == 2 {
-				epA = sk.GetEntity(gs.point[0])
-				epB = sk.GetEntity(gs.point[1])
+				epA = sk.Entity(gs.point[0])
+				epB = sk.Entity(gs.point[1])
 			}
 			if err := sk.ConstrainCurveCurveTangent(&c, eA, eB, epA, epB); err != nil {
 				ss.Error("%s", err.Error())
@@ -691,9 +691,9 @@ func (ss *Application) MenuConstrain(id Command) {
 			}
 		}
 
-		if constraint := sk.GetConstraint(nc.H); constraint != nil {
+		if constraint := sk.Constraint(nc.H); constraint != nil {
 			if sk.TestRankForGroup(nc.Group, nil) == core.SolveRedundantOkay &&
-				!sk.GetGroup(gw.activeGroupH()).AllowRedundant && constraint.HasLabel() {
+				!sk.Group(gw.activeGroupH()).AllowRedundant && constraint.HasLabel() {
 				constraint.Reference = true
 			}
 		}

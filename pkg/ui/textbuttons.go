@@ -13,7 +13,7 @@ import (
 // textButton is one icon (C++ Button).
 type textButton interface {
 	Tooltip() string
-	Draw(uiCanvas *render.UiCanvas, x, y int, asHovered bool)
+	Draw(uiCanvas *render.UICanvas, x, y int, asHovered bool)
 	AdvanceWidth() int
 	Click()
 }
@@ -23,9 +23,9 @@ type spacerButton struct{}
 
 func (*spacerButton) Tooltip() string { return "" }
 
-func (*spacerButton) Draw(uiCanvas *render.UiCanvas, x, y int, asHovered bool) {
+func (*spacerButton) Draw(uiCanvas *render.UICanvas, x, y int, asHovered bool) {
 	// Draw a darker-grey spacer in between the groups of icons.
-	uiCanvas.DrawRect(x, x+4, y, y-24, core.NewRgbaColor(45, 45, 45, 255), core.RgbaColor{}, 0)
+	uiCanvas.DrawRect(x, x+4, y, y-24, core.NewRGBA(45, 45, 45, 255), core.RGBA{}, 0)
 }
 
 func (*spacerButton) AdvanceWidth() int { return 12 }
@@ -52,18 +52,18 @@ func (b *showHideButton) Tooltip() string {
 	return "Show " + b.tooltip
 }
 
-func (b *showHideButton) Draw(uiCanvas *render.UiCanvas, x, y int, asHovered bool) {
+func (b *showHideButton) Draw(uiCanvas *render.UICanvas, x, y int, asHovered bool) {
 	if b.icon == nil {
 		b.icon = res.LoadPng("icons/text-window/" + b.iconName + ".png")
 	}
 
 	uiCanvas.DrawPixmap(b.icon, x, y-24, 0)
 	if asHovered {
-		uiCanvas.DrawRect(x-2, x+26, y+2, y-26, core.NewRgbaColor(255, 255, 0, 75), core.RgbaColor{}, 0)
+		uiCanvas.DrawRect(x-2, x+26, y+2, y-26, core.NewRGBA(255, 255, 0, 75), core.RGBA{}, 0)
 	}
 	if !*b.variable {
 		s, f := 0, 23
-		color := core.NewRgbaColor(255, 0, 0, 150)
+		color := core.NewRGBA(255, 0, 0, 150)
 		uiCanvas.DrawLine(x+s, y-s, x+f, y-f, color, 2, 0)
 		uiCanvas.DrawLine(x+s, y-f, x+f, y-s, color, 2, 0)
 	}
@@ -92,7 +92,7 @@ func (b *triStateButton) Tooltip() string {
 	panic("ui: unexpected mode")
 }
 
-func (b *triStateButton) Draw(uiCanvas *render.UiCanvas, x, y int, asHovered bool) {
+func (b *triStateButton) Draw(uiCanvas *render.UICanvas, x, y int, asHovered bool) {
 	for k := range 3 {
 		if b.icons[k] == nil {
 			b.icons[k] = res.LoadPng("icons/text-window/" + b.iconNames[k] + ".png")
@@ -109,7 +109,7 @@ func (b *triStateButton) Draw(uiCanvas *render.UiCanvas, x, y int, asHovered boo
 
 	uiCanvas.DrawPixmap(icon, x, y-24, 0)
 	if asHovered {
-		uiCanvas.DrawRect(x-2, x+26, y+2, y-26, core.NewRgbaColor(255, 255, 0, 75), core.RgbaColor{}, 0)
+		uiCanvas.DrawRect(x-2, x+26, y+2, y-26, core.NewRGBA(255, 255, 0, 75), core.RGBA{}, 0)
 	}
 }
 

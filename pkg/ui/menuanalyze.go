@@ -29,7 +29,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 	switch id {
 	case CmdStepDim:
 		if gs.constraints == 1 && gs.n == 0 {
-			c := sk.GetConstraint(gs.constraint[0])
+			c := sk.Constraint(gs.constraint[0])
 			if c.HasLabel() && !c.Reference {
 				ss.TW.stepDim.finish = c.ValA
 				ss.TW.stepDim.steps = 10
@@ -92,14 +92,13 @@ func (ss *Application) MenuAnalyze(id Command) {
 			default:
 				ss.Error("%d pairs of parts interfere, bad:\n\n%s", len(lines), strings.Join(lines, "\n"))
 			}
-			if len(lines) > 0 {
-			} else {
+			if len(lines) == 0 {
 				ss.Message("The assembly does not interfere, good.")
 			}
 			break
 		}
 
-		m := &sk.GetGroup(gw.activeGroupH()).DisplayMesh
+		m := &sk.Group(gw.activeGroupH()).DisplayMesh
 		root := srf.SKdNodeFrom(m)
 		var inters, leaks bool
 		root.MakeCertainEdgesInto(&ss.NakedEdges, srf.EdgeSelfInter, false, &inters, &leaks, 0)
@@ -121,7 +120,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 		gw.Invalidate(false)
 
 	case CmdVolume:
-		g := sk.GetGroup(gw.activeGroupH())
+		g := sk.Group(gw.activeGroupH())
 		totalVol := g.DisplayMesh.CalculateVolume()
 		msg := "The volume of the solid model is:\n\n    " + ss.MmToStringSI(totalVol, 3)
 
@@ -136,7 +135,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 		ss.Message("%s", msg)
 
 	case CmdArea:
-		g := sk.GetGroup(gw.activeGroupH())
+		g := sk.Group(gw.activeGroupH())
 		gw.GroupSelection()
 
 		if gs.faces > 0 {
@@ -176,7 +175,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 		if gs.n > 0 && gs.n == gs.entities {
 			perimeter := 0.0
 			for i := range gs.entities {
-				en := sk.GetEntity(gs.entity[i])
+				en := sk.Entity(gs.entity[i])
 				el := gw.getOrGenerateEdges(en)
 				for _, e := range el.Edges {
 					perimeter += e.B.Minus(e.A).Magnitude()
@@ -227,8 +226,8 @@ func (ss *Application) MenuAnalyze(id Command) {
 				p := pt.P
 				fmt.Fprintf(&b, "%.10f, %.10f, %.10f\r\n", p.X/s, p.Y/s, p.Z/s)
 			}
-			if err := os.WriteFile(dialog.GetFilename(), []byte(b.String()), 0o644); err != nil {
-				ss.Error("Couldn't write to '%s'", dialog.GetFilename())
+			if err := os.WriteFile(dialog.Filename(), []byte(b.String()), 0o644); err != nil {
+				ss.Error("Couldn't write to '%s'", dialog.Filename())
 			}
 		}
 		// Clear the trace, and stop tracing
@@ -247,7 +246,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 func (ss *Application) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 	ss.NakedEdges.Clear()
 
-	g := ss.SK.GetGroup(ss.GW.activeGroupH())
+	g := ss.SK.Group(ss.GW.activeGroupH())
 	root := srf.SKdNodeFrom(&g.DisplayMesh)
 	var inters, leaks bool
 	root.MakeCertainEdgesInto(&ss.NakedEdges, srf.EdgeNakedOrSelfInter, true, &inters, &leaks, 0)
@@ -283,7 +282,7 @@ func (ss *Application) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 // the view units.
 func (ss *Application) CheckSolid() {
 	sk := ss.SK
-	g := sk.GetGroup(ss.GW.activeGroupH())
+	g := sk.Group(ss.GW.activeGroupH())
 	r := check.Group(sk, g)
 	ss.NakedEdges.Clear()
 	ss.NakedEdges.Edges = append(ss.NakedEdges.Edges, r.Problems.Edges...)
@@ -336,8 +335,8 @@ func (ss *Application) CheckSolid() {
 // UpdateCenterOfMass finds the center of mass of the active group's
 // mesh (C++ SolveSpaceUI::UpdateCenterOfMass).
 func (ss *Application) UpdateCenterOfMass() {
-	m := &ss.SK.GetGroup(ss.GW.activeGroupH()).DisplayMesh
-	ss.CenterOfMass.Position = m.GetCenterOfMass()
+	m := &ss.SK.Group(ss.GW.activeGroupH()).DisplayMesh
+	ss.CenterOfMass.Position = m.CenterOfMass()
 	ss.CenterOfMass.Dirty = false
 }
 

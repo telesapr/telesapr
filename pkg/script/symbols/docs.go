@@ -8,7 +8,7 @@ import (
 
 // Doc is something a package declares, as help() shows it.
 type Doc struct {
-	// Decl is its declaration: "func (g Group) Bounds() (min, max Vec)".
+	// Decl is its declaration: "func (g Group) Bounds() (lo, hi Vec)".
 	Decl string `json:"decl"`
 	// Text is its comment, or the first sentence of it.
 	Text string `json:"text,omitempty"`

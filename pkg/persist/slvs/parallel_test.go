@@ -31,7 +31,7 @@ func generatedDump(t *testing.T, path, stl string, copies map[uint32]float64) []
 	}
 	sk := doc.Sketch
 	for h, n := range copies {
-		sk.GetGroup(core.HGroup{V: h}).ValA = n
+		sk.Group(core.HGroup{V: h}).ValA = n
 	}
 	sk.GenerateAllTyped(sketch.GenerateAll)
 
@@ -40,7 +40,7 @@ func generatedDump(t *testing.T, path, stl string, copies map[uint32]float64) []
 		fmt.Fprintf(&b, "%x %x %x ", math.Float64bits(v.X), math.Float64bits(v.Y), math.Float64bits(v.Z))
 	}
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		fmt.Fprintf(&b, "group %x failed=%v\n", hg.V, g.BooleanFailed)
 		for i := range g.RunningShell.Surface {
 			s := &g.RunningShell.Surface[i]

@@ -1,9 +1,10 @@
 package tlspr
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -165,19 +166,17 @@ func (d *decoder) file(f *File) {
 
 	// Lists are kept in handle order, as C++ IdLists are; groups are
 	// solved in their order.
-	sort.SliceStable(sk.Groups, func(i, j int) bool { return sk.Groups[i].H.V < sk.Groups[j].H.V })
+	slices.SortStableFunc(sk.Groups, func(a, b sketch.Group) int { return cmp.Compare(a.H.V, b.H.V) })
 	sk.GroupOrder = sk.GroupOrder[:0]
 	for i := range sk.Groups {
 		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
 	}
-	sort.SliceStable(sk.GroupOrder, func(i, j int) bool {
-		return sk.GetGroup(sk.GroupOrder[i]).Order < sk.GetGroup(sk.GroupOrder[j]).Order
-	})
-	sort.SliceStable(sk.Requests, func(i, j int) bool { return sk.Requests[i].H.V < sk.Requests[j].H.V })
-	sort.SliceStable(sk.Constraints, func(i, j int) bool { return sk.Constraints[i].H.V < sk.Constraints[j].H.V })
-	sort.SliceStable(sk.Styles, func(i, j int) bool { return sk.Styles[i].H.V < sk.Styles[j].H.V })
-	sort.SliceStable(sk.Params, func(i, j int) bool { return sk.Params[i].H.V < sk.Params[j].H.V })
-	sort.SliceStable(sk.Entities, func(i, j int) bool { return sk.Entities[i].H.V < sk.Entities[j].H.V })
+	slices.SortStableFunc(sk.GroupOrder, func(a, b core.HGroup) int { return cmp.Compare(sk.Group(a).Order, sk.Group(b).Order) })
+	slices.SortStableFunc(sk.Requests, func(a, b sketch.Request) int { return cmp.Compare(a.H.V, b.H.V) })
+	slices.SortStableFunc(sk.Constraints, func(a, b core.Constraint) int { return cmp.Compare(a.H.V, b.H.V) })
+	slices.SortStableFunc(sk.Styles, func(a, b core.Style) int { return cmp.Compare(a.H.V, b.H.V) })
+	slices.SortStableFunc(sk.Params, func(a, b core.Param) int { return cmp.Compare(a.H.V, b.H.V) })
+	slices.SortStableFunc(sk.Entities, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
 	d.lengths()
 	d.evaluate()
 }
@@ -496,7 +495,7 @@ func (d *decoder) evaluate() {
 		at := exprPlace{constraint: e.Constraint}
 		if e.Constraint.V == 0 {
 			at = exprPlace{group: e.Group, field: e.Field}
-			if g := sk.GetGroup(e.Group); g != nil && e.Field == "copies" {
+			if g := sk.Group(e.Group); g != nil && e.Field == "copies" {
 				// No copies is no group a user can make.
 				g.ValA = 1
 			}
@@ -529,7 +528,7 @@ func (d *decoder) quaternionField(n *Node) geom.Quaternion {
 	return geom.Quaternion{W: d.real(a[0]), X: d.real(a[1]), Y: d.real(a[2]), Z: d.real(a[3])}
 }
 
-func (d *decoder) color(args []Value) core.RgbaColor {
+func (d *decoder) color(args []Value) core.RGBA {
 	var c [4]uint8
 	for i := range c {
 		v := d.int(args[i])
@@ -538,10 +537,10 @@ func (d *decoder) color(args []Value) core.RgbaColor {
 		}
 		c[i] = uint8(v)
 	}
-	return core.RgbaColor{Red: c[0], Green: c[1], Blue: c[2], Alpha: c[3]}
+	return core.RGBA{Red: c[0], Green: c[1], Blue: c[2], Alpha: c[3]}
 }
 
-func (d *decoder) colorField(n *Node) core.RgbaColor { return d.color(d.fieldArgs(n, 4)) }
+func (d *decoder) colorField(n *Node) core.RGBA { return d.color(d.fieldArgs(n, 4)) }
 
 // enumValue reads a name of e; an unknown name is reported, and false.
 func enumValue[T comparable](d *decoder, e enum[T], v Value) (T, bool) {
@@ -920,7 +919,7 @@ func (d *decoder) mesh(n *Node) {
 			continue
 		}
 		a := d.fieldArgs(c, 14)
-		meta := srf.STriMeta{Face: srf.FaceID(d.handle(a[0])), RgbaColor: d.color(a[1:5])}
+		meta := srf.STriMeta{Face: srf.FaceID(d.handle(a[0])), RGBA: d.color(a[1:5])}
 		d.doc.Mesh.AddTriangle3(meta, d.vector(a[5:8]), d.vector(a[8:11]), d.vector(a[11:14]))
 	}
 }

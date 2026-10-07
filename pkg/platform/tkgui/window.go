@@ -114,15 +114,15 @@ func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window
 // Events returns the window's callbacks.
 func (w *Window) Events() *platform.WindowEvents { return &w.events }
 
-// GetPixelDensity is the screen's DPI.
-func (w *Window) GetPixelDensity() float64 { return screenunit.DPI() }
+// PixelDensity is the screen's DPI.
+func (w *Window) PixelDensity() float64 { return screenunit.DPI() }
 
-// GetDevicePixelRatio is 1: takigo draws in device pixels.
-func (w *Window) GetDevicePixelRatio() float64 { return 1 }
+// DevicePixelRatio is 1: takigo draws in device pixels.
+func (w *Window) DevicePixelRatio() float64 { return 1 }
 
-// GetDeviceFontScale is the DPI relative to 96.
-func (w *Window) GetDeviceFontScale() float64 {
-	return w.GetPixelDensity() / w.GetDevicePixelRatio() / 96.0
+// DeviceFontScale is the DPI relative to 96.
+func (w *Window) DeviceFontScale() float64 {
+	return w.PixelDensity() / w.DevicePixelRatio() / 96.0
 }
 
 // IsVisible reports whether the window is shown.
@@ -238,8 +238,8 @@ func (w *Window) SetMenuBar(mb platform.MenuBar) {
 	w.layout()
 }
 
-// GetContentSize is the drawing area's size.
-func (w *Window) GetContentSize() (float64, float64) {
+// ContentSize is the drawing area's size.
+func (w *Window) ContentSize() (float64, float64) {
 	win := w.canvas.Win
 	if win.Width <= 1 || win.Height <= 1 {
 		// Not laid out yet: the size it asks for, as GTK reports the

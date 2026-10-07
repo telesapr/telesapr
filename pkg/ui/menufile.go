@@ -187,9 +187,9 @@ func (ss *Application) AddToRecentList(filename string) {
 	ss.GW.PopulateRecentFiles()
 }
 
-// GetFilenameAndSave saves the sketch, asking for a file name for a new
-// sketch or for Save As (C++ SolveSpaceUI::GetFilenameAndSave).
-func (ss *Application) GetFilenameAndSave(saveAs bool) bool {
+// SaveToChosenFile saves the sketch, asking for a file name for a new
+// sketch or for Save As (C++ SolveSpaceUI::SaveToChosenFile).
+func (ss *Application) SaveToChosenFile(saveAs bool) bool {
 	newSaveFile := ss.SaveFile
 
 	if saveAs || newSaveFile == "" {
@@ -203,7 +203,7 @@ func (ss *Application) GetFilenameAndSave(saveAs bool) bool {
 			return false
 		}
 		dialog.FreezeChoices(ss.Settings, "Sketch")
-		newSaveFile = modelFileName(dialog.GetFilename())
+		newSaveFile = modelFileName(dialog.Filename())
 	}
 
 	if !ss.SaveToFile(newSaveFile) {
@@ -279,7 +279,7 @@ func (ss *Application) OkayToStartNewFile() bool {
 
 	switch dialog.RunModal() {
 	case platform.ResponseYes:
-		return ss.GetFilenameAndSave(false)
+		return ss.SaveToChosenFile(false)
 	case platform.ResponseNo:
 		ss.RemoveAutosave()
 		return true
@@ -319,7 +319,7 @@ func (ss *Application) locateMissingFile(name string, isImage, canCancel bool) (
 		fd.SuggestFilename(name)
 		if fd.RunModal() {
 			fd.FreezeChoices(ss.Settings, key)
-			return fd.GetFilename(), link.LocateYes
+			return fd.Filename(), link.LocateYes
 		}
 		if canCancel {
 			return "", link.LocateCancel
@@ -342,7 +342,7 @@ func (ss *Application) chooseLinkedImage() (string, bool) {
 		return "", false
 	}
 	dialog.FreezeChoices(ss.Settings, "LinkImage")
-	filename := dialog.GetFilename()
+	filename := dialog.Filename()
 	if !link.LoadLinkedImage(ss.SK, ss.SaveFile, filename) {
 		ss.Error("The image '%s' is corrupted.", filename)
 	}
@@ -379,14 +379,14 @@ func (ss *Application) MenuFile(id Command) {
 		dialog.ThawChoices(settings, "Sketch")
 		if dialog.RunModal() {
 			dialog.FreezeChoices(settings, "Sketch")
-			ss.Load(dialog.GetFilename())
+			ss.Load(dialog.Filename())
 		}
 
 	case CmdSave:
-		ss.GetFilenameAndSave(false)
+		ss.SaveToChosenFile(false)
 
 	case CmdSaveAs:
-		ss.GetFilenameAndSave(true)
+		ss.SaveToChosenFile(true)
 
 	case CmdExportImage, CmdExportView, CmdExportWireframe, CmdExportSection,
 		CmdExportMesh, CmdExportSurfaces, CmdImport:
@@ -422,7 +422,7 @@ func (ss *Application) menuExport(id Command) {
 			return "", false
 		}
 		dialog.FreezeChoices(settings, key)
-		return dialog.GetFilename(), true
+		return dialog.Filename(), true
 	}
 
 	switch id {
@@ -478,7 +478,7 @@ func (ss *Application) menuExport(id Command) {
 		}
 		dialog.FreezeChoices(settings, "Import")
 
-		importFile := dialog.GetFilename()
+		importFile := dialog.Filename()
 		switch {
 		case hasExtension(importFile, "dxf"):
 			ss.ImportDxf(importFile)

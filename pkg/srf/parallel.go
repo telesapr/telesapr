@@ -95,7 +95,7 @@ func (s *SShell) allPlanes() bool {
 // goroutines as there are, one when the mode is off), and whether that
 // takes switching the closest-point caches of their surfaces off.
 func booleanLoops(a, b *SShell) (atOnce, noCache bool) {
-	return true, !(a.allPlanes() && b.allPlanes())
+	return true, !a.allPlanes() || !b.allPlanes()
 }
 
 // setNoCache switches the closest-point caches of the shells' surfaces
@@ -198,7 +198,7 @@ func (k *curveSink) findExact(sb *SBezier) exactMatch {
 // add takes a marched curve.
 func (k *curveSink) add(sc SCurve) {
 	if !k.deferred {
-		k.shell.addAndAssignCurveId(sc)
+		k.shell.addAndAssignCurveID(sc)
 		return
 	}
 	k.entries = append(k.entries, sinkEntry{curve: sc, added: true})
@@ -209,7 +209,7 @@ func (k *curveSink) add(sc SCurve) {
 func (k *curveSink) putExact(sc *SCurve, ex exactCurve) {
 	if !k.deferred {
 		if sc != nil {
-			k.shell.addAndAssignCurveId(*sc)
+			k.shell.addAndAssignCurveID(*sc)
 		}
 		return
 	}
@@ -253,7 +253,7 @@ func (k *curveSink) commitTo(into *SShell, first int) {
 		}
 		if e.added {
 			at[j] = len(into.Curve)
-			into.addAndAssignCurveId(e.curve)
+			into.addAndAssignCurveID(e.curve)
 		}
 	}
 }

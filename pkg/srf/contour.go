@@ -67,7 +67,7 @@ func (c *SContour) SignedAreaProjdToNormal(n geom.Vector) float64 {
 	v := n.NormalDir(1)
 
 	area := 0.0
-	for i := 0; i < len(c.Points)-1; i++ {
+	for i := range len(c.Points) - 1 {
 		u0 := c.Points[i].P.Dot(u)
 		v0 := c.Points[i].P.Dot(v)
 		u1 := c.Points[i+1].P.Dot(u)
@@ -102,7 +102,7 @@ func (c *SContour) ContainsPointProjdToNormal(n, p geom.Vector) bool {
 
 	inside := false
 	ln := len(c.Points)
-	for i := 0; i < ln-1; i++ {
+	for i := range ln - 1 {
 		ua := c.Points[i].P.Dot(u)
 		va := c.Points[i].P.Dot(v)
 		// The curve needs to be exactly closed; approximation is death.
@@ -169,9 +169,11 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 			thetan += 2 * math.Pi
 		}
 
-		if math.Abs(thetan-thetap) < oneDegree {
+		switch {
+		case math.Abs(thetan-thetap) < oneDegree:
 			dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetap), Y: b.Y + r*libm.Cos(thetap)})
-		} else if thetan < thetap {
+
+		case thetan < thetap:
 			// This is an inside corner. We have two edges, Ep and En. Move
 			// out from their intersection by radius, normal to En, and
 			// then draw a line parallel to En. Move out from their
@@ -193,7 +195,8 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 			intersectionOfLines(px0, py0, pdx, pdy, nx0, ny0, ndx, ndy, &x, &y)
 
 			dest.AddPoint(geom.Vector{X: x, Y: y})
-		} else {
+
+		default:
 			if math.Abs(thetap-thetan) < sixDegrees {
 				dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetap), Y: b.Y + r*libm.Cos(thetap)})
 				dest.AddPoint(geom.Vector{X: b.X - r*libm.Sin(thetan), Y: b.Y + r*libm.Cos(thetan)})
@@ -262,7 +265,7 @@ func (c *SContour) FindPointWithMinX() {
 // contour repeats its first point at the end, so it is closed (C++
 // SContour::MakeEdgesInto).
 func (c *SContour) MakeEdgesInto(el *SEdgeList) {
-	for i := 0; i < len(c.Points)-1; i++ {
+	for i := range len(c.Points) - 1 {
 		el.AddEdge(c.Points[i].P, c.Points[i+1].P, 0, 0, 0)
 	}
 }

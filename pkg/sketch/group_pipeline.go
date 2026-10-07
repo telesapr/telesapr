@@ -129,7 +129,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	case GroupTranslate, GroupRotate:
 		// A step and repeat gets merged against the group's previous group,
 		// not our own previous group.
-		srcg = sk.GetGroup(g.OpA)
+		srcg = sk.Group(g.OpA)
 
 		if !srcg.Suppress {
 			if !g.IsForcedToMesh(sk) {
@@ -142,7 +142,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 			}
 		}
 	case GroupMirror:
-		srcg = sk.GetGroup(g.OpA)
+		srcg = sk.Group(g.OpA)
 		if !srcg.Suppress && g.checkMirror(sk) {
 			if !g.IsForcedToMesh(sk) {
 				src := &srcg.ThisShell
@@ -163,7 +163,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 			}
 		}
 	case GroupPathPattern:
-		srcg = sk.GetGroup(g.OpA)
+		srcg = sk.Group(g.OpA)
 		switch {
 		case g.IsForcedToMesh(sk):
 			g.setProblem(nil, "a pattern along a path is made of solids, not of triangle meshes")
@@ -341,17 +341,23 @@ func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat Combine
 			a := 2 * i
 			scratch[a/2].Clear()
 			// combine a pair of shells
-			if a == 0 && skipFirst { // if the first was skipped just copy the 2nd
+			switch {
+			case a == 0 && skipFirst: // if the first was skipped just copy the 2nd
+				// if the first was skipped just copy the 2nd
 				scratch[a/2].MakeFromCopyOf(&soFar[a+1])
 				soFar[a+1].Clear()
-			} else if a == n-1 { // for an odd number just copy the last one
+
+			case a == n-1: // for an odd number just copy the last one
+				// for an odd number just copy the last one
 				scratch[a/2].MakeFromCopyOf(&soFar[a])
 				soFar[a].Clear()
-			} else if forWhat == CombineAssemble {
+
+			case forWhat == CombineAssemble:
 				scratch[a/2].MakeFromAssemblyOf(&soFar[a], &soFar[a+1])
 				soFar[a].Clear()
 				soFar[a+1].Clear()
-			} else {
+
+			default:
 				scratch[a/2].MakeFromUnionOf(&soFar[a], &soFar[a+1])
 				soFar[a].Clear()
 				soFar[a+1].Clear()
@@ -387,17 +393,21 @@ func (g *Group) generateForStepAndRepeatMesh(sk *Sketch, steps, outs *srf.SMesh,
 		par.For((n+1)/2, func(i int) {
 			a := 2 * i
 			scratch[a/2].Clear()
-			if a == 0 && skipFirst {
+			switch {
+			case a == 0 && skipFirst:
 				scratch[a/2].MakeFromCopyOf(&soFar[a+1])
 				soFar[a+1].Clear()
-			} else if a == n-1 {
+
+			case a == n-1:
 				scratch[a/2].MakeFromCopyOf(&soFar[a])
 				soFar[a].Clear()
-			} else if forWhat == CombineAssemble {
+
+			case forWhat == CombineAssemble:
 				scratch[a/2].MakeFromAssemblyOf(&soFar[a], &soFar[a+1])
 				soFar[a].Clear()
 				soFar[a+1].Clear()
-			} else {
+
+			default:
 				scratch[a/2].MakeFromUnionOf(&soFar[a], &soFar[a+1])
 				soFar[a].Clear()
 				soFar[a+1].Clear()
@@ -454,7 +464,7 @@ func (sg shellGroup) Remap(in core.HEntity, copyNumber int) core.HEntity {
 }
 
 func (sg shellGroup) EntityExists(h core.HEntity) bool {
-	return sg.sk.GetEntity(h) != nil
+	return sg.sk.Entity(h) != nil
 }
 
 // haveSource reports whether the source section of an extrusion or
@@ -462,7 +472,7 @@ func (sg shellGroup) EntityExists(h core.HEntity) bool {
 // GenerateShellAndMesh's haveSrc).
 func (g *Group) haveSource(sk *Sketch) bool {
 	if g.Type == GroupExtrude || g.Type == GroupLathe || g.Type == GroupRevolve {
-		return sk.GetGroup(g.OpA).PolyError.How == int(core.PolyGood)
+		return sk.Group(g.OpA).PolyError.How == int(core.PolyGood)
 	}
 	return true
 }
@@ -477,7 +487,7 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 	if !g.haveSource(sk) {
 		return
 	}
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	translate := geom.Vector{
 		X: paramFloat(sk, g.H.Param(0)),
 		Y: paramFloat(sk, g.H.Param(1)),
@@ -539,8 +549,8 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 					continue
 				}
 
-				a := sk.MustGetEntity(e.Point[0]).PointGetNum(sk)
-				b := sk.MustGetEntity(e.Point[1]).PointGetNum(sk)
+				a := sk.MustEntity(e.Point[0]).PointGetNum(sk)
+				b := sk.MustEntity(e.Point[1]).PointGetNum(sk)
 				a = a.Plus(ttop)
 				b = b.Plus(ttop)
 				// Could get taken backwards, so check all cases.
@@ -560,8 +570,8 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 // axis of a LATHE/REVOLVE/HELIX group, from its predef origin point
 // and axis vector entities.
 func (g *Group) revolveAxis(sk *Sketch) (pt, axis geom.Vector) {
-	pt = sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
-	axis = sk.MustGetEntity(g.Predef.EntityB).VectorGetNum(sk)
+	pt = sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+	axis = sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
 	return pt, axis.WithMagnitude(1)
 }
 
@@ -575,7 +585,7 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 	if !g.haveSource(sk) {
 		return
 	}
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	pt, axis := g.revolveAxis(sk)
 	sg := shellGroup{g: g, sk: sk}
 
@@ -612,7 +622,7 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 	if !g.haveSource(sk) {
 		return
 	}
-	src := sk.GetGroup(g.OpA)
+	src := sk.Group(g.OpA)
 	pt, axis := g.revolveAxis(sk)
 
 	anglef := paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
@@ -780,7 +790,7 @@ func (g *Group) IsForcedToMeshBySource(sk *Sketch) bool {
 	if g.IsCopyGroup() {
 		// A step and repeat gets merged against the group's previous group,
 		// not our own previous group.
-		srcg = sk.GetGroup(g.OpA)
+		srcg = sk.Group(g.OpA)
 		if srcg.ForceToMesh {
 			return true
 		}
@@ -823,18 +833,18 @@ func (g *Group) SetRemapEntry(input core.HEntity, copyNumber int, id core.Entity
 // ExtrusionForceVectorTo sets the extrusion vector's parameters (C++
 // Group::ExtrusionForceVectorTo).
 func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector) {
-	sk.MustGetParam(g.H.Param(0)).Val = v.X
-	sk.MustGetParam(g.H.Param(1)).Val = v.Y
-	sk.MustGetParam(g.H.Param(2)).Val = v.Z
+	sk.MustParam(g.H.Param(0)).Val = v.X
+	sk.MustParam(g.H.Param(1)).Val = v.Y
+	sk.MustParam(g.H.Param(2)).Val = v.Z
 }
 
 // ExtrusionGetVector returns the extrusion vector, from its parameters
 // (C++ Group::ExtrusionGetVector).
 func (g *Group) ExtrusionGetVector(sk *Sketch) geom.Vector {
 	return geom.Vector{
-		X: sk.MustGetParam(g.H.Param(0)).Val,
-		Y: sk.MustGetParam(g.H.Param(1)).Val,
-		Z: sk.MustGetParam(g.H.Param(2)).Val,
+		X: sk.MustParam(g.H.Param(0)).Val,
+		Y: sk.MustParam(g.H.Param(1)).Val,
+		Z: sk.MustParam(g.H.Param(2)).Val,
 	}
 }
 
@@ -848,7 +858,7 @@ func (g *Group) TransformImportedBy(sk *Sketch, t geom.Vector, q geom.Quaternion
 
 	tx, ty, tz := g.H.Param(0), g.H.Param(1), g.H.Param(2)
 	qw, qx, qy, qz := g.H.Param(3), g.H.Param(4), g.H.Param(5), g.H.Param(6)
-	val := func(h core.HParam) float64 { return sk.MustGetParam(h).Val }
+	val := func(h core.HParam) float64 { return sk.MustParam(h).Val }
 
 	qg := geom.NewQuaternion(val(qw), val(qx), val(qy), val(qz))
 	qg = q.Times(qg)
@@ -856,14 +866,14 @@ func (g *Group) TransformImportedBy(sk *Sketch, t geom.Vector, q geom.Quaternion
 	tg := geom.Vector{X: val(tx), Y: val(ty), Z: val(tz)}
 	tg = tg.Plus(t)
 
-	sk.MustGetParam(tx).Val = tg.X
-	sk.MustGetParam(ty).Val = tg.Y
-	sk.MustGetParam(tz).Val = tg.Z
+	sk.MustParam(tx).Val = tg.X
+	sk.MustParam(ty).Val = tg.Y
+	sk.MustParam(tz).Val = tg.Z
 
-	sk.MustGetParam(qw).Val = qg.W
-	sk.MustGetParam(qx).Val = qg.X
-	sk.MustGetParam(qy).Val = qg.Y
-	sk.MustGetParam(qz).Val = qg.Z
+	sk.MustParam(qw).Val = qg.W
+	sk.MustParam(qx).Val = qg.X
+	sk.MustParam(qy).Val = qg.Y
+	sk.MustParam(qz).Val = qg.Z
 }
 
 // paramFloat returns the float value of a param by handle, or 0 if missing.

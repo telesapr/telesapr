@@ -33,7 +33,7 @@ func TestSTriangleContainsPoint(t *testing.T) {
 func TestSMeshGetBounding(t *testing.T) {
 	m := &SMesh{}
 	m.AddTriangle3(STriMeta{}, geom.Vector{}, geom.Vector{X: 2}, geom.Vector{Y: 1, Z: 3})
-	vmax, vmin := m.GetBounding()
+	vmax, vmin := m.Bounding()
 	if vmin.X != 0 || vmax.X != 2 || vmax.Z != 3 {
 		t.Fatalf("bbox = %v..%v", vmin, vmax)
 	}

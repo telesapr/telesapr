@@ -405,7 +405,7 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	// of a smaller radius, the chain stops, and the corner's check
 	// gives that reason (roadmap 15.7).
 	stopped := map[int]error{}
-	for i := 0; i < len(edges); i++ {
+	for i := 0; i < len(edges); i++ { //nolint:intrange // edges grows while it is walked
 		for _, v := range edges[i].v {
 			for _, x := range t.Vertices[v].Edges {
 				if _, ok := byEdge[x]; ok {
@@ -629,7 +629,7 @@ func (t *Topology) planeUnder(f int, loops [][]srf.SBezier) srf.SSurface {
 	grown := false
 	for _, loop := range loops {
 		for _, sb := range loop {
-			for k := 0; k <= 8; k++ {
+			for k := range 9 {
 				q := sb.PointAt(float64(k) / 8)
 				d := q.Minus(o)
 				a := (d.Dot(eu)*vv - d.Dot(ev)*uv) / det
@@ -980,8 +980,8 @@ func (t *Topology) generator(fe *filletEdge, f int) ([2]float64, bool) {
 		return none, false
 	}
 	// The surface itself, over its whole patch, and the face's edges.
-	for i := 0; i <= 4; i++ {
-		for j := 0; j <= 4; j++ {
+	for i := range 5 {
+		for j := range 5 {
 			pts = append(pts, at(s.PointAt(float64(i)/4, float64(j)/4)))
 		}
 	}

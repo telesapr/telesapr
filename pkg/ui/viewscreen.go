@@ -69,7 +69,7 @@ func (tw *TextWindow) ScreenChangeViewScale(link int, v uint32) {
 }
 
 func (tw *TextWindow) ScreenChangeViewToFullScale(link int, v uint32) {
-	tw.ss.GW.view.Scale = tw.ss.GW.window.GetPixelDensity() / 25.4
+	tw.ss.GW.view.Scale = tw.ss.GW.window.PixelDensity() / 25.4
 }
 
 func (tw *TextWindow) ScreenChangeViewOrigin(link int, v uint32) {

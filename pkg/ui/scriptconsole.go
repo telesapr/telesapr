@@ -287,7 +287,7 @@ func (ss *Application) MenuScript(id Command) {
 		}
 		dialog.FreezeChoices(ss.Settings, "Script")
 		c.SetVisible(true)
-		c.RunFile(dialog.GetFilename())
+		c.RunFile(dialog.Filename())
 
 	case CmdScriptStop:
 		c.Stop()

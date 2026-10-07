@@ -52,8 +52,8 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 			g.Predef.EntityB = gs.entity[0]
 			g.Predef.EntityC = gs.entity[1]
 
-			ut := sk.GetEntity(g.Predef.EntityB).VectorGetNum(sk)
-			vt := sk.GetEntity(g.Predef.EntityC).VectorGetNum(sk)
+			ut := sk.Entity(g.Predef.EntityB).VectorGetNum(sk)
+			vt := sk.Entity(g.Predef.EntityC).VectorGetNum(sk)
 			ut = ut.WithMagnitude(1)
 			vt = vt.WithMagnitude(1)
 
@@ -69,13 +69,13 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 			}
 		case gs.workplanes == 1 && gs.n == 1:
 			if gs.entity[0].IsFromRequest() {
-				wrkpl := sk.GetEntity(gs.entity[0])
-				normal := sk.GetEntity(wrkpl.Normal)
+				wrkpl := sk.Entity(gs.entity[0])
+				normal := sk.Entity(wrkpl.Normal)
 				g.Subtype = sketch.GroupWorkplaneByPointOrtho
 				g.Predef.Origin = wrkpl.Point[0]
 				g.Predef.Q = normal.NormalGetNum(sk)
 			} else {
-				wrkplg := sk.GetGroup(gs.entity[0].Group())
+				wrkplg := sk.Group(gs.entity[0].Group())
 				g.Subtype = wrkplg.Subtype
 				g.Predef.Origin = wrkplg.Predef.Origin
 				switch wrkplg.Subtype {
@@ -97,7 +97,7 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 		case gs.anyNormals == 1 && gs.points == 1 && gs.n == 2:
 			g.Subtype = sketch.GroupWorkplaneByPointNormal
 			g.Predef.EntityB = gs.anyNormal[0]
-			g.Predef.Q = sk.GetEntity(gs.anyNormal[0]).NormalGetNum(sk)
+			g.Predef.Q = sk.Entity(gs.anyNormal[0]).NormalGetNum(sk)
 			g.Predef.Origin = gs.point[0]
 		default:
 			ss.Error("Bad selection for new sketch in workplane. This " +
@@ -135,7 +135,7 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 			g.Predef.Origin = gs.point[0]
 			g.Predef.EntityB = gs.vector[0]
 		case gs.lineSegments == 1 && gs.n == 1:
-			g.Predef.Origin = sk.GetEntity(gs.entity[0]).Point[0]
+			g.Predef.Origin = sk.Entity(gs.entity[0]).Point[0]
 			g.Predef.EntityB = gs.entity[0]
 			// since a line segment is a vector
 		default:
@@ -168,7 +168,7 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 		switch {
 		case gs.points == 1 && gs.n == 1 && gw.LockedInWorkplane():
 			g.Predef.Origin = gs.point[0]
-			w := sk.GetEntity(gw.ActiveWorkplane())
+			w := sk.Entity(gw.ActiveWorkplane())
 			g.Predef.EntityB = w.NormalEntity(sk).H
 			g.ActiveWorkplane = w.H
 		case gs.points == 1 && gs.vectors == 1 && gs.n == 2:
@@ -271,7 +271,7 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 		// history from the active one, which is the first or the last.
 		others := map[core.HGroup]bool{}
 		for _, he := range append(append([]core.HEntity(nil), gs.entity...), gs.point...) {
-			if e := sk.GetEntity(he); e != nil && e.Group != sk.Active {
+			if e := sk.Entity(he); e != nil && e.Group != sk.Active {
 				others[e.Group] = true
 			}
 		}
@@ -344,7 +344,7 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 				return
 			}
 			dialog.FreezeChoices(ss.Settings, "LinkSketch")
-			g.LinkFile = dialog.GetFilename()
+			g.LinkFile = dialog.Filename()
 		}
 		// Assign the default name of the group based on the name of the
 		// linked file.
@@ -374,7 +374,7 @@ func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HG
 	// The undo state is remembered before the groups are reordered, but
 	// the colour is taken first, as in C++.
 	if g.IsMeshGroup() && len(sk.GroupOrder) > 0 {
-		if running := sk.GetRunningMeshGroupFor(gw.activeGroupH()); running != nil {
+		if running := sk.RunningMeshGroupFor(gw.activeGroupH()); running != nil {
 			g.Color = running.Color
 		}
 	}
@@ -384,7 +384,7 @@ func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HG
 
 	sk.BumpOrderAfterActive(&g)
 	hg := sk.AddGroup(g)
-	gg := sk.GetGroup(hg)
+	gg := sk.Group(hg)
 
 	if gg.Type == sketch.GroupLinked {
 		ss.reloadAllLinked()
@@ -392,7 +392,7 @@ func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HG
 	gg.Clean = false
 	gw.setActiveGroup(gg.H)
 	ss.GenerateAll(sketch.GenerateAll)
-	gg = sk.GetGroup(hg)
+	gg = sk.Group(hg)
 	if gg.Type == sketch.GroupDrawingWorkplane {
 		// Can't set the active workplane for this one until after we've
 		// regenerated, because the workplane doesn't exist until then.

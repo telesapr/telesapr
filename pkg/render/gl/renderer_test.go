@@ -21,11 +21,11 @@ import (
 )
 
 var (
-	red   = core.NewRgbaColor(220, 40, 40, 255)
-	green = core.NewRgbaColor(40, 200, 40, 255)
-	blue  = core.NewRgbaColor(40, 80, 230, 255)
-	white = core.NewRgbaColor(255, 255, 255, 255)
-	black = core.NewRgbaColor(0, 0, 0, 255)
+	red   = core.NewRGBA(220, 40, 40, 255)
+	green = core.NewRGBA(40, 200, 40, 255)
+	blue  = core.NewRGBA(40, 80, 230, 255)
+	white = core.NewRGBA(255, 255, 255, 255)
+	black = core.NewRGBA(0, 0, 0, 255)
 )
 
 const width, height = 240, 180
@@ -75,7 +75,7 @@ func lighting() render.Lighting {
 }
 
 // box is an axis-aligned box mesh, its faces outward and numbered.
-func box(lo, hi geom.Vector, color core.RgbaColor) *srf.SMesh {
+func box(lo, hi geom.Vector, color core.RGBA) *srf.SMesh {
 	var m srf.SMesh
 	v := func(x, y, z int) geom.Vector {
 		p := lo
@@ -99,7 +99,7 @@ func box(lo, hi geom.Vector, color core.RgbaColor) *srf.SMesh {
 		{{1, 0, 0}, {1, 1, 0}, {1, 1, 1}, {1, 0, 1}},
 	}
 	for i, q := range quads {
-		meta := srf.STriMeta{Face: srf.FaceID(i + 1), RgbaColor: color}
+		meta := srf.STriMeta{Face: srf.FaceID(i + 1), RGBA: color}
 		a, b, c, d := v(q[0][0], q[0][1], q[0][2]), v(q[1][0], q[1][1], q[1][2]),
 			v(q[2][0], q[2][1], q[2][2]), v(q[3][0], q[3][1], q[3][2])
 		m.AddTriangle3(meta, a, b, c)
@@ -114,18 +114,18 @@ func scene(c render.ViewportCanvas) {
 	c.SetCamera(isoCamera())
 	c.StartFrame()
 
-	front := c.GetFill(render.Fill{Layer: render.LayerNormal, Color: core.RgbaColor{}})
+	front := c.InternFill(render.Fill{Layer: render.LayerNormal, Color: core.RGBA{}})
 	// Cut by a plane, as the section view does: the near top corner of
 	// the box is taken away, so its inside shows.
 	keep := srf.HalfSpace{N: geom.Vector{X: 1, Y: 1, Z: 1}.WithMagnitude(1), D: 6}
 	c.SetClipPlane(&keep)
-	back := c.GetFill(render.Fill{Layer: render.LayerNormal, Color: red})
+	back := c.InternFill(render.Fill{Layer: render.LayerNormal, Color: red})
 	c.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, blue), front, back)
 	c.SetClipPlane(nil)
 
-	thin := c.GetStroke(render.Stroke{Layer: render.LayerNormal, ZIndex: 1, Color: white, Width: 1, Unit: render.UnitPX})
-	fat := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 6, Unit: render.UnitPX})
-	dashed := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: green, Width: 2, Unit: render.UnitPX,
+	thin := c.InternStroke(render.Stroke{Layer: render.LayerNormal, ZIndex: 1, Color: white, Width: 1, Unit: render.UnitPX})
+	fat := c.InternStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 6, Unit: render.UnitPX})
+	dashed := c.InternStroke(render.Stroke{Layer: render.LayerFront, Color: green, Width: 2, Unit: render.UnitPX,
 		StipplePattern: core.StippleDash, StippleScale: 4})
 	c.DrawLine(geom.Vector{X: -8, Y: -8, Z: 8}, geom.Vector{X: 8, Y: -8, Z: 8}, thin)
 	c.DrawLine(geom.Vector{X: -14, Y: 12}, geom.Vector{X: 14, Y: 12}, fat)
@@ -142,16 +142,16 @@ func scene(c render.ViewportCanvas) {
 	}
 	sq(4)
 	sq(2)
-	poly := c.GetFill(render.Fill{Layer: render.LayerFront, Color: green})
+	poly := c.InternFill(render.Fill{Layer: render.LayerFront, Color: green})
 	c.DrawPolygon(&p, poly)
-	checker := c.GetFill(render.Fill{Layer: render.LayerFront, Color: red, Pattern: render.FillCheckeredA})
+	checker := c.InternFill(render.Fill{Layer: render.LayerFront, Color: red, Pattern: render.FillCheckeredA})
 	c.DrawQuad(geom.Vector{X: -16, Y: 6, Z: 10}, geom.Vector{X: -10, Y: 6, Z: 10},
 		geom.Vector{X: -10, Y: 12, Z: 10}, geom.Vector{X: -16, Y: 12, Z: 10}, checker)
 	c.FlushFrame()
 
-	ui := render.CameraForPixels(*c.GetCamera())
+	ui := render.CameraForPixels(*c.Camera())
 	c.SetCamera(ui)
-	u := &render.UiCanvas{Canvas: c}
+	u := &render.UICanvas{Canvas: c}
 	u.DrawRect(10, 60, 10, 30, white.WithAlpha(128), white, 0)
 	u.DrawBitmapText("GL", 20, 30, red, 0)
 	c.FlushFrame()
@@ -202,41 +202,41 @@ func scene2(c render.ViewportCanvas) {
 	c.StartFrame()
 
 	m := box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, green)
-	c.DrawMesh(m, c.GetFill(render.Fill{Color: core.RgbaColor{}}), 0)
-	selected := c.GetFill(render.Fill{ZIndex: 1, Color: blue, Pattern: render.FillCheckeredB})
+	c.DrawMesh(m, c.InternFill(render.Fill{Color: core.RGBA{}}), 0)
+	selected := c.InternFill(render.Fill{ZIndex: 1, Color: blue, Pattern: render.FillCheckeredB})
 	c.DrawFaces(m, []uint32{2, 6}, selected)
 
 	var ol srf.SOutlineList
 	m.MakeOutlinesInto(&ol, srf.EdgeSharp)
-	edge := c.GetStroke(render.Stroke{ZIndex: 2, Color: white, Width: 1.5, Unit: render.UnitPX})
+	edge := c.InternStroke(render.Stroke{ZIndex: 2, Color: white, Width: 1.5, Unit: render.UnitPX})
 	for _, as := range []render.DrawOutlinesAs{render.EmphasizedAndContour, render.EmphasizedWithoutContour, render.ContourOnly} {
 		c.DrawOutlines(&ol, edge, as)
 	}
-	hidden := c.GetStroke(render.Stroke{Layer: render.LayerOccluded, Color: red, Width: 1, Unit: render.UnitPX,
+	hidden := c.InternStroke(render.Stroke{Layer: render.LayerOccluded, Color: red, Width: 1, Unit: render.UnitPX,
 		StipplePattern: core.StippleDot, StippleScale: 3})
 	c.DrawOutlines(&ol, hidden, render.EmphasizedAndContour)
 
 	var el srf.SEdgeList
 	el.AddEdge(geom.Vector{X: -16, Y: -16}, geom.Vector{X: -16, Y: 16}, 0, 0, 0)
 	el.AddEdge(geom.Vector{X: -16, Y: 16}, geom.Vector{X: 16, Y: 16}, 0, 0, 0)
-	dots := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 6, Unit: render.UnitPX,
+	dots := c.InternStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 6, Unit: render.UnitPX,
 		StipplePattern: core.StippleDashDot, StippleScale: 5})
 	c.DrawEdges(&el, dots)
 	if c.DrawBeziers(&srf.SBezierList{}, dots) {
 		panic("the renderer says it drew curves")
 	}
 
-	text := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: white, Width: 1, Unit: render.UnitPX})
+	text := c.InternStroke(render.Stroke{Layer: render.LayerFront, Color: white, Width: 1, Unit: render.UnitPX})
 	c.DrawVectorText("section", 3, geom.Vector{X: -14, Y: -14, Z: 12}, geom.Vector{X: 1}, geom.Vector{Y: 1}, text)
-	point := c.GetStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 7, Unit: render.UnitPX})
+	point := c.InternStroke(render.Stroke{Layer: render.LayerFront, Color: red, Width: 7, Unit: render.UnitPX})
 	c.DrawPoint(geom.Vector{X: 14, Y: -14, Z: 12}, point)
 
 	// Depth only: it hides the line behind it but shows nothing.
-	depth := c.GetFill(render.Fill{Layer: render.LayerDepthOnly, Color: white})
+	depth := c.InternFill(render.Fill{Layer: render.LayerDepthOnly, Color: white})
 	c.DrawQuad(geom.Vector{X: 10, Y: 6, Z: 20}, geom.Vector{X: 16, Y: 6, Z: 20},
 		geom.Vector{X: 16, Y: 12, Z: 20}, geom.Vector{X: 10, Y: 12, Z: 20}, depth)
 	c.DrawLine(geom.Vector{X: 8, Y: 9, Z: 15}, geom.Vector{X: 18, Y: 9, Z: 15}, edge)
-	back := c.GetFill(render.Fill{Layer: render.LayerBack, Color: core.NewRgbaColor(50, 50, 50, 255)})
+	back := c.InternFill(render.Fill{Layer: render.LayerBack, Color: core.NewRGBA(50, 50, 50, 255)})
 	c.DrawQuad(geom.Vector{X: -20, Y: -20}, geom.Vector{X: -20, Y: -12},
 		geom.Vector{X: -12, Y: -12}, geom.Vector{X: -12, Y: -20}, back)
 	c.FlushFrame()
@@ -277,7 +277,7 @@ func TestFaceColour(t *testing.T) {
 	c.ProjRight, c.ProjUp = geom.Vector{X: 1}, geom.Vector{Y: 1}
 	g.SetCamera(c)
 	g.StartFrame()
-	hcf := g.GetFill(render.Fill{Color: core.RgbaColor{}})
+	hcf := g.InternFill(render.Fill{Color: core.RGBA{}})
 	g.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, red), hcf, 0)
 	g.FinishFrame()
 	img := g.ReadFrame()
@@ -289,7 +289,7 @@ func TestFaceColour(t *testing.T) {
 	if bg := img.RGBAAt(2, 2); bg.R != 0 || bg.G != 0 || bg.B != 0 || bg.A != 255 {
 		t.Errorf("corner pixel %v, want the opaque background", bg)
 	}
-	if v, r, ver := g.GetIdent(); v == "" || r == "" || ver == "" {
+	if v, r, ver := g.Ident(); v == "" || r == "" || ver == "" {
 		t.Errorf("ident %q %q %q", v, r, ver)
 	}
 }
@@ -300,13 +300,13 @@ func TestInvalidatePixmap(t *testing.T) {
 	g.SetLighting(lighting())
 	g.SetCamera(render.CameraForPixels(isoCamera()))
 	pm := res.NewPixmap(res.FormatRGBA, 4, 4)
-	set := func(c core.RgbaColor) {
+	set := func(c core.RGBA) {
 		for i := 0; i+3 < len(pm.Data); i += 4 {
 			pm.Data[i], pm.Data[i+1], pm.Data[i+2], pm.Data[i+3] = c.Red, c.Green, c.Blue, 255
 		}
 	}
-	u := &render.UiCanvas{Canvas: g}
-	for _, c := range []core.RgbaColor{red, green} {
+	u := &render.UICanvas{Canvas: g}
+	for _, c := range []core.RGBA{red, green} {
 		set(c)
 		g.InvalidatePixmap(pm)
 		g.StartFrame()
@@ -332,7 +332,7 @@ func shadedScene(c render.ViewportCanvas) {
 		})
 	}
 	c.StartFrame()
-	front := c.GetFill(render.Fill{Color: core.RgbaColor{}})
+	front := c.InternFill(render.Fill{Color: core.RGBA{}})
 	c.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, green), front, 0)
 	c.FinishFrame()
 }
@@ -358,7 +358,7 @@ func TestShadedMatchesSoftware(t *testing.T) {
 	plain.SetCamera(isoCamera())
 	plain.StartFrame()
 	plain.DrawMesh(box(geom.Vector{X: -8, Y: -8, Z: -8}, geom.Vector{X: 8, Y: 8, Z: 8}, green),
-		plain.GetFill(render.Fill{Color: core.RgbaColor{}}), 0)
+		plain.InternFill(render.Fill{Color: core.RGBA{}}), 0)
 	plain.FinishFrame()
 	if n := diff(want, plain.ReadFrame(), 8); n == 0 {
 		t.Error("shaded and fixed-function lighting are the same")

@@ -2,10 +2,11 @@ package ttf
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/binary"
 	"errors"
 	"io"
-	"sort"
+	"slices"
 
 	"github.com/andybalholm/brotli"
 )
@@ -306,26 +307,32 @@ func storePoints(points []woff2Point, nContours, instructionLen uint16, haveOver
 		if i == 0 && haveOverlap {
 			flag |= glyfOverlapSimple
 		}
-		if dx == 0 {
+		switch {
+		case dx == 0:
 			flag |= glyfThisXIsSame
-		} else if dx > -256 && dx < 256 {
+
+		case dx > -256 && dx < 256:
 			flag |= glyfXShort
 			if dx > 0 {
 				flag |= glyfThisXIsSame
 			}
 			xBytes++
-		} else {
+
+		default:
 			xBytes += 2
 		}
-		if dy == 0 {
+		switch {
+		case dy == 0:
 			flag |= glyfThisYIsSame
-		} else if dy > -256 && dy < 256 {
+
+		case dy > -256 && dy < 256:
 			flag |= glyfYShort
 			if dy > 0 {
 				flag |= glyfThisYIsSame
 			}
 			yBytes++
-		} else {
+
+		default:
 			yBytes += 2
 		}
 
@@ -369,28 +376,34 @@ func storePoints(points []woff2Point, nContours, instructionLen uint16, haveOver
 	for _, point := range points {
 		dx := point.x - lastX
 		dy := point.y - lastY
-		if dx == 0 {
-		} else if dx > -256 && dx < 256 {
+		switch {
+		case dx == 0:
+		case dx > -256 && dx < 256:
+
 			if dx < 0 {
 				dst[xOffset] = byte(-dx)
 			} else {
 				dst[xOffset] = byte(dx)
 			}
 			xOffset++
-		} else {
+
+		default:
 			putShort(dst[xOffset:], dx)
 			xOffset += 2
 		}
 		lastX += dx
-		if dy == 0 {
-		} else if dy > -256 && dy < 256 {
+		switch {
+		case dy == 0:
+		case dy > -256 && dy < 256:
+
 			if dy < 0 {
 				dst[yOffset] = byte(-dy)
 			} else {
 				dst[yOffset] = byte(dy)
 			}
 			yOffset++
-		} else {
+
+		default:
 			putShort(dst[yOffset:], dy)
 			yOffset += 2
 		}
@@ -437,11 +450,14 @@ func compositeGlyphSize(s *cffStream, offset uint64) (uint64, bool, error) {
 		} else {
 			argSize += 2
 		}
-		if flags&flagWeHaveAScale != 0 {
+		switch {
+		case flags&flagWeHaveAScale != 0:
 			argSize += 2
-		} else if flags&flagWeHaveAnXAndYScale != 0 {
+
+		case flags&flagWeHaveAnXAndYScale != 0:
 			argSize += 4
-		} else if flags&flagWeHaveATwoByTwo != 0 {
+
+		case flags&flagWeHaveATwoByTwo != 0:
 			argSize += 8
 		}
 		if err := s.skip(argSize); err != nil {
@@ -525,7 +541,7 @@ func reconstructGlyf(s *cffStream, glyfChecksum, locaChecksum *uint64, w *sfntBu
 	destOffset := *outOffset
 	base := s.data
 
-	for i := uint64(0); i < uint64(numGlyphs); i++ {
+	for i := range uint64(numGlyphs) {
 		glyphSize := uint64(0)
 		var xMin uint16
 
@@ -547,7 +563,8 @@ func reconstructGlyf(s *cffStream, glyfChecksum, locaChecksum *uint64, w *sfntBu
 		}
 		substreams[nContourStream].offset += 2
 
-		if nContours == 0xffff {
+		switch {
+		case nContours == 0xffff:
 			// a composite glyph
 			if !haveBBox {
 				return errInvalidTable
@@ -615,7 +632,8 @@ func reconstructGlyf(s *cffStream, glyfChecksum, locaChecksum *uint64, w *sfntBu
 				substreams[instructionStream].offset += uint64(instructionSize)
 				glyphSize += uint64(instructionSize)
 			}
-		} else if nContours > 0 {
+
+		case nContours > 0:
 			// a simple glyph
 			haveOverlap := false
 			if overlapBitmapOffset != 0 {
@@ -732,7 +750,8 @@ func reconstructGlyf(s *cffStream, glyfChecksum, locaChecksum *uint64, w *sfntBu
 				glyphBuf); err != nil {
 				return errInvalidTable
 			}
-		} else if haveBBox {
+
+		case haveBBox:
 			// an empty glyph must not have a bbox
 			return errInvalidTable
 		}
@@ -863,7 +882,7 @@ func reconstructHmtx(s *cffStream, numGlyphs, numHMetrics uint16, xMins []int16,
 			return errInvalidTable
 		}
 	}
-	for i := 0; i < int(numHMetrics); i++ {
+	for i := range numHMetrics {
 		if hasProportionalLSBs {
 			v, err := s.readU16()
 			if err != nil {
@@ -886,7 +905,7 @@ func reconstructHmtx(s *cffStream, numGlyphs, numHMetrics uint16, xMins []int16,
 		}
 	}
 	table := make([]byte, 0, 2*int(numHMetrics)+2*int(numGlyphs))
-	for i := 0; i < int(numGlyphs); i++ {
+	for i := range int(numGlyphs) {
 		if i < int(numHMetrics) {
 			table = binary.BigEndian.AppendUint16(table, advanceWidths[i])
 		}
@@ -1218,7 +1237,7 @@ func woff2OpenFont(data []byte) ([]byte, error) {
 	info := &woff2Info{headerChecksum: computeULongSum(w.b[:12])}
 
 	// glibc's qsort is a merge sort
-	sort.SliceStable(indices, func(i, j int) bool { return indices[i].tag < indices[j].tag })
+	slices.SortStableFunc(indices, func(a, b *woff2Table) int { return cmp.Compare(a.tag, b.tag) })
 	for nn := 1; nn < int(numTables); nn++ {
 		if indices[nn].tag == indices[nn-1].tag {
 			return nil, errInvalidTable

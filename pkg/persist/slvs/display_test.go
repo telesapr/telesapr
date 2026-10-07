@@ -56,7 +56,7 @@ func TestDisplayOutlines(t *testing.T) {
 
 			var got strings.Builder
 			for _, hg := range sk.GroupOrder {
-				g := sk.GetGroup(hg)
+				g := sk.Group(hg)
 				g.GenerateDisplayItems(sk)
 				fmt.Fprintf(&got, "group %x mesh %d outlines %d\n", hg.V,
 					len(g.DisplayMesh.Triangles), len(g.DisplayOutlines.Outlines))

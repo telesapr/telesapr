@@ -219,7 +219,7 @@ type session struct {
 
 func newSession(stderr io.Writer) *session {
 	p := headless.New()
-	p.FontFiles = platform.SystemFontFiles()
+	p.Fonts = platform.SystemFontFiles()
 	s := &session{}
 	p.OnMessageDialog = func(d *headless.MessageDialog) {
 		kind := "Message"

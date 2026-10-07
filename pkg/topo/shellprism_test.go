@@ -23,7 +23,7 @@ func roundedBox(w, h, r, high float64) *srf.SShell {
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = l
 	ls.Normal = v(0, 0, -1)
-	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, high), core.NewRgbaColor(100, 100, 100, 255))
+	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, high), core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
 

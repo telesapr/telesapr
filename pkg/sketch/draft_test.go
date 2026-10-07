@@ -41,7 +41,7 @@ func TestDraft(t *testing.T) {
 	}
 	sk := d.Host().Sketch()
 	for _, e := range ex.Entities() {
-		if e.Kind() == "line" && e.Start().Pos().Z == 10 && !sk.GetEntity(e.H).ForceHidden {
+		if e.Kind() == "line" && e.Start().Pos().Z == 10 && !sk.Entity(e.H).ForceHidden {
 			t.Errorf("%s at the far end is shown", e.Kind())
 		}
 	}

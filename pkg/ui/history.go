@@ -16,7 +16,7 @@ func (ss *Application) MoveGroup(h core.HGroup, later bool) {
 			i = k
 		}
 	}
-	g := sk.GetGroup(h)
+	g := sk.Group(h)
 	if i < 0 || g == nil {
 		return
 	}
@@ -49,7 +49,7 @@ func (ss *Application) MoveGroup(h core.HGroup, later bool) {
 // says why it can't (Edit > Move Group to End).
 func (ss *Application) MoveGroupToEnd(h core.HGroup) {
 	sk := ss.SK
-	if sk.GetGroup(h) == nil {
+	if sk.Group(h) == nil {
 		return
 	}
 	if err := sk.CheckMoveGroupWithSources(h, core.HGroup{}); err != nil {
@@ -95,7 +95,7 @@ func (tw *TextWindow) ScreenClearBrokenReferences(link int, v uint32) {
 func (tw *TextWindow) ShowBrokenReferences() {
 	sk := tw.ss.SK
 	groupLink := func(h core.HGroup, name string) {
-		if sk.GetGroup(h) != nil {
+		if sk.Group(h) != nil {
 			tw.Printf(false, "     %Fl%Ll%D%fin %s%E", h.V, lf(tw.ScreenSelectGroup), name)
 		}
 	}
@@ -118,7 +118,7 @@ func (tw *TextWindow) ShowBrokenReferences() {
 		tw.Printf(true, "%FtEXPRESSIONS THAT COULD NOT BE EVALUATED%E")
 		for _, e := range sk.ExprErrors {
 			tw.Printf(false, "   %Fx%s%E", e.Error())
-			if g := sk.GetGroup(e.Group); g != nil {
+			if g := sk.Group(e.Group); g != nil {
 				groupLink(e.Group, g.DescriptionString())
 			}
 		}

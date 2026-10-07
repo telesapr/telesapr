@@ -143,8 +143,10 @@ func (b *SBsp3) InsertHow(how BspClass, tr *STriangle, instead *SMesh) {
 
 // insertAlt is InsertHow's alt label.
 func (b *SBsp3) insertAlt(how BspClass, tr *STriangle, instead *SMesh) {
-	if (how == BspPos && !instead.KeepInsideOtherShell) ||
-		(how == BspNeg && instead.KeepInsideOtherShell) {
+	switch {
+	case (how == BspPos && !instead.KeepInsideOtherShell) ||
+		(how == BspNeg && instead.KeepInsideOtherShell):
+
 		// We have decided that we need to keep a triangle (either inside or
 		// outside the other shell. So add it and flip it if requested.
 		if !instead.FlipNormal {
@@ -152,7 +154,8 @@ func (b *SBsp3) insertAlt(how BspClass, tr *STriangle, instead *SMesh) {
 		} else {
 			instead.AddTriangle3(tr.Meta, tr.C, tr.B, tr.A)
 		}
-	} else if how == BspCoplanar {
+
+	case how == BspCoplanar:
 		if b.Edges != nil {
 			b.Edges.InsertTriangle(tr, instead, b)
 		} else {
@@ -160,7 +163,8 @@ func (b *SBsp3) insertAlt(how BspClass, tr *STriangle, instead *SMesh) {
 			// face is the leaf, and all of its neighbors are earlier in tree?
 			b.InsertInPlane(false, tr, instead)
 		}
-	} else {
+
+	default:
 		instead.AtLeastOneDiscarded = true
 	}
 }
@@ -194,13 +198,16 @@ func (u *bspUtil) classifyTriangle(tri *STriangle, node *SBsp3) {
 	d := u.bsp.D
 	// Count vertices in the plane
 	for i := range 3 {
-		if dt[i] > d+geom.LengthEps {
+		switch {
+		case dt[i] > d+geom.LengthEps:
 			u.posc++
 			u.isPos[i] = true
-		} else if dt[i] < d-geom.LengthEps {
+
+		case dt[i] < d-geom.LengthEps:
 			u.negc++
 			u.isNeg[i] = true
-		} else {
+
+		default:
 			u.onc++
 			u.isOn[i] = true
 		}
@@ -216,16 +223,19 @@ func (u *bspUtil) classifyConvex(vertex []geom.Vector, node *SBsp3, insertEdge b
 
 	for i := range cnt {
 		dt := u.bsp.N.Dot(vertex[i])
-		if math.Abs(dt-u.bsp.D) < geom.LengthEps {
+		switch {
+		case math.Abs(dt-u.bsp.D) < geom.LengthEps:
 			u.isOn[i] = true
 			if u.onc < 2 {
 				u.on[u.onc] = vertex[i]
 			}
 			u.onc++
-		} else if dt > u.bsp.D {
+
+		case dt > u.bsp.D:
 			u.isPos[i] = true
 			u.posc++
-		} else {
+
+		default:
 			u.isNeg[i] = true
 			u.negc++
 		}
@@ -288,15 +298,19 @@ func (u *bspUtil) classifyConvexVertices(vertex []geom.Vector, insertEdges bool)
 		e01 := vertex[1].Minus(vertex[0])
 		e12 := vertex[2].Minus(vertex[1])
 		out := e01.Cross(e12)
-		if inters == 2 {
+		switch {
+		case inters == 2:
 			se := SEdge{A: inter[0], B: inter[1]}
 			u.bsp.Edges = SBsp2InsertOrCreateEdge(u.bsp.Edges, &se, u.bsp.N, out)
-		} else if inters == 1 && u.onc == 1 {
+
+		case inters == 1 && u.onc == 1:
 			se := SEdge{A: inter[0], B: u.on[0]}
 			u.bsp.Edges = SBsp2InsertOrCreateEdge(u.bsp.Edges, &se, u.bsp.N, out)
-		} else if inters == 0 && u.onc == 2 {
+
+		case inters == 0 && u.onc == 2:
 			// We already handled this on-plane existing edge
-		} else {
+
+		default:
 			return false // triangulate;
 		}
 	}
@@ -365,7 +379,8 @@ func (u *bspUtil) splitIntoTwoTriangles(insertEdge bool) bool {
 
 func (u *bspUtil) splitIntoTwoPieces(insertEdge bool) bool {
 	var a, b, c geom.Vector
-	if u.posc == 2 && u.negc == 1 {
+	switch {
+	case u.posc == 2 && u.negc == 1:
 		// Standardize so that a is on one side, and b and c are on the other.
 		switch {
 		case u.isNeg[0]:
@@ -377,7 +392,8 @@ func (u *bspUtil) splitIntoTwoPieces(insertEdge bool) bool {
 		default:
 			panic("Impossible")
 		}
-	} else if u.posc == 1 && u.negc == 2 {
+
+	case u.posc == 1 && u.negc == 2:
 		switch {
 		case u.isPos[0]:
 			a, b, c = u.tr.A, u.tr.B, u.tr.C
@@ -388,7 +404,8 @@ func (u *bspUtil) splitIntoTwoPieces(insertEdge bool) bool {
 		default:
 			panic("Impossible")
 		}
-	} else {
+
+	default:
 		panic("Impossible")
 	}
 
@@ -408,7 +425,7 @@ func (u *bspUtil) splitIntoTwoPieces(insertEdge bool) bool {
 }
 
 func bspTriangulate(bsp *SBsp3, meta STriMeta, vertex []geom.Vector, instead *SMesh) *SBsp3 {
-	for i := 0; i < len(vertex)-2; i++ {
+	for i := range len(vertex) - 2 {
 		tr := STriangleFrom(meta, vertex[0], vertex[i+1], vertex[i+2])
 		bsp = SBsp3InsertOrCreate(bsp, &tr, instead)
 	}
@@ -433,7 +450,7 @@ func (b *SBsp3) InsertConvexHow(how BspClass, meta STriMeta, vertex []geom.Vecto
 		panic("Unexpected BSP insert type")
 	}
 
-	for i := 0; i < len(vertex)-2; i++ {
+	for i := range len(vertex) - 2 {
 		tr := STriangleFrom(meta, vertex[0], vertex[i+1], vertex[i+2])
 		b.InsertHow(how, &tr, instead)
 	}
@@ -630,11 +647,14 @@ func (b *SBsp2) InsertEdge(nedge *SEdge, nnp, out geom.Vector) {
 
 	var isPos, isNeg, isOn [2]bool
 	for i := range 2 {
-		if math.Abs(dt[i]-b.D) < geom.LengthEps {
+		switch {
+		case math.Abs(dt[i]-b.D) < geom.LengthEps:
 			isOn[i] = true
-		} else if dt[i] > b.D {
+
+		case dt[i] > b.D:
 			isPos[i] = true
-		} else {
+
+		default:
 			isNeg[i] = true
 		}
 	}
@@ -702,13 +722,16 @@ func (b *SBsp2) InsertTriangle(tr *STriangle, m *SMesh, bsp3 *SBsp3) {
 	var isPos, isNeg, isOn [3]bool
 	inc, posc, negc := 0, 0, 0
 	for i := range 3 {
-		if math.Abs(dt[i]-b.D) < geom.LengthEps {
+		switch {
+		case math.Abs(dt[i]-b.D) < geom.LengthEps:
 			isOn[i] = true
 			inc++
-		} else if dt[i] > b.D {
+
+		case dt[i] > b.D:
 			isPos[i] = true
 			posc++
-		} else {
+
+		default:
 			isNeg[i] = true
 			negc++
 		}
@@ -764,7 +787,8 @@ func (b *SBsp2) InsertTriangle(tr *STriangle, m *SMesh, bsp3 *SBsp3) {
 		return
 	}
 
-	if posc == 2 && negc == 1 {
+	switch {
+	case posc == 2 && negc == 1:
 		// Standardize so that a is on one side, and b and c are on the other.
 		switch {
 		case isNeg[0]:
@@ -776,7 +800,8 @@ func (b *SBsp2) InsertTriangle(tr *STriangle, m *SMesh, bsp3 *SBsp3) {
 		default:
 			panic("Impossible")
 		}
-	} else if posc == 1 && negc == 2 {
+
+	case posc == 1 && negc == 2:
 		switch {
 		case isPos[0]:
 			a, bv, c = tr.A, tr.B, tr.C
@@ -787,7 +812,8 @@ func (b *SBsp2) InsertTriangle(tr *STriangle, m *SMesh, bsp3 *SBsp3) {
 		default:
 			panic("Impossible")
 		}
-	} else {
+
+	default:
 		panic("Impossible")
 	}
 

@@ -82,11 +82,11 @@ func (s *SShell) MakeFromCopyOf(src *SShell) {
 	s.MakeFromTransformationOf(src, geom.Vector{}, geom.QuaternionIdentity, 1.0)
 }
 
-// addAndAssignSurfaceId appends ss to s.Surface with a fresh
+// addAndAssignSurfaceID appends ss to s.Surface with a fresh
 // sequential handle, leaving its face alone (C++
 // IdList::AddAndAssignId).
-func (s *SShell) addAndAssignSurfaceId(ss SSurface) core.HSSurface {
-	return s.addSurfaceAssignId(ss)
+func (s *SShell) addAndAssignSurfaceID(ss SSurface) core.HSSurface {
+	return s.addSurfaceAssignID(ss)
 }
 
 // ShellGroup is what the revolution constructors read from the group
@@ -121,9 +121,9 @@ func lineToFace(group ShellGroup, sb *SBezier) (FaceID, bool) {
 	return FaceID(hface.V), true
 }
 
-// addAndAssignCurveId appends sc to s.Curve with a fresh sequential
+// addAndAssignCurveID appends sc to s.Curve with a fresh sequential
 // handle, mirroring the C++ `IdList::AddAndAssignId` semantics.
-func (s *SShell) addAndAssignCurveId(sc SCurve) core.HSCurve {
+func (s *SShell) addAndAssignCurveID(sc SCurve) core.HSCurve {
 	// Like C++ IdList::AddAndAssignId, use one more than the largest
 	// id in use.
 	var maxV uint32
@@ -167,7 +167,7 @@ type shellTrimLine struct {
 // joining consecutive curves; the outer contour and every hole are
 // capped at t0 and t1 with two shared planar surfaces trimmed by
 // the same translated curves.
-func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RgbaColor) {
+func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RGBA) {
 	// Like the C++, this adds to s rather than replacing it, so that a
 	// group's loop sets all extrude into one shell.
 	if sbls == nil {
@@ -187,9 +187,9 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 	v := n.NormalDir(1)
 	orig := sbls.Point
 	umin, umax := math.Inf(1), math.Inf(-1)
-	sbls.GetBoundingProjd(u, orig, &umin, &umax)
+	sbls.BoundingProjd(u, orig, &umin, &umax)
 	vmin, vmax := math.Inf(1), math.Inf(-1)
-	sbls.GetBoundingProjd(v, orig, &vmin, &vmax)
+	sbls.BoundingProjd(v, orig, &vmin, &vmax)
 	// and now fix things up so that all u and v lie between 0 and 1
 	orig = orig.Plus(u.ScaledBy(umin))
 	orig = orig.Plus(v.ScaledBy(vmin))
@@ -205,8 +205,8 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 	s1 := FromPlane(orig.Plus(t1).Plus(u), u.ScaledBy(-1), v)
 	s1.Color = color
 	s1.TrimBuilt = true
-	hs0 := s.addAndAssignSurfaceId(s0)
-	hs1 := s.addAndAssignSurfaceId(s1)
+	hs0 := s.addAndAssignSurfaceID(s0)
+	hs1 := s.addAndAssignSurfaceID(s1)
 
 	// Now go through the input curves. For each one, generate its
 	// surface of extrusion, its two translated trim curves, and one
@@ -229,13 +229,13 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			ss := FromExtrusionOf(b, t0, t1)
 			ss.Color = color
 			ss.TrimBuilt = true
-			hsext := s.addAndAssignSurfaceId(ss)
+			hsext := s.addAndAssignSurfaceID(ss)
 
 			// Translate the curve by t0 and t1 to produce two trim
 			// curves.
 			bt0 := *b
 			bt0.TransformedBy(t0, geom.QuaternionIdentity, 1.0)
-			hc0 := s.addAndAssignCurveId(SCurve{
+			hc0 := s.addAndAssignCurveID(SCurve{
 				IsExact: true,
 				Exact:   bt0,
 				Points:  makePwlSCurvePoints(&bt0, 0),
@@ -245,7 +245,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 
 			bt1 := *b
 			bt1.TransformedBy(t1, geom.QuaternionIdentity, 1.0)
-			hc1 := s.addAndAssignCurveId(SCurve{
+			hc1 := s.addAndAssignCurveID(SCurve{
 				IsExact: true,
 				Exact:   bt1,
 				Points:  makePwlSCurvePoints(&bt1, 0),
@@ -266,7 +266,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 			// And form the trim line.
 			pt := b.Finish()
 			lineBez := SBezierFrom2(pt.Plus(t0), pt.Plus(t1))
-			hl := s.addAndAssignCurveId(SCurve{
+			hl := s.addAndAssignCurveID(SCurve{
 				IsExact: true,
 				Exact:   lineBez,
 				Points:  makePwlSCurvePoints(&lineBez, 0),
@@ -293,10 +293,10 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 	}
 }
 
-// addSurfaceAssignId adds ss with a fresh handle (one more than the
+// addSurfaceAssignID adds ss with a fresh handle (one more than the
 // largest in use), leaving its Face alone. Mirrors C++
 // IdList::AddAndAssignId for surfaces.
-func (s *SShell) addSurfaceAssignId(ss SSurface) core.HSSurface {
+func (s *SShell) addSurfaceAssignID(ss SSurface) core.HSSurface {
 	var maxV uint32
 	for i := range s.Surface {
 		if s.Surface[i].H.V > maxV {
@@ -368,7 +368,7 @@ func transformedCopy(sb *SBezier, t geom.Vector, q geom.Quaternion) SBezier {
 // addCurveTrimming adds sc to the shell and trims its SurfA and SurfB
 // by it, SurfA with the given sense and SurfB with the opposite one.
 func (s *SShell) addCurveTrimming(sc SCurve, backwardsA bool) {
-	hc := s.addAndAssignCurveId(sc)
+	hc := s.addAndAssignCurveID(sc)
 	appendTrim(s, sc.SurfA, STrimByEntireCurveFromShell(s, hc, backwardsA))
 	appendTrim(s, sc.SurfB, STrimByEntireCurveFromShell(s, hc, !backwardsA))
 }
@@ -387,7 +387,7 @@ func (s *SShell) addCurveTrimming(sc SCurve, backwardsA bool) {
 // REMAP_LINE_TO_FACE of the swept surfaces is not done: SBezier
 // carries no source entity.
 func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector,
-	color core.RgbaColor, group ShellGroup, angles, anglef, dists, distf float64) {
+	color core.RGBA, group ShellGroup, angles, anglef, dists, distf float64) {
 	if sbls == nil {
 		return
 	}
@@ -412,9 +412,9 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 	v := n.NormalDir(1)
 	orig := sbls.Point
 	umin, umax := math.Inf(1), math.Inf(-1)
-	sbls.GetBoundingProjd(u, orig, &umin, &umax)
+	sbls.BoundingProjd(u, orig, &umin, &umax)
 	vmin, vmax := math.Inf(1), math.Inf(-1)
-	sbls.GetBoundingProjd(v, orig, &vmin, &vmax)
+	sbls.BoundingProjd(v, orig, &vmin, &vmax)
 	// and now fix things up so that all u and v lie between 0 and 1
 	orig = orig.Plus(u.ScaledBy(umin))
 	orig = orig.Plus(v.ScaledBy(vmin))
@@ -436,8 +436,8 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 	s0.Face = FaceID(group.Remap(core.NoEntity, startMapping).V)
 	s1.Face = FaceID(group.Remap(core.NoEntity, endMapping).V)
 
-	hs0 := s.addAndAssignSurfaceId(s0)
-	hs1 := s.addAndAssignSurfaceId(s1)
+	hs0 := s.addAndAssignSurfaceID(s0)
+	hs1 := s.addAndAssignSurfaceID(s1)
 
 	// Now we actually build and trim the swept surfaces. One loop at a time.
 	curve := 0 // the curves of the loops, counted from 1
@@ -466,7 +466,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 					} else {
 						ss.Origin = helixOrigin(curve, j)
 					}
-					revs[j] = s.addAndAssignSurfaceId(ss)
+					revs[j] = s.addAndAssignSurfaceID(ss)
 				}
 			}
 			hsl[bi] = revs
@@ -566,7 +566,7 @@ const LocalOriginBit = 0x8000
 // surfaces of revolution, trimmed by the rotated copies of the curve
 // and by the circles swept by its endpoints. Faithful port of C++
 // `SShell::MakeFromRevolutionOf` (shell.cpp).
-func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RgbaColor, group ShellGroup) {
+func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RGBA, group ShellGroup) {
 	if sbls == nil {
 		return
 	}
@@ -596,7 +596,7 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 					if face, ok := lineToFace(group, sb); ok {
 						ss.Face = face
 					}
-					hsl[bi][j] = s.addAndAssignSurfaceId(ss)
+					hsl[bi][j] = s.addAndAssignSurfaceID(ss)
 				}
 			}
 		}
@@ -717,8 +717,8 @@ func (s *SShell) makeFirstOrderRevolvedRange(pt, axis geom.Vector, i0, i1 int) {
 			// flip it again and put it back where we started.
 			sn.DegM = 2
 			sn.DegN = 1
-			for dm := 0; dm <= 1; dm++ {
-				for dn := 0; dn <= 2; dn++ {
+			for dm := range 2 {
+				for dn := range 3 {
 					sn.Ctrl[dn][dm] = srf.Ctrl[1-dm][dn]
 					sn.Weight[dn][dm] = srf.Weight[1-dm][dn]
 				}
@@ -781,16 +781,16 @@ func (s *SShell) TriangulateInto(mesh *SMesh) {
 // curved surfaces), then map every uv-space vertex/normal back to
 // 3-D via PointAt/NormalAt and flip the winding to match the
 // trim-contour orientation convention.
-func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
-	if len(srf.Trim) == 0 && !srf.TrimBuilt {
+func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
+	if len(s.Trim) == 0 && !s.TrimBuilt {
 		// See SSurface.TrimBuilt: a constructor that doesn't build
 		// trims yet.
-		srf.triangulateUntrimmedGrid(mesh)
+		s.triangulateUntrimmedGrid(mesh)
 		return
 	}
 
 	var el SEdgeList
-	srf.MakeEdgesInto(shell, &el, true, nil)
+	s.MakeEdgesInto(shell, &el, true, nil)
 
 	var poly SPolygon
 	if !el.AssemblePolygon(&poly, nil, true) {
@@ -799,27 +799,27 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 	}
 
 	start := len(mesh.Triangles)
-	if srf.flat() {
-		poly.UvTriangulateInto(mesh, srf)
+	if s.flat() {
+		poly.UvTriangulateInto(mesh, s)
 	} else {
-		poly.uvGridTriangulateInto(mesh, srf, &el)
-		srf.splitTrimDiagonals(shell, mesh, start, &el)
+		poly.uvGridTriangulateInto(mesh, s, &el)
+		s.splitTrimDiagonals(shell, mesh, start, &el)
 	}
 
-	meta := STriMeta{Face: shell.displayFace(srf), RgbaColor: srf.Color}
-	off := srf.trimPointsOff(shell)
+	meta := STriMeta{Face: shell.displayFace(s), RGBA: s.Color}
+	off := s.trimPointsOff(shell)
 	at := func(uv geom.Vector) geom.Vector {
 		if p, ok := off[[2]float64{uv.X, uv.Y}]; ok {
 			return p
 		}
-		return srf.PointAt(uv.X, uv.Y)
+		return s.PointAt(uv.X, uv.Y)
 	}
 	for i := start; i < len(mesh.Triangles); i++ {
 		t := &mesh.Triangles[i]
 		t.Meta = meta
-		t.NA = srf.NormalAt(t.A.X, t.A.Y)
-		t.NB = srf.NormalAt(t.B.X, t.B.Y)
-		t.NC = srf.NormalAt(t.C.X, t.C.Y)
+		t.NA = s.NormalAt(t.A.X, t.A.Y)
+		t.NB = s.NormalAt(t.B.X, t.B.Y)
+		t.NC = s.NormalAt(t.C.X, t.C.Y)
 		t.A = at(t.A)
 		t.B = at(t.B)
 		t.C = at(t.C)
@@ -847,17 +847,17 @@ func (srf *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 // the trim's own, which the face beyond it shares, or the two meshes
 // part there. Trims the kernel made lie on their surfaces, and none are
 // listed.
-func (srf *SSurface) trimPointsOff(shell *SShell) map[[2]float64]geom.Vector {
+func (s *SSurface) trimPointsOff(shell *SShell) map[[2]float64]geom.Vector {
 	var out map[[2]float64]geom.Vector
-	for i := range srf.Trim {
-		sc := shell.FindCurve(srf.Trim[i].Curve)
+	for i := range s.Trim {
+		sc := shell.FindCurve(s.Trim[i].Curve)
 		if sc == nil {
 			continue
 		}
 		for _, cp := range sc.Points {
 			var u, v float64
-			srf.ClosestPointToUV(cp.P, &u, &v, true)
-			if srf.SnapToTrims || srf.PointAt(u, v).Minus(cp.P).Magnitude() > geom.LengthEps {
+			s.ClosestPointToUV(cp.P, &u, &v, true)
+			if s.SnapToTrims || s.PointAt(u, v).Minus(cp.P).Magnitude() > geom.LengthEps {
 				if out == nil {
 					out = map[[2]float64]geom.Vector{}
 				}
@@ -895,7 +895,7 @@ func (s *SShell) displayFace(srf *SSurface) FaceID {
 // grid, keeping only cells whose center is inside srf.Bsp (when
 // present). This is the pre-item-3 triangulator, now used only as
 // the fallback for surfaces with no trim curves at all.
-func (srf *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
+func (s *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
 	const n = 16
 	for j := range n {
 		for i := range n {
@@ -905,18 +905,18 @@ func (srf *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
 			v1 := float64(j+1) / float64(n)
 			// Test the cell center; keep the cell only if it's inside
 			// the trim region.
-			if srf.Bsp != nil {
+			if s.Bsp != nil {
 				uc := (u0 + u1) / 2
 				vc := (v0 + v1) / 2
-				if srf.Bsp.ClassifyPoint(geom.Point2d{U: uc, V: vc}, geom.Point2d{}, srf) == BspUvOutside {
+				if s.Bsp.ClassifyPoint(geom.Point2d{U: uc, V: vc}, geom.Point2d{}, s) == BspUvOutside {
 					continue
 				}
 			}
-			p00 := srf.PointAt(u0, v0)
-			p10 := srf.PointAt(u1, v0)
-			p11 := srf.PointAt(u1, v1)
-			p01 := srf.PointAt(u0, v1)
-			meta := STriMeta{Face: srf.Face, RgbaColor: srf.Color}
+			p00 := s.PointAt(u0, v0)
+			p10 := s.PointAt(u1, v0)
+			p11 := s.PointAt(u1, v1)
+			p01 := s.PointAt(u0, v1)
+			meta := STriMeta{Face: s.Face, RGBA: s.Color}
 			mesh.AddTriangle3(meta, p00, p10, p11)
 			mesh.AddTriangle3(meta, p00, p11, p01)
 		}
@@ -938,15 +938,15 @@ func (s *SShell) MakeEdgesInto(el *SEdgeList) {
 // used by the Booleans, since the curves from the output shell are
 // split against any intersecting surfaces (and the originals aren't).
 // Mirrors C++ SSurface::MakeEdgesInto (surface.cpp).
-func (srf *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCurvesFrom *SShell) {
+func (s *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCurvesFrom *SShell) {
 	start := len(sel.Edges)
 	defer func() {
 		if asUV {
-			srf.openPoles(sel, start)
+			s.openPoles(sel, start)
 		}
 	}()
-	for i := range srf.Trim {
-		stb := &srf.Trim[i]
+	for i := range s.Trim {
+		stb := &s.Trim[i]
 		sc := shell.FindCurve(stb.Curve)
 		if sc == nil {
 			continue
@@ -959,7 +959,7 @@ func (srf *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, use
 			}
 		}
 
-		srf.makeTrimEdgesInto(sel, asUV, sc, stb)
+		s.makeTrimEdgesInto(sel, asUV, sc, stb)
 	}
 }
 
@@ -974,8 +974,8 @@ func (srf *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, use
 // end, as the curve reaches the pole; a trim that leaves the pole
 // where another came in is joined to it by an edge along the side,
 // of no length on the surface (roadmap 24.2).
-func (srf *SSurface) openPoles(sel *SEdgeList, start int) {
-	if srf.DegM < 1 || srf.DegN < 1 {
+func (s *SSurface) openPoles(sel *SEdgeList, start int) {
+	if s.DegM < 1 || s.DegN < 1 {
 		return
 	}
 	// side is the side of the uv square (0 to 3: u = 0, u = 1, v = 0,
@@ -1000,7 +1000,7 @@ func (srf *SSurface) openPoles(sel *SEdgeList, start int) {
 		}
 		if folds[k] < 0 {
 			folds[k] = 0
-			if srf.foldsSide(k) {
+			if s.foldsSide(k) {
 				folds[k] = 1
 			}
 		}
@@ -1058,14 +1058,14 @@ func (srf *SSurface) openPoles(sel *SEdgeList, start int) {
 
 // foldsSide reports whether the surface folds side k of its uv square
 // (0 to 3: u = 0, u = 1, v = 0, v = 1) to one point.
-func (srf *SSurface) foldsSide(k int) bool {
+func (s *SSurface) foldsSide(k int) bool {
 	var a, b, c geom.Vector
 	if k < 2 {
 		u := float64(k)
-		a, b, c = srf.PointAt(u, 0), srf.PointAt(u, 0.5), srf.PointAt(u, 1)
+		a, b, c = s.PointAt(u, 0), s.PointAt(u, 0.5), s.PointAt(u, 1)
 	} else {
 		v := float64(k - 2)
-		a, b, c = srf.PointAt(0, v), srf.PointAt(0.5, v), srf.PointAt(1, v)
+		a, b, c = s.PointAt(0, v), s.PointAt(0.5, v), s.PointAt(1, v)
 	}
 	return a.Equals(b) && a.Equals(c)
 }
@@ -1073,7 +1073,7 @@ func (srf *SSurface) foldsSide(k int) bool {
 // makeTrimEdgesInto walks sc's pwl from stb's start to its finish
 // (backwards if stb says so), emitting edges in uv or xyz. Mirrors
 // C++ SSurface::MakeTrimEdgesInto (surface.cpp:222).
-func (srf *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb *STrimBy) {
+func (s *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb *STrimBy) {
 	var prev geom.Vector
 	inCurve := false
 
@@ -1090,7 +1090,7 @@ func (srf *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, st
 		tpt := pt
 		if asUV {
 			var u, v float64
-			srf.ClosestPointToUV(pt, &u, &v, true)
+			s.ClosestPointToUV(pt, &u, &v, true)
 			tpt = geom.Vector{X: u, Y: v}
 		}
 
@@ -1122,7 +1122,7 @@ func (s *SShell) MakeSectionEdgesInto(n geom.Vector, d float64, sel *SEdgeList, 
 
 // ExactSurfaceTangentAt is the direction, at p, of the curve where srfA
 // meets srfB, pointing along dir (C++ SSurface::ExactSurfaceTangentAt).
-func (srf *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector {
+func (s *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector {
 	var puva, puvb geom.Point2d
 	srfA.ClosestPointTo(p, &puva, true)
 	srfB.ClosestPointTo(p, &puvb, true)
@@ -1138,13 +1138,14 @@ func (srf *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, 
 // exact and sbl is not nil, then add its exact form to sbl. Otherwise,
 // add its piecewise linearization to sel (C++
 // SSurface::MakeSectionEdgesInto).
-func (srf *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBezierList) {
-	for k := range srf.Trim {
-		stb := &srf.Trim[k]
+func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBezierList) {
+	for k := range s.Trim {
+		stb := &s.Trim[k]
 		sc := shell.FindCurve(stb.Curve)
 		sb := &sc.Exact
 
-		if sbl != nil && sc.IsExact && (sb.Degree != 1 || sel == nil) {
+		switch {
+		case sbl != nil && sc.IsExact && (sb.Degree != 1 || sel == nil):
 			var ts, tf float64
 			if stb.Backwards {
 				tf, _ = sb.ClosestPointTo(stb.StartP, true)
@@ -1163,19 +1164,20 @@ func (srf *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SB
 			keepAft.SplitAt(tf, &keepBef, &junkAft)
 
 			sbl.Curves = append(sbl.Curves, keepBef)
-		} else if sbl != nil && sel == nil && !sc.IsExact {
+
+		case sbl != nil && sel == nil && !sc.IsExact:
 			// We must approximate this trim curve, as piecewise cubic sections.
 			srfA := shell.FindSurface(sc.SurfA)
 			srfB := shell.FindSurface(sc.SurfB)
 
-			s, f := stb.StartP, stb.FinishP
+			start, finish := stb.StartP, stb.FinishP
 			if stb.Backwards {
-				s, f = f, s
+				start, finish = finish, start
 			}
 
 			sp := 0
 			for ; sp < len(sc.Points); sp++ {
-				if s.Equals(sc.Points[sp].P) {
+				if start.Equals(sc.Points[sp].P) {
 					break
 				}
 			}
@@ -1184,7 +1186,7 @@ func (srf *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SB
 			}
 			fp := sp
 			for ; fp < len(sc.Points); fp++ {
-				if f.Equals(sc.Points[fp].P) {
+				if finish.Equals(sc.Points[fp].P) {
 					break
 				}
 			}
@@ -1206,8 +1208,8 @@ func (srf *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SB
 					sf := ft.Minus(st)
 					m := sf.Magnitude() / 3
 
-					stan := srf.ExactSurfaceTangentAt(st, srfA, srfB, sf)
-					ftan := srf.ExactSurfaceTangentAt(ft, srfA, srfB, sf)
+					stan := s.ExactSurfaceTangentAt(st, srfA, srfB, sf)
+					ftan := s.ExactSurfaceTangentAt(ft, srfA, srfB, sf)
 
 					sb := SBezierFrom4(st,
 						st.Plus(stan.WithMagnitude(m)),
@@ -1241,8 +1243,9 @@ func (srf *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SB
 				// we just generated finishes.
 				sp = fpt
 			}
-		} else if sel != nil {
-			srf.makeTrimEdgesInto(sel, false, sc, stb)
+
+		case sel != nil:
+			s.makeTrimEdgesInto(sel, false, sc, stb)
 		}
 	}
 }

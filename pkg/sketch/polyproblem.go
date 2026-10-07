@@ -87,7 +87,7 @@ func (g *Group) reportPolyProblem(sk *Sketch) {
 		}
 		g.setProblem(&at, "the sketch %s", msg)
 	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep:
-		src := sk.GetGroup(g.OpA)
+		src := sk.Group(g.OpA)
 		if src == nil {
 			return
 		}
@@ -96,7 +96,7 @@ func (g *Group) reportPolyProblem(sk *Sketch) {
 		}
 	case GroupLoft:
 		for _, h := range g.LoftProfiles() {
-			src := sk.GetGroup(h)
+			src := sk.Group(h)
 			if src == nil {
 				continue
 			}

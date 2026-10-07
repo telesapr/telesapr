@@ -16,7 +16,7 @@ import (
 // points.
 func (gw *GraphicsWindow) drawSelection(s *Selection, isHovered bool, canvas render.Canvas) {
 	sk := gw.sk()
-	camera := canvas.GetCamera()
+	camera := canvas.Camera()
 
 	var refs []geom.Vector
 	how := EntityDrawSelected
@@ -25,7 +25,7 @@ func (gw *GraphicsWindow) drawSelection(s *Selection, isHovered bool, canvas ren
 		how, chow = EntityDrawHovered, ConstraintDrawHovered
 	}
 	if s.Entity.V != 0 {
-		e := sk.GetEntity(s.Entity)
+		e := sk.Entity(s.Entity)
 		gw.drawEntity(e, how, canvas)
 		if s.Emphasized {
 			refs = append(refs, gw.entityReferencePoints(e)...)
@@ -35,7 +35,7 @@ func (gw *GraphicsWindow) drawSelection(s *Selection, isHovered bool, canvas ren
 		gw.drawSolidEdge(s.Edge, isHovered, canvas)
 	}
 	if s.Constraint.V != 0 {
-		c := sk.GetConstraint(s.Constraint)
+		c := sk.Constraint(s.Constraint)
 		gw.drawConstraint(c, chow, canvas)
 		if s.Emphasized {
 			refs = append(refs, gw.constraintReferencePoints(c, camera)...)
@@ -51,7 +51,7 @@ func (gw *GraphicsWindow) drawSelection(s *Selection, isHovered bool, canvas ren
 			Width: 40,
 			Unit:  render.UnitPX,
 		}
-		hcsEmphasis := canvas.GetStroke(strokeEmphasis)
+		hcsEmphasis := canvas.InternStroke(strokeEmphasis)
 
 		topLeftScreen := geom.Point2d{U: -camera.Width / 2, V: camera.Height / 2}
 		topLeft := camera.UnProjectPoint(topLeftScreen)
@@ -84,11 +84,11 @@ func (gw *GraphicsWindow) ClearNonexistentSelectionItems() {
 	change := false
 	kept := gw.selection[:0]
 	for _, s := range gw.selection {
-		if s.Constraint.V != 0 && sk.GetConstraint(s.Constraint) == nil {
+		if s.Constraint.V != 0 && sk.Constraint(s.Constraint) == nil {
 			change = true
 			continue
 		}
-		if s.Entity.V != 0 && sk.GetEntity(s.Entity) == nil {
+		if s.Entity.V != 0 && sk.Entity(s.Entity) == nil {
 			change = true
 			continue
 		}
@@ -138,7 +138,7 @@ func (gw *GraphicsWindow) MakeUnselected(stog *Selection, coincidentPointTrick b
 		}
 	}
 	if stog.Entity.V != 0 && coincidentPointTrick {
-		e := sk.GetEntity(stog.Entity)
+		e := sk.Entity(stog.Entity)
 		if e.IsPoint() {
 			ep := e.PointGetNum(sk)
 			for i := range gw.selection {
@@ -146,7 +146,7 @@ func (gw *GraphicsWindow) MakeUnselected(stog *Selection, coincidentPointTrick b
 				if s.Entity.V == 0 || s.Entity == stog.Entity {
 					continue
 				}
-				se := sk.GetEntity(s.Entity)
+				se := sk.Entity(s.Entity)
 				if !se.IsPoint() {
 					continue
 				}
@@ -186,14 +186,14 @@ func (gw *GraphicsWindow) MakeSelected(stog *Selection) {
 		return
 	}
 	sk := gw.sk()
-	if stog.Entity.V != 0 && sk.GetEntity(stog.Entity).IsFace() {
+	if stog.Entity.V != 0 && sk.Entity(stog.Entity).IsFace() {
 		c := 0
 		for i := range gw.selection {
 			gw.selection[i].Tag = 0
 		}
 		for i := range gw.selection {
 			he := gw.selection[i].Entity
-			if he.V != 0 && sk.GetEntity(he).IsFace() {
+			if he.V != 0 && sk.Entity(he).IsFace() {
 				c++
 				if c >= maxSelectableFaces {
 					gw.selection[i].Tag = 1
@@ -252,7 +252,7 @@ func (gw *GraphicsWindow) GroupSelection() {
 		s := &gw.selection[i]
 		if s.Entity.V != 0 {
 			gs.n++
-			e := sk.GetEntity(s.Entity)
+			e := sk.Entity(s.Entity)
 			if entityIsStylable(e) {
 				gs.stylables++
 			}
@@ -313,7 +313,7 @@ func (gw *GraphicsWindow) GroupSelection() {
 		if s.Constraint.V != 0 {
 			gs.constraints++
 			gs.constraint = append(gs.constraint, s.Constraint)
-			c := sk.GetConstraint(s.Constraint)
+			c := sk.Constraint(s.Constraint)
 			if constraintIsStylable(c) {
 				gs.stylables++
 			}
@@ -342,7 +342,7 @@ func (gw *GraphicsWindow) chooseFromHover(forDrag bool) Selection {
 		return sel
 	}
 	sk := gw.sk()
-	activeGroup := sk.GetGroup(gw.activeGroupH())
+	activeGroup := sk.Group(gw.activeGroupH())
 	bestOrder := -1
 	bestZIndex := 0
 	bestDepth := core.VeryPositive
@@ -351,16 +351,16 @@ func (gw *GraphicsWindow) chooseFromHover(forDrag bool) Selection {
 		hov := &gw.hoverList[i]
 		var hg core.HGroup
 		if hov.Selection.Entity.V != 0 {
-			e := sk.GetEntity(hov.Selection.Entity)
+			e := sk.Entity(hov.Selection.Entity)
 			if forDrag && !gw.entityCanBeDragged(e) {
 				continue
 			}
 			hg = e.Group
 		} else if hov.Selection.Constraint.V != 0 {
-			hg = sk.GetConstraint(hov.Selection.Constraint).Group
+			hg = sk.Constraint(hov.Selection.Constraint).Group
 		}
 
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g.Order > activeGroup.Order {
 			continue
 		}
@@ -404,7 +404,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	}
 
 	canvas := &render.ObjectPicker{
-		Camera:    gw.GetCamera(),
+		Cam:       gw.Camera(),
 		SelRadius: 10.0,
 		Point:     mp,
 		MaxZIndex: -1,
@@ -430,7 +430,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 			if !e.IsPoint() || !e.H.IsFromRequest() {
 				continue
 			}
-			r := sk.GetRequest(e.H.Request())
+			r := sk.Request(e.H.Request())
 			if r.Type != sketch.RequestCubic || r.ExtraPoints < 2 {
 				continue
 			}
@@ -484,7 +484,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	if gw.pending.operation == PendingNone {
 		// Faces, from the triangle mesh; these are lowest priority
 		if sel.IsEmpty() && gw.showShaded && gw.showFaces {
-			g := sk.GetGroup(gw.activeGroupH())
+			g := sk.Group(gw.activeGroupH())
 			m := &g.DisplayMesh
 			rayPoint := gw.view.UnProjectPoint3(geom.Vector{X: mp.U, Y: mp.V, Z: 0.0})
 			rayDir := gw.view.UnProjectPoint3(geom.Vector{X: mp.U, Y: mp.V, Z: 1.0}).Minus(rayPoint)
@@ -495,7 +495,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 			if face := m.FirstIntersectionIn(rayPoint, rayDir, keep); face != 0 {
 				// A face entity, or for a face no entity names its
 				// identity.
-				if sk.GetEntity(core.HEntity{V: face}) != nil {
+				if sk.Entity(core.HEntity{V: face}) != nil {
 					sel.Entity.V = face
 				} else {
 					sel.Face = srf.FaceID(face)
@@ -517,14 +517,14 @@ func (gw *GraphicsWindow) DrawSnapGrid(canvas render.Canvas) {
 		return
 	}
 	sk := gw.sk()
-	camera := canvas.GetCamera()
+	camera := canvas.Camera()
 	width, height := camera.Width, camera.Height
 	v := &gw.view
 
-	wrkpl := sk.GetEntity(gw.ActiveWorkplane())
+	wrkpl := sk.Entity(gw.ActiveWorkplane())
 	norm := wrkpl.NormalEntity(sk)
 	n := v.ProjUp.Cross(v.ProjRight)
-	wp := sk.GetEntity(wrkpl.Point[0]).PointGetNum(sk)
+	wp := sk.Entity(wrkpl.Point[0]).PointGetNum(sk)
 	wu, wv, wn := norm.NormalU(sk), norm.NormalV(sk), norm.NormalN(sk)
 
 	g := gw.ss.GridSpacing
@@ -570,7 +570,7 @@ func (gw *GraphicsWindow) DrawSnapGrid(canvas render.Canvas) {
 		return
 	}
 
-	hcs := canvas.GetStroke(render.Stroke{
+	hcs := canvas.InternStroke(render.Stroke{
 		Layer: render.LayerBack,
 		Color: gw.ss.styleColor(hstyle(core.StyleDatum)).WithAlpha(75),
 		Unit:  render.UnitPX,
@@ -612,7 +612,7 @@ func (gw *GraphicsWindow) DrawEntities(canvas render.Canvas, persistent bool) {
 func (gw *GraphicsWindow) DrawPersistent(canvas render.Canvas) {
 	sk := gw.sk()
 	// Draw the active group; this does stuff like the mesh and edges.
-	gw.drawGroup(sk.GetGroup(gw.activeGroupH()), canvas)
+	gw.drawGroup(sk.Group(gw.activeGroupH()), canvas)
 
 	// Now draw the entities that don't change with viewport.
 	gw.DrawEntities(canvas, true)
@@ -622,7 +622,7 @@ func (gw *GraphicsWindow) DrawPersistent(canvas render.Canvas) {
 	// the filled paths are just being filled by default. This should go
 	// last, to make the transparency work.
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if !g.IsVisible() {
 			continue
 		}
@@ -635,7 +635,7 @@ func (gw *GraphicsWindow) DrawPersistent(canvas render.Canvas) {
 func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	ss := gw.ss
 	sk := gw.sk()
-	camera := canvas.GetCamera()
+	camera := canvas.Camera()
 
 	// Nothing draws a sketch that is still loading.
 	if !ss.AllConsistent {
@@ -656,7 +656,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 
 	// Draw the polygon errors.
 	if ss.CheckClosedContour {
-		gw.drawPolyError(sk.GetGroup(gw.activeGroupH()), canvas)
+		gw.drawPolyError(sk.Group(gw.activeGroupH()), canvas)
 	}
 
 	// Draw the constraints
@@ -667,7 +667,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	// Draw areas
 	if ss.ShowContourAreas {
 		for _, hg := range sk.GroupOrder {
-			g := sk.GetGroup(hg)
+			g := sk.Group(hg)
 			if g.H != gw.activeGroupH() || !g.IsVisible() {
 				continue
 			}
@@ -690,7 +690,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 
 	strokeAnalyze := ss.styleStroke(hstyle(core.StyleAnalyze))
 	strokeAnalyze.Layer = render.LayerFront
-	hcsAnalyze := canvas.GetStroke(strokeAnalyze)
+	hcsAnalyze := canvas.InternStroke(strokeAnalyze)
 
 	// Draw the traced path, if one exists
 	var tracedEdges srf.SEdgeList
@@ -700,26 +700,26 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	strokeError := ss.styleStroke(hstyle(core.StyleDrawError))
 	strokeError.Layer = render.LayerFront
 	strokeError.Width = 12
-	hcsError := canvas.GetStroke(strokeError)
+	hcsError := canvas.InternStroke(strokeError)
 
 	// And the naked edges, if the user did Analyze -> Show Naked Edges.
 	canvas.DrawEdges(&ss.NakedEdges, hcsError)
 
 	// Then redraw whatever the mouse is hovering over, highlighted.
 	gw.drawSelection(&gw.hover, true, canvas)
-	gw.drawMesh(sk.GetGroup(gw.activeGroupH()), drawMeshHovered, canvas)
+	gw.drawMesh(sk.Group(gw.activeGroupH()), drawMeshHovered, canvas)
 
 	// And finally draw the selection, same mechanism.
 	for i := range gw.selection {
 		gw.drawSelection(&gw.selection[i], false, canvas)
 	}
-	gw.drawMesh(sk.GetGroup(gw.activeGroupH()), drawMeshSelected, canvas)
+	gw.drawMesh(sk.Group(gw.activeGroupH()), drawMeshSelected, canvas)
 
 	strokeDatum := ss.styleStroke(hstyle(core.StyleDatum))
 	strokeDatum.Unit = render.UnitPX
 	strokeDatum.Layer = render.LayerFront
 	strokeDatum.Width = 1
-	hcsDatum := canvas.GetStroke(strokeDatum)
+	hcsDatum := canvas.InternStroke(strokeDatum)
 
 	// An extra line, used to indicate the origin when rotating within the
 	// plane of the monitor.
@@ -808,14 +808,14 @@ func (gw *GraphicsWindow) Paint() {
 	gw.havePainted = true
 	gw.syncSectionMenu()
 
-	camera := gw.GetCamera()
-	lighting := gw.GetLighting()
+	camera := gw.Camera()
+	lighting := gw.Lighting()
 
 	if !ss.ActiveGroupsOkay() {
 		// Draw a different background whenever we're having solve
 		// problems.
 		bgColor := ss.styleColor(hstyle(core.StyleDrawError))
-		bgColor = core.RgbaColorFromFloat(0.4*bgColor.RedF(), 0.4*bgColor.GreenF(), 0.4*bgColor.BlueF(), 1.0)
+		bgColor = core.RGBAFromFloat(0.4*bgColor.RedF(), 0.4*bgColor.GreenF(), 0.4*bgColor.BlueF(), 1.0)
 		lighting.BackgroundColor = bgColor
 		// And show the text window, which has info to debug it
 		gw.ForceTextWindowShown()
@@ -836,7 +836,7 @@ func (gw *GraphicsWindow) Paint() {
 	camera = render.CameraForPixels(camera)
 	canvas.SetCamera(camera)
 
-	uiCanvas := &render.UiCanvas{Canvas: canvas}
+	uiCanvas := &render.UICanvas{Canvas: canvas}
 
 	// If a marquee selection is in progress, then draw the selection
 	// rectangle, as an outline and a transparent fill.

@@ -162,7 +162,7 @@ func firstFaces(solid *Group, segs []chamferSegment, d2 float64) ([]geom.Vector,
 func (sk *Sketch) chamferSegments(solid *Group, edges []core.HEntity, names []topo.Name) ([]chamferSegment, error) {
 	var out []chamferSegment
 	for _, he := range edges {
-		e := sk.GetEntity(he)
+		e := sk.Entity(he)
 		if e == nil {
 			return nil, fmt.Errorf("edge %s doesn't exist", sk.entityName(he))
 		}
@@ -181,8 +181,8 @@ func (sk *Sketch) chamferSegments(solid *Group, edges []core.HEntity, names []to
 			return nil, fmt.Errorf("%s is neither a line segment nor a circle: a chamfer cuts straight and circular edges", sk.entityName(he))
 		}
 		out = append(out, chamferSegment{
-			a:     sk.MustGetEntity(e.Point[0]).PointGetNum(sk),
-			b:     sk.MustGetEntity(e.Point[1]).PointGetNum(sk),
+			a:     sk.MustEntity(e.Point[0]).PointGetNum(sk),
+			b:     sk.MustEntity(e.Point[1]).PointGetNum(sk),
 			label: "line segment " + sk.entityName(he),
 		})
 	}
@@ -239,7 +239,7 @@ func (sk *Sketch) SolidAt(hg core.HGroup) *Group { return sk.solidAt(hg) }
 
 // solidAt is SolidAt.
 func (sk *Sketch) solidAt(hg core.HGroup) *Group {
-	for g := sk.GetGroup(hg); g != nil; g = g.PreviousGroup(sk) {
+	for g := sk.Group(hg); g != nil; g = g.PreviousGroup(sk) {
 		if len(g.RunningShell.Surface) > 0 || len(g.RunningMesh.Triangles) > 0 {
 			return g
 		}

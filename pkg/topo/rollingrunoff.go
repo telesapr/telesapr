@@ -330,7 +330,7 @@ func clipPatch(p *srf.SSurface, ro *rbRunOff, tol float64) ([]srf.SBezier, []srf
 		return nil, nil, nil
 	}
 	var loop, across []srf.SBezier
-	for c := 0; c < len(segs); c++ {
+	for c := range segs {
 		sg := segs[(start+c)%len(segs)]
 		if !sg.in {
 			continue

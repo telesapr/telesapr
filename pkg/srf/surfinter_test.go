@@ -55,7 +55,7 @@ func extrudedCurves(sbl *SBezierList, t0, t1 geom.Vector) *SShell {
 	sh := &SShell{}
 	sblss := loopsOf(sbl)
 	for i := range sblss.Sets {
-		sh.MakeFromExtrusionOf(&sblss.Sets[i], t0, t1, core.RgbaColor{})
+		sh.MakeFromExtrusionOf(&sblss.Sets[i], t0, t1, core.RGBA{})
 	}
 	return sh
 }
@@ -89,7 +89,7 @@ func TestIntersectionBranchesVsCpp(t *testing.T) {
 		tube := &SShell{}
 		sblss := loopsOf(polylineCurves(geom.Vector{X: 1}, geom.Vector{X: 2}, geom.Vector{X: 2, Z: 1}, geom.Vector{X: 1, Z: 1}))
 		for i := range sblss.Sets {
-			tube.MakeFromRevolutionOf(&sblss.Sets[i], geom.Vector{}, z, core.RgbaColor{}, noFaces{})
+			tube.MakeFromRevolutionOf(&sblss.Sets[i], geom.Vector{}, z, core.RGBA{}, noFaces{})
 		}
 		box := extrudedCurves(polylineCurves(geom.Vector{X: -3, Z: -1}, geom.Vector{X: 3, Z: -1},
 			geom.Vector{X: 3, Y: 3, Z: -1}, geom.Vector{X: -3, Y: 3, Z: -1}), geom.Vector{}, geom.Vector{Z: 3})

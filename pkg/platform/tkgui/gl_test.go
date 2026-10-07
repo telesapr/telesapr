@@ -16,9 +16,9 @@ import (
 )
 
 // square is a mesh of one square face, facing +z, of half-size h.
-func square(h float64, color core.RgbaColor) *srf.SMesh {
+func square(h float64, color core.RGBA) *srf.SMesh {
 	var m srf.SMesh
-	meta := srf.STriMeta{Face: 1, RgbaColor: color}
+	meta := srf.STriMeta{Face: 1, RGBA: color}
 	a, b := geom.Vector{X: -h, Y: -h}, geom.Vector{X: h, Y: -h}
 	c, d := geom.Vector{X: h, Y: h}, geom.Vector{X: -h, Y: h}
 	m.AddTriangle3(meta, a, b, c)
@@ -28,15 +28,15 @@ func square(h float64, color core.RgbaColor) *srf.SMesh {
 
 // drawFace draws the square, lit by ambient light alone so that it
 // shows its own colour, centred in a frame of the window's size.
-func drawFace(w *Window, r render.ViewportCanvas, color core.RgbaColor) {
-	width, height := w.GetContentSize()
+func drawFace(w *Window, r render.ViewportCanvas, color core.RGBA) {
+	width, height := w.ContentSize()
 	var c render.Camera
 	c.LoadIdentity()
 	c.Width, c.Height, c.PixelRatio, c.Scale = width, height, 1, 5
-	r.SetLighting(render.Lighting{BackgroundColor: core.NewRgbaColor(0, 0, 0, 255), AmbientIntensity: 1})
+	r.SetLighting(render.Lighting{BackgroundColor: core.NewRGBA(0, 0, 0, 255), AmbientIntensity: 1})
 	r.SetCamera(c)
 	r.StartFrame()
-	r.DrawMesh(square(10, color), r.GetFill(render.Fill{}), 0)
+	r.DrawMesh(square(10, color), r.InternFill(render.Fill{}), 0)
 	r.FlushFrame()
 	r.FinishFrame()
 }
@@ -49,7 +49,7 @@ func TestGLWindowRendersFace(t *testing.T) {
 	p := requireGUI(t)
 	w := p.CreateWindow(platform.WindowToplevel, nil).(*Window)
 	w.SetMinContentSize(320, 240)
-	red := core.NewRgbaColor(200, 30, 40, 255)
+	red := core.NewRGBA(200, 30, 40, 255)
 
 	var r render.ViewportCanvas
 	renders := 0
@@ -84,7 +84,7 @@ func TestGLWindowRendersFace(t *testing.T) {
 	if centre != [3]byte{red.Red, red.Green, red.Blue} {
 		t.Errorf("centre pixel %v, want the face colour %v", centre, red)
 	}
-	if vendor, _, _ := r.GetIdent(); vendor == "" {
+	if vendor, _, _ := r.Ident(); vendor == "" {
 		t.Error("no GL vendor")
 	}
 }
@@ -98,7 +98,7 @@ func TestGLWindowSwitchesRenderer(t *testing.T) {
 	w.SetMinContentSize(200, 150)
 	w.SetVisible(true)
 	var kinds []string
-	green := core.NewRgbaColor(30, 200, 40, 255)
+	green := core.NewRGBA(30, 200, 40, 255)
 	run(p,
 		func() {
 			for _, useGL := range []bool{true, false, true} {

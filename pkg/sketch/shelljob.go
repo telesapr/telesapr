@@ -49,7 +49,7 @@ func (sk *Sketch) NewShellJob() *ShellJob {
 	// What the linked files gave is read, never written, by a
 	// regeneration: the copy shares it.
 	for i := range c.Groups {
-		if g := sk.GetGroup(c.Groups[i].H); g != nil {
+		if g := sk.Group(c.Groups[i].H); g != nil {
 			c.Groups[i].ImpEntity, c.Groups[i].ImpMesh, c.Groups[i].ImpShell = g.ImpEntity, g.ImpMesh, g.ImpShell
 			c.Groups[i].LinkInfo, c.Groups[i].LinkProblem = g.LinkInfo, g.LinkProblem
 		}
@@ -89,7 +89,7 @@ func (sk *Sketch) Apply(j *ShellJob) bool {
 	}
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
-		c := j.clone.GetGroup(g.H)
+		c := j.clone.Group(g.H)
 		if c == nil {
 			return false
 		}

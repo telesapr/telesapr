@@ -85,7 +85,7 @@ func segmentDistance2d(p, a, b geom.Point2d) (float64, float64) {
 // orthographic view and towards the eye in a perspective one, so only
 // the triangles over that pixel are tried (hoverGrid).
 func (gw *GraphicsWindow) hiddenBySolid(p geom.Vector) bool {
-	g := gw.sk().GetGroup(gw.activeGroupH())
+	g := gw.sk().Group(gw.activeGroupH())
 	if g == nil {
 		return false
 	}
@@ -265,7 +265,7 @@ func (gw *GraphicsWindow) drawSolidEdge(n topo.Name, hovered bool, canvas render
 	stroke.Layer = render.LayerFront
 	stroke.Unit = render.UnitPX
 	stroke.Width = 4
-	h := canvas.GetStroke(stroke)
+	h := canvas.InternStroke(stroke)
 	pts := tp.ChainPoints(tp.Chain(e))
 	for i := 1; i < len(pts); i++ {
 		canvas.DrawLine(pts[i-1], pts[i], h)

@@ -91,14 +91,18 @@ func (v Vector) Normal() Vector {
 func (v Vector) NormalDir(which int) Vector {
 	var n Vector
 	xa, ya, za := math.Abs(v.X), math.Abs(v.Y), math.Abs(v.Z)
-	if v.Equals(Vector{X: 0, Y: 0, Z: 1}) {
+	switch {
+	case v.Equals(Vector{X: 0, Y: 0, Z: 1}):
 		// Make DXFs exported in the XY plane work nicely...
 		n = Vector{X: 1}
-	} else if xa < ya && xa < za {
+
+	case xa < ya && xa < za:
 		n = Vector{X: 0, Y: v.Z, Z: -v.Y}
-	} else if ya < za {
+
+	case ya < za:
 		n = Vector{X: -v.Z, Y: 0, Z: v.X}
-	} else {
+
+	default:
 		n = Vector{X: v.Y, Y: -v.X, Z: 0}
 	}
 	if which == 1 {

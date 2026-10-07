@@ -13,7 +13,7 @@ import (
 // the model regenerated. The references can't be suppressed. The
 // caller remembers the undo state.
 func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error {
-	g := sk.GetGroup(h)
+	g := sk.Group(h)
 	if g == nil {
 		return fmt.Errorf("no group g%03x", h.V)
 	}
@@ -32,7 +32,7 @@ func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error {
 // if it is generated: "suppressed", or "uses g003-extrude, which is
 // suppressed".
 func (sk *Sketch) SuppressedReason(h core.HGroup) string {
-	g := sk.GetGroup(h)
+	g := sk.Group(h)
 	if g == nil || g.SuppressedBy.V == 0 {
 		return ""
 	}
@@ -47,32 +47,32 @@ func (sk *Sketch) SuppressedReason(h core.HGroup) string {
 // out. If the active group is left out, the nearest group that is not
 // becomes active, since nothing can be drawn in it.
 func (sk *Sketch) markSuppressed() {
-	any := false
+	found := false
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
 		g.SuppressedBy = core.HGroup{}
 		if g.SuppressAll && g.H.V != core.HGroupReferences {
-			any = true
+			found = true
 		}
 	}
-	if !any {
+	if !found {
 		return
 	}
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g.SuppressAll && hg.V != core.HGroupReferences {
 			g.SuppressedBy = hg
 			continue
 		}
 		for _, d := range sk.GroupDependencies(hg) {
-			if dg := sk.GetGroup(d.Group); dg != nil && dg.SuppressedBy.V != 0 && dg.Order < g.Order {
+			if dg := sk.Group(d.Group); dg != nil && dg.SuppressedBy.V != 0 && dg.Order < g.Order {
 				g.SuppressedBy = dg.SuppressedBy
 				break
 			}
 		}
 	}
 
-	if a := sk.GetGroup(sk.Active); a != nil && a.SuppressedBy.V != 0 {
+	if a := sk.Group(sk.Active); a != nil && a.SuppressedBy.V != 0 {
 		sk.Active = sk.nearestGenerated(sk.Active)
 	}
 }
@@ -87,7 +87,7 @@ func (sk *Sketch) nearestGenerated(h core.HGroup) core.HGroup {
 			seen = true
 			continue
 		}
-		if hg.V == core.HGroupReferences || sk.GetGroup(hg).SuppressedBy.V != 0 {
+		if hg.V == core.HGroupReferences || sk.Group(hg).SuppressedBy.V != 0 {
 			continue
 		}
 		if !seen {
@@ -141,11 +141,11 @@ func (sk *Sketch) paramGroup(h core.HParam) core.HGroup {
 	case h.V&0x80000000 != 0:
 		return core.HGroup{V: (h.V >> 16) & 0x3FFF}
 	case h.V&0x40000000 != 0:
-		if c := sk.GetConstraint(core.HConstraint{V: h.V &^ 0x40000000}); c != nil {
+		if c := sk.Constraint(core.HConstraint{V: h.V &^ 0x40000000}); c != nil {
 			return c.Group
 		}
 	default:
-		if r := sk.GetRequest(h.Request()); r != nil {
+		if r := sk.Request(h.Request()); r != nil {
 			return r.Group
 		}
 	}

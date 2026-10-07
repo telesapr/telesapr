@@ -4,8 +4,9 @@
 package solver
 
 import (
+	"cmp"
 	"math"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -88,7 +89,7 @@ type System struct {
 // initial guess.
 func (s *System) AddParam(p core.Param) {
 	s.Param = append(s.Param, &Param{Param: p})
-	sort.SliceStable(s.Param, func(i, j int) bool { return s.Param[i].H.V < s.Param[j].H.V })
+	slices.SortStableFunc(s.Param, func(a, b *Param) int { return cmp.Compare(a.H.V, b.H.V) })
 	s.paramIndex = nil
 }
 
@@ -113,7 +114,7 @@ func (s *System) setEquations(l []core.Equation) {
 	for _, e := range l {
 		s.Eq = append(s.Eq, Equation{H: e.H, E: e.Expr})
 	}
-	sort.SliceStable(s.Eq, func(i, j int) bool { return s.Eq[i].H.V < s.Eq[j].H.V })
+	slices.SortStableFunc(s.Eq, func(a, b Equation) int { return cmp.Compare(a.H.V, b.H.V) })
 }
 
 func (s *System) clearParamTags() {
@@ -240,7 +241,7 @@ func (s *System) WriteJacobian(tag int) bool {
 // EvalJacobian evaluates the symbolic Jacobian (C++ System::EvalJacobian).
 func (s *System) EvalJacobian() {
 	s.mat.Anum = make([][]float64, s.mat.m)
-	for i := 0; i < s.mat.m; i++ {
+	for i := range s.mat.m {
 		s.mat.Anum[i] = make([]float64, s.mat.n)
 		for j, pd := range s.mat.A[i] {
 			if pd != nil {
@@ -478,7 +479,7 @@ func leastSquares(a *spMat, b []float64) []float64 {
 		f := factorSparseQR(a.transpose())
 		v := make([]float64, m)
 		if f.rank > 0 {
-			for k := 0; k < f.rank; k++ {
+			for k := range f.rank {
 				v[k] = b[f.perm[k]]
 			}
 			f.solveUpperTransposed(v)
@@ -513,7 +514,7 @@ func (s *System) NewtonSolve() bool {
 
 	// Evaluate the functions at our operating point.
 	s.mat.Bnum = make([]float64, s.mat.m)
-	for i := 0; i < s.mat.m; i++ {
+	for i := range s.mat.m {
 		s.mat.Bnum[i] = s.mat.B[i].Eval(nil, nil)
 	}
 	for {
@@ -525,7 +526,7 @@ func (s *System) NewtonSolve() bool {
 
 		// Take the Newton step;
 		//      J(x_n) (x_{n+1} - x_n) = 0 - F(x_n)
-		for i := 0; i < s.mat.n; i++ {
+		for i := range s.mat.n {
 			p := s.findParam(s.mat.param[i])
 			p.Val -= s.mat.X[i]
 			if isReasonable(p.Val) {
@@ -535,7 +536,7 @@ func (s *System) NewtonSolve() bool {
 		}
 
 		// Re-evalute the functions, since the params have just changed.
-		for i := 0; i < s.mat.m; i++ {
+		for i := range s.mat.m {
 			s.mat.Bnum[i] = s.mat.B[i].Eval(nil, nil)
 			if isReasonable(s.mat.Bnum[i]) {
 				// Very bad, and clearly not convergent
@@ -545,13 +546,13 @@ func (s *System) NewtonSolve() bool {
 
 		// Check for convergence
 		converged = true
-		for i := 0; i < s.mat.m; i++ {
+		for i := range s.mat.m {
 			if math.Abs(s.mat.Bnum[i]) > ConvergeTolerance {
 				converged = false
 				break
 			}
 		}
-		if !(iter < 50 && !converged) {
+		if iter >= 50 || converged {
 			break
 		}
 		iter++

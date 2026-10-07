@@ -37,19 +37,26 @@ func cxxUnguardedPartitionPivot[T any](s []T, first, last int, less func(a, b *T
 }
 
 func cxxMoveMedianToFirst[T any](s []T, result, a, b, c int, less func(a, b *T) bool) {
-	if less(&s[a], &s[b]) {
-		if less(&s[b], &s[c]) {
+	switch {
+	case less(&s[a], &s[b]):
+		switch {
+		case less(&s[b], &s[c]):
 			s[result], s[b] = s[b], s[result]
-		} else if less(&s[a], &s[c]) {
+
+		case less(&s[a], &s[c]):
 			s[result], s[c] = s[c], s[result]
-		} else {
+
+		default:
 			s[result], s[a] = s[a], s[result]
 		}
-	} else if less(&s[a], &s[c]) {
+
+	case less(&s[a], &s[c]):
 		s[result], s[a] = s[a], s[result]
-	} else if less(&s[b], &s[c]) {
+
+	case less(&s[b], &s[c]):
 		s[result], s[c] = s[c], s[result]
-	} else {
+
+	default:
 		s[result], s[b] = s[b], s[result]
 	}
 }
@@ -63,7 +70,7 @@ func cxxUnguardedPartition[T any](s []T, first, last, pivot int, less func(a, b 
 		for less(&s[pivot], &s[last]) {
 			last--
 		}
-		if !(first < last) {
+		if first >= last {
 			return first
 		}
 		s[first], s[last] = s[last], s[first]

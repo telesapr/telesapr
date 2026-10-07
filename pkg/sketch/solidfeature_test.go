@@ -72,7 +72,7 @@ func step(d *api.Doc) { d.Host().(*api.SketchHost).BeginEval() }
 // forceToMesh builds g as a triangle mesh.
 func forceToMesh(d *api.Doc, g api.Group) {
 	d.With(func(sk *sketch.Sketch) {
-		sk.GetGroup(g.H).ForceToMesh = true
+		sk.Group(g.H).ForceToMesh = true
 		for i := range sk.Groups {
 			sk.Groups[i].Clean = false
 		}

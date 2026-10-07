@@ -89,10 +89,10 @@ func (c *Clipboard) NewEntityFor(he core.HEntity) core.HEntity {
 
 // activeWorkplaneCsys is the active workplane's basis and origin.
 func (sk *Sketch) activeWorkplaneCsys() (u, v, n, p geom.Vector) {
-	wrkpl := sk.MustGetEntity(sk.ActiveWorkplane())
-	wrkpln := sk.MustGetEntity(wrkpl.Normal)
+	wrkpl := sk.MustEntity(sk.ActiveWorkplane())
+	wrkpln := sk.MustEntity(wrkpl.Normal)
 	return wrkpln.NormalU(sk), wrkpln.NormalV(sk), wrkpln.NormalN(sk),
-		sk.MustGetEntity(wrkpl.Point[0]).PointGetNum(sk)
+		sk.MustEntity(wrkpl.Point[0]).PointGetNum(sk)
 }
 
 // CopySelection copies the selected entities that requests generate
@@ -109,13 +109,13 @@ func (sk *Sketch) CopySelection(selection []Selection) {
 			continue
 		}
 		// Work only on entities that have requests that will generate them.
-		e := sk.MustGetEntity(s.Entity)
+		e := sk.MustEntity(s.Entity)
 		req, pts, _, hasDistance, ok := getEntityInfo(e.Type, e.ExtraPoints)
 		if !ok {
 			if !e.H.IsFromRequest() {
 				continue
 			}
-			r := sk.GetRequest(e.H.Request())
+			r := sk.Request(e.H.Request())
 			if r.Type != RequestDatumPoint {
 				continue
 			}
@@ -136,23 +136,23 @@ func (sk *Sketch) CopySelection(selection []Selection) {
 		cr.Font = e.Font
 		cr.File = e.File
 		cr.Construction = e.Construction
-		for i := 0; i < pts; i++ {
+		for i := range pts {
 			var pt geom.Vector
 			if req == RequestDatumPoint {
 				pt = e.PointGetNum(sk)
 			} else {
-				pt = sk.MustGetEntity(e.Point[i]).PointGetNum(sk)
+				pt = sk.MustEntity(e.Point[i]).PointGetNum(sk)
 			}
 			pt = pt.Minus(p)
 			pt = pt.DotInToCsys(u, v, n)
 			cr.Point[i] = pt
 		}
 		if hasDistance {
-			cr.Distance = sk.MustGetEntity(e.Distance).DistanceGetNum(sk)
+			cr.Distance = sk.MustEntity(e.Distance).DistanceGetNum(sk)
 		}
 
 		cr.OldEnt = e.H
-		for i := 0; i < pts; i++ {
+		for i := range pts {
 			cr.OldPointEnt[i] = e.Point[i]
 		}
 
@@ -164,7 +164,7 @@ func (sk *Sketch) CopySelection(selection []Selection) {
 			continue
 		}
 
-		c := sk.GetConstraint(s.Constraint)
+		c := sk.Constraint(s.Constraint)
 		if c.Type == core.ConstraintComment {
 			cb.Constraints = append(cb.Constraints, *c)
 		}
@@ -203,7 +203,7 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 
 		if scale < 0 {
 			hr := he.Request()
-			r := sk.GetRequest(hr)
+			r := sk.Request(hr)
 			if r.Type == RequestArcOfCircle {
 				if he == hr.Entity(2) {
 					return hr.Entity(3)
@@ -218,7 +218,7 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 	for ci := range cb.Requests {
 		cr := &cb.Requests[ci]
 		hr := sk.AddRequestOfType(cr.Type, false)
-		r := sk.GetRequest(hr)
+		r := sk.Request(hr)
 		r.ExtraPoints = cr.ExtraPoints
 		r.Style = cr.Style
 		r.Str = cr.Str
@@ -228,7 +228,7 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 		// Need to regen to get the right number of points, if extraPoints
 		// changed.
 		sk.GenerateAllTyped(GenerateRegen)
-		r = sk.GetRequest(hr)
+		r = sk.Request(hr)
 		sk.MarkGroupDirty(r.Group, false)
 		_, pts, _, hasDistance, _ := getRequestInfo(r.Type, r.ExtraPoints)
 		for i := range pts {
@@ -249,10 +249,10 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 			if r.Type == RequestDatumPoint {
 				j = i
 			}
-			sk.MustGetEntity(mapPoint(hr.Entity(j))).PointForceTo(sk, pt)
+			sk.MustEntity(mapPoint(hr.Entity(j))).PointForceTo(sk, pt)
 		}
 		if hasDistance {
-			sk.MustGetEntity(hr.Entity(64)).DistanceForceTo(sk, cr.Distance*math.Abs(scale))
+			sk.MustEntity(hr.Entity(64)).DistanceForceTo(sk, cr.Distance*math.Abs(scale))
 		}
 
 		cr.NewReq = hr
@@ -307,10 +307,10 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 				// defined as counter-clockwise from the start point to the end point. And we
 				// swapped their points in mapPoint above to avoid inverting them.
 				// CUBIC splines do not need this.
-				if sk.MustGetEntity(c.EntityA).Type == core.EntityArcOfCircle {
+				if sk.MustEntity(c.EntityA).Type == core.EntityArcOfCircle {
 					c.Other = !c.Other
 				}
-				if sk.MustGetEntity(c.EntityB).Type == core.EntityArcOfCircle {
+				if sk.MustEntity(c.EntityB).Type == core.EntityArcOfCircle {
 					c.Other2 = !c.Other2
 				}
 			}

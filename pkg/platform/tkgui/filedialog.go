@@ -49,8 +49,8 @@ func (d *FileDialog) SetCurrentName(s string) {
 	}
 }
 
-// GetFilename is the file chosen.
-func (d *FileDialog) GetFilename() string { return d.filename }
+// Filename is the file chosen.
+func (d *FileDialog) Filename() string { return d.filename }
 
 // SetFilename starts at path (C++ set_filename: its folder, and for a
 // save dialog its name too).

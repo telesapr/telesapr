@@ -197,7 +197,7 @@ func (tw *TextWindow) ShowParameters() {
 	if len(sk.ExprErrors) > 0 {
 		tw.Printf(true, "%FtEXPRESSIONS THAT COULD NOT BE EVALUATED%E")
 		for _, e := range sk.ExprErrors {
-			g := sk.GetGroup(e.Group)
+			g := sk.Group(e.Group)
 			name := "?"
 			if g != nil {
 				name = g.Name

@@ -34,7 +34,7 @@ func TestInsertGroup(t *testing.T) {
 	var names []string
 	sk := d.Host().Sketch()
 	for _, hg := range sk.GroupOrder {
-		names = append(names, sk.GetGroup(hg).Name)
+		names = append(names, sk.Group(hg).Name)
 	}
 	if got := strings.Join(names, " "); got != "#references sketch-in-plane block chamfer hole-sketch cut" {
 		t.Fatalf("the history: %s", got)

@@ -109,7 +109,7 @@ func (rt *Runtime) Entity(h core.HEntity) (*core.Entity, error) {
 	if h == (core.HEntity{}) {
 		return nil, nil
 	}
-	e := rt.Sketch.GetEntity(h)
+	e := rt.Sketch.Entity(h)
 	if e == nil {
 		return nil, fmt.Errorf("entity %08x not found", h.V)
 	}
@@ -121,7 +121,7 @@ func (rt *Runtime) Param(h core.HParam) (*core.Param, error) {
 	if h == (core.HParam{}) {
 		return nil, nil
 	}
-	p := rt.Sketch.GetParam(h)
+	p := rt.Sketch.Param(h)
 	if p == nil {
 		return nil, fmt.Errorf("param %08x not found", h.V)
 	}
@@ -255,7 +255,7 @@ func (rt *Runtime) ParamValue(h core.HParam) (float64, bool) {
 	if h == (core.HParam{}) {
 		return 0, false
 	}
-	p := rt.Sketch.GetParam(h)
+	p := rt.Sketch.Param(h)
 	if p == nil {
 		return 0, false
 	}

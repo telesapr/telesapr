@@ -316,12 +316,12 @@ func TestPathSweepSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old, oldSegs := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
 	srf.SetChordTolMm(0.005)
 	srf.SetMaxSegments(100)
 	defer func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) }()
 	r := rand.New(rand.NewSource(10))
-	col := core.NewRgbaColor(100, 100, 100, 255)
+	col := core.NewRGBA(100, 100, 100, 255)
 	points, failed := 0, 0
 	for c := range 9 {
 		path := pathSweepCase(r, c)
@@ -419,7 +419,7 @@ func TestPathSweepRefusals(t *testing.T) {
 func BenchmarkPathSweep(b *testing.B) {
 	path := helixPath(20, 15, 1.5, 10)
 	loops, _ := profileAcross(path, 2)
-	col := core.NewRgbaColor(100, 100, 100, 255)
+	col := core.NewRGBA(100, 100, 100, 255)
 	for b.Loop() {
 		sp, err := topo.NewSweepPath(path, path[0].TangentAt(0).NormalDir(0), topo.PathSweepOptions{Tol: 5e-4})
 		if err != nil {

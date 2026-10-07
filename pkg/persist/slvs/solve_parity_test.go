@@ -29,7 +29,7 @@ func TestParityGroupSolveVsCpp(t *testing.T) {
 			sk.GenerateAll()
 
 			for hv, dof := range dofs {
-				g := sk.GetGroup(core.HGroup{V: hv})
+				g := sk.Group(core.HGroup{V: hv})
 				if g == nil {
 					t.Errorf("group %08x missing", hv)
 					continue
@@ -44,7 +44,7 @@ func TestParityGroupSolveVsCpp(t *testing.T) {
 
 			// Every group's own shell has the faces C++ gives it.
 			for _, hg := range sk.GroupOrder {
-				g := sk.GetGroup(hg)
+				g := sk.Group(hg)
 				var faces []uint32
 				for _, ss := range g.ThisShell.Surface {
 					faces = append(faces, uint32(ss.Face))

@@ -37,7 +37,7 @@ func (ss *Application) groupActivate(g *sketch.Group) {
 func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas render.Canvas) {
 	ss := gw.ss
 	sk := gw.sk()
-	if !(gw.showShaded || gw.drawOccludedAs != OccludedVisible) {
+	if !gw.showShaded && gw.drawOccludedAs == OccludedVisible {
 		return
 	}
 
@@ -52,15 +52,15 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		if (g.Type == sketch.GroupDrawing3D || g.Type == sketch.GroupDrawingWorkplane) && gw.dimSolidModel {
 			fillFront.Color = ss.styleColor(hstyle(core.StyleDimSolid))
 		}
-		hcfFront := canvas.GetFill(fillFront)
+		hcfFront := canvas.InternFill(fillFront)
 
 		// The back faces are drawn in red; should never see them, since
 		// we draw closed shells, so that's a debugging aid.
 		var hcfBack render.HFill
 		if ss.DrawBackFaces && !g.DisplayMesh.IsTransparent {
-			hcfBack = canvas.GetFill(render.Fill{
+			hcfBack = canvas.InternFill(render.Fill{
 				Layer: fillFront.Layer,
-				Color: core.RgbaColorFromFloat(1.0, 0.1, 0.1, 1.0),
+				Color: core.RGBAFromFloat(1.0, 0.1, 0.1, 1.0),
 			})
 		} else {
 			hcfBack = hcfFront
@@ -76,9 +76,9 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 
 		// Draw mesh edges, for debugging.
 		if gw.showMesh {
-			hcsTriangle := canvas.GetStroke(render.Stroke{
+			hcsTriangle := canvas.InternStroke(render.Stroke{
 				ZIndex: 1,
-				Color:  core.RgbaColorFromFloat(0.0, 1.0, 0.0, 1.0),
+				Color:  core.RGBAFromFloat(0.0, 1.0, 0.0, 1.0),
 				Width:  1,
 				Unit:   render.UnitPX,
 			})
@@ -92,14 +92,14 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		}
 
 	case drawMeshHovered:
-		hcf := canvas.GetFill(render.Fill{
+		hcf := canvas.InternFill(render.Fill{
 			Color:   ss.styleColor(hstyle(core.StyleHovered)),
 			Pattern: render.FillCheckeredA,
 			ZIndex:  2,
 		})
 		var faces []uint32
 		he := gw.hover.Entity
-		if he.V != 0 && sk.GetEntity(he).IsFace() {
+		if he.V != 0 && sk.Entity(he).IsFace() {
 			faces = append(faces, he.V)
 		}
 		if gw.hover.Face != 0 {
@@ -110,7 +110,7 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		unclip()
 
 	case drawMeshSelected:
-		hcf := canvas.GetFill(render.Fill{
+		hcf := canvas.InternFill(render.Fill{
 			Color:   ss.styleColor(hstyle(core.StyleSelected)),
 			Pattern: render.FillCheckeredB,
 			ZIndex:  1,
@@ -145,7 +145,7 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 	if gw.show.Edges {
 		strokeEdge := ss.styleStroke(hstyle(core.StyleSolidEdge))
 		strokeEdge.ZIndex = 1
-		hcsEdge := canvas.GetStroke(strokeEdge)
+		hcsEdge := canvas.InternStroke(strokeEdge)
 
 		drawAs := render.EmphasizedAndContour
 		if gw.show.Outlines {
@@ -159,7 +159,7 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 				strokeHidden.StipplePattern = core.StippleContinuous
 			}
 			strokeHidden.Layer = render.LayerOccluded
-			hcsHidden := canvas.GetStroke(strokeHidden)
+			hcsHidden := canvas.InternStroke(strokeHidden)
 			canvas.DrawOutlines(&g.DisplayOutlines, hcsHidden, render.EmphasizedAndContour)
 		}
 	}
@@ -167,7 +167,7 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 	if gw.show.Outlines {
 		strokeOutline := ss.styleStroke(hstyle(core.StyleOutline))
 		strokeOutline.ZIndex = 1
-		hcsOutline := canvas.GetStroke(strokeOutline)
+		hcsOutline := canvas.InternStroke(strokeOutline)
 		canvas.DrawOutlines(&g.DisplayOutlines, hcsOutline, render.ContourOnly)
 	}
 	unclip()
@@ -178,16 +178,16 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 // closed, planar, non-intersecting contour.
 func (gw *GraphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
 	ss := gw.ss
-	camera := canvas.GetCamera()
+	camera := canvas.Camera()
 
 	strokeUnclosed := ss.styleStroke(hstyle(core.StyleDrawError))
 	strokeUnclosed.Color = strokeUnclosed.Color.WithAlpha(50)
-	hcsUnclosed := canvas.GetStroke(strokeUnclosed)
+	hcsUnclosed := canvas.InternStroke(strokeUnclosed)
 
 	strokeError := ss.styleStroke(hstyle(core.StyleDrawError))
 	strokeError.Layer = render.LayerFront
 	strokeError.Width = 1.0
-	hcsError := canvas.GetStroke(strokeError)
+	hcsError := canvas.InternStroke(strokeError)
 
 	textHeight := ss.defaultTextHeight() / camera.Scale
 
@@ -263,7 +263,7 @@ func (gw *GraphicsWindow) drawFilledPaths(g *sketch.Group, canvas render.Canvas)
 		default:
 			continue
 		}
-		hcf := canvas.GetFill(fill)
+		hcf := canvas.InternFill(fill)
 
 		var sp srf.SPolygon
 		sbls.MakePwlInto(&sp)
@@ -274,7 +274,7 @@ func (gw *GraphicsWindow) drawFilledPaths(g *sketch.Group, canvas render.Canvas)
 // drawContourAreaLabels is Group::DrawContourAreaLabels.
 func (gw *GraphicsWindow) drawContourAreaLabels(g *sketch.Group, canvas render.Canvas) {
 	ss := gw.ss
-	camera := canvas.GetCamera()
+	camera := canvas.Camera()
 	gr := camera.ProjRight.ScaledBy(1 / camera.Scale)
 	gu := camera.ProjUp.ScaledBy(1 / camera.Scale)
 
@@ -286,9 +286,9 @@ func (gw *GraphicsWindow) drawContourAreaLabels(g *sketch.Group, canvas render.C
 		lo := sbls.Outer.Curves[0].Ctrl[0]
 		hi := lo
 		var zero geom.Vector
-		sbls.GetBoundingProjd(geom.Vector{X: 1}, zero, &lo.X, &hi.X)
-		sbls.GetBoundingProjd(geom.Vector{Y: 1}, zero, &lo.Y, &hi.Y)
-		sbls.GetBoundingProjd(geom.Vector{Z: 1}, zero, &lo.Z, &hi.Z)
+		sbls.BoundingProjd(geom.Vector{X: 1}, zero, &lo.X, &hi.X)
+		sbls.BoundingProjd(geom.Vector{Y: 1}, zero, &lo.Y, &hi.Y)
+		sbls.BoundingProjd(geom.Vector{Z: 1}, zero, &lo.Z, &hi.Z)
 
 		mid := lo.Plus(hi).ScaledBy(0.5)
 
@@ -299,10 +299,10 @@ func (gw *GraphicsWindow) drawContourAreaLabels(g *sketch.Group, canvas render.C
 		label := ss.MmToStringSI(math.Abs(sbls.SignedArea()), 2)
 		fontHeight := ss.styleTextHeight(hs)
 		vf := res.BuiltinVectorFont()
-		textWidth := vf.GetWidth(fontHeight, label)
+		textWidth := vf.Width(fontHeight, label)
 		textHeight := vf.GetCapHeight(fontHeight)
 		pos := mid.Minus(gr.ScaledBy(textWidth / 2.0)).Minus(gu.ScaledBy(textHeight / 2.0))
-		canvas.DrawVectorText(label, fontHeight, pos, gr, gu, canvas.GetStroke(stroke))
+		canvas.DrawVectorText(label, fontHeight, pos, gr, gu, canvas.InternStroke(stroke))
 	}
 }
 
@@ -337,7 +337,7 @@ func appearanceIndex(name string) int {
 // ScreenChangeAppearance gives the shown group the v-th appearance.
 func (tw *TextWindow) ScreenChangeAppearance(link int, v uint32) {
 	ss := tw.ss
-	g := ss.SK.GetGroup(tw.shown.group)
+	g := ss.SK.Group(tw.shown.group)
 	if g == nil || int(v) >= len(render.MaterialNames) {
 		return
 	}

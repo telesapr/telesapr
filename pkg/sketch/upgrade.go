@@ -27,14 +27,14 @@ func (sk *Sketch) UpgradeLegacyData() {
 		// request would generate, then add them now, so that we can
 		// force them to their appropriate positions.
 		for _, p := range param {
-			if sk.GetParam(p.H) != nil {
+			if sk.Param(p.H) != nil {
 				continue
 			}
 			sk.Params = append(sk.Params, p)
 		}
 		allPointsExist := true
 		for _, e := range entity {
-			if sk.GetEntity(e.H) != nil {
+			if sk.Entity(e.H) != nil {
 				continue
 			}
 			sk.Entities = append(sk.Entities, e)
@@ -42,9 +42,9 @@ func (sk *Sketch) UpgradeLegacyData() {
 		}
 
 		if !allPointsExist {
-			text := sk.MustGetEntity(r.H.Entity(0))
-			b := sk.MustGetEntity(text.Point[2])
-			c := sk.MustGetEntity(text.Point[3])
+			text := sk.MustEntity(r.H.Entity(0))
+			b := sk.MustEntity(text.Point[2])
+			c := sk.MustEntity(text.Point[3])
 			bex, cex := text.RectGetPointsExprs(sk)
 			b.PointForceParamTo(sk, evalVector(sk, bex))
 			c.PointForceParamTo(sk, evalVector(sk, cex))
@@ -80,16 +80,16 @@ func (sk *Sketch) UpgradeLegacyData() {
 				continue
 			}
 
-			eln := sk.MustGetEntity(c.EntityA)
-			ea := sk.MustGetEntity(eln.Point[0])
-			eb := sk.MustGetEntity(eln.Point[1])
-			ep := sk.MustGetEntity(c.PtA)
+			eln := sk.MustEntity(c.EntityA)
+			ea := sk.MustEntity(eln.Point[0])
+			eb := sk.MustEntity(eln.Point[1])
+			ep := sk.MustEntity(c.PtA)
 
 			exp := ep.PointGetExprsInWorkplane(sk, c.Workplane)
 			exa := ea.PointGetExprsInWorkplane(sk, c.Workplane)
 			exb := eb.PointGetExprsInWorkplane(sk, c.Workplane)
 			exba := exb.Minus(exa)
-			p := sk.MustGetParam(c.H.Param(0))
+			p := sk.MustParam(c.H.Param(0))
 			p.Val = core.EvalExpr(sk, exba.Dot(exp.Minus(exa))) / core.EvalExpr(sk, exba.Dot(exba))
 
 		case core.ConstraintCubicLineTangent:
@@ -97,8 +97,8 @@ func (sk *Sketch) UpgradeLegacyData() {
 				continue
 			}
 
-			cubic := sk.MustGetEntity(c.EntityA)
-			line := sk.MustGetEntity(c.EntityB)
+			cubic := sk.MustEntity(c.EntityA)
+			line := sk.MustEntity(c.EntityB)
 
 			var a core.ExprVector
 			if c.Other {
@@ -109,7 +109,7 @@ func (sk *Sketch) UpgradeLegacyData() {
 
 			b := line.VectorGetExprs(sk)
 
-			p := sk.MustGetParam(c.H.Param(0))
+			p := sk.MustParam(c.H.Param(0))
 			p.Val = core.EvalExpr(sk, a.Dot(b)) / core.EvalExpr(sk, b.Dot(b))
 
 		case core.ConstraintSameOrientation:
@@ -117,13 +117,13 @@ func (sk *Sketch) UpgradeLegacyData() {
 				continue
 			}
 
-			an := sk.MustGetEntity(c.EntityA)
-			bn := sk.MustGetEntity(c.EntityB)
+			an := sk.MustEntity(c.EntityA)
+			bn := sk.MustEntity(c.EntityB)
 
 			a := an.NormalExprsN(sk)
 			b := bn.NormalExprsN(sk)
 
-			p := sk.MustGetParam(c.H.Param(0))
+			p := sk.MustParam(c.H.Param(0))
 			p.Val = core.EvalExpr(sk, a.Dot(b)) / core.EvalExpr(sk, b.Dot(b))
 
 		case core.ConstraintParallel:
@@ -131,12 +131,12 @@ func (sk *Sketch) UpgradeLegacyData() {
 				continue
 			}
 
-			ea := sk.MustGetEntity(c.EntityA)
-			eb := sk.MustGetEntity(c.EntityB)
+			ea := sk.MustEntity(c.EntityA)
+			eb := sk.MustEntity(c.EntityB)
 			a := ea.VectorGetExprsInWorkplane(sk, c.Workplane)
 			b := eb.VectorGetExprsInWorkplane(sk, c.Workplane)
 
-			p := sk.MustGetParam(c.H.Param(0))
+			p := sk.MustParam(c.H.Param(0))
 			p.Val = core.EvalExpr(sk, a.Dot(b)) / core.EvalExpr(sk, b.Dot(b))
 		}
 	}
@@ -153,7 +153,7 @@ func evalVector(sk *Sketch, v core.ExprVector) geom.Vector {
 // EnsureValidActives): the last group, or the first that isn't the
 // references.
 func (sk *Sketch) ActiveGroup() core.HGroup {
-	if sk.Active.V != 0 && sk.GetGroup(sk.Active) != nil {
+	if sk.Active.V != 0 && sk.Group(sk.Active) != nil {
 		return sk.Active
 	}
 	if len(sk.GroupOrder) == 0 {
@@ -176,7 +176,7 @@ func (sk *Sketch) groupIsVisible(g *Group) bool {
 	if !g.Visible {
 		return false
 	}
-	active := sk.GetGroup(sk.ActiveGroup())
+	active := sk.Group(sk.ActiveGroup())
 	return active == nil || g.Order <= active.Order
 }
 
@@ -184,7 +184,7 @@ func (sk *Sketch) groupIsVisible(g *Group) bool {
 // sk.Show (GraphicsWindow::Init's when nil).
 func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
 	show := sk.visibility()
-	g := sk.GetGroup(e.Group)
+	g := sk.Group(e.Group)
 
 	if g.H.V == core.HGroupReferences && e.IsNormal() {
 		// The reference normals are always shown
@@ -226,7 +226,7 @@ func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
 // ActiveWorkplane is the active group's workplane (C++
 // GraphicsWindow::ActiveWorkplane).
 func (sk *Sketch) ActiveWorkplane() core.HEntity {
-	if g := sk.GetGroup(sk.ActiveGroup()); g != nil {
+	if g := sk.Group(sk.ActiveGroup()); g != nil {
 		return g.ActiveWorkplane
 	}
 	return core.FreeIn3D

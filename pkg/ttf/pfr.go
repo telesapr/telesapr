@@ -623,22 +623,22 @@ func pfrFaceInit(data []byte) (*Face, error) {
 
 // pfrCmapCharIndex is pfr_cmap_char_index.
 func pfrCmapCharIndex(chars []pfrChar, charCode uint32) uint32 {
-	min, max := uint32(0), uint32(len(chars))
-	mid := min + (max-min)/2
-	for min < max {
+	lo, hi := uint32(0), uint32(len(chars))
+	mid := lo + (hi-lo)/2
+	for lo < hi {
 		g := &chars[mid]
 		if g.charCode == charCode {
 			return mid + 1
 		}
 		if g.charCode < charCode {
-			min = mid + 1
+			lo = mid + 1
 		} else {
-			max = mid
+			hi = mid
 		}
 		// reasonable prediction in a continuous block
 		mid += charCode - g.charCode
-		if mid >= max || mid < min {
-			mid = min + (max-min)/2
+		if mid >= hi || mid < lo {
+			mid = lo + (hi-lo)/2
 		}
 	}
 	return 0

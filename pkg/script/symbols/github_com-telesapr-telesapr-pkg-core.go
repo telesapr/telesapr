@@ -118,7 +118,7 @@ func init() {
 		"NewFromString":               reflect.ValueOf(core.NewFromString),
 		"NewParam":                    reflect.ValueOf(core.NewParam),
 		"NewParamPtr":                 reflect.ValueOf(core.NewParamPtr),
-		"NewRgbaColor":                reflect.ValueOf(core.NewRgbaColor),
+		"NewRGBA":                     reflect.ValueOf(core.NewRGBA),
 		"NewVariable":                 reflect.ValueOf(core.NewVariable),
 		"NoConstraint":                reflect.ValueOf(&core.NoConstraint).Elem(),
 		"NoEntity":                    reflect.ValueOf(&core.NoEntity).Elem(),
@@ -164,12 +164,12 @@ func init() {
 		"PolySelfIntersecting":        reflect.ValueOf(core.PolySelfIntersecting),
 		"PolyZeroLenEdge":             reflect.ValueOf(core.PolyZeroLenEdge),
 		"ProjectVectorInto":           reflect.ValueOf(core.ProjectVectorInto),
+		"RGBAFromFloat":               reflect.ValueOf(core.RGBAFromFloat),
+		"RGBAFromPackedInt":           reflect.ValueOf(core.RGBAFromPackedInt),
 		"RatPolyEps":                  reflect.ValueOf(constant.MakeFromLiteral("1.000000000000000000000707446218885976918933772283892835730512161e-08", token.FLOAT, 0)),
 		"ReadUTF8":                    reflect.ValueOf(core.ReadUTF8),
 		"RenameVariable":              reflect.ValueOf(core.RenameVariable),
 		"RewriteColor":                reflect.ValueOf(core.RewriteColor),
-		"RgbaColorFromFloat":          reflect.ValueOf(core.RgbaColorFromFloat),
-		"RgbaColorFromPackedInt":      reflect.ValueOf(core.RgbaColorFromPackedInt),
 		"SetSettings":                 reflect.ValueOf(core.SetSettings),
 		"SolveDidntConverge":          reflect.ValueOf(core.SolveDidntConverge),
 		"SolveOkay":                   reflect.ValueOf(core.SolveOkay),
@@ -262,7 +262,7 @@ func init() {
 		"Param":             reflect.ValueOf((*core.Param)(nil)),
 		"ParamList":         reflect.ValueOf((*core.ParamList)(nil)),
 		"PolyError":         reflect.ValueOf((*core.PolyError)(nil)),
-		"RgbaColor":         reflect.ValueOf((*core.RgbaColor)(nil)),
+		"RGBA":              reflect.ValueOf((*core.RGBA)(nil)),
 		"Settings":          reflect.ValueOf((*core.Settings)(nil)),
 		"SolveResult":       reflect.ValueOf((*core.SolveResult)(nil)),
 		"StipplePattern":    reflect.ValueOf((*core.StipplePattern)(nil)),
@@ -283,16 +283,16 @@ func init() {
 
 // _github_com_telesapr_telesapr_pkg_core_EntitySketch is an interface wrapper for EntitySketch type
 type _github_com_telesapr_telesapr_pkg_core_EntitySketch struct {
-	IValue     interface{}
-	WGetEntity func(h core.HEntity) *core.Entity
-	WGetParam  func(h core.HParam) *core.Param
+	IValue  interface{}
+	WEntity func(h core.HEntity) *core.Entity
+	WParam  func(h core.HParam) *core.Param
 }
 
-func (W _github_com_telesapr_telesapr_pkg_core_EntitySketch) GetEntity(h core.HEntity) *core.Entity {
-	return W.WGetEntity(h)
+func (W _github_com_telesapr_telesapr_pkg_core_EntitySketch) Entity(h core.HEntity) *core.Entity {
+	return W.WEntity(h)
 }
-func (W _github_com_telesapr_telesapr_pkg_core_EntitySketch) GetParam(h core.HParam) *core.Param {
-	return W.WGetParam(h)
+func (W _github_com_telesapr_telesapr_pkg_core_EntitySketch) Param(h core.HParam) *core.Param {
+	return W.WParam(h)
 }
 
 // _github_com_telesapr_telesapr_pkg_core_EntityVisibility is an interface wrapper for EntityVisibility type

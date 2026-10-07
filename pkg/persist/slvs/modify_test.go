@@ -49,7 +49,7 @@ func TestModifyTools(t *testing.T) {
 		}},
 		{"split_circle_line", false, func(sk *sketch.Sketch) error {
 			a := addRequest(sk, sketch.RequestCircle, v(5, 5))
-			sk.MustGetEntity(a.Entity(64)).DistanceForceTo(sk, 12)
+			sk.MustEntity(a.Entity(64)).DistanceForceTo(sk, 12)
 			b := addRequest(sk, sketch.RequestLineSegment, v(-30, 0), v(30, 8))
 			sk.GenerateAllTyped(sketch.GenerateAll)
 			return sk.SplitLinesOrCurves(selectEntities(b.Entity(0), a.Entity(0)), sk.ProjectPoint(v(20, 6)))
@@ -63,7 +63,7 @@ func TestModifyTools(t *testing.T) {
 		{"split_point", false, func(sk *sketch.Sketch) error {
 			a := addRequest(sk, sketch.RequestLineSegment, v(-20, -5), v(30, 10))
 			p := addRequest(sk, sketch.RequestDatumPoint)
-			sk.MustGetEntity(p.Entity(0)).PointForceTo(sk, v(5, 3))
+			sk.MustEntity(p.Entity(0)).PointForceTo(sk, v(5, 3))
 			sk.Constrain(core.ConstraintPtOnLine, p.Entity(0), core.NoEntity, a.Entity(0), core.NoEntity, false, false)
 			sk.GenerateAllTyped(sketch.GenerateAll)
 			return sk.SplitLinesOrCurves(selectEntities(a.Entity(0), p.Entity(0)), geom.Point2d{})
@@ -97,7 +97,7 @@ func TestModifyTools(t *testing.T) {
 func addRequest(sk *sketch.Sketch, typ sketch.RequestType, pts ...geom.Vector) core.HRequest {
 	hr := sk.AddRequestOfType(typ, false)
 	for i, p := range pts {
-		sk.MustGetEntity(hr.Entity(1+i)).PointForceTo(sk, p)
+		sk.MustEntity(hr.Entity(1+i)).PointForceTo(sk, p)
 	}
 	return hr
 }

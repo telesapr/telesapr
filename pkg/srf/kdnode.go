@@ -497,9 +497,11 @@ func (n *SKdNode) FindEdgeOn(a, b geom.Vector, cnt int, coplanarIsInter bool, in
 		}
 
 		// Test if this triangle matches up with the given edge
-		if (a.Equals(tr.B) && b.Equals(tr.A)) ||
+		switch {
+		case (a.Equals(tr.B) && b.Equals(tr.A)) ||
 			(a.Equals(tr.C) && b.Equals(tr.B)) ||
-			(a.Equals(tr.A) && b.Equals(tr.C)) {
+			(a.Equals(tr.A) && b.Equals(tr.C)):
+
 			info.Count++
 			// Record whether this triangle is front- or back-facing.
 			info.FrontFacing = tr.Normal().Z > lengthEps
@@ -508,11 +510,14 @@ func (n *SKdNode) FindEdgeOn(a, b geom.Vector, cnt int, coplanarIsInter bool, in
 			// And record which vertices a and b correspond to
 			info.Ai = vertexIndex(tr, a)
 			info.Bi = vertexIndex(tr, b)
-		} else if (a.Equals(tr.A) && b.Equals(tr.B)) ||
+
+		case (a.Equals(tr.A) && b.Equals(tr.B)) ||
 			(a.Equals(tr.B) && b.Equals(tr.C)) ||
-			(a.Equals(tr.C) && b.Equals(tr.A)) {
+			(a.Equals(tr.C) && b.Equals(tr.A)):
+
 			// It's an edge of this triangle, okay.
-		} else {
+
+		default:
 			// Check for self-intersection
 			nn := tr.Normal().WithMagnitude(1)
 			d := tr.A.Dot(nn)
@@ -531,17 +536,17 @@ func (n *SKdNode) FindEdgeOn(a, b geom.Vector, cnt int, coplanarIsInter bool, in
 					} else {
 						p := geom.AtIntersectionOfPlaneAndLine(nn, d, a, b)
 						ta, tb, tc := tr.A, tr.B, tr.C
-						if p.DistanceToLine(ta, tb.Minus(ta)) < lengthEps ||
+						// An intersection on an edge of the triangle happens
+						// when our edge is from a triangle coplanar with
+						// another triangle in the mesh: the edge is not
+						// tested against the triangles whose plane holds
+						// it, but it is against the coplanar triangle's
+						// neighbours, which it meets on their edges. That
+						// is no intersection.
+						onEdge := p.DistanceToLine(ta, tb.Minus(ta)) < lengthEps ||
 							p.DistanceToLine(tb, tc.Minus(tb)) < lengthEps ||
-							p.DistanceToLine(tc, ta.Minus(tc)) < lengthEps {
-							// Intersection lies on edge. This happens when
-							// our edge is from a triangle coplanar with
-							// another triangle in the mesh. We don't test
-							// the edge against triangles whose plane contains
-							// that edge, but we do end up testing against
-							// the coplanar triangle's neighbours, which we
-							// will intersect on their edges.
-						} else {
+							p.DistanceToLine(tc, ta.Minus(tc)) < lengthEps
+						if !onEdge {
 							info.IntersectsMesh = true
 						}
 					}

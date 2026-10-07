@@ -48,7 +48,7 @@ func linkObj(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bo
 func objTriangles(data []byte, dir string) ([]srf.STriangle, error) {
 	var verts []geom.Vector
 	var tris []srf.STriangle
-	materials := map[string]core.RgbaColor{}
+	materials := map[string]core.RGBA{}
 	color := meshGrey
 	sc := bufio.NewScanner(bytes.NewReader(data))
 	sc.Buffer(make([]byte, 1<<16), 1<<24)
@@ -91,7 +91,7 @@ func objTriangles(data []byte, dir string) ([]srf.STriangle, error) {
 				corners = append(corners, verts[k-1])
 			}
 			for k := 2; k < len(corners); k++ {
-				tr := srf.STriangle{Meta: srf.STriMeta{RgbaColor: color}, A: corners[0], B: corners[k-1], C: corners[k]}
+				tr := srf.STriangle{Meta: srf.STriMeta{RGBA: color}, A: corners[0], B: corners[k-1], C: corners[k]}
 				n := tr.Normal().WithMagnitude(1)
 				tr.NA, tr.NB, tr.NC = n, n, n
 				tris = append(tris, tr)
@@ -121,7 +121,7 @@ func objTriangles(data []byte, dir string) ([]srf.STriangle, error) {
 }
 
 // readMtl adds the diffuse colours of a material file's materials.
-func readMtl(data []byte, materials map[string]core.RgbaColor) {
+func readMtl(data []byte, materials map[string]core.RGBA) {
 	var name string
 	unit := func(s string) uint8 {
 		v, err := strconv.ParseFloat(s, 64)

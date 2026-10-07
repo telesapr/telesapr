@@ -57,7 +57,7 @@ func invariantLines(fixture string) []string {
 	sk.GenerateAll()
 	var lines []string
 	for _, hg := range sk.GroupOrder {
-		r := check.Group(sk, sk.GetGroup(hg))
+		r := check.Group(sk, sk.Group(hg))
 		lines = append(lines, fmt.Sprintf("%s g%x %s", fixture, hg.V, r.String()))
 	}
 	return lines

@@ -167,7 +167,7 @@ func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, boo
 	if b.Degree <= 2 {
 		res = 7.0
 	}
-	for i := 0; i < int(res); i++ {
+	for i := range int(res) {
 		tryt := float64(i) / res
 
 		tryp := b.PointAt(tryt)
@@ -182,7 +182,7 @@ func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, boo
 	if mustConverge {
 		iters = 15
 	}
-	for i := 0; i < iters; i++ {
+	for range iters {
 		p0 := b.PointAt(t)
 		if p0.EqualsTol(p, ratPolyEps) {
 			return t, true
@@ -257,9 +257,9 @@ func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList) {
 	}
 }
 
-// GetBoundingProjd extends (pmin, pmax) with the projection of every
+// BoundingProjd extends (pmin, pmax) with the projection of every
 // control point onto the axis (orig + t * u).
-func (b *SBezier) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
+func (b *SBezier) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 	for i := 0; i <= b.Degree; i++ {
 		v := b.Ctrl[i]
 		proj := v.Minus(orig).Dot(u)

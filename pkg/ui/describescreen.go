@@ -23,7 +23,7 @@ func (tw *TextWindow) ScreenUnselectAll(link int, v uint32) {
 // TextWindow::ScreenEditTtfText).
 func (tw *TextWindow) ScreenEditTtfText(link int, v uint32) {
 	hr := core.HRequest{V: v}
-	r := tw.ss.SK.GetRequest(hr)
+	r := tw.ss.SK.Request(hr)
 
 	tw.ShowEditControl(10, r.Str)
 	tw.edit.meaning = EditTTFText
@@ -34,7 +34,7 @@ func (tw *TextWindow) ScreenEditTtfText(link int, v uint32) {
 // TextWindow::ScreenToggleTtfKerning).
 func (tw *TextWindow) ScreenToggleTtfKerning(link int, v uint32) {
 	ss := tw.ss
-	r := ss.SK.GetRequest(core.HRequest{V: v})
+	r := ss.SK.Request(core.HRequest{V: v})
 
 	ss.UndoRemember()
 	if r.ExtraPoints != 0 {
@@ -64,12 +64,12 @@ func (tw *TextWindow) ScreenSetTtfFont(link int, v uint32) {
 		return
 	}
 
-	e := sk.GetEntity(gs.entity[0])
+	e := sk.Entity(gs.entity[0])
 	if e == nil || e.Type != core.EntityTTFText || !e.H.IsFromRequest() {
 		return
 	}
 
-	r := sk.GetRequest(e.H.Request())
+	r := sk.Request(e.H.Request())
 	if r == nil {
 		return
 	}
@@ -84,7 +84,7 @@ func (tw *TextWindow) ScreenSetTtfFont(link int, v uint32) {
 // not (C++ TextWindow::ScreenConstraintToggleReference).
 func (tw *TextWindow) ScreenConstraintToggleReference(link int, v uint32) {
 	ss := tw.ss
-	c := ss.SK.GetConstraint(core.HConstraint{V: v})
+	c := ss.SK.Constraint(core.HConstraint{V: v})
 
 	ss.UndoRemember()
 	c.Reference = !c.Reference
@@ -97,7 +97,7 @@ func (tw *TextWindow) ScreenConstraintToggleReference(link int, v uint32) {
 // (C++ TextWindow::ScreenConstraintShowAsRadius).
 func (tw *TextWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
 	ss := tw.ss
-	c := ss.SK.GetConstraint(core.HConstraint{V: v})
+	c := ss.SK.Constraint(core.HConstraint{V: v})
 
 	ss.UndoRemember()
 	c.Other = !c.Other
@@ -107,7 +107,7 @@ func (tw *TextWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
 
 // projectInto projects p into workplane wrkpl (C++ Vector::ProjectInto).
 func (ss *Application) projectInto(p geom.Vector, wrkpl core.HEntity) geom.Vector {
-	w := ss.SK.MustGetEntity(wrkpl)
+	w := ss.SK.MustEntity(wrkpl)
 	p0 := w.WorkplaneGetOffset(ss.SK)
 
 	f := p.Minus(p0)
@@ -158,7 +158,7 @@ func (tw *TextWindow) DescribeSelection() {
 		}
 		return 'a'
 	}
-	ent := sk.MustGetEntity
+	ent := sk.MustEntity
 
 	gs := &ss.GW.gs
 
@@ -304,7 +304,7 @@ func (tw *TextWindow) DescribeSelection() {
 
 		tw.Printf(false, "")
 		if e.H.IsFromRequest() {
-			r := sk.GetRequest(e.H.Request())
+			r := sk.Request(e.H.Request())
 			if e.H == r.H.Entity(0) {
 				tw.Printf(false, "%FtFROM REQUEST%E  %s", r.DescriptionString())
 			} else {
@@ -313,7 +313,7 @@ func (tw *TextWindow) DescribeSelection() {
 					r.DescriptionString())
 			}
 		}
-		g := sk.GetGroup(e.Group)
+		g := sk.Group(e.Group)
 		tw.Printf(false, "%FtIN GROUP%E      %Fl%Ll%D%f%s%E",
 			g.H.V, lf(tw.ScreenSelectGroup), groupDescription(g))
 		if core.IsFreeIn3D(e.Workplane) {
@@ -347,8 +347,8 @@ func (tw *TextWindow) DescribeSelection() {
 		findConstraints := func(he core.HEntity) {
 			for i := range sk.Constraints {
 				c := &sk.Constraints[i]
-				if !(c.PtA == he || c.PtB == he || c.EntityA == he || c.EntityB == he ||
-					c.EntityC == he || c.EntityD == he) {
+				if c.PtA != he && c.PtB != he && c.EntityA != he && c.EntityB != he &&
+					c.EntityC != he && c.EntityD != he {
 					continue
 				}
 				lhc = append(lhc, c.H)
@@ -379,7 +379,7 @@ func (tw *TextWindow) DescribeSelection() {
 			first := true
 			a := 0
 			for _, hc := range lhc {
-				c := sk.GetConstraint(hc)
+				c := sk.Constraint(hc)
 				if c.Reference != reference {
 					continue
 				}
@@ -465,7 +465,7 @@ func (tw *TextWindow) DescribeSelection() {
 		tw.Printf(true, "     point "+ptAsStr, costr(p, pp)...)
 		tw.Printf(true, " pt-ln distance = %Fi%s%E", mm(pp.DistanceToLine(lp0, lp1.Minus(lp0))))
 		wrkpl := ss.GW.ActiveWorkplane()
-		if !core.IsFreeIn3D(wrkpl) && !(p.Workplane == wrkpl && ln.Workplane == wrkpl) {
+		if !core.IsFreeIn3D(wrkpl) && (p.Workplane != wrkpl || ln.Workplane != wrkpl) {
 			ppw := ss.projectInto(pp, wrkpl)
 			lp0w := ss.projectInto(lp0, wrkpl)
 			lp1w := ss.projectInto(lp1, wrkpl)
@@ -551,7 +551,7 @@ func (tw *TextWindow) DescribeSelection() {
 		}
 
 	case gs.n == 0 && gs.constraints == 1:
-		c := sk.GetConstraint(gs.constraint[0])
+		c := sk.Constraint(gs.constraint[0])
 		desc := c.DescriptionString()
 
 		switch {
@@ -645,7 +645,7 @@ func (tw *TextWindow) DescribeSelection() {
 		}
 	}
 	for i := range gs.constraints {
-		c := sk.GetConstraint(gs.constraint[i])
+		c := sk.Constraint(gs.constraint[i])
 		if c.Type == core.ConstraintComment && c.Disp.Style.V != 0 {
 			styleAssigned = true
 		}

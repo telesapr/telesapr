@@ -272,7 +272,7 @@ func (d *Document) processGroup(block Block) error {
 	}
 	// Files older than group colors leave C++'s zero color.
 	if v, ok := fields["Group.color"]; ok {
-		group.Color = core.RgbaColorFromPackedInt(parseHexUint32(v))
+		group.Color = core.RGBAFromPackedInt(parseHexUint32(v))
 	}
 	if v, ok := fields["Group.activeWorkplane.v"]; ok {
 		group.ActiveWorkplane = core.HEntity{V: parseHexUint32(v)}
@@ -696,10 +696,10 @@ func (d *Document) processStyle(block Block) {
 		style.TextOrigin = core.TextOrigin(parseHexUint32(v))
 	}
 	if v, ok := fields["Style.color"]; ok && v != "" {
-		style.Color = core.RgbaColorFromPackedInt(parseHexUint32(v))
+		style.Color = core.RGBAFromPackedInt(parseHexUint32(v))
 	}
 	if v, ok := fields["Style.fillColor"]; ok && v != "" {
-		style.FillColor = core.RgbaColorFromPackedInt(parseHexUint32(v))
+		style.FillColor = core.RGBAFromPackedInt(parseHexUint32(v))
 	}
 	if v, ok := fields["Style.filled"]; ok {
 		style.Filled = parseBool(v)

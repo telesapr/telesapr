@@ -184,7 +184,7 @@ func TestSparseQRVsEigen(t *testing.T) {
 			t.Errorf("case %d (%dx%d): %s, want %s", ci, c.a.rows, c.a.cols, gotRank, wantRank)
 		}
 		x := leastSquares(c.a, c.b)
-		for j := 0; j < c.a.cols; j++ {
+		for j := range c.a.cols {
 			w, err := strconv.ParseFloat(line(), 64)
 			if err != nil {
 				t.Fatal(err)

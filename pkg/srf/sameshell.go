@@ -37,7 +37,7 @@ func SameShell(a, b *SShell) bool {
 // round, the same control points with their weights as a set, and trims
 // with the same ends as a set.
 func samePatch(s, t *SSurface) bool {
-	if !(s.DegM == t.DegM && s.DegN == t.DegN) && !(s.DegM == t.DegN && s.DegN == t.DegM) {
+	if (s.DegM != t.DegM || s.DegN != t.DegN) && (s.DegM != t.DegN || s.DegN != t.DegM) {
 		return false
 	}
 	type wp struct {

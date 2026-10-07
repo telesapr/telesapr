@@ -1,12 +1,13 @@
 package link
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -86,7 +87,7 @@ func readStep(path string, pct float64) (*step.Result, error) {
 		for k := range stepCache {
 			keys = append(keys, k)
 		}
-		sort.Slice(keys, func(i, j int) bool { return stepCache[keys[i]].use < stepCache[keys[j]].use })
+		slices.SortFunc(keys, func(a, b stepKey) int { return cmp.Compare(stepCache[a].use, stepCache[b].use) })
 		delete(stepCache, keys[0])
 	}
 	return res, err

@@ -172,7 +172,7 @@ type Group struct {
 	// the links fills it.
 	LinkParts []BOMItem
 
-	Color core.RgbaColor
+	Color core.RGBA
 
 	Predef struct {
 		Q       geom.Quaternion
@@ -352,7 +352,7 @@ func (g *Group) PreviousGroup(sk *Sketch) *Group {
 
 	var prev *Group
 	for _, gh := range sk.GroupOrder {
-		current := sk.GetGroup(gh)
+		current := sk.Group(gh)
 		if current == nil {
 			continue
 		}
@@ -371,7 +371,7 @@ func (g *Group) RunningMeshGroup(sk *Sketch) *Group {
 
 	switch g.Type {
 	case GroupRotate, GroupTranslate, GroupMirror, GroupPathPattern:
-		opA := sk.GetGroup(g.OpA)
+		opA := sk.Group(g.OpA)
 		if opA == nil {
 			return nil
 		}
@@ -403,7 +403,7 @@ func FaceGroup(id srf.FaceID) core.HGroup { return faceGroup(id) }
 // AppearanceOf is the appearance of the face id of the model: its own,
 // or its group's, or "" for the default.
 func (sk *Sketch) AppearanceOf(id srf.FaceID) string {
-	g := sk.GetGroup(faceGroup(id))
+	g := sk.Group(faceGroup(id))
 	if g == nil {
 		return ""
 	}

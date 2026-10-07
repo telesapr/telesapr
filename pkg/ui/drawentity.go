@@ -54,9 +54,9 @@ func (gw *GraphicsWindow) entityCache(e *core.Entity) *entityDrawCache {
 // entityDescription is C++ Entity::DescriptionString.
 func (ss *Application) entityDescription(e *core.Entity) string {
 	if e.H.IsFromRequest() {
-		return ss.SK.GetRequest(e.H.Request()).DescriptionString()
+		return ss.SK.Request(e.H.Request()).DescriptionString()
 	}
-	return groupDescription(ss.SK.GetGroup(e.H.Group()))
+	return groupDescription(ss.SK.Group(e.H.Group()))
 }
 
 // groupDescription is C++ Group::DescriptionString.
@@ -115,7 +115,7 @@ func (gw *GraphicsWindow) getOrGenerateScreenBBox(e *core.Entity) (core.BBox, bo
 	sbl := gw.getOrGenerateBezierCurves(e)
 
 	// We don't bother with bounding boxes for workplanes, etc.
-	if !(e.IsPoint() || e.IsNormal() || len(sbl.Curves) > 0) {
+	if !e.IsPoint() && !e.IsNormal() && len(sbl.Curves) == 0 {
 		return core.BBox{}, false
 	}
 	c := gw.entityCache(e)
@@ -127,7 +127,7 @@ func (gw *GraphicsWindow) getOrGenerateScreenBBox(e *core.Entity) (core.BBox, bo
 		proj := gw.ProjectPoint3(e.PointGetNum(sk))
 		c.screenBBox = core.NewBBox(proj, proj)
 	case e.IsNormal():
-		proj := gw.ProjectPoint3(sk.GetEntity(e.Point[0]).PointGetNum(sk))
+		proj := gw.ProjectPoint3(sk.Entity(e.Point[0]).PointGetNum(sk))
 		c.screenBBox = core.NewBBox(proj, proj)
 	default:
 		first := gw.ProjectPoint3(sbl.Curves[0].Ctrl[0])
@@ -163,11 +163,11 @@ func (gw *GraphicsWindow) entityReferencePoints(e *core.Entity) []geom.Vector {
 		core.EntityNormalIn3D, core.EntityNormalIn2D, core.EntityWorkplane,
 		core.EntityCircle, core.EntityArcOfCircle, core.EntityCubic,
 		core.EntityCubicPeriodic, core.EntityTTFText, core.EntityImage:
-		return []geom.Vector{gw.pointGetDrawNum(sk.GetEntity(e.Point[0]))}
+		return []geom.Vector{gw.pointGetDrawNum(sk.Entity(e.Point[0]))}
 
 	case core.EntityLineSegment:
-		a := gw.pointGetDrawNum(sk.GetEntity(e.Point[0]))
-		b := gw.pointGetDrawNum(sk.GetEntity(e.Point[1]))
+		a := gw.pointGetDrawNum(sk.Entity(e.Point[0]))
+		b := gw.pointGetDrawNum(sk.Entity(e.Point[1]))
 		return []geom.Vector{b.Plus(a.Minus(b).ScaledBy(0.5))}
 	}
 	return nil
@@ -176,7 +176,7 @@ func (gw *GraphicsWindow) entityReferencePoints(e *core.Entity) []geom.Vector {
 // entityPositionOfPoint is Entity::GetPositionOfPoint: which of the
 // entity's edges is nearest p.
 func (gw *GraphicsWindow) entityPositionOfPoint(e *core.Entity, camera *render.Camera, p geom.Point2d) int {
-	op := &render.ObjectPicker{Camera: *camera, Point: p, MinDistance: 1e12}
+	op := &render.ObjectPicker{Cam: *camera, Point: p, MinDistance: 1e12}
 	gw.drawEntity(e, EntityDrawDefault, op)
 	return int(op.Position)
 }
@@ -187,7 +187,7 @@ func entityIsStylable(e *core.Entity) bool {
 }
 
 func (gw *GraphicsWindow) ptCanDrag(pt core.HEntity) bool {
-	p := gw.sk().GetEntity(pt)
+	p := gw.sk().Entity(pt)
 	// a numeric copy can not move
 	if p.Type == core.EntityPointNCopy {
 		return false
@@ -213,12 +213,12 @@ func (gw *GraphicsWindow) entityCanBeDragged(e *core.Entity) bool {
 			cc := &sk.Constraints[i]
 			if cc.Group == e.Group && cc.Type == core.ConstraintPointsCoincident {
 				if cc.PtA == e.H {
-					if sk.GetEntity(cc.PtB).Group.V < e.Group.V || !gw.ptCanDrag(cc.PtB) {
+					if sk.Entity(cc.PtB).Group.V < e.Group.V || !gw.ptCanDrag(cc.PtB) {
 						return false
 					}
 				}
 				if cc.PtB == e.H {
-					if sk.GetEntity(cc.PtA).Group.V < e.Group.V || !gw.ptCanDrag(cc.PtA) {
+					if sk.Entity(cc.PtA).Group.V < e.Group.V || !gw.ptCanDrag(cc.PtA) {
 						return false
 					}
 				}
@@ -240,16 +240,16 @@ func (gw *GraphicsWindow) groupShouldDrawExploded(g *sketch.Group) bool {
 }
 
 func (gw *GraphicsWindow) entityShouldDrawExploded(e *core.Entity) bool {
-	return gw.groupShouldDrawExploded(gw.sk().GetGroup(e.Group))
+	return gw.groupShouldDrawExploded(gw.sk().Group(e.Group))
 }
 
 // entityExplodeOffset is Entity::ExplodeOffset.
 func (gw *GraphicsWindow) entityExplodeOffset(e *core.Entity) geom.Vector {
 	sk := gw.sk()
 	if gw.entityShouldDrawExploded(e) && e.Workplane.V != 0 {
-		requestIdx := sk.GetRequest(e.H.Request()).GroupRequestIndex
+		requestIdx := sk.Request(e.H.Request()).GroupRequestIndex
 		offset := gw.ss.ExplodeDistance * float64(requestIdx+1)
-		return sk.GetEntity(e.Workplane).NormalEntity(sk).NormalN(sk).ScaledBy(offset)
+		return sk.Entity(e.Workplane).NormalEntity(sk).NormalN(sk).ScaledBy(offset)
 	}
 	return geom.Vector{}
 }
@@ -264,7 +264,7 @@ func (gw *GraphicsWindow) pointGetDrawNum(e *core.Entity) geom.Vector {
 func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas render.Canvas) {
 	ss := gw.ss
 	sk := gw.sk()
-	if !(how == EntityDrawHovered || how == EntityDrawSelected) && !sk.EntityIsVisible(e) {
+	if (how != EntityDrawHovered && how != EntityDrawSelected) && !sk.EntityIsVisible(e) {
 		return
 	}
 
@@ -317,7 +317,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		stroke.Color = ss.styleColor(hstyle(core.StyleSelected))
 	}
 	stroke.ZIndex = zIndex
-	hcs := canvas.GetStroke(stroke)
+	hcs := canvas.InternStroke(stroke)
 
 	switch e.Type {
 	case core.EntityPointNCopy, core.EntityPointNTrans, core.EntityPointNRotTrans,
@@ -332,10 +332,10 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		free := false
 		switch e.Type {
 		case core.EntityPointIn3D:
-			px, py, pz := sk.GetParam(e.Param[0]), sk.GetParam(e.Param[1]), sk.GetParam(e.Param[2])
+			px, py, pz := sk.Param(e.Param[0]), sk.Param(e.Param[1]), sk.Param(e.Param[2])
 			free = px.Free || py.Free || pz.Free
 		case core.EntityPointIn2D:
-			pu, pv := sk.GetParam(e.Param[0]), sk.GetParam(e.Param[1])
+			pu, pv := sk.Param(e.Param[0]), sk.Param(e.Param[1])
 			free = pu.Free || pv.Free
 		}
 
@@ -349,21 +349,21 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		if free {
 			pointStroke.Layer = render.LayerFront
 		}
-		hcsPoint := canvas.GetStroke(pointStroke)
+		hcsPoint := canvas.InternStroke(pointStroke)
 
 		p := gw.pointGetDrawNum(e)
 		if free {
 			analyzeStroke := ss.styleStroke(hstyle(core.StyleAnalyze))
 			analyzeStroke.Width = 14.0
 			analyzeStroke.Layer = render.LayerFront
-			canvas.DrawPoint(p, canvas.GetStroke(analyzeStroke))
+			canvas.DrawPoint(p, canvas.InternStroke(analyzeStroke))
 		}
 		canvas.DrawPoint(p, hcsPoint)
 		return
 
 	case core.EntityNormalNCopy, core.EntityNormalNRot, core.EntityNormalNRotAA,
 		core.EntityNormalIn3D, core.EntityNormalIn2D:
-		camera := canvas.GetCamera()
+		camera := canvas.Camera()
 		if how == EntityDrawHidden {
 			return
 		}
@@ -374,7 +374,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 					continue
 				}
 			} else {
-				if !sk.GetGroup(e.Group).IsVisible() || !gw.show.Normals {
+				if !sk.Group(e.Group).IsVisible() || !gw.show.Normals {
 					continue
 				}
 			}
@@ -422,11 +422,11 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 				tail = camera.ProjRight.ScaledBy(w / s).Plus(
 					camera.ProjUp.ScaledBy(h / s)).Minus(camera.Offset)
 			} else {
-				tail = gw.pointGetDrawNum(sk.GetEntity(e.Point[0]))
+				tail = gw.pointGetDrawNum(sk.Entity(e.Point[0]))
 			}
 			tail = camera.AlignToPixelGrid(tail)
 
-			hcs = canvas.GetStroke(stroke)
+			hcs = canvas.InternStroke(stroke)
 			v := q.RotationN().WithMagnitude(50.0 / camera.Scale)
 			tip := tail.Plus(v)
 			canvas.DrawLine(tail, tip, hcs)
@@ -437,12 +437,12 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 			canvas.DrawLine(tip, tip.Minus(v.RotatedAroundAxis(axis, -0.6)), hcs)
 
 			if e.Type == core.EntityNormalIn3D {
-				nw, nx := sk.GetParam(e.Param[0]), sk.GetParam(e.Param[1])
-				ny, nz := sk.GetParam(e.Param[2]), sk.GetParam(e.Param[3])
+				nw, nx := sk.Param(e.Param[0]), sk.Param(e.Param[1])
+				ny, nz := sk.Param(e.Param[2]), sk.Param(e.Param[3])
 				if nw.Free || nx.Free || ny.Free || nz.Free {
 					analyzeStroke := ss.styleStroke(hstyle(core.StyleAnalyze))
 					analyzeStroke.Layer = render.LayerFront
-					canvas.DrawLine(tail, tip, canvas.GetStroke(analyzeStroke))
+					canvas.DrawLine(tail, tip, canvas.InternStroke(analyzeStroke))
 				}
 			}
 		}
@@ -453,8 +453,8 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		return
 
 	case core.EntityWorkplane:
-		camera := canvas.GetCamera()
-		p := sk.GetEntity(e.Point[0]).PointGetNum(sk)
+		camera := canvas.Camera()
+		p := sk.Entity(e.Point[0]).PointGetNum(sk)
 		p = camera.AlignToPixelGrid(p)
 
 		n := e.NormalEntity(sk)
@@ -474,7 +474,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		strokeBorder.ZIndex -= 3
 		strokeBorder.StipplePattern = core.StippleShortDash
 		strokeBorder.StippleScale = 8.0
-		hcsBorder := canvas.GetStroke(strokeBorder)
+		hcsBorder := canvas.InternStroke(strokeBorder)
 
 		textHeight := ss.styleTextHeight(hs) / camera.Scale
 
@@ -526,13 +526,13 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 			canvas.DrawEdges(edges, hcs)
 		}
 		if e.Type == core.EntityCircle {
-			dist := sk.GetEntity(e.Distance)
+			dist := sk.Entity(e.Distance)
 			if dist.Type == core.EntityDistance {
-				p := sk.GetParam(dist.Param[0])
+				p := sk.Param(dist.Param[0])
 				if p.Free {
 					analyzeStroke := ss.styleStroke(hstyle(core.StyleAnalyze))
 					analyzeStroke.Layer = render.LayerFront
-					hcsAnalyze := canvas.GetStroke(analyzeStroke)
+					hcsAnalyze := canvas.InternStroke(analyzeStroke)
 					if !canvas.DrawBeziers(beziers, hcsAnalyze) {
 						canvas.DrawEdges(edges, hcsAnalyze)
 					}
@@ -556,14 +556,14 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 			fill.Pattern = render.FillCheckeredB
 			fill.ZIndex = 1
 		default:
-			fill.Color = core.RgbaColorFromFloat(1.0, 1.0, 1.0, 1.0)
+			fill.Color = core.RGBAFromFloat(1.0, 1.0, 1.0, 1.0)
 			pixmap = ss.imagePixmap(e.File)
 		}
 
-		hf := canvas.GetFill(fill)
+		hf := canvas.InternFill(fill)
 		var v [4]geom.Vector
 		for i := range 4 {
-			v[i] = gw.pointGetDrawNum(sk.GetEntity(e.Point[i]))
+			v[i] = gw.pointGetDrawNum(sk.Entity(e.Point[i]))
 		}
 		iu := v[3].Minus(v[0])
 		iv := v[1].Minus(v[0])
@@ -571,7 +571,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		if how == EntityDrawDefault && pixmap == nil {
 			errStroke := ss.styleStroke(hstyle(core.StyleDrawError))
 			errStroke.Color = errStroke.Color.WithAlpha(50)
-			hsErr := canvas.GetStroke(errStroke)
+			hsErr := canvas.InternStroke(errStroke)
 			canvas.DrawLine(v[0], v[2], hsErr)
 			canvas.DrawLine(v[1], v[3], hsErr)
 			for i := range 4 {
@@ -603,9 +603,9 @@ var (
 // freedomColor is the colour for an entity of the active group by how
 // much of it its constraints fix, when the setting is on and the
 // entity is not fixed.
-func (ss *Application) freedomColor(e *core.Entity) (core.RgbaColor, bool) {
+func (ss *Application) freedomColor(e *core.Entity) (core.RGBA, bool) {
 	if !ss.ColorByFreedom {
-		return core.RgbaColor{}, false
+		return core.RGBA{}, false
 	}
 	switch ss.SK.EntityFreedom(e.H) {
 	case sketch.FreedomPartly:
@@ -613,5 +613,5 @@ func (ss *Application) freedomColor(e *core.Entity) (core.RgbaColor, bool) {
 	case sketch.FreedomFree:
 		return colorFree, true
 	}
-	return core.RgbaColor{}, false
+	return core.RGBA{}, false
 }

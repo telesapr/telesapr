@@ -27,7 +27,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	core.SetSettings(p.GetSettings())
+	core.SetSettings(p.Settings())
 
 	opts := parseArgs(os.Args[1:])
 	files, scriptFile, scriptArgs := opts.files, opts.scriptFile, opts.scriptArgs

@@ -1,9 +1,10 @@
 package sketch
 
 import (
+	"cmp"
 	"fmt"
 	"math"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -27,9 +28,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	for i := range sk.Groups {
 		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
 	}
-	sort.SliceStable(sk.GroupOrder, func(i, j int) bool {
-		return sk.GetGroup(sk.GroupOrder[i]).Order < sk.GetGroup(sk.GroupOrder[j]).Order
-	})
+	slices.SortStableFunc(sk.GroupOrder, func(a, b core.HGroup) int { return cmp.Compare(sk.Group(a).Order, sk.Group(b).Order) })
 
 	// Parameters and stored expressions first, since they set the
 	// values the groups are solved for and which groups are dirty.
@@ -46,7 +45,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		// since all groups after the active group are hidden.
 		active := sk.ActiveGroup()
 		for i, hg := range sk.GroupOrder {
-			g := sk.GetGroup(hg)
+			g := sk.Group(hg)
 			if !g.Clean || !g.IsSolvedOkay() {
 				first = min(first, i)
 			}
@@ -108,7 +107,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		}
 		// A group suppressed whole, or using one that is, is left out
 		// before anything could prune what it refers to.
-		if g := sk.GetGroup(hg); g.SuppressedBy.V != 0 {
+		if g := sk.Group(hg); g.SuppressedBy.V != 0 {
 			sk.skipGroup(g, prev, i >= first && i <= last, genForBBox)
 			continue
 		}
@@ -119,7 +118,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 			sk.generateAllPruned(prev, typ, andFindFree, genForBBox)
 			return
 		}
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 
 		prevGroupParams := make(map[core.HParam]bool, len(sk.Params))
 		for _, p := range sk.Params {
@@ -183,26 +182,32 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		}
 		sk.recalculateGroupEntities(hg)
 
-		if hg.V == HGroupReferences {
+		switch {
+		case hg.V == HGroupReferences:
 			sk.ForceReferences()
 			g.Solved.How = core.SolveOkay
 			g.Clean = true
-		} else if i >= first && i <= last {
+
+		case i >= first && i <= last:
 			// The group falls inside the range, so really solve it,
 			// and then regenerate the mesh based on the solved stuff.
-			if genForBBox {
+			switch {
+			case genForBBox:
 				sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 				g.GenerateLoops(sk, rt)
-			} else if sk.DeferShells {
+
+			case sk.DeferShells:
 				// The solid as it was, to be made off the thread.
 				g.ShellsStale = true
 				g.Clean = true
-			} else {
+
+			default:
 				g.GenerateShellAndMesh(sk)
 				g.ShellsStale = false
 				g.Clean = true
 			}
-		} else {
+
+		default:
 			// The group falls outside the range, so just assume that
 			// it's good wherever we left it. The mesh is unchanged,
 			// and the parameters must be marked as known.
@@ -217,7 +222,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	// And update any reference dimensions with their new values
 	for ci := range sk.Constraints {
 		c := &sk.Constraints[ci]
-		if c.Reference && sk.GetGroup(c.Group).SuppressedBy.V == 0 {
+		if c.Reference && sk.Group(c.Group).SuppressedBy.V == 0 {
 			c.ModifyToSatisfy(sk)
 		}
 	}
@@ -265,10 +270,10 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 }
 
 // sortByHandle sorts the entities and params by handle, the order C++
-// IdList keeps them in.
+// IDList keeps them in.
 func (sk *Sketch) sortByHandle() {
-	sort.SliceStable(sk.Entities, func(i, j int) bool { return sk.Entities[i].H.V < sk.Entities[j].H.V })
-	sort.SliceStable(sk.Params, func(i, j int) bool { return sk.Params[i].H.V < sk.Params[j].H.V })
+	slices.SortStableFunc(sk.Entities, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
+	slices.SortStableFunc(sk.Params, func(a, b core.Param) int { return cmp.Compare(a.H.V, b.H.V) })
 }
 
 // generateAllPruned is GenerateAll's "pruned:" exit: restore the
@@ -293,26 +298,26 @@ func (sk *Sketch) ForceReferences() {
 		{HRequestReferenceZX, geom.Quaternion{W: 0.5, X: -0.5, Y: -0.5, Z: -0.5}},
 	}
 	for _, rq := range quat {
-		wrkpl := sk.MustGetEntity(rq.hr.Entity(0))
+		wrkpl := sk.MustEntity(rq.hr.Entity(0))
 		// The origin for our coordinate system, always zero
-		origin := sk.MustGetEntity(wrkpl.Point[0])
+		origin := sk.MustEntity(wrkpl.Point[0])
 		origin.PointForceTo(sk, geom.Vector{})
 		origin.Construction = true
 		for k := range 3 {
-			sk.GetParam(origin.Param[k]).Known = true
+			sk.Param(origin.Param[k]).Known = true
 		}
 		// The quaternion that defines the rotation, from the table.
-		normal := sk.MustGetEntity(wrkpl.Normal)
+		normal := sk.MustEntity(wrkpl.Normal)
 		normal.NormalForceTo(sk, rq.q)
 		for k := range 4 {
-			sk.GetParam(normal.Param[k]).Known = true
+			sk.Param(normal.Param[k]).Known = true
 		}
 	}
 }
 
 // groupExists reports whether hg is a group (C++ GroupExists).
 func (sk *Sketch) groupExists(hg core.HGroup) bool {
-	return sk.GetGroup(hg) != nil
+	return sk.Group(hg) != nil
 }
 
 // entityExists reports whether he is an entity or no entity at all
@@ -321,7 +326,7 @@ func (sk *Sketch) entityExists(he core.HEntity) bool {
 	if he == core.NoEntity {
 		return true
 	}
-	return sk.GetEntity(he) != nil
+	return sk.Entity(he) != nil
 }
 
 // groupsInOrder reports whether before comes before after (C++
@@ -333,7 +338,7 @@ func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool {
 	if !sk.groupExists(before) || !sk.groupExists(after) {
 		return false
 	}
-	return sk.GetGroup(before).Order < sk.GetGroup(after).Order
+	return sk.Group(before).Order < sk.Group(after).Order
 }
 
 // PruneOrphans removes requests and constraints whose group doesn't
@@ -367,7 +372,7 @@ func (sk *Sketch) PruneOrphans() bool {
 // don't exist (yet), and reports whether it did (C++
 // SolveSpaceUI::PruneGroups).
 func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	// An edge of a chamfer or a sweep path that is gone is dropped
 	// and listed; the group says what it lacks.
 	if len(g.Edges) > 0 {
@@ -433,10 +438,10 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 			return true
 		}
 		if he.IsFromRequest() {
-			if sk.GetRequest(he.Request()) != nil {
+			if sk.Request(he.Request()) != nil {
 				return true
 			}
-		} else if !checkEntity || sk.GetEntity(he) != nil {
+		} else if !checkEntity || sk.Entity(he) != nil {
 			return true
 		}
 		return false
@@ -495,7 +500,7 @@ const timeoutRedundantConstr = 1000 * time.Millisecond
 // its constraints except hc, of its entities, and of the group itself
 // (C++ System::WriteEquationsExceptFor).
 func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l *[]core.Equation) {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	// Generate all the equations from constraints in this group
 	for ci := range sk.Constraints {
 		c := &sk.Constraints[ci]
@@ -538,13 +543,13 @@ func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l
 // itself generate, holding every other param fixed, and marks the
 // params being dragged (C++ SolveSpaceUI::WriteEqSystemForGroup).
 func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HParam) (*solver.System, *solver.Group) {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 
 	// The solver works on copies of the group's params, with the
 	// sketch's values as initial guesses.
-	sys := &solver.System{SK: sk.GetParam}
+	sys := &solver.System{SK: sk.Param}
 	for _, h := range groupParams {
-		p := *sk.GetParam(h)
+		p := *sk.Param(h)
 		p.Known = false
 		sys.AddParam(p)
 	}
@@ -563,7 +568,7 @@ func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HPara
 			constraints = append(constraints, &sk.Constraints[ci])
 		}
 	}
-	sort.SliceStable(constraints, func(i, j int) bool { return constraints[i].H.V < constraints[j].H.V })
+	slices.SortStableFunc(constraints, func(a, b *core.Constraint) int { return cmp.Compare(a.H.V, b.H.V) })
 	sg := &solver.Group{
 		SuppressDofCalculation: g.SuppressDofCalculation,
 		AllowRedundant:         g.AllowRedundant,
@@ -596,22 +601,22 @@ func (sk *Sketch) groupParams(hg core.HGroup) []core.HParam {
 		}
 	}
 	es := []core.Entity(entities)
-	sk.GetGroup(hg).Generate(sk, &es, &ps)
+	sk.Group(hg).Generate(sk, &es, &ps)
 
 	hs := make([]core.HParam, 0, len(ps))
 	for _, p := range ps {
-		if sk.GetParam(p.H) != nil {
+		if sk.Param(p.H) != nil {
 			hs = append(hs, p.H)
 		}
 	}
-	sort.Slice(hs, func(i, j int) bool { return hs[i].V < hs[j].V })
+	slices.SortFunc(hs, func(a, b core.HParam) int { return cmp.Compare(a.V, b.V) })
 	return hs
 }
 
 // TestRankForGroup reports whether group hg would be redundantly
 // constrained, and its rank (C++ SolveSpaceUI::TestRankForGroup).
 func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	// If we don't calculate dof or redundant is allowed, there is
 	// no point to solve rank because this result is not meaningful
 	if g.SuppressDofCalculation || g.AllowRedundant {
@@ -626,7 +631,7 @@ func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult {
 // other param fixed (C++ SolveSpaceUI::SolveGroup, with
 // WriteEqSystemForGroup).
 func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	g.SketchDiagnostic = nil
 
 	sys, sg := sk.writeEqSystemForGroup(hg, groupParams)
@@ -698,9 +703,7 @@ func (sk *Sketch) orderedGroups() []core.HGroup {
 	for _, g := range sk.Groups {
 		hs = append(hs, g.H)
 	}
-	sort.Slice(hs, func(i, j int) bool {
-		return sk.GetGroup(hs[i]).Order < sk.GetGroup(hs[j]).Order
-	})
+	slices.SortFunc(hs, func(a, b core.HGroup) int { return cmp.Compare(sk.Group(a).Order, sk.Group(b).Order) })
 	return hs
 }
 
@@ -781,7 +784,7 @@ func (sk *Sketch) Refresh() {
 func (sk *Sketch) MarkGroupDirty(hg core.HGroup, onlyThis bool) {
 	goOn := false
 	for _, gh := range sk.GroupOrder {
-		g := sk.GetGroup(gh)
+		g := sk.Group(gh)
 		if g.H == hg {
 			goOn = true
 		}
@@ -799,5 +802,5 @@ func (sk *Sketch) MarkGroupDirty(hg core.HGroup, onlyThis bool) {
 // MarkGroupDirtyByEntity marks the group of entity he dirty (C++
 // SolveSpaceUI::MarkGroupDirtyByEntity).
 func (sk *Sketch) MarkGroupDirtyByEntity(he core.HEntity) {
-	sk.MarkGroupDirty(sk.MustGetEntity(he).Group, false)
+	sk.MarkGroupDirty(sk.MustEntity(he).Group, false)
 }

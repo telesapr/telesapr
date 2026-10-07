@@ -317,11 +317,11 @@ func padRoundLong(x, n int64) int64 {
 }
 
 // mulDivNoRound is FT_MulDiv_No_Round.
-func mulDivNoRound(a_, b_, c_ int64) int64 {
+func mulDivNoRound(a0, b0, c0 int64) int64 {
 	s := 1
-	a, s := moveSign(a_, s)
-	b, s := moveSign(b_, s)
-	c, s := moveSign(c_, s)
+	a, s := moveSign(a0, s)
+	b, s := moveSign(b0, s)
+	c, s := moveSign(c0, s)
 	var d uint64 = 0x7FFFFFFF
 	if c > 0 {
 		d = a * b / c
@@ -334,16 +334,16 @@ func mulDivNoRound(a_, b_, c_ int64) int64 {
 
 // vectorNormLen is FT_Vector_NormLen.
 func vectorNormLen(v *Vector) {
-	x_ := int32(v.X)
-	y_ := int32(v.Y)
+	x0 := int32(v.X)
+	y0 := int32(v.Y)
 	sx, sy := int32(1), int32(1)
-	x := uint32(x_)
-	if x_ < 0 {
+	x := uint32(x0)
+	if x0 < 0 {
 		x = 0 - x
 		sx = -sx
 	}
-	y := uint32(y_)
-	if y_ < 0 {
+	y := uint32(y0)
+	if y0 < 0 {
 		y = 0 - y
 		sy = -sy
 	}
@@ -384,12 +384,12 @@ func vectorNormLen(v *Vector) {
 		l >>= uint(-shift)
 	}
 	b := int32(0x10000) - int32(l)
-	x_ = int32(x)
-	y_ = int32(y)
+	x0 = int32(x)
+	y0 = int32(y)
 	var u, w uint32
 	for {
-		u = uint32(x_ + (x_ * b >> 16))
-		w = uint32(y_ + (y_ * b >> 16))
+		u = uint32(x0 + (x0 * b >> 16))
+		w = uint32(y0 + (y0 * b >> 16))
 		z := -int32(u*u+w*w) / 0x200
 		z = z * ((0x10000 + b) >> 8) / 0x10000
 		b += z
@@ -412,11 +412,14 @@ func vectorNormLen(v *Vector) {
 // currentRatio is Current_Ratio.
 func (exc *ttExecContext) currentRatio() int64 {
 	if exc.ttMetrics.ratio == 0 {
-		if exc.GS.projVector.y == 0 {
+		switch {
+		case exc.GS.projVector.y == 0:
 			exc.ttMetrics.ratio = exc.ttMetrics.xRatio
-		} else if exc.GS.projVector.x == 0 {
+
+		case exc.GS.projVector.x == 0:
 			exc.ttMetrics.ratio = exc.ttMetrics.yRatio
-		} else {
+
+		default:
 			x := ttMulFix14(exc.ttMetrics.xRatio, exc.GS.projVector.x)
 			y := ttMulFix14(exc.ttMetrics.yRatio, exc.GS.projVector.y)
 			exc.ttMetrics.ratio = hypot(x, y)
@@ -717,21 +720,27 @@ func (exc *ttExecContext) dualProj(v1, v2 Vector) int64 {
 func (exc *ttExecContext) computeFuncs() {
 	fDotP := (int64(exc.GS.projVector.x)*int64(exc.GS.freeVector.x) +
 		int64(exc.GS.projVector.y)*int64(exc.GS.freeVector.y) + 0x2000) >> 14
-	if fDotP >= 0x3FFE {
+	switch {
+	case fDotP >= 0x3FFE:
 		exc.moveVector.X = int64(exc.GS.freeVector.x) * 4
 		exc.moveVector.Y = int64(exc.GS.freeVector.y) * 4
-	} else if -0x400 < fDotP && fDotP < 0x400 {
+
+	case -0x400 < fDotP && fDotP < 0x400:
 		exc.moveVector = Vector{}
-	} else {
+
+	default:
 		exc.moveVector.X = int64(exc.GS.freeVector.x) * 0x10000 / fDotP
 		exc.moveVector.Y = int64(exc.GS.freeVector.y) * 0x10000 / fDotP
 	}
 
-	if fDotP >= 0x3FFE && exc.GS.freeVector.x == 0x4000 {
+	switch {
+	case fDotP >= 0x3FFE && exc.GS.freeVector.x == 0x4000:
 		exc.funcMove, exc.funcMoveOrig = directMoveX, directMoveOrigX
-	} else if fDotP >= 0x3FFE && exc.GS.freeVector.y == 0x4000 {
+
+	case fDotP >= 0x3FFE && exc.GS.freeVector.y == 0x4000:
 		exc.funcMove, exc.funcMoveOrig = directMoveY, directMoveOrigY
-	} else {
+
+	default:
 		exc.funcMove, exc.funcMoveOrig = directMove, directMoveOrig
 	}
 
@@ -928,7 +937,7 @@ func (exc *ttExecContext) findFDef(f uint64) *ttDefRecord {
 	}
 	if exc.maxFunc+1 != exc.numFDefs || def == nil || uint64(def.opc) != f {
 		def = nil
-		for i := uint32(0); i < exc.numFDefs; i++ {
+		for i := range exc.numFDefs {
 			if uint64(exc.FDefs[i].opc) == f {
 				def = &exc.FDefs[i]
 				break
@@ -1174,12 +1183,15 @@ func (exc *ttExecContext) insINSTCTRL(args int64) {
 		}
 		return
 	}
-	if exc.iniRange == ttCoderangeCvt {
+	switch {
+	case exc.iniRange == ttCoderangeCvt:
 		exc.GS.instructControl &^= byte(Kf)
 		exc.GS.instructControl |= byte(L)
-	} else if exc.iniRange == ttCoderangeGlyph && K == 3 {
+
+	case exc.iniRange == ttCoderangeGlyph && K == 3:
 		exc.backwardCompatibility = int((L & 4) ^ 4)
-	} else if exc.pedanticHinting {
+
+	case exc.pedanticHinting:
 		exc.err = errInvalidReference
 	}
 }
@@ -1187,10 +1199,11 @@ func (exc *ttExecContext) insINSTCTRL(args int64) {
 func (exc *ttExecContext) insSCANCTRL(args int64) {
 	a0 := exc.stack[args]
 	A := int32(a0 & 0xFF)
-	if A == 0xFF {
+	switch A {
+	case 0xFF:
 		exc.GS.scanControl = true
 		return
-	} else if A == 0 {
+	case 0:
 		exc.GS.scanControl = false
 		return
 	}
@@ -1389,7 +1402,7 @@ func (exc *ttExecContext) insSHZ(args int64) {
 	} else if exc.GS.gep2 == 1 && exc.zp2.nContours > 0 {
 		limit = exc.zp2.contours[exc.zp2.nContours-1] + 1
 	}
-	for i := uint16(0); i < limit; i++ {
+	for i := range limit {
 		if zp.twilight != exc.zp2.twilight || refp != i {
 			exc.moveZp2Point(i, dx, dy, false)
 		}
@@ -1412,18 +1425,21 @@ func (exc *ttExecContext) insSHPIX(args int64) {
 	for ; loop > 0; loop-- {
 		args--
 		point := uint16(exc.stack[args])
-		if bounds(int64(point), int64(exc.zp2.nPoints)) {
+		switch {
+		case bounds(int64(point), int64(exc.zp2.nPoints)):
 			if exc.pedanticHinting {
 				exc.err = errInvalidReference
 				return
 			}
-		} else if exc.backwardCompatibility != 0 {
+
+		case exc.backwardCompatibility != 0:
 			if inTwilight || (exc.backwardCompatibility != 0x7 &&
 				((exc.isComposite && exc.GS.freeVector.y != 0) ||
 					exc.zp2.tags[point]&curveTagTouchY != 0)) {
 				exc.moveZp2Point(point, 0, dy, true)
 			}
-		} else {
+
+		default:
 			exc.moveZp2Point(point, dx, dy, true)
 		}
 	}
@@ -1743,11 +1759,14 @@ func (exc *ttExecContext) insIP(args int64) {
 	curBase := exc.zp0.cur[exc.GS.rp1]
 	var oldRange, curRange int64
 	if !bounds(int64(exc.GS.rp2), int64(exc.zp1.nPoints)) {
-		if twilight {
+		switch {
+		case twilight:
 			oldRange = exc.dualProj(exc.zp1.org[exc.GS.rp2], orusBase)
-		} else if exc.metrics.xScale == exc.metrics.yScale {
+
+		case exc.metrics.xScale == exc.metrics.yScale:
 			oldRange = exc.dualProj(exc.zp1.orus[exc.GS.rp2], orusBase)
-		} else {
+
+		default:
 			vec := Vector{mulFix(exc.zp1.orus[exc.GS.rp2].X-orusBase.X, exc.metrics.xScale),
 				mulFix(exc.zp1.orus[exc.GS.rp2].Y-orusBase.Y, exc.metrics.yScale)}
 			oldRange = exc.funcDualproj(exc, vec.X, vec.Y)
@@ -1765,11 +1784,14 @@ func (exc *ttExecContext) insIP(args int64) {
 			continue
 		}
 		var orgDist int64
-		if twilight {
+		switch {
+		case twilight:
 			orgDist = exc.dualProj(exc.zp2.org[point], orusBase)
-		} else if exc.metrics.xScale == exc.metrics.yScale {
+
+		case exc.metrics.xScale == exc.metrics.yScale:
 			orgDist = exc.dualProj(exc.zp2.orus[point], orusBase)
-		} else {
+
+		default:
 			vec := Vector{mulFix(exc.zp2.orus[point].X-orusBase.X, exc.metrics.xScale),
 				mulFix(exc.zp2.orus[point].Y-orusBase.Y, exc.metrics.yScale)}
 			orgDist = exc.funcDualproj(exc, vec.X, vec.Y)
@@ -1862,11 +1884,14 @@ func (w *iupWorker) interpolate(p1, p2, ref1, ref2 uint32) {
 	if cur1 == cur2 || orus1 == orus2 {
 		for i := p1; i <= p2; i++ {
 			x := w.get(w.orgs, i)
-			if x <= org1 {
+			switch {
+			case x <= org1:
 				x += delta1
-			} else if x >= org2 {
+
+			case x >= org2:
 				x += delta2
-			} else {
+
+			default:
 				x = cur1
 			}
 			w.setCur(i, x)
@@ -1876,11 +1901,14 @@ func (w *iupWorker) interpolate(p1, p2, ref1, ref2 uint32) {
 		scaleValid := false
 		for i := p1; i <= p2; i++ {
 			x := w.get(w.orgs, i)
-			if x <= org1 {
+			switch {
+			case x <= org1:
 				x += delta1
-			} else if x >= org2 {
+
+			case x >= org2:
 				x += delta2
-			} else {
+
+			default:
 				if !scaleValid {
 					scaleValid = true
 					scale = divFix(cur2-cur1, orus2-orus1)
@@ -1943,7 +1971,7 @@ func (exc *ttExecContext) insIUP() {
 			}
 		}
 		contour++
-		if !(int32(contour) < int32(exc.pts.nContours)) {
+		if int32(contour) >= int32(exc.pts.nContours) {
 			break
 		}
 	}
@@ -2081,7 +2109,7 @@ func (exc *ttExecContext) insGETINFO(args int64) {
 
 // insUNKNOWN is Ins_UNKNOWN: a user-defined instruction.
 func (exc *ttExecContext) insUNKNOWN() {
-	for i := uint32(0); i < exc.numIDefs; i++ {
+	for i := range exc.numIDefs {
 		def := &exc.IDefs[i]
 		if byte(def.opc) == exc.opcode && def.active {
 			if exc.callTop >= exc.callSize {
@@ -2116,7 +2144,7 @@ func (exc *ttExecContext) runIns() error {
 				exc.err = errTooFewArguments
 				return exc.err
 			}
-			for i := 0; i < int(popPushCount[exc.opcode]>>4); i++ {
+			for i := range popPushCount[exc.opcode] >> 4 {
 				exc.stack[i] = 0
 			}
 			exc.args = 0
@@ -2190,11 +2218,14 @@ func (exc *ttExecContext) runIns() error {
 				exc.GS.gep2 = uint16(s[args])
 			}
 		case 0x17:
-			if s[args] < 0 {
+			switch {
+			case s[args] < 0:
 				exc.err = errBadArgument
-			} else if s[args] > 0xFFFF {
+
+			case s[args] > 0xFFFF:
 				exc.GS.loop = 0xFFFF
-			} else {
+
+			default:
 				exc.GS.loop = s[args]
 			}
 		case 0x18:
@@ -2333,13 +2364,16 @@ func (exc *ttExecContext) runIns() error {
 		case 0x46, 0x47:
 			L := uint64(s[args])
 			var R int64
-			if boundsL(int64(L), int64(exc.zp2.nPoints)) {
+			switch {
+			case boundsL(int64(L), int64(exc.zp2.nPoints)):
 				if exc.pedanticHinting {
 					exc.err = errInvalidReference
 				}
-			} else if exc.opcode&1 != 0 {
+
+			case exc.opcode&1 != 0:
 				R = exc.funcDualproj(exc, exc.zp2.org[L].X, exc.zp2.org[L].Y)
-			} else {
+
+			default:
 				R = exc.funcProject(exc, exc.zp2.cur[L].X, exc.zp2.cur[L].Y)
 			}
 			s[args] = R
@@ -2360,15 +2394,19 @@ func (exc *ttExecContext) runIns() error {
 			K := uint16(s[args+1])
 			L := uint16(s[args])
 			var D int64
-			if bounds(int64(L), int64(exc.zp0.nPoints)) || bounds(int64(K), int64(exc.zp1.nPoints)) {
+			switch {
+			case bounds(int64(L), int64(exc.zp0.nPoints)) || bounds(int64(K), int64(exc.zp1.nPoints)):
 				if exc.pedanticHinting {
 					exc.err = errInvalidReference
 				}
-			} else if exc.opcode&1 != 0 {
+
+			case exc.opcode&1 != 0:
 				D = exc.proj(exc.zp0.cur[L], exc.zp1.cur[K])
-			} else if exc.GS.gep0 == 0 || exc.GS.gep1 == 0 {
+
+			case exc.GS.gep0 == 0 || exc.GS.gep1 == 0:
 				D = exc.dualProj(exc.zp0.org[L], exc.zp1.org[K])
-			} else {
+
+			default:
 				D = exc.orusDist(exc.zp0.orus[L], exc.zp1.orus[K])
 			}
 			s[args] = D
@@ -2542,7 +2580,7 @@ func (exc *ttExecContext) runIns() error {
 		if exc.err != nil {
 			if errors.Is(exc.err, errInvalidOpcode) {
 				found := false
-				for i := uint32(0); i < exc.numIDefs; i++ {
+				for i := range exc.numIDefs {
 					def := &exc.IDefs[i]
 					if def.active && exc.opcode == byte(def.opc) {
 						if exc.callTop >= exc.callSize {

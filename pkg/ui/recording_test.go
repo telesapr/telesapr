@@ -21,10 +21,10 @@ type recordingCanvas struct {
 
 func newRecordingCanvas(w io.Writer) *recordingCanvas { return &recordingCanvas{w: w} }
 
-func (rc *recordingCanvas) GetCamera() *render.Camera { return &rc.camera }
+func (rc *recordingCanvas) Camera() *render.Camera { return &rc.camera }
 
 func (rc *recordingCanvas) p(v geom.Vector) { fmt.Fprintf(rc.w, " %x %x %x", v.X, v.Y, v.Z) }
-func (rc *recordingCanvas) c(c core.RgbaColor) {
+func (rc *recordingCanvas) c(c core.RGBA) {
 	fmt.Fprintf(rc.w, " %02x%02x%02x%02x", c.Red, c.Green, c.Blue, c.Alpha)
 }
 func (rc *recordingCanvas) s(h render.HStroke) {
@@ -126,7 +126,7 @@ func (rc *recordingCanvas) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill
 	fmt.Fprintln(rc.w)
 	for _, t := range m.Triangles {
 		fmt.Fprintf(rc.w, " t %d", uint32(t.Meta.Face))
-		rc.c(t.Meta.RgbaColor)
+		rc.c(t.Meta.RGBA)
 		rc.p(t.A)
 		rc.p(t.B)
 		rc.p(t.C)

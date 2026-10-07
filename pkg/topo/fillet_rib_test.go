@@ -26,7 +26,7 @@ type rib struct{ h, lean float64 }
 const ribFoot, ribWide = 14.0, 10.0
 
 func (rb rib) shell() *srf.SShell {
-	gray := core.NewRgbaColor(100, 100, 100, 255)
+	gray := core.NewRGBA(100, 100, 100, 255)
 	var plate, wedge, out srf.SShell
 	plate.MakePrism([]geom.Vector{v(-10, -8, -3), v(28, -8, -3), v(28, 18, -3), v(-10, 18, -3)}, v(0, 0, 0), v(0, 0, 3), gray)
 	// The wedge goes 1 into the plate, for the union.
@@ -198,7 +198,7 @@ func TestFilletGrownFaceCut(t *testing.T) {
 	srf.SetChordTolMm(0.002)
 	rb := rib{10, 0}
 	sides, ends := rb.foot()
-	gray := core.NewRgbaColor(100, 100, 100, 255)
+	gray := core.NewRGBA(100, 100, 100, 255)
 	for _, c := range []struct {
 		name string
 		segs [][2]geom.Vector

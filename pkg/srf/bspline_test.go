@@ -88,7 +88,7 @@ func TestBSplineCurveBeziers(t *testing.T) {
 					t.Fatalf("%d pieces for %d breaks", len(bz), len(bs))
 				}
 				lo, hi := c.Domain()
-				for k := 0; k <= 40; k++ {
+				for k := range 41 {
 					u := lo + (hi-lo)*float64(k)/40
 					i, s := spanOf(bs, u)
 					if d := bz[i].PointAt(s).Minus(c.PointAt(u)).Magnitude(); d > 1e-9 {
@@ -120,7 +120,7 @@ func TestBSplineCircle(t *testing.T) {
 	if err != nil || len(bz) != 4 {
 		t.Fatalf("%d pieces, %v", len(bz), err)
 	}
-	for k := 0; k <= 100; k++ {
+	for k := range 101 {
 		u := 4 * float64(k) / 100
 		if d := c.PointAt(u).Magnitude(); math.Abs(d-2) > 1e-12 {
 			t.Errorf("at %v the circle is %v from its centre", u, d)

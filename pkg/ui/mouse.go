@@ -19,7 +19,7 @@ import (
 // UpdateDraggedPoint moves a point with the mouse.
 func (gw *GraphicsWindow) UpdateDraggedPoint(hp core.HEntity, mx, my float64) {
 	sk := gw.sk()
-	p := sk.GetEntity(hp)
+	p := sk.Entity(hp)
 	pos := p.PointGetNum(sk)
 	gw.UpdateDraggedNum(&pos, mx, my)
 	p.PointForceTo(sk, pos)
@@ -37,13 +37,13 @@ func (gw *GraphicsWindow) UpdateDraggedNum(pos *geom.Vector, mx, my float64) {
 // or is a transformed point of the same group, which moves with it.
 func (gw *GraphicsWindow) AddPointToDraggedList(hp core.HEntity) {
 	sk := gw.sk()
-	p := sk.GetEntity(hp)
+	p := sk.Entity(hp)
 	for _, hee := range gw.pending.points {
 		if hee == hp {
 			// Exact same point.
 			return
 		}
-		pe := sk.GetEntity(hee)
+		pe := sk.Entity(hee)
 		if pe.Type == p.Type && pe.Type != core.EntityPointIn2D && pe.Type != core.EntityPointIn3D &&
 			pe.Group == p.Group {
 			// Transform-type point, from the same group. So it handles
@@ -57,7 +57,7 @@ func (gw *GraphicsWindow) AddPointToDraggedList(hp core.HEntity) {
 // StartDraggingByEntity drags an entity's points.
 func (gw *GraphicsWindow) StartDraggingByEntity(he core.HEntity) {
 	sk := gw.sk()
-	e := sk.GetEntity(he)
+	e := sk.Entity(he)
 	switch {
 	case e.IsPoint():
 		gw.AddPointToDraggedList(e.H)
@@ -76,7 +76,7 @@ func (gw *GraphicsWindow) StartDraggingByEntity(he core.HEntity) {
 		// Rotate groups are unstable dragging; revolve and helix faces
 		// too, since their point is on the axis. Files saved before v3.2
 		// didn't specify point[0], so check it exists.
-		if pt := sk.GetEntity(e.Point[0]); pt != nil {
+		if pt := sk.Entity(e.Point[0]); pt != nil {
 			if gw.entityCanBeDragged(pt) {
 				gw.AddPointToDraggedList(e.Point[0])
 			}
@@ -160,7 +160,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		dy := (y - gw.orig.mouse.V) / v.Scale
 
 		switch {
-		case !(shiftDown || ctrlDown):
+		case !shiftDown && !ctrlDown:
 			sign := 1.0
 			if ss.CameraNav {
 				sign = -1.0
@@ -216,7 +216,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 			var e *core.Entity
 			dragEntity := gw.ChooseFromHoverToDrag().Entity
 			if dragEntity.V != 0 {
-				e = sk.GetEntity(dragEntity)
+				e = sk.Entity(dragEntity)
 			}
 			if e != nil && e.Type != core.EntityWorkplane {
 				if !gw.hoverWasSelectedOnMousedown {
@@ -240,7 +240,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 					gw.hover.Clear()
 					gw.pending.operation = PendingDraggingPoints
 				}
-			} else if gw.hover.Constraint.V != 0 && sk.GetConstraint(gw.hover.Constraint).HasLabel() {
+			} else if gw.hover.Constraint.V != 0 && sk.Constraint(gw.hover.Constraint).HasLabel() {
 				gw.ClearSelection()
 				gw.pending.constraint = gw.hover.Constraint
 				gw.pending.operation = PendingDraggingConstraint
@@ -304,7 +304,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 	gw.havePainted = false
 	switch gw.pending.operation {
 	case PendingDraggingConstraint:
-		c := sk.GetConstraint(gw.pending.constraint)
+		c := sk.Constraint(gw.pending.constraint)
 		gw.UpdateDraggedNum(&c.Disp.Offset, x, y)
 		gw.orig.mouse = mp
 		gw.Invalidate(false)
@@ -353,7 +353,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 
 			// Now apply this rotation to the points being dragged.
 			for _, he := range gw.pending.points {
-				e := sk.GetEntity(he)
+				e := sk.Entity(he)
 				if e.Type != core.EntityPointNRotTrans {
 					if ctrlDown {
 						p := e.PointGetNum(sk)
@@ -391,20 +391,20 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		if gw.pending.point == hr.Entity(4) {
 			// The very first segment; dragging final point drags both
 			// tangent points.
-			p0 := sk.GetEntity(hr.Entity(1)).PointGetNum(sk)
-			p3 := sk.GetEntity(hr.Entity(4)).PointGetNum(sk)
+			p0 := sk.Entity(hr.Entity(1)).PointGetNum(sk)
+			p3 := sk.Entity(hr.Entity(4)).PointGetNum(sk)
 			p1 := p0.ScaledBy(2.0 / 3).Plus(p3.ScaledBy(1.0 / 3))
 			p2 := p0.ScaledBy(1.0 / 3).Plus(p3.ScaledBy(2.0 / 3))
-			sk.GetEntity(hr.Entity(1+1)).PointForceTo(sk, p1)
-			sk.GetEntity(hr.Entity(1+2)).PointForceTo(sk, p2)
+			sk.Entity(hr.Entity(1+1)).PointForceTo(sk, p1)
+			sk.Entity(hr.Entity(1+2)).PointForceTo(sk, p2)
 		} else {
 			// A subsequent segment; dragging point drags only final
 			// tangent point.
-			i := sk.GetEntity(hr.Entity(0)).ExtraPoints
-			pn := sk.GetEntity(hr.Entity(4 + i)).PointGetNum(sk)
-			pnm2 := sk.GetEntity(hr.Entity(2 + i)).PointGetNum(sk)
+			i := sk.Entity(hr.Entity(0)).ExtraPoints
+			pn := sk.Entity(hr.Entity(4 + i)).PointGetNum(sk)
+			pnm2 := sk.Entity(hr.Entity(2 + i)).PointGetNum(sk)
 			pnm1 := pn.Plus(pnm2).ScaledBy(0.5)
-			sk.GetEntity(hr.Entity(3+i)).PointForceTo(sk, pnm1)
+			sk.Entity(hr.Entity(3+i)).PointForceTo(sk, pnm1)
 		}
 
 		gw.orig.mouse = mp
@@ -415,22 +415,22 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		gw.HitTestMakeSelection(mp)
 
 		hr := gw.pending.point.Request()
-		ona := sk.GetEntity(hr.Entity(2)).PointGetNum(sk)
-		onb := sk.GetEntity(hr.Entity(3)).PointGetNum(sk)
+		ona := sk.Entity(hr.Entity(2)).PointGetNum(sk)
+		onb := sk.Entity(hr.Entity(3)).PointGetNum(sk)
 		center := ona.Plus(onb).ScaledBy(0.5)
 
-		sk.GetEntity(hr.Entity(1)).PointForceTo(sk, center)
+		sk.Entity(hr.Entity(1)).PointForceTo(sk, center)
 		gw.suggestFor(hr, ctrlDown)
 
 		gw.orig.mouse = mp
 		sk.MarkGroupDirtyByEntity(gw.pending.point)
 
 	case PendingDraggingNewRadius, PendingDraggingRadius:
-		circle := sk.GetEntity(gw.pending.circle)
-		center := sk.GetEntity(circle.Point[0]).PointGetNum(sk)
+		circle := sk.Entity(gw.pending.circle)
+		center := sk.Entity(circle.Point[0]).PointGetNum(sk)
 		c2 := gw.ProjectPoint(center)
 		r := c2.DistanceTo(mp) / v.Scale
-		sk.GetEntity(circle.Distance).DistanceForceTo(sk, r)
+		sk.Entity(circle.Distance).DistanceForceTo(sk, r)
 		if gw.pending.operation == PendingDraggingNewRadius {
 			gw.suggestFor(gw.pending.circle.Request(), ctrlDown)
 		}
@@ -439,8 +439,8 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		ss.ScheduleShowTW()
 
 	case PendingDraggingNormal:
-		normal := sk.GetEntity(gw.pending.normal)
-		p := sk.GetEntity(normal.Point[0]).PointGetNum(sk)
+		normal := sk.Entity(gw.pending.normal)
+		p := sk.Entity(normal.Point[0]).PointGetNum(sk)
 		p2 := gw.ProjectPoint(p)
 
 		q := normal.NormalGetNum(sk)
@@ -594,11 +594,11 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 				var hg core.HGroup
 				switch {
 				case gs.entities == 1:
-					hg = sk.GetEntity(gs.entity[0]).Group
+					hg = sk.Entity(gs.entity[0]).Group
 				case gs.points == 1:
-					hg = sk.GetEntity(gs.point[0]).Group
+					hg = sk.Entity(gs.point[0]).Group
 				case gs.constraints == 1:
-					hg = sk.GetConstraint(gs.constraint[0]).Group
+					hg = sk.Constraint(gs.constraint[0]).Group
 				default:
 					return
 				}
@@ -619,7 +619,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 				case gs.points == 1:
 					hs = sk.StyleForEntity(gs.point[0])
 				case gs.constraints == 1:
-					hs = constraintStyle(sk.GetConstraint(gs.constraint[0]))
+					hs = constraintStyle(sk.Constraint(gs.constraint[0]))
 				default:
 					return
 				}
@@ -635,7 +635,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 			menu.AddItem("Select Edge Chain", func() { gw.MenuEdit(CmdSelectChain) }, true)
 		}
 		if gs.constraints == 1 && gs.n == 0 {
-			c := sk.GetConstraint(gs.constraint[0])
+			c := sk.Constraint(gs.constraint[0])
 			if c.HasLabel() && c.Type != core.ConstraintComment {
 				menu.AddItem("Toggle Reference Dimension", func() { ss.MenuConstrain(CmdReference) }, true)
 			}
@@ -648,20 +648,20 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 		}
 
 		if gs.points == 1 && gs.point[0].IsFromRequest() {
-			r := sk.GetRequest(gs.point[0].Request())
+			r := sk.Request(gs.point[0].Request())
 			index := r.IndexOfPoint(gs.point[0])
 			if (r.Type == sketch.RequestCubic && index > 1 && index < r.ExtraPoints+2) ||
 				r.Type == sketch.RequestCubicPeriodic {
 				hr := r.H
 				menu.AddItem("Remove Spline Point", func() {
-					r := sk.GetRequest(hr)
+					r := sk.Request(hr)
 					index := r.IndexOfPoint(gs.point[0])
 					if r.ExtraPoints == 0 {
 						panic("ui: expected a bezier with interior control points")
 					}
 
 					ss.UndoRemember()
-					e := sk.GetEntity(r.H.Entity(0))
+					e := sk.Entity(r.H.Entity(0))
 
 					// First, fix point-coincident constraints involving
 					// this point. Then, remove all other constraints, since
@@ -674,22 +674,22 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 						if e.Point[i+1].V == 0 {
 							break
 						}
-						p0 := sk.GetEntity(e.Point[i])
-						p1 := sk.GetEntity(e.Point[i+1])
+						p0 := sk.Entity(e.Point[i])
+						p1 := sk.Entity(e.Point[i+1])
 						sk.ReplacePointInConstraints(p1.H, p0.H)
 						p0.PointForceTo(sk, p1.PointGetNum(sk))
 					}
-					sk.GetRequest(hr).ExtraPoints--
+					sk.Request(hr).ExtraPoints--
 					sk.MarkGroupDirtyByEntity(gs.point[0])
 					gw.ClearSelection()
 				}, true)
 			}
 		}
 		if gs.entities == 1 && gs.entity[0].IsFromRequest() {
-			r := sk.GetRequest(gs.entity[0].Request())
+			r := sk.Request(gs.entity[0].Request())
 			if r.Type == sketch.RequestCubic || r.Type == sketch.RequestCubicPeriodic {
-				e := sk.GetEntity(gs.entity[0])
-				camera := gw.GetCamera()
+				e := sk.Entity(gs.entity[0])
+				camera := gw.Camera()
 				addAfterPoint := gw.entityPositionOfPoint(e, &camera, geom.Point2d{U: x, V: y})
 				if addAfterPoint == -1 {
 					panic("ui: expected a nearest bezier point to be located")
@@ -700,7 +700,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 				}
 				hr := r.H
 				menu.AddItem("Add Spline Point", func() {
-					r := sk.GetRequest(hr)
+					r := sk.Request(hr)
 					pointCount := r.ExtraPoints + 4
 					if r.Type == sketch.RequestCubicPeriodic {
 						pointCount = r.ExtraPoints + 3
@@ -715,22 +715,22 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 					sk.MarkGroupDirtyByEntity(gs.entity[0])
 					ss.GenerateAll(sketch.GenerateRegen)
 
-					e := sk.GetEntity(hr.Entity(0))
+					e := sk.Entity(hr.Entity(0))
 					for i := core.MaxPointsInEntity; i > addAfterPoint+1; i-- {
 						if i >= core.MaxPointsInEntity {
 							// C++ reads one past the end of point[] here,
 							// which is always empty.
 							continue
 						}
-						p0 := sk.GetEntity(e.Point[i])
+						p0 := sk.Entity(e.Point[i])
 						if e.Point[i].V == 0 || p0 == nil {
 							continue
 						}
-						p1 := sk.GetEntity(e.Point[i-1])
+						p1 := sk.Entity(e.Point[i-1])
 						sk.ReplacePointInConstraints(p1.H, p0.H)
 						p0.PointForceTo(sk, p1.PointGetNum(sk))
 					}
-					p := sk.GetEntity(e.Point[addAfterPoint+1])
+					p := sk.Entity(e.Point[addAfterPoint+1])
 					p.PointForceTo(sk, v)
 					sk.MarkGroupDirtyByEntity(gs.entity[0])
 					gw.ClearSelection()
@@ -742,7 +742,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 		}
 
 		if gs.points == 1 {
-			p := sk.GetEntity(gs.point[0])
+			p := sk.Entity(gs.point[0])
 			found := false
 			for i := range sk.Constraints {
 				ci := &sk.Constraints[i]
@@ -757,7 +757,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 			if found {
 				hp := p.H
 				menu.AddItem("Delete Point-Coincident Constraint", func() {
-					p := sk.GetEntity(hp)
+					p := sk.Entity(hp)
 					if !p.IsPoint() {
 						return
 					}
@@ -828,7 +828,7 @@ func (gw *GraphicsWindow) AddRequest(typ sketch.RequestType, rememberForUndo boo
 // screen point pp.
 func (gw *GraphicsWindow) SnapToEntityByScreenPoint(pp geom.Point2d, he core.HEntity) geom.Vector {
 	sk := gw.sk()
-	e := sk.GetEntity(he)
+	e := sk.Entity(he)
 	if e.IsPoint() {
 		return e.PointGetNum(sk)
 	}
@@ -863,8 +863,8 @@ func (gw *GraphicsWindow) ConstrainPointByHovered(pt core.HEntity, projected *ge
 		return false
 	}
 	sk := gw.sk()
-	point := sk.GetEntity(pt)
-	e := sk.GetEntity(gw.hover.Entity)
+	point := sk.Entity(pt)
+	e := sk.Entity(gw.hover.Entity)
 	switch {
 	case e.IsPoint():
 		point.PointForceTo(sk, e.PointGetNum(sk))
@@ -889,7 +889,7 @@ func (gw *GraphicsWindow) ConstrainPointByHovered(pt core.HEntity, projected *ge
 // MouseEvent dispatches a mouse event from the window, in window
 // coordinates, as screen pixels from the centre with y up.
 func (gw *GraphicsWindow) MouseEvent(event platform.MouseEvent) bool {
-	width, height := gw.window.GetContentSize()
+	width, height := gw.window.ContentSize()
 	x := event.X - width/2
 	y := height/2 - event.Y
 
@@ -969,7 +969,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
 	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
 
-	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.GetEntity(he).PointForceTo(sk, p) }
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
 
 	var hr core.HRequest
 	var hc core.HConstraint
@@ -984,7 +984,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 
 		case CmdLineSegment, CmdConstrSegment:
 			hr = gw.AddRequest(sketch.RequestLineSegment, true)
-			sk.GetRequest(hr).Construction = gw.pending.command == CmdConstrSegment
+			sk.Request(hr).Construction = gw.pending.command == CmdConstrSegment
 			pointForceTo(hr.Entity(1), v)
 			gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
 
@@ -1023,7 +1023,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 				ss.constrain(typ, core.HEntity{}, core.HEntity{}, lns[i].Entity(0))
 			}
 			if gw.ConstrainPointByHovered(lns[2].Entity(1), &mouse) {
-				pos := sk.GetEntity(lns[2].Entity(1)).PointGetNum(sk)
+				pos := sk.Entity(lns[2].Entity(1)).PointGetNum(sk)
 				for i := range 4 {
 					pointForceTo(lns[i].Entity(1), pos)
 					pointForceTo(lns[i].Entity(2), pos)
@@ -1040,9 +1040,9 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			// Centered where we clicked
 			pointForceTo(hr.Entity(1), v)
 			// Normal to the screen
-			sk.GetEntity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
+			sk.Entity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
 			// Initial radius zero
-			sk.GetEntity(hr.Entity(64)).DistanceForceTo(sk, 0)
+			sk.Entity(hr.Entity(64)).DistanceForceTo(sk, 0)
 
 			gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
 
@@ -1099,7 +1099,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			}
 			hr = gw.AddRequest(sketch.RequestWorkplane, true)
 			pointForceTo(hr.Entity(1), v)
-			sk.GetEntity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
+			sk.Entity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
 			gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
 			gw.ClearSuper()
 
@@ -1112,7 +1112,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			}
 			hr = gw.AddRequest(sketch.RequestTTFText, true)
 			gw.AddToPending(hr)
-			r := sk.GetRequest(hr)
+			r := sk.Request(hr)
 			r.Str = "Abc"
 			r.Font = ttf.EmbeddedFont
 
@@ -1133,7 +1133,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			}
 			hr = gw.AddRequest(sketch.RequestImage, true)
 			gw.AddToPending(hr)
-			r := sk.GetRequest(hr)
+			r := sk.Request(hr)
 			r.File = gw.pending.filename
 			r.Construction = true
 
@@ -1172,7 +1172,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 
 	case PendingDraggingNewCubicPoint:
 		hr := gw.pending.point.Request()
-		r := sk.GetRequest(hr)
+		r := sk.Request(hr)
 
 		if gw.hover.Entity == hr.Entity(1) && r.ExtraPoints >= 2 {
 			// They want the endpoints coincident, which means a periodic
@@ -1181,11 +1181,11 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			// Remove the off-curve control points, which are no longer
 			// needed here; so move [2,ep+1] down, skipping first pt.
 			for i := 2; i <= r.ExtraPoints+1; i++ {
-				pointForceTo(hr.Entity((i-1)+1), sk.GetEntity(hr.Entity(i+1)).PointGetNum(sk))
+				pointForceTo(hr.Entity((i-1)+1), sk.Entity(hr.Entity(i+1)).PointGetNum(sk))
 			}
 			// and move ep+3 down by two, skipping both
 			pointForceTo(hr.Entity((r.ExtraPoints+1)+1),
-				sk.GetEntity(hr.Entity((r.ExtraPoints+3)+1)).PointGetNum(sk))
+				sk.Entity(hr.Entity((r.ExtraPoints+3)+1)).PointGetNum(sk))
 			r.ExtraPoints -= 2
 			// And we're done.
 			sk.MarkGroupDirty(r.Group, false)
@@ -1203,11 +1203,11 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			break
 		}
 
-		sk.GetRequest(hr).ExtraPoints++
+		sk.Request(hr).ExtraPoints++
 		ss.GenerateAll(sketch.GenerateRegen)
 
-		ep := sk.GetRequest(hr).ExtraPoints
-		last := sk.GetEntity(hr.Entity(3 + ep)).PointGetNum(sk)
+		ep := sk.Request(hr).ExtraPoints
+		last := sk.Entity(hr.Entity(3 + ep)).PointGetNum(sk)
 
 		pointForceTo(hr.Entity(2+ep), last)
 		pointForceTo(hr.Entity(3+ep), v)
@@ -1216,10 +1216,10 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 
 	case PendingDraggingNewLinePoint:
 		if gw.hover.Entity.V != 0 {
-			e := sk.GetEntity(gw.hover.Entity)
+			e := sk.Entity(gw.hover.Entity)
 			if e.IsPoint() {
 				hrl := gw.pending.point.Request()
-				sp := sk.GetEntity(hrl.Entity(1))
+				sp := sk.Entity(hrl.Entity(1))
 				if e.PointGetNum(sk).Equals(sp.PointGetNum(sk)) {
 					// If we constrained by the hovered point, then we would
 					// create a zero-length line segment. That's not good, so
@@ -1246,14 +1246,14 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 		// Create a new line segment, so that we continue drawing.
 		hr := gw.AddRequest(sketch.RequestLineSegment, true)
 		gw.ReplacePending(gw.pending.request, hr)
-		sk.GetRequest(hr).Construction = sk.GetRequest(gw.pending.request).Construction
+		sk.Request(hr).Construction = sk.Request(gw.pending.request).Construction
 		// Displace the second point of the new line segment slightly, to
 		// avoid creating zero-length edge warnings.
 		pointForceTo(hr.Entity(2), v.Plus(vw.ProjRight.ScaledBy(0.5/vw.Scale)))
 
 		// Constrain the line segments to share an endpoint
 		ss.constrainCoincident(gw.pending.point, hr.Entity(1))
-		pendingPos := sk.GetEntity(gw.pending.point).PointGetNum(sk)
+		pendingPos := sk.Entity(gw.pending.point).PointGetNum(sk)
 		pointForceTo(hr.Entity(1), pendingPos)
 
 		// And drag an endpoint of the new line segment
@@ -1280,10 +1280,10 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 	// Activate group with newly created request/constraint
 	var g *sketch.Group
 	if hr.V != 0 {
-		g = sk.GetGroup(sk.GetRequest(hr).Group)
+		g = sk.Group(sk.Request(hr).Group)
 	}
 	if hc.V != 0 {
-		g = sk.GetGroup(sk.GetConstraint(hc).Group)
+		g = sk.Group(sk.Constraint(hc).Group)
 	}
 	if g != nil {
 		g.Visible = true
@@ -1327,7 +1327,7 @@ func (gw *GraphicsWindow) EditConstraint(constraint core.HConstraint) {
 	gw.constraintBeingEdited = constraint
 	gw.ClearSuper()
 
-	c := gw.sk().GetConstraint(gw.constraintBeingEdited)
+	c := gw.sk().Constraint(gw.constraintBeingEdited)
 	if !c.HasLabel() {
 		// Not meaningful to edit a constraint without a dimension
 		return
@@ -1337,7 +1337,7 @@ func (gw *GraphicsWindow) EditConstraint(constraint core.HConstraint) {
 		return
 	}
 
-	camera := gw.GetCamera()
+	camera := gw.Camera()
 	p3 := gw.constraintLabelPos(c, &camera)
 	p2 := gw.ProjectPoint(p3)
 
@@ -1392,15 +1392,15 @@ func (gw *GraphicsWindow) EditConstraint(constraint core.HConstraint) {
 		editValue = c.Name + " = " + editValue
 	}
 
-	width, height := gw.window.GetContentSize()
+	width, height := gw.window.ContentSize()
 	hs := c.Disp.Style
 	if hs.V == 0 {
 		hs.V = core.StyleConstraint
 	}
 	capHeight := ss.styleTextHeight(hs)
 	vf := res.BuiltinVectorFont()
-	fontHeight := vf.GetHeight(capHeight)
-	editMinWidth := vf.GetWidth(capHeight, editPlaceholder)
+	fontHeight := vf.Height(capHeight)
+	editMinWidth := vf.Width(capHeight, editPlaceholder)
 	gw.window.ShowEditor(p2.U+width/2, height/2-p2.V, fontHeight, editMinWidth, false, editValue)
 }
 
@@ -1422,7 +1422,7 @@ func (gw *GraphicsWindow) EditControlDone(s string) {
 	gw.window.HideEditor()
 	gw.window.Invalidate()
 
-	c := gw.sk().GetConstraint(gw.constraintBeingEdited)
+	c := gw.sk().Constraint(gw.constraintBeingEdited)
 	if c == nil {
 		return
 	}

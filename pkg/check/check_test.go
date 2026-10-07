@@ -10,17 +10,17 @@ import (
 )
 
 // box is a closed mesh of an axis-aligned box, outward facing.
-func box(min, max geom.Vector) *srf.SMesh {
+func box(lo, hi geom.Vector) *srf.SMesh {
 	v := func(i int) geom.Vector {
-		p := min
+		p := lo
 		if i&1 != 0 {
-			p.X = max.X
+			p.X = hi.X
 		}
 		if i&2 != 0 {
-			p.Y = max.Y
+			p.Y = hi.Y
 		}
 		if i&4 != 0 {
-			p.Z = max.Z
+			p.Z = hi.Z
 		}
 		return p
 	}

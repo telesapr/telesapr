@@ -49,7 +49,7 @@ func (tw *TextWindow) ShowHeader(withNav bool) {
 	var header, desc string
 	if ss.GW.LockedInWorkplane() {
 		header = "in plane: "
-		desc = ss.entityDescription(ss.SK.MustGetEntity(ss.GW.ActiveWorkplane()))
+		desc = ss.entityDescription(ss.SK.MustEntity(ss.GW.ActiveWorkplane()))
 	} else {
 		header = "drawing / constraining in 3d"
 		desc = ""
@@ -78,7 +78,7 @@ func (tw *TextWindow) ScreenSelectGroup(link int, v uint32) {
 // ScreenToggleGroupShown hides or shows a group (C++
 // TextWindow::ScreenToggleGroupShown).
 func (tw *TextWindow) ScreenToggleGroupShown(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(core.HGroup{V: v})
+	g := tw.ss.SK.Group(core.HGroup{V: v})
 	g.Visible = !g.Visible
 	// If a group was just shown, then it might not have been generated
 	// previously, so regenerate.
@@ -90,7 +90,7 @@ func (tw *TextWindow) ScreenToggleGroupShown(link int, v uint32) {
 func (tw *TextWindow) ScreenShowGroupsSpecial(link int, v uint32) {
 	sk := tw.ss.SK
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		switch link {
 		case 's':
 			g.Visible = true
@@ -109,11 +109,11 @@ func (tw *TextWindow) ScreenActivateGroup(link int, v uint32) {
 	ss := tw.ss
 	if why := ss.SK.SuppressedReason(core.HGroup{V: v}); why != "" {
 		ss.Error("%s can't be made active: it is left out of the model (%s).",
-			ss.SK.GetGroup(core.HGroup{V: v}).DescriptionString(), why)
+			ss.SK.Group(core.HGroup{V: v}).DescriptionString(), why)
 		return
 	}
 	ss.SK.Active = core.HGroup{V: v}
-	ss.groupActivate(ss.SK.GetGroup(ss.SK.Active))
+	ss.groupActivate(ss.SK.Group(ss.SK.Active))
 	ss.GW.ClearSuper()
 }
 
@@ -172,7 +172,7 @@ func (tw *TextWindow) ShowListOfGroups() {
 	afterActive := false
 	backgroundParity := false
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 
 		s := groupDescription(g)
 		active := g.H == ss.GW.activeGroupH()
@@ -180,7 +180,7 @@ func (tw *TextWindow) ShowListOfGroups() {
 		ok := g.IsSolvedOkay()
 		warn := (g.Type == sketch.GroupDrawingWorkplane && g.PolyError.How != int(core.PolyGood)) ||
 			((g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe) &&
-				sk.GetGroup(g.OpA).PolyError.How != int(core.PolyGood)) ||
+				sk.Group(g.OpA).PolyError.How != int(core.PolyGood)) ||
 			g.Problem.Msg != "" || g.LinkProblem != ""
 		dof := g.Solved.Dof
 		sdof := "ok "
@@ -358,7 +358,7 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	ss.UndoRemember()
-	g := sk.GetGroup(tw.shown.group)
+	g := sk.Group(tw.shown.group)
 
 	switch link {
 	case 's':
@@ -450,7 +450,7 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 func (tw *TextWindow) ScreenChangeLoftTurn(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
-	g := sk.GetGroup(tw.shown.group)
+	g := sk.Group(tw.shown.group)
 	if g == nil || g.Type != sketch.GroupLoft {
 		return
 	}
@@ -465,14 +465,14 @@ func (tw *TextWindow) ScreenChangeLoftTurn(link int, v uint32) {
 func (tw *TextWindow) ScreenColor(link int, v uint32) {
 	tw.ss.UndoRemember()
 
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 	tw.ShowEditControlWithColorPicker(3, g.Color)
 	tw.edit.meaning = EditGroupColor
 }
 
 // ScreenOpacity edits a group's opacity (C++ TextWindow::ScreenOpacity).
 func (tw *TextWindow) ScreenOpacity(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 
 	tw.ShowEditControl(11, fmt.Sprintf("%.2f", g.Color.AlphaF()))
 	tw.edit.meaning = EditGroupOpacity
@@ -482,7 +482,7 @@ func (tw *TextWindow) ScreenOpacity(link int, v uint32) {
 // ScreenChangeExprA edits how many times a group repeats (C++
 // TextWindow::ScreenChangeExprA).
 func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 
 	text := g.ExprA
 	if text == "" {
@@ -496,7 +496,7 @@ func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
 // ScreenChangeGroupName renames a group (C++
 // TextWindow::ScreenChangeGroupName).
 func (tw *TextWindow) ScreenChangeGroupName(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 	tw.ShowEditControl(12, groupDescription(g)[5:])
 	tw.edit.meaning = EditGroupName
 	tw.edit.group = core.HGroup{V: v}
@@ -505,7 +505,7 @@ func (tw *TextWindow) ScreenChangeGroupName(link int, v uint32) {
 // ScreenChangeGroupScale edits a linked group's scale (C++
 // TextWindow::ScreenChangeGroupScale).
 func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 
 	text := g.ExprScale
 	if text == "" {
@@ -519,7 +519,7 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 // ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance
 // or a fillet's radius, all ValB (C++ TextWindow::ScreenChangeHelixPitch).
 func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprB
 	if text == "" {
 		text = fmt.Sprintf("%.8f", g.ValB/tw.ss.MmPerUnit())
@@ -533,7 +533,7 @@ func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 // as a reference mesh, and reads it again.
 func (tw *TextWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
 	ss := tw.ss
-	g := ss.SK.GetGroup(tw.shown.group)
+	g := ss.SK.Group(tw.shown.group)
 	if g == nil || g.Type != sketch.GroupLinked || g.LinkAsSolid == (link == 's') {
 		return
 	}
@@ -554,7 +554,7 @@ func (tw *TextWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
 // letter, or ('n') lets them turn least.
 func (tw *TextWindow) ScreenChangeSweepUp(link int, v uint32) {
 	ss := tw.ss
-	g := ss.SK.GetGroup(tw.shown.group)
+	g := ss.SK.Group(tw.shown.group)
 	if g == nil || g.Type != sketch.GroupSweep {
 		return
 	}
@@ -576,7 +576,7 @@ func (tw *TextWindow) ScreenChangeSweepUp(link int, v uint32) {
 // ScreenChangeGroupDraft edits an extrusion's draft or a sweep's twist,
 // in degrees.
 func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprC
 	if text == "" {
 		text = fmt.Sprintf("%g", g.ValC)
@@ -589,7 +589,7 @@ func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
 // ScreenChangeChamferDistance2 edits a chamfer's second distance, on
 // each edge's second face (roadmap 28.1).
 func (tw *TextWindow) ScreenChangeChamferDistance2(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprC
 	if text == "" {
 		d := g.ValC
@@ -607,7 +607,7 @@ func (tw *TextWindow) ScreenChangeChamferDistance2(link int, v uint32) {
 // chamfers each edge the other way round.
 func (tw *TextWindow) ScreenSwapChamferDistances(link int, v uint32) {
 	ss := tw.ss
-	g := ss.SK.GetGroup(core.HGroup{V: v})
+	g := ss.SK.Group(core.HGroup{V: v})
 	if g == nil || g.Type != sketch.GroupChamfer || g.ValC == 0 && g.ExprC == "" {
 		return
 	}
@@ -622,7 +622,7 @@ func (tw *TextWindow) ScreenSwapChamferDistances(link int, v uint32) {
 // again.
 func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
 	ss := tw.ss
-	g := ss.SK.GetGroup(core.HGroup{V: v})
+	g := ss.SK.Group(core.HGroup{V: v})
 	if g == nil || g.Type != sketch.GroupChamfer {
 		return
 	}
@@ -638,7 +638,7 @@ func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
 // roadmap 28.2).
 func (ss *Application) draftSelectedSides() {
 	gw := ss.GW
-	g := ss.SK.GetGroup(gw.activeGroupH())
+	g := ss.SK.Group(gw.activeGroupH())
 	if g == nil || g.Type != sketch.GroupExtrude || g.ValC == 0 && g.ExprC == "" {
 		ss.Error("Activate a drafted extrusion first: Draft Selected Sides chooses which of its sides the draft leans.")
 		return
@@ -667,7 +667,7 @@ func (ss *Application) draftSelectedSides() {
 // by Selected Curves, roadmap 28.3).
 func (ss *Application) loftGuidesFromSelection() {
 	gw := ss.GW
-	g := ss.SK.GetGroup(gw.activeGroupH())
+	g := ss.SK.Group(gw.activeGroupH())
 	if g == nil || g.Type != sketch.GroupLoft {
 		ss.Error("Activate a loft first: Guide Loft by Selected Curves holds it to guide curves.")
 		return
@@ -746,7 +746,7 @@ func (tw *TextWindow) showLoftEnds(g *sketch.Group) {
 // ScreenChangeLoftStart edits how square a loft leaves its first
 // profile, 0 for free.
 func (tw *TextWindow) ScreenChangeLoftStart(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprB
 	if text == "" {
 		text = fmt.Sprintf("%g", g.ValB)
@@ -760,9 +760,9 @@ func (tw *TextWindow) ScreenChangeLoftStart(link int, v uint32) {
 // TextWindow::ScreenChangePitchOption).
 func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
 	sk := tw.ss.SK
-	g := sk.GetGroup(tw.shown.group)
+	g := sk.Group(tw.shown.group)
 	if g.ValB == 0.0 {
-		g.ValB = sk.MustGetParam(g.H.Param(7)).Val * math.Pi / sk.MustGetParam(g.H.Param(3)).Val
+		g.ValB = sk.MustParam(g.H.Param(7)).Val * math.Pi / sk.MustParam(g.H.Param(3)).Val
 	} else {
 		g.ValB = 0.0
 	}
@@ -785,7 +785,7 @@ func (ss *Application) deleteGroup(hg core.HGroup) {
 	order := slices.Clone(sk.GroupOrder)
 	was := ss.GW.activeGroupH()
 	if hg == was {
-		if prev := sk.GetGroup(hg).PreviousGroup(sk); prev != nil {
+		if prev := sk.Group(hg).PreviousGroup(sk); prev != nil {
 			sk.Active = prev.H
 		}
 	}
@@ -803,7 +803,7 @@ func (ss *Application) deleteGroup(hg core.HGroup) {
 	}
 	ss.GenerateAll(sketch.GenerateAll)
 	if sk.ActivateSurvivor(order, was) {
-		ss.groupActivate(sk.GetGroup(sk.Active))
+		ss.groupActivate(sk.Group(sk.Active))
 	}
 
 	// Reset the graphics window. This will also recreate the default
@@ -858,7 +858,7 @@ func wrapWords(text string, width int) []string {
 func (tw *TextWindow) ShowGroupInfo() {
 	ss := tw.ss
 	sk := ss.SK
-	g := sk.GetGroup(tw.shown.group)
+	g := sk.Group(tw.shown.group)
 	s := "???"
 
 	check := func(b bool) string {
@@ -1088,8 +1088,8 @@ func (tw *TextWindow) ShowGroupInfo() {
 				g.ValB/ss.MmPerUnit(), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 		} else {
 			tw.Printf(false, "  %Ba %# %E",
-				sk.MustGetParam(g.H.Param(7)).Val*math.Pi/
-					(sk.MustGetParam(g.H.Param(3)).Val*ss.MmPerUnit()),
+				sk.MustParam(g.H.Param(7)).Val*math.Pi/
+					(sk.MustParam(g.H.Param(3)).Val*ss.MmPerUnit()),
 				lf(tw.ScreenChangeHelixPitch), g.H.V)
 		}
 		tw.Printf(false, "   %Fd%f%LP%s  fixed", lf(tw.ScreenChangePitchOption), check(g.ValB != 0))
@@ -1242,7 +1242,7 @@ func (tw *TextWindow) showEdgeRadius(g *sketch.Group, i int, bg byte) {
 // ScreenChangeEdgeRadius edits the own radius of the shown fillet's
 // edge v.
 func (tw *TextWindow) ScreenChangeEdgeRadius(link int, v uint32) {
-	g := tw.ss.SK.GetGroup(tw.shown.group)
+	g := tw.ss.SK.Group(tw.shown.group)
 	val, text, _ := g.EdgeRadius(int(v))
 	if text == "" {
 		text = fmt.Sprintf("%.8f", val/tw.ss.MmPerUnit())
@@ -1331,7 +1331,7 @@ func (tw *TextWindow) ScreenAllowRedundant(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
 
-	g := ss.SK.GetGroup(tw.shown.group)
+	g := ss.SK.Group(tw.shown.group)
 	g.AllowRedundant = true
 	ss.SK.MarkGroupDirty(tw.shown.group, false)
 
@@ -1345,7 +1345,7 @@ func (tw *TextWindow) ScreenAllowRedundant(link int, v uint32) {
 // TextWindow::ShowGroupSolveInfo).
 func (tw *TextWindow) ShowGroupSolveInfo() {
 	sk := tw.ss.SK
-	g := sk.GetGroup(tw.shown.group)
+	g := sk.Group(tw.shown.group)
 	if g.IsSolvedOkay() {
 		// Go back to the default group info screen
 		tw.shown.screen = ScreenGroupInfo
@@ -1376,7 +1376,7 @@ func (tw *TextWindow) ShowGroupSolveInfo() {
 	}
 
 	for i, hc := range g.Solved.Remove {
-		c := sk.GetConstraint(hc)
+		c := sk.Constraint(hc)
 		if c == nil {
 			continue
 		}
@@ -1431,7 +1431,7 @@ func (tw *TextWindow) ScreenStepDimSteps(link int, v uint32) {
 func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
 	ss := tw.ss
 	hc := tw.shown.constraint
-	c := ss.SK.GetConstraint(hc)
+	c := ss.SK.Constraint(hc)
 	if c == nil {
 		return
 	}
@@ -1447,7 +1447,7 @@ func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
 	tw.stepDim.timer.SetOnTimeout(func() {
 		sd := &ss.TW.stepDim
 		if sd.step <= sd.steps {
-			c := ss.SK.GetConstraint(hc)
+			c := ss.SK.Constraint(hc)
 			if c == nil {
 				return
 			}
@@ -1481,7 +1481,7 @@ func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
 // a final one (C++ TextWindow::ShowStepDimension).
 func (tw *TextWindow) ShowStepDimension() {
 	ss := tw.ss
-	c := ss.SK.GetConstraint(tw.shown.constraint)
+	c := ss.SK.Constraint(tw.shown.constraint)
 	if c == nil {
 		tw.shown.screen = ScreenListOfGroups
 		tw.Show()
@@ -1686,7 +1686,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 	switch tw.edit.meaning {
 	case EditTimesRepeated:
 		if e := ss.exprFromString(s); e != nil {
-			g := sk.GetGroup(tw.edit.group)
+			g := sk.Group(tw.edit.group)
 			if !ss.setGroupText(g.H, sketch.GroupCopies, s) {
 				break
 			}
@@ -1701,7 +1701,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 					if g.SkipFirst {
 						copies = g.ValA + 1
 					}
-					sk.MustGetParam(g.H.Param(3)).Val = math.Pi / (2 * copies)
+					sk.MustParam(g.H.Param(3)).Val = math.Pi / (2 * copies)
 				}
 			}
 		}
@@ -1712,7 +1712,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 		} else {
 			ss.UndoRemember()
 
-			g := sk.GetGroup(tw.edit.group)
+			g := sk.Group(tw.edit.group)
 			g.Name = s
 		}
 
@@ -1740,11 +1740,11 @@ func (tw *TextWindow) EditControlDone(s string) {
 		if x, y, z, ok := scanVector3(s); ok {
 			rgb := vec3(x, y, z).ClampWithin(0, 1)
 
-			g := sk.GetGroup(tw.shown.group)
+			g := sk.Group(tw.shown.group)
 			if g == nil {
 				break
 			}
-			g.Color = core.RgbaColorFromFloat(float32(rgb.X), float32(rgb.Y), float32(rgb.Z),
+			g.Color = core.RGBAFromFloat(float32(rgb.X), float32(rgb.Y), float32(rgb.Z),
 				g.Color.AlphaF())
 
 			sk.MarkGroupDirty(g.H, false)
@@ -1759,7 +1759,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 			if alpha < 0 || alpha > 1 {
 				ss.Error("Opacity must be between zero and one.")
 			} else {
-				g := sk.GetGroup(tw.edit.group)
+				g := sk.Group(tw.edit.group)
 				g.Color.Alpha = uint8(int(float64(float32(255.1)) * alpha))
 				sk.MarkGroupDirty(g.H, false)
 				ss.GW.ClearSuper()
@@ -1768,7 +1768,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 
 	case EditTTFText:
 		ss.UndoRemember()
-		if r := sk.GetRequest(tw.edit.request); r != nil {
+		if r := sk.Request(tw.edit.request); r != nil {
 			r.Str = s
 			sk.MarkGroupDirty(r.Group, false)
 		}

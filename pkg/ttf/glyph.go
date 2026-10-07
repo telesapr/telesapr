@@ -512,7 +512,7 @@ func (l *loader) processCompositeGlyph(startPoint, startContour int) error {
 	exec.glyphIns = ins
 
 	zone := prepareZone(b, startPoint, startContour)
-	for i := 0; i < int(zone.nPoints)-4; i++ {
+	for i := range int(zone.nPoints) - 4 {
 		zone.tags[i] &^= curveTagTouchBoth
 	}
 	// the current outline's first tag is the first phantom point's
@@ -652,11 +652,14 @@ func (l *loader) loadCompositeGlyph() ([]subGlyph, int, error) {
 		if sg.flags&argsAreWords != 0 {
 			count += 2
 		}
-		if sg.flags&weHaveAScale != 0 {
+		switch {
+		case sg.flags&weHaveAScale != 0:
 			count += 2
-		} else if sg.flags&weHaveAnXYScale != 0 {
+
+		case sg.flags&weHaveAnXYScale != 0:
 			count += 4
-		} else if sg.flags&weHaveA2x2 != 0 {
+
+		case sg.flags&weHaveA2x2 != 0:
 			count += 8
 		}
 		if pos+count > len(p) {
@@ -691,13 +694,16 @@ func (l *loader) loadCompositeGlyph() ([]subGlyph, int, error) {
 			pos += 2
 			return v
 		}
-		if sg.flags&weHaveAScale != 0 {
+		switch {
+		case sg.flags&weHaveAScale != 0:
 			sg.xx = next()
 			sg.yy = sg.xx
-		} else if sg.flags&weHaveAnXYScale != 0 {
+
+		case sg.flags&weHaveAnXYScale != 0:
 			sg.xx = next()
 			sg.yy = next()
-		} else if sg.flags&weHaveA2x2 != 0 {
+
+		case sg.flags&weHaveA2x2 != 0:
 			sg.xx = next()
 			sg.yx = next()
 			sg.xy = next()
@@ -841,7 +847,7 @@ const (
 // Decompose is FT_Outline_Decompose.
 func (o *Outline) Decompose(fn OutlineFuncs) error {
 	last := -1
-	for n := 0; n < len(o.Contours); n++ {
+	for n := range len(o.Contours) {
 		first := last + 1
 		last = o.Contours[n]
 		if last < first {

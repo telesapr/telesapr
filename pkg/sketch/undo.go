@@ -210,7 +210,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 
 	// Free everything in the main copy of the program before replacing it
 	for _, hg := range s.GroupOrder {
-		s.GetGroup(hg).Clear()
+		s.Group(hg).Clear()
 	}
 
 	// And then take the state from the undo list

@@ -18,7 +18,7 @@ func v(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 func box() *srf.SShell {
 	var sh srf.SShell
 	sh.MakePrism([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10, 20, 0), v(0, 20, 0)}, v(0, 0, 0), v(0, 0, 30),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	for i := range sh.Surface {
 		sh.Surface[i].Face = srf.FaceID(i + 1)
 	}

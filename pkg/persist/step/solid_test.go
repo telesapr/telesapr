@@ -29,7 +29,7 @@ func readModel(t *testing.T, path string) *Model {
 // fineMesh sets a fine chord tolerance for a test: a shell's trims take
 // their points at the tolerance in force when it is built.
 func fineMesh(t *testing.T, tol float64) {
-	old, oldSegs := srf.ChordTolMm(), srf.GetMaxSegments()
+	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
 	srf.SetChordTolMm(tol)
 	srf.SetMaxSegments(100)
 	t.Cleanup(func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) })
@@ -164,8 +164,8 @@ func TestOffsetCells(t *testing.T) {
 		if err != nil {
 			t.Fatalf("cell %g..%g: %v", us[i], us[i+1], err)
 		}
-		for k := 0; k <= 20; k++ {
-			for m := 0; m <= 4; m++ {
+		for k := range 21 {
+			for m := range 5 {
 				x, y := float64(k)/20, float64(m)/4
 				want := s.Eval(us[i]+(us[i+1]-us[i])*x, vs[0]+(vs[1]-vs[0])*y)
 				if d := p.PointAt(x, y).Minus(want).Magnitude(); d > lowDegreeTol {
@@ -334,10 +334,10 @@ func TestTurnedLoopsAtPole(t *testing.T) {
 	// Up a meridian at u = pi to the pole, down another at u = 0: laid
 	// out clockwise when the second comes out at 2 pi.
 	var l []uvSample
-	for k := 0; k <= 4; k++ {
+	for k := range 5 {
 		l = append(l, uvSample{u: math.Pi, v: -half + float64(k)*half/2})
 	}
-	for k := 0; k <= 4; k++ {
+	for k := range 5 {
 		l = append(l, uvSample{u: 2 * math.Pi, v: half - float64(k)*half/2})
 	}
 	pole := func(q uvSample) bool { return math.Abs(math.Abs(q.v)-half) < 1e-12 }

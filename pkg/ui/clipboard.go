@@ -52,8 +52,8 @@ func (gw *GraphicsWindow) MenuClipboard(id Command) {
 			ss.Error("Clipboard is empty; nothing to paste.")
 			break
 		}
-		wrkpl := sk.GetEntity(gw.ActiveWorkplane())
-		p := sk.GetEntity(wrkpl.Point[0]).PointGetNum(sk)
+		wrkpl := sk.Entity(gw.ActiveWorkplane())
+		p := sk.Entity(wrkpl.Point[0]).PointGetNum(sk)
 		paste := &ss.TW.shown.paste
 		paste.times = 1
 		paste.trans = geom.Vector{}
@@ -162,7 +162,7 @@ func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
 	switch link {
 	case 'o':
 		if gw.gs.points == 1 && gw.gs.n == 1 {
-			e := sk.MustGetEntity(gw.gs.point[0])
+			e := sk.MustEntity(gw.gs.point[0])
 			paste.origin = e.PointGetNum(sk)
 		} else {
 			ss.Error("Select one point to define origin of rotation.")
@@ -171,8 +171,8 @@ func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
 
 	case 't':
 		if gw.gs.points == 2 && gw.gs.n == 2 {
-			pa := sk.MustGetEntity(gw.gs.point[0])
-			pb := sk.MustGetEntity(gw.gs.point[1])
+			pa := sk.MustEntity(gw.gs.point[0])
+			pb := sk.MustEntity(gw.gs.point[1])
 			paste.trans = pb.PointGetNum(sk).Minus(pa.PointGetNum(sk))
 		} else {
 			ss.Error("Select two points to define translation vector.")
@@ -194,8 +194,8 @@ func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
 			ss.Error("No workplane active.")
 			break
 		}
-		wrkpl := sk.MustGetEntity(gw.ActiveWorkplane())
-		wrkpln := sk.MustGetEntity(wrkpl.Normal)
+		wrkpl := sk.MustEntity(gw.ActiveWorkplane())
+		wrkpln := sk.MustEntity(wrkpl.Normal)
 		wn := wrkpln.NormalN(sk)
 		ss.UndoRemember()
 		gw.ClearSelection()

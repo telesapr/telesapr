@@ -77,7 +77,7 @@ func load(t *testing.T, rel string) *sketch.Sketch {
 func solidGroups(sk *sketch.Sketch) []*sketch.Group {
 	var out []*sketch.Group
 	for _, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if len(g.RunningShell.Surface) == 0 || g.IsForcedToMesh(sk) || len(g.ThisShell.Surface) == 0 {
 			continue
 		}

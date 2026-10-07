@@ -61,23 +61,23 @@ func (tc threadCase) build(t testing.TB, chordTolPct float64) (*sketch.Sketch, c
 	sk.GenerateAll()
 	g1 := sk.ActiveGroup()
 	sk.Active = g1
-	sk.GetGroup(g1).ActiveWorkplane = g1.Entity(0)
+	sk.Group(g1).ActiveWorkplane = g1.Entity(0)
 
 	circle := sk.AddRequestOfType(sketch.RequestCircle, false)
-	sk.MustGetEntity(circle.Entity(1)).PointForceTo(sk, geom.Vector{})
-	sk.MustGetEntity(circle.Entity(64)).DistanceForceTo(sk, tc.radius)
+	sk.MustEntity(circle.Entity(1)).PointForceTo(sk, geom.Vector{})
+	sk.MustEntity(circle.Entity(64)).DistanceForceTo(sk, tc.radius)
 	sk.GenerateAllTyped(sketch.GenerateAll)
 
 	ext := sketch.Group{Type: sketch.GroupExtrude, Subtype: sketch.GroupOneSided, Name: "extrude",
-		OpA: g1, Visible: true, Scale: 1, Order: len(sk.Groups), Color: core.NewRgbaColor(100, 100, 100, 255)}
+		OpA: g1, Visible: true, Scale: 1, Order: len(sk.Groups), Color: core.NewRGBA(100, 100, 100, 255)}
 	ext.Predef.EntityB = g1.Entity(0)
 	part := sk.AddGroup(ext)
 	sk.Active = part
 	sk.GenerateAllTyped(sketch.GenerateAll)
 	// A one-sided extrusion is twice its params long.
-	sk.MustGetParam(part.Param(0)).Val = 0
-	sk.MustGetParam(part.Param(1)).Val = 0
-	sk.MustGetParam(part.Param(2)).Val = tc.height / 2
+	sk.MustParam(part.Param(0)).Val = 0
+	sk.MustParam(part.Param(1)).Val = 0
+	sk.MustParam(part.Param(2)).Val = tc.height / 2
 	sk.GenerateAllTyped(sketch.GenerateAll)
 
 	res, err := sk.AddThread(circle.Entity(0), tc.options(t))
@@ -102,7 +102,7 @@ func (tc threadCase) options(t testing.TB) sketch.ThreadOptions {
 // returns its mesh and how many naked or self-intersecting edges it
 // has.
 func meshStats(sk *sketch.Sketch, hg core.HGroup) (*srf.SMesh, int) {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	g.DisplayDirty = true
 	g.GenerateDisplayItems(sk)
 	var el srf.SEdgeList
@@ -133,10 +133,10 @@ func TestThreadSolids(t *testing.T) {
 			s := o.Spec
 			p := s.Profile(o.Internal, o.Clearance)
 
-			order := sk.GetGroup(hel).Order
+			order := sk.Group(hel).Order
 			var names []string
 			for _, hg := range sk.GroupOrder {
-				g := sk.GetGroup(hg)
+				g := sk.Group(hg)
 				if g.Order <= order-4 {
 					continue
 				}
@@ -191,8 +191,8 @@ func TestThreadSolids(t *testing.T) {
 			var foot [2]geom.Vector
 			for i := range sk.Requests {
 				if r := &sk.Requests[i]; r.Group == profile {
-					foot[0] = sk.MustGetEntity(r.H.Entity(1)).PointGetNum(sk)
-					foot[1] = sk.MustGetEntity(r.H.Entity(2)).PointGetNum(sk)
+					foot[0] = sk.MustEntity(r.H.Entity(1)).PointGetNum(sk)
+					foot[1] = sk.MustEntity(r.H.Entity(2)).PointGetNum(sk)
 					break
 				}
 			}
@@ -293,7 +293,7 @@ func TestThreadErrors(t *testing.T) {
 		he   core.HEntity
 		edit func(o *sketch.ThreadOptions)
 	}{
-		{"a point", sk.MustGetEntity(circle).Point[0], func(o *sketch.ThreadOptions) {}},
+		{"a point", sk.MustEntity(circle).Point[0], func(o *sketch.ThreadOptions) {}},
 		{"no entity", core.HEntity{V: 0x7fffffff}, func(o *sketch.ThreadOptions) {}},
 		{"no length", circle, func(o *sketch.ThreadOptions) { o.Length = 0 }},
 		{"a negative length", circle, func(o *sketch.ThreadOptions) { o.Length = -5 }},
@@ -331,7 +331,7 @@ func TestThreadAfterActiveGroup(t *testing.T) {
 	second := res.Group
 	var names []string
 	for i, hg := range sk.GroupOrder {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g.Order != i {
 			t.Errorf("group %s has order %d at place %d", g.Name, g.Order, i)
 		}
@@ -342,8 +342,8 @@ func TestThreadAfterActiveGroup(t *testing.T) {
 	if got := strings.Join(names, " "); got != want {
 		t.Errorf("groups %q, want %q", got, want)
 	}
-	if sk.ActiveGroup() != second || sk.GetGroup(first).Order != 10 {
-		t.Errorf("active group %v, first thread at %d", sk.ActiveGroup(), sk.GetGroup(first).Order)
+	if sk.ActiveGroup() != second || sk.Group(first).Order != 10 {
+		t.Errorf("active group %v, first thread at %d", sk.ActiveGroup(), sk.Group(first).Order)
 	}
 }
 
@@ -360,7 +360,7 @@ func TestThreadOriginsStay(t *testing.T) {
 	hel := res.Group
 	origins := func() map[uint32]geom.Vector {
 		out := map[uint32]geom.Vector{}
-		for _, s := range sk.GetGroup(hel).ThisShell.Surface {
+		for _, s := range sk.Group(hel).ThisShell.Surface {
 			if s.Face == 0 {
 				out[s.Origin] = s.PointAt(0.5, 0.5)
 			}
@@ -411,12 +411,12 @@ func TestThreadLengthDimension(t *testing.T) {
 	length.ValA = math.Copysign(5, before)
 	sk.MarkGroupDirty(hel, false)
 	sk.GenerateAllTyped(sketch.GenerateAll)
-	g := sk.GetGroup(hel)
+	g := sk.Group(hel)
 	if g.Solved.How != core.SolveOkay || g.Solved.Dof != 0 {
 		t.Fatalf("solved %v with %d degrees of freedom", g.Solved.How, g.Solved.Dof)
 	}
-	dist := 2 * sk.MustGetParam(hel.Param(7)).Val
-	angle := 4 * sk.MustGetParam(hel.Param(3)).Val
+	dist := 2 * sk.MustParam(hel.Param(7)).Val
+	angle := 4 * sk.MustParam(hel.Param(3)).Val
 	if math.Abs(dist-5) > 1e-9 || math.Abs(angle-5/1.25*2*math.Pi) > 1e-9 {
 		t.Errorf("helix of %g mm and %g rad, want 5 mm and %g rad (it was %g mm)", dist, angle, 5/1.25*2*math.Pi, before)
 	}
@@ -503,7 +503,7 @@ func TestThreadGoldensSound(t *testing.T) {
 				sk = doc.Sketch
 			}
 			sk.GenerateAll()
-			last := sk.GetGroup(sk.GroupOrder[len(sk.GroupOrder)-1])
+			last := sk.Group(sk.GroupOrder[len(sk.GroupOrder)-1])
 			if r := check.Group(sk, last); !r.Sound() || r.Empty() {
 				t.Errorf("%s: %s", last.Name, r.String())
 			}

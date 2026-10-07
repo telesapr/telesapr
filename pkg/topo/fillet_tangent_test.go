@@ -59,7 +59,7 @@ func roundedPrism(w, l, rad, h float64, round [4]bool) *srf.SShell {
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = roundedRect(w, l, rad, round, 0)
 	ls.Normal = v(0, 0, -1)
-	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, h), core.NewRgbaColor(100, 100, 100, 255))
+	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, h), core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
 
@@ -93,7 +93,7 @@ func TestFilletOutlineRefused(t *testing.T) {
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = []srf.SBezier{srf.SBezierFrom2(v(-5, 0, 0), v(5, 0, 0)), quarter(v(0, 0, 0), 5, 0, 0), quarter(v(0, 0, 0), 5, math.Pi/2, 0)}
 	ls.Normal = v(0, 0, -1)
-	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, 5), core.NewRgbaColor(100, 100, 100, 255))
+	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, 5), core.NewRGBA(100, 100, 100, 255))
 	err := topo.FilletPicks(&sh, []topo.FilletPick{{A: v(-5, 0, 5), B: v(5, 0, 5)}, {At: v(0, 5, 5), Arc: true}}, 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "must meet smoothly") {
 		t.Errorf("half disc: %v", err)
@@ -135,7 +135,7 @@ func TestFilletOutlineSweep(t *testing.T) {
 			// The outline as a pocket's in a block: its floor is filled.
 			var block, cut srf.SShell
 			block.MakePrism([]geom.Vector{v(-10, -10, 0), v(40, -10, 0), v(40, 30, 0), v(-10, 30, 0)}, v(0, 0, 0), v(0, 0, 15),
-				core.NewRgbaColor(100, 100, 100, 255))
+				core.NewRGBA(100, 100, 100, 255))
 			var moved srf.SShell
 			moved.MakeFromTransformationOf(roundedPrism(30, 20, rad, 20, round), v(0, 0, 5), geom.QuaternionIdentity, 1)
 			cut.MakeFromDifferenceOf(&block, &moved)

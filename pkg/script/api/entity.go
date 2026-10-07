@@ -23,7 +23,7 @@ func (e Entity) get(sk *sketch.Sketch) *core.Entity {
 	if e.d == nil || e.H.V == 0 {
 		fail("no entity")
 	}
-	ent := sk.GetEntity(e.H)
+	ent := sk.Entity(e.H)
 	if ent == nil {
 		fail("entity e%08x doesn't exist any more", e.H.V)
 	}
@@ -66,19 +66,19 @@ func kindOf(ent *core.Entity) string {
 // ownerOf describes the request or the group an entity is from.
 func ownerOf(sk *sketch.Sketch, h core.HEntity) string {
 	if h.IsFromRequest() {
-		if r := sk.GetRequest(h.Request()); r != nil {
+		if r := sk.Request(h.Request()); r != nil {
 			return r.DescriptionString()
 		}
 		return fmt.Sprintf("r%03x", h.Request().V)
 	}
-	return groupDescription(sk.GetGroup(h.Group()))
+	return groupDescription(sk.Group(h.Group()))
 }
 
 func (e Entity) describe(sk *sketch.Sketch) string {
 	if e.H.V == 0 {
 		return "no entity"
 	}
-	ent := sk.GetEntity(e.H)
+	ent := sk.Entity(e.H)
 	if ent == nil {
 		return fmt.Sprintf("deleted entity e%08x", e.H.V)
 	}
@@ -110,7 +110,7 @@ func (e Entity) Valid() (ok bool) {
 	if e.d == nil || e.H.V == 0 {
 		return false
 	}
-	e.d.read(func(sk *sketch.Sketch) { ok = sk.GetEntity(e.H) != nil })
+	e.d.read(func(sk *sketch.Sketch) { ok = sk.Entity(e.H) != nil })
 	return ok
 }
 
@@ -264,7 +264,7 @@ func (e Entity) SetRadius(r float64) {
 		if ent.Type != core.EntityCircle {
 			fail("%s isn't a circle", e.describe(sk))
 		}
-		sk.MustGetEntity(ent.Distance).DistanceForceTo(sk, r)
+		sk.MustEntity(ent.Distance).DistanceForceTo(sk, r)
 		sk.MarkGroupDirtyByEntity(e.H)
 	})
 }
@@ -364,7 +364,7 @@ func (r Request) get(sk *sketch.Sketch) *sketch.Request {
 	if r.d == nil || r.H.V == 0 {
 		fail("no request")
 	}
-	req := sk.GetRequest(r.H)
+	req := sk.Request(r.H)
 	if req == nil {
 		fail("request r%03x doesn't exist any more", r.H.V)
 	}
@@ -378,7 +378,7 @@ func (r Request) String() (s string) {
 		return "no request"
 	}
 	r.d.read(func(sk *sketch.Sketch) {
-		if req := sk.GetRequest(r.H); req != nil {
+		if req := sk.Request(r.H); req != nil {
 			s = req.DescriptionString()
 		} else {
 			s = fmt.Sprintf("deleted request r%03x", r.H.V)
@@ -392,7 +392,7 @@ func (r Request) Valid() (ok bool) {
 	if r.d == nil || r.H.V == 0 {
 		return false
 	}
-	r.d.read(func(sk *sketch.Sketch) { ok = sk.GetRequest(r.H) != nil })
+	r.d.read(func(sk *sketch.Sketch) { ok = sk.Request(r.H) != nil })
 	return ok
 }
 
@@ -443,7 +443,7 @@ func (p Param) get(sk *sketch.Sketch) *core.Param {
 	if p.d == nil || p.H.V == 0 {
 		fail("no parameter")
 	}
-	param := sk.GetParam(p.H)
+	param := sk.Param(p.H)
 	if param == nil {
 		fail("parameter p%08x doesn't exist any more", p.H.V)
 	}
@@ -455,7 +455,7 @@ func (p Param) Valid() (ok bool) {
 	if p.d == nil || p.H.V == 0 {
 		return false
 	}
-	p.d.read(func(sk *sketch.Sketch) { ok = sk.GetParam(p.H) != nil })
+	p.d.read(func(sk *sketch.Sketch) { ok = sk.Param(p.H) != nil })
 	return ok
 }
 

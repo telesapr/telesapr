@@ -82,7 +82,7 @@ func binomialF(n, k int) float64 {
 func bezierH(pts []geom.Vector4, t float64) geom.Vector4 {
 	tmp := append([]geom.Vector4(nil), pts...)
 	for r := 1; r < len(tmp); r++ {
-		for i := 0; i < len(tmp)-r; i++ {
+		for i := range len(tmp) - r {
 			tmp[i] = tmp[i].ScaledBy(1 - t).Plus(tmp[i+1].ScaledBy(t))
 		}
 	}
@@ -167,7 +167,7 @@ func (c *BSplineCurve) LowDegree(tol float64) (*BSplineCurve, error) {
 	for {
 		var pieces [][]geom.Vector4
 		split := make([]bool, len(br)-1)
-		any := false
+		found := false
 		for s := 0; s+1 < len(br); s++ {
 			a, b := br[s], br[s+1]
 			vals := make([]geom.Vector4, d+1)
@@ -182,10 +182,10 @@ func (c *BSplineCurve) LowDegree(tol float64) (*BSplineCurve, error) {
 			}
 			pieces = append(pieces, pts)
 			if !pieceWithin(pts, func(t float64) geom.Vector4 { return c.curveH(a + (b-a)*t) }, tol) {
-				split[s], any = true, true
+				split[s], found = true, true
 			}
 		}
-		if !any {
+		if !found {
 			out := &BSplineCurve{Deg: d, Knots: fullKnotVector(d, br)}
 			for s, pts := range pieces {
 				for i, q := range pts {
@@ -243,7 +243,7 @@ func (s *BSplineSurface) LowDegree(tol float64) (*BSplineSurface, error) {
 		cells := make([][][][]geom.Vector4, len(bu)-1)
 		splitU := make([]bool, len(bu)-1)
 		splitV := make([]bool, len(bv)-1)
-		any := false
+		found := false
 		for a := 0; a+1 < len(bu); a++ {
 			cells[a] = make([][][]geom.Vector4, len(bv)-1)
 			for b := 0; b+1 < len(bv); b++ {
@@ -277,7 +277,7 @@ func (s *BSplineSurface) LowDegree(tol float64) (*BSplineSurface, error) {
 				}
 				cells[a][b] = pts
 				if !patchWithin(pts, f, tol) {
-					any = true
+					found = true
 					if s.DegU > MaxDegree {
 						splitU[a] = true
 					}
@@ -287,7 +287,7 @@ func (s *BSplineSurface) LowDegree(tol float64) (*BSplineSurface, error) {
 				}
 			}
 		}
-		if !any {
+		if !found {
 			out := &BSplineSurface{DegU: du, DegV: dv, KnotsU: fullKnotVector(du, bu), KnotsV: fullKnotVector(dv, bv)}
 			rows := (len(bu)-1)*du + 1
 			cols := (len(bv)-1)*dv + 1

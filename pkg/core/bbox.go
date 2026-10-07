@@ -26,11 +26,11 @@ func NewBBox(p0, p1 geom.Vector) BBox {
 	}
 }
 
-// GetOrigin is the box's centre (C++ BBox::GetOrigin).
-func (b BBox) GetOrigin() geom.Vector { return b.MinP.Plus(b.MaxP.Minus(b.MinP).ScaledBy(0.5)) }
+// Origin is the box's centre (C++ BBox::Origin).
+func (b BBox) Origin() geom.Vector { return b.MinP.Plus(b.MaxP.Minus(b.MinP).ScaledBy(0.5)) }
 
-// GetExtents is half the box's size (C++ BBox::GetExtents).
-func (b BBox) GetExtents() geom.Vector { return b.MaxP.Minus(b.MinP).ScaledBy(0.5) }
+// Extents is half the box's size (C++ BBox::Extents).
+func (b BBox) Extents() geom.Vector { return b.MaxP.Minus(b.MinP).ScaledBy(0.5) }
 
 func (b *BBox) Include(v geom.Vector, r float64) {
 	b.MinP.X = geom.Min(b.MinP.X, v.X-r)
@@ -45,8 +45,8 @@ func (b *BBox) Include(v geom.Vector, r float64) {
 // Overlaps reports whether the boxes' interiors overlap (C++
 // BBox::Overlaps).
 func (b BBox) Overlaps(b1 BBox) bool {
-	t := b1.GetOrigin().Minus(b.GetOrigin())
-	e := b1.GetExtents().Plus(b.GetExtents())
+	t := b1.Origin().Minus(b.Origin())
+	e := b1.Extents().Plus(b.Extents())
 
 	return math.Abs(t.X) < e.X && math.Abs(t.Y) < e.Y && math.Abs(t.Z) < e.Z
 }

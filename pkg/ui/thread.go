@@ -33,7 +33,7 @@ func (ss *Application) MenuThread() {
 			"    * a circle or an arc (thread about its axis, from its plane)\n")
 		return
 	}
-	circle := sk.MustGetEntity(gs.entity[0])
+	circle := sk.MustEntity(gs.entity[0])
 	d := 2 * circle.CircleGetRadiusNum(sk)
 	spec := thread.Nearest(d)
 	t := &ss.TW.shown.thread
@@ -132,7 +132,7 @@ func (tw *TextWindow) ScreenMakeThread(link int, v uint32) {
 		return
 	}
 	ss.afterGenerate()
-	g := sk.GetGroup(res.Group)
+	g := sk.Group(res.Group)
 	ss.groupActivate(g)
 	tw.ScreenSelectGroup(0, g.H.V)
 	ss.ScheduleShowTW()

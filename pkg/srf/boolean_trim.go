@@ -137,17 +137,20 @@ func findChainAvoiding(src, dest *SEdgeList, avoid *SPointList) {
 			if se.Tag != 0 {
 				continue
 			}
-			if startOkay && s.Equals(se.B) {
+			switch {
+			case startOkay && s.Equals(se.B):
 				dest.addToBeginning(*se)
 				s = se.A
 				se.Tag = 1
 				startOkay = !avoid.ContainsPoint(s)
-			} else if finishOkay && f.Equals(se.A) {
+
+			case finishOkay && f.Equals(se.A):
 				dest.Edges = append(dest.Edges, *se)
 				f = se.B
 				se.Tag = 1
 				finishOkay = !avoid.ContainsPoint(f)
-			} else {
+
+			default:
 				continue
 			}
 
@@ -185,7 +188,7 @@ func (el *SEdgeList) removeTagged() {
 // trimFromEdgeList rebuilds srf's trims from el, merging adjoining
 // edges from the same curve (and direction) into one STrimBy with xyz
 // start and finish points. Mirrors C++ SSurface::TrimFromEdgeList.
-func (srf *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
+func (s *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
 	for i := range el.Edges {
 		el.Edges[i].Tag = 0
 	}
@@ -242,12 +245,12 @@ func (srf *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
 		}
 
 		if asUv {
-			stb.StartP = srf.PointAt(stb.StartP.X, stb.StartP.Y)
-			stb.FinishP = srf.PointAt(stb.FinishP.X, stb.FinishP.Y)
+			stb.StartP = s.PointAt(stb.StartP.X, stb.StartP.Y)
+			stb.FinishP = s.PointAt(stb.FinishP.X, stb.FinishP.Y)
 		}
 
 		// And add the merged trim, with xyz (not uv like the polygon) pts
-		srf.Trim = append(srf.Trim, stb)
+		s.Trim = append(s.Trim, stb)
 	}
 }
 
@@ -277,12 +280,12 @@ func (srf *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
 // (refined onto the curve auxA it approximates) and the edge's inner
 // and outer normals within srf, in xyz; surfN gets srf's normal there.
 // Mirrors C++ SSurface::EdgeNormalsWithinSurface (boolean.cpp).
-func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha, shb *SShell,
+func (s *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha, shb *SShell,
 	auxA int, surfN *geom.Vector) (pt, enin, enout geom.Vector) {
 	// the midpoint of the edge
 	muv := auv.Plus(buv).ScaledBy(0.5)
 
-	pt = srf.PointAtUv(muv)
+	pt = s.PointAtUv(muv)
 
 	// If this edge just approximates a curve, then refine our midpoint so
 	// so that it actually lies on that curve too. Otherwise stuff like
@@ -293,16 +296,16 @@ func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha,
 			t, _ := sc.Exact.ClosestPointTo(pt, false)
 			pt = sc.Exact.PointAt(t)
 		} else if !sc.IsExact {
-			trimmedA := sc.GetSurfaceA(sha, shb)
-			trimmedB := sc.GetSurfaceB(sha, shb)
+			trimmedA := sc.SurfaceA(sha, shb)
+			trimmedB := sc.SurfaceB(sha, shb)
 			if trimmedA != nil && trimmedB != nil {
 				pt = trimmedA.ClosestPointOnThisAndSurface(trimmedB, pt)
 			}
 		}
 	}
-	srf.ClosestPointTo(pt, &muv, true)
+	s.ClosestPointTo(pt, &muv, true)
 
-	*surfN = srf.NormalAt(muv.U, muv.V)
+	*surfN = s.NormalAt(muv.U, muv.V)
 
 	// Compute the edge's inner normal in xyz space. Use the configured
 	// chord tolerance as the probe distance, but never more than a
@@ -310,12 +313,12 @@ func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha,
 	// the surfaces close to the edge, and a coarse tolerance on a small
 	// model would otherwise evaluate them far away, or even extrapolate
 	// them outside their domain, and misclassify.
-	ab := srf.PointAtUv(auv).Minus(srf.PointAtUv(buv))
+	ab := s.PointAtUv(auv).Minus(s.PointAtUv(buv))
 	enxyz := ab.Cross(*surfN).WithMagnitude(geom.Min(ChordTolMm(), ab.Magnitude()/10))
 	// And based on that, compute the edge's inner normal in uv space. This
 	// vector is perpendicular to the edge in xyz, but not necessarily in uv.
 	var tu, tv geom.Vector
-	srf.TangentsAt(muv.U, muv.V, &tu, &tv, true)
+	s.TangentsAt(muv.U, muv.V, &tu, &tv, true)
 	n := tu.Cross(tv)
 	// since tu and tv may not be orthogonal, use y in place of v, x in place of u.
 	// |y| = |v|sin(theta) where theta is the angle between tu and tv.
@@ -330,8 +333,8 @@ func (srf *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha,
 	// Compute the inner and outer normals of this edge (within the srf),
 	// in xyz space. These are not necessarily antiparallel, if the
 	// surface is curved.
-	pin := srf.PointAtUv(muv.Minus(enuv))
-	pout := srf.PointAtUv(muv.Plus(enuv))
+	pin := s.PointAtUv(muv.Minus(enuv))
+	pout := s.PointAtUv(muv.Plus(enuv))
 	enin = pin.Minus(pt)
 	enout = pout.Minus(pt)
 	return
@@ -370,9 +373,9 @@ func (s *SShell) classifyEdge(indir, outdir *SShellClass,
 //
 // The copy is written to ret, which the caller owns: a surface is too
 // large to hand back by value in this loop.
-func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
+func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	t SurfaceCombineAs, ret *SSurface) (failed bool) {
-	*ret = *srf
+	*ret = *s
 	// The copy is this call's own, so it can use its closest-point cache
 	// whatever goes for the operands' surfaces.
 	ret.noCache = false
@@ -394,8 +397,8 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// parent-relative curve's NewH (the handle in `into` of the
 	// first emitted segment). Look up each trim curve in the parent
 	// shell and use that NewH as the rewritten handle.
-	for i := range srf.Trim {
-		stb := srf.Trim[i]
+	for i := range s.Trim {
+		stb := s.Trim[i]
 		if pc := parent.FindCurve(stb.Curve); pc != nil {
 			stb.Curve = pc.NewH
 		}
@@ -425,12 +428,12 @@ func (srf *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		}
 		var ss *SSurface
 		if opA {
-			if ic.SurfA != srf.H {
+			if ic.SurfA != s.H {
 				continue
 			}
 			ss = shb.FindSurface(ic.SurfB)
 		} else {
-			if ic.SurfB != srf.H {
+			if ic.SurfB != s.H {
 				continue
 			}
 			ss = sha.FindSurface(ic.SurfA)

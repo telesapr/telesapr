@@ -15,8 +15,8 @@ import (
 // EntitySketch is the part of the sketch that EntityBase methods read,
 // standing in for the C++ global SK.
 type EntitySketch interface {
-	GetEntity(h HEntity) *Entity
-	GetParam(h HParam) *Param
+	Entity(h HEntity) *Entity
+	Param(h HParam) *Param
 }
 
 // EntityVisibility is implemented by sketches that can answer the C++
@@ -33,7 +33,7 @@ func IsFreeIn3D(wrkpl HEntity) bool {
 }
 
 func mustEntity(sk EntitySketch, h HEntity) *Entity {
-	e := sk.GetEntity(h)
+	e := sk.Entity(h)
 	if e == nil {
 		panic(fmt.Sprintf("entity %08x not found", h.V))
 	}
@@ -41,7 +41,7 @@ func mustEntity(sk EntitySketch, h HEntity) *Entity {
 }
 
 func paramVal(sk EntitySketch, h HParam) float64 {
-	p := sk.GetParam(h)
+	p := sk.Param(h)
 	if p == nil {
 		panic(fmt.Sprintf("param %08x not found", h.V))
 	}
@@ -49,7 +49,7 @@ func paramVal(sk EntitySketch, h HParam) float64 {
 }
 
 func setParamVal(sk EntitySketch, h HParam, v float64) {
-	p := sk.GetParam(h)
+	p := sk.Param(h)
 	if p == nil {
 		panic(fmt.Sprintf("param %08x not found", h.V))
 	}
@@ -314,7 +314,7 @@ func (e *Entity) NormalGetNum(sk EntitySketch) geom.Quaternion {
 		q = q.Times(e.NumNormal)
 
 	case EntityNormalNRotAA:
-		q = e.GetAxisAngleQuaternion(sk, 0)
+		q = e.AxisAngleQuaternion(sk, 0)
 		q = q.Times(e.NumNormal)
 
 	default:
@@ -378,7 +378,7 @@ func (e *Entity) NormalGetExprs(sk EntitySketch) ExprQuaternion {
 
 	case EntityNormalNRotAA:
 		orig := NewExprQuaternionConst(e.NumNormal)
-		q = e.GetAxisAngleQuaternionExprs(0)
+		q = e.AxisAngleQuaternionExprs(0)
 		q = q.Times(orig)
 
 	default:
@@ -573,7 +573,7 @@ func (e *Entity) PointGetExprs(sk EntitySketch) ExprVector {
 	case EntityPointNRotAA:
 		orig := FromVector(e.NumPoint)
 		trans := exprVectorFromParams(e.Param[0], e.Param[1], e.Param[2])
-		q := e.GetAxisAngleQuaternionExprs(3)
+		q := e.AxisAngleQuaternionExprs(3)
 		orig = orig.Minus(trans)
 		orig = q.Rotate(orig)
 		r = orig.Plus(trans)
@@ -584,7 +584,7 @@ func (e *Entity) PointGetExprs(sk EntitySketch) ExprVector {
 		displace := exprVectorFromParams(e.Param[4], e.Param[5], e.Param[6]).
 			WithMagnitude(NewConstant(1.0)).ScaledBy(NewConstant(float64(e.TimesApplied))).ScaledBy(NewParam(e.Param[7]))
 
-		q := e.GetAxisAngleQuaternionExprs(3)
+		q := e.AxisAngleQuaternionExprs(3)
 		orig = orig.Minus(trans)
 		orig = q.Rotate(orig)
 		r = orig.Plus(trans).Plus(displace)
@@ -639,7 +639,7 @@ func (e *Entity) PointForceQuaternionTo(sk EntitySketch, q geom.Quaternion) {
 	setParamVal(sk, e.Param[6], q.Z)
 }
 
-func (e *Entity) GetAxisAngleQuaternion(sk EntitySketch, param0 int) geom.Quaternion {
+func (e *Entity) AxisAngleQuaternion(sk EntitySketch, param0 int) geom.Quaternion {
 	theta := float64(e.TimesApplied) * paramVal(sk, e.Param[param0+0])
 	s, c := libm.Sin(theta), libm.Cos(theta)
 	return geom.Quaternion{
@@ -650,7 +650,7 @@ func (e *Entity) GetAxisAngleQuaternion(sk EntitySketch, param0 int) geom.Quater
 	}
 }
 
-func (e *Entity) GetAxisAngleQuaternionExprs(param0 int) ExprQuaternion {
+func (e *Entity) AxisAngleQuaternionExprs(param0 int) ExprQuaternion {
 	theta := NewConstant(float64(e.TimesApplied)).Times(NewParam(e.Param[param0+0]))
 	c, s := theta.Cos(), theta.Sin()
 	return ExprQuaternion{
@@ -664,7 +664,7 @@ func (e *Entity) GetAxisAngleQuaternionExprs(param0 int) ExprQuaternion {
 func (e *Entity) PointGetQuaternion(sk EntitySketch) geom.Quaternion {
 	switch e.Type {
 	case EntityPointNRotAA, EntityPointNRotAxisTrans:
-		return e.GetAxisAngleQuaternion(sk, 3)
+		return e.AxisAngleQuaternion(sk, 3)
 	case EntityPointNRotTrans:
 		return quaternionFromParams(sk, e.Param[3], e.Param[4], e.Param[5], e.Param[6])
 	}
@@ -697,7 +697,7 @@ func (e *Entity) FaceGetNormalExprs() ExprVector {
 
 	case EntityFaceNRotAA, EntityFaceRotNormalPt:
 		r = FromVector(numNormalVector(e.NumNormal))
-		q := e.GetAxisAngleQuaternionExprs(3)
+		q := e.AxisAngleQuaternionExprs(3)
 		r = q.Rotate(r)
 
 	default:
@@ -728,7 +728,7 @@ func (e *Entity) FaceGetNormalNum(sk EntitySketch) geom.Vector {
 
 	case EntityFaceNRotAA, EntityFaceRotNormalPt:
 		r = numNormalVector(e.NumNormal)
-		q := e.GetAxisAngleQuaternion(sk, 3)
+		q := e.AxisAngleQuaternion(sk, 3)
 		r = q.Rotate(r)
 
 	default:
@@ -759,7 +759,7 @@ func (e *Entity) FaceGetPointExprs(sk EntitySketch) ExprVector {
 		trans := exprVectorFromParams(e.Param[0], e.Param[1], e.Param[2])
 		displace := exprVectorFromParams(e.Param[4], e.Param[5], e.Param[6]).
 			WithMagnitude(NewParam(e.Param[7])).ScaledBy(NewConstant(float64(e.TimesApplied)))
-		q := e.GetAxisAngleQuaternionExprs(3)
+		q := e.AxisAngleQuaternionExprs(3)
 		orig = orig.Minus(trans)
 		orig = q.Rotate(orig)
 		r = orig.Plus(trans).Plus(displace)
@@ -771,7 +771,7 @@ func (e *Entity) FaceGetPointExprs(sk EntitySketch) ExprVector {
 
 	case EntityFaceNRotAA:
 		trans := exprVectorFromParams(e.Param[0], e.Param[1], e.Param[2])
-		q := e.GetAxisAngleQuaternionExprs(3)
+		q := e.AxisAngleQuaternionExprs(3)
 		r = FromVector(e.NumPoint)
 		r = r.Minus(trans)
 		r = q.Rotate(r)
@@ -805,7 +805,7 @@ func (e *Entity) FaceGetPointNum(sk EntitySketch) geom.Vector {
 			WithMagnitude(paramVal(sk, e.Param[7])).ScaledBy(float64(e.TimesApplied))
 		// C++ calls PointGetQuaternion here, which asserts for face
 		// types; the axis-angle quaternion is what it would compute.
-		q := e.GetAxisAngleQuaternion(sk, 3)
+		q := e.AxisAngleQuaternion(sk, 3)
 		r = e.NumPoint.Minus(offset)
 		r = q.Rotate(r)
 		r = r.Plus(offset).Plus(displace)
@@ -816,7 +816,7 @@ func (e *Entity) FaceGetPointNum(sk EntitySketch) geom.Vector {
 
 	case EntityFaceNRotAA:
 		trans := vectorFromParams(sk, e.Param[0], e.Param[1], e.Param[2])
-		q := e.GetAxisAngleQuaternion(sk, 3)
+		q := e.AxisAngleQuaternion(sk, 3)
 		r = e.NumPoint.Minus(trans)
 		r = q.Rotate(r)
 		r = r.Plus(trans)

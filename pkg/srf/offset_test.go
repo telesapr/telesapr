@@ -14,8 +14,8 @@ func quarterCylinder(r, h float64) SSurface {
 	arc := quarterArcs(r, 0)[0]
 	var p SSurface
 	p.DegM, p.DegN = 2, 1
-	for i := 0; i <= 2; i++ {
-		for j := 0; j <= 1; j++ {
+	for i := range 3 {
+		for j := range 2 {
 			p.Ctrl[i][j] = arc.Ctrl[i].Plus(geom.Vector{Z: h * float64(j)})
 			p.Weight[i][j] = arc.Weight[i]
 		}
@@ -53,8 +53,8 @@ func TestOffsetSurface(t *testing.T) {
 	}
 	var bump SSurface
 	bump.DegM, bump.DegN = 3, 3
-	for i := 0; i <= 3; i++ {
-		for j := 0; j <= 3; j++ {
+	for i := range 4 {
+		for j := range 4 {
 			bump.Ctrl[i][j] = geom.Vector{X: 10 * float64(i), Y: 10 * float64(j), Z: 6 * (r.Float64() - 0.5)}
 			bump.Weight[i][j] = 1
 		}

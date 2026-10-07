@@ -80,7 +80,7 @@ func lShape() []geom.Vector {
 // checks the result against the volume from insetArea.
 func shellPrism(pts []geom.Vector, h, thick float64, top, bottom bool, side int) error {
 	var sh srf.SShell
-	sh.MakePrism(pts, v(0, 0, 0), v(0, 0, h), core.NewRgbaColor(100, 100, 100, 255))
+	sh.MakePrism(pts, v(0, 0, 0), v(0, 0, h), core.NewRGBA(100, 100, 100, 255))
 	tp, err := topo.Build(&sh)
 	if err != nil {
 		return err
@@ -293,7 +293,7 @@ func TestShellApexSweep(t *testing.T) {
 // the shell too.
 func TestShellHoledBlock(t *testing.T) {
 	var outer, hole, sh srf.SShell
-	c := core.NewRgbaColor(100, 100, 100, 255)
+	c := core.NewRGBA(100, 100, 100, 255)
 	outer.MakePrism([]geom.Vector{v(0, 0, 0), v(30, 0, 0), v(30, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 10), c)
 	hole.MakePrism([]geom.Vector{v(10, 10, -1), v(20, 10, -1), v(20, 20, -1), v(10, 20, -1)}, v(0, 0, 0), v(0, 0, 12), c)
 	sh.MakeFromDifferenceOf(&outer, &hole)

@@ -741,11 +741,14 @@ func getName(recs []nameRecord, nameID uint16) (string, bool) {
 		foundApple = foundAppleEnglish
 	}
 
-	if foundWin >= 0 && !(foundApple >= 0 && !isEnglish) {
+	switch {
+	case foundWin >= 0 && (foundApple < 0 || isEnglish):
 		return asciiFromUTF16(recs[foundWin].str), true
-	} else if foundApple >= 0 {
+
+	case foundApple >= 0:
 		return asciiFromOther(recs[foundApple].str), true
-	} else if foundUnicode >= 0 {
+
+	case foundUnicode >= 0:
 		return asciiFromUTF16(recs[foundUnicode].str), true
 	}
 	return "", false
@@ -753,7 +756,7 @@ func getName(recs []nameRecord, nameID uint16) (string, bool) {
 
 func asciiFromUTF16(b []byte) string {
 	var s []byte
-	for n := 0; n < len(b)/2; n++ {
+	for n := range len(b) / 2 {
 		code := binary.BigEndian.Uint16(b[2*n:])
 		if code == 0 {
 			break

@@ -54,7 +54,7 @@ func TestTextWindowLinks(t *testing.T) {
 		t.Fatalf("editor visible %v with %q", w.EditorVisible, w.EditorText)
 	}
 	w.FinishEditing("renamed")
-	if name := ss.SK.GetGroup(tw.shown.group).Name; name != "renamed" {
+	if name := ss.SK.Group(tw.shown.group).Name; name != "renamed" {
 		t.Errorf("group name %q", name)
 	}
 	if w.EditorVisible {

@@ -113,7 +113,7 @@ func (tw *TextWindow) ScreenChangeMotion(link int, v uint32) {
 		}
 		dialog.FreezeChoices(ss.Settings, "MotionStudy")
 		// frame.png saves frame-000.png, frame-001.png and on.
-		name := dialog.GetFilename()
+		name := dialog.Filename()
 		ext := filepath.Ext(name)
 		tw.runMotionStudy(strings.ReplaceAll(strings.TrimSuffix(name, ext), "%", "%%") + "-%03d" + ext)
 	}

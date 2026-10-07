@@ -25,7 +25,7 @@ func TestLowDegreeCurve(t *testing.T) {
 			t.Fatal(err)
 		}
 		lo, hi := c.Domain()
-		for k := 0; k <= 200; k++ {
+		for k := range 201 {
 			x := lo + (hi-lo)*float64(k)/200
 			if d := lc.PointAt(x).Minus(c.PointAt(x)).Magnitude(); d > tol {
 				t.Errorf("trial %d: %g off at %g", trial, d, x)

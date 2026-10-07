@@ -56,7 +56,7 @@ func TestParametersScreen(t *testing.T) {
 
 	// A table and an expression broken by hand, as a file can hold them.
 	ss.SK.Parameters = append(ss.SK.Parameters, sketch.Parameter{Name: "b", Expr: "zz"})
-	ss.SK.GetGroup(ss.SK.GroupOrder[1]).ExprA = "nope"
+	ss.SK.Group(ss.SK.GroupOrder[1]).ExprA = "nope"
 	ss.SK.GenerateAll()
 	tw.Show()
 	for _, want := range []string{`! unknown parameter "zz"`, "EXPRESSIONS THAT COULD NOT BE EVALUATED",
@@ -95,7 +95,7 @@ func TestColorByFreedom(t *testing.T) {
 	draw := func() string {
 		var b strings.Builder
 		rc := newRecordingCanvas(&b)
-		rc.camera = ss.GW.GetCamera()
+		rc.camera = ss.GW.Camera()
 		rc.SetBitmapFont(ss.GW.bitmapFont())
 		ss.GW.Draw(rc)
 		return b.String()
@@ -157,11 +157,11 @@ func TestConflictsShown(t *testing.T) {
 		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: wp, PtA: line.Point[0], PtB: line.Point[1], ValA: 10})
 	sk.MarkGroupDirty(hg, false)
 	ss.GenerateAll(sketch.GenerateAll)
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g.IsSolvedOkay() || len(g.Solved.Remove) == 0 {
 		t.Fatalf("solved %v, blamed %v", g.Solved.How, g.Solved.Remove)
 	}
-	blamed := sk.GetConstraint(g.Solved.Remove[0])
+	blamed := sk.Constraint(g.Solved.Remove[0])
 	if !ss.isConflicting(blamed) {
 		t.Fatal("the blamed constraint is not marked")
 	}

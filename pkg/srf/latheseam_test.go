@@ -18,7 +18,7 @@ func lathedProfile(p []geom.Vector) *SShell {
 		sbls.Outer.Curves = append(sbls.Outer.Curves, SBezierFrom2(p[i], p[(i+1)%len(p)]))
 	}
 	var sh SShell
-	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 	return &sh
 }
 
@@ -43,7 +43,7 @@ func arcBand(c geom.Vector, r0, r1, a0, a1, w float64) *SShell {
 	sbls := &SBezierLoopSet{Normal: geom.Vector{Y: -1}, Point: in.Start()}
 	sbls.Outer.Curves = []SBezier{in, SBezierFrom2(in.Finish(), out.Start()), out, SBezierFrom2(out.Finish(), in.Start())}
 	var sh SShell
-	sh.MakeFromExtrusionOf(sbls, geom.Vector{Y: -w}, geom.Vector{Y: w}, core.RgbaColor{})
+	sh.MakeFromExtrusionOf(sbls, geom.Vector{Y: -w}, geom.Vector{Y: w}, core.RGBA{})
 	return &sh
 }
 

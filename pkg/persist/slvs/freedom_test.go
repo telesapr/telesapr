@@ -40,7 +40,7 @@ func TestFreedomVsShowDof(t *testing.T) {
 			groups++
 			for h, f := range free {
 				params++
-				p := sk.GetParam(h)
+				p := sk.Param(h)
 				if p == nil {
 					continue
 				}

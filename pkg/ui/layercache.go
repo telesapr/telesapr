@@ -58,7 +58,7 @@ func (gw *GraphicsWindow) persistentKeyFor(canvas render.Canvas, lighting render
 	return persistentKey{
 		section:     section,
 		sectionOn:   sectionOn,
-		camera:      *canvas.GetCamera(),
+		camera:      *canvas.Camera(),
 		lighting:    lighting,
 		sketch:      gw.sk(),
 		generation:  gw.sk().Generation,

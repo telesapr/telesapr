@@ -17,13 +17,13 @@ func (sk *Sketch) StyleGet(h core.HStyle) *core.Style {
 		h.V = core.StyleActiveGrp
 	}
 
-	if s := sk.GetStyle(h); s != nil {
+	if s := sk.Style(h); s != nil {
 		// It exists, good.
 		return s
 	}
 	// It doesn't exist; so we should create it and then return that.
 	sk.CreateDefaultStyle(h)
-	return sk.GetStyle(h)
+	return sk.Style(h)
 }
 
 // CreateAllDefaultStyles makes sure the sketch has every default style
@@ -67,7 +67,7 @@ func (sk *Sketch) CreateDefaultStyle(h core.HStyle) {
 // whether it's in the active group, or construction (C++
 // Style::ForEntity).
 func (sk *Sketch) StyleForEntity(he core.HEntity) core.HStyle {
-	e := sk.MustGetEntity(he)
+	e := sk.MustEntity(he)
 	// If the entity has a special style, use that. If that style doesn't
 	// exist yet, then it will get created automatically later.
 	if e.Style.V != 0 {
@@ -86,7 +86,7 @@ func (sk *Sketch) StyleForEntity(he core.HEntity) core.HStyle {
 
 // StyleColor is style h's stroke colour, rewritten for export as
 // RewriteColor says (C++ Style::Color).
-func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) core.RgbaColor {
+func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA {
 	s := sk.StyleGet(h)
 	if forExport {
 		return core.RewriteColor(s.Color, fixExportColors)
@@ -95,7 +95,7 @@ func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) cor
 }
 
 // StyleFillColor is style h's fill colour (C++ Style::FillColor).
-func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool) core.RgbaColor {
+func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA {
 	s := sk.StyleGet(h)
 	if forExport {
 		return core.RewriteColor(s.FillColor, fixExportColors)

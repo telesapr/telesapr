@@ -6,7 +6,7 @@ import (
 )
 
 func TestRgbaColorFromFloatAndAccessors(t *testing.T) {
-	c := RgbaColorFromFloat(0.5, 0.25, 1.0, 0.0)
+	c := RGBAFromFloat(0.5, 0.25, 1.0, 0.0)
 
 	if c.Red != 127 || c.Green != 63 || c.Blue != 255 || c.Alpha != 0 {
 		t.Fatalf("unexpected conversion: %+v", c)
@@ -27,7 +27,7 @@ func TestRgbaColorFromFloatAndAccessors(t *testing.T) {
 }
 
 func TestRgbaColorPacking(t *testing.T) {
-	c := NewRgbaColor(10, 20, 30, 40)
+	c := NewRGBA(10, 20, 30, 40)
 
 	if c.IsEmpty() {
 		t.Fatal("expected color to be non-empty")
@@ -49,13 +49,13 @@ func TestRgbaColorPacking(t *testing.T) {
 		t.Fatalf("ToARGB32: got %#x want %#x", got, wantARGB)
 	}
 
-	if !RgbaColorFromPackedInt(c.ToPackedInt()).Equals(c) {
+	if !RGBAFromPackedInt(c.ToPackedInt()).Equals(c) {
 		t.Fatal("round-trip via packed int did not preserve color")
 	}
 }
 
 func TestRgbaColorEqualsAndWithAlpha(t *testing.T) {
-	c := NewRgbaColor(5, 6, 7, 0)
+	c := NewRGBA(5, 6, 7, 0)
 
 	if !c.IsEmpty() {
 		t.Fatal("expected IsEmpty to report true when alpha is zero")
@@ -75,7 +75,7 @@ func TestRgbaColorEqualsAndWithAlpha(t *testing.T) {
 
 // TestRgbaColorFromFloat verifies float-to-byte conversion.
 func TestRgbaColorFromFloat(t *testing.T) {
-	c := RgbaColorFromFloat(0.5, 0.0, 1.0, 1.0)
+	c := RGBAFromFloat(0.5, 0.0, 1.0, 1.0)
 	if c.Red != 127 || c.Red > 128 {
 		// 255.1 * 0.5 = 127.55 → uint8 = 127
 		if c.Red < 127 || c.Red > 128 {
@@ -92,7 +92,7 @@ func TestRgbaColorFromFloat(t *testing.T) {
 
 // TestRgbaColorFloatAccessors verify float accessors.
 func TestRgbaColorFloatAccessors(t *testing.T) {
-	c := NewRgbaColor(255, 128, 0, 255)
+	c := NewRGBA(255, 128, 0, 255)
 	if c.RedF() != 1.0 {
 		t.Errorf("RedF = %v, want 1.0", c.RedF())
 	}
@@ -109,11 +109,11 @@ func TestRgbaColorFloatAccessors(t *testing.T) {
 
 // TestRgbaColorIsEmpty verifies IsEmpty.
 func TestRgbaColorIsEmpty(t *testing.T) {
-	transparent := NewRgbaColor(0, 0, 0, 0)
+	transparent := NewRGBA(0, 0, 0, 0)
 	if !transparent.IsEmpty() {
 		t.Errorf("transparent color should be IsEmpty")
 	}
-	opaque := NewRgbaColor(0, 0, 0, 255)
+	opaque := NewRGBA(0, 0, 0, 255)
 	if opaque.IsEmpty() {
 		t.Errorf("opaque color should not be IsEmpty")
 	}

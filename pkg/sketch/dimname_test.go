@@ -15,8 +15,8 @@ func secondLine(t *testing.T, sk *Sketch) (core.HRequest, core.HConstraint) {
 	hg := sk.Active
 	hr := sk.AddRequest(Request{Type: RequestLineSegment, Group: hg, Workplane: hg.Entity(0)})
 	sk.GenerateAll()
-	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, geom.Vector{Y: 5})
-	sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, geom.Vector{X: 3, Y: 5})
+	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, geom.Vector{Y: 5})
+	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, geom.Vector{X: 3, Y: 5})
 	hc := sk.AddConstraint(core.Constraint{
 		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: hg.Entity(0),
 		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 3})
@@ -66,7 +66,7 @@ func TestDimensionByName(t *testing.T) {
 	if err := sk.SetConstraintName(hw, "w"); err != nil {
 		t.Fatal(err)
 	}
-	if c := sk.GetConstraint(hh); c.Expr != "w/2" || sk.Parameter("half").Expr != "w/2" {
+	if c := sk.Constraint(hh); c.Expr != "w/2" || sk.Parameter("half").Expr != "w/2" {
 		t.Errorf("after the rename: %q, %q", c.Expr, sk.Parameter("half").Expr)
 	}
 	if err := sk.SetConstraintName(hw, ""); err == nil || !strings.Contains(err.Error(), "used by") {
@@ -85,10 +85,10 @@ func TestDimensionByName(t *testing.T) {
 	sk.SetUnits(core.UnitMM)
 	sk.GenerateAll()
 	if b := lineLength(sk, hr2); math.Abs(b-7) > 1e-9 {
-		t.Errorf("back in mm the second line is %g mm (%q)", b, sk.GetConstraint(hh).Expr)
+		t.Errorf("back in mm the second line is %g mm (%q)", b, sk.Constraint(hh).Expr)
 	}
 	// What can't be named.
-	sk.GetConstraint(hh).Reference = true
+	sk.Constraint(hh).Reference = true
 	if err := sk.SetConstraintName(hh, "h"); err == nil || !strings.Contains(err.Error(), "reference") {
 		t.Errorf("a reference dimension named: %v", err)
 	}

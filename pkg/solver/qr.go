@@ -32,7 +32,7 @@ func spFromRows(a [][]float64, m, n int) *spMat {
 // sparse matrix to a SparseMatrix does.
 func (s *spMat) transpose() *spMat {
 	t := &spMat{rows: s.cols, cols: s.rows, idx: make([][]int, s.rows), val: make([][]float64, s.rows)}
-	for j := 0; j < s.cols; j++ {
+	for j := range s.cols {
 		for k, i := range s.idx[j] {
 			t.idx[i] = append(t.idx[i], j)
 			t.val[i] = append(t.val[i], s.val[j][k])
@@ -54,7 +54,7 @@ func (s *spMat) colDot(j int, x []float64) float64 {
 // column-major matrix with a dense vector computes it.
 func (s *spMat) mulTransposed(x []float64) []float64 {
 	res := make([]float64, s.cols)
-	for j := 0; j < s.cols; j++ {
+	for j := range s.cols {
 		tmp := 0.0
 		for k, i := range s.idx[j] {
 			tmp += s.val[j][k] * x[i]
@@ -72,7 +72,7 @@ func (s *spMat) mulSelfTransposed() *spMat {
 	m := s.rows
 	rowIdx := make([][]int, m)
 	rowVal := make([][]float64, m)
-	for j := 0; j < s.cols; j++ {
+	for j := range s.cols {
 		for k, i := range s.idx[j] {
 			rowIdx[i] = append(rowIdx[i], j)
 			rowVal[i] = append(rowVal[i], s.val[j][k])
@@ -285,7 +285,7 @@ func factorSparseQR(a *spMat) *sparseQR {
 				nzcolR++
 			}
 			nt := nzcolR - bi
-			for i := 0; i < nt/2; i++ {
+			for i := range nt / 2 {
 				ridx[bi+i], ridx[nzcolR-i-1] = ridx[nzcolR-i-1], ridx[bi+i]
 			}
 			if itp < len(pidx) {
@@ -364,7 +364,7 @@ func factorSparseQR(a *spMat) *sparseQR {
 			r.idx[col] = append(r.idx[col], nonzeroCol)
 			r.val[col] = append(r.val[col], beta)
 			f.hcoeffs[nonzeroCol] = tau
-			for itq := 0; itq < nzcolQ; itq++ {
+			for itq := range nzcolQ {
 				iQ := qidx[itq]
 				q.idx[nonzeroCol] = append(q.idx[nonzeroCol], iQ)
 				q.val[nonzeroCol] = append(q.val[nonzeroCol], tval[iQ])
@@ -460,7 +460,7 @@ func (f *sparseQR) solveUpper(b []float64) {
 // solveUpperTransposed solves R11' x = b in place, as Eigen's row-major
 // lower triangular sparse solve does with the transposed R.
 func (f *sparseQR) solveUpperTransposed(b []float64) {
-	for i := 0; i < f.rank; i++ {
+	for i := range f.rank {
 		tmp := b[i]
 		lastVal := 0.0
 		idx, val := f.r.idx[i], f.r.val[i]
@@ -486,7 +486,7 @@ func (f *sparseQR) solve(b []float64) []float64 {
 		y[i] = 0
 	}
 	x := make([]float64, f.n)
-	for k := 0; k < f.n; k++ {
+	for k := range f.n {
 		x[f.perm[k]] = y[k]
 	}
 	return x

@@ -30,7 +30,7 @@ func sphereLoopSet(r float64) *SBezierLoopSet {
 // then lies inside that one patch.
 func patchUpSphere(r float64, c geom.Vector) *SShell {
 	var sh SShell
-	sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+	sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 	var d geom.Vector
 	for i := range sh.Surface {
 		if s := &sh.Surface[i]; s.DegM > 1 || s.DegN > 1 {
@@ -79,15 +79,15 @@ func TestSphereThroughFace(t *testing.T) {
 	box := extrudedBox(geom.Vector{X: -15, Y: -15, Z: -15}, geom.Vector{X: 15, Y: 15, Z: top})
 	sphere := patchUpSphere(r, geom.Vector{})
 	boxV := 30 * 30 * (top + 15)
-	cap := capVolume(r, r-top)
+	capVol := capVolume(r, r-top)
 	for _, c := range []struct {
 		name string
 		op   SurfaceCombineAs
 		want float64
 	}{
-		{"union", SurfaceUnion, boxV + cap},
-		{"difference", SurfaceDiff, boxV - (4*math.Pi*r*r*r/3 - cap)},
-		{"intersection", SurfaceInter, 4*math.Pi*r*r*r/3 - cap},
+		{"union", SurfaceUnion, boxV + capVol},
+		{"difference", SurfaceDiff, boxV - (4*math.Pi*r*r*r/3 - capVol)},
+		{"intersection", SurfaceInter, 4*math.Pi*r*r*r/3 - capVol},
 	} {
 		var out SShell
 		out.MakeFromBoolean(box, sphere, c.op)
@@ -236,7 +236,7 @@ func TestSphereCutAlongAxis(t *testing.T) {
 	const r = 7.0
 	sphere := func() *SShell {
 		var sh SShell
-		sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+		sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 		return &sh
 	}
 	for _, x := range []float64{0.146 * r, 0.3 * r, 0.6 * r} {
@@ -314,7 +314,7 @@ func lathedCone(r, h float64) *SShell {
 		sbls.Outer.Curves = append(sbls.Outer.Curves, SBezierFrom2(p[i], p[(i+1)%3]))
 	}
 	var sh SShell
-	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RgbaColor{}, noFaces{})
+	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 	return &sh
 }
 

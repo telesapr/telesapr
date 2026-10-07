@@ -138,7 +138,7 @@ func TestPathEquivalenceMirror(t *testing.T) {
 // a script (roadmap 15.5).
 func TestPathEquivalenceMirrorSolid(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_mirror_solid", "path_mirror_solid")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupMirror || !g.MirrorSolid || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupMirror || !g.MirrorSolid || g.Problem.Msg != "" {
 		t.Errorf("the mirror: type %d, whole %v, problem %q", g.Type, g.MirrorSolid, g.Problem.Msg)
 	}
 }
@@ -147,7 +147,7 @@ func TestPathEquivalenceMirrorSolid(t *testing.T) {
 // by a script (roadmap 15.6).
 func TestPathEquivalencePathPattern(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_pattern_path", "path_pattern_path")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || g.ValA != 3 {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || g.ValA != 3 {
 		t.Errorf("the pattern: type %d, problem %q, copies %g", g.Type, g.Problem.Msg, g.ValA)
 	}
 }
@@ -156,7 +156,7 @@ func TestPathEquivalencePathPattern(t *testing.T) {
 // script (roadmap 28.5).
 func TestPathEquivalencePatternRing(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_pattern_ring", "path_pattern_ring")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || g.ValA != 3 {
 		t.Errorf("the pattern: type %d, problem %q, copies %g", g.Type, g.Problem.Msg, g.ValA)
 	}
@@ -166,7 +166,7 @@ func TestPathEquivalencePatternRing(t *testing.T) {
 // screen, and by a script (roadmap 28.2).
 func TestPathEquivalenceDraftSides(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_draft_sides", "path_draft_sides")
-	if g := ui.GetGroup(ui.Active); len(g.DraftFaces) != 2 || g.ValB != 10 || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); len(g.DraftFaces) != 2 || g.ValB != 10 || g.Problem.Msg != "" {
 		t.Errorf("the draft: %d sides, neutral %g, problem %q", len(g.DraftFaces), g.ValB, g.Problem.Msg)
 	}
 }
@@ -175,7 +175,7 @@ func TestPathEquivalenceDraftSides(t *testing.T) {
 // (roadmap 28.4).
 func TestPathEquivalenceSweepCorner(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_sweep_corner", "path_sweep_corner")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 2 {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 2 {
 		t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
 	}
 }
@@ -183,7 +183,7 @@ func TestPathEquivalenceSweepCorner(t *testing.T) {
 // A loft's ends set on its screen, and by a script (roadmap 28.3).
 func TestPathEquivalenceLoftTangency(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_loft_tangency", "path_loft_tangency")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupLoft || g.ValB != 1 || g.ValC != 0.5 || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || g.ValB != 1 || g.ValC != 0.5 || g.Problem.Msg != "" {
 		t.Errorf("the loft: type %d, ends %g and %g, problem %q", g.Type, g.ValB, g.ValC, g.Problem.Msg)
 	}
 }
@@ -192,7 +192,7 @@ func TestPathEquivalenceLoftTangency(t *testing.T) {
 // Loft by Selected Curves, and by a script (roadmap 28.3).
 func TestPathEquivalenceLoftGuides(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_loft_guides", "path_loft_guides")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupLoft || len(g.Edges) != 1 || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || len(g.Edges) != 1 || g.Problem.Msg != "" {
 		t.Errorf("the loft: type %d, guides %v, problem %q", g.Type, g.Edges, g.Problem.Msg)
 	}
 }
@@ -206,7 +206,7 @@ func TestPathEquivalenceChamfer(t *testing.T) {
 // a script (roadmap 28.1).
 func TestPathEquivalenceChamferTwo(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_chamfer_two", "path_chamfer_two")
-	if g := ui.GetGroup(ui.Active); g.ValB != 2 || g.ValC != 1 {
+	if g := ui.Group(ui.Active); g.ValB != 2 || g.ValC != 1 {
 		t.Errorf("the chamfer's distances are %g and %g, want 2 and 1", g.ValB, g.ValC)
 	}
 }
@@ -214,7 +214,7 @@ func TestPathEquivalenceChamferTwo(t *testing.T) {
 // A STEP file linked from the menu, and by a script.
 func TestPathEquivalenceLinkStep(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_link_step", "path_link_step")
-	if g := ui.GetGroup(ui.Active); len(g.ImpMesh.Triangles) == 0 || len(g.LinkInfo) == 0 {
+	if g := ui.Group(ui.Active); len(g.ImpMesh.Triangles) == 0 || len(g.LinkInfo) == 0 {
 		t.Errorf("the link has %d triangles, info %q", len(g.ImpMesh.Triangles), g.LinkInfo)
 	}
 }
@@ -223,7 +223,7 @@ func TestPathEquivalenceLinkStep(t *testing.T) {
 // same linked as a solid by a script (roadmap 21.4).
 func TestPathEquivalenceLinkStepSolid(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_link_step_solid", "path_link_step_solid")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if !g.LinkAsSolid || len(g.ImpShell.Surface) == 0 || g.ForceToMesh {
 		t.Errorf("the link: as solid %v, %d surfaces, forced to mesh %v", g.LinkAsSolid, len(g.ImpShell.Surface), g.ForceToMesh)
 	}
@@ -233,7 +233,7 @@ func TestPathEquivalenceLinkStepSolid(t *testing.T) {
 // edge chamfered by its name in a script.
 func TestPathEquivalenceChamferSolidEdge(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_chamfer_solid_edge", "path_chamfer_solid_edge")
-	if g := ui.GetGroup(ui.Active); len(g.SolidEdges) != 1 || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); len(g.SolidEdges) != 1 || g.Problem.Msg != "" {
 		t.Errorf("the chamfer has %d solid edges, problem %q", len(g.SolidEdges), g.Problem.Msg)
 	}
 }
@@ -242,7 +242,7 @@ func TestPathEquivalenceChamferSolidEdge(t *testing.T) {
 // same made by a script.
 func TestPathEquivalenceFillet(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet", "path_fillet")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
 		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
@@ -251,7 +251,7 @@ func TestPathEquivalenceFillet(t *testing.T) {
 // the mouse, and the same made by a script.
 func TestPathEquivalenceLoft(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_loft", "path_loft")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupLoft || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || g.Problem.Msg != "" {
 		t.Errorf("the loft: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
@@ -260,7 +260,7 @@ func TestPathEquivalenceLoft(t *testing.T) {
 // mouse, and the same made by a script (roadmap 20).
 func TestPathEquivalenceSmoothLoft(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_loft_smooth", "path_loft_smooth")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if g.Type != sketch.GroupLoft || g.Problem.Msg != "" || len(g.LoftThrough) != 1 {
 		t.Errorf("the loft: type %d, problem %q, through %v", g.Type, g.Problem.Msg, g.LoftThrough)
 	}
@@ -270,7 +270,7 @@ func TestPathEquivalenceSmoothLoft(t *testing.T) {
 // axis on the group screen, and the same made by a script (roadmap 20).
 func TestPathEquivalenceSweepCubic(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_sweep_cubic", "path_sweep_cubic")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if g.Type != sketch.GroupSweep || g.Problem.Msg != "" || g.ValC != 90 || g.SweepUp.X != 1 {
 		t.Errorf("the sweep: type %d, problem %q, twist %g, up %v", g.Type, g.Problem.Msg, g.ValC, g.SweepUp)
 	}
@@ -281,7 +281,7 @@ func TestPathEquivalenceSweepCubic(t *testing.T) {
 // (roadmap 14.1).
 func TestPathEquivalenceShellLoftFace(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_shell_loft", "path_shell_loft")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if g.Type != sketch.GroupShell || g.Problem.Msg != "" || len(g.SolidFaces) != 1 {
 		t.Errorf("the shell: type %d, problem %q, faces %v", g.Type, g.Problem.Msg, g.SolidFaces)
 	}
@@ -291,7 +291,7 @@ func TestPathEquivalenceShellLoftFace(t *testing.T) {
 // and the same made by a script.
 func TestPathEquivalenceShell(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_shell", "path_shell")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
 		t.Errorf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
@@ -300,7 +300,7 @@ func TestPathEquivalenceShell(t *testing.T) {
 // hollowed into a cup, and the same made by a script (roadmap 15.2).
 func TestPathEquivalenceShellCup(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_shell_cup", "path_shell_cup")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
 		t.Errorf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
@@ -309,7 +309,7 @@ func TestPathEquivalenceShellCup(t *testing.T) {
 // script (roadmap 15.4).
 func TestPathEquivalenceDraft(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_draft", "path_draft")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupExtrude || g.ValC != 5 || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupExtrude || g.ValC != 5 || g.Problem.Msg != "" {
 		t.Errorf("the extrusion: type %d, draft %g, problem %q", g.Type, g.ValC, g.Problem.Msg)
 	}
 }
@@ -321,10 +321,10 @@ func TestPathEquivalenceInsertGroup(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_insert_group", "path_insert_group")
 	var names []string
 	for _, hg := range ui.GroupOrder {
-		names = append(names, ui.GetGroup(hg).Name)
+		names = append(names, ui.Group(hg).Name)
 	}
 	if got := strings.Join(names, " "); got != "#references sketch-in-plane extrude extrude" ||
-		ui.GetGroup(ui.GroupOrder[2]).H.V < ui.GetGroup(ui.GroupOrder[3]).H.V {
+		ui.Group(ui.GroupOrder[2]).H.V < ui.Group(ui.GroupOrder[3]).H.V {
 		t.Errorf("the history: %s", got)
 	}
 }
@@ -375,7 +375,7 @@ func TestPathEquivalenceDrawing(t *testing.T) {
 // (roadmap 19.2).
 func TestPathEquivalenceAppearance(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_appearance", "path_appearance")
-	if g := ui.GetGroup(ui.Active); g.Appearance != "metal" {
+	if g := ui.Group(ui.Active); g.Appearance != "metal" {
 		t.Errorf("the extrusion's appearance %q", g.Appearance)
 	}
 }
@@ -384,7 +384,7 @@ func TestPathEquivalenceAppearance(t *testing.T) {
 // mitred, and the same made by a script.
 func TestPathEquivalenceFilletMitre(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_mitre", "path_fillet_mitre")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 2 {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 2 {
 		t.Errorf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
 	}
 }
@@ -394,7 +394,7 @@ func TestPathEquivalenceFilletMitre(t *testing.T) {
 // adds to the solid.
 func TestPathEquivalenceFilletConcave(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_concave", "path_fillet_concave")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 1 {
 		t.Fatalf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
 	}
@@ -411,7 +411,7 @@ func TestPathEquivalenceFilletConcave(t *testing.T) {
 // by a script.
 func TestPathEquivalenceFilletOutline(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_outline", "path_fillet_outline")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
 		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
@@ -420,7 +420,7 @@ func TestPathEquivalenceFilletOutline(t *testing.T) {
 // rounded, meeting in an uneven mitre, and the same made by a script.
 func TestPathEquivalenceFilletUneven(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_uneven", "path_fillet_uneven")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 2 {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 2 {
 		t.Errorf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
 	}
 }
@@ -430,7 +430,7 @@ func TestPathEquivalenceFilletUneven(t *testing.T) {
 // script.
 func TestPathEquivalenceFilletCone(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_cone", "path_fillet_cone")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
 		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
@@ -439,7 +439,7 @@ func TestPathEquivalenceFilletCone(t *testing.T) {
 // radius on the group's screen, and the same made by a script.
 func TestPathEquivalenceFilletRadii(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_radii", "path_fillet_radii")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.EdgeRadii) != 1 || g.EdgeRadii[0].Val != 3 {
 		t.Errorf("the fillet: type %d, problem %q, radii %+v", g.Type, g.Problem.Msg, g.EdgeRadii)
 	}
@@ -449,7 +449,7 @@ func TestPathEquivalenceFilletRadii(t *testing.T) {
 // same made by a script.
 func TestPathEquivalenceFilletCircle(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_circle", "path_fillet_circle")
-	if g := ui.GetGroup(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupFillet || g.Problem.Msg != "" {
 		t.Errorf("the fillet: type %d, problem %q", g.Type, g.Problem.Msg)
 	}
 }
@@ -460,7 +460,7 @@ func TestPathEquivalenceFilletCircle(t *testing.T) {
 // goes all round.
 func TestPathEquivalenceFilletRim(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_fillet_rim", "path_fillet_rim")
-	g := ui.GetGroup(ui.Active)
+	g := ui.Group(ui.Active)
 	if g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.SolidEdges) != 1 {
 		t.Fatalf("the fillet: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.SolidEdges))
 	}

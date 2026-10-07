@@ -11,7 +11,7 @@ import "github.com/telesapr/telesapr/pkg/core"
 func NewGroup() Group {
 	return Group{
 		Visible: true,
-		Color:   core.NewRgbaColor(100, 100, 100, 255),
+		Color:   core.NewRGBA(100, 100, 100, 255),
 		Scale:   1,
 	}
 }
@@ -23,7 +23,7 @@ func NewGroup() Group {
 func (sk *Sketch) AddGroupAfterActive(g Group) core.HGroup {
 	// Copy color from the previous mesh-contributing group.
 	if g.IsMeshGroup() && len(sk.GroupOrder) > 0 {
-		if running := sk.GetRunningMeshGroupFor(sk.Active); running != nil {
+		if running := sk.RunningMeshGroupFor(sk.Active); running != nil {
 			g.Color = running.Color
 		}
 	}
@@ -36,7 +36,7 @@ func (sk *Sketch) AddGroupAfterActive(g Group) core.HGroup {
 func (sk *Sketch) BumpOrderAfterActive(g *Group) {
 	afterActive := false
 	for _, hg := range sk.GroupOrder {
-		gi := sk.GetGroup(hg)
+		gi := sk.Group(hg)
 		if afterActive {
 			gi.Order++
 		}

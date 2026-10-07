@@ -36,7 +36,7 @@ type Application struct {
 	TW *TextWindow
 
 	// Little bits of extra configuration state.
-	ModelColor               [ModelColors]core.RgbaColor
+	ModelColor               [ModelColors]core.RGBA
 	LightDir                 [2]geom.Vector
 	LightIntensity           [2]float64
 	AmbientIntensity         float64
@@ -83,7 +83,7 @@ type Application struct {
 	RendererOverride      string
 	ShowToolbar           bool
 	ScreenshotFile        string
-	BackgroundColor       core.RgbaColor
+	BackgroundColor       core.RGBA
 	ExportShadedTriangles bool
 	ExportPwlCurves       bool
 	ExportCanvasSizeAuto  bool
@@ -186,7 +186,7 @@ type Application struct {
 // New makes the application on a platform; Init loads the settings and
 // opens the windows.
 func New(p platform.Platform) *Application {
-	ss := &Application{Platform: p, Settings: p.GetSettings()}
+	ss := &Application{Platform: p, Settings: p.Settings()}
 	ss.GW = newGraphicsWindow(ss)
 	ss.TW = newTextWindow(ss)
 	return ss
@@ -199,7 +199,7 @@ func (ss *Application) LoadSettings() {
 	ss.TangentArcRadius = 10.0
 	ss.ExplodeDistance = 1.0
 
-	defaults := [ModelColors]core.RgbaColor{
+	defaults := [ModelColors]core.RGBA{
 		rgbi(150, 150, 150), rgbi(100, 100, 100), rgbi(30, 30, 30), rgbi(150, 0, 0),
 		rgbi(0, 100, 0), rgbi(0, 80, 80), rgbi(0, 0, 130), rgbi(80, 0, 80),
 	}
@@ -377,7 +377,7 @@ func (ss *Application) SaveSettings() {
 	}
 }
 
-func rgbi(r, g, b uint8) core.RgbaColor { return core.NewRgbaColor(r, g, b, 255) }
+func rgbi(r, g, b uint8) core.RGBA { return core.NewRGBA(r, g, b, 255) }
 
 // Refresh regenerates what was scheduled, then shows the text window
 // (C++ SolveSpaceUI::Refresh).
@@ -460,7 +460,7 @@ func (ss *Application) afterGenerate() {
 // solved (C++ SolveSpaceUI::ActiveGroupsOkay).
 func (ss *Application) ActiveGroupsOkay() bool {
 	for _, hg := range ss.SK.GroupOrder {
-		g := ss.SK.GetGroup(hg)
+		g := ss.SK.Group(hg)
 		if !g.IsSolvedOkay() {
 			return false
 		}
@@ -522,7 +522,7 @@ func (ss *Application) MmToString(v float64, editable bool) string {
 			fmt.Fprintf(&b, "%d'-", feet)
 		}
 		// For something like 0.5, show 1/2" rather than 0 1/2"
-		if !(feet == 0 && inches == 0 && numerator != 0) {
+		if feet != 0 || inches != 0 || numerator == 0 {
 			fmt.Fprintf(&b, "%d", inches)
 		}
 		if numerator != 0 {

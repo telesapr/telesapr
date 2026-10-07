@@ -26,7 +26,7 @@ func threadWindow(t testing.TB) *Application {
 
 // hiddenByScan is hiddenBySolid trying every triangle.
 func (gw *GraphicsWindow) hiddenByScan(p geom.Vector) bool {
-	g := gw.sk().GetGroup(gw.activeGroupH())
+	g := gw.sk().Group(gw.activeGroupH())
 	gw.view.Tangent = gw.ss.CameraTangent()
 	towards, reach := gw.towardsViewer(p)
 	scale := max(1e-3/gw.view.Scale, 1e-6)
@@ -79,7 +79,7 @@ func BenchmarkHoverHidden(b *testing.B) {
 	tp := ss.GW.activeTopology()
 	p := tp.Edges[len(tp.Edges)/2].Points[0]
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		ss.GW.hiddenBySolid(p)
 	}
 }
@@ -89,7 +89,7 @@ func BenchmarkHoverHiddenScan(b *testing.B) {
 	tp := ss.GW.activeTopology()
 	p := tp.Edges[len(tp.Edges)/2].Points[0]
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		ss.GW.hiddenByScan(p)
 	}
 }

@@ -201,7 +201,7 @@ func TestFixturesRoundTrip(t *testing.T) {
 			}
 
 			for _, hg := range sk.GroupOrder {
-				r := check.Group(sk, sk.GetGroup(hg))
+				r := check.Group(sk, sk.Group(hg))
 				line := fmt.Sprintf("%s g%x %s", rel, hg.V, r.String())
 				want, ok := baseline[check.BaselineKey(line)]
 				if !ok {

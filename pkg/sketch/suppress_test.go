@@ -28,7 +28,7 @@ func translateND(t *testing.T) *sketch.Sketch {
 
 func volume(sk *sketch.Sketch, h core.HGroup) float64 {
 	var m srf.SMesh
-	sk.GetGroup(h).RunningShell.TriangulateInto(&m)
+	sk.Group(h).RunningShell.TriangulateInto(&m)
 	return m.CalculateVolume()
 }
 
@@ -44,7 +44,7 @@ func TestSuppressAll(t *testing.T) {
 	if err := sk.SetSuppressAll(hg(4), true); err != nil {
 		t.Fatal(err)
 	}
-	if sk.GetGroup(hg(4)).Clean || !sk.Unsaved {
+	if sk.Group(hg(4)).Clean || !sk.Unsaved {
 		t.Fatal("suppressing should dirty the group and the file")
 	}
 	sk.GenerateAll()
@@ -70,7 +70,7 @@ func TestSuppressAll(t *testing.T) {
 		if got := sk.SuppressedReason(hg(h)); got != w {
 			t.Errorf("g%03x: %q, want %q", h, got, w)
 		}
-		if gg := sk.GetGroup(hg(h)); h >= 4 && (gg.IsVisible() || !gg.IsSolvedOkay() || !gg.Clean) {
+		if gg := sk.Group(hg(h)); h >= 4 && (gg.IsVisible() || !gg.IsSolvedOkay() || !gg.Clean) {
 			t.Errorf("g%03x left out: visible %v, solved %v, clean %v", h, gg.IsVisible(), gg.IsSolvedOkay(), gg.Clean)
 		}
 	}
@@ -88,7 +88,7 @@ func TestSuppressAll(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !doc.Sketch.GetGroup(hg(4)).SuppressAll {
+	if !doc.Sketch.Group(hg(4)).SuppressAll {
 		t.Fatal("the save lost the flag")
 	}
 	for i, back := range []*sketch.Sketch{sk, doc.Sketch} {
@@ -110,7 +110,7 @@ func TestSuppressAllUndo(t *testing.T) {
 		t.Fatal(err)
 	}
 	sk.GenerateAll()
-	if sk.GetGroup(hg(6)).SuppressedBy != hg(5) || sk.GetGroup(hg(4)).SuppressedBy.V != 0 {
+	if sk.Group(hg(6)).SuppressedBy != hg(5) || sk.Group(hg(4)).SuppressedBy.V != 0 {
 		t.Fatal("suppressing g005 should leave out the copies and nothing before")
 	}
 	if !sk.UndoUndo() {
@@ -122,7 +122,7 @@ func TestSuppressAllUndo(t *testing.T) {
 			t.Fatalf("%s still suppressed after undo", g.DescriptionString())
 		}
 	}
-	if !sk.UndoRedo() || !sk.GetGroup(hg(5)).SuppressAll {
+	if !sk.UndoRedo() || !sk.Group(hg(5)).SuppressAll {
 		t.Fatal("redo should suppress again")
 	}
 }
@@ -140,7 +140,7 @@ func TestSuppressAllRefused(t *testing.T) {
 		t.Fatalf("bringing back a group that is there: %v, unsaved %v", err, sk.Unsaved)
 	}
 	// A flag on the references, as a file may hold, is ignored.
-	sk.GetGroup(hg(1)).SuppressAll = true
+	sk.Group(hg(1)).SuppressAll = true
 	sk.GenerateAll()
 	if sk.SuppressedReason(hg(1)) != "" || sk.SuppressedReason(hg(2)) != "" {
 		t.Fatal("the references were left out")
@@ -168,7 +168,7 @@ func TestSuppressAllActive(t *testing.T) {
 		t.Fatalf("active g%03x, want g007, the last before the profile", sk.Active.V)
 	}
 	for _, h := range []uint32{4, 5, 6, 7} {
-		if sk.GetGroup(hg(h)).SuppressedBy.V != 0 {
+		if sk.Group(hg(h)).SuppressedBy.V != 0 {
 			t.Fatalf("g%03x left out", h)
 		}
 	}

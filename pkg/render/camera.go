@@ -150,7 +150,7 @@ func (c *Camera) NormalizeProjectionVectors() {
 // Lighting describes the scene's lights, in right/up/forward screen
 // coordinates (C++ Lighting).
 type Lighting struct {
-	BackgroundColor  core.RgbaColor
+	BackgroundColor  core.RGBA
 	AmbientIntensity float64
 	LightIntensity   [2]float64
 	LightDirection   [2]geom.Vector

@@ -187,9 +187,9 @@ type barMenu struct {
 	menu      *Menu
 }
 
-// GetOrCreateMainMenu returns the main window's menu bar; each window
+// MainMenu returns the main window's menu bar; each window
 // has its own, so unique is false.
-func (p *Platform) GetOrCreateMainMenu() (platform.MenuBar, bool) {
+func (p *Platform) MainMenu() (platform.MenuBar, bool) {
 	if p.mainBar == nil {
 		p.mainBar = &MenuBar{p: p}
 	}

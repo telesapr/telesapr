@@ -149,7 +149,7 @@ func (b basis) ders(span int, t float64, nd int, ders [][]float64) {
 		left[j] = t - U[span+1-j]
 		right[j] = U[span+j] - t
 		saved := 0.0
-		for r := 0; r < j; r++ {
+		for r := range j {
 			ndu[j][r] = right[r+1] + left[j-r]
 			var temp float64
 			if ndu[j][r] != 0 {

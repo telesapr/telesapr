@@ -95,7 +95,7 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	t.Cleanup(func() { _ = os.RemoveAll(saveDir) })
 	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.tlspr")}
 	r.p = headless.New()
-	r.p.FontFiles = []string{filepath.Join(root, "Gentium-R.ttf")}
+	r.p.Fonts = []string{filepath.Join(root, "Gentium-R.ttf")}
 	r.p.PopUpHook = r.popUp
 	r.p.OnMessageDialog = func(d *headless.MessageDialog) {
 		fmt.Fprintf(&r.b, "dialog %d %s|%s\n", d.Type, escLine(r.unexpand(d.Message)), escLine(r.unexpand(d.Description)))
@@ -475,7 +475,7 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			fmt.Fprintf(&r.b, "param %x %s %d %d\n", p.H.V, g17(p.Val), b2i(p.Free), b2i(p.Known))
 		}
 		for _, hg := range r.ss.SK.GroupOrder {
-			g := r.ss.SK.GetGroup(hg)
+			g := r.ss.SK.Group(hg)
 			fmt.Fprintf(&r.b, "group %x %d %d %d %d\n", hg.V, g.Solved.How, g.Solved.Dof, b2i(g.DofCheckOk),
 				b2i(g.Clean))
 		}
@@ -495,7 +495,7 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			fmt.Fprintf(&r.b, "freedom %x %s %s\n", e.H.V, sk.EntityFreedom(e.H), color)
 		}
 	case "polyerror":
-		g := r.ss.SK.GetGroup(r.ss.GW.activeGroupH())
+		g := r.ss.SK.Group(r.ss.GW.activeGroupH())
 		fmt.Fprintf(&r.b, "polyerror %d %s %s %s\n", g.PolyError.How, v17(g.PolyError.ErrorPoint),
 			v17(g.PolyError.NotClosed.A), v17(g.PolyError.NotClosed.B))
 	case "menus":

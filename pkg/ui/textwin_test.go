@@ -198,7 +198,7 @@ func textwinScreensFor(t testing.TB, path string) string {
 	v.ProjRight = geom.Vector{X: 1}
 	v.ProjUp = geom.Vector{Y: 1}
 	for _, hg := range sk.GroupOrder {
-		sk.GetGroup(hg).GenerateDisplayItems(sk)
+		sk.Group(hg).GenerateDisplayItems(sk)
 	}
 
 	var b strings.Builder
@@ -232,7 +232,7 @@ func textwinScreensFor(t testing.TB, path string) string {
 	}
 
 	for _, hg := range groups {
-		g := sk.GetGroup(hg)
+		g := sk.Group(hg)
 		if g.Type != sketch.GroupExtrude {
 			continue
 		}

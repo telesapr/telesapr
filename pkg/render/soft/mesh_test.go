@@ -23,7 +23,7 @@ func fixtureDisplay(t testing.TB, name string) (*srf.SMesh, *srf.SOutlineList) {
 	sk.GenerateAll()
 	var g *sketch.Group
 	for _, hg := range sk.GroupOrder {
-		g = sk.GetGroup(hg)
+		g = sk.Group(hg)
 		g.GenerateDisplayItems(sk)
 	}
 	return &g.DisplayMesh, &g.DisplayOutlines
@@ -47,12 +47,12 @@ func fitCamera(c render.Camera, m *srf.SMesh) render.Camera {
 }
 
 func drawMeshScene(r *Renderer, m *srf.SMesh, ol *srf.SOutlineList) {
-	front := r.GetFill(render.Fill{Layer: render.LayerNormal})
+	front := r.InternFill(render.Fill{Layer: render.LayerNormal})
 	r.DrawMesh(m, front, 0)
-	edge := r.GetStroke(render.Stroke{Layer: render.LayerNormal, ZIndex: 1, Color: core.NewRgbaColor(255, 255, 255, 255),
+	edge := r.InternStroke(render.Stroke{Layer: render.LayerNormal, ZIndex: 1, Color: core.NewRGBA(255, 255, 255, 255),
 		Width: 1.5, Unit: render.UnitPX})
 	r.DrawOutlines(ol, edge, render.EmphasizedAndContour)
-	hidden := r.GetStroke(render.Stroke{Layer: render.LayerOccluded, ZIndex: 1, Color: core.NewRgbaColor(120, 120, 120, 255),
+	hidden := r.InternStroke(render.Stroke{Layer: render.LayerOccluded, ZIndex: 1, Color: core.NewRGBA(120, 120, 120, 255),
 		Width: 1, Unit: render.UnitPX, StipplePattern: core.StippleDash, StippleScale: 4})
 	r.DrawOutlines(ol, hidden, render.EmphasizedAndContour)
 }
@@ -69,8 +69,8 @@ func TestSoftMesh(t *testing.T) {
 	// Two-sided, as C++ draws a mesh with its back faces in red.
 	cam.Tangent = 0
 	checkGolden(t, "mesh_twosided", frame(r, cam, func() {
-		front := r.GetFill(render.Fill{Color: core.NewRgbaColor(160, 160, 160, 255)})
-		back := r.GetFill(render.Fill{Color: core.NewRgbaColor(255, 0, 0, 255)})
+		front := r.InternFill(render.Fill{Color: core.NewRGBA(160, 160, 160, 255)})
+		back := r.InternFill(render.Fill{Color: core.NewRGBA(255, 0, 0, 255)})
 		r.DrawMesh(m, front, back)
 	}))
 }

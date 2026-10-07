@@ -389,7 +389,7 @@ func (g *faceGrid) isoCurve(piece srf.SBezier, byU bool, ln float64) (srf.SBezie
 		out.Reverse()
 	}
 	out.Ctrl[0], out.Ctrl[out.Degree] = a, z
-	for k := 0; k <= 16; k++ {
+	for k := range 17 {
 		t := float64(k) / 16
 		if out.PointAt(t).Minus(piece.PointAt(t)).Magnitude() > fileTol {
 			// Compare by nearest points, the curves' parameters running
@@ -430,9 +430,10 @@ func (g *faceGrid) sampleUV(sb srf.SBezier, prev *uvSample, n int) []uvSample {
 	for k := 0; k <= n; k++ {
 		t := float64(k) / float64(n)
 		p := sb.PointAt(t)
-		if k == 0 {
+		switch k {
+		case 0:
 			p = sb.Start()
-		} else if k == n {
+		case n:
 			p = sb.Finish()
 		}
 		q := g.s.point(p, guess)
@@ -915,7 +916,7 @@ func (b *solidBuilder) planeFace(f *Face) error {
 }
 
 // faceColor is the face's colour, or the default.
-func faceColor(f *Face) core.RgbaColor {
+func faceColor(f *Face) core.RGBA {
 	if f.HasColor {
 		return f.Color
 	}
@@ -1144,7 +1145,7 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 			}
 		}
 		var run []gridPiece
-		for k := 0; k < len(ps); k++ {
+		for k := range ps {
 			idx := (start + k) % len(ps)
 			if len(run) > 0 && breakAt[idx] {
 				cells[run[0].cell].open = append(cells[run[0].cell].open, run)

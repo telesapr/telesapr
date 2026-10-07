@@ -35,7 +35,7 @@ const guideTol = 1e-3
 
 // MakeGuidedLoft is MakeSmoothLoftEnds held to guides, one or two;
 // none is MakeSmoothLoftEnds.
-func MakeGuidedLoft(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []LoftGuide, color core.RgbaColor, origin uint32) (*srf.SShell, error) {
+func MakeGuidedLoft(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []LoftGuide, color core.RGBA, origin uint32) (*srf.SShell, error) {
 	bs, err := GuidedLoftSurface(loops, turn, ends, guides)
 	if err != nil {
 		return nil, err

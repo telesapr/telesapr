@@ -97,7 +97,7 @@ func TestWindowRendersAndReportsInput(t *testing.T) {
 	ev := w.Events()
 	ev.OnRender = func() {
 		renders++
-		width, height := w.GetContentSize()
+		width, height := w.ContentSize()
 		img := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
 		for i := range img.Pix {
 			img.Pix[i] = 0x80
@@ -111,7 +111,7 @@ func TestWindowRendersAndReportsInput(t *testing.T) {
 
 	var width, height float64
 	run(p,
-		func() { width, height = w.GetContentSize(); w.Focus() },
+		func() { width, height = w.ContentSize(); w.Focus() },
 		func() {
 			// Two quick clicks are a press, a release, then a double press.
 			for range 2 {
@@ -151,7 +151,7 @@ func TestWindowRendersAndReportsInput(t *testing.T) {
 func TestMenuStateAndClear(t *testing.T) {
 	p := requireGUI(t)
 	w := p.CreateWindow(platform.WindowToplevel, nil)
-	bar, _ := p.GetOrCreateMainMenu()
+	bar, _ := p.MainMenu()
 	file := bar.AddSubMenu("&File")
 	file.AddItem("&New", nil, true)
 	recent := file.AddSubMenu("Open &Recent")
@@ -184,7 +184,7 @@ func TestMenuStateAndClear(t *testing.T) {
 func TestMenuBarKeyboard(t *testing.T) {
 	p := requireGUI(t)
 	w := p.CreateWindow(platform.WindowToplevel, nil).(*Window)
-	bar, _ := p.GetOrCreateMainMenu()
+	bar, _ := p.MainMenu()
 	var invoked []string
 	add := func(label, item string) *Menu {
 		m := bar.AddSubMenu(label)
@@ -306,7 +306,7 @@ func TestTooltipStaysWhilePointerRests(t *testing.T) {
 	w := p.CreateWindow(platform.WindowToplevel, nil).(*Window)
 	w.SetMinContentSize(320, 240)
 	w.Events().OnRender = func() {
-		width, height := w.GetContentSize()
+		width, height := w.ContentSize()
 		w.canvas.present(image.NewRGBA(image.Rect(0, 0, int(width), int(height))))
 	}
 	w.SetVisible(true)

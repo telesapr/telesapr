@@ -71,8 +71,8 @@ func New() *Renderer {
 	return &Renderer{ambient: 0.2}
 }
 
-// GetCamera returns the current camera.
-func (r *Renderer) GetCamera() *render.Camera { return &r.camera }
+// Camera returns the current camera.
+func (r *Renderer) Camera() *render.Camera { return &r.camera }
 
 // SetCamera sets the camera, resizes the frame to it and clears the
 // depth buffer (C++ SetCamera, UpdateProjection).
@@ -218,8 +218,8 @@ func (r *Renderer) FinishFrame() {}
 // renderer keeps drawing into it.
 func (r *Renderer) ReadFrame() *image.RGBA { return r.frame }
 
-// GetIdent names the renderer.
-func (r *Renderer) GetIdent() (vendor, renderer, version string) {
+// Ident names the renderer.
+func (r *Renderer) Ident() (vendor, renderer, version string) {
 	return "TeleSAPR", "software (OpenGL 1 semantics)", "1"
 }
 
@@ -229,7 +229,7 @@ func (r *Renderer) Clear() {
 	r.cur = state{}
 }
 
-func colorF(c core.RgbaColor) [4]float64 {
+func colorF(c core.RGBA) [4]float64 {
 	return [4]float64{float64(c.RedF()), float64(c.GreenF()), float64(c.BlueF()), float64(c.AlphaF())}
 }
 
@@ -448,7 +448,7 @@ func (r *Renderer) doStippledLine(a, b geom.Vector, hcs render.HStroke, phase fl
 
 	curPhase := 0.0
 	curDash := 0
-	for curDash = 0; curDash < len(dashes); curDash++ {
+	for curDash = 0; curDash < len(dashes); curDash++ { //nolint:intrange // curDash is read after the loop
 		curPhase += dashes[curDash] * scale
 		if phase < curPhase {
 			break
@@ -543,7 +543,7 @@ func (r *Renderer) DrawQuad(a, b, c, d geom.Vector, hcf render.HFill) {
 // DrawPoint draws a point as a square of the stroke's width.
 func (r *Renderer) DrawPoint(o geom.Vector, hcs render.HStroke) {
 	s := r.selectStroke(hcs)
-	hcf := r.GetFill(render.Fill{Layer: s.Layer, ZIndex: s.ZIndex, Color: s.Color})
+	hcf := r.InternFill(render.Fill{Layer: s.Layer, ZIndex: s.ZIndex, Color: s.Color})
 	rr := r.camera.ProjRight.ScaledBy(s.Width / 2.0 / r.camera.Scale)
 	u := r.camera.ProjUp.ScaledBy(s.Width / 2.0 / r.camera.Scale)
 	a := o.Plus(rr).Plus(u)
@@ -566,7 +566,7 @@ func (r *Renderer) DrawPolygon(p *srf.SPolygon, hcf render.HFill) {
 func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 	front := r.selectFill(hcfFront)
 	frontColor := front.Color
-	var backColor core.RgbaColor
+	var backColor core.RGBA
 	twoSide := hcfBack != 0
 	if twoSide {
 		back := r.Fill(hcfBack)
@@ -584,10 +584,10 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
 		if frontColor.IsEmpty() {
-			matFront = colorF(tr.Meta.RgbaColor)
+			matFront = colorF(tr.Meta.RGBA)
 		}
 		if backColor.IsEmpty() {
-			matBack = colorF(tr.Meta.RgbaColor)
+			matBack = colorF(tr.Meta.RGBA)
 		}
 
 		var na, nb, nc geom.Vector

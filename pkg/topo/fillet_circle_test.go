@@ -22,7 +22,7 @@ func cylinder(rad, h float64) *srf.SShell {
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = circle(rad, 0, 0)
 	ls.Normal = v(0, 0, -1)
-	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, h), core.NewRgbaColor(100, 100, 100, 255))
+	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, h), core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
 
@@ -31,7 +31,7 @@ func cylinder(rad, h float64) *srf.SShell {
 func plateWithHole(rad, h float64) *srf.SShell {
 	var plate, out srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, h),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	hole := cylinder(rad, h+2)
 	var moved srf.SShell
 	moved.MakeFromTransformationOf(hole, v(0, 0, -1), geom.QuaternionIdentity, 1)
@@ -130,7 +130,7 @@ func TestFilletCircleRefused(t *testing.T) {
 	// A boss on a plate.
 	var plate, boss, sh srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 5),
-		core.NewRgbaColor(100, 100, 100, 255))
+		core.NewRGBA(100, 100, 100, 255))
 	boss.MakeFromTransformationOf(cylinder(5, 10), v(0, 0, 5), geom.QuaternionIdentity, 1)
 	sh.MakeFromUnionOf(&plate, &boss)
 	for _, c := range []struct {

@@ -1,11 +1,12 @@
 package ui
 
 import (
+	"cmp"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -63,7 +64,7 @@ func TestEveryFacePicked(t *testing.T) {
 			gw := ss.GW
 			w := gw.window.(*headless.Window)
 			w.Width, w.Height = 1200, 900
-			g := ss.SK.GetGroup(gw.activeGroupH())
+			g := ss.SK.Group(gw.activeGroupH())
 			g.GenerateDisplayItems(ss.SK)
 			picked := map[uint32]bool{}
 			faces := map[uint32]bool{}
@@ -98,7 +99,7 @@ func TestEveryFacePicked(t *testing.T) {
 						cands[f] = append(cands[f], cand{tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0 / 3), s})
 					}
 					for f, cs := range cands {
-						sort.Slice(cs, func(i, j int) bool { return cs[i].a > cs[j].a })
+						slices.SortFunc(cs, func(a, b cand) int { return cmp.Compare(b.a, a.a) })
 						for k := 0; k < len(cs) && k < 8 && !picked[f]; k++ {
 							if zoom != 1 {
 								gw.view.Offset = cs[k].p.ScaledBy(-1)

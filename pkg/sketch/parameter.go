@@ -1,11 +1,11 @@
 package sketch
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"math"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -177,7 +177,7 @@ func (g *Group) EdgeRadius(i int) (float64, string, bool) {
 // what the user typed, in the document's unit, as SetGroupText does
 // for the group's radius; "" gives it the group's radius again.
 func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g == nil {
 		return fmt.Errorf("no group %08x", hg.V)
 	}
@@ -208,7 +208,7 @@ func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error {
 	old := append([]EdgeRadius(nil), g.EdgeRadii...)
 	if at < 0 {
 		g.EdgeRadii = append(g.EdgeRadii, EdgeRadius{Edge: i})
-		sort.Slice(g.EdgeRadii, func(a, b int) bool { return g.EdgeRadii[a].Edge < g.EdgeRadii[b].Edge })
+		slices.SortFunc(g.EdgeRadii, func(a, b EdgeRadius) int { return cmp.Compare(a.Edge, b.Edge) })
 		for k := range g.EdgeRadii {
 			if g.EdgeRadii[k].Edge == i {
 				at = k
@@ -483,7 +483,7 @@ func (sk *Sketch) markDirtyFrom(hg core.HGroup) {
 			on = true
 		}
 		if on {
-			sk.GetGroup(h).Clean = false
+			sk.Group(h).Clean = false
 		}
 	}
 }
@@ -707,11 +707,14 @@ func (sk *Sketch) evaluateTable() (map[string]float64, map[core.HConstraint]stri
 		vars[n.name] = n.value
 	}
 	for i := range entries {
-		if index[entries[i].name] == i {
+		switch {
+		case index[entries[i].name] == i:
 			visit(i)
-		} else if entries[i].param != nil {
+
+		case entries[i].param != nil:
 			entries[i].err = fmt.Sprintf("a second parameter %q", entries[i].name)
-		} else {
+
+		default:
 			entries[i].err = fmt.Sprintf("a second name %q", entries[i].name)
 		}
 	}
@@ -786,7 +789,7 @@ func SetConstraintValue(c *core.Constraint, v float64) {
 // and "wall*2" come back as they were typed. The constraint's group is
 // marked dirty.
 func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error {
-	c := sk.GetConstraint(hc)
+	c := sk.Constraint(hc)
 	if c == nil {
 		return fmt.Errorf("no constraint %08x", hc.V)
 	}
@@ -865,7 +868,7 @@ func unwrap(s, prefix string) (string, bool) {
 // from 1 to 999 copies, a scale that is not zero. The group is marked
 // dirty.
 func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g == nil {
 		return fmt.Errorf("no group %08x", hg.V)
 	}

@@ -10,12 +10,12 @@ import (
 // boolean operations.
 type STriMeta struct {
 	Face FaceID
-	core.RgbaColor
+	core.RGBA
 }
 
 // NewSTriMeta constructs an STriMeta with the given face id and color.
-func NewSTriMeta(face FaceID, color core.RgbaColor) STriMeta {
-	return STriMeta{Face: face, RgbaColor: color}
+func NewSTriMeta(face FaceID, color core.RGBA) STriMeta {
+	return STriMeta{Face: face, RGBA: color}
 }
 
 // STriangle is one face of an SMesh. The (a, b, c) vertices are

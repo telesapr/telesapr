@@ -276,7 +276,7 @@ func (m *cf2HintMask) read(cs *cf2Buffer, bitCount int) {
 	if m.setCounts(bitCount) == 0 {
 		return
 	}
-	for i := 0; i < m.byteCount; i++ {
+	for i := range m.byteCount {
 		m.mask[i] = byte(cs.readByte())
 	}
 }
@@ -286,7 +286,7 @@ func (m *cf2HintMask) setAll(bitCount int) {
 	if m.setCounts(bitCount) == 0 {
 		return
 	}
-	for i := 0; i < m.byteCount; i++ {
+	for i := range m.byteCount {
 		m.mask[i] = 0xFF
 	}
 	m.mask[m.byteCount-1] &^= byte(mask)
@@ -675,7 +675,7 @@ func (m *cf2HintMap) build(hStemHintArray, vStemHintArray *[]cf2StemHint, hintMa
 	m.adjustHints()
 
 	if !initialMap {
-		for i := 0; i < m.count; i++ {
+		for i := range m.count {
 			if !m.edge[i].isSynthetic() {
 				stemhint := stemHintAt(hStemHintArray, m.edge[i].index, &font.err)
 				if m.edge[i].isTop() {
@@ -794,7 +794,7 @@ func (b *cf2Blues) init(font *cf2Font) {
 	}
 
 	csUnitsPerPixel := cf2DivFix(cf2IntToFixed(1), b.scale)
-	for i := 0; i < b.count; i++ {
+	for i := range b.count {
 		flatEdge := b.zone[i].csFlatEdge
 		if b.zone[i].bottomZone {
 			minDiff := cf2FixedMax
@@ -845,7 +845,7 @@ func (b *cf2Blues) init(font *cf2Font) {
 	if font.stemDarkened {
 		b.boost = 0
 	}
-	for i := 0; i < b.count; i++ {
+	for i := range b.count {
 		if b.zone[i].bottomZone {
 			b.zone[i].dsFlatEdge = cf2FixedRound(cf2MulFix(b.zone[i].csFlatEdge, b.scale) - b.boost)
 		} else {
@@ -859,19 +859,22 @@ func (b *cf2Blues) capture(bottomHintEdge, topHintEdge *cf2Hint) bool {
 	csFuzz := b.blueFuzz
 	var dsNew, dsMove cf2Fixed
 	captured := false
-	for i := 0; i < b.count; i++ {
+	for i := range b.count {
 		z := &b.zone[i]
 		if z.bottomZone && bottomHintEdge.isBottom() {
 			if z.csBottomEdge-csFuzz <= bottomHintEdge.csCoord &&
 				bottomHintEdge.csCoord <= z.csTopEdge+csFuzz {
-				if b.suppressOvershoot {
+				switch {
+				case b.suppressOvershoot:
 					dsNew = z.dsFlatEdge
-				} else if z.csTopEdge-bottomHintEdge.csCoord >= b.blueShift {
+
+				case z.csTopEdge-bottomHintEdge.csCoord >= b.blueShift:
 					dsNew = cf2FixedRound(bottomHintEdge.dsCoord)
 					if lim := z.dsFlatEdge - cf2IntToFixed(1); lim < dsNew {
 						dsNew = lim
 					}
-				} else {
+
+				default:
 					dsNew = cf2FixedRound(bottomHintEdge.dsCoord)
 				}
 				dsMove = dsNew - bottomHintEdge.dsCoord
@@ -882,14 +885,17 @@ func (b *cf2Blues) capture(bottomHintEdge, topHintEdge *cf2Hint) bool {
 		if !z.bottomZone && topHintEdge.isTop() {
 			if z.csBottomEdge-csFuzz <= topHintEdge.csCoord &&
 				topHintEdge.csCoord <= z.csTopEdge+csFuzz {
-				if b.suppressOvershoot {
+				switch {
+				case b.suppressOvershoot:
 					dsNew = z.dsFlatEdge
-				} else if topHintEdge.csCoord-z.csBottomEdge >= b.blueShift {
+
+				case topHintEdge.csCoord-z.csBottomEdge >= b.blueShift:
 					dsNew = cf2FixedRound(topHintEdge.dsCoord)
 					if lim := z.dsFlatEdge + cf2IntToFixed(1); lim > dsNew {
 						dsNew = lim
 					}
-				} else {
+
+				default:
 					dsNew = cf2FixedRound(topHintEdge.dsCoord)
 				}
 				dsMove = dsNew - topHintEdge.dsCoord
@@ -1038,7 +1044,7 @@ func (gp *cf2GlyphPath) computeIntersection(u1, u2, v1, v2 Vector) (Vector, bool
 }
 
 // pushPrevElem is cf2_glyphpath_pushPrevElem.
-func (gp *cf2GlyphPath) pushPrevElem(hintmap *cf2HintMap, nextP0 *Vector, nextP1 Vector, close bool) {
+func (gp *cf2GlyphPath) pushPrevElem(hintmap *cf2HintMap, nextP0 *Vector, nextP1 Vector, closeTo bool) {
 	var params cf2CallbackParams
 	var prevP0, prevP1 *Vector
 	if gp.prevElemOp == cf2PathOpLineTo {
@@ -1059,7 +1065,7 @@ func (gp *cf2GlyphPath) pushPrevElem(hintmap *cf2HintMap, nextP0 *Vector, nextP1
 	switch gp.prevElemOp {
 	case cf2PathOpLineTo:
 		params.op = cf2PathOpLineTo
-		if close {
+		if closeTo {
 			params.pt1 = gp.hintPoint(&gp.firstHintMap, cf2Fixed(gp.prevElemP1.X), cf2Fixed(gp.prevElemP1.Y))
 		} else {
 			params.pt1 = gp.hintPoint(hintmap, cf2Fixed(gp.prevElemP1.X), cf2Fixed(gp.prevElemP1.Y))
@@ -1077,8 +1083,8 @@ func (gp *cf2GlyphPath) pushPrevElem(hintmap *cf2HintMap, nextP0 *Vector, nextP1
 		gp.currentDS = params.pt3
 	}
 
-	if !useIntersection || close {
-		if close {
+	if !useIntersection || closeTo {
+		if closeTo {
 			params.pt1 = gp.hintPoint(&gp.firstHintMap, cf2Fixed(nextP0.X), cf2Fixed(nextP0.Y))
 		} else {
 			params.pt1 = gp.hintPoint(hintmap, cf2Fixed(nextP0.X), cf2Fixed(nextP0.Y))
@@ -1734,7 +1740,7 @@ func doFlex(opStack *cf2Stack, curX, curY *cf2Fixed, glyphPath *cf2GlyphPath,
 	if isHFlex {
 		top = 9
 	}
-	for i := 0; i < top; i++ {
+	for i := range top {
 		vals[i+2] = vals[i]
 		if readFromStack[i] {
 			vals[i+2] += opStack.getReal(idx)
@@ -1863,18 +1869,18 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 
 		if font.isT1 {
 			// the first pass only collects the hints
-			if !initialMapReady && !(op1 == cmdHSTEM || op1 == cmdVSTEM || op1 == cmdHSBW ||
-				op1 == cmdCALLSUBR || op1 == cmdRETURN || op1 == cmdESC || op1 == cmdENDCHAR ||
-				op1 >= 32) {
+			if !initialMapReady && (op1 != cmdHSTEM && op1 != cmdVSTEM && op1 != cmdHSBW &&
+				op1 != cmdCALLSUBR && op1 != cmdRETURN && op1 != cmdESC && op1 != cmdENDCHAR &&
+				op1 < 32) {
 				opStack.clear()
 				continue
 			}
-			if resultCnt > 0 && !(op1 == cmdCALLSUBR || op1 == cmdRETURN || op1 == cmdESC ||
-				op1 >= 32) {
+			if resultCnt > 0 && (op1 != cmdCALLSUBR && op1 != cmdRETURN && op1 != cmdESC &&
+				op1 < 32) {
 				resultCnt = 0
 			}
 			// (op1 == cf2_escDIV compares with the ESC opcode)
-			if largeInt && !(op1 >= 32 || op1 == escDIV) {
+			if largeInt && (op1 < 32 && op1 != escDIV) {
 				largeInt = false
 			}
 		}
@@ -2249,7 +2255,7 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 						}
 						delta := opIdx + numPoints
 						values := opIdx
-						for nn := uint32(0); nn < numPoints; nn++ {
+						for range numPoints {
 							tmp := opStack.getReal(values)
 							for mm := uint32(1); mm < blend.numDesigns; mm++ {
 								tmp += cf2Fixed(mulFix(int64(opStack.getReal(delta)),
@@ -2510,11 +2516,14 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 					size := opStack.count()
 					if size > 0 {
 						var grIdx uint32
-						if idx < 0 {
+						switch {
+						case idx < 0:
 							grIdx = size - 1
-						} else if uint32(idx) >= size {
+
+						case uint32(idx) >= size:
 							grIdx = 0
-						} else {
+
+						default:
 							grIdx = size - 1 - uint32(idx)
 						}
 						opStack.pushFixed(opStack.getReal(grIdx))

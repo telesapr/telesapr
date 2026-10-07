@@ -1,7 +1,8 @@
 package ttf
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 	"strings"
 )
 
@@ -173,7 +174,7 @@ func (f *Face) loadHdmx() {
 		pos += recordSize
 	}
 	// glibc's qsort is a merge sort
-	sort.SliceStable(records, func(i, j int) bool { return records[i][0] < records[j][0] })
+	slices.SortStableFunc(records, func(a, b []byte) int { return cmp.Compare(a[0], b[0]) })
 	f.hdmxRecords = records
 }
 
@@ -184,11 +185,14 @@ func (f *Face) deviceMetrics(ppem uint32) []byte {
 	for lo < hi {
 		mid := (lo + hi) >> 1
 		r := f.hdmxRecords[mid]
-		if uint32(r[0]) > ppem {
+		switch {
+		case uint32(r[0]) > ppem:
 			hi = mid
-		} else if uint32(r[0]) < ppem {
+
+		case uint32(r[0]) < ppem:
 			lo = mid + 1
-		} else {
+
+		default:
 			return r[2:]
 		}
 	}
@@ -451,7 +455,7 @@ func (f *Face) runPrep() error {
 	s := f.size
 	exec := s.exec
 	s.GS = ttDefaultGraphicsState
-	for i := 0; i < int(s.twilight.nPoints); i++ {
+	for i := range s.twilight.nPoints {
 		s.twilight.org[i] = Vector{}
 		s.twilight.cur[i] = Vector{}
 	}

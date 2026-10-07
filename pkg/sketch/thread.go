@@ -99,7 +99,7 @@ func (o ThreadOptions) layout(circleR float64) (threadLayout, error) {
 // CheckThread reports why AddThread would refuse to make the thread,
 // without changing anything.
 func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error {
-	circle := sk.GetEntity(he)
+	circle := sk.Entity(he)
 	if circle == nil || !circle.IsCircle() {
 		return errors.New("thread must be made on a circle or an arc")
 	}
@@ -127,14 +127,14 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 	if err := sk.CheckThread(he, o); err != nil {
 		return ThreadResult{}, err
 	}
-	circle := sk.GetEntity(he)
+	circle := sk.Entity(he)
 	center := circle.Point[0]
 	radius := circle.CircleGetRadiusNum(sk)
 	l, _ := o.layout(radius)
 	p := l.profile
 
-	origin := sk.MustGetEntity(center).PointGetNum(sk)
-	q := sk.MustGetEntity(circle.Normal).NormalGetNum(sk)
+	origin := sk.MustEntity(center).PointGetNum(sk)
+	q := sk.MustEntity(circle.Normal).NormalGetNum(sk)
 	along := 1.0
 	if o.Reverse {
 		along = -1
@@ -177,8 +177,8 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 	// line draws a line segment of the active sketch.
 	line := func(r0, z0, r1, z1 float64) core.HRequest {
 		hr := sk.AddRequestOfType(RequestLineSegment, false)
-		sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, at(r0, z0))
-		sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, at(r1, z1))
+		sk.MustEntity(hr.Entity(1)).PointForceTo(sk, at(r0, z0))
+		sk.MustEntity(hr.Entity(2)).PointForceTo(sk, at(r1, z1))
 		return hr
 	}
 	closeLoop := func(lines []core.HRequest) {
@@ -308,7 +308,7 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 // solidIsSound tells whether the group's Boolean succeeded and the
 // mesh of its solid is watertight and doesn't cross itself.
 func (sk *Sketch) solidIsSound(hg core.HGroup) bool {
-	g := sk.GetGroup(hg)
+	g := sk.Group(hg)
 	if g.BooleanFailed {
 		return false
 	}
@@ -338,16 +338,16 @@ func (sk *Sketch) nextGroupHandle() core.HGroup {
 func (sk *Sketch) addGroupAfterActive(g Group) *Group {
 	g.Visible = true
 	g.Scale = 1
-	g.Color = core.NewRgbaColor(100, 100, 100, 255)
+	g.Color = core.NewRGBA(100, 100, 100, 255)
 	active := sk.ActiveGroup()
 	if g.IsMeshGroup() {
-		if running := sk.GetRunningMeshGroupFor(active); running != nil {
+		if running := sk.RunningMeshGroupFor(active); running != nil {
 			g.Color = running.Color
 		}
 	}
 	afterActive := false
 	for _, hg := range sk.GroupOrder {
-		gi := sk.GetGroup(hg)
+		gi := sk.Group(hg)
 		if afterActive {
 			gi.Order++
 		}
@@ -357,8 +357,8 @@ func (sk *Sketch) addGroupAfterActive(g Group) *Group {
 		}
 	}
 	hg := sk.AddGroup(g)
-	sk.GetGroup(hg).Clean = false
+	sk.Group(hg).Clean = false
 	sk.Active = hg
 	sk.GenerateAllTyped(GenerateRegen)
-	return sk.GetGroup(hg)
+	return sk.Group(hg)
 }

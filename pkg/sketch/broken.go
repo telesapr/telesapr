@@ -76,7 +76,7 @@ func (sk *Sketch) rememberNames() {
 func (sk *Sketch) GroupName(h core.HGroup) string { return sk.anyGroupName(h) }
 
 func (sk *Sketch) anyGroupName(h core.HGroup) string {
-	if g := sk.GetGroup(h); g != nil {
+	if g := sk.Group(h); g != nil {
 		return g.DescriptionString()
 	}
 	if name, ok := sk.names.groups[h]; ok {
@@ -95,7 +95,7 @@ func (sk *Sketch) EntityName(he core.HEntity) string { return sk.entityName(he) 
 
 func (sk *Sketch) entityName(he core.HEntity) string {
 	if he.IsFromRequest() {
-		if r := sk.GetRequest(he.Request()); r != nil {
+		if r := sk.Request(he.Request()); r != nil {
 			return r.DescriptionString() + " of " + sk.anyGroupName(r.Group)
 		}
 		if r, ok := sk.names.requests[he.Request()]; ok {

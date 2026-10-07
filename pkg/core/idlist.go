@@ -2,39 +2,39 @@ package core
 
 import (
 	"maps"
-	"sort"
+	"slices"
 )
 
-// IdList is a Go analogue of the C++ IdList<T, H>: a handle-keyed
+// IDList is a Go analogue of the C++ IDList<T, H>: a handle-keyed
 // container that preserves insertion order and supports efficient
 // lookup by handle. It is implemented as a slice paired with a
 // handle->index map so it can be extended during iteration (the
 // canonical SolveSpace pattern of "the slice may realloc, but the
 // handle stays stable").
-type IdList[H comparable, T any] struct {
+type IDList[H comparable, T any] struct {
 	Items []T
 	Index map[H]int
 }
 
-// NewIdList returns an empty IdList with optional capacity hints.
-func NewIdList[H comparable, T any](cap int) IdList[H, T] {
-	return IdList[H, T]{
-		Items: make([]T, 0, cap),
-		Index: make(map[H]int, cap),
+// NewIDList returns an empty IDList with optional capacity hints.
+func NewIDList[H comparable, T any](n int) IDList[H, T] {
+	return IDList[H, T]{
+		Items: make([]T, 0, n),
+		Index: make(map[H]int, n),
 	}
 }
 
 // Len reports the number of items in the list.
-func (l *IdList[H, T]) Len() int { return len(l.Items) }
+func (l *IDList[H, T]) Len() int { return len(l.Items) }
 
 // At returns the item at index i without bounds checking.
-func (l *IdList[H, T]) At(i int) T { return l.Items[i] }
+func (l *IDList[H, T]) At(i int) T { return l.Items[i] }
 
 // Set overwrites the item at index i.
-func (l *IdList[H, T]) Set(i int, v T) { l.Items[i] = v }
+func (l *IDList[H, T]) Set(i int, v T) { l.Items[i] = v }
 
 // Add appends an item to the list, with the caller-supplied handle.
-func (l *IdList[H, T]) Add(h H, v T) int {
+func (l *IDList[H, T]) Add(h H, v T) int {
 	idx := len(l.Items)
 	l.Items = append(l.Items, v)
 	if l.Index == nil {
@@ -45,7 +45,7 @@ func (l *IdList[H, T]) Add(h H, v T) int {
 }
 
 // Clear removes all items.
-func (l *IdList[H, T]) Clear() {
+func (l *IDList[H, T]) Clear() {
 	l.Items = l.Items[:0]
 	if l.Index != nil {
 		for k := range l.Index {
@@ -55,7 +55,7 @@ func (l *IdList[H, T]) Clear() {
 }
 
 // Reserve ensures the underlying slice has capacity for at least n more items.
-func (l *IdList[H, T]) Reserve(n int) {
+func (l *IDList[H, T]) Reserve(n int) {
 	if cap(l.Items)-len(l.Items) < n {
 		grown := make([]T, len(l.Items), len(l.Items)+n)
 		copy(grown, l.Items)
@@ -64,7 +64,7 @@ func (l *IdList[H, T]) Reserve(n int) {
 }
 
 // ReserveMore ensures capacity for at least n total items.
-func (l *IdList[H, T]) ReserveMore(n int) {
+func (l *IDList[H, T]) ReserveMore(n int) {
 	if cap(l.Items) < n {
 		grown := make([]T, len(l.Items), n)
 		copy(grown, l.Items)
@@ -74,7 +74,7 @@ func (l *IdList[H, T]) ReserveMore(n int) {
 
 // MoveSelfInto transfers ownership of all items from src into dst,
 // clearing src. Used to copy param/entity lists during regeneration.
-func (l *IdList[H, T]) MoveSelfInto(dst *IdList[H, T]) {
+func (l *IDList[H, T]) MoveSelfInto(dst *IDList[H, T]) {
 	dst.Items = append(dst.Items, l.Items...)
 	if dst.Index == nil {
 		dst.Index = make(map[H]int, len(l.Index))
@@ -83,8 +83,8 @@ func (l *IdList[H, T]) MoveSelfInto(dst *IdList[H, T]) {
 	l.Clear()
 }
 
-// FindById returns the item for handle h and true, or zero/false if absent.
-func (l *IdList[H, T]) FindById(h H) (T, bool) {
+// FindByID returns the item for handle h and true, or zero/false if absent.
+func (l *IDList[H, T]) FindByID(h H) (T, bool) {
 	if l.Index == nil {
 		var zero T
 		return zero, false
@@ -97,13 +97,8 @@ func (l *IdList[H, T]) FindById(h H) (T, bool) {
 	return l.Items[i], true
 }
 
-// FindByIdNoOops is the "no_oops" variant: returns zero/false if absent.
-func (l *IdList[H, T]) FindByIdNoOops(h H) (T, bool) {
-	return l.FindById(h)
-}
-
-// FindByIdPtr returns a pointer to the item for handle h, or nil if absent.
-func (l *IdList[H, T]) FindByIdPtr(h H) *T {
+// FindByIDPtr returns a pointer to the item for handle h, or nil if absent.
+func (l *IDList[H, T]) FindByIDPtr(h H) *T {
 	if l.Index == nil {
 		return nil
 	}
@@ -115,12 +110,21 @@ func (l *IdList[H, T]) FindByIdPtr(h H) *T {
 }
 
 // SortedHandles returns all handles in insertion order.
-func (l *IdList[H, T]) SortedHandles(less func(a, b H) bool) []H {
+func (l *IDList[H, T]) SortedHandles(less func(a, b H) bool) []H {
 	out := make([]H, 0, len(l.Index))
 	for h := range l.Index {
 		out = append(out, h)
 	}
-	sort.Slice(out, func(i, j int) bool { return less(out[i], out[j]) })
+	slices.SortFunc(out, func(a, b H) int {
+		less := func(a, b H) bool { return less(a, b) }
+		switch {
+		case less(a, b):
+			return -1
+		case less(b, a):
+			return 1
+		}
+		return 0
+	})
 	return out
 }
 
@@ -129,7 +133,7 @@ func (l *IdList[H, T]) SortedHandles(less func(a, b H) bool) []H {
 // stable order should sort or use SortedHandles. If callers want
 // insertion order they should walk Items directly and key their own
 // reverse map.
-func (l *IdList[H, T]) IDs() []H {
+func (l *IDList[H, T]) IDs() []H {
 	out := make([]H, 0, len(l.Index))
 	for h := range l.Index {
 		out = append(out, h)

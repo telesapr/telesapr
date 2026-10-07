@@ -71,10 +71,10 @@ func (l *SBezierList) ScaleSelfBy(s float64) {
 	}
 }
 
-// GetBoundingProjd extends the box (min, max) to contain the
+// BoundingProjd extends the box (min, max) to contain the
 // projection of every control point onto the axis through orig in
 // direction u.
-func (l *SBezierList) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
+func (l *SBezierList) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 	for i := range l.Curves {
 		for j := 0; j <= l.Curves[i].Degree; j++ {
 			v := l.Curves[i].Ctrl[j]
@@ -89,12 +89,12 @@ func (l *SBezierList) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64)
 	}
 }
 
-// GetPlaneContainingBeziers finds a plane that contains all the curves in
+// PlaneContainingBeziers finds a plane that contains all the curves in
 // this list. If the curves are all colinear (or coincident, or empty),
 // then that plane is not exactly determined but we choose the additional
 // degree(s) of freedom arbitrarily. Returns true if all curves are
 // coplanar, otherwise false.
-func (l *SBezierList) GetPlaneContainingBeziers(p, u, v *geom.Vector, notCoplanarAt *geom.Vector) bool {
+func (l *SBezierList) PlaneContainingBeziers(p, u, v *geom.Vector, notCoplanarAt *geom.Vector) bool {
 	var pt, ptFar, ptOffLine geom.Vector
 	if l.Len() > 0 {
 		pt = l.Curves[0].Start()
