@@ -123,7 +123,7 @@ var drawFixtures = []string{
 // default view and a rotated one, bit for bit.
 func TestDrawCalls(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
-	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
+	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range drawFixtures {
 		t.Run(f, func(t *testing.T) {
 			goldenPath := filepath.Join(root, "draw", strings.TrimSuffix(f, ".slvs")+".draw")

@@ -222,7 +222,7 @@ func (d *Doc) Text(text, font string, at Vec, height float64) Entity {
 	return d.request(sketch.RequestTTFText, needWorkplane("text"), func(sk *sketch.Sketch, hr core.HRequest) {
 		r := sk.Request(hr)
 		r.Str, r.Font = text, font
-		aspect := ttf.Fonts.AspectRatio(font, text, false)
+		aspect := d.h.Sketch().FontList().AspectRatio(font, text, false)
 		if aspect == 0 {
 			fail("the font '%s' isn't there, or has none of '%s'", font, text)
 		}

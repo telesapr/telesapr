@@ -11,6 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/solver"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 // GenerateAll regenerates the whole model: every group's entities
@@ -703,6 +704,14 @@ func (sk *Sketch) SegmentLimit() int {
 		return sk.MaxSegments
 	}
 	return 20
+}
+
+// FontList is Fonts, or ttf.DefaultFonts.
+func (sk *Sketch) FontList() *ttf.FontList {
+	if sk.Fonts == nil {
+		return ttf.DefaultFonts
+	}
+	return sk.Fonts
 }
 
 // SettingsStore is Settings, or a store that keeps nothing.

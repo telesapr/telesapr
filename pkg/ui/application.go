@@ -173,6 +173,8 @@ type Application struct {
 
 	// bitmapFont is the text font the canvases share.
 	bitmapFont *res.BitmapFont
+	// fonts are the platform's fonts, which text entities draw with.
+	fonts *ttf.FontList
 
 	// pixmaps are the image requests' pictures, converted for drawing.
 	pixmaps map[*sketch.Image]*res.Pixmap
@@ -736,7 +738,12 @@ func (ss *Application) CameraTangent() float64 {
 }
 
 // Fonts is the TrueType fonts the sketch can use.
-func (ss *Application) Fonts() *ttf.FontList { return &ttf.Fonts }
+func (ss *Application) Fonts() *ttf.FontList {
+	if ss.fonts == nil {
+		return ttf.DefaultFonts
+	}
+	return ss.fonts
+}
 
 // cFormatG is C's "%.*g": a negative precision means the default, 6.
 func cFormatG(prec int, v float64) string {

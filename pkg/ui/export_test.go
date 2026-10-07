@@ -38,7 +38,7 @@ var exportFixtures = []string{
 // byte for byte.
 func TestExport(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
-	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
+	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range exportFixtures {
 		t.Run(f, func(t *testing.T) {
 			gotDir := t.TempDir()

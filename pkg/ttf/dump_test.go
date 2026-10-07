@@ -28,12 +28,11 @@ func hexFloat(x float64) string {
 // dump is what the C++ harness that recorded the first goldens printed,
 // for the fonts in files and the strings strs.
 func dump(files []string, strs []string) string {
-	SetFontFiles(files)
-	defer SetFontFiles(nil)
+	fl := NewFontList(files)
 
 	var b strings.Builder
 	var names []string
-	for _, tf := range Fonts.List() {
+	for _, tf := range fl.List() {
 		fmt.Fprintf(&b, "font %s|%s\n", tf.FontFileBaseName(), tf.Name)
 		names = append(names, tf.FontFileBaseName())
 	}
@@ -42,7 +41,7 @@ func dump(files []string, strs []string) string {
 	u := geom.Vector{X: 0.3, Y: 0.4, Z: 0.1}
 	v := geom.Vector{X: -0.2, Y: 0.7, Z: 0.5}
 	for _, file := range names {
-		tf := Fonts.LoadFont(file)
+		tf := fl.LoadFont(file)
 		capHeight := 0.0
 		if tf != nil {
 			capHeight = tf.CapHeight
@@ -50,9 +49,9 @@ func dump(files []string, strs []string) string {
 		fmt.Fprintf(&b, "load %s %s\n", file, hexFloat(capHeight))
 		for i, str := range strs {
 			for kerning := range 2 {
-				ar := Fonts.AspectRatio(file, str, kerning != 0)
+				ar := fl.AspectRatio(file, str, kerning != 0)
 				var sbl srf.SBezierList
-				Fonts.PlotString(file, str, &sbl, kerning != 0, origin, u, v)
+				fl.PlotString(file, str, &sbl, kerning != 0, origin, u, v)
 				fmt.Fprintf(&b, "str %d %d %s %d\n", i, kerning, hexFloat(ar), len(sbl.Curves))
 				for _, sb := range sbl.Curves {
 					fmt.Fprintf(&b, "b %d", sb.Degree)

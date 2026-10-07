@@ -17,7 +17,16 @@ func (ss *Application) Init() {
 	// A missing linked file is looked for through the dialogs.
 	link.LocateMissingFile = ss.locateMissingFile
 	link.ImageCorrupted = func(file string) { ss.Error("The image '%s' is corrupted.", file) }
-	ttf.SetFontFiles(ss.Platform.FontFiles())
+	// The platform's fonts, for the sketches the application edits and,
+	// through the default, for the linked parts read outside them; a
+	// platform with none, as the headless one in tests, keeps the
+	// default as it is.
+	if files := ss.Platform.FontFiles(); len(files) > 0 {
+		ss.fonts = ttf.NewFontList(files)
+		ttf.DefaultFonts = ss.fonts
+	} else {
+		ss.fonts = ttf.DefaultFonts
+	}
 
 	ss.refreshTimer = ss.Platform.CreateTimer()
 	ss.refreshTimer.SetOnTimeout(ss.Refresh)
@@ -54,6 +63,8 @@ func (ss *Application) Init() {
 // view, the show flags and the event loop.
 func (ss *Application) setSketch(sk *sketch.Sketch) {
 	ss.SK = sk
+	sk.Fonts = ss.fonts
+	sk.Settings = ss.Settings
 	ss.ViewUnits = sk.Units
 	sk.View = &ss.GW.view
 	sk.Show = &ss.GW.show

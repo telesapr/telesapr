@@ -40,7 +40,7 @@ func (sk *Sketch) NewShellJob() *ShellJob {
 	c := &Sketch{
 		Units: st.Units, Active: st.Active,
 		ChordTolPct: sk.ChordTolPct, CheckClosedContour: sk.CheckClosedContour,
-		Images: sk.Images,
+		Images: sk.Images, Fonts: sk.Fonts, Settings: sk.Settings,
 	}
 	clone := sk.cloneState(st)
 	c.Groups, c.GroupOrder, c.Requests, c.Constraints = clone.Groups, clone.GroupOrder, clone.Requests, clone.Constraints

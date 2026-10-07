@@ -63,7 +63,7 @@ func TestText(t *testing.T) {
 	if text.Kind() != "text" {
 		t.Fatalf("the text is a %s", text.Kind())
 	}
-	aspect := ttf.Fonts.AspectRatio(ttf.EmbeddedFont, "Abc", false)
+	aspect := ttf.DefaultFonts.AspectRatio(ttf.EmbeddedFont, "Abc", false)
 	pts := text.Points()
 	if len(pts) != 4 {
 		t.Fatalf("the text has %d points", len(pts))

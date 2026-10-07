@@ -83,7 +83,7 @@ func runUIScriptWith(t testing.TB, name string, setup func(r *uiScriptRunner)) s
 // newUIScriptRunner starts the application, as the harness does.
 func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	root := filepath.Join("..", "..", "testdata")
-	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
+	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})
 
 	// The save goes where the harness's mktemp -d puts its own, one
 	// folder under the temporary directory: a linked file is saved

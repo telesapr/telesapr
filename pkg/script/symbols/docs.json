@@ -6118,6 +6118,10 @@
 						"decl": "func (rt *Runtime) Entity(h core.HEntity) (*core.Entity, error)",
 						"text": "Entity retrieves an entity by handle."
 					},
+					"FontList": {
+						"decl": "func (rt *Runtime) FontList() *ttf.FontList",
+						"text": "StyleForEntity is the style entity h draws in; part of the EntityBezierResolver interface."
+					},
 					"Group": {
 						"decl": "func (rt *Runtime) Group(h core.HGroup) (*Group, error)",
 						"text": "Group retrieves a group by handle."
@@ -6167,8 +6171,7 @@
 						"text": "Style retrieves a style by handle."
 					},
 					"StyleForEntity": {
-						"decl": "func (rt *Runtime) StyleForEntity(h core.HEntity) core.HStyle",
-						"text": "StyleForEntity is the style entity h draws in; part of the EntityBezierResolver interface."
+						"decl": "func (rt *Runtime) StyleForEntity(h core.HEntity) core.HStyle"
 					}
 				},
 				"makers": [
@@ -6446,6 +6449,10 @@
 					"FixConstraintsForRequestBeingDeleted": {
 						"decl": "func (sk *Sketch) FixConstraintsForRequestBeingDeleted(hr core.HRequest)",
 						"text": "FixConstraintsForRequestBeingDeleted keeps the points made coincident through a point of request hr, which is being deleted, coincident (C++ GraphicsWindow::FixConstraintsForRequestBeingDeleted)."
+					},
+					"FontList": {
+						"decl": "func (sk *Sketch) FontList() *ttf.FontList",
+						"text": "FontList is Fonts, or ttf.DefaultFonts."
 					},
 					"ForceReferences": {
 						"decl": "func (sk *Sketch) ForceReferences()",

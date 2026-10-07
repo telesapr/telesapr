@@ -83,7 +83,7 @@ func testDumpVsGolden(t *testing.T, fonts []string, strsFile, goldenFile string)
 
 // A text request in the builtin font finds it.
 func TestEmbeddedFontFound(t *testing.T) {
-	if Fonts.LoadFont(EmbeddedFont) == nil || Fonts.AspectRatio(EmbeddedFont, "Abc", false) <= 0 {
+	if DefaultFonts.LoadFont(EmbeddedFont) == nil || DefaultFonts.AspectRatio(EmbeddedFont, "Abc", false) <= 0 {
 		t.Errorf("the builtin font isn't found by the name text requests store, %q", EmbeddedFont)
 	}
 }

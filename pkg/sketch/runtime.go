@@ -6,6 +6,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 // Runtime provides quick handle-based lookup for a Sketch.
@@ -206,6 +207,9 @@ func (rt *Runtime) Normal(h core.HEntity) (geom.Quaternion, error) {
 
 // StyleForEntity is the style entity h draws in; part of the
 // EntityBezierResolver interface.
+// FontList is the sketch's font list.
+func (rt *Runtime) FontList() *ttf.FontList { return rt.Sketch.FontList() }
+
 func (rt *Runtime) StyleForEntity(h core.HEntity) core.HStyle {
 	return rt.Sketch.StyleForEntity(h)
 }

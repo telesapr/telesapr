@@ -26,20 +26,11 @@ const builtinFontResource = "res://fonts/BitstreamVeraSans-Roman-builtin.ttf"
 // resource path, which matches no font).
 const EmbeddedFont = "BitstreamVeraSans-Roman-builtin.ttf"
 
-// FontFiles are the font files the font list reads (C++
-// Platform::GetFontFiles, which the headless build takes from its
-// fontFiles list). Change them with SetFontFiles.
-var FontFiles []string
-
-// Fonts is the font list (C++ SS.fonts).
-var Fonts FontList
-
-// SetFontFiles makes files the font files, and has the font list read
-// them again the next time it's used.
-func SetFontFiles(files []string) {
-	FontFiles = append([]string(nil), files...)
-	Fonts = FontList{}
-}
+// DefaultFonts is the font list of a sketch that has none of its own:
+// the builtin font alone, until the program sets it once at startup
+// to the platform's fonts, as the application does, or a test's
+// TestMain to the fonts its fixtures use.
+var DefaultFonts = NewFontList(nil)
 
 // Font is a TtfFont.
 type Font struct {
@@ -49,10 +40,17 @@ type Font struct {
 	CapHeight float64
 }
 
-// FontList is a TtfFontList.
+// FontList is the fonts of a set of font files and the builtin font,
+// read when first used.
 type FontList struct {
+	files  []string
 	l      []Font
 	loaded bool
+}
+
+// NewFontList is the font list of files, read when first used.
+func NewFontList(files []string) *FontList {
+	return &FontList{files: append([]string(nil), files...)}
 }
 
 // FontFileBaseName is the basename of the font's file; that's how the
@@ -136,7 +134,7 @@ func (fl *FontList) LoadAll() {
 	if fl.loaded {
 		return
 	}
-	for _, file := range FontFiles {
+	for _, file := range fl.files {
 		tf := Font{FontFile: file}
 		if tf.load(false) {
 			fl.l = append(fl.l, tf)

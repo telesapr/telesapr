@@ -58,7 +58,7 @@ var textwinFixtures = []string{
 // the golden (testdata/textwin, first recorded from C++).
 func TestTextWindow(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
-	ttf.SetFontFiles([]string{filepath.Join(root, "Gentium-R.ttf")})
+	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range textwinFixtures {
 		t.Run(f, func(t *testing.T) {
 			goldenPath := filepath.Join(root, "textwin", strings.TrimSuffix(f, ".slvs")+".textwin")

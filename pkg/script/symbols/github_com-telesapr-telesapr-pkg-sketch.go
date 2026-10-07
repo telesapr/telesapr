@@ -6,6 +6,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/ttf"
 	"go/constant"
 	"go/token"
 	"reflect"
@@ -181,12 +182,16 @@ func init() {
 // _github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver is an interface wrapper for EntityBezierResolver type
 type _github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver struct {
 	IValue          interface{}
+	WFontList       func() *ttf.FontList
 	WNormal         func(a0 core.HEntity) (geom.Quaternion, error)
 	WPoint          func(a0 core.HEntity) (geom.Vector, error)
 	WRadius         func(a0 core.HEntity) (float64, error)
 	WStyleForEntity func(a0 core.HEntity) core.HStyle
 }
 
+func (W _github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver) FontList() *ttf.FontList {
+	return W.WFontList()
+}
 func (W _github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver) Normal(a0 core.HEntity) (geom.Quaternion, error) {
 	return W.WNormal(a0)
 }

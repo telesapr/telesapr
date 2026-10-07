@@ -125,7 +125,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 		u := v.Cross(n).WithMagnitude(v.Magnitude())
 
 		// `ExtraPoints` is storing kerning boolean
-		ttf.Fonts.PlotString(e.Font, e.Str, beziers, e.ExtraPoints != 0, botLeft, u, v)
+		rt.FontList().PlotString(e.Font, e.Str, beziers, e.ExtraPoints != 0, botLeft, u, v)
 	}
 
 	// Record our style for all of the Beziers that we just created.
@@ -363,4 +363,6 @@ type EntityBezierResolver interface {
 	// StyleForEntity is the style the entity draws in (C++
 	// Style::ForEntity).
 	StyleForEntity(core.HEntity) core.HStyle
+	// FontList is the font list text entities are drawn with.
+	FontList() *ttf.FontList
 }

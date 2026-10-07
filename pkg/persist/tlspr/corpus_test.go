@@ -20,7 +20,7 @@ var testdata = filepath.Join("..", "..", "..", "testdata")
 
 // TestMain gives TrueType text the font the fixtures use.
 func TestMain(m *testing.M) {
-	ttf.SetFontFiles([]string{filepath.Join(testdata, "Gentium-R.ttf")})
+	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(testdata, "Gentium-R.ttf")})
 	os.Exit(m.Run())
 }
 

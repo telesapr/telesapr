@@ -7,6 +7,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 type Sketch struct {
@@ -81,6 +82,10 @@ type Sketch struct {
 	// ChordTolPct is the display chord tolerance as a percentage of the
 	// model's size (C++ SS.chordTol); 0 is the default, 0.1.
 	ChordTolPct float64
+
+	// Fonts is the font list text entities are drawn with; nil for
+	// ttf.DefaultFonts.
+	Fonts *ttf.FontList
 
 	// Settings is the user's settings store, which the default styles
 	// are read from and saved to; nil for none.
