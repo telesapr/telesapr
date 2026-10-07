@@ -87,7 +87,7 @@ func BenchmarkGroupFreedom(b *testing.B) {
 	sk := doc.Sketch
 	sk.GenerateAll()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		sk.Generation++ // as a regeneration would, so the cache is missed
 		sk.GroupFreedom(hg)
 	}
@@ -99,7 +99,7 @@ func BenchmarkRegenerateLargest(b *testing.B) {
 	sk := doc.Sketch
 	sk.GenerateAll()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		sk.GenerateAll()
 	}
 }

@@ -15,7 +15,7 @@ func rbv(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 // four quarter patches.
 func rbCylinder(rad, h float64) *srf.SShell {
 	var out []srf.SBezier
-	for k := 0; k < 4; k++ {
+	for k := range 4 {
 		a := float64(k) * math.Pi / 2
 		b := a + math.Pi/2
 		pa := rbv(rad*math.Cos(a), rad*math.Sin(a), 0)

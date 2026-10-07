@@ -540,7 +540,7 @@ func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 		tCurve = 1.0
 	}
 
-	for i := 0; i < 30; i++ {
+	for range 30 {
 		// Approximate the surface by a plane
 		ps := s.PointAt(u, v)
 		var tu, tv geom.Vector
@@ -820,7 +820,7 @@ func (s *SSurface) DepartureFromCoplanar() float64 {
 // line through p0 and p1 meets the surface, trying the surface's edge
 // if that fails (C++ SSurface::PointIntersectingLine).
 func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool {
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		var tu, tv geom.Vector
 		p := s.PointAt(*u, *v)
 		s.TangentsAt(*u, *v, &tu, &tv, true)
@@ -964,11 +964,11 @@ func (s *SSurface) PointOnSurfaces(s1, s2 *SSurface, up, vp *float64) {
 	srf[1].ClosestPointToUV(p, &u[1], &v[1], false)
 	srf[2].ClosestPointToUV(p, &u[2], &v[2], false)
 
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		// Approximate each surface by a plane
 		var pj, tu, tv, n [3]geom.Vector
 		var d [3]float64
-		for j := 0; j < 3; j++ {
+		for j := range 3 {
 			pj[j] = srf[j].PointAt(u[j], v[j])
 			srf[j].TangentsAt(u[j], v[j], &tu[j], &tv[j], true)
 			n[j] = tu[j].Cross(tv[j]).WithMagnitude(1)
@@ -989,7 +989,7 @@ func (s *SSurface) PointOnSurfaces(s1, s2 *SSurface, up, vp *float64) {
 			pi = pj[0].Plus(pj[1]).Plus(pj[2]).ScaledBy(1.0 / 3.0)
 		}
 
-		for j := 0; j < 3; j++ {
+		for j := range 3 {
 			du, dv := uvStepToward(tu[j], tv[j], pi.Minus(pj[j]))
 			u[j] += du
 			v[j] += dv
@@ -1006,15 +1006,15 @@ func (s *SSurface) ClosestPointOnThisAndSurface(srf2 *SSurface, p geom.Vector) g
 	var puv [2]geom.Point2d
 	srf := [2]*SSurface{s, srf2}
 
-	for j := 0; j < 2; j++ {
+	for j := range 2 {
 		srf[j].ClosestPointTo(p, &puv[j], false)
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		var tu, tv, cp, n [2]geom.Vector
 		var d [2]float64
 
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			srf[j].TangentsAt(puv[j].U, puv[j].V, &tu[j], &tv[j], true)
 
 			cp[j] = srf[j].PointAtUv(puv[j])
@@ -1033,7 +1033,7 @@ func (s *SSurface) ClosestPointOnThisAndSurface(srf2 *SSurface, p geom.Vector) g
 		pc := p.ClosestPointOnLine(p0, dp)
 
 		// Adjust our guess and iterate
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			du, dv := uvStepToward(tu[j], tv[j], pc.Minus(cp[j]))
 			puv[j].U += du
 			puv[j].V += dv

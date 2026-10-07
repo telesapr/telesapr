@@ -14,9 +14,9 @@ func (ss *Application) MenuConstrain(id Command) {
 	sk := ss.SK
 	var newcons []*core.Constraint
 
-	c := core.Constraint{}
-	c.Group = gw.activeGroupH()
-	c.Workplane = gw.ActiveWorkplane()
+	c := core.Constraint{
+		Group:     gw.activeGroupH(),
+		Workplane: gw.ActiveWorkplane()}
 
 	gw.GroupSelection()
 	gs := &gw.gs
@@ -118,7 +118,7 @@ func (ss *Application) MenuConstrain(id Command) {
 		case gs.points == 1 && gs.faces >= 1 && gs.n == gs.points+gs.faces:
 			c.Type = core.ConstraintPtOnFace
 			c.PtA = gs.point[0]
-			for k := 0; k < gs.faces; k++ {
+			for k := range gs.faces {
 				c.EntityA = gs.face[k]
 				pending = append(pending, c)
 			}

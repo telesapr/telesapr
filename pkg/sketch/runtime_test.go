@@ -185,11 +185,9 @@ func TestRuntimeRecalculateEntities(t *testing.T) {
 	sk.Params = append(sk.Params, px, py, pz)
 
 	ent := core.Entity{
-		EntityBase: core.EntityBase{
-			H:     core.HEntity{V: 0x00010000},
-			Type:  core.EntityPointIn3D,
-			Param: [8]core.HParam{px.H, py.H, pz.H},
-		},
+		H:     core.HEntity{V: 0x00010000},
+		Type:  core.EntityPointIn3D,
+		Param: [8]core.HParam{px.H, py.H, pz.H},
 	}
 	sk.Entities = append(sk.Entities, ent)
 

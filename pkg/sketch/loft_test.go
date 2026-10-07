@@ -109,7 +109,7 @@ func TestLoftTwist(t *testing.T) {
 	c := 1 / math.Sqrt2
 	eighth, threeEighths := twistedVolume(10, 100, c, math.Pi/4), twistedVolume(10, 100, c, 3*math.Pi/4)
 	near := map[float64]int{}
-	for k := 0; k < 4; k++ {
+	for k := range 4 {
 		l.SetTurn(k)
 		r := l.Check()
 		for _, want := range []float64{eighth, threeEighths} {
@@ -132,7 +132,7 @@ func ngon(d *api.Doc, n int, r, z float64) {
 		return
 	}
 	var pts []api.Vec
-	for k := 0; k < n; k++ {
+	for k := range n {
 		a := 2 * math.Pi * float64(k) / float64(n)
 		pts = append(pts, api.V(r*math.Cos(a), r*math.Sin(a), z))
 	}
@@ -274,7 +274,7 @@ func TestSmoothLoftGroup(t *testing.T) {
 	// are smooth within the two spans across.
 	want := 0.0
 	const n = 4000
-	for k := 0; k < n; k++ {
+	for k := range n {
 		a, b := bs.PointAt(0, float64(k)/n), bs.PointAt(0, float64(k+1)/n)
 		ra, rb := math.Hypot(a.X, a.Y), math.Hypot(b.X, b.Y)
 		want += math.Pi * (ra*ra + rb*rb) / 2 * (b.Z - a.Z)
@@ -308,7 +308,7 @@ func TestSmoothLoftGroup(t *testing.T) {
 // four quarter arcs.
 func circleLoop(r, z float64) []srf.SBezier {
 	var out []srf.SBezier
-	for k := 0; k < 4; k++ {
+	for k := range 4 {
 		a0 := float64(k) * math.Pi / 2
 		sb := srf.SBezierFrom3(geom.Vector{X: r * math.Cos(a0), Y: r * math.Sin(a0), Z: z},
 			geom.Vector{X: r * math.Sqrt2 * math.Cos(a0+math.Pi/4), Y: r * math.Sqrt2 * math.Sin(a0+math.Pi/4), Z: z},

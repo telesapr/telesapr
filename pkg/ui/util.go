@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -10,8 +9,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
-
-func sprintf(format string, args ...any) string { return fmt.Sprintf(format, args...) }
 
 func vec3(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 

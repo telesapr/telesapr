@@ -316,7 +316,7 @@ func (f *Face) initFace() (uint32, error) {
 		return 0, errUnknownFormat
 	}
 	size := uint32(len(f.data))
-	for i := 0; i < numTables; i++ {
+	for range numTables {
 		var e tableEntry
 		e.tag = r.u32()
 		r.u32() // checksum
@@ -520,10 +520,7 @@ func (f *Face) loadLoca() error {
 	if f.indexToLocFormat != 0 {
 		shift = 2
 	}
-	tableLen := int64(len(loca))
-	if tableLen > 0x10000<<shift {
-		tableLen = 0x10000 << shift
-	}
+	tableLen := min(int64(len(loca)), 0x10000<<shift)
 	f.numLocations = tableLen >> shift
 
 	if f.numLocations != f.numGlyphs+1 && f.numLocations < f.numGlyphs+1 {
@@ -627,7 +624,7 @@ func (f *Face) loadNames() {
 		r.pos = storageStart
 		numLangTags := int(r.u16())
 		storageStart += 2 + 4*numLangTags
-		for i := 0; i < numLangTags; i++ {
+		for range numLangTags {
 			length := r.u16()
 			off := int(r.u16()) + storageOffset
 			if r.err != nil {
@@ -642,7 +639,7 @@ func (f *Face) loadNames() {
 	}
 
 	var recs []nameRecord
-	for i := 0; i < num; i++ {
+	for range num {
 		var rec nameRecord
 		rec.platformID = r.u16()
 		rec.encodingID = r.u16()
@@ -867,10 +864,7 @@ func (f *Face) kerning(left, right uint32) int64 {
 		p += 2
 		coverage := peek16(kern, p)
 		p += 2
-		next := base + length
-		if next > len(kern) {
-			next = len(kern)
-		}
+		next := min(base+length, len(kern))
 		if f.kernAvailBits&mask == 0 {
 			p = next
 			continue

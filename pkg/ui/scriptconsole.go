@@ -212,7 +212,7 @@ func (c *ScriptConsole) Submit(text string) {
 	}
 	c.start(func(ctx context.Context) func() {
 		more := false
-		for _, line := range strings.Split(text, "\n") {
+		for line := range strings.SplitSeq(text, "\n") {
 			shown, m, err := c.engine.Feed(ctx, line)
 			more = m
 			// Shown now, in its place among what the script prints.

@@ -97,7 +97,7 @@ func read255UShort(s *cffStream) (uint16, error) {
 // readBase128 is ReadBase128.
 func readBase128(s *cffStream) (uint64, error) {
 	var result uint64
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		code, err := s.readByte()
 		if err != nil {
 			return 0, err
@@ -227,7 +227,7 @@ func tripletDecode(flagsIn, in []byte, nPoints uint64, result []woff2Point) (uin
 		return 0, errInvalidTable
 	}
 	tripletIndex := uint64(0)
-	for i := uint64(0); i < nPoints; i++ {
+	for i := range nPoints {
 		flag := flagsIn[i]
 		onCurve := flag>>7 == 0
 		flag &= 0x7f

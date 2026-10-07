@@ -59,7 +59,7 @@ func expandKnots(mults []int, knots []float64) ([]float64, error) {
 	}
 	out := make([]float64, 0, total)
 	for i, m := range mults {
-		for j := 0; j < m; j++ {
+		for range m {
 			out = append(out, knots[i])
 		}
 	}

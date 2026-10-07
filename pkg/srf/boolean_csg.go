@@ -531,7 +531,7 @@ func findVertsOnCurve(out *[]geom.Vector, curve *SCurve, sh *SShell) {
 		ss := &sh.Surface[i]
 		for j := range ss.Trim {
 			stb := &ss.Trim[j]
-			for k := 0; k < 2; k++ {
+			for k := range 2 {
 				pt := stb.StartP
 				if k == 1 {
 					pt = stb.FinishP

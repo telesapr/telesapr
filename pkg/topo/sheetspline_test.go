@@ -16,7 +16,7 @@ import (
 // Patches that meet at a crease keep their knot.
 func TestGridSplineSmooth(t *testing.T) {
 	r := rand.New(rand.NewSource(271))
-	for trial := 0; trial < 24; trial++ {
+	for trial := range 24 {
 		du, dv := 1+r.Intn(4), 1+r.Intn(4)
 		nu, nv := du+2+r.Intn(4), dv+2+r.Intn(4)
 		s := lidSurface(r, du, dv, nu, nv, 1)

@@ -312,8 +312,7 @@ func (h *SketchHost) Save(path string) error {
 	}
 	h.sk.GenerateAll()
 	err := tlspr.SaveFile(h.sk, h.saveFile, path, tlspr.Options{})
-	var le *tlspr.LinkError
-	if errors.As(err, &le) {
+	if le, ok := errors.AsType[*tlspr.LinkError](err); ok {
 		return fmt.Errorf("the sketch links '%s', so it can only be saved on the same volume", le.Link)
 	}
 	if err != nil {

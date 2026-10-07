@@ -84,10 +84,7 @@ func (s *cffStream) read(n int64) ([]byte, error) {
 	if s.pos >= s.size() {
 		return nil, errInvalidStream
 	}
-	got := s.size() - s.pos
-	if got > n {
-		got = n
-	}
+	got := min(s.size()-s.pos, n)
 	b := s.data[s.pos : s.pos+got]
 	s.pos += got
 	if got < n {
@@ -516,10 +513,7 @@ func parseReal(d []byte, powerTen int64, scaling *int64) int64 {
 				*scaling = exponent - fractionLength + 1
 			} else {
 				if exponent > 0 {
-					newFractionLength := exponent
-					if newFractionLength > 5 {
-						newFractionLength = 5
-					}
+					newFractionLength := min(exponent, 5)
 					shift := newFractionLength - fractionLength
 					if shift > 0 {
 						exponent -= newFractionLength
@@ -968,7 +962,7 @@ func (cs *cffCharset) computeCIDs(numGlyphs uint32) {
 		return
 	}
 	var maxCID uint16
-	for i := uint32(0); i < numGlyphs; i++ {
+	for i := range numGlyphs {
 		if cs.sids[i] > maxCID {
 			maxCID = cs.sids[i]
 		}
@@ -1196,7 +1190,7 @@ func (b *cffBlend) buildVector(vsindex, lenNDV uint32, ndv []int64) error {
 		b.bv = append(b.bv, make([]int32, int(length)-len(b.bv))...)
 	}
 	b.lenBV = length
-	for master := uint32(0); master < length; master++ {
+	for master := range length {
 		if master == 0 {
 			b.bv[master] = 0x10000
 			continue
@@ -1211,7 +1205,7 @@ func (b *cffBlend) buildVector(vsindex, lenNDV uint32, ndv []int64) error {
 			continue
 		}
 		b.bv[master] = 0x10000
-		for j := uint32(0); j < lenNDV; j++ {
+		for j := range lenNDV {
 			axis := &varRegion[j]
 			if axis.peakCoord == ndv[j] || axis.peakCoord == 0 {
 				continue
@@ -1243,7 +1237,7 @@ func (b *cffBlend) checkVector(vsindex, lenNDV uint32, ndv []int64) bool {
 		return true
 	}
 	if lenNDV != 0 {
-		for i := uint32(0); i < lenNDV; i++ {
+		for i := range lenNDV {
 			if ndv[i] != b.lastNDV[i] {
 				return true
 			}
@@ -1332,10 +1326,7 @@ func (ps *cffParser) field(code uint32) (bool, error) {
 	// need is the table's argument check for a non-delta field.
 	need := func() bool { return numArgs >= 1 }
 	delta := func(arr []int64, count *byte, max int, fixed bool) {
-		n := numArgs
-		if n > max {
-			n = max
-		}
+		n := min(numArgs, max)
 		*count = byte(n)
 		var val int64
 		for i := 0; i < n; i++ {
@@ -1536,10 +1527,7 @@ func (ps *cffParser) field(code uint32) (bool, error) {
 		if !need() {
 			return false, errInvalidArg
 		}
-		top.maxstack = uint32(int32(num()))
-		if top.maxstack > cff2MaxStack {
-			top.maxstack = cff2MaxStack
-		}
+		top.maxstack = min(uint32(int32(num())), cff2MaxStack)
 		if top.maxstack < cff2DefaultStack {
 			top.maxstack = cff2DefaultStack
 		}
@@ -1668,7 +1656,7 @@ func (ps *cffParser) parseFontMatrix() error {
 	dict.hasFontMatrix = true
 	maxScaling := int64(minInt64)
 	minScaling := int64(maxInt64)
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		values[i] = parseFixedDynamic(ps.stack[i], &scalings[i])
 		if values[i] != 0 {
 			if scalings[i] > maxScaling {
@@ -1691,7 +1679,7 @@ func (ps *cffParser) parseFontMatrix() error {
 	if maxScaling < -9 || maxScaling > 0 || diff < 0 || diff > 9 {
 		return unlikely()
 	}
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		value := values[i]
 		if value == 0 {
 			continue
@@ -1748,7 +1736,7 @@ func (ps *cffParser) parseBlend() error {
 	} else {
 		base := count - numOperands
 		delta := base + numBlends
-		for i := uint32(0); i < numBlends; i++ {
+		for i := range numBlends {
 			sum := parseFixed(ps.stack[i+base])
 			for j := uint32(1); j < blend.lenBV; j++ {
 				sum += mulFix(parseFixed(ps.stack[delta]), int64(blend.bv[j]))
@@ -2019,7 +2007,7 @@ func loadEncoding(enc *cffEncoding, cs *cffCharset, numGlyphs uint32, s *cffStre
 					return err
 				}
 				enc.sids[glyphCode] = glyphSID
-				for gindex := uint32(0); gindex < numGlyphs; gindex++ {
+				for gindex := range numGlyphs {
 					if cs.sids[gindex] == glyphSID {
 						enc.codes[glyphCode] = uint16(gindex)
 						break
@@ -2039,7 +2027,7 @@ func loadEncoding(enc *cffEncoding, cs *cffCharset, numGlyphs uint32, s *cffStre
 	enc.offset = offset
 	enc.count = 0
 	cs.computeCIDs(numGlyphs)
-	for j := uint32(0); j < 256; j++ {
+	for j := range uint32(256) {
 		sid := uint32(enc.sids[j])
 		var gid uint32
 		if sid != 0 {

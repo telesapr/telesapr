@@ -72,7 +72,7 @@ func distinctInner(deg int, knots []float64) int {
 // back, and its points stay where they were.
 func TestRemoveKnotsGivesBack(t *testing.T) {
 	r := rand.New(rand.NewSource(27))
-	for trial := 0; trial < 40; trial++ {
+	for trial := range 40 {
 		du, dv := 1+r.Intn(4), 1+r.Intn(4)
 		nu, nv := du+1+r.Intn(4), dv+1+r.Intn(4)
 		s := randomSurface(r, du, dv, nu, nv, true)
@@ -91,7 +91,7 @@ func TestRemoveKnotsGivesBack(t *testing.T) {
 				trial, du, dv, n, len(f.KnotsU), len(f.KnotsV), want, len(s.KnotsU), len(s.KnotsV))
 		}
 		u0, u1, v0, v1 := s.Domain()
-		for k := 0; k < 20; k++ {
+		for range 20 {
 			u, v := u0+(u1-u0)*r.Float64(), v0+(v1-v0)*r.Float64()
 			if d := g.PointAt(u, v).Minus(s.PointAt(u, v)).Magnitude(); d > 1e-6 {
 				t.Errorf("trial %d: the surface moved %g at (%g, %g)", trial, d, u, v)
@@ -115,7 +115,7 @@ func TestRemoveKnotsKeepsCreases(t *testing.T) {
 		t.Errorf("a creased knot was taken out: %v from %v", g.KnotsU, f.KnotsU)
 	}
 	u0, u1, v0, v1 := f.Domain()
-	for k := 0; k < 50; k++ {
+	for range 50 {
 		u, v := u0+(u1-u0)*r.Float64(), v0+(v1-v0)*r.Float64()
 		if d := g.PointAt(u, v).Minus(f.PointAt(u, v)).Magnitude(); d > 1e-6 {
 			t.Errorf("the surface moved %g", d)

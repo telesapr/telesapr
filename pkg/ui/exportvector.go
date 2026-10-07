@@ -510,7 +510,7 @@ func (w *svgFileWriter) StartFile() {
 
 	exportStyle(core.HStyle{V: core.StyleNoStyle})
 	// Style::Get can add styles; C++ ranges over the list as it grows.
-	for i := 0; i < len(ss.SK.Styles); i++ {
+	for i := range len(ss.SK.Styles) {
 		exportStyle(ss.SK.Styles[i].H)
 	}
 	w.printf("]]></style>\r\n")
@@ -688,7 +688,7 @@ func (w *gcodeFileWriter) FinishAndCloseFile() {
 	var sp srf.SPolygon
 	w.sel.AssemblePolygon(&sp, nil, false)
 
-	for i := 0; i < ss.GCode.Passes; i++ {
+	for i := range ss.GCode.Passes {
 		depth := (ss.GCode.Depth / float64(ss.GCode.Passes)) * float64(i+1)
 
 		for _, sc := range sp.Contours {

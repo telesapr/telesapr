@@ -11,7 +11,7 @@ import (
 // quadratics.
 func quarterArcs(r, z float64) []SBezier {
 	var out []SBezier
-	for k := 0; k < 4; k++ {
+	for k := range 4 {
 		a0 := float64(k) * math.Pi / 2
 		a1 := a0 + math.Pi/2
 		sb := SBezierFrom3(geom.Vector{X: r * math.Cos(a0), Y: r * math.Sin(a0), Z: z},
@@ -59,7 +59,7 @@ func TestChainCurve(t *testing.T) {
 func TestSkin(t *testing.T) {
 	for _, k := range []int{2, 3, 4, 6} {
 		var secs []BSplineCurve
-		for s := 0; s < k; s++ {
+		for s := range k {
 			l := quarterArcs(4+float64(s*s%5), 3*float64(s)+float64(s*s)/4)
 			c, err := ChainCurve(l, 2)
 			if err != nil {
@@ -99,7 +99,7 @@ func TestSkinWithEnds(t *testing.T) {
 	for _, k := range []int{2, 3, 5} {
 		var secs []BSplineCurve
 		ts := make([]float64, k)
-		for s := 0; s < k; s++ {
+		for s := range k {
 			c, err := ChainCurve(quarterArcs(4+float64(s), 3*float64(s)), 2)
 			if err != nil {
 				t.Fatal(err)

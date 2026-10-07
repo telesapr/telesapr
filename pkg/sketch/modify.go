@@ -276,7 +276,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 	iters := 1000
 	t := [2]float64{0, 0}
 	var tp [2]float64
-	for i := 0; i < iters+20; i++ {
+	for i := range iters + 20 {
 		p0 := pc[0].pointAt(t[0])
 		p1 := pc[1].pointAt(t[1])
 		t0 := pc[0].tangentAt(t[0])
@@ -507,10 +507,10 @@ func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 			e0iPt := sk.MustGetEntity(r0i.Entity(0)).Point
 			ei1Pt := sk.MustGetEntity(ri1.Entity(0)).Point
 
-			for j := 0; j <= 3; j++ {
+			for j := range 4 {
 				sk.MustGetEntity(e0iPt[j]).PointForceTo(sk, b0i.Ctrl[j])
 			}
-			for j := 0; j <= 3; j++ {
+			for j := range 4 {
 				sk.MustGetEntity(ei1Pt[j]).PointForceTo(sk, bi1.Ctrl[j])
 			}
 
@@ -524,7 +524,7 @@ func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 			r := sk.AddRequestOfType(RequestCubic, false)
 			ePt := sk.MustGetEntity(r.Entity(0)).Point
 
-			for j := 0; j <= 3; j++ {
+			for j := range 4 {
 				sk.MustGetEntity(ePt[j]).PointForceTo(sk, sb.Ctrl[j])
 			}
 

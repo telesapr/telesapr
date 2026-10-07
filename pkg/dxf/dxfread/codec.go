@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"encoding/binary"
 	"io"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -126,12 +127,7 @@ func (c *codec) setCodePage(cp string) {
 func correctCodePage(s string) string {
 	cp := strings.ToUpper(s)
 	in := func(names ...string) bool {
-		for _, n := range names {
-			if cp == n {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(names, cp)
 	}
 	switch {
 	case in("ANSI_874", "CP874", "ISO8859-11", "TIS-620"):

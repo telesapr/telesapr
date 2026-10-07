@@ -122,7 +122,7 @@ func BenchmarkReadNIST5(b *testing.B) {
 		b.Fatal(err)
 	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		if _, err := Read(data, Options{}); err != nil {
 			b.Fatal(err)
 		}

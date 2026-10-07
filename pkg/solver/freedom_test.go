@@ -20,7 +20,7 @@ func rankOf(a [][]float64, m, n int) int {
 // combination of others.
 func TestRrefFixedColumnsVsRank(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
-	for trial := 0; trial < 20000; trial++ {
+	for trial := range 20000 {
 		n := 1 + rng.Intn(12)
 		m := rng.Intn(n + 3)
 		a := make([][]float64, m)
@@ -55,7 +55,7 @@ func TestRrefFixedColumnsVsRank(t *testing.T) {
 			cp[i] = append(cp[i][:0], a[i]...)
 		}
 		fast := fixedColumns(cp, m, n)
-		for j := 0; j < n; j++ {
+		for j := range n {
 			without := make([][]float64, m)
 			for i := range a {
 				without[i] = append(append([]float64(nil), a[i][:j]...), a[i][j+1:]...)

@@ -552,8 +552,8 @@ func setWindowIcon(win *window.Window) {
 	bpp := icon.BytesPerPixel()
 	vals := make([]uint32, 0, 2+icon.Width*icon.Height)
 	vals = append(vals, uint32(icon.Width), uint32(icon.Height))
-	for y := 0; y < icon.Height; y++ {
-		for x := 0; x < icon.Width; x++ {
+	for y := range icon.Height {
+		for x := range icon.Width {
 			px := icon.Data[y*icon.Stride+x*bpp:]
 			a := uint32(0xFF)
 			if icon.Format == res.FormatRGBA {

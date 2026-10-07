@@ -67,7 +67,7 @@ func (s *System) FreeParams(g *Group) map[core.HParam]bool {
 // Only the rows and classes left go to the dense reduction.
 func fixedColumns(a [][]float64, m, n int) []bool {
 	maxAbs := 0.0
-	for i := 0; i < m; i++ {
+	for i := range m {
 		for _, v := range a[i] {
 			maxAbs = math.Max(maxAbs, math.Abs(v))
 		}
@@ -96,7 +96,7 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 		return j
 	}
 	used := make([]bool, m)
-	for i := 0; i < m; i++ {
+	for i := range m {
 		idx := nonzero(a[i])
 		if len(idx) == 2 {
 			x, y := a[i][idx[0]], a[i][idx[1]]
@@ -111,7 +111,7 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 
 	// The other rows over the classes.
 	var rows [][]float64
-	for i := 0; i < m; i++ {
+	for i := range m {
 		if used[i] {
 			continue
 		}
@@ -148,7 +148,7 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 
 	// The rest, dense, over the classes still open.
 	var open []int
-	for j := 0; j < n; j++ {
+	for j := range n {
 		if find(j) == j && !classFixed[j] {
 			open = append(open, j)
 		}
@@ -172,7 +172,7 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 		classFixed[j] = openFixed[k]
 	}
 	fixed := make([]bool, n)
-	for j := 0; j < n; j++ {
+	for j := range n {
 		fixed[j] = classFixed[find(j)]
 	}
 	return fixed
@@ -183,7 +183,7 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 // whether its unit vector lies in the row space.
 func rrefFixedColumns(a [][]float64, m, n int) []bool {
 	maxAbs := 0.0
-	for i := 0; i < m; i++ {
+	for i := range m {
 		for _, v := range a[i] {
 			maxAbs = math.Max(maxAbs, math.Abs(v))
 		}
@@ -193,7 +193,7 @@ func rrefFixedColumns(a [][]float64, m, n int) []bool {
 	tol := float64(20*(m+n)) * maxAbs * epsilon
 	pivotRow := make([]int, n)
 	row := 0
-	for j := 0; j < n; j++ {
+	for j := range n {
 		pivotRow[j] = -1
 		if row == m {
 			continue
@@ -214,7 +214,7 @@ func rrefFixedColumns(a [][]float64, m, n int) []bool {
 			pr[k] *= inv
 		}
 		pr[j] = 1
-		for i := 0; i < m; i++ {
+		for i := range m {
 			if i == row || a[i][j] == 0 {
 				continue
 			}
@@ -229,13 +229,13 @@ func rrefFixedColumns(a [][]float64, m, n int) []bool {
 		row++
 	}
 	fixed := make([]bool, n)
-	for j := 0; j < n; j++ {
+	for j := range n {
 		r := pivotRow[j]
 		if r < 0 {
 			continue
 		}
 		alone := true
-		for k := 0; k < n; k++ {
+		for k := range n {
 			if k != j && math.Abs(a[r][k]) > 1e-9 {
 				alone = false
 				break

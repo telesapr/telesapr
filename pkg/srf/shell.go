@@ -276,7 +276,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 		}
 
 		nl := len(trimLines)
-		for i := 0; i < nl; i++ {
+		for i := range nl {
 			tl := trimLines[i]
 			tlp := trimLines[(i-1+nl)%nl]
 
@@ -450,7 +450,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 			sb := &sbl.Curves[bi]
 			curve++
 			revs := make([]core.HSSurface, sections)
-			for j := 0; j < sections; j++ {
+			for j := range sections {
 				if dist == 0 && isOnAxisLine(sb, pt, axis) {
 					// This is a line on the axis of revolution; it does
 					// not contribute a surface.
@@ -472,7 +472,7 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 			hsl[bi] = revs
 		}
 		// Still the same loop. Need to create trim curves
-		for i := 0; i < nc; i++ {
+		for i := range nc {
 			revs, revsp := hsl[i], hsl[(i-1+nc)%nc]
 			sb := &sbl.Curves[i]
 
@@ -583,7 +583,7 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 
 		for bi := range sbl.Curves {
 			sb := &sbl.Curves[bi]
-			for j := 0; j < 4; j++ {
+			for j := range 4 {
 				if isOnAxisLine(sb, pt, axis) {
 					// This is a line on the axis of revolution; it does
 					// not contribute a surface.
@@ -601,11 +601,11 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 			}
 		}
 
-		for i := 0; i < nc; i++ {
+		for i := range nc {
 			revs, revsp := hsl[i], hsl[(i-1+nc)%nc]
 			sb := &sbl.Curves[i]
 
-			for j := 0; j < 4; j++ {
+			for j := range 4 {
 				qs := geom.QuaternionFromAxisAngle(axis, (math.Pi/2)*float64(j))
 				// we want Q*(x - p) + p = Q*x + (p - Q*p)
 				ts := pt.Minus(qs.Rotate(pt))
@@ -897,8 +897,8 @@ func (s *SShell) displayFace(srf *SSurface) FaceID {
 // the fallback for surfaces with no trim curves at all.
 func (srf *SSurface) triangulateUntrimmedGrid(mesh *SMesh) {
 	const n = 16
-	for j := 0; j < n; j++ {
-		for i := 0; i < n; i++ {
+	for j := range n {
+		for i := range n {
 			u0 := float64(i) / float64(n)
 			u1 := float64(i+1) / float64(n)
 			v0 := float64(j) / float64(n)

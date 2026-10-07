@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -25,12 +26,7 @@ func (ss *Application) isConflicting(c *core.Constraint) bool {
 	if g == nil || c.Group != g.H || g.IsSolvedOkay() {
 		return false
 	}
-	for _, hc := range g.Solved.Remove {
-		if hc == c.H {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(g.Solved.Remove, c.H)
 }
 
 // ScreenShowConstraint selects constraint v and zooms to it and what

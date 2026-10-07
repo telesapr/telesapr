@@ -279,7 +279,7 @@ func (b *SBezier) GetBoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 func (b *SBezier) PointOnThisAndCurve(other *SBezier, p *geom.Vector) bool {
 	ta, _ := b.ClosestPointTo(*p, false)
 	tb, _ := other.ClosestPointTo(*p, false)
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		pa := b.PointAt(ta)
 		pb := other.PointAt(tb)
 		da := b.TangentAt(ta)

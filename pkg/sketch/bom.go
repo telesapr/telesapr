@@ -5,7 +5,7 @@ import (
 	"io"
 	"math"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -118,7 +118,7 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 		for f := range src {
 			files = append(files, f)
 		}
-		sort.Strings(files)
+		slices.Sort(files)
 		for _, f := range files {
 			mine[f] = src[f] * all
 			if n := src[f] * copies; n > 0 {

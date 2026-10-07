@@ -52,7 +52,7 @@ func (op *ObjectPicker) DoQuad(a, b, c, d geom.Vector, zIndex int, comparePositi
 		op.Camera.ProjectPoint(d),
 	}
 	minNegative, maxPositive := veryNegative, veryPositive
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		ap, bp := corners[i], corners[(i+1)%4]
 		distance := op.Point.DistanceToLineSigned(ap, bp.Minus(ap), true)
 		if distance < 0 {

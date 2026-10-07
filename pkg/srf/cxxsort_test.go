@@ -25,7 +25,7 @@ func TestCxxSortVsLibstdcxx(t *testing.T) {
 	var out []byte
 	put := func(v int32) { out = binary.LittleEndian.AppendUint32(out, uint32(v)) }
 	less := func(a, b *e) bool { return a.key < b.key }
-	for c := 0; c < 3000; c++ {
+	for c := range 3000 {
 		n := int(rnd() % 300)
 		alpha := 1 + int(rnd()%4)
 		mode := c % 2

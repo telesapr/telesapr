@@ -5,6 +5,7 @@ package ui
 import (
 	"bytes"
 	"os"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -118,10 +119,8 @@ func (w *stepFileWriter) HasCartesianPointAnAlias(number int, v geom.Vector, ver
 // any (C++ StepFileWriter::InsertPoint).
 func (w *stepFileWriter) InsertPoint(number int) int {
 	for _, p := range w.pointAliases {
-		for _, alias := range p.alias.aliases {
-			if alias == number {
-				return p.alias.reference
-			}
+		if slices.Contains(p.alias.aliases, number) {
+			return p.alias.reference
 		}
 	}
 
@@ -133,10 +132,8 @@ func (w *stepFileWriter) InsertPoint(number int) int {
 // StepFileWriter::InsertVertex).
 func (w *stepFileWriter) InsertVertex(number int) int {
 	for _, p := range w.pointAliases {
-		for _, alias := range p.vertexAlias.aliases {
-			if alias == number {
-				return p.vertexAlias.reference
-			}
+		if slices.Contains(p.vertexAlias.aliases, number) {
+			return p.vertexAlias.reference
 		}
 	}
 
@@ -271,10 +268,8 @@ func (w *stepFileWriter) HasOrientedEdgeAnAlias(number, edgeCurveID int, flip bo
 // StepFileWriter::InsertOrientedEdge).
 func (w *stepFileWriter) InsertOrientedEdge(number int) int {
 	for _, e := range w.orientedEdgeAliases {
-		for _, alias := range e.alias.aliases {
-			if alias == number {
-				return e.alias.reference
-			}
+		if slices.Contains(e.alias.aliases, number) {
+			return e.alias.reference
 		}
 	}
 
@@ -844,8 +839,8 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 	var ls []*srf.SBezierLoop
 	for _, l := range loops {
 		var r srf.SBezierLoop
-		for i := len(l.curves) - 1; i >= 0; i-- {
-			c := l.curves[i]
+		for _, c := range slices.Backward(l.curves) {
+
 			c.Reverse()
 			c.ScaleSelfBy(scale)
 			r.Curves = append(r.Curves, c)
@@ -995,8 +990,8 @@ func (sh *stepSheet) seamLoops(loops []stepLoop) ([]stepLoop, bool) {
 	}
 	up[0].Ctrl[0], up[len(up)-1].Ctrl[up[len(up)-1].Degree] = pa, pb
 	var down []srf.SBezier
-	for i := len(up) - 1; i >= 0; i-- {
-		c := up[i]
+	for _, c := range slices.Backward(up) {
+
 		c.Reverse()
 		down = append(down, c)
 	}

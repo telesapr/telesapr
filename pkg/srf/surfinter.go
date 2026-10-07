@@ -175,7 +175,7 @@ func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *cu
 	// necessary, since line will be split and excess edges culled, but
 	// this improves speed and robustness.
 	tmax, tmin := veryPositive, veryNegative
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		sr := s
 		if i == 1 {
 			sr = b
@@ -385,7 +385,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	// First, we find all the intersections between a surface and the
 	// boundary of the other surface.
 	var spl SPointList
-	for a := 0; a < 2; a++ {
+	for a := range 2 {
 		shA, srfA, srfB := agnstA, s, b
 		if a == 1 {
 			shA, srfA, srfB = agnstB, b, s
@@ -482,7 +482,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 			if !fwd {
 				dp = dp.ScaledBy(-1.0)
 			}
-			for i := 0; i < 20; i++ {
+			for range 20 {
 				np := start.Plus(dp.ScaledBy(step))
 				npc = s.ClosestPointOnThisAndSurface(b, np)
 				tol := npc.Minus(np).Magnitude()
@@ -682,7 +682,7 @@ func (s *SSurface) marchLoop(b *SSurface, start geom.Vector) ([]SCurvePt, bool) 
 	at := start
 	step := maxtol
 	travelled := 0.0
-	for a := 0; a < maxsteps; a++ {
+	for range maxsteps {
 		var pa, pb geom.Point2d
 		s.ClosestPointTo(at, &pa, true)
 		b.ClosestPointTo(at, &pb, true)
@@ -695,7 +695,7 @@ func (s *SSurface) marchLoop(b *SSurface, start geom.Vector) ([]SCurvePt, bool) 
 		}
 		dp = dp.WithMagnitude(1)
 		var npc geom.Vector
-		for i := 0; i < 20; i++ {
+		for range 20 {
 			np := at.Plus(dp.ScaledBy(step))
 			npc = s.ClosestPointOnThisAndSurface(b, np)
 			tol := npc.Minus(np).Magnitude()

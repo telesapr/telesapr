@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -133,12 +134,7 @@ func (o *options) parse(args []string, accepted []string, stderr io.Writer) bool
 		if arg != long && arg != short {
 			return false
 		}
-		for _, a := range accepted {
-			if a == long {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(accepted, long)
 	}
 	for n := 2; n < len(args); n++ {
 		arg := args[n]
@@ -203,15 +199,15 @@ func fileStem(name string) string {
 // outputFor is the file pattern names for the input file: its first %
 // is replaced by the input's folder and stem.
 func outputFor(pattern, input string) string {
-	i := strings.IndexByte(pattern, '%')
-	if i < 0 {
+	before, after, ok := strings.Cut(pattern, "%")
+	if !ok {
 		return pattern
 	}
 	subst := fileStem(input)
 	if dir := filepath.Dir(input); dir != "." || strings.HasPrefix(input, "."+string(filepath.Separator)) {
 		subst = filepath.Join(dir, subst)
 	}
-	return pattern[:i] + subst + pattern[i+1:]
+	return before + subst + after
 }
 
 // session is a fresh application without windows, in which one file is

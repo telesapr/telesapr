@@ -436,7 +436,7 @@ func (s *System) SolveLeastSquares() bool {
 	// squares solve, so that we can encourage the solver to make bigger
 	// changes in some parameters, and smaller in others.
 	scale := make([]float64, n)
-	for c := 0; c < n; c++ {
+	for c := range n {
 		scale[c] = 1
 		if s.isDragged(s.mat.param[c]) {
 			// It's least squares, so this parameter doesn't need to be all
@@ -445,7 +445,7 @@ func (s *System) SolveLeastSquares() bool {
 		}
 	}
 	a := spFromRows(s.mat.Anum, m, n)
-	for c := 0; c < n; c++ {
+	for c := range n {
 		for k := range a.val[c] {
 			a.val[c][k] *= scale[c]
 		}
@@ -457,7 +457,7 @@ func (s *System) SolveLeastSquares() bool {
 	}
 
 	s.mat.X = leastSquares(a, s.mat.Bnum)
-	for c := 0; c < n; c++ {
+	for c := range n {
 		s.mat.X[c] *= scale[c]
 	}
 	return true
@@ -485,7 +485,7 @@ func leastSquares(a *spMat, b []float64) []float64 {
 			f.solveUpper(v)
 		}
 		z = make([]float64, m)
-		for k := 0; k < m; k++ {
+		for k := range m {
 			z[f.perm[k]] = v[k]
 		}
 	} else {
@@ -575,7 +575,7 @@ func (s *System) FindWhichToRemoveToFixJacobian(g *Group, bad *[]core.HConstrain
 	start := time.Now()
 	g.Timeout = false
 
-	for a := 0; a < 2; a++ {
+	for a := range 2 {
 		for _, c := range g.Constraints {
 			if time.Since(start) > g.FindToFixTimeout {
 				g.Timeout = true

@@ -3,7 +3,7 @@ package ui
 import (
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -36,7 +36,7 @@ func TestImportDxf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sort.Strings(files)
+	slices.Sort(files)
 	if len(files) < 20 {
 		t.Fatalf("only %d DXF files", len(files))
 	}

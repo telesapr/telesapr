@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -67,7 +68,7 @@ func (gw *GraphicsWindow) StartDraggingByEntity(he core.HEntity) {
 		if !ok {
 			panic("ui: no entity info")
 		}
-		for i := 0; i < pts; i++ {
+		for i := range pts {
 			gw.AddPointToDraggedList(e.Point[i])
 		}
 	case e.Type == core.EntityFaceNormalPt || e.Type == core.EntityFaceNTrans ||
@@ -486,12 +487,7 @@ func (gw *GraphicsWindow) ClearPending(scheduleShowTW bool) {
 
 // IsFromPending reports whether request r is being drawn.
 func (gw *GraphicsWindow) IsFromPending(r core.HRequest) bool {
-	for _, req := range gw.pending.requests {
-		if req == r {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(gw.pending.requests, r)
 }
 
 // AddToPending marks r as being drawn.
@@ -1010,16 +1006,16 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			}
 			var lns [4]core.HRequest
 			ss.UndoRemember()
-			for i := 0; i < 4; i++ {
+			for i := range 4 {
 				lns[i] = gw.AddRequest(sketch.RequestLineSegment, false)
 				gw.AddToPending(lns[i])
 			}
-			for i := 0; i < 4; i++ {
+			for i := range 4 {
 				ss.constrainCoincident(lns[i].Entity(1), lns[(i+1)%4].Entity(2))
 				pointForceTo(lns[i].Entity(1), v)
 				pointForceTo(lns[i].Entity(2), v)
 			}
-			for i := 0; i < 4; i++ {
+			for i := range 4 {
 				typ := core.ConstraintVertical
 				if i%2 != 0 {
 					typ = core.ConstraintHorizontal
@@ -1028,7 +1024,7 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 			}
 			if gw.ConstrainPointByHovered(lns[2].Entity(1), &mouse) {
 				pos := sk.GetEntity(lns[2].Entity(1)).PointGetNum(sk)
-				for i := 0; i < 4; i++ {
+				for i := range 4 {
 					pointForceTo(lns[i].Entity(1), pos)
 					pointForceTo(lns[i].Entity(2), pos)
 				}

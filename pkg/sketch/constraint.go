@@ -43,16 +43,16 @@ func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool
 // and workplane (C++ Constraint::Constrain).
 func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity,
 	other, other2 bool) core.HConstraint {
-	c := core.Constraint{}
-	c.Group = sk.ActiveGroup()
-	c.Workplane = sk.ActiveWorkplane()
-	c.Type = typ
-	c.PtA = ptA
-	c.PtB = ptB
-	c.EntityA = entityA
-	c.EntityB = entityB
-	c.Other = other
-	c.Other2 = other2
+	c := core.Constraint{
+		Group:     sk.ActiveGroup(),
+		Workplane: sk.ActiveWorkplane(),
+		Type:      typ,
+		PtA:       ptA,
+		PtB:       ptB,
+		EntityA:   entityA,
+		EntityB:   entityB,
+		Other:     other,
+		Other2:    other2}
 	return sk.AddConstraintRemember(&c, false)
 }
 

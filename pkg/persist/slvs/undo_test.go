@@ -89,7 +89,7 @@ func TestUndoStackWraps(t *testing.T) {
 		t.Fatal(err)
 	}
 	sk := doc.Sketch
-	for i := 0; i < 105; i++ {
+	for range 105 {
 		sk.UndoRemember()
 	}
 	if sk.Undo.Cnt != 100 || sk.Undo.Write != 5 {

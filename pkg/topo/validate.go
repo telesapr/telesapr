@@ -85,7 +85,7 @@ func MeshEuler(m *srf.SMesh) int {
 	edges := map[ek]bool{}
 	for _, tr := range m.Triangles {
 		v := [3]int{t.vertexAt(tr.A, index), t.vertexAt(tr.B, index), t.vertexAt(tr.C, index)}
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			a, b := v[k], v[(k+1)%3]
 			edges[ek{min(a, b), max(a, b)}] = true
 		}

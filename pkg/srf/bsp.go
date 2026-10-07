@@ -193,7 +193,7 @@ func (u *bspUtil) classifyTriangle(tri *STriangle, node *SBsp3) {
 	dt := [3]float64{u.tr.A.Dot(u.bsp.N), u.tr.B.Dot(u.bsp.N), u.tr.C.Dot(u.bsp.N)}
 	d := u.bsp.D
 	// Count vertices in the plane
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if dt[i] > d+geom.LengthEps {
 			u.posc++
 			u.isPos[i] = true
@@ -214,7 +214,7 @@ func (u *bspUtil) classifyConvex(vertex []geom.Vector, node *SBsp3, insertEdge b
 	cnt := len(vertex)
 	u.isPos, u.isNeg, u.isOn = make([]bool, cnt), make([]bool, cnt), make([]bool, cnt)
 
-	for i := 0; i < cnt; i++ {
+	for i := range cnt {
 		dt := u.bsp.N.Dot(vertex[i])
 		if math.Abs(dt-u.bsp.D) < geom.LengthEps {
 			u.isOn[i] = true
@@ -255,7 +255,7 @@ func (u *bspUtil) classifyConvexVertices(vertex []geom.Vector, insertEdges bool)
 	u.vpos = make([]geom.Vector, 0, cnt+4)
 	u.vneg = make([]geom.Vector, 0, cnt+4)
 
-	for i := 0; i < cnt; i++ {
+	for i := range cnt {
 		ip := (i + 1) % cnt
 
 		if u.isPos[i] {
@@ -629,7 +629,7 @@ func (b *SBsp2) InsertEdge(nedge *SEdge, nnp, out geom.Vector) {
 	dt := [2]float64{nedge.A.Dot(b.NO), nedge.B.Dot(b.NO)}
 
 	var isPos, isNeg, isOn [2]bool
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		if math.Abs(dt[i]-b.D) < geom.LengthEps {
 			isOn[i] = true
 		} else if dt[i] > b.D {
@@ -701,7 +701,7 @@ func (b *SBsp2) InsertTriangle(tr *STriangle, m *SMesh, bsp3 *SBsp3) {
 
 	var isPos, isNeg, isOn [3]bool
 	inc, posc, negc := 0, 0, 0
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if math.Abs(dt[i]-b.D) < geom.LengthEps {
 			isOn[i] = true
 			inc++

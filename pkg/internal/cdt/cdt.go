@@ -12,6 +12,7 @@ package cdt
 import (
 	"errors"
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -191,7 +192,7 @@ func (t *triangulation) addTri(a, b, c int32) {
 func (t *triangulation) killTri(i int32) {
 	tr := &t.tris[i]
 	tr.dead = true
-	for k := 0; k < 3; k++ {
+	for k := range 3 {
 		e := edge{tr.v[k], tr.v[(k+1)%3]}
 		if j, ok := t.edges[e]; ok && j == i {
 			delete(t.edges, e)
@@ -219,8 +220,8 @@ func (t *triangulation) random() uint32 {
 func (t *triangulation) locate(p Point) int32 {
 	i := t.last
 	if t.tris[i].dead {
-		for j := len(t.tris) - 1; j >= 0; j-- {
-			if !t.tris[j].dead {
+		for j, v := range slices.Backward(t.tris) {
+			if !v.dead {
 				i = int32(j)
 				break
 			}
@@ -230,7 +231,7 @@ func (t *triangulation) locate(p Point) int32 {
 		tr := t.tris[i].v
 		start := int(t.random() % 3)
 		moved := false
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			e := (start + k) % 3
 			a, b := tr[e], tr[(e+1)%3]
 			if orient(t.pts[a], t.pts[b], p) < 0 {
@@ -269,7 +270,7 @@ func (t *triangulation) insert(i int32) {
 	in := map[int32]bool{start: true}
 	for k := 0; k < len(cavity); k++ {
 		tr := t.tris[cavity[k]].v
-		for e := 0; e < 3; e++ {
+		for e := range 3 {
 			j := t.across(tr[e], tr[(e+1)%3])
 			if j < 0 || in[j] {
 				continue
@@ -285,7 +286,7 @@ func (t *triangulation) insert(i int32) {
 	var rim []edge
 	for _, c := range cavity {
 		tr := t.tris[c].v
-		for e := 0; e < 3; e++ {
+		for e := range 3 {
 			a, b := tr[e], tr[(e+1)%3]
 			if j := t.across(a, b); j < 0 || !in[j] {
 				rim = append(rim, edge{a, b})
@@ -314,8 +315,8 @@ func (t *triangulation) fan(a int32) []int32 {
 	start := t.near[a]
 	if t.tris[start].dead || !hasVertex(t.tris[start].v, a) {
 		start = -1
-		for j := len(t.tris) - 1; j >= 0; j-- {
-			if !t.tris[j].dead && hasVertex(t.tris[j].v, a) {
+		for j, v := range slices.Backward(t.tris) {
+			if !v.dead && hasVertex(v.v, a) {
 				start = int32(j)
 				break
 			}
@@ -358,7 +359,7 @@ func (t *triangulation) fan(a int32) []int32 {
 func hasVertex(v [3]int32, a int32) bool { return v[0] == a || v[1] == a || v[2] == a }
 
 func vertexIndex(v [3]int32, a int32) int {
-	for k := 0; k < 3; k++ {
+	for k := range 3 {
 		if v[k] == a {
 			return k
 		}
@@ -501,7 +502,7 @@ func (t *triangulation) inside(n int32) [][3]int32 {
 		c := queue[0]
 		queue = queue[1:]
 		v := t.tris[c].v
-		for e := 0; e < 3; e++ {
+		for e := range 3 {
 			a, b := v[e], v[(e+1)%3]
 			j := t.across(a, b)
 			if j < 0 || parity[j] >= 0 {

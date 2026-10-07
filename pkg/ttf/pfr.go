@@ -888,7 +888,7 @@ func (g *pfrGlyph) loadSimple(c *pfrCursor) error {
 
 	var mask uint32
 	var x int32
-	for i := uint32(0); i < count; i++ {
+	for i := range count {
 		if i&7 == 0 {
 			if !c.check(1) {
 				return errPfrInvalidTable
@@ -1063,7 +1063,7 @@ func (g *pfrGlyph) loadCompound(c *pfrCursor) error {
 	for len(g.subs) < g.numSubs+count {
 		g.subs = append(g.subs, pfrSubGlyph{})
 	}
-	for i := 0; i < count; i++ {
+	for range count {
 		sub := &g.subs[g.numSubs]
 		var xPos, yPos int64
 		if !c.check(1) {
@@ -1153,7 +1153,7 @@ func (g *pfrGlyph) loadRec(data []byte, gpsOffset, offset, size uint64) error {
 		return err
 	}
 	count := g.numSubs - oldCount
-	for n := 0; n < count; n++ {
+	for n := range count {
 		sub := g.subs[oldCount+n]
 		oldPoints := len(g.base.Points)
 		if err := g.loadRec(data, gpsOffset, uint64(sub.gpsOffset), uint64(sub.gpsSize)); err != nil {

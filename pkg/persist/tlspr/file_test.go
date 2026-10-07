@@ -101,7 +101,7 @@ func TestLinkedTlsprAndCancel(t *testing.T) {
 	asm.NewFile()
 	asm.GenerateAll()
 	asm.Active = asm.GroupOrder[len(asm.GroupOrder)-1]
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		asm.Active = asm.AddGroupAfterActive(sketch.Group{
 			Type: sketch.GroupLinked, Name: "part", LinkFile: "sub/part.tlspr", Scale: 1, MeshCombine: sketch.CombineAssemble,
 		})

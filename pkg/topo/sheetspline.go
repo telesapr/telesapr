@@ -77,7 +77,7 @@ func GridSpline(ps []srf.SSurface) (*Grid, error) {
 		k := queue[0]
 		queue = queue[1:]
 		c := placed[k]
-		for side := 0; side < 4; side++ {
+		for side := range 4 {
 			want := c.p.EdgeCurve(side)
 			opp := (side + 2) % 4
 			for r := range ps {
@@ -334,7 +334,7 @@ func fullKnots(deg int, lengths []float64) []float64 {
 	sum := 0.0
 	for s := 0; s+1 < len(lengths); s++ {
 		sum += lengths[s]
-		for i := 0; i < deg; i++ {
+		for range deg {
 			k = append(k, at(sum))
 		}
 	}

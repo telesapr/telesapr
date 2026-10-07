@@ -176,7 +176,7 @@ func t42ParseEncoding(f *t1Font, l *t42Loader) {
 	f.encoding.charName = make([]string, count)
 	table := newPSTable(count)
 	l.encodingTable = table
-	for n := 0; n < count; n++ {
+	for n := range count {
 		_ = table.add(n, []byte(".notdef\x00")) // (void) in FreeType
 	}
 
@@ -364,7 +364,7 @@ func t42ParseSfnts(f *t1Font, l *t42Loader) {
 
 		// Copy the string to the TrueType data, checking it.
 		size := uint64(limit - p.cursor)
-		for n := uint64(0); n < stringSize; n++ {
+		for n := range stringSize {
 			if status == t42BeforeStart {
 				// the offset table, 12 bytes
 				if ttfCount < 12 {
@@ -388,7 +388,7 @@ func t42ParseSfnts(f *t1Font, l *t42Loader) {
 					ttfCount++
 					continue
 				}
-				for i := 0; i < numTables; i++ {
+				for i := range numTables {
 					length := uint64(peek32(ttf, 12+16*i+12))
 					if length > size || ttfReserved > int64(size-length) {
 						fail(errInvalidFileFormat)
@@ -740,14 +740,14 @@ func t42OpenFace(data []byte) (*t1Font, []byte, error) {
 	if f.encodingType == t1EncodingArray {
 		minChar, maxChar := 0, 0
 		table := l.encodingTable
-		for charcode := 0; charcode < table.maxElems; charcode++ {
+		for charcode := range table.maxElems {
 			f.encoding.charIndex[charcode] = 0
 			f.encoding.charName[charcode] = ".notdef"
 			if table.elements[charcode] == nil {
 				continue
 			}
 			charName := cstr(table.elements[charcode])
-			for idx := 0; idx < int(f.numGlyphs); idx++ {
+			for idx := range f.numGlyphs {
 				glyphName := *f.glyphNames[idx]
 				if charName == glyphName {
 					f.encoding.charIndex[charcode] = uint16(idx)

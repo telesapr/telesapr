@@ -200,9 +200,9 @@ func TestDocumentUnitsInterface(t *testing.T) {
 	hg := ss.GW.activeGroupH()
 	hr := sk.AddRequest(sketch.Request{Type: sketch.RequestLineSegment, Group: hg, Workplane: hg.Entity(0)})
 	sk.GenerateAll()
-	hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+	hc := sk.AddConstraint(core.Constraint{
 		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: hg.Entity(0),
-		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 1}})
+		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 1})
 	ss.SetDocumentUnits(core.UnitInches)
 	if sk.Units != core.UnitInches || ss.ViewUnits != core.UnitInches || ss.DefaultUnits != core.UnitInches {
 		t.Fatalf("units %v view %v default %v", sk.Units, ss.ViewUnits, ss.DefaultUnits)

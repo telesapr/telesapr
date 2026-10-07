@@ -58,10 +58,9 @@ func TestGroupDependencies(t *testing.T) {
 			shank = r.H
 		}
 	}
-	hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+	hc := sk.AddConstraint(core.Constraint{
 		Type: core.ConstraintPointsCoincident, Group: hg(4),
-		PtA: shank.Entity(1), PtB: hg(3).Entity(5),
-	}})
+		PtA: shank.Entity(1), PtB: hg(3).Entity(5)})
 	deps := sk.GroupDependencies(hg(4))
 	if len(deps) != 2 || deps[1].Group != hg(3) || !strings.HasPrefix(deps[1].Why, "constraint c") {
 		t.Fatalf("g004 with constraint %v depends on %v", hc, deps)

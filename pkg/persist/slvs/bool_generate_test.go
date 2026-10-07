@@ -241,14 +241,14 @@ func TestParityBooleanFixtureBBoxValue(t *testing.T) {
 			t.Errorf("%s: triangles: got %d, want %d",
 				name, stats.Triangles, golden.Triangles)
 		}
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			if math.Abs(stats.VMax[i]-golden.VMax[i]) > 1e-6 {
 				t.Errorf("%s: vmax drift: got %v, want %v",
 					name, stats.VMax, golden.VMax)
 				break
 			}
 		}
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			if math.Abs(stats.VMin[i]-golden.VMin[i]) > 1e-6 {
 				t.Errorf("%s: vmin drift: got %v, want %v",
 					name, stats.VMin, golden.VMin)

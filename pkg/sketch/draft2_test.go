@@ -43,7 +43,7 @@ func TestDraftChosenSides(t *testing.T) {
 	right := ex.Solid().FaceAt(api.V(20, 5, 5)).Entity()
 	ex.SetDraftFaces([]api.Entity{front, right})
 	want2 := 0.0
-	for i := 0; i <= 1000; i++ {
+	for i := range 1001 {
 		z := 10 * float64(i) / 1000
 		w := 1.0
 		if i > 0 && i < 1000 {

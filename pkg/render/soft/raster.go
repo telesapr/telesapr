@@ -198,12 +198,12 @@ func (r *Renderer) fragment(x, y int, z float64, col [4]float64) {
 	p := r.frame.Pix[idx*4 : idx*4+4 : idx*4+4]
 	if a == 1 {
 		// src*1 + dst*0 is src, exactly.
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			p[i] = uint8(math.Round(clamp01(col[i]) * 255))
 		}
 		return
 	}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		src := clamp01(col[i]) * 255
 		p[i] = uint8(math.Round(src*a + float64(p[i])*(1-a)))
 	}

@@ -79,7 +79,7 @@ var bernsteinPoly, bernsteinPolyD = func() (b [MaxDegree + 1][MaxDegree + 1][Max
 					b[n][k][m] = bernsteinCoeff[n][k][m]
 				}
 			}
-			for m := 0; m < MaxDegree; m++ {
+			for m := range MaxDegree {
 				d[n][k][m] = float64(m+1) * b[n][k][m+1]
 			}
 			if n <= 3 {

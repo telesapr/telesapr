@@ -3,7 +3,7 @@ package step
 import (
 	"fmt"
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -117,7 +117,7 @@ func curveBreaks(c Curve, lo, hi float64) []float64 {
 				}
 			}
 		}
-		sort.Float64s(out)
+		slices.Sort(out)
 	case *ellipse:
 		q := quarterSplits(lo, hi)
 		out = q[1 : len(q)-1]
@@ -513,7 +513,7 @@ func offsetCells(s *offset) (*surfaceCells, error) {
 				pts = append(pts, at(a+(b-a)*x, o))
 			}
 			c := srf.InterpolatedCurve(pts)
-			for k := 0; k <= 16; k++ {
+			for k := range 17 {
 				x := float64(k) / 16
 				if c.PointAt(x).Minus(at(a+(b-a)*x, o)).Magnitude() > lowDegreeTol/10 {
 					return false

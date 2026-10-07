@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -1260,7 +1261,7 @@ func (ss *Application) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm *
 	for k := range opacities {
 		keys = append(keys, int(k))
 	}
-	sort.Ints(keys)
+	slices.Sort(keys)
 
 	for _, k := range keys {
 		op := uint8(k)

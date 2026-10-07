@@ -31,7 +31,7 @@ func helixPath(r, pitch, turns, lead float64) []srf.SBezier {
 	path := []srf.SBezier{srf.SBezierFrom2(p0.Minus(d0.WithMagnitude(lead)), p0)}
 	n := int(math.Round(8 * turns))
 	da := 2 * math.Pi * turns / float64(n)
-	for k := 0; k < n; k++ {
+	for k := range n {
 		a, b := float64(k)*da, float64(k+1)*da
 		pa, ta := at(a)
 		pb, tb := at(b)
@@ -46,7 +46,7 @@ func wanderPath(r *rand.Rand, n int, lead float64, planar bool) []srf.SBezier {
 	p := v(0, 0, 0)
 	d := v(30, 0, 0)
 	path := []srf.SBezier{srf.SBezierFrom2(p.Minus(d.WithMagnitude(lead)), p)}
-	for k := 0; k < n; k++ {
+	for range n {
 		turn := 0.9 * (r.Float64() - 0.5)
 		lift := 0.0
 		if !planar {
@@ -73,7 +73,7 @@ func profileAcross(path []srf.SBezier, kind int) ([][]srf.SBezier, float64) {
 	at := func(x, y float64) geom.Vector { return o.Plus(e1.ScaledBy(x)).Plus(e2.ScaledBy(y)) }
 	circ := func(rad float64) []srf.SBezier {
 		var out []srf.SBezier
-		for k := 0; k < 4; k++ {
+		for k := range 4 {
 			a0 := float64(k) * math.Pi / 2
 			sb := srf.SBezierFrom3(at(rad*math.Cos(a0), rad*math.Sin(a0)),
 				at(rad*math.Sqrt2*math.Cos(a0+math.Pi/4), rad*math.Sqrt2*math.Sin(a0+math.Pi/4)),
@@ -280,7 +280,7 @@ func TestSweepPiecesMeetTangent(t *testing.T) {
 	for li := range surfs {
 		for i := 0; i+1 < len(surfs[li]); i++ {
 			a, b := surfs[li][i], surfs[li][i+1]
-			for k := 0; k < 40; k++ {
+			for k := range 40 {
 				u := (float64(k) + 0.5) / 40
 				if !a.PointAt(u, 1).EqualsTol(b.PointAt(u, 0), 1e-9) {
 					t.Fatalf("loop %d: pieces %d and %d part at u %g", li, i, i+1, u)
@@ -323,7 +323,7 @@ func TestPathSweepSweep(t *testing.T) {
 	r := rand.New(rand.NewSource(10))
 	col := core.NewRgbaColor(100, 100, 100, 255)
 	points, failed := 0, 0
-	for c := 0; c < 9; c++ {
+	for c := range 9 {
 		path := pathSweepCase(r, c)
 		kind := c % 3
 		loops, area := profileAcross(path, (c/3+kind)%3)
@@ -347,7 +347,7 @@ func TestPathSweepSweep(t *testing.T) {
 			sq = append(sq, o.Plus(e1.ScaledBy(xy[0])).Plus(e2.ScaledBy(xy[1])))
 		}
 		const blockVol, inside = 14 * 14 * 11.0, 5.0
-		for op := 0; op < 4; op++ {
+		for op := range 4 {
 			points++
 			name := fmt.Sprintf("case %d, op %d", c, op)
 			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2))

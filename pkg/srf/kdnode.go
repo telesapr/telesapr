@@ -2,6 +2,7 @@ package srf
 
 import (
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 )
@@ -105,7 +106,7 @@ func skdNodeFromList(tll []*STriangle) *SKdNode {
 	allc := 0
 	var badness, split [3]float64
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		for _, tr := range tll {
 			split[i] += tr.A.Element(i)
 			split[i] += tr.B.Element(i)
@@ -142,8 +143,8 @@ func skdNodeFromList(tll []*STriangle) *SKdNode {
 
 	// C++ prepends to each list, reversing the order.
 	var lgt, llt []*STriangle
-	for k := len(tll) - 1; k >= 0; k-- {
-		tr := tll[k]
+	for _, tr := range slices.Backward(tll) {
+
 		a, b, c := tr.A.Element(which), tr.B.Element(which), tr.C.Element(which)
 
 		if a < split[which]+kdTreeEps || b < split[which]+kdTreeEps || c < split[which]+kdTreeEps {
@@ -247,7 +248,7 @@ func (n *SKdNode) SnapToVertex(v geom.Vector, extras *SMesh) {
 		// Do a cheap bbox test first
 		mightHit := true
 
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			trA, trB, trC := tr.A.Element(k), tr.B.Element(k), tr.C.Element(k)
 			vk := v.Element(k)
 			if trA < vk-kdTreeEps && trB < vk-kdTreeEps && trC < vk-kdTreeEps {
@@ -307,7 +308,7 @@ func (n *SKdNode) SnapToMesh(m *SMesh) {
 		if tr.IsDegenerate() {
 			continue
 		}
-		for j := 0; j < 3; j++ {
+		for j := range 3 {
 			v := tr.vertex(j)
 
 			var extra SMesh
@@ -381,7 +382,7 @@ func (n *SKdNode) SplitLinesAgainstTriangle(sel *SEdgeList, tr *STriangle) {
 	d := [3]float64{nrm[0].Dot(b), nrm[1].Dot(c), nrm[2].Dot(a)}
 
 	// Split all of the edges where they intersect the triangle edges
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		for k := range sel.Edges {
 			se := &sel.Edges[k]
 			if se.AuxB != 0 {
@@ -420,7 +421,7 @@ func (n *SKdNode) SplitLinesAgainstTriangle(sel *SEdgeList, tr *STriangle) {
 			// then.
 			pt := se.A.Plus(se.B).ScaledBy(0.5).ProjectXy()
 			occluded = true
-			for i := 0; i < 3; i++ {
+			for i := range 3 {
 				// If the test point lies on the boundary of our triangle,
 				// then we still discard the edge.
 				if nrm[i].Dot(pt)-d[i] > geom.LengthEps {
@@ -617,7 +618,7 @@ func (n *SKdNode) MakeCertainEdgesInto(sel *SEdgeList, how EdgeKind, coplanarIsI
 	edgeTris := map[triPair]bool{}
 	cnt := 1234
 	for _, tr := range tris {
-		for j := 0; j < 3; j++ {
+		for j := range 3 {
 			a := tr.vertex(j)
 			b := tr.vertex((j + 1) % 3)
 
@@ -715,7 +716,7 @@ func (n *SKdNode) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind) {
 	edgeTris := map[triPair]bool{}
 	cnt := 1234
 	for _, tr := range tris {
-		for j := 0; j < 3; j++ {
+		for j := range 3 {
 			a := tr.vertex(j)
 			b := tr.vertex((j + 1) % 3)
 

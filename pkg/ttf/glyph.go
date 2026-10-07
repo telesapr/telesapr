@@ -1,5 +1,7 @@
 package ttf
 
+import "slices"
+
 // Vector is an FT_Vector, in 26.6 pixels once scaled.
 type Vector struct{ X, Y int64 }
 
@@ -308,10 +310,8 @@ func (l *loader) loadGlyph(gindex uint32, recurseCount int) error {
 	for i := recurseCount; i < len(l.composites); i++ {
 		l.composites[i] = -1
 	}
-	for _, c := range l.composites {
-		if c == int64(gindex) {
-			return errInvalidComp
-		}
+	if slices.Contains(l.composites, int64(gindex)) {
+		return errInvalidComp
 	}
 	if recurseCount < len(l.composites) {
 		l.composites[recurseCount] = int64(gindex)
@@ -530,7 +530,7 @@ func (l *loader) loadSimpleGlyph() (Outline, error) {
 		return o, errInvalidOutl
 	}
 	last := -1
-	for i := 0; i < nContours; i++ {
+	for range nContours {
 		c := int(peek16(p, pos))
 		pos += 2
 		if c <= last {
@@ -581,7 +581,7 @@ func (l *loader) loadSimpleGlyph() (Outline, error) {
 
 	o.Points = make([]Vector, nPoints+4)
 	var x int64
-	for i := 0; i < nPoints; i++ {
+	for i := range nPoints {
 		var delta int64
 		fl := o.Tags[i]
 		if fl&xShortVector != 0 {
@@ -605,7 +605,7 @@ func (l *loader) loadSimpleGlyph() (Outline, error) {
 	}
 
 	var y int64
-	for i := 0; i < nPoints; i++ {
+	for i := range nPoints {
 		var delta int64
 		fl := o.Tags[i]
 		if fl&yShortVector != 0 {

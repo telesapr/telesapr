@@ -30,7 +30,7 @@ func ReadBaseline(path string) (map[string]string, []string, error) {
 	}
 	lines := map[string]string{}
 	var order []string
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		if line == "" || line[0] == '#' {
 			continue
 		}

@@ -55,7 +55,7 @@ func skdNodeEdgesFromList(sell *SEdgeLl) *SKdNodeEdges {
 	var ltln, gtln [3]int
 	var badness [3]float64
 	for flip := sell; flip != nil; flip = flip.Next {
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			if flip.Edge.A.Element(i) < ptAve.Element(i)+kdTreeEps ||
 				flip.Edge.B.Element(i) < ptAve.Element(i)+kdTreeEps {
 				ltln[i]++
@@ -66,7 +66,7 @@ func skdNodeEdgesFromList(sell *SEdgeLl) *SKdNodeEdges {
 			}
 		}
 	}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		badness[i] = math.Pow(float64(ltln[i]), 4) + math.Pow(float64(gtln[i]), 4)
 	}
 

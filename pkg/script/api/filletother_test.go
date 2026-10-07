@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -39,7 +39,7 @@ func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, max int)
 			smooth = append(smooth, e.Smooth())
 		}
 	}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if smooth[i] {
 			tl.smooth++
 			continue
@@ -83,7 +83,7 @@ func (tl filletTally) String() string {
 	for r, n := range tl.reasons {
 		rs = append(rs, fmt.Sprintf("%d× %s", n, r))
 	}
-	sort.Strings(rs)
+	slices.Sort(rs)
 	return fmt.Sprintf("%d sound, %d unsound, %d refused, %d smooth left out [%s]", tl.sound, tl.unsound, tl.refused, tl.smooth, strings.Join(rs, "; "))
 }
 

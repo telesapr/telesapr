@@ -80,7 +80,7 @@ func TestSShellIntersectionOverlappingBoxes(t *testing.T) {
 // concatenates multiple shells.
 func TestSShellAssemblyOfThreeShells(t *testing.T) {
 	var out SShell
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		b := makeBoxShellForTest(
 			geom.NewVector(float64(i*2), 0, 0),
 			geom.NewVector(float64(i*2+1), 1, 1))

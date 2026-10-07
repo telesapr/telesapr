@@ -639,12 +639,12 @@ func (tw *TextWindow) DescribeSelection() {
 	// If any of the selected entities have an assigned style, then offer
 	// the option to remove that style.
 	styleAssigned := false
-	for i := 0; i < gs.entities; i++ {
+	for i := range gs.entities {
 		if ent(gs.entity[i]).Style.V != 0 {
 			styleAssigned = true
 		}
 	}
-	for i := 0; i < gs.constraints; i++ {
+	for i := range gs.constraints {
 		c := sk.GetConstraint(gs.constraint[i])
 		if c.Type == core.ConstraintComment && c.Disp.Style.V != 0 {
 			styleAssigned = true

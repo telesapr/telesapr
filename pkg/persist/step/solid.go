@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"sort"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -282,7 +283,7 @@ func (se *solidEdge) splitAtCuts() {
 	se.split, se.from = nil, nil
 	for i, sb := range se.bez {
 		cs := append([]float64(nil), se.cuts[i]...)
-		sort.Float64s(cs)
+		slices.Sort(cs)
 		// A cut closer than cutGap to an end or to the cut before
 		// would leave a sliver, as where a vertex misses a line of the
 		// grid by a file's tolerance: the vertex then counts as on it.
@@ -671,10 +672,8 @@ func turnedLoops(loops [][]uvSample, pu, pv float64, atPole func(uvSample) bool)
 		if (pu > 0 && math.Abs(z.u-a.u) > pu/2) || (pv > 0 && math.Abs(z.v-a.v) > pv/2) {
 			return false
 		}
-		for _, q := range l {
-			if atPole(q) {
-				return false
-			}
+		if slices.ContainsFunc(l, atPole) {
+			return false
 		}
 		poly := make([]geom.Vector, len(l))
 		for i, q := range l {
@@ -697,7 +696,7 @@ func widestGap(vals []float64, period, start float64) float64 {
 	for i, x := range vals {
 		m[i] = x - math.Floor((x-start)/period)*period
 	}
-	sort.Float64s(m)
+	slices.Sort(m)
 	best, at := -1.0, start
 	for i := range m {
 		next := m[(i+1)%len(m)]
@@ -840,7 +839,7 @@ func (g *faceGrid) refine(c srf.SBezier, p, q uvSample, ln float64, byU bool) fl
 	ta, tb := p.t, q.t
 	pa := p
 	sa := side(val(p))
-	for it := 0; it < 60; it++ {
+	for range 60 {
 		tm := (ta + tb) / 2
 		pt := c.PointAt(tm)
 		uv := g.s.point(pt, &[2]float64{pa.u, pa.v})
@@ -884,7 +883,7 @@ func (b *solidBuilder) planeFace(f *Face) error {
 		}
 		var poly []geom.Vector
 		for _, c := range cs {
-			for k := 0; k < 8; k++ {
+			for k := range 8 {
 				poly = append(poly, pl.f.local(c.PointAt(float64(k)/8)))
 			}
 		}
@@ -1078,8 +1077,8 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 		return errors.New("a face of too many cells")
 	}
 	cells := make([]*gridCell, nu*nv)
-	for i := 0; i < nu; i++ {
-		for j := 0; j < nv; j++ {
+	for i := range nu {
+		for j := range nv {
 			cells[i*nv+j] = &gridCell{i: i, j: j, u0: g.us[i], u1: g.us[i+1], v0: g.vs[j], v1: g.vs[j+1]}
 		}
 	}
@@ -1271,7 +1270,7 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 	for len(queue) > 0 {
 		c := queue[0]
 		queue = queue[1:]
-		for side := 0; side < 4; side++ {
+		for side := range 4 {
 			n := neighbour(c, side)
 			if n == nil || n.state != 0 {
 				continue
@@ -1667,7 +1666,7 @@ func (b *solidBuilder) walk(g *faceGrid, c *gridCell) ([]cellLoop, [4]bool, erro
 			}
 			l.curves = append(l.curves, cs...)
 			l.poly = append(l.poly, poly...)
-			for side := 0; side < 4; side++ {
+			for side := range 4 {
 				if covered(float64(side)+0.5, e.s, e.s+bestD) {
 					sides[side] = true
 				}

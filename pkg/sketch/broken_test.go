@@ -78,10 +78,9 @@ func TestBrokenReferencesDeleteRequest(t *testing.T) {
 		}
 	}
 	line := core.HRequest{V: 4}
-	hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+	hc := sk.AddConstraint(core.Constraint{
 		Type: core.ConstraintPointsCoincident, Group: hg(4),
-		PtA: shank.Entity(1), PtB: line.Entity(1),
-	}})
+		PtA: shank.Entity(1), PtB: line.Entity(1)})
 	sk.GenerateAll()
 	if sk.GetConstraint(hc) == nil || len(sk.BrokenReferences) != 0 {
 		t.Fatalf("the constraint didn't take: %s", brokenLines(sk))

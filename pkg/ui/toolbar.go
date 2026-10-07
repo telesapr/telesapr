@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/render"
@@ -89,7 +91,7 @@ func (gw *GraphicsWindow) ToolbarMouseMoved(x, y int) bool {
 		}
 		accel := gw.AcceleratorForCommand(gw.toolbarHovered)
 		if accelDesc := platform.AcceleratorDescription(accel); accelDesc != "" {
-			tooltip += sprintf(" (%s)", accelDesc)
+			tooltip += fmt.Sprintf(" (%s)", accelDesc)
 		}
 		gw.window.SetTooltip(tooltip, float64(hitX), float64(hitY), 32, 32)
 	} else {

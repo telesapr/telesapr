@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -134,15 +135,15 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 func (tw *TextWindow) ScreenChangePasteTransformed(link int, v uint32) {
 	switch link {
 	case 't':
-		tw.ShowEditControl(13, sprintf("%d", tw.shown.paste.times))
+		tw.ShowEditControl(13, fmt.Sprintf("%d", tw.shown.paste.times))
 		tw.edit.meaning = EditPasteTimesRepeated
 
 	case 'r':
-		tw.ShowEditControl(13, sprintf("%.3f", tw.shown.paste.theta*180/math.Pi))
+		tw.ShowEditControl(13, fmt.Sprintf("%.3f", tw.shown.paste.theta*180/math.Pi))
 		tw.edit.meaning = EditPasteAngle
 
 	case 's':
-		tw.ShowEditControl(13, sprintf("%.3f", math.Abs(tw.shown.paste.scale)))
+		tw.ShowEditControl(13, fmt.Sprintf("%.3f", math.Abs(tw.shown.paste.scale)))
 		tw.edit.meaning = EditPasteScale
 
 	case 'f':
@@ -198,7 +199,7 @@ func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
 		wn := wrkpln.NormalN(sk)
 		ss.UndoRemember()
 		gw.ClearSelection()
-		for i := 0; i < paste.times; i++ {
+		for i := range paste.times {
 			trans := paste.trans.ScaledBy(float64(i + 1))
 			origin := paste.origin
 			theta := paste.theta * float64(i+1)

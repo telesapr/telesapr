@@ -2,6 +2,7 @@ package tlspr
 
 import (
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 
@@ -89,7 +90,7 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 				rest = append(rest, k)
 			}
 		}
-		sort.Strings(rest)
+		slices.Sort(rest)
 		for _, k := range rest {
 			n.add(&Node{Name: "param", Args: []Value{Word(k)}, HasExpr: true, Expr: c.Exprs[k]})
 		}

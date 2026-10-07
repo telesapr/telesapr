@@ -259,7 +259,7 @@ func computeInterpolatingSpline(e *core.Entity, sbl *srf.SBezierList, rt EntityB
 	//    f' (1) = 3*(P3 - P2)
 	//    f''(0) = 6*(P0 - 2*P1 + P2)
 	//    f''(1) = 6*(P3 - 2*P2 + P1)
-	for a := 0; a < 3; a++ {
+	for a := range 3 {
 		var bm geom.BandedMatrix
 		bm.N = n
 

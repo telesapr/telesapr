@@ -165,18 +165,19 @@ func FillDefaultStyle(s *Style, d *StyleDefault, factory bool) {
 // CnfPrefixToName is a default style's name, e.g. "#def-active-grp"
 // (C++ Style::CnfPrefixToName).
 func CnfPrefixToName(prefix string) string {
-	name := "#def-"
-	for i := 0; i < len(prefix); i++ {
+	var name strings.Builder
+	name.WriteString("#def-")
+	for i := range len(prefix) {
 		ch := prefix[i]
 		if ch >= 'A' && ch <= 'Z' && i != 0 {
-			name += "-"
+			name.WriteString("-")
 		}
 		if ch >= 'A' && ch <= 'Z' {
 			ch += 'a' - 'A'
 		}
-		name += string(ch)
+		name.WriteString(string(ch))
 	}
-	return name
+	return name.String()
 }
 
 // DescriptionString names the style, e.g. "s100-thick" (C++

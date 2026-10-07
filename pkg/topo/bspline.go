@@ -103,7 +103,7 @@ func (fa *FaceAdder) AddPlanarFaceWithin(loops [][]srf.SBezier, id uint32, color
 				pts = append(pts, c.Ctrl[i])
 			}
 			if li == 0 {
-				for k := 0; k < 8; k++ {
+				for k := range 8 {
 					poly = append(poly, c.PointAt(float64(k)/8))
 				}
 			}

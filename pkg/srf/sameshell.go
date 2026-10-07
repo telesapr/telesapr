@@ -74,9 +74,9 @@ func samePatch(s, t *SSurface) bool {
 // with a different one of n items of another by same, taken greedily.
 func matchAll(n int, same func(i, j int) bool) bool {
 	used := make([]bool, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		found := false
-		for j := 0; j < n; j++ {
+		for j := range n {
 			if !used[j] && same(i, j) {
 				used[j], found = true, true
 				break

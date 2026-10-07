@@ -302,7 +302,7 @@ func TestBrepWithVoids(t *testing.T) {
 	// The void is the box again, scaled to a half about its centre:
 	// copy its faces under new numbers, scaling every point.
 	var b strings.Builder
-	for _, line := range strings.Split(outer[strings.Index(outer, "#17 = "):strings.Index(outer, "#165 = ")], ";\n") {
+	for line := range strings.SplitSeq(outer[strings.Index(outer, "#17 = "):strings.Index(outer, "#165 = ")], ";\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

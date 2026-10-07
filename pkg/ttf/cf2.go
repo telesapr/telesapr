@@ -229,7 +229,7 @@ func (s *cf2Stack) roll(count, shift int32) {
 		return
 	}
 	startIdx, idx := int32(-1), int32(-1)
-	for i := int32(0); i < count; i++ {
+	for range count {
 		if startIdx == idx {
 			startIdx++
 			idx = startIdx
@@ -448,14 +448,8 @@ func (m *cf2HintMap) adjustHints() {
 			if fracUp != 0 {
 				upMoveUp = cf2IntToFixed(1) - fracUp
 			}
-			moveUp := downMoveUp
-			if upMoveUp < moveUp {
-				moveUp = upMoveUp
-			}
-			moveDown := downMoveDown
-			if upMoveDown > moveDown {
-				moveDown = upMoveDown
-			}
+			moveUp := min(upMoveUp, downMoveUp)
+			moveDown := max(upMoveDown, downMoveDown)
 			downMinCounter := cf2MinCounter
 			upMinCounter := cf2MinCounter
 			saveEdge := false
@@ -634,7 +628,7 @@ func (m *cf2HintMap) build(hStemHintArray, vStemHintArray *[]cf2StemHint, hintMa
 	}
 
 	maskByte := byte(0x80)
-	for i := 0; i < bitCount; i++ {
+	for i := range bitCount {
 		if maskByte&tempHintMask.mask[maskPtr] != 0 {
 			var bottomHintEdge, topHintEdge cf2Hint
 			bottomHintEdge.init(hStemHintArray, i, font, hintOrigin, m.scale, true)
@@ -662,7 +656,7 @@ func (m *cf2HintMap) build(hStemHintArray, vStemHintArray *[]cf2StemHint, hintMa
 	} else {
 		maskPtr = 0
 		maskByte = 0x80
-		for i := 0; i < bitCount; i++ {
+		for i := range bitCount {
 			if maskByte&tempHintMask.mask[maskPtr] != 0 {
 				var bottomHintEdge, topHintEdge cf2Hint
 				bottomHintEdge.init(hStemHintArray, i, font, hintOrigin, m.scale, true)
@@ -846,10 +840,7 @@ func (b *cf2Blues) init(font *cf2Font) {
 	}
 	if b.scale < b.blueScale {
 		b.suppressOvershoot = true
-		b.boost = cf2BoostFactor - cf2Fixed(mulDiv(int64(cf2BoostFactor), int64(b.scale), int64(b.blueScale)))
-		if b.boost > 0x7FFF {
-			b.boost = 0x7FFF
-		}
+		b.boost = min(cf2BoostFactor-cf2Fixed(mulDiv(int64(cf2BoostFactor), int64(b.scale), int64(b.blueScale))), 0x7FFF)
 	}
 	if font.stemDarkened {
 		b.boost = 0
@@ -1575,10 +1566,7 @@ func (font *cf2Font) setup(transform *cf2Matrix) {
 		if unitsPerEm == 0 {
 			unitsPerEm = 1000
 		}
-		ppem = cf2IntToFixed(4)
-		if font.ppem > ppem {
-			ppem = font.ppem
-		}
+		ppem = max(font.ppem, cf2IntToFixed(4))
 		emRatio := cf2IntToFixed(1000) / unitsPerEm
 		font.stdVW = cf2IntToFixed(int32(subFont.privateDict.standardHeight))
 		if font.stdVW <= 0 {
@@ -1779,7 +1767,7 @@ func doFlex(opStack *cf2Stack, curX, curY *cf2Fixed, glyphPath *cf2GlyphPath,
 			vals[13] = *curY
 		}
 	}
-	for j := 0; j < 2; j++ {
+	for j := range 2 {
 		glyphPath.curveTo(vals[j*6+2], vals[j*6+3], vals[j*6+4], vals[j*6+5], vals[j*6+6], vals[j*6+7])
 	}
 	opStack.clear()
@@ -1792,7 +1780,7 @@ func doBlend(blend *cffBlend, opStack *cf2Stack, numBlends uint32) {
 	numOperands := numBlends * blend.lenBV
 	base := opStack.count() - numOperands
 	delta := base + numBlends
-	for i := uint32(0); i < numBlends; i++ {
+	for i := range numBlends {
 		sum := opStack.getReal(i + base)
 		for j := uint32(1); j < blend.lenBV; j++ {
 			sum += cf2MulFix(blend.bv[j], opStack.getReal(delta))
@@ -1983,7 +1971,7 @@ func (font *cf2Font) interpT2CharString(buf *cf2Buffer, translation Vector, doin
 		case cmdHLINETO, cmdVLINETO:
 			count := opStack.count()
 			isX := op1 == cmdHLINETO
-			for idx := uint32(0); idx < count; idx++ {
+			for idx := range count {
 				v := opStack.getReal(idx)
 				if isX {
 					curX += v

@@ -91,25 +91,25 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 			panic(fmt.Sprintf("unexpected workplane subtype %d", g.Subtype))
 		}
 
-		normal := core.Entity{}
-		normal.Type = core.EntityNormalNCopy
-		normal.NumNormal = q
+		normal := core.Entity{
+			Type:      core.EntityNormalNCopy,
+			NumNormal: q}
 		normal.Point[0] = h.Entity(2)
 		normal.Group = h
 		normal.H = h.Entity(1)
 		*entity = append(*entity, normal)
 
-		point := core.Entity{}
-		point.Type = core.EntityPointNCopy
-		point.NumPoint = sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk)
-		point.Construction = true
-		point.Group = h
-		point.H = h.Entity(2)
+		point := core.Entity{
+			Type:         core.EntityPointNCopy,
+			NumPoint:     sk.MustGetEntity(g.Predef.Origin).PointGetNum(sk),
+			Construction: true,
+			Group:        h,
+			H:            h.Entity(2)}
 		*entity = append(*entity, point)
 
-		wp := core.Entity{}
-		wp.Type = core.EntityWorkplane
-		wp.Normal = normal.H
+		wp := core.Entity{
+			Type:   core.EntityWorkplane,
+			Normal: normal.H}
 		wp.Point[0] = point.H
 		wp.Group = h
 		wp.H = h.Entity(0)
@@ -556,12 +556,12 @@ func (g *Group) MakeLatheCircles(sk *Sketch, el *[]core.Entity, in core.HEntity,
 		en.Type = core.EntityArcOfCircle
 
 		// Generate a normal.
-		n := core.Entity{}
-		n.Workplane = en.Workplane
-		n.H = g.RemapEntity(ep.H, RemapPtToNormal)
-		n.Group = en.Group
-		n.Style = en.Style
-		n.Type = core.EntityNormalNCopy
+		n := core.Entity{
+			Workplane: en.Workplane,
+			H:         g.RemapEntity(ep.H, RemapPtToNormal),
+			Group:     en.Group,
+			Style:     en.Style,
+			Type:      core.EntityNormalNCopy}
 
 		// Create basis for the normal.
 		nu := pp.NumPoint.Minus(pc.NumPoint).WithMagnitude(1.0)
@@ -633,9 +633,9 @@ func (g *Group) MakeRevolveEndFaces(sk *Sketch, el *[]core.Entity, pt core.HEnti
 	}
 	n := g.sourceLoopNormal(sk)
 
-	en := core.Entity{}
-	en.Type = core.EntityFaceRotNormalPt
-	en.Group = g.H
+	en := core.Entity{
+		Type:  core.EntityFaceRotNormalPt,
+		Group: g.H}
 	// The center of rotation
 	en.Param[0] = g.H.Param(0)
 	en.Param[1] = g.H.Param(1)
@@ -664,11 +664,11 @@ func (g *Group) MakeExtrusionTopBottomFaces(sk *Sketch, el *[]core.Entity, pt co
 	}
 	n := g.sourceLoopNormal(sk)
 
-	en := core.Entity{}
-	en.Type = core.EntityFaceNormalPt
-	en.Group = g.H
+	en := core.Entity{
+		Type:  core.EntityFaceNormalPt,
+		Group: g.H,
 
-	en.NumNormal = geom.Quaternion{W: 0, X: n.X, Y: n.Y, Z: n.Z}
+		NumNormal: geom.Quaternion{W: 0, X: n.X, Y: n.Y, Z: n.Z}}
 	en.Point[0] = g.RemapEntity(pt, RemapTop)
 	en.H = g.RemapEntity(core.NoEntity, RemapTop)
 	*el = append(*el, en)
@@ -692,17 +692,17 @@ func (g *Group) copyEntityScaled(el *[]core.Entity,
 	ep *core.Entity, timesApplied, remap int,
 	dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam,
 	as CopyAs, scale float64) {
-	en := core.Entity{}
-	en.Type = ep.Type
-	en.ExtraPoints = ep.ExtraPoints
-	en.H = g.RemapEntity(ep.H, remap)
-	en.TimesApplied = timesApplied
-	en.Group = g.H
-	en.Construction = ep.Construction
-	en.Style = ep.Style
-	en.Str = ep.Str
-	en.Font = ep.Font
-	en.File = ep.File
+	en := core.Entity{
+		Type:         ep.Type,
+		ExtraPoints:  ep.ExtraPoints,
+		H:            g.RemapEntity(ep.H, remap),
+		TimesApplied: timesApplied,
+		Group:        g.H,
+		Construction: ep.Construction,
+		Style:        ep.Style,
+		Str:          ep.Str,
+		Font:         ep.Font,
+		File:         ep.File}
 
 	switch ep.Type {
 	case core.EntityWorkplane:
@@ -817,7 +817,7 @@ func (g *Group) copyEntityScaled(el *[]core.Entity,
 		if !ok {
 			panic(fmt.Sprintf("no entity info for type %d", ep.Type))
 		}
-		for i := 0; i < points; i++ {
+		for i := range points {
 			en.Point[i] = g.RemapEntity(ep.Point[i], remap)
 		}
 		if hasNormal {

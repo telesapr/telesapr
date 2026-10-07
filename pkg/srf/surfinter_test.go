@@ -13,7 +13,7 @@ import (
 func circleCurves(c, u, v geom.Vector, r float64) *SBezierList {
 	w := math.Sqrt(2) / 2
 	sbl := &SBezierList{}
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		a0, a1 := float64(i)*math.Pi/2, float64(i+1)*math.Pi/2
 		am := (a0 + a1) / 2
 		p0 := c.Plus(u.ScaledBy(r * math.Cos(a0))).Plus(v.ScaledBy(r * math.Sin(a0)))

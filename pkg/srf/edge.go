@@ -38,7 +38,7 @@ func SEdgeFrom(a, b geom.Vector) SEdge {
 // needed.
 type SEdgeList struct {
 	Edges   []SEdge
-	KdEdges interface{}
+	KdEdges any
 }
 
 func (el *SEdgeList) Clear() {

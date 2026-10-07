@@ -7,7 +7,7 @@ package ui
 
 import (
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -284,7 +284,7 @@ func hatchLines(poly *srf.SPolygon, n geom.Vector, spacing float64, el *srf.SEdg
 				at = append(at, p.Minus(base).Dot(dir))
 			}
 		}
-		sort.Float64s(at)
+		slices.Sort(at)
 		for k := 0; k+1 < len(at); k += 2 {
 			el.AddEdge(base.Plus(dir.ScaledBy(at[k])), base.Plus(dir.ScaledBy(at[k+1])), 0, 0, 0)
 		}

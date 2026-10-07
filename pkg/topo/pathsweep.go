@@ -259,7 +259,7 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 	for i := range sp.pieces {
 		// Four sections a piece to begin with.
 		var ss []float64
-		for k := 0; k <= 4; k++ {
+		for k := range 5 {
 			ss = append(ss, float64(i)+float64(k)/4)
 		}
 		for {
@@ -356,7 +356,7 @@ func (sp *SweepPath) strays(curves []srf.BSplineCurve, surfs []*srf.BSplineSurfa
 		m := sp.Motion(sa + f*(sb-sa))
 		for ci, c := range curves {
 			n := len(c.Breaks()) - 1
-			for k := 0; k < 6*n; k++ {
+			for k := range 6 * n {
 				u := (float64(k) + 0.5) / float64(6*n)
 				want := m(c.PointAt(u))
 				dist := func(v float64) float64 { return surfs[ci].PointAt(u, v).Minus(want).Magnitude() }

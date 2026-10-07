@@ -35,7 +35,7 @@ func clampedKnots(r *rand.Rand, deg, n, mult int) []float64 {
 		k = append(k, 0)
 	}
 	for _, x := range ts {
-		for m := 0; m < mult; m++ {
+		for range mult {
 			k = append(k, x/total)
 		}
 	}
@@ -60,10 +60,10 @@ func greville(k []float64, deg, i int) float64 {
 func lidSurface(r *rand.Rand, du, dv, nu, nv, mult int) *srf.BSplineSurface {
 	s := &srf.BSplineSurface{DegU: du, DegV: dv,
 		KnotsU: clampedKnots(r, du, nu, mult), KnotsV: clampedKnots(r, dv, nv, mult)}
-	for i := 0; i < nu; i++ {
+	for i := range nu {
 		var row []geom.Vector
 		var w []float64
-		for j := 0; j < nv; j++ {
+		for j := range nv {
 			row = append(row, geom.Vector{X: lidW * greville(s.KnotsU, du, i), Y: lidD * greville(s.KnotsV, dv, j),
 				Z: 10 + 4*(r.Float64()-0.5)})
 			w = append(w, 1)
@@ -167,10 +167,10 @@ func checkSolid(t *testing.T, name string, sh *srf.SShell, want, rel float64) ch
 var gaussX, gaussW = func() (x, w [16]float64) {
 	// Newton on the Legendre polynomial of degree 16.
 	const n = 16
-	for i := 0; i < n; i++ {
+	for i := range n {
 		z := math.Cos(math.Pi * (float64(i) + 0.75) / (n + 0.5))
 		var pp float64
-		for it := 0; it < 100; it++ {
+		for range 100 {
 			p1, p2 := 1.0, 0.0
 			for j := 1; j <= n; j++ {
 				p1, p2 = ((2*float64(j)-1)*z*p1-(float64(j)-1)*p2)/float64(j), p1
@@ -194,7 +194,7 @@ func integrate(a, b float64, n int, f func(float64) float64) float64 {
 	gx, gw := gaussX, gaussW
 	sum := 0.0
 	h := (b - a) / float64(n)
-	for k := 0; k < n; k++ {
+	for k := range n {
 		for i := range gx {
 			sum += gw[i] * f(a+h*(float64(k)+gx[i]))
 		}
@@ -341,8 +341,8 @@ func TestBSplineSweep(t *testing.T) {
 	points, failed := 0, 0
 	for _, deg := range [][2]int{{2, 2}, {3, 3}, {4, 3}, {srf.MaxDegree, srf.MaxDegree}} {
 		for _, mult := range []int{1, 2} {
-			for op := 0; op < 3; op++ {
-				for k := 0; k < 4; k++ {
+			for op := range 3 {
+				for k := range 4 {
 					points++
 					// Enough points for two or three inner knots, a whole
 					// number of them for mult.

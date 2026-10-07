@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -385,7 +386,7 @@ func (s *faceSurface) loop(b *Bound, polys map[*Edge][]geom.Vector, uses map[*Ed
 	}
 	// Join the pieces, dropping a joint's second copy.
 	var c contour
-	for k := 0; k < n; k++ {
+	for k := range n {
 		pc := pieces[(anchor+k)%n]
 		for i, q := range pc.pts {
 			if i == 0 && len(c.pts) > 0 && sameJoint(c.pts[len(c.pts)-1], q) {
@@ -599,7 +600,7 @@ func (s *faceSurface) whole() (contour, error) {
 			c.pts = append(c.pts, uvPoint{p: a, u: ua, v: va, singU: va == vb, singV: ua == ub})
 			return
 		}
-		for i := 0; i < n; i++ {
+		for i := range n {
 			u := ua + (ub-ua)*float64(i)/n
 			v := va + (vb-va)*float64(i)/n
 			c.pts = append(c.pts, uvPoint{p: s.Eval(u, v), u: u, v: v})
@@ -992,7 +993,7 @@ func (s *faceSurface) triangulate(cs []contour, tol float64, sense bool) ([]mesh
 	out := make([]meshTri, 0, len(tris))
 	for _, t := range tris {
 		var mt meshTri
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			pn, ok := cache[t[k]]
 			if !ok {
 				p, n := at(t[k])
@@ -1012,7 +1013,7 @@ func (s *faceSurface) triangulate(cs []contour, tol float64, sense bool) ([]mesh
 		if m := fn.Magnitude(); m > 0 {
 			fn = fn.ScaledBy(1 / m)
 		}
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			if mt.n[k].MagSquared() == 0 {
 				mt.n[k] = fn
 			}
@@ -1062,7 +1063,7 @@ func gridPoints(pts []cdt.Point, segIdx [][2]int, x0, y0, w, h, hx, hy float64) 
 				xs = append(xs, sg.a.X+(y-sg.a.Y)*(sg.b.X-sg.a.X)/(sg.b.Y-sg.a.Y))
 			}
 		}
-		sort.Float64s(xs)
+		slices.Sort(xs)
 		cols := int(w / hx)
 		off := 0.5
 		if j%2 == 1 {
@@ -1155,7 +1156,7 @@ func (s *faceSurface) chartFor(cs []contour, umin, vmin, lu, lv float64) chart {
 	// its development.
 	d := 1e-4 * math.Max(math.Abs(vmid-vp), 1e-6)
 	k, kn := 0.0, 0
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		u := uref + s.pu*float64(i)/8
 		_, su, sv := s.Derivs(u, vp+side*d)
 		if m := sv.Magnitude(); m > 0 {

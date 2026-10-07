@@ -92,13 +92,13 @@ func (rb rib) filled(r float64, sides, ends bool) float64 {
 	// The rows are summed side by side, in the order they come.
 	rows := make([]float64, ny)
 	var wg sync.WaitGroup
-	for k := 0; k < runtime.GOMAXPROCS(0); k++ {
+	for k := range runtime.GOMAXPROCS(0) {
 		wg.Add(1)
 		go func(k int) {
 			defer wg.Done()
 			for j := k; j < ny; j += runtime.GOMAXPROCS(0) {
 				y := -margin + (float64(j)+0.5)*step
-				for i := 0; i < nu; i++ {
+				for i := range nu {
 					// u runs along the foot from the back wall, at any y.
 					u := -margin + (float64(i)+0.5)*step
 					sb, sf := -u*ribWide/dl, (u-ribFoot)*ribWide/dl

@@ -86,7 +86,7 @@ func benchmarkFrame(b *testing.B, path, renderer string) {
 
 	v := &ss.GW.view
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		v.ProjRight = v.ProjRight.RotatedAroundAxis(geom.Vector{Y: 1}, 0.01)
 		v.ProjUp = v.ProjUp.RotatedAroundAxis(geom.Vector{Y: 1}, 0.01)
 		ss.GW.Invalidate(false)

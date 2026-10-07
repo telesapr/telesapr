@@ -112,19 +112,19 @@ func t1MakeSubfont(priv *psPrivate) *cffSubFont {
 	sub := &cffSubFont{}
 	c := &sub.privateDict
 	c.numBlueValues = priv.numBlueValues
-	for n := 0; n < int(c.numBlueValues); n++ {
+	for n := range c.numBlueValues {
 		c.blueValues[n] = int64(cf2IntToFixed(int32(priv.blueValues[n])))
 	}
 	c.numOtherBlues = priv.numOtherBlues
-	for n := 0; n < int(c.numOtherBlues); n++ {
+	for n := range c.numOtherBlues {
 		c.otherBlues[n] = int64(cf2IntToFixed(int32(priv.otherBlues[n])))
 	}
 	c.numFamilyBlues = priv.numFamilyBlues
-	for n := 0; n < int(c.numFamilyBlues); n++ {
+	for n := range c.numFamilyBlues {
 		c.familyBlues[n] = int64(cf2IntToFixed(int32(priv.familyBlues[n])))
 	}
 	c.numFamilyOtherBlues = priv.numFamilyOtherBlues
-	for n := 0; n < int(c.numFamilyOtherBlues); n++ {
+	for n := range c.numFamilyOtherBlues {
 		c.familyOtherBlues[n] = int64(cf2IntToFixed(int32(priv.familyOtherBlues[n])))
 	}
 	c.blueScale = priv.blueScale
@@ -133,11 +133,11 @@ func t1MakeSubfont(priv *psPrivate) *cffSubFont {
 	c.standardWidth = int64(priv.standardWidth[0])
 	c.standardHeight = int64(priv.standardHeight[0])
 	c.numSnapWidths = priv.numSnapWidths
-	for n := 0; n < int(c.numSnapWidths); n++ {
+	for n := range c.numSnapWidths {
 		c.snapWidths[n] = int64(priv.snapWidths[n])
 	}
 	c.numSnapHeights = priv.numSnapHeights
-	for n := 0; n < int(c.numSnapHeights); n++ {
+	for n := range c.numSnapHeights {
 		c.snapHeights[n] = int64(priv.snapHeights[n])
 	}
 	c.forceBold = priv.forceBold

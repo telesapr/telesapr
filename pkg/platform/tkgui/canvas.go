@@ -198,7 +198,7 @@ func (c *canvas) present(frame *image.RGBA) {
 func changedRect(prev, next []byte, width, height int) (x0, y0, x1, y1 int, ok bool) {
 	stride := 4 * width
 	y0, y1 = -1, -1
-	for y := 0; y < height; y++ {
+	for y := range height {
 		row := y * stride
 		if !bytes.Equal(prev[row:row+stride], next[row:row+stride]) {
 			if y0 < 0 {

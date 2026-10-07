@@ -531,7 +531,7 @@ func TestSSurfaceSplitInHalf(t *testing.T) {
 	// A quarter cylinder: rational quadratic in u, linear in v.
 	w := math.Sqrt(2) / 2
 	s := SSurface{DegM: 2, DegN: 1}
-	for j := 0; j <= 1; j++ {
+	for j := range 2 {
 		z := float64(j) * 3
 		s.Ctrl[0][j] = geom.Vector{X: 2, Z: z}
 		s.Ctrl[1][j] = geom.Vector{X: 2, Y: 2, Z: z}

@@ -563,15 +563,9 @@ func directMoveOrigY(exc *ttExecContext, zone *ttGlyphZone, point uint16, distan
 func roundNone(exc *ttExecContext, distance, compensation int64) int64 {
 	var val int64
 	if distance >= 0 {
-		val = distance + compensation
-		if val < 0 {
-			val = 0
-		}
+		val = max(distance+compensation, 0)
 	} else {
-		val = distance - compensation
-		if val > 0 {
-			val = 0
-		}
+		val = min(distance-compensation, 0)
 	}
 	return val
 }
@@ -579,15 +573,9 @@ func roundNone(exc *ttExecContext, distance, compensation int64) int64 {
 func roundToGrid(exc *ttExecContext, distance, compensation int64) int64 {
 	var val int64
 	if distance >= 0 {
-		val = pixRoundLong(distance + compensation)
-		if val < 0 {
-			val = 0
-		}
+		val = max(pixRoundLong(distance+compensation), 0)
 	} else {
-		val = -pixRoundLong(compensation - distance)
-		if val > 0 {
-			val = 0
-		}
+		val = min(-pixRoundLong(compensation-distance), 0)
 	}
 	return val
 }
@@ -611,15 +599,9 @@ func roundToHalfGrid(exc *ttExecContext, distance, compensation int64) int64 {
 func roundDownToGrid(exc *ttExecContext, distance, compensation int64) int64 {
 	var val int64
 	if distance >= 0 {
-		val = pixFloor(distance + compensation)
-		if val < 0 {
-			val = 0
-		}
+		val = max(pixFloor(distance+compensation), 0)
 	} else {
-		val = -pixFloor(compensation - distance)
-		if val > 0 {
-			val = 0
-		}
+		val = min(-pixFloor(compensation-distance), 0)
 	}
 	return val
 }
@@ -627,15 +609,9 @@ func roundDownToGrid(exc *ttExecContext, distance, compensation int64) int64 {
 func roundUpToGrid(exc *ttExecContext, distance, compensation int64) int64 {
 	var val int64
 	if distance >= 0 {
-		val = pixCeilLong(distance + compensation)
-		if val < 0 {
-			val = 0
-		}
+		val = max(pixCeilLong(distance+compensation), 0)
 	} else {
-		val = -pixCeilLong(compensation - distance)
-		if val > 0 {
-			val = 0
-		}
+		val = min(-pixCeilLong(compensation-distance), 0)
 	}
 	return val
 }
@@ -643,15 +619,9 @@ func roundUpToGrid(exc *ttExecContext, distance, compensation int64) int64 {
 func roundToDoubleGrid(exc *ttExecContext, distance, compensation int64) int64 {
 	var val int64
 	if distance >= 0 {
-		val = padRoundLong(distance+compensation, 32)
-		if val < 0 {
-			val = 0
-		}
+		val = max(padRoundLong(distance+compensation, 32), 0)
 	} else {
-		val = -padRoundLong(compensation-distance, 32)
-		if val > 0 {
-			val = 0
-		}
+		val = min(-padRoundLong(compensation-distance, 32), 0)
 	}
 	return val
 }
@@ -1069,7 +1039,7 @@ func (exc *ttExecContext) insNPUSHB(args int64) {
 		exc.err = errTTStackOverflow
 		return
 	}
-	for K := int64(0); K < L; K++ {
+	for K := range L {
 		IP++
 		exc.stack[args+K] = int64(exc.code[IP])
 	}
@@ -1111,7 +1081,7 @@ func (exc *ttExecContext) insPUSHB(args int64) {
 		exc.err = errTTStackOverflow
 		return
 	}
-	for K := int64(0); K < L; K++ {
+	for K := range L {
 		IP++
 		exc.stack[args+K] = int64(exc.code[IP])
 	}
@@ -2656,10 +2626,7 @@ func (exc *ttExecContext) runContext(size *ttSize) error {
 	exc.zp1 = exc.pts
 	exc.zp2 = exc.pts
 
-	numTwilightPoints := 2 * (uint64(exc.pts.nPoints) + exc.cvtSize)
-	if numTwilightPoints < 30 {
-		numTwilightPoints = 30
-	}
+	numTwilightPoints := max(2*(uint64(exc.pts.nPoints)+exc.cvtSize), 30)
 	if uint64(exc.twilight.nPoints) > numTwilightPoints {
 		if numTwilightPoints > 0xFFFF {
 			numTwilightPoints = 0xFFFF
@@ -2670,14 +2637,8 @@ func (exc *ttExecContext) runContext(size *ttSize) error {
 	exc.loopcallCounter = 0
 	exc.negJumpCounter = 0
 	if exc.pts.nPoints != 0 {
-		a := 10 * uint64(exc.pts.nPoints)
-		if a < 50 {
-			a = 50
-		}
-		b := exc.cvtSize / 10
-		if b < 50 {
-			b = 50
-		}
+		a := max(10*uint64(exc.pts.nPoints), 50)
+		b := max(exc.cvtSize/10, 50)
 		exc.loopcallCounterMax = a + b
 	} else {
 		exc.loopcallCounterMax = 300 + 22*exc.cvtSize

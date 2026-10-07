@@ -344,7 +344,7 @@ func draftArcSides(p, moved profilePiece, ta, tb geom.Vector, start, end []srf.S
 	rb, rt := p.r, moved.r
 	var faces []draftFace
 	var bottom, top []srf.SBezier
-	for j := 0; j < parts; j++ {
+	for j := range parts {
 		x0, x1 := bounds[j], bounds[j+1]
 		b0, b1 := math.Max(pa, x0), math.Min(pb, x1)
 		t0, t1 := math.Max(qa, x0), math.Min(qb, x1)
@@ -628,7 +628,7 @@ func quinticThrough(at func(t float64, near geom.Vector) (geom.Vector, bool), a,
 	// Bernstein's matrix at ts, solved for each coordinate.
 	var sb srf.SBezier
 	sb.Degree = deg
-	for axis := 0; axis < 3; axis++ {
+	for axis := range 3 {
 		var m [deg + 1][deg + 2]float64
 		for i := 0; i <= deg; i++ {
 			for j := 0; j <= deg; j++ {

@@ -175,7 +175,7 @@ func TestGuidedLoftSweep(t *testing.T) {
 		k := math.Pi * float64(n-1) / h
 		centre := func(z float64) float64 { return aside * (z / h) * (z / h) }
 		var loops [][]srf.SBezier
-		for i := 0; i < n; i++ {
+		for i := range n {
 			z := h * float64(i) / float64(n-1)
 			loops = append(loops, circleAt(4, centre(z), 0, z))
 		}
@@ -208,7 +208,7 @@ func TestGuidedLoftSweep(t *testing.T) {
 		}
 		want := 0.0
 		const steps = 3000
-		for i := 0; i < steps; i++ {
+		for i := range steps {
 			z := h * (float64(i) + 0.5) / steps
 			want += math.Pi * r(z) * r(z) * h / steps
 		}

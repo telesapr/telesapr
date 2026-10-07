@@ -235,7 +235,7 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 			ip[1] = geom.Point2d{U: xint, V: ap.V}
 			ipN = 2
 		}
-		for i := 0; i < ipN; i++ {
+		for i := range ipN {
 			t := ip[i].Minus(ap).DivProjected(bp.Minus(ap))
 			// This is a point on the circle; but is it on the arc?
 			pp := ap.Plus(bp.Minus(ap).ScaledBy(t))

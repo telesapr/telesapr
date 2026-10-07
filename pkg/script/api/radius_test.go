@@ -25,7 +25,7 @@ func TestRadiusName(t *testing.T) {
 	if !strings.Contains(d.Describe(), r.String()+", on ") {
 		t.Errorf("the description lacks %q:\n%s", r.String(), d.Describe())
 	}
-	if name := strings.SplitN(r.String(), " ", 2)[0]; !d.Constraint(name).Valid() {
+	if name, _, _ := strings.Cut(r.String(), " "); !d.Constraint(name).Valid() {
 		t.Errorf("no constraint is called %q", name)
 	}
 }

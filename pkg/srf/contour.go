@@ -145,7 +145,7 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 	sixDegrees := (6 * pi) / 180
 	n := len(c.Points)
 	wrap := func(v int) int { return wrapIdx(v, n-1) }
-	for i := 0; i < n; i++ {
+	for i := range n {
 		a := c.Points[wrap(i-1)].P
 		b := c.Points[wrap(i)].P
 		cc := c.Points[wrap(i+1)].P

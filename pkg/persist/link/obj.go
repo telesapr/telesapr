@@ -130,7 +130,7 @@ func readMtl(data []byte, materials map[string]core.RgbaColor) {
 		}
 		return uint8(max(0, min(1, v))*255 + 0.5)
 	}
-	for _, l := range strings.Split(string(data), "\n") {
+	for l := range strings.SplitSeq(string(data), "\n") {
 		f := strings.Fields(l)
 		if len(f) == 0 {
 			continue

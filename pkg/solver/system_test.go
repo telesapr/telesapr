@@ -44,8 +44,8 @@ func (ts testSketch) get(h core.HParam) *core.Param { return ts[h] }
 func testGroup(eqs [][]*core.Expr) *Group {
 	g := &Group{FindToFixTimeout: time.Second}
 	for i := range eqs {
-		g.Constraints = append(g.Constraints, &core.Constraint{ConstraintBase: core.ConstraintBase{
-			H: core.HConstraint{V: uint32(i + 1)}, Type: core.ConstraintPtPtDistance}})
+		g.Constraints = append(g.Constraints, &core.Constraint{
+			H: core.HConstraint{V: uint32(i + 1)}, Type: core.ConstraintPtPtDistance})
 	}
 	g.WriteEquationsExceptFor = func(hc core.HConstraint, l *[]core.Equation) {
 		for i, ce := range eqs {

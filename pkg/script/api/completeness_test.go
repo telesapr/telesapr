@@ -14,7 +14,7 @@ import (
 	"go/token"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -91,11 +91,11 @@ var menuMethods = map[string]string{
 
 // apiTypes are the API's types by name, for menuMethods.
 var apiTypes = map[string]reflect.Type{
-	"Doc":        reflect.TypeOf(&api.Doc{}),
-	"Group":      reflect.TypeOf(api.Group{}),
-	"Entity":     reflect.TypeOf(api.Entity{}),
-	"Request":    reflect.TypeOf(api.Request{}),
-	"Constraint": reflect.TypeOf(api.Constraint{}),
+	"Doc":        reflect.TypeFor[*api.Doc](),
+	"Group":      reflect.TypeFor[api.Group](),
+	"Entity":     reflect.TypeFor[api.Entity](),
+	"Request":    reflect.TypeFor[api.Request](),
+	"Constraint": reflect.TypeFor[api.Constraint](),
 }
 
 // hasMethod reports whether "Type.Method" exists.
@@ -130,7 +130,7 @@ func TestEveryMenuCommandHasAMethod(t *testing.T) {
 			t.Errorf("the menu entry %q has no script API method; add one, or say in menuMethods why it needs none", key)
 		case strings.HasPrefix(methods, "- "):
 		default:
-			for _, m := range strings.Fields(methods) {
+			for m := range strings.FieldsSeq(methods) {
 				if !hasMethod(m) {
 					t.Errorf("the menu entry %q names %s, which doesn't exist", key, m)
 				}
@@ -208,7 +208,7 @@ func constsOfType(t *testing.T, dir, typ string) []string {
 			}
 		}
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 

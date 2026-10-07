@@ -2,6 +2,7 @@ package topo
 
 import (
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -66,7 +67,7 @@ func (t *Topology) rbEndAt(v int, faces [2]int, edge int) (*rbEnd, error) {
 		return nil, errNotRolling
 	}
 	end := &rbEnd{v: v, f: -1, a: [2]int{-1, -1}, face: faces}
-	for k := 0; k < 2; k++ {
+	for k := range 2 {
 		for _, x := range others {
 			fs := t.EdgeFaces(x)
 			g := -1
@@ -252,7 +253,7 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	nrm, d := end.n, end.d
 	var ss [3]float64
 	var feet [2]rbFoot
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		s, sec, err := rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.foot[i].p) }, s0, dir, at)
 		if err != nil {
 			return rbSection{}, 0, err
@@ -434,11 +435,11 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		breaks = append(breaks, s)
 	}
 	breaks = append(breaks, r1)
-	sort.Float64s(breaks)
+	slices.Sort(breaks)
 	h := math.Min(rb.length/12, 2*rb.r)
 	var specs []rbSpec
 	const steps = 4
-	for i := 0; i < steps; i++ {
+	for i := range steps {
 		specs = append(specs, rbSpec{end: 0, lam: float64(i) / steps})
 	}
 	for i := 0; i+1 < len(breaks); i++ {
@@ -447,7 +448,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			continue
 		}
 		m := int(math.Ceil((b - a) / h))
-		for j := 0; j < m; j++ {
+		for j := range m {
 			specs = append(specs, rbSpec{end: -1, s: a + (b-a)*float64(j)/float64(m)})
 		}
 	}
@@ -583,7 +584,7 @@ func (rb *rollingBall) cutEnd(sh *srf.SShell, end *rbEnd, arc srf.BSplineCurve) 
 	t := rb.t
 	cut := rbEndCut{end: end, q: [2]geom.Vector{arc.Ctrl[0], arc.Ctrl[len(arc.Ctrl)-1]}, arc: arc}
 	v := t.Vertices[end.v].P
-	for k := 0; k < 2; k++ {
+	for k := range 2 {
 		q := cut.q[k]
 		switch alongFrom(q, v, t.Edges[end.a[k]].Points) {
 		case 1:
@@ -652,7 +653,7 @@ func (rb *rollingBall) planeCut(end *rbEnd, k int, a, b geom.Vector) ([]srf.SBez
 	// The point of the curve near x, and the curve's way there.
 	on := func(x geom.Vector) (geom.Vector, geom.Vector, bool) {
 		var f rbFoot
-		for it := 0; it < 100; it++ {
+		for range 100 {
 			f = rb.foot(k, x)
 			y := proj(f.p)
 			moved := y.Minus(x).Magnitude()
@@ -739,7 +740,7 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 	dropped := 0
 	for _, tb := range fs.Trim {
 		gone := false
-		for k := 0; k < 2; k++ {
+		for k := range 2 {
 			q := cut.q[k]
 			isDrop := cut.goes[k] == nil &&
 				(tb.StartP.Equals(q) && tb.FinishP.Equals(v) || tb.StartP.Equals(v) && tb.FinishP.Equals(q))
@@ -757,7 +758,7 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 		}
 	}
 	want := 0
-	for k := 0; k < 2; k++ {
+	for k := range 2 {
 		if cut.goes[k] == nil {
 			want++
 		}
@@ -791,7 +792,7 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 	// flat face's loop, from the vertex out for side 0 when it runs on,
 	// into it for side 1; in the side's face the other way round from
 	// its own edge with the flat face.
-	for k := 0; k < 2; k++ {
+	for k := range 2 {
 		if cut.goes[k] == nil {
 			continue
 		}
@@ -954,7 +955,7 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 	nu := 2 + 3*(n-3)
 	us := append([]float64(nil), ts...)
 	fit := c
-	for round := 0; round < 10; round++ {
+	for range 10 {
 		ata := make([][]float64, nu)
 		for r := range ata {
 			ata[r] = make([]float64, nu)
@@ -973,8 +974,8 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 				f := w[i] * b[i]
 				cols = append(cols, geom.Vector{X: f}, geom.Vector{Y: f}, geom.Vector{Z: f})
 			}
-			for r := 0; r < nu; r++ {
-				for q := 0; q < nu; q++ {
+			for r := range nu {
+				for q := range nu {
 					ata[r][q] += cols[r].Dot(cols[q])
 				}
 				atb[r] += cols[r].Dot(rhs)
@@ -1018,7 +1019,7 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 // nearestParam is the parameter of curve c's point nearest p, from u.
 func nearestParam(c *srf.BSplineCurve, p geom.Vector, u float64) float64 {
 	h := 1e-4
-	for it := 0; it < 20; it++ {
+	for range 20 {
 		a, b := math.Max(0, u-h), math.Min(1, u+h)
 		d := c.PointAt(b).Minus(c.PointAt(a)).ScaledBy(1 / (b - a))
 		if d.MagSquared() == 0 {
@@ -1046,7 +1047,7 @@ func binomial(n, k int) float64 {
 func solveDense(a [][]float64, b []float64) ([]float64, bool) {
 	n := len(b)
 	x := make([]float64, n)
-	for c := 0; c < n; c++ {
+	for c := range n {
 		p := c
 		for r := c + 1; r < n; r++ {
 			if math.Abs(a[r][c]) > math.Abs(a[p][c]) {

@@ -14,13 +14,13 @@ import (
 func clickText(t *testing.T, ss *Application, s string) {
 	t.Helper()
 	tw := ss.TW
-	for r := 0; r < tw.rows; r++ {
+	for r := range tw.rows {
 		row := string(tw.lines[r].text[:])
-		i := strings.Index(row, s)
-		if i < 0 {
+		before, _, ok := strings.Cut(row, s)
+		if !ok {
 			continue
 		}
-		col := len([]rune(row[:i]))
+		col := len([]rune(before))
 		x := float64(leftMargin + col*charWidth + charWidth/2)
 		y := float64((tw.lines[r].top-tw.scrollPos)*(lineHeight/2) + lineHeight/2)
 		w := tw.window.(*headless.Window)

@@ -63,7 +63,7 @@ func GuidedLoftSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []
 		}
 	}
 	if len(gs) == 2 {
-		for i := 0; i < k; i++ {
+		for i := range k {
 			if gs[0].points[i].Minus(gs[1].points[i]).Magnitude() < guideTol {
 				return nil, fmt.Errorf("the two guides meet profile %d at one point", i+1)
 			}
@@ -75,7 +75,7 @@ func GuidedLoftSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []
 	var sections []srf.BSplineCurve
 	var vs []float64
 	var moved [][]geom.Vector // each section's control points' moves
-	for i := 0; i < k; i++ {
+	for i := range k {
 		if i > 0 {
 			for s := 1; s < guideSamples; s++ {
 				v := base.ts[i-1] + (base.ts[i]-base.ts[i-1])*float64(s)/guideSamples

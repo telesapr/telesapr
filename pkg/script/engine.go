@@ -16,6 +16,7 @@ import (
 	"go/token"
 	"io"
 	"log"
+	"maps"
 	"os"
 	"path"
 	"reflect"
@@ -187,9 +188,7 @@ func (e *Engine) exports() interp.Exports {
 	}
 	key := apiPath + "/api"
 	pkg := make(map[string]reflect.Value, len(symbols.Symbols[key]))
-	for name, v := range exports[key] {
-		pkg[name] = v
-	}
+	maps.Copy(pkg, exports[key])
 	pkg["Current"] = reflect.ValueOf(func() *api.Doc { return e.doc })
 	if e.opts.Open != nil {
 		pkg["Open"] = reflect.ValueOf(func(path string) (*api.Doc, error) {
@@ -209,9 +208,7 @@ func (e *Engine) exports() interp.Exports {
 	// and the others only if they are files; here they are whatever
 	// the script's output is, a console's window for one.
 	std := make(map[string]reflect.Value, len(symbols.Symbols["os/os"]))
-	for name, v := range symbols.Symbols["os/os"] {
-		std[name] = v
-	}
+	maps.Copy(std, symbols.Symbols["os/os"])
 	stdin, stdout, stderr := e.opts.Stdin, e.opts.Stdout, e.opts.Stderr
 	if _, ok := stdin.(*os.File); !ok {
 		std["Stdin"] = reflect.ValueOf(&stdin).Elem()
@@ -242,15 +239,13 @@ func (e *Engine) exports() interp.Exports {
 func typedFloats(pkg map[string]reflect.Value) map[string]reflect.Value {
 	var out map[string]reflect.Value
 	for name, v := range pkg {
-		c, ok := v.Interface().(constant.Value)
+		c, ok := reflect.TypeAssert[constant.Value](v)
 		if !ok || c.Kind() != constant.Float {
 			continue
 		}
 		if out == nil {
 			out = make(map[string]reflect.Value, len(pkg))
-			for name, v := range pkg {
-				out[name] = v
-			}
+			maps.Copy(out, pkg)
 		}
 		f, _ := constant.Float64Val(c)
 		out[name] = reflect.ValueOf(f)

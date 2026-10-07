@@ -868,7 +868,7 @@ func (e *Entity) IsInPlane(sk EntitySketch, norm geom.Vector, distance float64) 
 		if periodic {
 			n = 3 + e.ExtraPoints
 		}
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if !pointInPlane(sk, e.Point[i], norm, distance) {
 				return false
 			}

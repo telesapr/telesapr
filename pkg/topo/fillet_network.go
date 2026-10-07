@@ -3,7 +3,7 @@ package topo
 import (
 	"errors"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -105,7 +105,7 @@ func (fe *filletEdge) fits(m geom.Vector) error {
 	if !fe.circ {
 		return nil
 	}
-	for k := 0; k < 2; k++ {
+	for k := range 2 {
 		if fe.radius+fe.ss[k]*fe.gen[k][0] < geom.LengthEps {
 			gen := fe.gen[k]
 			if fe.flatK >= 0 {
@@ -490,7 +490,7 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	for f := range redo {
 		faces = append(faces, f)
 	}
-	sort.Ints(faces)
+	slices.Sort(faces)
 
 	type rebuilt struct {
 		s     srf.SSurface
@@ -524,7 +524,7 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 		if fe.circ {
 			mid = fe.curve.PointAt(0.5)
 		} else {
-			for k := 0; k < 2; k++ {
+			for k := range 2 {
 				if end[k].Minus(start[k]).Dot(fe.dir) < 10*geom.LengthEps {
 					return filletErr(mid, "the edge is too short for a %s this large", what)
 				}
@@ -548,7 +548,7 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	for v := range corners {
 		vs = append(vs, v)
 	}
-	sort.Ints(vs)
+	slices.Sort(vs)
 	for _, v := range vs {
 		c := corners[v]
 		if c.kind != 3 {
@@ -879,7 +879,7 @@ func (t *Topology) coaxialEdgeOf(e int, r float64, flat bool, n geom.Vector) (fi
 	// through the axis.
 	radial := fe.radial(m)
 	var normal [2][2]float64
-	for k := 0; k < 2; k++ {
+	for k := range 2 {
 		gen, ok := t.generator(&fe, fs[k])
 		if !ok {
 			return fe, filletErr(m, "the edge is curved, and a face at it is neither flat nor a cylinder or a cone "+
@@ -1009,7 +1009,7 @@ func (t *Topology) smoothJoin(a, b *filletEdge, v int) bool {
 	p := t.Vertices[v].P
 	for _, swap := range []int{0, 1} {
 		ok := true
-		for ka := 0; ka < 2; ka++ {
+		for ka := range 2 {
 			kb := ka ^ swap
 			da, db := a.into(ka, p), b.into(kb, p)
 			if !da.Equals(db) && da.Minus(db).Magnitude() > 1e-9 || math.Abs(a.ss[ka]-b.ss[kb]) > geom.LengthEps {
@@ -1160,7 +1160,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 		a, b := &edges[byEdge[round[0]]], &edges[byEdge[round[1]]]
 		c.kind = seam
 		for _, fe := range []*filletEdge{a, b} {
-			for k := 0; k < 2; k++ {
+			for k := range 2 {
 				c.at[[2]int{fe.e, fe.f[k]}] = p.Plus(fe.into(k, p).ScaledBy(fe.ss[k]))
 			}
 		}
@@ -1171,7 +1171,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 			var q geom.Vector
 			found := false
 			for _, fe := range []*filletEdge{a, b} {
-				for k := 0; k < 2; k++ {
+				for k := range 2 {
 					if fe.f[k] == fx[0] || fe.f[k] == fx[1] {
 						q, found = p.Plus(fe.into(k, p).ScaledBy(fe.ss[k])), true
 					}
@@ -1222,7 +1222,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 			return nil, filletErr(p, "a circular edge's fillet ends on a face that is not square to it")
 		}
 		c.end = end
-		for k := 0; k < 2; k++ {
+		for k := range 2 {
 			q, err := t.pointAlong(along[k], v, fe.into(k, p), fe.ss[k], fe.concave)
 			if err != nil {
 				return nil, err
@@ -1646,7 +1646,7 @@ func chainCurves(cs []srf.SBezier) ([]srf.SBezier, error) {
 func spherePatch(c geom.Vector, r float64, loop []srf.SBezier) srf.SSurface {
 	var pts []geom.Vector
 	for _, sb := range loop {
-		for k := 0; k < 32; k++ {
+		for k := range 32 {
 			pts = append(pts, sb.PointAt(float64(k)/32).Minus(c).WithMagnitude(1))
 		}
 	}

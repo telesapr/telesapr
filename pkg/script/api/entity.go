@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -189,11 +190,9 @@ func (e Entity) Points() (points []Entity) {
 func (e Entity) point(what string, i int, kinds ...core.EntityType) (p Entity) {
 	e.d.read(func(sk *sketch.Sketch) {
 		ent := e.get(sk)
-		for _, k := range kinds {
-			if ent.Type == k {
-				p = Entity{e.d, ent.Point[i]}
-				return
-			}
+		if slices.Contains(kinds, ent.Type) {
+			p = Entity{e.d, ent.Point[i]}
+			return
 		}
 		fail("%s has no %s", e.describe(sk), what)
 	})

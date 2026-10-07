@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"math"
+	"slices"
 	"strconv"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -64,12 +65,7 @@ func (g *Group) takesProfile(h core.HGroup) bool {
 	case !g.MakesSolidFromSketch():
 		return false
 	case g.Type == GroupLoft:
-		for _, p := range g.LoftProfiles() {
-			if p == h {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(g.LoftProfiles(), h)
 	}
 	return g.OpA == h
 }

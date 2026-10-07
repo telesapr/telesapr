@@ -197,8 +197,7 @@ func pieceLength(p pathPiece) float64 {
 func (g *Group) checkPattern(sk *Sketch) bool {
 	if _, err := g.patternMotions(sk); err != nil {
 		var at *geom.Vector
-		var pe *pathError
-		if errors.As(err, &pe) {
+		if pe, ok := errors.AsType[*pathError](err); ok {
 			at = pe.at
 		}
 		g.setProblem(at, "%v", err)

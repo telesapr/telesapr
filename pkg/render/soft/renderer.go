@@ -352,13 +352,11 @@ func (r *Renderer) batchLines(draw func()) {
 	var wg sync.WaitGroup
 	for y0 := 0; y0 < r.height; y0 += band {
 		y1 := min(y0+band, r.height)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for i := range segs {
 				r.rasterLineRows(&segs[i].a, &segs[i].b, segs[i].width, y0, y1)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }
@@ -648,7 +646,7 @@ func (r *Renderer) rasterTriangles(tris []rvert, mode fragMode) {
 	n := len(tris) / 3
 	workers := min(runtime.GOMAXPROCS(0), r.height/16)
 	if n < 64 || workers < 2 {
-		for i := 0; i < n; i++ {
+		for i := range n {
 			r.rasterTriangle(&tris[3*i], &tris[3*i+1], &tris[3*i+2], mode)
 		}
 		return
@@ -657,13 +655,11 @@ func (r *Renderer) rasterTriangles(tris []rvert, mode fragMode) {
 	var wg sync.WaitGroup
 	for y0 := 0; y0 < r.height; y0 += band {
 		y1 := min(y0+band, r.height)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for i := 0; i < n; i++ {
+		wg.Go(func() {
+			for i := range n {
 				r.rasterTriangleRows(&tris[3*i], &tris[3*i+1], &tris[3*i+2], mode, y0, y1)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }
@@ -696,7 +692,7 @@ func (r *Renderer) light(n geom.Vector, mat [4]float64, flip bool) [4]float64 {
 		n = n.ScaledBy(-1)
 	}
 	var c [4]float64
-	for k := 0; k < 3; k++ {
+	for k := range 3 {
 		c[k] = r.ambient * mat[k]
 	}
 	for _, l := range r.lights {
@@ -707,11 +703,11 @@ func (r *Renderer) light(n geom.Vector, mat [4]float64, flip bool) [4]float64 {
 		if d <= 0 {
 			continue
 		}
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			c[k] += d * l.intensity * mat[k]
 		}
 	}
-	for k := 0; k < 3; k++ {
+	for k := range 3 {
 		c[k] = clamp01(c[k])
 	}
 	c[3] = mat[3]

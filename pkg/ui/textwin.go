@@ -458,7 +458,7 @@ func (tw *TextWindow) ShowEditControlWithColorPicker(col int, rgb core.RgbaColor
 	tw.editControl.colorPicker.s = hs.Y
 	tw.editControl.colorPicker.v = hs.Z
 
-	tw.ShowEditControl(col, sprintf("%.2f, %.2f, %.2f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
+	tw.ShowEditControl(col, fmt.Sprintf("%.2f, %.2f, %.2f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
 }
 
 // ClearScreen empties the text (C++ TextWindow::ClearScreen).
@@ -606,9 +606,9 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 			}
 			switch format[i] {
 			case 'd':
-				buf = sprintf("%d", intArg(next()))
+				buf = fmt.Sprintf("%d", intArg(next()))
 			case 'x':
-				buf = sprintf("%08x", uint32(intArg(next())))
+				buf = fmt.Sprintf("%08x", uint32(intArg(next())))
 			case '@':
 				buf = cFixed(2, floatArg(next()))
 			case '2':
@@ -694,7 +694,7 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 
 		fid := funcID(f)
 		for _, ch := range buf {
-			for k := 0; k < font.GetWidth(ch); k++ {
+			for k := range font.GetWidth(ch) {
 				if c >= MaxCols {
 					return
 				}
@@ -981,7 +981,7 @@ func hsvPattern1d(hue, sat float64, w, h int) *res.Pixmap {
 // TextWindow::ColorPickerDone).
 func (tw *TextWindow) ColorPickerDone() {
 	rgb := tw.editControl.colorPicker.rgb
-	tw.EditControlDone(sprintf("%.2f, %.2f, %.3f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
+	tw.EditControlDone(fmt.Sprintf("%.2f, %.2f, %.3f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
 }
 
 var pickerBaseColor = [12]core.RgbaColor{
@@ -1055,8 +1055,8 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UiCanvas, how dr
 		return x >= float64(x0) && x <= float64(x1) && y >= float64(y0) && y <= float64(y1)
 	}
 
-	for i := 0; i < pWidth/2; i++ {
-		for j := 0; j < pHeight; j++ {
+	for i := range pWidth / 2 {
+		for j := range pHeight {
 			var rgb geom.Vector
 			switch {
 			case i == 0 && j < 8:

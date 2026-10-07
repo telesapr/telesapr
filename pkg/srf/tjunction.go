@@ -73,7 +73,7 @@ func (m *SMesh) SnapTJunctions() {
 func splitAtTJunctions(tr STriangle, on func(a, b geom.Vector) []geom.Vector) []STriangle {
 	corners := [3]geom.Vector{tr.A, tr.B, tr.C}
 	normals := [3]geom.Vector{tr.NA, tr.NB, tr.NC}
-	for k := 0; k < 3; k++ {
+	for k := range 3 {
 		a, b, c := corners[k], corners[(k+1)%3], corners[(k+2)%3]
 		na, nb, nc := normals[k], normals[(k+1)%3], normals[(k+2)%3]
 		pts := on(a, b)

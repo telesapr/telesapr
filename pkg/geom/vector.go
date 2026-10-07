@@ -306,7 +306,7 @@ func (v Vector) OutsideAndNotOn(maxv, minv Vector) bool {
 
 // BoundingBoxesDisjoint mirrors C++ Vector::BoundingBoxesDisjoint.
 func (v Vector) BoundingBoxesDisjoint(amax, amin, bmax, bmin Vector) bool {
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if amax.Element(i) < bmin.Element(i)-LengthEps {
 			return true
 		}
@@ -325,14 +325,14 @@ func BoundingBoxIntersectsLine(amax, amin, p0, p1 Vector, asSegment bool) bool {
 	lp := dp.Magnitude()
 	dp = dp.ScaledBy(1.0 / lp)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		j := (i + 1) % 3
 		k := (i + 2) % 3
 		if lp*math.Abs(dp.Element(i)) < LengthEps {
 			continue // parallel to plane
 		}
 
-		for a := 0; a < 2; a++ {
+		for a := range 2 {
 			d := amin.Element(i)
 			if a == 0 {
 				d = amax.Element(i)

@@ -135,14 +135,14 @@ func (tw *TextWindow) sameCellKey(r, c0, c1 int) bool {
 
 // dumpRows is the harness's DumpRows.
 func (tw *TextWindow) dumpRows(b *strings.Builder) {
-	for r := 0; r < tw.rows; r++ {
+	for r := range tw.rows {
 		row := &tw.lines[r]
 		end := MaxCols
 		for end > 0 && row.text[end-1] == ' ' {
 			end--
 		}
 		var ascii strings.Builder
-		for c := 0; c < end; c++ {
+		for c := range end {
 			if row.text[c] < 0x80 {
 				ascii.WriteRune(row.text[c])
 			} else {
@@ -156,7 +156,7 @@ func (tw *TextWindow) dumpRows(b *strings.Builder) {
 		}
 		fmt.Fprintf(b, "row %d ", row.top)
 		var buf [4]byte
-		for c := 0; c < end; c++ {
+		for c := range end {
 			n := utf8.EncodeRune(buf[:], row.text[c])
 			b.Write(buf[:n])
 		}

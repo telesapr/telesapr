@@ -13,6 +13,7 @@ package topo
 import (
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -411,7 +412,7 @@ func curvePoints(sc *srf.SCurve, stb *srf.STrimBy) []geom.Vector {
 	var out []geom.Vector
 	n := len(sc.Points)
 	in := false
-	for k := 0; k < n; k++ {
+	for k := range n {
 		i := k
 		if stb.Backwards {
 			i = n - 1 - k
@@ -574,8 +575,8 @@ func (t *Topology) makeFaces(s *srf.SSurface, loops [][]int) {
 			continue
 		}
 		// The smallest outer loop that holds a point of the hole.
-		for k := len(outers) - 1; k >= 0; k-- {
-			o := outers[k]
+		for _, o := range slices.Backward(outers) {
+
 			if len(infos[i].uv) > 0 && pointInPolygon(infos[i].uv[0], infos[o].uv) {
 				owner[i] = o
 				break

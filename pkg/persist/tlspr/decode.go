@@ -762,8 +762,8 @@ func (d *decoder) request(n *Node) (sketch.Request, bool) {
 
 func (d *decoder) constraint(n *Node) (core.Constraint, bool) {
 	a := d.head(n, 2)
-	c := core.Constraint{}
-	c.H = core.HConstraint{V: d.handle(a[0])}
+	c := core.Constraint{
+		H: core.HConstraint{V: d.handle(a[0])}}
 	typ, ok := enumValue(d, constraintTypes, a[1])
 	c.Type = typ
 	for _, f := range n.Children {
@@ -860,8 +860,8 @@ func (d *decoder) style(n *Node) core.Style {
 
 func (d *decoder) entity(n *Node) (core.Entity, bool) {
 	a := d.head(n, 2)
-	e := core.Entity{}
-	e.H = core.HEntity{V: d.handle(a[0])}
+	e := core.Entity{
+		H: core.HEntity{V: d.handle(a[0])}}
 	typ, ok := enumValue(d, entityTypes, a[1])
 	e.Type = typ
 	for _, c := range n.Children {

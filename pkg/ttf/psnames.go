@@ -232,7 +232,7 @@ func unicodesInit(numGlyphs uint32, glyphName func(uint32) (string, bool)) (*psU
 	var extraGlyphs [len(extraGlyphUnicodes)]uint32
 
 	var maps []uniMap
-	for n := uint32(0); n < numGlyphs; n++ {
+	for n := range numGlyphs {
 		gname, ok := glyphName(n)
 		if !ok || gname == "" {
 			continue

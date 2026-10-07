@@ -30,7 +30,7 @@ func remPio2(x float64) (n int32, y0, y1 float64) {
 	e0 := (ix >> 20) - 1046
 	z := math.Float64frombits(uint64(uint32(ix-(e0<<20)))<<32 | uint64(low))
 	var tx [3]float64
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		tx[i] = float64(int32(z))
 		z = (z - tx[i]) * two24
 	}
@@ -57,10 +57,7 @@ func kernelRemPio2(x, y []float64, e0, nx, prec int, ipio2 []int32) int32 {
 	jp := jk
 
 	jx := nx - 1
-	jv := (e0 - 3) / 24
-	if jv < 0 {
-		jv = 0
-	}
+	jv := max((e0-3)/24, 0)
 	q0 := e0 - 24*(jv+1)
 
 	j := jv - jx

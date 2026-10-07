@@ -6,7 +6,7 @@ import (
 	"math"
 	"os"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -83,7 +83,7 @@ func (r *Report) Problem() string {
 	for k := range r.Reasons {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	for _, k := range keys {
 		n := r.Reasons[k]
 		switch {
@@ -281,7 +281,7 @@ func shapePoints(sh *Shape) (verts, centers []geom.Vector) {
 				growBox(p, &lo, &hi)
 			}
 		}
-		for i := 0; i < 8; i++ {
+		for i := range 8 {
 			p := lo
 			if i&1 != 0 {
 				p.X = hi.X
@@ -335,14 +335,12 @@ func tessellateShape(sh *Shape, tol float64, rep *Report) shapeMesh {
 	var wg sync.WaitGroup
 	next := make(chan int)
 	workers := runtime.GOMAXPROCS(0)
-	for w := 0; w < workers; w++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range workers {
+		wg.Go(func() {
 			for i := range next {
 				sm.faces[i], errs[i] = safeTessellate(sh.Faces[i], tol)
 			}
-		}()
+		})
 	}
 	for i := range sh.Faces {
 		next <- i

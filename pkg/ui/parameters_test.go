@@ -15,7 +15,7 @@ import (
 // shows reports whether the text window shows s.
 func shows(ss *Application, s string) bool {
 	tw := ss.TW
-	for r := 0; r < tw.rows; r++ {
+	for r := range tw.rows {
 		if strings.Contains(string(tw.lines[r].text[:]), s) {
 			return true
 		}
@@ -150,11 +150,11 @@ func TestConflictsShown(t *testing.T) {
 	}
 	wp := ss.GW.ActiveWorkplane()
 	for _, typ := range []core.ConstraintType{core.ConstraintHorizontal, core.ConstraintVertical} {
-		sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
-			Type: typ, Group: hg, Workplane: wp, EntityA: line.H}})
+		sk.AddConstraint(core.Constraint{
+			Type: typ, Group: hg, Workplane: wp, EntityA: line.H})
 	}
-	sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
-		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: wp, PtA: line.Point[0], PtB: line.Point[1], ValA: 10}})
+	sk.AddConstraint(core.Constraint{
+		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: wp, PtA: line.Point[0], PtB: line.Point[1], ValA: 10})
 	sk.MarkGroupDirty(hg, false)
 	ss.GenerateAll(sketch.GenerateAll)
 	g := sk.GetGroup(hg)

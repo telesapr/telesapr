@@ -22,7 +22,7 @@ func Print(f *File) []byte {
 }
 
 func printNode(b *strings.Builder, n *Node, depth int) {
-	for i := 0; i < depth; i++ {
+	for range depth {
 		b.WriteString("  ")
 	}
 	b.WriteString(n.Name)
@@ -44,7 +44,7 @@ func printNode(b *strings.Builder, n *Node, depth int) {
 		for _, c := range n.Children {
 			printNode(b, c, depth+1)
 		}
-		for i := 0; i < depth; i++ {
+		for range depth {
 			b.WriteString("  ")
 		}
 		b.WriteString("}\n")

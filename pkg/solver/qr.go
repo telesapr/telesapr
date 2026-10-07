@@ -17,8 +17,8 @@ type spMat struct {
 // entry that is exactly zero is not stored.
 func spFromRows(a [][]float64, m, n int) *spMat {
 	s := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
-	for j := 0; j < n; j++ {
-		for i := 0; i < m; i++ {
+	for j := range n {
+		for i := range m {
 			if a[i][j] != 0 {
 				s.idx[j] = append(s.idx[j], i)
 				s.val[j] = append(s.val[j], a[i][j])
@@ -83,7 +83,7 @@ func (s *spMat) mulSelfTransposed() *spMat {
 	resVal := make([][]float64, m)
 	mask := make([]bool, m)
 	values := make([]float64, m)
-	for j := 0; j < m; j++ {
+	for j := range m {
 		var indices []int
 		for kk, k := range rowIdx[j] {
 			y := rowVal[j][kk]
@@ -105,7 +105,7 @@ func (s *spMat) mulSelfTransposed() *spMat {
 		}
 	}
 	t := &spMat{rows: m, cols: m, idx: make([][]int, m), val: make([][]float64, m)}
-	for j := 0; j < m; j++ {
+	for j := range m {
 		for k, i := range resIdx[j] {
 			t.idx[i] = append(t.idx[i], j)
 			t.val[i] = append(t.val[i], resVal[j][k])
@@ -145,15 +145,15 @@ func coletree(m, nc int, cols func(int) []int, perm []int) (parent, firstRowElt 
 	for i := range firstRowElt {
 		firstRowElt[i] = nc
 	}
-	for i := 0; i < diagSize; i++ {
+	for i := range diagSize {
 		firstRowElt[i] = i
 	}
-	for col := 0; col < nc; col++ {
+	for col := range nc {
 		for _, row := range cols(perm[col]) {
 			firstRowElt[row] = min(firstRowElt[row], col)
 		}
 	}
-	for col := 0; col < nc; col++ {
+	for col := range nc {
 		foundDiag := col >= m
 		pp[col] = col
 		cset := col
@@ -218,14 +218,14 @@ func factorSparseQR(a *spMat) *sparseQR {
 	// factorize. Column permC[i] of pmat is column i of a.
 	pmatIdx := make([][]int, n)
 	pmatVal := make([][]float64, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		pmatIdx[permC[i]] = a.idx[i]
 		pmatVal[permC[i]] = a.val[i]
 	}
 	pcols := func(j int) []int { return pmatIdx[j] }
 
 	max2Norm := 0.0
-	for j := 0; j < n; j++ {
+	for j := range n {
 		sum := 0.0
 		for _, v := range pmatVal[j] {
 			sum += v * v
@@ -251,7 +251,7 @@ func factorSparseQR(a *spMat) *sparseQR {
 	tval := make([]float64, m)
 
 	nonzeroCol := 0
-	for col := 0; col < n; col++ {
+	for col := range n {
 		for i := range mark {
 			mark[i] = -1
 		}
@@ -392,7 +392,7 @@ func factorSparseQR(a *spMat) *sparseQR {
 		// SparseMatrix::insert, which sorts each column.
 		pr := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
 		perm := make([]int, n)
-		for j := 0; j < n; j++ {
+		for j := range n {
 			idx, val := r.idx[pivotperm[j]], r.val[pivotperm[j]]
 			for k := range idx {
 				p := len(pr.idx[j])
@@ -424,7 +424,7 @@ func maxi(a, b float64) float64 {
 
 // applyQt overwrites b with Q' b (SparseQR_QProduct, transposed).
 func (f *sparseQR) applyQt(b []float64) {
-	for k := 0; k < min(f.m, f.n); k++ {
+	for k := range min(f.m, f.n) {
 		tau := f.q.colDot(k, b)
 		if tau == 0 {
 			continue

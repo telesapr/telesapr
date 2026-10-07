@@ -38,7 +38,7 @@ func randomKnots(r *rand.Rand, deg, n int, clamped bool) []float64 {
 
 func randomCurve(r *rand.Rand, deg, n int, clamped bool) BSplineCurve {
 	c := BSplineCurve{Deg: deg, Knots: randomKnots(r, deg, n, clamped)}
-	for i := 0; i < n; i++ {
+	for range n {
 		c.Ctrl = append(c.Ctrl, geom.Vector{X: 10 * r.Float64(), Y: 10 * r.Float64(), Z: 10 * r.Float64()})
 		c.Weight = append(c.Weight, 0.5+r.Float64())
 	}
@@ -47,10 +47,10 @@ func randomCurve(r *rand.Rand, deg, n int, clamped bool) BSplineCurve {
 
 func randomSurface(r *rand.Rand, du, dv, nu, nv int, clamped bool) BSplineSurface {
 	s := BSplineSurface{DegU: du, DegV: dv, KnotsU: randomKnots(r, du, nu, clamped), KnotsV: randomKnots(r, dv, nv, clamped)}
-	for i := 0; i < nu; i++ {
+	for i := range nu {
 		var row []geom.Vector
 		var w []float64
-		for j := 0; j < nv; j++ {
+		for j := range nv {
 			row = append(row, geom.Vector{X: float64(i) + r.Float64(), Y: float64(j) + r.Float64(), Z: 3 * r.Float64()})
 			w = append(w, 0.5+r.Float64())
 		}
@@ -150,7 +150,7 @@ func TestBSplineSurfacePatches(t *testing.T) {
 				t.Fatalf("%dx%d patches for %d x %d breaks", len(ps), len(ps[0]), len(us), len(vs))
 			}
 			u0, u1, v0, v1 := s.Domain()
-			for k := 0; k < 60; k++ {
+			for range 60 {
 				u := u0 + (u1-u0)*r.Float64()
 				v := v0 + (v1-v0)*r.Float64()
 				a, x := spanOf(us, u)

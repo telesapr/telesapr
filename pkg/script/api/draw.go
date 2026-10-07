@@ -131,7 +131,7 @@ func (d *Doc) Polyline(closed bool, points ...Vec) (lines []Entity) {
 		if closed {
 			n = len(points)
 		}
-		for i := 0; i < n; i++ {
+		for i := range n {
 			lines = append(lines, d.Line(points[i], points[(i+1)%len(points)]))
 		}
 		for i := 1; i < len(lines); i++ {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -100,7 +100,7 @@ func Import(src, dst string) (*Doc, error) {
 		for path, err := range res.Failed {
 			failed = append(failed, fmt.Sprintf("%s: %v", path, err))
 		}
-		sort.Strings(failed)
+		slices.Sort(failed)
 		return nil, fmt.Errorf("can't import %s: %s", src, strings.Join(failed, "; "))
 	}
 	return Open(plan.Root().Dst)

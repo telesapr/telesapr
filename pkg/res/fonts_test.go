@@ -43,8 +43,8 @@ func TestFonts(t *testing.T) {
 		s0, t0, s1, t1, w, h := bf.LocateGlyph(cp)
 		fmt.Fprintf(&b, "glyph %x width %d loc %x %x %x %x %d %d\n", cp, bf.GetWidth(cp), s0, t0, s1, t1, w, h)
 		x0, y0 := int(s0*float64(bf.Texture.Width)), int(t0*float64(bf.Texture.Height))
-		for y := 0; y < h; y++ {
-			for x := 0; x < w; x++ {
+		for y := range h {
+			for x := range w {
 				if bf.Texture.Data[(y0+y)*bf.Texture.Stride+x0+x] != 0 {
 					b.WriteByte('#')
 				} else {

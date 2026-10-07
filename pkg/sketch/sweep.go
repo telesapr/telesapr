@@ -307,7 +307,7 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what str
 			var u geom.Vector
 			best := math.Inf(1)
 			ref := n.NormalDir(0).WithMagnitude(1)
-			for k := 0; k < 360; k++ {
+			for k := range 360 {
 				d := ref.RotatedAroundAxis(n, float64(k)*math.Pi/180)
 				if x := dist(c.Plus(d.ScaledBy(r))); x < best-sweepTol {
 					best, u = x, d
@@ -496,10 +496,10 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		return
 	}
 	n := g.sourceLoopNormal(sk)
-	face := core.Entity{}
-	face.Type = core.EntityFaceNormalPt
-	face.Group = g.H
-	face.NumNormal = geom.Quaternion{X: n.X, Y: n.Y, Z: n.Z}
+	face := core.Entity{
+		Type:      core.EntityFaceNormalPt,
+		Group:     g.H,
+		NumNormal: geom.Quaternion{X: n.X, Y: n.Y, Z: n.Z}}
 	face.Point[0] = g.RemapEntity(pt, RemapBottom)
 	face.H = g.RemapEntity(core.NoEntity, RemapBottom)
 	*entity = append(*entity, face)
@@ -521,8 +521,7 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 	}
 	steps, err := g.sweepPath(sk)
 	if err != nil {
-		var pe *pathError
-		if errors.As(err, &pe) {
+		if pe, ok := errors.AsType[*pathError](err); ok {
 			g.setProblem(pe.at, "%s", pe.msg)
 		} else {
 			g.setProblem(nil, "%v", err)

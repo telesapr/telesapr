@@ -103,7 +103,7 @@ func (pm *Pixmap) ConvertTo(format PixmapFormat) {
 		panic("res: unexpected target format")
 	}
 	bpp := pm.BytesPerPixel()
-	for j := 0; j < pm.Height; j++ {
+	for j := range pm.Height {
 		row := pm.Data[j*pm.Stride:]
 		for i := 0; i != pm.Width*bpp; i += bpp {
 			row[i], row[i+2] = row[i+2], row[i]
@@ -118,7 +118,7 @@ func (pm *Pixmap) Equals(o *Pixmap) bool {
 		return false
 	}
 	n := pm.Width * pm.BytesPerPixel()
-	for y := 0; y < pm.Height; y++ {
+	for y := range pm.Height {
 		if !bytes.Equal(pm.Data[y*pm.Stride:y*pm.Stride+n], o.Data[y*o.Stride:y*o.Stride+n]) {
 			return false
 		}
@@ -178,12 +178,12 @@ func FromImage(img image.Image, flip bool) *Pixmap {
 	}
 	b := img.Bounds()
 	pm := NewPixmap(format, b.Dx(), b.Dy())
-	for y := 0; y < pm.Height; y++ {
+	for y := range pm.Height {
 		dy := y
 		if flip {
 			dy = pm.Height - y - 1
 		}
-		for x := 0; x < pm.Width; x++ {
+		for x := range pm.Width {
 			var c core.RgbaColor
 			if n, ok := img.(*image.NRGBA); ok {
 				i := n.PixOffset(b.Min.X+x, b.Min.Y+y)
@@ -202,8 +202,8 @@ func FromImage(img image.Image, flip bool) *Pixmap {
 // ToNRGBA returns the pixmap as a non-premultiplied image.
 func (pm *Pixmap) ToNRGBA() *image.NRGBA {
 	img := image.NewNRGBA(image.Rect(0, 0, pm.Width, pm.Height))
-	for y := 0; y < pm.Height; y++ {
-		for x := 0; x < pm.Width; x++ {
+	for y := range pm.Height {
+		for x := range pm.Width {
 			c := pm.GetPixel(x, y)
 			i := img.PixOffset(x, y)
 			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = c.Red, c.Green, c.Blue, c.Alpha
@@ -219,14 +219,14 @@ func (pm *Pixmap) WritePng(w io.Writer, flip bool) error {
 	switch pm.Format {
 	case FormatA:
 		g := image.NewGray(image.Rect(0, 0, pm.Width, pm.Height))
-		for y := 0; y < pm.Height; y++ {
+		for y := range pm.Height {
 			copy(g.Pix[y*g.Stride:y*g.Stride+pm.Width], pm.Data[y*pm.Stride:])
 		}
 		img = g
 	case FormatRGB, FormatBGR:
 		r := image.NewRGBA(image.Rect(0, 0, pm.Width, pm.Height))
-		for y := 0; y < pm.Height; y++ {
-			for x := 0; x < pm.Width; x++ {
+		for y := range pm.Height {
+			for x := range pm.Width {
 				c := pm.GetPixel(x, y)
 				i := r.PixOffset(x, y)
 				r.Pix[i], r.Pix[i+1], r.Pix[i+2], r.Pix[i+3] = c.Red, c.Green, c.Blue, 255

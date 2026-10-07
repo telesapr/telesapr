@@ -34,7 +34,7 @@ func splitIDFString(line string) []string {
 	inString := false
 	inQuotes := false
 
-	for i := 0; i < len(line); i++ {
+	for i := range len(line) {
 		c := line[i]
 		if inQuotes {
 			if c != '"' {
@@ -129,12 +129,12 @@ func isHoleDuplicate(el []core.Entity, x, y, r float64) bool {
 // them.
 
 func idfNewPoint(el *[]core.Entity, id *int, p geom.Vector, visible bool) core.HEntity {
-	en := core.Entity{}
-	en.Type = core.EntityPointNCopy
-	en.Group = core.HGroup{V: 462}
-	en.ActPoint = p
-	en.Style = core.HStyle{V: core.StyleDatum}
-	en.ActVisible = visible
+	en := core.Entity{
+		Type:       core.EntityPointNCopy,
+		Group:      core.HGroup{V: 462},
+		ActPoint:   p,
+		Style:      core.HStyle{V: core.StyleDatum},
+		ActVisible: visible}
 
 	*id++
 	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
@@ -150,8 +150,8 @@ func idfStyle(keepout bool) core.HStyle {
 }
 
 func idfNewLine(el *[]core.Entity, id *int, p0, p1 core.HEntity, keepout bool) core.HEntity {
-	en := core.Entity{}
-	en.Type = core.EntityLineSegment
+	en := core.Entity{
+		Type: core.EntityLineSegment}
 	en.Point[0] = p0
 	en.Point[1] = p1
 	en.Group = core.HGroup{V: 493}
@@ -166,11 +166,11 @@ func idfNewLine(el *[]core.Entity, id *int, p0, p1 core.HEntity, keepout bool) c
 }
 
 func idfNewNormal(el *[]core.Entity, id *int, normal geom.Quaternion) core.HEntity {
-	en := core.Entity{}
-	en.Type = core.EntityNormalNCopy
-	en.Group = core.HGroup{V: 472}
-	en.ActNormal = normal
-	en.Style = core.HStyle{V: core.StyleActiveGrp}
+	en := core.Entity{
+		Type:      core.EntityNormalNCopy,
+		Group:     core.HGroup{V: 472},
+		ActNormal: normal,
+		Style:     core.HStyle{V: core.StyleActiveGrp}}
 	// to be visible we need to add a point.
 	en.Point[0] = idfNewPoint(el, id, geom.Vector{Z: 3}, true)
 	en.ActVisible = true
@@ -182,8 +182,8 @@ func idfNewNormal(el *[]core.Entity, id *int, normal geom.Quaternion) core.HEnti
 }
 
 func idfNewArc(el *[]core.Entity, id *int, p0, p1, pc, hnorm core.HEntity, keepout bool) core.HEntity {
-	en := core.Entity{}
-	en.Type = core.EntityArcOfCircle
+	en := core.Entity{
+		Type: core.EntityArcOfCircle}
 	en.Point[0] = pc
 	en.Point[1] = p0
 	en.Point[2] = p1
@@ -202,12 +202,12 @@ func idfNewArc(el *[]core.Entity, id *int, p0, p1, pc, hnorm core.HEntity, keepo
 }
 
 func idfNewDistance(el *[]core.Entity, id *int, distance float64) core.HEntity {
-	en := core.Entity{}
-	en.Type = core.EntityDistance
-	en.Group = core.HGroup{V: 472}
-	en.ActDistance = distance
-	en.Style = core.HStyle{V: core.StyleActiveGrp}
-	en.ActVisible = false
+	en := core.Entity{
+		Type:        core.EntityDistance,
+		Group:       core.HGroup{V: 472},
+		ActDistance: distance,
+		Style:       core.HStyle{V: core.StyleActiveGrp},
+		ActVisible:  false}
 
 	*id++
 	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
@@ -216,8 +216,8 @@ func idfNewDistance(el *[]core.Entity, id *int, distance float64) core.HEntity {
 }
 
 func idfNewCircle(el *[]core.Entity, id *int, p0, hdist, hnorm core.HEntity, keepout bool) {
-	en := core.Entity{}
-	en.Type = core.EntityCircle
+	en := core.Entity{
+		Type: core.EntityCircle}
 	en.Point[0] = p0
 	en.Normal = hnorm
 	en.Distance = hdist
@@ -315,7 +315,7 @@ func makeBeziersForArcs(sbl *srf.SBezierList, center, pa geom.Vector,
 	}
 	dtheta /= float64(n)
 
-	for i := 0; i < n; i++ {
+	for range n {
 		c := libm.Cos(theta)
 		s := libm.Sin(theta)
 		// The start point of the curve, and the tangent vector at

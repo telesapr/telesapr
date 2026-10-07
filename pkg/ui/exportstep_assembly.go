@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -92,4 +93,4 @@ func stepDirection(v geom.Vector) string {
 
 // cfmtReal writes a real for STEP: ten decimals at most, with the point
 // a STEP real must have, as "1." or "0.7071067812".
-func cfmtReal(v float64) string { return strings.TrimRight(sprintf("%.10f", v), "0") }
+func cfmtReal(v float64) string { return strings.TrimRight(fmt.Sprintf("%.10f", v), "0") }

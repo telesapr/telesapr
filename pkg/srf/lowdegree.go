@@ -36,12 +36,12 @@ func bernsteinInverse(d int, t []float64) [][]float64 {
 	a := make([][]float64, n)
 	for k := range a {
 		a[k] = make([]float64, 2*n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			a[k][i] = binomialF(d, i) * math.Pow(t[k], float64(i)) * math.Pow(1-t[k], float64(d-i))
 		}
 		a[k][n+k] = 1
 	}
-	for c := 0; c < n; c++ {
+	for c := range n {
 		p := c
 		for r := c + 1; r < n; r++ {
 			if math.Abs(a[r][c]) > math.Abs(a[p][c]) {
@@ -53,7 +53,7 @@ func bernsteinInverse(d int, t []float64) [][]float64 {
 		for j := range a[c] {
 			a[c][j] /= f
 		}
-		for r := 0; r < n; r++ {
+		for r := range n {
 			if r == c || a[r][c] == 0 {
 				continue
 			}
@@ -129,7 +129,7 @@ func fullKnotVector(d int, breaks []float64) []float64 {
 		k = append(k, breaks[0])
 	}
 	for _, b := range breaks[1 : len(breaks)-1] {
-		for i := 0; i < d; i++ {
+		for range d {
 			k = append(k, b)
 		}
 	}

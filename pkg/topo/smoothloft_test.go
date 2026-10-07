@@ -17,7 +17,7 @@ import (
 // its corners at radius r, the first at angle rot.
 func polygonAt(n int, r, cx, cy, z, rot float64) []srf.SBezier {
 	var p []geom.Vector
-	for i := 0; i < n; i++ {
+	for i := range n {
 		a := rot + 2*math.Pi*float64(i)/float64(n)
 		p = append(p, v(cx+r*math.Cos(a), cy+r*math.Sin(a), z))
 	}
@@ -256,7 +256,7 @@ func smoothLoftCase(r *rand.Rand) [][]srf.SBezier {
 	k := 3 + r.Intn(4)
 	z := 0.0
 	var loops [][]srf.SBezier
-	for i := 0; i < k; i++ {
+	for range k {
 		cx, cy := 2*(r.Float64()-0.5), 2*(r.Float64()-0.5)
 		rad := 8 + 6*r.Float64()
 		switch r.Intn(3) {
@@ -286,7 +286,7 @@ func TestSmoothLoftSweep(t *testing.T) {
 	r := rand.New(rand.NewSource(20))
 	col := core.NewRgbaColor(100, 100, 100, 255)
 	points, failed := 0, 0
-	for c := 0; c < 12; c++ {
+	for c := range 12 {
 		loops := smoothLoftCase(r)
 		top := loops[len(loops)-1][0].Start().Z
 		bs, err := topo.SmoothLoftSurface(loops, 0)
@@ -296,7 +296,7 @@ func TestSmoothLoftSweep(t *testing.T) {
 		whole := loftVolumeBelow(bs, loops[0], top)
 		zc := top * (0.3 + 0.4*r.Float64())
 		below := loftVolumeBelow(bs, loops[0], zc)
-		for op := 0; op < 4; op++ {
+		for op := range 4 {
 			points++
 			name := fmt.Sprintf("case %d (%d sections), op %d", c, len(loops), op)
 			sh, err := topo.MakeSmoothLoft(loops, 0, col, srf.OriginFor(9, 0))

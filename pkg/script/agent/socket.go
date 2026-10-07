@@ -148,14 +148,12 @@ func Accept(ctx context.Context, l net.Listener, b Backend) {
 		if err != nil {
 			return
 		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 			defer stop()
 			_ = Serve(ctx, conn, b)
 			_ = conn.Close()
-		}()
+		})
 	}
 }
 

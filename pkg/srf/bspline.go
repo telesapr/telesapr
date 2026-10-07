@@ -365,10 +365,10 @@ func (s *BSplineSurface) Patches() ([][]SSurface, error) {
 	nb := len(rows[0])
 	// Then along u, column by column of each span along v.
 	var out [][]SSurface
-	for b := 0; b < nb; b++ {
+	for b := range nb {
 		for k := 0; k <= s.DegV; k++ {
 			col := make([]geom.Vector4, nu)
-			for i := 0; i < nu; i++ {
+			for i := range nu {
 				col[i] = rows[i][b][k]
 			}
 			segs := bezierSegments(s.DegU, append([]float64(nil), s.KnotsU...), col)

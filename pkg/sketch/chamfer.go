@@ -458,8 +458,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	var sh srf.SShell
 	sh.MakeFromCopyOf(&prev.RunningShell)
 	if err := topo.FilletPicks(&sh, arcs, d, srf.OriginFor(g.H.V, 0), true); err != nil {
-		var fe *topo.FilletError
-		if errors.As(err, &fe) {
+		if fe, ok := errors.AsType[*topo.FilletError](err); ok {
 			at := fe.At
 			g.setProblem(&at, "%v", err)
 		} else {

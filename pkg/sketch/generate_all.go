@@ -298,13 +298,13 @@ func (sk *Sketch) ForceReferences() {
 		origin := sk.MustGetEntity(wrkpl.Point[0])
 		origin.PointForceTo(sk, geom.Vector{})
 		origin.Construction = true
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			sk.GetParam(origin.Param[k]).Known = true
 		}
 		// The quaternion that defines the rotation, from the table.
 		normal := sk.MustGetEntity(wrkpl.Normal)
 		normal.NormalForceTo(sk, rq.q)
-		for k := 0; k < 4; k++ {
+		for k := range 4 {
 			sk.GetParam(normal.Param[k]).Known = true
 		}
 	}

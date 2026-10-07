@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -113,9 +113,9 @@ func (t Transform) ApplyDir(p geom.Vector) geom.Vector {
 // Then is t followed by u.
 func (t Transform) Then(u Transform) Transform {
 	var r Transform
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 3; j++ {
-			for k := 0; k < 3; k++ {
+	for i := range 3 {
+		for j := range 3 {
+			for k := range 3 {
 				r.M[i][j] += u.M[i][k] * t.M[k][j]
 			}
 		}
@@ -1191,8 +1191,7 @@ func (r *reader) shellFaces(in *Instance, flip bool, skip map[string]int, errs m
 		f, err := r.face(r.f.Get(v.Ref))
 		if err != nil {
 			reason := "bad face"
-			var ee *entityError
-			if errors.As(err, &ee) {
+			if ee, ok := errors.AsType[*entityError](err); ok {
 				reason = ee.reason()
 			}
 			skip[reason]++
@@ -1732,8 +1731,8 @@ func (a *assembly) placementOf(ref int, rep int) (Transform, bool) {
 		f := buildAxes(o, z, x, okx)
 		t := frameTransform(f)
 		if s, ok := num(ps[off+3]); ok && s > 0 {
-			for i := 0; i < 3; i++ {
-				for j := 0; j < 3; j++ {
+			for i := range 3 {
+				for j := range 3 {
 					t.M[i][j] *= s
 				}
 			}
@@ -2123,8 +2122,7 @@ func ReadModel(f *File) *Model {
 		}
 		if err != nil {
 			reason := "bad " + in.Name()
-			var ee *entityError
-			if errors.As(err, &ee) {
+			if ee, ok := errors.AsType[*entityError](err); ok {
 				reason = ee.reason()
 			}
 			m.unsupported[reason]++
@@ -2173,7 +2171,7 @@ func ReadModel(f *File) *Model {
 		for n := range found {
 			names = append(names, n)
 		}
-		sort.Strings(names)
+		slices.Sort(names)
 		for _, n := range names {
 			m.unsupported["unsupported "+n] += found[n]
 		}

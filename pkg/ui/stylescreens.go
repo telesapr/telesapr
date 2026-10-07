@@ -4,6 +4,8 @@ package ui
 // text window screens (C++ style.cpp from Style::CreateCustomStyle on).
 
 import (
+	"fmt"
+
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 )
@@ -44,7 +46,7 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 	gw.GroupSelection()
 
 	ss.UndoRemember()
-	for i := 0; i < gw.gs.entities; i++ {
+	for i := range gw.gs.entities {
 		he := gw.gs.entity[i]
 		e := sk.MustGetEntity(he)
 		if !entityIsStylable(e) {
@@ -60,7 +62,7 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 		r.Style = core.HStyle{V: v}
 		sk.MarkGroupDirty(r.Group, false)
 	}
-	for i := 0; i < gw.gs.constraints; i++ {
+	for i := range gw.gs.constraints {
 		c := sk.GetConstraint(gw.gs.constraint[i])
 		if !constraintIsStylable(c) {
 			continue
@@ -231,7 +233,7 @@ func (tw *TextWindow) ScreenChangeStyleMetric(link int, v uint32) {
 
 	var editValue string
 	if units == core.UnitsPixels {
-		editValue = sprintf("%.2f", val)
+		editValue = fmt.Sprintf("%.2f", val)
 	} else {
 		editValue = tw.ss.MmToString(val, true)
 	}
@@ -245,7 +247,7 @@ func (tw *TextWindow) ScreenChangeStyleMetric(link int, v uint32) {
 func (tw *TextWindow) ScreenChangeStyleTextAngle(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
-	tw.ShowEditControl(9, sprintf("%.2f", s.TextAngle))
+	tw.ShowEditControl(9, fmt.Sprintf("%.2f", s.TextAngle))
 	tw.edit.style = hs
 	tw.edit.meaning = EditStyleTextAngle
 }
@@ -493,7 +495,7 @@ func (tw *TextWindow) ShowStyleInfo() {
 	}
 	for i, src := range patternsSource {
 		var pattern []byte
-		for k := 0; k < len(src); k++ {
+		for k := range len(src) {
 			switch src[k] {
 			case ' ':
 				pattern = append(pattern, ' ')

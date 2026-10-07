@@ -6,7 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -69,7 +69,7 @@ func TestPackedModel(t *testing.T) {
 	for _, f := range zr.File {
 		names = append(names, f.Name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	got := strings.Join(names, " ")
 	for _, w := range []string{"model.tlspr", "parts/part.tlspr", "parts/cylinder.step", "parts/block.stl", "cache/step/"} {
 		if !strings.Contains(got, w) {

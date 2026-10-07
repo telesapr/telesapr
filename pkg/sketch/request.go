@@ -98,31 +98,31 @@ func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.P
 		}
 	}
 
-	entity := core.Entity{}
-	entity.Type = entityType
-	entity.ExtraPoints = r.ExtraPoints
-	entity.Group = r.Group
-	entity.Style = r.Style
-	entity.Workplane = r.Workplane
-	entity.Construction = r.Construction
-	entity.Str = r.Str
-	entity.Font = r.Font
-	entity.File = r.File
-	entity.AspectRatio = r.AspectRatio
-	entity.H = r.H.Entity(0)
+	entity := core.Entity{
+		Type:         entityType,
+		ExtraPoints:  r.ExtraPoints,
+		Group:        r.Group,
+		Style:        r.Style,
+		Workplane:    r.Workplane,
+		Construction: r.Construction,
+		Str:          r.Str,
+		Font:         r.Font,
+		File:         r.File,
+		AspectRatio:  r.AspectRatio,
+		H:            r.H.Entity(0)}
 
 	entityOffset := 1
 	if entityType == core.EntityType(0) {
 		entityOffset = 0
 	}
 
-	for i := 0; i < pointCount; i++ {
-		point := core.Entity{}
-		point.Workplane = r.Workplane
-		point.H = r.H.Entity(i + entityOffset)
-		point.Group = r.Group
-		point.Style = r.Style
-		point.Construction = r.Construction
+	for i := range pointCount {
+		point := core.Entity{
+			Workplane:    r.Workplane,
+			H:            r.H.Entity(i + entityOffset),
+			Group:        r.Group,
+			Style:        r.Style,
+			Construction: r.Construction}
 
 		if core.IsFreeIn3D(r.Workplane) {
 			point.Type = core.EntityPointIn3D
@@ -142,12 +142,12 @@ func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.P
 	}
 
 	if hasNormal {
-		normal := core.Entity{}
-		normal.Workplane = r.Workplane
-		normal.H = r.H.Entity(32)
-		normal.Group = r.Group
-		normal.Style = r.Style
-		normal.Construction = r.Construction
+		normal := core.Entity{
+			Workplane:    r.Workplane,
+			H:            r.H.Entity(32),
+			Group:        r.Group,
+			Style:        r.Style,
+			Construction: r.Construction}
 
 		if core.IsFreeIn3D(r.Workplane) {
 			normal.Type = core.EntityNormalIn3D
@@ -173,12 +173,12 @@ func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.P
 	}
 
 	if hasDistance {
-		distance := core.Entity{}
-		distance.Workplane = r.Workplane
-		distance.H = r.H.Entity(64)
-		distance.Group = r.Group
-		distance.Style = r.Style
-		distance.Type = core.EntityDistance
+		distance := core.Entity{
+			Workplane: r.Workplane,
+			H:         r.H.Entity(64),
+			Group:     r.Group,
+			Style:     r.Style,
+			Type:      core.EntityDistance}
 		distance.Param[0] = r.addParam(params, r.H.Param(64))
 
 		if entities != nil {
@@ -235,7 +235,7 @@ func (r *Request) IndexOfPoint(h core.HEntity) int {
 		return -1
 	}
 
-	for i := 0; i < core.MaxPointsInEntity; i++ {
+	for i := range core.MaxPointsInEntity {
 		if h == r.H.Entity(i+1) {
 			return i
 		}

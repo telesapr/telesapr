@@ -15,7 +15,7 @@ import "github.com/telesapr/telesapr/pkg/geom"
 func blossom(pts []geom.Vector4, us []float64) geom.Vector4 {
 	w := append([]geom.Vector4(nil), pts...)
 	for k, u := range us {
-		for i := 0; i < len(w)-1-k; i++ {
+		for i := range len(w) - 1 - k {
 			w[i] = w[i].ScaledBy(1 - u).Plus(w[i+1].ScaledBy(u))
 		}
 	}

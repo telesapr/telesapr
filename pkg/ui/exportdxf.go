@@ -6,7 +6,8 @@ package ui
 import (
 	"math"
 	"os"
-	"sort"
+	"slices"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/dxf"
@@ -64,17 +65,18 @@ func (w *dxfFileWriter) FinishAndCloseFile() {
 	}
 
 	if len(iface.messages) > 0 {
-		text := "Some aspects of the drawing have no DXF equivalent and " +
-			"were not exported:\n"
+		var text strings.Builder
+		text.WriteString("Some aspects of the drawing have no DXF equivalent and " +
+			"were not exported:\n")
 		var msgs []string
 		for m := range iface.messages {
 			msgs = append(msgs, m)
 		}
-		sort.Strings(msgs)
+		slices.Sort(msgs)
 		for _, m := range msgs {
-			text += " * " + m + "\n"
+			text.WriteString(" * " + m + "\n")
 		}
-		ss.Message("%s", text)
+		ss.Message("%s", text.String())
 	}
 }
 
@@ -142,7 +144,7 @@ func (d *dxfWriteInterface) WriteLayers(w *dxf.Writer) {
 	for v := range usedStyles {
 		styles = append(styles, v)
 	}
-	sort.Slice(styles, func(i, j int) bool { return styles[i] < styles[j] })
+	slices.Sort(styles)
 
 	for _, v := range styles {
 		s := d.writer.ss.SK.StyleGet(hstyle(v))
@@ -459,7 +461,7 @@ func (d *dxfWriteInterface) writeSpline(sb *srf.SBezier) {
 	if sb.Degree < 2 {
 		panic("ui: unexpected degree of spline")
 	}
-	for k := 0; k < 2*(sb.Degree+1); k++ {
+	for k := range 2 * (sb.Degree + 1) {
 		spline.Knots = append(spline.Knots, float64(k/(sb.Degree+1)))
 	}
 	for i := 0; i <= sb.Degree; i++ {

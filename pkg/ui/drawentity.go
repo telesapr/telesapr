@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/render"
@@ -63,7 +65,7 @@ func groupDescription(g *sketch.Group) string {
 	if name == "" {
 		name = "(unnamed)"
 	}
-	return sprintf("g%03x-%s", g.H.V, name)
+	return fmt.Sprintf("g%03x-%s", g.H.V, name)
 }
 
 // getOrGenerateBezierCurves is Entity::GetOrGenerateBezierCurves.
@@ -365,7 +367,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		if how == EntityDrawHidden {
 			return
 		}
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			asReference := i == 1
 			if asReference {
 				if !e.H.Request().IsFromReferences() {
@@ -560,7 +562,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 
 		hf := canvas.GetFill(fill)
 		var v [4]geom.Vector
-		for i := 0; i < 4; i++ {
+		for i := range 4 {
 			v[i] = gw.pointGetDrawNum(sk.GetEntity(e.Point[i]))
 		}
 		iu := v[3].Minus(v[0])
@@ -572,7 +574,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 			hsErr := canvas.GetStroke(errStroke)
 			canvas.DrawLine(v[0], v[2], hsErr)
 			canvas.DrawLine(v[1], v[3], hsErr)
-			for i := 0; i < 4; i++ {
+			for i := range 4 {
 				canvas.DrawLine(v[i], v[(i+1)%4], hsErr)
 			}
 		} else {

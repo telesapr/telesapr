@@ -3,7 +3,7 @@ package topo
 import (
 	"errors"
 	"math"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -128,7 +128,7 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 		}
 	}
 	if sharp {
-		sort.Float64s(radii)
+		slices.Sort(radii)
 		names := make([]string, len(radii))
 		for i, r := range radii {
 			names[i] = strconv.FormatFloat(r, 'g', -1, 64)
@@ -207,7 +207,7 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 	setback := map[int]float64{}
 	for _, fe := range round {
 		d := 0.0
-		for k := 0; k < 2; k++ {
+		for k := range 2 {
 			base := p.Plus(fe.u[k].ScaledBy(fe.ss[k]))
 			d = math.Max(d, cross[fe.f[k]].Minus(base).Dot(away(fe)))
 		}
@@ -220,7 +220,7 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 		return p.Plus(away(fe).ScaledBy(setback[fe.e])).Plus(fe.u[k].ScaledBy(fe.ss[k]))
 	}
 	for _, fe := range round {
-		for k := 0; k < 2; k++ {
+		for k := range 2 {
 			c.at[[2]int{fe.e, fe.f[k]}] = point(fe, fe.f[k])
 		}
 		mid := p.Plus(away(fe).ScaledBy(setback[fe.e]))
@@ -319,7 +319,7 @@ func quinticArc(sb srf.SBezier) (srf.SBezier, error) {
 		for i := range bb {
 			bb[i] = bernstein(patchDeg, i, u)
 		}
-		for d := 0; d < 3; d++ {
+		for d := range 3 {
 			row := make([]float64, 8)
 			row[0] = bb[1] * comp(tp, d)
 			row[1] = -bb[4] * comp(tq, d)
@@ -401,7 +401,7 @@ func leastSquaresDense(a [][]float64, b []float64) ([]float64, bool) {
 			}
 		}
 	}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		piv := i
 		for k := i + 1; k < n; k++ {
 			if math.Abs(m[k][i]) > math.Abs(m[piv][i]) {
@@ -447,7 +447,7 @@ func setbackPatches(sides []setbackSide, out geom.Vector) ([]srf.SSurface, error
 	bestQ := math.Inf(-1)
 	var firstErr error
 	ns := len(sides)
-	for start := 0; start < ns; start++ {
+	for start := range ns {
 		if (ns/2)%2 == 1 && start > 1 {
 			break
 		}
@@ -533,8 +533,7 @@ func setbackLayout(sides []setbackSide) ([]srf.SSurface, error) {
 	}
 	ps, err := setbackUnit(unit)
 	if err != nil {
-		var fx *FilletError
-		if errors.As(err, &fx) {
+		if fx, ok := errors.AsType[*FilletError](err); ok {
 			return nil, filletErr(fx.At.ScaledBy(size).Plus(mid), "%s", fx.Msg)
 		}
 		return nil, err
@@ -592,7 +591,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 		// of the hole to a middle point, a patch for each fillet, with its
 		// section and the face's curve after it. Three curves or five meet
 		// in the middle, where an odd number can be tangent all round.
-		for m := 0; m < k; m++ {
+		for m := range k {
 			quads = append(quads, [4]ref{h(2 * m), h(2*m + 1),
 				{hole: -1, diag: (m + 1) % k}, {hole: -1, diag: m, rev: true}})
 			beta1 = append(beta1, 1)
@@ -682,7 +681,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 					}
 					i1, j1, _, _ := slot(s, k)
 					i0, j0, _, _ := slot(o[1], kk)
-					for d := 0; d < 3; d++ {
+					for d := range 3 {
 						eq(map[int]float64{pv(q, i1, j1, d): 1, pv(o[0], i0, j0, d): -1}, 0, hard)
 					}
 				}
@@ -709,7 +708,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 						i, j, _, _ := slot(o[1], mm)
 						return i, j
 					}
-					for d := 0; d < 3; d++ {
+					for d := range 3 {
 						co := map[int]float64{}
 						co[pv(o[0], ia1, ja1, d)] += 1
 						co[pv(q, ib1, jb1, d)] += 1
@@ -745,7 +744,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 			// In the quad's order: sides 2 and 3 run backwards.
 			for k := 0; k <= n; k++ {
 				i, j, _, _ := slot(s, k)
-				for d := 0; d < 3; d++ {
+				for d := range 3 {
 					eq(map[int]float64{pv(q, i, j, d): 1}, comp(ctrl[k], d), hard)
 				}
 			}
@@ -753,7 +752,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 				for k := 0; k <= n; k++ {
 					i, j, i1, j1 := slot(s, k)
 					co := map[int]float64{}
-					for d := 0; d < 3; d++ {
+					for d := range 3 {
 						co[pv(q, i1, j1, d)] += comp(side.e, d)
 						co[pv(q, i, j, d)] -= comp(side.e, d)
 					}
@@ -771,7 +770,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 				if k > 0 {
 					db1 = ctrl[k].Minus(ctrl[k-1])
 				}
-				for d := 0; d < 3; d++ {
+				for d := range 3 {
 					co := map[int]float64{pv(q, i1, j1, d): 1, pv(q, i, j, d): -1}
 					co[base+k] -= comp(side.e, d)
 					co[base+n+1] -= float64(n-k) / n * comp(db0, d)
@@ -825,7 +824,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 					continue
 				}
 				i, j, i1, j1 := slot(s, k)
-				for d := 0; d < 3; d++ {
+				for d := range 3 {
 					eq(map[int]float64{pv(q, i1, j1, d): 1, pv(q, i, j, d): -1}, comp(in, d)*reach, w)
 				}
 			}
@@ -835,10 +834,10 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 	// points spread over it.
 	const g = 7
 	for q := range quads {
-		for gu := 0; gu < g; gu++ {
-			for gv := 0; gv < g; gv++ {
+		for gu := range g {
+			for gv := range g {
 				u, v := (float64(gu)+0.5)/g, (float64(gv)+0.5)/g
-				for d := 0; d < 3; d++ {
+				for d := range 3 {
 					uu, uv, vv := map[int]float64{}, map[int]float64{}, map[int]float64{}
 					for i := 0; i <= n; i++ {
 						for j := 0; j <= n; j++ {

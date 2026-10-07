@@ -30,7 +30,7 @@ type lsCase struct {
 func genLeastSquaresCases() []lsCase {
 	rnd := rand.New(rand.NewSource(1))
 	var cases []lsCase
-	for c := 0; c < 500; c++ {
+	for c := range 500 {
 		m := 1 + rnd.Intn(24)
 		n := 1 + rnd.Intn(24)
 		density := 0.1 + 0.4*rnd.Float64()
@@ -135,7 +135,7 @@ func readLeastSquaresCases(t *testing.T, path string) []lsCase {
 	for pos < len(f) {
 		m, n, nnz := nextInt(), nextInt(), nextInt()
 		a := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
-		for k := 0; k < nnz; k++ {
+		for range nnz {
 			i, j := nextInt(), nextInt()
 			a.idx[j] = append(a.idx[j], i)
 			a.val[j] = append(a.val[j], nextFloat())

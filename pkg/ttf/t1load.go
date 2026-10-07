@@ -394,14 +394,14 @@ func psLoadField(p *psParser, field *t1Field, typ int, elem int, objects []any, 
 
 		case t1FieldTypeMMBBox:
 			temp := make([]int64, maxObjects*4)
-			for i := 0; i < 4; i++ {
+			for i := range 4 {
 				result := psToFixedArray(b, &cur, limit, maxObjects, temp[i*maxObjects:], 0)
 				if result < 0 || result < maxObjects {
 					return errInvalidFileFormat
 				}
 				psSkipSpaces(b, &cur, limit)
 			}
-			for i := 0; i < maxObjects; i++ {
+			for i := range maxObjects {
 				field.setBBox(objects[i], t1BBox{roundFix(temp[i]), roundFix(temp[i+maxObjects]),
 					roundFix(temp[i+2*maxObjects]), roundFix(temp[i+3*maxObjects])})
 			}
@@ -575,10 +575,7 @@ func t1ParseEncoding(f *t1Font, l *t1Loader) {
 		} else {
 			count = int(int32(p.toInt()))
 		}
-		arraySize := count
-		if count > 256 {
-			arraySize = 256
-		}
+		arraySize := min(count, 256)
 		p.skipSpaces()
 		if p.cursor >= limit {
 			return
@@ -945,7 +942,7 @@ func t1ParseBlendAxisTypes(f *t1Font, l *t1Loader) {
 		if err := t1AllocateBlend(f, 0, uint32(numAxis)); err != nil {
 			return err
 		}
-		for n := 0; n < numAxis; n++ {
+		for n := range numAxis {
 			tok := tokens[n]
 			if p.base[tok.start] == '/' {
 				tok.start++
@@ -975,7 +972,7 @@ func t1ParseBlendDesignPositions(f *t1Font, l *t1Loader) {
 		oldCursor, oldLimit := p.cursor, p.limit
 		numAxis := 0
 		designPos := make([][]int64, numDesigns)
-		for n := 0; n < numDesigns; n++ {
+		for n := range numDesigns {
 			tok := designTokens[n]
 			p.cursor = tok.start
 			p.limit = tok.limit
@@ -994,7 +991,7 @@ func t1ParseBlendDesignPositions(f *t1Font, l *t1Loader) {
 			} else if nAxis != numAxis {
 				return errInvalidFileFormat
 			}
-			for axis := 0; axis < nAxis; axis++ {
+			for axis := range nAxis {
 				tok2 := axisTokens[axis]
 				p.cursor = tok2.start
 				p.limit = tok2.limit
@@ -1024,7 +1021,7 @@ func t1ParseBlendDesignMap(f *t1Font, l *t1Loader) {
 			return err
 		}
 		blend := f.blend
-		for n := 0; n < numAxis; n++ {
+		for n := range numAxis {
 			m := &blend.designMap[n]
 			tok := axisTokens[n]
 			p.cursor = tok.start
@@ -1039,7 +1036,7 @@ func t1ParseBlendDesignMap(f *t1Font, l *t1Loader) {
 			m.designPoints = make([]int64, numPoints)
 			m.blendPoints = make([]int64, numPoints)
 			m.numPoints = byte(numPoints)
-			for q := 0; q < numPoints; q++ {
+			for q := range numPoints {
 				pt := pointTokens[q]
 				p.cursor = pt.start + 1
 				p.limit = pt.limit - 1
@@ -1079,7 +1076,7 @@ func t1ParseWeightVector(f *t1Font, l *t1Loader) {
 			blend.defaultWeightVector = wv[numDesigns:]
 		}
 		oldCursor, oldLimit := p.cursor, p.limit
-		for n := 0; n < numDesigns; n++ {
+		for n := range numDesigns {
 			tok := designTokens[n]
 			p.cursor = tok.start
 			p.limit = tok.limit

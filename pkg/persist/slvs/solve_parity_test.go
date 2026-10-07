@@ -5,7 +5,7 @@ import (
 	"math"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -49,7 +49,7 @@ func TestParityGroupSolveVsCpp(t *testing.T) {
 				for _, ss := range g.ThisShell.Surface {
 					faces = append(faces, uint32(ss.Face))
 				}
-				sort.Slice(faces, func(i, j int) bool { return faces[i] < faces[j] })
+				slices.Sort(faces)
 				want := cppShellFaces[name][hg.V]
 				if fmt.Sprint(faces) != fmt.Sprint(want) {
 					t.Errorf("group %08x: shell faces %x, C++ %x", hg.V, faces, want)

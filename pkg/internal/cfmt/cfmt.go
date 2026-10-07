@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -98,12 +99,7 @@ func Sprintf(format string, args ...any) string {
 }
 
 func has(flags []byte, f byte) bool {
-	for _, c := range flags {
-		if c == f {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(flags, f)
 }
 
 // goSpec rebuilds the directive for Go's fmt.

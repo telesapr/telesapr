@@ -4,6 +4,7 @@ package ui
 // being edited (C++ confscreen.cpp).
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
@@ -29,7 +30,7 @@ func (tw *TextWindow) ScreenChangeChordTolerance(link int, v uint32) {
 }
 
 func (tw *TextWindow) ScreenChangeMaxSegments(link int, v uint32) {
-	tw.ShowEditControl(3, sprintf("%d", tw.ss.MaxSegments))
+	tw.ShowEditControl(3, fmt.Sprintf("%d", tw.ss.MaxSegments))
 	tw.edit.meaning = EditMaxSegments
 	tw.edit.i = 0
 }
@@ -41,7 +42,7 @@ func (tw *TextWindow) ScreenChangeExportChordTolerance(link int, v uint32) {
 }
 
 func (tw *TextWindow) ScreenChangeExportMaxSegments(link int, v uint32) {
-	tw.ShowEditControl(3, sprintf("%d", tw.ss.ExportMaxSegments))
+	tw.ShowEditControl(3, fmt.Sprintf("%d", tw.ss.ExportMaxSegments))
 	tw.edit.meaning = EditMaxSegments
 	tw.edit.i = 1
 }
@@ -52,12 +53,12 @@ func (tw *TextWindow) ScreenChangeGridSpacing(link int, v uint32) {
 }
 
 func (tw *TextWindow) ScreenChangeDigitsAfterDecimal(link int, v uint32) {
-	tw.ShowEditControl(14, sprintf("%d", tw.ss.UnitDigitsAfterDecimal()))
+	tw.ShowEditControl(14, fmt.Sprintf("%d", tw.ss.UnitDigitsAfterDecimal()))
 	tw.edit.meaning = EditDigitsAfterDecimal
 }
 
 func (tw *TextWindow) ScreenChangeDigitsAfterDecimalDegree(link int, v uint32) {
-	tw.ShowEditControl(14, sprintf("%d", tw.ss.AfterDecimalDegree))
+	tw.ShowEditControl(14, fmt.Sprintf("%d", tw.ss.AfterDecimalDegree))
 	tw.edit.meaning = EditDigitsAfterDecimalDegree
 }
 
@@ -67,7 +68,7 @@ func (tw *TextWindow) ScreenChangeUseSIPrefixes(link int, v uint32) {
 }
 
 func (tw *TextWindow) ScreenChangeExportScale(link int, v uint32) {
-	tw.ShowEditControl(5, sprintf("%.3f", tw.ss.ExportScale))
+	tw.ShowEditControl(5, fmt.Sprintf("%.3f", tw.ss.ExportScale))
 	tw.edit.meaning = EditExportScale
 }
 

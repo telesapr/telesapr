@@ -22,10 +22,9 @@ func lineSketch(t *testing.T) (*Sketch, core.HRequest, core.HConstraint) {
 	sk.GenerateAll()
 	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, geom.Vector{})
 	sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, geom.Vector{X: 5, Y: 1})
-	hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+	hc := sk.AddConstraint(core.Constraint{
 		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: hg.Entity(0),
-		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 10,
-	}})
+		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 10})
 	sk.GenerateAll()
 	return sk, hr, hc
 }
@@ -131,8 +130,8 @@ func TestSetUnits(t *testing.T) {
 	sk.GenerateAll()
 	must(sk.SetGroupText(hg, GroupPitch, "w+1"))
 	must(sk.SetGroupText(hg, GroupCopies, "n"))
-	angle := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
-		Type: core.ConstraintAngle, Group: sk.GetConstraint(hc).Group, ValA: 30, Expr: "n*10"}})
+	angle := sk.AddConstraint(core.Constraint{
+		Type: core.ConstraintAngle, Group: sk.GetConstraint(hc).Group, ValA: 30, Expr: "n*10"})
 
 	check := sk.SetUnits(core.UnitMM)
 	if strings.Join(check, ",") != "w,k" {
@@ -331,8 +330,8 @@ func TestSignedAndRadiusText(t *testing.T) {
 	}
 	hg := sk.GroupOrder[1]
 	add := func(typ core.ConstraintType, v float64, other bool) *core.Constraint {
-		hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
-			Type: typ, Group: hg, ValA: v, Other: other}})
+		hc := sk.AddConstraint(core.Constraint{
+			Type: typ, Group: hg, ValA: v, Other: other})
 		return sk.GetConstraint(hc)
 	}
 
@@ -559,7 +558,7 @@ func TestSetConstraintValue(t *testing.T) {
 		{core.ConstraintDiameter, 1, true, 5, 10},
 		{core.ConstraintAngle, 1, false, -30, 30},
 	} {
-		c := &core.Constraint{ConstraintBase: core.ConstraintBase{Type: tc.typ, ValA: tc.was, Other: tc.other, Expr: "x"}}
+		c := &core.Constraint{Type: tc.typ, ValA: tc.was, Other: tc.other, Expr: "x"}
 		SetConstraintValue(c, tc.v)
 		if c.ValA != tc.want || c.Expr != "" {
 			t.Errorf("%v from %v with %v: %v %q, want %v", tc.typ, tc.was, tc.v, c.ValA, c.Expr, tc.want)

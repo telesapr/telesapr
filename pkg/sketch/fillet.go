@@ -105,8 +105,7 @@ func (g *Group) generateFilletShell(sk *Sketch) {
 	var sh srf.SShell
 	sh.MakeFromCopyOf(&prev.RunningShell)
 	if err := topo.FilletPicks(&sh, picks, g.ValB, srf.OriginFor(g.H.V, 0), false); err != nil {
-		var fe *topo.FilletError
-		if errors.As(err, &fe) {
+		if fe, ok := errors.AsType[*topo.FilletError](err); ok {
 			at := fe.At
 			g.setProblem(&at, "%v", err)
 		} else {

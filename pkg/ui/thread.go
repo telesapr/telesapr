@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"math"
 	"strings"
 
@@ -168,7 +169,7 @@ func (tw *TextWindow) ShowThread() {
 	}
 	starts := ""
 	if n := o.Spec.NumStarts(); n > 1 {
-		starts = sprintf(", %d starts", n)
+		starts = fmt.Sprintf(", %d starts", n)
 	}
 	tw.Printf(false, "%Bd             %s pitch, %s-hand%s", ss.MmToString(o.Spec.Pitch, false), hand, starts)
 	tw.Printf(false, "%Ba   %Ftlength%E    %s %Fl%Ll%f[change]%E", ss.MmToString(o.Length, false), lf(tw.ScreenChangeThread))

@@ -75,14 +75,14 @@ func colamdOrdering(m, n int, cols [][]int) []int {
 	colamdOrderChildren(n, col, p)
 
 	perm := make([]int, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		perm[p[i]] = i
 	}
 	return perm
 }
 
 func colamdInitRowsCols(nRow, nCol int, row []colamdRow, col []colamdCol, a, p []int) {
-	for c := 0; c < nCol; c++ {
+	for c := range nCol {
 		col[c].start = p[c]
 		col[c].length = p[c+1] - p[c]
 		col[c].shared1 = 1
@@ -90,12 +90,12 @@ func colamdInitRowsCols(nRow, nCol int, row []colamdRow, col []colamdCol, a, p [
 		col[c].shared3 = colamdEmpty
 		col[c].shared4 = colamdEmpty
 	}
-	for r := 0; r < nRow; r++ {
+	for r := range nRow {
 		row[r].length = 0
 		row[r].shared2 = -1
 	}
 	jumbled := false
-	for c := 0; c < nCol; c++ {
+	for c := range nCol {
 		lastRow := -1
 		for cp := p[c]; cp < p[c+1]; cp++ {
 			r := a[cp]
@@ -122,7 +122,7 @@ func colamdInitRowsCols(nRow, nCol int, row []colamdRow, col []colamdCol, a, p [
 	}
 
 	if jumbled {
-		for c := 0; c < nCol; c++ {
+		for c := range nCol {
 			for cp := p[c]; cp < p[c+1]; cp++ {
 				r := a[cp]
 				if row[r].shared2 != c {
@@ -133,7 +133,7 @@ func colamdInitRowsCols(nRow, nCol int, row []colamdRow, col []colamdCol, a, p [
 			}
 		}
 	} else {
-		for c := 0; c < nCol; c++ {
+		for c := range nCol {
 			for cp := p[c]; cp < p[c+1]; cp++ {
 				r := a[cp]
 				a[row[r].shared1] = c
@@ -142,7 +142,7 @@ func colamdInitRowsCols(nRow, nCol int, row []colamdRow, col []colamdCol, a, p [
 		}
 	}
 
-	for r := 0; r < nRow; r++ {
+	for r := range nRow {
 		row[r].shared2 = 0
 		row[r].shared1 = row[r].length
 	}
@@ -154,7 +154,7 @@ func colamdInitRowsCols(nRow, nCol int, row []colamdRow, col []colamdCol, a, p [
 			col[c].start = col[c-1].start + col[c-1].length
 			p[c] = col[c].start
 		}
-		for r := 0; r < nRow; r++ {
+		for r := range nRow {
 			for rp := row[r].start; rp < row[r].start+row[r].length; rp++ {
 				a[p[a[rp]]] = r
 				p[a[rp]]++
@@ -191,7 +191,7 @@ func colamdInitScoring(nRow, nCol int, row []colamdRow, col []colamdCol, a, head
 			col[c].killPrincipal()
 		}
 	}
-	for r := 0; r < nRow; r++ {
+	for r := range nRow {
 		deg := row[r].shared1
 		if deg > denseRowCount || deg == 0 {
 			row[r].kill()
@@ -428,7 +428,7 @@ func colamdFindOrdering(nRow, nCol, alen int, row []colamdRow, col []colamdCol, 
 }
 
 func colamdOrderChildren(nCol int, col []colamdCol, p []int) {
-	for i := 0; i < nCol; i++ {
+	for i := range nCol {
 		if !col[i].isDeadPrincipal() && col[i].shared2 == colamdEmpty {
 			parent := i
 			for {
@@ -451,7 +451,7 @@ func colamdOrderChildren(nCol int, col []colamdCol, p []int) {
 			col[parent].shared2 = order
 		}
 	}
-	for c := 0; c < nCol; c++ {
+	for c := range nCol {
 		p[col[c].shared2] = c
 	}
 }
@@ -508,12 +508,12 @@ func colamdDetectSuperCols(col []colamdCol, a, head []int, rowStart, rowLength i
 // and returns the new pfree.
 func colamdGarbageCollection(nRow, nCol int, row []colamdRow, col []colamdCol, a []int, pfree int) int {
 	pdest := 0
-	for c := 0; c < nCol; c++ {
+	for c := range nCol {
 		if col[c].isAlive() {
 			psrc := col[c].start
 			col[c].start = pdest
 			length := col[c].length
-			for j := 0; j < length; j++ {
+			for range length {
 				r := a[psrc]
 				psrc++
 				if row[r].isAlive() {
@@ -524,7 +524,7 @@ func colamdGarbageCollection(nRow, nCol int, row []colamdRow, col []colamdCol, a
 			col[c].length = pdest - col[c].start
 		}
 	}
-	for r := 0; r < nRow; r++ {
+	for r := range nRow {
 		if row[r].isAlive() {
 			if row[r].length == 0 {
 				row[r].kill()
@@ -545,7 +545,7 @@ func colamdGarbageCollection(nRow, nCol int, row []colamdRow, col []colamdCol, a
 			a[psrc] = row[r].shared2
 			row[r].start = pdest
 			length := row[r].length
-			for j := 0; j < length; j++ {
+			for range length {
 				c := a[psrc]
 				psrc++
 				if col[c].isAlive() {
@@ -560,7 +560,7 @@ func colamdGarbageCollection(nRow, nCol int, row []colamdRow, col []colamdCol, a
 }
 
 func colamdClearMark(nRow int, row []colamdRow) int {
-	for r := 0; r < nRow; r++ {
+	for r := range nRow {
 		if row[r].isAlive() {
 			row[r].shared2 = 0
 		}

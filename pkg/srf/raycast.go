@@ -107,7 +107,7 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 	if edgeInters == 2 {
 		// Two faces meet at the shell's edge. Classify each side.
 		var dotp [2]float64
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			dotp[i] = edgeNOut.DirectionCosineWith(interSurfN[i])
 		}
 		// Put the more-aligned face first.
@@ -140,14 +140,14 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 			var dev [2]float64
 			var flat [2]bool
 			nu := surfN.WithMagnitude(1)
-			for i := 0; i < 2; i++ {
+			for i := range 2 {
 				dev[i] = ProbeTangentFace(interSrf[i], p, interEdgeN[i], nu, &f[i], &flat[i])
 			}
 			dirs := [2]*Class{indir, outdir}
 			en := [2]geom.Vector{edgeNIn, edgeNOut}
-			for s := 0; s < 2; s++ {
+			for s := range 2 {
 				best := -1
-				for i := 0; i < 2; i++ {
+				for i := range 2 {
 					if f[i].Dot(en[s]) <= 0 {
 						continue
 					}
@@ -251,7 +251,7 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		var ep [2]geom.Vector
 		var bestDot [2]float64
 		var bestN [2]geom.Vector
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			bestDot[i] = veryNegative
 			ep[i] = en[i].Minus(edgeD.ScaledBy(en[i].Dot(edgeD))).WithMagnitude(1)
 		}
@@ -274,7 +274,7 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 						continue
 					}
 					f = f.WithMagnitude(1)
-					for k := 0; k < 2; k++ {
+					for k := range 2 {
 						dot := ep[k].Dot(f)
 						if dot > bestDot[k] {
 							bestDot[k] = dot
@@ -285,7 +285,7 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 			}
 		}
 		dirs := [2]*Class{indir, outdir}
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			dotn := en[i].DirectionCosineWith(bestN[i])
 			if bestDot[i] > 0 && math.Abs(dotn) < DotProductTol {
 				if surfN.Dot(bestN[i]) > 0 {
@@ -366,7 +366,7 @@ func rayDirection(i int) geom.Vector {
 func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
 	tol := ChordTolMm() + lengthEps
 	best, bestClear := SurfOutside, -1.0
-	for try := 0; try < raycastTries; try++ {
+	for try := range raycastTries {
 		ray := rayDirection(try)
 		var l []SInter
 		for i := range s.Surface {

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"maps"
 	"sort"
 )
 
@@ -78,9 +79,7 @@ func (l *IdList[H, T]) MoveSelfInto(dst *IdList[H, T]) {
 	if dst.Index == nil {
 		dst.Index = make(map[H]int, len(l.Index))
 	}
-	for k, v := range l.Index {
-		dst.Index[k] = v
-	}
+	maps.Copy(dst.Index, l.Index)
 	l.Clear()
 }
 

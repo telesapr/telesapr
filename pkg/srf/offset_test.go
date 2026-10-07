@@ -43,7 +43,7 @@ func TestOffsetSurface(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := 5 + sign*d
-			for k := 0; k < 400; k++ {
+			for range 400 {
 				p := bs.PointAt(r.Float64(), r.Float64())
 				if got := math.Hypot(p.X, p.Y); math.Abs(got-want) > 2*tol {
 					t.Fatalf("offset %g within %g: a point %g from the axis, want %g", d, tol, got, want)
@@ -64,7 +64,7 @@ func TestOffsetSurface(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for k := 0; k < 200; k++ {
+	for range 200 {
 		u, v := 0.05+0.9*r.Float64(), 0.05+0.9*r.Float64()
 		p := bs.PointAt(u, v)
 		// The nearest point of the bump to p, from where p came.

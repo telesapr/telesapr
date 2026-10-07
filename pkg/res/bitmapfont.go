@@ -149,9 +149,9 @@ func (f *BitmapFont) GetGlyph(codepoint rune) BitmapGlyph {
 			panic("res: unexpected glyph bitmap length")
 		}
 
-		for y := 0; y < 16; y++ {
+		for y := range 16 {
 			row := f.textureRow(g.Position, y)
-			for x := 0; x < 16; x++ {
+			for x := range 16 {
 				if bits[y]&(1<<(15-x)) != 0 {
 					row[x] = 255
 				}

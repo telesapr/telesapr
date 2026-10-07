@@ -49,7 +49,7 @@ func dump(files []string, strs []string) string {
 		}
 		fmt.Fprintf(&b, "load %s %s\n", file, hexFloat(capHeight))
 		for i, str := range strs {
-			for kerning := 0; kerning < 2; kerning++ {
+			for kerning := range 2 {
 				ar := Fonts.AspectRatio(file, str, kerning != 0)
 				var sbl srf.SBezierList
 				Fonts.PlotString(file, str, &sbl, kerning != 0, origin, u, v)

@@ -97,7 +97,7 @@ func TestPatchElevationSplitAndClosest(t *testing.T) {
 	if _, err := up.Elevated(true); err == nil {
 		t.Error("a patch was raised past MaxDegree")
 	}
-	for k := 0; k < 20; k++ {
+	for range 20 {
 		u, v := r.Float64(), r.Float64()
 		if d := s.PointAt(u, v).Minus(up.PointAt(u, v)).Magnitude(); d > 1e-9 {
 			t.Errorf("raised torus %v apart at (%v, %v)", d, u, v)
@@ -115,7 +115,7 @@ func TestPatchElevationSplitAndClosest(t *testing.T) {
 	for _, byU := range []bool{true, false} {
 		var a, b SSurface
 		up.SplitInHalf(byU, &a, &b)
-		for k := 0; k < 10; k++ {
+		for range 10 {
 			x, y := r.Float64(), r.Float64()
 			pa, wa := a.PointAt(x, y), up.PointAt(x/2, y)
 			pb, wb := b.PointAt(x, y), up.PointAt(0.5+x/2, y)

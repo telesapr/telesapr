@@ -16,9 +16,7 @@ func hentity(v uint32) core.HEntity {
 
 func coreEntityPoint(h core.HEntity) core.Entity {
 	return core.Entity{
-		EntityBase: core.EntityBase{
-			H:    h,
-			Type: core.EntityPointIn3D,
-		},
+		H:    h,
+		Type: core.EntityPointIn3D,
 	}
 }

@@ -165,7 +165,7 @@ func (f *Face) loadHdmx() {
 	}
 	var records [][]byte
 	pos := uint64(8)
-	for nn := 0; nn < numRecords; nn++ {
+	for range numRecords {
 		if pos+recordSize > uint64(len(p)) {
 			break
 		}
@@ -306,7 +306,7 @@ func (f *Face) checkTrickynessSfntIDs() bool {
 		}
 	}
 	for j := range trickSfntIDs {
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			if !has[k] && trickSfntIDs[j][k][1] == 0 {
 				numMatched[j]++
 			}
@@ -400,10 +400,7 @@ func (f *Face) initBytecode() error {
 		exec.IDefs = defs[exec.maxFDefs:]
 	}
 
-	extra := int64(maxp.maxStackElements / 2)
-	if extra < 128 {
-		extra = 128
-	}
+	extra := max(int64(maxp.maxStackElements/2), 128)
 	exec.stackSize = int64(maxp.maxStackElements) + extra
 	exec.storeSize = maxp.maxStorage
 	exec.cvtSize = uint64(len(f.cvt))

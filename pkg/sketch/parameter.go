@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -413,11 +414,9 @@ func (sk *Sketch) ParameterUsers(name string) []string {
 		if err != nil {
 			return
 		}
-		for _, n := range e.Variables() {
-			if n == name {
-				users = append(users, who)
-				return
-			}
+		if slices.Contains(e.Variables(), name) {
+			users = append(users, who)
+			return
 		}
 	})
 	return users
@@ -496,10 +495,8 @@ func (sk *Sketch) evaluate() []core.HGroup {
 	sk.ExprErrors = sk.ExprErrors[:0]
 	var changed []core.HGroup
 	mark := func(hg core.HGroup) {
-		for _, h := range changed {
-			if h == hg {
-				return
-			}
+		if slices.Contains(changed, hg) {
+			return
 		}
 		changed = append(changed, hg)
 	}

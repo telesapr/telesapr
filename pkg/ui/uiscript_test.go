@@ -588,7 +588,7 @@ func compareUIScripts(t *testing.T, prefix string) {
 // firstDiffLine reports the first line where two outputs differ.
 func firstDiffLine(got, want string) string {
 	gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
-	for i := 0; i < max(len(gl), len(wl)); i++ {
+	for i := range max(len(gl), len(wl)) {
 		var g, w string
 		if i < len(gl) {
 			g = gl[i]

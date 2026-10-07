@@ -92,10 +92,10 @@ func TestSteinerPointsAndCollinear(t *testing.T) {
 	var segs [][2]int
 	// A square whose sides carry collinear points, filled with a grid.
 	var sq []Point
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		sq = append(sq, Point{float64(i), 0})
 	}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		sq = append(sq, Point{10, float64(i)})
 	}
 	for i := 10; i > 0; i-- {
@@ -195,7 +195,7 @@ func TestRandomPolygons(t *testing.T) {
 	// Star-shaped polygons with many vertices and a grid inside: the
 	// area must be the polygon's.
 	r := rand.New(rand.NewSource(7))
-	for k := 0; k < 50; k++ {
+	for k := range 50 {
 		n := 3 + r.Intn(200)
 		poly := make([]Point, n)
 		for i := range poly {
@@ -302,7 +302,7 @@ func TestSegmentThroughVertex(t *testing.T) {
 	}
 	edges := map[[2]int]bool{}
 	for _, tr := range tris {
-		for k := 0; k < 3; k++ {
+		for k := range 3 {
 			edges[[2]int{tr[k], tr[(k+1)%3]}] = true
 		}
 	}

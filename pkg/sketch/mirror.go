@@ -93,7 +93,7 @@ func (g *Group) generateMirror(sk *Sketch, entity *[]core.Entity, param *[]core.
 	AddParam(param, h.Param(5), n.Y)
 	AddParam(param, h.Param(6), n.Z)
 
-	for i := 0; i < len(*entity); i++ {
+	for i := range len(*entity) {
 		e := &(*entity)[i]
 		if e.Group != g.OpA {
 			continue

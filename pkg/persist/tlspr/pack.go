@@ -9,7 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -187,7 +187,7 @@ func Pack(sk *sketch.Sketch, from, out string, o Options) error {
 			names = append(names, n)
 		}
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	when := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 	for _, n := range append([]string{"model.tlspr"}, names...) {
 		w, err := zw.CreateHeader(&zip.FileHeader{Name: n, Method: zip.Deflate, Modified: when})

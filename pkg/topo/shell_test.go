@@ -63,7 +63,7 @@ func insetArea(pts []geom.Vector, d []float64) float64 {
 
 func regular(n int, r float64) []geom.Vector {
 	var pts []geom.Vector
-	for k := 0; k < n; k++ {
+	for k := range n {
 		a := 2 * math.Pi * float64(k) / float64(n)
 		pts = append(pts, v(r*math.Cos(a), r*math.Sin(a), 0))
 	}

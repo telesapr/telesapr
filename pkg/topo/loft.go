@@ -142,7 +142,7 @@ func coplanar(p0, p1, p2, p3 geom.Vector) bool {
 func newell(loop []srf.SBezier) geom.Vector {
 	var pts []geom.Vector
 	for _, sb := range loop {
-		for k := 0; k < sb.Degree; k++ {
+		for k := range sb.Degree {
 			pts = append(pts, sb.PointAt(float64(k)/float64(sb.Degree)))
 		}
 	}

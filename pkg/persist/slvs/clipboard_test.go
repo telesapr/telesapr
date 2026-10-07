@@ -52,7 +52,7 @@ func TestCopyPasteDelete(t *testing.T) {
 			t.Fatalf("%s: selected %d, want the line and its points", tc.name, len(sel))
 		}
 		sk.Refresh()
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			if got := pt(sel[1+i].Entity); !got.EqualsTol(tc.want[i], 1e-9) {
 				t.Errorf("%s: point %d at %v, want %v", tc.name, i, got, tc.want[i])
 			}

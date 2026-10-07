@@ -18,11 +18,11 @@ import (
 // prepareMnemonics drops the '&' that marks a label's mnemonic and
 // returns where it was, for Tk's -underline.
 func prepareMnemonics(label string) (string, int) {
-	i := strings.IndexByte(label, '&')
-	if i < 0 {
+	before, after, ok := strings.Cut(label, "&")
+	if !ok {
 		return label, -1
 	}
-	return label[:i] + label[i+1:], len([]rune(label[:i]))
+	return before + after, len([]rune(before))
 }
 
 // Menu is a Tk menu (C++ MenuImplGtk). Tk menus can't lose entries, so

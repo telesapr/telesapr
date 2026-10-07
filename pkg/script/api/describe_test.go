@@ -66,7 +66,7 @@ active group g002-sketch-in-plane, sketch-in-plane: solved, 6 DOF
 	}
 
 	// Every name it gives is one the lookups take.
-	for _, line := range strings.Split(got, "\n") {
+	for line := range strings.SplitSeq(got, "\n") {
 		name, _, _ := strings.Cut(strings.TrimSpace(line), ":")
 		name, _, _ = strings.Cut(name, ",")
 		name, _, _ = strings.Cut(name, " ")

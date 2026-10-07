@@ -177,7 +177,7 @@ func (c *SContour) BridgeToContour(sc *SContour, avoidEdges *SEdgeList, avoidPts
 	// First check if the contours share a point; in that case we should
 	// merge them there, without a bridge.
 shared:
-	for i := 0; i < ln; i++ {
+	for i := range ln {
 		thisp = wrapIdx(i+thiso, ln-1)
 		a = c.Points[thisp].P
 
@@ -200,7 +200,7 @@ shared:
 	// If that fails, look for a bridge that does not intersect any edges.
 	if !found {
 	bridge:
-		for i := 0; i < ln; i++ {
+		for i := range ln {
 			thisp = wrapIdx(i+thiso, ln)
 			a = c.Points[thisp].P
 
@@ -232,7 +232,7 @@ shared:
 	}
 
 	var merged SContour
-	for i := 0; i < ln; i++ {
+	for i := range ln {
 		if withbridge || i != thisp {
 			merged.AddPoint(c.Points[i].P)
 		}
@@ -353,7 +353,7 @@ func (c *SContour) IsEar(bp int, scaledEps float64) bool {
 	tr.B.MakeMaxMin(&maxv, &minv)
 	tr.C.MakeMaxMin(&maxv, &minv)
 
-	for i := 0; i < ln; i++ {
+	for i := range ln {
 		if i == ap || i == bp || i == cp {
 			continue
 		}
@@ -587,7 +587,7 @@ func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 		if toggle {
 			offset = -1
 		}
-		for i := 0; i < ln; i++ {
+		for i := range ln {
 			ear := wrapIdx(i+offset, ln)
 			if c.Points[ear].Ear == EarUnknown {
 				if c.IsEar(ear, scaledEps) {
@@ -1013,7 +1013,7 @@ func (s *SSurface) splitTrimDiagonals(shell *SShell, m *SMesh, start int, el *SE
 	// Points made here, which edges between trim points split.
 	made := map[key]bool{}
 	tol := ChordTolMm()
-	for round := 0; round < trimSplitRounds; round++ {
+	for round := range trimSplitRounds {
 		// Edges inside the mesh are in two of its triangles.
 		count := map[pair]int{}
 		for i := start; i < len(m.Triangles); i++ {

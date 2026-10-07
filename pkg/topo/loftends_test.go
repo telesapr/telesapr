@@ -79,7 +79,7 @@ func TestSmoothLoftEndsSweep(t *testing.T) {
 		n := int(p.Float("profiles"))
 		aside := p.Float("aside")
 		var loops [][]srf.SBezier
-		for i := 0; i < n; i++ {
+		for i := range n {
 			f := float64(i) / float64(n-1)
 			loops = append(loops, circleAt(4, aside*f*f, 0, 15*f))
 		}

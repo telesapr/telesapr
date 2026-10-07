@@ -134,8 +134,7 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 func (g *Group) generateLoftShell(sk *Sketch) {
 	sh, err := g.loftShell(sk, srf.OriginFor(g.H.V, 0))
 	if err != nil {
-		var pe *pathError
-		if errors.As(err, &pe) {
+		if pe, ok := errors.AsType[*pathError](err); ok {
 			g.setProblem(pe.at, "%s", pe.msg)
 		} else {
 			g.setProblem(nil, "%v", err)

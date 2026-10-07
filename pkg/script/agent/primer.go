@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -141,14 +141,14 @@ var Primer = sync.OnceValue(func() string {
 		for m := range td.Methods {
 			methods = append(methods, m)
 		}
-		sort.Strings(methods)
+		slices.Sort(methods)
 		b.WriteString("    " + name + ": " + strings.Join(methods, " ") + "\n")
 	}
 	funcs := make([]string, 0, len(p.Funcs))
 	for f := range p.Funcs {
 		funcs = append(funcs, f)
 	}
-	sort.Strings(funcs)
+	slices.Sort(funcs)
 	b.WriteString("\nFunctions: " + strings.Join(funcs, " ") + "\n")
 	return b.String()
 })

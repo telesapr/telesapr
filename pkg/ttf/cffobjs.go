@@ -17,7 +17,7 @@ func removeSubsetPrefix(name string) string {
 	i, idx := 0, 0
 	for {
 		ok := true
-		for k := 0; k < 6; k++ {
+		for range 6 {
 			c := at(i)
 			if !('A' <= c) {
 				ok = false
@@ -188,10 +188,7 @@ func (f *Face) cffFaceInit(sfntFormat bool) error {
 			if top.hasFontMatrix {
 				var scaling int64 = 1
 				if top.unitsPerEm > 1 && sub.unitsPerEm > 1 {
-					scaling = int64(top.unitsPerEm)
-					if int64(sub.unitsPerEm) < scaling {
-						scaling = int64(sub.unitsPerEm)
-					}
+					scaling = min(int64(sub.unitsPerEm), int64(top.unitsPerEm))
 				}
 				matrixMultiplyScaled(&top.fontMatrix, &sub.fontMatrix, scaling)
 				vectorTransformScaled(&sub.fontOffset, &top.fontMatrix, scaling)

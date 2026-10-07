@@ -34,7 +34,7 @@ func main() {
 	out := flag.String("o", "docs.json", "the file to write")
 	flag.Parse()
 	whole := map[string]bool{}
-	for _, p := range strings.Split(*full, ",") {
+	for p := range strings.SplitSeq(*full, ",") {
 		whole[p] = true
 	}
 

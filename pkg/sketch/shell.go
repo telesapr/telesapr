@@ -92,8 +92,7 @@ func (g *Group) generateShellShell(sk *Sketch) {
 	}
 	sh, err := shellOf(&prev.RunningShell, g.SolidFaces, g.ValB, srf.OriginFor(g.H.V, 0))
 	if err != nil {
-		var se *topo.ShellError
-		if errors.As(err, &se) {
+		if se, ok := errors.AsType[*topo.ShellError](err); ok {
 			at := se.At
 			g.setProblem(&at, "%v", err)
 		} else {

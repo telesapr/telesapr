@@ -84,7 +84,7 @@ func fullDocument() *Document {
 
 	sk.Units = core.UnitInches
 	doc := &Document{Sketch: sk, Version: Version, Units: core.UnitInches}
-	doc.Mesh.AddTriangle3(srf.STriMeta{Face: 0x1234, RgbaColor: core.RgbaColor{Red: 10, Alpha: 255}},
+	doc.Mesh.AddTriangle3(srf.STriMeta{Face: 0x1234, Red: 10, Alpha: 255},
 		geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1})
 	sf := srf.SSurface{H: core.HSSurface{V: 1}, Color: core.RgbaColor{Green: 7}, Face: 0x99, DegM: 1, DegN: 3, TrimBuilt: true}
 	for i := 0; i <= sf.DegM; i++ {
@@ -100,7 +100,7 @@ func fullDocument() *Document {
 	doc.Shell.Surface = []srf.SSurface{sf}
 	sc := srf.SCurve{H: core.HSCurve{V: 2}, IsExact: true, SurfA: core.HSSurface{V: 1}, SurfB: core.HSSurface{V: 5}}
 	sc.Exact.Degree = 2
-	for i := 0; i <= 2; i++ {
+	for i := range 3 {
 		sc.Exact.Ctrl[i] = geom.Vector{X: float64(i)}
 		sc.Exact.Weight[i] = 1
 	}

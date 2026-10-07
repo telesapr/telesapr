@@ -26,7 +26,7 @@ func square(s, z float64) []srf.SBezier {
 // quarter arcs, starting at angle start.
 func circle(r, z, start float64) []srf.SBezier {
 	var out []srf.SBezier
-	for k := 0; k < 4; k++ {
+	for k := range 4 {
 		a0 := start + float64(k)*math.Pi/2
 		a1 := a0 + math.Pi/2
 		p0 := v(r*math.Cos(a0), r*math.Sin(a0), z)

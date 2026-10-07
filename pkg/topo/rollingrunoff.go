@@ -367,7 +367,7 @@ func acrossPatch(p *srf.SSurface, ro *rbRunOff, u0, v0, u1, v1 float64, a, b geo
 	// The point of the patch in the plane near (u, v), and the curve's
 	// way there.
 	on := func(u, v float64) (geom.Vector, geom.Vector) {
-		for it := 0; it < 60; it++ {
+		for range 60 {
 			x := p.PointAt(u, v)
 			hv := ro.h(x)
 			var tu, tv geom.Vector

@@ -34,7 +34,7 @@ func roundedRect(w, l, rad float64, round [4]bool, z float64) []srf.SBezier {
 	// Into the rectangle from each corner, along each side.
 	in := []geom.Vector{v(1, 1, 0), v(-1, 1, 0), v(-1, -1, 0), v(1, -1, 0)}
 	var out []srf.SBezier
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		c, n := corner[i], corner[(i+1)%4]
 		d := n.Minus(c).WithMagnitude(1)
 		a, b := c, n

@@ -113,16 +113,14 @@ func Serve(ctx context.Context, conn io.ReadWriter, b Backend) error {
 		mu.Lock()
 		running[req.ID] = cancel
 		mu.Unlock()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			res := answer(rctx, b, req)
 			mu.Lock()
 			delete(running, req.ID)
 			mu.Unlock()
 			cancel()
 			reply(res)
-		}()
+		})
 	}
 	cancelAll()
 	return scan.Err()

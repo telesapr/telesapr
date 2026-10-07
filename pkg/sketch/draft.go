@@ -134,8 +134,7 @@ func (g *Group) generateDraftShell(src *Group, tbot, ttop geom.Vector) bool {
 			}
 			sh, err := topo.DraftedPrismAngles(loops, angles, along, g.Color, 0)
 			if err != nil {
-				var se *topo.ShellError
-				if errors.As(err, &se) {
+				if se, ok := errors.AsType[*topo.ShellError](err); ok {
 					at := se.At
 					g.setProblem(&at, "%v", err)
 				} else {

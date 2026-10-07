@@ -20,7 +20,7 @@ const (
 func (m *BandedMatrix) Solve() {
 	n := m.N
 	// Reduce the matrix to upper triangular form.
-	for i := 0; i < n; i++ {
+	for i := range n {
 		for ip := i + 1; ip < n && ip <= i+bandedLeftOfDiag; ip++ {
 			temp := m.A[ip][i] / m.A[i][i]
 

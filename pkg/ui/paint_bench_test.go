@@ -24,7 +24,7 @@ func benchmarkPaint(b *testing.B, fixture string) {
 	w.Render()
 	v := &ss.GW.view
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		v.ProjRight = v.ProjRight.RotatedAroundAxis(geom.Vector{Y: 1}, 0.01)
 		v.ProjUp = v.ProjUp.RotatedAroundAxis(geom.Vector{Y: 1}, 0.01)
 		ss.GW.Invalidate(false)
@@ -53,7 +53,7 @@ func BenchmarkPaintHover(b *testing.B) {
 	ss.GW.ZoomToFit(false, false)
 	w.Render()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		x := 660 + float64(i%60)*10
 		w.Mouse(platform.MouseEvent{Type: platform.MouseMotion, X: x, Y: 540})
 		ss.GW.Invalidate(false)

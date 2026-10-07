@@ -197,9 +197,9 @@ func (d *Document) parse(data []byte) error {
 			block.Lines = append(block.Lines, line)
 			trim := strings.TrimSpace(line)
 
-			if idx := strings.Index(trim, "="); idx >= 0 {
-				key := strings.TrimSpace(trim[:idx])
-				val := strings.TrimSpace(trim[idx+1:])
+			if before, after, ok := strings.Cut(trim, "="); ok {
+				key := strings.TrimSpace(before)
+				val := strings.TrimSpace(after)
 				block.Fields[key] = val
 
 				if strings.HasSuffix(val, "{") {
@@ -216,8 +216,8 @@ func (d *Document) parse(data []byte) error {
 			}
 
 			i++
-			if strings.HasPrefix(trim, "Add") {
-				block.Kind = strings.TrimPrefix(trim, "Add")
+			if after, ok := strings.CutPrefix(trim, "Add"); ok {
+				block.Kind = after
 				break
 			}
 		}
@@ -496,9 +496,7 @@ func (d *Document) processEntity(block Block) {
 	}
 
 	entity := core.Entity{
-		EntityBase: core.EntityBase{
-			H: core.HEntity{V: parseHexUint32(hStr)},
-		},
+		H: core.HEntity{V: parseHexUint32(hStr)},
 	}
 
 	if v, ok := fields["Entity.type"]; ok {
@@ -602,9 +600,7 @@ func (d *Document) processConstraint(block Block) {
 		return
 	}
 	constraint := core.Constraint{
-		ConstraintBase: core.ConstraintBase{
-			H: core.HConstraint{V: parseHexUint32(hStr)},
-		},
+		H: core.HConstraint{V: parseHexUint32(hStr)},
 	}
 	if v, ok := fields["Constraint.type"]; ok {
 		constraint.Type = core.ConstraintType(parseInt(v))

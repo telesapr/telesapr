@@ -84,12 +84,12 @@ func (vi *vertexIndex) addUnique(p, n geom.Vector) {
 // newPoint makes a point with the next id; its type doesn't matter,
 // since the linked group copies it.
 func newPoint(el *[]core.Entity, id *int, p geom.Vector) core.HEntity {
-	en := core.Entity{}
-	en.Type = core.EntityPointNCopy
-	en.Group = core.HGroup{V: 462}
-	en.ActPoint = p
-	en.Style = core.HStyle{V: core.StyleDatum}
-	en.ActVisible = true
+	en := core.Entity{
+		Type:       core.EntityPointNCopy,
+		Group:      core.HGroup{V: 462},
+		ActPoint:   p,
+		Style:      core.HStyle{V: core.StyleDatum},
+		ActVisible: true}
 
 	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
 	*id++
@@ -105,11 +105,11 @@ func addVertex(el *[]core.Entity, v geom.Vector) {
 }
 
 func newNormal(el *[]core.Entity, id *int, normal geom.Quaternion, p core.HEntity) {
-	en := core.Entity{}
-	en.Type = core.EntityNormalNCopy
-	en.Group = core.HGroup{V: 472}
-	en.ActNormal = normal
-	en.Style = core.HStyle{V: core.StyleNormals}
+	en := core.Entity{
+		Type:      core.EntityNormalNCopy,
+		Group:     core.HGroup{V: 472},
+		ActNormal: normal,
+		Style:     core.HStyle{V: core.StyleNormals}}
 	// to be visible we need to add a point.
 	en.Point[0] = p
 	en.ActVisible = true
@@ -120,8 +120,8 @@ func newNormal(el *[]core.Entity, id *int, normal geom.Quaternion, p core.HEntit
 }
 
 func newLine(el *[]core.Entity, id *int, p0, p1 core.HEntity) {
-	en := core.Entity{}
-	en.Type = core.EntityLineSegment
+	en := core.Entity{
+		Type: core.EntityLineSegment}
 	en.Point[0] = p0
 	en.Point[1] = p1
 	en.Group = core.HGroup{V: 493}
@@ -203,7 +203,7 @@ func binaryStlTriangles(data []byte) []srf.STriangle {
 		return geom.Vector{X: x, Y: y, Z: z}
 	}
 	var tris []srf.STriangle
-	for i := uint32(0); i < n; i++ {
+	for range n {
 		tr := srf.STriangle{}
 
 		// read the triangle normal

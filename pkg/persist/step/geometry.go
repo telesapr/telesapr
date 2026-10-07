@@ -164,7 +164,7 @@ func (c *conic) Param(p geom.Vector) float64 {
 // p, by Newton steps.
 func refineCurveParam(c Curve, p geom.Vector, t float64) float64 {
 	lo, hi := c.Range()
-	for i := 0; i < 30; i++ {
+	for range 30 {
 		d := c.Deriv(t)
 		m := d.MagSquared()
 		if m == 0 {
@@ -678,7 +678,7 @@ func newtonOnSurface(s Surface, p geom.Vector, uv [2]float64) (u, v float64) {
 		}
 		return math.Max(lo, math.Min(hi, t))
 	}
-	for i := 0; i < 40; i++ {
+	for range 40 {
 		q, su, sv := s.Derivs(u, v)
 		r := p.Minus(q)
 		a, b, c := su.Dot(su), su.Dot(sv), sv.Dot(sv)

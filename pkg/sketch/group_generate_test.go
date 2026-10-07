@@ -24,12 +24,12 @@ func TestGroupGenerateExtrude(t *testing.T) {
 	pb := core.HEntity{V: 0x10002}
 	line := core.HEntity{V: 0x10000}
 	sk.Entities = append(sk.Entities,
-		core.Entity{EntityBase: core.EntityBase{H: pa, Type: core.EntityPointIn3D, Group: srcH,
-			Param: [8]core.HParam{param(1, 0), param(2, 0), param(3, 0)}}},
-		core.Entity{EntityBase: core.EntityBase{H: pb, Type: core.EntityPointIn3D, Group: srcH,
-			Param: [8]core.HParam{param(4, 10), param(5, 0), param(6, 0)}}},
-		core.Entity{EntityBase: core.EntityBase{H: line, Type: core.EntityLineSegment, Group: srcH,
-			Point: [core.MaxPointsInEntity]core.HEntity{pa, pb}}},
+		core.Entity{H: pa, Type: core.EntityPointIn3D, Group: srcH,
+			Param: [8]core.HParam{param(1, 0), param(2, 0), param(3, 0)}},
+		core.Entity{H: pb, Type: core.EntityPointIn3D, Group: srcH,
+			Param: [8]core.HParam{param(4, 10), param(5, 0), param(6, 0)}},
+		core.Entity{H: line, Type: core.EntityLineSegment, Group: srcH,
+			Point: [core.MaxPointsInEntity]core.HEntity{pa, pb}},
 	)
 
 	g := sk.GetGroup(extrH)

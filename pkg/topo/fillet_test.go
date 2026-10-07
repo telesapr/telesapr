@@ -243,7 +243,7 @@ func TestFilletCornerSweep(t *testing.T) {
 		edges string
 	}
 	want := map[key][2]float64{}
-	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		var c key
 		var r, vol float64
 		if _, err := fmt.Sscan(line, &c.n, &c.h, &c.k, &c.edges, &r, &vol); err != nil {
@@ -348,7 +348,7 @@ func TestFilletUnevenMitreSweep(t *testing.T) {
 		edges string
 	}
 	want := map[key][3]float64{}
-	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		var c key
 		var r, vol, exact float64
 		if _, err := fmt.Sscan(line, &c.n, &c.lean, &c.dir, &c.k, &c.edges, &r, &vol, &exact); err != nil {

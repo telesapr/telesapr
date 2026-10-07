@@ -1,6 +1,9 @@
 package ttf
 
-import "errors"
+import (
+	"errors"
+	"slices"
+)
 
 // Charmaps (ttcmap.c): the subtable formats 0, 2, 4, 6, 8, 10, 12, 13
 // and 14.
@@ -115,8 +118,8 @@ func (f *Face) SelectUnicodeCharmap() error {
 	if len(f.charmaps) == 0 {
 		return errNoCharmap
 	}
-	for i := len(f.charmaps) - 1; i >= 0; i-- {
-		cm := f.charmaps[i]
+	for _, cm := range slices.Backward(f.charmaps) {
+
 		if cm.encoding != encodingUnicode {
 			continue
 		}
@@ -127,9 +130,9 @@ func (f *Face) SelectUnicodeCharmap() error {
 			return nil
 		}
 	}
-	for i := len(f.charmaps) - 1; i >= 0; i-- {
-		if f.charmaps[i].encoding == encodingUnicode {
-			f.charmap = f.charmaps[i]
+	for _, v := range slices.Backward(f.charmaps) {
+		if v.encoding == encodingUnicode {
+			f.charmap = v
 			return nil
 		}
 	}
@@ -240,7 +243,7 @@ func validate4(table []byte) (int, error) {
 	glyphIDs := offsets + numSegs*2
 
 	var lastStart, lastEnd int
-	for n := 0; n < numSegs; n++ {
+	for n := range numSegs {
 		start := int(peek16(table, starts+2*n))
 		end := int(peek16(table, ends+2*n))
 		offset := int(peek16(table, offsets+2*n))
@@ -281,7 +284,7 @@ func validate12(table []byte) error {
 		return errInvalidCmap
 	}
 	var last uint32
-	for n := uint64(0); n < numGroups; n++ {
+	for n := range numGroups {
 		p := 16 + 12*int(n)
 		start := peek32(table, p)
 		end := peek32(table, p+4)
@@ -315,7 +318,7 @@ func validate14(table []byte) error {
 	}
 	p := 10
 	lastVarSel := uint64(1)
-	for n := uint64(0); n < numSelectors; n++ {
+	for range numSelectors {
 		varSel := uint64(peek24(table, p))
 		defOff := uint64(peek32(table, p+3))
 		nondefOff := uint64(peek32(table, p+7))
@@ -338,7 +341,7 @@ func validate14(table []byte) error {
 				return errInvalidCmap
 			}
 			lastBase := uint64(0)
-			for i := uint64(0); i < numRanges; i++ {
+			for range numRanges {
 				base := uint64(peek24(table, int(defp)))
 				cnt := uint64(byteAt(table, int(defp)+3))
 				defp += 4
@@ -359,7 +362,7 @@ func validate14(table []byte) error {
 				return errInvalidCmap
 			}
 			lastUni := uint64(0)
-			for i := uint64(0); i < numMappings; i++ {
+			for range numMappings {
 				uni := uint64(peek24(table, int(ndp)))
 				ndp += 5
 				if uni >= 0x110000 || uni < lastUni {
@@ -409,7 +412,7 @@ func (f *Face) cmap4Linear(cm *charmap, charcode uint32) uint32 {
 	numSegs2 := numSegs << 1
 	p := 14
 	q := 16 + numSegs2
-	for i := 0; i < numSegs; i++ {
+	for i := range numSegs {
 		end := int(peek16(data, p))
 		p += 2
 		start := int(peek16(data, q))
@@ -596,7 +599,7 @@ func validate2(table []byte) error {
 		return errInvalidCmap
 	}
 	maxSubs := 0
-	for n := 0; n < 256; n++ {
+	for n := range 256 {
 		if idx := int(peek16(table, 6+2*n)) >> 3; idx > maxSubs {
 			maxSubs = idx
 		}
@@ -670,7 +673,7 @@ func validate8(table []byte) error {
 		return errInvalidCmap
 	}
 	var last uint32
-	for n := uint64(0); n < numGroups; n++ {
+	for n := range numGroups {
 		p := 8208 + 12*int(n)
 		start := peek32(table, p)
 		end := peek32(table, p+4)

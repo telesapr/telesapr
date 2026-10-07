@@ -65,9 +65,9 @@ func alignTo(loop, prev []srf.SBezier) []srf.SBezier {
 	n := len(loop)
 	cl, cp := centroid(loop), centroid(prev)
 	best, bestK := math.Inf(1), 0
-	for k := 0; k < n; k++ {
+	for k := range n {
 		d := 0.0
-		for i := 0; i < n; i++ {
+		for i := range n {
 			a := loop[(i+k)%n].Start().Minus(cl)
 			b := prev[i].Start().Minus(cp)
 			d += a.Minus(b).MagSquared()

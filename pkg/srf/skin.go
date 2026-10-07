@@ -30,7 +30,7 @@ func ChainCurve(chain []SBezier, deg int) (BSplineCurve, error) {
 		c.Knots = append(c.Knots, 0)
 	}
 	for i := 1; i < n; i++ {
-		for k := 0; k < deg; k++ {
+		for range deg {
 			c.Knots = append(c.Knots, float64(i)/float64(n))
 		}
 	}
@@ -189,7 +189,7 @@ func interpolate(ts []float64, rhs [][]geom.Vector4) (int, []float64, error) {
 // place, by Gaussian elimination with partial pivoting. a is changed.
 func solveDense(a [][]float64, rhs [][]geom.Vector4) error {
 	n := len(a)
-	for c := 0; c < n; c++ {
+	for c := range n {
 		p := c
 		for r := c + 1; r < n; r++ {
 			if math.Abs(a[r][c]) > math.Abs(a[p][c]) {

@@ -11,7 +11,7 @@ import (
 func TestLowDegreeCurve(t *testing.T) {
 	r := rand.New(rand.NewSource(272))
 	const tol = 1e-4
-	for trial := 0; trial < 30; trial++ {
+	for trial := range 30 {
 		deg := 6 + r.Intn(4)
 		c := randomCurve(r, deg, deg+1+r.Intn(6), true)
 		lc, err := c.LowDegree(tol)
@@ -48,7 +48,7 @@ func TestLowDegreeCurve(t *testing.T) {
 func TestLowDegreeSurface(t *testing.T) {
 	r := rand.New(rand.NewSource(273))
 	const tol = 1e-4
-	for trial := 0; trial < 12; trial++ {
+	for trial := range 12 {
 		du, dv := 6+r.Intn(3), 2+r.Intn(6)
 		if trial%2 == 1 {
 			du, dv = dv, du
@@ -65,7 +65,7 @@ func TestLowDegreeSurface(t *testing.T) {
 			t.Fatal(err)
 		}
 		u0, u1, v0, v1 := s.Domain()
-		for k := 0; k < 400; k++ {
+		for range 400 {
 			u, v := u0+(u1-u0)*r.Float64(), v0+(v1-v0)*r.Float64()
 			if d := ls.PointAt(u, v).Minus(s.PointAt(u, v)).Magnitude(); d > tol {
 				t.Errorf("trial %d (degree %d,%d): %g off at (%g, %g)", trial, du, dv, d, u, v)

@@ -236,9 +236,9 @@ func (d *Doc) constrain(build func(sk *sketch.Sketch, c *core.Constraint)) (out 
 			sk = d.h.Sketch()
 		}
 		sk.Active = sk.ActiveGroup()
-		c := core.Constraint{}
-		c.Group = sk.Active
-		c.Workplane = sk.ActiveWorkplane()
+		c := core.Constraint{
+			Group:     sk.Active,
+			Workplane: sk.ActiveWorkplane()}
 		build(sk, &c)
 		// A group refers only to what is made before it (roadmap 16.4).
 		for _, he := range []core.HEntity{c.PtA, c.PtB, c.EntityA, c.EntityB, c.EntityC, c.EntityD} {

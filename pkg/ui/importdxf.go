@@ -713,7 +713,7 @@ func (d *dxfImport) AddLWPolyline(data *dxfread.LWPolyline) {
 	// in http://paulbourke.net/dataformats/dxf/dxf10.html.
 	needSwapX := data.ExtPoint.Z == -1.0
 
-	for i := 0; i < vNum; i++ {
+	for i := range vNum {
 		c0 := *data.Vertices[i]
 		c1 := *data.Vertices[(i+1)%n]
 
@@ -759,7 +759,7 @@ func (d *dxfImport) AddPolyline(data *dxfread.Polyline) {
 	// in http://paulbourke.net/dataformats/dxf/dxf10.html.
 	needSwapX := data.ExtPoint.Z == -1.0
 
-	for i := 0; i < vNum; i++ {
+	for i := range vNum {
 		c0 := data.Vertices[i].BasePoint
 		c1 := data.Vertices[(i+1)%n].BasePoint
 

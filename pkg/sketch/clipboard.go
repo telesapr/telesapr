@@ -55,7 +55,7 @@ func (c *Clipboard) ContainsEntity(he core.HEntity) bool {
 			return true
 		}
 
-		for j := 0; j < core.MaxPointsInEntity; j++ {
+		for j := range core.MaxPointsInEntity {
 			if cr.OldPointEnt[j] == he {
 				return true
 			}
@@ -77,7 +77,7 @@ func (c *Clipboard) NewEntityFor(he core.HEntity) core.HEntity {
 			return cr.NewReq.Entity(0)
 		}
 
-		for j := 0; j < core.MaxPointsInEntity; j++ {
+		for j := range core.MaxPointsInEntity {
 			if cr.OldPointEnt[j] == he {
 				return cr.NewReq.Entity(1 + j)
 			}
@@ -231,7 +231,7 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 		r = sk.GetRequest(hr)
 		sk.MarkGroupDirty(r.Group, false)
 		_, pts, _, hasDistance, _ := getRequestInfo(r.Type, r.ExtraPoints)
-		for i := 0; i < pts; i++ {
+		for i := range pts {
 			pt := cr.Point[i]
 			// We need the reflection to occur within the workplane; it may
 			// otherwise correspond to just a rotation as projected.
@@ -257,7 +257,7 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 
 		cr.NewReq = hr
 		selected = append(selected, Selection{Entity: hr.Entity(0)})
-		for i := 0; i < pts; i++ {
+		for i := range pts {
 			j := i + 1
 			if r.Type == RequestDatumPoint {
 				j = i
@@ -268,22 +268,22 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 
 	for ci := range cb.Constraints {
 		cc := &cb.Constraints[ci]
-		c := core.Constraint{}
-		c.Group = sk.ActiveGroup()
-		c.Workplane = sk.ActiveWorkplane()
-		c.Type = cc.Type
-		c.ValA = cc.ValA
-		c.PtA = cb.NewEntityFor(mapPoint(cc.PtA))
-		c.PtB = cb.NewEntityFor(mapPoint(cc.PtB))
-		c.EntityA = cb.NewEntityFor(cc.EntityA)
-		c.EntityB = cb.NewEntityFor(cc.EntityB)
-		c.EntityC = cb.NewEntityFor(cc.EntityC)
-		c.EntityD = cb.NewEntityFor(cc.EntityD)
-		c.Other = cc.Other
-		c.Other2 = cc.Other2
-		c.Reference = cc.Reference
-		c.Disp = cc.Disp
-		c.Comment = cc.Comment
+		c := core.Constraint{
+			Group:     sk.ActiveGroup(),
+			Workplane: sk.ActiveWorkplane(),
+			Type:      cc.Type,
+			ValA:      cc.ValA,
+			PtA:       cb.NewEntityFor(mapPoint(cc.PtA)),
+			PtB:       cb.NewEntityFor(mapPoint(cc.PtB)),
+			EntityA:   cb.NewEntityFor(cc.EntityA),
+			EntityB:   cb.NewEntityFor(cc.EntityB),
+			EntityC:   cb.NewEntityFor(cc.EntityC),
+			EntityD:   cb.NewEntityFor(cc.EntityD),
+			Other:     cc.Other,
+			Other2:    cc.Other2,
+			Reference: cc.Reference,
+			Disp:      cc.Disp,
+			Comment:   cc.Comment}
 		dontAddConstraint := false
 		switch c.Type {
 		case core.ConstraintComment:

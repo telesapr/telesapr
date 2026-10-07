@@ -5,7 +5,7 @@ import (
 	"io"
 	"path"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -41,7 +41,7 @@ var helpPackages = sync.OnceValue(func() []string {
 			rest = append(rest, p)
 		}
 	}
-	sort.Strings(rest)
+	slices.Sort(rest)
 	return append(paths, rest...)
 })
 
@@ -130,7 +130,7 @@ func listed(w io.Writer, title string, docs map[string]symbols.Doc, names []stri
 	if len(names) == 0 {
 		return
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	_, _ = fmt.Fprintf(w, "\n%s:\n", title)
 	for _, name := range names {
 		d := docs[name]
@@ -165,7 +165,7 @@ func helpPackage(w io.Writer, importPath string, p *symbols.PackageDoc) {
 	}
 	if len(p.Types) > 0 {
 		names := keys(p.Types)
-		sort.Strings(names)
+		slices.Sort(names)
 		fmt.Fprintln(w, "\nTypes:")
 		for _, name := range names {
 			fmt.Fprintf(w, "    %-20s %s\n", name, synopsis(p.Types[name].Text))
@@ -174,7 +174,7 @@ func helpPackage(w io.Writer, importPath string, p *symbols.PackageDoc) {
 	listed(w, "Functions", p.Funcs, keys(p.Funcs))
 	if len(p.Values) > 0 {
 		names := keys(p.Values)
-		sort.Strings(names)
+		slices.Sort(names)
 		fmt.Fprintf(w, "\nConstants and variables:\n    %s\n", strings.Join(names, " "))
 	}
 	fmt.Fprintf(w, "\nhelp(\"%s.Name\") says more about one.\n", p.Name)
@@ -191,7 +191,7 @@ func helpType(w io.Writer, p *symbols.PackageDoc, name string, td *symbols.TypeD
 	listed(w, "Made by", p.Funcs, append([]string{}, td.Makers...))
 	if len(td.Values) > 0 {
 		values := append([]string{}, td.Values...)
-		sort.Strings(values)
+		slices.Sort(values)
 		fmt.Fprintf(w, "\nValues:\n    %s\n", strings.Join(values, " "))
 	}
 	listed(w, "Methods", td.Methods, keys(td.Methods))
@@ -206,8 +206,8 @@ func helpFields(w io.Writer, t reflect.Type) {
 		return
 	}
 	var lines []string
-	for i := 0; i < t.NumField(); i++ {
-		if f := t.Field(i); f.IsExported() {
+	for f := range t.Fields() {
+		if f := f; f.IsExported() {
 			lines = append(lines, fmt.Sprintf("    %-20s %s", f.Name, f.Type))
 		}
 	}
@@ -383,8 +383,8 @@ func helpOfType(w io.Writer, t reflect.Type, shown string) {
 	helpFields(w, named)
 	var methods []string
 	for _, mt := range []reflect.Type{reflect.PointerTo(named), named} {
-		for i := 0; i < mt.NumMethod(); i++ {
-			m := mt.Method(i)
+		for m := range mt.Methods() {
+			m := m
 			sig := strings.TrimPrefix(m.Type.String(), "func")
 			// Without the receiver, which is the first parameter.
 			if i := strings.IndexAny(sig, ",)"); i >= 0 {

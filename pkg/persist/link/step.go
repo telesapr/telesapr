@@ -100,8 +100,7 @@ func linkStep(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, _
 	*el = (*el)[:0]
 	res, err := readStep(path, sk.ChordTolPct)
 	if err != nil {
-		var pe *fs.PathError
-		if errors.As(err, &pe) {
+		if _, ok := errors.AsType[*fs.PathError](err); ok {
 			return false
 		}
 		rep.Problem = fmt.Sprintf("the file can't be read: %v", err)

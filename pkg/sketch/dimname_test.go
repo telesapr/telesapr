@@ -17,10 +17,9 @@ func secondLine(t *testing.T, sk *Sketch) (core.HRequest, core.HConstraint) {
 	sk.GenerateAll()
 	sk.MustGetEntity(hr.Entity(1)).PointForceTo(sk, geom.Vector{Y: 5})
 	sk.MustGetEntity(hr.Entity(2)).PointForceTo(sk, geom.Vector{X: 3, Y: 5})
-	hc := sk.AddConstraint(core.Constraint{ConstraintBase: core.ConstraintBase{
+	hc := sk.AddConstraint(core.Constraint{
 		Type: core.ConstraintPtPtDistance, Group: hg, Workplane: hg.Entity(0),
-		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 3,
-	}})
+		PtA: hr.Entity(1), PtB: hr.Entity(2), ValA: 3})
 	sk.GenerateAll()
 	return hr, hc
 }

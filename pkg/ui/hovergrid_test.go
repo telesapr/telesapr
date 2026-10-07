@@ -49,7 +49,7 @@ func TestHoverGridSameAsScan(t *testing.T) {
 	if tp == nil {
 		t.Fatal("no topology")
 	}
-	for turn := 0; turn < 4; turn++ {
+	for turn := range 4 {
 		if turn == 2 {
 			ss.UsePerspectiveProj = true
 			gw.view.ProjRight, gw.view.ProjUp = geom.Vector{X: 1}, geom.Vector{Y: 1}

@@ -192,10 +192,10 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 	// dimension adds a constraint with a value, which the drawing already
 	// has: the sign and the supplement are whatever make it so.
 	dimension := func(typ core.ConstraintType, val float64, ptA, ptB, entityA, entityB core.HEntity) {
-		c := core.Constraint{}
-		c.Group = sk.ActiveGroup()
-		c.Workplane = sk.ActiveWorkplane()
-		c.Type = typ
+		c := core.Constraint{
+			Group:     sk.ActiveGroup(),
+			Workplane: sk.ActiveWorkplane(),
+			Type:      typ}
 		c.PtA, c.PtB = ptA, ptB
 		c.EntityA, c.EntityB = entityA, entityB
 		c.ModifyToSatisfy(sk)

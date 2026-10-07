@@ -417,7 +417,7 @@ func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []
 			r := e.CircleGetRadiusNum(sk)
 			c := sk.GetEntity(e.Point[0]).PointGetNum(sk)
 			q := sk.GetEntity(e.Normal).NormalGetNum(sk)
-			for j := 0; j < 4; j++ {
+			for j := range 4 {
 				var p geom.Vector
 				switch j {
 				case 0:
@@ -434,7 +434,7 @@ func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []
 		default:
 			// We have to iterate children points, because we can select
 			// entities without points.
-			for i := 0; i < core.MaxPointsInEntity; i++ {
+			for i := range core.MaxPointsInEntity {
 				if e.Point[i].V == 0 {
 					break
 				}
@@ -666,16 +666,16 @@ func (gw *GraphicsWindow) MenuView(id Command) {
 		// the user is in turn-table mode, the isometric view must have
 		// the z-axis facing up, leaving 8 possible views (2*1*2*2).
 		requireTurntable := id == CmdNearestIso && ss.TurntableNav
-		for i := 0; i < 3; i++ {
-			for j := 0; j < 3; j++ {
+		for i := range 3 {
+			for j := range 3 {
 				if i == j {
 					continue
 				}
 				if requireTurntable && j != 2 {
 					continue
 				}
-				for negi := 0; negi < 2; negi++ {
-					for negj := 0; negj < 2; negj++ {
+				for negi := range 2 {
+					for negj := range 2 {
 						ou, ov := ortho[i], ortho[j]
 						if negi != 0 {
 							ou = ou.ScaledBy(-1)

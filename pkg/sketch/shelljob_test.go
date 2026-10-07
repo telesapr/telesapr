@@ -43,11 +43,9 @@ func TestShellJob(t *testing.T) {
 	}
 	job := sk.NewShellJob()
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		job.Run()
-	}()
+	})
 	// The owner regenerates meanwhile, deferring again, as dragging does.
 	sk.DeferShells = true
 	sk.GenerateAllTyped(sketch.GenerateDirty)

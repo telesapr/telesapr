@@ -169,7 +169,7 @@ func TestRequestGenerateArcOfCircle(t *testing.T) {
 		t.Fatalf("expected 13 params, got %d", len(params))
 	}
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if entities[i].Type != core.EntityPointIn3D {
 			t.Fatalf("entity %d expected 3D point, got %v", i, entities[i].Type)
 		}
@@ -190,7 +190,7 @@ func TestRequestGenerateArcOfCircle(t *testing.T) {
 	if arc.Normal != normal.H {
 		t.Fatalf("arc normal mismatch: %v", arc.Normal)
 	}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if arc.Point[i] != entities[i].H {
 			t.Fatalf("arc point %d mismatch: %v", i, arc.Point[i])
 		}
@@ -219,7 +219,7 @@ func TestRequestGenerateCubicWithExtraPoints(t *testing.T) {
 		t.Fatalf("expected 12 params (6 pts * 2), got %d", len(params))
 	}
 
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		if entities[i].Type != core.EntityPointIn2D {
 			t.Fatalf("point %d expected 2D type, got %v", i, entities[i].Type)
 		}

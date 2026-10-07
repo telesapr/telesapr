@@ -1,6 +1,8 @@
 package srf
 
 import (
+	"slices"
+
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
@@ -117,8 +119,8 @@ func assembleLoops(el *SEdgeList, dest *SPolygon) bool {
 			}
 		}
 		var sc SContour
-		for k := len(back) - 1; k >= 0; k-- {
-			sc.AddPoint(back[k])
+		for _, b := range slices.Backward(back) {
+			sc.AddPoint(b)
 		}
 		for _, p := range fwd {
 			sc.AddPoint(p)

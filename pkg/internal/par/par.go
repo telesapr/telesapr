@@ -67,7 +67,7 @@ func For(n int, fn func(i int)) {
 	}
 	helpers := acquire(n - 1)
 	if helpers == 0 {
-		for i := 0; i < n; i++ {
+		for i := range n {
 			fn(i)
 		}
 		return

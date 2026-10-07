@@ -3,6 +3,8 @@ package ui
 // The screen with the view's parameters (C++ view.cpp).
 
 import (
+	"fmt"
+
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
@@ -63,7 +65,7 @@ func (tw *TextWindow) ShowEditView() {
 
 func (tw *TextWindow) ScreenChangeViewScale(link int, v uint32) {
 	tw.edit.meaning = EditViewScale
-	tw.ShowEditControl(3, sprintf("%.3f", tw.ss.GW.view.Scale*tw.ss.MmPerUnit()))
+	tw.ShowEditControl(3, fmt.Sprintf("%.3f", tw.ss.GW.view.Scale*tw.ss.MmPerUnit()))
 }
 
 func (tw *TextWindow) ScreenChangeViewToFullScale(link int, v uint32) {
@@ -73,7 +75,7 @@ func (tw *TextWindow) ScreenChangeViewToFullScale(link int, v uint32) {
 func (tw *TextWindow) ScreenChangeViewOrigin(link int, v uint32) {
 	ss := tw.ss
 	o := ss.GW.view.Offset
-	editValue := sprintf("%s, %s, %s",
+	editValue := fmt.Sprintf("%s, %s, %s",
 		ss.MmToString(-o.X, true), ss.MmToString(-o.Y, true), ss.MmToString(-o.Z, true))
 
 	tw.edit.meaning = EditViewOrigin
@@ -82,32 +84,32 @@ func (tw *TextWindow) ScreenChangeViewOrigin(link int, v uint32) {
 
 func (tw *TextWindow) ScreenChangeViewProjection(link int, v uint32) {
 	r := tw.ss.GW.view.ProjRight
-	editValue := sprintf("%.3f, %.3f, %.3f", r.X, r.Y, r.Z)
+	editValue := fmt.Sprintf("%.3f, %.3f, %.3f", r.X, r.Y, r.Z)
 	tw.edit.meaning = EditViewProjRight
 	tw.ShowEditControl(10, editValue)
 }
 
 func (tw *TextWindow) ScreenChangeLightDirection(link int, v uint32) {
 	d := tw.ss.LightDir[v]
-	tw.ShowEditControl(8, sprintf("%.2f, %.2f, %.2f", d.X, d.Y, d.Z))
+	tw.ShowEditControl(8, fmt.Sprintf("%.2f, %.2f, %.2f", d.X, d.Y, d.Z))
 	tw.edit.meaning = EditLightDirection
 	tw.edit.i = int(v)
 }
 
 func (tw *TextWindow) ScreenChangeLightIntensity(link int, v uint32) {
-	tw.ShowEditControl(31, sprintf("%.2f", tw.ss.LightIntensity[v]))
+	tw.ShowEditControl(31, fmt.Sprintf("%.2f", tw.ss.LightIntensity[v]))
 	tw.edit.meaning = EditLightIntensity
 	tw.edit.i = int(v)
 }
 
 func (tw *TextWindow) ScreenChangeLightAmbient(link int, v uint32) {
-	tw.ShowEditControl(31, sprintf("%.2f", tw.ss.AmbientIntensity))
+	tw.ShowEditControl(31, fmt.Sprintf("%.2f", tw.ss.AmbientIntensity))
 	tw.edit.meaning = EditLightAmbient
 	tw.edit.i = 0
 }
 
 func (tw *TextWindow) ScreenChangeCameraTangent(link int, v uint32) {
-	tw.ShowEditControl(3, sprintf("%.3f", 1000*tw.ss.CameraTangentSetting))
+	tw.ShowEditControl(3, fmt.Sprintf("%.3f", 1000*tw.ss.CameraTangentSetting))
 	tw.edit.meaning = EditCameraTangent
 }
 
@@ -154,7 +156,7 @@ func (tw *TextWindow) EditControlDoneForView(s string) bool {
 			tw.edit.meaning = EditViewProjUp
 			tw.HideEditControl()
 			u := view.ProjUp
-			tw.ShowEditControl(10, sprintf("%.3f, %.3f, %.3f", u.X, u.Y, u.Z), tw.editControl.halfRow+2)
+			tw.ShowEditControl(10, fmt.Sprintf("%.3f, %.3f, %.3f", u.X, u.Y, u.Z), tw.editControl.halfRow+2)
 			tw.edit.showAgain = true
 		} else {
 			view.ProjUp = pt

@@ -230,7 +230,7 @@ func (d *constraintDrawer) doLineTrimmedAgainstBoxWith(hcs render.HStroke, ref, 
 	tmin, tmax := core.VeryPositive, core.VeryNegative
 	dl := b.Minus(a)
 
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		p, parallel := geom.AtIntersectionOfPlaneAndLineParallel(planes[i].n, planes[i].d, a, b)
 		if parallel {
 			continue
@@ -813,10 +813,10 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 			hcf = canvas.GetFill(fill)
 		}
 
-		for a := 0; a < 2; a++ {
+		for a := range 2 {
 			r := camera.ProjRight.ScaledBy(float64(a+1) / camera.Scale)
 			dd := camera.ProjUp.ScaledBy(float64(2-a) / camera.Scale)
-			for i := 0; i < 2; i++ {
+			for i := range 2 {
 				h := c.PtA
 				if i != 0 {
 					h = c.PtB
@@ -864,7 +864,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 		ur := u.Minus(gr.WithMagnitude(5 / camera.Scale))
 		// Draw four little crop marks, uniformly spaced (by ninety degree
 		// rotations) around the point.
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			d.doLine(hcs, u, uu)
 			d.doLine(hcs, u, ur)
 			u = u.RotatedAbout(p, gn, math.Pi/2)
@@ -874,7 +874,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 		return
 
 	case core.ConstraintSameOrientation:
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			h := c.EntityA
 			if i != 0 {
 				h = c.EntityB
@@ -950,7 +950,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 			ru = normal.NormalV(sk) // ru meaning r_up, not u/v
 		}
 
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			h := c.EntityA
 			if i != 0 {
 				h = c.EntityB
@@ -1056,7 +1056,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 		return
 
 	case core.ConstraintParallel:
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			h := c.EntityA
 			if i != 0 {
 				h = c.EntityB
@@ -1078,7 +1078,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 		return
 
 	case core.ConstraintEqualRadius:
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			var ref geom.Vector
 			h := c.EntityA
 			if i != 0 {
@@ -1100,7 +1100,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 
 	case core.ConstraintLengthRatio, core.ConstraintLengthDifference, core.ConstraintEqualLengthLines:
 		var a, b geom.Vector
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			h := c.EntityA
 			if i != 0 {
 				h = c.EntityB
@@ -1204,7 +1204,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 		return
 
 	case core.ConstraintEqPtLnDistances:
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			hl, hp := c.EntityA, c.PtA
 			if i != 0 {
 				hl, hp = c.EntityB, c.PtB
@@ -1258,7 +1258,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 		a := drawNum(c.PtA)
 		b := drawNum(c.PtB)
 
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			tail, dd := a, b
 			if i != 0 {
 				tail, dd = b, a
@@ -1327,7 +1327,7 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 			w := sk.GetEntity(c.Workplane).NormalEntity(sk)
 			cu, cv, cn := w.NormalU(sk), w.NormalV(sk), w.NormalN(sk)
 
-			for i := 0; i < 2; i++ {
+			for i := range 2 {
 				o, oo := a, a.Minus(b)
 				if i != 0 {
 					o, oo = b, b.Minus(a)

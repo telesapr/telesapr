@@ -712,7 +712,7 @@ func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forRefere
 	case ConstraintCurveCurveTangent:
 		parallel := true
 		var dir [2]ExprVector
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			he, oth := c.EntityA, c.Other
 			if i == 1 {
 				he, oth = c.EntityB, c.Other2

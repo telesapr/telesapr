@@ -531,7 +531,7 @@ func (gw *GraphicsWindow) DrawSnapGrid(canvas render.Canvas) {
 
 	umin, umax := core.VeryPositive, core.VeryNegative
 	vmin, vmax := core.VeryPositive, core.VeryNegative
-	for a := 0; a < 4; a++ {
+	for a := range 4 {
 		// Ideally, we would just do +/- half the width and height; but
 		// allow some extra slop for rounding.
 		horiz := v.ProjRight.ScaledBy((0.6*width)/v.Scale + 2*g)

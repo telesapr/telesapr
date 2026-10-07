@@ -4,6 +4,7 @@ package ui
 // arcs, and the edit control's dispatch (C++ textscreens.cpp).
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"slices"
@@ -187,7 +188,7 @@ func (tw *TextWindow) ShowListOfGroups() {
 			if dof > 999 {
 				sdof = "###"
 			} else {
-				sdof = sprintf("%-3d", dof)
+				sdof = fmt.Sprintf("%-3d", dof)
 			}
 		}
 		suffix := ""
@@ -230,7 +231,7 @@ func (tw *TextWindow) ShowListOfGroups() {
 		case g.SuppressedBy == g.H:
 			suffix += " (suppressed)"
 		case g.SuppressedBy.V != 0:
-			suffix += sprintf(" (suppressed with g%03x)", g.SuppressedBy.V)
+			suffix += fmt.Sprintf(" (suppressed with g%03x)", g.SuppressedBy.V)
 		}
 		format := "%Bp%Fd " +
 			"%Ft%s%Fb%D%f%Ll%s%E " +
@@ -473,7 +474,7 @@ func (tw *TextWindow) ScreenColor(link int, v uint32) {
 func (tw *TextWindow) ScreenOpacity(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 
-	tw.ShowEditControl(11, sprintf("%.2f", g.Color.AlphaF()))
+	tw.ShowEditControl(11, fmt.Sprintf("%.2f", g.Color.AlphaF()))
 	tw.edit.meaning = EditGroupOpacity
 	tw.edit.group = g.H
 }
@@ -485,7 +486,7 @@ func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
 
 	text := g.ExprA
 	if text == "" {
-		text = sprintf("%d", int(g.ValA))
+		text = fmt.Sprintf("%d", int(g.ValA))
 	}
 	tw.ShowEditControl(10, text)
 	tw.edit.meaning = EditTimesRepeated
@@ -508,7 +509,7 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 
 	text := g.ExprScale
 	if text == "" {
-		text = sprintf("%.3f", g.Scale)
+		text = fmt.Sprintf("%.3f", g.Scale)
 	}
 	tw.ShowEditControl(13, text)
 	tw.edit.meaning = EditGroupScale
@@ -521,7 +522,7 @@ func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	text := g.ExprB
 	if text == "" {
-		text = sprintf("%.8f", g.ValB/tw.ss.MmPerUnit())
+		text = fmt.Sprintf("%.8f", g.ValB/tw.ss.MmPerUnit())
 	}
 	tw.ShowEditControl(3, text)
 	tw.edit.meaning = EditHelixPitch
@@ -578,7 +579,7 @@ func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	text := g.ExprC
 	if text == "" {
-		text = sprintf("%g", g.ValC)
+		text = fmt.Sprintf("%g", g.ValC)
 	}
 	tw.ShowEditControl(10, text)
 	tw.edit.meaning = EditGroupDraft
@@ -595,7 +596,7 @@ func (tw *TextWindow) ScreenChangeChamferDistance2(link int, v uint32) {
 		if d == 0 {
 			d = g.ValB
 		}
-		text = sprintf("%.8f", d/tw.ss.MmPerUnit())
+		text = fmt.Sprintf("%.8f", d/tw.ss.MmPerUnit())
 	}
 	tw.ShowEditControl(3, text)
 	tw.edit.meaning = EditChamferDistance2
@@ -723,7 +724,7 @@ func (tw *TextWindow) showLoftEnds(g *sketch.Group) {
 		if v == 0 {
 			return "free"
 		}
-		return sprintf("square to it, %g", v)
+		return fmt.Sprintf("square to it, %g", v)
 	}
 	tw.Printf(false, "%Bd   %Ftleaves the first%E %s%s %Fl%Ll%f%D[change]%E",
 		end(g.ValB), exprNote(g.ExprB), lf(tw.ScreenChangeLoftStart), g.H.V)
@@ -748,7 +749,7 @@ func (tw *TextWindow) ScreenChangeLoftStart(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	text := g.ExprB
 	if text == "" {
-		text = sprintf("%g", g.ValB)
+		text = fmt.Sprintf("%g", g.ValB)
 	}
 	tw.ShowEditControl(3, text)
 	tw.edit.meaning = EditHelixPitch
@@ -919,7 +920,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 				lf(tw.ScreenChangeGroupOption), radio(two),
 				lf(tw.ScreenChangeGroupOption), check(skew))
 			tw.Printf(false, "%Bd   %Ftdraft%E %s deg%s %Fl%Ll%f%D[change]%E",
-				sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+				fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
 			if g.ValC != 0 || g.ExprC != "" {
 				// Roadmap 28.2: the plane the sides lean from, and which.
 				tw.Printf(false, "%Ba   %Ftfrom the plane%E %s along%s %Fl%Ll%f%D[change]%E",
@@ -1032,7 +1033,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(true, " %Ftsweep plane sketch along path%E")
 		tw.showGroupEdges(g, "path")
 		tw.Printf(false, "%Bd   %Fttwist%E %s deg%s %Fl%Ll%f%D[change]%E",
-			sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+			fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
 		up := g.SweepUp
 		tw.Printf(false, "%Ba   %Ftframes%E "+
 			"%f%Ln%Fd%s turn least%E  "+
@@ -1117,13 +1118,14 @@ func (tw *TextWindow) ShowGroupInfo() {
 		if app == "" {
 			app = "plastic"
 		}
-		line := "%Bd   %Ftappearance%E"
+		var line strings.Builder
+		line.WriteString("%Bd   %Ftappearance%E")
 		var args []any
 		for _, name := range render.MaterialNames {
-			line += "  %f%Lp%D%Fd%s " + name + "%E"
+			line.WriteString("  %f%Lp%D%Fd%s " + name + "%E")
 			args = append(args, lf(tw.ScreenChangeAppearance), 'a', appearanceIndex(name), radio(app == name))
 		}
-		tw.Printf(false, line, args...)
+		tw.Printf(false, line.String(), args...)
 
 		if g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe ||
 			g.Type == sketch.GroupRevolve || g.Type == sketch.GroupHelix || g.Type == sketch.GroupSweep {
@@ -1243,7 +1245,7 @@ func (tw *TextWindow) ScreenChangeEdgeRadius(link int, v uint32) {
 	g := tw.ss.SK.GetGroup(tw.shown.group)
 	val, text, _ := g.EdgeRadius(int(v))
 	if text == "" {
-		text = sprintf("%.8f", val/tw.ss.MmPerUnit())
+		text = fmt.Sprintf("%.8f", val/tw.ss.MmPerUnit())
 	}
 	tw.ShowEditControl(9, text)
 	tw.edit.meaning = EditEdgeRadius
@@ -1412,7 +1414,7 @@ func (tw *TextWindow) ScreenStepDimFinish(link int, v uint32) {
 	if tw.stepDim.isDistance {
 		editValue = tw.ss.MmToString(tw.stepDim.finish, true)
 	} else {
-		editValue = sprintf("%.3f", tw.stepDim.finish)
+		editValue = fmt.Sprintf("%.3f", tw.stepDim.finish)
 	}
 	tw.ShowEditControl(12, editValue)
 }
@@ -1421,7 +1423,7 @@ func (tw *TextWindow) ScreenStepDimFinish(link int, v uint32) {
 // TextWindow::ScreenStepDimSteps).
 func (tw *TextWindow) ScreenStepDimSteps(link int, v uint32) {
 	tw.edit.meaning = EditStepDimSteps
-	tw.ShowEditControl(12, sprintf("%d", tw.stepDim.steps))
+	tw.ShowEditControl(12, fmt.Sprintf("%d", tw.stepDim.steps))
 }
 
 // ScreenStepDimGo steps the dimension, solving at each step (C++

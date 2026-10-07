@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 
@@ -24,7 +25,7 @@ func (tw *TextWindow) ShowBillOfMaterials() {
 		if i%2 == 1 {
 			bg = 'd'
 		}
-		tw.Printf(false, "%Bp   %s  %s", bg, sprintf("%5d", it.Count), it.Part)
+		tw.Printf(false, "%Bp   %s  %s", bg, fmt.Sprintf("%5d", it.Count), it.Part)
 		tw.Printf(false, "%Bp          %Fd%s%E", bg, it.File)
 		tw.Printf(false, "%Bp          %Fdby %s%E", bg, strings.Join(it.Groups, ", "))
 	}

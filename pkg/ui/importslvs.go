@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/persist/convert"
@@ -117,7 +117,7 @@ func describeResult(r *convert.Result) string {
 	for path, err := range r.Failed {
 		lines = append(lines, fmt.Sprintf("Not written: %s: %v", path, err))
 	}
-	sort.Strings(lines)
+	slices.Sort(lines)
 	lines = append(lines, r.Warnings...)
 	return warningList(lines)
 }

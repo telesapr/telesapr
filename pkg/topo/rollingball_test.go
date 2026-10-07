@@ -110,7 +110,7 @@ func spout() (*srf.SShell, geom.Vector) {
 	d := v(math.Sin(alpha), 0, math.Cos(alpha))
 	a := base.Plus(v(0, 4, 0))
 	lo, hi := 0.0, 40.0
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		m := (lo + hi) / 2
 		p := a.Plus(d.ScaledBy(m))
 		if math.Hypot(p.X, p.Y) < 30-p.Z/4 {

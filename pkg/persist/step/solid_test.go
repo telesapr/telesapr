@@ -366,7 +366,7 @@ func cutters(lo, hi geom.Vector) []*srf.SShell {
 		{X: x1, Y: y1, Z: lo.Z - d.Z}, {X: x0, Y: y1, Z: lo.Z - d.Z}}, geom.Vector{}, geom.Vector{Z: 3 * d.Z}, col)
 	r := 0.15 * math.Min(d.X, d.Y)
 	var ls srf.SBezierLoopSet
-	for k := 0; k < 4; k++ {
+	for k := range 4 {
 		a0 := float64(k) * math.Pi / 2
 		at := func(a, s float64) geom.Vector {
 			return geom.Vector{X: c.X + r*s*math.Cos(a), Y: c.Y + r*s*math.Sin(a), Z: lo.Z - d.Z}

@@ -33,7 +33,7 @@ func BenchmarkFreedom150(b *testing.B) {
 	sk := d.h.Sketch()
 	hg := sk.ActiveGroup()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		sk.Generation++
 		if sk.GroupFreedom(hg) == nil {
 			b.Fatal("no freedom")
@@ -45,7 +45,7 @@ func BenchmarkRegen150(b *testing.B) {
 	d := zigzag(150)
 	sk := d.h.Sketch()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		sk.GenerateAll()
 	}
 }

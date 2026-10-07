@@ -1,7 +1,7 @@
 package topo
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -195,8 +195,8 @@ func (t *Topology) Chain(e int) []ChainPiece {
 		}
 	}
 	out := make([]ChainPiece, 0, len(back)+1)
-	for i := len(back) - 1; i >= 0; i-- {
-		out = append(out, back[i])
+	for _, b := range slices.Backward(back) {
+		out = append(out, b)
 	}
 	out = append(out, ChainPiece{Edge: e})
 	for cur, v := e, t.Edges[e].V[1]; ; {
@@ -333,6 +333,6 @@ func (t *Topology) SheetNeighbours(s int) []int {
 			}
 		}
 	}
-	sort.Ints(out)
+	slices.Sort(out)
 	return out
 }
