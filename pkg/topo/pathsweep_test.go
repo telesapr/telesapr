@@ -350,7 +350,7 @@ func TestPathSweepSweep(t *testing.T) {
 		for op := range 4 {
 			points++
 			name := fmt.Sprintf("case %d, op %d", c, op)
-			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2))
+			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), srf.Tolerance{})
 			if err != nil {
 				t.Fatalf("%s: %v", name, err)
 			}
@@ -425,7 +425,7 @@ func BenchmarkPathSweep(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		sh, err := topo.MakePathSweep(sp, loops, col, 1<<30, 1<<30+1, 1<<30+2)
+		sh, err := topo.MakePathSweep(sp, loops, col, 1<<30, 1<<30+1, 1<<30+2, srf.Tolerance{})
 		if err != nil {
 			b.Fatal(err)
 		}

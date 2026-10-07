@@ -294,7 +294,7 @@ func (h *ScriptHost) leaveExportMode() {
 	ss := h.ss
 	ss.JustExportedInfo.Draw = false
 	if ss.ExportMode {
-		ss.ExportMode = false
+		ss.leaveExportMode()
 		ss.GenerateAll(sketch.GenerateAll)
 	}
 }

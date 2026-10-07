@@ -531,7 +531,7 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 	start := srf.FaceID(g.RemapEntity(core.NoEntity, RemapBottom).V)
 	end := srf.FaceID(g.RemapEntity(core.NoEntity, RemapTop).V)
 	if g.fittedPath != nil {
-		g.generateFittedSweepShell(src, uint32(start), uint32(end))
+		g.generateFittedSweepShell(sk, src, uint32(start), uint32(end))
 		return
 	}
 	for i := range src.BezierLoops.Sets {
@@ -578,7 +578,7 @@ func sweepPathOf(chain []pathPiece, g *Group) (*topo.SweepPath, error) {
 // generateFittedSweepShell sweeps each of the profile's loop sets along
 // the fitted path, the caps' identities start and end, the patches'
 // from the group's own.
-func (g *Group) generateFittedSweepShell(src *Group, start, end uint32) {
+func (g *Group) generateFittedSweepShell(sk *Sketch, src *Group, start, end uint32) {
 	next := srf.OriginFor(g.H.V, 0)
 	for i := range src.BezierLoops.Sets {
 		set := &src.BezierLoops.Sets[i]
@@ -586,7 +586,7 @@ func (g *Group) generateFittedSweepShell(src *Group, start, end uint32) {
 		for _, h := range set.Holes {
 			loops = append(loops, h.Curves)
 		}
-		sh, err := topo.MakePathSweep(g.fittedPath, loops, g.Color, start, end, next)
+		sh, err := topo.MakePathSweep(g.fittedPath, loops, g.Color, start, end, next, sk.tol)
 		if err != nil {
 			g.setProblem(nil, "%v", err)
 			return

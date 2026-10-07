@@ -115,7 +115,7 @@ func filletInStages(orig *srf.SShell, picks []FilletPick, r float64, origin uint
 			}
 		}
 	}
-	tol := math.Max(10*geom.LengthEps, srf.ChordTolMm())
+	tol := math.Max(10*geom.LengthEps, orig.Tol.ChordTolMm())
 	// on reports whether edge x of the solid u lies along an edge of the
 	// solid as it was, by its middle point.
 	on := func(u *Topology, x int, of []int) bool {

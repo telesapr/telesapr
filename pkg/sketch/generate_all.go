@@ -76,12 +76,17 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 
 	// If we're generating entities for display, first we need to find
 	// the bounding box to turn relative chord tolerance to absolute.
-	if !srf.ExportMode() && !genForBBox {
+	switch {
+	case sk.Exporting.IsSet():
+		sk.tol = sk.Exporting
+	case !genForBBox:
 		sk.generateAll(typ, andFindFree, true)
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
-		srf.SetChordTolMm(maxSize * sk.chordTolPct() / 100.0)
+		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.maxSegments())
+		// Until every reader has a tolerance of its own.
+		srf.SetChordTolMm(sk.tol.ChordTolMm())
 	}
 
 	// Remove any requests or constraints that refer to a nonexistent
@@ -693,6 +698,19 @@ func (sk *Sketch) chordTolPct() float64 {
 // ChordTolPercent is the chord tolerance in effect, as a percentage of
 // the model's size.
 func (sk *Sketch) ChordTolPercent() float64 { return sk.chordTolPct() }
+
+// maxSegments is MaxSegments, or its default.
+func (sk *Sketch) maxSegments() int {
+	if sk.MaxSegments > 0 {
+		return sk.MaxSegments
+	}
+	return 20
+}
+
+// Tol is the tolerance the last regeneration followed curves and
+// surfaces at: the export one while Exporting is set, otherwise one
+// from the model's size and ChordTolPct.
+func (sk *Sketch) Tol() srf.Tolerance { return sk.tol }
 
 // chordTolPct mirrors the default C++ "ChordTolerancePct" setting
 // (solvespace.cpp:50).

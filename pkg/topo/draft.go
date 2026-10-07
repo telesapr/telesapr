@@ -26,7 +26,7 @@ import (
 // with its sides leaning in by angle radians (out when negative). The
 // faces get color and origins from origin up, 0 leaving them to the
 // caller.
-func DraftedPrism(loops [][]srf.SBezier, along geom.Vector, angle float64, color core.RGBA, origin uint32) (*srf.SShell, error) {
+func DraftedPrism(loops [][]srf.SBezier, along geom.Vector, angle float64, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	if math.IsNaN(angle) || math.Abs(angle) >= math.Pi/2-1e-6 {
 		return nil, fmt.Errorf("a draft of %.6g° leans the sides flat", angle*180/math.Pi)
 	}
@@ -36,7 +36,7 @@ func DraftedPrism(loops [][]srf.SBezier, along geom.Vector, angle float64, color
 			angles[k] = append(angles[k], angle)
 		}
 	}
-	return DraftedPrismAngles(loops, angles, along, color, origin)
+	return DraftedPrismAngles(loops, angles, along, color, origin, tol)
 }
 
 // pieceTangentAt is an arc's direction of travel where its radial

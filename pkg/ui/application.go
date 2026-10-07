@@ -284,8 +284,34 @@ func (ss *Application) applyEngineSettings() {
 	srf.SetExportMode(ss.ExportMode, ss.ExportChordTolMm(), ss.ExportMaxSegments)
 	if ss.SK != nil {
 		ss.SK.ChordTolPct = ss.ChordTol
+		ss.SK.MaxSegments = ss.MaxSegments
 		ss.SK.CheckClosedContour = ss.CheckClosedContour
+		ss.SK.Exporting = ss.exportTolerance()
 	}
+}
+
+// exportTolerance is the tolerance an export follows curves at while
+// ExportMode is on, and unset otherwise.
+func (ss *Application) exportTolerance() srf.Tolerance {
+	if !ss.ExportMode {
+		return srf.Tolerance{}
+	}
+	return srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments)
+}
+
+// enterExportMode has the regenerations that follow use the export
+// tolerance, until leaveExportMode.
+func (ss *Application) enterExportMode() {
+	ss.ExportMode = true
+	ss.SK.Exporting = ss.exportTolerance()
+	srf.SetExportMode(true, ss.ExportChordTolMm(), ss.ExportMaxSegments)
+}
+
+// leaveExportMode returns the regenerations to the display tolerance.
+func (ss *Application) leaveExportMode() {
+	ss.ExportMode = false
+	ss.SK.Exporting = srf.Tolerance{}
+	srf.SetExportMode(false, 0, 0)
 }
 
 // SaveSettings writes the configuration (C++ SolveSpaceUI::Exit, less
@@ -677,7 +703,7 @@ func (ss *Application) StringToMm(s string) float64 {
 }
 
 // ChordTolMm is the chord tolerance in mm in use.
-func (ss *Application) ChordTolMm() float64 { return srf.ChordTolMm() }
+func (ss *Application) ChordTolMm() float64 { return ss.SK.Tol().ChordTolMm() }
 
 // ExportChordTolMm is the chord tolerance for exported curves.
 func (ss *Application) ExportChordTolMm() float64 { return ss.ExportChordTol / ss.ExportScale }

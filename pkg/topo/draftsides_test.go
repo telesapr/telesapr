@@ -93,7 +93,7 @@ func TestDraftedPrismAngles(t *testing.T) {
 			func(z float64) float64 { x := z * tanOf(-6); return segment(10-x, x) }, math.Pi * 10},
 	} {
 		for _, way := range []float64{1, -1} {
-			sh, err := topo.DraftedPrismAngles(c.loops, c.angles, v(0, 0, way*c.h), color, 1<<30)
+			sh, err := topo.DraftedPrismAngles(c.loops, c.angles, v(0, 0, way*c.h), color, 1<<30, srf.Tolerance{})
 			if err != nil {
 				t.Errorf("%s (%g): %v", c.name, way, err)
 				continue
@@ -121,7 +121,7 @@ func TestDraftedPrismAnglesRefused(t *testing.T) {
 		"too few angles":                  {[][]srf.SBezier{rounded}, [][]float64{{0}}, "don't match"},
 		"flat":                            {[][]srf.SBezier{dShape(5)}, [][]float64{{rad(90), 0, 0}}, "flat"},
 	} {
-		_, err := topo.DraftedPrismAngles(c.loops, c.angles, v(0, 0, 5), color, 0)
+		_, err := topo.DraftedPrismAngles(c.loops, c.angles, v(0, 0, 5), color, 0, srf.Tolerance{})
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
 		}
@@ -163,7 +163,7 @@ func TestDraftAnglesSweep(t *testing.T) {
 			angles = []float64{a, a, 0}
 			area = func(z float64) float64 { return segment(10-z*tan, 0) }
 		}
-		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{dShape(10)}, [][]float64{angles}, v(0, 0, h), color, 1<<30)
+		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{dShape(10)}, [][]float64{angles}, v(0, 0, h), color, 1<<30, srf.Tolerance{})
 		if err != nil {
 			return err
 		}

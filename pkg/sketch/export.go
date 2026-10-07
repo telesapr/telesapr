@@ -55,8 +55,10 @@ func (es ExportSettings) ChordTolMm() float64 {
 func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 	// C++ stays in export mode until the user next does something, and
 	// then regenerates for display; here that happens on return.
+	sk.Exporting = srf.Tol(es.ChordTolMm(), es.MaxSegments)
 	srf.SetExportMode(true, es.ChordTolMm(), es.MaxSegments)
 	defer func() {
+		sk.Exporting = srf.Tolerance{}
 		srf.SetExportMode(false, 0, 0)
 		sk.GenerateAllTyped(GenerateAll)
 	}()

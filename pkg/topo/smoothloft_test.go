@@ -227,7 +227,7 @@ func TestSmoothLoftRefusals(t *testing.T) {
 		{"open profile", [][]srf.SBezier{square(10, 0), square(10, 10)[:3], square(10, 20)}},
 		{"on each other", [][]srf.SBezier{square(10, 0), square(10, 0), square(10, 20)}},
 	} {
-		if _, err := topo.MakeSmoothLoft(c.loops, 0, col, 1<<30); err == nil {
+		if _, err := topo.MakeSmoothLoft(c.loops, 0, col, 1<<30, srf.Tolerance{}); err == nil {
 			t.Errorf("%s: lofted", c.name)
 		}
 	}
@@ -299,7 +299,7 @@ func TestSmoothLoftSweep(t *testing.T) {
 		for op := range 4 {
 			points++
 			name := fmt.Sprintf("case %d (%d sections), op %d", c, len(loops), op)
-			sh, err := topo.MakeSmoothLoft(loops, 0, col, srf.OriginFor(9, 0))
+			sh, err := topo.MakeSmoothLoft(loops, 0, col, srf.OriginFor(9, 0), srf.Tolerance{})
 			if err != nil {
 				t.Fatalf("%s: %v", name, err)
 			}
@@ -349,7 +349,7 @@ func BenchmarkSmoothLoft(b *testing.B) {
 		blobAt(12, 8, 6, 0, 0, 32)}
 	col := core.NewRGBA(100, 100, 100, 255)
 	for b.Loop() {
-		sh, err := topo.MakeSmoothLoft(loops, 0, col, 1<<30)
+		sh, err := topo.MakeSmoothLoft(loops, 0, col, 1<<30, srf.Tolerance{})
 		if err != nil {
 			b.Fatal(err)
 		}

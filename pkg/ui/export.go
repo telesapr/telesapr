@@ -222,7 +222,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 		return
 	}
 
-	ss.ExportMode = true
+	ss.enterExportMode()
 	ss.GenerateAll(sketch.GenerateAll)
 
 	var sm *srf.SMesh
@@ -943,7 +943,7 @@ func (w *vectorWriter) BezierAsNonrationalCubic(sb *srf.SBezier, depth int) {
 // SolveSpaceUI::ExportMeshTo).
 func (ss *Application) ExportMeshTo(filename string) {
 	sk := ss.SK
-	ss.ExportMode = true
+	ss.enterExportMode()
 	ss.GenerateAll(sketch.GenerateAll)
 
 	g := sk.Group(ss.GW.activeGroupH())

@@ -570,25 +570,25 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 	var errorPointAt geom.Vector
 	var errorAt srf.SEdge
 
+	// The sketch's tolerance, or 0.1 mm when there is no sketch yet and
+	// the first group is the linked IDF.
+	tol := sk.Tol()
+	if tol.ChordTolMm() == 0 {
+		tol = srf.Tol(0.1, tol.MaxSegments())
+	}
 	var sblss srf.SBezierLoopSetSet
 	sblss.FindOuterFacesFrom(&sbl, &polyLoops, nil,
-		srf.Tol(100.0, srf.MaxSegments()), &allClosed, &errorAt,
+		srf.Tol(100.0, tol.MaxSegments()), &allClosed, &errorAt,
 		&allCoplanar, &errorPointAt, nil)
 
-	// hack for when there is no sketch yet and the first group is a
-	// linked IDF
-	ctc := srf.ChordTolMm()
-	if ctc == 0.0 {
-		srf.SetChordTolMm(0.1) // mm
-	}
 	// there should only by one sbls in the sblss unless a board has
 	// disjointed parts...
 	if len(sblss.Sets) > 0 {
+		sh.Tol = tol
 		sh.MakeFromExtrusionOf(&sblss.Sets[0], geom.Vector{},
 			geom.Vector{Z: boardThickness},
 			core.NewRGBA(0, 180, 0, 255))
 	}
-	srf.SetChordTolMm(ctc)
 	sh.BooleanFailed = false
 
 	// C++ keeps an EntityList sorted by handle.

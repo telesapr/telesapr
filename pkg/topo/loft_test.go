@@ -41,7 +41,7 @@ func circle(r, z, start float64) []srf.SBezier {
 
 func loftVolume(t *testing.T, a, b []srf.SBezier) (float64, *topo.Topology) {
 	t.Helper()
-	sh, err := topo.MakeRuledLoft(a, b, core.NewRGBA(100, 100, 100, 255), 1<<30)
+	sh, err := topo.MakeRuledLoft(a, b, core.NewRGBA(100, 100, 100, 255), 1<<30, srf.Tolerance{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestLoftRefusals(t *testing.T) {
 		"one only": {square(10, 0)[:1], square(10, 5)[:1]},
 	}
 	for name, c := range cases {
-		if _, err := topo.MakeRuledLoft(c[0], c[1], core.RGBA{}, 0); err == nil {
+		if _, err := topo.MakeRuledLoft(c[0], c[1], core.RGBA{}, 0, srf.Tolerance{}); err == nil {
 			t.Errorf("%s: no error", name)
 		}
 	}

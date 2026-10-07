@@ -82,6 +82,17 @@ type Sketch struct {
 	// model's size (C++ SS.chordTol); 0 is the default, 0.1.
 	ChordTolPct float64
 
+	// MaxSegments is the most segments a curve is cut into for the
+	// display; 0 is the default, 20.
+	MaxSegments int
+
+	// Exporting, while set, is the tolerance a regeneration follows
+	// curves and surfaces at, for a file; unset, the tolerance comes
+	// from the model's size and ChordTolPct.
+	Exporting srf.Tolerance
+	// tol is the tolerance of the last regeneration (Tol).
+	tol srf.Tolerance
+
 	// CheckClosedContour is whether a sketch's loops are checked for
 	// self-intersection, which is slow (C++ SS.checkClosedContour, on
 	// by default).

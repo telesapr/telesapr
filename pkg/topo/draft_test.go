@@ -88,7 +88,7 @@ func TestDraftedPrism(t *testing.T) {
 		}, 2 * math.Pi * 3},
 	} {
 		tan := math.Tan(c.deg * math.Pi / 180)
-		sh, err := topo.DraftedPrism(c.loops, v(0, 0, c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 1<<30)
+		sh, err := topo.DraftedPrism(c.loops, v(0, 0, c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 1<<30, srf.Tolerance{})
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue
@@ -98,7 +98,7 @@ func TestDraftedPrism(t *testing.T) {
 			t.Errorf("%s: volume %g, want %g", c.name, got, want)
 		}
 		// Downwards, the same solid upside down.
-		sh, err = topo.DraftedPrism(c.loops, v(0, 0, -c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0)
+		sh, err = topo.DraftedPrism(c.loops, v(0, 0, -c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0, srf.Tolerance{})
 		if err != nil {
 			t.Errorf("%s downwards: %v", c.name, err)
 			continue
@@ -125,7 +125,7 @@ func TestDraftRefused(t *testing.T) {
 		"skewed":          {[][]srf.SBezier{square}, v(1, 0, 5), 5, "square"},
 		"flat":            {[][]srf.SBezier{square}, v(0, 0, 5), 90, "flat"},
 	} {
-		_, err := topo.DraftedPrism(c.loops, c.along, c.deg*math.Pi/180, color, 0)
+		_, err := topo.DraftedPrism(c.loops, c.along, c.deg*math.Pi/180, color, 0, srf.Tolerance{})
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
 		}
@@ -196,7 +196,7 @@ func TestDraftSweep(t *testing.T) {
 		if p.String("way") == "down" {
 			along = v(0, 0, -h)
 		}
-		sh, err := topo.DraftedPrism(s.loops, along, deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0)
+		sh, err := topo.DraftedPrism(s.loops, along, deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0, srf.Tolerance{})
 		meets := x >= s.limit-1e-9
 		if p.String("shape") == "block with a hole" {
 			// Between the hole and the long side, 3 wide at the

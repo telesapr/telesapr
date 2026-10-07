@@ -48,6 +48,7 @@ type frame struct {
 // SweepPath is a chain of curves with its frames, sampled densely by
 // double reflection (Wang, Juttler, Zheng and Liu, 2008).
 type SweepPath struct {
+	tol     srf.Tolerance
 	pieces  []srf.SBezier
 	samples []frame
 	opts    PathSweepOptions
@@ -247,7 +248,7 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 	}
 	tol := sp.opts.Tol
 	if tol <= 0 {
-		tol = srf.ChordTolMm() / 10
+		tol = sp.tol.ChordTolMm() / 10
 	}
 	maxSections := sp.opts.MaxSections
 	if maxSections <= 0 {
@@ -389,12 +390,13 @@ func (sp *SweepPath) strays(curves []srf.BSplineCurve, surfs []*srf.BSplineSurfa
 // patches (SweptSurfaces), and the profile's planes at both ends. The
 // start cap takes identity startFace, the end endFace, and the surfaces'
 // patches identities from origin on.
-func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startFace, endFace, origin uint32) (*srf.SShell, error) {
+func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startFace, endFace, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+	sp.tol = tol
 	surfs, _, err := sp.SweptSurfaces(loops)
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins(surfs, color, startFace, endFace, origin)
+	return closeSkins(surfs, color, startFace, endFace, origin, tol)
 }
 
 // closeSkins is the solid bounded by chains of surfaces closed in u,
@@ -403,8 +405,8 @@ func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startF
 // and last loops at both ends. Each chain is one face of its own sheet,
 // its patches' identities on from origin; the caps take startFace and
 // endFace.
-func closeSkins(chains [][]*srf.BSplineSurface, color core.RGBA, startFace, endFace, origin uint32) (*srf.SShell, error) {
-	sh := &srf.SShell{}
+func closeSkins(chains [][]*srf.BSplineSurface, color core.RGBA, startFace, endFace, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+	sh := &srf.SShell{Tol: tol}
 	fa := NewFaceAdder(sh)
 	var first, last [][]srf.SBezier
 	id := origin

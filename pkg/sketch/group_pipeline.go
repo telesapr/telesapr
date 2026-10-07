@@ -108,8 +108,10 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	srcg := g
 
 	g.ThisShell.Clear()
+	g.ThisShell.Tol = sk.tol
 	g.ThisMesh.Clear()
 	g.RunningShell.Clear()
+	g.RunningShell.Tol = sk.tol
 	g.RunningMesh.Clear()
 
 	// A group left out passes the solid so far through.
@@ -427,6 +429,7 @@ func (g *Group) generateForStepAndRepeatMesh(sk *Sketch, steps, outs *srf.SMesh,
 // entities remapped.
 func (g *Group) generateLinkedShell(sk *Sketch) {
 	g.ThisShell.Clear()
+	g.ThisShell.Tol = sk.tol
 	g.ThisMesh.Clear()
 	if sk == nil {
 		return
@@ -483,6 +486,7 @@ func (g *Group) haveSource(sk *Sketch) bool {
 // selected.
 func (g *Group) generateExtrudeShell(sk *Sketch) {
 	g.ThisShell.Clear()
+	g.ThisShell.Tol = sk.tol
 	g.ThisMesh.Clear()
 	if !g.haveSource(sk) {
 		return
@@ -501,11 +505,12 @@ func (g *Group) generateExtrudeShell(sk *Sketch) {
 		tbot, ttop = translate.ScaledBy(-1), translate.ScaledBy(1)
 	}
 	if g.HasDraft() && len(src.BezierLoops.Sets) > 0 {
-		if g.generateDraftShell(src, tbot, ttop) {
+		if g.generateDraftShell(sk, src, tbot, ttop) {
 			g.annotateDraftFaces(sk, src.BezierLoops.Sets[0].Point, tbot, ttop)
 			return
 		}
 		g.ThisShell.Clear()
+		g.ThisShell.Tol = sk.tol
 	}
 
 	for k := range src.BezierLoops.Sets {
@@ -581,6 +586,7 @@ func (g *Group) revolveAxis(sk *Sketch) (pt, axis geom.Vector) {
 // angle for REVOLVE.
 func (g *Group) generateRevolveShell(sk *Sketch) {
 	g.ThisShell.Clear()
+	g.ThisShell.Tol = sk.tol
 	g.ThisMesh.Clear()
 	if !g.haveSource(sk) {
 		return
@@ -618,6 +624,7 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 // sets about the group's axis while translating along it.
 func (g *Group) generateHelixShell(sk *Sketch) {
 	g.ThisShell.Clear()
+	g.ThisShell.Tol = sk.tol
 	g.ThisMesh.Clear()
 	if !g.haveSource(sk) {
 		return

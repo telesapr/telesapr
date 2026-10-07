@@ -126,12 +126,12 @@ func SmoothLoftSections(loops [][]srf.SBezier, turn int) ([][]srf.SBezier, error
 // order, as SmoothLoftSections takes them with turn. The first
 // profile's cap takes origin, the last's origin + 1, and the surface's
 // patches origins from origin + 2 on, one face of sheet origin + 2.
-func MakeSmoothLoft(loops [][]srf.SBezier, turn int, color core.RGBA, origin uint32) (*srf.SShell, error) {
+func MakeSmoothLoft(loops [][]srf.SBezier, turn int, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	bs, err := SmoothLoftSurface(loops, turn)
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2)
+	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol)
 }
 
 // SmoothLoftSurface is the B-spline surface of a smooth loft through
@@ -168,12 +168,12 @@ type LoftEnds struct {
 
 // MakeSmoothLoftEnds is MakeSmoothLoft with its ends set by ends; two
 // profiles make a cubic surface, not a ruled one, when an end is set.
-func MakeSmoothLoftEnds(loops [][]srf.SBezier, turn int, ends LoftEnds, color core.RGBA, origin uint32) (*srf.SShell, error) {
+func MakeSmoothLoftEnds(loops [][]srf.SBezier, turn int, ends LoftEnds, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	bs, err := SmoothLoftSurfaceEnds(loops, turn, ends)
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2)
+	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol)
 }
 
 // SmoothLoftSurfaceEnds is SmoothLoftSurface with its ends set.

@@ -118,16 +118,16 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 		return nil, err
 	}
 	if len(guides) > 0 {
-		return topo.MakeGuidedLoft(loops, int(g.ValA), g.LoftEnds(), guides, g.Color, origin)
+		return topo.MakeGuidedLoft(loops, int(g.ValA), g.LoftEnds(), guides, g.Color, origin, sk.tol)
 	}
 	if ends := g.LoftEnds(); len(loops) > 2 || ends != (topo.LoftEnds{}) {
-		return topo.MakeSmoothLoftEnds(loops, int(g.ValA), ends, g.Color, origin)
+		return topo.MakeSmoothLoftEnds(loops, int(g.ValA), ends, g.Color, origin, sk.tol)
 	}
 	loops = topo.MatchCounts(loops)
 	a, b := loops[0], loops[1]
 	k := g.LoftTurn(len(b))
 	b = append(b[k:], b[:k]...)
-	return topo.MakeRuledLoft(a, b, g.Color, origin)
+	return topo.MakeRuledLoft(a, b, g.Color, origin, sk.tol)
 }
 
 // generateLoftShell makes the loft's shell, or says why it can't.

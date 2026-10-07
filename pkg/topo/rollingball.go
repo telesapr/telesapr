@@ -270,7 +270,7 @@ func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, er
 			}
 		}
 	}
-	rb.tol = math.Max(srf.ChordTolMm()/10, 1e-6)
+	rb.tol = math.Max(t.shell.Tol.ChordTolMm()/10, 1e-6)
 	if !closed {
 		for k, at := range []struct {
 			v     int
@@ -1107,7 +1107,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			if _, ok := loops[b]; ok {
 				return filletErr(at, "the fillet runs off faces at both its ends: make it smaller")
 			}
-			l, a, err := clipPatch(&row[b], ro, math.Max(srf.ChordTolMm()/10, 1e-6))
+			l, a, err := clipPatch(&row[b], ro, math.Max(sh.Tol.ChordTolMm()/10, 1e-6))
 			if err != nil {
 				return err
 			}
@@ -1161,7 +1161,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 					continue
 				}
 				var pts []geom.Vector
-				sb.MakePwlIntoPoints(&pts, srf.Tolerance{}, 0)
+				sb.MakePwlIntoPoints(&pts, sh.Tol, 0)
 				pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
 				nc := srf.SCurve{H: nextH, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H}
 				nextH.V++

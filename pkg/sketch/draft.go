@@ -105,7 +105,7 @@ func (sk *Sketch) draftCurve(g *Group, he core.HEntity) (core.HEntity, bool) {
 // sets from the sketch's plane to tbot and to ttop, or says why it
 // can't and leaves the shell empty: two prisms from the neutral plane,
 // one each way it reaches.
-func (g *Group) generateDraftShell(src *Group, tbot, ttop geom.Vector) bool {
+func (g *Group) generateDraftShell(sk *Sketch, src *Group, tbot, ttop geom.Vector) bool {
 	angle := g.ValC * math.Pi / 180
 	dir := ttop.Minus(tbot)
 	if dir.Magnitude() < core.LengthEps {
@@ -132,7 +132,7 @@ func (g *Group) generateDraftShell(src *Group, tbot, ttop geom.Vector) bool {
 			if along.Magnitude() < core.LengthEps {
 				continue
 			}
-			sh, err := topo.DraftedPrismAngles(loops, angles, along, g.Color, 0)
+			sh, err := topo.DraftedPrismAngles(loops, angles, along, g.Color, 0, sk.tol)
 			if err != nil {
 				if se, ok := errors.AsType[*topo.ShellError](err); ok {
 					at := se.At

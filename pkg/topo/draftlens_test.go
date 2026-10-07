@@ -50,7 +50,7 @@ func TestDraftSharpArcs(t *testing.T) {
 		{5, 5, 5}, {2, 6, 5}, {0, 8, 4}, {-3, 4, 6},
 	} {
 		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{lensLoop()}, [][]float64{{rad(c.a), rad(c.b)}},
-			v(0, 0, c.h), color, 0)
+			v(0, 0, c.h), color, 0, srf.Tolerance{})
 		if err != nil {
 			t.Fatalf("%v: %v", c, err)
 		}
@@ -83,7 +83,7 @@ func TestDraftSharpArcsSweep(t *testing.T) {
 	}
 	grid.Run(func(p sweep.Point) error {
 		a, b, h := p.Float("a"), p.Float("b"), p.Float("h")
-		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{lensLoop()}, [][]float64{{rad(a), rad(b)}}, v(0, 0, h), color, 0)
+		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{lensLoop()}, [][]float64{{rad(a), rad(b)}}, v(0, 0, h), color, 0, srf.Tolerance{})
 		if err != nil {
 			return err
 		}

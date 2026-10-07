@@ -669,7 +669,7 @@ func (rb *rollingBall) planeCut(end *rbEnd, k int, a, b geom.Vector) ([]srf.SBez
 	if chord.Magnitude() < geom.LengthEps {
 		return nil, nil
 	}
-	tol := math.Max(srf.ChordTolMm()/10, 1e-6)
+	tol := math.Max(rb.t.shell.Tol.ChordTolMm()/10, 1e-6)
 	for pieces := 1; pieces <= 64; pieces *= 2 {
 		var out []srf.SBezier
 		ok := true
@@ -768,7 +768,7 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 	}
 	add := func(s *srf.SSurface, other core.HSSurface, sb srf.SBezier, fwd bool) {
 		var pts []geom.Vector
-		sb.MakePwlIntoPoints(&pts, srf.Tolerance{}, 0)
+		sb.MakePwlIntoPoints(&pts, rb.t.shell.Tol, 0)
 		pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
 		nc := srf.SCurve{H: *h, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H, SurfB: other}
 		h.V++
@@ -998,7 +998,7 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 	}
 	// The curve is both faces' edge: it keeps to them as their meshes do,
 	// within half the chord tolerance.
-	tol := math.Max(srf.ChordTolMm()/2, 1e-6)
+	tol := math.Max(rb.t.shell.Tol.ChordTolMm()/2, 1e-6)
 	for j, p := range xs {
 		if d := fit.PointAt(us[j]).Minus(p).Magnitude(); d > tol {
 			return sec, filletErr(p, "the fillet's end on the curved face its edge ends at can't be fitted within "+

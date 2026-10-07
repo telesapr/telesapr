@@ -181,7 +181,7 @@ func checkLoop(loop []srf.SBezier) error {
 // closed loop b, curves of the same count joined in order: curve i of a
 // to curve i of b, each running the same way round. The faces get
 // origins from origin up and color.
-func MakeRuledLoft(a, b []srf.SBezier, color core.RGBA, origin uint32) (*srf.SShell, error) {
+func MakeRuledLoft(a, b []srf.SBezier, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	if len(a) != len(b) {
 		return nil, fmt.Errorf("the profiles have %d and %d curves; a loft joins them one to one", len(a), len(b))
 	}
@@ -207,7 +207,7 @@ func MakeRuledLoft(a, b []srf.SBezier, color core.RGBA, origin uint32) (*srf.SSh
 	if nb.Dot(along) < 0 {
 		b = reverseLoop(b)
 	}
-	sh := &srf.SShell{}
+	sh := &srf.SShell{Tol: tol}
 	next := origin
 	add := func(s srf.SSurface, loop []srf.SBezier) error {
 		s.Color = color
