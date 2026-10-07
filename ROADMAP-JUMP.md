@@ -2,8 +2,8 @@
 
 Date: 2026-10-01, compacted 2026-10-04 twice. Status: steps 1 to 29 and I7 are merged. Steps
 23 and 29 are complete; steps 22 and 24 to 28 are merged with the follow-ups listed under "Open
-work", all of them kernel work. 12.4 (CI's first run on GitHub) waits for the user. Read
-"Definition of done for every new feature" first.
+work", all of them kernel work. 12.4 is done: CI runs on GitHub (`telesapr/telesapr`) and
+is green since `c9e5ac2` (2026-10-06). Read "Definition of done for every new feature" first.
 
 TeleSAPR began as a Go port of SolveSpace, bit-identical with the C++. Since 2026-10-01 it is a
 separate project: no parity or file compatibility with SolveSpace, a Go-native kernel, its own
@@ -33,7 +33,7 @@ and `docs/done-audit.md`; the kernel's working notes are in `docs/notes`.
 | 11 | General surface type: multi-patch faces, B-splines with knots, degree up to 5, STEP export per face | `a8a973b` |
 | I7 | Drawing with an AI model: an MCP server in `telesapr-cli mcp` running Go scripts | `baaec8d` |
 | Name | Rename to TeleSAPR, module `github.com/telesapr/telesapr`, `.tlspr` | `74ff70b` |
-| 12 | Licence (GPL-3.0-or-later), version 0.1.0, icons, README, lint at 0, audit, user's guide; not 12.4 | `f5c6971` |
+| 12 | Licence (GPL-3.0-or-later), version 0.1.0, icons, README, lint at 0, audit, user's guide; 12.4, the remote and CI's first green run | `f5c6971`, `c9e5ac2` |
 | 13 | Kernel soundness: seam splits, fold check, twist rows, untrimmed surfaces dropped, symmetric mirror, STEP T-junctions | `101f59e` |
 | 14 | Every face picked, names that survive, non-manifold edges reported, hover grid, outward normals for Measure | `f512ed1` |
 | 15 | Chamfer by local edit, shell of curved prisms, four-face apexes, draft angle, mirror of the whole solid, pattern along a path | `fb151c3` |
@@ -66,7 +66,6 @@ why.
 
 | Item | From | State |
 |---|---|---|
-| The remote and CI's first run | 12.4 | The GitHub repository (organisation `telesapr`, for the module path) and the `TAKIGO_TOKEN` secret; then push, watch the workflow and fix what its runner shows. Until then no fresh clone has been shown to build. Effort 0.3 wk |
 | What to take back from "Left out" | | Every row there is a proposal. F5 now blocks two items below |
 | What the review took in without being asked | | B3 (16.11), G4 (17.4) and S3 (17.5): all done; the user may still disown them |
 
@@ -163,8 +162,9 @@ of every feature against this list.
   done included. Read them as relative weights: steps 1 to 21 were sized at about 175 weeks
   and were merged between 2026-10-01 and 2026-10-04. For a kernel item, a two-day spike on the
   hardest fixture is cheaper than trusting the table.
-- **takigo is a sibling checkout**, replaced in `go.mod`. CI pins its commit in `TAKIGO_REF`,
-  which has to move whenever `pkg/platform/tkgui` follows a newer takigo.
+- **takigo is fetched from GitHub** as `github.com/takigo/takigo`, a private module pinned by
+  its pseudo-version in `go.mod`; CI reads it with the `TAKIGO_TOKEN` secret. The pin must name
+  a commit pushed to takigo's remote, or CI fails at `go mod download`.
 
 ## Left out
 
