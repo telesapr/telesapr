@@ -55,10 +55,10 @@ const loadCacheSize = 64
 
 // cachedLoadAs is load(path, ...), or what it gave for the file before,
 // a file read as a solid kept apart from the same file read as a mesh.
-func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool {
+func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell, rep *Report) ([]core.Entity, bool) {
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
-		return load(path, sk, le, m, sh, rep)
+		return load(path, sk, m, sh, rep)
 	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -74,7 +74,7 @@ func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sket
 	}
 	loadMu.Unlock()
 	if hit {
-		*le = append((*le)[:0], e.ents...)
+		ents := append([]core.Entity(nil), e.ents...)
 		m.Triangles = append(m.Triangles[:0], e.mesh.Triangles...)
 		*sh = e.shell.Clone()
 		*rep = Report{Info: append([]string(nil), e.rep.Info...), Problem: e.rep.Problem}
@@ -83,16 +83,16 @@ func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sket
 				sk.Styles = append(sk.Styles, st)
 			}
 		}
-		return e.ok
+		return ents, e.ok
 	}
 
 	filesRead.Add(1)
 	before := len(sk.Styles)
-	ok := load(path, sk, le, m, sh, rep)
+	ents, ok := load(path, sk, m, sh, rep)
 	if !ok {
-		return false
+		return nil, false
 	}
-	e = &loadEntry{ok: ok, ents: append([]core.Entity(nil), (*le)...),
+	e = &loadEntry{ok: ok, ents: append([]core.Entity(nil), ents...),
 		rep:    Report{Info: append([]string(nil), rep.Info...), Problem: rep.Problem},
 		styles: append([]core.Style(nil), sk.Styles[before:]...)}
 	e.mesh.Triangles = append([]srf.STriangle(nil), m.Triangles...)
@@ -110,5 +110,5 @@ func cachedLoadAs(load ReportingLoader, path string, solid bool, sk *sketch.Sket
 		slices.SortFunc(keys, func(a, b loadKey) int { return cmp.Compare(loadCache[a].use, loadCache[b].use) })
 		delete(loadCache, keys[0])
 	}
-	return true
+	return ents, true
 }

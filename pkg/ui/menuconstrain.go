@@ -692,7 +692,7 @@ func (ss *Application) MenuConstrain(id Command) {
 		}
 
 		if constraint := sk.Constraint(nc.H); constraint != nil {
-			if sk.TestRankForGroup(nc.Group, nil) == core.SolveRedundantOkay &&
+			if how, _ := sk.TestRankForGroup(nc.Group); how == core.SolveRedundantOkay &&
 				!sk.Group(gw.activeGroupH()).AllowRedundant && constraint.HasLabel() {
 				constraint.Reference = true
 			}

@@ -85,9 +85,7 @@ func TestSolveSubstitutionAndAlone(t *testing.T) {
 		{p(b).Square().Minus(c(25))},
 	})
 	s := newSystem(sk, a, b)
-	var dof int
-	var bad []core.HConstraint
-	how := s.Solve(g, &dof, &bad, true, false, false)
+	how, dof, _ := s.Solve(g, true, false, false)
 	if how != core.SolveOkay {
 		t.Fatalf("how %d", how)
 	}
@@ -108,9 +106,8 @@ func TestSolveUnderdeterminedMinimumNorm(t *testing.T) {
 	x, y := sk.param(1, 0), sk.param(2, 0)
 	g := testGroup([][]*core.Expr{{p(x).Plus(p(y)).Minus(c(2))}})
 	s := newSystem(sk, x, y)
-	var dof int
-	var bad []core.HConstraint
-	if how := s.Solve(g, &dof, &bad, true, false, true); how != core.SolveOkay {
+	how, dof, _ := s.Solve(g, true, false, true)
+	if how != core.SolveOkay {
 		t.Fatalf("how %d", how)
 	}
 	// The minimum-norm step from (0, 0) lands on (1, 1).
@@ -131,9 +128,8 @@ func TestSolveKnownParamIsConstant(t *testing.T) {
 	g := testGroup([][]*core.Expr{{p(x).Times(p(x)).Minus(p(k).Times(p(k)))}})
 	sk[x].Val = 1
 	s := newSystem(sk, x)
-	var dof int
-	var bad []core.HConstraint
-	if how := s.Solve(g, &dof, &bad, true, false, true); how != core.SolveOkay {
+	how, _, _ := s.Solve(g, true, false, true)
+	if how != core.SolveOkay {
 		t.Fatalf("how %d", how)
 	}
 	if math.Abs(sk[x].Val-7) > 1e-9 || sk[k].Val != 7 {
@@ -152,9 +148,7 @@ func TestSolveRedundantFindsConstraints(t *testing.T) {
 		{p(y).Minus(c(1))},
 	})
 	s := newSystem(sk, x, y)
-	var dof int
-	var bad []core.HConstraint
-	how := s.Solve(g, &dof, &bad, true, false, true)
+	how, _, bad := s.Solve(g, true, false, true)
 	if how != core.SolveRedundantOkay {
 		t.Fatalf("how %d, want REDUNDANT_OKAY", how)
 	}
@@ -177,9 +171,7 @@ func TestSolveInconsistentDoesNotConverge(t *testing.T) {
 		{p(x).Plus(p(y)).Minus(c(2))},
 	})
 	s := newSystem(sk, x, y)
-	var dof int
-	var bad []core.HConstraint
-	how := s.Solve(g, &dof, &bad, true, false, true)
+	how, _, bad := s.Solve(g, true, false, true)
 	if how != core.SolveRedundantDidntConverge {
 		t.Fatalf("how %d, want REDUNDANT_DIDNT_CONVERGE", how)
 	}

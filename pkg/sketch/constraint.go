@@ -61,10 +61,9 @@ func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB 
 // Constraint::TryConstrain).
 func (sk *Sketch) TryConstrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity,
 	other, other2 bool) core.HConstraint {
-	var rankBefore, rankAfter int
-	howBefore := sk.TestRankForGroup(sk.ActiveGroup(), &rankBefore)
+	howBefore, rankBefore := sk.TestRankForGroup(sk.ActiveGroup())
 	hc := sk.Constrain(typ, ptA, ptB, entityA, entityB, other, other2)
-	howAfter := sk.TestRankForGroup(sk.ActiveGroup(), &rankAfter)
+	howAfter, rankAfter := sk.TestRankForGroup(sk.ActiveGroup())
 	// There are two cases where the constraint is clearly redundant:
 	//   * If the group wasn't overconstrained and now it is;
 	//   * If the group was overconstrained, and adding the constraint doesn't change rank at all.

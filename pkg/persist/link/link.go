@@ -22,10 +22,10 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// Loader reads the entities, mesh and shell of a linked file at path
-// into le, m and sh, and may add the file's styles to sk. It is false
-// when the file can't be read.
-type Loader func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell) bool
+// Loader reads the mesh and shell of a linked file at path into m and
+// sh, returning its entities, and may add the file's styles to sk. It
+// is false when the file can't be read.
+type Loader func(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool)
 
 // Report is what a loader says about a file it read, for the group
 // that links it (sketch.Group.LinkInfo and LinkProblem).
@@ -36,17 +36,17 @@ type Report struct {
 
 // ReportingLoader is a Loader that also describes the file, and says
 // what of it it could not read.
-type ReportingLoader func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool
+type ReportingLoader func(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell, rep *Report) ([]core.Entity, bool)
 
 var (
 	loadersMu sync.RWMutex
 	loaders   = map[string]ReportingLoader{
 		"emn": quiet(linkIDF),
-		"stl": func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, _ *srf.SShell, _ *Report) bool {
-			return linkStl(path, sk, le, m)
+		"stl": func(path string, sk *sketch.Sketch, m *srf.SMesh, _ *srf.SShell, _ *Report) ([]core.Entity, bool) {
+			return linkStl(path, sk, m)
 		},
-		"obj": func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, _ *srf.SShell, _ *Report) bool {
-			return linkObj(path, sk, le, m)
+		"obj": func(path string, sk *sketch.Sketch, m *srf.SMesh, _ *srf.SShell, _ *Report) ([]core.Entity, bool) {
+			return linkObj(path, sk, m)
 		},
 		"step": linkStep,
 		"stp":  linkStep,
@@ -58,8 +58,8 @@ func quiet(l Loader) ReportingLoader {
 	if l == nil {
 		return nil
 	}
-	return func(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell, _ *Report) bool {
-		return l(path, sk, le, m, sh)
+	return func(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell, _ *Report) ([]core.Entity, bool) {
+		return l(path, sk, m, sh)
 	}
 }
 
@@ -199,7 +199,11 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 				load = linkStepSolid
 			}
 			var rep Report
-			if load != nil && cachedLoadAs(load, linkFile, solid, sk, &g.ImpEntity, &g.ImpMesh, &g.ImpShell, &rep) {
+			loaded := false
+			if load != nil {
+				g.ImpEntity, loaded = cachedLoadAs(load, linkFile, solid, sk, &g.ImpMesh, &g.ImpShell, &rep)
+			}
+			if loaded {
 				g.LinkInfo, g.LinkProblem = rep.Info, rep.Problem
 				g.LinkParts = LinkedParts(saveFile, linkFile)
 				// We loaded the data, good. Now import its dependencies

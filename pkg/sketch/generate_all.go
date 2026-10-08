@@ -618,16 +618,18 @@ func (sk *Sketch) groupParams(hg core.HGroup) []core.HParam {
 }
 
 // TestRankForGroup reports whether group hg would be redundantly
-// constrained, and its rank (C++ SolveSpaceUI::TestRankForGroup).
-func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult {
+// constrained, and its rank; a group that allows redundancy or doesn't
+// count its freedom is okay with rank 0.
+func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int) {
 	g := sk.Group(hg)
 	// If we don't calculate dof or redundant is allowed, there is
 	// no point to solve rank because this result is not meaningful
 	if g.SuppressDofCalculation || g.AllowRedundant {
-		return core.SolveOkay
+		return core.SolveOkay, 0
 	}
 	sys, sg := sk.writeEqSystemForGroup(hg, sk.groupParams(hg))
-	return sys.SolveRank(sg, rank, nil, nil, false, false)
+	how, rank, _, _ := sys.SolveRank(sg, false, false)
+	return how, rank
 }
 
 // SolveGroupAndReport solves group hg for groupParams, the params its
@@ -642,8 +644,7 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 	g.Solved.Remove = nil
 	var how core.SolveResult
 	err := catchPanic(func() {
-		how = sys.Solve(sg, &g.Solved.Dof, &g.Solved.Remove,
-			!g.AllowRedundant, andFindFree, !g.DofCheckOk)
+		how, g.Solved.Dof, g.Solved.Remove = sys.Solve(sg, !g.AllowRedundant, andFindFree, !g.DofCheckOk)
 	})
 	if err != nil {
 		// C++ would have asserted on the malformed sketch.

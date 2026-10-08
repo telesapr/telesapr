@@ -82,30 +82,45 @@ func (vi *vertexIndex) addUnique(p, n geom.Vector) {
 	vi.verts[found].normal = append(vi.verts[found].normal, n)
 }
 
-// newPoint makes a point with the next id; its type doesn't matter,
-// since the linked group copies it.
-func newPoint(el *[]core.Entity, id *int, p geom.Vector) core.HEntity {
+// entities collects the entities a linked file gives its group, each
+// numbered in the order it is made, so that a file reloaded gives the
+// same handles.
+type entities struct {
+	list []core.Entity
+	id   int
+}
+
+// pointEntity is a point entity with the number id; its type doesn't
+// matter, since the linked group copies it.
+func pointEntity(id int, p geom.Vector) core.Entity {
 	en := core.Entity{
 		Type:       core.EntityPointNCopy,
 		Group:      core.HGroup{V: 462},
 		ActPoint:   p,
 		Style:      core.HStyle{V: core.StyleDatum},
 		ActVisible: true}
+	en.H = core.HEntity{V: uint32(id) + en.Group.V*65536}
+	return en
+}
 
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*id++
-	*el = append(*el, en)
+// point adds a point with the next number.
+func (b *entities) point(p geom.Vector) core.HEntity {
+	en := pointEntity(b.id, p)
+	b.id++
+	b.list = append(b.list, en)
 	return en.H
 }
 
-func addVertex(el *[]core.Entity, v geom.Vector) {
-	if len(*el) < 15000 {
-		id := len(*el)
-		newPoint(el, &id, v)
+// vertex adds a point numbered by its place in the list, up to the
+// bound on a mesh's points.
+func (b *entities) vertex(v geom.Vector) {
+	if len(b.list) < 15000 {
+		b.list = append(b.list, pointEntity(len(b.list), v))
 	}
 }
 
-func newNormal(el *[]core.Entity, id *int, normal geom.Quaternion, p core.HEntity) {
+// normal adds a normal at point p.
+func (b *entities) normal(normal geom.Quaternion, p core.HEntity) {
 	en := core.Entity{
 		Type:      core.EntityNormalNCopy,
 		Group:     core.HGroup{V: 472},
@@ -115,12 +130,13 @@ func newNormal(el *[]core.Entity, id *int, normal geom.Quaternion, p core.HEntit
 	en.Point[0] = p
 	en.ActVisible = true
 
-	*id++
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*el = append(*el, en)
+	b.id++
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.list = append(b.list, en)
 }
 
-func newLine(el *[]core.Entity, id *int, p0, p1 core.HEntity) {
+// line adds a construction line from p0 to p1.
+func (b *entities) line(p0, p1 core.HEntity) {
 	en := core.Entity{
 		Type: core.EntityLineSegment}
 	en.Point[0] = p0
@@ -130,20 +146,19 @@ func newLine(el *[]core.Entity, id *int, p0, p1 core.HEntity) {
 	en.Style = core.HStyle{V: core.StyleConstruction}
 	en.ActVisible = true
 
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*id++
-	*el = append(*el, en)
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.id++
+	b.list = append(b.list, en)
 }
 
 // linkStl reads an STL file, binary or text, into mesh m, with
 // entities for its origin, its bounding box and the vertices on its
 // edges (C++ LinkStl, which read binary files only; roadmap 16.6 reads
 // text ones too).
-func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bool {
-	*el = (*el)[:0]
+func linkStl(path string, sk *sketch.Sketch, m *srf.SMesh) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	var tris []srf.STriangle
 	if isTextStl(data) {
@@ -151,13 +166,12 @@ func linkStl(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bo
 			if sk.Message != nil {
 				sk.Message(fmt.Sprintf("The STL file '%s' can't be read: %v.", path, err))
 			}
-			return false
+			return nil, false
 		}
 	} else {
 		tris = binaryStlTriangles(data)
 	}
-	linkMesh(tris, el, m)
-	return true
+	return linkMesh(tris, m), true
 }
 
 // meshGrey is the colour of a triangle a mesh file gives none.
@@ -295,7 +309,7 @@ func textStlTriangles(data []byte) ([]srf.STriangle, error) {
 
 // linkMesh puts triangles into mesh m, with entities for the origin,
 // the bounding box and the vertices on the mesh's edges.
-func linkMesh(tris []srf.STriangle, el *[]core.Entity, m *srf.SMesh) {
+func linkMesh(tris []srf.STriangle, m *srf.SMesh) []core.Entity {
 	var vi vertexIndex
 	for _, tr := range tris {
 		m.AddTriangle(tr)
@@ -306,13 +320,13 @@ func linkMesh(tris []srf.STriangle, el *[]core.Entity, m *srf.SMesh) {
 	}
 	verts := vi.verts
 
-	id := 1
+	b := entities{id: 1}
 
 	// add the STL origin and normals
-	origin := newPoint(el, &id, geom.Vector{})
-	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{X: 1}, geom.Vector{Y: 1}), origin)
-	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{Y: 1}, geom.Vector{Z: 1}), origin)
-	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{Z: 1}, geom.Vector{X: 1}), origin)
+	origin := b.point(geom.Vector{})
+	b.normal(geom.QuaternionFromBasis(geom.Vector{X: 1}, geom.Vector{Y: 1}), origin)
+	b.normal(geom.QuaternionFromBasis(geom.Vector{Y: 1}, geom.Vector{Z: 1}), origin)
+	b.normal(geom.QuaternionFromBasis(geom.Vector{Z: 1}, geom.Vector{X: 1}), origin)
 
 	// C++ reads past the end of an empty list here.
 	box := core.BBox{}
@@ -328,37 +342,38 @@ func linkMesh(tris []srf.STriangle, el *[]core.Entity, m *srf.SMesh) {
 
 	lo, hi := box.MinP, box.MaxP
 	var p [8]core.HEntity
-	p[0] = newPoint(el, &id, geom.Vector{X: lo.X, Y: lo.Y, Z: lo.Z})
-	p[1] = newPoint(el, &id, geom.Vector{X: hi.X, Y: lo.Y, Z: lo.Z})
-	p[2] = newPoint(el, &id, geom.Vector{X: lo.X, Y: hi.Y, Z: lo.Z})
-	p[3] = newPoint(el, &id, geom.Vector{X: hi.X, Y: hi.Y, Z: lo.Z})
-	p[4] = newPoint(el, &id, geom.Vector{X: lo.X, Y: lo.Y, Z: hi.Z})
-	p[5] = newPoint(el, &id, geom.Vector{X: hi.X, Y: lo.Y, Z: hi.Z})
-	p[6] = newPoint(el, &id, geom.Vector{X: lo.X, Y: hi.Y, Z: hi.Z})
-	p[7] = newPoint(el, &id, geom.Vector{X: hi.X, Y: hi.Y, Z: hi.Z})
+	p[0] = b.point(geom.Vector{X: lo.X, Y: lo.Y, Z: lo.Z})
+	p[1] = b.point(geom.Vector{X: hi.X, Y: lo.Y, Z: lo.Z})
+	p[2] = b.point(geom.Vector{X: lo.X, Y: hi.Y, Z: lo.Z})
+	p[3] = b.point(geom.Vector{X: hi.X, Y: hi.Y, Z: lo.Z})
+	p[4] = b.point(geom.Vector{X: lo.X, Y: lo.Y, Z: hi.Z})
+	p[5] = b.point(geom.Vector{X: hi.X, Y: lo.Y, Z: hi.Z})
+	p[6] = b.point(geom.Vector{X: lo.X, Y: hi.Y, Z: hi.Z})
+	p[7] = b.point(geom.Vector{X: hi.X, Y: hi.Y, Z: hi.Z})
 
-	newLine(el, &id, p[0], p[1])
-	newLine(el, &id, p[0], p[2])
-	newLine(el, &id, p[3], p[1])
-	newLine(el, &id, p[3], p[2])
+	b.line(p[0], p[1])
+	b.line(p[0], p[2])
+	b.line(p[3], p[1])
+	b.line(p[3], p[2])
 
-	newLine(el, &id, p[4], p[5])
-	newLine(el, &id, p[4], p[6])
-	newLine(el, &id, p[7], p[5])
-	newLine(el, &id, p[7], p[6])
+	b.line(p[4], p[5])
+	b.line(p[4], p[6])
+	b.line(p[7], p[5])
+	b.line(p[7], p[6])
 
-	newLine(el, &id, p[0], p[4])
-	newLine(el, &id, p[1], p[5])
-	newLine(el, &id, p[2], p[6])
-	newLine(el, &id, p[3], p[7])
+	b.line(p[0], p[4])
+	b.line(p[1], p[5])
+	b.line(p[2], p[6])
+	b.line(p[3], p[7])
 
 	for i := range verts {
 		// create point entities for edge vertexes
 		if isEdgeVertex(&verts[i]) {
-			addVertex(el, verts[i].p)
+			b.vertex(verts[i].p)
 		}
 	}
 
 	// C++ keeps an EntityList sorted by handle.
-	slices.SortStableFunc(*el, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
+	slices.SortStableFunc(b.list, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
+	return b.list
 }

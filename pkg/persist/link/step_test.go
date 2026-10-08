@@ -15,10 +15,10 @@ var stepShapes = filepath.Join("..", "..", "..", "testdata", "step", "shapes")
 
 func TestLinkStep(t *testing.T) {
 	sk := &sketch.Sketch{}
-	var el []core.Entity
 	var m srf.SMesh
 	var rep Report
-	if !linkStep(filepath.Join(stepShapes, "cylinder.step"), sk, &el, &m, nil, &rep) {
+	el, ok := linkStep(filepath.Join(stepShapes, "cylinder.step"), sk, &m, nil, &rep)
+	if !ok {
 		t.Fatal("not linked")
 	}
 	if len(m.Triangles) == 0 || rep.Problem != "" {
@@ -50,11 +50,10 @@ func TestLinkStep(t *testing.T) {
 
 func TestLinkStepProblems(t *testing.T) {
 	sk := &sketch.Sketch{}
-	var el []core.Entity
 	var m srf.SMesh
 	var rep Report
 	// Missing: not linked, so the user is asked to find it.
-	if linkStep(filepath.Join(stepShapes, "missing.step"), sk, &el, &m, nil, &rep) {
+	if _, ok := linkStep(filepath.Join(stepShapes, "missing.step"), sk, &m, nil, &rep); ok {
 		t.Error("a missing file linked")
 	}
 	// Not STEP: linked, empty, with the reason.
@@ -64,7 +63,7 @@ func TestLinkStepProblems(t *testing.T) {
 		t.Fatal(err)
 	}
 	rep = Report{}
-	if !linkStep(bad, sk, &el, &m, nil, &rep) {
+	if _, ok := linkStep(bad, sk, &m, nil, &rep); !ok {
 		t.Fatal("a broken file counts as missing")
 	}
 	if !strings.HasPrefix(rep.Problem, "the file can't be read") || len(m.Triangles) != 0 {
@@ -73,7 +72,7 @@ func TestLinkStepProblems(t *testing.T) {
 	// Nothing it can read: the unsupported entities are named.
 	csg := filepath.Join("..", "..", "..", "testdata", "step", "corpus", "ap203e2_csg.stp")
 	rep = Report{}
-	if !linkStep(csg, sk, &el, &m, nil, &rep) || !strings.Contains(rep.Problem, "CSG_SOLID") {
+	if _, ok := linkStep(csg, sk, &m, nil, &rep); !ok || !strings.Contains(rep.Problem, "CSG_SOLID") {
 		t.Errorf("problem %q", rep.Problem)
 	}
 }

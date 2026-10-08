@@ -28,8 +28,7 @@ func TestTryConstrain(t *testing.T) {
 	}
 	hl, p0, p1 := line.H, line.Point[0], line.Point[1]
 
-	var rank int
-	if how := sk.TestRankForGroup(sk.ActiveGroup(), &rank); how != core.SolveOkay || rank != 0 {
+	if how, rank := sk.TestRankForGroup(sk.ActiveGroup()); how != core.SolveOkay || rank != 0 {
 		t.Errorf("before: %v rank %d, want OKAY 0", how, rank)
 	}
 

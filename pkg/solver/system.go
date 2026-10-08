@@ -166,21 +166,23 @@ func (s *System) deepCopyWithParamsAsPointers(e *core.Expr) *core.Expr {
 	return &n
 }
 
-// paramsUsed lists the params e refers to (C++ Expr::ParamsUsedList).
-func paramsUsed(e *core.Expr, set map[core.HParam]bool, order *[]core.HParam) {
+// paramsUsed appends the params e refers to, in order of first use,
+// to order; set holds those already listed.
+func paramsUsed(e *core.Expr, set map[core.HParam]bool, order []core.HParam) []core.HParam {
 	if h, ok := e.ParamHandle(); ok {
 		if !set[h] {
 			set[h] = true
-			*order = append(*order, h)
+			order = append(order, h)
 		}
-		return
+		return order
 	}
 	if e.Left != nil {
-		paramsUsed(e.Left, set, order)
+		order = paramsUsed(e.Left, set, order)
 	}
 	if e.Right != nil {
-		paramsUsed(e.Right, set, order)
+		order = paramsUsed(e.Right, set, order)
 	}
+	return order
 }
 
 // WriteJacobian writes the equations and params tagged tag into the
@@ -217,8 +219,7 @@ func (s *System) WriteJacobian(tag int) bool {
 		// Deep-copy and simplify (fold) the current equation.
 		f := s.deepCopyWithParamsAsPointers(e.E)
 
-		var used []core.HParam
-		paramsUsed(f, map[core.HParam]bool{}, &used)
+		used := paramsUsed(f, map[core.HParam]bool{}, nil)
 
 		s.mat.A[i] = make([]*core.Expr, s.mat.n)
 		for _, p := range used {
@@ -570,17 +571,18 @@ func (s *System) writeEquationsExceptFor(hc core.HConstraint, g *Group) {
 }
 
 // FindWhichToRemoveToFixJacobian lists the constraints whose removal
-// would make the Jacobian full rank (C++
-// System::FindWhichToRemoveToFixJacobian).
-func (s *System) FindWhichToRemoveToFixJacobian(g *Group, bad *[]core.HConstraint, forceDofCheck bool) {
+// would make the Jacobian full rank, the point-coincident ones last;
+// it stops at the group's FindToFixTimeout, setting its Timeout.
+func (s *System) FindWhichToRemoveToFixJacobian(g *Group, forceDofCheck bool) []core.HConstraint {
 	start := time.Now()
 	g.Timeout = false
+	var bad []core.HConstraint
 
 	for a := range 2 {
 		for _, c := range g.Constraints {
 			if time.Since(start) > g.FindToFixTimeout {
 				g.Timeout = true
-				return
+				return bad
 			}
 
 			if (c.Type == core.ConstraintPointsCoincident && a == 0) ||
@@ -607,10 +609,11 @@ func (s *System) FindWhichToRemoveToFixJacobian(g *Group, bad *[]core.HConstrain
 			rank := s.CalculateRank()
 			if rank == s.mat.m {
 				// We fixed it by removing this constraint
-				*bad = append(*bad, c.H)
+				bad = append(bad, c.H)
 			}
 		}
 	}
+	return bad
 }
 
 // referencedParam returns the one unknown e refers to, or reports none
@@ -644,14 +647,14 @@ func (s *System) referencedParam(e *core.Expr) (h core.HParam, none, multiple bo
 }
 
 // Solve solves the group's equations, writes the solution back to the
-// sketch, and reports the result, the degrees of freedom, and (if the
-// system is inconsistent or didn't converge) the constraints to blame
-// (C++ System::Solve).
-func (s *System) Solve(g *Group, dof *int, bad *[]core.HConstraint,
-	andFindBad, andFindFree, forceDofCheck bool) core.SolveResult {
+// sketch, and reports the result, the degrees of freedom (-1 when they
+// were not counted) and, when the system is inconsistent or didn't
+// converge, the constraints to blame, found only if andFindBad.
+func (s *System) Solve(g *Group, andFindBad, andFindFree, forceDofCheck bool) (how core.SolveResult, dof int, bad []core.HConstraint) {
 	s.writeEquationsExceptFor(core.NoConstraint, g)
 
 	rankOk := false
+	dof = -1
 
 	// All params and equations are assigned to group zero.
 	s.clearParamTags()
@@ -694,7 +697,8 @@ func (s *System) Solve(g *Group, dof *int, bad *[]core.HConstraint,
 			// the DIDNT_CONVERGE result here.
 			rankOk = true
 			// Failed to converge, bail out early
-			return s.didntConverge(g, bad, rankOk)
+			how, bad = s.didntConverge(g, rankOk)
+			return how, dof, bad
 		}
 		alone++
 	}
@@ -702,31 +706,28 @@ func (s *System) Solve(g *Group, dof *int, bad *[]core.HConstraint,
 	// Now write the Jacobian for what's left, and do a rank test; that
 	// tells us if the system is inconsistently constrained.
 	if !s.WriteJacobian(0) {
-		return core.SolveTooManyUnknowns
-	}
-	// Clear dof value in order to have indication when dof is actually not calculated
-	if dof != nil {
-		*dof = -1
+		return core.SolveTooManyUnknowns, dof, nil
 	}
 	// We are suppressing or allowing redundant, so we no need to catch unsolveable + redundant
 	rankOk = true
 	if !g.SuppressDofCalculation && !g.AllowRedundant {
-		rankOk = s.testRank(dof)
+		rankOk, dof, _ = s.TestRank()
 	}
 
 	// And do the leftovers as one big system
 	if !s.NewtonSolve() {
-		return s.didntConverge(g, bad, rankOk)
+		how, bad = s.didntConverge(g, rankOk)
+		return how, dof, bad
 	}
 
 	// Here we are want to calculate dof even when redundant is allowed, so just handle suppressing
 	rankOk = true
 	if !g.SuppressDofCalculation {
-		rankOk = s.testRank(dof)
+		rankOk, dof, _ = s.TestRank()
 	}
 	if !rankOk {
 		if andFindBad {
-			s.FindWhichToRemoveToFixJacobian(g, bad, forceDofCheck)
+			bad = s.FindWhichToRemoveToFixJacobian(g, forceDofCheck)
 		}
 	} else {
 		s.MarkParamsFree(andFindFree)
@@ -745,22 +746,15 @@ func (s *System) Solve(g *Group, dof *int, bad *[]core.HConstraint,
 		pp.Free = p.Free
 	}
 	if rankOk {
-		return core.SolveOkay
+		return core.SolveOkay, dof, bad
 	}
-	return core.SolveRedundantOkay
+	return core.SolveRedundantOkay, dof, bad
 }
 
-func (s *System) testRank(dof *int) bool {
-	ok, d, _ := s.TestRank()
-	if dof != nil {
-		*dof = d
-	}
-	return ok
-}
-
-// didntConverge lists the constraints whose equations aren't
-// satisfied (the didnt_converge exit of C++ System::Solve).
-func (s *System) didntConverge(g *Group, bad *[]core.HConstraint, rankOk bool) core.SolveResult {
+// didntConverge is the result of a solve that didn't converge, with
+// the constraints whose equations aren't satisfied.
+func (s *System) didntConverge(g *Group, rankOk bool) (core.SolveResult, []core.HConstraint) {
+	var bad []core.HConstraint
 	tagged := map[core.HConstraint]bool{}
 	for i, eq := range s.mat.eq {
 		b := s.mat.Bnum[i]
@@ -777,16 +771,16 @@ func (s *System) didntConverge(g *Group, bad *[]core.HConstraint, rankOk bool) c
 			// Don't double-show constraints that generated multiple
 			// unsatisfied equations
 			if !tagged[hc] {
-				*bad = append(*bad, hc)
+				bad = append(bad, hc)
 				tagged[hc] = true
 			}
 		}
 	}
 
 	if rankOk {
-		return core.SolveDidntConverge
+		return core.SolveDidntConverge, bad
 	}
-	return core.SolveRedundantDidntConverge
+	return core.SolveRedundantDidntConverge, bad
 }
 
 func (g *Group) hasConstraint(hc core.HConstraint) bool {
@@ -799,9 +793,10 @@ func (g *Group) hasConstraint(hc core.HConstraint) bool {
 }
 
 // SolveRank writes the group's equations and tests the Jacobian's rank
-// without solving (C++ System::SolveRank).
-func (s *System) SolveRank(g *Group, rank, dof *int, bad *[]core.HConstraint,
-	andFindBad, andFindFree bool) core.SolveResult {
+// without solving: the result, the rank, the degrees of freedom and,
+// when the group is redundantly constrained and andFindBad, the
+// constraints to blame.
+func (s *System) SolveRank(g *Group, andFindBad, andFindFree bool) (how core.SolveResult, rank, dof int, bad []core.HConstraint) {
 	s.writeEquationsExceptFor(core.NoConstraint, g)
 
 	// All params and equations are assigned to group zero.
@@ -811,31 +806,25 @@ func (s *System) SolveRank(g *Group, rank, dof *int, bad *[]core.HConstraint,
 	// Now write the Jacobian, and do a rank test; that
 	// tells us if the system is inconsistently constrained.
 	if !s.WriteJacobian(0) {
-		return core.SolveTooManyUnknowns
+		return core.SolveTooManyUnknowns, 0, -1, nil
 	}
 
-	rankOk, d, r := s.TestRank()
-	if dof != nil {
-		*dof = d
-	}
-	if rank != nil {
-		*rank = r
-	}
+	rankOk, dof, rank := s.TestRank()
 	if !rankOk {
 		// When we are testing with redundant allowed, we don't want to have additional info
 		// about redundants since this test is working only for single redundant constraint
 		if !g.SuppressDofCalculation && !g.AllowRedundant {
 			if andFindBad {
-				s.FindWhichToRemoveToFixJacobian(g, bad, true)
+				bad = s.FindWhichToRemoveToFixJacobian(g, true)
 			}
 		}
 	} else {
 		s.MarkParamsFree(andFindFree)
 	}
 	if rankOk {
-		return core.SolveOkay
+		return core.SolveOkay, rank, dof, bad
 	}
-	return core.SolveRedundantOkay
+	return core.SolveRedundantOkay, rank, dof, bad
 }
 
 // MarkParamsFree finds, if asked, the params that no equation pins down;

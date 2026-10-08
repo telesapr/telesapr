@@ -42,16 +42,16 @@ func (d *Document) reloadAllLinked(saveFile string, canCancel bool) bool {
 // loadEntitiesFromSlvs reads the saved entities, mesh and shell of a
 // linked .slvs file, and imports its styles that the sketch doesn't
 // have (C++ SolveSpaceUI::LoadEntitiesFromSlvs).
-func loadEntitiesFromSlvs(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell) bool {
+func loadEntitiesFromSlvs(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	linked := &Document{Sketch: sketch.NewSketch(), groupRemap: make(map[core.HGroup][]RemapEntry)}
 	if err := linked.parse(data); err != nil || linked.Empty {
-		return false
+		return nil, false
 	}
-	*le = append((*le)[:0], linked.Sketch.Entities...)
+	ents := append([]core.Entity(nil), linked.Sketch.Entities...)
 	for _, st := range linked.Sketch.Styles {
 		// Linked file contains a style that we don't have yet,
 		// so import it.
@@ -59,7 +59,10 @@ func loadEntitiesFromSlvs(path string, sk *sketch.Sketch, le *[]core.Entity, m *
 			sk.Styles = append(sk.Styles, st)
 		}
 	}
-	return parseShellLines(linked.shellLines, m, sh) == nil
+	if parseShellLines(linked.shellLines, m, sh) != nil {
+		return nil, false
+	}
+	return ents, true
 }
 
 // parseShellLines reads a saved mesh and shell (the Triangle, Surface

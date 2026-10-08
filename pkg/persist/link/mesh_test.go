@@ -91,13 +91,13 @@ func TestLinkMeshFiles(t *testing.T) {
 	var first []core.Entity
 	for _, name := range []string{"binary.stl", "solid.stl", "text.stl", "box.obj"} {
 		sk := &sketch.Sketch{}
-		var el []core.Entity
 		var got srf.SMesh
 		load := linkStl
 		if strings.HasSuffix(name, ".obj") {
 			load = linkObj
 		}
-		if !load(filepath.Join(dir, name), sk, &el, &got) {
+		el, ok := load(filepath.Join(dir, name), sk, &got)
+		if !ok {
 			t.Fatalf("%s not linked", name)
 		}
 		vol := 0.0
@@ -146,13 +146,12 @@ func TestLinkMeshFilesRefused(t *testing.T) {
 		}
 		var said string
 		sk := &sketch.Sketch{Message: func(s string) { said = s }}
-		var el []core.Entity
 		var m srf.SMesh
 		load := linkStl
 		if strings.HasSuffix(name, ".obj") {
 			load = linkObj
 		}
-		if load(path, sk, &el, &m) || !strings.Contains(said, "can't be read") {
+		if _, ok := load(path, sk, &m); ok || !strings.Contains(said, "can't be read") {
 			t.Errorf("%s: linked, or said %q", name, said)
 		}
 	}

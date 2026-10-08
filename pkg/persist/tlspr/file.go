@@ -81,16 +81,15 @@ func Load(data []byte, path string) (doc *Document, err error) {
 // loadLinked reads the saved entities, mesh and shell of a linked .tlspr
 // file, and imports its styles that the sketch doesn't have (C++
 // SolveSpaceUI::LoadEntitiesFromSlvs).
-func loadLinked(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh, sh *srf.SShell) bool {
+func loadLinked(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	doc, err := Decode(data)
 	if err != nil {
-		return false
+		return nil, false
 	}
-	*le = append((*le)[:0], doc.Sketch.Entities...)
 	for _, st := range doc.Sketch.Styles {
 		// Linked file contains a style that we don't have yet, so
 		// import it.
@@ -101,7 +100,7 @@ func loadLinked(path string, sk *sketch.Sketch, le *[]core.Entity, m *srf.SMesh,
 	m.Triangles = append(m.Triangles, doc.Mesh.Triangles...)
 	sh.Surface = append(sh.Surface, doc.Shell.Surface...)
 	sh.Curve = append(sh.Curve, doc.Shell.Curve...)
-	return true
+	return append([]core.Entity(nil), doc.Sketch.Entities...), true
 }
 
 // SaveFile regenerates nothing: it writes a sketch the caller has just

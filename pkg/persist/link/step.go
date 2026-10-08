@@ -93,19 +93,19 @@ func readStep(path string, pct float64) (*step.Result, error) {
 	return res, err
 }
 
-// linkStep reads a STEP file into mesh m and point entities el. A
+// linkStep reads a STEP file into mesh m, with a point entity at each
+// vertex and arc centre. A
 // file that is missing or can't be opened counts as missing; one that
 // can't be parsed, or holds nothing this reader supports, links as an
 // empty mesh, with the reason in the report.
-func linkStep(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, _ *srf.SShell, rep *Report) bool {
-	*el = (*el)[:0]
+func linkStep(path string, sk *sketch.Sketch, m *srf.SMesh, _ *srf.SShell, rep *Report) ([]core.Entity, bool) {
 	res, err := readStep(path, sk.ChordTolPct)
 	if err != nil {
 		if _, ok := errors.AsType[*fs.PathError](err); ok {
-			return false
+			return nil, false
 		}
 		rep.Problem = fmt.Sprintf("the file can't be read: %v", err)
-		return true
+		return nil, true
 	}
 	m.MakeFromCopyOf(&res.Mesh)
 	r := &res.Report
@@ -120,18 +120,18 @@ func linkStep(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, _
 	}
 	rep.Problem = r.Problem()
 
-	id := 1
-	origin := newPoint(el, &id, geom.Vector{})
-	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{X: 1}, geom.Vector{Y: 1}), origin)
-	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{Y: 1}, geom.Vector{Z: 1}), origin)
-	newNormal(el, &id, geom.QuaternionFromBasis(geom.Vector{Z: 1}, geom.Vector{X: 1}), origin)
+	b := entities{id: 1}
+	origin := b.point(geom.Vector{})
+	b.normal(geom.QuaternionFromBasis(geom.Vector{X: 1}, geom.Vector{Y: 1}), origin)
+	b.normal(geom.QuaternionFromBasis(geom.Vector{Y: 1}, geom.Vector{Z: 1}), origin)
+	b.normal(geom.QuaternionFromBasis(geom.Vector{Z: 1}, geom.Vector{X: 1}), origin)
 	n := 0
 	for _, pts := range [][]geom.Vector{res.Vertices, res.Centers} {
 		for _, p := range pts {
 			if n >= maxStepPoints {
 				break
 			}
-			newPoint(el, &id, p)
+			b.point(p)
 			n++
 		}
 	}
@@ -139,7 +139,7 @@ func linkStep(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, _
 		rep.Info = append(rep.Info, fmt.Sprintf("points for the first %d of %d vertices and centres",
 			n, len(res.Vertices)+len(res.Centers)))
 	}
-	return true
+	return b.list, true
 }
 
 // plural is "1 face" or "n faces".
@@ -163,16 +163,17 @@ func IsStep(path string) bool {
 // as linkStep gives them, and its shapes as one exact shell; a file
 // that can't be read as one links as linkStep links it, with the reason
 // in the report.
-func linkStepSolid(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh *srf.SShell, rep *Report) bool {
-	if !linkStep(path, sk, el, m, sh, rep) {
-		return false
+func linkStepSolid(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell, rep *Report) ([]core.Entity, bool) {
+	ents, ok := linkStep(path, sk, m, sh, rep)
+	if !ok {
+		return nil, false
 	}
 	// At the tolerance the mesh was made at: from the part's own size
 	// and the sketch's chord tolerance, so that it is the same whenever
 	// the part is read.
 	res, err := readStep(path, sk.ChordTolPct)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	solid, faces, err := step.SolidFile(path, srf.Tol(res.Report.ChordTol, sk.SegmentLimit()))
 	if err != nil {
@@ -181,10 +182,10 @@ func linkStepSolid(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMe
 			why = rep.Problem + "; " + why
 		}
 		rep.Problem = why
-		return true
+		return ents, true
 	}
 	m.Clear()
 	*sh = *solid
 	rep.Info = append(rep.Info, fmt.Sprintf("read as a solid, %s exact", plural(faces, "face")))
-	return true
+	return ents, true
 }

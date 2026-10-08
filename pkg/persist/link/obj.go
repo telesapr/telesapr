@@ -26,21 +26,19 @@ import (
 
 // linkObj reads an OBJ file into mesh m with the entities a linked STL
 // file gets.
-func linkObj(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh) bool {
-	*el = (*el)[:0]
+func linkObj(path string, sk *sketch.Sketch, m *srf.SMesh) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	tris, err := objTriangles(data, filepath.Dir(path))
 	if err != nil {
 		if sk.Message != nil {
 			sk.Message(fmt.Sprintf("The OBJ file '%s' can't be read: %v.", path, err))
 		}
-		return false
+		return nil, false
 	}
-	linkMesh(tris, el, m)
-	return true
+	return linkMesh(tris, m), true
 }
 
 // objTriangles are the faces of an OBJ file, its materials' files read

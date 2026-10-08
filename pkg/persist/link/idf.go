@@ -133,7 +133,7 @@ func isHoleDuplicate(el []core.Entity, x, y, r float64) bool {
 // their actPoint, and so on. That's fine, since the linked group copies
 // them.
 
-func idfNewPoint(el *[]core.Entity, id *int, p geom.Vector, visible bool) core.HEntity {
+func (b *entities) idfPoint(p geom.Vector, visible bool) core.HEntity {
 	en := core.Entity{
 		Type:       core.EntityPointNCopy,
 		Group:      core.HGroup{V: 462},
@@ -141,9 +141,9 @@ func idfNewPoint(el *[]core.Entity, id *int, p geom.Vector, visible bool) core.H
 		Style:      core.HStyle{V: core.StyleDatum},
 		ActVisible: visible}
 
-	*id++
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*el = append(*el, en)
+	b.id++
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.list = append(b.list, en)
 	return en.H
 }
 
@@ -154,7 +154,7 @@ func idfStyle(keepout bool) core.HStyle {
 	return core.HStyle{V: core.StyleActiveGrp}
 }
 
-func idfNewLine(el *[]core.Entity, id *int, p0, p1 core.HEntity, keepout bool) core.HEntity {
+func (b *entities) idfLine(p0, p1 core.HEntity, keepout bool) core.HEntity {
 	en := core.Entity{
 		Type: core.EntityLineSegment}
 	en.Point[0] = p0
@@ -164,29 +164,29 @@ func idfNewLine(el *[]core.Entity, id *int, p0, p1 core.HEntity, keepout bool) c
 	en.Style = idfStyle(keepout)
 	en.ActVisible = true
 
-	*id++
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*el = append(*el, en)
+	b.id++
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.list = append(b.list, en)
 	return en.H
 }
 
-func idfNewNormal(el *[]core.Entity, id *int, normal geom.Quaternion) core.HEntity {
+func (b *entities) idfNormal(normal geom.Quaternion) core.HEntity {
 	en := core.Entity{
 		Type:      core.EntityNormalNCopy,
 		Group:     core.HGroup{V: 472},
 		ActNormal: normal,
 		Style:     core.HStyle{V: core.StyleActiveGrp}}
 	// to be visible we need to add a point.
-	en.Point[0] = idfNewPoint(el, id, geom.Vector{Z: 3}, true)
+	en.Point[0] = b.idfPoint(geom.Vector{Z: 3}, true)
 	en.ActVisible = true
 
-	*id++
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*el = append(*el, en)
+	b.id++
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.list = append(b.list, en)
 	return en.H
 }
 
-func idfNewArc(el *[]core.Entity, id *int, p0, p1, pc, hnorm core.HEntity, keepout bool) core.HEntity {
+func (b *entities) idfArc(p0, p1, pc, hnorm core.HEntity, keepout bool) core.HEntity {
 	en := core.Entity{
 		Type: core.EntityArcOfCircle}
 	en.Point[0] = pc
@@ -198,15 +198,15 @@ func idfNewArc(el *[]core.Entity, id *int, p0, p1, pc, hnorm core.HEntity, keepo
 	en.Style = idfStyle(keepout)
 	en.ActVisible = true
 	// C++ increments the id twice here.
-	*id++
+	b.id++
 
-	*id++
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*el = append(*el, en)
+	b.id++
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.list = append(b.list, en)
 	return en.H
 }
 
-func idfNewDistance(el *[]core.Entity, id *int, distance float64) core.HEntity {
+func (b *entities) idfDistance(distance float64) core.HEntity {
 	en := core.Entity{
 		Type:        core.EntityDistance,
 		Group:       core.HGroup{V: 472},
@@ -214,13 +214,13 @@ func idfNewDistance(el *[]core.Entity, id *int, distance float64) core.HEntity {
 		Style:       core.HStyle{V: core.StyleActiveGrp},
 		ActVisible:  false}
 
-	*id++
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*el = append(*el, en)
+	b.id++
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.list = append(b.list, en)
 	return en.H
 }
 
-func idfNewCircle(el *[]core.Entity, id *int, p0, hdist, hnorm core.HEntity, keepout bool) {
+func (b *entities) idfCircle(p0, hdist, hnorm core.HEntity, keepout bool) {
 	en := core.Entity{
 		Type: core.EntityCircle}
 	en.Point[0] = p0
@@ -231,9 +231,9 @@ func idfNewCircle(el *[]core.Entity, id *int, p0, hdist, hnorm core.HEntity, kee
 	en.Style = idfStyle(keepout)
 	en.ActVisible = true
 
-	*id++
-	en.H = core.HEntity{V: uint32(*id) + en.Group.V*65536}
-	*el = append(*el, en)
+	b.id++
+	en.H = core.HEntity{V: uint32(b.id) + en.Group.V*65536}
+	b.list = append(b.list, en)
 }
 
 // arcCenter is the centre of the arc from p0 to p1 through angle
@@ -254,7 +254,7 @@ func arcCenter(p0, p1 geom.Vector, angle float64) geom.Vector {
 // createIDFEntity adds an IDF line or arc. A zero angle is a line;
 // positive angles are counter clockwise, negative clockwise; 360 is a
 // circle centred at p0 through p1 (C++ CreateEntity).
-func createIDFEntity(el *[]core.Entity, id *int, h0, h1, hnorm core.HEntity,
+func (b *entities) idfEntity(h0, h1, hnorm core.HEntity,
 	p0, p1 geom.Vector, angle float64, keepout bool) {
 	switch {
 	case math.Abs(angle) < 0.1:
@@ -263,13 +263,13 @@ func createIDFEntity(el *[]core.Entity, id *int, h0, h1, hnorm core.HEntity,
 			return
 		}
 
-		idfNewLine(el, id, h0, h1, keepout)
+		b.idfLine(h0, h1, keepout)
 
 	case angle == 360.0:
 		// circle
 		d := p1.Minus(p0).Magnitude()
-		hd := idfNewDistance(el, id, d)
-		idfNewCircle(el, id, h1, hd, hnorm, keepout)
+		hd := b.idfDistance(d)
+		b.idfCircle(h1, hd, hnorm, keepout)
 
 	default:
 		// arc
@@ -285,8 +285,8 @@ func createIDFEntity(el *[]core.Entity, id *int, h0, h1, hnorm core.HEntity,
 		theta := 0.5 * angle * math.Pi / 180.0
 		dist := p1.Minus(m).Magnitude() * libm.Cos(theta) / libm.Sin(theta)
 		c := m.Minus(perp.ScaledBy(dist))
-		hc := idfNewPoint(el, id, c, false)
-		idfNewArc(el, id, h0, h1, hc, hnorm, keepout)
+		hc := b.idfPoint(c, false)
+		b.idfArc(h0, h1, hc, hnorm, keepout)
 	}
 }
 
@@ -369,17 +369,16 @@ const (
 // linkIDF reads the board outline section of an IDF file (C++ LinkIDF).
 // Where C++ would stop on a number it can't read, this reports that
 // the file couldn't be loaded.
-func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh *srf.SShell) bool {
-	*el = (*el)[:0]
+func linkIDF(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool) {
+	var b entities
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return false
+		return nil, false
 	}
 
 	section := idfNone
 	recordNumber := 0
 	curve := -1
-	entityCount := 0
 
 	var hprev, hprevTop core.HEntity
 	var pprev, pprevTop geom.Vector
@@ -390,7 +389,7 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 	bottomEntities := false
 
 	normal := geom.QuaternionFromBasis(geom.Vector{X: 1}, geom.Vector{Y: 1})
-	hnorm := idfNewNormal(el, &entityCount, normal)
+	hnorm := b.idfNormal(normal)
 
 	// to create the extrusion we will need to collect a set of bezier
 	// curves defined by the perimeter, cutouts, and holes.
@@ -443,7 +442,7 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 					bottomEntities = true
 					t, err := stod(line)
 					if err != nil {
-						return false
+						return nil, false
 					}
 					boardThickness = t * scale
 				case idfRoutingKeepout:
@@ -466,7 +465,7 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 				y, err2 := stof(values[2])
 				ang, err3 := stof(values[3])
 				if err0 != nil || err1 != nil || err2 != nil || err3 != nil {
-					return false
+					return nil, false
 				}
 				x *= scale
 				y *= scale
@@ -475,10 +474,10 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 				if c != curve { // start a new curve
 					curve = c
 					if bottomEntities {
-						hprev = idfNewPoint(el, &entityCount, point, false)
+						hprev = b.idfPoint(point, false)
 					}
 					if topEntities {
-						hprevTop = idfNewPoint(el, &entityCount, pTop, false)
+						hprevTop = b.idfPoint(pTop, false)
 					}
 					pprev = point
 					pprevTop = pTop
@@ -504,15 +503,15 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 					// circle centers will be visible
 					vis := ang == 360.0
 					if bottomEntities {
-						hp := idfNewPoint(el, &entityCount, point, vis)
-						createIDFEntity(el, &entityCount, hprev, hp, hnorm, pprev, point, ang,
+						hp := b.idfPoint(point, vis)
+						b.idfEntity(hprev, hp, hnorm, pprev, point, ang,
 							section == idfRoutingKeepout)
 						pprev = point
 						hprev = hp
 					}
 					if topEntities {
-						hp := idfNewPoint(el, &entityCount, pTop, vis)
-						createIDFEntity(el, &entityCount, hprevTop, hp, hnorm, pprevTop, pTop,
+						hp := b.idfPoint(pTop, vis)
+						b.idfEntity(hprevTop, hp, hnorm, pprevTop, pTop,
 							ang, section == idfRoutingKeepout)
 						pprevTop = pTop
 						hprevTop = hp
@@ -530,26 +529,26 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 			x, err1 := stof(values[1])
 			y, err2 := stof(values[2])
 			if err0 != nil || err1 != nil || err2 != nil {
-				return false
+				return nil, false
 			}
 			d *= scale
 			x *= scale
 			y *= scale
-			duplicate := isHoleDuplicate(*el, x, y, d/2)
+			duplicate := isHoleDuplicate(b.list, x, y, d/2)
 			// Only show holes likely to be useful in MCAD to reduce
 			// complexity.
 			if (d > 1.7 || strings.HasPrefix(values[5], "PIN") ||
 				strings.HasPrefix(values[5], "MTG")) && !duplicate {
 				// create the entity
 				cent := geom.Vector{X: x, Y: y}
-				hcent := idfNewPoint(el, &entityCount, cent, true)
-				hdist := idfNewDistance(el, &entityCount, d/2)
-				idfNewCircle(el, &entityCount, hcent, hdist, hnorm, false)
+				hcent := b.idfPoint(cent, true)
+				hdist := b.idfDistance(d / 2)
+				b.idfCircle(hcent, hdist, hnorm, false)
 				// and again for the top
 				cTop := geom.Vector{X: x, Y: y, Z: boardThickness}
-				hcent = idfNewPoint(el, &entityCount, cTop, true)
-				hdist = idfNewDistance(el, &entityCount, d/2)
-				idfNewCircle(el, &entityCount, hcent, hdist, hnorm, false)
+				hcent = b.idfPoint(cTop, true)
+				hdist = b.idfDistance(d / 2)
+				b.idfCircle(hcent, hdist, hnorm, false)
 				// create the curves for the extrusion
 				pt := geom.Vector{X: x + d/2, Y: y}
 				makeBeziersForArcs(&sbl, cent, pt, normal, 360.0)
@@ -592,6 +591,6 @@ func linkIDF(path string, sk *sketch.Sketch, el *[]core.Entity, m *srf.SMesh, sh
 	sh.BooleanFailed = false
 
 	// C++ keeps an EntityList sorted by handle.
-	slices.SortStableFunc(*el, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
-	return true
+	slices.SortStableFunc(b.list, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
+	return b.list, true
 }
