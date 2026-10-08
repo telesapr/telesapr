@@ -25,10 +25,10 @@ type commandEntry struct {
 // commandEntries lists the entries of the main menu that run a
 // command, in the menus' order; the recent-file submenus are not
 // commands.
-func commandEntries() []commandEntry {
+func (ss *Application) commandEntries() []commandEntry {
 	var out []commandEntry
 	var path []string
-	for _, m := range menuTable {
+	for _, m := range ss.menu {
 		if m.label == "" {
 			continue
 		}
@@ -43,9 +43,9 @@ func commandEntries() []commandEntry {
 
 // CommandLabels lists the labels the command search knows, "Menu >
 // Entry", in the menus' order.
-func CommandLabels() []string {
+func (ss *Application) CommandLabels() []string {
 	var out []string
-	for _, e := range commandEntries() {
+	for _, e := range ss.commandEntries() {
 		out = append(out, e.label)
 	}
 	return out
@@ -54,14 +54,14 @@ func CommandLabels() []string {
 // findCommands returns the entries whose label holds every word of
 // query, ignoring case: an entry whose own name starts with the query
 // first, then the others in the menus' order.
-func findCommands(query string) []commandEntry {
+func (ss *Application) findCommands(query string) []commandEntry {
 	words := strings.Fields(strings.ToLower(query))
 	if len(words) == 0 {
 		return nil
 	}
 	q := strings.ToLower(strings.TrimSpace(query))
 	var found []commandEntry
-	for _, e := range commandEntries() {
+	for _, e := range ss.commandEntries() {
 		l := strings.ToLower(e.label)
 		ok := true
 		for _, w := range words {
@@ -97,7 +97,7 @@ func findCommands(query string) []commandEntry {
 func (ss *Application) RunCommand(label string) error {
 	want := strings.ToLower(strings.TrimSpace(label))
 	var byName []commandEntry
-	for _, e := range commandEntries() {
+	for _, e := range ss.commandEntries() {
 		l := strings.ToLower(e.label)
 		if l == want {
 			e.fn(ss, e.cmd)
@@ -170,7 +170,7 @@ func (tw *TextWindow) EditControlDoneForCommands(s string) bool {
 	c := &tw.shown.commands
 	again := strings.TrimSpace(s) == strings.TrimSpace(c.query) && len(c.found) > 0
 	c.query = s
-	c.found = findCommands(s)
+	c.found = tw.ss.findCommands(s)
 	if len(c.found) == 1 || (again && len(c.found) > 0) {
 		tw.runFound(c.found[0])
 		return true

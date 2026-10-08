@@ -19,7 +19,6 @@ import (
 // MenuAnalyze runs an Analyze menu command (C++
 // SolveSpaceUI::MenuAnalyze).
 func (ss *Application) MenuAnalyze(id Command) {
-	settings := ss.Settings
 	sk := ss.SK
 	gw := ss.GW
 
@@ -63,113 +62,19 @@ func (ss *Application) MenuAnalyze(id Command) {
 		ss.ShowNakedEdges(false)
 
 	case CmdInterference:
-		ss.NakedEdges.Clear()
-
-		// The parts by their shells (roadmap 16.10), unless one is a
-		// mesh with none: then the triangles, as C++ checks.
-		found, meshOnly := sk.Interferences(gw.activeGroupH())
-		if len(meshOnly) == 0 {
-			var lines []string
-			for _, f := range found {
-				if f.Failed {
-					lines = append(lines, fmt.Sprintf("    %s and %s: the Boolean failed",
-						sk.GroupName(f.A), sk.GroupName(f.B)))
-					continue
-				}
-				lines = append(lines, fmt.Sprintf("    %s and %s share %s",
-					sk.GroupName(f.A), sk.GroupName(f.B), ss.MmToStringSI(f.Volume, 3)))
-				for _, tr := range f.Mesh.Triangles {
-					ss.NakedEdges.AddEdge(tr.A, tr.B, 0, 0, 0)
-					ss.NakedEdges.AddEdge(tr.B, tr.C, 0, 0, 0)
-					ss.NakedEdges.AddEdge(tr.C, tr.A, 0, 0, 0)
-				}
-			}
-			gw.Invalidate(false)
-			switch len(lines) {
-			case 0:
-			case 1:
-				ss.Error("Two parts interfere, bad:\n\n%s", lines[0])
-			default:
-				ss.Error("%d pairs of parts interfere, bad:\n\n%s", len(lines), strings.Join(lines, "\n"))
-			}
-			if len(lines) == 0 {
-				ss.Message("The assembly does not interfere, good.")
-			}
-			break
-		}
-
-		m := &sk.Group(gw.activeGroupH()).DisplayMesh
-		root := srf.SKdNodeFrom(m)
-		var inters, leaks bool
-		root.MakeCertainEdgesInto(&ss.NakedEdges, srf.EdgeSelfInter, false, &inters, &leaks, 0)
-
-		gw.Invalidate(false)
-
-		if inters {
-			ss.Error("%d edges interfere with other triangles, bad.", len(ss.NakedEdges.Edges))
-		} else {
-			ss.Message("The assembly does not interfere, good.")
-		}
+		ss.analyzeInterference()
 
 	case CmdCheckSolid:
 		ss.CheckSolid()
 
 	case CmdCenterOfMass:
-		ss.UpdateCenterOfMass()
-		ss.CenterOfMass.Draw = true
-		gw.Invalidate(false)
+		ss.analyzeCenterOfMass()
 
 	case CmdVolume:
-		g := sk.Group(gw.activeGroupH())
-		totalVol := g.DisplayMesh.CalculateVolume()
-		msg := "The volume of the solid model is:\n\n    " + ss.MmToStringSI(totalVol, 3)
-
-		var curMesh srf.SMesh
-		g.ThisShell.TriangulateInto(&curMesh)
-		if curVol := curMesh.CalculateVolume(); curVol > 0.0 {
-			msg += "\nThe volume of current group mesh is:\n\n    " + ss.MmToStringSI(curVol, 3)
-		}
-
-		msg += "\n\nCurved surfaces have been approximated as triangles.\n" +
-			"This introduces error, typically of around 1%."
-		ss.Message("%s", msg)
+		ss.analyzeVolume()
 
 	case CmdArea:
-		g := sk.Group(gw.activeGroupH())
-		gw.GroupSelection()
-
-		if gs.faces > 0 {
-			faces := []uint32{gs.face[0].V}
-			if gs.faces > 1 {
-				faces = append(faces, gs.face[1].V)
-			}
-			area := g.DisplayMesh.CalculateSurfaceArea(faces)
-			ss.Message("The surface area of the selected faces is:\n\n"+
-				"    %s\n\n"+
-				"Curves have been approximated as piecewise linear.\n"+
-				"This introduces error, typically of around 1%%.",
-				ss.MmToStringSI(area, 2))
-			break
-		}
-
-		if g.PolyError.How != int(core.PolyGood) {
-			ss.Error("This group does not contain a correctly-formed " +
-				"2d closed area. It is open, not coplanar, or self-" +
-				"intersecting.")
-			break
-		}
-		var sel srf.SEdgeList
-		g.PolyLoops.MakeEdgesInto(&sel)
-		var sp srf.SPolygon
-		sel.AssemblePolygon(&sp, nil, true)
-		sp.Normal = sp.ComputeNormal()
-		sp.FixContourDirections()
-		area := sp.SignedArea()
-		ss.Message("The area of the region sketched in this group is:\n\n"+
-			"    %s\n\n"+
-			"Curves have been approximated as piecewise linear.\n"+
-			"This introduces error, typically of around 1%%.",
-			ss.MmToStringSI(area, 2))
+		ss.analyzeArea()
 
 	case CmdPerimeter:
 		if gs.n > 0 && gs.n == gs.entities {
@@ -204,40 +109,181 @@ func (ss *Application) MenuAnalyze(id Command) {
 		}
 
 	case CmdBillOfMaterials:
-		gw.ClearSelection()
-		ss.TW.GoToScreen(ScreenBillOfMaterials)
-		gw.ForceTextWindowShown()
-		ss.ScheduleShowTW()
+		ss.analyzeBillOfMaterials()
 
 	case CmdStopTracing:
-		if ss.Traced.Point.V == 0 {
-			break
-		}
-		dialog := ss.Platform.CreateSaveFileDialog(gw.window)
-		dialog.AddFilters(platform.CsvFileFilters)
-		dialog.ThawChoices(settings, "Trace")
-		dialog.SetFilename(ss.SaveFile)
-		if dialog.RunModal() {
-			dialog.FreezeChoices(settings, "Trace")
-
-			var b strings.Builder
-			s := ss.ExportScale
-			for _, pt := range ss.Traced.Path.Points {
-				p := pt.P
-				fmt.Fprintf(&b, "%.10f, %.10f, %.10f\r\n", p.X/s, p.Y/s, p.Z/s)
-			}
-			if err := os.WriteFile(dialog.Filename(), []byte(b.String()), 0o644); err != nil {
-				ss.Error("Couldn't write to '%s'", dialog.Filename())
-			}
-		}
-		// Clear the trace, and stop tracing
-		ss.Traced.Point = core.HEntity{}
-		ss.Traced.Path.Points = nil
-		gw.Invalidate(false)
+		ss.analyzeStopTracing()
 
 	default:
 		panic("ui: unexpected menu ID")
 	}
+}
+
+// analyzeInterference runs the Analyze menu's CmdInterference.
+func (ss *Application) analyzeInterference() {
+	sk := ss.SK
+	gw := ss.GW
+
+	ss.NakedEdges.Clear()
+
+	// The parts by their shells (roadmap 16.10), unless one is a
+	// mesh with none: then the triangles, as C++ checks.
+	found, meshOnly := sk.Interferences(gw.activeGroupH())
+	if len(meshOnly) == 0 {
+		var lines []string
+		for _, f := range found {
+			if f.Failed {
+				lines = append(lines, fmt.Sprintf("    %s and %s: the Boolean failed",
+					sk.GroupName(f.A), sk.GroupName(f.B)))
+				continue
+			}
+			lines = append(lines, fmt.Sprintf("    %s and %s share %s",
+				sk.GroupName(f.A), sk.GroupName(f.B), ss.MmToStringSI(f.Volume, 3)))
+			for _, tr := range f.Mesh.Triangles {
+				ss.NakedEdges.AddEdge(tr.A, tr.B, 0, 0, 0)
+				ss.NakedEdges.AddEdge(tr.B, tr.C, 0, 0, 0)
+				ss.NakedEdges.AddEdge(tr.C, tr.A, 0, 0, 0)
+			}
+		}
+		gw.Invalidate(false)
+		switch len(lines) {
+		case 0:
+		case 1:
+			ss.Error("Two parts interfere, bad:\n\n%s", lines[0])
+		default:
+			ss.Error("%d pairs of parts interfere, bad:\n\n%s", len(lines), strings.Join(lines, "\n"))
+		}
+		if len(lines) == 0 {
+			ss.Message("The assembly does not interfere, good.")
+		}
+		return
+	}
+
+	m := &sk.Group(gw.activeGroupH()).DisplayMesh
+	root := srf.SKdNodeFrom(m)
+	var inters, leaks bool
+	root.MakeCertainEdgesInto(&ss.NakedEdges, srf.EdgeSelfInter, false, &inters, &leaks, 0)
+
+	gw.Invalidate(false)
+
+	if inters {
+		ss.Error("%d edges interfere with other triangles, bad.", len(ss.NakedEdges.Edges))
+	} else {
+		ss.Message("The assembly does not interfere, good.")
+	}
+}
+
+// analyzeCenterOfMass runs the Analyze menu's CmdCenterOfMass.
+func (ss *Application) analyzeCenterOfMass() {
+	gw := ss.GW
+
+	ss.UpdateCenterOfMass()
+	ss.CenterOfMass.Draw = true
+	gw.Invalidate(false)
+}
+
+// analyzeVolume runs the Analyze menu's CmdVolume.
+func (ss *Application) analyzeVolume() {
+	sk := ss.SK
+	gw := ss.GW
+
+	g := sk.Group(gw.activeGroupH())
+	totalVol := g.DisplayMesh.CalculateVolume()
+	msg := "The volume of the solid model is:\n\n    " + ss.MmToStringSI(totalVol, 3)
+
+	var curMesh srf.SMesh
+	g.ThisShell.TriangulateInto(&curMesh)
+	if curVol := curMesh.CalculateVolume(); curVol > 0.0 {
+		msg += "\nThe volume of current group mesh is:\n\n    " + ss.MmToStringSI(curVol, 3)
+	}
+
+	msg += "\n\nCurved surfaces have been approximated as triangles.\n" +
+		"This introduces error, typically of around 1%."
+	ss.Message("%s", msg)
+}
+
+// analyzeArea runs the Analyze menu's CmdArea.
+func (ss *Application) analyzeArea() {
+	sk := ss.SK
+	gw := ss.GW
+	gs := &gw.gs
+
+	g := sk.Group(gw.activeGroupH())
+	gw.GroupSelection()
+
+	if gs.faces > 0 {
+		faces := []uint32{gs.face[0].V}
+		if gs.faces > 1 {
+			faces = append(faces, gs.face[1].V)
+		}
+		area := g.DisplayMesh.CalculateSurfaceArea(faces)
+		ss.Message("The surface area of the selected faces is:\n\n"+
+			"    %s\n\n"+
+			"Curves have been approximated as piecewise linear.\n"+
+			"This introduces error, typically of around 1%%.",
+			ss.MmToStringSI(area, 2))
+		return
+	}
+
+	if g.PolyError.How != int(core.PolyGood) {
+		ss.Error("This group does not contain a correctly-formed " +
+			"2d closed area. It is open, not coplanar, or self-" +
+			"intersecting.")
+		return
+	}
+	var sel srf.SEdgeList
+	g.PolyLoops.MakeEdgesInto(&sel)
+	var sp srf.SPolygon
+	sel.AssemblePolygon(&sp, nil, true)
+	sp.Normal = sp.ComputeNormal()
+	sp.FixContourDirections()
+	area := sp.SignedArea()
+	ss.Message("The area of the region sketched in this group is:\n\n"+
+		"    %s\n\n"+
+		"Curves have been approximated as piecewise linear.\n"+
+		"This introduces error, typically of around 1%%.",
+		ss.MmToStringSI(area, 2))
+}
+
+// analyzeBillOfMaterials runs the Analyze menu's CmdBillOfMaterials.
+func (ss *Application) analyzeBillOfMaterials() {
+	gw := ss.GW
+
+	gw.ClearSelection()
+	ss.TW.GoToScreen(ScreenBillOfMaterials)
+	gw.ForceTextWindowShown()
+	ss.ScheduleShowTW()
+}
+
+// analyzeStopTracing runs the Analyze menu's CmdStopTracing.
+func (ss *Application) analyzeStopTracing() {
+	settings := ss.Settings
+	gw := ss.GW
+
+	if ss.Traced.Point.V == 0 {
+		return
+	}
+	dialog := ss.Platform.CreateSaveFileDialog(gw.window)
+	dialog.AddFilters(platform.CsvFileFilters)
+	dialog.ThawChoices(settings, "Trace")
+	dialog.SetFilename(ss.SaveFile)
+	if dialog.RunModal() {
+		dialog.FreezeChoices(settings, "Trace")
+
+		var b strings.Builder
+		s := ss.ExportScale
+		for _, pt := range ss.Traced.Path.Points {
+			p := pt.P
+			fmt.Fprintf(&b, "%.10f, %.10f, %.10f\r\n", p.X/s, p.Y/s, p.Z/s)
+		}
+		if err := os.WriteFile(dialog.Filename(), []byte(b.String()), 0o644); err != nil {
+			ss.Error("Couldn't write to '%s'", dialog.Filename())
+		}
+	}
+	// Clear the trace, and stop tracing
+	ss.Traced.Point = core.HEntity{}
+	ss.Traced.Path.Points = nil
+	gw.Invalidate(false)
 }
 
 // ShowNakedEdges finds the naked and self-intersecting edges of the

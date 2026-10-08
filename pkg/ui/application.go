@@ -155,6 +155,11 @@ type Application struct {
 	refreshTimer         platform.Timer
 
 	// scriptHost is what scripts work on the sketch through, and
+	// menu is the menu bar's table, menuTable: the handlers that look a
+	// command up reach it through the application, since the table
+	// names them.
+	menu []menuEntry
+
 	// messageSink, while a script runs, takes what would be shown in
 	// a message dialog.
 	scriptHost  *ScriptHost
@@ -191,7 +196,7 @@ type Application struct {
 // New makes the application on a platform; Init loads the settings and
 // opens the windows.
 func New(p platform.Platform) *Application {
-	ss := &Application{Platform: p, Settings: p.Settings(), StepOneSurfacePerFace: true}
+	ss := &Application{Platform: p, Settings: p.Settings(), StepOneSurfacePerFace: true, menu: menuTable}
 	ss.GW = newGraphicsWindow(ss)
 	ss.TW = newTextWindow(ss)
 	return ss

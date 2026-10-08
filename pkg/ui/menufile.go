@@ -404,96 +404,107 @@ func (ss *Application) MenuFile(id Command) {
 	ss.UpdateWindowTitles()
 }
 
-// menuExport runs the File menu's export and import commands (those
-// cases of C++ SolveSpaceUI::MenuFile).
-func (ss *Application) menuExport(id Command) {
-	settings := ss.Settings
-	gw := ss.GW
-
-	// saveDialog asks where to save, remembering the folder and type
-	// under key.
-	saveDialog := func(filters []platform.FileFilter, key string) (string, bool) {
-		dialog := ss.Platform.CreateSaveFileDialog(gw.window)
-		dialog.AddFilters(filters)
-		dialog.ThawChoices(settings, key)
-		dialog.SuggestFilename(ss.SaveFile)
-		if !dialog.RunModal() {
-			return "", false
-		}
-		dialog.FreezeChoices(settings, key)
-		return dialog.Filename(), true
+// exportDialog asks where to export to, remembering the folder and
+// type under key.
+func (ss *Application) exportDialog(filters []platform.FileFilter, key string) (string, bool) {
+	dialog := ss.Platform.CreateSaveFileDialog(ss.GW.window)
+	dialog.AddFilters(filters)
+	dialog.ThawChoices(ss.Settings, key)
+	dialog.SuggestFilename(ss.SaveFile)
+	if !dialog.RunModal() {
+		return "", false
 	}
+	dialog.FreezeChoices(ss.Settings, key)
+	return dialog.Filename(), true
+}
 
+// menuExport runs the File menu's export and import commands.
+func (ss *Application) menuExport(id Command) {
 	switch id {
 	case CmdExportImage:
-		if filename, ok := saveDialog(platform.RasterFileFilters, "ExportImage"); ok {
+		if filename, ok := ss.exportDialog(platform.RasterFileFilters, "ExportImage"); ok {
 			ss.ExportAsPngTo(filename)
 		}
 
 	case CmdExportView:
-		filename, ok := saveDialog(platform.VectorFileFilters, "ExportView")
-		if !ok {
-			break
-		}
-
-		// If the user is exporting something where it would be
-		// inappropriate to include the constraints, then warn.
-		if gw.showConstraints != SCMNoShow &&
-			(hasExtension(filename, "txt") || math.Abs(ss.ExportOffset) > core.LengthEps) {
-			ss.Message("Constraints are currently shown, and will be exported " +
-				"in the toolpath. This is probably not what you want; " +
-				"hide them by clicking the link at the top of the " +
-				"text window.")
-		}
-
-		ss.Report(ss.ExportViewOrWireframeTo(filename, false))
+		ss.menuExportView()
 
 	case CmdExportWireframe:
-		if filename, ok := saveDialog(platform.Vector3dFileFilters, "ExportWireframe"); ok {
+		if filename, ok := ss.exportDialog(platform.Vector3dFileFilters, "ExportWireframe"); ok {
 			ss.Report(ss.ExportViewOrWireframeTo(filename, true))
 		}
 
 	case CmdExportSection:
-		if filename, ok := saveDialog(platform.VectorFileFilters, "ExportSection"); ok {
+		if filename, ok := ss.exportDialog(platform.VectorFileFilters, "ExportSection"); ok {
 			ss.Report(ss.ExportSectionTo(filename))
 		}
 
 	case CmdExportMesh:
-		if filename, ok := saveDialog(platform.MeshFileFilters, "ExportMesh"); ok {
+		if filename, ok := ss.exportDialog(platform.MeshFileFilters, "ExportMesh"); ok {
 			ss.Report(ss.ExportMeshTo(filename))
 		}
 
 	case CmdExportSurfaces:
-		if filename, ok := saveDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
+		if filename, ok := ss.exportDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
 			ss.Report(ss.ExportSurfacesTo(filename))
 		}
 
 	case CmdImport:
-		dialog := ss.Platform.CreateOpenFileDialog(gw.window)
-		dialog.AddFilters(platform.ImportFileFilters)
-		dialog.ThawChoices(settings, "Import")
-		if !dialog.RunModal() {
-			break
-		}
-		dialog.FreezeChoices(settings, "Import")
-
-		importFile := dialog.Filename()
-		switch {
-		case hasExtension(importFile, "dxf"):
-			ss.ImportDxf(importFile)
-		case hasExtension(importFile, "dwg"):
-			ss.ImportDwg(importFile)
-		case hasExtension(importFile, "slvs"):
-			// A whole model: it replaces the sketch.
-			ss.Report(ss.ImportSolveSpace(importFile))
-			return
-		default:
-			ss.Error("Can't identify file type from file extension of "+
-				"filename '%s'; try .dxf, .dwg or .slvs.", importFile)
-			return
-		}
-
-		ss.GenerateAll(sketch.GenerateUntilActive)
-		ss.ScheduleShowTW()
+		ss.menuImport()
 	}
+}
+
+// menuExportView runs the File menu's CmdExportView.
+func (ss *Application) menuExportView() {
+	gw := ss.GW
+
+	filename, ok := ss.exportDialog(platform.VectorFileFilters, "ExportView")
+	if !ok {
+		return
+	}
+
+	// If the user is exporting something where it would be
+	// inappropriate to include the constraints, then warn.
+	if gw.showConstraints != SCMNoShow &&
+		(hasExtension(filename, "txt") || math.Abs(ss.ExportOffset) > core.LengthEps) {
+		ss.Message("Constraints are currently shown, and will be exported " +
+			"in the toolpath. This is probably not what you want; " +
+			"hide them by clicking the link at the top of the " +
+			"text window.")
+	}
+
+	ss.Report(ss.ExportViewOrWireframeTo(filename, false))
+}
+
+// menuImport runs the File menu's CmdImport.
+func (ss *Application) menuImport() {
+	settings := ss.Settings
+	gw := ss.GW
+
+	dialog := ss.Platform.CreateOpenFileDialog(gw.window)
+	dialog.AddFilters(platform.ImportFileFilters)
+	dialog.ThawChoices(settings, "Import")
+	if !dialog.RunModal() {
+		return
+	}
+	dialog.FreezeChoices(settings, "Import")
+
+	importFile := dialog.Filename()
+	switch {
+	case hasExtension(importFile, "dxf"):
+		ss.ImportDxf(importFile)
+	case hasExtension(importFile, "dwg"):
+		ss.ImportDwg(importFile)
+	case hasExtension(importFile, "slvs"):
+		// A whole model: it replaces the sketch.
+		ss.Report(ss.ImportSolveSpace(importFile))
+		return
+	default:
+		ss.Error("Can't identify file type from file extension of "+
+			"filename '%s'; try .dxf, .dwg or .slvs.", importFile)
+		return
+	}
+
+	ss.GenerateAll(sketch.GenerateUntilActive)
+	ss.ScheduleShowTW()
 }

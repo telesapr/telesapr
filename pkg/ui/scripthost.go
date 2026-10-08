@@ -399,7 +399,7 @@ func (h *ScriptHost) Select(sel []sketch.Selection) {
 // RunCommand runs a menu command, as choosing it does; what the
 // command says went wrong is the error.
 // Commands lists the main menu's commands for the command search.
-func (h *ScriptHost) Commands() []string { return CommandLabels() }
+func (h *ScriptHost) Commands() []string { return h.ss.CommandLabels() }
 
 func (h *ScriptHost) RunCommand(label string) error {
 	var err error

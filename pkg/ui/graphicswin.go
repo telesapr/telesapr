@@ -23,7 +23,7 @@ func (gw *GraphicsWindow) setActiveGroup(hg core.HGroup) { gw.sk().Active = hg }
 
 // ActivateCommand runs a command as its menu item would.
 func (gw *GraphicsWindow) ActivateCommand(cmd Command) {
-	for _, m := range menuTable {
+	for _, m := range gw.ss.menu {
 		if cmd == m.cmd {
 			if m.fn != nil {
 				m.fn(gw.ss, m.cmd)
@@ -36,7 +36,7 @@ func (gw *GraphicsWindow) ActivateCommand(cmd Command) {
 // AcceleratorForCommand is the key that runs cmd.
 func (gw *GraphicsWindow) AcceleratorForCommand(cmd Command) platform.KeyboardEvent {
 	rawAccel := 0
-	for _, m := range menuTable {
+	for _, m := range gw.ss.menu {
 		if cmd == m.cmd {
 			rawAccel = m.accel
 			break
@@ -78,7 +78,7 @@ func (gw *GraphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 		}
 	}
 	// The platform doesn't handle the accelerators, so do it here.
-	for _, m := range menuTable {
+	for _, m := range gw.ss.menu {
 		if m.label == "" || m.cmd == CmdNone {
 			continue
 		}
@@ -99,7 +99,7 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 
 	var currentSubMenu platform.Menu
 	var subMenuStack []platform.Menu
-	for _, m := range menuTable {
+	for _, m := range gw.ss.menu {
 		for m.level > 0 && m.level <= len(subMenuStack) {
 			currentSubMenu = subMenuStack[len(subMenuStack)-1]
 			subMenuStack = subMenuStack[:len(subMenuStack)-1]
@@ -625,97 +625,21 @@ func (gw *GraphicsWindow) MenuView(id Command) {
 		gw.ZoomToFit(false, true)
 		ss.ScheduleShowTW()
 	case CmdShowGrid:
-		gw.showSnapGrid = !gw.showSnapGrid
-		gw.EnsureValidActives()
-		gw.Invalidate(false)
-		if gw.showSnapGrid && !gw.LockedInWorkplane() {
-			ss.Message("No workplane is active, so the grid will not appear.")
-		}
+		gw.toggleSnapGrid()
 	case CmdDimSolidModel:
 		gw.dimSolidModel = !gw.dimSolidModel
 		gw.EnsureValidActives()
 		gw.Invalidate(true)
 	case CmdPerspectiveProj:
-		ss.UsePerspectiveProj = !ss.UsePerspectiveProj
-		gw.EnsureValidActives()
-		gw.Invalidate(false)
-		if ss.CameraTangentSetting < 1e-6 {
-			ss.Error("The perspective factor is set to zero, so the view will " +
-				"always be a parallel projection.\n\n" +
-				"For a perspective projection, modify the perspective " +
-				"factor in the configuration screen. A value around 0.3 " +
-				"is typical.")
-		}
+		gw.togglePerspective()
 	case CmdExplodeSketch:
 		ss.Explode = !ss.Explode
 		gw.EnsureValidActives()
 		ss.SK.MarkGroupDirty(gw.activeGroupH(), true)
 	case CmdOntoWorkplane, CmdNearestOrtho, CmdNearestIso:
-		if id == CmdOntoWorkplane && gw.LockedInWorkplane() {
-			gw.AnimateOntoWorkplane()
-			break
-		}
-		// If not in 2d mode use ORTHO logic.
-		ortho := [3]geom.Vector{{X: 1}, {Y: 1}, {Z: 1}}
-		sqrt2, sqrt6 := math.Sqrt(2.0), math.Sqrt(6.0)
-		quat0 := geom.QuaternionFromBasis(gw.view.ProjRight, gw.view.ProjUp)
-		quatf := quat0
-		dmin := 1e10
-
-		// There are 24 possible views (3*2*2*2), if all are allowed. If
-		// the user is in turn-table mode, the isometric view must have
-		// the z-axis facing up, leaving 8 possible views (2*1*2*2).
-		requireTurntable := id == CmdNearestIso && ss.TurntableNav
-		for i := range 3 {
-			for j := range 3 {
-				if i == j {
-					continue
-				}
-				if requireTurntable && j != 2 {
-					continue
-				}
-				for negi := range 2 {
-					for negj := range 2 {
-						ou, ov := ortho[i], ortho[j]
-						if negi != 0 {
-							ou = ou.ScaledBy(-1)
-						}
-						if negj != 0 {
-							ov = ov.ScaledBy(-1)
-						}
-						on := ou.Cross(ov)
-
-						var u, v geom.Vector
-						if id == CmdNearestOrtho || id == CmdOntoWorkplane {
-							u, v = ou, ov
-						} else {
-							u = ou.ScaledBy(1 / sqrt2).Plus(on.ScaledBy(-1 / sqrt2))
-							v = ou.ScaledBy(-1 / sqrt6).Plus(ov.ScaledBy(2 / sqrt6).Plus(on.ScaledBy(-1 / sqrt6)))
-						}
-
-						quatt := geom.QuaternionFromBasis(u, v)
-						d := geom.Min(quatt.Minus(quat0).Magnitude(), quatt.Plus(quat0).Magnitude())
-						if d < dmin {
-							dmin = d
-							quatf = quatt
-						}
-					}
-				}
-			}
-		}
-		gw.AnimateOnto(quatf, gw.view.Offset)
+		gw.alignView(id)
 	case CmdCenterView:
-		gw.GroupSelection()
-		if gw.gs.n == 1 && gw.gs.points == 1 {
-			// Offset is the selected point, quaternion is same as before
-			sk := gw.sk()
-			pt := sk.Entity(gw.gs.point[0]).PointGetNum(sk)
-			quat0 := geom.QuaternionFromBasis(gw.view.ProjRight, gw.view.ProjUp)
-			gw.ClearSelection()
-			gw.AnimateOnto(quat0, pt.ScaledBy(-1))
-		} else {
-			ss.Error("Select a point; this point will become the center of the view on screen.")
-		}
+		gw.centerViewAtPoint()
 	case CmdShowToolbar:
 		ss.ShowToolbar = !ss.ShowToolbar
 		gw.EnsureValidActives()
@@ -738,6 +662,110 @@ func (gw *GraphicsWindow) MenuView(id Command) {
 		panic("ui: unexpected menu ID")
 	}
 	gw.Invalidate(false)
+}
+
+// toggleSnapGrid runs the View menu's CmdShowGrid.
+func (gw *GraphicsWindow) toggleSnapGrid() {
+	ss := gw.ss
+
+	gw.showSnapGrid = !gw.showSnapGrid
+	gw.EnsureValidActives()
+	gw.Invalidate(false)
+	if gw.showSnapGrid && !gw.LockedInWorkplane() {
+		ss.Message("No workplane is active, so the grid will not appear.")
+	}
+}
+
+// togglePerspective runs the View menu's CmdPerspectiveProj.
+func (gw *GraphicsWindow) togglePerspective() {
+	ss := gw.ss
+
+	ss.UsePerspectiveProj = !ss.UsePerspectiveProj
+	gw.EnsureValidActives()
+	gw.Invalidate(false)
+	if ss.CameraTangentSetting < 1e-6 {
+		ss.Error("The perspective factor is set to zero, so the view will " +
+			"always be a parallel projection.\n\n" +
+			"For a perspective projection, modify the perspective " +
+			"factor in the configuration screen. A value around 0.3 " +
+			"is typical.")
+	}
+}
+
+// alignView runs the View menu's CmdOntoWorkplane, CmdNearestOrtho, CmdNearestIso.
+func (gw *GraphicsWindow) alignView(id Command) {
+	ss := gw.ss
+
+	if id == CmdOntoWorkplane && gw.LockedInWorkplane() {
+		gw.AnimateOntoWorkplane()
+		return
+	}
+	// If not in 2d mode use ORTHO logic.
+	ortho := [3]geom.Vector{{X: 1}, {Y: 1}, {Z: 1}}
+	sqrt2, sqrt6 := math.Sqrt(2.0), math.Sqrt(6.0)
+	quat0 := geom.QuaternionFromBasis(gw.view.ProjRight, gw.view.ProjUp)
+	quatf := quat0
+	dmin := 1e10
+
+	// There are 24 possible views (3*2*2*2), if all are allowed. If
+	// the user is in turn-table mode, the isometric view must have
+	// the z-axis facing up, leaving 8 possible views (2*1*2*2).
+	requireTurntable := id == CmdNearestIso && ss.TurntableNav
+	for i := range 3 {
+		for j := range 3 {
+			if i == j {
+				continue
+			}
+			if requireTurntable && j != 2 {
+				continue
+			}
+			for negi := range 2 {
+				for negj := range 2 {
+					ou, ov := ortho[i], ortho[j]
+					if negi != 0 {
+						ou = ou.ScaledBy(-1)
+					}
+					if negj != 0 {
+						ov = ov.ScaledBy(-1)
+					}
+					on := ou.Cross(ov)
+
+					var u, v geom.Vector
+					if id == CmdNearestOrtho || id == CmdOntoWorkplane {
+						u, v = ou, ov
+					} else {
+						u = ou.ScaledBy(1 / sqrt2).Plus(on.ScaledBy(-1 / sqrt2))
+						v = ou.ScaledBy(-1 / sqrt6).Plus(ov.ScaledBy(2 / sqrt6).Plus(on.ScaledBy(-1 / sqrt6)))
+					}
+
+					quatt := geom.QuaternionFromBasis(u, v)
+					d := geom.Min(quatt.Minus(quat0).Magnitude(), quatt.Plus(quat0).Magnitude())
+					if d < dmin {
+						dmin = d
+						quatf = quatt
+					}
+				}
+			}
+		}
+	}
+	gw.AnimateOnto(quatf, gw.view.Offset)
+}
+
+// centerViewAtPoint runs the View menu's CmdCenterView.
+func (gw *GraphicsWindow) centerViewAtPoint() {
+	ss := gw.ss
+
+	gw.GroupSelection()
+	if gw.gs.n == 1 && gw.gs.points == 1 {
+		// Offset is the selected point, quaternion is same as before
+		sk := gw.sk()
+		pt := sk.Entity(gw.gs.point[0]).PointGetNum(sk)
+		quat0 := geom.QuaternionFromBasis(gw.view.ProjRight, gw.view.ProjUp)
+		gw.ClearSelection()
+		gw.AnimateOnto(quat0, pt.ScaledBy(-1))
+	} else {
+		ss.Error("Select a point; this point will become the center of the view on screen.")
+	}
 }
 
 // EnsureValidActives makes sure the active group and workplane exist,
@@ -900,191 +928,21 @@ func (gw *GraphicsWindow) SnapToGrid(p geom.Vector) geom.Vector {
 // MenuEdit runs an Edit menu command.
 func (gw *GraphicsWindow) MenuEdit(id Command) {
 	ss := gw.ss
-	sk := gw.sk()
 	switch id {
 	case CmdUnselectAll:
-		// Esc stops the solid being made off the thread first.
-		if ss.stopShellJob() {
-			break
-		}
-		gw.GroupSelection()
-		// If there's nothing selected to de-select, and no operation to
-		// cancel, then perhaps they want to return to the home screen in
-		// the text window.
-		if gw.gs.n == 0 && gw.gs.constraints == 0 && gw.pending.operation == PendingNone {
-			if !ss.TW.window.IsEditorVisible() && !gw.window.IsEditorVisible() {
-				if ss.TW.shown.screen == ScreenStyleInfo {
-					ss.TW.GoToScreen(ScreenListOfStyles)
-				} else {
-					ss.TW.ClearSuper()
-				}
-			}
-		}
-		// Some pending operations need an Undo to properly clean up on ESC.
-		switch gw.pending.operation {
-		case PendingDraggingNewPoint, PendingDraggingNewLinePoint,
-			PendingDraggingNewArcPoint, PendingDraggingNewRadius:
-			gw.ClearSuper()
-			ss.UndoUndo()
-		}
-		gw.ClearSuper()
-		ss.TW.HideEditControl()
-		ss.NakedEdges.Clear()
-		ss.JustExportedInfo.Draw = false
-		ss.CenterOfMass.Draw = false
-		// This clears the marks drawn to indicate which points are still
-		// free to drag.
-		for i := range sk.Params {
-			sk.Params[i].Free = false
-		}
-		if ss.ExportMode {
-			ss.LeaveExportMode()
-			ss.GenerateAll(sketch.GenerateAll)
-		}
-		gw.persistentDirty = true
+		gw.unselectAll()
 
 	case CmdSelectAll:
-		for i := range sk.Entities {
-			e := &sk.Entities[i]
-			if e.Group != gw.activeGroupH() {
-				continue
-			}
-			if e.IsFace() || e.IsDistance() {
-				continue
-			}
-			if !sk.EntityIsVisible(e) {
-				continue
-			}
-			gw.MakeSelectedEntity(e.H)
-		}
-		gw.Invalidate(false)
-		ss.ScheduleShowTW()
+		gw.selectAll()
 
 	case CmdSelectChain:
-		newlySelected := 0
-		for {
-			didSomething := false
-			for i := range sk.Entities {
-				e := &sk.Entities[i]
-				if e.Group != gw.activeGroupH() {
-					continue
-				}
-				if !e.HasEndpoints() {
-					continue
-				}
-				if !sk.EntityIsVisible(e) {
-					continue
-				}
-				st, fi := e.EndpointStart(sk), e.EndpointFinish(sk)
-
-				onChain, alreadySelected := false, false
-				for j := range gw.selection {
-					s := &gw.selection[j]
-					if s.Entity.V == 0 {
-						continue
-					}
-					if s.Entity == e.H {
-						alreadySelected = true
-						continue
-					}
-					se := sk.Entity(s.Entity)
-					if !se.HasEndpoints() {
-						continue
-					}
-					sst, sfi := se.EndpointStart(sk), se.EndpointFinish(sk)
-					if sst.Equals(st) || sst.Equals(fi) || sfi.Equals(st) || sfi.Equals(fi) {
-						onChain = true
-					}
-				}
-				if onChain && !alreadySelected {
-					gw.MakeSelectedEntity(e.H)
-					newlySelected++
-					didSomething = true
-				}
-			}
-			if !didSomething {
-				break
-			}
-		}
-		gw.Invalidate(false)
-		ss.ScheduleShowTW()
-		if newlySelected == 0 {
-			ss.Error("No additional entities share endpoints with the selected entities.")
-		}
+		gw.selectEdgeChain()
 
 	case CmdRotate90:
-		gw.GroupSelection()
-		var e *core.Entity
-		if gw.gs.n == 1 && gw.gs.points == 1 {
-			e = sk.Entity(gw.gs.point[0])
-		} else if gw.gs.n == 1 && gw.gs.entities == 1 {
-			e = sk.Entity(gw.gs.entity[0])
-		}
-		gw.ClearSelection()
-
-		hg := gw.activeGroupH()
-		if e != nil {
-			hg = e.Group
-		}
-		g := sk.Group(hg)
-		if g.Type != sketch.GroupLinked {
-			ss.Error("To use this command, select a point or other " +
-				"entity from an linked part, or make a link " +
-				"group the active group.")
-			break
-		}
-
-		ss.UndoRemember()
-		// Rotate by ninety degrees about the coordinate axis closest to
-		// the screen normal.
-		norm := gw.view.ProjRight.Cross(gw.view.ProjUp)
-		norm = norm.ClosestOrtho()
-		norm = norm.WithMagnitude(1)
-		qaa := geom.QuaternionFromAxisAngle(norm, math.Pi/2)
-
-		g.TransformImportedBy(sk, geom.Vector{}, qaa)
-
-		// and regenerate as necessary.
-		sk.MarkGroupDirty(hg, false)
+		gw.rotateImported90()
 
 	case CmdSnapToGrid:
-		if !gw.LockedInWorkplane() {
-			ss.Error("No workplane is active. Activate a workplane " +
-				"(with Sketch -> In Workplane) to define the plane " +
-				"for the snap grid.")
-			break
-		}
-		gw.GroupSelection()
-		if gw.gs.points == 0 && gw.gs.constraintLabels == 0 {
-			ss.Error("Can't snap these items to grid; select points, " +
-				"text comments, or constraints with a label. " +
-				"To snap a line, select its endpoints.")
-			break
-		}
-		ss.UndoRemember()
-
-		for i := range gw.selection {
-			s := &gw.selection[i]
-			if s.Entity.V != 0 {
-				hp := s.Entity
-				ep := sk.Entity(hp)
-				if !ep.IsPoint() {
-					continue
-				}
-				p := ep.PointGetNum(sk)
-				ep.PointForceTo(sk, gw.SnapToGrid(p))
-				gw.pending.points = append(gw.pending.points, hp)
-				sk.MarkGroupDirty(ep.Group, false)
-			} else if s.Constraint.V != 0 {
-				c := sk.Constraint(s.Constraint)
-				camera := gw.Camera()
-				refs := gw.constraintReferencePoints(c, &camera)
-				c.Disp.Offset = c.Disp.Offset.Plus(gw.SnapToGrid(refs[0]).Minus(refs[0]))
-			}
-		}
-		// Regenerate, with these points marked as dragged so that they
-		// get placed as close as possible to our snap grid.
-		gw.ClearSelection()
+		gw.snapSelectionToGrid()
 
 	case CmdUndo:
 		ss.UndoUndo()
@@ -1093,12 +951,7 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 		ss.UndoRedo()
 
 	case CmdRegenAll:
-		sk.Images = nil
-		if sk.ReloadAllLinked != nil {
-			sk.ReloadAllLinked(sk)
-		}
-		ss.GenerateAll(sketch.GenerateUntilActive)
-		ss.ScheduleShowTW()
+		gw.regenerateAll()
 
 	case CmdEditLineStyles:
 		ss.TW.GoToScreen(ScreenListOfStyles)
@@ -1118,62 +971,243 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 	}
 }
 
+// unselectAll runs the Edit menu's CmdUnselectAll.
+func (gw *GraphicsWindow) unselectAll() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	// Esc stops the solid being made off the thread first.
+	if ss.stopShellJob() {
+		return
+	}
+	gw.GroupSelection()
+	// If there's nothing selected to de-select, and no operation to
+	// cancel, then perhaps they want to return to the home screen in
+	// the text window.
+	if gw.gs.n == 0 && gw.gs.constraints == 0 && gw.pending.operation == PendingNone {
+		if !ss.TW.window.IsEditorVisible() && !gw.window.IsEditorVisible() {
+			if ss.TW.shown.screen == ScreenStyleInfo {
+				ss.TW.GoToScreen(ScreenListOfStyles)
+			} else {
+				ss.TW.ClearSuper()
+			}
+		}
+	}
+	// Some pending operations need an Undo to properly clean up on ESC.
+	switch gw.pending.operation {
+	case PendingDraggingNewPoint, PendingDraggingNewLinePoint,
+		PendingDraggingNewArcPoint, PendingDraggingNewRadius:
+		gw.ClearSuper()
+		ss.UndoUndo()
+	}
+	gw.ClearSuper()
+	ss.TW.HideEditControl()
+	ss.NakedEdges.Clear()
+	ss.JustExportedInfo.Draw = false
+	ss.CenterOfMass.Draw = false
+	// This clears the marks drawn to indicate which points are still
+	// free to drag.
+	for i := range sk.Params {
+		sk.Params[i].Free = false
+	}
+	if ss.ExportMode {
+		ss.LeaveExportMode()
+		ss.GenerateAll(sketch.GenerateAll)
+	}
+	gw.persistentDirty = true
+}
+
+// selectAll runs the Edit menu's CmdSelectAll.
+func (gw *GraphicsWindow) selectAll() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	for i := range sk.Entities {
+		e := &sk.Entities[i]
+		if e.Group != gw.activeGroupH() {
+			continue
+		}
+		if e.IsFace() || e.IsDistance() {
+			continue
+		}
+		if !sk.EntityIsVisible(e) {
+			continue
+		}
+		gw.MakeSelectedEntity(e.H)
+	}
+	gw.Invalidate(false)
+	ss.ScheduleShowTW()
+}
+
+// selectEdgeChain runs the Edit menu's CmdSelectChain.
+func (gw *GraphicsWindow) selectEdgeChain() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	newlySelected := 0
+	for {
+		didSomething := false
+		for i := range sk.Entities {
+			e := &sk.Entities[i]
+			if e.Group != gw.activeGroupH() {
+				continue
+			}
+			if !e.HasEndpoints() {
+				continue
+			}
+			if !sk.EntityIsVisible(e) {
+				continue
+			}
+			st, fi := e.EndpointStart(sk), e.EndpointFinish(sk)
+
+			onChain, alreadySelected := false, false
+			for j := range gw.selection {
+				s := &gw.selection[j]
+				if s.Entity.V == 0 {
+					continue
+				}
+				if s.Entity == e.H {
+					alreadySelected = true
+					continue
+				}
+				se := sk.Entity(s.Entity)
+				if !se.HasEndpoints() {
+					continue
+				}
+				sst, sfi := se.EndpointStart(sk), se.EndpointFinish(sk)
+				if sst.Equals(st) || sst.Equals(fi) || sfi.Equals(st) || sfi.Equals(fi) {
+					onChain = true
+				}
+			}
+			if onChain && !alreadySelected {
+				gw.MakeSelectedEntity(e.H)
+				newlySelected++
+				didSomething = true
+			}
+		}
+		if !didSomething {
+			break
+		}
+	}
+	gw.Invalidate(false)
+	ss.ScheduleShowTW()
+	if newlySelected == 0 {
+		ss.Error("No additional entities share endpoints with the selected entities.")
+	}
+}
+
+// rotateImported90 runs the Edit menu's CmdRotate90.
+func (gw *GraphicsWindow) rotateImported90() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	gw.GroupSelection()
+	var e *core.Entity
+	if gw.gs.n == 1 && gw.gs.points == 1 {
+		e = sk.Entity(gw.gs.point[0])
+	} else if gw.gs.n == 1 && gw.gs.entities == 1 {
+		e = sk.Entity(gw.gs.entity[0])
+	}
+	gw.ClearSelection()
+
+	hg := gw.activeGroupH()
+	if e != nil {
+		hg = e.Group
+	}
+	g := sk.Group(hg)
+	if g.Type != sketch.GroupLinked {
+		ss.Error("To use this command, select a point or other " +
+			"entity from an linked part, or make a link " +
+			"group the active group.")
+		return
+	}
+
+	ss.UndoRemember()
+	// Rotate by ninety degrees about the coordinate axis closest to
+	// the screen normal.
+	norm := gw.view.ProjRight.Cross(gw.view.ProjUp)
+	norm = norm.ClosestOrtho()
+	norm = norm.WithMagnitude(1)
+	qaa := geom.QuaternionFromAxisAngle(norm, math.Pi/2)
+
+	g.TransformImportedBy(sk, geom.Vector{}, qaa)
+
+	// and regenerate as necessary.
+	sk.MarkGroupDirty(hg, false)
+}
+
+// snapSelectionToGrid runs the Edit menu's CmdSnapToGrid.
+func (gw *GraphicsWindow) snapSelectionToGrid() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	if !gw.LockedInWorkplane() {
+		ss.Error("No workplane is active. Activate a workplane " +
+			"(with Sketch -> In Workplane) to define the plane " +
+			"for the snap grid.")
+		return
+	}
+	gw.GroupSelection()
+	if gw.gs.points == 0 && gw.gs.constraintLabels == 0 {
+		ss.Error("Can't snap these items to grid; select points, " +
+			"text comments, or constraints with a label. " +
+			"To snap a line, select its endpoints.")
+		return
+	}
+	ss.UndoRemember()
+
+	for i := range gw.selection {
+		s := &gw.selection[i]
+		if s.Entity.V != 0 {
+			hp := s.Entity
+			ep := sk.Entity(hp)
+			if !ep.IsPoint() {
+				continue
+			}
+			p := ep.PointGetNum(sk)
+			ep.PointForceTo(sk, gw.SnapToGrid(p))
+			gw.pending.points = append(gw.pending.points, hp)
+			sk.MarkGroupDirty(ep.Group, false)
+		} else if s.Constraint.V != 0 {
+			c := sk.Constraint(s.Constraint)
+			camera := gw.Camera()
+			refs := gw.constraintReferencePoints(c, &camera)
+			c.Disp.Offset = c.Disp.Offset.Plus(gw.SnapToGrid(refs[0]).Minus(refs[0]))
+		}
+	}
+	// Regenerate, with these points marked as dragged so that they
+	// get placed as close as possible to our snap grid.
+	gw.ClearSelection()
+}
+
+// regenerateAll runs the Edit menu's CmdRegenAll.
+func (gw *GraphicsWindow) regenerateAll() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	sk.Images = nil
+	if sk.ReloadAllLinked != nil {
+		sk.ReloadAllLinked(sk)
+	}
+	ss.GenerateAll(sketch.GenerateUntilActive)
+	ss.ScheduleShowTW()
+}
+
 // MenuRequest runs a Sketch menu command.
 func (gw *GraphicsWindow) MenuRequest(id Command) {
 	ss := gw.ss
-	sk := gw.sk()
 	var s string
 	switch id {
 	case CmdSelWorkplane:
-		gw.GroupSelection()
-		g := sk.Group(gw.activeGroupH())
-
-		switch {
-		case gw.gs.n == 1 && gw.gs.workplanes == 1:
-			// A user-selected workplane
-			g.ActiveWorkplane = gw.gs.entity[0]
-			gw.EnsureValidActives()
-			ss.ScheduleShowTW()
-		case g.Type == sketch.GroupDrawingWorkplane:
-			// The group's default workplane
-			g.ActiveWorkplane = g.H.Entity(0)
-			ss.MessageAndRun(func() {
-				// Align the view with the selected workplane
-				gw.ClearSuper()
-				gw.AnimateOntoWorkplane()
-			}, "No workplane selected. Activating default workplane for this group.")
-		default:
-			ss.Error("No workplane is selected, and the active group does " +
-				"not have a default workplane. Try selecting a " +
-				"workplane, or activating a sketch-in-new-workplane " +
-				"group.")
-			// update checkboxes in the menus
-			gw.EnsureValidActives()
-		}
+		gw.sketchInWorkplane()
 		return
 
 	case CmdFreeIn3D:
-		gw.SetWorkplaneFreeIn3d()
-		gw.EnsureValidActives()
-		ss.ScheduleShowTW()
-		gw.Invalidate(false)
+		gw.sketchFreeIn3D()
 		return
 
 	case CmdTangentArc:
-		gw.GroupSelection()
-		switch {
-		case gw.gs.n == 1 && gw.gs.points == 1:
-			gw.MakeTangentArc()
-		case gw.gs.n != 0:
-			ss.Error("Bad selection for tangent arc at point. Select a " +
-				"single point, or select nothing to set up arc " +
-				"parameters.")
-		default:
-			ss.TW.GoToScreen(ScreenTangentArc)
-			gw.ForceTextWindowShown()
-			ss.ScheduleShowTW()
-			gw.Invalidate(false) // repaint toolbar
-		}
+		gw.startTangentArc()
 		return
 
 	case CmdArc:
@@ -1203,34 +1237,7 @@ func (gw *GraphicsWindow) MenuRequest(id Command) {
 		s = "click top left of image"
 
 	case CmdConstruction:
-		// if we are drawing
-		switch gw.pending.operation {
-		case PendingDraggingNewPoint, PendingDraggingNewLinePoint, PendingDraggingNewArcPoint,
-			PendingDraggingNewCubicPoint, PendingDraggingNewRadius:
-			for _, hr := range gw.pending.requests {
-				r := sk.Request(hr)
-				r.Construction = !r.Construction
-				sk.MarkGroupDirty(r.Group, false)
-			}
-			gw.Invalidate(false)
-			return
-		}
-		gw.GroupSelection()
-		if gw.gs.entities == 0 {
-			ss.Error("No entities are selected. Select entities before " +
-				"trying to toggle their construction state.")
-			return
-		}
-		ss.UndoRemember()
-		for _, he := range gw.gs.entity {
-			if !he.IsFromRequest() {
-				continue
-			}
-			r := sk.Request(he.Request())
-			r.Construction = !r.Construction
-			sk.MarkGroupDirty(r.Group, false)
-		}
-		gw.ClearSelection()
+		gw.toggleConstruction()
 		return
 
 	case CmdSplitCurves:
@@ -1246,6 +1253,103 @@ func (gw *GraphicsWindow) MenuRequest(id Command) {
 	gw.pending.description = s
 	ss.ScheduleShowTW()
 	gw.Invalidate(false) // repaint toolbar
+}
+
+// sketchInWorkplane runs the Sketch menu's CmdSelWorkplane.
+func (gw *GraphicsWindow) sketchInWorkplane() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	gw.GroupSelection()
+	g := sk.Group(gw.activeGroupH())
+
+	switch {
+	case gw.gs.n == 1 && gw.gs.workplanes == 1:
+		// A user-selected workplane
+		g.ActiveWorkplane = gw.gs.entity[0]
+		gw.EnsureValidActives()
+		ss.ScheduleShowTW()
+	case g.Type == sketch.GroupDrawingWorkplane:
+		// The group's default workplane
+		g.ActiveWorkplane = g.H.Entity(0)
+		ss.MessageAndRun(func() {
+			// Align the view with the selected workplane
+			gw.ClearSuper()
+			gw.AnimateOntoWorkplane()
+		}, "No workplane selected. Activating default workplane for this group.")
+	default:
+		ss.Error("No workplane is selected, and the active group does " +
+			"not have a default workplane. Try selecting a " +
+			"workplane, or activating a sketch-in-new-workplane " +
+			"group.")
+		// update checkboxes in the menus
+		gw.EnsureValidActives()
+	}
+}
+
+// sketchFreeIn3D runs the Sketch menu's CmdFreeIn3D.
+func (gw *GraphicsWindow) sketchFreeIn3D() {
+	ss := gw.ss
+
+	gw.SetWorkplaneFreeIn3d()
+	gw.EnsureValidActives()
+	ss.ScheduleShowTW()
+	gw.Invalidate(false)
+}
+
+// startTangentArc runs the Sketch menu's CmdTangentArc.
+func (gw *GraphicsWindow) startTangentArc() {
+	ss := gw.ss
+
+	gw.GroupSelection()
+	switch {
+	case gw.gs.n == 1 && gw.gs.points == 1:
+		gw.MakeTangentArc()
+	case gw.gs.n != 0:
+		ss.Error("Bad selection for tangent arc at point. Select a " +
+			"single point, or select nothing to set up arc " +
+			"parameters.")
+	default:
+		ss.TW.GoToScreen(ScreenTangentArc)
+		gw.ForceTextWindowShown()
+		ss.ScheduleShowTW()
+		gw.Invalidate(false) // repaint toolbar
+	}
+}
+
+// toggleConstruction runs the Sketch menu's CmdConstruction.
+func (gw *GraphicsWindow) toggleConstruction() {
+	ss := gw.ss
+	sk := gw.sk()
+
+	// if we are drawing
+	switch gw.pending.operation {
+	case PendingDraggingNewPoint, PendingDraggingNewLinePoint, PendingDraggingNewArcPoint,
+		PendingDraggingNewCubicPoint, PendingDraggingNewRadius:
+		for _, hr := range gw.pending.requests {
+			r := sk.Request(hr)
+			r.Construction = !r.Construction
+			sk.MarkGroupDirty(r.Group, false)
+		}
+		gw.Invalidate(false)
+		return
+	}
+	gw.GroupSelection()
+	if gw.gs.entities == 0 {
+		ss.Error("No entities are selected. Select entities before " +
+			"trying to toggle their construction state.")
+		return
+	}
+	ss.UndoRemember()
+	for _, he := range gw.gs.entity {
+		if !he.IsFromRequest() {
+			continue
+		}
+		r := sk.Request(he.Request())
+		r.Construction = !r.Construction
+		sk.MarkGroupDirty(r.Group, false)
+	}
+	gw.ClearSelection()
 }
 
 // ClearSuper cancels whatever is in progress and clears the selection.

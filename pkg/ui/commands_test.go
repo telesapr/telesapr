@@ -13,7 +13,8 @@ import (
 )
 
 func TestFindCommands(t *testing.T) {
-	labels := CommandLabels()
+	ss, _ := newTestApp(t)
+	labels := ss.CommandLabels()
 	if len(labels) < 100 || labels[0] != "File > New" {
 		t.Fatalf("%d labels, first %q", len(labels), labels[0])
 	}
@@ -22,12 +23,12 @@ func TestFindCommands(t *testing.T) {
 			t.Errorf("label %q", l)
 		}
 	}
-	if got := (&ScriptHost{}).Commands(); len(got) != len(labels) {
+	if got := ss.ScriptHost().Commands(); len(got) != len(labels) {
 		t.Errorf("the script host has %d commands, want %d", len(got), len(labels))
 	}
 	names := func(q string) string {
 		var out []string
-		for _, e := range findCommands(q) {
+		for _, e := range ss.findCommands(q) {
 			out = append(out, e.label)
 		}
 		return strings.Join(out, "; ")
@@ -68,9 +69,7 @@ func TestRunCommand(t *testing.T) {
 		t.Errorf("unknown: %v", err)
 	}
 	// A name two entries share is ambiguous.
-	saved := menuTable
-	t.Cleanup(func() { menuTable = saved })
-	menuTable = append(append([]menuEntry(nil), saved...),
+	ss.menu = append(append([]menuEntry(nil), menuTable...),
 		menuEntry{0, "&Extra", CmdNone, 0, kn, nil},
 		menuEntry{1, "Zoom To &Fit", CmdZoomToFit, 0, kn, mView})
 	if err := ss.RunCommand("zoom to fit"); err == nil || !strings.Contains(err.Error(), "View > Zoom To Fit or Extra > Zoom To Fit") {

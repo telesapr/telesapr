@@ -32,6 +32,13 @@ func IsFreeIn3D(wrkpl HEntity) bool {
 	return wrkpl.V == 0 || wrkpl == FreeIn3D
 }
 
+// The lookups below panic on a handle that is not in the sketch or an
+// entity of the wrong type. That is a programmer error, not a bad
+// file: a regeneration deletes every request, constraint and group
+// whose references are gone before anything here reads them (the
+// sketch package's broken references), and each reader is given the
+// entity type it asks for by the caller that chose it.
+
 func mustEntity(sk EntitySketch, h HEntity) *Entity {
 	e := sk.Entity(h)
 	if e == nil {
