@@ -10,27 +10,22 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// boolFixtureStats holds the actual stats we compute per fixture.
+// boolFixtureStats is what collectBoolStats measures of a fixture.
 type boolFixtureStats struct {
 	Triangles int
 	VMin      [3]float64
 	VMax      [3]float64
 	Volume    float64 // signed volume of the last (active) mesh group
-	// Naked and self-intersecting edges of the active group's display
-	// mesh, as the SolveSpace fixture tests find them.
+	// Naked and self-intersecting edges of the last group's display
+	// mesh.
 	NakedEdges   int
 	Inters, Leak bool
 	TotalVol     float64 // sum of all mesh-group running volumes
 }
 
-// booleanFixtureGoldens holds, per fixture, the Go-port triangle
-// count (a regression baseline, not a SolveSpace value) and the bounding box
-// of the active group's mesh, which is the model's exact extent.
-//
-// The active group in the SolveSpace binary is SK.GetGroup(activeGroup),
-// which corresponds to the last group in topological order for
-// freshly-loaded fixtures. Triangles are summed across every mesh
-// group's running mesh.
+// booleanFixtureGoldens holds, per fixture, the number of triangles of
+// every mesh group's display mesh together, and the bounding box of the
+// last group's, which is the model's exact extent.
 var booleanFixtureGoldens = map[string]boolFixtureStats{
 	"boolean_coplanar_union": {
 		Triangles: 118,
@@ -64,16 +59,9 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 	},
 }
 
-// booleanFixtureCppGoldens holds the SolveSpace reference volumes produced
-// by the SolveSpace CLI testsuite. Each fixture's value comes
-// from `m->CalculateVolume() / golden = 1.0` assertions in
-// solvespace/test/group/<name>/test.cpp. The SolveSpace testsuite is the
-// ground truth; the Go port's volumes should converge to these as
-// the boolean-CSG pipeline matures.
-//
-// They were read from the SolveSpace testsuite's `CalculateVolume() / N == 1.0`
-// checks; since the SolveSpace comparison was frozen they are this project's
-// goldens, changed by hand when the kernel changes a volume on purpose.
+// booleanFixtureCppGoldens is the volume of each fixture's last group,
+// recorded while the kernel was verified against SolveSpace; changed by
+// hand when the kernel changes a volume on purpose.
 var booleanFixtureCppGoldens = map[string]float64{
 	"boolean_coplanar_union":   13250.0,
 	"boolean_knife_edge":       1.8303900357690596,
@@ -83,9 +71,8 @@ var booleanFixtureCppGoldens = map[string]float64{
 	"boolean_tangent_spline":   204638.6271882122,
 }
 
-// cppGoldenRatioTol is how far stats.Volume / cpp may be from 1: the
-// SolveSpace testsuite's own criterion, |ratio - 1| < LENGTH_EPS (1e-6;
-// test/harness.cpp, CheckEqualEpsilon).
+// cppGoldenRatioTol is how far a volume may be from its record, as a
+// ratio.
 const cppGoldenRatioTol = 1e-6
 
 // collectBoolStats loads a fixture and reports its mesh statistics.
@@ -104,7 +91,7 @@ func collectBoolStats(path string) (boolFixtureStats, error) {
 		if !g.IsMeshGroup() {
 			continue
 		}
-		// The mesh SolveSpace displays, and its fixture tests check.
+		// The mesh the window shows.
 		g.GenerateDisplayItems(doc.Sketch)
 		mesh := &g.DisplayMesh
 		stats.Triangles += len(mesh.Triangles)
@@ -128,161 +115,36 @@ func collectBoolStats(path string) (boolFixtureStats, error) {
 	return stats, nil
 }
 
-// TestBooleanFixtureLoadsAndGenerates runs every boolean_* fixture
-// through LoadFile + Sketch::GenerateAll and asserts that the load
-// succeeds, GenerateAll completes without panic, and the resulting
-// mesh is non-empty. This is the parity-smoke gate for Phase E.
-func TestBooleanFixtureLoadsAndGenerates(t *testing.T) {
-	_, thisFile, _, _ := runtime.Caller(0)
-	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
-	paths := []string{
-		filepath.Join(root, "testdata/group/boolean_coplanar_union/normal.slvs"),
-		filepath.Join(root, "testdata/group/boolean_knife_edge/normal.slvs"),
-		filepath.Join(root, "testdata/group/boolean_tangent_crossing/normal.slvs"),
-		filepath.Join(root, "testdata/group/boolean_tangent_edge/normal.slvs"),
-		filepath.Join(root, "testdata/group/boolean_tangent_fillet/normal.slvs"),
-		filepath.Join(root, "testdata/group/boolean_tangent_spline/normal.slvs"),
-	}
-	for _, p := range paths {
-		doc, err := LoadFile(p)
-		if err != nil {
-			t.Errorf("load %s: %v", p, err)
-			continue
-		}
-		if doc.Sketch == nil {
-			t.Errorf("%s: nil sketch after load", p)
-			continue
-		}
-		doc.Sketch.GenerateAll()
-		surfaces := 0
-		for i := range doc.Sketch.Groups {
-			g := &doc.Sketch.Groups[i]
-			if g.IsMeshGroup() {
-				surfaces += len(g.RunningShell.Surface)
-			}
-		}
-		if surfaces == 0 {
-			t.Errorf("%s: empty running shells after GenerateAll", p)
-		}
-	}
-}
-
-// TestParityBooleanFixtures asserts that each boolean fixture produces
-// exactly the recorded triangle count. This is a stronger version of
-// the smoke gate: it catches regressions in the boolean-CSG chain
-// that produce non-empty but malformed meshes.
-func TestParityBooleanFixtures(t *testing.T) {
+// TestBooleanFixtures regenerates each Boolean fixture and requires
+// the recorded number of triangles, bounding box and volume of its
+// display mesh (booleanFixtureGoldens, booleanFixtureCppGoldens), and
+// a watertight mesh with no self-intersection.
+func TestBooleanFixtures(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
 	for name, golden := range booleanFixtureGoldens {
-		path := filepath.Join(root, "testdata/group", name, "normal.slvs")
-		stats, err := collectBoolStats(path)
-		if err != nil {
-			t.Errorf("%s: load: %v", name, err)
-			continue
-		}
-		if stats.Triangles == 0 {
-			t.Errorf("%s: no triangles after GenerateAll", name)
-			continue
-		}
-		if stats.Triangles != golden.Triangles {
-			t.Errorf("%s: triangle count drift: got %d, want %d",
-				name, stats.Triangles, golden.Triangles)
-		}
-		// The SolveSpace fixture tests also require the mesh to be watertight:
-		// no naked or self-intersecting edges.
-		if stats.NakedEdges != 0 || stats.Inters || stats.Leak {
-			t.Errorf("%s: %d naked or self-intersecting edges (inters %v, leaks %v)",
-				name, stats.NakedEdges, stats.Inters, stats.Leak)
-		}
-	}
-}
-
-// TestParityBooleanFixtureBBox records the bounding boxes from the
-// current run so they can be promoted to golden values. Run with
-// `go test -run TestParityBooleanFixtureBBox -v` to print the boxes.
-func TestParityBooleanFixtureBBox(t *testing.T) {
-	_, thisFile, _, _ := runtime.Caller(0)
-	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
-	names := []string{
-		"boolean_coplanar_union",
-		"boolean_knife_edge",
-		"boolean_tangent_crossing",
-		"boolean_tangent_edge",
-		"boolean_tangent_fillet",
-		"boolean_tangent_spline",
-	}
-	for _, name := range names {
-		path := filepath.Join(root, "testdata/group", name, "normal.slvs")
-		stats, err := collectBoolStats(path)
-		if err != nil {
-			t.Errorf("%s: load: %v", name, err)
-			continue
-		}
-		t.Logf("%s: triangles=%d vmin=%v vmax=%v totalVol=%g lastVol=%g",
-			name, stats.Triangles, stats.VMin, stats.VMax, stats.TotalVol, stats.Volume)
-	}
-}
-
-// TestParityBooleanFixtureBBoxValue asserts each boolean fixture's
-// triangle count and bounding box (within LENGTH_EPS) match
-// booleanFixtureGoldens.
-func TestParityBooleanFixtureBBoxValue(t *testing.T) {
-	_, thisFile, _, _ := runtime.Caller(0)
-	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
-	for name, golden := range booleanFixtureGoldens {
-		path := filepath.Join(root, "testdata/group", name, "normal.slvs")
-		stats, err := collectBoolStats(path)
-		if err != nil {
-			t.Errorf("%s: load: %v", name, err)
-			continue
-		}
-		if stats.Triangles != golden.Triangles {
-			t.Errorf("%s: triangles: got %d, want %d",
-				name, stats.Triangles, golden.Triangles)
-		}
-		for i := range 3 {
-			if math.Abs(stats.VMax[i]-golden.VMax[i]) > 1e-6 {
-				t.Errorf("%s: vmax drift: got %v, want %v",
-					name, stats.VMax, golden.VMax)
-				break
+		t.Run(name, func(t *testing.T) {
+			stats, err := collectBoolStats(filepath.Join(root, "testdata/group", name, "normal.slvs"))
+			if err != nil {
+				t.Fatalf("load: %v", err)
 			}
-		}
-		for i := range 3 {
-			if math.Abs(stats.VMin[i]-golden.VMin[i]) > 1e-6 {
-				t.Errorf("%s: vmin drift: got %v, want %v",
-					name, stats.VMin, golden.VMin)
-				break
+			if stats.Triangles != golden.Triangles {
+				t.Errorf("triangles: got %d, want %d", stats.Triangles, golden.Triangles)
 			}
-		}
-	}
-}
-
-// TestParityBooleanVolumeVsCppGolden compares each boolean fixture's
-// active-group volume against the SolveSpace reference volume from
-// solvespace/test/group/<name>/test.cpp, within the per-fixture band
-// in booleanFixtureCppGoldenTolerances.
-func TestParityBooleanVolumeVsCppGolden(t *testing.T) {
-	_, thisFile, _, _ := runtime.Caller(0)
-	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
-	for name, cppGolden := range booleanFixtureCppGoldens {
-		path := filepath.Join(root, "testdata/group", name, "normal.slvs")
-		stats, err := collectBoolStats(path)
-		if err != nil {
-			t.Errorf("%s: load: %v", name, err)
-			continue
-		}
-		if cppGolden == 0 {
-			continue
-		}
-		var ratio float64
-		if stats.Volume > 0 {
-			ratio = stats.Volume / cppGolden
-			t.Logf("%s: go=%.4f cpp=%.4f ratio=%.6f",
-				name, stats.Volume, cppGolden, ratio)
-		}
-		if math.Abs(ratio-1) >= cppGoldenRatioTol {
-			t.Errorf("%s: ratio %.9f, want within %g of 1", name, ratio, cppGoldenRatioTol)
-		}
+			if stats.NakedEdges != 0 || stats.Inters || stats.Leak {
+				t.Errorf("%d naked or self-intersecting edges (inters %v, leaks %v)",
+					stats.NakedEdges, stats.Inters, stats.Leak)
+			}
+			for i := range 3 {
+				if math.Abs(stats.VMax[i]-golden.VMax[i]) > 1e-6 || math.Abs(stats.VMin[i]-golden.VMin[i]) > 1e-6 {
+					t.Errorf("bounding box %v to %v, want %v to %v", stats.VMin, stats.VMax, golden.VMin, golden.VMax)
+					break
+				}
+			}
+			want := booleanFixtureCppGoldens[name]
+			if ratio := stats.Volume / want; math.Abs(ratio-1) >= cppGoldenRatioTol {
+				t.Errorf("volume %.6f, want %.6f (ratio %.9f)", stats.Volume, want, ratio)
+			}
+		})
 	}
 }
