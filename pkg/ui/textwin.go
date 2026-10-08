@@ -1436,3 +1436,19 @@ func (tw *TextWindow) ScrollbarEvent(newPos float64) {
 func (tw *TextWindow) GoToScreen(screen Screen) {
 	tw.shown.screen = screen
 }
+
+// checkMark is the box drawn for a setting that is on or off.
+func checkMark(on bool) string {
+	if on {
+		return checkTrue
+	}
+	return checkFalse
+}
+
+// radioMark is the button drawn for a choice that is taken or not.
+func radioMark(taken bool) string {
+	if taken {
+		return radioTrue
+	}
+	return radioFalse
+}

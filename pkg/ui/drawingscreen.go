@@ -58,18 +58,6 @@ func (tw *TextWindow) ShowDrawing() {
 	if d == nil {
 		d = sketch.DefaultDrawing()
 	}
-	radio := func(b bool) string {
-		if b {
-			return radioTrue
-		}
-		return radioFalse
-	}
-	check := func(b bool) string {
-		if b {
-			return checkTrue
-		}
-		return checkFalse
-	}
 	show := "[show it in the window]"
 	if tw.ss.GW.sheetShown {
 		show = "[show the model]"
@@ -79,15 +67,15 @@ func (tw *TextWindow) ShowDrawing() {
 	tw.Printf(true, "%Ba   %Ftsheet%E      %s, %s x %s mm %Fl%Ls%f[next]%E",
 		d.Sheet, strconv.FormatFloat(w, 'g', -1, 64), strconv.FormatFloat(h, 'g', -1, 64), lf(tw.ScreenChangeDrawing))
 	tw.Printf(false, "%Bd   %f%Lo%Fd%s landscape%E  %f%LO%Fd%s portrait%E",
-		lf(tw.ScreenChangeDrawing), radio(!d.Portrait), lf(tw.ScreenChangeDrawing), radio(d.Portrait))
+		lf(tw.ScreenChangeDrawing), radioMark(!d.Portrait), lf(tw.ScreenChangeDrawing), radioMark(d.Portrait))
 	scale := "fitted to the sheet"
 	if d.Scale != 0 {
 		scale = sketch.ScaleText(d.Scale)
 	}
 	tw.Printf(false, "%Ba   %Ftscale%E      %s %Fl%Lc%f[change]%E", scale, lf(tw.ScreenChangeDrawing))
 	tw.Printf(false, "%Bd   %f%Lt%Fd%s third angle%E  %f%Lf%Fd%s first angle%E",
-		lf(tw.ScreenChangeDrawing), radio(!d.FirstAngle), lf(tw.ScreenChangeDrawing), radio(d.FirstAngle))
-	tw.Printf(false, "%Ba   %f%Lh%Fd%s hidden edges, dashed%E", lf(tw.ScreenChangeDrawing), check(d.Hidden))
+		lf(tw.ScreenChangeDrawing), radioMark(!d.FirstAngle), lf(tw.ScreenChangeDrawing), radioMark(d.FirstAngle))
+	tw.Printf(false, "%Ba   %f%Lh%Fd%s hidden edges, dashed%E", lf(tw.ScreenChangeDrawing), checkMark(d.Hidden))
 
 	// The section and detail views (roadmap 18.3), lettered in order.
 	tw.Printf(true, "%Ft   sections and details%E")

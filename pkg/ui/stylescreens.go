@@ -409,18 +409,6 @@ func (tw *TextWindow) ShowStyleInfo() {
 
 	s := ss.SK.StyleGet(tw.shown.style)
 	custom := s.H.V >= core.StyleFirstCustom
-	radio := func(b bool) string {
-		if b {
-			return radioTrue
-		}
-		return radioFalse
-	}
-	check := func(b bool) string {
-		if b {
-			return checkTrue
-		}
-		return checkFalse
-	}
 
 	if !custom {
 		tw.Printf(true, "%FtSTYLE  %E%s ", s.DescriptionString())
@@ -465,8 +453,8 @@ func (tw *TextWindow) ShowStyleInfo() {
 		tw.Printf(false, "%Ba   %Ftin units of  %Fd"+
 			"%D%f%LW%s pixels%E  "+
 			"%D%f%Lw%s %s",
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(widthpx),
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(!widthpx),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(widthpx),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(!widthpx),
 			ss.UnitName())
 	}
 
@@ -507,7 +495,7 @@ func (tw *TextWindow) ShowStyleInfo() {
 		}
 		tw.Printf(false, "%Bp     %D%f%Lp%s %s%E",
 			bg, s.H.V, lf(tw.ScreenChangeStylePatternType),
-			i+1, radio(s.StippleType == core.StipplePattern(i)), string(pattern))
+			i+1, radioMark(s.StippleType == core.StipplePattern(i)), string(pattern))
 	}
 
 	if custom {
@@ -522,7 +510,7 @@ func (tw *TextWindow) ShowStyleInfo() {
 			s.H.V, lf(tw.ScreenChangeStyleColor))
 
 		tw.Printf(false, "%Bd   %D%f%Lf%s  contours are filled%E",
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), check(s.Filled))
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), checkMark(s.Filled))
 	}
 
 	// The text height, and its units
@@ -544,8 +532,8 @@ func (tw *TextWindow) ShowStyleInfo() {
 		tw.Printf(false, "%Bd   %Ftin units of  %Fd"+
 			"%D%f%LG%s pixels%E  "+
 			"%D%f%Lg%s %s",
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(textHeightpx),
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(!textHeightpx),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(textHeightpx),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(!textHeightpx),
 			ss.UnitName())
 	}
 
@@ -560,29 +548,29 @@ func (tw *TextWindow) ShowStyleInfo() {
 			"%D%f%LL%s left%E    "+
 			"%D%f%LH%s center%E  "+
 			"%D%f%LR%s right%E  ",
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(s.TextOrigin&core.TextOriginLeft != 0),
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(neither),
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(s.TextOrigin&core.TextOriginRight != 0))
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(s.TextOrigin&core.TextOriginLeft != 0),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(neither),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(s.TextOrigin&core.TextOriginRight != 0))
 
 		neither = s.TextOrigin&(core.TextOriginBot|core.TextOriginTop) == 0
 		tw.Printf(false, "%Bd   "+
 			"%D%f%LB%s bottom%E  "+
 			"%D%f%LV%s center%E  "+
 			"%D%f%LT%s top%E  ",
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(s.TextOrigin&core.TextOriginBot != 0),
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(neither),
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), radio(s.TextOrigin&core.TextOriginTop != 0))
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(s.TextOrigin&core.TextOriginBot != 0),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(neither),
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), radioMark(s.TextOrigin&core.TextOriginTop != 0))
 	}
 
 	tw.Printf(false, "")
 
 	if custom {
 		tw.Printf(false, "  %Fd%D%f%Lv%s  show these objects on screen%E",
-			s.H.V, lf(tw.ScreenChangeStyleYesNo), check(s.Visible))
+			s.H.V, lf(tw.ScreenChangeStyleYesNo), checkMark(s.Visible))
 	}
 
 	tw.Printf(false, "  %Fd%D%f%Le%s  export these objects%E",
-		s.H.V, lf(tw.ScreenChangeStyleYesNo), check(s.Exportable))
+		s.H.V, lf(tw.ScreenChangeStyleYesNo), checkMark(s.Exportable))
 
 	if custom {
 		tw.Printf(false, "")

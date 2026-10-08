@@ -172,22 +172,16 @@ func (tw *TextWindow) ShowParameters() {
 
 	// The configurations: the table filled one way or another (roadmap
 	// 16.2).
-	radio := func(b bool) string {
-		if b {
-			return radioTrue
-		}
-		return radioFalse
-	}
 	tw.Printf(true, "%FtCONFIGURATIONS%E   (each a set of the expressions above; one may be active)")
 	tw.Printf(false, "%Ba   %Fl%Lc%D%f%s none%E   (the table changes alone)",
-		0, lf(tw.ScreenChangeConfiguration), radio(sk.ActiveConfiguration == ""))
+		0, lf(tw.ScreenChangeConfiguration), radioMark(sk.ActiveConfiguration == ""))
 	for i, c := range sk.Configurations {
 		bg := byte('d')
 		if i%2 == 1 {
 			bg = 'a'
 		}
 		tw.Printf(false, "%Bp   %Fl%Lc%D%f%s %s%E %Fl%Lr%D%f[rename]%E %Fl%Lx%D%f[delete]%E",
-			bg, i+1, lf(tw.ScreenChangeConfiguration), radio(sk.ActiveConfiguration == c.Name), c.Name,
+			bg, i+1, lf(tw.ScreenChangeConfiguration), radioMark(sk.ActiveConfiguration == c.Name), c.Name,
 			i+1, lf(tw.ScreenChangeConfiguration),
 			i+1, lf(tw.ScreenChangeConfiguration))
 	}

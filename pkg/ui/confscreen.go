@@ -256,18 +256,6 @@ func (tw *TextWindow) ScreenChangeAnimationSpeed(link int, v uint32) {
 // TextWindow::ShowConfiguration).
 func (tw *TextWindow) ShowConfiguration() {
 	ss := tw.ss
-	check := func(b bool) string {
-		if b {
-			return checkTrue
-		}
-		return checkFalse
-	}
-	radio := func(b bool) string {
-		if b {
-			return radioTrue
-		}
-		return radioFalse
-	}
 	tw.Printf(true, "%Ft user color (r, g, b)")
 
 	for i := range ModelColors {
@@ -312,7 +300,7 @@ func (tw *TextWindow) ShowConfiguration() {
 		ss.AfterDecimalDegree, lf(tw.ScreenChangeDigitsAfterDecimalDegree), 0,
 		ss.DegreeToString(1.23456789))
 	tw.Printf(false, "  %Fd%f%Ll%s  use SI prefixes for distances%E",
-		lf(tw.ScreenChangeUseSIPrefixes), check(ss.UseSIPrefixes))
+		lf(tw.ScreenChangeUseSIPrefixes), checkMark(ss.UseSIPrefixes))
 
 	tw.Printf(false, "")
 	tw.Printf(false, "%Ft export scale factor (1:1=mm, 1:25.4=inch)")
@@ -324,25 +312,25 @@ func (tw *TextWindow) ShowConfiguration() {
 
 	tw.Printf(false, "")
 	tw.Printf(false, "  %Fd%f%Ll%s  export shaded 2d triangles%E",
-		lf(tw.ScreenChangeShadedTriangles), check(ss.ExportShadedTriangles))
+		lf(tw.ScreenChangeShadedTriangles), checkMark(ss.ExportShadedTriangles))
 	if math.Abs(ss.ExportOffset) > core.LengthEps {
 		tw.Printf(false, "  %Fd%s  curves as piecewise linear%E "+
 			"(since cutter radius is not zero)", checkTrue)
 	} else {
 		tw.Printf(false, "  %Fd%f%Ll%s  export curves as piecewise linear%E",
-			lf(tw.ScreenChangePwlCurves), check(ss.ExportPwlCurves))
+			lf(tw.ScreenChangePwlCurves), checkMark(ss.ExportPwlCurves))
 	}
 	tw.Printf(false, "  %Fd%f%Ll%s  fix white exported lines%E",
-		lf(tw.ScreenChangeFixExportColors), check(ss.FixExportColors))
+		lf(tw.ScreenChangeFixExportColors), checkMark(ss.FixExportColors))
 	tw.Printf(false, "  %Fd%f%Ll%s  export background color%E",
-		lf(tw.ScreenChangeExportBackgroundColor), check(ss.ExportBackgroundColor))
+		lf(tw.ScreenChangeExportBackgroundColor), checkMark(ss.ExportBackgroundColor))
 
 	tw.Printf(false, "")
 	tw.Printf(false, "%Ft export canvas size:  "+
 		"%f%Fd%Lf%s fixed%E  "+
 		"%f%Fd%Lt%s auto%E",
-		lf(tw.ScreenChangeCanvasSizeAuto), radio(!ss.ExportCanvasSizeAuto),
-		lf(tw.ScreenChangeCanvasSizeAuto), radio(ss.ExportCanvasSizeAuto))
+		lf(tw.ScreenChangeCanvasSizeAuto), radioMark(!ss.ExportCanvasSizeAuto),
+		lf(tw.ScreenChangeCanvasSizeAuto), radioMark(ss.ExportCanvasSizeAuto))
 
 	if ss.ExportCanvasSizeAuto {
 		tw.Printf(false, "%Ft (by margins around exported geometry)")
@@ -379,31 +367,31 @@ func (tw *TextWindow) ShowConfiguration() {
 
 	tw.Printf(false, "")
 	tw.Printf(false, "  %Fd%f%Ll%s  draw triangle back faces in red%E",
-		lf(tw.ScreenChangeBackFaces), check(ss.DrawBackFaces))
+		lf(tw.ScreenChangeBackFaces), checkMark(ss.DrawBackFaces))
 	tw.Printf(false, "  %Fd%f%Ll%s  check sketch for closed contour%E",
-		lf(tw.ScreenChangeCheckClosedContour), check(ss.CheckClosedContour))
+		lf(tw.ScreenChangeCheckClosedContour), checkMark(ss.CheckClosedContour))
 	tw.Printf(false, "  %Fd%f%Ll%s  show areas of closed contours%E",
-		lf(tw.ScreenChangeShowContourAreas), check(ss.ShowContourAreas))
+		lf(tw.ScreenChangeShowContourAreas), checkMark(ss.ShowContourAreas))
 	tw.Printf(false, "  %Fd%f%Ll%s  enable automatic line constraints%E",
-		lf(tw.ScreenChangeAutomaticLineConstraints), check(ss.AutomaticLineConstraints))
+		lf(tw.ScreenChangeAutomaticLineConstraints), checkMark(ss.AutomaticLineConstraints))
 	tw.Printf(false, "  %Fd%f%Ll%s  colour entities by constraint state%E",
-		lf(tw.ScreenChangeColorByFreedom), check(ss.ColorByFreedom))
+		lf(tw.ScreenChangeColorByFreedom), checkMark(ss.ColorByFreedom))
 	tw.Printf(false, "  %Fd%f%Ll%s  shade solids by their appearance%E",
-		lf(tw.ScreenChangeShaded), check(ss.Shaded))
+		lf(tw.ScreenChangeShaded), checkMark(ss.Shaded))
 	tw.Printf(false, "  %Fd%f%Ll%s  use camera mouse navigation%E",
-		lf(tw.ScreenChangeCameraNav), check(ss.CameraNav))
+		lf(tw.ScreenChangeCameraNav), checkMark(ss.CameraNav))
 	tw.Printf(false, "  %Fd%f%Ll%s  use turntable mouse navigation%E",
-		lf(tw.ScreenChangeTurntableNav), check(ss.TurntableNav))
+		lf(tw.ScreenChangeTurntableNav), checkMark(ss.TurntableNav))
 	tw.Printf(false, "  %Fd%f%Ll%s  edit newly added dimensions%E",
-		lf(tw.ScreenChangeImmediatelyEditDimension), check(ss.ImmediatelyEditDimension))
+		lf(tw.ScreenChangeImmediatelyEditDimension), checkMark(ss.ImmediatelyEditDimension))
 	tw.Printf(false, "  %Fd%f%Ll%s  arc default is diameter%E",
-		lf(tw.ScreenChangeArcDimDefault), check(ss.ArcDimDefaultDiameter))
+		lf(tw.ScreenChangeArcDimDefault), checkMark(ss.ArcDimDefaultDiameter))
 	tw.Printf(false, "  %Fd%f%Ll%s  display the full path in the title bar%E",
-		lf(tw.ScreenChangeShowFullFilePath), check(ss.ShowFullFilePath))
+		lf(tw.ScreenChangeShowFullFilePath), checkMark(ss.ShowFullFilePath))
 	tw.Printf(false, "  %Fd%f%Ll%s  draw with OpenGL%E",
-		lf(tw.ScreenChangeUseOpenGL), check(ss.UseGL()))
+		lf(tw.ScreenChangeUseOpenGL), checkMark(ss.UseGL()))
 	tw.Printf(false, "  %Fd%f%Ll%s  ask before an AI program's script runs%E",
-		lf(tw.ScreenChangeAgentConfirm), check(ss.AgentConfirm))
+		lf(tw.ScreenChangeAgentConfirm), checkMark(ss.AgentConfirm))
 	tw.Printf(false, "")
 	tw.Printf(false, "%Ft autosave interval (in minutes)%E")
 	tw.Printf(false, "%Ba   %d %Fl%Ll%f[change]%E",

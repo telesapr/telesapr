@@ -168,12 +168,6 @@ func (tw *TextWindow) ShowSection() {
 	ss := tw.ss
 	sk := ss.SK
 	s := sk.Section
-	check := func(b bool) string {
-		if b {
-			return checkTrue
-		}
-		return checkFalse
-	}
 	tw.Printf(true, "%FtSECTION VIEW%E")
 	if s == nil {
 		tw.Printf(true, "The section view is off. Select a face or a workplane and")
@@ -187,7 +181,7 @@ func (tw *TextWindow) ShowSection() {
 		offset = "0"
 	}
 	tw.Printf(false, "%Bd   %Ftoffset%E      %s %Fl%Ll%f[change]%E", offset, lf(tw.ScreenChangeSectionOffset))
-	tw.Printf(false, "%Ba   %Fd%f%Ll%s  keep the other side%E", lf(tw.ScreenChangeSectionFlip), check(s.Flip))
+	tw.Printf(false, "%Ba   %Fd%f%Ll%s  keep the other side%E", lf(tw.ScreenChangeSectionFlip), checkMark(s.Flip))
 	if _, _, ok, err := sk.SectionCut(); !ok && err != nil {
 		tw.Printf(true, "%FxThe section can't cut: %s.%E", err.Error())
 	} else if g := sk.Group(ss.GW.activeGroupH()); g != nil && ss.GW.sectionCap.mesh == &g.DisplayMesh &&

@@ -140,18 +140,6 @@ func (tw *TextWindow) ShowThread() {
 	ss := tw.ss
 	t := &tw.shown.thread
 	o := &t.options
-	check := func(b bool) string {
-		if b {
-			return checkTrue
-		}
-		return checkFalse
-	}
-	radio := func(b bool) string {
-		if b {
-			return radioTrue
-		}
-		return radioFalse
-	}
 	tw.Printf(true, "%FtSCREW THREAD%E")
 	tw.Printf(true, "%Ba   %Ftthread%E    %s %Fl%Ld%f[change]%E", t.designation, lf(tw.ScreenChangeThread))
 	hand := "right"
@@ -166,9 +154,9 @@ func (tw *TextWindow) ShowThread() {
 	tw.Printf(false, "%Ba   %Ftlength%E    %s %Fl%Ll%f[change]%E", ss.MmToString(o.Length, false), lf(tw.ScreenChangeThread))
 	tw.Printf(false, "%Bd   %Ftclearance%E %s %Fl%Lc%f[change]%E", ss.MmToString(o.Clearance, false), lf(tw.ScreenChangeThread))
 	tw.Printf(false, "%Ba   %f%Le%Fd%s external%E  %f%Li%Fd%s internal%E",
-		lf(tw.ScreenChangeThread), radio(!o.Internal), lf(tw.ScreenChangeThread), radio(o.Internal))
-	tw.Printf(false, "%Bd   %Fd%f%Lt%s  through the far end%E", lf(tw.ScreenChangeThread), check(o.Through))
-	tw.Printf(false, "%Ba   %Fd%f%Lr%s  against the circle's normal%E", lf(tw.ScreenChangeThread), check(o.Reverse))
+		lf(tw.ScreenChangeThread), radioMark(!o.Internal), lf(tw.ScreenChangeThread), radioMark(o.Internal))
+	tw.Printf(false, "%Bd   %Fd%f%Lt%s  through the far end%E", lf(tw.ScreenChangeThread), checkMark(o.Through))
+	tw.Printf(false, "%Ba   %Fd%f%Lr%s  against the circle's normal%E", lf(tw.ScreenChangeThread), checkMark(o.Reverse))
 
 	tw.Printf(true, " %Fl%Lg%fmake the thread now%E", lf(tw.ScreenMakeThread))
 

@@ -859,20 +859,6 @@ func (tw *TextWindow) ShowGroupInfo() {
 	ss := tw.ss
 	sk := ss.SK
 	g := sk.Group(tw.shown.group)
-	s := "???"
-
-	check := func(b bool) string {
-		if b {
-			return checkTrue
-		}
-		return checkFalse
-	}
-	radio := func(b bool) string {
-		if b {
-			return radioTrue
-		}
-		return radioFalse
-	}
 
 	if tw.shown.group.V == core.HGroupReferences {
 		tw.Printf(true, "%FtGROUP  %E%s", groupDescription(g))
@@ -893,184 +879,23 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(true, " %Ftlathe plane sketch")
 	case sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve,
 		sketch.GroupHelix:
-		switch g.Type {
-		case sketch.GroupExtrude:
-			s = "extrude plane sketch"
-		case sketch.GroupTranslate:
-			s = "translate original sketch"
-		case sketch.GroupHelix:
-			s = "create helical extrusion"
-		case sketch.GroupRotate:
-			s = "rotate original sketch"
-		case sketch.GroupRevolve:
-			s = "revolve original sketch"
-		}
-		tw.Printf(true, " %Ft%s%E", s)
-
-		one := g.Subtype == sketch.GroupOneSided || g.Subtype == sketch.GroupOneSkewed
-		two := g.Subtype == sketch.GroupTwoSided || g.Subtype == sketch.GroupTwoSkewed
-		skew := g.Subtype == sketch.GroupOneSkewed || g.Subtype == sketch.GroupTwoSkewed
-
-		if g.Type == sketch.GroupExtrude {
-			tw.Printf(false,
-				"%Ba   %f%Ls%Fd%s one-sided%E  "+
-					"%f%LS%Fd%s two-sided%E  "+
-					"%f%Lw%Fd%s skewed%E",
-				lf(tw.ScreenChangeGroupOption), radio(one),
-				lf(tw.ScreenChangeGroupOption), radio(two),
-				lf(tw.ScreenChangeGroupOption), check(skew))
-			tw.Printf(false, "%Bd   %Ftdraft%E %s deg%s %Fl%Ll%f%D[change]%E",
-				fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
-			if g.ValC != 0 || g.ExprC != "" {
-				// Roadmap 28.2: the plane the sides lean from, and which.
-				tw.Printf(false, "%Ba   %Ftfrom the plane%E %s along%s %Fl%Ll%f%D[change]%E",
-					ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
-				// Which: New Group > Draft Selected Sides chooses them.
-				if len(g.DraftFaces) == 0 {
-					tw.Printf(false, "%Bd   %Ftsides%E all")
-				} else {
-					tw.Printf(false, "%Bd   %Ftsides%E %d of the sketch's %Fl%Ll%f%D[all]%E",
-						len(g.DraftFaces), lf(tw.ScreenDraftAllSides), g.H.V)
-				}
-			}
-		} else {
-			tw.Printf(false,
-				"%Ba   %f%Ls%Fd%s one-sided%E  "+
-					"%f%LS%Fd%s two-sided%E",
-				lf(tw.ScreenChangeGroupOption), radio(one),
-				lf(tw.ScreenChangeGroupOption), radio(two))
-		}
-
-		if g.Type == sketch.GroupRotate || g.Type == sketch.GroupTranslate {
-			if g.Subtype == sketch.GroupOneSided {
-				skip := g.SkipFirst
-				tw.Printf(false,
-					"%Bd   %Ftstart  %f%LK%Fd%s with original%E  "+
-						"%f%Lk%Fd%s with copy #1%E",
-					lf(tw.ScreenChangeGroupOption), radio(!skip),
-					lf(tw.ScreenChangeGroupOption), radio(skip))
-			}
-
-			times := int(g.ValA)
-			bg := byte('d')
-			if g.Subtype == sketch.GroupOneSided {
-				bg = 'a'
-			}
-			plural := "s"
-			if times == 1 {
-				plural = ""
-			}
-			tw.Printf(false, "%Bp   %Ftrepeat%E %d time%s%s %Fl%Ll%D%f[change]%E",
-				bg, times, plural, exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
-		}
+		tw.showExtrusionInfo(g)
 	case sketch.GroupMirror:
-		tw.Printf(true, " %Ftmirror original sketch and solid%E")
-		pl := g.Predef.EntityB
-		tw.Printf(false, "%Ba   %Ftin plane%E %Fl%Ll%D%f%h%s%E",
-			pl.V, lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(pl))
-		tw.Printf(false, "%Bd   %Ftsolid  %f%LK%Fd%s with original%E  "+
-			"%f%Lk%Fd%s reflection only%E",
-			lf(tw.ScreenChangeGroupOption), radio(!g.SkipFirst),
-			lf(tw.ScreenChangeGroupOption), radio(g.SkipFirst))
-		tw.Printf(false, "%Ba   %f%Lm%Fd%s the whole solid so far%E",
-			lf(tw.ScreenChangeGroupOption), check(g.MirrorSolid))
+		tw.showMirrorInfo(g)
 	case sketch.GroupChamfer:
-		tw.Printf(true, " %Ftchamfer edges of the solid%E")
-		tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
-			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
-		if g.ValC == 0 && g.ExprC == "" {
-			tw.Printf(false, "%Bd   %Ftsecond distance%E the same %Fl%Ll%f%D[change]%E",
-				lf(tw.ScreenChangeChamferDistance2), g.H.V)
-		} else {
-			tw.Printf(false, "%Bd   %Ftsecond distance%E %s%s %Fl%Ll%f%D[change]%E %Fl%Ll%f%D[swap]%E %Fl%Ll%f%D[same]%E",
-				ss.MmToString(g.ValC, false), exprNote(g.ExprC), lf(tw.ScreenChangeChamferDistance2), g.H.V,
-				lf(tw.ScreenSwapChamferDistances), g.H.V, lf(tw.ScreenSameChamferDistances), g.H.V)
-		}
-		tw.showGroupEdges(g, "edges")
+		tw.showChamferInfo(g)
 	case sketch.GroupLoft:
-		if len(g.LoftThrough) == 0 {
-			tw.Printf(true, " %Ftloft between two profiles%E")
-			tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
-			tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
-			tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
-				int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
-			tw.showLoftEnds(g)
-			break
-		}
-		tw.Printf(true, " %Ftsmooth loft through %d profiles%E", len(g.LoftThrough)+2)
-		for i, h := range g.LoftProfiles() {
-			bg := byte('a')
-			if i%2 == 1 {
-				bg = 'd'
-			}
-			tw.Printf(false, "%Bp   %Ft%d%E %s", bg, i+1, sk.GroupName(h))
-		}
-		bg := byte('a')
-		if len(g.LoftThrough)%2 == 1 {
-			bg = 'd'
-		}
-		tw.Printf(false, "%Bp   %Ftturn those after the first by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
-			bg, int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
-		tw.showLoftEnds(g)
+		tw.showLoftInfo(g)
 	case sketch.GroupFillet:
-		tw.Printf(true, " %Ftround edges of the solid%E")
-		tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
-			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
-		tw.showGroupEdges(g, "edges")
+		tw.showFilletInfo(g)
 	case sketch.GroupShell:
-		tw.Printf(true, " %Fthollow the solid to walls%E")
-		tw.Printf(false, "%Ba   %Ftthickness%E %s%s %Fl%Ll%f%D[change]%E",
-			ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
-		tw.Printf(false, "%Bd   %Ftfaces taken away%E")
-		for i, id := range g.SolidFaces {
-			bg := byte('a')
-			if i%2 == 1 {
-				bg = 'd'
-			}
-			tw.Printf(false, "%Bp     %s", bg, sk.FaceName(id))
-		}
+		tw.showShellInfo(g)
 	case sketch.GroupSweep:
-		tw.Printf(true, " %Ftsweep plane sketch along path%E")
-		tw.showGroupEdges(g, "path")
-		tw.Printf(false, "%Bd   %Fttwist%E %s deg%s %Fl%Ll%f%D[change]%E",
-			fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
-		up := g.SweepUp
-		tw.Printf(false, "%Ba   %Ftframes%E "+
-			"%f%Ln%Fd%s turn least%E  "+
-			"%f%Lx%Fd%s held to x%E  "+
-			"%f%Ly%Fd%s y%E  "+
-			"%f%Lz%Fd%s z%E",
-			lf(tw.ScreenChangeSweepUp), radio(up.Magnitude() == 0),
-			lf(tw.ScreenChangeSweepUp), radio(up == geom.Vector{X: 1}),
-			lf(tw.ScreenChangeSweepUp), radio(up == geom.Vector{Y: 1}),
-			lf(tw.ScreenChangeSweepUp), radio(up == geom.Vector{Z: 1}))
+		tw.showSweepInfo(g)
 	case sketch.GroupPathPattern:
-		tw.Printf(true, " %Ftrepeat solid along path%E")
-		tw.Printf(false, "%Ba   %Ftcopies%E %d%s %Fl%Ll%D%f[change]%E",
-			int(g.ValA), exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
-		tw.showGroupEdges(g, "path")
+		tw.showPathPatternInfo(g)
 	case sketch.GroupLinked:
-		tw.Printf(true, " %Ftlink geometry from file%E")
-		tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))
-		tw.Printf(false, "%Bd   %Ftscaled by%E %#%s %Fl%Ll%f%D[change]%E",
-			g.Scale, exprNote(g.ExprScale), lf(tw.ScreenChangeGroupScale), g.H.V)
-		if link.IsStep(g.LinkFile) {
-			tw.Printf(false, "%Ba   %Ftread as%E %f%Lm%Fd%s reference mesh%E  %f%Ls%Fd%s solid%E",
-				lf(tw.ScreenChangeLinkAsSolid), radio(!g.LinkAsSolid),
-				lf(tw.ScreenChangeLinkAsSolid), radio(g.LinkAsSolid))
-		}
-		for _, line := range g.LinkInfo {
-			tw.Printf(false, "   %Fd%s%E", line)
-		}
-		if g.LinkProblem != "" {
-			for i, line := range wrapWords("Not all of the file was read: "+g.LinkProblem+".", MaxCols-6) {
-				indent := "   "
-				if i > 0 {
-					indent = "     "
-				}
-				tw.Printf(false, "%s%Fx%s%E", indent, line)
-			}
-		}
+		tw.showLinkedInfo(g)
 	case sketch.GroupDrawing3D:
 		tw.Printf(true, " %Ftsketch in 3d%E")
 	case sketch.GroupDrawingWorkplane:
@@ -1092,7 +917,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 					(sk.MustParam(g.H.Param(3)).Val*ss.MmPerUnit()),
 				lf(tw.ScreenChangeHelixPitch), g.H.V)
 		}
-		tw.Printf(false, "   %Fd%f%LP%s  fixed", lf(tw.ScreenChangePitchOption), check(g.ValB != 0))
+		tw.Printf(false, "   %Fd%f%LP%s  fixed", lf(tw.ScreenChangePitchOption), checkMark(g.ValB != 0))
 
 		tw.Printf(false, "") // blank line
 	}
@@ -1107,12 +932,12 @@ func (tw *TextWindow) ShowGroupInfo() {
 		tw.Printf(false, " %Ftsolid model as")
 		tw.Printf(false, "%Ba   %f%D%Lc%Fd%s union%E  "+
 			"%f%D%Lc%Fd%s assemble%E  ",
-			lf(tw.ScreenChangeGroupOption), sketch.CombineUnion, radio(un),
-			lf(tw.ScreenChangeGroupOption), sketch.CombineAssemble, radio(asy))
+			lf(tw.ScreenChangeGroupOption), sketch.CombineUnion, radioMark(un),
+			lf(tw.ScreenChangeGroupOption), sketch.CombineAssemble, radioMark(asy))
 		tw.Printf(false, "%Ba   %f%D%Lc%Fd%s difference%E  "+
 			"%f%D%Lc%Fd%s intersection%E  ",
-			lf(tw.ScreenChangeGroupOption), sketch.CombineDifference, radio(diff),
-			lf(tw.ScreenChangeGroupOption), sketch.CombineIntersection, radio(intr))
+			lf(tw.ScreenChangeGroupOption), sketch.CombineDifference, radioMark(diff),
+			lf(tw.ScreenChangeGroupOption), sketch.CombineIntersection, radioMark(intr))
 		// The appearance when the window shades (roadmap 19.2).
 		app := g.Appearance
 		if app == "" {
@@ -1123,7 +948,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 		var args []any
 		for _, name := range render.MaterialNames {
 			line.WriteString("  %f%Lp%D%Fd%s " + name + "%E")
-			args = append(args, lf(tw.ScreenChangeAppearance), 'a', appearanceIndex(name), radio(app == name))
+			args = append(args, lf(tw.ScreenChangeAppearance), 'a', appearanceIndex(name), radioMark(app == name))
 		}
 		tw.Printf(false, line.String(), args...)
 
@@ -1139,34 +964,34 @@ func (tw *TextWindow) ShowGroupInfo() {
 		}
 
 		tw.Printf(false, "   %Fd%f%LP%s  suppress this group's solid model",
-			lf(tw.ScreenChangeGroupOption), check(g.Suppress))
+			lf(tw.ScreenChangeGroupOption), checkMark(g.Suppress))
 
 		tw.Printf(false, "")
 	}
 
 	tw.Printf(false, " %f%Lv%Fd%s  show entities from this group",
-		lf(tw.ScreenChangeGroupOption), check(g.Visible))
+		lf(tw.ScreenChangeGroupOption), checkMark(g.Visible))
 	tw.Printf(false, " %f%LA%Fd%s  suppress this group and the groups that use it",
-		lf(tw.ScreenChangeGroupOption), check(g.SuppressAll))
+		lf(tw.ScreenChangeGroupOption), checkMark(g.SuppressAll))
 
 	if !g.IsForcedToMeshBySource(sk) && !g.IsTriangleMeshAssembly() {
 		tw.Printf(false, " %f%Lf%Fd%s  force NURBS surfaces to triangle mesh",
-			lf(tw.ScreenChangeGroupOption), check(g.ForceToMesh))
+			lf(tw.ScreenChangeGroupOption), checkMark(g.ForceToMesh))
 	} else {
 		tw.Printf(false, " (model already forced to triangle mesh)")
 	}
 
 	tw.Printf(true, " %f%Lr%Fd%s  relax constraints and dimensions",
-		lf(tw.ScreenChangeGroupOption), check(g.RelaxConstraints))
+		lf(tw.ScreenChangeGroupOption), checkMark(g.RelaxConstraints))
 
 	tw.Printf(false, " %f%Le%Fd%s  allow redundant constraints",
-		lf(tw.ScreenChangeGroupOption), check(g.AllowRedundant))
+		lf(tw.ScreenChangeGroupOption), checkMark(g.AllowRedundant))
 
 	tw.Printf(false, " %f%LD%Fd%s  suppress dof calculation (improves solver performance)",
-		lf(tw.ScreenChangeGroupOption), check(g.SuppressDofCalculation))
+		lf(tw.ScreenChangeGroupOption), checkMark(g.SuppressDofCalculation))
 
 	tw.Printf(false, " %f%Ld%Fd%s  treat all dimensions as reference",
-		lf(tw.ScreenChangeGroupOption), check(g.AllDimsReference))
+		lf(tw.ScreenChangeGroupOption), checkMark(g.AllDimsReference))
 
 	if g.Problem.Msg != "" {
 		tw.Printf(false, "")
@@ -1188,6 +1013,232 @@ func (tw *TextWindow) ShowGroupInfo() {
 	}
 
 	tw.showGroupItems(g)
+}
+
+// showExtrusionInfo shows the settings of a sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve, sketch.GroupHelix group.
+func (tw *TextWindow) showExtrusionInfo(g *sketch.Group) {
+	ss := tw.ss
+	s := "???"
+
+	switch g.Type {
+	case sketch.GroupExtrude:
+		s = "extrude plane sketch"
+	case sketch.GroupTranslate:
+		s = "translate original sketch"
+	case sketch.GroupHelix:
+		s = "create helical extrusion"
+	case sketch.GroupRotate:
+		s = "rotate original sketch"
+	case sketch.GroupRevolve:
+		s = "revolve original sketch"
+	}
+	tw.Printf(true, " %Ft%s%E", s)
+
+	one := g.Subtype == sketch.GroupOneSided || g.Subtype == sketch.GroupOneSkewed
+	two := g.Subtype == sketch.GroupTwoSided || g.Subtype == sketch.GroupTwoSkewed
+	skew := g.Subtype == sketch.GroupOneSkewed || g.Subtype == sketch.GroupTwoSkewed
+
+	if g.Type == sketch.GroupExtrude {
+		tw.Printf(false,
+			"%Ba   %f%Ls%Fd%s one-sided%E  "+
+				"%f%LS%Fd%s two-sided%E  "+
+				"%f%Lw%Fd%s skewed%E",
+			lf(tw.ScreenChangeGroupOption), radioMark(one),
+			lf(tw.ScreenChangeGroupOption), radioMark(two),
+			lf(tw.ScreenChangeGroupOption), checkMark(skew))
+		tw.Printf(false, "%Bd   %Ftdraft%E %s deg%s %Fl%Ll%f%D[change]%E",
+			fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+		if g.ValC != 0 || g.ExprC != "" {
+			// Roadmap 28.2: the plane the sides lean from, and which.
+			tw.Printf(false, "%Ba   %Ftfrom the plane%E %s along%s %Fl%Ll%f%D[change]%E",
+				ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+			// Which: New Group > Draft Selected Sides chooses them.
+			if len(g.DraftFaces) == 0 {
+				tw.Printf(false, "%Bd   %Ftsides%E all")
+			} else {
+				tw.Printf(false, "%Bd   %Ftsides%E %d of the sketch's %Fl%Ll%f%D[all]%E",
+					len(g.DraftFaces), lf(tw.ScreenDraftAllSides), g.H.V)
+			}
+		}
+	} else {
+		tw.Printf(false,
+			"%Ba   %f%Ls%Fd%s one-sided%E  "+
+				"%f%LS%Fd%s two-sided%E",
+			lf(tw.ScreenChangeGroupOption), radioMark(one),
+			lf(tw.ScreenChangeGroupOption), radioMark(two))
+	}
+
+	if g.Type == sketch.GroupRotate || g.Type == sketch.GroupTranslate {
+		if g.Subtype == sketch.GroupOneSided {
+			skip := g.SkipFirst
+			tw.Printf(false,
+				"%Bd   %Ftstart  %f%LK%Fd%s with original%E  "+
+					"%f%Lk%Fd%s with copy #1%E",
+				lf(tw.ScreenChangeGroupOption), radioMark(!skip),
+				lf(tw.ScreenChangeGroupOption), radioMark(skip))
+		}
+
+		times := int(g.ValA)
+		bg := byte('d')
+		if g.Subtype == sketch.GroupOneSided {
+			bg = 'a'
+		}
+		plural := "s"
+		if times == 1 {
+			plural = ""
+		}
+		tw.Printf(false, "%Bp   %Ftrepeat%E %d time%s%s %Fl%Ll%D%f[change]%E",
+			bg, times, plural, exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
+	}
+}
+
+// showMirrorInfo shows the settings of a sketch.GroupMirror group.
+func (tw *TextWindow) showMirrorInfo(g *sketch.Group) {
+	ss := tw.ss
+	sk := ss.SK
+
+	tw.Printf(true, " %Ftmirror original sketch and solid%E")
+	pl := g.Predef.EntityB
+	tw.Printf(false, "%Ba   %Ftin plane%E %Fl%Ll%D%f%h%s%E",
+		pl.V, lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(pl))
+	tw.Printf(false, "%Bd   %Ftsolid  %f%LK%Fd%s with original%E  "+
+		"%f%Lk%Fd%s reflection only%E",
+		lf(tw.ScreenChangeGroupOption), radioMark(!g.SkipFirst),
+		lf(tw.ScreenChangeGroupOption), radioMark(g.SkipFirst))
+	tw.Printf(false, "%Ba   %f%Lm%Fd%s the whole solid so far%E",
+		lf(tw.ScreenChangeGroupOption), checkMark(g.MirrorSolid))
+}
+
+// showChamferInfo shows the settings of a sketch.GroupChamfer group.
+func (tw *TextWindow) showChamferInfo(g *sketch.Group) {
+	ss := tw.ss
+
+	tw.Printf(true, " %Ftchamfer edges of the solid%E")
+	tw.Printf(false, "%Ba   %Ftdistance%E %s%s %Fl%Ll%f%D[change]%E",
+		ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+	if g.ValC == 0 && g.ExprC == "" {
+		tw.Printf(false, "%Bd   %Ftsecond distance%E the same %Fl%Ll%f%D[change]%E",
+			lf(tw.ScreenChangeChamferDistance2), g.H.V)
+	} else {
+		tw.Printf(false, "%Bd   %Ftsecond distance%E %s%s %Fl%Ll%f%D[change]%E %Fl%Ll%f%D[swap]%E %Fl%Ll%f%D[same]%E",
+			ss.MmToString(g.ValC, false), exprNote(g.ExprC), lf(tw.ScreenChangeChamferDistance2), g.H.V,
+			lf(tw.ScreenSwapChamferDistances), g.H.V, lf(tw.ScreenSameChamferDistances), g.H.V)
+	}
+	tw.showGroupEdges(g, "edges")
+}
+
+// showLoftInfo shows the settings of a sketch.GroupLoft group.
+func (tw *TextWindow) showLoftInfo(g *sketch.Group) {
+	ss := tw.ss
+	sk := ss.SK
+
+	if len(g.LoftThrough) == 0 {
+		tw.Printf(true, " %Ftloft between two profiles%E")
+		tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
+		tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
+		tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
+			int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+		tw.showLoftEnds(g)
+		return
+	}
+	tw.Printf(true, " %Ftsmooth loft through %d profiles%E", len(g.LoftThrough)+2)
+	for i, h := range g.LoftProfiles() {
+		bg := byte('a')
+		if i%2 == 1 {
+			bg = 'd'
+		}
+		tw.Printf(false, "%Bp   %Ft%d%E %s", bg, i+1, sk.GroupName(h))
+	}
+	bg := byte('a')
+	if len(g.LoftThrough)%2 == 1 {
+		bg = 'd'
+	}
+	tw.Printf(false, "%Bp   %Ftturn those after the first by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
+		bg, int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
+	tw.showLoftEnds(g)
+}
+
+// showFilletInfo shows the settings of a sketch.GroupFillet group.
+func (tw *TextWindow) showFilletInfo(g *sketch.Group) {
+	ss := tw.ss
+
+	tw.Printf(true, " %Ftround edges of the solid%E")
+	tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
+		ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+	tw.showGroupEdges(g, "edges")
+}
+
+// showShellInfo shows the settings of a sketch.GroupShell group.
+func (tw *TextWindow) showShellInfo(g *sketch.Group) {
+	ss := tw.ss
+	sk := ss.SK
+
+	tw.Printf(true, " %Fthollow the solid to walls%E")
+	tw.Printf(false, "%Ba   %Ftthickness%E %s%s %Fl%Ll%f%D[change]%E",
+		ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+	tw.Printf(false, "%Bd   %Ftfaces taken away%E")
+	for i, id := range g.SolidFaces {
+		bg := byte('a')
+		if i%2 == 1 {
+			bg = 'd'
+		}
+		tw.Printf(false, "%Bp     %s", bg, sk.FaceName(id))
+	}
+}
+
+// showSweepInfo shows the settings of a sketch.GroupSweep group.
+func (tw *TextWindow) showSweepInfo(g *sketch.Group) {
+
+	tw.Printf(true, " %Ftsweep plane sketch along path%E")
+	tw.showGroupEdges(g, "path")
+	tw.Printf(false, "%Bd   %Fttwist%E %s deg%s %Fl%Ll%f%D[change]%E",
+		fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+	up := g.SweepUp
+	tw.Printf(false, "%Ba   %Ftframes%E "+
+		"%f%Ln%Fd%s turn least%E  "+
+		"%f%Lx%Fd%s held to x%E  "+
+		"%f%Ly%Fd%s y%E  "+
+		"%f%Lz%Fd%s z%E",
+		lf(tw.ScreenChangeSweepUp), radioMark(up.Magnitude() == 0),
+		lf(tw.ScreenChangeSweepUp), radioMark(up == geom.Vector{X: 1}),
+		lf(tw.ScreenChangeSweepUp), radioMark(up == geom.Vector{Y: 1}),
+		lf(tw.ScreenChangeSweepUp), radioMark(up == geom.Vector{Z: 1}))
+}
+
+// showPathPatternInfo shows the settings of a sketch.GroupPathPattern group.
+func (tw *TextWindow) showPathPatternInfo(g *sketch.Group) {
+
+	tw.Printf(true, " %Ftrepeat solid along path%E")
+	tw.Printf(false, "%Ba   %Ftcopies%E %d%s %Fl%Ll%D%f[change]%E",
+		int(g.ValA), exprNote(g.ExprA), g.H.V, lf(tw.ScreenChangeExprA))
+	tw.showGroupEdges(g, "path")
+}
+
+// showLinkedInfo shows the settings of a sketch.GroupLinked group.
+func (tw *TextWindow) showLinkedInfo(g *sketch.Group) {
+	ss := tw.ss
+
+	tw.Printf(true, " %Ftlink geometry from file%E")
+	tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))
+	tw.Printf(false, "%Bd   %Ftscaled by%E %#%s %Fl%Ll%f%D[change]%E",
+		g.Scale, exprNote(g.ExprScale), lf(tw.ScreenChangeGroupScale), g.H.V)
+	if link.IsStep(g.LinkFile) {
+		tw.Printf(false, "%Ba   %Ftread as%E %f%Lm%Fd%s reference mesh%E  %f%Ls%Fd%s solid%E",
+			lf(tw.ScreenChangeLinkAsSolid), radioMark(!g.LinkAsSolid),
+			lf(tw.ScreenChangeLinkAsSolid), radioMark(g.LinkAsSolid))
+	}
+	for _, line := range g.LinkInfo {
+		tw.Printf(false, "   %Fd%s%E", line)
+	}
+	if g.LinkProblem != "" {
+		for i, line := range wrapWords("Not all of the file was read: "+g.LinkProblem+".", MaxCols-6) {
+			indent := "   "
+			if i > 0 {
+				indent = "     "
+			}
+			tw.Printf(false, "%s%Fx%s%E", indent, line)
+		}
+	}
 }
 
 // showGroupEdges lists the edges of a chamfer or the path of a sweep,
@@ -1537,17 +1588,11 @@ func (tw *TextWindow) ShowTangentArc() {
 		tw.Printf(false, "%Ba   automatic")
 	}
 
-	check := func(b bool) string {
-		if b {
-			return checkTrue
-		}
-		return checkFalse
-	}
 	tw.Printf(false, "")
 	tw.Printf(false, "  %Fd%f%La%s  choose radius automatically%E",
-		lf(tw.ScreenChangeTangentArc), check(!ss.TangentArcManual))
+		lf(tw.ScreenChangeTangentArc), checkMark(!ss.TangentArcManual))
 	tw.Printf(false, "  %Fd%f%Lm%s  modify original entities%E",
-		lf(tw.ScreenChangeTangentArc), check(ss.TangentArcModify))
+		lf(tw.ScreenChangeTangentArc), checkMark(ss.TangentArcModify))
 
 	tw.Printf(false, "")
 	tw.Printf(false, "To create a tangent arc at a point,")
