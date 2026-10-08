@@ -13,7 +13,7 @@ import (
 func threadWindow(t testing.TB) *Application {
 	ss := New(headless.New())
 	ss.Init()
-	if !ss.LoadFromFile(filepath.Join("..", "..", "testdata", "thread", "triple_m12.tlspr")) {
+	if ss.LoadFromFile(filepath.Join("..", "..", "testdata", "thread", "triple_m12.tlspr")) != nil {
 		t.Fatal("load failed")
 	}
 	ss.AfterNewFile()

@@ -249,13 +249,10 @@ func (h *ScriptHost) MmPerUnit() float64 { return h.ss.MmPerUnit() }
 // sketch that is open; that one stays if the file can't be read.
 func (h *ScriptHost) Load(path string) error {
 	ss := h.ss
-	ok := false
-	err := h.collect(func() { ok = ss.LoadFromFile(path) })
-	if !ok {
-		if err == nil {
-			err = fmt.Errorf("couldn't load '%s'", path)
-		}
-		return err
+	var lerr error
+	err := h.collect(func() { lerr = ss.LoadFromFile(path) })
+	if lerr != nil {
+		return lerr
 	}
 	ss.SaveFile = path
 	if !ss.Windowless {
@@ -270,13 +267,10 @@ func (h *ScriptHost) Load(path string) error {
 // Save saves the sketch as File > Save As does.
 func (h *ScriptHost) Save(path string) error {
 	ss := h.ss
-	ok := false
-	err := h.collect(func() { ok = ss.SaveToFile(path) })
-	if !ok {
-		if err == nil {
-			err = fmt.Errorf("couldn't save '%s'", path)
-		}
-		return err
+	var serr error
+	err := h.collect(func() { serr = ss.SaveToFile(path) })
+	if serr != nil {
+		return serr
 	}
 	if !ss.Windowless {
 		ss.AddToRecentList(path)
@@ -302,20 +296,25 @@ func (h *ScriptHost) leaveExportMode() {
 func (h *ScriptHost) Export(kind api.ExportKind, path string) error {
 	ss := h.ss
 	defer h.leaveExportMode()
-	return h.collect(func() {
+	var xerr error
+	err := h.collect(func() {
 		switch kind {
 		case api.ExportMesh:
-			ss.ExportMeshTo(path)
+			xerr = ss.ExportMeshTo(path)
 		case api.ExportView:
-			ss.ExportViewOrWireframeTo(path, false)
+			xerr = ss.ExportViewOrWireframeTo(path, false)
 		case api.ExportWireframe:
-			ss.ExportViewOrWireframeTo(path, true)
+			xerr = ss.ExportViewOrWireframeTo(path, true)
 		case api.ExportSurfaces:
-			ss.ExportSurfacesTo(path)
+			xerr = ss.ExportSurfacesTo(path)
 		default:
-			ss.Error("Nothing to export as %d.", kind)
+			xerr = fmt.Errorf("nothing to export as %d", kind)
 		}
 	})
+	if xerr != nil {
+		return xerr
+	}
+	return err
 }
 
 // ShowDrawingSheet shows the drawing sheet in the window, or the model

@@ -97,7 +97,7 @@ func (tw *TextWindow) ScreenChangeConfiguration(link int, v uint32) {
 // why when it is refused.
 func (ss *Application) parameterEdit(fn func() error) {
 	if err := ss.SK.UndoRememberFor(fn); err != nil {
-		ss.Error("%s.", capitalize(err.Error()))
+		ss.Report(err)
 		return
 	}
 	ss.SK.Unsaved = true

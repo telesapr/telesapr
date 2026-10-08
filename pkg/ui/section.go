@@ -137,7 +137,7 @@ func (gw *GraphicsWindow) MenuSectionView() {
 		return
 	}
 	if err := sk.SetSection(plane, "", false); err != nil {
-		ss.Error("%v", err)
+		ss.Report(err)
 		return
 	}
 	gw.ClearSelection()
@@ -215,7 +215,7 @@ func (tw *TextWindow) ScreenChangeSectionFlip(link int, v uint32) {
 	sk := tw.ss.SK
 	if s := sk.Section; s != nil {
 		if err := sk.SetSection(s.Plane, s.Offset, !s.Flip); err != nil {
-			tw.ss.Error("%v", err)
+			tw.ss.Report(err)
 		}
 	}
 	tw.ss.GW.sectionChanged()
@@ -235,7 +235,7 @@ func (tw *TextWindow) EditControlDoneForSection(s string) bool {
 	sk := tw.ss.SK
 	if sec := sk.Section; sec != nil {
 		if err := sk.SetSection(sec.Plane, s, sec.Flip); err != nil {
-			tw.ss.Error("%v", err)
+			tw.ss.Report(err)
 		}
 	}
 	tw.ss.GW.sectionChanged()

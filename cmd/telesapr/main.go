@@ -41,7 +41,7 @@ func main() {
 		if len(files) > 1 {
 			log.Print("Only the first file passed on command line will be opened.")
 		}
-		ss.Load(files[len(files)-1])
+		ss.Report(ss.Load(files[len(files)-1]))
 	}
 	if opts.agent {
 		if err := ss.AllowAgent(true); err != nil {

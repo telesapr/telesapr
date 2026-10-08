@@ -121,18 +121,18 @@ func (sk *Sketch) ConstrainArcLineTangent(c *core.Constraint, line, arc, arcEndp
 			c.Other = true
 
 		default:
-			return errors.New("The point you selected does not belong to the arc. " +
+			return errors.New("the point you selected does not belong to the arc. " +
 				"The arc and line segment do not share an end point.\n\n" +
 				"Select the end point of the arc at which you want " +
-				"it to be tangent to the line.")
+				"it to be tangent to the line")
 		}
 
 	default:
-		return errors.New("The tangent arc and line segment must share an " +
+		return errors.New("the tangent arc and line segment must share an " +
 			"endpoint. Constrain them with Constrain -> " +
 			"On Point before constraining tangent.\n\n" +
 			"Alternatively select the end point of the arc " +
-			"at which you want it to be tangent to the line.")
+			"at which you want it to be tangent to the line")
 	}
 	return nil
 }
@@ -162,18 +162,18 @@ func (sk *Sketch) ConstrainCubicLineTangent(c *core.Constraint, line, cubic, cur
 			c.Other = true
 
 		default:
-			return errors.New("The point you selected is not an end point of the cubic spline. " +
+			return errors.New("the point you selected is not an end point of the cubic spline. " +
 				"The spline and line segment do not share an end point.\n\n" +
 				"Select the end point of the spline at which you want " +
-				"it to be tangent to the line.")
+				"it to be tangent to the line")
 		}
 
 	default:
-		return errors.New("The tangent cubic spline and line segment must share an " +
+		return errors.New("the tangent cubic spline and line segment must share an " +
 			"endpoint. Constrain them with Constrain -> " +
 			"On Point before constraining tangent.\n\n" +
 			"Alternatively select the end point of the cubic spline " +
-			"at which you want it to be tangent to the line.")
+			"at which you want it to be tangent to the line")
 	}
 	return nil
 }
@@ -213,18 +213,18 @@ func (sk *Sketch) ConstrainCurveCurveTangent(c *core.Constraint, eA, eB, epA, ep
 			c.Other, c.Other2 = true, true
 
 		default:
-			return errors.New("The points you selected are not end points of the two curves. " +
+			return errors.New("the points you selected are not end points of the two curves. " +
 				"The curves do not share an end point.\n\n" +
 				"Select the end points of both curves at which you want " +
-				"them to be tangent to each other.")
+				"them to be tangent to each other")
 		}
 
 	default:
-		return errors.New("The curves must share an endpoint. Constrain them " +
+		return errors.New("the curves must share an endpoint. Constrain them " +
 			"with Constrain -> On Point before constraining " +
 			"tangent.\n\n" +
 			"Alternatively select the end points of both " +
-			"curves at which you want the curves to be tangent.")
+			"curves at which you want the curves to be tangent")
 	}
 	return nil
 }

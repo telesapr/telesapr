@@ -20,11 +20,11 @@ import (
 // shows every file the import will write before it writes any, and,
 // when converted copies of linked models exist already, asks once
 // whether to reuse or overwrite them. A linked model that is missing is
-// asked for as when a model is opened. It reports whether the model
-// was imported and opened.
-func (ss *Application) ImportSolveSpace(src string) bool {
+// asked for as when a model is opened; ErrDeclined when the user gave
+// up at one of the questions.
+func (ss *Application) ImportSolveSpace(src string) error {
 	if !ss.OkayToStartNewFile() {
-		return false
+		return ErrDeclined
 	}
 
 	dialog := ss.Platform.CreateSaveFileDialog(ss.GW.window)
@@ -33,15 +33,14 @@ func (ss *Application) ImportSolveSpace(src string) bool {
 	dialog.ThawChoices(ss.Settings, "Sketch")
 	dialog.SetFilename(withExtension(src, tlspr.Extension))
 	if !dialog.RunModal() {
-		return false
+		return ErrDeclined
 	}
 	dialog.FreezeChoices(ss.Settings, "Sketch")
 	dst := modelFileName(dialog.Filename())
 
 	plan, err := convert.MakePlan(src, dst)
 	if err != nil {
-		ss.Error("Can't import '%s': %v", src, err)
-		return false
+		return fmt.Errorf("can't import '%s': %w", src, err)
 	}
 
 	ask := ss.Platform.CreateMessageDialog(ss.GW.window)
@@ -59,23 +58,22 @@ func (ss *Application) ImportSolveSpace(src string) bool {
 			overwrite = true
 		case platform.ResponseNo:
 		default:
-			return false
+			return ErrDeclined
 		}
 	} else {
 		ask.AddButton("&Import", platform.ResponseYes, true)
 		ask.AddButton("&Cancel", platform.ResponseCancel, false)
 		if ask.RunModal() != platform.ResponseYes {
-			return false
+			return ErrDeclined
 		}
 	}
 
 	res, err := convert.Run(plan, convert.Options{Overwrite: overwrite, Units: ss.ViewUnits})
 	if errors.Is(err, convert.ErrCancelled) {
-		return false
+		return ErrDeclined
 	}
 	if err != nil {
-		ss.Error("Can't import '%s': %v", src, err)
-		return false
+		return fmt.Errorf("can't import '%s': %w", src, err)
 	}
 	if report := describeResult(res); report != "" {
 		ss.Error("The import of '%s' was not complete.\n\n%s", src, report)

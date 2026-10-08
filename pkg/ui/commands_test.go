@@ -234,7 +234,7 @@ func TestDocumentUnitsInterface(t *testing.T) {
 	// A new document starts in the last unit chosen; a file opens in
 	// its own.
 	path := filepath.Join(t.TempDir(), "inch.tlspr")
-	if !ss.SaveToFile(path) {
+	if ss.SaveToFile(path) != nil {
 		t.Fatal("save failed")
 	}
 	p.DialogResponses = append(p.DialogResponses, platform.ResponseOK)
@@ -243,7 +243,7 @@ func TestDocumentUnitsInterface(t *testing.T) {
 	if ss.SK.Units != core.UnitMeters || ss.ViewUnits != core.UnitMeters {
 		t.Errorf("a new file is in %v, view %v", ss.SK.Units, ss.ViewUnits)
 	}
-	if !ss.Load(path) {
+	if ss.Load(path) != nil {
 		t.Fatal("load failed")
 	}
 	if ss.SK.Units != core.UnitInches || ss.ViewUnits != core.UnitInches {

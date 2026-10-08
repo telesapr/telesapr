@@ -39,8 +39,7 @@ linters:
         - name: empty-block
         - name: error-naming
         - name: error-return
-        # error-strings is off until WP3, with staticcheck's ST1005
-        # below.
+        - name: error-strings
         - name: errorf
         - name: increment-decrement
         - name: indent-error-flow
@@ -71,10 +70,6 @@ linters:
         - -ST1020
         - -ST1021
         - -ST1022
-        # The errors that the interface shows the user in a message box
-        # are sentences, capitalised and punctuated. They become plain
-        # errors, with the sentence made where the box is, in WP3.
-        - -ST1005
         # De Morgan's law applied by rote reads worse than the
         # negation of what is meant.
         - -QF1001

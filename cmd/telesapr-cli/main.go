@@ -213,8 +213,7 @@ func outputFor(pattern, input string) string {
 // session is a fresh application without windows, in which one file is
 // loaded and run on.
 type session struct {
-	ss      *ui.Application
-	errored bool
+	ss *ui.Application
 }
 
 func newSession(stderr io.Writer) *session {
@@ -225,7 +224,6 @@ func newSession(stderr io.Writer) *session {
 		kind := "Message"
 		if d.Type == platform.DialogError {
 			kind = "Error"
-			s.errored = true
 		}
 		msg := d.Message
 		if d.Description != "" {
@@ -312,14 +310,12 @@ func runCommand(args []string, stderr io.Writer) bool {
 			s.ss.GW.SetProjection(o.projRight, o.projUp)
 			s.ss.ExportChordTol = o.chordTol
 			s.ss.ExportBackgroundColor = o.bgColor
-			s.ss.ExportViewOrWireframeTo(output, false)
-			return nil
+			return s.ss.ExportViewOrWireframeTo(output, false)
 		}
 	case "export-wireframe":
 		runner = func(s *session, output string) error {
 			s.ss.ExportChordTol = o.chordTol
-			s.ss.ExportViewOrWireframeTo(output, true)
-			return nil
+			return s.ss.ExportViewOrWireframeTo(output, true)
 		}
 	case "export-drawing":
 		runner = func(s *session, output string) error {
@@ -333,23 +329,18 @@ func runCommand(args []string, stderr io.Writer) bool {
 	case "export-mesh":
 		runner = func(s *session, output string) error {
 			s.ss.ExportChordTol = o.chordTol
-			s.ss.ExportMeshTo(output)
-			return nil
+			return s.ss.ExportMeshTo(output)
 		}
 	case "export-surfaces":
 		runner = func(s *session, output string) error {
-			s.ss.ExportSurfacesTo(output)
-			return nil
+			return s.ss.ExportSurfacesTo(output)
 		}
 	case "regenerate":
 		o.outputPattern = "%.tlspr"
 		runner = func(s *session, output string) error {
 			s.ss.ExportChordTol = o.chordTol
 			s.ss.EnterExportMode()
-			if !s.ss.SaveToFile(output) {
-				return fmt.Errorf("cannot save")
-			}
-			return nil
+			return s.ss.SaveToFile(output)
 		}
 	}
 
@@ -379,16 +370,13 @@ func runCommand(args []string, stderr io.Writer) bool {
 		s := newSession(stderr)
 		// Links are relative to the file that names them.
 		s.ss.SaveFile = absInput
-		if !s.ss.LoadFromFile(absInput) || s.errored {
-			fmt.Fprintf(stderr, "Cannot load '%s'!\n", input)
+		if err := s.ss.LoadFromFile(absInput); err != nil {
+			fmt.Fprintf(stderr, "Cannot load '%s': %v\n", input, err)
 			return false
 		}
 		s.ss.AfterNewFile()
-		err = runner(s, absOutput)
-		if err != nil || s.errored {
-			if err != nil {
-				fmt.Fprintf(stderr, "Cannot write '%s': %v\n", output, err)
-			}
+		if err := runner(s, absOutput); err != nil {
+			fmt.Fprintf(stderr, "Cannot write '%s': %v\n", output, err)
 			return false
 		}
 		fmt.Fprintf(stderr, "Written '%s'.\n", output)

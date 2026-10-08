@@ -4,6 +4,7 @@ package ui
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"slices"
 
@@ -1016,25 +1017,23 @@ func (w *stepFileWriter) WriteFooter() {
 
 // ExportSurfacesTo writes the active group's shell as STEP (C++
 // StepFileWriter::ExportSurfacesTo).
-func (ss *Application) ExportSurfacesTo(filename string) {
+func (ss *Application) ExportSurfacesTo(filename string) error {
 	g := ss.SK.Group(ss.GW.activeGroupH())
 	shell := &g.RunningShell
 
 	if len(shell.Surface) == 0 {
 		extra := ""
 		if len(g.RunningMesh.Triangles) > 0 {
-			extra = "\n\nThe model does contain triangles from a mesh, but " +
+			extra = ".\n\nThe model does contain triangles from a mesh, but " +
 				"a triangle mesh cannot be exported as a STEP file. Try " +
-				"File -> Export Mesh... instead."
+				"File -> Export Mesh... instead"
 		}
-		ss.Error("The model does not contain any surfaces to export.%s", extra)
-		return
+		return fmt.Errorf("the model does not contain any surfaces to export%s", extra)
 	}
 
 	f, err := os.Create(filename)
 	if err != nil {
-		ss.Error("Couldn't write to '%s'", filename)
-		return
+		return fmt.Errorf("couldn't write to '%s'", filename)
 	}
 
 	var out bytes.Buffer
@@ -1052,9 +1051,9 @@ func (ss *Application) ExportSurfacesTo(filename string) {
 			err = cerr
 		}
 		if err != nil {
-			ss.Error("Couldn't write to '%s'", filename)
+			return fmt.Errorf("couldn't write to '%s'", filename)
 		}
-		return
+		return nil
 	}
 
 	w.exportShellFaces(shell, 1.0/ss.ExportScale)
@@ -1078,8 +1077,9 @@ func (ss *Application) ExportSurfacesTo(filename string) {
 		err = cerr
 	}
 	if err != nil {
-		ss.Error("Couldn't write to '%s'", filename)
+		return fmt.Errorf("couldn't write to '%s'", filename)
 	}
+	return nil
 }
 
 // exportShellFaces writes the faces of shell, scaled by scale, adding

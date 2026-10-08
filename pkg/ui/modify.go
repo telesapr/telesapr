@@ -38,7 +38,7 @@ func (gw *GraphicsWindow) MakeTangentArc() {
 	})
 	ss.afterEngineEdit(undo)
 	if err != nil {
-		ss.Error("%s", err.Error())
+		ss.Report(err)
 	}
 }
 
@@ -51,7 +51,7 @@ func (gw *GraphicsWindow) SplitLinesOrCurves() {
 	err := ss.SK.SplitLinesOrCurves(gw.selectionForEngine(), gw.currentMousePosition)
 	ss.afterEngineEdit(undo)
 	if err != nil {
-		ss.Error("%s", err.Error())
+		ss.Report(err)
 		return
 	}
 	// All done, clean up and regenerate.

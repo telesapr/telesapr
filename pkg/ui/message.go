@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -92,6 +93,37 @@ func isSpace(c byte) bool {
 // Error shows an error message (C++ Error).
 func (ss *Application) Error(format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), true, nil)
+}
+
+// ErrDeclined is the error of an action the user gave up on at one of
+// its dialogs: nothing to report.
+var ErrDeclined = errors.New("declined")
+
+// Report shows err to the user, unless there is none or the user
+// declined the action themselves.
+func (ss *Application) Report(err error) {
+	if err == nil || errors.Is(err, ErrDeclined) {
+		return
+	}
+	ss.Error("%s", sentence(err.Error()))
+}
+
+// sentence is an error's text as a message: capitalised, and ending
+// with a full stop unless it ends with other punctuation.
+func sentence(s string) string {
+	s = capitalize(strings.TrimRight(s, " \n"))
+	if s == "" || strings.ContainsRune(".!?:", rune(s[len(s)-1])) {
+		return s
+	}
+	return s + "."
+}
+
+// capitalize starts a message with a capital, as the dialogs do.
+func capitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 // Message shows an informational message (C++ Message).

@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -55,7 +54,7 @@ func (tw *TextWindow) EditControlDoneForThread(s string) bool {
 	case EditThreadDesignation:
 		spec, err := thread.Parse(s)
 		if err != nil {
-			ss.Error("%s", capitalize(err.Error()))
+			ss.Report(err)
 			break
 		}
 		t.designation = spec.String()
@@ -79,14 +78,6 @@ func (tw *TextWindow) EditControlDoneForThread(s string) bool {
 		return false
 	}
 	return true
-}
-
-// capitalize starts a message with a capital, as the dialogs do.
-func capitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 // ScreenChangeThread edits a thread parameter.
@@ -120,7 +111,7 @@ func (tw *TextWindow) ScreenMakeThread(link int, v uint32) {
 	sk := ss.SK
 	t := &tw.shown.thread
 	if err := sk.CheckThread(t.circle, t.options); err != nil {
-		ss.Error("%s", capitalize(err.Error()))
+		ss.Report(err)
 		return
 	}
 	ss.UndoRemember()
@@ -128,7 +119,7 @@ func (tw *TextWindow) ScreenMakeThread(link int, v uint32) {
 	ss.applyEngineSettings()
 	res, err := sk.AddThread(t.circle, t.options)
 	if err != nil {
-		ss.Error("%s", capitalize(err.Error()))
+		ss.Report(err)
 		return
 	}
 	ss.afterGenerate()

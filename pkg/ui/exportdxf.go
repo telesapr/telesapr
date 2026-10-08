@@ -4,6 +4,7 @@ package ui
 // and DxfFileWriter), written through pkg/dxf.
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"slices"
@@ -52,7 +53,7 @@ func (w *dxfFileWriter) Bezier(sb *srf.SBezier) {
 	w.paths[len(w.paths)-1] = append(w.paths[len(w.paths)-1], sb)
 }
 
-func (w *dxfFileWriter) FinishAndCloseFile() {
+func (w *dxfFileWriter) FinishAndCloseFile() error {
 	ss := w.ss
 	iface := &dxfWriteInterface{writer: w, messages: map[string]bool{}}
 	data := dxf.Write(iface)
@@ -60,8 +61,7 @@ func (w *dxfFileWriter) FinishAndCloseFile() {
 	w.constraints = nil
 
 	if err := os.WriteFile(w.filename, data, 0o644); err != nil {
-		ss.Error("Couldn't write to '%s'", w.filename)
-		return
+		return fmt.Errorf("couldn't write to '%s'", w.filename)
 	}
 
 	if len(iface.messages) > 0 {
@@ -78,6 +78,7 @@ func (w *dxfFileWriter) FinishAndCloseFile() {
 		}
 		ss.Message("%s", text.String())
 	}
+	return nil
 }
 
 // needToOutput reports whether a constraint goes in the file as a

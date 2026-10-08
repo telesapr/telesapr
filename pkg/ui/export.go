@@ -8,6 +8,8 @@ package ui
 import (
 	"bytes"
 	"cmp"
+	"errors"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -26,7 +28,7 @@ import (
 
 // ExportSectionTo exports the section of the solid model by a plane
 // (C++ SolveSpaceUI::ExportSectionTo).
-func (ss *Application) ExportSectionTo(filename string) {
+func (ss *Application) ExportSectionTo(filename string) error {
 	sk := ss.SK
 	gw := ss.GW
 	gn := gw.view.ProjRight.Cross(gw.view.ProjUp)
@@ -35,9 +37,8 @@ func (ss *Application) ExportSectionTo(filename string) {
 	g := sk.Group(gw.activeGroupH())
 	g.GenerateDisplayItems(sk)
 	if g.DisplayMesh.IsEmpty() {
-		ss.Error("No solid model present; draw one with extrudes and revolves, " +
-			"or use Export 2d View to export bare lines and curves.")
-		return
+		return errors.New("no solid model present; draw one with extrudes and revolves, " +
+			"or use Export 2d View to export bare lines and curves")
 	}
 
 	// The plane in which the exported section lies; need this because
@@ -84,13 +85,12 @@ func (ss *Application) ExportSectionTo(filename string) {
 		u = ut.WithMagnitude(1)
 		v = n.Cross(u).WithMagnitude(1)
 	default:
-		ss.Error("Bad selection for export section. Please select:\n\n" +
+		return errors.New("bad selection for export section. Please select:\n\n" +
 			"    * nothing, with an active workplane " +
 			"(workplane is section plane)\n" +
 			"    * a face (section plane through face)\n" +
 			"    * a point and two line segments " +
-			"(plane through point and parallel to lines)\n")
-		return
+			"(plane through point and parallel to lines)")
 	}
 	gw.ClearSelection()
 
@@ -152,10 +152,12 @@ func (ss *Application) ExportSectionTo(filename string) {
 	bl.CullIdenticalBeziers(false)
 
 	// And write the edges.
-	if out := ss.vectorFileWriterFor(filename); out != nil {
-		// parallel projection (no perspective), and no mesh
-		ss.ExportLinesAndMesh(&el, &bl, nil, u, v, n, origin, 0, out)
+	out, err := ss.vectorFileWriterFor(filename)
+	if err != nil {
+		return err
 	}
+	// parallel projection (no perspective), and no mesh
+	return ss.ExportLinesAndMesh(&el, &bl, nil, u, v, n, origin, 0, out)
 }
 
 // getEdgesCanvas turns what constraints draw into edges (C++
@@ -211,15 +213,15 @@ func (c *getEdgesCanvas) InvalidatePixmap(pm *res.Pixmap) { panic("ui: not imple
 
 // ExportViewOrWireframeTo exports the view as 2d vector art, or the
 // wireframe in 3d (C++ SolveSpaceUI::ExportViewOrWireframeTo).
-func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe bool) {
+func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe bool) error {
 	sk := ss.SK
 	gw := ss.GW
 	var edges srf.SEdgeList
 	var beziers srf.SBezierList
 
-	out := ss.vectorFileWriterFor(filename)
-	if out == nil {
-		return
+	out, err := ss.vectorFileWriterFor(filename)
+	if err != nil {
+		return err
 	}
 
 	ss.EnterExportMode()
@@ -281,8 +283,9 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 
 		out.vw().SetModelviewProjection(u, v, n, origin, cameraTan, scale)
 
-		ss.ExportWireframeCurves(&edges, &beziers, out)
-	} else {
+		return ss.ExportWireframeCurves(&edges, &beziers, out)
+	}
+	{
 		u := gw.view.ProjRight
 		v := gw.view.ProjUp
 		n := u.Cross(v)
@@ -290,7 +293,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 
 		out.vw().SetModelviewProjection(u, v, n, origin, ss.CameraTangent()*gw.view.Scale, ss.ExportScale)
 
-		ss.ExportLinesAndMesh(&edges, &beziers, sm, u, v, n, origin, ss.CameraTangent()*gw.view.Scale, out)
+		err = ss.ExportLinesAndMesh(&edges, &beziers, sm, u, v, n, origin, ss.CameraTangent()*gw.view.Scale, out)
 
 		if !out.HasCanvasSize() {
 			// These file formats don't have a canvas size, so they just
@@ -307,11 +310,12 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 		ss.JustExportedInfo.Draw = true
 		gw.Invalidate(false)
 	}
+	return err
 }
 
 // ExportWireframeCurves writes the edges and curves in 3d (C++
 // SolveSpaceUI::ExportWireframeCurves).
-func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, out vectorFileWriter) {
+func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, out vectorFileWriter) error {
 	var sblss srf.SBezierLoopSetSet
 	for _, se := range sel.Edges {
 		sb := srf.SBezierFrom2(se.A.ScaledBy(1.0/ss.ExportScale), se.B.ScaledBy(1.0/ss.ExportScale))
@@ -323,14 +327,14 @@ func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezie
 		sblss.AddOpenPath(sb)
 	}
 
-	out.vw().OutputLinesAndMesh(&sblss, nil)
+	return out.vw().OutputLinesAndMesh(&sblss, nil)
 }
 
 // ExportLinesAndMesh projects the edges, curves and mesh, removes the
 // hidden lines, and writes what's left (C++
 // SolveSpaceUI::ExportLinesAndMesh).
 func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierList, sm *srf.SMesh,
-	u, v, n, origin geom.Vector, cameraTan float64, out vectorFileWriter) {
+	u, v, n, origin geom.Vector, cameraTan float64, out vectorFileWriter) error {
 	sk := ss.SK
 	gw := ss.GW
 	s := 1.0 / ss.ExportScale
@@ -476,7 +480,7 @@ func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierLi
 	}
 
 	cleanExportEdges(sk, sel)
-	writeExportCurves(sel, sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
+	return writeExportCurves(sel, sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
 }
 
 // cleanExportEdges removes from sel the segments with no length once
@@ -634,7 +638,7 @@ func cleanExportEdges(sk *sketch.Sketch, sel *srf.SEdgeList) {
 // writeExportCurves writes the projected edges and curves, assembled
 // into loops where they close, and the mesh, to out (the end of C++
 // ExportLinesAndMesh).
-func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh, tol srf.Tolerance, out vectorFileWriter) {
+func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh, tol srf.Tolerance, out vectorFileWriter) error {
 	// We kept the line segments and Beziers separate until now; but put
 	// them all together, and also project everything into the xy plane,
 	// since not all export targets ignore the z component of the points.
@@ -671,7 +675,7 @@ func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh,
 	}
 
 	// Now write the lines and triangles to the output file
-	out.vw().OutputLinesAndMesh(&sblss, sms)
+	return out.vw().OutputLinesAndMesh(&sblss, sms)
 }
 
 // vectorFileWriter is a 2d vector file format (C++ VectorFileWriter).
@@ -685,7 +689,7 @@ type vectorFileWriter interface {
 	OutputConstraints(constraints *[]core.Constraint) bool
 	Background(color core.RGBA)
 	StartFile()
-	FinishAndCloseFile()
+	FinishAndCloseFile() error
 	HasCanvasSize() bool
 	CanOutputMesh() bool
 }
@@ -717,10 +721,10 @@ func (w *vectorWriter) printf(format string, args ...any) {
 	w.out.WriteString(cfmt.Sprintf(format, args...))
 }
 
-// closeFile writes the file (C++ fclose).
-func (w *vectorWriter) closeFile() {
+// closeFile writes the file.
+func (w *vectorWriter) closeFile() error {
 	if w.f == nil {
-		return
+		return nil
 	}
 	_, err := w.f.Write(w.out.Bytes())
 	if cerr := w.f.Close(); err == nil {
@@ -729,8 +733,9 @@ func (w *vectorWriter) closeFile() {
 	w.f = nil
 	w.out.Reset()
 	if err != nil {
-		w.ss.Error("Couldn't write to '%s'", w.filename)
+		return fmt.Errorf("couldn't write to '%s'", w.filename)
 	}
+	return nil
 }
 
 // MmToPts converts mm to points, 72 to the inch (C++
@@ -742,7 +747,7 @@ func MmToPts(mm float64) float64 {
 
 // vectorFileWriterFor picks the writer for a file's extension and opens
 // the file (C++ VectorFileWriter::ForFile).
-func (ss *Application) vectorFileWriterFor(filename string) vectorFileWriter {
+func (ss *Application) vectorFileWriterFor(filename string) (vectorFileWriter, error) {
 	var ret vectorFileWriter
 	needOpen := true
 	switch {
@@ -762,27 +767,25 @@ func (ss *Application) vectorFileWriterFor(filename string) vectorFileWriter {
 	case hasExtension(filename, "txt"), hasExtension(filename, "ngc"):
 		ret = &gcodeFileWriter{}
 	default:
-		ss.Error("Can't identify output file type from file extension of "+
+		return nil, fmt.Errorf("can't identify output file type from file extension of "+
 			"filename '%s'; try "+
 			".step, .stp, .dxf, .svg, .plt, .hpgl, .pdf, .txt, .ngc, "+
-			".eps, or .ps.", filename)
-		return nil
+			".eps, or .ps", filename)
 	}
 	w := ret.vw()
 	w.ss = ss
 	w.self = ret
 	w.filename = filename
 	if !needOpen {
-		return ret
+		return ret, nil
 	}
 
 	f, err := os.Create(filename)
 	if err != nil {
-		ss.Error("Couldn't write to '%s'", filename)
-		return nil
+		return nil, fmt.Errorf("couldn't write to '%s'", filename)
 	}
 	w.f = f
-	return ret
+	return ret, nil
 }
 
 // SetModelviewProjection sets the projection Transform applies (C++
@@ -814,7 +817,7 @@ func loopsOf(sbls *srf.SBezierLoopSet) []*srf.SBezierLoop {
 
 // OutputLinesAndMesh works out the canvas and writes the file (C++
 // VectorFileWriter::OutputLinesAndMesh).
-func (w *vectorWriter) OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.SMesh) {
+func (w *vectorWriter) OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.SMesh) error {
 	ss := w.ss
 	sk := ss.SK
 
@@ -886,7 +889,7 @@ func (w *vectorWriter) OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.
 			}
 		}
 	}
-	w.self.FinishAndCloseFile()
+	return w.self.FinishAndCloseFile()
 }
 
 // BezierAsPwl writes a curve as line segments (C++
@@ -941,7 +944,7 @@ func (w *vectorWriter) BezierAsNonrationalCubic(sb *srf.SBezier, depth int) {
 
 // ExportMeshTo exports the active group's mesh (C++
 // SolveSpaceUI::ExportMeshTo).
-func (ss *Application) ExportMeshTo(filename string) {
+func (ss *Application) ExportMeshTo(filename string) error {
 	sk := ss.SK
 	ss.EnterExportMode()
 	ss.GenerateAll(sketch.GenerateAll)
@@ -951,14 +954,12 @@ func (ss *Application) ExportMeshTo(filename string) {
 
 	m := &g.DisplayMesh
 	if m.IsEmpty() {
-		ss.Error("Active group mesh is empty; nothing to export.")
-		return
+		return errors.New("active group mesh is empty; nothing to export")
 	}
 
 	f, err := os.Create(filename)
 	if err != nil {
-		ss.Error("Couldn't write to '%s'", filename)
-		return
+		return fmt.Errorf("couldn't write to '%s'", filename)
 	}
 	var out bytes.Buffer
 	ss.ShowNakedEdges(true)
@@ -971,9 +972,8 @@ func (ss *Application) ExportMeshTo(filename string) {
 		mtlFilename := withExtension(filename, "mtl")
 		fMtl, err := os.Create(mtlFilename)
 		if err != nil {
-			ss.Error("Couldn't write to '%s'", filename)
 			_ = f.Close()
-			return
+			return fmt.Errorf("couldn't write to '%s'", mtlFilename)
 		}
 
 		out.WriteString(cfmt.Sprintf("mtllib %s\n", filepath.Base(mtlFilename)))
@@ -982,7 +982,8 @@ func (ss *Application) ExportMeshTo(filename string) {
 
 		_, werr := fMtl.Write(mtl.Bytes())
 		if cerr := fMtl.Close(); werr != nil || cerr != nil {
-			ss.Error("Couldn't write to '%s'", mtlFilename)
+			_ = f.Close()
+			return fmt.Errorf("couldn't write to '%s'", mtlFilename)
 		}
 	case hasExtension(filename, "js"), hasExtension(filename, "html"):
 		e := &g.DisplayOutlines
@@ -990,18 +991,20 @@ func (ss *Application) ExportMeshTo(filename string) {
 	case hasExtension(filename, "wrl"):
 		ss.ExportMeshAsVrmlTo(&out, filename, m)
 	default:
-		ss.Error("Can't identify output file type from file extension of "+
-			"filename '%s'; try .stl, .3mf, .obj, .js, .html.", filename)
+		_ = f.Close()
+		return fmt.Errorf("can't identify output file type from file extension of "+
+			"filename '%s'; try .stl, .3mf, .obj, .js, .html", filename)
 	}
 
 	_, werr := f.Write(out.Bytes())
 	if cerr := f.Close(); werr != nil || cerr != nil {
-		ss.Error("Couldn't write to '%s'", filename)
+		return fmt.Errorf("couldn't write to '%s'", filename)
 	}
 
 	ss.JustExportedInfo.ShowOrigin = false
 	ss.JustExportedInfo.Draw = true
 	ss.GW.Invalidate(false)
+	return nil
 }
 
 // ExportMeshAsObjTo writes the mesh as Wavefront OBJ, with its

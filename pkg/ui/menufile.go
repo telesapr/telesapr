@@ -58,11 +58,11 @@ func errorStrings[E error](errs []E) []string {
 }
 
 // LoadAutosaveFor offers to load filename's autosave file instead, and
-// loads it when the user agrees (C++ SolveSpaceUI::LoadAutosaveFor).
-func (ss *Application) LoadAutosaveFor(filename string) bool {
+// loads it when the user agrees; loaded says whether it did.
+func (ss *Application) LoadAutosaveFor(filename string) (loaded bool, err error) {
 	autosaveFile := withExtension(filename, backupExt)
 	if _, err := os.Stat(autosaveFile); err != nil {
-		return false
+		return false, nil //nolint:nilerr // without an autosave there is nothing to load
 	}
 
 	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
@@ -74,21 +74,24 @@ func (ss *Application) LoadAutosaveFor(filename string) bool {
 	dialog.AddButton("Do&n't Load", platform.ResponseNo, false)
 
 	if dialog.RunModal() == platform.ResponseYes {
-		if !ss.LoadFromFile(autosaveFile) {
-			return false
+		if err := ss.LoadFromFile(autosaveFile); err != nil {
+			return false, err
 		}
 		ss.SK.Unsaved = true
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
-// Load opens filename, or its autosave, as the sketch being edited (C++
-// SolveSpaceUI::Load).
-func (ss *Application) Load(filename string) bool {
-	autosaveLoaded := ss.LoadAutosaveFor(filename)
-	fileLoaded := autosaveLoaded || ss.LoadFromFile(filename)
-	if fileLoaded {
+// Load opens filename, or its autosave, as the sketch being edited; a
+// file that can't be read leaves a new sketch, and the error says why.
+func (ss *Application) Load(filename string) error {
+	autosaveLoaded, err := ss.LoadAutosaveFor(filename)
+	if !autosaveLoaded {
+		ss.Report(err)
+		err = ss.LoadFromFile(filename)
+	}
+	if err == nil {
 		ss.SaveFile = filename
 		ss.AddToRecentList(filename)
 	} else {
@@ -97,23 +100,21 @@ func (ss *Application) Load(filename string) bool {
 	}
 	ss.AfterNewFile()
 	ss.SK.Unsaved = autosaveLoaded
-	return fileLoaded
+	return err
 }
 
-// LoadFromFile reads filename into a new sketch (C++
-// SolveSpaceUI::LoadFromFile). A linked file that is missing counts as
-// declined rather than prompting for its new place.
-func (ss *Application) LoadFromFile(filename string) bool {
+// LoadFromFile reads filename into a new sketch; the error is what to
+// tell the user, ErrDeclined when they gave up at a missing linked
+// file. What was left out of the file is shown as it is read.
+func (ss *Application) LoadFromFile(filename string) error {
 	ss.AllConsistent = false
 
 	if _, err := os.Stat(filename); err != nil {
-		ss.Error("Couldn't read from file '%s'", filename)
-		return false
+		return fmt.Errorf("couldn't read from file '%s'", filename)
 	}
 	if hasExtension(filename, "slvs") {
-		ss.Error("'%s' is a SolveSpace model. Use File > Import, or telesapr-cli "+
-			"convert, to convert it to a TeleSAPR model, which can then be opened.", filename)
-		return false
+		return fmt.Errorf("'%s' is a SolveSpace model. Use File > Import, or telesapr-cli "+
+			"convert, to convert it to a TeleSAPR model, which can then be opened", filename)
 	}
 
 	doc, err := tlspr.LoadFile(filename)
@@ -121,15 +122,13 @@ func (ss *Application) LoadFromFile(filename string) bool {
 	switch {
 	case errors.Is(err, tlspr.ErrCancelled):
 		// The user gave up at a missing linked file.
-		return false
+		return ErrDeclined
 	case errors.As(err, &ve):
-		ss.Error("The file '%s' was saved by a newer version of the program, in format "+
-			"version %d. This version reads files up to version %d.", filename, ve.File, ve.Reader)
-		return false
+		return fmt.Errorf("the file '%s' was saved by a newer version of the program, in format "+
+			"version %d. This version reads files up to version %d", filename, ve.File, ve.Reader)
 	case err != nil:
-		ss.Error("Unrecognized data in file. This file may be corrupt, or "+
+		return fmt.Errorf("unrecognized data in file. This file may be corrupt, or "+
 			"from a newer version of the program.\n\n%v", err)
-		return false
 	}
 	if len(doc.Warnings) > 0 {
 		ss.Error("Some of the file '%s' was not recognized and was left out. It may "+
@@ -141,15 +140,15 @@ func (ss *Application) LoadFromFile(filename string) bool {
 			filename, warningList(errorStrings(doc.ExprErrors)))
 	}
 	ss.setSketch(doc.Sketch)
-	return true
+	return nil
 }
 
-// SaveToFile writes the sketch to filename (C++ SolveSpaceUI::SaveToFile).
-func (ss *Application) SaveToFile(filename string) bool {
+// SaveToFile writes the sketch to filename; the error is what to tell
+// the user.
+func (ss *Application) SaveToFile(filename string) error {
 	if hasExtension(filename, "slvs") {
-		ss.Error("TeleSAPR doesn't write SolveSpace models; save the sketch as a " +
-			".tlspr file.")
-		return false
+		return errors.New("a SolveSpace model can't be written; save the sketch as a " +
+			".tlspr file")
 	}
 
 	// Make sure all the entities are regenerated up to date, since they
@@ -161,14 +160,12 @@ func (ss *Application) SaveToFile(filename string) bool {
 	var le *tlspr.LinkError
 	switch {
 	case errors.As(err, &le):
-		ss.Error("This sketch links the sketch '%s'; it can only be saved "+
-			"on the same volume.", le.Link)
-		return false
+		return fmt.Errorf("this sketch links the sketch '%s'; it can only be saved "+
+			"on the same volume", le.Link)
 	case err != nil:
-		ss.Error("Couldn't write to file '%s'", filename)
-		return false
+		return fmt.Errorf("couldn't write to file '%s'", filename)
 	}
-	return true
+	return nil
 }
 
 // AddToRecentList puts filename first in the recent files (C++
@@ -188,8 +185,8 @@ func (ss *Application) AddToRecentList(filename string) {
 }
 
 // SaveToChosenFile saves the sketch, asking for a file name for a new
-// sketch or for Save As (C++ SolveSpaceUI::SaveToChosenFile).
-func (ss *Application) SaveToChosenFile(saveAs bool) bool {
+// sketch or for Save As; ErrDeclined when the user gave up.
+func (ss *Application) SaveToChosenFile(saveAs bool) error {
 	newSaveFile := ss.SaveFile
 
 	if saveAs || newSaveFile == "" {
@@ -200,20 +197,20 @@ func (ss *Application) SaveToChosenFile(saveAs bool) bool {
 			dialog.SetFilename(newSaveFile)
 		}
 		if !dialog.RunModal() {
-			return false
+			return ErrDeclined
 		}
 		dialog.FreezeChoices(ss.Settings, "Sketch")
 		newSaveFile = modelFileName(dialog.Filename())
 	}
 
-	if !ss.SaveToFile(newSaveFile) {
-		return false
+	if err := ss.SaveToFile(newSaveFile); err != nil {
+		return err
 	}
 	ss.AddToRecentList(newSaveFile)
 	ss.RemoveAutosave()
 	ss.SaveFile = newSaveFile
 	ss.SK.Unsaved = false
-	return true
+	return nil
 }
 
 // modelFileName is the file a sketch is saved in when the user chose
@@ -236,7 +233,7 @@ func (ss *Application) Autosave() {
 	ss.ScheduleAutosave()
 
 	if ss.SaveFile != "" && ss.SK.Unsaved {
-		ss.SaveToFile(withExtension(ss.SaveFile, backupExt))
+		ss.Report(ss.SaveToFile(withExtension(ss.SaveFile, backupExt)))
 	}
 }
 
@@ -279,7 +276,9 @@ func (ss *Application) OkayToStartNewFile() bool {
 
 	switch dialog.RunModal() {
 	case platform.ResponseYes:
-		return ss.SaveToChosenFile(false)
+		err := ss.SaveToChosenFile(false)
+		ss.Report(err)
+		return err == nil
 	case platform.ResponseNo:
 		ss.RemoveAutosave()
 		return true
@@ -379,14 +378,14 @@ func (ss *Application) MenuFile(id Command) {
 		dialog.ThawChoices(settings, "Sketch")
 		if dialog.RunModal() {
 			dialog.FreezeChoices(settings, "Sketch")
-			ss.Load(dialog.Filename())
+			ss.Report(ss.Load(dialog.Filename()))
 		}
 
 	case CmdSave:
-		ss.SaveToChosenFile(false)
+		ss.Report(ss.SaveToChosenFile(false))
 
 	case CmdSaveAs:
-		ss.SaveToChosenFile(true)
+		ss.Report(ss.SaveToChosenFile(true))
 
 	case CmdExportImage, CmdExportView, CmdExportWireframe, CmdExportSection,
 		CmdExportMesh, CmdExportSurfaces, CmdImport:
@@ -447,26 +446,26 @@ func (ss *Application) menuExport(id Command) {
 				"text window.")
 		}
 
-		ss.ExportViewOrWireframeTo(filename, false)
+		ss.Report(ss.ExportViewOrWireframeTo(filename, false))
 
 	case CmdExportWireframe:
 		if filename, ok := saveDialog(platform.Vector3dFileFilters, "ExportWireframe"); ok {
-			ss.ExportViewOrWireframeTo(filename, true)
+			ss.Report(ss.ExportViewOrWireframeTo(filename, true))
 		}
 
 	case CmdExportSection:
 		if filename, ok := saveDialog(platform.VectorFileFilters, "ExportSection"); ok {
-			ss.ExportSectionTo(filename)
+			ss.Report(ss.ExportSectionTo(filename))
 		}
 
 	case CmdExportMesh:
 		if filename, ok := saveDialog(platform.MeshFileFilters, "ExportMesh"); ok {
-			ss.ExportMeshTo(filename)
+			ss.Report(ss.ExportMeshTo(filename))
 		}
 
 	case CmdExportSurfaces:
 		if filename, ok := saveDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
-			ss.ExportSurfacesTo(filename)
+			ss.Report(ss.ExportSurfacesTo(filename))
 		}
 
 	case CmdImport:
@@ -486,7 +485,7 @@ func (ss *Application) menuExport(id Command) {
 			ss.ImportDwg(importFile)
 		case hasExtension(importFile, "slvs"):
 			// A whole model: it replaces the sketch.
-			ss.ImportSolveSpace(importFile)
+			ss.Report(ss.ImportSolveSpace(importFile))
 			return
 		default:
 			ss.Error("Can't identify file type from file extension of "+

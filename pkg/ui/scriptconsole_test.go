@@ -68,7 +68,7 @@ func TestScriptConsole(t *testing.T) {
 		"... \tfmt.Println(\"i =\", i)\n" +
 		"... }\ni = 0\ni = 1\n" +
 		">>> c.Pos()\nerror: circle r004-circle, radius 2.000 isn't a point; see Start, End, Center and Points\n" +
-		">>> doc.Export(\"/nowhere/x.stl\")\nActive group mesh is empty; nothing to export.\n"
+		">>> doc.Export(\"/nowhere/x.stl\")\nactive group mesh is empty; nothing to export\n"
 	if got := after(w, n); got != want {
 		t.Errorf("the console showed:\n%s\nwant:\n%s", got, want)
 	}

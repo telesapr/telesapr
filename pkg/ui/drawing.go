@@ -487,9 +487,9 @@ func (ss *Application) ExportDrawingTo(filename string, d *sketch.Drawing) error
 	if err != nil {
 		return err
 	}
-	out := ss.vectorFileWriterFor(filename)
-	if out == nil {
-		return errors.New("can't tell what to write from the name " + filename)
+	out, err := ss.vectorFileWriterFor(filename)
+	if err != nil {
+		return err
 	}
 	// The canvas is the sheet, in mm, as written.
 	w, h := d.Size()
@@ -500,6 +500,5 @@ func (ss *Application) ExportDrawingTo(filename string, d *sketch.Drawing) error
 	out.vw().SetModelviewProjection(geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1}, geom.Vector{}, 0, 1)
 	var sbl srf.SBezierList
 	var sms srf.SMesh
-	writeExportCurves(&sheet, &sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
-	return nil
+	return writeExportCurves(&sheet, &sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
 }

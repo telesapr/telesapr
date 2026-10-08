@@ -561,7 +561,7 @@ func (ss *Application) MenuConstrain(id Command) {
 				ep = sk.Entity(gs.point[0])
 			}
 			if err := sk.ConstrainArcLineTangent(&c, line, arc, ep); err != nil {
-				ss.Error("%s", err.Error())
+				ss.Report(err)
 				return
 			}
 			c.Type = core.ConstraintArcLineTangent
@@ -579,7 +579,7 @@ func (ss *Application) MenuConstrain(id Command) {
 				ep = sk.Entity(gs.point[0])
 			}
 			if err := sk.ConstrainCubicLineTangent(&c, line, cubic, ep); err != nil {
-				ss.Error("%s", err.Error())
+				ss.Report(err)
 				return
 			}
 			c.Type = core.ConstraintCubicLineTangent
@@ -599,7 +599,7 @@ func (ss *Application) MenuConstrain(id Command) {
 				epB = sk.Entity(gs.point[1])
 			}
 			if err := sk.ConstrainCurveCurveTangent(&c, eA, eB, epA, epB); err != nil {
-				ss.Error("%s", err.Error())
+				ss.Report(err)
 				return
 			}
 			c.Type = core.ConstraintCurveCurveTangent

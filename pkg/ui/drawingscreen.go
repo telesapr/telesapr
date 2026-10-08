@@ -302,7 +302,7 @@ func (tw *TextWindow) editDrawing(s string) bool {
 			d.Details = append(d.Details, sketch.DrawingDetail{View: f[0], CX: nums[0], CY: nums[1], R: nums[2], Scale: nums[3]})
 		}
 		if err := d.Check(); err != nil {
-			ss.Error("%s.", capitalize(err.Error()))
+			ss.Report(err)
 			return true
 		}
 		ss.UndoRemember()
@@ -328,7 +328,7 @@ func (tw *TextWindow) editDrawing(s string) bool {
 		d := ss.drawing().Clone()
 		d.Dimensions = append(d.Dimensions, dm)
 		if err := d.Check(); err != nil {
-			ss.Error("%s.", capitalize(err.Error()))
+			ss.Report(err)
 			return true
 		}
 		ss.UndoRemember()

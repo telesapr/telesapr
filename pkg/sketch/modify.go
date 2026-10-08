@@ -211,7 +211,7 @@ func (sk *Sketch) constrainPointIfCoincident(hpt core.HEntity) {
 // GraphicsWindow::MakeTangentArc).
 func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) error {
 	if !sk.LockedInWorkplane() {
-		return errors.New("Must be sketching in workplane to create tangent arc.")
+		return errors.New("must be sketching in workplane to create tangent arc")
 	}
 
 	// The point corresponding to the vertex to be rounded.
@@ -256,9 +256,9 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 		}
 	}
 	if c != 2 {
-		return errors.New("To create a tangent arc, select a point where two " +
+		return errors.New("to create a tangent arc, select a point where two " +
 			"non-construction lines or circles in this group and " +
-			"workplane join.")
+			"workplane join")
 	}
 
 	wrkpl := sk.MustEntity(sk.ActiveWorkplane())
@@ -334,9 +334,9 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 		t[0] < 0.01 || t[1] < 0.01 ||
 		t[0] > 0.99 || t[1] > 0.99 ||
 		isReasonable(t[0]) || isReasonable(t[1]) {
-		return errors.New("Couldn't round this corner. Try a smaller radius, or try " +
+		return errors.New("couldn't round this corner. Try a smaller radius, or try " +
 			"creating the desired geometry by hand with tangency " +
-			"constraints.")
+			"constraints")
 	}
 
 	// Compute the location of the center of the arc
@@ -562,7 +562,7 @@ func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity
 		ret = sk.SplitCubic(he, pinter)
 
 	default:
-		return core.NoEntity, errors.New("Couldn't split this entity; lines, circles, or cubics only.")
+		return core.NoEntity, errors.New("couldn't split this entity; lines, circles, or cubics only")
 	}
 
 	// Finally, delete the request that generated the original entity.
@@ -591,7 +591,7 @@ func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity
 // GraphicsWindow::SplitLinesOrCurves).
 func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) error {
 	if !sk.LockedInWorkplane() {
-		return errors.New("Must be sketching in workplane to split.")
+		return errors.New("must be sketching in workplane to split")
 	}
 
 	// C++ GraphicsWindow::GroupSelection, the counts used here.
@@ -621,8 +621,8 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 	}
 	n := lineSegments + circlesOrArcs + cubics + periodicCubics
 	if !((n == 2 && points == 0) || (n == 1 && points == 1)) {
-		return errors.New("Select two entities that intersect each other " +
-			"(e.g. two lines/circles/arcs or a line/circle/arc and a point).")
+		return errors.New("select two entities that intersect each other " +
+			"(e.g. two lines/circles/arcs or a line/circle/arc and a point)")
 	}
 
 	splitAtPoint := points == 1
@@ -701,7 +701,7 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 
 	// Then, actually split the entities.
 	if !foundInters {
-		return errors.New("Can't split; no intersection found.")
+		return errors.New("can't split; no intersection found")
 	}
 
 	sk.UndoRemember()

@@ -48,7 +48,7 @@ func (tw *TextWindow) ScreenExportBOM(link int, v uint32) {
 	dialog.FreezeChoices(ss.Settings, "BillOfMaterials")
 	var b bytes.Buffer
 	if err := sketch.WriteBOMCSV(&b, ss.SK.BillOfMaterials()); err != nil {
-		ss.Error("%s.", capitalize(err.Error()))
+		ss.Report(err)
 		return
 	}
 	if err := os.WriteFile(dialog.Filename(), b.Bytes(), 0o644); err != nil {

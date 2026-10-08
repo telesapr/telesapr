@@ -67,7 +67,7 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 
 	m := &g.DisplayMesh
 	if len(m.Triangles) == 0 {
-		return errors.New("Active group mesh is empty; nothing to export.")
+		return errors.New("active group mesh is empty; nothing to export")
 	}
 
 	var write func(w io.Writer) error
@@ -78,15 +78,15 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 		write = func(w io.Writer) error { return ExportMeshAs3mfTo(w, m) }
 	case hasExtension(filename, "obj"), hasExtension(filename, "js"),
 		hasExtension(filename, "html"), hasExtension(filename, "wrl"):
-		return fmt.Errorf("Exporting a mesh to '%s' isn't supported; try .stl or .3mf.", filename)
+		return fmt.Errorf("exporting a mesh to '%s' isn't supported; try .stl or .3mf", filename)
 	default:
-		return fmt.Errorf("Can't identify output file type from file extension of "+
-			"filename '%s'; try .stl, .3mf, .obj, .js, .html.", filename)
+		return fmt.Errorf("can't identify output file type from file extension of "+
+			"filename '%s'; try .stl, .3mf, .obj, .js, .html", filename)
 	}
 
 	f, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("Couldn't write to '%s'", filename)
+		return fmt.Errorf("couldn't write to '%s'", filename)
 	}
 	sk.ShowNakedEdges(true)
 	bw := bufio.NewWriter(f)

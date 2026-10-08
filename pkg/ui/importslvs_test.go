@@ -46,21 +46,17 @@ func dialogText(d *headless.MessageDialog) string { return d.Message + "\n" + d.
 func TestSlvsNotOpenedOrSaved(t *testing.T) {
 	ss, p := newTestApp(t)
 	p.DialogResponses = []platform.Response{platform.ResponseOK, platform.ResponseOK}
-	if ss.LoadFromFile(filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
-		t.Error("opened a .slvs file")
-	}
-	if d := lastDialog(t, p); !strings.Contains(dialogText(d), "Use File > Import") {
-		t.Errorf("message %q", dialogText(d))
+	err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs"))
+	if err == nil || !strings.Contains(err.Error(), "Use File > Import") {
+		t.Errorf("opening a .slvs file: %v", err)
 	}
 	path := filepath.Join(t.TempDir(), "a.slvs")
-	if ss.SaveToFile(path) {
-		t.Error("saved a .slvs file")
+	err = ss.SaveToFile(path)
+	if err == nil || !strings.Contains(err.Error(), "can't be written") {
+		t.Errorf("saving a .slvs file: %v", err)
 	}
 	if _, err := os.Stat(path); err == nil {
 		t.Error("a .slvs file was written")
-	}
-	if d := lastDialog(t, p); !strings.Contains(dialogText(d), "doesn't write SolveSpace models") {
-		t.Errorf("message %q", dialogText(d))
 	}
 }
 
@@ -85,12 +81,12 @@ func TestLoadTlsprProblems(t *testing.T) {
 		{"syntax.tlspr", "telesapr 1\ngroup {\n", "2:1: block 'group' is not closed", false},
 		{"newer.tlspr", "telesapr 3\n", "This version reads files up to version 2", false},
 	} {
-		p.DialogResponses = []platform.Response{platform.ResponseOK}
-		if got := ss.LoadFromFile(write(c.name, c.data)); got != c.loads {
+		err := ss.LoadFromFile(write(c.name, c.data))
+		if got := err == nil; got != c.loads {
 			t.Errorf("%s: loaded %v", c.name, got)
 		}
-		if d := lastDialog(t, p); !strings.Contains(dialogText(d), c.message) {
-			t.Errorf("%s: message %q, want %q", c.name, dialogText(d), c.message)
+		if err == nil || !strings.Contains(err.Error(), c.message) {
+			t.Errorf("%s: error %q, want %q", c.name, err, c.message)
 		}
 	}
 
@@ -100,7 +96,7 @@ func TestLoadTlsprProblems(t *testing.T) {
 	}
 	future := write("future.tlspr", string(good)+"\nhologram 0x1 {\n  shimmer\n}\n")
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	if !ss.LoadFromFile(future) || len(ss.SK.Groups) <= 2 {
+	if ss.LoadFromFile(future) != nil || len(ss.SK.Groups) <= 2 {
 		t.Errorf("a file with an unknown block didn't load: %d groups", len(ss.SK.Groups))
 	}
 	if d := lastDialog(t, p); !strings.Contains(dialogText(d), "was not recognized and was left out") ||
@@ -114,7 +110,9 @@ func TestLoadTlsprProblems(t *testing.T) {
 		many.WriteString("odd\n")
 	}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	ss.LoadFromFile(write("many.tlspr", many.String()))
+	if err := ss.LoadFromFile(write("many.tlspr", many.String())); err != nil {
+		t.Errorf("many.tlspr: %v", err)
+	}
 	if d := lastDialog(t, p); !strings.Contains(dialogText(d), "... and 3 more") {
 		t.Errorf("message %q", dialogText(d))
 	}
@@ -153,12 +151,12 @@ func TestImportSolveSpace(t *testing.T) {
 	// Cancelling at the save dialog or at the plan writes nothing.
 	other := filepath.Join(dir, "other.tlspr")
 	p.FilePaths = []string{""}
-	if ss.ImportSolveSpace(src) {
+	if ss.ImportSolveSpace(src) == nil {
 		t.Error("imported after cancelling the save dialog")
 	}
 	p.FilePaths = []string{other}
 	p.DialogResponses = []platform.Response{platform.ResponseCancel}
-	if ss.ImportSolveSpace(src) {
+	if ss.ImportSolveSpace(src) == nil {
 		t.Error("imported after cancelling the plan")
 	}
 	if _, err := os.Stat(other); err == nil {
@@ -171,7 +169,7 @@ func TestImportSolveSpace(t *testing.T) {
 	// Unsaved changes are asked about first.
 	ss.SK.Unsaved = true
 	p.DialogResponses = []platform.Response{platform.ResponseCancel}
-	if ss.ImportSolveSpace(src) || lastDialog(t, p).Title != "Modified File" {
+	if ss.ImportSolveSpace(src) == nil || lastDialog(t, p).Title != "Modified File" {
 		t.Error("imported over unsaved changes")
 	}
 	ss.SK.Unsaved = false
@@ -197,7 +195,7 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 
 	p.FilePaths = []string{dst}
 	p.DialogResponses = []platform.Response{platform.ResponseYes}
-	if !ss.ImportSolveSpace(src) {
+	if ss.ImportSolveSpace(src) != nil {
 		t.Fatal("import failed")
 	}
 	if d := lastDialog(t, p); d.Description != linked+"\n"+dst {
@@ -234,7 +232,7 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 	mark()
 	p.FilePaths = []string{dst}
 	p.DialogResponses = []platform.Response{platform.ResponseNo}
-	if !ss.ImportSolveSpace(src) || !marked() {
+	if ss.ImportSolveSpace(src) != nil || !marked() {
 		t.Error("Reuse rewrote the linked copy")
 	}
 	if d := lastDialog(t, p); !strings.Contains(d.Description, "exist already") ||
@@ -243,12 +241,12 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 	}
 	p.FilePaths = []string{dst}
 	p.DialogResponses = []platform.Response{platform.ResponseYes}
-	if !ss.ImportSolveSpace(src) || marked() {
+	if ss.ImportSolveSpace(src) != nil || marked() {
 		t.Error("Overwrite kept the linked copy")
 	}
 	p.FilePaths = []string{dst}
 	p.DialogResponses = []platform.Response{platform.ResponseCancel}
-	if ss.ImportSolveSpace(src) {
+	if ss.ImportSolveSpace(src) == nil {
 		t.Error("imported after Cancel")
 	}
 
@@ -264,7 +262,8 @@ func TestImportSolveSpaceAssembly(t *testing.T) {
 	p.DialogResponses = []platform.Response{platform.ResponseYes, platform.ResponseNo, platform.ResponseOK,
 		platform.ResponseNo}
 	shown := len(p.DialogsShown)
-	ss.ImportSolveSpace(src)
+	// The dialogs are what is checked; the responses give the search up.
+	_ = ss.ImportSolveSpace(src)
 	var plan, locate *headless.MessageDialog
 	for _, d := range p.DialogsShown[shown:] {
 		switch d.Title {
@@ -300,10 +299,8 @@ func TestImportSolveSpaceCycle(t *testing.T) {
 	}
 	p.FilePaths = []string{filepath.Join(dir, "a.tlspr")}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	if ss.ImportSolveSpace(filepath.Join(dir, "a.slvs")) {
-		t.Error("imported a cycle")
-	}
-	if d := lastDialog(t, p); !strings.Contains(dialogText(d), "the linked files form a cycle") {
-		t.Errorf("message %q", dialogText(d))
+	err = ss.ImportSolveSpace(filepath.Join(dir, "a.slvs"))
+	if err == nil || !strings.Contains(err.Error(), "the linked files form a cycle") {
+		t.Errorf("importing a cycle: %v", err)
 	}
 }

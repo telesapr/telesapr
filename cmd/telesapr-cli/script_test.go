@@ -89,7 +89,7 @@ func TestRunScript(t *testing.T) {
 
 	// An export that fails is the script's to report.
 	status, _, stderr = runScripting(t, "", "run", file, "10", filepath.Join(dir, "none", "block.stl"))
-	if status != 4 || !strings.HasPrefix(stderr, "failed: Couldn't write to") {
+	if status != 4 || !strings.HasPrefix(stderr, "failed: couldn't write to") {
 		t.Errorf("failed export: status %d, stderr %q", status, stderr)
 	}
 }

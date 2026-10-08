@@ -68,7 +68,7 @@ func TestSaveNewFile(t *testing.T) {
 	}
 
 	// What the file holds opens as the sketch saved.
-	if !ss.Load(path) || len(ss.SK.Groups) != 2 {
+	if ss.Load(path) != nil || len(ss.SK.Groups) != 2 {
 		t.Errorf("reopened with %d groups", len(ss.SK.Groups))
 	}
 }
@@ -147,7 +147,7 @@ func TestOpenAndUnsavedChanges(t *testing.T) {
 func TestAutosave(t *testing.T) {
 	ss, p := newTestApp(t)
 	path := importFixture(t, "group/translate_nd/normal.slvs")
-	if !ss.Load(path) {
+	if ss.Load(path) != nil {
 		t.Fatal("load failed")
 	}
 
@@ -163,7 +163,7 @@ func TestAutosave(t *testing.T) {
 	}
 
 	p.DialogResponses = []platform.Response{platform.ResponseYes}
-	if !ss.Load(path) {
+	if ss.Load(path) != nil {
 		t.Fatal("load of autosave failed")
 	}
 	if !ss.SK.Unsaved || ss.SaveFile != path {
@@ -184,7 +184,7 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 	ss, p := newTestApp(t)
 	src := importFixture(t, "group/link_stl/normal.slvs")
 	dir := filepath.Dir(filepath.Dir(src))
-	if !ss.Load(src) {
+	if ss.Load(src) != nil {
 		t.Fatal("load failed")
 	}
 	triangles := func() int {
@@ -213,7 +213,7 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 		t.Error("link not rewritten relative to the new file")
 	}
 
-	if !ss.Load(dst) {
+	if ss.Load(dst) != nil {
 		t.Fatal("reload failed")
 	}
 	if after := triangles(); after != before {
@@ -265,7 +265,7 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 			p.DialogResponses = tc.responses
 			p.FilePaths = tc.files
 
-			loaded := ss.Load(path)
+			loaded := ss.Load(path) == nil
 			if loaded != tc.loaded {
 				t.Fatalf("loaded %v, want %v", loaded, tc.loaded)
 			}

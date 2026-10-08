@@ -70,10 +70,9 @@ func scriptSession(file string, stderr io.Writer) (api.Host, error) {
 	if err != nil {
 		abs = file
 	}
-	// LoadFromFile says what is wrong through a message, to stderr.
 	s.ss.SaveFile = abs
-	if !s.ss.LoadFromFile(abs) || s.errored {
-		return nil, fmt.Errorf("cannot load '%s'", file)
+	if err := s.ss.LoadFromFile(abs); err != nil {
+		return nil, fmt.Errorf("cannot load '%s': %w", file, err)
 	}
 	s.ss.AfterNewFile()
 	return host, nil
@@ -101,7 +100,7 @@ func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stde
 
 	host, err := scriptSession(sketchFile, stderr)
 	if err != nil {
-		fmt.Fprintf(stderr, "Cannot load '%s'!\n", sketchFile)
+		fmt.Fprintf(stderr, "%s\n", capitalized(err.Error()))
 		return exitLoad
 	}
 	opts := script.Options{
@@ -172,4 +171,13 @@ func isTerminal(r io.Reader) bool {
 	}
 	info, err := f.Stat()
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+// capitalized is s with its first letter in upper case, as a message
+// on its own line starts.
+func capitalized(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }

@@ -1446,7 +1446,7 @@ func (gw *GraphicsWindow) EditControlDone(s string) {
 			return ss.SK.SetConstraintText(gw.constraintBeingEdited, value)
 		})
 		if err != nil {
-			ss.Error("%s.", capitalize(err.Error()))
+			ss.Report(err)
 			return
 		}
 		ss.SK.Unsaved = true

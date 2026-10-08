@@ -46,7 +46,9 @@ func TestExportStepSheets(t *testing.T) {
 			rep := check.Group(ss.SK, g)
 			path := filepath.Join(t.TempDir(), "out.step")
 			read := func() (*step.Result, string) {
-				ss.ExportSurfacesTo(path)
+				if err := ss.ExportSurfacesTo(path); err != nil {
+					t.Fatal(err)
+				}
 				data, err := os.ReadFile(path)
 				if err != nil {
 					t.Fatal(err)

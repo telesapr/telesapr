@@ -515,7 +515,7 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 		r.ss.TW.dumpRows(&rows)
 		r.b.WriteString(r.unexpand(rows.String()))
 	case "save":
-		if !r.ss.SaveToFile(r.savePath) {
+		if r.ss.SaveToFile(r.savePath) != nil {
 			fmt.Fprintf(&r.b, "save failed\n")
 		} else {
 			data, err := os.ReadFile(r.savePath)

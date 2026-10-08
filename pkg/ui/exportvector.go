@@ -219,11 +219,11 @@ func (w *epsFileWriter) Bezier(sb *srf.SBezier) {
 	}
 }
 
-func (w *epsFileWriter) FinishAndCloseFile() {
+func (w *epsFileWriter) FinishAndCloseFile() error {
 	w.printf("\r\n" +
 		"grestore\r\n" +
 		"\r\n")
-	w.closeFile()
+	return w.closeFile()
 }
 
 // ---------------------------------------------------------------------
@@ -297,7 +297,7 @@ func (w *pdfFileWriter) StartFile() {
 	w.bodyStart = w.ftell()
 }
 
-func (w *pdfFileWriter) FinishAndCloseFile() {
+func (w *pdfFileWriter) FinishAndCloseFile() error {
 	bodyEnd := w.ftell()
 
 	w.printf("endstream\r\n" +
@@ -349,7 +349,7 @@ func (w *pdfFileWriter) FinishAndCloseFile() {
 		"%%%%EOF\r\n",
 		xrefStart)
 
-	w.closeFile()
+	return w.closeFile()
 }
 
 func (w *pdfFileWriter) Background(color core.RGBA) {
@@ -607,9 +607,9 @@ func (w *svgFileWriter) Bezier(sb *srf.SBezier) {
 	}
 }
 
-func (w *svgFileWriter) FinishAndCloseFile() {
+func (w *svgFileWriter) FinishAndCloseFile() error {
 	w.printf("\r\n</svg>\r\n")
-	w.closeFile()
+	return w.closeFile()
 }
 
 // ---------------------------------------------------------------------
@@ -646,8 +646,8 @@ func (w *hpglFileWriter) Bezier(sb *srf.SBezier) {
 	}
 }
 
-func (w *hpglFileWriter) FinishAndCloseFile() {
-	w.closeFile()
+func (w *hpglFileWriter) FinishAndCloseFile() error {
+	return w.closeFile()
 }
 
 // ---------------------------------------------------------------------
@@ -682,7 +682,7 @@ func (w *gcodeFileWriter) Bezier(sb *srf.SBezier) {
 	}
 }
 
-func (w *gcodeFileWriter) FinishAndCloseFile() {
+func (w *gcodeFileWriter) FinishAndCloseFile() error {
 	ss := w.ss
 	mm := func(v float64) string { return ss.MmToString(v, false) }
 	var sp srf.SPolygon
@@ -709,7 +709,7 @@ func (w *gcodeFileWriter) FinishAndCloseFile() {
 	}
 
 	w.sel = srf.SEdgeList{}
-	w.closeFile()
+	return w.closeFile()
 }
 
 // ---------------------------------------------------------------------
@@ -742,8 +742,8 @@ func (w *step2dFileWriter) Bezier(sb *srf.SBezier) {
 	w.sfw.curves = append(w.sfw.curves, c)
 }
 
-func (w *step2dFileWriter) FinishAndCloseFile() {
+func (w *step2dFileWriter) FinishAndCloseFile() error {
 	w.sfw.WriteWireframe()
 	w.sfw.WriteFooter()
-	w.closeFile()
+	return w.closeFile()
 }

@@ -73,7 +73,7 @@ func TestExportMeshToErrors(t *testing.T) {
 	}
 	doc.Sketch.GenerateAllTyped(sketch.GenerateAll)
 	if err := doc.Sketch.ExportMeshTo(filepath.Join(t.TempDir(), "out.xyz"), es); err == nil ||
-		!strings.Contains(err.Error(), "Can't identify output file type") {
+		!strings.Contains(err.Error(), "can't identify output file type") {
 		t.Errorf("unknown format: %v", err)
 	}
 }

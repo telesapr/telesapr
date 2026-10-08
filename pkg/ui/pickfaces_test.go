@@ -57,7 +57,7 @@ func TestEveryFacePicked(t *testing.T) {
 		t.Run(strings.TrimSuffix(filepath.Base(file), ".tlspr"), func(t *testing.T) {
 			ss := New(headless.New())
 			ss.Init()
-			if _, err := os.Stat(file); err != nil || !ss.LoadFromFile(file) {
+			if _, err := os.Stat(file); err != nil || ss.LoadFromFile(file) != nil {
 				t.Fatal("load failed")
 			}
 			ss.AfterNewFile()

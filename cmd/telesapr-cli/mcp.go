@@ -78,7 +78,7 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 		out := &agent.Capture{}
 		host, err := scriptSession(sketchFile, out)
 		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "Cannot load '%s'!\n", sketchFile)
+			_, _ = fmt.Fprintf(stderr, "%s\n", capitalized(err.Error()))
 			return exitLoad
 		}
 		engine, err := script.New(script.Options{

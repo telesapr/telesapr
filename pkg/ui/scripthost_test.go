@@ -90,12 +90,12 @@ func TestScriptHostMessages(t *testing.T) {
 		`doc.Unsaved()`,
 		`doc.Load("`+filepath.Join(dir, "none.tlspr")+`")`,
 	)
-	want := "Active group mesh is empty; nothing to export.\n" +
+	want := "active group mesh is empty; nothing to export\n" +
 		"circle r004-circle, radius 5.000\n" +
 		"g003-disc\n" +
 		"can't tell what to export from the name '" + filepath.Join(dir, "disc.xyz") + "'\n" +
 		"nil\nnil\nfalse\n" +
-		"Couldn't read from file '" + filepath.Join(dir, "none.tlspr") + "'\n"
+		"couldn't read from file '" + filepath.Join(dir, "none.tlspr") + "'\n"
 	if got != want {
 		t.Errorf("the console showed:\n%s\nwant:\n%s", got, want)
 	}

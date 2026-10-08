@@ -205,7 +205,7 @@ func (gw *GraphicsWindow) PopulateRecentFiles() {
 		if !gw.ss.OkayToStartNewFile() {
 			return
 		}
-		gw.ss.Load(path)
+		gw.ss.Report(gw.ss.Load(path))
 	})
 	gw.populateMenuWithPathnames(gw.linkRecentMenu, gw.ss.RecentFiles, func(path string) {
 		gw.ss.MenuGroup(CmdGroupLink, path)

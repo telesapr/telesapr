@@ -75,11 +75,30 @@ func exportAllFor(t testing.TB, path, dir string) {
 	v.ProjUp = geom.Vector{X: 0.3, Y: 0.6, Z: 0.75}
 	ss.GW.NormalizeProjectionVectors()
 
+	// A fixture without a solid has nothing for the section, mesh and
+	// surface writers, which say so; any other error is a failure.
+	tolerate := func(err error) {
+		t.Helper()
+		if err == nil {
+			return
+		}
+		for _, empty := range []string{"no solid model", "mesh is empty", "does not contain any surfaces",
+			"bad selection for export section"} {
+			if strings.Contains(err.Error(), empty) {
+				return
+			}
+		}
+		t.Fatal(err)
+	}
 	for _, ext := range []string{"svg", "eps", "pdf", "plt", "txt", "step", "dxf"} {
-		ss.ExportViewOrWireframeTo(filepath.Join(dir, "view."+ext), false)
+		if err := ss.ExportViewOrWireframeTo(filepath.Join(dir, "view."+ext), false); err != nil {
+			t.Fatal(err)
+		}
 	}
 	for _, ext := range []string{"dxf", "step"} {
-		ss.ExportViewOrWireframeTo(filepath.Join(dir, "wireframe."+ext), true)
+		if err := ss.ExportViewOrWireframeTo(filepath.Join(dir, "wireframe."+ext), true); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// Straight on, so circles stay circles, with diameters shown as
 	// radii.
@@ -91,21 +110,27 @@ func exportAllFor(t testing.TB, path, dir string) {
 		}
 	}
 	for _, ext := range []string{"svg", "eps", "pdf", "dxf"} {
-		ss.ExportViewOrWireframeTo(filepath.Join(dir, "front."+ext), false)
+		if err := ss.ExportViewOrWireframeTo(filepath.Join(dir, "front."+ext), false); err != nil {
+			t.Fatal(err)
+		}
 	}
-	ss.ExportSectionTo(filepath.Join(dir, "section.svg"))
+	tolerate(ss.ExportSectionTo(filepath.Join(dir, "section.svg")))
 	// With the export options that are off by default.
 	ss.ExportShadedTriangles = true
 	ss.ExportBackgroundColor = true
 	ss.ExportCanvasSizeAuto = false
 	for _, ext := range []string{"svg", "eps", "pdf"} {
-		ss.ExportViewOrWireframeTo(filepath.Join(dir, "options."+ext), false)
+		if err := ss.ExportViewOrWireframeTo(filepath.Join(dir, "options."+ext), false); err != nil {
+			t.Fatal(err)
+		}
 	}
 	ss.ExportOffset = 0.5
-	ss.ExportViewOrWireframeTo(filepath.Join(dir, "offset.txt"), false)
+	if err := ss.ExportViewOrWireframeTo(filepath.Join(dir, "offset.txt"), false); err != nil {
+		t.Fatal(err)
+	}
 	ss.ExportOffset = 0
 	for _, ext := range []string{"stl", "obj", "js", "wrl"} {
-		ss.ExportMeshTo(filepath.Join(dir, "mesh."+ext))
+		tolerate(ss.ExportMeshTo(filepath.Join(dir, "mesh."+ext)))
 	}
-	ss.ExportSurfacesTo(filepath.Join(dir, "surfaces.step"))
+	tolerate(ss.ExportSurfacesTo(filepath.Join(dir, "surfaces.step")))
 }

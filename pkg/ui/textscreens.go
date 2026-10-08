@@ -419,7 +419,7 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 
 	case 'A':
 		if err := sk.SetSuppressAll(g.H, !g.SuppressAll); err != nil {
-			ss.Error("%v.", err)
+			ss.Report(err)
 		}
 
 	case 'r':
@@ -696,7 +696,7 @@ func (tw *TextWindow) ScreenLoftNoGuides(link int, v uint32) {
 	ss := tw.ss
 	err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetLoftGuides(core.HGroup{V: v}, nil) })
 	if err != nil {
-		ss.Error("%s.", capitalize(err.Error()))
+		ss.Report(err)
 		return
 	}
 	ss.SK.Unsaved = true
@@ -709,7 +709,7 @@ func (tw *TextWindow) ScreenDraftAllSides(link int, v uint32) {
 	ss := tw.ss
 	err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetDraftFaces(core.HGroup{V: v}, nil) })
 	if err != nil {
-		ss.Error("%s.", capitalize(err.Error()))
+		ss.Report(err)
 		return
 	}
 	ss.SK.Unsaved = true
@@ -1266,7 +1266,7 @@ func (ss *Application) setEdgeRadiusText(hg core.HGroup, i int, s string) {
 		return ss.SK.SetEdgeRadiusText(hg, i, s)
 	})
 	if err != nil {
-		ss.Error("%s.", capitalize(err.Error()))
+		ss.Report(err)
 		return
 	}
 	ss.SK.Unsaved = true
@@ -1668,7 +1668,7 @@ func (ss *Application) setGroupText(hg core.HGroup, f sketch.GroupValue, s strin
 		return ss.SK.SetGroupText(hg, f, s)
 	})
 	if err != nil {
-		ss.Error("%s.", capitalize(err.Error()))
+		ss.Report(err)
 		return false
 	}
 	ss.SK.Unsaved = true
