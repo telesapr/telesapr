@@ -48,363 +48,36 @@ func AddParam(param *[]core.Param, hp core.HParam, v float64) {
 // Group::Generate). It appends to entity and param, which during
 // GenerateAll are sk.Entities and sk.Params themselves.
 func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
-	// C++ seeds new group params from SS.GW's view; it only matters
-	// for params without a previous value.
-	view := sk.view()
-	gn := view.ProjRight.Cross(view.ProjUp)
-	gp := view.ProjRight.Plus(view.ProjUp)
-	gc := view.Offset.ScaledBy(-1)
-	gn = gn.WithMagnitude(200 / view.Scale)
-	gp = gp.WithMagnitude(200 / view.Scale)
-	h := g.H
-
 	switch g.Type {
 	case GroupDrawing3D:
 		return
 
 	case GroupDrawingWorkplane:
-		var q geom.Quaternion
-		switch g.Subtype {
-		case GroupWorkplaneByLineSegments:
-			u := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
-			v := sk.MustEntity(g.Predef.EntityC).VectorGetNum(sk)
-			u = u.WithMagnitude(1)
-			n := u.Cross(v)
-			v = n.Cross(u).WithMagnitude(1)
-
-			if g.Predef.SwapUV {
-				u, v = v, u
-			}
-			if g.Predef.NegateU {
-				u = u.ScaledBy(-1)
-			}
-			if g.Predef.NegateV {
-				v = v.ScaledBy(-1)
-			}
-			q = geom.QuaternionFromBasis(u, v)
-		case GroupWorkplaneByPointOrtho:
-			// Already given, numerically.
-			q = g.Predef.Q
-		case GroupWorkplaneByPointNormal:
-			q = sk.MustEntity(g.Predef.EntityB).NormalGetNum(sk)
-		default:
-			panic(fmt.Sprintf("unexpected workplane subtype %d", g.Subtype))
-		}
-
-		normal := core.Entity{
-			Type:      core.EntityNormalNCopy,
-			NumNormal: q}
-		normal.Point[0] = h.Entity(2)
-		normal.Group = h
-		normal.H = h.Entity(1)
-		*entity = append(*entity, normal)
-
-		point := core.Entity{
-			Type:         core.EntityPointNCopy,
-			NumPoint:     sk.MustEntity(g.Predef.Origin).PointGetNum(sk),
-			Construction: true,
-			Group:        h,
-			H:            h.Entity(2)}
-		*entity = append(*entity, point)
-
-		wp := core.Entity{
-			Type:   core.EntityWorkplane,
-			Normal: normal.H}
-		wp.Point[0] = point.H
-		wp.Group = h
-		wp.H = h.Entity(0)
-		*entity = append(*entity, wp)
+		g.generateDrawingWorkplane(sk, entity)
 		return
 
 	case GroupExtrude:
-		AddParam(param, h.Param(0), gn.X)
-		AddParam(param, h.Param(1), gn.Y)
-		AddParam(param, h.Param(2), gn.Z)
-		var ai, af int
-		switch g.Subtype {
-		case GroupOneSided, GroupOneSkewed:
-			ai, af = 0, 2
-		case GroupTwoSided, GroupTwoSkewed:
-			ai, af = -1, 1
-		default:
-			panic(fmt.Sprintf("unexpected extrusion subtype %d", g.Subtype))
-		}
-
-		// Get some arbitrary point in the sketch, that will be used
-		// as a reference when defining top and bottom faces.
-		var pt core.HEntity
-		// Not using range here because we're changing the size of
-		// entity in the loop.
-		for i := 0; i < len(*entity); i++ {
-			e := &(*entity)[i]
-			if e.Group != g.OpA {
-				continue
-			}
-
-			if e.IsPoint() {
-				pt = e.H
-			}
-
-			e.CalculateNumerical(sk, false)
-			he := e.H
-			// As soon as I call CopyEntity, e may become invalid! That
-			// adds entities, which may cause a realloc.
-			n0 := len(*entity)
-			g.CopyEntity(sk, entity, sk.MustEntity(he), ai, RemapBottom,
-				h.Param(0), h.Param(1), h.Param(2),
-				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
-				CopyAsNTrans)
-			n1 := len(*entity)
-			g.CopyEntity(sk, entity, sk.MustEntity(he), af, RemapTop,
-				h.Param(0), h.Param(1), h.Param(2),
-				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
-				CopyAsNTrans)
-			g.MakeExtrusionLines(sk, entity, he)
-			// A draft moves the far end and the sides off where these
-			// are (draft.go), and both ends of a two-sided extrusion.
-			if g.HasDraft() {
-				from := n1
-				if ai != 0 || g.ValB != 0 {
-					// Two-sided, or leaning from another plane: both ends
-					// move.
-					from = n0
-				}
-				for i := from; i < len(*entity); i++ {
-					(*entity)[i].ForceHidden = true
-				}
-			}
-		}
-		// Remapped versions of that arbitrary point will be used to
-		// provide points on the plane faces.
-		g.MakeExtrusionTopBottomFaces(sk, entity, pt)
+		g.generateExtrude(sk, entity, param)
 		return
 
 	case GroupLathe:
-		axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
-		axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
-
-		for i := range len(*entity) {
-			e := &(*entity)[i]
-			if e.Group != g.OpA {
-				continue
-			}
-
-			e.CalculateNumerical(sk, false)
-			he := e.H
-
-			// As soon as I call CopyEntity, e may become invalid! That
-			// adds entities, which may cause a realloc.
-
-			// this is the regular copy of all entities
-			g.CopyEntity(sk, entity, sk.MustEntity(he), 0, RemapLatheStart,
-				core.NoParam, core.NoParam, core.NoParam,
-				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
-				CopyAsNumeric)
-
-			e = &(*entity)[i] // because we copied.
-			if e.IsPoint() {
-				// for points this copy is used for the circle centers
-				g.CopyEntity(sk, entity, sk.MustEntity(he), 0, RemapLatheArcCenter,
-					core.NoParam, core.NoParam, core.NoParam,
-					core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
-					CopyAsNumeric)
-				g.MakeLatheCircles(sk, entity, he, axisPos, axisDir)
-			}
-			g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
-		}
+		g.generateLathe(sk, entity)
 		return
 
 	case GroupRevolve:
-		// this was borrowed from LATHE and ROTATE
-		axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
-		axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
-
-		// The center of rotation
-		AddParam(param, h.Param(0), axisPos.X)
-		AddParam(param, h.Param(1), axisPos.Y)
-		AddParam(param, h.Param(2), axisPos.Z)
-		// The rotation quaternion
-		AddParam(param, h.Param(3), 30*geom.Pi/180)
-		AddParam(param, h.Param(4), axisDir.X)
-		AddParam(param, h.Param(5), axisDir.Y)
-		AddParam(param, h.Param(6), axisDir.Z)
-
-		// Get some arbitrary point in the sketch, that will be used
-		// as a reference when defining end faces.
-		var pt core.HEntity
-
-		ai, af := 0, 2
-		if g.Subtype == GroupTwoSided {
-			ai, af = -1, 1
-		}
-		for i := range len(*entity) {
-			e := &(*entity)[i]
-			if e.Group != g.OpA {
-				continue
-			}
-
-			if e.IsPoint() {
-				pt = e.H
-			}
-
-			e.CalculateNumerical(sk, false)
-			he := e.H
-			// one copy for each end of the revolved surface
-			g.CopyEntity(sk, entity, e, ai, RemapLatheStart, h.Param(0),
-				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
-				h.Param(6), core.NoParam, CopyAsNRotAA)
-
-			e = &(*entity)[i] // because we copied.
-			g.CopyEntity(sk, entity, e, af, RemapLatheEnd, h.Param(0),
-				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
-				h.Param(6), core.NoParam, CopyAsNRotAA)
-
-			// Arcs are not generated for revolve groups, for now, because our current arc
-			// entity is not chiral, and dragging a revolve may break the arc by inverting it.
-			// MakeLatheCircles(entity, param, he, axis_pos, axis_dir);
-			g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
-		}
-		g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
+		g.generateRevolve(sk, entity, param)
 		return
 
 	case GroupHelix:
-		axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
-		axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
-
-		// The center of rotation
-		AddParam(param, h.Param(0), axisPos.X)
-		AddParam(param, h.Param(1), axisPos.Y)
-		AddParam(param, h.Param(2), axisPos.Z)
-		// The rotation quaternion
-		AddParam(param, h.Param(3), 30*geom.Pi/180)
-		AddParam(param, h.Param(4), axisDir.X)
-		AddParam(param, h.Param(5), axisDir.Y)
-		AddParam(param, h.Param(6), axisDir.Z)
-		// distance to translate along the rotation axis
-		AddParam(param, h.Param(7), 20)
-
-		// Get some arbitrary point in the sketch, that will be used
-		// as a reference when defining end faces.
-		var pt core.HEntity
-
-		ai, af := 0, 2 // initial and final number of transformations
-		if g.Subtype != GroupOneSided {
-			ai, af = -1, 1
-		}
-
-		for i := range len(*entity) {
-			e := &(*entity)[i]
-			if e.Group != g.OpA && e.H != g.Predef.Origin {
-				continue
-			}
-
-			if e.IsPoint() {
-				pt = e.H
-			}
-
-			e.CalculateNumerical(sk, false)
-
-			// one copy for each end of the helix
-			g.CopyEntity(sk, entity, e, ai, RemapLatheStart, h.Param(0),
-				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
-				h.Param(6), h.Param(7), CopyAsNRotAxisTrans)
-
-			e = &(*entity)[i] // because we copied.
-			g.CopyEntity(sk, entity, e, af, RemapLatheEnd, h.Param(0),
-				h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
-				h.Param(6), h.Param(7), CopyAsNRotAxisTrans)
-
-			// For point entities on the axis, create a construction line
-			e = &(*entity)[i]
-			if e.IsPoint() {
-				check := e.PointGetNum(sk).Minus(axisPos).Cross(axisDir)
-				if check.Dot(check) < core.LengthEps {
-					ep := sk.MustEntity(e.H)
-					en := core.Entity{}
-					// A point gets extruded to form a line segment
-					en.Point[0] = g.RemapEntity(ep.H, RemapLatheStart)
-					en.Point[1] = g.RemapEntity(ep.H, RemapLatheEnd)
-					en.Group = h
-					en.Construction = ep.Construction
-					en.Style = ep.Style
-					en.H = g.RemapEntity(ep.H, RemapPtToLine)
-					en.Type = core.EntityLineSegment
-					*entity = append(*entity, en)
-				}
-			}
-		}
-		g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
+		g.generateHelix(sk, entity, param)
 		return
 
 	case GroupTranslate:
-		// inherit meshCombine from source group
-		srcg := sk.Group(g.OpA)
-		g.MeshCombine = srcg.MeshCombine
-		// The translation vector
-		AddParam(param, h.Param(0), gp.X)
-		AddParam(param, h.Param(1), gp.Y)
-		AddParam(param, h.Param(2), gp.Z)
-
-		n, a0 := int(g.ValA), 0
-		if g.Subtype == GroupOneSided && g.SkipFirst {
-			a0++
-			n++
-		}
-
-		for a := a0; a < n; a++ {
-			for i := range len(*entity) {
-				e := &(*entity)[i]
-				if e.Group != g.OpA {
-					continue
-				}
-
-				e.CalculateNumerical(sk, false)
-				g.CopyEntity(sk, entity, e,
-					a*2-stepOffset(g.Subtype, n),
-					stepRemap(a, n),
-					h.Param(0), h.Param(1), h.Param(2),
-					core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
-					CopyAsNTrans)
-			}
-		}
+		g.generateTranslate(sk, entity, param)
 		return
 
 	case GroupRotate:
-		// inherit meshCombine from source group
-		srcg := sk.Group(g.OpA)
-		g.MeshCombine = srcg.MeshCombine
-		// The center of rotation
-		AddParam(param, h.Param(0), gc.X)
-		AddParam(param, h.Param(1), gc.Y)
-		AddParam(param, h.Param(2), gc.Z)
-		// The rotation quaternion
-		AddParam(param, h.Param(3), 30*geom.Pi/180)
-		AddParam(param, h.Param(4), gn.X)
-		AddParam(param, h.Param(5), gn.Y)
-		AddParam(param, h.Param(6), gn.Z)
-
-		n, a0 := int(g.ValA), 0
-		if g.Subtype == GroupOneSided && g.SkipFirst {
-			a0++
-			n++
-		}
-
-		for a := a0; a < n; a++ {
-			for i := range len(*entity) {
-				e := &(*entity)[i]
-				if e.Group != g.OpA {
-					continue
-				}
-
-				e.CalculateNumerical(sk, false)
-				g.CopyEntity(sk, entity, e,
-					a*2-stepOffset(g.Subtype, n),
-					stepRemap(a, n),
-					h.Param(0), h.Param(1), h.Param(2),
-					h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
-					CopyAsNRotAA)
-			}
-		}
+		g.generateRotate(sk, entity, param)
 		return
 
 	case GroupMirror:
@@ -419,32 +92,426 @@ func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)
 		return
 
 	case GroupLinked:
-		// The translation vector. A model comes in beside what is
-		// drawn, off the middle of the view, as in C++; a STEP file or
-		// a mesh where it was drawn, so that its coordinates are the
-		// file's (roadmap 16.13).
-		if !g.linksModel() {
-			gp = geom.Vector{}
-		}
-		AddParam(param, h.Param(0), gp.X)
-		AddParam(param, h.Param(1), gp.Y)
-		AddParam(param, h.Param(2), gp.Z)
-		// The rotation quaternion
-		AddParam(param, h.Param(3), 1)
-		AddParam(param, h.Param(4), 0)
-		AddParam(param, h.Param(5), 0)
-		AddParam(param, h.Param(6), 0)
-
-		for i := range len(g.ImpEntity) {
-			ie := &g.ImpEntity[i]
-			g.CopyEntity(sk, entity, ie, 0, 0,
-				h.Param(0), h.Param(1), h.Param(2),
-				h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
-				CopyAsNRotTrans)
-		}
+		g.generateLinked(sk, entity, param)
 		return
 	}
 	panic(fmt.Sprintf("unexpected group type %d", g.Type))
+}
+
+// generateDrawingWorkplane makes the entities and params of a GroupDrawingWorkplane group.
+func (g *Group) generateDrawingWorkplane(sk *Sketch, entity *[]core.Entity) {
+	h := g.H
+
+	var q geom.Quaternion
+	switch g.Subtype {
+	case GroupWorkplaneByLineSegments:
+		u := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
+		v := sk.MustEntity(g.Predef.EntityC).VectorGetNum(sk)
+		u = u.WithMagnitude(1)
+		n := u.Cross(v)
+		v = n.Cross(u).WithMagnitude(1)
+
+		if g.Predef.SwapUV {
+			u, v = v, u
+		}
+		if g.Predef.NegateU {
+			u = u.ScaledBy(-1)
+		}
+		if g.Predef.NegateV {
+			v = v.ScaledBy(-1)
+		}
+		q = geom.QuaternionFromBasis(u, v)
+	case GroupWorkplaneByPointOrtho:
+		// Already given, numerically.
+		q = g.Predef.Q
+	case GroupWorkplaneByPointNormal:
+		q = sk.MustEntity(g.Predef.EntityB).NormalGetNum(sk)
+	default:
+		panic(fmt.Sprintf("unexpected workplane subtype %d", g.Subtype))
+	}
+
+	normal := core.Entity{
+		Type:      core.EntityNormalNCopy,
+		NumNormal: q}
+	normal.Point[0] = h.Entity(2)
+	normal.Group = h
+	normal.H = h.Entity(1)
+	*entity = append(*entity, normal)
+
+	point := core.Entity{
+		Type:         core.EntityPointNCopy,
+		NumPoint:     sk.MustEntity(g.Predef.Origin).PointGetNum(sk),
+		Construction: true,
+		Group:        h,
+		H:            h.Entity(2)}
+	*entity = append(*entity, point)
+
+	wp := core.Entity{
+		Type:   core.EntityWorkplane,
+		Normal: normal.H}
+	wp.Point[0] = point.H
+	wp.Group = h
+	wp.H = h.Entity(0)
+	*entity = append(*entity, wp)
+	return
+}
+
+// generateExtrude makes the entities and params of a GroupExtrude group.
+func (g *Group) generateExtrude(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
+	gn, _, _ := g.viewSeeds(sk)
+	h := g.H
+
+	AddParam(param, h.Param(0), gn.X)
+	AddParam(param, h.Param(1), gn.Y)
+	AddParam(param, h.Param(2), gn.Z)
+	var ai, af int
+	switch g.Subtype {
+	case GroupOneSided, GroupOneSkewed:
+		ai, af = 0, 2
+	case GroupTwoSided, GroupTwoSkewed:
+		ai, af = -1, 1
+	default:
+		panic(fmt.Sprintf("unexpected extrusion subtype %d", g.Subtype))
+	}
+
+	// Get some arbitrary point in the sketch, that will be used
+	// as a reference when defining top and bottom faces.
+	var pt core.HEntity
+	// Not using range here because we're changing the size of
+	// entity in the loop.
+	for i := 0; i < len(*entity); i++ {
+		e := &(*entity)[i]
+		if e.Group != g.OpA {
+			continue
+		}
+
+		if e.IsPoint() {
+			pt = e.H
+		}
+
+		e.CalculateNumerical(sk, false)
+		he := e.H
+		// As soon as I call CopyEntity, e may become invalid! That
+		// adds entities, which may cause a realloc.
+		n0 := len(*entity)
+		g.CopyEntity(sk, entity, sk.MustEntity(he), ai, RemapBottom,
+			h.Param(0), h.Param(1), h.Param(2),
+			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+			CopyAsNTrans)
+		n1 := len(*entity)
+		g.CopyEntity(sk, entity, sk.MustEntity(he), af, RemapTop,
+			h.Param(0), h.Param(1), h.Param(2),
+			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+			CopyAsNTrans)
+		g.MakeExtrusionLines(sk, entity, he)
+		// A draft moves the far end and the sides off where these
+		// are (draft.go), and both ends of a two-sided extrusion.
+		if g.HasDraft() {
+			from := n1
+			if ai != 0 || g.ValB != 0 {
+				// Two-sided, or leaning from another plane: both ends
+				// move.
+				from = n0
+			}
+			for i := from; i < len(*entity); i++ {
+				(*entity)[i].ForceHidden = true
+			}
+		}
+	}
+	// Remapped versions of that arbitrary point will be used to
+	// provide points on the plane faces.
+	g.MakeExtrusionTopBottomFaces(sk, entity, pt)
+	return
+}
+
+// generateLathe makes the entities and params of a GroupLathe group.
+func (g *Group) generateLathe(sk *Sketch, entity *[]core.Entity) {
+	axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+	axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
+
+	for i := range len(*entity) {
+		e := &(*entity)[i]
+		if e.Group != g.OpA {
+			continue
+		}
+
+		e.CalculateNumerical(sk, false)
+		he := e.H
+
+		// As soon as I call CopyEntity, e may become invalid! That
+		// adds entities, which may cause a realloc.
+
+		// this is the regular copy of all entities
+		g.CopyEntity(sk, entity, sk.MustEntity(he), 0, RemapLatheStart,
+			core.NoParam, core.NoParam, core.NoParam,
+			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+			CopyAsNumeric)
+
+		e = &(*entity)[i] // because we copied.
+		if e.IsPoint() {
+			// for points this copy is used for the circle centers
+			g.CopyEntity(sk, entity, sk.MustEntity(he), 0, RemapLatheArcCenter,
+				core.NoParam, core.NoParam, core.NoParam,
+				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+				CopyAsNumeric)
+			g.MakeLatheCircles(sk, entity, he, axisPos, axisDir)
+		}
+		g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
+	}
+	return
+}
+
+// generateRevolve makes the entities and params of a GroupRevolve group.
+func (g *Group) generateRevolve(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
+	h := g.H
+
+	// this was borrowed from LATHE and ROTATE
+	axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+	axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
+
+	// The center of rotation
+	AddParam(param, h.Param(0), axisPos.X)
+	AddParam(param, h.Param(1), axisPos.Y)
+	AddParam(param, h.Param(2), axisPos.Z)
+	// The rotation quaternion
+	AddParam(param, h.Param(3), 30*geom.Pi/180)
+	AddParam(param, h.Param(4), axisDir.X)
+	AddParam(param, h.Param(5), axisDir.Y)
+	AddParam(param, h.Param(6), axisDir.Z)
+
+	// Get some arbitrary point in the sketch, that will be used
+	// as a reference when defining end faces.
+	var pt core.HEntity
+
+	ai, af := 0, 2
+	if g.Subtype == GroupTwoSided {
+		ai, af = -1, 1
+	}
+	for i := range len(*entity) {
+		e := &(*entity)[i]
+		if e.Group != g.OpA {
+			continue
+		}
+
+		if e.IsPoint() {
+			pt = e.H
+		}
+
+		e.CalculateNumerical(sk, false)
+		he := e.H
+		// one copy for each end of the revolved surface
+		g.CopyEntity(sk, entity, e, ai, RemapLatheStart, h.Param(0),
+			h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+			h.Param(6), core.NoParam, CopyAsNRotAA)
+
+		e = &(*entity)[i] // because we copied.
+		g.CopyEntity(sk, entity, e, af, RemapLatheEnd, h.Param(0),
+			h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+			h.Param(6), core.NoParam, CopyAsNRotAA)
+
+		// Arcs are not generated for revolve groups, for now, because our current arc
+		// entity is not chiral, and dragging a revolve may break the arc by inverting it.
+		// MakeLatheCircles(entity, param, he, axis_pos, axis_dir);
+		g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
+	}
+	g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
+	return
+}
+
+// generateHelix makes the entities and params of a GroupHelix group.
+func (g *Group) generateHelix(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
+	h := g.H
+
+	axisPos := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+	axisDir := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
+
+	// The center of rotation
+	AddParam(param, h.Param(0), axisPos.X)
+	AddParam(param, h.Param(1), axisPos.Y)
+	AddParam(param, h.Param(2), axisPos.Z)
+	// The rotation quaternion
+	AddParam(param, h.Param(3), 30*geom.Pi/180)
+	AddParam(param, h.Param(4), axisDir.X)
+	AddParam(param, h.Param(5), axisDir.Y)
+	AddParam(param, h.Param(6), axisDir.Z)
+	// distance to translate along the rotation axis
+	AddParam(param, h.Param(7), 20)
+
+	// Get some arbitrary point in the sketch, that will be used
+	// as a reference when defining end faces.
+	var pt core.HEntity
+
+	ai, af := 0, 2 // initial and final number of transformations
+	if g.Subtype != GroupOneSided {
+		ai, af = -1, 1
+	}
+
+	for i := range len(*entity) {
+		e := &(*entity)[i]
+		if e.Group != g.OpA && e.H != g.Predef.Origin {
+			continue
+		}
+
+		if e.IsPoint() {
+			pt = e.H
+		}
+
+		e.CalculateNumerical(sk, false)
+
+		// one copy for each end of the helix
+		g.CopyEntity(sk, entity, e, ai, RemapLatheStart, h.Param(0),
+			h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+			h.Param(6), h.Param(7), CopyAsNRotAxisTrans)
+
+		e = &(*entity)[i] // because we copied.
+		g.CopyEntity(sk, entity, e, af, RemapLatheEnd, h.Param(0),
+			h.Param(1), h.Param(2), h.Param(3), h.Param(4), h.Param(5),
+			h.Param(6), h.Param(7), CopyAsNRotAxisTrans)
+
+		// For point entities on the axis, create a construction line
+		e = &(*entity)[i]
+		if e.IsPoint() {
+			check := e.PointGetNum(sk).Minus(axisPos).Cross(axisDir)
+			if check.Dot(check) < core.LengthEps {
+				ep := sk.MustEntity(e.H)
+				en := core.Entity{}
+				// A point gets extruded to form a line segment
+				en.Point[0] = g.RemapEntity(ep.H, RemapLatheStart)
+				en.Point[1] = g.RemapEntity(ep.H, RemapLatheEnd)
+				en.Group = h
+				en.Construction = ep.Construction
+				en.Style = ep.Style
+				en.H = g.RemapEntity(ep.H, RemapPtToLine)
+				en.Type = core.EntityLineSegment
+				*entity = append(*entity, en)
+			}
+		}
+	}
+	g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
+	return
+}
+
+// generateTranslate makes the entities and params of a GroupTranslate group.
+func (g *Group) generateTranslate(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
+	_, gp, _ := g.viewSeeds(sk)
+	h := g.H
+
+	// inherit meshCombine from source group
+	srcg := sk.Group(g.OpA)
+	g.MeshCombine = srcg.MeshCombine
+	// The translation vector
+	AddParam(param, h.Param(0), gp.X)
+	AddParam(param, h.Param(1), gp.Y)
+	AddParam(param, h.Param(2), gp.Z)
+
+	n, a0 := int(g.ValA), 0
+	if g.Subtype == GroupOneSided && g.SkipFirst {
+		a0++
+		n++
+	}
+
+	for a := a0; a < n; a++ {
+		for i := range len(*entity) {
+			e := &(*entity)[i]
+			if e.Group != g.OpA {
+				continue
+			}
+
+			e.CalculateNumerical(sk, false)
+			g.CopyEntity(sk, entity, e,
+				a*2-stepOffset(g.Subtype, n),
+				stepRemap(a, n),
+				h.Param(0), h.Param(1), h.Param(2),
+				core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
+				CopyAsNTrans)
+		}
+	}
+	return
+}
+
+// generateRotate makes the entities and params of a GroupRotate group.
+func (g *Group) generateRotate(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
+	gn, _, gc := g.viewSeeds(sk)
+	h := g.H
+
+	// inherit meshCombine from source group
+	srcg := sk.Group(g.OpA)
+	g.MeshCombine = srcg.MeshCombine
+	// The center of rotation
+	AddParam(param, h.Param(0), gc.X)
+	AddParam(param, h.Param(1), gc.Y)
+	AddParam(param, h.Param(2), gc.Z)
+	// The rotation quaternion
+	AddParam(param, h.Param(3), 30*geom.Pi/180)
+	AddParam(param, h.Param(4), gn.X)
+	AddParam(param, h.Param(5), gn.Y)
+	AddParam(param, h.Param(6), gn.Z)
+
+	n, a0 := int(g.ValA), 0
+	if g.Subtype == GroupOneSided && g.SkipFirst {
+		a0++
+		n++
+	}
+
+	for a := a0; a < n; a++ {
+		for i := range len(*entity) {
+			e := &(*entity)[i]
+			if e.Group != g.OpA {
+				continue
+			}
+
+			e.CalculateNumerical(sk, false)
+			g.CopyEntity(sk, entity, e,
+				a*2-stepOffset(g.Subtype, n),
+				stepRemap(a, n),
+				h.Param(0), h.Param(1), h.Param(2),
+				h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
+				CopyAsNRotAA)
+		}
+	}
+	return
+}
+
+// generateLinked makes the entities and params of a GroupLinked group.
+func (g *Group) generateLinked(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
+	_, gp, _ := g.viewSeeds(sk)
+	h := g.H
+
+	// The translation vector. A model comes in beside what is
+	// drawn, off the middle of the view, as in C++; a STEP file or
+	// a mesh where it was drawn, so that its coordinates are the
+	// file's (roadmap 16.13).
+	if !g.linksModel() {
+		gp = geom.Vector{}
+	}
+	AddParam(param, h.Param(0), gp.X)
+	AddParam(param, h.Param(1), gp.Y)
+	AddParam(param, h.Param(2), gp.Z)
+	// The rotation quaternion
+	AddParam(param, h.Param(3), 1)
+	AddParam(param, h.Param(4), 0)
+	AddParam(param, h.Param(5), 0)
+	AddParam(param, h.Param(6), 0)
+
+	for i := range len(g.ImpEntity) {
+		ie := &g.ImpEntity[i]
+		g.CopyEntity(sk, entity, ie, 0, 0,
+			h.Param(0), h.Param(1), h.Param(2),
+			h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
+			CopyAsNRotTrans)
+	}
+	return
+}
+
+// viewSeeds are the initial values of a group's free params, taken from
+// the view: a normal and a diagonal 200 pixels long, and the point the
+// view looks at. They only matter for a param without a previous value.
+func (g *Group) viewSeeds(sk *Sketch) (gn, gp, gc geom.Vector) {
+	view := sk.view()
+	gn = view.ProjRight.Cross(view.ProjUp).WithMagnitude(200 / view.Scale)
+	gp = view.ProjRight.Plus(view.ProjUp).WithMagnitude(200 / view.Scale)
+	gc = view.Offset.ScaledBy(-1)
+	return gn, gp, gc
 }
 
 // linksModel reports whether a link group links a model file, rather

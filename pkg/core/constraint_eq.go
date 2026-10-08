@@ -244,554 +244,759 @@ func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forRefere
 		return
 	}
 
-	exA := NewConstant(c.ValA)
 	switch c.Type {
 	case ConstraintPtPtDistance:
-		c.addEq(l, DistanceExpr(sk, c.Workplane, c.PtA, c.PtB).Minus(exA), 0)
+		c.ptPtDistanceEquations(sk, l)
 		return
 
 	case ConstraintProjPtDistance:
-		pA := mustEntity(sk, c.PtA).PointGetExprs(sk)
-		pB := mustEntity(sk, c.PtB).PointGetExprs(sk)
-		dp := pB.Minus(pA)
-
-		pp := mustEntity(sk, c.EntityA).VectorGetExprs(sk)
-		pp = pp.WithMagnitude(NewConstant(1.0))
-
-		c.addEq(l, dp.Dot(pp).Minus(exA), 0)
+		c.projPtDistanceEquations(sk, l)
 		return
 
 	case ConstraintPtLineDistance:
-		c.addEq(l, PointLineDistance(sk, c.Workplane, c.PtA, c.EntityA).Minus(exA), 0)
+		c.ptLineDistanceEquations(sk, l)
 		return
 
 	case ConstraintPtPlaneDistance:
-		pt := mustEntity(sk, c.PtA).PointGetExprs(sk)
-		c.addEq(l, PointPlaneDistance(sk, pt, c.EntityA).Minus(exA), 0)
+		c.ptPlaneDistanceEquations(sk, l)
 		return
 
 	case ConstraintPtFaceDistance:
-		pt := mustEntity(sk, c.PtA).PointGetExprs(sk)
-		f := mustEntity(sk, c.EntityA)
-		p0 := f.FaceGetPointExprs(sk)
-		n := f.FaceGetNormalExprs()
-		c.addEq(l, pt.Minus(p0).Dot(n).Minus(exA), 0)
+		c.ptFaceDistanceEquations(sk, l)
 		return
 
 	case ConstraintEqualLengthLines:
-		a := mustEntity(sk, c.EntityA)
-		b := mustEntity(sk, c.EntityB)
-		c.addEq(l, DistanceExpr(sk, c.Workplane, a.Point[0], a.Point[1]).Minus(
-			DistanceExpr(sk, c.Workplane, b.Point[0], b.Point[1])), 0)
+		c.equalLengthLinesEquations(sk, l)
 		return
 
 	// These work on distance squared, since the pt-line distances are
 	// signed, and we want the absolute value.
 	case ConstraintEqLenPtLineD:
-		forLen := mustEntity(sk, c.EntityA)
-		d1 := DistanceExpr(sk, c.Workplane, forLen.Point[0], forLen.Point[1])
-		d2 := PointLineDistance(sk, c.Workplane, c.PtA, c.EntityB)
-		c.addEq(l, d1.Square().Minus(d2.Square()), 0)
+		c.eqLenPtLineDEquations(sk, l)
 		return
 
 	case ConstraintEqPtLnDistances:
-		d1 := PointLineDistance(sk, c.Workplane, c.PtA, c.EntityA)
-		d2 := PointLineDistance(sk, c.Workplane, c.PtB, c.EntityB)
-		c.addEq(l, d1.Square().Minus(d2.Square()), 0)
+		c.eqPtLnDistancesEquations(sk, l)
 		return
 
 	case ConstraintLengthRatio:
-		a := mustEntity(sk, c.EntityA)
-		b := mustEntity(sk, c.EntityB)
-		la := DistanceExpr(sk, c.Workplane, a.Point[0], a.Point[1])
-		lb := DistanceExpr(sk, c.Workplane, b.Point[0], b.Point[1])
-		c.addEq(l, la.Div(lb).Minus(exA), 0)
+		c.lengthRatioEquations(sk, l)
 		return
 
 	case ConstraintArcArcLenRatio:
-		r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityA))
-		r2, theta2 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
-		// And write the equation; (r1*theta1) / ( r2*theta2) = some ratio
-		c.addEq(l, r1.Times(theta1).Div(r2.Times(theta2)).Minus(exA), 0)
+		c.arcArcLenRatioEquations(sk, l)
 		return
 
 	case ConstraintArcLineLenRatio:
-		line := mustEntity(sk, c.EntityA)
-		ll := DistanceExpr(sk, c.Workplane, line.Point[0], line.Point[1])
-		r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
-		// And write the equation; (r1*theta1) / ( length) = some ratio
-		c.addEq(l, r1.Times(theta1).Div(ll).Minus(exA), 0)
+		c.arcLineLenRatioEquations(sk, l)
 		return
 
 	case ConstraintLengthDifference:
-		a := mustEntity(sk, c.EntityA)
-		b := mustEntity(sk, c.EntityB)
-		la := DistanceExpr(sk, c.Workplane, a.Point[0], a.Point[1])
-		lb := DistanceExpr(sk, c.Workplane, b.Point[0], b.Point[1])
-		c.addEq(l, la.Minus(lb).Minus(exA), 0)
+		c.lengthDifferenceEquations(sk, l)
 		return
 
 	case ConstraintArcArcDifference:
-		r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityA))
-		r2, theta2 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
-		// And write the equation; (r1*theta1) - ( r2*theta2) = some difference
-		c.addEq(l, r1.Times(theta1).Minus(r2.Times(theta2)).Minus(exA), 0)
+		c.arcArcDifferenceEquations(sk, l)
 		return
 
 	case ConstraintArcLineDifference:
-		line := mustEntity(sk, c.EntityA)
-		ll := DistanceExpr(sk, c.Workplane, line.Point[0], line.Point[1])
-		r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
-		// And write the equation; (r1*theta1) - ( length) = some difference
-		c.addEq(l, r1.Times(theta1).Minus(ll).Minus(exA), 0)
+		c.arcLineDifferenceEquations(sk, l)
 		return
 
 	case ConstraintDiameter:
-		circle := mustEntity(sk, c.EntityA)
-		r := circle.CircleGetRadiusExpr(sk)
-		c.addEq(l, r.Times(NewConstant(2)).Minus(exA), 0)
+		c.diameterEquations(sk, l)
 		return
 
 	case ConstraintEqualRadius:
-		c1 := mustEntity(sk, c.EntityA)
-		c2 := mustEntity(sk, c.EntityB)
-		c.addEq(l, c1.CircleGetRadiusExpr(sk).Minus(c2.CircleGetRadiusExpr(sk)), 0)
+		c.equalRadiusEquations(sk, l)
 		return
 
 	case ConstraintEqualLineArcLen:
-		line := mustEntity(sk, c.EntityA)
-		arc := mustEntity(sk, c.EntityB)
-
-		// Get the line length
-		l0 := mustEntity(sk, line.Point[0]).PointGetExprs(sk)
-		l1 := mustEntity(sk, line.Point[1]).PointGetExprs(sk)
-		ll := l1.Minus(l0).Magnitude()
-
-		r, theta := arcLengthExprs(sk, arc)
-
-		// And write the equation; r*theta = L
-		c.addEq(l, r.Times(theta).Minus(ll), 0)
+		c.equalLineArcLenEquations(sk, l)
 		return
 
 	case ConstraintPointsCoincident:
-		a := mustEntity(sk, c.PtA)
-		b := mustEntity(sk, c.PtB)
-		if IsFreeIn3D(c.Workplane) {
-			pa := a.PointGetExprs(sk)
-			pb := b.PointGetExprs(sk)
-			c.addEq(l, pa.X.Minus(pb.X), 0)
-			c.addEq(l, pa.Y.Minus(pb.Y), 1)
-			c.addEq(l, pa.Z.Minus(pb.Z), 2)
-		} else {
-			au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-			bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-			c.addEq(l, au.Minus(bu), 0)
-			c.addEq(l, av.Minus(bv), 1)
-		}
+		c.pointsCoincidentEquations(sk, l)
 		return
 
 	case ConstraintPtInPlane:
-		// This one works the same, whether projected or not.
-		c.addEq(l, PointPlaneDistance(sk, mustEntity(sk, c.PtA).PointGetExprs(sk), c.EntityA), 0)
+		c.ptInPlaneEquations(sk, l)
 		return
 
 	case ConstraintPtOnFace:
-		// a plane, n dot (p - p0) = 0
-		p := mustEntity(sk, c.PtA).PointGetExprs(sk)
-		f := mustEntity(sk, c.EntityA)
-		p0 := f.FaceGetPointExprs(sk)
-		n := f.FaceGetNormalExprs()
-		c.addEq(l, p.Minus(p0).Dot(n), 0)
+		c.ptOnFaceEquations(sk, l)
 		return
 
 	case ConstraintPtOnLine:
-		ln := mustEntity(sk, c.EntityA)
-		a := mustEntity(sk, ln.Point[0])
-		b := mustEntity(sk, ln.Point[1])
-		p := mustEntity(sk, c.PtA)
-
-		ep := p.PointGetExprsInWorkplane(sk, c.Workplane)
-		ea := a.PointGetExprsInWorkplane(sk, c.Workplane)
-		eb := b.PointGetExprsInWorkplane(sk, c.Workplane)
-
-		ptOnLine := ea.Plus(eb.Minus(ea).ScaledBy(NewParam(c.ValP)))
-		eq := ptOnLine.Minus(ep)
-
-		c.addEqVector(l, eq, 0)
+		c.ptOnLineEquations(sk, l)
 		return
 
 	case ConstraintPtOnCircle:
-		// This actually constrains the point to lie on the cylinder.
-		circle := mustEntity(sk, c.EntityA)
-		center := mustEntity(sk, circle.Point[0]).PointGetExprs(sk)
-		pt := mustEntity(sk, c.PtA).PointGetExprs(sk)
-		normal := mustEntity(sk, circle.Normal)
-		u := normal.NormalExprsU(sk)
-		v := normal.NormalExprsV(sk)
-
-		du := center.Minus(pt).Dot(u)
-		dv := center.Minus(pt).Dot(v)
-
-		r := circle.CircleGetRadiusExpr(sk)
-
-		c.addEq(l, du.Square().Plus(dv.Square()).Sqrt().Minus(r), 0)
+		c.ptOnCircleEquations(sk, l)
 		return
 
 	case ConstraintAtMidpoint:
-		if IsFreeIn3D(c.Workplane) {
-			ln := mustEntity(sk, c.EntityA)
-			a := mustEntity(sk, ln.Point[0]).PointGetExprs(sk)
-			b := mustEntity(sk, ln.Point[1]).PointGetExprs(sk)
-			m := a.Plus(b).ScaledBy(NewConstant(0.5))
-
-			if c.PtA.V != 0 {
-				p := mustEntity(sk, c.PtA).PointGetExprs(sk)
-				c.addEq(l, m.X.Minus(p.X), 0)
-				c.addEq(l, m.Y.Minus(p.Y), 1)
-				c.addEq(l, m.Z.Minus(p.Z), 2)
-			} else {
-				c.addEq(l, PointPlaneDistance(sk, m, c.EntityB), 0)
-			}
-		} else {
-			ln := mustEntity(sk, c.EntityA)
-			a := mustEntity(sk, ln.Point[0])
-			b := mustEntity(sk, ln.Point[1])
-
-			au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-			bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-			mu := NewConstant(0.5).Times(au.Plus(bu))
-			mv := NewConstant(0.5).Times(av.Plus(bv))
-
-			if c.PtA.V != 0 {
-				p := mustEntity(sk, c.PtA)
-				pu, pv := p.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-				c.addEq(l, pu.Minus(mu), 0)
-				c.addEq(l, pv.Minus(mv), 1)
-			} else {
-				m := PointInThreeSpace(sk, c.Workplane, mu, mv)
-				c.addEq(l, PointPlaneDistance(sk, m, c.EntityB), 0)
-			}
-		}
+		c.atMidpointEquations(sk, l)
 		return
 
 	case ConstraintSymmetric:
-		if IsFreeIn3D(c.Workplane) {
-			plane := mustEntity(sk, c.EntityA)
-			ea := mustEntity(sk, c.PtA)
-			eb := mustEntity(sk, c.PtB)
-			a := ea.PointGetExprs(sk)
-			b := eb.PointGetExprs(sk)
-
-			// The midpoint of the line connecting the symmetric points
-			// lies on the plane of the symmetry.
-			m := a.Plus(b).ScaledBy(NewConstant(0.5))
-			c.addEq(l, PointPlaneDistance(sk, m, plane.H), 0)
-
-			// And projected into the plane of symmetry, the points are
-			// coincident.
-			au, av := ea.PointGetExprsInWorkplaneUV(sk, plane.H)
-			bu, bv := eb.PointGetExprsInWorkplaneUV(sk, plane.H)
-			c.addEq(l, au.Minus(bu), 1)
-			c.addEq(l, av.Minus(bv), 2)
-		} else {
-			plane := mustEntity(sk, c.EntityA)
-			a := mustEntity(sk, c.PtA)
-			b := mustEntity(sk, c.PtB)
-
-			au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-			bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-			mu := NewConstant(0.5).Times(au.Plus(bu))
-			mv := NewConstant(0.5).Times(av.Plus(bv))
-
-			m := PointInThreeSpace(sk, c.Workplane, mu, mv)
-			c.addEq(l, PointPlaneDistance(sk, m, plane.H), 0)
-
-			// Construct a vector within the workplane that is normal
-			// to the symmetry pane's normal (i.e., that lies in the
-			// plane of symmetry). The line connecting the points is
-			// perpendicular to that constructed vector.
-			w := mustEntity(sk, c.Workplane)
-			u := w.NormalEntity(sk).NormalExprsU(sk)
-			v := w.NormalEntity(sk).NormalExprsV(sk)
-
-			pa := a.PointGetExprs(sk)
-			pb := b.PointGetExprs(sk)
-			n, _ := plane.WorkplaneGetPlaneExprs(sk)
-			c.addEq(l, n.Cross(u.Cross(v)).Dot(pa.Minus(pb)), 1)
-		}
+		c.symmetricEquations(sk, l)
 		return
 
 	case ConstraintSymmetricHoriz, ConstraintSymmetricVert:
-		if IsFreeIn3D(c.Workplane) {
-			panic("Unexpected horizontal/vertical symmetric constraint in 3d")
-		}
+		c.symmetricAxisEquations(sk, l)
+		return
 
+	case ConstraintSymmetricLine:
+		c.symmetricLineEquations(sk, l)
+		return
+
+	case ConstraintHorizontal, ConstraintVertical:
+		c.horizontalVerticalEquations(sk, l)
+		return
+
+	case ConstraintSameOrientation:
+		c.sameOrientationEquations(sk, l)
+		return
+
+	case ConstraintPerpendicular, ConstraintAngle:
+		c.angleEquations(sk, l)
+		return
+
+	case ConstraintEqualAngle:
+		c.equalAngleEquations(sk, l)
+		return
+
+	case ConstraintArcLineTangent:
+		c.arcLineTangentEquations(sk, l)
+		return
+
+	case ConstraintCubicLineTangent:
+		c.cubicLineTangentEquations(sk, l)
+		return
+
+	case ConstraintCurveCurveTangent:
+		c.curveCurveTangentEquations(sk, l)
+		return
+
+	case ConstraintParallel:
+		c.parallelEquations(sk, l)
+		return
+
+	case ConstraintWhereDragged:
+		c.whereDraggedEquations(sk, l)
+		return
+
+	case ConstraintComment:
+		c.commentEquations(sk, l)
+		return
+	}
+	panic(fmt.Sprintf("Unexpected constraint type %d", c.Type))
+}
+
+// ptPtDistanceEquations appends the equations of a ConstraintPtPtDistance constraint.
+func (c *Constraint) ptPtDistanceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	c.addEq(l, DistanceExpr(sk, c.Workplane, c.PtA, c.PtB).Minus(exA), 0)
+}
+
+// projPtDistanceEquations appends the equations of a ConstraintProjPtDistance constraint.
+func (c *Constraint) projPtDistanceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	pA := mustEntity(sk, c.PtA).PointGetExprs(sk)
+	pB := mustEntity(sk, c.PtB).PointGetExprs(sk)
+	dp := pB.Minus(pA)
+
+	pp := mustEntity(sk, c.EntityA).VectorGetExprs(sk)
+	pp = pp.WithMagnitude(NewConstant(1.0))
+
+	c.addEq(l, dp.Dot(pp).Minus(exA), 0)
+}
+
+// ptLineDistanceEquations appends the equations of a ConstraintPtLineDistance constraint.
+func (c *Constraint) ptLineDistanceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	c.addEq(l, PointLineDistance(sk, c.Workplane, c.PtA, c.EntityA).Minus(exA), 0)
+}
+
+// ptPlaneDistanceEquations appends the equations of a ConstraintPtPlaneDistance constraint.
+func (c *Constraint) ptPlaneDistanceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	pt := mustEntity(sk, c.PtA).PointGetExprs(sk)
+	c.addEq(l, PointPlaneDistance(sk, pt, c.EntityA).Minus(exA), 0)
+}
+
+// ptFaceDistanceEquations appends the equations of a ConstraintPtFaceDistance constraint.
+func (c *Constraint) ptFaceDistanceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	pt := mustEntity(sk, c.PtA).PointGetExprs(sk)
+	f := mustEntity(sk, c.EntityA)
+	p0 := f.FaceGetPointExprs(sk)
+	n := f.FaceGetNormalExprs()
+	c.addEq(l, pt.Minus(p0).Dot(n).Minus(exA), 0)
+}
+
+// equalLengthLinesEquations appends the equations of a ConstraintEqualLengthLines constraint.
+func (c *Constraint) equalLengthLinesEquations(sk EntitySketch, l *[]Equation) {
+	a := mustEntity(sk, c.EntityA)
+	b := mustEntity(sk, c.EntityB)
+	c.addEq(l, DistanceExpr(sk, c.Workplane, a.Point[0], a.Point[1]).Minus(
+		DistanceExpr(sk, c.Workplane, b.Point[0], b.Point[1])), 0)
+}
+
+// eqLenPtLineDEquations appends the equations of a ConstraintEqLenPtLineD constraint.
+func (c *Constraint) eqLenPtLineDEquations(sk EntitySketch, l *[]Equation) {
+	forLen := mustEntity(sk, c.EntityA)
+	d1 := DistanceExpr(sk, c.Workplane, forLen.Point[0], forLen.Point[1])
+	d2 := PointLineDistance(sk, c.Workplane, c.PtA, c.EntityB)
+	c.addEq(l, d1.Square().Minus(d2.Square()), 0)
+}
+
+// eqPtLnDistancesEquations appends the equations of a ConstraintEqPtLnDistances constraint.
+func (c *Constraint) eqPtLnDistancesEquations(sk EntitySketch, l *[]Equation) {
+	d1 := PointLineDistance(sk, c.Workplane, c.PtA, c.EntityA)
+	d2 := PointLineDistance(sk, c.Workplane, c.PtB, c.EntityB)
+	c.addEq(l, d1.Square().Minus(d2.Square()), 0)
+}
+
+// lengthRatioEquations appends the equations of a ConstraintLengthRatio constraint.
+func (c *Constraint) lengthRatioEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	a := mustEntity(sk, c.EntityA)
+	b := mustEntity(sk, c.EntityB)
+	la := DistanceExpr(sk, c.Workplane, a.Point[0], a.Point[1])
+	lb := DistanceExpr(sk, c.Workplane, b.Point[0], b.Point[1])
+	c.addEq(l, la.Div(lb).Minus(exA), 0)
+}
+
+// arcArcLenRatioEquations appends the equations of a ConstraintArcArcLenRatio constraint.
+func (c *Constraint) arcArcLenRatioEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityA))
+	r2, theta2 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
+	// And write the equation; (r1*theta1) / ( r2*theta2) = some ratio
+	c.addEq(l, r1.Times(theta1).Div(r2.Times(theta2)).Minus(exA), 0)
+}
+
+// arcLineLenRatioEquations appends the equations of a ConstraintArcLineLenRatio constraint.
+func (c *Constraint) arcLineLenRatioEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	line := mustEntity(sk, c.EntityA)
+	ll := DistanceExpr(sk, c.Workplane, line.Point[0], line.Point[1])
+	r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
+	// And write the equation; (r1*theta1) / ( length) = some ratio
+	c.addEq(l, r1.Times(theta1).Div(ll).Minus(exA), 0)
+}
+
+// lengthDifferenceEquations appends the equations of a ConstraintLengthDifference constraint.
+func (c *Constraint) lengthDifferenceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	a := mustEntity(sk, c.EntityA)
+	b := mustEntity(sk, c.EntityB)
+	la := DistanceExpr(sk, c.Workplane, a.Point[0], a.Point[1])
+	lb := DistanceExpr(sk, c.Workplane, b.Point[0], b.Point[1])
+	c.addEq(l, la.Minus(lb).Minus(exA), 0)
+}
+
+// arcArcDifferenceEquations appends the equations of a ConstraintArcArcDifference constraint.
+func (c *Constraint) arcArcDifferenceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityA))
+	r2, theta2 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
+	// And write the equation; (r1*theta1) - ( r2*theta2) = some difference
+	c.addEq(l, r1.Times(theta1).Minus(r2.Times(theta2)).Minus(exA), 0)
+}
+
+// arcLineDifferenceEquations appends the equations of a ConstraintArcLineDifference constraint.
+func (c *Constraint) arcLineDifferenceEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	line := mustEntity(sk, c.EntityA)
+	ll := DistanceExpr(sk, c.Workplane, line.Point[0], line.Point[1])
+	r1, theta1 := arcLengthExprs(sk, mustEntity(sk, c.EntityB))
+	// And write the equation; (r1*theta1) - ( length) = some difference
+	c.addEq(l, r1.Times(theta1).Minus(ll).Minus(exA), 0)
+}
+
+// diameterEquations appends the equations of a ConstraintDiameter constraint.
+func (c *Constraint) diameterEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	circle := mustEntity(sk, c.EntityA)
+	r := circle.CircleGetRadiusExpr(sk)
+	c.addEq(l, r.Times(NewConstant(2)).Minus(exA), 0)
+}
+
+// equalRadiusEquations appends the equations of a ConstraintEqualRadius constraint.
+func (c *Constraint) equalRadiusEquations(sk EntitySketch, l *[]Equation) {
+	c1 := mustEntity(sk, c.EntityA)
+	c2 := mustEntity(sk, c.EntityB)
+	c.addEq(l, c1.CircleGetRadiusExpr(sk).Minus(c2.CircleGetRadiusExpr(sk)), 0)
+}
+
+// equalLineArcLenEquations appends the equations of a ConstraintEqualLineArcLen constraint.
+func (c *Constraint) equalLineArcLenEquations(sk EntitySketch, l *[]Equation) {
+	line := mustEntity(sk, c.EntityA)
+	arc := mustEntity(sk, c.EntityB)
+
+	// Get the line length
+	l0 := mustEntity(sk, line.Point[0]).PointGetExprs(sk)
+	l1 := mustEntity(sk, line.Point[1]).PointGetExprs(sk)
+	ll := l1.Minus(l0).Magnitude()
+
+	r, theta := arcLengthExprs(sk, arc)
+
+	// And write the equation; r*theta = L
+	c.addEq(l, r.Times(theta).Minus(ll), 0)
+}
+
+// pointsCoincidentEquations appends the equations of a ConstraintPointsCoincident constraint.
+func (c *Constraint) pointsCoincidentEquations(sk EntitySketch, l *[]Equation) {
+	a := mustEntity(sk, c.PtA)
+	b := mustEntity(sk, c.PtB)
+	if IsFreeIn3D(c.Workplane) {
+		pa := a.PointGetExprs(sk)
+		pb := b.PointGetExprs(sk)
+		c.addEq(l, pa.X.Minus(pb.X), 0)
+		c.addEq(l, pa.Y.Minus(pb.Y), 1)
+		c.addEq(l, pa.Z.Minus(pb.Z), 2)
+	} else {
+		au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+		bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+		c.addEq(l, au.Minus(bu), 0)
+		c.addEq(l, av.Minus(bv), 1)
+	}
+}
+
+// ptInPlaneEquations appends the equations of a ConstraintPtInPlane constraint.
+func (c *Constraint) ptInPlaneEquations(sk EntitySketch, l *[]Equation) {
+	// This one works the same, whether projected or not.
+	c.addEq(l, PointPlaneDistance(sk, mustEntity(sk, c.PtA).PointGetExprs(sk), c.EntityA), 0)
+}
+
+// ptOnFaceEquations appends the equations of a ConstraintPtOnFace constraint.
+func (c *Constraint) ptOnFaceEquations(sk EntitySketch, l *[]Equation) {
+	// a plane, n dot (p - p0) = 0
+	p := mustEntity(sk, c.PtA).PointGetExprs(sk)
+	f := mustEntity(sk, c.EntityA)
+	p0 := f.FaceGetPointExprs(sk)
+	n := f.FaceGetNormalExprs()
+	c.addEq(l, p.Minus(p0).Dot(n), 0)
+}
+
+// ptOnLineEquations appends the equations of a ConstraintPtOnLine constraint.
+func (c *Constraint) ptOnLineEquations(sk EntitySketch, l *[]Equation) {
+	ln := mustEntity(sk, c.EntityA)
+	a := mustEntity(sk, ln.Point[0])
+	b := mustEntity(sk, ln.Point[1])
+	p := mustEntity(sk, c.PtA)
+
+	ep := p.PointGetExprsInWorkplane(sk, c.Workplane)
+	ea := a.PointGetExprsInWorkplane(sk, c.Workplane)
+	eb := b.PointGetExprsInWorkplane(sk, c.Workplane)
+
+	ptOnLine := ea.Plus(eb.Minus(ea).ScaledBy(NewParam(c.ValP)))
+	eq := ptOnLine.Minus(ep)
+
+	c.addEqVector(l, eq, 0)
+}
+
+// ptOnCircleEquations appends the equations of a ConstraintPtOnCircle constraint.
+func (c *Constraint) ptOnCircleEquations(sk EntitySketch, l *[]Equation) {
+	// This actually constrains the point to lie on the cylinder.
+	circle := mustEntity(sk, c.EntityA)
+	center := mustEntity(sk, circle.Point[0]).PointGetExprs(sk)
+	pt := mustEntity(sk, c.PtA).PointGetExprs(sk)
+	normal := mustEntity(sk, circle.Normal)
+	u := normal.NormalExprsU(sk)
+	v := normal.NormalExprsV(sk)
+
+	du := center.Minus(pt).Dot(u)
+	dv := center.Minus(pt).Dot(v)
+
+	r := circle.CircleGetRadiusExpr(sk)
+
+	c.addEq(l, du.Square().Plus(dv.Square()).Sqrt().Minus(r), 0)
+}
+
+// atMidpointEquations appends the equations of a ConstraintAtMidpoint constraint.
+func (c *Constraint) atMidpointEquations(sk EntitySketch, l *[]Equation) {
+	if IsFreeIn3D(c.Workplane) {
+		ln := mustEntity(sk, c.EntityA)
+		a := mustEntity(sk, ln.Point[0]).PointGetExprs(sk)
+		b := mustEntity(sk, ln.Point[1]).PointGetExprs(sk)
+		m := a.Plus(b).ScaledBy(NewConstant(0.5))
+
+		if c.PtA.V != 0 {
+			p := mustEntity(sk, c.PtA).PointGetExprs(sk)
+			c.addEq(l, m.X.Minus(p.X), 0)
+			c.addEq(l, m.Y.Minus(p.Y), 1)
+			c.addEq(l, m.Z.Minus(p.Z), 2)
+		} else {
+			c.addEq(l, PointPlaneDistance(sk, m, c.EntityB), 0)
+		}
+	} else {
+		ln := mustEntity(sk, c.EntityA)
+		a := mustEntity(sk, ln.Point[0])
+		b := mustEntity(sk, ln.Point[1])
+
+		au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+		bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+		mu := NewConstant(0.5).Times(au.Plus(bu))
+		mv := NewConstant(0.5).Times(av.Plus(bv))
+
+		if c.PtA.V != 0 {
+			p := mustEntity(sk, c.PtA)
+			pu, pv := p.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+			c.addEq(l, pu.Minus(mu), 0)
+			c.addEq(l, pv.Minus(mv), 1)
+		} else {
+			m := PointInThreeSpace(sk, c.Workplane, mu, mv)
+			c.addEq(l, PointPlaneDistance(sk, m, c.EntityB), 0)
+		}
+	}
+}
+
+// symmetricEquations appends the equations of a ConstraintSymmetric constraint.
+func (c *Constraint) symmetricEquations(sk EntitySketch, l *[]Equation) {
+	if IsFreeIn3D(c.Workplane) {
+		plane := mustEntity(sk, c.EntityA)
+		ea := mustEntity(sk, c.PtA)
+		eb := mustEntity(sk, c.PtB)
+		a := ea.PointGetExprs(sk)
+		b := eb.PointGetExprs(sk)
+
+		// The midpoint of the line connecting the symmetric points
+		// lies on the plane of the symmetry.
+		m := a.Plus(b).ScaledBy(NewConstant(0.5))
+		c.addEq(l, PointPlaneDistance(sk, m, plane.H), 0)
+
+		// And projected into the plane of symmetry, the points are
+		// coincident.
+		au, av := ea.PointGetExprsInWorkplaneUV(sk, plane.H)
+		bu, bv := eb.PointGetExprsInWorkplaneUV(sk, plane.H)
+		c.addEq(l, au.Minus(bu), 1)
+		c.addEq(l, av.Minus(bv), 2)
+	} else {
+		plane := mustEntity(sk, c.EntityA)
 		a := mustEntity(sk, c.PtA)
 		b := mustEntity(sk, c.PtB)
 
 		au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
 		bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+		mu := NewConstant(0.5).Times(au.Plus(bu))
+		mv := NewConstant(0.5).Times(av.Plus(bv))
 
-		if c.Type == ConstraintSymmetricHoriz {
-			c.addEq(l, av.Minus(bv), 0)
-			c.addEq(l, au.Plus(bu), 1)
-		} else {
-			c.addEq(l, au.Minus(bu), 0)
-			c.addEq(l, av.Plus(bv), 1)
-		}
-		return
+		m := PointInThreeSpace(sk, c.Workplane, mu, mv)
+		c.addEq(l, PointPlaneDistance(sk, m, plane.H), 0)
 
-	case ConstraintSymmetricLine:
-		pa := mustEntity(sk, c.PtA)
-		pb := mustEntity(sk, c.PtB)
+		// Construct a vector within the workplane that is normal
+		// to the symmetry pane's normal (i.e., that lies in the
+		// plane of symmetry). The line connecting the points is
+		// perpendicular to that constructed vector.
+		w := mustEntity(sk, c.Workplane)
+		u := w.NormalEntity(sk).NormalExprsU(sk)
+		v := w.NormalEntity(sk).NormalExprsV(sk)
 
-		pau, pav := pa.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-		pbu, pbv := pb.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-
-		ln := mustEntity(sk, c.EntityA)
-		la := mustEntity(sk, ln.Point[0])
-		lb := mustEntity(sk, ln.Point[1])
-		lau, lav := la.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-		lbu, lbv := lb.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-
-		dpu, dpv := pbu.Minus(pau), pbv.Minus(pav)
-		dlu, dlv := lbu.Minus(lau), lbv.Minus(lav)
-
-		// The line through the points is perpendicular to the line
-		// of symmetry.
-		c.addEq(l, dlu.Times(dpu).Plus(dlv.Times(dpv)), 0)
-
-		// And the signed distances of the points to the line are
-		// equal in magnitude and opposite in sign, so sum to zero
-		dista := dlv.Times(lau.Minus(pau)).Minus(dlu.Times(lav.Minus(pav)))
-		distb := dlv.Times(lau.Minus(pbu)).Minus(dlu.Times(lav.Minus(pbv)))
-		c.addEq(l, dista.Plus(distb), 1)
-		return
-
-	case ConstraintHorizontal, ConstraintVertical:
-		if IsFreeIn3D(c.Workplane) {
-			panic("Unexpected horizontal/vertical constraint in 3d")
-		}
-
-		var ha, hb HEntity
-		if c.EntityA.V != 0 {
-			e := mustEntity(sk, c.EntityA)
-			ha = e.Point[0]
-			hb = e.Point[1]
-		} else {
-			ha = c.PtA
-			hb = c.PtB
-		}
-		a := mustEntity(sk, ha)
-		b := mustEntity(sk, hb)
-
-		au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-		bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-
-		if c.Type == ConstraintHorizontal {
-			c.addEq(l, av.Minus(bv), 0)
-		} else {
-			c.addEq(l, au.Minus(bu), 0)
-		}
-		return
-
-	case ConstraintSameOrientation:
-		a := mustEntity(sk, c.EntityA)
-		b := mustEntity(sk, c.EntityB)
-
-		au := a.NormalExprsU(sk)
-		an := a.NormalExprsN(sk)
-		bu := b.NormalExprsU(sk)
-		bv := b.NormalExprsV(sk)
-		bn := b.NormalExprsN(sk)
-
-		eq := VectorsParallel3d(an, bn, c.ValP)
-		c.addEq(l, eq.X, 0)
-		c.addEq(l, eq.Y, 1)
-		c.addEq(l, eq.Z, 2)
-		d1 := au.Dot(bv)
-		d2 := au.Dot(bu)
-		// Allow either orientation for the coordinate system, depending
-		// on how it was drawn.
-		if math.Abs(EvalExpr(sk, d1)) < math.Abs(EvalExpr(sk, d2)) {
-			c.addEq(l, d1, 3)
-		} else {
-			c.addEq(l, d2, 3)
-		}
-		return
-
-	case ConstraintPerpendicular, ConstraintAngle:
-		a := mustEntity(sk, c.EntityA)
-		b := mustEntity(sk, c.EntityB)
-		ae := a.VectorGetExprs(sk)
-		be := b.VectorGetExprs(sk)
-		if c.Other {
-			ae = ae.ScaledBy(NewConstant(-1))
-		}
-		cs := DirectionCosine(sk, c.Workplane, ae, be)
-
-		if c.Type == ConstraintAngle {
-			// The direction cosine is equal to the cosine of the
-			// specified angle
-			rads := exA.Times(NewConstant(math.Pi / 180))
-			rc := rads.Cos()
-			arc := math.Abs(EvalExpr(sk, rc))
-			// avoid false detection of inconsistent systems by gaining
-			// up as the difference in dot products gets small at small
-			// angles; doubles still have plenty of precision, only
-			// problem is that rank test
-			mult := 1.0
-			if arc > 0.99 {
-				mult = 0.01 / (1.00001 - arc)
-			}
-			c.addEq(l, cs.Minus(rc).Times(NewConstant(mult)), 0)
-		} else {
-			// The dot product (and therefore the direction cosine)
-			// is equal to zero, perpendicular.
-			c.addEq(l, cs, 0)
-		}
-		return
-
-	case ConstraintEqualAngle:
-		a := mustEntity(sk, c.EntityA)
-		b := mustEntity(sk, c.EntityB)
-		cc := mustEntity(sk, c.EntityC)
-		d := mustEntity(sk, c.EntityD)
-		ae := a.VectorGetExprs(sk)
-		be := b.VectorGetExprs(sk)
-		ce := cc.VectorGetExprs(sk)
-		de := d.VectorGetExprs(sk)
-
-		if c.Other {
-			ae = ae.ScaledBy(NewConstant(-1))
-		}
-
-		cab := DirectionCosine(sk, c.Workplane, ae, be)
-		ccd := DirectionCosine(sk, c.Workplane, ce, de)
-
-		c.addEq(l, cab.Minus(ccd), 0)
-		return
-
-	case ConstraintArcLineTangent:
-		arc := mustEntity(sk, c.EntityA)
-		line := mustEntity(sk, c.EntityB)
-
-		ac := mustEntity(sk, arc.Point[0]).PointGetExprs(sk)
-		pt := arc.Point[1]
-		if c.Other {
-			pt = arc.Point[2]
-		}
-		ap := mustEntity(sk, pt).PointGetExprs(sk)
-
-		ld := line.VectorGetExprs(sk)
-
-		// The line is perpendicular to the radius
-		c.addEq(l, ld.Dot(ac.Minus(ap)), 0)
-		return
-
-	case ConstraintCubicLineTangent:
-		cubic := mustEntity(sk, c.EntityA)
-		line := mustEntity(sk, c.EntityB)
-
-		var a ExprVector
-		if c.Other {
-			a = cubic.CubicGetFinishTangentExprs(sk)
-		} else {
-			a = cubic.CubicGetStartTangentExprs(sk)
-		}
-
-		b := line.VectorGetExprs(sk)
-
-		if IsFreeIn3D(c.Workplane) {
-			eq := VectorsParallel3d(a, b, c.ValP)
-			c.addEqVector(l, eq, 0)
-		} else {
-			w := mustEntity(sk, c.Workplane)
-			wn := w.NormalEntity(sk).NormalExprsN(sk)
-			c.addEq(l, a.Cross(b).Dot(wn), 0)
-		}
-		return
-
-	case ConstraintCurveCurveTangent:
-		parallel := true
-		var dir [2]ExprVector
-		for i := range 2 {
-			he, oth := c.EntityA, c.Other
-			if i == 1 {
-				he, oth = c.EntityB, c.Other2
-			}
-			e := mustEntity(sk, he)
-
-			switch e.Type {
-			case EntityArcOfCircle:
-				center := mustEntity(sk, e.Point[0]).PointGetExprs(sk)
-				pt := e.Point[1]
-				if oth {
-					pt = e.Point[2]
-				}
-				endpoint := mustEntity(sk, pt).PointGetExprs(sk)
-				dir[i] = endpoint.Minus(center)
-				// We're using the vector from the center of the arc to
-				// an endpoint; so that's normal to the tangent, not
-				// parallel.
-				parallel = !parallel
-			case EntityCubic:
-				if oth {
-					dir[i] = e.CubicGetFinishTangentExprs(sk)
-				} else {
-					dir[i] = e.CubicGetStartTangentExprs(sk)
-				}
-			default:
-				panic("Unexpected entity types for CURVE_CURVE_TANGENT")
-			}
-		}
-		if parallel {
-			w := mustEntity(sk, c.Workplane)
-			wn := w.NormalEntity(sk).NormalExprsN(sk)
-			c.addEq(l, dir[0].Cross(dir[1]).Dot(wn), 0)
-		} else {
-			c.addEq(l, dir[0].Dot(dir[1]), 0)
-		}
-		return
-
-	case ConstraintParallel:
-		ea := mustEntity(sk, c.EntityA)
-		eb := mustEntity(sk, c.EntityB)
-		a := ea.VectorGetExprsInWorkplane(sk, c.Workplane)
-		b := eb.VectorGetExprsInWorkplane(sk, c.Workplane)
-
-		if IsFreeIn3D(c.Workplane) {
-			eq := VectorsParallel3d(a, b, c.ValP)
-			c.addEqVector(l, eq, 0)
-		} else {
-			// We use expressions written in workplane csys, so we can
-			// assume the workplane normal is (0, 0, 1); the pseudo-scalar
-			// product is the z component of a x b.
-			eq := a.X.Times(b.Y).Minus(a.Y.Times(b.X))
-			c.addEq(l, eq, 0)
-		}
-		return
-
-	case ConstraintWhereDragged:
-		ep := mustEntity(sk, c.PtA)
-		if IsFreeIn3D(c.Workplane) {
-			ev := ep.PointGetExprs(sk)
-			v := ep.PointGetNum(sk)
-
-			c.addEq(l, ev.X.Minus(NewConstant(v.X)), 0)
-			c.addEq(l, ev.Y.Minus(NewConstant(v.Y)), 1)
-			c.addEq(l, ev.Z.Minus(NewConstant(v.Z)), 2)
-		} else {
-			u, v := ep.PointGetExprsInWorkplaneUV(sk, c.Workplane)
-			c.addEq(l, u.Minus(NewConstant(EvalExpr(sk, u))), 0)
-			c.addEq(l, v.Minus(NewConstant(EvalExpr(sk, v))), 1)
-		}
-		return
-
-	case ConstraintComment:
-		return
+		pa := a.PointGetExprs(sk)
+		pb := b.PointGetExprs(sk)
+		n, _ := plane.WorkplaneGetPlaneExprs(sk)
+		c.addEq(l, n.Cross(u.Cross(v)).Dot(pa.Minus(pb)), 1)
 	}
-	panic(fmt.Sprintf("Unexpected constraint type %d", c.Type))
+}
+
+// symmetricAxisEquations appends the equations of a ConstraintSymmetricHoriz, ConstraintSymmetricVert constraint.
+func (c *Constraint) symmetricAxisEquations(sk EntitySketch, l *[]Equation) {
+	if IsFreeIn3D(c.Workplane) {
+		panic("Unexpected horizontal/vertical symmetric constraint in 3d")
+	}
+
+	a := mustEntity(sk, c.PtA)
+	b := mustEntity(sk, c.PtB)
+
+	au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+	bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+
+	if c.Type == ConstraintSymmetricHoriz {
+		c.addEq(l, av.Minus(bv), 0)
+		c.addEq(l, au.Plus(bu), 1)
+	} else {
+		c.addEq(l, au.Minus(bu), 0)
+		c.addEq(l, av.Plus(bv), 1)
+	}
+}
+
+// symmetricLineEquations appends the equations of a ConstraintSymmetricLine constraint.
+func (c *Constraint) symmetricLineEquations(sk EntitySketch, l *[]Equation) {
+	pa := mustEntity(sk, c.PtA)
+	pb := mustEntity(sk, c.PtB)
+
+	pau, pav := pa.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+	pbu, pbv := pb.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+
+	ln := mustEntity(sk, c.EntityA)
+	la := mustEntity(sk, ln.Point[0])
+	lb := mustEntity(sk, ln.Point[1])
+	lau, lav := la.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+	lbu, lbv := lb.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+
+	dpu, dpv := pbu.Minus(pau), pbv.Minus(pav)
+	dlu, dlv := lbu.Minus(lau), lbv.Minus(lav)
+
+	// The line through the points is perpendicular to the line
+	// of symmetry.
+	c.addEq(l, dlu.Times(dpu).Plus(dlv.Times(dpv)), 0)
+
+	// And the signed distances of the points to the line are
+	// equal in magnitude and opposite in sign, so sum to zero
+	dista := dlv.Times(lau.Minus(pau)).Minus(dlu.Times(lav.Minus(pav)))
+	distb := dlv.Times(lau.Minus(pbu)).Minus(dlu.Times(lav.Minus(pbv)))
+	c.addEq(l, dista.Plus(distb), 1)
+}
+
+// horizontalVerticalEquations appends the equations of a ConstraintHorizontal, ConstraintVertical constraint.
+func (c *Constraint) horizontalVerticalEquations(sk EntitySketch, l *[]Equation) {
+	if IsFreeIn3D(c.Workplane) {
+		panic("Unexpected horizontal/vertical constraint in 3d")
+	}
+
+	var ha, hb HEntity
+	if c.EntityA.V != 0 {
+		e := mustEntity(sk, c.EntityA)
+		ha = e.Point[0]
+		hb = e.Point[1]
+	} else {
+		ha = c.PtA
+		hb = c.PtB
+	}
+	a := mustEntity(sk, ha)
+	b := mustEntity(sk, hb)
+
+	au, av := a.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+	bu, bv := b.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+
+	if c.Type == ConstraintHorizontal {
+		c.addEq(l, av.Minus(bv), 0)
+	} else {
+		c.addEq(l, au.Minus(bu), 0)
+	}
+}
+
+// sameOrientationEquations appends the equations of a ConstraintSameOrientation constraint.
+func (c *Constraint) sameOrientationEquations(sk EntitySketch, l *[]Equation) {
+	a := mustEntity(sk, c.EntityA)
+	b := mustEntity(sk, c.EntityB)
+
+	au := a.NormalExprsU(sk)
+	an := a.NormalExprsN(sk)
+	bu := b.NormalExprsU(sk)
+	bv := b.NormalExprsV(sk)
+	bn := b.NormalExprsN(sk)
+
+	eq := VectorsParallel3d(an, bn, c.ValP)
+	c.addEq(l, eq.X, 0)
+	c.addEq(l, eq.Y, 1)
+	c.addEq(l, eq.Z, 2)
+	d1 := au.Dot(bv)
+	d2 := au.Dot(bu)
+	// Allow either orientation for the coordinate system, depending
+	// on how it was drawn.
+	if math.Abs(EvalExpr(sk, d1)) < math.Abs(EvalExpr(sk, d2)) {
+		c.addEq(l, d1, 3)
+	} else {
+		c.addEq(l, d2, 3)
+	}
+}
+
+// angleEquations appends the equations of a ConstraintPerpendicular, ConstraintAngle constraint.
+func (c *Constraint) angleEquations(sk EntitySketch, l *[]Equation) {
+	exA := NewConstant(c.ValA)
+
+	a := mustEntity(sk, c.EntityA)
+	b := mustEntity(sk, c.EntityB)
+	ae := a.VectorGetExprs(sk)
+	be := b.VectorGetExprs(sk)
+	if c.Other {
+		ae = ae.ScaledBy(NewConstant(-1))
+	}
+	cs := DirectionCosine(sk, c.Workplane, ae, be)
+
+	if c.Type == ConstraintAngle {
+		// The direction cosine is equal to the cosine of the
+		// specified angle
+		rads := exA.Times(NewConstant(math.Pi / 180))
+		rc := rads.Cos()
+		arc := math.Abs(EvalExpr(sk, rc))
+		// avoid false detection of inconsistent systems by gaining
+		// up as the difference in dot products gets small at small
+		// angles; doubles still have plenty of precision, only
+		// problem is that rank test
+		mult := 1.0
+		if arc > 0.99 {
+			mult = 0.01 / (1.00001 - arc)
+		}
+		c.addEq(l, cs.Minus(rc).Times(NewConstant(mult)), 0)
+	} else {
+		// The dot product (and therefore the direction cosine)
+		// is equal to zero, perpendicular.
+		c.addEq(l, cs, 0)
+	}
+}
+
+// equalAngleEquations appends the equations of a ConstraintEqualAngle constraint.
+func (c *Constraint) equalAngleEquations(sk EntitySketch, l *[]Equation) {
+	a := mustEntity(sk, c.EntityA)
+	b := mustEntity(sk, c.EntityB)
+	cc := mustEntity(sk, c.EntityC)
+	d := mustEntity(sk, c.EntityD)
+	ae := a.VectorGetExprs(sk)
+	be := b.VectorGetExprs(sk)
+	ce := cc.VectorGetExprs(sk)
+	de := d.VectorGetExprs(sk)
+
+	if c.Other {
+		ae = ae.ScaledBy(NewConstant(-1))
+	}
+
+	cab := DirectionCosine(sk, c.Workplane, ae, be)
+	ccd := DirectionCosine(sk, c.Workplane, ce, de)
+
+	c.addEq(l, cab.Minus(ccd), 0)
+}
+
+// arcLineTangentEquations appends the equations of a ConstraintArcLineTangent constraint.
+func (c *Constraint) arcLineTangentEquations(sk EntitySketch, l *[]Equation) {
+	arc := mustEntity(sk, c.EntityA)
+	line := mustEntity(sk, c.EntityB)
+
+	ac := mustEntity(sk, arc.Point[0]).PointGetExprs(sk)
+	pt := arc.Point[1]
+	if c.Other {
+		pt = arc.Point[2]
+	}
+	ap := mustEntity(sk, pt).PointGetExprs(sk)
+
+	ld := line.VectorGetExprs(sk)
+
+	// The line is perpendicular to the radius
+	c.addEq(l, ld.Dot(ac.Minus(ap)), 0)
+}
+
+// cubicLineTangentEquations appends the equations of a ConstraintCubicLineTangent constraint.
+func (c *Constraint) cubicLineTangentEquations(sk EntitySketch, l *[]Equation) {
+	cubic := mustEntity(sk, c.EntityA)
+	line := mustEntity(sk, c.EntityB)
+
+	var a ExprVector
+	if c.Other {
+		a = cubic.CubicGetFinishTangentExprs(sk)
+	} else {
+		a = cubic.CubicGetStartTangentExprs(sk)
+	}
+
+	b := line.VectorGetExprs(sk)
+
+	if IsFreeIn3D(c.Workplane) {
+		eq := VectorsParallel3d(a, b, c.ValP)
+		c.addEqVector(l, eq, 0)
+	} else {
+		w := mustEntity(sk, c.Workplane)
+		wn := w.NormalEntity(sk).NormalExprsN(sk)
+		c.addEq(l, a.Cross(b).Dot(wn), 0)
+	}
+}
+
+// curveCurveTangentEquations appends the equations of a ConstraintCurveCurveTangent constraint.
+func (c *Constraint) curveCurveTangentEquations(sk EntitySketch, l *[]Equation) {
+	parallel := true
+	var dir [2]ExprVector
+	for i := range 2 {
+		he, oth := c.EntityA, c.Other
+		if i == 1 {
+			he, oth = c.EntityB, c.Other2
+		}
+		e := mustEntity(sk, he)
+
+		switch e.Type {
+		case EntityArcOfCircle:
+			center := mustEntity(sk, e.Point[0]).PointGetExprs(sk)
+			pt := e.Point[1]
+			if oth {
+				pt = e.Point[2]
+			}
+			endpoint := mustEntity(sk, pt).PointGetExprs(sk)
+			dir[i] = endpoint.Minus(center)
+			// We're using the vector from the center of the arc to
+			// an endpoint; so that's normal to the tangent, not
+			// parallel.
+			parallel = !parallel
+		case EntityCubic:
+			if oth {
+				dir[i] = e.CubicGetFinishTangentExprs(sk)
+			} else {
+				dir[i] = e.CubicGetStartTangentExprs(sk)
+			}
+		default:
+			panic("Unexpected entity types for CURVE_CURVE_TANGENT")
+		}
+	}
+	if parallel {
+		w := mustEntity(sk, c.Workplane)
+		wn := w.NormalEntity(sk).NormalExprsN(sk)
+		c.addEq(l, dir[0].Cross(dir[1]).Dot(wn), 0)
+	} else {
+		c.addEq(l, dir[0].Dot(dir[1]), 0)
+	}
+}
+
+// parallelEquations appends the equations of a ConstraintParallel constraint.
+func (c *Constraint) parallelEquations(sk EntitySketch, l *[]Equation) {
+	ea := mustEntity(sk, c.EntityA)
+	eb := mustEntity(sk, c.EntityB)
+	a := ea.VectorGetExprsInWorkplane(sk, c.Workplane)
+	b := eb.VectorGetExprsInWorkplane(sk, c.Workplane)
+
+	if IsFreeIn3D(c.Workplane) {
+		eq := VectorsParallel3d(a, b, c.ValP)
+		c.addEqVector(l, eq, 0)
+	} else {
+		// We use expressions written in workplane csys, so we can
+		// assume the workplane normal is (0, 0, 1); the pseudo-scalar
+		// product is the z component of a x b.
+		eq := a.X.Times(b.Y).Minus(a.Y.Times(b.X))
+		c.addEq(l, eq, 0)
+	}
+}
+
+// whereDraggedEquations appends the equations of a ConstraintWhereDragged constraint.
+func (c *Constraint) whereDraggedEquations(sk EntitySketch, l *[]Equation) {
+	ep := mustEntity(sk, c.PtA)
+	if IsFreeIn3D(c.Workplane) {
+		ev := ep.PointGetExprs(sk)
+		v := ep.PointGetNum(sk)
+
+		c.addEq(l, ev.X.Minus(NewConstant(v.X)), 0)
+		c.addEq(l, ev.Y.Minus(NewConstant(v.Y)), 1)
+		c.addEq(l, ev.Z.Minus(NewConstant(v.Z)), 2)
+	} else {
+		u, v := ep.PointGetExprsInWorkplaneUV(sk, c.Workplane)
+		c.addEq(l, u.Minus(NewConstant(EvalExpr(sk, u))), 0)
+		c.addEq(l, v.Minus(NewConstant(EvalExpr(sk, v))), 1)
+	}
+}
+
+// commentEquations appends the equations of a ConstraintComment constraint.
+func (c *Constraint) commentEquations(sk EntitySketch, l *[]Equation) {
 }
 
 // IsProjectible reports whether the constraint applies in a workplane,
