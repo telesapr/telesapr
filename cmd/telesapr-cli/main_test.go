@@ -46,7 +46,7 @@ func model(t *testing.T, fixture string) string {
 	return dst
 }
 
-func run(t *testing.T, args ...string) (bool, string) {
+func runTool(t *testing.T, args ...string) (bool, string) {
 	t.Helper()
 	var stderr bytes.Buffer
 	ok := runCommand(append([]string{"telesapr-cli"}, args...), &stderr)
@@ -58,7 +58,7 @@ func run(t *testing.T, args ...string) (bool, string) {
 // pkg/persist/slvs regenerates it).
 func TestExportMesh(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "mesh.stl")
-	ok, msg := run(t, "export-mesh", "--chord-tol", "0.1", "-o", out,
+	ok, msg := runTool(t, "export-mesh", "--chord-tol", "0.1", "-o", out,
 		model(t, "group/boolean_knife_edge/normal.slvs"))
 	if !ok {
 		t.Fatalf("failed: %s", msg)
@@ -81,7 +81,7 @@ func TestExportMesh(t *testing.T) {
 func TestExportMesh3mf(t *testing.T) {
 	dir := t.TempDir()
 	for _, name := range []string{"mesh.stl", "mesh.3mf"} {
-		if ok, msg := run(t, "export-mesh", "--chord-tol", "0.1", "-o", filepath.Join(dir, name),
+		if ok, msg := runTool(t, "export-mesh", "--chord-tol", "0.1", "-o", filepath.Join(dir, name),
 			model(t, "group/boolean_knife_edge/normal.slvs")); !ok {
 			t.Fatalf("%s: %s", name, msg)
 		}
@@ -112,7 +112,7 @@ func TestExportMesh3mf(t *testing.T) {
 // A3 sheet (roadmap 18.1).
 func TestExportDrawing(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "sheet.svg")
-	if ok, msg := run(t, "export-drawing", "-o", out, model(t, "group/boolean_knife_edge/normal.slvs")); !ok {
+	if ok, msg := runTool(t, "export-drawing", "-o", out, model(t, "group/boolean_knife_edge/normal.slvs")); !ok {
 		t.Fatalf("failed: %s", msg)
 	}
 	data, err := os.ReadFile(out)
@@ -137,7 +137,7 @@ func TestOutputFor(t *testing.T) {
 
 func TestThumbnail(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "t.png")
-	ok, msg := run(t, "thumbnail", "--size", "64x48", "--view", "isometric", "-o", out,
+	ok, msg := runTool(t, "thumbnail", "--size", "64x48", "--view", "isometric", "-o", out,
 		model(t, "group/boolean_knife_edge/normal.slvs"))
 	if !ok {
 		t.Fatalf("failed: %s", msg)
@@ -172,7 +172,7 @@ func TestBadCommandLines(t *testing.T) {
 		{[]string{"convert"}, "At least one input file"},
 		{[]string{"convert", "-o", "x.tlspr", in, in}, "must include a %"},
 	} {
-		ok, out := run(t, c.args...)
+		ok, out := runTool(t, c.args...)
 		if ok || !strings.Contains(out, c.msg) {
 			t.Errorf("%v: ok=%v, output %q lacks %q", c.args, ok, out, c.msg)
 		}
@@ -183,7 +183,7 @@ func TestBadCommandLines(t *testing.T) {
 // sketch without solids, to fail.
 func TestExportErrorFails(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "x.stl")
-	ok, msg := run(t, "export-mesh", "-o", out, model(t, "request/line_segment/normal.slvs"))
+	ok, msg := runTool(t, "export-mesh", "-o", out, model(t, "request/line_segment/normal.slvs"))
 	if ok || !strings.Contains(msg, "nothing to export") {
 		t.Errorf("ok=%v: %s", ok, msg)
 	}
@@ -194,7 +194,7 @@ func TestExportErrorFails(t *testing.T) {
 // is finer than the default.
 func TestRegenerateWritesTlspr(t *testing.T) {
 	in := model(t, "group/translate_nd/normal.slvs")
-	if ok, msg := run(t, "regenerate", "--chord-tol", "0.05", in); !ok || !strings.Contains(msg, "Written '"+in+"'") {
+	if ok, msg := runTool(t, "regenerate", "--chord-tol", "0.05", in); !ok || !strings.Contains(msg, "Written '"+in+"'") {
 		t.Fatalf("ok=%v: %s", ok, msg)
 	}
 	data, err := os.ReadFile(in)
@@ -205,7 +205,7 @@ func TestRegenerateWritesTlspr(t *testing.T) {
 		t.Errorf("regenerated file starts %.30q", data)
 	}
 	out := filepath.Join(t.TempDir(), "x.stl")
-	if ok, msg := run(t, "export-mesh", "-o", out, in); !ok {
+	if ok, msg := runTool(t, "export-mesh", "-o", out, in); !ok {
 		t.Errorf("the regenerated model doesn't export: %s", msg)
 	}
 }
@@ -238,28 +238,28 @@ func TestConvert(t *testing.T) {
 	src := filepath.Join(dir, "normal.slvs")
 	linked := filepath.Join(dir, "rect_v20.tlspr")
 
-	ok, msg := run(t, "convert", src)
+	ok, msg := runTool(t, "convert", src)
 	if !ok || !strings.Contains(msg, "Written '"+linked+"'") || !strings.Contains(msg, "Written '"+filepath.Join(dir, "normal.tlspr")+"'") {
 		t.Fatalf("ok=%v: %s", ok, msg)
 	}
-	ok, msg = run(t, "convert", "-o", "%-copy.tlspr", src)
+	ok, msg = runTool(t, "convert", "-o", "%-copy.tlspr", src)
 	if !ok || !strings.Contains(msg, "Kept '"+linked+"'") || !strings.Contains(msg, "normal-copy.tlspr") {
 		t.Errorf("ok=%v: %s", ok, msg)
 	}
-	ok, msg = run(t, "convert", "--overwrite", src)
+	ok, msg = runTool(t, "convert", "--overwrite", src)
 	if !ok || !strings.Contains(msg, "Written '"+linked+"'") {
 		t.Errorf("ok=%v: %s", ok, msg)
 	}
 
 	// What it wrote is a model the other commands take.
-	if ok, msg := run(t, "regenerate", filepath.Join(dir, "normal.tlspr")); !ok {
+	if ok, msg := runTool(t, "regenerate", filepath.Join(dir, "normal.tlspr")); !ok {
 		t.Errorf("regenerating the converted model: %s", msg)
 	}
 
 	if err := os.Remove(filepath.Join(dir, "rect_v20.slvs")); err != nil {
 		t.Fatal(err)
 	}
-	ok, msg = run(t, "convert", "-o", "%-missing.tlspr", src)
+	ok, msg = runTool(t, "convert", "-o", "%-missing.tlspr", src)
 	if ok || !strings.Contains(msg, "the linked file '"+filepath.Join(dir, "rect_v20.slvs")+"' can't be read") {
 		t.Errorf("ok=%v: %s", ok, msg)
 	}
@@ -267,11 +267,11 @@ func TestConvert(t *testing.T) {
 		t.Error("a model with a missing link was written")
 	}
 
-	ok, msg = run(t, "convert", "-o", filepath.Join(dir, "x.txt"), src)
+	ok, msg = runTool(t, "convert", "-o", filepath.Join(dir, "x.txt"), src)
 	if ok || !strings.Contains(msg, "is not a TeleSAPR file") {
 		t.Errorf("ok=%v: %s", ok, msg)
 	}
-	ok, msg = run(t, "convert", "-o", filepath.Join(dir, "none", "x.tlspr"), filepath.Join(dir, "normal.slvs"))
+	ok, msg = runTool(t, "convert", "-o", filepath.Join(dir, "none", "x.tlspr"), filepath.Join(dir, "normal.slvs"))
 	if ok || !strings.Contains(msg, "Cannot convert") {
 		t.Errorf("unwritable output: ok=%v: %s", ok, msg)
 	}

@@ -4,7 +4,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"os"
 	"runtime"
 	"strings"
@@ -20,42 +21,61 @@ import (
 func init() { runtime.LockOSThread() }
 
 func main() {
-	log.SetFlags(0)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+			return a
+		},
+	}))
+	cfg, problems := parseArgs(os.Args[1:])
+	for _, p := range problems {
+		logger.Warn(p)
+	}
+	if err := run(cfg, logger); err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+}
+
+// run opens the window on the platform, loads the file the command line
+// names and runs its script, and serves the event loop until the
+// window closes.
+func run(cfg options, logger *slog.Logger) error {
 	srf.SetParallelModeFromEnv()
 	p, err := tkgui.New(platform.DefaultSettingsPath())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	opts := parseArgs(os.Args[1:])
-	files, scriptFile, scriptArgs := opts.files, opts.scriptFile, opts.scriptArgs
-
 	ss := ui.New(p)
-	ss.RendererOverride = opts.renderer
+	ss.RendererOverride = cfg.renderer
 	// The solids are made off the interface's thread unless
 	// TELESAPR_BACKGROUND is off (roadmap 17.3).
 	ss.BackgroundShells = os.Getenv("TELESAPR_BACKGROUND") != "off"
 	ss.Init()
 
-	if len(files) >= 1 {
-		if len(files) > 1 {
-			log.Print("Only the first file passed on command line will be opened.")
+	if len(cfg.files) >= 1 {
+		if len(cfg.files) > 1 {
+			logger.Warn("only the first file passed on the command line will be opened")
 		}
-		ss.Report(ss.Load(files[len(files)-1]))
+		ss.Report(ss.Load(cfg.files[len(cfg.files)-1]))
 	}
-	if opts.agent {
+	if cfg.agent {
 		if err := ss.AllowAgent(true); err != nil {
-			log.Printf("--agent: %v", err)
+			logger.Warn("--agent: " + err.Error())
 		}
 	}
-	if scriptFile != "" {
+	if cfg.scriptFile != "" {
 		// It runs once the event loop does, on the sketch just opened.
 		console := ss.Console()
 		console.SetVisible(true)
-		console.RunFile(scriptFile, scriptArgs...)
+		console.RunFile(cfg.scriptFile, cfg.scriptArgs...)
 	}
 
 	p.Run()
+	return nil
 }
 
 // options is what the command line asks for.
@@ -72,10 +92,10 @@ type options struct {
 // parseArgs splits the command line into the sketch files to open, the
 // renderer to draw with for this run, whether AI programs may connect
 // (telesapr-cli mcp), and, after --script, a Go script to run on the
-// sketch with its arguments:
+// sketch with its arguments, saying what it could not read:
 //
 //	telesapr [--renderer opengl|software] [--agent] [sketch.tlspr] [--script script.go [argument...]]
-func parseArgs(args []string) (o options) {
+func parseArgs(args []string) (o options, problems []string) {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch {
@@ -83,23 +103,23 @@ func parseArgs(args []string) (o options) {
 			if i+1 < len(args) {
 				o.scriptFile, o.scriptArgs = args[i+1], args[i+2:]
 			} else {
-				log.Print("--script needs the script to run.")
+				problems = append(problems, "--script needs the script to run")
 			}
-			return o
+			return o, problems
 		case arg == "--agent":
 			o.agent = true
 		case arg == "--renderer" || strings.HasPrefix(arg, "--renderer="):
 			value, ok := strings.CutPrefix(arg, "--renderer=")
 			if !ok {
 				if i+1 >= len(args) {
-					log.Print("--renderer needs opengl or software.")
+					problems = append(problems, "--renderer needs opengl or software")
 					continue
 				}
 				i++
 				value = args[i]
 			}
 			if value != "opengl" && value != "software" {
-				log.Printf("--renderer %s: it is opengl or software.", value)
+				problems = append(problems, fmt.Sprintf("--renderer %s: it is opengl or software", value))
 				continue
 			}
 			o.renderer = value
@@ -107,5 +127,5 @@ func parseArgs(args []string) (o options) {
 			o.files = append(o.files, arg)
 		}
 	}
-	return o
+	return o, problems
 }

@@ -27,7 +27,7 @@ func TestParseArgs(t *testing.T) {
 		{args: []string{"--script"}},
 	}
 	for _, c := range cases {
-		o := parseArgs(c.args)
+		o, _ := parseArgs(c.args)
 		if !slices.Equal(o.files, c.files) || o.renderer != c.renderer || o.scriptFile != c.script ||
 			!slices.Equal(o.scriptArgs, c.sargs) || o.agent != c.agent {
 			t.Errorf("parseArgs(%q) = %+v", c.args, o)

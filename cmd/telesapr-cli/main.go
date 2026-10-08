@@ -239,6 +239,96 @@ func newSession(stderr io.Writer) *session {
 	return s
 }
 
+// fileCommand is a command that works on model files: the options it
+// takes, what it checks before starting, the output pattern it uses
+// when none is given ("" means one must be), and what it does to each
+// file.
+type fileCommand struct {
+	accepted []string
+	output   string
+	check    func(o *options, stderr io.Writer) bool
+	run      func(s *session, o *options, output string) error
+}
+
+// needView and needSize are what the view and thumbnail commands
+// check.
+func needView(o *options, stderr io.Writer) bool {
+	if !o.viewGiven() {
+		fmt.Fprintln(stderr, "View direction must be specified.")
+		return false
+	}
+	return true
+}
+
+func needSize(o *options, stderr io.Writer) bool {
+	if o.width == 0 || o.height == 0 {
+		fmt.Fprintln(stderr, "Non-zero viewport size must be specified.")
+		return false
+	}
+	return needView(o, stderr)
+}
+
+// fileCommands are the commands that work on model files, by name.
+var fileCommands = map[string]fileCommand{
+	"thumbnail": {
+		accepted: []string{"--output", "--view", "--chord-tol", "--size"},
+		check:    needSize,
+		run: func(s *session, o *options, output string) error {
+			return s.ss.WriteThumbnail(output, o.width, o.height, o.projRight, o.projUp)
+		},
+	},
+	"export-view": {
+		accepted: []string{"--output", "--view", "--chord-tol", "--bg-color"},
+		check:    needView,
+		run: func(s *session, o *options, output string) error {
+			s.ss.GW.SetProjection(o.projRight, o.projUp)
+			s.ss.ExportChordTol = o.chordTol
+			s.ss.ExportBackgroundColor = o.bgColor
+			return s.ss.ExportViewOrWireframeTo(output, false)
+		},
+	},
+	"export-wireframe": {
+		accepted: []string{"--output", "--chord-tol"},
+		run: func(s *session, o *options, output string) error {
+			s.ss.ExportChordTol = o.chordTol
+			return s.ss.ExportViewOrWireframeTo(output, true)
+		},
+	},
+	"export-drawing": {
+		accepted: []string{"--output", "--chord-tol"},
+		run: func(s *session, o *options, output string) error {
+			s.ss.ExportChordTol = o.chordTol
+			d := s.ss.SK.Drawing
+			if d == nil {
+				d = sketch.DefaultDrawing()
+			}
+			return s.ss.ExportDrawingTo(output, d)
+		},
+	},
+	"export-mesh": {
+		accepted: []string{"--output", "--chord-tol"},
+		run: func(s *session, o *options, output string) error {
+			s.ss.ExportChordTol = o.chordTol
+			return s.ss.ExportMeshTo(output)
+		},
+	},
+	"export-surfaces": {
+		accepted: []string{"--output"},
+		run: func(s *session, _ *options, output string) error {
+			return s.ss.ExportSurfacesTo(output)
+		},
+	},
+	"regenerate": {
+		accepted: []string{"--chord-tol"},
+		output:   "%.tlspr",
+		run: func(s *session, o *options, output string) error {
+			s.ss.ExportChordTol = o.chordTol
+			s.ss.EnterExportMode()
+			return s.ss.SaveToFile(output)
+		},
+	},
+}
+
 // runCommand performs args[1] on the files args name. It is false when
 // the command line or a file was wrong.
 func runCommand(args []string, stderr io.Writer) bool {
@@ -253,95 +343,29 @@ func runCommand(args []string, stderr io.Writer) bool {
 	}
 
 	o := &options{chordTol: 1.0}
-	var accepted []string
-	var runner func(s *session, output string) error
-
 	switch args[1] {
 	case "version":
 		_, _ = fmt.Fprintf(stderr, "TeleSAPR version %s\n", version.Version)
 		return true
-	case "thumbnail":
-		accepted = []string{"--output", "--view", "--chord-tol", "--size"}
-	case "export-view":
-		accepted = []string{"--output", "--view", "--chord-tol", "--bg-color"}
-	case "export-wireframe":
-		accepted = []string{"--output", "--chord-tol"}
-	case "export-drawing":
-		accepted = []string{"--output", "--chord-tol"}
-	case "export-mesh":
-		accepted = []string{"--output", "--chord-tol"}
-	case "export-surfaces":
-		accepted = []string{"--output"}
-	case "regenerate":
-		accepted = []string{"--chord-tol"}
 	case "convert":
-		accepted = []string{"--output", "--overwrite"}
-	default:
+		if !o.parse(args, []string{"--output", "--overwrite"}, stderr) {
+			return false
+		}
+		return convertModels(o, stderr)
+	}
+	c, ok := fileCommands[args[1]]
+	if !ok {
 		fmt.Fprintf(stderr, "Unrecognized command '%s'.\n", args[1])
 		return false
 	}
-	if !o.parse(args, accepted, stderr) {
+	if !o.parse(args, c.accepted, stderr) {
 		return false
 	}
-
-	if args[1] == "convert" {
-		return convertModels(o, stderr)
+	if c.check != nil && !c.check(o, stderr) {
+		return false
 	}
-
-	switch args[1] {
-	case "thumbnail":
-		if o.width == 0 || o.height == 0 {
-			fmt.Fprintln(stderr, "Non-zero viewport size must be specified.")
-			return false
-		}
-		if !o.viewGiven() {
-			fmt.Fprintln(stderr, "View direction must be specified.")
-			return false
-		}
-		runner = func(s *session, output string) error {
-			return s.ss.WriteThumbnail(output, o.width, o.height, o.projRight, o.projUp)
-		}
-	case "export-view":
-		if !o.viewGiven() {
-			fmt.Fprintln(stderr, "View direction must be specified.")
-			return false
-		}
-		runner = func(s *session, output string) error {
-			s.ss.GW.SetProjection(o.projRight, o.projUp)
-			s.ss.ExportChordTol = o.chordTol
-			s.ss.ExportBackgroundColor = o.bgColor
-			return s.ss.ExportViewOrWireframeTo(output, false)
-		}
-	case "export-wireframe":
-		runner = func(s *session, output string) error {
-			s.ss.ExportChordTol = o.chordTol
-			return s.ss.ExportViewOrWireframeTo(output, true)
-		}
-	case "export-drawing":
-		runner = func(s *session, output string) error {
-			s.ss.ExportChordTol = o.chordTol
-			d := s.ss.SK.Drawing
-			if d == nil {
-				d = sketch.DefaultDrawing()
-			}
-			return s.ss.ExportDrawingTo(output, d)
-		}
-	case "export-mesh":
-		runner = func(s *session, output string) error {
-			s.ss.ExportChordTol = o.chordTol
-			return s.ss.ExportMeshTo(output)
-		}
-	case "export-surfaces":
-		runner = func(s *session, output string) error {
-			return s.ss.ExportSurfacesTo(output)
-		}
-	case "regenerate":
-		o.outputPattern = "%.tlspr"
-		runner = func(s *session, output string) error {
-			s.ss.ExportChordTol = o.chordTol
-			s.ss.EnterExportMode()
-			return s.ss.SaveToFile(output)
-		}
+	if o.outputPattern == "" {
+		o.outputPattern = c.output
 	}
 
 	if o.outputPattern == "" {
@@ -375,7 +399,7 @@ func runCommand(args []string, stderr io.Writer) bool {
 			return false
 		}
 		s.ss.AfterNewFile()
-		if err := runner(s, absOutput); err != nil {
+		if err := c.run(s, o, absOutput); err != nil {
 			fmt.Fprintf(stderr, "Cannot write '%s': %v\n", output, err)
 			return false
 		}
@@ -440,24 +464,29 @@ func convertModels(o *options, stderr io.Writer) bool {
 
 func main() {
 	srf.SetParallelModeFromEnv()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	args := append([]string{filepath.Base(os.Args[0])}, os.Args[1:]...)
+	status := run(ctx, args, os.Stdin, os.Stdout, os.Stderr)
+	stop()
+	os.Exit(status)
+}
+
+// run performs the command line args, args[0] being the tool's name,
+// and returns the exit status: 0 for success, 1 for a command that
+// failed, and the scripting commands' own statuses.
+func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 1 {
-		showUsage(os.Stderr, args[0])
-		return
+		showUsage(stderr, args[0])
+		return exitOK
 	}
-	if isScriptCommand(args[1]) {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-		status := runScript(ctx, args, os.Stdin, os.Stdout, os.Stderr)
-		stop()
-		os.Exit(status)
+	switch {
+	case isScriptCommand(args[1]):
+		return runScript(ctx, args, stdin, stdout, stderr)
+	case args[1] == "mcp":
+		return runMCP(ctx, args, stdin, stdout, stderr)
 	}
-	if args[1] == "mcp" {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-		status := runMCP(ctx, args, os.Stdin, os.Stdout, os.Stderr)
-		stop()
-		os.Exit(status)
+	if !runCommand(args, stderr) {
+		return 1
 	}
-	if !runCommand(args, os.Stderr) {
-		os.Exit(1)
-	}
+	return exitOK
 }
