@@ -1,7 +1,7 @@
 package export
 
 // The file format-specific stuff for the 2d vector output formats but
-// DXF (C++ exportvector.cpp).
+// DXF.
 
 import (
 	"math"
@@ -16,8 +16,7 @@ import (
 
 var veryPositiveVector = geom.Vector{X: geom.VeryPositive, Y: geom.VeryPositive, Z: geom.VeryPositive}
 
-// makeStipplePattern is a dash pattern in the format's units (C++
-// MakeStipplePattern).
+// makeStipplePattern is a dash pattern in the format's units.
 func makeStipplePattern(pattern core.StipplePattern, scale float64, delimiter byte,
 	inkscapeWorkaround bool) string {
 	scale /= 2.0
@@ -67,8 +66,8 @@ type epsFileWriter struct {
 func (w *epsFileWriter) HasCanvasSize() bool { return true }
 func (w *epsFileWriter) CanOutputMesh() bool { return true }
 
-// cppInt converts f to a C++ int as x86 does: what doesn't fit, such as
-// the extent of an empty sketch, is INT_MIN.
+// cppInt converts f to a 32-bit int as x86 does: what doesn't fit, such
+// as the extent of an empty sketch, is INT_MIN.
 func cppInt(f float64) int {
 	if !(f >= math.MinInt32 && f <= math.MaxInt32) {
 		return math.MinInt32
@@ -506,7 +505,7 @@ func (w *svgFileWriter) StartFile() {
 	}
 
 	exportStyle(core.HStyle{V: core.StyleNoStyle})
-	// Style::Get can add styles; C++ ranges over the list as it grows.
+	// Style::Get can add styles; the list is ranged over as it grows.
 	for i := range len(w.sk.Styles) {
 		exportStyle(w.sk.Styles[i].H)
 	}

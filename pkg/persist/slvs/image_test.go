@@ -10,9 +10,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// TestImageAspectFromFile: as in C++, an image request takes its
-// aspect ratio from the image file when it can be read, over the saved
-// one.
+// TestImageAspectFromFile:, an image request takes its aspect ratio
+// from the image file when it can be read, over the saved one.
 func TestImageAspectFromFile(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	src := filepath.Join(filepath.Dir(thisFile), "../../../testdata/request/image")

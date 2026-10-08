@@ -26,7 +26,7 @@ const ModelColors = 8
 const MaxRecent = 8
 
 // Application is the application: the sketch, its two windows and the
-// user's configuration (C++ SolveSpaceUI, the SS global).
+// user's configuration.
 type Application struct {
 	Platform platform.Platform
 	Settings core.Settings
@@ -58,9 +58,9 @@ type Application struct {
 	// StepOneSurfacePerFace has STEP export write a face of several
 	// patches as one surface; the tests turn it off to compare.
 	StepOneSurfacePerFace bool
-	// Windowless makes the graphics window behave as C++'s headless
-	// build, which has none: the view is never fitted to it and the
-	// camera is 297 by 210. The command-line tool sets it.
+	// Windowless makes the graphics window behave as if there were
+	// none: the view is never fitted to it and the camera is 297 by
+	// 210. The command-line tool sets it.
 	Windowless bool
 
 	// ViewUnits is the unit lengths are shown and typed in: the
@@ -114,8 +114,7 @@ type Application struct {
 	pixmaps map[*sketch.Image]*res.Pixmap
 
 	// lastGeneration is the sketch generation the display last saw, to
-	// notice a regeneration (C++ GenerateAll's persistentDirty and
-	// centerOfMass.dirty).
+	// notice a regeneration.
 	lastGeneration uint64
 }
 
@@ -128,8 +127,7 @@ func New(p platform.Platform) *Application {
 	return ss
 }
 
-// LoadSettings reads the configuration (the first part of C++
-// SolveSpaceUI::Init).
+// LoadSettings reads the configuration.
 func (ss *Application) LoadSettings() {
 	ss.TangentArcRadius = 10.0
 	ss.ExplodeDistance = 1.0
@@ -178,8 +176,7 @@ func (ss *Application) LeaveExportMode() {
 	ss.SK.Exporting = srf.Tolerance{}
 }
 
-// SaveSettings writes the configuration (C++ SolveSpaceUI::Exit, less
-// the exit).
+// SaveSettings writes the configuration.
 func (ss *Application) SaveSettings() {
 	s := ss.Settings
 	if ss.GW.window != nil {
@@ -201,8 +198,7 @@ func (ss *Application) SaveSettings() {
 
 func rgbi(r, g, b uint8) core.RGBA { return core.NewRGBA(r, g, b, 255) }
 
-// Refresh regenerates what was scheduled, then shows the text window
-// (C++ SolveSpaceUI::Refresh).
+// Refresh regenerates what was scheduled, then shows the text window.
 func (ss *Application) Refresh() {
 	// GenerateAll must happen before updating displays.
 	if ss.scheduledGenerateAll {
@@ -254,7 +250,7 @@ func (ss *Application) ScheduleAutosave() {
 }
 
 // GenerateAll regenerates the sketch, then updates the display state
-// that depends on it (C++ SolveSpaceUI::GenerateAll).
+// that depends on it.
 func (ss *Application) GenerateAll(t sketch.GenerateType) {
 	ss.applyEngineSettings()
 	ss.SK.GenerateAllTyped(t)
@@ -269,7 +265,7 @@ func (ss *Application) GenerateAllFindFree(t sketch.GenerateType) {
 	ss.afterGenerate()
 }
 
-// afterGenerate is the end of C++ GenerateAll.
+// afterGenerate is what the interface does after a regeneration.
 func (ss *Application) afterGenerate() {
 	ss.AllConsistent = true
 	ss.GW.persistentDirty = true
@@ -279,7 +275,7 @@ func (ss *Application) afterGenerate() {
 }
 
 // ActiveGroupsOkay reports whether every group up to the active one
-// solved (C++ SolveSpaceUI::ActiveGroupsOkay).
+// solved.
 func (ss *Application) ActiveGroupsOkay() bool {
 	for _, hg := range ss.SK.GroupOrder {
 		g := ss.SK.Group(hg)
@@ -319,8 +315,7 @@ func (ss *Application) UnitName() string {
 }
 
 // MmToString formats a length in the view units; editable gives plain
-// inches instead of feet and inches, which can't be parsed back (C++
-// SolveSpaceUI::MmToString).
+// inches instead of feet and inches, which can't be parsed back.
 func (ss *Application) MmToString(v float64, editable bool) string {
 	v /= ss.MmPerUnit()
 	if ss.ViewUnits == core.UnitFeetInches && !editable {
@@ -439,8 +434,7 @@ func selectSIPrefixInch(deg int) (int, string) {
 }
 
 // MmToStringSI formats a measure of dimension dim with an SI prefix;
-// dim 0 is a length, with SI prefixes only if the user wants them (C++
-// SolveSpaceUI::MmToStringSI).
+// dim 0 is a length, with SI prefixes only if the user wants them.
 func (ss *Application) MmToStringSI(v float64, dim int) string {
 	compact := false
 	if dim == 0 {

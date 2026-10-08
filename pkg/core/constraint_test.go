@@ -91,7 +91,7 @@ func TestConstraintBaseClear(t *testing.T) {
 		ValA:  42.0,
 		PtA:   HEntity{V: 0x1234},
 	}
-	// Clear is a no-op, as C++'s is; it must not panic or change c.
+	// Clear is a no-op, as SolveSpace's is; it must not panic or change c.
 	before := *c
 	c.Clear()
 	if c.ConstraintBase != before.ConstraintBase {

@@ -8,7 +8,7 @@ import (
 
 // scrollbarAdapter gives a Tk scrollbar, which works in fractions,
 // GTK's adjustment: a value between min and max-pageSize, stepped by 1
-// and paged by 4 (C++ ConfigureScrollbar).
+// and paged by 4.
 type scrollbarAdapter struct {
 	w                  *Window
 	sb                 *scrollbar.Scrollbar

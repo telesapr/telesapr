@@ -24,7 +24,7 @@ import (
 )
 
 // prepareTitle is the GTK backend's window title: the application's
-// name after the window's own (C++ PrepareTitle).
+// name after the window's own.
 func prepareTitle(title string) string { return title + " — TeleSAPR" }
 
 func (p *Platform) parentOf(w platform.Window) widget.Caregiver {
@@ -34,8 +34,7 @@ func (p *Platform) parentOf(w platform.Window) widget.Caregiver {
 	return p.app
 }
 
-// MessageDialog is a modal Tk dialog with the application's buttons
-// (C++ MessageDialogImplGtk).
+// MessageDialog is a modal Tk dialog with the application's buttons.
 type MessageDialog struct {
 	p           *Platform
 	parent      widget.Caregiver

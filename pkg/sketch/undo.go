@@ -11,12 +11,10 @@ import (
 // changes something, the state is recorded and pushed on a stack, and
 // undo pops it.
 
-// MaxUndo is the depth of the undo and redo stacks (C++
-// SolveSpaceUI::MAX_UNDO).
+// MaxUndo is the depth of the undo and redo stacks.
 const MaxUndo = 100
 
-// UndoState is one snapshot of the sketch: what can't be regenerated
-// (C++ UndoState).
+// UndoState is one snapshot of the sketch: what can't be regenerated.
 type UndoState struct {
 	Groups      []Group
 	GroupOrder  []core.HGroup
@@ -32,7 +30,7 @@ type UndoState struct {
 	Active      core.HGroup
 }
 
-// UndoStack is a ring of up to MaxUndo states (C++ UndoStack).
+// UndoStack is a ring of up to MaxUndo states.
 type UndoStack struct {
 	D     [MaxUndo]UndoState
 	Cnt   int
@@ -42,8 +40,7 @@ type UndoStack struct {
 func wrapUndo(v int) int { return ((v % MaxUndo) + MaxUndo) % MaxUndo }
 
 // UndoRemember records the current state for undo, and forgets what
-// could be redone (C++ SolveSpaceUI::UndoRemember; the unsaved flag and
-// the menus are the caller's).
+// could be redone.
 func (s *Sketch) UndoRemember() {
 	s.PushFromCurrentOnto(&s.Undo)
 	s.UndoClearStack(&s.Redo)
@@ -85,7 +82,7 @@ func (s *Sketch) UndoPushedSince(write int) int {
 }
 
 // UndoUndo restores the last remembered state, keeping the current one
-// for redo; false if there is none (C++ SolveSpaceUI::UndoUndo).
+// for redo; false if there is none.
 func (s *Sketch) UndoUndo() bool {
 	if s.Undo.Cnt <= 0 {
 		return false
@@ -97,7 +94,7 @@ func (s *Sketch) UndoUndo() bool {
 	return true
 }
 
-// UndoRedo restores the last undone state (C++ SolveSpaceUI::UndoRedo).
+// UndoRedo restores the last undone state.
 func (s *Sketch) UndoRedo() bool {
 	if s.Redo.Cnt <= 0 {
 		return false
@@ -110,7 +107,7 @@ func (s *Sketch) UndoRedo() bool {
 }
 
 // PushFromCurrentOnto records the current state on uk, over its oldest
-// one when it's full (C++ SolveSpaceUI::PushFromCurrentOnto).
+// one when it's full.
 func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 	if uk.Cnt == MaxUndo {
 		s.UndoClearState(&uk.D[uk.Write])
@@ -197,8 +194,7 @@ func (s *Sketch) definingState() *UndoState {
 }
 
 // PopOntoCurrentFrom makes the last state on uk the current one, then
-// reloads the linked files and regenerates (C++
-// SolveSpaceUI::PopOntoCurrentFrom).
+// reloads the linked files and regenerates.
 func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	if uk.Cnt <= 0 {
 		panic("Cannot pop from empty undo stack")
@@ -238,8 +234,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	s.GenerateAll()
 }
 
-// UndoClearStack forgets every state on uk (C++
-// SolveSpaceUI::UndoClearStack).
+// UndoClearStack forgets every state on uk.
 func (s *Sketch) UndoClearStack(uk *UndoStack) {
 	for uk.Cnt > 0 {
 		uk.Write = wrapUndo(uk.Write - 1)
@@ -249,7 +244,7 @@ func (s *Sketch) UndoClearStack(uk *UndoStack) {
 	*uk = UndoStack{} // for good measure
 }
 
-// UndoClearState forgets one state (C++ SolveSpaceUI::UndoClearState).
+// UndoClearState forgets one state.
 func (s *Sketch) UndoClearState(ut *UndoState) {
 	*ut = UndoState{}
 }

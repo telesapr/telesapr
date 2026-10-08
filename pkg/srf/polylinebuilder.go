@@ -6,25 +6,23 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// PolylineBuilder assembles scattered edges into contiguous polylines
-// (C++ PolylineBuilder, polyline.cpp).
+// PolylineBuilder assembles scattered edges into contiguous polylines.
 type PolylineBuilder struct {
-	// vertices is C++'s unordered_map<Vector, Vertex*, VectorHash,
-	// VectorPred>: a lookup needs an equal VectorHash and a position
-	// within LENGTH_EPS.
+	// vertices are looked up by vectorHash, and then by a position
+	// within LengthEps.
 	vertices map[uint64][]*PolylineVertex
 	edgeMap  map[[2]*PolylineVertex]*PolylineEdge
 	Edges    []*PolylineEdge
 }
 
-// PolylineVertex is a joint between edges (C++ PolylineBuilder::Vertex).
+// PolylineVertex is a joint between edges.
 type PolylineVertex struct {
 	Pos   geom.Vector
 	Edges []*PolylineEdge
 }
 
 // PolylineEdge is an edge between two vertices; Outline or Edge is the
-// source it was made from (C++ PolylineBuilder::Edge).
+// source it was made from.
 type PolylineEdge struct {
 	A, B    *PolylineVertex
 	Kind    uint32
@@ -33,8 +31,8 @@ type PolylineEdge struct {
 	Edge    *SEdge
 }
 
-// vectorHash is C++ VectorHash (util.cpp), including its use of y
-// for the z term.
+// vectorHash hashes a position by cell, using y for the z term as the
+// goldens' order has it.
 func vectorHash(v geom.Vector) uint64 {
 	size := uint64(math.Pow(float64(math.MaxUint64), 1.0/3.0) - 1)
 	const eps = 4.0 * geom.LengthEps
@@ -47,8 +45,7 @@ func vectorHash(v geom.Vector) uint64 {
 	return (zs*size+ys)*size + xs
 }
 
-// getNext follows the first untagged edge of the given kind (C++
-// Vertex::GetNext).
+// getNext follows the first untagged edge of the given kind.
 func (v *PolylineVertex) getNext(kind uint32) (*PolylineVertex, *PolylineEdge, bool) {
 	for _, e := range v.Edges {
 		if e.Tag == 0 && e.Kind == kind {
@@ -60,7 +57,7 @@ func (v *PolylineVertex) getNext(kind uint32) (*PolylineVertex, *PolylineEdge, b
 }
 
 // getNextInPlane follows the untagged edge of the given kind whose far
-// end is closest to the plane (C++ Vertex::GetNext with a plane).
+// end is closest to the plane.
 func (v *PolylineVertex) getNextInPlane(kind uint32, plane geom.Vector, dist float64) (*PolylineVertex, *PolylineEdge, bool) {
 	var best *PolylineEdge
 	minD := math.Inf(1)
@@ -93,7 +90,7 @@ func (v *PolylineVertex) countEdgesWithTagAndKind(tag int, kind uint32) int {
 	return n
 }
 
-// OtherVertex is the edge's end that isn't v (C++ Edge::GetOtherVertex).
+// OtherVertex is the edge's end that isn't v.
 func (e *PolylineEdge) OtherVertex(v *PolylineVertex) *PolylineVertex {
 	if e.A == v {
 		return e.B
@@ -104,8 +101,7 @@ func (e *PolylineEdge) OtherVertex(v *PolylineVertex) *PolylineVertex {
 	return nil
 }
 
-// startAndNext picks the end a polyline through e starts from (C++
-// Edge::GetStartAndNext).
+// startAndNext picks the end a polyline through e starts from.
 func (e *PolylineEdge) startAndNext(loop bool) (start, next *PolylineVertex, ok bool) {
 	numA := e.A.countEdgesWithTagAndKind(0, e.Kind)
 	numB := e.B.countEdgesWithTagAndKind(0, e.Kind)
@@ -119,15 +115,14 @@ func (e *PolylineEdge) startAndNext(loop bool) (start, next *PolylineVertex, ok 
 	return nil, nil, false
 }
 
-// Clear drops every vertex and edge (C++ PolylineBuilder::Clear).
+// Clear drops every vertex and edge.
 func (b *PolylineBuilder) Clear() {
 	b.vertices = nil
 	b.edgeMap = nil
 	b.Edges = nil
 }
 
-// AddVertex returns the vertex at pos, adding it if new (C++
-// PolylineBuilder::AddVertex).
+// AddVertex returns the vertex at pos, adding it if new.
 func (b *PolylineBuilder) AddVertex(pos geom.Vector) *PolylineVertex {
 	if b.vertices == nil {
 		b.vertices = make(map[uint64][]*PolylineVertex)
@@ -143,8 +138,8 @@ func (b *PolylineBuilder) AddVertex(pos geom.Vector) *PolylineVertex {
 	return v
 }
 
-// AddEdge adds the edge p0-p1, unless it is degenerate or already
-// there in the same direction (C++ PolylineBuilder::AddEdge).
+// AddEdge adds the edge p0-p1, unless it is degenerate or already there
+// in the same direction.
 func (b *PolylineBuilder) AddEdge(p0, p1 geom.Vector, kind uint32) *PolylineEdge {
 	v0 := b.AddVertex(p0)
 	v1 := b.AddVertex(p1)
@@ -167,9 +162,8 @@ func (b *PolylineBuilder) AddEdge(p0, p1 geom.Vector, kind uint32) *PolylineEdge
 }
 
 // Generate walks the edges as polylines: startFn for each polyline's
-// first edge, nextFn for each following one, endFn after each
-// polyline, and aloneFn for the edges left over (C++
-// PolylineBuilder::Generate).
+// first edge, nextFn for each following one, endFn after each polyline,
+// and aloneFn for the edges left over.
 func (b *PolylineBuilder) Generate(
 	startFn func(start, next *PolylineVertex, e *PolylineEdge),
 	nextFn func(next *PolylineVertex, e *PolylineEdge),
@@ -231,8 +225,7 @@ func (b *PolylineBuilder) Generate(
 	}
 }
 
-// MakeFromEdges adds sel's edges, with auxA as the kind (C++
-// PolylineBuilder::MakeFromEdges).
+// MakeFromEdges adds sel's edges, with auxA as the kind.
 func (b *PolylineBuilder) MakeFromEdges(sel *SEdgeList) {
 	for i := range sel.Edges {
 		se := &sel.Edges[i]
@@ -243,8 +236,7 @@ func (b *PolylineBuilder) MakeFromEdges(sel *SEdgeList) {
 }
 
 // MakeFromOutlines adds the outlines, with the tag as the kind so that
-// emphasized and contour outlines stay apart (C++
-// PolylineBuilder::MakeFromOutlines).
+// emphasized and contour outlines stay apart.
 func (b *PolylineBuilder) MakeFromOutlines(ol *SOutlineList) {
 	for i := range ol.Outlines {
 		so := &ol.Outlines[i]
@@ -254,8 +246,7 @@ func (b *PolylineBuilder) MakeFromOutlines(ol *SOutlineList) {
 	}
 }
 
-// GenerateEdges writes the polylines as edges (C++
-// PolylineBuilder::GenerateEdges).
+// GenerateEdges writes the polylines as edges.
 func (b *PolylineBuilder) GenerateEdges(sel *SEdgeList) {
 	var prev geom.Vector
 	b.Generate(
@@ -275,8 +266,7 @@ func (b *PolylineBuilder) GenerateEdges(sel *SEdgeList) {
 }
 
 // GenerateOutlines writes the polylines as outlines, each keeping its
-// source outline's normals and tag (C++
-// PolylineBuilder::GenerateOutlines).
+// source outline's normals and tag.
 func (b *PolylineBuilder) GenerateOutlines(sol *SOutlineList) {
 	var prev geom.Vector
 	b.Generate(

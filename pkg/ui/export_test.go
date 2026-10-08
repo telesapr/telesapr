@@ -34,7 +34,7 @@ var exportFixtures = []string{
 }
 
 // TestExport exports each fixture in every format and compares the
-// files with the goldens (testdata/export, first recorded from C++),
+// files with the goldens (testdata/export, first recorded from SolveSpace),
 // byte for byte.
 func TestExport(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
@@ -64,7 +64,7 @@ func exportAllFor(t testing.TB, path, dir string) {
 		t.Fatal(err)
 	}
 	ss.LoadSketchForTest(doc.Sketch, path)
-	// C++'s headless build has no window: its camera is 297x210.
+	// SolveSpace's headless build has no window: its camera is 297x210.
 	w := ss.GW.window.(*headless.Window)
 	w.Width, w.Height = 297, 210
 

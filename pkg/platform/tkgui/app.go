@@ -83,7 +83,7 @@ func (p *Platform) OpenInBrowser(url string) {
 // the GTK build lists the ones fontconfig knows.
 func (p *Platform) FontFiles() []string { return platform.SystemFontFiles() }
 
-// CreateTimer returns a timer on the event loop (C++ TimerImplGtk).
+// CreateTimer returns a timer on the event loop.
 func (p *Platform) CreateTimer() platform.Timer { return &Timer{p: p} }
 
 // Timer is a single-shot timer on the event loop.

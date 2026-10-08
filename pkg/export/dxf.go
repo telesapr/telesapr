@@ -1,7 +1,6 @@
 package export
 
-// DXF export (the DXF part of C++ exportvector.cpp: DxfWriteInterface
-// and DxfFileWriter), written through pkg/dxf.
+// DXF export, written through pkg/dxf.
 
 import (
 	"fmt"
@@ -18,10 +17,10 @@ import (
 )
 
 // dxfFileWriter collects the curves, and writes them with the
-// constraints when the file is finished (C++ DxfFileWriter).
+// constraints when the file is finished.
 type dxfFileWriter struct {
 	vectorWriter
-	// paths are the curves of each path (C++ BezierPath).
+	// paths are the curves of each path.
 	paths       [][]*srf.SBezier
 	constraints []core.Constraint
 }
@@ -81,7 +80,7 @@ func (w *dxfFileWriter) FinishAndCloseFile() error {
 }
 
 // needToOutput reports whether a constraint goes in the file as a
-// dimension or text (C++ DxfFileWriter::NeedToOutput).
+// dimension or text.
 func (w *dxfFileWriter) needToOutput(c *core.Constraint) bool {
 	switch c.Type {
 	case core.ConstraintPtPtDistance, core.ConstraintPtLineDistance, core.ConstraintDiameter,
@@ -113,8 +112,7 @@ func DxfLineType(stippleType core.StipplePattern) string {
 	return "CONTINUOUS"
 }
 
-// dxfWriteInterface supplies the file's contents (C++
-// DxfWriteInterface).
+// dxfWriteInterface supplies the file's contents.
 type dxfWriteInterface struct {
 	writer   *dxfFileWriter
 	dxf      *dxf.Writer
@@ -366,8 +364,7 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 	}
 }
 
-// findDxfColor is the nearest colour in the DXF palette (C++
-// DxfWriteInterface::findDxfColor).
+// findDxfColor is the nearest colour in the DXF palette.
 func findDxfColor(src core.RGBA) int {
 	best := 0
 	minDist := geom.VeryPositive
@@ -384,8 +381,7 @@ func findDxfColor(src core.RGBA) int {
 	return best
 }
 
-// toPackedIntBGRA is C++ RgbaColor::ToPackedIntBGRA, as the int
-// libdxfrw keeps it in.
+// toPackedIntBGRA is a colour as the int libdxfrw keeps it in.
 func toPackedIntBGRA(c core.RGBA) int {
 	return int(int32(uint32(c.Blue) | uint32(c.Green)<<8 | uint32(c.Red)<<16 | uint32(255-c.Alpha)<<24))
 }

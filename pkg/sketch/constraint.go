@@ -12,7 +12,7 @@ import (
 
 // DeleteAllConstraintsFor deletes the constraints of the given type on
 // entityA and ptA; used when auto-removing constraints that would
-// become redundant (C++ Constraint::DeleteAllConstraintsFor).
+// become redundant.
 func (sk *Sketch) DeleteAllConstraintsFor(typ core.ConstraintType, entityA, ptA core.HEntity) {
 	kept := sk.Constraints[:0]
 	for _, c := range sk.Constraints {
@@ -24,8 +24,8 @@ func (sk *Sketch) DeleteAllConstraintsFor(typ core.ConstraintType, entityA, ptA 
 	sk.Constraints = kept
 }
 
-// AddConstraintRemember adds c with a new handle, and its params, and marks
-// its group dirty (C++ Constraint::AddConstraint).
+// AddConstraintRemember adds c with a new handle, and its params, and
+// marks its group dirty.
 func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool) core.HConstraint {
 	if rememberForUndo {
 		sk.UndoRemember()
@@ -39,8 +39,8 @@ func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool
 	return c.H
 }
 
-// Constrain adds a constraint of the given type in the active group
-// and workplane (C++ Constraint::Constrain).
+// Constrain adds a constraint of the given type in the active group and
+// workplane.
 func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity,
 	other, other2 bool) core.HConstraint {
 	c := core.Constraint{
@@ -57,8 +57,7 @@ func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB 
 }
 
 // TryConstrain is Constrain, except that a constraint that would be
-// redundant isn't added; it then returns no constraint (C++
-// Constraint::TryConstrain).
+// redundant isn't added; it then returns no constraint.
 func (sk *Sketch) TryConstrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity,
 	other, other2 bool) core.HConstraint {
 	howBefore, rankBefore := sk.TestRankForGroup(sk.ActiveGroup())
@@ -76,8 +75,7 @@ func (sk *Sketch) TryConstrain(typ core.ConstraintType, ptA, ptB, entityA, entit
 	return hc
 }
 
-// RemoveConstraint deletes constraint hc (C++
-// SK.constraint.RemoveById).
+// RemoveConstraint deletes constraint hc.
 func (sk *Sketch) RemoveConstraint(hc core.HConstraint) {
 	for i := range sk.Constraints {
 		if sk.Constraints[i].H == hc {
@@ -87,17 +85,14 @@ func (sk *Sketch) RemoveConstraint(hc core.HConstraint) {
 	}
 }
 
-// ConstrainCoincident makes points ptA and ptB coincident (C++
-// Constraint::ConstrainCoincident).
+// ConstrainCoincident makes points ptA and ptB coincident.
 func (sk *Sketch) ConstrainCoincident(ptA, ptB core.HEntity) core.HConstraint {
 	return sk.Constrain(core.ConstraintPointsCoincident, ptA, ptB,
 		core.NoEntity, core.NoEntity, false, false)
 }
 
 // ConstrainArcLineTangent sets which end of arc c makes tangent to
-// line: the one they share, else arcEndpoint (C++
-// Constraint::ConstrainArcLineTangent, which reports the error to the
-// user).
+// line: the one they share, else arcEndpoint.
 func (sk *Sketch) ConstrainArcLineTangent(c *core.Constraint, line, arc, arcEndpoint *core.Entity) error {
 	l0 := sk.MustEntity(line.Point[0]).PointGetNum(sk)
 	l1 := sk.MustEntity(line.Point[1]).PointGetNum(sk)
@@ -137,7 +132,7 @@ func (sk *Sketch) ConstrainArcLineTangent(c *core.Constraint, line, arc, arcEndp
 }
 
 // ConstrainCubicLineTangent sets which end of cubic c makes tangent to
-// line (C++ Constraint::ConstrainCubicLineTangent).
+// line.
 func (sk *Sketch) ConstrainCubicLineTangent(c *core.Constraint, line, cubic, curveEndpoint *core.Entity) error {
 	l0 := sk.MustEntity(line.Point[0]).PointGetNum(sk)
 	l1 := sk.MustEntity(line.Point[1]).PointGetNum(sk)
@@ -178,8 +173,7 @@ func (sk *Sketch) ConstrainCubicLineTangent(c *core.Constraint, line, cubic, cur
 }
 
 // ConstrainCurveCurveTangent sets at which ends c makes curves eA and
-// eB tangent: the ends they share, else epA and epB (C++
-// Constraint::ConstrainCurveCurveTangent).
+// eB tangent: the ends they share, else epA and epB.
 func (sk *Sketch) ConstrainCurveCurveTangent(c *core.Constraint, eA, eB, epA, epB *core.Entity) error {
 	as, af := eA.EndpointStart(sk), eA.EndpointFinish(sk)
 	bs, bf := eB.EndpointStart(sk), eB.EndpointFinish(sk)

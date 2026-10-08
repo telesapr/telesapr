@@ -368,8 +368,7 @@ func MaxExpr(args ...*Expr) *Expr {
 	return &Expr{Op: OpMax, Args: args}
 }
 
-// IsZeroConst reports whether the expression is the constant zero
-// (C++ Expr::IsZeroConst, an exact comparison).
+// IsZeroConst reports whether the expression is the constant zero.
 func (e *Expr) IsZeroConst() bool {
 	return e != nil && e.Op == OpConstant && e.Value == 0
 }
@@ -420,16 +419,15 @@ func (e *Expr) ReferencedParams(set map[HParam]struct{}) {
 	}
 }
 
-// exprTol is C++ Expr::Tol, the tolerance FoldConstants uses to
-// recognize 0 and 1 (deliberately coarse, as in C++).
+// exprTol is the tolerance FoldConstants uses to recognize 0 and 1
+// (deliberately coarse).
 func exprTol(a, b float64) bool {
 	return math.Abs(a-b) < 0.001
 }
 
-// FoldConstants returns a simplified copy of the expression (C++
-// Expr::FoldConstants with allocCopy): constant subtrees are evaluated,
-// and x+0, 0+x, x*1, 1*x reduce to x and x*0, 0*x to 0, where 0 and 1
-// are matched within exprTol.
+// FoldConstants returns a simplified copy of the expression: constant
+// subtrees are evaluated, and x+0, 0+x, x*1, 1*x reduce to x and x*0,
+// 0*x to 0, where 0 and 1 are matched within exprTol.
 func (e *Expr) FoldConstants() *Expr {
 	if e == nil {
 		return nil
@@ -448,8 +446,7 @@ func (e *Expr) FoldConstants() *Expr {
 }
 
 // FoldNode is FoldConstants for a node whose children are folded
-// already: it simplifies just this node (C++ FoldConstants with depth
-// 0). It may return e itself.
+// already: it simplifies just this node. It may return e itself.
 func (e *Expr) FoldNode() *Expr {
 	n, left, right := e, e.Left, e.Right
 	switch e.Op {
@@ -481,20 +478,18 @@ func (e *Expr) FoldNode() *Expr {
 		}
 
 	case OpSqrt, OpSquare, OpNegate, OpSin, OpCos, OpASin, OpACos,
-		// Not in C++; folded the same way.
+		// Folded the same way.
 		OpTan, OpATan, OpExp, OpLn, OpLog, OpAbs, OpFloor, OpCeil, OpRound:
 		if left.Op == OpConstant {
 			return NewConstant(n.Eval(nil, nil))
 		}
 
 	case OpPow, OpATan2, OpHypot:
-		// Not in C++.
 		if left.Op == OpConstant && right.Op == OpConstant {
 			return NewConstant(n.Eval(nil, nil))
 		}
 
 	case OpMin, OpMax:
-		// Not in C++.
 		allConst := len(e.Args) > 0
 		for _, a := range e.Args {
 			allConst = allConst && a.Op == OpConstant
@@ -506,8 +501,7 @@ func (e *Expr) FoldNode() *Expr {
 	return n
 }
 
-// Derivative returns the partial derivative with respect to param h
-// (C++ Expr::PartialWrt, in the same form).
+// Derivative returns the partial derivative with respect to param h.
 func (e *Expr) Derivative(h HParam) *Expr {
 	if e == nil {
 		return NewConstant(0)
@@ -705,15 +699,14 @@ func NewExprQuaternionConst(q geom.Quaternion) ExprQuaternion {
 	}
 }
 
-// Rotate expresses p in the basis (RotationU, RotationV, RotationN),
-// as C++ ExprQuaternion::Rotate does.
+// Rotate expresses p in the basis (RotationU, RotationV, RotationN).
 func (q ExprQuaternion) Rotate(p ExprVector) ExprVector {
 	return q.RotationU().ScaledBy(p.X).Plus(
 		q.RotationV().ScaledBy(p.Y)).Plus(
 		q.RotationN().ScaledBy(p.Z))
 }
 
-// RotationU returns the rotated unit X axis (C++ ExprQuaternion::RotationU).
+// RotationU returns the rotated unit X axis.
 func (q ExprQuaternion) RotationU() ExprVector {
 	two := NewConstant(2)
 	var u ExprVector
@@ -730,7 +723,7 @@ func (q ExprQuaternion) RotationU() ExprVector {
 	return u
 }
 
-// RotationV returns the rotated unit Y axis (C++ ExprQuaternion::RotationV).
+// RotationV returns the rotated unit Y axis.
 func (q ExprQuaternion) RotationV() ExprVector {
 	two := NewConstant(2)
 	var v ExprVector
@@ -747,7 +740,7 @@ func (q ExprQuaternion) RotationV() ExprVector {
 	return v
 }
 
-// RotationN returns the rotated unit Z axis (C++ ExprQuaternion::RotationN).
+// RotationN returns the rotated unit Z axis.
 func (q ExprQuaternion) RotationN() ExprVector {
 	two := NewConstant(2)
 	var n ExprVector
@@ -764,7 +757,7 @@ func (q ExprQuaternion) RotationN() ExprVector {
 	return n
 }
 
-// Times multiplies two quaternions (C++ ExprQuaternion::Times).
+// Times multiplies two quaternions.
 func (q ExprQuaternion) Times(b ExprQuaternion) ExprQuaternion {
 	sa, sb := q.W, b.W
 	va := ExprVector{X: q.X, Y: q.Y, Z: q.Z}

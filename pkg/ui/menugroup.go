@@ -15,7 +15,7 @@ import (
 )
 
 // MenuGroup makes a new group from the selection; linkFile is the file
-// to link for a link group, or "" to ask (C++ Group::MenuGroup).
+// to link for a link group, or "" to ask.
 func (ss *Application) MenuGroup(id Command, linkFile string) {
 	gw := ss.GW
 
@@ -514,13 +514,13 @@ func (ss *Application) groupLink(g *sketch.Group) bool {
 }
 
 // addNewGroup adds g after the active group, activates it and
-// regenerates, as the end of C++ Group::MenuGroup does.
+// regenerates.
 func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HGroup {
 	gw := ss.GW
 	sk := ss.SK
 
 	// The undo state is remembered before the groups are reordered, but
-	// the colour is taken first, as in C++.
+	// the colour is taken first.
 	if g.IsMeshGroup() && len(sk.GroupOrder) > 0 {
 		if running := sk.RunningMeshGroupFor(gw.activeGroupH()); running != nil {
 			g.Color = running.Color

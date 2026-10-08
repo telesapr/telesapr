@@ -10,8 +10,8 @@ import (
 )
 
 // TestNewFile checks that a new file, generated as AfterNewFile does,
-// saves to the golden (testdata/tlspr/golden/newfile.tlspr; until the C++
-// comparison was frozen, the .slvs save matched C++'s byte for byte).
+// saves to the golden (testdata/tlspr/golden/newfile.tlspr; until the SolveSpace
+// comparison was frozen, the .slvs save matched SolveSpace's byte for byte).
 func TestNewFile(t *testing.T) {
 	sk := sketch.NewSketch()
 	sk.NewFile()

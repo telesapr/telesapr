@@ -6,12 +6,11 @@ import (
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
-// This file ports the sketch editing that C++ does in GraphicsWindow:
-// adding a request (mouse.cpp), deleting the selection
-// (clipboard.cpp, graphicswin.cpp), and fixing up the constraints on
-// what's deleted (modify.cpp). The selection is passed in.
+// This file is the sketch editing the window asks for: adding a
+// request, deleting the selection, and fixing up the constraints on
+// what's deleted. The selection is passed in.
 
-// Selection is a selected entity or constraint (C++ Selection).
+// Selection is a selected entity or constraint.
 type Selection struct {
 	Entity     core.HEntity
 	Constraint core.HConstraint
@@ -22,8 +21,8 @@ type Selection struct {
 }
 
 // AddRequestOfType adds a request of the given type in the active group
-// and workplane, and generates its entities and params, without solving
-// (C++ GraphicsWindow::AddRequest).
+// and workplane, and generates its entities and params, without
+// solving.
 func (sk *Sketch) AddRequestOfType(typ RequestType, rememberForUndo bool) core.HRequest {
 	if rememberForUndo {
 		sk.UndoRemember()
@@ -60,7 +59,7 @@ func (sk *Sketch) AddRequestOfType(typ RequestType, rememberForUndo bool) core.H
 }
 
 // DeleteSelection deletes the selected requests (not the references)
-// and constraints (C++ GraphicsWindow::DeleteSelection).
+// and constraints.
 func (sk *Sketch) DeleteSelection(selection []Selection) {
 	for i := range sk.Requests {
 		sk.Requests[i].Tag = 0
@@ -94,8 +93,7 @@ func (sk *Sketch) DeleteSelection(selection []Selection) {
 }
 
 // DeleteTaggedRequests deletes the tagged requests, fixing up the
-// point-coincident constraints on their points, and regenerates (C++
-// GraphicsWindow::DeleteTaggedRequests).
+// point-coincident constraints on their points, and regenerates.
 func (sk *Sketch) DeleteTaggedRequests() {
 	// Rewrite any point-coincident constraints that were affected by this
 	// deletion.
@@ -127,8 +125,7 @@ func (sk *Sketch) DeleteTaggedRequests() {
 	sk.GenerateAllTyped(GenerateAll)
 }
 
-// ReplacePointInConstraints moves the constraints on oldpt to newpt
-// (C++ GraphicsWindow::ReplacePointInConstraints).
+// ReplacePointInConstraints moves the constraints on oldpt to newpt.
 func (sk *Sketch) ReplacePointInConstraints(oldpt, newpt core.HEntity) {
 	for i := range sk.Constraints {
 		c := &sk.Constraints[i]
@@ -141,8 +138,7 @@ func (sk *Sketch) ReplacePointInConstraints(oldpt, newpt core.HEntity) {
 	}
 }
 
-// RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt
-// (C++ GraphicsWindow::RemoveConstraintsForPointBeingDeleted).
+// RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt.
 func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity) {
 	kept := sk.Constraints[:0]
 	for _, c := range sk.Constraints {
@@ -161,8 +157,7 @@ func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity) {
 }
 
 // FixConstraintsForRequestBeingDeleted keeps the points made coincident
-// through a point of request hr, which is being deleted, coincident
-// (C++ GraphicsWindow::FixConstraintsForRequestBeingDeleted).
+// through a point of request hr, which is being deleted, coincident.
 func (sk *Sketch) FixConstraintsForRequestBeingDeleted(hr core.HRequest) {
 	r := sk.Request(hr)
 	if r.Group != sk.ActiveGroup() {
@@ -189,7 +184,7 @@ func (sk *Sketch) FixConstraintsForRequestBeingDeleted(hr core.HRequest) {
 
 // FixConstraintsForPointBeingDeleted deletes the point-coincident
 // constraints on hpt, and makes the points they joined to it coincident
-// with each other (C++ GraphicsWindow::FixConstraintsForPointBeingDeleted).
+// with each other.
 func (sk *Sketch) FixConstraintsForPointBeingDeleted(hpt core.HEntity) {
 	var ld []core.HEntity
 

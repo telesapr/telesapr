@@ -1,6 +1,6 @@
 package ui
 
-// The screen with the view's parameters (C++ view.cpp).
+// The screen with the view's parameters.
 
 import (
 	"fmt"
@@ -8,8 +8,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
-// ShowEditView is the screen with the view's parameters (C++
-// TextWindow::ShowEditView).
+// ShowEditView is the screen with the view's parameters.
 func (tw *TextWindow) ShowEditView() {
 	ss := tw.ss
 	view := &ss.GW.view
@@ -119,8 +118,7 @@ func (tw *TextWindow) ScreenChangeExplodeDistance(link int, v uint32) {
 }
 
 // EditControlDoneForView takes an edited view parameter, and reports
-// whether the edit was one of the view's (C++
-// TextWindow::EditControlDoneForView).
+// whether the edit was one of the view's.
 func (tw *TextWindow) EditControlDoneForView(s string) bool {
 	ss := tw.ss
 	view := &ss.GW.view

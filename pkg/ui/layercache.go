@@ -17,10 +17,10 @@ type layerCanvas interface {
 
 // persistentKey is what the persistent part of a frame (the snap grid,
 // then DrawPersistent) depends on beyond what persistentDirty tracks:
-// C++ GL 3 keeps that part as a batch of 3d geometry, redrawn from any
-// view, but the software renderer keeps its pixels. The show flags are
-// here too, so that a frame never depends on their changes invalidating
-// the batch.
+// The GL renderer keeps that part as a batch of 3d geometry, redrawn
+// from any view, but the software renderer keeps its pixels. The show
+// flags are here too, so that a frame never depends on their changes
+// invalidating the batch.
 type persistentKey struct {
 	camera   render.Camera
 	lighting render.Lighting

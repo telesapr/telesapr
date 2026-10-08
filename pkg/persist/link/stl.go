@@ -151,10 +151,8 @@ func (b *entities) line(p0, p1 core.HEntity) {
 	b.list = append(b.list, en)
 }
 
-// linkStl reads an STL file, binary or text, into mesh m, with
-// entities for its origin, its bounding box and the vertices on its
-// edges (C++ LinkStl, which read binary files only; roadmap 16.6 reads
-// text ones too).
+// linkStl reads an STL file, binary or text, into mesh m, with entities
+// for its origin, its bounding box and the vertices on its edges.
 func linkStl(path string, sk *sketch.Sketch, m *srf.SMesh) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -194,7 +192,7 @@ func isTextStl(data []byte) bool {
 // binaryStlTriangles are the triangles of a binary STL file, with their
 // colours where the file gives them.
 func binaryStlTriangles(data []byte) []srf.STriangle {
-	// C++ reads a short file as zeros.
+	// A short file reads as zeros.
 	read := func(off, n int) []byte {
 		b := make([]byte, n)
 		if off < len(data) {
@@ -326,7 +324,7 @@ func linkMesh(tris []srf.STriangle, m *srf.SMesh) []core.Entity {
 	b.normal(geom.QuaternionFromBasis(geom.Vector{Y: 1}, geom.Vector{Z: 1}), origin)
 	b.normal(geom.QuaternionFromBasis(geom.Vector{Z: 1}, geom.Vector{X: 1}), origin)
 
-	// C++ reads past the end of an empty list here.
+	// An empty list has no first vertex.
 	box := core.BBox{}
 	if len(verts) > 0 {
 		box.MinP = verts[0].p
@@ -371,7 +369,7 @@ func linkMesh(tris []srf.STriangle, m *srf.SMesh) []core.Entity {
 		}
 	}
 
-	// C++ keeps an EntityList sorted by handle.
+	// The entities are kept sorted by handle.
 	slices.SortStableFunc(b.list, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
 	return b.list
 }

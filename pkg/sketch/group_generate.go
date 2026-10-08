@@ -10,9 +10,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// Remap keys for entity copies made by Group::Generate (C++
-// Group::REMAP_*). Small non-negative keys are step-and-repeat copy
-// numbers.
+// Remap keys for entity copies made by Group::Generate. Small
+// non-negative keys are step-and-repeat copy numbers.
 const (
 	RemapLast           = 1000
 	RemapTop            = 1001
@@ -26,8 +25,7 @@ const (
 	RemapLatheArcCenter = 1010
 )
 
-// CopyAs is the transformation a copied entity gets (C++
-// Group::CopyAs).
+// CopyAs is the transformation a copied entity gets.
 type CopyAs int
 
 const (
@@ -38,15 +36,14 @@ const (
 	CopyAsNRotAxisTrans
 )
 
-// AddParam appends a group param with an initial value (C++
-// Group::AddParam).
+// AddParam appends a group param with an initial value.
 func AddParam(param *[]core.Param, hp core.HParam, v float64) {
 	*param = append(*param, core.Param{H: hp, Val: v})
 }
 
-// Generate creates this group's entities and params (C++
-// Group::Generate). It appends to entity and param, which during
-// GenerateAll are sk.Entities and sk.Params themselves.
+// Generate creates this group's entities and params. It appends to
+// entity and param, which during GenerateAll are sk.Entities and
+// sk.Params themselves.
 func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
 	switch g.Type {
 	case GroupDrawing3D:
@@ -470,10 +467,9 @@ func (g *Group) generateLinked(sk *Sketch, entity *[]core.Entity, param *[]core.
 	_, gp, _ := g.viewSeeds(sk)
 	h := g.H
 
-	// The translation vector. A model comes in beside what is
-	// drawn, off the middle of the view, as in C++; a STEP file or
-	// a mesh where it was drawn, so that its coordinates are the
-	// file's (roadmap 16.13).
+	// The translation vector. A model comes in beside what is drawn,
+	// off the middle of the view; a STEP file or a mesh where it was
+	// drawn, so that its coordinates are the file's (roadmap 16.13).
 	if !g.linksModel() {
 		gp = geom.Vector{}
 	}
@@ -514,7 +510,7 @@ func (g *Group) linksModel() bool {
 }
 
 // stepOffset and stepRemap are the step-and-repeat timesApplied offset
-// and remap key of copy a out of n (inline expressions in C++).
+// and remap key of copy a out of n.
 func stepOffset(subtype GroupSubtype, n int) int {
 	if subtype == GroupOneSided {
 		return 0
@@ -529,9 +525,9 @@ func stepRemap(a, n int) int {
 	return a
 }
 
-// RemapEntity returns the handle of copy copyNumber of entity in, allocating
-// a new one in the group's remap table if needed (C++ Group::Remap).
-// The table is saved with the file, so copies keep their handles.
+// RemapEntity returns the handle of copy copyNumber of entity in,
+// allocating a new one in the group's remap table if needed. The table
+// is saved with the file, so copies keep their handles.
 func (g *Group) RemapEntity(in core.HEntity, copyNumber int) core.HEntity {
 	if g.Remap == nil {
 		g.Remap = make(core.EntityMap)
@@ -737,7 +733,7 @@ func (g *Group) MakeExtrusionTopBottomFaces(sk *Sketch, el *[]core.Entity, pt co
 	*el = append(*el, en)
 }
 
-// CopyEntity appends a transformed copy of ep (C++ Group::CopyEntity).
+// CopyEntity appends a transformed copy of ep.
 func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity,
 	ep *core.Entity, timesApplied, remap int,
 	dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam,
@@ -902,8 +898,7 @@ func (g *Group) copyEntityScaled(el *[]core.Entity,
 	*el = append(*el, en)
 }
 
-// GenerateEquations appends the group's own equations (C++
-// Group::GenerateEquations).
+// GenerateEquations appends the group's own equations.
 func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 	addEq := func(expr *core.Expr, index int) {
 		*l = append(*l, core.Equation{H: g.H.Equation(index), Expr: expr})
@@ -964,8 +959,7 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 	}
 }
 
-// GenerateConstraint adds the params the constraint needs (C++
-// ConstraintBase::Generate).
+// GenerateConstraint adds the params the constraint needs.
 func GenerateConstraint(c *core.Constraint, l *[]core.Param) {
 	switch c.Type {
 	case core.ConstraintParallel, core.ConstraintCubicLineTangent:

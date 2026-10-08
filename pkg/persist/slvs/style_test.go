@@ -12,8 +12,8 @@ import (
 
 // TestStyleDefaults: a style block fills the fields it leaves out with
 // the default style's, and an entity naming a style the file lacks
-// gets a new custom style when saved; both as C++ wrote them (checked
-// with a C++ harness while the C++ comparison ran).
+// gets a new custom style when saved; both as SolveSpace wrote them (checked
+// with a SolveSpace harness while the SolveSpace comparison ran).
 func TestStyleDefaults(t *testing.T) {
 	data, err := os.ReadFile(fixture("request/line_segment/normal.slvs"))
 	if err != nil {
@@ -53,7 +53,7 @@ func TestStyleDefaults(t *testing.T) {
 			t.Fatal(err)
 		}
 		if saved := string(tlspr.Encode(doc.Sketch, tlspr.Options{})); !strings.Contains(saved, tc.want) {
-			t.Errorf("%s: saved style isn't the one C++ wrote:\n%s", tc.name, saved[max(0, strings.Index(saved, "\nstyle ")):])
+			t.Errorf("%s: saved style isn't the one SolveSpace wrote:\n%s", tc.name, saved[max(0, strings.Index(saved, "\nstyle ")):])
 		}
 	}
 }

@@ -9,8 +9,7 @@ import (
 )
 
 // ObjectPicker is a canvas that draws nothing but finds the geometry
-// nearest Point, within SelRadius pixels; higher z-indexes win (C++
-// ObjectPicker).
+// nearest Point, within SelRadius pixels; higher z-indexes win.
 type ObjectPicker struct {
 	CanvasBase
 	Cam Camera
@@ -102,7 +101,7 @@ func (op *ObjectPicker) DrawEdges(el *srf.SEdgeList, hcs HStroke) {
 // DrawBeziers can't pick curves; the caller draws them as edges.
 func (op *ObjectPicker) DrawBeziers(*srf.SBezierList, HStroke) bool { return false }
 
-// DrawOutlines is not implemented, as in C++.
+// DrawOutlines is not implemented.
 func (op *ObjectPicker) DrawOutlines(*srf.SOutlineList, HStroke, DrawOutlinesAs) {
 	panic("render: ObjectPicker.DrawOutlines not implemented")
 }
@@ -133,17 +132,17 @@ func (op *ObjectPicker) DrawPoint(o geom.Vector, hcs HStroke) {
 	op.DoCompare(depth, distance, stroke.ZIndex, 0)
 }
 
-// DrawPolygon is not implemented, as in C++.
+// DrawPolygon is not implemented.
 func (op *ObjectPicker) DrawPolygon(*srf.SPolygon, HFill) {
 	panic("render: ObjectPicker.DrawPolygon not implemented")
 }
 
-// DrawMesh is not implemented, as in C++.
+// DrawMesh is not implemented.
 func (op *ObjectPicker) DrawMesh(*srf.SMesh, HFill, HFill) {
 	panic("render: ObjectPicker.DrawMesh not implemented")
 }
 
-// DrawFaces is not implemented, as in C++.
+// DrawFaces is not implemented.
 func (op *ObjectPicker) DrawFaces(*srf.SMesh, []uint32, HFill) {
 	panic("render: ObjectPicker.DrawFaces not implemented")
 }

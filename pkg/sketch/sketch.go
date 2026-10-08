@@ -50,21 +50,19 @@ type Sketch struct {
 	names  knownNames
 
 	// Images are the loaded image files, by the file name image
-	// requests give (C++ SS.images); nil for one that couldn't be read.
+	// requests give; nil for one that couldn't be read.
 	Images map[string]*Image
 
 	// ReloadAllLinked reloads the files the sketch links, from wherever
-	// the sketch was loaded (C++ SS.ReloadAllLinked(SS.saveFile)); undo
-	// calls it. Nil for a sketch that wasn't loaded from a file.
+	// the sketch was loaded; undo calls it. Nil for a sketch that
+	// wasn't loaded from a file.
 	ReloadAllLinked func(sk *Sketch)
 
-	// Active is the group the user works in (C++ SS.GW.activeGroup);
-	// if unset or gone, ActiveGroup picks one as C++ does on load.
+	// Active is the group the user works in; if unset or gone,
+	// ActiveGroup picks one on load.
 	Active core.HGroup
 
-	// View is the screen projection (C++ SS.GW's offset, projRight,
-	// projUp, scale and SS.CameraTangent()); nil is DefaultView, as in
-	// C++'s headless build.
+	// View is the screen projection; nil is DefaultView.
 	View *View
 
 	// Section is the section view, nil when it is off; see SetSection.
@@ -75,7 +73,7 @@ type Sketch struct {
 	Show *Visibility
 
 	// ChordTolPct is the display chord tolerance as a percentage of the
-	// model's size (C++ SS.chordTol); 0 is the default, 0.1.
+	// model's size; 0 is the default, 0.1.
 	ChordTolPct float64
 
 	// Fonts is the font list text entities are drawn with; nil for
@@ -98,16 +96,14 @@ type Sketch struct {
 	tol srf.Tolerance
 
 	// CheckClosedContour is whether a sketch's loops are checked for
-	// self-intersection, which is slow (C++ SS.checkClosedContour, on
-	// by default).
+	// self-intersection, which is slow.
 	CheckClosedContour bool
 
 	// Generation counts completed GenerateAll runs, so a GUI can tell
 	// when its per-entity drawing caches are stale.
 	Generation uint64
 
-	// Unsaved is whether the sketch changed since it was saved (C++
-	// SS.unsaved).
+	// Unsaved is whether the sketch changed since it was saved.
 	Unsaved bool
 
 	scheduledGenerateAll bool
@@ -116,7 +112,7 @@ type Sketch struct {
 	freedom []freedomCache
 
 	// Deleted counts what regeneration pruned because it depended on
-	// something deleted, until GenerateAll reports it (C++ SS.deleted).
+	// something deleted, until GenerateAll reports it.
 	Deleted struct {
 		Requests, Constraints, NonTrivialConstraints, Groups int
 	}
@@ -130,7 +126,7 @@ type Sketch struct {
 	// stops one between groups.
 	DeferShells bool
 
-	// Clipboard holds what was copied (C++ SS.clipboard).
+	// Clipboard holds what was copied.
 	Clipboard Clipboard
 
 	// Undo/redo stacks.
@@ -180,8 +176,7 @@ func (s *Sketch) Entity(h core.HEntity) *core.Entity {
 	return nil
 }
 
-// MustEntity is GetEntity for handles that must exist (C++
-// SK.GetEntity, which asserts).
+// MustEntity is GetEntity for handles that must exist.
 func (s *Sketch) MustEntity(h core.HEntity) *core.Entity {
 	e := s.Entity(h)
 	if e == nil {
@@ -190,8 +185,7 @@ func (s *Sketch) MustEntity(h core.HEntity) *core.Entity {
 	return e
 }
 
-// MustParam is GetParam for handles that must exist (C++
-// SK.GetParam, which asserts).
+// MustParam is GetParam for handles that must exist.
 func (s *Sketch) MustParam(h core.HParam) *core.Param {
 	p := s.Param(h)
 	if p == nil {
@@ -242,8 +236,7 @@ func (s *Sketch) Style(h core.HStyle) *core.Style {
 }
 
 // AddReferences adds the references group and its three coordinate
-// plane workplanes, which every sketch has; the first half of C++
-// SolveSpaceUI::NewFile. Call it on an empty sketch.
+// plane workplanes, which every sketch has. Call it on an empty sketch.
 func (s *Sketch) AddReferences() {
 	// Our initial group, that contains the references.
 	s.Groups = append(s.Groups, Group{
@@ -267,8 +260,8 @@ func (s *Sketch) AddReferences() {
 	}
 }
 
-// The Add* functions add an item with a new handle, one more than
-// the largest in use, as C++ IdList::AddAndAssignId does.
+// The Add* functions add an item with a new handle, one more than the
+// largest in use.
 
 func (s *Sketch) AddGroup(g Group) core.HGroup {
 	var top uint32
@@ -354,12 +347,11 @@ func (s *Sketch) Clear() {
 }
 
 // CalculateEntityBBox returns the bounding box of the non-construction
-// entities (C++ Sketch::CalculateEntityBBox). Circles and arcs count
-// their Bezier control points, which is not exact for arcs.
+// entities. Circles and arcs count their Bezier control points, which
+// is not exact for arcs.
 //
-// Without includingInvisible, the C++ skips entities for which
-// Entity::IsVisible (which depends on UI settings) is false; here that
-// is approximated by ActVisible and ForceHidden.
+// Without includingInvisible, hidden entities (ActVisible off, or
+// ForceHidden) are skipped.
 func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox {
 	box := core.BBox{}
 	first := true
@@ -445,8 +437,8 @@ func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity {
 	return out
 }
 
-// Image is a loaded image file (C++ Pixmap): its size in pixels, which
-// sets an image request's aspect ratio, and its pixels, for drawing.
+// Image is a loaded image file: its size in pixels, which sets an image
+// request's aspect ratio, and its pixels, for drawing.
 type Image struct {
 	Width, Height int
 	Pixels        image.Image

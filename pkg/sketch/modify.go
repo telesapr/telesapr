@@ -10,13 +10,11 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// This file ports the editing tools of solvespace/src/modify.cpp:
-// rounding a corner with a tangent arc, and splitting lines and curves
-// where they intersect. The selection is passed in, and C++'s error
-// messages are returned instead of shown.
+// This file is the editing tools: rounding a corner with a tangent arc,
+// and splitting lines and curves where they intersect. The selection is
+// passed in, and what can't be done is an error.
 
-// TangentArcSettings are the user's settings for MakeTangentArc (C++
-// SS.tangentArcManual, tangentArcRadius and tangentArcModify).
+// TangentArcSettings are the user's settings for MakeTangentArc.
 type TangentArcSettings struct {
 	// Manual uses Radius; otherwise the radius is chosen automatically.
 	Manual bool
@@ -26,20 +24,19 @@ type TangentArcSettings struct {
 	Modify bool
 }
 
-// isReasonable is C++ IsReasonable, which despite its name is true for
-// NaN and huge values.
+// isReasonable is true for NaN and huge values, despite its name.
 func isReasonable(x float64) bool {
 	return math.IsNaN(x) || x > 1e11 || x < -1e11
 }
 
-// LockedInWorkplane is whether the active group sketches in a workplane
-// (C++ GraphicsWindow::LockedInWorkplane).
+// LockedInWorkplane is whether the active group sketches in a
+// workplane.
 func (sk *Sketch) LockedInWorkplane() bool {
 	return !core.IsFreeIn3D(sk.ActiveWorkplane())
 }
 
 // parametricCurve is a line or arc by its parametric equation, for
-// finding tangent arcs numerically (C++ GraphicsWindow::ParametricCurve).
+// finding tangent arcs numerically.
 type parametricCurve struct {
 	isLine                    bool
 	p0, p1                    geom.Vector
@@ -109,8 +106,7 @@ func (pc *parametricCurve) tangentAt(t float64) geom.Vector {
 
 // createRequestTrimmedTo changes or copies entity orig and connects it
 // to arc: at t on this curve, to the arc's finish if arcFinish. With
-// reuseOrig, orig's finish is moved if pointf, else its start (C++
-// ParametricCurve::CreateRequestTrimmedTo).
+// reuseOrig, orig's finish is moved if pointf, else its start.
 func (sk *Sketch) createRequestTrimmedTo(pc *parametricCurve, t float64,
 	reuseOrig bool, orig, arc core.HEntity, arcFinish, pointf bool) {
 	var e *core.Entity
@@ -168,14 +164,14 @@ func (sk *Sketch) createRequestTrimmedTo(pc *parametricCurve, t float64,
 	}
 }
 
-// constrainPointIfCoincident constrains hpt coincident to a point in its
-// group and workplane that is numerically coincident with it, if one
-// exists (C++ ParametricCurve::ConstrainPointIfCoincident).
+// constrainPointIfCoincident constrains hpt coincident to a point in
+// its group and workplane that is numerically coincident with it, if
+// one exists.
 func (sk *Sketch) constrainPointIfCoincident(hpt core.HEntity) {
 	pt := sk.MustEntity(hpt)
 	ptv := pt.PointGetNum(sk)
 
-	// C++ walks the entities in handle order and takes the first.
+	// The entities are walked in handle order and the first taken.
 	var found core.HEntity
 	for i := range sk.Entities {
 		e := &sk.Entities[i]
@@ -207,8 +203,7 @@ func (sk *Sketch) constrainPointIfCoincident(hpt core.HEntity) {
 }
 
 // MakeTangentArc rounds the corner at point hpt, where two
-// non-construction line segments or arcs join, with a tangent arc (C++
-// GraphicsWindow::MakeTangentArc).
+// non-construction line segments or arcs join, with a tangent arc.
 func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) error {
 	if !sk.LockedInWorkplane() {
 		return errors.New("must be sketching in workplane to create tangent arc")
@@ -392,7 +387,7 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 }
 
 // SplitLine splits line segment he at pinter into two, and returns the
-// point where they join (C++ GraphicsWindow::SplitLine).
+// point where they join.
 func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
 	// Save the original endpoints, since we're about to delete this
 	// entity.
@@ -429,8 +424,7 @@ func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
 }
 
 // SplitCircle splits circle or arc he at pinter: a circle into a 360
-// degree arc, an arc into two. It returns the point at the split (C++
-// GraphicsWindow::SplitCircle).
+// degree arc, an arc into two. It returns the point at the split.
 func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity {
 	circle := sk.MustEntity(he)
 	if circle.Type == core.EntityCircle {
@@ -476,7 +470,7 @@ func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity 
 }
 
 // SplitCubic splits cubic he at pinter into cubic segments, and returns
-// the point at the split (C++ GraphicsWindow::SplitCubic).
+// the point at the split.
 func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 	// Save the original endpoints, since we're about to delete this
 	// entity.
@@ -545,8 +539,7 @@ func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 
 // SplitEntity splits line, circle or cubic he at pinter, deletes the
 // request it came from (unless that's construction or in another
-// group), and returns the point at the split (C++
-// GraphicsWindow::SplitEntity).
+// group), and returns the point at the split.
 func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity, error) {
 	e := sk.MustEntity(he)
 
@@ -587,14 +580,13 @@ func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity
 // SplitLinesOrCurves splits the selected entities where they intersect:
 // two lines, circles, arcs or cubics, or one of them and a point on it.
 // Of several intersections it takes the one the view shows closest to
-// mouse, in the default view's screen coordinates (C++
-// GraphicsWindow::SplitLinesOrCurves).
+// mouse, in the default view's screen coordinates.
 func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) error {
 	if !sk.LockedInWorkplane() {
 		return errors.New("must be sketching in workplane to split")
 	}
 
-	// C++ GraphicsWindow::GroupSelection, the counts used here.
+	// The counts of the selection used here.
 	var points, lineSegments, circlesOrArcs, cubics, periodicCubics int
 	var point, entity []core.HEntity
 	for _, s := range selection {
@@ -715,7 +707,7 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 	}
 	sk.Constraints = kept
 
-	// C++ shows SplitEntity's error and carries on.
+	// A failed split is reported and the rest carries on.
 	hia, err := sk.SplitEntity(ha, pi)
 	// SplitEntity adds the coincident constraints to join the split
 	// halves of each original entity; and then we add the constraint to

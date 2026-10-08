@@ -18,7 +18,7 @@ import (
 // TestImportDxf imports each DXF file in testdata/importdxf into a new
 // sketch, in its workplane and free in 3d, and compares the saved sketch
 // with the golden in testdata/importdxf/golden, byte for byte. Until the
-// C++ comparison was frozen, the .slvs save was C++'s byte for byte.
+// SolveSpace comparison was frozen, the .slvs save was SolveSpace's byte for byte.
 func TestImportDxf(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow; skipped with -short")

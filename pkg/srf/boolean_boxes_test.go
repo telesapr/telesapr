@@ -9,7 +9,7 @@ import (
 )
 
 // boxLoopSet returns a square loop set in the z=z0 plane, wound
-// clockwise about its +Z normal as C++ FindOuterFacesFrom leaves
+// clockwise about its +Z normal as SolveSpace FindOuterFacesFrom leaves
 // outer loops.
 func boxLoopSet(x0, y0, x1, y1, z0 float64) *SBezierLoopSet {
 	p := []geom.Vector{{X: x0, Y: y0, Z: z0}, {X: x0, Y: y1, Z: z0}, {X: x1, Y: y1, Z: z0}, {X: x1, Y: y0, Z: z0}}

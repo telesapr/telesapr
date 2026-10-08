@@ -1,8 +1,7 @@
 package core
 
-// Settings is the user's persistent settings (C++ Platform::Settings).
-// Floats are stored as the caller rounds them; C++ stores several as
-// float.
+// Settings is the user's persistent settings. Floats are stored as the
+// caller rounds them.
 type Settings interface {
 	FreezeInt(key string, value uint32)
 	ThawInt(key string, defaultValue uint32) uint32
@@ -14,8 +13,7 @@ type Settings interface {
 	ThawString(key, defaultValue string) string
 }
 
-// NoSettings stores nothing and returns the defaults, as the headless
-// C++ build's settings do (SettingsImplDummy).
+// NoSettings stores nothing and returns the defaults.
 type NoSettings struct{}
 
 func (NoSettings) FreezeInt(string, uint32)                         {}
@@ -26,7 +24,7 @@ func (NoSettings) FreezeString(string, string)                      {}
 func (NoSettings) ThawString(_, defaultValue string) string         { return defaultValue }
 
 // FreezeBool, ThawBool, FreezeColor and ThawColor store through the
-// integer settings (C++ Settings::FreezeBool and so on).
+// integer settings.
 func FreezeBool(s Settings, key string, value bool) {
 	v := uint32(0)
 	if value {
@@ -51,7 +49,7 @@ func ThawColor(s Settings, key string, defaultValue RGBA) RGBA {
 	return RGBAFromPackedInt(s.ThawInt(key, defaultValue.ToPackedInt()))
 }
 
-// The settings keys of a default style (C++ Style::CnfColor and so on).
+// The settings keys of a default style.
 func CnfColor(prefix string) string        { return "Style_" + prefix + "_Color" }
 func CnfWidth(prefix string) string        { return "Style_" + prefix + "_Width" }
 func CnfStippleType(prefix string) string  { return "Style_" + prefix + "_StippleType" }

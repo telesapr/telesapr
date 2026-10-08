@@ -278,8 +278,7 @@ func makeFunction(name string, args []*Expr) (*Expr, error) {
 		return args[0].Sqrt(), nil
 	case "sq":
 		return args[0].Square(), nil
-	// Angles a user types are in degrees, as in C++ ExprParser::Reduce
-	// and in stored expressions.
+	// Angles a user types are in degrees, as in stored expressions.
 	case "sin":
 		return args[0].Times(NewConstant(math.Pi / 180)).Sin(), nil
 	case "cos":

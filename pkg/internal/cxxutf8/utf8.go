@@ -1,10 +1,9 @@
-// Package cxxutf8 decodes UTF-8 as SolveSpace's C++ did, which the
-// fonts and the text drawing keep to.
+// Package cxxutf8 decodes UTF-8 the way the fonts and the text drawing
+// expect: without checking the encoding.
 package cxxutf8
 
-// Decode decodes str as C++'s utf8_iterator does, which doesn't check
-// the encoding; the byte after the string reads as 0, like a C
-// string's terminator.
+// Decode decodes str without checking the encoding; the byte after the
+// string reads as 0, like a C string's terminator.
 func Decode(str string) []uint32 {
 	at := func(i int) uint32 {
 		if i < len(str) {

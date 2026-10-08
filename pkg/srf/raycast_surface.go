@@ -9,7 +9,6 @@ import (
 
 // IsExtrusion reports whether this surface is an extrusion; if so and
 // of is non-nil, the extruded curve and direction are returned.
-// Mirrors C++ SSurface::IsExtrusion (surface.cpp:29).
 func (s *SSurface) IsExtrusion(of *SBezier, along *geom.Vector) bool {
 	if s.DegN != 1 {
 		return false
@@ -33,9 +32,8 @@ func (s *SSurface) IsExtrusion(of *SBezier, along *geom.Vector) bool {
 	return true
 }
 
-// IsCircle reports whether this curve is a circular arc about axis;
-// if so its center and radius are returned. Mirrors C++
-// SBezier::IsCircle (curve.cpp:127).
+// IsCircle reports whether this curve is a circular arc about axis; if
+// so its center and radius are returned.
 func (b *SBezier) IsCircle(axis geom.Vector, center *geom.Vector, r *float64) bool {
 	if b.Degree != 2 {
 		return false
@@ -80,7 +78,7 @@ func (b *SBezier) IsCircle(axis geom.Vector, center *geom.Vector, r *float64) bo
 	return math.Abs(b.Weight[1]-libm.Cos(dtheta/2)) <= geom.LengthEps
 }
 
-// wrapNot0 clamps v to the range (0, n]. Mirrors C++ WRAP_NOT_0.
+// wrapNot0 clamps v to the range (0, n].
 func wrapNot0(v, n float64) float64 {
 	for v > n {
 		v -= n
@@ -92,7 +90,6 @@ func wrapNot0(v, n float64) float64 {
 }
 
 // IsCylinder reports whether this surface is an extruded circular arc.
-// Mirrors C++ SSurface::IsCylinder (surface.cpp:56).
 func (s *SSurface) IsCylinder(axis, center *geom.Vector, r *float64, start, finish *geom.Vector) bool {
 	var sb SBezier
 	if !s.IsExtrusion(&sb, axis) {
@@ -106,10 +103,9 @@ func (s *SSurface) IsCylinder(axis, center *geom.Vector, r *float64, start, fini
 	return true
 }
 
-// surfInter is a (u, v) line-surface intersection candidate. Mirrors
-// C++ SSurface::Inter.
-// offPatchTol is how far from the line's own hit the closest point on
-// a cylinder's patch may be and still count as that hit.
+// surfInter is a (u, v) line-surface intersection candidate.
+// offPatchTol is how far from the line's own hit the closest point on a
+// cylinder's patch may be and still count as that hit.
 const offPatchTol = 1e3 * lengthEps
 
 type surfInter struct {
@@ -118,8 +114,7 @@ type surfInter struct {
 }
 
 // AllPointsIntersectingUntrimmed recursively subdivides the surface
-// until each piece is nearly flat, then refines with Newton. Mirrors
-// C++ SSurface::AllPointsIntersectingUntrimmed (raycast.cpp:191).
+// until each piece is nearly flat, then refines with Newton.
 func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *int,
 	l *[]surfInter, asSegment bool, sorig *SSurface) {
 	// Test if the line intersects our axis-aligned bounding box; if no, then
@@ -156,12 +151,11 @@ func (s *SSurface) AllPointsIntersectingUntrimmed(a, b geom.Vector, cnt, level *
 	surf1.AllPointsIntersectingUntrimmed(a, b, cnt, level, l, asSegment, sorig)
 }
 
-// AllPointsIntersecting finds all points where the line through a and
-// b intersects this surface and appends them to l. If asSegment, only
+// AllPointsIntersecting finds all points where the line through a and b
+// intersects this surface and appends them to l. If asSegment, only
 // intersections strictly inside the segment are reported. If trimmed,
 // only intersections inside the trim region (per the classifying BSP)
-// are reported. Mirrors C++ SSurface::AllPointsIntersecting
-// (raycast.cpp:249).
+// are reported.
 func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 	asSegment, trimmed, inclTangent bool) {
 	s.allPointsIntersecting(a, b, l, asSegment, trimmed, inclTangent, 0)

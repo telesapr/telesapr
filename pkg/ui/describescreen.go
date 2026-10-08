@@ -1,8 +1,7 @@
 package ui
 
 // The screens shown when something is selected: a description of it,
-// the endpoints of the lines, diameter of the circle, etc. (C++
-// describescreen.cpp).
+// the endpoints of the lines, diameter of the circle, etc..
 
 import (
 	"math"
@@ -14,14 +13,12 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// ScreenUnselectAll clears the selection (C++
-// TextWindow::ScreenUnselectAll).
+// ScreenUnselectAll clears the selection.
 func (tw *TextWindow) ScreenUnselectAll(link int, v uint32) {
 	tw.ss.GW.MenuEdit(CmdUnselectAll)
 }
 
-// ScreenEditTtfText edits a text request's string (C++
-// TextWindow::ScreenEditTtfText).
+// ScreenEditTtfText edits a text request's string.
 func (tw *TextWindow) ScreenEditTtfText(link int, v uint32) {
 	hr := core.HRequest{V: v}
 	r := tw.ss.SK.Request(hr)
@@ -31,8 +28,7 @@ func (tw *TextWindow) ScreenEditTtfText(link int, v uint32) {
 	tw.edit.request = hr
 }
 
-// ScreenToggleTtfKerning turns a text request's kerning on or off (C++
-// TextWindow::ScreenToggleTtfKerning).
+// ScreenToggleTtfKerning turns a text request's kerning on or off.
 func (tw *TextWindow) ScreenToggleTtfKerning(link int, v uint32) {
 	ss := tw.ss
 	r := ss.SK.Request(core.HRequest{V: v})
@@ -48,8 +44,7 @@ func (tw *TextWindow) ScreenToggleTtfKerning(link int, v uint32) {
 	ss.ScheduleShowTW()
 }
 
-// ScreenSetTtfFont sets the selected text's font (C++
-// TextWindow::ScreenSetTtfFont).
+// ScreenSetTtfFont sets the selected text's font.
 func (tw *TextWindow) ScreenSetTtfFont(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
@@ -82,7 +77,7 @@ func (tw *TextWindow) ScreenSetTtfFont(link int, v uint32) {
 }
 
 // ScreenConstraintToggleReference makes a dimension a reference, or
-// not (C++ TextWindow::ScreenConstraintToggleReference).
+// not.
 func (tw *TextWindow) ScreenConstraintToggleReference(link int, v uint32) {
 	ss := tw.ss
 	c := ss.SK.Constraint(core.HConstraint{V: v})
@@ -94,8 +89,7 @@ func (tw *TextWindow) ScreenConstraintToggleReference(link int, v uint32) {
 	ss.ScheduleShowTW()
 }
 
-// ScreenConstraintShowAsRadius shows a diameter as a radius, or not
-// (C++ TextWindow::ScreenConstraintShowAsRadius).
+// ScreenConstraintShowAsRadius shows a diameter as a radius, or not.
 func (tw *TextWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
 	ss := tw.ss
 	c := ss.SK.Constraint(core.HConstraint{V: v})
@@ -106,7 +100,7 @@ func (tw *TextWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
 	ss.ScheduleShowTW()
 }
 
-// projectInto projects p into workplane wrkpl (C++ Vector::ProjectInto).
+// projectInto projects p into workplane wrkpl.
 func (ss *Application) projectInto(p geom.Vector, wrkpl core.HEntity) geom.Vector {
 	w := ss.SK.MustEntity(wrkpl)
 	p0 := w.WorkplaneGetOffset(ss.SK)

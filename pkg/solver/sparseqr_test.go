@@ -13,7 +13,7 @@ import (
 )
 
 // sparseQRDir holds the generated least-squares cases (cases.txt) and
-// what a C++ harness, built against SolveSpace's Eigen with its flags,
+// what a SolveSpace harness, built against SolveSpace's Eigen with its flags,
 // printed for them (eigen.txt): the rank SparseQR finds for A, then X
 // as System::SolveLeastSquares computes it (A unscaled).
 var sparseQRDir = filepath.Join("..", "..", "testdata", "solver", "sparseqr")
@@ -150,7 +150,7 @@ func readLeastSquaresCases(t *testing.T, path string) []lsCase {
 }
 
 // TestSparseQRVsEigen requires the rank and the least-squares solution
-// C++ gets from Eigen, bit for bit. Set SPARSEQR_GEN=1 to rewrite
+// SolveSpace gets from Eigen, bit for bit. Set SPARSEQR_GEN=1 to rewrite
 // cases.txt; eigen.txt then has to be regenerated with the harness.
 func TestSparseQRVsEigen(t *testing.T) {
 	t.Parallel()

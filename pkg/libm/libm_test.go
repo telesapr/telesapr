@@ -70,7 +70,7 @@ func mulAdd(x, y, z float64) float64 { return x*y + z }
 
 // TestNoFusedMultiplyAdd fails when the compiler fuses x*y + z, as Go
 // does for GOAMD64=v3 and on arm64: the ports (and the whole engine)
-// round every product where C++ does, and use math.FMA where it fuses.
+// round every product where SolveSpace does, and use math.FMA where it fuses.
 func TestNoFusedMultiplyAdd(t *testing.T) {
 	t.Parallel()
 	if got := mulAdd(1+0x1p-30, 1-0x1p-30, -1); got != 0 {

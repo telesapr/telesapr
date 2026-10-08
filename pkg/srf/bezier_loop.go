@@ -22,8 +22,7 @@ func (l *SBezierLoop) MakePwlInto(el *SEdgeList, tol Tolerance) {
 }
 
 // MakePwlIntoContour appends the loop's pwl approximation to sc,
-// without doubled points at the joins, and closes it exactly. Mirrors
-// C++ SBezierLoop::MakePwlInto(SContour *, double) (curve.cpp:468).
+// without doubled points at the joins, and closes it exactly.
 func (l *SBezierLoop) MakePwlIntoContour(sc *SContour, tol Tolerance) {
 	for i := range l.Curves {
 		l.Curves[i].MakePwlIntoContour(sc, tol, 0)
@@ -40,8 +39,7 @@ func (l *SBezierLoop) MakePwlIntoContour(sc *SContour, tol Tolerance) {
 }
 
 // Reverse reverses the loop order and every curve in it, so that each
-// curve still starts where the previous one finishes. Mirrors C++
-// SBezierLoop::Reverse.
+// curve still starts where the previous one finishes.
 func (l *SBezierLoop) Reverse() {
 	for i, j := 0, len(l.Curves)-1; i < j; i, j = i+1, j-1 {
 		l.Curves[i], l.Curves[j] = l.Curves[j], l.Curves[i]
@@ -51,8 +49,7 @@ func (l *SBezierLoop) Reverse() {
 	}
 }
 
-// IsClosed reports whether the loop ends where it starts (C++
-// SBezierLoop::IsClosed).
+// IsClosed reports whether the loop ends where it starts.
 func (l *SBezierLoop) IsClosed() bool {
 	if len(l.Curves) == 0 {
 		return false
@@ -71,8 +68,7 @@ func (l *SBezierLoop) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64) {
 
 // SBezierLoopFromCurves removes curves from sbl, chaining them
 // end-to-start (reversing a curve when needed) into one loop. Only
-// curves with the same AuxA (style) as the first are joined. Mirrors
-// C++ SBezierLoop::FromCurves (curve.cpp).
+// curves with the same AuxA (style) as the first are joined.
 func SBezierLoopFromCurves(sbl *SBezierList, allClosed *bool, errorAt *SEdge) SBezierLoop {
 	var loop SBezierLoop
 

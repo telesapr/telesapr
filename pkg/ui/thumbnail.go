@@ -8,9 +8,8 @@ import (
 )
 
 // WriteThumbnail renders the sketch seen along the projection vectors,
-// zoomed to fit a width by height viewport, and saves it as a PNG (the
-// thumbnail command of C++ solvespace-cli). It draws without a window,
-// with the software renderer.
+// zoomed to fit a width by height viewport, and saves it as a PNG. It
+// draws without a window, with the software renderer.
 func (ss *Application) WriteThumbnail(filename string, width, height uint, projRight, projUp geom.Vector) error {
 	gw := ss.GW
 	camera := render.Camera{

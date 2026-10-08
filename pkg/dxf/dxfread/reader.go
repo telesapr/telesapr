@@ -1,7 +1,5 @@
 // Package dxfread reads DXF files as the part of libdxfrw that
-// SolveSpace's DXF import uses does (C++ dxfRW::read, its ASCII and
-// binary readers, the text codec, and the entities' parseCode and
-// applyExtrusion), quirks included.
+// SolveSpace's DXF import uses does, quirks included.
 package dxfread
 
 import (
@@ -12,8 +10,7 @@ import (
 	"strings"
 )
 
-// valueType is what kind of value a record holds (C++
-// dxfReader::TYPE).
+// valueType is what kind of value a record holds.
 type valueType int
 
 const (
@@ -25,8 +22,7 @@ const (
 	typeInvalid
 )
 
-// reader reads group code and value records (C++ dxfReader and its
-// ASCII and binary subclasses).
+// reader reads group code and value records.
 type reader struct {
 	data   []byte
 	pos    int
@@ -185,7 +181,7 @@ func (r *reader) readInt16() {
 	r.typ = typeInt32
 	if r.binary {
 		b := r.readBytes(2)
-		// C++ combines signed chars.
+		// The bytes combine as signed chars, as the files were written.
 		r.intData = int(int8(b[1]))<<8 | int(int8(b[0]))
 		return
 	}
@@ -229,8 +225,7 @@ func (r *reader) readBool() {
 	r.intData = atoi(r.readText())
 }
 
-// readRec reads a record, and reports whether the file is still good
-// (C++ dxfReader::readRec).
+// readRec reads a record, and reports whether the file is still good.
 func (r *reader) readRec() (int, bool) {
 	r.good = true
 	code := r.readCode()
@@ -313,8 +308,7 @@ func (r *reader) getDouble() float64    { return r.doubleData }
 func (r *reader) getInt32() int         { return r.intData }
 func (r *reader) getBool() bool         { return r.intData != 0 }
 
-// getHandleString is the string as a hex handle (C++
-// dxfReader::getHandleString).
+// getHandleString is the string as a hex handle.
 func (r *reader) getHandleString() int {
 	s := strings.TrimLeft(r.strData, " \t\n\r\f\v")
 	end := 0

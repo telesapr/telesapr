@@ -2,12 +2,11 @@ package sketch
 
 import "github.com/telesapr/telesapr/pkg/core"
 
-// This file holds the part of making a group that doesn't depend on
-// the selection, which C++ does at the end of Group::MenuGroup, so that
-// a script can make groups without a user interface.
+// This file holds the part of making a group that doesn't depend on the
+// selection, so that a script can make groups without a user interface.
 
-// NewGroup is a group as C++ Group::MenuGroup starts one: visible,
-// grey, at scale 1.
+// NewGroup is a group as the menu starts one: visible, grey, at scale
+// 1.
 func NewGroup() Group {
 	return Group{
 		Visible: true,
@@ -17,9 +16,8 @@ func NewGroup() Group {
 }
 
 // AddGroupAfterActive adds g right after the active group, moving the
-// later groups down, and gives a group that makes a solid the colour
-// of the solid so far (C++ Group::MenuGroup). The caller activates and
-// generates it.
+// later groups down, and gives a group that makes a solid the colour of
+// the solid so far. The caller activates and generates it.
 func (sk *Sketch) AddGroupAfterActive(g Group) core.HGroup {
 	// Copy color from the previous mesh-contributing group.
 	if g.IsMeshGroup() && len(sk.GroupOrder) > 0 {

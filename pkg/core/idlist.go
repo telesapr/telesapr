@@ -5,12 +5,11 @@ import (
 	"slices"
 )
 
-// IDList is a Go analogue of the C++ IDList<T, H>: a handle-keyed
-// container that preserves insertion order and supports efficient
-// lookup by handle. It is implemented as a slice paired with a
-// handle->index map so it can be extended during iteration (the
-// canonical SolveSpace pattern of "the slice may realloc, but the
-// handle stays stable").
+// IDList is a handle-keyed container that preserves insertion order and
+// supports efficient lookup by handle. It is implemented as a slice
+// paired with a handle->index map so it can be extended during
+// iteration (the canonical SolveSpace pattern of "the slice may
+// realloc, but the handle stays stable").
 type IDList[H comparable, T any] struct {
 	Items []T
 	Index map[H]int

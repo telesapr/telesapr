@@ -9,9 +9,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// DeleteSelection deletes the selected requests and constraints (C++
-// GraphicsWindow::DeleteSelection); this regenerates and clears the
-// selection, to avoid lingering references to the deleted items.
+// DeleteSelection deletes the selected requests and constraints; this
+// regenerates and clears the selection, to avoid lingering references
+// to the deleted items.
 func (gw *GraphicsWindow) DeleteSelection() {
 	// This regenerates and clears the selection, to avoid lingering
 	// references to the just-deleted items.
@@ -84,8 +84,7 @@ func (gw *GraphicsWindow) MenuClipboard(id Command) {
 }
 
 // EditControlDoneForPaste takes an edited paste-transformed parameter,
-// and reports whether the edit was one of those (C++
-// TextWindow::EditControlDoneForPaste).
+// and reports whether the edit was one of those.
 func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
@@ -111,7 +110,7 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 	case EditPasteScale:
 		e := ss.exprFromString(s)
 		if e == nil {
-			// C++ dereferences the null expression here.
+			// The expression may be nil here.
 			break
 		}
 		v := ss.evalExpr(e)
@@ -131,8 +130,7 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 	return true
 }
 
-// ScreenChangePasteTransformed edits a paste-transformed parameter (C++
-// TextWindow::ScreenChangePasteTransformed).
+// ScreenChangePasteTransformed edits a paste-transformed parameter.
 func (tw *TextWindow) ScreenChangePasteTransformed(link int, v uint32) {
 	switch link {
 	case 't':
@@ -153,7 +151,7 @@ func (tw *TextWindow) ScreenChangePasteTransformed(link int, v uint32) {
 }
 
 // ScreenPasteTransformed takes the origin or translation from the
-// selection, or pastes (C++ TextWindow::ScreenPasteTransformed).
+// selection, or pastes.
 func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
@@ -215,8 +213,7 @@ func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
 	}
 }
 
-// ShowPasteTransformed is the screen to paste with a transformation
-// (C++ TextWindow::ShowPasteTransformed).
+// ShowPasteTransformed is the screen to paste with a transformation.
 func (tw *TextWindow) ShowPasteTransformed() {
 	ss := tw.ss
 	paste := &tw.shown.paste

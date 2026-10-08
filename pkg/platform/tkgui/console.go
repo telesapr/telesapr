@@ -18,9 +18,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform"
 )
 
-// This file is the window scripts are typed in, which C++ SolveSpace
-// doesn't have, and the way into the event loop for the goroutines
-// scripts run on.
+// This file is the window scripts are typed in, and the way into the
+// event loop for the goroutines scripts run on.
 
 var (
 	_ platform.LoopPoster  = (*Platform)(nil)

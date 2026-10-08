@@ -1,6 +1,6 @@
 package platform
 
-// The file types TeleSAPR reads and writes (after C++ gui.cpp).
+// The file types TeleSAPR reads and writes.
 var (
 	// ModelFileFilters are the documents TeleSAPR opens and saves.
 	ModelFileFilters = []FileFilter{

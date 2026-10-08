@@ -20,7 +20,7 @@ type SContour struct {
 
 func (c *SContour) Len() int { return len(c.Points) }
 
-// AddPoint appends p with tag 0 (C++ SContour::AddPoint).
+// AddPoint appends p with tag 0.
 func (c *SContour) AddPoint(p geom.Vector) {
 	c.Points = append(c.Points, SPoint{P: p})
 }
@@ -33,16 +33,12 @@ func (c *SContour) Reverse() {
 }
 
 // ComputeNormal returns the unit face normal of the contour's plane
-// (best-fit for non-planar contours). Faithful port of C++
-// `SContour::ComputeNormal` (polygon.cpp:584): scans every
-// consecutive triple of points, normalizing each edge before
-// crossing them, and keeps whichever triple's cross product has the
-// largest magnitude. This matters because a contour sampled by
-// piecewise-linearizing a Bezier loop (MakePwlIntoEdges) often has
-// several collinear points in a row along a single straight edge —
-// checking only the first triple (as an earlier version of this
-// function did) can spuriously return the zero vector even though
-// the contour is planar and non-degenerate.
+// (best-fit for non-planar contours). This matters because a contour
+// sampled by piecewise-linearizing a Bezier loop (MakePwlIntoEdges)
+// often has several collinear points in a row along a single straight
+// edge — checking only the first triple (as an earlier version of this
+// function did) can spuriously return the zero vector even though the
+// contour is planar and non-degenerate.
 func (c *SContour) ComputeNormal() geom.Vector {
 	n := geom.Vector{}
 	for i := 0; i+2 < len(c.Points); i++ {
@@ -56,11 +52,11 @@ func (c *SContour) ComputeNormal() geom.Vector {
 	return n.Normal()
 }
 
-// SignedAreaProjdToNormal mirrors C++ SContour::SignedAreaProjdToNormal
-// (polygon.cpp:611). Contours are stored closed (last point repeats
-// the first). Note the C++ sign convention: the sum is negative for a
-// loop that winds counterclockwise about n in the right-handed basis
-// (n.Normal(0), n.Normal(1)).
+// SignedAreaProjdToNormal is the contour's area projected along n.
+// Contours are stored closed (last point repeats the first). Note the
+// sign convention: the sum is negative for a loop that winds
+// counterclockwise about n in the right-handed basis (n.Normal(0),
+// n.Normal(1)).
 func (c *SContour) SignedAreaProjdToNormal(n geom.Vector) float64 {
 	// An arbitrary 2d coordinate system that has n as its normal
 	u := n.NormalDir(0)
@@ -78,9 +74,8 @@ func (c *SContour) SignedAreaProjdToNormal(n geom.Vector) float64 {
 	return area
 }
 
-// IsClockwiseProjdToNormal mirrors C++ SContour::IsClockwiseProjdToNormal
-// (polygon.cpp:603), including its sign convention (see
-// SignedAreaProjdToNormal).
+// IsClockwiseProjdToNormal reports whether the contour winds clockwise
+// about n, with the sign convention of SignedAreaProjdToNormal.
 func (c *SContour) IsClockwiseProjdToNormal(n geom.Vector) bool {
 	// Degenerate things might happen as we draw; doesn't really matter
 	// what we do then.
@@ -90,9 +85,8 @@ func (c *SContour) IsClockwiseProjdToNormal(n geom.Vector) bool {
 	return c.SignedAreaProjdToNormal(n) < 0
 }
 
-// ContainsPointProjdToNormal mirrors C++
-// SContour::ContainsPointProjdToNormal (polygon.cpp). The contour must
-// be stored exactly closed.
+// ContainsPointProjdToNormal reports whether p, projected along n, is
+// inside the contour, which must be stored exactly closed.
 func (c *SContour) ContainsPointProjdToNormal(n, p geom.Vector) bool {
 	u := n.NormalDir(0)
 	v := n.NormalDir(1)
@@ -127,7 +121,7 @@ func (c *SContour) AnyEdgeMidpoint() geom.Vector {
 	return c.Points[0].P.Plus(c.Points[1].P).ScaledBy(0.5)
 }
 
-// CopyInto adds the contour's points to dest (C++ SContour::CopyInto).
+// CopyInto adds the contour's points to dest.
 func (c *SContour) CopyInto(dest *SContour) {
 	for _, sp := range c.Points {
 		dest.AddPoint(sp.P)
@@ -135,11 +129,11 @@ func (c *SContour) CopyInto(dest *SContour) {
 }
 
 // OffsetInto adds to dest the contour, in the xy plane, offset by r:
-// outside corners are rounded, inside ones mitred (C++
-// SContour::OffsetInto).
+// outside corners are rounded, inside ones mitred.
 func (c *SContour) OffsetInto(dest *SContour, r float64) {
-	// C++ computes (1*PI)/180 and (6*PI)/180 in doubles, rounding twice;
-	// Go's constant arithmetic would round once.
+	// (1*PI)/180 and (6*PI)/180 are computed in doubles, rounding
+	// twice, as the goldens record; constant arithmetic would round
+	// once.
 	pi := math.Pi
 	oneDegree := (1 * pi) / 180
 	sixDegrees := (6 * pi) / 180
@@ -210,8 +204,7 @@ func (c *SContour) OffsetInto(dest *SContour, r float64) {
 }
 
 // intersectionOfLines is where the lines (x0A, y0A) + t*(dxA, dyA) and
-// (x0B, y0B) + t*(dxB, dyB) cross; false if they're parallel (C++'s
-// static IntersectionOfLines in polygon.cpp).
+// (x0B, y0B) + t*(dxB, dyB) cross; false if they're parallel.
 func intersectionOfLines(x0A, y0A, dxA, dyA, x0B, y0B, dxB, dyB float64, xi, yi *float64) bool {
 	var A [2][2]float64
 	var b [2]float64
@@ -250,8 +243,7 @@ func intersectionOfLines(x0A, y0A, dxA, dyA, x0B, y0B, dxB, dyB float64, xi, yi 
 	return true
 }
 
-// FindPointWithMinX sets XMinPt to the first point with the least x
-// (C++ SContour::FindPointWithMinX).
+// FindPointWithMinX sets XMinPt to the first point with the least x.
 func (c *SContour) FindPointWithMinX() {
 	c.XMinPt = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
 	for _, sp := range c.Points {
@@ -262,8 +254,7 @@ func (c *SContour) FindPointWithMinX() {
 }
 
 // MakeEdgesInto adds an edge for each pair of consecutive points; the
-// contour repeats its first point at the end, so it is closed (C++
-// SContour::MakeEdgesInto).
+// contour repeats its first point at the end, so it is closed.
 func (c *SContour) MakeEdgesInto(el *SEdgeList) {
 	for i := range len(c.Points) - 1 {
 		el.AddEdge(c.Points[i].P, c.Points[i+1].P, 0, 0, 0)

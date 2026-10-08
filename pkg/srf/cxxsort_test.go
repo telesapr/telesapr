@@ -10,7 +10,7 @@ import (
 // TestCxxSortVsLibstdcxx sorts 3000 random arrays with few distinct keys,
 // half with CxxSort and half with the heapsort cxxPartialSort, and
 // requires the permutations libstdc++ 16's std::sort and
-// std::partial_sort(first, last, last) give: the output of a C++
+// std::partial_sort(first, last, last) give: the output of a SolveSpace
 // program with the same generator hashes to want.
 func TestCxxSortVsLibstdcxx(t *testing.T) {
 	const want = "098d058e2fdca9b54ecfb3dc96f884eff33b6f7b3f54465f8c98562a023e2aa4"

@@ -11,7 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// drawMeshAs is how a group's mesh is drawn (C++ Group::DrawMeshAs).
+// drawMeshAs is how a group's mesh is drawn.
 type drawMeshAs int
 
 const (
@@ -20,8 +20,7 @@ const (
 	drawMeshSelected
 )
 
-// groupActivate makes g the group the user works in (C++
-// Group::Activate).
+// groupActivate makes g the group the user works in.
 func (ss *Application) groupActivate(g *sketch.Group) {
 	gw := ss.GW
 	if g.Type == sketch.GroupDrawingWorkplane || g.Type == sketch.GroupDrawing3D {

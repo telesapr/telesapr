@@ -6,8 +6,7 @@ import (
 )
 
 // UpgradeLegacyData brings a freshly loaded sketch up to date, and
-// regenerates its entities without solving (C++
-// SolveSpaceUI::UpgradeLegacyData, which LoadFromFile ends with).
+// regenerates its entities without solving.
 func (sk *Sketch) UpgradeLegacyData() {
 	for ri := range sk.Requests {
 		r := &sk.Requests[ri]
@@ -142,16 +141,14 @@ func (sk *Sketch) UpgradeLegacyData() {
 	}
 }
 
-// evalVector evaluates v at the sketch's param values (C++
-// ExprVector::Eval).
+// evalVector evaluates v at the sketch's param values.
 func evalVector(sk *Sketch, v core.ExprVector) geom.Vector {
 	return geom.Vector{X: core.EvalExpr(sk, v.X), Y: core.EvalExpr(sk, v.Y), Z: core.EvalExpr(sk, v.Z)}
 }
 
 // ActiveGroup is the active group: Active if it exists, else the one
-// C++ makes active after loading a file (GraphicsWindow::Init and
-// EnsureValidActives): the last group, or the first that isn't the
-// references.
+// made active after loading a file: the last group, or the first that
+// isn't the references.
 func (sk *Sketch) ActiveGroup() core.HGroup {
 	if sk.Active.V != 0 && sk.Group(sk.Active) != nil {
 		return sk.Active
@@ -170,7 +167,7 @@ func (sk *Sketch) ActiveGroup() core.HGroup {
 	return active
 }
 
-// groupIsVisible is C++ Group::IsVisible: shown, and not after the
+// groupIsVisible reports whether the group is shown and not after the
 // active group.
 func (sk *Sketch) groupIsVisible(g *Group) bool {
 	if !g.Visible {
@@ -180,8 +177,8 @@ func (sk *Sketch) groupIsVisible(g *Group) bool {
 	return active == nil || g.Order <= active.Order
 }
 
-// EntityIsVisible is C++ Entity::IsVisible, with the show flags of
-// sk.Show (GraphicsWindow::Init's when nil).
+// EntityIsVisible reports whether the entity is drawn, by the show
+// flags of sk.Show (the defaults when nil).
 func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
 	show := sk.visibility()
 	g := sk.Group(e.Group)
@@ -223,8 +220,7 @@ func (sk *Sketch) EntityIsVisible(e *core.Entity) bool {
 	return !e.ForceHidden
 }
 
-// ActiveWorkplane is the active group's workplane (C++
-// GraphicsWindow::ActiveWorkplane).
+// ActiveWorkplane is the active group's workplane.
 func (sk *Sketch) ActiveWorkplane() core.HEntity {
 	if g := sk.Group(sk.ActiveGroup()); g != nil {
 		return g.ActiveWorkplane

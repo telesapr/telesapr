@@ -172,7 +172,7 @@ func (rt *Runtime) Point(h core.HEntity) (geom.Vector, error) {
 }
 
 // numeric runs fn, turning a panic from a malformed entity (a missing
-// entity or param, which C++ asserts on) into an error.
+// entity or param) into an error.
 func numeric[T any](e *core.Entity, fn func() T) (r T, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -183,8 +183,8 @@ func numeric[T any](e *core.Entity, fn func() T) (r T, err error) {
 }
 
 func (rt *Runtime) pointValue(e *core.Entity) (geom.Vector, error) {
-	// A POINT_IN_3D without params (hand-built test fixtures only; C++
-	// always gives it three) is a fixed point.
+	// A POINT_IN_3D without params (hand-built test fixtures only) is a
+	// fixed point.
 	if e.Type == core.EntityPointIn3D && e.Param[0].V == 0 {
 		return e.ActPoint, nil
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 // TestFreedomVsShowDof compares Sketch.GroupFreedom, which finds the
-// free params of a group in one pass, with the C++ algorithm behind
+// free params of a group in one pass, with the SolveSpace algorithm behind
 // Analyze > Show Degrees of Freedom (MarkParamsFree, a rank test per
 // param), on every fixture's every solved group. What Show DOF finds
 // free must be free here. The converse does not hold: Show DOF reports

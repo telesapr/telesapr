@@ -1,12 +1,12 @@
 // Package cfmt formats as C's printf does (glibc), for the file writers
-// whose output must match the C++ program's byte for byte.
+// whose output the goldens record byte for byte.
 //
-// It understands the directives the C++ code uses: flags "-+ #0", a
-// width and a precision (either may be "*"), the length modifiers
-// hh, h, l, ll, z, j, t and L (ignored), and the conversions d, i, u,
-// x, X, o, c, s, f, F, e, E, g, G and %. Go's fmt differs from C on
-// NaN and infinities ("NaN" for "nan") and on %g without a precision
-// (Go prints the shortest representation, C six significant digits).
+// It understands the directives the writers use: flags "-+ #0", a width
+// and a precision (either may be "*"), the length modifiers hh, h, l,
+// ll, z, j, t and L (ignored), and the conversions d, i, u, x, X, o, c,
+// s, f, F, e, E, g, G and %. Go's fmt differs from C on NaN and
+// infinities ("NaN" for "nan") and on %g without a precision (Go prints
+// the shortest representation, C six significant digits).
 package cfmt
 
 import (

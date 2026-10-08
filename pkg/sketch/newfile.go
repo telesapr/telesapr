@@ -5,9 +5,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// ClearExisting drops the whole sketch and the undo history, leaving
-// it without even the references; the caller must fix that (C++
-// SolveSpaceUI::ClearExisting).
+// ClearExisting drops the whole sketch and the undo history, leaving it
+// without even the references; the caller must fix that.
 func (sk *Sketch) ClearExisting() {
 	sk.UndoClearStack(&sk.Redo)
 	sk.UndoClearStack(&sk.Undo)
@@ -21,8 +20,8 @@ func (sk *Sketch) ClearExisting() {
 	sk.Images = nil
 }
 
-// CreateDefaultDrawingGroup adds the empty group in the XY plane that
-// a new file starts in (C++ SolveSpaceUI::CreateDefaultDrawingGroup).
+// CreateDefaultDrawingGroup adds the empty group in the XY plane that a
+// new file starts in.
 func (sk *Sketch) CreateDefaultDrawingGroup() core.HGroup {
 	hg := sk.AddGroup(Group{
 		Visible: true,
@@ -38,10 +37,9 @@ func (sk *Sketch) CreateDefaultDrawingGroup() core.HGroup {
 	return hg
 }
 
-// NewFile makes the sketch a new, empty file: the references group
-// with the three reference workplanes, and a drawing group (C++
-// SolveSpaceUI::NewFile). The caller then generates it, as C++
-// AfterNewFile does.
+// NewFile makes the sketch a new, empty file: the references group with
+// the three reference workplanes, and a drawing group. The caller then
+// generates it.
 func (sk *Sketch) NewFile() {
 	sk.ClearExisting()
 	sk.Groups = append(sk.Groups, Group{

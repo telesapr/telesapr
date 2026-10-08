@@ -15,15 +15,14 @@ var stippleDashes = [...][]float64{
 	StippleZigzag:     {1.0, 2.0},
 }
 
-// StipplePatternDashes is the pattern's dash list (C++
-// StipplePatternDashes, util.cpp).
+// StipplePatternDashes is the pattern's dash list.
 func StipplePatternDashes(p StipplePattern) []float64 {
 	return stippleDashes[p]
 }
 
 // StipplePatternLength is the length of one repetition of the pattern.
-// As in C++ StipplePatternLength, the last pattern (zigzag) is left
-// out of the table and so has length 0.
+// The last pattern (zigzag) is left out of the table and so has length
+// 0.
 func StipplePatternLength(p StipplePattern) float64 {
 	if p == StippleZigzag {
 		return 0

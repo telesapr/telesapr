@@ -11,8 +11,7 @@ import (
 // mesh. These are used to compute Boolean operations on meshes. These
 // aren't used for anything relating to an SShell of ratpoly surfaces.
 
-// BspClass is the side of a BSP node's plane something is on (C++
-// BspClass).
+// BspClass is the side of a BSP node's plane something is on.
 type BspClass uint32
 
 const (
@@ -21,9 +20,9 @@ const (
 	BspCoplanar BspClass = 200
 )
 
-// SBsp3 is a node of a 3d BSP: the plane n . p = d of its triangle
-// tri, the other triangles in that plane (more), and the edges of the
-// triangles in that plane, as a 2d BSP (C++ SBsp3).
+// SBsp3 is a node of a 3d BSP: the plane n. p = d of its triangle tri,
+// the other triangles in that plane (more), and the edges of the
+// triangles in that plane, as a 2d BSP.
 type SBsp3 struct {
 	N geom.Vector
 	D float64
@@ -38,7 +37,7 @@ type SBsp3 struct {
 }
 
 // SBsp3FromMesh builds the BSP of mesh m, inserting its triangles in
-// the shuffled order C++ does (C++ SBsp3::FromMesh).
+// the shuffled order glibcRand gives, which the goldens record.
 func SBsp3FromMesh(m *SMesh) *SBsp3 {
 	mc := make([]STriangle, len(m.Triangles))
 	copy(mc, m.Triangles)
@@ -59,7 +58,7 @@ func SBsp3FromMesh(m *SMesh) *SBsp3 {
 }
 
 // IntersectionWith is where the segment from a to b, which must cross
-// the node's plane, crosses it (C++ SBsp3::IntersectionWith).
+// the node's plane, crosses it.
 func (b *SBsp3) IntersectionWith(a, bb geom.Vector) geom.Vector {
 	da := a.Dot(b.N) - b.D
 	db := bb.Dot(b.N) - b.D
@@ -73,7 +72,7 @@ func (b *SBsp3) IntersectionWith(a, bb geom.Vector) geom.Vector {
 
 // InsertInPlane adds tr, which lies in the node's plane, to m if the
 // Boolean keeps it: by whether a triangle in the plane covers its
-// centroid, and on which side (C++ SBsp3::InsertInPlane).
+// centroid, and on which side.
 func (b *SBsp3) InsertInPlane(pos2 bool, tr *STriangle, m *SMesh) {
 	tc := tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0 / 3)
 
@@ -113,8 +112,7 @@ func (b *SBsp3) InsertInPlane(pos2 bool, tr *STriangle, m *SMesh) {
 }
 
 // InsertHow inserts tr on the given side of the node, or, when instead
-// is set and the tree ends there, decides whether the Boolean keeps it
-// (C++ SBsp3::InsertHow).
+// is set and the tree ends there, decides whether the Boolean keeps it.
 func (b *SBsp3) InsertHow(how BspClass, tr *STriangle, instead *SMesh) {
 	switch how {
 	case BspPos:
@@ -170,7 +168,7 @@ func (b *SBsp3) insertAlt(how BspClass, tr *STriangle, instead *SMesh) {
 }
 
 // bspUtil classifies and splits a triangle or convex polygon against a
-// node's plane (C++ BspUtil).
+// node's plane.
 type bspUtil struct {
 	bsp *SBsp3
 
@@ -432,8 +430,8 @@ func bspTriangulate(bsp *SBsp3, meta STriMeta, vertex []geom.Vector, instead *SM
 	return bsp
 }
 
-// InsertConvexHow inserts a convex polygon on the given side of the node
-// (C++ SBsp3::InsertConvexHow).
+// InsertConvexHow inserts a convex polygon on the given side of the
+// node.
 func (b *SBsp3) InsertConvexHow(how BspClass, meta STriMeta, vertex []geom.Vector, instead *SMesh) {
 	switch how {
 	case BspPos:
@@ -457,7 +455,7 @@ func (b *SBsp3) InsertConvexHow(how BspClass, meta STriMeta, vertex []geom.Vecto
 }
 
 // InsertConvex inserts a convex polygon, splitting it against the
-// node's plane as a polygon where it can (C++ SBsp3::InsertConvex).
+// node's plane as a polygon where it can.
 func (b *SBsp3) InsertConvex(meta STriMeta, vertex []geom.Vector, instead *SMesh) *SBsp3 {
 	u := &bspUtil{}
 	if u.classifyConvex(vertex, b, instead == nil) {
@@ -483,7 +481,7 @@ func (b *SBsp3) InsertConvex(meta STriMeta, vertex []geom.Vector, instead *SMesh
 
 // SBsp3InsertOrCreate inserts tr into the tree at where, making a node
 // of it if the tree ends there; with instead, the triangle instead goes
-// into (or is discarded from) that mesh (C++ SBsp3::InsertOrCreate).
+// into (or is discarded from) that mesh.
 func SBsp3InsertOrCreate(where *SBsp3, tr *STriangle, instead *SMesh) *SBsp3 {
 	if where == nil {
 		if instead != nil {
@@ -510,7 +508,7 @@ func SBsp3InsertOrCreate(where *SBsp3, tr *STriangle, instead *SMesh) *SBsp3 {
 }
 
 // Insert inserts tr below this node, splitting it against the node's
-// plane (C++ SBsp3::Insert).
+// plane.
 func (b *SBsp3) Insert(tr *STriangle, instead *SMesh) {
 	u := &bspUtil{}
 	u.classifyTriangle(tr, b)
@@ -557,8 +555,8 @@ func (b *SBsp3) Insert(tr *STriangle, instead *SMesh) {
 	}
 }
 
-// GenerateInPaintOrder lists the tree's triangles back to front along z
-// (C++ SBsp3::GenerateInPaintOrder).
+// GenerateInPaintOrder lists the tree's triangles back to front along
+// z.
 func (b *SBsp3) GenerateInPaintOrder(m *SMesh) {
 	// Doesn't matter which branch we take if the normal has zero z
 	// component, so don't need a separate case for that.
@@ -589,7 +587,7 @@ func (b *SBsp3) GenerateInPaintOrder(m *SMesh) {
 
 // SBsp2 is a 2d BSP over the edges of the triangles in a 3d node's
 // plane: the line through edge, in the plane with normal np, with
-// outward normal no, at no . p = d (C++ SBsp2).
+// outward normal no, at no. p = d.
 type SBsp2 struct {
 	NP   geom.Vector // normal to the plane
 	NO   geom.Vector // outer normal to the edge
@@ -603,7 +601,7 @@ type SBsp2 struct {
 }
 
 // IntersectionWith is where the segment from a to b, which must cross
-// the node's line, crosses it (C++ SBsp2::IntersectionWith).
+// the node's line, crosses it.
 func (b *SBsp2) IntersectionWith(a, bb geom.Vector) geom.Vector {
 	da := a.Dot(b.NO) - b.D
 	db := bb.Dot(b.NO) - b.D
@@ -630,7 +628,7 @@ func newSBsp2(nedge *SEdge, nnp, out geom.Vector) *SBsp2 {
 }
 
 // SBsp2InsertOrCreateEdge inserts nedge into the tree at where, making
-// a node of it if the tree ends there (C++ SBsp2::InsertOrCreateEdge).
+// a node of it if the tree ends there.
 func SBsp2InsertOrCreateEdge(where *SBsp2, nedge *SEdge, nnp, out geom.Vector) *SBsp2 {
 	if where == nil {
 		// Brand new node; so allocate for it, and fill us in.
@@ -641,7 +639,7 @@ func SBsp2InsertOrCreateEdge(where *SBsp2, nedge *SEdge, nnp, out geom.Vector) *
 }
 
 // InsertEdge inserts nedge below this node, splitting it against the
-// node's line (C++ SBsp2::InsertEdge).
+// node's line.
 func (b *SBsp2) InsertEdge(nedge *SEdge, nnp, out geom.Vector) {
 	dt := [2]float64{nedge.A.Dot(b.NO), nedge.B.Dot(b.NO)}
 
@@ -692,8 +690,7 @@ func (b *SBsp2) InsertEdge(nedge *SEdge, nnp, out geom.Vector) {
 }
 
 // InsertTriangleHow passes tr down the given side, or, where the tree
-// ends, decides it against the 3d node's plane (C++
-// SBsp2::InsertTriangleHow).
+// ends, decides it against the 3d node's plane.
 func (b *SBsp2) InsertTriangleHow(how BspClass, tr *STriangle, m *SMesh, bsp3 *SBsp3) {
 	switch how {
 	case BspPos:
@@ -714,8 +711,7 @@ func (b *SBsp2) InsertTriangleHow(how BspClass, tr *STriangle, m *SMesh, bsp3 *S
 }
 
 // InsertTriangle classifies tr, which lies in the 3d node's plane,
-// against the edges in that plane, splitting it as needed (C++
-// SBsp2::InsertTriangle).
+// against the edges in that plane, splitting it as needed.
 func (b *SBsp2) InsertTriangle(tr *STriangle, m *SMesh, bsp3 *SBsp3) {
 	dt := [3]float64{tr.A.Dot(b.NO), tr.B.Dot(b.NO), tr.C.Dot(b.NO)}
 

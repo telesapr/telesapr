@@ -21,9 +21,8 @@ type SCurvePt struct {
 // walking from Start to Finish); SurfB is the "inner" surface.
 //
 // NewH records the new handle assigned to this curve when it gets
-// copied into a different shell during a boolean. Mirrors the C++
-// SCurve::newH field used by SShell::MakeFromBoolean to rewrite trim
-// handles after CopyCurvesSplitAgainst.
+// copied into a different shell during a boolean. MakeFromBoolean
+// rewrites trim handles with it after CopyCurvesSplitAgainst.
 type SCurve struct {
 	H       core.HSCurve
 	NewH    core.HSCurve
@@ -77,9 +76,9 @@ func (s *SShell) Clear() {
 	s.BooleanFailed = false
 }
 
-// MakeFromCopyOf copies src (C++ SShell::MakeFromCopyOf): a
-// transformation by the identity, which, like C++'s, still rotates
-// and translates the curves' exact forms (so turns -0 into +0).
+// MakeFromCopyOf copies src: a transformation by the identity, which
+// still rotates and translates the curves' exact forms (so turns -0
+// into +0).
 func (s *SShell) MakeFromCopyOf(src *SShell) {
 	if s == src {
 		panic("Can't make from copy of self")
@@ -87,26 +86,23 @@ func (s *SShell) MakeFromCopyOf(src *SShell) {
 	s.MakeFromTransformationOf(src, geom.Vector{}, geom.QuaternionIdentity, 1.0)
 }
 
-// addAndAssignSurfaceID appends ss to s.Surface with a fresh
-// sequential handle, leaving its face alone (C++
-// IdList::AddAndAssignId).
+// addAndAssignSurfaceID appends ss to s.Surface with a fresh sequential
+// handle, leaving its face alone.
 func (s *SShell) addAndAssignSurfaceID(ss SSurface) core.HSSurface {
 	return s.addSurfaceAssignID(ss)
 }
 
 // ShellGroup is what the revolution constructors read from the group
-// they build a shell for (C++ passes its Group): the faces of the new
-// surfaces are entities from the group's remap table.
+// they build a shell for: the faces of the new surfaces are entities
+// from the group's remap table.
 type ShellGroup interface {
-	// Remap is the handle of copy copyNumber of entity in (C++
-	// Group::Remap).
+	// Remap is the handle of copy copyNumber of entity in.
 	Remap(in core.HEntity, copyNumber int) core.HEntity
 	// EntityExists reports whether the sketch has entity h.
 	EntityExists(h core.HEntity) bool
 }
 
-// The remap keys of the faces the shell constructors assign (C++
-// Group::REMAP_LINE_TO_FACE, REMAP_LATHE_START, REMAP_LATHE_END).
+// The remap keys of the faces the shell constructors assign.
 const (
 	remapLineToFace = 1004
 	remapLatheStart = 1006
@@ -126,11 +122,10 @@ func lineToFace(group ShellGroup, sb *SBezier) (FaceID, bool) {
 	return FaceID(hface.V), true
 }
 
-// addAndAssignCurveID appends sc to s.Curve with a fresh sequential
-// handle, mirroring the C++ `IdList::AddAndAssignId` semantics.
+// addAndAssignCurveID appends sc to s.Curve with a fresh handle, one
+// more than the largest in use.
 func (s *SShell) addAndAssignCurveID(sc SCurve) core.HSCurve {
-	// Like C++ IdList::AddAndAssignId, use one more than the largest
-	// id in use.
+	// Use one more than the largest id in use.
 	var maxV uint32
 	for i := range s.Curve {
 		if s.Curve[i].H.V > maxV {
@@ -143,10 +138,8 @@ func (s *SShell) addAndAssignCurveID(sc SCurve) core.HSCurve {
 	return h
 }
 
-// makePwlSCurvePoints samples b's polyline approximation into
-// SCurvePt form, marking the first and last samples as vertices.
-// Mirrors the C++ `SBezier::MakePwlInto(List<SCurvePt> *l, ...)`
-// overload (ratpoly.cpp).
+// makePwlSCurvePoints samples b's polyline approximation into SCurvePt
+// form, marking the first and last samples as vertices.
 func makePwlSCurvePoints(b *SBezier, tol Tolerance, maxDt float64) []SCurvePt {
 	var raw []geom.Vector
 	b.MakePwlIntoPoints(&raw, tol, maxDt)
@@ -158,23 +151,21 @@ func makePwlSCurvePoints(b *SBezier, tol Tolerance, maxDt float64) []SCurvePt {
 }
 
 // shellTrimLine pairs a trim curve handle with the extrusion side
-// surface it belongs to. Mirrors the C++ `TrimLine` struct in
-// shell.cpp.
+// surface it belongs to.
 type shellTrimLine struct {
 	hc core.HSCurve
 	hs core.HSSurface
 }
 
 // MakeFromExtrusionOf extrudes a planar BezierLoopSet from t0 to t1.
-// Faithful port of C++ `SShell::MakeFromExtrusionOf` (shell.cpp).
 // Each curve in the set becomes a side surface trimmed by the two
 // translated copies of itself (at t0 and t1) and by the trim lines
 // joining consecutive curves; the outer contour and every hole are
-// capped at t0 and t1 with two shared planar surfaces trimmed by
-// the same translated curves.
+// capped at t0 and t1 with two shared planar surfaces trimmed by the
+// same translated curves.
 func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, color core.RGBA) {
-	// Like the C++, this adds to s rather than replacing it, so that a
-	// group's loop sets all extrude into one shell.
+	// This adds to s rather than replacing it, so that a group's loop
+	// sets all extrude into one shell.
 	if sbls == nil {
 		return
 	}
@@ -299,8 +290,7 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 }
 
 // addSurfaceAssignID adds ss with a fresh handle (one more than the
-// largest in use), leaving its Face alone. Mirrors C++
-// IdList::AddAndAssignId for surfaces.
+// largest in use), leaving its Face alone.
 func (s *SShell) addSurfaceAssignID(ss SSurface) core.HSSurface {
 	ss.Tol = s.Tol.Or(ss.Tol)
 	var maxV uint32
@@ -325,9 +315,8 @@ func appendTrim(s *SShell, h core.HSSurface, stb STrimBy) {
 }
 
 // CheckNormalAxisRelationship reports whether the direction of
-// revolution/extrusion ends up parallel to the normal of the sketch,
-// on the side of the axis where the sketch is. Faithful port of C++
-// `SShell::CheckNormalAxisRelationship` (shell.cpp).
+// revolution/extrusion ends up parallel to the normal of the sketch, on
+// the side of the axis where the sketch is.
 func CheckNormalAxisRelationship(sbls *SBezierLoopSet, pt, axis geom.Vector, da, dx float64) bool {
 	var pto geom.Vector
 	md := math.Inf(-1)
@@ -382,16 +371,13 @@ func (s *SShell) addCurveTrimming(sc SCurve, backwardsA bool) {
 // MakeFromHelicalRevolutionOf sweeps a planar BezierLoopSet around the
 // axis (pt, axis) from angle angles to anglef while translating along
 // the axis from dists to distf. The swept surfaces are split into
-// sections of at most 90 degrees and capped by two planes. Faithful
-// port of C++ `SShell::MakeFromHelicalRevolutionOf` (shell.cpp).
+// sections of at most 90 degrees and capped by two planes.
 //
 // The sketch must not contain the axis of revolution as a
-// non-construction line when dist is nonzero. startFace and endFace
-// are the face ids of the caps at angles and anglef (C++
-// Group::Remap(NO_ENTITY, REMAP_LATHE_START / REMAP_LATHE_END)); a
-// zero id leaves the cap's face at its surface handle. The C++
-// REMAP_LINE_TO_FACE of the swept surfaces is not done: SBezier
-// carries no source entity.
+// non-construction line when dist is nonzero. startFace and endFace are
+// the face ids of the caps at angles and anglef; a zero id leaves the
+// cap's face at its surface handle. The swept surfaces are not given
+// their lines' faces: SBezier carries no source entity.
 func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector,
 	color core.RGBA, group ShellGroup, angles, anglef, dists, distf float64) {
 	if sbls == nil {
@@ -570,8 +556,7 @@ const LocalOriginBit = 0x8000
 // MakeFromRevolutionOf revolves a planar BezierLoopSet a full turn
 // around the axis (pt, axis). Each curve becomes four 90-degree
 // surfaces of revolution, trimmed by the rotated copies of the curve
-// and by the circles swept by its endpoints. Faithful port of C++
-// `SShell::MakeFromRevolutionOf` (shell.cpp).
+// and by the circles swept by its endpoints.
 func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RGBA, group ShellGroup) {
 	if sbls == nil {
 		return
@@ -646,12 +631,11 @@ func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector
 	s.MakeFirstOrderRevolvedSurfaces(pt, axis, i0)
 }
 
-// MakeFirstOrderRevolvedSurfaces rewrites the surfaces from index i0
-// on that are revolutions of a line into lower-order forms where
-// possible: a revolution in a plane perpendicular to the axis becomes
-// a degree (1, 1) plane, and a cylinder is transposed so that it is
-// recognized as a surface of extrusion. Faithful port of C++
-// `SShell::MakeFirstOrderRevolvedSurfaces` (shell.cpp).
+// MakeFirstOrderRevolvedSurfaces rewrites the surfaces from index i0 on
+// that are revolutions of a line into lower-order forms where possible:
+// a revolution in a plane perpendicular to the axis becomes a degree
+// (1, 1) plane, and a cylinder is transposed so that it is recognized
+// as a surface of extrusion.
 func (s *SShell) MakeFirstOrderRevolvedSurfaces(pt, axis geom.Vector, i0 int) {
 	s.makeFirstOrderRevolvedRange(pt, axis, i0, len(s.Surface))
 }
@@ -736,11 +720,10 @@ func (s *SShell) makeFirstOrderRevolvedRange(pt, axis geom.Vector, i0, i1 int) {
 	}
 }
 
-// MakeFromTransformationOf applies (translate, rotate, scale) to
-// every surface and curve of src, keeping their original handles.
+// MakeFromTransformationOf applies (translate, rotate, scale) to every
+// surface and curve of src, keeping their original handles.
 // MakeFromTransformationOf adds the surfaces and curves of a, scaled,
-// then rotated, then translated, keeping their handles (C++
-// SShell::MakeFromTransformationOf).
+// then rotated, then translated, keeping their handles.
 func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quaternion, scale float64) {
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol)
@@ -755,17 +738,13 @@ func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quate
 	}
 }
 
-// TriangulateInto triangulates every surface in the shell and
-// appends the resulting triangles to mesh. Faithful port of C++
-// `SShell::TriangulateInto` (shell.cpp): each surface's trim curves
-// (resolved against this shell) are assembled into a uv-space
-// polygon and triangulated either by ear-clipping (planar surfaces)
-// or by the adaptive uv grid (curved surfaces). See SSurface.TrimBuilt
-// for the one Go-only fallback.
+// TriangulateInto triangulates every surface in the shell and appends
+// the resulting triangles to mesh. See SSurface.TrimBuilt for the
+// untrimmed case.
 //
-// The surfaces are triangulated at once, as under C++'s OpenMP, each
-// into a mesh of its own; the meshes are joined in the surfaces' order,
-// which is the order C++ built without OpenMP adds them in.
+// The surfaces are triangulated at once, each into a mesh of its own;
+// the meshes are joined in the surfaces' order, so the result doesn't
+// depend on the timing.
 func (s *SShell) TriangulateInto(mesh *SMesh) {
 	if len(s.Surface) < 2 || par.Workers() < 2 {
 		for i := range s.Surface {
@@ -782,13 +761,11 @@ func (s *SShell) TriangulateInto(mesh *SMesh) {
 	}
 }
 
-// TriangulateInto is the per-surface version. Mirrors C++
-// `SSurface::TriangulateInto(SShell *shell, SMesh *sm)`
-// (surface.cpp:414): build the uv-space trim polygon via the
-// surface's own STrimBy list (resolved against shell), triangulate
-// it (ear-clipping for degree (1,1) planes, the adaptive uv grid for
-// curved surfaces), then map every uv-space vertex/normal back to
-// 3-D via PointAt/NormalAt and flip the winding to match the
+// TriangulateInto is the per-surface version: build the uv-space trim
+// polygon via the surface's own STrimBy list (resolved against shell),
+// triangulate it (ear-clipping for degree (1,1) planes, the adaptive uv
+// grid for curved surfaces), then map every uv-space vertex/normal back
+// to 3-D via PointAt/NormalAt and flip the winding to match the
 // trim-contour orientation convention.
 func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 	if len(s.Trim) == 0 && !s.TrimBuilt {
@@ -833,7 +810,7 @@ func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 		t.B = at(t.B)
 		t.C = at(t.C)
 		// Works out that the chosen contour direction is inconsistent
-		// with the triangle direction (matches the C++ comment).
+		// with the triangle direction.
 		t.FlipNormal()
 	}
 	// A trim along a pole (openPoles) has two corners at one point:
@@ -942,11 +919,10 @@ func (s *SShell) MakeEdgesInto(el *SEdgeList) {
 }
 
 // MakeEdgesInto emits the pwl edges of every trim curve of srf, in uv
-// space (asUV) or xyz. When useCurvesFrom is non-nil, each trim's
-// curve is replaced by its split copy (newH) in that shell; that is
-// used by the Booleans, since the curves from the output shell are
-// split against any intersecting surfaces (and the originals aren't).
-// Mirrors C++ SSurface::MakeEdgesInto (surface.cpp).
+// space (asUV) or xyz. When useCurvesFrom is non-nil, each trim's curve
+// is replaced by its split copy (newH) in that shell; that is used by
+// the Booleans, since the curves from the output shell are split
+// against any intersecting surfaces (and the originals aren't).
 func (s *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCurvesFrom *SShell) {
 	start := len(sel.Edges)
 	defer func() {
@@ -1080,8 +1056,7 @@ func (s *SSurface) foldsSide(k int) bool {
 }
 
 // makeTrimEdgesInto walks sc's pwl from stb's start to its finish
-// (backwards if stb says so), emitting edges in uv or xyz. Mirrors
-// C++ SSurface::MakeTrimEdgesInto (surface.cpp:222).
+// (backwards if stb says so), emitting edges in uv or xyz.
 func (s *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb *STrimBy) {
 	var prev geom.Vector
 	inCurve := false
@@ -1119,8 +1094,8 @@ func (s *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb 
 }
 
 // MakeSectionEdgesInto reports the trim curves of the shell's planar
-// faces that lie in the plane n . p = d: exactly into sbl where it can,
-// otherwise as pwl edges into sel (C++ SShell::MakeSectionEdgesInto).
+// faces that lie in the plane n. p = d: exactly into sbl where it can,
+// otherwise as pwl edges into sel.
 func (s *SShell) MakeSectionEdgesInto(n geom.Vector, d float64, sel *SEdgeList, sbl *SBezierList) {
 	for i := range s.Surface {
 		if s.Surface[i].CoincidentWithPlane(n, d) {
@@ -1130,7 +1105,7 @@ func (s *SShell) MakeSectionEdgesInto(n geom.Vector, d float64, sel *SEdgeList, 
 }
 
 // ExactSurfaceTangentAt is the direction, at p, of the curve where srfA
-// meets srfB, pointing along dir (C++ SSurface::ExactSurfaceTangentAt).
+// meets srfB, pointing along dir.
 func (s *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector {
 	var puva, puvb geom.Point2d
 	srfA.ClosestPointTo(p, &puva, true)
@@ -1145,8 +1120,7 @@ func (s *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, di
 
 // MakeSectionEdgesInto reports our trim curves. If a trim curve is
 // exact and sbl is not nil, then add its exact form to sbl. Otherwise,
-// add its piecewise linearization to sel (C++
-// SSurface::MakeSectionEdgesInto).
+// add its piecewise linearization to sel.
 func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBezierList) {
 	for k := range s.Trim {
 		stb := &s.Trim[k]
@@ -1260,7 +1234,7 @@ func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBez
 }
 
 // RemapFaces rewrites each surface's face to the group's copy
-// copyNumber of it (C++ SShell::RemapFaces).
+// copyNumber of it.
 func (s *SShell) RemapFaces(group ShellGroup, remap int) {
 	for i := range s.Surface {
 		ss := &s.Surface[i]
@@ -1275,7 +1249,7 @@ func (s *SShell) RemapFaces(group ShellGroup, remap int) {
 }
 
 // RemapFaces rewrites each triangle's face to the group's copy
-// copyNumber of it (C++ SMesh::RemapFaces).
+// copyNumber of it.
 func (m *SMesh) RemapFaces(group ShellGroup, remap int) {
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]

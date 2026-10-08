@@ -29,7 +29,7 @@ const (
 	fnMask    = 0x400
 )
 
-// menuEntry is a line of the menu table (C++ MenuEntry).
+// menuEntry is a line of the menu table.
 type menuEntry struct {
 	level int    // 0 == on menu bar, 1 == one level down
 	label string // or "" for a separator
@@ -218,7 +218,6 @@ var menuTable = []menuEntry{
 	{1, "Step &Dimension...", CmdStepDim, ctrl | shift | 'd', kn, mAna},
 	{1, "Motion St&udy...", CmdMotionStudy, 0, kn, func(ss *Application, c Command) { ss.MenuMotionStudy() }},
 
-	// C++ has no scripts; the menu is ours.
 	{0, "S&cript", CmdNone, 0, kn, mScr},
 	{1, "Show &Console", CmdScriptConsole, ctrl | shift | 'k', kc, mScr},
 	{1, "", CmdNone, 0, kn, nil},

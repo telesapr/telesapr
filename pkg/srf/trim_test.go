@@ -14,7 +14,7 @@ func TestSSurfaceTriangulateIntoRespectsTrim(t *testing.T) {
 	// Build a planar surface in the XY plane.
 	s := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	// Build a small BSP that classifies points with v > 0.5 as
-	// inside (an "upper-half" trim). As in C++
+	// inside (an "upper-half" trim). As in SolveSpace
 	// SBspUv::ClassifyPoint, "inside" is the right-hand side of the
 	// directed edge. With edge direction (1, 0.5)→(0, 0.5) (pointing toward
 	// -U), the right-hand side is +V, so points above the line
@@ -26,7 +26,7 @@ func TestSSurfaceTriangulateIntoRespectsTrim(t *testing.T) {
 	s.TriangulateInto(nil, mesh)
 
 	// Count triangles with v < 0.5: should be zero (trimmed). As in
-	// C++ SSurface::FromPlane, the second parameter runs along the
+	// SolveSpace SSurface::FromPlane, the second parameter runs along the
 	// plane's u vector (+X here).
 	below := 0
 	for _, t := range mesh.Triangles {

@@ -9,9 +9,9 @@ import (
 )
 
 // CopyCurvesSplitAgainst copies every curve of s into `into`, split so
-// that a pwl segment never crosses a surface of agnst, and records
-// each original curve's handle in `into` as its NewH (for rewriting
-// the trims). Mirrors C++ SShell::CopyCurvesSplitAgainst.
+// that a pwl segment never crosses a surface of agnst, and records each
+// original curve's handle in `into` as its NewH (for rewriting the
+// trims).
 func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 	atOnce, noCache := booleanLoops(s, agnst)
 	if atOnce && noCache {
@@ -42,13 +42,12 @@ func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 // intersection curves between every pair of surfaces (one from
 // `s`, one from `agnst`) and appends them to into.Curve.
 //
-// Dispatches to the C++-equivalent SSurface::IntersectAgainst for
-// each pair, which selects between plane-plane (exact line),
-// plane-extrusion (exact projection or sampled lines),
-// extrusion-extrusion-same-axis (exact lines), and the
-// marching-squares fallback for general surfaces. Each emitted
-// curve is tagged Source = CurveSourceIntersection so the
-// per-surface trim pass can include it in the `inter` edge list.
+// Dispatches to IntersectAgainst for each pair, which selects between
+// plane-plane (exact line), plane-extrusion (exact projection or
+// sampled lines), extrusion-extrusion-same-axis (exact lines), and the
+// marching-squares fallback for general surfaces. Each emitted curve is
+// tagged Source = CurveSourceIntersection so the per-surface trim pass
+// can include it in the `inter` edge list.
 func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 	if agnst == nil || into == nil {
 		return
@@ -89,8 +88,7 @@ func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 
 // CopySurfacesTrimAgainst copies every surface of s into `into`,
 // trimmed against the other operand per the boolean op, and records
-// each surface's handle in `into` as its NewH. Mirrors C++
-// SShell::CopySurfacesTrimAgainst (boolean.cpp:750).
+// each surface's handle in `into` as its NewH.
 func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombineAs) {
 	atOnce, noCache := booleanLoops(sha, shb)
 	if atOnce && noCache {
@@ -122,8 +120,7 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 }
 
 // RewriteSurfaceHandlesForCurves points every curve's SurfA/SurfB at
-// the new handles of its surfaces in s. Mirrors C++
-// SShell::RewriteSurfaceHandlesForCurves (boolean.cpp:791).
+// the new handles of its surfaces in s.
 func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell) {
 	for i := range s.Curve {
 		sc := &s.Curve[i]
@@ -138,8 +135,8 @@ func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell) {
 	}
 }
 
-// SurfaceA returns the surface named by SurfA, looked up in the
-// operand the curve came from. Mirrors C++ SCurve::SurfaceA.
+// SurfaceA returns the surface named by SurfA, looked up in the operand
+// the curve came from.
 func (c *SCurve) SurfaceA(a, b *SShell) *SSurface {
 	switch c.Source {
 	case CurveSourceOrigB:
@@ -149,8 +146,8 @@ func (c *SCurve) SurfaceA(a, b *SShell) *SSurface {
 	}
 }
 
-// SurfaceB returns the surface named by SurfB, looked up in the
-// operand the curve came from. Mirrors C++ SCurve::SurfaceB.
+// SurfaceB returns the surface named by SurfB, looked up in the operand
+// the curve came from.
 func (c *SCurve) SurfaceB(a, b *SShell) *SSurface {
 	switch c.Source {
 	case CurveSourceOrigA:
@@ -161,10 +158,9 @@ func (c *SCurve) SurfaceB(a, b *SShell) *SSurface {
 }
 
 // RemoveShortSegments drops the polyline points that aren't vertices,
-// aren't spaced deliberately along an exact curve, and aren't needed
-// to meet the chord tolerance in either surface. Faithful port of C++
-// SCurve::RemoveShortSegments (curve.cpp:806). When both surfaces are
-// nil (a Go-only case) it does nothing.
+// aren't spaced deliberately along an exact curve, and aren't needed to
+// meet the chord tolerance in either surface. When both surfaces are
+// nil it does nothing.
 func (c *SCurve) RemoveShortSegments(sA, sB *SSurface) {
 	c.RemoveShortSegmentsWithChordTol(sA, sB, tolOf(sA).ChordTolMm())
 }
@@ -253,7 +249,6 @@ func onSurface(s *SSurface, p geom.Vector) bool {
 // it crosses a (trimmed, or nearly trimmed) surface of agnstA or
 // agnstB, and at any trim vertex of those shells lying on the curve.
 // srfA and srfB are the surfaces c trims, whose crossings don't count.
-// Mirrors C++ SCurve::MakeCopySplitAgainst (boolean.cpp).
 func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurface) SCurve {
 	ret := *c
 	ret.Points = nil

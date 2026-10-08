@@ -67,7 +67,7 @@ func TestSoftMesh(t *testing.T) {
 	cam.Tangent = 2 / (cam.Scale * 100)
 	checkGolden(t, "mesh_perspective", frame(r, cam, func() { drawMeshScene(r, m, ol) }))
 
-	// Two-sided, as C++ draws a mesh with its back faces in red.
+	// Two-sided, as SolveSpace draws a mesh with its back faces in red.
 	cam.Tangent = 0
 	checkGolden(t, "mesh_twosided", frame(r, cam, func() {
 		front := r.InternFill(render.Fill{Color: core.NewRGBA(160, 160, 160, 255)})

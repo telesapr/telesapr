@@ -26,7 +26,7 @@ func wrapIdx(v, n int) int {
 
 // UvTriangulateInto triangulates the uv-space polygon (contours stored
 // closed, holes oriented opposite to outer contours) and adds the
-// triangles, still in uv, to m. Mirrors C++ SPolygon::UvTriangulateInto.
+// triangles, still in uv, to m.
 func (p *SPolygon) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	if len(p.Contours) == 0 {
 		return
@@ -130,8 +130,7 @@ func (p *SPolygon) UvTriangulateInto(m *SMesh, srf *SSurface) {
 
 // BridgeToContour merges the hole sc into this (open, i.e. without the
 // repeated closing point) contour, joining them at a shared point or
-// along a bridge edge that crosses none of avoidEdges. Mirrors C++
-// SContour::BridgeToContour.
+// along a bridge edge that crosses none of avoidEdges.
 func (c *SContour) BridgeToContour(sc *SContour, avoidEdges *SEdgeList, avoidPts *[]geom.Vector) bool {
 	if sc == nil {
 		return false
@@ -261,7 +260,7 @@ shared:
 }
 
 // IsEmptyTriangle reports whether no other point of the contour lies in
-// the triangle (ap, bp, cp). Mirrors C++ SContour::IsEmptyTriangle.
+// the triangle (ap, bp, cp).
 func (c *SContour) IsEmptyTriangle(ap, bp, cp int, scaledEPS float64) bool {
 	tr := STriangle{A: c.Points[ap].P, B: c.Points[bp].P, C: c.Points[cp].P}
 
@@ -296,8 +295,7 @@ func (c *SContour) IsEmptyTriangle(ap, bp, cp int, scaledEPS float64) bool {
 	return true
 }
 
-// RayIsInside tests if ray b->d passes through triangle a,b,c. Mirrors
-// the static C++ RayIsInside in triangulate.cpp.
+// RayIsInside tests if ray b->d passes through triangle a,b,c.
 func RayIsInside(a, c, b, d geom.Vector) bool {
 	// coincident edges are not considered to intersect the triangle
 	if d.Equals(a) {
@@ -325,8 +323,7 @@ func RayIsInside(a, c, b, d geom.Vector) bool {
 	return true
 }
 
-// IsEar reports whether vertex bp can be clipped. Mirrors C++
-// SContour::IsEar.
+// IsEar reports whether vertex bp can be clipped.
 func (c *SContour) IsEar(bp int, scaledEps float64) bool {
 	ln := len(c.Points)
 	ap := wrapIdx(bp-1, ln)
@@ -395,19 +392,16 @@ func (c *SContour) IsEar(bp int, scaledEps float64) bool {
 }
 
 // ClipEarInto adds the triangle at vertex bp to m (unless degenerate)
-// and removes that vertex. Mirrors C++ SContour::ClipEarInto.
+// and removes that vertex.
 func (c *SContour) ClipEarInto(m *SMesh, bp int, scaledEps float64) {
 	c.clipEarInto(m, bp, scaledEps, nil)
 }
 
 // clipEarInto is ClipEarInto on surface srf, nil for none. A triangle
 // is culled when it is thin in uv: its height over its longest side
-// below scaledEps (C++ compares its doubled area with the square of
-// the epsilon, which also culls thin triangles that are real, such as
-// the sliver between a fine chord of a curve and the next, and leaves a
-// hole there). On a curved surface a triangle thin in uv may not be in
-// xyz: three points along a seam between two patches of a face lie on
-// a line in uv, the line that the seam is in the patch's parameters,
+// below scaledEps. On a curved surface a triangle thin in uv may not be
+// in xyz: three points along a seam between two patches of a face lie
+// on a line in uv, the line that the seam is in the patch's parameters,
 // but on a curve in xyz, and the next patch meets the chords between
 // them; so it is kept unless it is thin in xyz too.
 func (c *SContour) clipEarInto(m *SMesh, bp int, scaledEps float64, srf *SSurface) {
@@ -452,7 +446,7 @@ func (c *SContour) removeTaggedPoints() {
 }
 
 // UvTriangulateInto ear-clips this single (hole-free) uv contour into
-// m. Mirrors C++ SContour::UvTriangulateInto.
+// m.
 func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface) {
 	var tu, tv geom.Vector
 	srf.TangentsAt(0.5, 0.5, &tu, &tv, true)
@@ -1104,8 +1098,7 @@ const trimSplitRounds = 6
 const trimSplitOff = 100 * geom.LengthEps
 
 // ChordToleranceForEdge returns how far the surface deviates from the
-// straight xyz segment between the uv points a and b. Mirrors C++
-// SSurface::ChordToleranceForEdge.
+// straight xyz segment between the uv points a and b.
 func (s *SSurface) ChordToleranceForEdge(a, b geom.Vector) float64 {
 	as := s.PointAt(a.X, a.Y)
 	bs := s.PointAt(b.X, b.Y)
@@ -1121,7 +1114,7 @@ func (s *SSurface) ChordToleranceForEdge(a, b geom.Vector) float64 {
 	return math.Sqrt(worst)
 }
 
-// PointAtMaybeSwapped mirrors C++ SSurface::PointAtMaybeSwapped.
+// PointAtMaybeSwapped is PointAt with u and v swapped when asked.
 func (s *SSurface) PointAtMaybeSwapped(u, v float64, swapped bool) geom.Vector {
 	if swapped {
 		return s.PointAt(v, u)
@@ -1129,7 +1122,7 @@ func (s *SSurface) PointAtMaybeSwapped(u, v float64, swapped bool) geom.Vector {
 	return s.PointAt(u, v)
 }
 
-// NormalAtMaybeSwapped mirrors C++ SSurface::NormalAtMaybeSwapped.
+// NormalAtMaybeSwapped is NormalAt with u and v swapped when asked.
 func (s *SSurface) NormalAtMaybeSwapped(u, v float64, swapped bool) geom.Vector {
 	var du, dv geom.Vector
 	if swapped {
@@ -1141,8 +1134,7 @@ func (s *SSurface) NormalAtMaybeSwapped(u, v float64, swapped bool) geom.Vector 
 }
 
 // MakeTriangulationGridInto appends grid lines in (vs, vf] spaced to
-// satisfy the chord tolerance. Mirrors C++
-// SSurface::MakeTriangulationGridInto.
+// satisfy the chord tolerance.
 func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapped bool, depth int) {
 	worst := 0.0
 
@@ -1189,8 +1181,8 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 }
 
 // UvGridTriangulateInto covers the interior of the uv polygon with an
-// adaptive grid of quads, cuts those out of the polygon, and
-// ear-clips the rest. Mirrors C++ SPolygon::UvGridTriangulateInto.
+// adaptive grid of quads, cuts those out of the polygon, and ear-clips
+// the rest.
 func (p *SPolygon) UvGridTriangulateInto(mesh *SMesh, srf *SSurface) {
 	p.uvGridTriangulateInto(mesh, srf, nil)
 }
@@ -1370,8 +1362,7 @@ func gridNearTrim(srf *SSurface, el *SEdgeList, li, lj []float64) [][]bool {
 	return near
 }
 
-// TriangulateInto triangulates this planar xyz polygon into m. Mirrors
-// C++ SPolygon::TriangulateInto.
+// TriangulateInto triangulates this planar xyz polygon into m.
 func (p *SPolygon) TriangulateInto(m *SMesh) {
 	n := p.Normal
 	if n.Equals(geom.Vector{}) {
@@ -1392,7 +1383,6 @@ func (p *SPolygon) TriangulateInto(m *SMesh) {
 }
 
 // InverseTransformInto expresses every vertex in the (u, v, n) basis.
-// Mirrors C++ SPolygon::InverseTransformInto.
 func (p *SPolygon) InverseTransformInto(sp *SPolygon, u, v, n geom.Vector) {
 	for i := range p.Contours {
 		sc := &p.Contours[i]
@@ -1406,7 +1396,7 @@ func (p *SPolygon) InverseTransformInto(sp *SPolygon, u, v, n geom.Vector) {
 
 // EdgeCrosses reports whether the segment ea->eb crosses this edge.
 // Sharing an endpoint is not a crossing; overlapping coincident
-// segments are. Mirrors C++ SEdge::EdgeCrosses (polygon.cpp).
+// segments are.
 func (e *SEdge) EdgeCrosses(ea, eb geom.Vector, ppi *geom.Vector, spl *SPointList) bool {
 	d := eb.Minus(ea)
 	tEps := geom.LengthEps / d.Magnitude()
@@ -1498,8 +1488,7 @@ func (e *SEdge) EdgeCrosses(ea, eb geom.Vector, ppi *geom.Vector, spl *SPointLis
 	return false
 }
 
-// AnyEdgeCrossings counts the edges that ea->eb crosses. Mirrors C++
-// SEdgeList::AnyEdgeCrossings.
+// AnyEdgeCrossings counts the edges that ea->eb crosses.
 func (el *SEdgeList) AnyEdgeCrossings(a, b geom.Vector, ppi *geom.Vector, spl *SPointList) int {
 	cnt := 0
 	for i := range el.Edges {
@@ -1575,9 +1564,9 @@ func (s *SSurface) refineTwistedGrid(li, lj []float64) ([]float64, []float64) {
 const twistEdgeHalvings = 1
 
 // gridMaxTwistDepth is how many times MakeTriangulationGridInto halves
-// a span for twist, so a twisted face gets up to 32 rows. C++ stopped
-// at 16 (depth > 3), which a ruled face turned by a third of a turn
-// outruns: the rows along its trims were ear-clipped into triangles
-// that cross (roadmap 13.1). Each level doubles the rows of every
-// twisted face, and with them the time to mesh it.
+// a span for twist, so a twisted face gets up to 32 rows. 16 rows
+// (depth > 3) a ruled face turned by a third of a turn outruns: the
+// rows along its trims were ear-clipped into triangles that cross
+// (roadmap 13.1). Each level doubles the rows of every twisted face,
+// and with them the time to mesh it.
 const gridMaxTwistDepth = 5

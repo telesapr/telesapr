@@ -13,8 +13,7 @@ import (
 )
 
 // writeExportCurves writes the projected edges and curves, assembled
-// into loops where they close, and the mesh, to out (the end of C++
-// ExportLinesAndMesh).
+// into loops where they close, and the mesh, to out.
 func WriteCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh, tol srf.Tolerance, out Writer) error {
 	// We kept the line segments and Beziers separate until now; but put
 	// them all together, and also project everything into the xy plane,
@@ -55,7 +54,7 @@ func WriteCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh, tol s
 	return out.vw().OutputLinesAndMesh(&sblss, sms)
 }
 
-// Writer is a 2d vector file format (C++ VectorFileWriter).
+// Writer is a 2d vector file format.
 type Writer interface {
 	vw() *vectorWriter
 	StartPath(strokeRgb core.RGBA, lineWidth float64, filled bool, fillRgb core.RGBA, hs core.HStyle)
@@ -76,8 +75,7 @@ type Writer interface {
 	OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.SMesh) error
 }
 
-// vectorWriter is what the formats share (C++ VectorFileWriter's
-// fields and non-virtual methods). The file is written when it's
+// vectorWriter is what the formats share. The file is written when it's
 // finished.
 type vectorWriter struct {
 	sk   *sketch.Sketch
@@ -121,8 +119,7 @@ func (w *vectorWriter) closeFile() error {
 	return nil
 }
 
-// MmToPts converts mm to points, 72 to the inch (C++
-// VectorFileWriter::MmToPts).
+// MmToPts converts mm to points, 72 to the inch.
 func MmToPts(mm float64) float64 {
 	// 72 points in an inch
 	return (mm / 25.4) * 72
@@ -171,8 +168,7 @@ func NewWriter(filename string, sk *sketch.Sketch, o Options) (Writer, error) {
 	return ret, nil
 }
 
-// SetModelviewProjection sets the projection Transform applies (C++
-// VectorFileWriter::SetModelviewProjection).
+// SetModelviewProjection sets the projection Transform applies.
 func (w *vectorWriter) SetModelviewProjection(u, v, n, origin geom.Vector, cameraTan, scale float64) {
 	w.u = u
 	w.v = v
@@ -182,14 +178,12 @@ func (w *vectorWriter) SetModelviewProjection(u, v, n, origin geom.Vector, camer
 	w.scale = scale
 }
 
-// Transform projects a point as the view was exported (C++
-// VectorFileWriter::Transform).
+// Transform projects a point as the view was exported.
 func (w *vectorWriter) Transform(pos geom.Vector) geom.Vector {
 	return pos.InPerspective(w.u, w.v, w.n, w.origin, w.cameraTan).ScaledBy(1.0 / w.scale)
 }
 
-// loopsOf is a loop set's loops in C++'s order: the outer, then the
-// holes.
+// loopsOf is a loop set's loops: the outer, then the holes.
 func loopsOf(sbls *srf.SBezierLoopSet) []*srf.SBezierLoop {
 	loops := []*srf.SBezierLoop{&sbls.Outer}
 	for i := range sbls.Holes {
@@ -198,8 +192,7 @@ func loopsOf(sbls *srf.SBezierLoopSet) []*srf.SBezierLoop {
 	return loops
 }
 
-// OutputLinesAndMesh works out the canvas and writes the file (C++
-// VectorFileWriter::OutputLinesAndMesh).
+// OutputLinesAndMesh works out the canvas and writes the file.
 func (w *vectorWriter) OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.SMesh) error {
 	sk := w.sk
 
@@ -274,8 +267,7 @@ func (w *vectorWriter) OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.
 	return w.self.FinishAndCloseFile()
 }
 
-// BezierAsPwl writes a curve as line segments (C++
-// VectorFileWriter::BezierAsPwl).
+// BezierAsPwl writes a curve as line segments.
 func (w *vectorWriter) BezierAsPwl(sb *srf.SBezier) {
 	var lv []geom.Vector
 	sb.MakePwlIntoPoints(&lv, w.o.Tol, 0)
@@ -286,8 +278,7 @@ func (w *vectorWriter) BezierAsPwl(sb *srf.SBezier) {
 	}
 }
 
-// BezierAsNonrationalCubic writes a curve as nonrational cubics (C++
-// VectorFileWriter::BezierAsNonrationalCubic).
+// BezierAsNonrationalCubic writes a curve as nonrational cubics.
 func (w *vectorWriter) BezierAsNonrationalCubic(sb *srf.SBezier, depth int) {
 	t0, t1 := sb.TangentAt(0), sb.TangentAt(1)
 	// The curve is correct, and the first derivatives are correct, at

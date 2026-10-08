@@ -1,6 +1,5 @@
 // Package dxf writes ASCII DXF files, AutoCAD 2007 (AC1021) format, as
-// the part of libdxfrw that SolveSpace uses does (C++ dxfRW::write, its
-// dxfWriterAscii, and the table and entity writers), byte for byte.
+// the part of libdxfrw that SolveSpace uses does, byte for byte.
 package dxf
 
 import (
@@ -13,28 +12,26 @@ import (
 	"github.com/telesapr/telesapr/pkg/internal/cfmt"
 )
 
-// Version is the libdxfrw version the files name (C++ DRW_VERSION).
+// Version is the libdxfrw version the files name.
 const Version = "0.6.3"
 
-// firstHandle is where handles start (C++ FIRSTHANDLE).
+// firstHandle is where handles start.
 const firstHandle = 48
 
-// ARAD converts radians to degrees (C++ ARAD).
+// ARAD converts radians to degrees.
 const ARAD = 57.29577951308232
 
 // header is the HEADER section libdxfrw writes for AC1021 when the
-// application sets no header variables, as SolveSpace doesn't: it
-// depends on nothing else. scripts/regen-dxf-golden.sh extracts it
-// from a C++ export.
+// application sets no header variables: it depends on nothing else.
+// scripts/regen-dxf-golden.sh extracts it from a SolveSpace export.
 //
 //go:embed header.txt
 var header string
 
-// Coord is a point (C++ DRW_Coord).
+// Coord is a point.
 type Coord struct{ X, Y, Z float64 }
 
-// Line widths as DXF writes them (C++ DRW_LW_Conv): by layer, by block
-// and the default.
+// Line widths as DXF writes them: by layer, by block and the default.
 const (
 	WidthByLayer = -1
 	WidthByBlock = -2
@@ -42,8 +39,7 @@ const (
 )
 
 // WidthMm is a line width in mm rounded down to a standard DXF line
-// weight, in hundredths of a mm (C++ DRW_Entity::setWidthMm, then
-// DRW_LW_Conv::lineWidth2dxfInt).
+// weight, in hundredths of a mm.
 func WidthMm(millimeters float64) int {
 	if millimeters < 0.0 {
 		return WidthByLayer
@@ -65,7 +61,7 @@ func WidthMm(millimeters float64) int {
 	return 211
 }
 
-// Entity is what every entity has (C++ DRW_Entity).
+// Entity is what every entity has.
 type Entity struct {
 	Space    int // 1 for paper space
 	Layer    string
@@ -82,13 +78,13 @@ func NewEntity() Entity {
 	return Entity{Layer: "0", LineType: "BYLAYER", Color: 256, Color24: -1, LWeight: WidthByLayer}
 }
 
-// Line is a LINE (C++ DRW_Line).
+// Line is a LINE.
 type Line struct {
 	Entity
 	BasePoint, SecPoint Coord
 }
 
-// Arc is an ARC, with its angles in radians (C++ DRW_Arc).
+// Arc is an ARC, with its angles in radians.
 type Arc struct {
 	Entity
 	BasePoint          Coord
@@ -96,20 +92,20 @@ type Arc struct {
 	StaAngle, EndAngle float64
 }
 
-// Vertex is a polyline vertex (C++ DRW_Vertex).
+// Vertex is a polyline vertex.
 type Vertex struct {
 	BasePoint Coord
 	Bulge     float64
 }
 
-// Polyline is a POLYLINE; flag 8 makes it 3d (C++ DRW_Polyline).
+// Polyline is a POLYLINE; flag 8 makes it 3d.
 type Polyline struct {
 	Entity
 	Flags    int
 	Vertices []Vertex
 }
 
-// Spline is a SPLINE (C++ DRW_Spline).
+// Spline is a SPLINE.
 type Spline struct {
 	Entity
 	Flags    int
@@ -119,7 +115,7 @@ type Spline struct {
 	Controls []Coord
 }
 
-// DimensionKind is the kind of a dimension (C++ DRW::ETYPE).
+// DimensionKind is the kind of a dimension.
 type DimensionKind int
 
 const (
@@ -130,9 +126,8 @@ const (
 	DimAngular
 )
 
-// Dimension is a DIMENSION (C++ DRW_Dimension and its subclasses). Its
-// points are named after the DXF codes they go in: Def is 10, Text 11,
-// Pt3 13, Pt4 14, Pt5 15 and Pt6 16.
+// Dimension is a DIMENSION. Its points are named after the DXF codes
+// they go in: Def is 10, Text 11, Pt3 13, Pt4 14, Pt5 15 and Pt6 16.
 type Dimension struct {
 	Entity
 	Kind      DimensionKind
@@ -149,7 +144,7 @@ type Dimension struct {
 	HasActual bool
 }
 
-// Text alignments (C++ DRW_Text::HAlign and VAlign).
+// Text alignments.
 const (
 	HLeft   = 0
 	HCenter = 1
@@ -160,7 +155,7 @@ const (
 	VTop      = 3
 )
 
-// Text is a TEXT (C++ DRW_Text).
+// Text is a TEXT.
 type Text struct {
 	Entity
 	BasePoint, SecPoint Coord
@@ -171,26 +166,24 @@ type Text struct {
 	AlignH, AlignV      int
 }
 
-// LType is a line type (C++ DRW_LType).
+// LType is a line type.
 type LType struct {
 	Name string
 	Path []float64
 }
 
-// Layer is a layer, with libdxfrw's defaults but its name (C++
-// DRW_Layer).
+// Layer is a layer, with libdxfrw's defaults but its name.
 type Layer struct {
 	Name string
 }
 
 // Textstyle is a text style, with libdxfrw's defaults but its name and
-// font (C++ DRW_Textstyle).
+// font.
 type Textstyle struct {
 	Name, Font string
 }
 
-// Interface supplies what the file holds (the parts of C++
-// DRW_Interface SolveSpace implements).
+// Interface supplies what the file holds.
 type Interface interface {
 	WriteLTypes(w *Writer)
 	WriteLayers(w *Writer)
@@ -198,7 +191,7 @@ type Interface interface {
 	WriteEntities(w *Writer)
 }
 
-// Writer writes a DXF file (C++ dxfRW, writing).
+// Writer writes a DXF file.
 type Writer struct {
 	out          bytes.Buffer
 	entCount     int
@@ -235,8 +228,7 @@ func (w *Writer) writeBool(code int, data bool) {
 	w.out.WriteString(cfmt.Sprintf("%d\n%d\n", code, v))
 }
 
-// Write writes a file with what iface supplies (C++ dxfRW::write, ASCII,
-// AC1021).
+// Write writes a file with what iface supplies.
 func Write(iface Interface) []byte {
 	w := &Writer{textStyleMap: map[string]int{}}
 	w.writeString(999, "dxfrw "+Version)
@@ -285,8 +277,7 @@ func (w *Writer) writeEntity(ent *Entity) {
 	w.writeInt16(370, ent.LWeight)
 }
 
-// WriteLineType writes a line type table entry (C++
-// dxfRW::writeLineType).
+// WriteLineType writes a line type table entry.
 func (w *Writer) WriteLineType(ent *LType) {
 	strname := strings.ToUpper(ent.Name)
 	// do not write linetypes handled by library
@@ -316,7 +307,7 @@ func (w *Writer) WriteLineType(ent *LType) {
 	}
 }
 
-// WriteLayer writes a layer table entry (C++ dxfRW::writeLayer).
+// WriteLayer writes a layer table entry.
 func (w *Writer) WriteLayer(ent *Layer) {
 	w.writeString(0, "LAYER")
 	if !w.wlayer0 && ent.Name == "0" {
@@ -337,8 +328,7 @@ func (w *Writer) WriteLayer(ent *Layer) {
 	w.writeString(390, "F")
 }
 
-// WriteTextstyle writes a text style table entry (C++
-// dxfRW::writeTextstyle).
+// WriteTextstyle writes a text style table entry.
 func (w *Writer) WriteTextstyle(ent *Textstyle) {
 	w.writeString(0, "STYLE")
 	name := strings.ToUpper(ent.Name)
@@ -363,8 +353,7 @@ func (w *Writer) WriteTextstyle(ent *Textstyle) {
 	w.writeString(4, "")
 }
 
-// writeVport writes the default active viewport (C++ dxfRW::writeVport
-// of a default DRW_Vport).
+// writeVport writes the default active viewport.
 func (w *Writer) writeVport() {
 	w.dimstyleStd = true
 	w.writeString(0, "VPORT")
@@ -432,8 +421,7 @@ func (w *Writer) writeVport() {
 	w.writeInt32(421, 3358443)
 }
 
-// writeDimstyle writes the default dimension style, "Standard" (C++
-// dxfRW::writeDimstyle of a default DRW_Dimstyle).
+// writeDimstyle writes the default dimension style, "Standard".
 func (w *Writer) writeDimstyle() {
 	w.writeString(0, "DIMSTYLE")
 	w.dimstyleStd = true
@@ -670,7 +658,7 @@ func (w *Writer) writeObjects() {
 	w.writeInt16(281, 1)
 }
 
-// WriteLine writes a LINE (C++ dxfRW::writeLine).
+// WriteLine writes a LINE.
 func (w *Writer) WriteLine(ent *Line) {
 	w.writeString(0, "LINE")
 	w.writeEntity(&ent.Entity)
@@ -688,7 +676,7 @@ func (w *Writer) WriteLine(ent *Line) {
 	}
 }
 
-// WriteArc writes an ARC (C++ dxfRW::writeArc).
+// WriteArc writes an ARC.
 func (w *Writer) WriteArc(ent *Arc) {
 	w.writeString(0, "ARC")
 	w.writeEntity(&ent.Entity)
@@ -704,8 +692,7 @@ func (w *Writer) WriteArc(ent *Arc) {
 	w.writeDouble(51, ent.EndAngle*ARAD)
 }
 
-// WritePolyline writes a POLYLINE and its vertices (C++
-// dxfRW::writePolyline).
+// WritePolyline writes a POLYLINE and its vertices.
 func (w *Writer) WritePolyline(ent *Polyline) {
 	w.writeString(0, "POLYLINE")
 	w.writeEntity(&ent.Entity)
@@ -741,7 +728,7 @@ func (w *Writer) WritePolyline(ent *Polyline) {
 	w.writeEntity(&ent.Entity)
 }
 
-// WriteSpline writes a SPLINE (C++ dxfRW::writeSpline).
+// WriteSpline writes a SPLINE.
 func (w *Writer) WriteSpline(ent *Spline) {
 	w.writeString(0, "SPLINE")
 	w.writeEntity(&ent.Entity)
@@ -769,7 +756,7 @@ func (w *Writer) WriteSpline(ent *Spline) {
 	}
 }
 
-// WriteDimension writes a DIMENSION (C++ dxfRW::writeDimension).
+// WriteDimension writes a DIMENSION.
 func (w *Writer) WriteDimension(ent *Dimension) {
 	w.writeString(0, "DIMENSION")
 	w.writeEntity(&ent.Entity)
@@ -854,7 +841,7 @@ func (w *Writer) WriteDimension(ent *Dimension) {
 	}
 }
 
-// WriteText writes a TEXT (C++ dxfRW::writeText).
+// WriteText writes a TEXT.
 func (w *Writer) WriteText(ent *Text) {
 	w.writeString(0, "TEXT")
 	w.writeEntity(&ent.Entity)

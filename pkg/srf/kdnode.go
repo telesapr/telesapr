@@ -12,12 +12,12 @@ import (
 // that have no mate (naked), that cross other triangles, or that
 // outline it.
 
-// kdTreeEps is how close to a node's splitting plane a triangle must
-// be to go on both sides (C++ KDTREE_EPS).
+// kdTreeEps is how close to a node's splitting plane a triangle must be
+// to go on both sides.
 const kdTreeEps = 20 * lengthEps
 
 // SKdNode is a node of the kd-tree: an interior node splits space at
-// coordinate Which == C, a leaf holds a list of triangles (C++ SKdNode).
+// coordinate Which == C, a leaf holds a list of triangles.
 type SKdNode struct {
 	Which int // whether C is x, y, or z
 	C     float64
@@ -28,8 +28,8 @@ type SKdNode struct {
 }
 
 // glibcRand reproduces glibc's rand() (the TYPE_3 additive feedback
-// generator of random_r) after srand(seed), so that the kd-tree C++
-// builds, and so the order in which it finds edges, comes out the same.
+// generator of random_r) after srand(seed), so that the kd-tree, and so
+// the order in which it finds edges, comes out as the goldens record.
 type glibcRand struct {
 	r []int32
 	i int
@@ -69,7 +69,7 @@ func (g *glibcRand) rand() int {
 }
 
 // SKdNodeFrom builds the kd-tree over copies of mesh m's triangles, in
-// the shuffled order C++ gives them (C++ SKdNode::From(SMesh *)).
+// the shuffled order glibcRand gives them.
 func SKdNodeFrom(m *SMesh) *SKdNode {
 	copies := make([]STriangle, len(m.Triangles))
 	copy(copies, m.Triangles)
@@ -86,7 +86,7 @@ func SKdNodeFrom(m *SMesh) *SKdNode {
 		tra[k], tra[n] = tra[n], tra[k]
 	}
 
-	// C++ builds a linked list by prepending, which reverses the order.
+	// The list is built by prepending, which reverses the order.
 	tll := make([]*STriangle, len(tra))
 	for i, tr := range tra {
 		tll[len(tra)-1-i] = tr
@@ -94,8 +94,7 @@ func SKdNodeFrom(m *SMesh) *SKdNode {
 	return skdNodeFromList(tll)
 }
 
-// skdNodeFromList builds the kd-tree over tll (C++
-// SKdNode::From(STriangleLl *)).
+// skdNodeFromList builds the kd-tree over tll.
 func skdNodeFromList(tll []*STriangle) *SKdNode {
 	ret := &SKdNode{}
 	if len(tll) == 0 {
@@ -141,7 +140,7 @@ func skdNodeFromList(tll []*STriangle) *SKdNode {
 		return ret
 	}
 
-	// C++ prepends to each list, reversing the order.
+	// Each list is prepended to, reversing the order.
 	var lgt, llt []*STriangle
 	for _, tr := range slices.Backward(tll) {
 
@@ -186,7 +185,7 @@ func (n *SKdNode) AddTriangle(tr *STriangle) {
 		}
 		return
 	}
-	// C++ prepends to the leaf's list.
+	// The leaf's list is prepended to.
 	n.Tris = append([]*STriangle{tr}, n.Tris...)
 }
 
@@ -226,8 +225,7 @@ func (n *SKdNode) ListTrianglesInto(tl *[]*STriangle) {
 
 // SnapToVertex splits every triangle with an edge that goes through v
 // (but not a vertex at v) so that it has a vertex there: the triangle
-// is modified, and the new one goes in extras (C++
-// SKdNode::SnapToVertex).
+// is modified, and the new one goes in extras.
 func (n *SKdNode) SnapToVertex(v geom.Vector, extras *SMesh) {
 	if n.Gt != nil && n.Lt != nil {
 		vc := v.Element(n.Which)
@@ -300,8 +298,7 @@ func (n *SKdNode) SnapToVertex(v geom.Vector, extras *SMesh) {
 }
 
 // SnapToMesh snaps the tree to each vertex of each triangle of m; if m
-// is the mesh the tree was made from, the result is vertex-to-vertex
-// (C++ SKdNode::SnapToMesh).
+// is the mesh the tree was made from, the result is vertex-to-vertex.
 func (n *SKdNode) SnapToMesh(m *SMesh) {
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
@@ -323,8 +320,7 @@ func (n *SKdNode) SnapToMesh(m *SMesh) {
 }
 
 // SplitLinesAgainstTriangle splits the edges of sel against tr, and
-// tags those that tr hides when looking down z (C++
-// SKdNode::SplitLinesAgainstTriangle).
+// tags those that tr hides when looking down z.
 func (n *SKdNode) SplitLinesAgainstTriangle(sel *SEdgeList, tr *STriangle) {
 	var seln SEdgeList
 
@@ -437,7 +433,7 @@ func (n *SKdNode) SplitLinesAgainstTriangle(sel *SEdgeList, tr *STriangle) {
 }
 
 // OcclusionTestLine splits orig against the mesh into sel, tagging the
-// hidden pieces (C++ SKdNode::OcclusionTestLine).
+// hidden pieces.
 func (n *SKdNode) OcclusionTestLine(orig SEdge, sel *SEdgeList, cnt int) {
 	if n.Gt != nil && n.Lt != nil {
 		ac, bc := orig.A.Element(n.Which), orig.B.Element(n.Which)
@@ -462,8 +458,7 @@ func (n *SKdNode) OcclusionTestLine(orig SEdge, sel *SEdgeList, cnt int) {
 	}
 }
 
-// EdgeOnInfo is what FindEdgeOn learns about an edge (C++
-// SKdNode::EdgeOnInfo).
+// EdgeOnInfo is what FindEdgeOn learns about an edge.
 type EdgeOnInfo struct {
 	Count          int
 	FrontFacing    bool
@@ -476,7 +471,7 @@ type EdgeOnInfo struct {
 // edge b -> a of theirs), counting them in info.Count; it also reports
 // whether the edge crosses the mesh. With coplanarIsInter, an edge
 // crossing a triangle on its boundary counts too. Triangles tagged cnt
-// were seen already (C++ SKdNode::FindEdgeOn).
+// were seen already.
 func (n *SKdNode) FindEdgeOn(a, b geom.Vector, cnt int, coplanarIsInter bool, info *EdgeOnInfo) {
 	if n.Gt != nil && n.Lt != nil {
 		ac, bc := a.Element(n.Which), b.Element(n.Which)
@@ -605,8 +600,7 @@ func checkAndAddTrianglePair(pairs map[triPair]bool, a, b *STriangle) bool {
 // MakeCertainEdgesInto picks certain classes of edges out from the
 // mesh: naked edges (with no anti-parallel mate) and self-intersecting
 // edges, or turning, emphasized or sharp edges. inter and leaky, when
-// not nil, report whether any edge was self-intersecting or naked (C++
-// SKdNode::MakeCertainEdgesInto).
+// not nil, report whether any edge was self-intersecting or naked.
 func (n *SKdNode) MakeCertainEdgesInto(sel *SEdgeList, how EdgeKind, coplanarIsInter bool,
 	inter, leaky *bool, auxA int) {
 	if inter != nil {
@@ -711,8 +705,7 @@ func isSharp(tr *STriangle, j int, info *EdgeOnInfo) bool {
 
 // MakeOutlinesInto lists the edges shared by two triangles, tagged 1
 // where they are emphasized or sharp (per edgeKind); untagged edges
-// between triangles with the same normal are left out (C++
-// SKdNode::MakeOutlinesInto).
+// between triangles with the same normal are left out.
 func (n *SKdNode) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind) {
 	var tris []*STriangle
 	n.ClearTags()

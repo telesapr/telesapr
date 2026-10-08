@@ -13,8 +13,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform"
 )
 
-// FileDialog asks for a file to open or save (C++ FileDialogImplGtk).
-// It keeps what the C++ dialog is told and shows takigo's chooser.
+// FileDialog asks for a file to open or save. It keeps what it is told
+// and shows takigo's chooser.
 type FileDialog struct {
 	p      *Platform
 	parent widget.Caregiver
@@ -41,8 +41,7 @@ func (p *Platform) CreateSaveFileDialog(parent platform.Window) platform.FileDia
 // SetTitle sets the title, which GTK's PrepareTitle suffixes.
 func (d *FileDialog) SetTitle(s string) { d.title = s }
 
-// SetCurrentName sets the name to save under (C++ SetCurrentName: a
-// save dialog only).
+// SetCurrentName sets the name to save under.
 func (d *FileDialog) SetCurrentName(s string) {
 	if d.save {
 		d.name = s
@@ -52,8 +51,7 @@ func (d *FileDialog) SetCurrentName(s string) {
 // Filename is the file chosen.
 func (d *FileDialog) Filename() string { return d.filename }
 
-// SetFilename starts at path (C++ set_filename: its folder, and for a
-// save dialog its name too).
+// SetFilename starts at path.
 func (d *FileDialog) SetFilename(path string) {
 	d.dir = filepath.Dir(path)
 	if d.save {
@@ -63,7 +61,7 @@ func (d *FileDialog) SetFilename(path string) {
 }
 
 // SuggestFilename starts in path's folder, with its name under the
-// current filter's extension (C++ SuggestFilename).
+// current filter's extension.
 func (d *FileDialog) SuggestFilename(path string) {
 	if !d.save {
 		return
@@ -78,8 +76,7 @@ func (d *FileDialog) AddFilter(f platform.FileFilter) { d.filters = append(d.fil
 // AddFilters adds file types.
 func (d *FileDialog) AddFilters(fs []platform.FileFilter) { d.filters = append(d.filters, fs...) }
 
-// FreezeChoices remembers the folder and the filter (C++
-// FreezeChoices).
+// FreezeChoices remembers the folder and the filter.
 func (d *FileDialog) FreezeChoices(s core.Settings, key string) {
 	if d.filename != "" {
 		s.FreezeString("Dialog_"+key+"_Folder", filepath.Dir(d.filename))
@@ -88,7 +85,7 @@ func (d *FileDialog) FreezeChoices(s core.Settings, key string) {
 }
 
 // ThawChoices starts in the folder and with the filter FreezeChoices
-// remembered (C++ ThawChoices).
+// remembered.
 func (d *FileDialog) ThawChoices(s core.Settings, key string) {
 	if dir := s.ThawString("Dialog_"+key+"_Folder", ""); dir != "" {
 		d.dir = dir
@@ -96,8 +93,7 @@ func (d *FileDialog) ThawChoices(s core.Settings, key string) {
 	d.setExtension(s.ThawString("Dialog_"+key+"_Filter", ""))
 }
 
-// extension is the current filter's first extension (C++
-// GetExtension).
+// extension is the current filter's first extension.
 func (d *FileDialog) extension() string {
 	if len(d.filters) == 0 {
 		return ""
@@ -113,7 +109,7 @@ func (d *FileDialog) extension() string {
 }
 
 // setExtension picks the filter whose first extension is ext, or the
-// first filter (C++ SetExtension).
+// first filter.
 func (d *FileDialog) setExtension(ext string) {
 	d.filter = 0
 	for i, f := range d.filters {
@@ -124,8 +120,7 @@ func (d *FileDialog) setExtension(ext string) {
 	}
 }
 
-// fileStem is path's file name without its extension (C++
-// Path::FileStem).
+// fileStem is path's file name without its extension.
 func fileStem(path string) string {
 	base := filepath.Base(path)
 	if dot := strings.LastIndexByte(base, '.'); dot > 0 {
@@ -189,7 +184,7 @@ func (d *FileDialog) RunModal() bool {
 }
 
 // filterPattern is f's extensions as the chooser's glob patterns, each
-// also in upper case (C++ AddFilter).
+// also in upper case.
 func filterPattern(f platform.FileFilter) string {
 	var pats []string
 	for _, e := range f.Extensions {

@@ -4,10 +4,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
-// This file is not a port: C++ SolveSpace shows which points are free
-// only on demand, with Analyze > Show Degrees of Freedom. Here each
-// entity of a group can tell how much of it its constraints fix, after
-// every regeneration, for colouring and for scripts.
+// Each entity of a group can tell how much of it its constraints fix,
+// after every regeneration, for colouring and for scripts.
 
 // Freedom is how much of an entity its group's constraints fix.
 type Freedom int

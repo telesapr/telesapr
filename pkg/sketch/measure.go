@@ -9,9 +9,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/libm"
 )
 
-// This file is not a port: C++ SolveSpace shows measurements only in
-// the text window's description of the selection. Measure works them
-// out, with the same formulas, for the canvas and for scripts.
+// Measure works out the measurements the selection's description shows,
+// for the canvas and for scripts.
 
 // MeasureKind is what a measurement is.
 type MeasureKind int

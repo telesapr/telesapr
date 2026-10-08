@@ -2,7 +2,7 @@ package solver
 
 import "math"
 
-// This is the COLAMD of the Eigen 3.4 that C++ SolveSpace vendors
+// This is the COLAMD of Eigen 3.4
 // (Eigen/src/OrderingMethods/Eigen_Colamd.h, after Davis's colamd 2.x),
 // which SparseQR's COLAMDOrdering uses to order the columns before
 // factoring. The column order decides the order of every floating point

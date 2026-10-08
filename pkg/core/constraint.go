@@ -204,8 +204,8 @@ type Constraint struct {
 
 type ConstraintList []Constraint
 
-// constraintNames are the names C++ Constraint::DescriptionString
-// gives the constraint types.
+// constraintNames are the constraint types' names, as descriptions show
+// them.
 var constraintNames = map[ConstraintType]string{
 	ConstraintPointsCoincident:  "pts-coincident",
 	ConstraintPtPtDistance:      "pt-pt-distance",
@@ -248,10 +248,9 @@ var constraintNames = map[ConstraintType]string{
 	ConstraintComment:           "comment",
 }
 
-// DescriptionString names the constraint, e.g. "c002-horizontal" (C++
-// Constraint::DescriptionString, untranslated). A diameter shown as a
-// radius is named "radius", so that its name and the value it shows
-// agree.
+// DescriptionString names the constraint, e.g. "c002-horizontal". A
+// diameter shown as a radius is named "radius", so that its name and
+// the value it shows agree.
 func (c *ConstraintBase) DescriptionString() string {
 	s, ok := constraintNames[c.Type]
 	if !ok {

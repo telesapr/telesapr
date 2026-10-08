@@ -18,7 +18,7 @@ func TestSPointBasic(t *testing.T) {
 }
 
 // TestSPointListIncrementTagFor verifies that points equal within
-// LENGTH_EPS share a tag, as in C++.
+// LENGTH_EPS share a tag.
 func TestSPointListIncrementTagFor(t *testing.T) {
 	var list SPointList
 	list.IncrementTagFor(geom.Vector{X: 1})

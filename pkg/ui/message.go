@@ -11,8 +11,7 @@ import (
 )
 
 // messageBox shows a message: the first sentence (up to a '.' or ':'
-// followed by white space) as the message, the rest as its description
-// (C++ MessageBox, util.cpp).
+// followed by white space) as the message, the rest as its description.
 func (ss *Application) messageBox(text string, isError bool, onDismiss func()) {
 	if ss.messageSink != nil {
 		// A script is running: a dialog would run the event loop under
@@ -90,7 +89,7 @@ func isSpace(c byte) bool {
 	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v'
 }
 
-// Error shows an error message (C++ Error).
+// Error shows an error message.
 func (ss *Application) Error(format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), true, nil)
 }
@@ -126,13 +125,12 @@ func capitalize(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-// Message shows an informational message (C++ Message).
+// Message shows an informational message.
 func (ss *Application) Message(format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), false, nil)
 }
 
-// MessageAndRun shows a message, then runs onDismiss (C++
-// MessageAndRun).
+// MessageAndRun shows a message, then runs onDismiss.
 func (ss *Application) MessageAndRun(onDismiss func(), format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), false, onDismiss)
 }

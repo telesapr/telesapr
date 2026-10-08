@@ -1,10 +1,10 @@
-// Package ttf reads fonts as C++ SolveSpace's ttf.cpp does, through the
-// parts of FreeType 2.14.3 it uses: opening a face and selecting its
-// Unicode charmap, a size request, loading unhinted glyph outlines,
-// kerning, and outline decomposition. FreeType's drivers for scalable
-// fonts are ported: TrueType, Type 1, CFF (OpenType CFF and CFF2 fonts,
-// and bare CFF files), PFR and Type 42; its CID-keyed Type 1 driver and
-// its bitmap font drivers aren't, since ttf.cpp can't use those fonts.
+// Package ttf reads fonts through the parts of FreeType 2.14.3 the
+// program uses: opening a face and selecting its Unicode charmap, a
+// size request, loading unhinted glyph outlines, kerning, and outline
+// decomposition. FreeType's drivers for scalable fonts are ported:
+// TrueType, Type 1, CFF (OpenType CFF and CFF2 fonts, and bare CFF
+// files), PFR and Type 42; its CID-keyed Type 1 driver and its bitmap
+// font drivers aren't, since those fonts have no outlines to plot.
 package ttf
 
 import (

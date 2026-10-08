@@ -12,11 +12,10 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
-// This file is not a port: C++ SolveSpace evaluates an expression when
-// it is typed and keeps only the number. Here a constraint's value and
-// a group's values may keep the expression they came from, and the
-// expression may name parameters from a table on the sketch. Every
-// regeneration evaluates the table and then the stored expressions.
+// A constraint's value and a group's values may keep the expression
+// they came from, and the expression may name parameters from a table
+// on the sketch. Every regeneration evaluates the table and then the
+// stored expressions.
 //
 // Stored expressions are in the document's unit for lengths (Units)
 // and in degrees for angles; parameters are plain numbers, which take

@@ -2,8 +2,7 @@ package ui
 
 import "github.com/telesapr/telesapr/pkg/core"
 
-// UndoRemember records the state for undo (C++
-// SolveSpaceUI::UndoRemember).
+// UndoRemember records the state for undo.
 func (ss *Application) UndoRemember() {
 	ss.SK.Unsaved = true
 	ss.SK.UndoRemember()
@@ -29,8 +28,7 @@ func (ss *Application) UndoRedo() {
 }
 
 // afterUndoPop resets the rest of the program after the sketch changed
-// a lot (the end of C++ PopOntoCurrentFrom; the engine already reloaded
-// the linked files and regenerated).
+// a lot (the engine already reloaded the linked files and regenerated).
 func (ss *Application) afterUndoPop() {
 	ss.ViewUnits = ss.SK.Units
 	ss.afterGenerate()
@@ -52,13 +50,12 @@ func (ss *Application) UndoEnableMenus() {
 	ss.GW.redoMenuItem.SetEnabled(ss.SK.Redo.Cnt > 0)
 }
 
-// GroupsInOrder reports whether group before comes before group after
-// (C++ SolveSpaceUI::GroupsInOrder).
+// GroupsInOrder reports whether group before comes before group after.
 func (ss *Application) GroupsInOrder(before, after core.HGroup) bool {
 	return ss.SK.GroupsInOrder(before, after)
 }
 
-// addConstraint adds a constraint (C++ Constraint::AddConstraint).
+// addConstraint adds a constraint.
 func (ss *Application) addConstraint(c *core.Constraint, rememberForUndo bool) core.HConstraint {
 	if rememberForUndo {
 		ss.UndoRemember()
@@ -66,8 +63,7 @@ func (ss *Application) addConstraint(c *core.Constraint, rememberForUndo bool) c
 	return ss.SK.AddConstraintRemember(c, false)
 }
 
-// constrain adds a constraint in the active group and workplane (C++
-// Constraint::Constrain).
+// constrain adds a constraint in the active group and workplane.
 func (ss *Application) constrain(typ core.ConstraintType, ptA, ptB, entityA core.HEntity) {
 	ss.SK.Constrain(typ, ptA, ptB, entityA, core.HEntity{}, false, false)
 }

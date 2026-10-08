@@ -1,7 +1,6 @@
 package dxfread
 
-// The entities SolveSpace imports, as libdxfrw parses them (C++
-// drw_entities.cpp and the LAYER table entry of drw_objects.cpp).
+// The entities SolveSpace imports, as libdxfrw parses them.
 
 import (
 	"math"
@@ -9,13 +8,13 @@ import (
 	"github.com/telesapr/telesapr/pkg/libm"
 )
 
-// ARAD converts radians to degrees (C++ ARAD).
+// ARAD converts radians to degrees.
 const ARAD = 57.29577951308232
 
-// Coord is a point (C++ DRW_Coord).
+// Coord is a point.
 type Coord struct{ X, Y, Z float64 }
 
-// unitize scales c to unit length (C++ DRW_Coord::unitize).
+// unitize scales c to unit length.
 func (c *Coord) unitize() {
 	dist := libm.Hypot(libm.Hypot(c.X, c.Y), c.Z)
 	if dist > 0.0 {
@@ -25,8 +24,8 @@ func (c *Coord) unitize() {
 	}
 }
 
-// LineWidth is a line weight (C++ DRW_LW_Conv::lineWidth): the standard
-// weights 0 to 23, and by layer, by block and the default.
+// LineWidth is a line weight: the standard weights 0 to 23, and by
+// layer, by block and the default.
 type LineWidth int
 
 const (
@@ -35,7 +34,7 @@ const (
 	WidthDefault LineWidth = 31
 )
 
-// dxfInt2lineWidth is C++ DRW_LW_Conv::dxfInt2lineWidth.
+// dxfInt2lineWidth is the line width a DXF integer code means.
 func dxfInt2lineWidth(i int) LineWidth {
 	if i < 0 {
 		switch i {
@@ -57,8 +56,7 @@ func dxfInt2lineWidth(i int) LineWidth {
 	return 23
 }
 
-// DXFInt is the line weight as DXF writes it, in hundredths of a mm (C++
-// DRW_LW_Conv::lineWidth2dxfInt).
+// DXFInt is the line weight as DXF writes it, in hundredths of a mm.
 func (lw LineWidth) DXFInt() int {
 	switch lw {
 	case WidthByLayer:
@@ -75,20 +73,19 @@ func (lw LineWidth) DXFInt() int {
 	return -3
 }
 
-// Colours by block and by layer (C++ DRW::ColorByBlock and
-// ColorByLayer).
+// Colours by block and by layer.
 const (
 	ColorByBlock = 0
 	ColorByLayer = 256
 )
 
-// ModelSpace and PaperSpace are the spaces (C++ DRW::Space).
+// ModelSpace and PaperSpace are the spaces.
 const (
 	ModelSpace = 0
 	PaperSpace = 1
 )
 
-// Entity is what every entity has (C++ DRW_Entity).
+// Entity is what every entity has.
 type Entity struct {
 	Handle   int
 	Space    int
@@ -98,8 +95,7 @@ type Entity struct {
 	LWeight  LineWidth
 	Color24  int
 
-	// The arbitrary axis the extrusion uses (C++ extAxisX and
-	// extAxisY).
+	// The arbitrary axis the extrusion uses.
 	extAxisX, extAxisY Coord
 }
 
@@ -107,8 +103,7 @@ func newEntity() Entity {
 	return Entity{Layer: "0", LineType: "BYLAYER", Color: ColorByLayer, LWeight: WidthByLayer, Color24: -1}
 }
 
-// calculateAxis finds the arbitrary axis of an extrusion (C++
-// DRW_Entity::calculateAxis).
+// calculateAxis finds the arbitrary axis of an extrusion.
 func (e *Entity) calculateAxis(extPoint Coord) {
 	// Follow the arbitrary DXF definitions for extrusion axes.
 	if math.Abs(extPoint.X) < 0.015625 && math.Abs(extPoint.Y) < 0.015625 {
@@ -133,8 +128,7 @@ func (e *Entity) calculateAxis(extPoint Coord) {
 	e.extAxisY.unitize()
 }
 
-// extrudePoint takes a point by the arbitrary axis (C++
-// DRW_Entity::extrudePoint).
+// extrudePoint takes a point by the arbitrary axis.
 func (e *Entity) extrudePoint(extPoint Coord, point *Coord) {
 	px := (e.extAxisX.X * point.X) + (e.extAxisY.X * point.Y) + (extPoint.X * point.Z)
 	py := (e.extAxisX.Y * point.X) + (e.extAxisY.Y * point.Y) + (extPoint.Y * point.Z)
@@ -145,7 +139,7 @@ func (e *Entity) extrudePoint(extPoint Coord, point *Coord) {
 	point.Z = pz
 }
 
-// parseEntity is C++ DRW_Entity::parseCode, for what SolveSpace uses.
+// parseEntity reads the records every entity has.
 func (e *Entity) parseEntity(code int, r *reader) bool {
 	switch code {
 	case 5:
@@ -166,8 +160,7 @@ func (e *Entity) parseEntity(code int, r *reader) bool {
 	return true
 }
 
-// Point is a POINT, and what the entities built on it have (C++
-// DRW_Point).
+// Point is a POINT, and what the entities built on it have.
 type Point struct {
 	Entity
 	BasePoint     Coord
@@ -203,7 +196,7 @@ func (p *Point) parsePoint(code int, r *reader) bool {
 	return true
 }
 
-// Line is a LINE (C++ DRW_Line).
+// Line is a LINE.
 type Line struct {
 	Point
 	SecPoint Coord
@@ -225,7 +218,7 @@ func (l *Line) parseLine(code int, r *reader) bool {
 	return true
 }
 
-// Circle is a CIRCLE (C++ DRW_Circle).
+// Circle is a CIRCLE.
 type Circle struct {
 	Point
 	Radius float64
@@ -241,7 +234,7 @@ func (c *Circle) parseCircle(code int, r *reader) bool {
 	return c.parsePoint(code, r)
 }
 
-// applyExtrusion is C++ DRW_Circle::applyExtrusion.
+// applyExtrusion moves the circle by its extrusion direction.
 func (c *Circle) applyExtrusion() {
 	if c.HaveExtrusion {
 		// NOTE: Commenting these out causes the the arcs being tested to
@@ -252,7 +245,7 @@ func (c *Circle) applyExtrusion() {
 	}
 }
 
-// Arc is an ARC, with its angles in radians (C++ DRW_Arc).
+// Arc is an ARC, with its angles in radians.
 type Arc struct {
 	Circle
 	StaAngle, EndAngle float64
@@ -272,7 +265,7 @@ func (a *Arc) parseArc(code int, r *reader) bool {
 	return true
 }
 
-// applyExtrusion is C++ DRW_Arc::applyExtrusion.
+// applyExtrusion moves the arc by its extrusion direction.
 func (a *Arc) applyExtrusion() {
 	a.Circle.applyExtrusion()
 	if a.HaveExtrusion {
@@ -287,7 +280,7 @@ func (a *Arc) applyExtrusion() {
 	}
 }
 
-// Block is a BLOCK's header (C++ DRW_Block).
+// Block is a BLOCK's header.
 type Block struct {
 	Point
 	Name  string
@@ -312,7 +305,7 @@ func (b *Block) parseBlock(code int, r *reader) bool {
 	return true
 }
 
-// Insert is an INSERT of a block (C++ DRW_Insert).
+// Insert is an INSERT of a block.
 type Insert struct {
 	Point
 	Name                   string
@@ -353,14 +346,14 @@ func (in *Insert) parseInsert(code int, r *reader) bool {
 	return true
 }
 
-// Vertex2D is a light polyline's vertex (C++ DRW_Vertex2D).
+// Vertex2D is a light polyline's vertex.
 type Vertex2D struct {
 	X, Y               float64
 	StaWidth, EndWidth float64
 	Bulge              float64
 }
 
-// LWPolyline is an LWPOLYLINE (C++ DRW_LWPolyline).
+// LWPolyline is an LWPOLYLINE.
 type LWPolyline struct {
 	Entity
 	VertexNum     int
@@ -427,7 +420,7 @@ func (p *LWPolyline) parseLWPolyline(code int, r *reader) bool {
 	return true
 }
 
-// applyExtrusion is C++ DRW_LWPolyline::applyExtrusion.
+// applyExtrusion moves the polyline by its extrusion direction.
 func (p *LWPolyline) applyExtrusion() {
 	if p.HaveExtrusion {
 		p.calculateAxis(p.ExtPoint)
@@ -440,7 +433,7 @@ func (p *LWPolyline) applyExtrusion() {
 	}
 }
 
-// Vertex is a POLYLINE's VERTEX (C++ DRW_Vertex).
+// Vertex is a POLYLINE's VERTEX.
 type Vertex struct {
 	Point
 	StaWidth, EndWidth float64
@@ -471,7 +464,7 @@ func (v *Vertex) parseVertex(code int, r *reader) bool {
 	return true
 }
 
-// Polyline is a POLYLINE (C++ DRW_Polyline).
+// Polyline is a POLYLINE.
 type Polyline struct {
 	Point
 	Flags    int
@@ -492,7 +485,7 @@ func (p *Polyline) parsePolyline(code int, r *reader) bool {
 	return true
 }
 
-// Spline is a SPLINE (C++ DRW_Spline).
+// Spline is a SPLINE.
 type Spline struct {
 	Entity
 	Degree   int
@@ -527,7 +520,7 @@ func (s *Spline) parseSpline(code int, r *reader) bool {
 	return true
 }
 
-// Text alignments (C++ DRW_Text::HAlign and VAlign).
+// Text alignments.
 const (
 	HLeft    = 0
 	HCenter  = 1
@@ -542,7 +535,7 @@ const (
 	VTop      = 3
 )
 
-// Text is a TEXT (C++ DRW_Text).
+// Text is a TEXT.
 type Text struct {
 	Line
 	Height     float64
@@ -586,7 +579,7 @@ func (t *Text) parseText(code int, r *reader) bool {
 	return true
 }
 
-// MText is an MTEXT (C++ DRW_MText).
+// MText is an MTEXT.
 type MText struct {
 	Text
 	InterLin    float64
@@ -595,13 +588,13 @@ type MText struct {
 
 func newMText() MText {
 	m := MText{Text: newText(), InterLin: 1}
-	// C++ sets alignV to (VAlign)TopLeft, which is 1: VBottom.
+	// alignV becomes 1, VBottom, as the goldens have it.
 	m.AlignV = VBottom
 	m.TextGen = 1
 	return m
 }
 
-// The MTEXT attachment points (C++ DRW_MText::Attach).
+// The MTEXT attachment points.
 const (
 	topLeft = iota + 1
 	topCenter
@@ -659,15 +652,15 @@ func (m *MText) parseMText(code int, r *reader) bool {
 	return true
 }
 
-// updateAngle is C++ DRW_MText::updateAngle.
+// updateAngle sets the text's angle from its direction vector.
 func (m *MText) updateAngle() {
 	if m.hasXAxisVec {
 		m.Angle = libm.Atan2(m.SecPoint.Y, m.SecPoint.X) * ARAD
 	}
 }
 
-// DimensionKind is which DIMENSION it is, from the low bits of its
-// type (the C++ DRW_Dimension subclasses).
+// DimensionKind is which DIMENSION it is, from the low bits of its type
+// (each with its own points).
 type DimensionKind int
 
 const (
@@ -680,9 +673,8 @@ const (
 	DimOrdinate
 )
 
-// Dimension is a DIMENSION (C++ DRW_Dimension). Its points are named
-// by their DXF codes: Def is 10, Text 11, Clone 12, Def1 13, Def2 14,
-// Circle 15 and Arc 16.
+// Dimension is a DIMENSION. Its points are named by their DXF codes:
+// Def is 10, Text 11, Clone 12, Def1 13, Def2 14, Circle 15 and Arc 16.
 type Dimension struct {
 	Entity
 	Kind       DimensionKind
@@ -784,7 +776,7 @@ func (d *Dimension) parseDimension(code int, r *reader) bool {
 	case 42:
 		d.MeasureValue = r.getDouble()
 		d.HasMeasureValue = d.MeasureValue != 0.0
-		// C++ falls through to the next case.
+		// The next case applies too.
 		d.ExtPoint.X = r.getDouble()
 	case 210:
 		d.ExtPoint.X = r.getDouble()
@@ -798,7 +790,7 @@ func (d *Dimension) parseDimension(code int, r *reader) bool {
 	return true
 }
 
-// The points of each kind of dimension, by their C++ accessors.
+// The points of each kind of dimension.
 
 func (d *Dimension) DimPoint() Coord       { return d.Def }         // aligned, linear
 func (d *Dimension) CenterPoint() Coord    { return d.Def }         // radial
@@ -813,7 +805,7 @@ func (d *Dimension) FirstLine() Coord      { return d.Def1 }        // 3-point a
 func (d *Dimension) SecondLine() Coord     { return d.Def2 }        // 3-point angular
 func (d *Dimension) VertexPoint() Coord    { return d.CirclePoint } // 3-point angular
 
-// Layer is a LAYER table entry (C++ DRW_Layer).
+// Layer is a LAYER table entry.
 type Layer struct {
 	Name     string
 	Flags    int
@@ -824,7 +816,7 @@ type Layer struct {
 	LWeight  LineWidth
 }
 
-// reset is C++ DRW_Layer::reset, which keeps the name.
+// reset clears the layer but its name.
 func (l *Layer) reset() {
 	l.LineType = "CONTINUOUS"
 	l.Color = 7

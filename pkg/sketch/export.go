@@ -19,8 +19,7 @@ import (
 // SolveSpaceUI::ShowNakedEdges. The other mesh formats (OBJ, three.js,
 // VRML) aren't ported.
 
-// ExportSettings are the user's export settings (C++
-// SS.exportChordTol, exportMaxSegments and exportScale).
+// ExportSettings are the user's export settings.
 type ExportSettings struct {
 	// ChordTol is the chord tolerance in export units.
 	ChordTol    float64
@@ -29,8 +28,7 @@ type ExportSettings struct {
 	Scale float64
 }
 
-// ThawExportSettings reads the export settings, with C++'s defaults (C++
-// SolveSpaceUI::Init).
+// ThawExportSettings reads the export settings, with their defaults.
 func ThawExportSettings(settings core.Settings) ExportSettings {
 	return ExportSettings{
 		ChordTol:    settings.ThawFloat("ExportChordTolerance", 0.1),
@@ -39,22 +37,19 @@ func ThawExportSettings(settings core.Settings) ExportSettings {
 	}
 }
 
-// ChordTolMm is the export chord tolerance in mm (C++
-// SS.ExportChordTolMm).
+// ChordTolMm is the export chord tolerance in mm.
 func (es ExportSettings) ChordTolMm() float64 {
 	return es.ChordTol / es.Scale
 }
 
-// ExportMeshTo writes the active group's mesh, regenerated at the export
-// chord tolerance, to filename; the extension picks the format, STL or
-// 3MF. Like C++, it reports a mesh that isn't watertight or
-// self-intersects through Message, but still exports it (C++
-// SolveSpaceUI::ExportMeshTo). As in C++, regenerating in export mode
-// doesn't solve, so the sketch must have been generated since it was
-// loaded or changed (C++ AfterNewFile does that on load).
+// ExportMeshTo writes the active group's mesh, regenerated at the
+// export chord tolerance, to filename; the extension picks the format,
+// STL or 3MF. It reports a mesh that isn't watertight or
+// self-intersects through Message, but still exports it. Regenerating
+// in export mode doesn't solve, so the sketch must have been generated
+// since it was loaded or changed.
 func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
-	// C++ stays in export mode until the user next does something, and
-	// then regenerates for display; here that happens on return.
+	// The display is regenerated on return.
 	sk.Exporting = srf.Tol(es.ChordTolMm(), es.MaxSegments)
 	defer func() {
 		sk.Exporting = srf.Tolerance{}
@@ -102,7 +97,7 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 }
 
 // hasExtension reports whether filename has extension ext, ignoring
-// case (C++ Platform::Path::HasExtension).
+// case.
 func hasExtension(filename, ext string) bool {
 	ours := ""
 	if dot := strings.LastIndexByte(filename, '.'); dot >= 0 {
@@ -112,9 +107,8 @@ func hasExtension(filename, ext string) bool {
 }
 
 // ExportMeshAsStlTo writes m as a binary STL file, in export units of
-// scale mm (C++ SolveSpaceUI::ExportMeshAsStlTo). The mesh should be
-// vertex-to-vertex and not self-intersecting, so there's not much to
-// do.
+// scale mm. The mesh should be vertex-to-vertex and not
+// self-intersecting, so there's not much to do.
 func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error {
 	var header [80]byte
 	copy(header[:], "STL exported mesh")
@@ -147,8 +141,7 @@ func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error {
 
 // ShowNakedEdges finds the active group's naked and self-intersecting
 // edges, and reports them through Message; with reportOnlyWhenNotOkay,
-// only if there are any. It returns the edges (C++
-// SolveSpaceUI::ShowNakedEdges, which keeps them to draw).
+// only if there are any. It returns the edges.
 func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList {
 	var nakedEdges srf.SEdgeList
 

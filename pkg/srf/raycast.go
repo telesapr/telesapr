@@ -185,16 +185,11 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 			}
 			return true
 		}
-		// 5 sub-branches the C++ has at the end of `edge_inters == 2`
-		// (solvespace/src/srf/raycast.cpp:602–637). The Go port
-		// historically collapsed these into one
-		// `interSurfN[s]·en[s]` test and discarded `towards0`
-		// — which the C++ uses here. For tangent-cutters like
-		// `boolean_tangent_crossing` (issue #1291) the discarded
-		// `towards0` is the only thing that distinguishes the
-		// material-side from the void-side of the tangent face, so
-		// the bug surfaces as every chain on the cutter
-		// classifying as `SurfOutside` and getting discarded.
+		// Five cases of two intersections, which need towards0: for a
+		// tangent cutter (boolean_tangent_crossing) it is the only
+		// thing that tells the material side of the tangent face from
+		// the void side; without it every chain on the cutter
+		// classifies as SurfOutside and is discarded.
 		dirs := [2]*Class{indir, outdir}
 		switch {
 		case math.Abs(dotp[0]) < DotProductTol && dotp[1] > DotProductTol:
@@ -246,13 +241,12 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 	}
 
 	// 2. Knife-edge: more than two faces of the shell meet edge-on-edge
-	// along the given edge. The faces along the knife divide the directions
-	// perpendicular to the edge at p into sectors that are alternately
-	// inside and outside the shell, so classify each side of our edge
-	// against the face that lies angularly closest to it: that face bounds
-	// the sector containing it, and its normal points out of that sector
-	// iff the sector is outside the shell. Mirrors the C++ branch at
-	// srf/raycast.cpp:641 ("knife edge from issue #1091").
+	// along the given edge. The faces along the knife divide the
+	// directions perpendicular to the edge at p into sectors that are
+	// alternately inside and outside the shell, so classify each side
+	// of our edge against the face that lies angularly closest to it:
+	// that face bounds the sector containing it, and its normal points
+	// out of that sector iff the sector is outside the shell.
 	if edgeInters >= 4 && edgeInters%2 == 0 {
 		edgeD := eb.Minus(ea).WithMagnitude(1)
 		en := [2]geom.Vector{edgeNIn, edgeNOut}
@@ -355,8 +349,8 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 // raycastTries is how many directions raycastClass tries.
 const raycastTries = 16
 
-// rayDirection is the i-th direction raycastClass tries: the six C++
-// tries first, then points spread evenly over the sphere.
+// rayDirection is the i-th direction raycastClass tries: six
+// axis-aligned ones first, then points spread evenly over the sphere.
 func rayDirection(i int) geom.Vector {
 	if i < 6 {
 		return geom.Vector{X: randomTable[i], Y: randomTable[i+1], Z: randomTable[i+2]}

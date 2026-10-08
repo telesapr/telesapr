@@ -6,21 +6,19 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// lengthEps mirrors C++ LENGTH_EPS (defs.h:7).
+// lengthEps is the tolerance lengths are compared with.
 const lengthEps = geom.LengthEps
 
-// ratPolyEps mirrors C++ RATPOLY_EPS (ratpoly.cpp:16).
+// ratPolyEps is the tolerance of the rational polynomial arithmetic.
 const ratPolyEps = lengthEps / 100
 
-// veryPositive and veryNegative mirror C++ VERY_POSITIVE and
-// VERY_NEGATIVE (defs.h).
+// veryPositive and veryNegative are beyond any coordinate.
 const (
 	veryPositive = 1e10
 	veryNegative = -1e10
 )
 
-// isReasonable is C++ IsReasonable, which despite its name is true
-// for NaN and huge values.
+// isReasonable is true for NaN and huge values, despite its name.
 func isReasonable(x float64) bool {
 	return math.IsNaN(x) || x > 1e11 || x < -1e11
 }
@@ -38,7 +36,7 @@ type SBezier struct {
 	AuxA int
 	AuxB int
 	// Entity is the handle of the sketch entity (a line segment) the
-	// curve came from, or 0 (C++ SBezier::entity).
+	// curve came from, or 0.
 	Entity uint32
 
 	// Hint of which kind of curve this is, used by SShell trimming.
@@ -73,8 +71,7 @@ func (b *SBezier) Finish() geom.Vector {
 	return b.Ctrl[b.Degree]
 }
 
-// IsRational reports whether a weight differs from 1 (C++
-// SBezier::IsRational).
+// IsRational reports whether a weight differs from 1.
 func (b *SBezier) IsRational() bool {
 	for i := 0; i <= b.Degree; i++ {
 		if mathAbs(b.Weight[i]-1.0) > lengthEps {
@@ -108,8 +105,8 @@ func (b *SBezier) TransformedBy(t geom.Vector, q geom.Quaternion, scale float64)
 	}
 }
 
-// IsInPlane reports whether every control point lies in the plane
-// n . p = d (C++ SBezier::IsInPlane).
+// IsInPlane reports whether every control point lies in the plane n. p
+// = d.
 func (b *SBezier) IsInPlane(n geom.Vector, d float64) bool {
 	for i := 0; i <= b.Degree; i++ {
 		if mathAbs(b.Ctrl[i].Dot(n)-d) > lengthEps {
@@ -133,8 +130,7 @@ func (b *SBezier) PointAt(t float64) geom.Vector {
 	return pt
 }
 
-// TangentAt is the derivative of the curve at t (C++
-// SBezier::TangentAt).
+// TangentAt is the derivative of the curve at t.
 func (b *SBezier) TangentAt(t float64) geom.Vector {
 	pt, ptP := geom.Vector{}, geom.Vector{}
 	d, dP := 0.0, 0.0
@@ -158,8 +154,7 @@ func (b *SBezier) TangentAt(t float64) geom.Vector {
 
 // ClosestPointTo is the parameter t of the point on the curve closest
 // to p: the closest of a few samples, refined by Newton's method. It
-// reports whether that converged; C++ only complains when mustConverge
-// (C++ SBezier::ClosestPointTo).
+// reports whether that converged.
 func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, bool) {
 	minDist := veryPositive
 	t := 0.0
@@ -195,8 +190,7 @@ func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, boo
 	return t, false
 }
 
-// SBezierFromV4 is the curve with homogeneous control points ct (C++
-// SBezier::From(Vector4 ...)).
+// SBezierFromV4 is the curve with homogeneous control points ct.
 func SBezierFromV4(ct ...geom.Vector4) SBezier {
 	ret := SBezier{Degree: len(ct) - 1}
 	for i, c := range ct {
@@ -207,8 +201,7 @@ func SBezierFromV4(ct ...geom.Vector4) SBezier {
 }
 
 // SplitAt splits the curve at t into the part before and the part
-// after, by de Casteljau's algorithm on the homogeneous control points
-// (C++ SBezier::SplitAt).
+// after, by de Casteljau's algorithm on the homogeneous control points.
 func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
 	if b.Degree < 1 || b.Degree > MaxDegree {
 		panic("Unexpected degree of spline")
@@ -232,8 +225,7 @@ func (b *SBezier) SplitAt(t float64, bef, aft *SBezier) {
 
 // AllIntersectionsWith adds to spl the points where this curve crosses
 // sbb: their pwls' crossings, refined onto both curves. It misses
-// tangencies, and crossings where two pwl vertices meet (C++
-// SBezier::AllIntersectionsWith).
+// tangencies, and crossings where two pwl vertices meet.
 func (b *SBezier) AllIntersectionsWith(sbb *SBezier, spl *SPointList, tol Tolerance) {
 	var splRaw SPointList
 	var sea, seb SEdgeList

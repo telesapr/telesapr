@@ -58,7 +58,7 @@ func TestBBoxOverlaps(t *testing.T) {
 		t.Fatal("expected disjoint boxes to report false")
 	}
 	if b.Overlaps(c) {
-		t.Fatal("boxes that only touch don't overlap, as in C++ (b vs c)")
+		t.Fatal("boxes that only touch don't overlap, as in SolveSpace (b vs c)")
 	}
 	if !b.Contains(geom.Point2d{U: 2.1, V: 1}, 0.2) || b.Contains(geom.Point2d{U: 2.3, V: 1}, 0.2) {
 		t.Fatal("Contains")

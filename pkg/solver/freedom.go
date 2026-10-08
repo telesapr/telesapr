@@ -6,9 +6,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
-// This file is not a port: C++ SolveSpace finds the free params only
-// on demand (MarkParamsFree), with a rank test per param. FreeParams
-// answers for every param at once, so that it can run after each solve.
+// MarkParamsFree finds the free params on demand, with a rank test per
+// param; FreeParams answers for every param at once, so that it can run
+// after each solve.
 
 // FreeParams reports, for each unknown of the group, whether its
 // equations leave it free to move, to first order, at the unknowns'

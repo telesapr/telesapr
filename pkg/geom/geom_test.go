@@ -267,7 +267,7 @@ func TestVectorOnLineSegment(t *testing.T) {
 	}
 }
 
-// TestVectorCsys checks DotInToCsys and ScaleOutOfCsys as C++ defines
+// TestVectorCsys checks DotInToCsys and ScaleOutOfCsys as SolveSpace defines
 // them: components along u, v, n, and the combination of u, v, n.
 func TestVectorCsys(t *testing.T) {
 	t.Parallel()

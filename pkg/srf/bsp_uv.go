@@ -6,11 +6,10 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// SBspUv is a 2-D BSP tree over uv-space edges, used to test
-// whether a point (u, v) on a surface lies inside or outside the
-// trim region. Built by recursive insertion of uv edges with a
-// "more" chain for coincident edges, then queried via ClassifyPoint
-// or ClassifyEdge. Mirrors C++ SBspUv (solvespace/src/srf/boolean.cpp).
+// SBspUv is a 2-D BSP tree over uv-space edges, used to test whether a
+// point (u, v) on a surface lies inside or outside the trim region.
+// Built by recursive insertion of uv edges with a "more" chain for
+// coincident edges, then queried via ClassifyPoint or ClassifyEdge.
 type SBspUv struct {
 	A, B geom.Point2d
 	Pos  *SBspUv
@@ -31,9 +30,9 @@ const (
 	BspUvEdgeOther    BspUvClass = 500
 )
 
-// SBspUvFrom builds a BSP from the uv-space edge list el (points
-// stored in the X/Y components). Edges are inserted longest-first for
-// numerical stability. Mirrors C++ SBspUv::From.
+// SBspUvFrom builds a BSP from the uv-space edge list el (points stored
+// in the X/Y components). Edges are inserted longest-first for
+// numerical stability.
 func SBspUvFrom(el *SEdgeList, srf *SSurface) *SBspUv {
 	work := make([]SEdge, len(el.Edges))
 	copy(work, el.Edges)
@@ -51,7 +50,7 @@ func SBspUvFrom(el *SEdgeList, srf *SSurface) *SBspUv {
 
 // scalePoints linearizes srf about pt so that uv distances become xyz
 // distances, letting tolerances apply consistently in xyz. A nil srf
-// leaves the points unscaled. Mirrors C++ SBspUv::ScalePoints.
+// leaves the points unscaled.
 func scalePoints(pt, a, b *geom.Point2d, srf *SSurface) {
 	if srf == nil {
 		return
@@ -67,9 +66,8 @@ func scalePoints(pt, a, b *geom.Point2d, srf *SSurface) {
 	b.V *= mv
 }
 
-// scaledSignedDistanceToLine is positive on the right-hand side of
-// a->b (the "inside" of a trim edge). Mirrors C++
-// SBspUv::ScaledSignedDistanceToLine.
+// scaledSignedDistanceToLine is positive on the right-hand side of a->b
+// (the "inside" of a trim edge).
 func scaledSignedDistanceToLine(pt, a, b geom.Point2d, srf *SSurface) float64 {
 	scalePoints(&pt, &a, &b, srf)
 	n := b.Minus(a).Normal().WithMagnitude(1)
@@ -77,8 +75,9 @@ func scaledSignedDistanceToLine(pt, a, b geom.Point2d, srf *SSurface) float64 {
 	return pt.Dot(n) - d
 }
 
-// scaledDistanceToLine mirrors C++ SBspUv::ScaledDistanceToLine; b is
-// the line direction (not its end point).
+// scaledDistanceToLine is the distance of p from the line through a
+// along b, scaled by b's length; b is the line direction, not its end
+// point.
 func scaledDistanceToLine(pt, a, b geom.Point2d, asSegment bool, srf *SSurface) float64 {
 	scalePoints(&pt, &a, &b, srf)
 	return pt.DistanceToLine(a, b, asSegment)
@@ -92,8 +91,8 @@ func bspUvInsertOrCreateEdge(where *SBspUv, ea, eb geom.Point2d, srf *SSurface) 
 	return where
 }
 
-// insertEdge mirrors C++ SBspUv::InsertEdge: coincident edges go on
-// the More chain, edges straddling this node's line are split.
+// insertEdge inserts an edge: coincident edges go on the More chain,
+// edges straddling this node's line are split.
 func (b *SBspUv) insertEdge(ea, eb geom.Point2d, srf *SSurface) {
 	dea := scaledSignedDistanceToLine(ea, b.A, b.B, srf)
 	deb := scaledSignedDistanceToLine(eb, b.A, b.B, srf)
@@ -136,10 +135,9 @@ func (b *SBspUv) insertEdge(ea, eb geom.Point2d, srf *SSurface) {
 	}
 }
 
-// ClassifyPoint classifies p against the trim region. When p lies on
-// a trim edge, eb (a second point along the direction being tested)
+// ClassifyPoint classifies p against the trim region. When p lies on a
+// trim edge, eb (a second point along the direction being tested)
 // decides between EDGE_PARALLEL, EDGE_ANTIPARALLEL and EDGE_OTHER.
-// Mirrors C++ SBspUv::ClassifyPoint.
 func (b *SBspUv) ClassifyPoint(p, eb geom.Point2d, srf *SSurface) BspUvClass {
 	if b == nil {
 		return BspUvOutside
@@ -178,7 +176,6 @@ func (b *SBspUv) ClassifyPoint(p, eb geom.Point2d, srf *SSurface) BspUvClass {
 
 // ClassifyEdge classifies the edge ea->eb by its midpoint, retrying at
 // another point if the midpoint lands on a non-parallel trim edge.
-// Mirrors C++ SBspUv::ClassifyEdge.
 func (b *SBspUv) ClassifyEdge(ea, eb geom.Point2d, srf *SSurface) BspUvClass {
 	ret := b.ClassifyPoint(ea.Plus(eb).ScaledBy(0.5), eb, srf)
 	if ret == BspUvEdgeOther {
@@ -191,7 +188,7 @@ func (b *SBspUv) ClassifyEdge(ea, eb geom.Point2d, srf *SSurface) BspUvClass {
 }
 
 // MinimumDistanceToEdge returns the xyz-scaled distance from p to the
-// nearest trim edge. Mirrors C++ SBspUv::MinimumDistanceToEdge.
+// nearest trim edge.
 func (b *SBspUv) MinimumDistanceToEdge(p geom.Point2d, srf *SSurface) float64 {
 	if b == nil {
 		return geom.VeryPositive

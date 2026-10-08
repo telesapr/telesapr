@@ -56,8 +56,8 @@ func Parse(data []byte) (*Document, error) {
 	return doc, nil
 }
 
-// LoadFile opens a .slvs file as C++ does: it loads what the file links,
-// .slvs files included, and regenerates the sketch without solving.
+// LoadFile opens a .slvs file: it loads what the file links, .slvs
+// files included, and regenerates the sketch without solving.
 func LoadFile(path string) (doc *Document, err error) {
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
@@ -67,17 +67,15 @@ func LoadFile(path string) (doc *Document, err error) {
 	if err != nil {
 		return nil, err
 	}
-	// Like C++ SolveSpaceUI::LoadFromFile: the saved entities are
-	// regenerated, not loaded, and the sketch is then upgraded and
-	// regenerated without solving.
+	// The saved entities are regenerated, not loaded, and the sketch is
+	// then upgraded and regenerated without solving.
 	doc.Sketch.Entities = doc.Sketch.Entities[:0]
 	if !doc.reloadAllLinked(path, true) {
 		return nil, ErrCancelled
 	}
 	doc.Sketch.ReloadAllLinked = func(*sketch.Sketch) { doc.reloadAllLinked(path, false) }
 	defer func() {
-		// A sketch C++ would assert on (e.g. one missing the reference
-		// workplanes) is an error here.
+		// A sketch missing its reference workplanes is an error.
 		if rec := recover(); rec != nil {
 			doc, err = nil, fmt.Errorf("%s: can't regenerate: %v", path, rec)
 		}
@@ -107,12 +105,11 @@ func fgetsLine(data []byte, pos int) (chunk string, next int, ok bool) {
 	return chunk, end, true
 }
 
-// scanLines reads the lines of a saved file as C++ LoadFromFile does: a
-// line ends at a newline, a carriage return or a NUL and is at most 1023
-// bytes; empty lines are skipped; a line the loader doesn't recognize is
-// dropped and counts as a load error; a file with no line left is empty.
-// The entries of a group's remap, which C++ reads with their own fgets,
-// are kept as they are.
+// scanLines reads the lines of a saved file: a line ends at a newline,
+// a carriage return or a NUL and is at most 1023 bytes; empty lines are
+// skipped; a line the loader doesn't recognize is dropped and counts as
+// a load error; a file with no line left is empty. The entries of a
+// group's remap are kept as they are.
 func scanLines(data []byte) (lines []string, empty, loadError bool) {
 	empty = true
 	pos := 0
@@ -270,7 +267,7 @@ func (d *Document) processGroup(block Block) error {
 	if v, ok := fields["Group.name"]; ok {
 		group.Name = v
 	}
-	// Files older than group colors leave C++'s zero color.
+	// Files older than group colors leave the zero color.
 	if v, ok := fields["Group.color"]; ok {
 		group.Color = core.RGBAFromPackedInt(parseHexUint32(v))
 	}
@@ -670,7 +667,7 @@ func (d *Document) processStyle(block Block) {
 	if !ok {
 		return
 	}
-	// Like C++, fields the file leaves out take default values.
+	// Fields the file leaves out take default values.
 	style := core.Style{}
 	core.FillDefaultStyle(&style, nil, false, nil)
 	style.H = core.HStyle{V: parseHexUint32(hStr)}

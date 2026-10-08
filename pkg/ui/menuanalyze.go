@@ -1,7 +1,6 @@
 package ui
 
-// The Analyze and Help menus (C++ SolveSpaceUI::MenuAnalyze,
-// ShowNakedEdges, UpdateCenterOfMass and MenuHelp).
+// The Analyze and Help menus.
 
 import (
 	"fmt"
@@ -16,8 +15,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/version"
 )
 
-// MenuAnalyze runs an Analyze menu command (C++
-// SolveSpaceUI::MenuAnalyze).
+// MenuAnalyze runs an Analyze menu command.
 func (ss *Application) MenuAnalyze(id Command) {
 	sk := ss.SK
 	gw := ss.GW
@@ -126,8 +124,8 @@ func (ss *Application) analyzeInterference() {
 
 	ss.GW.nakedEdges.Clear()
 
-	// The parts by their shells (roadmap 16.10), unless one is a
-	// mesh with none: then the triangles, as C++ checks.
+	// The parts by their shells (roadmap 16.10), unless one is a mesh
+	// with none: then the triangles.
 	found, meshOnly := sk.Interferences(gw.activeGroupH())
 	if len(meshOnly) == 0 {
 		var lines []string
@@ -287,8 +285,7 @@ func (ss *Application) analyzeStopTracing() {
 }
 
 // ShowNakedEdges finds the naked and self-intersecting edges of the
-// active group's mesh and reports them (C++
-// SolveSpaceUI::ShowNakedEdges).
+// active group's mesh and reports them.
 func (ss *Application) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 	ss.GW.nakedEdges.Clear()
 
@@ -379,14 +376,14 @@ func (ss *Application) CheckSolid() {
 }
 
 // UpdateCenterOfMass finds the center of mass of the active group's
-// mesh (C++ SolveSpaceUI::UpdateCenterOfMass).
+// mesh.
 func (ss *Application) UpdateCenterOfMass() {
 	m := &ss.SK.Group(ss.GW.activeGroupH()).DisplayMesh
 	ss.GW.centerOfMass.Position = m.CenterOfMass()
 	ss.GW.centerOfMass.Dirty = false
 }
 
-// MenuHelp runs a Help menu command (C++ SolveSpaceUI::MenuHelp).
+// MenuHelp runs a Help menu command.
 func (ss *Application) MenuHelp(id Command) {
 	switch id {
 	case CmdWebsite:

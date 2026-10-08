@@ -101,7 +101,7 @@ func TestSPolygonUvTriangulateWithHole(t *testing.T) {
 
 func TestSPolygonFixDirections(t *testing.T) {
 	// A single (outer) contour, geometrically counterclockwise about +Z
-	// and stored closed. C++ SPolygon::FixContourDirections makes outer
+	// and stored closed. SolveSpace SPolygon::FixContourDirections makes outer
 	// contours "counterclockwise" in the sense of
 	// SContour::IsClockwiseProjdToNormal, which is geometrically
 	// clockwise about the normal, so this one must get reversed.
@@ -134,8 +134,8 @@ func TestSEdgeListAssemblePolygon(t *testing.T) {
 	el.AddEdge(geom.Vector{Y: 1}, geom.Vector{}, 0, 0, 0)
 	var p SPolygon
 	ok := el.AssemblePolygon(&p, nil, true)
-	// Closed contours in SolveSpace are stored with the closing
-	// vertex duplicated (C++ convention), so 4 edges => 5 points.
+	// Closed contours in SolveSpace are stored with the closing vertex
+	// duplicated, so 4 edges => 5 points.
 	if !ok || len(p.Contours) != 1 || len(p.Contours[0].Points) != 5 {
 		t.Fatalf("expected 1 contour of 5 points (closed), got %d contours, sizes: %v", len(p.Contours), contourSizes(&p))
 	}

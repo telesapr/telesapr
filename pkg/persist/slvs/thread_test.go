@@ -252,7 +252,7 @@ var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "s
 
 // TestThreadGoldens saves the file a thread makes, opens it and saves
 // it again, and requires the golden, testdata/thread/<name>.tlspr. Until
-// the C++ comparison was frozen, the same steps gave the bytes C++
+// the SolveSpace comparison was frozen, the same steps gave the bytes SolveSpace
 // saved after opening the file (testdata/thread/<name>.slvs, now plain
 // fixtures). TELESAPR_REGEN_GOLDEN=1 rewrites the goldens.
 func TestThreadGoldens(t *testing.T) {
@@ -479,7 +479,7 @@ func TestThreadSweep(t *testing.T) {
 const threadSweepMaxFailRate = 0
 
 // TestThreadGoldensSound checks the solid of every thread golden, the
-// .tlspr ones and the C++ saves, with the invariant oracle.
+// .tlspr ones and the SolveSpace saves, with the invariant oracle.
 func TestThreadGoldensSound(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join("..", "..", "..", "testdata", "thread", "*.s[lp]?s"))
 	if err != nil || len(files) == 0 {

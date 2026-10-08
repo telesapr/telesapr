@@ -1,7 +1,6 @@
 package ui
 
-// The text-based browser window (C++ textwin.cpp and the TextWindow
-// part of ui.h).
+// The text-based browser window.
 
 import (
 	"fmt"
@@ -39,14 +38,13 @@ const (
 	radioTrue  = ""
 )
 
-// LinkFunction runs when a link is clicked or hovered (C++
-// TextWindow::LinkFunction).
+// LinkFunction runs when a link is clicked or hovered.
 type LinkFunction func(link int, v uint32)
 
 // notALink is the link code of plain text.
 const notALink = 0
 
-// Screen is a text window screen (C++ TextWindow::Screen).
+// Screen is a text window screen.
 type Screen int
 
 const (
@@ -60,7 +58,7 @@ const (
 	ScreenPasteTransformed
 	ScreenEditView
 	ScreenTangentArc
-	// Extensions: screens C++ SolveSpace doesn't have.
+	// Screens of this program's own.
 	ScreenThread
 	ScreenParameters
 	ScreenCommands
@@ -71,7 +69,7 @@ const (
 	ScreenDrawing
 )
 
-// Edit is what the edit control is editing (C++ TextWindow::Edit).
+// Edit is what the edit control is editing.
 type Edit int
 
 const (
@@ -166,8 +164,7 @@ const (
 	EditSectionOffset Edit = 930
 )
 
-// drawOrHitHow is what DrawOrHitTestIcons and the colour picker do
-// (C++ TextWindow::DrawOrHitHow).
+// drawOrHitHow is what DrawOrHitTestIcons and the colour picker do.
 type drawOrHitHow int
 
 const (
@@ -176,8 +173,7 @@ const (
 	howClick
 )
 
-// shownState is the screen shown and its arguments (C++
-// TextWindow::ShownState).
+// shownState is the screen shown and its arguments.
 type shownState struct {
 	screen     Screen
 	group      core.HGroup
@@ -195,27 +191,26 @@ type shownState struct {
 }
 
 // cellMeta is how one character cell is drawn and what clicking it
-// does (C++ TextWindow::meta).
+// does.
 type cellMeta struct {
 	fg, bg byte
 	bgRgb  core.RGBA
 	link   int
 	data   uint32
 	f, h   LinkFunction
-	// fID identifies f's code, standing in for C++'s comparison of
-	// function pointers.
+	// fID identifies f's code, so that links can be compared.
 	fID uintptr
 }
 
 // textRow is a row of the text window: its top in half-rows, and its
-// characters (C++ TextWindow::text, meta and top).
+// characters.
 type textRow struct {
 	top  int
 	text [MaxCols]rune
 	meta [MaxCols]cellMeta
 }
 
-// clear resets the row as C++ ClearScreen does.
+// clear resets the row.
 func (row *textRow) clear() {
 	for j := range MaxCols {
 		row.text[j] = ' '
@@ -225,7 +220,7 @@ func (row *textRow) clear() {
 	}
 }
 
-// TextWindow is the property browser (C++ TextWindow).
+// TextWindow is the property browser.
 type TextWindow struct {
 	ss *Application
 
@@ -235,8 +230,8 @@ type TextWindow struct {
 	scrollPos int // The scrollbar position, in half-row units
 	halfRows  int // The height of our window, in half-row units
 
-	// lines are the rows written since ClearScreen; C++'s top[] of the
-	// unused rows, i*2, is lineTop.
+	// lines are the rows written since ClearScreen; lineTop has the
+	// unused rows' tops.
 	lines                  []textRow
 	rows                   int
 	hoveredRow, hoveredCol int
@@ -280,7 +275,7 @@ type TextWindow struct {
 		step  int
 	}
 
-	// buttons are the icons at the top (C++ static buttons[]).
+	// buttons are the icons at the top.
 	buttons []textButton
 }
 
@@ -290,8 +285,7 @@ func newTextWindow(ss *Application) *TextWindow {
 	return tw
 }
 
-// The foreground and background colour codes (C++ fgColors and
-// bgColors).
+// The foreground and background colour codes.
 var (
 	fgColors = []struct {
 		c     byte
@@ -320,8 +314,8 @@ var (
 	}
 )
 
-// colorTables are C++'s fgColorTable and bgColorTable: the colours by
-// code, as floats; codes not in the lists are black.
+// colorTables are the foreground and background colours by code, as
+// floats; codes not in the lists are black.
 var fgColorTable, bgColorTable = func() (fg, bg [256][3]float32) {
 	for _, c := range fgColors {
 		fg[c.c] = [3]float32{c.color.RedF(), c.color.GreenF(), c.color.BlueF()}
@@ -336,8 +330,7 @@ func colorFromTable(t *[256][3]float32, c byte) core.RGBA {
 	return core.RGBAFromFloat(t[c][0], t[c][1], t[c][2], 1)
 }
 
-// Init opens the window the first time, and resets it (C++
-// TextWindow::Init).
+// Init opens the window the first time, and resets it.
 func (tw *TextWindow) Init() {
 	ss := tw.ss
 	if tw.window == nil {
@@ -391,10 +384,10 @@ func (tw *TextWindow) Init() {
 }
 
 // ClearSuper resets everything but the window, and shows the home
-// screen (C++ TextWindow::ClearSuper).
+// screen.
 func (tw *TextWindow) ClearSuper() {
-	// C++ destroys the step dimension's timer with the rest; a step in
-	// progress must not go on with the reset state.
+	// The step dimension's timer goes with the rest; a step in progress
+	// must not go on with the reset state.
 	if t := tw.stepDim.timer; t != nil {
 		t.SetOnTimeout(nil)
 	}
@@ -406,8 +399,7 @@ func (tw *TextWindow) ClearSuper() {
 	tw.Show()
 }
 
-// HideEditControl hides the edit box and the colour picker (C++
-// TextWindow::HideEditControl).
+// HideEditControl hides the edit box and the colour picker.
 func (tw *TextWindow) HideEditControl() {
 	tw.editControl.colorPicker.show = false
 	if tw.window != nil {
@@ -417,7 +409,7 @@ func (tw *TextWindow) HideEditControl() {
 }
 
 // ShowEditControl shows the edit box at a column of a half-row, by
-// default the hovered row (C++ TextWindow::ShowEditControl).
+// default the hovered row.
 func (tw *TextWindow) ShowEditControl(col int, str string, halfRow ...int) {
 	hr := -1
 	if len(halfRow) > 0 {
@@ -441,7 +433,7 @@ func (tw *TextWindow) ShowEditControl(col int, str string, halfRow ...int) {
 }
 
 // ShowEditControlWithColorPicker shows the edit box with a colour
-// picker under it (C++ TextWindow::ShowEditControlWithColorPicker).
+// picker under it.
 func (tw *TextWindow) ShowEditControlWithColorPicker(col int, rgb core.RGBA) {
 	tw.ss.ScheduleShowTW()
 
@@ -461,14 +453,14 @@ func (tw *TextWindow) ShowEditControlWithColorPicker(col int, rgb core.RGBA) {
 	tw.ShowEditControl(col, fmt.Sprintf("%.2f, %.2f, %.2f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
 }
 
-// ClearScreen empties the text (C++ TextWindow::ClearScreen).
+// ClearScreen empties the text.
 func (tw *TextWindow) ClearScreen() {
 	tw.lines = tw.lines[:0]
 	tw.rows = 0
 }
 
-// lineTop is C++ top[r]: a written row's top, or r*2 for one ClearScreen
-// left unused.
+// lineTop is a written row's top, or r*2 for one ClearScreen left
+// unused.
 func (tw *TextWindow) lineTop(r int) int {
 	if r >= 0 && r < len(tw.lines) {
 		return tw.lines[r].top
@@ -494,8 +486,7 @@ func (tw *TextWindow) addRow() *textRow {
 // window: scrolling seemed to be broken, but was actually at MaxRows.
 const endString = "    **** End of Text Screen ****"
 
-// funcID identifies a link function's code (C++ compares the function
-// pointers).
+// funcID identifies a link function's code.
 func funcID(f LinkFunction) uintptr {
 	if f == nil {
 		return 0
@@ -542,12 +533,12 @@ func linkArg(a any) LinkFunction {
 	panic(fmt.Sprintf("ui: Printf: %T is not a link function", a))
 }
 
-// Printf writes a row in the text window's format language (C++
-// TextWindow::Printf): %d, %x, %@, %2, %3, %#, %s, %c and %% print
-// their argument; %Fx and %Bx set the colours (p takes the code as an
-// argument, and z a *core.RgbaColor); %Lx starts a link (p: code as an
-// argument); %f and %h take the click and hover LinkFunctions; %D the
-// link's data; and %E ends the link and the foreground colour.
+// Printf writes a row in the text window's format language: %d, %x, %@,
+// %2, %3, %#, %s, %c and %% print their argument; %Fx and %Bx set the
+// colours (p takes the code as an argument, and z a *core.RgbaColor);
+// %Lx starts a link (p: code as an argument); %f and %h take the click
+// and hover LinkFunctions; %D the link's data; and %E ends the link and
+// the foreground colour.
 func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 	if tw.canvas == nil {
 		return
@@ -723,8 +714,7 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 	}
 }
 
-// Show fills the window with the screen for the state of things (C++
-// TextWindow::Show).
+// Show fills the window with the screen for the state of things.
 func (tw *TextWindow) Show() {
 	ss := tw.ss
 	gw := ss.GW
@@ -823,7 +813,7 @@ func (tw *TextWindow) Show() {
 	}
 }
 
-// Resize fits the scrollbar to the window (C++ TextWindow::Resize).
+// Resize fits the scrollbar to the window.
 func (tw *TextWindow) Resize() {
 	_, height := tw.window.ContentSize()
 
@@ -840,7 +830,7 @@ func (tw *TextWindow) Resize() {
 }
 
 // DrawOrHitTestIcons draws the icons at the top, or finds the one under
-// the mouse (C++ TextWindow::DrawOrHitTestIcons).
+// the mouse.
 func (tw *TextWindow) DrawOrHitTestIcons(uiCanvas *render.UICanvas, how drawOrHitHow, mx, my float64) {
 	width, _ := tw.window.ContentSize()
 
@@ -884,7 +874,7 @@ func (tw *TextWindow) DrawOrHitTestIcons(uiCanvas *render.UICanvas, how drawOrHi
 }
 
 // hsvToRgb takes (h, s, v) in [0,6), [0,1], [0,1] to (r, g, b) all in
-// [0, 1] (C++ TextWindow::HsvToRgb).
+// [0, 1].
 func hsvToRgb(hsv geom.Vector) geom.Vector {
 	if hsv.X >= 6 {
 		hsv.X -= 6
@@ -919,7 +909,7 @@ func hsvToRgb(hsv geom.Vector) geom.Vector {
 }
 
 // rgbToHsv takes (r, g, b) in [0,1) to (h, s, v) in [0,6], [0,1],
-// [0,1] (C++ TextWindow::RgbToHsv).
+// [0,1].
 func rgbToHsv(rgb geom.Vector) geom.Vector {
 	r, g, b := rgb.X, rgb.Y, rgb.Z
 
@@ -984,8 +974,7 @@ func hsvPattern1d(hue, sat float64, w, h int) *res.Pixmap {
 	return pixmap
 }
 
-// ColorPickerDone enters the picked colour (C++
-// TextWindow::ColorPickerDone).
+// ColorPickerDone enters the picked colour.
 func (tw *TextWindow) ColorPickerDone() {
 	rgb := tw.editControl.colorPicker.rgb
 	tw.EditControlDone(fmt.Sprintf("%.2f, %.2f, %.3f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
@@ -1014,7 +1003,7 @@ func rgbfVec(rgb geom.Vector) core.RGBA {
 
 // DrawOrHitTestColorPicker draws the colour picker, or handles the
 // mouse on it; it reports whether the picker is shown and has the
-// mouse (C++ TextWindow::DrawOrHitTestColorPicker).
+// mouse.
 func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UICanvas, how drawOrHitHow,
 	leftDown bool, x, y float64) bool {
 	cp := &tw.editControl.colorPicker
@@ -1141,8 +1130,8 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UICanvas, how dr
 		uiCanvas.DrawPixmap(hsvPattern1d(cp.h, cp.s, hxm-hx, hym-hy), hx, hy, 2)
 
 		cx := hx + int(float64(hxm-hx)*(1.0-cp.v))
-		// C++ passes the fill and outline colours of DrawRect to
-		// DrawLine: the outline becomes a width of 0.
+		// DrawRect's fill and outline colours go to DrawLine: the
+		// outline becomes a width of 0.
 		uiCanvas.DrawLine(cx, hy, cx, hym, core.NewRGBA(0, 0, 0, 255), 0, 3)
 	} else if how == howClick || (how == howHover && leftDown && cp.picker1dActive) {
 		if in(hx, hy, hxm, hym) {
@@ -1189,7 +1178,7 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UICanvas, how dr
 	return true
 }
 
-// Paint draws the window (C++ TextWindow::Paint).
+// Paint draws the window.
 func (tw *TextWindow) Paint() {
 	if tw.canvas == nil {
 		return
@@ -1327,8 +1316,7 @@ func (tw *TextWindow) Paint() {
 	canvas.Clear()
 }
 
-// MouseEvent handles the mouse moving or clicking in the window (C++
-// TextWindow::MouseEvent).
+// MouseEvent handles the mouse moving or clicking in the window.
 func (tw *TextWindow) MouseEvent(leftClick, leftDown bool, x, y float64) {
 	ss := tw.ss
 	if tw.window.IsEditorVisible() || (ss.GW.window != nil && ss.GW.window.IsEditorVisible()) {
@@ -1405,7 +1393,7 @@ func (tw *TextWindow) MouseEvent(leftClick, leftDown bool, x, y float64) {
 	}
 }
 
-// MouseLeave forgets the hovered cell (C++ TextWindow::MouseLeave).
+// MouseLeave forgets the hovered cell.
 func (tw *TextWindow) MouseLeave() {
 	tw.hoveredButton = nil
 	tw.hoveredRow = 0
@@ -1413,8 +1401,7 @@ func (tw *TextWindow) MouseLeave() {
 	tw.window.Invalidate()
 }
 
-// ScrollbarEvent scrolls to a position in half-rows (C++
-// TextWindow::ScrollbarEvent).
+// ScrollbarEvent scrolls to a position in half-rows.
 func (tw *TextWindow) ScrollbarEvent(newPos float64) {
 	if tw.window.IsEditorVisible() {
 		// An edit field is active. Do not move the scrollbar.
@@ -1431,8 +1418,7 @@ func (tw *TextWindow) ScrollbarEvent(newPos float64) {
 	}
 }
 
-// GoToScreen shows another screen at the next Show (C++
-// TextWindow::GoToScreen).
+// GoToScreen shows another screen at the next Show.
 func (tw *TextWindow) GoToScreen(screen Screen) {
 	tw.shown.screen = screen
 }

@@ -12,14 +12,12 @@ import (
 	"github.com/telesapr/telesapr/pkg/libm"
 )
 
-// VectorContour is a polyline of a vector glyph (C++
-// VectorFont::Contour).
+// VectorContour is a polyline of a vector glyph.
 type VectorContour struct {
 	Points []geom.Point2d
 }
 
-// VectorGlyph is a vector glyph and its metrics (C++
-// VectorFont::Glyph).
+// VectorGlyph is a vector glyph and its metrics.
 type VectorGlyph struct {
 	Contours        []VectorContour
 	LeftSideBearing float64
@@ -28,7 +26,7 @@ type VectorGlyph struct {
 }
 
 // VectorFont is the stroke font the graphics window labels with,
-// LibreCAD's LFF format (C++ VectorFont).
+// LibreCAD's LFF format.
 type VectorFont struct {
 	lffData          string
 	glyphs           map[rune]*VectorGlyph
@@ -115,8 +113,8 @@ func glyphBBox(g *VectorGlyph) (minx, maxx, miny, maxy float64) {
 
 var lffHeaderRe = regexp.MustCompile(`^#\s*(\w+)\s*:\s*(.+?)\n`)
 
-// VectorFontFrom parses an LFF font's header; glyphs are parsed as
-// they are asked for (C++ VectorFont::From).
+// VectorFontFrom parses an LFF font's header; glyphs are parsed as they
+// are asked for.
 func VectorFontFrom(lffData string) *VectorFont {
 	f := &VectorFont{lffData: lffData, glyphs: make(map[rune]*VectorGlyph)}
 	pos := 0
@@ -156,8 +154,7 @@ var (
 	builtinVectorFontOnce sync.Once
 )
 
-// BuiltinVectorFont is the bundled LibreCAD unicode font (C++
-// VectorFont::Builtin).
+// BuiltinVectorFont is the bundled LibreCAD unicode font.
 func BuiltinVectorFont() *VectorFont {
 	builtinVectorFontOnce.Do(func() {
 		builtinVectorFont = VectorFontFrom(LoadStringFromGzip("fonts/unicode.lff.gz"))
@@ -165,11 +162,11 @@ func BuiltinVectorFont() *VectorFont {
 	return builtinVectorFont
 }
 
-// IsEmpty reports whether the font has no data (C++ IsEmpty).
+// IsEmpty reports whether the font has no data.
 func (f *VectorFont) IsEmpty() bool { return f == nil || f.lffData == "" }
 
-// Glyph returns the glyph, parsing it the first time; a missing one
-// is U+FFFD (C++ VectorFont::Glyph).
+// Glyph returns the glyph, parsing it the first time; a missing one is
+// U+FFFD.
 func (f *VectorFont) Glyph(codepoint rune) *VectorGlyph {
 	if g, ok := f.glyphs[codepoint]; ok {
 		return g
@@ -269,18 +266,15 @@ func (f *VectorFont) Glyph(codepoint rune) *VectorGlyph {
 	return f.Glyph(0xfffd)
 }
 
-// GetCapHeight is the cap height text of that cap height has (C++
-// VectorFont::GetCapHeight).
+// GetCapHeight is the cap height text of that cap height has.
 func (f *VectorFont) GetCapHeight(forCapHeight float64) float64 { return forCapHeight }
 
-// Height is the full height of text with that cap height (C++
-// VectorFont::Height).
+// Height is the full height of text with that cap height.
 func (f *VectorFont) Height(forCapHeight float64) float64 {
 	return (f.Ascender - f.Descender) * (forCapHeight / f.CapHeight)
 }
 
-// Width is the width of str at that cap height (C++
-// VectorFont::Width).
+// Width is the width of str at that cap height.
 func (f *VectorFont) Width(forCapHeight float64, str string) float64 {
 	width := 0.0
 	for _, c := range cxxutf8.Decode(str) {
@@ -290,14 +284,13 @@ func (f *VectorFont) Width(forCapHeight float64, str string) float64 {
 	return width * (forCapHeight / f.CapHeight)
 }
 
-// Extents is the width and height of str (C++
-// VectorFont::Extents).
+// Extents is the width and height of str.
 func (f *VectorFont) Extents(forCapHeight float64, str string) geom.Vector {
 	return geom.Vector{X: f.Width(forCapHeight, str), Y: f.Height(forCapHeight)}
 }
 
 // Trace calls traceEdge for every stroke of str, laid out from o along
-// u, with v up (C++ VectorFont::Trace).
+// u, with v up.
 func (f *VectorFont) Trace(forCapHeight float64, o, u, v geom.Vector, str string, traceEdge func(a, b geom.Vector)) {
 	scale := forCapHeight / f.CapHeight
 	u = u.ScaledBy(scale)
@@ -322,8 +315,7 @@ func (f *VectorFont) Trace(forCapHeight float64, o, u, v geom.Vector, str string
 }
 
 // TraceAligned is Trace with each glyph grid-fitted to the camera's
-// pixels when the text is parallel to the screen (C++
-// VectorFont::Trace with a camera).
+// pixels when the text is parallel to the screen.
 func (f *VectorFont) TraceAligned(forCapHeight float64, o, u, v geom.Vector, str string, traceEdge func(a, b geom.Vector), camera TraceCamera) {
 	right, up := camera.ProjVectors()
 	// Perform grid-fitting only when the text is parallel to the view plane.

@@ -5,8 +5,8 @@ import (
 )
 
 // FromTransformationOfSCurve is a copy of a scaled, then rotated, then
-// translated; like C++ it keeps only the handle, the exact form, the
-// surfaces and the pwl (C++ SCurve::FromTransformationOf).
+// translated; it keeps only the handle, the exact form, the surfaces
+// and the pwl.
 func FromTransformationOfSCurve(a *SCurve, t geom.Vector, q geom.Quaternion, scale float64) SCurve {
 	needRotate := !(q.X == 0 && q.Y == 0 && q.Z == 0 && q.W == 1)
 	needTranslate := !(t.X == 0 && t.Y == 0 && t.Z == 0)

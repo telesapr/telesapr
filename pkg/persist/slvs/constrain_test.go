@@ -7,7 +7,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
-// TestTryConstrain adds constraints to a free line the way C++'s
+// TestTryConstrain adds constraints to a free line the way SolveSpace's
 // Constrain menu does: a first horizontal constraint is added, a second
 // one would be redundant and isn't, and the scheduled regeneration
 // solves the line level.

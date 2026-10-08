@@ -10,8 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
-// Init loads the settings, makes a new file and opens the windows (C++
-// SolveSpaceUI::Init).
+// Init loads the settings, makes a new file and opens the windows.
 func (ss *Application) Init() {
 	ss.LoadSettings()
 	// A missing linked file is looked for through the dialogs.
@@ -92,7 +91,7 @@ func (ss *Application) setSketch(sk *sketch.Sketch) {
 	ss.applyEngineSettings()
 }
 
-// NewFile starts a new sketch (C++ SolveSpaceUI::NewFile).
+// NewFile starts a new sketch.
 func (ss *Application) NewFile() {
 	sk := sketch.NewSketch()
 	sk.NewFile()
@@ -101,7 +100,7 @@ func (ss *Application) NewFile() {
 }
 
 // AfterNewFile generates a new or loaded sketch and resets the windows
-// to it (C++ SolveSpaceUI::AfterNewFile).
+// to it.
 func (ss *Application) AfterNewFile() {
 	// Clear out the traced point, which is no longer valid
 	ss.GW.traced.Point = core.HEntity{}
@@ -158,8 +157,8 @@ func (ss *Application) UpdateWindowTitles() {
 	}
 }
 
-// LoadSketchForTest adopts an already loaded sketch as C++ does after
-// LoadFromFile, then AfterNewFile.
+// LoadSketchForTest adopts an already loaded sketch after LoadFromFile,
+// then AfterNewFile.
 func (ss *Application) LoadSketchForTest(sk *sketch.Sketch, saveFile string) {
 	ss.SaveFile = saveFile
 	ss.setSketch(sk)
@@ -167,8 +166,7 @@ func (ss *Application) LoadSketchForTest(sk *sketch.Sketch, saveFile string) {
 }
 
 // MarkDraggedParams lists the params of what the graphics window is
-// dragging: its pending points, circle and normal (C++
-// SolveSpaceUI::MarkDraggedParams).
+// dragging: its pending points, circle and normal.
 func (ss *Application) MarkDraggedParams() []core.HParam {
 	sk := ss.SK
 	pd := &ss.GW.pending
@@ -208,8 +206,8 @@ func (ss *Application) MarkDraggedParams() []core.HParam {
 	return dragged
 }
 
-// onGenerated is the user interface's part of the end of C++
-// GenerateAll.
+// onGenerated is the user interface's part of the end of a
+// regeneration.
 func (ss *Application) onGenerated(requests, constraints, groups int) {
 	sk := ss.SK
 	// Make sure the point that we're tracing exists.

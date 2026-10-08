@@ -5,14 +5,12 @@ type HEquation struct {
 }
 
 // IsFromConstraint reports whether the equation was written by a
-// constraint (C++ hEquation::isFromConstraint): entity and group
-// equations set one of the top two bits.
+// constraint: entity and group equations set one of the top two bits.
 func (h HEquation) IsFromConstraint() bool {
 	return h.V&0xc0000000 == 0
 }
 
-// Constraint is the constraint that wrote the equation (C++
-// hEquation::constraint).
+// Constraint is the constraint that wrote the equation.
 func (h HEquation) Constraint() HConstraint {
 	return HConstraint{V: h.V >> 16}
 }
@@ -46,7 +44,7 @@ func (h HRequest) Param(i int) HParam {
 }
 
 // IsFromReferences reports whether the request is one of the three
-// reference workplanes (C++ hRequest::IsFromReferences).
+// reference workplanes.
 func (h HRequest) IsFromReferences() bool {
 	return h.V == 1 || h.V == 2 || h.V == 3
 }

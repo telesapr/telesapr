@@ -123,7 +123,7 @@ func TestBernstein(t *testing.T) {
 func TestSBspUvClassify(t *testing.T) {
 	// Add an edge along the X axis, directed toward +U.
 	root := bspUvInsertOrCreateEdge(nil, geom.Point2d{U: -1, V: 0}, geom.Point2d{U: 1, V: 0}, nil)
-	// As in C++ SBspUv::ClassifyPoint, "inside" is the right-hand
+	// As in SolveSpace SBspUv::ClassifyPoint, "inside" is the right-hand
 	// side of the directed edge. Facing +U, the right-hand side is
 	// -V, so a point BELOW the X axis is classified INSIDE.
 	c := root.ClassifyPoint(geom.Point2d{U: 0, V: -1}, geom.Point2d{}, nil)
@@ -209,7 +209,7 @@ func TestSBezierPointAtMidpoint(t *testing.T) {
 }
 
 // TestSBezierTangentAtMidpoint verifies the linear tangent, which is
-// the derivative, unnormalized, as C++ returns it.
+// the derivative, unnormalized, as SolveSpace returns it.
 func TestSBezierTangentAtMidpoint(t *testing.T) {
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 10})
 	tan := b.TangentAt(0.5)
@@ -359,7 +359,7 @@ func TestSSurfacePointIntersectingLineVertical(t *testing.T) {
 func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	u, v := 0.5, 0.5
-	// As in C++ SSurface::FromPlane, the first parameter runs along
+	// As in SolveSpace SSurface::FromPlane, the first parameter runs along
 	// the plane's v vector (+Y), so the u=1 edge is the line y=1.
 	curve := SBezierFrom2(geom.Vector{Y: 1}, geom.Vector{Y: 2})
 	ok := plane.EdgeCurveIntersection(&u, &v, &curve)
@@ -373,8 +373,7 @@ func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
 func TestSSurfaceAllPointsIntersectingOnPlane(t *testing.T) {
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var inters []SInter
-	// No trim BSP, so ask for untrimmed hits (C++ classifies a
-	// BSP-less surface as OUTSIDE for trimmed queries).
+	// No trim BSP, so ask for untrimmed hits.
 	plane.AllPointsIntersecting(geom.Vector{Z: -1}, geom.Vector{Z: 1},
 		&inters, true, false, false)
 	if len(inters) == 0 {
@@ -448,7 +447,7 @@ func TestRayIsInside(t *testing.T) {
 }
 
 // TestSContourIsEar tests ear detection on a simple square. As in
-// C++ SContour::IsEar, contours are clipped with ears facing -Z, i.e.
+// SolveSpace SContour::IsEar, contours are clipped with ears facing -Z, i.e.
 // wound clockwise about +Z (the orientation FixContourDirections
 // gives outer contours).
 func TestSContourIsEar(t *testing.T) {
@@ -510,7 +509,7 @@ func TestSSurfaceBlendRowOrCol(t *testing.T) {
 }
 
 // TestSSurfaceWeightControlPoints: weighting scales each control point
-// by its weight, and unweighting undoes it (C++).
+// by its weight, and unweighting undoes it.
 func TestSSurfaceWeightControlPoints(t *testing.T) {
 	plane := FromPlane(geom.Vector{X: 1, Y: 2}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	plane.Weight[1][0] = 4.0
@@ -690,7 +689,7 @@ func TestSBezierListClear(t *testing.T) {
 }
 
 // TestCullIdenticalBeziers: a curve identical to an earlier one, either
-// way round, goes; with both, the earlier one goes too (C++).
+// way round, goes; with both, the earlier one goes too.
 func TestCullIdenticalBeziers(t *testing.T) {
 	a := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
 	b := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{}) // a reversed

@@ -15,8 +15,8 @@ import (
 
 func (gw *GraphicsWindow) sk() *sketch.Sketch { return gw.ss.SK }
 
-// activeGroupH is the active group (C++ GW.activeGroup), which the
-// sketch keeps as Sketch.Active.
+// activeGroupH is the active group, which the sketch keeps as
+// Sketch.Active.
 func (gw *GraphicsWindow) activeGroupH() core.HGroup { return gw.sk().Active }
 
 func (gw *GraphicsWindow) setActiveGroup(hg core.HGroup) { gw.sk().Active = hg }
@@ -60,7 +60,7 @@ func (gw *GraphicsWindow) AcceleratorForCommand(cmd Command) platform.KeyboardEv
 }
 
 // KeyboardEvent handles a key: Backspace is Escape, '=' is '+', and the
-// menu accelerators (C++ GraphicsWindow::KeyboardEvent).
+// menu accelerators.
 func (gw *GraphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 	if event.Type == platform.KeyRelease {
 		return true
@@ -213,7 +213,7 @@ func (gw *GraphicsWindow) PopulateRecentFiles() {
 }
 
 // Init resets the view, activates the last group, and the first time
-// makes the window and its menus (C++ GraphicsWindow::Init).
+// makes the window and its menus.
 func (gw *GraphicsWindow) Init() {
 	gw.view.Scale = 5
 	gw.view.Offset = geom.Vector{}
@@ -312,7 +312,7 @@ func (gw *GraphicsWindow) AnimateOntoWorkplane() {
 }
 
 // AnimateOnto animates the view to orientation quatf and offset
-// offsetf (C++ GraphicsWindow::AnimateOnto).
+// offsetf.
 func (gw *GraphicsWindow) AnimateOnto(quatf geom.Quaternion, offsetf geom.Vector) {
 	// Get our initial orientation and translation.
 	quat0 := geom.QuaternionFromBasis(gw.view.ProjRight, gw.view.ProjUp)
@@ -884,13 +884,12 @@ func (gw *GraphicsWindow) ForceTextWindowShown() {
 }
 
 // DeleteTaggedRequests deletes the tagged requests and updates the
-// display (C++ GraphicsWindow::DeleteTaggedRequests).
+// display.
 func (gw *GraphicsWindow) DeleteTaggedRequests() {
 	gw.sk().DeleteTaggedRequests()
 }
 
-// regenerateAfterDelete is the end of C++
-// GraphicsWindow::DeleteTaggedRequests, after the requests are gone.
+// regenerateAfterDelete regenerates after requests were deleted.
 func (gw *GraphicsWindow) regenerateAfterDelete() {
 	// An edit might be in progress for the just-deleted item. So now
 	// it's not.
@@ -1363,8 +1362,7 @@ func (gw *GraphicsWindow) ClearSuper() {
 	gw.EnsureValidActives()
 }
 
-// ToggleBool flips a show flag and does what it needs (C++
-// GraphicsWindow::ToggleBool).
+// ToggleBool flips a show flag and does what it needs.
 func (gw *GraphicsWindow) ToggleBool(v *bool) {
 	*v = !*v
 

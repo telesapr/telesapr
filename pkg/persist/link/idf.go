@@ -20,10 +20,9 @@ import (
 // This file ports solvespace/src/importidf.cpp, which links the board
 // outline of an Intermediate Data Format (IDF) file: its outline,
 // cutouts, routing keepouts and drilled holes become entities, and the
-// board an extruded shell. Part placement isn't supported, as in C++.
+// board an extruded shell. Part placement isn't supported.
 
-// splitIDFString splits a line at spaces, except within quotes (C++
-// splitString).
+// splitIDFString splits a line at spaces, except within quotes.
 func splitIDFString(line string) []string {
 	var v []string
 
@@ -78,13 +77,12 @@ var (
 	cIntPrefix   = regexp.MustCompile(`^[ \t\n\v\f\r]*[+-]?\d+`)
 )
 
-// stof is C++ std::stof: the float that starts s. C++ throws, and so
-// stops, where this returns an error.
+// stof is the float that starts s, or an error.
 func stof(s string) (float64, error) {
 	return parseCPrefix(s, cFloatPrefix, 32)
 }
 
-// stod is C++ std::stod.
+// stod is the double that starts s, or an error.
 func stod(s string) (float64, error) {
 	return parseCPrefix(s, cFloatPrefix, 64)
 }
@@ -97,7 +95,7 @@ func parseCPrefix(s string, re *regexp.Regexp, bits int) (float64, error) {
 	return strconv.ParseFloat(strings.TrimLeft(m, " \t\n\v\f\r"), bits)
 }
 
-// stoi is C++ std::stoi.
+// stoi is the integer that starts s, or an error.
 func stoi(s string) (int, error) {
 	m := cIntPrefix.FindString(s)
 	if m == "" {
@@ -197,7 +195,7 @@ func (b *entities) idfArc(p0, p1, pc, hnorm core.HEntity, keepout bool) core.HEn
 	en.Construction = keepout
 	en.Style = idfStyle(keepout)
 	en.ActVisible = true
-	// C++ increments the id twice here.
+	// An id is skipped here, so that the handles stay what they were.
 	b.id++
 
 	b.id++
@@ -237,7 +235,7 @@ func (b *entities) idfCircle(p0, hdist, hnorm core.HEntity, keepout bool) {
 }
 
 // arcCenter is the centre of the arc from p0 to p1 through angle
-// degrees (C++ ArcCenter).
+// degrees.
 func arcCenter(p0, p1 geom.Vector, angle float64) geom.Vector {
 	m := p0.Plus(p1).ScaledBy(0.5)
 	perp := geom.Vector{X: p1.Y - p0.Y, Y: p0.X - p1.X}.WithMagnitude(1.0)
@@ -253,7 +251,7 @@ func arcCenter(p0, p1 geom.Vector, angle float64) geom.Vector {
 
 // createIDFEntity adds an IDF line or arc. A zero angle is a line;
 // positive angles are counter clockwise, negative clockwise; 360 is a
-// circle centred at p0 through p1 (C++ CreateEntity).
+// circle centred at p0 through p1.
 func (b *entities) idfEntity(h0, h1, hnorm core.HEntity,
 	p0, p1 geom.Vector, angle float64, keepout bool) {
 	switch {
@@ -291,8 +289,7 @@ func (b *entities) idfEntity(h0, h1, hnorm core.HEntity,
 }
 
 // makeBeziersForArcs adds the arc about center from pa through angle
-// degrees, as Entity::GenerateBezierCurves would (C++
-// MakeBeziersForArcs).
+// degrees, as Entity::GenerateBezierCurves would.
 func makeBeziersForArcs(sbl *srf.SBezierList, center, pa geom.Vector,
 	q geom.Quaternion, angle float64) {
 	u, v := q.RotationU(), q.RotationV()
@@ -366,9 +363,8 @@ const (
 	idfComponentPlacement
 )
 
-// linkIDF reads the board outline section of an IDF file (C++ LinkIDF).
-// Where C++ would stop on a number it can't read, this reports that
-// the file couldn't be loaded.
+// linkIDF reads the board outline section of an IDF file. A number it
+// can't read makes the file unloadable.
 func linkIDF(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool) {
 	var b entities
 	raw, err := os.ReadFile(path)
@@ -590,7 +586,7 @@ func linkIDF(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]co
 	}
 	sh.BooleanFailed = false
 
-	// C++ keeps an EntityList sorted by handle.
+	// The entities are kept sorted by handle.
 	slices.SortStableFunc(b.list, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
 	return b.list, true
 }

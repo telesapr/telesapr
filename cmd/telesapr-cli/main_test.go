@@ -54,7 +54,7 @@ func runTool(t *testing.T, args ...string) (bool, string) {
 }
 
 // TestExportMesh requires the golden STL of export-mesh --chord-tol 0.1
-// (first written by C++ solvespace-cli; TestExportStl in
+// (first written by SolveSpace solvespace-cli; TestExportStl in
 // pkg/persist/slvs regenerates it).
 func TestExportMesh(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "mesh.stl")

@@ -10,7 +10,7 @@ import (
 )
 
 // profileLoopSet returns the rectangle r0 <= x <= r1, z0 <= z <= z1 in
-// the y=0 plane, wound clockwise about its +Y normal as C++
+// the y=0 plane, wound clockwise about its +Y normal as SolveSpace
 // FindOuterFacesFrom leaves outer loops.
 func profileLoopSet(r0, r1, z0, z1 float64) *SBezierLoopSet {
 	p := []geom.Vector{{X: r0, Z: z0}, {X: r1, Z: z0}, {X: r1, Z: z1}, {X: r0, Z: z1}}
@@ -126,7 +126,7 @@ func TestBooleanRevolveBoxVolume(t *testing.T) {
 }
 
 // TestRevolveParityCpp pins the mesh volumes at the default chord
-// tolerance to those of the C++ SShell::MakeFromRevolutionOf,
+// tolerance to those of the SolveSpace SShell::MakeFromRevolutionOf,
 // MakeFromHelicalRevolutionOf and MakeFromBoolean on the same inputs
 // (a harness linked against libsolvespace-core, chordTolCalculated
 // 0.1, maxSegments 20).
@@ -134,7 +134,7 @@ func TestRevolveParityCpp(t *testing.T) {
 	check := func(name string, got, want float64) {
 		t.Helper()
 		if math.Abs(got-want) > 1e-8 {
-			t.Errorf("%s: volume=%.12g, C++ %.12g", name, got, want)
+			t.Errorf("%s: volume=%.12g, SolveSpace %.12g", name, got, want)
 		}
 	}
 	check("tube", shellVolume(lathedTube(1, 2, 0, 1)), 9.18326468473)
@@ -147,7 +147,7 @@ func TestRevolveParityCpp(t *testing.T) {
 		// A whole turn's helical faces are twisted ruled faces, whose
 		// grid has its outer cells halved since roadmap 24.4, and whose
 		// ears keep their chords off the points they cut off since the
-		// cut-off test (cutOff.crosses): C++ had 9.38597257969, 24.4
+		// cut-off test (cutOff.crosses): SolveSpace had 9.38597257969, 24.4
 		// 9.37728875643; exact 9.42477796077.
 		{-math.Pi, math.Pi, -1, 1, 9.37779507644},
 	} {

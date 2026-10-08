@@ -201,8 +201,8 @@ type Group struct {
 	RunningMesh     srf.SMesh
 	DisplayMesh     srf.SMesh
 	DisplayOutlines srf.SOutlineList
-	// DisplayDirty is set when the shell or mesh changed, so the display
-	// items need making again (C++ Group::displayDirty).
+	// DisplayDirty is set when the shell or mesh changed, so the
+	// display items need making again.
 	DisplayDirty bool
 
 	ImpMesh   srf.SMesh
@@ -276,8 +276,7 @@ func (g *Group) setProblem(at *geom.Vector, format string, args ...any) {
 	}
 }
 
-// Clear drops everything regeneration makes, and the remap table (C++
-// Group::Clear).
+// Clear drops everything regeneration makes, and the remap table.
 func (g *Group) Clear() {
 	g.Solved.Remove = nil
 	g.PolyLoops.Clear()

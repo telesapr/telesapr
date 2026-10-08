@@ -12,7 +12,7 @@ import (
 // paste-transformed text screen are user interface.
 
 // ClipboardRequest is a copied request: its points in the workplane's
-// coordinates, and the entities it came from (C++ ClipboardRequest).
+// coordinates, and the entities it came from.
 type ClipboardRequest struct {
 	Type         RequestType
 	ExtraPoints  int
@@ -30,8 +30,7 @@ type ClipboardRequest struct {
 	NewReq      core.HRequest
 }
 
-// Clipboard holds copied requests, and the constraints among them (C++
-// SolveSpaceUI::Clipboard).
+// Clipboard holds copied requests, and the constraints among them.
 type Clipboard struct {
 	Requests    []ClipboardRequest
 	Constraints []core.Constraint
@@ -42,8 +41,7 @@ func (c *Clipboard) Clear() {
 	c.Constraints = nil
 }
 
-// ContainsEntity reports whether he, or no entity, was copied (C++
-// Clipboard::ContainsEntity).
+// ContainsEntity reports whether he, or no entity, was copied.
 func (c *Clipboard) ContainsEntity(he core.HEntity) bool {
 	if he == core.NoEntity {
 		return true
@@ -64,8 +62,7 @@ func (c *Clipboard) ContainsEntity(he core.HEntity) bool {
 	return false
 }
 
-// NewEntityFor is the pasted entity for copied entity he (C++
-// Clipboard::NewEntityFor).
+// NewEntityFor is the pasted entity for copied entity he.
 func (c *Clipboard) NewEntityFor(he core.HEntity) core.HEntity {
 	if he == core.NoEntity {
 		return core.NoEntity
@@ -97,7 +94,7 @@ func (sk *Sketch) activeWorkplaneCsys() (u, v, n, p geom.Vector) {
 
 // CopySelection copies the selected entities that requests generate
 // (not workplanes), the selected comments, and the constraints among
-// the copied entities (C++ GraphicsWindow::CopySelection).
+// the copied entities.
 func (sk *Sketch) CopySelection(selection []Selection) {
 	cb := &sk.Clipboard
 	cb.Clear()
@@ -186,9 +183,8 @@ func (sk *Sketch) CopySelection(selection []Selection) {
 
 // PasteClipboard pastes the clipboard into the active group and
 // workplane: scaled (mirrored if negative) in the workplane, rotated by
-// theta about its normal, and moved by trans. It returns what C++
-// selects afterwards: the pasted entities and comments (C++
-// GraphicsWindow::PasteClipboard).
+// theta about its normal, and moved by trans. It returns what is
+// selected afterwards: the pasted entities and comments.
 func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Selection {
 	cb := &sk.Clipboard
 	u, v, n, p := sk.activeWorkplaneCsys()

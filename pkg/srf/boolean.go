@@ -9,7 +9,6 @@ import (
 )
 
 // MakeFromBoolean sets s to the boolean combination of a and b.
-// Mirrors C++ SShell::MakeFromBoolean (boolean.cpp).
 func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
@@ -62,9 +61,8 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 // as the faces of a cutter that lie wholly outside what it cut, and the
 // curves on them that no trim left uses; a kept surface may be trimmed
 // by a curve whose other surface was dropped, where coincident faces
-// merged. C++ kept them: they mesh to nothing, but they counted as
-// faces, and an exporter of surfaces wrote them out whole (roadmap
-// 13.3).
+// merged. Kept, they mesh to nothing but count as faces, and an
+// exporter of surfaces writes them out whole (roadmap 13.3).
 func (s *SShell) dropUntrimmed() {
 	dropped := map[core.HSSurface]bool{}
 	used := map[core.HSCurve]bool{}
@@ -97,9 +95,8 @@ func (s *SShell) dropUntrimmed() {
 // MakeFromAssemblyOf copies all the surfaces and curves from two
 // different shells into a single shell, rewriting their handles; it
 // doesn't look for any surface intersections, so if two objects
-// interfere then the result is just self-intersecting. This is used
-// for assembly, since it's much faster than merging as union (C++
-// SShell::MakeFromAssemblyOf).
+// interfere then the result is just self-intersecting. This is used for
+// assembly, since it's much faster than merging as union.
 func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
@@ -144,7 +141,7 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 }
 
 // CleanupAfterBoolean clears the edges MakeClassifyingBsps made as a
-// calculation aid (C++ SShell::CleanupAfterBoolean).
+// calculation aid.
 func (s *SShell) CleanupAfterBoolean() {
 	for i := range s.Surface {
 		s.Surface[i].Edges = SEdgeList{}
@@ -201,21 +198,18 @@ func (s *SShell) MakeFromIntersectionOf(a, b *SShell) {
 // extrusion-extrusion vs marching-squares). Reverted in favor of the
 // case-3 default fix.)
 //
-// The surfaces are done at once, as under C++'s OpenMP: each one writes
-// only its own bsp, edges and closest-point cache.
+// The surfaces are done at once: each one writes only its own bsp,
+// edges and closest-point cache.
 func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 	par.For(len(s.Surface), func(i int) {
 		srf := &s.Surface[i]
 		srf.Bsp = buildSurfaceClassifyingBsp(s, srf, useCurvesFrom)
-		// Mirrors the second half of C++ `SSurface::MakeClassifyingBsp`
-		// (boolean.cpp:909-918): besides the uv-space bsp, it also
-		// rebuilds `edges` as the *xyz* trim boundary of this surface.
 		// `SShell::ClassifyEdge`'s edge-on-edge (case 1) and knife-edge
 		// (case 2) branches read `srf.Edges` to detect when the probe
 		// point lies exactly on another surface's trim boundary; with
 		// `Edges` always empty those branches could never fire and
-		// every such probe fell through to the raycast fallback
-		// (case 4), which is far less precise for the axis-aligned
+		// every such probe fell through to the raycast fallback (case
+		// 4), which is far less precise for the axis-aligned
 		// coincident-edge geometry the boolean fixtures are full of.
 		srf.Edges = buildSurfaceClassifyingEdgesXYZ(s, srf, useCurvesFrom)
 		srf.curvedEdges = buildCurvedTrimEdgesXYZ(s, srf, useCurvesFrom)
@@ -286,17 +280,14 @@ func distanceToEdges(p geom.Vector, el *SEdgeList) float64 {
 	return d
 }
 
-// buildSurfaceClassifyingBsp builds srf's uv-space trim BSP, as the
-// first half of C++ SSurface::MakeClassifyingBsp (boolean.cpp:913).
+// buildSurfaceClassifyingBsp builds srf's uv-space trim BSP.
 func buildSurfaceClassifyingBsp(sh *SShell, srf *SSurface, useCurvesFrom *SShell) *SBspUv {
 	var el SEdgeList
 	srf.MakeEdgesInto(sh, &el, true, useCurvesFrom)
 	return SBspUvFrom(&el, srf)
 }
 
-// buildSurfaceClassifyingEdgesXYZ builds srf's xyz-space trim
-// boundary, as the second half of C++ SSurface::MakeClassifyingBsp
-// (boolean.cpp:918).
+// buildSurfaceClassifyingEdgesXYZ builds srf's xyz-space trim boundary.
 func buildSurfaceClassifyingEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *SShell) SEdgeList {
 	var el SEdgeList
 	srf.MakeEdgesInto(sh, &el, false, useCurvesFrom)
@@ -304,8 +295,7 @@ func buildSurfaceClassifyingEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *S
 }
 
 // AllPointsIntersecting collects the intersections of the line (a, b)
-// with every surface of the shell. Mirrors C++
-// SShell::AllPointsIntersecting (raycast.cpp:383).
+// with every surface of the shell.
 func (s *SShell) AllPointsIntersecting(a, b geom.Vector, inters *[]SInter, asSegment, trimmed, inclTangent bool) {
 	for i := range s.Surface {
 		s.Surface[i].AllPointsIntersecting(a, b, inters, asSegment, trimmed, inclTangent)
@@ -313,7 +303,7 @@ func (s *SShell) AllPointsIntersecting(a, b geom.Vector, inters *[]SInter, asSeg
 }
 
 // SInter is a ray-shell intersection point with metadata about the
-// surfaces and curves it crossed. Equivalent to C++ SInter.
+// surfaces and curves it crossed.
 type SInter struct {
 	P          geom.Vector
 	SurfA      core.HSSurface

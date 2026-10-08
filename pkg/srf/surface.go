@@ -65,12 +65,11 @@ type SSurface struct {
 	// parallel.go).
 	noCache bool
 
-	// TrimBuilt is a Go-port-only marker (no C++ field mirrors it):
-	// true when the surface's Trim list is authoritative, so an empty
-	// one means "nothing to render", as in C++. Every SShell
+	// TrimBuilt is true when the surface's Trim list is authoritative,
+	// so an empty one means "nothing to render". Every SShell
 	// constructor sets it; it is false only for a bare surface built
-	// outside one (FromPlane etc.), which TriangulateInto renders
-	// over its full parameter range instead.
+	// outside one (FromPlane etc.), which TriangulateInto renders over
+	// its full parameter range instead.
 	TrimBuilt bool
 }
 
@@ -83,7 +82,6 @@ type STrimBy struct {
 	Finish    float64 // parameter space: 0..1
 	Backwards bool
 	// 3D endpoints, populated by STrimByEntireCurveFromShell.
-	// Matches the C++ STrimBy::start / STrimBy::finish fields.
 	StartP  geom.Vector
 	FinishP geom.Vector
 }
@@ -92,13 +90,13 @@ func STrimByEntireCurve(c core.HSCurve) STrimBy {
 	return STrimBy{Curve: c, Start: 0, Finish: 1}
 }
 
-// Clear drops the trims (C++ SSurface::Clear).
+// Clear drops the trims.
 func (s *SSurface) Clear() {
 	s.Trim = nil
 }
 
 // Reverse flips the first parameter direction, which flips the normal,
-// and reverses the trims to match. Mirrors C++ SSurface::Reverse.
+// and reverses the trims to match.
 func (s *SSurface) Reverse() {
 	for i := range (s.DegM + 1) / 2 {
 		for j := 0; j <= s.DegN; j++ {
@@ -157,7 +155,7 @@ func (s *SSurface) PointAtUv(puv geom.Point2d) geom.Vector {
 }
 
 // NormalAt returns the (unnormalized) surface normal at (u, v), the
-// cross product of the tangents (C++ SSurface::NormalAt).
+// cross product of the tangents.
 func (s *SSurface) NormalAt(u, v float64) geom.Vector {
 	var tu, tv geom.Vector
 	s.TangentsAt(u, v, &tu, &tv, true)
@@ -169,10 +167,10 @@ func (s *SSurface) NormalAtUv(puv geom.Point2d) geom.Vector {
 	return s.NormalAt(puv.U, puv.V)
 }
 
-// TangentsAt computes the partial derivatives dP/du and dP/dv at
-// (u, v) (C++ SSurface::TangentsAt). A tangent is zero at
-// singularities like the north pole; with retry, (u, v) is then moved
-// a little toward the middle and the tangents recomputed.
+// TangentsAt computes the partial derivatives dP/du and dP/dv at (u,
+// v). A tangent is zero at singularities like the north pole; with
+// retry, (u, v) is then moved a little toward the middle and the
+// tangents recomputed.
 func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
 	var num, numU, numV geom.Vector
 	var den, denU, denV float64
@@ -264,8 +262,7 @@ func FromPlane(pt, u, v geom.Vector) SSurface {
 	s.Weight[0][1] = 1
 	s.Weight[1][0] = 1
 	s.Weight[1][1] = 1
-	// Matches C++ SSurface::FromPlane (surface.cpp:114): the m
-	// (first) index runs along v and the n index along u.
+	// The m (first) index runs along v and the n index along u.
 	s.Ctrl[0][0] = pt
 	s.Ctrl[0][1] = pt.Plus(u)
 	s.Ctrl[1][0] = pt.Plus(v)
@@ -381,10 +378,9 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 	return s
 }
 
-// ClosestPointTo finds the (u, v) of the point on the surface closest to
-// p (C++ SSurface::ClosestPointTo). With mustConverge the Newton
-// refinement starts from the last result, is given more iterations,
-// and stops once it reaches p.
+// ClosestPointTo finds the (u, v) of the point on the surface closest
+// to p. With mustConverge the Newton refinement starts from the last
+// result, is given more iterations, and stops once it reaches p.
 func (s *SSurface) ClosestPointTo(p geom.Vector, puv *geom.Point2d, mustConverge bool) {
 	s.ClosestPointToUV(p, &puv.U, &puv.V, mustConverge)
 }
@@ -417,9 +413,9 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 		n := bu.Cross(bv)
 		dp := p.Minus(orig)
 		if math.Abs(bu.Dot(bv)) > 1e-12*bu.Magnitude()*bv.Magnitude() {
-			// Axes not square to each other, as on the side of a leaning
-			// prism: solve dp = u bu + v bv, through the vectors in the
-			// plane square to each axis. (C++ assumes square axes.)
+			// Axes not square to each other, as on the side of a
+			// leaning prism: solve dp = u bu + v bv, through the
+			// vectors in the plane square to each axis.
 			tx, ty := bv.Cross(n), n.Cross(bu)
 			*u = dp.Dot(tx) / bu.Dot(tx)
 			*v = dp.Dot(ty) / bv.Dot(ty)
@@ -480,7 +476,7 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 }
 
 // closestPointNewton refines the guess (u, v) by Newton iteration,
-// clamped to the unit square (C++ SSurface::ClosestPointNewton).
+// clamped to the unit square.
 func (s *SSurface) closestPointNewton(p geom.Vector, u, v *float64, mustConverge bool) bool {
 	iters := 5
 	if mustConverge {
@@ -529,9 +525,8 @@ func (s *SSurface) closestPointNewton(p geom.Vector, u, v *float64, mustConverge
 // PointOnCurve refines (*up, *vp), an initial guess, to where curve
 // pierces the surface, by alternating Newton iterations: each finds
 // where the curve's tangent line pierces the surface's tangent plane,
-// then updates both the surface (u, v) and the curve parameter. If
-// it doesn't converge, *up and *vp are left alone. Faithful port of
-// C++ `SSurface::PointOnCurve` (ratpoly.cpp).
+// then updates both the surface (u, v) and the curve parameter. If it
+// doesn't converge, *up and *vp are left alone.
 func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 	u, v := *up, *vp
 	ps := s.PointAt(u, v)
@@ -620,7 +615,7 @@ func (s *SSurface) ContainsPlaneCurve(sc *SCurve) bool {
 }
 
 // CoincidentWithPlane reports whether the surface is a plane lying in
-// the plane n . p = d (C++ SSurface::CoincidentWithPlane).
+// the plane n. p = d.
 func (s *SSurface) CoincidentWithPlane(n geom.Vector, d float64) bool {
 	if s.DegM != 1 || s.DegN != 1 {
 		return false
@@ -644,7 +639,6 @@ func (s *SSurface) CoincidentWithPlane(n geom.Vector, d float64) bool {
 // LineEntirelyOutsideBbox returns true if the line (a, b) does not
 // cross the surface's bounding box.
 func (s *SSurface) LineEntirelyOutsideBbox(a, b geom.Vector, asSegment bool) bool {
-	// Mirrors C++ SSurface::LineEntirelyOutsideBbox.
 	var amax, amin geom.Vector
 	s.AxisAlignedBounding(&amax, &amin)
 	if !geom.BoundingBoxIntersectsLine(amax, amin, a, b, asSegment) {
@@ -657,8 +651,7 @@ func (s *SSurface) LineEntirelyOutsideBbox(a, b geom.Vector, asSegment bool) boo
 	return false
 }
 
-// WeightControlPoints multiplies each control point by its weight (C++
-// SSurface::WeightControlPoints).
+// WeightControlPoints multiplies each control point by its weight.
 func (s *SSurface) WeightControlPoints() {
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
@@ -667,8 +660,7 @@ func (s *SSurface) WeightControlPoints() {
 	}
 }
 
-// UnWeightControlPoints divides each control point by its weight (C++
-// SSurface::UnWeightControlPoints).
+// UnWeightControlPoints divides each control point by its weight.
 func (s *SSurface) UnWeightControlPoints() {
 	for i := 0; i <= s.DegM; i++ {
 		for j := 0; j <= s.DegN; j++ {
@@ -677,8 +669,7 @@ func (s *SSurface) UnWeightControlPoints() {
 	}
 }
 
-// CopyRowOrCol copies row (or column) srcIJ of src into row thisIJ
-// (C++ SSurface::CopyRowOrCol).
+// CopyRowOrCol copies row (or column) srcIJ of src into row thisIJ.
 func (s *SSurface) CopyRowOrCol(row bool, thisIJ int, src *SSurface, srcIJ int) {
 	if row {
 		for j := 0; j <= s.DegN; j++ {
@@ -694,7 +685,7 @@ func (s *SSurface) CopyRowOrCol(row bool, thisIJ int, src *SSurface, srcIJ int) 
 }
 
 // BlendRowOrCol sets row (or column) thisIJ to the average of row aIJ
-// of a and row bIJ of b (C++ SSurface::BlendRowOrCol).
+// of a and row bIJ of b.
 func (s *SSurface) BlendRowOrCol(row bool, thisIJ int, a *SSurface, aIJ int, b *SSurface, bIJ int) {
 	if row {
 		for j := 0; j <= s.DegN; j++ {
@@ -714,9 +705,8 @@ func (s *SSurface) BlendRowOrCol(row bool, thisIJ int, a *SSurface, aIJ int, b *
 }
 
 // SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa
-// and sb, by de Casteljau's algorithm in projective space (C++
-// SSurface::SplitInHalf, for any degree). Only the control net of sa
-// and sb is written.
+// and sb, by de Casteljau's algorithm in projective space. Only the
+// control net of sa and sb is written.
 func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface) {
 	sa.DegM, sb.DegM = s.DegM, s.DegM
 	sa.DegN, sb.DegN = s.DegN, s.DegN
@@ -761,8 +751,7 @@ func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface) {
 }
 
 // DepartureFromCoplanar is how far the control points stray from the
-// plane through three of them, chosen far apart (C++
-// SSurface::DepartureFromCoplanar).
+// plane through three of them, chosen far apart.
 func (s *SSurface) DepartureFromCoplanar() float64 {
 	ib, jb, ic, jc := 0, 0, 0, 0
 
@@ -823,7 +812,7 @@ func (s *SSurface) DepartureFromCoplanar() float64 {
 
 // PointIntersectingLine refines (u, v) by Newton's method to where the
 // line through p0 and p1 meets the surface, trying the surface's edge
-// if that fails (C++ SSurface::PointIntersectingLine).
+// if that fails.
 func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool {
 	for range 20 {
 		var tu, tv geom.Vector
@@ -947,9 +936,8 @@ func STrimByEntireCurveFromShell(shell *SShell, hsc core.HSCurve, backwards bool
 	return stb
 }
 
-// uvStepToward returns the (du, dv) that moves srf's point at (u, v)
-// by dp, to first order. Shared by the Newton iterations of C++
-// PointOnSurfaces and ClosestPointOnThisAndSurface.
+// uvStepToward returns the (du, dv) that moves srf's point at (u, v) by
+// dp, to first order.
 func uvStepToward(tu, tv, dp geom.Vector) (du, dv float64) {
 	n := tu.Cross(tv)
 	ty := n.Cross(tu).ScaledBy(1.0 / tu.MagSquared())
@@ -958,7 +946,7 @@ func uvStepToward(tu, tv, dp geom.Vector) (du, dv float64) {
 }
 
 // PointOnSurfaces refines (*up, *vp) on s so that the point also lies
-// on s1 and s2. Mirrors C++ SSurface::PointOnSurfaces (ratpoly.cpp).
+// on s1 and s2.
 func (s *SSurface) PointOnSurfaces(s1, s2 *SSurface, up, vp *float64) {
 	u := [3]float64{*up, 0, 0}
 	v := [3]float64{*vp, 0, 0}
@@ -1000,13 +988,12 @@ func (s *SSurface) PointOnSurfaces(s1, s2 *SSurface, up, vp *float64) {
 			v[j] += dv
 		}
 	}
-	// didn't converge (three surfaces intersecting); C++ leaves *up,
-	// *vp unchanged.
+	// It didn't converge (three surfaces intersecting): *up and *vp are
+	// left unchanged.
 }
 
-// ClosestPointOnThisAndSurface returns the point on the intersection
-// of s and srf2 closest to p. Mirrors C++
-// SSurface::ClosestPointOnThisAndSurface (ratpoly.cpp:627).
+// ClosestPointOnThisAndSurface returns the point on the intersection of
+// s and srf2 closest to p.
 func (s *SSurface) ClosestPointOnThisAndSurface(srf2 *SSurface, p geom.Vector) geom.Vector {
 	var puv [2]geom.Point2d
 	srf := [2]*SSurface{s, srf2}

@@ -16,7 +16,7 @@ func fixture(name string) string {
 }
 
 // TestUndoRedoRegenerates changes a dimension, then undoes and redoes
-// the change: as in C++, each pop restores what defines the sketch and
+// the change:, each pop restores what defines the sketch and
 // regenerates the rest, so the saves match the originals exactly.
 func TestUndoRedoRegenerates(t *testing.T) {
 	doc, err := LoadFile(fixture("constraint/pt_pt_distance/normal.slvs"))
@@ -65,7 +65,7 @@ func TestUndoRedoRegenerates(t *testing.T) {
 }
 
 // TestUndoReloadsLinked: undo drops the linked groups' imported data
-// and reloads it from the linked file, as C++ does.
+// and reloads it from the linked file.
 func TestUndoReloadsLinked(t *testing.T) {
 	doc, err := LoadFile(fixture("group/link/normal.slvs"))
 	if err != nil {

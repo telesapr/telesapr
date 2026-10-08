@@ -11,8 +11,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// entityDrawCache holds what C++ caches on an Entity for drawing: its
-// Beziers, their piecewise linear edges, and its bounding box on screen.
+// entityDrawCache holds what is cached per entity for drawing: its
+// Beziers, their piecewise linear edges, and its bounding box on
+// screen.
 type entityDrawCache struct {
 	beziers       srf.SBezierList
 	beziersValid  bool
@@ -24,7 +25,7 @@ type entityDrawCache struct {
 	screenBBoxValid bool
 }
 
-// EntityDrawAs is how an entity is drawn (C++ Entity::DrawAs).
+// EntityDrawAs is how an entity is drawn.
 type EntityDrawAs int
 
 const (
@@ -36,7 +37,7 @@ const (
 )
 
 // entityCache returns e's drawing cache; a regeneration, or another
-// sketch, drops them all, as C++ makes the entities anew.
+// sketch, drops them all.
 func (gw *GraphicsWindow) entityCache(e *core.Entity) *entityDrawCache {
 	if sk := gw.sk(); gw.entityCaches == nil || gw.cacheGen != sk.Generation || gw.cacheSketch != sk {
 		gw.entityCaches = make(map[core.HEntity]*entityDrawCache)
@@ -51,7 +52,7 @@ func (gw *GraphicsWindow) entityCache(e *core.Entity) *entityDrawCache {
 	return c
 }
 
-// entityDescription is C++ Entity::DescriptionString.
+// entityDescription names an entity for the user.
 func (ss *Application) entityDescription(e *core.Entity) string {
 	if e.H.IsFromRequest() {
 		return ss.SK.Request(e.H.Request()).DescriptionString()
@@ -59,7 +60,7 @@ func (ss *Application) entityDescription(e *core.Entity) string {
 	return groupDescription(ss.SK.Group(e.H.Group()))
 }
 
-// groupDescription is C++ Group::DescriptionString.
+// groupDescription names a group for the user.
 func groupDescription(g *sketch.Group) string {
 	name := g.Name
 	if name == "" {
@@ -581,7 +582,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 			canvas.DrawPixmap(pixmap, v[0], iu, iv,
 				geom.Point2d{U: 0.0, V: 0.0}, geom.Point2d{U: 1.0, V: 1.0}, hf)
 		}
-		// C++ falls through into the face cases here, which do nothing.
+		// The face cases do nothing.
 		return
 
 	case core.EntityFaceNormalPt, core.EntityFaceXProd, core.EntityFaceNRotTrans,

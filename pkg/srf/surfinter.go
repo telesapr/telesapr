@@ -12,9 +12,8 @@ import (
 // special case (e.g., two planes to make a line), or a numerical thing.
 
 // AddExactIntersectionCurve adds the exact curve sb, where s meets
-// srfB, to into: its pwl follows an identical curve already in into,
-// or else is split against the operand shells (C++
-// SSurface::AddExactIntersectionCurve).
+// srfB, to into: its pwl follows an identical curve already in into, or
+// else is split against the operand shells.
 func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA, agnstB *SShell, into *SShell) {
 	s.addExactIntersectionCurve(sb, srfB, agnstA, agnstB, &curveSink{shell: into})
 }
@@ -82,8 +81,7 @@ func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 	into.putExact(&split, ex)
 }
 
-// IntersectAgainst adds the curves where s meets b to into (C++
-// SSurface::IntersectAgainst).
+// IntersectAgainst adds the curves where s meets b to into.
 func (s *SSurface) IntersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *SShell) {
 	s.intersectAgainst(b, agnstA, agnstB, &curveSink{shell: into})
 }
@@ -737,8 +735,7 @@ func (s *SSurface) marchLoop(b *SSurface, start geom.Vector) ([]SCurvePt, bool) 
 
 // MakeCoincidentEdgesInto copies into el the trim polygons of every
 // surface in the shell that is coincident with proto (with the same or
-// opposite normal, as asked), in proto's uv coordinates (C++
-// SShell::MakeCoincidentEdgesInto).
+// opposite normal, as asked), in proto's uv coordinates.
 func (s *SShell) MakeCoincidentEdgesInto(proto *SSurface, sameNormal bool, el *SEdgeList, useCurvesFrom *SShell) {
 	for i := range s.Surface {
 		ss := &s.Surface[i]

@@ -1,7 +1,6 @@
 // Package gl is an OpenGL 1 renderer: a render.ViewportCanvas drawing
-// with fixed-function GL through go-gl, a port of SolveSpace's
-// render/rendergl1.cpp. Polygons are triangulated by the Go
-// triangulator where the C++ used GLU's tessellator.
+// with fixed-function GL through go-gl. Polygons are triangulated by
+// the kernel's triangulator.
 //
 // The renderer doesn't make its context: it is given one (see package
 // glx) and makes it current before it draws. GL output depends on the

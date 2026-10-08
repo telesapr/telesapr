@@ -1,7 +1,7 @@
 package ui
 
 // The text window's screens for the groups, step dimension and tangent
-// arcs, and the edit control's dispatch (C++ textscreens.cpp).
+// arcs, and the edit control's dispatch.
 
 import (
 	"fmt"
@@ -22,8 +22,7 @@ import (
 // lf makes a method value a LinkFunction for Printf.
 func lf(f func(link int, v uint32)) LinkFunction { return f }
 
-// groupNumConstraints counts the constraints in group hg (C++
-// Group::GetNumConstraints).
+// groupNumConstraints counts the constraints in group hg.
 func groupNumConstraints(sk *sketch.Sketch, hg core.HGroup) int {
 	n := 0
 	for i := range sk.Constraints {
@@ -34,14 +33,13 @@ func groupNumConstraints(sk *sketch.Sketch, hg core.HGroup) int {
 	return n
 }
 
-// ScreenHome goes back to the list of groups (C++
-// TextWindow::ScreenHome).
+// ScreenHome goes back to the list of groups.
 func (tw *TextWindow) ScreenHome(link int, v uint32) {
 	tw.GoToScreen(ScreenListOfGroups)
 }
 
 // ShowHeader starts a screen with the navigation bar that always
-// appears at the top of the window (C++ TextWindow::ShowHeader).
+// appears at the top of the window.
 func (tw *TextWindow) ShowHeader(withNav bool) {
 	ss := tw.ss
 	tw.ClearScreen()
@@ -67,16 +65,14 @@ func (tw *TextWindow) ShowHeader(withNav bool) {
 	tw.Printf(false, "")
 }
 
-// ScreenSelectGroup shows a group's screen (C++
-// TextWindow::ScreenSelectGroup).
+// ScreenSelectGroup shows a group's screen.
 func (tw *TextWindow) ScreenSelectGroup(link int, v uint32) {
 	tw.ss.GW.MenuEdit(CmdUnselectAll)
 	tw.GoToScreen(ScreenGroupInfo)
 	tw.shown.group = core.HGroup{V: v}
 }
 
-// ScreenToggleGroupShown hides or shows a group (C++
-// TextWindow::ScreenToggleGroupShown).
+// ScreenToggleGroupShown hides or shows a group.
 func (tw *TextWindow) ScreenToggleGroupShown(link int, v uint32) {
 	g := tw.ss.SK.Group(core.HGroup{V: v})
 	g.Visible = !g.Visible
@@ -85,8 +81,7 @@ func (tw *TextWindow) ScreenToggleGroupShown(link int, v uint32) {
 	tw.ss.GenerateAll(sketch.GenerateDirty)
 }
 
-// ScreenShowGroupsSpecial shows all, the unconstrained or no groups
-// (C++ TextWindow::ScreenShowGroupsSpecial).
+// ScreenShowGroupsSpecial shows all, the unconstrained or no groups.
 func (tw *TextWindow) ScreenShowGroupsSpecial(link int, v uint32) {
 	sk := tw.ss.SK
 	for _, hg := range sk.GroupOrder {
@@ -103,8 +98,7 @@ func (tw *TextWindow) ScreenShowGroupsSpecial(link int, v uint32) {
 	tw.ss.GW.persistentDirty = true
 }
 
-// ScreenActivateGroup makes a group active (C++
-// TextWindow::ScreenActivateGroup).
+// ScreenActivateGroup makes a group active.
 func (tw *TextWindow) ScreenActivateGroup(link int, v uint32) {
 	ss := tw.ss
 	if why := ss.SK.SuppressedReason(core.HGroup{V: v}); why != "" {
@@ -117,8 +111,7 @@ func (tw *TextWindow) ScreenActivateGroup(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
-// ReportHowGroupSolved shows why a group failed to solve (C++
-// TextWindow::ReportHowGroupSolved).
+// ReportHowGroupSolved shows why a group failed to solve.
 func (tw *TextWindow) ReportHowGroupSolved(hg core.HGroup) {
 	tw.ss.GW.ClearSuper()
 	tw.GoToScreen(ScreenGroupSolveInfo)
@@ -126,8 +119,7 @@ func (tw *TextWindow) ReportHowGroupSolved(hg core.HGroup) {
 	tw.ss.ScheduleShowTW()
 }
 
-// ScreenHowGroupSolved activates a group and shows how it solved (C++
-// TextWindow::ScreenHowGroupSolved).
+// ScreenHowGroupSolved activates a group and shows how it solved.
 func (tw *TextWindow) ScreenHowGroupSolved(link int, v uint32) {
 	if tw.ss.GW.activeGroupH().V != v {
 		tw.ScreenActivateGroup(link, v)
@@ -136,27 +128,23 @@ func (tw *TextWindow) ScreenHowGroupSolved(link int, v uint32) {
 	tw.shown.group = core.HGroup{V: v}
 }
 
-// ScreenShowConfiguration shows the configuration (C++
-// TextWindow::ScreenShowConfiguration).
+// ScreenShowConfiguration shows the configuration.
 func (tw *TextWindow) ScreenShowConfiguration(link int, v uint32) {
 	tw.GoToScreen(ScreenConfiguration)
 }
 
-// ScreenShowEditView shows the view parameters (C++
-// TextWindow::ScreenShowEditView).
+// ScreenShowEditView shows the view parameters.
 func (tw *TextWindow) ScreenShowEditView(link int, v uint32) {
 	tw.GoToScreen(ScreenEditView)
 }
 
-// ScreenGoToWebsite opens the project's home (C++
-// TextWindow::ScreenGoToWebsite).
+// ScreenGoToWebsite opens the project's home.
 func (tw *TextWindow) ScreenGoToWebsite(link int, v uint32) {
 	tw.ss.Platform.OpenInBrowser(version.Repository)
 }
 
 // ShowListOfGroups is the home screen: every group in the sketch, with
-// options to hide or show them, and to view them in detail (C++
-// TextWindow::ShowListOfGroups).
+// options to hide or show them, and to view them in detail.
 func (tw *TextWindow) ShowListOfGroups() {
 	ss := tw.ss
 	sk := ss.SK
@@ -289,8 +277,7 @@ func (tw *TextWindow) ShowListOfGroups() {
 	}
 }
 
-// ScreenHoverGroupWorkplane hovers a group's workplane (C++
-// TextWindow::ScreenHoverGroupWorkplane).
+// ScreenHoverGroupWorkplane hovers a group's workplane.
 func (tw *TextWindow) ScreenHoverGroupWorkplane(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.hover.Clear()
@@ -298,8 +285,7 @@ func (tw *TextWindow) ScreenHoverGroupWorkplane(link int, v uint32) {
 	gw.hover.Emphasized = true
 }
 
-// ScreenHoverEntity hovers an entity (C++
-// TextWindow::ScreenHoverEntity).
+// ScreenHoverEntity hovers an entity.
 func (tw *TextWindow) ScreenHoverEntity(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.hover.Clear()
@@ -307,8 +293,7 @@ func (tw *TextWindow) ScreenHoverEntity(link int, v uint32) {
 	gw.hover.Emphasized = true
 }
 
-// ScreenHoverRequest hovers a request's first entity (C++
-// TextWindow::ScreenHoverRequest).
+// ScreenHoverRequest hovers a request's first entity.
 func (tw *TextWindow) ScreenHoverRequest(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.hover.Clear()
@@ -316,8 +301,7 @@ func (tw *TextWindow) ScreenHoverRequest(link int, v uint32) {
 	gw.hover.Emphasized = true
 }
 
-// ScreenHoverConstraint hovers a constraint (C++
-// TextWindow::ScreenHoverConstraint).
+// ScreenHoverConstraint hovers a constraint.
 func (tw *TextWindow) ScreenHoverConstraint(link int, v uint32) {
 	gw := tw.ss.GW
 	if gw.showConstraints == SCMNoShow {
@@ -328,32 +312,28 @@ func (tw *TextWindow) ScreenHoverConstraint(link int, v uint32) {
 	gw.hover.Emphasized = true
 }
 
-// ScreenSelectEntity selects an entity (C++
-// TextWindow::ScreenSelectEntity).
+// ScreenSelectEntity selects an entity.
 func (tw *TextWindow) ScreenSelectEntity(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.ClearSelection()
 	gw.selection = append(gw.selection, Selection{Entity: core.HEntity{V: v}})
 }
 
-// ScreenSelectRequest selects a request's first entity (C++
-// TextWindow::ScreenSelectRequest).
+// ScreenSelectRequest selects a request's first entity.
 func (tw *TextWindow) ScreenSelectRequest(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.ClearSelection()
 	gw.selection = append(gw.selection, Selection{Entity: core.HRequest{V: v}.Entity(0)})
 }
 
-// ScreenSelectConstraint selects a constraint (C++
-// TextWindow::ScreenSelectConstraint).
+// ScreenSelectConstraint selects a constraint.
 func (tw *TextWindow) ScreenSelectConstraint(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.ClearSelection()
 	gw.selection = append(gw.selection, Selection{Constraint: core.HConstraint{V: v}})
 }
 
-// ScreenChangeGroupOption flips one of a group's options (C++
-// TextWindow::ScreenChangeGroupOption).
+// ScreenChangeGroupOption flips one of a group's options.
 func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
@@ -461,7 +441,7 @@ func (tw *TextWindow) ScreenChangeLoftTurn(link int, v uint32) {
 	ss.GW.Invalidate(false)
 }
 
-// ScreenColor edits a group's colour (C++ TextWindow::ScreenColor).
+// ScreenColor edits a group's colour.
 func (tw *TextWindow) ScreenColor(link int, v uint32) {
 	tw.ss.UndoRemember()
 
@@ -470,7 +450,7 @@ func (tw *TextWindow) ScreenColor(link int, v uint32) {
 	tw.edit.meaning = EditGroupColor
 }
 
-// ScreenOpacity edits a group's opacity (C++ TextWindow::ScreenOpacity).
+// ScreenOpacity edits a group's opacity.
 func (tw *TextWindow) ScreenOpacity(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 
@@ -479,8 +459,7 @@ func (tw *TextWindow) ScreenOpacity(link int, v uint32) {
 	tw.edit.group = g.H
 }
 
-// ScreenChangeExprA edits how many times a group repeats (C++
-// TextWindow::ScreenChangeExprA).
+// ScreenChangeExprA edits how many times a group repeats.
 func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 
@@ -493,8 +472,7 @@ func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeGroupName renames a group (C++
-// TextWindow::ScreenChangeGroupName).
+// ScreenChangeGroupName renames a group.
 func (tw *TextWindow) ScreenChangeGroupName(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	tw.ShowEditControl(12, groupDescription(g)[5:])
@@ -502,8 +480,7 @@ func (tw *TextWindow) ScreenChangeGroupName(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeGroupScale edits a linked group's scale (C++
-// TextWindow::ScreenChangeGroupScale).
+// ScreenChangeGroupScale edits a linked group's scale.
 func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 
@@ -516,8 +493,8 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance
-// or a fillet's radius, all ValB (C++ TextWindow::ScreenChangeHelixPitch).
+// ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance or
+// a fillet's radius, all ValB.
 func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprB
@@ -756,8 +733,7 @@ func (tw *TextWindow) ScreenChangeLoftStart(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangePitchOption fixes or frees a helix's pitch (C++
-// TextWindow::ScreenChangePitchOption).
+// ScreenChangePitchOption fixes or frees a helix's pitch.
 func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
 	sk := tw.ss.SK
 	g := sk.Group(tw.shown.group)
@@ -770,8 +746,7 @@ func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
 	tw.ss.GW.Invalidate(false)
 }
 
-// ScreenDeleteGroup deletes the shown group (C++
-// TextWindow::ScreenDeleteGroup).
+// ScreenDeleteGroup deletes the shown group.
 func (tw *TextWindow) ScreenDeleteGroup(link int, v uint32) {
 	tw.ss.UndoRemember()
 	tw.ss.deleteGroup(tw.shown.group)
@@ -812,7 +787,7 @@ func (ss *Application) deleteGroup(hg core.HGroup) {
 }
 
 // relativePath names path relative to the folder of the sketch's file,
-// or "" when it can't (C++ Path::RelativeTo(saveFile.Parent())).
+// or "" when it can't.
 func (ss *Application) relativePath(path string) string {
 	if path == "" || ss.SaveFile == "" || !filepath.IsAbs(path) {
 		return ""
@@ -826,7 +801,7 @@ func (ss *Application) relativePath(path string) string {
 
 // linkDisplayPath is how a group or image names its file: the engine
 // keeps what the file said, relative to the sketch, and the UI the
-// absolute paths it chose; C++ shows them relative when it can.
+// absolute paths it chose; they are shown relative when they can be.
 func (ss *Application) linkDisplayPath(path string) string {
 	if rel := ss.relativePath(path); rel != "" {
 		return rel
@@ -853,8 +828,7 @@ func wrapWords(text string, width int) []string {
 	return append(lines, text)
 }
 
-// ShowGroupInfo is the screen about one group, where the user edits it
-// (C++ TextWindow::ShowGroupInfo).
+// ShowGroupInfo is the screen about one group, where the user edits it.
 func (tw *TextWindow) ShowGroupInfo() {
 	ss := tw.ss
 	sk := ss.SK
@@ -1325,8 +1299,7 @@ func (ss *Application) setEdgeRadiusText(hg core.HGroup, i int, s string) {
 	ss.GW.Invalidate(false)
 }
 
-// showGroupItems lists a group's requests and constraints (the
-// list_items part of C++ TextWindow::ShowGroupInfo).
+// showGroupItems lists a group's requests and constraints.
 func (tw *TextWindow) showGroupItems(g *sketch.Group) {
 	sk := tw.ss.SK
 	parity := func(a int) byte {
@@ -1376,8 +1349,7 @@ func (tw *TextWindow) showGroupItems(g *sketch.Group) {
 	}
 }
 
-// ScreenAllowRedundant allows the shown group redundant constraints
-// (C++ TextWindow::ScreenAllowRedundant).
+// ScreenAllowRedundant allows the shown group redundant constraints.
 func (tw *TextWindow) ScreenAllowRedundant(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
@@ -1392,8 +1364,7 @@ func (tw *TextWindow) ScreenAllowRedundant(link int, v uint32) {
 
 // ShowGroupSolveInfo is the screen displayed when the sketch fails to
 // solve: what failed, and (if the problem is a singular Jacobian) the
-// constraints that could be removed to fix it (C++
-// TextWindow::ShowGroupSolveInfo).
+// constraints that could be removed to fix it.
 func (tw *TextWindow) ShowGroupSolveInfo() {
 	sk := tw.ss.SK
 	g := sk.Group(tw.shown.group)
@@ -1457,8 +1428,7 @@ func (tw *TextWindow) ShowGroupSolveInfo() {
 	}
 }
 
-// ScreenStepDimFinish edits the step dimension's final value (C++
-// TextWindow::ScreenStepDimFinish).
+// ScreenStepDimFinish edits the step dimension's final value.
 func (tw *TextWindow) ScreenStepDimFinish(link int, v uint32) {
 	tw.edit.meaning = EditStepDimFinish
 	var editValue string
@@ -1470,15 +1440,13 @@ func (tw *TextWindow) ScreenStepDimFinish(link int, v uint32) {
 	tw.ShowEditControl(12, editValue)
 }
 
-// ScreenStepDimSteps edits the number of steps (C++
-// TextWindow::ScreenStepDimSteps).
+// ScreenStepDimSteps edits the number of steps.
 func (tw *TextWindow) ScreenStepDimSteps(link int, v uint32) {
 	tw.edit.meaning = EditStepDimSteps
 	tw.ShowEditControl(12, fmt.Sprintf("%d", tw.stepDim.steps))
 }
 
-// ScreenStepDimGo steps the dimension, solving at each step (C++
-// TextWindow::ScreenStepDimGo).
+// ScreenStepDimGo steps the dimension, solving at each step.
 func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
 	ss := tw.ss
 	hc := tw.shown.constraint
@@ -1529,7 +1497,7 @@ func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
 }
 
 // ShowStepDimension is the screen to step a dimension from its value to
-// a final one (C++ TextWindow::ShowStepDimension).
+// a final one.
 func (tw *TextWindow) ShowStepDimension() {
 	ss := tw.ss
 	c := ss.SK.Constraint(tw.shown.constraint)
@@ -1558,8 +1526,7 @@ func (tw *TextWindow) ShowStepDimension() {
 	tw.Printf(true, "(or %Fl%Ll%fcancel operation%E)", lf(tw.ScreenHome))
 }
 
-// ScreenChangeTangentArc edits the tangent arc options (C++
-// TextWindow::ScreenChangeTangentArc).
+// ScreenChangeTangentArc edits the tangent arc options.
 func (tw *TextWindow) ScreenChangeTangentArc(link int, v uint32) {
 	ss := tw.ss
 	switch link {
@@ -1574,8 +1541,7 @@ func (tw *TextWindow) ScreenChangeTangentArc(link int, v uint32) {
 	}
 }
 
-// ShowTangentArc is the screen for the tangent arc options (C++
-// TextWindow::ShowTangentArc).
+// ShowTangentArc is the screen for the tangent arc options.
 func (tw *TextWindow) ShowTangentArc() {
 	ss := tw.ss
 	tw.Printf(true, "%FtTANGENT ARC PARAMETERS%E")
@@ -1707,7 +1673,7 @@ func exprNote(expr string) string {
 }
 
 // setGroupText gives a group value typed text, as one undo step, and
-// reports whether it was taken; a refusal is shown as C++ shows its own.
+// reports whether it was taken; a refusal is shown in a dialog.
 func (ss *Application) setGroupText(hg core.HGroup, f sketch.GroupValue, s string) bool {
 	err := ss.SK.UndoRememberFor(func() error {
 		return ss.SK.SetGroupText(hg, f, s)
@@ -1721,8 +1687,7 @@ func (ss *Application) setGroupText(hg core.HGroup, f sketch.GroupValue, s strin
 	return true
 }
 
-// EditControlDone handles the text entered in the edit control (C++
-// TextWindow::EditControlDone).
+// EditControlDone handles the text entered in the edit control.
 func (tw *TextWindow) EditControlDone(s string) {
 	ss := tw.ss
 	sk := ss.SK

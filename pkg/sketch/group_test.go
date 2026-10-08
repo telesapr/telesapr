@@ -45,7 +45,7 @@ func TestGroupIsMeshGroupFalseForNonMeshTypes(t *testing.T) {
 	}
 }
 
-// TestGroupIsTriangleMeshAssemblyBasic checks C++'s rule: a linked
+// TestGroupIsTriangleMeshAssemblyBasic checks SolveSpace's rule: a linked
 // group whose file brought a mesh and no shell.
 func TestGroupIsTriangleMeshAssemblyBasic(t *testing.T) {
 	g := &Group{Type: GroupLinked}

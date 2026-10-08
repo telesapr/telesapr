@@ -9,7 +9,7 @@ import (
 // AssemblePolygon assembles the edges into closed contours, using and
 // setting each edge's Tag to mark it as consumed. It keeps assembling
 // even if some contour fails to close, and returns whether all of them
-// closed. Mirrors C++ SEdgeList::AssemblePolygon (polygon.cpp:270).
+// closed.
 func (el *SEdgeList) AssemblePolygon(dest *SPolygon, errorAt *SEdge, keepDir bool) bool {
 	dest.Clear()
 
@@ -32,8 +32,7 @@ func (el *SEdgeList) AssemblePolygon(dest *SPolygon, errorAt *SEdge, keepDir boo
 }
 
 // AssembleContour chains untagged edges onto first->last until the
-// contour closes. Mirrors C++ SEdgeList::AssembleContour
-// (polygon.cpp:228).
+// contour closes.
 func (el *SEdgeList) AssembleContour(first, last geom.Vector, dest *SContour, errorAt *SEdge, keepDir bool, start int) bool {
 	dest.AddPoint(first)
 	dest.AddPoint(last)
@@ -76,7 +75,7 @@ func (el *SEdgeList) AssembleContour(first, last geom.Vector, dest *SContour, er
 
 // MergeCollinearSegments sorts the edges, which all lie on the line
 // from a to b, along it, and merges each run of joined edges of the
-// same style into one (C++ SEdgeList::MergeCollinearSegments).
+// same style into one.
 func (el *SEdgeList) MergeCollinearSegments(a, b geom.Vector) {
 	lineStart := a
 	lineDirection := b.Minus(a)

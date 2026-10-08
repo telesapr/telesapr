@@ -11,8 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/res"
 )
 
-// ConstraintDrawAs is how a constraint is drawn (C++
-// Constraint::DrawAs).
+// ConstraintDrawAs is how a constraint is drawn.
 type ConstraintDrawAs int
 
 const (
@@ -99,8 +98,7 @@ func (gw *GraphicsWindow) constraintShouldDrawExploded(c *core.Constraint) bool 
 	return gw.groupShouldDrawExploded(gw.sk().Group(c.Group))
 }
 
-// constraintDrawer lays out and draws one constraint (the methods of
-// C++ Constraint that take a canvas).
+// constraintDrawer lays out and draws one constraint.
 type constraintDrawer struct {
 	gw     *GraphicsWindow
 	c      *core.Constraint
@@ -227,10 +225,10 @@ func (d *constraintDrawer) doProjectedPoint(hcs render.HStroke, r *geom.Vector) 
 }
 
 // doLineTrimmedAgainstBox draws a line from a to b around the label box
-// at ref (C++ Constraint::DoLineTrimmedAgainstBox): if the line would
-// cross the label, it is trimmed to leave a gap, returning 0; if not,
-// it is extended to almost meet the box, returning positive or
-// negative as that extension was from a or from b.
+// at ref: if the line would cross the label, it is trimmed to leave a
+// gap, returning 0; if not, it is extended to almost meet the box,
+// returning positive or negative as that extension was from a or from
+// b.
 func (d *constraintDrawer) doLineTrimmedAgainstBox(hcs render.HStroke, ref, a, b geom.Vector, extend bool) int {
 	ss := d.gw.ss
 	th := ss.styleTextHeight(constraintStyle(d.c)) / d.camera.Scale

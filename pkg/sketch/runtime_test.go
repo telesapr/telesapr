@@ -32,7 +32,7 @@ func TestRuntimeLookup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load fixture: %v", err)
 	}
-	// The file's saved actPoint/actNormal are what C++ computed; check
+	// The file's saved actPoint/actNormal are what SolveSpace computed; check
 	// the regenerated entities against them.
 	saved := make(map[core.HEntity]core.Entity, len(doc.Sketch.Entities))
 	for _, e := range doc.Sketch.Entities {

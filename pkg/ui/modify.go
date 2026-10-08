@@ -20,8 +20,7 @@ func (ss *Application) afterEngineEdit(undoBefore int) {
 	ss.UndoEnableMenus()
 }
 
-// MakeTangentArc rounds the selected corner (C++
-// GraphicsWindow::MakeTangentArc, with the geometry in the engine).
+// MakeTangentArc rounds the selected corner.
 func (gw *GraphicsWindow) MakeTangentArc() {
 	ss := gw.ss
 	if !gw.LockedInWorkplane() {
@@ -43,8 +42,7 @@ func (gw *GraphicsWindow) MakeTangentArc() {
 }
 
 // SplitLinesOrCurves splits the selected curves where they cross,
-// taking the crossing nearest the mouse (C++
-// GraphicsWindow::SplitLinesOrCurves).
+// taking the crossing nearest the mouse.
 func (gw *GraphicsWindow) SplitLinesOrCurves() {
 	ss := gw.ss
 	undo := ss.SK.Undo.Write

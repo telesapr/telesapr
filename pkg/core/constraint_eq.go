@@ -11,8 +11,8 @@ import (
 // This file ports solvespace/src/constrainteq.cpp: the equations each
 // constraint imposes, written with the EntityBase accessors.
 
-// sketchParams evaluates expressions against the sketch's current
-// param values, as C++ Expr::Eval does through SK.
+// sketchParams evaluates expressions against the sketch's current param
+// values.
 type sketchParams struct {
 	sk EntitySketch
 }
@@ -25,14 +25,13 @@ func (s sketchParams) ParamValue(h HParam) (float64, bool) {
 	return p.Val, true
 }
 
-// EvalExpr evaluates expr at the sketch's current param values (C++
-// Expr::Eval).
+// EvalExpr evaluates expr at the sketch's current param values.
 func EvalExpr(sk EntitySketch, expr *Expr) float64 {
 	return expr.Eval(sketchParams{sk: sk}, nil)
 }
 
 // HasLabel reports whether the constraint is a dimension with a value
-// label (C++ ConstraintBase::HasLabel).
+// label.
 func (c *Constraint) HasLabel() bool {
 	switch c.Type {
 	case ConstraintPtLineDistance, ConstraintPtPlaneDistance,
@@ -47,14 +46,13 @@ func (c *Constraint) HasLabel() bool {
 	return false
 }
 
-// VectorsParallel3d is zero when a is p times b (C++
-// ConstraintBase::VectorsParallel3d).
+// VectorsParallel3d is zero when a is p times b.
 func VectorsParallel3d(a, b ExprVector, p HParam) ExprVector {
 	return a.Minus(b.ScaledBy(NewParam(p)))
 }
 
 // PointLineDistance is the distance from point hpt to line hln, signed
-// when projected into wrkpl (C++ ConstraintBase::PointLineDistance).
+// when projected into wrkpl.
 func PointLineDistance(sk EntitySketch, wrkpl, hpt, hln HEntity) *Expr {
 	ln := mustEntity(sk, hln)
 	a := mustEntity(sk, ln.Point[0])
@@ -87,16 +85,14 @@ func PointLineDistance(sk EntitySketch, wrkpl, hpt, hln HEntity) *Expr {
 	return proj.Div(m)
 }
 
-// PointPlaneDistance is the signed distance from p to workplane hpl (C++
-// ConstraintBase::PointPlaneDistance).
+// PointPlaneDistance is the signed distance from p to workplane hpl.
 func PointPlaneDistance(sk EntitySketch, p ExprVector, hpl HEntity) *Expr {
 	n, d := mustEntity(sk, hpl).WorkplaneGetPlaneExprs(sk)
 	return p.Dot(n).Minus(d)
 }
 
 // DirectionCosine is the cosine of the angle between two vectors, or
-// between their projections into wrkpl (C++
-// ConstraintBase::DirectionCosine).
+// between their projections into wrkpl.
 func DirectionCosine(sk EntitySketch, wrkpl HEntity, ae, be ExprVector) *Expr {
 	if IsFreeIn3D(wrkpl) {
 		mags := ae.Magnitude().Times(be.Magnitude())
@@ -115,8 +111,7 @@ func DirectionCosine(sk EntitySketch, wrkpl HEntity, ae, be ExprVector) *Expr {
 	return dot.Div(maga.Times(magb))
 }
 
-// PointInThreeSpace is the point at (u, v) in workplane (C++
-// ConstraintBase::PointInThreeSpace).
+// PointInThreeSpace is the point at (u, v) in workplane.
 func PointInThreeSpace(sk EntitySketch, workplane HEntity, u, v *Expr) ExprVector {
 	w := mustEntity(sk, workplane)
 
@@ -127,8 +122,7 @@ func PointInThreeSpace(sk EntitySketch, workplane HEntity, u, v *Expr) ExprVecto
 	return ub.ScaledBy(u).Plus(vb.ScaledBy(v)).Plus(ob)
 }
 
-// ProjectVectorInto projects v into the plane of workplane wrkpl (C++
-// Vector::ProjectVectorInto).
+// ProjectVectorInto projects v into the plane of workplane wrkpl.
 func ProjectVectorInto(sk EntitySketch, v geom.Vector, wrkpl HEntity) geom.Vector {
 	w := mustEntity(sk, wrkpl)
 	u := w.NormalEntity(sk).NormalU(sk)
@@ -141,8 +135,7 @@ func ProjectVectorInto(sk EntitySketch, v geom.Vector, wrkpl HEntity) geom.Vecto
 }
 
 // ModifyToSatisfy changes the constraint's value (or its valP) so that
-// it holds for the sketch as it stands; used for reference dimensions
-// (C++ ConstraintBase::ModifyToSatisfy).
+// it holds for the sketch as it stands; used for reference dimensions.
 func (c *Constraint) ModifyToSatisfy(sk EntitySketch) {
 	switch c.Type {
 	case ConstraintAngle:
@@ -189,8 +182,7 @@ func (c *Constraint) addEq(l *[]Equation, expr *Expr, index int) {
 	*l = append(*l, Equation{H: c.H.Equation(index), Expr: expr})
 }
 
-// addEqVector adds v's components, the z one only in 3d (C++ AddEq with
-// an ExprVector).
+// addEqVector adds v's components, the z one only in 3d.
 func (c *Constraint) addEqVector(l *[]Equation, v ExprVector, baseIndex int) {
 	c.addEq(l, v.X, baseIndex)
 	c.addEq(l, v.Y, baseIndex+1)
@@ -201,8 +193,7 @@ func (c *Constraint) addEqVector(l *[]Equation, v ExprVector, baseIndex int) {
 
 // arcLengthExprs returns the radius and the swept angle of arc as
 // expressions, choosing the inverse trig function that stays well
-// conditioned for the arc's current angle. C++ writes this out inline
-// in each arc-length constraint.
+// conditioned for the arc's current angle.
 func arcLengthExprs(sk EntitySketch, arc *Entity) (r, theta *Expr) {
 	// And get the arc radius, and the cosine of its angle
 	ao := mustEntity(sk, arc.Point[0])
@@ -236,9 +227,8 @@ func arcLengthExprs(sk EntitySketch, arc *Entity) (r, theta *Expr) {
 	return r, theta
 }
 
-// GenerateEquations appends the constraint's equations (C++
-// ConstraintBase::GenerateEquations). Reference constraints generate
-// none unless forReference is set.
+// GenerateEquations appends the constraint's equations. Reference
+// constraints generate none unless forReference is set.
 func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forReference bool) {
 	if c.Reference && !forReference {
 		return
@@ -1000,7 +990,7 @@ func (c *Constraint) commentEquations(sk EntitySketch, l *[]Equation) {
 }
 
 // IsProjectible reports whether the constraint applies in a workplane,
-// projected into it (C++ ConstraintBase::IsProjectible).
+// projected into it.
 func (c *Constraint) IsProjectible() bool {
 	switch c.Type {
 	case ConstraintPointsCoincident, ConstraintPtPtDistance, ConstraintPtLineDistance,

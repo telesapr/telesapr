@@ -42,7 +42,7 @@ func TestGroupGenerateExtrude(t *testing.T) {
 		p.Val = []float64{0, 0, 5}[k]
 	}
 
-	// Remap ids are handed out in the order C++ asks for them: each
+	// Remap ids are handed out in the order SolveSpace asks for them: each
 	// point's bottom, top and side line, then the line's bottom, top
 	// and side face, then the top and bottom faces.
 	want := []struct {
@@ -95,6 +95,6 @@ func TestGroupGenerateExtrude(t *testing.T) {
 
 func TestCopyAsEnum(t *testing.T) {
 	if CopyAsNumeric != 0 || CopyAsNTrans != 1 {
-		t.Fatalf("CopyAs enum values don't match C++ convention")
+		t.Fatalf("CopyAs enum values don't match SolveSpace convention")
 	}
 }

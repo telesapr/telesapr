@@ -3,8 +3,7 @@
 
 package dxfread
 
-// singleByteTables are the Windows code pages' characters 0x80-0xFF
-// (C++ DRW_Table874 and so on).
+// singleByteTables are the Windows code pages' characters 0x80-0xFF.
 var singleByteTables = map[string]*[128]int32{
 	"ANSI_874": {
 		0x20AC, 0x0000, 0x0000, 0x0000, 0x0000, 0x2026, 0x0000, 0x0000,

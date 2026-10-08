@@ -1,7 +1,7 @@
 // Package thread has the screw thread standards: the sizes and pitches
 // of the ISO metric, unified inch and ISO metric trapezoidal series,
 // their designations, and the profile of a thread in a plane through
-// its axis. It is not a port: C++ SolveSpace has no threads.
+// its axis.
 package thread
 
 import (

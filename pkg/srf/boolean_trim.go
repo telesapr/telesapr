@@ -5,8 +5,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// SShellClass mirrors the C++ SShell::Class enum (srf/surface.h:420).
-// Used during boolean CSG to record, for each side of a trim edge,
+// SShellClass records, during a Boolean,, for each side of a trim edge,
 // how that side relates to the shell being unioned/subtracted.
 type SShellClass uint32
 
@@ -21,11 +20,8 @@ const (
 // (srf/raycast.cpp:16).
 const shellDotpTol = 1e-5
 
-// shellClassFromClass bridges the Class enum (the canonical Go enum
-// equivalent of the C++ SShell::Class, defined in raycast.go) to the
-// SShellClass mirror that pre-dates the full ClassifyEdge port. The two
-// enums share semantics; the mirror was introduced when only a partial
-// raycast fallback existed.
+// shellClassFromClass is the SShellClass of a Class (raycast.go); the
+// two enums share their meaning and differ in history.
 func shellClassFromClass(c Class) SShellClass {
 	switch c {
 	case SurfInside:
@@ -107,9 +103,9 @@ func tagByClassifiedEdge(bspclass BspUvClass, indir, outdir *SShellClass) {
 	}
 }
 
-// findChainAvoiding moves a chain of adjoining edges from src to
-// dest, starting from src's first edge and never extending the chain
-// past a point in avoid (C++ SSurface::FindChainAvoiding).
+// findChainAvoiding moves a chain of adjoining edges from src to dest,
+// starting from src's first edge and never extending the chain past a
+// point in avoid.
 func findChainAvoiding(src, dest *SEdgeList, avoid *SPointList) {
 	if len(src.Edges) == 0 {
 		panic("Need at least one edge")
@@ -164,17 +160,16 @@ func findChainAvoiding(src, dest *SEdgeList, avoid *SPointList) {
 	src.removeTagged()
 }
 
-// addToBeginning is C++ List::AddToBeginning, which doesn't insert: its
-// std::move_backward moves only the first element, to the end, and
-// then se overwrites the first. The chains FindChainAvoiding builds,
-// and so the order of the trims booleans make, depend on that.
+// addToBeginning doesn't insert: it moves the first element to the end
+// and then overwrites the first with se. The chains FindChainAvoiding
+// builds, and so the order of the trims Booleans make, depend on that,
+// and the goldens record it.
 func (el *SEdgeList) addToBeginning(se SEdge) {
 	el.Edges = append(el.Edges, el.Edges[0])
 	el.Edges[0] = se
 }
 
-// removeTagged drops the tagged edges, keeping the order of the rest
-// (C++ List::RemoveTagged).
+// removeTagged drops the tagged edges, keeping the order of the rest.
 func (el *SEdgeList) removeTagged() {
 	out := el.Edges[:0]
 	for _, se := range el.Edges {
@@ -187,7 +182,7 @@ func (el *SEdgeList) removeTagged() {
 
 // trimFromEdgeList rebuilds srf's trims from el, merging adjoining
 // edges from the same curve (and direction) into one STrimBy with xyz
-// start and finish points. Mirrors C++ SSurface::TrimFromEdgeList.
+// start and finish points.
 func (s *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
 	for i := range el.Edges {
 		el.Edges[i].Tag = 0
@@ -254,32 +249,16 @@ func (s *SSurface) trimFromEdgeList(el *SEdgeList, asUv bool) {
 	}
 }
 
-// The C++ MakeCopyTrimAgainst rewrites each STrimBy's Curve handle
-// to refer to the new (split) curve in `into`. That rewrite is done
-// up-front in `SShell::CopyCurvesSplitAgainst`, which records the
-// parent curve's newH (the handle in `into`). The Go port defers
-// that rewrite to the final SShell::RewriteSurfaceHandlesForCurves
-// pass at the end of MakeFromBoolean, so the STrimBy entries we
-// build here keep their parent-relative Curve ids. The trim from
-// `makeSurfaceEdgesIntoUv` below is therefore built directly from the
-// curve in `into` that the trim refers to (looked up by raw H value).
-//
-// An earlier version of this file also called a second helper
-// (`makeEdgesIntoForBoolean`) after `makeSurfaceEdgesIntoUv` to
-// rebuild `orig` a second time from every curve in `into` touching
-// `srf.H`, without clearing the edge list first. That appended a
-// second, overlapping copy of the boundary AND pulled in every
-// CurveSourceIntersection curve touching this surface (which
-// belongs in the separate `inter` list built below, not `orig`) —
-// neither matches the C++, which builds `orig` from `ret.trim`
-// alone (`boolean.cpp:528`: `ret.MakeEdgesInto(into, &orig,
-// MakeAs::UV)`). That second call has been removed;
-// `makeSurfaceEdgesIntoUv` alone now mirrors the C++.
+// The STrimBy entries built here keep their parent-relative Curve ids:
+// CopyCurvesSplitAgainst records each parent curve's NewH, and
+// RewriteSurfaceHandlesForCurves rewrites the handles at the end of
+// MakeFromBoolean. The trim from makeSurfaceEdgesIntoUv below is
+// therefore built directly from the curve in into that the trim refers
+// to (looked up by raw H value).
 
 // edgeNormalsWithinSurface returns a point on the uv edge auv->buv
 // (refined onto the curve auxA it approximates) and the edge's inner
 // and outer normals within srf, in xyz; surfN gets srf's normal there.
-// Mirrors C++ SSurface::EdgeNormalsWithinSurface (boolean.cpp).
 func (s *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha, shb *SShell,
 	auxA int, surfN *geom.Vector) (pt, enin, enout geom.Vector) {
 	// the midpoint of the edge
@@ -366,10 +345,8 @@ func (s *SShell) classifyEdge(indir, outdir *SShellClass,
 // classified against `agnst`; only the regions appropriate for the
 // boolean op (UNION / DIFFERENCE / INTERSECTION) are kept.
 //
-// Mirrors SSurface::MakeCopyTrimAgainst in boolean.cpp:497. This is a
-// focused Go port that prioritises the boolean-csg parity for the
-// planar / coplanar / cylindrical fixture cases over the C++'s full
-// edge-on-edge / tangent-face handling.
+// It handles the planar, coplanar and cylindrical cases; edge-on-edge
+// and tangent faces are not fully handled.
 //
 // The copy is written to ret, which the caller owns: a surface is too
 // large to hand back by value in this loop.
@@ -392,11 +369,11 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	ret.Trim = nil
 	ret.TrimBuilt = true
 
-	// Step 1 (C++ line 511-518): rewrite trim curves to use the
-	// new (split) curve handles. CopyCurvesSplitAgainst stored the
-	// parent-relative curve's NewH (the handle in `into` of the
-	// first emitted segment). Look up each trim curve in the parent
-	// shell and use that NewH as the rewritten handle.
+	// Step 1: rewrite trim curves to use the new (split) curve handles.
+	// CopyCurvesSplitAgainst stored the parent-relative curve's NewH
+	// (the handle in `into` of the first emitted segment). Look up each
+	// trim curve in the parent shell and use that NewH as the rewritten
+	// handle.
 	for i := range s.Trim {
 		stb := s.Trim[i]
 		if pc := parent.FindCurve(stb.Curve); pc != nil {
@@ -405,21 +382,19 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		ret.Trim = append(ret.Trim, stb)
 	}
 
-	// Step 2 (C++ line 520-523): the second operand of DIFFERENCE
-	// gets reversed.
+	// Step 2: the second operand of DIFFERENCE gets reversed.
 	if t == SurfaceDiff && !opA {
 		ret.Reverse()
 	}
 
-	// Step 3 (C++ line 528-532): build the orig trim polygon from
-	// the new (split) curves.
+	// Step 3: build the orig trim polygon from the new (split) curves.
 	orig := &SEdgeList{}
 	ret.MakeEdgesInto(into, orig, true, nil)
 	ret.Trim = nil
 	origBsp := SBspUvFrom(orig, ret)
 
-	// Step 4 (C++ line 535-594): build the inter edge list from the
-	// intersection curves in `into`.
+	// Step 4: build the inter edge list from the intersection curves in
+	// `into`.
 	inter := &SEdgeList{}
 	for i := range into.Curve {
 		ic := &into.Curve[i]
@@ -496,8 +471,8 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		}
 	}
 
-	// Step 5 (C++ line 596-618): the points where other than two edges
-	// meet, which chains mustn't run through.
+	// Step 5: the points where other than two edges meet, which chains
+	// mustn't run through.
 	var choosing SPointList
 	for i := range orig.Edges {
 		choosing.IncrementTagFor(orig.Edges[i].A)
@@ -509,7 +484,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	}
 	choosing.removeTagged(func(sp *SPoint) bool { return sp.Tag == 2 })
 
-	// Step 6 (C++ line 623-661): walk orig chains, classify, keep.
+	// Step 6: walk orig chains, classify, keep.
 	final := &SEdgeList{}
 	for len(orig.Edges) > 0 {
 		chain := &SEdgeList{}
@@ -535,7 +510,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		chain.Edges = nil
 	}
 
-	// Step 7 (C++ line 663-720): walk inter chains, classify, keep.
+	// Step 7: walk inter chains, classify, keep.
 	for len(inter.Edges) > 0 {
 		chain := &SEdgeList{}
 		findChainAvoiding(inter, chain, &choosing)
@@ -570,12 +545,11 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		chain.Edges = nil
 	}
 
-	// Step 8 (C++ line 723-727): cull duplicate / anti-parallel edges.
+	// Step 8: cull duplicate / anti-parallel edges.
 	final.CullExtraneousEdges(true)
 
-	// Step 9 (C++ line 729-744): assemble the trim polygon from the
-	// kept edges; if it fails to close, the caller marks booleanFailed
-	// in `into` (C++ does that here, in a critical section).
+	// Step 9: assemble the trim polygon from the kept edges; if it
+	// fails to close, the caller marks booleanFailed in `into`.
 	ret.trimFromEdgeList(final, true)
 	var poly SPolygon
 	final.lClearTags()

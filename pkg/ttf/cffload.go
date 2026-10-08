@@ -106,7 +106,7 @@ func (s *cffStream) frame(n uint64) ([]byte, error) {
 
 // cffIndex is a CFF_IndexRec.
 type cffIndex struct {
-	valid      bool // the C++ stream pointer is set
+	valid      bool // the stream is open
 	start      int64
 	hdrSize    int64
 	count      uint32
@@ -1816,9 +1816,8 @@ func (f *cffFont) loadPrivateDict(subfont *cffSubFont, lenNDV uint32, ndv []int6
 	return nil
 }
 
-// driverRandomSeed is the CFF driver's random_seed, which C++ computes
-// from memory addresses; only the charstring `random' operator uses it,
-// so no font can depend on its value.
+// driverRandomSeed is the CFF driver's random_seed; only the charstring
+// `random' operator uses it, so no font can depend on its value.
 var driverRandomSeed int32 = 0x2A5D6B
 
 // cffRandom is cff_random.

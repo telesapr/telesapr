@@ -10,7 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
-// Command is a menu or toolbar command (C++ Command, ui.h).
+// Command is a menu or toolbar command.
 type Command uint32
 
 const (
@@ -128,12 +128,12 @@ const (
 	CmdWebsite
 	CmdGithub
 	CmdAbout
-	// Script, which C++ doesn't have
+	// Script
 	CmdScriptConsole
 	CmdScriptRun
 	CmdScriptStop
-	// Commands C++ SolveSpace doesn't have, after its own so that their
-	// numbers stay.
+	// Commands of this program's own, after the original ones so that
+	// their numbers stay.
 	CmdCheckSolid
 	CmdGroupThread
 	CmdParameters
@@ -165,7 +165,7 @@ const (
 )
 
 // Pending is an operation to be completed by doing something with the
-// mouse (C++ GraphicsWindow::Pending).
+// mouse.
 type Pending uint32
 
 const (
@@ -201,8 +201,7 @@ const (
 	OccludedVisible
 )
 
-// Selection is a selected or hovered entity or constraint (C++
-// GraphicsWindow::Selection).
+// Selection is a selected or hovered entity or constraint.
 type Selection struct {
 	Tag        int
 	Entity     core.HEntity
@@ -232,8 +231,7 @@ func (s *Selection) Clear() {
 	s.Emphasized = false
 }
 
-// Hover is a hovered item and how near the cursor it is (C++
-// GraphicsWindow::Hover).
+// Hover is a hovered item and how near the cursor it is.
 type Hover struct {
 	ZIndex    int
 	Distance  float64
@@ -241,8 +239,7 @@ type Hover struct {
 	Selection Selection
 }
 
-// groupedSelection is the selection sorted by kind (C++
-// GraphicsWindow::gs, filled by GroupSelection).
+// groupedSelection is the selection sorted by kind.
 type groupedSelection struct {
 	point      []core.HEntity
 	entity     []core.HEntity
@@ -273,7 +270,8 @@ type groupedSelection struct {
 	n                int
 }
 
-// pendingState is C++ GraphicsWindow::pending.
+// pendingState is the operation in progress: the command chosen, or the
+// drag.
 type pendingState struct {
 	operation Pending
 	command   Command
@@ -293,8 +291,7 @@ type pendingState struct {
 	suggestion    sketch.Suggestion
 }
 
-// GraphicsWindow is the window with the model and the toolbar (C++
-// GraphicsWindow).
+// GraphicsWindow is the window with the model and the toolbar.
 type GraphicsWindow struct {
 	// What the window draws beside the sketch: the point being traced
 	// and its path, the naked edges Analyze found, the line a drag
@@ -363,7 +360,7 @@ type GraphicsWindow struct {
 
 	// The map from 2d screen coordinates to the coordinates of the 3d
 	// sketch points: offset, projRight, projUp and scale. The sketch
-	// reads it too (SS.GW in C++), as View.
+	// reads it too, as View.
 	view sketch.View
 
 	orig struct {
@@ -431,7 +428,7 @@ type GraphicsWindow struct {
 	measuring bool
 
 	// Per-entity drawing caches, for the sketch generation they were
-	// made in (C++ Entity::beziers, edges and screenBBox).
+	// made in.
 	entityCaches map[core.HEntity]*entityDrawCache
 	cacheGen     uint64
 	cacheSketch  *sketch.Sketch

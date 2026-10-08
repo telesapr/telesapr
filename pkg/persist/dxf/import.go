@@ -3,7 +3,7 @@
 // constraints of the active group, in its workplane or in 3d.
 package dxf
 
-// DXF import (C++ importdxf.cpp), reading through pkg/dxf/dxfread.
+// DXF import, reading through pkg/dxf/dxfread.
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 )
 
 // normalFromExtPoint is the DXF arbitrary axis algorithm for turning a
-// Z vector into a rotated coordinate system (C++ NormalFromExtPoint).
+// Z vector into a rotated coordinate system.
 func normalFromExtPoint(extPoint geom.Vector) geom.Quaternion {
 	var ax, ay geom.Vector
 	az := extPoint.WithMagnitude(1.0)
@@ -37,8 +37,8 @@ func normalFromExtPoint(extPoint geom.Vector) geom.Quaternion {
 
 func coordVec(c dxfread.Coord) geom.Vector { return geom.Vector{X: c.X, Y: c.Y, Z: c.Z} }
 
-// importPointKey is C++ DxfImport::VectorHash: points are found only
-// among those whose coordinates fall in the same cell.
+// importPointKey is a point's cell: points are found only among those
+// whose coordinates fall in the same cell.
 func importPointKey(v geom.Vector) uint64 {
 	const size = uint64(math.MaxUint64/2 - 1)
 	const eps = 4.0 * core.LengthEps
@@ -57,15 +57,13 @@ type importPoint struct {
 	he  core.HEntity
 }
 
-// importBlock is a block's entities, kept to insert later (C++
-// DxfImport::Block).
+// importBlock is a block's entities, kept to insert later.
 type importBlock struct {
 	entities []any
 	data     dxfread.Block
 }
 
-// dxfImport makes requests and constraints from a DXF file's entities
-// (C++ DxfImport).
+// dxfImport makes requests and constraints from a DXF file's entities.
 type dxfImport struct {
 	sketch     *sketch.Sketch
 	textHeight float64
@@ -80,8 +78,8 @@ type dxfImport struct {
 	readBlock       *importBlock
 	insertInsert    *dxfread.Insert
 
-	// points is C++'s unordered_map from positions to points: by
-	// cell, newest first, as a lookup meets them.
+	// points are the points by cell, newest first, as a lookup meets
+	// them.
 	points map[uint64][]importPoint
 }
 
@@ -210,19 +208,18 @@ func (d *dxfImport) createBulge(p0, p1 geom.Vector, bulge float64) core.HRequest
 	return hr
 }
 
-// untypedDimension is a dimension kept in a block: C++ copies it with
-// DRW_Dimension's copy constructor, which resets its type to plain
-// DIMENSION, so inserting the block counts it as unknown.
+// untypedDimension is a dimension kept in a block: its type is lost in
+// the copy, so inserting the block counts it as unknown.
 type untypedDimension struct{}
 
-// addPendingDimension keeps a dimension of the block being read, as
-// C++ does, and reports whether it did.
+// addPendingDimension keeps a dimension of the block being read, and
+// reports whether it did.
 func (d *dxfImport) addPendingDimension() bool {
 	return d.addPendingBlockEntity(untypedDimension{})
 }
 
 // addPendingBlockEntity keeps an entity of the block being read, and
-// reports whether it did (C++ DxfImport::addPendingBlockEntity).
+// reports whether it did.
 func (d *dxfImport) addPendingBlockEntity(e any) bool {
 	if d.readBlock == nil {
 		return false
@@ -231,8 +228,7 @@ func (d *dxfImport) addPendingBlockEntity(e any) bool {
 	return true
 }
 
-// addEntity adds an inserted block's entity (C++
-// DxfImport::addEntity).
+// addEntity adds an inserted block's entity.
 func (d *dxfImport) addEntity(e any) {
 	switch e := e.(type) {
 	case dxfread.Point:
@@ -263,8 +259,7 @@ func (d *dxfImport) addEntity(e any) {
 	}
 }
 
-// dxfAlignToOrigin is a text's alignment as a style's origin (C++
-// DxfImport::dxfAlignToOrigin).
+// dxfAlignToOrigin is a text's alignment as a style's origin.
 func dxfAlignToOrigin(alignH, alignV int) core.TextOrigin {
 	var origin core.TextOrigin
 	switch alignH {
@@ -371,9 +366,9 @@ func (d *dxfImport) invisibleStyle() core.HStyle {
 	return hs
 }
 
-// dxfColor is a colour index's colour. C++ indexes the palette with
-// whatever the file says; a layer that is off has its colour negated,
-// so that is read as the colour, and anything else out of range as 7.
+// dxfColor is a colour index's colour. A layer that is off has its
+// colour negated, so that is read as the colour, and anything else out
+// of range as 7.
 func dxfColor(col int) core.RGBA {
 	if col < 0 {
 		col = -col
@@ -386,7 +381,7 @@ func dxfColor(col int) core.RGBA {
 }
 
 // styleFor is the custom style for an entity's colour, width, line type
-// and, for texts, text properties (C++ DxfImport::styleFor).
+// and, for texts, text properties.
 func (d *dxfImport) styleFor(e *dxfread.Entity, text *dxfread.Text) core.HStyle {
 	// Color.
 	c := dxfColor(d.getColor(e))
@@ -713,7 +708,8 @@ func (d *dxfImport) AddLWPolyline(data *dxfread.LWPolyline) {
 
 	n := len(data.Vertices)
 	if n == 0 {
-		// C++ counts the segments of an empty polyline down past zero.
+		// An empty polyline counts its segments down past zero, as the
+		// goldens have it.
 		return
 	}
 	vNum := n
@@ -808,7 +804,8 @@ func (d *dxfImport) AddSpline(data *dxfread.Spline) {
 		return
 	}
 	if len(data.Controls) < 4 {
-		// C++ reads control points it doesn't have.
+		// Control points past the end read as zero, as the goldens have
+		// it.
 		return
 	}
 
@@ -831,7 +828,7 @@ func (d *dxfImport) AddInsert(data *dxfread.Insert) {
 
 	block, ok := d.blocks[data.Name]
 	if !ok {
-		// C++ asserts that the inserted block exists.
+		// An inserted block that doesn't exist is skipped.
 		return
 	}
 
@@ -872,8 +869,7 @@ func (d *dxfImport) AddText(data *dxfread.Text) {
 	d.addText(data)
 }
 
-// addText is C++ DxfImport::addText, for TEXT and the MTEXT it passes
-// on.
+// addText adds TEXT, and the MTEXT passed on to it.
 func (d *dxfImport) addText(data *dxfread.Text) {
 	if data.Space != dxfread.ModelSpace {
 		return
@@ -897,7 +893,7 @@ func (d *dxfImport) addText(data *dxfread.Text) {
 	sk.AddConstraintRemember(&c, false)
 }
 
-// AddDimension dispatches by kind (C++ dxfRW::processDimension).
+// AddDimension dispatches by kind.
 func (d *dxfImport) AddDimension(data *dxfread.Dimension) {
 	switch data.Kind {
 	case dxfread.DimAligned:
@@ -927,7 +923,7 @@ func (d *dxfImport) addDimAlign(data *dxfread.Dimension) {
 	p0 := d.toVector(data.Def1)
 	p1 := d.toVector(data.Def2)
 	p2 := d.toVector(data.TextPoint)
-	// GCC evaluates C++'s arguments right to left.
+	// The points are made right to left, the order the goldens have.
 	ptB := d.createOrGetPoint(p1)
 	ptA := d.createOrGetPoint(p0)
 	hc := sk.Constrain(core.ConstraintPtPtDistance, ptA, ptB, core.NoEntity, core.NoEntity, false, false)
@@ -969,7 +965,7 @@ func (d *dxfImport) addDimLinear(data *dxfread.Dimension) {
 	p3 = d.blockTransform(p3)
 	p4 = d.blockTransform(p4)
 
-	// GCC evaluates C++'s arguments right to left.
+	// The points are made right to left, the order the goldens have.
 	line := d.createLine(p1, p3, d.invisibleStyle(), false)
 	pt := d.createOrGetPoint(p0)
 	hc := sk.Constrain(core.ConstraintPtLineDistance, pt, core.NoEntity, line, core.NoEntity, false, false)
@@ -993,8 +989,7 @@ func (d *dxfImport) addDimAngular(data *dxfread.Dimension) {
 	d.dimAngular(data.FirstLine1(), data.FirstLine2(), data.SecondLine1(), data.SecondLine2(), data)
 }
 
-// dimAngular is C++ DxfImport::addDimAngular's work, with the lines'
-// points given.
+// dimAngular adds an angular dimension, with the lines' points given.
 func (d *dxfImport) dimAngular(fl1, fl2, sl1, sl2 dxfread.Coord, data *dxfread.Dimension) {
 	sk := d.sk()
 	l0p0 := d.toVector(fl1)
@@ -1002,7 +997,7 @@ func (d *dxfImport) dimAngular(fl1, fl2, sl1, sl2 dxfread.Coord, data *dxfread.D
 	l1p0 := d.toVector(sl1)
 	l1p1 := d.toVector(sl2)
 
-	// GCC evaluates C++'s arguments right to left.
+	// The points are made right to left, the order the goldens have.
 	lineB := d.createLine(l1p1, l1p0, d.invisibleStyle(), false)
 	lineA := d.createLine(l0p0, l0p1, d.invisibleStyle(), false)
 	hc := sk.Constrain(core.ConstraintAngle, core.NoEntity, core.NoEntity, lineA, lineB, false, false)
@@ -1072,8 +1067,7 @@ func (d *dxfImport) addDimDiametric(data *dxfread.Dimension) {
 	if data.Space != dxfread.ModelSpace {
 		return
 	}
-	// C++ keeps a diametric dimension in a block as a radial one: its
-	// DRW_DimRadial(const DRW_Dimension&) sets the type.
+	// A diametric dimension in a block is kept as a radial one.
 	radial := *data
 	radial.Kind = dxfread.DimRadial
 	if d.addPendingBlockEntity(radial) {
@@ -1103,13 +1097,12 @@ func (d *dxfImport) addDimAngular3P(data *dxfread.Dimension) {
 		return
 	}
 
-	// C++ makes an angular dimension of it: its Space and the other
-	// fields are the same, which addDimAngular checks again.
+	// It is made an angular dimension: its Space and the other fields
+	// are the same, which addDimAngular checks again.
 	d.dimAngular(data.VertexPoint(), data.FirstLine(), data.VertexPoint(), data.SecondLine(), data)
 }
 
-// dxfCheck3D finds whether a file has anything out of the xy plane (C++
-// DxfCheck3D).
+// dxfCheck3D finds whether a file has anything out of the xy plane.
 type dxfCheck3D struct {
 	is3d bool
 }
@@ -1161,8 +1154,7 @@ func (d *dxfCheck3D) AddCircle(data *dxfread.Circle) {
 	d.checkExt(data.ExtPoint)
 }
 
-// AddLWPolyline is DRW_Interface's, which does nothing: C++'s checker
-// doesn't look at light polylines.
+// AddLWPolyline does nothing: light polylines are not checked.
 func (d *dxfCheck3D) AddLWPolyline(*dxfread.LWPolyline) {}
 
 func (d *dxfCheck3D) AddPolyline(data *dxfread.Polyline) {

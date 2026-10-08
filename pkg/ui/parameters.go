@@ -5,9 +5,8 @@ import (
 	"strings"
 )
 
-// This file is an extension: C++ SolveSpace has no named parameters.
-// The screen lists the sketch's parameter table, with what could not
-// be evaluated, and edits it.
+// The parameters screen lists the sketch's parameter table, with what
+// could not be evaluated, and edits it.
 
 // ScreenShowParameters shows the parameter table.
 func (tw *TextWindow) ScreenShowParameters(link int, v uint32) {

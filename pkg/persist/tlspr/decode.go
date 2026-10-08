@@ -164,8 +164,7 @@ func (d *decoder) file(f *File) {
 		}
 	}
 
-	// Lists are kept in handle order, as C++ IdLists are; groups are
-	// solved in their order.
+	// Lists are kept in handle order; groups are solved in their order.
 	slices.SortStableFunc(sk.Groups, func(a, b sketch.Group) int { return cmp.Compare(a.H.V, b.H.V) })
 	sk.GroupOrder = sk.GroupOrder[:0]
 	for i := range sk.Groups {

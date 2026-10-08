@@ -1,6 +1,6 @@
 package dxfread
 
-// Text decoding (C++ DRW_TextCodec and its converters, reading side).
+// Text decoding.
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	"sync"
 )
 
-// Version is a DXF/DWG version (C++ DRW::Version).
+// Version is a DXF/DWG version.
 type Version int
 
 const (
@@ -46,7 +46,7 @@ var versionStrings = map[string]Version{
 	"AC1032": AC1032,
 }
 
-// converterKind is which C++ DRW_Converter subclass decodes.
+// converterKind is which decoder a code page needs.
 type converterKind int
 
 const (
@@ -56,7 +56,7 @@ const (
 	convDBCS                       // DRW_ConvDBCSTable
 )
 
-// codec decodes the file's strings to UTF-8 (C++ DRW_TextCodec).
+// codec decodes the file's strings to UTF-8.
 type codec struct {
 	version Version
 	cp      string
@@ -67,7 +67,7 @@ type codec struct {
 
 func newCodec() codec { return codec{version: AC1021, kind: convUTF8} }
 
-// setVersionString is C++ DRW_TextCodec::setVersion(string, dxfFormat).
+// setVersionString sets the DXF version from its string.
 func (c *codec) setVersionString(v string) {
 	c.version = UnknownVersion
 	if ver, ok := versionStrings[v]; ok {
@@ -76,7 +76,7 @@ func (c *codec) setVersionString(v string) {
 	}
 }
 
-// setVersion is C++ DRW_TextCodec::setVersion(Version, dxfFormat=true).
+// setVersion sets the DXF version.
 func (c *codec) setVersion(v Version) {
 	switch v {
 	case AC1006, AC1009:
@@ -94,7 +94,7 @@ func (c *codec) setVersion(v Version) {
 	}
 }
 
-// setCodePage is C++ DRW_TextCodec::setCodePage(c, dxfFormat=true).
+// setCodePage sets the code page by name.
 func (c *codec) setCodePage(cp string) {
 	c.cp = correctCodePage(cp)
 	c.table, c.dbcs = nil, nil
@@ -122,8 +122,7 @@ func (c *codec) setCodePage(cp string) {
 	}
 }
 
-// correctCodePage names a code page as libdxfrw does (C++
-// DRW_TextCodec::correctCodePage).
+// correctCodePage names a code page as libdxfrw does.
 func correctCodePage(s string) string {
 	cp := strings.ToUpper(s)
 	in := func(names ...string) bool {
@@ -169,8 +168,7 @@ func correctCodePage(s string) string {
 	return "ANSI_1252"
 }
 
-// dbcsTable is a double-byte code page (C++ DRW_LeadTableNNN and
-// DRW_DoubleTableNNN).
+// dbcsTable is a double-byte code page.
 type dbcsTable struct {
 	lead   []int32
 	double [][2]int32
@@ -210,16 +208,14 @@ var dbcsTables = sync.OnceValue(func() map[string]*dbcsTable {
 	return tables
 })
 
-// The characters libdxfrw puts for bytes it can't decode (C++
-// NOTFOUND932 and NOTFOUND936).
+// The characters libdxfrw puts for bytes it can't decode.
 const (
 	notFound932 = 0x30FB
 	notFound936 = 0x003F
 	cpOffset932 = 0xFEC0
 )
 
-// encodeNum is a code point as UTF-8, as C++ DRW_Converter::encodeNum
-// builds it: a C string, so 0 gives nothing.
+// encodeNum is a code point as UTF-8; 0 gives nothing.
 func encodeNum(c int) string {
 	var ret []byte
 	switch {
@@ -239,9 +235,8 @@ func encodeNum(c int) string {
 	return string(ret)
 }
 
-// encodeText decodes a "\U+XXXX" escape (C++
-// DRW_Converter::encodeText): the hex digits after "\U+" as far as
-// they go, as istream >> std::hex reads them.
+// encodeText decodes a "\U+XXXX" escape: the hex digits after "\U+" as
+// far as they go, as istream >> std::hex reads them.
 func encodeText(stmp string) string {
 	s := stmp[3:]
 	if len(s) > 4 {
@@ -284,7 +279,7 @@ func encodeText(stmp string) string {
 	return encodeNum(code)
 }
 
-// toUtf8 decodes a string from the file (C++ DRW_TextCodec::toUtf8).
+// toUtf8 decodes a string from the file.
 func (c *codec) toUtf8(s string) string {
 	switch c.kind {
 	case convTable:
@@ -297,8 +292,7 @@ func (c *codec) toUtf8(s string) string {
 	return converterToUtf8(s)
 }
 
-// converterToUtf8 is C++ DRW_Converter::toUtf8: UTF-8 as it is, but
-// "\U+XXXX" escapes decoded.
+// converterToUtf8 is UTF-8 as it is, but "\U+XXXX" escapes decoded.
 func converterToUtf8(s string) string {
 	var result strings.Builder
 	j := 0
@@ -337,7 +331,7 @@ func escape(res *strings.Builder, s string, i int) int {
 	return i
 }
 
-// tableToUtf8 is C++ DRW_ConvTable::toUtf8.
+// tableToUtf8 decodes a single-byte code page through its table.
 func (c *codec) tableToUtf8(s string) string {
 	var res strings.Builder
 	for i := 0; i < len(s); i++ {
@@ -362,7 +356,7 @@ func at(s string, i int) byte {
 	return 0
 }
 
-// dbcsToUtf8 is C++ DRW_ConvDBCSTable::toUtf8.
+// dbcsToUtf8 decodes a double-byte code page through its tables.
 func (c *codec) dbcsToUtf8(s string) string {
 	var res strings.Builder
 	t := c.dbcs
@@ -400,7 +394,7 @@ func (c *codec) dbcsToUtf8(s string) string {
 	return res.String()
 }
 
-// dbcs932ToUtf8 is C++ DRW_Conv932Table::toUtf8.
+// dbcs932ToUtf8 decodes code page 932 (Shift JIS) through its tables.
 func (c *codec) dbcs932ToUtf8(s string) string {
 	var res strings.Builder
 	t := c.dbcs

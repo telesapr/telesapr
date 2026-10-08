@@ -25,8 +25,8 @@ func prepareMnemonics(label string) (string, int) {
 	return before + after, len([]rune(before))
 }
 
-// Menu is a Tk menu (C++ MenuImplGtk). Tk menus can't lose entries, so
-// Clear replaces the menu in the entry it hangs from.
+// Menu is a Tk menu. Tk menus can't lose entries, so Clear replaces the
+// menu in the entry it hangs from.
 type Menu struct {
 	p     *Platform
 	m     *menu.Menu
@@ -36,8 +36,7 @@ type Menu struct {
 	parentIndex int
 }
 
-// MenuItem is an entry of a Menu, addressed by its index there (C++
-// MenuItemImplGtk).
+// MenuItem is an entry of a Menu, addressed by its index there.
 type MenuItem struct {
 	menu      *Menu
 	index     int
@@ -168,9 +167,8 @@ func (m *Menu) Clear() {
 	old.Destroy()
 }
 
-// MenuBar is a window's menu bar (C++ MenuBarImplGtk). Until it is
-// given to a window it only records its menus, since a Tk menubar
-// belongs to its toplevel.
+// MenuBar is a window's menu bar. Until it is given to a window it only
+// records its menus, since a Tk menubar belongs to its toplevel.
 type MenuBar struct {
 	p     *Platform
 	menus []barMenu

@@ -3,7 +3,7 @@ package srf
 import "math/bits"
 
 // CxxSort sorts s as libstdc++'s std::sort does, so that elements that
-// compare equal end up in the same order as in C++ (std::sort isn't
+// compare equal end up in the order the goldens record (std::sort isn't
 // stable, and a mesh's order is what gets exported): introsort with a
 // median-of-three pivot, heapsort past the depth limit, then insertion
 // sort (bits/stl_algo.h, bits/stl_heap.h).

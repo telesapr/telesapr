@@ -10,7 +10,7 @@ import (
 // on triangle meshes, like the mesh Booleans using the BSP.
 
 // SMesh is a list of triangles, with the flags the Booleans use to pick
-// which triangles to keep (C++ SMesh).
+// which triangles to keep.
 type SMesh struct {
 	Triangles []STriangle
 
@@ -21,7 +21,7 @@ type SMesh struct {
 	IsTransparent        bool
 }
 
-// Clear drops the triangles; like C++ SMesh::Clear it keeps the flags.
+// Clear drops the triangles; it keeps the flags.
 func (m *SMesh) Clear() {
 	m.Triangles = m.Triangles[:0]
 }
@@ -29,8 +29,7 @@ func (m *SMesh) Clear() {
 func (m *SMesh) IsEmpty() bool { return len(m.Triangles) == 0 }
 
 // AddTriangleN adds the triangle a, b, c, wound so its normal points
-// along n; a (nearly) collinear one is dropped (C++
-// SMesh::AddTriangle(meta, n, a, b, c)).
+// along n; a (nearly) collinear one is dropped.
 func (m *SMesh) AddTriangleN(meta STriMeta, n, a, b, c geom.Vector) {
 	ab, bc := b.Minus(a), c.Minus(b)
 	np := ab.Cross(bc)
@@ -45,18 +44,17 @@ func (m *SMesh) AddTriangleN(meta STriMeta, n, a, b, c geom.Vector) {
 	}
 }
 
-// AddTriangle3 adds the triangle a, b, c (C++ SMesh::AddTriangle(meta,
-// a, b, c)).
+// AddTriangle3 adds the triangle a, b, c.
 func (m *SMesh) AddTriangle3(meta STriMeta, a, b, c geom.Vector) {
 	m.AddTriangle(STriangle{Meta: meta, A: a, B: b, C: c})
 }
 
-// AddTriangle adds a copy of t (C++ SMesh::AddTriangle(const STriangle *)).
+// AddTriangle adds a copy of t.
 func (m *SMesh) AddTriangle(t STriangle) {
 	m.Triangles = append(m.Triangles, t)
 }
 
-// DoBounding extends (vmax, vmin) to include v (C++ SMesh::DoBounding).
+// DoBounding extends (vmax, vmin) to include v.
 func DoBounding(v geom.Vector, vmax, vmin *geom.Vector) {
 	vmax.X = geom.Max(vmax.X, v.X)
 	vmax.Y = geom.Max(vmax.Y, v.Y)
@@ -67,7 +65,7 @@ func DoBounding(v geom.Vector, vmax, vmin *geom.Vector) {
 	vmin.Z = geom.Min(vmin.Z, v.Z)
 }
 
-// Bounding is the mesh's bounding box (C++ SMesh::Bounding).
+// Bounding is the mesh's bounding box.
 func (m *SMesh) Bounding() (vmax, vmin geom.Vector) {
 	vmin = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
 	vmax = geom.Vector{X: veryNegative, Y: veryNegative, Z: veryNegative}
@@ -81,8 +79,7 @@ func (m *SMesh) Bounding() (vmax, vmin geom.Vector) {
 }
 
 // MakeEdgesInPlaneInto reports the edges of the boundary of the
-// region(s) of the mesh that lie within the plane n . p = d (C++
-// SMesh::MakeEdgesInPlaneInto).
+// region(s) of the mesh that lie within the plane n. p = d.
 func (m *SMesh) MakeEdgesInPlaneInto(sel *SEdgeList, n geom.Vector, d float64) {
 	var mc SMesh
 	mc.MakeFromCopyOf(m)
@@ -110,7 +107,7 @@ func (m *SMesh) MakeEdgesInPlaneInto(sel *SEdgeList, n geom.Vector, d float64) {
 // coplanar, with fewer ones covering the same area: it pastes them
 // together into convex polygons, merging collinear edges where it can,
 // and triangulates those. It is used after a triangle has been split
-// against the BSP (C++ SMesh::Simplify).
+// against the BSP.
 func (m *SMesh) Simplify(start int) {
 	meta := m.Triangles[start].Meta
 
@@ -259,7 +256,7 @@ func (m *SMesh) Simplify(start int) {
 
 // AddAgainstBsp adds the triangles of srcm that the Boolean keeps
 // against bsp3, as the mesh's flags say, split where they cross the
-// other mesh (C++ SMesh::AddAgainstBsp).
+// other mesh.
 func (m *SMesh) AddAgainstBsp(srcm *SMesh, bsp3 *SBsp3) {
 	for i := range srcm.Triangles {
 		st := &srcm.Triangles[i]
@@ -280,7 +277,7 @@ func (m *SMesh) AddAgainstBsp(srcm *SMesh, bsp3 *SBsp3) {
 	}
 }
 
-// MakeFromUnionOf adds the union of a and b (C++ SMesh::MakeFromUnionOf).
+// MakeFromUnionOf adds the union of a and b.
 func (m *SMesh) MakeFromUnionOf(a, b *SMesh) {
 	bspa := SBsp3FromMesh(a)
 	bspb := SBsp3FromMesh(b)
@@ -295,7 +292,7 @@ func (m *SMesh) MakeFromUnionOf(a, b *SMesh) {
 	m.AddAgainstBsp(a, bspb)
 }
 
-// MakeFromDifferenceOf adds a minus b (C++ SMesh::MakeFromDifferenceOf).
+// MakeFromDifferenceOf adds a minus b.
 func (m *SMesh) MakeFromDifferenceOf(a, b *SMesh) {
 	bspa := SBsp3FromMesh(a)
 	bspb := SBsp3FromMesh(b)
@@ -311,8 +308,7 @@ func (m *SMesh) MakeFromDifferenceOf(a, b *SMesh) {
 	m.AddAgainstBsp(a, bspb)
 }
 
-// MakeFromIntersectionOf adds the intersection of a and b (C++
-// SMesh::MakeFromIntersectionOf).
+// MakeFromIntersectionOf adds the intersection of a and b.
 func (m *SMesh) MakeFromIntersectionOf(a, b *SMesh) {
 	bspa := SBsp3FromMesh(a)
 	bspb := SBsp3FromMesh(b)
@@ -327,7 +323,7 @@ func (m *SMesh) MakeFromIntersectionOf(a, b *SMesh) {
 	m.AddAgainstBsp(b, bspa)
 }
 
-// MakeFromCopyOf adds a's triangles (C++ SMesh::MakeFromCopyOf).
+// MakeFromCopyOf adds a's triangles.
 func (m *SMesh) MakeFromCopyOf(a *SMesh) {
 	if m == a {
 		panic("Can't make from copy of self")
@@ -335,16 +331,14 @@ func (m *SMesh) MakeFromCopyOf(a *SMesh) {
 	m.Triangles = append(m.Triangles, a.Triangles...)
 }
 
-// MakeFromAssemblyOf adds the triangles of a and of b (C++
-// SMesh::MakeFromAssemblyOf).
+// MakeFromAssemblyOf adds the triangles of a and of b.
 func (m *SMesh) MakeFromAssemblyOf(a, b *SMesh) {
 	m.MakeFromCopyOf(a)
 	m.MakeFromCopyOf(b)
 }
 
 // MakeFromTransformationOf adds a's triangles, scaled, then rotated,
-// then translated; a mirroring scale keeps the mesh outside out (C++
-// SMesh::MakeFromTransformationOf).
+// then translated; a mirroring scale keeps the mesh outside out.
 func (m *SMesh) MakeFromTransformationOf(a *SMesh, trans geom.Vector, q geom.Quaternion, scale float64) {
 	for _, tt := range a.Triangles {
 		tt.A = tt.A.ScaledBy(scale)
@@ -362,9 +356,8 @@ func (m *SMesh) MakeFromTransformationOf(a *SMesh, trans geom.Vector, q geom.Qua
 }
 
 // FirstIntersectionWith is the face of the farthest-along triangle,
-// with a face, that the ray rayPoint + t*rayDir hits; 0 if none. C++
-// SMesh::FirstIntersectionWith takes a point on the screen and makes
-// the ray from the view; here the caller does that.
+// with a face, that the ray rayPoint + t*rayDir hits; 0 if none. The
+// caller makes the ray from the view.
 func (m *SMesh) FirstIntersectionWith(rayPoint, rayDir geom.Vector) uint32 {
 	return m.FirstIntersectionIn(rayPoint, rayDir, nil)
 }
@@ -397,8 +390,7 @@ func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) 
 	return face
 }
 
-// CenterOfMass is the centroid of the volume the mesh encloses (C++
-// SMesh::CenterOfMass).
+// CenterOfMass is the centroid of the volume the mesh encloses.
 func (m *SMesh) CenterOfMass() geom.Vector {
 	center := geom.Vector{}
 	vol := 0.0
@@ -412,9 +404,8 @@ func (m *SMesh) CenterOfMass() geom.Vector {
 }
 
 // PrecomputeTransparency sorts the opaque triangles before the
-// transparent ones, for drawing, in std::sort's order; and notes whether
-// the comparisons met a transparent triangle (C++
-// SMesh::PrecomputeTransparency).
+// transparent ones, for drawing, in std::sort's order; and notes
+// whether the comparisons met a transparent triangle.
 func (m *SMesh) PrecomputeTransparency() {
 	CxxSort(m.Triangles, func(sta, stb *STriangle) bool {
 		colora, colorb := sta.Meta.RGBA, stb.Meta.RGBA
@@ -428,8 +419,7 @@ func (m *SMesh) PrecomputeTransparency() {
 	})
 }
 
-// RemoveDegenerateTriangles drops the degenerate triangles (C++
-// SMesh::RemoveDegenerateTriangles).
+// RemoveDegenerateTriangles drops the degenerate triangles.
 func (m *SMesh) RemoveDegenerateTriangles() {
 	out := m.Triangles[:0]
 	for _, tr := range m.Triangles {
@@ -442,8 +432,8 @@ func (m *SMesh) RemoveDegenerateTriangles() {
 	m.Triangles = out
 }
 
-// CalculateVolume is the volume the mesh encloses, integrated under each
-// triangle (C++ SMesh::CalculateVolume).
+// CalculateVolume is the volume the mesh encloses, integrated under
+// each triangle.
 func (m *SMesh) CalculateVolume() float64 {
 	vol := 0.0
 	for _, tr := range m.Triangles {
@@ -497,8 +487,7 @@ func (m *SMesh) CalculateVolume() float64 {
 	return vol
 }
 
-// CalculateSurfaceArea is the area of the triangles on the given faces
-// (C++ SMesh::CalculateSurfaceArea).
+// CalculateSurfaceArea is the area of the triangles on the given faces.
 func (m *SMesh) CalculateSurfaceArea(faces []uint32) float64 {
 	area := 0.0
 	for _, f := range faces {

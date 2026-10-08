@@ -13,8 +13,7 @@ import (
 )
 
 // Camera maps 3d sketch coordinates to 2d screen coordinates, using an
-// axonometric projection; Tangent is non-zero for perspective (C++
-// Camera).
+// axonometric projection; Tangent is non-zero for perspective.
 type Camera struct {
 	Width, Height float64
 	PixelRatio    float64
@@ -148,7 +147,7 @@ func (c *Camera) NormalizeProjectionVectors() {
 }
 
 // Lighting describes the scene's lights, in right/up/forward screen
-// coordinates (C++ Lighting).
+// coordinates.
 type Lighting struct {
 	BackgroundColor  core.RGBA
 	AmbientIntensity float64

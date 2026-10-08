@@ -119,8 +119,8 @@ func firstDiff(a, b []byte) string {
 }
 
 // goldenPath is the .tlspr golden of a fixture: its import, which is
-// what loading and regenerating it gives. For the fixtures C++ saved,
-// that was C++'s own save of them, byte for byte, until the C++
+// what loading and regenerating it gives. For the fixtures SolveSpace saved,
+// that was SolveSpace's own save of them, byte for byte, until the SolveSpace
 // comparison was frozen (ROADMAP-JUMP.md, package 5.1).
 func goldenPath(rel string) string {
 	return filepath.Join(testdata, "tlspr", "golden", filepath.FromSlash(strings.TrimSuffix(rel, ".slvs"))+".tlspr")

@@ -6,8 +6,7 @@ package version
 // Version is TeleSAPR's version.
 const Version = "0.2.0"
 
-// SolveSpaceVersion is the version of SolveSpace the port began from
-// (C++ PACKAGE_VERSION, which names the commit).
+// SolveSpaceVersion is the version of SolveSpace the port began from.
 const SolveSpaceVersion = "3.2~cbff7a91"
 
 // Repository is the project's home.

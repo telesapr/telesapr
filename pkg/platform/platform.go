@@ -13,7 +13,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/render"
 )
 
-// MouseEventType is what a mouse event reports (C++ MouseEvent::Type).
+// MouseEventType is what a mouse event reports.
 type MouseEventType int
 
 const (
@@ -25,7 +25,7 @@ const (
 	MouseLeave
 )
 
-// MouseButton is a mouse button (C++ MouseEvent::Button).
+// MouseButton is a mouse button.
 type MouseButton int
 
 const (
@@ -37,7 +37,7 @@ const (
 
 // MouseEvent is a mouse input event; X and Y are in the window's
 // content, y down. Button is set for motion, press and release;
-// ScrollDelta for scrolling, positive up (C++ MouseEvent).
+// ScrollDelta for scrolling, positive up.
 type MouseEvent struct {
 	Type        MouseEventType
 	X, Y        float64
@@ -63,8 +63,8 @@ const (
 	KeyFunction
 )
 
-// KeyboardEvent is a keyboard input event: Chr for a character, Num
-// for function key F<Num> (C++ KeyboardEvent).
+// KeyboardEvent is a keyboard input event: Chr for a character, Num for
+// function key F<Num>.
 type KeyboardEvent struct {
 	Type        KeyboardEventType
 	Key         KeyKind
@@ -83,7 +83,7 @@ func (k KeyboardEvent) Equals(o KeyboardEvent) bool {
 }
 
 // AcceleratorDescription is the accelerator's label for a menu, like
-// "Ctrl+Shift+S" (C++ AcceleratorDescription).
+// "Ctrl+Shift+S".
 func AcceleratorDescription(accel KeyboardEvent) string {
 	var b strings.Builder
 	if accel.ControlDown {
@@ -116,7 +116,7 @@ func AcceleratorDescription(accel KeyboardEvent) string {
 	return b.String()
 }
 
-// Timer is a single-shot timer (C++ Timer).
+// Timer is a single-shot timer.
 type Timer interface {
 	// SetOnTimeout sets what runs when the timer fires.
 	SetOnTimeout(fn func())
@@ -126,8 +126,7 @@ type Timer interface {
 	RunAfterProcessingEvents()
 }
 
-// Indicator is a menu item's check or radio mark (C++
-// MenuItem::Indicator).
+// Indicator is a menu item's check or radio mark.
 type Indicator int
 
 const (
@@ -136,7 +135,7 @@ const (
 	IndicatorRadioMark
 )
 
-// MenuItem is a menu entry (C++ MenuItem).
+// MenuItem is a menu entry.
 type MenuItem interface {
 	SetAccelerator(accel KeyboardEvent)
 	SetIndicator(Indicator)
@@ -144,8 +143,8 @@ type MenuItem interface {
 	SetActive(bool)
 }
 
-// Menu is a menu or submenu (C++ Menu). A label's '&' marks the
-// mnemonic when mnemonics is set.
+// Menu is a menu or submenu. A label's '&' marks the mnemonic when
+// mnemonics is set.
 type Menu interface {
 	AddItem(label string, onTrigger func(), mnemonics bool) MenuItem
 	AddSubMenu(label string) Menu
@@ -156,14 +155,14 @@ type Menu interface {
 	Clear()
 }
 
-// MenuBar is a window's menu bar (C++ MenuBar).
+// MenuBar is a window's menu bar.
 type MenuBar interface {
 	AddSubMenu(label string) Menu
 	Clear()
 }
 
 // WindowKind is a toplevel window or a tool window that stays with its
-// parent (C++ Window::Kind).
+// parent.
 type WindowKind int
 
 const (
@@ -171,7 +170,7 @@ const (
 	WindowTool
 )
 
-// Cursor is a mouse cursor shape (C++ Window::Cursor).
+// Cursor is a mouse cursor shape.
 type Cursor int
 
 const (
@@ -179,8 +178,8 @@ const (
 	CursorHand
 )
 
-// WindowEvents are the callbacks a window makes into the application
-// (C++ Window's on* members). Unset ones are ignored.
+// WindowEvents are the callbacks a window makes into the application.
+// Unset ones are ignored.
 type WindowEvents struct {
 	OnClose             func()
 	OnFullScreen        func(bool)
@@ -195,7 +194,7 @@ type WindowEvents struct {
 }
 
 // Window is a top-level window with a drawing area, an editor overlay
-// and a vertical scrollbar (C++ Window).
+// and a vertical scrollbar.
 type Window interface {
 	Events() *WindowEvents
 
@@ -244,8 +243,8 @@ type Window interface {
 	Invalidate()
 	// CreateRenderer returns a renderer that draws the window's
 	// content: with useGL, OpenGL where the platform has it, else the
-	// software renderer (C++ CreateRenderer). A renderer made earlier
-	// for the window must not be used after.
+	// software renderer. A renderer made earlier for the window must
+	// not be used after.
 	CreateRenderer(useGL bool) render.ViewportCanvas
 	// PresentFrame shows the frame canvas, which CreateRenderer made,
 	// has just finished: of the content size times the device pixel
@@ -253,7 +252,7 @@ type Window interface {
 	PresentFrame(canvas render.ViewportCanvas)
 }
 
-// DialogType is a message dialog's icon (C++ MessageDialog::Type).
+// DialogType is a message dialog's icon.
 type DialogType int
 
 const (
@@ -263,8 +262,7 @@ const (
 	DialogError
 )
 
-// Response is the button a dialog was closed with (C++
-// MessageDialog::Response).
+// Response is the button a dialog was closed with.
 type Response int
 
 const (
@@ -275,8 +273,7 @@ const (
 	ResponseCancel
 )
 
-// MessageDialog asks for one choice out of several (C++
-// MessageDialog).
+// MessageDialog asks for one choice out of several.
 type MessageDialog interface {
 	SetType(DialogType)
 	SetTitle(string)
@@ -286,13 +283,13 @@ type MessageDialog interface {
 	RunModal() Response
 }
 
-// FileFilter is a named set of file extensions (C++ FileFilter).
+// FileFilter is a named set of file extensions.
 type FileFilter struct {
 	Name       string
 	Extensions []string
 }
 
-// FileDialog asks for a file to open or save (C++ FileDialog).
+// FileDialog asks for a file to open or save.
 type FileDialog interface {
 	SetTitle(string)
 	// SetCurrentName sets the file name, without its folder.
@@ -309,8 +306,7 @@ type FileDialog interface {
 	RunModal() bool
 }
 
-// Platform creates the platform's objects and runs its event loop
-// (the C++ free functions of gui.h).
+// Platform creates the platform's objects and runs its event loop.
 type Platform interface {
 	Settings() core.Settings
 	CreateTimer() Timer

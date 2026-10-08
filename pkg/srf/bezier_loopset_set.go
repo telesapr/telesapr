@@ -20,8 +20,7 @@ func (s *SBezierLoopSetSet) AddOuter() *SBezierLoopSet {
 	return &s.Sets[len(s.Sets)-1]
 }
 
-// AddOpenPath adds a set holding a loop of just b (C++
-// SBezierLoopSetSet::AddOpenPath).
+// AddOpenPath adds a set holding a loop of just b.
 func (s *SBezierLoopSetSet) AddOpenPath(b SBezier) {
 	s.Sets = append(s.Sets, SBezierLoopSet{Outer: SBezierLoop{Curves: []SBezier{b}}})
 }
@@ -30,8 +29,7 @@ func (s *SBezierLoopSetSet) AddOpenPath(b SBezier) {
 // groups each outer loop with its holes into one SBezierLoopSet. The
 // pwl of every loop goes into spxyz. If srfuv is nil, the curves must
 // all be coplanar and a plane through them is used. Leftover and open
-// loops go to openContours (when non-nil). Mirrors C++
-// SBezierLoopSetSet::FindOuterFacesFrom (curve.cpp:575).
+// loops go to openContours (when non-nil).
 func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon,
 	srfuv *SSurface, tol Tolerance,
 	allClosed *bool, notClosedAt *SEdge,

@@ -13,8 +13,8 @@ type spMat struct {
 }
 
 // spFromRows makes the m x n sparse matrix with the nonzero entries of
-// a (a[i][j], row i, column j), as C++ System::EvalJacobian does: an
-// entry that is exactly zero is not stored.
+// a (a[i][j], row i, column j): an entry that is exactly zero is not
+// stored.
 func spFromRows(a [][]float64, m, n int) *spMat {
 	s := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
 	for j := range n {
@@ -114,13 +114,12 @@ func (s *spMat) mulSelfTransposed() *spMat {
 	return t
 }
 
-// sparseQR is Eigen's SparseQR with COLAMDOrdering (the Eigen 3.4 that
-// C++ SolveSpace vendors in extlib/eigen), the rank-revealing
-// QR C++ System uses: A P = Q R. The columns are ordered by COLAMD, then
-// factored left to right (left-looking, following the column
-// elimination tree); a column whose Householder pivot |beta| falls
-// below the threshold is dead: it gets no reflection, and the
-// permutation moves it after the live ones.
+// sparseQR is Eigen 3.4's SparseQR with COLAMDOrdering, the
+// rank-revealing QR the goldens were solved with: A P = Q R. The
+// columns are ordered by COLAMD, then factored left to right
+// (left-looking, following the column elimination tree); a column whose
+// Householder pivot |beta| falls below the threshold is dead: it gets
+// no reflection, and the permutation moves it after the live ones.
 type sparseQR struct {
 	m, n int
 	// q is the Householder vectors, r the triangular factor, both in

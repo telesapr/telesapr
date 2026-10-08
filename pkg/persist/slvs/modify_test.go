@@ -13,8 +13,8 @@ import (
 
 // TestModifyTools runs the tangent arc and split tools on sketches built
 // on a fixture, and requires the goldens in testdata/tlspr/golden/modify.
-// Until the C++ comparison was frozen, the saves were those C++ wrote
-// after the same steps (testdata/edit, from a C++ harness).
+// Until the SolveSpace comparison was frozen, the saves were those SolveSpace wrote
+// after the same steps (testdata/edit, from a SolveSpace harness).
 func TestModifyTools(t *testing.T) {
 	v := func(x, y float64) geom.Vector { return geom.Vector{X: x, Y: y} }
 	for _, tc := range []struct {
@@ -93,7 +93,7 @@ func TestModifyTools(t *testing.T) {
 }
 
 // addRequest adds a request of type typ with its points at pts, as a
-// C++ harness does with GraphicsWindow::AddRequest and PointForceTo.
+// SolveSpace harness does with GraphicsWindow::AddRequest and PointForceTo.
 func addRequest(sk *sketch.Sketch, typ sketch.RequestType, pts ...geom.Vector) core.HRequest {
 	hr := sk.AddRequestOfType(typ, false)
 	for i, p := range pts {

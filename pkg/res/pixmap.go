@@ -12,7 +12,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
-// PixmapFormat is the layout of a pixmap's pixels (C++ Pixmap::Format).
+// PixmapFormat is the layout of a pixmap's pixels.
 type PixmapFormat int
 
 const (
@@ -24,7 +24,7 @@ const (
 )
 
 // Pixmap is a raster image; rows are Stride bytes apart, a multiple of
-// four (C++ Pixmap).
+// four.
 type Pixmap struct {
 	Format        PixmapFormat
 	Width, Height int
@@ -32,7 +32,7 @@ type Pixmap struct {
 	Data          []byte
 }
 
-// NewPixmap makes a blank pixmap (C++ Pixmap::Create).
+// NewPixmap makes a blank pixmap.
 func NewPixmap(format PixmapFormat, width, height int) *Pixmap {
 	pm := &Pixmap{Format: format, Width: width, Height: height}
 	// Align to fulfill OpenGL texture requirements.
@@ -45,7 +45,7 @@ func NewPixmap(format PixmapFormat, width, height int) *Pixmap {
 	return pm
 }
 
-// BytesPerPixel is the size of one pixel (C++ GetBytesPerPixel).
+// BytesPerPixel is the size of one pixel.
 func (pm *Pixmap) BytesPerPixel() int {
 	switch pm.Format {
 	case FormatRGBA, FormatBGRA:
@@ -58,7 +58,7 @@ func (pm *Pixmap) BytesPerPixel() int {
 	panic("res: unexpected pixmap format")
 }
 
-// Pixel is the pixel at x, y (C++ Pixmap::Pixel).
+// Pixel is the pixel at x, y.
 func (pm *Pixmap) Pixel(x, y int) core.RGBA {
 	p := pm.Data[y*pm.Stride+x*pm.BytesPerPixel():]
 	switch pm.Format {
@@ -76,7 +76,7 @@ func (pm *Pixmap) Pixel(x, y int) core.RGBA {
 	panic("res: unexpected pixmap format")
 }
 
-// SetPixel sets the pixel at x, y (C++ Pixmap::SetPixel).
+// SetPixel sets the pixel at x, y.
 func (pm *Pixmap) SetPixel(x, y int, c core.RGBA) {
 	p := pm.Data[y*pm.Stride+x*pm.BytesPerPixel():]
 	switch pm.Format {
@@ -93,7 +93,7 @@ func (pm *Pixmap) SetPixel(x, y int, c core.RGBA) {
 	}
 }
 
-// ConvertTo swaps between RGB(A) and BGR(A) (C++ Pixmap::ConvertTo).
+// ConvertTo swaps between RGB(A) and BGR(A).
 func (pm *Pixmap) ConvertTo(format PixmapFormat) {
 	ok := (pm.Format == FormatRGBA && format == FormatBGRA) ||
 		(pm.Format == FormatBGRA && format == FormatRGBA) ||
@@ -112,7 +112,7 @@ func (pm *Pixmap) ConvertTo(format PixmapFormat) {
 	pm.Format = format
 }
 
-// Equals compares format, size and pixels (C++ Pixmap::Equals).
+// Equals compares format, size and pixels.
 func (pm *Pixmap) Equals(o *Pixmap) bool {
 	if pm.Format != o.Format || pm.Width != o.Width || pm.Height != o.Height {
 		return false
@@ -126,17 +126,16 @@ func (pm *Pixmap) Equals(o *Pixmap) bool {
 	return true
 }
 
-// Copy is a deep copy (C++ Pixmap::Copy).
+// Copy is a deep copy.
 func (pm *Pixmap) Copy() *Pixmap {
 	c := *pm
 	c.Data = append([]byte(nil), pm.Data...)
 	return &c
 }
 
-// FromPng decodes a PNG as C++ does through libpng with EXPAND,
-// GRAY_TO_RGB and SCALE_16: RGBA if the image has an alpha channel or
-// transparency, else RGB; with flip, the rows bottom-up (C++
-// Pixmap::FromPng).
+// FromPng decodes a PNG through libpng with EXPAND, GRAY_TO_RGB and
+// SCALE_16: RGBA if the image has an alpha channel or transparency,
+// else RGB; with flip, the rows bottom-up.
 func FromPng(data []byte, flip bool) (*Pixmap, error) {
 	img, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
@@ -145,7 +144,7 @@ func FromPng(data []byte, flip bool) (*Pixmap, error) {
 	return FromImage(img, flip), nil
 }
 
-// ReadPng reads a PNG file (C++ Pixmap::ReadPng).
+// ReadPng reads a PNG file.
 func ReadPng(path string, flip bool) (*Pixmap, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -212,8 +211,8 @@ func (pm *Pixmap) ToNRGBA() *image.NRGBA {
 	return img
 }
 
-// WritePng encodes the pixmap as a PNG; with flip, bottom-up (C++
-// Pixmap::WritePng). The bytes are Go's encoder's, not libpng's.
+// WritePng encodes the pixmap as a PNG; with flip, bottom-up. The bytes
+// are Go's encoder's, not libpng's.
 func (pm *Pixmap) WritePng(w io.Writer, flip bool) error {
 	var img image.Image
 	switch pm.Format {

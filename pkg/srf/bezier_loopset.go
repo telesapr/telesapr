@@ -18,9 +18,7 @@ func (s *SBezierLoopSet) Clear() {
 	s.Holes = s.Holes[:0]
 }
 
-// loops returns the set's loops in C++ order: the outer loop first,
-// then the holes.
-// Loops are the outer loop, then the holes.
+// loops returns the set's loops: the outer loop first, then the holes.
 func (s *SBezierLoopSet) Loops() []*SBezierLoop { return s.loops() }
 
 func (s *SBezierLoopSet) loops() []*SBezierLoop {
@@ -32,8 +30,7 @@ func (s *SBezierLoopSet) loops() []*SBezierLoop {
 	return ls
 }
 
-// MakePwlInto adds one contour to sp for each loop, outer loop first
-// (C++ SBezierLoopSet::MakePwlInto).
+// MakePwlInto adds one contour to sp for each loop, outer loop first.
 func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon, tol Tolerance) {
 	for _, l := range s.loops() {
 		sp.AddEmptyContour()
@@ -44,9 +41,7 @@ func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon, tol Tolerance) {
 // sBezierLoopSetFrom assembles every curve of sbl into loops, adding
 // one pwl contour per closed loop to poly. Open loops go to
 // openContours (when non-nil). Returns the closed loops plus the
-// polygon's normal and a point on it. Mirrors C++
-// SBezierLoopSet::From (curve.cpp:497), whose result is a flat list of
-// loops not yet grouped into outer + holes.
+// polygon's normal and a point on it.
 func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, tol Tolerance,
 	allClosed *bool, errorAt *SEdge, openContours *[]SBezierLoop) (loops []SBezierLoop, normal, point geom.Vector) {
 
@@ -76,7 +71,7 @@ func sBezierLoopSetFrom(sbl *SBezierList, poly *SPolygon, tol Tolerance,
 }
 
 // SignedArea is the set's area about its own normal, computed on first
-// use (C++ SBezierLoopSet::SignedArea).
+// use.
 func (s *SBezierLoopSet) SignedArea() float64 {
 	if s.Area == 0.0 {
 		var sp SPolygon

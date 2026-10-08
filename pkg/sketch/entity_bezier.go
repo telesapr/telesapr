@@ -12,9 +12,8 @@ import (
 
 // GenerateEntityBeziers populates the supplied SBezierList with the
 // piecewise-rational Bezier representation of this entity. Used by
-// Group::AssembleLoops to convert sketch entities into trim curves
-// for SShell::MakeFromExtrusionOf and friends. Mirrors C++
-// Entity::GenerateBezierCurves (drawentity.cpp:389).
+// Group::AssembleLoops to convert sketch entities into trim curves for
+// SShell::MakeFromExtrusionOf and friends.
 func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBezierResolver) {
 	if beziers == nil {
 		return
@@ -50,7 +49,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 		r, errR := rt.Radius(e.Distance)
 		if e.Type == core.EntityArcOfCircle {
 			// An arc's radius is the distance from its center to its
-			// start point (C++ EntityBase::CircleGetRadiusNum).
+			// start point.
 			pa, errA := rt.Point(e.Point[1])
 			if errA != nil {
 				return
@@ -136,8 +135,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 }
 
 // arcGetAngles returns the arc's start angle and sweep in the (u, v)
-// basis of its normal. Mirrors C++ EntityBase::ArcGetAngles
-// (entity.cpp:147).
+// basis of its normal.
 func arcGetAngles(e *core.Entity, rt EntityBezierResolver, c, u, v geom.Vector) (thetaa, dtheta float64, ok bool) {
 	pa, errA := rt.Point(e.Point[1])
 	pb, errB := rt.Point(e.Point[2])
@@ -162,9 +160,8 @@ func arcGetAngles(e *core.Entity, rt EntityBezierResolver, c, u, v geom.Vector) 
 	return thetaa, dtheta, true
 }
 
-// splineTerm is a value expressed as a constant part plus multiples
-// of X[i-1], X[i] and X[i+1]. Mirrors the Vector4 (w; x, y, z) use in
-// C++ Entity::ComputeInterpolatingSpline.
+// splineTerm is a value expressed as a constant part plus multiples of
+// X[i-1], X[i] and X[i+1].
 type splineTerm struct{ w, x, y, z float64 }
 
 func (a splineTerm) plus(b splineTerm) splineTerm {
@@ -190,8 +187,7 @@ func wrapInt(v, n int) int {
 }
 
 // computeInterpolatingSpline builds the C2 cubic spline through the
-// entity's on-curve points. Mirrors C++
-// Entity::ComputeInterpolatingSpline (drawentity.cpp:252).
+// entity's on-curve points.
 func computeInterpolatingSpline(e *core.Entity, sbl *srf.SBezierList, rt EntityBezierResolver, periodic bool) {
 	ep := e.ExtraPoints
 
@@ -360,8 +356,7 @@ type EntityBezierResolver interface {
 	Point(core.HEntity) (geom.Vector, error)
 	Normal(core.HEntity) (geom.Quaternion, error)
 	Radius(core.HEntity) (float64, error)
-	// StyleForEntity is the style the entity draws in (C++
-	// Style::ForEntity).
+	// StyleForEntity is the style the entity draws in.
 	StyleForEntity(core.HEntity) core.HStyle
 	// FontList is the font list text entities are drawn with.
 	FontList() *ttf.FontList

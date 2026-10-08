@@ -1,9 +1,8 @@
-// Package golden compares test output with recorded goldens. Most of
-// them were first recorded by the C++ SolveSpace harnesses this project
-// grew out of; since the C++ comparison was frozen (roadmap package
-// 5.1), Go writes them: TELESAPR_REGEN_GOLDEN=1, which
-// scripts/regen-golden.sh sets, makes Check, CheckDump and CheckDir
-// rewrite the golden instead of comparing with it.
+// Package golden compares test output with recorded goldens. Most were
+// first recorded by the SolveSpace harnesses this project grew out of
+// (ADR 0001); since then the tests write them: TELESAPR_REGEN_GOLDEN=1,
+// which scripts/regen-golden.sh sets, makes Check, CheckDump and
+// CheckDir rewrite the golden instead of comparing with it.
 package golden
 
 import (
@@ -136,8 +135,8 @@ func FirstDifference(want, got []byte) string {
 
 // CompareDump compares two dumps line by line and field by field; a
 // field that differs as text is read as a float, since C's %a, in which
-// the C++ harnesses wrote the first goldens, and Go's %x spell hex
-// floats' exponents differently.
+// the first goldens were written, and Go's %x spell hex floats'
+// exponents differently.
 func CompareDump(t testing.TB, want, got string) {
 	t.Helper()
 	ws := bufio.NewScanner(strings.NewReader(want))

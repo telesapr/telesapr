@@ -1,7 +1,7 @@
 package ui
 
 // The styles' user interface: custom styles, assigning them, and their
-// text window screens (C++ style.cpp from Style::CreateCustomStyle on).
+// text window screens.
 
 import (
 	"fmt"
@@ -11,8 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// CreateCustomStyle adds a custom style and returns its handle (C++
-// Style::CreateCustomStyle).
+// CreateCustomStyle adds a custom style and returns its handle.
 func (ss *Application) CreateCustomStyle(rememberForUndo bool) uint32 {
 	if rememberForUndo {
 		ss.UndoRemember()
@@ -21,7 +20,7 @@ func (ss *Application) CreateCustomStyle(rememberForUndo bool) uint32 {
 }
 
 // AssignSelectionToStyle gives the selected entities and constraints
-// style v, or no style for 0 (C++ Style::AssignSelectionToStyle).
+// style v, or no style for 0.
 func (ss *Application) AssignSelectionToStyle(v uint32) {
 	sk := ss.SK
 	gw := ss.GW
@@ -69,51 +68,45 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 	ss.ScheduleShowTW()
 }
 
-// LoadFactoryDefaultStyles resets the default styles and the
-// background colour (C++ Style::LoadFactoryDefaults).
+// LoadFactoryDefaultStyles resets the default styles and the background
+// colour.
 func (ss *Application) LoadFactoryDefaultStyles() {
 	ss.SK.LoadFactoryDefaults()
 	ss.BackgroundColor = rgbi(0, 0, 0)
 }
 
-// ScreenShowListOfStyles shows the list of styles (C++
-// TextWindow::ScreenShowListOfStyles).
+// ScreenShowListOfStyles shows the list of styles.
 func (tw *TextWindow) ScreenShowListOfStyles(link int, v uint32) {
 	tw.GoToScreen(ScreenListOfStyles)
 }
 
-// ScreenShowStyleInfo shows one style (C++
-// TextWindow::ScreenShowStyleInfo).
+// ScreenShowStyleInfo shows one style.
 func (tw *TextWindow) ScreenShowStyleInfo(link int, v uint32) {
 	tw.ss.GW.MenuEdit(CmdUnselectAll)
 	tw.GoToScreen(ScreenStyleInfo)
 	tw.shown.style = core.HStyle{V: v}
 }
 
-// ScreenLoadFactoryDefaultStyles resets the default styles (C++
-// TextWindow::ScreenLoadFactoryDefaultStyles).
+// ScreenLoadFactoryDefaultStyles resets the default styles.
 func (tw *TextWindow) ScreenLoadFactoryDefaultStyles(link int, v uint32) {
 	tw.ss.LoadFactoryDefaultStyles()
 	tw.GoToScreen(ScreenListOfStyles)
 	tw.ss.GW.persistentDirty = true
 }
 
-// ScreenCreateCustomStyle adds a custom style (C++
-// TextWindow::ScreenCreateCustomStyle).
+// ScreenCreateCustomStyle adds a custom style.
 func (tw *TextWindow) ScreenCreateCustomStyle(link int, v uint32) {
 	tw.ss.CreateCustomStyle(true)
 }
 
-// ScreenChangeBackgroundColor edits the background colour (C++
-// TextWindow::ScreenChangeBackgroundColor).
+// ScreenChangeBackgroundColor edits the background colour.
 func (tw *TextWindow) ScreenChangeBackgroundColor(link int, v uint32) {
 	rgb := tw.ss.BackgroundColor
 	tw.ShowEditControlWithColorPicker(3, rgb)
 	tw.edit.meaning = EditBackgroundColor
 }
 
-// ShowListOfStyles is the screen with every style (C++
-// TextWindow::ShowListOfStyles).
+// ShowListOfStyles is the screen with every style.
 func (tw *TextWindow) ShowListOfStyles() {
 	ss := tw.ss
 	tw.Printf(true, "%Ft color  style-name")
@@ -147,8 +140,7 @@ func (tw *TextWindow) ShowListOfStyles() {
 	tw.Printf(false, "  %Fl%Ll%fload factory defaults%E", lf(tw.ScreenLoadFactoryDefaultStyles))
 }
 
-// ScreenChangeStyleName renames a style (C++
-// TextWindow::ScreenChangeStyleName).
+// ScreenChangeStyleName renames a style.
 func (tw *TextWindow) ScreenChangeStyleName(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
@@ -157,7 +149,7 @@ func (tw *TextWindow) ScreenChangeStyleName(link int, v uint32) {
 	tw.edit.meaning = EditStyleName
 }
 
-// ScreenDeleteStyle deletes a style (C++ TextWindow::ScreenDeleteStyle).
+// ScreenDeleteStyle deletes a style.
 func (tw *TextWindow) ScreenDeleteStyle(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
@@ -174,8 +166,7 @@ func (tw *TextWindow) ScreenDeleteStyle(link int, v uint32) {
 	ss.GW.Invalidate(false)
 }
 
-// ScreenChangeStylePatternType sets a style's stipple pattern (C++
-// TextWindow::ScreenChangeStylePatternType).
+// ScreenChangeStylePatternType sets a style's stipple pattern.
 func (tw *TextWindow) ScreenChangeStylePatternType(link int, v uint32) {
 	s := tw.ss.SK.StyleGet(core.HStyle{V: v})
 	s.StippleType = core.StipplePattern(link - 1)
@@ -183,7 +174,7 @@ func (tw *TextWindow) ScreenChangeStylePatternType(link int, v uint32) {
 }
 
 // ScreenChangeStyleMetric edits a style's width, stipple period or text
-// height (C++ TextWindow::ScreenChangeStyleMetric).
+// height.
 func (tw *TextWindow) ScreenChangeStyleMetric(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
@@ -225,8 +216,7 @@ func (tw *TextWindow) ScreenChangeStyleMetric(link int, v uint32) {
 	tw.edit.meaning = meaning
 }
 
-// ScreenChangeStyleTextAngle edits a style's text angle (C++
-// TextWindow::ScreenChangeStyleTextAngle).
+// ScreenChangeStyleTextAngle edits a style's text angle.
 func (tw *TextWindow) ScreenChangeStyleTextAngle(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
@@ -235,8 +225,7 @@ func (tw *TextWindow) ScreenChangeStyleTextAngle(link int, v uint32) {
 	tw.edit.meaning = EditStyleTextAngle
 }
 
-// ScreenChangeStyleColor edits a style's stroke or fill colour (C++
-// TextWindow::ScreenChangeStyleColor).
+// ScreenChangeStyleColor edits a style's stroke or fill colour.
 func (tw *TextWindow) ScreenChangeStyleColor(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
@@ -258,8 +247,7 @@ func (tw *TextWindow) ScreenChangeStyleColor(link int, v uint32) {
 	tw.edit.meaning = em
 }
 
-// ScreenChangeStyleYesNo flips one of a style's options (C++
-// TextWindow::ScreenChangeStyleYesNo).
+// ScreenChangeStyleYesNo flips one of a style's options.
 func (tw *TextWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
@@ -328,8 +316,7 @@ func (tw *TextWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 }
 
 // EditControlDoneForStyles takes an edited style value, and reports
-// whether the edit was one of the styles' (C++
-// TextWindow::EditControlDoneForStyles).
+// whether the edit was one of the styles'.
 func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
@@ -394,8 +381,7 @@ func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
 	return true
 }
 
-// ShowStyleInfo is the screen for one style (C++
-// TextWindow::ShowStyleInfo).
+// ShowStyleInfo is the screen for one style.
 func (tw *TextWindow) ShowStyleInfo() {
 	ss := tw.ss
 	tw.Printf(true, "%Fl%f%Ll(back to list of styles)%E", lf(tw.ScreenShowListOfStyles))
@@ -572,8 +558,7 @@ func (tw *TextWindow) ShowStyleInfo() {
 	}
 }
 
-// ScreenAssignSelectionToStyle gives the selection style v (C++
-// TextWindow::ScreenAssignSelectionToStyle).
+// ScreenAssignSelectionToStyle gives the selection style v.
 func (tw *TextWindow) ScreenAssignSelectionToStyle(link int, v uint32) {
 	tw.ss.AssignSelectionToStyle(v)
 }

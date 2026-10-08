@@ -26,8 +26,7 @@ const (
 	EarIsEar   EarType = 2
 )
 
-// SPointList is an ordered list of points, each with a tag (C++
-// SPointList).
+// SPointList is an ordered list of points, each with a tag.
 type SPointList struct {
 	Points []SPoint
 }
@@ -36,8 +35,7 @@ func (l *SPointList) Clear() {
 	l.Points = l.Points[:0]
 }
 
-// IndexForPoint is the index of the list's point equal to pt, or -1
-// (C++ SPointList::IndexForPoint).
+// IndexForPoint is the index of the list's point equal to pt, or -1.
 func (l *SPointList) IndexForPoint(pt geom.Vector) int {
 	for i := range l.Points {
 		if pt.Equals(l.Points[i].P) {
@@ -48,14 +46,13 @@ func (l *SPointList) IndexForPoint(pt geom.Vector) int {
 	return -1
 }
 
-// ContainsPoint reports whether pt is one of the list's points (C++
-// SPointList::ContainsPoint).
+// ContainsPoint reports whether pt is one of the list's points.
 func (l *SPointList) ContainsPoint(pt geom.Vector) bool {
 	return l.IndexForPoint(pt) >= 0
 }
 
 // IncrementTagFor counts pt: it increments the tag of the point equal
-// to pt, or adds pt with tag 1 (C++ SPointList::IncrementTagFor).
+// to pt, or adds pt with tag 1.
 func (l *SPointList) IncrementTagFor(pt geom.Vector) {
 	for i := range l.Points {
 		if pt.Equals(l.Points[i].P) {
@@ -66,13 +63,13 @@ func (l *SPointList) IncrementTagFor(pt geom.Vector) {
 	l.Points = append(l.Points, SPoint{P: pt, Tag: 1})
 }
 
-// Add appends pt with tag 0 (C++ SPointList::Add).
+// Add appends pt with tag 0.
 func (l *SPointList) Add(pt geom.Vector) {
 	l.Points = append(l.Points, SPoint{P: pt})
 }
 
 // removeTagged drops the points for which tagged is true, keeping the
-// order of the rest (C++ List::RemoveTagged, after the caller tags).
+// order of the rest.
 func (l *SPointList) removeTagged(tagged func(*SPoint) bool) {
 	out := l.Points[:0]
 	for i := range l.Points {

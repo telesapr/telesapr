@@ -10,8 +10,7 @@ import (
 // style screens of the text window are user interface.
 
 // StyleGet is style h, created with default settings if the sketch
-// doesn't have it yet; no style means the active group's (C++
-// Style::Get).
+// doesn't have it yet; no style means the active group's.
 func (sk *Sketch) StyleGet(h core.HStyle) *core.Style {
 	if h.V == 0 {
 		h.V = core.StyleActiveGrp
@@ -26,16 +25,15 @@ func (sk *Sketch) StyleGet(h core.HStyle) *core.Style {
 	return sk.Style(h)
 }
 
-// CreateAllDefaultStyles makes sure the sketch has every default style
-// (C++ Style::CreateAllDefaultStyles).
+// CreateAllDefaultStyles makes sure the sketch has every default style.
 func (sk *Sketch) CreateAllDefaultStyles() {
 	for _, d := range core.StyleDefaults {
 		sk.StyleGet(d.H)
 	}
 }
 
-// CreateDefaultStyle adds style h: the default style it names, or else a
-// custom one like the active group's (C++ Style::CreateDefaultStyle).
+// CreateDefaultStyle adds style h: the default style it names, or else
+// a custom one like the active group's.
 func (sk *Sketch) CreateDefaultStyle(h core.HStyle) {
 	var d *core.StyleDefault
 	for i := range core.StyleDefaults {
@@ -56,7 +54,7 @@ func (sk *Sketch) CreateDefaultStyle(h core.HStyle) {
 	}
 	ns.H = h
 
-	// C++ IdList keeps the styles sorted by handle.
+	// The styles are kept sorted by handle.
 	i := sort.Search(len(sk.Styles), func(i int) bool { return sk.Styles[i].H.V > h.V })
 	sk.Styles = append(sk.Styles, core.Style{})
 	copy(sk.Styles[i+1:], sk.Styles[i:])
@@ -64,8 +62,7 @@ func (sk *Sketch) CreateDefaultStyle(h core.HStyle) {
 }
 
 // StyleForEntity is the style entity he draws in: its own, else by
-// whether it's in the active group, or construction (C++
-// Style::ForEntity).
+// whether it's in the active group, or construction.
 func (sk *Sketch) StyleForEntity(he core.HEntity) core.HStyle {
 	e := sk.MustEntity(he)
 	// If the entity has a special style, use that. If that style doesn't
@@ -85,7 +82,7 @@ func (sk *Sketch) StyleForEntity(he core.HEntity) core.HStyle {
 }
 
 // StyleColor is style h's stroke colour, rewritten for export as
-// RewriteColor says (C++ Style::Color).
+// RewriteColor says.
 func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA {
 	s := sk.StyleGet(h)
 	if forExport {
@@ -94,7 +91,7 @@ func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) cor
 	return s.Color
 }
 
-// StyleFillColor is style h's fill colour (C++ Style::FillColor).
+// StyleFillColor is style h's fill colour.
 func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA {
 	s := sk.StyleGet(h)
 	if forExport {
@@ -104,8 +101,7 @@ func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool)
 }
 
 // LoadFactoryDefaults resets the default styles to their factory
-// settings (C++ Style::LoadFactoryDefaults; the background colour it
-// also resets is the user interface's).
+// settings.
 func (sk *Sketch) LoadFactoryDefaults() {
 	for i := range core.StyleDefaults {
 		d := &core.StyleDefaults[i]
@@ -115,8 +111,7 @@ func (sk *Sketch) LoadFactoryDefaults() {
 }
 
 // FreezeDefaultStyles saves the default styles as the user's settings,
-// with widths and text heights at the view's scale (C++
-// Style::FreezeDefaultStyles).
+// with widths and text heights at the view's scale.
 func (sk *Sketch) FreezeDefaultStyles(settings core.Settings) {
 	for i := range core.StyleDefaults {
 		d := &core.StyleDefaults[i]
@@ -130,7 +125,7 @@ func (sk *Sketch) FreezeDefaultStyles(settings core.Settings) {
 }
 
 // StyleWidth is style h's width in pixels, at the view's scale in
-// pixels per mm (C++ Style::Width).
+// pixels per mm.
 func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64 {
 	s := sk.StyleGet(h)
 	switch s.WidthAs {
@@ -142,8 +137,7 @@ func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64 {
 	panic("Unexpected units")
 }
 
-// StyleTextHeight is style h's text height in pixels (C++
-// Style::TextHeight).
+// StyleTextHeight is style h's text height in pixels.
 func (sk *Sketch) StyleTextHeight(h core.HStyle, scale float64) float64 {
 	s := sk.StyleGet(h)
 	switch s.TextHeightAs {
@@ -155,19 +149,19 @@ func (sk *Sketch) StyleTextHeight(h core.HStyle, scale float64) float64 {
 	panic("Unexpected units")
 }
 
-// StyleExportable reports whether lines of style h go in exported files:
-// if it's both shown and exportable (C++ Style::Exportable).
+// StyleExportable reports whether lines of style h go in exported
+// files: if it's both shown and exportable.
 func (sk *Sketch) StyleExportable(h core.HStyle) bool {
 	s := sk.StyleGet(h)
 	return s.Exportable && s.Visible
 }
 
-// StylePatternType is style h's stipple pattern (C++ Style::PatternType).
+// StylePatternType is style h's stipple pattern.
 func (sk *Sketch) StylePatternType(h core.HStyle) core.StipplePattern {
 	return sk.StyleGet(h).StippleType
 }
 
-// StyleStippleScale is style h's stipple scale (C++ Style::StippleScale).
+// StyleStippleScale is style h's stipple scale.
 func (sk *Sketch) StyleStippleScale(h core.HStyle) float64 {
 	return sk.StyleGet(h).StippleScale
 }

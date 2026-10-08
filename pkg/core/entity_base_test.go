@@ -143,7 +143,7 @@ func TestEntityNumAndExprsAgree(t *testing.T) {
 			t.Errorf("type %d: FaceGetPointNum %v, FaceGetPointExprs %v", e.Type, got, want)
 		}
 		if e.Type == EntityFaceNRotAxisTrans {
-			// C++ has no FaceGetNormalExprs case for this type.
+			// SolveSpace has no FaceGetNormalExprs case for this type.
 			continue
 		}
 		if got, want := e.FaceGetNormalNum(sk), evalVector(t, sk, e.FaceGetNormalExprs()); !got.EqualsTol(want, 1e-12) {

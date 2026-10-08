@@ -12,13 +12,12 @@ import (
 
 func vec3(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 
-// getMilliseconds is a monotonic clock in milliseconds (C++
-// GetMilliseconds).
+// getMilliseconds is a monotonic clock in milliseconds.
 func getMilliseconds() int64 { return time.Since(processStart).Milliseconds() }
 
 var processStart = time.Now()
 
-// evalExpr evaluates an expression the user typed (C++ Expr::Eval).
+// evalExpr evaluates an expression the user typed.
 func (ss *Application) evalExpr(e *core.Expr) float64 {
 	return e.Eval(sketch.NewRuntime(ss.SK), nil)
 }

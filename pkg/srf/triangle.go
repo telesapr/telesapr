@@ -29,26 +29,25 @@ type STriangle struct {
 	NA, NB, NC geom.Vector
 }
 
-// STriangleFrom is a triangle with the given vertices, and zero
-// vertex normals (C++ STriangle::From).
+// STriangleFrom is a triangle with the given vertices, and zero vertex
+// normals.
 func STriangleFrom(meta STriMeta, a, b, c geom.Vector) STriangle {
 	return STriangle{Meta: meta, A: a, B: b, C: c}
 }
 
-// Normal is the triangle's unnormalized normal (C++ STriangle::Normal).
+// Normal is the triangle's unnormalized normal.
 func (t *STriangle) Normal() geom.Vector {
 	ab, bc := t.B.Minus(t.A), t.C.Minus(t.B)
 	return ab.Cross(bc)
 }
 
-// FlipNormal swaps a and b (C++ STriangle::FlipNormal).
+// FlipNormal swaps a and b.
 func (t *STriangle) FlipNormal() {
 	t.A, t.B = t.B, t.A
 	t.NA, t.NB = t.NB, t.NA
 }
 
-// MinAltitude is the triangle's smallest altitude (C++
-// STriangle::MinAltitude).
+// MinAltitude is the triangle's smallest altitude.
 func (t *STriangle) MinAltitude() float64 {
 	altA := t.A.DistanceToLine(t.B, t.C.Minus(t.B))
 	altB := t.B.DistanceToLine(t.C, t.A.Minus(t.C))
@@ -58,8 +57,7 @@ func (t *STriangle) MinAltitude() float64 {
 }
 
 // ContainsPoint reports whether p, projected along the normal, lies in
-// the triangle; never for a zero-area triangle (C++
-// STriangle::ContainsPoint).
+// the triangle; never for a zero-area triangle.
 func (t *STriangle) ContainsPoint(p geom.Vector) bool {
 	n := t.Normal()
 	if t.MinAltitude() < geom.LengthEps {
@@ -70,7 +68,7 @@ func (t *STriangle) ContainsPoint(p geom.Vector) bool {
 }
 
 // ContainsPointProjd reports whether p, projected along n, lies in the
-// triangle (edges included; C++ STriangle::ContainsPointProjd).
+// triangle (edges included).
 func (t *STriangle) ContainsPointProjd(n, p geom.Vector) bool {
 	ab, bc, ca := t.B.Minus(t.A), t.C.Minus(t.B), t.A.Minus(t.C)
 
@@ -105,24 +103,23 @@ func (t *STriangle) containsPointProjdWithin(n, p geom.Vector) bool {
 }
 
 // edgeCrossesWithin reports whether the segment from a to b, whose ends
-// lie on either side of the triangle's plane (unit normal nn, offset d),
-// crosses the plane within LengthEps of the triangle, measured in the
-// plane at the crossing point. containsPointProjdWithin along the
+// lie on either side of the triangle's plane (unit normal nn, offset
+// d), crosses the plane within LengthEps of the triangle, measured in
+// the plane at the crossing point. containsPointProjdWithin along the
 // segment measures that distance across the segment instead, which for
 // a segment nearly in the triangle's plane is the in-plane distance
 // times the sine of their angle: a long edge of a flat face passing a
 // sliver of the next face, all but in its plane, was taken to cross it
 // millimetres away (NIST_MBE_PMI_5 and _6). The mesh checker asks both,
 // so that it counts no crossing it didn't before (the boxes of
-// translate_asy, which do cross, keep C++'s count).
+// translate_asy, which do cross, keep their count).
 func (t *STriangle) edgeCrossesWithin(nn geom.Vector, d float64, a, b geom.Vector) bool {
 	p := geom.AtIntersectionOfPlaneAndLine(nn, d, a, b)
 	return t.containsPointProjdWithin(nn, p)
 }
 
 // Raytrace intersects the ray rayPoint + t*rayDir with the triangle,
-// which must face against the ray (C++ STriangle::Raytrace; the
-// Moeller-Trumbore algorithm).
+// which must face against the ray.
 func (t *STriangle) Raytrace(rayPoint, rayDir geom.Vector) (tt float64, inters geom.Vector, ok bool) {
 	// Find vectors for two edges sharing vertex A.
 	edge1 := t.B.Minus(t.A)
@@ -165,28 +162,27 @@ func (t *STriangle) Raytrace(rayPoint, rayDir geom.Vector) (tt float64, inters g
 }
 
 // SignedVolume is the signed volume of the tetrahedron of the triangle
-// and the origin (C++ STriangle::SignedVolume).
+// and the origin.
 func (t *STriangle) SignedVolume() float64 {
 	return t.A.Dot(t.B.Cross(t.C)) / 6.0
 }
 
-// Area is the triangle's area (C++ STriangle::Area).
+// Area is the triangle's area.
 func (t *STriangle) Area() float64 {
 	ab := t.A.Minus(t.B)
 	cb := t.C.Minus(t.B)
 	return ab.Cross(cb).Magnitude() / 2.0
 }
 
-// IsDegenerate reports whether a vertex lies on the opposite edge (C++
-// STriangle::IsDegenerate).
+// IsDegenerate reports whether a vertex lies on the opposite edge.
 func (t *STriangle) IsDegenerate() bool {
 	return t.A.OnLineSegment(t.B, t.C, geom.LengthEps) ||
 		t.B.OnLineSegment(t.A, t.C, geom.LengthEps) ||
 		t.C.OnLineSegment(t.A, t.B, geom.LengthEps)
 }
 
-// Transform takes every vertex and normal as coordinates in the
-// (u, v, n) basis (C++ STriangle::Transform).
+// Transform takes every vertex and normal as coordinates in the (u, v,
+// n) basis.
 func (t STriangle) Transform(u, v, n geom.Vector) STriangle {
 	tr := t
 	tr.A = tr.A.ScaleOutOfCsys(u, v, n)

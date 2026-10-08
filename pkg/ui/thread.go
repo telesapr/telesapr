@@ -9,8 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/thread"
 )
 
-// This file is an extension: C++ SolveSpace has no screw threads. The
-// screen follows the paste-transformed one (clipboard.go).
+// The thread screen follows the paste-transformed one (clipboard.go).
 
 // threadScreen is what the screw thread screen shows and makes.
 type threadScreen struct {

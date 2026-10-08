@@ -12,9 +12,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/solver"
 )
 
-// TestParityGroupSolveVsCpp regenerates every fixture C++ can load and
-// checks that each group solves, with the degrees of freedom C++
-// reports, that its shell's faces are C++'s, and that every
+// TestParityGroupSolveVsCpp regenerates every fixture SolveSpace can load and
+// checks that each group solves, with the degrees of freedom SolveSpace
+// reports, that its shell's faces are SolveSpace's, and that every
 // constraint's equations hold afterwards.
 func TestParityGroupSolveVsCpp(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
@@ -38,11 +38,11 @@ func TestParityGroupSolveVsCpp(t *testing.T) {
 					t.Errorf("group %08x: solve result %d, want OKAY", hv, g.Solved.How)
 				}
 				if g.Solved.Dof != dof {
-					t.Errorf("group %08x: dof %d, C++ %d", hv, g.Solved.Dof, dof)
+					t.Errorf("group %08x: dof %d, SolveSpace %d", hv, g.Solved.Dof, dof)
 				}
 			}
 
-			// Every group's own shell has the faces C++ gives it.
+			// Every group's own shell has the faces SolveSpace gives it.
 			for _, hg := range sk.GroupOrder {
 				g := sk.Group(hg)
 				var faces []uint32
@@ -52,7 +52,7 @@ func TestParityGroupSolveVsCpp(t *testing.T) {
 				slices.Sort(faces)
 				want := cppShellFaces[name][hg.V]
 				if fmt.Sprint(faces) != fmt.Sprint(want) {
-					t.Errorf("group %08x: shell faces %x, C++ %x", hg.V, faces, want)
+					t.Errorf("group %08x: shell faces %x, SolveSpace %x", hg.V, faces, want)
 				}
 			}
 

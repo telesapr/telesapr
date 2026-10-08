@@ -9,11 +9,10 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// This file is an extension: C++ SolveSpace lists the constraints that
-// keep a group from solving, and measures the selection, only in the
-// text window. Here the constraints are also drawn in their own colour,
-// and the list can show each one; and a measure mode labels the
-// selection's measure on the canvas.
+// The text window lists the constraints that keep a group from solving,
+// and measures the selection. Here the constraints are also drawn in
+// their own colour, and the list can show each one; and a measure mode
+// labels the selection's measure on the canvas.
 
 // colorConflict is the colour of a constraint the active group's
 // failed solve blames.

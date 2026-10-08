@@ -78,9 +78,8 @@ func Load(data []byte, path string) (doc *Document, err error) {
 	return doc, nil
 }
 
-// loadLinked reads the saved entities, mesh and shell of a linked .tlspr
-// file, and imports its styles that the sketch doesn't have (C++
-// SolveSpaceUI::LoadEntitiesFromSlvs).
+// loadLinked reads the saved entities, mesh and shell of a linked
+// .tlspr file, and imports its styles that the sketch doesn't have.
 func loadLinked(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {

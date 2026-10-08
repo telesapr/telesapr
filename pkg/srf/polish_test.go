@@ -103,7 +103,7 @@ func TestSCurveRemoveShortSegments(t *testing.T) {
 
 // TestSCurveRemoveShortSegmentsKeepsEssentialPoints verifies that
 // RemoveShortSegments preserves a vertex when it is marked as a
-// curve vertex (the C++ logic for SCurvePt::vertex).
+// curve vertex (the SolveSpace logic for SCurvePt::vertex).
 func TestSCurveRemoveShortSegmentsKeepsEssentialPoints(t *testing.T) {
 	c := &SCurve{
 		Points: []SCurvePt{
@@ -165,9 +165,9 @@ func TestSPolygonUvGridTriangulateIntoAdaptive(t *testing.T) {
 	}
 }
 
-// TestSPolygonOffsetInto offsets squares as C++ does: counterclockwise
-// grows, with rounded corners exactly r from the square; clockwise
-// shrinks, with mitred corners.
+// TestSPolygonOffsetInto offsets squares: counterclockwise grows, with
+// rounded corners exactly r from the square; clockwise shrinks, with
+// mitred corners.
 func TestSPolygonOffsetInto(t *testing.T) {
 	square := func(pts ...geom.Vector) *SPolygon {
 		p := &SPolygon{}

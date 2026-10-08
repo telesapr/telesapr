@@ -56,7 +56,7 @@ func TestSaveNewFile(t *testing.T) {
 	if len(ss.RecentFiles) == 0 || ss.RecentFiles[0] != path {
 		t.Errorf("recent files %v", ss.RecentFiles)
 	}
-	// C++ shows the full path by default.
+	// SolveSpace shows the full path by default.
 	if title := ss.GW.window.(*headless.Window).Title; title != path {
 		t.Errorf("title %q", title)
 	}
@@ -236,9 +236,9 @@ func TestAnalyzeVolume(t *testing.T) {
 	t.Logf("%s / %s", d.Message, d.Description)
 }
 
-// TestLoadMissingLinkAsks loads a sketch whose linked file is missing:
-// as in C++, the user is asked to locate it, and may decline, cancel
-// the load, or pick the file.
+// TestLoadMissingLinkAsks loads a sketch whose linked file is missing:,
+// the user is asked to locate it, and may decline, cancel the load, or
+// pick the file.
 func TestLoadMissingLinkAsks(t *testing.T) {
 	fixture := importFixture(t, "group/link/normal.slvs")
 	linked, err := filepath.Abs(filepath.Join(filepath.Dir(fixture), "rect_v20.tlspr"))

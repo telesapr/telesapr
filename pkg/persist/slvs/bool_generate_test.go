@@ -17,17 +17,17 @@ type boolFixtureStats struct {
 	VMax      [3]float64
 	Volume    float64 // signed volume of the last (active) mesh group
 	// Naked and self-intersecting edges of the active group's display
-	// mesh, as the C++ fixture tests find them.
+	// mesh, as the SolveSpace fixture tests find them.
 	NakedEdges   int
 	Inters, Leak bool
 	TotalVol     float64 // sum of all mesh-group running volumes
 }
 
 // booleanFixtureGoldens holds, per fixture, the Go-port triangle
-// count (a regression baseline, not a C++ value) and the bounding box
+// count (a regression baseline, not a SolveSpace value) and the bounding box
 // of the active group's mesh, which is the model's exact extent.
 //
-// The active group in the C++ binary is SK.GetGroup(activeGroup),
+// The active group in the SolveSpace binary is SK.GetGroup(activeGroup),
 // which corresponds to the last group in topological order for
 // freshly-loaded fixtures. Triangles are summed across every mesh
 // group's running mesh.
@@ -64,15 +64,15 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 	},
 }
 
-// booleanFixtureCppGoldens holds the C++ reference volumes produced
-// by the C++ SolveSpace CLI testsuite. Each fixture's value comes
+// booleanFixtureCppGoldens holds the SolveSpace reference volumes produced
+// by the SolveSpace CLI testsuite. Each fixture's value comes
 // from `m->CalculateVolume() / golden = 1.0` assertions in
-// solvespace/test/group/<name>/test.cpp. The C++ testsuite is the
+// solvespace/test/group/<name>/test.cpp. The SolveSpace testsuite is the
 // ground truth; the Go port's volumes should converge to these as
 // the boolean-CSG pipeline matures.
 //
-// They were read from the C++ testsuite's `CalculateVolume() / N == 1.0`
-// checks; since the C++ comparison was frozen they are this project's
+// They were read from the SolveSpace testsuite's `CalculateVolume() / N == 1.0`
+// checks; since the SolveSpace comparison was frozen they are this project's
 // goldens, changed by hand when the kernel changes a volume on purpose.
 var booleanFixtureCppGoldens = map[string]float64{
 	"boolean_coplanar_union":   13250.0,
@@ -84,7 +84,7 @@ var booleanFixtureCppGoldens = map[string]float64{
 }
 
 // cppGoldenRatioTol is how far stats.Volume / cpp may be from 1: the
-// C++ testsuite's own criterion, |ratio - 1| < LENGTH_EPS (1e-6;
+// SolveSpace testsuite's own criterion, |ratio - 1| < LENGTH_EPS (1e-6;
 // test/harness.cpp, CheckEqualEpsilon).
 const cppGoldenRatioTol = 1e-6
 
@@ -104,7 +104,7 @@ func collectBoolStats(path string) (boolFixtureStats, error) {
 		if !g.IsMeshGroup() {
 			continue
 		}
-		// The mesh C++ displays, and its fixture tests check.
+		// The mesh SolveSpace displays, and its fixture tests check.
 		g.GenerateDisplayItems(doc.Sketch)
 		mesh := &g.DisplayMesh
 		stats.Triangles += len(mesh.Triangles)
@@ -189,7 +189,7 @@ func TestParityBooleanFixtures(t *testing.T) {
 			t.Errorf("%s: triangle count drift: got %d, want %d",
 				name, stats.Triangles, golden.Triangles)
 		}
-		// The C++ fixture tests also require the mesh to be watertight:
+		// The SolveSpace fixture tests also require the mesh to be watertight:
 		// no naked or self-intersecting edges.
 		if stats.NakedEdges != 0 || stats.Inters || stats.Leak {
 			t.Errorf("%s: %d naked or self-intersecting edges (inters %v, leaks %v)",
@@ -259,7 +259,7 @@ func TestParityBooleanFixtureBBoxValue(t *testing.T) {
 }
 
 // TestParityBooleanVolumeVsCppGolden compares each boolean fixture's
-// active-group volume against the C++ reference volume from
+// active-group volume against the SolveSpace reference volume from
 // solvespace/test/group/<name>/test.cpp, within the per-fixture band
 // in booleanFixtureCppGoldenTolerances.
 func TestParityBooleanVolumeVsCppGolden(t *testing.T) {

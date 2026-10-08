@@ -32,7 +32,7 @@ func TestPhase7AllFixturesLoad(t *testing.T) {
 		rel, _ := filepath.Rel(root, path)
 		if filepath.ToSlash(rel) == invalidFixture {
 			if err == nil {
-				t.Errorf("%s: loaded, but C++ can't load it", path)
+				t.Errorf("%s: loaded, but SolveSpace can't load it", path)
 			}
 			return nil
 		}
@@ -56,6 +56,6 @@ func TestPhase7AllFixturesLoad(t *testing.T) {
 	t.Logf("loaded %d fixtures successfully", count)
 }
 
-// invalidFixture is not a valid SolveSpace file; C++ can't load it
+// invalidFixture is not a valid SolveSpace file; SolveSpace can't load it
 // either.
 const invalidFixture = "solver/param_point_distance.slvs"

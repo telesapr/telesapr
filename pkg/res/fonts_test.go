@@ -11,7 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// The strings and code points the golden covers, as the C++ harness that
+// The strings and code points the golden covers, as the SolveSpace harness that
 // recorded it used them.
 var fontTestStrings = []string{
 	"Hello, world!", "0.123 mm", "\u2220 45\u00b0", "日本語",
@@ -23,7 +23,7 @@ var fontTestCodepoints = []rune{'A', ' ', 'g', 0xE000, 0xE003, 0xE007, 0x00B0, 0
 	0x672C, 0x8A9E, 0xFFFE, 0x1F600, 0x0416, 0x05D0, 0x3042}
 
 // TestFonts compares the vector and bitmap fonts with the golden
-// (testdata/res/fonts.golden, first recorded from C++ resource.cpp):
+// (testdata/res/fonts.golden, first recorded from SolveSpace resource.cpp):
 // metrics, widths and traced strokes bit for bit, and each bitmap
 // glyph's texture slot and pixels.
 func TestFonts(t *testing.T) {

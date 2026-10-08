@@ -1,7 +1,7 @@
 package ui
 
 // The configuration screen: settings that are not specific to the file
-// being edited (C++ confscreen.cpp).
+// being edited.
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// toF32 rounds to a C++ float field.
+// toF32 rounds to a single-precision float, as the setting is stored.
 func toF32(v float64) float64 { return float64(float32(v)) }
 
 func (tw *TextWindow) ScreenChangeColor(link int, v uint32) {
@@ -252,8 +252,7 @@ func (tw *TextWindow) ScreenChangeAnimationSpeed(link int, v uint32) {
 	tw.edit.meaning = EditAnimationSpeed
 }
 
-// ShowConfiguration is the configuration screen (C++
-// TextWindow::ShowConfiguration).
+// ShowConfiguration is the configuration screen.
 func (tw *TextWindow) ShowConfiguration() {
 	ss := tw.ss
 	tw.Printf(true, "%Ft user color (r, g, b)")
@@ -418,8 +417,7 @@ func (tw *TextWindow) ShowConfiguration() {
 // the bound when the value is NaN, where Go's min and max give NaN.
 
 // EditControlDoneForConfiguration takes an edited configuration value,
-// and reports whether the edit was one of the configuration's (C++
-// TextWindow::EditControlDoneForConfiguration).
+// and reports whether the edit was one of the configuration's.
 func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
@@ -584,8 +582,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 	return true
 }
 
-// isUnreasonable is C++ IsReasonable, which despite its name is true
-// for NaN and huge values.
+// isUnreasonable is true for NaN and huge values.
 func isUnreasonable(x float64) bool {
 	return math.IsNaN(x) || x > 1e11 || x < -1e11
 }

@@ -18,7 +18,7 @@ import (
 )
 
 // canvas is the drawing area: a widget showing the last frame the
-// application rendered (the C++ GtkGLWidget).
+// application rendered.
 type canvas struct {
 	widget.Base
 	w *Window
@@ -259,11 +259,10 @@ func (c *canvas) blit() {
 	d.Flush()
 }
 
-// tooltip is a small window of its own shown under the pointer after
-// it rests in its area, since takigo has no tooltips (the C++ backends
-// use the toolkit's). A window, not pixels drawn over the frame: with
-// OpenGL the next buffer swap, sent on another connection, would wipe
-// those out at once.
+// tooltip is a small window of its own shown under the pointer after it
+// rests in its area, since takigo has no tooltips. A window, not pixels
+// drawn over the frame: with OpenGL the next buffer swap, sent on
+// another connection, would wipe those out at once.
 type tooltip struct {
 	text       string
 	x, y, w, h float64

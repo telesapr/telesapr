@@ -84,8 +84,7 @@ type Style struct {
 
 type StyleList []Style
 
-// StyleDefault is a default style's factory settings (C++
-// Style::Default).
+// StyleDefault is a default style's factory settings.
 type StyleDefault struct {
 	H           HStyle
 	CnfPrefix   string
@@ -98,7 +97,7 @@ type StyleDefault struct {
 
 func rgbf(r, g, b float32) RGBA { return RGBAFromFloat(r, g, b, 1.0) }
 
-// StyleDefaults are the default styles (C++ Style::Defaults).
+// StyleDefaults are the default styles.
 var StyleDefaults = []StyleDefault{
 	{HStyle{StyleActiveGrp}, "ActiveGrp", rgbf(1.0, 1.0, 1.0), 1.5, 4, true, StippleContinuous},
 	{HStyle{StyleConstruction}, "Construction", rgbf(0.1, 0.7, 0.1), 1.5, 0, false, StippleContinuous},
@@ -164,8 +163,7 @@ func FillDefaultStyle(s *Style, d *StyleDefault, factory bool, settings Settings
 	s.ZIndex = d.ZIndex
 }
 
-// CnfPrefixToName is a default style's name, e.g. "#def-active-grp"
-// (C++ Style::CnfPrefixToName).
+// CnfPrefixToName is a default style's name, e.g. "#def-active-grp".
 func CnfPrefixToName(prefix string) string {
 	var name strings.Builder
 	name.WriteString("#def-")
@@ -182,8 +180,7 @@ func CnfPrefixToName(prefix string) string {
 	return name.String()
 }
 
-// DescriptionString names the style, e.g. "s100-thick" (C++
-// Style::DescriptionString).
+// DescriptionString names the style, e.g. "s100-thick".
 func (s *Style) DescriptionString() string {
 	if s.Name == "" {
 		return fmt.Sprintf("s%03x-(unnamed)", s.H.V)
@@ -192,7 +189,7 @@ func (s *Style) DescriptionString() string {
 }
 
 // StipplePatternFromString is the pattern with the given name, ignoring
-// case; continuous if none (C++ Style::StipplePatternFromString).
+// case; continuous if none.
 func StipplePatternFromString(name string) StipplePattern {
 	switch strings.ToLower(name) {
 	case "continuous":
@@ -217,8 +214,7 @@ func StipplePatternFromString(name string) StipplePattern {
 	return StippleContinuous
 }
 
-// StipplePatternName is the pattern's name (C++
-// Style::StipplePatternName).
+// StipplePatternName is the pattern's name.
 func StipplePatternName(p StipplePattern) string {
 	switch p {
 	case StippleContinuous:
@@ -244,8 +240,7 @@ func StipplePatternName(p StipplePattern) string {
 }
 
 // RewriteColor turns an almost-white colour black when fixExportColors,
-// so it doesn't vanish on a light background (C++ Style::RewriteColor,
-// with SS.fixExportColors as an argument).
+// so it doesn't vanish on a light background.
 func RewriteColor(rgbin RGBA, fixExportColors bool) RGBA {
 	dr := float64(rgbin.RedF()) - 1
 	dg := float64(rgbin.GreenF()) - 1

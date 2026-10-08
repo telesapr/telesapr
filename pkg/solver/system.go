@@ -14,13 +14,13 @@ import (
 
 // ConvergeTolerance is how close to zero every equation must be. It
 // must always be much less than LENGTH_EPS, and in practice should be
-// much less (C++ System::CONVERGE_TOLERANCE).
+// much less.
 const ConvergeTolerance = core.LengthEps / 1e2
 
-// MaxUnknowns bounds the size of the Jacobian (C++ System::MAX_UNKNOWNS).
+// MaxUnknowns bounds the size of the Jacobian.
 const MaxUnknowns = 2048
 
-// Tags the solver puts on params and equations (C++ System enum).
+// Tags the solver puts on params and equations.
 const (
 	varSubstituted = 10000
 	varDofTest     = 10001
@@ -51,12 +51,11 @@ type Group struct {
 	// Constraints are the group's constraints, in handle order.
 	Constraints []*core.Constraint
 	// WriteEquationsExceptFor appends the equations of the group's
-	// constraints except hc, of its entities and of the group itself
-	// (C++ System::WriteEquationsExceptFor).
+	// constraints except hc, of its entities and of the group itself.
 	WriteEquationsExceptFor func(hc core.HConstraint, l *[]core.Equation)
 }
 
-// System is the equations and unknowns of one group (C++ System).
+// System is the equations and unknowns of one group.
 type System struct {
 	// Param are the unknowns, in handle order.
 	Param []*Param
@@ -107,8 +106,7 @@ func (s *System) isDragged(h core.HParam) bool {
 	return s.Dragged[h]
 }
 
-// setEquations replaces the equations, sorted by handle as the C++
-// IdList keeps them.
+// setEquations replaces the equations, sorted by handle.
 func (s *System) setEquations(l []core.Equation) {
 	s.Eq = s.Eq[:0]
 	for _, e := range l {
@@ -131,8 +129,7 @@ func (s *System) clearEqTags() {
 
 // deepCopyWithParamsAsPointers copies e, binding each param to the
 // system's copy if it is an unknown, else to the sketch's; a known
-// param becomes a constant. Constant subtrees are folded (C++
-// Expr::DeepCopyWithParamsAsPointers with foldConstants).
+// param becomes a constant. Constant subtrees are folded.
 func (s *System) deepCopyWithParamsAsPointers(e *core.Expr) *core.Expr {
 	if e.Op == core.OpParam {
 		var p *core.Param
@@ -186,7 +183,7 @@ func paramsUsed(e *core.Expr, set map[core.HParam]bool, order []core.HParam) []c
 }
 
 // WriteJacobian writes the equations and params tagged tag into the
-// matrix, symbolically (C++ System::WriteJacobian).
+// matrix, symbolically.
 func (s *System) WriteJacobian(tag int) bool {
 	s.mat.param = s.mat.param[:0]
 	s.mat.eq = s.mat.eq[:0]
@@ -239,7 +236,7 @@ func (s *System) WriteJacobian(tag int) bool {
 	return true
 }
 
-// EvalJacobian evaluates the symbolic Jacobian (C++ System::EvalJacobian).
+// EvalJacobian evaluates the symbolic Jacobian.
 func (s *System) EvalJacobian() {
 	s.mat.Anum = make([][]float64, s.mat.m)
 	for i := range s.mat.m {
@@ -252,8 +249,7 @@ func (s *System) EvalJacobian() {
 	}
 }
 
-// substitute renames the params of e that subMap maps (C++
-// Expr::Substitute).
+// substitute renames the params of e that subMap maps.
 func substitute(e *core.Expr, subMap map[core.HParam]*Param) {
 	if e.Op == core.OpParam {
 		if by, ok := subMap[e.Param]; ok {
@@ -271,8 +267,7 @@ func substitute(e *core.Expr, subMap map[core.HParam]*Param) {
 
 // SolveBySubstitution eliminates the equations that just say two
 // unknowns are equal, a - b = 0, by substituting one for the other; it
-// returns what each eliminated param was substituted by (C++
-// System::SolveBySubstitution).
+// returns what each eliminated param was substituted by.
 func (s *System) SolveBySubstitution() map[core.HParam]*Param {
 	// Contains pointers to last substitutions in a substitution chain
 	var subVec []*Param
@@ -410,8 +405,7 @@ func (s *System) SolveBySubstitution() map[core.HParam]*Param {
 	return subMap
 }
 
-// CalculateRank returns the rank of the evaluated Jacobian (C++
-// System::CalculateRank).
+// CalculateRank returns the rank of the evaluated Jacobian.
 func (s *System) CalculateRank() int {
 	if s.mat.n == 0 || s.mat.m == 0 {
 		return 0
@@ -420,8 +414,7 @@ func (s *System) CalculateRank() int {
 }
 
 // TestRank evaluates the Jacobian and reports whether it has full row
-// rank, along with the degrees of freedom and the rank (C++
-// System::TestRank).
+// rank, along with the degrees of freedom and the rank.
 func (s *System) TestRank() (ok bool, dof, rank int) {
 	s.EvalJacobian()
 	jacobianRank := s.CalculateRank()
@@ -430,8 +423,8 @@ func (s *System) TestRank() (ok bool, dof, rank int) {
 	return jacobianRank == s.mat.m, s.mat.n - jacobianRank, jacobianRank
 }
 
-// SolveLeastSquares computes the minimum-norm Newton step X with
-// A X = B (C++ System::SolveLeastSquares).
+// SolveLeastSquares computes the minimum-norm Newton step X with A X =
+// B.
 func (s *System) SolveLeastSquares() bool {
 	m, n := s.mat.m, s.mat.n
 	// Scale the columns; this scale weights the parameters for the least
@@ -465,8 +458,8 @@ func (s *System) SolveLeastSquares() bool {
 	return true
 }
 
-// leastSquares returns the minimum-norm solution X of A X = B, as C++
-// System::SolveLeastSquares finds it once A is scaled.
+// leastSquares returns the minimum-norm solution X of A X = B, once A
+// is scaled.
 func leastSquares(a *spMat, b []float64) []float64 {
 	m, n := a.rows, a.cols
 	var z []float64
@@ -501,14 +494,14 @@ func leastSquares(a *spMat, b []float64) []float64 {
 	return a.mulTransposed(z)
 }
 
-// isReasonable is C++ IsReasonable, which despite its name is true for
-// values that are clearly not.
+// isReasonable is true for values that are clearly not, despite its
+// name.
 func isReasonable(x float64) bool {
 	return math.IsNaN(x) || x > 1e11 || x < -1e11
 }
 
 // NewtonSolve iterates Newton steps until every equation is within
-// ConvergeTolerance of zero (C++ System::NewtonSolve).
+// ConvergeTolerance of zero.
 func (s *System) NewtonSolve() bool {
 	iter := 0
 	converged := false
@@ -617,7 +610,7 @@ func (s *System) FindWhichToRemoveToFixJacobian(g *Group, forceDofCheck bool) []
 }
 
 // referencedParam returns the one unknown e refers to, or reports none
-// or several (C++ Expr::ReferencedParams).
+// or several.
 func (s *System) referencedParam(e *core.Expr) (h core.HParam, none, multiple bool) {
 	var found core.HParam
 	var walk func(e *core.Expr) bool
@@ -827,9 +820,8 @@ func (s *System) SolveRank(g *Group, andFindBad, andFindFree bool) (how core.Sol
 	return core.SolveRedundantOkay, rank, dof, bad
 }
 
-// MarkParamsFree finds, if asked, the params that no equation pins down;
-// that might be more than the number of degrees of freedom (C++
-// System::MarkParamsFree).
+// MarkParamsFree finds, if asked, the params that no equation pins
+// down; that might be more than the number of degrees of freedom.
 func (s *System) MarkParamsFree(find bool) {
 	for _, p := range s.Param {
 		p.Free = false

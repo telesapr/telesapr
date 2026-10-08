@@ -55,7 +55,7 @@ var textwinFixtures = []string{
 
 // TestTextWindow shows each text window screen for the fixtures, and
 // compares the rows, their text and each cell's colours and links with
-// the golden (testdata/textwin, first recorded from C++).
+// the golden (testdata/textwin, first recorded from SolveSpace).
 func TestTextWindow(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})

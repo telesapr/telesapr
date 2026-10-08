@@ -1,6 +1,6 @@
 package export
 
-// Export a STEP file describing our ratpoly shell (C++ exportstep.cpp).
+// Export a STEP file describing our ratpoly shell.
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 )
 
 // fp is the coordinate precision: LENGTH_EPS is 1e-6, so five decimal
-// places round out errors like 0.999999mm (C++ FP).
+// places round out errors like 0.999999mm.
 const stepCartesianPointFormat = "#%d=CARTESIAN_POINT('',(%.5f,%.5f,%.5f));\n"
 
 const stepPrecision = 2 * core.LengthEps
@@ -53,7 +53,7 @@ type stepOrientedEdgeAlias struct {
 	flip        bool
 }
 
-// stepFileWriter writes STEP (C++ StepFileWriter).
+// stepFileWriter writes STEP.
 type stepFileWriter struct {
 	sk *sketch.Sketch
 	o  Options
@@ -76,9 +76,8 @@ func (w *stepFileWriter) printf(format string, args ...any) {
 }
 
 // HasCartesianPointAnAlias reports whether this point was already
-// defined with a different ID number, and records it (C++
-// StepFileWriter::HasCartesianPointAnAlias). vertex is the id of the
-// vertex linked to the point, or less than 1 for none.
+// defined with a different ID number, and records it. vertex is the id
+// of the vertex linked to the point, or less than 1 for none.
 func (w *stepFileWriter) HasCartesianPointAnAlias(number int, v geom.Vector, vertex int,
 	vertexHasAlias *bool) bool {
 	// Look for this point "v" in the alias list.
@@ -119,7 +118,7 @@ func (w *stepFileWriter) HasCartesianPointAnAlias(number int, v geom.Vector, ver
 }
 
 // InsertPoint is a cartesian point's index, its first alias if it has
-// any (C++ StepFileWriter::InsertPoint).
+// any.
 func (w *stepFileWriter) InsertPoint(number int) int {
 	for _, p := range w.pointAliases {
 		if slices.Contains(p.alias.aliases, number) {
@@ -131,8 +130,7 @@ func (w *stepFileWriter) InsertPoint(number int) int {
 	return -1
 }
 
-// InsertVertex is a vertex's index, its first alias if it has any (C++
-// StepFileWriter::InsertVertex).
+// InsertVertex is a vertex's index, its first alias if it has any.
 func (w *stepFileWriter) InsertVertex(number int) int {
 	for _, p := range w.pointAliases {
 		if slices.Contains(p.vertexAlias.aliases, number) {
@@ -144,9 +142,8 @@ func (w *stepFileWriter) InsertVertex(number int) int {
 	return -1
 }
 
-// HasBSplineCurveAnAlias reports whether this curve was already
-// defined with a different ID number, and records it (C++
-// StepFileWriter::HasBSplineCurveAnAlias).
+// HasBSplineCurveAnAlias reports whether this curve was already defined
+// with a different ID number, and records it.
 func (w *stepFileWriter) HasBSplineCurveAnAlias(number int, points []int) bool {
 	for i := range w.curveAliases {
 		c := &w.curveAliases[i]
@@ -182,7 +179,7 @@ func (w *stepFileWriter) HasBSplineCurveAnAlias(number int, points []int) bool {
 	return false
 }
 
-// InsertCurve is a curve's index (C++ StepFileWriter::InsertCurve).
+// InsertCurve is a curve's index.
 func (w *stepFileWriter) InsertCurve(number int) int {
 	for _, c := range w.curveAliases {
 		for _, alias := range c.alias.aliases {
@@ -198,7 +195,7 @@ func (w *stepFileWriter) InsertCurve(number int) int {
 
 // HasEdgeCurveAnAlias reports whether this edge curve was already
 // defined with a different ID number, in either direction, and records
-// it (C++ StepFileWriter::HasEdgeCurveAnAlias).
+// it.
 func (w *stepFileWriter) HasEdgeCurveAnAlias(number, prevFinish, thisFinish, curveID int, flip *bool) bool {
 	for i := range w.edgeCurveAliases {
 		e := &w.edgeCurveAliases[i]
@@ -231,8 +228,7 @@ func (w *stepFileWriter) HasEdgeCurveAnAlias(number, prevFinish, thisFinish, cur
 	return false
 }
 
-// InsertEdgeCurve is an edge curve's index (C++
-// StepFileWriter::InsertEdgeCurve).
+// InsertEdgeCurve is an edge curve's index.
 func (w *stepFileWriter) InsertEdgeCurve(number int) int {
 	for _, e := range w.edgeCurveAliases {
 		for _, alias := range e.alias.aliases {
@@ -247,8 +243,7 @@ func (w *stepFileWriter) InsertEdgeCurve(number int) int {
 }
 
 // HasOrientedEdgeAnAlias reports whether this oriented edge was already
-// defined with a different ID number, and records it (C++
-// StepFileWriter::HasOrientedEdgeAnAlias).
+// defined with a different ID number, and records it.
 func (w *stepFileWriter) HasOrientedEdgeAnAlias(number, edgeCurveID int, flip bool) bool {
 	for i := range w.orientedEdgeAliases {
 		e := &w.orientedEdgeAliases[i]
@@ -267,8 +262,7 @@ func (w *stepFileWriter) HasOrientedEdgeAnAlias(number, edgeCurveID int, flip bo
 	return false
 }
 
-// InsertOrientedEdge is an oriented edge's index (C++
-// StepFileWriter::InsertOrientedEdge).
+// InsertOrientedEdge is an oriented edge's index.
 func (w *stepFileWriter) InsertOrientedEdge(number int) int {
 	for _, e := range w.orientedEdgeAliases {
 		if slices.Contains(e.alias.aliases, number) {
@@ -281,7 +275,7 @@ func (w *stepFileWriter) InsertOrientedEdge(number int) int {
 }
 
 // WriteHeader writes the header, and the units and tolerances, which
-// are always the same (C++ StepFileWriter::WriteHeader).
+// are always the same.
 func (w *stepFileWriter) WriteHeader() {
 	w.printf(
 		"ISO-10303-21;\n"+
@@ -344,8 +338,7 @@ func (w *stepFileWriter) WriteHeader() {
 	w.id = 200
 }
 
-// WriteProductHeader writes the product definition (C++
-// StepFileWriter::WriteProductHeader).
+// WriteProductHeader writes the product definition.
 func (w *stepFileWriter) WriteProductHeader() {
 	w.printf(
 		"#175 = SHAPE_DEFINITION_REPRESENTATION(#176, #169);\n" +
@@ -361,8 +354,7 @@ func (w *stepFileWriter) WriteProductHeader() {
 			"\n")
 }
 
-// ExportCurve writes a curve and returns its id (C++
-// StepFileWriter::ExportCurve).
+// ExportCurve writes a curve and returns its id.
 func (w *stepFileWriter) ExportCurve(sb *srf.SBezier) int {
 	ret := w.id
 	var curvePoints []int
@@ -426,8 +418,8 @@ func (w *stepFileWriter) vertexFor(p geom.Vector) int {
 	}
 }
 
-// ExportCurveLoop writes a trim loop as a face bound and returns its id
-// (C++ StepFileWriter::ExportCurveLoop).
+// ExportCurveLoop writes a trim loop as a face bound and returns its
+// id.
 func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int {
 	if len(loop.Curves) < 1 {
 		panic("ui: expected at least one loop")
@@ -490,8 +482,7 @@ func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int 
 	w.printf("));\n")
 
 	// The kernel's loops run clockwise about the face's normal, and a
-	// STEP face's counter-clockwise: the bound runs its loop backwards
-	// (C++ wrote .T., which readers that classify by pcurves forgive).
+	// STEP face's counter-clockwise: the bound runs its loop backwards.
 	fb := w.id + 1
 	bound := "FACE_OUTER_BOUND"
 	if inner {
@@ -504,8 +495,7 @@ func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int 
 	return fb
 }
 
-// ExportSurface writes a trimmed surface as advanced faces (C++
-// StepFileWriter::ExportSurface).
+// ExportSurface writes a trimmed surface as advanced faces.
 func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// Read the colour of the surface: use it to tell apart surfaces from
 	// different parts.
@@ -543,8 +533,8 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	}
 }
 
-// stepKnot writes a knot: as C++ does for the ends of a Bezier
-// patch, and to ten places for others.
+// stepKnot writes a knot: for the ends of a Bezier patch, and to ten
+// places for others.
 func stepKnot(k float64) string {
 	if k == float64(int(k)) {
 		return cfmt.Sprintf("%.3f", k)
@@ -583,7 +573,7 @@ func stepList[T any](xs []T, f func(T) string) string {
 
 // writeSurface writes a rational B-spline surface, its control points
 // ctrl[i][j], i along u, and returns its id. Nil knots make it one
-// Bezier patch, as C++ writes every surface.
+// Bezier patch, as every surface was once written.
 func (w *stepFileWriter) writeSurface(du, dv int, knotsU, knotsV []float64, ctrl [][]geom.Vector, weight [][]float64, closedU bool) int {
 	srfid := w.id
 	nv := len(ctrl[0])
@@ -1009,7 +999,7 @@ func (sh *stepSheet) seamLoops(loops []stepLoop) ([]stepLoop, bool) {
 	return append([]stepLoop{joined}, others...), true
 }
 
-// WriteFooter ends the file (C++ StepFileWriter::WriteFooter).
+// WriteFooter ends the file.
 func (w *stepFileWriter) WriteFooter() {
 	w.printf("\n" +
 		"ENDSEC;\n" +
@@ -1065,8 +1055,8 @@ func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
 		sheets = stepSheets(shell)
 	}
 	for i := range shell.Surface {
-		// C++ ranges over the surfaces by reference, so the export scale
-		// below scales the shell itself.
+		// The export scale below scales the shell itself, as the
+		// goldens record.
 		srfc := &shell.Surface[i]
 		if len(srfc.Trim) == 0 {
 			continue
@@ -1098,8 +1088,7 @@ func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
 	}
 }
 
-// WriteWireframe writes the curves as a wireframe (C++
-// StepFileWriter::WriteWireframe).
+// WriteWireframe writes the curves as a wireframe.
 func (w *stepFileWriter) WriteWireframe() {
 	w.printf("#%d=GEOMETRIC_CURVE_SET('curves',(", w.id)
 	for i, c := range w.curves {

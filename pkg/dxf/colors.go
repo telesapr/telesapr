@@ -2,8 +2,7 @@
 
 package dxf
 
-// Colors is the AutoCAD colour index palette (C++ DRW::dxfColors); entry 0
-// is unused.
+// Colors is the AutoCAD colour index palette; entry 0 is unused.
 var Colors = [256][3]uint8{
 	{0, 0, 0},
 	{255, 0, 0},

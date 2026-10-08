@@ -7,16 +7,16 @@ import (
 )
 
 // SEdgeLl is a singly-linked list of edges, the payload of an
-// SKdNodeEdges leaf (C++ SEdgeLl).
+// SKdNodeEdges leaf.
 type SEdgeLl struct {
 	Edge *SEdge
 	Next *SEdgeLl
 }
 
 // SKdNodeEdges is a kd-tree over edges, so that a query for the edges
-// crossing one need only test those near it (C++ SKdNodeEdges). An
-// edge near a split plane goes on both sides, and is tagged as it is
-// tested so that it counts once.
+// crossing one need only test those near it. An edge near a split plane
+// goes on both sides, and is tagged as it is tested so that it counts
+// once.
 type SKdNodeEdges struct {
 	Which int // whether c is x, y, or z
 	C     float64
@@ -27,7 +27,7 @@ type SKdNodeEdges struct {
 }
 
 // SKdNodeEdgesFrom builds the tree over the edges of sel, which it
-// keeps pointers into (C++ SKdNodeEdges::From(SEdgeList *)).
+// keeps pointers into.
 func SKdNodeEdgesFrom(sel *SEdgeList) *SKdNodeEdges {
 	var sell *SEdgeLl
 	for i := range sel.Edges {
@@ -36,7 +36,7 @@ func SKdNodeEdgesFrom(sel *SEdgeList) *SKdNodeEdges {
 	return skdNodeEdgesFromList(sell)
 }
 
-// skdNodeEdgesFromList is C++ SKdNodeEdges::From(SEdgeLl *).
+// skdNodeEdgesFromList builds the edge kd-tree from a list of edges.
 func skdNodeEdgesFromList(sell *SEdgeLl) *SKdNodeEdges {
 	n := &SKdNodeEdges{}
 
@@ -106,11 +106,11 @@ func skdNodeEdgesFromList(sell *SEdgeLl) *SKdNodeEdges {
 	return n
 }
 
-// AnyEdgeCrossings counts the edges of the tree that the edge from a
-// to b crosses, as SEdge.EdgeCrosses decides, tagging each tested edge
+// AnyEdgeCrossings counts the edges of the tree that the edge from a to
+// b crosses, as SEdge.EdgeCrosses decides, tagging each tested edge
 // with cnt so that one on both sides of a split counts once; an edge
-// already tagged cnt isn't tested (C++ SKdNodeEdges::AnyEdgeCrossings).
-// A crossing is left in pi and added to spl when they are given.
+// already tagged cnt isn't tested. A crossing is left in pi and added
+// to spl when they are given.
 func (n *SKdNodeEdges) AnyEdgeCrossings(a, b geom.Vector, cnt int, pi *geom.Vector, spl *SPointList) int {
 	inters := 0
 	if n.Gt != nil && n.Lt != nil {

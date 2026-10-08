@@ -18,7 +18,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// backupExt is the autosave file extension (C++ BACKUP_EXT).
+// backupExt is the autosave file extension.
 const backupExt = tlspr.Extension + "~"
 
 // maxWarnings is how many of a file's warnings a message lists.
@@ -32,8 +32,7 @@ func warningList(ws []string) string {
 	return strings.Join(ws, "\n")
 }
 
-// withExtension replaces the extension of path's file name with ext
-// (C++ Path::WithExtension).
+// withExtension replaces the extension of path's file name with ext.
 func withExtension(path, ext string) string {
 	dir, base := filepath.Split(path)
 	if dot := strings.LastIndexByte(base, '.'); dot >= 0 {
@@ -42,8 +41,7 @@ func withExtension(path, ext string) string {
 	return dir + base + "." + ext
 }
 
-// hasExtension reports whether path's extension is ext, ignoring case
-// (C++ Path::HasExtension).
+// hasExtension reports whether path's extension is ext, ignoring case.
 func hasExtension(path, ext string) bool {
 	return strings.EqualFold(strings.TrimPrefix(filepath.Ext(path), "."), ext)
 }
@@ -168,8 +166,7 @@ func (ss *Application) SaveToFile(filename string) error {
 	return nil
 }
 
-// AddToRecentList puts filename first in the recent files (C++
-// SolveSpaceUI::AddToRecentList).
+// AddToRecentList puts filename first in the recent files.
 func (ss *Application) AddToRecentList(filename string) {
 	for i, p := range ss.RecentFiles {
 		if p == filename {
@@ -227,8 +224,7 @@ func modelFileName(name string) string {
 	}
 }
 
-// Autosave saves a backup of an unsaved sketch next to its file (C++
-// SolveSpaceUI::Autosave).
+// Autosave saves a backup of an unsaved sketch next to its file.
 func (ss *Application) Autosave() {
 	ss.ScheduleAutosave()
 
@@ -237,8 +233,7 @@ func (ss *Application) Autosave() {
 	}
 }
 
-// RemoveAutosave deletes the sketch's autosave file (C++
-// SolveSpaceUI::RemoveAutosave).
+// RemoveAutosave deletes the sketch's autosave file.
 func (ss *Application) RemoveAutosave() {
 	if ss.SaveFile == "" {
 		return
@@ -247,8 +242,7 @@ func (ss *Application) RemoveAutosave() {
 }
 
 // OkayToStartNewFile asks whether to save unsaved changes, and reports
-// whether the sketch may be replaced (C++
-// SolveSpaceUI::OkayToStartNewFile).
+// whether the sketch may be replaced.
 func (ss *Application) OkayToStartNewFile() bool {
 	if !ss.SK.Unsaved {
 		return true
@@ -288,8 +282,7 @@ func (ss *Application) OkayToStartNewFile() bool {
 }
 
 // locateMissingFile asks whether to find a linked file that couldn't be
-// read, and where it is (C++ LocateImportedFile, and the file dialogs
-// of ReloadAllLinked and ReloadLinkedImage).
+// read, and where it is.
 func (ss *Application) locateMissingFile(name string, isImage, canCancel bool) (string, link.LocateResponse) {
 	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
 	dialog.SetType(platform.DialogQuestion)
@@ -332,7 +325,7 @@ func (ss *Application) locateMissingFile(name string, isImage, canCancel bool) (
 }
 
 // chooseLinkedImage asks for a picture for a new image request and
-// loads it (C++ SolveSpaceUI::ReloadLinkedImage with an empty name).
+// loads it.
 func (ss *Application) chooseLinkedImage() (string, bool) {
 	dialog := ss.Platform.CreateOpenFileDialog(ss.GW.window)
 	dialog.AddFilters(platform.RasterFileFilters)
@@ -348,7 +341,7 @@ func (ss *Application) chooseLinkedImage() (string, bool) {
 	return filename, true
 }
 
-// Exit saves the settings and quits (C++ SolveSpaceUI::Exit).
+// Exit saves the settings and quits.
 func (ss *Application) Exit() {
 	ss.SaveSettings()
 	// The socket goes with the program; the setting stays.
@@ -356,7 +349,7 @@ func (ss *Application) Exit() {
 	ss.Platform.Exit()
 }
 
-// MenuFile runs a File menu command (C++ SolveSpaceUI::MenuFile).
+// MenuFile runs a File menu command.
 func (ss *Application) MenuFile(id Command) {
 	settings := ss.Settings
 

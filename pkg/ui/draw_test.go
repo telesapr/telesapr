@@ -119,7 +119,7 @@ var drawFixtures = []string{
 }
 
 // TestDrawCalls compares every canvas call GraphicsWindow.Draw makes
-// with the golden (testdata/draw, first recorded from C++), in the
+// with the golden (testdata/draw, first recorded from SolveSpace), in the
 // default view and a rotated one, bit for bit.
 func TestDrawCalls(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
@@ -128,14 +128,14 @@ func TestDrawCalls(t *testing.T) {
 		t.Run(f, func(t *testing.T) {
 			goldenPath := filepath.Join(root, "draw", strings.TrimSuffix(f, ".slvs")+".draw")
 			if want, err := os.ReadFile(goldenPath); err == nil && len(want) == 0 {
-				t.Skip("C++ couldn't draw this fixture")
+				t.Skip("SolveSpace couldn't draw this fixture")
 			}
 			golden.CheckDump(t, goldenPath, drawCallsFor(t, filepath.Join(root, f)))
 		})
 	}
 }
 
-// drawCallsFor loads a fixture as the C++ harness does and records the
+// drawCallsFor loads a fixture as the SolveSpace harness does and records the
 // draw calls of both views.
 func drawCallsFor(t testing.TB, path string) string {
 	p := headless.New()
@@ -150,7 +150,7 @@ func drawCallsFor(t testing.TB, path string) string {
 		t.Fatal(err)
 	}
 	ss.LoadSketchForTest(doc.Sketch, path)
-	// C++'s headless build has no window: its camera is 297x210.
+	// SolveSpace's headless build has no window: its camera is 297x210.
 	w := ss.GW.window.(*headless.Window)
 	w.Width, w.Height = 297, 210
 

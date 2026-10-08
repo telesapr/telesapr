@@ -13,7 +13,7 @@ import (
 // TestExportStl exports the mesh of every fixture that has one, at a
 // 0.1 mm chord tolerance, and requires the golden STL file
 // (testdata/export/stl, named after the fixture's path; first written
-// by C++ solvespace-cli export-mesh --chord-tol 0.1).
+// by SolveSpace solvespace-cli export-mesh --chord-tol 0.1).
 func TestExportStl(t *testing.T) {
 	goldens, err := filepath.Glob(fixture("export/stl/*.stl"))
 	if err != nil || len(goldens) == 0 {
@@ -27,13 +27,13 @@ func TestExportStl(t *testing.T) {
 		j := strings.LastIndexByte(name, '_')
 		src := name[:i] + "/" + name[i+1:j] + "/" + name[j+1:] + ".slvs"
 		t.Run(src, func(t *testing.T) {
-			// As in a fresh C++ process.
+			// As in a fresh SolveSpace process.
 			doc, err := LoadFile(fixture(src))
 			if err != nil {
 				t.Fatal(err)
 			}
 			sk := doc.Sketch
-			// C++ AfterNewFile.
+			// SolveSpace AfterNewFile.
 			sk.GenerateAllTyped(sketch.GenerateAll)
 
 			out := filepath.Join(dir, name+".stl")

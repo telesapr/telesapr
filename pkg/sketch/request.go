@@ -63,10 +63,10 @@ type Request struct {
 
 func (r *Request) Clear() {}
 
-// Generate adds the entities and params of the request (C++
-// Request::Generate). sk stands in for C++'s SS, whose loaded images
-// give an image request its aspect ratio; it may be nil. A TTF request
-// takes its aspect ratio from its font, in the sketch's font list.
+// Generate adds the entities and params of the request. sk's loaded
+// images give an image request its aspect ratio; it may be nil. A TTF
+// request takes its aspect ratio from its font, in the sketch's font
+// list.
 func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.ParamList) {
 	entityType, pointCount, hasNormal, hasDistance, ok := getRequestInfo(r.Type, r.ExtraPoints)
 	if !ok {
@@ -296,9 +296,8 @@ func getEntityInfo(entity core.EntityType, extraPoints int) (RequestType, int, b
 	return 0, 0, false, false, false
 }
 
-// EntityPointCount is how many points an entity of that type has
-// (C++ EntReqTable::GetEntityInfo's pts); ok is false for a type no
-// request makes.
+// EntityPointCount is how many points an entity of that type has; ok is
+// false for a type no request makes.
 func EntityPointCount(entity core.EntityType, extraPoints int) (pts int, ok bool) {
 	_, pts, _, _, ok = getEntityInfo(entity, extraPoints)
 	return pts, ok

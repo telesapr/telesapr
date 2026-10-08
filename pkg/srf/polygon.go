@@ -23,8 +23,7 @@ func (p *SPolygon) AddEmptyContour() {
 	p.Contours = append(p.Contours, SContour{})
 }
 
-// ComputeNormal is the first contour's normal (C++
-// SPolygon::ComputeNormal).
+// ComputeNormal is the first contour's normal.
 func (p *SPolygon) ComputeNormal() geom.Vector {
 	if len(p.Contours) == 0 {
 		return geom.Vector{}
@@ -34,7 +33,7 @@ func (p *SPolygon) ComputeNormal() geom.Vector {
 
 // SignedArea is the polygon's area about its normal: the true area only
 // if the contours are all oriented correctly, with the holes backwards
-// from the outer contours (C++ SPolygon::SignedArea).
+// from the outer contours.
 func (p *SPolygon) SignedArea() float64 {
 	area := 0.0
 	for i := range p.Contours {
@@ -43,13 +42,14 @@ func (p *SPolygon) SignedArea() float64 {
 	return area
 }
 
-// ContainsPoint mirrors C++ SPolygon::ContainsPoint (odd winding
-// number about p.Normal).
+// ContainsPoint reports whether the point is inside: an odd winding
+// number about p.Normal.
 func (p *SPolygon) ContainsPoint(pt geom.Vector) bool {
 	return p.WindingNumberForPoint(pt)%2 == 1
 }
 
-// WindingNumberForPoint mirrors C++ SPolygon::WindingNumberForPoint.
+// WindingNumberForPoint is how many times the polygon winds about the
+// point.
 func (p *SPolygon) WindingNumberForPoint(pt geom.Vector) int {
 	winding := 0
 	for i := range p.Contours {
@@ -69,10 +69,9 @@ func (p *SPolygon) MakeEdgesInto(el *SEdgeList) {
 }
 
 // FixContourDirections orients every contour so that outer contours
-// look counterclockwise projected against p.Normal (in the C++ sense of
+// look counterclockwise projected against p.Normal (in the sense of
 // IsClockwiseProjdToNormal) and holes the opposite way. At output, a
-// contour's Tag is 1 if it was reversed, else 0. Mirrors C++
-// SPolygon::FixContourDirections (polygon.cpp:706).
+// contour's Tag is 1 if it was reversed, else 0.
 func (p *SPolygon) FixContourDirections() {
 	for i := range p.Contours {
 		p.Contours[i].Tag = 0
@@ -121,10 +120,10 @@ func (p *SPolygon) AnyPoint() geom.Vector {
 }
 
 // SelfIntersecting reports whether any edge of the polygon crosses
-// another, leaving a crossing in intersectsAt when it is given (C++
-// SPolygon::SelfIntersecting). Each edge is tested against the others
-// through a kd-tree over them; an edge counts as crossing itself, so
-// any other crossing makes the count differ from one.
+// another, leaving a crossing in intersectsAt when it is given. Each
+// edge is tested against the others through a kd-tree over them; an
+// edge counts as crossing itself, so any other crossing makes the count
+// differ from one.
 func (p *SPolygon) SelfIntersecting(intersectsAt *geom.Vector) bool {
 	var el SEdgeList
 	p.MakeEdgesInto(&el)
@@ -148,8 +147,7 @@ func (p *SPolygon) SelfIntersecting(intersectsAt *geom.Vector) bool {
 	return ret
 }
 
-// OffsetInto sets dest to the polygon offset by r, contour by contour
-// (C++ SPolygon::OffsetInto).
+// OffsetInto sets dest to the polygon offset by r, contour by contour.
 func (p *SPolygon) OffsetInto(dest *SPolygon, r float64) {
 	dest.Contours = nil
 	for i := range p.Contours {

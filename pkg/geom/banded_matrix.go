@@ -2,7 +2,6 @@ package geom
 
 // BandedMatrix solves a banded linear system with two extra dense
 // right-hand columns (for periodic splines), without pivoting.
-// Mirrors C++ BandedMatrix (solvespace/src/dsc.h, util.cpp).
 type BandedMatrix struct {
 	A [BandedMaxUnknowns][BandedMaxUnknowns]float64
 	B [BandedMaxUnknowns]float64
@@ -16,7 +15,7 @@ const (
 	bandedLeftOfDiag  = 2
 )
 
-// Solve mirrors C++ BandedMatrix::Solve.
+// Solve solves the system for its right-hand sides.
 func (m *BandedMatrix) Solve() {
 	n := m.N
 	// Reduce the matrix to upper triangular form.

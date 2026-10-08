@@ -17,7 +17,7 @@ import (
 )
 
 // ExportMeshAsObjTo writes the mesh as Wavefront OBJ, with its
-// materials (C++ SolveSpaceUI::ExportMeshAsObjTo).
+// materials.
 func WriteOBJ(fObj, fMtl *bytes.Buffer, sm *srf.SMesh, o Options) {
 	colors := map[uint32]string{}
 	var colorKeys []core.RGBA
@@ -109,7 +109,7 @@ const threeJsHTMLEnd = `
 `
 
 // ExportMeshAsThreeJsTo writes the mesh as a script for three.js, or a
-// page with it (C++ SolveSpaceUI::ExportMeshAsThreeJsTo).
+// page with it.
 func WriteThreeJS(f *bytes.Buffer, filename string, sm *srf.SMesh,
 	sol *srf.SOutlineList, view *sketch.View, o Options) {
 	const threeFn = "three-r111.min.js"
@@ -239,8 +239,7 @@ func WriteThreeJS(f *bytes.Buffer, filename string, sm *srf.SMesh,
 	}
 }
 
-// ExportMeshAsVrmlTo writes the mesh as VRML (C++
-// SolveSpaceUI::ExportMeshAsVrmlTo).
+// ExportMeshAsVrmlTo writes the mesh as VRML.
 func WriteVRML(f *bytes.Buffer, filename string, sm *srf.SMesh, o Options) {
 	pf := func(format string, args ...any) { f.WriteString(cfmt.Sprintf(format, args...)) }
 	basename := fileStemIdentifier(filename)
@@ -253,8 +252,7 @@ func WriteVRML(f *bytes.Buffer, filename string, sm *srf.SMesh, o Options) {
 		version.Version,
 		basename)
 
-	// The runs of triangles of each opacity, by opacity (C++'s
-	// std::map<uint8_t, ...>).
+	// The runs of triangles of each opacity, by opacity.
 	type span struct{ first, pastLast int }
 	opacities := map[uint8][]span{}
 	start := 0

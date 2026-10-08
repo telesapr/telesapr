@@ -68,7 +68,7 @@ func invariantLines(fixture string) []string {
 // rewrites the file; review its diff before committing.
 //
 // The baseline was recorded while the kernel's output was verified
-// byte for byte against C++ SolveSpace, so it is the judge of every
+// byte for byte against SolveSpace, so it is the judge of every
 // later kernel change.
 func TestInvariants(t *testing.T) {
 	fixtures := invariantFixtures(t)

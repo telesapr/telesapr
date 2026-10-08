@@ -11,8 +11,7 @@ import (
 )
 
 // JSONSettings is a core.Settings kept in a JSON object in a file, as
-// the GTK build keeps its settings (C++ SettingsImplGtk). Every change
-// is written through.
+// the GTK build keeps its settings. Every change is written through.
 type JSONSettings struct {
 	mu     sync.Mutex
 	path   string
@@ -20,8 +19,8 @@ type JSONSettings struct {
 }
 
 // DefaultSettingsPath is $XDG_CONFIG_HOME/telesapr/settings.json, or
-// under ~/.config; empty if neither is known. It is not the C++
-// application's file, so the two don't overwrite each other's.
+// under ~/.config; empty if neither is known. It is not SolveSpace's
+// file, so the two don't overwrite each other's.
 func DefaultSettingsPath() string {
 	dir := os.Getenv("XDG_CONFIG_HOME")
 	if dir == "" {

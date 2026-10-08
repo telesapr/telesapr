@@ -10,8 +10,8 @@ import (
 )
 
 // HStroke and HFill address a canvas's interned strokes and fills, so
-// geometry can be grouped into indexed draw calls (C++ Canvas::hStroke,
-// Canvas::hFill). Zero is no stroke or fill.
+// geometry can be grouped into indexed draw calls. Zero is no stroke or
+// fill.
 type (
 	HStroke uint32
 	HFill   uint32
@@ -19,7 +19,7 @@ type (
 
 // Layer describes how geometry occludes other geometry. Within a layer,
 // geometry with a higher z-index occludes geometry with a lower one, or
-// geometry drawn earlier if z-indexes match (C++ Canvas::Layer).
+// geometry drawn earlier if z-indexes match.
 type Layer int
 
 const (
@@ -33,8 +33,7 @@ const (
 
 // DrawOutlinesAs picks which outlines DrawOutlines draws: emphasized
 // ones mark an abrupt change in surface curvature, contour ones the
-// boundary of the mesh from this point of view (C++
-// Canvas::DrawOutlinesAs).
+// boundary of the mesh from this point of view.
 type DrawOutlinesAs int
 
 const (
@@ -43,8 +42,8 @@ const (
 	ContourOnly              DrawOutlinesAs = 2
 )
 
-// Unit says whether a width is in millimetres (scales with the view)
-// or pixels (C++ Canvas::Unit).
+// Unit says whether a width is in millimetres (scales with the view) or
+// pixels.
 type Unit int
 
 const (
@@ -52,7 +51,7 @@ const (
 	UnitPX
 )
 
-// Stroke is a line style (C++ Canvas::Stroke).
+// Stroke is a line style.
 type Stroke struct {
 	H              HStroke
 	Layer          Layer
@@ -103,8 +102,7 @@ func (s *Stroke) StippleScalePx(c *Camera) float64 {
 	return s.StippleScale
 }
 
-// FillPattern is solid, or one of two complementary checkerboards
-// (C++ Canvas::FillPattern).
+// FillPattern is solid, or one of two complementary checkerboards.
 type FillPattern int
 
 const (
@@ -113,7 +111,7 @@ const (
 	FillCheckeredB
 )
 
-// Fill is a fill style (C++ Canvas::Fill).
+// Fill is a fill style.
 type Fill struct {
 	H       HFill
 	Layer   Layer
@@ -129,7 +127,7 @@ func (f *Fill) Equals(o *Fill) bool {
 		f.Pattern == o.Pattern && f.Texture == o.Texture
 }
 
-// Canvas is something geometry can be drawn onto (C++ Canvas).
+// Canvas is something geometry can be drawn onto.
 type Canvas interface {
 	Camera() *Camera
 
@@ -163,8 +161,7 @@ type Canvas interface {
 	Clear()
 }
 
-// ViewportCanvas draws a view of the scene into a frame (C++
-// ViewportCanvas).
+// ViewportCanvas draws a view of the scene into a frame.
 type ViewportCanvas interface {
 	Canvas
 	SetCamera(Camera)
@@ -183,8 +180,7 @@ type ViewportCanvas interface {
 	Ident() (vendor, renderer, version string)
 }
 
-// BatchCanvas records view-independent geometry to draw later (C++
-// BatchCanvas).
+// BatchCanvas records view-independent geometry to draw later.
 type BatchCanvas interface {
 	Canvas
 	Finalize()
@@ -192,15 +188,15 @@ type BatchCanvas interface {
 }
 
 // CanvasBase holds the interned strokes and fills and the bitmap font
-// every canvas has (the concrete part of C++ Canvas).
+// every canvas has.
 type CanvasBase struct {
 	strokes    []Stroke
 	fills      []Fill
 	bitmapFont *res.BitmapFont
 }
 
-// InternStroke interns s, returning the handle of an equal stroke if there
-// is one (C++ Canvas::InternStroke).
+// InternStroke interns s, returning the handle of an equal stroke if
+// there is one.
 func (cb *CanvasBase) InternStroke(s Stroke) HStroke {
 	for i := range cb.strokes {
 		if cb.strokes[i].Equals(&s) {
@@ -212,7 +208,7 @@ func (cb *CanvasBase) InternStroke(s Stroke) HStroke {
 	return s.H
 }
 
-// InternFill interns f (C++ Canvas::InternFill).
+// InternFill interns f.
 func (cb *CanvasBase) InternFill(f Fill) HFill {
 	for i := range cb.fills {
 		if cb.fills[i].Equals(&f) {
@@ -247,7 +243,7 @@ func (cb *CanvasBase) Strokes() []Stroke { return cb.strokes }
 func (cb *CanvasBase) Fills() []Fill { return cb.fills }
 
 // BitmapFont returns the canvas's bitmap font, loading it the first
-// time (C++ Canvas::BitmapFont).
+// time.
 func (cb *CanvasBase) BitmapFont() *res.BitmapFont {
 	if cb.bitmapFont.IsEmpty() {
 		cb.bitmapFont = res.NewBitmapFont()
@@ -259,11 +255,11 @@ func (cb *CanvasBase) BitmapFont() *res.BitmapFont {
 // is slow.
 func (cb *CanvasBase) SetBitmapFont(f *res.BitmapFont) { cb.bitmapFont = f }
 
-// Clear forgets the strokes and fills (C++ Canvas::Clear).
+// Clear forgets the strokes and fills.
 func (cb *CanvasBase) Clear() {
 	cb.strokes = cb.strokes[:0]
 	cb.fills = cb.fills[:0]
 }
 
-// CreateBatch returns nil: no batching (C++ Canvas::CreateBatch).
+// CreateBatch returns nil: no batching.
 func (cb *CanvasBase) CreateBatch() BatchCanvas { return nil }

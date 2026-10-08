@@ -21,7 +21,7 @@ import (
 var data embed.FS
 
 // LoadResource returns the resource at name, a path such as
-// "icons/graphics-window/line.png" (C++ Platform::LoadResource).
+// "icons/graphics-window/line.png".
 func LoadResource(name string) ([]byte, error) {
 	b, err := data.ReadFile("data/" + name)
 	if err != nil {
@@ -38,8 +38,7 @@ func mustLoadResource(name string) []byte {
 	return b
 }
 
-// LoadString returns a text resource without carriage returns (C++
-// LoadString).
+// LoadString returns a text resource without carriage returns.
 func LoadString(name string) string {
 	return strings.ReplaceAll(string(mustLoadResource(name)), "\r", "")
 }
@@ -49,8 +48,7 @@ func LoadString(name string) string {
 // loads it.
 var inflated sync.Map // name -> string
 
-// LoadStringFromGzip returns a gzipped text resource, inflated (C++
-// LoadStringFromGzip).
+// LoadStringFromGzip returns a gzipped text resource, inflated.
 func LoadStringFromGzip(name string) string {
 	if s, ok := inflated.Load(name); ok {
 		return s.(string)
@@ -72,7 +70,7 @@ func inflate(name string) string {
 	return string(b)
 }
 
-// LoadPng returns a PNG resource as a pixmap (C++ LoadPng).
+// LoadPng returns a PNG resource as a pixmap.
 func LoadPng(name string) *Pixmap {
 	pm, err := FromPng(mustLoadResource(name), false)
 	if err != nil {
@@ -81,7 +79,7 @@ func LoadPng(name string) *Pixmap {
 	return pm
 }
 
-// asciiReader is C++'s ASCIIReader over a string.
+// asciiReader reads a resource's text line by line.
 type asciiReader struct {
 	s   string
 	pos int

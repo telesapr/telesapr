@@ -24,7 +24,7 @@ func (l *SBezierList) Add(b SBezier) {
 }
 
 // AllIntersectionsWith adds to spl the points where any curve of this
-// list crosses any of other (C++ SBezierList::AllIntersectionsWith).
+// list crosses any of other.
 func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList, tol Tolerance) {
 	for i := range l.Curves {
 		for j := range other.Curves {
@@ -34,8 +34,7 @@ func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList, 
 }
 
 // CullIdenticalBeziers removes the curves identical to an earlier one,
-// either way round, and with both the earlier one too (C++
-// SBezierList::CullIdenticalBeziers).
+// either way round, and with both the earlier one too.
 func (l *SBezierList) CullIdenticalBeziers(both bool) {
 	for i := range l.Curves {
 		l.Curves[i].Tag = 0

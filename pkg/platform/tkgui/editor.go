@@ -12,7 +12,7 @@ import (
 )
 
 // editor is the text entry shown over the drawing area to edit a
-// dimension or a value (C++ GtkEditorOverlay).
+// dimension or a value.
 type editor struct {
 	e       *entry.Entry
 	font    string
@@ -25,7 +25,7 @@ func (w *Window) editorVisible() bool { return w.editor != nil && w.editor.visib
 func (w *Window) IsEditorVisible() bool { return w.editorVisible() }
 
 // ShowEditor shows the editor with its text's baseline at x, y, in a
-// font of fontHeight pixels (C++ start_editing).
+// font of fontHeight pixels.
 func (w *Window) ShowEditor(x, y, fontHeight, minWidth float64, isMonospace bool, text string) {
 	app := w.p.app
 	family := "sans-serif"

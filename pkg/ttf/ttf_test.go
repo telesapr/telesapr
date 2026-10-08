@@ -15,7 +15,7 @@ import (
 // TestTTF requires the font list, cap heights, aspect ratios and
 // PlotString's Beziers to be the golden's, bit for bit, for Gentium and
 // the builtin font over testdata/ttf/strings.txt (golden data first
-// recorded from C++ ttf.cpp).
+// recorded from SolveSpace ttf.cpp).
 func TestTTF(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	testDumpVsGolden(t, []string{filepath.Join(root, "Gentium-R.ttf")},

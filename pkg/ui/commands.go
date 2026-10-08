@@ -8,11 +8,10 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform"
 )
 
-// This file is an extension: C++ SolveSpace has no command search. The
-// screen finds an entry of the main menu by words of its label and runs
-// it. The editor tells only when Enter is pressed, so the first Enter
-// lists what matches and the second, on the same text, runs the first
-// of them; a single match runs at once.
+// The command search screen finds an entry of the main menu by words of
+// its label and runs it. The editor tells only when Enter is pressed,
+// so the first Enter lists what matches and the second, on the same
+// text, runs the first of them; a single match runs at once.
 
 // commandEntry is a menu entry the command search can run.
 type commandEntry struct {

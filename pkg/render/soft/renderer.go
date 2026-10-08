@@ -27,8 +27,7 @@ type glLight struct {
 	dir       geom.Vector
 }
 
-// Renderer is a render.ViewportCanvas drawing in software (C++
-// OpenGl1Renderer).
+// Renderer is a render.ViewportCanvas drawing in software.
 type Renderer struct {
 	render.CanvasBase
 	camera   render.Camera
@@ -75,7 +74,7 @@ func New() *Renderer {
 func (r *Renderer) Camera() *render.Camera { return &r.camera }
 
 // SetCamera sets the camera, resizes the frame to it and clears the
-// depth buffer (C++ SetCamera, UpdateProjection).
+// depth buffer.
 func (r *Renderer) SetCamera(c render.Camera) {
 	r.camera = c
 	r.updateProjection()
@@ -163,7 +162,7 @@ func (r *Renderer) clip(p geom.Vector) cvert {
 }
 
 // StartFrame sets up lighting and clears the frame to the background
-// colour (C++ OpenGl1Renderer::StartFrame).
+// colour.
 func (r *Renderer) StartFrame() {
 	l := &r.lighting
 	for i := range r.lights {
@@ -361,7 +360,7 @@ func (r *Renderer) batchLines(draw func()) {
 	wg.Wait()
 }
 
-// doFatLineEndcap is a semicircle fan (C++ DoFatLineEndcap).
+// doFatLineEndcap is a semicircle fan.
 func (r *Renderer) doFatLineEndcap(p, u, v geom.Vector) {
 	vs := make([]cvert, 0, len(render.EndcapCircle))
 	for _, pc := range render.EndcapCircle {
@@ -371,7 +370,7 @@ func (r *Renderer) doFatLineEndcap(p, u, v geom.Vector) {
 }
 
 // doFatLine draws a line wider than GL_LINES can as a quad with round
-// caps, of constant thickness on screen (C++ DoFatLine).
+// caps, of constant thickness on screen.
 func (r *Renderer) doFatLine(a, b geom.Vector, width float64) {
 	hw := width / 2
 	ab := b.Minus(a)

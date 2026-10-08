@@ -31,17 +31,16 @@ func isShellLine(line string) bool {
 // a missing linked file.
 var ErrCancelled = link.ErrCancelled
 
-// reloadAllLinked loads what the sketch links (C++
-// SolveSpaceUI::ReloadAllLinked), reading linked .slvs files too, as
-// the C++ comparison tests need. It is false when the user cancelled,
-// which canCancel allows.
+// reloadAllLinked loads what the sketch links, reading linked .slvs
+// files too. It is false when the user cancelled, which canCancel
+// allows.
 func (d *Document) reloadAllLinked(saveFile string, canCancel bool) bool {
 	return link.ReloadAll(d.Sketch, saveFile, link.Options{CanCancel: canCancel, Fallback: loadEntitiesFromSlvs})
 }
 
 // loadEntitiesFromSlvs reads the saved entities, mesh and shell of a
 // linked .slvs file, and imports its styles that the sketch doesn't
-// have (C++ SolveSpaceUI::LoadEntitiesFromSlvs).
+// have.
 func loadEntitiesFromSlvs(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -66,7 +65,7 @@ func loadEntitiesFromSlvs(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.
 }
 
 // parseShellLines reads a saved mesh and shell (the Triangle, Surface
-// and Curve records of C++ LoadEntitiesFromSlvs).
+// and Curve records).
 func parseShellLines(lines []string, m *srf.SMesh, sh *srf.SShell) error {
 	var sf srf.SSurface
 	var crv srf.SCurve

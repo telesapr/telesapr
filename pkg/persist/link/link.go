@@ -85,7 +85,7 @@ func loaderFor(path string) ReportingLoader {
 }
 
 // Path resolves a link, which the file holding it names relative to
-// itself (C++ 'P' fields).
+// itself.
 func Path(saveFile, link string) string {
 	if filepath.IsAbs(link) {
 		return link
@@ -94,7 +94,7 @@ func Path(saveFile, link string) string {
 }
 
 // LocateResponse is what the user answered when a linked file was
-// missing (C++ LocateImportedFile and the file dialog after it).
+// missing.
 type LocateResponse int
 
 const (
@@ -110,16 +110,14 @@ const (
 )
 
 // LocateMissingFile, when set, asks the user to find a linked file or
-// image that couldn't be read, named relative to the sketch's file,
-// and returns where it is now (C++ LocateImportedFile and the file
-// dialogs of ReloadAllLinked and ReloadLinkedImage). Without it a
-// missing file counts as declined. canCancel says whether loading can
-// be given up; it can when a file is being opened, not when the sketch
-// is regenerated or undone.
+// image that couldn't be read, named relative to the sketch's file, and
+// returns where it is now. Without it a missing file counts as
+// declined. canCancel says whether loading can be given up; it can when
+// a file is being opened, not when the sketch is regenerated or undone.
 var LocateMissingFile func(name string, isImage, canCancel bool) (path string, resp LocateResponse)
 
 // ImageCorrupted, when set, tells the user an image they chose can't be
-// read (C++ Error("The image '%s' is corrupted.")).
+// read.
 var ImageCorrupted = func(file string) {}
 
 // ErrCancelled is a loader's error when the user cancelled loading at
@@ -127,8 +125,7 @@ var ImageCorrupted = func(file string) {}
 var ErrCancelled = errors.New("loading cancelled")
 
 // RelativeLink names a file the user chose as the sketch's file links
-// it: relative to the sketch's folder when it can be, as C++ writes
-// its 'P' fields; else absolute.
+// it: relative to the sketch's folder when it can be; else absolute.
 func RelativeLink(saveFile, chosen string) string {
 	abs, err := filepath.Abs(chosen)
 	if err != nil {
@@ -160,10 +157,10 @@ type Options struct {
 	Fallback Loader
 }
 
-// ReloadAll loads the entities, mesh and shell of every file the
-// sketch links (C++ SolveSpaceUI::ReloadAllLinked), and the pictures of
-// its image requests, asking the user to find a missing one through
-// LocateMissingFile. It is false when the user cancelled.
+// ReloadAll loads the entities, mesh and shell of every file the sketch
+// links, and the pictures of its image requests, asking the user to
+// find a missing one through LocateMissingFile. It is false when the
+// user cancelled.
 func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 	canCancel := o.CanCancel
 	locate := locateMissingFile
@@ -260,8 +257,7 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 
 // ReloadAllLinked reloads the linked files and images of sk, relative
 // to saveFile, the file the sketch is saved in or "", without the
-// choice to cancel (C++ SolveSpaceUI::ReloadAllLinked). Undo and
-// regeneration call it.
+// choice to cancel. Undo and regeneration call it.
 func ReloadAllLinked(sk *sketch.Sketch, saveFile string) {
 	ReloadAll(sk, saveFile, Options{})
 }
@@ -290,10 +286,10 @@ func readImage(path string) *sketch.Image {
 }
 
 // reloadLinkedImage loads the image *file, named relative to saveFile,
-// into the sketch's images (C++ SolveSpaceUI::ReloadLinkedImage),
-// asking the user to find it through LocateMissingFile when it can't be
-// read, and renaming *file to where it was found. It is false when the
-// user cancelled, which canCancel allows.
+// into the sketch's images, asking the user to find it through
+// LocateMissingFile when it can't be read, and renaming *file to where
+// it was found. It is false when the user cancelled, which canCancel
+// allows.
 func reloadLinkedImage(sk *sketch.Sketch, saveFile string, file *string, canCancel bool,
 	locate func(name string, isImage, canCancel bool) (string, LocateResponse)) bool {
 	if *file == "" {
@@ -317,7 +313,7 @@ func reloadLinkedImage(sk *sketch.Sketch, saveFile string, file *string, canCanc
 			}
 			img = readImage(Path(saveFile, *file))
 			if img == nil && LocateMissingFile != nil {
-				// C++: Error("The image '%s' is corrupted.")
+				// The image is corrupted.
 				ImageCorrupted(*file)
 			}
 		case LocateCancel:
@@ -346,11 +342,11 @@ func LoadLinkedImage(sk *sketch.Sketch, saveFile, file string) bool {
 	return sk.Images[file] != nil
 }
 
-// RebaseLinks rewrites the linked files and images of sk, named relative
-// to the file the sketch was in (from, or "" for a new sketch), relative
-// to the file it is saved in next (to), as C++ writes its 'P' fields
-// relative to the file being saved. It fails when a link can't be made
-// relative, such as across Windows volumes, and then changes nothing.
+// RebaseLinks rewrites the linked files and images of sk, named
+// relative to the file the sketch was in (from, or "" for a new
+// sketch), relative to the file it is saved in next (to). It fails when
+// a link can't be made relative, such as across Windows volumes, and
+// then changes nothing.
 func RebaseLinks(sk *sketch.Sketch, from, to string) (badLink string, err error) {
 	rebase := func(link string) (string, error) {
 		if link == "" {

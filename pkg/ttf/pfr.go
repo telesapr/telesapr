@@ -597,7 +597,7 @@ func pfrFaceInit(data []byte) (*Face, error) {
 	} else if pf.fontID != nil {
 		f.FamilyName = *pf.fontID
 	}
-	// C++ reads a NULL style name (and family name) as a string
+	// A missing style name (and family name) reads as an empty string
 	if pf.styleName != nil {
 		f.StyleName = *pf.styleName
 	}

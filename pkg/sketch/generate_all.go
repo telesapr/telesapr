@@ -14,15 +14,14 @@ import (
 	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
-// GenerateAll regenerates the whole model: every group's entities
-// and params, then the solve, loops and shells. It is C++
-// SolveSpaceUI::GenerateAll(Generate::ALL) as it runs outside export
-// mode.
+// GenerateAll regenerates the whole model: every group's entities and
+// params, then the solve, loops and shells.
 func (sk *Sketch) GenerateAll() {
 	sk.generateAll(GenerateAll, false, false)
 }
 
-// generateAll ports C++ SolveSpaceUI::GenerateAll (generate.cpp).
+// generateAll is the regeneration that GenerateAll and its variants
+// run.
 func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	defer func() { sk.Generation++ }()
 	sk.GroupOrder = sk.GroupOrder[:0]
@@ -150,14 +149,13 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 			}
 			GenerateConstraint(c, &sk.Params)
 		}
-		// C++ keeps its entity and param lists sorted by handle; the
+		// The entity and param lists are kept sorted by handle; the
 		// group iterates over them in that order.
 		sk.sortByHandle()
 		g.Generate(sk, &sk.Entities, &sk.Params)
 		sk.sortByHandle()
-		// The params this group's solve may change: C++
-		// WriteEqSystemForGroup collects the same set by generating the
-		// group's requests, constraints and group params again.
+		// The params this group's solve may change: those its requests,
+		// its constraints and the group itself generate.
 		groupParams := make([]core.HParam, 0, len(sk.Params)-len(prevGroupParams))
 		for _, p := range sk.Params {
 			if !prevGroupParams[p.H] {
@@ -271,8 +269,8 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	}
 }
 
-// sortByHandle sorts the entities and params by handle, the order C++
-// IDList keeps them in.
+// sortByHandle sorts the entities and params by handle, the order the
+// lists are kept in.
 func (sk *Sketch) sortByHandle() {
 	slices.SortStableFunc(sk.Entities, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
 	slices.SortStableFunc(sk.Params, func(a, b core.Param) int { return cmp.Compare(a.H.V, b.H.V) })
@@ -288,8 +286,8 @@ func (sk *Sketch) generateAllPruned(prev []core.Param, typ GenerateType, andFind
 // HGroupReferences is the handle value of the references group.
 const HGroupReferences = core.HGroupReferences
 
-// ForceReferences forces the values of the params that define the
-// three reference coordinate systems (C++ SolveSpaceUI::ForceReferences).
+// ForceReferences forces the values of the params that define the three
+// reference coordinate systems.
 func (sk *Sketch) ForceReferences() {
 	quat := []struct {
 		hr core.HRequest
@@ -317,13 +315,12 @@ func (sk *Sketch) ForceReferences() {
 	}
 }
 
-// groupExists reports whether hg is a group (C++ GroupExists).
+// groupExists reports whether hg is a group.
 func (sk *Sketch) groupExists(hg core.HGroup) bool {
 	return sk.Group(hg) != nil
 }
 
-// entityExists reports whether he is an entity or no entity at all
-// (C++ EntityExists).
+// entityExists reports whether he is an entity or no entity at all.
 func (sk *Sketch) entityExists(he core.HEntity) bool {
 	if he == core.NoEntity {
 		return true
@@ -331,8 +328,7 @@ func (sk *Sketch) entityExists(he core.HEntity) bool {
 	return sk.Entity(he) != nil
 }
 
-// groupsInOrder reports whether before comes before after (C++
-// GroupsInOrder).
+// groupsInOrder reports whether before comes before after.
 func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool {
 	if before.V == 0 || after.V == 0 {
 		return true
@@ -344,7 +340,7 @@ func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool {
 }
 
 // PruneOrphans removes requests and constraints whose group doesn't
-// exist (C++ SolveSpaceUI::PruneOrphans).
+// exist.
 func (sk *Sketch) PruneOrphans() bool {
 	requests, constraints := len(sk.Requests), len(sk.Constraints)
 
@@ -370,9 +366,8 @@ func (sk *Sketch) PruneOrphans() bool {
 	return requests > len(sk.Requests) || constraints > len(sk.Constraints)
 }
 
-// PruneGroups removes group hg if its operand or predef entities
-// don't exist (yet), and reports whether it did (C++
-// SolveSpaceUI::PruneGroups).
+// PruneGroups removes group hg if its operand or predef entities don't
+// exist (yet), and reports whether it did.
 func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 	g := sk.Group(hg)
 	// An edge of a chamfer or a sweep path that is gone is dropped
@@ -432,8 +427,7 @@ func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 }
 
 // PruneRequestsAndConstraints removes group hg's requests and
-// constraints that refer to entities that don't exist (C++
-// SolveSpaceUI::PruneRequestsAndConstraints).
+// constraints that refer to entities that don't exist.
 func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 	entityRequestExists := func(he core.HEntity, checkEntity bool) bool {
 		if he == core.NoEntity {
@@ -495,12 +489,11 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 }
 
 // timeoutRedundantConstr bounds the search for the constraints that
-// make a group inconsistent (C++ SS.timeoutRedundantConstr's default).
+// make a group inconsistent.
 const timeoutRedundantConstr = 1000 * time.Millisecond
 
 // WriteEquationsExceptFor appends the equations of group hg: those of
-// its constraints except hc, of its entities, and of the group itself
-// (C++ System::WriteEquationsExceptFor).
+// its constraints except hc, of its entities, and of the group itself.
 func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l *[]core.Equation) {
 	g := sk.Group(hg)
 	// Generate all the equations from constraints in this group
@@ -543,7 +536,7 @@ func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l
 // writeEqSystemForGroup is the system that solves group hg for
 // groupParams, the params its requests, constraints and the group
 // itself generate, holding every other param fixed, and marks the
-// params being dragged (C++ SolveSpaceUI::WriteEqSystemForGroup).
+// params being dragged.
 func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HParam) (*solver.System, *solver.Group) {
 	g := sk.Group(hg)
 
@@ -630,8 +623,7 @@ func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int) {
 
 // SolveGroupAndReport solves group hg for groupParams, the params its
 // requests, constraints and the group itself generate, holding every
-// other param fixed (C++ SolveSpaceUI::SolveGroup, with
-// WriteEqSystemForGroup).
+// other param fixed.
 func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
 	g := sk.Group(hg)
 	g.SketchDiagnostic = nil
@@ -643,7 +635,7 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 		how, g.Solved.Dof, g.Solved.Remove = sys.Solve(sg, !g.AllowRedundant, andFindFree, !g.DofCheckOk)
 	})
 	if err != nil {
-		// C++ would have asserted on the malformed sketch.
+		// A malformed sketch is reported, not a crash.
 		g.SketchDiagnostic = &SketchDiagnostic{AddConstraintErrors: []string{
 			fmt.Sprintf("group %v: %v", hg, err)}}
 		how = core.SolveDidntConverge
@@ -658,7 +650,7 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 
 // recalculateGroupEntities refreshes the cached Act* values of group
 // hg's entities, which the solver's numeric helpers and the renderer
-// read; C++ evaluates those live.
+// read.
 func (sk *Sketch) recalculateGroupEntities(hg core.HGroup) {
 	for i := range sk.Entities {
 		e := &sk.Entities[i]
@@ -669,8 +661,7 @@ func (sk *Sketch) recalculateGroupEntities(hg core.HGroup) {
 	}
 }
 
-// catchPanic runs fn, returning a panic (C++ would have asserted) as
-// an error.
+// catchPanic runs fn, returning a panic as an error.
 func catchPanic(fn func()) (err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -682,7 +673,7 @@ func catchPanic(fn func()) (err error) {
 }
 
 // chordTolPct is the chord tolerance as a percentage of the model's
-// size: Sketch.ChordTolPct, or the default C++ "ChordTolerancePct"
+// size: Sketch.ChordTolPct, or the default of the ChordTolerancePct
 // setting.
 func (sk *Sketch) chordTolPct() float64 {
 	if sk.ChordTolPct > 0 {
@@ -724,8 +715,7 @@ func (sk *Sketch) SettingsStore() core.Settings {
 // from the model's size and ChordTolPct.
 func (sk *Sketch) Tol() srf.Tolerance { return sk.tol }
 
-// chordTolPct mirrors the default C++ "ChordTolerancePct" setting
-// (solvespace.cpp:50).
+// chordTolPct is the default of the ChordTolerancePct setting.
 const chordTolPct = 0.1
 
 func (sk *Sketch) orderedGroups() []core.HGroup {
@@ -764,10 +754,9 @@ func ParseExprText(s string) *core.Expr {
 	return e
 }
 
-// GenerateType is which groups GenerateAll solves (C++
-// SolveSpaceUI::Generate): all of them; from the first dirty or
-// unsolved one to the active one; none, only regenerating the
-// entities; or up to the active one.
+// GenerateType is which groups GenerateAll solves: all of them; from
+// the first dirty or unsolved one to the active one; none, only
+// regenerating the entities; or up to the active one.
 type GenerateType int
 
 const (
@@ -783,22 +772,19 @@ func (sk *Sketch) GenerateAllTyped(t GenerateType) {
 }
 
 // GenerateAllFindFree regenerates like GenerateAllTyped and also works
-// out which parameters are free, for Analyze > Show Degrees of Freedom
-// (C++ GenerateAll with andFindFree).
+// out which parameters are free, for Analyze > Show Degrees of Freedom.
 func (sk *Sketch) GenerateAllFindFree(t GenerateType) {
 	sk.generateAll(t, true, false)
 }
 
 // ScheduleGenerateAll asks for a regeneration of the dirty groups when
-// Refresh next runs (C++ SolveSpaceUI::ScheduleGenerateAll, which
-// Refresh serves after the pending events).
+// Refresh next runs.
 func (sk *Sketch) ScheduleGenerateAll() {
 	sk.scheduledGenerateAll = true
 	sk.hooks().ScheduleGenerateAll()
 }
 
-// Refresh does the scheduled regeneration (C++
-// SolveSpaceUI::Refresh; showing the text window is the caller's).
+// Refresh does the scheduled regeneration.
 func (sk *Sketch) Refresh() {
 	if sk.scheduledGenerateAll {
 		sk.scheduledGenerateAll = false
@@ -807,8 +793,7 @@ func (sk *Sketch) Refresh() {
 }
 
 // MarkGroupDirty marks group hg, and unless onlyThis every group after
-// it, as needing regeneration, and schedules it (C++
-// SolveSpaceUI::MarkGroupDirty).
+// it, as needing regeneration, and schedules it.
 func (sk *Sketch) MarkGroupDirty(hg core.HGroup, onlyThis bool) {
 	goOn := false
 	for _, gh := range sk.GroupOrder {
@@ -827,8 +812,7 @@ func (sk *Sketch) MarkGroupDirty(hg core.HGroup, onlyThis bool) {
 	sk.ScheduleGenerateAll()
 }
 
-// MarkGroupDirtyByEntity marks the group of entity he dirty (C++
-// SolveSpaceUI::MarkGroupDirtyByEntity).
+// MarkGroupDirtyByEntity marks the group of entity he dirty.
 func (sk *Sketch) MarkGroupDirtyByEntity(he core.HEntity) {
 	sk.MarkGroupDirty(sk.MustEntity(he).Group, false)
 }

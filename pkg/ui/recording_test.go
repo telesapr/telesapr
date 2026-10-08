@@ -11,7 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// recordingCanvas prints every draw call, as the C++ harness that
+// recordingCanvas prints every draw call, as the SolveSpace harness that
 // recorded the first draw goldens did.
 type recordingCanvas struct {
 	render.CanvasBase

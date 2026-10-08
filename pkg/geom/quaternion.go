@@ -16,8 +16,7 @@ func NewQuaternion(w, x, y, z float64) Quaternion {
 	return Quaternion{W: w, X: x, Y: y, Z: z}
 }
 
-// QuaternionFromAxisAngle is the rotation by dtheta about axis (C++
-// Quaternion::From(Vector axis, double dtheta)).
+// QuaternionFromAxisAngle is the rotation by dtheta about axis.
 func QuaternionFromAxisAngle(axis Vector, dtheta float64) Quaternion {
 	c, s := libm.Cos(dtheta/2), libm.Sin(dtheta/2)
 	axis = axis.WithMagnitude(s)
@@ -26,8 +25,7 @@ func QuaternionFromAxisAngle(axis Vector, dtheta float64) Quaternion {
 
 // QuaternionFromBasis builds the quaternion that rotates the X axis
 // onto u and the Y axis onto v. Caller must ensure u and v are
-// perpendicular unit vectors. Mirrors C++ Quaternion::From(Vector u,
-// Vector v) (util.cpp), including its branch choice and sign.
+// perpendicular unit vectors.
 func QuaternionFromBasis(u, v Vector) Quaternion {
 	n := u.Cross(v)
 
@@ -87,8 +85,7 @@ func (q Quaternion) MagSquared() float64 {
 	return q.W*q.W + q.X*q.X + q.Y*q.Y + q.Z*q.Z
 }
 
-// WithMagnitude is q scaled to magnitude s (C++
-// Quaternion::WithMagnitude).
+// WithMagnitude is q scaled to magnitude s.
 func (q Quaternion) WithMagnitude(s float64) Quaternion {
 	return q.ScaledBy(s / q.Magnitude())
 }
@@ -101,7 +98,7 @@ func (q Quaternion) Normal() Quaternion {
 	return q.ScaledBy(1.0 / mag)
 }
 
-// Times is the product q b (C++ Quaternion::Times).
+// Times is the product q b.
 func (q Quaternion) Times(b Quaternion) Quaternion {
 	sa, sb := q.W, b.W
 	va := Vector{q.X, q.Y, q.Z}
@@ -116,14 +113,13 @@ func (q Quaternion) Times(b Quaternion) Quaternion {
 	return r
 }
 
-// Inverse is the inverse rotation (C++ Quaternion::Inverse).
+// Inverse is the inverse rotation.
 func (q Quaternion) Inverse() Quaternion {
 	r := Quaternion{W: q.W, X: -q.X, Y: -q.Y, Z: -q.Z}
 	return r.WithMagnitude(1) // not that the normalize should be reqd
 }
 
-// Mirror is the orientation with U and V reversed (C++
-// Quaternion::Mirror).
+// Mirror is the orientation with U and V reversed.
 func (q Quaternion) Mirror() Quaternion {
 	u, v := q.RotationU(), q.RotationV()
 	u = u.ScaledBy(-1)
@@ -131,8 +127,7 @@ func (q Quaternion) Mirror() Quaternion {
 	return QuaternionFromBasis(u, v)
 }
 
-// ToThe is q, a unit quaternion, raised to the power p (C++
-// Quaternion::ToThe).
+// ToThe is q, a unit quaternion, raised to the power p.
 func (q Quaternion) ToThe(p float64) Quaternion {
 	// Avoid division by zero, or arccos of something not in its domain
 	if q.W >= (1 - 1e-6) {
@@ -156,9 +151,8 @@ func (q Quaternion) IsIdentity() bool {
 	return q.W == 1.0 && q.X == 0 && q.Y == 0 && q.Z == 0
 }
 
-// Rotate expresses v in the basis (RotationU, RotationV, RotationN),
-// as C++ Quaternion::Rotate does. For a non-unit quaternion this
-// scales by |q|^2.
+// Rotate expresses v in the basis (RotationU, RotationV, RotationN).
+// For a non-unit quaternion this scales by |q|^2.
 func (q Quaternion) Rotate(v Vector) Vector {
 	return q.RotationU().ScaledBy(v.X).Plus(
 		q.RotationV().ScaledBy(v.Y)).Plus(

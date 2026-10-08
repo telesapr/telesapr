@@ -9,8 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/res"
 )
 
-// toolIcon is a toolbar button; an empty name is a spacer (C++
-// ToolIcon).
+// toolIcon is a toolbar button; an empty name is a spacer.
 type toolIcon struct {
 	name    string
 	command Command
@@ -18,8 +17,7 @@ type toolIcon struct {
 	pixmap  *res.Pixmap
 }
 
-// toolbar is the toolbar at the left of the graphics window (C++
-// Toolbar[], toolbar.cpp).
+// toolbar is the toolbar at the left of the graphics window.
 var toolbar = []toolIcon{
 	{"line", CmdLineSegment, "Sketch line segment", nil},
 	{"rectangle", CmdRectangle, "Sketch rectangle", nil},
@@ -115,7 +113,7 @@ func (gw *GraphicsWindow) ToolbarMouseDown(x, y int) bool {
 }
 
 // toolbarDrawOrHitTest draws the toolbar, or with a nil canvas finds
-// the button at mx, my (C++ ToolbarDrawOrHitTest).
+// the button at mx, my.
 func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanvas) (within bool, hitCommand Command, hitX, hitY int) {
 	_, height := gw.window.ContentSize()
 

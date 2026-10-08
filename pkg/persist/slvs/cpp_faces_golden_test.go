@@ -1,8 +1,8 @@
 package slvs
 
-// cppShellFaces is, for each fixture C++ can load, the sorted face
+// cppShellFaces is, for each fixture SolveSpace can load, the sorted face
 // entities of the surfaces of every group's own shell (thisShell), as
-// C++ generates them. Generated with a C++ harness linked against
+// SolveSpace generates them. Generated with a SolveSpace harness linked against
 // solvespace's core library; groups without a shell are left out.
 var cppShellFaces = map[string]map[uint32][]uint32{
 	"constraint/pt_face_distance/normal.slvs": {

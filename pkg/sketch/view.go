@@ -2,9 +2,9 @@ package sketch
 
 import "github.com/telesapr/telesapr/pkg/geom"
 
-// View is the map from model space to screen pixels that C++ keeps in
-// GraphicsWindow (offset, projRight, projUp, scale) and reads through
-// SS.GW; Tangent is SS.CameraTangent(), zero for an orthographic view.
+// View is the map from model space to screen pixels: the window's
+// offset, projection vectors and scale; Tangent is the perspective
+// factor, zero for an orthographic view.
 type View struct {
 	Offset    geom.Vector
 	ProjRight geom.Vector
@@ -24,7 +24,7 @@ func DefaultView() View {
 }
 
 // view is the sketch's view, or the default one when the sketch has
-// none (a sketch without a GUI, as in the headless C++ build).
+// none (a sketch without a window).
 func (sk *Sketch) view() *View {
 	if sk.View != nil {
 		return sk.View
@@ -34,7 +34,7 @@ func (sk *Sketch) view() *View {
 }
 
 // ProjectPoint4 projects p halfway into screen space: no scale and no
-// perspective divide; w is returned (C++ GraphicsWindow::ProjectPoint4).
+// perspective divide; w is returned.
 func (v *View) ProjectPoint4(p geom.Vector) (r geom.Vector, w float64) {
 	p = p.Plus(v.Offset)
 	r.X = p.Dot(v.ProjRight)
@@ -44,31 +44,27 @@ func (v *View) ProjectPoint4(p geom.Vector) (r geom.Vector, w float64) {
 	return r, w
 }
 
-// ProjectPoint3 projects p to screen pixels, z included (C++
-// GraphicsWindow::ProjectPoint3).
+// ProjectPoint3 projects p to screen pixels, z included.
 func (v *View) ProjectPoint3(p geom.Vector) geom.Vector {
 	r, w := v.ProjectPoint4(p)
 	return r.ScaledBy(v.Scale / w)
 }
 
-// ProjectPoint projects p to screen pixels (C++
-// GraphicsWindow::ProjectPoint).
+// ProjectPoint projects p to screen pixels.
 func (v *View) ProjectPoint(p geom.Vector) geom.Point2d {
 	p3 := v.ProjectPoint3(p)
 	return geom.Point2d{U: p3.X, V: p3.Y}
 }
 
-// UnProjectPoint is the point in the plane through the offset,
-// parallel to the screen, that projects onto p (C++
-// GraphicsWindow::UnProjectPoint).
+// UnProjectPoint is the point in the plane through the offset, parallel
+// to the screen, that projects onto p.
 func (v *View) UnProjectPoint(p geom.Point2d) geom.Vector {
 	orig := v.Offset.ScaledBy(-1)
 	return orig.Plus(v.ProjRight.ScaledBy(p.U / v.Scale)).Plus(
 		v.ProjUp.ScaledBy(p.V / v.Scale))
 }
 
-// UnProjectPoint3 inverts ProjectPoint3 (C++
-// GraphicsWindow::UnProjectPoint3).
+// UnProjectPoint3 inverts ProjectPoint3.
 func (v *View) UnProjectPoint3(p geom.Vector) geom.Vector {
 	p.Z /= v.Scale - p.Z*v.Tangent*v.Scale
 	w := 1 + p.Z*v.Tangent*v.Scale
@@ -81,8 +77,7 @@ func (v *View) UnProjectPoint3(p geom.Vector) geom.Vector {
 			v.ProjRight.Cross(v.ProjUp).ScaledBy(p.Z)))
 }
 
-// NormalizeProjectionVectors makes ProjRight and ProjUp orthonormal
-// (C++ GraphicsWindow::NormalizeProjectionVectors).
+// NormalizeProjectionVectors makes ProjRight and ProjUp orthonormal.
 func (v *View) NormalizeProjectionVectors() {
 	if v.ProjRight.Magnitude() < geom.LengthEps {
 		v.ProjRight = geom.Vector{X: 1}
@@ -97,7 +92,7 @@ func (v *View) NormalizeProjectionVectors() {
 }
 
 // VectorFromProjs is the model-space vector with the given right, up
-// and forward screen components (C++ GraphicsWindow::VectorFromProjs).
+// and forward screen components.
 func (v *View) VectorFromProjs(rightUpForward geom.Vector) geom.Vector {
 	n := v.ProjRight.Cross(v.ProjUp)
 	r := v.ProjRight.ScaledBy(rightUpForward.X)
@@ -105,15 +100,14 @@ func (v *View) VectorFromProjs(rightUpForward geom.Vector) geom.Vector {
 	return r.Plus(n.ScaledBy(rightUpForward.Z))
 }
 
-// ProjectPoint projects p to the screen in the sketch's view (C++
-// GraphicsWindow::ProjectPoint).
+// ProjectPoint projects p to the screen in the sketch's view.
 func (sk *Sketch) ProjectPoint(p geom.Vector) geom.Point2d {
 	return sk.view().ProjectPoint(p)
 }
 
-// Visibility holds the view's show flags the engine reads (C++
-// GraphicsWindow::showPoints and friends): Entity::IsVisible reads the
-// first four, Group::GenerateDisplayItems the last two.
+// Visibility holds the view's show flags the engine reads:
+// Entity::IsVisible reads the first four, Group::GenerateDisplayItems
+// the last two.
 type Visibility struct {
 	Points, Normals, Construction, Workplanes bool
 	Edges, Outlines                           bool
@@ -134,8 +128,7 @@ func (sk *Sketch) visibility() Visibility {
 
 // DistanceLabelOffset is where the label of a new distance between
 // points at a and b goes, as Constrain > Distance puts it: 50 pixels
-// from the middle, across the line between them in the view (C++
-// GraphicsWindow::MenuConstrain).
+// from the middle, across the line between them in the view.
 func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector {
 	v := sk.view()
 	n := v.ProjRight.Cross(v.ProjUp)

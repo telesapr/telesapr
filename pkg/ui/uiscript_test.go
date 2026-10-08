@@ -21,7 +21,7 @@ import (
 )
 
 // uiScriptRunner runs the scripts in testdata/ui/scripts on the headless
-// platform, and prints what the C++ harness that recorded the first
+// platform, and prints what the SolveSpace harness that recorded the first
 // goldens printed.
 type uiScriptRunner struct {
 	t        testing.TB
@@ -559,7 +559,7 @@ func linkPathsFromTestdata(s string) string {
 // compareUIScripts runs the scripts with a prefix and compares each
 // output with its golden, testdata/ui/golden/<name>.goui, reporting the
 // first differing line. The goldens of the scripts that are not ext_
-// were first recorded from C++. TELESAPR_REGEN_GOLDEN=1 rewrites them
+// were first recorded from SolveSpace. TELESAPR_REGEN_GOLDEN=1 rewrites them
 // (scripts/regen-goui.sh); review the diff before committing.
 func compareUIScripts(t *testing.T, prefix string) {
 	names := uiScripts(t, prefix)

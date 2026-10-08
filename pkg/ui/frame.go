@@ -25,9 +25,7 @@ func (gw *GraphicsWindow) shareBitmapFont(c render.Canvas) {
 	}
 }
 
-// writeFramePng saves a rendered frame as a PNG (C++
-// Pixmap::WritePng of the read frame, which is already top row first
-// here).
+// writeFramePng saves a rendered frame as a PNG.
 func writeFramePng(frame *image.RGBA, path string) error {
 	f, err := os.Create(path)
 	if err != nil {

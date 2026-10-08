@@ -12,8 +12,8 @@ import (
 
 // The port of ttf.cpp: TtfFont and TtfFontList.
 
-// builtinFont is C++'s builtin font resource (solvespace/res/fonts), Bitstream
-// Vera Sans, whose license allows bundling it with software.
+// builtinFont is the built-in font, Bitstream Vera Sans, whose license
+// allows bundling it with software.
 //
 //go:embed fonts/BitstreamVeraSans-Roman-builtin.ttf
 var builtinFont []byte
@@ -21,9 +21,7 @@ var builtinFont []byte
 const builtinFontResource = "res://fonts/BitstreamVeraSans-Roman-builtin.ttf"
 
 // EmbeddedFont names the builtin font, as text requests store it: by
-// its file's basename, as every font is looked up (C++
-// Platform::embeddedFont off Windows; on Windows C++ stores the
-// resource path, which matches no font).
+// its file's basename, as every font is looked up.
 const EmbeddedFont = "BitstreamVeraSans-Roman-builtin.ttf"
 
 // DefaultFonts is the font list of a sketch that has none of its own:
@@ -278,7 +276,7 @@ func (tf *Font) PlotString(str string, out OutlineSink, kerning bool,
 			factor: float32(1.0 / tf.CapHeight),
 			bx:     bx,
 		}
-		// C++ only logs a failure, keeping what was decomposed.
+		// A failure keeps what was decomposed.
 		_ = g.Outline.Decompose(OutlineFuncs{
 			MoveTo: func(p Vector) {
 				d.px, d.py = p.X, p.Y

@@ -9,24 +9,21 @@ import (
 	"github.com/telesapr/telesapr/pkg/internal/par"
 )
 
-// This file has what lets the loops C++ marks "#pragma omp parallel
-// for" run on several goroutines and still give one result, whatever
-// the goroutines' timing: the result of the loops run in order, which
-// is C++'s built without OpenMP (with it, C++'s own result depends on
-// the timing).
+// This file has what lets the kernel's long loops run on several
+// goroutines and still give one result, whatever the goroutines'
+// timing: the result of the loops run in order.
 //
 // A loop whose iterations write only what they own just runs at once
 // (MakeClassifyingBsps, TriangulateInto). The loops of a Boolean over
 // one operand's curves and surfaces also write to the result shell,
 // which they do afterwards, in order, and would read the closest-point
 // caches of the surfaces they project points on (SSurface.Cached),
-// which makes a projection depend on the one before it; so for
-// operands with curved surfaces the caches are off while they run.
-// Planes have no use for them. The loops run the same way on one
-// goroutine as on several, so the result is the same to the bit
-// whatever the number (roadmap 17.1: there was an exact mode, which ran
-// curved operands' loops in order with the caches on, for C++'s last
-// bits).
+// which makes a projection depend on the one before it; so for operands
+// with curved surfaces the caches are off while they run. Planes have
+// no use for them. The loops run the same way on one goroutine as on
+// several, so the result is the same to the bit whatever the number
+// (roadmap 17.1: there was an exact mode, which ran curved operands'
+// loops in order with the caches on).
 
 // ParallelMode says whether the loops run on several goroutines.
 type ParallelMode int

@@ -9,7 +9,7 @@ import (
 
 // UICanvas draws user interface in integer screen coordinates onto a
 // canvas whose camera is the identity in pixels; with Flip, y grows
-// down (C++ UICanvas).
+// down.
 type UICanvas struct {
 	Canvas Canvas
 	Flip   bool

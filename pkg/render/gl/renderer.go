@@ -18,8 +18,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// Renderer is a render.ViewportCanvas drawing with OpenGL 1 (C++
-// OpenGl1Renderer).
+// Renderer is a render.ViewportCanvas drawing with OpenGL 1.
 type Renderer struct {
 	render.CanvasBase
 	ctx      Context
@@ -72,7 +71,7 @@ func (r *Renderer) makeCurrent() {
 func (r *Renderer) Camera() *render.Camera { return &r.camera }
 
 // SetCamera sets the camera and the projection, and clears the depth
-// buffer (C++ SetCamera).
+// buffer.
 func (r *Renderer) SetCamera(c render.Camera) {
 	r.camera = c
 	r.makeCurrent()
@@ -141,8 +140,7 @@ func (r *Renderer) updateProjection() {
 	glapi.Clear(glapi.DEPTH_BUFFER_BIT)
 }
 
-// StartFrame sets up the state, the lights, and clears the frame
-// (C++ StartFrame).
+// StartFrame sets up the state, the lights, and clears the frame.
 func (r *Renderer) StartFrame() {
 	r.makeCurrent()
 	r.cur.hcs, r.cur.stroke, r.cur.hcf, r.cur.fill, r.cur.texture = 0, nil, 0, nil, nil
@@ -194,8 +192,8 @@ func (r *Renderer) FlushFrame() {
 func (r *Renderer) FinishFrame() {
 	r.unSelectPrimitive()
 	glapi.Finish()
-	// An error here is the driver's, and drawing goes on as in C++,
-	// which only logs it; clear it so the next frame's check is fresh.
+	// An error here is the driver's, and drawing goes on, which only
+	// logs it; clear it so the next frame's check is fresh.
 	glapi.GetError()
 }
 

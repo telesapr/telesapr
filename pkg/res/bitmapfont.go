@@ -3,15 +3,14 @@ package res
 import "github.com/telesapr/telesapr/pkg/internal/cxxutf8"
 
 // BitmapGlyph is a glyph's width in 8-pixel cells and its slot in the
-// texture (C++ BitmapFont::Glyph).
+// texture.
 type BitmapGlyph struct {
 	AdvanceCells uint8
 	Position     uint16
 }
 
 // BitmapFont is the text window's font: GNU Unifont's 8x16 and 16x16
-// glyphs, rendered on demand into a 1024x1024 alpha texture (C++
-// BitmapFont).
+// glyphs, rendered on demand into a 1024x1024 alpha texture.
 type BitmapFont struct {
 	unifontData    string
 	glyphs         map[rune]BitmapGlyph
@@ -20,8 +19,7 @@ type BitmapFont struct {
 	nextPosition   uint16
 }
 
-// BitmapFontFrom makes a font from Unifont's .hex data (C++
-// BitmapFont::From).
+// BitmapFontFrom makes a font from Unifont's .hex data.
 func BitmapFontFrom(unifontData string) *BitmapFont {
 	return &BitmapFont{
 		unifontData: unifontData,
@@ -32,7 +30,7 @@ func BitmapFontFrom(unifontData string) *BitmapFont {
 
 // NewBitmapFont loads the bundled Unifont and adds the private glyphs:
 // U+0020, and at U+E000..U+E007 the checkboxes, radio buttons and
-// stipple samples (C++ BitmapFont::Create).
+// stipple samples.
 func NewBitmapFont() *BitmapFont {
 	f := BitmapFontFrom(LoadStringFromGzip("fonts/unifont.hex.gz"))
 	// Unifont doesn't have a glyph for U+0020.
@@ -46,7 +44,7 @@ func NewBitmapFont() *BitmapFont {
 	return f
 }
 
-// IsEmpty reports whether the font has no data (C++ IsEmpty).
+// IsEmpty reports whether the font has no data.
 func (f *BitmapFont) IsEmpty() bool { return f == nil || f.unifontData == "" }
 
 func (f *BitmapFont) textureRow(position uint16, y int) []byte {
@@ -56,8 +54,7 @@ func (f *BitmapFont) textureRow(position uint16, y int) []byte {
 	return f.Texture.Data[f.Texture.Stride*(16*row+y)+16*col:]
 }
 
-// AddGlyph adds an 8x16 or 16x16 RGB glyph; any non-black pixel is
-// ink (C++ BitmapFont::AddGlyph).
+// AddGlyph adds an 8x16 or 16x16 RGB glyph; any non-black pixel is ink.
 func (f *BitmapFont) AddGlyph(codepoint rune, pm *Pixmap) {
 	if (pm.Width != 8 && pm.Width != 16) || pm.Height != 16 {
 		panic("res: unexpected pixmap dimensions")
@@ -85,7 +82,7 @@ func (f *BitmapFont) AddGlyph(codepoint rune, pm *Pixmap) {
 }
 
 // Glyph returns the glyph, rendering it into the texture the first
-// time; a missing one is U+FFFD (C++ BitmapFont::Glyph).
+// time; a missing one is U+FFFD.
 func (f *BitmapFont) Glyph(codepoint rune) BitmapGlyph {
 	if g, ok := f.glyphs[codepoint]; ok {
 		return g
@@ -170,7 +167,7 @@ func (f *BitmapFont) Glyph(codepoint rune) BitmapGlyph {
 }
 
 // LocateGlyph returns where the glyph is in the texture, as texture
-// coordinates, and its size in pixels (C++ BitmapFont::LocateGlyph).
+// coordinates, and its size in pixels.
 func (f *BitmapFont) LocateGlyph(codepoint rune) (s0, t0, s1, t1 float64, w, h int) {
 	g := f.Glyph(codepoint)
 	w = int(g.AdvanceCells) * 8
@@ -183,9 +180,8 @@ func (f *BitmapFont) LocateGlyph(codepoint rune) (s0, t0, s1, t1 float64, w, h i
 	return
 }
 
-// Width is the glyph's width in cells; the private checkboxes and
-// radio buttons count as one, since Printf pads them (C++
-// BitmapFont::Width).
+// Width is the glyph's width in cells; the private checkboxes and radio
+// buttons count as one, since Printf pads them.
 func (f *BitmapFont) Width(codepoint rune) int {
 	if codepoint >= 0xe000 && codepoint <= 0xefff {
 		return 1
@@ -193,8 +189,7 @@ func (f *BitmapFont) Width(codepoint rune) int {
 	return int(f.Glyph(codepoint).AdvanceCells)
 }
 
-// StringWidth is the string's width in cells (C++
-// BitmapFont::GetWidth(const std::string &)).
+// StringWidth is the string's width in cells.
 func (f *BitmapFont) StringWidth(str string) int {
 	w := 0
 	for _, c := range cxxutf8.Decode(str) {

@@ -14,8 +14,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
-// This file is the part of the tool that C++ solvespace-cli doesn't
-// have: running Go scripts on a sketch.
+// This file is the tool's scripting: running Go scripts on a sketch.
 
 const scriptUsage = `
 Scripting commands:

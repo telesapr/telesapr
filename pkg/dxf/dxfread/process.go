@@ -1,12 +1,10 @@
 package dxfread
 
-// The sections of a DXF file, as C++ dxfRW::read and its process*
-// functions walk them.
+// The sections of a DXF file, as they are walked.
 
 import "bytes"
 
-// Interface receives what the file holds (the parts of C++
-// DRW_Interface SolveSpace implements; the rest are read and dropped).
+// Interface receives what the file holds; the rest is read and dropped.
 type Interface interface {
 	AddLayer(l *Layer)
 	AddBlock(b *Block)
@@ -21,35 +19,33 @@ type Interface interface {
 	AddInsert(i *Insert)
 	AddText(t *Text)
 	AddMText(m *MText)
-	// AddDimension gets every kind of dimension, with its Kind set (C++
-	// addDimLinear, addDimAlign and so on).
+	// AddDimension gets every kind of dimension, with its Kind set.
 	AddDimension(d *Dimension)
 }
 
 // binarySentinel starts a binary DXF file.
 var binarySentinel = []byte("AutoCAD Binary DXF\r\n\x1a\x00")
 
-// dxfRW is the reading state (C++ dxfRW).
+// dxfRW is the reading state.
 type dxfRW struct {
 	r          *reader
 	iface      Interface
 	applyExt   bool
 	nextentity string
 
-	// The header's current variable (C++ DRW_Header::curr and name).
+	// The header's current variable.
 	headerCurr bool
 	headerName string
 }
 
 // Read reads a DXF file, telling iface what it holds, and reports
-// whether it read it all (C++ dxfRW::read). applyExt applies the
-// entities' extrusions, as SolveSpace asks.
+// whether it read it all. applyExt applies the entities' extrusions, as
+// SolveSpace asks.
 func Read(data []byte, iface Interface, applyExt bool) bool {
 	d := &dxfRW{iface: iface, applyExt: applyExt}
 	r := &reader{data: data, good: true, decoder: newCodec()}
 	if len(data) < len(binarySentinel) {
-		// C++ reads the sentinel's 22 bytes first; a shorter file leaves
-		// the stream failed.
+		// The sentinel's 22 bytes are read first; a shorter file fails.
 		return false
 	}
 	// strcmp: up to the first NUL of the file's first 22 bytes.
@@ -132,8 +128,7 @@ func (d *dxfRW) processDxf() bool {
 }
 
 // processHeader reads the HEADER section; only the version and code
-// page matter here (C++ dxfRW::processHeader and
-// DRW_Header::parseCode).
+// page matter here.
 func (d *dxfRW) processHeader() bool {
 	r := d.r
 	for {
@@ -168,8 +163,7 @@ func (d *dxfRW) processHeader() bool {
 	}
 }
 
-// processTables reads the TABLES section, passing on the layers (C++
-// dxfRW::processTables).
+// processTables reads the TABLES section, passing on the layers.
 func (d *dxfRW) processTables() bool {
 	r := d.r
 	for {
@@ -202,7 +196,7 @@ func (d *dxfRW) processTables() bool {
 	}
 }
 
-// parseLType is C++ DRW_LType::parseCode: only its path count can fail.
+// parseLType reads a line type's records: only its path count can fail.
 func (d *dxfRW) parseLType(code int) bool {
 	if code == 73 {
 		return reserveOK(d.r.getInt32())
@@ -210,9 +204,8 @@ func (d *dxfRW) parseLType(code int) bool {
 	return true
 }
 
-// processTable reads a table whose entries SolveSpace ignores (C++
-// dxfRW::processLType, processTextStyle and so on); a table's return
-// value is ignored, as in C++.
+// processTable reads a table whose entries SolveSpace ignores; a
+// table's return value is ignored.
 func (d *dxfRW) processTable(entry string, parse func(code int) bool) {
 	r := d.r
 	reading := false
@@ -236,7 +229,7 @@ func (d *dxfRW) processTable(entry string, parse func(code int) bool) {
 	}
 }
 
-// processLayer reads the LAYER table (C++ dxfRW::processLayer).
+// processLayer reads the LAYER table.
 func (d *dxfRW) processLayer() bool {
 	r := d.r
 	reading := false
@@ -264,7 +257,7 @@ func (d *dxfRW) processLayer() bool {
 	}
 }
 
-// processBlocks reads the BLOCKS section (C++ dxfRW::processBlocks).
+// processBlocks reads the BLOCKS section.
 func (d *dxfRW) processBlocks() bool {
 	r := d.r
 	for {
@@ -283,7 +276,7 @@ func (d *dxfRW) processBlocks() bool {
 	}
 }
 
-// processBlock reads a block (C++ dxfRW::processBlock).
+// processBlock reads a block.
 func (d *dxfRW) processBlock() bool {
 	r := d.r
 	block := newBlock()
@@ -306,9 +299,9 @@ func (d *dxfRW) processBlock() bool {
 	}
 }
 
-// processEntities reads entities up to ENDSEC or ENDBLK (C++
-// dxfRW::processEntities). In a block the entity's name was read
-// already, and so C++ drops the first record after it.
+// processEntities reads entities up to ENDSEC or ENDBLK. In a block the
+// entity's name was read already, and the first record after it is
+// dropped, as the goldens have it.
 func (d *dxfRW) processEntities(isblock bool) bool {
 	r := d.r
 	code, ok := r.readRec()
@@ -405,8 +398,7 @@ func (d *dxfRW) processEntities(isblock bool) bool {
 }
 
 // processEntity reads an entity's records into it with parse until the
-// next entity, then calls done (the shape of C++ dxfRW::processLine
-// and the others).
+// next entity, then calls done.
 func (d *dxfRW) processEntity(parse func(code int, r *reader) bool, done func()) bool {
 	r := d.r
 	for {
@@ -425,9 +417,8 @@ func (d *dxfRW) processEntity(parse func(code int, r *reader) bool, done func())
 	}
 }
 
-// processPolyline reads a POLYLINE, its vertices and SEQEND (C++
-// dxfRW::processPolyline). As in C++, SEQEND's own records are parsed
-// into the polyline.
+// processPolyline reads a POLYLINE, its vertices and SEQEND. SEQEND's
+// own records are parsed into the polyline.
 func (d *dxfRW) processPolyline() bool {
 	r := d.r
 	pl := newPolyline()
@@ -451,8 +442,7 @@ func (d *dxfRW) processPolyline() bool {
 	}
 }
 
-// processVertex reads the vertices up to SEQEND (C++
-// dxfRW::processVertex).
+// processVertex reads the vertices up to SEQEND.
 func (d *dxfRW) processVertex(pl *Polyline) bool {
 	r := d.r
 	v := newVertex()
@@ -478,7 +468,7 @@ func (d *dxfRW) processVertex(pl *Polyline) bool {
 	}
 }
 
-// processObjects reads the OBJECTS section (C++ dxfRW::processObjects).
+// processObjects reads the OBJECTS section.
 func (d *dxfRW) processObjects() bool {
 	r := d.r
 	code, ok := r.readRec()

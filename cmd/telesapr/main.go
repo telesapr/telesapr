@@ -1,6 +1,5 @@
-// Command telesapr is the TeleSAPR GUI (after C++ platform/entrygui.cpp).
-// Unlike C++, it can run a Go script on the sketch at startup; see
-// parseArgs.
+// Command telesapr is the TeleSAPR GUI. It can run a Go script on the
+// sketch at startup; see parseArgs.
 package main
 
 import (

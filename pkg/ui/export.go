@@ -3,7 +3,7 @@ package ui
 // The 2d vector output stuff that isn't specific to any particular file
 // format: getting the appropriate lines and curves, performing hidden
 // line removal, calculating bounding boxes, and so on. Also raster and
-// triangle mesh output (C++ export.cpp).
+// triangle mesh output.
 
 import (
 	"bytes"
@@ -23,8 +23,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// ExportSectionTo exports the section of the solid model by a plane
-// (C++ SolveSpaceUI::ExportSectionTo).
+// ExportSectionTo exports the section of the solid model by a plane.
 func (ss *Application) ExportSectionTo(filename string) error {
 	sk := ss.SK
 	gw := ss.GW
@@ -157,9 +156,7 @@ func (ss *Application) ExportSectionTo(filename string) error {
 	return ss.ExportLinesAndMesh(&el, &bl, nil, u, v, n, origin, 0, out)
 }
 
-// getEdgesCanvas turns what constraints draw into edges (C++
-// GetEdgesCanvas, "an awful temporary hack to replace
-// Constraint::GetEdges").
+// getEdgesCanvas turns what constraints draw into edges.
 type getEdgesCanvas struct {
 	render.CanvasBase
 	camera render.Camera
@@ -209,7 +206,7 @@ func (c *getEdgesCanvas) DrawPixmap(pm *res.Pixmap, o, u, v geom.Vector, ta, tb 
 func (c *getEdgesCanvas) InvalidatePixmap(pm *res.Pixmap) { panic("ui: not implemented") }
 
 // ExportViewOrWireframeTo exports the view as 2d vector art, or the
-// wireframe in 3d (C++ SolveSpaceUI::ExportViewOrWireframeTo).
+// wireframe in 3d.
 func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe bool) error {
 	sk := ss.SK
 	gw := ss.GW
@@ -310,8 +307,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 	return err
 }
 
-// ExportWireframeCurves writes the edges and curves in 3d (C++
-// SolveSpaceUI::ExportWireframeCurves).
+// ExportWireframeCurves writes the edges and curves in 3d.
 func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, out export.Writer) error {
 	var sblss srf.SBezierLoopSetSet
 	for _, se := range sel.Edges {
@@ -328,8 +324,7 @@ func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezie
 }
 
 // ExportLinesAndMesh projects the edges, curves and mesh, removes the
-// hidden lines, and writes what's left (C++
-// SolveSpaceUI::ExportLinesAndMesh).
+// hidden lines, and writes what's left.
 func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierList, sm *srf.SMesh,
 	u, v, n, origin geom.Vector, cameraTan float64, out export.Writer) error {
 	sk := ss.SK
@@ -482,7 +477,7 @@ func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierLi
 
 // cleanExportEdges removes from sel the segments with no length once
 // projected, and the parts of collinear segments that overlap, keeping
-// the one of the style drawn on top (part of C++ ExportLinesAndMesh).
+// the one of the style drawn on top.
 func cleanExportEdges(sk *sketch.Sketch, sel *srf.SEdgeList) {
 	for i := range sel.Edges {
 		sel.Edges[i].Tag = 0
@@ -632,8 +627,7 @@ func cleanExportEdges(sk *sketch.Sketch, sel *srf.SEdgeList) {
 
 }
 
-// ExportMeshTo exports the active group's mesh (C++
-// SolveSpaceUI::ExportMeshTo).
+// ExportMeshTo exports the active group's mesh.
 func (ss *Application) ExportMeshTo(filename string) error {
 	sk := ss.SK
 	ss.EnterExportMode()
@@ -697,8 +691,7 @@ func (ss *Application) ExportMeshTo(filename string) error {
 	return nil
 }
 
-// ExportAsPngTo saves the view as an image at the next redraw (C++
-// SolveSpaceUI::ExportAsPngTo).
+// ExportAsPngTo saves the view as an image at the next redraw.
 func (ss *Application) ExportAsPngTo(filename string) {
 	ss.ScreenshotFile = filename
 	// The rest of the work is done in the next redraw.

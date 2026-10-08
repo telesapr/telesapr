@@ -1,8 +1,8 @@
 package slvs
 
-// cppGroupDOF is, for each fixture C++ can load, every group's degrees
-// of freedom after C++ loads it as the testsuite does (LoadFromFile +
-// AfterNewFile). Every group solves OKAY there. Generated with a C++
+// cppGroupDOF is, for each fixture SolveSpace can load, every group's degrees
+// of freedom after SolveSpace loads it as the testsuite does (LoadFromFile +
+// AfterNewFile). Every group solves OKAY there. Generated with a SolveSpace
 // harness linked against solvespace's core library.
 var cppGroupDOF = map[string]map[uint32]int{
 	"analysis/contour_area/normal.slvs":                 {0x00000001: 0, 0x00000002: 4},

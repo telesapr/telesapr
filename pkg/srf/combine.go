@@ -1,6 +1,6 @@
-// Package srf mirrors the C++ srf/ module: NURBS/Bezier primitives,
-// trimmed surfaces, watertight shells, BSP trees, and mesh boolean
-// operations. It is the geometry engine of the SolveSpace port.
+// Package srf is the geometry kernel: NURBS and Bézier curves, trimmed
+// surfaces, watertight shells, BSP trees, and Boolean operations on
+// surfaces and meshes.
 //
 // Files are organized by class, with larger classes split into
 // `_eval.go`, `_factory.go`, `_geom.go`, `_closest.go`,
@@ -10,10 +10,10 @@ package srf
 import "github.com/telesapr/telesapr/pkg/core"
 
 // SurfaceCombineAs is the boolean operation selector used by
-// SSurface::MakeFromBoolean and the SShell/SMesh constructors that
-// take a combine type. The numeric values match the C++ enum in
-// srf/surface.h (UNION=10, DIFFERENCE=11, INTERSECTION=12) and
-// intentionally differ from sketch.CombineAs (UNION=0, ...).
+// SSurface::MakeFromBoolean and the SShell/SMesh constructors that take
+// a combine type. The numeric values (UNION=10, DIFFERENCE=11,
+// INTERSECTION=12) differ from sketch.CombineAs (UNION=0, ...) on
+// purpose.
 type SurfaceCombineAs int
 
 const (
@@ -69,8 +69,8 @@ const (
 	FaceIsTransparent        FaceFlag = 1 << 4
 )
 
-// MeshMeta is the colour/face tag attached to one triangle of an
-// SMesh or to one surface of an SShell. Equivalent to C++ STriMeta.
+// MeshMeta is the colour/face tag attached to one triangle of an SMesh
+// or to one surface of an SShell.
 type MeshMeta struct {
 	Face FaceID
 	core.RGBA

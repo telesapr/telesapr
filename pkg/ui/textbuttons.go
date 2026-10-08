@@ -1,7 +1,6 @@
 package ui
 
-// The icons at the top of the text window (C++ textwin.cpp's Button
-// classes and buttons[]).
+// The icons at the top of the text window.
 
 import (
 	"github.com/telesapr/telesapr/pkg/core"
@@ -10,7 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// textButton is one icon (C++ Button).
+// textButton is one icon.
 type textButton interface {
 	Tooltip() string
 	Draw(uiCanvas *render.UICanvas, x, y int, asHovered bool)
@@ -18,7 +17,7 @@ type textButton interface {
 	Click()
 }
 
-// spacerButton is a gap between groups of icons (C++ SpacerButton).
+// spacerButton is a gap between groups of icons.
 type spacerButton struct{}
 
 func (*spacerButton) Tooltip() string { return "" }
@@ -31,14 +30,14 @@ func (*spacerButton) Draw(uiCanvas *render.UICanvas, x, y int, asHovered bool) {
 func (*spacerButton) AdvanceWidth() int { return 12 }
 func (*spacerButton) Click()            {}
 
-// showHideButton toggles a show flag (C++ ShowHideButton).
+// showHideButton toggles a show flag.
 type showHideButton struct {
 	gw       *GraphicsWindow
 	variable *bool
 	tooltip  string
 	iconName string
 	icon     *res.Pixmap
-	// tooltipFn replaces the tooltip (C++ FacesButton).
+	// tooltipFn replaces the tooltip.
 	tooltipFn func() string
 }
 
@@ -72,7 +71,7 @@ func (b *showHideButton) Draw(uiCanvas *render.UICanvas, x, y int, asHovered boo
 func (b *showHideButton) AdvanceWidth() int { return 32 }
 func (b *showHideButton) Click()            { b.gw.ToggleBool(b.variable) }
 
-// triStateButton cycles through three modes (C++ TriStateButton).
+// triStateButton cycles through three modes.
 type triStateButton struct {
 	ss        *Application
 	get       func() uint32
@@ -128,7 +127,7 @@ func (b *triStateButton) Click() {
 	b.ss.ScheduleShowTW()
 }
 
-// newTextButtons makes the icons (C++ buttons[]).
+// newTextButtons makes the icons.
 func newTextButtons(ss *Application) []textButton {
 	gw := ss.GW
 	spacer := &spacerButton{}

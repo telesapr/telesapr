@@ -23,7 +23,7 @@ import (
 )
 
 // Window is a toplevel with a menu bar, a drawing area, an editor over
-// it and a scrollbar at its right (C++ GtkWindow and WindowImplGtk).
+// it and a scrollbar at its right.
 type Window struct {
 	p      *Platform
 	events platform.WindowEvents
@@ -62,8 +62,7 @@ const (
 )
 
 // CreateWindow makes a window. The first toplevel is the application's
-// root window; a tool window stays over its parent (C++
-// CreateWindow).
+// root window; a tool window stays over its parent.
 func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window) platform.Window {
 	w := &Window{p: p}
 	if kind == platform.WindowToplevel && !p.rootUsed {
@@ -256,7 +255,7 @@ func (w *Window) SetMinContentSize(width, height float64) {
 	w.layout()
 }
 
-// FreezePosition saves the window's geometry (C++ FreezePosition).
+// FreezePosition saves the window's geometry.
 func (w *Window) FreezePosition(s core.Settings, key string) {
 	if !w.visible {
 		return
@@ -544,9 +543,9 @@ func keySymToUnicode(k tkplatform.KeySym) rune {
 	return r
 }
 
-// setWindowIcon gives a window the SolveSpace icon, as the C++ GTK
-// window does with set_icon; takigo has no iconphoto, so this sets
-// _NET_WM_ICON (cardinals: width, height, then ARGB pixels) directly.
+// setWindowIcon gives a window the SolveSpace icon; takigo has no
+// iconphoto, so this sets _NET_WM_ICON (cardinals: width, height, then
+// ARGB pixels) directly.
 func setWindowIcon(win *window.Window) {
 	icon := res.LoadPng("freedesktop/telesapr-48x48.png")
 	bpp := icon.BytesPerPixel()

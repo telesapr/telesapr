@@ -786,8 +786,8 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 					e := sk.Entity(hr.Entity(0))
 					for i := core.MaxPointsInEntity; i > addAfterPoint+1; i-- {
 						if i >= core.MaxPointsInEntity {
-							// C++ reads one past the end of point[] here,
-							// which is always empty.
+							// The entry past the end of point[] is
+							// always empty.
 							continue
 						}
 						p0 := sk.Entity(e.Point[i])
@@ -883,8 +883,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 	ss.ScheduleShowTW()
 }
 
-// AddRequest adds a request in the active group and workplane (C++
-// GraphicsWindow::AddRequest).
+// AddRequest adds a request in the active group and workplane.
 func (gw *GraphicsWindow) AddRequest(typ sketch.RequestType, rememberForUndo bool) core.HRequest {
 	if rememberForUndo {
 		gw.ss.UndoRemember()
@@ -1724,8 +1723,7 @@ func (gw *GraphicsWindow) MouseLeave() {
 	gw.extraLine.Draw = false
 }
 
-// exprFromString parses an expression, telling the user if it doesn't
-// (C++ Expr::From).
+// exprFromString parses an expression, telling the user if it doesn't.
 func (ss *Application) exprFromString(input string) *core.Expr {
 	e, err := core.NewFromString(input)
 	if err != nil {

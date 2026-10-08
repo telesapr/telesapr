@@ -6,7 +6,7 @@ import (
 )
 
 // imagePixmap is the pixmap of an image request's file, or nil if it
-// couldn't be read (C++ SS.images[file]).
+// couldn't be read.
 func (ss *Application) imagePixmap(file string) *res.Pixmap {
 	img := ss.SK.Images[file]
 	if img == nil || img.Pixels == nil {

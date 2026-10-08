@@ -12,7 +12,6 @@ import (
 
 // MergeCoincidentSurfaces merges coincident, same-color planes that
 // share an edge into one surface carrying all of their trims.
-// Mirrors C++ SShell::MergeCoincidentSurfaces.
 //
 // The planes are first put in classes, each the planes coincident with
 // its first and of its colour, in the surfaces' order; a surface only
@@ -204,8 +203,7 @@ func (s *SShell) mergeClass(class []int, curveAt map[core.HSCurve]*SCurve) (repl
 }
 
 // CoincidentWith reports whether ss is a plane lying in the same plane
-// as s, with the same (or, if !sameNormal, opposite) normal. Mirrors
-// C++ SSurface::CoincidentWith.
+// as s, with the same (or, if !sameNormal, opposite) normal.
 func (s *SSurface) CoincidentWith(ss *SSurface, sameNormal bool) bool {
 	if s.DegM != 1 || s.DegN != 1 {
 		return false
@@ -237,7 +235,7 @@ func (s *SSurface) CoincidentWith(ss *SSurface, sameNormal bool) bool {
 }
 
 // ContainsEdgeFrom reports whether any edge of el is also in sel (in
-// either direction). Mirrors C++ SEdgeList::ContainsEdgeFrom.
+// either direction).
 func (el *SEdgeList) ContainsEdgeFrom(sel *SEdgeList) bool {
 	for i := range el.Edges {
 		if sel.ContainsEdge(&el.Edges[i]) {
@@ -248,7 +246,6 @@ func (el *SEdgeList) ContainsEdgeFrom(sel *SEdgeList) bool {
 }
 
 // ContainsEdge reports whether el contains set, in either direction.
-// Mirrors C++ SEdgeList::ContainsEdge.
 func (el *SEdgeList) ContainsEdge(set *SEdge) bool {
 	for i := range el.Edges {
 		se := &el.Edges[i]
@@ -263,8 +260,7 @@ func (el *SEdgeList) ContainsEdge(set *SEdge) bool {
 }
 
 // CullExtraneousEdges removes duplicate edges, and anti-parallel pairs
-// (both of them if both, else one). Mirrors C++
-// SEdgeList::CullExtraneousEdges.
+// (both of them if both, else one).
 func (el *SEdgeList) CullExtraneousEdges(both bool) {
 	for i := range el.Edges {
 		el.Edges[i].Tag = 0

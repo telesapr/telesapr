@@ -1,7 +1,6 @@
 // Package par runs the iterations of a loop on several goroutines.
-// It stands in for the "#pragma omp parallel for" of the C++; callers
-// keep their results the same as one thread's by writing only to what
-// an iteration owns and committing in index order afterwards.
+// Callers keep their results the same as one thread's by writing only
+// to what an iteration owns and committing in index order afterwards.
 package par
 
 import (

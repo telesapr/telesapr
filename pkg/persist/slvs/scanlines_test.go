@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// TestScanLinesLikeLoadFromFile pins scanLines to C++ LoadFromFile's
+// TestScanLinesLikeLoadFromFile pins scanLines to SolveSpace LoadFromFile's
 // reading: NUL, CR and LF end a line, empty lines don't count, and a
 // line it doesn't know is dropped and flagged.
 func TestScanLinesLikeLoadFromFile(t *testing.T) {

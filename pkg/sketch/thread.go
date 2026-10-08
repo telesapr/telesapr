@@ -11,9 +11,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/thread"
 )
 
-// This file is not a port: C++ SolveSpace has no screw threads. It
-// draws one with the groups a user would make by hand, so the file it
-// saves is an ordinary one that C++ opens and regenerates.
+// A screw thread is drawn with the groups a user would make by hand, so
+// the file it saves is an ordinary one.
 
 // ThreadOptions is a screw thread to make on a circle.
 type ThreadOptions struct {
@@ -331,10 +330,9 @@ func (sk *Sketch) nextGroupHandle() core.HGroup {
 	return core.HGroup{V: h + 1}
 }
 
-// addGroupAfterActive adds g after the active group, as New Group does
-// (C++ Group::MenuGroup): in the colour of the solid so far, the later
-// groups moved on. It makes g active and generates its entities,
-// without solving.
+// addGroupAfterActive adds g after the active group, as New Group does:
+// in the colour of the solid so far, the later groups moved on. It
+// makes g active and generates its entities, without solving.
 func (sk *Sketch) addGroupAfterActive(g Group) *Group {
 	g.Visible = true
 	g.Scale = 1

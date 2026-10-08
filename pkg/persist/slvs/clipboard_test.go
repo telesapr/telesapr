@@ -10,7 +10,7 @@ import (
 )
 
 // TestCopyPasteDelete copies a constrained line, pastes it moved,
-// mirrored and rotated as C++'s Paste Transformed does, and deletes the
+// mirrored and rotated as SolveSpace's Paste Transformed does, and deletes the
 // original.
 func TestCopyPasteDelete(t *testing.T) {
 	doc, err := LoadFile(fixture("request/line_segment/normal.slvs"))

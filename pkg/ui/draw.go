@@ -375,7 +375,7 @@ func (gw *GraphicsWindow) chooseFromHover(forDrag bool) Selection {
 		bestOrder = g.Order
 		bestZIndex = hov.ZIndex
 		if !forDrag {
-			// C++ ChooseFromHoverToDrag doesn't update bestDepth.
+			// bestDepth is left as it is here.
 			bestDepth = hov.Depth
 		}
 		sel = hov.Selection
@@ -630,8 +630,7 @@ func (gw *GraphicsWindow) DrawPersistent(canvas render.Canvas) {
 	}
 }
 
-// Draw draws the model, constraints and overlays (C++
-// GraphicsWindow::Draw).
+// Draw draws the model, constraints and overlays.
 func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	ss := gw.ss
 	sk := gw.sk()
@@ -792,7 +791,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	}
 }
 
-// Paint renders the window (C++ GraphicsWindow::Paint).
+// Paint renders the window.
 func (gw *GraphicsWindow) Paint() {
 	ss := gw.ss
 	if gw.window == nil || gw.canvas == nil {

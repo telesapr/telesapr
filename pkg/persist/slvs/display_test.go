@@ -33,7 +33,7 @@ var displayFixtures = []string{
 }
 
 // TestDisplayOutlines checks each group's display items against the
-// golden, first recorded from C++ Group::GenerateDisplayItems: the
+// golden, first recorded from SolveSpace Group::GenerateDisplayItems: the
 // mesh's size, and the outlines as PolylineBuilder joins them, bit for
 // bit.
 func TestDisplayOutlines(t *testing.T) {

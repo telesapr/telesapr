@@ -103,7 +103,7 @@ func (c *Config) Thaw(s core.Settings) {
 	c.AfterDecimalInch = int(s.ThawInt("AfterDecimalInch", 3))
 	c.AfterDecimalDegree = int(s.ThawInt("AfterDecimalDegree", 2))
 	c.UseSIPrefixes = core.ThawBool(s, "UseSIPrefixes", false)
-	c.CameraTangentSetting = s.ThawFloat("CameraTangent", float64(float32(0.3))/1e3) // C++ 0.3f/1e3, in double
+	c.CameraTangentSetting = s.ThawFloat("CameraTangent", float64(float32(0.3))/1e3) // 0.3f/1e3 in single precision, as the setting was first stored
 	c.GridSpacing = s.ThawFloat("GridSpacing", 5.0)
 	c.ExportScale = s.ThawFloat("ExportScale", 1.0)
 	c.ExportOffset = s.ThawFloat("ExportOffset", 0.0)

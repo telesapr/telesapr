@@ -11,10 +11,9 @@ import (
 )
 
 // AssembleLoops converts this group's visible, non-construction
-// entities into Bezier curves and assembles them into closed loops:
-// the outer loops grouped with their holes go into g.BezierLoops (and
-// their pwl into g.PolyLoops), the leftovers into g.BezierOpens.
-// Mirrors C++ Group::AssembleLoops (groupmesh.cpp:12).
+// entities into Bezier curves and assembles them into closed loops: the
+// outer loops grouped with their holes go into g.BezierLoops (and their
+// pwl into g.PolyLoops), the leftovers into g.BezierOpens.
 func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, allCoplanar, allNonZeroLen bool) {
 	var sbl srf.SBezierList
 
@@ -60,12 +59,10 @@ func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, a
 	return
 }
 
-// GenerateLoops rebuilds this group's loops: for sketch-like groups
-// it assembles them from the group's entities and records the
-// polygon error, otherwise it just clears them. Mirrors C++
-// Group::GenerateLoops (groupmesh.cpp:58). The self-intersection check
-// is slow, so it runs only with the sketch's CheckClosedContour (C++
-// SS.checkClosedContour).
+// GenerateLoops rebuilds this group's loops: for sketch-like groups it
+// assembles them from the group's entities and records the polygon
+// error, otherwise it just clears them. The self-intersection check is
+// slow, so it runs only with the sketch's CheckClosedContour.
 func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 	g.PolyLoops.Clear()
 	g.BezierLoops.Clear()
@@ -96,9 +93,8 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 
 // GenerateShellAndMesh builds this group's shell (by extrusion,
 // revolution, step and repeat, or linking), and combines it with the
-// previous group's running shell by the group's Boolean (C++
-// Group::GenerateShellAndMesh). A group forced to a mesh combines
-// meshes instead (see combineMeshes).
+// previous group's running shell by the group's Boolean. A group forced
+// to a mesh combines meshes instead (see combineMeshes).
 func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	defer func() { g.DisplayDirty = true }()
 	g.BooleanFailed = false
@@ -260,8 +256,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	}
 }
 
-// stepsOf returns the range of copies a step and repeat makes (C++
-// GenerateForStepAndRepeat's n and a0).
+// stepsOf returns the range of copies a step and repeat makes.
 func (g *Group) stepsOf() (n, a0 int) {
 	n, a0 = int(g.ValA), 0
 	if g.Subtype == GroupOneSided && g.SkipFirst {
@@ -305,8 +300,7 @@ func (g *Group) stepTransforms(sk *Sketch, n int) ([]geom.Vector, []geom.Quatern
 }
 
 // generateForStepAndRepeatShell makes the transformed copies of steps
-// and combines them, a pair at a time (C++
-// Group::GenerateForStepAndRepeat<SShell>).
+// and combines them, a pair at a time.
 func (g *Group) generateForStepAndRepeatShell(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs) {
 	n, a0 := g.stepsOf()
 	ts, qs := g.stepTransforms(sk, n)
@@ -336,8 +330,7 @@ func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat Combine
 	soFar, scratch := transd, workA
 	// do the boolean operations on pairs of equal size
 	for n > 1 {
-		// The pairs share nothing, so they are combined at once (C++
-		// does them in turn).
+		// The pairs share nothing, so they are combined at once.
 		skipFirst := a0 == 1
 		par.For((n+1)/2, func(i int) {
 			a := 2 * i
@@ -374,7 +367,7 @@ func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat Combine
 }
 
 // generateForStepAndRepeatMesh is generateForStepAndRepeatShell for a
-// group forced to a mesh (C++ Group::GenerateForStepAndRepeat<SMesh>).
+// group forced to a mesh.
 func (g *Group) generateForStepAndRepeatMesh(sk *Sketch, steps, outs *srf.SMesh, forWhat CombineAs) {
 	n, a0 := g.stepsOf()
 
@@ -423,10 +416,9 @@ func (g *Group) generateForStepAndRepeatMesh(sk *Sketch, steps, outs *srf.SMesh,
 	*outs = soFar[0]
 }
 
-// generateLinkedShell is the LINKED branch of C++
-// Group::GenerateShellAndMesh: the imported shell or mesh are copied
-// over, with the group's transformation applied, and their face
-// entities remapped.
+// generateLinkedShell makes a linked group's solid: the imported shell
+// or mesh are copied over, with the group's transformation applied, and
+// their face entities remapped.
 func (g *Group) generateLinkedShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisShell.Tol = sk.tol
@@ -471,8 +463,7 @@ func (sg shellGroup) EntityExists(h core.HEntity) bool {
 }
 
 // haveSource reports whether the source section of an extrusion or
-// lathe is good: planar and not self-intersecting (C++
-// GenerateShellAndMesh's haveSrc).
+// lathe is good: planar and not self-intersecting.
 func (g *Group) haveSource(sk *Sketch) bool {
 	if g.Type == GroupExtrude || g.Type == GroupLathe || g.Type == GroupRevolve {
 		return sk.Group(g.OpA).PolyError.How == int(core.PolyGood)
@@ -480,10 +471,9 @@ func (g *Group) haveSource(sk *Sketch) bool {
 	return true
 }
 
-// generateExtrudeShell is the EXTRUDE branch of C++
-// Group::GenerateShellAndMesh: extrude each of the source group's loop
-// sets, and give the plane faces their entities so they can be
-// selected.
+// generateExtrudeShell makes an extrusion's solid: extrude each of the
+// source group's loop sets, and give the plane faces their entities so
+// they can be selected.
 func (g *Group) generateExtrudeShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisShell.Tol = sk.tol
@@ -580,10 +570,9 @@ func (g *Group) revolveAxis(sk *Sketch) (pt, axis geom.Vector) {
 	return pt, axis.WithMagnitude(1)
 }
 
-// generateRevolveShell is the LATHE and REVOLVE branches of C++
-// Group::GenerateShellAndMesh: revolve each of the source group's loop
-// sets about the group's axis, a full turn for LATHE, by the group's
-// angle for REVOLVE.
+// generateRevolveShell makes a lathe's or a revolve's solid: revolve
+// each of the source group's loop sets about the group's axis, a full
+// turn for LATHE, by the group's angle for REVOLVE.
 func (g *Group) generateRevolveShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisShell.Tol = sk.tol
@@ -619,9 +608,8 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 	}
 }
 
-// generateHelixShell is the HELIX branch of C++
-// Group::GenerateShellAndMesh: sweep each of the source group's loop
-// sets about the group's axis while translating along it.
+// generateHelixShell makes a helix's solid: sweep each of the source
+// group's loop sets about the group's axis while translating along it.
 func (g *Group) generateHelixShell(sk *Sketch) {
 	g.ThisShell.Clear()
 	g.ThisShell.Tol = sk.tol
@@ -649,7 +637,7 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 }
 
 // generateForBooleanShell combines prevs and thiss into outs with the
-// group's MeshCombine. Mirrors C++ Group::GenerateForBoolean<SShell>.
+// group's MeshCombine.
 func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell, how CombineAs) {
 	// If this group contributes no new mesh, then our running mesh is the
 	// same as last time, no combining required. Likewise if we have a mesh
@@ -673,9 +661,9 @@ func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell, how Comb
 	}
 }
 
-// combineMeshes is GenerateShellAndMesh's combine for a group forced
-// to a mesh: triangulate both operands, combine the meshes (C++
-// GenerateForBoolean<SMesh>), and make the result vertex to vertex.
+// combineMeshes is GenerateShellAndMesh's combine for a group forced to
+// a mesh: triangulate both operands, combine the meshes, and make the
+// result vertex to vertex.
 func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
 	var prevm, thism srf.SMesh
 	if prevg != nil {
@@ -716,9 +704,8 @@ func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
 }
 
 // GenerateDisplayItems builds the mesh and outlines to display: the
-// previous group's, if this group adds no solid, else the running
-// shell triangulated, with the running mesh (C++
-// Group::GenerateDisplayItems).
+// previous group's, if this group adds no solid, else the running shell
+// triangulated, with the running mesh.
 func (g *Group) GenerateDisplayItems(sk *Sketch) {
 	// This is potentially slow (since we've got to triangulate a shell,
 	// or to find the emphasized edges for a mesh), so we will run it
@@ -784,14 +771,14 @@ func (g *Group) generateOwnDisplayItems(sk *Sketch) {
 }
 
 // IsForcedToMesh reports whether the group is built as a triangle mesh
-// instead of a shell: asked to be, an imported mesh, or combined with
-// a mesh (C++ Group::IsForcedToMesh).
+// instead of a shell: asked to be, an imported mesh, or combined with a
+// mesh.
 func (g *Group) IsForcedToMesh(sk *Sketch) bool {
 	return g.ForceToMesh || g.IsTriangleMeshAssembly() || g.IsForcedToMeshBySource(sk)
 }
 
 // IsForcedToMeshBySource reports whether the group combines with a
-// group forced to a mesh (C++ Group::IsForcedToMeshBySource).
+// group forced to a mesh.
 func (g *Group) IsForcedToMeshBySource(sk *Sketch) bool {
 	srcg := g
 	if g.IsCopyGroup() {
@@ -810,7 +797,7 @@ func (g *Group) IsForcedToMeshBySource(sk *Sketch) bool {
 }
 
 // IsTriangleMeshAssembly reports whether the group links a triangle
-// mesh, without a shell (C++ Group::IsTriangleMeshAssembly).
+// mesh, without a shell.
 func (g *Group) IsTriangleMeshAssembly() bool {
 	if g.Type != GroupLinked {
 		return false
@@ -837,16 +824,14 @@ func (g *Group) SetRemapEntry(input core.HEntity, copyNumber int, id core.Entity
 	g.Remap[core.EntityKey{Input: input, CopyNumber: copyNumber}] = id
 }
 
-// ExtrusionForceVectorTo sets the extrusion vector's parameters (C++
-// Group::ExtrusionForceVectorTo).
+// ExtrusionForceVectorTo sets the extrusion vector's parameters.
 func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector) {
 	sk.MustParam(g.H.Param(0)).Val = v.X
 	sk.MustParam(g.H.Param(1)).Val = v.Y
 	sk.MustParam(g.H.Param(2)).Val = v.Z
 }
 
-// ExtrusionGetVector returns the extrusion vector, from its parameters
-// (C++ Group::ExtrusionGetVector).
+// ExtrusionGetVector returns the extrusion vector, from its parameters.
 func (g *Group) ExtrusionGetVector(sk *Sketch) geom.Vector {
 	return geom.Vector{
 		X: sk.MustParam(g.H.Param(0)).Val,
@@ -856,8 +841,7 @@ func (g *Group) ExtrusionGetVector(sk *Sketch) geom.Vector {
 }
 
 // TransformImportedBy moves a linked group by t and rotates it by q,
-// composing them into its placement parameters (C++
-// Group::TransformImportedBy).
+// composing them into its placement parameters.
 func (g *Group) TransformImportedBy(sk *Sketch, t geom.Vector, q geom.Quaternion) {
 	if g.Type != GroupLinked {
 		panic("Expected a linked group")
