@@ -12,8 +12,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch supersedes the run before it; a run
+# asked for by hand is a group of its own, so it neither cancels nor
+# waits for the push's.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
