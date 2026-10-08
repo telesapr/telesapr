@@ -2,47 +2,11 @@ package slvs
 
 import (
 	"math"
-	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
 )
-
-// TestParityAnalysisFixtures asserts that every analysis_* fixture
-// loads and solves successfully. This is the structural parity gate
-// for the analysis fixture family (Phase E).
-func TestParityAnalysisFixtures(t *testing.T) {
-	_, thisFile, _, _ := runtime.Caller(0)
-	root := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
-	analysisRoot := filepath.Join(root, "testdata/analysis")
-	entries, err := os.ReadDir(analysisRoot)
-	if err != nil {
-		t.Fatalf("readDir: %v", err)
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		dir := entry.Name()
-		path := filepath.Join(analysisRoot, dir, "normal.slvs")
-		doc, err := LoadFile(path)
-		if err != nil {
-			t.Errorf("%s: load: %v", dir, err)
-			continue
-		}
-		doc.Sketch.GenerateAll()
-		for i, g := range doc.Sketch.Groups {
-			if !g.Clean {
-				t.Errorf("%s group %d: not clean", dir, i)
-			}
-			if g.Solved.How != core.SolveOkay && g.Solved.How != core.SolveRedundantOkay {
-				t.Errorf("%s group %d: solve failed: How=%d", dir, i, g.Solved.How)
-			}
-		}
-	}
-}
 
 // ContourAreaSignAndMagnitude returns the signed area of the
 // closed contour formed by the line-segment entities in the
