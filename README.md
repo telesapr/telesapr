@@ -5,8 +5,10 @@ TeleSAPR is a parametric 2D/3D CAD program written in Go. It began as a port of
 SolveSpace's behaviour or file format. It saves its own text format, `.tlspr`, and imports
 SolveSpace's `.slvs`.
 
-It is version 0.3.2, built and tested on Linux. See [`ROADMAP-JUMP.md`](ROADMAP-JUMP.md) for
-where it is going.
+> **Warning:** TeleSAPR is experimental. It may have bugs, and it may change in ways that break
+> your files, scripts and workflow. It is not recommended for sensitive or critical work.
+
+It is built and tested on Linux. See [`ROADMAP-JUMP.md`](ROADMAP-JUMP.md) for where it is going.
 
 ## What it adds to SolveSpace
 
