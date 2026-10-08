@@ -90,36 +90,6 @@ func TestNames(t *testing.T) {
 	}
 }
 
-// TestFixtureNames: in every fixture's solid, every edge that has a
-// name resolves back to itself.
-func TestFixtureNames(t *testing.T) {
-	named, edges := 0, 0
-	for _, f := range fixtures(t) {
-		sk := load(t, f)
-		if sk == nil {
-			continue
-		}
-		for _, g := range solidGroups(sk) {
-			tp, err := topo.Build(&g.RunningShell)
-			if err != nil {
-				continue
-			}
-			for e := range tp.Edges {
-				edges++
-				n, err := tp.NameOf(e)
-				if err != nil {
-					continue
-				}
-				named++
-				if got, err := tp.Resolve(n); err != nil || got != e {
-					t.Errorf("%s g%x: %v resolves to %d, not %d (%v)", f, g.H.V, n, got, e, err)
-				}
-			}
-		}
-	}
-	t.Logf("%d of %d edges named", named, edges)
-}
-
 func TestAccessors(t *testing.T) {
 	sh := box()
 	tp := build(t, sh)

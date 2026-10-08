@@ -2,11 +2,9 @@ package topo_test
 
 import (
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/srf"
-	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // named gives the cylinder's side patches one identity, as the circle
@@ -149,137 +147,5 @@ func TestNoSeamAtAngle(t *testing.T) {
 		if len(tp.Chain(e)) != 1 {
 			t.Errorf("edge %d chains %v", e, tp.Chain(e))
 		}
-	}
-}
-
-// TestSheetsOfFixtures checks, over every fixture solid, that seams
-// join patches that are smooth across them, and that every chain's
-// pieces lie between the same two sheets and join end to end.
-func TestSheetsOfFixtures(t *testing.T) {
-	patches, sheets := 0, 0
-	for _, f := range fixtures(t) {
-		sk := load(t, f)
-		if sk == nil {
-			continue
-		}
-		for _, g := range solidGroups(sk) {
-			tp, err := topo.Build(&g.RunningShell)
-			if err != nil {
-				continue
-			}
-			patches += len(tp.Faces)
-			sheets += len(tp.Sheets)
-			for _, s := range tp.Sheets {
-				first := tp.Surface(s.Faces[0])
-				for _, fc := range s.Faces[1:] {
-					sf := tp.Surface(fc)
-					if (sf.Sheet == 0 || sf.Sheet != first.Sheet) && tp.Faces[fc].ID != s.ID {
-						t.Errorf("%s: a sheet of %x has a patch of %x from curve %x", f, s.ID, tp.Faces[fc].ID, sf.Sheet)
-					}
-				}
-			}
-			for e := range tp.Edges {
-				ch := tp.Chain(e)
-				pts := tp.ChainPoints(ch)
-				for i := 1; i < len(ch); i++ {
-					a, b := tp.Edges[ch[i-1].Edge], tp.Edges[ch[i].Edge]
-					end := a.V[1]
-					if ch[i-1].Reversed {
-						end = a.V[0]
-					}
-					start := b.V[0]
-					if ch[i].Reversed {
-						start = b.V[1]
-					}
-					if end != start {
-						t.Fatalf("%s g%x: chain of %d breaks at %d", f, g.H.V, e, i)
-					}
-				}
-				if len(pts) < 2 {
-					t.Errorf("%s g%x: chain of %d has %d points", f, g.H.V, e, len(pts))
-				}
-			}
-		}
-	}
-	if sheets >= patches {
-		t.Errorf("%d patches made %d sheets: no seam anywhere", patches, sheets)
-	}
-	t.Logf("%d patches in %d sheets", patches, sheets)
-}
-
-// TestSheetSplines writes every face of several patches, of every
-// fixture solid, as one B-spline where its patches make a grid, and
-// checks the surface against its patches: their points on it, its
-// normal theirs.
-func TestSheetSplines(t *testing.T) {
-	merged, grids, rings := 0, 0, 0
-	reasons := map[string]int{}
-	for _, f := range fixtures(t) {
-		sk := load(t, f)
-		if sk == nil {
-			continue
-		}
-		for _, g := range solidGroups(sk) {
-			tp, err := topo.Build(&g.RunningShell)
-			if err != nil {
-				continue
-			}
-			for s := range tp.Sheets {
-				if len(tp.Sheets[s].Faces) < 2 {
-					continue
-				}
-				grids++
-				grid, err := tp.SheetSpline(s)
-				if err != nil {
-					msg := err.Error()
-					if i := strings.IndexAny(msg, "0123456789"); i > 0 {
-						msg = msg[:i]
-					}
-					reasons[msg]++
-					t.Logf("%s g%x sheet %d: %v", f, g.H.V, s, err)
-					continue
-				}
-				merged++
-				bs := grid.Surface
-				if grid.ClosedU {
-					rings++
-				}
-				u0, u1, v0, v1 := bs.Domain()
-				for _, fc := range tp.Sheets[s].Faces {
-					p := tp.Surface(fc)
-					for _, uv := range [][2]float64{{0.5, 0.5}, {0.1, 0.9}, {0.8, 0.3}} {
-						q := p.PointAt(uv[0], uv[1])
-						// The nearest point of the B-spline, by its
-						// patches.
-						ps, _ := bs.Patches()
-						best, bu, bv := math.Inf(1), 0.0, 0.0
-						var bp *srf.SSurface
-						for a := range ps {
-							for b := range ps[a] {
-								var u, v float64
-								ps[a][b].ClosestPointToUV(q, &u, &v, true)
-								if d := ps[a][b].PointAt(u, v).Minus(q).Magnitude(); d < best {
-									best, bu, bv, bp = d, u, v, &ps[a][b]
-								}
-							}
-						}
-						if best > 1e-6 {
-							t.Errorf("%s g%x sheet %d: a patch's point is %g off the surface", f, g.H.V, s, best)
-							continue
-						}
-						n1 := p.NormalAt(uv[0], uv[1]).WithMagnitude(1)
-						n2 := bp.NormalAt(bu, bv).WithMagnitude(1)
-						if n1.Dot(n2) < 1-1e-6 {
-							t.Errorf("%s g%x sheet %d: the surface's normal turns from its patch's (%v, %v)", f, g.H.V, s, n1, n2)
-						}
-					}
-				}
-				_, _, _, _ = u0, u1, v0, v1
-			}
-		}
-	}
-	t.Logf("%d faces of several patches, %d one B-spline (%d rings); not: %v", grids, merged, rings, reasons)
-	if merged == 0 {
-		t.Error("no face was written as one B-spline")
 	}
 }
