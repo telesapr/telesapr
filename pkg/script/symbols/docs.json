@@ -1795,6 +1795,10 @@
 					"ModifyToSatisfy": {
 						"decl": "func (c *Constraint) ModifyToSatisfy(sk EntitySketch)",
 						"text": "ModifyToSatisfy changes the constraint's value (or its valP) so that it holds for the sketch as it stands; used for reference dimensions (C++ ConstraintBase::ModifyToSatisfy)."
+					},
+					"StyleOrDefault": {
+						"decl": "func (c *Constraint) StyleOrDefault() HStyle",
+						"text": "StyleOrDefault is the style the constraint is drawn in: its own, or the constraint style."
 					}
 				}
 			},
@@ -2844,10 +2848,6 @@
 			},
 			"RGBAFromPackedInt": {
 				"decl": "func RGBAFromPackedInt(rgba uint32) RGBA"
-			},
-			"ReadUTF8": {
-				"decl": "func ReadUTF8(str string) []uint32",
-				"text": "ReadUTF8 decodes str as C++'s utf8_iterator does, which doesn't check the encoding; the byte after the string reads as 0, like a C string's terminator."
 			},
 			"RenameVariable": {
 				"decl": "func RenameVariable(s, from, to string) string",
@@ -6613,6 +6613,10 @@
 						"decl": "func (sk *Sketch) NewChamferTwo(edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, name string) (Group, error)",
 						"text": "NewChamferTwo is NewChamfer with two distances (roadmap 28.1): d1 on each edge's first face, d2 on the other."
 					},
+					"NewCustomStyle": {
+						"decl": "func (sk *Sketch) NewCustomStyle() core.HStyle",
+						"text": "NewCustomStyle adds a custom style, numbered after the last, with the defaults, and returns its handle."
+					},
 					"NewFile": {
 						"decl": "func (sk *Sketch) NewFile()",
 						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group (C++ SolveSpaceUI::NewFile)."
@@ -7575,6 +7579,21 @@
 				"makers": [
 					"NewMeshMeta"
 				]
+			},
+			"OutlineInto": {
+				"text": "OutlineInto takes the curves of plotted text (ttf.OutlineSink) into a list of Béziers.",
+				"kind": "struct",
+				"methods": {
+					"Cubic": {
+						"decl": "func (o OutlineInto) Cubic(a, b, c, d geom.Vector)"
+					},
+					"Line": {
+						"decl": "func (o OutlineInto) Line(a, b geom.Vector)"
+					},
+					"Quadratic": {
+						"decl": "func (o OutlineInto) Quadratic(a, b, c geom.Vector)"
+					}
+				}
 			},
 			"ParallelMode": {
 				"text": "ParallelMode says whether the loops run on several goroutines.",

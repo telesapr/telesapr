@@ -3,11 +3,11 @@ package ttf
 import (
 	_ "embed"
 	"os"
+	"slices"
 	"strings"
 
-	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
-	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/internal/cxxutf8"
 )
 
 // The port of ttf.cpp: TtfFont and TtfFontList.
@@ -148,7 +148,7 @@ func (fl *FontList) LoadAll() {
 	}
 
 	// Sort fonts according to their actual name, not filename.
-	srf.CxxSort(fl.l, func(a, b *Font) bool { return a.Name < b.Name })
+	slices.SortStableFunc(fl.l, func(a, b Font) int { return strings.Compare(a.Name, b.Name) })
 
 	// Filter out fonts with the same family and style name (std::unique).
 	if len(fl.l) > 0 {
@@ -187,16 +187,25 @@ func (fl *FontList) LoadFont(font string) *Font {
 	return nil
 }
 
-// PlotString adds the outlines of str, set in font, to sbl; with no
-// text or no font, a big X marks the error.
-func (fl *FontList) PlotString(font, str string, sbl *srf.SBezierList, kerning bool,
+// OutlineSink takes the curves of plotted text: lines, quadratic and
+// cubic Béziers, by their control points in the plane of the text.
+type OutlineSink interface {
+	Line(a, b geom.Vector)
+	Quadratic(a, b, c geom.Vector)
+	Cubic(a, b, c, d geom.Vector)
+}
+
+// PlotString gives out the outlines of str, set in font, from origin
+// with u the width and v the height of a capital; with no text or no
+// font, a big X marks the error.
+func (fl *FontList) PlotString(font, str string, out OutlineSink, kerning bool,
 	origin, u, v geom.Vector) {
 	tf := fl.LoadFont(font)
 	if str != "" && tf != nil {
-		tf.PlotString(str, sbl, kerning, origin, u, v)
+		tf.PlotString(str, out, kerning, origin, u, v)
 	} else {
-		sbl.Add(srf.SBezierFrom2(origin, origin.Plus(u).Plus(v)))
-		sbl.Add(srf.SBezierFrom2(origin.Plus(v), origin.Plus(u)))
+		out.Line(origin, origin.Plus(u).Plus(v))
+		out.Line(origin.Plus(v), origin.Plus(u))
 	}
 }
 
@@ -211,7 +220,7 @@ func (fl *FontList) AspectRatio(font, str string, kerning bool) float64 {
 
 type outlineData struct {
 	origin, u, v geom.Vector
-	beziers      *srf.SBezierList
+	out          OutlineSink
 	factor       float32 // ratio between freetype and solvespace coordinates
 	bx           int64   // x offset of the current glyph
 	px, py       int64   // current point
@@ -224,8 +233,9 @@ func (d *outlineData) transform(x, y int64) geom.Vector {
 	return r
 }
 
-// PlotString is TtfFont::PlotString.
-func (tf *Font) PlotString(str string, sbl *srf.SBezierList, kerning bool,
+// PlotString gives out the outlines of str, as FontList.PlotString
+// does for a loaded font.
+func (tf *Font) PlotString(str string, out OutlineSink, kerning bool,
 	origin, u, v geom.Vector) {
 	if tf.face == nil {
 		panic("Expected font face to be loaded")
@@ -234,7 +244,7 @@ func (tf *Font) PlotString(str string, sbl *srf.SBezierList, kerning bool,
 
 	var dx int64
 	var prevGid uint32
-	for _, cid := range core.ReadUTF8(str) {
+	for _, cid := range cxxutf8.Decode(str) {
 		gid := face.CharIndex(cid)
 		if gid == 0 {
 			// Using the CID as the GID.
@@ -261,12 +271,12 @@ func (tf *Font) PlotString(str string, sbl *srf.SBezierList, kerning bool,
 		bx += g.HoriBearingX
 
 		d := &outlineData{
-			origin:  origin,
-			u:       u,
-			v:       v,
-			beziers: sbl,
-			factor:  float32(1.0 / tf.CapHeight),
-			bx:      bx,
+			origin: origin,
+			u:      u,
+			v:      v,
+			out:    out,
+			factor: float32(1.0 / tf.CapHeight),
+			bx:     bx,
 		}
 		// C++ only logs a failure, keeping what was decomposed.
 		_ = g.Outline.Decompose(OutlineFuncs{
@@ -274,24 +284,24 @@ func (tf *Font) PlotString(str string, sbl *srf.SBezierList, kerning bool,
 				d.px, d.py = p.X, p.Y
 			},
 			LineTo: func(p Vector) {
-				d.beziers.Add(srf.SBezierFrom2(
+				d.out.Line(
 					d.transform(d.px, d.py),
-					d.transform(p.X, p.Y)))
+					d.transform(p.X, p.Y))
 				d.px, d.py = p.X, p.Y
 			},
 			ConicTo: func(c, p Vector) {
-				d.beziers.Add(srf.SBezierFrom3(
+				d.out.Quadratic(
 					d.transform(d.px, d.py),
 					d.transform(c.X, c.Y),
-					d.transform(p.X, p.Y)))
+					d.transform(p.X, p.Y))
 				d.px, d.py = p.X, p.Y
 			},
 			CubicTo: func(c1, c2, p Vector) {
-				d.beziers.Add(srf.SBezierFrom4(
+				d.out.Cubic(
 					d.transform(d.px, d.py),
 					d.transform(c1.X, c1.Y),
 					d.transform(c2.X, c2.Y),
-					d.transform(p.X, p.Y)))
+					d.transform(p.X, p.Y))
 				d.px, d.py = p.X, p.Y
 			},
 		})
@@ -313,7 +323,7 @@ func (tf *Font) AspectRatio(str string, kerning bool) float64 {
 
 	var dx float64
 	var prevGid uint32
-	for _, chr := range core.ReadUTF8(str) {
+	for _, chr := range cxxutf8.Decode(str) {
 		gid := face.CharIndex(chr)
 		g, err := face.LoadGlyph(gid)
 		if err != nil {

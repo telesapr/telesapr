@@ -1,6 +1,6 @@
 package res
 
-import "github.com/telesapr/telesapr/pkg/core"
+import "github.com/telesapr/telesapr/pkg/internal/cxxutf8"
 
 // BitmapGlyph is a glyph's width in 8-pixel cells and its slot in the
 // texture (C++ BitmapFont::Glyph).
@@ -197,7 +197,7 @@ func (f *BitmapFont) Width(codepoint rune) int {
 // BitmapFont::GetWidth(const std::string &)).
 func (f *BitmapFont) StringWidth(str string) int {
 	w := 0
-	for _, c := range core.ReadUTF8(str) {
+	for _, c := range cxxutf8.Decode(str) {
 		w += f.Width(rune(c))
 	}
 	return w

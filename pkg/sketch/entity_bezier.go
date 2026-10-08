@@ -125,7 +125,7 @@ func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBe
 		u := v.Cross(n).WithMagnitude(v.Magnitude())
 
 		// `ExtraPoints` is storing kerning boolean
-		rt.FontList().PlotString(e.Font, e.Str, beziers, e.ExtraPoints != 0, botLeft, u, v)
+		rt.FontList().PlotString(e.Font, e.Str, srf.OutlineInto{List: beziers}, e.ExtraPoints != 0, botLeft, u, v)
 	}
 
 	// Record our style for all of the Beziers that we just created.

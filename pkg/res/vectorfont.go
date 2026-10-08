@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/cxxutf8"
 	"github.com/telesapr/telesapr/pkg/libm"
 )
 
@@ -283,7 +283,7 @@ func (f *VectorFont) Height(forCapHeight float64) float64 {
 // VectorFont::Width).
 func (f *VectorFont) Width(forCapHeight float64, str string) float64 {
 	width := 0.0
-	for _, c := range core.ReadUTF8(str) {
+	for _, c := range cxxutf8.Decode(str) {
 		width += f.Glyph(rune(c)).AdvanceWidth
 	}
 	width -= f.RightSideBearing
@@ -303,7 +303,7 @@ func (f *VectorFont) Trace(forCapHeight float64, o, u, v geom.Vector, str string
 	u = u.ScaledBy(scale)
 	v = v.ScaledBy(scale)
 
-	for _, cp := range core.ReadUTF8(str) {
+	for _, cp := range cxxutf8.Decode(str) {
 		g := f.Glyph(rune(cp))
 		for _, c := range g.Contours {
 			var prevp geom.Vector
@@ -336,7 +336,7 @@ func (f *VectorFont) TraceAligned(forCapHeight float64, o, u, v geom.Vector, str
 	u = u.ScaledBy(scale)
 	v = v.ScaledBy(scale)
 
-	for _, cp := range core.ReadUTF8(str) {
+	for _, cp := range cxxutf8.Decode(str) {
 		g := f.Glyph(rune(cp))
 		actualWidth := geom.Max(1.0, g.BoundingWidth)
 

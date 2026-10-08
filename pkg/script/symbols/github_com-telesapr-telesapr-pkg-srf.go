@@ -121,6 +121,7 @@ func init() {
 		"FaceID":            reflect.ValueOf((*srf.FaceID)(nil)),
 		"HalfSpace":         reflect.ValueOf((*srf.HalfSpace)(nil)),
 		"MeshMeta":          reflect.ValueOf((*srf.MeshMeta)(nil)),
+		"OutlineInto":       reflect.ValueOf((*srf.OutlineInto)(nil)),
 		"ParallelMode":      reflect.ValueOf((*srf.ParallelMode)(nil)),
 		"PolylineBuilder":   reflect.ValueOf((*srf.PolylineBuilder)(nil)),
 		"PolylineEdge":      reflect.ValueOf((*srf.PolylineEdge)(nil)),

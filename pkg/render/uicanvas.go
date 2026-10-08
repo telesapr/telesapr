@@ -3,6 +3,7 @@ package render
 import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/cxxutf8"
 	"github.com/telesapr/telesapr/pkg/res"
 )
 
@@ -102,7 +103,7 @@ func (u *UICanvas) DrawBitmapChar(codepoint rune, x, y int, color core.RGBA, zIn
 // DrawBitmapText draws a string of bitmap-font characters.
 func (u *UICanvas) DrawBitmapText(str string, x, y int, color core.RGBA, zIndex int) {
 	font := u.Canvas.BitmapFont()
-	for _, cp := range core.ReadUTF8(str) {
+	for _, cp := range cxxutf8.Decode(str) {
 		u.DrawBitmapChar(rune(cp), x, y, color, zIndex)
 		x += font.Width(rune(cp)) * 8
 	}

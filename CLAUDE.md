@@ -10,9 +10,10 @@ conventions, for people and for coding agents alike (`AGENTS.md` is the same fil
 - `pkg/` holds the packages (a recorded deviation from the usual root layout: see
   `docs/adr/0003-pkg-directory.md`; do not move them). Private helpers go under `pkg/internal/`
   or a package's own `internal/`. There is no `util`, `common` or `helpers` package.
-- The layers, each importing only the ones above it: `geom`, `libm` → `core` → `srf`, `solver`,
-  `thread`, `ttf` → `topo` → `sketch` → `persist/*`, `export`, `check`, `render` → `script/*`,
-  `platform/*` → `ui` → `cmd/*`. `pkg/sketch` is the model: every way of changing a model (window, script,
+- The layers, each importing only the ones above it: `geom`, `libm`, `ttf`, `dxf` → `core` →
+  `srf`, `solver`, `thread` → `topo` → `sketch` → `persist/*`, `export`, `check`, `render` →
+  `script/*`, `platform/*` → `ui` → `cmd/*`. The font and DXF libraries know nothing of the
+  kernel: text outlines go through `ttf.OutlineSink`, which `srf.OutlineInto` takes into Béziers. `pkg/sketch` is the model: every way of changing a model (window, script,
   file) reaches the same entry point there.
 - One concern per file, named for what it holds (`group_generate.go`, not `util.go`). A function
   longer than a screen is split.

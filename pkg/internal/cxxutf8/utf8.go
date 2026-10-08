@@ -1,9 +1,11 @@
-package core
+// Package cxxutf8 decodes UTF-8 as SolveSpace's C++ did, which the
+// fonts and the text drawing keep to.
+package cxxutf8
 
-// ReadUTF8 decodes str as C++'s utf8_iterator does, which doesn't check
+// Decode decodes str as C++'s utf8_iterator does, which doesn't check
 // the encoding; the byte after the string reads as 0, like a C
 // string's terminator.
-func ReadUTF8(str string) []uint32 {
+func Decode(str string) []uint32 {
 	at := func(i int) uint32 {
 		if i < len(str) {
 			return uint32(str[i])

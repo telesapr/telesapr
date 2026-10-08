@@ -166,7 +166,6 @@ func init() {
 		"RGBAFromFloat":               reflect.ValueOf(core.RGBAFromFloat),
 		"RGBAFromPackedInt":           reflect.ValueOf(core.RGBAFromPackedInt),
 		"RatPolyEps":                  reflect.ValueOf(constant.MakeFromLiteral("1.000000000000000000000707446218885976918933772283892835730512161e-08", token.FLOAT, 0)),
-		"ReadUTF8":                    reflect.ValueOf(core.ReadUTF8),
 		"RenameVariable":              reflect.ValueOf(core.RenameVariable),
 		"RewriteColor":                reflect.ValueOf(core.RewriteColor),
 		"SolveDidntConverge":          reflect.ValueOf(core.SolveDidntConverge),

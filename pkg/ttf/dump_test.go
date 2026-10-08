@@ -51,7 +51,7 @@ func dump(files []string, strs []string) string {
 			for kerning := range 2 {
 				ar := fl.AspectRatio(file, str, kerning != 0)
 				var sbl srf.SBezierList
-				fl.PlotString(file, str, &sbl, kerning != 0, origin, u, v)
+				fl.PlotString(file, str, srf.OutlineInto{List: &sbl}, kerning != 0, origin, u, v)
 				fmt.Fprintf(&b, "str %d %d %s %d\n", i, kerning, hexFloat(ar), len(sbl.Curves))
 				for _, sb := range sbl.Curves {
 					fmt.Fprintf(&b, "b %d", sb.Degree)
