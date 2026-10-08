@@ -2,6 +2,7 @@ package platform
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -23,6 +24,23 @@ func TestAcceleratorDescription(t *testing.T) {
 		if got := AcceleratorDescription(tc.ev); got != tc.want {
 			t.Errorf("%+v: %q, want %q", tc.ev, got, tc.want)
 		}
+	}
+}
+
+// Not parallel: it sets the environment the path is read from.
+func TestDefaultSettingsPath(t *testing.T) {
+	dir := t.TempDir()
+	switch runtime.GOOS {
+	case "windows":
+		t.Setenv("AppData", dir)
+	case "darwin":
+		t.Setenv("HOME", dir)
+		dir = filepath.Join(dir, "Library", "Application Support")
+	default:
+		t.Setenv("XDG_CONFIG_HOME", dir)
+	}
+	if got, want := DefaultSettingsPath(), filepath.Join(dir, "telesapr", "settings.json"); got != want {
+		t.Errorf("DefaultSettingsPath() = %q, want %q", got, want)
 	}
 }
 

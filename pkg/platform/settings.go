@@ -18,17 +18,15 @@ type JSONSettings struct {
 	values map[string]any
 }
 
-// DefaultSettingsPath is $XDG_CONFIG_HOME/telesapr/settings.json, or
-// under ~/.config; empty if neither is known. It is not SolveSpace's
-// file, so the two don't overwrite each other's.
+// DefaultSettingsPath is telesapr/settings.json under the user's
+// configuration directory: $XDG_CONFIG_HOME or ~/.config on Linux,
+// %AppData% on Windows, ~/Library/Application Support on macOS. It is
+// empty, and nothing is saved, where none of these is known. It is not
+// SolveSpace's file, so the two don't overwrite each other's.
 func DefaultSettingsPath() string {
-	dir := os.Getenv("XDG_CONFIG_HOME")
-	if dir == "" {
-		home := os.Getenv("HOME")
-		if home == "" {
-			return ""
-		}
-		dir = filepath.Join(home, ".config")
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
 	}
 	return filepath.Join(dir, "telesapr", "settings.json")
 }
