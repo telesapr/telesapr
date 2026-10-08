@@ -101,5 +101,4 @@ At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
   after each commit, `make ci` before the merge; the branch is merged into `master` and deleted.
 - A commit does one thing and says why in its message. Regenerated goldens are a commit of their
   own.
-- takigo is a private module, pinned by pseudo-version in `go.mod`; the pin must name a commit on
-  its remote. CI reads it with the `TAKIGO_TOKEN` secret.
+- takigo is a public module, required in `go.mod` at a tagged version.

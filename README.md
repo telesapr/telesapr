@@ -31,8 +31,7 @@ The [user's guide](docs/guide/README.md) has a page for each, built on an exampl
 ## Build
 
 TeleSAPR needs Go 1.27, X11 and OpenGL development files, and its windowing library
-[takigo](https://github.com/takigo/takigo), which is private: set `GOPRIVATE=github.com/takigo/takigo`
-and make sure git can authenticate to GitHub.
+[takigo](https://github.com/takigo/takigo), which `go` fetches like any other module.
 
 ```bash
 # Debian and Ubuntu; other distributions have the same libraries.
