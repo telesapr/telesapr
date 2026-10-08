@@ -74,15 +74,25 @@ type Engine struct {
 	mu      sync.Mutex
 	cancel  context.CancelFunc
 	running bool
+	// stale is set when a step was cancelled: the interpreter's
+	// goroutine runs on until the statement it is in ends, and there is
+	// no waiting for it, so the next step starts a new interpreter.
+	stale bool
 
 	// pending is the lines of a statement that isn't complete yet.
 	pending []string
 
+	// told guards what the interpreter's goroutine tells the engine:
+	// where a panic was, and the values of a console's expression. A
+	// cancelled evaluation may still be telling after its interpreter
+	// was replaced, so values carry the interpreter they come from.
+	told sync.Mutex
 	// panicAt is where the interpreter said the last panic was.
 	panicAt struct{ line, col int }
-
-	// values are what the last expression of a console gave.
+	// values are what the last expression of a console gave, from the
+	// interpreter of generation gen.
 	values []any
+	gen    uint64
 	// ran is whether the last source evaluated got to run, rather than
 	// failing before.
 	ran bool
@@ -166,22 +176,50 @@ func newEngine(opts Options) (*Engine, error) {
 		opts.Args = []string{"script"}
 	}
 	e := &Engine{opts: opts, doc: api.NewDoc(opts.Host)}
-	e.i = interp.New(interp.Options{
-		Stdin:  opts.Stdin,
-		Stdout: opts.Stdout,
-		Stderr: &panicFilter{e: e, w: opts.Stderr},
-		Args:   opts.Args,
-		Env:    os.Environ(),
-	})
-	if err := e.i.Use(e.exports()); err != nil {
-		return nil, fmt.Errorf("script: %w", err)
+	if err := e.newInterpreter(); err != nil {
+		return nil, err
 	}
 	return e, nil
 }
 
+// newInterpreter makes the engine's interpreter, with what it can
+// import.
+func (e *Engine) newInterpreter() error {
+	e.told.Lock()
+	e.gen++
+	gen := e.gen
+	e.told.Unlock()
+	e.i = interp.New(interp.Options{
+		Stdin:  e.opts.Stdin,
+		Stdout: e.opts.Stdout,
+		Stderr: &panicFilter{e: e, w: e.opts.Stderr},
+		Args:   e.opts.Args,
+		Env:    os.Environ(),
+	})
+	if err := e.i.Use(e.exports(gen)); err != nil {
+		return fmt.Errorf("script: %w", err)
+	}
+	return nil
+}
+
+// restart replaces the interpreter after a cancelled step, as New
+// made it: what the console had defined is gone with the old one.
+func (e *Engine) restart() error {
+	if err := e.newInterpreter(); err != nil {
+		return err
+	}
+	e.i.ImportUsed()
+	if _, err := e.i.Eval(prelude); err != nil {
+		return fmt.Errorf("script: prelude: %w", err)
+	}
+	e.pending = nil
+	return nil
+}
+
 // exports is what the interpreter can import: the generated tables,
-// with package api's Current, Open and New bound to this engine.
-func (e *Engine) exports() interp.Exports {
+// with package api's Current, Open and New bound to this engine, and
+// the console's Show to the interpreter of generation gen.
+func (e *Engine) exports(gen uint64) interp.Exports {
 	exports := make(interp.Exports, len(symbols.Symbols))
 	for path, pkg := range symbols.Symbols {
 		exports[path] = typedFloats(pkg)
@@ -229,8 +267,8 @@ func (e *Engine) exports() interp.Exports {
 
 	// What a console wraps an expression in to get all of its values.
 	exports[showPath+"/console"] = map[string]reflect.Value{
-		"Show": reflect.ValueOf(func(values ...any) { e.values = values }),
-		"Take": reflect.ValueOf(func(i int) any { return e.values[i] }),
+		"Show": reflect.ValueOf(func(values ...any) { e.setValues(gen, values) }),
+		"Take": reflect.ValueOf(func(i int) any { return e.shownValues()[i] }),
 		"Help": reflect.ValueOf(e.help),
 	}
 	return exports
@@ -272,7 +310,9 @@ func (e *Engine) Running() bool {
 	return e.running
 }
 
-// Cancel stops the script that is running, at its next statement.
+// Cancel stops the script that is running, at its next statement. The
+// next step starts a new interpreter, since the stopped one has no way
+// of saying when it is done: what a console had defined is gone.
 func (e *Engine) Cancel() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -284,6 +324,47 @@ func (e *Engine) Cancel() {
 // ErrBusy is the error of running a script while another runs.
 var ErrBusy = errors.New("a script is running")
 
+// setValues keeps the values a console's expression gave, when they
+// come from the current interpreter, gen.
+func (e *Engine) setValues(gen uint64, values []any) {
+	e.told.Lock()
+	defer e.told.Unlock()
+	if gen == e.gen {
+		e.values = values
+	}
+}
+
+// shownValues is what the last expression gave.
+func (e *Engine) shownValues() []any {
+	e.told.Lock()
+	defer e.told.Unlock()
+	return e.values
+}
+
+// clearTold forgets what the interpreter told, before an evaluation
+// whose values are shown.
+func (e *Engine) clearTold() {
+	e.told.Lock()
+	defer e.told.Unlock()
+	e.values = nil
+	e.panicAt.line = 0
+}
+
+// clearPanic forgets where the last panic was, before an evaluation.
+func (e *Engine) clearPanic() {
+	e.told.Lock()
+	defer e.told.Unlock()
+	e.panicAt.line = 0
+}
+
+// panicPlace is where the interpreter said the last panic was, or
+// line 0 for none.
+func (e *Engine) panicPlace() (line, col int) {
+	e.told.Lock()
+	defer e.told.Unlock()
+	return e.panicAt.line, e.panicAt.col
+}
+
 // step runs fn as one step: one undo step, shown when it is done.
 func (e *Engine) step(ctx context.Context, fn func(ctx context.Context) (reflect.Value, error)) (reflect.Value, error) {
 	e.mu.Lock()
@@ -291,15 +372,24 @@ func (e *Engine) step(ctx context.Context, fn func(ctx context.Context) (reflect
 		e.mu.Unlock()
 		return reflect.Value{}, ErrBusy
 	}
+	stale := e.stale
+	e.stale = false
 	ctx, cancel := context.WithCancel(ctx)
 	e.running, e.cancel = true, cancel
 	e.mu.Unlock()
 	defer func() {
 		e.mu.Lock()
 		e.running, e.cancel = false, nil
+		// The interpreter's goroutine may run on after a cancellation.
+		e.stale = e.stale || ctx.Err() != nil
 		e.mu.Unlock()
 		cancel()
 	}()
+	if stale {
+		if err := e.restart(); err != nil {
+			return reflect.Value{}, err
+		}
+	}
 
 	host := e.opts.Host
 	if eh, ok := host.(evalHost); ok {
@@ -319,7 +409,7 @@ func (e *Engine) Eval(ctx context.Context, src string) (reflect.Value, error) {
 
 // eval runs source in the interpreter and says where an error is.
 func (e *Engine) eval(ctx context.Context, src string) (reflect.Value, error) {
-	e.panicAt.line = 0
+	e.clearPanic()
 	// The interpreter logs some of what it can't compile, besides
 	// returning the error.
 	logged := log.Writer()
@@ -329,7 +419,8 @@ func (e *Engine) eval(ctx context.Context, src string) (reflect.Value, error) {
 	// The interpreter says where a panic of the script was; one without
 	// a place is its own, from before the script ran.
 	var p interp.Panic
-	e.ran = err == nil || ctx.Err() != nil || (errors.As(err, &p) && e.panicAt.line != 0)
+	line, _ := e.panicPlace()
+	e.ran = err == nil || ctx.Err() != nil || (errors.As(err, &p) && line != 0)
 	return v, e.locate(err, src)
 }
 
@@ -488,7 +579,7 @@ func (e *Engine) run(ctx context.Context, src string) error {
 		return derr
 	}
 
-	e.values = nil
+	e.clearTold()
 	const wrapper = "telesaprConsole.Show("
 	if _, derr := e.eval(ctx, wrapper+d.value+")"); derr != nil {
 		// What is wrong with the expression says more than that the
@@ -507,7 +598,7 @@ func (e *Engine) run(ctx context.Context, src string) error {
 		}
 		return err
 	}
-	values := e.values
+	values := e.shownValues()
 	if len(values) != len(d.names) {
 		return fmt.Errorf("assignment mismatch: %d variables but %d values", len(d.names), len(values))
 	}
@@ -519,7 +610,7 @@ func (e *Engine) run(ctx context.Context, src string) error {
 		if !ok {
 			return fmt.Errorf("can't tell the type of %s from its value; declare it first: var %s T", name, name)
 		}
-		e.values = values
+		e.setValues(e.gen, values)
 		if _, derr := e.eval(ctx, "var "+name+" "+typ); derr != nil {
 			return derr
 		}
@@ -658,8 +749,10 @@ var panicLine = regexp.MustCompile(`^(\d+):(\d+): panic: [^\n]*\n?$`)
 
 func (f *panicFilter) Write(p []byte) (int, error) {
 	if m := panicLine.FindSubmatch(p); m != nil {
+		f.e.told.Lock()
 		f.e.panicAt.line, _ = strconv.Atoi(string(m[1]))
 		f.e.panicAt.col, _ = strconv.Atoi(string(m[2]))
+		f.e.told.Unlock()
 		return len(p), nil
 	}
 	return f.w.Write(p)
@@ -732,7 +825,7 @@ func (e *Engine) locate(err error, src string) error {
 		default:
 			out.Err = fmt.Errorf("panic: %v", p.Value)
 		}
-		out.Line, out.Col = e.panicAt.line, e.panicAt.col
+		out.Line, out.Col = e.panicPlace()
 	case errors.As(err, &list) && len(list) > 0:
 		out.Line, out.Col, out.Err = list[0].Pos.Line, list[0].Pos.Column, errors.New(list[0].Msg)
 	default:
@@ -819,14 +912,14 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 	// A call can have several values, of which the interpreter returns
 	// one; passed on to a function, they are all there. That doesn't
 	// compile for a call without a value, which is then just run.
-	e.values = nil
-	e.panicAt.line = 0
+	e.clearTold()
 	_, err := e.i.EvalWithContext(ctx, "telesaprConsole.Show("+src+")")
 	var p interp.Panic
 	switch {
 	case err == nil:
-		parts := make([]string, len(e.values))
-		for i, v := range e.values {
+		values := e.shownValues()
+		parts := make([]string, len(values))
+		for i, v := range values {
 			parts[i] = Format(v)
 		}
 		return strings.Join(parts, ", "), nil

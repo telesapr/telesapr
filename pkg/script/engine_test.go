@@ -220,6 +220,9 @@ func TestExitAndCancel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := e.Run(context.Background(), "console", "x := 5"); err != nil {
+		t.Fatal(err)
+	}
 	done := make(chan error, 1)
 	go func() {
 		_, err := e.Eval(context.Background(), "for { time.Sleep(time.Millisecond) }")
@@ -239,6 +242,15 @@ func TestExitAndCancel(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("the script didn't stop")
+	}
+	// A stopped script's interpreter may still be winding down, so the
+	// next step gets a new one: the console's names are gone, and the
+	// line runs.
+	if _, err := e.Run(context.Background(), "console", "x"); err == nil {
+		t.Error("x is still defined after the stop")
+	}
+	if shown, err := e.Run(context.Background(), "console", "1 + 2"); err != nil || shown != "3" {
+		t.Errorf("after the stop, 1 + 2 gave %q, %v", shown, err)
 	}
 }
 
