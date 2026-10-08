@@ -61,6 +61,10 @@ func invariantLines(fixture string) []string {
 	return lines
 }
 
+// invalidFixture is not a valid file, on purpose: the one fixture that
+// must fail to load.
+const invalidFixture = "solver/param_point_distance.slvs"
+
 // TestInvariants loads every fixture, regenerates it, checks the solid
 // of each group, and compares the reports with testdata/invariants.txt.
 // Counts and flags must match exactly; volume, centre of mass and
@@ -72,9 +76,16 @@ func invariantLines(fixture string) []string {
 // later kernel change.
 func TestInvariants(t *testing.T) {
 	fixtures := invariantFixtures(t)
+	if len(fixtures) == 0 {
+		t.Fatal("no fixtures")
+	}
 	var got []string
 	for _, f := range fixtures {
-		got = append(got, invariantLines(f)...)
+		lines := invariantLines(f)
+		if failed := len(lines) == 1 && strings.HasPrefix(lines[0], f+" error "); failed != (f == invalidFixture) {
+			t.Errorf("%s: %s", f, lines[0])
+		}
+		got = append(got, lines...)
 	}
 
 	if os.Getenv("TELESAPR_REGEN_INVARIANTS") != "" {
