@@ -309,7 +309,7 @@ camera 5 0 0 0 1 0 0 0 1 0
 counts 3 7 67 8 40
 editor 0 "" 0 "0"
 tw 14 unsaved 1 cursor 0 tooltip ""
-dialog 3 unknown parameter "q"|
+dialog 3 Unknown parameter "q".|
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
