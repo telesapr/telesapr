@@ -1755,22 +1755,22 @@
 				"methods": {
 					"Contains": {
 						"decl": "func (b BBox) Contains(p geom.Point2d, r float64) bool",
-						"text": "Contains reports whether p, in x and y, lies within r of the box (C++ BBox::Contains)."
+						"text": "Contains reports whether p, in x and y, lies within r of the box."
 					},
 					"Extents": {
 						"decl": "func (b BBox) Extents() geom.Vector",
-						"text": "Extents is half the box's size (C++ BBox::Extents)."
+						"text": "Extents is half the box's size."
 					},
 					"Include": {
 						"decl": "func (b *BBox) Include(v geom.Vector, r float64)"
 					},
 					"Origin": {
 						"decl": "func (b BBox) Origin() geom.Vector",
-						"text": "Origin is the box's centre (C++ BBox::Origin)."
+						"text": "Origin is the box's centre."
 					},
 					"Overlaps": {
 						"decl": "func (b BBox) Overlaps(b1 BBox) bool",
-						"text": "Overlaps reports whether the boxes' interiors overlap (C++ BBox::Overlaps)."
+						"text": "Overlaps reports whether the boxes' interiors overlap."
 					}
 				},
 				"makers": [
@@ -1782,19 +1782,19 @@
 				"methods": {
 					"GenerateEquations": {
 						"decl": "func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forReference bool)",
-						"text": "GenerateEquations appends the constraint's equations (C++ ConstraintBase::GenerateEquations)."
+						"text": "GenerateEquations appends the constraint's equations."
 					},
 					"HasLabel": {
 						"decl": "func (c *Constraint) HasLabel() bool",
-						"text": "HasLabel reports whether the constraint is a dimension with a value label (C++ ConstraintBase::HasLabel)."
+						"text": "HasLabel reports whether the constraint is a dimension with a value label."
 					},
 					"IsProjectible": {
 						"decl": "func (c *Constraint) IsProjectible() bool",
-						"text": "IsProjectible reports whether the constraint applies in a workplane, projected into it (C++ ConstraintBase::IsProjectible)."
+						"text": "IsProjectible reports whether the constraint applies in a workplane, projected into it."
 					},
 					"ModifyToSatisfy": {
 						"decl": "func (c *Constraint) ModifyToSatisfy(sk EntitySketch)",
-						"text": "ModifyToSatisfy changes the constraint's value (or its valP) so that it holds for the sketch as it stands; used for reference dimensions (C++ ConstraintBase::ModifyToSatisfy)."
+						"text": "ModifyToSatisfy changes the constraint's value (or its valP) so that it holds for the sketch as it stands; used for reference dimensions."
 					},
 					"StyleOrDefault": {
 						"decl": "func (c *Constraint) StyleOrDefault() HStyle",
@@ -1885,7 +1885,7 @@
 					},
 					"CalculateNumerical": {
 						"decl": "func (e *Entity) CalculateNumerical(sk EntitySketch, forExport bool)",
-						"text": "CalculateNumerical caches the entity's numeric state in its Act* fields (C++ Entity::CalculateNumerical, drawentity.cpp)."
+						"text": "CalculateNumerical caches the entity's numeric state in its Act* fields."
 					},
 					"CircleGetRadiusExpr": {
 						"decl": "func (e *Entity) CircleGetRadiusExpr(sk EntitySketch) *Expr"
@@ -1943,7 +1943,7 @@
 					},
 					"GenerateEquations": {
 						"decl": "func (e *Entity) GenerateEquations(sk EntitySketch, constraints []Constraint, l *[]Equation)",
-						"text": "GenerateEquations appends the equations this entity imposes (C++ EntityBase::GenerateEquations)."
+						"text": "GenerateEquations appends the equations this entity imposes."
 					},
 					"HasEndpoints": {
 						"decl": "func (e *Entity) HasEndpoints() bool"
@@ -1974,7 +1974,7 @@
 					},
 					"NormalEntity": {
 						"decl": "func (e *Entity) NormalEntity(sk EntitySketch) *Entity",
-						"text": "NormalEntity returns the entity's normal (C++ EntityBase::Normal)."
+						"text": "NormalEntity returns the entity's normal."
 					},
 					"NormalExprsN": {
 						"decl": "func (e *Entity) NormalExprsN(sk EntitySketch) ExprVector"
@@ -2020,7 +2020,7 @@
 					},
 					"PointGetExprsInWorkplaneUV": {
 						"decl": "func (e *Entity) PointGetExprsInWorkplaneUV(sk EntitySketch, wrkpl HEntity) (u, v *Expr)",
-						"text": "PointGetExprsInWorkplaneUV returns this point's (u, v) coordinates in wrkpl (C++ PointGetExprsInWorkplane(hEntity, Expr **, Expr **))."
+						"text": "PointGetExprsInWorkplaneUV returns this point's (u, v) coordinates in wrkpl."
 					},
 					"PointGetNum": {
 						"decl": "func (e *Entity) PointGetNum(sk EntitySketch) geom.Vector"
@@ -2079,7 +2079,7 @@
 				"kind": "map[EntityKey]EntityID"
 			},
 			"EntitySketch": {
-				"text": "EntitySketch is the part of the sketch that EntityBase methods read, standing in for the C++ global SK.",
+				"text": "EntitySketch is the part of the sketch that the entity accessors read.",
 				"kind": "interface"
 			},
 			"EntityType": {
@@ -2120,11 +2120,11 @@
 				]
 			},
 			"EntityVisibility": {
-				"text": "EntityVisibility is implemented by sketches that can answer the C++ Entity::IsVisible, which depends on UI state.",
+				"text": "EntityVisibility is implemented by sketches that know which entities are shown, which depends on the window's state.",
 				"kind": "interface"
 			},
 			"Equation": {
-				"text": "Equation is one equation generated by an entity or a group, with the handle C++ AddEq gives it.",
+				"text": "Equation is one equation generated by an entity or a group, with its handle.",
 				"kind": "struct"
 			},
 			"EvalParamProvider": {
@@ -2173,7 +2173,7 @@
 					},
 					"Derivative": {
 						"decl": "func (e *Expr) Derivative(h HParam) *Expr",
-						"text": "Derivative returns the partial derivative with respect to param h (C++ Expr::PartialWrt, in the same form)."
+						"text": "Derivative returns the partial derivative with respect to param h."
 					},
 					"Div": {
 						"decl": "func (e *Expr) Div(b *Expr) *Expr",
@@ -2193,11 +2193,11 @@
 					},
 					"FoldConstants": {
 						"decl": "func (e *Expr) FoldConstants() *Expr",
-						"text": "FoldConstants returns a simplified copy of the expression (C++ Expr::FoldConstants with allocCopy): constant subtrees are evaluated, and x+0, 0+x, x*1, 1*x reduce to x and x*0, 0*x to 0, where 0 and 1 are matched within exprTol."
+						"text": "FoldConstants returns a simplified copy of the expression: constant subtrees are evaluated, and x+0, 0+x, x*1, 1*x reduce to x and x*0, 0*x to 0, where 0 and 1 are matched within exprTol."
 					},
 					"FoldNode": {
 						"decl": "func (e *Expr) FoldNode() *Expr",
-						"text": "FoldNode is FoldConstants for a node whose children are folded already: it simplifies just this node (C++ FoldConstants with depth 0)."
+						"text": "FoldNode is FoldConstants for a node whose children are folded already: it simplifies just this node."
 					},
 					"Hypot": {
 						"decl": "func (e *Expr) Hypot(x *Expr) *Expr",
@@ -2205,7 +2205,7 @@
 					},
 					"IsZeroConst": {
 						"decl": "func (e *Expr) IsZeroConst() bool",
-						"text": "IsZeroConst reports whether the expression is the constant zero (C++ Expr::IsZeroConst, an exact comparison)."
+						"text": "IsZeroConst reports whether the expression is the constant zero."
 					},
 					"Ln": {
 						"decl": "func (e *Expr) Ln() *Expr",
@@ -2300,23 +2300,23 @@
 					},
 					"Rotate": {
 						"decl": "func (q ExprQuaternion) Rotate(p ExprVector) ExprVector",
-						"text": "Rotate expresses p in the basis (RotationU, RotationV, RotationN), as C++ ExprQuaternion::Rotate does."
+						"text": "Rotate expresses p in the basis (RotationU, RotationV, RotationN)."
 					},
 					"RotationN": {
 						"decl": "func (q ExprQuaternion) RotationN() ExprVector",
-						"text": "RotationN returns the rotated unit Z axis (C++ ExprQuaternion::RotationN)."
+						"text": "RotationN returns the rotated unit Z axis."
 					},
 					"RotationU": {
 						"decl": "func (q ExprQuaternion) RotationU() ExprVector",
-						"text": "RotationU returns the rotated unit X axis (C++ ExprQuaternion::RotationU)."
+						"text": "RotationU returns the rotated unit X axis."
 					},
 					"RotationV": {
 						"decl": "func (q ExprQuaternion) RotationV() ExprVector",
-						"text": "RotationV returns the rotated unit Y axis (C++ ExprQuaternion::RotationV)."
+						"text": "RotationV returns the rotated unit Y axis."
 					},
 					"Times": {
 						"decl": "func (q ExprQuaternion) Times(b ExprQuaternion) ExprQuaternion",
-						"text": "Times multiplies two quaternions (C++ ExprQuaternion::Times)."
+						"text": "Times multiplies two quaternions."
 					}
 				},
 				"makers": [
@@ -2397,11 +2397,11 @@
 				"methods": {
 					"Constraint": {
 						"decl": "func (h HEquation) Constraint() HConstraint",
-						"text": "Constraint is the constraint that wrote the equation (C++ hEquation::constraint)."
+						"text": "Constraint is the constraint that wrote the equation."
 					},
 					"IsFromConstraint": {
 						"decl": "func (h HEquation) IsFromConstraint() bool",
-						"text": "IsFromConstraint reports whether the equation was written by a constraint (C++ hEquation::isFromConstraint): entity and group equations set one of the top two bits."
+						"text": "IsFromConstraint reports whether the equation was written by a constraint: entity and group equations set one of the top two bits."
 					}
 				}
 			},
@@ -2435,7 +2435,7 @@
 					},
 					"IsFromReferences": {
 						"decl": "func (h HRequest) IsFromReferences() bool",
-						"text": "IsFromReferences reports whether the request is one of the three reference workplanes (C++ hRequest::IsFromReferences)."
+						"text": "IsFromReferences reports whether the request is one of the three reference workplanes."
 					},
 					"Param": {
 						"decl": "func (h HRequest) Param(i int) HParam"
@@ -2462,7 +2462,7 @@
 				"kind": "struct"
 			},
 			"IDList": {
-				"text": "IDList is a Go analogue of the C++ IDList\u003cT, H\u003e: a handle-keyed container that preserves insertion order and supports efficient lookup by handle.",
+				"text": "IDList is a handle-keyed container that preserves insertion order and supports efficient lookup by handle.",
 				"kind": "struct",
 				"methods": {
 					"Add": {
@@ -2519,7 +2519,7 @@
 				]
 			},
 			"NoSettings": {
-				"text": "NoSettings stores nothing and returns the defaults, as the headless C++ build's settings do (SettingsImplDummy).",
+				"text": "NoSettings stores nothing and returns the defaults.",
 				"kind": "struct",
 				"methods": {
 					"FreezeFloat": {
@@ -2643,7 +2643,7 @@
 				]
 			},
 			"Settings": {
-				"text": "Settings is the user's persistent settings (C++ Platform::Settings).",
+				"text": "Settings is the user's persistent settings.",
 				"kind": "interface"
 			},
 			"SolveResult": {
@@ -2683,7 +2683,7 @@
 				}
 			},
 			"StyleDefault": {
-				"text": "StyleDefault is a default style's factory settings (C++ Style::Default).",
+				"text": "StyleDefault is a default style's factory settings.",
 				"kind": "struct"
 			},
 			"StyleList": {
@@ -2725,7 +2725,7 @@
 		"funcs": {
 			"CnfColor": {
 				"decl": "func CnfColor(prefix string) string",
-				"text": "The settings keys of a default style (C++ Style::CnfColor and so on)."
+				"text": "The settings keys of a default style."
 			},
 			"CnfExportable": {
 				"decl": "func CnfExportable(prefix string) string"
@@ -2748,15 +2748,15 @@
 			},
 			"DirectionCosine": {
 				"decl": "func DirectionCosine(sk EntitySketch, wrkpl HEntity, ae, be ExprVector) *Expr",
-				"text": "DirectionCosine is the cosine of the angle between two vectors, or between their projections into wrkpl (C++ ConstraintBase::DirectionCosine)."
+				"text": "DirectionCosine is the cosine of the angle between two vectors, or between their projections into wrkpl."
 			},
 			"DistanceExpr": {
 				"decl": "func DistanceExpr(sk EntitySketch, wrkpl, hpa, hpb HEntity) *Expr",
-				"text": "DistanceExpr is the true distance between two points, or the distance projected into wrkpl (C++ ConstraintBase::Distance)."
+				"text": "DistanceExpr is the true distance between two points, or the distance projected into wrkpl."
 			},
 			"EvalExpr": {
 				"decl": "func EvalExpr(sk EntitySketch, expr *Expr) float64",
-				"text": "EvalExpr evaluates expr at the sketch's current param values (C++ Expr::Eval)."
+				"text": "EvalExpr evaluates expr at the sketch's current param values."
 			},
 			"FillDefaultStyle": {
 				"decl": "func FillDefaultStyle(s *Style, d *StyleDefault, factory bool, settings Settings)",
@@ -2764,7 +2764,7 @@
 			},
 			"FreezeBool": {
 				"decl": "func FreezeBool(s Settings, key string, value bool)",
-				"text": "FreezeBool, ThawBool, FreezeColor and ThawColor store through the integer settings (C++ Settings::FreezeBool and so on)."
+				"text": "FreezeBool, ThawBool, FreezeColor and ThawColor store through the integer settings."
 			},
 			"FreezeColor": {
 				"decl": "func FreezeColor(s Settings, key string, value RGBA)"
@@ -2829,19 +2829,19 @@
 			},
 			"PointInThreeSpace": {
 				"decl": "func PointInThreeSpace(sk EntitySketch, workplane HEntity, u, v *Expr) ExprVector",
-				"text": "PointInThreeSpace is the point at (u, v) in workplane (C++ ConstraintBase::PointInThreeSpace)."
+				"text": "PointInThreeSpace is the point at (u, v) in workplane."
 			},
 			"PointLineDistance": {
 				"decl": "func PointLineDistance(sk EntitySketch, wrkpl, hpt, hln HEntity) *Expr",
-				"text": "PointLineDistance is the distance from point hpt to line hln, signed when projected into wrkpl (C++ ConstraintBase::PointLineDistance)."
+				"text": "PointLineDistance is the distance from point hpt to line hln, signed when projected into wrkpl."
 			},
 			"PointPlaneDistance": {
 				"decl": "func PointPlaneDistance(sk EntitySketch, p ExprVector, hpl HEntity) *Expr",
-				"text": "PointPlaneDistance is the signed distance from p to workplane hpl (C++ ConstraintBase::PointPlaneDistance)."
+				"text": "PointPlaneDistance is the signed distance from p to workplane hpl."
 			},
 			"ProjectVectorInto": {
 				"decl": "func ProjectVectorInto(sk EntitySketch, v geom.Vector, wrkpl HEntity) geom.Vector",
-				"text": "ProjectVectorInto projects v into the plane of workplane wrkpl (C++ Vector::ProjectVectorInto)."
+				"text": "ProjectVectorInto projects v into the plane of workplane wrkpl."
 			},
 			"RGBAFromFloat": {
 				"decl": "func RGBAFromFloat(r, g, b, a float32) RGBA"
@@ -2855,15 +2855,15 @@
 			},
 			"RewriteColor": {
 				"decl": "func RewriteColor(rgbin RGBA, fixExportColors bool) RGBA",
-				"text": "RewriteColor turns an almost-white colour black when fixExportColors, so it doesn't vanish on a light background (C++ Style::RewriteColor, with SS.fixExportColors as an argument)."
+				"text": "RewriteColor turns an almost-white colour black when fixExportColors, so it doesn't vanish on a light background."
 			},
 			"StipplePatternDashes": {
 				"decl": "func StipplePatternDashes(p StipplePattern) []float64",
-				"text": "StipplePatternDashes is the pattern's dash list (C++ StipplePatternDashes, util.cpp)."
+				"text": "StipplePatternDashes is the pattern's dash list."
 			},
 			"StipplePatternFromString": {
 				"decl": "func StipplePatternFromString(name string) StipplePattern",
-				"text": "StipplePatternFromString is the pattern with the given name, ignoring case; continuous if none (C++ Style::StipplePatternFromString)."
+				"text": "StipplePatternFromString is the pattern with the given name, ignoring case; continuous if none."
 			},
 			"StipplePatternLength": {
 				"decl": "func StipplePatternLength(p StipplePattern) float64",
@@ -2871,7 +2871,7 @@
 			},
 			"StipplePatternName": {
 				"decl": "func StipplePatternName(p StipplePattern) string",
-				"text": "StipplePatternName is the pattern's name (C++ Style::StipplePatternName)."
+				"text": "StipplePatternName is the pattern's name."
 			},
 			"ThawBool": {
 				"decl": "func ThawBool(s Settings, key string, defaultValue bool) bool"
@@ -2885,7 +2885,7 @@
 			},
 			"VectorsParallel3d": {
 				"decl": "func VectorsParallel3d(a, b ExprVector, p HParam) ExprVector",
-				"text": "VectorsParallel3d is zero when a is p times b (C++ ConstraintBase::VectorsParallel3d)."
+				"text": "VectorsParallel3d is zero when a is p times b."
 			}
 		},
 		"values": {
@@ -3314,7 +3314,7 @@
 			},
 			"StyleDefaults": {
 				"decl": "var StyleDefaults",
-				"text": "StyleDefaults are the default styles (C++ Style::Defaults)."
+				"text": "StyleDefaults are the default styles."
 			},
 			"StyleDimSolid": {
 				"decl": "const StyleDimSolid"
@@ -3409,7 +3409,7 @@
 				"methods": {
 					"Solve": {
 						"decl": "func (m *BandedMatrix) Solve()",
-						"text": "Solve mirrors C++ BandedMatrix::Solve."
+						"text": "Solve solves the system for its right-hand sides."
 					}
 				}
 			},
@@ -3418,11 +3418,11 @@
 				"methods": {
 					"Angle": {
 						"decl": "func (p Point2d) Angle() float64",
-						"text": "Angle is p's angle, in [0, 2 pi] (C++ Point2d::Angle)."
+						"text": "Angle is p's angle, in [0, 2 pi]."
 					},
 					"AngleTo": {
 						"decl": "func (p Point2d) AngleTo(b Point2d) float64",
-						"text": "AngleTo is the angle of the direction from p to b (C++ Point2d::AngleTo)."
+						"text": "AngleTo is the angle of the direction from p to b."
 					},
 					"DistanceTo": {
 						"decl": "func (p Point2d) DistanceTo(b Point2d) float64"
@@ -3433,7 +3433,7 @@
 					},
 					"DistanceToLineSigned": {
 						"decl": "func (p Point2d) DistanceToLineSigned(p0, dp Point2d, asSegment bool) float64",
-						"text": "DistanceToLineSigned is p's signed distance from the line p0 + t*dp, positive on the side of dp's normal; with asSegment, the distance to the nearer end past either (C++ Point2d::DistanceToLineSigned)."
+						"text": "DistanceToLineSigned is p's signed distance from the line p0 + t*dp, positive on the side of dp's normal; with asSegment, the distance to the nearer end past either."
 					},
 					"DivProjected": {
 						"decl": "func (p Point2d) DivProjected(delta Point2d) float64",
@@ -3444,11 +3444,11 @@
 					},
 					"Equals": {
 						"decl": "func (p Point2d) Equals(b Point2d) bool",
-						"text": "Equals is EqualsTol with LENGTH_EPS (C++ Point2d::Equals's default)."
+						"text": "Equals is EqualsTol with LENGTH_EPS."
 					},
 					"EqualsTol": {
 						"decl": "func (p Point2d) EqualsTol(b Point2d, tol float64) bool",
-						"text": "EqualsTol mirrors C++ Point2d::Equals (util.cpp:989)."
+						"text": "EqualsTol reports whether the points are within tol of each other."
 					},
 					"MagSquared": {
 						"decl": "func (p Point2d) MagSquared() float64"
@@ -3471,7 +3471,7 @@
 					},
 					"WithMagnitude": {
 						"decl": "func (p Point2d) WithMagnitude(v float64) Point2d",
-						"text": "WithMagnitude mirrors C++ Point2d::WithMagnitude (util.cpp:934)."
+						"text": "WithMagnitude is the point scaled to the given length."
 					}
 				},
 				"makers": [
@@ -3487,7 +3487,7 @@
 					},
 					"Inverse": {
 						"decl": "func (q Quaternion) Inverse() Quaternion",
-						"text": "Inverse is the inverse rotation (C++ Quaternion::Inverse)."
+						"text": "Inverse is the inverse rotation."
 					},
 					"IsIdentity": {
 						"decl": "func (q Quaternion) IsIdentity() bool",
@@ -3504,7 +3504,7 @@
 					},
 					"Mirror": {
 						"decl": "func (q Quaternion) Mirror() Quaternion",
-						"text": "Mirror is the orientation with U and V reversed (C++ Quaternion::Mirror)."
+						"text": "Mirror is the orientation with U and V reversed."
 					},
 					"Normal": {
 						"decl": "func (q Quaternion) Normal() Quaternion"
@@ -3514,7 +3514,7 @@
 					},
 					"Rotate": {
 						"decl": "func (q Quaternion) Rotate(v Vector) Vector",
-						"text": "Rotate expresses v in the basis (RotationU, RotationV, RotationN), as C++ Quaternion::Rotate does."
+						"text": "Rotate expresses v in the basis (RotationU, RotationV, RotationN)."
 					},
 					"RotationN": {
 						"decl": "func (q Quaternion) RotationN() Vector"
@@ -3530,15 +3530,15 @@
 					},
 					"Times": {
 						"decl": "func (q Quaternion) Times(b Quaternion) Quaternion",
-						"text": "Times is the product q b (C++ Quaternion::Times)."
+						"text": "Times is the product q b."
 					},
 					"ToThe": {
 						"decl": "func (q Quaternion) ToThe(p float64) Quaternion",
-						"text": "ToThe is q, a unit quaternion, raised to the power p (C++ Quaternion::ToThe)."
+						"text": "ToThe is q, a unit quaternion, raised to the power p."
 					},
 					"WithMagnitude": {
 						"decl": "func (q Quaternion) WithMagnitude(s float64) Quaternion",
-						"text": "WithMagnitude is q scaled to magnitude s (C++ Quaternion::WithMagnitude)."
+						"text": "WithMagnitude is q scaled to magnitude s."
 					}
 				},
 				"makers": [
@@ -3552,65 +3552,65 @@
 				"methods": {
 					"BoundingBoxesDisjoint": {
 						"decl": "func (v Vector) BoundingBoxesDisjoint(amax, amin, bmax, bmin Vector) bool",
-						"text": "BoundingBoxesDisjoint mirrors C++ Vector::BoundingBoxesDisjoint."
+						"text": "BoundingBoxesDisjoint reports whether the two boxes don't overlap."
 					},
 					"ClampWithin": {
 						"decl": "func (v Vector) ClampWithin(minv, maxv float64) Vector"
 					},
 					"ClosestOrtho": {
 						"decl": "func (v Vector) ClosestOrtho() Vector",
-						"text": "ClampWithin clamps each component to [minv, maxv] (C++ Vector::ClampWithin)."
+						"text": "ClampWithin clamps each component to [minv, maxv]."
 					},
 					"ClosestPointOnLine": {
 						"decl": "func (v Vector) ClosestPointOnLine(p0, dp Vector) Vector",
-						"text": "ClosestPointOnLine is the point of the line p0 + t*dp closest to v (C++ Vector::ClosestPointOnLine)."
+						"text": "ClosestPointOnLine is the point of the line p0 + t*dp closest to v."
 					},
 					"Cross": {
 						"decl": "func (v Vector) Cross(b Vector) Vector"
 					},
 					"DirectionCosineWith": {
 						"decl": "func (v Vector) DirectionCosineWith(b Vector) float64",
-						"text": "DirectionCosineWith is the cosine of the angle between v and b (C++ Vector::DirectionCosineWith)."
+						"text": "DirectionCosineWith is the cosine of the angle between v and b."
 					},
 					"DistanceTo": {
 						"decl": "func (v Vector) DistanceTo(b Vector) float64"
 					},
 					"DistanceToLine": {
 						"decl": "func (v Vector) DistanceToLine(p0, dp Vector) float64",
-						"text": "DistanceToLine is the distance from v to the line p0 + t*dp (C++ Vector::DistanceToLine)."
+						"text": "DistanceToLine is the distance from v to the line p0 + t*dp."
 					},
 					"DistanceToPlane": {
 						"decl": "func (v Vector) DistanceToPlane(normal, origin Vector) float64",
-						"text": "DistanceToPlane is v's signed distance from the plane through origin with normal (scaled by its magnitude, as C++ Vector::DistanceToPlane)."
+						"text": "DistanceToPlane is v's signed distance from the plane through origin with normal (scaled by its magnitude)."
 					},
 					"DivProjected": {
 						"decl": "func (v Vector) DivProjected(delta Vector) float64",
-						"text": "DivProjected is v's length along delta, in units of delta (C++ Vector::DivProjected)."
+						"text": "DivProjected is v's length along delta, in units of delta."
 					},
 					"Dot": {
 						"decl": "func (v Vector) Dot(b Vector) float64"
 					},
 					"DotInToCsys": {
 						"decl": "func (v Vector) DotInToCsys(u, w, n Vector) Vector",
-						"text": "DotInToCsys is v's components along u, w and n (C++ Vector::DotInToCsys)."
+						"text": "DotInToCsys is v's components along u, w and n."
 					},
 					"Element": {
 						"decl": "func (v Vector) Element(i int) float64"
 					},
 					"Equals": {
 						"decl": "func (v Vector) Equals(b Vector) bool",
-						"text": "Equals mirrors C++ Vector::Equals with its default LENGTH_EPS tolerance (dsc.h:129)."
+						"text": "Equals reports whether the vectors are within LengthEps of each other."
 					},
 					"EqualsExactly": {
 						"decl": "func (v Vector) EqualsExactly(b Vector) bool"
 					},
 					"EqualsTol": {
 						"decl": "func (v Vector) EqualsTol(b Vector, tol float64) bool",
-						"text": "EqualsTol mirrors C++ Vector::Equals(v, tol)."
+						"text": "EqualsTol reports whether the vectors are within tol of each other."
 					},
 					"InPerspective": {
 						"decl": "func (v Vector) InPerspective(u, vv, n, origin Vector, cameraTan float64) Vector",
-						"text": "InPerspective takes v into the csys (u, v, n) at origin, and applies the perspective of cameraTan (C++ Vector::InPerspective)."
+						"text": "InPerspective takes v into the csys (u, v, n) at origin, and applies the perspective of cameraTan."
 					},
 					"MagSquared": {
 						"decl": "func (v Vector) MagSquared() float64"
@@ -3660,22 +3660,22 @@
 					},
 					"RotatedAbout": {
 						"decl": "func (v Vector) RotatedAbout(orig, axis Vector, theta float64) Vector",
-						"text": "RotatedAbout rotates v by theta about the axis through orig (C++ Vector::RotatedAbout(orig, axis, theta))."
+						"text": "RotatedAbout rotates v by theta about the axis through orig."
 					},
 					"RotatedAroundAxis": {
 						"decl": "func (v Vector) RotatedAroundAxis(axis Vector, theta float64) Vector",
-						"text": "RotatedAroundAxis rotates v by theta about the axis through the origin (C++ Vector::RotatedAbout(axis, theta))."
+						"text": "RotatedAroundAxis rotates v by theta about the axis through the origin."
 					},
 					"ScaleOutOfCsys": {
 						"decl": "func (v Vector) ScaleOutOfCsys(u, w, n Vector) Vector",
-						"text": "ScaleOutOfCsys takes v's components as coordinates in the (u, w, n) basis (C++ Vector::ScaleOutOfCsys)."
+						"text": "ScaleOutOfCsys takes v's components as coordinates in the (u, w, n) basis."
 					},
 					"ScaledBy": {
 						"decl": "func (v Vector) ScaledBy(s float64) Vector"
 					},
 					"WithMagnitude": {
 						"decl": "func (v Vector) WithMagnitude(s float64) Vector",
-						"text": "WithMagnitude is v scaled to magnitude s; a zero vector stays zero (C++ Vector::WithMagnitude)."
+						"text": "WithMagnitude is v scaled to magnitude s; a zero vector stays zero."
 					}
 				},
 				"makers": [
@@ -3690,7 +3690,7 @@
 				]
 			},
 			"Vector4": {
-				"text": "Vector4 is a point in homogeneous coordinates (w*x, w*y, w*z, w) (C++ Vector4).",
+				"text": "Vector4 is a point in homogeneous coordinates (w*x, w*y, w*z, w).",
 				"kind": "struct",
 				"methods": {
 					"Magnitude": {
@@ -3702,7 +3702,7 @@
 					},
 					"PerspectiveProject": {
 						"decl": "func (v Vector4) PerspectiveProject() Vector",
-						"text": "PerspectiveProject is the point (x/w, y/w, z/w) (C++ Vector4::PerspectiveProject)."
+						"text": "PerspectiveProject is the point (x/w, y/w, z/w)."
 					},
 					"Plus": {
 						"decl": "func (v Vector4) Plus(b Vector4) Vector4"
@@ -3721,15 +3721,15 @@
 		"funcs": {
 			"AtIntersectionOfLines": {
 				"decl": "func AtIntersectionOfLines(a0, a1, b0, b1 Vector) Vector",
-				"text": "AtIntersectionOfLines is the point on line (a0, a1) closest to line (b0, b1), their intersection if they meet (C++ Vector::AtIntersectionOfLines, without the skew and parameter outputs)."
+				"text": "AtIntersectionOfLines is the point on line (a0, a1) closest to line (b0, b1), their intersection if they meet."
 			},
 			"AtIntersectionOfLinesSkew": {
 				"decl": "func AtIntersectionOfLinesSkew(a0, a1, b0, b1 Vector) (Vector, bool)",
-				"text": "AtIntersectionOfLinesSkew is AtIntersectionOfLines, also reporting whether the lines are skew: whether the closest points on them aren't coincident (C++ Vector::AtIntersectionOfLines with skew)."
+				"text": "AtIntersectionOfLinesSkew is AtIntersectionOfLines, also reporting whether the lines are skew: whether the closest points on them aren't coincident."
 			},
 			"AtIntersectionOfPlaneAndLine": {
 				"decl": "func AtIntersectionOfPlaneAndLine(n Vector, d float64, p0, p1 Vector) Vector",
-				"text": "AtIntersectionOfPlaneAndLine is where the line through p0 and p1 meets the plane n ."
+				"text": "AtIntersectionOfPlaneAndLine is where the line through p0 and p1 meets the plane n."
 			},
 			"AtIntersectionOfPlaneAndLineParallel": {
 				"decl": "func AtIntersectionOfPlaneAndLineParallel(n Vector, d float64, p0, p1 Vector) (Vector, bool)",
@@ -3753,11 +3753,11 @@
 			},
 			"Max": {
 				"decl": "func Max(a, b float64) float64",
-				"text": "Max is C++ std::max for doubles: b if a \u003c b, else a."
+				"text": "Max is b if a \u003c b, else a."
 			},
 			"Min": {
 				"decl": "func Min(a, b float64) float64",
-				"text": "Min is C++ std::min for doubles: b if b \u003c a, else a (see Max)."
+				"text": "Min is b if b \u003c a, else a (see Max)."
 			},
 			"NewPoint2d": {
 				"decl": "func NewPoint2d(u, v float64) Point2d"
@@ -3770,11 +3770,11 @@
 			},
 			"Point2dFromPolar": {
 				"decl": "func Point2dFromPolar(r, a float64) Point2d",
-				"text": "Point2dFromPolar is the point at radius r and angle a (C++ Point2d::FromPolar)."
+				"text": "Point2dFromPolar is the point at radius r and angle a."
 			},
 			"QuaternionFromAxisAngle": {
 				"decl": "func QuaternionFromAxisAngle(axis Vector, dtheta float64) Quaternion",
-				"text": "QuaternionFromAxisAngle is the rotation by dtheta about axis (C++ Quaternion::From(Vector axis, double dtheta))."
+				"text": "QuaternionFromAxisAngle is the rotation by dtheta about axis."
 			},
 			"QuaternionFromBasis": {
 				"decl": "func QuaternionFromBasis(u, v Vector) Quaternion",
@@ -3782,15 +3782,15 @@
 			},
 			"Vector4Blend": {
 				"decl": "func Vector4Blend(a, b Vector4, t float64) Vector4",
-				"text": "Vector4Blend is a*(1 - t) + b*t (C++ Vector4::Blend)."
+				"text": "Vector4Blend is a*(1 - t) + b*t."
 			},
 			"Vector4From": {
 				"decl": "func Vector4From(w, x, y, z float64) Vector4",
-				"text": "Vector4From is (x, y, z, w) (C++ Vector4::From(w, x, y, z))."
+				"text": "Vector4From is (x, y, z, w)."
 			},
 			"Vector4FromWeighted": {
 				"decl": "func Vector4FromWeighted(w float64, v Vector) Vector4",
-				"text": "Vector4FromWeighted is v with weight w: (w*v, w) (C++ Vector4::From(w, v))."
+				"text": "Vector4FromWeighted is v with weight w: (w*v, w)."
 			},
 			"VectorZero": {
 				"decl": "func VectorZero() Vector"
@@ -3802,7 +3802,7 @@
 			},
 			"LengthEps": {
 				"decl": "const LengthEps",
-				"text": "LengthEps and VeryPositive mirror C++ LENGTH_EPS and VERY_POSITIVE (solvespace/src/defs.h:7-8)."
+				"text": "LengthEps is the tolerance lengths are compared with, and VeryPositive a length beyond any model."
 			},
 			"Pi": {
 				"decl": "var Pi",
@@ -3813,7 +3813,7 @@
 			},
 			"VeryPositive": {
 				"decl": "const VeryPositive",
-				"text": "LengthEps and VeryPositive mirror C++ LENGTH_EPS and VERY_POSITIVE (solvespace/src/defs.h:7-8)."
+				"text": "LengthEps is the tolerance lengths are compared with, and VeryPositive a length beyond any model."
 			}
 		}
 	},
@@ -5657,7 +5657,7 @@
 				}
 			},
 			"Clipboard": {
-				"text": "Clipboard holds copied requests, and the constraints among them (C++ SolveSpaceUI::Clipboard).",
+				"text": "Clipboard holds copied requests, and the constraints among them.",
 				"kind": "struct",
 				"methods": {
 					"Clear": {
@@ -5665,16 +5665,16 @@
 					},
 					"ContainsEntity": {
 						"decl": "func (c *Clipboard) ContainsEntity(he core.HEntity) bool",
-						"text": "ContainsEntity reports whether he, or no entity, was copied (C++ Clipboard::ContainsEntity)."
+						"text": "ContainsEntity reports whether he, or no entity, was copied."
 					},
 					"NewEntityFor": {
 						"decl": "func (c *Clipboard) NewEntityFor(he core.HEntity) core.HEntity",
-						"text": "NewEntityFor is the pasted entity for copied entity he (C++ Clipboard::NewEntityFor)."
+						"text": "NewEntityFor is the pasted entity for copied entity he."
 					}
 				}
 			},
 			"ClipboardRequest": {
-				"text": "ClipboardRequest is a copied request: its points in the workplane's coordinates, and the entities it came from (C++ ClipboardRequest).",
+				"text": "ClipboardRequest is a copied request: its points in the workplane's coordinates, and the entities it came from.",
 				"kind": "struct"
 			},
 			"CombineAs": {
@@ -5691,7 +5691,7 @@
 				"kind": "struct"
 			},
 			"CopyAs": {
-				"text": "CopyAs is the transformation a copied entity gets (C++ Group::CopyAs).",
+				"text": "CopyAs is the transformation a copied entity gets.",
 				"kind": "int",
 				"values": [
 					"CopyAsNumeric",
@@ -5763,12 +5763,12 @@
 				"kind": "interface"
 			},
 			"ExportSettings": {
-				"text": "ExportSettings are the user's export settings (C++ SS.exportChordTol, exportMaxSegments and exportScale).",
+				"text": "ExportSettings are the user's export settings.",
 				"kind": "struct",
 				"methods": {
 					"ChordTolMm": {
 						"decl": "func (es ExportSettings) ChordTolMm() float64",
-						"text": "ChordTolMm is the export chord tolerance in mm (C++ SS.ExportChordTolMm)."
+						"text": "ChordTolMm is the export chord tolerance in mm."
 					}
 				},
 				"makers": [
@@ -5804,7 +5804,7 @@
 				]
 			},
 			"GenerateType": {
-				"text": "GenerateType is which groups GenerateAll solves (C++ SolveSpaceUI::Generate): all of them; from the first dirty or unsolved one to the active one; none, only regenerating the entities; or up to the active one.",
+				"text": "GenerateType is which groups GenerateAll solves: all of them; from the first dirty or unsolved one to the active one; none, only regenerating the entities; or up to the active one.",
 				"kind": "int",
 				"values": [
 					"GenerateAll",
@@ -5822,11 +5822,11 @@
 					},
 					"Clear": {
 						"decl": "func (g *Group) Clear()",
-						"text": "Clear drops everything regeneration makes, and the remap table (C++ Group::Clear)."
+						"text": "Clear drops everything regeneration makes, and the remap table."
 					},
 					"CopyEntity": {
 						"decl": "func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity, ep *core.Entity, timesApplied, remap int, dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam, as CopyAs)",
-						"text": "CopyEntity appends a transformed copy of ep (C++ Group::CopyEntity)."
+						"text": "CopyEntity appends a transformed copy of ep."
 					},
 					"DescriptionString": {
 						"decl": "func (g *Group) DescriptionString() string",
@@ -5842,11 +5842,11 @@
 					},
 					"ExtrusionForceVectorTo": {
 						"decl": "func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector)",
-						"text": "ExtrusionForceVectorTo sets the extrusion vector's parameters (C++ Group::ExtrusionForceVectorTo)."
+						"text": "ExtrusionForceVectorTo sets the extrusion vector's parameters."
 					},
 					"ExtrusionGetVector": {
 						"decl": "func (g *Group) ExtrusionGetVector(sk *Sketch) geom.Vector",
-						"text": "ExtrusionGetVector returns the extrusion vector, from its parameters (C++ Group::ExtrusionGetVector)."
+						"text": "ExtrusionGetVector returns the extrusion vector, from its parameters."
 					},
 					"FieldName": {
 						"decl": "func (g *Group) FieldName(f GroupValue) string",
@@ -5854,15 +5854,15 @@
 					},
 					"Generate": {
 						"decl": "func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)",
-						"text": "Generate creates this group's entities and params (C++ Group::Generate)."
+						"text": "Generate creates this group's entities and params."
 					},
 					"GenerateDisplayItems": {
 						"decl": "func (g *Group) GenerateDisplayItems(sk *Sketch)",
-						"text": "GenerateDisplayItems builds the mesh and outlines to display: the previous group's, if this group adds no solid, else the running shell triangulated, with the running mesh (C++ Group::GenerateDisplayItems)."
+						"text": "GenerateDisplayItems builds the mesh and outlines to display: the previous group's, if this group adds no solid, else the running shell triangulated, with the running mesh."
 					},
 					"GenerateEquations": {
 						"decl": "func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation)",
-						"text": "GenerateEquations appends the group's own equations (C++ Group::GenerateEquations)."
+						"text": "GenerateEquations appends the group's own equations."
 					},
 					"GenerateLoops": {
 						"decl": "func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver)",
@@ -5870,7 +5870,7 @@
 					},
 					"GenerateShellAndMesh": {
 						"decl": "func (g *Group) GenerateShellAndMesh(sk *Sketch)",
-						"text": "GenerateShellAndMesh builds this group's shell (by extrusion, revolution, step and repeat, or linking), and combines it with the previous group's running shell by the group's Boolean (C++ Group::GenerateShellAndMesh)."
+						"text": "GenerateShellAndMesh builds this group's shell (by extrusion, revolution, step and repeat, or linking), and combines it with the previous group's running shell by the group's Boolean."
 					},
 					"HasDraft": {
 						"decl": "func (g *Group) HasDraft() bool",
@@ -5882,11 +5882,11 @@
 					},
 					"IsForcedToMesh": {
 						"decl": "func (g *Group) IsForcedToMesh(sk *Sketch) bool",
-						"text": "IsForcedToMesh reports whether the group is built as a triangle mesh instead of a shell: asked to be, an imported mesh, or combined with a mesh (C++ Group::IsForcedToMesh)."
+						"text": "IsForcedToMesh reports whether the group is built as a triangle mesh instead of a shell: asked to be, an imported mesh, or combined with a mesh."
 					},
 					"IsForcedToMeshBySource": {
 						"decl": "func (g *Group) IsForcedToMeshBySource(sk *Sketch) bool",
-						"text": "IsForcedToMeshBySource reports whether the group combines with a group forced to a mesh (C++ Group::IsForcedToMeshBySource)."
+						"text": "IsForcedToMeshBySource reports whether the group combines with a group forced to a mesh."
 					},
 					"IsLength": {
 						"decl": "func (g *Group) IsLength(f GroupValue) bool",
@@ -5904,7 +5904,7 @@
 					},
 					"IsTriangleMeshAssembly": {
 						"decl": "func (g *Group) IsTriangleMeshAssembly() bool",
-						"text": "IsTriangleMeshAssembly reports whether the group links a triangle mesh, without a shell (C++ Group::IsTriangleMeshAssembly)."
+						"text": "IsTriangleMeshAssembly reports whether the group links a triangle mesh, without a shell."
 					},
 					"IsVisible": {
 						"decl": "func (g *Group) IsVisible() bool"
@@ -5950,7 +5950,7 @@
 					},
 					"RemapEntity": {
 						"decl": "func (g *Group) RemapEntity(in core.HEntity, copyNumber int) core.HEntity",
-						"text": "RemapEntity returns the handle of copy copyNumber of entity in, allocating a new one in the group's remap table if needed (C++ Group::Remap)."
+						"text": "RemapEntity returns the handle of copy copyNumber of entity in, allocating a new one in the group's remap table if needed."
 					},
 					"RunningMeshGroup": {
 						"decl": "func (g *Group) RunningMeshGroup(sk *Sketch) *Group"
@@ -5965,7 +5965,7 @@
 					},
 					"TransformImportedBy": {
 						"decl": "func (g *Group) TransformImportedBy(sk *Sketch, t geom.Vector, q geom.Quaternion)",
-						"text": "TransformImportedBy moves a linked group by t and rotates it by q, composing them into its placement parameters (C++ Group::TransformImportedBy)."
+						"text": "TransformImportedBy moves a linked group by t and rotates it by q, composing them into its placement parameters."
 					},
 					"Value": {
 						"decl": "func (g *Group) Value(f GroupValue) (val *float64, expr *string)",
@@ -6037,7 +6037,7 @@
 				"kind": "interface"
 			},
 			"Image": {
-				"text": "Image is a loaded image file (C++ Pixmap): its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
+				"text": "Image is a loaded image file: its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
 				"kind": "struct"
 			},
 			"Interference": {
@@ -6130,7 +6130,7 @@
 					},
 					"Generate": {
 						"decl": "func (r *Request) Generate(sk *Sketch, entities *core.EntityList, params *core.ParamList)",
-						"text": "Generate adds the entities and params of the request (C++ Request::Generate)."
+						"text": "Generate adds the entities and params of the request."
 					},
 					"IndexOfPoint": {
 						"decl": "func (r *Request) IndexOfPoint(h core.HEntity) int"
@@ -6235,7 +6235,7 @@
 				"kind": "struct"
 			},
 			"Selection": {
-				"text": "Selection is a selected entity or constraint (C++ Selection).",
+				"text": "Selection is a selected entity or constraint.",
 				"kind": "struct"
 			},
 			"ShellJob": {
@@ -6265,11 +6265,11 @@
 					},
 					"ActiveGroup": {
 						"decl": "func (sk *Sketch) ActiveGroup() core.HGroup",
-						"text": "ActiveGroup is the active group: Active if it exists, else the one C++ makes active after loading a file (GraphicsWindow::Init and EnsureValidActives): the last group, or the first that isn't the references."
+						"text": "ActiveGroup is the active group: Active if it exists, else the one made active after loading a file: the last group, or the first that isn't the references."
 					},
 					"ActiveWorkplane": {
 						"decl": "func (sk *Sketch) ActiveWorkplane() core.HEntity",
-						"text": "ActiveWorkplane is the active group's workplane (C++ GraphicsWindow::ActiveWorkplane)."
+						"text": "ActiveWorkplane is the active group's workplane."
 					},
 					"AddConfiguration": {
 						"decl": "func (sk *Sketch) AddConfiguration(name string) error",
@@ -6280,7 +6280,7 @@
 					},
 					"AddConstraintRemember": {
 						"decl": "func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool) core.HConstraint",
-						"text": "AddConstraintRemember adds c with a new handle, and its params, and marks its group dirty (C++ Constraint::AddConstraint)."
+						"text": "AddConstraintRemember adds c with a new handle, and its params, and marks its group dirty."
 					},
 					"AddEntity": {
 						"decl": "func (s *Sketch) AddEntity(e core.Entity) core.HEntity"
@@ -6290,7 +6290,7 @@
 					},
 					"AddGroupAfterActive": {
 						"decl": "func (sk *Sketch) AddGroupAfterActive(g Group) core.HGroup",
-						"text": "AddGroupAfterActive adds g right after the active group, moving the later groups down, and gives a group that makes a solid the colour of the solid so far (C++ Group::MenuGroup)."
+						"text": "AddGroupAfterActive adds g right after the active group, moving the later groups down, and gives a group that makes a solid the colour of the solid so far."
 					},
 					"AddParam": {
 						"decl": "func (s *Sketch) AddParam(p core.Param) core.HParam"
@@ -6301,14 +6301,14 @@
 					},
 					"AddReferences": {
 						"decl": "func (s *Sketch) AddReferences()",
-						"text": "AddReferences adds the references group and its three coordinate plane workplanes, which every sketch has; the first half of C++ SolveSpaceUI::NewFile."
+						"text": "AddReferences adds the references group and its three coordinate plane workplanes, which every sketch has."
 					},
 					"AddRequest": {
 						"decl": "func (s *Sketch) AddRequest(r Request) core.HRequest"
 					},
 					"AddRequestOfType": {
 						"decl": "func (sk *Sketch) AddRequestOfType(typ RequestType, rememberForUndo bool) core.HRequest",
-						"text": "AddRequestOfType adds a request of the given type in the active group and workplane, and generates its entities and params, without solving (C++ GraphicsWindow::AddRequest)."
+						"text": "AddRequestOfType adds a request of the given type in the active group and workplane, and generates its entities and params, without solving."
 					},
 					"AddStyle": {
 						"decl": "func (s *Sketch) AddStyle(st core.Style) core.HStyle"
@@ -6351,7 +6351,7 @@
 					},
 					"CalculateEntityBBox": {
 						"decl": "func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox",
-						"text": "CalculateEntityBBox returns the bounding box of the non-construction entities (C++ Sketch::CalculateEntityBBox)."
+						"text": "CalculateEntityBBox returns the bounding box of the non-construction entities."
 					},
 					"CheckMoveGroup": {
 						"decl": "func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error",
@@ -6378,7 +6378,7 @@
 					},
 					"ClearExisting": {
 						"decl": "func (sk *Sketch) ClearExisting()",
-						"text": "ClearExisting drops the whole sketch and the undo history, leaving it without even the references; the caller must fix that (C++ SolveSpaceUI::ClearExisting)."
+						"text": "ClearExisting drops the whole sketch and the undo history, leaving it without even the references; the caller must fix that."
 					},
 					"ClearSection": {
 						"decl": "func (sk *Sketch) ClearSection()",
@@ -6390,42 +6390,42 @@
 					},
 					"Constrain": {
 						"decl": "func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity, other, other2 bool) core.HConstraint",
-						"text": "Constrain adds a constraint of the given type in the active group and workplane (C++ Constraint::Constrain)."
+						"text": "Constrain adds a constraint of the given type in the active group and workplane."
 					},
 					"ConstrainArcLineTangent": {
 						"decl": "func (sk *Sketch) ConstrainArcLineTangent(c *core.Constraint, line, arc, arcEndpoint *core.Entity) error",
-						"text": "ConstrainArcLineTangent sets which end of arc c makes tangent to line: the one they share, else arcEndpoint (C++ Constraint::ConstrainArcLineTangent, which reports the error to the user)."
+						"text": "ConstrainArcLineTangent sets which end of arc c makes tangent to line: the one they share, else arcEndpoint."
 					},
 					"ConstrainCoincident": {
 						"decl": "func (sk *Sketch) ConstrainCoincident(ptA, ptB core.HEntity) core.HConstraint",
-						"text": "ConstrainCoincident makes points ptA and ptB coincident (C++ Constraint::ConstrainCoincident)."
+						"text": "ConstrainCoincident makes points ptA and ptB coincident."
 					},
 					"ConstrainCubicLineTangent": {
 						"decl": "func (sk *Sketch) ConstrainCubicLineTangent(c *core.Constraint, line, cubic, curveEndpoint *core.Entity) error",
-						"text": "ConstrainCubicLineTangent sets which end of cubic c makes tangent to line (C++ Constraint::ConstrainCubicLineTangent)."
+						"text": "ConstrainCubicLineTangent sets which end of cubic c makes tangent to line."
 					},
 					"ConstrainCurveCurveTangent": {
 						"decl": "func (sk *Sketch) ConstrainCurveCurveTangent(c *core.Constraint, eA, eB, epA, epB *core.Entity) error",
-						"text": "ConstrainCurveCurveTangent sets at which ends c makes curves eA and eB tangent: the ends they share, else epA and epB (C++ Constraint::ConstrainCurveCurveTangent)."
+						"text": "ConstrainCurveCurveTangent sets at which ends c makes curves eA and eB tangent: the ends they share, else epA and epB."
 					},
 					"Constraint": {
 						"decl": "func (s *Sketch) Constraint(h core.HConstraint) *core.Constraint"
 					},
 					"CopySelection": {
 						"decl": "func (sk *Sketch) CopySelection(selection []Selection)",
-						"text": "CopySelection copies the selected entities that requests generate (not workplanes), the selected comments, and the constraints among the copied entities (C++ GraphicsWindow::CopySelection)."
+						"text": "CopySelection copies the selected entities that requests generate (not workplanes), the selected comments, and the constraints among the copied entities."
 					},
 					"CreateAllDefaultStyles": {
 						"decl": "func (sk *Sketch) CreateAllDefaultStyles()",
-						"text": "CreateAllDefaultStyles makes sure the sketch has every default style (C++ Style::CreateAllDefaultStyles)."
+						"text": "CreateAllDefaultStyles makes sure the sketch has every default style."
 					},
 					"CreateDefaultDrawingGroup": {
 						"decl": "func (sk *Sketch) CreateDefaultDrawingGroup() core.HGroup",
-						"text": "CreateDefaultDrawingGroup adds the empty group in the XY plane that a new file starts in (C++ SolveSpaceUI::CreateDefaultDrawingGroup)."
+						"text": "CreateDefaultDrawingGroup adds the empty group in the XY plane that a new file starts in."
 					},
 					"CreateDefaultStyle": {
 						"decl": "func (sk *Sketch) CreateDefaultStyle(h core.HStyle)",
-						"text": "CreateDefaultStyle adds style h: the default style it names, or else a custom one like the active group's (C++ Style::CreateDefaultStyle)."
+						"text": "CreateDefaultStyle adds style h: the default style it names, or else a custom one like the active group's."
 					},
 					"CreateParam": {
 						"decl": "func (sk *Sketch) CreateParam(h core.HParam, val float64) core.HParam",
@@ -6433,7 +6433,7 @@
 					},
 					"DeleteAllConstraintsFor": {
 						"decl": "func (sk *Sketch) DeleteAllConstraintsFor(typ core.ConstraintType, entityA, ptA core.HEntity)",
-						"text": "DeleteAllConstraintsFor deletes the constraints of the given type on entityA and ptA; used when auto-removing constraints that would become redundant (C++ Constraint::DeleteAllConstraintsFor)."
+						"text": "DeleteAllConstraintsFor deletes the constraints of the given type on entityA and ptA; used when auto-removing constraints that would become redundant."
 					},
 					"DeleteConfiguration": {
 						"decl": "func (sk *Sketch) DeleteConfiguration(name string) error",
@@ -6445,11 +6445,11 @@
 					},
 					"DeleteSelection": {
 						"decl": "func (sk *Sketch) DeleteSelection(selection []Selection)",
-						"text": "DeleteSelection deletes the selected requests (not the references) and constraints (C++ GraphicsWindow::DeleteSelection)."
+						"text": "DeleteSelection deletes the selected requests (not the references) and constraints."
 					},
 					"DeleteTaggedRequests": {
 						"decl": "func (sk *Sketch) DeleteTaggedRequests()",
-						"text": "DeleteTaggedRequests deletes the tagged requests, fixing up the point-coincident constraints on their points, and regenerates (C++ GraphicsWindow::DeleteTaggedRequests)."
+						"text": "DeleteTaggedRequests deletes the tagged requests, fixing up the point-coincident constraints on their points, and regenerates."
 					},
 					"DependenciesOf": {
 						"decl": "func (sk *Sketch) DependenciesOf(g *Group) []Dependency",
@@ -6457,7 +6457,7 @@
 					},
 					"DistanceLabelOffset": {
 						"decl": "func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector",
-						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view (C++ GraphicsWindow::MenuConstrain)."
+						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view."
 					},
 					"EntitiesToMap": {
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
@@ -6476,7 +6476,7 @@
 					},
 					"EntityIsVisible": {
 						"decl": "func (sk *Sketch) EntityIsVisible(e *core.Entity) bool",
-						"text": "EntityIsVisible is C++ Entity::IsVisible, with the show flags of sk.Show (GraphicsWindow::Init's when nil)."
+						"text": "EntityIsVisible reports whether the entity is drawn, by the show flags of sk.Show (the defaults when nil)."
 					},
 					"EntityName": {
 						"decl": "func (sk *Sketch) EntityName(he core.HEntity) string",
@@ -6496,11 +6496,11 @@
 					},
 					"FixConstraintsForPointBeingDeleted": {
 						"decl": "func (sk *Sketch) FixConstraintsForPointBeingDeleted(hpt core.HEntity)",
-						"text": "FixConstraintsForPointBeingDeleted deletes the point-coincident constraints on hpt, and makes the points they joined to it coincident with each other (C++ GraphicsWindow::FixConstraintsForPointBeingDeleted)."
+						"text": "FixConstraintsForPointBeingDeleted deletes the point-coincident constraints on hpt, and makes the points they joined to it coincident with each other."
 					},
 					"FixConstraintsForRequestBeingDeleted": {
 						"decl": "func (sk *Sketch) FixConstraintsForRequestBeingDeleted(hr core.HRequest)",
-						"text": "FixConstraintsForRequestBeingDeleted keeps the points made coincident through a point of request hr, which is being deleted, coincident (C++ GraphicsWindow::FixConstraintsForRequestBeingDeleted)."
+						"text": "FixConstraintsForRequestBeingDeleted keeps the points made coincident through a point of request hr, which is being deleted, coincident."
 					},
 					"FontList": {
 						"decl": "func (sk *Sketch) FontList() *ttf.FontList",
@@ -6508,11 +6508,11 @@
 					},
 					"ForceReferences": {
 						"decl": "func (sk *Sketch) ForceReferences()",
-						"text": "ForceReferences forces the values of the params that define the three reference coordinate systems (C++ SolveSpaceUI::ForceReferences)."
+						"text": "ForceReferences forces the values of the params that define the three reference coordinate systems."
 					},
 					"FreezeDefaultStyles": {
 						"decl": "func (sk *Sketch) FreezeDefaultStyles(settings core.Settings)",
-						"text": "FreezeDefaultStyles saves the default styles as the user's settings, with widths and text heights at the view's scale (C++ Style::FreezeDefaultStyles)."
+						"text": "FreezeDefaultStyles saves the default styles as the user's settings, with widths and text heights at the view's scale."
 					},
 					"GenerateAll": {
 						"decl": "func (sk *Sketch) GenerateAll()",
@@ -6520,7 +6520,7 @@
 					},
 					"GenerateAllFindFree": {
 						"decl": "func (sk *Sketch) GenerateAllFindFree(t GenerateType)",
-						"text": "GenerateAllFindFree regenerates like GenerateAllTyped and also works out which parameters are free, for Analyze \u003e Show Degrees of Freedom (C++ GenerateAll with andFindFree)."
+						"text": "GenerateAllFindFree regenerates like GenerateAllTyped and also works out which parameters are free, for Analyze \u003e Show Degrees of Freedom."
 					},
 					"GenerateAllTyped": {
 						"decl": "func (sk *Sketch) GenerateAllTyped(t GenerateType)",
@@ -6547,7 +6547,7 @@
 					},
 					"GroupsInOrder": {
 						"decl": "func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool",
-						"text": "groupsInOrder reports whether before comes before after (C++ GroupsInOrder)."
+						"text": "groupsInOrder reports whether before comes before after."
 					},
 					"Interferences": {
 						"decl": "func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup)",
@@ -6559,23 +6559,23 @@
 					},
 					"LoadFactoryDefaults": {
 						"decl": "func (sk *Sketch) LoadFactoryDefaults()",
-						"text": "LoadFactoryDefaults resets the default styles to their factory settings (C++ Style::LoadFactoryDefaults; the background colour it also resets is the user interface's)."
+						"text": "LoadFactoryDefaults resets the default styles to their factory settings."
 					},
 					"LockedInWorkplane": {
 						"decl": "func (sk *Sketch) LockedInWorkplane() bool",
-						"text": "LockedInWorkplane is whether the active group sketches in a workplane (C++ GraphicsWindow::LockedInWorkplane)."
+						"text": "LockedInWorkplane is whether the active group sketches in a workplane."
 					},
 					"MakeTangentArc": {
 						"decl": "func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) error",
-						"text": "MakeTangentArc rounds the corner at point hpt, where two non-construction line segments or arcs join, with a tangent arc (C++ GraphicsWindow::MakeTangentArc)."
+						"text": "MakeTangentArc rounds the corner at point hpt, where two non-construction line segments or arcs join, with a tangent arc."
 					},
 					"MarkGroupDirty": {
 						"decl": "func (sk *Sketch) MarkGroupDirty(hg core.HGroup, onlyThis bool)",
-						"text": "MarkGroupDirty marks group hg, and unless onlyThis every group after it, as needing regeneration, and schedules it (C++ SolveSpaceUI::MarkGroupDirty)."
+						"text": "MarkGroupDirty marks group hg, and unless onlyThis every group after it, as needing regeneration, and schedules it."
 					},
 					"MarkGroupDirtyByEntity": {
 						"decl": "func (sk *Sketch) MarkGroupDirtyByEntity(he core.HEntity)",
-						"text": "MarkGroupDirtyByEntity marks the group of entity he dirty (C++ SolveSpaceUI::MarkGroupDirtyByEntity)."
+						"text": "MarkGroupDirtyByEntity marks the group of entity he dirty."
 					},
 					"Measure": {
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
@@ -6595,11 +6595,11 @@
 					},
 					"MustEntity": {
 						"decl": "func (s *Sketch) MustEntity(h core.HEntity) *core.Entity",
-						"text": "MustEntity is GetEntity for handles that must exist (C++ SK.GetEntity, which asserts)."
+						"text": "MustEntity is GetEntity for handles that must exist."
 					},
 					"MustParam": {
 						"decl": "func (s *Sketch) MustParam(h core.HParam) *core.Param",
-						"text": "MustParam is GetParam for handles that must exist (C++ SK.GetParam, which asserts)."
+						"text": "MustParam is GetParam for handles that must exist."
 					},
 					"NamedConstraint": {
 						"decl": "func (sk *Sketch) NamedConstraint(name string) *core.Constraint",
@@ -6619,7 +6619,7 @@
 					},
 					"NewFile": {
 						"decl": "func (sk *Sketch) NewFile()",
-						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group (C++ SolveSpaceUI::NewFile)."
+						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group."
 					},
 					"NewFillet": {
 						"decl": "func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius float64, name string) (Group, error)",
@@ -6686,31 +6686,31 @@
 					},
 					"PopOntoCurrentFrom": {
 						"decl": "func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack)",
-						"text": "PopOntoCurrentFrom makes the last state on uk the current one, then reloads the linked files and regenerates (C++ SolveSpaceUI::PopOntoCurrentFrom)."
+						"text": "PopOntoCurrentFrom makes the last state on uk the current one, then reloads the linked files and regenerates."
 					},
 					"ProjectPoint": {
 						"decl": "func (sk *Sketch) ProjectPoint(p geom.Vector) geom.Point2d",
-						"text": "ProjectPoint projects p to the screen in the sketch's view (C++ GraphicsWindow::ProjectPoint)."
+						"text": "ProjectPoint projects p to the screen in the sketch's view."
 					},
 					"PruneGroups": {
 						"decl": "func (sk *Sketch) PruneGroups(hg core.HGroup) bool",
-						"text": "PruneGroups removes group hg if its operand or predef entities don't exist (yet), and reports whether it did (C++ SolveSpaceUI::PruneGroups)."
+						"text": "PruneGroups removes group hg if its operand or predef entities don't exist (yet), and reports whether it did."
 					},
 					"PruneOrphans": {
 						"decl": "func (sk *Sketch) PruneOrphans() bool",
-						"text": "PruneOrphans removes requests and constraints whose group doesn't exist (C++ SolveSpaceUI::PruneOrphans)."
+						"text": "PruneOrphans removes requests and constraints whose group doesn't exist."
 					},
 					"PruneRequestsAndConstraints": {
 						"decl": "func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool",
-						"text": "PruneRequestsAndConstraints removes group hg's requests and constraints that refer to entities that don't exist (C++ SolveSpaceUI::PruneRequestsAndConstraints)."
+						"text": "PruneRequestsAndConstraints removes group hg's requests and constraints that refer to entities that don't exist."
 					},
 					"PushFromCurrentOnto": {
 						"decl": "func (s *Sketch) PushFromCurrentOnto(uk *UndoStack)",
-						"text": "PushFromCurrentOnto records the current state on uk, over its oldest one when it's full (C++ SolveSpaceUI::PushFromCurrentOnto)."
+						"text": "PushFromCurrentOnto records the current state on uk, over its oldest one when it's full."
 					},
 					"Refresh": {
 						"decl": "func (sk *Sketch) Refresh()",
-						"text": "Refresh does the scheduled regeneration (C++ SolveSpaceUI::Refresh; showing the text window is the caller's)."
+						"text": "Refresh does the scheduled regeneration."
 					},
 					"RegenerationPending": {
 						"decl": "func (sk *Sketch) RegenerationPending() bool",
@@ -6718,11 +6718,11 @@
 					},
 					"RemoveConstraint": {
 						"decl": "func (sk *Sketch) RemoveConstraint(hc core.HConstraint)",
-						"text": "RemoveConstraint deletes constraint hc (C++ SK.constraint.RemoveById)."
+						"text": "RemoveConstraint deletes constraint hc."
 					},
 					"RemoveConstraintsForPointBeingDeleted": {
 						"decl": "func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity)",
-						"text": "RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt (C++ GraphicsWindow::RemoveConstraintsForPointBeingDeleted)."
+						"text": "RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt."
 					},
 					"RenameConfiguration": {
 						"decl": "func (sk *Sketch) RenameConfiguration(from, to string) error",
@@ -6734,7 +6734,7 @@
 					},
 					"ReplacePointInConstraints": {
 						"decl": "func (sk *Sketch) ReplacePointInConstraints(oldpt, newpt core.HEntity)",
-						"text": "ReplacePointInConstraints moves the constraints on oldpt to newpt (C++ GraphicsWindow::ReplacePointInConstraints)."
+						"text": "ReplacePointInConstraints moves the constraints on oldpt to newpt."
 					},
 					"Request": {
 						"decl": "func (s *Sketch) Request(h core.HRequest) *Request"
@@ -6744,7 +6744,7 @@
 					},
 					"ScheduleGenerateAll": {
 						"decl": "func (sk *Sketch) ScheduleGenerateAll()",
-						"text": "ScheduleGenerateAll asks for a regeneration of the dirty groups when Refresh next runs (C++ SolveSpaceUI::ScheduleGenerateAll, which Refresh serves after the pending events)."
+						"text": "ScheduleGenerateAll asks for a regeneration of the dirty groups when Refresh next runs."
 					},
 					"SectionCut": {
 						"decl": "func (sk *Sketch) SectionCut() (keep srf.HalfSpace, origin geom.Vector, ok bool, err error)",
@@ -6824,7 +6824,7 @@
 					},
 					"SolveGroupAndReport": {
 						"decl": "func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool)",
-						"text": "SolveGroupAndReport solves group hg for groupParams, the params its requests, constraints and the group itself generate, holding every other param fixed (C++ SolveSpaceUI::SolveGroup, with WriteEqSystemForGroup)."
+						"text": "SolveGroupAndReport solves group hg for groupParams, the params its requests, constraints and the group itself generate, holding every other param fixed."
 					},
 					"SplitCircle": {
 						"decl": "func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity",
@@ -6832,15 +6832,15 @@
 					},
 					"SplitCubic": {
 						"decl": "func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity",
-						"text": "SplitCubic splits cubic he at pinter into cubic segments, and returns the point at the split (C++ GraphicsWindow::SplitCubic)."
+						"text": "SplitCubic splits cubic he at pinter into cubic segments, and returns the point at the split."
 					},
 					"SplitEntity": {
 						"decl": "func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity, error)",
-						"text": "SplitEntity splits line, circle or cubic he at pinter, deletes the request it came from (unless that's construction or in another group), and returns the point at the split (C++ GraphicsWindow::SplitEntity)."
+						"text": "SplitEntity splits line, circle or cubic he at pinter, deletes the request it came from (unless that's construction or in another group), and returns the point at the split."
 					},
 					"SplitLine": {
 						"decl": "func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity",
-						"text": "SplitLine splits line segment he at pinter into two, and returns the point where they join (C++ GraphicsWindow::SplitLine)."
+						"text": "SplitLine splits line segment he at pinter into two, and returns the point where they join."
 					},
 					"SplitLinesOrCurves": {
 						"decl": "func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) error",
@@ -6851,39 +6851,39 @@
 					},
 					"StyleColor": {
 						"decl": "func (sk *Sketch) StyleColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA",
-						"text": "StyleColor is style h's stroke colour, rewritten for export as RewriteColor says (C++ Style::Color)."
+						"text": "StyleColor is style h's stroke colour, rewritten for export as RewriteColor says."
 					},
 					"StyleExportable": {
 						"decl": "func (sk *Sketch) StyleExportable(h core.HStyle) bool",
-						"text": "StyleExportable reports whether lines of style h go in exported files: if it's both shown and exportable (C++ Style::Exportable)."
+						"text": "StyleExportable reports whether lines of style h go in exported files: if it's both shown and exportable."
 					},
 					"StyleFillColor": {
 						"decl": "func (sk *Sketch) StyleFillColor(h core.HStyle, forExport, fixExportColors bool) core.RGBA",
-						"text": "StyleFillColor is style h's fill colour (C++ Style::FillColor)."
+						"text": "StyleFillColor is style h's fill colour."
 					},
 					"StyleForEntity": {
 						"decl": "func (sk *Sketch) StyleForEntity(he core.HEntity) core.HStyle",
-						"text": "StyleForEntity is the style entity he draws in: its own, else by whether it's in the active group, or construction (C++ Style::ForEntity)."
+						"text": "StyleForEntity is the style entity he draws in: its own, else by whether it's in the active group, or construction."
 					},
 					"StyleGet": {
 						"decl": "func (sk *Sketch) StyleGet(h core.HStyle) *core.Style",
-						"text": "StyleGet is style h, created with default settings if the sketch doesn't have it yet; no style means the active group's (C++ Style::Get)."
+						"text": "StyleGet is style h, created with default settings if the sketch doesn't have it yet; no style means the active group's."
 					},
 					"StylePatternType": {
 						"decl": "func (sk *Sketch) StylePatternType(h core.HStyle) core.StipplePattern",
-						"text": "StylePatternType is style h's stipple pattern (C++ Style::PatternType)."
+						"text": "StylePatternType is style h's stipple pattern."
 					},
 					"StyleStippleScale": {
 						"decl": "func (sk *Sketch) StyleStippleScale(h core.HStyle) float64",
-						"text": "StyleStippleScale is style h's stipple scale (C++ Style::StippleScale)."
+						"text": "StyleStippleScale is style h's stipple scale."
 					},
 					"StyleTextHeight": {
 						"decl": "func (sk *Sketch) StyleTextHeight(h core.HStyle, scale float64) float64",
-						"text": "StyleTextHeight is style h's text height in pixels (C++ Style::TextHeight)."
+						"text": "StyleTextHeight is style h's text height in pixels."
 					},
 					"StyleWidth": {
 						"decl": "func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64",
-						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm (C++ Style::Width)."
+						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm."
 					},
 					"SuggestConstraint": {
 						"decl": "func (sk *Sketch) SuggestConstraint(request core.HRequest, wp core.HEntity, group core.HGroup) (Suggestion, bool)",
@@ -6907,15 +6907,15 @@
 					},
 					"TryConstrain": {
 						"decl": "func (sk *Sketch) TryConstrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity, other, other2 bool) core.HConstraint",
-						"text": "TryConstrain is Constrain, except that a constraint that would be redundant isn't added; it then returns no constraint (C++ Constraint::TryConstrain)."
+						"text": "TryConstrain is Constrain, except that a constraint that would be redundant isn't added; it then returns no constraint."
 					},
 					"UndoClearStack": {
 						"decl": "func (s *Sketch) UndoClearStack(uk *UndoStack)",
-						"text": "UndoClearStack forgets every state on uk (C++ SolveSpaceUI::UndoClearStack)."
+						"text": "UndoClearStack forgets every state on uk."
 					},
 					"UndoClearState": {
 						"decl": "func (s *Sketch) UndoClearState(ut *UndoState)",
-						"text": "UndoClearState forgets one state (C++ SolveSpaceUI::UndoClearState)."
+						"text": "UndoClearState forgets one state."
 					},
 					"UndoDropNewest": {
 						"decl": "func (s *Sketch) UndoDropNewest(n int)",
@@ -6927,11 +6927,11 @@
 					},
 					"UndoRedo": {
 						"decl": "func (s *Sketch) UndoRedo() bool",
-						"text": "UndoRedo restores the last undone state (C++ SolveSpaceUI::UndoRedo)."
+						"text": "UndoRedo restores the last undone state."
 					},
 					"UndoRemember": {
 						"decl": "func (s *Sketch) UndoRemember()",
-						"text": "UndoRemember records the current state for undo, and forgets what could be redone (C++ SolveSpaceUI::UndoRemember; the unsaved flag and the menus are the caller's)."
+						"text": "UndoRemember records the current state for undo, and forgets what could be redone."
 					},
 					"UndoRememberFor": {
 						"decl": "func (s *Sketch) UndoRememberFor(fn func() error) error",
@@ -6939,15 +6939,15 @@
 					},
 					"UndoUndo": {
 						"decl": "func (s *Sketch) UndoUndo() bool",
-						"text": "UndoUndo restores the last remembered state, keeping the current one for redo; false if there is none (C++ SolveSpaceUI::UndoUndo)."
+						"text": "UndoUndo restores the last remembered state, keeping the current one for redo; false if there is none."
 					},
 					"UpgradeLegacyData": {
 						"decl": "func (sk *Sketch) UpgradeLegacyData()",
-						"text": "UpgradeLegacyData brings a freshly loaded sketch up to date, and regenerates its entities without solving (C++ SolveSpaceUI::UpgradeLegacyData, which LoadFromFile ends with)."
+						"text": "UpgradeLegacyData brings a freshly loaded sketch up to date, and regenerates its entities without solving."
 					},
 					"WriteEquationsExceptFor": {
 						"decl": "func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l *[]core.Equation)",
-						"text": "WriteEquationsExceptFor appends the equations of group hg: those of its constraints except hc, of its entities, and of the group itself (C++ System::WriteEquationsExceptFor)."
+						"text": "WriteEquationsExceptFor appends the equations of group hg: those of its constraints except hc, of its entities, and of the group itself."
 					}
 				},
 				"makers": [
@@ -6963,7 +6963,7 @@
 				"kind": "struct"
 			},
 			"TangentArcSettings": {
-				"text": "TangentArcSettings are the user's settings for MakeTangentArc (C++ SS.tangentArcManual, tangentArcRadius and tangentArcModify).",
+				"text": "TangentArcSettings are the user's settings for MakeTangentArc.",
 				"kind": "struct"
 			},
 			"ThreadOptions": {
@@ -6975,44 +6975,44 @@
 				"kind": "struct"
 			},
 			"UndoStack": {
-				"text": "UndoStack is a ring of up to MaxUndo states (C++ UndoStack).",
+				"text": "UndoStack is a ring of up to MaxUndo states.",
 				"kind": "struct"
 			},
 			"UndoState": {
-				"text": "UndoState is one snapshot of the sketch: what can't be regenerated (C++ UndoState).",
+				"text": "UndoState is one snapshot of the sketch: what can't be regenerated.",
 				"kind": "struct"
 			},
 			"View": {
-				"text": "View is the map from model space to screen pixels that C++ keeps in GraphicsWindow (offset, projRight, projUp, scale) and reads through SS.GW; Tangent is SS.CameraTangent(), zero for an orthographic view.",
+				"text": "View is the map from model space to screen pixels: the window's offset, projection vectors and scale; Tangent is the perspective factor, zero for an orthographic view.",
 				"kind": "struct",
 				"methods": {
 					"NormalizeProjectionVectors": {
 						"decl": "func (v *View) NormalizeProjectionVectors()",
-						"text": "NormalizeProjectionVectors makes ProjRight and ProjUp orthonormal (C++ GraphicsWindow::NormalizeProjectionVectors)."
+						"text": "NormalizeProjectionVectors makes ProjRight and ProjUp orthonormal."
 					},
 					"ProjectPoint": {
 						"decl": "func (v *View) ProjectPoint(p geom.Vector) geom.Point2d",
-						"text": "ProjectPoint projects p to screen pixels (C++ GraphicsWindow::ProjectPoint)."
+						"text": "ProjectPoint projects p to screen pixels."
 					},
 					"ProjectPoint3": {
 						"decl": "func (v *View) ProjectPoint3(p geom.Vector) geom.Vector",
-						"text": "ProjectPoint3 projects p to screen pixels, z included (C++ GraphicsWindow::ProjectPoint3)."
+						"text": "ProjectPoint3 projects p to screen pixels, z included."
 					},
 					"ProjectPoint4": {
 						"decl": "func (v *View) ProjectPoint4(p geom.Vector) (r geom.Vector, w float64)",
-						"text": "ProjectPoint4 projects p halfway into screen space: no scale and no perspective divide; w is returned (C++ GraphicsWindow::ProjectPoint4)."
+						"text": "ProjectPoint4 projects p halfway into screen space: no scale and no perspective divide; w is returned."
 					},
 					"UnProjectPoint": {
 						"decl": "func (v *View) UnProjectPoint(p geom.Point2d) geom.Vector",
-						"text": "UnProjectPoint is the point in the plane through the offset, parallel to the screen, that projects onto p (C++ GraphicsWindow::UnProjectPoint)."
+						"text": "UnProjectPoint is the point in the plane through the offset, parallel to the screen, that projects onto p."
 					},
 					"UnProjectPoint3": {
 						"decl": "func (v *View) UnProjectPoint3(p geom.Vector) geom.Vector",
-						"text": "UnProjectPoint3 inverts ProjectPoint3 (C++ GraphicsWindow::UnProjectPoint3)."
+						"text": "UnProjectPoint3 inverts ProjectPoint3."
 					},
 					"VectorFromProjs": {
 						"decl": "func (v *View) VectorFromProjs(rightUpForward geom.Vector) geom.Vector",
-						"text": "VectorFromProjs is the model-space vector with the given right, up and forward screen components (C++ GraphicsWindow::VectorFromProjs)."
+						"text": "VectorFromProjs is the model-space vector with the given right, up and forward screen components."
 					}
 				},
 				"makers": [
@@ -7020,7 +7020,7 @@
 				]
 			},
 			"Visibility": {
-				"text": "Visibility holds the view's show flags the engine reads (C++ GraphicsWindow::showPoints and friends): Entity::IsVisible reads the first four, Group::GenerateDisplayItems the last two.",
+				"text": "Visibility holds the view's show flags the engine reads: Entity::IsVisible reads the first four, Group::GenerateDisplayItems the last two.",
 				"kind": "struct",
 				"makers": [
 					"DefaultVisibility"
@@ -7030,7 +7030,7 @@
 		"funcs": {
 			"AddParam": {
 				"decl": "func AddParam(param *[]core.Param, hp core.HParam, v float64)",
-				"text": "AddParam appends a group param with an initial value (C++ Group::AddParam)."
+				"text": "AddParam appends a group param with an initial value."
 			},
 			"AlmostEqualQuaternion": {
 				"decl": "func AlmostEqualQuaternion(a, b geom.Quaternion, tol float64) bool",
@@ -7066,7 +7066,7 @@
 			},
 			"EntityPointCount": {
 				"decl": "func EntityPointCount(entity core.EntityType, extraPoints int) (pts int, ok bool)",
-				"text": "EntityPointCount is how many points an entity of that type has (C++ EntReqTable::GetEntityInfo's pts); ok is false for a type no request makes."
+				"text": "EntityPointCount is how many points an entity of that type has; ok is false for a type no request makes."
 			},
 			"ExportMeshAs3mfTo": {
 				"decl": "func ExportMeshAs3mfTo(w io.Writer, m *srf.SMesh) error",
@@ -7074,7 +7074,7 @@
 			},
 			"ExportMeshAsStlTo": {
 				"decl": "func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error",
-				"text": "ExportMeshAsStlTo writes m as a binary STL file, in export units of scale mm (C++ SolveSpaceUI::ExportMeshAsStlTo)."
+				"text": "ExportMeshAsStlTo writes m as a binary STL file, in export units of scale mm."
 			},
 			"FaceGroup": {
 				"decl": "func FaceGroup(id srf.FaceID) core.HGroup",
@@ -7082,7 +7082,7 @@
 			},
 			"GenerateConstraint": {
 				"decl": "func GenerateConstraint(c *core.Constraint, l *[]core.Param)",
-				"text": "GenerateConstraint adds the params the constraint needs (C++ ConstraintBase::Generate)."
+				"text": "GenerateConstraint adds the params the constraint needs."
 			},
 			"GenerateEntityBeziers": {
 				"decl": "func GenerateEntityBeziers(e *core.Entity, beziers *srf.SBezierList, rt EntityBezierResolver)",
@@ -7098,7 +7098,7 @@
 			},
 			"NewGroup": {
 				"decl": "func NewGroup() Group",
-				"text": "NewGroup is a group as C++ Group::MenuGroup starts one: visible, grey, at scale 1."
+				"text": "NewGroup is a group as the menu starts one: visible, grey, at scale 1."
 			},
 			"NewRuntime": {
 				"decl": "func NewRuntime(sk *Sketch) *Runtime",
@@ -7129,7 +7129,7 @@
 			},
 			"ThawExportSettings": {
 				"decl": "func ThawExportSettings(settings core.Settings) ExportSettings",
-				"text": "ThawExportSettings reads the export settings, with C++'s defaults (C++ SolveSpaceUI::Init)."
+				"text": "ThawExportSettings reads the export settings, with their defaults."
 			},
 			"ViewDirection": {
 				"decl": "func ViewDirection(kind string) (right, up [3]float64, ok bool)",
@@ -7299,7 +7299,7 @@
 			},
 			"MaxUndo": {
 				"decl": "const MaxUndo",
-				"text": "MaxUndo is the depth of the undo and redo stacks (C++ SolveSpaceUI::MAX_UNDO)."
+				"text": "MaxUndo is the depth of the undo and redo stacks."
 			},
 			"MeasureAngle": {
 				"decl": "const MeasureAngle"
@@ -7315,27 +7315,27 @@
 			},
 			"RemapBottom": {
 				"decl": "const RemapBottom",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapLast": {
 				"decl": "const RemapLast",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapLatheArcCenter": {
 				"decl": "const RemapLatheArcCenter",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapLatheEnd": {
 				"decl": "const RemapLatheEnd",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapLatheStart": {
 				"decl": "const RemapLatheStart",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapLineToFace": {
 				"decl": "const RemapLineToFace",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapPattern": {
 				"decl": "const RemapPattern",
@@ -7343,19 +7343,19 @@
 			},
 			"RemapPtToArc": {
 				"decl": "const RemapPtToArc",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapPtToLine": {
 				"decl": "const RemapPtToLine",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapPtToNormal": {
 				"decl": "const RemapPtToNormal",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RemapTop": {
 				"decl": "const RemapTop",
-				"text": "Remap keys for entity copies made by Group::Generate (C++ Group::REMAP_*)."
+				"text": "Remap keys for entity copies made by Group::Generate."
 			},
 			"RequestArcOfCircle": {
 				"decl": "const RequestArcOfCircle"
@@ -7404,7 +7404,7 @@
 	},
 	"github.com/telesapr/telesapr/pkg/srf": {
 		"name": "srf",
-		"text": "Package srf mirrors the C++ srf/ module: NURBS/Bezier primitives, trimmed surfaces, watertight shells, BSP trees, and mesh boolean operations.",
+		"text": "Package srf is the geometry kernel: NURBS and Bézier curves, trimmed surfaces, watertight shells, BSP trees, and Boolean operations on surfaces and meshes.",
 		"types": {
 			"BSplineCurve": {
 				"text": "BSplineCurve is a B-spline curve.",
@@ -7483,7 +7483,7 @@
 				]
 			},
 			"BspClass": {
-				"text": "BspClass is the side of a BSP node's plane something is on (C++ BspClass).",
+				"text": "BspClass is the side of a BSP node's plane something is on.",
 				"kind": "uint32",
 				"values": [
 					"BspPos",
@@ -7545,7 +7545,7 @@
 				]
 			},
 			"EdgeOnInfo": {
-				"text": "EdgeOnInfo is what FindEdgeOn learns about an edge (C++ SKdNode::EdgeOnInfo).",
+				"text": "EdgeOnInfo is what FindEdgeOn learns about an edge.",
 				"kind": "struct"
 			},
 			"FaceFlag": {
@@ -7607,55 +7607,55 @@
 				]
 			},
 			"PolylineBuilder": {
-				"text": "PolylineBuilder assembles scattered edges into contiguous polylines (C++ PolylineBuilder, polyline.cpp).",
+				"text": "PolylineBuilder assembles scattered edges into contiguous polylines.",
 				"kind": "struct",
 				"methods": {
 					"AddEdge": {
 						"decl": "func (b *PolylineBuilder) AddEdge(p0, p1 geom.Vector, kind uint32) *PolylineEdge",
-						"text": "AddEdge adds the edge p0-p1, unless it is degenerate or already there in the same direction (C++ PolylineBuilder::AddEdge)."
+						"text": "AddEdge adds the edge p0-p1, unless it is degenerate or already there in the same direction."
 					},
 					"AddVertex": {
 						"decl": "func (b *PolylineBuilder) AddVertex(pos geom.Vector) *PolylineVertex",
-						"text": "AddVertex returns the vertex at pos, adding it if new (C++ PolylineBuilder::AddVertex)."
+						"text": "AddVertex returns the vertex at pos, adding it if new."
 					},
 					"Clear": {
 						"decl": "func (b *PolylineBuilder) Clear()",
-						"text": "Clear drops every vertex and edge (C++ PolylineBuilder::Clear)."
+						"text": "Clear drops every vertex and edge."
 					},
 					"Generate": {
 						"decl": "func (b *PolylineBuilder) Generate( startFn func(start, next *PolylineVertex, e *PolylineEdge), nextFn func(next *PolylineVertex, e *PolylineEdge), aloneFn func(e *PolylineEdge), endFn func(), )",
-						"text": "Generate walks the edges as polylines: startFn for each polyline's first edge, nextFn for each following one, endFn after each polyline, and aloneFn for the edges left over (C++ PolylineBuilder::Generate)."
+						"text": "Generate walks the edges as polylines: startFn for each polyline's first edge, nextFn for each following one, endFn after each polyline, and aloneFn for the edges left over."
 					},
 					"GenerateEdges": {
 						"decl": "func (b *PolylineBuilder) GenerateEdges(sel *SEdgeList)",
-						"text": "GenerateEdges writes the polylines as edges (C++ PolylineBuilder::GenerateEdges)."
+						"text": "GenerateEdges writes the polylines as edges."
 					},
 					"GenerateOutlines": {
 						"decl": "func (b *PolylineBuilder) GenerateOutlines(sol *SOutlineList)",
-						"text": "GenerateOutlines writes the polylines as outlines, each keeping its source outline's normals and tag (C++ PolylineBuilder::GenerateOutlines)."
+						"text": "GenerateOutlines writes the polylines as outlines, each keeping its source outline's normals and tag."
 					},
 					"MakeFromEdges": {
 						"decl": "func (b *PolylineBuilder) MakeFromEdges(sel *SEdgeList)",
-						"text": "MakeFromEdges adds sel's edges, with auxA as the kind (C++ PolylineBuilder::MakeFromEdges)."
+						"text": "MakeFromEdges adds sel's edges, with auxA as the kind."
 					},
 					"MakeFromOutlines": {
 						"decl": "func (b *PolylineBuilder) MakeFromOutlines(ol *SOutlineList)",
-						"text": "MakeFromOutlines adds the outlines, with the tag as the kind so that emphasized and contour outlines stay apart (C++ PolylineBuilder::MakeFromOutlines)."
+						"text": "MakeFromOutlines adds the outlines, with the tag as the kind so that emphasized and contour outlines stay apart."
 					}
 				}
 			},
 			"PolylineEdge": {
-				"text": "PolylineEdge is an edge between two vertices; Outline or Edge is the source it was made from (C++ PolylineBuilder::Edge).",
+				"text": "PolylineEdge is an edge between two vertices; Outline or Edge is the source it was made from.",
 				"kind": "struct",
 				"methods": {
 					"OtherVertex": {
 						"decl": "func (e *PolylineEdge) OtherVertex(v *PolylineVertex) *PolylineVertex",
-						"text": "OtherVertex is the edge's end that isn't v (C++ Edge::GetOtherVertex)."
+						"text": "OtherVertex is the edge's end that isn't v."
 					}
 				}
 			},
 			"PolylineVertex": {
-				"text": "PolylineVertex is a joint between edges (C++ PolylineBuilder::Vertex).",
+				"text": "PolylineVertex is a joint between edges.",
 				"kind": "struct"
 			},
 			"Rigid": {
@@ -7717,11 +7717,11 @@
 					},
 					"IsInPlane": {
 						"decl": "func (b *SBezier) IsInPlane(n geom.Vector, d float64) bool",
-						"text": "IsInPlane reports whether every control point lies in the plane n ."
+						"text": "IsInPlane reports whether every control point lies in the plane n."
 					},
 					"IsRational": {
 						"decl": "func (b *SBezier) IsRational() bool",
-						"text": "IsRational reports whether a weight differs from 1 (C++ SBezier::IsRational)."
+						"text": "IsRational reports whether a weight differs from 1."
 					},
 					"MakePwlInto": {
 						"decl": "func (b *SBezier) MakePwlInto(sel *SEdgeList, tol Tolerance, maxDt float64)",
@@ -7757,7 +7757,7 @@
 					},
 					"SplitAt": {
 						"decl": "func (b *SBezier) SplitAt(t float64, bef, aft *SBezier)",
-						"text": "SplitAt splits the curve at t into the part before and the part after, by de Casteljau's algorithm on the homogeneous control points (C++ SBezier::SplitAt)."
+						"text": "SplitAt splits the curve at t into the part before and the part after, by de Casteljau's algorithm on the homogeneous control points."
 					},
 					"Start": {
 						"decl": "func (b *SBezier) Start() geom.Vector",
@@ -7769,7 +7769,7 @@
 					},
 					"TangentAt": {
 						"decl": "func (b *SBezier) TangentAt(t float64) geom.Vector",
-						"text": "TangentAt is the derivative of the curve at t (C++ SBezier::TangentAt)."
+						"text": "TangentAt is the derivative of the curve at t."
 					},
 					"TransformedBy": {
 						"decl": "func (b *SBezier) TransformedBy(t geom.Vector, q geom.Quaternion, scale float64)",
@@ -7793,7 +7793,7 @@
 					},
 					"AllIntersectionsWith": {
 						"decl": "func (l *SBezierList) AllIntersectionsWith(other *SBezierList, spl *SPointList, tol Tolerance)",
-						"text": "AllIntersectionsWith adds to spl the points where any curve of this list crosses any of other (C++ SBezierList::AllIntersectionsWith)."
+						"text": "AllIntersectionsWith adds to spl the points where any curve of this list crosses any of other."
 					},
 					"BoundingProjd": {
 						"decl": "func (l *SBezierList) BoundingProjd(u, orig geom.Vector, pmin, pmax *float64)",
@@ -7804,7 +7804,7 @@
 					},
 					"CullIdenticalBeziers": {
 						"decl": "func (l *SBezierList) CullIdenticalBeziers(both bool)",
-						"text": "CullIdenticalBeziers removes the curves identical to an earlier one, either way round, and with both the earlier one too (C++ SBezierList::CullIdenticalBeziers)."
+						"text": "CullIdenticalBeziers removes the curves identical to an earlier one, either way round, and with both the earlier one too."
 					},
 					"Len": {
 						"decl": "func (l *SBezierList) Len() int"
@@ -7829,7 +7829,7 @@
 					},
 					"IsClosed": {
 						"decl": "func (l *SBezierLoop) IsClosed() bool",
-						"text": "IsClosed reports whether the loop ends where it starts (C++ SBezierLoop::IsClosed)."
+						"text": "IsClosed reports whether the loop ends where it starts."
 					},
 					"Len": {
 						"decl": "func (l *SBezierLoop) Len() int"
@@ -7864,15 +7864,15 @@
 					},
 					"Loops": {
 						"decl": "func (s *SBezierLoopSet) Loops() []*SBezierLoop",
-						"text": "loops returns the set's loops in C++ order: the outer loop first, then the holes."
+						"text": "loops returns the set's loops: the outer loop first, then the holes."
 					},
 					"MakePwlInto": {
 						"decl": "func (s *SBezierLoopSet) MakePwlInto(sp *SPolygon, tol Tolerance)",
-						"text": "MakePwlInto adds one contour to sp for each loop, outer loop first (C++ SBezierLoopSet::MakePwlInto)."
+						"text": "MakePwlInto adds one contour to sp for each loop, outer loop first."
 					},
 					"SignedArea": {
 						"decl": "func (s *SBezierLoopSet) SignedArea() float64",
-						"text": "SignedArea is the set's area about its own normal, computed on first use (C++ SBezierLoopSet::SignedArea)."
+						"text": "SignedArea is the set's area about its own normal, computed on first use."
 					}
 				},
 				"makers": [
@@ -7886,7 +7886,7 @@
 				"methods": {
 					"AddOpenPath": {
 						"decl": "func (s *SBezierLoopSetSet) AddOpenPath(b SBezier)",
-						"text": "AddOpenPath adds a set holding a loop of just b (C++ SBezierLoopSetSet::AddOpenPath)."
+						"text": "AddOpenPath adds a set holding a loop of just b."
 					},
 					"AddOuter": {
 						"decl": "func (s *SBezierLoopSetSet) AddOuter() *SBezierLoopSet",
@@ -7902,24 +7902,24 @@
 				}
 			},
 			"SBsp2": {
-				"text": "SBsp2 is a 2d BSP over the edges of the triangles in a 3d node's plane: the line through edge, in the plane with normal np, with outward normal no, at no .",
+				"text": "SBsp2 is a 2d BSP over the edges of the triangles in a 3d node's plane: the line through edge, in the plane with normal np, with outward normal no, at no.",
 				"kind": "struct",
 				"methods": {
 					"InsertEdge": {
 						"decl": "func (b *SBsp2) InsertEdge(nedge *SEdge, nnp, out geom.Vector)",
-						"text": "InsertEdge inserts nedge below this node, splitting it against the node's line (C++ SBsp2::InsertEdge)."
+						"text": "InsertEdge inserts nedge below this node, splitting it against the node's line."
 					},
 					"InsertTriangle": {
 						"decl": "func (b *SBsp2) InsertTriangle(tr *STriangle, m *SMesh, bsp3 *SBsp3)",
-						"text": "InsertTriangle classifies tr, which lies in the 3d node's plane, against the edges in that plane, splitting it as needed (C++ SBsp2::InsertTriangle)."
+						"text": "InsertTriangle classifies tr, which lies in the 3d node's plane, against the edges in that plane, splitting it as needed."
 					},
 					"InsertTriangleHow": {
 						"decl": "func (b *SBsp2) InsertTriangleHow(how BspClass, tr *STriangle, m *SMesh, bsp3 *SBsp3)",
-						"text": "InsertTriangleHow passes tr down the given side, or, where the tree ends, decides it against the 3d node's plane (C++ SBsp2::InsertTriangleHow)."
+						"text": "InsertTriangleHow passes tr down the given side, or, where the tree ends, decides it against the 3d node's plane."
 					},
 					"IntersectionWith": {
 						"decl": "func (b *SBsp2) IntersectionWith(a, bb geom.Vector) geom.Vector",
-						"text": "IntersectionWith is where the segment from a to b, which must cross the node's line, crosses it (C++ SBsp2::IntersectionWith)."
+						"text": "IntersectionWith is where the segment from a to b, which must cross the node's line, crosses it."
 					}
 				},
 				"makers": [
@@ -7927,36 +7927,36 @@
 				]
 			},
 			"SBsp3": {
-				"text": "SBsp3 is a node of a 3d BSP: the plane n .",
+				"text": "SBsp3 is a node of a 3d BSP: the plane n.",
 				"kind": "struct",
 				"methods": {
 					"GenerateInPaintOrder": {
 						"decl": "func (b *SBsp3) GenerateInPaintOrder(m *SMesh)",
-						"text": "GenerateInPaintOrder lists the tree's triangles back to front along z (C++ SBsp3::GenerateInPaintOrder)."
+						"text": "GenerateInPaintOrder lists the tree's triangles back to front along z."
 					},
 					"Insert": {
 						"decl": "func (b *SBsp3) Insert(tr *STriangle, instead *SMesh)",
-						"text": "Insert inserts tr below this node, splitting it against the node's plane (C++ SBsp3::Insert)."
+						"text": "Insert inserts tr below this node, splitting it against the node's plane."
 					},
 					"InsertConvex": {
 						"decl": "func (b *SBsp3) InsertConvex(meta STriMeta, vertex []geom.Vector, instead *SMesh) *SBsp3",
-						"text": "InsertConvex inserts a convex polygon, splitting it against the node's plane as a polygon where it can (C++ SBsp3::InsertConvex)."
+						"text": "InsertConvex inserts a convex polygon, splitting it against the node's plane as a polygon where it can."
 					},
 					"InsertConvexHow": {
 						"decl": "func (b *SBsp3) InsertConvexHow(how BspClass, meta STriMeta, vertex []geom.Vector, instead *SMesh)",
-						"text": "InsertConvexHow inserts a convex polygon on the given side of the node (C++ SBsp3::InsertConvexHow)."
+						"text": "InsertConvexHow inserts a convex polygon on the given side of the node."
 					},
 					"InsertHow": {
 						"decl": "func (b *SBsp3) InsertHow(how BspClass, tr *STriangle, instead *SMesh)",
-						"text": "InsertHow inserts tr on the given side of the node, or, when instead is set and the tree ends there, decides whether the Boolean keeps it (C++ SBsp3::InsertHow)."
+						"text": "InsertHow inserts tr on the given side of the node, or, when instead is set and the tree ends there, decides whether the Boolean keeps it."
 					},
 					"InsertInPlane": {
 						"decl": "func (b *SBsp3) InsertInPlane(pos2 bool, tr *STriangle, m *SMesh)",
-						"text": "InsertInPlane adds tr, which lies in the node's plane, to m if the Boolean keeps it: by whether a triangle in the plane covers its centroid, and on which side (C++ SBsp3::InsertInPlane)."
+						"text": "InsertInPlane adds tr, which lies in the node's plane, to m if the Boolean keeps it: by whether a triangle in the plane covers its centroid, and on which side."
 					},
 					"IntersectionWith": {
 						"decl": "func (b *SBsp3) IntersectionWith(a, bb geom.Vector) geom.Vector",
-						"text": "IntersectionWith is where the segment from a to b, which must cross the node's plane, crosses it (C++ SBsp3::IntersectionWith)."
+						"text": "IntersectionWith is where the segment from a to b, which must cross the node's plane, crosses it."
 					}
 				},
 				"makers": [
@@ -7991,7 +7991,7 @@
 				"methods": {
 					"AddPoint": {
 						"decl": "func (c *SContour) AddPoint(p geom.Vector)",
-						"text": "AddPoint appends p with tag 0 (C++ SContour::AddPoint)."
+						"text": "AddPoint appends p with tag 0."
 					},
 					"AnyEdgeMidpoint": {
 						"decl": "func (c *SContour) AnyEdgeMidpoint() geom.Vector",
@@ -8011,19 +8011,19 @@
 					},
 					"ContainsPointProjdToNormal": {
 						"decl": "func (c *SContour) ContainsPointProjdToNormal(n, p geom.Vector) bool",
-						"text": "ContainsPointProjdToNormal mirrors C++ SContour::ContainsPointProjdToNormal (polygon.cpp)."
+						"text": "ContainsPointProjdToNormal reports whether p, projected along n, is inside the contour, which must be stored exactly closed."
 					},
 					"CopyInto": {
 						"decl": "func (c *SContour) CopyInto(dest *SContour)",
-						"text": "CopyInto adds the contour's points to dest (C++ SContour::CopyInto)."
+						"text": "CopyInto adds the contour's points to dest."
 					},
 					"FindPointWithMinX": {
 						"decl": "func (c *SContour) FindPointWithMinX()",
-						"text": "FindPointWithMinX sets XMinPt to the first point with the least x (C++ SContour::FindPointWithMinX)."
+						"text": "FindPointWithMinX sets XMinPt to the first point with the least x."
 					},
 					"IsClockwiseProjdToNormal": {
 						"decl": "func (c *SContour) IsClockwiseProjdToNormal(n geom.Vector) bool",
-						"text": "IsClockwiseProjdToNormal mirrors C++ SContour::IsClockwiseProjdToNormal (polygon.cpp:603), including its sign convention (see SignedAreaProjdToNormal)."
+						"text": "IsClockwiseProjdToNormal reports whether the contour winds clockwise about n, with the sign convention of SignedAreaProjdToNormal."
 					},
 					"IsEar": {
 						"decl": "func (c *SContour) IsEar(bp int, scaledEps float64) bool",
@@ -8038,11 +8038,11 @@
 					},
 					"MakeEdgesInto": {
 						"decl": "func (c *SContour) MakeEdgesInto(el *SEdgeList)",
-						"text": "MakeEdgesInto adds an edge for each pair of consecutive points; the contour repeats its first point at the end, so it is closed (C++ SContour::MakeEdgesInto)."
+						"text": "MakeEdgesInto adds an edge for each pair of consecutive points; the contour repeats its first point at the end, so it is closed."
 					},
 					"OffsetInto": {
 						"decl": "func (c *SContour) OffsetInto(dest *SContour, r float64)",
-						"text": "OffsetInto adds to dest the contour, in the xy plane, offset by r: outside corners are rounded, inside ones mitred (C++ SContour::OffsetInto)."
+						"text": "OffsetInto adds to dest the contour, in the xy plane, offset by r: outside corners are rounded, inside ones mitred."
 					},
 					"Reverse": {
 						"decl": "func (c *SContour) Reverse()",
@@ -8050,7 +8050,7 @@
 					},
 					"SignedAreaProjdToNormal": {
 						"decl": "func (c *SContour) SignedAreaProjdToNormal(n geom.Vector) float64",
-						"text": "SignedAreaProjdToNormal mirrors C++ SContour::SignedAreaProjdToNormal (polygon.cpp:611)."
+						"text": "SignedAreaProjdToNormal is the contour's area projected along n."
 					},
 					"UvTriangulateInto": {
 						"decl": "func (c *SContour) UvTriangulateInto(m *SMesh, srf *SSurface)",
@@ -8151,12 +8151,12 @@
 					},
 					"MergeCollinearSegments": {
 						"decl": "func (el *SEdgeList) MergeCollinearSegments(a, b geom.Vector)",
-						"text": "MergeCollinearSegments sorts the edges, which all lie on the line from a to b, along it, and merges each run of joined edges of the same style into one (C++ SEdgeList::MergeCollinearSegments)."
+						"text": "MergeCollinearSegments sorts the edges, which all lie on the line from a to b, along it, and merges each run of joined edges of the same style into one."
 					}
 				}
 			},
 			"SEdgeLl": {
-				"text": "SEdgeLl is a singly-linked list of edges, the payload of an SKdNodeEdges leaf (C++ SEdgeLl).",
+				"text": "SEdgeLl is a singly-linked list of edges, the payload of an SKdNodeEdges leaf.",
 				"kind": "struct"
 			},
 			"SInter": {
@@ -8164,7 +8164,7 @@
 				"kind": "struct"
 			},
 			"SKdNode": {
-				"text": "SKdNode is a node of the kd-tree: an interior node splits space at coordinate Which == C, a leaf holds a list of triangles (C++ SKdNode).",
+				"text": "SKdNode is a node of the kd-tree: an interior node splits space at coordinate Which == C, a leaf holds a list of triangles.",
 				"kind": "struct",
 				"methods": {
 					"AddTriangle": {
@@ -8193,23 +8193,23 @@
 					},
 					"MakeOutlinesInto": {
 						"decl": "func (n *SKdNode) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind)",
-						"text": "MakeOutlinesInto lists the edges shared by two triangles, tagged 1 where they are emphasized or sharp (per edgeKind); untagged edges between triangles with the same normal are left out (C++ SKdNode::MakeOutlinesInto)."
+						"text": "MakeOutlinesInto lists the edges shared by two triangles, tagged 1 where they are emphasized or sharp (per edgeKind); untagged edges between triangles with the same normal are left out."
 					},
 					"OcclusionTestLine": {
 						"decl": "func (n *SKdNode) OcclusionTestLine(orig SEdge, sel *SEdgeList, cnt int)",
-						"text": "OcclusionTestLine splits orig against the mesh into sel, tagging the hidden pieces (C++ SKdNode::OcclusionTestLine)."
+						"text": "OcclusionTestLine splits orig against the mesh into sel, tagging the hidden pieces."
 					},
 					"SnapToMesh": {
 						"decl": "func (n *SKdNode) SnapToMesh(m *SMesh)",
-						"text": "SnapToMesh snaps the tree to each vertex of each triangle of m; if m is the mesh the tree was made from, the result is vertex-to-vertex (C++ SKdNode::SnapToMesh)."
+						"text": "SnapToMesh snaps the tree to each vertex of each triangle of m; if m is the mesh the tree was made from, the result is vertex-to-vertex."
 					},
 					"SnapToVertex": {
 						"decl": "func (n *SKdNode) SnapToVertex(v geom.Vector, extras *SMesh)",
-						"text": "SnapToVertex splits every triangle with an edge that goes through v (but not a vertex at v) so that it has a vertex there: the triangle is modified, and the new one goes in extras (C++ SKdNode::SnapToVertex)."
+						"text": "SnapToVertex splits every triangle with an edge that goes through v (but not a vertex at v) so that it has a vertex there: the triangle is modified, and the new one goes in extras."
 					},
 					"SplitLinesAgainstTriangle": {
 						"decl": "func (n *SKdNode) SplitLinesAgainstTriangle(sel *SEdgeList, tr *STriangle)",
-						"text": "SplitLinesAgainstTriangle splits the edges of sel against tr, and tags those that tr hides when looking down z (C++ SKdNode::SplitLinesAgainstTriangle)."
+						"text": "SplitLinesAgainstTriangle splits the edges of sel against tr, and tags those that tr hides when looking down z."
 					}
 				},
 				"makers": [
@@ -8217,12 +8217,12 @@
 				]
 			},
 			"SKdNodeEdges": {
-				"text": "SKdNodeEdges is a kd-tree over edges, so that a query for the edges crossing one need only test those near it (C++ SKdNodeEdges).",
+				"text": "SKdNodeEdges is a kd-tree over edges, so that a query for the edges crossing one need only test those near it.",
 				"kind": "struct",
 				"methods": {
 					"AnyEdgeCrossings": {
 						"decl": "func (n *SKdNodeEdges) AnyEdgeCrossings(a, b geom.Vector, cnt int, pi *geom.Vector, spl *SPointList) int",
-						"text": "AnyEdgeCrossings counts the edges of the tree that the edge from a to b crosses, as SEdge.EdgeCrosses decides, tagging each tested edge with cnt so that one on both sides of a split counts once; an edge already tagged cnt isn't tested (C++ SKdNodeEdges::AnyEdgeCrossings)."
+						"text": "AnyEdgeCrossings counts the edges of the tree that the edge from a to b crosses, as SEdge.EdgeCrosses decides, tagging each tested edge with cnt so that one on both sides of a split counts once; an edge already tagged cnt isn't tested."
 					}
 				},
 				"makers": [
@@ -8230,44 +8230,44 @@
 				]
 			},
 			"SMesh": {
-				"text": "SMesh is a list of triangles, with the flags the Booleans use to pick which triangles to keep (C++ SMesh).",
+				"text": "SMesh is a list of triangles, with the flags the Booleans use to pick which triangles to keep.",
 				"kind": "struct",
 				"methods": {
 					"AddAgainstBsp": {
 						"decl": "func (m *SMesh) AddAgainstBsp(srcm *SMesh, bsp3 *SBsp3)",
-						"text": "AddAgainstBsp adds the triangles of srcm that the Boolean keeps against bsp3, as the mesh's flags say, split where they cross the other mesh (C++ SMesh::AddAgainstBsp)."
+						"text": "AddAgainstBsp adds the triangles of srcm that the Boolean keeps against bsp3, as the mesh's flags say, split where they cross the other mesh."
 					},
 					"AddTriangle": {
 						"decl": "func (m *SMesh) AddTriangle(t STriangle)",
-						"text": "AddTriangle adds a copy of t (C++ SMesh::AddTriangle(const STriangle *))."
+						"text": "AddTriangle adds a copy of t."
 					},
 					"AddTriangle3": {
 						"decl": "func (m *SMesh) AddTriangle3(meta STriMeta, a, b, c geom.Vector)",
-						"text": "AddTriangle3 adds the triangle a, b, c (C++ SMesh::AddTriangle(meta, a, b, c))."
+						"text": "AddTriangle3 adds the triangle a, b, c."
 					},
 					"AddTriangleN": {
 						"decl": "func (m *SMesh) AddTriangleN(meta STriMeta, n, a, b, c geom.Vector)",
-						"text": "AddTriangleN adds the triangle a, b, c, wound so its normal points along n; a (nearly) collinear one is dropped (C++ SMesh::AddTriangle(meta, n, a, b, c))."
+						"text": "AddTriangleN adds the triangle a, b, c, wound so its normal points along n; a (nearly) collinear one is dropped."
 					},
 					"Bounding": {
 						"decl": "func (m *SMesh) Bounding() (vmax, vmin geom.Vector)",
-						"text": "Bounding is the mesh's bounding box (C++ SMesh::Bounding)."
+						"text": "Bounding is the mesh's bounding box."
 					},
 					"CalculateSurfaceArea": {
 						"decl": "func (m *SMesh) CalculateSurfaceArea(faces []uint32) float64",
-						"text": "CalculateSurfaceArea is the area of the triangles on the given faces (C++ SMesh::CalculateSurfaceArea)."
+						"text": "CalculateSurfaceArea is the area of the triangles on the given faces."
 					},
 					"CalculateVolume": {
 						"decl": "func (m *SMesh) CalculateVolume() float64",
-						"text": "CalculateVolume is the volume the mesh encloses, integrated under each triangle (C++ SMesh::CalculateVolume)."
+						"text": "CalculateVolume is the volume the mesh encloses, integrated under each triangle."
 					},
 					"CenterOfMass": {
 						"decl": "func (m *SMesh) CenterOfMass() geom.Vector",
-						"text": "CenterOfMass is the centroid of the volume the mesh encloses (C++ SMesh::CenterOfMass)."
+						"text": "CenterOfMass is the centroid of the volume the mesh encloses."
 					},
 					"Clear": {
 						"decl": "func (m *SMesh) Clear()",
-						"text": "Clear drops the triangles; like C++ SMesh::Clear it keeps the flags."
+						"text": "Clear drops the triangles; it keeps the flags."
 					},
 					"FirstIntersectionIn": {
 						"decl": "func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) uint32",
@@ -8282,35 +8282,35 @@
 					},
 					"MakeEdgesInPlaneInto": {
 						"decl": "func (m *SMesh) MakeEdgesInPlaneInto(sel *SEdgeList, n geom.Vector, d float64)",
-						"text": "MakeEdgesInPlaneInto reports the edges of the boundary of the region(s) of the mesh that lie within the plane n ."
+						"text": "MakeEdgesInPlaneInto reports the edges of the boundary of the region(s) of the mesh that lie within the plane n."
 					},
 					"MakeFromAssemblyOf": {
 						"decl": "func (m *SMesh) MakeFromAssemblyOf(a, b *SMesh)",
-						"text": "MakeFromAssemblyOf adds the triangles of a and of b (C++ SMesh::MakeFromAssemblyOf)."
+						"text": "MakeFromAssemblyOf adds the triangles of a and of b."
 					},
 					"MakeFromCopyOf": {
 						"decl": "func (m *SMesh) MakeFromCopyOf(a *SMesh)",
-						"text": "MakeFromCopyOf adds a's triangles (C++ SMesh::MakeFromCopyOf)."
+						"text": "MakeFromCopyOf adds a's triangles."
 					},
 					"MakeFromDifferenceOf": {
 						"decl": "func (m *SMesh) MakeFromDifferenceOf(a, b *SMesh)",
-						"text": "MakeFromDifferenceOf adds a minus b (C++ SMesh::MakeFromDifferenceOf)."
+						"text": "MakeFromDifferenceOf adds a minus b."
 					},
 					"MakeFromIntersectionOf": {
 						"decl": "func (m *SMesh) MakeFromIntersectionOf(a, b *SMesh)",
-						"text": "MakeFromIntersectionOf adds the intersection of a and b (C++ SMesh::MakeFromIntersectionOf)."
+						"text": "MakeFromIntersectionOf adds the intersection of a and b."
 					},
 					"MakeFromTransformationOf": {
 						"decl": "func (m *SMesh) MakeFromTransformationOf(a *SMesh, trans geom.Vector, q geom.Quaternion, scale float64)",
-						"text": "MakeFromTransformationOf adds a's triangles, scaled, then rotated, then translated; a mirroring scale keeps the mesh outside out (C++ SMesh::MakeFromTransformationOf)."
+						"text": "MakeFromTransformationOf adds a's triangles, scaled, then rotated, then translated; a mirroring scale keeps the mesh outside out."
 					},
 					"MakeFromUnionOf": {
 						"decl": "func (m *SMesh) MakeFromUnionOf(a, b *SMesh)",
-						"text": "MakeFromUnionOf adds the union of a and b (C++ SMesh::MakeFromUnionOf)."
+						"text": "MakeFromUnionOf adds the union of a and b."
 					},
 					"MakeOutlinesInto": {
 						"decl": "func (m *SMesh) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind)",
-						"text": "MakeOutlinesInto lists the mesh's outline edges of the given kind (C++ SMesh::MakeOutlinesInto)."
+						"text": "MakeOutlinesInto lists the mesh's outline edges of the given kind."
 					},
 					"MakeSectionPolygonInto": {
 						"decl": "func (m *SMesh) MakeSectionPolygonInto(h HalfSpace, dest *SPolygon) bool",
@@ -8318,15 +8318,15 @@
 					},
 					"PrecomputeTransparency": {
 						"decl": "func (m *SMesh) PrecomputeTransparency()",
-						"text": "PrecomputeTransparency sorts the opaque triangles before the transparent ones, for drawing, in std::sort's order; and notes whether the comparisons met a transparent triangle (C++ SMesh::PrecomputeTransparency)."
+						"text": "PrecomputeTransparency sorts the opaque triangles before the transparent ones, for drawing, in std::sort's order; and notes whether the comparisons met a transparent triangle."
 					},
 					"RemapFaces": {
 						"decl": "func (m *SMesh) RemapFaces(group ShellGroup, remap int)",
-						"text": "RemapFaces rewrites each triangle's face to the group's copy copyNumber of it (C++ SMesh::RemapFaces)."
+						"text": "RemapFaces rewrites each triangle's face to the group's copy copyNumber of it."
 					},
 					"RemoveDegenerateTriangles": {
 						"decl": "func (m *SMesh) RemoveDegenerateTriangles()",
-						"text": "RemoveDegenerateTriangles drops the degenerate triangles (C++ SMesh::RemoveDegenerateTriangles)."
+						"text": "RemoveDegenerateTriangles drops the degenerate triangles."
 					},
 					"Simplify": {
 						"decl": "func (m *SMesh) Simplify(start int)",
@@ -8343,33 +8343,33 @@
 				}
 			},
 			"SOutline": {
-				"text": "SOutline is an edge between two triangles of a mesh, with the normals on its left and right (C++ SOutline).",
+				"text": "SOutline is an edge between two triangles of a mesh, with the normals on its left and right.",
 				"kind": "struct",
 				"methods": {
 					"IsVisible": {
 						"decl": "func (so *SOutline) IsVisible(projDir geom.Vector) bool",
-						"text": "IsVisible reports whether the edge is an outline when looking along projDir: one of its faces is toward the viewer and the other away (C++ SOutline::IsVisible)."
+						"text": "IsVisible reports whether the edge is an outline when looking along projDir: one of its faces is toward the viewer and the other away."
 					}
 				}
 			},
 			"SOutlineList": {
-				"text": "SOutlineList is a list of outline edges (C++ SOutlineList).",
+				"text": "SOutlineList is a list of outline edges.",
 				"kind": "struct",
 				"methods": {
 					"AddEdge": {
 						"decl": "func (l *SOutlineList) AddEdge(a, b, nl, nr geom.Vector, tag int)",
-						"text": "AddEdge adds an outline edge (C++ SOutlineList::AddEdge)."
+						"text": "AddEdge adds an outline edge."
 					},
 					"Clear": {
 						"decl": "func (l *SOutlineList) Clear()"
 					},
 					"ListTaggedInto": {
 						"decl": "func (l *SOutlineList) ListTaggedInto(el *SEdgeList, auxA, auxB int)",
-						"text": "ListTaggedInto adds the tagged outline edges to el (C++ SOutlineList::ListTaggedInto)."
+						"text": "ListTaggedInto adds the tagged outline edges to el."
 					},
 					"MakeFromCopyOf": {
 						"decl": "func (l *SOutlineList) MakeFromCopyOf(sol *SOutlineList)",
-						"text": "MakeFromCopyOf adds sol's outline edges (C++ SOutlineList::MakeFromCopyOf)."
+						"text": "MakeFromCopyOf adds sol's outline edges."
 					}
 				}
 			},
@@ -8378,27 +8378,27 @@
 				"kind": "struct"
 			},
 			"SPointList": {
-				"text": "SPointList is an ordered list of points, each with a tag (C++ SPointList).",
+				"text": "SPointList is an ordered list of points, each with a tag.",
 				"kind": "struct",
 				"methods": {
 					"Add": {
 						"decl": "func (l *SPointList) Add(pt geom.Vector)",
-						"text": "Add appends pt with tag 0 (C++ SPointList::Add)."
+						"text": "Add appends pt with tag 0."
 					},
 					"Clear": {
 						"decl": "func (l *SPointList) Clear()"
 					},
 					"ContainsPoint": {
 						"decl": "func (l *SPointList) ContainsPoint(pt geom.Vector) bool",
-						"text": "ContainsPoint reports whether pt is one of the list's points (C++ SPointList::ContainsPoint)."
+						"text": "ContainsPoint reports whether pt is one of the list's points."
 					},
 					"IncrementTagFor": {
 						"decl": "func (l *SPointList) IncrementTagFor(pt geom.Vector)",
-						"text": "IncrementTagFor counts pt: it increments the tag of the point equal to pt, or adds pt with tag 1 (C++ SPointList::IncrementTagFor)."
+						"text": "IncrementTagFor counts pt: it increments the tag of the point equal to pt, or adds pt with tag 1."
 					},
 					"IndexForPoint": {
 						"decl": "func (l *SPointList) IndexForPoint(pt geom.Vector) int",
-						"text": "IndexForPoint is the index of the list's point equal to pt, or -1 (C++ SPointList::IndexForPoint)."
+						"text": "IndexForPoint is the index of the list's point equal to pt, or -1."
 					}
 				}
 			},
@@ -8418,15 +8418,15 @@
 					},
 					"ComputeNormal": {
 						"decl": "func (p *SPolygon) ComputeNormal() geom.Vector",
-						"text": "ComputeNormal is the first contour's normal (C++ SPolygon::ComputeNormal)."
+						"text": "ComputeNormal is the first contour's normal."
 					},
 					"ContainsPoint": {
 						"decl": "func (p *SPolygon) ContainsPoint(pt geom.Vector) bool",
-						"text": "ContainsPoint mirrors C++ SPolygon::ContainsPoint (odd winding number about p.Normal)."
+						"text": "ContainsPoint reports whether the point is inside: an odd winding number about p.Normal."
 					},
 					"FixContourDirections": {
 						"decl": "func (p *SPolygon) FixContourDirections()",
-						"text": "FixContourDirections orients every contour so that outer contours look counterclockwise projected against p.Normal (in the C++ sense of IsClockwiseProjdToNormal) and holes the opposite way."
+						"text": "FixContourDirections orients every contour so that outer contours look counterclockwise projected against p.Normal (in the sense of IsClockwiseProjdToNormal) and holes the opposite way."
 					},
 					"InverseTransformInto": {
 						"decl": "func (p *SPolygon) InverseTransformInto(sp *SPolygon, u, v, n geom.Vector)",
@@ -8441,15 +8441,15 @@
 					},
 					"OffsetInto": {
 						"decl": "func (p *SPolygon) OffsetInto(dest *SPolygon, r float64)",
-						"text": "OffsetInto sets dest to the polygon offset by r, contour by contour (C++ SPolygon::OffsetInto)."
+						"text": "OffsetInto sets dest to the polygon offset by r, contour by contour."
 					},
 					"SelfIntersecting": {
 						"decl": "func (p *SPolygon) SelfIntersecting(intersectsAt *geom.Vector) bool",
-						"text": "SelfIntersecting reports whether any edge of the polygon crosses another, leaving a crossing in intersectsAt when it is given (C++ SPolygon::SelfIntersecting)."
+						"text": "SelfIntersecting reports whether any edge of the polygon crosses another, leaving a crossing in intersectsAt when it is given."
 					},
 					"SignedArea": {
 						"decl": "func (p *SPolygon) SignedArea() float64",
-						"text": "SignedArea is the polygon's area about its normal: the true area only if the contours are all oriented correctly, with the holes backwards from the outer contours (C++ SPolygon::SignedArea)."
+						"text": "SignedArea is the polygon's area about its normal: the true area only if the contours are all oriented correctly, with the holes backwards from the outer contours."
 					},
 					"TriangulateInto": {
 						"decl": "func (p *SPolygon) TriangulateInto(m *SMesh)",
@@ -8465,7 +8465,7 @@
 					},
 					"WindingNumberForPoint": {
 						"decl": "func (p *SPolygon) WindingNumberForPoint(pt geom.Vector) int",
-						"text": "WindingNumberForPoint mirrors C++ SPolygon::WindingNumberForPoint."
+						"text": "WindingNumberForPoint is how many times the polygon winds about the point."
 					}
 				}
 			},
@@ -8487,7 +8487,7 @@
 					},
 					"CleanupAfterBoolean": {
 						"decl": "func (s *SShell) CleanupAfterBoolean()",
-						"text": "CleanupAfterBoolean clears the edges MakeClassifyingBsps made as a calculation aid (C++ SShell::CleanupAfterBoolean)."
+						"text": "CleanupAfterBoolean clears the edges MakeClassifyingBsps made as a calculation aid."
 					},
 					"Clear": {
 						"decl": "func (s *SShell) Clear()",
@@ -8503,7 +8503,7 @@
 					},
 					"CopySurfacesTrimAgainst": {
 						"decl": "func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombineAs)",
-						"text": "CopySurfacesTrimAgainst copies every surface of s into `into`, trimmed against the other operand per the boolean op, and records each surface's handle in `into` as its NewH. Mirrors C++ SShell::CopySurfacesTrimAgainst (boolean.cpp:750)."
+						"text": "CopySurfacesTrimAgainst copies every surface of s into `into`, trimmed against the other operand per the boolean op, and records each surface's handle in `into` as its NewH."
 					},
 					"FindCurve": {
 						"decl": "func (s *SShell) FindCurve(h core.HSCurve) *SCurve",
@@ -8523,7 +8523,7 @@
 					},
 					"MakeCoincidentEdgesInto": {
 						"decl": "func (s *SShell) MakeCoincidentEdgesInto(proto *SSurface, sameNormal bool, el *SEdgeList, useCurvesFrom *SShell)",
-						"text": "MakeCoincidentEdgesInto copies into el the trim polygons of every surface in the shell that is coincident with proto (with the same or opposite normal, as asked), in proto's uv coordinates (C++ SShell::MakeCoincidentEdgesInto)."
+						"text": "MakeCoincidentEdgesInto copies into el the trim polygons of every surface in the shell that is coincident with proto (with the same or opposite normal, as asked), in proto's uv coordinates."
 					},
 					"MakeEdgesInto": {
 						"decl": "func (s *SShell) MakeEdgesInto(el *SEdgeList)",
@@ -8543,7 +8543,7 @@
 					},
 					"MakeFromCopyOf": {
 						"decl": "func (s *SShell) MakeFromCopyOf(src *SShell)",
-						"text": "MakeFromCopyOf copies src (C++ SShell::MakeFromCopyOf): a transformation by the identity, which, like C++'s, still rotates and translates the curves' exact forms (so turns -0 into +0)."
+						"text": "MakeFromCopyOf copies src: a transformation by the identity, which still rotates and translates the curves' exact forms (so turns -0 into +0)."
 					},
 					"MakeFromDifferenceOf": {
 						"decl": "func (s *SShell) MakeFromDifferenceOf(a, b *SShell)",
@@ -8587,7 +8587,7 @@
 					},
 					"MakeSectionEdgesInto": {
 						"decl": "func (s *SShell) MakeSectionEdgesInto(n geom.Vector, d float64, sel *SEdgeList, sbl *SBezierList)",
-						"text": "MakeSectionEdgesInto reports the trim curves of the shell's planar faces that lie in the plane n ."
+						"text": "MakeSectionEdgesInto reports the trim curves of the shell's planar faces that lie in the plane n."
 					},
 					"MergeCoincidentSurfaces": {
 						"decl": "func (s *SShell) MergeCoincidentSurfaces()",
@@ -8595,7 +8595,7 @@
 					},
 					"RemapFaces": {
 						"decl": "func (s *SShell) RemapFaces(group ShellGroup, remap int)",
-						"text": "RemapFaces rewrites each surface's face to the group's copy copyNumber of it (C++ SShell::RemapFaces)."
+						"text": "RemapFaces rewrites each surface's face to the group's copy copyNumber of it."
 					},
 					"RewriteSurfaceHandlesForCurves": {
 						"decl": "func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell)",
@@ -8612,7 +8612,7 @@
 				}
 			},
 			"SShellClass": {
-				"text": "SShellClass mirrors the C++ SShell::Class enum (srf/surface.h:420).",
+				"text": "SShellClass records, during a Boolean,, for each side of a trim edge, how that side relates to the shell being unioned/subtracted.",
 				"kind": "uint32",
 				"values": [
 					"ShellInside",
@@ -8627,7 +8627,7 @@
 				"methods": {
 					"AddExactIntersectionCurve": {
 						"decl": "func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA, agnstB *SShell, into *SShell)",
-						"text": "AddExactIntersectionCurve adds the exact curve sb, where s meets srfB, to into: its pwl follows an identical curve already in into, or else is split against the operand shells (C++ SSurface::AddExactIntersectionCurve)."
+						"text": "AddExactIntersectionCurve adds the exact curve sb, where s meets srfB, to into: its pwl follows an identical curve already in into, or else is split against the operand shells."
 					},
 					"AllPointsIntersecting": {
 						"decl": "func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter, asSegment, trimmed, inclTangent bool)",
@@ -8643,7 +8643,7 @@
 					},
 					"BlendRowOrCol": {
 						"decl": "func (s *SSurface) BlendRowOrCol(row bool, thisIJ int, a *SSurface, aIJ int, b *SSurface, bIJ int)",
-						"text": "BlendRowOrCol sets row (or column) thisIJ to the average of row aIJ of a and row bIJ of b (C++ SSurface::BlendRowOrCol)."
+						"text": "BlendRowOrCol sets row (or column) thisIJ to the average of row aIJ of a and row bIJ of b."
 					},
 					"ChordToleranceForEdge": {
 						"decl": "func (s *SSurface) ChordToleranceForEdge(a, b geom.Vector) float64",
@@ -8651,7 +8651,7 @@
 					},
 					"Clear": {
 						"decl": "func (s *SSurface) Clear()",
-						"text": "Clear drops the trims (C++ SSurface::Clear)."
+						"text": "Clear drops the trims."
 					},
 					"ClosestPointOnThisAndSurface": {
 						"decl": "func (s *SSurface) ClosestPointOnThisAndSurface(srf2 *SSurface, p geom.Vector) geom.Vector",
@@ -8659,7 +8659,7 @@
 					},
 					"ClosestPointTo": {
 						"decl": "func (s *SSurface) ClosestPointTo(p geom.Vector, puv *geom.Point2d, mustConverge bool)",
-						"text": "ClosestPointTo finds the (u, v) of the point on the surface closest to p (C++ SSurface::ClosestPointTo)."
+						"text": "ClosestPointTo finds the (u, v) of the point on the surface closest to p."
 					},
 					"ClosestPointToUV": {
 						"decl": "func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge bool)",
@@ -8671,7 +8671,7 @@
 					},
 					"CoincidentWithPlane": {
 						"decl": "func (s *SSurface) CoincidentWithPlane(n geom.Vector, d float64) bool",
-						"text": "CoincidentWithPlane reports whether the surface is a plane lying in the plane n ."
+						"text": "CoincidentWithPlane reports whether the surface is a plane lying in the plane n."
 					},
 					"ContainsPlaneCurve": {
 						"decl": "func (s *SSurface) ContainsPlaneCurve(sc *SCurve) bool",
@@ -8679,11 +8679,11 @@
 					},
 					"CopyRowOrCol": {
 						"decl": "func (s *SSurface) CopyRowOrCol(row bool, thisIJ int, src *SSurface, srcIJ int)",
-						"text": "CopyRowOrCol copies row (or column) srcIJ of src into row thisIJ (C++ SSurface::CopyRowOrCol)."
+						"text": "CopyRowOrCol copies row (or column) srcIJ of src into row thisIJ."
 					},
 					"DepartureFromCoplanar": {
 						"decl": "func (s *SSurface) DepartureFromCoplanar() float64",
-						"text": "DepartureFromCoplanar is how far the control points stray from the plane through three of them, chosen far apart (C++ SSurface::DepartureFromCoplanar)."
+						"text": "DepartureFromCoplanar is how far the control points stray from the plane through three of them, chosen far apart."
 					},
 					"EdgeCurve": {
 						"decl": "func (s *SSurface) EdgeCurve(side int) SBezier",
@@ -8703,11 +8703,11 @@
 					},
 					"ExactSurfaceTangentAt": {
 						"decl": "func (s *SSurface) ExactSurfaceTangentAt(p geom.Vector, srfA, srfB *SSurface, dir geom.Vector) geom.Vector",
-						"text": "ExactSurfaceTangentAt is the direction, at p, of the curve where srfA meets srfB, pointing along dir (C++ SSurface::ExactSurfaceTangentAt)."
+						"text": "ExactSurfaceTangentAt is the direction, at p, of the curve where srfA meets srfB, pointing along dir."
 					},
 					"IntersectAgainst": {
 						"decl": "func (s *SSurface) IntersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *SShell)",
-						"text": "IntersectAgainst adds the curves where s meets b to into (C++ SSurface::IntersectAgainst)."
+						"text": "IntersectAgainst adds the curves where s meets b to into."
 					},
 					"IsCylinder": {
 						"decl": "func (s *SSurface) IsCylinder(axis, center *geom.Vector, r *float64, start, finish *geom.Vector) bool",
@@ -8735,11 +8735,11 @@
 					},
 					"NormalAt": {
 						"decl": "func (s *SSurface) NormalAt(u, v float64) geom.Vector",
-						"text": "NormalAt returns the (unnormalized) surface normal at (u, v), the cross product of the tangents (C++ SSurface::NormalAt)."
+						"text": "NormalAt returns the (unnormalized) surface normal at (u, v), the cross product of the tangents."
 					},
 					"NormalAtMaybeSwapped": {
 						"decl": "func (s *SSurface) NormalAtMaybeSwapped(u, v float64, swapped bool) geom.Vector",
-						"text": "NormalAtMaybeSwapped mirrors C++ SSurface::NormalAtMaybeSwapped."
+						"text": "NormalAtMaybeSwapped is NormalAt with u and v swapped when asked."
 					},
 					"NormalAtUv": {
 						"decl": "func (s *SSurface) NormalAtUv(puv geom.Point2d) geom.Vector",
@@ -8755,7 +8755,7 @@
 					},
 					"PointAtMaybeSwapped": {
 						"decl": "func (s *SSurface) PointAtMaybeSwapped(u, v float64, swapped bool) geom.Vector",
-						"text": "PointAtMaybeSwapped mirrors C++ SSurface::PointAtMaybeSwapped."
+						"text": "PointAtMaybeSwapped is PointAt with u and v swapped when asked."
 					},
 					"PointAtUv": {
 						"decl": "func (s *SSurface) PointAtUv(puv geom.Point2d) geom.Vector",
@@ -8763,7 +8763,7 @@
 					},
 					"PointIntersectingLine": {
 						"decl": "func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool",
-						"text": "PointIntersectingLine refines (u, v) by Newton's method to where the line through p0 and p1 meets the surface, trying the surface's edge if that fails (C++ SSurface::PointIntersectingLine)."
+						"text": "PointIntersectingLine refines (u, v) by Newton's method to where the line through p0 and p1 meets the surface, trying the surface's edge if that fails."
 					},
 					"PointOnCurve": {
 						"decl": "func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64)",
@@ -8783,7 +8783,7 @@
 					},
 					"SplitInHalf": {
 						"decl": "func (s *SSurface) SplitInHalf(byU bool, sa, sb *SSurface)",
-						"text": "SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa and sb, by de Casteljau's algorithm in projective space (C++ SSurface::SplitInHalf, for any degree)."
+						"text": "SplitInHalf splits the surface at u = 0.5 (byU) or v = 0.5 into sa and sb, by de Casteljau's algorithm in projective space."
 					},
 					"Sub": {
 						"decl": "func (s *SSurface) Sub(u0, u1, v0, v1 float64) SSurface",
@@ -8791,19 +8791,19 @@
 					},
 					"TangentsAt": {
 						"decl": "func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool)",
-						"text": "TangentsAt computes the partial derivatives dP/du and dP/dv at (u, v) (C++ SSurface::TangentsAt)."
+						"text": "TangentsAt computes the partial derivatives dP/du and dP/dv at (u, v)."
 					},
 					"TriangulateInto": {
 						"decl": "func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh)",
-						"text": "TriangulateInto is the per-surface version."
+						"text": "TriangulateInto is the per-surface version: build the uv-space trim polygon via the surface's own STrimBy list (resolved against shell), triangulate it (ear-clipping for degree (1,1) planes, the adaptive uv grid for curved surfaces), then map every uv-space vertex/normal back to 3-D via PointAt/NormalAt and flip the winding to match the trim-contour orientation convention."
 					},
 					"UnWeightControlPoints": {
 						"decl": "func (s *SSurface) UnWeightControlPoints()",
-						"text": "UnWeightControlPoints divides each control point by its weight (C++ SSurface::UnWeightControlPoints)."
+						"text": "UnWeightControlPoints divides each control point by its weight."
 					},
 					"WeightControlPoints": {
 						"decl": "func (s *SSurface) WeightControlPoints()",
-						"text": "WeightControlPoints multiplies each control point by its weight (C++ SSurface::WeightControlPoints)."
+						"text": "WeightControlPoints multiplies each control point by its weight."
 					}
 				},
 				"makers": [
@@ -8827,43 +8827,43 @@
 				"methods": {
 					"Area": {
 						"decl": "func (t *STriangle) Area() float64",
-						"text": "Area is the triangle's area (C++ STriangle::Area)."
+						"text": "Area is the triangle's area."
 					},
 					"ContainsPoint": {
 						"decl": "func (t *STriangle) ContainsPoint(p geom.Vector) bool",
-						"text": "ContainsPoint reports whether p, projected along the normal, lies in the triangle; never for a zero-area triangle (C++ STriangle::ContainsPoint)."
+						"text": "ContainsPoint reports whether p, projected along the normal, lies in the triangle; never for a zero-area triangle."
 					},
 					"ContainsPointProjd": {
 						"decl": "func (t *STriangle) ContainsPointProjd(n, p geom.Vector) bool",
-						"text": "ContainsPointProjd reports whether p, projected along n, lies in the triangle (edges included; C++ STriangle::ContainsPointProjd)."
+						"text": "ContainsPointProjd reports whether p, projected along n, lies in the triangle (edges included)."
 					},
 					"FlipNormal": {
 						"decl": "func (t *STriangle) FlipNormal()",
-						"text": "FlipNormal swaps a and b (C++ STriangle::FlipNormal)."
+						"text": "FlipNormal swaps a and b."
 					},
 					"IsDegenerate": {
 						"decl": "func (t *STriangle) IsDegenerate() bool",
-						"text": "IsDegenerate reports whether a vertex lies on the opposite edge (C++ STriangle::IsDegenerate)."
+						"text": "IsDegenerate reports whether a vertex lies on the opposite edge."
 					},
 					"MinAltitude": {
 						"decl": "func (t *STriangle) MinAltitude() float64",
-						"text": "MinAltitude is the triangle's smallest altitude (C++ STriangle::MinAltitude)."
+						"text": "MinAltitude is the triangle's smallest altitude."
 					},
 					"Normal": {
 						"decl": "func (t *STriangle) Normal() geom.Vector",
-						"text": "Normal is the triangle's unnormalized normal (C++ STriangle::Normal)."
+						"text": "Normal is the triangle's unnormalized normal."
 					},
 					"Raytrace": {
 						"decl": "func (t *STriangle) Raytrace(rayPoint, rayDir geom.Vector) (tt float64, inters geom.Vector, ok bool)",
-						"text": "Raytrace intersects the ray rayPoint + t*rayDir with the triangle, which must face against the ray (C++ STriangle::Raytrace; the Moeller-Trumbore algorithm)."
+						"text": "Raytrace intersects the ray rayPoint + t*rayDir with the triangle, which must face against the ray."
 					},
 					"SignedVolume": {
 						"decl": "func (t *STriangle) SignedVolume() float64",
-						"text": "SignedVolume is the signed volume of the tetrahedron of the triangle and the origin (C++ STriangle::SignedVolume)."
+						"text": "SignedVolume is the signed volume of the tetrahedron of the triangle and the origin."
 					},
 					"Transform": {
 						"decl": "func (t STriangle) Transform(u, v, n geom.Vector) STriangle",
-						"text": "Transform takes every vertex and normal as coordinates in the (u, v, n) basis (C++ STriangle::Transform)."
+						"text": "Transform takes every vertex and normal as coordinates in the (u, v, n) basis."
 					}
 				},
 				"makers": [
@@ -8879,7 +8879,7 @@
 				]
 			},
 			"ShellGroup": {
-				"text": "ShellGroup is what the revolution constructors read from the group they build a shell for (C++ passes its Group): the faces of the new surfaces are entities from the group's remap table.",
+				"text": "ShellGroup is what the revolution constructors read from the group they build a shell for: the faces of the new surfaces are entities from the group's remap table.",
 				"kind": "interface"
 			},
 			"SurfaceCombineAs": {
@@ -8959,11 +8959,11 @@
 			},
 			"CxxSort": {
 				"decl": "func CxxSort[T any](s []T, less func(a, b *T) bool)",
-				"text": "CxxSort sorts s as libstdc++'s std::sort does, so that elements that compare equal end up in the same order as in C++ (std::sort isn't stable, and a mesh's order is what gets exported): introsort with a median-of-three pivot, heapsort past the depth limit, then insertion sort (bits/stl_algo.h, bits/stl_heap.h)."
+				"text": "CxxSort sorts s as libstdc++'s std::sort does, so that elements that compare equal end up in the order the goldens record (std::sort isn't stable, and a mesh's order is what gets exported): introsort with a median-of-three pivot, heapsort past the depth limit, then insertion sort (bits/stl_algo.h, bits/stl_heap.h)."
 			},
 			"DoBounding": {
 				"decl": "func DoBounding(v geom.Vector, vmax, vmin *geom.Vector)",
-				"text": "DoBounding extends (vmax, vmin) to include v (C++ SMesh::DoBounding)."
+				"text": "DoBounding extends (vmax, vmin) to include v."
 			},
 			"FromExtrusionOf": {
 				"decl": "func FromExtrusionOf(spc *SBezier, t0, t1 geom.Vector) SSurface",
@@ -8983,7 +8983,7 @@
 			},
 			"FromTransformationOfSCurve": {
 				"decl": "func FromTransformationOfSCurve(a *SCurve, t geom.Vector, q geom.Quaternion, scale float64) SCurve",
-				"text": "FromTransformationOfSCurve is a copy of a scaled, then rotated, then translated; like C++ it keeps only the handle, the exact form, the surfaces and the pwl (C++ SCurve::FromTransformationOf)."
+				"text": "FromTransformationOfSCurve is a copy of a scaled, then rotated, then translated; it keeps only the handle, the exact form, the surfaces and the pwl."
 			},
 			"GetParallelMode": {
 				"decl": "func GetParallelMode() ParallelMode",
@@ -9039,7 +9039,7 @@
 			},
 			"SBezierFromV4": {
 				"decl": "func SBezierFromV4(ct ...geom.Vector4) SBezier",
-				"text": "SBezierFromV4 is the curve with homogeneous control points ct (C++ SBezier::From(Vector4 ...))."
+				"text": "SBezierFromV4 is the curve with homogeneous control points ct."
 			},
 			"SBezierLoopFromCurves": {
 				"decl": "func SBezierLoopFromCurves(sbl *SBezierList, allClosed *bool, errorAt *SEdge) SBezierLoop",
@@ -9047,15 +9047,15 @@
 			},
 			"SBsp2InsertOrCreateEdge": {
 				"decl": "func SBsp2InsertOrCreateEdge(where *SBsp2, nedge *SEdge, nnp, out geom.Vector) *SBsp2",
-				"text": "SBsp2InsertOrCreateEdge inserts nedge into the tree at where, making a node of it if the tree ends there (C++ SBsp2::InsertOrCreateEdge)."
+				"text": "SBsp2InsertOrCreateEdge inserts nedge into the tree at where, making a node of it if the tree ends there."
 			},
 			"SBsp3FromMesh": {
 				"decl": "func SBsp3FromMesh(m *SMesh) *SBsp3",
-				"text": "SBsp3FromMesh builds the BSP of mesh m, inserting its triangles in the shuffled order C++ does (C++ SBsp3::FromMesh)."
+				"text": "SBsp3FromMesh builds the BSP of mesh m, inserting its triangles in the shuffled order glibcRand gives, which the goldens record."
 			},
 			"SBsp3InsertOrCreate": {
 				"decl": "func SBsp3InsertOrCreate(where *SBsp3, tr *STriangle, instead *SMesh) *SBsp3",
-				"text": "SBsp3InsertOrCreate inserts tr into the tree at where, making a node of it if the tree ends there; with instead, the triangle instead goes into (or is discarded from) that mesh (C++ SBsp3::InsertOrCreate)."
+				"text": "SBsp3InsertOrCreate inserts tr into the tree at where, making a node of it if the tree ends there; with instead, the triangle instead goes into (or is discarded from) that mesh."
 			},
 			"SBspUvFrom": {
 				"decl": "func SBspUvFrom(el *SEdgeList, srf *SSurface) *SBspUv",
@@ -9066,15 +9066,15 @@
 			},
 			"SKdNodeEdgesFrom": {
 				"decl": "func SKdNodeEdgesFrom(sel *SEdgeList) *SKdNodeEdges",
-				"text": "SKdNodeEdgesFrom builds the tree over the edges of sel, which it keeps pointers into (C++ SKdNodeEdges::From(SEdgeList *))."
+				"text": "SKdNodeEdgesFrom builds the tree over the edges of sel, which it keeps pointers into."
 			},
 			"SKdNodeFrom": {
 				"decl": "func SKdNodeFrom(m *SMesh) *SKdNode",
-				"text": "SKdNodeFrom builds the kd-tree over copies of mesh m's triangles, in the shuffled order C++ gives them (C++ SKdNode::From(SMesh *))."
+				"text": "SKdNodeFrom builds the kd-tree over copies of mesh m's triangles, in the shuffled order glibcRand gives them."
 			},
 			"STriangleFrom": {
 				"decl": "func STriangleFrom(meta STriMeta, a, b, c geom.Vector) STriangle",
-				"text": "STriangleFrom is a triangle with the given vertices, and zero vertex normals (C++ STriangle::From)."
+				"text": "STriangleFrom is a triangle with the given vertices, and zero vertex normals."
 			},
 			"STrimByEntireCurve": {
 				"decl": "func STrimByEntireCurve(c core.HSCurve) STrimBy"
