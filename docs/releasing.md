@@ -7,9 +7,7 @@ version is bumped by hand, in a commit of its own; the rest is `make release`.
 ## The bump
 
 1. Set `Version` in `pkg/version/version.go`.
-2. The VRML export writes the version into its files, so regenerate its goldens:
-   `scripts/regen-golden.sh export`, and commit them on their own, as every regenerated golden is.
-3. Commit the bump as "Version X.Y.Z".
+2. Commit the bump as "Version X.Y.Z". No golden holds the version.
 
 ## The release
 

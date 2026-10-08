@@ -13,7 +13,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
-	"github.com/telesapr/telesapr/pkg/version"
 )
 
 // ExportMeshAsObjTo writes the mesh as Wavefront OBJ, with its
@@ -244,12 +243,13 @@ func WriteVRML(f *bytes.Buffer, filename string, sm *srf.SMesh, o Options) {
 	pf := func(format string, args ...any) { f.WriteString(cfmt.Sprintf(format, args...)) }
 	basename := fileStemIdentifier(filename)
 
+	// No version in the header: the goldens would change with every
+	// release.
 	pf("#VRML V2.0 utf8\n"+
-		"#Exported from TeleSAPR %s\n"+
+		"#Exported from TeleSAPR\n"+
 		"\n"+
 		"DEF %s Transform {\n"+
 		"  children [",
-		version.Version,
 		basename)
 
 	// The runs of triangles of each opacity, by opacity.
