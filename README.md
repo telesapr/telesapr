@@ -30,6 +30,26 @@ It is built and tested on Linux. See [`ROADMAP-JUMP.md`](ROADMAP-JUMP.md) for wh
 
 The [user's guide](docs/guide/README.md) has a page for each, built on an example script.
 
+## Download
+
+Each [release](https://github.com/telesapr/telesapr/releases) carries `telesapr` (the window) and
+`telesapr-cli` (the command line) for:
+
+- **Linux x86_64**: a `.deb` (`sudo apt install ./telesapr_*.deb`), an `.rpm`
+  (`sudo dnf install ./telesapr-*.rpm`), or a `.tar.gz` to unpack anywhere, with the desktop
+  entry, icons and MIME type under its `share/`. The window needs an X server with OpenGL;
+  without OpenGL it draws in software.
+- **Windows x64 and arm64**: a `-setup.exe` installer (Start Menu entry, `.tlspr` association,
+  and PATH for `telesapr-cli` if asked), or a `.zip` to run from any folder. The window draws in
+  software.
+- **macOS 11 or later, Apple silicon and Intel**: a `.dmg` with `TeleSAPR.app`; drag it to
+  Applications. The app is not notarized, so the first time Control-click it and choose Open.
+  `telesapr-cli` is inside, at `TeleSAPR.app/Contents/MacOS/telesapr-cli`.
+
+`SHA256SUMS` lists the checksums. The Windows and macOS packages are built by the release
+workflow and not tested by it; TeleSAPR is tested on Linux. `docs/releasing.md` says how a
+release is made.
+
 ## Build
 
 TeleSAPR needs Go 1.27, X11 and OpenGL development files, and its windowing library

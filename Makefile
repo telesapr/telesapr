@@ -30,8 +30,20 @@ help:
 	@echo "  make clean        - Remove bin/ and coverage.out"
 	@echo "  make distclean    - clean, plus the Go build, test and module caches"
 	@echo ""
+	@echo "Release (docs/releasing.md):"
+	@echo "  make dist         - The packages for this OS into bin/dist (version $(VERSION))"
+	@echo "  make dist-linux   - tar.gz, .deb and .rpm (needs the X11 development packages)"
+	@echo "  make dist-windows - zips, cross-compiled; the installers where Inno Setup is"
+	@echo "  make dist-macos   - a universal TeleSAPR.app in a .dmg (on macOS only)"
+	@echo "  make release-notes - Print what the release of v$(VERSION) would say"
+	@echo "  make release      - Push master, wait for CI, tag v$(VERSION), make the GitHub release"
+	@echo ""
 
-.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean
+.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+	dist dist-linux dist-windows dist-macos release release-notes
+
+# The version is pkg/version.Version; a release's tag is v$(VERSION).
+VERSION := $(shell sed -n 's/^const Version = "\(.*\)"$$/\1/p' pkg/version/version.go)
 
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
@@ -144,10 +156,14 @@ generate:
 generate-check: generate
 	git diff --exit-code -- pkg/script/symbols
 
+# LDFLAGS is empty for a development build; the release scripts set it
+# to -s -w, and -trimpath through GOFLAGS.
+LDFLAGS ?=
+
 build:
 	@echo "==> go build ./cmd/telesapr ./cmd/telesapr-cli"
-	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr ./cmd/telesapr
-	GOCACHE=$(PWD)/.gocache go build -o bin/telesapr-cli ./cmd/telesapr-cli
+	GOCACHE=$(PWD)/.gocache go build -ldflags '$(LDFLAGS)' -o bin/telesapr ./cmd/telesapr
+	GOCACHE=$(PWD)/.gocache go build -ldflags '$(LDFLAGS)' -o bin/telesapr-cli ./cmd/telesapr-cli
 
 # The desktop entry, icons and MIME type, from dist/freedesktop; the
 # layout follows SolveSpace's res/CMakeLists.txt.
@@ -178,6 +194,42 @@ uninstall:
 		rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/$$s/apps/telesapr.png \
 			$(DESTDIR)$(DATADIR)/icons/hicolor/$$s/mimetypes/application-x-telesapr.png; \
 	done
+
+# The packages a release carries, into bin/dist: each script builds the
+# binaries for its OS with -trimpath and without symbols, then wraps
+# them as docs/releasing.md lists. dist picks the script for this host.
+DIST_OUT = $(PWD)/bin/dist
+DIST_ENV = VERSION=$(VERSION) OUT=$(DIST_OUT) GOCACHE=$(PWD)/.gocache
+
+dist:
+	@case "$$(uname -s)" in \
+		Linux) $(MAKE) --no-print-directory dist-linux dist-windows ;; \
+		Darwin) $(MAKE) --no-print-directory dist-macos ;; \
+		MINGW*|MSYS*) $(MAKE) --no-print-directory dist-windows ;; \
+		*) echo "make dist: no packaging for $$(uname -s)"; exit 1 ;; \
+	esac
+
+dist-linux:
+	@echo "==> Linux packages for $(VERSION)"
+	$(DIST_ENV) scripts/dist-linux.sh
+
+dist-windows:
+	@echo "==> Windows packages for $(VERSION)"
+	$(DIST_ENV) scripts/dist-windows.sh
+
+dist-macos:
+	@echo "==> macOS package for $(VERSION)"
+	$(DIST_ENV) scripts/dist-macos.sh
+
+# The release of v$(VERSION): scripts/release.sh pushes master, waits
+# for CI on it, tags, pushes the tag and creates the GitHub release;
+# the Release workflow then attaches the packages. release-notes only
+# prints what the release would say.
+release:
+	scripts/release.sh
+
+release-notes:
+	scripts/release.sh --notes
 
 # Build output only; dist/ holds tracked sources and .gocache is kept.
 clean:

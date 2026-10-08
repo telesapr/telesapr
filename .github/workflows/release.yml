@@ -1,0 +1,120 @@
+# The packages of a release: built on a tag push (make release), and
+# attached to the GitHub release of that tag. Run by hand
+# (workflow_dispatch) it only builds, and the packages are the run's
+# artifacts: how to try a change to the packaging without a release.
+# CI runs on the same push, on the same commit; make release waited for
+# it before tagging, so this workflow only builds.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    # In a container, not on the runner's Ubuntu: the binaries link the
+    # glibc they are built against, and Debian bookworm's (2.36) runs on
+    # more systems than the newest Ubuntu's.
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    timeout-minutes: 30
+    steps:
+      - name: Install the C compiler, the X11 development packages and what the packaging needs
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential git ca-certificates \
+            libx11-dev libxft-dev libfontconfig1-dev libgl-dev
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Packages
+        run: make dist-linux
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: bin/dist/*
+          if-no-files-found: error
+
+  windows:
+    # The Windows build is pure Go; the installers need Inno Setup,
+    # which the runner image has. GNU make is not on its PATH, so the
+    # script runs directly.
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Packages
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's/^const Version = "\(.*\)"$/\1/p' pkg/version/version.go) \
+            OUT="$PWD/bin/dist" bash scripts/dist-windows.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: bin/dist/*
+          if-no-files-found: error
+
+  macos:
+    # Apple silicon runner; the Intel half of the universal binary is
+    # cross-compiled on it.
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Package
+        run: make dist-macos
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: bin/dist/*
+          if-no-files-found: error
+
+  release:
+    # Attaches the packages and their checksums to the tag's release,
+    # which make release created; makes it if it is not there.
+    if: github.event_name == 'push'
+    needs: [linux, windows, macos]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: The tag is the version in the code
+        run: |
+          version=$(sed -n 's/^const Version = "\(.*\)"$/\1/p' pkg/version/version.go)
+          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME, but pkg/version says $version"; exit 1; }
+      - uses: actions/download-artifact@v7
+        with:
+          path: packages
+          merge-multiple: true
+      - name: Checksums
+        working-directory: packages
+        run: |
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 ||
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "TeleSAPR ${GITHUB_REF_NAME#v}" --notes-from-tag
+          gh release upload "$GITHUB_REF_NAME" packages/* --clobber

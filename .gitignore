@@ -4,4 +4,6 @@
 solvespace
 bin
 coverage.out
+# go-winres writes these for the Windows build (scripts/dist-windows.sh)
+*.syso
 .claude

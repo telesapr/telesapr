@@ -102,3 +102,5 @@ At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
 - A commit does one thing and says why in its message. Regenerated goldens are a commit of their
   own.
 - takigo is a public module, required in `go.mod` at a tagged version.
+- A release is `make release` on `master` (`docs/releasing.md`): the tag is `v` +
+  `version.Version`, bumped by hand in a commit of its own, with the VRML goldens regenerated.

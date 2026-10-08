@@ -1,0 +1,41 @@
+# The .deb and .rpm of a release, made by nfpm (scripts/dist-linux.sh).
+# VERSION is pkg/version.Version; bin/stage-linux is where the script
+# had make install put the files (nfpm expands no variable in a path).
+# The package databases' triggers register the desktop entry and the
+# MIME type, so there are no install scripts.
+name: telesapr
+arch: amd64
+platform: linux
+version: ${VERSION}
+release: "1"
+section: graphics
+priority: optional
+maintainer: Mikhail Sorochan <msorc@yandex.ru>
+description: |
+  Parametric 2D/3D CAD.
+  Sketches held by constraints, turned into solids: extrude, lathe,
+  revolve, sweep, loft, fillet, chamfer, shell, mirror, step and repeat,
+  screw threads. Imports SolveSpace's .slvs and STEP; exports STEP, STL,
+  DXF and more. Every feature can be scripted in Go.
+vendor: The TeleSAPR authors
+homepage: https://github.com/telesapr/telesapr
+license: GPL-3.0-or-later
+contents:
+  - src: bin/stage-linux/usr
+    dst: /usr
+    type: tree
+depends:
+  - libx11-6
+  - libxft2
+  - libfontconfig1
+  - libgl1
+overrides:
+  rpm:
+    depends:
+      - libX11
+      - libXft
+      - fontconfig
+      - libglvnd-glx
+rpm:
+  summary: Parametric 2D/3D CAD
+  group: Applications/Engineering
