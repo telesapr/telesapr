@@ -10,6 +10,7 @@ help:
 	@echo "  make test-race    - Run the engine packages' tests under the race detector"
 	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
 	@echo "  make fuzz         - Run each fuzz target for FUZZTIME ($(FUZZTIME))"
+	@echo "  make checks       - fmt-check, tidy-check, generate-check, build and vuln"
 	@echo "  make ci           - Everything the GitHub workflow runs"
 	@echo "  make fmt          - Format code"
 	@echo "  make fmt-check    - Fail if gofmt would change a tracked file"
@@ -39,7 +40,7 @@ help:
 	@echo "  make release      - Push master, wait for CI, tag v$(VERSION), make the GitHub release"
 	@echo ""
 
-.PHONY: test test-gui test-race coverage fuzz ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: test test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -63,10 +64,13 @@ test-gui:
 
 # The packages whose loops run on several goroutines, what loads and
 # regenerates through them, and the servers and platforms that hand
-# work between goroutines. pkg/ui and pkg/script/api take over ten
-# minutes each under the detector and wait for WP2 of the review plan
-# (docs/adr, 2026-10-07), which lets their tests run in parallel.
-RACE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
+# work between goroutines. pkg/ui and pkg/script/api are left out:
+# their tests set process-wide state (the chord tolerance, the parallel
+# mode, the fonts) and so run one after another, over ten minutes each
+# under the detector; what they regenerate through is covered from
+# pkg/sketch. The GitHub workflow runs the set in shards, each a
+# RACE_PACKAGES of its own.
+RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
 	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render ./pkg/render/soft ./cmd/... \
 	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo
 
@@ -99,11 +103,19 @@ fuzz:
 		GOCACHE=$(PWD)/.gocache go test $$pkg -run '^$$' -fuzz "^$$name\$$" -fuzztime $(FUZZTIME) || exit 1; \
 	done
 
-# What .github/workflows/ci.yml runs, the whole tree linted.
-# The checks that rewrite or read the sources first; then the rest side
-# by side, each target's output printed when it is done.
-ci: fmt-check vet tidy-check generate-check
-	@$(MAKE) --no-print-directory -j --output-sync=target build coverage test-race test-gui lint vuln
+# The quick checks: those that rewrite or read the sources first, then
+# the build and the vulnerability report. The GitHub workflow runs them
+# as one job beside the tests and the lint.
+checks: fmt-check tidy-check generate-check
+	@$(MAKE) --no-print-directory -j --output-sync=target build vuln
+
+# What .github/workflows/ci.yml runs on a push to master, in one go:
+# the checks, then the rest side by side, each target's output printed
+# when it is done. govet is in the lint; the GUI packages run under
+# Xvfb inside coverage. On a branch the workflow leaves out test-race,
+# which it runs on master and on request.
+ci: checks
+	@$(MAKE) --no-print-directory -j --output-sync=target coverage test-race lint
 
 fmt-check:
 	@echo "==> gofmt -l"

@@ -26,12 +26,14 @@ COVERPROFILE=${COVERPROFILE:-}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
+# The packages to shard are those of SHARDED that PACKAGES names.
 all=$(go list $PACKAGES)
-sharded=$(go list $SHARDED)
+shardable=$(go list $SHARDED)
+sharded=""
 others=""
 for p in $all; do
-	case " $(echo $sharded) " in
-	*" $p "*) ;;
+	case " $(echo $shardable) " in
+	*" $p "*) sharded="$sharded $p" ;;
 	*) others="$others $p" ;;
 	esac
 done

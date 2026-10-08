@@ -74,7 +74,9 @@ three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the ta
 - Scripting: a method on `pkg/script/api` per feature with a doc comment (`help()` and
   `docs.json` come from it), `make generate` run and `make generate-check` passing, an example
   under `examples/scripts` that a test executes.
-- `make ci` is what the GitHub workflow runs; `make lint-new` lints what a branch changed.
+- `make ci` is what the GitHub workflow runs on `master`; on a branch it leaves out
+  `make test-race`, which runs on `master` and on request (workflow_dispatch). `make lint-new`
+  lints what a branch changed.
 
 ### Environment variables the tests and tools read
 

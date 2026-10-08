@@ -1,8 +1,13 @@
+# Every push and pull request: the checks, the tests with coverage and
+# the lint, as three jobs side by side. The race detector runs on a
+# push to master, and on request (workflow_dispatch) for a branch, in
+# three shards. make ci runs all of it locally.
 name: CI
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,43 +20,59 @@ env:
   X11_PACKAGES: libx11-dev libxft-dev libfontconfig1-dev libgl-dev
 
 jobs:
-  test:
+  checks:
     runs-on: ubuntu-latest
-    # The race run of pkg/persist alone takes over ten minutes.
-    timeout-minutes: 60
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
+      # The Makefile builds into .gocache, which setup-go's cache of
+      # the default build directory never sees; each job keeps its own,
+      # saved on every run and restored from the newest run before it.
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-checks-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-checks-${{ hashFiles('go.sum') }}-
+            gocache-checks-
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - name: gofmt, go.mod tidy, generated symbols up to date, build, govulncheck
+        run: make checks
+
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-coverage-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-coverage-${{ hashFiles('go.sum') }}-
+            gocache-coverage-
       - name: Install X11 development packages, Xvfb and a font
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
-      - name: gofmt
-        run: make fmt-check
-      - name: Vet
-        run: make vet
-      - name: go.mod and go.sum are tidy
-        run: make tidy-check
-      - name: Build
-        run: make build
-      - name: Generated script symbols are up to date
-        run: make generate-check
+      # Every test, the GUI ones under Xvfb, with the 85% rule.
       - name: Tests, with coverage
         run: make coverage
-      - name: Race detector on the engine packages
-        run: make test-race
-      - name: GUI tests under Xvfb
-        run: make test-gui
-      - name: Known vulnerabilities reachable from the binaries
-        run: make vuln
       - uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage.out
 
   lint:
-    # The whole tree, which is lint-clean since 2026-10-03.
+    # The whole tree, which is lint-clean since 2026-10-03. govet is in
+    # the set.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -67,3 +88,45 @@ jobs:
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.13.2
+
+  race:
+    # The engine packages under the race detector, about eight times
+    # slower than the plain run: on master, where make release waits
+    # for it, and on request. The shards take about the same CPU time
+    # each; with the build cache, a package no commit touched since the
+    # last run is a cached result.
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: slvs
+            packages: ./pkg/persist/slvs
+          - name: topo
+            packages: ./pkg/topo ./pkg/thread ./pkg/ttf ./pkg/check
+          - name: kernel
+            packages: >-
+              ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/convert
+              ./pkg/persist/dxf ./pkg/persist/link ./pkg/persist/step ./pkg/persist/tlspr
+              ./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render
+              ./pkg/render/soft ./cmd/... ./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/...
+              ./pkg/res
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-race-${{ matrix.name }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-race-${{ matrix.name }}-${{ hashFiles('go.sum') }}-
+            gocache-race-${{ matrix.name }}-
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - name: Race detector, shard ${{ matrix.name }}
+        run: make test-race RACE_PACKAGES='${{ matrix.packages }}'
