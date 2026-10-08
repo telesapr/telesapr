@@ -55,7 +55,11 @@ for arch in amd64 arm64; do
 
     echo "==> $name.zip"
     rm -f "$OUT/$name.zip"
-    (cd "$OUT" && mv "stage-$name" "$name" && zip -qr "$name.zip" "$name" && mv "$name" "stage-$name")
+    # Git Bash on the Windows runner has no zip; it has 7-Zip.
+    (cd "$OUT" && mv "stage-$name" "$name" &&
+        if command -v zip >/dev/null; then zip -qr "$name.zip" "$name"
+        else 7z a -tzip -bso0 -bsp0 "$name.zip" "$name"; fi &&
+        mv "$name" "stage-$name")
 
     if [[ -n $iscc ]]; then
         echo "==> $name-setup.exe"
