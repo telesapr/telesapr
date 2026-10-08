@@ -304,177 +304,245 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 	gw.havePainted = false
 	switch gw.pending.operation {
 	case PendingDraggingConstraint:
-		c := sk.Constraint(gw.pending.constraint)
-		gw.UpdateDraggedNum(&c.Disp.Offset, x, y)
-		gw.orig.mouse = mp
-		gw.Invalidate(false)
+		gw.dragConstraint(x, y)
 		return
 
 	case PendingDraggingNewLinePoint, PendingDraggingNewPoint:
-		if gw.pending.operation == PendingDraggingNewLinePoint {
-			if !ctrlDown {
-				gw.pending.suggestion, gw.pending.hasSuggestion = gw.SuggestConstraint(gw.pending.request)
-			} else {
-				gw.pending.hasSuggestion = false
-			}
-		}
-		gw.UpdateDraggedPoint(gw.pending.point, x, y)
-		gw.HitTestMakeSelection(mp)
-		sk.MarkGroupDirtyByEntity(gw.pending.point)
-		gw.orig.mouse = mp
+		gw.dragNewPoint(x, y, ctrlDown)
 
 	case PendingDraggingPoints:
-		if shiftDown || ctrlDown {
-			// Edit the rotation associated with a POINT_N_ROT_TRANS,
-			// either within (ctrlDown) or out of (shiftDown) the plane of
-			// the screen. So first get the rotation to apply, in qt.
-			var qt geom.Quaternion
-			if ctrlDown {
-				d := mp.DistanceTo(gw.orig.mouseOnButtonDown)
-				if d < 25 {
-					// Don't start dragging the position about the normal
-					// until we're a little ways out, to get a reasonable
-					// reference pos
-					qt = geom.Quaternion{W: 1}
-				} else {
-					ob := gw.orig.mouseOnButtonDown
-					theta := libm.Atan2(gw.orig.mouse.V-ob.V, gw.orig.mouse.U-ob.U)
-					theta -= libm.Atan2(y-ob.V, x-ob.U)
-					gn := v.ProjRight.Cross(v.ProjUp)
-					qt = geom.QuaternionFromAxisAngle(gn, -theta)
-				}
-			} else {
-				dx := -(x - gw.orig.mouse.U)
-				dy := -(y - gw.orig.mouse.V)
-				s := 0.3 * (geom.Pi / 180) // degrees per pixel
-				qt = geom.QuaternionFromAxisAngle(v.ProjUp, -s*dx).Times(
-					geom.QuaternionFromAxisAngle(v.ProjRight, s*dy))
-			}
-
-			// Now apply this rotation to the points being dragged.
-			for _, he := range gw.pending.points {
-				e := sk.Entity(he)
-				if e.Type != core.EntityPointNRotTrans {
-					if ctrlDown {
-						p := e.PointGetNum(sk)
-						p = p.Minus(ss.ExtraLine.PtA)
-						p = qt.Rotate(p)
-						p = p.Plus(ss.ExtraLine.PtA)
-						e.PointForceTo(sk, p)
-					} else {
-						gw.UpdateDraggedPoint(he, x, y)
-					}
-				} else {
-					q := e.PointGetQuaternion(sk)
-					p := e.PointGetNum(sk)
-					q = qt.Times(q)
-					e.PointForceQuaternionTo(sk, q)
-					// Let's rotate about the selected point; so fix up the
-					// translation so that that point didn't move.
-					e.PointForceTo(sk, p)
-				}
-				sk.MarkGroupDirtyByEntity(e.H)
-			}
-		} else {
-			for _, he := range gw.pending.points {
-				gw.UpdateDraggedPoint(he, x, y)
-				sk.MarkGroupDirtyByEntity(he)
-			}
-		}
-		gw.orig.mouse = mp
+		gw.dragPoints(x, y, shiftDown, ctrlDown)
 
 	case PendingDraggingNewCubicPoint:
-		gw.UpdateDraggedPoint(gw.pending.point, x, y)
-		gw.HitTestMakeSelection(mp)
-
-		hr := gw.pending.point.Request()
-		if gw.pending.point == hr.Entity(4) {
-			// The very first segment; dragging final point drags both
-			// tangent points.
-			p0 := sk.Entity(hr.Entity(1)).PointGetNum(sk)
-			p3 := sk.Entity(hr.Entity(4)).PointGetNum(sk)
-			p1 := p0.ScaledBy(2.0 / 3).Plus(p3.ScaledBy(1.0 / 3))
-			p2 := p0.ScaledBy(1.0 / 3).Plus(p3.ScaledBy(2.0 / 3))
-			sk.Entity(hr.Entity(1+1)).PointForceTo(sk, p1)
-			sk.Entity(hr.Entity(1+2)).PointForceTo(sk, p2)
-		} else {
-			// A subsequent segment; dragging point drags only final
-			// tangent point.
-			i := sk.Entity(hr.Entity(0)).ExtraPoints
-			pn := sk.Entity(hr.Entity(4 + i)).PointGetNum(sk)
-			pnm2 := sk.Entity(hr.Entity(2 + i)).PointGetNum(sk)
-			pnm1 := pn.Plus(pnm2).ScaledBy(0.5)
-			sk.Entity(hr.Entity(3+i)).PointForceTo(sk, pnm1)
-		}
-
-		gw.orig.mouse = mp
-		sk.MarkGroupDirtyByEntity(gw.pending.point)
+		gw.dragNewCubicPoint(x, y)
 
 	case PendingDraggingNewArcPoint:
-		gw.UpdateDraggedPoint(gw.pending.point, x, y)
-		gw.HitTestMakeSelection(mp)
-
-		hr := gw.pending.point.Request()
-		ona := sk.Entity(hr.Entity(2)).PointGetNum(sk)
-		onb := sk.Entity(hr.Entity(3)).PointGetNum(sk)
-		center := ona.Plus(onb).ScaledBy(0.5)
-
-		sk.Entity(hr.Entity(1)).PointForceTo(sk, center)
-		gw.suggestFor(hr, ctrlDown)
-
-		gw.orig.mouse = mp
-		sk.MarkGroupDirtyByEntity(gw.pending.point)
+		gw.dragNewArcPoint(x, y, ctrlDown)
 
 	case PendingDraggingNewRadius, PendingDraggingRadius:
-		circle := sk.Entity(gw.pending.circle)
-		center := sk.Entity(circle.Point[0]).PointGetNum(sk)
-		c2 := gw.ProjectPoint(center)
-		r := c2.DistanceTo(mp) / v.Scale
-		sk.Entity(circle.Distance).DistanceForceTo(sk, r)
-		if gw.pending.operation == PendingDraggingNewRadius {
-			gw.suggestFor(gw.pending.circle.Request(), ctrlDown)
-		}
-
-		sk.MarkGroupDirtyByEntity(gw.pending.circle)
-		ss.ScheduleShowTW()
+		gw.dragRadius(x, y, ctrlDown)
 
 	case PendingDraggingNormal:
-		normal := sk.Entity(gw.pending.normal)
-		p := sk.Entity(normal.Point[0]).PointGetNum(sk)
-		p2 := gw.ProjectPoint(p)
-
-		q := normal.NormalGetNum(sk)
-		u, vv := q.RotationU(), q.RotationV()
-
-		if ctrlDown {
-			theta := libm.Atan2(gw.orig.mouse.V-p2.V, gw.orig.mouse.U-p2.U)
-			theta -= libm.Atan2(y-p2.V, x-p2.U)
-
-			n := v.ProjRight.Cross(v.ProjUp)
-			u = u.RotatedAroundAxis(n, -theta)
-			vv = vv.RotatedAroundAxis(n, -theta)
-		} else {
-			dx := -(x - gw.orig.mouse.U)
-			dy := -(y - gw.orig.mouse.V)
-			s := 0.3 * (geom.Pi / 180) // degrees per pixel
-			u = u.RotatedAroundAxis(v.ProjUp, -s*dx)
-			u = u.RotatedAroundAxis(v.ProjRight, s*dy)
-			vv = vv.RotatedAroundAxis(v.ProjUp, -s*dx)
-			vv = vv.RotatedAroundAxis(v.ProjRight, s*dy)
-		}
-		gw.orig.mouse = mp
-		normal.NormalForceTo(sk, geom.QuaternionFromBasis(u, vv))
-
-		sk.MarkGroupDirtyByEntity(gw.pending.normal)
+		gw.dragNormal(x, y, ctrlDown)
 
 	case PendingDraggingMarquee:
-		gw.orig.mouse = mp
-		gw.Invalidate(false)
+		gw.dragMarquee(x, y)
 		return
 
 	default:
 		panic("ui: unexpected pending operation")
 	}
+}
+
+// dragPoints moves what a PendingDraggingPoints drag holds to the mouse.
+func (gw *GraphicsWindow) dragPoints(x, y float64, shiftDown, ctrlDown bool) {
+	ss := gw.ss
+	sk := gw.sk()
+	v := &gw.view
+	mp := geom.Point2d{U: x, V: y}
+
+	if shiftDown || ctrlDown {
+		// Edit the rotation associated with a POINT_N_ROT_TRANS,
+		// either within (ctrlDown) or out of (shiftDown) the plane of
+		// the screen. So first get the rotation to apply, in qt.
+		var qt geom.Quaternion
+		if ctrlDown {
+			d := mp.DistanceTo(gw.orig.mouseOnButtonDown)
+			if d < 25 {
+				// Don't start dragging the position about the normal
+				// until we're a little ways out, to get a reasonable
+				// reference pos
+				qt = geom.Quaternion{W: 1}
+			} else {
+				ob := gw.orig.mouseOnButtonDown
+				theta := libm.Atan2(gw.orig.mouse.V-ob.V, gw.orig.mouse.U-ob.U)
+				theta -= libm.Atan2(y-ob.V, x-ob.U)
+				gn := v.ProjRight.Cross(v.ProjUp)
+				qt = geom.QuaternionFromAxisAngle(gn, -theta)
+			}
+		} else {
+			dx := -(x - gw.orig.mouse.U)
+			dy := -(y - gw.orig.mouse.V)
+			s := 0.3 * (geom.Pi / 180) // degrees per pixel
+			qt = geom.QuaternionFromAxisAngle(v.ProjUp, -s*dx).Times(
+				geom.QuaternionFromAxisAngle(v.ProjRight, s*dy))
+		}
+
+		// Now apply this rotation to the points being dragged.
+		for _, he := range gw.pending.points {
+			e := sk.Entity(he)
+			if e.Type != core.EntityPointNRotTrans {
+				if ctrlDown {
+					p := e.PointGetNum(sk)
+					p = p.Minus(ss.ExtraLine.PtA)
+					p = qt.Rotate(p)
+					p = p.Plus(ss.ExtraLine.PtA)
+					e.PointForceTo(sk, p)
+				} else {
+					gw.UpdateDraggedPoint(he, x, y)
+				}
+			} else {
+				q := e.PointGetQuaternion(sk)
+				p := e.PointGetNum(sk)
+				q = qt.Times(q)
+				e.PointForceQuaternionTo(sk, q)
+				// Let's rotate about the selected point; so fix up the
+				// translation so that that point didn't move.
+				e.PointForceTo(sk, p)
+			}
+			sk.MarkGroupDirtyByEntity(e.H)
+		}
+	} else {
+		for _, he := range gw.pending.points {
+			gw.UpdateDraggedPoint(he, x, y)
+			sk.MarkGroupDirtyByEntity(he)
+		}
+	}
+	gw.orig.mouse = mp
+}
+
+// dragMarquee moves what a PendingDraggingMarquee drag holds to the mouse.
+func (gw *GraphicsWindow) dragMarquee(x, y float64) {
+	mp := geom.Point2d{U: x, V: y}
+
+	gw.orig.mouse = mp
+	gw.Invalidate(false)
+}
+
+// dragConstraint moves what a PendingDraggingConstraint drag holds to the mouse.
+func (gw *GraphicsWindow) dragConstraint(x, y float64) {
+	sk := gw.sk()
+	mp := geom.Point2d{U: x, V: y}
+
+	c := sk.Constraint(gw.pending.constraint)
+	gw.UpdateDraggedNum(&c.Disp.Offset, x, y)
+	gw.orig.mouse = mp
+	gw.Invalidate(false)
+}
+
+// dragNewPoint moves what a PendingDraggingNewLinePoint, PendingDraggingNewPoint drag holds to the mouse.
+func (gw *GraphicsWindow) dragNewPoint(x, y float64, ctrlDown bool) {
+	sk := gw.sk()
+	mp := geom.Point2d{U: x, V: y}
+
+	if gw.pending.operation == PendingDraggingNewLinePoint {
+		if !ctrlDown {
+			gw.pending.suggestion, gw.pending.hasSuggestion = gw.SuggestConstraint(gw.pending.request)
+		} else {
+			gw.pending.hasSuggestion = false
+		}
+	}
+	gw.UpdateDraggedPoint(gw.pending.point, x, y)
+	gw.HitTestMakeSelection(mp)
+	sk.MarkGroupDirtyByEntity(gw.pending.point)
+	gw.orig.mouse = mp
+}
+
+// dragNewCubicPoint moves what a PendingDraggingNewCubicPoint drag holds to the mouse.
+func (gw *GraphicsWindow) dragNewCubicPoint(x, y float64) {
+	sk := gw.sk()
+	mp := geom.Point2d{U: x, V: y}
+
+	gw.UpdateDraggedPoint(gw.pending.point, x, y)
+	gw.HitTestMakeSelection(mp)
+
+	hr := gw.pending.point.Request()
+	if gw.pending.point == hr.Entity(4) {
+		// The very first segment; dragging final point drags both
+		// tangent points.
+		p0 := sk.Entity(hr.Entity(1)).PointGetNum(sk)
+		p3 := sk.Entity(hr.Entity(4)).PointGetNum(sk)
+		p1 := p0.ScaledBy(2.0 / 3).Plus(p3.ScaledBy(1.0 / 3))
+		p2 := p0.ScaledBy(1.0 / 3).Plus(p3.ScaledBy(2.0 / 3))
+		sk.Entity(hr.Entity(1+1)).PointForceTo(sk, p1)
+		sk.Entity(hr.Entity(1+2)).PointForceTo(sk, p2)
+	} else {
+		// A subsequent segment; dragging point drags only final
+		// tangent point.
+		i := sk.Entity(hr.Entity(0)).ExtraPoints
+		pn := sk.Entity(hr.Entity(4 + i)).PointGetNum(sk)
+		pnm2 := sk.Entity(hr.Entity(2 + i)).PointGetNum(sk)
+		pnm1 := pn.Plus(pnm2).ScaledBy(0.5)
+		sk.Entity(hr.Entity(3+i)).PointForceTo(sk, pnm1)
+	}
+
+	gw.orig.mouse = mp
+	sk.MarkGroupDirtyByEntity(gw.pending.point)
+}
+
+// dragNewArcPoint moves what a PendingDraggingNewArcPoint drag holds to the mouse.
+func (gw *GraphicsWindow) dragNewArcPoint(x, y float64, ctrlDown bool) {
+	sk := gw.sk()
+	mp := geom.Point2d{U: x, V: y}
+
+	gw.UpdateDraggedPoint(gw.pending.point, x, y)
+	gw.HitTestMakeSelection(mp)
+
+	hr := gw.pending.point.Request()
+	ona := sk.Entity(hr.Entity(2)).PointGetNum(sk)
+	onb := sk.Entity(hr.Entity(3)).PointGetNum(sk)
+	center := ona.Plus(onb).ScaledBy(0.5)
+
+	sk.Entity(hr.Entity(1)).PointForceTo(sk, center)
+	gw.suggestFor(hr, ctrlDown)
+
+	gw.orig.mouse = mp
+	sk.MarkGroupDirtyByEntity(gw.pending.point)
+}
+
+// dragRadius moves what a PendingDraggingNewRadius, PendingDraggingRadius drag holds to the mouse.
+func (gw *GraphicsWindow) dragRadius(x, y float64, ctrlDown bool) {
+	ss := gw.ss
+	sk := gw.sk()
+	v := &gw.view
+	mp := geom.Point2d{U: x, V: y}
+
+	circle := sk.Entity(gw.pending.circle)
+	center := sk.Entity(circle.Point[0]).PointGetNum(sk)
+	c2 := gw.ProjectPoint(center)
+	r := c2.DistanceTo(mp) / v.Scale
+	sk.Entity(circle.Distance).DistanceForceTo(sk, r)
+	if gw.pending.operation == PendingDraggingNewRadius {
+		gw.suggestFor(gw.pending.circle.Request(), ctrlDown)
+	}
+
+	sk.MarkGroupDirtyByEntity(gw.pending.circle)
+	ss.ScheduleShowTW()
+}
+
+// dragNormal moves what a PendingDraggingNormal drag holds to the mouse.
+func (gw *GraphicsWindow) dragNormal(x, y float64, ctrlDown bool) {
+	sk := gw.sk()
+	v := &gw.view
+	mp := geom.Point2d{U: x, V: y}
+
+	normal := sk.Entity(gw.pending.normal)
+	p := sk.Entity(normal.Point[0]).PointGetNum(sk)
+	p2 := gw.ProjectPoint(p)
+
+	q := normal.NormalGetNum(sk)
+	u, vv := q.RotationU(), q.RotationV()
+
+	if ctrlDown {
+		theta := libm.Atan2(gw.orig.mouse.V-p2.V, gw.orig.mouse.U-p2.U)
+		theta -= libm.Atan2(y-p2.V, x-p2.U)
+
+		n := v.ProjRight.Cross(v.ProjUp)
+		u = u.RotatedAroundAxis(n, -theta)
+		vv = vv.RotatedAroundAxis(n, -theta)
+	} else {
+		dx := -(x - gw.orig.mouse.U)
+		dy := -(y - gw.orig.mouse.V)
+		s := 0.3 * (geom.Pi / 180) // degrees per pixel
+		u = u.RotatedAroundAxis(v.ProjUp, -s*dx)
+		u = u.RotatedAroundAxis(v.ProjRight, s*dy)
+		vv = vv.RotatedAroundAxis(v.ProjUp, -s*dx)
+		vv = vv.RotatedAroundAxis(v.ProjRight, s*dy)
+	}
+	gw.orig.mouse = mp
+	normal.NormalForceTo(sk, geom.QuaternionFromBasis(u, vv))
+
+	sk.MarkGroupDirtyByEntity(gw.pending.normal)
 }
 
 // ClearPending cancels the operation in progress.
@@ -953,7 +1021,8 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 		return
 	}
 
-	// This will be clobbered by MouseMoved below.
+	// The suggestion made while dragging is read before MouseMoved
+	// below replaces it, and handed to the click that applies it.
 	hasConstraintSuggestion := gw.pending.hasSuggestion
 	constraintSuggestion := gw.pending.suggestion
 
@@ -961,306 +1030,24 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 	gw.MouseMoved(mx, my, false, false, false, false, false)
 	gw.orig.mouse = geom.Point2d{U: mx, V: my}
 	gw.orig.mouseOnButtonDown = gw.orig.mouse
-	mouse := geom.Point2d{U: mx, V: my}
-
-	// The current mouse location
-	vw := &gw.view
-	v := vw.Offset.ScaledBy(-1)
-	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
-	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
-
-	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
 
 	var hr core.HRequest
 	var hc core.HConstraint
 	switch gw.pending.operation {
 	case PendingCommand:
-		switch gw.pending.command {
-		case CmdDatumPoint:
-			hr = gw.AddRequest(sketch.RequestDatumPoint, true)
-			pointForceTo(hr.Entity(0), v)
-			gw.ConstrainPointByHovered(hr.Entity(0), &mouse)
-			gw.ClearSuper()
-
-		case CmdLineSegment, CmdConstrSegment:
-			hr = gw.AddRequest(sketch.RequestLineSegment, true)
-			sk.Request(hr).Construction = gw.pending.command == CmdConstrSegment
-			pointForceTo(hr.Entity(1), v)
-			gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
-
-			gw.ClearSuper()
-			gw.AddToPending(hr)
-
-			gw.pending.operation = PendingDraggingNewLinePoint
-			gw.pending.request = hr
-			gw.pending.point = hr.Entity(2)
-			gw.pending.description = "click next point of line, or press Esc"
-			pointForceTo(gw.pending.point, v)
-
-		case CmdRectangle:
-			if !gw.LockedInWorkplane() {
-				ss.Error("Can't draw rectangle in 3d; first, activate a workplane " +
-					"with Sketch -> In Workplane.")
-				gw.ClearSuper()
-				break
-			}
-			var lns [4]core.HRequest
-			ss.UndoRemember()
-			for i := range 4 {
-				lns[i] = gw.AddRequest(sketch.RequestLineSegment, false)
-				gw.AddToPending(lns[i])
-			}
-			for i := range 4 {
-				ss.constrainCoincident(lns[i].Entity(1), lns[(i+1)%4].Entity(2))
-				pointForceTo(lns[i].Entity(1), v)
-				pointForceTo(lns[i].Entity(2), v)
-			}
-			for i := range 4 {
-				typ := core.ConstraintVertical
-				if i%2 != 0 {
-					typ = core.ConstraintHorizontal
-				}
-				ss.constrain(typ, core.HEntity{}, core.HEntity{}, lns[i].Entity(0))
-			}
-			if gw.ConstrainPointByHovered(lns[2].Entity(1), &mouse) {
-				pos := sk.Entity(lns[2].Entity(1)).PointGetNum(sk)
-				for i := range 4 {
-					pointForceTo(lns[i].Entity(1), pos)
-					pointForceTo(lns[i].Entity(2), pos)
-				}
-			}
-
-			gw.pending.operation = PendingDraggingNewPoint
-			gw.pending.point = lns[1].Entity(2)
-			gw.pending.description = "click to place other corner of rectangle"
-			hr = lns[0]
-
-		case CmdCircle:
-			hr = gw.AddRequest(sketch.RequestCircle, true)
-			// Centered where we clicked
-			pointForceTo(hr.Entity(1), v)
-			// Normal to the screen
-			sk.Entity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
-			// Initial radius zero
-			sk.Entity(hr.Entity(64)).DistanceForceTo(sk, 0)
-
-			gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
-
-			gw.ClearSuper()
-			gw.AddToPending(hr)
-
-			gw.pending.operation = PendingDraggingNewRadius
-			gw.pending.circle = hr.Entity(0)
-			gw.pending.description = "click to set radius"
-
-		case CmdArc:
-			if !gw.LockedInWorkplane() {
-				ss.Error("Can't draw arc in 3d; first, activate a workplane " +
-					"with Sketch -> In Workplane.")
-				gw.ClearPending(true)
-				break
-			}
-			hr = gw.AddRequest(sketch.RequestArcOfCircle, true)
-			// This fudge factor stops us from immediately failing to solve
-			// because of the arc's implicit (equal radius) tangent.
-			adj := vw.ProjRight.WithMagnitude(2 / vw.Scale)
-			pointForceTo(hr.Entity(1), v.Minus(adj))
-			pointForceTo(hr.Entity(2), v)
-			pointForceTo(hr.Entity(3), v)
-			gw.ConstrainPointByHovered(hr.Entity(2), &mouse)
-
-			gw.ClearSuper()
-			gw.AddToPending(hr)
-
-			gw.pending.operation = PendingDraggingNewArcPoint
-			gw.pending.point = hr.Entity(3)
-			gw.pending.description = "click to place point"
-
-		case CmdCubic:
-			hr = gw.AddRequest(sketch.RequestCubic, true)
-			for i := 1; i <= 4; i++ {
-				pointForceTo(hr.Entity(i), v)
-			}
-			gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
-
-			gw.ClearSuper()
-			gw.AddToPending(hr)
-
-			gw.pending.operation = PendingDraggingNewCubicPoint
-			gw.pending.point = hr.Entity(4)
-			gw.pending.description = "click next point of cubic, or press Esc"
-
-		case CmdWorkplane:
-			if gw.LockedInWorkplane() {
-				ss.Error("Sketching in a workplane already; sketch in 3d before " +
-					"creating new workplane.")
-				gw.ClearSuper()
-				break
-			}
-			hr = gw.AddRequest(sketch.RequestWorkplane, true)
-			pointForceTo(hr.Entity(1), v)
-			sk.Entity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
-			gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
-			gw.ClearSuper()
-
-		case CmdTTFText:
-			if !gw.LockedInWorkplane() {
-				ss.Error("Can't draw text in 3d; first, activate a workplane " +
-					"with Sketch -> In Workplane.")
-				gw.ClearSuper()
-				break
-			}
-			hr = gw.AddRequest(sketch.RequestTTFText, true)
-			gw.AddToPending(hr)
-			r := sk.Request(hr)
-			r.Str = "Abc"
-			r.Font = ttf.EmbeddedFont
-
-			for i := 1; i <= 4; i++ {
-				pointForceTo(hr.Entity(i), v)
-			}
-
-			gw.pending.operation = PendingDraggingNewPoint
-			gw.pending.point = hr.Entity(3)
-			gw.pending.description = "click to place bottom right of text"
-
-		case CmdImage:
-			if !gw.LockedInWorkplane() {
-				ss.Error("Can't draw image in 3d; first, activate a workplane " +
-					"with Sketch -> In Workplane.")
-				gw.ClearSuper()
-				break
-			}
-			hr = gw.AddRequest(sketch.RequestImage, true)
-			gw.AddToPending(hr)
-			r := sk.Request(hr)
-			r.File = gw.pending.filename
-			r.Construction = true
-
-			for i := 1; i <= 4; i++ {
-				pointForceTo(hr.Entity(i), v)
-			}
-
-			gw.pending.operation = PendingDraggingNewPoint
-			gw.pending.point = hr.Entity(3)
-			gw.pending.description = "click to place bottom right of image"
-
-		case CmdComment:
-			gw.ClearSuper()
-			var c core.Constraint
-			c.Group = gw.activeGroupH()
-			c.Workplane = gw.ActiveWorkplane()
-			c.Type = core.ConstraintComment
-			c.Disp.Offset = v
-			c.Comment = "NEW COMMENT -- DOUBLE-CLICK TO EDIT"
-			hc = ss.addConstraint(&c, true)
-
-		default:
-			panic("ui: unexpected pending menu id")
-		}
+		hr, hc = gw.clickForCommand(mx, my)
 
 	case PendingDraggingRadius:
-		gw.ClearPending(true)
+		gw.clickEndsRadius()
 
 	case PendingDraggingNewPoint, PendingDraggingNewArcPoint:
-		arc := gw.pending.operation == PendingDraggingNewArcPoint
-		gw.ConstrainPointByHovered(gw.pending.point, &mouse)
-		if arc && hasConstraintSuggestion {
-			gw.applySuggestion(constraintSuggestion)
-		}
-		gw.ClearPending(true)
+		gw.clickPlacesPoint(mx, my, constraintSuggestion, hasConstraintSuggestion)
 
 	case PendingDraggingNewCubicPoint:
-		hr := gw.pending.point.Request()
-		r := sk.Request(hr)
-
-		if gw.hover.Entity == hr.Entity(1) && r.ExtraPoints >= 2 {
-			// They want the endpoints coincident, which means a periodic
-			// spline instead.
-			r.Type = sketch.RequestCubicPeriodic
-			// Remove the off-curve control points, which are no longer
-			// needed here; so move [2,ep+1] down, skipping first pt.
-			for i := 2; i <= r.ExtraPoints+1; i++ {
-				pointForceTo(hr.Entity((i-1)+1), sk.Entity(hr.Entity(i+1)).PointGetNum(sk))
-			}
-			// and move ep+3 down by two, skipping both
-			pointForceTo(hr.Entity((r.ExtraPoints+1)+1),
-				sk.Entity(hr.Entity((r.ExtraPoints+3)+1)).PointGetNum(sk))
-			r.ExtraPoints -= 2
-			// And we're done.
-			sk.MarkGroupDirty(r.Group, false)
-			gw.ClearPending(true)
-			break
-		}
-
-		if gw.ConstrainPointByHovered(gw.pending.point, &mouse) {
-			gw.ClearPending(true)
-			break
-		}
-
-		if r.ExtraPoints >= core.MaxPointsInEntity-4 {
-			gw.ClearPending(true)
-			break
-		}
-
-		sk.Request(hr).ExtraPoints++
-		ss.GenerateAll(sketch.GenerateRegen)
-
-		ep := sk.Request(hr).ExtraPoints
-		last := sk.Entity(hr.Entity(3 + ep)).PointGetNum(sk)
-
-		pointForceTo(hr.Entity(2+ep), last)
-		pointForceTo(hr.Entity(3+ep), v)
-		pointForceTo(hr.Entity(4+ep), v)
-		gw.pending.point = hr.Entity(4 + ep)
+		gw.clickPlacesCubicPoint(mx, my)
 
 	case PendingDraggingNewLinePoint:
-		if gw.hover.Entity.V != 0 {
-			e := sk.Entity(gw.hover.Entity)
-			if e.IsPoint() {
-				hrl := gw.pending.point.Request()
-				sp := sk.Entity(hrl.Entity(1))
-				if e.PointGetNum(sk).Equals(sp.PointGetNum(sk)) {
-					// If we constrained by the hovered point, then we would
-					// create a zero-length line segment. That's not good, so
-					// just stop drawing.
-					gw.ClearPending(true)
-					break
-				}
-			}
-		}
-
-		doneDragging := gw.ConstrainPointByHovered(gw.pending.point, &mouse)
-
-		// Constrain the line segment horizontal or vertical if close
-		// enough
-		if hasConstraintSuggestion {
-			gw.applySuggestion(constraintSuggestion)
-		}
-
-		if doneDragging {
-			gw.ClearPending(true)
-			break
-		}
-
-		// Create a new line segment, so that we continue drawing.
-		hr := gw.AddRequest(sketch.RequestLineSegment, true)
-		gw.ReplacePending(gw.pending.request, hr)
-		sk.Request(hr).Construction = sk.Request(gw.pending.request).Construction
-		// Displace the second point of the new line segment slightly, to
-		// avoid creating zero-length edge warnings.
-		pointForceTo(hr.Entity(2), v.Plus(vw.ProjRight.ScaledBy(0.5/vw.Scale)))
-
-		// Constrain the line segments to share an endpoint
-		ss.constrainCoincident(gw.pending.point, hr.Entity(1))
-		pendingPos := sk.Entity(gw.pending.point).PointGetNum(sk)
-		pointForceTo(hr.Entity(1), pendingPos)
-
-		// And drag an endpoint of the new line segment
-		gw.pending.operation = PendingDraggingNewLinePoint
-		gw.pending.request = hr
-		gw.pending.point = hr.Entity(2)
-		gw.pending.description = "click next point of line, or press Esc"
+		gw.clickPlacesLinePoint(mx, my, constraintSuggestion, hasConstraintSuggestion)
 
 	default:
 		if gw.pending.operation == PendingDraggingNewRadius && hasConstraintSuggestion {
@@ -1291,6 +1078,471 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 
 	ss.ScheduleShowTW()
 	gw.Invalidate(false)
+}
+
+// clickForCommand is a left click while PendingCommand.
+func (gw *GraphicsWindow) clickForCommand(mx, my float64) (core.HRequest, core.HConstraint) {
+	var hr core.HRequest
+	var hc core.HConstraint
+
+	switch gw.pending.command {
+	case CmdDatumPoint:
+		hr = gw.placeDatumPoint(mx, my)
+
+	case CmdLineSegment, CmdConstrSegment:
+		hr = gw.placeLineSegment(mx, my)
+
+	case CmdRectangle:
+		hr = gw.placeRectangle(mx, my)
+
+	case CmdCircle:
+		hr = gw.placeCircle(mx, my)
+
+	case CmdArc:
+		hr = gw.placeArc(mx, my)
+
+	case CmdCubic:
+		hr = gw.placeCubic(mx, my)
+
+	case CmdWorkplane:
+		hr = gw.placeWorkplane(mx, my)
+
+	case CmdTTFText:
+		hr = gw.placeTTFText(mx, my)
+
+	case CmdImage:
+		hr = gw.placeImage(mx, my)
+
+	case CmdComment:
+		hc = gw.placeComment(mx, my)
+
+	default:
+		panic("ui: unexpected pending menu id")
+	}
+	return hr, hc
+}
+
+// placeDatumPoint starts a CmdDatumPoint at the click.
+func (gw *GraphicsWindow) placeDatumPoint(mx, my float64) core.HRequest {
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	hr := gw.AddRequest(sketch.RequestDatumPoint, true)
+	pointForceTo(hr.Entity(0), v)
+	gw.ConstrainPointByHovered(hr.Entity(0), &mouse)
+	gw.ClearSuper()
+	return hr
+}
+
+// placeLineSegment starts a CmdLineSegment, CmdConstrSegment at the click.
+func (gw *GraphicsWindow) placeLineSegment(mx, my float64) core.HRequest {
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	hr := gw.AddRequest(sketch.RequestLineSegment, true)
+	sk.Request(hr).Construction = gw.pending.command == CmdConstrSegment
+	pointForceTo(hr.Entity(1), v)
+	gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
+
+	gw.ClearSuper()
+	gw.AddToPending(hr)
+
+	gw.pending.operation = PendingDraggingNewLinePoint
+	gw.pending.request = hr
+	gw.pending.point = hr.Entity(2)
+	gw.pending.description = "click next point of line, or press Esc"
+	pointForceTo(gw.pending.point, v)
+	return hr
+}
+
+// placeRectangle starts a CmdRectangle at the click.
+func (gw *GraphicsWindow) placeRectangle(mx, my float64) core.HRequest {
+	ss := gw.ss
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	var hr core.HRequest
+
+	if !gw.LockedInWorkplane() {
+		ss.Error("Can't draw rectangle in 3d; first, activate a workplane " +
+			"with Sketch -> In Workplane.")
+		gw.ClearSuper()
+		return hr
+	}
+	var lns [4]core.HRequest
+	ss.UndoRemember()
+	for i := range 4 {
+		lns[i] = gw.AddRequest(sketch.RequestLineSegment, false)
+		gw.AddToPending(lns[i])
+	}
+	for i := range 4 {
+		ss.constrainCoincident(lns[i].Entity(1), lns[(i+1)%4].Entity(2))
+		pointForceTo(lns[i].Entity(1), v)
+		pointForceTo(lns[i].Entity(2), v)
+	}
+	for i := range 4 {
+		typ := core.ConstraintVertical
+		if i%2 != 0 {
+			typ = core.ConstraintHorizontal
+		}
+		ss.constrain(typ, core.HEntity{}, core.HEntity{}, lns[i].Entity(0))
+	}
+	if gw.ConstrainPointByHovered(lns[2].Entity(1), &mouse) {
+		pos := sk.Entity(lns[2].Entity(1)).PointGetNum(sk)
+		for i := range 4 {
+			pointForceTo(lns[i].Entity(1), pos)
+			pointForceTo(lns[i].Entity(2), pos)
+		}
+	}
+
+	gw.pending.operation = PendingDraggingNewPoint
+	gw.pending.point = lns[1].Entity(2)
+	gw.pending.description = "click to place other corner of rectangle"
+	hr = lns[0]
+	return hr
+}
+
+// placeCircle starts a CmdCircle at the click.
+func (gw *GraphicsWindow) placeCircle(mx, my float64) core.HRequest {
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	hr := gw.AddRequest(sketch.RequestCircle, true)
+	// Centered where we clicked
+	pointForceTo(hr.Entity(1), v)
+	// Normal to the screen
+	sk.Entity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
+	// Initial radius zero
+	sk.Entity(hr.Entity(64)).DistanceForceTo(sk, 0)
+
+	gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
+
+	gw.ClearSuper()
+	gw.AddToPending(hr)
+
+	gw.pending.operation = PendingDraggingNewRadius
+	gw.pending.circle = hr.Entity(0)
+	gw.pending.description = "click to set radius"
+	return hr
+}
+
+// placeArc starts a CmdArc at the click.
+func (gw *GraphicsWindow) placeArc(mx, my float64) core.HRequest {
+	ss := gw.ss
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	var hr core.HRequest
+
+	if !gw.LockedInWorkplane() {
+		ss.Error("Can't draw arc in 3d; first, activate a workplane " +
+			"with Sketch -> In Workplane.")
+		gw.ClearPending(true)
+		return hr
+	}
+	hr = gw.AddRequest(sketch.RequestArcOfCircle, true)
+	// This fudge factor stops us from immediately failing to solve
+	// because of the arc's implicit (equal radius) tangent.
+	adj := vw.ProjRight.WithMagnitude(2 / vw.Scale)
+	pointForceTo(hr.Entity(1), v.Minus(adj))
+	pointForceTo(hr.Entity(2), v)
+	pointForceTo(hr.Entity(3), v)
+	gw.ConstrainPointByHovered(hr.Entity(2), &mouse)
+
+	gw.ClearSuper()
+	gw.AddToPending(hr)
+
+	gw.pending.operation = PendingDraggingNewArcPoint
+	gw.pending.point = hr.Entity(3)
+	gw.pending.description = "click to place point"
+	return hr
+}
+
+// placeCubic starts a CmdCubic at the click.
+func (gw *GraphicsWindow) placeCubic(mx, my float64) core.HRequest {
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	hr := gw.AddRequest(sketch.RequestCubic, true)
+	for i := 1; i <= 4; i++ {
+		pointForceTo(hr.Entity(i), v)
+	}
+	gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
+
+	gw.ClearSuper()
+	gw.AddToPending(hr)
+
+	gw.pending.operation = PendingDraggingNewCubicPoint
+	gw.pending.point = hr.Entity(4)
+	gw.pending.description = "click next point of cubic, or press Esc"
+	return hr
+}
+
+// placeWorkplane starts a CmdWorkplane at the click.
+func (gw *GraphicsWindow) placeWorkplane(mx, my float64) core.HRequest {
+	ss := gw.ss
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	var hr core.HRequest
+
+	if gw.LockedInWorkplane() {
+		ss.Error("Sketching in a workplane already; sketch in 3d before " +
+			"creating new workplane.")
+		gw.ClearSuper()
+		return hr
+	}
+	hr = gw.AddRequest(sketch.RequestWorkplane, true)
+	pointForceTo(hr.Entity(1), v)
+	sk.Entity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(vw.ProjRight, vw.ProjUp))
+	gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
+	gw.ClearSuper()
+	return hr
+}
+
+// placeTTFText starts a CmdTTFText at the click.
+func (gw *GraphicsWindow) placeTTFText(mx, my float64) core.HRequest {
+	ss := gw.ss
+	sk := gw.sk()
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	var hr core.HRequest
+
+	if !gw.LockedInWorkplane() {
+		ss.Error("Can't draw text in 3d; first, activate a workplane " +
+			"with Sketch -> In Workplane.")
+		gw.ClearSuper()
+		return hr
+	}
+	hr = gw.AddRequest(sketch.RequestTTFText, true)
+	gw.AddToPending(hr)
+	r := sk.Request(hr)
+	r.Str = "Abc"
+	r.Font = ttf.EmbeddedFont
+
+	for i := 1; i <= 4; i++ {
+		pointForceTo(hr.Entity(i), v)
+	}
+
+	gw.pending.operation = PendingDraggingNewPoint
+	gw.pending.point = hr.Entity(3)
+	gw.pending.description = "click to place bottom right of text"
+	return hr
+}
+
+// placeImage starts a CmdImage at the click.
+func (gw *GraphicsWindow) placeImage(mx, my float64) core.HRequest {
+	ss := gw.ss
+	sk := gw.sk()
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+	var hr core.HRequest
+
+	if !gw.LockedInWorkplane() {
+		ss.Error("Can't draw image in 3d; first, activate a workplane " +
+			"with Sketch -> In Workplane.")
+		gw.ClearSuper()
+		return hr
+	}
+	hr = gw.AddRequest(sketch.RequestImage, true)
+	gw.AddToPending(hr)
+	r := sk.Request(hr)
+	r.File = gw.pending.filename
+	r.Construction = true
+
+	for i := 1; i <= 4; i++ {
+		pointForceTo(hr.Entity(i), v)
+	}
+
+	gw.pending.operation = PendingDraggingNewPoint
+	gw.pending.point = hr.Entity(3)
+	gw.pending.description = "click to place bottom right of image"
+	return hr
+}
+
+// placeComment starts a CmdComment at the click.
+func (gw *GraphicsWindow) placeComment(mx, my float64) core.HConstraint {
+	ss := gw.ss
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	var hc core.HConstraint
+
+	gw.ClearSuper()
+	var c core.Constraint
+	c.Group = gw.activeGroupH()
+	c.Workplane = gw.ActiveWorkplane()
+	c.Type = core.ConstraintComment
+	c.Disp.Offset = v
+	c.Comment = "NEW COMMENT -- DOUBLE-CLICK TO EDIT"
+	hc = ss.addConstraint(&c, true)
+	return hc
+}
+
+// clickEndsRadius is a left click while PendingDraggingRadius.
+func (gw *GraphicsWindow) clickEndsRadius() {
+	gw.ClearPending(true)
+}
+
+// clickPlacesPoint is a left click while PendingDraggingNewPoint, PendingDraggingNewArcPoint.
+func (gw *GraphicsWindow) clickPlacesPoint(mx, my float64, suggestion sketch.Suggestion, hasSuggestion bool) {
+	mouse := geom.Point2d{U: mx, V: my}
+
+	arc := gw.pending.operation == PendingDraggingNewArcPoint
+	gw.ConstrainPointByHovered(gw.pending.point, &mouse)
+	if arc && hasSuggestion {
+		gw.applySuggestion(suggestion)
+	}
+	gw.ClearPending(true)
+}
+
+// clickPlacesCubicPoint is a left click while PendingDraggingNewCubicPoint.
+func (gw *GraphicsWindow) clickPlacesCubicPoint(mx, my float64) {
+	ss := gw.ss
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+
+	hr := gw.pending.point.Request()
+	r := sk.Request(hr)
+
+	if gw.hover.Entity == hr.Entity(1) && r.ExtraPoints >= 2 {
+		// They want the endpoints coincident, which means a periodic
+		// spline instead.
+		r.Type = sketch.RequestCubicPeriodic
+		// Remove the off-curve control points, which are no longer
+		// needed here; so move [2,ep+1] down, skipping first pt.
+		for i := 2; i <= r.ExtraPoints+1; i++ {
+			pointForceTo(hr.Entity((i-1)+1), sk.Entity(hr.Entity(i+1)).PointGetNum(sk))
+		}
+		// and move ep+3 down by two, skipping both
+		pointForceTo(hr.Entity((r.ExtraPoints+1)+1),
+			sk.Entity(hr.Entity((r.ExtraPoints+3)+1)).PointGetNum(sk))
+		r.ExtraPoints -= 2
+		// And we're done.
+		sk.MarkGroupDirty(r.Group, false)
+		gw.ClearPending(true)
+		return
+	}
+
+	if gw.ConstrainPointByHovered(gw.pending.point, &mouse) {
+		gw.ClearPending(true)
+		return
+	}
+
+	if r.ExtraPoints >= core.MaxPointsInEntity-4 {
+		gw.ClearPending(true)
+		return
+	}
+
+	sk.Request(hr).ExtraPoints++
+	ss.GenerateAll(sketch.GenerateRegen)
+
+	ep := sk.Request(hr).ExtraPoints
+	last := sk.Entity(hr.Entity(3 + ep)).PointGetNum(sk)
+
+	pointForceTo(hr.Entity(2+ep), last)
+	pointForceTo(hr.Entity(3+ep), v)
+	pointForceTo(hr.Entity(4+ep), v)
+	gw.pending.point = hr.Entity(4 + ep)
+}
+
+// clickPlacesLinePoint is a left click while PendingDraggingNewLinePoint.
+func (gw *GraphicsWindow) clickPlacesLinePoint(mx, my float64, suggestion sketch.Suggestion, hasSuggestion bool) {
+	ss := gw.ss
+	sk := gw.sk()
+	mouse := geom.Point2d{U: mx, V: my}
+	vw := &gw.view
+	v := vw.Offset.ScaledBy(-1)
+	v = v.Plus(vw.ProjRight.ScaledBy(mx / vw.Scale))
+	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
+	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
+
+	if gw.hover.Entity.V != 0 {
+		e := sk.Entity(gw.hover.Entity)
+		if e.IsPoint() {
+			hrl := gw.pending.point.Request()
+			sp := sk.Entity(hrl.Entity(1))
+			if e.PointGetNum(sk).Equals(sp.PointGetNum(sk)) {
+				// If we constrained by the hovered point, then we would
+				// create a zero-length line segment. That's not good, so
+				// just stop drawing.
+				gw.ClearPending(true)
+				return
+			}
+		}
+	}
+
+	doneDragging := gw.ConstrainPointByHovered(gw.pending.point, &mouse)
+
+	// Constrain the line segment horizontal or vertical if close
+	// enough
+	if hasSuggestion {
+		gw.applySuggestion(suggestion)
+	}
+
+	if doneDragging {
+		gw.ClearPending(true)
+		return
+	}
+
+	// Create a new line segment, so that we continue drawing.
+	hr := gw.AddRequest(sketch.RequestLineSegment, true)
+	gw.ReplacePending(gw.pending.request, hr)
+	sk.Request(hr).Construction = sk.Request(gw.pending.request).Construction
+	// Displace the second point of the new line segment slightly, to
+	// avoid creating zero-length edge warnings.
+	pointForceTo(hr.Entity(2), v.Plus(vw.ProjRight.ScaledBy(0.5/vw.Scale)))
+
+	// Constrain the line segments to share an endpoint
+	ss.constrainCoincident(gw.pending.point, hr.Entity(1))
+	pendingPos := sk.Entity(gw.pending.point).PointGetNum(sk)
+	pointForceTo(hr.Entity(1), pendingPos)
+
+	// And drag an endpoint of the new line segment
+	gw.pending.operation = PendingDraggingNewLinePoint
+	gw.pending.request = hr
+	gw.pending.point = hr.Entity(2)
+	gw.pending.description = "click next point of line, or press Esc"
 }
 
 // MouseLeftUp ends a drag or a marquee.
