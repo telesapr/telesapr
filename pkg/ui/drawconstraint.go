@@ -111,6 +111,43 @@ type constraintDrawer struct {
 	c      *core.Constraint
 	canvas render.Canvas
 	camera *render.Camera
+
+	// The state of one layout (doLayout): how the constraint is drawn,
+	// where its label corner and reference points go when asked for,
+	// the stroke and fill it draws with, the view's unit vectors (one
+	// pixel long) and the height of its text.
+	how        ConstraintDrawAs
+	labelPos   *geom.Vector
+	refs       *[]geom.Vector
+	stroke     render.Stroke
+	fill       render.Fill
+	hcs        render.HStroke
+	hcf        render.HFill
+	gr, gu, gn geom.Vector
+	textHeight float64
+}
+
+// addRef records a reference point of the constraint, when asked for.
+func (d *constraintDrawer) addRef(p geom.Vector) {
+	if d.refs != nil {
+		*d.refs = append(*d.refs, p)
+	}
+}
+
+// pointNum is the position of point h.
+func (d *constraintDrawer) pointNum(h core.HEntity) geom.Vector {
+	sk := d.gw.sk()
+	return sk.Entity(h).PointGetNum(sk)
+}
+
+// drawNum is where point h is drawn, exploded if the sketch is.
+func (d *constraintDrawer) drawNum(h core.HEntity) geom.Vector {
+	return d.gw.pointGetDrawNum(d.gw.sk().Entity(h))
+}
+
+// explodeOffset is how far entity h is moved by exploding the sketch.
+func (d *constraintDrawer) explodeOffset(h core.HEntity) geom.Vector {
+	return d.gw.entityExplodeOffset(d.gw.sk().Entity(h))
 }
 
 func (d *constraintDrawer) projectInto(v geom.Vector, wrkpl core.HEntity) geom.Vector {
@@ -567,29 +604,20 @@ func (d *constraintDrawer) doArcForAngle(hcs render.HStroke, a0, da, b0, db, off
 func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector, refs *[]geom.Vector) {
 	gw := d.gw
 	ss := gw.ss
-	sk := gw.sk()
 	c := d.c
-	canvas := d.canvas
 	if (how != ConstraintDrawHovered && how != ConstraintDrawSelected) && !gw.constraintIsVisible(c) {
 		return
 	}
-	addRef := func(p geom.Vector) {
-		if refs != nil {
-			*refs = append(*refs, p)
-		}
-	}
-	pointNum := func(h core.HEntity) geom.Vector { return sk.Entity(h).PointGetNum(sk) }
-	drawNum := func(h core.HEntity) geom.Vector { return gw.pointGetDrawNum(sk.Entity(h)) }
-	explodeOffset := func(h core.HEntity) geom.Vector { return gw.entityExplodeOffset(sk.Entity(h)) }
+	d.how, d.labelPos, d.refs = how, labelPos, refs
 
 	// Unit vectors that describe our current view of the scene. One pixel
 	// long, not one actual unit.
 	camera := d.camera
-	gr := camera.ProjRight.ScaledBy(1 / camera.Scale)
-	gu := camera.ProjUp.ScaledBy(1 / camera.Scale)
-	gn := gr.Cross(gu).WithMagnitude(1 / camera.Scale)
+	d.gr = camera.ProjRight.ScaledBy(1 / camera.Scale)
+	d.gu = camera.ProjUp.ScaledBy(1 / camera.Scale)
+	d.gn = d.gr.Cross(d.gu).WithMagnitude(1 / camera.Scale)
 
-	textHeight := ss.styleTextHeight(constraintStyle(c)) / camera.Scale
+	d.textHeight = ss.styleTextHeight(constraintStyle(c)) / camera.Scale
 
 	var color core.RGBA
 	switch how {
@@ -603,783 +631,964 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 	case ConstraintDrawSelected:
 		color = ss.styleColor(hstyle(core.StyleSelected))
 	}
-	stroke := ss.styleStroke(constraintStyle(c))
-	stroke.Layer = render.LayerFront
-	stroke.Color = color
-	stroke.ZIndex = 4
-	hcs := canvas.InternStroke(stroke)
+	d.stroke = ss.styleStroke(constraintStyle(c))
+	d.stroke.Layer = render.LayerFront
+	d.stroke.Color = color
+	d.stroke.ZIndex = 4
+	d.hcs = d.canvas.InternStroke(d.stroke)
 
-	fill := render.Fill{Layer: render.LayerFront, Color: color, ZIndex: stroke.ZIndex}
-	hcf := canvas.InternFill(fill)
+	d.fill = render.Fill{Layer: render.LayerFront, Color: color, ZIndex: d.stroke.ZIndex}
+	d.hcf = d.canvas.InternFill(d.fill)
+	d.layout()
+}
 
-	switch c.Type {
+// layout lays the constraint out by its type.
+func (d *constraintDrawer) layout() {
+	switch d.c.Type {
 	case core.ConstraintPtPtDistance:
-		ap := pointNum(c.PtA)
-		bp := pointNum(c.PtB)
-
-		if !core.IsFreeIn3D(c.Workplane) {
-			d.doProjectedPoint(hcs, &ap)
-			d.doProjectedPoint(hcs, &bp)
-		}
-
-		if gw.constraintShouldDrawExploded(c) {
-			// Offset A and B by the same offset so the constraint is drawn
-			// in the plane of one of the exploded points (rather than at an
-			// angle)
-			offset := explodeOffset(c.PtA)
-			ap = ap.Plus(offset)
-			bp = bp.Plus(offset)
-		}
-
-		ref := ap.Plus(bp).ScaledBy(0.5).Plus(c.Disp.Offset)
-		addRef(ref)
-
-		d.doLineWithArrows(hcs, ref, ap, bp, false)
-		d.doLabel(hcs, ref, labelPos, gr, gu)
+		d.layoutPtPtDistance()
 		return
 
 	case core.ConstraintProjPtDistance:
-		ap := pointNum(c.PtA)
-		bp := pointNum(c.PtB)
-		dp := bp.Minus(ap)
-		pp := sk.Entity(c.EntityA).VectorGetNum(sk)
-
-		if gw.constraintShouldDrawExploded(c) {
-			// explode for whichever point is in the workplane (or the first
-			// if both are)
-			pt := sk.Entity(c.PtA)
-			if pt.Group != c.Group {
-				pt = sk.Entity(c.PtB)
-			}
-			if pt.Group == c.Group {
-				offset := gw.entityExplodeOffset(pt)
-				ap = ap.Plus(offset)
-				bp = bp.Plus(offset)
-			}
-		}
-
-		ref := ap.Plus(bp).ScaledBy(0.5).Plus(c.Disp.Offset)
-		addRef(ref)
-
-		pp = pp.WithMagnitude(1)
-		dist := dp.Dot(pp)
-		bpp := ap.Plus(pp.ScaledBy(dist))
-		d.doStippledLine(hcs, ap, bpp)
-		d.doStippledLine(hcs, bp, bpp)
-
-		d.doLineWithArrows(hcs, ref, ap, bpp, false)
-		d.doLabel(hcs, ref, labelPos, gr, gu)
+		d.layoutProjPtDistance()
 		return
 
 	case core.ConstraintPtFaceDistance, core.ConstraintPtPlaneDistance:
-		pt := drawNum(c.PtA)
-		enta := sk.Entity(c.EntityA)
-		var n, p geom.Vector
-		if c.Type == core.ConstraintPtPlaneDistance {
-			n = enta.NormalEntity(sk).NormalN(sk)
-			p = enta.WorkplaneGetOffset(sk)
-		} else {
-			n = enta.FaceGetNormalNum(sk)
-			p = enta.FaceGetPointNum(sk)
-		}
-
-		dist := p.Minus(pt).Dot(n)
-		closest := pt.Plus(n.WithMagnitude(dist))
-
-		ref := closest.Plus(pt).ScaledBy(0.5).Plus(c.Disp.Offset)
-		addRef(ref)
-
-		if !pt.Equals(closest) {
-			d.doLineWithArrows(hcs, ref, pt, closest, true)
-		}
-		d.doLabel(hcs, ref, labelPos, gr, gu)
+		d.layoutPtPlaneDistance()
 		return
 
 	case core.ConstraintPtLineDistance:
-		ptEntity := sk.Entity(c.PtA)
-		pt := ptEntity.PointGetNum(sk)
-		line := sk.Entity(c.EntityA)
-		lA := pointNum(line.Point[0])
-		lB := pointNum(line.Point[1])
-		dl := lB.Minus(lA)
-
-		if !core.IsFreeIn3D(c.Workplane) {
-			lA = d.projectInto(lA, c.Workplane)
-			lB = d.projectInto(lB, c.Workplane)
-			d.doProjectedPoint(hcs, &pt)
-		}
-
-		// Only explode if the point and line are in the same group (and
-		// that group is a sketch with explode enabled) otherwise it's too
-		// visually confusing to figure out what the correct projections
-		// should be.
-		shouldExplode := gw.constraintShouldDrawExploded(c) &&
-			ptEntity.Group == c.Group && line.Group == c.Group
-		if shouldExplode {
-			offset := gw.entityExplodeOffset(ptEntity)
-			pt = pt.Plus(offset)
-			lA = lA.Plus(offset)
-			lB = lB.Plus(offset)
-		}
-
-		// Find the closest point on the line
-		closest := pt.ClosestPointOnLine(lA, dl)
-
-		ref := closest.Plus(pt).ScaledBy(0.5).Plus(c.Disp.Offset)
-		addRef(ref)
-		d.doLabel(hcs, ref, labelPos, gr, gu)
-
-		if !pt.Equals(closest) {
-			d.doLineWithArrows(hcs, ref, pt, closest, true)
-
-			// Draw projected point
-			a := pt
-			b := closest
-			ab := a.Minus(b)
-			ar := a.Minus(ref)
-			n := ab.Cross(ar)
-			out := ab.Cross(n).WithMagnitude(1)
-			out = out.ScaledBy(-out.Dot(ar))
-			be := b.Plus(out)
-			np := lA.Minus(pt).Cross(lB.Minus(pt)).WithMagnitude(1.0)
-			d.doProjectedPointToPlane(hcs, &be, np, pt)
-
-			// Extensions to line
-			pixels := 1.0 / camera.Scale
-			refClosest := ref.ClosestPointOnLine(lA, dl)
-			ddl := dl.Dot(dl)
-			if math.Abs(ddl) > geom.LengthEps*geom.LengthEps {
-				t := refClosest.Minus(lA).Dot(dl) / ddl
-				if t < 0.0 {
-					d.doLine(hcs, refClosest.Minus(dl.WithMagnitude(10.0*pixels)), lA)
-				} else if t > 1.0 {
-					d.doLine(hcs, refClosest.Plus(dl.WithMagnitude(10.0*pixels)), lB)
-				}
-			}
-		}
-
-		if !core.IsFreeIn3D(c.Workplane) {
-			// Draw the projection marker from the closest point on the
-			// projected line to the projected point on the real line.
-			lAB := lA.Minus(lB)
-			t := lA.Minus(closest).DivProjected(lAB)
-
-			lA := pointNum(line.Point[0])
-			lB := pointNum(line.Point[1])
-
-			c2 := lA.ScaledBy(1 - t).Plus(lB.ScaledBy(t))
-			d.doProjectedPoint(hcs, &c2)
-		}
+		d.layoutPtLineDistance()
 		return
 
 	case core.ConstraintDiameter:
-		circle := sk.Entity(c.EntityA)
-		center := drawNum(circle.Point[0])
-		q := sk.Entity(circle.Normal).NormalGetNum(sk)
-		n := q.RotationN().WithMagnitude(1)
-		r := circle.CircleGetRadiusNum(sk)
-
-		ref := center.Plus(c.Disp.Offset)
-		// Force the label into the same plane as the circle.
-		ref = ref.Minus(n.ScaledBy(n.Dot(ref) - n.Dot(center)))
-		addRef(ref)
-
-		mark := ref.Minus(center)
-		mark = mark.WithMagnitude(mark.Magnitude() - r)
-		d.doLineTrimmedAgainstBox(hcs, ref, ref, ref.Minus(mark), true)
-
-		var topLeft geom.Vector
-		d.doLabel(hcs, ref, &topLeft, gr, gu)
-		if labelPos != nil {
-			*labelPos = topLeft
-		}
+		d.layoutDiameter()
 		return
 
 	case core.ConstraintPointsCoincident:
-		if how == ConstraintDrawDefault {
-			// Let's adjust the color of this constraint to have the same
-			// rough luma as the point color, so that the constraint does
-			// not stand out in an ugly way.
-			cd := ss.styleColor(hstyle(core.StyleDatum))
-			cc := ss.styleColor(hstyle(core.StyleConstraint))
-			// convert from 8-bit color to a vector
-			vd := geom.Vector{X: float64(cd.RedF()), Y: float64(cd.GreenF()), Z: float64(cd.BlueF())}
-			vc := geom.Vector{X: float64(cc.RedF()), Y: float64(cc.GreenF()), Z: float64(cc.BlueF())}
-			// and scale the constraint color to have the same magnitude as
-			// the datum color, maybe a bit dimmer
-			vc = vc.WithMagnitude(vd.Magnitude() * 0.9)
-			// and set the color to that.
-			fill.Color = core.RGBAFromFloat(float32(vc.X), float32(vc.Y), float32(vc.Z), 1.0)
-			hcf = canvas.InternFill(fill)
-		}
-
-		for a := range 2 {
-			r := camera.ProjRight.ScaledBy(float64(a+1) / camera.Scale)
-			dd := camera.ProjUp.ScaledBy(float64(2-a) / camera.Scale)
-			for i := range 2 {
-				h := c.PtA
-				if i != 0 {
-					h = c.PtB
-				}
-				p := drawNum(h)
-				addRef(p)
-				canvas.DrawQuad(p.Plus(r).Plus(dd), p.Plus(r).Minus(dd),
-					p.Minus(r).Minus(dd), p.Minus(r).Plus(dd), hcf)
-			}
-		}
+		d.layoutPointsCoincident()
 		return
 
 	case core.ConstraintPtOnCircle, core.ConstraintPtOnLine, core.ConstraintPtOnFace, core.ConstraintPtInPlane:
-		s := 8 / camera.Scale
-		p := drawNum(c.PtA)
-		addRef(p)
-		var r, dd geom.Vector
-		switch c.Type {
-		case core.ConstraintPtOnFace:
-			n := sk.Entity(c.EntityA).FaceGetNormalNum(sk)
-			r = n.NormalDir(0)
-			dd = n.NormalDir(1)
-		case core.ConstraintPtInPlane:
-			n := sk.Entity(c.EntityA).NormalEntity(sk)
-			r = n.NormalU(sk)
-			dd = n.NormalV(sk)
-		default:
-			r = gr
-			dd = gu
-			s *= 6.0 / 8 // draw these a little smaller
-		}
-		r = r.WithMagnitude(s)
-		dd = dd.WithMagnitude(s)
-		d.doLine(hcs, p.Plus(r).Plus(dd), p.Plus(r).Minus(dd))
-		d.doLine(hcs, p.Plus(r).Minus(dd), p.Minus(r).Minus(dd))
-		d.doLine(hcs, p.Minus(r).Minus(dd), p.Minus(r).Plus(dd))
-		d.doLine(hcs, p.Minus(r).Plus(dd), p.Plus(r).Plus(dd))
+		d.layoutPtOnEntity()
 		return
 
 	case core.ConstraintWhereDragged:
-		p := drawNum(c.PtA)
-		addRef(p)
-		u := p.Plus(gu.WithMagnitude(8 / camera.Scale)).Plus(gr.WithMagnitude(8 / camera.Scale))
-		uu := u.Minus(gu.WithMagnitude(5 / camera.Scale))
-		ur := u.Minus(gr.WithMagnitude(5 / camera.Scale))
-		// Draw four little crop marks, uniformly spaced (by ninety degree
-		// rotations) around the point.
-		for range 4 {
-			d.doLine(hcs, u, uu)
-			d.doLine(hcs, u, ur)
-			u = u.RotatedAbout(p, gn, math.Pi/2)
-			ur = ur.RotatedAbout(p, gn, math.Pi/2)
-			uu = uu.RotatedAbout(p, gn, math.Pi/2)
-		}
+		d.layoutWhereDragged()
 		return
 
 	case core.ConstraintSameOrientation:
-		for i := range 2 {
-			h := c.EntityA
-			if i != 0 {
-				h = c.EntityB
-			}
-			e := sk.Entity(h)
-			q := e.NormalGetNum(sk)
-			n := q.RotationN().WithMagnitude(25 / camera.Scale)
-			u := q.RotationU().WithMagnitude(6 / camera.Scale)
-			p := pointNum(e.Point[0])
-			p = p.Plus(n.WithMagnitude(10 / camera.Scale))
-			addRef(p)
-
-			d.doLine(hcs, p.Plus(u), p.Minus(u).Plus(n))
-			d.doLine(hcs, p.Minus(u), p.Plus(u).Plus(n))
-		}
+		d.layoutSameOrientation()
 		return
 
 	case core.ConstraintEqualAngle:
-		var ref geom.Vector
-		a := sk.Entity(c.EntityA)
-		b := sk.Entity(c.EntityB)
-		cc := sk.Entity(c.EntityC)
-		dd := sk.Entity(c.EntityD)
-
-		a0 := a.VectorGetStartPoint(sk)
-		b0 := b.VectorGetStartPoint(sk)
-		c0 := cc.VectorGetStartPoint(sk)
-		d0 := dd.VectorGetStartPoint(sk)
-		da := a.VectorGetNum(sk)
-		db := b.VectorGetNum(sk)
-		dc := cc.VectorGetNum(sk)
-		ddv := dd.VectorGetNum(sk)
-
-		if c.Other {
-			a0 = a0.Plus(da)
-			da = da.ScaledBy(-1)
-		}
-
-		d.doArcForAngle(hcs, a0, da, b0, db, da.WithMagnitude(40/camera.Scale), &ref, false, gw.entityExplodeOffset(a))
-		addRef(ref)
-		d.doArcForAngle(hcs, c0, dc, d0, ddv, dc.WithMagnitude(40/camera.Scale), &ref, false, gw.entityExplodeOffset(cc))
-		addRef(ref)
+		d.layoutEqualAngle()
 		return
 
 	case core.ConstraintAngle:
-		a := sk.Entity(c.EntityA)
-		b := sk.Entity(c.EntityB)
-
-		a0 := a.VectorGetStartPoint(sk)
-		b0 := b.VectorGetStartPoint(sk)
-		da := a.VectorGetNum(sk)
-		db := b.VectorGetNum(sk)
-		if c.Other {
-			a0 = a0.Plus(da)
-			da = da.ScaledBy(-1)
-		}
-
-		var ref geom.Vector
-		d.doArcForAngle(hcs, a0, da, b0, db, c.Disp.Offset, &ref, true, gw.entityExplodeOffset(a))
-		d.doLabel(hcs, ref, labelPos, gr, gu)
-		addRef(ref)
+		d.layoutAngle()
 		return
 
 	case core.ConstraintPerpendicular:
-		var u, v geom.Vector
-		var rn, ru geom.Vector
-		if core.IsFreeIn3D(c.Workplane) {
-			rn = gn
-			ru = gu
-		} else {
-			normal := sk.Entity(c.Workplane).NormalEntity(sk)
-			rn = normal.NormalN(sk)
-			ru = normal.NormalV(sk) // ru meaning r_up, not u/v
-		}
-
-		for i := range 2 {
-			h := c.EntityA
-			if i != 0 {
-				h = c.EntityB
-			}
-			e := sk.Entity(h)
-
-			if i == 0 {
-				// Calculate orientation of perpendicular sign only once, so
-				// that it's the same both times it's drawn
-				u = e.VectorGetNum(sk)
-				u = u.WithMagnitude(16 / camera.Scale)
-				v = rn.Cross(u).WithMagnitude(16 / camera.Scale)
-				// a bit of bias to stop it from flickering between the two
-				// possibilities
-				if math.Abs(u.Dot(ru)) < math.Abs(v.Dot(ru))+geom.LengthEps {
-					u, v = v, u
-				}
-				if u.Dot(ru) < 0 {
-					u = u.ScaledBy(-1)
-				}
-			}
-
-			p := e.VectorGetRefPoint(sk).Plus(gw.entityExplodeOffset(e))
-			s := p.Plus(u).Plus(v)
-			d.doLine(hcs, s, s.Plus(v))
-			m := s.Plus(v.ScaledBy(0.5))
-			d.doLine(hcs, m, m.Plus(u))
-			addRef(m)
-		}
+		d.layoutPerpendicular()
 		return
 
 	case core.ConstraintCurveCurveTangent, core.ConstraintCubicLineTangent, core.ConstraintArcLineTangent:
-		var textAt, u, v geom.Vector
-
-		switch c.Type {
-		case core.ConstraintArcLineTangent:
-			arc := sk.Entity(c.EntityA)
-			norm := sk.Entity(arc.Normal)
-			ctr := drawNum(arc.Point[0])
-			pi := 1
-			if c.Other {
-				pi = 2
-			}
-			p := drawNum(arc.Point[pi])
-			r := p.Minus(ctr)
-			textAt = p.Plus(r.WithMagnitude(14 / camera.Scale))
-			u = norm.NormalU(sk)
-			v = norm.NormalV(sk)
-		case core.ConstraintCubicLineTangent:
-			var n geom.Vector
-			if core.IsFreeIn3D(c.Workplane) {
-				u, v, n = gr, gu, gn
-			} else {
-				wn := sk.Entity(c.Workplane).NormalEntity(sk)
-				u, v, n = wn.NormalU(sk), wn.NormalV(sk), wn.NormalN(sk)
-			}
-
-			cubic := sk.Entity(c.EntityA)
-			var p geom.Vector
-			if c.Other {
-				p = cubic.CubicGetFinishNum(sk)
-			} else {
-				p = cubic.CubicGetStartNum(sk)
-			}
-			p = p.Plus(gw.entityExplodeOffset(cubic))
-			dir := sk.Entity(c.EntityB).VectorGetNum(sk)
-			out := n.Cross(dir)
-			textAt = p.Plus(out.WithMagnitude(14 / camera.Scale))
-		default:
-			wn := sk.Entity(c.Workplane).NormalEntity(sk)
-			u, v = wn.NormalU(sk), wn.NormalV(sk)
-			n := wn.NormalN(sk)
-			eA := sk.Entity(c.EntityA)
-			// Big pain; we have to get a vector tangent to the curve at
-			// the shared point, which could be from either a cubic or an
-			// arc.
-			var dir geom.Vector
-			if c.Other {
-				textAt = eA.EndpointFinish(sk).Plus(gw.entityExplodeOffset(eA))
-				if eA.Type == core.EntityCubic {
-					dir = eA.CubicGetFinishTangentNum(sk)
-				} else {
-					dir = pointNum(eA.Point[0]).Minus(pointNum(eA.Point[2]))
-					dir = n.Cross(dir)
-				}
-			} else {
-				textAt = eA.EndpointStart(sk).Plus(gw.entityExplodeOffset(eA))
-				if eA.Type == core.EntityCubic {
-					dir = eA.CubicGetStartTangentNum(sk)
-				} else {
-					dir = pointNum(eA.Point[0]).Minus(pointNum(eA.Point[1]))
-					dir = n.Cross(dir)
-				}
-			}
-			dir = n.Cross(dir)
-			textAt = textAt.Plus(dir.WithMagnitude(14 / camera.Scale))
-		}
-
-		ex := res.BuiltinVectorFont().Extents(textHeight, "T")
-		canvas.DrawVectorText("T", textHeight, textAt.Minus(ex.ScaledBy(0.5)),
-			u.WithMagnitude(1), v.WithMagnitude(1), hcs)
-		addRef(textAt)
+		d.layoutTangent()
 		return
 
 	case core.ConstraintParallel:
-		for i := range 2 {
-			h := c.EntityA
-			if i != 0 {
-				h = c.EntityB
-			}
-			e := sk.Entity(h)
-			n := e.VectorGetNum(sk)
-			n = n.WithMagnitude(25 / camera.Scale)
-			u := gn.Cross(n).WithMagnitude(4 / camera.Scale)
-			p := e.VectorGetRefPoint(sk)
-
-			if gw.constraintShouldDrawExploded(c) {
-				p = p.Plus(gw.entityExplodeOffset(e))
-			}
-
-			d.doLine(hcs, p.Plus(u), p.Plus(u).Plus(n))
-			d.doLine(hcs, p.Minus(u), p.Minus(u).Plus(n))
-			addRef(p.Plus(n.ScaledBy(0.5)))
-		}
+		d.layoutParallel()
 		return
 
 	case core.ConstraintEqualRadius:
-		for i := range 2 {
-			var ref geom.Vector
-			h := c.EntityA
-			if i != 0 {
-				h = c.EntityB
-			}
-			d.doEqualRadiusTicks(hcs, h, &ref)
-			addRef(ref)
-		}
+		d.layoutEqualRadius()
 		return
 
 	case core.ConstraintEqualLineArcLen:
-		line := sk.Entity(c.EntityA)
-		var ref geom.Vector
-		d.doEqualLenTicks(hcs, drawNum(line.Point[0]), drawNum(line.Point[1]), gn, &ref)
-		addRef(ref)
-		d.doEqualRadiusTicks(hcs, c.EntityB, &ref)
-		addRef(ref)
+		d.layoutEqualLineArcLen()
 		return
 
 	case core.ConstraintLengthRatio, core.ConstraintLengthDifference, core.ConstraintEqualLengthLines:
-		var a, b geom.Vector
-		for i := range 2 {
-			h := c.EntityA
-			if i != 0 {
-				h = c.EntityB
-			}
-			e := sk.Entity(h)
-			a = pointNum(e.Point[0])
-			b = pointNum(e.Point[1])
-
-			if !core.IsFreeIn3D(c.Workplane) {
-				d.doProjectedPoint(hcs, &a)
-				d.doProjectedPoint(hcs, &b)
-			}
-
-			if gw.constraintShouldDrawExploded(c) {
-				offset := gw.entityExplodeOffset(e)
-				a = a.Plus(offset)
-				b = b.Plus(offset)
-			}
-
-			var ref geom.Vector
-			d.doEqualLenTicks(hcs, a, b, gn, &ref)
-			addRef(ref)
-		}
-		if c.Type == core.ConstraintLengthRatio || c.Type == core.ConstraintLengthDifference {
-			ref := a.Plus(b).ScaledBy(0.5).Plus(c.Disp.Offset)
-			d.doLabel(hcs, ref, labelPos, gr, gu)
-		}
+		d.layoutEqualLength()
 		return
 
 	case core.ConstraintArcArcLenRatio, core.ConstraintArcArcDifference:
-		circle := sk.Entity(c.EntityA)
-		center := pointNum(circle.Point[0])
-		q := sk.Entity(circle.Normal).NormalGetNum(sk)
-		n := q.RotationN().WithMagnitude(1)
-
-		var ref2 geom.Vector
-		d.doEqualRadiusTicks(hcs, c.EntityA, &ref2)
-		d.doEqualRadiusTicks(hcs, c.EntityB, &ref2)
-
-		ref := center.Plus(c.Disp.Offset)
-		// Force the label into the same plane as the circle.
-		ref = ref.Minus(n.ScaledBy(n.Dot(ref) - n.Dot(center)))
-		addRef(ref)
-		var topLeft geom.Vector
-		d.doLabel(hcs, ref, &topLeft, gr, gu)
-		if labelPos != nil {
-			*labelPos = topLeft
-		}
+		d.layoutArcArcLength()
 		return
 
 	case core.ConstraintArcLineLenRatio, core.ConstraintArcLineDifference:
-		e := sk.Entity(c.EntityA)
-		a := pointNum(e.Point[0])
-		b := pointNum(e.Point[1])
-		var ref geom.Vector
-		d.doEqualLenTicks(hcs, a, b, gn, &ref)
-		addRef(ref)
-		d.doEqualRadiusTicks(hcs, c.EntityB, &ref)
-		addRef(ref)
-		ref = a.Plus(b).ScaledBy(0.5).Plus(c.Disp.Offset)
-		d.doLabel(hcs, ref, labelPos, gr, gu)
+		d.layoutArcLineLength()
 		return
 
 	case core.ConstraintEqLenPtLineD:
-		forLen := sk.Entity(c.EntityA)
-		a := pointNum(forLen.Point[0])
-		b := pointNum(forLen.Point[1])
-		if !core.IsFreeIn3D(c.Workplane) {
-			d.doProjectedPoint(hcs, &a)
-			d.doProjectedPoint(hcs, &b)
+		d.layoutEqLenPtLineD()
+		return
+
+	case core.ConstraintEqPtLnDistances:
+		d.layoutEqPtLnDistances()
+		return
+
+	case core.ConstraintSymmetric, core.ConstraintSymmetricHoriz, core.ConstraintSymmetricVert,
+		core.ConstraintSymmetricLine:
+		d.layoutSymmetric()
+		return
+
+	case core.ConstraintAtMidpoint, core.ConstraintHorizontal, core.ConstraintVertical:
+		d.layoutMidpointOrAxis()
+		return
+
+	case core.ConstraintComment:
+		d.layoutComment()
+		return
+	}
+	panic("ui: unexpected constraint type")
+}
+
+// layoutPtPtDistance lays out a core.ConstraintPtPtDistance constraint.
+func (d *constraintDrawer) layoutPtPtDistance() {
+	gw := d.gw
+	c := d.c
+	ap := d.pointNum(c.PtA)
+	bp := d.pointNum(c.PtB)
+
+	if !core.IsFreeIn3D(c.Workplane) {
+		d.doProjectedPoint(d.hcs, &ap)
+		d.doProjectedPoint(d.hcs, &bp)
+	}
+
+	if gw.constraintShouldDrawExploded(c) {
+		// Offset A and B by the same offset so the constraint is drawn
+		// in the plane of one of the exploded points (rather than at an
+		// angle)
+		offset := d.explodeOffset(c.PtA)
+		ap = ap.Plus(offset)
+		bp = bp.Plus(offset)
+	}
+
+	ref := ap.Plus(bp).ScaledBy(0.5).Plus(c.Disp.Offset)
+	d.addRef(ref)
+
+	d.doLineWithArrows(d.hcs, ref, ap, bp, false)
+	d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
+}
+
+// layoutProjPtDistance lays out a core.ConstraintProjPtDistance constraint.
+func (d *constraintDrawer) layoutProjPtDistance() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	ap := d.pointNum(c.PtA)
+	bp := d.pointNum(c.PtB)
+	dp := bp.Minus(ap)
+	pp := sk.Entity(c.EntityA).VectorGetNum(sk)
+
+	if gw.constraintShouldDrawExploded(c) {
+		// explode for whichever point is in the workplane (or the first
+		// if both are)
+		pt := sk.Entity(c.PtA)
+		if pt.Group != c.Group {
+			pt = sk.Entity(c.PtB)
 		}
+		if pt.Group == c.Group {
+			offset := gw.entityExplodeOffset(pt)
+			ap = ap.Plus(offset)
+			bp = bp.Plus(offset)
+		}
+	}
+
+	ref := ap.Plus(bp).ScaledBy(0.5).Plus(c.Disp.Offset)
+	d.addRef(ref)
+
+	pp = pp.WithMagnitude(1)
+	dist := dp.Dot(pp)
+	bpp := ap.Plus(pp.ScaledBy(dist))
+	d.doStippledLine(d.hcs, ap, bpp)
+	d.doStippledLine(d.hcs, bp, bpp)
+
+	d.doLineWithArrows(d.hcs, ref, ap, bpp, false)
+	d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
+}
+
+// layoutPtPlaneDistance lays out a core.ConstraintPtFaceDistance, core.ConstraintPtPlaneDistance constraint.
+func (d *constraintDrawer) layoutPtPlaneDistance() {
+	sk := d.gw.sk()
+	c := d.c
+	pt := d.drawNum(c.PtA)
+	enta := sk.Entity(c.EntityA)
+	var n, p geom.Vector
+	if c.Type == core.ConstraintPtPlaneDistance {
+		n = enta.NormalEntity(sk).NormalN(sk)
+		p = enta.WorkplaneGetOffset(sk)
+	} else {
+		n = enta.FaceGetNormalNum(sk)
+		p = enta.FaceGetPointNum(sk)
+	}
+
+	dist := p.Minus(pt).Dot(n)
+	closest := pt.Plus(n.WithMagnitude(dist))
+
+	ref := closest.Plus(pt).ScaledBy(0.5).Plus(c.Disp.Offset)
+	d.addRef(ref)
+
+	if !pt.Equals(closest) {
+		d.doLineWithArrows(d.hcs, ref, pt, closest, true)
+	}
+	d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
+}
+
+// layoutPtLineDistance lays out a core.ConstraintPtLineDistance constraint.
+func (d *constraintDrawer) layoutPtLineDistance() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	ptEntity := sk.Entity(c.PtA)
+	pt := ptEntity.PointGetNum(sk)
+	line := sk.Entity(c.EntityA)
+	lA := d.pointNum(line.Point[0])
+	lB := d.pointNum(line.Point[1])
+	dl := lB.Minus(lA)
+
+	if !core.IsFreeIn3D(c.Workplane) {
+		lA = d.projectInto(lA, c.Workplane)
+		lB = d.projectInto(lB, c.Workplane)
+		d.doProjectedPoint(d.hcs, &pt)
+	}
+
+	// Only explode if the point and line are in the same group (and
+	// that group is a sketch with explode enabled) otherwise it's too
+	// visually confusing to figure out what the correct projections
+	// should be.
+	shouldExplode := gw.constraintShouldDrawExploded(c) &&
+		ptEntity.Group == c.Group && line.Group == c.Group
+	if shouldExplode {
+		offset := gw.entityExplodeOffset(ptEntity)
+		pt = pt.Plus(offset)
+		lA = lA.Plus(offset)
+		lB = lB.Plus(offset)
+	}
+
+	// Find the closest point on the line
+	closest := pt.ClosestPointOnLine(lA, dl)
+
+	ref := closest.Plus(pt).ScaledBy(0.5).Plus(c.Disp.Offset)
+	d.addRef(ref)
+	d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
+
+	if !pt.Equals(closest) {
+		d.doLineWithArrows(d.hcs, ref, pt, closest, true)
+
+		// Draw projected point
+		a := pt
+		b := closest
+		ab := a.Minus(b)
+		ar := a.Minus(ref)
+		n := ab.Cross(ar)
+		out := ab.Cross(n).WithMagnitude(1)
+		out = out.ScaledBy(-out.Dot(ar))
+		be := b.Plus(out)
+		np := lA.Minus(pt).Cross(lB.Minus(pt)).WithMagnitude(1.0)
+		d.doProjectedPointToPlane(d.hcs, &be, np, pt)
+
+		// Extensions to line
+		pixels := 1.0 / d.camera.Scale
+		refClosest := ref.ClosestPointOnLine(lA, dl)
+		ddl := dl.Dot(dl)
+		if math.Abs(ddl) > geom.LengthEps*geom.LengthEps {
+			t := refClosest.Minus(lA).Dot(dl) / ddl
+			if t < 0.0 {
+				d.doLine(d.hcs, refClosest.Minus(dl.WithMagnitude(10.0*pixels)), lA)
+			} else if t > 1.0 {
+				d.doLine(d.hcs, refClosest.Plus(dl.WithMagnitude(10.0*pixels)), lB)
+			}
+		}
+	}
+
+	if !core.IsFreeIn3D(c.Workplane) {
+		// Draw the projection marker from the closest point on the
+		// projected line to the projected point on the real line.
+		lAB := lA.Minus(lB)
+		t := lA.Minus(closest).DivProjected(lAB)
+
+		lA := d.pointNum(line.Point[0])
+		lB := d.pointNum(line.Point[1])
+
+		c2 := lA.ScaledBy(1 - t).Plus(lB.ScaledBy(t))
+		d.doProjectedPoint(d.hcs, &c2)
+	}
+}
+
+// layoutDiameter lays out a core.ConstraintDiameter constraint.
+func (d *constraintDrawer) layoutDiameter() {
+	sk := d.gw.sk()
+	c := d.c
+	circle := sk.Entity(c.EntityA)
+	center := d.drawNum(circle.Point[0])
+	q := sk.Entity(circle.Normal).NormalGetNum(sk)
+	n := q.RotationN().WithMagnitude(1)
+	r := circle.CircleGetRadiusNum(sk)
+
+	ref := center.Plus(c.Disp.Offset)
+	// Force the label into the same plane as the circle.
+	ref = ref.Minus(n.ScaledBy(n.Dot(ref) - n.Dot(center)))
+	d.addRef(ref)
+
+	mark := ref.Minus(center)
+	mark = mark.WithMagnitude(mark.Magnitude() - r)
+	d.doLineTrimmedAgainstBox(d.hcs, ref, ref, ref.Minus(mark), true)
+
+	var topLeft geom.Vector
+	d.doLabel(d.hcs, ref, &topLeft, d.gr, d.gu)
+	if d.labelPos != nil {
+		*d.labelPos = topLeft
+	}
+}
+
+// layoutPointsCoincident lays out a core.ConstraintPointsCoincident constraint.
+func (d *constraintDrawer) layoutPointsCoincident() {
+	ss := d.gw.ss
+	c := d.c
+	if d.how == ConstraintDrawDefault {
+		// Let's adjust the color of this constraint to have the same
+		// rough luma as the point color, so that the constraint does
+		// not stand out in an ugly way.
+		cd := ss.styleColor(hstyle(core.StyleDatum))
+		cc := ss.styleColor(hstyle(core.StyleConstraint))
+		// convert from 8-bit color to a vector
+		vd := geom.Vector{X: float64(cd.RedF()), Y: float64(cd.GreenF()), Z: float64(cd.BlueF())}
+		vc := geom.Vector{X: float64(cc.RedF()), Y: float64(cc.GreenF()), Z: float64(cc.BlueF())}
+		// and scale the constraint color to have the same magnitude as
+		// the datum color, maybe a bit dimmer
+		vc = vc.WithMagnitude(vd.Magnitude() * 0.9)
+		// and set the color to that.
+		d.fill.Color = core.RGBAFromFloat(float32(vc.X), float32(vc.Y), float32(vc.Z), 1.0)
+		d.hcf = d.canvas.InternFill(d.fill)
+	}
+
+	for a := range 2 {
+		r := d.camera.ProjRight.ScaledBy(float64(a+1) / d.camera.Scale)
+		dd := d.camera.ProjUp.ScaledBy(float64(2-a) / d.camera.Scale)
+		for i := range 2 {
+			h := c.PtA
+			if i != 0 {
+				h = c.PtB
+			}
+			p := d.drawNum(h)
+			d.addRef(p)
+			d.canvas.DrawQuad(p.Plus(r).Plus(dd), p.Plus(r).Minus(dd),
+				p.Minus(r).Minus(dd), p.Minus(r).Plus(dd), d.hcf)
+		}
+	}
+}
+
+// layoutPtOnEntity lays out a core.ConstraintPtOnCircle, core.ConstraintPtOnLine, core.ConstraintPtOnFace, core.ConstraintPtInPlane constraint.
+func (d *constraintDrawer) layoutPtOnEntity() {
+	sk := d.gw.sk()
+	c := d.c
+	s := 8 / d.camera.Scale
+	p := d.drawNum(c.PtA)
+	d.addRef(p)
+	var r, dd geom.Vector
+	switch c.Type {
+	case core.ConstraintPtOnFace:
+		n := sk.Entity(c.EntityA).FaceGetNormalNum(sk)
+		r = n.NormalDir(0)
+		dd = n.NormalDir(1)
+	case core.ConstraintPtInPlane:
+		n := sk.Entity(c.EntityA).NormalEntity(sk)
+		r = n.NormalU(sk)
+		dd = n.NormalV(sk)
+	default:
+		r = d.gr
+		dd = d.gu
+		s *= 6.0 / 8 // draw these a little smaller
+	}
+	r = r.WithMagnitude(s)
+	dd = dd.WithMagnitude(s)
+	d.doLine(d.hcs, p.Plus(r).Plus(dd), p.Plus(r).Minus(dd))
+	d.doLine(d.hcs, p.Plus(r).Minus(dd), p.Minus(r).Minus(dd))
+	d.doLine(d.hcs, p.Minus(r).Minus(dd), p.Minus(r).Plus(dd))
+	d.doLine(d.hcs, p.Minus(r).Plus(dd), p.Plus(r).Plus(dd))
+}
+
+// layoutWhereDragged lays out a core.ConstraintWhereDragged constraint.
+func (d *constraintDrawer) layoutWhereDragged() {
+	c := d.c
+	p := d.drawNum(c.PtA)
+	d.addRef(p)
+	u := p.Plus(d.gu.WithMagnitude(8 / d.camera.Scale)).Plus(d.gr.WithMagnitude(8 / d.camera.Scale))
+	uu := u.Minus(d.gu.WithMagnitude(5 / d.camera.Scale))
+	ur := u.Minus(d.gr.WithMagnitude(5 / d.camera.Scale))
+	// Draw four little crop marks, uniformly spaced (by ninety degree
+	// rotations) around the point.
+	for range 4 {
+		d.doLine(d.hcs, u, uu)
+		d.doLine(d.hcs, u, ur)
+		u = u.RotatedAbout(p, d.gn, math.Pi/2)
+		ur = ur.RotatedAbout(p, d.gn, math.Pi/2)
+		uu = uu.RotatedAbout(p, d.gn, math.Pi/2)
+	}
+}
+
+// layoutSameOrientation lays out a core.ConstraintSameOrientation constraint.
+func (d *constraintDrawer) layoutSameOrientation() {
+	sk := d.gw.sk()
+	c := d.c
+	for i := range 2 {
+		h := c.EntityA
+		if i != 0 {
+			h = c.EntityB
+		}
+		e := sk.Entity(h)
+		q := e.NormalGetNum(sk)
+		n := q.RotationN().WithMagnitude(25 / d.camera.Scale)
+		u := q.RotationU().WithMagnitude(6 / d.camera.Scale)
+		p := d.pointNum(e.Point[0])
+		p = p.Plus(n.WithMagnitude(10 / d.camera.Scale))
+		d.addRef(p)
+
+		d.doLine(d.hcs, p.Plus(u), p.Minus(u).Plus(n))
+		d.doLine(d.hcs, p.Minus(u), p.Plus(u).Plus(n))
+	}
+}
+
+// layoutEqualAngle lays out a core.ConstraintEqualAngle constraint.
+func (d *constraintDrawer) layoutEqualAngle() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	var ref geom.Vector
+	a := sk.Entity(c.EntityA)
+	b := sk.Entity(c.EntityB)
+	cc := sk.Entity(c.EntityC)
+	dd := sk.Entity(c.EntityD)
+
+	a0 := a.VectorGetStartPoint(sk)
+	b0 := b.VectorGetStartPoint(sk)
+	c0 := cc.VectorGetStartPoint(sk)
+	d0 := dd.VectorGetStartPoint(sk)
+	da := a.VectorGetNum(sk)
+	db := b.VectorGetNum(sk)
+	dc := cc.VectorGetNum(sk)
+	ddv := dd.VectorGetNum(sk)
+
+	if c.Other {
+		a0 = a0.Plus(da)
+		da = da.ScaledBy(-1)
+	}
+
+	d.doArcForAngle(d.hcs, a0, da, b0, db, da.WithMagnitude(40/d.camera.Scale), &ref, false, gw.entityExplodeOffset(a))
+	d.addRef(ref)
+	d.doArcForAngle(d.hcs, c0, dc, d0, ddv, dc.WithMagnitude(40/d.camera.Scale), &ref, false, gw.entityExplodeOffset(cc))
+	d.addRef(ref)
+}
+
+// layoutAngle lays out a core.ConstraintAngle constraint.
+func (d *constraintDrawer) layoutAngle() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	a := sk.Entity(c.EntityA)
+	b := sk.Entity(c.EntityB)
+
+	a0 := a.VectorGetStartPoint(sk)
+	b0 := b.VectorGetStartPoint(sk)
+	da := a.VectorGetNum(sk)
+	db := b.VectorGetNum(sk)
+	if c.Other {
+		a0 = a0.Plus(da)
+		da = da.ScaledBy(-1)
+	}
+
+	var ref geom.Vector
+	d.doArcForAngle(d.hcs, a0, da, b0, db, c.Disp.Offset, &ref, true, gw.entityExplodeOffset(a))
+	d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
+	d.addRef(ref)
+}
+
+// layoutPerpendicular lays out a core.ConstraintPerpendicular constraint.
+func (d *constraintDrawer) layoutPerpendicular() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	var u, v geom.Vector
+	var rn, ru geom.Vector
+	if core.IsFreeIn3D(c.Workplane) {
+		rn = d.gn
+		ru = d.gu
+	} else {
+		normal := sk.Entity(c.Workplane).NormalEntity(sk)
+		rn = normal.NormalN(sk)
+		ru = normal.NormalV(sk) // ru meaning r_up, not u/v
+	}
+
+	for i := range 2 {
+		h := c.EntityA
+		if i != 0 {
+			h = c.EntityB
+		}
+		e := sk.Entity(h)
+
+		if i == 0 {
+			// Calculate orientation of perpendicular sign only once, so
+			// that it's the same both times it's drawn
+			u = e.VectorGetNum(sk)
+			u = u.WithMagnitude(16 / d.camera.Scale)
+			v = rn.Cross(u).WithMagnitude(16 / d.camera.Scale)
+			// a bit of bias to stop it from flickering between the two
+			// possibilities
+			if math.Abs(u.Dot(ru)) < math.Abs(v.Dot(ru))+geom.LengthEps {
+				u, v = v, u
+			}
+			if u.Dot(ru) < 0 {
+				u = u.ScaledBy(-1)
+			}
+		}
+
+		p := e.VectorGetRefPoint(sk).Plus(gw.entityExplodeOffset(e))
+		s := p.Plus(u).Plus(v)
+		d.doLine(d.hcs, s, s.Plus(v))
+		m := s.Plus(v.ScaledBy(0.5))
+		d.doLine(d.hcs, m, m.Plus(u))
+		d.addRef(m)
+	}
+}
+
+// layoutTangent lays out a core.ConstraintCurveCurveTangent, core.ConstraintCubicLineTangent, core.ConstraintArcLineTangent constraint.
+func (d *constraintDrawer) layoutTangent() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	var textAt, u, v geom.Vector
+
+	switch c.Type {
+	case core.ConstraintArcLineTangent:
+		arc := sk.Entity(c.EntityA)
+		norm := sk.Entity(arc.Normal)
+		ctr := d.drawNum(arc.Point[0])
+		pi := 1
+		if c.Other {
+			pi = 2
+		}
+		p := d.drawNum(arc.Point[pi])
+		r := p.Minus(ctr)
+		textAt = p.Plus(r.WithMagnitude(14 / d.camera.Scale))
+		u = norm.NormalU(sk)
+		v = norm.NormalV(sk)
+	case core.ConstraintCubicLineTangent:
+		var n geom.Vector
+		if core.IsFreeIn3D(c.Workplane) {
+			u, v, n = d.gr, d.gu, d.gn
+		} else {
+			wn := sk.Entity(c.Workplane).NormalEntity(sk)
+			u, v, n = wn.NormalU(sk), wn.NormalV(sk), wn.NormalN(sk)
+		}
+
+		cubic := sk.Entity(c.EntityA)
+		var p geom.Vector
+		if c.Other {
+			p = cubic.CubicGetFinishNum(sk)
+		} else {
+			p = cubic.CubicGetStartNum(sk)
+		}
+		p = p.Plus(gw.entityExplodeOffset(cubic))
+		dir := sk.Entity(c.EntityB).VectorGetNum(sk)
+		out := n.Cross(dir)
+		textAt = p.Plus(out.WithMagnitude(14 / d.camera.Scale))
+	default:
+		wn := sk.Entity(c.Workplane).NormalEntity(sk)
+		u, v = wn.NormalU(sk), wn.NormalV(sk)
+		n := wn.NormalN(sk)
+		eA := sk.Entity(c.EntityA)
+		// Big pain; we have to get a vector tangent to the curve at
+		// the shared point, which could be from either a cubic or an
+		// arc.
+		var dir geom.Vector
+		if c.Other {
+			textAt = eA.EndpointFinish(sk).Plus(gw.entityExplodeOffset(eA))
+			if eA.Type == core.EntityCubic {
+				dir = eA.CubicGetFinishTangentNum(sk)
+			} else {
+				dir = d.pointNum(eA.Point[0]).Minus(d.pointNum(eA.Point[2]))
+				dir = n.Cross(dir)
+			}
+		} else {
+			textAt = eA.EndpointStart(sk).Plus(gw.entityExplodeOffset(eA))
+			if eA.Type == core.EntityCubic {
+				dir = eA.CubicGetStartTangentNum(sk)
+			} else {
+				dir = d.pointNum(eA.Point[0]).Minus(d.pointNum(eA.Point[1]))
+				dir = n.Cross(dir)
+			}
+		}
+		dir = n.Cross(dir)
+		textAt = textAt.Plus(dir.WithMagnitude(14 / d.camera.Scale))
+	}
+
+	ex := res.BuiltinVectorFont().Extents(d.textHeight, "T")
+	d.canvas.DrawVectorText("T", d.textHeight, textAt.Minus(ex.ScaledBy(0.5)),
+		u.WithMagnitude(1), v.WithMagnitude(1), d.hcs)
+	d.addRef(textAt)
+}
+
+// layoutParallel lays out a core.ConstraintParallel constraint.
+func (d *constraintDrawer) layoutParallel() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	for i := range 2 {
+		h := c.EntityA
+		if i != 0 {
+			h = c.EntityB
+		}
+		e := sk.Entity(h)
+		n := e.VectorGetNum(sk)
+		n = n.WithMagnitude(25 / d.camera.Scale)
+		u := d.gn.Cross(n).WithMagnitude(4 / d.camera.Scale)
+		p := e.VectorGetRefPoint(sk)
+
 		if gw.constraintShouldDrawExploded(c) {
-			offset := gw.entityExplodeOffset(forLen)
+			p = p.Plus(gw.entityExplodeOffset(e))
+		}
+
+		d.doLine(d.hcs, p.Plus(u), p.Plus(u).Plus(n))
+		d.doLine(d.hcs, p.Minus(u), p.Minus(u).Plus(n))
+		d.addRef(p.Plus(n.ScaledBy(0.5)))
+	}
+}
+
+// layoutEqualRadius lays out a core.ConstraintEqualRadius constraint.
+func (d *constraintDrawer) layoutEqualRadius() {
+	c := d.c
+	for i := range 2 {
+		var ref geom.Vector
+		h := c.EntityA
+		if i != 0 {
+			h = c.EntityB
+		}
+		d.doEqualRadiusTicks(d.hcs, h, &ref)
+		d.addRef(ref)
+	}
+}
+
+// layoutEqualLineArcLen lays out a core.ConstraintEqualLineArcLen constraint.
+func (d *constraintDrawer) layoutEqualLineArcLen() {
+	sk := d.gw.sk()
+	c := d.c
+	line := sk.Entity(c.EntityA)
+	var ref geom.Vector
+	d.doEqualLenTicks(d.hcs, d.drawNum(line.Point[0]), d.drawNum(line.Point[1]), d.gn, &ref)
+	d.addRef(ref)
+	d.doEqualRadiusTicks(d.hcs, c.EntityB, &ref)
+	d.addRef(ref)
+}
+
+// layoutEqualLength lays out a core.ConstraintLengthRatio, core.ConstraintLengthDifference, core.ConstraintEqualLengthLines constraint.
+func (d *constraintDrawer) layoutEqualLength() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	var a, b geom.Vector
+	for i := range 2 {
+		h := c.EntityA
+		if i != 0 {
+			h = c.EntityB
+		}
+		e := sk.Entity(h)
+		a = d.pointNum(e.Point[0])
+		b = d.pointNum(e.Point[1])
+
+		if !core.IsFreeIn3D(c.Workplane) {
+			d.doProjectedPoint(d.hcs, &a)
+			d.doProjectedPoint(d.hcs, &b)
+		}
+
+		if gw.constraintShouldDrawExploded(c) {
+			offset := gw.entityExplodeOffset(e)
 			a = a.Plus(offset)
 			b = b.Plus(offset)
 		}
-		var refa geom.Vector
-		d.doEqualLenTicks(hcs, a, b, gn, &refa)
-		addRef(refa)
 
-		ln := sk.Entity(c.EntityB)
-		la := pointNum(ln.Point[0])
-		lb := pointNum(ln.Point[1])
-		pt := pointNum(c.PtA)
+		var ref geom.Vector
+		d.doEqualLenTicks(d.hcs, a, b, d.gn, &ref)
+		d.addRef(ref)
+	}
+	if c.Type == core.ConstraintLengthRatio || c.Type == core.ConstraintLengthDifference {
+		ref := a.Plus(b).ScaledBy(0.5).Plus(c.Disp.Offset)
+		d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
+	}
+}
+
+// layoutArcArcLength lays out a core.ConstraintArcArcLenRatio, core.ConstraintArcArcDifference constraint.
+func (d *constraintDrawer) layoutArcArcLength() {
+	sk := d.gw.sk()
+	c := d.c
+	circle := sk.Entity(c.EntityA)
+	center := d.pointNum(circle.Point[0])
+	q := sk.Entity(circle.Normal).NormalGetNum(sk)
+	n := q.RotationN().WithMagnitude(1)
+
+	var ref2 geom.Vector
+	d.doEqualRadiusTicks(d.hcs, c.EntityA, &ref2)
+	d.doEqualRadiusTicks(d.hcs, c.EntityB, &ref2)
+
+	ref := center.Plus(c.Disp.Offset)
+	// Force the label into the same plane as the circle.
+	ref = ref.Minus(n.ScaledBy(n.Dot(ref) - n.Dot(center)))
+	d.addRef(ref)
+	var topLeft geom.Vector
+	d.doLabel(d.hcs, ref, &topLeft, d.gr, d.gu)
+	if d.labelPos != nil {
+		*d.labelPos = topLeft
+	}
+}
+
+// layoutArcLineLength lays out a core.ConstraintArcLineLenRatio, core.ConstraintArcLineDifference constraint.
+func (d *constraintDrawer) layoutArcLineLength() {
+	sk := d.gw.sk()
+	c := d.c
+	e := sk.Entity(c.EntityA)
+	a := d.pointNum(e.Point[0])
+	b := d.pointNum(e.Point[1])
+	var ref geom.Vector
+	d.doEqualLenTicks(d.hcs, a, b, d.gn, &ref)
+	d.addRef(ref)
+	d.doEqualRadiusTicks(d.hcs, c.EntityB, &ref)
+	d.addRef(ref)
+	ref = a.Plus(b).ScaledBy(0.5).Plus(c.Disp.Offset)
+	d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
+}
+
+// layoutEqLenPtLineD lays out a core.ConstraintEqLenPtLineD constraint.
+func (d *constraintDrawer) layoutEqLenPtLineD() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	forLen := sk.Entity(c.EntityA)
+	a := d.pointNum(forLen.Point[0])
+	b := d.pointNum(forLen.Point[1])
+	if !core.IsFreeIn3D(c.Workplane) {
+		d.doProjectedPoint(d.hcs, &a)
+		d.doProjectedPoint(d.hcs, &b)
+	}
+	if gw.constraintShouldDrawExploded(c) {
+		offset := gw.entityExplodeOffset(forLen)
+		a = a.Plus(offset)
+		b = b.Plus(offset)
+	}
+	var refa geom.Vector
+	d.doEqualLenTicks(d.hcs, a, b, d.gn, &refa)
+	d.addRef(refa)
+
+	ln := sk.Entity(c.EntityB)
+	la := d.pointNum(ln.Point[0])
+	lb := d.pointNum(ln.Point[1])
+	pt := d.pointNum(c.PtA)
+	if !core.IsFreeIn3D(c.Workplane) {
+		d.doProjectedPoint(d.hcs, &pt)
+		la = d.projectInto(la, c.Workplane)
+		lb = d.projectInto(lb, c.Workplane)
+	}
+
+	closest := pt.ClosestPointOnLine(la, lb.Minus(la))
+	if gw.constraintShouldDrawExploded(c) {
+		offset := d.explodeOffset(c.PtA)
+		pt = pt.Plus(offset)
+		closest = closest.Plus(offset)
+	}
+	d.doLine(d.hcs, pt, closest)
+	var refb geom.Vector
+	d.doEqualLenTicks(d.hcs, pt, closest, d.gn, &refb)
+	d.addRef(refb)
+}
+
+// layoutEqPtLnDistances lays out a core.ConstraintEqPtLnDistances constraint.
+func (d *constraintDrawer) layoutEqPtLnDistances() {
+	gw := d.gw
+	sk := d.gw.sk()
+	c := d.c
+	for i := range 2 {
+		hl, hp := c.EntityA, c.PtA
+		if i != 0 {
+			hl, hp = c.EntityB, c.PtB
+		}
+		ln := sk.Entity(hl)
+		la := d.pointNum(ln.Point[0])
+		lb := d.pointNum(ln.Point[1])
+		pte := sk.Entity(hp)
+		pt := pte.PointGetNum(sk)
+
 		if !core.IsFreeIn3D(c.Workplane) {
-			d.doProjectedPoint(hcs, &pt)
+			d.doProjectedPoint(d.hcs, &pt)
 			la = d.projectInto(la, c.Workplane)
 			lb = d.projectInto(lb, c.Workplane)
 		}
 
 		closest := pt.ClosestPointOnLine(la, lb.Minus(la))
 		if gw.constraintShouldDrawExploded(c) {
-			offset := explodeOffset(c.PtA)
+			offset := gw.entityExplodeOffset(pte)
 			pt = pt.Plus(offset)
 			closest = closest.Plus(offset)
 		}
-		d.doLine(hcs, pt, closest)
-		var refb geom.Vector
-		d.doEqualLenTicks(hcs, pt, closest, gn, &refb)
-		addRef(refb)
-		return
+		d.doLine(d.hcs, pt, closest)
 
-	case core.ConstraintEqPtLnDistances:
-		for i := range 2 {
-			hl, hp := c.EntityA, c.PtA
-			if i != 0 {
-				hl, hp = c.EntityB, c.PtB
-			}
-			ln := sk.Entity(hl)
-			la := pointNum(ln.Point[0])
-			lb := pointNum(ln.Point[1])
-			pte := sk.Entity(hp)
-			pt := pte.PointGetNum(sk)
-
-			if !core.IsFreeIn3D(c.Workplane) {
-				d.doProjectedPoint(hcs, &pt)
-				la = d.projectInto(la, c.Workplane)
-				lb = d.projectInto(lb, c.Workplane)
-			}
-
-			closest := pt.ClosestPointOnLine(la, lb.Minus(la))
-			if gw.constraintShouldDrawExploded(c) {
-				offset := gw.entityExplodeOffset(pte)
-				pt = pt.Plus(offset)
-				closest = closest.Plus(offset)
-			}
-			d.doLine(hcs, pt, closest)
-
-			var ref geom.Vector
-			d.doEqualLenTicks(hcs, pt, closest, gn, &ref)
-			addRef(ref)
-		}
-		return
-
-	case core.ConstraintSymmetric, core.ConstraintSymmetricHoriz, core.ConstraintSymmetricVert,
-		core.ConstraintSymmetricLine:
-		var n geom.Vector
-		switch c.Type {
-		case core.ConstraintSymmetric:
-			n = sk.Entity(c.EntityA).NormalEntity(sk).NormalN(sk)
-		case core.ConstraintSymmetricHoriz:
-			n = sk.Entity(c.Workplane).NormalEntity(sk).NormalU(sk)
-		case core.ConstraintSymmetricVert:
-			n = sk.Entity(c.Workplane).NormalEntity(sk).NormalV(sk)
-		default:
-			ln := sk.Entity(c.EntityA)
-			la := pointNum(ln.Point[0])
-			lb := pointNum(ln.Point[1])
-			la = d.projectInto(la, c.Workplane)
-			lb = d.projectInto(lb, c.Workplane)
-			n = lb.Minus(la)
-			nw := sk.Entity(c.Workplane).NormalEntity(sk).NormalN(sk)
-			n = n.RotatedAroundAxis(nw, math.Pi/2)
-		}
-		a := drawNum(c.PtA)
-		b := drawNum(c.PtB)
-
-		for i := range 2 {
-			tail, dd := a, b
-			if i != 0 {
-				tail, dd = b, a
-			}
-			dd = dd.Minus(tail)
-			// Project the direction in which the arrow is drawn normal to
-			// the symmetry plane; for projected symmetry constraints, they
-			// might not be in the same direction, even when the constraint
-			// is fully solved.
-			dd = n.ScaledBy(dd.Dot(n))
-			dd = dd.WithMagnitude(20 / camera.Scale)
-			tip := tail.Plus(dd)
-
-			d.doLine(hcs, tail, tip)
-			dd = dd.WithMagnitude(9 / camera.Scale)
-			d.doLine(hcs, tip, tip.Minus(dd.RotatedAroundAxis(gn, 0.6)))
-			d.doLine(hcs, tip, tip.Minus(dd.RotatedAroundAxis(gn, -0.6)))
-			addRef(tip)
-		}
-		return
-
-	case core.ConstraintAtMidpoint, core.ConstraintHorizontal, core.ConstraintVertical:
-		if c.EntityA.V != 0 {
-			var r, u, n geom.Vector
-			if core.IsFreeIn3D(c.Workplane) {
-				r, u, n = gr, gu, gn
-			} else {
-				wn := sk.Entity(c.Workplane).NormalEntity(sk)
-				r = wn.NormalU(sk)
-				u = wn.NormalV(sk)
-				n = r.Cross(u)
-			}
-			// For "at midpoint", this branch is always taken.
-			e := sk.Entity(c.EntityA)
-			a := drawNum(e.Point[0])
-			b := drawNum(e.Point[1])
-			m := a.ScaledBy(0.5).Plus(b.ScaledBy(0.5))
-			offset := a.Minus(b).Cross(n)
-			offset = offset.WithMagnitude(textHeight)
-			// Draw midpoint constraint on other side of line, so that a
-			// line can be midpoint and horizontal at same time.
-			if c.Type == core.ConstraintAtMidpoint {
-				offset = offset.ScaledBy(-1)
-			}
-
-			var s string
-			switch c.Type {
-			case core.ConstraintHorizontal:
-				s = "H"
-			case core.ConstraintVertical:
-				s = "V"
-			case core.ConstraintAtMidpoint:
-				s = "M"
-			}
-			o := m.Plus(offset).Plus(u.WithMagnitude(textHeight / 5))
-			ex := res.BuiltinVectorFont().Extents(textHeight, s)
-			shift := r.WithMagnitude(ex.X).Plus(u.WithMagnitude(ex.Y))
-
-			canvas.DrawVectorText(s, textHeight, o.Minus(shift.ScaledBy(0.5)),
-				r.WithMagnitude(1), u.WithMagnitude(1), hcs)
-			addRef(o)
-		} else {
-			a := drawNum(c.PtA)
-			b := drawNum(c.PtB)
-
-			w := sk.Entity(c.Workplane).NormalEntity(sk)
-			cu, cv, cn := w.NormalU(sk), w.NormalV(sk), w.NormalN(sk)
-
-			for i := range 2 {
-				o, oo := a, a.Minus(b)
-				if i != 0 {
-					o, oo = b, b.Minus(a)
-				}
-				dd := cv
-				if c.Type == core.ConstraintHorizontal {
-					dd = cu
-				}
-				if oo.Dot(dd) < 0 {
-					dd = dd.ScaledBy(-1)
-				}
-
-				dp := cn.Cross(dd)
-				dd = dd.WithMagnitude(14 / camera.Scale)
-				cc := o.Minus(dd)
-				d.doLine(hcs, o, cc)
-				dd = dd.WithMagnitude(3 / camera.Scale)
-				dp = dp.WithMagnitude(2 / camera.Scale)
-				canvas.DrawQuad(cc.Plus(dd).Plus(dp), cc.Minus(dd).Plus(dp),
-					cc.Minus(dd).Minus(dp), cc.Plus(dd).Minus(dp), hcf)
-				addRef(cc)
-			}
-		}
-		return
-
-	case core.ConstraintComment:
-		var u, v geom.Vector
-		if core.IsFreeIn3D(c.Workplane) {
-			u, v = gr, gu
-		} else {
-			norm := sk.Entity(c.Workplane).NormalEntity(sk)
-			u, v = norm.NormalU(sk), norm.NormalV(sk)
-		}
-
-		if c.Disp.Style.V != 0 {
-			color := stroke.Color
-			stroke = ss.styleStroke(c.Disp.Style)
-			stroke.Layer = render.LayerFront
-			if how != ConstraintDrawDefault {
-				stroke.Color = color
-			}
-			hcs = canvas.InternStroke(stroke)
-		}
-		ref := c.Disp.Offset
-		if c.PtA.V != 0 {
-			ref = pointNum(c.PtA).Plus(c.Disp.Offset)
-		}
-		d.doLabel(hcs, ref, labelPos, u, v)
-		addRef(ref)
-		return
+		var ref geom.Vector
+		d.doEqualLenTicks(d.hcs, pt, closest, d.gn, &ref)
+		d.addRef(ref)
 	}
-	panic("ui: unexpected constraint type")
+}
+
+// layoutSymmetric lays out a core.ConstraintSymmetric, core.ConstraintSymmetricHoriz, core.ConstraintSymmetricVert, core.ConstraintSymmetricLine constraint.
+func (d *constraintDrawer) layoutSymmetric() {
+	sk := d.gw.sk()
+	c := d.c
+	var n geom.Vector
+	switch c.Type {
+	case core.ConstraintSymmetric:
+		n = sk.Entity(c.EntityA).NormalEntity(sk).NormalN(sk)
+	case core.ConstraintSymmetricHoriz:
+		n = sk.Entity(c.Workplane).NormalEntity(sk).NormalU(sk)
+	case core.ConstraintSymmetricVert:
+		n = sk.Entity(c.Workplane).NormalEntity(sk).NormalV(sk)
+	default:
+		ln := sk.Entity(c.EntityA)
+		la := d.pointNum(ln.Point[0])
+		lb := d.pointNum(ln.Point[1])
+		la = d.projectInto(la, c.Workplane)
+		lb = d.projectInto(lb, c.Workplane)
+		n = lb.Minus(la)
+		nw := sk.Entity(c.Workplane).NormalEntity(sk).NormalN(sk)
+		n = n.RotatedAroundAxis(nw, math.Pi/2)
+	}
+	a := d.drawNum(c.PtA)
+	b := d.drawNum(c.PtB)
+
+	for i := range 2 {
+		tail, dd := a, b
+		if i != 0 {
+			tail, dd = b, a
+		}
+		dd = dd.Minus(tail)
+		// Project the direction in which the arrow is drawn normal to
+		// the symmetry plane; for projected symmetry constraints, they
+		// might not be in the same direction, even when the constraint
+		// is fully solved.
+		dd = n.ScaledBy(dd.Dot(n))
+		dd = dd.WithMagnitude(20 / d.camera.Scale)
+		tip := tail.Plus(dd)
+
+		d.doLine(d.hcs, tail, tip)
+		dd = dd.WithMagnitude(9 / d.camera.Scale)
+		d.doLine(d.hcs, tip, tip.Minus(dd.RotatedAroundAxis(d.gn, 0.6)))
+		d.doLine(d.hcs, tip, tip.Minus(dd.RotatedAroundAxis(d.gn, -0.6)))
+		d.addRef(tip)
+	}
+}
+
+// layoutMidpointOrAxis lays out a core.ConstraintAtMidpoint, core.ConstraintHorizontal, core.ConstraintVertical constraint.
+func (d *constraintDrawer) layoutMidpointOrAxis() {
+	sk := d.gw.sk()
+	c := d.c
+	if c.EntityA.V != 0 {
+		var r, u, n geom.Vector
+		if core.IsFreeIn3D(c.Workplane) {
+			r, u, n = d.gr, d.gu, d.gn
+		} else {
+			wn := sk.Entity(c.Workplane).NormalEntity(sk)
+			r = wn.NormalU(sk)
+			u = wn.NormalV(sk)
+			n = r.Cross(u)
+		}
+		// For "at midpoint", this branch is always taken.
+		e := sk.Entity(c.EntityA)
+		a := d.drawNum(e.Point[0])
+		b := d.drawNum(e.Point[1])
+		m := a.ScaledBy(0.5).Plus(b.ScaledBy(0.5))
+		offset := a.Minus(b).Cross(n)
+		offset = offset.WithMagnitude(d.textHeight)
+		// Draw midpoint constraint on other side of line, so that a
+		// line can be midpoint and horizontal at same time.
+		if c.Type == core.ConstraintAtMidpoint {
+			offset = offset.ScaledBy(-1)
+		}
+
+		var s string
+		switch c.Type {
+		case core.ConstraintHorizontal:
+			s = "H"
+		case core.ConstraintVertical:
+			s = "V"
+		case core.ConstraintAtMidpoint:
+			s = "M"
+		}
+		o := m.Plus(offset).Plus(u.WithMagnitude(d.textHeight / 5))
+		ex := res.BuiltinVectorFont().Extents(d.textHeight, s)
+		shift := r.WithMagnitude(ex.X).Plus(u.WithMagnitude(ex.Y))
+
+		d.canvas.DrawVectorText(s, d.textHeight, o.Minus(shift.ScaledBy(0.5)),
+			r.WithMagnitude(1), u.WithMagnitude(1), d.hcs)
+		d.addRef(o)
+	} else {
+		a := d.drawNum(c.PtA)
+		b := d.drawNum(c.PtB)
+
+		w := sk.Entity(c.Workplane).NormalEntity(sk)
+		cu, cv, cn := w.NormalU(sk), w.NormalV(sk), w.NormalN(sk)
+
+		for i := range 2 {
+			o, oo := a, a.Minus(b)
+			if i != 0 {
+				o, oo = b, b.Minus(a)
+			}
+			dd := cv
+			if c.Type == core.ConstraintHorizontal {
+				dd = cu
+			}
+			if oo.Dot(dd) < 0 {
+				dd = dd.ScaledBy(-1)
+			}
+
+			dp := cn.Cross(dd)
+			dd = dd.WithMagnitude(14 / d.camera.Scale)
+			cc := o.Minus(dd)
+			d.doLine(d.hcs, o, cc)
+			dd = dd.WithMagnitude(3 / d.camera.Scale)
+			dp = dp.WithMagnitude(2 / d.camera.Scale)
+			d.canvas.DrawQuad(cc.Plus(dd).Plus(dp), cc.Minus(dd).Plus(dp),
+				cc.Minus(dd).Minus(dp), cc.Plus(dd).Minus(dp), d.hcf)
+			d.addRef(cc)
+		}
+	}
+}
+
+// layoutComment lays out a core.ConstraintComment constraint.
+func (d *constraintDrawer) layoutComment() {
+	ss := d.gw.ss
+	sk := d.gw.sk()
+	c := d.c
+	var u, v geom.Vector
+	if core.IsFreeIn3D(c.Workplane) {
+		u, v = d.gr, d.gu
+	} else {
+		norm := sk.Entity(c.Workplane).NormalEntity(sk)
+		u, v = norm.NormalU(sk), norm.NormalV(sk)
+	}
+
+	if c.Disp.Style.V != 0 {
+		color := d.stroke.Color
+		d.stroke = ss.styleStroke(c.Disp.Style)
+		d.stroke.Layer = render.LayerFront
+		if d.how != ConstraintDrawDefault {
+			d.stroke.Color = color
+		}
+		d.hcs = d.canvas.InternStroke(d.stroke)
+	}
+	ref := c.Disp.Offset
+	if c.PtA.V != 0 {
+		ref = d.pointNum(c.PtA).Plus(c.Disp.Offset)
+	}
+	d.doLabel(d.hcs, ref, d.labelPos, u, v)
+	d.addRef(ref)
 }
 
 // drawConstraint is Constraint::Draw.
