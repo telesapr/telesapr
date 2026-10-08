@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/export"
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
@@ -50,15 +51,9 @@ type Config struct {
 	ExportShadedTriangles bool
 	ExportPwlCurves       bool
 	ExportCanvasSizeAuto  bool
-	ExportMargin          struct{ Left, Right, Bottom, Top float64 }
-	ExportCanvas          struct{ Width, Height, Dx, Dy float64 }
-	GCode                 struct {
-		Depth      float64
-		SafeHeight float64
-		Passes     int
-		Feed       float64
-		PlungeFeed float64
-	}
+	ExportMargin          export.Margin
+	ExportCanvas          export.Canvas
+	GCode                 export.GCode
 	// DefaultUnits is the unit of a new document, the last one the
 	// user chose.
 	DefaultUnits       core.Unit

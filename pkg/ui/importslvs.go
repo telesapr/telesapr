@@ -6,11 +6,13 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/persist/convert"
+	"github.com/telesapr/telesapr/pkg/persist/dxf"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/platform"
 )
@@ -118,4 +120,43 @@ func describeResult(r *convert.Result) string {
 	slices.Sort(lines)
 	lines = append(lines, r.Warnings...)
 	return warningList(lines)
+}
+
+// ImportDxf imports a DXF file into the active group: in its workplane,
+// or as construction entities in 3d when the file leaves the plane.
+func (ss *Application) ImportDxf(filename string) {
+	fileType := strings.ToUpper(strings.TrimPrefix(filepath.Ext(filename), "."))
+
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		ss.Error("Couldn't read from '%s'", filename)
+		return
+	}
+
+	asConstruction := true
+	if ss.GW.LockedInWorkplane() {
+		if dxf.Has3D(data) {
+			ss.Message("This %s file contains entities with non-zero Z coordinate; "+
+				"the entire file will be imported as construction entities in 3d.", fileType)
+			ss.GW.SetWorkplaneFreeIn3d()
+			ss.GW.EnsureValidActives()
+		} else {
+			asConstruction = false
+		}
+	}
+
+	ss.UndoRemember()
+	rep, err := dxf.Import(ss.SK, data, dxf.Options{AsConstruction: asConstruction, TextHeight: ss.defaultTextHeight()})
+	if err != nil {
+		ss.Error("Corrupted %s file.", fileType)
+		return
+	}
+	if rep.Unknown > 0 {
+		ss.Message("%d %s entities of unknown type were ignored.", rep.Unknown, fileType)
+	}
+}
+
+// ImportDwg would import a DWG file; reading DWG isn't ported.
+func (ss *Application) ImportDwg(filename string) {
+	ss.Error("DWG import is not supported; save the drawing as DXF.")
 }

@@ -1,16 +1,17 @@
-package ui
+package export
 
 // Export a STEP file describing our ratpoly shell (C++ exportstep.cpp).
 
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"io"
 	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/cfmt"
+	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -54,7 +55,8 @@ type stepOrientedEdgeAlias struct {
 
 // stepFileWriter writes STEP (C++ StepFileWriter).
 type stepFileWriter struct {
-	ss *Application
+	sk *sketch.Sketch
+	o  Options
 
 	curves        []int
 	advancedFaces []int
@@ -530,7 +532,7 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// don't want it to give us any open contours. The polygon and chord
 	// tolerance are required, because they are used to calculate the
 	// contour directions and determine inner vs. outer contours.
-	sblss.FindOuterFacesFrom(sbl, &spxyz, ss, srf.Tol(w.ss.ExportChordTolMm(), w.ss.ExportMaxSegments),
+	sblss.FindOuterFacesFrom(sbl, &spxyz, ss, w.o.Tol,
 		&allClosed, &notClosedAt, nil, nil, nil)
 
 	// So in our list of SBezierLoopSet, each set contains at least one
@@ -1015,12 +1017,10 @@ func (w *stepFileWriter) WriteFooter() {
 		"END-ISO-10303-21;\n")
 }
 
-// ExportSurfacesTo writes the active group's shell as STEP (C++
-// StepFileWriter::ExportSurfacesTo).
-func (ss *Application) ExportSurfacesTo(filename string) error {
-	g := ss.SK.Group(ss.GW.activeGroupH())
+// WriteStep writes the group's shell to out as STEP: an assembly's
+// parts placed, or one solid. A group with no surfaces is an error.
+func WriteStep(out io.Writer, sk *sketch.Sketch, g *sketch.Group, o Options) error {
 	shell := &g.RunningShell
-
 	if len(shell.Surface) == 0 {
 		extra := ""
 		if len(g.RunningMesh.Triangles) > 0 {
@@ -1031,62 +1031,37 @@ func (ss *Application) ExportSurfacesTo(filename string) error {
 		return fmt.Errorf("the model does not contain any surfaces to export%s", extra)
 	}
 
-	f, err := os.Create(filename)
-	if err != nil {
-		return fmt.Errorf("couldn't write to '%s'", filename)
-	}
-
-	var out bytes.Buffer
-	w := &stepFileWriter{ss: ss, f: &out, exportParts: true}
-
+	var buf bytes.Buffer
+	w := &stepFileWriter{sk: sk, o: o, f: &buf, exportParts: true}
 	w.WriteHeader()
 	w.WriteProductHeader()
-
-	// An assembly: a product a part, placed (roadmap 16.8).
-	if parts := ss.SK.AssemblyParts(g.H); len(parts) >= 2 {
-		w.WriteAssembly(parts, 1.0/ss.ExportScale)
-		w.WriteFooter()
-		_, err = f.Write(out.Bytes())
-		if cerr := f.Close(); err == nil {
-			err = cerr
+	if parts := sk.AssemblyParts(g.H); len(parts) >= 2 {
+		// An assembly: a product a part, placed.
+		w.WriteAssembly(parts, 1.0/o.Scale)
+	} else {
+		w.exportShellFaces(shell, 1.0/o.Scale)
+		w.printf("#%d=CLOSED_SHELL('',(", w.id)
+		for i, af := range w.advancedFaces {
+			w.printf("#%d", af)
+			if i+1 < len(w.advancedFaces) {
+				w.printf(",")
+			}
 		}
-		if err != nil {
-			return fmt.Errorf("couldn't write to '%s'", filename)
-		}
-		return nil
+		w.printf("));\n")
+		w.printf("#%d=MANIFOLD_SOLID_BREP('brep',#%d);\n", w.id+1, w.id)
+		w.printf("#%d=ADVANCED_BREP_SHAPE_REPRESENTATION('',(#%d,#170),#168);\n", w.id+2, w.id+1)
+		w.printf("#%d=SHAPE_REPRESENTATION_RELATIONSHIP($,$,#169,#%d);\n", w.id+3, w.id+2)
 	}
-
-	w.exportShellFaces(shell, 1.0/ss.ExportScale)
-
-	w.printf("#%d=CLOSED_SHELL('',(", w.id)
-	for i, af := range w.advancedFaces {
-		w.printf("#%d", af)
-		if i+1 < len(w.advancedFaces) {
-			w.printf(",")
-		}
-	}
-	w.printf("));\n")
-	w.printf("#%d=MANIFOLD_SOLID_BREP('brep',#%d);\n", w.id+1, w.id)
-	w.printf("#%d=ADVANCED_BREP_SHAPE_REPRESENTATION('',(#%d,#170),#168);\n", w.id+2, w.id+1)
-	w.printf("#%d=SHAPE_REPRESENTATION_RELATIONSHIP($,$,#169,#%d);\n", w.id+3, w.id+2)
-
 	w.WriteFooter()
-
-	_, err = f.Write(out.Bytes())
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		return fmt.Errorf("couldn't write to '%s'", filename)
-	}
-	return nil
+	_, err := out.Write(buf.Bytes())
+	return err
 }
 
 // exportShellFaces writes the faces of shell, scaled by scale, adding
 // them to w.advancedFaces.
 func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
 	sheets := map[core.HSSurface]*stepSheet{}
-	if w.ss.StepOneSurfacePerFace {
+	if w.o.StepOneSurfacePerFace {
 		sheets = stepSheets(shell)
 	}
 	for i := range shell.Surface {

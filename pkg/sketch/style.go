@@ -171,3 +171,15 @@ func (sk *Sketch) StylePatternType(h core.HStyle) core.StipplePattern {
 func (sk *Sketch) StyleStippleScale(h core.HStyle) float64 {
 	return sk.StyleGet(h).StippleScale
 }
+
+// NewCustomStyle adds a custom style, numbered after the last, with the
+// defaults, and returns its handle.
+func (sk *Sketch) NewCustomStyle() core.HStyle {
+	maxID := uint32(0)
+	for i := range sk.Styles {
+		maxID = max(maxID, sk.Styles[i].H.V)
+	}
+	hs := core.HStyle{V: max(uint32(core.StyleFirstCustom), maxID+1)}
+	sk.StyleGet(hs)
+	return hs
+}

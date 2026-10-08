@@ -1,4 +1,4 @@
-package ui
+package export
 
 // DXF export (the DXF part of C++ exportvector.cpp: DxfWriteInterface
 // and DxfFileWriter), written through pkg/dxf.
@@ -23,13 +23,13 @@ type dxfFileWriter struct {
 	vectorWriter
 	// paths are the curves of each path (C++ BezierPath).
 	paths       [][]*srf.SBezier
-	constraints *[]core.Constraint
+	constraints []core.Constraint
 }
 
 func (w *dxfFileWriter) HasCanvasSize() bool { return false }
 func (w *dxfFileWriter) CanOutputMesh() bool { return false }
 
-func (w *dxfFileWriter) OutputConstraints(constraints *[]core.Constraint) bool {
+func (w *dxfFileWriter) OutputConstraints(constraints []core.Constraint) bool {
 	w.constraints = constraints
 	return true
 }
@@ -54,7 +54,6 @@ func (w *dxfFileWriter) Bezier(sb *srf.SBezier) {
 }
 
 func (w *dxfFileWriter) FinishAndCloseFile() error {
-	ss := w.ss
 	iface := &dxfWriteInterface{writer: w, messages: map[string]bool{}}
 	data := dxf.Write(iface)
 	w.paths = nil
@@ -76,7 +75,7 @@ func (w *dxfFileWriter) FinishAndCloseFile() error {
 		for _, m := range msgs {
 			text.WriteString(" * " + m + "\n")
 		}
-		ss.Message("%s", text.String())
+		w.warn(text.String())
 	}
 	return nil
 }
@@ -87,14 +86,13 @@ func (w *dxfFileWriter) needToOutput(c *core.Constraint) bool {
 	switch c.Type {
 	case core.ConstraintPtPtDistance, core.ConstraintPtLineDistance, core.ConstraintDiameter,
 		core.ConstraintAngle, core.ConstraintComment:
-		return w.ss.GW.constraintIsVisible(c)
+		return w.o.Constraints.Visible(c)
 	}
 	return false
 }
 
-// dxfLineTypeName is a stipple pattern's DXF line type (C++
-// DxfFileWriter::lineTypeName).
-func dxfLineTypeName(stippleType core.StipplePattern) string {
+// DxfLineType is a stipple pattern's DXF line type.
+func DxfLineType(stippleType core.StipplePattern) string {
 	switch stippleType {
 	case core.StippleContinuous:
 		return "CONTINUOUS"
@@ -148,7 +146,7 @@ func (d *dxfWriteInterface) WriteLayers(w *dxf.Writer) {
 	slices.Sort(styles)
 
 	for _, v := range styles {
-		s := d.writer.ss.SK.StyleGet(hstyle(v))
+		s := d.writer.sk.StyleGet(hstyle(v))
 		w.WriteLayer(&dxf.Layer{Name: s.DescriptionString()})
 	}
 }
@@ -158,7 +156,7 @@ func (d *dxfWriteInterface) WriteLTypes(w *dxf.Writer) {
 		// LibreCAD requires the line type to have one of these exact
 		// names, or otherwise it overwrites it with its own (continuous)
 		// style.
-		typ := dxf.LType{Name: dxfLineTypeName(st)}
+		typ := dxf.LType{Name: DxfLineType(st)}
 		sw := 1.0
 		switch st {
 		case core.StippleContinuous:
@@ -228,8 +226,7 @@ func (d *dxfWriteInterface) writePolylines() {
 
 func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 	d.dxf = w
-	ss := d.writer.ss
-	sk := ss.SK
+	sk := d.writer.sk
 	d.writePolylines()
 
 	for _, path := range d.writer.paths {
@@ -244,8 +241,8 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 	if d.writer.constraints == nil {
 		return
 	}
-	for i := range *d.writer.constraints {
-		c := &(*d.writer.constraints)[i]
+	for i := range d.writer.constraints {
+		c := &(d.writer.constraints)[i]
 		if !d.writer.needToOutput(c) {
 			continue
 		}
@@ -255,7 +252,7 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 			bp := sk.MustEntity(c.PtB).PointGetNum(sk)
 			ref := ap.Plus(bp).ScaledBy(0.5).Plus(c.Disp.Offset)
 			d.writeAlignedDimension(d.xfrm(ap), d.xfrm(bp), d.xfrm(ref),
-				d.xfrm(ref), ss.constraintLabel(c), constraintStyle(c), c.ValA)
+				d.xfrm(ref), d.writer.o.Constraints.Label(c), c.StyleOrDefault(), c.ValA)
 
 		case core.ConstraintPtLineDistance:
 			pt := sk.MustEntity(c.PtA).PointGetNum(sk)
@@ -285,9 +282,9 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 
 			xdl := d.xfrm(lB).Minus(d.xfrm(lA))
 			d.writeLinearDimension(d.xfrm(pt), d.xfrm(refClosest), d.xfrm(ref),
-				d.xfrm(ref), ss.constraintLabel(c),
+				d.xfrm(ref), d.writer.o.Constraints.Label(c),
 				libm.Atan2(xdl.Y, xdl.X)/math.Pi*180.0+90.0, 0.0,
-				constraintStyle(c), c.ValA)
+				c.StyleOrDefault(), c.ValA)
 
 		case core.ConstraintDiameter:
 			circle := sk.MustEntity(c.EntityA)
@@ -303,10 +300,10 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 			rad := ref.Minus(center).WithMagnitude(r)
 			if c.Other { // isRadius
 				d.writeRadialDimension(d.xfrm(center), d.xfrm(center.Plus(rad)),
-					d.xfrm(ref), ss.constraintLabel(c), constraintStyle(c), c.ValA)
+					d.xfrm(ref), d.writer.o.Constraints.Label(c), c.StyleOrDefault(), c.ValA)
 			} else {
 				d.writeDiametricDimension(d.xfrm(center.Minus(rad)), d.xfrm(center.Plus(rad)),
-					d.xfrm(ref), ss.constraintLabel(c), constraintStyle(c), c.ValA)
+					d.xfrm(ref), d.writer.o.Constraints.Label(c), c.StyleOrDefault(), c.ValA)
 			}
 
 		case core.ConstraintAngle:
@@ -357,13 +354,13 @@ func (d *dxfWriteInterface) WriteEntities(w *dxf.Writer) {
 
 			d.writeAngularDimension(
 				d.xfrm(a0), d.xfrm(a0.Plus(da)), d.xfrm(b0), d.xfrm(b0.Plus(db)), d.xfrm(ref),
-				d.xfrm(ref), ss.constraintLabel(c), constraintStyle(c), c.ValA)
+				d.xfrm(ref), d.writer.o.Constraints.Label(c), c.StyleOrDefault(), c.ValA)
 
 		case core.ConstraintComment:
-			hs := constraintStyle(c)
+			hs := c.StyleOrDefault()
 			st := sk.StyleGet(hs)
-			d.writeText(d.xfrm(c.Disp.Offset), ss.constraintLabel(c),
-				ss.styleTextHeight(hs)/ss.GW.view.Scale,
+			d.writeText(d.xfrm(c.Disp.Offset), d.writer.o.Constraints.Label(c),
+				d.writer.styleTextHeight(hs)/d.writer.o.ViewScale,
 				st.TextAngle, st.TextOrigin, hs)
 		}
 	}
@@ -394,15 +391,14 @@ func toPackedIntBGRA(c core.RGBA) int {
 }
 
 func (d *dxfWriteInterface) assignEntityDefaults(entity *dxf.Entity, hs core.HStyle) {
-	ss := d.writer.ss
 	*entity = dxf.NewEntity()
-	s := ss.SK.StyleGet(hs)
-	color := ss.styleExportColor(hs)
+	s := d.writer.sk.StyleGet(hs)
+	color := d.writer.styleExportColor(hs)
 	entity.Color24 = toPackedIntBGRA(color)
 	entity.Color = findDxfColor(color)
 	entity.Layer = s.DescriptionString()
-	entity.LineType = dxfLineTypeName(s.StippleType)
-	entity.LWeight = dxf.WidthMm(ss.styleWidthMm(hs))
+	entity.LineType = DxfLineType(s.StippleType)
+	entity.LWeight = dxf.WidthMm(d.writer.styleWidthMm(hs))
 
 	switch s.StippleType {
 	case core.StippleFreehand:
@@ -437,7 +433,7 @@ func (d *dxfWriteInterface) writeArc(c geom.Vector, r, sa, ea float64, hs core.H
 
 func (d *dxfWriteInterface) writeBezierAsPwl(sb *srf.SBezier) {
 	var lv []geom.Vector
-	sb.MakePwlIntoPoints(&lv, srf.Tol(d.writer.ss.ExportChordTolMm(), d.writer.ss.ExportMaxSegments), 0)
+	sb.MakePwlIntoPoints(&lv, d.writer.o.Tol, 0)
 	hs := hstyle(uint32(sb.AuxA))
 	var polyline dxf.Polyline
 	d.assignEntityDefaults(&polyline.Entity, hs)

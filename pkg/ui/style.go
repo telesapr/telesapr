@@ -41,37 +41,3 @@ func (ss *Application) styleTextHeight(hs core.HStyle) float64 {
 func (ss *Application) defaultTextHeight() float64 {
 	return ss.styleTextHeight(hstyle(core.StyleConstraint))
 }
-
-// styleWidth is a style's width in pixels (C++ Style::Width).
-func (ss *Application) styleWidth(hs core.HStyle) float64 {
-	return ss.SK.StyleWidth(hs, ss.GW.view.Scale)
-}
-
-// styleWidthMm is a style's width in mm (C++ Style::WidthMm).
-func (ss *Application) styleWidthMm(hs core.HStyle) float64 {
-	return ss.styleWidth(hs) / ss.GW.view.Scale
-}
-
-// styleStippleScaleMm is a style's stipple scale in mm (C++
-// Style::StippleScaleMm).
-func (ss *Application) styleStippleScaleMm(hs core.HStyle) float64 {
-	s := ss.SK.StyleGet(hs)
-	switch s.WidthAs {
-	case core.UnitsMM:
-		return s.StippleScale
-	case core.UnitsPixels:
-		return s.StippleScale / ss.GW.view.Scale
-	}
-	return 1.0
-}
-
-// styleExportColor and styleExportFillColor are a style's colours for
-// export, near-white rewritten to black if the user asks (C++
-// Style::Color and FillColor with forExport).
-func (ss *Application) styleExportColor(hs core.HStyle) core.RGBA {
-	return ss.SK.StyleColor(hs, true, ss.FixExportColors)
-}
-
-func (ss *Application) styleExportFillColor(hs core.HStyle) core.RGBA {
-	return ss.SK.StyleFillColor(hs, true, ss.FixExportColors)
-}

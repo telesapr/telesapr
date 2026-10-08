@@ -15,3 +15,5 @@ pkg/internal/cdt
 pkg/topo
 pkg/script/agent
 pkg/mcpserver
+pkg/export
+pkg/persist/dxf

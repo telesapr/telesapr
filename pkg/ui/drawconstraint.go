@@ -26,13 +26,8 @@ func constraintIsStylable(c *core.Constraint) bool {
 	return c.Type == core.ConstraintComment
 }
 
-// constraintStyle is Constraint::GetStyle.
-func constraintStyle(c *core.Constraint) core.HStyle {
-	if c.Disp.Style.V != 0 {
-		return c.Disp.Style
-	}
-	return hstyle(core.StyleConstraint)
-}
+// constraintStyle is the style a constraint is drawn in.
+func constraintStyle(c *core.Constraint) core.HStyle { return c.StyleOrDefault() }
 
 // constraintLabel is Constraint::Label.
 func (ss *Application) constraintLabel(c *core.Constraint) string {

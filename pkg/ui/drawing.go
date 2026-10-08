@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/export"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -487,18 +488,17 @@ func (ss *Application) ExportDrawingTo(filename string, d *sketch.Drawing) error
 	if err != nil {
 		return err
 	}
-	out, err := ss.vectorFileWriterFor(filename)
+	// The canvas is the sheet, in mm, as written.
+	o := ss.exportOptions()
+	w, h := d.Size()
+	o.CanvasSizeAuto, o.Scale = false, 1
+	o.Canvas = export.Canvas{Width: w, Height: h}
+	out, err := export.NewWriter(filename, ss.SK, o)
 	if err != nil {
 		return err
 	}
-	// The canvas is the sheet, in mm, as written.
-	w, h := d.Size()
-	auto, canvas, scale := ss.ExportCanvasSizeAuto, ss.ExportCanvas, ss.ExportScale
-	defer func() { ss.ExportCanvasSizeAuto, ss.ExportCanvas, ss.ExportScale = auto, canvas, scale }()
-	ss.ExportCanvasSizeAuto, ss.ExportScale = false, 1
-	ss.ExportCanvas.Width, ss.ExportCanvas.Height, ss.ExportCanvas.Dx, ss.ExportCanvas.Dy = w, h, 0, 0
-	out.vw().SetModelviewProjection(geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1}, geom.Vector{}, 0, 1)
+	out.SetModelviewProjection(geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1}, geom.Vector{}, 0, 1)
 	var sbl srf.SBezierList
 	var sms srf.SMesh
-	return writeExportCurves(&sheet, &sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
+	return export.WriteCurves(&sheet, &sbl, &sms, ss.exportTolerance(), out)
 }

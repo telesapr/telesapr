@@ -1,16 +1,19 @@
-package ui
+// Package dxf imports a DXF drawing into a sketch: its lines, arcs,
+// circles, splines, text and dimensions become requests and
+// constraints of the active group, in its workplane or in 3d.
+package dxf
 
 // DXF import (C++ importdxf.cpp), reading through pkg/dxf/dxfread.
 
 import (
+	"errors"
 	"math"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/dxf"
+	dxffmt "github.com/telesapr/telesapr/pkg/dxf"
 	"github.com/telesapr/telesapr/pkg/dxf/dxfread"
+	"github.com/telesapr/telesapr/pkg/export"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/cfmt"
 	"github.com/telesapr/telesapr/pkg/libm"
@@ -64,7 +67,8 @@ type importBlock struct {
 // dxfImport makes requests and constraints from a DXF file's entities
 // (C++ DxfImport).
 type dxfImport struct {
-	ss *Application
+	sketch     *sketch.Sketch
+	textHeight float64
 
 	blockX, blockY, blockZ, blockT geom.Vector
 
@@ -81,17 +85,30 @@ type dxfImport struct {
 	points map[uint64][]importPoint
 }
 
-func newDxfImport(ss *Application) *dxfImport {
+func newDxfImport(sk *sketch.Sketch, textHeight float64) *dxfImport {
 	return &dxfImport{
-		ss:     ss,
-		styles: map[string]core.HStyle{},
-		blocks: map[string]*importBlock{},
-		layers: map[string]*dxfread.Layer{},
-		points: map[uint64][]importPoint{},
+		sketch:     sk,
+		textHeight: textHeight,
+		styles:     map[string]core.HStyle{},
+		blocks:     map[string]*importBlock{},
+		layers:     map[string]*dxfread.Layer{},
+		points:     map[uint64][]importPoint{},
 	}
 }
 
-func (d *dxfImport) sk() *sketch.Sketch { return d.ss.SK }
+func (d *dxfImport) sk() *sketch.Sketch { return d.sketch }
+
+// activeWorkplane is the active group's workplane, none in 3d.
+func (d *dxfImport) activeWorkplane() core.HEntity {
+	if g := d.sketch.Group(d.sketch.ActiveGroup()); g != nil {
+		return g.ActiveWorkplane
+	}
+	return core.HEntity{}
+}
+
+// lockedInWorkplane reports whether the active group draws in a
+// workplane.
+func (d *dxfImport) lockedInWorkplane() bool { return !core.IsFreeIn3D(d.activeWorkplane()) }
 
 func (d *dxfImport) invertXTransform() {
 	d.blockX.X = -d.blockX.X
@@ -183,7 +200,7 @@ func (d *dxfImport) createBulge(p0, p1 geom.Vector, bulge float64) core.HRequest
 	d.blockTransformArc(&center, &p0, &p1)
 
 	sk := d.sk()
-	hr := d.ss.GW.AddRequest(sketch.RequestArcOfCircle, false)
+	hr := d.sk().AddRequestOfType(sketch.RequestArcOfCircle, false)
 	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, center)
 	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, p0)
 	sk.MustEntity(hr.Entity(3)).PointForceTo(sk, p1)
@@ -345,7 +362,7 @@ func (d *dxfImport) invisibleStyle() core.HStyle {
 		return hs
 	}
 
-	hs := core.HStyle{V: d.ss.CreateCustomStyle(false)}
+	hs := core.HStyle{V: d.sk().NewCustomStyle().V}
 	s := d.sk().StyleGet(hs)
 	s.Name = id
 	s.Visible = false
@@ -364,14 +381,13 @@ func dxfColor(col int) core.RGBA {
 	if col > 255 {
 		col = 7
 	}
-	c := dxf.Colors[col]
+	c := dxffmt.Colors[col]
 	return core.NewRGBA(c[0], c[1], c[2], 255)
 }
 
 // styleFor is the custom style for an entity's colour, width, line type
 // and, for texts, text properties (C++ DxfImport::styleFor).
 func (d *dxfImport) styleFor(e *dxfread.Entity, text *dxfread.Text) core.HStyle {
-	ss := d.ss
 	// Color.
 	c := dxfColor(d.getColor(e))
 
@@ -386,7 +402,7 @@ func (d *dxfImport) styleFor(e *dxfread.Entity, text *dxfread.Text) core.HStyle 
 	lineType := d.getLineType(e)
 	stipple := core.StippleContinuous
 	for st := core.StippleContinuous; st <= core.StippleZigzag; st++ {
-		if lineType == dxfLineTypeName(st) {
+		if lineType == export.DxfLineType(st) {
 			stipple = st
 			break
 		}
@@ -396,7 +412,7 @@ func (d *dxfImport) styleFor(e *dxfread.Entity, text *dxfread.Text) core.HStyle 
 	alignH := dxfread.HLeft
 	alignV := dxfread.VBaseLine
 	textAngle := 0.0
-	textHeight := ss.defaultTextHeight()
+	textHeight := d.textHeight
 
 	if text != nil {
 		alignH = text.AlignH
@@ -420,7 +436,7 @@ func (d *dxfImport) styleFor(e *dxfread.Entity, text *dxfread.Text) core.HStyle 
 	if c.Red != 0 || c.Green != 0 || c.Blue != 0 {
 		id += cfmt.Sprintf("-#%02x%02x%02x", c.Red, c.Green, c.Blue)
 	}
-	if textHeight != ss.defaultTextHeight() {
+	if textHeight != d.textHeight {
 		id += cfmt.Sprintf("-h%.4g", textHeight)
 	}
 	if textAngle != 0.0 {
@@ -437,7 +453,7 @@ func (d *dxfImport) styleFor(e *dxfread.Entity, text *dxfread.Text) core.HStyle 
 		return hs
 	}
 
-	hs := core.HStyle{V: ss.CreateCustomStyle(false)}
+	hs := core.HStyle{V: d.sk().NewCustomStyle().V}
 	s := d.sk().StyleGet(hs)
 	if lw != dxfread.WidthDefault {
 		s.WidthAs = core.UnitsMM
@@ -500,7 +516,7 @@ func (d *dxfImport) createOrGetPoint(p geom.Vector) core.HEntity {
 	}
 
 	sk := d.sk()
-	hr := d.ss.GW.AddRequest(sketch.RequestDatumPoint, false)
+	hr := d.sk().AddRequestOfType(sketch.RequestDatumPoint, false)
 	he := hr.Entity(0)
 	sk.MustEntity(he).PointForceTo(sk, p)
 	d.addPoint(p, he)
@@ -512,14 +528,13 @@ func (d *dxfImport) createLine(p0, p1 geom.Vector, style core.HStyle, constrainH
 		return core.NoEntity
 	}
 	sk := d.sk()
-	gw := d.ss.GW
-	hr := gw.AddRequest(sketch.RequestLineSegment, false)
+	hr := sk.AddRequestOfType(sketch.RequestLineSegment, false)
 	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, p0)
 	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, p1)
 	d.processPoint(hr.Entity(1))
 	d.processPoint(hr.Entity(2))
 
-	if constrainHV && gw.LockedInWorkplane() {
+	if constrainHV && d.lockedInWorkplane() {
 		hasConstraint := false
 		var cType core.ConstraintType
 		if math.Abs(p0.X-p1.X) < core.LengthEps {
@@ -540,7 +555,7 @@ func (d *dxfImport) createLine(p0, p1 geom.Vector, style core.HStyle, constrainH
 
 func (d *dxfImport) createWorkplane(p geom.Vector, q geom.Quaternion) core.HEntity {
 	sk := d.sk()
-	hr := d.ss.GW.AddRequest(sketch.RequestWorkplane, false)
+	hr := d.sk().AddRequestOfType(sketch.RequestWorkplane, false)
 	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, p)
 	d.processPoint(hr.Entity(1))
 	sk.MustEntity(hr.Entity(32)).NormalForceTo(sk, q)
@@ -552,7 +567,7 @@ func (d *dxfImport) findOrCreateWorkplane(p geom.Vector, q geom.Quaternion) core
 	z := q.RotationN()
 	for i := range sk.Requests {
 		r := &sk.Requests[i]
-		if r.Type == sketch.RequestWorkplane && r.Group == d.ss.GW.activeGroupH() {
+		if r.Type == sketch.RequestWorkplane && r.Group == d.sk().ActiveGroup() {
 			wp := sk.MustEntity(r.H.Entity(1)).PointGetNum(sk)
 			wz := sk.MustEntity(r.H.Entity(32)).NormalN(sk)
 
@@ -566,13 +581,13 @@ func (d *dxfImport) findOrCreateWorkplane(p geom.Vector, q geom.Quaternion) core
 }
 
 func (d *dxfImport) activateWorkplane(he core.HEntity) {
-	g := d.sk().Group(d.ss.GW.activeGroupH())
+	g := d.sk().Group(d.sk().ActiveGroup())
 	g.ActiveWorkplane = he
 }
 
 func (d *dxfImport) createCircle(c geom.Vector, q geom.Quaternion, r float64, style core.HStyle) core.HEntity {
 	sk := d.sk()
-	hr := d.ss.GW.AddRequest(sketch.RequestCircle, false)
+	hr := d.sk().AddRequestOfType(sketch.RequestCircle, false)
 	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, c)
 	d.processPoint(hr.Entity(1))
 	sk.MustEntity(hr.Entity(32)).NormalForceTo(sk, q)
@@ -611,7 +626,7 @@ func (d *dxfImport) AddPoint(data *dxfread.Point) {
 	}
 
 	sk := d.sk()
-	hr := d.ss.GW.AddRequest(sketch.RequestDatumPoint, false)
+	hr := d.sk().AddRequestOfType(sketch.RequestDatumPoint, false)
 	sk.MustEntity(hr.Entity(0)).PointForceTo(sk, d.toVector(data.BasePoint))
 	d.processPoint(hr.Entity(0))
 }
@@ -636,7 +651,6 @@ func (d *dxfImport) AddArc(data *dxfread.Arc) {
 	}
 
 	sk := d.sk()
-	gw := d.ss.GW
 	r := data.Radius
 	sa := data.StaAngle
 	ea := data.EndAngle
@@ -647,12 +661,12 @@ func (d *dxfImport) AddArc(data *dxfread.Arc) {
 	planar := q.RotationN().Equals(geom.Vector{Z: 1})
 	onPlane := c.Z < core.LengthEps
 
-	oldWorkplane := gw.ActiveWorkplane()
+	oldWorkplane := d.activeWorkplane()
 	if !planar || !onPlane {
 		d.activateWorkplane(d.findOrCreateWorkplane(c, q))
 	}
 
-	hr := gw.AddRequest(sketch.RequestArcOfCircle, false)
+	hr := sk.AddRequestOfType(sketch.RequestArcOfCircle, false)
 	u, v := q.RotationU(), q.RotationV()
 	rvs := c.Plus(u.ScaledBy(r * libm.Cos(sa))).Plus(v.ScaledBy(r * libm.Sin(sa)))
 	rve := c.Plus(u.ScaledBy(r * libm.Cos(ea))).Plus(v.ScaledBy(r * libm.Sin(ea)))
@@ -799,7 +813,7 @@ func (d *dxfImport) AddSpline(data *dxfread.Spline) {
 	}
 
 	sk := d.sk()
-	hr := d.ss.GW.AddRequest(sketch.RequestCubic, false)
+	hr := d.sk().AddRequestOfType(sketch.RequestCubic, false)
 	for i := range 4 {
 		sk.MustEntity(hr.Entity(i+1)).PointForceTo(sk, d.toVector(*data.Controls[i]))
 		d.processPoint(hr.Entity(i + 1))
@@ -869,10 +883,9 @@ func (d *dxfImport) addText(data *dxfread.Text) {
 	}
 
 	sk := d.sk()
-	gw := d.ss.GW
 	var c core.Constraint
-	c.Group = gw.activeGroupH()
-	c.Workplane = gw.ActiveWorkplane()
+	c.Group = sk.ActiveGroup()
+	c.Workplane = d.activeWorkplane()
 	c.Type = core.ConstraintComment
 	if data.AlignH == dxfread.HLeft && data.AlignV == dxfread.VBaseLine {
 		c.Disp.Offset = d.toVector(data.BasePoint)
@@ -1231,47 +1244,40 @@ func (d *dxfCheck3D) AddDimension(data *dxfread.Dimension) {
 	}
 }
 
-// ImportDxf imports a DXF file into the active group (C++ ImportDxf and
-// ImportDwgDxf).
-func (ss *Application) ImportDxf(filename string) {
-	fileType := strings.ToUpper(strings.TrimPrefix(filepath.Ext(filename), "."))
-
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		ss.Error("Couldn't read from '%s'", filename)
-		return
-	}
-
-	asConstruction := true
-	if ss.GW.LockedInWorkplane() {
-		checker := &dxfCheck3D{}
-		dxfread.Read(data, checker, true)
-		if checker.is3d {
-			ss.Message("This %s file contains entities with non-zero Z coordinate; "+
-				"the entire file will be imported as construction entities in 3d.", fileType)
-			ss.GW.SetWorkplaneFreeIn3d()
-			ss.GW.EnsureValidActives()
-		} else {
-			asConstruction = false
-		}
-	}
-
-	ss.UndoRemember()
-
-	importer := newDxfImport(ss)
-	importer.asConstruction = asConstruction
-	importer.clearBlockTransform()
-	if !dxfread.Read(data, importer, true) {
-		ss.Error("Corrupted %s file.", fileType)
-		return
-	}
-	if importer.unknownEntities > 0 {
-		ss.Message("%d %s entities of unknown type were ignored.", importer.unknownEntities, fileType)
-	}
+// Options is how a file is imported.
+type Options struct {
+	// AsConstruction makes every entity construction, as a 3d file's
+	// are.
+	AsConstruction bool
+	// TextHeight is the height of text the file gives no height for:
+	// the constraint style's.
+	TextHeight float64
 }
 
-// ImportDwg would import a DWG file (C++ ImportDwg); reading DWG isn't
-// ported.
-func (ss *Application) ImportDwg(filename string) {
-	ss.Error("DWG import is not supported; save the drawing as DXF.")
+// Report is what an import says about the file.
+type Report struct {
+	// Unknown counts the entities of kinds the importer doesn't know.
+	Unknown int
+}
+
+// ErrCorrupt is the error of a file that doesn't parse as DXF.
+var ErrCorrupt = errors.New("corrupted DXF file")
+
+// Has3D reports whether the file's entities leave the XY plane.
+func Has3D(data []byte) bool {
+	checker := &dxfCheck3D{}
+	dxfread.Read(data, checker, true)
+	return checker.is3d
+}
+
+// Import adds the file's entities to the sketch's active group, in
+// its workplane or, if none is active, in 3d.
+func Import(sk *sketch.Sketch, data []byte, o Options) (Report, error) {
+	importer := newDxfImport(sk, o.TextHeight)
+	importer.asConstruction = o.AsConstruction
+	importer.clearBlockTransform()
+	if !dxfread.Read(data, importer, true) {
+		return Report{}, ErrCorrupt
+	}
+	return Report{Unknown: importer.unknownEntities}, nil
 }

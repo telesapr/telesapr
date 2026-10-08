@@ -262,3 +262,12 @@ func (c *ConstraintBase) DescriptionString() string {
 	}
 	return fmt.Sprintf("c%03x-%s", c.H.V, s)
 }
+
+// StyleOrDefault is the style the constraint is drawn in: its own, or
+// the constraint style.
+func (c *Constraint) StyleOrDefault() HStyle {
+	if c.Disp.Style.V != 0 {
+		return c.Disp.Style
+	}
+	return HStyle{V: StyleConstraint}
+}

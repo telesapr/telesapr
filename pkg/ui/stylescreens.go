@@ -17,14 +17,7 @@ func (ss *Application) CreateCustomStyle(rememberForUndo bool) uint32 {
 	if rememberForUndo {
 		ss.UndoRemember()
 	}
-	maxID := uint32(0)
-	for i := range ss.SK.Styles {
-		maxID = max(maxID, ss.SK.Styles[i].H.V)
-	}
-	vs := max(uint32(core.StyleFirstCustom), maxID+1)
-	hs := core.HStyle{V: vs}
-	ss.SK.StyleGet(hs)
-	return hs.V
+	return ss.SK.NewCustomStyle().V
 }
 
 // AssignSelectionToStyle gives the selected entities and constraints

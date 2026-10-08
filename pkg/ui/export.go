@@ -7,23 +7,20 @@ package ui
 
 import (
 	"bytes"
-	"cmp"
 	"errors"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/export"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/cfmt"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
-	"github.com/telesapr/telesapr/pkg/version"
 )
 
 // ExportSectionTo exports the section of the solid model by a plane
@@ -152,7 +149,7 @@ func (ss *Application) ExportSectionTo(filename string) error {
 	bl.CullIdenticalBeziers(false)
 
 	// And write the edges.
-	out, err := ss.vectorFileWriterFor(filename)
+	out, err := export.NewWriter(filename, ss.SK, ss.exportOptions())
 	if err != nil {
 		return err
 	}
@@ -219,7 +216,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 	var edges srf.SEdgeList
 	var beziers srf.SBezierList
 
-	out, err := ss.vectorFileWriterFor(filename)
+	out, err := export.NewWriter(filename, ss.SK, ss.exportOptions())
 	if err != nil {
 		return err
 	}
@@ -262,7 +259,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 	}
 
 	if gw.showConstraints != SCMNoShow {
-		if !out.OutputConstraints(&sk.Constraints) {
+		if !out.OutputConstraints(sk.Constraints) {
 			canvas := &getEdgesCanvas{camera: gw.Camera(), edges: &edges}
 
 			// The output format cannot represent constraints directly,
@@ -281,7 +278,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 		cameraTan := 0.0
 		scale := 1.0
 
-		out.vw().SetModelviewProjection(u, v, n, origin, cameraTan, scale)
+		out.SetModelviewProjection(u, v, n, origin, cameraTan, scale)
 
 		return ss.ExportWireframeCurves(&edges, &beziers, out)
 	}
@@ -291,7 +288,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 		n := u.Cross(v)
 		origin := gw.view.Offset.ScaledBy(-1)
 
-		out.vw().SetModelviewProjection(u, v, n, origin, ss.CameraTangent()*gw.view.Scale, ss.ExportScale)
+		out.SetModelviewProjection(u, v, n, origin, ss.CameraTangent()*gw.view.Scale, ss.ExportScale)
 
 		err = ss.ExportLinesAndMesh(&edges, &beziers, sm, u, v, n, origin, ss.CameraTangent()*gw.view.Scale, out)
 
@@ -315,7 +312,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 
 // ExportWireframeCurves writes the edges and curves in 3d (C++
 // SolveSpaceUI::ExportWireframeCurves).
-func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, out vectorFileWriter) error {
+func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, out export.Writer) error {
 	var sblss srf.SBezierLoopSetSet
 	for _, se := range sel.Edges {
 		sb := srf.SBezierFrom2(se.A.ScaledBy(1.0/ss.ExportScale), se.B.ScaledBy(1.0/ss.ExportScale))
@@ -327,14 +324,14 @@ func (ss *Application) ExportWireframeCurves(sel *srf.SEdgeList, sbl *srf.SBezie
 		sblss.AddOpenPath(sb)
 	}
 
-	return out.vw().OutputLinesAndMesh(&sblss, nil)
+	return out.OutputLinesAndMesh(&sblss, nil)
 }
 
 // ExportLinesAndMesh projects the edges, curves and mesh, removes the
 // hidden lines, and writes what's left (C++
 // SolveSpaceUI::ExportLinesAndMesh).
 func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierList, sm *srf.SMesh,
-	u, v, n, origin geom.Vector, cameraTan float64, out vectorFileWriter) error {
+	u, v, n, origin geom.Vector, cameraTan float64, out export.Writer) error {
 	sk := ss.SK
 	gw := ss.GW
 	s := 1.0 / ss.ExportScale
@@ -480,7 +477,7 @@ func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierLi
 	}
 
 	cleanExportEdges(sk, sel)
-	return writeExportCurves(sel, sbl, &sms, srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments), out)
+	return export.WriteCurves(sel, sbl, &sms, ss.exportTolerance(), out)
 }
 
 // cleanExportEdges removes from sel the segments with no length once
@@ -635,313 +632,6 @@ func cleanExportEdges(sk *sketch.Sketch, sel *srf.SEdgeList) {
 
 }
 
-// writeExportCurves writes the projected edges and curves, assembled
-// into loops where they close, and the mesh, to out (the end of C++
-// ExportLinesAndMesh).
-func writeExportCurves(sel *srf.SEdgeList, sbl *srf.SBezierList, sms *srf.SMesh, tol srf.Tolerance, out vectorFileWriter) error {
-	// We kept the line segments and Beziers separate until now; but put
-	// them all together, and also project everything into the xy plane,
-	// since not all export targets ignore the z component of the points.
-	if sbl == nil {
-		panic("ui: adding line segments to beziers assumes bezier list is non-nil")
-	}
-	for _, e := range sel.Edges {
-		sb := srf.SBezierFrom2(e.A, e.B)
-		sb.AuxA = e.AuxA
-		sbl.Curves = append(sbl.Curves, sb)
-	}
-	for i := range sbl.Curves {
-		b := &sbl.Curves[i]
-		for k := 0; k <= b.Degree; k++ {
-			b.Ctrl[k].Z = 0
-		}
-	}
-
-	// If possible, then we will assemble these output curves into loops.
-	// They will then get exported as closed paths.
-	var sblss srf.SBezierLoopSetSet
-	var leftovers []srf.SBezierLoop
-	plane := srf.FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
-	var spxyz srf.SPolygon
-	var allClosed bool
-	var notClosedAt srf.SEdge
-	for i := range sbl.Curves {
-		sbl.Curves[i].Tag = 0
-	}
-	sblss.FindOuterFacesFrom(sbl, &spxyz, &plane, tol,
-		&allClosed, &notClosedAt, nil, nil, &leftovers)
-	if len(leftovers) > 0 {
-		sblss.Sets = append(sblss.Sets, srf.SBezierLoopSet{Outer: leftovers[0], Holes: leftovers[1:]})
-	}
-
-	// Now write the lines and triangles to the output file
-	return out.vw().OutputLinesAndMesh(&sblss, sms)
-}
-
-// vectorFileWriter is a 2d vector file format (C++ VectorFileWriter).
-type vectorFileWriter interface {
-	vw() *vectorWriter
-	StartPath(strokeRgb core.RGBA, lineWidth float64, filled bool, fillRgb core.RGBA, hs core.HStyle)
-	FinishPath(strokeRgb core.RGBA, lineWidth float64, filled bool, fillRgb core.RGBA,
-		hs core.HStyle, closed bool)
-	Bezier(sb *srf.SBezier)
-	Triangle(tr *srf.STriangle)
-	OutputConstraints(constraints *[]core.Constraint) bool
-	Background(color core.RGBA)
-	StartFile()
-	FinishAndCloseFile() error
-	HasCanvasSize() bool
-	CanOutputMesh() bool
-}
-
-// vectorWriter is what the formats share (C++ VectorFileWriter's
-// fields and non-virtual methods). The file is written when it's
-// finished.
-type vectorWriter struct {
-	ss   *Application
-	self vectorFileWriter
-
-	u, v, n, origin  geom.Vector
-	cameraTan, scale float64
-
-	f        *os.File
-	out      bytes.Buffer
-	filename string
-
-	ptMin, ptMax geom.Vector
-}
-
-func (w *vectorWriter) vw() *vectorWriter { return w }
-
-// OutputConstraints reports whether the format writes constraints
-// itself; most don't.
-func (w *vectorWriter) OutputConstraints(*[]core.Constraint) bool { return false }
-
-func (w *vectorWriter) printf(format string, args ...any) {
-	w.out.WriteString(cfmt.Sprintf(format, args...))
-}
-
-// closeFile writes the file.
-func (w *vectorWriter) closeFile() error {
-	if w.f == nil {
-		return nil
-	}
-	_, err := w.f.Write(w.out.Bytes())
-	if cerr := w.f.Close(); err == nil {
-		err = cerr
-	}
-	w.f = nil
-	w.out.Reset()
-	if err != nil {
-		return fmt.Errorf("couldn't write to '%s'", w.filename)
-	}
-	return nil
-}
-
-// MmToPts converts mm to points, 72 to the inch (C++
-// VectorFileWriter::MmToPts).
-func MmToPts(mm float64) float64 {
-	// 72 points in an inch
-	return (mm / 25.4) * 72
-}
-
-// vectorFileWriterFor picks the writer for a file's extension and opens
-// the file (C++ VectorFileWriter::ForFile).
-func (ss *Application) vectorFileWriterFor(filename string) (vectorFileWriter, error) {
-	var ret vectorFileWriter
-	needOpen := true
-	switch {
-	case hasExtension(filename, "dxf"):
-		ret = &dxfFileWriter{}
-		needOpen = false
-	case hasExtension(filename, "ps"), hasExtension(filename, "eps"):
-		ret = &epsFileWriter{}
-	case hasExtension(filename, "pdf"):
-		ret = &pdfFileWriter{}
-	case hasExtension(filename, "svg"):
-		ret = &svgFileWriter{}
-	case hasExtension(filename, "plt"), hasExtension(filename, "hpgl"):
-		ret = &hpglFileWriter{}
-	case hasExtension(filename, "step"), hasExtension(filename, "stp"):
-		ret = &step2dFileWriter{}
-	case hasExtension(filename, "txt"), hasExtension(filename, "ngc"):
-		ret = &gcodeFileWriter{}
-	default:
-		return nil, fmt.Errorf("can't identify output file type from file extension of "+
-			"filename '%s'; try "+
-			".step, .stp, .dxf, .svg, .plt, .hpgl, .pdf, .txt, .ngc, "+
-			".eps, or .ps", filename)
-	}
-	w := ret.vw()
-	w.ss = ss
-	w.self = ret
-	w.filename = filename
-	if !needOpen {
-		return ret, nil
-	}
-
-	f, err := os.Create(filename)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't write to '%s'", filename)
-	}
-	w.f = f
-	return ret, nil
-}
-
-// SetModelviewProjection sets the projection Transform applies (C++
-// VectorFileWriter::SetModelviewProjection).
-func (w *vectorWriter) SetModelviewProjection(u, v, n, origin geom.Vector, cameraTan, scale float64) {
-	w.u = u
-	w.v = v
-	w.n = n
-	w.origin = origin
-	w.cameraTan = cameraTan
-	w.scale = scale
-}
-
-// Transform projects a point as the view was exported (C++
-// VectorFileWriter::Transform).
-func (w *vectorWriter) Transform(pos geom.Vector) geom.Vector {
-	return pos.InPerspective(w.u, w.v, w.n, w.origin, w.cameraTan).ScaledBy(1.0 / w.scale)
-}
-
-// loopsOf is a loop set's loops in C++'s order: the outer, then the
-// holes.
-func loopsOf(sbls *srf.SBezierLoopSet) []*srf.SBezierLoop {
-	loops := []*srf.SBezierLoop{&sbls.Outer}
-	for i := range sbls.Holes {
-		loops = append(loops, &sbls.Holes[i])
-	}
-	return loops
-}
-
-// OutputLinesAndMesh works out the canvas and writes the file (C++
-// VectorFileWriter::OutputLinesAndMesh).
-func (w *vectorWriter) OutputLinesAndMesh(sblss *srf.SBezierLoopSetSet, sm *srf.SMesh) error {
-	ss := w.ss
-	sk := ss.SK
-
-	// First calculate the bounding box.
-	w.ptMin = geom.Vector{X: geom.VeryPositive, Y: geom.VeryPositive, Z: geom.VeryPositive}
-	w.ptMax = geom.Vector{X: -geom.VeryPositive, Y: -geom.VeryPositive, Z: -geom.VeryPositive}
-	if sm != nil {
-		for _, tr := range sm.Triangles {
-			tr.A.MakeMaxMin(&w.ptMax, &w.ptMin)
-			tr.B.MakeMaxMin(&w.ptMax, &w.ptMin)
-			tr.C.MakeMaxMin(&w.ptMax, &w.ptMin)
-		}
-	}
-	if sblss != nil {
-		for si := range sblss.Sets {
-			for _, sbl := range loopsOf(&sblss.Sets[si]) {
-				for _, b := range sbl.Curves {
-					for i := 0; i <= b.Degree; i++ {
-						b.Ctrl[i].MakeMaxMin(&w.ptMax, &w.ptMin)
-					}
-				}
-			}
-		}
-	}
-
-	// And now we compute the canvas size.
-	s := 1.0 / ss.ExportScale
-	if ss.ExportCanvasSizeAuto {
-		// It's based on the calculated bounding box; we grow it along
-		// each boundary by the specified amount.
-		w.ptMin.X -= s * ss.ExportMargin.Left
-		w.ptMax.X += s * ss.ExportMargin.Right
-		w.ptMin.Y -= s * ss.ExportMargin.Bottom
-		w.ptMax.Y += s * ss.ExportMargin.Top
-	} else {
-		w.ptMin.X = s * ss.ExportCanvas.Dx
-		w.ptMin.Y = s * ss.ExportCanvas.Dy
-		w.ptMax.X = w.ptMin.X + s*ss.ExportCanvas.Width
-		w.ptMax.Y = w.ptMin.Y + s*ss.ExportCanvas.Height
-	}
-
-	w.self.StartFile()
-	if ss.ExportBackgroundColor {
-		w.self.Background(ss.BackgroundColor)
-	}
-	if sm != nil && ss.ExportShadedTriangles {
-		for i := range sm.Triangles {
-			w.self.Triangle(&sm.Triangles[i])
-		}
-	}
-	if sblss != nil {
-		for si := range sblss.Sets {
-			for _, sbl := range loopsOf(&sblss.Sets[si]) {
-				if len(sbl.Curves) == 0 || !sk.StyleExportable(hstyle(uint32(sbl.Curves[0].AuxA))) {
-					continue
-				}
-
-				hs := hstyle(uint32(sbl.Curves[0].AuxA))
-				stl := sk.StyleGet(hs)
-				lineWidth := ss.styleWidthMm(hs) * s
-				strokeRgb := ss.styleExportColor(hs)
-				fillRgb := ss.styleExportFillColor(hs)
-
-				w.self.StartPath(strokeRgb, lineWidth, stl.Filled, fillRgb, hs)
-				for i := range sbl.Curves {
-					w.self.Bezier(&sbl.Curves[i])
-				}
-				w.self.FinishPath(strokeRgb, lineWidth, stl.Filled, fillRgb, hs, sbl.IsClosed())
-			}
-		}
-	}
-	return w.self.FinishAndCloseFile()
-}
-
-// BezierAsPwl writes a curve as line segments (C++
-// VectorFileWriter::BezierAsPwl).
-func (w *vectorWriter) BezierAsPwl(sb *srf.SBezier) {
-	var lv []geom.Vector
-	sb.MakePwlIntoPoints(&lv, srf.Tol(w.ss.ExportChordTolMm(), w.ss.ExportMaxSegments), 0)
-
-	for i := 1; i < len(lv); i++ {
-		sb := srf.SBezierFrom2(lv[i-1], lv[i])
-		w.self.Bezier(&sb)
-	}
-}
-
-// BezierAsNonrationalCubic writes a curve as nonrational cubics (C++
-// VectorFileWriter::BezierAsNonrationalCubic).
-func (w *vectorWriter) BezierAsNonrationalCubic(sb *srf.SBezier, depth int) {
-	t0, t1 := sb.TangentAt(0), sb.TangentAt(1)
-	// The curve is correct, and the first derivatives are correct, at
-	// the endpoints.
-	bnr := srf.SBezierFrom4(
-		sb.Start(),
-		sb.Start().Plus(t0.ScaledBy(1.0/3)),
-		sb.Finish().Minus(t1.ScaledBy(1.0/3)),
-		sb.Finish())
-
-	tol := w.ss.ExportChordTolMm()
-	// Arbitrary choice, but make it a little finer than pwl tolerance
-	// since it should be easier to achieve that with the smooth curves.
-	tol /= 2
-
-	closeEnough := true
-	for i := 1; i <= 3; i++ {
-		t := float64(i) / 4.0
-		p0 := sb.PointAt(t)
-		pn := bnr.PointAt(t)
-		d := p0.Minus(pn).Magnitude()
-		if d > tol {
-			closeEnough = false
-		}
-	}
-
-	if closeEnough || depth > 3 {
-		w.self.Bezier(&bnr)
-	} else {
-		var bef, aft srf.SBezier
-		sb.SplitAt(0.5, &bef, &aft)
-		w.BezierAsNonrationalCubic(&bef, depth+1)
-		w.BezierAsNonrationalCubic(&aft, depth+1)
-	}
-}
-
 // ExportMeshTo exports the active group's mesh (C++
 // SolveSpaceUI::ExportMeshTo).
 func (ss *Application) ExportMeshTo(filename string) error {
@@ -978,7 +668,7 @@ func (ss *Application) ExportMeshTo(filename string) error {
 
 		out.WriteString(cfmt.Sprintf("mtllib %s\n", filepath.Base(mtlFilename)))
 		var mtl bytes.Buffer
-		ss.ExportMeshAsObjTo(&out, &mtl, m)
+		export.WriteOBJ(&out, &mtl, m, ss.exportOptions())
 
 		_, werr := fMtl.Write(mtl.Bytes())
 		if cerr := fMtl.Close(); werr != nil || cerr != nil {
@@ -987,9 +677,9 @@ func (ss *Application) ExportMeshTo(filename string) error {
 		}
 	case hasExtension(filename, "js"), hasExtension(filename, "html"):
 		e := &g.DisplayOutlines
-		ss.ExportMeshAsThreeJsTo(&out, filename, m, e)
+		export.WriteThreeJS(&out, filename, m, e, &ss.GW.view, ss.exportOptions())
 	case hasExtension(filename, "wrl"):
-		ss.ExportMeshAsVrmlTo(&out, filename, m)
+		export.WriteVRML(&out, filename, m, ss.exportOptions())
 	default:
 		_ = f.Close()
 		return fmt.Errorf("can't identify output file type from file extension of "+
@@ -1007,356 +697,23 @@ func (ss *Application) ExportMeshTo(filename string) error {
 	return nil
 }
 
-// ExportMeshAsObjTo writes the mesh as Wavefront OBJ, with its
-// materials (C++ SolveSpaceUI::ExportMeshAsObjTo).
-func (ss *Application) ExportMeshAsObjTo(fObj, fMtl *bytes.Buffer, sm *srf.SMesh) {
-	colors := map[uint32]string{}
-	var colorKeys []core.RGBA
-	for _, t := range sm.Triangles {
-		color := t.Meta.RGBA
-		if _, ok := colors[color.ToARGB32()]; !ok {
-			id := cfmt.Sprintf("h%02x%02x%02x", color.Red, color.Green, color.Blue)
-			colors[color.ToARGB32()] = id
-			colorKeys = append(colorKeys, color)
-		}
-		for _, vtx := range []geom.Vector{t.A, t.B, t.C} {
-			p := vtx.ScaledBy(1 / ss.ExportScale)
-			fObj.WriteString(cfmt.Sprintf("v %.10f %.10f %.10f\n", p.X, p.Y, p.Z))
-		}
-	}
-
-	// std::map orders the colours by their ARGB value.
-	slices.SortStableFunc(colorKeys, func(a, b core.RGBA) int { return cmp.Compare(a.ToARGB32(), b.ToARGB32()) })
-	for _, c := range colorKeys {
-		fMtl.WriteString(cfmt.Sprintf("newmtl %s\n", colors[c.ToARGB32()]))
-		fMtl.WriteString(cfmt.Sprintf("Kd %.3f %.3f %.3f\n", c.RedF(), c.GreenF(), c.BlueF()))
-	}
-
-	for _, t := range sm.Triangles {
-		for _, nv := range []geom.Vector{t.NA, t.NB, t.NC} {
-			n := nv.WithMagnitude(1.0)
-			fObj.WriteString(cfmt.Sprintf("vn %.10f %.10f %.10f\n", n.X, n.Y, n.Z))
-		}
-	}
-
-	var currentColor core.RGBA
-	for i, t := range sm.Triangles {
-		if !currentColor.Equals(t.Meta.RGBA) {
-			currentColor = t.Meta.RGBA
-			fObj.WriteString(cfmt.Sprintf("usemtl %s\n", colors[currentColor.ToARGB32()]))
-		}
-
-		fObj.WriteString(cfmt.Sprintf("f %d//%d %d//%d %d//%d\n",
-			i*3+1, i*3+1,
-			i*3+2, i*3+2,
-			i*3+3, i*3+3))
-	}
-}
-
-// fileStemIdentifier is the file's name without extension, with
-// everything but letters, digits and non-ASCII bytes made '_'.
-func fileStemIdentifier(filename string) string {
-	base := filepath.Base(filename)
-	if dot := strings.LastIndexByte(base, '.'); dot >= 0 {
-		base = base[:dot]
-	}
-	b := []byte(base)
-	for i, c := range b {
-		isAlnum := (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-		if !isAlnum && c < 0x80 {
-			b[i] = '_'
-		}
-	}
-	return string(b)
-}
-
-const threeJsHTMLBegin = `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8"></meta>
-    <title>Three.js TeleSAPR Mesh</title>
-    <script id="%s">%s</script>
-    <script id="%s">%s</script>
-    <script id="%s">%s</script>
-    <style type="text/css">
-    body { margin: 0; overflow: hidden; }
-    </style>
-  </head>
-  <body>
-    <script>
-`
-
-const threeJsHTMLEnd = `
-    document.body.appendChild(telesapr(telesapr_model_%s, {
-        scale: %g,
-        offset: new THREE.Vector3(%g, %g, %g),
-        projUp: new THREE.Vector3(%g, %g, %g),
-        projRight: new THREE.Vector3(%g, %g, %g)
-    }));
-    </script>
-  </body>
-</html>
-`
-
-// ExportMeshAsThreeJsTo writes the mesh as a script for three.js, or a
-// page with it (C++ SolveSpaceUI::ExportMeshAsThreeJsTo).
-func (ss *Application) ExportMeshAsThreeJsTo(f *bytes.Buffer, filename string, sm *srf.SMesh,
-	sol *srf.SOutlineList) {
-	const threeFn = "three-r111.min.js"
-	const hammerFn = "hammer-2.0.8.js"
-	const controlsFn = "TeleSAPRControls.js"
-	pf := func(format string, args ...any) { f.WriteString(cfmt.Sprintf(format, args...)) }
-
-	// A default three.js viewer with OrthographicTrackballControls is
-	// generated as a comment preceding the data.
-
-	// x bounds should be the range of x or y, whichever is larger,
-	// before aspect ratio correction is applied. y bounds should be the
-	// range of x or y, whichever is larger. No aspect ratio correction
-	// is applied. Near plane should be 1. Camera's z-position should be
-	// the range of z + 1 or the larger of the x or y bounds, whichever
-	// is larger. Far plane should be at least twice as much as the
-	// camera's z-position. Edge projection bias should be about 1/500 of
-	// the far plane's distance. Further corrections will be applied to
-	// the z-position and far plane in the default viewer, but the
-	// defaults are fine for a model which only rotates about the world
-	// origin.
-
-	bndh, bndl := sm.Bounding()
-	largerBoundXY := max(bndh.X-bndl.X, bndh.Y-bndl.Y)
-	largerBoundZ := max(largerBoundXY, bndh.Z-bndl.Z+1)
-
-	basename := fileStemIdentifier(filename)
-
-	if hasExtension(filename, "html") {
-		pf(threeJsHTMLBegin,
-			threeFn, res.LoadStringFromGzip("threejs/"+threeFn+".gz"),
-			hammerFn, res.LoadStringFromGzip("threejs/"+hammerFn+".gz"),
-			controlsFn, res.LoadString("threejs/"+controlsFn))
-	}
-
-	pf("var telesapr_model_%s = {\n"+
-		"  bounds: {\n"+
-		"    x: %f, y: %f, near: %f, far: %f, z: %f, edgeBias: %f\n"+
-		"  },\n",
-		basename,
-		largerBoundXY,
-		largerBoundXY,
-		1.0,
-		largerBoundZ*2,
-		largerBoundZ,
-		largerBoundZ/250)
-
-	// Output lighting information.
-	f.WriteString("  lights: {\n" +
-		"    d: [\n")
-
-	// Directional.
-	for lightCount := range 2 {
-		d := ss.LightDir[lightCount]
-		pf("      {\n"+
-			"        intensity: %f, direction: [%f, %f, %f]\n"+
-			"      },\n",
-			ss.LightIntensity[lightCount], d.X, d.Y, d.Z)
-	}
-
-	// Global Ambience.
-	pf("    ],\n"+
-		"    a: %f\n", ss.AmbientIntensity)
-
-	var spl srf.SPointList
-	for _, tr := range sm.Triangles {
-		spl.IncrementTagFor(tr.A)
-		spl.IncrementTagFor(tr.B)
-		spl.IncrementTagFor(tr.C)
-	}
-
-	// Output all the vertices.
-	f.WriteString("  },\n" +
-		"  points: [\n")
-	for _, sp := range spl.Points {
-		pf("    [%f, %f, %f],\n",
-			sp.P.X/ss.ExportScale, sp.P.Y/ss.ExportScale, sp.P.Z/ss.ExportScale)
-	}
-
-	f.WriteString("  ],\n" +
-		"  faces: [\n")
-	// And now all the triangular faces, in terms of those vertices. This
-	// time we count from zero.
-	for _, tr := range sm.Triangles {
-		pf("    [%d, %d, %d],\n",
-			spl.IndexForPoint(tr.A), spl.IndexForPoint(tr.B), spl.IndexForPoint(tr.C))
-	}
-
-	// Output face normals.
-	f.WriteString("  ],\n" +
-		"  normals: [\n")
-	for _, tr := range sm.Triangles {
-		pf("    [[%f, %f, %f], [%f, %f, %f], [%f, %f, %f]],\n",
-			tr.NA.X, tr.NA.Y, tr.NA.Z, tr.NB.X, tr.NB.Y, tr.NB.Z, tr.NC.X, tr.NC.Y, tr.NC.Z)
-	}
-
-	f.WriteString("  ],\n" +
-		"  colors: [\n")
-	// Output triangle colors.
-	for _, tr := range sm.Triangles {
-		pf("    0x%x,\n", tr.Meta.ToARGB32())
-	}
-
-	f.WriteString("  ],\n" +
-		"  edges: [\n")
-	// Output edges. Assume user's model colors do not obscure white
-	// edges.
-	for _, so := range sol.Outlines {
-		if so.Tag == 0 {
-			continue
-		}
-		pf("    [[%f, %f, %f], [%f, %f, %f]],\n",
-			so.A.X/ss.ExportScale, so.A.Y/ss.ExportScale, so.A.Z/ss.ExportScale,
-			so.B.X/ss.ExportScale, so.B.Y/ss.ExportScale, so.B.Z/ss.ExportScale)
-	}
-
-	f.WriteString("  ]\n};\n")
-
-	if hasExtension(filename, "html") {
-		v := &ss.GW.view
-		pf(threeJsHTMLEnd,
-			basename,
-			v.Scale,
-			v.Offset.X, v.Offset.Y, v.Offset.Z,
-			v.ProjUp.X, v.ProjUp.Y, v.ProjUp.Z,
-			v.ProjRight.X, v.ProjRight.Y, v.ProjRight.Z)
-	}
-}
-
-// ExportMeshAsVrmlTo writes the mesh as VRML (C++
-// SolveSpaceUI::ExportMeshAsVrmlTo).
-func (ss *Application) ExportMeshAsVrmlTo(f *bytes.Buffer, filename string, sm *srf.SMesh) {
-	pf := func(format string, args ...any) { f.WriteString(cfmt.Sprintf(format, args...)) }
-	basename := fileStemIdentifier(filename)
-
-	pf("#VRML V2.0 utf8\n"+
-		"#Exported from TeleSAPR %s\n"+
-		"\n"+
-		"DEF %s Transform {\n"+
-		"  children [",
-		version.Version,
-		basename)
-
-	// The runs of triangles of each opacity, by opacity (C++'s
-	// std::map<uint8_t, ...>).
-	type span struct{ first, pastLast int }
-	opacities := map[uint8][]span{}
-	start := 0
-	lastOpacity := sm.Triangles[0].Meta.Alpha
-	for i, tr := range sm.Triangles {
-		if tr.Meta.Alpha != lastOpacity {
-			opacities[lastOpacity] = append(opacities[lastOpacity], span{start, i})
-			start = i
-			lastOpacity = sm.Triangles[start].Meta.Alpha
-		}
-	}
-	opacities[lastOpacity] = append(opacities[lastOpacity], span{start, len(sm.Triangles)})
-	var keys []int
-	for k := range opacities {
-		keys = append(keys, int(k))
-	}
-	slices.Sort(keys)
-
-	for _, k := range keys {
-		op := uint8(k)
-		spans := opacities[op]
-		pf("\n"+
-			"    Shape {\n"+
-			"      appearance Appearance {\n"+
-			"        material DEF %s_material_%u Material {\n"+
-			"          diffuseColor %f %f %f\n"+
-			"          ambientIntensity %f\n"+
-			"          transparency %f\n"+
-			"        }\n"+
-			"      }\n"+
-			"      geometry IndexedFaceSet {\n"+
-			"        colorPerVertex TRUE\n"+
-			"        coord Coordinate { point [\n",
-			basename,
-			uint(op),
-			ss.AmbientIntensity,
-			ss.AmbientIntensity,
-			ss.AmbientIntensity,
-			ss.AmbientIntensity,
-			float64(float32(1)-(float32(op)/float32(255))))
-
-		var spl srf.SPointList
-		for _, sp := range spans {
-			for _, tr := range sm.Triangles[sp.first:sp.pastLast] {
-				spl.IncrementTagFor(tr.A)
-				spl.IncrementTagFor(tr.B)
-				spl.IncrementTagFor(tr.C)
-			}
-		}
-
-		// Output all the vertices.
-		for _, sp := range spl.Points {
-			pf("          %f %f %f,\n",
-				sp.P.X/ss.ExportScale, sp.P.Y/ss.ExportScale, sp.P.Z/ss.ExportScale)
-		}
-
-		f.WriteString("        ] }\n" +
-			"        coordIndex [\n")
-		// And now all the triangular faces, in terms of those vertices.
-		for _, sp := range spans {
-			for _, tr := range sm.Triangles[sp.first:sp.pastLast] {
-				pf("          %d, %d, %d, -1,\n",
-					spl.IndexForPoint(tr.A), spl.IndexForPoint(tr.B), spl.IndexForPoint(tr.C))
-			}
-		}
-
-		f.WriteString("        ]\n" +
-			"        color Color { color [\n")
-		// Output triangle colors.
-		var triangleColourIDs []int
-		var coloursPresent []core.RGBA
-		for _, sp := range spans {
-			for _, tr := range sm.Triangles[sp.first:sp.pastLast] {
-				found := -1
-				for ci, c := range coloursPresent {
-					if c.Equals(tr.Meta.RGBA) {
-						found = ci
-						break
-					}
-				}
-				if found < 0 {
-					pf("          %.10f %.10f %.10f,\n",
-						tr.Meta.RedF(), tr.Meta.GreenF(), tr.Meta.BlueF())
-					triangleColourIDs = append(triangleColourIDs, len(coloursPresent))
-					coloursPresent = append(coloursPresent, tr.Meta.RGBA)
-				} else {
-					triangleColourIDs = append(triangleColourIDs, found)
-				}
-			}
-		}
-
-		f.WriteString("        ] }\n" +
-			"        colorIndex [\n")
-
-		for _, idx := range triangleColourIDs {
-			pf("          %d, %d, %d, -1,\n", idx, idx, idx)
-		}
-
-		f.WriteString("        ]\n" +
-			"      }\n" +
-			"    }\n")
-	}
-
-	f.WriteString("  ]\n" +
-		"}\n")
-}
-
 // ExportAsPngTo saves the view as an image at the next redraw (C++
 // SolveSpaceUI::ExportAsPngTo).
 func (ss *Application) ExportAsPngTo(filename string) {
 	ss.ScreenshotFile = filename
 	// The rest of the work is done in the next redraw.
 	ss.GW.Invalidate(false)
+}
+
+// ExportSurfacesTo writes the active group's shell as STEP.
+func (ss *Application) ExportSurfacesTo(filename string) error {
+	g := ss.SK.Group(ss.GW.activeGroupH())
+	var out bytes.Buffer
+	if err := export.WriteStep(&out, ss.SK, g, ss.exportOptions()); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filename, out.Bytes(), 0o644); err != nil {
+		return fmt.Errorf("couldn't write to '%s'", filename)
+	}
+	return nil
 }

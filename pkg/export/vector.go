@@ -1,4 +1,4 @@
-package ui
+package export
 
 // The file format-specific stuff for the 2d vector output formats but
 // DXF (C++ exportvector.cpp).
@@ -132,9 +132,8 @@ func (w *epsFileWriter) StartPath(strokeRgb core.RGBA, lineWidth float64, filled
 
 func (w *epsFileWriter) FinishPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
 	fillRgb core.RGBA, hs core.HStyle, closed bool) {
-	ss := w.ss
-	pattern := ss.SK.StylePatternType(hs)
-	stippleScale := MmToPts(ss.styleStippleScaleMm(hs))
+	pattern := w.sk.StylePatternType(hs)
+	stippleScale := MmToPts(w.styleStippleScaleMm(hs))
 
 	w.printf("    %.3f setlinewidth\r\n"+
 		"    %.3f %.3f %.3f setrgbcolor\r\n"+
@@ -245,7 +244,7 @@ func (w *pdfFileWriter) ftell() uint32 { return uint32(w.out.Len()) }
 
 func (w *pdfFileWriter) StartFile() {
 	if (w.ptMax.X-w.ptMin.X) > 200*25.4 || (w.ptMax.Y-w.ptMin.Y) > 200*25.4 {
-		w.ss.Message("PDF page size exceeds 200 by 200 inches; many viewers may " +
+		w.warn("PDF page size exceeds 200 by 200 inches; many viewers may " +
 			"reject this file.")
 	}
 
@@ -377,9 +376,8 @@ func (w *pdfFileWriter) Background(color core.RGBA) {
 
 func (w *pdfFileWriter) StartPath(strokeRgb core.RGBA, lineWidth float64, filled bool,
 	fillRgb core.RGBA, hs core.HStyle) {
-	ss := w.ss
-	pattern := ss.SK.StylePatternType(hs)
-	stippleScale := MmToPts(ss.styleStippleScaleMm(hs))
+	pattern := w.sk.StylePatternType(hs)
+	stippleScale := MmToPts(w.styleStippleScaleMm(hs))
 
 	w.printf("1 J 1 j "+ // round endcaps and joins
 		"%.3f w [%s] 0 d "+
@@ -460,7 +458,6 @@ func (w *svgFileWriter) HasCanvasSize() bool { return true }
 func (w *svgFileWriter) CanOutputMesh() bool { return true }
 
 func (w *svgFileWriter) StartFile() {
-	ss := w.ss
 	w.printf("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" "+
 		"\"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\r\n"+
 		"<svg xmlns=\"http://www.w3.org/2000/svg\"  "+
@@ -484,16 +481,16 @@ func (w *svgFileWriter) StartFile() {
 	w.printf("}\r\n")
 
 	exportStyle := func(hs core.HStyle) {
-		s := ss.SK.StyleGet(hs)
-		strokeRgb := ss.styleExportColor(hs)
-		fillRgb := ss.styleExportFillColor(hs)
-		pattern := ss.SK.StylePatternType(hs)
-		stippleScale := ss.styleStippleScaleMm(hs)
+		s := w.sk.StyleGet(hs)
+		strokeRgb := w.styleExportColor(hs)
+		fillRgb := w.styleExportFillColor(hs)
+		pattern := w.sk.StylePatternType(hs)
+		stippleScale := w.styleStippleScaleMm(hs)
 
 		w.printf(".s%x {\r\n", hs.V)
 		w.printf("stroke:#%02x%02x%02x;\r\n", strokeRgb.Red, strokeRgb.Green, strokeRgb.Blue)
 		// don't know why we have to take a half of the width
-		w.printf("stroke-width:%f;\r\n", ss.styleWidthMm(hs)/2.0)
+		w.printf("stroke-width:%f;\r\n", w.styleWidthMm(hs)/2.0)
 		w.printf("stroke-linecap:round;\r\n")
 		w.printf("stroke-linejoin:round;\r\n")
 		patternStr := makeStipplePattern(pattern, stippleScale, ',', true)
@@ -510,8 +507,8 @@ func (w *svgFileWriter) StartFile() {
 
 	exportStyle(core.HStyle{V: core.StyleNoStyle})
 	// Style::Get can add styles; C++ ranges over the list as it grows.
-	for i := range len(ss.SK.Styles) {
-		exportStyle(ss.SK.Styles[i].H)
+	for i := range len(w.sk.Styles) {
+		exportStyle(w.sk.Styles[i].H)
 	}
 	w.printf("]]></style>\r\n")
 }
@@ -683,13 +680,12 @@ func (w *gcodeFileWriter) Bezier(sb *srf.SBezier) {
 }
 
 func (w *gcodeFileWriter) FinishAndCloseFile() error {
-	ss := w.ss
-	mm := func(v float64) string { return ss.MmToString(v, false) }
+	mm := func(v float64) string { return w.format(v) }
 	var sp srf.SPolygon
 	w.sel.AssemblePolygon(&sp, nil, false)
 
-	for i := range ss.GCode.Passes {
-		depth := (ss.GCode.Depth / float64(ss.GCode.Passes)) * float64(i+1)
+	for i := range w.o.GCode.Passes {
+		depth := (w.o.GCode.Depth / float64(w.o.GCode.Passes)) * float64(i+1)
 
 		for _, sc := range sp.Contours {
 			if len(sc.Points) < 2 {
@@ -698,13 +694,13 @@ func (w *gcodeFileWriter) FinishAndCloseFile() error {
 
 			pt := sc.Points[0]
 			w.printf("G00 X%s Y%s\r\n", mm(pt.P.X), mm(pt.P.Y))
-			w.printf("G01 Z%s F%s\r\n", mm(depth), mm(ss.GCode.PlungeFeed))
+			w.printf("G01 Z%s F%s\r\n", mm(depth), mm(w.o.GCode.PlungeFeed))
 
 			for _, pt := range sc.Points[1:] {
-				w.printf("G01 X%s Y%s F%s\r\n", mm(pt.P.X), mm(pt.P.Y), mm(ss.GCode.Feed))
+				w.printf("G01 X%s Y%s F%s\r\n", mm(pt.P.X), mm(pt.P.Y), mm(w.o.GCode.Feed))
 			}
 			// Move up to a clearance plane above the work.
-			w.printf("G00 Z%s\r\n", mm(ss.GCode.SafeHeight))
+			w.printf("G00 Z%s\r\n", mm(w.o.GCode.SafeHeight))
 		}
 	}
 
@@ -726,7 +722,7 @@ func (w *step2dFileWriter) HasCanvasSize() bool { return false }
 func (w *step2dFileWriter) CanOutputMesh() bool { return false }
 
 func (w *step2dFileWriter) StartFile() {
-	w.sfw = stepFileWriter{ss: w.ss, f: &w.out, exportParts: true}
+	w.sfw = stepFileWriter{sk: w.sk, o: w.o, f: &w.out, exportParts: true}
 	w.sfw.WriteHeader()
 }
 
