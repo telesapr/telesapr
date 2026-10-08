@@ -6838,8 +6838,8 @@
 						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
 					},
 					"TestRankForGroup": {
-						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup, rank *int) core.SolveResult",
-						"text": "TestRankForGroup reports whether group hg would be redundantly constrained, and its rank (C++ SolveSpaceUI::TestRankForGroup)."
+						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int)",
+						"text": "TestRankForGroup reports whether group hg would be redundantly constrained, and its rank; a group that allows redundancy or doesn't count its freedom is okay with rank 0."
 					},
 					"Tol": {
 						"decl": "func (sk *Sketch) Tol() srf.Tolerance",
