@@ -568,20 +568,27 @@ func compareUIScripts(t *testing.T, prefix string) {
 	}
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
-			path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".goui")
-			got := linkPathsFromTestdata(runUIScript(t, name))
-			if golden.Regen() {
-				golden.Check(t, path, []byte(got))
-				return
-			}
-			wantB, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatalf("%v (record it with scripts/regen-goui.sh %s)", err, name)
-			}
-			if want := linkPathsFromTestdata(string(wantB)); got != want {
-				t.Fatalf("output differs from the golden at %s", firstDiffLine(got, want))
-			}
+			compareUIScript(t, name, runUIScript(t, name))
 		})
+	}
+}
+
+// compareUIScript compares a script's output with its golden, or
+// records it.
+func compareUIScript(t *testing.T, name, out string) {
+	t.Helper()
+	path := filepath.Join("..", "..", "testdata", "ui", "golden", name+".goui")
+	got := linkPathsFromTestdata(out)
+	if golden.Regen() {
+		golden.Check(t, path, []byte(got))
+		return
+	}
+	wantB, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("%v (record it with scripts/regen-goui.sh %s)", err, name)
+	}
+	if want := linkPathsFromTestdata(string(wantB)); got != want {
+		t.Fatalf("output differs from the golden at %s", firstDiffLine(got, want))
 	}
 }
 
@@ -613,8 +620,43 @@ func TestMenuTable(t *testing.T) { compareUIScripts(t, "menu_") }
 func TestHover(t *testing.T) { compareUIScripts(t, "hover_") }
 
 // TestInteraction replays mouse, keyboard, menu and dialog input, and
-// what the interface shows and saves.
-func TestInteraction(t *testing.T) { compareUIScripts(t, "act_") }
+// what the interface shows and saves; then replays each script without
+// the persistent layer cache, and requires every frame the graphics
+// window presented to be the same: the cache must never show a stale
+// picture.
+func TestInteraction(t *testing.T) {
+	names := uiScripts(t, "act_")
+	if len(names) == 0 {
+		t.Fatal("no scripts act_*")
+	}
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			var cached, drawn []uint64
+			hits := 0
+			outCached := runUIScriptWith(t, name, func(r *uiScriptRunner) {
+				r.frames = &cached
+				r.ss.GW.persistent.onHit = func() { hits++ }
+			})
+			compareUIScript(t, name, outCached)
+			outDrawn := runUIScriptWith(t, name, func(r *uiScriptRunner) {
+				r.frames = &drawn
+				r.ss.GW.persistent.disabled = true
+			})
+			if outCached != outDrawn {
+				t.Fatal("the script's output depends on the cache")
+			}
+			if len(cached) != len(drawn) {
+				t.Fatalf("%d frames with the cache, %d without", len(cached), len(drawn))
+			}
+			for i := range cached {
+				if cached[i] != drawn[i] {
+					t.Fatalf("frame %d of %d differs with the cache", i+1, len(cached))
+				}
+			}
+			t.Logf("%d frames, %d from the cache", len(cached), hits)
+		})
+	}
+}
 
 // TestUIScript prints the output of the script TELESAPR_UI_SCRIPT
 // names.
