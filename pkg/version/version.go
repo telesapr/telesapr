@@ -4,7 +4,7 @@
 package version
 
 // Version is TeleSAPR's version.
-const Version = "0.2.0"
+const Version = "0.3.1"
 
 // SolveSpaceVersion is the version of SolveSpace the port began from.
 const SolveSpaceVersion = "3.2~cbff7a91"
