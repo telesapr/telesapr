@@ -43,13 +43,13 @@ type sectionCap struct {
 
 // sectionKeep is the half space the section view keeps; ok is false
 // when it is off or can't cut.
-func (gw *GraphicsWindow) sectionKeep() (keep srf.HalfSpace, ok bool) {
+func (gw *graphicsWindow) sectionKeep() (keep srf.HalfSpace, ok bool) {
 	keep, _, ok, _ = gw.sk().SectionCut()
 	return keep, ok
 }
 
 // capFor is the cap of g's display mesh by keep's plane.
-func (gw *GraphicsWindow) capFor(g *sketch.Group, keep srf.HalfSpace) *sectionCap {
+func (gw *graphicsWindow) capFor(g *sketch.Group, keep srf.HalfSpace) *sectionCap {
 	c := &gw.sectionCap
 	m := &g.DisplayMesh
 	if c.mesh == m && c.triangles == len(m.Triangles) && c.generation == gw.sk().Generation && c.keep == keep {
@@ -62,7 +62,7 @@ func (gw *GraphicsWindow) capFor(g *sketch.Group, keep srf.HalfSpace) *sectionCa
 
 // clipToSection makes canvas keep only what the section view keeps,
 // if it is on; the returned function undoes it.
-func (gw *GraphicsWindow) clipToSection(canvas render.Canvas) func() {
+func (gw *graphicsWindow) clipToSection(canvas render.Canvas) func() {
 	cc, ok := canvas.(clipCanvas)
 	if !ok {
 		return func() {}
@@ -76,7 +76,7 @@ func (gw *GraphicsWindow) clipToSection(canvas render.Canvas) func() {
 }
 
 // drawSectionCap fills the cut of g's solid and outlines it.
-func (gw *GraphicsWindow) drawSectionCap(g *sketch.Group, canvas render.Canvas) {
+func (gw *graphicsWindow) drawSectionCap(g *sketch.Group, canvas render.Canvas) {
 	if _, ok := canvas.(clipCanvas); !ok {
 		return
 	}
@@ -111,7 +111,7 @@ func (gw *GraphicsWindow) drawSectionCap(g *sketch.Group, canvas render.Canvas) 
 // MenuSectionView turns the section view off, or on, cut parallel to
 // the selected face or workplane, or the active workplane when nothing
 // is selected.
-func (gw *GraphicsWindow) MenuSectionView() {
+func (gw *graphicsWindow) MenuSectionView() {
 	ss := gw.ss
 	sk := gw.sk()
 	if sk.Section != nil {
@@ -142,12 +142,12 @@ func (gw *GraphicsWindow) MenuSectionView() {
 	}
 	gw.ClearSelection()
 	gw.sectionChanged()
-	ss.TW.GoToScreen(ScreenSection)
+	ss.TW.GoToScreen(screenSection)
 }
 
 // syncSectionMenu checks View > Section View when the view is on, which
 // a script or a file load may have changed.
-func (gw *GraphicsWindow) syncSectionMenu() {
+func (gw *graphicsWindow) syncSectionMenu() {
 	on := gw.sk().Section != nil
 	if gw.sectionMenuItem != nil && on != gw.sectionMenuOn {
 		gw.sectionMenuItem.SetActive(on)
@@ -156,7 +156,7 @@ func (gw *GraphicsWindow) syncSectionMenu() {
 }
 
 // sectionChanged redraws for a new section, and shows its state.
-func (gw *GraphicsWindow) sectionChanged() {
+func (gw *graphicsWindow) sectionChanged() {
 	gw.syncSectionMenu()
 	gw.persistentDirty = true
 	gw.Invalidate(false)
@@ -164,7 +164,7 @@ func (gw *GraphicsWindow) sectionChanged() {
 }
 
 // ShowSection is the section view's screen.
-func (tw *TextWindow) ShowSection() {
+func (tw *textWindow) ShowSection() {
 	ss := tw.ss
 	sk := ss.SK
 	s := sk.Section
@@ -192,7 +192,7 @@ func (tw *TextWindow) ShowSection() {
 	tw.Printf(false, "%Fl%Ll%f(back to home screen)%E", lf(tw.ScreenHome))
 }
 
-func (tw *TextWindow) ScreenChangeSectionOffset(link int, v uint32) {
+func (tw *textWindow) ScreenChangeSectionOffset(link int, v uint32) {
 	s := tw.ss.SK.Section
 	if s == nil {
 		return
@@ -202,10 +202,10 @@ func (tw *TextWindow) ScreenChangeSectionOffset(link int, v uint32) {
 		text = "0"
 	}
 	tw.ShowEditControl(17, text)
-	tw.edit.meaning = EditSectionOffset
+	tw.edit.meaning = editSectionOffset
 }
 
-func (tw *TextWindow) ScreenChangeSectionFlip(link int, v uint32) {
+func (tw *textWindow) ScreenChangeSectionFlip(link int, v uint32) {
 	sk := tw.ss.SK
 	if s := sk.Section; s != nil {
 		if err := sk.SetSection(s.Plane, s.Offset, !s.Flip); err != nil {
@@ -215,15 +215,15 @@ func (tw *TextWindow) ScreenChangeSectionFlip(link int, v uint32) {
 	tw.ss.GW.sectionChanged()
 }
 
-func (tw *TextWindow) ScreenSectionOff(link int, v uint32) {
+func (tw *textWindow) ScreenSectionOff(link int, v uint32) {
 	tw.ss.SK.ClearSection()
 	tw.ss.GW.sectionChanged()
 }
 
 // EditControlDoneForSection takes the edited offset, and reports
 // whether the edit was the section's.
-func (tw *TextWindow) EditControlDoneForSection(s string) bool {
-	if tw.edit.meaning != EditSectionOffset {
+func (tw *textWindow) EditControlDoneForSection(s string) bool {
+	if tw.edit.meaning != editSectionOffset {
 		return false
 	}
 	sk := tw.ss.SK

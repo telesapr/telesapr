@@ -12,43 +12,43 @@ import (
 // DeleteSelection deletes the selected requests and constraints; this
 // regenerates and clears the selection, to avoid lingering references
 // to the deleted items.
-func (gw *GraphicsWindow) DeleteSelection() {
+func (gw *graphicsWindow) DeleteSelection() {
 	// This regenerates and clears the selection, to avoid lingering
 	// references to the just-deleted items.
 	gw.sk().DeleteSelection(gw.selectionForEngine())
 }
 
 // CopySelection copies the selection to the clipboard.
-func (gw *GraphicsWindow) CopySelection() {
+func (gw *graphicsWindow) CopySelection() {
 	gw.sk().CopySelection(gw.selectionForEngine())
 }
 
 // PasteClipboard pastes the clipboard moved by trans, rotated by theta
 // and scaled, and selects what was pasted.
-func (gw *GraphicsWindow) PasteClipboard(trans geom.Vector, theta, scale float64) {
+func (gw *graphicsWindow) PasteClipboard(trans geom.Vector, theta, scale float64) {
 	for _, s := range gw.sk().PasteClipboard(trans, theta, scale) {
 		gw.MakeSelected(&Selection{Entity: s.Entity, Constraint: s.Constraint})
 	}
 }
 
 // MenuClipboard runs a cut, copy, paste or delete command.
-func (gw *GraphicsWindow) MenuClipboard(id Command) {
+func (gw *graphicsWindow) MenuClipboard(id Command) {
 	ss := gw.ss
 	sk := gw.sk()
-	if id != CmdDelete && !gw.LockedInWorkplane() {
+	if id != cmdDelete && !gw.LockedInWorkplane() {
 		ss.Error("Cut, paste, and copy work only in a workplane.\n\n" +
 			"Activate one with Sketch -> In Workplane.")
 		return
 	}
 
 	switch id {
-	case CmdPaste:
+	case cmdPaste:
 		ss.UndoRemember()
 		trans := gw.view.ProjRight.ScaledBy(80 / gw.view.Scale).Plus(gw.view.ProjUp.ScaledBy(40 / gw.view.Scale))
 		gw.ClearSelection()
 		gw.PasteClipboard(trans, 0, 1)
 
-	case CmdPasteTransform:
+	case cmdPasteTransform:
 		if len(sk.Clipboard.Requests) == 0 {
 			ss.Error("Clipboard is empty; nothing to paste.")
 			break
@@ -61,20 +61,20 @@ func (gw *GraphicsWindow) MenuClipboard(id Command) {
 		paste.theta = 0
 		paste.origin = p
 		paste.scale = 1
-		ss.TW.GoToScreen(ScreenPasteTransformed)
+		ss.TW.GoToScreen(screenPasteTransformed)
 		gw.ForceTextWindowShown()
 		ss.ScheduleShowTW()
 
-	case CmdCopy:
+	case cmdCopy:
 		gw.CopySelection()
 		gw.ClearSelection()
 
-	case CmdCut:
+	case cmdCut:
 		ss.UndoRemember()
 		gw.CopySelection()
 		gw.DeleteSelection()
 
-	case CmdDelete:
+	case cmdDelete:
 		ss.UndoRemember()
 		gw.DeleteSelection()
 
@@ -85,10 +85,10 @@ func (gw *GraphicsWindow) MenuClipboard(id Command) {
 
 // EditControlDoneForPaste takes an edited paste-transformed parameter,
 // and reports whether the edit was one of those.
-func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
+func (tw *textWindow) EditControlDoneForPaste(s string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
-	case EditPasteTimesRepeated:
+	case editPasteTimesRepeated:
 		e := ss.exprFromString(s)
 		if e == nil {
 			break
@@ -100,14 +100,14 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 			ss.Error("Number of copies to paste must be at least one.")
 		}
 
-	case EditPasteAngle:
+	case editPasteAngle:
 		e := ss.exprFromString(s)
 		if e == nil {
 			break
 		}
 		tw.shown.paste.theta = srf.WrapSymmetric(ss.evalExpr(e)*math.Pi/180, 2*math.Pi)
 
-	case EditPasteScale:
+	case editPasteScale:
 		e := ss.exprFromString(s)
 		if e == nil {
 			// The expression may be nil here.
@@ -131,28 +131,28 @@ func (tw *TextWindow) EditControlDoneForPaste(s string) bool {
 }
 
 // ScreenChangePasteTransformed edits a paste-transformed parameter.
-func (tw *TextWindow) ScreenChangePasteTransformed(link int, v uint32) {
+func (tw *textWindow) ScreenChangePasteTransformed(link int, v uint32) {
 	switch link {
 	case 't':
 		tw.ShowEditControl(13, fmt.Sprintf("%d", tw.shown.paste.times))
-		tw.edit.meaning = EditPasteTimesRepeated
+		tw.edit.meaning = editPasteTimesRepeated
 
 	case 'r':
 		tw.ShowEditControl(13, fmt.Sprintf("%.3f", tw.shown.paste.theta*180/math.Pi))
-		tw.edit.meaning = EditPasteAngle
+		tw.edit.meaning = editPasteAngle
 
 	case 's':
 		tw.ShowEditControl(13, fmt.Sprintf("%.3f", math.Abs(tw.shown.paste.scale)))
-		tw.edit.meaning = EditPasteScale
+		tw.edit.meaning = editPasteScale
 
 	case 'f':
 		tw.shown.paste.scale *= -1
 	}
 }
 
-// ScreenPasteTransformed takes the origin or translation from the
+// screenPasteTransformed takes the origin or translation from the
 // selection, or pastes.
-func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
+func (tw *textWindow) ScreenPasteTransformed(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	gw := ss.GW
@@ -208,13 +208,13 @@ func (tw *TextWindow) ScreenPasteTransformed(link int, v uint32) {
 
 			gw.PasteClipboard(t, theta, paste.scale)
 		}
-		tw.GoToScreen(ScreenListOfGroups)
+		tw.GoToScreen(screenListOfGroups)
 		ss.ScheduleShowTW()
 	}
 }
 
 // ShowPasteTransformed is the screen to paste with a transformation.
-func (tw *TextWindow) ShowPasteTransformed() {
+func (tw *textWindow) ShowPasteTransformed() {
 	ss := tw.ss
 	paste := &tw.shown.paste
 	tw.Printf(true, "%FtPASTE TRANSFORMED%E")

@@ -8,11 +8,11 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// Config is the user's configuration: what the configuration screen
+// config is the user's configuration: what the configuration screen
 // and the menus set and the settings store keeps between runs. The
 // application embeds it.
-type Config struct {
-	ModelColor               [ModelColors]core.RGBA
+type config struct {
+	ModelColor               [modelColors]core.RGBA
 	LightDir                 [2]geom.Vector
 	LightIntensity           [2]float64
 	AmbientIntensity         float64
@@ -73,9 +73,9 @@ type Config struct {
 
 // Thaw reads the configuration from the store, with the defaults for
 // what it doesn't hold.
-func (c *Config) Thaw(s core.Settings) {
+func (c *config) Thaw(s core.Settings) {
 
-	defaults := [ModelColors]core.RGBA{
+	defaults := [modelColors]core.RGBA{
 		rgbi(150, 150, 150), rgbi(100, 100, 100), rgbi(30, 30, 30), rgbi(150, 0, 0),
 		rgbi(0, 100, 0), rgbi(0, 80, 80), rgbi(0, 0, 130), rgbi(80, 0, 80),
 	}
@@ -142,7 +142,7 @@ func (c *Config) Thaw(s core.Settings) {
 	c.AgentAllowed = core.ThawBool(s, "AgentAllowed", false)
 	c.AgentConfirm = core.ThawBool(s, "AgentConfirm", false)
 	c.RecentFiles = nil
-	for i := range MaxRecent {
+	for i := range maxRecent {
 		if raw := s.ThawString("RecentFile_"+strconv.Itoa(i), ""); raw != "" {
 			c.RecentFiles = append(c.RecentFiles, raw)
 		}
@@ -151,8 +151,8 @@ func (c *Config) Thaw(s core.Settings) {
 }
 
 // Freeze writes the configuration to the store.
-func (c *Config) Freeze(s core.Settings) {
-	for i := range MaxRecent {
+func (c *config) Freeze(s core.Settings) {
+	for i := range maxRecent {
 		raw := ""
 		if i < len(c.RecentFiles) {
 			raw = c.RecentFiles[i]

@@ -70,7 +70,7 @@ func (ss *Application) writePicture(filename string, camera render.Camera) error
 }
 
 // SetProjection turns the view to look along projRight and projUp.
-func (gw *GraphicsWindow) SetProjection(projRight, projUp geom.Vector) {
+func (gw *graphicsWindow) SetProjection(projRight, projUp geom.Vector) {
 	gw.view.ProjRight = projRight
 	gw.view.ProjUp = projUp
 }

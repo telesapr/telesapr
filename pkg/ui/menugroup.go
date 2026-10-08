@@ -25,71 +25,71 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 	gw.GroupSelection()
 
 	switch id {
-	case CmdGroup3D:
+	case cmdGroup3D:
 		g.Type = sketch.GroupDrawing3D
 		g.Name = "sketch-in-3d"
 
-	case CmdGroupWrkpl:
+	case cmdGroupWrkpl:
 		if !ss.groupWorkplane(&g) {
 			return
 		}
 
-	case CmdGroupExtrude:
+	case cmdGroupExtrude:
 		if !ss.groupExtrude(&g) {
 			return
 		}
 
-	case CmdGroupLathe, CmdGroupRevolve, CmdGroupHelix:
+	case cmdGroupLathe, cmdGroupRevolve, cmdGroupHelix:
 		if !ss.groupLatheOrRevolve(&g, id) {
 			return
 		}
 
-	case CmdGroupRot:
+	case cmdGroupRot:
 		if !ss.groupRotate(&g) {
 			return
 		}
 
-	case CmdGroupTrans:
+	case cmdGroupTrans:
 		if !ss.groupTranslate(&g) {
 			return
 		}
 
-	case CmdGroupMirror:
+	case cmdGroupMirror:
 		if !ss.groupMirror(&g) {
 			return
 		}
 
-	case CmdGroupChamfer:
+	case cmdGroupChamfer:
 		if !ss.groupChamfer(&g) {
 			return
 		}
 
-	case CmdGroupFillet:
+	case cmdGroupFillet:
 		if !ss.groupFillet(&g) {
 			return
 		}
 
-	case CmdGroupShell:
+	case cmdGroupShell:
 		if !ss.groupShell(&g) {
 			return
 		}
 
-	case CmdGroupLoft:
+	case cmdGroupLoft:
 		if !ss.groupLoft(&g) {
 			return
 		}
 
-	case CmdGroupPathPattern:
+	case cmdGroupPathPattern:
 		if !ss.groupPathPattern(&g) {
 			return
 		}
 
-	case CmdGroupSweep:
+	case cmdGroupSweep:
 		if !ss.groupSweep(&g) {
 			return
 		}
 
-	case CmdGroupLink:
+	case cmdGroupLink:
 		if !ss.groupLink(&g) {
 			return
 		}
@@ -102,7 +102,7 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 	ss.addNewGroup(g, true)
 }
 
-// groupWorkplane sets up a CmdGroupWrkpl group, or reports why it can't be made.
+// groupWorkplane sets up a cmdGroupWrkpl group, or reports why it can't be made.
 func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -189,7 +189,7 @@ func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 	return true
 }
 
-// groupExtrude sets up a CmdGroupExtrude group, or reports why it can't be made.
+// groupExtrude sets up a cmdGroupExtrude group, or reports why it can't be made.
 func (ss *Application) groupExtrude(g *sketch.Group) bool {
 	gw := ss.GW
 
@@ -207,13 +207,13 @@ func (ss *Application) groupExtrude(g *sketch.Group) bool {
 	return true
 }
 
-// groupLatheOrRevolve sets up a CmdGroupLathe, CmdGroupRevolve, CmdGroupHelix group, or reports why it can't be made.
+// groupLatheOrRevolve sets up a cmdGroupLathe, cmdGroupRevolve, cmdGroupHelix group, or reports why it can't be made.
 func (ss *Application) groupLatheOrRevolve(g *sketch.Group, id Command) bool {
 	gw := ss.GW
 	sk := ss.SK
 	gs := &gw.gs
 
-	what := map[Command]string{CmdGroupLathe: "Lathe", CmdGroupRevolve: "Revolve", CmdGroupHelix: "Helix"}[id]
+	what := map[Command]string{cmdGroupLathe: "Lathe", cmdGroupRevolve: "Revolve", cmdGroupHelix: "Helix"}[id]
 	if !gw.LockedInWorkplane() {
 		ss.Error("%s operation can only be applied to planar sketches.", what)
 		return false
@@ -237,10 +237,10 @@ func (ss *Application) groupLatheOrRevolve(g *sketch.Group, id Command) bool {
 	}
 	g.OpA = gw.activeGroupH()
 	switch id {
-	case CmdGroupLathe:
+	case cmdGroupLathe:
 		g.Type = sketch.GroupLathe
 		g.Name = "lathe"
-	case CmdGroupRevolve:
+	case cmdGroupRevolve:
 		g.Type = sketch.GroupRevolve
 		g.ValA = 2
 		g.Subtype = sketch.GroupOneSided
@@ -254,7 +254,7 @@ func (ss *Application) groupLatheOrRevolve(g *sketch.Group, id Command) bool {
 	return true
 }
 
-// groupRotate sets up a CmdGroupRot group, or reports why it can't be made.
+// groupRotate sets up a cmdGroupRot group, or reports why it can't be made.
 func (ss *Application) groupRotate(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -287,7 +287,7 @@ func (ss *Application) groupRotate(g *sketch.Group) bool {
 	return true
 }
 
-// groupTranslate sets up a CmdGroupTrans group, or reports why it can't be made.
+// groupTranslate sets up a cmdGroupTrans group, or reports why it can't be made.
 func (ss *Application) groupTranslate(g *sketch.Group) bool {
 	gw := ss.GW
 
@@ -301,7 +301,7 @@ func (ss *Application) groupTranslate(g *sketch.Group) bool {
 	return true
 }
 
-// groupMirror sets up a CmdGroupMirror group, or reports why it can't be made.
+// groupMirror sets up a cmdGroupMirror group, or reports why it can't be made.
 func (ss *Application) groupMirror(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -323,7 +323,7 @@ func (ss *Application) groupMirror(g *sketch.Group) bool {
 	return true
 }
 
-// groupChamfer sets up a CmdGroupChamfer group, or reports why it can't be made.
+// groupChamfer sets up a cmdGroupChamfer group, or reports why it can't be made.
 func (ss *Application) groupChamfer(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -343,7 +343,7 @@ func (ss *Application) groupChamfer(g *sketch.Group) bool {
 	return true
 }
 
-// groupFillet sets up a CmdGroupFillet group, or reports why it can't be made.
+// groupFillet sets up a cmdGroupFillet group, or reports why it can't be made.
 func (ss *Application) groupFillet(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -370,7 +370,7 @@ func (ss *Application) groupFillet(g *sketch.Group) bool {
 	return true
 }
 
-// groupShell sets up a CmdGroupShell group, or reports why it can't be made.
+// groupShell sets up a cmdGroupShell group, or reports why it can't be made.
 func (ss *Application) groupShell(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -396,7 +396,7 @@ func (ss *Application) groupShell(g *sketch.Group) bool {
 	return true
 }
 
-// groupLoft sets up a CmdGroupLoft group, or reports why it can't be made.
+// groupLoft sets up a cmdGroupLoft group, or reports why it can't be made.
 func (ss *Application) groupLoft(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -440,7 +440,7 @@ func (ss *Application) groupLoft(g *sketch.Group) bool {
 	return true
 }
 
-// groupPathPattern sets up a CmdGroupPathPattern group, or reports why it can't be made.
+// groupPathPattern sets up a cmdGroupPathPattern group, or reports why it can't be made.
 func (ss *Application) groupPathPattern(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -460,7 +460,7 @@ func (ss *Application) groupPathPattern(g *sketch.Group) bool {
 	return true
 }
 
-// groupSweep sets up a CmdGroupSweep group, or reports why it can't be made.
+// groupSweep sets up a cmdGroupSweep group, or reports why it can't be made.
 func (ss *Application) groupSweep(g *sketch.Group) bool {
 	gw := ss.GW
 	sk := ss.SK
@@ -484,7 +484,7 @@ func (ss *Application) groupSweep(g *sketch.Group) bool {
 	return true
 }
 
-// groupLink sets up a CmdGroupLink group, or reports why it can't be made.
+// groupLink sets up a cmdGroupLink group, or reports why it can't be made.
 func (ss *Application) groupLink(g *sketch.Group) bool {
 	gw := ss.GW
 

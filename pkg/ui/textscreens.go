@@ -19,8 +19,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/version"
 )
 
-// lf makes a method value a LinkFunction for Printf.
-func lf(f func(link int, v uint32)) LinkFunction { return f }
+// lf makes a method value a linkFunction for Printf.
+func lf(f func(link int, v uint32)) linkFunction { return f }
 
 // groupNumConstraints counts the constraints in group hg.
 func groupNumConstraints(sk *sketch.Sketch, hg core.HGroup) int {
@@ -34,13 +34,13 @@ func groupNumConstraints(sk *sketch.Sketch, hg core.HGroup) int {
 }
 
 // ScreenHome goes back to the list of groups.
-func (tw *TextWindow) ScreenHome(link int, v uint32) {
-	tw.GoToScreen(ScreenListOfGroups)
+func (tw *textWindow) ScreenHome(link int, v uint32) {
+	tw.GoToScreen(screenListOfGroups)
 }
 
 // ShowHeader starts a screen with the navigation bar that always
 // appears at the top of the window.
-func (tw *TextWindow) ShowHeader(withNav bool) {
+func (tw *textWindow) ShowHeader(withNav bool) {
 	ss := tw.ss
 	tw.ClearScreen()
 
@@ -66,14 +66,14 @@ func (tw *TextWindow) ShowHeader(withNav bool) {
 }
 
 // ScreenSelectGroup shows a group's screen.
-func (tw *TextWindow) ScreenSelectGroup(link int, v uint32) {
-	tw.ss.GW.MenuEdit(CmdUnselectAll)
-	tw.GoToScreen(ScreenGroupInfo)
+func (tw *textWindow) ScreenSelectGroup(link int, v uint32) {
+	tw.ss.GW.MenuEdit(cmdUnselectAll)
+	tw.GoToScreen(screenGroupInfo)
 	tw.shown.group = core.HGroup{V: v}
 }
 
 // ScreenToggleGroupShown hides or shows a group.
-func (tw *TextWindow) ScreenToggleGroupShown(link int, v uint32) {
+func (tw *textWindow) ScreenToggleGroupShown(link int, v uint32) {
 	g := tw.ss.SK.Group(core.HGroup{V: v})
 	g.Visible = !g.Visible
 	// If a group was just shown, then it might not have been generated
@@ -82,7 +82,7 @@ func (tw *TextWindow) ScreenToggleGroupShown(link int, v uint32) {
 }
 
 // ScreenShowGroupsSpecial shows all, the unconstrained or no groups.
-func (tw *TextWindow) ScreenShowGroupsSpecial(link int, v uint32) {
+func (tw *textWindow) ScreenShowGroupsSpecial(link int, v uint32) {
 	sk := tw.ss.SK
 	for _, hg := range sk.GroupOrder {
 		g := sk.Group(hg)
@@ -99,7 +99,7 @@ func (tw *TextWindow) ScreenShowGroupsSpecial(link int, v uint32) {
 }
 
 // ScreenActivateGroup makes a group active.
-func (tw *TextWindow) ScreenActivateGroup(link int, v uint32) {
+func (tw *textWindow) ScreenActivateGroup(link int, v uint32) {
 	ss := tw.ss
 	if why := ss.SK.SuppressedReason(core.HGroup{V: v}); why != "" {
 		ss.Error("%s can't be made active: it is left out of the model (%s).",
@@ -112,40 +112,40 @@ func (tw *TextWindow) ScreenActivateGroup(link int, v uint32) {
 }
 
 // ReportHowGroupSolved shows why a group failed to solve.
-func (tw *TextWindow) ReportHowGroupSolved(hg core.HGroup) {
+func (tw *textWindow) ReportHowGroupSolved(hg core.HGroup) {
 	tw.ss.GW.ClearSuper()
-	tw.GoToScreen(ScreenGroupSolveInfo)
+	tw.GoToScreen(screenGroupSolveInfo)
 	tw.shown.group = hg
 	tw.ss.ScheduleShowTW()
 }
 
 // ScreenHowGroupSolved activates a group and shows how it solved.
-func (tw *TextWindow) ScreenHowGroupSolved(link int, v uint32) {
+func (tw *textWindow) ScreenHowGroupSolved(link int, v uint32) {
 	if tw.ss.GW.activeGroupH().V != v {
 		tw.ScreenActivateGroup(link, v)
 	}
-	tw.GoToScreen(ScreenGroupSolveInfo)
+	tw.GoToScreen(screenGroupSolveInfo)
 	tw.shown.group = core.HGroup{V: v}
 }
 
 // ScreenShowConfiguration shows the configuration.
-func (tw *TextWindow) ScreenShowConfiguration(link int, v uint32) {
-	tw.GoToScreen(ScreenConfiguration)
+func (tw *textWindow) ScreenShowConfiguration(link int, v uint32) {
+	tw.GoToScreen(screenConfiguration)
 }
 
 // ScreenShowEditView shows the view parameters.
-func (tw *TextWindow) ScreenShowEditView(link int, v uint32) {
-	tw.GoToScreen(ScreenEditView)
+func (tw *textWindow) ScreenShowEditView(link int, v uint32) {
+	tw.GoToScreen(screenEditView)
 }
 
 // ScreenGoToWebsite opens the project's home.
-func (tw *TextWindow) ScreenGoToWebsite(link int, v uint32) {
+func (tw *textWindow) ScreenGoToWebsite(link int, v uint32) {
 	tw.ss.Platform.OpenInBrowser(version.Repository)
 }
 
 // ShowListOfGroups is the home screen: every group in the sketch, with
 // options to hide or show them, and to view them in detail.
-func (tw *TextWindow) ShowListOfGroups() {
+func (tw *textWindow) ShowListOfGroups() {
 	ss := tw.ss
 	sk := ss.SK
 	const (
@@ -278,7 +278,7 @@ func (tw *TextWindow) ShowListOfGroups() {
 }
 
 // ScreenHoverGroupWorkplane hovers a group's workplane.
-func (tw *TextWindow) ScreenHoverGroupWorkplane(link int, v uint32) {
+func (tw *textWindow) ScreenHoverGroupWorkplane(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.hover.Clear()
 	gw.hover.Entity = core.HGroup{V: v}.Entity(0)
@@ -286,7 +286,7 @@ func (tw *TextWindow) ScreenHoverGroupWorkplane(link int, v uint32) {
 }
 
 // ScreenHoverEntity hovers an entity.
-func (tw *TextWindow) ScreenHoverEntity(link int, v uint32) {
+func (tw *textWindow) ScreenHoverEntity(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.hover.Clear()
 	gw.hover.Entity = core.HEntity{V: v}
@@ -294,7 +294,7 @@ func (tw *TextWindow) ScreenHoverEntity(link int, v uint32) {
 }
 
 // ScreenHoverRequest hovers a request's first entity.
-func (tw *TextWindow) ScreenHoverRequest(link int, v uint32) {
+func (tw *textWindow) ScreenHoverRequest(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.hover.Clear()
 	gw.hover.Entity = core.HRequest{V: v}.Entity(0)
@@ -302,9 +302,9 @@ func (tw *TextWindow) ScreenHoverRequest(link int, v uint32) {
 }
 
 // ScreenHoverConstraint hovers a constraint.
-func (tw *TextWindow) ScreenHoverConstraint(link int, v uint32) {
+func (tw *textWindow) ScreenHoverConstraint(link int, v uint32) {
 	gw := tw.ss.GW
-	if gw.showConstraints == SCMNoShow {
+	if gw.showConstraints == sCMNoShow {
 		return
 	}
 	gw.hover.Clear()
@@ -313,28 +313,28 @@ func (tw *TextWindow) ScreenHoverConstraint(link int, v uint32) {
 }
 
 // ScreenSelectEntity selects an entity.
-func (tw *TextWindow) ScreenSelectEntity(link int, v uint32) {
+func (tw *textWindow) ScreenSelectEntity(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.ClearSelection()
 	gw.selection = append(gw.selection, Selection{Entity: core.HEntity{V: v}})
 }
 
 // ScreenSelectRequest selects a request's first entity.
-func (tw *TextWindow) ScreenSelectRequest(link int, v uint32) {
+func (tw *textWindow) ScreenSelectRequest(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.ClearSelection()
 	gw.selection = append(gw.selection, Selection{Entity: core.HRequest{V: v}.Entity(0)})
 }
 
 // ScreenSelectConstraint selects a constraint.
-func (tw *TextWindow) ScreenSelectConstraint(link int, v uint32) {
+func (tw *textWindow) ScreenSelectConstraint(link int, v uint32) {
 	gw := tw.ss.GW
 	gw.ClearSelection()
 	gw.selection = append(gw.selection, Selection{Constraint: core.HConstraint{V: v}})
 }
 
 // ScreenChangeGroupOption flips one of a group's options.
-func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
+func (tw *textWindow) ScreenChangeGroupOption(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	ss.UndoRemember()
@@ -427,7 +427,7 @@ func (tw *TextWindow) ScreenChangeGroupOption(link int, v uint32) {
 
 // ScreenChangeLoftTurn turns a loft's second profile by one curve,
 // either way (v is +1 or -1, as an unsigned word).
-func (tw *TextWindow) ScreenChangeLoftTurn(link int, v uint32) {
+func (tw *textWindow) ScreenChangeLoftTurn(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	g := sk.Group(tw.shown.group)
@@ -442,25 +442,25 @@ func (tw *TextWindow) ScreenChangeLoftTurn(link int, v uint32) {
 }
 
 // ScreenColor edits a group's colour.
-func (tw *TextWindow) ScreenColor(link int, v uint32) {
+func (tw *textWindow) ScreenColor(link int, v uint32) {
 	tw.ss.UndoRemember()
 
 	g := tw.ss.SK.Group(tw.shown.group)
 	tw.ShowEditControlWithColorPicker(3, g.Color)
-	tw.edit.meaning = EditGroupColor
+	tw.edit.meaning = editGroupColor
 }
 
 // ScreenOpacity edits a group's opacity.
-func (tw *TextWindow) ScreenOpacity(link int, v uint32) {
+func (tw *textWindow) ScreenOpacity(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 
 	tw.ShowEditControl(11, fmt.Sprintf("%.2f", g.Color.AlphaF()))
-	tw.edit.meaning = EditGroupOpacity
+	tw.edit.meaning = editGroupOpacity
 	tw.edit.group = g.H
 }
 
 // ScreenChangeExprA edits how many times a group repeats.
-func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
+func (tw *textWindow) ScreenChangeExprA(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 
 	text := g.ExprA
@@ -468,20 +468,20 @@ func (tw *TextWindow) ScreenChangeExprA(link int, v uint32) {
 		text = fmt.Sprintf("%d", int(g.ValA))
 	}
 	tw.ShowEditControl(10, text)
-	tw.edit.meaning = EditTimesRepeated
+	tw.edit.meaning = editTimesRepeated
 	tw.edit.group = core.HGroup{V: v}
 }
 
 // ScreenChangeGroupName renames a group.
-func (tw *TextWindow) ScreenChangeGroupName(link int, v uint32) {
+func (tw *textWindow) ScreenChangeGroupName(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	tw.ShowEditControl(12, groupDescription(g)[5:])
-	tw.edit.meaning = EditGroupName
+	tw.edit.meaning = editGroupName
 	tw.edit.group = core.HGroup{V: v}
 }
 
 // ScreenChangeGroupScale edits a linked group's scale.
-func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
+func (tw *textWindow) ScreenChangeGroupScale(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 
 	text := g.ExprScale
@@ -489,26 +489,26 @@ func (tw *TextWindow) ScreenChangeGroupScale(link int, v uint32) {
 		text = fmt.Sprintf("%.3f", g.Scale)
 	}
 	tw.ShowEditControl(13, text)
-	tw.edit.meaning = EditGroupScale
+	tw.edit.meaning = editGroupScale
 	tw.edit.group = core.HGroup{V: v}
 }
 
 // ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance or
 // a fillet's radius, all ValB.
-func (tw *TextWindow) ScreenChangeHelixPitch(link int, v uint32) {
+func (tw *textWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprB
 	if text == "" {
 		text = fmt.Sprintf("%.8f", g.ValB/tw.ss.MmPerUnit())
 	}
 	tw.ShowEditControl(3, text)
-	tw.edit.meaning = EditHelixPitch
+	tw.edit.meaning = editHelixPitch
 	tw.edit.group = core.HGroup{V: v}
 }
 
 // ScreenChangeLinkAsSolid reads a linked STEP file as a solid ('s') or
 // as a reference mesh, and reads it again.
-func (tw *TextWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
+func (tw *textWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
 	ss := tw.ss
 	g := ss.SK.Group(tw.shown.group)
 	if g == nil || g.Type != sketch.GroupLinked || g.LinkAsSolid == (link == 's') {
@@ -529,7 +529,7 @@ func (tw *TextWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
 
 // ScreenChangeSweepUp holds a sweep's frames to an axis, by the link's
 // letter, or ('n') lets them turn least.
-func (tw *TextWindow) ScreenChangeSweepUp(link int, v uint32) {
+func (tw *textWindow) ScreenChangeSweepUp(link int, v uint32) {
 	ss := tw.ss
 	g := ss.SK.Group(tw.shown.group)
 	if g == nil || g.Type != sketch.GroupSweep {
@@ -552,20 +552,20 @@ func (tw *TextWindow) ScreenChangeSweepUp(link int, v uint32) {
 
 // ScreenChangeGroupDraft edits an extrusion's draft or a sweep's twist,
 // in degrees.
-func (tw *TextWindow) ScreenChangeGroupDraft(link int, v uint32) {
+func (tw *textWindow) ScreenChangeGroupDraft(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprC
 	if text == "" {
 		text = fmt.Sprintf("%g", g.ValC)
 	}
 	tw.ShowEditControl(10, text)
-	tw.edit.meaning = EditGroupDraft
+	tw.edit.meaning = editGroupDraft
 	tw.edit.group = core.HGroup{V: v}
 }
 
 // ScreenChangeChamferDistance2 edits a chamfer's second distance, on
 // each edge's second face (roadmap 28.1).
-func (tw *TextWindow) ScreenChangeChamferDistance2(link int, v uint32) {
+func (tw *textWindow) ScreenChangeChamferDistance2(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprC
 	if text == "" {
@@ -576,13 +576,13 @@ func (tw *TextWindow) ScreenChangeChamferDistance2(link int, v uint32) {
 		text = fmt.Sprintf("%.8f", d/tw.ss.MmPerUnit())
 	}
 	tw.ShowEditControl(3, text)
-	tw.edit.meaning = EditChamferDistance2
+	tw.edit.meaning = editChamferDistance2
 	tw.edit.group = core.HGroup{V: v}
 }
 
 // ScreenSwapChamferDistances swaps a chamfer's two distances, which
 // chamfers each edge the other way round.
-func (tw *TextWindow) ScreenSwapChamferDistances(link int, v uint32) {
+func (tw *textWindow) ScreenSwapChamferDistances(link int, v uint32) {
 	ss := tw.ss
 	g := ss.SK.Group(core.HGroup{V: v})
 	if g == nil || g.Type != sketch.GroupChamfer || g.ValC == 0 && g.ExprC == "" {
@@ -597,7 +597,7 @@ func (tw *TextWindow) ScreenSwapChamferDistances(link int, v uint32) {
 
 // ScreenSameChamferDistances makes a chamfer's second distance its first
 // again.
-func (tw *TextWindow) ScreenSameChamferDistances(link int, v uint32) {
+func (tw *textWindow) ScreenSameChamferDistances(link int, v uint32) {
 	ss := tw.ss
 	g := ss.SK.Group(core.HGroup{V: v})
 	if g == nil || g.Type != sketch.GroupChamfer {
@@ -669,7 +669,7 @@ func (ss *Application) loftGuidesFromSelection() {
 }
 
 // ScreenLoftNoGuides takes a loft's guide curves away.
-func (tw *TextWindow) ScreenLoftNoGuides(link int, v uint32) {
+func (tw *textWindow) ScreenLoftNoGuides(link int, v uint32) {
 	ss := tw.ss
 	err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetLoftGuides(core.HGroup{V: v}, nil) })
 	if err != nil {
@@ -682,7 +682,7 @@ func (tw *TextWindow) ScreenLoftNoGuides(link int, v uint32) {
 }
 
 // ScreenDraftAllSides makes an extrusion's draft lean every side again.
-func (tw *TextWindow) ScreenDraftAllSides(link int, v uint32) {
+func (tw *textWindow) ScreenDraftAllSides(link int, v uint32) {
 	ss := tw.ss
 	err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetDraftFaces(core.HGroup{V: v}, nil) })
 	if err != nil {
@@ -696,7 +696,7 @@ func (tw *TextWindow) ScreenDraftAllSides(link int, v uint32) {
 
 // showLoftEnds shows how a loft leaves its first profile and reaches
 // its last (roadmap 28.3).
-func (tw *TextWindow) showLoftEnds(g *sketch.Group) {
+func (tw *textWindow) showLoftEnds(g *sketch.Group) {
 	end := func(v float64) string {
 		if v == 0 {
 			return "free"
@@ -722,19 +722,19 @@ func (tw *TextWindow) showLoftEnds(g *sketch.Group) {
 
 // ScreenChangeLoftStart edits how square a loft leaves its first
 // profile, 0 for free.
-func (tw *TextWindow) ScreenChangeLoftStart(link int, v uint32) {
+func (tw *textWindow) ScreenChangeLoftStart(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprB
 	if text == "" {
 		text = fmt.Sprintf("%g", g.ValB)
 	}
 	tw.ShowEditControl(3, text)
-	tw.edit.meaning = EditHelixPitch
+	tw.edit.meaning = editHelixPitch
 	tw.edit.group = core.HGroup{V: v}
 }
 
 // ScreenChangePitchOption fixes or frees a helix's pitch.
-func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
+func (tw *textWindow) ScreenChangePitchOption(link int, v uint32) {
 	sk := tw.ss.SK
 	g := sk.Group(tw.shown.group)
 	if g.ValB == 0.0 {
@@ -747,7 +747,7 @@ func (tw *TextWindow) ScreenChangePitchOption(link int, v uint32) {
 }
 
 // ScreenDeleteGroup deletes the shown group.
-func (tw *TextWindow) ScreenDeleteGroup(link int, v uint32) {
+func (tw *textWindow) ScreenDeleteGroup(link int, v uint32) {
 	tw.ss.UndoRemember()
 	tw.ss.deleteGroup(tw.shown.group)
 }
@@ -829,7 +829,7 @@ func wrapWords(text string, width int) []string {
 }
 
 // ShowGroupInfo is the screen about one group, where the user edits it.
-func (tw *TextWindow) ShowGroupInfo() {
+func (tw *textWindow) ShowGroupInfo() {
 	ss := tw.ss
 	sk := ss.SK
 	g := sk.Group(tw.shown.group)
@@ -990,7 +990,7 @@ func (tw *TextWindow) ShowGroupInfo() {
 }
 
 // showExtrusionInfo shows the settings of a sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve, sketch.GroupHelix group.
-func (tw *TextWindow) showExtrusionInfo(g *sketch.Group) {
+func (tw *textWindow) showExtrusionInfo(g *sketch.Group) {
 	ss := tw.ss
 	s := "???"
 
@@ -1067,7 +1067,7 @@ func (tw *TextWindow) showExtrusionInfo(g *sketch.Group) {
 }
 
 // showMirrorInfo shows the settings of a sketch.GroupMirror group.
-func (tw *TextWindow) showMirrorInfo(g *sketch.Group) {
+func (tw *textWindow) showMirrorInfo(g *sketch.Group) {
 	ss := tw.ss
 	sk := ss.SK
 
@@ -1084,7 +1084,7 @@ func (tw *TextWindow) showMirrorInfo(g *sketch.Group) {
 }
 
 // showChamferInfo shows the settings of a sketch.GroupChamfer group.
-func (tw *TextWindow) showChamferInfo(g *sketch.Group) {
+func (tw *textWindow) showChamferInfo(g *sketch.Group) {
 	ss := tw.ss
 
 	tw.Printf(true, " %Ftchamfer edges of the solid%E")
@@ -1102,7 +1102,7 @@ func (tw *TextWindow) showChamferInfo(g *sketch.Group) {
 }
 
 // showLoftInfo shows the settings of a sketch.GroupLoft group.
-func (tw *TextWindow) showLoftInfo(g *sketch.Group) {
+func (tw *textWindow) showLoftInfo(g *sketch.Group) {
 	ss := tw.ss
 	sk := ss.SK
 
@@ -1133,7 +1133,7 @@ func (tw *TextWindow) showLoftInfo(g *sketch.Group) {
 }
 
 // showFilletInfo shows the settings of a sketch.GroupFillet group.
-func (tw *TextWindow) showFilletInfo(g *sketch.Group) {
+func (tw *textWindow) showFilletInfo(g *sketch.Group) {
 	ss := tw.ss
 
 	tw.Printf(true, " %Ftround edges of the solid%E")
@@ -1143,7 +1143,7 @@ func (tw *TextWindow) showFilletInfo(g *sketch.Group) {
 }
 
 // showShellInfo shows the settings of a sketch.GroupShell group.
-func (tw *TextWindow) showShellInfo(g *sketch.Group) {
+func (tw *textWindow) showShellInfo(g *sketch.Group) {
 	ss := tw.ss
 	sk := ss.SK
 
@@ -1161,7 +1161,7 @@ func (tw *TextWindow) showShellInfo(g *sketch.Group) {
 }
 
 // showSweepInfo shows the settings of a sketch.GroupSweep group.
-func (tw *TextWindow) showSweepInfo(g *sketch.Group) {
+func (tw *textWindow) showSweepInfo(g *sketch.Group) {
 
 	tw.Printf(true, " %Ftsweep plane sketch along path%E")
 	tw.showGroupEdges(g, "path")
@@ -1180,7 +1180,7 @@ func (tw *TextWindow) showSweepInfo(g *sketch.Group) {
 }
 
 // showPathPatternInfo shows the settings of a sketch.GroupPathPattern group.
-func (tw *TextWindow) showPathPatternInfo(g *sketch.Group) {
+func (tw *textWindow) showPathPatternInfo(g *sketch.Group) {
 
 	tw.Printf(true, " %Ftrepeat solid along path%E")
 	tw.Printf(false, "%Ba   %Ftcopies%E %d%s %Fl%Ll%D%f[change]%E",
@@ -1189,7 +1189,7 @@ func (tw *TextWindow) showPathPatternInfo(g *sketch.Group) {
 }
 
 // showLinkedInfo shows the settings of a sketch.GroupLinked group.
-func (tw *TextWindow) showLinkedInfo(g *sketch.Group) {
+func (tw *textWindow) showLinkedInfo(g *sketch.Group) {
 	ss := tw.ss
 
 	tw.Printf(true, " %Ftlink geometry from file%E")
@@ -1205,7 +1205,7 @@ func (tw *TextWindow) showLinkedInfo(g *sketch.Group) {
 		tw.Printf(false, "   %Fd%s%E", line)
 	}
 	if g.LinkProblem != "" {
-		for i, line := range wrapWords("Not all of the file was read: "+g.LinkProblem+".", MaxCols-6) {
+		for i, line := range wrapWords("Not all of the file was read: "+g.LinkProblem+".", maxCols-6) {
 			indent := "   "
 			if i > 0 {
 				indent = "     "
@@ -1217,7 +1217,7 @@ func (tw *TextWindow) showLinkedInfo(g *sketch.Group) {
 
 // showGroupEdges lists the edges of a chamfer or the path of a sweep,
 // each one hovered and selected from its row.
-func (tw *TextWindow) showGroupEdges(g *sketch.Group, what string) {
+func (tw *textWindow) showGroupEdges(g *sketch.Group, what string) {
 	sk := tw.ss.SK
 	tw.Printf(false, "%Ba   %Ft%s%E", what)
 	for i, he := range g.Edges {
@@ -1234,7 +1234,7 @@ func (tw *TextWindow) showGroupEdges(g *sketch.Group, what string) {
 		if (len(g.Edges)+i)%2 == 1 {
 			bg = 'a'
 		}
-		for k, line := range wrapWords(sk.SolidEdgeName(n), MaxCols-8) {
+		for k, line := range wrapWords(sk.SolidEdgeName(n), maxCols-8) {
 			indent := "     "
 			if k > 0 {
 				indent = "       "
@@ -1250,7 +1250,7 @@ func (tw *TextWindow) showGroupEdges(g *sketch.Group, what string) {
 
 // showEdgeRadius shows, under a fillet's edge i, the radius of its own
 // that it has, or a link to give it one.
-func (tw *TextWindow) showEdgeRadius(g *sketch.Group, i int, bg byte) {
+func (tw *textWindow) showEdgeRadius(g *sketch.Group, i int, bg byte) {
 	if g.Type != sketch.GroupFillet {
 		return
 	}
@@ -1266,21 +1266,21 @@ func (tw *TextWindow) showEdgeRadius(g *sketch.Group, i int, bg byte) {
 
 // ScreenChangeEdgeRadius edits the own radius of the shown fillet's
 // edge v.
-func (tw *TextWindow) ScreenChangeEdgeRadius(link int, v uint32) {
+func (tw *textWindow) ScreenChangeEdgeRadius(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	val, text, _ := g.EdgeRadius(int(v))
 	if text == "" {
 		text = fmt.Sprintf("%.8f", val/tw.ss.MmPerUnit())
 	}
 	tw.ShowEditControl(9, text)
-	tw.edit.meaning = EditEdgeRadius
+	tw.edit.meaning = editEdgeRadius
 	tw.edit.group = g.H
 	tw.edit.i = int(v)
 }
 
 // ScreenResetEdgeRadius gives the shown fillet's edge v the fillet's
 // radius again.
-func (tw *TextWindow) ScreenResetEdgeRadius(link int, v uint32) {
+func (tw *textWindow) ScreenResetEdgeRadius(link int, v uint32) {
 	tw.ss.setEdgeRadiusText(tw.shown.group, int(v), "")
 }
 
@@ -1300,7 +1300,7 @@ func (ss *Application) setEdgeRadiusText(hg core.HGroup, i int, s string) {
 }
 
 // showGroupItems lists a group's requests and constraints.
-func (tw *TextWindow) showGroupItems(g *sketch.Group) {
+func (tw *textWindow) showGroupItems(g *sketch.Group) {
 	sk := tw.ss.SK
 	parity := func(a int) byte {
 		if a&1 != 0 {
@@ -1350,7 +1350,7 @@ func (tw *TextWindow) showGroupItems(g *sketch.Group) {
 }
 
 // ScreenAllowRedundant allows the shown group redundant constraints.
-func (tw *TextWindow) ScreenAllowRedundant(link int, v uint32) {
+func (tw *textWindow) ScreenAllowRedundant(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
 
@@ -1358,19 +1358,19 @@ func (tw *TextWindow) ScreenAllowRedundant(link int, v uint32) {
 	g.AllowRedundant = true
 	ss.SK.MarkGroupDirty(tw.shown.group, false)
 
-	tw.shown.screen = ScreenGroupInfo
+	tw.shown.screen = screenGroupInfo
 	tw.Show()
 }
 
 // ShowGroupSolveInfo is the screen displayed when the sketch fails to
 // solve: what failed, and (if the problem is a singular Jacobian) the
 // constraints that could be removed to fix it.
-func (tw *TextWindow) ShowGroupSolveInfo() {
+func (tw *textWindow) ShowGroupSolveInfo() {
 	sk := tw.ss.SK
 	g := sk.Group(tw.shown.group)
 	if g.IsSolvedOkay() {
 		// Go back to the default group info screen
-		tw.shown.screen = ScreenGroupInfo
+		tw.shown.screen = screenGroupInfo
 		tw.Show()
 		return
 	}
@@ -1429,8 +1429,8 @@ func (tw *TextWindow) ShowGroupSolveInfo() {
 }
 
 // ScreenStepDimFinish edits the step dimension's final value.
-func (tw *TextWindow) ScreenStepDimFinish(link int, v uint32) {
-	tw.edit.meaning = EditStepDimFinish
+func (tw *textWindow) ScreenStepDimFinish(link int, v uint32) {
+	tw.edit.meaning = editStepDimFinish
 	var editValue string
 	if tw.stepDim.isDistance {
 		editValue = tw.ss.MmToString(tw.stepDim.finish, true)
@@ -1441,13 +1441,13 @@ func (tw *TextWindow) ScreenStepDimFinish(link int, v uint32) {
 }
 
 // ScreenStepDimSteps edits the number of steps.
-func (tw *TextWindow) ScreenStepDimSteps(link int, v uint32) {
-	tw.edit.meaning = EditStepDimSteps
+func (tw *textWindow) ScreenStepDimSteps(link int, v uint32) {
+	tw.edit.meaning = editStepDimSteps
 	tw.ShowEditControl(12, fmt.Sprintf("%d", tw.stepDim.steps))
 }
 
 // ScreenStepDimGo steps the dimension, solving at each step.
-func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
+func (tw *textWindow) ScreenStepDimGo(link int, v uint32) {
 	ss := tw.ss
 	hc := tw.shown.constraint
 	c := ss.SK.Constraint(hc)
@@ -1488,7 +1488,7 @@ func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
 			}
 			sd.time = time
 		} else {
-			ss.TW.GoToScreen(ScreenListOfGroups)
+			ss.TW.GoToScreen(screenListOfGroups)
 			ss.ScheduleShowTW()
 		}
 		ss.GW.Invalidate(false)
@@ -1498,11 +1498,11 @@ func (tw *TextWindow) ScreenStepDimGo(link int, v uint32) {
 
 // ShowStepDimension is the screen to step a dimension from its value to
 // a final one.
-func (tw *TextWindow) ShowStepDimension() {
+func (tw *textWindow) ShowStepDimension() {
 	ss := tw.ss
 	c := ss.SK.Constraint(tw.shown.constraint)
 	if c == nil {
-		tw.shown.screen = ScreenListOfGroups
+		tw.shown.screen = screenListOfGroups
 		tw.Show()
 		return
 	}
@@ -1527,11 +1527,11 @@ func (tw *TextWindow) ShowStepDimension() {
 }
 
 // ScreenChangeTangentArc edits the tangent arc options.
-func (tw *TextWindow) ScreenChangeTangentArc(link int, v uint32) {
+func (tw *textWindow) ScreenChangeTangentArc(link int, v uint32) {
 	ss := tw.ss
 	switch link {
 	case 'r':
-		tw.edit.meaning = EditTangentArcRadius
+		tw.edit.meaning = editTangentArcRadius
 		tw.ShowEditControl(3, ss.MmToString(ss.TangentArcRadius, true))
 
 	case 'a':
@@ -1542,7 +1542,7 @@ func (tw *TextWindow) ScreenChangeTangentArc(link int, v uint32) {
 }
 
 // ShowTangentArc is the screen for the tangent arc options.
-func (tw *TextWindow) ShowTangentArc() {
+func (tw *textWindow) ShowTangentArc() {
 	ss := tw.ss
 	tw.Printf(true, "%FtTANGENT ARC PARAMETERS%E")
 
@@ -1688,13 +1688,13 @@ func (ss *Application) setGroupText(hg core.HGroup, f sketch.GroupValue, s strin
 }
 
 // EditControlDone handles the text entered in the edit control.
-func (tw *TextWindow) EditControlDone(s string) {
+func (tw *textWindow) EditControlDone(s string) {
 	ss := tw.ss
 	sk := ss.SK
 	tw.edit.showAgain = false
 
 	switch tw.edit.meaning {
-	case EditTimesRepeated:
+	case editTimesRepeated:
 		if e := ss.exprFromString(s); e != nil {
 			g := sk.Group(tw.edit.group)
 			if !ss.setGroupText(g.H, sketch.GroupCopies, s) {
@@ -1716,7 +1716,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 			}
 		}
 
-	case EditGroupName:
+	case editGroupName:
 		if s == "" {
 			ss.Error("Group name cannot be empty")
 		} else {
@@ -1726,27 +1726,27 @@ func (tw *TextWindow) EditControlDone(s string) {
 			g.Name = s
 		}
 
-	case EditGroupScale:
+	case editGroupScale:
 		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupScale, s)
 		}
 
-	case EditHelixPitch: // stored in valB
+	case editHelixPitch: // stored in valB
 		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
 		}
 
-	case EditGroupDraft, EditChamferDistance2:
+	case editGroupDraft, editChamferDistance2:
 		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupValC, s)
 		}
 
-	case EditEdgeRadius:
+	case editEdgeRadius:
 		if e := ss.exprFromString(s); e != nil {
 			ss.setEdgeRadiusText(tw.edit.group, tw.edit.i, s)
 		}
 
-	case EditGroupColor:
+	case editGroupColor:
 		if x, y, z, ok := scanVector3(s); ok {
 			rgb := vec3(x, y, z).ClampWithin(0, 1)
 
@@ -1763,7 +1763,7 @@ func (tw *TextWindow) EditControlDone(s string) {
 			ss.Error("Bad format: specify color as r, g, b")
 		}
 
-	case EditGroupOpacity:
+	case editGroupOpacity:
 		if e := ss.exprFromString(s); e != nil {
 			alpha := ss.evalExpr(e)
 			if alpha < 0 || alpha > 1 {
@@ -1776,14 +1776,14 @@ func (tw *TextWindow) EditControlDone(s string) {
 			}
 		}
 
-	case EditTTFText:
+	case editTTFText:
 		ss.UndoRemember()
 		if r := sk.Request(tw.edit.request); r != nil {
 			r.Str = s
 			sk.MarkGroupDirty(r.Group, false)
 		}
 
-	case EditStepDimFinish:
+	case editStepDimFinish:
 		if e := ss.exprFromString(s); e != nil {
 			if tw.stepDim.isDistance {
 				tw.stepDim.finish = ss.ExprToMm(e)
@@ -1792,10 +1792,10 @@ func (tw *TextWindow) EditControlDone(s string) {
 			}
 		}
 
-	case EditStepDimSteps:
+	case editStepDimSteps:
 		tw.stepDim.steps = min(300, max(1, atoi(s)))
 
-	case EditTangentArcRadius:
+	case editTangentArcRadius:
 		if e := ss.exprFromString(s); e != nil {
 			if ss.evalExpr(e) < core.LengthEps {
 				ss.Error("Radius cannot be zero or negative.")
@@ -1845,6 +1845,6 @@ func (tw *TextWindow) EditControlDone(s string) {
 
 	if !tw.edit.showAgain {
 		tw.HideEditControl()
-		tw.edit.meaning = EditNothing
+		tw.edit.meaning = editNothing
 	}
 }

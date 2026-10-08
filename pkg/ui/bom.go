@@ -12,7 +12,7 @@ import (
 
 // ShowBillOfMaterials lists the parts the model places by linking files,
 // with a link to write them to a CSV file (roadmap 16.7).
-func (tw *TextWindow) ShowBillOfMaterials() {
+func (tw *textWindow) ShowBillOfMaterials() {
 	items := tw.ss.SK.BillOfMaterials()
 	tw.Printf(true, "%FtBILL OF MATERIALS%E")
 	if len(items) == 0 {
@@ -36,7 +36,7 @@ func (tw *TextWindow) ShowBillOfMaterials() {
 }
 
 // ScreenExportBOM asks where, and writes the bill of materials there.
-func (tw *TextWindow) ScreenExportBOM(link int, v uint32) {
+func (tw *textWindow) ScreenExportBOM(link int, v uint32) {
 	ss := tw.ss
 	dialog := ss.Platform.CreateSaveFileDialog(ss.GW.window)
 	dialog.AddFilters(platform.CsvFileFilters)

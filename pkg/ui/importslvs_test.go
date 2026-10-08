@@ -128,7 +128,7 @@ func TestImportSolveSpace(t *testing.T) {
 
 	p.FilePaths = []string{src, dst}
 	p.DialogResponses = []platform.Response{platform.ResponseYes}
-	ss.MenuFile(CmdImport)
+	ss.MenuFile(cmdImport)
 	dst += ".tlspr"
 	if ss.SaveFile != dst || ss.SK.Unsaved || len(ss.SK.Groups) <= 2 {
 		t.Fatalf("SaveFile %q, unsaved %v, %d groups", ss.SaveFile, ss.SK.Unsaved, len(ss.SK.Groups))
@@ -177,7 +177,7 @@ func TestImportSolveSpace(t *testing.T) {
 	// An unknown extension names the ones Import reads.
 	p.FilePaths = []string{filepath.Join(dir, "x.txt")}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	ss.MenuFile(CmdImport)
+	ss.MenuFile(cmdImport)
 	if d := lastDialog(t, p); !strings.Contains(dialogText(d), "try .dxf, .dwg or .slvs") {
 		t.Errorf("message %q", dialogText(d))
 	}

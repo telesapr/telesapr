@@ -15,7 +15,7 @@ func (ss *Application) MenuMate(id Command) {
 	var run func(d *api.Doc, a, b api.Entity)
 	var picked []uint32
 	switch id {
-	case CmdMateConcentric:
+	case cmdMateConcentric:
 		what, need = "concentric", "two circles or arcs"
 		run = func(d *api.Doc, a, b api.Entity) { d.Concentric(a, b) }
 		if gs.circlesOrArcs == 2 && gs.n == 2 {
@@ -23,7 +23,7 @@ func (ss *Application) MenuMate(id Command) {
 				picked = append(picked, h.V)
 			}
 		}
-	case CmdMateFlush:
+	case cmdMateFlush:
 		what, need = "flush", "two faces"
 		run = func(d *api.Doc, a, b api.Entity) { d.Flush(a, b) }
 		if gs.faces == 2 && gs.n == 2 {
@@ -31,7 +31,7 @@ func (ss *Application) MenuMate(id Command) {
 				picked = append(picked, h.V)
 			}
 		}
-	case CmdMateHinge:
+	case cmdMateHinge:
 		what, need = "hinge", "two line segments"
 		run = func(d *api.Doc, a, b api.Entity) { d.Hinge(a, b) }
 		if gs.lineSegments == 2 && gs.n == 2 {

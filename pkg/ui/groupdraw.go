@@ -33,10 +33,10 @@ func (ss *Application) groupActivate(g *sketch.Group) {
 }
 
 // drawMesh is Group::DrawMesh.
-func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas render.Canvas) {
+func (gw *graphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas render.Canvas) {
 	ss := gw.ss
 	sk := gw.sk()
-	if !gw.showShaded && gw.drawOccludedAs == OccludedVisible {
+	if !gw.showShaded && gw.drawOccludedAs == occludedVisible {
 		return
 	}
 
@@ -130,7 +130,7 @@ func (gw *GraphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 
 // drawGroup is Group::Draw: the mesh, edges and outlines, whether or
 // not the group is hidden.
-func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
+func (gw *graphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 	ss := gw.ss
 	regenerated := g.DisplayDirty
 	g.GenerateDisplayItems(gw.sk())
@@ -152,9 +152,9 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 		}
 		canvas.DrawOutlines(&g.DisplayOutlines, hcsEdge, drawAs)
 
-		if gw.drawOccludedAs != OccludedInvisible {
+		if gw.drawOccludedAs != occludedInvisible {
 			strokeHidden := ss.styleStroke(hstyle(core.StyleHiddenEdge))
-			if gw.drawOccludedAs == OccludedVisible {
+			if gw.drawOccludedAs == occludedVisible {
 				strokeHidden.StipplePattern = core.StippleContinuous
 			}
 			strokeHidden.Layer = render.LayerOccluded
@@ -175,7 +175,7 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 
 // drawPolyError is Group::DrawPolyError: where the sketch isn't a
 // closed, planar, non-intersecting contour.
-func (gw *GraphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
+func (gw *graphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
 	ss := gw.ss
 	camera := canvas.Camera()
 
@@ -235,7 +235,7 @@ func (gw *GraphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
 
 // drawFilledPaths is Group::DrawFilledPaths: the loops of styles with
 // a fill, and in the active group a dim fill of good contours.
-func (gw *GraphicsWindow) drawFilledPaths(g *sketch.Group, canvas render.Canvas) {
+func (gw *graphicsWindow) drawFilledPaths(g *sketch.Group, canvas render.Canvas) {
 	ss := gw.ss
 	for i := range g.BezierLoops.Sets {
 		sbls := &g.BezierLoops.Sets[i]
@@ -271,7 +271,7 @@ func (gw *GraphicsWindow) drawFilledPaths(g *sketch.Group, canvas render.Canvas)
 }
 
 // drawContourAreaLabels is Group::DrawContourAreaLabels.
-func (gw *GraphicsWindow) drawContourAreaLabels(g *sketch.Group, canvas render.Canvas) {
+func (gw *graphicsWindow) drawContourAreaLabels(g *sketch.Group, canvas render.Canvas) {
 	ss := gw.ss
 	camera := canvas.Camera()
 	gr := camera.ProjRight.ScaledBy(1 / camera.Scale)
@@ -334,7 +334,7 @@ func appearanceIndex(name string) int {
 }
 
 // ScreenChangeAppearance gives the shown group the v-th appearance.
-func (tw *TextWindow) ScreenChangeAppearance(link int, v uint32) {
+func (tw *textWindow) ScreenChangeAppearance(link int, v uint32) {
 	ss := tw.ss
 	g := ss.SK.Group(tw.shown.group)
 	if g == nil || int(v) >= len(render.MaterialNames) {

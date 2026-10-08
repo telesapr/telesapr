@@ -275,10 +275,10 @@ func (c *ScriptConsole) Stop() {
 func (ss *Application) MenuScript(id Command) {
 	c := ss.Console()
 	switch id {
-	case CmdScriptConsole:
+	case cmdScriptConsole:
 		c.SetVisible(!c.Visible())
 
-	case CmdScriptRun:
+	case cmdScriptRun:
 		dialog := ss.Platform.CreateOpenFileDialog(ss.GW.window)
 		dialog.AddFilters(platform.ScriptFileFilters)
 		dialog.ThawChoices(ss.Settings, "Script")
@@ -289,10 +289,10 @@ func (ss *Application) MenuScript(id Command) {
 		c.SetVisible(true)
 		c.RunFile(dialog.Filename())
 
-	case CmdScriptStop:
+	case cmdScriptStop:
 		c.Stop()
 
-	case CmdScriptAgent:
+	case cmdScriptAgent:
 		allow := !ss.AgentListening()
 		if err := ss.AllowAgent(allow); err != nil {
 			ss.Error("AI connections can't be allowed: %v", err)

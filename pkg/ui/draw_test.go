@@ -118,7 +118,7 @@ var drawFixtures = []string{
 	"request/workplane/normal.slvs",
 }
 
-// TestDrawCalls compares every canvas call GraphicsWindow.Draw makes
+// TestDrawCalls compares every canvas call graphicsWindow.Draw makes
 // with the golden (testdata/draw, first recorded from SolveSpace), in the
 // default view and a rotated one, bit for bit.
 func TestDrawCalls(t *testing.T) {

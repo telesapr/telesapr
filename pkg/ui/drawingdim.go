@@ -473,7 +473,7 @@ func (ss *Application) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d *
 
 // selectedFaceIDs are the identities of the selected faces of the
 // solid, whether an entity names them or not, after GroupSelection.
-func (gw *GraphicsWindow) selectedFaceIDs() []srf.FaceID {
+func (gw *graphicsWindow) selectedFaceIDs() []srf.FaceID {
 	var out []srf.FaceID
 	for _, h := range gw.gs.face {
 		out = append(out, srf.FaceID(h.V))

@@ -102,7 +102,7 @@ func (ss *Application) Load(filename string) error {
 }
 
 // LoadFromFile reads filename into a new sketch; the error is what to
-// tell the user, ErrDeclined when they gave up at a missing linked
+// tell the user, errDeclined when they gave up at a missing linked
 // file. What was left out of the file is shown as it is read.
 func (ss *Application) LoadFromFile(filename string) error {
 	ss.AllConsistent = false
@@ -120,7 +120,7 @@ func (ss *Application) LoadFromFile(filename string) error {
 	switch {
 	case errors.Is(err, tlspr.ErrCancelled):
 		// The user gave up at a missing linked file.
-		return ErrDeclined
+		return errDeclined
 	case errors.As(err, &ve):
 		return fmt.Errorf("the file '%s' was saved by a newer version of the program, in format "+
 			"version %d. This version reads files up to version %d", filename, ve.File, ve.Reader)
@@ -174,15 +174,15 @@ func (ss *Application) AddToRecentList(filename string) {
 			break
 		}
 	}
-	if len(ss.RecentFiles) > MaxRecent {
-		ss.RecentFiles = append(ss.RecentFiles[:MaxRecent], ss.RecentFiles[MaxRecent+1:]...)
+	if len(ss.RecentFiles) > maxRecent {
+		ss.RecentFiles = append(ss.RecentFiles[:maxRecent], ss.RecentFiles[maxRecent+1:]...)
 	}
 	ss.RecentFiles = append([]string{filename}, ss.RecentFiles...)
 	ss.GW.PopulateRecentFiles()
 }
 
 // SaveToChosenFile saves the sketch, asking for a file name for a new
-// sketch or for Save As; ErrDeclined when the user gave up.
+// sketch or for Save As; errDeclined when the user gave up.
 func (ss *Application) SaveToChosenFile(saveAs bool) error {
 	newSaveFile := ss.SaveFile
 
@@ -194,7 +194,7 @@ func (ss *Application) SaveToChosenFile(saveAs bool) error {
 			dialog.SetFilename(newSaveFile)
 		}
 		if !dialog.RunModal() {
-			return ErrDeclined
+			return errDeclined
 		}
 		dialog.FreezeChoices(ss.Settings, "Sketch")
 		newSaveFile = modelFileName(dialog.Filename())
@@ -354,7 +354,7 @@ func (ss *Application) MenuFile(id Command) {
 	settings := ss.Settings
 
 	switch id {
-	case CmdNew:
+	case cmdNew:
 		if !ss.OkayToStartNewFile() {
 			break
 		}
@@ -362,7 +362,7 @@ func (ss *Application) MenuFile(id Command) {
 		ss.NewFile()
 		ss.AfterNewFile()
 
-	case CmdOpen:
+	case cmdOpen:
 		if !ss.OkayToStartNewFile() {
 			break
 		}
@@ -374,17 +374,17 @@ func (ss *Application) MenuFile(id Command) {
 			ss.Report(ss.Load(dialog.Filename()))
 		}
 
-	case CmdSave:
+	case cmdSave:
 		ss.Report(ss.SaveToChosenFile(false))
 
-	case CmdSaveAs:
+	case cmdSaveAs:
 		ss.Report(ss.SaveToChosenFile(true))
 
-	case CmdExportImage, CmdExportView, CmdExportWireframe, CmdExportSection,
-		CmdExportMesh, CmdExportSurfaces, CmdImport:
+	case cmdExportImage, cmdExportView, cmdExportWireframe, cmdExportSection,
+		cmdExportMesh, cmdExportSurfaces, cmdImport:
 		ss.menuExport(id)
 
-	case CmdExit:
+	case cmdExit:
 		if !ss.OkayToStartNewFile() {
 			break
 		}
@@ -414,40 +414,40 @@ func (ss *Application) exportDialog(filters []platform.FileFilter, key string) (
 // menuExport runs the File menu's export and import commands.
 func (ss *Application) menuExport(id Command) {
 	switch id {
-	case CmdExportImage:
+	case cmdExportImage:
 		if filename, ok := ss.exportDialog(platform.RasterFileFilters, "ExportImage"); ok {
 			ss.ExportAsPngTo(filename)
 		}
 
-	case CmdExportView:
+	case cmdExportView:
 		ss.menuExportView()
 
-	case CmdExportWireframe:
+	case cmdExportWireframe:
 		if filename, ok := ss.exportDialog(platform.Vector3dFileFilters, "ExportWireframe"); ok {
 			ss.Report(ss.ExportViewOrWireframeTo(filename, true))
 		}
 
-	case CmdExportSection:
+	case cmdExportSection:
 		if filename, ok := ss.exportDialog(platform.VectorFileFilters, "ExportSection"); ok {
 			ss.Report(ss.ExportSectionTo(filename))
 		}
 
-	case CmdExportMesh:
+	case cmdExportMesh:
 		if filename, ok := ss.exportDialog(platform.MeshFileFilters, "ExportMesh"); ok {
 			ss.Report(ss.ExportMeshTo(filename))
 		}
 
-	case CmdExportSurfaces:
+	case cmdExportSurfaces:
 		if filename, ok := ss.exportDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
 			ss.Report(ss.ExportSurfacesTo(filename))
 		}
 
-	case CmdImport:
+	case cmdImport:
 		ss.menuImport()
 	}
 }
 
-// menuExportView runs the File menu's CmdExportView.
+// menuExportView runs the File menu's cmdExportView.
 func (ss *Application) menuExportView() {
 	gw := ss.GW
 
@@ -458,7 +458,7 @@ func (ss *Application) menuExportView() {
 
 	// If the user is exporting something where it would be
 	// inappropriate to include the constraints, then warn.
-	if gw.showConstraints != SCMNoShow &&
+	if gw.showConstraints != sCMNoShow &&
 		(hasExtension(filename, "txt") || math.Abs(ss.ExportOffset) > core.LengthEps) {
 		ss.Message("Constraints are currently shown, and will be exported " +
 			"in the toolpath. This is probably not what you want; " +
@@ -469,7 +469,7 @@ func (ss *Application) menuExportView() {
 	ss.Report(ss.ExportViewOrWireframeTo(filename, false))
 }
 
-// menuImport runs the File menu's CmdImport.
+// menuImport runs the File menu's cmdImport.
 func (ss *Application) menuImport() {
 	settings := ss.Settings
 	gw := ss.GW

@@ -222,7 +222,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 	ss.GenerateAll(sketch.GenerateAll)
 
 	var sm *srf.SMesh
-	if gw.showShaded || gw.drawOccludedAs != OccludedVisible {
+	if gw.showShaded || gw.drawOccludedAs != occludedVisible {
 		g := sk.Group(gw.activeGroupH())
 		g.GenerateDisplayItems(sk)
 		sm = &g.DisplayMesh
@@ -255,14 +255,14 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 		}
 	}
 
-	if gw.showConstraints != SCMNoShow {
+	if gw.showConstraints != sCMNoShow {
 		if !out.OutputConstraints(sk.Constraints) {
 			canvas := &getEdgesCanvas{camera: gw.Camera(), edges: &edges}
 
 			// The output format cannot represent constraints directly,
 			// so convert them to edges.
 			for i := range sk.Constraints {
-				gw.drawConstraint(&sk.Constraints[i], ConstraintDrawDefault, canvas)
+				gw.drawConstraint(&sk.Constraints[i], constraintDrawDefault, canvas)
 			}
 		}
 	}
@@ -443,13 +443,13 @@ func (ss *Application) ExportLinesAndMesh(sel *srf.SEdgeList, sbl *srf.SBezierLi
 			edges.AddEdge(se.A, se.B, se.AuxA, 0, 0)
 			root.OcclusionTestLine(se, &edges, cnt)
 			switch gw.drawOccludedAs {
-			case OccludedStippled:
+			case occludedStippled:
 				for k := range edges.Edges {
 					if edges.Edges[k].Tag == 1 {
 						edges.Edges[k].AuxA = core.StyleHiddenEdge
 					}
 				}
-			case OccludedInvisible:
+			case occludedInvisible:
 				kept := edges.Edges[:0]
 				for _, e := range edges.Edges {
 					if e.Tag == 0 {

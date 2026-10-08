@@ -101,7 +101,7 @@ func compareTextwin(t *testing.T, want, got string) {
 }
 
 // cellKey is the harness's CellKey.
-func (tw *TextWindow) cellKey(r, c int) string {
+func (tw *textWindow) cellKey(r, c int) string {
 	m := &tw.lines[r].meta[c]
 	key := fmt.Sprintf("%02x %02x", m.fg, m.bg)
 	if m.bg == 'z' {
@@ -109,7 +109,7 @@ func (tw *TextWindow) cellKey(r, c int) string {
 	}
 	key += fmt.Sprintf(" %d", m.link)
 	if m.link != 0 {
-		b2i := func(f LinkFunction) int {
+		b2i := func(f linkFunction) int {
 			if f != nil {
 				return 1
 			}
@@ -122,7 +122,7 @@ func (tw *TextWindow) cellKey(r, c int) string {
 
 // sameCellKey is cellKey(r, c0) == cellKey(r, c1), without formatting
 // either.
-func (tw *TextWindow) sameCellKey(r, c0, c1 int) bool {
+func (tw *textWindow) sameCellKey(r, c0, c1 int) bool {
 	a, b := &tw.lines[r].meta[c0], &tw.lines[r].meta[c1]
 	if a.fg != b.fg || a.bg != b.bg || a.link != b.link {
 		return false
@@ -134,10 +134,10 @@ func (tw *TextWindow) sameCellKey(r, c0, c1 int) bool {
 }
 
 // dumpRows is the harness's DumpRows.
-func (tw *TextWindow) dumpRows(b *strings.Builder) {
+func (tw *textWindow) dumpRows(b *strings.Builder) {
 	for r := range tw.rows {
 		row := &tw.lines[r]
-		end := MaxCols
+		end := maxCols
 		for end > 0 && row.text[end-1] == ' ' {
 			end--
 		}
@@ -162,9 +162,9 @@ func (tw *TextWindow) dumpRows(b *strings.Builder) {
 		}
 		b.WriteByte('\n')
 		c0 := 0
-		for c0 < MaxCols {
+		for c0 < maxCols {
 			c1 := c0 + 1
-			for c1 < MaxCols && tw.sameCellKey(r, c0, c1) {
+			for c1 < maxCols && tw.sameCellKey(r, c0, c1) {
 				c1++
 			}
 			fmt.Fprintf(b, " %d-%d %s\n", c0, c1-1, tw.cellKey(r, c0))
@@ -221,14 +221,14 @@ func textwinScreensFor(t testing.TB, path string) string {
 		}
 	}
 
-	showScreen("groups", ScreenListOfGroups)
+	showScreen("groups", screenListOfGroups)
 
 	groups := append([]core.HGroup(nil), sk.GroupOrder...)
 	for _, hg := range groups {
 		tw.shown.group = hg
-		showScreen(fmt.Sprintf("group %x", hg.V), ScreenGroupInfo)
+		showScreen(fmt.Sprintf("group %x", hg.V), screenGroupInfo)
 		tw.shown.group = hg
-		showScreen(fmt.Sprintf("solve %x", hg.V), ScreenGroupSolveInfo)
+		showScreen(fmt.Sprintf("solve %x", hg.V), screenGroupSolveInfo)
 	}
 
 	for _, hg := range groups {
@@ -257,25 +257,25 @@ func textwinScreensFor(t testing.TB, path string) string {
 			g.SkipFirst = i%2 == 1
 			g.BooleanFailed = i == 5
 			tw.shown.group = hg
-			showScreen(fmt.Sprintf("variant %x %d", hg.V, i), ScreenGroupInfo)
+			showScreen(fmt.Sprintf("variant %x %d", hg.V, i), screenGroupInfo)
 		}
 		*g = saved
 	}
 
-	showScreen("configuration", ScreenConfiguration)
-	showScreen("styles", ScreenListOfStyles)
+	showScreen("configuration", screenConfiguration)
+	showScreen("styles", screenListOfStyles)
 	var styles []core.HStyle
 	for i := range sk.Styles {
 		styles = append(styles, sk.Styles[i].H)
 	}
 	for _, hs := range styles {
 		tw.shown.style = hs
-		showScreen(fmt.Sprintf("style %x", hs.V), ScreenStyleInfo)
+		showScreen(fmt.Sprintf("style %x", hs.V), screenStyleInfo)
 	}
-	showScreen("view", ScreenEditView)
-	showScreen("tangent", ScreenTangentArc)
+	showScreen("view", screenEditView)
+	showScreen("tangent", screenTangentArc)
 	ss.TangentArcManual = !ss.TangentArcManual
-	showScreen("tangent manual", ScreenTangentArc)
+	showScreen("tangent manual", screenTangentArc)
 	ss.TangentArcManual = !ss.TangentArcManual
 
 	tw.shown.paste.times = 3
@@ -283,7 +283,7 @@ func textwinScreensFor(t testing.TB, path string) string {
 	tw.shown.paste.theta = 0.5
 	tw.shown.paste.origin = geom.Vector{X: 0.25, Y: 0.75}
 	tw.shown.paste.scale = -1.5
-	showScreen("paste", ScreenPasteTransformed)
+	showScreen("paste", screenPasteTransformed)
 
 	for i := range sk.Constraints {
 		c := &sk.Constraints[i]
@@ -301,10 +301,10 @@ func textwinScreensFor(t testing.TB, path string) string {
 			tw.stepDim.isDistance = true
 		}
 		tw.shown.constraint = c.H
-		tw.shown.screen = ScreenStepDimension
+		tw.shown.screen = screenStepDimension
 		tw.Show()
 		for r := range tw.lines {
-			for col := range MaxCols {
+			for col := range maxCols {
 				tw.lines[r].meta[col].data = 0
 			}
 		}
@@ -312,12 +312,12 @@ func textwinScreensFor(t testing.TB, path string) string {
 		tw.dumpRows(&b)
 		break
 	}
-	tw.shown.screen = ScreenListOfGroups
+	tw.shown.screen = screenListOfGroups
 
-	gw.pending.operation = PendingCommand
+	gw.pending.operation = pendingCommand
 	gw.pending.description = "click first point of line segment"
 	dump("pending")
-	gw.pending.operation = PendingNone
+	gw.pending.operation = pendingNone
 	gw.pending.description = ""
 
 	var entities []core.HEntity
@@ -359,10 +359,10 @@ func textwinScreensFor(t testing.TB, path string) string {
 		break
 	}
 	tw.shown.style = hs
-	showScreen("custom style", ScreenStyleInfo)
+	showScreen("custom style", screenStyleInfo)
 	gw.ClearSelection()
-	showScreen("custom style info", ScreenStyleInfo)
-	showScreen("styles with custom", ScreenListOfStyles)
+	showScreen("custom style info", screenStyleInfo)
+	showScreen("styles with custom", screenListOfStyles)
 
 	for i := range sk.Constraints {
 		c := &sk.Constraints[i]
@@ -373,9 +373,9 @@ func textwinScreensFor(t testing.TB, path string) string {
 		dup.H = core.HConstraint{}
 		sk.AddConstraintRemember(&dup, false)
 		ss.GenerateAll(sketch.GenerateAll)
-		showScreen("failed groups", ScreenListOfGroups)
+		showScreen("failed groups", screenListOfGroups)
 		tw.shown.group = dup.Group
-		showScreen("failed solve", ScreenGroupSolveInfo)
+		showScreen("failed solve", screenGroupSolveInfo)
 		break
 	}
 	return b.String()

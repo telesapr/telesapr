@@ -212,7 +212,7 @@ func (h *ScriptHost) AddGroup(g sketch.Group) core.HGroup {
 	return h.ss.addNewGroup(g, false)
 }
 
-// DeleteGroup is TextWindow.ScreenDeleteGroup for any group.
+// DeleteGroup is textWindow.ScreenDeleteGroup for any group.
 func (h *ScriptHost) DeleteGroup(hg core.HGroup) {
 	h.ss.deleteGroup(hg)
 }

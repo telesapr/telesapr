@@ -39,18 +39,18 @@ func (ss *Application) MenuThread() {
 	t.options.Spec = spec
 	t.options.Length = math.Ceil(1.5 * spec.Diameter)
 	gw.ClearSelection()
-	ss.TW.GoToScreen(ScreenThread)
+	ss.TW.GoToScreen(screenThread)
 	gw.ForceTextWindowShown()
 	ss.ScheduleShowTW()
 }
 
 // EditControlDoneForThread takes an edited thread parameter, and
 // reports whether the edit was one of those.
-func (tw *TextWindow) EditControlDoneForThread(s string) bool {
+func (tw *textWindow) EditControlDoneForThread(s string) bool {
 	ss := tw.ss
 	t := &tw.shown.thread
 	switch tw.edit.meaning {
-	case EditThreadDesignation:
+	case editThreadDesignation:
 		spec, err := thread.Parse(s)
 		if err != nil {
 			ss.Report(err)
@@ -59,7 +59,7 @@ func (tw *TextWindow) EditControlDoneForThread(s string) bool {
 		t.designation = spec.String()
 		t.options.Spec = spec
 
-	case EditThreadLength:
+	case editThreadLength:
 		if e := ss.exprFromString(s); e != nil {
 			if v := ss.ExprToMm(e); v < core.LengthEps {
 				ss.Error("Length cannot be zero or negative.")
@@ -68,7 +68,7 @@ func (tw *TextWindow) EditControlDoneForThread(s string) bool {
 			}
 		}
 
-	case EditThreadClearance:
+	case editThreadClearance:
 		if e := ss.exprFromString(s); e != nil {
 			t.options.Clearance = ss.ExprToMm(e)
 		}
@@ -80,19 +80,19 @@ func (tw *TextWindow) EditControlDoneForThread(s string) bool {
 }
 
 // ScreenChangeThread edits a thread parameter.
-func (tw *TextWindow) ScreenChangeThread(link int, v uint32) {
+func (tw *textWindow) ScreenChangeThread(link int, v uint32) {
 	ss := tw.ss
 	t := &tw.shown.thread
 	switch link {
 	case 'd':
 		tw.ShowEditControl(14, t.designation)
-		tw.edit.meaning = EditThreadDesignation
+		tw.edit.meaning = editThreadDesignation
 	case 'l':
 		tw.ShowEditControl(14, ss.MmToString(t.options.Length, true))
-		tw.edit.meaning = EditThreadLength
+		tw.edit.meaning = editThreadLength
 	case 'c':
 		tw.ShowEditControl(14, ss.MmToString(t.options.Clearance, true))
-		tw.edit.meaning = EditThreadClearance
+		tw.edit.meaning = editThreadClearance
 	case 'e':
 		t.options.Internal = false
 	case 'i':
@@ -105,7 +105,7 @@ func (tw *TextWindow) ScreenChangeThread(link int, v uint32) {
 }
 
 // ScreenMakeThread makes the thread.
-func (tw *TextWindow) ScreenMakeThread(link int, v uint32) {
+func (tw *textWindow) ScreenMakeThread(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	t := &tw.shown.thread
@@ -135,7 +135,7 @@ func (tw *TextWindow) ScreenMakeThread(link int, v uint32) {
 }
 
 // ShowThread is the screen to make a screw thread.
-func (tw *TextWindow) ShowThread() {
+func (tw *textWindow) ShowThread() {
 	ss := tw.ss
 	t := &tw.shown.thread
 	o := &t.options

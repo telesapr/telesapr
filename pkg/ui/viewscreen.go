@@ -9,7 +9,7 @@ import (
 )
 
 // ShowEditView is the screen with the view's parameters.
-func (tw *TextWindow) ShowEditView() {
+func (tw *textWindow) ShowEditView() {
 	ss := tw.ss
 	view := &ss.GW.view
 	tw.Printf(true, "%Ft3D VIEW PARAMETERS%E")
@@ -62,68 +62,68 @@ func (tw *TextWindow) ShowEditView() {
 		ss.MmToString(ss.ExplodeDistance, false), lf(tw.ScreenChangeExplodeDistance), 0)
 }
 
-func (tw *TextWindow) ScreenChangeViewScale(link int, v uint32) {
-	tw.edit.meaning = EditViewScale
+func (tw *textWindow) ScreenChangeViewScale(link int, v uint32) {
+	tw.edit.meaning = editViewScale
 	tw.ShowEditControl(3, fmt.Sprintf("%.3f", tw.ss.GW.view.Scale*tw.ss.MmPerUnit()))
 }
 
-func (tw *TextWindow) ScreenChangeViewToFullScale(link int, v uint32) {
+func (tw *textWindow) ScreenChangeViewToFullScale(link int, v uint32) {
 	tw.ss.GW.view.Scale = tw.ss.GW.window.PixelDensity() / 25.4
 }
 
-func (tw *TextWindow) ScreenChangeViewOrigin(link int, v uint32) {
+func (tw *textWindow) ScreenChangeViewOrigin(link int, v uint32) {
 	ss := tw.ss
 	o := ss.GW.view.Offset
 	editValue := fmt.Sprintf("%s, %s, %s",
 		ss.MmToString(-o.X, true), ss.MmToString(-o.Y, true), ss.MmToString(-o.Z, true))
 
-	tw.edit.meaning = EditViewOrigin
+	tw.edit.meaning = editViewOrigin
 	tw.ShowEditControl(3, editValue)
 }
 
-func (tw *TextWindow) ScreenChangeViewProjection(link int, v uint32) {
+func (tw *textWindow) ScreenChangeViewProjection(link int, v uint32) {
 	r := tw.ss.GW.view.ProjRight
 	editValue := fmt.Sprintf("%.3f, %.3f, %.3f", r.X, r.Y, r.Z)
-	tw.edit.meaning = EditViewProjRight
+	tw.edit.meaning = editViewProjRight
 	tw.ShowEditControl(10, editValue)
 }
 
-func (tw *TextWindow) ScreenChangeLightDirection(link int, v uint32) {
+func (tw *textWindow) ScreenChangeLightDirection(link int, v uint32) {
 	d := tw.ss.LightDir[v]
 	tw.ShowEditControl(8, fmt.Sprintf("%.2f, %.2f, %.2f", d.X, d.Y, d.Z))
-	tw.edit.meaning = EditLightDirection
+	tw.edit.meaning = editLightDirection
 	tw.edit.i = int(v)
 }
 
-func (tw *TextWindow) ScreenChangeLightIntensity(link int, v uint32) {
+func (tw *textWindow) ScreenChangeLightIntensity(link int, v uint32) {
 	tw.ShowEditControl(31, fmt.Sprintf("%.2f", tw.ss.LightIntensity[v]))
-	tw.edit.meaning = EditLightIntensity
+	tw.edit.meaning = editLightIntensity
 	tw.edit.i = int(v)
 }
 
-func (tw *TextWindow) ScreenChangeLightAmbient(link int, v uint32) {
+func (tw *textWindow) ScreenChangeLightAmbient(link int, v uint32) {
 	tw.ShowEditControl(31, fmt.Sprintf("%.2f", tw.ss.AmbientIntensity))
-	tw.edit.meaning = EditLightAmbient
+	tw.edit.meaning = editLightAmbient
 	tw.edit.i = 0
 }
 
-func (tw *TextWindow) ScreenChangeCameraTangent(link int, v uint32) {
+func (tw *textWindow) ScreenChangeCameraTangent(link int, v uint32) {
 	tw.ShowEditControl(3, fmt.Sprintf("%.3f", 1000*tw.ss.CameraTangentSetting))
-	tw.edit.meaning = EditCameraTangent
+	tw.edit.meaning = editCameraTangent
 }
 
-func (tw *TextWindow) ScreenChangeExplodeDistance(link int, v uint32) {
+func (tw *textWindow) ScreenChangeExplodeDistance(link int, v uint32) {
 	tw.ShowEditControl(3, tw.ss.MmToString(tw.ss.ExplodeDistance, true))
-	tw.edit.meaning = EditExplodeDistance
+	tw.edit.meaning = editExplodeDistance
 }
 
 // EditControlDoneForView takes an edited view parameter, and reports
 // whether the edit was one of the view's.
-func (tw *TextWindow) EditControlDoneForView(s string) bool {
+func (tw *textWindow) EditControlDoneForView(s string) bool {
 	ss := tw.ss
 	view := &ss.GW.view
 	switch tw.edit.meaning {
-	case EditViewScale:
+	case editViewScale:
 		if e := ss.exprFromString(s); e != nil {
 			v := ss.evalExpr(e) / ss.MmPerUnit()
 			if v > core.LengthEps {
@@ -133,7 +133,7 @@ func (tw *TextWindow) EditControlDoneForView(s string) bool {
 			}
 		}
 
-	case EditViewOrigin:
+	case editViewOrigin:
 		if x, y, z, ok := scanVector3(s); ok {
 			pt := vec3(x, y, z).ScaledBy(ss.MmPerUnit())
 			view.Offset = pt.ScaledBy(-1)
@@ -141,17 +141,17 @@ func (tw *TextWindow) EditControlDoneForView(s string) bool {
 			ss.Error("Bad format: specify x, y, z")
 		}
 
-	case EditViewProjRight, EditViewProjUp:
+	case editViewProjRight, editViewProjUp:
 		x, y, z, ok := scanVector3(s)
 		if !ok {
 			ss.Error("Bad format: specify x, y, z")
 			break
 		}
 		pt := vec3(x, y, z)
-		if tw.edit.meaning == EditViewProjRight {
+		if tw.edit.meaning == editViewProjRight {
 			view.ProjRight = pt
 			ss.GW.NormalizeProjectionVectors()
-			tw.edit.meaning = EditViewProjUp
+			tw.edit.meaning = editViewProjUp
 			tw.HideEditControl()
 			u := view.ProjUp
 			tw.ShowEditControl(10, fmt.Sprintf("%.3f, %.3f, %.3f", u.X, u.Y, u.Z), tw.editControl.halfRow+2)

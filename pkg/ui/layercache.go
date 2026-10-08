@@ -53,7 +53,7 @@ type persistentLayer struct {
 	onHit    func() // for tests: told of each restored frame
 }
 
-func (gw *GraphicsWindow) persistentKeyFor(canvas render.Canvas, lighting render.Lighting) persistentKey {
+func (gw *graphicsWindow) persistentKeyFor(canvas render.Canvas, lighting render.Lighting) persistentKey {
 	section, sectionOn := gw.sectionKeep()
 	return persistentKey{
 		section:     section,
@@ -78,7 +78,7 @@ func (gw *GraphicsWindow) persistentKeyFor(canvas render.Canvas, lighting render
 // drawPersistentLayer draws the snap grid and DrawPersistent, or puts
 // back their pixels from the last frame when nothing they depend on has
 // changed.
-func (gw *GraphicsWindow) drawPersistentLayer(canvas render.Canvas) {
+func (gw *graphicsWindow) drawPersistentLayer(canvas render.Canvas) {
 	lc, ok := canvas.(layerCanvas)
 	ok = ok && !gw.persistent.disabled
 	var key persistentKey

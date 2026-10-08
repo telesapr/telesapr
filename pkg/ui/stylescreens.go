@@ -63,7 +63,7 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 	gw.Invalidate(false)
 
 	// And show that style's info screen in the text window.
-	ss.TW.GoToScreen(ScreenStyleInfo)
+	ss.TW.GoToScreen(screenStyleInfo)
 	ss.TW.shown.style = core.HStyle{V: v}
 	ss.ScheduleShowTW()
 }
@@ -76,38 +76,38 @@ func (ss *Application) LoadFactoryDefaultStyles() {
 }
 
 // ScreenShowListOfStyles shows the list of styles.
-func (tw *TextWindow) ScreenShowListOfStyles(link int, v uint32) {
-	tw.GoToScreen(ScreenListOfStyles)
+func (tw *textWindow) ScreenShowListOfStyles(link int, v uint32) {
+	tw.GoToScreen(screenListOfStyles)
 }
 
 // ScreenShowStyleInfo shows one style.
-func (tw *TextWindow) ScreenShowStyleInfo(link int, v uint32) {
-	tw.ss.GW.MenuEdit(CmdUnselectAll)
-	tw.GoToScreen(ScreenStyleInfo)
+func (tw *textWindow) ScreenShowStyleInfo(link int, v uint32) {
+	tw.ss.GW.MenuEdit(cmdUnselectAll)
+	tw.GoToScreen(screenStyleInfo)
 	tw.shown.style = core.HStyle{V: v}
 }
 
 // ScreenLoadFactoryDefaultStyles resets the default styles.
-func (tw *TextWindow) ScreenLoadFactoryDefaultStyles(link int, v uint32) {
+func (tw *textWindow) ScreenLoadFactoryDefaultStyles(link int, v uint32) {
 	tw.ss.LoadFactoryDefaultStyles()
-	tw.GoToScreen(ScreenListOfStyles)
+	tw.GoToScreen(screenListOfStyles)
 	tw.ss.GW.persistentDirty = true
 }
 
 // ScreenCreateCustomStyle adds a custom style.
-func (tw *TextWindow) ScreenCreateCustomStyle(link int, v uint32) {
+func (tw *textWindow) ScreenCreateCustomStyle(link int, v uint32) {
 	tw.ss.CreateCustomStyle(true)
 }
 
 // ScreenChangeBackgroundColor edits the background colour.
-func (tw *TextWindow) ScreenChangeBackgroundColor(link int, v uint32) {
+func (tw *textWindow) ScreenChangeBackgroundColor(link int, v uint32) {
 	rgb := tw.ss.BackgroundColor
 	tw.ShowEditControlWithColorPicker(3, rgb)
-	tw.edit.meaning = EditBackgroundColor
+	tw.edit.meaning = editBackgroundColor
 }
 
 // ShowListOfStyles is the screen with every style.
-func (tw *TextWindow) ShowListOfStyles() {
+func (tw *textWindow) ShowListOfStyles() {
 	ss := tw.ss
 	tw.Printf(true, "%Ft color  style-name")
 
@@ -141,16 +141,16 @@ func (tw *TextWindow) ShowListOfStyles() {
 }
 
 // ScreenChangeStyleName renames a style.
-func (tw *TextWindow) ScreenChangeStyleName(link int, v uint32) {
+func (tw *textWindow) ScreenChangeStyleName(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
 	tw.ShowEditControl(12, s.Name)
 	tw.edit.style = hs
-	tw.edit.meaning = EditStyleName
+	tw.edit.meaning = editStyleName
 }
 
 // ScreenDeleteStyle deletes a style.
-func (tw *TextWindow) ScreenDeleteStyle(link int, v uint32) {
+func (tw *textWindow) ScreenDeleteStyle(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
 	hs := core.HStyle{V: v}
@@ -162,12 +162,12 @@ func (tw *TextWindow) ScreenDeleteStyle(link int, v uint32) {
 			break
 		}
 	}
-	tw.GoToScreen(ScreenListOfStyles)
+	tw.GoToScreen(screenListOfStyles)
 	ss.GW.Invalidate(false)
 }
 
 // ScreenChangeStylePatternType sets a style's stipple pattern.
-func (tw *TextWindow) ScreenChangeStylePatternType(link int, v uint32) {
+func (tw *textWindow) ScreenChangeStylePatternType(link int, v uint32) {
 	s := tw.ss.SK.StyleGet(core.HStyle{V: v})
 	s.StippleType = core.StipplePattern(link - 1)
 	tw.ss.GW.persistentDirty = true
@@ -175,7 +175,7 @@ func (tw *TextWindow) ScreenChangeStylePatternType(link int, v uint32) {
 
 // ScreenChangeStyleMetric edits a style's width, stipple period or text
 // height.
-func (tw *TextWindow) ScreenChangeStyleMetric(link int, v uint32) {
+func (tw *textWindow) ScreenChangeStyleMetric(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
 	var val float64
@@ -187,19 +187,19 @@ func (tw *TextWindow) ScreenChangeStyleMetric(link int, v uint32) {
 		val = s.TextHeight
 		units = s.TextHeightAs
 		col = 10
-		meaning = EditStyleTextHeight
+		meaning = editStyleTextHeight
 
 	case 's':
 		val = s.StippleScale
 		units = s.WidthAs
 		col = 17
-		meaning = EditStyleStipplePeriod
+		meaning = editStyleStipplePeriod
 
 	case 'w', 'W':
 		val = s.Width
 		units = s.WidthAs
 		col = 9
-		meaning = EditStyleWidth
+		meaning = editStyleWidth
 
 	default:
 		panic("ui: unexpected link")
@@ -217,16 +217,16 @@ func (tw *TextWindow) ScreenChangeStyleMetric(link int, v uint32) {
 }
 
 // ScreenChangeStyleTextAngle edits a style's text angle.
-func (tw *TextWindow) ScreenChangeStyleTextAngle(link int, v uint32) {
+func (tw *textWindow) ScreenChangeStyleTextAngle(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
 	tw.ShowEditControl(9, fmt.Sprintf("%.2f", s.TextAngle))
 	tw.edit.style = hs
-	tw.edit.meaning = EditStyleTextAngle
+	tw.edit.meaning = editStyleTextAngle
 }
 
 // ScreenChangeStyleColor edits a style's stroke or fill colour.
-func (tw *TextWindow) ScreenChangeStyleColor(link int, v uint32) {
+func (tw *textWindow) ScreenChangeStyleColor(link int, v uint32) {
 	hs := core.HStyle{V: v}
 	s := tw.ss.SK.StyleGet(hs)
 	// Same function used for stroke and fill colors
@@ -234,10 +234,10 @@ func (tw *TextWindow) ScreenChangeStyleColor(link int, v uint32) {
 	var rgb core.RGBA
 	switch link {
 	case 's':
-		em = EditStyleColor
+		em = editStyleColor
 		rgb = s.Color
 	case 'f':
-		em = EditStyleFillColor
+		em = editStyleFillColor
 		rgb = s.FillColor
 	default:
 		panic("ui: unexpected link")
@@ -248,7 +248,7 @@ func (tw *TextWindow) ScreenChangeStyleColor(link int, v uint32) {
 }
 
 // ScreenChangeStyleYesNo flips one of a style's options.
-func (tw *TextWindow) ScreenChangeStyleYesNo(link int, v uint32) {
+func (tw *textWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
 	s := ss.SK.StyleGet(core.HStyle{V: v})
@@ -317,15 +317,15 @@ func (tw *TextWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 
 // EditControlDoneForStyles takes an edited style value, and reports
 // whether the edit was one of the styles'.
-func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
+func (tw *textWindow) EditControlDoneForStyles(str string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
-	case EditStyleStipplePeriod, EditStyleTextHeight, EditStyleWidth:
+	case editStyleStipplePeriod, editStyleTextHeight, editStyleWidth:
 		ss.UndoRemember()
 		s := ss.SK.StyleGet(tw.edit.style)
 
 		units := s.WidthAs
-		if tw.edit.meaning == EditStyleTextHeight {
+		if tw.edit.meaning == editStyleTextHeight {
 			units = s.TextHeightAs
 		}
 		var v float64
@@ -336,27 +336,27 @@ func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
 		}
 		v = geom.Max(0.0, v) // std::max: 0 for NaN
 		switch tw.edit.meaning {
-		case EditStyleTextHeight:
+		case editStyleTextHeight:
 			s.TextHeight = v
-		case EditStyleStipplePeriod:
+		case editStyleStipplePeriod:
 			s.StippleScale = v
 		default:
 			s.Width = v
 		}
 
-	case EditStyleTextAngle:
+	case editStyleTextAngle:
 		ss.UndoRemember()
 		s := ss.SK.StyleGet(tw.edit.style)
 		s.TextAngle = srf.WrapSymmetric(atof(str), 360)
 
-	case EditBackgroundColor, EditStyleFillColor, EditStyleColor:
+	case editBackgroundColor, editStyleFillColor, editStyleColor:
 		if x, y, z, ok := scanVector3(str); ok {
 			rgb := rgbfVec(vec3(x, y, z).ClampWithin(0, 1))
 			switch tw.edit.meaning {
-			case EditStyleColor:
+			case editStyleColor:
 				ss.UndoRemember()
 				ss.SK.StyleGet(tw.edit.style).Color = rgb
-			case EditStyleFillColor:
+			case editStyleFillColor:
 				ss.UndoRemember()
 				ss.SK.StyleGet(tw.edit.style).FillColor = rgb
 			default:
@@ -366,7 +366,7 @@ func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
 			ss.Error("Bad format: specify color as r, g, b")
 		}
 
-	case EditStyleName:
+	case editStyleName:
 		if str == "" {
 			ss.Error("Style name cannot be empty")
 		} else {
@@ -382,7 +382,7 @@ func (tw *TextWindow) EditControlDoneForStyles(str string) bool {
 }
 
 // ShowStyleInfo is the screen for one style.
-func (tw *TextWindow) ShowStyleInfo() {
+func (tw *textWindow) ShowStyleInfo() {
 	ss := tw.ss
 	tw.Printf(true, "%Fl%f%Ll(back to list of styles)%E", lf(tw.ScreenShowListOfStyles))
 
@@ -559,6 +559,6 @@ func (tw *TextWindow) ShowStyleInfo() {
 }
 
 // ScreenAssignSelectionToStyle gives the selection style v.
-func (tw *TextWindow) ScreenAssignSelectionToStyle(link int, v uint32) {
+func (tw *textWindow) ScreenAssignSelectionToStyle(link int, v uint32) {
 	tw.ss.AssignSelectionToStyle(v)
 }

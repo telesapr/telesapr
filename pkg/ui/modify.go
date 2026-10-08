@@ -3,7 +3,7 @@ package ui
 import "github.com/telesapr/telesapr/pkg/sketch"
 
 // selectionForEngine is the selection as the engine takes it.
-func (gw *GraphicsWindow) selectionForEngine() []sketch.Selection {
+func (gw *graphicsWindow) selectionForEngine() []sketch.Selection {
 	out := make([]sketch.Selection, 0, len(gw.selection))
 	for _, s := range gw.selection {
 		out = append(out, sketch.Selection{Entity: s.Entity, Constraint: s.Constraint})
@@ -21,7 +21,7 @@ func (ss *Application) afterEngineEdit(undoBefore int) {
 }
 
 // MakeTangentArc rounds the selected corner.
-func (gw *GraphicsWindow) MakeTangentArc() {
+func (gw *graphicsWindow) MakeTangentArc() {
 	ss := gw.ss
 	if !gw.LockedInWorkplane() {
 		ss.Error("Must be sketching in workplane to create tangent arc.")
@@ -43,7 +43,7 @@ func (gw *GraphicsWindow) MakeTangentArc() {
 
 // SplitLinesOrCurves splits the selected curves where they cross,
 // taking the crossing nearest the mouse.
-func (gw *GraphicsWindow) SplitLinesOrCurves() {
+func (gw *graphicsWindow) SplitLinesOrCurves() {
 	ss := gw.ss
 	undo := ss.SK.Undo.Write
 	err := ss.SK.SplitLinesOrCurves(gw.selectionForEngine(), gw.currentMousePosition)

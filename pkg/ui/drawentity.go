@@ -25,20 +25,20 @@ type entityDrawCache struct {
 	screenBBoxValid bool
 }
 
-// EntityDrawAs is how an entity is drawn.
-type EntityDrawAs int
+// entityDrawAs is how an entity is drawn.
+type entityDrawAs int
 
 const (
-	EntityDrawDefault EntityDrawAs = iota
-	EntityDrawOverlay
-	EntityDrawHidden
-	EntityDrawHovered
-	EntityDrawSelected
+	entityDrawDefault entityDrawAs = iota
+	entityDrawOverlay
+	entityDrawHidden
+	entityDrawHovered
+	entityDrawSelected
 )
 
 // entityCache returns e's drawing cache; a regeneration, or another
 // sketch, drops them all.
-func (gw *GraphicsWindow) entityCache(e *core.Entity) *entityDrawCache {
+func (gw *graphicsWindow) entityCache(e *core.Entity) *entityDrawCache {
 	if sk := gw.sk(); gw.entityCaches == nil || gw.cacheGen != sk.Generation || gw.cacheSketch != sk {
 		gw.entityCaches = make(map[core.HEntity]*entityDrawCache)
 		gw.cacheGen = sk.Generation
@@ -70,7 +70,7 @@ func groupDescription(g *sketch.Group) string {
 }
 
 // getOrGenerateBezierCurves is Entity::GetOrGenerateBezierCurves.
-func (gw *GraphicsWindow) getOrGenerateBezierCurves(e *core.Entity) *srf.SBezierList {
+func (gw *graphicsWindow) getOrGenerateBezierCurves(e *core.Entity) *srf.SBezierList {
 	c := gw.entityCache(e)
 	if !c.beziersValid {
 		c.beziers = srf.SBezierList{}
@@ -81,7 +81,7 @@ func (gw *GraphicsWindow) getOrGenerateBezierCurves(e *core.Entity) *srf.SBezier
 }
 
 // generateEdges is Entity::GenerateEdges.
-func (gw *GraphicsWindow) generateEdges(e *core.Entity, el *srf.SEdgeList) {
+func (gw *graphicsWindow) generateEdges(e *core.Entity, el *srf.SEdgeList) {
 	sbl := gw.getOrGenerateBezierCurves(e)
 	style := gw.sk().StyleForEntity(e.H)
 	for i := range sbl.Curves {
@@ -96,7 +96,7 @@ func (gw *GraphicsWindow) generateEdges(e *core.Entity, el *srf.SEdgeList) {
 
 // getOrGenerateEdges is Entity::GetOrGenerateEdges: the edges, made
 // again if the chord tolerance changed.
-func (gw *GraphicsWindow) getOrGenerateEdges(e *core.Entity) *srf.SEdgeList {
+func (gw *graphicsWindow) getOrGenerateEdges(e *core.Entity) *srf.SEdgeList {
 	c := gw.entityCache(e)
 	chordTol := gw.ss.ChordTolMm()
 	if c.edgesValid && c.edgesChordTol == chordTol {
@@ -111,7 +111,7 @@ func (gw *GraphicsWindow) getOrGenerateEdges(e *core.Entity) *srf.SEdgeList {
 
 // getOrGenerateScreenBBox is Entity::GetOrGenerateScreenBBox; ok is
 // false for entities without one, like workplanes.
-func (gw *GraphicsWindow) getOrGenerateScreenBBox(e *core.Entity) (core.BBox, bool) {
+func (gw *graphicsWindow) getOrGenerateScreenBBox(e *core.Entity) (core.BBox, bool) {
 	sk := gw.sk()
 	sbl := gw.getOrGenerateBezierCurves(e)
 
@@ -145,14 +145,14 @@ func (gw *GraphicsWindow) getOrGenerateScreenBBox(e *core.Entity) (core.BBox, bo
 
 // invalidateScreenBBoxes forgets the entities' screen bounding boxes,
 // after the view changed.
-func (gw *GraphicsWindow) invalidateScreenBBoxes() {
+func (gw *graphicsWindow) invalidateScreenBBoxes() {
 	for _, c := range gw.entityCaches {
 		c.screenBBoxValid = false
 	}
 }
 
 // entityReferencePoints is Entity::GetReferencePoints.
-func (gw *GraphicsWindow) entityReferencePoints(e *core.Entity) []geom.Vector {
+func (gw *graphicsWindow) entityReferencePoints(e *core.Entity) []geom.Vector {
 	sk := gw.sk()
 	switch e.Type {
 	case core.EntityPointNCopy, core.EntityPointNTrans, core.EntityPointNRotTrans,
@@ -176,9 +176,9 @@ func (gw *GraphicsWindow) entityReferencePoints(e *core.Entity) []geom.Vector {
 
 // entityPositionOfPoint is Entity::GetPositionOfPoint: which of the
 // entity's edges is nearest p.
-func (gw *GraphicsWindow) entityPositionOfPoint(e *core.Entity, camera *render.Camera, p geom.Point2d) int {
+func (gw *graphicsWindow) entityPositionOfPoint(e *core.Entity, camera *render.Camera, p geom.Point2d) int {
 	op := &render.ObjectPicker{Cam: *camera, Point: p, MinDistance: 1e12}
-	gw.drawEntity(e, EntityDrawDefault, op)
+	gw.drawEntity(e, entityDrawDefault, op)
 	return int(op.Position)
 }
 
@@ -187,7 +187,7 @@ func entityIsStylable(e *core.Entity) bool {
 	return !e.IsPoint() && !e.IsWorkplane() && !e.IsNormal()
 }
 
-func (gw *GraphicsWindow) ptCanDrag(pt core.HEntity) bool {
+func (gw *graphicsWindow) ptCanDrag(pt core.HEntity) bool {
 	p := gw.sk().Entity(pt)
 	// a numeric copy can not move
 	if p.Type == core.EntityPointNCopy {
@@ -203,7 +203,7 @@ func (gw *GraphicsWindow) ptCanDrag(pt core.HEntity) bool {
 
 // entityCanBeDragged is Entity::CanBeDragged: entities made by some
 // copies can't be dragged with the mouse.
-func (gw *GraphicsWindow) entityCanBeDragged(e *core.Entity) bool {
+func (gw *graphicsWindow) entityCanBeDragged(e *core.Entity) bool {
 	sk := gw.sk()
 	if e.IsPoint() {
 		if !gw.ptCanDrag(e.H) {
@@ -236,16 +236,16 @@ func (gw *GraphicsWindow) entityCanBeDragged(e *core.Entity) bool {
 }
 
 // groupShouldDrawExploded is Group::ShouldDrawExploded.
-func (gw *GraphicsWindow) groupShouldDrawExploded(g *sketch.Group) bool {
+func (gw *graphicsWindow) groupShouldDrawExploded(g *sketch.Group) bool {
 	return gw.ss.Explode && g.H == gw.activeGroupH() && g.Type == sketch.GroupDrawingWorkplane && !gw.ss.ExportMode
 }
 
-func (gw *GraphicsWindow) entityShouldDrawExploded(e *core.Entity) bool {
+func (gw *graphicsWindow) entityShouldDrawExploded(e *core.Entity) bool {
 	return gw.groupShouldDrawExploded(gw.sk().Group(e.Group))
 }
 
 // entityExplodeOffset is Entity::ExplodeOffset.
-func (gw *GraphicsWindow) entityExplodeOffset(e *core.Entity) geom.Vector {
+func (gw *graphicsWindow) entityExplodeOffset(e *core.Entity) geom.Vector {
 	sk := gw.sk()
 	if gw.entityShouldDrawExploded(e) && e.Workplane.V != 0 {
 		requestIdx := sk.Request(e.H.Request()).GroupRequestIndex
@@ -257,15 +257,15 @@ func (gw *GraphicsWindow) entityExplodeOffset(e *core.Entity) geom.Vector {
 
 // pointGetDrawNum is Entity::PointGetDrawNum: where a point is drawn,
 // which in an exploded view isn't where it is.
-func (gw *GraphicsWindow) pointGetDrawNum(e *core.Entity) geom.Vector {
+func (gw *graphicsWindow) pointGetDrawNum(e *core.Entity) geom.Vector {
 	return e.PointGetNum(gw.sk()).Plus(gw.entityExplodeOffset(e))
 }
 
 // drawEntity is Entity::Draw.
-func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas render.Canvas) {
+func (gw *graphicsWindow) drawEntity(e *core.Entity, how entityDrawAs, canvas render.Canvas) {
 	ss := gw.ss
 	sk := gw.sk()
-	if (how != EntityDrawHovered && how != EntityDrawSelected) && !sk.EntityIsVisible(e) {
+	if (how != entityDrawHovered && how != entityDrawSelected) && !sk.EntityIsVisible(e) {
 		return
 	}
 
@@ -273,7 +273,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 	switch {
 	case e.IsPoint():
 		zIndex = 6
-	case how == EntityDrawHidden:
+	case how == entityDrawHidden:
 		zIndex = 2
 	case e.Group != gw.activeGroupH():
 		zIndex = 3
@@ -295,25 +295,25 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 	}
 
 	stroke := ss.styleStroke(hs)
-	if (how == EntityDrawDefault || how == EntityDrawOverlay) && !e.IsNormal() &&
+	if (how == entityDrawDefault || how == entityDrawOverlay) && !e.IsNormal() &&
 		e.Type != core.EntityWorkplane && e.Group == gw.activeGroupH() {
 		if c, ok := ss.freedomColor(e); ok {
 			stroke.Color = c
 		}
 	}
 	switch how {
-	case EntityDrawDefault:
+	case entityDrawDefault:
 		stroke.Layer = render.LayerNormal
-	case EntityDrawOverlay:
+	case entityDrawOverlay:
 		stroke.Layer = render.LayerFront
-	case EntityDrawHidden:
+	case entityDrawHidden:
 		stroke.Layer = render.LayerOccluded
 		stroke.StipplePattern = sk.StylePatternType(hstyle(core.StyleHiddenEdge))
 		stroke.StippleScale = sk.StyleGet(hstyle(core.StyleHiddenEdge)).StippleScale
-	case EntityDrawHovered:
+	case entityDrawHovered:
 		stroke.Layer = render.LayerFront
 		stroke.Color = ss.styleColor(hstyle(core.StyleHovered))
-	case EntityDrawSelected:
+	case entityDrawSelected:
 		stroke.Layer = render.LayerFront
 		stroke.Color = ss.styleColor(hstyle(core.StyleSelected))
 	}
@@ -324,7 +324,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 	case core.EntityPointNCopy, core.EntityPointNTrans, core.EntityPointNRotTrans,
 		core.EntityPointNRotAA, core.EntityPointNRotAxisTrans, core.EntityPointIn3D,
 		core.EntityPointIn2D:
-		if how == EntityDrawHidden {
+		if how == entityDrawHidden {
 			return
 		}
 		// If we're analyzing the sketch to show the degrees of freedom,
@@ -365,7 +365,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 	case core.EntityNormalNCopy, core.EntityNormalNRot, core.EntityNormalNRotAA,
 		core.EntityNormalIn3D, core.EntityNormalIn2D:
 		camera := canvas.Camera()
-		if how == EntityDrawHidden {
+		if how == entityDrawHidden {
 			return
 		}
 		for i := range 2 {
@@ -385,7 +385,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 			} else {
 				stroke.Layer = render.LayerNormal
 			}
-			if how != EntityDrawHovered && how != EntityDrawSelected {
+			if how != entityDrawHovered && how != entityDrawSelected {
 				// Always draw the x, y, and z axes in red, green, and
 				// blue; brighter for the ones at the bottom left of the
 				// screen, dimmer for the ones at the model origin.
@@ -546,13 +546,13 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		var fill render.Fill
 		var pixmap *res.Pixmap
 		switch how {
-		case EntityDrawHidden:
+		case entityDrawHidden:
 			return
-		case EntityDrawHovered:
+		case entityDrawHovered:
 			fill.Color = ss.styleColor(hstyle(core.StyleHovered)).WithAlpha(180)
 			fill.Pattern = render.FillCheckeredA
 			fill.ZIndex = 2
-		case EntityDrawSelected:
+		case entityDrawSelected:
 			fill.Color = ss.styleColor(hstyle(core.StyleSelected)).WithAlpha(180)
 			fill.Pattern = render.FillCheckeredB
 			fill.ZIndex = 1
@@ -569,7 +569,7 @@ func (gw *GraphicsWindow) drawEntity(e *core.Entity, how EntityDrawAs, canvas re
 		iu := v[3].Minus(v[0])
 		iv := v[1].Minus(v[0])
 
-		if how == EntityDrawDefault && pixmap == nil {
+		if how == entityDrawDefault && pixmap == nil {
 			errStroke := ss.styleStroke(hstyle(core.StyleDrawError))
 			errStroke.Color = errStroke.Color.WithAlpha(50)
 			hsErr := canvas.InternStroke(errStroke)

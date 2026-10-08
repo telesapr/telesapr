@@ -11,13 +11,13 @@ import (
 	"github.com/telesapr/telesapr/pkg/res"
 )
 
-// ConstraintDrawAs is how a constraint is drawn.
-type ConstraintDrawAs int
+// constraintDrawAs is how a constraint is drawn.
+type constraintDrawAs int
 
 const (
-	ConstraintDrawDefault ConstraintDrawAs = iota
-	ConstraintDrawHovered
-	ConstraintDrawSelected
+	constraintDrawDefault constraintDrawAs = iota
+	constraintDrawHovered
+	constraintDrawSelected
 )
 
 // constraintIsStylable is Constraint::IsStylable: only comments.
@@ -59,19 +59,19 @@ func (ss *Application) constraintLabel(c *core.Constraint) string {
 }
 
 // constraintIsVisible is Constraint::IsVisible.
-func (gw *GraphicsWindow) constraintIsVisible(c *core.Constraint) bool {
-	if gw.showConstraints == SCMNoShow {
+func (gw *graphicsWindow) constraintIsVisible(c *core.Constraint) bool {
+	if gw.showConstraints == sCMNoShow {
 		return false
 	}
 	isDim := false
-	if gw.showConstraints == SCMShowDim {
+	if gw.showConstraints == sCMShowDim {
 		switch c.Type {
 		case core.ConstraintAngle, core.ConstraintDiameter, core.ConstraintPtPtDistance,
 			core.ConstraintPtFaceDistance, core.ConstraintPtLineDistance, core.ConstraintPtPlaneDistance:
 			isDim = true
 		}
 	}
-	if gw.showConstraints == SCMShowAll || isDim {
+	if gw.showConstraints == sCMShowAll || isDim {
 		sk := gw.sk()
 		g := sk.Group(c.Group)
 		// If the group is hidden, then the constraints are hidden and not
@@ -94,13 +94,13 @@ func (gw *GraphicsWindow) constraintIsVisible(c *core.Constraint) bool {
 	return false
 }
 
-func (gw *GraphicsWindow) constraintShouldDrawExploded(c *core.Constraint) bool {
+func (gw *graphicsWindow) constraintShouldDrawExploded(c *core.Constraint) bool {
 	return gw.groupShouldDrawExploded(gw.sk().Group(c.Group))
 }
 
 // constraintDrawer lays out and draws one constraint.
 type constraintDrawer struct {
-	gw     *GraphicsWindow
+	gw     *graphicsWindow
 	c      *core.Constraint
 	canvas render.Canvas
 	camera *render.Camera
@@ -109,7 +109,7 @@ type constraintDrawer struct {
 	// where its label corner and reference points go when asked for,
 	// the stroke and fill it draws with, the view's unit vectors (one
 	// pixel long) and the height of its text.
-	how        ConstraintDrawAs
+	how        constraintDrawAs
 	labelPos   *geom.Vector
 	refs       *[]geom.Vector
 	stroke     render.Stroke
@@ -594,11 +594,11 @@ func (d *constraintDrawer) doArcForAngle(hcs render.HStroke, a0, da, b0, db, off
 
 // doLayout is Constraint::DoLayout: it draws the constraint, and gives
 // its label's corner and its reference points.
-func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector, refs *[]geom.Vector) {
+func (d *constraintDrawer) doLayout(how constraintDrawAs, labelPos *geom.Vector, refs *[]geom.Vector) {
 	gw := d.gw
 	ss := gw.ss
 	c := d.c
-	if (how != ConstraintDrawHovered && how != ConstraintDrawSelected) && !gw.constraintIsVisible(c) {
+	if (how != constraintDrawHovered && how != constraintDrawSelected) && !gw.constraintIsVisible(c) {
 		return
 	}
 	d.how, d.labelPos, d.refs = how, labelPos, refs
@@ -614,14 +614,14 @@ func (d *constraintDrawer) doLayout(how ConstraintDrawAs, labelPos *geom.Vector,
 
 	var color core.RGBA
 	switch how {
-	case ConstraintDrawDefault:
+	case constraintDrawDefault:
 		color = ss.styleColor(constraintStyle(c))
 		if ss.isConflicting(c) {
 			color = colorConflict
 		}
-	case ConstraintDrawHovered:
+	case constraintDrawHovered:
 		color = ss.styleColor(hstyle(core.StyleHovered))
-	case ConstraintDrawSelected:
+	case constraintDrawSelected:
 		color = ss.styleColor(hstyle(core.StyleSelected))
 	}
 	d.stroke = ss.styleStroke(constraintStyle(c))
@@ -941,7 +941,7 @@ func (d *constraintDrawer) layoutDiameter() {
 func (d *constraintDrawer) layoutPointsCoincident() {
 	ss := d.gw.ss
 	c := d.c
-	if d.how == ConstraintDrawDefault {
+	if d.how == constraintDrawDefault {
 		// Let's adjust the color of this constraint to have the same
 		// rough luma as the point color, so that the constraint does
 		// not stand out in an ugly way.
@@ -1571,7 +1571,7 @@ func (d *constraintDrawer) layoutComment() {
 		color := d.stroke.Color
 		d.stroke = ss.styleStroke(c.Disp.Style)
 		d.stroke.Layer = render.LayerFront
-		if d.how != ConstraintDrawDefault {
+		if d.how != constraintDrawDefault {
 			d.stroke.Color = color
 		}
 		d.hcs = d.canvas.InternStroke(d.stroke)
@@ -1585,25 +1585,25 @@ func (d *constraintDrawer) layoutComment() {
 }
 
 // drawConstraint is Constraint::Draw.
-func (gw *GraphicsWindow) drawConstraint(c *core.Constraint, how ConstraintDrawAs, canvas render.Canvas) {
+func (gw *graphicsWindow) drawConstraint(c *core.Constraint, how constraintDrawAs, canvas render.Canvas) {
 	d := &constraintDrawer{gw: gw, c: c, canvas: canvas, camera: canvas.Camera()}
 	d.doLayout(how, nil, nil)
 }
 
 // constraintLabelPos is Constraint::GetLabelPos.
-func (gw *GraphicsWindow) constraintLabelPos(c *core.Constraint, camera *render.Camera) geom.Vector {
+func (gw *graphicsWindow) constraintLabelPos(c *core.Constraint, camera *render.Camera) geom.Vector {
 	var p geom.Vector
 	op := &render.ObjectPicker{Cam: *camera}
 	d := &constraintDrawer{gw: gw, c: c, canvas: op, camera: op.Camera()}
-	d.doLayout(ConstraintDrawDefault, &p, nil)
+	d.doLayout(constraintDrawDefault, &p, nil)
 	return p
 }
 
 // constraintReferencePoints is Constraint::GetReferencePoints.
-func (gw *GraphicsWindow) constraintReferencePoints(c *core.Constraint, camera *render.Camera) []geom.Vector {
+func (gw *graphicsWindow) constraintReferencePoints(c *core.Constraint, camera *render.Camera) []geom.Vector {
 	var refs []geom.Vector
 	op := &render.ObjectPicker{Cam: *camera}
 	d := &constraintDrawer{gw: gw, c: c, canvas: op, camera: op.Camera()}
-	d.doLayout(ConstraintDrawDefault, nil, &refs)
+	d.doLayout(constraintDrawDefault, nil, &refs)
 	return refs
 }

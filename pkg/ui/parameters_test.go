@@ -33,7 +33,7 @@ func TestParametersScreen(t *testing.T) {
 	tw.Show()
 	clickText(t, ss, "parameters")
 	tw.Show()
-	if tw.shown.screen != ScreenParameters {
+	if tw.shown.screen != screenParameters {
 		t.Fatalf("screen %d after the link", tw.shown.screen)
 	}
 	clickText(t, ss, "[add a parameter]")
@@ -67,7 +67,7 @@ func TestParametersScreen(t *testing.T) {
 	}
 	clickText(t, ss, "in group sketch-in-plane")
 	tw.Show()
-	if tw.shown.screen != ScreenGroupInfo {
+	if tw.shown.screen != screenGroupInfo {
 		t.Errorf("screen %d after the group link", tw.shown.screen)
 	}
 	ss.MenuParameters()
@@ -167,7 +167,7 @@ func TestConflictsShown(t *testing.T) {
 	}
 	tw := ss.TW
 	tw.shown.group = hg
-	tw.GoToScreen(ScreenGroupSolveInfo)
+	tw.GoToScreen(screenGroupSolveInfo)
 	tw.Show()
 	before := ss.GW.view
 	clickText(t, ss, "[show]")

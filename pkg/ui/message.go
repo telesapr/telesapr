@@ -94,14 +94,14 @@ func (ss *Application) Error(format string, args ...any) {
 	ss.messageBox(fmt.Sprintf(format, args...), true, nil)
 }
 
-// ErrDeclined is the error of an action the user gave up on at one of
+// errDeclined is the error of an action the user gave up on at one of
 // its dialogs: nothing to report.
-var ErrDeclined = errors.New("declined")
+var errDeclined = errors.New("declined")
 
 // Report shows err to the user, unless there is none or the user
 // declined the action themselves.
 func (ss *Application) Report(err error) {
-	if err == nil || errors.Is(err, ErrDeclined) {
+	if err == nil || errors.Is(err, errDeclined) {
 		return
 	}
 	ss.Error("%s", sentence(err.Error()))

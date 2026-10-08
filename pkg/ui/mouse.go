@@ -17,7 +17,7 @@ import (
 )
 
 // UpdateDraggedPoint moves a point with the mouse.
-func (gw *GraphicsWindow) UpdateDraggedPoint(hp core.HEntity, mx, my float64) {
+func (gw *graphicsWindow) UpdateDraggedPoint(hp core.HEntity, mx, my float64) {
 	sk := gw.sk()
 	p := sk.Entity(hp)
 	pos := p.PointGetNum(sk)
@@ -27,7 +27,7 @@ func (gw *GraphicsWindow) UpdateDraggedPoint(hp core.HEntity, mx, my float64) {
 }
 
 // UpdateDraggedNum moves pos by the mouse's movement.
-func (gw *GraphicsWindow) UpdateDraggedNum(pos *geom.Vector, mx, my float64) {
+func (gw *graphicsWindow) UpdateDraggedNum(pos *geom.Vector, mx, my float64) {
 	v := &gw.view
 	*pos = pos.Plus(v.ProjRight.ScaledBy((mx - gw.orig.mouse.U) / v.Scale))
 	*pos = pos.Plus(v.ProjUp.ScaledBy((my - gw.orig.mouse.V) / v.Scale))
@@ -35,7 +35,7 @@ func (gw *GraphicsWindow) UpdateDraggedNum(pos *geom.Vector, mx, my float64) {
 
 // AddPointToDraggedList drags a point too, unless it's there already,
 // or is a transformed point of the same group, which moves with it.
-func (gw *GraphicsWindow) AddPointToDraggedList(hp core.HEntity) {
+func (gw *graphicsWindow) AddPointToDraggedList(hp core.HEntity) {
 	sk := gw.sk()
 	p := sk.Entity(hp)
 	for _, hee := range gw.pending.points {
@@ -55,7 +55,7 @@ func (gw *GraphicsWindow) AddPointToDraggedList(hp core.HEntity) {
 }
 
 // StartDraggingByEntity drags an entity's points.
-func (gw *GraphicsWindow) StartDraggingByEntity(he core.HEntity) {
+func (gw *graphicsWindow) StartDraggingByEntity(he core.HEntity) {
 	sk := gw.sk()
 	e := sk.Entity(he)
 	switch {
@@ -85,7 +85,7 @@ func (gw *GraphicsWindow) StartDraggingByEntity(he core.HEntity) {
 }
 
 // StartDraggingBySelection drags the selection and the hovered item.
-func (gw *GraphicsWindow) StartDraggingBySelection() {
+func (gw *graphicsWindow) StartDraggingBySelection() {
 	for _, s := range gw.selection {
 		if s.Entity.V == 0 {
 			continue
@@ -104,7 +104,7 @@ func (gw *GraphicsWindow) StartDraggingBySelection() {
 
 // MouseMoved handles the mouse moving to x, y (screen pixels from the
 // centre, y up).
-func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDown, shiftDown, ctrlDown bool) {
+func (gw *graphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDown, shiftDown, ctrlDown bool) {
 	ss := gw.ss
 	sk := gw.sk()
 	v := &gw.view
@@ -135,8 +135,8 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		}
 	}
 
-	if !leftDown && (gw.pending.operation == PendingDraggingPoints ||
-		gw.pending.operation == PendingDraggingMarquee) {
+	if !leftDown && (gw.pending.operation == pendingDraggingPoints ||
+		gw.pending.operation == pendingDraggingMarquee) {
 		gw.ClearPending(true)
 		gw.Invalidate(false)
 	}
@@ -198,7 +198,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		gw.orig.offset = v.Offset
 		gw.orig.mouse = geom.Point2d{U: x, V: y}
 
-		if ss.TW.shown.screen == ScreenEditView {
+		if ss.TW.shown.screen == screenEditView {
 			if gw.havePainted {
 				ss.ScheduleShowTW()
 			}
@@ -208,7 +208,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		return
 	}
 
-	if gw.pending.operation == PendingNone {
+	if gw.pending.operation == pendingNone {
 		dm := gw.orig.mouse.DistanceTo(mp)
 		// If we're currently not doing anything, then see if we should
 		// start dragging something.
@@ -231,21 +231,21 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 				case e.Type == core.EntityCircle && len(gw.selection) <= 1:
 					// Drag the radius.
 					gw.pending.circle = dragEntity
-					gw.pending.operation = PendingDraggingRadius
+					gw.pending.operation = pendingDraggingRadius
 				case e.IsNormal():
 					gw.pending.normal = dragEntity
-					gw.pending.operation = PendingDraggingNormal
+					gw.pending.operation = pendingDraggingNormal
 				default:
 					gw.StartDraggingBySelection()
 					gw.hover.Clear()
-					gw.pending.operation = PendingDraggingPoints
+					gw.pending.operation = pendingDraggingPoints
 				}
 			} else if gw.hover.Constraint.V != 0 && sk.Constraint(gw.hover.Constraint).HasLabel() {
 				gw.ClearSelection()
 				gw.pending.constraint = gw.hover.Constraint
-				gw.pending.operation = PendingDraggingConstraint
+				gw.pending.operation = pendingDraggingConstraint
 			}
-			if gw.pending.operation != PendingNone {
+			if gw.pending.operation != pendingNone {
 				// We just started a drag, so remember for the undo before
 				// the drag changes anything.
 				ss.UndoRemember()
@@ -259,7 +259,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 						gw.MakeUnselectedEntity(gw.hover.Entity, false)
 						gw.hover.Clear()
 					}
-					gw.pending.operation = PendingDraggingMarquee
+					gw.pending.operation = pendingDraggingMarquee
 					gw.orig.marqueePoint = gw.UnProjectPoint(gw.orig.mouseOnButtonDown)
 				}
 			}
@@ -283,12 +283,12 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 
 	// If the user has started an operation from the menu, but not
 	// completed it, then just do the selection.
-	if gw.pending.operation == PendingCommand {
+	if gw.pending.operation == pendingCommand {
 		gw.HitTestMakeSelection(mp)
 		return
 	}
 
-	if gw.pending.operation == PendingDraggingPoints && ctrlDown {
+	if gw.pending.operation == pendingDraggingPoints && ctrlDown {
 		ss.GW.extraLine.PtA = gw.UnProjectPoint(gw.orig.mouseOnButtonDown)
 		ss.GW.extraLine.PtB = gw.UnProjectPoint(mp)
 		ss.GW.extraLine.Draw = true
@@ -303,29 +303,29 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 
 	gw.havePainted = false
 	switch gw.pending.operation {
-	case PendingDraggingConstraint:
+	case pendingDraggingConstraint:
 		gw.dragConstraint(x, y)
 		return
 
-	case PendingDraggingNewLinePoint, PendingDraggingNewPoint:
+	case pendingDraggingNewLinePoint, pendingDraggingNewPoint:
 		gw.dragNewPoint(x, y, ctrlDown)
 
-	case PendingDraggingPoints:
+	case pendingDraggingPoints:
 		gw.dragPoints(x, y, shiftDown, ctrlDown)
 
-	case PendingDraggingNewCubicPoint:
+	case pendingDraggingNewCubicPoint:
 		gw.dragNewCubicPoint(x, y)
 
-	case PendingDraggingNewArcPoint:
+	case pendingDraggingNewArcPoint:
 		gw.dragNewArcPoint(x, y, ctrlDown)
 
-	case PendingDraggingNewRadius, PendingDraggingRadius:
+	case pendingDraggingNewRadius, pendingDraggingRadius:
 		gw.dragRadius(x, y, ctrlDown)
 
-	case PendingDraggingNormal:
+	case pendingDraggingNormal:
 		gw.dragNormal(x, y, ctrlDown)
 
-	case PendingDraggingMarquee:
+	case pendingDraggingMarquee:
 		gw.dragMarquee(x, y)
 		return
 
@@ -334,8 +334,8 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 	}
 }
 
-// dragPoints moves what a PendingDraggingPoints drag holds to the mouse.
-func (gw *GraphicsWindow) dragPoints(x, y float64, shiftDown, ctrlDown bool) {
+// dragPoints moves what a pendingDraggingPoints drag holds to the mouse.
+func (gw *graphicsWindow) dragPoints(x, y float64, shiftDown, ctrlDown bool) {
 	ss := gw.ss
 	sk := gw.sk()
 	v := &gw.view
@@ -401,16 +401,16 @@ func (gw *GraphicsWindow) dragPoints(x, y float64, shiftDown, ctrlDown bool) {
 	gw.orig.mouse = mp
 }
 
-// dragMarquee moves what a PendingDraggingMarquee drag holds to the mouse.
-func (gw *GraphicsWindow) dragMarquee(x, y float64) {
+// dragMarquee moves what a pendingDraggingMarquee drag holds to the mouse.
+func (gw *graphicsWindow) dragMarquee(x, y float64) {
 	mp := geom.Point2d{U: x, V: y}
 
 	gw.orig.mouse = mp
 	gw.Invalidate(false)
 }
 
-// dragConstraint moves what a PendingDraggingConstraint drag holds to the mouse.
-func (gw *GraphicsWindow) dragConstraint(x, y float64) {
+// dragConstraint moves what a pendingDraggingConstraint drag holds to the mouse.
+func (gw *graphicsWindow) dragConstraint(x, y float64) {
 	sk := gw.sk()
 	mp := geom.Point2d{U: x, V: y}
 
@@ -420,12 +420,12 @@ func (gw *GraphicsWindow) dragConstraint(x, y float64) {
 	gw.Invalidate(false)
 }
 
-// dragNewPoint moves what a PendingDraggingNewLinePoint, PendingDraggingNewPoint drag holds to the mouse.
-func (gw *GraphicsWindow) dragNewPoint(x, y float64, ctrlDown bool) {
+// dragNewPoint moves what a pendingDraggingNewLinePoint, pendingDraggingNewPoint drag holds to the mouse.
+func (gw *graphicsWindow) dragNewPoint(x, y float64, ctrlDown bool) {
 	sk := gw.sk()
 	mp := geom.Point2d{U: x, V: y}
 
-	if gw.pending.operation == PendingDraggingNewLinePoint {
+	if gw.pending.operation == pendingDraggingNewLinePoint {
 		if !ctrlDown {
 			gw.pending.suggestion, gw.pending.hasSuggestion = gw.SuggestConstraint(gw.pending.request)
 		} else {
@@ -438,8 +438,8 @@ func (gw *GraphicsWindow) dragNewPoint(x, y float64, ctrlDown bool) {
 	gw.orig.mouse = mp
 }
 
-// dragNewCubicPoint moves what a PendingDraggingNewCubicPoint drag holds to the mouse.
-func (gw *GraphicsWindow) dragNewCubicPoint(x, y float64) {
+// dragNewCubicPoint moves what a pendingDraggingNewCubicPoint drag holds to the mouse.
+func (gw *graphicsWindow) dragNewCubicPoint(x, y float64) {
 	sk := gw.sk()
 	mp := geom.Point2d{U: x, V: y}
 
@@ -470,8 +470,8 @@ func (gw *GraphicsWindow) dragNewCubicPoint(x, y float64) {
 	sk.MarkGroupDirtyByEntity(gw.pending.point)
 }
 
-// dragNewArcPoint moves what a PendingDraggingNewArcPoint drag holds to the mouse.
-func (gw *GraphicsWindow) dragNewArcPoint(x, y float64, ctrlDown bool) {
+// dragNewArcPoint moves what a pendingDraggingNewArcPoint drag holds to the mouse.
+func (gw *graphicsWindow) dragNewArcPoint(x, y float64, ctrlDown bool) {
 	sk := gw.sk()
 	mp := geom.Point2d{U: x, V: y}
 
@@ -490,8 +490,8 @@ func (gw *GraphicsWindow) dragNewArcPoint(x, y float64, ctrlDown bool) {
 	sk.MarkGroupDirtyByEntity(gw.pending.point)
 }
 
-// dragRadius moves what a PendingDraggingNewRadius, PendingDraggingRadius drag holds to the mouse.
-func (gw *GraphicsWindow) dragRadius(x, y float64, ctrlDown bool) {
+// dragRadius moves what a pendingDraggingNewRadius, pendingDraggingRadius drag holds to the mouse.
+func (gw *graphicsWindow) dragRadius(x, y float64, ctrlDown bool) {
 	ss := gw.ss
 	sk := gw.sk()
 	v := &gw.view
@@ -502,7 +502,7 @@ func (gw *GraphicsWindow) dragRadius(x, y float64, ctrlDown bool) {
 	c2 := gw.ProjectPoint(center)
 	r := c2.DistanceTo(mp) / v.Scale
 	sk.Entity(circle.Distance).DistanceForceTo(sk, r)
-	if gw.pending.operation == PendingDraggingNewRadius {
+	if gw.pending.operation == pendingDraggingNewRadius {
 		gw.suggestFor(gw.pending.circle.Request(), ctrlDown)
 	}
 
@@ -510,8 +510,8 @@ func (gw *GraphicsWindow) dragRadius(x, y float64, ctrlDown bool) {
 	ss.ScheduleShowTW()
 }
 
-// dragNormal moves what a PendingDraggingNormal drag holds to the mouse.
-func (gw *GraphicsWindow) dragNormal(x, y float64, ctrlDown bool) {
+// dragNormal moves what a pendingDraggingNormal drag holds to the mouse.
+func (gw *graphicsWindow) dragNormal(x, y float64, ctrlDown bool) {
 	sk := gw.sk()
 	v := &gw.view
 	mp := geom.Point2d{U: x, V: y}
@@ -546,7 +546,7 @@ func (gw *GraphicsWindow) dragNormal(x, y float64, ctrlDown bool) {
 }
 
 // ClearPending cancels the operation in progress.
-func (gw *GraphicsWindow) ClearPending(scheduleShowTW bool) {
+func (gw *graphicsWindow) ClearPending(scheduleShowTW bool) {
 	gw.pending = pendingState{}
 	if scheduleShowTW {
 		gw.ss.ScheduleShowTW()
@@ -554,17 +554,17 @@ func (gw *GraphicsWindow) ClearPending(scheduleShowTW bool) {
 }
 
 // IsFromPending reports whether request r is being drawn.
-func (gw *GraphicsWindow) IsFromPending(r core.HRequest) bool {
+func (gw *graphicsWindow) IsFromPending(r core.HRequest) bool {
 	return slices.Contains(gw.pending.requests, r)
 }
 
 // AddToPending marks r as being drawn.
-func (gw *GraphicsWindow) AddToPending(r core.HRequest) {
+func (gw *graphicsWindow) AddToPending(r core.HRequest) {
 	gw.pending.requests = append(gw.pending.requests, r)
 }
 
 // ReplacePending swaps a request being drawn for another.
-func (gw *GraphicsWindow) ReplacePending(before, after core.HRequest) {
+func (gw *graphicsWindow) ReplacePending(before, after core.HRequest) {
 	for i, req := range gw.pending.requests {
 		if req == before {
 			gw.pending.requests[i] = after
@@ -573,7 +573,7 @@ func (gw *GraphicsWindow) ReplacePending(before, after core.HRequest) {
 }
 
 // MouseMiddleOrRightDown starts a pan or rotation.
-func (gw *GraphicsWindow) MouseMiddleOrRightDown(x, y float64) {
+func (gw *graphicsWindow) MouseMiddleOrRightDown(x, y float64) {
 	if gw.window.IsEditorVisible() {
 		return
 	}
@@ -585,7 +585,7 @@ func (gw *GraphicsWindow) MouseMiddleOrRightDown(x, y float64) {
 }
 
 // MouseRightUp stops drawing, or shows the context menu.
-func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
+func (gw *graphicsWindow) MouseRightUp(x, y float64) {
 	ss := gw.ss
 	sk := gw.sk()
 	ss.GW.extraLine.Draw = false
@@ -601,15 +601,15 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 	}
 
 	switch gw.pending.operation {
-	case PendingDraggingNewLinePoint, PendingDraggingNewArcPoint, PendingDraggingNewRadius:
+	case pendingDraggingNewLinePoint, pendingDraggingNewArcPoint, pendingDraggingNewRadius:
 		if gw.pending.hasSuggestion {
 			gw.applySuggestion(gw.pending.suggestion)
 		}
 	}
 
 	switch gw.pending.operation {
-	case PendingDraggingNewLinePoint, PendingDraggingNewCubicPoint, PendingDraggingNewArcPoint,
-		PendingDraggingNewRadius, PendingDraggingNewPoint:
+	case pendingDraggingNewLinePoint, pendingDraggingNewCubicPoint, pendingDraggingNewArcPoint,
+		pendingDraggingNewRadius, pendingDraggingNewPoint:
 		// Special case; use a right click to stop drawing lines, since a
 		// left click would draw another one. This is quicker and more
 		// intuitive than hitting escape. Likewise for other entities for
@@ -672,7 +672,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 				}
 				gw.ClearSelection()
 
-				ss.TW.GoToScreen(ScreenGroupInfo)
+				ss.TW.GoToScreen(screenGroupInfo)
 				ss.TW.shown.group = hg
 				ss.ScheduleShowTW()
 				gw.ForceTextWindowShown()
@@ -693,26 +693,26 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 				}
 				gw.ClearSelection()
 
-				ss.TW.GoToScreen(ScreenStyleInfo)
+				ss.TW.GoToScreen(screenStyleInfo)
 				ss.TW.shown.style = hs
 				ss.ScheduleShowTW()
 				gw.ForceTextWindowShown()
 			}, true)
 		}
 		if gs.withEndpoints > 0 {
-			menu.AddItem("Select Edge Chain", func() { gw.MenuEdit(CmdSelectChain) }, true)
+			menu.AddItem("Select Edge Chain", func() { gw.MenuEdit(cmdSelectChain) }, true)
 		}
 		if gs.constraints == 1 && gs.n == 0 {
 			c := sk.Constraint(gs.constraint[0])
 			if c.HasLabel() && c.Type != core.ConstraintComment {
-				menu.AddItem("Toggle Reference Dimension", func() { ss.MenuConstrain(CmdReference) }, true)
+				menu.AddItem("Toggle Reference Dimension", func() { ss.MenuConstrain(cmdReference) }, true)
 			}
 			if c.Type == core.ConstraintAngle || c.Type == core.ConstraintEqualAngle {
-				menu.AddItem("Other Supplementary Angle", func() { ss.MenuConstrain(CmdOtherAngle) }, true)
+				menu.AddItem("Other Supplementary Angle", func() { ss.MenuConstrain(cmdOtherAngle) }, true)
 			}
 		}
 		if gs.constraintLabels > 0 || gs.points > 0 {
-			menu.AddItem("Snap to Grid", func() { gw.MenuEdit(CmdSnapToGrid) }, true)
+			menu.AddItem("Snap to Grid", func() { gw.MenuEdit(cmdSnapToGrid) }, true)
 		}
 
 		if gs.points == 1 && gs.point[0].IsFromRequest() {
@@ -806,7 +806,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 			}
 		}
 		if gs.entities == gs.n {
-			menu.AddItem("Toggle Construction", func() { gw.MenuRequest(CmdConstruction) }, true)
+			menu.AddItem("Toggle Construction", func() { gw.MenuRequest(cmdConstruction) }, true)
 		}
 
 		if gs.points == 1 {
@@ -844,22 +844,22 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 		}
 		menu.AddSeparator()
 		if gw.LockedInWorkplane() {
-			menu.AddItem("Cut", func() { gw.MenuClipboard(CmdCut) }, true)
-			menu.AddItem("Copy", func() { gw.MenuClipboard(CmdCopy) }, true)
+			menu.AddItem("Cut", func() { gw.MenuClipboard(cmdCut) }, true)
+			menu.AddItem("Copy", func() { gw.MenuClipboard(cmdCopy) }, true)
 		}
 	} else {
-		menu.AddItem("Select All", func() { gw.MenuEdit(CmdSelectAll) }, true)
+		menu.AddItem("Select All", func() { gw.MenuEdit(cmdSelectAll) }, true)
 	}
 
 	if (len(sk.Clipboard.Requests) > 0 || len(sk.Clipboard.Constraints) > 0) && gw.LockedInWorkplane() {
-		menu.AddItem("Paste", func() { gw.MenuClipboard(CmdPaste) }, true)
-		menu.AddItem("Paste Transformed...", func() { gw.MenuClipboard(CmdPasteTransform) }, true)
+		menu.AddItem("Paste", func() { gw.MenuClipboard(cmdPaste) }, true)
+		menu.AddItem("Paste Transformed...", func() { gw.MenuClipboard(cmdPasteTransform) }, true)
 	}
 
 	if itemsSelected {
-		menu.AddItem("Delete", func() { gw.MenuClipboard(CmdDelete) }, true)
+		menu.AddItem("Delete", func() { gw.MenuClipboard(cmdDelete) }, true)
 		menu.AddSeparator()
-		menu.AddItem("Unselect All", func() { gw.MenuEdit(CmdUnselectAll) }, true)
+		menu.AddItem("Unselect All", func() { gw.MenuEdit(cmdUnselectAll) }, true)
 	}
 	// If only one item is selected, then it must be the one that we just
 	// selected from the hovered item; in which case unselect all and
@@ -874,7 +874,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 
 	if itemsSelected {
 		menu.AddSeparator()
-		menu.AddItem("Zoom to Fit", func() { gw.MenuView(CmdZoomToFit) }, true)
+		menu.AddItem("Zoom to Fit", func() { gw.MenuView(cmdZoomToFit) }, true)
 	}
 
 	menu.PopUp()
@@ -884,7 +884,7 @@ func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 }
 
 // AddRequest adds a request in the active group and workplane.
-func (gw *GraphicsWindow) AddRequest(typ sketch.RequestType, rememberForUndo bool) core.HRequest {
+func (gw *graphicsWindow) AddRequest(typ sketch.RequestType, rememberForUndo bool) core.HRequest {
 	if rememberForUndo {
 		gw.ss.UndoRemember()
 	}
@@ -893,7 +893,7 @@ func (gw *GraphicsWindow) AddRequest(typ sketch.RequestType, rememberForUndo boo
 
 // SnapToEntityByScreenPoint is the point of entity he nearest the
 // screen point pp.
-func (gw *GraphicsWindow) SnapToEntityByScreenPoint(pp geom.Point2d, he core.HEntity) geom.Vector {
+func (gw *graphicsWindow) SnapToEntityByScreenPoint(pp geom.Point2d, he core.HEntity) geom.Vector {
 	sk := gw.sk()
 	e := sk.Entity(he)
 	if e.IsPoint() {
@@ -925,7 +925,7 @@ func (gw *GraphicsWindow) SnapToEntityByScreenPoint(pp geom.Point2d, he core.HEn
 
 // ConstrainPointByHovered constrains pt onto the hovered point, circle
 // or line, if any.
-func (gw *GraphicsWindow) ConstrainPointByHovered(pt core.HEntity, projected *geom.Point2d) bool {
+func (gw *graphicsWindow) ConstrainPointByHovered(pt core.HEntity, projected *geom.Point2d) bool {
 	if gw.hover.Entity.V == 0 {
 		return false
 	}
@@ -955,7 +955,7 @@ func (gw *GraphicsWindow) ConstrainPointByHovered(pt core.HEntity, projected *ge
 
 // MouseEvent dispatches a mouse event from the window, in window
 // coordinates, as screen pixels from the centre with y up.
-func (gw *GraphicsWindow) MouseEvent(event platform.MouseEvent) bool {
+func (gw *graphicsWindow) MouseEvent(event platform.MouseEvent) bool {
 	width, height := gw.window.ContentSize()
 	x := event.X - width/2
 	y := height/2 - event.Y
@@ -996,7 +996,7 @@ func (gw *GraphicsWindow) MouseEvent(event platform.MouseEvent) bool {
 
 // MouseLeftDown handles a left click: the pending command, or a
 // selection.
-func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool) {
+func (gw *graphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool) {
 	ss := gw.ss
 	sk := gw.sk()
 	gw.orig.mouseDown = true
@@ -1033,23 +1033,23 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 	var hr core.HRequest
 	var hc core.HConstraint
 	switch gw.pending.operation {
-	case PendingCommand:
+	case pendingCommand:
 		hr, hc = gw.clickForCommand(mx, my)
 
-	case PendingDraggingRadius:
+	case pendingDraggingRadius:
 		gw.clickEndsRadius()
 
-	case PendingDraggingNewPoint, PendingDraggingNewArcPoint:
+	case pendingDraggingNewPoint, pendingDraggingNewArcPoint:
 		gw.clickPlacesPoint(mx, my, constraintSuggestion, hasConstraintSuggestion)
 
-	case PendingDraggingNewCubicPoint:
+	case pendingDraggingNewCubicPoint:
 		gw.clickPlacesCubicPoint(mx, my)
 
-	case PendingDraggingNewLinePoint:
+	case pendingDraggingNewLinePoint:
 		gw.clickPlacesLinePoint(mx, my, constraintSuggestion, hasConstraintSuggestion)
 
 	default:
-		if gw.pending.operation == PendingDraggingNewRadius && hasConstraintSuggestion {
+		if gw.pending.operation == pendingDraggingNewRadius && hasConstraintSuggestion {
 			gw.applySuggestion(constraintSuggestion)
 		}
 		gw.ClearPending(true)
@@ -1079,40 +1079,40 @@ func (gw *GraphicsWindow) MouseLeftDown(mx, my float64, shiftDown, ctrlDown bool
 	gw.Invalidate(false)
 }
 
-// clickForCommand is a left click while PendingCommand.
-func (gw *GraphicsWindow) clickForCommand(mx, my float64) (core.HRequest, core.HConstraint) {
+// clickForCommand is a left click while pendingCommand.
+func (gw *graphicsWindow) clickForCommand(mx, my float64) (core.HRequest, core.HConstraint) {
 	var hr core.HRequest
 	var hc core.HConstraint
 
 	switch gw.pending.command {
-	case CmdDatumPoint:
+	case cmdDatumPoint:
 		hr = gw.placeDatumPoint(mx, my)
 
-	case CmdLineSegment, CmdConstrSegment:
+	case cmdLineSegment, cmdConstrSegment:
 		hr = gw.placeLineSegment(mx, my)
 
-	case CmdRectangle:
+	case cmdRectangle:
 		hr = gw.placeRectangle(mx, my)
 
-	case CmdCircle:
+	case cmdCircle:
 		hr = gw.placeCircle(mx, my)
 
-	case CmdArc:
+	case cmdArc:
 		hr = gw.placeArc(mx, my)
 
-	case CmdCubic:
+	case cmdCubic:
 		hr = gw.placeCubic(mx, my)
 
-	case CmdWorkplane:
+	case cmdWorkplane:
 		hr = gw.placeWorkplane(mx, my)
 
-	case CmdTTFText:
+	case cmdTTFText:
 		hr = gw.placeTTFText(mx, my)
 
-	case CmdImage:
+	case cmdImage:
 		hr = gw.placeImage(mx, my)
 
-	case CmdComment:
+	case cmdComment:
 		hc = gw.placeComment(mx, my)
 
 	default:
@@ -1121,8 +1121,8 @@ func (gw *GraphicsWindow) clickForCommand(mx, my float64) (core.HRequest, core.H
 	return hr, hc
 }
 
-// placeDatumPoint starts a CmdDatumPoint at the click.
-func (gw *GraphicsWindow) placeDatumPoint(mx, my float64) core.HRequest {
+// placeDatumPoint starts a cmdDatumPoint at the click.
+func (gw *graphicsWindow) placeDatumPoint(mx, my float64) core.HRequest {
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
 	vw := &gw.view
@@ -1137,8 +1137,8 @@ func (gw *GraphicsWindow) placeDatumPoint(mx, my float64) core.HRequest {
 	return hr
 }
 
-// placeLineSegment starts a CmdLineSegment, CmdConstrSegment at the click.
-func (gw *GraphicsWindow) placeLineSegment(mx, my float64) core.HRequest {
+// placeLineSegment starts a cmdLineSegment, cmdConstrSegment at the click.
+func (gw *graphicsWindow) placeLineSegment(mx, my float64) core.HRequest {
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
 	vw := &gw.view
@@ -1147,14 +1147,14 @@ func (gw *GraphicsWindow) placeLineSegment(mx, my float64) core.HRequest {
 	v = v.Plus(vw.ProjUp.ScaledBy(my / vw.Scale))
 	pointForceTo := func(he core.HEntity, p geom.Vector) { sk.Entity(he).PointForceTo(sk, p) }
 	hr := gw.AddRequest(sketch.RequestLineSegment, true)
-	sk.Request(hr).Construction = gw.pending.command == CmdConstrSegment
+	sk.Request(hr).Construction = gw.pending.command == cmdConstrSegment
 	pointForceTo(hr.Entity(1), v)
 	gw.ConstrainPointByHovered(hr.Entity(1), &mouse)
 
 	gw.ClearSuper()
 	gw.AddToPending(hr)
 
-	gw.pending.operation = PendingDraggingNewLinePoint
+	gw.pending.operation = pendingDraggingNewLinePoint
 	gw.pending.request = hr
 	gw.pending.point = hr.Entity(2)
 	gw.pending.description = "click next point of line, or press Esc"
@@ -1162,8 +1162,8 @@ func (gw *GraphicsWindow) placeLineSegment(mx, my float64) core.HRequest {
 	return hr
 }
 
-// placeRectangle starts a CmdRectangle at the click.
-func (gw *GraphicsWindow) placeRectangle(mx, my float64) core.HRequest {
+// placeRectangle starts a cmdRectangle at the click.
+func (gw *graphicsWindow) placeRectangle(mx, my float64) core.HRequest {
 	ss := gw.ss
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
@@ -1206,15 +1206,15 @@ func (gw *GraphicsWindow) placeRectangle(mx, my float64) core.HRequest {
 		}
 	}
 
-	gw.pending.operation = PendingDraggingNewPoint
+	gw.pending.operation = pendingDraggingNewPoint
 	gw.pending.point = lns[1].Entity(2)
 	gw.pending.description = "click to place other corner of rectangle"
 	hr = lns[0]
 	return hr
 }
 
-// placeCircle starts a CmdCircle at the click.
-func (gw *GraphicsWindow) placeCircle(mx, my float64) core.HRequest {
+// placeCircle starts a cmdCircle at the click.
+func (gw *graphicsWindow) placeCircle(mx, my float64) core.HRequest {
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
 	vw := &gw.view
@@ -1235,14 +1235,14 @@ func (gw *GraphicsWindow) placeCircle(mx, my float64) core.HRequest {
 	gw.ClearSuper()
 	gw.AddToPending(hr)
 
-	gw.pending.operation = PendingDraggingNewRadius
+	gw.pending.operation = pendingDraggingNewRadius
 	gw.pending.circle = hr.Entity(0)
 	gw.pending.description = "click to set radius"
 	return hr
 }
 
-// placeArc starts a CmdArc at the click.
-func (gw *GraphicsWindow) placeArc(mx, my float64) core.HRequest {
+// placeArc starts a cmdArc at the click.
+func (gw *graphicsWindow) placeArc(mx, my float64) core.HRequest {
 	ss := gw.ss
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
@@ -1271,14 +1271,14 @@ func (gw *GraphicsWindow) placeArc(mx, my float64) core.HRequest {
 	gw.ClearSuper()
 	gw.AddToPending(hr)
 
-	gw.pending.operation = PendingDraggingNewArcPoint
+	gw.pending.operation = pendingDraggingNewArcPoint
 	gw.pending.point = hr.Entity(3)
 	gw.pending.description = "click to place point"
 	return hr
 }
 
-// placeCubic starts a CmdCubic at the click.
-func (gw *GraphicsWindow) placeCubic(mx, my float64) core.HRequest {
+// placeCubic starts a cmdCubic at the click.
+func (gw *graphicsWindow) placeCubic(mx, my float64) core.HRequest {
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
 	vw := &gw.view
@@ -1295,14 +1295,14 @@ func (gw *GraphicsWindow) placeCubic(mx, my float64) core.HRequest {
 	gw.ClearSuper()
 	gw.AddToPending(hr)
 
-	gw.pending.operation = PendingDraggingNewCubicPoint
+	gw.pending.operation = pendingDraggingNewCubicPoint
 	gw.pending.point = hr.Entity(4)
 	gw.pending.description = "click next point of cubic, or press Esc"
 	return hr
 }
 
-// placeWorkplane starts a CmdWorkplane at the click.
-func (gw *GraphicsWindow) placeWorkplane(mx, my float64) core.HRequest {
+// placeWorkplane starts a cmdWorkplane at the click.
+func (gw *graphicsWindow) placeWorkplane(mx, my float64) core.HRequest {
 	ss := gw.ss
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
@@ -1327,8 +1327,8 @@ func (gw *GraphicsWindow) placeWorkplane(mx, my float64) core.HRequest {
 	return hr
 }
 
-// placeTTFText starts a CmdTTFText at the click.
-func (gw *GraphicsWindow) placeTTFText(mx, my float64) core.HRequest {
+// placeTTFText starts a cmdTTFText at the click.
+func (gw *graphicsWindow) placeTTFText(mx, my float64) core.HRequest {
 	ss := gw.ss
 	sk := gw.sk()
 	vw := &gw.view
@@ -1354,14 +1354,14 @@ func (gw *GraphicsWindow) placeTTFText(mx, my float64) core.HRequest {
 		pointForceTo(hr.Entity(i), v)
 	}
 
-	gw.pending.operation = PendingDraggingNewPoint
+	gw.pending.operation = pendingDraggingNewPoint
 	gw.pending.point = hr.Entity(3)
 	gw.pending.description = "click to place bottom right of text"
 	return hr
 }
 
-// placeImage starts a CmdImage at the click.
-func (gw *GraphicsWindow) placeImage(mx, my float64) core.HRequest {
+// placeImage starts a cmdImage at the click.
+func (gw *graphicsWindow) placeImage(mx, my float64) core.HRequest {
 	ss := gw.ss
 	sk := gw.sk()
 	vw := &gw.view
@@ -1387,14 +1387,14 @@ func (gw *GraphicsWindow) placeImage(mx, my float64) core.HRequest {
 		pointForceTo(hr.Entity(i), v)
 	}
 
-	gw.pending.operation = PendingDraggingNewPoint
+	gw.pending.operation = pendingDraggingNewPoint
 	gw.pending.point = hr.Entity(3)
 	gw.pending.description = "click to place bottom right of image"
 	return hr
 }
 
-// placeComment starts a CmdComment at the click.
-func (gw *GraphicsWindow) placeComment(mx, my float64) core.HConstraint {
+// placeComment starts a cmdComment at the click.
+func (gw *graphicsWindow) placeComment(mx, my float64) core.HConstraint {
 	ss := gw.ss
 	vw := &gw.view
 	v := vw.Offset.ScaledBy(-1)
@@ -1413,16 +1413,16 @@ func (gw *GraphicsWindow) placeComment(mx, my float64) core.HConstraint {
 	return hc
 }
 
-// clickEndsRadius is a left click while PendingDraggingRadius.
-func (gw *GraphicsWindow) clickEndsRadius() {
+// clickEndsRadius is a left click while pendingDraggingRadius.
+func (gw *graphicsWindow) clickEndsRadius() {
 	gw.ClearPending(true)
 }
 
-// clickPlacesPoint is a left click while PendingDraggingNewPoint, PendingDraggingNewArcPoint.
-func (gw *GraphicsWindow) clickPlacesPoint(mx, my float64, suggestion sketch.Suggestion, hasSuggestion bool) {
+// clickPlacesPoint is a left click while pendingDraggingNewPoint, pendingDraggingNewArcPoint.
+func (gw *graphicsWindow) clickPlacesPoint(mx, my float64, suggestion sketch.Suggestion, hasSuggestion bool) {
 	mouse := geom.Point2d{U: mx, V: my}
 
-	arc := gw.pending.operation == PendingDraggingNewArcPoint
+	arc := gw.pending.operation == pendingDraggingNewArcPoint
 	gw.ConstrainPointByHovered(gw.pending.point, &mouse)
 	if arc && hasSuggestion {
 		gw.applySuggestion(suggestion)
@@ -1430,8 +1430,8 @@ func (gw *GraphicsWindow) clickPlacesPoint(mx, my float64, suggestion sketch.Sug
 	gw.ClearPending(true)
 }
 
-// clickPlacesCubicPoint is a left click while PendingDraggingNewCubicPoint.
-func (gw *GraphicsWindow) clickPlacesCubicPoint(mx, my float64) {
+// clickPlacesCubicPoint is a left click while pendingDraggingNewCubicPoint.
+func (gw *graphicsWindow) clickPlacesCubicPoint(mx, my float64) {
 	ss := gw.ss
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
@@ -1485,8 +1485,8 @@ func (gw *GraphicsWindow) clickPlacesCubicPoint(mx, my float64) {
 	gw.pending.point = hr.Entity(4 + ep)
 }
 
-// clickPlacesLinePoint is a left click while PendingDraggingNewLinePoint.
-func (gw *GraphicsWindow) clickPlacesLinePoint(mx, my float64, suggestion sketch.Suggestion, hasSuggestion bool) {
+// clickPlacesLinePoint is a left click while pendingDraggingNewLinePoint.
+func (gw *graphicsWindow) clickPlacesLinePoint(mx, my float64, suggestion sketch.Suggestion, hasSuggestion bool) {
 	ss := gw.ss
 	sk := gw.sk()
 	mouse := geom.Point2d{U: mx, V: my}
@@ -1538,18 +1538,18 @@ func (gw *GraphicsWindow) clickPlacesLinePoint(mx, my float64, suggestion sketch
 	pointForceTo(hr.Entity(1), pendingPos)
 
 	// And drag an endpoint of the new line segment
-	gw.pending.operation = PendingDraggingNewLinePoint
+	gw.pending.operation = pendingDraggingNewLinePoint
 	gw.pending.request = hr
 	gw.pending.point = hr.Entity(2)
 	gw.pending.description = "click next point of line, or press Esc"
 }
 
 // MouseLeftUp ends a drag or a marquee.
-func (gw *GraphicsWindow) MouseLeftUp(mx, my float64, shiftDown, ctrlDown bool) {
+func (gw *graphicsWindow) MouseLeftUp(mx, my float64, shiftDown, ctrlDown bool) {
 	gw.orig.mouseDown = false
 
 	switch gw.pending.operation {
-	case PendingDraggingPoints, PendingDraggingConstraint, PendingDraggingNormal, PendingDraggingRadius:
+	case pendingDraggingPoints, pendingDraggingConstraint, pendingDraggingNormal, pendingDraggingRadius:
 		if !gw.hoverWasSelectedOnMousedown {
 			// And then clear the selection again, since they probably
 			// didn't want that selected if they just were dragging it.
@@ -1560,12 +1560,12 @@ func (gw *GraphicsWindow) MouseLeftUp(mx, my float64, shiftDown, ctrlDown bool) 
 		gw.ClearPending(true)
 		gw.Invalidate(false)
 
-	case PendingDraggingMarquee:
+	case pendingDraggingMarquee:
 		gw.SelectByMarquee()
 		gw.ClearPending(true)
 		gw.Invalidate(false)
 
-	case PendingNone:
+	case pendingNone:
 		if gw.hover.IsEmpty() && !ctrlDown {
 			gw.ClearSelection()
 		}
@@ -1573,7 +1573,7 @@ func (gw *GraphicsWindow) MouseLeftUp(mx, my float64, shiftDown, ctrlDown bool) 
 }
 
 // EditConstraint shows the editor over a constraint's label.
-func (gw *GraphicsWindow) EditConstraint(constraint core.HConstraint) {
+func (gw *graphicsWindow) EditConstraint(constraint core.HConstraint) {
 	ss := gw.ss
 	gw.constraintBeingEdited = constraint
 	gw.ClearSuper()
@@ -1656,7 +1656,7 @@ func (gw *GraphicsWindow) EditConstraint(constraint core.HConstraint) {
 }
 
 // MouseLeftDoubleClick edits the hovered constraint.
-func (gw *GraphicsWindow) MouseLeftDoubleClick(mx, my float64) {
+func (gw *graphicsWindow) MouseLeftDoubleClick(mx, my float64) {
 	if gw.window.IsEditorVisible() {
 		return
 	}
@@ -1668,7 +1668,7 @@ func (gw *GraphicsWindow) MouseLeftDoubleClick(mx, my float64) {
 }
 
 // EditControlDone applies the edited constraint value.
-func (gw *GraphicsWindow) EditControlDone(s string) {
+func (gw *graphicsWindow) EditControlDone(s string) {
 	ss := gw.ss
 	gw.window.HideEditor()
 	gw.window.Invalidate()
@@ -1706,7 +1706,7 @@ func (gw *GraphicsWindow) EditControlDone(s string) {
 }
 
 // MouseScroll zooms about the mouse.
-func (gw *GraphicsWindow) MouseScroll(zoomMultiplyer float64) {
+func (gw *graphicsWindow) MouseScroll(zoomMultiplyer float64) {
 	// scale *= exp(ln(1.2) * zoomMultiplyer), so that the same total
 	// scroll delta always gives the same zoom however it was split into
 	// events.
@@ -1714,10 +1714,10 @@ func (gw *GraphicsWindow) MouseScroll(zoomMultiplyer float64) {
 }
 
 // MouseLeave un-hovers everything, unless a context menu is shown.
-func (gw *GraphicsWindow) MouseLeave() {
+func (gw *graphicsWindow) MouseLeave() {
 	if !gw.context.active {
 		gw.hover.Clear()
-		gw.toolbarHovered = CmdNone
+		gw.toolbarHovered = cmdNone
 		gw.Invalidate(false)
 	}
 	gw.extraLine.Draw = false

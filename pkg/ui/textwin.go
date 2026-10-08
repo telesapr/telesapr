@@ -17,9 +17,9 @@ import (
 
 // The text window's size limits.
 const (
-	MaxCols = 100
-	MinCols = 45
-	MaxRows = 4000
+	maxCols = 100
+	minCols = 45
+	maxRows = 4000
 )
 
 // The text window's character grid, in pixels.
@@ -38,8 +38,8 @@ const (
 	radioTrue  = ""
 )
 
-// LinkFunction runs when a link is clicked or hovered.
-type LinkFunction func(link int, v uint32)
+// linkFunction runs when a link is clicked or hovered.
+type linkFunction func(link int, v uint32)
 
 // notALink is the link code of plain text.
 const notALink = 0
@@ -48,120 +48,120 @@ const notALink = 0
 type Screen int
 
 const (
-	ScreenListOfGroups Screen = iota
-	ScreenGroupInfo
-	ScreenGroupSolveInfo
-	ScreenConfiguration
-	ScreenStepDimension
-	ScreenListOfStyles
-	ScreenStyleInfo
-	ScreenPasteTransformed
-	ScreenEditView
-	ScreenTangentArc
+	screenListOfGroups Screen = iota
+	screenGroupInfo
+	screenGroupSolveInfo
+	screenConfiguration
+	screenStepDimension
+	screenListOfStyles
+	screenStyleInfo
+	screenPasteTransformed
+	screenEditView
+	screenTangentArc
 	// Screens of this program's own.
-	ScreenThread
-	ScreenParameters
-	ScreenCommands
-	ScreenBrokenReferences
-	ScreenSection
-	ScreenBillOfMaterials
-	ScreenMotionStudy
-	ScreenDrawing
+	screenThread
+	screenParameters
+	screenCommands
+	screenBrokenReferences
+	screenSection
+	screenBillOfMaterials
+	screenMotionStudy
+	screenDrawing
 )
 
 // Edit is what the edit control is editing.
 type Edit int
 
 const (
-	EditNothing Edit = 0
+	editNothing Edit = 0
 	// For multiple groups
-	EditTimesRepeated Edit = 1
-	EditGroupName     Edit = 2
-	EditGroupScale    Edit = 3
-	EditGroupColor    Edit = 4
-	EditGroupOpacity  Edit = 5
+	editTimesRepeated Edit = 1
+	editGroupName     Edit = 2
+	editGroupScale    Edit = 3
+	editGroupColor    Edit = 4
+	editGroupOpacity  Edit = 5
 	// For the configuration screen
-	EditLightDirection           Edit = 100
-	EditLightIntensity           Edit = 101
-	EditColor                    Edit = 102
-	EditChordTolerance           Edit = 103
-	EditMaxSegments              Edit = 104
-	EditCameraTangent            Edit = 105
-	EditGridSpacing              Edit = 106
-	EditDigitsAfterDecimal       Edit = 107
-	EditDigitsAfterDecimalDegree Edit = 108
-	EditExportScale              Edit = 109
-	EditExportOffset             Edit = 110
-	EditCanvasSize               Edit = 111
-	EditGCodeDepth               Edit = 112
-	EditGCodeSafeHeight          Edit = 113
-	EditGCodePasses              Edit = 114
-	EditGCodeFeed                Edit = 115
-	EditGCodePlungeFeed          Edit = 116
-	EditAutosaveInterval         Edit = 117
-	EditLightAmbient             Edit = 118
-	EditFindConstraintTimeout    Edit = 119
-	EditExplodeDistance          Edit = 120
-	EditAnimationSpeed           Edit = 121
+	editLightDirection           Edit = 100
+	editLightIntensity           Edit = 101
+	editColor                    Edit = 102
+	editChordTolerance           Edit = 103
+	editMaxSegments              Edit = 104
+	editCameraTangent            Edit = 105
+	editGridSpacing              Edit = 106
+	editDigitsAfterDecimal       Edit = 107
+	editDigitsAfterDecimalDegree Edit = 108
+	editExportScale              Edit = 109
+	editExportOffset             Edit = 110
+	editCanvasSize               Edit = 111
+	editGCodeDepth               Edit = 112
+	editGCodeSafeHeight          Edit = 113
+	editGCodePasses              Edit = 114
+	editGCodeFeed                Edit = 115
+	editGCodePlungeFeed          Edit = 116
+	editAutosaveInterval         Edit = 117
+	editLightAmbient             Edit = 118
+	editFindConstraintTimeout    Edit = 119
+	editExplodeDistance          Edit = 120
+	editAnimationSpeed           Edit = 121
 	// For TTF text
-	EditTTFText Edit = 300
+	editTTFText Edit = 300
 	// For the step dimension screen
-	EditStepDimFinish Edit = 400
-	EditStepDimSteps  Edit = 401
+	editStepDimFinish Edit = 400
+	editStepDimSteps  Edit = 401
 	// For the styles stuff
-	EditStyleWidth         Edit = 500
-	EditStyleTextHeight    Edit = 501
-	EditStyleTextAngle     Edit = 502
-	EditStyleColor         Edit = 503
-	EditStyleFillColor     Edit = 504
-	EditStyleName          Edit = 505
-	EditBackgroundColor    Edit = 506
-	EditStyleStipplePeriod Edit = 508
+	editStyleWidth         Edit = 500
+	editStyleTextHeight    Edit = 501
+	editStyleTextAngle     Edit = 502
+	editStyleColor         Edit = 503
+	editStyleFillColor     Edit = 504
+	editStyleName          Edit = 505
+	editBackgroundColor    Edit = 506
+	editStyleStipplePeriod Edit = 508
 	// For paste transforming
-	EditPasteTimesRepeated Edit = 600
-	EditPasteAngle         Edit = 601
-	EditPasteScale         Edit = 602
+	editPasteTimesRepeated Edit = 600
+	editPasteAngle         Edit = 601
+	editPasteScale         Edit = 602
 	// For view
-	EditViewScale     Edit = 700
-	EditViewOrigin    Edit = 701
-	EditViewProjRight Edit = 702
-	EditViewProjUp    Edit = 703
+	editViewScale     Edit = 700
+	editViewOrigin    Edit = 701
+	editViewProjRight Edit = 702
+	editViewProjUp    Edit = 703
 	// For tangent arc
-	EditTangentArcRadius Edit = 800
+	editTangentArcRadius Edit = 800
 	// For helix pitch
-	EditHelixPitch Edit = 802
+	editHelixPitch Edit = 802
 	// For a fillet's edge's own radius (an extension)
-	EditEdgeRadius Edit = 803
+	editEdgeRadius Edit = 803
 	// For an extrusion's draft (an extension)
-	EditGroupDraft Edit = 804
+	editGroupDraft Edit = 804
 	// For a chamfer's second distance (an extension)
-	EditChamferDistance2 Edit = 805
+	editChamferDistance2 Edit = 805
 	// For the screw thread (an extension)
-	EditThreadDesignation Edit = 900
-	EditThreadLength      Edit = 901
-	EditThreadClearance   Edit = 902
+	editThreadDesignation Edit = 900
+	editThreadLength      Edit = 901
+	editThreadClearance   Edit = 902
 	// For the parameter table (an extension)
-	EditParameterAdd  Edit = 910
-	EditParameterExpr Edit = 911
-	EditParameterName Edit = 912
+	editParameterAdd  Edit = 910
+	editParameterExpr Edit = 911
+	editParameterName Edit = 912
 	// For configurations (an extension)
-	EditConfigurationAdd  Edit = 913
-	EditConfigurationName Edit = 914
+	editConfigurationAdd  Edit = 913
+	editConfigurationName Edit = 914
 	// For the motion study (an extension)
-	EditMotionParameter Edit = 915
-	EditMotionFrom      Edit = 916
-	EditMotionTo        Edit = 917
-	EditMotionSteps     Edit = 918
+	editMotionParameter Edit = 915
+	editMotionFrom      Edit = 916
+	editMotionTo        Edit = 917
+	editMotionSteps     Edit = 918
 	// For the drawing (an extension)
-	EditDrawingScale     Edit = 919
-	EditDrawingField     Edit = 921
-	EditDrawingSection   Edit = 922
-	EditDrawingDetail    Edit = 923
-	EditDrawingDimension Edit = 924
+	editDrawingScale     Edit = 919
+	editDrawingField     Edit = 921
+	editDrawingSection   Edit = 922
+	editDrawingDetail    Edit = 923
+	editDrawingDimension Edit = 924
 	// For the command search (an extension)
-	EditCommandQuery Edit = 920
+	editCommandQuery Edit = 920
 	// For the section view (an extension)
-	EditSectionOffset Edit = 930
+	editSectionOffset Edit = 930
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do.
@@ -197,7 +197,7 @@ type cellMeta struct {
 	bgRgb  core.RGBA
 	link   int
 	data   uint32
-	f, h   LinkFunction
+	f, h   linkFunction
 	// fID identifies f's code, so that links can be compared.
 	fID uintptr
 }
@@ -206,13 +206,13 @@ type cellMeta struct {
 // characters.
 type textRow struct {
 	top  int
-	text [MaxCols]rune
-	meta [MaxCols]cellMeta
+	text [maxCols]rune
+	meta [maxCols]cellMeta
 }
 
 // clear resets the row.
 func (row *textRow) clear() {
-	for j := range MaxCols {
+	for j := range maxCols {
 		row.text[j] = ' '
 		row.meta[j].fg = 'd'
 		row.meta[j].bg = 'd'
@@ -220,8 +220,8 @@ func (row *textRow) clear() {
 	}
 }
 
-// TextWindow is the property browser.
-type TextWindow struct {
+// textWindow is the property browser.
+type textWindow struct {
 	ss *Application
 
 	window platform.Window
@@ -279,8 +279,8 @@ type TextWindow struct {
 	buttons []textButton
 }
 
-func newTextWindow(ss *Application) *TextWindow {
-	tw := &TextWindow{ss: ss}
+func newTextWindow(ss *Application) *textWindow {
+	tw := &textWindow{ss: ss}
 	tw.buttons = newTextButtons(ss)
 	return tw
 }
@@ -331,7 +331,7 @@ func colorFromTable(t *[256][3]float32, c byte) core.RGBA {
 }
 
 // Init opens the window the first time, and resets it.
-func (tw *TextWindow) Init() {
+func (tw *textWindow) Init() {
 	ss := tw.ss
 	if tw.window == nil {
 		tw.window = ss.Platform.CreateWindow(platform.WindowTool, ss.GW.window)
@@ -385,13 +385,13 @@ func (tw *TextWindow) Init() {
 
 // ClearSuper resets everything but the window, and shows the home
 // screen.
-func (tw *TextWindow) ClearSuper() {
+func (tw *textWindow) ClearSuper() {
 	// The step dimension's timer goes with the rest; a step in progress
 	// must not go on with the reset state.
 	if t := tw.stepDim.timer; t != nil {
 		t.SetOnTimeout(nil)
 	}
-	*tw = TextWindow{ss: tw.ss, window: tw.window, canvas: tw.canvas, buttons: tw.buttons}
+	*tw = textWindow{ss: tw.ss, window: tw.window, canvas: tw.canvas, buttons: tw.buttons}
 
 	tw.HideEditControl()
 
@@ -400,7 +400,7 @@ func (tw *TextWindow) ClearSuper() {
 }
 
 // HideEditControl hides the edit box and the colour picker.
-func (tw *TextWindow) HideEditControl() {
+func (tw *textWindow) HideEditControl() {
 	tw.editControl.colorPicker.show = false
 	if tw.window != nil {
 		tw.window.HideEditor()
@@ -410,7 +410,7 @@ func (tw *TextWindow) HideEditControl() {
 
 // ShowEditControl shows the edit box at a column of a half-row, by
 // default the hovered row.
-func (tw *TextWindow) ShowEditControl(col int, str string, halfRow ...int) {
+func (tw *textWindow) ShowEditControl(col int, str string, halfRow ...int) {
 	hr := -1
 	if len(halfRow) > 0 {
 		hr = halfRow[0]
@@ -434,7 +434,7 @@ func (tw *TextWindow) ShowEditControl(col int, str string, halfRow ...int) {
 
 // ShowEditControlWithColorPicker shows the edit box with a colour
 // picker under it.
-func (tw *TextWindow) ShowEditControlWithColorPicker(col int, rgb core.RGBA) {
+func (tw *textWindow) ShowEditControlWithColorPicker(col int, rgb core.RGBA) {
 	tw.ss.ScheduleShowTW()
 
 	tw.editControl.colorPicker.show = true
@@ -454,14 +454,14 @@ func (tw *TextWindow) ShowEditControlWithColorPicker(col int, rgb core.RGBA) {
 }
 
 // ClearScreen empties the text.
-func (tw *TextWindow) ClearScreen() {
+func (tw *textWindow) ClearScreen() {
 	tw.lines = tw.lines[:0]
 	tw.rows = 0
 }
 
 // lineTop is a written row's top, or r*2 for one ClearScreen left
 // unused.
-func (tw *TextWindow) lineTop(r int) int {
+func (tw *textWindow) lineTop(r int) int {
 	if r >= 0 && r < len(tw.lines) {
 		return tw.lines[r].top
 	}
@@ -469,7 +469,7 @@ func (tw *TextWindow) lineTop(r int) int {
 }
 
 // addRow starts row r, cleared.
-func (tw *TextWindow) addRow() *textRow {
+func (tw *textWindow) addRow() *textRow {
 	r := len(tw.lines)
 	if r < cap(tw.lines) {
 		tw.lines = tw.lines[:r+1]
@@ -483,11 +483,11 @@ func (tw *TextWindow) addRow() *textRow {
 }
 
 // endString was added when someone had too many fonts for the text
-// window: scrolling seemed to be broken, but was actually at MaxRows.
+// window: scrolling seemed to be broken, but was actually at maxRows.
 const endString = "    **** End of Text Screen ****"
 
 // funcID identifies a link function's code.
-func funcID(f LinkFunction) uintptr {
+func funcID(f linkFunction) uintptr {
 	if f == nil {
 		return 0
 	}
@@ -521,11 +521,11 @@ func floatArg(a any) float64 {
 	panic(fmt.Sprintf("ui: Printf: %T is not a float", a))
 }
 
-func linkArg(a any) LinkFunction {
+func linkArg(a any) linkFunction {
 	switch f := a.(type) {
 	case nil:
 		return nil
-	case LinkFunction:
+	case linkFunction:
 		return f
 	case func(int, uint32):
 		return f
@@ -539,16 +539,16 @@ func linkArg(a any) LinkFunction {
 // %Lx starts a link (p: code as an argument); %f and %h take the click
 // and hover LinkFunctions; %D the link's data; and %E ends the link and
 // the foreground colour.
-func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
+func (tw *textWindow) Printf(halfLine bool, format string, args ...any) {
 	if tw.canvas == nil {
 		return
 	}
 
-	if tw.rows >= MaxRows {
+	if tw.rows >= maxRows {
 		return
 	}
 
-	if tw.rows >= MaxRows-2 && format != endString {
+	if tw.rows >= maxRows-2 && format != endString {
 		// twice due to some half-row issues on resizing
 		tw.Printf(halfLine, endString)
 		tw.Printf(halfLine, endString)
@@ -576,7 +576,7 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 	}
 	tw.rows++
 
-	for c := range MaxCols {
+	for c := range maxCols {
 		row.text[c] = ' '
 		row.meta[c].link = notALink
 	}
@@ -585,7 +585,7 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 	bgRgb := rgbi(0, 0, 0)
 	link := notALink
 	var data uint32
-	var f, h LinkFunction
+	var f, h linkFunction
 
 	font := tw.ss.GW.bitmapFont()
 	c := 0
@@ -689,7 +689,7 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 		fid := funcID(f)
 		for _, ch := range buf {
 			for k := range font.Width(ch) {
-				if c >= MaxCols {
+				if c >= maxCols {
 					return
 				}
 				if k == 0 {
@@ -706,7 +706,7 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 		_, size := utf8.DecodeRuneInString(format[i:])
 		i += size
 	}
-	for c < MaxCols {
+	for c < maxCols {
 		row.meta[c].fg = fg
 		row.meta[c].bg = bg
 		row.meta[c].bgRgb = bgRgb
@@ -715,10 +715,10 @@ func (tw *TextWindow) Printf(halfLine bool, format string, args ...any) {
 }
 
 // Show fills the window with the screen for the state of things.
-func (tw *TextWindow) Show() {
+func (tw *textWindow) Show() {
 	ss := tw.ss
 	gw := ss.GW
-	if gw.pending.operation == PendingNone {
+	if gw.pending.operation == pendingNone {
 		gw.ClearPending(false)
 	}
 
@@ -735,63 +735,63 @@ func (tw *TextWindow) Show() {
 		tw.ShowHeader(false)
 		tw.Printf(false, "")
 		tw.Printf(false, "%s", gw.pending.description)
-		tw.Printf(true, "%Fl%f%Ll(cancel operation)%E", LinkFunction(tw.ScreenUnselectAll))
+		tw.Printf(true, "%Fl%f%Ll(cancel operation)%E", linkFunction(tw.ScreenUnselectAll))
 
-	case (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != ScreenPasteTransformed &&
-		tw.shown.screen != ScreenDrawing:
+	case (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != screenPasteTransformed &&
+		tw.shown.screen != screenDrawing:
 
 		// The drawing's screen stays while edges and faces are picked
 		// for its dimensions (roadmap 29.2).
-		if tw.edit.meaning != EditTTFText {
+		if tw.edit.meaning != editTTFText {
 			tw.HideEditControl()
 		}
 		tw.ShowHeader(false)
 		tw.DescribeSelection()
 
 	default:
-		if tw.edit.meaning == EditTTFText {
+		if tw.edit.meaning == editTTFText {
 			tw.HideEditControl()
 		}
 		tw.ShowHeader(true)
 		switch tw.shown.screen {
 		default:
-			tw.shown.screen = ScreenListOfGroups
+			tw.shown.screen = screenListOfGroups
 			tw.ShowListOfGroups()
-		case ScreenListOfGroups:
+		case screenListOfGroups:
 			tw.ShowListOfGroups()
-		case ScreenGroupInfo:
+		case screenGroupInfo:
 			tw.ShowGroupInfo()
-		case ScreenGroupSolveInfo:
+		case screenGroupSolveInfo:
 			tw.ShowGroupSolveInfo()
-		case ScreenConfiguration:
+		case screenConfiguration:
 			tw.ShowConfiguration()
-		case ScreenStepDimension:
+		case screenStepDimension:
 			tw.ShowStepDimension()
-		case ScreenListOfStyles:
+		case screenListOfStyles:
 			tw.ShowListOfStyles()
-		case ScreenStyleInfo:
+		case screenStyleInfo:
 			tw.ShowStyleInfo()
-		case ScreenPasteTransformed:
+		case screenPasteTransformed:
 			tw.ShowPasteTransformed()
-		case ScreenEditView:
+		case screenEditView:
 			tw.ShowEditView()
-		case ScreenTangentArc:
+		case screenTangentArc:
 			tw.ShowTangentArc()
-		case ScreenThread:
+		case screenThread:
 			tw.ShowThread()
-		case ScreenParameters:
+		case screenParameters:
 			tw.ShowParameters()
-		case ScreenCommands:
+		case screenCommands:
 			tw.ShowCommands()
-		case ScreenBrokenReferences:
+		case screenBrokenReferences:
 			tw.ShowBrokenReferences()
-		case ScreenSection:
+		case screenSection:
 			tw.ShowSection()
-		case ScreenBillOfMaterials:
+		case screenBillOfMaterials:
 			tw.ShowBillOfMaterials()
-		case ScreenMotionStudy:
+		case screenMotionStudy:
 			tw.ShowMotionStudy()
-		case ScreenDrawing:
+		case screenDrawing:
 			tw.ShowDrawing()
 		}
 	}
@@ -801,7 +801,7 @@ func (tw *TextWindow) Show() {
 	if tw.editControl.colorPicker.show {
 		pickerHeight := 25
 		halfRow := tw.editControl.halfRow
-		if tw.lineTop(tw.rows-1)-halfRow < pickerHeight && tw.rows < MaxRows {
+		if tw.lineTop(tw.rows-1)-halfRow < pickerHeight && tw.rows < maxRows {
 			tw.rows++
 			row := tw.addRow()
 			row.top = halfRow + pickerHeight
@@ -814,7 +814,7 @@ func (tw *TextWindow) Show() {
 }
 
 // Resize fits the scrollbar to the window.
-func (tw *TextWindow) Resize() {
+func (tw *textWindow) Resize() {
 	_, height := tw.window.ContentSize()
 
 	tw.halfRows = int(height) / (lineHeight / 2)
@@ -831,7 +831,7 @@ func (tw *TextWindow) Resize() {
 
 // DrawOrHitTestIcons draws the icons at the top, or finds the one under
 // the mouse.
-func (tw *TextWindow) DrawOrHitTestIcons(uiCanvas *render.UICanvas, how drawOrHitHow, mx, my float64) {
+func (tw *textWindow) DrawOrHitTestIcons(uiCanvas *render.UICanvas, how drawOrHitHow, mx, my float64) {
 	width, _ := tw.window.ContentSize()
 
 	x, y := 20, 33+lineHeight
@@ -975,7 +975,7 @@ func hsvPattern1d(hue, sat float64, w, h int) *res.Pixmap {
 }
 
 // ColorPickerDone enters the picked colour.
-func (tw *TextWindow) ColorPickerDone() {
+func (tw *textWindow) ColorPickerDone() {
 	rgb := tw.editControl.colorPicker.rgb
 	tw.EditControlDone(fmt.Sprintf("%.2f, %.2f, %.3f", rgb.RedF(), rgb.GreenF(), rgb.BlueF()))
 }
@@ -1004,7 +1004,7 @@ func rgbfVec(rgb geom.Vector) core.RGBA {
 // DrawOrHitTestColorPicker draws the colour picker, or handles the
 // mouse on it; it reports whether the picker is shown and has the
 // mouse.
-func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UICanvas, how drawOrHitHow,
+func (tw *textWindow) DrawOrHitTestColorPicker(uiCanvas *render.UICanvas, how drawOrHitHow,
 	leftDown bool, x, y float64) bool {
 	cp := &tw.editControl.colorPicker
 	mousePointerAsHand := false
@@ -1179,7 +1179,7 @@ func (tw *TextWindow) DrawOrHitTestColorPicker(uiCanvas *render.UICanvas, how dr
 }
 
 // Paint draws the window.
-func (tw *TextWindow) Paint() {
+func (tw *textWindow) Paint() {
 	if tw.canvas == nil {
 		return
 	}
@@ -1210,7 +1210,7 @@ func (tw *TextWindow) Paint() {
 
 	uiCanvas := &render.UICanvas{Canvas: canvas, Flip: true}
 
-	cols := min(int(width)/charWidth+1, MaxCols)
+	cols := min(int(width)/charWidth+1, maxCols)
 	for a := range 2 {
 		for r := range tw.rows {
 			ltop := tw.lineTop(r)
@@ -1266,7 +1266,7 @@ func (tw *TextWindow) Paint() {
 						}
 						cs++
 
-						for cf < MaxCols && same(cf) {
+						for cf < maxCols && same(cf) {
 							cf++
 						}
 
@@ -1296,7 +1296,7 @@ func (tw *TextWindow) Paint() {
 	// Make sure this test agrees with test to determine which screen is
 	// drawn
 	if ss.GW.pending.description == "" && gs.n == 0 && gs.constraints == 0 &&
-		tw.shown.screen == ScreenListOfGroups {
+		tw.shown.screen == screenListOfGroups {
 		x, y := 29, 70+lineHeight
 		y -= tw.scrollPos * (lineHeight / 2)
 
@@ -1317,7 +1317,7 @@ func (tw *TextWindow) Paint() {
 }
 
 // MouseEvent handles the mouse moving or clicking in the window.
-func (tw *TextWindow) MouseEvent(leftClick, leftDown bool, x, y float64) {
+func (tw *textWindow) MouseEvent(leftClick, leftDown bool, x, y float64) {
 	ss := tw.ss
 	if tw.window.IsEditorVisible() || (ss.GW.window != nil && ss.GW.window.IsEditorVisible()) {
 		how := howHover
@@ -1362,7 +1362,7 @@ func (tw *TextWindow) MouseEvent(leftClick, leftDown bool, x, y float64) {
 			break
 		}
 	}
-	if r >= 0 && c >= 0 && r < tw.rows && c < MaxCols {
+	if r >= 0 && c >= 0 && r < tw.rows && c < maxCols {
 		tw.window.SetCursor(platform.CursorPointer)
 
 		tw.hoveredRow = r
@@ -1394,7 +1394,7 @@ func (tw *TextWindow) MouseEvent(leftClick, leftDown bool, x, y float64) {
 }
 
 // MouseLeave forgets the hovered cell.
-func (tw *TextWindow) MouseLeave() {
+func (tw *textWindow) MouseLeave() {
 	tw.hoveredButton = nil
 	tw.hoveredRow = 0
 	tw.hoveredCol = 0
@@ -1402,7 +1402,7 @@ func (tw *TextWindow) MouseLeave() {
 }
 
 // ScrollbarEvent scrolls to a position in half-rows.
-func (tw *TextWindow) ScrollbarEvent(newPos float64) {
+func (tw *textWindow) ScrollbarEvent(newPos float64) {
 	if tw.window.IsEditorVisible() {
 		// An edit field is active. Do not move the scrollbar.
 		return
@@ -1419,7 +1419,7 @@ func (tw *TextWindow) ScrollbarEvent(newPos float64) {
 }
 
 // GoToScreen shows another screen at the next Show.
-func (tw *TextWindow) GoToScreen(screen Screen) {
+func (tw *textWindow) GoToScreen(screen Screen) {
 	tw.shown.screen = screen
 }
 

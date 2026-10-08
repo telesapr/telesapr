@@ -37,13 +37,13 @@ func (ss *Application) MenuMotionStudy() {
 		}
 	}
 	ss.GW.ClearSelection()
-	tw.GoToScreen(ScreenMotionStudy)
+	tw.GoToScreen(screenMotionStudy)
 	ss.GW.ForceTextWindowShown()
 	ss.ScheduleShowTW()
 }
 
 // ShowMotionStudy is the motion study's screen.
-func (tw *TextWindow) ShowMotionStudy() {
+func (tw *textWindow) ShowMotionStudy() {
 	m := &tw.motion
 	tw.Printf(true, "%FtMOTION STUDY%E")
 	if len(tw.ss.SK.Parameters) == 0 {
@@ -85,21 +85,21 @@ func (tw *TextWindow) ShowMotionStudy() {
 
 // ScreenChangeMotion edits the study's parameter ('n'), its range ('f',
 // 't') or steps ('s'), or runs it ('r'), saving each step ('R').
-func (tw *TextWindow) ScreenChangeMotion(link int, v uint32) {
+func (tw *textWindow) ScreenChangeMotion(link int, v uint32) {
 	m := &tw.motion
 	switch link {
 	case 'n':
 		tw.ShowEditControl(13, m.param)
-		tw.edit.meaning = EditMotionParameter
+		tw.edit.meaning = editMotionParameter
 	case 'f':
 		tw.ShowEditControl(13, strconv.FormatFloat(m.from, 'g', -1, 64))
-		tw.edit.meaning = EditMotionFrom
+		tw.edit.meaning = editMotionFrom
 	case 't':
 		tw.ShowEditControl(13, strconv.FormatFloat(m.to, 'g', -1, 64))
-		tw.edit.meaning = EditMotionTo
+		tw.edit.meaning = editMotionTo
 	case 's':
 		tw.ShowEditControl(13, strconv.Itoa(m.steps))
-		tw.edit.meaning = EditMotionSteps
+		tw.edit.meaning = editMotionSteps
 	case 'r':
 		tw.runMotionStudy("")
 	case 'R':
@@ -121,7 +121,7 @@ func (tw *TextWindow) ScreenChangeMotion(link int, v uint32) {
 
 // runMotionStudy runs the study, saving its frames by the pattern if
 // it isn't "", and shows what it gave.
-func (tw *TextWindow) runMotionStudy(frames string) {
+func (tw *textWindow) runMotionStudy(frames string) {
 	m := &tw.motion
 	doc := api.NewDoc(tw.ss.ScriptHost())
 	m.frames, m.err = nil, ""
@@ -136,7 +136,7 @@ func (tw *TextWindow) runMotionStudy(frames string) {
 
 // editMotion takes an edit of the study's screen, and reports whether
 // the edit was one of those.
-func (tw *TextWindow) editMotion(s string) bool {
+func (tw *textWindow) editMotion(s string) bool {
 	ss := tw.ss
 	m := &tw.motion
 	s = strings.TrimSpace(s)
@@ -148,21 +148,21 @@ func (tw *TextWindow) editMotion(s string) bool {
 		return ss.evalExpr(e), true
 	}
 	switch tw.edit.meaning {
-	case EditMotionParameter:
+	case editMotionParameter:
 		if ss.SK.Parameter(s) == nil {
 			ss.Error("There is no parameter %q.", s)
 			break
 		}
 		m.param = s
-	case EditMotionFrom:
+	case editMotionFrom:
 		if v, ok := number(); ok {
 			m.from = v
 		}
-	case EditMotionTo:
+	case editMotionTo:
 		if v, ok := number(); ok {
 			m.to = v
 		}
-	case EditMotionSteps:
+	case editMotionSteps:
 		n, err := strconv.Atoi(s)
 		if err != nil || n < 1 || n > 10000 {
 			ss.Error("A motion study takes from 1 to 10000 steps.")

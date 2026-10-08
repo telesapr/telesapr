@@ -26,12 +26,12 @@ type sheetCache struct {
 }
 
 // SheetShown reports whether the window shows the drawing sheet.
-func (gw *GraphicsWindow) SheetShown() bool { return gw.sheetShown }
+func (gw *graphicsWindow) SheetShown() bool { return gw.sheetShown }
 
 // ShowSheet shows the drawing sheet in the window, or the model again.
 // It is an error to show a sheet that can't be made, as of a group with
 // no solid; the window then stays on the model.
-func (gw *GraphicsWindow) ShowSheet(on bool) error {
+func (gw *graphicsWindow) ShowSheet(on bool) error {
 	if on {
 		if _, err := gw.sheetEdges(); err != nil {
 			return err
@@ -46,14 +46,14 @@ func (gw *GraphicsWindow) ShowSheet(on bool) error {
 }
 
 // MenuShowDrawingSheet turns the sheet in the window on or off.
-func (gw *GraphicsWindow) MenuShowDrawingSheet() {
+func (gw *graphicsWindow) MenuShowDrawingSheet() {
 	if err := gw.ShowSheet(!gw.sheetShown); err != nil {
 		gw.ss.Error("Can't show the drawing sheet: %s.", err.Error())
 	}
 }
 
 // syncSheetMenu checks View > Show Drawing Sheet when the sheet is shown.
-func (gw *GraphicsWindow) syncSheetMenu() {
+func (gw *graphicsWindow) syncSheetMenu() {
 	if gw.sheetMenuItem != nil {
 		gw.sheetMenuItem.SetActive(gw.sheetShown)
 	}
@@ -61,7 +61,7 @@ func (gw *GraphicsWindow) syncSheetMenu() {
 
 // sheetEdges is the drawing's sheet as it would be written, made again
 // only when the model, the active group or the drawing has changed.
-func (gw *GraphicsWindow) sheetEdges() (*srf.SEdgeList, error) {
+func (gw *graphicsWindow) sheetEdges() (*srf.SEdgeList, error) {
 	ss := gw.ss
 	d := ss.drawing()
 	key := fmt.Sprintf("%d %x %v", ss.SK.Generation, gw.activeGroupH().V, *d)
@@ -74,7 +74,7 @@ func (gw *GraphicsWindow) sheetEdges() (*srf.SEdgeList, error) {
 
 // sheetCamera looks square at the sheet, which lies in the plane z = 0
 // in mm from its bottom left, fitted to a window the size of camera's.
-func (gw *GraphicsWindow) sheetCamera(camera render.Camera) render.Camera {
+func (gw *graphicsWindow) sheetCamera(camera render.Camera) render.Camera {
 	w, h := gw.ss.drawing().Size()
 	c := camera
 	c.ProjRight, c.ProjUp = geom.Vector{X: 1}, geom.Vector{Y: 1}
@@ -88,7 +88,7 @@ func (gw *GraphicsWindow) sheetCamera(camera render.Camera) render.Camera {
 // edge, then the sheet's lines in their styles, hidden edges dashed.
 // A canvas with no camera of its own to set, as the picker's, gets
 // nothing: the sheet is not picked.
-func (gw *GraphicsWindow) drawSheet(canvas render.Canvas) {
+func (gw *graphicsWindow) drawSheet(canvas render.Canvas) {
 	ss := gw.ss
 	vc, ok := canvas.(render.ViewportCanvas)
 	if !ok {

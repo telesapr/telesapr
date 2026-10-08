@@ -19,11 +19,11 @@ import (
 	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
-// ModelColors is how many model colours the settings keep.
-const ModelColors = 8
+// modelColors is how many model colours the settings keep.
+const modelColors = 8
 
-// MaxRecent is how many recent files are remembered.
-const MaxRecent = 8
+// maxRecent is how many recent files are remembered.
+const maxRecent = 8
 
 // Application is the application: the sketch, its two windows and the
 // user's configuration.
@@ -32,11 +32,11 @@ type Application struct {
 	Settings core.Settings
 
 	SK *sketch.Sketch
-	GW *GraphicsWindow
-	TW *TextWindow
+	GW *graphicsWindow
+	TW *textWindow
 
-	// Config is the user's configuration, as saved between runs.
-	Config
+	// config is the user's configuration, as saved between runs.
+	config
 
 	// BackgroundShells has the regenerations the interface schedules
 	// make the solids off its thread (shelljob.go); the application

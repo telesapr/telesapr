@@ -14,15 +14,15 @@ import (
 // drawSelection is Selection::Draw: highlighted, and when emphasized,
 // with thick lines from the top left of the screen to its reference
 // points.
-func (gw *GraphicsWindow) drawSelection(s *Selection, isHovered bool, canvas render.Canvas) {
+func (gw *graphicsWindow) drawSelection(s *Selection, isHovered bool, canvas render.Canvas) {
 	sk := gw.sk()
 	camera := canvas.Camera()
 
 	var refs []geom.Vector
-	how := EntityDrawSelected
-	chow := ConstraintDrawSelected
+	how := entityDrawSelected
+	chow := constraintDrawSelected
 	if isHovered {
-		how, chow = EntityDrawHovered, ConstraintDrawHovered
+		how, chow = entityDrawHovered, constraintDrawHovered
 	}
 	if s.Entity.V != 0 {
 		e := sk.Entity(s.Entity)
@@ -71,7 +71,7 @@ func (gw *GraphicsWindow) drawSelection(s *Selection, isHovered bool, canvas ren
 }
 
 // ClearSelection selects nothing.
-func (gw *GraphicsWindow) ClearSelection() {
+func (gw *graphicsWindow) ClearSelection() {
 	gw.selection = nil
 	gw.ss.ScheduleShowTW()
 	gw.Invalidate(false)
@@ -79,7 +79,7 @@ func (gw *GraphicsWindow) ClearSelection() {
 
 // ClearNonexistentSelectionItems drops what no longer exists from the
 // selection.
-func (gw *GraphicsWindow) ClearNonexistentSelectionItems() {
+func (gw *graphicsWindow) ClearNonexistentSelectionItems() {
 	sk := gw.sk()
 	change := false
 	kept := gw.selection[:0]
@@ -101,12 +101,12 @@ func (gw *GraphicsWindow) ClearNonexistentSelectionItems() {
 }
 
 // IsSelectedEntity reports whether he is selected.
-func (gw *GraphicsWindow) IsSelectedEntity(he core.HEntity) bool {
+func (gw *graphicsWindow) IsSelectedEntity(he core.HEntity) bool {
 	return gw.IsSelected(&Selection{Entity: he})
 }
 
 // IsSelected reports whether st is selected.
-func (gw *GraphicsWindow) IsSelected(st *Selection) bool {
+func (gw *graphicsWindow) IsSelected(st *Selection) bool {
 	for i := range gw.selection {
 		if gw.selection[i].Equals(st) {
 			return true
@@ -116,14 +116,14 @@ func (gw *GraphicsWindow) IsSelected(st *Selection) bool {
 }
 
 // MakeUnselectedEntity unselects he.
-func (gw *GraphicsWindow) MakeUnselectedEntity(he core.HEntity, coincidentPointTrick bool) {
+func (gw *graphicsWindow) MakeUnselectedEntity(he core.HEntity, coincidentPointTrick bool) {
 	gw.MakeUnselected(&Selection{Entity: he}, coincidentPointTrick)
 }
 
 // MakeUnselected unselects an item; with coincidentPointTrick, also
 // the points coincident with it, since the lower of two coincident
 // points could never be hovered to be deselected.
-func (gw *GraphicsWindow) MakeUnselected(stog *Selection, coincidentPointTrick bool) {
+func (gw *graphicsWindow) MakeUnselected(stog *Selection, coincidentPointTrick bool) {
 	if stog.IsEmpty() {
 		return
 	}
@@ -159,7 +159,7 @@ func (gw *GraphicsWindow) MakeUnselected(stog *Selection, coincidentPointTrick b
 	gw.removeTaggedSelections()
 }
 
-func (gw *GraphicsWindow) removeTaggedSelections() {
+func (gw *graphicsWindow) removeTaggedSelections() {
 	kept := gw.selection[:0]
 	for _, s := range gw.selection {
 		if s.Tag == 0 {
@@ -170,18 +170,18 @@ func (gw *GraphicsWindow) removeTaggedSelections() {
 }
 
 // MakeSelectedEntity selects he.
-func (gw *GraphicsWindow) MakeSelectedEntity(he core.HEntity) {
+func (gw *graphicsWindow) MakeSelectedEntity(he core.HEntity) {
 	gw.MakeSelected(&Selection{Entity: he})
 }
 
 // MakeSelectedConstraint selects hc.
-func (gw *GraphicsWindow) MakeSelectedConstraint(hc core.HConstraint) {
+func (gw *graphicsWindow) MakeSelectedConstraint(hc core.HConstraint) {
 	gw.MakeSelected(&Selection{Constraint: hc})
 }
 
 // MakeSelected selects an item, if it isn't already; only
 // maxSelectableFaces faces may be selected at once.
-func (gw *GraphicsWindow) MakeSelected(stog *Selection) {
+func (gw *graphicsWindow) MakeSelected(stog *Selection) {
 	if stog.IsEmpty() || gw.IsSelected(stog) {
 		return
 	}
@@ -206,7 +206,7 @@ func (gw *GraphicsWindow) MakeSelected(stog *Selection) {
 }
 
 // SelectByMarquee selects what lies within the marquee.
-func (gw *GraphicsWindow) SelectByMarquee() {
+func (gw *graphicsWindow) SelectByMarquee() {
 	sk := gw.sk()
 	marqueePoint := gw.ProjectPoint(gw.orig.marqueePoint)
 	marqueeBBox := core.NewBBox(
@@ -244,7 +244,7 @@ func (gw *GraphicsWindow) SelectByMarquee() {
 }
 
 // GroupSelection sorts the selection by kind into gw.gs.
-func (gw *GraphicsWindow) GroupSelection() {
+func (gw *graphicsWindow) GroupSelection() {
 	sk := gw.sk()
 	gw.gs = groupedSelection{}
 	gs := &gw.gs
@@ -326,17 +326,17 @@ func (gw *GraphicsWindow) GroupSelection() {
 
 // ChooseFromHoverToSelect picks what a click selects: the frontmost of
 // the hovered items not after the active group.
-func (gw *GraphicsWindow) ChooseFromHoverToSelect() Selection {
+func (gw *graphicsWindow) ChooseFromHoverToSelect() Selection {
 	return gw.chooseFromHover(false)
 }
 
 // ChooseFromHoverToDrag is ChooseFromHoverToSelect, less the points
 // that can't be dragged.
-func (gw *GraphicsWindow) ChooseFromHoverToDrag() Selection {
+func (gw *graphicsWindow) ChooseFromHoverToDrag() Selection {
 	return gw.chooseFromHover(true)
 }
 
-func (gw *GraphicsWindow) chooseFromHover(forDrag bool) Selection {
+func (gw *graphicsWindow) chooseFromHover(forDrag bool) Selection {
 	var sel Selection
 	if len(gw.hoverList) == 0 {
 		return sel
@@ -385,7 +385,7 @@ func (gw *GraphicsWindow) chooseFromHover(forDrag bool) Selection {
 
 // HitTestMakeSelection finds what is under the mouse at mp and makes
 // it the hover.
-func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
+func (gw *graphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	sk := gw.sk()
 	gw.hoverList = nil
 	var sel Selection
@@ -439,7 +439,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 			}
 		}
 
-		if canvas.Pick(func() { gw.drawEntity(e, EntityDrawDefault, canvas) }) {
+		if canvas.Pick(func() { gw.drawEntity(e, entityDrawDefault, canvas) }) {
 			gw.hoverList = append(gw.hoverList, Hover{
 				Distance:  canvas.MinDistance,
 				ZIndex:    canvas.MaxZIndex,
@@ -450,10 +450,10 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	}
 
 	// The constraints and faces happen only when nothing's in progress.
-	if gw.pending.operation == PendingNone {
+	if gw.pending.operation == pendingNone {
 		for i := range sk.Constraints {
 			c := &sk.Constraints[i]
-			if canvas.Pick(func() { gw.drawConstraint(c, ConstraintDrawDefault, canvas) }) {
+			if canvas.Pick(func() { gw.drawConstraint(c, constraintDrawDefault, canvas) }) {
 				gw.hoverList = append(gw.hoverList, Hover{
 					Distance:  canvas.MinDistance,
 					ZIndex:    canvas.MaxZIndex,
@@ -472,7 +472,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	})
 	sel = gw.ChooseFromHoverToSelect()
 
-	if gw.pending.operation == PendingNone && sel.IsEmpty() && gw.showShaded {
+	if gw.pending.operation == pendingNone && sel.IsEmpty() && gw.showShaded {
 		// Edges of the solid that no entity draws, as a Boolean makes:
 		// below entities and constraints, above faces.
 		if n, ok := gw.hoverSolidEdge(mp); ok {
@@ -481,7 +481,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 		}
 	}
 
-	if gw.pending.operation == PendingNone {
+	if gw.pending.operation == pendingNone {
 		// Faces, from the triangle mesh; these are lowest priority
 		if sel.IsEmpty() && gw.showShaded && gw.showFaces {
 			g := sk.Group(gw.activeGroupH())
@@ -512,7 +512,7 @@ func (gw *GraphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 }
 
 // DrawSnapGrid draws the grid in the active workplane.
-func (gw *GraphicsWindow) DrawSnapGrid(canvas render.Canvas) {
+func (gw *graphicsWindow) DrawSnapGrid(canvas render.Canvas) {
 	if !gw.LockedInWorkplane() {
 		return
 	}
@@ -588,7 +588,7 @@ func (gw *GraphicsWindow) DrawSnapGrid(canvas render.Canvas) {
 
 // DrawEntities draws the entities that change with the view (or, with
 // persistent, those that don't: normals and workplanes).
-func (gw *GraphicsWindow) DrawEntities(canvas render.Canvas, persistent bool) {
+func (gw *graphicsWindow) DrawEntities(canvas render.Canvas, persistent bool) {
 	sk := gw.sk()
 	for i := range sk.Entities {
 		e := &sk.Entities[i]
@@ -596,20 +596,20 @@ func (gw *GraphicsWindow) DrawEntities(canvas render.Canvas, persistent bool) {
 			continue
 		}
 		switch gw.drawOccludedAs {
-		case OccludedVisible:
-			gw.drawEntity(e, EntityDrawOverlay, canvas)
-		case OccludedStippled:
-			gw.drawEntity(e, EntityDrawHidden, canvas)
-			gw.drawEntity(e, EntityDrawDefault, canvas)
-		case OccludedInvisible:
-			gw.drawEntity(e, EntityDrawDefault, canvas)
+		case occludedVisible:
+			gw.drawEntity(e, entityDrawOverlay, canvas)
+		case occludedStippled:
+			gw.drawEntity(e, entityDrawHidden, canvas)
+			gw.drawEntity(e, entityDrawDefault, canvas)
+		case occludedInvisible:
+			gw.drawEntity(e, entityDrawDefault, canvas)
 		}
 	}
 }
 
 // DrawPersistent draws what doesn't change with the view: the active
 // group's mesh and edges, and the filled paths.
-func (gw *GraphicsWindow) DrawPersistent(canvas render.Canvas) {
+func (gw *graphicsWindow) DrawPersistent(canvas render.Canvas) {
 	sk := gw.sk()
 	// Draw the active group; this does stuff like the mesh and edges.
 	gw.drawGroup(sk.Group(gw.activeGroupH()), canvas)
@@ -631,7 +631,7 @@ func (gw *GraphicsWindow) DrawPersistent(canvas render.Canvas) {
 }
 
 // Draw draws the model, constraints and overlays.
-func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
+func (gw *graphicsWindow) Draw(canvas render.Canvas) {
 	ss := gw.ss
 	sk := gw.sk()
 	camera := canvas.Camera()
@@ -660,7 +660,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 
 	// Draw the constraints
 	for i := range sk.Constraints {
-		gw.drawConstraint(&sk.Constraints[i], ConstraintDrawDefault, canvas)
+		gw.drawConstraint(&sk.Constraints[i], constraintDrawDefault, canvas)
 	}
 
 	// Draw areas
@@ -676,15 +676,15 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 
 	// Draw the "pending" constraint, i.e. a constraint that would be
 	// placed on a line that is almost horizontal or vertical.
-	if (gw.pending.operation == PendingDraggingNewLinePoint || gw.pending.operation == PendingDraggingNewArcPoint ||
-		gw.pending.operation == PendingDraggingNewRadius) && gw.pending.hasSuggestion {
+	if (gw.pending.operation == pendingDraggingNewLinePoint || gw.pending.operation == pendingDraggingNewArcPoint ||
+		gw.pending.operation == pendingDraggingNewRadius) && gw.pending.hasSuggestion {
 		var c core.Constraint
 		c.Group = gw.activeGroupH()
 		c.Workplane = gw.ActiveWorkplane()
 		c.Type = gw.pending.suggestion.Type
 		c.EntityA, c.EntityB = gw.pending.suggestion.A, gw.pending.suggestion.B
 		c.Other, c.Other2 = gw.pending.suggestion.Other, gw.pending.suggestion.Other2
-		gw.drawConstraint(&c, ConstraintDrawDefault, canvas)
+		gw.drawConstraint(&c, constraintDrawDefault, canvas)
 	}
 
 	strokeAnalyze := ss.styleStroke(hstyle(core.StyleAnalyze))
@@ -792,7 +792,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 }
 
 // Paint renders the window.
-func (gw *GraphicsWindow) Paint() {
+func (gw *graphicsWindow) Paint() {
 	ss := gw.ss
 	if gw.window == nil || gw.canvas == nil {
 		panic("ui: cannot paint without window and canvas")
@@ -839,7 +839,7 @@ func (gw *GraphicsWindow) Paint() {
 
 	// If a marquee selection is in progress, then draw the selection
 	// rectangle, as an outline and a transparent fill.
-	if gw.pending.operation == PendingDraggingMarquee {
+	if gw.pending.operation == pendingDraggingMarquee {
 		begin := gw.ProjectPoint(gw.orig.marqueePoint)
 		uiCanvas.DrawRect(int(gw.orig.mouse.U)+int(camera.Width)/2,
 			int(begin.U)+int(camera.Width)/2,

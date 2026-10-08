@@ -28,7 +28,7 @@ func (ss *Application) drawing() *sketch.Drawing {
 // MenuDrawingSheet shows the drawing's screen.
 // What is selected stays, for dimensions.
 func (ss *Application) MenuDrawingSheet() {
-	ss.TW.GoToScreen(ScreenDrawing)
+	ss.TW.GoToScreen(screenDrawing)
 	ss.GW.ForceTextWindowShown()
 	ss.ScheduleShowTW()
 }
@@ -53,7 +53,7 @@ func (ss *Application) MenuExportDrawing() {
 }
 
 // ShowDrawing is the drawing's screen.
-func (tw *TextWindow) ShowDrawing() {
+func (tw *textWindow) ShowDrawing() {
 	d := tw.ss.SK.Drawing
 	if d == nil {
 		d = sketch.DefaultDrawing()
@@ -160,7 +160,7 @@ func (tw *TextWindow) ShowDrawing() {
 // landscape or portrait ('o', 'O'), the scale ('c'), the projection
 // ('t', 'f'), hidden edges ('h'), or a field of the title block ('1' to
 // '6').
-func (tw *TextWindow) ScreenChangeDrawing(link int, v uint32) {
+func (tw *textWindow) ScreenChangeDrawing(link int, v uint32) {
 	ss := tw.ss
 	change := func(fn func(d *sketch.Drawing)) {
 		ss.UndoRemember()
@@ -195,7 +195,7 @@ func (tw *TextWindow) ScreenChangeDrawing(link int, v uint32) {
 			text = strconv.FormatFloat(d.Scale, 'g', -1, 64)
 		}
 		tw.ShowEditControl(12, text)
-		tw.edit.meaning = EditDrawingScale
+		tw.edit.meaning = editDrawingScale
 	case 'x':
 		change(func(d *sketch.Drawing) {
 			if int(v) < len(d.Sections) {
@@ -223,28 +223,28 @@ func (tw *TextWindow) ScreenChangeDrawing(link int, v uint32) {
 			return
 		}
 		tw.ShowEditControl(18, "front length")
-		tw.edit.meaning = EditDrawingDimension
+		tw.edit.meaning = editDrawingDimension
 	case 'a':
 		tw.ShowEditControl(18, "front 0")
-		tw.edit.meaning = EditDrawingSection
+		tw.edit.meaning = editDrawingSection
 	case 'd':
 		tw.ShowEditControl(18, "front 0 0 10 2")
-		tw.edit.meaning = EditDrawingDetail
+		tw.edit.meaning = editDrawingDetail
 	case '1', '2', '3', '4', '5', '6':
 		d := ss.drawing()
 		text := []string{d.Title, d.Author, d.Number, d.Revision, d.Material, d.Company}[link-'1']
 		tw.ShowEditControl(18, text)
-		tw.edit.meaning = EditDrawingField
+		tw.edit.meaning = editDrawingField
 		tw.edit.i = link - '1'
 	}
 }
 
 // editDrawing takes an edit of the drawing's screen, and reports
 // whether the edit was one of those.
-func (tw *TextWindow) editDrawing(s string) bool {
+func (tw *textWindow) editDrawing(s string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
-	case EditDrawingScale:
+	case editDrawingScale:
 		// "1:2", "2:1" or a number; 0 fits the sheet.
 		var scale float64
 		var err error
@@ -264,7 +264,7 @@ func (tw *TextWindow) editDrawing(s string) bool {
 		}
 		ss.UndoRemember()
 		ss.drawing().Scale = scale
-	case EditDrawingSection, EditDrawingDetail:
+	case editDrawingSection, editDrawingDetail:
 		f := strings.Fields(s)
 		var nums []float64
 		for _, w := range f[min(1, len(f)):] {
@@ -276,7 +276,7 @@ func (tw *TextWindow) editDrawing(s string) bool {
 			nums = append(nums, x)
 		}
 		d := ss.drawing().Clone()
-		if tw.edit.meaning == EditDrawingSection {
+		if tw.edit.meaning == editDrawingSection {
 			if len(f) != 2 || len(nums) != 1 {
 				ss.Error("A section is typed as its view and its offset, as front 0.")
 				return true
@@ -295,7 +295,7 @@ func (tw *TextWindow) editDrawing(s string) bool {
 		}
 		ss.UndoRemember()
 		ss.SK.Drawing = d
-	case EditDrawingDimension:
+	case editDrawingDimension:
 		f := strings.Fields(s)
 		if len(f) < 2 || len(f) > 3 {
 			ss.Error("A dimension is typed as its view and kind, as front length, and how far out, as front length 10.")
@@ -322,7 +322,7 @@ func (tw *TextWindow) editDrawing(s string) bool {
 		ss.UndoRemember()
 		ss.SK.Drawing = d
 		ss.GW.ClearSelection()
-	case EditDrawingField:
+	case editDrawingField:
 		ss.UndoRemember()
 		d := ss.drawing()
 		v := strings.TrimSpace(s)

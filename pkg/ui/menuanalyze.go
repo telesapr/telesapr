@@ -24,7 +24,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 	gs := &gw.gs
 
 	switch id {
-	case CmdStepDim:
+	case cmdStepDim:
 		if gs.constraints == 1 && gs.n == 0 {
 			c := sk.Constraint(gs.constraint[0])
 			if c.HasLabel() && !c.Reference {
@@ -40,7 +40,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 					ss.TW.stepDim.isDistance = true
 				}
 				ss.TW.shown.constraint = c.H
-				ss.TW.shown.screen = ScreenStepDimension
+				ss.TW.shown.screen = screenStepDimension
 
 				// The step params are specified in the text window,
 				// so force that to be shown.
@@ -56,25 +56,25 @@ func (ss *Application) MenuAnalyze(id Command) {
 			ss.Error("Bad selection for step dimension; select a constraint.")
 		}
 
-	case CmdNakedEdges:
+	case cmdNakedEdges:
 		ss.ShowNakedEdges(false)
 
-	case CmdInterference:
+	case cmdInterference:
 		ss.analyzeInterference()
 
-	case CmdCheckSolid:
+	case cmdCheckSolid:
 		ss.CheckSolid()
 
-	case CmdCenterOfMass:
+	case cmdCenterOfMass:
 		ss.analyzeCenterOfMass()
 
-	case CmdVolume:
+	case cmdVolume:
 		ss.analyzeVolume()
 
-	case CmdArea:
+	case cmdArea:
 		ss.analyzeArea()
 
-	case CmdPerimeter:
+	case cmdPerimeter:
 		if gs.n > 0 && gs.n == gs.entities {
 			perimeter := 0.0
 			for i := range gs.entities {
@@ -93,12 +93,12 @@ func (ss *Application) MenuAnalyze(id Command) {
 			ss.Error("Bad selection for perimeter; select line segments, arcs, and curves.")
 		}
 
-	case CmdShowDOF:
+	case cmdShowDOF:
 		// This works like a normal solve, except that it calculates
 		// which variables are free/bound at the same time.
 		ss.GenerateAllFindFree(sketch.GenerateAll)
 
-	case CmdTracePt:
+	case cmdTracePt:
 		if gs.points == 1 && gs.n == 1 {
 			ss.GW.traced.Point = gs.point[0]
 			gw.ClearSelection()
@@ -106,10 +106,10 @@ func (ss *Application) MenuAnalyze(id Command) {
 			ss.Error("Bad selection for trace; select a single point.")
 		}
 
-	case CmdBillOfMaterials:
+	case cmdBillOfMaterials:
 		ss.analyzeBillOfMaterials()
 
-	case CmdStopTracing:
+	case cmdStopTracing:
 		ss.analyzeStopTracing()
 
 	default:
@@ -117,7 +117,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 	}
 }
 
-// analyzeInterference runs the Analyze menu's CmdInterference.
+// analyzeInterference runs the Analyze menu's cmdInterference.
 func (ss *Application) analyzeInterference() {
 	sk := ss.SK
 	gw := ss.GW
@@ -171,7 +171,7 @@ func (ss *Application) analyzeInterference() {
 	}
 }
 
-// analyzeCenterOfMass runs the Analyze menu's CmdCenterOfMass.
+// analyzeCenterOfMass runs the Analyze menu's cmdCenterOfMass.
 func (ss *Application) analyzeCenterOfMass() {
 	gw := ss.GW
 
@@ -180,7 +180,7 @@ func (ss *Application) analyzeCenterOfMass() {
 	gw.Invalidate(false)
 }
 
-// analyzeVolume runs the Analyze menu's CmdVolume.
+// analyzeVolume runs the Analyze menu's cmdVolume.
 func (ss *Application) analyzeVolume() {
 	sk := ss.SK
 	gw := ss.GW
@@ -200,7 +200,7 @@ func (ss *Application) analyzeVolume() {
 	ss.Message("%s", msg)
 }
 
-// analyzeArea runs the Analyze menu's CmdArea.
+// analyzeArea runs the Analyze menu's cmdArea.
 func (ss *Application) analyzeArea() {
 	sk := ss.SK
 	gw := ss.GW
@@ -243,17 +243,17 @@ func (ss *Application) analyzeArea() {
 		ss.MmToStringSI(area, 2))
 }
 
-// analyzeBillOfMaterials runs the Analyze menu's CmdBillOfMaterials.
+// analyzeBillOfMaterials runs the Analyze menu's cmdBillOfMaterials.
 func (ss *Application) analyzeBillOfMaterials() {
 	gw := ss.GW
 
 	gw.ClearSelection()
-	ss.TW.GoToScreen(ScreenBillOfMaterials)
+	ss.TW.GoToScreen(screenBillOfMaterials)
 	gw.ForceTextWindowShown()
 	ss.ScheduleShowTW()
 }
 
-// analyzeStopTracing runs the Analyze menu's CmdStopTracing.
+// analyzeStopTracing runs the Analyze menu's cmdStopTracing.
 func (ss *Application) analyzeStopTracing() {
 	settings := ss.Settings
 	gw := ss.GW
@@ -386,10 +386,10 @@ func (ss *Application) UpdateCenterOfMass() {
 // MenuHelp runs a Help menu command.
 func (ss *Application) MenuHelp(id Command) {
 	switch id {
-	case CmdWebsite:
+	case cmdWebsite:
 		ss.Platform.OpenInBrowser(version.Guide)
 
-	case CmdAbout:
+	case cmdAbout:
 		ss.Message(
 			"This is TeleSAPR version %s.\n"+
 				"\n"+
@@ -409,7 +409,7 @@ func (ss *Application) MenuHelp(id Command) {
 				"© 2025-2026 Mikhail Sorochan and the TeleSAPR authors.\n",
 			version.Version, version.SolveSpaceVersion, 2026)
 
-	case CmdGithub:
+	case cmdGithub:
 		ss.Platform.OpenInBrowser(version.Repository)
 
 	default:

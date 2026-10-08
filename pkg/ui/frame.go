@@ -11,7 +11,7 @@ import (
 
 // bitmapFont is the text font the canvases share, since loading
 // Unifont is slow.
-func (gw *GraphicsWindow) bitmapFont() *res.BitmapFont {
+func (gw *graphicsWindow) bitmapFont() *res.BitmapFont {
 	if gw.ss.bitmapFont == nil {
 		gw.ss.bitmapFont = res.NewBitmapFont()
 	}
@@ -19,7 +19,7 @@ func (gw *GraphicsWindow) bitmapFont() *res.BitmapFont {
 }
 
 // shareBitmapFont gives a canvas the shared bitmap font.
-func (gw *GraphicsWindow) shareBitmapFont(c render.Canvas) {
+func (gw *graphicsWindow) shareBitmapFont(c render.Canvas) {
 	if s, ok := c.(interface{ SetBitmapFont(*res.BitmapFont) }); ok {
 		s.SetBitmapFont(gw.bitmapFont())
 	}

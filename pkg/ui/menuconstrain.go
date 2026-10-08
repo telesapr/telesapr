@@ -13,7 +13,7 @@ import (
 // on, and the constraints it added.
 type constraining struct {
 	ss      *Application
-	gw      *GraphicsWindow
+	gw      *graphicsWindow
 	sk      *sketch.Sketch
 	gs      *groupedSelection
 	c       core.Constraint
@@ -65,7 +65,7 @@ func (ss *Application) MenuConstrain(id Command) {
 			}
 		}
 
-		if (id == CmdDistanceDia || id == CmdAngle || id == CmdRatio || id == CmdDifference) &&
+		if (id == cmdDistanceDia || id == cmdAngle || id == cmdRatio || id == cmdDifference) &&
 			ss.ImmediatelyEditDimension {
 			gw.EditConstraint(nc.H)
 		}
@@ -77,51 +77,51 @@ func (ss *Application) MenuConstrain(id Command) {
 // run adds the constraints command id asks for.
 func (k *constraining) run(id Command) {
 	switch id {
-	case CmdDistanceDia, CmdRefDistance:
+	case cmdDistanceDia, cmdRefDistance:
 		k.constrainDistance(id)
 
-	case CmdOnEntity:
+	case cmdOnEntity:
 		k.constrainOnEntity()
 
-	case CmdEqual:
+	case cmdEqual:
 		k.constrainEqual()
 
-	case CmdRatio, CmdDifference:
+	case cmdRatio, cmdDifference:
 		k.constrainRatioOrDifference(id)
 
-	case CmdAtMidpoint:
+	case cmdAtMidpoint:
 		k.constrainAtMidpoint()
 
-	case CmdSymmetric:
+	case cmdSymmetric:
 		k.constrainSymmetric()
 
-	case CmdVertical, CmdHorizontal:
+	case cmdVertical, cmdHorizontal:
 		k.constrainHorizontalOrVertical(id)
 
-	case CmdOrientedSame:
+	case cmdOrientedSame:
 		k.constrainOrientedSame()
 
-	case CmdOtherAngle:
+	case cmdOtherAngle:
 		k.constrainOtherAngle()
 		return
 
-	case CmdReference:
+	case cmdReference:
 		k.constrainReference()
 		return
 
-	case CmdAngle, CmdRefAngle:
+	case cmdAngle, cmdRefAngle:
 		k.constrainAngle(id)
 
-	case CmdParallel:
+	case cmdParallel:
 		k.constrainParallel()
 
-	case CmdPerpendicular:
+	case cmdPerpendicular:
 		k.constrainPerpendicular()
 
-	case CmdWhereDragged:
+	case cmdWhereDragged:
 		k.constrainWhereDragged()
 
-	case CmdComment:
+	case cmdComment:
 		k.constrainComment()
 
 	default:
@@ -129,7 +129,7 @@ func (k *constraining) run(id Command) {
 	}
 }
 
-// constrainDistance adds the constraint of CmdDistanceDia, CmdRefDistance.
+// constrainDistance adds the constraint of cmdDistanceDia, cmdRefDistance.
 func (k *constraining) constrainDistance(id Command) {
 	ss := k.ss
 	sk := k.sk
@@ -189,7 +189,7 @@ func (k *constraining) constrainDistance(id Command) {
 	} else {
 		c.Disp.Offset = geom.Vector{}
 	}
-	if id == CmdRefDistance {
+	if id == cmdRefDistance {
 		c.Reference = true
 	}
 	c.ValA = 0
@@ -197,7 +197,7 @@ func (k *constraining) constrainDistance(id Command) {
 	k.add(c, true)
 }
 
-// constrainOnEntity adds the constraint of CmdOnEntity.
+// constrainOnEntity adds the constraint of cmdOnEntity.
 func (k *constraining) constrainOnEntity() {
 	gs := k.gs
 	c := k.c
@@ -248,7 +248,7 @@ func (k *constraining) constrainOnEntity() {
 	}
 }
 
-// constrainEqual adds the constraint of CmdEqual.
+// constrainEqual adds the constraint of cmdEqual.
 func (k *constraining) constrainEqual() {
 	ss := k.ss
 	sk := k.sk
@@ -331,13 +331,13 @@ func (k *constraining) constrainEqual() {
 	}
 }
 
-// constrainRatioOrDifference adds the constraint of CmdRatio, CmdDifference.
+// constrainRatioOrDifference adds the constraint of cmdRatio, cmdDifference.
 func (k *constraining) constrainRatioOrDifference(id Command) {
 	sk := k.sk
 	gs := k.gs
 	c := k.c
 
-	ratio := id == CmdRatio
+	ratio := id == cmdRatio
 	switch {
 	case gs.lineSegments == 2 && gs.n == 2:
 		c.Type = core.ConstraintLengthDifference
@@ -382,7 +382,7 @@ func (k *constraining) constrainRatioOrDifference(id Command) {
 	k.add(c, true)
 }
 
-// constrainAtMidpoint adds the constraint of CmdAtMidpoint.
+// constrainAtMidpoint adds the constraint of cmdAtMidpoint.
 func (k *constraining) constrainAtMidpoint() {
 	ss := k.ss
 	sk := k.sk
@@ -417,7 +417,7 @@ func (k *constraining) constrainAtMidpoint() {
 	}
 }
 
-// constrainSymmetric adds the constraint of CmdSymmetric.
+// constrainSymmetric adds the constraint of cmdSymmetric.
 func (k *constraining) constrainSymmetric() {
 	ss := k.ss
 	gw := k.gw
@@ -503,13 +503,13 @@ func (k *constraining) constrainSymmetric() {
 	k.add(c, true)
 }
 
-// constrainHorizontalOrVertical adds the constraint of CmdVertical, CmdHorizontal.
+// constrainHorizontalOrVertical adds the constraint of cmdVertical, cmdHorizontal.
 func (k *constraining) constrainHorizontalOrVertical(id Command) {
 	ss := k.ss
 	gs := k.gs
 	c := k.c
 
-	if id == CmdHorizontal {
+	if id == cmdHorizontal {
 		c.Type = core.ConstraintHorizontal
 	} else {
 		c.Type = core.ConstraintVertical
@@ -545,7 +545,7 @@ func (k *constraining) constrainHorizontalOrVertical(id Command) {
 	}
 }
 
-// constrainOrientedSame adds the constraint of CmdOrientedSame.
+// constrainOrientedSame adds the constraint of cmdOrientedSame.
 func (k *constraining) constrainOrientedSame() {
 	ss := k.ss
 	gw := k.gw
@@ -597,7 +597,7 @@ func (k *constraining) constrainOrientedSame() {
 	k.add(c, false)
 }
 
-// constrainOtherAngle adds the constraint of CmdOtherAngle.
+// constrainOtherAngle adds the constraint of cmdOtherAngle.
 func (k *constraining) constrainOtherAngle() {
 	ss := k.ss
 	sk := k.sk
@@ -623,7 +623,7 @@ func (k *constraining) constrainOtherAngle() {
 	k.errorf("Must select an angle constraint.")
 }
 
-// constrainReference adds the constraint of CmdReference.
+// constrainReference adds the constraint of cmdReference.
 func (k *constraining) constrainReference() {
 	ss := k.ss
 	sk := k.sk
@@ -642,7 +642,7 @@ func (k *constraining) constrainReference() {
 	k.errorf("Must select a constraint with associated label.")
 }
 
-// constrainAngle adds the constraint of CmdAngle, CmdRefAngle.
+// constrainAngle adds the constraint of cmdAngle, cmdRefAngle.
 func (k *constraining) constrainAngle(id Command) {
 	sk := k.sk
 	gs := k.gs
@@ -698,14 +698,14 @@ func (k *constraining) constrainAngle(id Command) {
 		// Otherwise no shared point; not clear which intersection to
 		// draw.
 	}
-	if id == CmdRefAngle {
+	if id == cmdRefAngle {
 		c.Reference = true
 	}
 	c.ModifyToSatisfy(sk)
 	k.add(c, true)
 }
 
-// constrainParallel adds the constraint of CmdParallel.
+// constrainParallel adds the constraint of cmdParallel.
 func (k *constraining) constrainParallel() {
 	ss := k.ss
 	gw := k.gw
@@ -802,7 +802,7 @@ func (k *constraining) constrainParallel() {
 	}
 }
 
-// constrainPerpendicular adds the constraint of CmdPerpendicular.
+// constrainPerpendicular adds the constraint of cmdPerpendicular.
 func (k *constraining) constrainPerpendicular() {
 	gs := k.gs
 	c := k.c
@@ -828,7 +828,7 @@ func (k *constraining) constrainPerpendicular() {
 	k.add(c, true)
 }
 
-// constrainWhereDragged adds the constraint of CmdWhereDragged.
+// constrainWhereDragged adds the constraint of cmdWhereDragged.
 func (k *constraining) constrainWhereDragged() {
 	gs := k.gs
 	c := k.c
@@ -845,7 +845,7 @@ func (k *constraining) constrainWhereDragged() {
 	k.add(c, true)
 }
 
-// constrainComment adds the constraint of CmdComment.
+// constrainComment adds the constraint of cmdComment.
 func (k *constraining) constrainComment() {
 	ss := k.ss
 	gw := k.gw
@@ -860,8 +860,8 @@ func (k *constraining) constrainComment() {
 		c.Comment = "NEW COMMENT -- DOUBLE-CLICK TO EDIT"
 		k.add(c, true)
 	} else {
-		gw.pending.operation = PendingCommand
-		gw.pending.command = CmdComment
+		gw.pending.operation = pendingCommand
+		gw.pending.command = cmdComment
 		gw.pending.description = "click center of comment text"
 		ss.ScheduleShowTW()
 	}

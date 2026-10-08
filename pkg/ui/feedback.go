@@ -30,7 +30,7 @@ func (ss *Application) isConflicting(c *core.Constraint) bool {
 
 // ScreenShowConstraint selects constraint v and zooms to it and what
 // it constrains, from the list of a failed solve.
-func (tw *TextWindow) ScreenShowConstraint(link int, v uint32) {
+func (tw *textWindow) ScreenShowConstraint(link int, v uint32) {
 	ss := tw.ss
 	gw := ss.GW
 	sk := ss.SK

@@ -13,16 +13,16 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-func (gw *GraphicsWindow) sk() *sketch.Sketch { return gw.ss.SK }
+func (gw *graphicsWindow) sk() *sketch.Sketch { return gw.ss.SK }
 
 // activeGroupH is the active group, which the sketch keeps as
 // Sketch.Active.
-func (gw *GraphicsWindow) activeGroupH() core.HGroup { return gw.sk().Active }
+func (gw *graphicsWindow) activeGroupH() core.HGroup { return gw.sk().Active }
 
-func (gw *GraphicsWindow) setActiveGroup(hg core.HGroup) { gw.sk().Active = hg }
+func (gw *graphicsWindow) setActiveGroup(hg core.HGroup) { gw.sk().Active = hg }
 
 // ActivateCommand runs a command as its menu item would.
-func (gw *GraphicsWindow) ActivateCommand(cmd Command) {
+func (gw *graphicsWindow) ActivateCommand(cmd Command) {
 	for _, m := range gw.ss.menu {
 		if cmd == m.cmd {
 			if m.fn != nil {
@@ -34,7 +34,7 @@ func (gw *GraphicsWindow) ActivateCommand(cmd Command) {
 }
 
 // AcceleratorForCommand is the key that runs cmd.
-func (gw *GraphicsWindow) AcceleratorForCommand(cmd Command) platform.KeyboardEvent {
+func (gw *graphicsWindow) AcceleratorForCommand(cmd Command) platform.KeyboardEvent {
 	rawAccel := 0
 	for _, m := range gw.ss.menu {
 		if cmd == m.cmd {
@@ -61,7 +61,7 @@ func (gw *GraphicsWindow) AcceleratorForCommand(cmd Command) platform.KeyboardEv
 
 // KeyboardEvent handles a key: Backspace is Escape, '=' is '+', and the
 // menu accelerators.
-func (gw *GraphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
+func (gw *graphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 	if event.Type == platform.KeyRelease {
 		return true
 	}
@@ -69,17 +69,17 @@ func (gw *GraphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 		switch event.Chr {
 		case '\b':
 			// Treat backspace identically to escape.
-			gw.MenuEdit(CmdUnselectAll)
+			gw.MenuEdit(cmdUnselectAll)
 			return true
 		case '=':
 			// Treat = as +, as on US keyboards.
-			gw.MenuView(CmdZoomIn)
+			gw.MenuView(cmdZoomIn)
 			return true
 		}
 	}
 	// The platform doesn't handle the accelerators, so do it here.
 	for _, m := range gw.ss.menu {
-		if m.label == "" || m.cmd == CmdNone {
+		if m.label == "" || m.cmd == cmdNone {
 			continue
 		}
 		if gw.AcceleratorForCommand(m.cmd).Equals(event) {
@@ -91,7 +91,7 @@ func (gw *GraphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 }
 
 // PopulateMainMenu builds the menu bar from the menu table.
-func (gw *GraphicsWindow) PopulateMainMenu() {
+func (gw *graphicsWindow) PopulateMainMenu() {
 	mainMenu, unique := gw.ss.Platform.MainMenu()
 	if unique {
 		mainMenu.Clear()
@@ -111,9 +111,9 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 		switch {
 		case m.level == 0:
 			currentSubMenu = mainMenu.AddSubMenu(m.label)
-		case m.cmd == CmdOpenRecent:
+		case m.cmd == cmdOpenRecent:
 			gw.openRecentMenu = currentSubMenu.AddSubMenu(m.label)
-		case m.cmd == CmdGroupRecent:
+		case m.cmd == cmdGroupRecent:
 			gw.linkRecentMenu = currentSubMenu.AddSubMenu(m.label)
 		case m.fn == nil:
 			subMenuStack = append(subMenuStack, currentSubMenu)
@@ -126,47 +126,47 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 				item.SetAccelerator(gw.AcceleratorForCommand(m.cmd))
 			}
 			switch m.cmd {
-			case CmdShowGrid:
+			case cmdShowGrid:
 				gw.showGridMenuItem = item
-			case CmdDimSolidModel:
+			case cmdDimSolidModel:
 				gw.dimSolidModelMenuItem = item
-			case CmdMeasure:
+			case cmdMeasure:
 				gw.measureMenuItem = item
-			case CmdSectionView:
+			case cmdSectionView:
 				gw.sectionMenuItem = item
 				gw.sectionMenuOn = false
-			case CmdShowDrawingSheet:
+			case cmdShowDrawingSheet:
 				gw.sheetMenuItem = item
 				item.SetActive(gw.sheetShown)
-			case CmdPerspectiveProj:
+			case cmdPerspectiveProj:
 				gw.perspectiveProjMenuItem = item
-			case CmdExplodeSketch:
+			case cmdExplodeSketch:
 				gw.explodeMenuItem = item
-			case CmdShowToolbar:
+			case cmdShowToolbar:
 				gw.showToolbarMenuItem = item
-			case CmdShowTextWnd:
+			case cmdShowTextWnd:
 				gw.showTextWndMenuItem = item
-			case CmdScriptConsole:
+			case cmdScriptConsole:
 				gw.scriptConsoleMenuItem = item
-			case CmdScriptAgent:
+			case cmdScriptAgent:
 				gw.scriptAgentMenuItem = item
-			case CmdFullScreen:
+			case cmdFullScreen:
 				gw.fullScreenMenuItem = item
-			case CmdUnitsMm:
+			case cmdUnitsMm:
 				gw.unitsMmMenuItem = item
-			case CmdUnitsMeters:
+			case cmdUnitsMeters:
 				gw.unitsMetersMenuItem = item
-			case CmdUnitsInches:
+			case cmdUnitsInches:
 				gw.unitsInchesMenuItem = item
-			case CmdUnitsFeetInches:
+			case cmdUnitsFeetInches:
 				gw.unitsFeetInchesMenuItem = item
-			case CmdSelWorkplane:
+			case cmdSelWorkplane:
 				gw.inWorkplaneMenuItem = item
-			case CmdFreeIn3D:
+			case cmdFreeIn3D:
 				gw.in3dMenuItem = item
-			case CmdUndo:
+			case cmdUndo:
 				gw.undoMenuItem = item
-			case CmdRedo:
+			case cmdRedo:
 				gw.redoMenuItem = item
 			}
 		}
@@ -178,7 +178,7 @@ func (gw *GraphicsWindow) PopulateMainMenu() {
 	gw.window.SetMenuBar(mainMenu)
 }
 
-func (gw *GraphicsWindow) populateMenuWithPathnames(menu platform.Menu, pathnames []string, onTrigger func(string)) {
+func (gw *graphicsWindow) populateMenuWithPathnames(menu platform.Menu, pathnames []string, onTrigger func(string)) {
 	menu.Clear()
 	if len(pathnames) == 0 {
 		item := menu.AddItem("(no recent files)", nil, true)
@@ -197,7 +197,7 @@ func (gw *GraphicsWindow) populateMenuWithPathnames(menu platform.Menu, pathname
 }
 
 // PopulateRecentFiles fills the Open Recent and Link Recent menus.
-func (gw *GraphicsWindow) PopulateRecentFiles() {
+func (gw *graphicsWindow) PopulateRecentFiles() {
 	if gw.openRecentMenu == nil {
 		return
 	}
@@ -208,13 +208,13 @@ func (gw *GraphicsWindow) PopulateRecentFiles() {
 		gw.ss.Report(gw.ss.Load(path))
 	})
 	gw.populateMenuWithPathnames(gw.linkRecentMenu, gw.ss.RecentFiles, func(path string) {
-		gw.ss.MenuGroup(CmdGroupLink, path)
+		gw.ss.MenuGroup(cmdGroupLink, path)
 	})
 }
 
 // Init resets the view, activates the last group, and the first time
 // makes the window and its menus.
-func (gw *GraphicsWindow) Init() {
+func (gw *graphicsWindow) Init() {
 	gw.view.Scale = 5
 	gw.view.Offset = geom.Vector{}
 	gw.view.ProjRight = geom.Vector{X: 1}
@@ -237,19 +237,19 @@ func (gw *GraphicsWindow) Init() {
 	gw.ss.groupActivate(sk.Group(gw.activeGroupH()))
 
 	gw.show = sketch.Visibility{Points: true, Normals: true, Construction: true, Edges: true}
-	gw.showConstraints = SCMShowAll
+	gw.showConstraints = sCMShowAll
 	gw.showShaded = true
 	gw.showMesh = false
 	gw.showFacesDrawing = false
 	gw.showFacesNonDrawing = true
-	gw.drawOccludedAs = OccludedInvisible
+	gw.drawOccludedAs = occludedInvisible
 
 	gw.showTextWindow = true
 
 	gw.showSnapGrid = false
 	gw.dimSolidModel = true
 	gw.context.active = false
-	gw.toolbarHovered = CmdNone
+	gw.toolbarHovered = cmdNone
 
 	if gw.window == nil {
 		gw.window = gw.ss.Platform.CreateWindow(platform.WindowToplevel, nil)
@@ -258,7 +258,7 @@ func (gw *GraphicsWindow) Init() {
 			// don't try to paint without a canvas.
 			gw.window.SetMinContentSize(720, 32*18+3*16+8+4)
 			ev := gw.window.Events()
-			ev.OnClose = func() { gw.ss.MenuFile(CmdExit) }
+			ev.OnClose = func() { gw.ss.MenuFile(cmdExit) }
 			ev.OnContextLost = func() {
 				gw.canvas = nil
 				gw.persistentDirty = true
@@ -281,7 +281,7 @@ func (gw *GraphicsWindow) Init() {
 }
 
 // AnimateOntoWorkplane turns the view onto the active workplane.
-func (gw *GraphicsWindow) AnimateOntoWorkplane() {
+func (gw *graphicsWindow) AnimateOntoWorkplane() {
 	if !gw.LockedInWorkplane() {
 		return
 	}
@@ -313,7 +313,7 @@ func (gw *GraphicsWindow) AnimateOntoWorkplane() {
 
 // AnimateOnto animates the view to orientation quatf and offset
 // offsetf.
-func (gw *GraphicsWindow) AnimateOnto(quatf geom.Quaternion, offsetf geom.Vector) {
+func (gw *graphicsWindow) AnimateOnto(quatf geom.Quaternion, offsetf geom.Vector) {
 	// Get our initial orientation and translation.
 	quat0 := geom.QuaternionFromBasis(gw.view.ProjRight, gw.view.ProjUp)
 	offset0 := gw.view.Offset
@@ -381,13 +381,13 @@ func (gw *GraphicsWindow) AnimateOnto(quatf geom.Quaternion, offsetf geom.Vector
 
 // FinishAnimation puts the view where a turn AnimateOnto started ends,
 // at once, so that what reads the view sees where it is going.
-func (gw *GraphicsWindow) FinishAnimation() {
+func (gw *graphicsWindow) FinishAnimation() {
 	if gw.animating {
 		gw.animateEnd()
 	}
 }
 
-func (gw *GraphicsWindow) handlePointForZoomToFit(p geom.Vector, pmax, pmin *geom.Point2d,
+func (gw *graphicsWindow) handlePointForZoomToFit(p geom.Vector, pmax, pmin *geom.Point2d,
 	wmin *float64, usePerspective bool, camera *render.Camera) {
 	pp, w := camera.ProjectPoint4(p)
 	// If usePerspective is true, then we calculate a perspective
@@ -403,7 +403,7 @@ func (gw *GraphicsWindow) handlePointForZoomToFit(p geom.Vector, pmax, pmin *geo
 	*wmin = geom.Min(*wmin, w)
 }
 
-func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []*core.Constraint,
+func (gw *graphicsWindow) loopOverPoints(entities []*core.Entity, constraints []*core.Constraint,
 	faces []core.HEntity, pmax, pmin *geom.Point2d, wmin *float64,
 	usePerspective, includeMesh bool, camera *render.Camera) {
 	sk := gw.sk()
@@ -486,7 +486,7 @@ func (gw *GraphicsWindow) loopOverPoints(entities []*core.Entity, constraints []
 
 // ZoomToFit scales and centres the view on the sketch, or on the
 // selection with useSelection.
-func (gw *GraphicsWindow) ZoomToFit(includingInvisibles, useSelection bool) {
+func (gw *graphicsWindow) ZoomToFit(includingInvisibles, useSelection bool) {
 	if gw.window == nil || gw.ss.Windowless {
 		return
 	}
@@ -494,7 +494,7 @@ func (gw *GraphicsWindow) ZoomToFit(includingInvisibles, useSelection bool) {
 	gw.view.Scale = gw.zoomToFit(&camera, includingInvisibles, useSelection)
 }
 
-func (gw *GraphicsWindow) zoomToFit(camera *render.Camera, includingInvisibles, useSelection bool) float64 {
+func (gw *graphicsWindow) zoomToFit(camera *render.Camera, includingInvisibles, useSelection bool) float64 {
 	sk := gw.sk()
 	var entities []*core.Entity
 	var constraints []*core.Constraint
@@ -587,7 +587,7 @@ func (gw *GraphicsWindow) zoomToFit(camera *render.Camera, includingInvisibles, 
 }
 
 // ZoomToMouse zooms by 1.2 to the power zoomMultiplyer about the mouse.
-func (gw *GraphicsWindow) ZoomToMouse(zoomMultiplyer float64) {
+func (gw *graphicsWindow) ZoomToMouse(zoomMultiplyer float64) {
 	v := &gw.view
 	offsetRight := v.Offset.Dot(v.ProjRight)
 	offsetUp := v.Offset.Dot(v.ProjUp)
@@ -604,7 +604,7 @@ func (gw *GraphicsWindow) ZoomToMouse(zoomMultiplyer float64) {
 	v.Offset = v.Offset.Plus(v.ProjRight.ScaledBy(rightf - righti))
 	v.Offset = v.Offset.Plus(v.ProjUp.ScaledBy(upf - upi))
 
-	if gw.ss.TW.shown.screen == ScreenEditView {
+	if gw.ss.TW.shown.screen == screenEditView {
 		if gw.havePainted {
 			gw.ss.ScheduleShowTW()
 		}
@@ -614,48 +614,48 @@ func (gw *GraphicsWindow) ZoomToMouse(zoomMultiplyer float64) {
 }
 
 // MenuView runs a View menu command.
-func (gw *GraphicsWindow) MenuView(id Command) {
+func (gw *graphicsWindow) MenuView(id Command) {
 	ss := gw.ss
 	switch id {
-	case CmdZoomIn:
+	case cmdZoomIn:
 		gw.ZoomToMouse(1)
-	case CmdZoomOut:
+	case cmdZoomOut:
 		gw.ZoomToMouse(-1)
-	case CmdZoomToFit:
+	case cmdZoomToFit:
 		gw.ZoomToFit(false, true)
 		ss.ScheduleShowTW()
-	case CmdShowGrid:
+	case cmdShowGrid:
 		gw.toggleSnapGrid()
-	case CmdDimSolidModel:
+	case cmdDimSolidModel:
 		gw.dimSolidModel = !gw.dimSolidModel
 		gw.EnsureValidActives()
 		gw.Invalidate(true)
-	case CmdPerspectiveProj:
+	case cmdPerspectiveProj:
 		gw.togglePerspective()
-	case CmdExplodeSketch:
+	case cmdExplodeSketch:
 		ss.Explode = !ss.Explode
 		gw.EnsureValidActives()
 		ss.SK.MarkGroupDirty(gw.activeGroupH(), true)
-	case CmdOntoWorkplane, CmdNearestOrtho, CmdNearestIso:
+	case cmdOntoWorkplane, cmdNearestOrtho, cmdNearestIso:
 		gw.alignView(id)
-	case CmdCenterView:
+	case cmdCenterView:
 		gw.centerViewAtPoint()
-	case CmdShowToolbar:
+	case cmdShowToolbar:
 		ss.ShowToolbar = !ss.ShowToolbar
 		gw.EnsureValidActives()
 		gw.Invalidate(false)
-	case CmdShowTextWnd:
+	case cmdShowTextWnd:
 		gw.showTextWindow = !gw.showTextWindow
 		gw.EnsureValidActives()
-	case CmdUnitsInches:
+	case cmdUnitsInches:
 		ss.SetDocumentUnits(core.UnitInches)
-	case CmdUnitsFeetInches:
+	case cmdUnitsFeetInches:
 		ss.SetDocumentUnits(core.UnitFeetInches)
-	case CmdUnitsMm:
+	case cmdUnitsMm:
 		ss.SetDocumentUnits(core.UnitMM)
-	case CmdUnitsMeters:
+	case cmdUnitsMeters:
 		ss.SetDocumentUnits(core.UnitMeters)
-	case CmdFullScreen:
+	case cmdFullScreen:
 		gw.window.SetFullScreen(!gw.window.IsFullScreen())
 		gw.EnsureValidActives()
 	default:
@@ -664,8 +664,8 @@ func (gw *GraphicsWindow) MenuView(id Command) {
 	gw.Invalidate(false)
 }
 
-// toggleSnapGrid runs the View menu's CmdShowGrid.
-func (gw *GraphicsWindow) toggleSnapGrid() {
+// toggleSnapGrid runs the View menu's cmdShowGrid.
+func (gw *graphicsWindow) toggleSnapGrid() {
 	ss := gw.ss
 
 	gw.showSnapGrid = !gw.showSnapGrid
@@ -676,8 +676,8 @@ func (gw *GraphicsWindow) toggleSnapGrid() {
 	}
 }
 
-// togglePerspective runs the View menu's CmdPerspectiveProj.
-func (gw *GraphicsWindow) togglePerspective() {
+// togglePerspective runs the View menu's cmdPerspectiveProj.
+func (gw *graphicsWindow) togglePerspective() {
 	ss := gw.ss
 
 	ss.UsePerspectiveProj = !ss.UsePerspectiveProj
@@ -692,11 +692,11 @@ func (gw *GraphicsWindow) togglePerspective() {
 	}
 }
 
-// alignView runs the View menu's CmdOntoWorkplane, CmdNearestOrtho, CmdNearestIso.
-func (gw *GraphicsWindow) alignView(id Command) {
+// alignView runs the View menu's cmdOntoWorkplane, cmdNearestOrtho, cmdNearestIso.
+func (gw *graphicsWindow) alignView(id Command) {
 	ss := gw.ss
 
-	if id == CmdOntoWorkplane && gw.LockedInWorkplane() {
+	if id == cmdOntoWorkplane && gw.LockedInWorkplane() {
 		gw.AnimateOntoWorkplane()
 		return
 	}
@@ -710,7 +710,7 @@ func (gw *GraphicsWindow) alignView(id Command) {
 	// There are 24 possible views (3*2*2*2), if all are allowed. If
 	// the user is in turn-table mode, the isometric view must have
 	// the z-axis facing up, leaving 8 possible views (2*1*2*2).
-	requireTurntable := id == CmdNearestIso && ss.TurntableNav
+	requireTurntable := id == cmdNearestIso && ss.TurntableNav
 	for i := range 3 {
 		for j := range 3 {
 			if i == j {
@@ -731,7 +731,7 @@ func (gw *GraphicsWindow) alignView(id Command) {
 					on := ou.Cross(ov)
 
 					var u, v geom.Vector
-					if id == CmdNearestOrtho || id == CmdOntoWorkplane {
+					if id == cmdNearestOrtho || id == cmdOntoWorkplane {
 						u, v = ou, ov
 					} else {
 						u = ou.ScaledBy(1 / sqrt2).Plus(on.ScaledBy(-1 / sqrt2))
@@ -751,8 +751,8 @@ func (gw *GraphicsWindow) alignView(id Command) {
 	gw.AnimateOnto(quatf, gw.view.Offset)
 }
 
-// centerViewAtPoint runs the View menu's CmdCenterView.
-func (gw *GraphicsWindow) centerViewAtPoint() {
+// centerViewAtPoint runs the View menu's cmdCenterView.
+func (gw *graphicsWindow) centerViewAtPoint() {
 	ss := gw.ss
 
 	gw.GroupSelection()
@@ -770,7 +770,7 @@ func (gw *GraphicsWindow) centerViewAtPoint() {
 
 // EnsureValidActives makes sure the active group and workplane exist,
 // and updates the menus' check marks.
-func (gw *GraphicsWindow) EnsureValidActives() {
+func (gw *graphicsWindow) EnsureValidActives() {
 	ss := gw.ss
 	sk := gw.sk()
 	change := false
@@ -856,13 +856,13 @@ func (gw *GraphicsWindow) EnsureValidActives() {
 }
 
 // SetWorkplaneFreeIn3d draws the active group in 3d.
-func (gw *GraphicsWindow) SetWorkplaneFreeIn3d() {
+func (gw *graphicsWindow) SetWorkplaneFreeIn3d() {
 	// Entity::FREE_IN_3D, which is no entity.
 	gw.sk().Group(gw.activeGroupH()).ActiveWorkplane = core.HEntity{}
 }
 
 // ActiveWorkplane is the active group's workplane, or FreeIn3D.
-func (gw *GraphicsWindow) ActiveWorkplane() core.HEntity {
+func (gw *graphicsWindow) ActiveWorkplane() core.HEntity {
 	if g := gw.sk().Group(gw.activeGroupH()); g != nil {
 		return g.ActiveWorkplane
 	}
@@ -870,12 +870,12 @@ func (gw *GraphicsWindow) ActiveWorkplane() core.HEntity {
 }
 
 // LockedInWorkplane reports whether a workplane is active.
-func (gw *GraphicsWindow) LockedInWorkplane() bool {
+func (gw *graphicsWindow) LockedInWorkplane() bool {
 	return !core.IsFreeIn3D(gw.ActiveWorkplane())
 }
 
 // ForceTextWindowShown shows the text window.
-func (gw *GraphicsWindow) ForceTextWindowShown() {
+func (gw *graphicsWindow) ForceTextWindowShown() {
 	if !gw.showTextWindow {
 		gw.showTextWindow = true
 		gw.showTextWndMenuItem.SetActive(true)
@@ -885,12 +885,12 @@ func (gw *GraphicsWindow) ForceTextWindowShown() {
 
 // DeleteTaggedRequests deletes the tagged requests and updates the
 // display.
-func (gw *GraphicsWindow) DeleteTaggedRequests() {
+func (gw *graphicsWindow) DeleteTaggedRequests() {
 	gw.sk().DeleteTaggedRequests()
 }
 
 // regenerateAfterDelete regenerates after requests were deleted.
-func (gw *GraphicsWindow) regenerateAfterDelete() {
+func (gw *graphicsWindow) regenerateAfterDelete() {
 	// An edit might be in progress for the just-deleted item. So now
 	// it's not.
 	gw.window.HideEditor()
@@ -905,7 +905,7 @@ func (gw *GraphicsWindow) regenerateAfterDelete() {
 }
 
 // SnapToGrid rounds p to the snap grid in the active workplane.
-func (gw *GraphicsWindow) SnapToGrid(p geom.Vector) geom.Vector {
+func (gw *graphicsWindow) SnapToGrid(p geom.Vector) geom.Vector {
 	if !gw.LockedInWorkplane() {
 		return p
 	}
@@ -925,43 +925,43 @@ func (gw *GraphicsWindow) SnapToGrid(p geom.Vector) geom.Vector {
 }
 
 // MenuEdit runs an Edit menu command.
-func (gw *GraphicsWindow) MenuEdit(id Command) {
+func (gw *graphicsWindow) MenuEdit(id Command) {
 	ss := gw.ss
 	switch id {
-	case CmdUnselectAll:
+	case cmdUnselectAll:
 		gw.unselectAll()
 
-	case CmdSelectAll:
+	case cmdSelectAll:
 		gw.selectAll()
 
-	case CmdSelectChain:
+	case cmdSelectChain:
 		gw.selectEdgeChain()
 
-	case CmdRotate90:
+	case cmdRotate90:
 		gw.rotateImported90()
 
-	case CmdSnapToGrid:
+	case cmdSnapToGrid:
 		gw.snapSelectionToGrid()
 
-	case CmdUndo:
+	case cmdUndo:
 		ss.UndoUndo()
 
-	case CmdRedo:
+	case cmdRedo:
 		ss.UndoRedo()
 
-	case CmdRegenAll:
+	case cmdRegenAll:
 		gw.regenerateAll()
 
-	case CmdEditLineStyles:
-		ss.TW.GoToScreen(ScreenListOfStyles)
+	case cmdEditLineStyles:
+		ss.TW.GoToScreen(screenListOfStyles)
 		gw.ForceTextWindowShown()
 		ss.ScheduleShowTW()
-	case CmdViewProjection:
-		ss.TW.GoToScreen(ScreenEditView)
+	case cmdViewProjection:
+		ss.TW.GoToScreen(screenEditView)
 		gw.ForceTextWindowShown()
 		ss.ScheduleShowTW()
-	case CmdConfiguration:
-		ss.TW.GoToScreen(ScreenConfiguration)
+	case cmdConfiguration:
+		ss.TW.GoToScreen(screenConfiguration)
 		gw.ForceTextWindowShown()
 		ss.ScheduleShowTW()
 
@@ -970,8 +970,8 @@ func (gw *GraphicsWindow) MenuEdit(id Command) {
 	}
 }
 
-// unselectAll runs the Edit menu's CmdUnselectAll.
-func (gw *GraphicsWindow) unselectAll() {
+// unselectAll runs the Edit menu's cmdUnselectAll.
+func (gw *graphicsWindow) unselectAll() {
 	ss := gw.ss
 	sk := gw.sk()
 
@@ -983,10 +983,10 @@ func (gw *GraphicsWindow) unselectAll() {
 	// If there's nothing selected to de-select, and no operation to
 	// cancel, then perhaps they want to return to the home screen in
 	// the text window.
-	if gw.gs.n == 0 && gw.gs.constraints == 0 && gw.pending.operation == PendingNone {
+	if gw.gs.n == 0 && gw.gs.constraints == 0 && gw.pending.operation == pendingNone {
 		if !ss.TW.window.IsEditorVisible() && !gw.window.IsEditorVisible() {
-			if ss.TW.shown.screen == ScreenStyleInfo {
-				ss.TW.GoToScreen(ScreenListOfStyles)
+			if ss.TW.shown.screen == screenStyleInfo {
+				ss.TW.GoToScreen(screenListOfStyles)
 			} else {
 				ss.TW.ClearSuper()
 			}
@@ -994,8 +994,8 @@ func (gw *GraphicsWindow) unselectAll() {
 	}
 	// Some pending operations need an Undo to properly clean up on ESC.
 	switch gw.pending.operation {
-	case PendingDraggingNewPoint, PendingDraggingNewLinePoint,
-		PendingDraggingNewArcPoint, PendingDraggingNewRadius:
+	case pendingDraggingNewPoint, pendingDraggingNewLinePoint,
+		pendingDraggingNewArcPoint, pendingDraggingNewRadius:
 		gw.ClearSuper()
 		ss.UndoUndo()
 	}
@@ -1016,8 +1016,8 @@ func (gw *GraphicsWindow) unselectAll() {
 	gw.persistentDirty = true
 }
 
-// selectAll runs the Edit menu's CmdSelectAll.
-func (gw *GraphicsWindow) selectAll() {
+// selectAll runs the Edit menu's cmdSelectAll.
+func (gw *graphicsWindow) selectAll() {
 	ss := gw.ss
 	sk := gw.sk()
 
@@ -1038,8 +1038,8 @@ func (gw *GraphicsWindow) selectAll() {
 	ss.ScheduleShowTW()
 }
 
-// selectEdgeChain runs the Edit menu's CmdSelectChain.
-func (gw *GraphicsWindow) selectEdgeChain() {
+// selectEdgeChain runs the Edit menu's cmdSelectChain.
+func (gw *graphicsWindow) selectEdgeChain() {
 	ss := gw.ss
 	sk := gw.sk()
 
@@ -1095,8 +1095,8 @@ func (gw *GraphicsWindow) selectEdgeChain() {
 	}
 }
 
-// rotateImported90 runs the Edit menu's CmdRotate90.
-func (gw *GraphicsWindow) rotateImported90() {
+// rotateImported90 runs the Edit menu's cmdRotate90.
+func (gw *graphicsWindow) rotateImported90() {
 	ss := gw.ss
 	sk := gw.sk()
 
@@ -1135,8 +1135,8 @@ func (gw *GraphicsWindow) rotateImported90() {
 	sk.MarkGroupDirty(hg, false)
 }
 
-// snapSelectionToGrid runs the Edit menu's CmdSnapToGrid.
-func (gw *GraphicsWindow) snapSelectionToGrid() {
+// snapSelectionToGrid runs the Edit menu's cmdSnapToGrid.
+func (gw *graphicsWindow) snapSelectionToGrid() {
 	ss := gw.ss
 	sk := gw.sk()
 
@@ -1179,8 +1179,8 @@ func (gw *GraphicsWindow) snapSelectionToGrid() {
 	gw.ClearSelection()
 }
 
-// regenerateAll runs the Edit menu's CmdRegenAll.
-func (gw *GraphicsWindow) regenerateAll() {
+// regenerateAll runs the Edit menu's cmdRegenAll.
+func (gw *graphicsWindow) regenerateAll() {
 	ss := gw.ss
 	sk := gw.sk()
 
@@ -1193,41 +1193,41 @@ func (gw *GraphicsWindow) regenerateAll() {
 }
 
 // MenuRequest runs a Sketch menu command.
-func (gw *GraphicsWindow) MenuRequest(id Command) {
+func (gw *graphicsWindow) MenuRequest(id Command) {
 	ss := gw.ss
 	var s string
 	switch id {
-	case CmdSelWorkplane:
+	case cmdSelWorkplane:
 		gw.sketchInWorkplane()
 		return
 
-	case CmdFreeIn3D:
+	case cmdFreeIn3D:
 		gw.sketchFreeIn3D()
 		return
 
-	case CmdTangentArc:
+	case cmdTangentArc:
 		gw.startTangentArc()
 		return
 
-	case CmdArc:
+	case cmdArc:
 		s = "click point on arc (draws anti-clockwise)"
-	case CmdDatumPoint:
+	case cmdDatumPoint:
 		s = "click to place datum point"
-	case CmdLineSegment:
+	case cmdLineSegment:
 		s = "click first point of line segment"
-	case CmdConstrSegment:
+	case cmdConstrSegment:
 		s = "click first point of construction line segment"
-	case CmdCubic:
+	case cmdCubic:
 		s = "click first point of cubic segment"
-	case CmdCircle:
+	case cmdCircle:
 		s = "click center of circle"
-	case CmdWorkplane:
+	case cmdWorkplane:
 		s = "click origin of workplane"
-	case CmdRectangle:
+	case cmdRectangle:
 		s = "click one corner of rectangle"
-	case CmdTTFText:
+	case cmdTTFText:
 		s = "click top left of text"
-	case CmdImage:
+	case cmdImage:
 		file, ok := ss.chooseLinkedImage()
 		if !ok {
 			return
@@ -1235,11 +1235,11 @@ func (gw *GraphicsWindow) MenuRequest(id Command) {
 		gw.pending.filename = file
 		s = "click top left of image"
 
-	case CmdConstruction:
+	case cmdConstruction:
 		gw.toggleConstruction()
 		return
 
-	case CmdSplitCurves:
+	case cmdSplitCurves:
 		gw.SplitLinesOrCurves()
 		return
 
@@ -1247,15 +1247,15 @@ func (gw *GraphicsWindow) MenuRequest(id Command) {
 		panic("ui: unexpected menu ID")
 	}
 
-	gw.pending.operation = PendingCommand
+	gw.pending.operation = pendingCommand
 	gw.pending.command = id
 	gw.pending.description = s
 	ss.ScheduleShowTW()
 	gw.Invalidate(false) // repaint toolbar
 }
 
-// sketchInWorkplane runs the Sketch menu's CmdSelWorkplane.
-func (gw *GraphicsWindow) sketchInWorkplane() {
+// sketchInWorkplane runs the Sketch menu's cmdSelWorkplane.
+func (gw *graphicsWindow) sketchInWorkplane() {
 	ss := gw.ss
 	sk := gw.sk()
 
@@ -1286,8 +1286,8 @@ func (gw *GraphicsWindow) sketchInWorkplane() {
 	}
 }
 
-// sketchFreeIn3D runs the Sketch menu's CmdFreeIn3D.
-func (gw *GraphicsWindow) sketchFreeIn3D() {
+// sketchFreeIn3D runs the Sketch menu's cmdFreeIn3D.
+func (gw *graphicsWindow) sketchFreeIn3D() {
 	ss := gw.ss
 
 	gw.SetWorkplaneFreeIn3d()
@@ -1296,8 +1296,8 @@ func (gw *GraphicsWindow) sketchFreeIn3D() {
 	gw.Invalidate(false)
 }
 
-// startTangentArc runs the Sketch menu's CmdTangentArc.
-func (gw *GraphicsWindow) startTangentArc() {
+// startTangentArc runs the Sketch menu's cmdTangentArc.
+func (gw *graphicsWindow) startTangentArc() {
 	ss := gw.ss
 
 	gw.GroupSelection()
@@ -1309,22 +1309,22 @@ func (gw *GraphicsWindow) startTangentArc() {
 			"single point, or select nothing to set up arc " +
 			"parameters.")
 	default:
-		ss.TW.GoToScreen(ScreenTangentArc)
+		ss.TW.GoToScreen(screenTangentArc)
 		gw.ForceTextWindowShown()
 		ss.ScheduleShowTW()
 		gw.Invalidate(false) // repaint toolbar
 	}
 }
 
-// toggleConstruction runs the Sketch menu's CmdConstruction.
-func (gw *GraphicsWindow) toggleConstruction() {
+// toggleConstruction runs the Sketch menu's cmdConstruction.
+func (gw *graphicsWindow) toggleConstruction() {
 	ss := gw.ss
 	sk := gw.sk()
 
 	// if we are drawing
 	switch gw.pending.operation {
-	case PendingDraggingNewPoint, PendingDraggingNewLinePoint, PendingDraggingNewArcPoint,
-		PendingDraggingNewCubicPoint, PendingDraggingNewRadius:
+	case pendingDraggingNewPoint, pendingDraggingNewLinePoint, pendingDraggingNewArcPoint,
+		pendingDraggingNewCubicPoint, pendingDraggingNewRadius:
 		for _, hr := range gw.pending.requests {
 			r := sk.Request(hr)
 			r.Construction = !r.Construction
@@ -1352,7 +1352,7 @@ func (gw *GraphicsWindow) toggleConstruction() {
 }
 
 // ClearSuper cancels whatever is in progress and clears the selection.
-func (gw *GraphicsWindow) ClearSuper() {
+func (gw *graphicsWindow) ClearSuper() {
 	if gw.window != nil {
 		gw.window.HideEditor()
 	}
@@ -1363,7 +1363,7 @@ func (gw *GraphicsWindow) ClearSuper() {
 }
 
 // ToggleBool flips a show flag and does what it needs.
-func (gw *GraphicsWindow) ToggleBool(v *bool) {
+func (gw *graphicsWindow) ToggleBool(v *bool) {
 	*v = !*v
 
 	// The faces are shown as special stippling on the shaded triangle
@@ -1397,7 +1397,7 @@ func (gw *GraphicsWindow) ToggleBool(v *bool) {
 // circle, the request, as it is drawn (sketch.SuggestConstraint), in
 // the active group, when automatic constraints are on. Lines and arcs
 // get one only locked in a workplane.
-func (gw *GraphicsWindow) SuggestConstraint(request core.HRequest) (sketch.Suggestion, bool) {
+func (gw *graphicsWindow) SuggestConstraint(request core.HRequest) (sketch.Suggestion, bool) {
 	if !gw.ss.AutomaticLineConstraints {
 		return sketch.Suggestion{}, false
 	}
@@ -1410,7 +1410,7 @@ func (gw *GraphicsWindow) SuggestConstraint(request core.HRequest) (sketch.Sugge
 
 // suggestFor sets the pending suggestion for the arc or circle of
 // request being drawn; none while Ctrl is held.
-func (gw *GraphicsWindow) suggestFor(request core.HRequest, ctrlDown bool) {
+func (gw *graphicsWindow) suggestFor(request core.HRequest, ctrlDown bool) {
 	if ctrlDown {
 		gw.pending.hasSuggestion = false
 		return
@@ -1420,12 +1420,12 @@ func (gw *GraphicsWindow) suggestFor(request core.HRequest, ctrlDown bool) {
 
 // applySuggestion adds the suggested constraint, unless it would be
 // redundant.
-func (gw *GraphicsWindow) applySuggestion(s sketch.Suggestion) {
+func (gw *graphicsWindow) applySuggestion(s sketch.Suggestion) {
 	gw.sk().ApplySuggestion(s)
 }
 
 // Camera is the camera for the current view and window.
-func (gw *GraphicsWindow) Camera() render.Camera {
+func (gw *graphicsWindow) Camera() render.Camera {
 	var c render.Camera
 	if gw.window != nil && !gw.ss.Windowless {
 		c.Width, c.Height = gw.window.ContentSize()
@@ -1446,7 +1446,7 @@ func (gw *GraphicsWindow) Camera() render.Camera {
 }
 
 // Lighting is the lighting from the settings.
-func (gw *GraphicsWindow) Lighting() render.Lighting {
+func (gw *graphicsWindow) Lighting() render.Lighting {
 	ss := gw.ss
 	return render.Lighting{
 		BackgroundColor:  ss.BackgroundColor,
@@ -1458,31 +1458,31 @@ func (gw *GraphicsWindow) Lighting() render.Lighting {
 }
 
 // ProjectPoint is p on the screen, in pixels from the centre.
-func (gw *GraphicsWindow) ProjectPoint(p geom.Vector) geom.Point2d {
+func (gw *graphicsWindow) ProjectPoint(p geom.Vector) geom.Point2d {
 	gw.view.Tangent = gw.ss.CameraTangent()
 	return gw.view.ProjectPoint(p)
 }
 
 // ProjectPoint3 is p in screen pixels, depth included.
-func (gw *GraphicsWindow) ProjectPoint3(p geom.Vector) geom.Vector {
+func (gw *graphicsWindow) ProjectPoint3(p geom.Vector) geom.Vector {
 	gw.view.Tangent = gw.ss.CameraTangent()
 	return gw.view.ProjectPoint3(p)
 }
 
 // UnProjectPoint is the point in the plane through the offset that
 // projects to p.
-func (gw *GraphicsWindow) UnProjectPoint(p geom.Point2d) geom.Vector {
+func (gw *graphicsWindow) UnProjectPoint(p geom.Point2d) geom.Vector {
 	return gw.view.UnProjectPoint(p)
 }
 
 // NormalizeProjectionVectors keeps the view orthonormal.
-func (gw *GraphicsWindow) NormalizeProjectionVectors() {
+func (gw *graphicsWindow) NormalizeProjectionVectors() {
 	gw.view.NormalizeProjectionVectors()
 }
 
 // Invalidate asks for a repaint; clearPersistent also redraws the
 // things that don't change with the view.
-func (gw *GraphicsWindow) Invalidate(clearPersistent bool) {
+func (gw *graphicsWindow) Invalidate(clearPersistent bool) {
 	if gw.window != nil {
 		if clearPersistent {
 			gw.persistentDirty = true

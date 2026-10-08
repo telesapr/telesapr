@@ -40,7 +40,7 @@ func TestSaveNewFile(t *testing.T) {
 	ss, p := newTestApp(t)
 	path := filepath.Join(t.TempDir(), "a")
 	p.FilePaths = []string{path}
-	ss.MenuFile(CmdSave)
+	ss.MenuFile(cmdSave)
 	path += ".tlspr"
 
 	got, err := os.ReadFile(path)
@@ -62,7 +62,7 @@ func TestSaveNewFile(t *testing.T) {
 	}
 
 	// Saving again doesn't ask for a name.
-	ss.MenuFile(CmdSave)
+	ss.MenuFile(cmdSave)
 	if len(p.FileDialogs) != 1 {
 		t.Errorf("%d file dialogs", len(p.FileDialogs))
 	}
@@ -113,7 +113,7 @@ func TestOpenAndUnsavedChanges(t *testing.T) {
 	path := importFixture(t, "group/translate_nd/normal.slvs")
 
 	p.FilePaths = []string{path}
-	ss.MenuFile(CmdOpen)
+	ss.MenuFile(cmdOpen)
 	if ss.SaveFile != path || len(ss.SK.Groups) <= 2 {
 		t.Fatalf("open: SaveFile %q, %d groups", ss.SaveFile, len(ss.SK.Groups))
 	}
@@ -124,7 +124,7 @@ func TestOpenAndUnsavedChanges(t *testing.T) {
 
 	ss.SK.Unsaved = true
 	p.DialogResponses = []platform.Response{platform.ResponseCancel}
-	ss.MenuFile(CmdNew)
+	ss.MenuFile(cmdNew)
 	if len(ss.SK.Groups) != groups || ss.SaveFile != path {
 		t.Error("New went ahead after Cancel")
 	}
@@ -133,7 +133,7 @@ func TestOpenAndUnsavedChanges(t *testing.T) {
 	}
 
 	p.DialogResponses = []platform.Response{platform.ResponseNo}
-	ss.MenuFile(CmdNew)
+	ss.MenuFile(cmdNew)
 	if len(ss.SK.Groups) != 2 || ss.SaveFile != "" {
 		t.Errorf("New: %d groups, SaveFile %q", len(ss.SK.Groups), ss.SaveFile)
 	}
@@ -172,7 +172,7 @@ func TestAutosave(t *testing.T) {
 
 	// Don't Save removes the autosave.
 	p.DialogResponses = []platform.Response{platform.ResponseNo}
-	ss.MenuFile(CmdNew)
+	ss.MenuFile(cmdNew)
 	if _, err := os.Stat(backup); err == nil {
 		t.Error("autosave left after Don't Save")
 	}
@@ -204,7 +204,7 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.FilePaths = []string{dst}
-	ss.MenuFile(CmdSaveAs)
+	ss.MenuFile(cmdSaveAs)
 	data, err := os.ReadFile(dst)
 	if err != nil {
 		t.Fatal(err)
@@ -228,7 +228,7 @@ func TestAnalyzeVolume(t *testing.T) {
 		t.Fatal("load failed")
 	}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
-	ss.MenuAnalyze(CmdVolume)
+	ss.MenuAnalyze(cmdVolume)
 	d := p.DialogsShown[len(p.DialogsShown)-1]
 	if !strings.HasPrefix(d.Message, "The volume of the solid model is:") {
 		t.Errorf("message %q", d.Message)

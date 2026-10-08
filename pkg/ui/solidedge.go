@@ -21,7 +21,7 @@ const solidEdgePickRadius = 6.0
 
 // activeTopology is the topology of the solid at the active group,
 // and that solid's group, or nil.
-func (gw *GraphicsWindow) activeTopology() *topo.Topology {
+func (gw *graphicsWindow) activeTopology() *topo.Topology {
 	sk := gw.sk()
 	g := sk.SolidAt(gw.activeGroupH())
 	if g == nil || g.IsForcedToMesh(sk) || len(g.RunningShell.Surface) == 0 {
@@ -33,7 +33,7 @@ func (gw *GraphicsWindow) activeTopology() *topo.Topology {
 
 // hoverSolidEdge is the named edge of the solid nearest mp on the
 // screen, within the pick radius and not hidden behind the solid.
-func (gw *GraphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, bool) {
+func (gw *graphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, bool) {
 	tp := gw.activeTopology()
 	if tp == nil {
 		return topo.Name{}, false
@@ -84,7 +84,7 @@ func segmentDistance2d(p, a, b geom.Point2d) (float64, float64) {
 // ray stays on the point's pixel, along the view direction in an
 // orthographic view and towards the eye in a perspective one, so only
 // the triangles over that pixel are tried (hoverGrid).
-func (gw *GraphicsWindow) hiddenBySolid(p geom.Vector) bool {
+func (gw *graphicsWindow) hiddenBySolid(p geom.Vector) bool {
 	g := gw.sk().Group(gw.activeGroupH())
 	if g == nil {
 		return false
@@ -113,7 +113,7 @@ func (gw *GraphicsWindow) hiddenBySolid(p geom.Vector) bool {
 // far the viewer is: along the view direction without end in an
 // orthographic view, towards the eye in a perspective one, which is
 // where ProjectPoint4's w is zero.
-func (gw *GraphicsWindow) towardsViewer(p geom.Vector) (geom.Vector, float64) {
+func (gw *graphicsWindow) towardsViewer(p geom.Vector) (geom.Vector, float64) {
 	v := &gw.view
 	if v.Tangent == 0 {
 		// A projected point's z grows towards the viewer.
@@ -147,7 +147,7 @@ const hoverGridCells = 64
 
 // hoverGridFor is the grid of tris in the current view, made again if
 // the view or the mesh changed.
-func (gw *GraphicsWindow) hoverGridFor(tris []srf.STriangle) *hoverGrid {
+func (gw *graphicsWindow) hoverGridFor(tris []srf.STriangle) *hoverGrid {
 	var first *srf.STriangle
 	if len(tris) > 0 {
 		first = &tris[0]
@@ -248,7 +248,7 @@ func rayHit(o, d geom.Vector, t *srf.STriangle) (float64, bool) {
 
 // drawSolidEdge draws an edge of the solid hovered or selected, all of
 // it: every piece its seams cut it into.
-func (gw *GraphicsWindow) drawSolidEdge(n topo.Name, hovered bool, canvas render.Canvas) {
+func (gw *graphicsWindow) drawSolidEdge(n topo.Name, hovered bool, canvas render.Canvas) {
 	tp := gw.activeTopology()
 	if tp == nil {
 		return

@@ -32,7 +32,7 @@ func (ss *Application) commandEntries() []commandEntry {
 			continue
 		}
 		path = append(path[:m.level], strings.ReplaceAll(m.label, "&", ""))
-		if m.cmd == CmdNone || m.fn == nil || m.cmd == CmdOpenRecent || m.cmd == CmdGroupRecent {
+		if m.cmd == cmdNone || m.fn == nil || m.cmd == cmdOpenRecent || m.cmd == cmdGroupRecent {
 			continue
 		}
 		out = append(out, commandEntry{label: strings.Join(path, " > "), cmd: m.cmd, accel: m.accel, fn: m.fn})
@@ -131,20 +131,20 @@ func (ss *Application) MenuFindCommand() {
 	ss.GW.ClearSelection()
 	tw := ss.TW
 	tw.shown.commands = commandScreen{}
-	tw.GoToScreen(ScreenCommands)
+	tw.GoToScreen(screenCommands)
 	ss.GW.ForceTextWindowShown()
 	tw.Show()
 	tw.ScreenChangeCommandQuery(0, 0)
 }
 
 // ScreenChangeCommandQuery opens the editor on the search text.
-func (tw *TextWindow) ScreenChangeCommandQuery(link int, v uint32) {
+func (tw *textWindow) ScreenChangeCommandQuery(link int, v uint32) {
 	tw.ShowEditControl(3, tw.shown.commands.query, tw.lineTop(1))
-	tw.edit.meaning = EditCommandQuery
+	tw.edit.meaning = editCommandQuery
 }
 
 // ScreenRunCommand runs found command v.
-func (tw *TextWindow) ScreenRunCommand(link int, v uint32) {
+func (tw *textWindow) ScreenRunCommand(link int, v uint32) {
 	found := tw.shown.commands.found
 	if int(v) < len(found) {
 		tw.runFound(found[v])
@@ -152,18 +152,18 @@ func (tw *TextWindow) ScreenRunCommand(link int, v uint32) {
 }
 
 // runFound leaves the screen and runs e.
-func (tw *TextWindow) runFound(e commandEntry) {
+func (tw *textWindow) runFound(e commandEntry) {
 	tw.HideEditControl()
-	tw.edit.meaning = EditNothing
-	tw.GoToScreen(ScreenListOfGroups)
+	tw.edit.meaning = editNothing
+	tw.GoToScreen(screenListOfGroups)
 	tw.ss.ScheduleShowTW()
 	e.fn(tw.ss, e.cmd)
 }
 
 // EditControlDoneForCommands takes the search text, and reports whether
 // the edit was the search's.
-func (tw *TextWindow) EditControlDoneForCommands(s string) bool {
-	if tw.edit.meaning != EditCommandQuery {
+func (tw *textWindow) EditControlDoneForCommands(s string) bool {
+	if tw.edit.meaning != editCommandQuery {
 		return false
 	}
 	c := &tw.shown.commands
@@ -182,7 +182,7 @@ func (tw *TextWindow) EditControlDoneForCommands(s string) bool {
 }
 
 // ShowCommands is the command search screen.
-func (tw *TextWindow) ShowCommands() {
+func (tw *textWindow) ShowCommands() {
 	c := &tw.shown.commands
 	tw.Printf(false, "%Ft FIND A COMMAND%E  %Fl%Le%f[type]%E", lf(tw.ScreenChangeCommandQuery))
 	tw.Printf(false, "")

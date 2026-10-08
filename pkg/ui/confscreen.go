@@ -16,90 +16,90 @@ import (
 // toF32 rounds to a single-precision float, as the setting is stored.
 func toF32(v float64) float64 { return float64(float32(v)) }
 
-func (tw *TextWindow) ScreenChangeColor(link int, v uint32) {
+func (tw *textWindow) ScreenChangeColor(link int, v uint32) {
 	tw.ShowEditControlWithColorPicker(13, tw.ss.ModelColor[v])
 
-	tw.edit.meaning = EditColor
+	tw.edit.meaning = editColor
 	tw.edit.i = int(v)
 }
 
-func (tw *TextWindow) ScreenChangeChordTolerance(link int, v uint32) {
+func (tw *textWindow) ScreenChangeChordTolerance(link int, v uint32) {
 	tw.ShowEditControl(3, cFormatG(6, tw.ss.ChordTol))
-	tw.edit.meaning = EditChordTolerance
+	tw.edit.meaning = editChordTolerance
 	tw.edit.i = 0
 }
 
-func (tw *TextWindow) ScreenChangeMaxSegments(link int, v uint32) {
+func (tw *textWindow) ScreenChangeMaxSegments(link int, v uint32) {
 	tw.ShowEditControl(3, fmt.Sprintf("%d", tw.ss.MaxSegments))
-	tw.edit.meaning = EditMaxSegments
+	tw.edit.meaning = editMaxSegments
 	tw.edit.i = 0
 }
 
-func (tw *TextWindow) ScreenChangeExportChordTolerance(link int, v uint32) {
+func (tw *textWindow) ScreenChangeExportChordTolerance(link int, v uint32) {
 	tw.ShowEditControl(3, cFormatG(6, tw.ss.ExportChordTol))
-	tw.edit.meaning = EditChordTolerance
+	tw.edit.meaning = editChordTolerance
 	tw.edit.i = 1
 }
 
-func (tw *TextWindow) ScreenChangeExportMaxSegments(link int, v uint32) {
+func (tw *textWindow) ScreenChangeExportMaxSegments(link int, v uint32) {
 	tw.ShowEditControl(3, fmt.Sprintf("%d", tw.ss.ExportMaxSegments))
-	tw.edit.meaning = EditMaxSegments
+	tw.edit.meaning = editMaxSegments
 	tw.edit.i = 1
 }
 
-func (tw *TextWindow) ScreenChangeGridSpacing(link int, v uint32) {
+func (tw *textWindow) ScreenChangeGridSpacing(link int, v uint32) {
 	tw.ShowEditControl(3, tw.ss.MmToString(tw.ss.GridSpacing, true))
-	tw.edit.meaning = EditGridSpacing
+	tw.edit.meaning = editGridSpacing
 }
 
-func (tw *TextWindow) ScreenChangeDigitsAfterDecimal(link int, v uint32) {
+func (tw *textWindow) ScreenChangeDigitsAfterDecimal(link int, v uint32) {
 	tw.ShowEditControl(14, fmt.Sprintf("%d", tw.ss.UnitDigitsAfterDecimal()))
-	tw.edit.meaning = EditDigitsAfterDecimal
+	tw.edit.meaning = editDigitsAfterDecimal
 }
 
-func (tw *TextWindow) ScreenChangeDigitsAfterDecimalDegree(link int, v uint32) {
+func (tw *textWindow) ScreenChangeDigitsAfterDecimalDegree(link int, v uint32) {
 	tw.ShowEditControl(14, fmt.Sprintf("%d", tw.ss.AfterDecimalDegree))
-	tw.edit.meaning = EditDigitsAfterDecimalDegree
+	tw.edit.meaning = editDigitsAfterDecimalDegree
 }
 
-func (tw *TextWindow) ScreenChangeUseSIPrefixes(link int, v uint32) {
+func (tw *textWindow) ScreenChangeUseSIPrefixes(link int, v uint32) {
 	tw.ss.UseSIPrefixes = !tw.ss.UseSIPrefixes
 	tw.ss.GW.Invalidate(false)
 }
 
-func (tw *TextWindow) ScreenChangeExportScale(link int, v uint32) {
+func (tw *textWindow) ScreenChangeExportScale(link int, v uint32) {
 	tw.ShowEditControl(5, fmt.Sprintf("%.3f", tw.ss.ExportScale))
-	tw.edit.meaning = EditExportScale
+	tw.edit.meaning = editExportScale
 }
 
-func (tw *TextWindow) ScreenChangeExportOffset(link int, v uint32) {
+func (tw *textWindow) ScreenChangeExportOffset(link int, v uint32) {
 	tw.ShowEditControl(3, tw.ss.MmToString(tw.ss.ExportOffset, true))
-	tw.edit.meaning = EditExportOffset
+	tw.edit.meaning = editExportOffset
 }
 
-func (tw *TextWindow) ScreenChangeArcDimDefault(link int, v uint32) {
+func (tw *textWindow) ScreenChangeArcDimDefault(link int, v uint32) {
 	tw.ss.ArcDimDefaultDiameter = !tw.ss.ArcDimDefaultDiameter
 }
 
-func (tw *TextWindow) ScreenChangeShowFullFilePath(link int, v uint32) {
+func (tw *textWindow) ScreenChangeShowFullFilePath(link int, v uint32) {
 	tw.ss.ShowFullFilePath = !tw.ss.ShowFullFilePath
 	tw.ss.UpdateWindowTitles()
 }
 
-func (tw *TextWindow) ScreenChangeFixExportColors(link int, v uint32) {
+func (tw *textWindow) ScreenChangeFixExportColors(link int, v uint32) {
 	tw.ss.FixExportColors = !tw.ss.FixExportColors
 }
 
-func (tw *TextWindow) ScreenChangeExportBackgroundColor(link int, v uint32) {
+func (tw *textWindow) ScreenChangeExportBackgroundColor(link int, v uint32) {
 	tw.ss.ExportBackgroundColor = !tw.ss.ExportBackgroundColor
 }
 
-func (tw *TextWindow) ScreenChangeBackFaces(link int, v uint32) {
+func (tw *textWindow) ScreenChangeBackFaces(link int, v uint32) {
 	tw.ss.DrawBackFaces = !tw.ss.DrawBackFaces
 	tw.ss.GW.Invalidate(true)
 }
 
-func (tw *TextWindow) ScreenChangeTurntableNav(link int, v uint32) {
+func (tw *textWindow) ScreenChangeTurntableNav(link int, v uint32) {
 	ss := tw.ss
 	ss.TurntableNav = !ss.TurntableNav
 	if ss.TurntableNav {
@@ -112,71 +112,71 @@ func (tw *TextWindow) ScreenChangeTurntableNav(link int, v uint32) {
 
 // ScreenChangeUseOpenGL switches between the OpenGL and the software
 // renderer (an extension).
-func (tw *TextWindow) ScreenChangeUseOpenGL(link int, v uint32) {
+func (tw *textWindow) ScreenChangeUseOpenGL(link int, v uint32) {
 	tw.ss.SetUseOpenGL(!tw.ss.UseGL())
 }
 
 // ScreenChangeAgentConfirm turns asking before each script of a
 // program that connected through Script > Allow AI Connections on or
 // off (an extension).
-func (tw *TextWindow) ScreenChangeAgentConfirm(link int, v uint32) {
+func (tw *textWindow) ScreenChangeAgentConfirm(link int, v uint32) {
 	tw.ss.AgentConfirm = !tw.ss.AgentConfirm
 }
 
-func (tw *TextWindow) ScreenChangeCameraNav(link int, v uint32) {
+func (tw *textWindow) ScreenChangeCameraNav(link int, v uint32) {
 	tw.ss.CameraNav = !tw.ss.CameraNav
 }
 
-func (tw *TextWindow) ScreenChangeImmediatelyEditDimension(link int, v uint32) {
+func (tw *textWindow) ScreenChangeImmediatelyEditDimension(link int, v uint32) {
 	tw.ss.ImmediatelyEditDimension = !tw.ss.ImmediatelyEditDimension
 	tw.ss.GW.Invalidate(true)
 }
 
-func (tw *TextWindow) ScreenChangeShowContourAreas(link int, v uint32) {
+func (tw *textWindow) ScreenChangeShowContourAreas(link int, v uint32) {
 	tw.ss.ShowContourAreas = !tw.ss.ShowContourAreas
 	tw.ss.GW.Invalidate(false)
 }
 
-func (tw *TextWindow) ScreenChangeCheckClosedContour(link int, v uint32) {
+func (tw *textWindow) ScreenChangeCheckClosedContour(link int, v uint32) {
 	tw.ss.CheckClosedContour = !tw.ss.CheckClosedContour
 	tw.ss.GW.Invalidate(false)
 }
 
 // ScreenChangeColorByFreedom turns the colouring of entities by
 // constraint state on or off (an extension).
-func (tw *TextWindow) ScreenChangeColorByFreedom(link int, v uint32) {
+func (tw *textWindow) ScreenChangeColorByFreedom(link int, v uint32) {
 	tw.ss.ColorByFreedom = !tw.ss.ColorByFreedom
 	tw.ss.GW.Invalidate(false)
 }
 
 // ScreenChangeShaded turns the shading by appearances on or off
 // (roadmap 19.1).
-func (tw *TextWindow) ScreenChangeShaded(link int, v uint32) {
+func (tw *textWindow) ScreenChangeShaded(link int, v uint32) {
 	tw.ss.Shaded = !tw.ss.Shaded
 	tw.ss.GW.Invalidate(false)
 }
 
-func (tw *TextWindow) ScreenChangeAutomaticLineConstraints(link int, v uint32) {
+func (tw *textWindow) ScreenChangeAutomaticLineConstraints(link int, v uint32) {
 	tw.ss.AutomaticLineConstraints = !tw.ss.AutomaticLineConstraints
 	tw.ss.GW.Invalidate(false)
 }
 
-func (tw *TextWindow) ScreenChangeShadedTriangles(link int, v uint32) {
+func (tw *textWindow) ScreenChangeShadedTriangles(link int, v uint32) {
 	tw.ss.ExportShadedTriangles = !tw.ss.ExportShadedTriangles
 	tw.ss.GW.Invalidate(false)
 }
 
-func (tw *TextWindow) ScreenChangePwlCurves(link int, v uint32) {
+func (tw *textWindow) ScreenChangePwlCurves(link int, v uint32) {
 	tw.ss.ExportPwlCurves = !tw.ss.ExportPwlCurves
 	tw.ss.GW.Invalidate(false)
 }
 
-func (tw *TextWindow) ScreenChangeCanvasSizeAuto(link int, v uint32) {
+func (tw *textWindow) ScreenChangeCanvasSizeAuto(link int, v uint32) {
 	tw.ss.ExportCanvasSizeAuto = link == 't'
 	tw.ss.GW.Invalidate(false)
 }
 
-func (tw *TextWindow) ScreenChangeCanvasSize(link int, v uint32) {
+func (tw *textWindow) ScreenChangeCanvasSize(link int, v uint32) {
 	ss := tw.ss
 	var d float64
 	switch v {
@@ -206,58 +206,58 @@ func (tw *TextWindow) ScreenChangeCanvasSize(link int, v uint32) {
 		col = 11
 	}
 	tw.ShowEditControl(col, ss.MmToString(d, true))
-	tw.edit.meaning = EditCanvasSize
+	tw.edit.meaning = editCanvasSize
 	tw.edit.i = int(v)
 }
 
-func (tw *TextWindow) ScreenChangeGCodeParameter(link int, v uint32) {
+func (tw *textWindow) ScreenChangeGCodeParameter(link int, v uint32) {
 	ss := tw.ss
 	var buf string
 	switch link {
 	case 'd':
-		tw.edit.meaning = EditGCodeDepth
+		tw.edit.meaning = editGCodeDepth
 		buf += ss.MmToString(ss.GCode.Depth, true)
 
 	case 'h':
-		tw.edit.meaning = EditGCodeSafeHeight
+		tw.edit.meaning = editGCodeSafeHeight
 		buf += ss.MmToString(ss.GCode.SafeHeight, true)
 
 	case 's':
-		tw.edit.meaning = EditGCodePasses
+		tw.edit.meaning = editGCodePasses
 		buf += strconv.Itoa(ss.GCode.Passes)
 
 	case 'F':
-		tw.edit.meaning = EditGCodeFeed
+		tw.edit.meaning = editGCodeFeed
 		buf += ss.MmToString(ss.GCode.Feed, true)
 
 	case 'P':
-		tw.edit.meaning = EditGCodePlungeFeed
+		tw.edit.meaning = editGCodePlungeFeed
 		buf += ss.MmToString(ss.GCode.PlungeFeed, true)
 	}
 	tw.ShowEditControl(14, buf)
 }
 
-func (tw *TextWindow) ScreenChangeAutosaveInterval(link int, v uint32) {
+func (tw *textWindow) ScreenChangeAutosaveInterval(link int, v uint32) {
 	tw.ShowEditControl(3, strconv.Itoa(tw.ss.AutosaveInterval))
-	tw.edit.meaning = EditAutosaveInterval
+	tw.edit.meaning = editAutosaveInterval
 }
 
-func (tw *TextWindow) ScreenChangeFindConstraintTimeout(link int, v uint32) {
+func (tw *textWindow) ScreenChangeFindConstraintTimeout(link int, v uint32) {
 	tw.ShowEditControl(3, strconv.Itoa(tw.ss.TimeoutRedundantConstr))
-	tw.edit.meaning = EditFindConstraintTimeout
+	tw.edit.meaning = editFindConstraintTimeout
 }
 
-func (tw *TextWindow) ScreenChangeAnimationSpeed(link int, v uint32) {
+func (tw *textWindow) ScreenChangeAnimationSpeed(link int, v uint32) {
 	tw.ShowEditControl(3, strconv.Itoa(tw.ss.AnimationSpeed))
-	tw.edit.meaning = EditAnimationSpeed
+	tw.edit.meaning = editAnimationSpeed
 }
 
 // ShowConfiguration is the configuration screen.
-func (tw *TextWindow) ShowConfiguration() {
+func (tw *textWindow) ShowConfiguration() {
 	ss := tw.ss
 	tw.Printf(true, "%Ft user color (r, g, b)")
 
-	for i := range ModelColors {
+	for i := range modelColors {
 		bg := byte('a')
 		if i&1 != 0 {
 			bg = 'd'
@@ -418,56 +418,56 @@ func (tw *TextWindow) ShowConfiguration() {
 
 // EditControlDoneForConfiguration takes an edited configuration value,
 // and reports whether the edit was one of the configuration's.
-func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
+func (tw *textWindow) EditControlDoneForConfiguration(s string) bool {
 	ss := tw.ss
 	switch tw.edit.meaning {
-	case EditLightIntensity:
+	case editLightIntensity:
 		ss.LightIntensity[tw.edit.i] = geom.Min(1.0, geom.Max(0.0, atof(s)))
 		ss.GW.Invalidate(false)
-	case EditLightAmbient:
+	case editLightAmbient:
 		ss.AmbientIntensity = geom.Min(1.0, geom.Max(0.0, atof(s)))
 		ss.GW.Invalidate(false)
-	case EditLightDirection:
+	case editLightDirection:
 		if x, y, z, ok := scanVector3(s); ok {
 			ss.LightDir[tw.edit.i] = vec3(x, y, z)
 			ss.GW.Invalidate(false)
 		} else {
 			ss.Error("Bad format: specify coordinates as x, y, z")
 		}
-	case EditColor:
+	case editColor:
 		if x, y, z, ok := scanVector3(s); ok {
 			ss.ModelColor[tw.edit.i] = rgbfVec(vec3(x, y, z).ClampWithin(0, 1))
 		} else {
 			ss.Error("Bad format: specify color as r, g, b")
 		}
-	case EditChordTolerance:
+	case editChordTolerance:
 		if tw.edit.i == 0 {
 			ss.ChordTol = geom.Max(0.0, atof(s))
 			ss.GenerateAll(sketch.GenerateAll)
 		} else {
 			ss.ExportChordTol = geom.Max(0.0, atof(s))
 		}
-	case EditMaxSegments:
+	case editMaxSegments:
 		if tw.edit.i == 0 {
 			ss.MaxSegments = min(1000, max(7, atoi(s)))
 			ss.GenerateAll(sketch.GenerateAll)
 		} else {
 			ss.ExportMaxSegments = min(1000, max(7, atoi(s)))
 		}
-	case EditCameraTangent:
+	case editCameraTangent:
 		ss.CameraTangentSetting = geom.Min(2.0, geom.Max(0.0, atof(s))) / 1000.0
 		ss.GW.Invalidate(false)
 		if !ss.UsePerspectiveProj {
 			ss.Message("The perspective factor will have no effect until you " +
 				"enable View -> Use Perspective Projection.")
 		}
-	case EditGridSpacing:
+	case editGridSpacing:
 		ss.GridSpacing = toF32(geom.Min(1e4, geom.Max(1e-3, ss.StringToMm(s))))
 		ss.GW.Invalidate(false)
-	case EditExplodeDistance:
+	case editExplodeDistance:
 		ss.ExplodeDistance = geom.Min(1e4, geom.Max(-1e4, ss.StringToMm(s)))
 		ss.SK.MarkGroupDirty(ss.GW.activeGroupH(), true)
-	case EditDigitsAfterDecimal:
+	case editDigitsAfterDecimal:
 		v := atoi(s)
 		if v < 0 || v > 8 {
 			ss.Error("Specify between 0 and %d digits after the decimal.", 8)
@@ -475,7 +475,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 			ss.SetUnitDigitsAfterDecimal(v)
 			ss.GW.Invalidate(false)
 		}
-	case EditDigitsAfterDecimalDegree:
+	case editDigitsAfterDecimalDegree:
 		v := atoi(s)
 		if v < 0 || v > 4 {
 			ss.Error("Specify between 0 and %d digits after the decimal.", 4)
@@ -483,7 +483,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 			ss.AfterDecimalDegree = v
 			ss.GW.Invalidate(false)
 		}
-	case EditExportScale:
+	case editExportScale:
 		if e := ss.exprFromString(s); e != nil {
 			ev := ss.evalExpr(e)
 			if math.Abs(ev) < 0.001 || isUnreasonable(ev) {
@@ -492,7 +492,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 				ss.ExportScale = toF32(ev)
 			}
 		}
-	case EditExportOffset:
+	case editExportOffset:
 		if e := ss.exprFromString(s); e != nil {
 			ev := ss.ExprToMm(e)
 			if isUnreasonable(ev) || ev < 0 {
@@ -501,7 +501,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 				ss.ExportOffset = toF32(ev)
 			}
 		}
-	case EditCanvasSize:
+	case editCanvasSize:
 		e := ss.exprFromString(s)
 		if e == nil {
 			break
@@ -526,28 +526,28 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 		case 13:
 			ss.ExportCanvas.Dy = d
 		}
-	case EditGCodeDepth:
+	case editGCodeDepth:
 		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.Depth = toF32(ss.ExprToMm(e))
 		}
-	case EditGCodeSafeHeight:
+	case editGCodeSafeHeight:
 		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.SafeHeight = toF32(ss.ExprToMm(e))
 		}
-	case EditGCodePasses:
+	case editGCodePasses:
 		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.Passes = int(ss.evalExpr(e))
 		}
 		ss.GCode.Passes = max(1, min(1000, ss.GCode.Passes))
-	case EditGCodeFeed:
+	case editGCodeFeed:
 		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.Feed = toF32(ss.ExprToMm(e))
 		}
-	case EditGCodePlungeFeed:
+	case editGCodePlungeFeed:
 		if e := ss.exprFromString(s); e != nil {
 			ss.GCode.PlungeFeed = toF32(ss.ExprToMm(e))
 		}
-	case EditAutosaveInterval:
+	case editAutosaveInterval:
 		interval := atoi(s)
 		if interval != 0 {
 			if interval >= 1 {
@@ -559,7 +559,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 		} else {
 			ss.Error("Bad format: specify interval in integral minutes")
 		}
-	case EditFindConstraintTimeout:
+	case editFindConstraintTimeout:
 		timeout := atoi(s)
 		if timeout != 0 {
 			if timeout >= 1 {
@@ -568,7 +568,7 @@ func (tw *TextWindow) EditControlDoneForConfiguration(s string) bool {
 				ss.TimeoutRedundantConstr = 1000
 			}
 		}
-	case EditAnimationSpeed:
+	case editAnimationSpeed:
 		speed := atoi(s)
 		if speed >= 0 {
 			ss.AnimationSpeed = speed

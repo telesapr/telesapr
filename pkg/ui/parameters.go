@@ -9,14 +9,14 @@ import (
 // could not be evaluated, and edits it.
 
 // ScreenShowParameters shows the parameter table.
-func (tw *TextWindow) ScreenShowParameters(link int, v uint32) {
-	tw.GoToScreen(ScreenParameters)
+func (tw *textWindow) ScreenShowParameters(link int, v uint32) {
+	tw.GoToScreen(screenParameters)
 }
 
 // MenuParameters shows the parameter table, from the menu.
 func (ss *Application) MenuParameters() {
 	ss.GW.ClearSelection()
-	ss.TW.GoToScreen(ScreenParameters)
+	ss.TW.GoToScreen(screenParameters)
 	ss.GW.ForceTextWindowShown()
 	ss.ScheduleShowTW()
 }
@@ -35,12 +35,12 @@ func pad(s string, n int) string {
 
 // ScreenChangeParameter starts an edit of parameter v: its expression
 // ('e'), its name ('n'), or deletes it ('x'). 'a' adds one.
-func (tw *TextWindow) ScreenChangeParameter(link int, v uint32) {
+func (tw *textWindow) ScreenChangeParameter(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	if link == 'a' {
 		tw.ShowEditControl(3, "")
-		tw.edit.meaning = EditParameterAdd
+		tw.edit.meaning = editParameterAdd
 		return
 	}
 	i := int(v)
@@ -52,10 +52,10 @@ func (tw *TextWindow) ScreenChangeParameter(link int, v uint32) {
 	switch link {
 	case 'e':
 		tw.ShowEditControl(3, p.Expr)
-		tw.edit.meaning = EditParameterExpr
+		tw.edit.meaning = editParameterExpr
 	case 'n':
 		tw.ShowEditControl(3, p.Name)
-		tw.edit.meaning = EditParameterName
+		tw.edit.meaning = editParameterName
 	case 'x':
 		ss.parameterEdit(func() error { return sk.DeleteParameter(p.Name) })
 	}
@@ -63,12 +63,12 @@ func (tw *TextWindow) ScreenChangeParameter(link int, v uint32) {
 
 // ScreenChangeConfiguration activates configuration v-1, or none for v
 // = 0 ('c'), renames ('r') or deletes it ('x'), or adds one ('A').
-func (tw *TextWindow) ScreenChangeConfiguration(link int, v uint32) {
+func (tw *textWindow) ScreenChangeConfiguration(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	if link == 'A' {
 		tw.ShowEditControl(3, "")
-		tw.edit.meaning = EditConfigurationAdd
+		tw.edit.meaning = editConfigurationAdd
 		return
 	}
 	if link == 'c' && v == 0 {
@@ -86,7 +86,7 @@ func (tw *TextWindow) ScreenChangeConfiguration(link int, v uint32) {
 	case 'r':
 		tw.edit.i = i
 		tw.ShowEditControl(3, name)
-		tw.edit.meaning = EditConfigurationName
+		tw.edit.meaning = editConfigurationName
 	case 'x':
 		ss.parameterEdit(func() error { return sk.DeleteConfiguration(name) })
 	}
@@ -107,7 +107,7 @@ func (ss *Application) parameterEdit(fn func() error) {
 
 // EditControlDoneForParameters takes an edit of the parameter table,
 // and reports whether the edit was one of those.
-func (tw *TextWindow) EditControlDoneForParameters(s string) bool {
+func (tw *textWindow) EditControlDoneForParameters(s string) bool {
 	ss := tw.ss
 	sk := ss.SK
 	name := func() string {
@@ -117,7 +117,7 @@ func (tw *TextWindow) EditControlDoneForParameters(s string) bool {
 		return ""
 	}
 	switch tw.edit.meaning {
-	case EditParameterAdd:
+	case editParameterAdd:
 		// "name = expression", or a name alone for a parameter of 0.
 		n, expr, found := strings.Cut(s, "=")
 		n = strings.TrimSpace(n)
@@ -125,15 +125,15 @@ func (tw *TextWindow) EditControlDoneForParameters(s string) bool {
 			expr = "0"
 		}
 		ss.parameterEdit(func() error { return sk.AddParameter(n, expr) })
-	case EditParameterExpr:
+	case editParameterExpr:
 		n := name()
 		ss.parameterEdit(func() error { return sk.SetParameterExpr(n, s) })
-	case EditParameterName:
+	case editParameterName:
 		n := name()
 		ss.parameterEdit(func() error { return sk.RenameParameter(n, strings.TrimSpace(s)) })
-	case EditConfigurationAdd:
+	case editConfigurationAdd:
 		ss.parameterEdit(func() error { return sk.AddConfiguration(strings.TrimSpace(s)) })
-	case EditConfigurationName:
+	case editConfigurationName:
 		if tw.edit.i < len(sk.Configurations) {
 			from := sk.Configurations[tw.edit.i].Name
 			ss.parameterEdit(func() error { return sk.RenameConfiguration(from, strings.TrimSpace(s)) })
@@ -145,7 +145,7 @@ func (tw *TextWindow) EditControlDoneForParameters(s string) bool {
 }
 
 // ShowParameters is the screen of the parameter table.
-func (tw *TextWindow) ShowParameters() {
+func (tw *textWindow) ShowParameters() {
 	sk := tw.ss.SK
 	tw.Printf(true, "%FtPARAMETERS%E")
 	if len(sk.Parameters) == 0 {

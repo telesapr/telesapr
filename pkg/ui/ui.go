@@ -14,154 +14,154 @@ import (
 type Command uint32
 
 const (
-	CmdNone Command = 0
+	cmdNone Command = 0
 	// File
-	CmdNew Command = 100 + iota - 1
-	CmdOpen
-	CmdOpenRecent
-	CmdSave
-	CmdSaveAs
-	CmdExportImage
-	CmdExportMesh
-	CmdExportSurfaces
-	CmdExportView
-	CmdExportSection
-	CmdExportWireframe
-	CmdImport
-	CmdExit
+	cmdNew Command = 100 + iota - 1
+	cmdOpen
+	cmdOpenRecent
+	cmdSave
+	cmdSaveAs
+	cmdExportImage
+	cmdExportMesh
+	cmdExportSurfaces
+	cmdExportView
+	cmdExportSection
+	cmdExportWireframe
+	cmdImport
+	cmdExit
 	// View
-	CmdZoomIn
-	CmdZoomOut
-	CmdZoomToFit
-	CmdShowGrid
-	CmdDimSolidModel
-	CmdPerspectiveProj
-	CmdExplodeSketch
-	CmdOntoWorkplane
-	CmdNearestOrtho
-	CmdNearestIso
-	CmdCenterView
-	CmdShowToolbar
-	CmdShowTextWnd
-	CmdUnitsInches
-	CmdUnitsFeetInches
-	CmdUnitsMm
-	CmdUnitsMeters
-	CmdFullScreen
+	cmdZoomIn
+	cmdZoomOut
+	cmdZoomToFit
+	cmdShowGrid
+	cmdDimSolidModel
+	cmdPerspectiveProj
+	cmdExplodeSketch
+	cmdOntoWorkplane
+	cmdNearestOrtho
+	cmdNearestIso
+	cmdCenterView
+	cmdShowToolbar
+	cmdShowTextWnd
+	cmdUnitsInches
+	cmdUnitsFeetInches
+	cmdUnitsMm
+	cmdUnitsMeters
+	cmdFullScreen
 	// Edit
-	CmdUndo
-	CmdRedo
-	CmdCut
-	CmdCopy
-	CmdPaste
-	CmdPasteTransform
-	CmdDelete
-	CmdSelectChain
-	CmdSelectAll
-	CmdSnapToGrid
-	CmdRotate90
-	CmdUnselectAll
-	CmdRegenAll
-	CmdEditLineStyles
-	CmdViewProjection
-	CmdConfiguration
+	cmdUndo
+	cmdRedo
+	cmdCut
+	cmdCopy
+	cmdPaste
+	cmdPasteTransform
+	cmdDelete
+	cmdSelectChain
+	cmdSelectAll
+	cmdSnapToGrid
+	cmdRotate90
+	cmdUnselectAll
+	cmdRegenAll
+	cmdEditLineStyles
+	cmdViewProjection
+	cmdConfiguration
 	// Request
-	CmdSelWorkplane
-	CmdFreeIn3D
-	CmdDatumPoint
-	CmdWorkplane
-	CmdLineSegment
-	CmdConstrSegment
-	CmdCircle
-	CmdArc
-	CmdRectangle
-	CmdCubic
-	CmdTTFText
-	CmdImage
-	CmdSplitCurves
-	CmdTangentArc
-	CmdConstruction
+	cmdSelWorkplane
+	cmdFreeIn3D
+	cmdDatumPoint
+	cmdWorkplane
+	cmdLineSegment
+	cmdConstrSegment
+	cmdCircle
+	cmdArc
+	cmdRectangle
+	cmdCubic
+	cmdTTFText
+	cmdImage
+	cmdSplitCurves
+	cmdTangentArc
+	cmdConstruction
 	// Group
-	CmdGroup3D
-	CmdGroupWrkpl
-	CmdGroupExtrude
-	CmdGroupHelix
-	CmdGroupLathe
-	CmdGroupRevolve
-	CmdGroupRot
-	CmdGroupTrans
-	CmdGroupLink
-	CmdGroupRecent
+	cmdGroup3D
+	cmdGroupWrkpl
+	cmdGroupExtrude
+	cmdGroupHelix
+	cmdGroupLathe
+	cmdGroupRevolve
+	cmdGroupRot
+	cmdGroupTrans
+	cmdGroupLink
+	cmdGroupRecent
 	// Constrain
-	CmdDistanceDia
-	CmdRefDistance
-	CmdAngle
-	CmdRefAngle
-	CmdOtherAngle
-	CmdReference
-	CmdEqual
-	CmdRatio
-	CmdDifference
-	CmdOnEntity
-	CmdSymmetric
-	CmdAtMidpoint
-	CmdHorizontal
-	CmdVertical
-	CmdParallel
-	CmdPerpendicular
-	CmdOrientedSame
-	CmdWhereDragged
-	CmdComment
+	cmdDistanceDia
+	cmdRefDistance
+	cmdAngle
+	cmdRefAngle
+	cmdOtherAngle
+	cmdReference
+	cmdEqual
+	cmdRatio
+	cmdDifference
+	cmdOnEntity
+	cmdSymmetric
+	cmdAtMidpoint
+	cmdHorizontal
+	cmdVertical
+	cmdParallel
+	cmdPerpendicular
+	cmdOrientedSame
+	cmdWhereDragged
+	cmdComment
 	// Analyze
-	CmdVolume
-	CmdArea
-	CmdPerimeter
-	CmdInterference
-	CmdNakedEdges
-	CmdShowDOF
-	CmdCenterOfMass
-	CmdTracePt
-	CmdStopTracing
-	CmdStepDim
+	cmdVolume
+	cmdArea
+	cmdPerimeter
+	cmdInterference
+	cmdNakedEdges
+	cmdShowDOF
+	cmdCenterOfMass
+	cmdTracePt
+	cmdStopTracing
+	cmdStepDim
 	// Help
-	CmdLocale
-	CmdWebsite
-	CmdGithub
-	CmdAbout
+	cmdLocale
+	cmdWebsite
+	cmdGithub
+	cmdAbout
 	// Script
-	CmdScriptConsole
-	CmdScriptRun
-	CmdScriptStop
+	cmdScriptConsole
+	cmdScriptRun
+	cmdScriptStop
 	// Commands of this program's own, after the original ones so that
 	// their numbers stay.
-	CmdCheckSolid
-	CmdGroupThread
-	CmdParameters
-	CmdFindCommand
-	CmdMeasure
-	CmdMoveGroupEarlier
-	CmdMoveGroupLater
-	CmdBrokenReferences
-	CmdSectionView
-	CmdGroupMirror
-	CmdGroupChamfer
-	CmdGroupSweep
-	CmdGroupFillet
-	CmdGroupLoft
-	CmdGroupShell
-	CmdScriptAgent
-	CmdGroupPathPattern
-	CmdBillOfMaterials
-	CmdMotionStudy
-	CmdMateConcentric
-	CmdMateFlush
-	CmdMateHinge
-	CmdDrawingSheet
-	CmdExportDrawing
-	CmdMoveGroupToEnd
-	CmdShowDrawingSheet
-	CmdDraftSelectedSides
-	CmdLoftGuides
+	cmdCheckSolid
+	cmdGroupThread
+	cmdParameters
+	cmdFindCommand
+	cmdMeasure
+	cmdMoveGroupEarlier
+	cmdMoveGroupLater
+	cmdBrokenReferences
+	cmdSectionView
+	cmdGroupMirror
+	cmdGroupChamfer
+	cmdGroupSweep
+	cmdGroupFillet
+	cmdGroupLoft
+	cmdGroupShell
+	cmdScriptAgent
+	cmdGroupPathPattern
+	cmdBillOfMaterials
+	cmdMotionStudy
+	cmdMateConcentric
+	cmdMateFlush
+	cmdMateHinge
+	cmdDrawingSheet
+	cmdExportDrawing
+	cmdMoveGroupToEnd
+	cmdShowDrawingSheet
+	cmdDraftSelectedSides
+	cmdLoftGuides
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -169,36 +169,36 @@ const (
 type Pending uint32
 
 const (
-	PendingNone Pending = iota
-	PendingCommand
-	PendingDraggingPoints
-	PendingDraggingNewPoint
-	PendingDraggingNewLinePoint
-	PendingDraggingNewCubicPoint
-	PendingDraggingNewArcPoint
-	PendingDraggingConstraint
-	PendingDraggingRadius
-	PendingDraggingNormal
-	PendingDraggingNewRadius
-	PendingDraggingMarquee
+	pendingNone Pending = iota
+	pendingCommand
+	pendingDraggingPoints
+	pendingDraggingNewPoint
+	pendingDraggingNewLinePoint
+	pendingDraggingNewCubicPoint
+	pendingDraggingNewArcPoint
+	pendingDraggingConstraint
+	pendingDraggingRadius
+	pendingDraggingNormal
+	pendingDraggingNewRadius
+	pendingDraggingMarquee
 )
 
-// ShowConstraintMode says which constraints are drawn.
-type ShowConstraintMode uint32
+// showConstraintMode says which constraints are drawn.
+type showConstraintMode uint32
 
 const (
-	SCMNoShow ShowConstraintMode = iota
-	SCMShowAll
-	SCMShowDim
+	sCMNoShow showConstraintMode = iota
+	sCMShowAll
+	sCMShowDim
 )
 
 // DrawOccludedAs says how lines hidden by the solid are drawn.
 type DrawOccludedAs uint32
 
 const (
-	OccludedInvisible DrawOccludedAs = iota
-	OccludedStippled
-	OccludedVisible
+	occludedInvisible DrawOccludedAs = iota
+	occludedStippled
+	occludedVisible
 )
 
 // Selection is a selected or hovered entity or constraint.
@@ -291,8 +291,8 @@ type pendingState struct {
 	suggestion    sketch.Suggestion
 }
 
-// GraphicsWindow is the window with the model and the toolbar.
-type GraphicsWindow struct {
+// graphicsWindow is the window with the model and the toolbar.
+type graphicsWindow struct {
 	// What the window draws beside the sketch: the point being traced
 	// and its path, the naked edges Analyze found, the line a drag
 	// with Ctrl shows, where an export's origin was, and the centre of
@@ -412,7 +412,7 @@ type GraphicsWindow struct {
 	// This sets what gets displayed.
 	show sketch.Visibility
 
-	showConstraints     ShowConstraintMode
+	showConstraints     showConstraintMode
 	showTextWindow      bool
 	showShaded          bool
 	showFaces           bool
@@ -442,10 +442,10 @@ type GraphicsWindow struct {
 // maxSelectableFaces limits the faces selected at once.
 const maxSelectableFaces = 3
 
-func newGraphicsWindow(ss *Application) *GraphicsWindow {
-	gw := &GraphicsWindow{ss: ss}
+func newGraphicsWindow(ss *Application) *graphicsWindow {
+	gw := &graphicsWindow{ss: ss}
 	gw.view = sketch.DefaultView()
-	// What GraphicsWindow::Init sets; the sketch reads the show flags
+	// What graphicsWindow::Init sets; the sketch reads the show flags
 	// even before the window is made.
 	gw.show = sketch.DefaultVisibility()
 	return gw

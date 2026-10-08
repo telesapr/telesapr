@@ -70,8 +70,8 @@ func TestRunCommand(t *testing.T) {
 	}
 	// A name two entries share is ambiguous.
 	ss.menu = append(append([]menuEntry(nil), menuTable...),
-		menuEntry{0, "&Extra", CmdNone, 0, kn, nil},
-		menuEntry{1, "Zoom To &Fit", CmdZoomToFit, 0, kn, mView})
+		menuEntry{0, "&Extra", cmdNone, 0, kn, nil},
+		menuEntry{1, "Zoom To &Fit", cmdZoomToFit, 0, kn, mView})
 	if err := ss.RunCommand("zoom to fit"); err == nil || !strings.Contains(err.Error(), "View > Zoom To Fit or Extra > Zoom To Fit") {
 		t.Errorf("ambiguous: %v", err)
 	}
@@ -87,12 +87,12 @@ func TestCommandSearchScreen(t *testing.T) {
 	tw := ss.TW
 	w := tw.window.(*headless.Window)
 	ss.MenuFindCommand()
-	if tw.shown.screen != ScreenCommands || !w.EditorVisible {
+	if tw.shown.screen != screenCommands || !w.EditorVisible {
 		t.Fatalf("screen %d, editor %v", tw.shown.screen, w.EditorVisible)
 	}
 	w.FinishEditing("feet")
 	tw.Show()
-	if ss.MmPerUnit() != 25.4 || tw.shown.screen == ScreenCommands {
+	if ss.MmPerUnit() != 25.4 || tw.shown.screen == screenCommands {
 		t.Fatalf("a single match didn't run: units %v, screen %d", ss.MmPerUnit(), tw.shown.screen)
 	}
 

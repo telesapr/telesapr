@@ -22,11 +22,11 @@ import (
 // shows every file the import will write before it writes any, and,
 // when converted copies of linked models exist already, asks once
 // whether to reuse or overwrite them. A linked model that is missing is
-// asked for as when a model is opened; ErrDeclined when the user gave
+// asked for as when a model is opened; errDeclined when the user gave
 // up at one of the questions.
 func (ss *Application) ImportSolveSpace(src string) error {
 	if !ss.OkayToStartNewFile() {
-		return ErrDeclined
+		return errDeclined
 	}
 
 	dialog := ss.Platform.CreateSaveFileDialog(ss.GW.window)
@@ -35,7 +35,7 @@ func (ss *Application) ImportSolveSpace(src string) error {
 	dialog.ThawChoices(ss.Settings, "Sketch")
 	dialog.SetFilename(withExtension(src, tlspr.Extension))
 	if !dialog.RunModal() {
-		return ErrDeclined
+		return errDeclined
 	}
 	dialog.FreezeChoices(ss.Settings, "Sketch")
 	dst := modelFileName(dialog.Filename())
@@ -60,19 +60,19 @@ func (ss *Application) ImportSolveSpace(src string) error {
 			overwrite = true
 		case platform.ResponseNo:
 		default:
-			return ErrDeclined
+			return errDeclined
 		}
 	} else {
 		ask.AddButton("&Import", platform.ResponseYes, true)
 		ask.AddButton("&Cancel", platform.ResponseCancel, false)
 		if ask.RunModal() != platform.ResponseYes {
-			return ErrDeclined
+			return errDeclined
 		}
 	}
 
 	res, err := convert.Run(plan, convert.Options{Overwrite: overwrite, Units: ss.ViewUnits})
 	if errors.Is(err, convert.ErrCancelled) {
-		return ErrDeclined
+		return errDeclined
 	}
 	if err != nil {
 		return fmt.Errorf("can't import '%s': %w", src, err)

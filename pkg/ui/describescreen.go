@@ -14,22 +14,22 @@ import (
 )
 
 // ScreenUnselectAll clears the selection.
-func (tw *TextWindow) ScreenUnselectAll(link int, v uint32) {
-	tw.ss.GW.MenuEdit(CmdUnselectAll)
+func (tw *textWindow) ScreenUnselectAll(link int, v uint32) {
+	tw.ss.GW.MenuEdit(cmdUnselectAll)
 }
 
 // ScreenEditTtfText edits a text request's string.
-func (tw *TextWindow) ScreenEditTtfText(link int, v uint32) {
+func (tw *textWindow) ScreenEditTtfText(link int, v uint32) {
 	hr := core.HRequest{V: v}
 	r := tw.ss.SK.Request(hr)
 
 	tw.ShowEditControl(10, r.Str)
-	tw.edit.meaning = EditTTFText
+	tw.edit.meaning = editTTFText
 	tw.edit.request = hr
 }
 
 // ScreenToggleTtfKerning turns a text request's kerning on or off.
-func (tw *TextWindow) ScreenToggleTtfKerning(link int, v uint32) {
+func (tw *textWindow) ScreenToggleTtfKerning(link int, v uint32) {
 	ss := tw.ss
 	r := ss.SK.Request(core.HRequest{V: v})
 
@@ -45,7 +45,7 @@ func (tw *TextWindow) ScreenToggleTtfKerning(link int, v uint32) {
 }
 
 // ScreenSetTtfFont sets the selected text's font.
-func (tw *TextWindow) ScreenSetTtfFont(link int, v uint32) {
+func (tw *textWindow) ScreenSetTtfFont(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
 	i := int(int32(v))
@@ -78,7 +78,7 @@ func (tw *TextWindow) ScreenSetTtfFont(link int, v uint32) {
 
 // ScreenConstraintToggleReference makes a dimension a reference, or
 // not.
-func (tw *TextWindow) ScreenConstraintToggleReference(link int, v uint32) {
+func (tw *textWindow) ScreenConstraintToggleReference(link int, v uint32) {
 	ss := tw.ss
 	c := ss.SK.Constraint(core.HConstraint{V: v})
 
@@ -90,7 +90,7 @@ func (tw *TextWindow) ScreenConstraintToggleReference(link int, v uint32) {
 }
 
 // ScreenConstraintShowAsRadius shows a diameter as a radius, or not.
-func (tw *TextWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
+func (tw *textWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
 	ss := tw.ss
 	c := ss.SK.Constraint(core.HConstraint{V: v})
 
@@ -122,7 +122,7 @@ const (
 // describer writes the description of what is selected to the text
 // window.
 type describer struct {
-	tw *TextWindow
+	tw *textWindow
 	ss *Application
 	sk *sketch.Sketch
 	gs *groupedSelection
@@ -189,7 +189,7 @@ func (d *describer) listFaces() {
 }
 
 // DescribeSelection describes what is selected.
-func (tw *TextWindow) DescribeSelection() {
+func (tw *textWindow) DescribeSelection() {
 	ss := tw.ss
 	sk := ss.SK
 	tw.Printf(false, "")
@@ -197,7 +197,7 @@ func (tw *TextWindow) DescribeSelection() {
 	d := &describer{tw: tw, ss: ss, sk: sk, gs: gs}
 	d.describe()
 
-	if tw.shown.screen == ScreenStyleInfo && tw.shown.style.V >= core.StyleFirstCustom && gs.stylables > 0 {
+	if tw.shown.screen == screenStyleInfo && tw.shown.style.V >= core.StyleFirstCustom && gs.stylables > 0 {
 		// If we are showing a screen for a particular style, then offer
 		// the option to assign our selected entities to that style.
 		s := sk.StyleGet(tw.shown.style)
@@ -658,7 +658,7 @@ func (d *describer) describeSolidEdge() {
 	tw, ss, sk, gs := d.tw, d.ss, d.sk, d.gs
 	n := gs.solidEdge[0]
 	tw.Printf(false, "%FtSOLID EDGE%E  %s", n.String())
-	for k, line := range wrapWords(sk.SolidEdgeName(n), MaxCols-4) {
+	for k, line := range wrapWords(sk.SolidEdgeName(n), maxCols-4) {
 		if k == 0 {
 			tw.Printf(true, "  %s", line)
 		} else {

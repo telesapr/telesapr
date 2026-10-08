@@ -45,7 +45,7 @@ func TestTextWindowLinks(t *testing.T) {
 	}
 
 	clickText(t, ss, "g002-sketch-in-plane")
-	if tw.shown.screen != ScreenGroupInfo || tw.shown.group.V != 2 {
+	if tw.shown.screen != screenGroupInfo || tw.shown.group.V != 2 {
 		t.Fatalf("after clicking the group: screen %d group %v", tw.shown.screen, tw.shown.group)
 	}
 
@@ -64,7 +64,7 @@ func TestTextWindowLinks(t *testing.T) {
 
 	clickText(t, ss, "home")
 	tw.Show()
-	if tw.shown.screen != ScreenListOfGroups {
+	if tw.shown.screen != screenListOfGroups {
 		t.Fatalf("screen %d after home", tw.shown.screen)
 	}
 	clickText(t, ss, "g002-renamed")

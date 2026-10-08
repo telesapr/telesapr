@@ -65,25 +65,25 @@ func (ss *Application) MoveGroupToEnd(h core.HGroup) {
 
 // ScreenMoveGroup moves a group of the group list earlier ('u') or
 // later ('d').
-func (tw *TextWindow) ScreenMoveGroup(link int, v uint32) {
+func (tw *textWindow) ScreenMoveGroup(link int, v uint32) {
 	tw.ss.MoveGroup(core.HGroup{V: v}, link == 'd')
 }
 
 // MenuBrokenReferences shows what regenerations deleted, from the menu.
 func (ss *Application) MenuBrokenReferences() {
 	ss.GW.ClearSelection()
-	ss.TW.GoToScreen(ScreenBrokenReferences)
+	ss.TW.GoToScreen(screenBrokenReferences)
 	ss.GW.ForceTextWindowShown()
 	ss.ScheduleShowTW()
 }
 
 // ScreenShowBrokenReferences shows what regenerations deleted.
-func (tw *TextWindow) ScreenShowBrokenReferences(link int, v uint32) {
-	tw.GoToScreen(ScreenBrokenReferences)
+func (tw *textWindow) ScreenShowBrokenReferences(link int, v uint32) {
+	tw.GoToScreen(screenBrokenReferences)
 }
 
 // ScreenClearBrokenReferences empties the list.
-func (tw *TextWindow) ScreenClearBrokenReferences(link int, v uint32) {
+func (tw *textWindow) ScreenClearBrokenReferences(link int, v uint32) {
 	tw.ss.SK.ClearBrokenReferences()
 	tw.ss.ScheduleShowTW()
 }
@@ -92,7 +92,7 @@ func (tw *TextWindow) ScreenClearBrokenReferences(link int, v uint32) {
 // that deleted something deleted, because what it used was gone, and
 // of the stored expressions that can't be evaluated; each with a link
 // to the group it is in, where that group is still there.
-func (tw *TextWindow) ShowBrokenReferences() {
+func (tw *textWindow) ShowBrokenReferences() {
 	sk := tw.ss.SK
 	groupLink := func(h core.HGroup, name string) {
 		if sk.Group(h) != nil {

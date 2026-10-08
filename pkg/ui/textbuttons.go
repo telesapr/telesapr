@@ -32,7 +32,7 @@ func (*spacerButton) Click()            {}
 
 // showHideButton toggles a show flag.
 type showHideButton struct {
-	gw       *GraphicsWindow
+	gw       *graphicsWindow
 	variable *bool
 	tooltip  string
 	iconName string
@@ -144,8 +144,8 @@ func newTextButtons(ss *Application) []textButton {
 	constraints := &triStateButton{
 		ss:     ss,
 		get:    func() uint32 { return uint32(gw.showConstraints) },
-		set:    func(v uint32) { gw.showConstraints = ShowConstraintMode(v) },
-		states: [3]uint32{uint32(SCMShowAll), uint32(SCMShowDim), uint32(SCMNoShow)},
+		set:    func(v uint32) { gw.showConstraints = showConstraintMode(v) },
+		states: [3]uint32{uint32(sCMShowAll), uint32(sCMShowDim), uint32(sCMNoShow)},
 		tooltips: [3]string{"Show only dimensions", "Hide constraints and dimensions",
 			"Show constraints and dimensions"},
 		iconNames: [3]string{"constraint", "constraint-dimo", "constraint-wo"},
@@ -154,8 +154,8 @@ func newTextButtons(ss *Application) []textButton {
 		ss:  ss,
 		get: func() uint32 { return uint32(gw.drawOccludedAs) },
 		set: func(v uint32) { gw.drawOccludedAs = DrawOccludedAs(v) },
-		states: [3]uint32{uint32(OccludedInvisible), uint32(OccludedStippled),
-			uint32(OccludedVisible)},
+		states: [3]uint32{uint32(occludedInvisible), uint32(occludedStippled),
+			uint32(occludedVisible)},
 		tooltips: [3]string{"Stipple occluded lines", "Draw occluded lines",
 			"Don't draw occluded lines"},
 		iconNames: [3]string{"occluded-invisible", "occluded-stippled", "occluded-visible"},

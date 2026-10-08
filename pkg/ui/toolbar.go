@@ -19,56 +19,56 @@ type toolIcon struct {
 
 // toolbar is the toolbar at the left of the graphics window.
 var toolbar = []toolIcon{
-	{"line", CmdLineSegment, "Sketch line segment", nil},
-	{"rectangle", CmdRectangle, "Sketch rectangle", nil},
-	{"circle", CmdCircle, "Sketch circle", nil},
-	{"arc", CmdArc, "Sketch arc of a circle", nil},
-	{"text", CmdTTFText, "Sketch curves from text in a TrueType font", nil},
-	{"image", CmdImage, "Sketch image from a file", nil},
-	{"tangent-arc", CmdTangentArc, "Create tangent arc at selected point", nil},
-	{"bezier", CmdCubic, "Sketch cubic Bezier spline", nil},
-	{"point", CmdDatumPoint, "Sketch datum point", nil},
-	{"construction", CmdConstruction, "Toggle construction", nil},
-	{"trim", CmdSplitCurves, "Split lines / curves where they intersect", nil},
-	{"", CmdNone, "", nil},
+	{"line", cmdLineSegment, "Sketch line segment", nil},
+	{"rectangle", cmdRectangle, "Sketch rectangle", nil},
+	{"circle", cmdCircle, "Sketch circle", nil},
+	{"arc", cmdArc, "Sketch arc of a circle", nil},
+	{"text", cmdTTFText, "Sketch curves from text in a TrueType font", nil},
+	{"image", cmdImage, "Sketch image from a file", nil},
+	{"tangent-arc", cmdTangentArc, "Create tangent arc at selected point", nil},
+	{"bezier", cmdCubic, "Sketch cubic Bezier spline", nil},
+	{"point", cmdDatumPoint, "Sketch datum point", nil},
+	{"construction", cmdConstruction, "Toggle construction", nil},
+	{"trim", cmdSplitCurves, "Split lines / curves where they intersect", nil},
+	{"", cmdNone, "", nil},
 
-	{"length", CmdDistanceDia, "Constrain distance / diameter / length", nil},
-	{"angle", CmdAngle, "Constrain angle", nil},
-	{"horiz", CmdHorizontal, "Constrain to be horizontal", nil},
-	{"vert", CmdVertical, "Constrain to be vertical", nil},
-	{"parallel", CmdParallel, "Constrain to be parallel or tangent", nil},
-	{"perpendicular", CmdPerpendicular, "Constrain to be perpendicular", nil},
-	{"pointonx", CmdOnEntity, "Constrain point on line / curve / plane / point", nil},
-	{"symmetric", CmdSymmetric, "Constrain symmetric", nil},
-	{"equal", CmdEqual, "Constrain equal length / radius / angle", nil},
-	{"same-orientation", CmdOrientedSame, "Constrain normals in same orientation", nil},
-	{"other-supp", CmdOtherAngle, "Other supplementary angle", nil},
-	{"ref", CmdReference, "Toggle reference dimension", nil},
-	{"", CmdNone, "", nil},
+	{"length", cmdDistanceDia, "Constrain distance / diameter / length", nil},
+	{"angle", cmdAngle, "Constrain angle", nil},
+	{"horiz", cmdHorizontal, "Constrain to be horizontal", nil},
+	{"vert", cmdVertical, "Constrain to be vertical", nil},
+	{"parallel", cmdParallel, "Constrain to be parallel or tangent", nil},
+	{"perpendicular", cmdPerpendicular, "Constrain to be perpendicular", nil},
+	{"pointonx", cmdOnEntity, "Constrain point on line / curve / plane / point", nil},
+	{"symmetric", cmdSymmetric, "Constrain symmetric", nil},
+	{"equal", cmdEqual, "Constrain equal length / radius / angle", nil},
+	{"same-orientation", cmdOrientedSame, "Constrain normals in same orientation", nil},
+	{"other-supp", cmdOtherAngle, "Other supplementary angle", nil},
+	{"ref", cmdReference, "Toggle reference dimension", nil},
+	{"", cmdNone, "", nil},
 
-	{"extrude", CmdGroupExtrude, "New group extruding active sketch", nil},
-	{"lathe", CmdGroupLathe, "New group rotating active sketch", nil},
-	{"helix", CmdGroupHelix, "New group helix from active sketch", nil},
-	{"revolve", CmdGroupRevolve, "New group revolve active sketch", nil},
-	{"step-rotate", CmdGroupRot, "New group step and repeat rotating", nil},
-	{"step-translate", CmdGroupTrans, "New group step and repeat translating", nil},
-	{"sketch-in-plane", CmdGroupWrkpl, "New group in new workplane (thru given entities)", nil},
-	{"sketch-in-3d", CmdGroup3D, "New group in 3d", nil},
-	{"assemble", CmdGroupLink, "New group linking / assembling file", nil},
-	{"", CmdNone, "", nil},
+	{"extrude", cmdGroupExtrude, "New group extruding active sketch", nil},
+	{"lathe", cmdGroupLathe, "New group rotating active sketch", nil},
+	{"helix", cmdGroupHelix, "New group helix from active sketch", nil},
+	{"revolve", cmdGroupRevolve, "New group revolve active sketch", nil},
+	{"step-rotate", cmdGroupRot, "New group step and repeat rotating", nil},
+	{"step-translate", cmdGroupTrans, "New group step and repeat translating", nil},
+	{"sketch-in-plane", cmdGroupWrkpl, "New group in new workplane (thru given entities)", nil},
+	{"sketch-in-3d", cmdGroup3D, "New group in 3d", nil},
+	{"assemble", cmdGroupLink, "New group linking / assembling file", nil},
+	{"", cmdNone, "", nil},
 
-	{"in3d", CmdNearestIso, "Nearest isometric view", nil},
-	{"ontoworkplane", CmdOntoWorkplane, "Align view to active workplane", nil},
+	{"in3d", cmdNearestIso, "Nearest isometric view", nil},
+	{"ontoworkplane", cmdOntoWorkplane, "Align view to active workplane", nil},
 }
 
 // ToolbarDraw draws the toolbar.
-func (gw *GraphicsWindow) ToolbarDraw(canvas *render.UICanvas) {
+func (gw *graphicsWindow) ToolbarDraw(canvas *render.UICanvas) {
 	gw.toolbarDrawOrHitTest(0, 0, canvas)
 }
 
 // ToolbarMouseMoved highlights the button under the mouse and sets its
 // tooltip; it reports whether the mouse is over the toolbar.
-func (gw *GraphicsWindow) ToolbarMouseMoved(x, y int) bool {
+func (gw *graphicsWindow) ToolbarMouseMoved(x, y int) bool {
 	width, height := gw.window.ContentSize()
 	x += int(width) / 2
 	y += int(height) / 2
@@ -80,7 +80,7 @@ func (gw *GraphicsWindow) ToolbarMouseMoved(x, y int) bool {
 		gw.Invalidate(false)
 	}
 
-	if gw.toolbarHovered != CmdNone {
+	if gw.toolbarHovered != cmdNone {
 		var tooltip string
 		for _, icon := range toolbar {
 			if gw.toolbarHovered == icon.command {
@@ -100,13 +100,13 @@ func (gw *GraphicsWindow) ToolbarMouseMoved(x, y int) bool {
 
 // ToolbarMouseDown runs the button clicked; it reports whether the
 // click was on the toolbar.
-func (gw *GraphicsWindow) ToolbarMouseDown(x, y int) bool {
+func (gw *graphicsWindow) ToolbarMouseDown(x, y int) bool {
 	width, height := gw.window.ContentSize()
 	x += int(width) / 2
 	y += int(height) / 2
 
 	within, hitCommand, _, _ := gw.toolbarDrawOrHitTest(x, y, nil)
-	if hitCommand != CmdNone {
+	if hitCommand != cmdNone {
 		gw.ActivateCommand(hitCommand)
 	}
 	return within
@@ -114,7 +114,7 @@ func (gw *GraphicsWindow) ToolbarMouseDown(x, y int) bool {
 
 // toolbarDrawOrHitTest draws the toolbar, or with a nil canvas finds
 // the button at mx, my.
-func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanvas) (within bool, hitCommand Command, hitX, hitY int) {
+func (gw *graphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanvas) (within bool, hitCommand Command, hitX, hitY int) {
 	_, height := gw.window.ContentSize()
 
 	x, y := 17, int(height-21) // 20 is the menu bar height
@@ -141,7 +141,7 @@ func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanv
 
 	if canvas == nil && !within {
 		// This gets called every MouseMove event, so return quickly.
-		return false, CmdNone, 0, 0
+		return false, cmdNone, 0, 0
 	}
 
 	if canvas != nil {
@@ -176,7 +176,7 @@ func (gw *GraphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanv
 			canvas.DrawPixmap(icon.pixmap, x-icon.pixmap.Width/2, y-icon.pixmap.Height/2, 0)
 
 			if gw.toolbarHovered == icon.command ||
-				(gw.pending.operation == PendingCommand && gw.pending.command == icon.command) {
+				(gw.pending.operation == pendingCommand && gw.pending.command == icon.command) {
 				// Highlight the hovered or pending item.
 				const boxhw = 15
 				canvas.DrawRect(x+boxhw, x-boxhw, y+boxhw, y-boxhw,
