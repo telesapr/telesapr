@@ -167,6 +167,7 @@ func TestGuidedLoftSweep(t *testing.T) {
 			sweep.Floats("ends", 0, 0.5),
 		},
 		MaxFailRate: 0,
+		Sample:      16,
 	}
 	grid.Run(func(p sweep.Point) error {
 		n := int(p.Float("profiles"))

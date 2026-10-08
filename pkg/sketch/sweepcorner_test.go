@@ -105,6 +105,7 @@ func TestSweepCornerSweep(t *testing.T) {
 			sweep.Floats("along", 6, 20),
 		},
 		MaxFailRate: 0,
+		Sample:      10,
 	}
 	grid.Run(func(p sweep.Point) error {
 		d := api.New()

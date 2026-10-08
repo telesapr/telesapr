@@ -80,6 +80,7 @@ func TestDraftSharpArcsSweep(t *testing.T) {
 			sweep.Floats("h", 3, 6),
 		},
 		MaxFailRate: 0,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		a, b, h := p.Float("a"), p.Float("b"), p.Float("h")

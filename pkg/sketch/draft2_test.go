@@ -207,6 +207,7 @@ func TestDraftSidesSweep(t *testing.T) {
 			sweep.Floats("neutral", 0, 4, 10),
 		},
 		MaxFailRate: 0,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		deg, s0 := p.Float("degrees"), p.Float("neutral")

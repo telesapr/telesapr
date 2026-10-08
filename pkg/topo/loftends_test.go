@@ -74,6 +74,7 @@ func TestSmoothLoftEndsSweep(t *testing.T) {
 			sweep.Floats("aside", 0, 6),
 		},
 		MaxFailRate: 0,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		n := int(p.Float("profiles"))

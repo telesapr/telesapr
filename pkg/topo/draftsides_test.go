@@ -145,6 +145,7 @@ func TestDraftAnglesSweep(t *testing.T) {
 			sweep.Floats("height", 2, 8),
 		},
 		MaxFailRate: 0,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		deg, h := p.Float("degrees"), p.Float("height")

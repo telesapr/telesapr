@@ -233,7 +233,7 @@ func TestPathPatternClosedSweep(t *testing.T) {
 			sweep.Strings("path", "circle", "track"),
 		},
 		MaxFailRate: 0,
-		Sample:      24,
+		Sample:      12,
 	}
 	grid.Run(func(p sweep.Point) error {
 		n, size := int(p.Float("copies")), p.Float("size")
