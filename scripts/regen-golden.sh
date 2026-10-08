@@ -20,7 +20,7 @@ declare -A pkg=(
     [draw]=./pkg/ui [export]=./pkg/ui [textwin]=./pkg/ui [ui]=./pkg/ui
     [render]=./pkg/render [res]=./pkg/res [ttf]=./pkg/ttf
     [tlspr]=./pkg/persist/convert [newfile]=./pkg/persist/slvs [modify]=./pkg/persist/slvs
-    [thread]=./pkg/persist/slvs [importdxf]=./pkg/ui [solid]=./pkg/sketch
+    [thread]=./pkg/persist/slvs [importdxf]=./pkg/persist/dxf [solid]=./pkg/sketch
 )
 declare -A run=(
     [display]='^TestDisplayOutlines$'                 # testdata/display
@@ -36,7 +36,7 @@ declare -A run=(
     [newfile]='^TestNewFile$'                         # testdata/tlspr/golden/newfile.tlspr
     [modify]='^TestModifyTools$'                      # testdata/tlspr/golden/modify
     [thread]='^TestThreadGoldens$'                    # testdata/thread/*.tlspr
-    [importdxf]='^TestImportDxf$'                     # testdata/importdxf/golden
+    [importdxf]='^TestImport$'                        # testdata/importdxf/golden
     [solid]='^TestSolidGoldens$'                      # testdata/solid/*.tlspr
 )
 areas=("$@")

@@ -15,14 +15,13 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// TestImportDxf imports each DXF file in testdata/importdxf into a new
-// sketch, in its workplane and free in 3d, and compares the saved sketch
-// with the golden in testdata/importdxf/golden, byte for byte. Until the
-// SolveSpace comparison was frozen, the .slvs save was SolveSpace's byte for byte.
+// TestImportDxf imports a DXF file through the interface, with its
+// dialogs, into a new sketch, in its workplane and free in 3d, and
+// compares the saved sketch with the golden in testdata/importdxf/golden,
+// byte for byte. It takes the first file of each kind; every file is
+// compared with its golden by TestImport in pkg/persist/dxf, which
+// the interface's import calls.
 func TestImportDxf(t *testing.T) {
-	if testing.Short() {
-		t.Skip("slow; skipped with -short")
-	}
 	root := filepath.Join("..", "..", "testdata", "importdxf")
 	var files []string
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -40,6 +39,7 @@ func TestImportDxf(t *testing.T) {
 	if len(files) < 20 {
 		t.Fatalf("only %d DXF files", len(files))
 	}
+	files = files[:2]
 	for _, f := range files {
 		for _, in3d := range []bool{false, true} {
 			name := f
