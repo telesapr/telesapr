@@ -106,7 +106,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 
 	rt := &Runtime{Sketch: sk}
 	for i, hg := range sk.GroupOrder {
-		if sk.Cancel != nil && sk.Cancel() {
+		if sk.hooks().Cancel() {
 			return
 		}
 		// A group suppressed whole, or using one that is, is left out
@@ -236,9 +236,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 
 	// The user interface's part: the traced point, the selection, and
 	// what a deletion invalidates.
-	if sk.OnGenerated != nil {
-		sk.OnGenerated(sk.Deleted.Requests, sk.Deleted.Constraints, sk.Deleted.Groups)
-	}
+	sk.hooks().Generated(sk.Deleted.Requests, sk.Deleted.Constraints, sk.Deleted.Groups)
 
 	if sk.Deleted.Requests > 0 || sk.Deleted.Constraints > 0 || sk.Deleted.Groups > 0 {
 		d := sk.Deleted
@@ -248,7 +246,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		// People get annoyed if I complain whenever they delete any request,
 		// and I otherwise will, since those always come with pt-coincident
 		// constraints.
-		if (d.Requests > 0 || d.NonTrivialConstraints > 0 || d.Groups > 0) && sk.Message != nil {
+		if d.Requests > 0 || d.NonTrivialConstraints > 0 || d.Groups > 0 {
 			plural := func(n int) string {
 				if n == 1 {
 					return ""
@@ -259,7 +257,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 			if sk.Undo.Cnt > 0 {
 				undo = "\n\nChoose Edit -> Undo to undelete all elements."
 			}
-			sk.Message(fmt.Sprintf("Additional sketch elements were deleted, because they "+
+			sk.Tell(fmt.Sprintf("Additional sketch elements were deleted, because they "+
 				"depend on the element that was just deleted explicitly. "+
 				"These include: \n"+
 				"     %d request%s\n"+
@@ -557,13 +555,11 @@ func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HPara
 		p.Known = false
 		sys.AddParam(p)
 	}
-	if sk.DraggedParams != nil {
-		for _, h := range sk.DraggedParams() {
-			if sys.Dragged == nil {
-				sys.Dragged = make(map[core.HParam]bool)
-			}
-			sys.Dragged[h] = true
+	for _, h := range sk.hooks().DraggedParams() {
+		if sys.Dragged == nil {
+			sys.Dragged = make(map[core.HParam]bool)
 		}
+		sys.Dragged[h] = true
 	}
 
 	var constraints []*core.Constraint
@@ -798,9 +794,7 @@ func (sk *Sketch) GenerateAllFindFree(t GenerateType) {
 // Refresh serves after the pending events).
 func (sk *Sketch) ScheduleGenerateAll() {
 	sk.scheduledGenerateAll = true
-	if sk.OnScheduleGenerateAll != nil {
-		sk.OnScheduleGenerateAll()
-	}
+	sk.hooks().ScheduleGenerateAll()
 }
 
 // Refresh does the scheduled regeneration (C++

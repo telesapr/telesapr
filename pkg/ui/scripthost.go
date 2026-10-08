@@ -286,7 +286,7 @@ func (h *ScriptHost) Save(path string) error {
 // regenerated it for the file, as the next click does.
 func (h *ScriptHost) leaveExportMode() {
 	ss := h.ss
-	ss.JustExportedInfo.Draw = false
+	ss.GW.justExported.Draw = false
 	if ss.ExportMode {
 		ss.LeaveExportMode()
 		ss.GenerateAll(sketch.GenerateAll)

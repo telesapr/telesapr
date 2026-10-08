@@ -694,7 +694,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 
 	// Draw the traced path, if one exists
 	var tracedEdges srf.SEdgeList
-	ss.Traced.Path.MakeEdgesInto(&tracedEdges)
+	ss.GW.traced.Path.MakeEdgesInto(&tracedEdges)
 	canvas.DrawEdges(&tracedEdges, hcsAnalyze)
 
 	strokeError := ss.styleStroke(hstyle(core.StyleDrawError))
@@ -703,7 +703,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	hcsError := canvas.InternStroke(strokeError)
 
 	// And the naked edges, if the user did Analyze -> Show Naked Edges.
-	canvas.DrawEdges(&ss.NakedEdges, hcsError)
+	canvas.DrawEdges(&ss.GW.nakedEdges, hcsError)
 
 	// Then redraw whatever the mouse is hovering over, highlighted.
 	gw.drawSelection(&gw.hover, true, canvas)
@@ -723,8 +723,8 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 
 	// An extra line, used to indicate the origin when rotating within the
 	// plane of the monitor.
-	if ss.ExtraLine.Draw {
-		canvas.DrawLine(ss.ExtraLine.PtA, ss.ExtraLine.PtB, hcsDatum)
+	if ss.GW.extraLine.Draw {
+		canvas.DrawLine(ss.GW.extraLine.PtA, ss.GW.extraLine.PtB, hcsDatum)
 	}
 
 	scale := gw.view.Scale
@@ -735,8 +735,8 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 			camera.ProjRight, camera.ProjUp, hcsDatum)
 	}
 
-	if ss.CenterOfMass.Draw && !ss.CenterOfMass.Dirty {
-		p := ss.CenterOfMass.Position
+	if ss.GW.centerOfMass.Draw && !ss.GW.centerOfMass.Dirty {
+		p := ss.GW.centerOfMass.Position
 		u := camera.ProjRight
 		v := camera.ProjUp
 
@@ -764,10 +764,10 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 	}
 
 	// A note to indicate the origin in the just-exported file.
-	if ss.JustExportedInfo.Draw {
+	if ss.GW.justExported.Draw {
 		var p, u, v geom.Vector
-		if ss.JustExportedInfo.ShowOrigin {
-			p, u, v = ss.JustExportedInfo.Pt, ss.JustExportedInfo.U, ss.JustExportedInfo.V
+		if ss.GW.justExported.ShowOrigin {
+			p, u, v = ss.GW.justExported.Pt, ss.GW.justExported.U, ss.GW.justExported.V
 		} else {
 			p = camera.Offset.ScaledBy(-1)
 			u = camera.ProjRight
@@ -777,7 +777,7 @@ func (gw *GraphicsWindow) Draw(canvas render.Canvas) {
 			ss.defaultTextHeight()/camera.Scale,
 			p.Plus(u.ScaledBy(10/scale)).Plus(v.ScaledBy(10/scale)), u, v, hcsDatum)
 
-		if ss.JustExportedInfo.ShowOrigin {
+		if ss.GW.justExported.ShowOrigin {
 			um := p.Plus(u.WithMagnitude(-15 / scale))
 			up := p.Plus(u.WithMagnitude(30 / scale))
 			vm := p.Plus(v.WithMagnitude(-15 / scale))
@@ -802,7 +802,7 @@ func (gw *GraphicsWindow) Paint() {
 		// The engine regenerated outside GenerateAll's UI wrapper.
 		ss.lastGeneration = ss.SK.Generation
 		gw.persistentDirty = true
-		ss.CenterOfMass.Dirty = true
+		ss.GW.centerOfMass.Dirty = true
 	}
 
 	gw.havePainted = true

@@ -296,6 +296,28 @@ type pendingState struct {
 // GraphicsWindow is the window with the model and the toolbar (C++
 // GraphicsWindow).
 type GraphicsWindow struct {
+	// What the window draws beside the sketch: the point being traced
+	// and its path, the naked edges Analyze found, the line a drag
+	// with Ctrl shows, where an export's origin was, and the centre of
+	// mass.
+	traced struct {
+		Path  srf.SContour
+		Point core.HEntity
+	}
+	nakedEdges srf.SEdgeList
+	extraLine  struct {
+		Draw     bool
+		PtA, PtB geom.Vector
+	}
+	justExported struct {
+		Draw, ShowOrigin bool
+		Pt, U, V         geom.Vector
+	}
+	centerOfMass struct {
+		Draw, Dirty bool
+		Position    geom.Vector
+	}
+
 	// hoverTris is the grid hiddenBySolid looks triangles up in.
 	hoverTris *hoverGrid
 	ss        *Application

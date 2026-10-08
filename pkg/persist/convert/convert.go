@@ -293,11 +293,15 @@ func convertOne(it Item, o Options) (data []byte, warnings []string, err error) 
 			data, err = nil, fmt.Errorf("%s: can't regenerate: %v", it.Src, rec)
 		}
 	}()
-	var requests, constraints, groups int
-	sk.OnGenerated = func(r, c, g int) { requests, constraints, groups = requests+r, constraints+c, groups+g }
+	counter := &deletedCounter{Hooks: sketch.NoHooks{}}
+	if sk.Hooks != nil {
+		counter.Hooks = sk.Hooks
+	}
+	sk.Hooks = counter
 	sk.UpgradeLegacyData()
 	sk.GenerateAll()
-	sk.OnGenerated = nil
+	sk.Hooks = counter.Hooks
+	requests, constraints, groups := counter.requests, counter.constraints, counter.groups
 	if requests+constraints+groups > 0 {
 		warnings = append(warnings, fmt.Sprintf("%s: regeneration removed %d requests, %d constraints and %d groups that depended on what is missing",
 			it.Src, requests, constraints, groups))
@@ -318,4 +322,18 @@ func File(root, dst string, overwrite bool) (*Plan, *Result, error) {
 	}
 	r, err := Run(p, Options{Overwrite: overwrite, Quiet: true})
 	return p, r, err
+}
+
+// deletedCounter counts what the regenerations of a conversion delete
+// along with something missing, over the sketch's own Hooks.
+type deletedCounter struct {
+	sketch.Hooks
+	requests, constraints, groups int
+}
+
+func (c *deletedCounter) Generated(requests, constraints, groups int) {
+	c.requests += requests
+	c.constraints += constraints
+	c.groups += groups
+	c.Hooks.Generated(requests, constraints, groups)
 }

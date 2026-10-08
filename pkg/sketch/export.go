@@ -175,14 +175,12 @@ func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList {
 	cntMsg := fmt.Sprintf("\n\nThe model contains %d triangles, from %d surfaces.",
 		len(g.DisplayMesh.Triangles), len(g.RunningShell.Surface))
 
-	if sk.Message != nil {
-		if len(nakedEdges.Edges) == 0 {
-			sk.Message(fmt.Sprintf("%s\n\n%s\n\nZero problematic edges, good.%s",
-				intersMsg, leaksMsg, cntMsg))
-		} else {
-			sk.Message(fmt.Sprintf("%s\n\n%s\n\n%d problematic edges, bad.%s",
-				intersMsg, leaksMsg, len(nakedEdges.Edges), cntMsg))
-		}
+	if len(nakedEdges.Edges) == 0 {
+		sk.Tell(fmt.Sprintf("%s\n\n%s\n\nZero problematic edges, good.%s",
+			intersMsg, leaksMsg, cntMsg))
+	} else {
+		sk.Tell(fmt.Sprintf("%s\n\n%s\n\n%d problematic edges, bad.%s",
+			intersMsg, leaksMsg, len(nakedEdges.Edges), cntMsg))
 	}
 	return nakedEdges
 }

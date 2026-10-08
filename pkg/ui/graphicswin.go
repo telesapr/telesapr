@@ -1002,9 +1002,9 @@ func (gw *GraphicsWindow) unselectAll() {
 	}
 	gw.ClearSuper()
 	ss.TW.HideEditControl()
-	ss.NakedEdges.Clear()
-	ss.JustExportedInfo.Draw = false
-	ss.CenterOfMass.Draw = false
+	ss.GW.nakedEdges.Clear()
+	ss.GW.justExported.Draw = false
+	ss.GW.centerOfMass.Draw = false
 	// This clears the marks drawn to indicate which points are still
 	// free to drag.
 	for i := range sk.Params {

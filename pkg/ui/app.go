@@ -59,6 +59,24 @@ func (ss *Application) Init() {
 	}
 }
 
+// appHooks is what the sketch tells the application and asks of it.
+type appHooks struct{ ss *Application }
+
+func (h appHooks) Message(msg string)   { h.ss.Message("%s", msg) }
+func (h appHooks) ScheduleGenerateAll() { h.ss.onScheduleGenerateAll() }
+func (h appHooks) Generated(requests, constraints, groups int) {
+	h.ss.onGenerated(requests, constraints, groups)
+}
+
+// RegenerateAfterDelete clears the selection and the editors that could
+// refer to the deleted requests, then regenerates.
+func (h appHooks) RegenerateAfterDelete() bool {
+	h.ss.GW.regenerateAfterDelete()
+	return true
+}
+func (h appHooks) DraggedParams() []core.HParam { return h.ss.MarkDraggedParams() }
+func (h appHooks) Cancel() bool                 { return false }
+
 // setSketch makes sk the sketch the application edits, wired to the
 // view, the show flags and the event loop.
 func (ss *Application) setSketch(sk *sketch.Sketch) {
@@ -68,12 +86,8 @@ func (ss *Application) setSketch(sk *sketch.Sketch) {
 	ss.ViewUnits = sk.Units
 	sk.View = &ss.GW.view
 	sk.Show = &ss.GW.show
-	sk.OnScheduleGenerateAll = ss.onScheduleGenerateAll
-	sk.Message = func(msg string) { ss.Message("%s", msg) }
+	sk.Hooks = appHooks{ss}
 	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAllLinked(sk, ss.SaveFile) }
-	sk.DraggedParams = ss.MarkDraggedParams
-	sk.OnGenerated = ss.onGenerated
-	sk.RegenerateAfterDelete = ss.GW.regenerateAfterDelete
 	ss.pixmaps = nil
 	ss.applyEngineSettings()
 }
@@ -90,14 +104,14 @@ func (ss *Application) NewFile() {
 // to it (C++ SolveSpaceUI::AfterNewFile).
 func (ss *Application) AfterNewFile() {
 	// Clear out the traced point, which is no longer valid
-	ss.Traced.Point = core.HEntity{}
-	ss.Traced.Path.Points = nil
+	ss.GW.traced.Point = core.HEntity{}
+	ss.GW.traced.Path.Points = nil
 	// and the naked edges
-	ss.NakedEdges.Clear()
+	ss.GW.nakedEdges.Clear()
 
 	// Quit export mode
-	ss.JustExportedInfo.Draw = false
-	ss.CenterOfMass.Draw = false
+	ss.GW.justExported.Draw = false
+	ss.GW.centerOfMass.Draw = false
 	ss.ExportMode = false
 
 	// GenerateAll() expects the view to be valid, because it uses that
@@ -199,12 +213,12 @@ func (ss *Application) MarkDraggedParams() []core.HParam {
 func (ss *Application) onGenerated(requests, constraints, groups int) {
 	sk := ss.SK
 	// Make sure the point that we're tracing exists.
-	if ss.Traced.Point.V != 0 && sk.Entity(ss.Traced.Point) == nil {
-		ss.Traced.Point = core.HEntity{}
+	if ss.GW.traced.Point.V != 0 && sk.Entity(ss.GW.traced.Point) == nil {
+		ss.GW.traced.Point = core.HEntity{}
 	}
 	// And if we're tracing a point, add its new value to the path
-	if ss.Traced.Point.V != 0 {
-		ss.Traced.Path.AddPoint(sk.MustEntity(ss.Traced.Point).PointGetNum(sk))
+	if ss.GW.traced.Point.V != 0 {
+		ss.GW.traced.Path.AddPoint(sk.MustEntity(ss.GW.traced.Point).PointGetNum(sk))
 	}
 
 	ss.GW.Invalidate(false)

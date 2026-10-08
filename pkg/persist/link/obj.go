@@ -33,9 +33,7 @@ func linkObj(path string, sk *sketch.Sketch, m *srf.SMesh) ([]core.Entity, bool)
 	}
 	tris, err := objTriangles(data, filepath.Dir(path))
 	if err != nil {
-		if sk.Message != nil {
-			sk.Message(fmt.Sprintf("The OBJ file '%s' can't be read: %v.", path, err))
-		}
+		sk.Tell(fmt.Sprintf("The OBJ file '%s' can't be read: %v.", path, err))
 		return nil, false
 	}
 	return linkMesh(tris, m), true

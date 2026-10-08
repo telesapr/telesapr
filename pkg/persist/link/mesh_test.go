@@ -145,7 +145,7 @@ func TestLinkMeshFilesRefused(t *testing.T) {
 			t.Fatal(err)
 		}
 		var said string
-		sk := &sketch.Sketch{Message: func(s string) { said = s }}
+		sk := &sketch.Sketch{Hooks: sketch.Messages(func(s string) { said = s })}
 		var m srf.SMesh
 		load := linkStl
 		if strings.HasSuffix(name, ".obj") {

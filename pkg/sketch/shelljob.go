@@ -71,10 +71,19 @@ func (sk *Sketch) cloneState(st *UndoState) *UndoState {
 // Cancel asks Run to stop at the next group.
 func (j *ShellJob) Cancel() { j.cancel.Store(true) }
 
+// cancelledBy is a job's copy's Hooks: the sketch's own, with the job
+// answering Cancel.
+type cancelledBy struct {
+	Hooks
+	cancel func() bool
+}
+
+func (c cancelledBy) Cancel() bool { return c.cancel() }
+
 // Run regenerates the copy in full; it may run on any goroutine.
 func (j *ShellJob) Run() {
 	c := j.clone
-	c.Cancel = j.cancel.Load
+	c.Hooks = cancelledBy{Hooks: c.hooks(), cancel: j.cancel.Load}
 	c.GenerateAllTyped(GenerateAll)
 	j.Cancelled = j.cancel.Load()
 }

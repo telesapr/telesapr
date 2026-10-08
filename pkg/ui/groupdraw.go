@@ -136,7 +136,7 @@ func (gw *GraphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 	regenerated := g.DisplayDirty
 	g.GenerateDisplayItems(gw.sk())
 	// Recalculate mass center if needed
-	if regenerated && ss.CenterOfMass.Draw && ss.CenterOfMass.Dirty && g.H == gw.activeGroupH() {
+	if regenerated && ss.GW.centerOfMass.Draw && ss.GW.centerOfMass.Dirty && g.H == gw.activeGroupH() {
 		ss.UpdateCenterOfMass()
 	}
 	unclip := gw.clipToSection(canvas)

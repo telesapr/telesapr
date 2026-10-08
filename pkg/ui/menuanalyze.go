@@ -102,7 +102,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 
 	case CmdTracePt:
 		if gs.points == 1 && gs.n == 1 {
-			ss.Traced.Point = gs.point[0]
+			ss.GW.traced.Point = gs.point[0]
 			gw.ClearSelection()
 		} else {
 			ss.Error("Bad selection for trace; select a single point.")
@@ -124,7 +124,7 @@ func (ss *Application) analyzeInterference() {
 	sk := ss.SK
 	gw := ss.GW
 
-	ss.NakedEdges.Clear()
+	ss.GW.nakedEdges.Clear()
 
 	// The parts by their shells (roadmap 16.10), unless one is a
 	// mesh with none: then the triangles, as C++ checks.
@@ -140,9 +140,9 @@ func (ss *Application) analyzeInterference() {
 			lines = append(lines, fmt.Sprintf("    %s and %s share %s",
 				sk.GroupName(f.A), sk.GroupName(f.B), ss.MmToStringSI(f.Volume, 3)))
 			for _, tr := range f.Mesh.Triangles {
-				ss.NakedEdges.AddEdge(tr.A, tr.B, 0, 0, 0)
-				ss.NakedEdges.AddEdge(tr.B, tr.C, 0, 0, 0)
-				ss.NakedEdges.AddEdge(tr.C, tr.A, 0, 0, 0)
+				ss.GW.nakedEdges.AddEdge(tr.A, tr.B, 0, 0, 0)
+				ss.GW.nakedEdges.AddEdge(tr.B, tr.C, 0, 0, 0)
+				ss.GW.nakedEdges.AddEdge(tr.C, tr.A, 0, 0, 0)
 			}
 		}
 		gw.Invalidate(false)
@@ -162,12 +162,12 @@ func (ss *Application) analyzeInterference() {
 	m := &sk.Group(gw.activeGroupH()).DisplayMesh
 	root := srf.SKdNodeFrom(m)
 	var inters, leaks bool
-	root.MakeCertainEdgesInto(&ss.NakedEdges, srf.EdgeSelfInter, false, &inters, &leaks, 0)
+	root.MakeCertainEdgesInto(&ss.GW.nakedEdges, srf.EdgeSelfInter, false, &inters, &leaks, 0)
 
 	gw.Invalidate(false)
 
 	if inters {
-		ss.Error("%d edges interfere with other triangles, bad.", len(ss.NakedEdges.Edges))
+		ss.Error("%d edges interfere with other triangles, bad.", len(ss.GW.nakedEdges.Edges))
 	} else {
 		ss.Message("The assembly does not interfere, good.")
 	}
@@ -178,7 +178,7 @@ func (ss *Application) analyzeCenterOfMass() {
 	gw := ss.GW
 
 	ss.UpdateCenterOfMass()
-	ss.CenterOfMass.Draw = true
+	ss.GW.centerOfMass.Draw = true
 	gw.Invalidate(false)
 }
 
@@ -260,7 +260,7 @@ func (ss *Application) analyzeStopTracing() {
 	settings := ss.Settings
 	gw := ss.GW
 
-	if ss.Traced.Point.V == 0 {
+	if ss.GW.traced.Point.V == 0 {
 		return
 	}
 	dialog := ss.Platform.CreateSaveFileDialog(gw.window)
@@ -272,7 +272,7 @@ func (ss *Application) analyzeStopTracing() {
 
 		var b strings.Builder
 		s := ss.ExportScale
-		for _, pt := range ss.Traced.Path.Points {
+		for _, pt := range ss.GW.traced.Path.Points {
 			p := pt.P
 			fmt.Fprintf(&b, "%.10f, %.10f, %.10f\r\n", p.X/s, p.Y/s, p.Z/s)
 		}
@@ -281,8 +281,8 @@ func (ss *Application) analyzeStopTracing() {
 		}
 	}
 	// Clear the trace, and stop tracing
-	ss.Traced.Point = core.HEntity{}
-	ss.Traced.Path.Points = nil
+	ss.GW.traced.Point = core.HEntity{}
+	ss.GW.traced.Path.Points = nil
 	gw.Invalidate(false)
 }
 
@@ -290,14 +290,14 @@ func (ss *Application) analyzeStopTracing() {
 // active group's mesh and reports them (C++
 // SolveSpaceUI::ShowNakedEdges).
 func (ss *Application) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
-	ss.NakedEdges.Clear()
+	ss.GW.nakedEdges.Clear()
 
 	g := ss.SK.Group(ss.GW.activeGroupH())
 	root := srf.SKdNodeFrom(&g.DisplayMesh)
 	var inters, leaks bool
-	root.MakeCertainEdgesInto(&ss.NakedEdges, srf.EdgeNakedOrSelfInter, true, &inters, &leaks, 0)
+	root.MakeCertainEdgesInto(&ss.GW.nakedEdges, srf.EdgeNakedOrSelfInter, true, &inters, &leaks, 0)
 
-	if reportOnlyWhenNotOkay && !inters && !leaks && len(ss.NakedEdges.Edges) == 0 {
+	if reportOnlyWhenNotOkay && !inters && !leaks && len(ss.GW.nakedEdges.Edges) == 0 {
 		return
 	}
 	ss.GW.Invalidate(false)
@@ -314,12 +314,12 @@ func (ss *Application) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 	cntMsg := fmt.Sprintf("\n\nThe model contains %d triangles, from %d surfaces.",
 		len(g.DisplayMesh.Triangles), len(g.RunningShell.Surface))
 
-	if len(ss.NakedEdges.Edges) == 0 {
+	if len(ss.GW.nakedEdges.Edges) == 0 {
 		ss.Message("%s\n\n%s\n\nZero problematic edges, good.%s",
 			intersMsg, leaksMsg, cntMsg)
 	} else {
 		ss.Error("%s\n\n%s\n\n%d problematic edges, bad.%s",
-			intersMsg, leaksMsg, len(ss.NakedEdges.Edges), cntMsg)
+			intersMsg, leaksMsg, len(ss.GW.nakedEdges.Edges), cntMsg)
 	}
 }
 
@@ -330,9 +330,9 @@ func (ss *Application) CheckSolid() {
 	sk := ss.SK
 	g := sk.Group(ss.GW.activeGroupH())
 	r := check.Group(sk, g)
-	ss.NakedEdges.Clear()
-	ss.NakedEdges.Edges = append(ss.NakedEdges.Edges, r.Problems.Edges...)
-	ss.NakedEdges.Edges = append(ss.NakedEdges.Edges, r.TopologyEdges.Edges...)
+	ss.GW.nakedEdges.Clear()
+	ss.GW.nakedEdges.Edges = append(ss.GW.nakedEdges.Edges, r.Problems.Edges...)
+	ss.GW.nakedEdges.Edges = append(ss.GW.nakedEdges.Edges, r.TopologyEdges.Edges...)
 	ss.GW.Invalidate(false)
 
 	if r.Empty() {
@@ -382,8 +382,8 @@ func (ss *Application) CheckSolid() {
 // mesh (C++ SolveSpaceUI::UpdateCenterOfMass).
 func (ss *Application) UpdateCenterOfMass() {
 	m := &ss.SK.Group(ss.GW.activeGroupH()).DisplayMesh
-	ss.CenterOfMass.Position = m.CenterOfMass()
-	ss.CenterOfMass.Dirty = false
+	ss.GW.centerOfMass.Position = m.CenterOfMass()
+	ss.GW.centerOfMass.Dirty = false
 }
 
 // MenuHelp runs a Help menu command (C++ SolveSpaceUI::MenuHelp).

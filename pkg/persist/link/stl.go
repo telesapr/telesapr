@@ -163,9 +163,7 @@ func linkStl(path string, sk *sketch.Sketch, m *srf.SMesh) ([]core.Entity, bool)
 	var tris []srf.STriangle
 	if isTextStl(data) {
 		if tris, err = textStlTriangles(data); err != nil {
-			if sk.Message != nil {
-				sk.Message(fmt.Sprintf("The STL file '%s' can't be read: %v.", path, err))
-			}
+			sk.Tell(fmt.Sprintf("The STL file '%s' can't be read: %v.", path, err))
 			return nil, false
 		}
 	} else {

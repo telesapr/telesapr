@@ -74,11 +74,6 @@ type Sketch struct {
 	// DefaultVisibility.
 	Show *Visibility
 
-	// OnScheduleGenerateAll, if set, is told when a regeneration is
-	// scheduled, so that the caller's event loop can call Refresh (C++
-	// ScheduleGenerateAll starts SS.refreshTimer).
-	OnScheduleGenerateAll func()
-
 	// ChordTolPct is the display chord tolerance as a percentage of the
 	// model's size (C++ SS.chordTol); 0 is the default, 0.1.
 	ChordTolPct float64
@@ -126,33 +121,14 @@ type Sketch struct {
 		Requests, Constraints, NonTrivialConstraints, Groups int
 	}
 
-	// Message shows the user a message, as C++ Message does; nil
-	// drops it.
-	Message func(msg string)
-
-	// DraggedParams, if set, lists the params the user is dragging,
-	// which the solver keeps as close to their values as it can (C++
-	// SolveSpaceUI::MarkDraggedParams, from the graphics window's
-	// pending drag).
-	DraggedParams func() []core.HParam
+	// Hooks is what the sketch tells whoever owns it and asks of them;
+	// nil is NoHooks.
+	Hooks Hooks
 
 	// DeferShells, while set, has a regeneration leave each group's
-	// solid as it was, marked ShellsStale (shelljob.go); Cancel, if
-	// set, stops one between groups when it reports true.
+	// solid as it was, marked ShellsStale (shelljob.go); Hooks.Cancel
+	// stops one between groups.
 	DeferShells bool
-	Cancel      func() bool
-
-	// OnGenerated, if set, is called near the end of each GenerateAll
-	// pass, before the message about what was deleted along with
-	// something, with how many requests, constraints and groups were
-	// (C++ GenerateAll's user interface part).
-	OnGenerated func(requests, constraints, groups int)
-
-	// RegenerateAfterDelete, if set, replaces the regeneration that
-	// follows deleting requests, so that a user interface can first
-	// clear its selection and editors (C++
-	// GraphicsWindow::DeleteTaggedRequests); it must regenerate.
-	RegenerateAfterDelete func()
 
 	// Clipboard holds what was copied (C++ SS.clipboard).
 	Clipboard Clipboard

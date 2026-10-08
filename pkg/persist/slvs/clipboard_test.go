@@ -68,7 +68,7 @@ func TestCopyPasteDelete(t *testing.T) {
 
 	// Deleting the original line deletes its constraint too.
 	var msg string
-	sk.Message = func(m string) { msg = m }
+	sk.Hooks = sketch.Messages(func(m string) { msg = m })
 	n := len(sk.Constraints)
 	sk.DeleteSelection([]sketch.Selection{{Entity: line.H}})
 	if sk.Entity(line.H) != nil || len(sk.Constraints) != n-1 {

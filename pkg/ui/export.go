@@ -299,15 +299,15 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 			// These file formats don't have a canvas size, so they just
 			// get exported in the raw coordinate system. So indicate
 			// what that was on-screen.
-			ss.JustExportedInfo.ShowOrigin = true
-			ss.JustExportedInfo.Pt = origin
-			ss.JustExportedInfo.U = u
-			ss.JustExportedInfo.V = v
+			ss.GW.justExported.ShowOrigin = true
+			ss.GW.justExported.Pt = origin
+			ss.GW.justExported.U = u
+			ss.GW.justExported.V = v
 		} else {
-			ss.JustExportedInfo.ShowOrigin = false
+			ss.GW.justExported.ShowOrigin = false
 		}
 
-		ss.JustExportedInfo.Draw = true
+		ss.GW.justExported.Draw = true
 		gw.Invalidate(false)
 	}
 	return err
@@ -1001,8 +1001,8 @@ func (ss *Application) ExportMeshTo(filename string) error {
 		return fmt.Errorf("couldn't write to '%s'", filename)
 	}
 
-	ss.JustExportedInfo.ShowOrigin = false
-	ss.JustExportedInfo.Draw = true
+	ss.GW.justExported.ShowOrigin = false
+	ss.GW.justExported.Draw = true
 	ss.GW.Invalidate(false)
 	return nil
 }

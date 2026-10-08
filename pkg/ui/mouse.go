@@ -112,7 +112,7 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		return
 	}
 
-	ss.ExtraLine.Draw = false
+	ss.GW.extraLine.Draw = false
 
 	if !gw.orig.mouseDown {
 		// If someone drags the mouse into our window with the left button
@@ -178,9 +178,9 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 		case ctrlDown:
 			theta := libm.Atan2(gw.orig.mouse.V, gw.orig.mouse.U)
 			theta -= libm.Atan2(y, x)
-			ss.ExtraLine.Draw = true
-			ss.ExtraLine.PtA = gw.UnProjectPoint(geom.Point2d{})
-			ss.ExtraLine.PtB = gw.UnProjectPoint(mp)
+			ss.GW.extraLine.Draw = true
+			ss.GW.extraLine.PtA = gw.UnProjectPoint(geom.Point2d{})
+			ss.GW.extraLine.PtB = gw.UnProjectPoint(mp)
 
 			normal := gw.orig.projRight.Cross(gw.orig.projUp)
 			v.ProjRight = gw.orig.projRight.RotatedAroundAxis(normal, theta)
@@ -289,9 +289,9 @@ func (gw *GraphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 	}
 
 	if gw.pending.operation == PendingDraggingPoints && ctrlDown {
-		ss.ExtraLine.PtA = gw.UnProjectPoint(gw.orig.mouseOnButtonDown)
-		ss.ExtraLine.PtB = gw.UnProjectPoint(mp)
-		ss.ExtraLine.Draw = true
+		ss.GW.extraLine.PtA = gw.UnProjectPoint(gw.orig.mouseOnButtonDown)
+		ss.GW.extraLine.PtB = gw.UnProjectPoint(mp)
+		ss.GW.extraLine.Draw = true
 	}
 
 	// We're currently dragging something; so do that. But if we haven't
@@ -374,9 +374,9 @@ func (gw *GraphicsWindow) dragPoints(x, y float64, shiftDown, ctrlDown bool) {
 			if e.Type != core.EntityPointNRotTrans {
 				if ctrlDown {
 					p := e.PointGetNum(sk)
-					p = p.Minus(ss.ExtraLine.PtA)
+					p = p.Minus(ss.GW.extraLine.PtA)
 					p = qt.Rotate(p)
-					p = p.Plus(ss.ExtraLine.PtA)
+					p = p.Plus(ss.GW.extraLine.PtA)
 					e.PointForceTo(sk, p)
 				} else {
 					gw.UpdateDraggedPoint(he, x, y)
@@ -588,7 +588,7 @@ func (gw *GraphicsWindow) MouseMiddleOrRightDown(x, y float64) {
 func (gw *GraphicsWindow) MouseRightUp(x, y float64) {
 	ss := gw.ss
 	sk := gw.sk()
-	ss.ExtraLine.Draw = false
+	ss.GW.extraLine.Draw = false
 	gw.Invalidate(false)
 
 	// Don't show a context menu if the user is right-clicking the
@@ -1557,7 +1557,7 @@ func (gw *GraphicsWindow) MouseLeftUp(mx, my float64, shiftDown, ctrlDown bool) 
 			gw.ClearSelection()
 		}
 		gw.hoverWasSelectedOnMousedown = false
-		gw.ss.ExtraLine.Draw = false
+		gw.extraLine.Draw = false
 		gw.ClearPending(true)
 		gw.Invalidate(false)
 
@@ -1721,7 +1721,7 @@ func (gw *GraphicsWindow) MouseLeave() {
 		gw.toolbarHovered = CmdNone
 		gw.Invalidate(false)
 	}
-	gw.ss.ExtraLine.Draw = false
+	gw.extraLine.Draw = false
 }
 
 // exprFromString parses an expression, telling the user if it doesn't
