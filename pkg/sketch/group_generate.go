@@ -153,7 +153,6 @@ func (g *Group) generateDrawingWorkplane(sk *Sketch, entity *[]core.Entity) {
 	wp.Group = h
 	wp.H = h.Entity(0)
 	*entity = append(*entity, wp)
-	return
 }
 
 // generateExtrude makes the entities and params of a GroupExtrude group.
@@ -221,7 +220,6 @@ func (g *Group) generateExtrude(sk *Sketch, entity *[]core.Entity, param *[]core
 	// Remapped versions of that arbitrary point will be used to
 	// provide points on the plane faces.
 	g.MakeExtrusionTopBottomFaces(sk, entity, pt)
-	return
 }
 
 // generateLathe makes the entities and params of a GroupLathe group.
@@ -258,7 +256,6 @@ func (g *Group) generateLathe(sk *Sketch, entity *[]core.Entity) {
 		}
 		g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
 	}
-	return
 }
 
 // generateRevolve makes the entities and params of a GroupRevolve group.
@@ -315,7 +312,6 @@ func (g *Group) generateRevolve(sk *Sketch, entity *[]core.Entity, param *[]core
 		g.MakeLatheSurfacesSelectable(sk, entity, he, axisDir)
 	}
 	g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
-	return
 }
 
 // generateHelix makes the entities and params of a GroupHelix group.
@@ -388,7 +384,6 @@ func (g *Group) generateHelix(sk *Sketch, entity *[]core.Entity, param *[]core.P
 		}
 	}
 	g.MakeRevolveEndFaces(sk, entity, pt, ai, af)
-	return
 }
 
 // generateTranslate makes the entities and params of a GroupTranslate group.
@@ -426,7 +421,6 @@ func (g *Group) generateTranslate(sk *Sketch, entity *[]core.Entity, param *[]co
 				CopyAsNTrans)
 		}
 	}
-	return
 }
 
 // generateRotate makes the entities and params of a GroupRotate group.
@@ -469,7 +463,6 @@ func (g *Group) generateRotate(sk *Sketch, entity *[]core.Entity, param *[]core.
 				CopyAsNRotAA)
 		}
 	}
-	return
 }
 
 // generateLinked makes the entities and params of a GroupLinked group.
@@ -500,7 +493,6 @@ func (g *Group) generateLinked(sk *Sketch, entity *[]core.Entity, param *[]core.
 			h.Param(3), h.Param(4), h.Param(5), h.Param(6), core.NoParam,
 			CopyAsNRotTrans)
 	}
-	return
 }
 
 // viewSeeds are the initial values of a group's free params, taken from
