@@ -6032,6 +6032,10 @@
 					"GroupScale"
 				]
 			},
+			"Hooks": {
+				"text": "Hooks is what a sketch tells whoever owns it, and asks of them: a user interface implements all of them, NoHooks none, and Messages a function that takes the messages.",
+				"kind": "interface"
+			},
 			"Image": {
 				"text": "Image is a loaded image file (C++ Pixmap): its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
 				"kind": "struct"
@@ -6054,12 +6058,60 @@
 				"text": "Measurement is what Measure finds.",
 				"kind": "struct"
 			},
+			"Messages": {
+				"text": "Messages is the Hooks of a sketch whose messages go to a function and that asks nothing else.",
+				"kind": "func",
+				"methods": {
+					"Cancel": {
+						"decl": "func (Messages) Cancel() bool"
+					},
+					"DraggedParams": {
+						"decl": "func (Messages) DraggedParams() []core.HParam"
+					},
+					"Generated": {
+						"decl": "func (Messages) Generated(_, _, _ int)"
+					},
+					"Message": {
+						"decl": "func (m Messages) Message(msg string)"
+					},
+					"RegenerateAfterDelete": {
+						"decl": "func (Messages) RegenerateAfterDelete() bool"
+					},
+					"ScheduleGenerateAll": {
+						"decl": "func (Messages) ScheduleGenerateAll()"
+					}
+				}
+			},
 			"MoveError": {
 				"text": "MoveError is why a group can't move where it was asked to: Group would come before On, which it refers to through Why.",
 				"kind": "struct",
 				"methods": {
 					"Error": {
 						"decl": "func (e *MoveError) Error() string"
+					}
+				}
+			},
+			"NoHooks": {
+				"text": "NoHooks is the Hooks of a sketch that nobody watches.",
+				"kind": "struct",
+				"methods": {
+					"Cancel": {
+						"decl": "func (NoHooks) Cancel() bool"
+					},
+					"DraggedParams": {
+						"decl": "func (NoHooks) DraggedParams() []core.HParam"
+					},
+					"Generated": {
+						"decl": "func (NoHooks) Generated(_, _, _ int)"
+					},
+					"Message": {
+						"decl": "func (NoHooks) Message(string)"
+					},
+					"RegenerateAfterDelete": {
+						"decl": "func (NoHooks) RegenerateAfterDelete() bool"
+					},
+					"ScheduleGenerateAll": {
+						"decl": "func (NoHooks) ScheduleGenerateAll()"
 					}
 				}
 			},
@@ -6836,6 +6888,10 @@
 					"SuppressedReason": {
 						"decl": "func (sk *Sketch) SuppressedReason(h core.HGroup) string",
 						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
+					},
+					"Tell": {
+						"decl": "func (sk *Sketch) Tell(msg string)",
+						"text": "Tell shows the user a message, through the sketch's Hooks."
 					},
 					"TestRankForGroup": {
 						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int)",

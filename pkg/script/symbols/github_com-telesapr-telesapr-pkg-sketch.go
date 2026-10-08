@@ -150,11 +150,14 @@ func init() {
 		"GroupSubtype":         reflect.ValueOf((*sketch.GroupSubtype)(nil)),
 		"GroupType":            reflect.ValueOf((*sketch.GroupType)(nil)),
 		"GroupValue":           reflect.ValueOf((*sketch.GroupValue)(nil)),
+		"Hooks":                reflect.ValueOf((*sketch.Hooks)(nil)),
 		"Image":                reflect.ValueOf((*sketch.Image)(nil)),
 		"Interference":         reflect.ValueOf((*sketch.Interference)(nil)),
 		"MeasureKind":          reflect.ValueOf((*sketch.MeasureKind)(nil)),
 		"Measurement":          reflect.ValueOf((*sketch.Measurement)(nil)),
+		"Messages":             reflect.ValueOf((*sketch.Messages)(nil)),
 		"MoveError":            reflect.ValueOf((*sketch.MoveError)(nil)),
+		"NoHooks":              reflect.ValueOf((*sketch.NoHooks)(nil)),
 		"Parameter":            reflect.ValueOf((*sketch.Parameter)(nil)),
 		"Request":              reflect.ValueOf((*sketch.Request)(nil)),
 		"RequestList":          reflect.ValueOf((*sketch.RequestList)(nil)),
@@ -176,6 +179,7 @@ func init() {
 
 		// interface wrapper definitions
 		"_EntityBezierResolver": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver)(nil)),
+		"_Hooks":                reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_Hooks)(nil)),
 	}
 }
 
@@ -203,4 +207,34 @@ func (W _github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver) Radius(a0
 }
 func (W _github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver) StyleForEntity(a0 core.HEntity) core.HStyle {
 	return W.WStyleForEntity(a0)
+}
+
+// _github_com_telesapr_telesapr_pkg_sketch_Hooks is an interface wrapper for Hooks type
+type _github_com_telesapr_telesapr_pkg_sketch_Hooks struct {
+	IValue                 interface{}
+	WCancel                func() bool
+	WDraggedParams         func() []core.HParam
+	WGenerated             func(requests int, constraints int, groups int)
+	WMessage               func(msg string)
+	WRegenerateAfterDelete func() bool
+	WScheduleGenerateAll   func()
+}
+
+func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) Cancel() bool {
+	return W.WCancel()
+}
+func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) DraggedParams() []core.HParam {
+	return W.WDraggedParams()
+}
+func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) Generated(requests int, constraints int, groups int) {
+	W.WGenerated(requests, constraints, groups)
+}
+func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) Message(msg string) {
+	W.WMessage(msg)
+}
+func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) RegenerateAfterDelete() bool {
+	return W.WRegenerateAfterDelete()
+}
+func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) ScheduleGenerateAll() {
+	W.WScheduleGenerateAll()
 }
