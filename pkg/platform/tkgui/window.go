@@ -260,7 +260,7 @@ func (w *Window) FreezePosition(s core.Settings, key string) {
 	if !w.visible {
 		return
 	}
-	width, height, _, _, _, _, _, _, err := wm.ParseGeometry(w.wmInfo.Geometry())
+	geom, err := wm.ParseGeometry(w.wmInfo.Geometry())
 	if err != nil {
 		return
 	}
@@ -272,8 +272,8 @@ func (w *Window) FreezePosition(s core.Settings, key string) {
 	x, y = x-fl, y-ft
 	s.FreezeInt(key+"_Left", uint32(int32(x)))
 	s.FreezeInt(key+"_Top", uint32(int32(y)))
-	s.FreezeInt(key+"_Width", uint32(width))
-	s.FreezeInt(key+"_Height", uint32(height))
+	s.FreezeInt(key+"_Width", uint32(geom.Width))
+	s.FreezeInt(key+"_Height", uint32(geom.Height))
 	core.FreezeBool(s, key+"_Maximized", false)
 }
 

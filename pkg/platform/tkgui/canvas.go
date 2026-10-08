@@ -144,13 +144,13 @@ func (c *canvas) pack() {
 
 // invalidate schedules one render at idle time.
 func (c *canvas) invalidate() {
-	if c.renderPending || c.Destroyed {
+	if c.renderPending || c.Destroyed() {
 		return
 	}
 	c.renderPending = true
 	c.w.p.app.DoWhenIdle(func() {
 		c.renderPending = false
-		if c.Destroyed || c.Win.Width <= 1 || c.Win.Height <= 1 {
+		if c.Destroyed() || c.Win.Width <= 1 || c.Win.Height <= 1 {
 			return
 		}
 		if c.w.events.OnRender != nil {
@@ -175,7 +175,7 @@ func (c *canvas) present(frame *image.RGBA) {
 		return
 	}
 	win := c.Win
-	if c.Destroyed || win.PlatformID == 0 {
+	if c.Destroyed() || win.PlatformID == 0 {
 		return
 	}
 	// Keep the copy in step with what the window will show.
@@ -241,7 +241,7 @@ func (c *canvas) blit() {
 		return
 	}
 	win := c.Win
-	if c.Destroyed || win.PlatformID == 0 {
+	if c.Destroyed() || win.PlatformID == 0 {
 		return
 	}
 	d := c.w.p.app.Server()

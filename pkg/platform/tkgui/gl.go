@@ -53,7 +53,7 @@ func (c *canvas) dropGL() {
 
 // presentGL shows the frame the GL renderer drew.
 func (c *canvas) presentGL() {
-	if c.Destroyed || c.Win.PlatformID == 0 {
+	if c.Destroyed() || c.Win.PlatformID == 0 {
 		return
 	}
 	c.glCtx.SwapBuffers()
