@@ -1,7 +1,6 @@
 package solver
 
 import (
-	"bufio"
 	"fmt"
 	"math"
 	"math/rand"
@@ -10,12 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 )
 
 // sparseQRDir holds the generated least-squares cases (cases.txt) and
-// what a SolveSpace harness, built against SolveSpace's Eigen with its flags,
-// printed for them (eigen.txt): the rank SparseQR finds for A, then X
-// as System::SolveLeastSquares computes it (A unscaled).
+// what SparseQR gives for them (solutions.txt): the rank it finds for A,
+// then X as System::SolveLeastSquares computes it (A unscaled).
 var sparseQRDir = filepath.Join("..", "..", "testdata", "solver", "sparseqr")
 
 type lsCase struct {
@@ -149,51 +149,35 @@ func readLeastSquaresCases(t *testing.T, path string) []lsCase {
 	return cases
 }
 
-// TestSparseQRVsEigen requires the rank and the least-squares solution
-// SolveSpace gets from Eigen, bit for bit. Set SPARSEQR_GEN=1 to rewrite
-// cases.txt; eigen.txt then has to be regenerated with the harness.
-func TestSparseQRVsEigen(t *testing.T) {
+// TestSparseQRGolden requires, bit for bit, the rank SparseQR finds for
+// each case and the least-squares solution (solutions.txt, first
+// recorded from Eigen 3.4's SparseQR, which this one follows). With
+// TELESAPR_REGEN_GOLDEN=1 it rewrites both cases.txt and solutions.txt.
+func TestSparseQRGolden(t *testing.T) {
 	t.Parallel()
 	casesPath := filepath.Join(sparseQRDir, "cases.txt")
-	if os.Getenv("SPARSEQR_GEN") != "" {
-		if err := os.MkdirAll(sparseQRDir, 0o755); err != nil {
-			t.Fatal(err)
-		}
+	if golden.Regen() {
 		if err := writeLeastSquaresCases(casesPath, genLeastSquaresCases()); err != nil {
 			t.Fatal(err)
 		}
 	}
-	cases := readLeastSquaresCases(t, casesPath)
-	want, err := os.Open(filepath.Join(sparseQRDir, "eigen.txt"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = want.Close() }()
-	sc := bufio.NewScanner(want)
-	line := func() string {
-		if !sc.Scan() {
-			t.Fatal("eigen.txt ends early")
-		}
-		return sc.Text()
-	}
-	failed := 0
-	for ci, c := range cases {
-		wantRank := line()
-		gotRank := fmt.Sprintf("rank %d", factorSparseQR(c.a).rank)
-		if gotRank != wantRank && failed < 10 {
-			failed++
-			t.Errorf("case %d (%dx%d): %s, want %s", ci, c.a.rows, c.a.cols, gotRank, wantRank)
-		}
-		x := leastSquares(c.a, c.b)
-		for j := range c.a.cols {
-			w, err := strconv.ParseFloat(line(), 64)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if math.Float64bits(x[j]) != math.Float64bits(w) && !(math.IsNaN(x[j]) && math.IsNaN(w)) && failed < 10 {
-				failed++
-				t.Errorf("case %d (%dx%d): x[%d] = %x, want %x", ci, c.a.rows, c.a.cols, j, x[j], w)
-			}
+	var sb strings.Builder
+	for _, c := range readLeastSquaresCases(t, casesPath) {
+		fmt.Fprintf(&sb, "rank %d\n", factorSparseQR(c.a).rank)
+		for _, x := range leastSquares(c.a, c.b) {
+			sb.WriteString(hexFloat(x) + "\n")
 		}
 	}
+	golden.Check(t, filepath.Join(sparseQRDir, "solutions.txt"), []byte(sb.String()))
+}
+
+// hexFloat formats x as C's %a does, with no padding in the exponent,
+// which is how the golden was first written.
+func hexFloat(x float64) string {
+	s := strconv.FormatFloat(x, 'x', -1, 64)
+	i := strings.LastIndexAny(s, "+-")
+	if exp := strings.TrimLeft(s[i+1:], "0"); exp != "" {
+		return s[:i+1] + exp
+	}
+	return s[:i+1] + "0"
 }
