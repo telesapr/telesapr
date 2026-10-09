@@ -41,7 +41,10 @@ func TestFindCommands(t *testing.T) {
 		t.Errorf("EXTRUDE: %s", got)
 	}
 	// An entry whose name starts with the words comes first.
-	if got := names("sel"); !strings.HasPrefix(got, "Edit > Select Edge Chain; Edit > Select All") {
+	// With nothing selected, Select Edge Chain can't run: it comes after
+	// what can, and Select All is first.
+	if got := names("sel"); !strings.HasPrefix(got, "Edit > Select All; ") ||
+		!strings.HasSuffix(got, "Edit > Select Edge Chain; Edit > Snap Selection to Grid") {
 		t.Errorf("sel: %s", got)
 	}
 	if got := names("  "); got != "" {

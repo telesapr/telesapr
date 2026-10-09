@@ -22,17 +22,17 @@
   &Redo [Ctrl+Y] ind=0 en=1 act=0
   Re&generate All [Space] ind=0 en=1 act=0
   ---
-  Cu&t [Ctrl+X] ind=0 en=1 act=0
-  &Copy [Ctrl+C] ind=0 en=1 act=0
-  &Paste [Ctrl+V] ind=0 en=1 act=0
-  Paste &Transformed... [Ctrl+T] ind=0 en=1 act=0
-  &Delete [Del] ind=0 en=1 act=0
+  Cu&t [Ctrl+X] ind=0 en=0 act=0
+  &Copy [Ctrl+C] ind=0 en=0 act=0
+  &Paste [Ctrl+V] ind=0 en=0 act=0
+  Paste &Transformed... [Ctrl+T] ind=0 en=0 act=0
+  &Delete [Del] ind=0 en=0 act=0
   ---
-  Select &Edge Chain [Ctrl+E] ind=0 en=1 act=0
+  Select &Edge Chain [Ctrl+E] ind=0 en=0 act=0
   Select &All [Ctrl+A] ind=0 en=1 act=0
   &Unselect All [Esc] ind=0 en=1 act=0
   ---
-  Snap Selection to &Grid [.] ind=0 en=1 act=0
+  Snap Selection to &Grid [.] ind=0 en=0 act=0
   Rotate Imported &90° [9] ind=0 en=1 act=0
   ---
   Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
@@ -181,13 +181,13 @@ Asse&mbly ind=0 en=1 act=0
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
-  &Stop Tracing... ind=0 en=1 act=0
+  &Stop Tracing... ind=0 en=0 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
 Sc&ript ind=0 en=1 act=0
   Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
   ---
   &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
-  &Stop ind=0 en=1 act=0
+  &Stop ind=0 en=0 act=0
   ---
   Allow &AI Connections ind=1 en=1 act=0
 &Help ind=0 en=1 act=0
@@ -226,17 +226,17 @@ tw 0 unsaved 1 cursor 0 tooltip ""
   &Redo [Ctrl+Y] ind=0 en=1 act=0
   Re&generate All [Space] ind=0 en=1 act=0
   ---
-  Cu&t [Ctrl+X] ind=0 en=1 act=0
-  &Copy [Ctrl+C] ind=0 en=1 act=0
-  &Paste [Ctrl+V] ind=0 en=1 act=0
-  Paste &Transformed... [Ctrl+T] ind=0 en=1 act=0
-  &Delete [Del] ind=0 en=1 act=0
+  Cu&t [Ctrl+X] ind=0 en=0 act=0
+  &Copy [Ctrl+C] ind=0 en=0 act=0
+  &Paste [Ctrl+V] ind=0 en=0 act=0
+  Paste &Transformed... [Ctrl+T] ind=0 en=0 act=0
+  &Delete [Del] ind=0 en=0 act=0
   ---
-  Select &Edge Chain [Ctrl+E] ind=0 en=1 act=0
+  Select &Edge Chain [Ctrl+E] ind=0 en=0 act=0
   Select &All [Ctrl+A] ind=0 en=1 act=0
   &Unselect All [Esc] ind=0 en=1 act=0
   ---
-  Snap Selection to &Grid [.] ind=0 en=1 act=0
+  Snap Selection to &Grid [.] ind=0 en=0 act=0
   Rotate Imported &90° [9] ind=0 en=1 act=0
   ---
   Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
@@ -385,13 +385,13 @@ Asse&mbly ind=0 en=1 act=0
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
-  &Stop Tracing... ind=0 en=1 act=0
+  &Stop Tracing... ind=0 en=0 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
 Sc&ript ind=0 en=1 act=0
   Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
   ---
   &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
-  &Stop ind=0 en=1 act=0
+  &Stop ind=0 en=0 act=0
   ---
   Allow &AI Connections ind=1 en=1 act=0
 &Help ind=0 en=1 act=0

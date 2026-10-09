@@ -18,7 +18,9 @@ The menus run in the order of the work. Sketch draws and Constrain holds what is
 makes the history's groups (sketches, then the solids that create, modify and pattern, then
 moving a group in the history); Assembly links files, mates them and checks them against each
 other; Analyze measures and checks. View > Show shows and hides what the icons at the top of the
-property browser do. Edit > Find Command (Ctrl+K) finds any entry by words of its name. A script
+property browser do. An entry with nothing to work on, as Paste with an empty clipboard, is greyed
+and its key does nothing. Edit > Find Command (Ctrl+K) finds any entry by words of its name, and
+lists last, with the reason, those that can't run now. A script
 names an entry as the command search lists it, `doc.RunCommand("Features > Extrude")`; the names
 the entries had before the menus took this order are still taken.
 
