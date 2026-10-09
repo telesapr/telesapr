@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -255,4 +256,41 @@ func TestDocumentUnitsInterface(t *testing.T) {
 		t.Error("the parameters screen doesn't name the unit")
 	}
 
+}
+
+// TestAcceleratorsDistinct guards against two commands on one key: the
+// first in the table would take it and the other's shortcut, though
+// shown in its menu, would do nothing.
+func TestAcceleratorsDistinct(t *testing.T) {
+	seen := map[int]string{}
+	check := func(accel int, label string) {
+		if accel == 0 {
+			return
+		}
+		if other, ok := seen[accel]; ok {
+			t.Errorf("%s and %s share an accelerator (%#x)", other, label, accel)
+		}
+		seen[accel] = label
+	}
+	for _, m := range menuTable {
+		check(m.accel, m.label)
+	}
+	for _, a := range accelAliases {
+		check(a.accel, fmt.Sprintf("the alias of command %d", a.cmd))
+	}
+}
+
+func TestRedoCtrlShiftZ(t *testing.T) {
+	ss, _ := newTestApp(t)
+	ss.UndoRemember()
+	ss.SK.Groups[len(ss.SK.Groups)-1].Name = "changed"
+	ss.UndoUndo()
+	if ss.SK.Redo.Cnt != 1 {
+		t.Fatalf("redo stack %d after undo", ss.SK.Redo.Cnt)
+	}
+	ss.GW.KeyboardEvent(platform.KeyboardEvent{Type: platform.KeyPress, Key: platform.KeyCharacter,
+		Chr: 'z', ControlDown: true, ShiftDown: true})
+	if ss.SK.Redo.Cnt != 0 || ss.SK.Groups[len(ss.SK.Groups)-1].Name != "changed" {
+		t.Errorf("Ctrl+Shift+Z did not redo: redo stack %d", ss.SK.Redo.Cnt)
+	}
 }

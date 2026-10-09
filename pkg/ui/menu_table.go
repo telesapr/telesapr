@@ -214,7 +214,7 @@ var menuTable = []menuEntry{
 	{1, "Show &Underconstrained Points", cmdShowDOF, ctrl | shift | 'f', kn, mAna},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "&Trace Point", cmdTracePt, ctrl | shift | 't', kn, mAna},
-	{1, "&Stop Tracing...", cmdStopTracing, ctrl | shift | 's', kn, mAna},
+	{1, "&Stop Tracing...", cmdStopTracing, 0, kn, mAna}, // Ctrl+Shift+S is Save As
 	{1, "Step &Dimension...", cmdStepDim, ctrl | shift | 'd', kn, mAna},
 	{1, "Motion St&udy...", cmdMotionStudy, 0, kn, func(ss *Application, c Command) { ss.MenuMotionStudy() }},
 
@@ -230,6 +230,15 @@ var menuTable = []menuEntry{
 	{1, "&User's Guide", cmdWebsite, 0, kn, mHelp},
 	{1, "Go to &GitHub", cmdGithub, 0, kn, mHelp},
 	{1, "&About", cmdAbout, 0, kn, mHelp},
+}
+
+// accelAliases are further keys that run a command, beside the one the
+// menu shows: Ctrl+Shift+Z is Redo where Ctrl+Y is not the custom.
+var accelAliases = []struct {
+	cmd   Command
+	accel int
+}{
+	{cmdRedo, ctrl | shift | 'z'},
 }
 
 // MenuItem is an entry of the main menu: the labels of the menus it
