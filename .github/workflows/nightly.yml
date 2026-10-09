@@ -2,7 +2,7 @@
 # every push: the vulnerability report as a job that fails, the
 # robustness sweeps over their whole grids, the fuzz targets, every
 # benchmark once, the race detector over pkg/ui and pkg/script/api, and
-# the quick tests on Windows.
+# the quick tests on Windows and macOS.
 # Each step is a make target, so any of it runs locally the same way.
 #
 # On a schedule it runs only when master moved since the last nightly
@@ -115,8 +115,9 @@ jobs:
   windows:
     # The quick tests (make test-fast) on Windows, without those
     # scripts/os-skip/windows.txt lists: some fifteen minutes, most of it
-    # compiling, too long for every push to master. GNU make is not on
-    # the runner's PATH, so the script runs directly, in Git Bash.
+    # compiling, too long for every push to master, and its minutes
+    # count twice in a private repository. GNU make is not on the
+    # runner's PATH, so the script runs directly, in Git Bash.
     needs: changed
     if: needs.changed.outputs.run == 'true'
     runs-on: windows-latest
@@ -133,4 +134,22 @@ jobs:
           cache-dependency-path: go.sum
       - name: Quick tests
         shell: bash
+        run: scripts/test-os.sh
+
+  macos:
+    # The quick tests (make test-fast) on macOS, without those
+    # scripts/os-skip/darwin.txt lists: two minutes, but a private
+    # repository's macOS minutes count ten times, so once a night rather
+    # than on every push to master. The Release workflow runs them too.
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Quick tests
         run: scripts/test-os.sh
