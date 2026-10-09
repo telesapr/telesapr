@@ -48,8 +48,12 @@ jobs:
           restore-keys: |
             gocache-checks-${{ hashFiles('go.sum') }}-
             gocache-checks-
-      - name: Install X11 development packages
-        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      # The packages and what they depend on come from a cache rather
+      # than from the mirror on every run.
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ${{ env.X11_PACKAGES }}
+          version: x11-1
       - name: gofmt, go.mod tidy, generated symbols up to date, build
         run: make checks
 
@@ -74,8 +78,10 @@ jobs:
           restore-keys: |
             gocache-vuln-${{ hashFiles('go.sum') }}-
             gocache-vuln-
-      - name: Install X11 development packages
-        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ${{ env.X11_PACKAGES }}
+          version: x11-1
       - name: govulncheck
         run: make vuln
 
@@ -95,8 +101,13 @@ jobs:
           restore-keys: |
             gocache-coverage-${{ hashFiles('go.sum') }}-
             gocache-coverage-
-      - name: Install X11 development packages, Xvfb and a font
-        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
+      # Xvfb for the GUI tests, and a font for what they draw; the
+      # font's install script builds fontconfig's cache.
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ${{ env.X11_PACKAGES }} xvfb fonts-dejavu-core
+          version: x11-xvfb-1
+          execute_install_scripts: true
       # Every test, the GUI ones under Xvfb, with the 85% rule.
       - name: Tests, with coverage
         run: make coverage
@@ -128,8 +139,10 @@ jobs:
           restore-keys: |
             lint-${{ hashFiles('go.sum', 'tools/lint/go.sum', '.golangci.yml') }}-
             lint-
-      - name: Install X11 development packages
-        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ${{ env.X11_PACKAGES }}
+          version: x11-1
       - name: golangci-lint
         run: make lint
 
@@ -170,7 +183,9 @@ jobs:
           restore-keys: |
             gocache-race-${{ matrix.name }}-${{ hashFiles('go.sum') }}-
             gocache-race-${{ matrix.name }}-
-      - name: Install X11 development packages
-        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ${{ env.X11_PACKAGES }}
+          version: x11-1
       - name: Race detector, shard ${{ matrix.name }}
         run: make test-race RACE_PACKAGES='${{ matrix.packages }}'
