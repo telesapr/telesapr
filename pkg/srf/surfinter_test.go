@@ -60,11 +60,10 @@ func extrudedCurves(sbl *SBezierList, t0, t1 geom.Vector) *SShell {
 	return sh
 }
 
-// TestIntersectionBranchesVsCpp runs a boolean through each of
-// IntersectAgainst's branches that the fixtures don't reach. The
-// expected values come from a SolveSpace harness building the same shells
-// with SS.chordTolCalculated = 0.1 and SS.maxSegments = 20.
-func TestIntersectionBranchesVsCpp(t *testing.T) {
+// TestIntersectionBranches runs a boolean through each of
+// IntersectAgainst's branches that the fixtures don't reach, at a chord
+// tolerance of 0.1, and pins the result's volume and counts.
+func TestIntersectionBranches(t *testing.T) {
 	old := ChordTolMm()
 	SetChordTolMm(0.1)
 	t.Cleanup(func() { SetChordTolMm(old) })
@@ -105,12 +104,9 @@ func TestIntersectionBranchesVsCpp(t *testing.T) {
 		curves    int
 		triangles int
 	}{
-		// The volumes and triangles are SolveSpace's. A difference has fewer
-		// surfaces and curves than SolveSpace left: the cutter's faces wholly
-		// outside are dropped, with the curves on them no trim uses
-		// (roadmap 13.3). The crossing's volumes are 3e-6 over SolveSpace's
-		// since 24.1, which clips no ear whose chord passes a hair from
-		// a trim point (SContour.grazed): other ears, as many triangles.
+		// Recorded; they change only when the kernel means them to. A
+		// difference drops the cutter's faces wholly outside, with the
+		// curves on them no trim uses (roadmap 13.3).
 		{"coaxial-union", coaxial, SurfaceUnion, 8481.244959586, 12, 30, 268},
 		{"coaxial-difference", coaxial, SurfaceDiff, 2237.031816644, 8, 19, 132},
 		{"crossing-union", crossing, SurfaceUnion, 14851.712352551, 12, 32, 364},

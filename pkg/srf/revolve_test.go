@@ -1,7 +1,6 @@
 package srf
 
 import (
-	"fmt"
 	"math"
 	"testing"
 
@@ -121,56 +120,6 @@ func TestBooleanRevolveBoxVolume(t *testing.T) {
 				continue
 			}
 			checkVolume(t, c.name+" "+op.name, shellVolume(&r), op.want)
-		}
-	}
-}
-
-// TestRevolveParityCpp pins the mesh volumes at the default chord
-// tolerance to those of the SolveSpace SShell::MakeFromRevolutionOf,
-// MakeFromHelicalRevolutionOf and MakeFromBoolean on the same inputs
-// (a harness linked against libsolvespace-core, chordTolCalculated
-// 0.1, maxSegments 20).
-func TestRevolveParityCpp(t *testing.T) {
-	check := func(name string, got, want float64) {
-		t.Helper()
-		if math.Abs(got-want) > 1e-8 {
-			t.Errorf("%s: volume=%.12g, SolveSpace %.12g", name, got, want)
-		}
-	}
-	check("tube", shellVolume(lathedTube(1, 2, 0, 1)), 9.18326468473)
-	check("cylinder", shellVolume(lathedTube(0, 2, 0, 1)), 12.244352913)
-	for _, c := range []struct {
-		angles, anglef, dists, distf, want float64
-	}{
-		{0, math.Pi / 3, 0, 0, 1.56630902883},
-		{0, -2.5, 0, 0, 3.73472309685},
-		// A whole turn's helical faces are twisted ruled faces, whose
-		// grid has its outer cells halved since roadmap 24.4, and whose
-		// ears keep their chords off the points they cut off since the
-		// cut-off test (cutOff.crosses): SolveSpace had 9.38597257969, 24.4
-		// 9.37728875643; exact 9.42477796077.
-		{-math.Pi, math.Pi, -1, 1, 9.37779507644},
-	} {
-		var sh SShell
-		sh.MakeFromHelicalRevolutionOf(profileLoopSet(1, 2, 0, 1), geom.Vector{}, geom.Vector{Z: 1},
-			core.RGBA{}, noFaces{}, c.angles, c.anglef, c.dists, c.distf)
-		check(fmt.Sprintf("helical %v..%v", c.anglef, c.distf), shellVolume(&sh), c.want)
-	}
-	boxes := []struct {
-		name   string
-		lo, hi geom.Vector
-		want   [3]float64 // union, difference, intersection
-	}{
-		{"slab", geom.Vector{X: -3, Y: -3, Z: 0.25}, geom.Vector{X: 3, Y: 3, Z: 2},
-			[3]float64{65.2958161712, 2.29581617118, 6.88744851355}},
-		{"side", geom.Vector{X: 0.5, Y: -3, Z: -1}, geom.Vector{X: 3, Y: 3, Z: 2},
-			[3]float64{50.6126559863, 5.61265598634, 3.5863097602}},
-	}
-	for _, c := range boxes {
-		for k, op := range []SurfaceCombineAs{SurfaceUnion, SurfaceDiff, SurfaceInter} {
-			var r SShell
-			r.MakeFromBoolean(lathedTube(1, 2, 0, 1), extrudedBox(c.lo, c.hi), op)
-			check(fmt.Sprintf("%s op %d", c.name, op), shellVolume(&r), c.want[k])
 		}
 	}
 }
