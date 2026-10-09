@@ -353,6 +353,49 @@ func (e Entity) Delete() {
 	})
 }
 
+// AddSplinePoint adds a point at p to the cubic spline the entity is,
+// in the span of the spline's points that passes nearest p, as the
+// context menu's Add Spline Point does where the curve is clicked. The
+// spline then passes through p, or for a periodic one through it too.
+func (e Entity) AddSplinePoint(p Vec) {
+	e.d.change(func(sk *sketch.Sketch) {
+		e.get(sk)
+		after, err := sk.NearestSplineSpan(e.H, p)
+		if err == nil {
+			err = sk.AddSplinePoint(e.H, after, p)
+		}
+		if err != nil {
+			fail("%s: %v", e.describe(sk), err)
+		}
+	})
+}
+
+// RemoveSplinePoint takes the point out of the cubic spline it belongs
+// to, as the context menu's Remove Spline Point does. The points it was
+// coincident with stay coincident with each other; its other
+// constraints are deleted. An open spline's ends and their control
+// points can't be removed.
+func (e Entity) RemoveSplinePoint() {
+	e.d.change(func(sk *sketch.Sketch) {
+		e.get(sk)
+		if err := sk.RemoveSplinePoint(e.H); err != nil {
+			fail("%s: %v", e.describe(sk), err)
+		}
+	})
+}
+
+// DeleteCoincidences deletes the constraints that make the point
+// coincident with others, as the context menu's Delete Point-Coincident
+// Constraint does, so it can be dragged away from them.
+func (e Entity) DeleteCoincidences() {
+	e.d.change(func(sk *sketch.Sketch) {
+		e.get(sk)
+		if err := sk.DeletePointCoincidences(e.H); err != nil {
+			fail("%s: %v", e.describe(sk), err)
+		}
+	})
+}
+
 // Request is something that was drawn: a line segment, a circle, a
 // datum point. The property browser lists the requests of a group.
 type Request struct {
