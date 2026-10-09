@@ -79,7 +79,7 @@ jobs:
           - name: bench
             target: bench
           - name: race-ui-api
-            target: test-race RACE_PACKAGES='./pkg/ui ./pkg/script/api'
+            target: test-race RACE_PACKAGES='./pkg/ui ./pkg/script/api' RACE_TIMEOUT=90m
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v7

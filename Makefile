@@ -109,9 +109,15 @@ RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/.
 # The slow packages' tests run as several processes side by side
 # (scripts/go-test.sh), and the fixture loops take a sample under the
 # race detector (raceSample in pkg/persist/slvs).
+# RACE_TIMEOUT bounds each go test process: pkg/script/api's
+# TestFilletOnOtherSolidsVolumes alone takes 14 minutes here under the
+# detector, and twice that on a runner, so the nightly workflow gives it
+# more.
+RACE_TIMEOUT ?= 30m
+
 test-race:
 	@echo "==> go test -race $(RACE_PACKAGES)"
-	GOCACHE=$(PWD)/.gocache PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout 30m
+	GOCACHE=$(PWD)/.gocache PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout $(RACE_TIMEOUT)
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
 # package listed in scripts/coverage-packages.txt is under 85%. The
