@@ -11,7 +11,7 @@ Requirement set by the user on 2026-10-01: a new feature is well tested, has a u
 and has scripting support. A feature that lacks one of the three is not done and does not merge.
 The three paths, interface, script and file, must reach the same engine entry point in
 `pkg/sketch`, so none of them can drift from the others. The conventions of the code itself, and
-the environment variables the tests read, are in `CLAUDE.md`.
+the environment variables the tests read, are in `AGENTS.md`.
 
 The order inside a feature is: entry point in `pkg/sketch`, save and load, interface, script API,
 path equivalence test. Document state a feature adds goes into `UndoState` in
