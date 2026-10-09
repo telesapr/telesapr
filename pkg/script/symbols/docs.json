@@ -4268,9 +4268,17 @@
 						"decl": "func (d *Doc) Constraint(name string) (c Constraint)",
 						"text": "Constraint is the constraint with a description as the property\nbrowser shows it: \"c002-pt-pt-distance\" or just \"c002\"."
 					},
+					"Copy": {
+						"decl": "func (d *Doc) Copy(entities ...Entity)",
+						"text": "Copy puts the entities on the clipboard, with the constraints between\nthem, as Edit \u003e Copy does with them selected. Workplanes are left out."
+					},
 					"Cubic": {
 						"decl": "func (d *Doc) Cubic(p0, p1, p2, p3 Vec) Entity",
 						"text": "Cubic adds a cubic Bézier curve from p0 to p3, with the control\npoints p1 and p2."
+					},
+					"CurveLength": {
+						"decl": "func (d *Doc) CurveLength(curves ...Entity) (mm float64)",
+						"text": "CurveLength is the total length in mm of the curves given, as Analyze \u003e\nMeasure Perimeter gives it: line segments, arcs, circles and cubics,\neach taken as the straight pieces it is drawn with."
 					},
 					"DeleteConfiguration": {
 						"decl": "func (d *Doc) DeleteConfiguration(name string) (err error)",
@@ -4343,6 +4351,10 @@
 					"FaceAppearance": {
 						"decl": "func (d *Doc) FaceAppearance(face SolidFace) (name string)",
 						"text": "FaceAppearance is the appearance the face has: its own, its group's,\nor \"\" for the default."
+					},
+					"FacesArea": {
+						"decl": "func (d *Doc) FacesArea(faces ...Entity) (mm2 float64)",
+						"text": "FacesArea is the area in mm² of faces of the solid at the active\ngroup, as Analyze \u003e Measure Area gives it with them selected: the\nface entities an extrusion or a lathe makes."
 					},
 					"Fillet": {
 						"decl": "func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group",
@@ -4479,6 +4491,10 @@
 					"Parameters": {
 						"decl": "func (d *Doc) Parameters() (params []Parameter)",
 						"text": "Parameters lists the parameter table, in the order the parameters\nwere made."
+					},
+					"Paste": {
+						"decl": "func (d *Doc) Paste(move Vec, angle, scale float64) (pasted []Entity)",
+						"text": "Paste adds what is on the clipboard to the active group, in the\nactive workplane, turned by angle degrees about the workplane's\norigin, scaled by scale and then moved by move, as Edit \u003e Paste\nTransformed does once; a scale of -1 mirrors it. It returns what\nwas drawn by pasting, a line for a line, without their points."
 					},
 					"PatternAlongPath": {
 						"decl": "func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group",
@@ -4845,9 +4861,17 @@
 						"decl": "func (g Group) Appearance() (name string)",
 						"text": "Appearance is the group's solid's appearance, \"\" for the default,\nplastic."
 					},
+					"Area": {
+						"decl": "func (g Group) Area() (mm2 float64)",
+						"text": "Area is the area in mm² of the closed region the group's sketch\ndraws, holes taken out, as Analyze \u003e Measure Area gives it with\nnothing selected."
+					},
 					"Bounds": {
 						"decl": "func (g Group) Bounds() (lo, hi Vec)",
 						"text": "Bounds are the corners of the box around the model up to and with\nthis group."
+					},
+					"CenterOfMass": {
+						"decl": "func (g Group) CenterOfMass() (p Vec)",
+						"text": "CenterOfMass is the centre of mass of the model up to and with this\ngroup, of one density throughout, as Analyze \u003e Show Center of Mass\nmarks it."
 					},
 					"Check": {
 						"decl": "func (g Group) Check() (r check.Report)",
@@ -6369,6 +6393,10 @@
 						"decl": "func (s *Sketch) CalculateEntityBBox(includingInvisible bool) core.BBox",
 						"text": "CalculateEntityBBox returns the bounding box of the non-construction entities."
 					},
+					"CenterOfMass": {
+						"decl": "func (sk *Sketch) CenterOfMass(hg core.HGroup) (geom.Vector, error)",
+						"text": "CenterOfMass is the centre of mass of the solid at group hg, taken as of one density throughout."
+					},
 					"CheckMoveGroup": {
 						"decl": "func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error",
 						"text": "CheckMoveGroup reports the error MoveGroup(h, before) would give, without moving anything."
@@ -6514,6 +6542,10 @@
 						"decl": "func (sk *Sketch) FaceName(id srf.FaceID) string",
 						"text": "FaceName names a face of a solid by its identity: the entity that made it, or for a face no entity names, the group that made it."
 					},
+					"FacesArea": {
+						"decl": "func (sk *Sketch) FacesArea(hg core.HGroup, hs []core.HEntity) (float64, error)",
+						"text": "FacesArea is the area of the faces of group hg's solid that the face entities hs stand for."
+					},
 					"FixConstraintsForPointBeingDeleted": {
 						"decl": "func (sk *Sketch) FixConstraintsForPointBeingDeleted(hpt core.HEntity)",
 						"text": "FixConstraintsForPointBeingDeleted deletes the point-coincident constraints on hpt, and makes the points they joined to it coincident with each other."
@@ -6576,6 +6608,10 @@
 					"LaterReference": {
 						"decl": "func (sk *Sketch) LaterReference(h core.HGroup) (dep Dependency, ok bool)",
 						"text": "LaterReference is the first group that group h refers to and that comes after it in the history, as one made with an earlier group active and then named by a group before it would: what a group refers to must be made before it."
+					},
+					"Length": {
+						"decl": "func (sk *Sketch) Length(hs []core.HEntity) (float64, error)",
+						"text": "Length is the total length of the curves of entities hs: line segments, arcs, circles, cubics and text."
 					},
 					"LoadFactoryDefaults": {
 						"decl": "func (sk *Sketch) LoadFactoryDefaults()",
@@ -6743,6 +6779,10 @@
 					"RegenerationPending": {
 						"decl": "func (sk *Sketch) RegenerationPending() bool",
 						"text": "RegenerationPending reports whether a regeneration is scheduled and hasn't run, so that what is read from the sketch may be stale."
+					},
+					"RegionArea": {
+						"decl": "func (sk *Sketch) RegionArea(hg core.HGroup) (float64, error)",
+						"text": "RegionArea is the area of the closed region group hg's sketch draws, holes taken out."
 					},
 					"RemoveConstraint": {
 						"decl": "func (sk *Sketch) RemoveConstraint(hc core.HConstraint)",
@@ -7203,6 +7243,10 @@
 			"DimensionKinds": {
 				"decl": "var DimensionKinds",
 				"text": "DimensionKinds are the kinds of drawing dimension and how many edges each takes."
+			},
+			"ErrNoClosedRegion": {
+				"decl": "var ErrNoClosedRegion",
+				"text": "ErrNoClosedRegion is returned when a group's sketch is not a closed region whose area can be taken."
 			},
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",

@@ -75,15 +75,8 @@ func (ss *Application) MenuAnalyze(id Command) {
 		ss.analyzeArea()
 
 	case cmdPerimeter:
-		if gs.n > 0 && gs.n == gs.entities {
-			perimeter := 0.0
-			for i := range gs.entities {
-				en := sk.Entity(gs.entity[i])
-				el := gw.getOrGenerateEdges(en)
-				for _, e := range el.Edges {
-					perimeter += e.B.Minus(e.A).Magnitude()
-				}
-			}
+		perimeter, err := sk.Length(gs.entity)
+		if gs.n > 0 && gs.n == gs.entities && err == nil {
 			ss.Message("The total length of the selected entities is:\n\n"+
 				"    %s\n\n"+
 				"Curves have been approximated as piecewise linear.\n"+
@@ -210,11 +203,11 @@ func (ss *Application) analyzeArea() {
 	gw.GroupSelection()
 
 	if gs.faces > 0 {
-		faces := []uint32{gs.face[0].V}
-		if gs.faces > 1 {
-			faces = append(faces, gs.face[1].V)
+		area, err := sk.FacesArea(g.H, gs.face)
+		if err != nil {
+			ss.Error("Can't measure the faces' area: %s.", err)
+			return
 		}
-		area := g.DisplayMesh.CalculateSurfaceArea(faces)
 		ss.Message("The surface area of the selected faces is:\n\n"+
 			"    %s\n\n"+
 			"Curves have been approximated as piecewise linear.\n"+
@@ -223,19 +216,13 @@ func (ss *Application) analyzeArea() {
 		return
 	}
 
-	if g.PolyError.How != int(core.PolyGood) {
+	area, err := sk.RegionArea(g.H)
+	if err != nil {
 		ss.Error("This group does not contain a correctly-formed " +
 			"2d closed area. It is open, not coplanar, or self-" +
 			"intersecting.")
 		return
 	}
-	var sel srf.SEdgeList
-	g.PolyLoops.MakeEdgesInto(&sel)
-	var sp srf.SPolygon
-	sel.AssemblePolygon(&sp, nil, true)
-	sp.Normal = sp.ComputeNormal()
-	sp.FixContourDirections()
-	area := sp.SignedArea()
 	ss.Message("The area of the region sketched in this group is:\n\n"+
 		"    %s\n\n"+
 		"Curves have been approximated as piecewise linear.\n"+
