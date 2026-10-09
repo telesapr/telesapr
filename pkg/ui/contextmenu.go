@@ -124,36 +124,9 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 			index := r.IndexOfPoint(gs.point[0])
 			if (r.Type == sketch.RequestCubic && index > 1 && index < r.ExtraPoints+2) ||
 				r.Type == sketch.RequestCubicPeriodic {
-				hr := r.H
+				hp := gs.point[0]
 				menu.AddItem("Remove Spline Point", func() {
-					r := sk.Request(hr)
-					index := r.IndexOfPoint(gs.point[0])
-					if r.ExtraPoints == 0 {
-						panic("ui: expected a bezier with interior control points")
-					}
-
-					ss.UndoRemember()
-					e := sk.Entity(r.H.Entity(0))
-
-					// First, fix point-coincident constraints involving
-					// this point. Then, remove all other constraints, since
-					// they would otherwise jump to an adjacent one and mess
-					// up the bezier after generation.
-					sk.FixConstraintsForPointBeingDeleted(e.Point[index])
-					sk.RemoveConstraintsForPointBeingDeleted(e.Point[index])
-
-					for i := index; i < core.MaxPointsInEntity-1; i++ {
-						if e.Point[i+1].V == 0 {
-							break
-						}
-						p0 := sk.Entity(e.Point[i])
-						p1 := sk.Entity(e.Point[i+1])
-						sk.ReplacePointInConstraints(p1.H, p0.H)
-						p0.PointForceTo(sk, p1.PointGetNum(sk))
-					}
-					sk.Request(hr).ExtraPoints--
-					sk.MarkGroupDirtyByEntity(gs.point[0])
-					gw.ClearSelection()
+					ss.editModel("Can't remove the spline point", func() error { return sk.RemoveSplinePoint(hp) })
 				}, true)
 			}
 		}
@@ -162,50 +135,17 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 			if r.Type == sketch.RequestCubic || r.Type == sketch.RequestCubicPeriodic {
 				e := sk.Entity(gs.entity[0])
 				camera := gw.Camera()
-				addAfterPoint := gw.entityPositionOfPoint(e, &camera, geom.Point2d{U: x, V: y})
-				if addAfterPoint == -1 {
-					panic("ui: expected a nearest bezier point to be located")
-				}
-				// Skip derivative point.
+				// The piece of the curve nearest the click; an open
+				// spline's first point is its start's control point.
+				after := gw.entityPositionOfPoint(e, &camera, geom.Point2d{U: x, V: y})
 				if r.Type == sketch.RequestCubic {
-					addAfterPoint++
+					after++
 				}
-				hr := r.H
+				he := gs.entity[0]
 				menu.AddItem("Add Spline Point", func() {
-					r := sk.Request(hr)
-					pointCount := r.ExtraPoints + 4
-					if r.Type == sketch.RequestCubicPeriodic {
-						pointCount = r.ExtraPoints + 3
-					}
-					if pointCount >= core.MaxPointsInEntity {
-						ss.Error("Cannot add spline point: maximum number of points reached.")
-						return
-					}
-
-					ss.UndoRemember()
-					r.ExtraPoints++
-					sk.MarkGroupDirtyByEntity(gs.entity[0])
-					ss.GenerateAll(sketch.GenerateRegen)
-
-					e := sk.Entity(hr.Entity(0))
-					for i := core.MaxPointsInEntity; i > addAfterPoint+1; i-- {
-						if i >= core.MaxPointsInEntity {
-							// The entry past the end of point[] is
-							// always empty.
-							continue
-						}
-						p0 := sk.Entity(e.Point[i])
-						if e.Point[i].V == 0 || p0 == nil {
-							continue
-						}
-						p1 := sk.Entity(e.Point[i-1])
-						sk.ReplacePointInConstraints(p1.H, p0.H)
-						p0.PointForceTo(sk, p1.PointGetNum(sk))
-					}
-					p := sk.Entity(e.Point[addAfterPoint+1])
-					p.PointForceTo(sk, v)
-					sk.MarkGroupDirtyByEntity(gs.entity[0])
-					gw.ClearSelection()
+					ss.applyEngineSettings()
+					ss.editModel("Can't add a spline point", func() error { return sk.AddSplinePoint(he, after, v) })
+					ss.afterGenerate()
 				}, true)
 			}
 		}
@@ -213,38 +153,11 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 			menu.AddItem("Toggle Construction", func() { gw.MenuRequest(cmdConstruction) }, true)
 		}
 
-		if gs.points == 1 {
-			p := sk.Entity(gs.point[0])
-			found := false
-			for i := range sk.Constraints {
-				ci := &sk.Constraints[i]
-				if ci.Type != core.ConstraintPointsCoincident {
-					continue
-				}
-				if ci.PtA == p.H || ci.PtB == p.H {
-					found = true
-					break
-				}
-			}
-			if found {
-				hp := p.H
-				menu.AddItem("Delete Point-Coincident Constraint", func() {
-					p := sk.Entity(hp)
-					if !p.IsPoint() {
-						return
-					}
-					ss.UndoRemember()
-					kept := sk.Constraints[:0]
-					for _, c := range sk.Constraints {
-						if c.Type == core.ConstraintPointsCoincident && (c.PtA == p.H || c.PtB == p.H) {
-							continue
-						}
-						kept = append(kept, c)
-					}
-					sk.Constraints = kept
-					gw.ClearSelection()
-				}, true)
-			}
+		if gs.points == 1 && sk.PointIsCoincident(gs.point[0]) {
+			hp := gs.point[0]
+			menu.AddItem("Delete Point-Coincident Constraint", func() {
+				ss.editModel("Can't delete the coincidence", func() error { return sk.DeletePointCoincidences(hp) })
+			}, true)
 		}
 		menu.AddSeparator()
 		if gw.LockedInWorkplane() {
@@ -288,6 +201,18 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 
 	gw.context.active = false
 	ss.ScheduleShowTW()
+}
+
+// editModel makes an edit of the model one undo step, and says why when
+// it can't be made, with what before the reason.
+func (ss *Application) editModel(what string, edit func() error) {
+	if err := ss.SK.UndoRememberFor(edit); err != nil {
+		ss.Error("%s: %s.", what, err)
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	ss.GW.ClearSelection()
 }
 
 // addModelItems adds the entries for the solid's edges and faces, for a

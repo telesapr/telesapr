@@ -4721,6 +4721,10 @@
 				"text": "Entity is something on the drawing: a point, a line segment, a\ncircle, an arc, a curve, a workplane, a normal, a face. What is\ndrawn makes several: a line segment is an entity and so are its two\nends.",
 				"kind": "struct",
 				"methods": {
+					"AddSplinePoint": {
+						"decl": "func (e Entity) AddSplinePoint(p Vec)",
+						"text": "AddSplinePoint adds a point at p to the cubic spline the entity is,\nin the span of the spline's points that passes nearest p, as the\ncontext menu's Add Spline Point does where the curve is clicked. The\nspline then passes through p, or for a periodic one through it too."
+					},
 					"Center": {
 						"decl": "func (e Entity) Center() Entity",
 						"text": "Center is the centre of a circle or an arc, or the origin of a\nworkplane."
@@ -4732,6 +4736,10 @@
 					"Delete": {
 						"decl": "func (e Entity) Delete()",
 						"text": "Delete deletes what was drawn to make the entity, and the\nconstraints on it."
+					},
+					"DeleteCoincidences": {
+						"decl": "func (e Entity) DeleteCoincidences()",
+						"text": "DeleteCoincidences deletes the constraints that make the point\ncoincident with others, as the context menu's Delete Point-Coincident\nConstraint does, so it can be dragged away from them."
 					},
 					"Dir": {
 						"decl": "func (e Entity) Dir() (v Vec)",
@@ -4784,6 +4792,10 @@
 					"Radius": {
 						"decl": "func (e Entity) Radius() (r float64)",
 						"text": "Radius is the radius of a circle or an arc."
+					},
+					"RemoveSplinePoint": {
+						"decl": "func (e Entity) RemoveSplinePoint()",
+						"text": "RemoveSplinePoint takes the point out of the cubic spline it belongs\nto, as the context menu's Remove Spline Point does. The points it was\ncoincident with stay coincident with each other; its other\nconstraints are deleted. An open spline's ends and their control\npoints can't be removed."
 					},
 					"Request": {
 						"decl": "func (e Entity) Request() Request",
@@ -6310,6 +6322,10 @@
 						"decl": "func (sk *Sketch) AddRequestOfType(typ RequestType, rememberForUndo bool) core.HRequest",
 						"text": "AddRequestOfType adds a request of the given type in the active group and workplane, and generates its entities and params, without solving."
 					},
+					"AddSplinePoint": {
+						"decl": "func (sk *Sketch) AddSplinePoint(he core.HEntity, after int, at geom.Vector) error",
+						"text": "AddSplinePoint adds a point at at to the cubic spline that entity he belongs to, after its point number after, which for an open spline is one of the points between its ends' control points or the first of those."
+					},
 					"AddStyle": {
 						"decl": "func (s *Sketch) AddStyle(st core.Style) core.HStyle"
 					},
@@ -6442,6 +6458,10 @@
 					"DeleteParameter": {
 						"decl": "func (sk *Sketch) DeleteParameter(name string) error",
 						"text": "DeleteParameter removes a parameter."
+					},
+					"DeletePointCoincidences": {
+						"decl": "func (sk *Sketch) DeletePointCoincidences(hp core.HEntity) error",
+						"text": "DeletePointCoincidences deletes the constraints that make point hp coincident with others, and reports an error when there are none."
 					},
 					"DeleteSelection": {
 						"decl": "func (sk *Sketch) DeleteSelection(selection []Selection)",
@@ -6605,6 +6625,10 @@
 						"decl": "func (sk *Sketch) NamedConstraint(name string) *core.Constraint",
 						"text": "NamedConstraint is the constraint named name, or nil."
 					},
+					"NearestSplineSpan": {
+						"decl": "func (sk *Sketch) NearestSplineSpan(he core.HEntity, at geom.Vector) (int, error)",
+						"text": "NearestSplineSpan is the point of the spline of entity he that a point added nearest at should follow: the start of the span between two neighbouring points, of those AddSplinePoint takes, that passes nearest at."
+					},
 					"NewChamfer": {
 						"decl": "func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, distance float64, name string) (Group, error)",
 						"text": "NewChamfer starts a chamfer at the active group, of edges of the solid so far: line segments along edges between two planar faces, and edges of the solid itself, by name, straight and between two planar faces; at distance mm from each edge on both faces."
@@ -6684,6 +6708,10 @@
 						"decl": "func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Selection",
 						"text": "PasteClipboard pastes the clipboard into the active group and workplane: scaled (mirrored if negative) in the workplane, rotated by theta about its normal, and moved by trans."
 					},
+					"PointIsCoincident": {
+						"decl": "func (sk *Sketch) PointIsCoincident(hp core.HEntity) bool",
+						"text": "PointIsCoincident reports whether a constraint makes point hp coincident with another."
+					},
 					"PopOntoCurrentFrom": {
 						"decl": "func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack)",
 						"text": "PopOntoCurrentFrom makes the last state on uk the current one, then reloads the linked files and regenerates."
@@ -6723,6 +6751,10 @@
 					"RemoveConstraintsForPointBeingDeleted": {
 						"decl": "func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity)",
 						"text": "RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt."
+					},
+					"RemoveSplinePoint": {
+						"decl": "func (sk *Sketch) RemoveSplinePoint(hp core.HEntity) error",
+						"text": "RemoveSplinePoint takes point hp out of the cubic spline it belongs to."
 					},
 					"RenameConfiguration": {
 						"decl": "func (sk *Sketch) RenameConfiguration(from, to string) error",
@@ -7171,6 +7203,10 @@
 			"DimensionKinds": {
 				"decl": "var DimensionKinds",
 				"text": "DimensionKinds are the kinds of drawing dimension and how many edges each takes."
+			},
+			"ErrSplinePointsFull": {
+				"decl": "var ErrSplinePointsFull",
+				"text": "ErrSplinePointsFull is returned when a spline has as many points as an entity holds."
 			},
 			"FreedomFixed": {
 				"decl": "const FreedomFixed"

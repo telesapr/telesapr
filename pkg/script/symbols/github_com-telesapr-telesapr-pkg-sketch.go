@@ -35,6 +35,7 @@ func init() {
 		"DimensionKinds":               reflect.ValueOf(&sketch.DimensionKinds).Elem(),
 		"EdgeRadiusField":              reflect.ValueOf(sketch.EdgeRadiusField),
 		"EntityPointCount":             reflect.ValueOf(sketch.EntityPointCount),
+		"ErrSplinePointsFull":          reflect.ValueOf(&sketch.ErrSplinePointsFull).Elem(),
 		"ExportMeshAs3mfTo":            reflect.ValueOf(sketch.ExportMeshAs3mfTo),
 		"ExportMeshAsStlTo":            reflect.ValueOf(sketch.ExportMeshAsStlTo),
 		"FaceGroup":                    reflect.ValueOf(sketch.FaceGroup),
