@@ -1,9 +1,11 @@
-# Every push to a branch: the checks, the tests with coverage, the lint
-# and the vulnerability report, as jobs side by side. On a push to master,
-# and on request (workflow_dispatch) for a branch, also the race detector
-# in shards. make ci runs it locally; the nightly workflow (nightly.yml)
-# runs what is too slow or costs too many minutes for every push, the
-# quick tests on Windows and macOS among it.
+# Every push to a branch: the checks, the quick tests (make test-fast),
+# the lint and the vulnerability report, as jobs side by side. On a push
+# to master, and on request (workflow_dispatch) for a branch, every test
+# with coverage in place of the quick ones, and the race detector in
+# shards: make ci, run before a merge, is the same locally, so a branch
+# gets its answer in minutes and master still checks it all. The nightly
+# workflow (nightly.yml) runs what is too slow or costs too many minutes
+# for every push, the quick tests on Windows and macOS among it.
 #
 # A tag push runs nothing here: make release tags a commit of master
 # that this workflow has passed, and release.yml runs on the tag. There
@@ -80,7 +82,32 @@ jobs:
       - name: govulncheck
         run: make vuln
 
+  quick:
+    # A branch's tests: those that skip themselves under testing.Short
+    # are the slow ones, which master and make ci run.
+    if: github.ref != 'refs/heads/master' && github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-quick-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-quick-${{ hashFiles('go.sum') }}-
+            gocache-quick-
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - name: Quick tests
+        run: make test-fast
+
   coverage:
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

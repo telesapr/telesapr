@@ -77,8 +77,9 @@ three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the ta
 - Three tiers. `make test-fast` (`go test -short`) is the check before a commit: a test that
   takes more than a few seconds skips itself under `testing.Short()`, saying what it is.
   `make test` runs every test, and `make ci` is what the GitHub workflow runs on `master`
-  (checks, coverage, race, lint, vuln); on a branch the workflow leaves out the race detector,
-  which runs on `master` and on request (workflow_dispatch). The nightly workflow, on
+  (checks, coverage, race, lint, vuln); on a branch the workflow runs `make test-fast` in
+  place of coverage and leaves out the race detector, both of which run on `master` and on
+  request (workflow_dispatch), so `make ci` before the merge is what catches the rest. The nightly workflow, on
   `master`, runs what is too slow or costs too many minutes for a push: `make test-sweeps`,
   `make fuzz`, `make bench`, govulncheck as a failing job, the race detector over `pkg/ui`
   and `pkg/script/api`, and the quick tests on Windows and macOS. `make lint-new` lints what a branch changed.

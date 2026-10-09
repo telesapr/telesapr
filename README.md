@@ -68,8 +68,9 @@ sudo make install                               # with the desktop entry, icons 
 `make help` lists the other targets. `make test-fast` runs the quick tests, `make test` all of
 them. `make ci` runs what the GitHub workflow does on a push to master: formatting, the
 generated-symbol check, the build, the tests with coverage (the GUI ones under Xvfb), the race
-detector on the engine packages, the linter and govulncheck. On a branch the workflow leaves
-out the race detector, which runs on master and on request; a nightly workflow runs the
+detector on the engine packages, the linter and govulncheck. On a branch the workflow runs the
+quick tests in place of coverage and leaves out the race detector; both run on master and on
+request. A nightly workflow runs the
 full robustness sweeps, the fuzz targets, the benchmarks and the quick tests on Windows and
 macOS.
 
