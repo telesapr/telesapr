@@ -24,5 +24,5 @@ Features no longer wait on parity, and goldens change when the kernel improves, 
 say why. The bit-exact scaffolding (`pkg/libm`, `CxxSort`, the FMA build rules) is kept only
 where a golden depends on it, and may be replaced call site by call site when the goldens allow.
 A bug can no longer be settled by diffing against the original; the SolveSpace tree is kept
-outside the repository (`TELESAPR_SOLVESPACE_SRC`) for the two scripts that still build against
-its vendored Eigen.
+outside the repository (`TELESAPR_SOLVESPACE_SRC`) for the one script that still reads from it,
+`scripts/gen-dxf-cptables.py` (libdxfrw's code pages).

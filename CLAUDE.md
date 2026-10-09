@@ -86,13 +86,12 @@ three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the ta
 | `TELESAPR_REGEN_GOLDEN=1` | The golden tests rewrite their goldens instead of comparing; set by `scripts/regen-golden.sh`. |
 | `UPDATE_GOLDENS=1` | The same for the software renderer's PNGs (`pkg/render/soft`). |
 | `TELESAPR_REGEN_INVARIANTS=1` | Rewrites `testdata/invariants.txt` (`pkg/persist/slvs`). |
-| `SPARSEQR_GEN=1` | `TestSparseQRVsEigen` writes its cases for `scripts/regen-sparseqr-golden.sh`. |
 | `TELESAPR_SWEEP=1` | Robustness sweeps run their whole grid instead of a sample (`pkg/internal/sweep`). |
 | `TELESAPR_STEP_CORPUS=dir` | `TestExternalCorpus` reads the STEP files `external.txt` lists from `dir`. |
 | `TELESAPR_STEP_OUT=dir`, `TELESAPR_KEEP_STEP=1`, `TELESAPR_RENDER_DIR=dir`, `TELESAPR_PATHEQUIV_DIR=dir`, `TELESAPR_GL_DUMP=dir` | Tests in `pkg/ui` and `pkg/render/gl` keep what they produced there, for a diff. |
 | `TELESAPR_UI_SCRIPT=name` | `TestUIScript` prints what the interface shows for one script of `testdata/ui/scripts`. |
 | `TELESAPR_CACHE_DIR=dir` | Where tessellations of STEP files are kept; tests keep none unless it is set. |
-| `TELESAPR_SOLVESPACE_SRC=dir` | A SolveSpace source tree, for the two scripts that build against its vendored Eigen and libdxfrw. Not needed to build or test. |
+| `TELESAPR_SOLVESPACE_SRC=dir` | A SolveSpace source tree, for `scripts/gen-dxf-cptables.py`, which reads its vendored libdxfrw. Not needed to build or test. |
 
 At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
 `TELESAPR_BACKGROUND=off` on the window's thread.
