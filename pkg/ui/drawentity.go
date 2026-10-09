@@ -416,8 +416,9 @@ func (gw *graphicsWindow) drawEntity(e *core.Entity, how entityDrawAs, canvas re
 				// Shift the axis to the right if they would overlap with
 				// the toolbar.
 				if ss.ShowToolbar {
-					if h+30 > -float64(32*18+3*16+8)/2 {
-						w += 60
+					cols := toolbarColumns(int(camera.Height))
+					if h+30 > -float64(toolbarHeight(cols))/2 {
+						w += float64(toolbarWidth(cols) - 6)
 					}
 				}
 				tail = camera.ProjRight.ScaledBy(w / s).Plus(

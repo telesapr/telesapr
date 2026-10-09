@@ -275,7 +275,7 @@ func (gw *graphicsWindow) Init() {
 		if gw.window != nil {
 			// Do this first, so that if it causes an onRender event we
 			// don't try to paint without a canvas.
-			gw.window.SetMinContentSize(720, 32*18+3*16+8+4)
+			gw.window.SetMinContentSize(720, float64(toolbarHeight(3)+4))
 			ev := gw.window.Events()
 			ev.OnClose = func() { gw.ss.MenuFile(cmdExit) }
 			ev.OnContextLost = func() {
