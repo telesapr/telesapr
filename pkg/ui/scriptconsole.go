@@ -152,6 +152,7 @@ func (c *ScriptConsole) start(job func(ctx context.Context) (done func())) {
 	if c.window != nil {
 		c.window.SetBusy(true)
 	}
+	c.ss.GW.refreshEnabled()
 	run := func() {
 		done := job(ctx)
 		c.onLoop(func() {
@@ -163,6 +164,7 @@ func (c *ScriptConsole) start(job func(ctx context.Context) (done func())) {
 			if c.window != nil {
 				c.window.SetBusy(false)
 			}
+			c.ss.GW.refreshEnabled()
 		})
 	}
 	if c.poster != nil {

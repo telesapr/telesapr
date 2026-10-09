@@ -89,7 +89,9 @@ func (gw *graphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 			continue
 		}
 		if gw.AcceleratorForCommand(m.cmd).Equals(event) {
-			gw.ActivateCommand(m.cmd)
+			if gw.commandUnavailable(m.cmd) == "" {
+				gw.ActivateCommand(m.cmd)
+			}
 			return true
 		}
 	}
@@ -184,10 +186,12 @@ func (gw *graphicsWindow) PopulateMainMenu() {
 			if gw.isShowCommand(m.cmd) {
 				gw.addShowMenuItem(m.cmd, item)
 			}
+			gw.addEnablementItem(m.cmd, item)
 		}
 	}
 
 	gw.PopulateRecentFiles()
+	gw.refreshEnabled()
 	gw.ss.UndoEnableMenus()
 
 	gw.window.SetMenuBar(mainMenu)
@@ -860,6 +864,7 @@ func (gw *graphicsWindow) EnsureValidActives() {
 
 	gw.showGridMenuItem.SetActive(gw.showSnapGrid)
 	gw.refreshShowMenu()
+	gw.refreshEnabled()
 	gw.dimSolidModelMenuItem.SetActive(gw.dimSolidModel)
 	gw.perspectiveProjMenuItem.SetActive(ss.UsePerspectiveProj)
 	gw.explodeMenuItem.SetActive(ss.Explode)
@@ -1506,4 +1511,5 @@ func (gw *graphicsWindow) Invalidate(clearPersistent bool) {
 		}
 		gw.window.Invalidate()
 	}
+	gw.refreshEnabled()
 }

@@ -51,8 +51,9 @@ func (ss *Application) CommandLabels() []string {
 }
 
 // findCommands returns the entries whose label holds every word of
-// query, ignoring case: an entry whose own name starts with the query
-// first, then the others in the menus' order.
+// query, ignoring case: those that can run now before those that can't,
+// and among each an entry whose own name starts with the query first,
+// then the others in the menus' order.
 func (ss *Application) findCommands(query string) []commandEntry {
 	words := strings.Fields(strings.ToLower(query))
 	if len(words) == 0 {
@@ -77,16 +78,19 @@ func (ss *Application) findCommands(query string) []commandEntry {
 		l := strings.ToLower(e.label)
 		return l[strings.LastIndex(l, " > ")+3:]
 	}
-	slices.SortStableFunc(found, func(a, b commandEntry) int {
-		less := func(a, b commandEntry) bool { return strings.HasPrefix(name(a), q) && !strings.HasPrefix(name(b), q) }
-		switch {
-		case less(a, b):
-			return -1
-		case less(b, a):
-			return 1
+	// What can run now first, then an entry whose own name starts with
+	// the query, then the menus' order.
+	rank := func(e commandEntry) int {
+		r := 0
+		if ss.GW.commandUnavailable(e.cmd) != "" {
+			r += 2
 		}
-		return 0
-	})
+		if !strings.HasPrefix(name(e), q) {
+			r++
+		}
+		return r
+	}
+	slices.SortStableFunc(found, func(a, b commandEntry) int { return rank(a) - rank(b) })
 	return found
 }
 
@@ -152,8 +156,7 @@ func (ss *Application) RunCommand(label string) error {
 	for _, e := range ss.commandEntries() {
 		l := strings.ToLower(e.label)
 		if l == want {
-			e.fn(ss, e.cmd)
-			return nil
+			return ss.runEntry(e)
 		}
 		if l[strings.LastIndex(l, " > ")+3:] == want {
 			byName = append(byName, e)
@@ -162,15 +165,13 @@ func (ss *Application) RunCommand(label string) error {
 	if cmd, ok := formerCommandLabels[want]; ok && len(byName) == 0 {
 		for _, e := range ss.commandEntries() {
 			if e.cmd == cmd {
-				e.fn(ss, e.cmd)
-				return nil
+				return ss.runEntry(e)
 			}
 		}
 	}
 	switch len(byName) {
 	case 1:
-		byName[0].fn(ss, byName[0].cmd)
-		return nil
+		return ss.runEntry(byName[0])
 	case 0:
 		return fmt.Errorf("no command %q", label)
 	}
@@ -179,6 +180,15 @@ func (ss *Application) RunCommand(label string) error {
 		labels = append(labels, e.label)
 	}
 	return fmt.Errorf("%q could be %s", label, strings.Join(labels, " or "))
+}
+
+// runEntry runs a menu entry, or says why it can't run now.
+func (ss *Application) runEntry(e commandEntry) error {
+	if why := ss.GW.commandUnavailable(e.cmd); why != "" {
+		return fmt.Errorf("%s: %s", e.label, why)
+	}
+	e.fn(ss, e.cmd)
+	return nil
 }
 
 // commandScreen is what the command search shows.
@@ -212,8 +222,12 @@ func (tw *textWindow) ScreenRunCommand(link int, v uint32) {
 	}
 }
 
-// runFound leaves the screen and runs e.
+// runFound leaves the screen and runs e; one that can't run now leaves
+// the screen as it is, which says why.
 func (tw *textWindow) runFound(e commandEntry) {
+	if tw.ss.GW.commandUnavailable(e.cmd) != "" {
+		return
+	}
 	tw.HideEditControl()
 	tw.edit.meaning = editNothing
 	tw.GoToScreen(screenListOfGroups)
@@ -266,6 +280,10 @@ func (tw *textWindow) ShowCommands() {
 			first := ""
 			if i == 0 {
 				first = "  (Enter)"
+			}
+			if why := tw.ss.GW.commandUnavailable(e.cmd); why != "" {
+				tw.Printf(false, "%Bp   %Fh%s%E%Fh%s  (%s)%E", bg, e.label, accel, why)
+				continue
 			}
 			tw.Printf(false, "%Bp   %Fl%Lr%D%f%s%E%Fh%s%E%s", bg, uint32(i), lf(tw.ScreenRunCommand), e.label, accel, first)
 		}

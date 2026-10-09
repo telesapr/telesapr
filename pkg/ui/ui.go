@@ -358,6 +358,8 @@ type graphicsWindow struct {
 	scriptConsoleMenuItem   platform.MenuItem
 	scriptAgentMenuItem     platform.MenuItem
 	showMenuItems           map[Command]platform.MenuItem // View > Show
+	enablementItems         map[Command]platform.MenuItem // entries greyed when they can't run
+	enabledState            map[Command]bool              // as the platform last showed them
 	fullScreenMenuItem      platform.MenuItem
 
 	unitsMmMenuItem         platform.MenuItem
