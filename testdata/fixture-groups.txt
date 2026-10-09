@@ -1,0 +1,470 @@
+analysis/contour_area/normal.slvs groups=2 entities=24 constraints=8
+analysis/contour_area/normal.slvs g00000001 how=0 dof=0 clean=true
+analysis/contour_area/normal.slvs g00000002 how=0 dof=4 clean=true
+constraint/angle/free_in_3d.slvs groups=2 entities=18 constraints=2
+constraint/angle/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/angle/free_in_3d.slvs g00000002 how=0 dof=8 clean=true
+constraint/angle/normal.slvs groups=2 entities=18 constraints=2
+constraint/angle/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/angle/normal.slvs g00000002 how=0 dof=5 clean=true
+constraint/angle/reference.slvs groups=2 entities=18 constraints=3
+constraint/angle/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/angle/reference.slvs g00000002 how=0 dof=6 clean=true
+constraint/angle/reference_free_in_3d.slvs groups=2 entities=18 constraints=2
+constraint/angle/reference_free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/angle/reference_free_in_3d.slvs g00000002 how=0 dof=9 clean=true
+constraint/angle/skew.slvs groups=2 entities=18 constraints=1
+constraint/angle/skew.slvs g00000001 how=0 dof=0 clean=true
+constraint/angle/skew.slvs g00000002 how=0 dof=7 clean=true
+constraint/arc_line_tangent/normal.slvs groups=2 entities=23 constraints=4
+constraint/arc_line_tangent/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/arc_line_tangent/normal.slvs g00000002 how=0 dof=7 clean=true
+constraint/at_midpoint/line_plane_free_in_3d.slvs groups=2 entities=15 constraints=1
+constraint/at_midpoint/line_plane_free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/at_midpoint/line_plane_free_in_3d.slvs g00000002 how=0 dof=5 clean=true
+constraint/at_midpoint/line_plane_normal.slvs groups=2 entities=15 constraints=1
+constraint/at_midpoint/line_plane_normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/at_midpoint/line_plane_normal.slvs g00000002 how=0 dof=3 clean=true
+constraint/at_midpoint/line_pt_free_in_3d.slvs groups=2 entities=16 constraints=1
+constraint/at_midpoint/line_pt_free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/at_midpoint/line_pt_free_in_3d.slvs g00000002 how=0 dof=6 clean=true
+constraint/at_midpoint/line_pt_normal.slvs groups=2 entities=16 constraints=1
+constraint/at_midpoint/line_pt_normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/at_midpoint/line_pt_normal.slvs g00000002 how=0 dof=4 clean=true
+constraint/comment/normal.slvs groups=2 entities=12 constraints=1
+constraint/comment/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/comment/normal.slvs g00000002 how=0 dof=0 clean=true
+constraint/cubic_line_tangent/free_in_3d.slvs groups=2 entities=20 constraints=2
+constraint/cubic_line_tangent/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/cubic_line_tangent/free_in_3d.slvs g00000002 how=0 dof=13 clean=true
+constraint/cubic_line_tangent/normal.slvs groups=2 entities=23 constraints=4
+constraint/cubic_line_tangent/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/cubic_line_tangent/normal.slvs g00000002 how=0 dof=10 clean=true
+constraint/curve_curve_tangent/arc_arc.slvs groups=2 entities=22 constraints=2
+constraint/curve_curve_tangent/arc_arc.slvs g00000001 how=0 dof=0 clean=true
+constraint/curve_curve_tangent/arc_arc.slvs g00000002 how=0 dof=7 clean=true
+constraint/curve_curve_tangent/arc_cubic.slvs groups=2 entities=27 constraints=4
+constraint/curve_curve_tangent/arc_cubic.slvs g00000001 how=0 dof=0 clean=true
+constraint/curve_curve_tangent/arc_cubic.slvs g00000002 how=0 dof=12 clean=true
+constraint/diameter/normal.slvs groups=2 entities=16 constraints=1
+constraint/diameter/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/diameter/normal.slvs g00000002 how=0 dof=2 clean=true
+constraint/diameter/reference.slvs groups=2 entities=16 constraints=1
+constraint/diameter/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/diameter/reference.slvs g00000002 how=0 dof=3 clean=true
+constraint/eq_len_pt_line_d/normal.slvs groups=2 entities=19 constraints=1
+constraint/eq_len_pt_line_d/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/eq_len_pt_line_d/normal.slvs g00000002 how=0 dof=9 clean=true
+constraint/eq_pt_ln_distances/normal.slvs groups=2 entities=20 constraints=1
+constraint/eq_pt_ln_distances/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/eq_pt_ln_distances/normal.slvs g00000002 how=0 dof=11 clean=true
+constraint/equal_angle/normal.slvs groups=2 entities=24 constraints=3
+constraint/equal_angle/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_angle/normal.slvs g00000002 how=0 dof=11 clean=true
+constraint/equal_angle/normal_old_version.slvs groups=2 entities=24 constraints=3
+constraint/equal_angle/normal_old_version.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_angle/normal_old_version.slvs g00000002 how=0 dof=11 clean=true
+constraint/equal_angle/other.slvs groups=2 entities=24 constraints=3
+constraint/equal_angle/other.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_angle/other.slvs g00000002 how=0 dof=11 clean=true
+constraint/equal_length_lines/normal.slvs groups=2 entities=18 constraints=1
+constraint/equal_length_lines/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_length_lines/normal.slvs g00000002 how=0 dof=7 clean=true
+constraint/equal_line_arc_len/normal.slvs groups=2 entities=20 constraints=1
+constraint/equal_line_arc_len/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_line_arc_len/normal.slvs g00000002 how=0 dof=8 clean=true
+constraint/equal_line_arc_len/pi.slvs groups=2 entities=20 constraints=1
+constraint/equal_line_arc_len/pi.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_line_arc_len/pi.slvs g00000002 how=0 dof=8 clean=true
+constraint/equal_line_arc_len/tau.slvs groups=2 entities=20 constraints=1
+constraint/equal_line_arc_len/tau.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_line_arc_len/tau.slvs g00000002 how=0 dof=8 clean=true
+constraint/equal_radius/normal.slvs groups=2 entities=20 constraints=1
+constraint/equal_radius/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/equal_radius/normal.slvs g00000002 how=0 dof=5 clean=true
+constraint/horizontal/line.slvs groups=2 entities=15 constraints=1
+constraint/horizontal/line.slvs g00000001 how=0 dof=0 clean=true
+constraint/horizontal/line.slvs g00000002 how=0 dof=3 clean=true
+constraint/horizontal/pt_pt.slvs groups=2 entities=14 constraints=1
+constraint/horizontal/pt_pt.slvs g00000001 how=0 dof=0 clean=true
+constraint/horizontal/pt_pt.slvs g00000002 how=0 dof=3 clean=true
+constraint/large_dimensions/normal.slvs groups=2 entities=18 constraints=4
+constraint/large_dimensions/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/large_dimensions/normal.slvs g00000002 how=0 dof=4 clean=true
+constraint/length_difference/normal.slvs groups=2 entities=18 constraints=1
+constraint/length_difference/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/length_difference/normal.slvs g00000002 how=0 dof=7 clean=true
+constraint/length_difference/reference.slvs groups=2 entities=18 constraints=1
+constraint/length_difference/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/length_difference/reference.slvs g00000002 how=0 dof=8 clean=true
+constraint/length_ratio/normal.slvs groups=2 entities=18 constraints=1
+constraint/length_ratio/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/length_ratio/normal.slvs g00000002 how=0 dof=7 clean=true
+constraint/length_ratio/reference.slvs groups=2 entities=18 constraints=1
+constraint/length_ratio/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/length_ratio/reference.slvs g00000002 how=0 dof=8 clean=true
+constraint/parallel/free_in_3d.slvs groups=2 entities=15 constraints=1
+constraint/parallel/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/parallel/free_in_3d.slvs g00000002 how=0 dof=4 clean=true
+constraint/parallel/normal.slvs groups=2 entities=18 constraints=1
+constraint/parallel/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/parallel/normal.slvs g00000002 how=0 dof=7 clean=true
+constraint/perpendicular/normal.slvs groups=2 entities=18 constraints=1
+constraint/perpendicular/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/perpendicular/normal.slvs g00000002 how=0 dof=7 clean=true
+constraint/points_coincident/free_in_3d.slvs groups=2 entities=14 constraints=1
+constraint/points_coincident/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/points_coincident/free_in_3d.slvs g00000002 how=0 dof=3 clean=true
+constraint/points_coincident/normal.slvs groups=2 entities=14 constraints=1
+constraint/points_coincident/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/points_coincident/normal.slvs g00000002 how=0 dof=2 clean=true
+constraint/proj_pt_distance/normal.slvs groups=2 entities=14 constraints=1
+constraint/proj_pt_distance/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/proj_pt_distance/normal.slvs g00000002 how=0 dof=3 clean=true
+constraint/proj_pt_distance/reference.slvs groups=2 entities=14 constraints=1
+constraint/proj_pt_distance/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/proj_pt_distance/reference.slvs g00000002 how=0 dof=4 clean=true
+constraint/pt_face_distance/normal.slvs groups=3 entities=33 constraints=2
+constraint/pt_face_distance/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_face_distance/normal.slvs g00000002 how=0 dof=1 clean=true
+constraint/pt_face_distance/normal.slvs g00000003 how=0 dof=2 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+constraint/pt_face_distance/reference.slvs groups=3 entities=33 constraints=2
+constraint/pt_face_distance/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_face_distance/reference.slvs g00000002 how=0 dof=1 clean=true
+constraint/pt_face_distance/reference.slvs g00000003 how=0 dof=3 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+constraint/pt_in_plane/normal.slvs groups=2 entities=13 constraints=1
+constraint/pt_in_plane/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_in_plane/normal.slvs g00000002 how=0 dof=1 clean=true
+constraint/pt_line_distance/extended.slvs groups=2 entities=16 constraints=1
+constraint/pt_line_distance/extended.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_line_distance/extended.slvs g00000002 how=0 dof=5 clean=true
+constraint/pt_line_distance/free_in_3d.slvs groups=2 entities=16 constraints=1
+constraint/pt_line_distance/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_line_distance/free_in_3d.slvs g00000002 how=0 dof=8 clean=true
+constraint/pt_line_distance/normal.slvs groups=2 entities=16 constraints=1
+constraint/pt_line_distance/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_line_distance/normal.slvs g00000002 how=0 dof=5 clean=true
+constraint/pt_line_distance/reference.slvs groups=2 entities=16 constraints=1
+constraint/pt_line_distance/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_line_distance/reference.slvs g00000002 how=0 dof=6 clean=true
+constraint/pt_on_circle/negative_dia.slvs groups=2 entities=18 constraints=3
+constraint/pt_on_circle/negative_dia.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_on_circle/negative_dia.slvs g00000002 how=0 dof=5 clean=true
+constraint/pt_on_circle/normal.slvs groups=2 entities=17 constraints=1
+constraint/pt_on_circle/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_on_circle/normal.slvs g00000002 how=0 dof=4 clean=true
+constraint/pt_on_face/normal.slvs groups=3 entities=33 constraints=2
+constraint/pt_on_face/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_on_face/normal.slvs g00000002 how=0 dof=1 clean=true
+constraint/pt_on_face/normal.slvs g00000003 how=0 dof=3 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+constraint/pt_on_line/left_free_in_3d.slvs groups=2 entities=16 constraints=1
+constraint/pt_on_line/left_free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_on_line/left_free_in_3d.slvs g00000002 how=0 dof=7 clean=true
+constraint/pt_on_line/normal.slvs groups=2 entities=16 constraints=1
+constraint/pt_on_line/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_on_line/normal.slvs g00000002 how=0 dof=5 clean=true
+constraint/pt_on_line/right_free_in_3d.slvs groups=2 entities=16 constraints=1
+constraint/pt_on_line/right_free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_on_line/right_free_in_3d.slvs g00000002 how=0 dof=7 clean=true
+constraint/pt_plane_distance/normal.slvs groups=2 entities=13 constraints=1
+constraint/pt_plane_distance/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_plane_distance/normal.slvs g00000002 how=0 dof=1 clean=true
+constraint/pt_plane_distance/reference.slvs groups=2 entities=13 constraints=1
+constraint/pt_plane_distance/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_plane_distance/reference.slvs g00000002 how=0 dof=2 clean=true
+constraint/pt_pt_distance/free_in_3d.slvs groups=2 entities=14 constraints=1
+constraint/pt_pt_distance/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_pt_distance/free_in_3d.slvs g00000002 how=0 dof=5 clean=true
+constraint/pt_pt_distance/normal.slvs groups=2 entities=14 constraints=1
+constraint/pt_pt_distance/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_pt_distance/normal.slvs g00000002 how=0 dof=3 clean=true
+constraint/pt_pt_distance/reference.slvs groups=2 entities=14 constraints=1
+constraint/pt_pt_distance/reference.slvs g00000001 how=0 dof=0 clean=true
+constraint/pt_pt_distance/reference.slvs g00000002 how=0 dof=4 clean=true
+constraint/same_orientation/normal.slvs groups=2 entities=16 constraints=1
+constraint/same_orientation/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/same_orientation/normal.slvs g00000002 how=0 dof=4 clean=true
+constraint/same_orientation/same_group.slvs groups=2 entities=20 constraints=1
+constraint/same_orientation/same_group.slvs g00000001 how=0 dof=0 clean=true
+constraint/same_orientation/same_group.slvs g00000002 how=0 dof=11 clean=true
+constraint/symmetric/free_in_3d.slvs groups=2 entities=14 constraints=1
+constraint/symmetric/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/symmetric/free_in_3d.slvs g00000002 how=0 dof=3 clean=true
+constraint/symmetric/normal.slvs groups=2 entities=14 constraints=1
+constraint/symmetric/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/symmetric/normal.slvs g00000002 how=0 dof=2 clean=true
+constraint/symmetric_horiz/normal.slvs groups=2 entities=14 constraints=1
+constraint/symmetric_horiz/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/symmetric_horiz/normal.slvs g00000002 how=0 dof=2 clean=true
+constraint/symmetric_line/normal.slvs groups=2 entities=17 constraints=1
+constraint/symmetric_line/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/symmetric_line/normal.slvs g00000002 how=0 dof=6 clean=true
+constraint/symmetric_vert/normal.slvs groups=2 entities=14 constraints=1
+constraint/symmetric_vert/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/symmetric_vert/normal.slvs g00000002 how=0 dof=2 clean=true
+constraint/vertical/line.slvs groups=2 entities=15 constraints=1
+constraint/vertical/line.slvs g00000001 how=0 dof=0 clean=true
+constraint/vertical/line.slvs g00000002 how=0 dof=3 clean=true
+constraint/vertical/pt_pt.slvs groups=2 entities=14 constraints=1
+constraint/vertical/pt_pt.slvs g00000001 how=0 dof=0 clean=true
+constraint/vertical/pt_pt.slvs g00000002 how=0 dof=3 clean=true
+constraint/where_dragged/free_in_3d.slvs groups=2 entities=13 constraints=1
+constraint/where_dragged/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+constraint/where_dragged/free_in_3d.slvs g00000002 how=0 dof=0 clean=true
+constraint/where_dragged/normal.slvs groups=2 entities=13 constraints=1
+constraint/where_dragged/normal.slvs g00000001 how=0 dof=0 clean=true
+constraint/where_dragged/normal.slvs g00000002 how=0 dof=0 clean=true
+edit/split_arc_cubic.slvs groups=2 entities=35 constraints=3
+edit/split_arc_cubic.slvs g00000001 how=0 dof=0 clean=true
+edit/split_arc_cubic.slvs g00000002 how=0 dof=24 clean=true
+edit/split_circle_line.slvs groups=2 entities=26 constraints=3
+edit/split_circle_line.slvs g00000001 how=0 dof=0 clean=true
+edit/split_circle_line.slvs g00000002 how=0 dof=12 clean=true
+edit/split_lines.slvs groups=2 entities=27 constraints=3
+edit/split_lines.slvs g00000001 how=0 dof=0 clean=true
+edit/split_lines.slvs g00000002 how=0 dof=14 clean=true
+edit/split_periodic.slvs groups=2 entities=41 constraints=3
+edit/split_periodic.slvs g00000001 how=0 dof=0 clean=true
+edit/split_periodic.slvs g00000002 how=0 dof=38 clean=true
+edit/split_point.slvs groups=2 entities=21 constraints=1
+edit/split_point.slvs g00000001 how=0 dof=0 clean=true
+edit/split_point.slvs g00000002 how=0 dof=10 clean=true
+edit/tangent.slvs groups=2 entities=32 constraints=9
+edit/tangent.slvs g00000001 how=0 dof=0 clean=true
+edit/tangent.slvs g00000002 how=0 dof=11 clean=true
+edit/tangent_arc.slvs groups=2 entities=36 constraints=9
+edit/tangent_arc.slvs g00000001 how=0 dof=0 clean=true
+edit/tangent_arc.slvs g00000002 how=0 dof=12 clean=true
+edit/tangent_arc_modify.slvs groups=2 entities=28 constraints=4
+edit/tangent_arc_modify.slvs g00000001 how=0 dof=0 clean=true
+edit/tangent_arc_modify.slvs g00000002 how=0 dof=12 clean=true
+edit/tangent_fail.slvs groups=2 entities=23 constraints=1
+edit/tangent_fail.slvs g00000001 how=0 dof=0 clean=true
+edit/tangent_fail.slvs g00000002 how=0 dof=11 clean=true
+edit/tangent_manual.slvs groups=2 entities=32 constraints=9
+edit/tangent_manual.slvs g00000001 how=0 dof=0 clean=true
+edit/tangent_manual.slvs g00000002 how=0 dof=11 clean=true
+edit/tangent_modify.slvs groups=2 entities=26 constraints=4
+edit/tangent_modify.slvs g00000001 how=0 dof=0 clean=true
+edit/tangent_modify.slvs g00000002 how=0 dof=11 clean=true
+group/boolean_coplanar_union/normal.slvs groups=11 entities=245 constraints=0
+group/boolean_coplanar_union/normal.slvs g00000001 how=0 dof=0 clean=true
+group/boolean_coplanar_union/normal.slvs g00000002 how=0 dof=0 clean=true
+group/boolean_coplanar_union/normal.slvs g00000003 how=0 dof=3 clean=true
+group/boolean_coplanar_union/normal.slvs g00000004 how=0 dof=16 clean=true
+group/boolean_coplanar_union/normal.slvs g00000005 how=0 dof=1 clean=true faces 80050007 80050010 80050019 80050022 8005002c 8005002d
+group/boolean_coplanar_union/normal.slvs g00000006 how=0 dof=16 clean=true
+group/boolean_coplanar_union/normal.slvs g00000007 how=0 dof=1 clean=true faces 80070007 80070010 80070019 80070022 8007002c 8007002d
+group/boolean_coplanar_union/normal.slvs g00000008 how=0 dof=16 clean=true
+group/boolean_coplanar_union/normal.slvs g00000009 how=0 dof=1 clean=true faces 80090007 80090010 80090019 80090022 8009002c 8009002d
+group/boolean_coplanar_union/normal.slvs g0000000a how=0 dof=16 clean=true
+group/boolean_coplanar_union/normal.slvs g0000000b how=0 dof=1 clean=true faces 800b0007 800b0010 800b0019 800b0022 800b002c 800b002d
+group/boolean_knife_edge/normal.slvs groups=5 entities=137 constraints=21
+group/boolean_knife_edge/normal.slvs g00000001 how=0 dof=0 clean=true
+group/boolean_knife_edge/normal.slvs g00000002 how=0 dof=2 clean=true
+group/boolean_knife_edge/normal.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030022 8003003d 80030046 80030050 80030050 80030051 80030051 80030058 80030061
+group/boolean_knife_edge/normal.slvs g00000004 how=0 dof=0 clean=true
+group/boolean_knife_edge/normal.slvs g00000005 how=0 dof=1 clean=true faces 80050007 80050010 80050027 80050028 80050029
+group/boolean_tangent_crossing/normal.slvs groups=5 entities=120 constraints=23
+group/boolean_tangent_crossing/normal.slvs g00000001 how=0 dof=0 clean=true
+group/boolean_tangent_crossing/normal.slvs g00000002 how=0 dof=0 clean=true
+group/boolean_tangent_crossing/normal.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030010 80030019 80030022 8003002c 8003002d
+group/boolean_tangent_crossing/normal.slvs g00000004 how=0 dof=5 clean=true
+group/boolean_tangent_crossing/normal.slvs g00000005 how=0 dof=0 clean=true faces 00000000 80050007 80050010 80050028 80050029
+group/boolean_tangent_edge/normal.slvs groups=5 entities=137 constraints=0
+group/boolean_tangent_edge/normal.slvs g00000001 how=0 dof=0 clean=true
+group/boolean_tangent_edge/normal.slvs g00000002 how=0 dof=24 clean=true
+group/boolean_tangent_edge/normal.slvs g00000003 how=0 dof=1 clean=true faces 80030007 80030010 80030019 80030022 8003002b 80030034 8003003e 8003003f
+group/boolean_tangent_edge/normal.slvs g00000004 how=0 dof=12 clean=true
+group/boolean_tangent_edge/normal.slvs g00000005 how=0 dof=1 clean=true faces 80050007 80050010 80050019 80050023 80050024
+group/boolean_tangent_fillet/normal.slvs groups=5 entities=107 constraints=19
+group/boolean_tangent_fillet/normal.slvs g00000001 how=0 dof=0 clean=true
+group/boolean_tangent_fillet/normal.slvs g00000002 how=0 dof=0 clean=true
+group/boolean_tangent_fillet/normal.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030010 80030019 80030023 80030024
+group/boolean_tangent_fillet/normal.slvs g00000004 how=0 dof=0 clean=true
+group/boolean_tangent_fillet/normal.slvs g00000005 how=0 dof=0 clean=true faces 00000000 80050007 80050010 80050027 80050028
+group/boolean_tangent_spline/normal.slvs groups=5 entities=120 constraints=22
+group/boolean_tangent_spline/normal.slvs g00000001 how=0 dof=0 clean=true
+group/boolean_tangent_spline/normal.slvs g00000002 how=0 dof=0 clean=true
+group/boolean_tangent_spline/normal.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030010 80030019 80030022 8003002c 8003002d
+group/boolean_tangent_spline/normal.slvs g00000004 how=0 dof=6 clean=true
+group/boolean_tangent_spline/normal.slvs g00000005 how=0 dof=0 clean=true faces 00000000 80050007 80050010 80050028 80050029
+group/force_to_mesh/difference.slvs groups=5 entities=137 constraints=21
+group/force_to_mesh/difference.slvs g00000001 how=0 dof=0 clean=true
+group/force_to_mesh/difference.slvs g00000002 how=0 dof=2 clean=true
+group/force_to_mesh/difference.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030022 8003003d 80030046 80030050 80030050 80030051 80030051 80030058 80030061
+group/force_to_mesh/difference.slvs g00000004 how=0 dof=0 clean=true
+group/force_to_mesh/difference.slvs g00000005 how=0 dof=1 clean=true faces 80050007 80050010 80050027 80050028 80050029
+group/force_to_mesh/fillet.slvs groups=5 entities=107 constraints=19
+group/force_to_mesh/fillet.slvs g00000001 how=0 dof=0 clean=true
+group/force_to_mesh/fillet.slvs g00000002 how=0 dof=0 clean=true
+group/force_to_mesh/fillet.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030010 80030019 80030023 80030024
+group/force_to_mesh/fillet.slvs g00000004 how=0 dof=0 clean=true
+group/force_to_mesh/fillet.slvs g00000005 how=0 dof=0 clean=true faces 00000000 80050007 80050010 80050027 80050028
+group/force_to_mesh/translate.slvs groups=7 entities=641 constraints=17
+group/force_to_mesh/translate.slvs g00000001 how=0 dof=0 clean=true
+group/force_to_mesh/translate.slvs g00000002 how=0 dof=4 clean=true
+group/force_to_mesh/translate.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030010 80030019 80030022 8003002c 8003002d
+group/force_to_mesh/translate.slvs g00000004 how=0 dof=4 clean=true
+group/force_to_mesh/translate.slvs g00000005 how=0 dof=1 clean=true faces 80050011 80050012 80050015 8005001d 80050026 8005002f
+group/force_to_mesh/translate.slvs g00000006 how=0 dof=3 clean=true
+group/force_to_mesh/translate.slvs g00000007 how=0 dof=2 clean=true
+group/force_to_mesh/union.slvs groups=11 entities=245 constraints=0
+group/force_to_mesh/union.slvs g00000001 how=0 dof=0 clean=true
+group/force_to_mesh/union.slvs g00000002 how=0 dof=0 clean=true
+group/force_to_mesh/union.slvs g00000003 how=0 dof=3 clean=true
+group/force_to_mesh/union.slvs g00000004 how=0 dof=16 clean=true
+group/force_to_mesh/union.slvs g00000005 how=0 dof=1 clean=true faces 80050007 80050010 80050019 80050022 8005002c 8005002d
+group/force_to_mesh/union.slvs g00000006 how=0 dof=16 clean=true
+group/force_to_mesh/union.slvs g00000007 how=0 dof=1 clean=true faces 80070007 80070010 80070019 80070022 8007002c 8007002d
+group/force_to_mesh/union.slvs g00000008 how=0 dof=16 clean=true
+group/force_to_mesh/union.slvs g00000009 how=0 dof=1 clean=true faces 80090007 80090010 80090019 80090022 8009002c 8009002d
+group/force_to_mesh/union.slvs g0000000a how=0 dof=16 clean=true
+group/force_to_mesh/union.slvs g0000000b how=0 dof=1 clean=true faces 800b0007 800b0010 800b0019 800b0022 800b002c 800b002d
+group/link/normal.slvs groups=3 entities=32 constraints=0
+group/link/normal.slvs g00000001 how=0 dof=0 clean=true
+group/link/normal.slvs g00000002 how=0 dof=0 clean=true
+group/link/normal.slvs g00000003 how=0 dof=6 clean=true
+group/link/rect_v20.slvs groups=2 entities=24 constraints=8
+group/link/rect_v20.slvs g00000001 how=0 dof=0 clean=true
+group/link/rect_v20.slvs g00000002 how=0 dof=4 clean=true
+group/link_idf/normal.slvs groups=3 entities=66 constraints=0
+group/link_idf/normal.slvs g00000001 how=0 dof=0 clean=true
+group/link_idf/normal.slvs g00000002 how=0 dof=0 clean=true
+group/link_idf/normal.slvs g00000003 how=0 dof=6 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+group/link_stl/normal.slvs groups=3 entities=44 constraints=0
+group/link_stl/normal.slvs g00000001 how=0 dof=0 clean=true
+group/link_stl/normal.slvs g00000002 how=0 dof=0 clean=true
+group/link_stl/normal.slvs g00000003 how=0 dof=6 clean=true
+group/translate_asy/normal.slvs groups=4 entities=153 constraints=8
+group/translate_asy/normal.slvs g00000001 how=0 dof=0 clean=true
+group/translate_asy/normal.slvs g00000002 how=0 dof=4 clean=true
+group/translate_asy/normal.slvs g00000003 how=0 dof=1 clean=true faces 80030007 80030010 80030019 80030022 8003002c 8003002d
+group/translate_asy/normal.slvs g00000004 how=0 dof=3 clean=true faces 80040007 80040010 80040019 80040022 8004002a 8004002b 8004005d 80040066 8004006f 80040078 80040080 80040081
+group/translate_nd/normal.slvs groups=7 entities=641 constraints=17
+group/translate_nd/normal.slvs g00000001 how=0 dof=0 clean=true
+group/translate_nd/normal.slvs g00000002 how=0 dof=4 clean=true
+group/translate_nd/normal.slvs g00000003 how=0 dof=0 clean=true faces 80030007 80030010 80030019 80030022 8003002c 8003002d
+group/translate_nd/normal.slvs g00000004 how=0 dof=4 clean=true
+group/translate_nd/normal.slvs g00000005 how=0 dof=1 clean=true faces 80050011 80050012 80050015 8005001d 80050026 8005002f
+group/translate_nd/normal.slvs g00000006 how=0 dof=3 clean=true faces 8006000f 80060010 8006001f 80060020 8006002f 80060030 80060033 8006003b 80060044 8006004d 80060052 8006005a 80060063 8006006c 80060071 80060079 80060082 8006008b
+group/translate_nd/normal.slvs g00000007 how=0 dof=2 clean=true faces 8007000f 80070010 8007001f 80070020 8007002f 80070030 8007003f 80070040 8007004f 80070050 8007005f 80070060 8007006f 80070070 8007007f 80070080 8007008f 80070090 80070097 8007009f 800700a8 800700b1 800700b4 800700bc 800700c5 800700ce 800700d1 800700d9 800700e2 800700eb 800700f4 800700fc 80070105 8007010e 80070111 80070119 80070122 8007012b 8007012e 80070136 8007013f 80070148 80070151 80070159 80070162 8007016b 8007016e 80070176 8007017f 80070188 8007018b 80070193 8007019c 800701a5
+request/arc_of_circle/normal.slvs groups=2 entities=17 constraints=0
+request/arc_of_circle/normal.slvs g00000001 how=0 dof=0 clean=true
+request/arc_of_circle/normal.slvs g00000002 how=0 dof=5 clean=true
+request/circle/free_in_3d.slvs groups=2 entities=16 constraints=0
+request/circle/free_in_3d.slvs g00000001 how=0 dof=0 clean=true
+request/circle/free_in_3d.slvs g00000002 how=0 dof=7 clean=true
+request/circle/normal.slvs groups=2 entities=16 constraints=0
+request/circle/normal.slvs g00000001 how=0 dof=0 clean=true
+request/circle/normal.slvs g00000002 how=0 dof=3 clean=true
+request/cubic/normal.slvs groups=2 entities=19 constraints=0
+request/cubic/normal.slvs g00000001 how=0 dof=0 clean=true
+request/cubic/normal.slvs g00000002 how=0 dof=12 clean=true
+request/cubic_periodic/normal.slvs groups=2 entities=17 constraints=0
+request/cubic_periodic/normal.slvs g00000001 how=0 dof=0 clean=true
+request/cubic_periodic/normal.slvs g00000002 how=0 dof=8 clean=true
+request/datum_point/normal.slvs groups=2 entities=13 constraints=0
+request/datum_point/normal.slvs g00000001 how=0 dof=0 clean=true
+request/datum_point/normal.slvs g00000002 how=0 dof=2 clean=true
+request/image/linked.slvs groups=3 entities=26 constraints=1
+request/image/linked.slvs g00000001 how=0 dof=0 clean=true
+request/image/linked.slvs g00000002 how=0 dof=0 clean=true
+request/image/linked.slvs g00000003 how=0 dof=3 clean=true
+request/image/normal.slvs groups=2 entities=18 constraints=0
+request/image/normal.slvs g00000001 how=0 dof=0 clean=true
+request/image/normal.slvs g00000002 how=0 dof=4 clean=true
+request/line_segment/normal.slvs groups=2 entities=15 constraints=0
+request/line_segment/normal.slvs g00000001 how=0 dof=0 clean=true
+request/line_segment/normal.slvs g00000002 how=0 dof=4 clean=true
+request/ttf_text/extrude.slvs groups=3 entities=41 constraints=0
+request/ttf_text/extrude.slvs g00000001 how=0 dof=0 clean=true
+request/ttf_text/extrude.slvs g00000002 how=0 dof=4 clean=true
+request/ttf_text/extrude.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80030018 80030018 80030018 80030019 80030019 80030019
+request/ttf_text/extrude_kerning.slvs groups=3 entities=41 constraints=0
+request/ttf_text/extrude_kerning.slvs g00000001 how=0 dof=0 clean=true
+request/ttf_text/extrude_kerning.slvs g00000002 how=0 dof=4 clean=true
+request/ttf_text/extrude_kerning.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80030018 80030018 80030019 80030019
+request/ttf_text/kerning.slvs groups=2 entities=18 constraints=0
+request/ttf_text/kerning.slvs g00000001 how=0 dof=0 clean=true
+request/ttf_text/kerning.slvs g00000002 how=0 dof=4 clean=true
+request/ttf_text/normal.slvs groups=2 entities=18 constraints=0
+request/ttf_text/normal.slvs g00000001 how=0 dof=0 clean=true
+request/ttf_text/normal.slvs g00000002 how=0 dof=4 clean=true
+request/workplane/normal.slvs groups=2 entities=15 constraints=1
+request/workplane/normal.slvs g00000001 how=0 dof=0 clean=true
+request/workplane/normal.slvs g00000002 how=0 dof=3 clean=true
+thread/blind_m6.slvs groups=7 entities=139 constraints=25
+thread/blind_m6.slvs g00000001 how=0 dof=0 clean=true
+thread/blind_m6.slvs g00000002 how=0 dof=3 clean=true
+thread/blind_m6.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/blind_m6.slvs g00000004 how=0 dof=0 clean=true
+thread/blind_m6.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/blind_m6.slvs g00000006 how=0 dof=0 clean=true
+thread/blind_m6.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80070023 80070024
+thread/bolt_m8x30.slvs groups=9 entities=221 constraints=45
+thread/bolt_m8x30.slvs g00000001 how=0 dof=0 clean=true
+thread/bolt_m8x30.slvs g00000002 how=0 dof=0 clean=true
+thread/bolt_m8x30.slvs g00000003 how=0 dof=1 clean=true faces 80030007 80030010 80030019 80030022 8003002b 80030034 8003003e 8003003f
+thread/bolt_m8x30.slvs g00000004 how=0 dof=0 clean=true
+thread/bolt_m8x30.slvs g00000005 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80050011 80050012
+thread/bolt_m8x30.slvs g00000006 how=0 dof=0 clean=true
+thread/bolt_m8x30.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8007000d 80070020
+thread/bolt_m8x30.slvs g00000008 how=0 dof=0 clean=true
+thread/bolt_m8x30.slvs g00000009 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80090023 80090024
+thread/lead_tr20.slvs groups=7 entities=175 constraints=37
+thread/lead_tr20.slvs g00000001 how=0 dof=0 clean=true
+thread/lead_tr20.slvs g00000002 how=0 dof=3 clean=true
+thread/lead_tr20.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/lead_tr20.slvs g00000004 how=0 dof=0 clean=true
+thread/lead_tr20.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/lead_tr20.slvs g00000006 how=0 dof=0 clean=true
+thread/lead_tr20.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8007003b 8007003b 8007003c 8007003c
+thread/nut_m8.slvs groups=7 entities=139 constraints=25
+thread/nut_m8.slvs g00000001 how=0 dof=0 clean=true
+thread/nut_m8.slvs g00000002 how=0 dof=3 clean=true
+thread/nut_m8.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/nut_m8.slvs g00000004 how=0 dof=0 clean=true
+thread/nut_m8.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/nut_m8.slvs g00000006 how=0 dof=0 clean=true
+thread/nut_m8.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80070023 80070024
+thread/screw_m6_down.slvs groups=7 entities=139 constraints=25
+thread/screw_m6_down.slvs g00000001 how=0 dof=0 clean=true
+thread/screw_m6_down.slvs g00000002 how=0 dof=3 clean=true
+thread/screw_m6_down.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/screw_m6_down.slvs g00000004 how=0 dof=0 clean=true
+thread/screw_m6_down.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/screw_m6_down.slvs g00000006 how=0 dof=0 clean=true
+thread/screw_m6_down.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80070023 80070024
+thread/screw_m8.slvs groups=7 entities=139 constraints=25
+thread/screw_m8.slvs g00000001 how=0 dof=0 clean=true
+thread/screw_m8.slvs g00000002 how=0 dof=3 clean=true
+thread/screw_m8.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/screw_m8.slvs g00000004 how=0 dof=0 clean=true
+thread/screw_m8.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/screw_m8.slvs g00000006 how=0 dof=0 clean=true
+thread/screw_m8.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80070023 80070024
+thread/screw_m8_lh.slvs groups=7 entities=139 constraints=25
+thread/screw_m8_lh.slvs g00000001 how=0 dof=0 clean=true
+thread/screw_m8_lh.slvs g00000002 how=0 dof=3 clean=true
+thread/screw_m8_lh.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/screw_m8_lh.slvs g00000004 how=0 dof=0 clean=true
+thread/screw_m8_lh.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/screw_m8_lh.slvs g00000006 how=0 dof=0 clean=true
+thread/screw_m8_lh.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80070023 80070024
+thread/screw_unc.slvs groups=7 entities=139 constraints=25
+thread/screw_unc.slvs g00000001 how=0 dof=0 clean=true
+thread/screw_unc.slvs g00000002 how=0 dof=3 clean=true
+thread/screw_unc.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/screw_unc.slvs g00000004 how=0 dof=0 clean=true
+thread/screw_unc.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/screw_unc.slvs g00000006 how=0 dof=0 clean=true
+thread/screw_unc.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80070023 80070024
+thread/triple_m12.slvs groups=7 entities=211 constraints=49
+thread/triple_m12.slvs g00000001 how=0 dof=0 clean=true
+thread/triple_m12.slvs g00000002 how=0 dof=3 clean=true
+thread/triple_m12.slvs g00000003 how=0 dof=1 clean=true faces 00000000 00000000 00000000 00000000 80030011 80030012
+thread/triple_m12.slvs g00000004 how=0 dof=0 clean=true
+thread/triple_m12.slvs g00000005 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 8005000d 80050020
+thread/triple_m12.slvs g00000006 how=0 dof=0 clean=true
+thread/triple_m12.slvs g00000007 how=0 dof=0 clean=true faces 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 80070053 80070053 80070053 80070054 80070054 80070054
