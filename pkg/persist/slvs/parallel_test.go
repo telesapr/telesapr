@@ -127,6 +127,9 @@ func eachFixture(t *testing.T, fn func(path string)) {
 // on several, and requires the same shells, meshes, save and STL file
 // to the bit.
 func TestParallelSameAsSerial(t *testing.T) {
+	if testing.Short() {
+		t.Skip("every fixture, twice")
+	}
 	stl := filepath.Join(t.TempDir(), "out.stl")
 	count := 0
 	eachFixture(t, func(path string) {

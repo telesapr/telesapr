@@ -5,12 +5,15 @@ help:
 	@echo "TeleSAPR Build Targets:"
 	@echo ""
 	@echo "Development:"
+	@echo "  make test-fast    - Run the quick tests (go test -short)"
 	@echo "  make test         - Run all tests"
+	@echo "  make test-sweeps  - Run the robustness sweeps over their whole grids"
+	@echo "  make bench        - Run every benchmark once"
 	@echo "  make test-gui     - Run the GUI backend tests under Xvfb"
 	@echo "  make test-race    - Run the engine packages' tests under the race detector"
 	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
 	@echo "  make fuzz         - Run each fuzz target for FUZZTIME ($(FUZZTIME))"
-	@echo "  make checks       - fmt-check, tidy-check, generate-check, build and vuln"
+	@echo "  make checks       - fmt-check, tidy-check, generate-check and build"
 	@echo "  make ci           - Everything the GitHub workflow runs"
 	@echo "  make fmt          - Format code"
 	@echo "  make fmt-check    - Fail if gofmt would change a tracked file"
@@ -40,7 +43,7 @@ help:
 	@echo "  make release      - Push master, wait for CI, tag v$(VERSION), make the GitHub release"
 	@echo ""
 
-.PHONY: test test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: test test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -52,9 +55,36 @@ DATADIR = $(PREFIX)/share
 FREEDESKTOP = dist/freedesktop
 ICON_SIZES = 16x16 24x24 32x32 48x48
 
+# The tiers: test-fast while working (the -short tests, under a minute
+# on a workstation), test for every test, ci for what the GitHub workflow runs;
+# the nightly workflow adds test-sweeps, fuzz, bench and the race detector
+# over pkg/ui and pkg/script/api. All of them go through scripts/go-test.sh,
+# which runs the slow packages as several processes, as CI does.
 test:
 	@echo "==> go test ./..."
-	GOCACHE=$(PWD)/.gocache go test ./...
+	GOCACHE=$(PWD)/.gocache scripts/go-test.sh
+
+# A test that takes more than a few seconds skips itself under -short
+# (testing.Short), so this is what is quick enough before every commit;
+# the Windows and macOS jobs run it too.
+test-fast:
+	@echo "==> go test -short ./..."
+	GOCACHE=$(PWD)/.gocache scripts/go-test.sh -short
+
+# The robustness sweeps over their whole grids (pkg/internal/sweep),
+# rather than the sample the ordinary run takes; the packages are those
+# with sweeps, and their other tests run too.
+SWEEP_PACKAGES = ./pkg/persist/slvs ./pkg/script/api ./pkg/sketch ./pkg/srf ./pkg/topo
+
+test-sweeps:
+	@echo "==> TELESAPR_SWEEP=1 go test $(SWEEP_PACKAGES)"
+	GOCACHE=$(PWD)/.gocache TELESAPR_SWEEP=1 PACKAGES='$(SWEEP_PACKAGES)' scripts/go-test.sh -timeout 180m
+
+# Every benchmark once: they are run so that they keep working, not
+# timed; the nightly workflow keeps the output.
+bench:
+	@echo "==> go test -bench . -benchtime 1x ./..."
+	GOCACHE=$(PWD)/.gocache go test -run '^$$' -bench . -benchtime 1x ./...
 
 # The GUI backend's tests open windows, so they run under Xvfb.
 test-gui:
@@ -64,22 +94,30 @@ test-gui:
 
 # The packages whose loops run on several goroutines, what loads and
 # regenerates through them, and the servers and platforms that hand
-# work between goroutines. pkg/ui and pkg/script/api are left out:
-# their tests set process-wide state (the chord tolerance, the parallel
-# mode, the fonts) and so run one after another, over ten minutes each
-# under the detector; what they regenerate through is covered from
-# pkg/sketch. The GitHub workflow runs the set in shards, each a
-# RACE_PACKAGES of its own.
+# work between goroutines: every package with tests. pkg/ui and
+# pkg/script/api set process-wide state (the chord tolerance, the
+# parallel mode, the fonts), so their tests run one after another;
+# scripts/go-test.sh splits them over several processes. The GitHub
+# workflow runs the set in shards, each a RACE_PACKAGES of its own, on
+# a push to master without pkg/ui and pkg/script/api, which the nightly
+# workflow runs.
 RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
 	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render ./pkg/render/soft ./cmd/... \
-	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo
+	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo \
+	./pkg/ui ./pkg/script/api
 
 # The slow packages' tests run as several processes side by side
 # (scripts/go-test.sh), and the fixture loops take a sample under the
 # race detector (raceSample in pkg/persist/slvs).
+# RACE_TIMEOUT bounds each go test process: pkg/script/api's
+# TestFilletOnOtherSolidsVolumes alone takes 14 minutes here under the
+# detector, and twice that on a runner, so the nightly workflow gives it
+# more.
+RACE_TIMEOUT ?= 30m
+
 test-race:
 	@echo "==> go test -race $(RACE_PACKAGES)"
-	GOCACHE=$(PWD)/.gocache PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout 30m
+	GOCACHE=$(PWD)/.gocache PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout $(RACE_TIMEOUT)
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
 # package listed in scripts/coverage-packages.txt is under 85%. The
@@ -103,11 +141,13 @@ fuzz:
 		GOCACHE=$(PWD)/.gocache go test $$pkg -run '^$$' -fuzz "^$$name\$$" -fuzztime $(FUZZTIME) || exit 1; \
 	done
 
-# The quick checks: those that rewrite or read the sources first, then
-# the build and the vulnerability report. The GitHub workflow runs them
-# as one job beside the tests and the lint.
-checks: fmt-check tidy-check generate-check
-	@$(MAKE) --no-print-directory -j --output-sync=target build vuln
+# The quick checks: those that rewrite or read the sources, then the
+# build. The GitHub workflow runs them as one job beside the tests and
+# the lint. govulncheck is not among them: a new advisory against the
+# standard library or a dependency fails it with no commit at all, so
+# the workflow runs vuln as a job of its own that only warns, and the
+# nightly and Release workflows as one that fails.
+checks: fmt-check tidy-check generate-check build
 
 # What .github/workflows/ci.yml runs on a push to master, in one go:
 # the checks, then the rest side by side, each target's output printed
@@ -115,7 +155,7 @@ checks: fmt-check tidy-check generate-check
 # Xvfb inside coverage. On a branch the workflow leaves out test-race,
 # which it runs on master and on request.
 ci: checks
-	@$(MAKE) --no-print-directory -j --output-sync=target coverage test-race lint
+	@$(MAKE) --no-print-directory -j --output-sync=target coverage test-race lint vuln
 
 fmt-check:
 	@echo "==> gofmt -l"
@@ -144,18 +184,30 @@ vuln:
 	@echo "==> govulncheck ./..."
 	GOCACHE=$(PWD)/.gocache go tool govulncheck ./...
 
-lint:
+# golangci-lint is pinned in tools/lint/go.mod, a module of its own so
+# that its dependencies stay out of ours, and built from there into bin/;
+# the GitHub workflow runs the same binary. It is built with go.mod's
+# toolchain: one older than the code's cannot read the export data of
+# the standard library it type-checks against.
+GOLANGCI_LINT = bin/golangci-lint
+LINT_ENV = GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint
+
+$(GOLANGCI_LINT): go.mod tools/lint/go.mod tools/lint/go.sum
+	GOCACHE=$(PWD)/.gocache GOTOOLCHAIN=$$(go env GOVERSION) go build -C tools/lint -o $(PWD)/$(GOLANGCI_LINT) \
+		github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+
+lint: $(GOLANGCI_LINT)
 	@echo "==> golangci-lint run"
-	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
+	$(LINT_ENV) $(GOLANGCI_LINT) run ./...
 
 # Where the branch left master, so that a branch's commits are linted
 # and not only what is uncommitted; on master that is HEAD. A quicker
 # check while working; make ci lints everything.
 LINT_BASE ?= $(shell git merge-base HEAD master 2>/dev/null || echo HEAD)
 
-lint-new:
+lint-new: $(GOLANGCI_LINT)
 	@echo "==> golangci-lint run --new-from-rev=$(LINT_BASE)"
-	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run --new-from-rev=$(LINT_BASE) ./...
+	$(LINT_ENV) $(GOLANGCI_LINT) run --new-from-rev=$(LINT_BASE) ./...
 
 # The tables of what a script can import are generated from the
 # packages; they change when what those export does.

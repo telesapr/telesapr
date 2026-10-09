@@ -106,6 +106,9 @@ func TestSweepProblems(t *testing.T) {
 // Pappus gives. The rate allowed was fixed at none before the sweep
 // was written; see sweepGridMaxFailRate for what it is.
 func TestSweepGrid(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("rho", 0.5, 2),

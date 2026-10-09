@@ -2,8 +2,10 @@
 # attached to the GitHub release of that tag. Run by hand
 # (workflow_dispatch) it only builds, and the packages are the run's
 # artifacts: how to try a change to the packaging without a release.
-# CI runs on the same push, on the same commit; make release waited for
-# it before tagging, so this workflow only builds.
+# make release waited for CI on the tagged commit of master before
+# tagging, so this workflow builds, but first runs the vulnerability
+# report as a job that fails (in CI it only warns) and the quick tests
+# on Windows and macOS, where the packages are built.
 name: Release
 
 on:
@@ -19,6 +21,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  vuln:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxft-dev libfontconfig1-dev libgl-dev
+      - name: govulncheck
+        run: make vuln
+
   linux:
     # In a container, not on the runner's Ubuntu: the binaries link the
     # glibc they are built against, and Debian bookworm's (2.36) runs on
@@ -52,11 +68,18 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
+      # Git for Windows checks text files out with CRLF line endings,
+      # and the goldens are compared byte for byte.
+      - name: LF line endings
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
+      - name: Quick tests
+        shell: bash
+        run: scripts/test-os.sh
       - name: Packages
         shell: bash
         run: |
@@ -79,6 +102,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
+      - name: Quick tests
+        run: scripts/test-os.sh
       - name: Package
         run: make dist-macos
       - uses: actions/upload-artifact@v7
@@ -91,7 +116,7 @@ jobs:
     # Attaches the packages and their checksums to the tag's release,
     # which make release created; makes it if it is not there.
     if: github.event_name == 'push'
-    needs: [linux, windows, macos]
+    needs: [vuln, linux, windows, macos]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

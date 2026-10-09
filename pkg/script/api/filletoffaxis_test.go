@@ -146,6 +146,9 @@ func TestChamferRunsOffBand(t *testing.T) {
 // 3 on the widest band, where the ear clipping is left with no other
 // ear (the shells are sound). A shell made unsound fails outright.
 func TestRunOffSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	g := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("y", 2, 2.5, 3),

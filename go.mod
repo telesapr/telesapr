@@ -2,6 +2,8 @@ module github.com/telesapr/telesapr
 
 go 1.27.0
 
+toolchain go1.27.2
+
 require (
 	github.com/andybalholm/brotli v1.2.6
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276

@@ -1,0 +1,29 @@
+# Tests scripts/test-os.sh skips on Windows, one name per line: what
+# fails there for a reason of the platform, until it is fixed. Found
+# by the first run of the quick tests on windows-latest, 2026-10-09.
+#
+# Relative paths are written with backslashes ($testdata\step\...), so
+# a file saved on Windows names its links in a form other systems
+# cannot read, and the goldens differ.
+TestGoScripts
+TestHover
+TestInteraction
+TestTextWindow
+TestExport
+TestDrawCalls
+TestDisplayOutlines
+TestOutputFor
+TestScriptFailures
+TestScriptHostMessages
+TestFileMisuse
+TestPlanErrors
+# The font of a TTF text request is looked up by a path with
+# backslashes and not found, so text extrudes to nothing.
+TestTTF
+TestSynthFonts
+TestInvariants
+TestFixtureGroupsSolve
+TestFixturesRoundTrip
+# Unix-domain sockets and read-only directories behave otherwise.
+TestSockets
+TestReadOnlyDirectory

@@ -1,12 +1,21 @@
-# Every push and pull request: the checks, the tests with coverage and
-# the lint, as three jobs side by side. The race detector runs on a
-# push to master, and on request (workflow_dispatch) for a branch, in
-# three shards. make ci runs all of it locally.
+# Every push to a branch: the checks, the quick tests (make test-fast),
+# the lint and the vulnerability report, as jobs side by side. On a push
+# to master, and on request (workflow_dispatch) for a branch, every test
+# with coverage in place of the quick ones, and the race detector in
+# shards: make ci, run before a merge, is the same locally, so a branch
+# gets its answer in minutes and master still checks it all. The nightly
+# workflow (nightly.yml) runs what is too slow or costs too many minutes
+# for every push, the quick tests on Windows and macOS among it.
+#
+# A tag push runs nothing here: make release tags a commit of master
+# that this workflow has passed, and release.yml runs on the tag. There
+# is no pull_request trigger: the repository takes no pull requests from
+# forks, and a pull request's commits are pushes to a branch, which run.
 name: CI
 
 on:
   push:
-  pull_request:
+    branches: ['**']
   workflow_dispatch:
 
 permissions:
@@ -44,10 +53,61 @@ jobs:
             gocache-checks-
       - name: Install X11 development packages
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
-      - name: gofmt, go.mod tidy, generated symbols up to date, build, govulncheck
+      - name: gofmt, go.mod tidy, generated symbols up to date, build
         run: make checks
 
+  vuln:
+    # govulncheck fails when an advisory is published against the
+    # standard library or a dependency, with no commit at all: here it
+    # only warns, so that master does not turn red for it. The nightly
+    # and Release workflows run it as a job that fails.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-vuln-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-vuln-${{ hashFiles('go.sum') }}-
+            gocache-vuln-
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - name: govulncheck
+        run: make vuln
+
+  quick:
+    # A branch's tests: those that skip themselves under testing.Short
+    # are the slow ones, which master and make ci run.
+    if: github.ref != 'refs/heads/master' && github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-quick-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-quick-${{ hashFiles('go.sum') }}-
+            gocache-quick-
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - name: Quick tests
+        run: make test-fast
+
   coverage:
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -74,30 +134,41 @@ jobs:
           path: coverage.out
 
   lint:
-    # The whole tree, which is lint-clean since 2026-10-03. govet is in
-    # the set.
+    # The whole tree, which is lint-clean since 2026-10-03, with the
+    # golangci-lint that tools/lint/go.mod pins, as make lint runs it
+    # locally. govet is in the set.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache-dependency-path: |
+            go.sum
+            tools/lint/go.sum
+      - uses: actions/cache@v5
+        with:
+          path: |
+            .gocache
+            .golangci-lint
+          key: lint-${{ hashFiles('go.sum', 'tools/lint/go.sum', '.golangci.yml') }}-${{ github.sha }}
+          restore-keys: |
+            lint-${{ hashFiles('go.sum', 'tools/lint/go.sum', '.golangci.yml') }}-
+            lint-
       - name: Install X11 development packages
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
-      - uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.13.2
+      - name: golangci-lint
+        run: make lint
 
   race:
     # The engine packages under the race detector, about eight times
     # slower than the plain run: on master, where make release waits
-    # for it, and on request. The shards take about the same CPU time
-    # each; with the build cache, a package no commit touched since the
-    # last run is a cached result.
+    # for it, and on request. scripts/go-test.sh runs the slow packages
+    # as several processes, and the shards take about the same time;
+    # with the build cache, a package no commit touched since the last
+    # run is a cached result. pkg/ui and pkg/script/api run under the
+    # detector in the nightly workflow.
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 40

@@ -74,9 +74,23 @@ three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the ta
 - Scripting: a method on `pkg/script/api` per feature with a doc comment (`help()` and
   `docs.json` come from it), `make generate` run and `make generate-check` passing, an example
   under `examples/scripts` that a test executes.
-- `make ci` is what the GitHub workflow runs on `master`; on a branch it leaves out
-  `make test-race`, which runs on `master` and on request (workflow_dispatch). `make lint-new`
-  lints what a branch changed.
+- Three tiers. `make test-fast` (`go test -short`) is the check before a commit: a test that
+  takes more than a few seconds skips itself under `testing.Short()`, saying what it is.
+  `make test` runs every test, and `make ci` is what the GitHub workflow runs on `master`
+  (checks, coverage, race, lint, vuln); on a branch the workflow runs `make test-fast` in
+  place of coverage and leaves out the race detector, both of which run on `master` and on
+  request (workflow_dispatch), so `make ci` before the merge is what catches the rest. The nightly workflow, on
+  `master`, runs what is too slow or costs too many minutes for a push: `make test-sweeps`,
+  `make fuzz`, `make bench`, govulncheck as a failing job, the race detector over `pkg/ui`
+  and `pkg/script/api`, and the quick tests on Windows and macOS. `make lint-new` lints what a branch changed.
+- `scripts/go-test.sh` runs the slow packages (`SHARDED`) as several processes, their heaviest
+  tests (`HEAVY`) one each; every test target goes through it. A new test of a minute or more in
+  one of those packages goes into `HEAVY`.
+- On Windows and macOS the workflows run `scripts/test-os.sh`: the quick tests without those
+  `scripts/os-skip/<GOOS>.txt` lists, each with why it fails there. A fix takes its test off the
+  list; a new test that fails there for a reason of the platform goes on it, with the reason.
+- golangci-lint is pinned in `tools/lint/go.mod`, a module of its own, and `make lint` builds it
+  into `bin/`; govulncheck is pinned in `go.mod`'s tool block. Neither comes from `PATH`.
 
 ### Environment variables the tests and tools read
 

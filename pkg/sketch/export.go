@@ -99,10 +99,7 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 // hasExtension reports whether filename has extension ext, ignoring
 // case.
 func hasExtension(filename, ext string) bool {
-	ours := ""
-	if dot := strings.LastIndexByte(filename, '.'); dot >= 0 {
-		ours = filename[dot+1:]
-	}
+	_, ours, _ := strings.CutLast(filename, ".")
 	return strings.EqualFold(ours, ext)
 }
 
