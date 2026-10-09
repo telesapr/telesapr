@@ -30,10 +30,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
-      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
-        with:
-          packages: libx11-dev libxft-dev libfontconfig1-dev libgl-dev
-          version: x11-1
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxft-dev libfontconfig1-dev libgl-dev
       - name: govulncheck
         run: make vuln
 

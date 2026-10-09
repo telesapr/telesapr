@@ -56,10 +56,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
-      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
-        with:
-          packages: ${{ env.X11_PACKAGES }}
-          version: x11-1
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
       - name: govulncheck
         run: make vuln
 
@@ -94,10 +92,8 @@ jobs:
           restore-keys: |
             gocache-nightly-${{ matrix.name }}-${{ hashFiles('go.sum') }}-
             gocache-nightly-${{ matrix.name }}-
-      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
-        with:
-          packages: ${{ env.X11_PACKAGES }}
-          version: x11-1
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
       - name: make ${{ matrix.target }}
         run: make ${{ matrix.target }} 2>&1 | tee nightly-${{ matrix.name }}.txt
         shell: bash -o pipefail {0}
