@@ -65,10 +65,13 @@ make build                                      # bin/telesapr and bin/telesapr-
 sudo make install                               # with the desktop entry, icons and MIME type
 ```
 
-`make help` lists the other targets. `make ci` runs what the GitHub workflow does on a push to
-master: formatting, the generated-symbol check, the build, the tests with coverage (the GUI
-ones under Xvfb), the race detector on the engine packages, and the linter. On a branch the
-workflow leaves out the race detector, which runs on master and on request.
+`make help` lists the other targets. `make test-fast` runs the quick tests, `make test` all of
+them. `make ci` runs what the GitHub workflow does on a push to master: formatting, the
+generated-symbol check, the build, the tests with coverage (the GUI ones under Xvfb), the race
+detector on the engine packages, the linter and govulncheck. On a branch the workflow leaves
+out the race detector and the quick tests on Windows and macOS, which run on master and on
+request; a nightly workflow runs the full robustness sweeps, the fuzz targets and the
+benchmarks.
 
 ## Using it
 

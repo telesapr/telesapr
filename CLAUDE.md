@@ -74,9 +74,19 @@ three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the ta
 - Scripting: a method on `pkg/script/api` per feature with a doc comment (`help()` and
   `docs.json` come from it), `make generate` run and `make generate-check` passing, an example
   under `examples/scripts` that a test executes.
-- `make ci` is what the GitHub workflow runs on `master`; on a branch it leaves out
-  `make test-race`, which runs on `master` and on request (workflow_dispatch). `make lint-new`
-  lints what a branch changed.
+- Three tiers. `make test-fast` (`go test -short`) is the check before a commit: a test that
+  takes more than a few seconds skips itself under `testing.Short()`, saying what it is.
+  `make test` runs every test, and `make ci` is what the GitHub workflow runs on `master`
+  (checks, coverage, race, lint, vuln); on a branch the workflow leaves out the race detector
+  and the Windows and macOS quick tests, which run on `master` and on request
+  (workflow_dispatch). The nightly workflow runs what is too slow for a push: `make
+  test-sweeps`, `make fuzz`, `make bench`, govulncheck as a failing job, and the race detector
+  over `pkg/ui` and `pkg/script/api`. `make lint-new` lints what a branch changed.
+- `scripts/go-test.sh` runs the slow packages (`SHARDED`) as several processes, their heaviest
+  tests (`HEAVY`) one each; every test target goes through it. A new test of a minute or more in
+  one of those packages goes into `HEAVY`.
+- golangci-lint is pinned in `tools/lint/go.mod`, a module of its own, and `make lint` builds it
+  into `bin/`; govulncheck is pinned in `go.mod`'s tool block. Neither comes from `PATH`.
 
 ### Environment variables the tests and tools read
 
