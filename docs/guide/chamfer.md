@@ -5,7 +5,7 @@ with its top edges cut, [`examples/scripts/edges`](../../examples/scripts/edges/
 an edge that no sketch entity draws, chamfered by its name, and
 [`examples/scripts/bevel`](../../examples/scripts/bevel/bevel.go), a bevel of two distances.
 
-New Group > Chamfer Edges (Shift+Q) cuts edges of the solid so far at a distance, 1 mm to
+Features > Chamfer Edges (Shift+Q) cuts edges of the solid so far at a distance, 1 mm to
 begin with. An edge that goes in, as a pocket's floor, is filled; a chamfered edge goes on into
 the edges it meets smoothly, round a rounded rectangle's corners by cones. Select one or more of:
 

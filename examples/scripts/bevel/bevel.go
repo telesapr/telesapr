@@ -10,7 +10,7 @@
 //	telesapr --script examples/scripts/bevel/bevel.go
 //
 // The front top edge of a 60 x 20 x 6 plate is cut back across mm on
-// the top and down mm on the front (6 and 2 unless given), as New Group
+// the top and down mm on the front (6 and 2 unless given), as Features
 // > Chamfer Edges does with a second distance set on its screen. Which
 // face takes the first distance is the one of the lower identity, so
 // the script reads the cut back from the solid and swaps the distances

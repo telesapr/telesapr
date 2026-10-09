@@ -11,7 +11,7 @@
 //
 // The half is an L from the middle plane x = 0 out to x = 30, with a
 // hole in its foot, and a bore down its upright cut by a later group;
-// New Group > Mirror in the YZ workplane, set to the whole solid so
+// Features > Mirror in the YZ workplane, set to the whole solid so
 // far, makes the other half, holes and all, and joins it on, a T. The
 // script prints what Check Solid finds and saves bracket.tlspr, unless
 // given "-".

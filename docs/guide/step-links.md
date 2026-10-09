@@ -5,7 +5,7 @@ file and prints what was read; given none, it exports a plate as STEP and links 
 [`examples/scripts/stepsolid`](../../examples/scripts/stepsolid/stepsolid.go) links a STEP
 file as a solid and cuts a slot across it.
 
-New Group > Link / Assemble... (Shift+I) takes a STEP file (`.step`, `.stp`) as well as a
+Assembly > Link / Assemble... (Shift+I) takes a STEP file (`.step`, `.stp`) as well as a
 TeleSAPR model or a triangle mesh: an STL file, binary or text, or a Wavefront OBJ file, whose
 faces take the colours of the materials its `.mtl` file gives. A mesh links with a point at its
 origin, the corners of its bounding box, and a point at each vertex on its sharp edges. A STEP

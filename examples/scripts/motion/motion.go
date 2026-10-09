@@ -14,7 +14,7 @@
 // asked: a picture of the window's view for .png, in the application,
 // or a mesh. Here a plate's width w goes from 20 to 80; each step's
 // volume is checked, and its mesh written to frames/, unless given
-// "-". Analyze > Motion Study does the same from the window, where
+// "-". Assembly > Motion Study does the same from the window, where
 // .png frames make an animation.
 package main
 

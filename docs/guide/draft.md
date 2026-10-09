@@ -30,7 +30,7 @@ boss.SetExpr(sketch.GroupValC, "angle")
 
 A draft may lean only some sides: select them, as lines, arcs or circles of the extruded sketch,
 their copies at the extrusion's ends, or the faces of the sides, with the extrusion active, and
-choose New Group > Draft Selected Sides. The group's screen says how many sides are drafted, and
+choose Features > Draft Selected Sides. The group's screen says how many sides are drafted, and
 *[all]* drafts every side again. The rest stay upright.
 
 The sides lean from the sketch's plane to begin with. The screen's *from the plane* row moves that

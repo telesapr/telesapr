@@ -11,7 +11,7 @@
 //
 // A square of side size (1 unless given), drawn on the block's left end
 // across the front top edge, is swept along the front and right top
-// edges of a 40 x 20 x 10 block, picked by their names as New Group >
+// edges of a 40 x 20 x 10 block, picked by their names as Features >
 // Sweep Along Path does with them selected on the model. At the corner
 // between the two edges the sweep is mitred. The sweep keeps the edges'
 // names, so it follows them when the block changes. The script prints

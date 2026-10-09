@@ -4,7 +4,7 @@ Example: [`examples/scripts/shell`](../../examples/scripts/shell/shell.go), an e
 block hollowed to 2 mm walls, open at the top; [`examples/scripts/pot`](../../examples/scripts/pot/pot.go),
 a pot with rounded corners and a drain hole.
 
-New Group > Shell Solid (Shift+G) hollows the solid so far to walls of one thickness, open
+Features > Shell Solid (Shift+G) hollows the solid so far to walls of one thickness, open
 where faces are taken away. Select one or more flat faces of the solid to take away. A solid
 of flat faces can be open at any of them; a prism whose sides are flat or round, as an extruded
 circle, rounded rectangle or a block with a round hole, can be open at its ends: its arcs keep

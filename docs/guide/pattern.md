@@ -5,7 +5,7 @@ rail of a straight run, a bend and another run, and
 [`examples/scripts/flange`](../../examples/scripts/flange/flange.go), bolt holes round a pitch
 circle.
 
-New Group > Pattern Along Path repeats the active group's solid along a path: line segments and
+Features > Pattern Along Path repeats the active group's solid along a path: line segments and
 arcs joined end to end and meeting tangent, as a sweep's path. Make the group whose solid is to
 be repeated active, select the pieces of the path, and choose the menu entry. There are three
 copies to begin with: the first where the solid is, the last at the far end of the path, and the

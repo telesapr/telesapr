@@ -3,7 +3,7 @@
 Example: [`examples/scripts/bolt`](../../examples/scripts/bolt/bolt.go), a hexagon head bolt
 with a thread of any designation, M8 unless given.
 
-Select a circle or an arc, such as the rim of an extruded circle, and choose New Group > Screw
+Select a circle or an arc, such as the rim of an extruded circle, and choose Features > Screw
 Thread... (Shift+E). The screen offers the standard thread nearest the circle's diameter, and
 takes:
 

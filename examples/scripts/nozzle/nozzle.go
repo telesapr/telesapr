@@ -10,7 +10,7 @@
 //	telesapr --script examples/scripts/nozzle/nozzle.go
 //
 // A 20 mm square on the XY plane is lofted to a circle of radius 6, 30
-// above and 10 aside, as New Group > Loft To Selected Profile does; the
+// above and 10 aside, as Features > Loft To Selected Profile does; the
 // loft's screen then sets both ends to tangency (1 unless given), so
 // that the nozzle leaves the square and reaches the circle square to
 // them, as a duct that fits pipes at both ends. The script prints the

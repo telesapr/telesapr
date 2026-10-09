@@ -18,7 +18,7 @@
 // length on the isometric, as long as it is, not as it looks. The
 // script saves drawing.tlspr and a picture of the sheet shown in the
 // window, sheet.png, unless given "-"; in the application it
-// also writes drawing.pdf (File > Export Drawing does the same), and
+// also writes drawing.pdf (File > Export > Drawing does the same), and
 // without one telesapr-cli export-drawing writes it from the file.
 package main
 

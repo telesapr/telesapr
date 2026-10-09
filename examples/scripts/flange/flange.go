@@ -10,7 +10,7 @@
 //	telesapr --script examples/scripts/flange/flange.go
 //
 // A disc of radius 50 and 8 thick has one hole of radius 4 cut on a
-// pitch circle of radius 35, which New Group > Pattern Along Path
+// pitch circle of radius 35, which Features > Pattern Along Path
 // repeats round the circle, holes times in all (6 unless given), with
 // the circle selected: a path that closes shares the copies out round
 // it. The script prints the volume, the disc's less the holes'.

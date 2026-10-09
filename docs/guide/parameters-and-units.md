@@ -62,7 +62,7 @@ must(doc.ActivateConfiguration("small"))
 Example: [`examples/scripts/motion`](../../examples/scripts/motion/motion.go), a plate grown
 through a range of widths, a mesh saved at each step.
 
-Analyze > Motion Study drives one parameter through a range: its screen takes the parameter, the
+Assembly > Motion Study drives one parameter through a range: its screen takes the parameter, the
 values to go from and to, and the number of steps. `[run]` regenerates the model at each step,
 and lists the value, whether every group solved, and the volume of the solid. `[run, saving each
 step...]` asks for a file and saves a frame of each step beside it, numbered: a picture of the
