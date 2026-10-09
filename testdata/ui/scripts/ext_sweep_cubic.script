@@ -11,7 +11,7 @@ view default
 move 382.5 232.5
 down L 382.5 232.5
 up L 382.5 232.5
-menu New Group|Sweep Along Path
+menu Features|Sweep Along Path
 dump
 tw
 answer ok

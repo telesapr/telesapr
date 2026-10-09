@@ -7,24 +7,21 @@ dialog 0 No workplane is active, so the grid will not appear.|
   &Save [Ctrl+S] ind=0 en=1 act=0
   Save &As... [Ctrl+Shift+S] ind=0 en=1 act=0
   ---
-  Export &Image... ind=0 en=1 act=0
-  Export 2d &View... ind=0 en=1 act=0
-  Export 2d &Section... ind=0 en=1 act=0
-  Drawing S&heet... ind=0 en=1 act=0
-  Export &Drawing... ind=0 en=1 act=0
-  Export 3d &Wireframe... ind=0 en=1 act=0
-  Export Triangle &Mesh... ind=0 en=1 act=0
-  Export &Surfaces... ind=0 en=1 act=0
   Im&port... ind=0 en=1 act=0
+  &Export ind=0 en=1 act=0
+    &Image... ind=0 en=1 act=0
+    2d &View... ind=0 en=1 act=0
+    2d &Section... ind=0 en=1 act=0
+    3d &Wireframe... ind=0 en=1 act=0
+    Triangle &Mesh... ind=0 en=1 act=0
+    Sur&faces... ind=0 en=1 act=0
+    &Drawing... ind=0 en=1 act=0
   ---
   E&xit [Ctrl+Q] ind=0 en=1 act=0
 &Edit ind=0 en=1 act=0
   &Undo [Ctrl+Z] ind=0 en=1 act=0
   &Redo [Ctrl+Y] ind=0 en=0 act=0
   Re&generate All [Space] ind=0 en=1 act=0
-  ---
-  Snap Selection to &Grid [.] ind=0 en=1 act=0
-  Rotate Imported &90° [9] ind=0 en=1 act=0
   ---
   Cu&t [Ctrl+X] ind=0 en=1 act=0
   &Copy [Ctrl+C] ind=0 en=1 act=0
@@ -36,15 +33,15 @@ dialog 0 No workplane is active, so the grid will not appear.|
   Select &All [Ctrl+A] ind=0 en=1 act=0
   &Unselect All [Esc] ind=0 en=1 act=0
   ---
-  &Line Styles... ind=0 en=1 act=0
-  &View Projection... ind=0 en=1 act=0
-  Con&figuration... ind=0 en=1 act=0
+  Snap Selection to &Grid [.] ind=0 en=1 act=0
+  Rotate Imported &90° [9] ind=0 en=1 act=0
+  ---
   Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
-  Move Group Earl&ier ind=0 en=1 act=0
-  Move Gr&oup Later ind=0 en=1 act=0
-  Move Group to E&nd ind=0 en=1 act=0
-  Bro&ken References... ind=0 en=1 act=0
+  ---
+  &Line Styles... ind=0 en=1 act=0
+  &View Projection... ind=0 en=1 act=0
+  Pre&ferences... ind=0 en=1 act=0
 &View ind=0 en=1 act=0
   Zoom &In [+] ind=0 en=1 act=0
   Zoom &Out [-] ind=0 en=1 act=0
@@ -55,12 +52,32 @@ dialog 0 No workplane is active, so the grid will not appear.|
   Nearest &Isometric View [F3] ind=0 en=1 act=0
   &Center View At Point [F4] ind=0 en=1 act=0
   ---
+  S&how ind=0 en=1 act=0
+    &Workplanes of Inactive Groups ind=1 en=1 act=0
+    &Normals ind=1 en=1 act=1
+    &Points ind=1 en=1 act=1
+    &Construction Entities ind=1 en=1 act=1
+    ---
+    Constraints &and Dimensions ind=2 en=1 act=1
+    &Dimensions Only ind=2 en=1 act=0
+    No Constrain&ts ind=2 en=1 act=0
+    ---
+    &Shaded Solid ind=1 en=1 act=1
+    Selectable &Faces ind=1 en=1 act=0
+    Solid &Edges ind=1 en=1 act=1
+    Solid &Outline ind=1 en=1 act=0
+    Triangle &Mesh ind=1 en=1 act=0
+    ---
+    Hidden Lines &Invisible ind=2 en=1 act=1
+    Hidden Lines Stipp&led ind=2 en=1 act=0
+    Hidden Lines &Visible ind=2 en=1 act=0
   Show Snap &Grid [>] ind=1 en=1 act=1
   Darken Inactive Solids ind=1 en=1 act=1
   Use &Perspective Projection [`] ind=1 en=1 act=1
   Show E&xploded View [\] ind=1 en=1 act=0
   &Section View [Ctrl+Shift+X] ind=1 en=1 act=0
-  Show Drawing S&heet ind=1 en=1 act=0
+  Show &Drawing Sheet ind=1 en=1 act=0
+  Drawing Sh&eet... ind=0 en=1 act=0
   Dimension &Units ind=0 en=1 act=0
     Dimensions in &Millimeters ind=2 en=1 act=0
     Dimensions in M&eters ind=2 en=1 act=0
@@ -71,32 +88,6 @@ dialog 0 No workplane is active, so the grid will not appear.|
   Show Property Bro&wser [Tab] ind=1 en=1 act=0
   ---
   &Full Screen [Ctrl+F11] ind=1 en=1 act=0
-&New Group ind=0 en=1 act=0
-  Sketch In &3d [Shift+3] ind=0 en=1 act=0
-  Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
-  ---
-  Step &Translating [Shift+T] ind=0 en=1 act=0
-  Step &Rotating [Shift+R] ind=0 en=1 act=0
-  ---
-  E&xtrude [Shift+X] ind=0 en=1 act=0
-  &Helix [Shift+H] ind=0 en=1 act=0
-  &Lathe [Shift+L] ind=0 en=1 act=0
-  Re&volve [Shift+V] ind=0 en=1 act=0
-  Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
-  Swee&p Along Path [Shift+U] ind=0 en=1 act=0
-  ---
-  &Mirror [Shift+Y] ind=0 en=1 act=0
-  &Chamfer Edges [Shift+Q] ind=0 en=1 act=0
-  &Fillet Edges [Shift+F] ind=0 en=1 act=0
-  Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
-  &Shell Solid [Shift+G] ind=0 en=1 act=0
-  Pattern Along Pat&h ind=0 en=1 act=0
-  &Draft Selected Sides ind=0 en=1 act=0
-  Guide Loft by Selected &Curves ind=0 en=1 act=0
-  ---
-  Link / Assemble... [Shift+I] ind=0 en=1 act=0
-  Link Recent ind=0 en=1 act=0
-    (no recent files) ind=0 en=0 act=0
 &Sketch ind=0 en=1 act=0
   In &Workplane [2] ind=2 en=1 act=0
   Anywhere In &3d [3] ind=2 en=1 act=1
@@ -140,28 +131,60 @@ dialog 0 No workplane is active, so the grid will not appear.|
   Lock Point Where &Dragged []] ind=0 en=1 act=0
   ---
   Comment [;] ind=0 en=1 act=0
+Fea&tures ind=0 en=1 act=0
+  Sketch In &3d [Shift+3] ind=0 en=1 act=0
+  Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  ---
+  E&xtrude [Shift+X] ind=0 en=1 act=0
+  Re&volve [Shift+V] ind=0 en=1 act=0
+  &Lathe [Shift+L] ind=0 en=1 act=0
+  &Helix [Shift+H] ind=0 en=1 act=0
+  Swee&p Along Path [Shift+U] ind=0 en=1 act=0
+  Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
+  Guide Loft by Selected &Curves ind=0 en=1 act=0
+  Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
+  ---
+  &Fillet Edges [Shift+F] ind=0 en=1 act=0
+  Chamfer E&dges [Shift+Q] ind=0 en=1 act=0
+  &Shell Solid [Shift+G] ind=0 en=1 act=0
+  Draft Selected S&ides ind=0 en=1 act=0
+  &Mirror [Shift+Y] ind=0 en=1 act=0
+  ---
+  Step &Translating [Shift+T] ind=0 en=1 act=0
+  Step &Rotating [Shift+R] ind=0 en=1 act=0
+  Pattern Alon&g Path ind=0 en=1 act=0
+  ---
+  Move Group E&arlier ind=0 en=1 act=0
+  Move Gro&up Later ind=0 en=1 act=0
+  Move Group to E&nd ind=0 en=1 act=0
+  Bro&ken References... ind=0 en=1 act=0
+Asse&mbly ind=0 en=1 act=0
+  &Link / Assemble... [Shift+I] ind=0 en=1 act=0
+  Link &Recent ind=0 en=1 act=0
+    (no recent files) ind=0 en=0 act=0
   ---
   Mate &Concentric ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
+  ---
+  Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
+  &Bill of Materials ind=0 en=1 act=0
+  Motion St&udy... ind=0 en=1 act=0
 &Analyze ind=0 en=1 act=0
+  Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
   Measure &Volume [Ctrl+Shift+V] ind=0 en=1 act=0
   Measure A&rea [Ctrl+Shift+A] ind=0 en=1 act=0
   Measure &Perimeter [Ctrl+Shift+P] ind=0 en=1 act=0
-  Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
-  Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Center of Mass [Ctrl+Shift+C] ind=0 en=1 act=0
-  Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
-  &Bill of Materials ind=0 en=1 act=0
-  Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
   ---
+  Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
+  Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
   &Stop Tracing... ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
-  Motion St&udy... ind=0 en=1 act=0
-S&cript ind=0 en=1 act=0
+Sc&ript ind=0 en=1 act=0
   Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
   ---
   &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0
@@ -189,24 +212,21 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   &Save [Ctrl+S] ind=0 en=1 act=0
   Save &As... [Ctrl+Shift+S] ind=0 en=1 act=0
   ---
-  Export &Image... ind=0 en=1 act=0
-  Export 2d &View... ind=0 en=1 act=0
-  Export 2d &Section... ind=0 en=1 act=0
-  Drawing S&heet... ind=0 en=1 act=0
-  Export &Drawing... ind=0 en=1 act=0
-  Export 3d &Wireframe... ind=0 en=1 act=0
-  Export Triangle &Mesh... ind=0 en=1 act=0
-  Export &Surfaces... ind=0 en=1 act=0
   Im&port... ind=0 en=1 act=0
+  &Export ind=0 en=1 act=0
+    &Image... ind=0 en=1 act=0
+    2d &View... ind=0 en=1 act=0
+    2d &Section... ind=0 en=1 act=0
+    3d &Wireframe... ind=0 en=1 act=0
+    Triangle &Mesh... ind=0 en=1 act=0
+    Sur&faces... ind=0 en=1 act=0
+    &Drawing... ind=0 en=1 act=0
   ---
   E&xit [Ctrl+Q] ind=0 en=1 act=0
 &Edit ind=0 en=1 act=0
   &Undo [Ctrl+Z] ind=0 en=1 act=0
   &Redo [Ctrl+Y] ind=0 en=0 act=0
   Re&generate All [Space] ind=0 en=1 act=0
-  ---
-  Snap Selection to &Grid [.] ind=0 en=1 act=0
-  Rotate Imported &90° [9] ind=0 en=1 act=0
   ---
   Cu&t [Ctrl+X] ind=0 en=1 act=0
   &Copy [Ctrl+C] ind=0 en=1 act=0
@@ -218,15 +238,15 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   Select &All [Ctrl+A] ind=0 en=1 act=0
   &Unselect All [Esc] ind=0 en=1 act=0
   ---
-  &Line Styles... ind=0 en=1 act=0
-  &View Projection... ind=0 en=1 act=0
-  Con&figuration... ind=0 en=1 act=0
+  Snap Selection to &Grid [.] ind=0 en=1 act=0
+  Rotate Imported &90° [9] ind=0 en=1 act=0
+  ---
   Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
-  Move Group Earl&ier ind=0 en=1 act=0
-  Move Gr&oup Later ind=0 en=1 act=0
-  Move Group to E&nd ind=0 en=1 act=0
-  Bro&ken References... ind=0 en=1 act=0
+  ---
+  &Line Styles... ind=0 en=1 act=0
+  &View Projection... ind=0 en=1 act=0
+  Pre&ferences... ind=0 en=1 act=0
 &View ind=0 en=1 act=0
   Zoom &In [+] ind=0 en=1 act=0
   Zoom &Out [-] ind=0 en=1 act=0
@@ -237,12 +257,32 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   Nearest &Isometric View [F3] ind=0 en=1 act=0
   &Center View At Point [F4] ind=0 en=1 act=0
   ---
+  S&how ind=0 en=1 act=0
+    &Workplanes of Inactive Groups ind=1 en=1 act=0
+    &Normals ind=1 en=1 act=1
+    &Points ind=1 en=1 act=1
+    &Construction Entities ind=1 en=1 act=1
+    ---
+    Constraints &and Dimensions ind=2 en=1 act=1
+    &Dimensions Only ind=2 en=1 act=0
+    No Constrain&ts ind=2 en=1 act=0
+    ---
+    &Shaded Solid ind=1 en=1 act=1
+    Selectable &Faces ind=1 en=1 act=0
+    Solid &Edges ind=1 en=1 act=1
+    Solid &Outline ind=1 en=1 act=0
+    Triangle &Mesh ind=1 en=1 act=0
+    ---
+    Hidden Lines &Invisible ind=2 en=1 act=1
+    Hidden Lines Stipp&led ind=2 en=1 act=0
+    Hidden Lines &Visible ind=2 en=1 act=0
   Show Snap &Grid [>] ind=1 en=1 act=1
   Darken Inactive Solids ind=1 en=1 act=1
   Use &Perspective Projection [`] ind=1 en=1 act=1
   Show E&xploded View [\] ind=1 en=1 act=0
   &Section View [Ctrl+Shift+X] ind=1 en=1 act=0
-  Show Drawing S&heet ind=1 en=1 act=0
+  Show &Drawing Sheet ind=1 en=1 act=0
+  Drawing Sh&eet... ind=0 en=1 act=0
   Dimension &Units ind=0 en=1 act=0
     Dimensions in &Millimeters ind=2 en=1 act=0
     Dimensions in M&eters ind=2 en=1 act=0
@@ -253,32 +293,6 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   Show Property Bro&wser [Tab] ind=1 en=1 act=1
   ---
   &Full Screen [Ctrl+F11] ind=1 en=1 act=0
-&New Group ind=0 en=1 act=0
-  Sketch In &3d [Shift+3] ind=0 en=1 act=0
-  Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
-  ---
-  Step &Translating [Shift+T] ind=0 en=1 act=0
-  Step &Rotating [Shift+R] ind=0 en=1 act=0
-  ---
-  E&xtrude [Shift+X] ind=0 en=1 act=0
-  &Helix [Shift+H] ind=0 en=1 act=0
-  &Lathe [Shift+L] ind=0 en=1 act=0
-  Re&volve [Shift+V] ind=0 en=1 act=0
-  Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
-  Swee&p Along Path [Shift+U] ind=0 en=1 act=0
-  ---
-  &Mirror [Shift+Y] ind=0 en=1 act=0
-  &Chamfer Edges [Shift+Q] ind=0 en=1 act=0
-  &Fillet Edges [Shift+F] ind=0 en=1 act=0
-  Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
-  &Shell Solid [Shift+G] ind=0 en=1 act=0
-  Pattern Along Pat&h ind=0 en=1 act=0
-  &Draft Selected Sides ind=0 en=1 act=0
-  Guide Loft by Selected &Curves ind=0 en=1 act=0
-  ---
-  Link / Assemble... [Shift+I] ind=0 en=1 act=0
-  Link Recent ind=0 en=1 act=0
-    (no recent files) ind=0 en=0 act=0
 &Sketch ind=0 en=1 act=0
   In &Workplane [2] ind=2 en=1 act=1
   Anywhere In &3d [3] ind=2 en=1 act=0
@@ -322,28 +336,60 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   Lock Point Where &Dragged []] ind=0 en=1 act=0
   ---
   Comment [;] ind=0 en=1 act=0
+Fea&tures ind=0 en=1 act=0
+  Sketch In &3d [Shift+3] ind=0 en=1 act=0
+  Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  ---
+  E&xtrude [Shift+X] ind=0 en=1 act=0
+  Re&volve [Shift+V] ind=0 en=1 act=0
+  &Lathe [Shift+L] ind=0 en=1 act=0
+  &Helix [Shift+H] ind=0 en=1 act=0
+  Swee&p Along Path [Shift+U] ind=0 en=1 act=0
+  Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
+  Guide Loft by Selected &Curves ind=0 en=1 act=0
+  Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
+  ---
+  &Fillet Edges [Shift+F] ind=0 en=1 act=0
+  Chamfer E&dges [Shift+Q] ind=0 en=1 act=0
+  &Shell Solid [Shift+G] ind=0 en=1 act=0
+  Draft Selected S&ides ind=0 en=1 act=0
+  &Mirror [Shift+Y] ind=0 en=1 act=0
+  ---
+  Step &Translating [Shift+T] ind=0 en=1 act=0
+  Step &Rotating [Shift+R] ind=0 en=1 act=0
+  Pattern Alon&g Path ind=0 en=1 act=0
+  ---
+  Move Group E&arlier ind=0 en=1 act=0
+  Move Gro&up Later ind=0 en=1 act=0
+  Move Group to E&nd ind=0 en=1 act=0
+  Bro&ken References... ind=0 en=1 act=0
+Asse&mbly ind=0 en=1 act=0
+  &Link / Assemble... [Shift+I] ind=0 en=1 act=0
+  Link &Recent ind=0 en=1 act=0
+    (no recent files) ind=0 en=0 act=0
   ---
   Mate &Concentric ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
+  ---
+  Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
+  &Bill of Materials ind=0 en=1 act=0
+  Motion St&udy... ind=0 en=1 act=0
 &Analyze ind=0 en=1 act=0
+  Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
   Measure &Volume [Ctrl+Shift+V] ind=0 en=1 act=0
   Measure A&rea [Ctrl+Shift+A] ind=0 en=1 act=0
   Measure &Perimeter [Ctrl+Shift+P] ind=0 en=1 act=0
-  Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
-  Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Center of Mass [Ctrl+Shift+C] ind=0 en=1 act=0
-  Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
-  &Bill of Materials ind=0 en=1 act=0
-  Measure Se&lection [Ctrl+Shift+E] ind=1 en=1 act=0
   ---
+  Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
+  Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
   &Stop Tracing... ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
-  Motion St&udy... ind=0 en=1 act=0
-S&cript ind=0 en=1 act=0
+Sc&ript ind=0 en=1 act=0
   Show &Console [Ctrl+Shift+K] ind=1 en=1 act=0
   ---
   &Run File... [Ctrl+Shift+R] ind=0 en=1 act=0

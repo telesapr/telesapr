@@ -8,7 +8,7 @@ tw
 twmove 24 160
 twdown L 24 160
 twup L 24 160
-menu Edit|Move Group to End
+menu Features|Move Group to End
 tw
 key z ctrl
 tw

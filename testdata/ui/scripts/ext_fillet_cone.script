@@ -11,7 +11,7 @@ menu View|Zoom To Fit
 move 370 295
 down L 370 295
 up L 370 295
-menu New Group|Fillet Edges
+menu Features|Fillet Edges
 dump
 tw
 answer ok

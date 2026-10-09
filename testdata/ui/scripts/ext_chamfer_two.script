@@ -17,7 +17,7 @@ up L 382.5 232.5
 move 247.5 202.5
 down L 247.5 202.5
 up L 247.5 202.5
-menu New Group|Chamfer Edges
+menu Features|Chamfer Edges
 tw
 twmove 263 145
 twdown L 263 145

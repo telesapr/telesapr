@@ -26,7 +26,7 @@ key v ctrl shift
 menu View|Dimension Units|Dimensions in Meters
 answer ok
 key v ctrl shift
-menu Edit|Configuration...
+menu Edit|Preferences...
 tw
 twmove 28 560
 twdown L 28 560

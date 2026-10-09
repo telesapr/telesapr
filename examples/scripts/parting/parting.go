@@ -12,7 +12,7 @@
 // A D of radius 20, its flat side along x, is extruded 16 and drafted
 // by degrees (3 unless given) from the plane halfway up, the parting
 // line, so that it narrows both ways from there. The flat side stays
-// upright: the draft leans the arc's side only, as New Group > Draft
+// upright: the draft leans the arc's side only, as Features > Draft
 // Selected Sides does with the arc selected. Where the arc meets the
 // flat side at a sharp corner, the cone and the plane meet in a conic.
 package main

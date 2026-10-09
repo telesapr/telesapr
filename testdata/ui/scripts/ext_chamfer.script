@@ -15,7 +15,7 @@ move 290 265
 down L 290 265
 up L 290 265
 answer ok
-menu New Group|Chamfer Edges
+menu Features|Chamfer Edges
 key esc
 move 382.5 232.5
 down L 382.5 232.5
@@ -23,7 +23,7 @@ up L 382.5 232.5
 move 247.5 202.5
 down L 247.5 202.5
 up L 247.5 202.5
-menu New Group|Chamfer Edges
+menu Features|Chamfer Edges
 dump
 tw
 answer ok

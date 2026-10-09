@@ -14,6 +14,14 @@ or in the application, from Script > Run File, or with `telesapr --script <file>
 feature can be scripted; the console (Script > Show Console) takes the same Go, a line at a
 time, and `help()` there lists what a script can call.
 
+The menus run in the order of the work. Sketch draws and Constrain holds what is drawn; Features
+makes the history's groups (sketches, then the solids that create, modify and pattern, then
+moving a group in the history); Assembly links files, mates them and checks them against each
+other; Analyze measures and checks. View > Show shows and hides what the icons at the top of the
+property browser do. Edit > Find Command (Ctrl+K) finds any entry by words of its name. A script
+names an entry as the command search lists it, `doc.RunCommand("Features > Extrude")`; the names
+the entries had before the menus took this order are still taken.
+
 | Page | What it covers | Example |
 |---|---|---|
 | [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `configurations`, `motion`, `dimensions`, `feedback` |

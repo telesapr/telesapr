@@ -9,11 +9,11 @@ group that made the face.
 
 ## Moving a group
 
-The arrows after a group's name in the group list move it one place; Edit > Move Group Earlier
+The arrows after a group's name in the group list move it one place; Features > Move Group Earlier
 and Move Group Later move the active group. A move that would put a group ahead of a group it
 uses is refused, and the message names both.
 
-Edit > Move Group to End moves the active group to the end of the history together with the
+Features > Move Group to End moves the active group to the end of the history together with the
 groups only it needs, keeping their order: an extrusion goes with its sketch, and that sketch's
 own workplane with it. A sketch that another group uses too stays where it is. Scripts do the
 same with `Group.MoveToEndWithSources` and `Group.MoveWithSourcesBefore`; `Group.MoveToEnd`

@@ -6,4 +6,4 @@ view default
 move 300 400
 down L 300 400
 up L 300 400
-menu New Group|Loft To Selected Profile
+menu Features|Loft To Selected Profile

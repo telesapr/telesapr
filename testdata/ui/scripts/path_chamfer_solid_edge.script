@@ -8,4 +8,4 @@ menu View|Zoom To Fit
 move 335 425
 down L 335 425
 up L 335 425
-menu New Group|Chamfer Edges
+menu Features|Chamfer Edges

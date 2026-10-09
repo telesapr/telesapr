@@ -27,4 +27,4 @@ key x shift
 move 300 200
 down L 300 200
 up L 300 200
-menu New Group|Pattern Along Path
+menu Features|Pattern Along Path

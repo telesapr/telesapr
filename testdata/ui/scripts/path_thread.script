@@ -12,7 +12,7 @@ key x shift
 move 350 300
 down L 350 300
 up L 350 300
-menu New Group|Screw Thread...
+menu Features|Screw Thread...
 # The designation, the length, an internal thread, then make it.
 twmove 172 110
 twdown L 172 110

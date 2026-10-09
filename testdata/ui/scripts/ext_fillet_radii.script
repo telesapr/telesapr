@@ -18,7 +18,7 @@ up L 382.5 262.5
 move 197.5 262.5
 down L 197.5 262.5
 up L 197.5 262.5
-menu New Group|Fillet Edges
+menu Features|Fillet Edges
 dump
 twmove 105 225
 twdown L 105 225

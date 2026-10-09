@@ -125,6 +125,7 @@ func (b *triStateButton) Click() {
 	b.ss.GenerateAll(sketch.GenerateDirty)
 	b.ss.GW.Invalidate(false)
 	b.ss.ScheduleShowTW()
+	b.ss.GW.refreshShowMenu()
 }
 
 // newTextButtons makes the icons.

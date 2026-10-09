@@ -8,7 +8,7 @@ and an isometric, placed as the projection has them, at a scale, in a frame with
 It is part of the model and saved with it; what is drawn is made from the solid each time the
 drawing is written, so it follows the model.
 
-File > Drawing Sheet shows its screen:
+View > Drawing Sheet shows its screen:
 
 - **sheet**: A4 to A0, Letter or Tabloid, landscape or portrait;
 - **scale**: fitted (the largest of 10:1, 5:1, 2:1, 1:1, 1:2, 1:5 and on down at which the views
@@ -58,7 +58,7 @@ follows each change made on the drawing's screen and to the model; while it is s
 picks nothing in the model. It is a view, not saved with the file. From a script,
 `doc.ShowDrawingSheet(true)`, and `doc.Render(path, w, h, "window")` pictures it.
 
-File > Export Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
+File > Export > Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
 sheet's size in millimetres. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
 without a window.
 

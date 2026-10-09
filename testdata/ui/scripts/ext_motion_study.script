@@ -27,7 +27,7 @@ dbl L 290 370
 up L 290 370
 edit w
 key x shift
-menu Analyze|Motion Study...
+menu Assembly|Motion Study...
 tw
 twmove 159 165
 twdown L 159 165

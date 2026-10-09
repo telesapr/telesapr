@@ -37,7 +37,7 @@ func TestFindCommands(t *testing.T) {
 	if got := names("zoom fit"); got != "View > Zoom To Fit" {
 		t.Errorf("zoom fit: %s", got)
 	}
-	if got := names("EXTRUDE"); got != "New Group > Extrude" {
+	if got := names("EXTRUDE"); got != "Features > Extrude" {
 		t.Errorf("EXTRUDE: %s", got)
 	}
 	// An entry whose name starts with the words comes first.
@@ -292,5 +292,69 @@ func TestRedoCtrlShiftZ(t *testing.T) {
 		Chr: 'z', ControlDown: true, ShiftDown: true})
 	if ss.SK.Redo.Cnt != 0 || ss.SK.Groups[len(ss.SK.Groups)-1].Name != "changed" {
 		t.Errorf("Ctrl+Shift+Z did not redo: redo stack %d", ss.SK.Redo.Cnt)
+	}
+}
+
+// TestFormerCommandLabels checks that a script written against the
+// menus as they were still finds each entry that moved, and that no
+// former label is now the label of a different entry.
+func TestFormerCommandLabels(t *testing.T) {
+	ss, _ := newTestApp(t)
+	byCmd := map[Command]string{}
+	for _, e := range ss.commandEntries() {
+		byCmd[e.cmd] = strings.ToLower(e.label)
+	}
+	for label, cmd := range formerCommandLabels {
+		now, ok := byCmd[cmd]
+		if !ok {
+			t.Errorf("%q: command %d is in no menu", label, cmd)
+			continue
+		}
+		if now == label {
+			t.Errorf("%q is still the entry's label; it need not be kept", label)
+		}
+	}
+	if err := ss.RunCommand("Edit > Configuration..."); err != nil {
+		t.Fatal(err)
+	}
+	if ss.TW.shown.screen != screenConfiguration {
+		t.Errorf("the former label of Preferences shows screen %d", ss.TW.shown.screen)
+	}
+}
+
+func TestViewShowMenu(t *testing.T) {
+	ss, _ := newTestApp(t)
+	gw := ss.GW
+	item := func(cmd Command) bool {
+		t.Helper()
+		it, ok := gw.showMenuItems[cmd]
+		if !ok {
+			t.Fatalf("no menu item for command %d", cmd)
+		}
+		return it.(*headless.MenuItem).Active
+	}
+	was := gw.show.Normals
+	if err := ss.RunCommand("View > Show > Normals"); err != nil {
+		t.Fatal(err)
+	}
+	if gw.show.Normals == was || item(cmdShowNormals) != gw.show.Normals {
+		t.Errorf("normals %v, menu %v; were %v", gw.show.Normals, item(cmdShowNormals), was)
+	}
+	// The property browser's icon changes the same field; the menu follows.
+	gw.ToggleBool(&gw.show.Normals)
+	if item(cmdShowNormals) != gw.show.Normals {
+		t.Errorf("the menu did not follow the icon")
+	}
+	if err := ss.RunCommand("Dimensions Only"); err != nil {
+		t.Fatal(err)
+	}
+	if gw.showConstraints != sCMShowDim || !item(cmdShowConstraintsDim) || item(cmdShowConstraintsAll) {
+		t.Errorf("constraints mode %d", gw.showConstraints)
+	}
+	if err := ss.RunCommand("Hidden Lines Visible"); err != nil {
+		t.Fatal(err)
+	}
+	if gw.drawOccludedAs != occludedVisible || !item(cmdShowOccludedVisible) {
+		t.Errorf("occluded mode %d", gw.drawOccludedAs)
 	}
 }

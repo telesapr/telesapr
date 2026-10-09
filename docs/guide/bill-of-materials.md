@@ -1,6 +1,6 @@
 # Assemblies
 
-An assembly is a model of parts: files linked into it (New Group > Link / Assemble), or groups
+An assembly is a model of parts: files linked into it (Assembly > Link / Assemble), or groups
 that combine as an assembly. This page is about putting them together, checking them and
 counting them.
 
@@ -35,7 +35,7 @@ Example: [`examples/scripts/bom`](../../examples/scripts/bom/bom.go), which save
 bolt as part files, links them into a bracket with the bolt repeated, links the bracket twice
 into the model, and writes the bill.
 
-Analyze > Bill of Materials lists the parts the model places by linking files, one line a file:
+Assembly > Bill of Materials lists the parts the model places by linking files, one line a file:
 how many, the part's name (the file's, without its folder and extension), the file, and the
 groups that place them. Each link group places one part. A step and repeat, a mirror or a
 pattern along a path of a link group places its copies too, but for a copy at the place of the
@@ -58,7 +58,7 @@ must(doc.ExportBOM("bom.csv"))
 
 ## Interfering parts
 
-Analyze > Show Interfering Parts checks the parts of an assembly against each other by their
+Assembly > Show Interfering Parts checks the parts of an assembly against each other by their
 shells: each group that combines as an assembly is a part, and so is the solid made before the
 first of them. Two parts interfere where they share volume; parts that only touch don't. The
 message lists each pair with the volume they share, and the shared solid is outlined. A part
@@ -74,7 +74,7 @@ for _, f := range found {
 
 ## STEP export of an assembly
 
-File > Export 3d Surfaces... writes a model with parts as an assembly: the model is the top
+File > Export > Surfaces... writes a model with parts as an assembly: the model is the top
 product, and each part a product of its own, written once in its own coordinates, with its faces
 in their colours; each place a part goes is an occurrence of it, with the rotation and offset
 that put it there. A file linked twice is one product used twice. The parts are those the

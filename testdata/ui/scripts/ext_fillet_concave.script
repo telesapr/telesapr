@@ -34,7 +34,7 @@ move 300 360 M
 move 360 375
 down L 360 375
 up L 360 375
-menu New Group|Fillet Edges
+menu Features|Fillet Edges
 dump
 tw
 answer ok

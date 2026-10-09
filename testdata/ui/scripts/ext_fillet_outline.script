@@ -20,7 +20,7 @@ key x shift
 move 382.5 232.5
 down L 382.5 232.5
 up L 382.5 232.5
-menu New Group|Fillet Edges
+menu Features|Fillet Edges
 dump
 tw
 answer ok

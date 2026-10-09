@@ -10,7 +10,7 @@ up L 347.5 217.5
 move 377.5 202.5
 down L 377.5 202.5
 up L 377.5 202.5
-menu New Group|Sweep Along Path
+menu Features|Sweep Along Path
 tw
 answer ok
 menu Analyze|Check Solid

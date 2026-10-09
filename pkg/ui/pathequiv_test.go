@@ -188,7 +188,7 @@ func TestPathEquivalenceLoftTangency(t *testing.T) {
 	}
 }
 
-// A loft's guide picked with the mouse and set by New Group > Guide
+// A loft's guide picked with the mouse and set by Features > Guide
 // Loft by Selected Curves, and by a script (roadmap 28.3).
 func TestPathEquivalenceLoftGuides(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_loft_guides", "path_loft_guides")

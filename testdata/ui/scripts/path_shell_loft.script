@@ -7,8 +7,8 @@ view default
 move 300 400
 down L 300 400
 up L 300 400
-menu New Group|Loft To Selected Profile
+menu Features|Loft To Selected Profile
 move 320 375
 down L 320 375
 up L 320 375
-menu New Group|Shell Solid
+menu Features|Shell Solid

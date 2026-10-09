@@ -12,7 +12,7 @@ down L 380 330
 up L 380 330
 key esc
 key x shift
-menu File|Drawing Sheet...
+menu View|Drawing Sheet...
 tw
 twmove 307 105
 twdown L 307 105
@@ -42,5 +42,5 @@ twdown L 46 345
 twup L 46 345
 tw
 file $tmp/sheet.svg
-menu File|Export Drawing...
+menu File|Export|Drawing...
 save

@@ -2,7 +2,7 @@
 # screen; the same as path_link_step_solid.go makes
 # (TestPathEquivalenceLinkStepSolid).
 file $testdata/step/shapes/box_hole.step
-menu New Group|Link / Assemble...
+menu Assembly|Link / Assemble...
 twmove 289 165
 twdown L 289 165
 twup L 289 165

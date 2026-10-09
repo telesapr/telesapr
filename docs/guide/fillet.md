@@ -6,7 +6,7 @@ its upright edges rounded; [`roundbox`](../../examples/scripts/roundbox),
 [`plinth`](../../examples/scripts/plinth), [`spinner`](../../examples/scripts/spinner) and
 [`rib`](../../examples/scripts/rib) for corners, filled edges and edges of their own radius.
 
-New Group > Fillet Edges (Shift+F) rounds edges of the solid so far, 1 mm to begin with. It
+Features > Fillet Edges (Shift+F) rounds edges of the solid so far, 1 mm to begin with. It
 takes the same selection as a chamfer:
 
 - line segments along edges between two flat faces;

@@ -1,15 +1,15 @@
 # Bill of Materials (an extension): a STEP part linked twice and a
 # second part once; Analyze > Bill of Materials lists them with their
 # counts, files and groups, and writes them to a CSV file.
-menu Analyze|Bill of Materials
+menu Assembly|Bill of Materials
 tw
 file $testdata/step/shapes/cylinder.step
-menu New Group|Link / Assemble...
+menu Assembly|Link / Assemble...
 file $testdata/step/shapes/cylinder.step
-menu New Group|Link / Assemble...
+menu Assembly|Link / Assemble...
 file $testdata/step/shapes/box.step
-menu New Group|Link / Assemble...
-menu Analyze|Bill of Materials
+menu Assembly|Link / Assemble...
+menu Assembly|Bill of Materials
 tw
 file $tmp/bom.csv
 twmove 33 245

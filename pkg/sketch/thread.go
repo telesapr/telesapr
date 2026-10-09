@@ -330,7 +330,7 @@ func (sk *Sketch) nextGroupHandle() core.HGroup {
 	return core.HGroup{V: h + 1}
 }
 
-// addGroupAfterActive adds g after the active group, as New Group does:
+// addGroupAfterActive adds g after the active group, as a feature of the Features menu does:
 // in the colour of the solid so far, the later groups moved on. It
 // makes g active and generates its entities, without solving.
 func (sk *Sketch) addGroupAfterActive(g Group) *Group {

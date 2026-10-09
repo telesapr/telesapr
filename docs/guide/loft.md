@@ -5,7 +5,7 @@ duct adapter; [`examples/scripts/vase`](../../examples/scripts/vase/vase.go), a 
 smoothly through four profiles.
 
 A loft joins the closed loop of the active group's sketch, in a workplane, to those of other
-sketches. Activate one sketch, select any entity of each other one, and choose New Group > Loft
+sketches. Activate one sketch, select any entity of each other one, and choose Features > Loft
 To Selected Profile (Shift+O).
 
 - With one other sketch picked, the two loops are joined by ruled faces, curve by curve.
@@ -61,7 +61,7 @@ loft.SetTangency(0, 0) // free again
 A loft can be held to guide curves: line segments, arcs and cubics drawn in a sketch before the
 loft, each chain of them that joins end to end one guide, running from a point of the first
 profile through every profile to the last. Activate the loft, select the curves and choose
-New Group > Guide Loft by Selected Curves; the loft's screen says how many curves guide it, and
+Features > Guide Loft by Selected Curves; the loft's screen says how many curves guide it, and
 [none] takes them away.
 
 One guide moves the loft's sections across, each within its own plane, so that the loft runs

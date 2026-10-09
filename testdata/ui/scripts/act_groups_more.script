@@ -11,7 +11,7 @@ key t shift
 dump
 tw
 key esc
-menu New Group|Sketch In 3d
+menu Features|Sketch In 3d
 dump
 answer ok
 menu Sketch|In Workplane

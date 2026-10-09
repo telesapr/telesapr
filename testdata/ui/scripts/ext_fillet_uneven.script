@@ -14,7 +14,7 @@ up L 445 145
 move 445 265
 down L 445 265
 up L 445 265
-menu New Group|Fillet Edges
+menu Features|Fillet Edges
 dump
 tw
 answer ok

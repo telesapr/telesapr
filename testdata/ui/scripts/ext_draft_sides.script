@@ -22,7 +22,7 @@ up L 382.5 232.5
 move 247.5 202.5
 down L 247.5 202.5
 up L 247.5 202.5
-menu New Group|Draft Selected Sides
+menu Features|Draft Selected Sides
 tw
 twmove 272 165
 twdown L 272 165

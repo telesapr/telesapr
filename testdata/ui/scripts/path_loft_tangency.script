@@ -8,7 +8,7 @@ view default
 move 300 400
 down L 300 400
 up L 300 400
-menu New Group|Loft To Selected Profile
+menu Features|Loft To Selected Profile
 twmove 236 185
 twdown L 236 185
 twup L 236 185

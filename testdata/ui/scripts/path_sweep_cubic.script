@@ -8,7 +8,7 @@ view default
 move 382.5 232.5
 down L 382.5 232.5
 up L 382.5 232.5
-menu New Group|Sweep Along Path
+menu Features|Sweep Along Path
 twmove 154 165
 twdown L 154 165
 twup L 154 165

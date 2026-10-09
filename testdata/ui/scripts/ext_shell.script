@@ -14,11 +14,11 @@ up L 380 330
 key esc
 key x shift
 answer ok
-menu New Group|Shell Solid
+menu Features|Shell Solid
 move 290 265
 down L 290 265
 up L 290 265
-menu New Group|Shell Solid
+menu Features|Shell Solid
 dump
 tw
 answer ok

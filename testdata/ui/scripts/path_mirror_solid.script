@@ -13,7 +13,7 @@ key x shift
 move 290 265
 down L 290 265
 up L 290 265
-menu New Group|Mirror
+menu Features|Mirror
 twmove 60 165
 twdown L 60 165
 twup L 60 165

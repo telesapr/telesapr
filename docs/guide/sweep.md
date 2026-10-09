@@ -5,7 +5,7 @@ ring swept along a straight, a bend and a straight;
 [`examples/scripts/spring`](../../examples/scripts/spring/spring.go), a coil spring: a circle
 swept along a helix drawn as cubics.
 
-New Group > Sweep Along Path (Shift+U) moves the active group's sketch, in its workplane, along
+Features > Sweep Along Path (Shift+U) moves the active group's sketch, in its workplane, along
 a path. Select the line segments, arcs and cubics of the path, joined end to end and meeting
 tangent; they may lie in a workplane or anywhere in 3d. The profile's workplane must be active
 (Sketch > In Workplane). The path is an ordinary sketch, so its dimensions drive the sweep.

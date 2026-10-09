@@ -12,7 +12,7 @@
 // A circle of radius 20 on the XY plane is lofted to one of radius 6,
 // 60 above. Free, the loft is a cone's frustum; two cubics drawn in the
 // XZ plane from one circle to the other, one each side, curve inwards
-// and hold it, as New Group > Guide Loft by Selected Curves does, so
+// and hold it, as Features > Guide Loft by Selected Curves does, so
 // that it flares out at the mouth (by flare mm at the cubics' inner
 // handles, 12 unless given). The script prints the volume before and
 // after.

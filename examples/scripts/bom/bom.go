@@ -13,7 +13,7 @@
 // there too: the plate once, the bolt once and then repeated along the
 // plate, four in all unless given. The model links the bracket and
 // repeats it, two brackets; the parts a linked file links count too.
-// Analyze > Bill of Materials lists what the model places, by file; here
+// Assembly > Bill of Materials lists what the model places, by file; here
 // Doc.BillOfMaterials gives it and Doc.ExportBOM writes bom.csv, unless
 // given "-". The script checks the counts.
 package main

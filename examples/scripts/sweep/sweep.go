@@ -13,7 +13,7 @@
 // quarter bend of bend-radius mm (25 unless given), and 40 mm along x,
 // joined and made tangent by constraints. The ring, 12 mm across with
 // a 2 mm wall, is drawn in XY round the start of the path, and swept
-// along it as New Group > Sweep Along Path does. The script prints the
+// along it as Features > Sweep Along Path does. The script prints the
 // volume against what Pappus's theorem gives.
 package main
 

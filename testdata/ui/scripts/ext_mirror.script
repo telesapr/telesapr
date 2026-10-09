@@ -15,12 +15,12 @@ move 382.5 232.5
 down L 382.5 232.5
 up L 382.5 232.5
 answer ok
-menu New Group|Mirror
+menu Features|Mirror
 key esc
 move 290 265
 down L 290 265
 up L 290 265
-menu New Group|Mirror
+menu Features|Mirror
 dump
 tw
 answer ok

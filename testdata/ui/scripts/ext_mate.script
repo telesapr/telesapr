@@ -2,11 +2,11 @@
 # select; two circles picked and made a concentric mate in a workplane
 # have their centres put on each other.
 answer ok
-menu Constrain|Mate Concentric
+menu Assembly|Mate Concentric
 answer ok
-menu Constrain|Mate Flush
+menu Assembly|Mate Flush
 answer ok
-menu Constrain|Mate Hinge
+menu Assembly|Mate Hinge
 key c
 move 290 265
 down L 290 265
@@ -29,5 +29,5 @@ up L 290 215
 move 400 235
 down L 400 235
 up L 400 235
-menu Constrain|Mate Concentric
+menu Assembly|Mate Concentric
 save

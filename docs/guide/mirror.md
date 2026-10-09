@@ -3,7 +3,7 @@
 Example: [`examples/scripts/mirror`](../../examples/scripts/mirror/mirror.go), a symmetric
 bracket: one half drawn and extruded, the other half made by a mirror.
 
-New Group > Mirror (Shift+Y) reflects the active group in a plane and joins the reflection to
+Features > Mirror (Shift+Y) reflects the active group in a plane and joins the reflection to
 the solid. Select first:
 
 - a workplane, or
