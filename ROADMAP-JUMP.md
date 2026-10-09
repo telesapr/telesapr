@@ -58,9 +58,18 @@ not read.
 
 ## Open work and follow-ups
 
-Every item left is kernel work, unsized. A two-day spike on the hardest fixture comes before
-any of them is planned as a step. The notes in `docs/notes` hold the attempts that failed and
-why.
+Every item left is kernel work, unsized, except "Sketch on a face" below. A two-day spike on the
+hardest fixture comes before any kernel item is planned as a step. The notes in `docs/notes`
+hold the attempts that failed and why.
+
+### Features (from the UI review of 2026-10-09)
+
+The review's interface work (menus, greyed entries, context menu, toolbar, breadcrumbs, API
+parity) is merged into `devel`; this is what it left as a feature of its own.
+
+| Item | State |
+|---|---|
+| Sketch on a face | Not started. Select a flat face of the solid and choose Sketch on Face (Features menu and context menu): a new sketch group whose workplane lies in the face, its normal out of the solid, its origin and axes taken from the face (a corner, an edge's direction), and which follows the face when the model regenerates. Today Sketch In New Workplane takes a point, a point and two lines, a point and a normal, or a workplane, never a face, and the plane is tied to the points picked, not to the face. Needs: a workplane subtype "by face" in `pkg/sketch`, its plane computed from the face (`FacePoint`, `FaceNormal`) at each regeneration; the reference saved in `.tlspr`, with a round trip; faces no entity stands for (a fillet's, a shell's, a STEP solid's) referred to by their topology names (step 9), and a broken reference when the face goes; `Doc.SketchOnFace`, a scenario, a path pair and an example |
 
 ### Waiting for the user
 
