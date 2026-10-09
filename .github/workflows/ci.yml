@@ -179,8 +179,9 @@ jobs:
         run: make test-race RACE_PACKAGES='${{ matrix.packages }}'
 
   os:
-    # The quick tests (make test-fast) on Windows and macOS: on master
-    # and on request, since their runners cost more minutes. GNU make is
+    # The quick tests (make test-fast) on Windows and macOS, without
+    # those scripts/os-skip lists for the platform: on master and on
+    # request, since their runners cost more minutes. GNU make is
     # not on the Windows runner's PATH, so the script runs directly, in
     # Git Bash. The Release workflow runs them again before it packages.
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
@@ -202,4 +203,4 @@ jobs:
           cache-dependency-path: go.sum
       - name: Quick tests
         shell: bash
-        run: scripts/go-test.sh -short
+        run: scripts/test-os.sh

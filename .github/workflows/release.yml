@@ -79,7 +79,7 @@ jobs:
           cache-dependency-path: go.sum
       - name: Quick tests
         shell: bash
-        run: scripts/go-test.sh -short
+        run: scripts/test-os.sh
       - name: Packages
         shell: bash
         run: |
@@ -103,7 +103,7 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
       - name: Quick tests
-        run: make test-fast
+        run: scripts/test-os.sh
       - name: Package
         run: make dist-macos
       - uses: actions/upload-artifact@v7

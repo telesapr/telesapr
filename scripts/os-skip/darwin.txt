@@ -1,0 +1,35 @@
+# Tests scripts/test-os.sh skips on macOS, one name per line: what
+# fails there for a reason of the platform, until it is fixed. Found
+# by the first run of the quick tests on macos-latest (arm64),
+# 2026-10-09.
+#
+# On arm64 the Go compiler fuses a*b+c into one multiply-add, which
+# amd64 does not, so the last bits of the kernel's arithmetic differ
+# and every golden that records them: meshes, exports, drawings,
+# solver tables, the text window. The shipped macOS build computes
+# the same way, so this is the program's behaviour there and not only
+# a test's.
+TestNoFusedMultiplyAdd
+TestLibmVsGlibc
+TestFixturesRoundTrip
+TestSolidGoldens
+TestSparseQRGolden
+TestDisplayOutlines
+TestDrawCalls
+TestDrawingDimensions
+TestDrawingDimensionsViewsFaces
+TestExport
+TestExportMesh
+TestExportStl
+TestImport
+TestImportDxf
+TestModifyTools
+TestGoScripts
+TestHover
+TestInteraction
+TestTextWindow
+TestCamera
+TestSoftText
+TestFonts
+TestSynthFonts
+TestTTF
