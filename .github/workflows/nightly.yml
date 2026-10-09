@@ -1,7 +1,8 @@
 # What is too slow, or changes too little from commit to commit, for
 # every push: the vulnerability report as a job that fails, the
 # robustness sweeps over their whole grids, the fuzz targets, every
-# benchmark once, and the race detector over pkg/ui and pkg/script/api.
+# benchmark once, the race detector over pkg/ui and pkg/script/api, and
+# the quick tests on Windows.
 # Each step is a make target, so any of it runs locally the same way.
 #
 # On a schedule it runs only when master moved since the last nightly
@@ -110,3 +111,26 @@ jobs:
           name: fuzz-failures
           path: '**/testdata/fuzz/**'
           if-no-files-found: ignore
+
+  windows:
+    # The quick tests (make test-fast) on Windows, without those
+    # scripts/os-skip/windows.txt lists: some fifteen minutes, most of it
+    # compiling, too long for every push to master. GNU make is not on
+    # the runner's PATH, so the script runs directly, in Git Bash.
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      # Git for Windows checks text files out with CRLF line endings,
+      # and the goldens are compared byte for byte.
+      - name: LF line endings
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Quick tests
+        shell: bash
+        run: scripts/test-os.sh

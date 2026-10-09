@@ -78,10 +78,10 @@ three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the ta
   takes more than a few seconds skips itself under `testing.Short()`, saying what it is.
   `make test` runs every test, and `make ci` is what the GitHub workflow runs on `master`
   (checks, coverage, race, lint, vuln); on a branch the workflow leaves out the race detector
-  and the Windows and macOS quick tests, which run on `master` and on request
-  (workflow_dispatch). The nightly workflow runs what is too slow for a push: `make
-  test-sweeps`, `make fuzz`, `make bench`, govulncheck as a failing job, and the race detector
-  over `pkg/ui` and `pkg/script/api`. `make lint-new` lints what a branch changed.
+  and the macOS quick tests, which run on `master` and on request (workflow_dispatch). The
+  nightly workflow runs what is too slow for a push: `make test-sweeps`, `make fuzz`, `make
+  bench`, govulncheck as a failing job, the race detector over `pkg/ui` and `pkg/script/api`,
+  and the quick tests on Windows. `make lint-new` lints what a branch changed.
 - `scripts/go-test.sh` runs the slow packages (`SHARDED`) as several processes, their heaviest
   tests (`HEAVY`) one each; every test target goes through it. A new test of a minute or more in
   one of those packages goes into `HEAVY`.

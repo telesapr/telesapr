@@ -69,9 +69,9 @@ sudo make install                               # with the desktop entry, icons 
 them. `make ci` runs what the GitHub workflow does on a push to master: formatting, the
 generated-symbol check, the build, the tests with coverage (the GUI ones under Xvfb), the race
 detector on the engine packages, the linter and govulncheck. On a branch the workflow leaves
-out the race detector and the quick tests on Windows and macOS, which run on master and on
-request; a nightly workflow runs the full robustness sweeps, the fuzz targets and the
-benchmarks.
+out the race detector and the quick tests on macOS, which run on master and on request; a
+nightly workflow runs the full robustness sweeps, the fuzz targets, the benchmarks and the
+quick tests on Windows.
 
 ## Using it
 
