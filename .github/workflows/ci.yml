@@ -1,5 +1,5 @@
-# Every push and pull request: the checks, the tests with coverage and
-# the lint, as three jobs side by side. The race detector runs on a
+# Every push and pull request: the checks, the tests with coverage, the
+# lint and the vulnerability report, as jobs side by side. The race detector runs on a
 # push to master, and on request (workflow_dispatch) for a branch, in
 # three shards. make ci runs all of it locally.
 name: CI
@@ -44,8 +44,34 @@ jobs:
             gocache-checks-
       - name: Install X11 development packages
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
-      - name: gofmt, go.mod tidy, generated symbols up to date, build, govulncheck
+      - name: gofmt, go.mod tidy, generated symbols up to date, build
         run: make checks
+
+  vuln:
+    # govulncheck fails when an advisory is published against the
+    # standard library or a dependency, with no commit at all: here it
+    # only warns, so that master does not turn red for it. The nightly
+    # and Release workflows run it as a job that fails.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-vuln-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-vuln-${{ hashFiles('go.sum') }}-
+            gocache-vuln-
+      - name: Install X11 development packages
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - name: govulncheck
+        run: make vuln
 
   coverage:
     runs-on: ubuntu-latest

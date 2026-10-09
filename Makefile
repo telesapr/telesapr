@@ -10,7 +10,7 @@ help:
 	@echo "  make test-race    - Run the engine packages' tests under the race detector"
 	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
 	@echo "  make fuzz         - Run each fuzz target for FUZZTIME ($(FUZZTIME))"
-	@echo "  make checks       - fmt-check, tidy-check, generate-check, build and vuln"
+	@echo "  make checks       - fmt-check, tidy-check, generate-check and build"
 	@echo "  make ci           - Everything the GitHub workflow runs"
 	@echo "  make fmt          - Format code"
 	@echo "  make fmt-check    - Fail if gofmt would change a tracked file"
@@ -103,11 +103,13 @@ fuzz:
 		GOCACHE=$(PWD)/.gocache go test $$pkg -run '^$$' -fuzz "^$$name\$$" -fuzztime $(FUZZTIME) || exit 1; \
 	done
 
-# The quick checks: those that rewrite or read the sources first, then
-# the build and the vulnerability report. The GitHub workflow runs them
-# as one job beside the tests and the lint.
-checks: fmt-check tidy-check generate-check
-	@$(MAKE) --no-print-directory -j --output-sync=target build vuln
+# The quick checks: those that rewrite or read the sources, then the
+# build. The GitHub workflow runs them as one job beside the tests and
+# the lint. govulncheck is not among them: a new advisory against the
+# standard library or a dependency fails it with no commit at all, so
+# the workflow runs vuln as a job of its own that only warns, and the
+# nightly and Release workflows as one that fails.
+checks: fmt-check tidy-check generate-check build
 
 # What .github/workflows/ci.yml runs on a push to master, in one go:
 # the checks, then the rest side by side, each target's output printed
@@ -115,7 +117,7 @@ checks: fmt-check tidy-check generate-check
 # Xvfb inside coverage. On a branch the workflow leaves out test-race,
 # which it runs on master and on request.
 ci: checks
-	@$(MAKE) --no-print-directory -j --output-sync=target coverage test-race lint
+	@$(MAKE) --no-print-directory -j --output-sync=target coverage test-race lint vuln
 
 fmt-check:
 	@echo "==> gofmt -l"
