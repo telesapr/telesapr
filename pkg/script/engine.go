@@ -555,6 +555,12 @@ func (e *Engine) run(ctx context.Context, src string) error {
 	if err == nil || e.ran || Incomplete(err, src) {
 		return err
 	}
+	if ctx.Err() != nil {
+		// Stopped before it ran: the error is the stop's, not a sign
+		// that src is several statements to run one at a time, which
+		// would run a lone "}" of it.
+		return ctx.Err()
+	}
 	if parts, ok := split(src, err); ok {
 		for _, p := range parts {
 			if err := e.run(ctx, p.src); err != nil {
@@ -891,6 +897,13 @@ func (e *Engine) Feed(ctx context.Context, line string) (shown string, more bool
 		shown, err = e.show(ctx, src)
 		return reflect.Value{}, err
 	})
+	if err != nil && ctx.Err() != nil {
+		// Stopped: what the interpreter made of a statement cut short,
+		// a syntax error as often as not, is not the script's error,
+		// and the statement is gone.
+		e.pending = nil
+		return "", false, ctx.Err()
+	}
 	if Incomplete(err, src) {
 		return "", true, nil
 	}

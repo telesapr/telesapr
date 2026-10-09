@@ -395,3 +395,30 @@ error: assignment mismatch: 2 variables but 1 values
 		t.Errorf("the sketch has %d requests, want the 3 references and 2 lines", n)
 	}
 }
+
+// A statement stopped before it ran is reported as stopped, not as
+// whatever the interpreter made of it (a stop that came while it was
+// compiling once showed a syntax error of its last line), and is not
+// kept to join the next line.
+func TestFeedStopped(t *testing.T) {
+	t.Parallel()
+	var out bytes.Buffer
+	e, err := New(Options{Host: newHost(), Stdout: &out, Stderr: &out})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	if _, more, err := e.Feed(ctx, "for {"); !more || err != nil {
+		t.Fatalf("the first line: more %v, %v", more, err)
+	}
+	cancel()
+	if _, more, err := e.Feed(ctx, "}"); more || !errors.Is(err, context.Canceled) {
+		t.Errorf("the last line after the stop: more %v, %v", more, err)
+	}
+	if e.Pending() {
+		t.Error("the stopped statement is still pending")
+	}
+	if shown, _, err := e.Feed(context.Background(), "1 + 1"); err != nil || shown != "2" {
+		t.Errorf("the next line gave %q, %v", shown, err)
+	}
+}
