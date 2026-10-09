@@ -42,6 +42,12 @@ func (gw *graphicsWindow) AcceleratorForCommand(cmd Command) platform.KeyboardEv
 			break
 		}
 	}
+	return acceleratorEvent(rawAccel)
+}
+
+// acceleratorEvent is the key press that an accelerator of the menu
+// table stands for.
+func acceleratorEvent(rawAccel int) platform.KeyboardEvent {
 	accel := platform.KeyboardEvent{Type: platform.KeyPress}
 	if rawAccel&shiftMask != 0 {
 		accel.ShiftDown = true
@@ -84,6 +90,12 @@ func (gw *graphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 		}
 		if gw.AcceleratorForCommand(m.cmd).Equals(event) {
 			gw.ActivateCommand(m.cmd)
+			return true
+		}
+	}
+	for _, a := range accelAliases {
+		if acceleratorEvent(a.accel).Equals(event) {
+			gw.ActivateCommand(a.cmd)
 			return true
 		}
 	}

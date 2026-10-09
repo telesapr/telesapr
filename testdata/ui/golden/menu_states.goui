@@ -158,7 +158,7 @@ dialog 0 No workplane is active, so the grid will not appear.|
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
-  &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
+  &Stop Tracing... ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
   Motion St&udy... ind=0 en=1 act=0
 S&cript ind=0 en=1 act=0
@@ -340,7 +340,7 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
-  &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
+  &Stop Tracing... ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
   Motion St&udy... ind=0 en=1 act=0
 S&cript ind=0 en=1 act=0
