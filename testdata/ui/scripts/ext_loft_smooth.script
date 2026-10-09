@@ -14,7 +14,7 @@ up L 292.5 232.5
 move 292.5 217.5
 down L 292.5 217.5
 up L 292.5 217.5
-menu New Group|Loft To Selected Profile
+menu Features|Loft To Selected Profile
 dump
 tw
 answer ok

@@ -21,9 +21,9 @@ twdown L 262 200
 twup L 262 200
 # Nor the thread, the active group, before its profile; and it is last.
 answer ok
-menu Edit|Move Group Earlier
+menu Features|Move Group Earlier
 answer ok
-menu Edit|Move Group Later
+menu Features|Move Group Later
 # Undo takes the one move back, and redo does it again.
 key z ctrl
 tw

@@ -2,7 +2,7 @@
 # that use it, and Edit > Broken References names each, with what it
 # used. The home screen links to the list while it isn't empty.
 load group/translate_nd/normal.slvs
-menu Edit|Broken References...
+menu Features|Broken References...
 tw
 # The sketch on the extrusion's face, deleted from its screen.
 twmove 28 10

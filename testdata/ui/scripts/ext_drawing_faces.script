@@ -16,7 +16,7 @@ key x shift
 move 285 315
 down L 285 315
 up L 285 315
-menu File|Drawing Sheet...
+menu View|Drawing Sheet...
 tw
 twmove 46 305
 twdown L 46 305

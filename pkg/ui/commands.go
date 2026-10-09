@@ -90,9 +90,62 @@ func (ss *Application) findCommands(query string) []commandEntry {
 	return found
 }
 
+// formerCommandLabels are the labels, "Menu > Entry" in lower case, that
+// entries had before the menus were put in the order of the work, so that
+// a script written against them still runs.
+var formerCommandLabels = map[string]Command{
+	"file > export image...":                    cmdExportImage,
+	"file > export 2d view...":                  cmdExportView,
+	"file > export 2d section...":               cmdExportSection,
+	"file > drawing sheet...":                   cmdDrawingSheet,
+	"file > export drawing...":                  cmdExportDrawing,
+	"file > export 3d wireframe...":             cmdExportWireframe,
+	"file > export triangle mesh...":            cmdExportMesh,
+	"file > export surfaces...":                 cmdExportSurfaces,
+	"edit > configuration...":                   cmdConfiguration,
+	"edit > move group earlier":                 cmdMoveGroupEarlier,
+	"edit > move group later":                   cmdMoveGroupLater,
+	"edit > move group to end":                  cmdMoveGroupToEnd,
+	"edit > broken references...":               cmdBrokenReferences,
+	"new group > sketch in 3d":                  cmdGroup3D,
+	"new group > sketch in new workplane":       cmdGroupWrkpl,
+	"new group > step translating":              cmdGroupTrans,
+	"new group > step rotating":                 cmdGroupRot,
+	"new group > extrude":                       cmdGroupExtrude,
+	"new group > helix":                         cmdGroupHelix,
+	"new group > lathe":                         cmdGroupLathe,
+	"new group > revolve":                       cmdGroupRevolve,
+	"new group > screw thread...":               cmdGroupThread,
+	"new group > sweep along path":              cmdGroupSweep,
+	"new group > mirror":                        cmdGroupMirror,
+	"new group > chamfer edges":                 cmdGroupChamfer,
+	"new group > fillet edges":                  cmdGroupFillet,
+	"new group > loft to selected profile":      cmdGroupLoft,
+	"new group > shell solid":                   cmdGroupShell,
+	"new group > pattern along path":            cmdGroupPathPattern,
+	"new group > draft selected sides":          cmdDraftSelectedSides,
+	"new group > guide loft by selected curves": cmdLoftGuides,
+	"new group > link / assemble...":            cmdGroupLink,
+	"constrain > mate concentric":               cmdMateConcentric,
+	"constrain > mate flush":                    cmdMateFlush,
+	"constrain > mate hinge":                    cmdMateHinge,
+	"analyze > show interfering parts":          cmdInterference,
+	"analyze > bill of materials":               cmdBillOfMaterials,
+	"analyze > motion study...":                 cmdMotionStudy,
+	"export image...":                           cmdExportImage,
+	"export 2d view...":                         cmdExportView,
+	"export 2d section...":                      cmdExportSection,
+	"export drawing...":                         cmdExportDrawing,
+	"export 3d wireframe...":                    cmdExportWireframe,
+	"export triangle mesh...":                   cmdExportMesh,
+	"export surfaces...":                        cmdExportSurfaces,
+	"configuration...":                          cmdConfiguration,
+}
+
 // RunCommand runs the menu entry with the label given, "Menu > Entry"
-// as CommandLabels lists it, or the entry's own name when only one
-// entry has it; case and mnemonics are ignored.
+// as CommandLabels lists it, the entry's own name when only one entry
+// has it, or a label the entry had before (formerCommandLabels); case
+// and mnemonics are ignored.
 func (ss *Application) RunCommand(label string) error {
 	want := strings.ToLower(strings.TrimSpace(label))
 	var byName []commandEntry
@@ -104,6 +157,14 @@ func (ss *Application) RunCommand(label string) error {
 		}
 		if l[strings.LastIndex(l, " > ")+3:] == want {
 			byName = append(byName, e)
+		}
+	}
+	if cmd, ok := formerCommandLabels[want]; ok && len(byName) == 0 {
+		for _, e := range ss.commandEntries() {
+			if e.cmd == cmd {
+				e.fn(ss, e.cmd)
+				return nil
+			}
 		}
 	}
 	switch len(byName) {

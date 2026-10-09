@@ -1,7 +1,7 @@
 # A screw thread (an extension): on nothing, then on an extruded circle,
 # through its screen.
 answer ok
-menu New Group|Screw Thread...
+menu Features|Screw Thread...
 key c
 move 300 300
 down L 300 300
@@ -14,7 +14,7 @@ key x shift
 move 350 300
 down L 350 300
 up L 350 300
-menu New Group|Screw Thread...
+menu Features|Screw Thread...
 tw
 dump
 # The designation, the length, an internal thread, then make it.

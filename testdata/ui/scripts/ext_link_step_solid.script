@@ -6,7 +6,7 @@
 file $testdata/step/host.tlspr
 menu File|Open...
 file $testdata/step/shapes/box_hole.step
-menu New Group|Link / Assemble...
+menu Assembly|Link / Assemble...
 tw
 twmove 289 165
 twdown L 289 165
@@ -18,7 +18,7 @@ key z ctrl
 answer ok
 menu Analyze|Check Solid
 file $testdata/step/corpus/ap203e2_csg.stp
-menu New Group|Link / Assemble...
+menu Assembly|Link / Assemble...
 twmove 289 165
 twdown L 289 165
 twup L 289 165

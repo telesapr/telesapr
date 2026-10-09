@@ -26,11 +26,11 @@ key g
 key esc
 key x shift
 answer ok
-menu New Group|Pattern Along Path
+menu Features|Pattern Along Path
 move 300 200
 down L 300 200
 up L 300 200
-menu New Group|Pattern Along Path
+menu Features|Pattern Along Path
 tw
 answer ok
 menu Analyze|Check Solid

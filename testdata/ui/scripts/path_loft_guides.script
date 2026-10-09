@@ -8,8 +8,8 @@ view iso
 move 252.5 272.5
 down L 252.5 272.5
 up L 252.5 272.5
-menu New Group|Loft To Selected Profile
+menu Features|Loft To Selected Profile
 move 337.5 267.5
 down L 337.5 267.5
 up L 337.5 267.5
-menu New Group|Guide Loft by Selected Curves
+menu Features|Guide Loft by Selected Curves

@@ -7,7 +7,7 @@ file $testdata/ui/sweep_path.tlspr
 menu File|Open...
 view other
 answer ok
-menu New Group|Sweep Along Path
+menu Features|Sweep Along Path
 dump
 move 307.5 247.5
 down L 307.5 247.5
@@ -18,7 +18,7 @@ up L 322.5 187.5
 move 397.5 157.5
 down L 397.5 157.5
 up L 397.5 157.5
-menu New Group|Sweep Along Path
+menu Features|Sweep Along Path
 dump
 tw
 answer ok

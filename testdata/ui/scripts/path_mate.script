@@ -23,4 +23,4 @@ up L 290 215
 move 400 235
 down L 400 235
 up L 400 235
-menu Constrain|Mate Concentric
+menu Assembly|Mate Concentric

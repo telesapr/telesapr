@@ -162,6 +162,21 @@ const (
 	cmdShowDrawingSheet
 	cmdDraftSelectedSides
 	cmdLoftGuides
+	cmdShowWorkplanes
+	cmdShowNormals
+	cmdShowPoints
+	cmdShowConstruction
+	cmdShowConstraintsAll
+	cmdShowConstraintsDim
+	cmdShowConstraintsNone
+	cmdShowShaded
+	cmdShowFaces
+	cmdShowEdges
+	cmdShowOutlines
+	cmdShowMesh
+	cmdShowOccludedInvisible
+	cmdShowOccludedStippled
+	cmdShowOccludedVisible
 )
 
 // Pending is an operation to be completed by doing something with the
@@ -342,6 +357,7 @@ type graphicsWindow struct {
 	showTextWndMenuItem     platform.MenuItem
 	scriptConsoleMenuItem   platform.MenuItem
 	scriptAgentMenuItem     platform.MenuItem
+	showMenuItems           map[Command]platform.MenuItem // View > Show
 	fullScreenMenuItem      platform.MenuItem
 
 	unitsMmMenuItem         platform.MenuItem

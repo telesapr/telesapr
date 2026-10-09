@@ -46,7 +46,7 @@ func (ss *Application) MoveGroup(h core.HGroup, later bool) {
 
 // MoveGroupToEnd moves group h to the end of the history with the
 // groups only it needs, as an extrusion's sketch, as one undo step, or
-// says why it can't (Edit > Move Group to End).
+// says why it can't (Features > Move Group to End).
 func (ss *Application) MoveGroupToEnd(h core.HGroup) {
 	sk := ss.SK
 	if sk.Group(h) == nil {

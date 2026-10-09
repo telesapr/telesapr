@@ -13,7 +13,7 @@ key x shift
 move 340 265
 down L 340 265
 up L 340 265
-menu New Group|Fillet Edges
+menu Features|Fillet Edges
 dump
 tw
 answer ok

@@ -8,7 +8,7 @@ view default
 move 295 245
 down L 295 245
 up L 295 245
-menu New Group|Fillet Edges
+menu Features|Fillet Edges
 tw
 answer ok
 menu Analyze|Check Solid

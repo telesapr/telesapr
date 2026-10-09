@@ -611,7 +611,7 @@ func (tw *textWindow) ScreenSameChamferDistances(link int, v uint32) {
 
 // draftSelectedSides makes the active extrusion's draft lean only the
 // sides of the selected curves of its sketch, their copies at its ends,
-// or the selected faces of the sides (New Group > Draft Selected Sides,
+// or the selected faces of the sides (Features > Draft Selected Sides,
 // roadmap 28.2).
 func (ss *Application) draftSelectedSides() {
 	gw := ss.GW
@@ -640,7 +640,7 @@ func (ss *Application) draftSelectedSides() {
 }
 
 // loftGuidesFromSelection holds the active loft to the selected line
-// segments, arcs and cubics as its guide curves (New Group > Guide Loft
+// segments, arcs and cubics as its guide curves (Features > Guide Loft
 // by Selected Curves, roadmap 28.3).
 func (ss *Application) loftGuidesFromSelection() {
 	gw := ss.GW
@@ -707,7 +707,7 @@ func (tw *textWindow) showLoftEnds(g *sketch.Group) {
 		end(g.ValB), exprNote(g.ExprB), lf(tw.ScreenChangeLoftStart), g.H.V)
 	tw.Printf(false, "%Ba   %Ftreaches the last%E %s%s %Fl%Ll%f%D[change]%E",
 		end(g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
-	// Its guides: New Group > Guide Loft by Selected Curves sets them.
+	// Its guides: Features > Guide Loft by Selected Curves sets them.
 	if len(g.Edges) == 0 {
 		tw.Printf(false, "%Bd   %Ftguides%E none")
 	} else {
@@ -1026,7 +1026,7 @@ func (tw *textWindow) showExtrusionInfo(g *sketch.Group) {
 			// Roadmap 28.2: the plane the sides lean from, and which.
 			tw.Printf(false, "%Ba   %Ftfrom the plane%E %s along%s %Fl%Ll%f%D[change]%E",
 				ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
-			// Which: New Group > Draft Selected Sides chooses them.
+			// Which: Features > Draft Selected Sides chooses them.
 			if len(g.DraftFaces) == 0 {
 				tw.Printf(false, "%Bd   %Ftsides%E all")
 			} else {

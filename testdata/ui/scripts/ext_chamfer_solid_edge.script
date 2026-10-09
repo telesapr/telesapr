@@ -13,7 +13,7 @@ down L 335 425
 up L 335 425
 dump
 tw
-menu New Group|Chamfer Edges
+menu Features|Chamfer Edges
 dump
 tw
 answer ok

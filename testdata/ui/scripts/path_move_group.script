@@ -19,5 +19,5 @@ move 400 400
 down L 400 400
 up L 400 400
 key esc
-menu Edit|Move Group Earlier
-menu Edit|Move Group Earlier
+menu Features|Move Group Earlier
+menu Features|Move Group Earlier

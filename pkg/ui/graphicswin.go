@@ -181,6 +181,9 @@ func (gw *graphicsWindow) PopulateMainMenu() {
 			case cmdRedo:
 				gw.redoMenuItem = item
 			}
+			if gw.isShowCommand(m.cmd) {
+				gw.addShowMenuItem(m.cmd, item)
+			}
 		}
 	}
 
@@ -856,6 +859,7 @@ func (gw *graphicsWindow) EnsureValidActives() {
 	gw.showTextWndMenuItem.SetActive(gw.showTextWindow)
 
 	gw.showGridMenuItem.SetActive(gw.showSnapGrid)
+	gw.refreshShowMenu()
 	gw.dimSolidModelMenuItem.SetActive(gw.dimSolidModel)
 	gw.perspectiveProjMenuItem.SetActive(ss.UsePerspectiveProj)
 	gw.explodeMenuItem.SetActive(ss.Explode)
@@ -1403,6 +1407,7 @@ func (gw *graphicsWindow) ToggleBool(v *bool) {
 
 	gw.Invalidate(true)
 	gw.ss.ScheduleShowTW()
+	gw.refreshShowMenu()
 }
 
 // SuggestConstraint suggests a constraint for a new line, arc or
