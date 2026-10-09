@@ -58,11 +58,15 @@ row 16    View > Dimension Units > Dimensions in Feet and Inches
  0-2 64 64 0
  3-56 6c 64 114 3 1 0
  57-99 64 64 0
-row 19 (back to the groups)
+row 18    View > Show > Constraints and Dimensions
+ 0-2 64 61 0
+ 3-42 6c 61 114 4 1 0
+ 43-99 64 61 0
+row 21 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 21 
+row 23 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
