@@ -5,7 +5,10 @@ help:
 	@echo "TeleSAPR Build Targets:"
 	@echo ""
 	@echo "Development:"
+	@echo "  make test-fast    - Run the quick tests (go test -short)"
 	@echo "  make test         - Run all tests"
+	@echo "  make test-sweeps  - Run the robustness sweeps over their whole grids"
+	@echo "  make bench        - Run every benchmark once"
 	@echo "  make test-gui     - Run the GUI backend tests under Xvfb"
 	@echo "  make test-race    - Run the engine packages' tests under the race detector"
 	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
@@ -40,7 +43,7 @@ help:
 	@echo "  make release      - Push master, wait for CI, tag v$(VERSION), make the GitHub release"
 	@echo ""
 
-.PHONY: test test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: test test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -52,9 +55,36 @@ DATADIR = $(PREFIX)/share
 FREEDESKTOP = dist/freedesktop
 ICON_SIZES = 16x16 24x24 32x32 48x48
 
+# The tiers: test-fast while working (the -short tests, under a minute
+# on a workstation), test for every test, ci for what the GitHub workflow runs;
+# the nightly workflow adds test-sweeps, fuzz, bench and the race detector
+# over pkg/ui and pkg/script/api. All of them go through scripts/go-test.sh,
+# which runs the slow packages as several processes, as CI does.
 test:
 	@echo "==> go test ./..."
-	GOCACHE=$(PWD)/.gocache go test ./...
+	GOCACHE=$(PWD)/.gocache scripts/go-test.sh
+
+# A test that takes more than a few seconds skips itself under -short
+# (testing.Short), so this is what is quick enough before every commit;
+# the Windows and macOS jobs run it too.
+test-fast:
+	@echo "==> go test -short ./..."
+	GOCACHE=$(PWD)/.gocache scripts/go-test.sh -short
+
+# The robustness sweeps over their whole grids (pkg/internal/sweep),
+# rather than the sample the ordinary run takes; the packages are those
+# with sweeps, and their other tests run too.
+SWEEP_PACKAGES = ./pkg/persist/slvs ./pkg/script/api ./pkg/sketch ./pkg/srf ./pkg/topo
+
+test-sweeps:
+	@echo "==> TELESAPR_SWEEP=1 go test $(SWEEP_PACKAGES)"
+	GOCACHE=$(PWD)/.gocache TELESAPR_SWEEP=1 PACKAGES='$(SWEEP_PACKAGES)' scripts/go-test.sh -timeout 180m
+
+# Every benchmark once: they are run so that they keep working, not
+# timed; the nightly workflow keeps the output.
+bench:
+	@echo "==> go test -bench . -benchtime 1x ./..."
+	GOCACHE=$(PWD)/.gocache go test -run '^$$' -bench . -benchtime 1x ./...
 
 # The GUI backend's tests open windows, so they run under Xvfb.
 test-gui:

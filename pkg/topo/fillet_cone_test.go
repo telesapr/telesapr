@@ -137,6 +137,9 @@ func onPlate(r0, r1, h float64) *srf.SShell {
 // cone's slope and the radius, against Pappus's volumes; the rate
 // allowed, 0, was set before.
 func TestFilletConeSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	old := srf.ChordTolMm()
 	defer srf.SetChordTolMm(old)
 	grid := sweep.Grid{

@@ -150,6 +150,9 @@ func ngon(d *api.Doc, n int, r, z float64) {
 // the two turns of the largest). The outer cells are halved since, and
 // the worst is 0.55%.
 func TestLoftSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	loft := func(p sweep.Point) error {
 		n, c, h, turn := int(p.Float("sides")), p.Float("scale"), p.Float("height"), int(p.Float("turn"))
 		curves := n

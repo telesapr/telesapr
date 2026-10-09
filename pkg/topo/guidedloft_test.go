@@ -155,6 +155,9 @@ func TestGuidedLoftRefusals(t *testing.T) {
 // the integral of the circles' areas, r(z) set by the guides. The rate
 // allowed was fixed at none before the guides were written.
 func TestGuidedLoftSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	old := srf.ChordTolMm()
 	defer srf.SetChordTolMm(old)
 	srf.SetChordTolMm(0.002)

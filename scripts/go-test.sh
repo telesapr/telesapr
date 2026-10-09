@@ -17,9 +17,15 @@ set -eu
 cd "$(dirname "$0")/.."
 
 PACKAGES=${PACKAGES:-./...}
-SHARDED=${SHARDED:-./pkg/persist/slvs}
+# The packages whose tests take the longest in one process: on a
+# runner of four cores each of them alone used to outlast every other
+# package (pkg/topo 14 minutes under the race detector, pkg/script/api
+# 5 minutes with coverage). HEAVY are the tests of a minute or more on
+# such a runner, or that dominate their package; a new one goes here.
+SHARDED=${SHARDED:-./pkg/persist/slvs ./pkg/topo ./pkg/script/api ./pkg/ui}
 HEAVY=${HEAVY:-TestParallelSameAsSerial TestParallelFastSameOnAnyGoroutines TestThreadSolids \
-TestThreadGoldens TestThreadSweep TestFreedomVsShowDof TestParallelFastSameShapeAsSerial TestMoveGroupSweep TestSuppressAllSweep}
+TestThreadGoldens TestThreadSweep TestFreedomVsShowDof TestParallelFastSameShapeAsSerial TestMoveGroupSweep TestSuppressAllSweep \
+TestFilletOnOtherSolids TestFilletOnOtherSolidsVolumes TestEveryFacePicked}
 REST_SHARDS=${REST_SHARDS:-3}
 COVERPROFILE=${COVERPROFILE:-}
 

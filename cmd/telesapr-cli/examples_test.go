@@ -10,6 +10,9 @@ import (
 // "Definition of done": an example for every feature, executed by a
 // test).
 func TestExamplesRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("every example script")
+	}
 	root, err := filepath.Abs(filepath.Join("..", "..", "examples", "scripts"))
 	if err != nil {
 		t.Fatal(err)

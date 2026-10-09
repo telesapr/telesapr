@@ -92,6 +92,9 @@ func (tl filletTally) String() string {
 // filleted alone, the rate measured. A fillet that is made must be
 // sound; what is refused is counted, and the counts may only get better.
 func TestFilletOnOtherSolids(t *testing.T) {
+	if testing.Short() {
+		t.Skip("STEP solids at a fine tolerance")
+	}
 	type tcase struct {
 		name    string
 		build   func(d *Doc) Group
@@ -219,6 +222,9 @@ func TestSolidEdgeSmooth(t *testing.T) {
 // saving and loading, and gone with one undo. Ours take 0.1 to 0.2% more
 // at this chord tolerance.
 func TestFilletEndsOnCurvedFace(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fillets over curved faces, slow")
+	}
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
 	for _, c := range []struct {
 		at   Vec

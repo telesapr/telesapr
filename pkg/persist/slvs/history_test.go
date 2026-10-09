@@ -152,6 +152,9 @@ func firstLineDiff(a, b []byte) string {
 // By default one group per fixture is tried, every one under
 // TELESAPR_SWEEP=1.
 func TestSuppressAllSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	tried, compared := 0, 0
 	for fi, f := range invariantFixtures(t) {
 		if slvs.RaceDetector && fi%5 != 0 {

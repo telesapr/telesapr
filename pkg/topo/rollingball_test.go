@@ -205,6 +205,9 @@ func TestRollingBallRefusals(t *testing.T) {
 // a large branch at 55 degrees with the largest radius, whose ball runs
 // off the branch.
 func TestRollingBallSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("kind", "joined", "hole"),

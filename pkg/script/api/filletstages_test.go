@@ -17,6 +17,9 @@ import (
 // edges of different radii over an upright left sharp are refused,
 // saying why, marked at the corner.
 func TestFilletStagesScript(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a long script")
+	}
 	const w, l, h, upright, top = 30.0, 20.0, 15.0, 5.0, 2.0
 	build := func(d *Doc) (Group, []SolidEdge, int) {
 		d.SetChordTolerance(0.002)

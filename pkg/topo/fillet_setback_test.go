@@ -199,6 +199,9 @@ func setbackCase(t *testing.T, corner string, r1, r2, r3 float64) (refused bool,
 // each made, sound and tangent all round. The rate allowed, 0, was fixed
 // before the sweep first ran.
 func TestFilletSetbackSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	old := srf.ChordTolMm()
 	defer srf.SetChordTolMm(old)
 	grid := sweep.Grid{
@@ -225,6 +228,9 @@ func TestFilletSetbackSweep(t *testing.T) {
 // to 1 side by side), allowed up to 12%. The allowance was set after
 // the first run, unlike the grid above's. The whole grid always runs.
 func TestFilletSetbackExtremeSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a sweep")
+	}
 	old := srf.ChordTolMm()
 	defer srf.SetChordTolMm(old)
 	grid := sweep.Grid{
