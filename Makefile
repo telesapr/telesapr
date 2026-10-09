@@ -144,18 +144,30 @@ vuln:
 	@echo "==> govulncheck ./..."
 	GOCACHE=$(PWD)/.gocache go tool govulncheck ./...
 
-lint:
+# golangci-lint is pinned in tools/lint/go.mod, a module of its own so
+# that its dependencies stay out of ours, and built from there into bin/;
+# the GitHub workflow runs the same binary. It is built with go.mod's
+# toolchain: one older than the code's cannot read the export data of
+# the standard library it type-checks against.
+GOLANGCI_LINT = bin/golangci-lint
+LINT_ENV = GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint
+
+$(GOLANGCI_LINT): go.mod tools/lint/go.mod tools/lint/go.sum
+	GOCACHE=$(PWD)/.gocache GOTOOLCHAIN=$$(go env GOVERSION) go build -C tools/lint -o $(PWD)/$(GOLANGCI_LINT) \
+		github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+
+lint: $(GOLANGCI_LINT)
 	@echo "==> golangci-lint run"
-	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run ./...
+	$(LINT_ENV) $(GOLANGCI_LINT) run ./...
 
 # Where the branch left master, so that a branch's commits are linted
 # and not only what is uncommitted; on master that is HEAD. A quicker
 # check while working; make ci lints everything.
 LINT_BASE ?= $(shell git merge-base HEAD master 2>/dev/null || echo HEAD)
 
-lint-new:
+lint-new: $(GOLANGCI_LINT)
 	@echo "==> golangci-lint run --new-from-rev=$(LINT_BASE)"
-	GOCACHE=$(PWD)/.gocache GOLANGCI_LINT_CACHE=$(PWD)/.golangci-lint golangci-lint run --new-from-rev=$(LINT_BASE) ./...
+	$(LINT_ENV) $(GOLANGCI_LINT) run --new-from-rev=$(LINT_BASE) ./...
 
 # The tables of what a script can import are generated from the
 # packages; they change when what those export does.
