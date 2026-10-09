@@ -7,7 +7,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/thread"
 )
 
-// ThreadOptions are what New Group > Screw Thread asks for. The zero
+// ThreadOptions are what Features > Screw Thread asks for. The zero
 // value is what the screen starts with: the standard thread nearest
 // the circle's diameter, external, one and a half diameters long,
 // ending at a shoulder.
@@ -36,7 +36,7 @@ type ThreadOptions struct {
 func ThreadNearest(d float64) string { return thread.Nearest(d).String() }
 
 // Thread makes a screw thread on a circle or an arc, about its axis
-// and from its plane, as New Group > Screw Thread does: four groups,
+// and from its plane, as Features > Screw Thread does: four groups,
 // a sketch and a lathe that turn the part down (or bore it), and a
 // ridge sketch and a helix that sweeps it. It returns the helix group,
 // which becomes active; its Check says whether the solid came out

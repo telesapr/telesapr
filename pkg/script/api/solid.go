@@ -143,7 +143,7 @@ func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group {
 // segments and arcs joined end to end and meeting tangent, as a sweep's
 // path, copies times in all: the first where the solid is and the last
 // at the far end of the path, spaced evenly along it, each turned with
-// it, as New Group > Pattern Along Path does. The path starts at its
+// it, as Features > Pattern Along Path does. The path starts at its
 // end nearest the solid. A path that closes, a circle alone or pieces
 // that come back to their start meeting it tangent, has the copies
 // shared out evenly round it, starting at its point nearest the
