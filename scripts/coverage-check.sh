@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs every test with a coverage profile over ./pkg/..., prints the
 # total, and fails when a package listed in scripts/coverage-packages.txt
-# has less than MIN percent of its statements covered (ROADMAP-JUMP.md:
+# has less than MIN percent of its statements covered (docs/done-audit.md:
 # new packages hold at least 85%).
 #
 # The profile counts a package's statements whichever package's tests

@@ -1,7 +1,7 @@
 package api_test
 
 // The script API must reach everything the interface makes
-// (ROADMAP-JUMP.md, "Definition of done"): these tests fail when a
+// (docs/done-audit.md, "Definition of done"): these tests fail when a
 // group type or a menu command has no API method and no reason to have
 // none, or when an exported API name has no doc comment, which help()
 // shows. That every example runs is tested where telesapr-cli run is,

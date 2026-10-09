@@ -1,6 +1,6 @@
 # TeleSAPR: how the code is written
 
-Read this before changing anything. `README.md` says what the program is; `ROADMAP-JUMP.md` says
+Read this before changing anything. `README.md` says what the program is; `ROADMAP.md` says
 what is being built; `docs/adr/` says why the big decisions were taken. This file is the
 conventions, for people and for coding agents alike (`AGENTS.md` is the same file).
 

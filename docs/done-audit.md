@@ -2,8 +2,56 @@
 
 Roadmap package 12.8, made on 2026-10-03 on branch `step-12-close`. Each feature that steps 1 to
 11 and I7 added is a row; each column is a requirement of "Definition of done for every new
-feature" in `ROADMAP-JUMP.md`. A cell names what meets the requirement, or says why it does not
-apply ("n/a" and the reason). No cell is empty.
+feature" below. A cell names what meets the requirement, or says why it does not apply ("n/a"
+and the reason). No cell is empty.
+
+## Definition of done for every new feature
+
+Requirement set by the user on 2026-10-01: a new feature is well tested, has a user interface,
+and has scripting support. A feature that lacks one of the three is not done and does not merge.
+The three paths, interface, script and file, must reach the same engine entry point in
+`pkg/sketch`, so none of them can drift from the others. The conventions of the code itself, and
+the environment variables the tests read, are in `CLAUDE.md`.
+
+The order inside a feature is: entry point in `pkg/sketch`, save and load, interface, script API,
+path equivalence test. Document state a feature adds goes into `UndoState` in
+`pkg/sketch/undo.go`, or it is lost on undo.
+
+### Tests
+
+| Requirement | How it is met here |
+|---|---|
+| Unit tests for new engine and kernel code | Beside the code, in the package. New packages hold at least 85% statement coverage and no exported function at 0% (`scripts/coverage-packages.txt`). Measure with `-coverpkg=./pkg/...`, since `pkg/sketch` and `pkg/core` are mostly exercised from other packages. |
+| Geometric invariants on every solid a test builds | The oracle `pkg/check`: watertight shell, no naked or self-intersecting edges, face count, and volume and centre of mass against a closed-form value where one exists. |
+| Golden files | A `.tlspr` fixture per feature variant under `testdata`, with a regeneration script. A golden only changes in a commit that says why. |
+| Save and load round trip | Load, regenerate, save gives the same bytes. A file from the previous format version still loads. |
+| Undo and redo | Every creating and editing action is one undo step and comes back identical on redo. |
+| Failure behaviour | Bad input gives a diagnostic on the group, never a panic and never silently wrong geometry. Each documented failure has a test. |
+| Robustness sweep, for solid features | A parameter sweep over sizes, angles and placements (`pkg/internal/sweep`), reporting the failure rate. The acceptable rate is fixed before the feature starts. Fuzz targets for parsers. |
+| Concurrency | `go test -race` over the touched packages, and the same result on one goroutine and on eight. |
+| Performance | A benchmark for anything on the regeneration path, compared with the previous commit. |
+| Interface scenario | At least one script under `testdata/ui/scripts` that drives the feature through menus, mouse and text window on the headless platform. |
+| Path equivalence | One test builds the same model through the interface script and through a Go script and requires identical saved files. |
+
+### User interface
+
+- A menu entry in `pkg/ui/menu_table.go`, with an accelerator where one is free, and a toolbar icon for features used while drawing.
+- A text-window screen showing every parameter of the feature, editable in place, with expressions accepted wherever a number is.
+- Selection-driven creation as the existing groups do it: select, then invoke. A clear message when the selection does not fit, saying what to select.
+- Feedback on the canvas: hover and selection highlighting for whatever the feature lets the user pick, and failure marked on the model where it happened.
+- An entry in the command search.
+- No feature reachable only from the console or the command line.
+
+### Scripting
+
+- A method on `pkg/script/api` to create the feature, to read and change every parameter the text window shows, and to query the result.
+- Doc comments on every method, since `help()` and `docs.json` are generated from them. `make generate` is run and `make generate-check` passes.
+- A runnable example under `examples/scripts`, executed by a test.
+- A test in `pkg/script/api` that covers misuse as well as use, as `TestMisuse` does.
+- Reachable from `telesapr-cli run`, so the feature works without a window.
+- Kernel foundations have no interface of their own, but expose what scripts can use.
+
+## The audit
 
 Where things are:
 

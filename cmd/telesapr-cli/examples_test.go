@@ -6,7 +6,7 @@ import (
 )
 
 // Every example under examples/scripts runs with telesapr-cli run,
-// with no arguments, in a directory of its own (ROADMAP-JUMP.md,
+// with no arguments, in a directory of its own (docs/done-audit.md,
 // "Definition of done": an example for every feature, executed by a
 // test).
 func TestExamplesRun(t *testing.T) {

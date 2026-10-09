@@ -8,7 +8,7 @@ SolveSpace's `.slvs`.
 > **Warning:** TeleSAPR is experimental. It may have bugs, and it may change in ways that break
 > your files, scripts and workflow. It is not recommended for sensitive or critical work.
 
-It is built and tested on Linux. See [`ROADMAP-JUMP.md`](ROADMAP-JUMP.md) for where it is going.
+It is built and tested on Linux. See [`ROADMAP.md`](ROADMAP.md) for where it is going.
 
 ## What it adds to SolveSpace
 

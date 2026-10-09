@@ -1,7 +1,7 @@
 // Package sweep runs a robustness sweep: a function over every
 // combination of a few parameters, such as sizes, angles and
 // placements, counting the combinations it fails on. The acceptable
-// failure rate is fixed before the feature is built (ROADMAP-JUMP.md,
+// failure rate is fixed before the feature is built (docs/done-audit.md,
 // "Definition of done"), and a sweep over it fails the test.
 //
 // By default a sweep runs an even sample of its grid, so that it fits
