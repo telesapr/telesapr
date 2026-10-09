@@ -247,5 +247,5 @@ func TestScriptConsoleOnLoop(t *testing.T) {
 			t.Errorf("after the script was stopped the console is busy %v, with the prompt %q", w.Busy, w.Prompt)
 		}
 	})
-	close(p.posted)
+	p.stop()
 }

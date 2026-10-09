@@ -6,6 +6,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/platform/headless"
@@ -169,10 +170,38 @@ type loopPlatform struct {
 	*headless.Platform
 	posted chan func()
 	done   chan struct{}
+
+	// mu keeps a post from racing stop: a goroutine of the agent's
+	// server can still post while a test ends, and a post after stop
+	// is dropped, as a window's closed loop drops it, rather than sent
+	// on the closed channel.
+	mu      sync.RWMutex
+	stopped bool
 }
 
-func (p *loopPlatform) PostToLoop(fn func())      { p.posted <- fn }
+func (p *loopPlatform) PostToLoop(fn func()) {
+	// A read lock, so that a function on the loop can post while
+	// another goroutine waits to.
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	if !p.stopped {
+		p.posted <- fn
+	}
+}
+
 func (p *loopPlatform) LoopDone() <-chan struct{} { return p.done }
+
+// stop ends the loop: what was posted before still runs, and LoopDone
+// is closed.
+func (p *loopPlatform) stop() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.stopped {
+		p.stopped = true
+		close(p.posted)
+		close(p.done)
+	}
+}
 
 // A script on a goroutine of its own works on the sketch through the
 // event loop, where a call made from inside another runs in place and
@@ -224,9 +253,8 @@ func TestScriptHostRunsOnLoop(t *testing.T) {
 		t.Error("the line is gone after a failed call")
 	}
 
-	close(p.posted)
+	p.stop()
 	<-stopped
-	close(p.done)
 	func() {
 		defer func() {
 			if r, _ := recover().(error); !errors.Is(r, ErrLoopEnded) {
