@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/telesapr/telesapr/pkg/platform"
+import (
+	"slices"
+
+	"github.com/telesapr/telesapr/pkg/platform"
+)
 
 // An entry of the menu that has nothing to work on is greyed out, its
 // key does nothing and the command search says why. Only what the state
@@ -60,14 +64,12 @@ func (gw *graphicsWindow) refreshEnabled() {
 
 // addEnablementItem keeps a menu item whose command can be refused.
 func (gw *graphicsWindow) addEnablementItem(cmd Command, item platform.MenuItem) {
-	for _, c := range enablementCommands {
-		if c == cmd {
-			if gw.enablementItems == nil {
-				gw.enablementItems = map[Command]platform.MenuItem{}
-			}
-			gw.enablementItems[cmd] = item
-			delete(gw.enabledState, cmd)
-			return
-		}
+	if !slices.Contains(enablementCommands, cmd) {
+		return
 	}
+	if gw.enablementItems == nil {
+		gw.enablementItems = map[Command]platform.MenuItem{}
+	}
+	gw.enablementItems[cmd] = item
+	delete(gw.enabledState, cmd)
 }
