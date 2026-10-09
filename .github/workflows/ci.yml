@@ -1,8 +1,9 @@
 # Every push to a branch: the checks, the tests with coverage, the lint
 # and the vulnerability report, as jobs side by side. On a push to master,
 # and on request (workflow_dispatch) for a branch, also the race detector
-# in shards. make ci runs it locally; the nightly workflow (nightly.yml)
-# runs what is too slow for every push.
+# in shards and the quick tests on Windows and macOS. make ci runs the
+# Linux part of it locally; the nightly workflow (nightly.yml) runs what
+# is too slow for every push.
 #
 # A tag push runs nothing here: make release tags a commit of master
 # that this workflow has passed, and release.yml runs on the tag. There
@@ -191,3 +192,25 @@ jobs:
           version: x11-1
       - name: Race detector, shard ${{ matrix.name }}
         run: make test-race RACE_PACKAGES='${{ matrix.packages }}'
+
+  os:
+    # The quick tests (make test-fast) on Windows and macOS: on master
+    # and on request, since their runners cost more minutes. GNU make is
+    # not on the Windows runner's PATH, so the script runs directly, in
+    # Git Bash. The Release workflow runs them again before it packages.
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Quick tests
+        shell: bash
+        run: scripts/go-test.sh -short
