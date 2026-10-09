@@ -1,21 +1,29 @@
 filedialog open
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-loft   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-19 64 64 0
+ 20-47 74 64 0
+ 48-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-loft [rename/del]
+row 7 GROUP  g007-loft [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-17 64 64 0
  18-23 6c 64 108 7 1 0
  24-24 64 64 0
  25-27 6c 64 108 7 1 0
- 28-99 64 64 0
+ 28-30 64 64 0
+ 31-36 73 64 0
+ 37-37 64 64 0
+ 38-41 6c 64 115 7 1 0
+ 42-42 64 64 0
+ 43-43 6c 64 117 7 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 100 7 1 0
+ 46-99 64 64 0
 row 10  loft between two profiles
  0-0 64 64 0
  1-25 74 64 0
@@ -107,23 +115,31 @@ camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.207390338946
 counts 7 7 32 0 42
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-loft   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-19 64 64 0
+ 20-47 74 64 0
+ 48-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-loft [rename/del]
+row 7 GROUP  g007-loft [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-17 64 64 0
  18-23 6c 64 108 7 1 0
  24-24 64 64 0
  25-27 6c 64 108 7 1 0
- 28-99 64 64 0
+ 28-30 64 64 0
+ 31-36 73 64 0
+ 37-37 64 64 0
+ 38-41 6c 64 115 7 1 0
+ 42-42 64 64 0
+ 43-43 6c 64 117 7 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 100 7 1 0
+ 46-99 64 64 0
 row 10  loft between two profiles
  0-0 64 64 0
  1-25 74 64 0

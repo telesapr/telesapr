@@ -1,9 +1,9 @@
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › parameters   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-20 64 64 0
+ 21-30 74 64 0
+ 31-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -40,12 +40,12 @@ row 28 (back to the groups)
  19-99 64 64 0
 row 30 
  0-99 64 64 0
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › parameters   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-20 64 64 0
+ 21-30 74 64 0
+ 31-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -143,12 +143,12 @@ param 40014 8.9366093740916774 0 0
 group 1 0 0 0 1
 group 2 0 3 1 1
 dialog 3 Parameter "length" is used by parameter w, constraint c001-pt-pt-distance.|
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › parameters   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-20 64 64 0
+ 21-30 74 64 0
+ 31-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

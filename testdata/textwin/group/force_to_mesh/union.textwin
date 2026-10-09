@@ -187,12 +187,12 @@ row 39   parameters
 row 41 
  0-99 64 64 0
 screen group 1
-row 0  home   drawing / constraining in 3d
+row 0  home › g001-#references   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-26 64 64 0
+ 27-54 74 64 0
+ 55-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -225,12 +225,12 @@ row 23    (none)
 row 25 
  0-99 64 64 0
 screen solve 1
-row 0  home   drawing / constraining in 3d
+row 0  home › g001-#references   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-26 64 64 0
+ 27-54 74 64 0
+ 55-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -265,23 +265,31 @@ row 25
 row 27 
  0-99 64 64 0
 screen group 2
-row 0  home   drawing / constraining in 3d
+row 0  home › g002-sketch-in-plane   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-30 64 64 0
+ 31-58 74 64 0
+ 59-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g002-sketch-in-plane [rename/del]
+row 7 GROUP  g002-sketch-in-plane [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-28 64 64 0
  29-34 6c 64 108 2 1 0
  35-35 64 64 0
  36-38 6c 64 108 2 1 0
- 39-99 64 64 0
+ 39-41 64 64 0
+ 42-49 6c 64 97 2 1 0
+ 50-50 64 64 0
+ 51-54 6c 64 115 2 1 0
+ 55-55 64 64 0
+ 56-56 6c 64 117 2 1 0
+ 57-57 64 64 0
+ 58-58 6c 64 100 2 1 0
+ 59-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -331,23 +339,31 @@ row 39    (none)
 row 41 
  0-99 64 64 0
 screen solve 2
-row 0  home   drawing / constraining in 3d
+row 0  home › g002-sketch-in-plane   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-30 64 64 0
+ 31-58 74 64 0
+ 59-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g002-sketch-in-plane [rename/del]
+row 7 GROUP  g002-sketch-in-plane [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-28 64 64 0
  29-34 6c 64 108 2 1 0
  35-35 64 64 0
  36-38 6c 64 108 2 1 0
- 39-99 64 64 0
+ 39-41 64 64 0
+ 42-49 6c 64 97 2 1 0
+ 50-50 64 64 0
+ 51-54 6c 64 115 2 1 0
+ 55-55 64 64 0
+ 56-56 6c 64 117 2 1 0
+ 57-57 64 64 0
+ 58-58 6c 64 100 2 1 0
+ 59-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -399,23 +415,31 @@ row 41
 row 43 
  0-99 64 64 0
 screen group 3
-row 0  home   drawing / constraining in 3d
+row 0  home › g003-helpers   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g003-helpers [rename/del]
+row 7 GROUP  g003-helpers [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 3 1 0
  27-27 64 64 0
  28-30 6c 64 108 3 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 3 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 3 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 3 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 3 1 0
+ 51-99 64 64 0
 row 10  sketch in 3d
  0-0 64 64 0
  1-12 74 64 0
@@ -467,23 +491,31 @@ row 39    (none)
 row 41 
  0-99 64 64 0
 screen solve 3
-row 0  home   drawing / constraining in 3d
+row 0  home › g003-helpers   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g003-helpers [rename/del]
+row 7 GROUP  g003-helpers [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 3 1 0
  27-27 64 64 0
  28-30 6c 64 108 3 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 3 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 3 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 3 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 3 1 0
+ 51-99 64 64 0
 row 10  sketch in 3d
  0-0 64 64 0
  1-12 74 64 0
@@ -537,23 +569,31 @@ row 41
 row 43 
  0-99 64 64 0
 screen group 4
-row 0  home   drawing / constraining in 3d
+row 0  home › g004-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g004-sketch [rename/del]
+row 7 GROUP  g004-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 4 1 0
  26-26 64 64 0
  27-29 6c 64 108 4 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 4 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 4 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 4 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 4 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -617,23 +657,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen solve 4
-row 0  home   drawing / constraining in 3d
+row 0  home › g004-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g004-sketch [rename/del]
+row 7 GROUP  g004-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 4 1 0
  26-26 64 64 0
  27-29 6c 64 108 4 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 4 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 4 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 4 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 4 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -699,23 +747,31 @@ row 47
 row 49 
  0-99 64 64 0
 screen group 5
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -825,23 +881,31 @@ row 59    (none)
 row 61 
  0-99 64 64 0
 screen solve 5
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -953,23 +1017,31 @@ row 61
 row 63 
  0-99 64 64 0
 screen group 6
-row 0  home   drawing / constraining in 3d
+row 0  home › g006-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g006-sketch [rename/del]
+row 7 GROUP  g006-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 6 1 0
  26-26 64 64 0
  27-29 6c 64 108 6 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 6 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 6 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 6 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 6 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -1031,23 +1103,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen solve 6
-row 0  home   drawing / constraining in 3d
+row 0  home › g006-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g006-sketch [rename/del]
+row 7 GROUP  g006-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 6 1 0
  26-26 64 64 0
  27-29 6c 64 108 6 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 6 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 6 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 6 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 6 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -1111,23 +1191,31 @@ row 47
 row 49 
  0-99 64 64 0
 screen group 7
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -1235,23 +1323,31 @@ row 59    (none)
 row 61 
  0-99 64 64 0
 screen solve 7
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -1361,23 +1457,31 @@ row 61
 row 63 
  0-99 64 64 0
 screen group 8
-row 0  home   drawing / constraining in 3d
+row 0  home › g008-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g008-sketch [rename/del]
+row 7 GROUP  g008-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 8 1 0
  26-26 64 64 0
  27-29 6c 64 108 8 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 8 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 8 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 8 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 8 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -1439,23 +1543,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen solve 8
-row 0  home   drawing / constraining in 3d
+row 0  home › g008-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g008-sketch [rename/del]
+row 7 GROUP  g008-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 8 1 0
  26-26 64 64 0
  27-29 6c 64 108 8 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 8 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 8 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 8 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 8 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -1519,23 +1631,31 @@ row 47
 row 49 
  0-99 64 64 0
 screen group 9
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -1643,23 +1763,31 @@ row 59    (none)
 row 61 
  0-99 64 64 0
 screen solve 9
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -1769,23 +1897,31 @@ row 61
 row 63 
  0-99 64 64 0
 screen group a
-row 0  home   drawing / constraining in 3d
+row 0  home › g00a-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00a-sketch [rename/del]
+row 7 GROUP  g00a-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 a 1 0
  26-26 64 64 0
  27-29 6c 64 108 a 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 a 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 a 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 a 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 a 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -1847,23 +1983,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen solve a
-row 0  home   drawing / constraining in 3d
+row 0  home › g00a-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00a-sketch [rename/del]
+row 7 GROUP  g00a-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 a 1 0
  26-26 64 64 0
  27-29 6c 64 108 a 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-40 6c 64 97 a 1 0
+ 41-41 64 64 0
+ 42-45 6c 64 115 a 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 117 a 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 100 a 1 0
+ 50-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -1927,23 +2071,31 @@ row 47
 row 49 
  0-99 64 64 0
 screen group b
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -2051,23 +2203,31 @@ row 59    (none)
 row 61 
  0-99 64 64 0
 screen solve b
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -2177,23 +2337,31 @@ row 61
 row 63 
  0-99 64 64 0
 screen variant 5 0
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  lathe plane sketch
  0-0 64 64 0
  1-99 74 64 0
@@ -2288,23 +2456,31 @@ row 55    (none)
 row 57 
  0-99 64 64 0
 screen variant 5 1
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
@@ -2406,23 +2582,31 @@ row 57    (none)
 row 59 
  0-99 64 64 0
 screen variant 5 2
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
@@ -2538,23 +2722,31 @@ row 65    (none)
 row 67 
  0-99 64 64 0
 screen variant 5 3
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  rotate original sketch
  0-0 64 64 0
  1-22 74 64 0
@@ -2623,23 +2815,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen variant 5 4
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  translate original sketch
  0-0 64 64 0
  1-25 74 64 0
@@ -2701,23 +2901,31 @@ row 43    (none)
 row 45 
  0-99 64 64 0
 screen variant 5 5
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-extrude [rename/del]
+row 7 GROUP  g005-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 5 1 0
  27-27 64 64 0
  28-30 6c 64 108 5 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -2835,23 +3043,31 @@ row 67    (none)
 row 69 
  0-99 64 64 0
 screen variant 7 0
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  lathe plane sketch
  0-0 64 64 0
  1-99 74 64 0
@@ -2944,23 +3160,31 @@ row 55    (none)
 row 57 
  0-99 64 64 0
 screen variant 7 1
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
@@ -3060,23 +3284,31 @@ row 57    (none)
 row 59 
  0-99 64 64 0
 screen variant 7 2
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
@@ -3190,23 +3422,31 @@ row 65    (none)
 row 67 
  0-99 64 64 0
 screen variant 7 3
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  rotate original sketch
  0-0 64 64 0
  1-22 74 64 0
@@ -3273,23 +3513,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen variant 7 4
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  translate original sketch
  0-0 64 64 0
  1-25 74 64 0
@@ -3349,23 +3597,31 @@ row 43    (none)
 row 45 
  0-99 64 64 0
 screen variant 7 5
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-extrude [rename/del]
+row 7 GROUP  g007-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 7 1 0
  27-27 64 64 0
  28-30 6c 64 108 7 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 7 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -3481,23 +3737,31 @@ row 67    (none)
 row 69 
  0-99 64 64 0
 screen variant 9 0
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  lathe plane sketch
  0-0 64 64 0
  1-99 74 64 0
@@ -3590,23 +3854,31 @@ row 55    (none)
 row 57 
  0-99 64 64 0
 screen variant 9 1
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
@@ -3706,23 +3978,31 @@ row 57    (none)
 row 59 
  0-99 64 64 0
 screen variant 9 2
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
@@ -3836,23 +4116,31 @@ row 65    (none)
 row 67 
  0-99 64 64 0
 screen variant 9 3
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  rotate original sketch
  0-0 64 64 0
  1-22 74 64 0
@@ -3919,23 +4207,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen variant 9 4
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  translate original sketch
  0-0 64 64 0
  1-25 74 64 0
@@ -3995,23 +4291,31 @@ row 43    (none)
 row 45 
  0-99 64 64 0
 screen variant 9 5
-row 0  home   drawing / constraining in 3d
+row 0  home › g009-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g009-extrude [rename/del]
+row 7 GROUP  g009-extrude [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 9 1 0
  27-27 64 64 0
  28-30 6c 64 108 9 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 9 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 9 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 9 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 9 1 0
+ 51-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -4127,23 +4431,31 @@ row 67    (none)
 row 69 
  0-99 64 64 0
 screen variant b 0
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  lathe plane sketch
  0-0 64 64 0
  1-99 74 64 0
@@ -4236,23 +4548,31 @@ row 55    (none)
 row 57 
  0-99 64 64 0
 screen variant b 1
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
@@ -4352,23 +4672,31 @@ row 57    (none)
 row 59 
  0-99 64 64 0
 screen variant b 2
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
@@ -4482,23 +4810,31 @@ row 65    (none)
 row 67 
  0-99 64 64 0
 screen variant b 3
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  rotate original sketch
  0-0 64 64 0
  1-22 74 64 0
@@ -4565,23 +4901,31 @@ row 45    (none)
 row 47 
  0-99 64 64 0
 screen variant b 4
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  translate original sketch
  0-0 64 64 0
  1-25 74 64 0
@@ -4641,23 +4985,31 @@ row 43    (none)
 row 45 
  0-99 64 64 0
 screen variant b 5
-row 0  home   drawing / constraining in 3d
+row 0  home › g00b-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g00b-extrude [rename/del]
+row 7 GROUP  g00b-extrude [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-20 64 64 0
  21-26 6c 64 108 b 1 0
  27-27 64 64 0
  28-30 6c 64 108 b 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 b 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 b 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 b 1 0
+ 49-99 64 64 0
 row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
@@ -4773,12 +5125,12 @@ row 67    (none)
 row 69 
  0-99 64 64 0
 screen configuration
-row 0  home   drawing / constraining in 3d
+row 0  home › preferences   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5066,12 +5418,12 @@ row 157 (renderer)
 row 159 
  0-99 64 64 0
 screen styles
-row 0  home   drawing / constraining in 3d
+row 0  home › line styles   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5196,12 +5548,12 @@ row 52   load factory defaults
 row 54 
  0-99 64 64 0
 screen style 1
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5302,12 +5654,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 2
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5408,12 +5760,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 3
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5514,12 +5866,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 4
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5620,12 +5972,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 5
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5726,12 +6078,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 6
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5832,12 +6184,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 7
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5938,12 +6290,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 8
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6044,12 +6396,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 9
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6150,12 +6502,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style a
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6256,12 +6608,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style b
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6362,12 +6714,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style c
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6468,12 +6820,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style d
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6574,12 +6926,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style e
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6680,12 +7032,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style f
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6786,12 +7138,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 10
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6892,12 +7244,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen view
-row 0  home   drawing / constraining in 3d
+row 0  home › view   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-14 64 64 0
+ 15-42 74 64 0
+ 43-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -6988,12 +7340,12 @@ row 52    1.00 [change]
 row 54 
  0-99 64 64 0
 screen tangent
-row 0  home   drawing / constraining in 3d
+row 0  home › tangent arc   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -7031,12 +7383,12 @@ row 29 (or back to home screen)
 row 31 
  0-99 64 64 0
 screen tangent manual
-row 0  home   drawing / constraining in 3d
+row 0  home › tangent arc   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -7076,12 +7428,12 @@ row 29 (or back to home screen)
 row 31 
  0-99 64 64 0
 screen paste
-row 0  home   drawing / constraining in 3d
+row 0  home › paste transformed   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -17998,12 +18350,12 @@ row 19 (unselect all)
 row 21 
  0-99 64 64 0
 screen custom style info
-row 0  home   drawing / constraining in 3d
+row 0  home › style   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-15 64 64 0
+ 16-43 74 64 0
+ 44-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -18167,12 +18519,12 @@ row 79 right-click them on the drawing.
 row 81 
  0-99 64 64 0
 screen styles with custom
-row 0  home   drawing / constraining in 3d
+row 0  home › line styles   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

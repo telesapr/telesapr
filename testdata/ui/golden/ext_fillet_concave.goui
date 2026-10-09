@@ -6,23 +6,31 @@ camera 5 20 -20 -80 1 0 0 0 0.95105651629515364 -0.30901699437494745
 counts 6 11 125 16 59
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › g006-fillet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g006-fillet [rename/del]
+row 7 GROUP  g006-fillet [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 6 1 0
  26-26 64 64 0
  27-29 6c 64 108 6 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-38 73 64 0
+ 39-39 64 64 0
+ 40-43 6c 64 115 6 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 117 6 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 100 6 1 0
+ 48-99 64 64 0
 row 10  round edges of the solid
  0-0 64 64 0
  1-24 74 64 0
@@ -90,23 +98,31 @@ row 47    (none)
 row 49 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 12\nTriangles: 44\nVolume: 90.24 cm³\nCenter of mass: (-3.02, 7.51, 53.62)\nExtent: 36.00 x 26.00 x 160.00
-row 0  home   drawing / constraining in 3d
+row 0  home › g006-fillet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g006-fillet [rename/del]
+row 7 GROUP  g006-fillet [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 6 1 0
  26-26 64 64 0
  27-29 6c 64 108 6 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-38 73 64 0
+ 39-39 64 64 0
+ 40-43 6c 64 115 6 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 117 6 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 100 6 1 0
+ 48-99 64 64 0
 row 10  round edges of the solid
  0-0 64 64 0
  1-24 74 64 0

@@ -1,9 +1,9 @@
-row 0  home   drawing / constraining in 3d
+row 0  home › motion study   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -47,12 +47,12 @@ row 22 (back to the groups)
  19-99 64 64 0
 row 24 
  0-99 64 64 0
-row 0  home   drawing / constraining in 3d
+row 0  home › motion study   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -108,12 +108,12 @@ row 33 (back to the groups)
 row 35 
  0-99 64 64 0
 filedialog save
-row 0  home   drawing / constraining in 3d
+row 0  home › motion study   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -168,12 +168,12 @@ row 33 (back to the groups)
  19-99 64 64 0
 row 35 
  0-99 64 64 0
-row 0  home   drawing / constraining in 3d
+row 0  home › parameters   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-20 64 64 0
+ 21-48 74 64 0
+ 49-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

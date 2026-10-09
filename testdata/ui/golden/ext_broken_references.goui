@@ -1,9 +1,9 @@
-row 0  home   in plane: r001-#XY
+row 0  home › broken references   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -150,23 +150,31 @@ row 31   parameters
  12-99 64 64 0
 row 33 
  0-99 64 64 0
-row 0  home   in plane: r001-#XY
+row 0  home › g004-sketch-in-plane   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-30 64 64 0
+ 31-40 74 64 0
+ 41-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g004-sketch-in-plane [rename/del]
+row 7 GROUP  g004-sketch-in-plane [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-28 64 64 0
  29-34 6c 64 108 4 1 0
  35-35 64 64 0
  36-38 6c 64 108 4 1 0
- 39-99 64 64 0
+ 39-41 64 64 0
+ 42-49 6c 64 97 4 1 0
+ 50-50 64 64 0
+ 51-54 6c 64 115 4 1 0
+ 55-55 64 64 0
+ 56-56 6c 64 117 4 1 0
+ 57-57 64 64 0
+ 58-58 6c 64 100 4 1 0
+ 59-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -347,12 +355,12 @@ camera 15.428571428571429 -2.5 2.5 0 1 0 0 0 1 0
 counts 3 7 67 9 40
 editor 0 "" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › broken references   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -382,12 +390,12 @@ row 18 (back to the groups)
  19-99 64 64 0
 row 20 
  0-99 64 64 0
-row 0  home   drawing / constraining in 3d
+row 0  home › broken references   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

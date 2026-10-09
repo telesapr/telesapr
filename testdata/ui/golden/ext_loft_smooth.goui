@@ -7,23 +7,31 @@ camera 5 0 0 0 1 0 0 0 1 0
 counts 8 11 43 8 49
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › g008-loft   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-19 64 64 0
+ 20-47 74 64 0
+ 48-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g008-loft [rename/del]
+row 7 GROUP  g008-loft [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-17 64 64 0
  18-23 6c 64 108 8 1 0
  24-24 64 64 0
  25-27 6c 64 108 8 1 0
- 28-99 64 64 0
+ 28-30 64 64 0
+ 31-36 73 64 0
+ 37-37 64 64 0
+ 38-41 6c 64 115 8 1 0
+ 42-42 64 64 0
+ 43-43 6c 64 117 8 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 100 8 1 0
+ 46-99 64 64 0
 row 10  smooth loft through 3 profiles
  0-0 64 64 0
  1-30 74 64 0
@@ -109,23 +117,31 @@ row 53    (none)
 row 55 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 2700\nVolume: 19.76 cm³\nCenter of mass: (-0.00, -0.00, 16.73)\nExtent: 30.00 x 30.00 x 40.00
-row 0  home   drawing / constraining in 3d
+row 0  home › g008-loft   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-19 64 64 0
+ 20-47 74 64 0
+ 48-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g008-loft [rename/del]
+row 7 GROUP  g008-loft [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-17 64 64 0
  18-23 6c 64 108 8 1 0
  24-24 64 64 0
  25-27 6c 64 108 8 1 0
- 28-99 64 64 0
+ 28-30 64 64 0
+ 31-36 73 64 0
+ 37-37 64 64 0
+ 38-41 6c 64 115 8 1 0
+ 42-42 64 64 0
+ 43-43 6c 64 117 8 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 100 8 1 0
+ 46-99 64 64 0
 row 10  smooth loft through 3 profiles
  0-0 64 64 0
  1-30 74 64 0

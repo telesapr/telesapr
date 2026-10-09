@@ -74,12 +74,12 @@ group 5 0 0 1 1
 dialog 0 The volume of the solid model is:|59377.087 mil³\nThe volume of current group mesh is:\n\n    1646.657 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
 dialog 0 The volume of the solid model is:|34.362 ft³\nThe volume of current group mesh is:\n\n    1646.657 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
 dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
-row 0  home   drawing / constraining in 3d
+row 0  home › preferences   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -366,12 +366,12 @@ row 155 (renderer)
 row 157 (renderer)
 row 159 
  0-99 64 64 0
-row 0  home   drawing / constraining in 3d
+row 0  home › preferences   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

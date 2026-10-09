@@ -1,10 +1,10 @@
 dialog 3 Bad selection for new screw thread.|This group can be created with:\n\n    * a circle or an arc (thread about its axis, from its plane)\n
-row 0  home   drawing / constraining in 3d
+row 0  home › screw thread   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -64,12 +64,12 @@ camera 5 0 0 0 1 0 0 0 1 0
 counts 3 4 32 1 27
 editor 0 "" 0 ""
 tw 10 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › screw thread   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -121,23 +121,31 @@ row 28 (or cancel operation)
  20-99 64 64 0
 row 30 
  0-99 64 64 0
-row 0  home   drawing / constraining in 3d
+row 0  home › g007-M6-thread   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-24 64 64 0
+ 25-52 74 64 0
+ 53-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g007-M6-thread [rename/del]
+row 7 GROUP  g007-M6-thread [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-22 64 64 0
  23-28 6c 64 108 7 1 0
  29-29 64 64 0
  30-32 6c 64 108 7 1 0
- 33-99 64 64 0
+ 33-35 64 64 0
+ 36-41 73 64 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 7 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 7 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 7 1 0
+ 51-99 64 64 0
 row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0

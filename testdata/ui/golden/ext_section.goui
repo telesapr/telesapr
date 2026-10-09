@@ -203,12 +203,12 @@ Sc&ript ind=0 en=1 act=0
   &User's Guide ind=0 en=1 act=0
   Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0
-row 0  home   drawing / constraining in 3d
+row 0  home › section view   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -246,12 +246,12 @@ camera 5 0 0 0 1 0 0 0 1 0
 counts 3 7 67 8 40
 editor 0 "" 0 ""
 tw 14 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › section view   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -289,12 +289,12 @@ camera 5 0 0 0 1 0 0 0 1 0
 counts 3 7 67 8 40
 editor 0 "" 0 "0"
 tw 14 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › section view   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -341,12 +341,12 @@ camera 5 0 0 0 1 0 0 0 1 0
 counts 3 7 67 8 40
 editor 0 "" 0 "-10"
 tw 14 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › section view   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -572,12 +572,12 @@ Sc&ript ind=0 en=1 act=0
   &User's Guide ind=0 en=1 act=0
   Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0
-row 0  home   drawing / constraining in 3d
+row 0  home › section view   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

@@ -67,12 +67,12 @@ camera 5 0 0 0 1 0 0 0 1 0
 counts 2 4 15 3 25
 editor 0 "40.00" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › g002-sketch-in-plane › solve   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-38 64 64 0
+ 39-48 74 64 0
+ 49-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
