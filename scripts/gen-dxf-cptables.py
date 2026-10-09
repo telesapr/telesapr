@@ -6,7 +6,8 @@ pages as Go source (cptables.go), the double-byte ones (932, 936, 949,
 a uint32 count and that many lead-table entries, then a uint32 count and
 that many (code, unicode) uint32 pairs, all little-endian.
 
-Usage: scripts/gen-dxf-cptables.py
+Usage: TELESAPR_SOLVESPACE_SRC=/path/to/solvespace scripts/gen-dxf-cptables.py
+(the tree defaults to ../solvespace beside this repository)
 """
 import gzip
 import os
@@ -14,7 +15,8 @@ import re
 import struct
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "solvespace", "extlib", "libdxfrw", "intern")
+SOLVESPACE = os.environ.get("TELESAPR_SOLVESPACE_SRC", os.path.join(os.path.dirname(ROOT), "solvespace"))
+SRC = os.path.join(SOLVESPACE, "extlib", "libdxfrw", "intern")
 OUT = os.path.join(ROOT, "pkg", "dxf", "dxfread")
 
 
