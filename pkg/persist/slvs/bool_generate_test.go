@@ -59,10 +59,10 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 	},
 }
 
-// booleanFixtureCppGoldens is the volume of each fixture's last group,
+// booleanFixtureVolumes is the volume of each fixture's last group,
 // recorded while the kernel was verified against SolveSpace; changed by
 // hand when the kernel changes a volume on purpose.
-var booleanFixtureCppGoldens = map[string]float64{
+var booleanFixtureVolumes = map[string]float64{
 	"boolean_coplanar_union":   13250.0,
 	"boolean_knife_edge":       1.8303900357690596,
 	"boolean_tangent_crossing": 205477.058604742,
@@ -71,9 +71,9 @@ var booleanFixtureCppGoldens = map[string]float64{
 	"boolean_tangent_spline":   204638.6271882122,
 }
 
-// cppGoldenRatioTol is how far a volume may be from its record, as a
+// volumeRatioTol is how far a volume may be from its record, as a
 // ratio.
-const cppGoldenRatioTol = 1e-6
+const volumeRatioTol = 1e-6
 
 // collectBoolStats loads a fixture and reports its mesh statistics.
 func collectBoolStats(path string) (boolFixtureStats, error) {
@@ -117,7 +117,7 @@ func collectBoolStats(path string) (boolFixtureStats, error) {
 
 // TestBooleanFixtures regenerates each Boolean fixture and requires
 // the recorded number of triangles, bounding box and volume of its
-// display mesh (booleanFixtureGoldens, booleanFixtureCppGoldens), and
+// display mesh (booleanFixtureGoldens, booleanFixtureVolumes), and
 // a watertight mesh with no self-intersection.
 func TestBooleanFixtures(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
@@ -141,8 +141,8 @@ func TestBooleanFixtures(t *testing.T) {
 					break
 				}
 			}
-			want := booleanFixtureCppGoldens[name]
-			if ratio := stats.Volume / want; math.Abs(ratio-1) >= cppGoldenRatioTol {
+			want := booleanFixtureVolumes[name]
+			if ratio := stats.Volume / want; math.Abs(ratio-1) >= volumeRatioTol {
 				t.Errorf("volume %.6f, want %.6f (ratio %.9f)", stats.Volume, want, ratio)
 			}
 		})

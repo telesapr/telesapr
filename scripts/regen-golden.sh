@@ -21,7 +21,7 @@ declare -A pkg=(
     [render]=./pkg/render [res]=./pkg/res [ttf]=./pkg/ttf
     [tlspr]=./pkg/persist/convert [newfile]=./pkg/persist/slvs [modify]=./pkg/persist/slvs
     [thread]=./pkg/persist/slvs [importdxf]=./pkg/persist/dxf [solid]=./pkg/sketch
-    [sparseqr]=./pkg/solver
+    [sparseqr]=./pkg/solver [groups]=./pkg/persist/slvs
 )
 declare -A run=(
     [display]='^TestDisplayOutlines$'                 # testdata/display
@@ -40,10 +40,11 @@ declare -A run=(
     [importdxf]='^TestImport$'                        # testdata/importdxf/golden
     [solid]='^TestSolidGoldens$'                      # testdata/solid/*.tlspr
     [sparseqr]='^TestSparseQRGolden$'                 # testdata/solver/sparseqr
+    [groups]='^TestFixtureGroupsSolve$'               # testdata/fixture-groups.txt
 )
 areas=("$@")
 if [ ${#areas[@]} -eq 0 ]; then
-    areas=(display stl draw export textwin ui render res ttf tlspr newfile modify thread importdxf solid sparseqr)
+    areas=(display stl draw export textwin ui render res ttf tlspr newfile modify thread importdxf solid sparseqr groups)
 fi
 for a in "${areas[@]}"; do
     if [ -z "${run[$a]:-}" ]; then
