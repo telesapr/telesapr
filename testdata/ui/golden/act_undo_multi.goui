@@ -197,7 +197,7 @@ tw 0 unsaved 1 cursor 0 tooltip ""
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
   &Trace Point [Ctrl+Shift+T] ind=0 en=1 act=0
-  &Stop Tracing... [Ctrl+Shift+S] ind=0 en=1 act=0
+  &Stop Tracing... ind=0 en=1 act=0
   Step &Dimension... [Ctrl+Shift+D] ind=0 en=1 act=0
   Motion St&udy... ind=0 en=1 act=0
 S&cript ind=0 en=1 act=0
