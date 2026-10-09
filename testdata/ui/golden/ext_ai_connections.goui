@@ -194,12 +194,12 @@ Sc&ript ind=0 en=1 act=0
   &User's Guide ind=0 en=1 act=0
   Go to &GitHub ind=0 en=1 act=0
   &About ind=0 en=1 act=0
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › preferences   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -486,12 +486,12 @@ row 155 (renderer)
 row 157 (renderer)
 row 159 
  0-99 64 64 0
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › preferences   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

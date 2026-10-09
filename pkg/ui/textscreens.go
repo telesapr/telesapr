@@ -53,9 +53,9 @@ func (tw *textWindow) ShowHeader(withNav bool) {
 		desc = ""
 	}
 
-	// Navigation buttons
+	// Navigation buttons, and where the screen is from home.
 	if withNav {
-		tw.Printf(false, " %Fl%Lh%fhome%E   %Ft%s%E%s", lf(tw.ScreenHome), header, desc)
+		tw.Printf(false, " %Fl%Lh%fhome%E%s   %Ft%s%E%s", lf(tw.ScreenHome), tw.breadcrumb(), header, desc)
 	} else {
 		tw.Printf(false, "        %Ft%s%E%s", header, desc)
 	}
@@ -63,6 +63,50 @@ func (tw *textWindow) ShowHeader(withNav bool) {
 	// Leave space for the icons that are painted here.
 	tw.Printf(false, "")
 	tw.Printf(false, "")
+}
+
+// screenTitles name the screens a breadcrumb names by their title.
+var screenTitles = map[Screen]string{
+	screenConfiguration:    "preferences",
+	screenStepDimension:    "step dimension",
+	screenListOfStyles:     "line styles",
+	screenStyleInfo:        "style",
+	screenPasteTransformed: "paste transformed",
+	screenEditView:         "view",
+	screenTangentArc:       "tangent arc",
+	screenThread:           "screw thread",
+	screenParameters:       "parameters",
+	screenCommands:         "find command",
+	screenBrokenReferences: "broken references",
+	screenSection:          "section view",
+	screenBillOfMaterials:  "bill of materials",
+	screenMotionStudy:      "motion study",
+	screenDrawing:          "drawing sheet",
+}
+
+// breadcrumb says where the screen shown is from the list of groups,
+// after "home": the group a group's screen is of, or the screen's
+// title.
+func (tw *textWindow) breadcrumb() string {
+	const sep = " › "
+	switch tw.shown.screen {
+	case screenListOfGroups:
+		return ""
+	case screenGroupInfo, screenGroupSolveInfo:
+		g := tw.ss.SK.Group(tw.shown.group)
+		if g == nil {
+			return ""
+		}
+		crumb := sep + groupDescription(g)
+		if tw.shown.screen == screenGroupSolveInfo {
+			crumb += sep + "solve"
+		}
+		return crumb
+	}
+	if title, ok := screenTitles[tw.shown.screen]; ok {
+		return sep + title
+	}
+	return ""
 }
 
 // ScreenSelectGroup shows a group's screen.
@@ -839,10 +883,11 @@ func (tw *textWindow) ShowGroupInfo() {
 		tw.showGroupItems(g)
 		return
 	}
-	tw.Printf(true, "%FtGROUP  %E%s [%Fl%Ll%D%frename%E/%Fl%Ll%D%fdel%E]",
-		groupDescription(g),
-		g.H.V, lf(tw.ScreenChangeGroupName),
-		g.H.V, lf(tw.ScreenDeleteGroup))
+	actions, args := tw.groupActions(g)
+	tw.Printf(true, "%FtGROUP  %E%s [%Fl%Ll%D%frename%E/%Fl%Ll%D%fdel%E] "+actions,
+		append([]any{groupDescription(g),
+			g.H.V, lf(tw.ScreenChangeGroupName),
+			g.H.V, lf(tw.ScreenDeleteGroup)}, args...)...)
 
 	if why := sk.SuppressedReason(g.H); why != "" {
 		tw.Printf(false, " %Fxleft out of the model: %s%E", why)
@@ -987,6 +1032,26 @@ func (tw *textWindow) ShowGroupInfo() {
 	}
 
 	tw.showGroupItems(g)
+}
+
+// groupActions are the group list's actions for the group whose screen
+// this is, to follow its name: make it active, show or hide it, move it
+// earlier or later in the history. They share the name's line, so the
+// screen's other lines stay where they were.
+func (tw *textWindow) groupActions(g *sketch.Group) (format string, args []any) {
+	format = "[%Fsactive%E/"
+	if g.H != tw.ss.GW.activeGroupH() {
+		format = "[%Fl%La%D%factivate%E/"
+		args = []any{g.H.V, lf(tw.ScreenActivateGroup)}
+	}
+	shown := "hide"
+	if !g.Visible {
+		shown = "show"
+	}
+	format += "%Fl%Ls%D%f%s%E/%Fl%Lu%D%f↑%E/%Fl%Ld%D%f↓%E]"
+	args = append(args, g.H.V, lf(tw.ScreenToggleGroupShown), shown,
+		g.H.V, lf(tw.ScreenMoveGroup), g.H.V, lf(tw.ScreenMoveGroup))
+	return format, args
 }
 
 // showExtrusionInfo shows the settings of a sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve, sketch.GroupHelix group.

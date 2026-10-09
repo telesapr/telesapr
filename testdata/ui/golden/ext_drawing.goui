@@ -1,9 +1,9 @@
-row 0  home   drawing / constraining in 3d
+row 0  home › drawing sheet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-23 64 64 0
+ 24-51 74 64 0
+ 52-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -93,12 +93,12 @@ row 48 (back to the groups)
 row 50 
  0-99 64 64 0
 dialog 3 Select one edge of the solid for a length, one edge or face for a diameter or a radius, or two edges or flat faces for the distance between them, then dimension them on a view of the drawing, a section or a detail.|
-row 0  home   drawing / constraining in 3d
+row 0  home › drawing sheet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-23 64 64 0
+ 24-51 74 64 0
+ 52-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

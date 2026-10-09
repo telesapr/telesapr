@@ -157,23 +157,31 @@ row 35   parameters
  12-99 64 64 0
 row 37 
  0-99 64 64 0
-row 0  home   drawing / constraining in 3d
+row 0  home › g004-shank-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g004-shank-sketch [rename/del]
+row 7 GROUP  g004-shank-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-25 64 64 0
  26-31 6c 64 108 4 1 0
  32-32 64 64 0
  33-35 6c 64 108 4 1 0
- 36-99 64 64 0
+ 36-38 64 64 0
+ 39-46 6c 64 97 4 1 0
+ 47-47 64 64 0
+ 48-51 6c 64 115 4 1 0
+ 52-52 64 64 0
+ 53-53 6c 64 117 4 1 0
+ 54-54 64 64 0
+ 55-55 6c 64 100 4 1 0
+ 56-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -230,23 +238,31 @@ row 41    c014-diameter
  16-99 64 64 0
 row 43 
  0-99 64 64 0
-row 0  home   drawing / constraining in 3d
+row 0  home › g004-shank-sketch   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g004-shank-sketch [rename/del]
+row 7 GROUP  g004-shank-sketch [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-25 64 64 0
  26-31 6c 64 108 4 1 0
  32-32 64 64 0
  33-35 6c 64 108 4 1 0
- 36-99 64 64 0
+ 36-38 64 64 0
+ 39-46 6c 64 97 4 1 0
+ 47-47 64 64 0
+ 48-51 6c 64 115 4 1 0
+ 52-52 64 64 0
+ 53-53 6c 64 117 4 1 0
+ 54-54 64 64 0
+ 55-55 6c 64 100 4 1 0
+ 56-99 64 64 0
 row 9  left out of the model: suppressed
  0-0 64 64 0
  1-33 78 64 0

@@ -25,7 +25,9 @@ is under the pointer: on an edge of the solid, Fillet, Chamfer and Sweep Along E
 Shell and Mirror; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
 suppress or delete the group it belongs to. The toolbar at the left has buttons for the features that
 take a selection (fillet, chamfer, shell, sweep, loft, mirror, pattern) and for measuring and the
-section view; it takes three columns when the window is too short for two. A script
+section view; it takes three columns when the window is too short for two. The property browser's
+first line says where its screen is ("home › g004-extrude"), and a group's screen offers, beside
+rename and delete, to make it active, hide it, or move it earlier or later. A script
 names an entry as the command search lists it, `doc.RunCommand("Features > Extrude")`; the names
 the entries had before the menus took this order are still taken.
 

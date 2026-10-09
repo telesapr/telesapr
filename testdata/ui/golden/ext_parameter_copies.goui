@@ -1,20 +1,28 @@
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › g003-translate   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-24 64 64 0
+ 25-34 74 64 0
+ 35-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g003-translate [rename/del]
+row 7 GROUP  g003-translate [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-22 64 64 0
  23-28 6c 64 108 3 1 0
  29-29 64 64 0
  30-32 6c 64 108 3 1 0
- 33-99 64 64 0
+ 33-35 64 64 0
+ 36-41 73 64 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 3 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 3 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 3 1 0
+ 51-99 64 64 0
 row 10  translate original sketch
  0-0 64 64 0
  1-25 74 64 0
@@ -99,23 +107,31 @@ counts 3 4 46 1 27
 editor 0 "" 1 "n+1"
 tw 1 unsaved 1 cursor 0 tooltip ""
 dialog 3 Can't repeat fewer than 1 time.|
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › g003-translate   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-24 64 64 0
+ 25-34 74 64 0
+ 35-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g003-translate [rename/del]
+row 7 GROUP  g003-translate [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-22 64 64 0
  23-28 6c 64 108 3 1 0
  29-29 64 64 0
  30-32 6c 64 108 3 1 0
- 33-99 64 64 0
+ 33-35 64 64 0
+ 36-41 73 64 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 3 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 3 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 3 1 0
+ 51-99 64 64 0
 row 10  translate original sketch
  0-0 64 64 0
  1-25 74 64 0

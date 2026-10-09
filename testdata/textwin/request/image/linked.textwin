@@ -75,12 +75,12 @@ row 23   parameters
 row 25 
  0-99 64 64 0
 screen group 1
-row 0  home   in plane: r001-#XY
+row 0  home › g001-#references   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-26 64 64 0
+ 27-36 74 64 0
+ 37-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -113,12 +113,12 @@ row 23    (none)
 row 25 
  0-99 64 64 0
 screen solve 1
-row 0  home   in plane: r001-#XY
+row 0  home › g001-#references   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-26 64 64 0
+ 27-36 74 64 0
+ 37-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -153,23 +153,31 @@ row 25
 row 27 
  0-99 64 64 0
 screen group 2
-row 0  home   in plane: r001-#XY
+row 0  home › g002-sketch-in-plane   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-30 64 64 0
+ 31-40 74 64 0
+ 41-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g002-sketch-in-plane [rename/del]
+row 7 GROUP  g002-sketch-in-plane [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-28 64 64 0
  29-34 6c 64 108 2 1 0
  35-35 64 64 0
  36-38 6c 64 108 2 1 0
- 39-99 64 64 0
+ 39-41 64 64 0
+ 42-49 6c 64 97 2 1 0
+ 50-50 64 64 0
+ 51-54 6c 64 115 2 1 0
+ 55-55 64 64 0
+ 56-56 6c 64 117 2 1 0
+ 57-57 64 64 0
+ 58-58 6c 64 100 2 1 0
+ 59-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -219,23 +227,31 @@ row 39    (none)
 row 41 
  0-99 64 64 0
 screen solve 2
-row 0  home   in plane: r001-#XY
+row 0  home › g002-sketch-in-plane   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-30 64 64 0
+ 31-40 74 64 0
+ 41-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g002-sketch-in-plane [rename/del]
+row 7 GROUP  g002-sketch-in-plane [rename/del] [activate/hide/↑/↓]
  0-6 74 64 0
  7-28 64 64 0
  29-34 6c 64 108 2 1 0
  35-35 64 64 0
  36-38 6c 64 108 2 1 0
- 39-99 64 64 0
+ 39-41 64 64 0
+ 42-49 6c 64 97 2 1 0
+ 50-50 64 64 0
+ 51-54 6c 64 115 2 1 0
+ 55-55 64 64 0
+ 56-56 6c 64 117 2 1 0
+ 57-57 64 64 0
+ 58-58 6c 64 100 2 1 0
+ 59-99 64 64 0
 row 10  sketch in new workplane
  0-0 64 64 0
  1-23 74 64 0
@@ -287,23 +303,31 @@ row 41
 row 43 
  0-99 64 64 0
 screen group 3
-row 0  home   in plane: r001-#XY
+row 0  home › g003-normal   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g003-normal [rename/del]
+row 7 GROUP  g003-normal [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 3 1 0
  26-26 64 64 0
  27-29 6c 64 108 3 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-38 73 64 0
+ 39-39 64 64 0
+ 40-43 6c 64 115 3 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 117 3 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 100 3 1 0
+ 48-99 64 64 0
 row 10  link geometry from file
  0-0 64 64 0
  1-23 74 64 0
@@ -396,23 +420,31 @@ row 55    c001-same-orientation
 row 57 
  0-99 64 64 0
 screen solve 3
-row 0  home   in plane: r001-#XY
+row 0  home › g003-normal   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g003-normal [rename/del]
+row 7 GROUP  g003-normal [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 3 1 0
  26-26 64 64 0
  27-29 6c 64 108 3 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-38 73 64 0
+ 39-39 64 64 0
+ 40-43 6c 64 115 3 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 117 3 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 100 3 1 0
+ 48-99 64 64 0
 row 10  link geometry from file
  0-0 64 64 0
  1-23 74 64 0
@@ -507,12 +539,12 @@ row 57
 row 59 
  0-99 64 64 0
 screen configuration
-row 0  home   in plane: r001-#XY
+row 0  home › preferences   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -800,12 +832,12 @@ row 157 (renderer)
 row 159 
  0-99 64 64 0
 screen styles
-row 0  home   in plane: r001-#XY
+row 0  home › line styles   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -930,12 +962,12 @@ row 52   load factory defaults
 row 54 
  0-99 64 64 0
 screen style 1
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1036,12 +1068,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 2
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1142,12 +1174,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 3
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1248,12 +1280,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 4
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1354,12 +1386,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 5
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1460,12 +1492,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 6
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1566,12 +1598,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 7
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1672,12 +1704,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 8
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1778,12 +1810,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 9
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1884,12 +1916,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style a
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -1990,12 +2022,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style b
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2096,12 +2128,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style c
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2202,12 +2234,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style d
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2308,12 +2340,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style e
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2414,12 +2446,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style f
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2520,12 +2552,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen style 10
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2626,12 +2658,12 @@ row 53     export these objects
 row 55 
  0-99 64 64 0
 screen view
-row 0  home   in plane: r001-#XY
+row 0  home › view   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-14 64 64 0
+ 15-24 74 64 0
+ 25-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2722,12 +2754,12 @@ row 52    1.00 [change]
 row 54 
  0-99 64 64 0
 screen tangent
-row 0  home   in plane: r001-#XY
+row 0  home › tangent arc   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2765,12 +2797,12 @@ row 29 (or back to home screen)
 row 31 
  0-99 64 64 0
 screen tangent manual
-row 0  home   in plane: r001-#XY
+row 0  home › tangent arc   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -2810,12 +2842,12 @@ row 29 (or back to home screen)
 row 31 
  0-99 64 64 0
 screen paste
-row 0  home   in plane: r001-#XY
+row 0  home › paste transformed   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5400,12 +5432,12 @@ row 16 (unselect all)
 row 18 
  0-99 64 64 0
 screen custom style info
-row 0  home   in plane: r001-#XY
+row 0  home › style   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5569,12 +5601,12 @@ row 79 right-click them on the drawing.
 row 81 
  0-99 64 64 0
 screen styles with custom
-row 0  home   in plane: r001-#XY
+row 0  home › line styles   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -5781,12 +5813,12 @@ row 23   parameters
 row 25 
  0-99 64 64 0
 screen failed solve
-row 0  home   in plane: r001-#XY
+row 0  home › g003-normal › solve   in plane: r001-#XY
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-29 64 64 0
+ 30-39 74 64 0
+ 40-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

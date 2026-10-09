@@ -1,9 +1,9 @@
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › bill of materials   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -22,12 +22,12 @@ row 14
 filedialog open
 filedialog open
 filedialog open
-row 0  home   drawing / constraining in 3d
+row 0  home › bill of materials   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -60,12 +60,12 @@ row 27 (back to the groups)
 row 29 
  0-99 64 64 0
 filedialog save
-row 0  home   drawing / constraining in 3d
+row 0  home › bill of materials   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

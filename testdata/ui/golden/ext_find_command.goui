@@ -1,9 +1,9 @@
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › find command   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-22 64 64 0
+ 23-32 74 64 0
+ 33-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -25,12 +25,12 @@ row 15 (back to the groups)
  19-99 64 64 0
 row 17 
  0-99 64 64 0
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › find command   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-22 64 64 0
+ 23-32 74 64 0
+ 33-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 

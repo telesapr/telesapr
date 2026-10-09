@@ -1,21 +1,29 @@
 filedialog open
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-fillet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-fillet [rename/del]
+row 7 GROUP  g005-fillet [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-19 64 64 0
  20-25 6c 64 108 5 1 0
  26-26 64 64 0
  27-29 6c 64 108 5 1 0
- 30-99 64 64 0
+ 30-32 64 64 0
+ 33-38 73 64 0
+ 39-39 64 64 0
+ 40-43 6c 64 115 5 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 117 5 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 100 5 1 0
+ 48-99 64 64 0
 row 10  round edges of the solid
  0-0 64 64 0
  1-24 74 64 0

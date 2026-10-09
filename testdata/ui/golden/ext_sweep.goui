@@ -16,23 +16,31 @@ camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.207390338946
 counts 5 7 47 4 38
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
-row 0  home   drawing / constraining in 3d
+row 0  home › g005-sweep   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-35 74 64 0
- 36-99 64 64 0
+ 5-20 64 64 0
+ 21-48 74 64 0
+ 49-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 GROUP  g005-sweep [rename/del]
+row 7 GROUP  g005-sweep [rename/del] [active/hide/↑/↓]
  0-6 74 64 0
  7-18 64 64 0
  19-24 6c 64 108 5 1 0
  25-25 64 64 0
  26-28 6c 64 108 5 1 0
- 29-99 64 64 0
+ 29-31 64 64 0
+ 32-37 73 64 0
+ 38-38 64 64 0
+ 39-42 6c 64 115 5 1 0
+ 43-43 64 64 0
+ 44-44 6c 64 117 5 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 100 5 1 0
+ 47-99 64 64 0
 row 10  sweep plane sketch along path
  0-0 64 64 0
  1-29 74 64 0

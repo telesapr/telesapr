@@ -1,9 +1,9 @@
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › parameters   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-20 64 64 0
+ 21-30 74 64 0
+ 31-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
@@ -65,12 +65,12 @@ row 34 (back to the groups)
  19-99 64 64 0
 row 36 
  0-99 64 64 0
-row 0  home   in plane: g002-sketch-in-plane
+row 0  home › parameters   in plane: g002-sketch-in-plane
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
- 5-7 64 64 0
- 8-17 74 64 0
- 18-99 64 64 0
+ 5-20 64 64 0
+ 21-30 74 64 0
+ 31-99 64 64 0
 row 2 
  0-99 64 64 0
 row 4 
