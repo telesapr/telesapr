@@ -85,6 +85,9 @@ three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the ta
 - `scripts/go-test.sh` runs the slow packages (`SHARDED`) as several processes, their heaviest
   tests (`HEAVY`) one each; every test target goes through it. A new test of a minute or more in
   one of those packages goes into `HEAVY`.
+- On Windows and macOS the workflows run `scripts/test-os.sh`: the quick tests without those
+  `scripts/os-skip/<GOOS>.txt` lists, each with why it fails there. A fix takes its test off the
+  list; a new test that fails there for a reason of the platform goes on it, with the reason.
 - golangci-lint is pinned in `tools/lint/go.mod`, a module of its own, and `make lint` builds it
   into `bin/`; govulncheck is pinned in `go.mod`'s tool block. Neither comes from `PATH`.
 
