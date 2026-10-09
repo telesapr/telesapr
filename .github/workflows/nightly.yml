@@ -1,0 +1,116 @@
+# What is too slow, or changes too little from commit to commit, for
+# every push: the vulnerability report as a job that fails, the
+# robustness sweeps over their whole grids, the fuzz targets, every
+# benchmark once, and the race detector over pkg/ui and pkg/script/api.
+# Each step is a make target, so any of it runs locally the same way.
+#
+# On a schedule it runs only when master moved since the last nightly
+# run that passed; asked for by hand (workflow_dispatch), on any branch,
+# it always runs. A failure mails whoever the repository's notification
+# settings name, as any failed run does.
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  X11_PACKAGES: libx11-dev libxft-dev libfontconfig1-dev libgl-dev
+
+jobs:
+  changed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != schedule ]; then
+            echo run=true >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last=$(gh run list -R "$GITHUB_REPOSITORY" -w Nightly -s success -L 1 --json headSha -q '.[0].headSha')
+          echo "master is $GITHUB_SHA; the last nightly run that passed was on ${last:-none}"
+          if [ "$last" = "$GITHUB_SHA" ]; then echo run=false; else echo run=true; fi >>"$GITHUB_OUTPUT"
+
+  vuln:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ${{ env.X11_PACKAGES }}
+          version: x11-1
+      - name: govulncheck
+        run: make vuln
+
+  deep:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: sweeps
+            target: test-sweeps
+          - name: fuzz
+            target: fuzz FUZZTIME=5m
+          - name: bench
+            target: bench
+          - name: race-ui-api
+            target: test-race RACE_PACKAGES='./pkg/ui ./pkg/script/api'
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-nightly-${{ matrix.name }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-nightly-${{ matrix.name }}-${{ hashFiles('go.sum') }}-
+            gocache-nightly-${{ matrix.name }}-
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ${{ env.X11_PACKAGES }}
+          version: x11-1
+      - name: make ${{ matrix.target }}
+        run: make ${{ matrix.target }} 2>&1 | tee nightly-${{ matrix.name }}.txt
+        shell: bash -o pipefail {0}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nightly-${{ matrix.name }}
+          path: nightly-${{ matrix.name }}.txt
+      # What a fuzz target found, as go test wrote it under testdata/fuzz:
+      # copied into the repository, it becomes a test case.
+      - uses: actions/upload-artifact@v7
+        if: failure() && matrix.name == 'fuzz'
+        with:
+          name: fuzz-failures
+          path: '**/testdata/fuzz/**'
+          if-no-files-found: ignore
