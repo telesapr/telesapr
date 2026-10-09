@@ -57,8 +57,75 @@ var toolbar = []toolIcon{
 	{"assemble", cmdGroupLink, "New group linking / assembling file", nil},
 	{"", cmdNone, "", nil},
 
+	{"fillet", cmdGroupFillet, "Fillet selected edges", nil},
+	{"chamfer", cmdGroupChamfer, "Chamfer selected edges", nil},
+	{"shell", cmdGroupShell, "Shell solid, open at selected faces", nil},
+	{"sweep", cmdGroupSweep, "Sweep active sketch along selected path", nil},
+	{"loft", cmdGroupLoft, "Loft active sketch to selected profiles", nil},
+	{"mirror", cmdGroupMirror, "Mirror in selected plane", nil},
+	{"pattern", cmdGroupPathPattern, "Pattern along selected path", nil},
+	{"", cmdNone, "", nil},
+
 	{"in3d", cmdNearestIso, "Nearest isometric view", nil},
 	{"ontoworkplane", cmdOntoWorkplane, "Align view to active workplane", nil},
+	{"measure", cmdMeasure, "Measure selection", nil},
+	{"section", cmdSectionView, "Section view", nil},
+}
+
+// Toolbar geometry, in pixels: a button's pitch, the gap a spacer adds,
+// and the room left below the menu bar and round the buttons.
+const (
+	toolbarPitch  = 32
+	toolbarSpacer = 16
+	toolbarFudge  = 8
+	toolbarTop    = 21 // the menu bar is 20 high
+)
+
+// toolbarRows is the number of rows the toolbar's buttons take in cols
+// columns, and the number of spacers between their sections.
+func toolbarRows(cols int) (rows, spacers int) {
+	inSection := 0
+	for _, icon := range toolbar {
+		if icon.name == "" {
+			rows += (inSection + cols - 1) / cols
+			spacers++
+			inSection = 0
+			continue
+		}
+		inSection++
+	}
+	rows += (inSection + cols - 1) / cols
+	return rows, spacers
+}
+
+// toolbarHeight is the height of the toolbar in cols columns.
+func toolbarHeight(cols int) int {
+	rows, spacers := toolbarRows(cols)
+	return rows*toolbarPitch + spacers*toolbarSpacer + toolbarFudge
+}
+
+// toolbarColumns is how many columns the toolbar takes in a window of
+// that height: two, as SolveSpace's, or three when two would not fit.
+func toolbarColumns(height int) int {
+	if toolbarHeight(2) <= height-toolbarTop {
+		return 2
+	}
+	return 3
+}
+
+// toolbarWidth is the width of the toolbar in cols columns.
+func toolbarWidth(cols int) int { return 2 + toolbarPitch*cols }
+
+// toolbarToggled reports whether a button's command is a mode that is
+// on, which its button shows as it shows the pending one.
+func (gw *graphicsWindow) toolbarToggled(cmd Command) bool {
+	switch cmd {
+	case cmdMeasure:
+		return gw.measuring
+	case cmdSectionView:
+		return gw.sectionMenuOn
+	}
+	return false
 }
 
 // ToolbarDraw draws the toolbar.
@@ -113,29 +180,25 @@ func (gw *graphicsWindow) ToolbarMouseDown(x, y int) bool {
 }
 
 // toolbarDrawOrHitTest draws the toolbar, or with a nil canvas finds
-// the button at mx, my.
+// the button at mx, my. The buttons run in rows of two, or of three in a
+// short window, each section of the table starting a row of its own.
 func (gw *graphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanvas) (within bool, hitCommand Command, hitX, hitY int) {
 	_, height := gw.window.ContentSize()
+	cols := toolbarColumns(int(height))
+	h := toolbarHeight(cols)
 
-	x, y := 17, int(height-21) // 20 is the menu bar height
-
-	// When changing these values, also change the asReference drawing
-	// code in drawentity.go as well as the SetMinContentSize in
-	// graphicswin.go.
-	const fudge = 8
-	const h = 32*18 + 3*16 + fudge // 18 icons * 32 pixels + 3 dividers * 16 pixels + fudge
-
+	const x0 = 17
+	y := int(height) - toolbarTop
 	if h < y {
 		// If there is enough vertical space leave up to 32 pixels between
 		// the menu bar and the toolbar.
-		if y-h < 32 {
-			y -= y - h
-		} else {
-			y -= 32
-		}
+		y -= min(y-h, 32)
 	}
 
-	aleft, aright, atop, abot := 0, 66, y+16+fudge/2, y+16-h
+	// When changing these, also change the asReference drawing code in
+	// drawentity.go and the SetMinContentSize in graphicswin.go, which
+	// use toolbarHeight and toolbarWidth.
+	aleft, aright, atop, abot := 0, toolbarWidth(cols), y+16+toolbarFudge/2, y+16-h
 
 	within = mx >= aleft && mx <= aright && my <= atop && my >= abot
 
@@ -148,21 +211,22 @@ func (gw *graphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanv
 		canvas.DrawRect(aleft, aright, atop, abot, core.NewRGBA(30, 30, 30, 255), core.RGBA{}, 0)
 	}
 
-	leftpos := true
+	col := 0
+	x := x0
 	for i := range toolbar {
 		icon := &toolbar[i]
 		if icon.name == "" { // spacer
-			if !leftpos {
-				leftpos = true
-				y -= 32
-				x -= 32
+			if col != 0 {
+				col, x = 0, x0
+				y -= toolbarPitch
 			}
-			y -= 16
+			y -= toolbarSpacer
 
 			if canvas != nil {
 				// Draw a separator bar in a slightly different color.
-				divw, divh := 30, 2
-				canvas.DrawRect(x+16+divw, x+16-divw, y+24+divh, y+24-divh,
+				divw, divh := toolbarWidth(cols)/2-3, 2
+				mid := aright / 2
+				canvas.DrawRect(mid+divw, mid-divw, y+24+divh, y+24-divh,
 					core.NewRGBA(45, 45, 45, 255), core.RGBA{}, 0)
 			}
 			continue
@@ -175,9 +239,9 @@ func (gw *graphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanv
 		if canvas != nil {
 			canvas.DrawPixmap(icon.pixmap, x-icon.pixmap.Width/2, y-icon.pixmap.Height/2, 0)
 
-			if gw.toolbarHovered == icon.command ||
+			if gw.toolbarHovered == icon.command || gw.toolbarToggled(icon.command) ||
 				(gw.pending.operation == pendingCommand && gw.pending.command == icon.command) {
-				// Highlight the hovered or pending item.
+				// Highlight the hovered, toggled or pending item.
 				const boxhw = 15
 				canvas.DrawRect(x+boxhw, x-boxhw, y+boxhw, y-boxhw,
 					core.NewRGBA(255, 255, 0, 75), core.RGBA{}, 0)
@@ -191,13 +255,11 @@ func (gw *graphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanv
 			}
 		}
 
-		if leftpos {
-			x += 32
-			leftpos = false
-		} else {
-			x -= 32
-			y -= 32
-			leftpos = true
+		col++
+		x += toolbarPitch
+		if col == cols {
+			col, x = 0, x0
+			y -= toolbarPitch
 		}
 	}
 	return within, hitCommand, hitX, hitY

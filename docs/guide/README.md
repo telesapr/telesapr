@@ -23,7 +23,9 @@ and its key does nothing. Edit > Find Command (Ctrl+K) finds any entry by words 
 lists last, with the reason, those that can't run now. A right click offers what applies to what
 is under the pointer: on an edge of the solid, Fillet, Chamfer and Sweep Along Edges; on a face,
 Shell and Mirror; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
-suppress or delete the group it belongs to. A script
+suppress or delete the group it belongs to. The toolbar at the left has buttons for the features that
+take a selection (fillet, chamfer, shell, sweep, loft, mirror, pattern) and for measuring and the
+section view; it takes three columns when the window is too short for two. A script
 names an entry as the command search lists it, `doc.RunCommand("Features > Extrude")`; the names
 the entries had before the menus took this order are still taken.
 

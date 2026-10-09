@@ -71,7 +71,7 @@ func newAgentApp(t *testing.T) *agentApp {
 	t.Cleanup(func() {
 		a.r.Close()
 		a.on(func() { _ = a.ss.AllowAgent(false) })
-		close(a.p.posted)
+		a.p.stop()
 		_ = os.RemoveAll(dir)
 	})
 	return a
