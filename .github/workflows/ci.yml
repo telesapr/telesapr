@@ -149,9 +149,11 @@ jobs:
   race:
     # The engine packages under the race detector, about eight times
     # slower than the plain run: on master, where make release waits
-    # for it, and on request. The shards take about the same CPU time
-    # each; with the build cache, a package no commit touched since the
-    # last run is a cached result.
+    # for it, and on request. scripts/go-test.sh runs the slow packages
+    # as several processes, and the shards take about the same time;
+    # with the build cache, a package no commit touched since the last
+    # run is a cached result. pkg/ui and pkg/script/api run under the
+    # detector in the nightly workflow.
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 40

@@ -94,15 +94,17 @@ test-gui:
 
 # The packages whose loops run on several goroutines, what loads and
 # regenerates through them, and the servers and platforms that hand
-# work between goroutines. pkg/ui and pkg/script/api are left out:
-# their tests set process-wide state (the chord tolerance, the parallel
-# mode, the fonts) and so run one after another, over ten minutes each
-# under the detector; what they regenerate through is covered from
-# pkg/sketch. The GitHub workflow runs the set in shards, each a
-# RACE_PACKAGES of its own.
+# work between goroutines: every package with tests. pkg/ui and
+# pkg/script/api set process-wide state (the chord tolerance, the
+# parallel mode, the fonts), so their tests run one after another;
+# scripts/go-test.sh splits them over several processes. The GitHub
+# workflow runs the set in shards, each a RACE_PACKAGES of its own, on
+# a push to master without pkg/ui and pkg/script/api, which the nightly
+# workflow runs.
 RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
 	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render ./pkg/render/soft ./cmd/... \
-	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo
+	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo \
+	./pkg/ui ./pkg/script/api
 
 # The slow packages' tests run as several processes side by side
 # (scripts/go-test.sh), and the fixture loops take a sample under the
