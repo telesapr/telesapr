@@ -1,12 +1,18 @@
-# Every push and pull request: the checks, the tests with coverage, the
-# lint and the vulnerability report, as jobs side by side. The race detector runs on a
-# push to master, and on request (workflow_dispatch) for a branch, in
-# three shards. make ci runs all of it locally.
+# Every push to a branch: the checks, the tests with coverage, the lint
+# and the vulnerability report, as jobs side by side. On a push to master,
+# and on request (workflow_dispatch) for a branch, also the race detector
+# in shards. make ci runs it locally; the nightly workflow (nightly.yml)
+# runs what is too slow for every push.
+#
+# A tag push runs nothing here: make release tags a commit of master
+# that this workflow has passed, and release.yml runs on the tag. There
+# is no pull_request trigger: the repository takes no pull requests from
+# forks, and a pull request's commits are pushes to a branch, which run.
 name: CI
 
 on:
   push:
-  pull_request:
+    branches: ['**']
   workflow_dispatch:
 
 permissions:
