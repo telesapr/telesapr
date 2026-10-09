@@ -9,6 +9,12 @@ popup
   ---
   Cut ind=0 en=1 act=0
   Copy ind=0 en=1 act=0
+  Measure Selection ind=0 en=1 act=0
+  Group ind=0 en=1 act=0
+    Hide ind=0 en=1 act=0
+    Suppress with What Uses It ind=0 en=1 act=0
+    ---
+    Delete Group ind=0 en=1 act=0
   Delete ind=0 en=1 act=0
   ---
   Unselect All ind=0 en=1 act=0
@@ -34,6 +40,12 @@ popup
   ---
   Cut ind=0 en=1 act=0
   Copy ind=0 en=1 act=0
+  Measure Selection ind=0 en=1 act=0
+  Group ind=0 en=1 act=0
+    Hide ind=0 en=1 act=0
+    Suppress with What Uses It ind=0 en=1 act=0
+    ---
+    Delete Group ind=0 en=1 act=0
   Delete ind=0 en=1 act=0
   ---
   Unselect All ind=0 en=1 act=0

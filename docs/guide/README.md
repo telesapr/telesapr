@@ -20,7 +20,10 @@ moving a group in the history); Assembly links files, mates them and checks them
 other; Analyze measures and checks. View > Show shows and hides what the icons at the top of the
 property browser do. An entry with nothing to work on, as Paste with an empty clipboard, is greyed
 and its key does nothing. Edit > Find Command (Ctrl+K) finds any entry by words of its name, and
-lists last, with the reason, those that can't run now. A script
+lists last, with the reason, those that can't run now. A right click offers what applies to what
+is under the pointer: on an edge of the solid, Fillet, Chamfer and Sweep Along Edges; on a face,
+Shell and Mirror; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
+suppress or delete the group it belongs to. A script
 names an entry as the command search lists it, `doc.RunCommand("Features > Extrude")`; the names
 the entries had before the menus took this order are still taken.
 

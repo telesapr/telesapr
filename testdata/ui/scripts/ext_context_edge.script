@@ -1,0 +1,16 @@
+# The context menu on an edge of the solid that no entity draws: the
+# upright edge of testdata/topo/slot.tlspr that ext_chamfer_solid_edge
+# picks, right-clicked, offers the features that take edges, and Fillet
+# Edges from it makes the same group the Features menu does.
+file $testdata/topo/slot.tlspr
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+move 335 425
+popup Fillet Edges
+down R 335 425
+up R 335 425
+dump
+tw
+answer ok
+menu Analyze|Check Solid
