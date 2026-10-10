@@ -12,11 +12,14 @@ cd "$(dirname "$0")/.."
 
 MIN=${MIN:-85}
 PROFILE=${PROFILE:-coverage.out}
+# Each test process: the instrumented fillet tests alone outlast go test's
+# default ten minutes on a runner.
+TIMEOUT=${TIMEOUT:-90m}
 LIST=scripts/coverage-packages.txt
 MODULE=$(go list -m)
 
 # Sharded as scripts/go-test.sh shards it; it merges the profiles.
-COVERPROFILE="$PROFILE" scripts/go-test.sh -coverpkg=./pkg/...
+COVERPROFILE="$PROFILE" scripts/go-test.sh -coverpkg=./pkg/... -timeout "$TIMEOUT"
 
 # A block appears once per test binary that was built with it: it is
 # covered when any of them ran it.

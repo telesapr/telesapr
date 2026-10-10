@@ -1,8 +1,9 @@
 # What is too slow, or changes too little from commit to commit, for
 # every push: the vulnerability report as a job that fails, the
 # robustness sweeps over their whole grids, the fuzz targets, every
-# benchmark once, the race detector over pkg/ui and pkg/script/api, and
-# the quick tests on Windows and macOS.
+# benchmark once, the race detector over pkg/ui and pkg/script/api, the
+# coverage rule (85% of the packages in scripts/coverage-packages.txt),
+# and the quick tests on Windows and macOS.
 # Each step is a make target, so any of it runs locally the same way.
 #
 # On a schedule it runs only when master moved since the last nightly
@@ -77,6 +78,8 @@ jobs:
             target: fuzz FUZZTIME=5m
           - name: bench
             target: bench
+          - name: coverage
+            target: coverage
           - name: race-ui-api
             target: test-race RACE_PACKAGES='./pkg/ui ./pkg/script/api' RACE_TIMEOUT=90m
     name: ${{ matrix.name }}
@@ -93,8 +96,8 @@ jobs:
           restore-keys: |
             gocache-nightly-${{ matrix.name }}-${{ hashFiles('go.sum') }}-
             gocache-nightly-${{ matrix.name }}-
-      - name: Install X11 development packages
-        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES
+      - name: Install X11 development packages, Xvfb and a font
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
       - name: make ${{ matrix.target }}
         run: make ${{ matrix.target }} 2>&1 | tee nightly-${{ matrix.name }}.txt
         shell: bash -o pipefail {0}
@@ -102,7 +105,10 @@ jobs:
         if: always()
         with:
           name: nightly-${{ matrix.name }}
-          path: nightly-${{ matrix.name }}.txt
+          path: |
+            nightly-${{ matrix.name }}.txt
+            coverage.out
+          if-no-files-found: ignore
       # What a fuzz target found, as go test wrote it under testdata/fuzz:
       # copied into the repository, it becomes a test case.
       - uses: actions/upload-artifact@v7
