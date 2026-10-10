@@ -15,7 +15,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Three cases done 2026-10-10; tilted rings touching a pot left |
+| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Four cases done 2026-10-10 and 11; two of a ring touching a pot left, and three for K4 |
 | 2 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 3 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher |
 | 4 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
@@ -57,9 +57,19 @@ sweep takes leans either way); a face lying on another's coplanar patches is spl
 cross no longer follows a patch past its edge (`onBothPatches`), and stops at the first seed it
 reaches (a ring joined to a lathed pot, `TestHandleOnPotSweep`, 15 to 9 of 144). Caps meeting
 caps with equal curved outlines unite (`TestMitredBarsUnion`); the sweep corners' failure was the
-half-space and bent-cap cuts, not the contact.
+half-space and bent-cap cuts, not the contact. Done 2026-10-11 (a two-day spike's first day): where
+a ring's patch corner lies on the pot's seam and the curve runs from it along the ring's seam within
+the chord tolerance, the march on the patch beside the curve's own copied it and used up the seed
+the rest of that patch's curve starts from (`marchOnBothPatches`: a march's points between its seeds
+must lie on both patches within LengthEps); and on its own patch the curve's chord lay on the seam,
+trimming a sliver of nothing (`SEdgeList.hasReversed`, `SSurface.offChord`: the two cancel). The
+handle 9 to 5 of 144.
 
-Tried: fusing every curve vertex within LengthEps before trimming changed no sweep.
+Tried: fusing every curve vertex within LengthEps before trimming changed no sweep. Splitting the
+operands' trims at the intersection curves' ends that lie within the chord tolerance of them (the
+seam's chord missing the pot) fixed no handle case once the two rules above were in, and split
+coincident outlines on one side only; marching a seed left alone to a used one, and dropping
+marches that reach no seed, gained nothing either.
 
 Approach for what is left (BRL-CAD libnmg): **fuse first, then classify by identity.** Before
 intersecting, fuse the two shells' vertices within tolerance, split edges at vertices lying on
@@ -74,7 +84,7 @@ with explicit valid / grazing / coincident / failed results instead of a vote.
 
 | Open item | State today |
 |---|---|
-| A ring on a pot, tilted, a patch's corner on the pot's face or a seam tangent to it | 9 of 144 (`TestHandleOnPotSweep`): a seam of the ring 0.002 inside the cone, under the chord tolerance, is kept as outside |
+| A ring on a pot, tilted, a patch's corner on the pot's seam | 2 of 144 (`TestHandleOnPotSweep`; 3 more are K4's, trims meshed crossing themselves): a curve dips into the pot's patch beside its seam deeper than the classification's probe (the chord tolerance), so the seam reads as inside the ring on both sides; and a march ends 1e-5 from the seam's vertex, under the chord tolerance but over LengthEps, leaving an edge of 1e-5 the outline can't assemble |
 | Sweep corners beside an arc (see [Solid feature leftovers](#solid-feature-leftovers)) | needs the joint inside `MakeFromSweepOf`, not a Boolean of cut runs |
 
 A last resort, not recommended: BRL-CAD's mesh Boolean with deterministic perturbation of

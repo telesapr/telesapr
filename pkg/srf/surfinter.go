@@ -560,7 +560,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 			start = npc
 		}
 
-		if !onBothPatches(s, b, sc.Points[1:], maxtol) {
+		if !marchOnBothPatches(s, b, sc.Points, maxtol) {
 			// Two patches that touch only where an edge of each
 			// crosses the other's, as a lathe's seam crosses a ring's
 			// in the plane both lie in, give a seed there and no
@@ -602,6 +602,23 @@ func offPatch(srf *SSurface, p geom.Vector, tol float64) bool {
 // of theirs.
 func onBothPatches(a, b *SSurface, pts []SCurvePt, tol float64) bool {
 	return slices.ContainsFunc(pts, func(p SCurvePt) bool { return !offPatch(a, p.P, tol) && !offPatch(b, p.P, tol) })
+}
+
+// marchOnBothPatches tells whether a march from a seed is a curve of
+// patches a and b. Its ends are seeds, on the patches' edges, and where
+// it has points between, one of those must lie on both: the march's
+// points are on both surfaces to far below LengthEps where they are on
+// the patches at all. Where the curve runs along the seam between two
+// patches of one face, within the chord tolerance of it, from a seed at
+// the seam's end to one further along it (a ring's patch corner on a
+// pot, roadmap K3), the march from the patch beside the curve's own
+// follows it too, off its patch by less than the chord tolerance; that
+// copy is its neighbour's curve, and kept, both would trim the face.
+func marchOnBothPatches(a, b *SSurface, pts []SCurvePt, tol float64) bool {
+	if len(pts) > 2 {
+		return onBothPatches(a, b, pts[1:len(pts)-1], geom.LengthEps)
+	}
+	return onBothPatches(a, b, pts[1:], tol)
 }
 
 // loopDepth is how many times intersectClosedLoops halves each surface
