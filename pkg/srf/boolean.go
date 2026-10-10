@@ -161,6 +161,7 @@ func (s *SShell) CleanupAfterBoolean() {
 	for i := range s.Surface {
 		s.Surface[i].Edges = SEdgeList{}
 	}
+	s.index = nil
 }
 
 // MakeFromUnionOf dispatches to MakeFromBoolean(UNION).
@@ -229,6 +230,9 @@ func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 		srf.Edges = buildSurfaceClassifyingEdgesXYZ(s, srf, useCurvesFrom)
 		srf.curvedEdges = buildCurvedTrimEdgesXYZ(s, srf, useCurvesFrom)
 	})
+	if len(s.Surface) >= surfaceIndexMin {
+		s.index = newSurfaceIndex(s)
+	}
 }
 
 // buildCurvedTrimEdgesXYZ is buildSurfaceClassifyingEdgesXYZ for the
@@ -312,7 +316,8 @@ func buildSurfaceClassifyingEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *S
 // AllPointsIntersecting collects the intersections of the line (a, b)
 // with every surface of the shell.
 func (s *SShell) AllPointsIntersecting(a, b geom.Vector, inters *[]SInter, asSegment, trimmed, inclTangent bool) {
-	for i := range s.Surface {
+	var buf [16]int
+	for _, i := range s.surfacesNear(a, b, asSegment, buf[:]) {
 		s.Surface[i].AllPointsIntersecting(a, b, inters, asSegment, trimmed, inclTangent)
 	}
 }

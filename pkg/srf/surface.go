@@ -641,14 +641,7 @@ func (s *SSurface) CoincidentWithPlane(n geom.Vector, d float64) bool {
 func (s *SSurface) LineEntirelyOutsideBbox(a, b geom.Vector, asSegment bool) bool {
 	var amax, amin geom.Vector
 	s.AxisAlignedBounding(&amax, &amin)
-	if !geom.BoundingBoxIntersectsLine(amax, amin, a, b, asSegment) {
-		// The line segment could fail to intersect the bbox, but lie entirely
-		// within it and intersect the surface.
-		if a.OutsideAndNotOn(amax, amin) && b.OutsideAndNotOn(amax, amin) {
-			return true
-		}
-	}
-	return false
+	return lineOutsideBox(amax, amin, a, b, asSegment)
 }
 
 // WeightControlPoints multiplies each control point by its weight.

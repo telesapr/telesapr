@@ -67,6 +67,11 @@ type SShell struct {
 	Tol Tolerance
 
 	BooleanFailed bool
+
+	// index finds the surfaces a line meets, while a Boolean
+	// classifies against the shell: MakeClassifyingBsps makes it,
+	// CleanupAfterBoolean drops it.
+	index *surfaceIndex
 }
 
 // Clear resets all data.
@@ -74,6 +79,7 @@ func (s *SShell) Clear() {
 	s.Curve = nil
 	s.Surface = nil
 	s.BooleanFailed = false
+	s.index = nil
 }
 
 // MakeFromCopyOf copies src: a transformation by the identity, which
