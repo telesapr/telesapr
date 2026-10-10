@@ -17,24 +17,15 @@ fixture has been done; its "Tried" notes say what not to try again.
 |---|---|---|---|---|
 | 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
 | 2 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
-| 3 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
-| 4 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 5 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 6 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 7 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
-| 8 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 4 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
+| 5 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 6 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 7 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 Items 1 and 2 open most of the rest: the dependency column in each table below names which.
 
 ## Features
-
-### F4 Corner radius on path sweeps
-
-A path sweep's corner rounded on the path, not on the solid: the straight runs trimmed back by
-`radius · tan(θ/2)` and joined by the profile revolved about the bend's axis, so each run's end
-section is the bend's end section and no surface intersection is needed (BRL-CAD's pipe
-primitive, `pipe.c`). Refuse bends that overlap. Works for any profile and for corners beside
-arcs, which the mitre cannot do (see [Solid feature leftovers](#solid-feature-leftovers)).
 
 ### F5 Small UI and CLI conveniences
 
@@ -169,7 +160,7 @@ holding it, not only those sharing the nearest one's surface, made a sphere_bore
 
 | Item | State | Approach / tried |
 |---|---|---|
-| Sweep corners next to an arc or curve; corners on twisted or fitted sweeps; closed sweeps | refused; corners between two lines are mitred | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines: F5). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. F4 is the alternative users usually want |
+| Mitred sweep corners next to an arc or curve; corners on twisted or fitted sweeps; closed sweeps | refused; corners between two lines are mitred, and any corner beside lines or arcs rounded with a corner radius (F4) | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines: F5). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. A corner radius (F4, done) rounds corners beside arcs, which is what users usually want |
 | Shells of other curved solids (filleted, lofted, revolved) | prisms only | Offsets of patches (22.1) are the first part; faces whose offsets do not cross themselves can be sized. The general shell is open-ended (E12, parked) |
 
 ## Waiting for the user

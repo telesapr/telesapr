@@ -52,9 +52,23 @@ line meets an arc, a twisted sweep has a crease, since the true one has.
 ## Corners and edges of the solid
 
 Two line segments of the path may meet at an angle: there the sweep is mitred, each piece cut by
-the plane that halves the corner, as a picture frame's moulding is. A corner next to an arc or a
-cubic is refused, as is a twisted sweep or one held to a direction with a corner, and a piece
-too short for the mitres at its ends.
+the plane that halves the corner, as a picture frame's moulding is. A corner next to a cubic is
+refused, as is a twisted sweep or one held to a direction with a corner, and a piece too short for
+the mitres at its ends.
+
+A corner radius, set on the sweep's screen ("corners mitred [round]"), rounds every corner on the
+path instead, as a pipe is bent: the pieces either side are cut back to where an arc of the
+radius, tangent to both, joins them, and the profile turns about that arc's axis. The solid is
+exact and no surface is intersected, so it works for any profile, and beside an arc, where a mitre
+can't join an arc's turned sides: a corner next to an arc needs a radius, and the sweep says so
+until it has one. A radius too large for a piece, too small for the profile to clear the arc's
+axis, or a corner out of the plane of the arc beside it, is a problem on the group. Example:
+[`examples/scripts/elbow`](../../examples/scripts/elbow/elbow.go), a duct with two rounded corners.
+
+```go
+duct := doc.Sweep(path, "duct")
+duct.SetCornerRadius(8)
+```
 
 The path may be edges of the solid so far, picked on the model, alone or with sketch entities:
 a straight edge is a line, a circular one an arc, any other a curve. The sweep keeps the edges'
@@ -68,5 +82,5 @@ bead := doc.SweepEdges([]api.SolidEdge{front, right}, nil, "bead")
 
 ## Not yet
 
-A corner beside an arc, and a closed path, are not done. Repeating a solid along a path is
+A closed path is not done, nor a corner radius on a twisted sweep or one along a cubic. Repeating a solid along a path is
 [Pattern Along Path](pattern.md).

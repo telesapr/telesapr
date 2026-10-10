@@ -13,6 +13,6 @@ twmove 154 165
 twdown L 154 165
 twup L 154 165
 edit 90
-twmove 235 185
-twdown L 235 185
-twup L 235 185
+twmove 235 205
+twdown L 235 205
+twup L 235 205

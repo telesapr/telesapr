@@ -69,13 +69,6 @@ func TestSweepCornerRefused(t *testing.T) {
 				d.Line(api.V(0.5, 0, 10), api.V(0.5, 0, 0)),
 			}
 		}, "too short"},
-		"next to an arc": {func(d *api.Doc) []api.Entity {
-			d.SketchIn(d.Workplane("ZX"), "path")
-			return []api.Entity{
-				d.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
-				d.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(5, 0, 15)),
-			}
-		}, "next to an arc"},
 	} {
 		d := api.New()
 		path := c.path(d)
