@@ -148,8 +148,9 @@ func TestChamferRunsOffBand(t *testing.T) {
 // measured on 2026-10-10, to be kept from then on; since 2026-10-11 the
 // cone's face whose ear-clipped mesh crosses the chamfer is meshed again
 // by the constrained Delaunay mesher (srf's mendCrossings, roadmap K4),
-// and only the 2 refused fillets fail. A shell made unsound fails
-// outright.
+// and the 2 refused fillets are made since their end sections are fitted
+// to the plane's cut where conics can't follow it (topo's fitCuts): none
+// fails. A shell made unsound fails outright.
 func TestRunOffSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
@@ -161,10 +162,8 @@ func TestRunOffSweep(t *testing.T) {
 			sweep.Strings("kind", "chamfer", "fillet"),
 			sweep.Floats("r", 2, 2.5, 3),
 		},
-		MaxFailRate: 2.0 / 36,
+		MaxFailRate: 0,
 		Sample:      7,
-		// The sample's points, measured: one refused.
-		SampleMaxFailRate: 1.0 / 7,
 	}
 	g.Run(func(p sweep.Point) error {
 		d := New()
@@ -188,6 +187,31 @@ func TestRunOffSweep(t *testing.T) {
 		}
 		return nil
 	}).Require(t)
+}
+
+// Fillets of 3 on the narrowest band of TestRunOffSweep: the band's edge
+// on the cone is curved, so the surface the ball sweeps is no tube and
+// the conics of the end sections strayed from it by 1.46e-4 mm at a
+// tolerance of 9e-5, however close the sections. The end sections are
+// fitted to the planes' cuts then (topo's fitCuts), and the fillets are
+// made, and sound.
+func TestRunOffFittedCuts(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fillets refined to a fine tolerance")
+	}
+	for _, top := range []float64{22, 25} {
+		d := New()
+		d.Edit.SetChordTolerance(0.003)
+		edge, before := bandOnCone(d, 2, top)
+		f := d.Features.FilletSolid([]SolidEdge{edge}, 3, "")
+		if p := f.Problem(); p != "" {
+			t.Errorf("top %g: %s", top, p)
+			continue
+		}
+		if r := f.Analyze().Check(); !r.Sound() || r.Volume <= before {
+			t.Errorf("top %g: %s, volume %g, before %g", top, r.Summary(), r.Volume, before)
+		}
+	}
 }
 
 // A slot cut from the cone, its side's edge on the cone chamfered: the

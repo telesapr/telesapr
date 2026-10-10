@@ -178,11 +178,18 @@ solids) at 44 of 59 sound.
 | Chamfers at setback corners; convex meeting concave at one vertex beyond what the stages round | refused | No setback for chamfers yet |
 | Chamfers of edges between flat faces that end on a curved face | refused | Routed like the fillets, they left 134 naked edges and edges run the same way; not traced |
 | Ends on a dome that one degree-5 curve can't follow | 8 of 40 refused at r 1.5 to 2.5 (`TestFilletEndsOnCurvedFaceSweep`) | The dome's height round the corner is no quintic within tolerance (degree 5 misses by 3e-4, 6 by 2e-5); the end section should be several Béziers |
-| A fillet of 3 on the narrowest band (run-off sweep) | 2 of 36 refused, cannot be fitted | |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | One box_hole.step edge | the ball skips a face cut from a shared patch between two scan samples (faces 7, 9, 8 round the hole) | |
-| STEP cylinder fillet at chord 0.002% | the fit's misfit floors at 2.6e-5 against 2.4e-5 | More rounds change nothing; cause not found |
 | Teapot handle (tilted, touching), slot chamfer at 3, run-off chamfer crossings | see K3 and K4 | |
+
+Done 2026-10-11: the run-off sweep's 2 refused fillets of 3 (`TestRunOffFittedCuts`): along a
+curved edge the swept surface is no tube and the end sections' conics strayed from it by 1.6 times
+the tolerance however close the sections; when they do, the end sections are refitted as quintics
+to where the swept surface meets their planes (`rollingBall.fitCuts`, `planeCutSection`), and a
+first try that stalls between conics stops early. And the STEP cylinder at chord 0.002%
+(`TestFilletCylinderFineTolerance`): each section put in tipped the span beside it over the
+tolerance, one a round round the edge; from the third round spans over three quarters of it are
+split too (`refineNear`). Neither moved a golden.
 
 The robust projection of K1 (`srf.SSurface.Project`, `srf.ProjectFrom`) is not what the rolling
 ball's feet use: most points it projects are on faces far from the ball, where plain Gauss-Newton
