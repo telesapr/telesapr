@@ -145,7 +145,6 @@ func TestHandleOnPotSweep(t *testing.T) {
 	sweepChordTol(t)
 	grid := handleGrid()
 	grid.MaxFailRate = handleMaxFailRate
-	grid.SampleMaxFailRate = 2.0 / 24
 	grid.Run(handleOnPot).Require(t)
 }
 
@@ -199,8 +198,10 @@ func TestHandleOnPotSeam(t *testing.T) {
 }
 
 // handleMaxFailRate is the fraction of TestHandleOnPotSweep's grid
-// allowed to fail.
-const handleMaxFailRate = 3.0 / 144
+// allowed to fail: none since roadmap K4's mending, which meshes again
+// by the constrained Delaunay mesher the faces whose ear-clipped trims
+// crossed themselves (the last 3 of 144).
+const handleMaxFailRate = 0
 
 // TestTorusVolume checks the ring the handle sweep uses: closed, facing
 // out, of volume 2 pi^2 big r^2.

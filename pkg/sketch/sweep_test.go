@@ -280,8 +280,8 @@ func TestSweepTwistAndUp(t *testing.T) {
 	// split where the twist bends the face from their diagonals, the
 	// bias is gone (roadmap K4).
 	d.With(func(sk *sketch.Sketch) { sk.Mesher = srf.MesherCDT })
-	d.Regen()
-	if r := bar.Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.0005*480 {
+	d.Edit.Regen()
+	if r := bar.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.0005*480 {
 		t.Fatalf("a twisted bar meshed Delaunay: %s", r.String())
 	}
 

@@ -1,8 +1,9 @@
 # K4 spike: a constrained Delaunay mesher, October 2026
 
 What the two-day spike of roadmap K4 built, what it measured against the ear clipper, and what it
-would take to make it the default. K4 is postponed; the code is kept, unmerged, on the branch
-`k4-cdt-spike` (commits `5d8923c`, `2d91e8b`, `e372c4c`, cut from `devel` at `ce7dde1`).
+would take to make it the default. The spike's branch is `k4-cdt-spike` (commits `5d8923c`,
+`2d91e8b`, `e372c4c`, cut from `devel` at `ce7dde1`). Making it the default is postponed; since
+2026-10-11 its mesher is merged and mends the ear clipper's crossing faces (the last section).
 
 ## Summary
 
@@ -111,3 +112,32 @@ rest.
 | Slot chamfer at 3 and 3.25 | One topology problem and one crossing, not traced |
 | The four failures above | Bounds to restate for the new mesh; the oracle's hole test should drop a whole face |
 | A setting | `Sketch.Mesher` is not saved, shown or scripted. Needed only if both meshers stay |
+
+## 2026-10-11: the CDT as a mender
+
+Merged into `devel` as a mender, not the default: `SShell.TriangulateInto` meshes every face with
+the ear clipper as before, then `mendCrossings` (`pkg/srf/triangulate_mend.go`) meshes again by the
+CDT each face that is both
+
+- a candidate (`earMeshStrays`, `triangulate_check.go`): a triangle folded against the others, or a
+  chord parting from the image of its uv segment by more than four chord tolerances, and
+- unsound in the shell's mesh: an edge of its triangles crosses the mesh or has no mate.
+
+| Fixture | Mended | Ear clipper |
+|---|---|---|
+| `TestBoreToLathedTipSweep` (full grid) | 0 of 80 fail, 2.8 s | 20, 1.5 s |
+| `TestHandleOnPotSweep` (full grid) | 0 of 144 fail, 20 s | 3, 14 s |
+| `TestRunOffSweep` (full grid) | 2 of 36 fail, both fillet fits refused, no crossing | 4 |
+| Goldens, `make test`, `make test-sweeps` | none moved | |
+
+Tried first and dropped:
+
+- **The CDT for every candidate.** It moved the goldens of the threads (their faces part by 2.5
+  chord tolerances), the cone fillets, lofts and spheres (up to 43), and `TestSphereThroughFace`
+  came out 0.1% short. No threshold set the bore's faces (4 to 8 and more) apart from them.
+- **The distance to the surface** (the chord's middle projected) in place of the distance to the
+  uv middle's point. It flags none of the bore's faces: their chords lie on the cone within the
+  tolerance; what crosses the trim is the uv image bending away from the chord.
+
+Trap: the ear clipper uses up the `SPolygon` it is given; the mender builds the face's polygon
+again (`SSurface.triangulate` with the CDT) rather than reusing it.

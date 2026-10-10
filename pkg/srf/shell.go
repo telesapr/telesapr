@@ -752,16 +752,18 @@ func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quate
 // the meshes are joined in the surfaces' order, so the result doesn't
 // depend on the timing.
 func (s *SShell) TriangulateInto(mesh *SMesh) {
+	ms := make([]SMesh, len(s.Surface))
+	strays := make([]bool, len(s.Surface))
 	if len(s.Surface) < 2 || par.Workers() < 2 {
 		for i := range s.Surface {
-			s.Surface[i].TriangulateInto(s, mesh)
+			strays[i] = s.Surface[i].triangulate(s, &ms[i], false)
 		}
-		return
+	} else {
+		par.For(len(s.Surface), func(i int) {
+			strays[i] = s.Surface[i].triangulate(s, &ms[i], false)
+		})
 	}
-	ms := make([]SMesh, len(s.Surface))
-	par.For(len(s.Surface), func(i int) {
-		s.Surface[i].TriangulateInto(s, &ms[i])
-	})
+	s.mendCrossings(ms, strays)
 	for i := range ms {
 		mesh.Triangles = append(mesh.Triangles, ms[i].Triangles...)
 	}
@@ -774,11 +776,19 @@ func (s *SShell) TriangulateInto(mesh *SMesh) {
 // to 3-D via PointAt/NormalAt and flip the winding to match the
 // trim-contour orientation convention.
 func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
+	s.triangulate(shell, mesh, false)
+}
+
+// triangulate is TriangulateInto, by the constrained Delaunay mesher
+// where the tolerance says so or cdt is set, and the ear clipper where
+// it refuses. It tells whether the ear clipper's mesh of a curved
+// surface strays (earMeshStrays), and may cross the faces beyond.
+func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, cdt bool) (strays bool) {
 	if len(s.Trim) == 0 && !s.TrimBuilt {
 		// See SSurface.TrimBuilt: a constructor that doesn't build
 		// trims yet.
 		s.triangulateUntrimmedGrid(mesh)
-		return
+		return false
 	}
 
 	var el SEdgeList
@@ -787,20 +797,22 @@ func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 	var poly SPolygon
 	if !el.AssemblePolygon(&poly, nil, true) {
 		// failed to assemble polygon to trim nurbs surface in uv space
-		return
+		return false
 	}
 
+	cdt = cdt || s.Tol.Mesher() == MesherCDT
 	start := len(mesh.Triangles)
 	if s.flat() {
-		if s.Tol.Mesher() != MesherCDT || poly.cdtTriangulateInto(mesh, s) != nil {
+		if !cdt || poly.cdtTriangulateInto(mesh, s) != nil {
 			mesh.Triangles = mesh.Triangles[:start]
 			poly.UvTriangulateInto(mesh, s)
 		}
 	} else {
-		if s.Tol.Mesher() != MesherCDT || poly.cdtTriangulateInto(mesh, s) != nil {
+		if !cdt || poly.cdtTriangulateInto(mesh, s) != nil {
 			mesh.Triangles = mesh.Triangles[:start]
 			poly.uvGridTriangulateInto(mesh, s, &el)
 			s.splitTrimDiagonals(shell, mesh, start, &el)
+			strays = !cdt && s.earMeshStrays(mesh.Triangles[start:])
 		}
 	}
 
@@ -836,6 +848,7 @@ func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 		kept = append(kept, t)
 	}
 	mesh.Triangles = kept
+	return strays
 }
 
 // trimPointsOff are the points of the surface's trims that it misses

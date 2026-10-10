@@ -20,7 +20,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 3 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher |
 | 4 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 5 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint is not a contact case after all |
-| 6 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Postponed 2026-10-10 after its spike: sound where the ear clipper isn't, at 3 to 5 times the triangles |
+| 6 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 7 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 K3 opens what touches. K4, postponed, would open most of the mesher's open items; the dependency
@@ -101,9 +101,18 @@ explicit, reported "approximate" mode.
 
 ### K4 Constrained Delaunay mesher
 
-Postponed 2026-10-10. A two-day spike built it behind a switch, off by default, on the branch
-`k4-cdt-spike`, which is kept unmerged for reference. `docs/notes/k4-cdt-spike.md` has the
-design, the measurements, what was tried and what making it the default needs.
+Postponed 2026-10-10 as the default. A two-day spike built it behind a switch, off by default, on
+the branch `k4-cdt-spike`. `docs/notes/k4-cdt-spike.md` has the design, the measurements, what
+was tried and what making it the default needs.
+
+Since 2026-10-11 it is merged as a mender (`pkg/srf/triangulate_mend.go`, `triangulate_check.go`):
+the ear clipper meshes every face as before, a face whose chords part from their uv segments' images
+by more than four chord tolerances is a candidate, and a candidate whose triangles cross the shell's
+mesh, or leave an edge with no mate, is meshed again by the CDT. A sound mesh is left as it is, so
+no golden moved. The bore sweep went from 20 of 80 failing to none, the handle on the pot from 3 of
+144 to none, and the run-off chamfers' crossings are gone (2 of 36 left, refused fillets). The
+measure alone could not choose the faces: sound faces part as far (a sphere's patches 18 chord
+tolerances, a loft's 43), and their goldens moved when it did.
 
 `UvTriangulateInto` (`pkg/srf/triangulate.go`) ear-clips a uv outline against grid points, and
 every step 24 to 26 fix was an ear-ordering rule (`grazed`, `folded`, `cutOff.crosses`,
@@ -125,14 +134,12 @@ segments, and refinement rounds. With it on every face, against the ear clipper:
 It costs 3 to 5 times the triangles, and `pkg/topo`'s tests take 260 s against 77 s. To take it
 up again: bring the cost down, then regenerate every golden with a curved face.
 
-It would unblock these items, which stay open with the ear clipper:
+As the default it would close these items, which the mender leaves open (none is a crossing):
 
-| Open item | State today, with the ear clipper |
+| Open item | State today, with the ear clipper and the mender |
 |---|---|
 | A twisted swept bar | flat sides mesh within 1.6% of volume |
 | NIST_MBE_PMI_6 as a solid | mesh Euler number 6 off the shell's (see K5) |
-| Run-off chamfers crossing the cone (`TestRunOffSweep`) | 2 of 36 cross by one edge each |
-| A bore off a lathed tip's axis that breaks out through its side (`TestBoreToLathedTipSweep`) | 20 of 80 |
 | A chamfer of 3 where a slot meets a cone | 6 naked edges, on the slot's flat walls; with K4's mesher none, but one topology problem left |
 
 The band-on-cone fillet at r 1 and chord 0.001%, listed here before, is sound with the ear

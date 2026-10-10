@@ -73,16 +73,16 @@ func TestCDTBoreToLathedTipSweep(t *testing.T) {
 }
 
 // TestCDTHandleOnPotSweep is TestHandleOnPotSweep meshed by the CDT
-// mesher: 6 of 144 fail, against the ear clipper's 9, all tilted, with
-// a seam of the ring inside the pot by less than the chord tolerance
-// (roadmap K3).
+// mesher: none fails. On the spike 6 of 144 failed, against the ear
+// clipper's 9, all tilted, with a seam of the ring inside the pot by
+// less than the chord tolerance (roadmap K3, mended since).
 func TestCDTHandleOnPotSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
 	cdtChordTol(t, 0.01)
 	grid := handleGrid()
-	grid.MaxFailRate = 6.0 / 144
+	grid.MaxFailRate = 0
 	grid.SampleMaxFailRate = 2.0 / 24
 	grid.Run(handleOnPot).Require(t)
 }
