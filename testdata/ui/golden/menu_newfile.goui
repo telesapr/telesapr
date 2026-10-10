@@ -60,6 +60,8 @@
     Constraints &and Dimensions ind=2 en=1 act=1
     &Dimensions Only ind=2 en=1 act=0
     No Constrain&ts ind=2 en=1 act=0
+    &Reference Dimensions ind=1 en=1 act=1
+    Co&mments ind=1 en=1 act=1
     ---
     &Shaded Solid ind=1 en=1 act=1
     Selectable &Faces ind=1 en=1 act=0

@@ -1,0 +1,8 @@
+# View > Show > Reference Dimensions and Comments (F5), each a check
+# item of its own: both shown at first, hidden one after the other,
+# as the menus show their checks.
+menu View|Show|Reference Dimensions
+menu View|Show|Comments
+menus
+menu View|Show|Reference Dimensions
+menus

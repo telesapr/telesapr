@@ -21,6 +21,10 @@ func (gw *graphicsWindow) showFlag(cmd Command) *bool {
 		return &gw.show.Points
 	case cmdShowConstruction:
 		return &gw.show.Construction
+	case cmdShowReferences:
+		return &gw.show.References
+	case cmdShowComments:
+		return &gw.show.Comments
 	case cmdShowShaded:
 		return &gw.showShaded
 	case cmdShowFaces:

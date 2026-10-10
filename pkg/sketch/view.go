@@ -111,12 +111,16 @@ func (sk *Sketch) ProjectPoint(p geom.Vector) geom.Point2d {
 type Visibility struct {
 	Points, Normals, Construction, Workplanes bool
 	Edges, Outlines                           bool
+	// References and Comments show reference dimensions and comments,
+	// when constraints are shown at all.
+	References, Comments bool
 }
 
 // DefaultVisibility is what GraphicsWindow::Init sets: points, normals,
-// construction and edges shown, workplanes and outlines not.
+// construction, edges, reference dimensions and comments shown,
+// workplanes and outlines not.
 func DefaultVisibility() Visibility {
-	return Visibility{Points: true, Normals: true, Construction: true, Edges: true}
+	return Visibility{Points: true, Normals: true, Construction: true, Edges: true, References: true, Comments: true}
 }
 
 func (sk *Sketch) visibility() Visibility {

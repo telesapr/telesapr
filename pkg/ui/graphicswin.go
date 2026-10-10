@@ -258,7 +258,7 @@ func (gw *graphicsWindow) Init() {
 	}
 	gw.ss.groupActivate(sk.Group(gw.activeGroupH()))
 
-	gw.show = sketch.Visibility{Points: true, Normals: true, Construction: true, Edges: true}
+	gw.show = sketch.DefaultVisibility()
 	gw.showConstraints = sCMShowAll
 	gw.showShaded = true
 	gw.showMesh = false
