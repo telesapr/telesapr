@@ -43,7 +43,6 @@ From the neosolve survey; each is small and independent.
 | Item | State |
 |---|---|
 | The ray-cast oracle (K2) for more groups: drafts, helices, sweeps, lofts, patterns, mirrors; moments of inertia | extrusions without draft, lathes and revolves; the rest are refused by name (`check.ErrUnsupported`) |
-| Minimum and maximum bounds on point-line and point-plane distances, radii and angles | F2 bounds point-point distances and lengths; the same active set (`core.Constraint.Crossed`) takes any dimension |
 | Arrow keys nudge the selected entities | not found in `pkg/ui` |
 | Directional marquee: window left to right, crossing right to left | check what the selection does today |
 | Separate visibility toggles for reference constraints and comments | check what View > Show offers |

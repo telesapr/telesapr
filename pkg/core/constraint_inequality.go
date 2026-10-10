@@ -2,7 +2,8 @@ package core
 
 import "math"
 
-// An inequality is solved by an active set. While it holds it writes
+// An inequality is a dimension with a Limit, or a point on a segment,
+// and is solved by an active set. While it holds it writes
 // no equation, and leaves the sketch every degree of freedom it had;
 // where the sketch would cross it, the solve holds it at its bound as
 // an equality, which takes one. Which bound holds, if any, is the
@@ -13,11 +14,43 @@ import "math"
 // A point on a segment is on its line at the constraint's own param t
 // (ValP), as a point on a line is; held at an end, t is 0 or 1.
 
+// Limit is which side of its value a bounded dimension keeps to.
+type Limit int
+
+// Limits a dimension can have.
+const (
+	LimitNone Limit = iota
+	LimitMin
+	LimitMax
+)
+
+// String names the limit as files and descriptions do.
+func (l Limit) String() string {
+	switch l {
+	case LimitMin:
+		return "min"
+	case LimitMax:
+		return "max"
+	}
+	return ""
+}
+
+// CanLimit reports whether the constraint is a dimension that can be
+// a bound: a distance of any kind, a diameter or radius, an angle.
+func (c *ConstraintBase) CanLimit() bool {
+	switch c.Type {
+	case ConstraintPtPtDistance, ConstraintProjPtDistance, ConstraintPtLineDistance,
+		ConstraintPtPlaneDistance, ConstraintPtFaceDistance, ConstraintDiameter, ConstraintAngle:
+		return true
+	}
+	return false
+}
+
 // Bounds an inequality can be held at.
 const (
 	// BoundFree is an inequality that holds by itself.
 	BoundFree = 0
-	// BoundHeld is a minimum or a maximum distance held at its value.
+	// BoundHeld is a bounded dimension held at its value.
 	BoundHeld = 1
 	// BoundStart and BoundEnd are a point held at a segment's ends.
 	BoundStart = 1
@@ -33,20 +66,7 @@ const atBound = LengthEps / 1e2
 // IsInequality reports whether the constraint is an inequality, held
 // at its bound only where the sketch would cross it.
 func (c *ConstraintBase) IsInequality() bool {
-	switch c.Type {
-	case ConstraintMinDistance, ConstraintMaxDistance, ConstraintPtOnSegment:
-		return true
-	}
-	return false
-}
-
-// distanceBoundEquations appends the equation of a ConstraintMinDistance
-// or ConstraintMaxDistance constraint held at its value.
-func (c *Constraint) distanceBoundEquations(sk EntitySketch, l *[]Equation) {
-	if c.Bound == BoundFree {
-		return
-	}
-	c.addEq(l, DistanceExpr(sk, c.Workplane, c.PtA, c.PtB).Minus(NewConstant(c.ValA)), 0)
+	return c.Type == ConstraintPtOnSegment || c.Limit != LimitNone
 }
 
 // ptOnSegmentEquations appends the equations of a ConstraintPtOnSegment
@@ -68,27 +88,40 @@ func (c *Constraint) ptOnSegmentEquations(sk EntitySketch, l *[]Equation) {
 // point on a segment it reads t, and so is meant after a solve has put
 // the point on the line.
 func (c *Constraint) Crossed(sk EntitySketch) (by float64, bound int) {
-	switch c.Type {
-	case ConstraintMinDistance, ConstraintMaxDistance:
-		by = c.ValA - EvalExpr(sk, DistanceExpr(sk, c.Workplane, c.PtA, c.PtB))
-		if c.Type == ConstraintMaxDistance {
+	if c.Limit != LimitNone {
+		// The dimension's equation is its measure less its value,
+		// which is how far it is past a maximum; an angle's runs in
+		// its cosine, which falls as the angle grows.
+		var l []Equation
+		c.GenerateEquations(sk, &l, true)
+		if len(l) != 1 {
+			return math.Inf(-1), BoundFree
+		}
+		by = EvalExpr(sk, l[0].Expr)
+		if c.Type == ConstraintAngle {
+			by = -by
+		}
+		if c.Limit == LimitMin {
+			by = -by
+		}
+		// A negative value is a signed distance on the other side of
+		// a line or a plane, and the bound is on its size: further
+		// that way is more.
+		if c.ValA < 0 {
 			by = -by
 		}
 		return by, BoundHeld
-
-	case ConstraintPtOnSegment:
-		p := sk.Param(c.ValP)
-		if p == nil {
-			return math.Inf(-1), BoundFree
-		}
-		ln := mustEntity(sk, c.EntityA)
-		length := EvalExpr(sk, DistanceExpr(sk, c.Workplane, ln.Point[0], ln.Point[1]))
-		if p.Val < 0.5 {
-			return -p.Val * length, BoundStart
-		}
-		return (p.Val - 1) * length, BoundEnd
 	}
-	return math.Inf(-1), BoundFree
+	p := sk.Param(c.ValP)
+	if c.Type != ConstraintPtOnSegment || p == nil {
+		return math.Inf(-1), BoundFree
+	}
+	ln := mustEntity(sk, c.EntityA)
+	length := EvalExpr(sk, DistanceExpr(sk, c.Workplane, ln.Point[0], ln.Point[1]))
+	if p.Val < 0.5 {
+		return -p.Val * length, BoundStart
+	}
+	return (p.Val - 1) * length, BoundEnd
 }
 
 // IsCrossed reports whether a crossing of by, as Crossed measures it,

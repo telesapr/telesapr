@@ -16,8 +16,6 @@ const (
 	ConstraintPtLineDistance   ConstraintType = 32
 	ConstraintPtFaceDistance   ConstraintType = 33
 	ConstraintProjPtDistance   ConstraintType = 34
-	ConstraintMinDistance      ConstraintType = 35
-	ConstraintMaxDistance      ConstraintType = 36
 	ConstraintPtInPlane        ConstraintType = 41
 	ConstraintPtOnLine         ConstraintType = 42
 	ConstraintPtOnFace         ConstraintType = 43
@@ -73,10 +71,6 @@ func (t ConstraintType) String() string {
 		return "PtFaceDistance"
 	case ConstraintProjPtDistance:
 		return "ProjPtDistance"
-	case ConstraintMinDistance:
-		return "MinDistance"
-	case ConstraintMaxDistance:
-		return "MaxDistance"
 	case ConstraintPtInPlane:
 		return "PtInPlane"
 	case ConstraintPtOnLine:
@@ -179,6 +173,11 @@ type ConstraintBase struct {
 	Reference bool
 	Comment   string
 
+	// Limit makes a dimension a bound, its value the least (LimitMin)
+	// or the most (LimitMax) the dimension may be, instead of what it
+	// is; LimitNone for a dimension.
+	Limit Limit
+
 	// Bound is the bound an inequality is held at in the solve, or
 	// BoundFree: worked out afresh at each solve, and neither saved
 	// nor compared.
@@ -202,6 +201,7 @@ func (c *ConstraintBase) Equals(other *ConstraintBase) bool {
 		c.Other == other.Other &&
 		c.Other2 == other.Other2 &&
 		c.Reference == other.Reference &&
+		c.Limit == other.Limit &&
 		c.Comment == other.Comment
 }
 
@@ -227,8 +227,6 @@ var constraintNames = map[ConstraintType]string{
 	ConstraintPtPlaneDistance:   "pt-plane-distance",
 	ConstraintPtFaceDistance:    "pt-face-distance",
 	ConstraintProjPtDistance:    "proj-pt-pt-distance",
-	ConstraintMinDistance:       "min-distance",
-	ConstraintMaxDistance:       "max-distance",
 	ConstraintPtInPlane:         "pt-in-plane",
 	ConstraintPtOnLine:          "pt-on-line",
 	ConstraintPtOnFace:          "pt-on-face",
@@ -275,6 +273,12 @@ func (c *ConstraintBase) DescriptionString() string {
 	}
 	if c.Type == ConstraintDiameter && c.Other {
 		s = "radius"
+	}
+	switch c.Limit {
+	case LimitMin:
+		s = "min-" + s
+	case LimitMax:
+		s = "max-" + s
 	}
 	return fmt.Sprintf("c%03x-%s", c.H.V, s)
 }

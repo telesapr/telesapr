@@ -117,8 +117,6 @@ var constraintTypes = newEnum("constraint type", map[core.ConstraintType]string{
 	core.ConstraintPtLineDistance:    "pt-line-distance",
 	core.ConstraintPtFaceDistance:    "pt-face-distance",
 	core.ConstraintProjPtDistance:    "proj-pt-pt-distance",
-	core.ConstraintMinDistance:       "min-distance",
-	core.ConstraintMaxDistance:       "max-distance",
 	core.ConstraintPtInPlane:         "pt-in-plane",
 	core.ConstraintPtOnLine:          "pt-on-line",
 	core.ConstraintPtOnFace:          "pt-on-face",
@@ -184,4 +182,9 @@ var docUnits = newEnum("unit", map[core.Unit]string{
 	core.UnitInches:     "inch",
 	core.UnitMeters:     "m",
 	core.UnitFeetInches: "ft-in",
+})
+
+var limits = newEnum("limit", map[core.Limit]string{
+	core.LimitMin: "min",
+	core.LimitMax: "max",
 })

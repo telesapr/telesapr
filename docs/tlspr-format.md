@@ -368,6 +368,7 @@ constraint <handle> <type> {
   other
   other2
   reference
+  limit min|max             # a bound: the least or the most the dimension may be
   comment <string>
   label-offset <x> <y> <z>  # left out when all three are 0
   label-style <handle>
@@ -384,13 +385,14 @@ The constraint type names are those the text window shows:
 `same-orientation`, `angle`, `parallel`, `perpendicular`, `arc-line-tangent`,
 `cubic-line-tangent`, `curve-curve-tangent`, `eq-radius`, `lock-where-dragged`,
 `arc-arc-length-ratio`, `arc-line-length-ratio`, `arc-arc-len-difference`,
-`arc-line-len-difference`, `comment`, `min-distance`, `max-distance`, `pt-on-segment` (the
-last three added within version 2 on 2026-10-10).
+`arc-line-len-difference`, `comment`, `pt-on-segment` (added within version 2 on 2026-10-10).
 
-`min-distance` and `max-distance` bound the distance between `pt-a` and `pt-b` by `value`; they
-have no `param`. `pt-on-segment` keeps `pt-a` on the line segment `entity-a` between its ends;
-its `param` is the point's place along the segment, 0 at its start and 1 at its end. Whether an
-inequality holds at its bound is worked out at each solve and isn't saved.
+A dimension with `limit min` or `limit max` (added within version 2 on 2026-10-10) is a bound: its
+`value` is the least or the most what it measures may be. `pt-on-segment` keeps `pt-a` on the
+line segment `entity-a` between its ends; its `param` is the point's place along the segment, 0
+at its start and 1 at its end. Whether a bound holds at its value is worked out at each solve
+and isn't saved. Files of 2026-10-10 that wrote `min-distance` and `max-distance` as types of
+their own read as `pt-pt-distance` with `limit min` and `limit max`.
 
 ### Style
 

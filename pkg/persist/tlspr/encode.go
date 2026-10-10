@@ -465,6 +465,9 @@ func encodeConstraint(c *core.Constraint, mmPer float64) *Node {
 	n.flag("other", c.Other)
 	n.flag("other2", c.Other2)
 	n.flag("reference", c.Reference)
+	if c.Limit != core.LimitNone {
+		n.add(field("limit", Word(enumName(limits, c.Limit))))
+	}
 	n.str("comment", c.Comment)
 	n.vector("label-offset", c.Disp.Offset)
 	n.handle("label-style", c.Disp.Style.V)

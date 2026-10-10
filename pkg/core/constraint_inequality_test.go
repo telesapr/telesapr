@@ -33,51 +33,102 @@ func inequalitySketch(typ ConstraintType, x, y, v float64) (*testSketch, *Constr
 	return sk, c
 }
 
-// A distance bound is crossed by how far the distance is past it, and
-// writes its equation only while held, which then holds at the bound.
+// A bounded distance is crossed by how far the distance is past its
+// value, and writes its equation only while held, which then holds at
+// the bound.
 func TestDistanceBoundCrossed(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
-		typ  ConstraintType
-		x, y float64
-		v    float64
-		by   float64
+		limit Limit
+		x, y  float64
+		v     float64
+		by    float64
 	}{
-		{ConstraintMinDistance, 30, 40, 20, -30},
-		{ConstraintMinDistance, 3, 4, 20, 15},
-		{ConstraintMinDistance, 12, 16, 20, 0},
-		{ConstraintMaxDistance, 3, 4, 20, -15},
-		{ConstraintMaxDistance, 30, 40, 20, 30},
+		{LimitMin, 30, 40, 20, -30},
+		{LimitMin, 3, 4, 20, 15},
+		{LimitMin, 12, 16, 20, 0},
+		{LimitMax, 3, 4, 20, -15},
+		{LimitMax, 30, 40, 20, 30},
 	} {
-		sk, c := inequalitySketch(tc.typ, tc.x, tc.y, tc.v)
+		sk, c := inequalitySketch(ConstraintPtPtDistance, tc.x, tc.y, tc.v)
+		c.Limit = tc.limit
 		by, bound := c.Crossed(sk)
 		if math.Abs(by-tc.by) > 1e-12 || bound != BoundHeld {
-			t.Errorf("%v at (%g, %g): crossed by %g at %d, want %g", tc.typ, tc.x, tc.y, by, bound, tc.by)
+			t.Errorf("%v at (%g, %g): crossed by %g at %d, want %g", tc.limit, tc.x, tc.y, by, bound, tc.by)
 		}
 		if IsCrossed(by) != (tc.by > 0) || IsAtBound(by) != (tc.by == 0) {
-			t.Errorf("%v at (%g, %g): crossed %v, at the bound %v", tc.typ, tc.x, tc.y, IsCrossed(by), IsAtBound(by))
+			t.Errorf("%v at (%g, %g): crossed %v, at the bound %v", tc.limit, tc.x, tc.y, IsCrossed(by), IsAtBound(by))
 		}
 		var eqs []Equation
 		c.GenerateEquations(sk, &eqs, false)
 		if len(eqs) != 0 {
-			t.Errorf("%v free: %d equations", tc.typ, len(eqs))
+			t.Errorf("%v free: %d equations", tc.limit, len(eqs))
 		}
 		c.Bound = BoundHeld
 		eqs = nil
 		c.GenerateEquations(sk, &eqs, false)
-		if len(eqs) != 1 || math.Abs(EvalExpr(sk, eqs[0].Expr)+tc.by*sign(tc.typ)) > 1e-12 {
-			t.Errorf("%v held: %d equations", tc.typ, len(eqs))
+		sign := -1.0
+		if tc.limit == LimitMin {
+			sign = 1
+		}
+		if len(eqs) != 1 || math.Abs(EvalExpr(sk, eqs[0].Expr)+tc.by*sign) > 1e-12 {
+			t.Errorf("%v held: %d equations", tc.limit, len(eqs))
 		}
 	}
 }
 
-// sign is the residual's sign for a crossing: a minimum crossed is a
-// distance short of it.
-func sign(typ ConstraintType) float64 {
-	if typ == ConstraintMinDistance {
-		return 1
+// Any dimension takes a limit, crossed by its own measure: a point's
+// distance from a line, signed, and an angle, whose equation runs in
+// its cosine; a constraint that is no dimension doesn't.
+func TestOtherBoundsCrossed(t *testing.T) {
+	t.Parallel()
+	sk, c := inequalitySketch(ConstraintPtLineDistance, 3, 4, 0)
+	c.PtA, c.PtB, c.EntityA = c.PtB, NoEntity, HEntity{V: 0x20}
+	c.ModifyToSatisfy(sk)
+	if math.Abs(c.ValA-4) > 1e-12 {
+		t.Fatalf("the point is %g from the line", c.ValA)
 	}
-	return -1
+	c.ValA, c.Limit = 6, LimitMin
+	if by, _ := c.Crossed(sk); math.Abs(by-2) > 1e-12 {
+		t.Errorf("4 from a line, at least 6: crossed by %g", by)
+	}
+
+	sk, _ = inequalitySketch(ConstraintPtPtDistance, 0, 0, 0)
+	var next uint32 = 0x200
+	point := func(x, y float64) HEntity {
+		next++
+		h := HEntity{V: next}
+		sk.add(Entity{H: h, Type: EntityPointIn3D,
+			Param: [8]HParam{sk.param(next<<4|1, x), sk.param(next<<4|2, y), sk.param(next<<4|3, 0)}})
+		return h
+	}
+	l1, l2 := HEntity{V: 0x30}, HEntity{V: 0x31}
+	sk.add(Entity{H: l1, Type: EntityLineSegment, Point: [MaxPointsInEntity]HEntity{point(0, 0), point(1, 0)}})
+	sk.add(Entity{H: l2, Type: EntityLineSegment, Point: [MaxPointsInEntity]HEntity{point(0, 0), point(1, 1)}})
+	a := &Constraint{}
+	a.H, a.Type, a.Workplane, a.EntityA, a.EntityB = HConstraint{V: 2}, ConstraintAngle, NoEntity, l1, l2
+	a.ModifyToSatisfy(sk)
+	if math.Abs(a.ValA-45) > 1e-9 {
+		t.Fatalf("the angle is %g", a.ValA)
+	}
+	for _, tc := range []struct {
+		limit   Limit
+		v       float64
+		crossed bool
+	}{
+		{LimitMin, 60, true}, {LimitMin, 30, false}, {LimitMax, 30, true}, {LimitMax, 60, false},
+	} {
+		a.ValA, a.Limit = tc.v, tc.limit
+		if by, _ := a.Crossed(sk); IsCrossed(by) != tc.crossed {
+			t.Errorf("45 degrees, %v %g: crossed by %g", tc.limit, tc.v, by)
+		}
+	}
+	if (&ConstraintBase{Type: ConstraintHorizontal}).CanLimit() || !(&ConstraintBase{Type: ConstraintDiameter}).CanLimit() {
+		t.Error("CanLimit")
+	}
+	if LimitMin.String() != "min" || LimitMax.String() != "max" || LimitNone.String() != "" {
+		t.Error("Limit.String")
+	}
 }
 
 // A point on a segment starts at its foot on the segment, between the
@@ -129,20 +180,22 @@ func TestPtOnSegment(t *testing.T) {
 // no equation.
 func TestInequalityKinds(t *testing.T) {
 	t.Parallel()
-	for _, typ := range []ConstraintType{ConstraintMinDistance, ConstraintMaxDistance, ConstraintPtOnSegment} {
-		c := ConstraintBase{Type: typ}
+	for _, c := range []ConstraintBase{
+		{Type: ConstraintPtPtDistance, Limit: LimitMin}, {Type: ConstraintAngle, Limit: LimitMax}, {Type: ConstraintPtOnSegment},
+	} {
 		if !c.IsInequality() {
-			t.Errorf("%v isn't an inequality", typ)
+			t.Errorf("%v isn't an inequality", c.Type)
 		}
-		if typ.String() == "Unknown" || constraintNames[typ] == "" {
-			t.Errorf("%v has no name", typ)
-		}
+	}
+	if c := (ConstraintBase{H: HConstraint{V: 3}, Type: ConstraintPtPtDistance, Limit: LimitMin}); c.DescriptionString() != "c003-min-pt-pt-distance" {
+		t.Errorf("described as %q", c.DescriptionString())
 	}
 	if (&ConstraintBase{Type: ConstraintPtOnLine}).IsInequality() {
 		t.Error("a point on a line is an inequality")
 	}
 
-	sk, c := inequalitySketch(ConstraintMinDistance, 3, 4, 20)
+	sk, c := inequalitySketch(ConstraintPtPtDistance, 3, 4, 20)
+	c.Limit = LimitMin
 	c.ModifyToSatisfy(sk)
 	if c.ValA != 5 {
 		t.Errorf("a minimum distance made to satisfy the sketch is %g, want 5", c.ValA)

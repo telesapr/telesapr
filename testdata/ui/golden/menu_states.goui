@@ -111,8 +111,8 @@ dialog 0 No workplane is active, so the grid will not appear.|
 &Constrain ind=0 en=1 act=0
   &Distance / Diameter [D] ind=0 en=1 act=0
   Re&ference Dimension [Shift+D] ind=0 en=1 act=0
-  M&inimum Distance ind=0 en=1 act=0
-  Ma&ximum Distance ind=0 en=1 act=0
+  M&inimum Dimension ind=0 en=1 act=0
+  Ma&ximum Dimension ind=0 en=1 act=0
   A&ngle / Equal Angle [N] ind=0 en=1 act=0
   Reference An&gle [Shift+N] ind=0 en=1 act=0
   Other S&upplementary Angle [U] ind=0 en=1 act=0
@@ -321,8 +321,8 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
 &Constrain ind=0 en=1 act=0
   &Distance / Diameter [D] ind=0 en=1 act=0
   Re&ference Dimension [Shift+D] ind=0 en=1 act=0
-  M&inimum Distance ind=0 en=1 act=0
-  Ma&ximum Distance ind=0 en=1 act=0
+  M&inimum Dimension ind=0 en=1 act=0
+  Ma&ximum Dimension ind=0 en=1 act=0
   A&ngle / Equal Angle [N] ind=0 en=1 act=0
   Reference An&gle [Shift+N] ind=0 en=1 act=0
   Other S&upplementary Angle [U] ind=0 en=1 act=0
