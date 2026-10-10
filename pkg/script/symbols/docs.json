@@ -1690,6 +1690,72 @@
 		"name": "check",
 		"text": "Package check judges the solid a group makes by invariants that hold for any sound solid, whatever produced it: the mesh is closed and does not cross itself, the Boolean that built the shell succeeded, and the volume, centre of mass and extent are those expected.",
 		"types": {
+			"Interval": {
+				"text": "Interval is a stretch of a ray inside the solid, from From to To in the ray's parameter.",
+				"kind": "struct",
+				"makers": [
+					"MeshProbe"
+				]
+			},
+			"Manifold": {
+				"text": "Manifold is what one pass over a mesh's sorted half-edges finds, as a closed two-manifold has none of: each undirected edge should be used by exactly two triangles, once each way.",
+				"kind": "struct",
+				"methods": {
+					"Closed": {
+						"decl": "func (m Manifold) Closed() bool",
+						"text": "Closed reports whether every edge is used twice, once each way, by triangles that aren't degenerate."
+					}
+				},
+				"makers": [
+					"MeshManifold"
+				]
+			},
+			"Oracle": {
+				"text": "Oracle is a group's solid as the ray-cast oracle builds it.",
+				"kind": "struct",
+				"methods": {
+					"Diff": {
+						"decl": "func (o *Oracle) Diff(mesh *srf.SMesh, n int, tol float64) []RayDiff",
+						"text": "Diff casts a grid of n by n rays along each axis through the oracle and the mesh, and lists those along which the two disagree: where one has the ray inside and the other not, over a stretch whose middle lies further than tol from the mesh's triangles."
+					},
+					"Inside": {
+						"decl": "func (o *Oracle) Inside(x geom.Vector) bool",
+						"text": "Inside reports whether x is inside the solid."
+					},
+					"Measure": {
+						"decl": "func (o *Oracle) Measure(rel float64, most int) RayMeasure",
+						"text": "Measure integrates the solid along three grids of rays, one along each axis, starting at 16 rays a side and doubling them up to most until the three volumes agree within rel."
+					},
+					"Probe": {
+						"decl": "func (o *Oracle) Probe(from, dir geom.Vector) []Interval",
+						"text": "Probe is where the line through from along dir passes through the solid, in the line's parameter (dir's length to a unit), from where it enters the solid's box to where it leaves."
+					}
+				},
+				"makers": [
+					"NewOracle"
+				]
+			},
+			"RayDiff": {
+				"text": "RayDiff is a ray along which the oracle and a mesh disagree.",
+				"kind": "struct"
+			},
+			"RayMeasure": {
+				"text": "RayMeasure is what three grids of rays find of a solid: its volume and centroid by each grid's direction, and their mean.",
+				"kind": "struct",
+				"methods": {
+					"Spread": {
+						"decl": "func (m RayMeasure) Spread() float64",
+						"text": "Spread is the largest difference between two grids' volumes, as a fraction of the volume."
+					}
+				}
+			},
+			"RayReport": {
+				"text": "RayReport is what the ray-cast oracle finds of a group's solid, against the kernel's.",
+				"kind": "struct",
+				"makers": [
+					"RayCheck"
+				]
+			},
 			"Report": {
 				"text": "Report is what Solid finds.",
 				"kind": "struct",
@@ -1730,6 +1796,22 @@
 				"decl": "func Group(sk *sketch.Sketch, g *sketch.Group) (r Report)",
 				"text": "Group checks the solid a group's regeneration left, which is the solid of every group up to it: the shell of the last group that contributed solid model, and the mesh shown for g."
 			},
+			"MeshManifold": {
+				"decl": "func MeshManifold(mesh *srf.SMesh) Manifold",
+				"text": "MeshManifold sorts the mesh's half-edges by their ends, so that the uses of each edge lie together, and counts what is wrong with each run: O(n log n)."
+			},
+			"MeshProbe": {
+				"decl": "func MeshProbe(mesh *srf.SMesh, from, dir geom.Vector) []Interval",
+				"text": "MeshProbe is where the line through from along dir passes through a closed mesh: its hits with the triangles, sorted, taken in pairs."
+			},
+			"NewOracle": {
+				"decl": "func NewOracle(sk *sketch.Sketch, hg core.HGroup) (*Oracle, error)",
+				"text": "NewOracle builds the solid group hg's tree makes, from the groups' definitions: ErrUnsupported, wrapped with the group's name, for a group the oracle can't build, and nil and no error where the tree holds no solid."
+			},
+			"RayCheck": {
+				"decl": "func RayCheck(sk *sketch.Sketch, g *sketch.Group, n int) (RayReport, error)",
+				"text": "RayCheck measures group g's solid by the ray-cast oracle, compares it ray by ray with the kernel's mesh along a grid of n rays a side in each direction, and checks the mesh's half-edges."
+			},
 			"ReadBaseline": {
 				"decl": "func ReadBaseline(path string) (map[string]string, []string, error)",
 				"text": "ReadBaseline reads a baseline file into its lines by key, and the keys in file order."
@@ -1743,6 +1825,10 @@
 			"BaselineRelTol": {
 				"decl": "const BaselineRelTol",
 				"text": "BaselineRelTol is how far a volume, centre of mass or bounding box coordinate may move from the baseline, relative to the larger of 1 and the recorded value."
+			},
+			"ErrUnsupported": {
+				"decl": "var ErrUnsupported",
+				"text": "ErrUnsupported is returned for a group tree with a leaf the oracle can't build: anything but extrusions without draft, lathes and revolves."
 			}
 		}
 	},
@@ -5077,6 +5163,10 @@
 						"decl": "func (g Group) Plane() (plane Entity)",
 						"text": "Plane is the workplane or face a mirror reflects in."
 					},
+					"Probe": {
+						"decl": "func (g Group) Probe(from, dir Vec) (inside []check.Interval)",
+						"text": "Probe is where the line through from along dir passes through the\nsolid of the model up to and with this group, by the ray-cast oracle\n(Group.RayCheck): the stretches inside it, in the line's parameter,\ndir's length to one. It fails as RayCheck does."
+					},
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
 						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where."
@@ -5088,6 +5178,10 @@
 					"Radius": {
 						"decl": "func (g Group) Radius() (mm float64)",
 						"text": "Radius is a fillet's radius in mm."
+					},
+					"RayCheck": {
+						"decl": "func (g Group) RayCheck() (r check.RayReport)",
+						"text": "RayCheck checks the solid of the model up to and with this group by\nthe ray-cast oracle, which rebuilds it from the groups' definitions\n(profiles, extrusions, axes) without the kernel's surface\nintersection: its volume and centre of mass by three grids of rays,\nthe rays along which it and the kernel's mesh disagree by more than\ntwice the chord tolerance, and the mesh's half-edges (each edge used\ntwice, once each way). It fails for a model with a group the oracle\ncan't build, as a fillet: extrusions without draft, lathes and\nrevolves only. Analyze \u003e Ray-Cast Check shows the same."
 					},
 					"Requests": {
 						"decl": "func (g Group) Requests() (requests []Request)",
@@ -7683,6 +7777,10 @@
 					"CurveSourceIntersection"
 				]
 			},
+			"Derivs": {
+				"text": "Derivs evaluates a surface and its two first derivatives at (u, v).",
+				"kind": "func"
+			},
 			"EarType": {
 				"text": "EarType classifies a vertex for ear-clipping triangulation.",
 				"kind": "uint32",
@@ -7817,6 +7915,17 @@
 			"PolylineVertex": {
 				"text": "PolylineVertex is a joint between edges.",
 				"kind": "struct"
+			},
+			"ProjectDomain": {
+				"text": "ProjectDomain is the (u, v) range a projection keeps to.",
+				"kind": "struct"
+			},
+			"Projection": {
+				"text": "Projection is where a point projects onto a surface: the parameters of the surface's point nearest it, that point, and how far it is.",
+				"kind": "struct",
+				"makers": [
+					"ProjectFrom"
+				]
 			},
 			"Rigid": {
 				"text": "Rigid is the rigid motion p -\u003e Q p + T.",
@@ -8933,6 +9042,10 @@
 						"decl": "func (s *SSurface) PointOnSurfaces(s1, s2 *SSurface, up, vp *float64)",
 						"text": "PointOnSurfaces refines (*up, *vp) on s so that the point also lies on s1 and s2."
 					},
+					"Project": {
+						"decl": "func (s *SSurface) Project(p geom.Vector, ext float64) Projection",
+						"text": "Project is the point of the patch nearest p, within its (u, v) square carried on by ext past each side."
+					},
 					"Reverse": {
 						"decl": "func (s *SSurface) Reverse()",
 						"text": "Reverse flips the first parameter direction, which flips the normal, and reverses the trims to match."
@@ -9180,6 +9293,10 @@
 			"ProbeTangentFace": {
 				"decl": "func ProbeTangentFace(srf *SSurface, p, interEdgeN, nu geom.Vector, f *geom.Vector, flat *bool) float64",
 				"text": "ProbeTangentFace probes a face that meets the surface being classified tangentially at a point."
+			},
+			"ProjectFrom": {
+				"decl": "func ProjectFrom(f Derivs, dom ProjectDomain, p geom.Vector, tol float64, seeds ...geom.Point2d) Projection",
+				"text": "ProjectFrom is the point of the surface nearest p, by damped Gauss-Newton steps from each seed in turn, best first: the step solves the 2x2 normal equations, is capped to a quarter of the domain in each direction, and is halved until it brings the point nearer, so that it never climbs away from a minimum or jumps across a crease."
 			},
 			"RayIsInside": {
 				"decl": "func RayIsInside(a, c, b, d geom.Vector) bool",
