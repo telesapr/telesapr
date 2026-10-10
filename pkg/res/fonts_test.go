@@ -3,6 +3,7 @@ package res
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -56,4 +57,41 @@ func TestFonts(t *testing.T) {
 		}
 	}
 	golden.CheckDump(t, filepath.Join("..", "..", "testdata", "res", "fonts.golden"), b.String())
+}
+
+// TestUnifontWidths holds the generated unifontWide to the bundled
+// font: Width must say what looking each glyph up would, for every code
+// point Unifont has, for ones it doesn't (U+FFFD's width) and for the
+// private glyphs.
+func TestUnifontWidths(t *testing.T) {
+	t.Parallel()
+	data := LoadStringFromGzip("fonts/unifont.hex.gz")
+	want := make(map[rune]int)
+	for line := range strings.Lines(data) {
+		cp, bits, ok := strings.Cut(strings.TrimSpace(line), ":")
+		if !ok {
+			t.Fatalf("bad Unifont line %q", line)
+		}
+		c, err := strconv.ParseUint(cp, 16, 32)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want[rune(c)] = len(bits) / 32
+	}
+	f := NewBitmapFont()
+	for c := range rune(0x110000) {
+		w, ok := want[c]
+		switch {
+		case c >= 0xe000 && c <= 0xefff:
+			w = 1
+		case !ok:
+			w = want[0xfffd]
+		}
+		if got := f.Width(c); got != w {
+			t.Fatalf("Width(U+%04X) = %d, Unifont says %d; run scripts/gen-unifont-widths.py", c, got, w)
+		}
+	}
+	if !f.IsEmpty() && f.load == nil {
+		t.Error("Width inflated the font")
+	}
 }
