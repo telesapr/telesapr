@@ -39,6 +39,28 @@ type Result struct {
 	// Status is how the drawing is after the script: the active group
 	// with how it solved, and every group that is in trouble.
 	Status string `json:"status,omitempty"`
+	// Groups are the groups Status names, active first, for a program
+	// that would rather not read the text.
+	Groups []GroupStatus `json:"groups,omitempty"`
+	// ExpressionErrors are the parameters and dimensions whose
+	// expressions can't be worked out.
+	ExpressionErrors []string `json:"expressionErrors,omitempty"`
+}
+
+// GroupStatus is how a group came out of a script.
+type GroupStatus struct {
+	// Name is the group's name, as Doc.Group takes it.
+	Name string `json:"name"`
+	// Kind is what the group is, as Group.Kind says it.
+	Kind string `json:"kind"`
+	// Active is whether the group is the one being worked in.
+	Active bool `json:"active,omitempty"`
+	// Solved is whether the group's sketch solved.
+	Solved bool `json:"solved"`
+	// DOF is the degrees of freedom the group's sketch has left.
+	DOF int `json:"dof"`
+	// Problem is why the group made no solid, or "".
+	Problem string `json:"problem,omitempty"`
 }
 
 // Backend is a drawing as a program that writes scripts sees it. Its
@@ -194,11 +216,9 @@ func (s *Session) Run(ctx context.Context, code string) (Result, error) {
 			}
 		}
 	}
-	status, serr := s.status()
-	if serr != nil {
-		status = "the drawing's state couldn't be read: " + serr.Error()
+	if serr := s.status(&res); serr != nil {
+		res.Status = "the drawing's state couldn't be read: " + serr.Error()
 	}
-	res.Status = status
 	// What the program said while the state was read is the script's
 	// doing too.
 	res.Output = s.out.Stop()
@@ -213,27 +233,37 @@ func firstLine(text string) string {
 
 // status is the active group with how it solved, and every other
 // group that didn't solve or has a problem.
-func (s *Session) status() (status string, err error) {
+func (s *Session) status(res *Result) error {
 	doc := s.engine.Doc()
-	err = try(func() {
+	return try(func() {
 		doc.Batch(func() {
 			active := doc.Active()
 			lines := []string{"active group " + firstLine(active.Describe())}
+			groups := []GroupStatus{groupStatus(active, true)}
 			for _, g := range doc.Groups() {
 				if g.H == active.H || g.LeftOut() != "" {
 					continue
 				}
 				if !g.Solved() || g.Problem() != "" {
 					lines = append(lines, "in trouble: "+firstLine(g.Describe()))
+					groups = append(groups, groupStatus(g, false))
 				}
 			}
-			for _, e := range doc.Params.Errors() {
+			errs := doc.Params.Errors()
+			for _, e := range errs {
 				lines = append(lines, "expression error: "+e)
 			}
-			status = strings.Join(lines, "\n")
+			res.Status = strings.Join(lines, "\n")
+			res.Groups = groups
+			res.ExpressionErrors = errs
 		})
 	})
-	return status, err
+}
+
+// groupStatus is how g came out.
+func groupStatus(g api.Group, active bool) GroupStatus {
+	return GroupStatus{Name: g.Name(), Kind: g.Kind(), Active: active,
+		Solved: g.Solved(), DOF: g.Dof(), Problem: g.Problem()}
 }
 
 // Describe is the drawing, or one group of it, in words.

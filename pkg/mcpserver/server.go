@@ -62,6 +62,16 @@ type RenderInput struct {
 	Height int    `json:"height,omitempty" jsonschema:"the picture's height in pixels, 600 if left out"`
 }
 
+// RunOutput is the part of run_script's result a program can read
+// without reading the text: whether the script failed and how the
+// groups came out.
+type RunOutput struct {
+	Error            string              `json:"error,omitempty" jsonschema:"why the script stopped, with its line and column; empty if it ran to its end"`
+	RolledBack       bool                `json:"rolledBack,omitempty" jsonschema:"whether what the script changed was taken back"`
+	Groups           []agent.GroupStatus `json:"groups" jsonschema:"the active group, then every group in trouble: not solved, or with a problem"`
+	ExpressionErrors []string            `json:"expressionErrors,omitempty" jsonschema:"expressions that can't be worked out"`
+}
+
 // HelpInput is what api_help takes.
 type HelpInput struct {
 	Name string `json:"name,omitempty" jsonschema:"a menu, type, method or function, as Features, Features.Extrude or Group, or a menu entry, as Features > Fillet Edges; the primer if left out"`
@@ -112,14 +122,18 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Title:       "Run a script on the drawing",
 		Description: runDescription,
 		Annotations: &mcp.ToolAnnotations{OpenWorldHint: &closed},
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in RunInput) (*mcp.CallToolResult, any, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in RunInput) (*mcp.CallToolResult, RunOutput, error) {
 		res, err := b.Run(ctx, in.Code)
 		if err != nil {
-			return nil, nil, err
+			return nil, RunOutput{}, err
 		}
 		out := text(RunText(res))
 		out.IsError = res.Error != ""
-		return out, nil, nil
+		groups := res.Groups
+		if groups == nil {
+			groups = []agent.GroupStatus{}
+		}
+		return out, RunOutput{Error: res.Error, RolledBack: res.RolledBack, Groups: groups, ExpressionErrors: res.ExpressionErrors}, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

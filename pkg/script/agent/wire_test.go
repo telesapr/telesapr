@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -69,8 +70,9 @@ func TestRemoteSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := Result{Output: "drawn\n", Value: "5", Status: "active group g002-sketch-in-plane, sketch-in-plane: solved, 3 DOF"}
-	if res != want {
+	want := Result{Output: "drawn\n", Value: "5", Status: "active group g002-sketch-in-plane, sketch-in-plane: solved, 3 DOF",
+		Groups: []GroupStatus{{Name: "sketch-in-plane", Kind: "sketch-in-plane", Active: true, Solved: true, DOF: 3}}}
+	if !reflect.DeepEqual(res, want) {
 		t.Errorf("the run gave %+v, want %+v", res, want)
 	}
 	if res, err = r.Run(ctx, "doc.Features.Extrude(2, \"disc\")\nc.Length()\nundefined()"); err != nil || !res.RolledBack || res.Error == "" {

@@ -3,10 +3,12 @@ package mcpserver
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"image"
 	"image/color"
 	"image/png"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -238,6 +240,22 @@ func TestSketchProblemShown(t *testing.T) {
 	if res.IsError || !strings.Contains(text, "active group g003-bow, extrude: solved, 1 DOF, problem: the sketch g002-sketch-in-plane crosses itself at (5, 5, 0)") ||
 		!strings.Contains(text, "in trouble: g002-sketch-in-plane, sketch-in-plane: solved, 8 DOF, problem: the sketch crosses itself at (5, 5, 0)") {
 		t.Errorf("the status reads\n%s", text)
+	}
+	// The same, for a program that reads the structured result.
+	raw, err := json.Marshal(res.StructuredContent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out RunOutput
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	want := []agent.GroupStatus{
+		{Name: "bow", Kind: "extrude", Active: true, Solved: true, DOF: 1, Problem: "the sketch g002-sketch-in-plane crosses itself at (5, 5, 0)"},
+		{Name: "sketch-in-plane", Kind: "sketch-in-plane", Solved: true, DOF: 8, Problem: "the sketch crosses itself at (5, 5, 0)"},
+	}
+	if out.Error != "" || !reflect.DeepEqual(out.Groups, want) {
+		t.Errorf("the structured result is %s", raw)
 	}
 	if _, text = call(t, cs, ToolDescribe, nil); !strings.Contains(text, "problem: the sketch g002-sketch-in-plane crosses itself") {
 		t.Errorf("the drawing is described as\n%s", text)
