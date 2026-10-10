@@ -70,6 +70,7 @@ the profile square to an arc's axis), and the copies step and repeats, patterns 
 mirrors make of them; a model with any other solid group (a fillet, a chamfer, a loft, a sweep
 along a cubic, twisted or held to a direction, a shell, a STEP link) is refused, naming the group.
 
-A helix's rays disagree with the mesh by up to a tenth of a millimetre on a steep helix, whatever
-the chord tolerance: the kernel's patches are off the true helix by about 2% of each quarter
-turn's rise, which the rebuilt model, being the true helix, shows.
+A helix's rays agree with the mesh as a lathe's do, within the chord tolerance: the kernel's
+patches follow the true helix within a few millionths of each quarter turn's rise. A ray that
+grazes a helix's inner wall can still disagree by a few hundredths of a millimetre, where the
+rebuilt model samples the crossing.
