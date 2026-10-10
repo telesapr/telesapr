@@ -1,0 +1,35 @@
+# Sketch On Face (F1): with nothing selected, Features > Sketch On Face
+# says what to select; with the top face of the extrusion of
+# path_extrude picked, it starts a sketch whose workplane lies in the
+# face, which the group screen names. A rectangle drawn there and
+# extruded stands on the block, and Analyze > Check Solid finds the
+# whole sound.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+answer ok
+menu Features|Sketch On Face
+move 290 265
+down L 290 265
+up L 290 265
+menu Features|Sketch On Face
+dump
+tw
+key r
+move 300 250
+down L 300 250
+up L 300 250
+move 400 330
+down L 400 330
+up L 400 330
+key esc
+key x shift
+dump
+answer ok
+menu Analyze|Check Solid

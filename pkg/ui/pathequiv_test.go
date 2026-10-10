@@ -296,6 +296,17 @@ func TestPathEquivalenceShell(t *testing.T) {
 	}
 }
 
+// The top of an extrusion picked with the mouse and a sketch started on
+// it, and the same made by a script (F1).
+func TestPathEquivalenceSketchOnFace(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sketch_on_face", "path_sketch_on_face")
+	g := ui.Group(ui.Active)
+	if g.Type != sketch.GroupDrawingWorkplane || g.Subtype != sketch.GroupWorkplaneByFace ||
+		g.Problem.Msg != "" || len(g.SolidFaces) != 1 {
+		t.Errorf("the sketch: type %d, subtype %d, problem %q, faces %v", g.Type, g.Subtype, g.Problem.Msg, g.SolidFaces)
+	}
+}
+
 // The top of an extruded circle picked with the mouse and the cylinder
 // hollowed into a cup, and the same made by a script (roadmap 15.2).
 func TestPathEquivalenceShellCup(t *testing.T) {

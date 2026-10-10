@@ -100,6 +100,7 @@ func (g *Group) generateDrawingWorkplane(sk *Sketch, entity *[]core.Entity) {
 	h := g.H
 
 	var q geom.Quaternion
+	var origin geom.Vector
 	switch g.Subtype {
 	case GroupWorkplaneByLineSegments:
 		u := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk)
@@ -123,8 +124,13 @@ func (g *Group) generateDrawingWorkplane(sk *Sketch, entity *[]core.Entity) {
 		q = g.Predef.Q
 	case GroupWorkplaneByPointNormal:
 		q = sk.MustEntity(g.Predef.EntityB).NormalGetNum(sk)
+	case GroupWorkplaneByFace:
+		q, origin = g.facePlane(sk)
 	default:
 		panic(fmt.Sprintf("unexpected workplane subtype %d", g.Subtype))
+	}
+	if g.Subtype != GroupWorkplaneByFace {
+		origin = sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
 	}
 
 	normal := core.Entity{
@@ -137,7 +143,7 @@ func (g *Group) generateDrawingWorkplane(sk *Sketch, entity *[]core.Entity) {
 
 	point := core.Entity{
 		Type:         core.EntityPointNCopy,
-		NumPoint:     sk.MustEntity(g.Predef.Origin).PointGetNum(sk),
+		NumPoint:     origin,
 		Construction: true,
 		Group:        h,
 		H:            h.Entity(2)}

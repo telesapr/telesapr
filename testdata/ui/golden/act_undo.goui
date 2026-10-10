@@ -133,6 +133,7 @@
 Fea&tures ind=0 en=1 act=0
   Sketch In &3d [Shift+3] ind=0 en=1 act=0
   Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  Sketch On Face [Shift+B] ind=0 en=1 act=0
   ---
   E&xtrude [Shift+X] ind=0 en=1 act=0
   Re&volve [Shift+V] ind=0 en=1 act=0
@@ -337,6 +338,7 @@ tw 0 unsaved 1 cursor 0 tooltip ""
 Fea&tures ind=0 en=1 act=0
   Sketch In &3d [Shift+3] ind=0 en=1 act=0
   Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  Sketch On Face [Shift+B] ind=0 en=1 act=0
   ---
   E&xtrude [Shift+X] ind=0 en=1 act=0
   Re&volve [Shift+V] ind=0 en=1 act=0

@@ -68,6 +68,11 @@ const (
 	GroupWorkplaneByPointOrtho GroupSubtype = 6000 + iota
 	GroupWorkplaneByLineSegments
 	GroupWorkplaneByPointNormal
+	// GroupWorkplaneByFace lies in a flat face of the solid so far,
+	// SolidFaces[0], and follows it at each regeneration
+	// (topo.FaceFrame); Predef.Q and Predef.At hold where it was last
+	// found.
+	GroupWorkplaneByFace
 )
 
 const (
@@ -175,8 +180,12 @@ type Group struct {
 	Color core.RGBA
 
 	Predef struct {
-		Q       geom.Quaternion
-		Origin  core.HEntity
+		Q      geom.Quaternion
+		Origin core.HEntity
+		// At is the origin of a workplane in a face, where the last
+		// regeneration found it; it holds the workplane when the face
+		// can't be found, as before the solid is made on loading.
+		At      geom.Vector
 		EntityB core.HEntity
 		EntityC core.HEntity
 		SwapUV  bool
@@ -235,9 +244,13 @@ type Group struct {
 	// LoftThrough are the profiles a smooth loft goes through between
 	// OpA and OpB, in order (roadmap E8).
 	LoftThrough []core.HGroup
-	// SolidFaces are the faces of the solid a shell takes away, by
-	// identity (srf.FaceID).
+	// SolidFaces are the faces of the solid a shell takes away, or the
+	// face a sketch on a face lies in, by identity (srf.FaceID).
 	SolidFaces []srf.FaceID
+	// faceProblem is why the face of a workplane in a face was not
+	// found when the group's entities were made, which the solid's
+	// regeneration, clearing Problem, then reports (face_workplane.go).
+	faceProblem string
 	// EdgeRadii are a fillet's edges that have a radius of their own,
 	// rather than ValB, in the order of Edges and then SolidEdges.
 	EdgeRadii []EdgeRadius

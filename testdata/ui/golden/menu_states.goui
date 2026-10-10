@@ -134,6 +134,7 @@ dialog 0 No workplane is active, so the grid will not appear.|
 Fea&tures ind=0 en=1 act=0
   Sketch In &3d [Shift+3] ind=0 en=1 act=0
   Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  Sketch On Face [Shift+B] ind=0 en=1 act=0
   ---
   E&xtrude [Shift+X] ind=0 en=1 act=0
   Re&volve [Shift+V] ind=0 en=1 act=0
@@ -339,6 +340,7 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
 Fea&tures ind=0 en=1 act=0
   Sketch In &3d [Shift+3] ind=0 en=1 act=0
   Sketch In New &Workplane [Shift+W] ind=0 en=1 act=0
+  Sketch On Face [Shift+B] ind=0 en=1 act=0
   ---
   E&xtrude [Shift+X] ind=0 en=1 act=0
   Re&volve [Shift+V] ind=0 en=1 act=0

@@ -22,7 +22,7 @@ property browser do. An entry with nothing to work on, as Paste with an empty cl
 and its key does nothing. Edit > Find Command (Ctrl+K) finds any entry by words of its name, and
 lists last, with the reason, those that can't run now. A right click offers what applies to what
 is under the pointer: on an edge of the solid, Fillet, Chamfer and Sweep Along Edges; on a face,
-Shell and Mirror; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
+Shell, Mirror and Sketch On Face; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
 suppress or delete the group it belongs to. The toolbar at the left has buttons for the features that
 take a selection (fillet, chamfer, shell, sweep, loft, mirror, pattern) and for measuring and the
 section view; it takes three columns when the window is too short for two. The property browser's
@@ -40,6 +40,7 @@ the entries had before the menus took this order are still taken.
 | [Constraints while drawing](drawing.md) | Tangent, perpendicular, parallel and equal inferred as a line is drawn | (none) |
 | [History](history.md) | Moving a group, suppressing one with what uses it, broken references | `history` |
 | [Appearance and shading](appearance.md) | Matte, plastic, glossy and metal faces, lit by a shader | `appearance` |
+| [Sketch on a face](sketch-on-face.md) | A sketch in a flat face of the solid, following it | `pedestal` |
 | [Section view](section-view.md) | Cutting the model open to look inside | `section` |
 | [Mirror](mirror.md) | A group reflected in a plane | `mirror` |
 | [Chamfer](chamfer.md) | Edges cut at a distance | `chamfer`, `edges` |

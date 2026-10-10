@@ -104,6 +104,12 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	sk.markSuppressed()
 
 	rt := &Runtime{Sketch: sk}
+	// The pass that finds the model's size solves the groups and makes
+	// their loops, placing a sketch on a face from the solids of the
+	// regeneration before; where this pass finds the face elsewhere,
+	// that sketch and every group after it are solved and their loops
+	// made again (face_workplane.go).
+	resolve := false
 	for i, hg := range sk.GroupOrder {
 		if sk.hooks().Cancel() {
 			return
@@ -152,8 +158,10 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		// The entity and param lists are kept sorted by handle; the
 		// group iterates over them in that order.
 		sk.sortByHandle()
+		was := g.Predef
 		g.Generate(sk, &sk.Entities, &sk.Params)
 		sk.sortByHandle()
+		resolve = resolve || (!genForBBox && g.facePlaneMoved(was.Q, was.At))
 		// The params this group's solve may change: those its requests,
 		// its constraints and the group itself generate.
 		groupParams := make([]core.HParam, 0, len(sk.Params)-len(prevGroupParams))
@@ -199,11 +207,19 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 				g.GenerateLoops(sk, rt)
 
 			case sk.DeferShells:
+				if resolve {
+					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
+					g.GenerateLoops(sk, rt)
+				}
 				// The solid as it was, to be made off the thread.
 				g.ShellsStale = true
 				g.Clean = true
 
 			default:
+				if resolve {
+					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
+					g.GenerateLoops(sk, rt)
+				}
 				g.GenerateShellAndMesh(sk)
 				g.ShellsStale = false
 				g.Clean = true

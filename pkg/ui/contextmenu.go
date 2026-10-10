@@ -239,6 +239,9 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 		if gs.n == 1 && gs.faces == 1 && len(gs.solidFace) == 0 {
 			menu.AddItem("Mirror in This Plane", func() { ss.MenuGroup(cmdGroupMirror, "") }, true)
 		}
+		if _, ok := gs.onlyFace(); ok {
+			menu.AddItem("Sketch On Face", func() { ss.MenuGroup(cmdGroupSketchOnFace, "") }, true)
+		}
 	}
 	if edges || faces || gs.n > 0 {
 		menu.AddItem("Measure Selection", func() { ss.MenuMeasure() }, true)

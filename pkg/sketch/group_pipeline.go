@@ -119,6 +119,10 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		return
 	}
 
+	// A sketch on a face that lost its face says so first.
+	if g.faceProblem != "" {
+		g.setProblem(nil, "%s", g.faceProblem)
+	}
 	// A sketch that is no good as a profile says so, as does a solid
 	// made from it.
 	g.reportPolyProblem(sk)

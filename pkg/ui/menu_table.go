@@ -194,6 +194,7 @@ var menuTable = []menuEntry{
 	{0, "Fea&tures", cmdNone, 0, kn, mGrp},
 	{1, "Sketch In &3d", cmdGroup3D, shift | '3', kn, mGrp},
 	{1, "Sketch In New &Workplane", cmdGroupWrkpl, shift | 'w', kn, mGrp},
+	{1, "Sketch On Face", cmdGroupSketchOnFace, shift | 'b', kn, mGrp},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "E&xtrude", cmdGroupExtrude, shift | 'x', kn, mGrp},
 	{1, "Re&volve", cmdGroupRevolve, shift | 'v', kn, mGrp},

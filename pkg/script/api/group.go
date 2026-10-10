@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -499,6 +500,9 @@ func (d *Doc) SketchIn(wp Entity, name string) Group {
 		case sketch.GroupWorkplaneByPointNormal:
 			g.Predef.Q = from.Predef.Q
 			g.Predef.EntityB = from.Predef.EntityB
+		case sketch.GroupWorkplaneByFace:
+			g.Predef.Q, g.Predef.At = from.Predef.Q, from.Predef.At
+			g.SolidFaces = slices.Clone(from.SolidFaces)
 		default:
 			fail("%s has no workplane to copy", groupDescription(from))
 		}
@@ -525,6 +529,41 @@ func (d *Doc) SketchAt(origin Entity, u, v Vec, name string) Group {
 		g.Predef.Origin = origin.H
 		return g
 	}, nil)
+}
+
+// SketchOnFace adds a group to draw in, in a workplane lying in a flat
+// face of the solid so far, as Solid.FaceAt or Solid.Face give it: its
+// normal out of the solid, its origin on a corner of the face and u
+// along an edge of it (for a face with no straight edge, as a
+// cylinder's cap, the origin at the centre of its circle). The
+// workplane follows the face when an edit upstream moves it; when the
+// face is gone, it stays where it was and Problem says so. The new
+// group becomes active, and its workplane the one drawn in.
+func (d *Doc) SketchOnFace(face SolidFace, name string) Group {
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		g, err := sk.NewSketchOnFace(face.id, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// Face is the face of the solid so far that a sketch made by
+// SketchOnFace lies in.
+func (g Group) Face() (f SolidFace) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if group.Type != sketch.GroupDrawingWorkplane || group.Subtype != sketch.GroupWorkplaneByFace {
+			fail("Face is for a sketch on a face, and %s is not one", groupDescription(group))
+		}
+		before := group.PreviousGroup(sk)
+		if before == nil || len(group.SolidFaces) == 0 {
+			fail("%s has no face", groupDescription(group))
+		}
+		f = SolidFace{s: Solid{d: g.d, g: before.H}, id: group.SolidFaces[0]}
+	})
+	return f
 }
 
 // workplaneNormal is the unit normal of the active workplane, which
