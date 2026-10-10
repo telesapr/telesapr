@@ -409,6 +409,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		if quartic {
 			deriv[k] = elevateH(deriv[k])
 		}
+		if rb.splitEnds {
+			_, deriv[k] = srf.InsertKnotH(endDeg, bezierKnots(endDeg), deriv[k], 0.5)
+		}
 	}
 	if r1 < r0 {
 		return nil, nil, nil, filletErr(midpoint(rb.pts), "the edge is too short for a fillet this large between "+
@@ -475,7 +478,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			case sp.end >= 0 && rb.fitCuts:
 				sec, err = rb.planeCutSection(sp.end, sec)
 			default:
-				sec.arc = raised(sec.arc)
+				sec.arc = rb.splitSection(raised(sec.arc))
 			}
 		}
 		if err == nil {
@@ -793,11 +796,13 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 		sh.Curve = append(sh.Curve, nc)
 	}
 	bz, err := cut.arc.Beziers()
-	if err != nil || len(bz) != 1 {
-		return filletErr(v, "the fillet's end is not one curve")
+	if err != nil || len(bz) == 0 {
+		return filletErr(v, "the fillet's end is not a curve")
 	}
 	fs.Trim = kept
-	add(fs, core.HSSurface{}, bz[0], forward)
+	for _, b := range bz {
+		add(fs, core.HSSurface{}, b, forward)
+	}
 	// A side's curve in the plane, from the vertex to its point: in the
 	// flat face's loop, from the vertex out for side 0 when it runs on,
 	// into it for side 1; in the side's face the other way round from
@@ -904,6 +909,25 @@ func raised(c srf.BSplineCurve) srf.BSplineCurve {
 	return fromHomog(elevateH(homog(c)))
 }
 
+// bezierKnots are the knots of one Bézier span of degree deg on [0, 1].
+func bezierKnots(deg int) []float64 {
+	k := make([]float64, 2*(deg+1))
+	for i := deg + 1; i < len(k); i++ {
+		k[i] = 1
+	}
+	return k
+}
+
+// splitSection is c, a section of degree endDeg, split at its middle
+// into two spans when the fillet's sections are (splitEnds): the same
+// curve, so that it skins with the end sections fitted in two.
+func (rb *rollingBall) splitSection(c srf.BSplineCurve) srf.BSplineCurve {
+	if !rb.splitEnds || len(c.Ctrl) != endDeg+1 {
+		return c
+	}
+	return c.WithKnot(0.5)
+}
+
 // curvedEndSection is end k's section on its curved face: sec, the
 // conic through where the swept surface meets the face at the two sides
 // and the middle, refitted as a quintic of the conic's raised weights.
@@ -940,7 +964,7 @@ func (rb *rollingBall) planeCutSection(k int, sec rbSection) (rbSection, error) 
 func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector) geom.Vector,
 	height func(geom.Vector) float64, what, strays string) (rbSection, error) {
 	at := sec.arc.PointAt(0.5)
-	c := raised(sec.arc)
+	c := rb.splitSection(raised(sec.arc))
 	// The ball's own arcs' weights, at the ball's own parameters: where
 	// the sides' faces are flat the swept surface is a tube, its arcs
 	// circles, and only the height along it is left to fit.
@@ -948,9 +972,11 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector)
 	if err != nil {
 		return sec, err
 	}
-	w := raised(ball.arc).Weight
+	w := rb.splitSection(raised(ball.arc)).Weight
 	c.Weight = w
-	q0, q1 := c.Ctrl[0], c.Ctrl[endDeg]
+	// The last control point: endDeg, or one more for two spans.
+	n := len(c.Ctrl) - 1
+	q0, q1 := c.Ctrl[0], c.Ctrl[n]
 	way := func(q, n, toward geom.Vector) geom.Vector {
 		t := tanAt(q, n)
 		if t.Magnitude() == 0 {
@@ -962,14 +988,17 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector)
 		return t.WithMagnitude(1)
 	}
 	t0 := way(q0, sec.foot[0].n, c.Ctrl[1])
-	t1 := way(q1, sec.foot[1].n, c.Ctrl[endDeg-1])
+	t1 := way(q1, sec.foot[1].n, c.Ctrl[n-1])
 	// Where the swept surface meets the cut, along the ball's arcs.
 	dir := endDir(k)
-	const nPts = 9
+	nPts := 9
+	if n > endDeg {
+		nPts = 17
+	}
 	var ts []float64
 	var xs []geom.Vector
 	for j := 1; j < nPts; j++ {
-		tj := float64(j) / nPts
+		tj := float64(j) / float64(nPts)
 		_, xsec, err := rb.planeRoot(func(x rbSection) float64 { return height(x.arc.PointAt(tj)) }, sec.s, dir, at)
 		if err != nil {
 			return sec, err
@@ -977,18 +1006,22 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector)
 		ts = append(ts, tj)
 		xs = append(xs, xsec.arc.PointAt(tj))
 	}
-	bern := func(u float64) []float64 {
-		b := make([]float64, endDeg+1)
-		for i := range b {
-			b[i] = binomial(endDeg, i) * math.Pow(u, float64(i)) * math.Pow(1-u, float64(endDeg-i))
+	// One span's basis is Bernstein's, as it was before two spans were
+	// fitted, which keeps the last digits of what one span made.
+	basis := c.Basis
+	if n == endDeg {
+		basis = func(u float64) []float64 {
+			b := make([]float64, endDeg+1)
+			for i := range b {
+				b[i] = binomial(endDeg, i) * math.Pow(u, float64(i)) * math.Pow(1-u, float64(endDeg-i))
+			}
+			return b
 		}
-		return b
 	}
 	// Unknowns: P1 = q0 + a t0, P(n-1) = q1 + b t1, and the points between;
 	// fixed weights, so the weighted residual is linear in them. Each
 	// point's parameter is then the nearest on the curve, and the fit
 	// again.
-	const n = endDeg
 	nu := 2 + 3*(n-3)
 	us := append([]float64(nil), ts...)
 	fit := c
@@ -999,7 +1032,7 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector)
 		}
 		atb := make([]float64, nu)
 		for j, x := range xs {
-			b := bern(us[j])
+			b := basis(us[j])
 			wt := 0.0
 			for i := range b {
 				wt += w[i] * b[i]

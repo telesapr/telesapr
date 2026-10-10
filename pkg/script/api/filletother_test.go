@@ -270,15 +270,45 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 	}
 }
 
+// The lid's upright edges filleted at radius 2.5 where they end on its
+// dome, too wide a corner for one quintic to follow: the sections are
+// split in two spans (rollingBall.splitEnds), and take what OpenCASCADE's
+// makeFillet takes within half a percent (ours 0.12 to 0.17% more at
+// this chord tolerance, as at radius 1).
+func TestFilletEndsOnCurvedFaceWide(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fillets over curved faces, slow")
+	}
+	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
+	for _, c := range []struct {
+		at   Vec
+		want float64
+	}{{V(0, 0, 4), 13.812062}, {V(40, 0, 4), 14.384156}, {V(40, 30, 4), 12.747386}, {V(0, 30, 4), 11.556165}} {
+		d := New()
+		d.Edit.SetChordTolerance(0.002)
+		g, err := d.Assembly.LinkStep(lid, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := g.Analyze().Check().Volume
+		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 2.5, "")
+		if p := f.Problem(); p != "" {
+			t.Fatalf("at %v: %s", c.at, p)
+		}
+		rep := f.Analyze().Check()
+		if took := before - rep.Volume; !rep.Sound() || math.Abs(took-c.want) > 0.005*c.want {
+			t.Errorf("at %v: %s, took %g, OpenCASCADE %g", c.at, rep.Summary(), took, c.want)
+		}
+	}
+}
+
 // The lid's upright edges filleted where they end on its dome, at radii
-// up to 2.5 and two chord tolerances. The rate fixed before the first
-// run, none refused, was missed: 8 of 40 are refused, at radii of 1.5
-// to 2.5, as their end can't be fitted. The dome's height round a corner
-// that wide is no quintic within half the chord tolerance (a polynomial
-// in the angle round the corner misses it by 3e-4 mm at degree 5, 2e-5
-// at 6), and a section has one piece of degree 5 at most. None is made
-// unsound. The allowance of 8 was fixed at what was measured on
-// 2026-10-10, to be kept from then on.
+// up to 2.5 and two chord tolerances: none refused, none unsound. Until
+// 2026-10-11 8 of 40 were refused, at radii of 1.5 to 2.5: the dome's
+// height round a corner that wide is no quintic within half the chord
+// tolerance (a polynomial in the angle round the corner misses it by
+// 3e-4 mm at degree 5, 2e-5 at 6). Their sections are now split in two
+// quintic spans (rollingBall.splitEnds).
 func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
 	g := sweep.Grid{
@@ -287,9 +317,7 @@ func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
 			sweep.Floats("r", 0.5, 1, 1.5, 2, 2.5),
 			sweep.Floats("chord", 0.002, 0.005),
 		},
-		MaxFailRate:       8.0 / 40,
-		Sample:            6,
-		SampleMaxFailRate: 2.0 / 6,
+		Sample: 6,
 	}
 	g.Run(func(p sweep.Point) error {
 		var x, y float64

@@ -88,6 +88,10 @@ type rollingBall struct {
 	// where the swept surface meets their planes, not conics
 	// (planeCutSection).
 	fitCuts bool
+	// splitEnds makes every section of a fillet with a curved end two
+	// quintic spans, split at the middle (splitSection), so that the end
+	// section on the curved face can follow it round a wide corner.
+	splitEnds bool
 	// uvLoops are faces' trims in their patches' (u, v).
 	uvLoops map[int][][]geom.Vector
 	// The edge, densely, on both faces, with the arc length along it.
@@ -880,6 +884,15 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 			}
 			rb.fitCuts = false
 		}
+		if err != nil && rb.anyCurvedEnd() {
+			// Round a corner wide for its dome the face's height is no
+			// quintic within the tolerance; two spans follow it.
+			rb.splitEnds = true
+			if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
+				return fsf, fsecs, fcross, nil
+			}
+			rb.splitEnds = false
+		}
 		return sf, secs, cross, err
 	}
 	n := int(math.Min(2000, math.Max(64, 4*rb.length/rb.r)))
@@ -1007,16 +1020,21 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	if err != nil {
 		return filletErr(at, "the fillet's surface can't be cut into patches: %v", err)
 	}
-	if len(all) != 1 {
+	// One row of patches along the edge, or two where the sections are
+	// split at their middles (splitEnds): side 0's half, then side 1's.
+	if len(all) != 1 && (!rb.splitEnds || len(all) != 2) {
 		return filletErr(at, "the fillet's sections are not single arcs")
 	}
 	row := all[0]
 	m := len(row)
-	if m != len(secs)-1 {
+	if m != len(secs)-1 || len(all[len(all)-1]) != m {
 		return filletErr(at, "the fillet's surface has %d patches for %d sections", m, len(secs))
 	}
+	// sideRow is the row of patches along side k.
+	sideRow := func(k int) []srf.SSurface { return all[k*(len(all)-1)] }
 	// The fillet's corner at section j on side k.
 	corner := func(j, k int) geom.Vector {
+		row := sideRow(k)
 		i := 0
 		if k == 1 {
 			i = row[0].DegM
@@ -1126,6 +1144,10 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 				}
 			}
 			if ro := cut.off; ro != nil {
+				if len(all) > 1 {
+					return filletErr(t.Vertices[end.v].P, "the fillet runs off a face at one end and "+
+						"ends on a curved face too wide to follow at the other: make it smaller")
+				}
 				if err := rb.runOffCuts(sh, row, k, ro); err != nil {
 					return err
 				}
@@ -1197,7 +1219,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 				return filletErr(at, "a face the fillet touches is not along the edge")
 			}
 			for _, b := range pieces[f] {
-				sb, ok := rb.contactPiece(row, endCuts, k, b)
+				sb, ok := rb.contactPiece(sideRow(k), endCuts, k, b)
 				if !ok {
 					continue
 				}
@@ -1251,20 +1273,22 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 
 	// The fillet's patches.
 	fa := NewFaceAdder(sh)
-	for b := range m {
-		p := row[b]
-		loop := patchLoop(&p)
-		if l, ok := loops[b]; ok {
-			if len(l) == 0 {
-				continue
+	for _, row := range all {
+		for b := range m {
+			p := row[b]
+			loop := patchLoop(&p)
+			if l, ok := loops[b]; ok {
+				if len(l) == 0 {
+					continue
+				}
+				loop = l
 			}
-			loop = l
-		}
-		p.Color = color
-		p.Origin = origin
-		p.Sheet = origin
-		if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
-			return filletErr(loop[0].Start(), "the fillet's face can't be put in: %v", err)
+			p.Color = color
+			p.Origin = origin
+			p.Sheet = origin
+			if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
+				return filletErr(loop[0].Start(), "the fillet's face can't be put in: %v", err)
+			}
 		}
 	}
 	t2, err := Build(sh)
