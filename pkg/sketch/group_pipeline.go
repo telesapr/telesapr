@@ -66,6 +66,7 @@ func (g *Group) AssembleLoops(sk *Sketch, rt EntityBezierResolver) (allClosed, a
 // error, otherwise it just clears them. The self-intersection check is
 // slow, so it runs only with the sketch's CheckClosedContour.
 func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
+	defer sk.timed(g.H, timingLoops)()
 	g.PolyLoops.Clear()
 	g.BezierLoops.Clear()
 	g.BezierOpens = nil
@@ -99,6 +100,7 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 // to a mesh combines meshes instead (see combineMeshes).
 func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	defer trace.StartRegion(context.Background(), "solid").End()
+	defer sk.timed(g.H, timingSolid)()
 	defer func() { g.DisplayDirty = true }()
 	g.BooleanFailed = false
 	g.Problem = GroupProblem{}

@@ -138,6 +138,10 @@ type Sketch struct {
 	// or reordering Entities and Params needs no bookkeeping.
 	entityIndex map[core.HEntity]int
 	paramIndex  map[core.HParam]int
+
+	// Timings, when set, collects how long each group's regeneration
+	// takes (telesapr-cli --profile).
+	Timings *Timings
 }
 
 func NewSketch() *Sketch {

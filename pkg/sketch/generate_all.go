@@ -716,6 +716,7 @@ func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int) {
 // other param fixed.
 func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
 	defer trace.StartRegion(context.Background(), "solve").End()
+	defer sk.timed(hg, timingSolve)()
 	g := sk.Group(hg)
 	g.SketchDiagnostic = nil
 

@@ -337,9 +337,10 @@ var fileCommands = map[string]fileCommand{
 	},
 }
 
-// runCommand performs args[1] on the files args name. It is false when
-// the command line or a file was wrong.
-func runCommand(args []string, stderr io.Writer) bool {
+// runCommand performs args[1] on the files args name, timing each in
+// rep when it isn't nil. It is false when the command line or a file
+// was wrong.
+func runCommand(args []string, stderr io.Writer, rep *runReport) bool {
 	if len(args) < 2 {
 		return false
 	}
@@ -400,21 +401,25 @@ func runCommand(args []string, stderr io.Writer) bool {
 		}
 
 		s := newSession(stderr)
+		f := rep.file(input)
 		// Links are relative to the file that names them.
 		s.ss.SaveFile = absInput
 		if err := s.ss.LoadFromFile(absInput); err != nil {
 			fmt.Fprintf(stderr, "Cannot load '%s': %v\n", input, err)
 			return false
 		}
+		f.loaded(s.ss.SK)
 		// The loaded sketch is solved; its solids are made at the
 		// display tolerance unless the command makes them again.
 		s.ss.SK.DeferShells = c.solidsLater
 		s.ss.AfterNewFile()
 		s.ss.SK.DeferShells = false
+		f.regenerated()
 		if err := c.run(s, o, absOutput); err != nil {
 			fmt.Fprintf(stderr, "Cannot write '%s': %v\n", output, err)
 			return false
 		}
+		f.ran(s.ss.SK)
 		fmt.Fprintf(stderr, "Written '%s'.\n", output)
 	}
 	return true
@@ -496,13 +501,14 @@ func main() {
 // and returns the exit status: 0 for success, 1 for a command that
 // failed, and the scripting commands' own statuses.
 func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	return withProfiles(args, stderr, func(args []string) int {
-		return runCommandLine(ctx, args, stdin, stdout, stderr)
+	return withProfiles(args, stderr, func(args []string, rep *runReport) int {
+		return runCommandLine(ctx, args, stdin, stdout, stderr, rep)
 	})
 }
 
-// runCommandLine is run without the profiling options.
-func runCommandLine(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+// runCommandLine is run without the profiling options; rep, when not
+// nil, is filled in for --profile.
+func runCommandLine(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer, rep *runReport) int {
 	if len(args) == 1 {
 		showUsage(stderr, args[0])
 		return exitOK
@@ -513,7 +519,7 @@ func runCommandLine(ctx context.Context, args []string, stdin io.Reader, stdout,
 	case args[1] == "mcp":
 		return runMCP(ctx, args, stdin, stdout, stderr)
 	}
-	if !runCommand(args, stderr) {
+	if !runCommand(args, stderr, rep) {
 		return 1
 	}
 	return exitOK
