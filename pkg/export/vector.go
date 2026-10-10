@@ -647,67 +647,6 @@ func (w *hpglFileWriter) FinishAndCloseFile() error {
 }
 
 // ---------------------------------------------------------------------
-// G code: slightly complicated by our ability to generate multiple
-// passes, and to specify the feeds and depth; those parameters get set
-// in the configuration screen.
-// ---------------------------------------------------------------------
-
-type gcodeFileWriter struct {
-	vectorWriter
-	sel srf.SEdgeList
-}
-
-func (w *gcodeFileWriter) HasCanvasSize() bool { return false }
-func (w *gcodeFileWriter) CanOutputMesh() bool { return false }
-
-func (w *gcodeFileWriter) StartFile() {
-	w.sel = srf.SEdgeList{}
-}
-func (w *gcodeFileWriter) StartPath(core.RGBA, float64, bool, core.RGBA, core.HStyle) {
-}
-func (w *gcodeFileWriter) Background(core.RGBA) {}
-func (w *gcodeFileWriter) FinishPath(core.RGBA, float64, bool, core.RGBA, core.HStyle, bool) {
-}
-func (w *gcodeFileWriter) Triangle(*srf.STriangle) {}
-
-func (w *gcodeFileWriter) Bezier(sb *srf.SBezier) {
-	if sb.Degree == 1 {
-		w.sel.AddEdge(sb.Ctrl[0], sb.Ctrl[1], 0, 0, 0)
-	} else {
-		w.BezierAsPwl(sb)
-	}
-}
-
-func (w *gcodeFileWriter) FinishAndCloseFile() error {
-	mm := func(v float64) string { return w.format(v) }
-	var sp srf.SPolygon
-	w.sel.AssemblePolygon(&sp, nil, false)
-
-	for i := range w.o.GCode.Passes {
-		depth := (w.o.GCode.Depth / float64(w.o.GCode.Passes)) * float64(i+1)
-
-		for _, sc := range sp.Contours {
-			if len(sc.Points) < 2 {
-				continue
-			}
-
-			pt := sc.Points[0]
-			w.printf("G00 X%s Y%s\r\n", mm(pt.P.X), mm(pt.P.Y))
-			w.printf("G01 Z%s F%s\r\n", mm(depth), mm(w.o.GCode.PlungeFeed))
-
-			for _, pt := range sc.Points[1:] {
-				w.printf("G01 X%s Y%s F%s\r\n", mm(pt.P.X), mm(pt.P.Y), mm(w.o.GCode.Feed))
-			}
-			// Move up to a clearance plane above the work.
-			w.printf("G00 Z%s\r\n", mm(w.o.GCode.SafeHeight))
-		}
-	}
-
-	w.sel = srf.SEdgeList{}
-	return w.closeFile()
-}
-
-// ---------------------------------------------------------------------
 // STEP: just a wrapper around the general STEP stuff that can also be
 // used for surfaces or 3d curves.
 // ---------------------------------------------------------------------

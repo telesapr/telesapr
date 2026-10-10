@@ -19,17 +19,16 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 2 | [K1 Robust point projection](#k1-robust-point-projection) | kernel foundation | S–M | Smallest kernel item with the widest effect (fillets, pullback, picking, STEP) |
 | 3 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
 | 4 | [P1 Sweep allowances fixed before the run](#p1-sweep-allowances-fixed-before-the-run) | hygiene | S | Three sweeps break the "rate fixed before" rule |
-| 5 | [F3 G-code arcs](#f3-g-code-arcs-g02g03) | feature | S | Local change in `pkg/export/vector.go` |
-| 6 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
-| 7 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
-| 8 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
-| 9 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 10 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 11 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 12 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
-| 13 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 5 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
+| 6 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
+| 7 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
+| 8 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 9 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
+| 10 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 11 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 12 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-Items 6 and 7 open most of the rest: the dependency column in each table below names which.
+Items 5 and 6 open most of the rest: the dependency column in each table below names which.
 
 ## Features
 
@@ -44,12 +43,6 @@ From the neosolve survey (2026-10-07). Neosolve has them; TeleSAPR has neither.
 
 Both need the usual menu entries, text-window rows, `pkg/script/api` methods and freedom/conflict
 reporting.
-
-### F3 G-code arcs (G02/G03)
-
-`gcodeFileWriter` in `pkg/export/vector.go` writes every curve as G01 lines; only degree-1
-Béziers are exact. Fit arcs and curves to biarcs (BRL-CAD's `sketch_tess.cpp` is a reference) and
-write G02/G03. The same biarc fit serves DXF export.
 
 ### F4 Corner radius on path sweeps
 
