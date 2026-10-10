@@ -35,6 +35,7 @@ func init() {
 		"DimensionKinds":               reflect.ValueOf(&sketch.DimensionKinds).Elem(),
 		"EdgeRadiusField":              reflect.ValueOf(sketch.EdgeRadiusField),
 		"EntityPointCount":             reflect.ValueOf(sketch.EntityPointCount),
+		"ErrFittedSweep":               reflect.ValueOf(&sketch.ErrFittedSweep).Elem(),
 		"ErrNoClosedRegion":            reflect.ValueOf(&sketch.ErrNoClosedRegion).Elem(),
 		"ErrNotCopies":                 reflect.ValueOf(&sketch.ErrNotCopies).Elem(),
 		"ErrSplinePointsFull":          reflect.ValueOf(&sketch.ErrSplinePointsFull).Elem(),

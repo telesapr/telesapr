@@ -567,6 +567,31 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 	}
 }
 
+// ErrFittedSweep is SweepSteps' error for a sweep whose surface is
+// fitted, not made of rigid steps: along a cubic, twisted, or held to a
+// direction.
+var ErrFittedSweep = errors.New("the sweep is fitted along its path, not moved rigidly")
+
+// SweepSteps are the rigid steps a sweep along lines and arcs moves its
+// profile by, in order from the profile where it is drawn: a line's
+// translation, an arc's turn, and at a mitred corner the turn between
+// two lines, where each is cut by the plane halving the corner (a
+// corner radius is an arc). ErrFittedSweep, wrapped, for a fitted
+// sweep. The ray-cast oracle (pkg/check) rebuilds the solid from these.
+func (g *Group) SweepSteps(sk *Sketch) ([]srf.SweepStep, error) {
+	if g.Type != GroupSweep {
+		return nil, fmt.Errorf("%s is not a sweep", g.DescriptionString())
+	}
+	steps, err := g.sweepPath(sk)
+	if err != nil {
+		return nil, err
+	}
+	if g.fittedPath != nil {
+		return nil, fmt.Errorf("%s: %w", g.DescriptionString(), ErrFittedSweep)
+	}
+	return steps, nil
+}
+
 // sweepFitted reports whether the sweep's surface is fitted along the
 // chain rather than exact: along a cubic, or twisted, or with its frames
 // held to a direction.

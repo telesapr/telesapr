@@ -14,18 +14,22 @@ import (
 
 // The ray-cast oracle judges a solid without the kernel's surface
 // intersection: it rebuilds the group tree from each group's own
-// definition (a profile and an extrusion, a profile and an axis, the
-// motions that place a pattern's or a mirror's copies), finds
+// definition (a profile and an extrusion, a profile and an axis, a
+// sweep's rigid steps, the motions that place a pattern's or a
+// mirror's copies), finds
 // where a ray may cross each leaf's boundary, and evaluates the tree
 // between those places, point by point. Volumes, centroids and where a
 // line passes through the solid then come from rays alone, and a
 // disagreement with the B-rep's mesh says where one of them is wrong.
 
 // ErrUnsupported is returned for a group tree with a leaf the oracle
-// can't build: anything but extrusions, drafted or not, lathes and
-// revolves, and the step and repeats, patterns along a path and
-// mirrors of those.
-var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions, lathes, revolves and their copies only")
+// can't build: anything but extrusions, drafted or not, lathes,
+// revolves, helices of a profile in a plane through their axis, sweeps
+// along lines and arcs, and the step and repeats, patterns along a path
+// and mirrors of those. Lofts, fitted sweeps (along cubics, twisted or
+// held to a direction) and the solids made by editing others (fillets,
+// chamfers, shells) are refused.
+var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions, lathes, revolves, helices, sweeps along lines and arcs, and their copies only")
 
 // profileTol is the chord tolerance the profiles' curves are cut to:
 // fine enough that the oracle's own error is far below any mesh's.
@@ -126,6 +130,9 @@ type prism struct {
 	dirDotN  float64
 	cornerLo geom.Vector
 	cornerHi geom.Vector
+	// cuts, where set, end the prism in their place of t from 0 to 1:
+	// a sweep's run mitred at a corner (newCutPrism).
+	cuts []halfSpace
 }
 
 func newPrism(pr profile, tbot, ttop geom.Vector) *prism {
@@ -153,6 +160,14 @@ func (p *prism) coords(x geom.Vector) (t, a, b float64) {
 
 func (p *prism) inside(x geom.Vector) bool {
 	t, a, b := p.coords(x)
+	if p.cuts != nil {
+		for _, h := range p.cuts {
+			if !h.holds(x) {
+				return false
+			}
+		}
+		return p.pr.contains(a, b)
+	}
 	return t >= 0 && t <= 1 && p.pr.contains(a, b)
 }
 
@@ -160,7 +175,12 @@ func (p *prism) crossings(o, d geom.Vector, out []float64) []float64 {
 	t0, a0, b0 := p.coords(o)
 	t1, a1, b1 := p.coords(o.Plus(d))
 	dt, da, db := t1-t0, a1-a0, b1-b0
-	if dt != 0 {
+	switch {
+	case p.cuts != nil:
+		for _, h := range p.cuts {
+			out = h.crossing(o, d, out)
+		}
+	case dt != 0:
 		out = append(out, -t0/dt, (1-t0)/dt)
 	}
 	for _, poly := range p.pr.polys {
@@ -487,6 +507,29 @@ func oracleLeaf(sk *sketch.Sketch, g *sketch.Group) (node, error) {
 		for i := range src.BezierLoops.Sets {
 			leaves = append(leaves, newRevolution(&src.BezierLoops.Sets[i], pt, axis, full, phi0, phi1))
 		}
+	case g.Type == sketch.GroupHelix && src != nil:
+		pt := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
+		axis := sk.MustEntity(g.Predef.EntityB).VectorGetNum(sk).WithMagnitude(1)
+		// As the kernel reads them: the angle four times its parameter,
+		// the distance twice, both about the drawing for two sides.
+		th0, th1, d0, d1 := 0.0, param(3)*4, 0.0, param(7)*2
+		if g.Subtype != sketch.GroupOneSided {
+			th1, d1 = th1/2, d1/2
+			th0, d0 = -th1, -d1
+		}
+		for i := range src.BezierLoops.Sets {
+			hx, ok := newHelix(&src.BezierLoops.Sets[i], pt, axis, th0, th1, d0, d1)
+			if !ok {
+				return nil, fmt.Errorf("%s: its profile is not in a plane through the axis: %w", g.DescriptionString(), ErrUnsupported)
+			}
+			leaves = append(leaves, hx)
+		}
+	case g.Type == sketch.GroupSweep && src != nil:
+		sw, err := sweepLeaves(sk, g, src)
+		if err != nil {
+			return nil, err
+		}
+		leaves = append(leaves, sw...)
 	default:
 		return nil, fmt.Errorf("%s: %w", g.DescriptionString(), ErrUnsupported)
 	}
