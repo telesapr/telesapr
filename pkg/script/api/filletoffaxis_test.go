@@ -144,7 +144,9 @@ func TestChamferRunsOffBand(t *testing.T) {
 // points it cut off. The cone's ears keep their chords off those points
 // now (srf's cutOff.crosses): 2 of those 8 still cross, the chamfers of
 // 3 on the widest band, where the ear clipping is left with no other
-// ear (the shells are sound). A shell made unsound fails outright.
+// ear (the shells are sound). The allowance of 4 was fixed at what was
+// measured on 2026-10-10, to be kept from then on. A shell made unsound
+// fails outright.
 func TestRunOffSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")

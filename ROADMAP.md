@@ -18,18 +18,17 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 1 | [F2 Inequality and point-on-segment constraints](#f2-inequality-and-point-on-segment-constraints) | feature | M | Solver gap against neosolve; no kernel risk |
 | 2 | [K1 Robust point projection](#k1-robust-point-projection) | kernel foundation | S–M | Smallest kernel item with the widest effect (fillets, pullback, picking, STEP) |
 | 3 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
-| 4 | [P1 Sweep allowances fixed before the run](#p1-sweep-allowances-fixed-before-the-run) | hygiene | S | Three sweeps break the "rate fixed before" rule |
-| 5 | [F3 G-code arcs](#f3-g-code-arcs-g02g03) | feature | S | Local change in `pkg/export/vector.go` |
-| 6 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
-| 7 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
-| 8 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
-| 9 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 10 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 11 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 12 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
-| 13 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 4 | [F3 G-code arcs](#f3-g-code-arcs-g02g03) | feature | S | Local change in `pkg/export/vector.go` |
+| 5 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
+| 6 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
+| 7 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
+| 8 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 9 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
+| 10 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 11 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 12 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-Items 6 and 7 open most of the rest: the dependency column in each table below names which.
+Items 5 and 6 open most of the rest: the dependency column in each table below names which.
 
 ## Features
 
@@ -224,12 +223,6 @@ holding it, not only those sharing the nearest one's surface, made a sphere_bore
 |---|---|---|
 | Sweep corners next to an arc or curve; corners on twisted or fitted sweeps; closed sweeps | refused; corners between two lines are mitred | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines: F5). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. F4 is the alternative users usually want |
 | Shells of other curved solids (filleted, lofted, revolved) | prisms only | Offsets of patches (22.1) are the first part; faces whose offsets do not cross themselves can be sized. The general shell is open-ended (E12, parked) |
-
-### P1 Sweep allowances fixed before the run
-
-The rule is that a sweep's failure allowance is fixed before the first run. Three were set after:
-the 6:1 setback sweep (12%), the run-off sweep, the curved-end sweep. Fix them at their current
-values now and keep them.
 
 ## Waiting for the user
 
