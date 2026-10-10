@@ -15,11 +15,22 @@ func init() {
 		"BaselineKey":     reflect.ValueOf(check.BaselineKey),
 		"BaselineRelTol":  reflect.ValueOf(constant.MakeFromLiteral("1.00000000000000000003625036316452388482356461452127405209466815e-06", token.FLOAT, 0)),
 		"CompareBaseline": reflect.ValueOf(check.CompareBaseline),
+		"ErrUnsupported":  reflect.ValueOf(&check.ErrUnsupported).Elem(),
 		"Group":           reflect.ValueOf(check.Group),
+		"MeshManifold":    reflect.ValueOf(check.MeshManifold),
+		"MeshProbe":       reflect.ValueOf(check.MeshProbe),
+		"NewOracle":       reflect.ValueOf(check.NewOracle),
+		"RayCheck":        reflect.ValueOf(check.RayCheck),
 		"ReadBaseline":    reflect.ValueOf(check.ReadBaseline),
 		"Solid":           reflect.ValueOf(check.Solid),
 
 		// type definitions
-		"Report": reflect.ValueOf((*check.Report)(nil)),
+		"Interval":   reflect.ValueOf((*check.Interval)(nil)),
+		"Manifold":   reflect.ValueOf((*check.Manifold)(nil)),
+		"Oracle":     reflect.ValueOf((*check.Oracle)(nil)),
+		"RayDiff":    reflect.ValueOf((*check.RayDiff)(nil)),
+		"RayMeasure": reflect.ValueOf((*check.RayMeasure)(nil)),
+		"RayReport":  reflect.ValueOf((*check.RayReport)(nil)),
+		"Report":     reflect.ValueOf((*check.Report)(nil)),
 	}
 }

@@ -138,6 +138,7 @@ const (
 	// Commands of this program's own, after the original ones so that
 	// their numbers stay.
 	cmdCheckSolid
+	cmdRayCheck
 	cmdGroupThread
 	cmdParameters
 	cmdFindCommand

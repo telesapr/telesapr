@@ -417,6 +417,42 @@ func (g Group) Check() (r check.Report) {
 	return r
 }
 
+// RayCheck checks the solid of the model up to and with this group by
+// the ray-cast oracle, which rebuilds it from the groups' definitions
+// (profiles, extrusions, axes) without the kernel's surface
+// intersection: its volume and centre of mass by three grids of rays,
+// the rays along which it and the kernel's mesh disagree by more than
+// twice the chord tolerance, and the mesh's half-edges (each edge used
+// twice, once each way). It fails for a model with a group the oracle
+// can't build, as a fillet: extrusions without draft, lathes and
+// revolves only. Analyze > Ray-Cast Check shows the same.
+func (g Group) RayCheck() (r check.RayReport) {
+	g.d.read(func(sk *sketch.Sketch) {
+		var err error
+		if r, err = check.RayCheck(sk, g.get(sk), 24); err != nil {
+			fail("%v", err)
+		}
+	})
+	return r
+}
+
+// Probe is where the line through from along dir passes through the
+// solid of the model up to and with this group, by the ray-cast oracle
+// (Group.RayCheck): the stretches inside it, in the line's parameter,
+// dir's length to one. It fails as RayCheck does.
+func (g Group) Probe(from, dir Vec) (inside []check.Interval) {
+	g.d.read(func(sk *sketch.Sketch) {
+		o, err := check.NewOracle(sk, g.get(sk).H)
+		if err != nil {
+			fail("%v", err)
+		}
+		if o != nil {
+			inside = o.Probe(from, dir)
+		}
+	})
+	return inside
+}
+
 // newGroup starts a group of a type, named name or else what the
 // menu would name it.
 func newGroup(typ sketch.GroupType, name, defaultName string) sketch.Group {

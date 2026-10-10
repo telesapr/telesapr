@@ -35,3 +35,31 @@ fmt.Println(r.Faces, r.Volume, r.CenterOfMass)
 
 Every solid feature is tested by checking many variants of it this way, in sweeps; the tests and
 their failure rates are listed in [`docs/done-audit.md`](../done-audit.md).
+
+## Ray-cast check
+
+Example: [`examples/scripts/raycheck`](../../examples/scripts/raycheck/raycheck.go), a plate with
+a turned spindle through it and a slot cut across.
+
+Check Solid judges the kernel's B-rep by its own mesh. Analyze > Ray-Cast Check judges it against
+a second, independent account of the solid: it rebuilds the model from the groups' definitions
+alone (each extrusion's profile and depth, each lathe's or revolve's profile, axis and angle,
+joined, cut or intersected as the groups say), with no surface intersection, and casts rays
+through it. It reports:
+
+- **the volume and centre of mass** by three grids of rays, one along each axis, made finer
+  until the three volumes agree within 0.1% (or 256 rays a side), beside the mesh's volume;
+- **the rays that disagree** with the mesh: where the ray is inside one and not the other over a
+  stretch further than twice the chord tolerance from the mesh. The rays are drawn on the model;
+- **the mesh's edges**, made vertex to vertex: each should be used by two triangles, once each
+  way. Edges used once, more than twice or twice the same way, and degenerate triangles, are
+  counted.
+
+From a script, `group.RayCheck()` gives the same report and `group.Probe(from, dir)` the stretches
+of a line inside the solid.
+
+### Not yet
+
+The rebuilt model takes extrusions without draft, lathes and revolves; a model with any other
+solid group (a fillet, a chamfer, a sweep, a loft, a pattern, a STEP link) is refused, naming the
+group. Moments of inertia are not measured.

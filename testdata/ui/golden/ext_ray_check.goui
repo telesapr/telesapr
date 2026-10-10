@@ -1,0 +1,2 @@
+dialog 0 The active group has no solid to check.|
+dialog 0 Ray-cast volume:|74.88 cm³ (three grids of 16 rays a side agree within 0.000%)\nThe mesh's volume: 74.88 cm³, +0.000%\nRay-cast center of mass: (-2.00, 7.00, 40.00)\n\nAll 1728 rays agree with the mesh.\nEvery edge of the mesh is used twice, once each way.

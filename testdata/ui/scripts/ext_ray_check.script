@@ -1,0 +1,16 @@
+# Ray-Cast Check (K2): with no solid it says so; an extrusion of a
+# rectangle, checked, is measured by rays from its definition and every
+# ray agrees with its mesh, whose edges are each used twice.
+answer ok
+menu Analyze|Ray-Cast Check
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+answer ok
+menu Analyze|Ray-Cast Check

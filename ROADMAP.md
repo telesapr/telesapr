@@ -15,17 +15,16 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
-| 2 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
-| 3 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
-| 4 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
-| 5 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 6 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 7 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 8 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
-| 9 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
+| 2 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
+| 3 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
+| 4 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 5 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
+| 6 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 7 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 8 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-Items 2 and 3 open most of the rest: the dependency column in each table below names which.
+Items 1 and 2 open most of the rest: the dependency column in each table below names which.
 
 ## Features
 
@@ -43,6 +42,7 @@ From the neosolve survey; each is small and independent.
 
 | Item | State |
 |---|---|
+| The ray-cast oracle (K2) for more groups: drafts, helices, sweeps, lofts, patterns, mirrors; moments of inertia | extrusions without draft, lathes and revolves; the rest are refused by name (`check.ErrUnsupported`) |
 | Minimum and maximum bounds on point-line and point-plane distances, radii and angles | F2 bounds point-point distances and lengths; the same active set (`core.Constraint.Crossed`) takes any dimension |
 | Arrow keys nudge the selected entities | not found in `pkg/ui` |
 | Directional marquee: window left to right, crossing right to left | check what the selection does today |
@@ -60,18 +60,6 @@ Neosolve reads and writes IGES. Low priority: STEP covers the exchange; take it 
 These come before the open defects they unblock. Recommended by the BRL-CAD survey of
 2026-10-07 (BRL-CAD checkout surveyed read-only; the libraries are LGPL 2.1, so ideas are
 re-implemented in Go, no cgo). Each starts as a two-day spike with a fixed budget.
-
-### K2 Ray-cast CSG oracle
-
-An independent oracle in `pkg/check` that needs no surface intersection: each leaf solid returns
-in/out segments along a ray, the segments are woven and the group tree evaluated per segment
-(BRL-CAD `rt_boolweave` / `bool_eval`). Analytic leaves (plane, cylinder, cone, sphere, torus),
-extrusions by 2D parity, revolutions. Volume, centroid and inertia by three orthogonal grids,
-halved until the three agree; a raydiff against the B-rep mesh says where they disagree. Gives the
-sweeps a failure signal without FreeCAD or OpenCASCADE, and an MCP "probe along this line" tool.
-
-Also from BRL-CAD, for `pkg/check`: a one-pass sorted half-edge closed-manifold check
-(`bg_trimesh_solid2`: unmatched, excess, misoriented, degenerate in O(n log n)).
 
 ### K3 Coincident and tangent contact (F5)
 
