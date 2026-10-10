@@ -143,7 +143,15 @@ func torusY(c geom.Vector, big, r float64) *SShell {
 // and three whose trims mesh crossing themselves (roadmap K4).
 func TestHandleOnPotSweep(t *testing.T) {
 	sweepChordTol(t)
-	grid := sweep.Grid{
+	grid := handleGrid()
+	grid.MaxFailRate = handleMaxFailRate
+	grid.SampleMaxFailRate = 2.0 / 24
+	grid.Run(handleOnPot).Require(t)
+}
+
+// handleGrid is TestHandleOnPotSweep's grid, its allowances unset.
+func handleGrid() sweep.Grid {
+	return sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("cx", -29, -31, -33, -35),
 			sweep.Floats("big", 8, 10),
@@ -151,23 +159,23 @@ func TestHandleOnPotSweep(t *testing.T) {
 			sweep.Floats("z", 15, 20, 26),
 			sweep.Floats("tilt", 0, 20),
 		},
-		MaxFailRate:       handleMaxFailRate,
-		Sample:            24,
-		SampleMaxFailRate: 2.0 / 24,
+		Sample: 24,
 	}
-	grid.Run(func(p sweep.Point) error {
-		pot := lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}})
-		ring := torusY(geom.Vector{}, p.Float("big"), p.Float("r"))
-		var handle SShell
-		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 1}, p.Float("tilt")*math.Pi/180)
-		handle.MakeFromTransformationOf(ring, geom.Vector{X: p.Float("cx"), Z: p.Float("z")}, q, 1)
-		var out SShell
-		out.MakeFromBoolean(pot, &handle, SurfaceUnion)
-		if out.BooleanFailed || !meshIsSound(&out) {
-			return errUnsound(out.BooleanFailed)
-		}
-		return nil
-	}).Require(t)
+}
+
+// handleOnPot unites the pot and the ring of TestHandleOnPotSweep at p.
+func handleOnPot(p sweep.Point) error {
+	pot := lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}})
+	ring := torusY(geom.Vector{}, p.Float("big"), p.Float("r"))
+	var handle SShell
+	q := geom.QuaternionFromAxisAngle(geom.Vector{X: 1}, p.Float("tilt")*math.Pi/180)
+	handle.MakeFromTransformationOf(ring, geom.Vector{X: p.Float("cx"), Z: p.Float("z")}, q, 1)
+	var out SShell
+	out.MakeFromBoolean(pot, &handle, SurfaceUnion)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		return errUnsound(out.BooleanFailed)
+	}
+	return nil
 }
 
 // TestHandleOnPotSeam unites the pot with two rings of

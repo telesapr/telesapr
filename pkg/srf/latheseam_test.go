@@ -95,32 +95,40 @@ const latheSeamMaxFailRate = 0
 // failed until the circle was split at the seams (fuseCoplanarSeam).
 func TestBoreToLathedTipSweep(t *testing.T) {
 	sweepChordTol(t)
-	grid := sweep.Grid{
+	grid := boreTipGrid()
+	grid.MaxFailRate = boreTipMaxFailRate
+	grid.SampleMaxFailRate = 5.0 / 16
+	grid.Run(boreToLathedTip).Require(t)
+}
+
+// boreTipGrid is TestBoreToLathedTipSweep's grid, its allowances unset.
+func boreTipGrid() sweep.Grid {
+	return sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("tilt", 0, 30, 48, 75),
 			sweep.Floats("bore", 0.5, 1, 1.5, 2.5, 2.9),
 			sweep.Floats("tip", 3, 1.2),
 			sweep.Floats("off", 0, 0.3),
 		},
-		MaxFailRate:       boreTipMaxFailRate,
-		Sample:            16,
-		SampleMaxFailRate: 5.0 / 16,
+		Sample: 16,
 	}
-	grid.Run(func(p sweep.Point) error {
-		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 0.3, Y: 1, Z: 0.1}.WithMagnitude(1), p.Float("tilt")*math.Pi/180)
-		at := geom.Vector{X: 3, Y: 1, Z: 2}
-		tip := p.Float("tip")
-		var spout, bore SShell
-		spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: tip, Z: 20}, {Z: 20}}), at, q, 1)
-		bore.MakeFromTransformationOf(lathedTube(0, math.Min(p.Float("bore"), tip*0.95), -5, 20),
-			at.Plus(q.Rotate(geom.Vector{X: p.Float("off")})), q, 1)
-		var out SShell
-		out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
-		if out.BooleanFailed || !meshIsSound(&out) {
-			return errUnsound(out.BooleanFailed)
-		}
-		return nil
-	}).Require(t)
+}
+
+// boreToLathedTip bores the spout of TestBoreToLathedTipSweep at p.
+func boreToLathedTip(p sweep.Point) error {
+	q := geom.QuaternionFromAxisAngle(geom.Vector{X: 0.3, Y: 1, Z: 0.1}.WithMagnitude(1), p.Float("tilt")*math.Pi/180)
+	at := geom.Vector{X: 3, Y: 1, Z: 2}
+	tip := p.Float("tip")
+	var spout, bore SShell
+	spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: tip, Z: 20}, {Z: 20}}), at, q, 1)
+	bore.MakeFromTransformationOf(lathedTube(0, math.Min(p.Float("bore"), tip*0.95), -5, 20),
+		at.Plus(q.Rotate(geom.Vector{X: p.Float("off")})), q, 1)
+	var out SShell
+	out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		return errUnsound(out.BooleanFailed)
+	}
+	return nil
 }
 
 // boreTipMaxFailRate is the fraction of TestBoreToLathedTipSweep's
