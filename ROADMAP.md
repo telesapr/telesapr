@@ -15,15 +15,16 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks six open items below, the off-axis bore's 20 among them |
-| 2 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Three cases done 2026-10-10; tilted rings touching a pot left |
-| 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 4 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 5 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 6 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint is not a contact case after all |
+| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Three cases done 2026-10-10; tilted rings touching a pot left |
+| 2 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 3 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher |
+| 4 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 5 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint is not a contact case after all |
+| 6 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Postponed 2026-10-10 after its spike: sound where the ear clipper isn't, at 3 to 5 times the triangles |
 | 7 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-K4 opens most of the rest, K3 what touches; the dependency column in each table below names which.
+K3 opens what touches. K4, postponed, would open most of the mesher's open items; the dependency
+column in each table below names which.
 
 ## Features
 
@@ -82,6 +83,10 @@ explicit, reported "approximate" mode.
 
 ### K4 Constrained Delaunay mesher
 
+Postponed 2026-10-10. A two-day spike built it behind a switch, off by default, on the branch
+`k4-cdt-spike`, which is kept unmerged for reference. `docs/notes/k4-cdt-spike.md` has the
+design, the measurements, what was tried and what making it the default needs.
+
 `UvTriangulateInto` (`pkg/srf/triangulate.go`) ear-clips a uv outline against grid points, and
 every step 24 to 26 fix was an ear-ordering rule (`grazed`, `folded`, `cutOff.crosses`,
 `poleSliver`, `AvoidFlatEars`, `simple`). Its weakness is fans: a patch ruled one way, or a
@@ -89,26 +94,31 @@ trimmed corner, has few interior points, so the clipper fans long chords from on
 a chord, straight in xyz where its uv image bends by its sag, passes a trim point on the wrong
 side.
 
-Approach (BRL-CAD `ON_Brep_CDT_Tessellate`): discretise each edge once, in 3D, shared by both
-faces (watertight by construction); interior uv points by recursive quadsection sized from the
-boundary's segments, finer near trims; uv rescaled to unit aspect; a constrained Delaunay with
-holes (a Go port of detria, or earcut with Steiner points); singular trims split in 2D at poles
-and the degenerate 3D triangles dropped; then validate and repair (edges used more than twice,
-normals against the surface, misoriented pairs; a bad patch regrown and retriangulated).
+The spike's mesher is a constrained Delaunay triangulation on `pkg/internal/cdt`. It uses a chart
+in millimetres (polar about a pole), quadtree points sized by the surface's sag and the trim's
+segments, and refinement rounds. With it on every face, against the ear clipper:
 
-Spike: one patch type behind a flag (the twisted ruled face, then a pole patch), measured against
-the current mesher on the fixtures below.
+- the twisted bar's volume error is 0.003% (1.6%);
+- the off-axis bore sweep fails 0 of 80 (20);
+- the handle on the pot fails 6 of 144 (9);
+- the run-off sweep has no crossing (2 of 36 crossed);
+- the STEP corpus reads 9 of 9 as sound (7).
 
-Unblocks:
+It costs 3 to 5 times the triangles, and `pkg/topo`'s tests take 260 s against 77 s. To take it
+up again: bring the cost down, then regenerate every golden with a curved face.
 
-| Open item | State today | Tried |
-|---|---|---|
-| A twisted swept bar | flat sides mesh within 1.6% of volume | One inner column across the rulings: 0.33% (132 to 452 triangles); four lines 0.25%. But a bar cell and a thread flank's cell have the same twist (diagonal sag ~0.05 mm), so no rule by aspect or sag gives the bar columns and not the threads; columns everywhere doubled thread meshes and moved 2 of 3 thread volumes the wrong way. Sag-driven cell refinement ran for minutes. Untried: fan diagonals alternated so the twist's bias cancels |
-| NIST_MBE_PMI_6 as a solid | mesh Euler number 6 off the shell's | At two poles a trim runs up a meridian into the pole and earlier ears fanned the last grid row to one trim point, leaving only pole slivers; `poleSliver` as a fallback ear mended one pole. Needs grid points in the band below the pole, or an ear order that keeps a row point for the meridian's top |
-| Run-off chamfers crossing the cone (`TestRunOffSweep`) | 2 of 36 cross by one edge each | `cutOff.crosses` took 10 to 4 failing. Grid lines across rulings of trimmed ruled patches: 8 to 2, but 2x meshes at default tolerance, 5-7x at fine. Demoting ears leaning off the tangent plane: no change |
-| A band-on-cone fillet at r 1, chord 0.001% | 2 crossing mesh edges where the fillet meets the cone tangentially | It is two tangent faces' meshes crossing, not the fit; not re-checked since the mesher fix of `7b3b32a` |
-| A bore off a lathed tip's axis that breaks out through its side (`TestBoreToLathedTipSweep`) | 20 of 80: the Boolean closes; the bore wall's thin lens fans long chords from the rim crossing, sound at chord 0.05, 0.005, 0.0005 and not at 0.02, 0.01, 0.002 | |
-| A chamfer of 3 where a slot meets a cone | 6 naked edges where it reaches the slot's floor at (6, 3, 0); sound to 2.75, 10 naked at 3.25 | The topology lists every edge, so they are the meshes' (the end wall's, or the side wall's thin triangle (6,3,0)-(6.47,3,0)-(6,3,2.25)); not traced |
+It would unblock these items, which stay open with the ear clipper:
+
+| Open item | State today, with the ear clipper |
+|---|---|
+| A twisted swept bar | flat sides mesh within 1.6% of volume |
+| NIST_MBE_PMI_6 as a solid | mesh Euler number 6 off the shell's (see K5) |
+| Run-off chamfers crossing the cone (`TestRunOffSweep`) | 2 of 36 cross by one edge each |
+| A bore off a lathed tip's axis that breaks out through its side (`TestBoreToLathedTipSweep`) | 20 of 80 |
+| A chamfer of 3 where a slot meets a cone | 6 naked edges, on the slot's flat walls; with K4's mesher none, but one topology problem left |
+
+The band-on-cone fillet at r 1 and chord 0.001%, listed here before, is sound with the ear
+clipper at 0.001% to 0.005%.
 
 ### K5 STEP repair and accounting rules
 
@@ -120,8 +130,8 @@ exactly one accounted result per entity, so the report says what was repaired or
 
 | Open item | State today |
 |---|---|
-| NIST_MBE_PMI_6 | the pole topology problem under K4. STEP's `newtonOnSurface` keeps its own steps: with the kernel's projection (`srf.ProjectFrom`, K1) the trims moved and the pole slivers grew, the mesh's Euler number off by 10, not 6; switch it after K4 |
-| Schenkel | mesh closed and not self-crossing (`TestSolidSchenkelClosed`), no naked edges since `ed03d3b`, but the shell's Euler number is -34 against the mesh's -6; cause not found, so not counted sound |
+| NIST_MBE_PMI_6 | the pole topology problem under K4; sound with the spike's mesher (polar chart). STEP's `newtonOnSurface` keeps its own steps: with the kernel's projection (`srf.ProjectFrom`, K1) the trims moved and the pole slivers grew, the mesh's Euler number off by 10, not 6; switch it after K4 |
+| Schenkel | mesh closed and not self-crossing (`TestSolidSchenkelClosed`), no naked edges since `ed03d3b`, but the shell's Euler number is -34 against the mesh's -6; cause not found, so not counted sound; sound with K4's mesher, so likely the mesh's |
 
 ## Open defects
 
@@ -147,7 +157,7 @@ solids) at 44 of 59 sound.
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | One box_hole.step edge | the ball skips a face cut from a shared patch between two scan samples (faces 7, 9, 8 round the hole) | |
 | STEP cylinder fillet at chord 0.002% | the fit's misfit floors at 2.6e-5 against 2.4e-5 | More rounds change nothing; cause not found |
-| Teapot handle (tilted, touching), slot chamfer at 3, run-off chamfer crossings, band-on-cone r 1 | see K3 and K4 | |
+| Teapot handle (tilted, touching), slot chamfer at 3, run-off chamfer crossings | see K3 and K4 | |
 
 The robust projection of K1 (`srf.SSurface.Project`, `srf.ProjectFrom`) is not what the rolling
 ball's feet use: most points it projects are on faces far from the ball, where plain Gauss-Newton
