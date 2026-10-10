@@ -60,6 +60,10 @@ type rbSection struct {
 	c    geom.Vector
 	foot [2]rbFoot
 	arc  srf.BSplineCurve
+	// cutN and cutD are the plane an open fillet's end section lies in
+	// (conicIn), cutN zero for the ball's own.
+	cutN geom.Vector
+	cutD float64
 }
 
 // rollingBall is a fillet's edge, its two sides, and the ball.
@@ -80,6 +84,10 @@ type rollingBall struct {
 	// target, where the ball's own sections take over from the conics.
 	endS   [2][3]float64
 	target [2]float64
+	// fitCuts makes an open fillet's end sections the quintics fitted to
+	// where the swept surface meets their planes, not conics
+	// (planeCutSection).
+	fitCuts bool
 	// uvLoops are faces' trims in their patches' (u, v).
 	uvLoops map[int][][]geom.Vector
 	// The edge, densely, on both faces, with the arc length along it.
@@ -851,11 +859,28 @@ func (rb *rollingBall) nearestSection(p geom.Vector, s float64) float64 {
 	return s
 }
 
+// refineNear is how near the tolerance, as a share of it, a span's
+// misfit is split in blend's late rounds.
+const refineNear = 0.75
+
 // blend is the fillet's surface, its sections, and the arc lengths of
 // the crossings of seams among them.
 func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, error) {
 	if !rb.closed {
-		return rb.blendOpen()
+		sf, secs, cross, err := rb.blendOpen()
+		if err != nil && !rb.flat && !rb.fitCuts {
+			// Along a curved edge the swept surface is no tube, and a
+			// plane cuts no conic from it: near the ends the conics
+			// stray from it by more than the tolerance however close
+			// the sections. The sections fitted to the cuts take their
+			// place; where the conics do, they are kept.
+			rb.fitCuts = true
+			if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
+				return fsf, fsecs, fcross, nil
+			}
+			rb.fitCuts = false
+		}
+		return sf, secs, cross, err
 	}
 	n := int(math.Min(2000, math.Max(64, 4*rb.length/rb.r)))
 	scan := make([]rbSection, n)
@@ -917,12 +942,15 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 		}
 		var more []float64
 		worst, where := 0.0, geom.Vector{}
+		var errs []float64
 		for i := 0; i+1 < len(secs); i++ {
 			sm := (secs[i].s + secs[i+1].s) / 2
 			if _, err := rb.section(sm); err != nil {
 				return nil, nil, nil, err
 			}
-			if e, at := rb.misfit(sf, (ts[i]+ts[i+1])/2, sm, false); e > rb.tol {
+			e, at := rb.misfit(sf, (ts[i]+ts[i+1])/2, sm, false)
+			errs = append(errs, e)
+			if e > rb.tol {
 				more = append(more, sm)
 				if e > worst {
 					worst, where = e, at
@@ -931,6 +959,19 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 		}
 		if len(more) == 0 {
 			return sf, secs, cross, nil
+		}
+		if round >= 2 {
+			// A section put in moves the fit of the spans beside it a
+			// little, the surface being skinned through all of them:
+			// where every span is just under the tolerance, one goes over
+			// each round, round the edge. Late rounds split the spans near
+			// it too.
+			more = more[:0]
+			for i, e := range errs {
+				if e > refineNear*rb.tol {
+					more = append(more, (secs[i].s+secs[i+1].s)/2)
+				}
+			}
 		}
 		if round == 10 || len(ss)+len(more) > 600 {
 			return nil, nil, nil, filletErr(where, "the fillet's surface can't be fitted to within %.3g mm here (%.3g)",
