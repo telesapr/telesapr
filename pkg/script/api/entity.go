@@ -167,6 +167,20 @@ func (e Entity) MoveTo(p Vec) {
 	})
 }
 
+// MoveBy moves the entity by d: a point, or the points of a line, an
+// arc, a circle, a cubic, a text or an image, as the arrow keys nudge
+// the selection; the solver then moves them as the constraints require,
+// holding them as near where they were put as it can.
+func (e Entity) MoveBy(d Vec) {
+	e.d.change(func(sk *sketch.Sketch) {
+		points := sk.MovablePoints(e.get(sk).H)
+		if len(points) == 0 {
+			fail("%s has no points to move", e.describe(sk))
+		}
+		sk.MovePointsBy(points, d)
+	})
+}
+
 // Points are the points of the entity: the ends of a line, the centre
 // and the ends of an arc, the centre of a circle, the control points
 // of a cubic, the origin of a workplane. A point has itself.

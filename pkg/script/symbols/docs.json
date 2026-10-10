@@ -4970,6 +4970,10 @@
 						"decl": "func (e Entity) Length() (l float64)",
 						"text": "Length is the length of a line segment, an arc or a circle."
 					},
+					"MoveBy": {
+						"decl": "func (e Entity) MoveBy(d Vec)",
+						"text": "MoveBy moves the entity by d: a point, or the points of a line, an\narc, a circle, a cubic, a text or an image, as the arrow keys nudge\nthe selection; the solver then moves them as the constraints require,\nholding them as near where they were put as it can."
+					},
 					"MoveTo": {
 						"decl": "func (e Entity) MoveTo(p Vec)",
 						"text": "MoveTo puts a point at p, as dragging it there does: the solver\nthen moves it as the constraints require."
@@ -6859,6 +6863,10 @@
 						"decl": "func (sk *Sketch) MirrorPlaneOK(he core.HEntity) bool",
 						"text": "MirrorPlaneOK reports whether he can be the plane of a mirror: a workplane or a planar face."
 					},
+					"MovablePoints": {
+						"decl": "func (sk *Sketch) MovablePoints(he core.HEntity) []core.HEntity",
+						"text": "MovablePoints are the points that moving entity he moves: the point itself, or a curve's, a text's or an image's points; none for what has no points of its own to move, as a normal or a workplane."
+					},
 					"MoveGroup": {
 						"decl": "func (sk *Sketch) MoveGroup(h, before core.HGroup) error",
 						"text": "MoveGroup moves group h to just before group before in the history, or to the end for the zero handle."
@@ -6866,6 +6874,10 @@
 					"MoveGroupWithSources": {
 						"decl": "func (sk *Sketch) MoveGroupWithSources(h, before core.HGroup) ([]core.HGroup, error)",
 						"text": "MoveGroupWithSources moves group h, with its OwnSources in their order, to just before group before, or to the end for the zero handle, as MoveGroup moves one group: a move that would put a group ahead of one it refers to is refused with a *MoveError, and nothing moves."
+					},
+					"MovePointsBy": {
+						"decl": "func (sk *Sketch) MovePointsBy(points []core.HEntity, d geom.Vector)",
+						"text": "MovePointsBy moves each point by d, as a drag would put it, and marks their groups to be solved again; a point named twice moves once."
 					},
 					"MustEntity": {
 						"decl": "func (s *Sketch) MustEntity(h core.HEntity) *core.Entity",

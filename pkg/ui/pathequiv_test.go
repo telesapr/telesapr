@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/script"
 	"github.com/telesapr/telesapr/pkg/script/api"
@@ -359,6 +360,20 @@ func TestPathEquivalenceDistanceBounds(t *testing.T) {
 	// the point's one along it.
 	if g := ui.Group(ui.Active); !g.IsSolvedOkay() || g.Solved.Dof != 5 {
 		t.Errorf("the sketch: %v, %d DOF", g.Solved.How, g.Solved.Dof)
+	}
+}
+
+// A line nudged with the arrow keys, and the same moved by a script
+// (F5).
+func TestPathEquivalenceNudge(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_nudge", "path_nudge")
+	for i := range ui.Entities {
+		if e := &ui.Entities[i]; e.Type == core.EntityLineSegment && e.Group == ui.Active {
+			a := ui.MustEntity(e.Point[0]).PointGetNum(ui)
+			if a.Minus(geom.Vector{X: -19.8, Y: 12}).Magnitude() > 1e-9 {
+				t.Errorf("the line starts at %v", a)
+			}
+		}
 	}
 }
 

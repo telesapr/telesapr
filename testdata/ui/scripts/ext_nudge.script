@@ -1,0 +1,22 @@
+# Arrow keys nudge the selection (F5): a line selected moves a pixel
+# right and, with Shift, ten up, one step of undo each; with nothing
+# selected the arrows do nothing.
+key s
+move 200 250
+down L 200 250
+up L 200 250
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+key right
+dump
+move 275 250
+down L 275 250
+up L 275 250
+key right
+dump
+key up shift
+dump
+key z ctrl
+dump
