@@ -22,10 +22,10 @@ import (
 // disagreement with the B-rep's mesh says where one of them is wrong.
 
 // ErrUnsupported is returned for a group tree with a leaf the oracle
-// can't build: anything but extrusions without draft, lathes and
+// can't build: anything but extrusions, drafted or not, lathes and
 // revolves, and the step and repeats, patterns along a path and
 // mirrors of those.
-var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions without draft, lathes, revolves and their copies only")
+var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions, lathes, revolves and their copies only")
 
 // profileTol is the chord tolerance the profiles' curves are cut to:
 // fine enough that the oracle's own error is far below any mesh's.
@@ -448,15 +448,27 @@ func oracleLeaf(sk *sketch.Sketch, g *sketch.Group) (node, error) {
 	}
 	var leaves union
 	switch {
-	case g.Type == sketch.GroupExtrude && !g.HasDraft() && src != nil:
+	case g.Type == sketch.GroupExtrude && src != nil:
 		translate := geom.Vector{X: param(0), Y: param(1), Z: param(2)}
 		tbot, ttop := translate.ScaledBy(-1), translate
 		if g.Subtype == sketch.GroupOneSided || g.Subtype == sketch.GroupOneSkewed {
 			tbot, ttop = geom.Vector{}, translate.ScaledBy(2)
 		}
+		// A draft the kernel refused leaves the extrusion upright,
+		// with a problem on the group.
+		drafted := g.HasDraft() && g.Problem.Msg == ""
 		for i := range src.BezierLoops.Sets {
 			sbls := &src.BezierLoops.Sets[i]
 			n := sbls.Normal.WithMagnitude(1)
+			if drafted {
+				dir := ttop.Minus(tbot).WithMagnitude(1)
+				dp, ok := newDraftedPrism(g, sbls, dir, tbot.Dot(dir), ttop.Dot(dir), g.ValC*math.Pi/180)
+				if !ok {
+					return nil, fmt.Errorf("%s: %w", g.DescriptionString(), ErrUnsupported)
+				}
+				leaves = append(leaves, dp)
+				continue
+			}
 			eu := n.NormalDir(0)
 			leaves = append(leaves, newPrism(newProfile(sbls, sbls.Point, eu, n.Cross(eu)), tbot, ttop))
 		}
