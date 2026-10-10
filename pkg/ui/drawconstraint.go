@@ -67,6 +67,9 @@ func (gw *graphicsWindow) constraintIsVisible(c *core.Constraint) bool {
 	if gw.showConstraints == sCMNoShow {
 		return false
 	}
+	if c.Reference && !gw.show.References || c.Type == core.ConstraintComment && !gw.show.Comments {
+		return false
+	}
 	isDim := false
 	if gw.showConstraints == sCMShowDim {
 		switch c.Type {

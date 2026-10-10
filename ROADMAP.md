@@ -43,7 +43,6 @@ From the neosolve survey; each is small and independent.
 | Item | State |
 |---|---|
 | The ray-cast oracle (K2) for more groups: drafts, helices, sweeps, lofts, patterns, mirrors; moments of inertia | extrusions without draft, lathes and revolves; the rest are refused by name (`check.ErrUnsupported`) |
-| Separate visibility toggles for reference constraints and comments | check what View > Show offers |
 | Dockable property browser | takigo decides; lowest |
 
 ### F6 IGES import and export

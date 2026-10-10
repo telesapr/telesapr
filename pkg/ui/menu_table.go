@@ -118,6 +118,8 @@ var menuTable = []menuEntry{
 	{2, "Constraints &and Dimensions", cmdShowConstraintsAll, 0, kr, mShow},
 	{2, "&Dimensions Only", cmdShowConstraintsDim, 0, kr, mShow},
 	{2, "No Constrain&ts", cmdShowConstraintsNone, 0, kr, mShow},
+	{2, "&Reference Dimensions", cmdShowReferences, 0, kc, mShow},
+	{2, "Co&mments", cmdShowComments, 0, kc, mShow},
 	{2, "", cmdNone, 0, kn, nil},
 	{2, "&Shaded Solid", cmdShowShaded, 0, kc, mShow},
 	{2, "Selectable &Faces", cmdShowFaces, 0, kc, mShow},

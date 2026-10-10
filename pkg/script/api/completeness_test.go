@@ -73,6 +73,8 @@ var menuMethods = map[string]string{
 	"View/Show/Constraints and Dimensions":               "- what the window shows",
 	"View/Show/Dimensions Only":                          "- what the window shows",
 	"View/Show/No Constraints":                           "- what the window shows",
+	"View/Show/Reference Dimensions":                     "- what the window shows",
+	"View/Show/Comments":                                 "- what the window shows",
 	"View/Show/Shaded Solid":                             "- what the window shows",
 	"View/Show/Selectable Faces":                         "- what the window shows",
 	"View/Show/Solid Edges":                              "- what the window shows",

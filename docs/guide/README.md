@@ -18,7 +18,7 @@ The menus run in the order of the work. Sketch draws and Constrain holds what is
 makes the history's groups (sketches, then the solids that create, modify and pattern, then
 moving a group in the history); Assembly links files, mates them and checks them against each
 other; Analyze measures and checks. View > Show shows and hides what the icons at the top of the
-property browser do. An entry with nothing to work on, as Paste with an empty clipboard, is greyed
+property browser do, and reference dimensions and comments apart from the other constraints. An entry with nothing to work on, as Paste with an empty clipboard, is greyed
 and its key does nothing. Edit > Find Command (Ctrl+K) finds any entry by words of its name, and
 lists last, with the reason, those that can't run now. A right click offers what applies to what
 is under the pointer: on an edge of the solid, Fillet, Chamfer and Sweep Along Edges; on a face,

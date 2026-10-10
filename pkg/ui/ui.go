@@ -170,6 +170,8 @@ const (
 	cmdShowNormals
 	cmdShowPoints
 	cmdShowConstruction
+	cmdShowReferences
+	cmdShowComments
 	cmdShowConstraintsAll
 	cmdShowConstraintsDim
 	cmdShowConstraintsNone
