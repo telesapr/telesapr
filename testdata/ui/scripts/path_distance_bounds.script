@@ -12,12 +12,12 @@ key esc
 move 275 250
 down L 275 250
 up L 275 250
-menu Constrain|Minimum Distance
+menu Constrain|Minimum Dimension
 edit 40
 move 275 250
 down L 275 250
 up L 275 250
-menu Constrain|Maximum Distance
+menu Constrain|Maximum Dimension
 edit 50
 key p
 move 260 330

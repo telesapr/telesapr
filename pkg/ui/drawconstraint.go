@@ -38,10 +38,6 @@ func (ss *Application) constraintLabel(c *core.Constraint) string {
 		result = fmt.Sprintf("%.3f:1", c.ValA)
 	case core.ConstraintComment:
 		result = c.Comment
-	case core.ConstraintMinDistance:
-		result = "min " + ss.MmToStringSI(math.Abs(c.ValA), 0)
-	case core.ConstraintMaxDistance:
-		result = "max " + ss.MmToStringSI(math.Abs(c.ValA), 0)
 	case core.ConstraintDiameter:
 		if !c.Other {
 			result = "⌀" + ss.MmToStringSI(c.ValA, 0)
@@ -51,6 +47,10 @@ func (ss *Application) constraintLabel(c *core.Constraint) string {
 	default:
 		// valA has units of distance
 		result = ss.MmToStringSI(math.Abs(c.ValA), 0)
+	}
+	// A bound says which: the vector font has no ≥ or ≤.
+	if c.Limit != core.LimitNone {
+		result = c.Limit.String() + " " + result
 	}
 	if c.Reference {
 		result += " REF"
@@ -71,7 +71,6 @@ func (gw *graphicsWindow) constraintIsVisible(c *core.Constraint) bool {
 	if gw.showConstraints == sCMShowDim {
 		switch c.Type {
 		case core.ConstraintAngle, core.ConstraintDiameter, core.ConstraintPtPtDistance,
-			core.ConstraintMinDistance, core.ConstraintMaxDistance,
 			core.ConstraintPtFaceDistance, core.ConstraintPtLineDistance, core.ConstraintPtPlaneDistance:
 			isDim = true
 		}
@@ -643,7 +642,7 @@ func (d *constraintDrawer) doLayout(how constraintDrawAs, labelPos *geom.Vector,
 // layout lays the constraint out by its type.
 func (d *constraintDrawer) layout() {
 	switch d.c.Type {
-	case core.ConstraintPtPtDistance, core.ConstraintMinDistance, core.ConstraintMaxDistance:
+	case core.ConstraintPtPtDistance:
 		d.layoutPtPtDistance()
 		return
 

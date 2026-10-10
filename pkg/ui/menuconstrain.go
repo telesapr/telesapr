@@ -18,10 +18,16 @@ type constraining struct {
 	gs      *groupedSelection
 	c       core.Constraint
 	newcons []*core.Constraint
+	// limit makes the dimensions added bounds (Minimum and Maximum
+	// Dimension).
+	limit core.Limit
 }
 
 // add adds a constraint made from the template and keeps it.
 func (k *constraining) add(nc core.Constraint, remember bool) {
+	if k.limit != core.LimitNone && nc.CanLimit() {
+		nc.Limit = k.limit
+	}
 	k.ss.addConstraint(&nc, remember)
 	k.newcons = append(k.newcons, &nc)
 }
@@ -85,7 +91,7 @@ func (k *constraining) run(id Command) {
 		k.constrainDistance(id)
 
 	case cmdMinDistance, cmdMaxDistance:
-		k.constrainDistanceBound(id)
+		k.constrainBound(id)
 
 	case cmdOnEntity:
 		k.constrainOnEntity()
@@ -207,41 +213,40 @@ func (k *constraining) constrainDistance(id Command) {
 	k.add(c, true)
 }
 
-// constrainDistanceBound adds the constraint of cmdMinDistance,
-// cmdMaxDistance: at first the distance as it is, which the user then
-// edits to the bound.
-func (k *constraining) constrainDistanceBound(id Command) {
+// constrainBound adds the constraint of cmdMinDistance, cmdMaxDistance:
+// the dimension Distance / Diameter or Angle would make of the
+// selection, as a bound, made at what it measures, which the user then
+// edits to the bound; or, with one dimension selected, makes that one
+// a bound, or a dimension again when it is that bound already.
+func (k *constraining) constrainBound(id Command) {
+	ss := k.ss
 	sk := k.sk
 	gs := k.gs
-	c := k.c
-
-	c.Type = core.ConstraintMinDistance
-	what := "minimum"
+	limit := core.LimitMin
 	if id == cmdMaxDistance {
-		c.Type = core.ConstraintMaxDistance
-		what = "maximum"
+		limit = core.LimitMax
 	}
-	switch {
-	case gs.points == 2 && gs.n == 2:
-		c.PtA = gs.point[0]
-		c.PtB = gs.point[1]
-	case gs.lineSegments == 1 && gs.n == 1:
-		e := sk.Entity(gs.entity[0])
-		c.PtA = e.Point[0]
-		c.PtB = e.Point[1]
-	default:
-		k.errorf("Bad selection for " + what + " distance constraint. This " +
-			"constraint can apply to:\n\n" +
-			"    * two points (distance between points)\n" +
-			"    * a line segment (length)\n")
+	if gs.constraints == 1 && gs.n == 0 {
+		c := sk.Constraint(gs.constraint[0])
+		if !c.CanLimit() {
+			k.errorf("Only a distance, a diameter or an angle can be a minimum or a maximum.")
+			return
+		}
+		ss.UndoRemember()
+		if c.Limit == limit {
+			c.Limit = core.LimitNone
+		} else {
+			c.Limit = limit
+		}
+		sk.MarkGroupDirty(c.Group, false)
 		return
 	}
-	a := sk.Entity(c.PtA).PointGetNum(sk)
-	b := sk.Entity(c.PtB).PointGetNum(sk)
-	c.Disp.Offset = sk.DistanceLabelOffset(a, b)
-	c.ValA = 0
-	c.ModifyToSatisfy(sk)
-	k.add(c, true)
+	k.limit = limit
+	if gs.vectors == 2 && gs.n == 2 {
+		k.constrainAngle(cmdAngle)
+		return
+	}
+	k.constrainDistance(cmdDistanceDia)
 }
 
 // constrainOnSegment adds the constraint of cmdOnSegment.

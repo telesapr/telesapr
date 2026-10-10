@@ -346,11 +346,11 @@ func TestPathEquivalenceInsertGroup(t *testing.T) {
 // script (F2).
 func TestPathEquivalenceDistanceBounds(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_distance_bounds", "path_distance_bounds")
-	var kinds []core.ConstraintType
+	var kinds []string
 	for i := range ui.Constraints {
-		kinds = append(kinds, ui.Constraints[i].Type)
+		kinds = append(kinds, ui.Constraints[i].DescriptionString())
 	}
-	want := []core.ConstraintType{core.ConstraintMinDistance, core.ConstraintMaxDistance, core.ConstraintPtOnSegment}
+	want := []string{"c001-min-pt-pt-distance", "c002-max-pt-pt-distance", "c003-pt-on-segment"}
 	if !slices.Equal(kinds, want) {
 		t.Errorf("constraints %v, want %v", kinds, want)
 	}

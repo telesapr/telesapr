@@ -1,0 +1,44 @@
+# Bounds on other dimensions: two lines selected, Minimum Dimension
+# bounds the angle between them, made at what it is and edited to 30
+# degrees, labelled "min 30°"; a point and a line, Maximum Dimension
+# bounds the point's distance from the line, edited to 10.
+key s
+move 200 300
+down L 200 300
+up L 200 300
+move 400 300
+down L 400 300
+up L 400 300
+key esc
+key s
+move 200 250
+down L 200 250
+up L 200 250
+move 400 220
+down L 400 220
+up L 400 220
+key esc
+move 300 300
+down L 300 300
+up L 300 300
+move 300 235
+down L 300 235
+up L 300 235
+menu Constrain|Minimum Dimension
+edit 30
+dump
+tw
+key p
+move 250 380
+down L 250 380
+up L 250 380
+key esc
+move 250 380
+down L 250 380
+up L 250 380
+move 300 300
+down L 300 300
+up L 300 300
+menu Constrain|Maximum Dimension
+edit 10
+dump
