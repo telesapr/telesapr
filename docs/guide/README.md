@@ -31,8 +31,8 @@ take a selection (fillet, chamfer, shell, sweep, loft, mirror, pattern) and for 
 section view; it takes three columns when the window is too short for two. The property browser's
 first line says where its screen is ("home › g004-extrude"), and a group's screen offers, beside
 rename and delete, to make it active, hide it, or move it earlier or later. Every entry of the
-menus has a script call, or is the window's own (its view and its panels): Doc.Copy and Doc.Paste,
-Doc.CurveLength, Group.Area, Doc.FacesArea and Group.CenterOfMass are the Edit and Analyze
+menus has a script call, or is the window's own (its view and its panels): Edit.Copy and Edit.Paste,
+Analyze.CurveLength, GroupAnalysis.Area, Analyze.FacesArea and GroupAnalysis.CenterOfMass are the Edit and Analyze
 entries' (`examples/scripts/measure`). A script
 names an entry as the command search lists it, `doc.Edit.RunCommand("Features > Extrude")`; the names
 the entries had before the menus took this order are still taken.

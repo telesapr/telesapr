@@ -16,7 +16,7 @@ uses is refused, and the message names both.
 Features > Move Group to End moves the active group to the end of the history together with the
 groups only it needs, keeping their order: an extrusion goes with its sketch, and that sketch's
 own workplane with it. A sketch that another group uses too stays where it is. Scripts do the
-same with `Group.MoveToEndWithSources` and `Group.MoveWithSourcesBefore`; `Group.MoveToEnd`
+same with `GroupHistory.MoveToEndWithSources` and `GroupHistory.MoveWithSourcesBefore`; `GroupHistory.MoveToEnd`
 moves the one group.
 
 Deleting the active group, or a group it uses (which deletes it too), makes active the last

@@ -104,9 +104,12 @@ fmt.Println(plate.Analyze().Volume())
 doc.File.Export("plate.stl")
 ```
 
-What a script sees of the sketch is `pkg/script/api` (`go doc ./pkg/script/api`). In a console
-`help()` lists the most used of it, `help(x)` says what a value is and what methods it has, and
-`help("Group.Bounds")` or `help("api")` looks a name up. A script file is a Go program that
+What a script sees of the sketch is `pkg/script/api` (`go doc ./pkg/script/api`). Its calls sit
+where the window's commands do: `doc.Sketch` holds what the Sketch menu does, `doc.Features` the
+Features menu, and so on, and what only one kind of group has is on a view of it
+(`g.AsFillet().SetRadius(3)`). In a console `help()` lists the most used of it, `help(x)` says
+what a value is and what methods it has, `help("Features.Extrude")` or `help("api")` looks a name
+up, and `help("Features > Fillet Edges")` says what a script calls in place of a menu entry. A script file is a Go program that
 imports that package and starts from `api.Current()`, so it can also be compiled as it is; see
 [`examples/scripts`](examples/scripts), each of which a test runs.
 
