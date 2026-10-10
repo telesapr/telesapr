@@ -15,8 +15,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// ExportMeshAsObjTo writes the mesh as Wavefront OBJ, with its
-// materials.
+// WriteOBJ writes the mesh as Wavefront OBJ, with its materials.
 func WriteOBJ(fObj, fMtl *bytes.Buffer, sm *srf.SMesh, o Options) {
 	colors := map[uint32]string{}
 	var colorKeys []core.RGBA
@@ -107,8 +106,8 @@ const threeJsHTMLEnd = `
 </html>
 `
 
-// ExportMeshAsThreeJsTo writes the mesh as a script for three.js, or a
-// page with it.
+// WriteThreeJS writes the mesh as a script for three.js, or a page with
+// it.
 func WriteThreeJS(f *bytes.Buffer, filename string, sm *srf.SMesh,
 	sol *srf.SOutlineList, view *sketch.View, o Options) {
 	const threeFn = "three-r111.min.js"
@@ -238,7 +237,8 @@ func WriteThreeJS(f *bytes.Buffer, filename string, sm *srf.SMesh,
 	}
 }
 
-// ExportMeshAsVrmlTo writes the mesh as VRML.
+// WriteVRML writes the mesh as VRML; an empty mesh is a transform with
+// no children.
 func WriteVRML(f *bytes.Buffer, filename string, sm *srf.SMesh, o Options) {
 	pf := func(format string, args ...any) { f.WriteString(cfmt.Sprintf(format, args...)) }
 	basename := fileStemIdentifier(filename)
@@ -255,16 +255,19 @@ func WriteVRML(f *bytes.Buffer, filename string, sm *srf.SMesh, o Options) {
 	// The runs of triangles of each opacity, by opacity.
 	type span struct{ first, pastLast int }
 	opacities := map[uint8][]span{}
-	start := 0
-	lastOpacity := sm.Triangles[0].Meta.Alpha
-	for i, tr := range sm.Triangles {
-		if tr.Meta.Alpha != lastOpacity {
-			opacities[lastOpacity] = append(opacities[lastOpacity], span{start, i})
-			start = i
-			lastOpacity = sm.Triangles[start].Meta.Alpha
+	// An empty mesh has no first triangle to start the first run.
+	if len(sm.Triangles) > 0 {
+		start := 0
+		lastOpacity := sm.Triangles[0].Meta.Alpha
+		for i, tr := range sm.Triangles {
+			if tr.Meta.Alpha != lastOpacity {
+				opacities[lastOpacity] = append(opacities[lastOpacity], span{start, i})
+				start = i
+				lastOpacity = sm.Triangles[start].Meta.Alpha
+			}
 		}
+		opacities[lastOpacity] = append(opacities[lastOpacity], span{start, len(sm.Triangles)})
 	}
-	opacities[lastOpacity] = append(opacities[lastOpacity], span{start, len(sm.Triangles)})
 	var keys []int
 	for k := range opacities {
 		keys = append(keys, int(k))

@@ -220,6 +220,24 @@ func TestMeshFormats(t *testing.T) {
 	}
 }
 
+// TestMeshFormatsEmpty writes an empty mesh in each format without a
+// panic; VRML gives a transform with no shapes.
+func TestMeshFormatsEmpty(t *testing.T) {
+	t.Parallel()
+	var m srf.SMesh
+	o := options(nil)
+	var obj, mtl bytes.Buffer
+	WriteOBJ(&obj, &mtl, &m, o)
+	view := sketch.DefaultView()
+	var js bytes.Buffer
+	WriteThreeJS(&js, "model.js", &m, &srf.SOutlineList{}, &view, o)
+	var wrl bytes.Buffer
+	WriteVRML(&wrl, "model.wrl", &m, o)
+	if s := wrl.String(); !strings.HasPrefix(s, "#VRML") || strings.Contains(s, "Shape") {
+		t.Errorf("empty vrml:\n%s", s)
+	}
+}
+
 // TestStep writes a solid as STEP, and refuses a group without one.
 func TestStep(t *testing.T) {
 	t.Parallel()
