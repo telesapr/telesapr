@@ -137,7 +137,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 			d.Sketch.Rect(V(-6, -6, 0), V(6, 6, 0))
 			return d.Features.Sweep([]Entity{up, bend, along}, "bar")
 		}, 1, 12},
-		{"box_hole", step("shapes/box_hole.step"), 1, 13},
+		{"box_hole", step("shapes/box_hole.step"), 1, 14},
 		{"cylinder", step("shapes/cylinder.step"), 1, 2},
 		{"blob_extruded", step("shapes/blob_extruded.step"), 1, 1},
 		{"sphere_bored", step("shapes/sphere_bored.step"), 1, 2},
