@@ -14,9 +14,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// MenuGroup makes a new group from the selection; linkFile is the file
+// MenuFeatures makes a new group from the selection; linkFile is the file
 // to link for a link group, or "" to ask.
-func (ss *Application) MenuGroup(id Command, linkFile string) {
+func (ss *Application) MenuFeatures(id Command, linkFile string) {
 	gw := ss.GW
 
 	g := sketch.NewGroup()

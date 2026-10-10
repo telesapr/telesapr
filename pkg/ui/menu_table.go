@@ -10,17 +10,17 @@ import (
 type menuHandler func(ss *Application, cmd Command)
 
 var (
-	mView menuHandler = func(ss *Application, c Command) { ss.GW.MenuView(c) }
-	mEdit menuHandler = func(ss *Application, c Command) { ss.GW.MenuEdit(c) }
-	mClip menuHandler = func(ss *Application, c Command) { ss.GW.MenuClipboard(c) }
-	mReq  menuHandler = func(ss *Application, c Command) { ss.GW.MenuRequest(c) }
-	mCon  menuHandler = func(ss *Application, c Command) { ss.MenuConstrain(c) }
-	mFile menuHandler = func(ss *Application, c Command) { ss.MenuFile(c) }
-	mGrp  menuHandler = func(ss *Application, c Command) { ss.MenuGroup(c, "") }
-	mAna  menuHandler = func(ss *Application, c Command) { ss.MenuAnalyze(c) }
-	mHelp menuHandler = func(ss *Application, c Command) { ss.MenuHelp(c) }
-	mScr  menuHandler = func(ss *Application, c Command) { ss.MenuScript(c) }
-	mShow menuHandler = func(ss *Application, c Command) { ss.GW.MenuShow(c) }
+	mView     menuHandler = func(ss *Application, c Command) { ss.GW.MenuView(c) }
+	mEdit     menuHandler = func(ss *Application, c Command) { ss.GW.MenuEdit(c) }
+	mClip     menuHandler = func(ss *Application, c Command) { ss.GW.MenuClipboard(c) }
+	mSketch   menuHandler = func(ss *Application, c Command) { ss.GW.MenuSketch(c) }
+	mCon      menuHandler = func(ss *Application, c Command) { ss.MenuConstrain(c) }
+	mFile     menuHandler = func(ss *Application, c Command) { ss.MenuFile(c) }
+	mFeatures menuHandler = func(ss *Application, c Command) { ss.MenuFeatures(c, "") }
+	mAna      menuHandler = func(ss *Application, c Command) { ss.MenuAnalyze(c) }
+	mHelp     menuHandler = func(ss *Application, c Command) { ss.MenuHelp(c) }
+	mScr      menuHandler = func(ss *Application, c Command) { ss.MenuScript(c) }
+	mShow     menuHandler = func(ss *Application, c Command) { ss.GW.MenuShow(c) }
 )
 
 // Accelerator modifier bits in menuEntry.accel.
@@ -148,26 +148,26 @@ var menuTable = []menuEntry{
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "&Full Screen", cmdFullScreen, ctrl | fnKey | 11, kc, mView},
 
-	{0, "&Sketch", cmdNone, 0, kn, mReq},
-	{1, "In &Workplane", cmdSelWorkplane, '2', kr, mReq},
-	{1, "Anywhere In &3d", cmdFreeIn3D, '3', kr, mReq},
+	{0, "&Sketch", cmdNone, 0, kn, mSketch},
+	{1, "In &Workplane", cmdSelWorkplane, '2', kr, mSketch},
+	{1, "Anywhere In &3d", cmdFreeIn3D, '3', kr, mSketch},
 	{1, "", cmdNone, 0, kn, nil},
-	{1, "Datum &Point", cmdDatumPoint, 'p', kn, mReq},
-	{1, "Wor&kplane", cmdWorkplane, 0, kn, mReq},
+	{1, "Datum &Point", cmdDatumPoint, 'p', kn, mSketch},
+	{1, "Wor&kplane", cmdWorkplane, 0, kn, mSketch},
 	{1, "", cmdNone, 0, kn, nil},
-	{1, "Line &Segment", cmdLineSegment, 's', kn, mReq},
-	{1, "C&onstruction Line Segment", cmdConstrSegment, shift | 's', kn, mReq},
-	{1, "&Rectangle", cmdRectangle, 'r', kn, mReq},
-	{1, "&Circle", cmdCircle, 'c', kn, mReq},
-	{1, "&Arc of a Circle", cmdArc, 'a', kn, mReq},
-	{1, "&Bezier Cubic Spline", cmdCubic, 'b', kn, mReq},
+	{1, "Line &Segment", cmdLineSegment, 's', kn, mSketch},
+	{1, "C&onstruction Line Segment", cmdConstrSegment, shift | 's', kn, mSketch},
+	{1, "&Rectangle", cmdRectangle, 'r', kn, mSketch},
+	{1, "&Circle", cmdCircle, 'c', kn, mSketch},
+	{1, "&Arc of a Circle", cmdArc, 'a', kn, mSketch},
+	{1, "&Bezier Cubic Spline", cmdCubic, 'b', kn, mSketch},
 	{1, "", cmdNone, 0, kn, nil},
-	{1, "&Text in TrueType Font", cmdTTFText, 't', kn, mReq},
-	{1, "I&mage", cmdImage, 0, kn, mReq},
+	{1, "&Text in TrueType Font", cmdTTFText, 't', kn, mSketch},
+	{1, "I&mage", cmdImage, 0, kn, mSketch},
 	{1, "", cmdNone, 0, kn, nil},
-	{1, "To&ggle Construction", cmdConstruction, 'g', kn, mReq},
-	{1, "Ta&ngent Arc at Point", cmdTangentArc, shift | 'a', kn, mReq},
-	{1, "Split Curves at &Intersection", cmdSplitCurves, 'i', kn, mReq},
+	{1, "To&ggle Construction", cmdConstruction, 'g', kn, mSketch},
+	{1, "Ta&ngent Arc at Point", cmdTangentArc, shift | 'a', kn, mSketch},
+	{1, "Split Curves at &Intersection", cmdSplitCurves, 'i', kn, mSketch},
 
 	{0, "&Constrain", cmdNone, 0, kn, mCon},
 	{1, "&Distance / Diameter", cmdDistanceDia, 'd', kn, mCon},
@@ -196,29 +196,29 @@ var menuTable = []menuEntry{
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "Comment", cmdComment, ';', kn, mCon},
 
-	{0, "Fea&tures", cmdNone, 0, kn, mGrp},
-	{1, "Sketch In &3d", cmdGroup3D, shift | '3', kn, mGrp},
-	{1, "Sketch In New &Workplane", cmdGroupWrkpl, shift | 'w', kn, mGrp},
-	{1, "Sketch On Face", cmdGroupSketchOnFace, shift | 'b', kn, mGrp},
+	{0, "Fea&tures", cmdNone, 0, kn, mFeatures},
+	{1, "Sketch In &3d", cmdGroup3D, shift | '3', kn, mFeatures},
+	{1, "Sketch In New &Workplane", cmdGroupWrkpl, shift | 'w', kn, mFeatures},
+	{1, "Sketch On Face", cmdGroupSketchOnFace, shift | 'b', kn, mFeatures},
 	{1, "", cmdNone, 0, kn, nil},
-	{1, "E&xtrude", cmdGroupExtrude, shift | 'x', kn, mGrp},
-	{1, "Re&volve", cmdGroupRevolve, shift | 'v', kn, mGrp},
-	{1, "&Lathe", cmdGroupLathe, shift | 'l', kn, mGrp},
-	{1, "&Helix", cmdGroupHelix, shift | 'h', kn, mGrp},
-	{1, "Swee&p Along Path", cmdGroupSweep, shift | 'u', kn, mGrp},
-	{1, "Loft To Selected Pr&ofile", cmdGroupLoft, shift | 'o', kn, mGrp},
+	{1, "E&xtrude", cmdGroupExtrude, shift | 'x', kn, mFeatures},
+	{1, "Re&volve", cmdGroupRevolve, shift | 'v', kn, mFeatures},
+	{1, "&Lathe", cmdGroupLathe, shift | 'l', kn, mFeatures},
+	{1, "&Helix", cmdGroupHelix, shift | 'h', kn, mFeatures},
+	{1, "Swee&p Along Path", cmdGroupSweep, shift | 'u', kn, mFeatures},
+	{1, "Loft To Selected Pr&ofile", cmdGroupLoft, shift | 'o', kn, mFeatures},
 	{1, "Guide Loft by Selected &Curves", cmdLoftGuides, 0, kn, func(ss *Application, c Command) { ss.loftGuidesFromSelection() }},
 	{1, "Screw Thr&ead...", cmdGroupThread, shift | 'e', kn, func(ss *Application, c Command) { ss.MenuThread() }},
 	{1, "", cmdNone, 0, kn, nil},
-	{1, "&Fillet Edges", cmdGroupFillet, shift | 'f', kn, mGrp},
-	{1, "Chamfer E&dges", cmdGroupChamfer, shift | 'q', kn, mGrp},
-	{1, "&Shell Solid", cmdGroupShell, shift | 'g', kn, mGrp},
+	{1, "&Fillet Edges", cmdGroupFillet, shift | 'f', kn, mFeatures},
+	{1, "Chamfer E&dges", cmdGroupChamfer, shift | 'q', kn, mFeatures},
+	{1, "&Shell Solid", cmdGroupShell, shift | 'g', kn, mFeatures},
 	{1, "Draft Selected S&ides", cmdDraftSelectedSides, 0, kn, func(ss *Application, c Command) { ss.draftSelectedSides() }},
-	{1, "&Mirror", cmdGroupMirror, shift | 'y', kn, mGrp},
+	{1, "&Mirror", cmdGroupMirror, shift | 'y', kn, mFeatures},
 	{1, "", cmdNone, 0, kn, nil},
-	{1, "Step &Translating", cmdGroupTrans, shift | 't', kn, mGrp},
-	{1, "Step &Rotating", cmdGroupRot, shift | 'r', kn, mGrp},
-	{1, "Pattern Alon&g Path", cmdGroupPathPattern, 0, kn, mGrp},
+	{1, "Step &Translating", cmdGroupTrans, shift | 't', kn, mFeatures},
+	{1, "Step &Rotating", cmdGroupRot, shift | 'r', kn, mFeatures},
+	{1, "Pattern Alon&g Path", cmdGroupPathPattern, 0, kn, mFeatures},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "Move Group E&arlier", cmdMoveGroupEarlier, 0, kn, func(ss *Application, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), false) }},
 	{1, "Move Gro&up Later", cmdMoveGroupLater, 0, kn, func(ss *Application, c Command) { ss.MoveGroup(ss.GW.activeGroupH(), true) }},
@@ -226,8 +226,8 @@ var menuTable = []menuEntry{
 	{1, "Bro&ken References...", cmdBrokenReferences, 0, kn, func(ss *Application, c Command) { ss.MenuBrokenReferences() }},
 
 	{0, "Asse&mbly", cmdNone, 0, kn, nil},
-	{1, "&Link / Assemble...", cmdGroupLink, shift | 'i', kn, mGrp},
-	{1, "Link &Recent", cmdGroupRecent, 0, kn, mGrp},
+	{1, "&Link / Assemble...", cmdGroupLink, shift | 'i', kn, mFeatures},
+	{1, "Link &Recent", cmdGroupRecent, 0, kn, mFeatures},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "Mate &Concentric", cmdMateConcentric, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
 	{1, "Mate &Flush", cmdMateFlush, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
