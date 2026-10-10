@@ -356,6 +356,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// The copy is this call's own, so it can use its closest-point cache
 	// whatever goes for the operands' surfaces.
 	ret.noCache = false
+	ret.guess = nil
 	if parent == nil || sha == nil || shb == nil || into == nil {
 		return false
 	}

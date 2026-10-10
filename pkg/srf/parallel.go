@@ -103,6 +103,8 @@ func setNoCache(off bool, shells ...*SShell) {
 			sh.Surface[i].noCache = off
 		}
 	}
+	// Without the cache, every closest point searches the grid.
+	makeGuessGrids(off, shells...)
 }
 
 // loop calls fn for every i in [0, n), at once or in order.
