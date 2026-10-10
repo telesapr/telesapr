@@ -49,7 +49,7 @@ func model(t *testing.T, fixture string) string {
 func runTool(t *testing.T, args ...string) (bool, string) {
 	t.Helper()
 	var stderr bytes.Buffer
-	ok := runCommand(append([]string{"telesapr-cli"}, args...), &stderr)
+	ok := runCommand(append([]string{"telesapr-cli"}, args...), &stderr, nil)
 	return ok, stderr.String()
 }
 

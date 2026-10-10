@@ -83,7 +83,7 @@ func TestRunScript(t *testing.T) {
 
 	// The saved sketch is one the other commands take.
 	var errs bytes.Buffer
-	if !runCommand([]string{"telesapr-cli", "export-mesh", "-o", filepath.Join(dir, "again.stl"), model}, &errs) {
+	if !runCommand([]string{"telesapr-cli", "export-mesh", "-o", filepath.Join(dir, "again.stl"), model}, &errs, nil) {
 		t.Errorf("export-mesh of the script's sketch failed: %s", errs.String())
 	}
 

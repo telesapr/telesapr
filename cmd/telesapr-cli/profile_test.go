@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
@@ -51,5 +52,54 @@ func TestProfiles(t *testing.T) {
 		filepath.Join(dir, "missing", "cpu")}, nil, &stderr, &stderr)
 	if status == exitOK || !strings.Contains(stderr.String(), "Cannot profile") {
 		t.Errorf("a profile that can't be created gave status %d: %s", status, stderr.String())
+	}
+}
+
+// TestProfileReport exports a model with --profile, and reads back how
+// long it took, by phase and by group, and what it allocated; a
+// command on no model gives the run's figures alone, and a report that
+// can't be written fails the run.
+func TestProfileReport(t *testing.T) {
+	t.Parallel()
+	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")
+	dir := t.TempDir()
+	report := filepath.Join(dir, "profile.json")
+	var stderr bytes.Buffer
+	status := run(context.Background(), []string{"telesapr-cli", "export-mesh", "--profile", report,
+		"-o", filepath.Join(dir, "out.stl"), in}, nil, &stderr, &stderr)
+	if status != exitOK {
+		t.Fatalf("status %d: %s", status, stderr.String())
+	}
+	var r runReport
+	data, err := os.ReadFile(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(data, &r); err != nil {
+		t.Fatal(err)
+	}
+	if r.Status != 0 || r.TotalMs <= 0 || len(r.Files) != 1 || r.Memory.TotalAllocBytes == 0 || slices.Contains(r.Command, "--profile") {
+		t.Fatalf("report %s", data)
+	}
+	f := r.Files[0]
+	solids := 0
+	for _, g := range f.Groups {
+		if strings.Contains(g.Group, "fillet") && g.Solids > 0 && g.SolidMs > 0 {
+			solids++
+		}
+	}
+	if f.Input != in || f.CommandMs <= 0 || solids == 0 {
+		t.Errorf("the model's figures: %+v", f)
+	}
+
+	status = run(context.Background(), []string{"telesapr-cli", "version", "--profile", report}, nil, &stderr, &stderr)
+	data, _ = os.ReadFile(report)
+	if status != exitOK || !strings.Contains(string(data), `"total_ms"`) || strings.Contains(string(data), `"files"`) {
+		t.Errorf("version: status %d, %s", status, data)
+	}
+	status = run(context.Background(), []string{"telesapr-cli", "version", "--profile",
+		filepath.Join(dir, "missing", "p.json")}, nil, &stderr, &stderr)
+	if status == exitOK {
+		t.Error("a report that can't be written succeeded")
 	}
 }

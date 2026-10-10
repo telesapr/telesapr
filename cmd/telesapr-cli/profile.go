@@ -20,12 +20,17 @@ Profiling options, taken by every command:
     --trace <file>
         Writes an execution trace to <file>, for go tool trace. Its regions
         say how long loading, solving, building solids and saving took.
+    --profile <file>
+        Writes a summary of the run to <file> as JSON: how long it took,
+        for each model how long loading, regenerating and the command
+        took and how long each group spent solving, making its loops and
+        building its solid, and what the run allocated.
 `
 
 // profiles are the files the profiling options name; "" is one not
 // asked for.
 type profiles struct {
-	cpu, mem, trace string
+	cpu, mem, trace, report string
 }
 
 // takeProfileFlags removes the profiling options from args, wherever
@@ -43,6 +48,8 @@ func takeProfileFlags(args []string) ([]string, profiles, error) {
 			dst = &p.mem
 		case "--trace":
 			dst = &p.trace
+		case "--profile":
+			dst = &p.report
 		default:
 			out = append(out, args[n])
 			continue
@@ -126,9 +133,10 @@ func writeHeapProfile(name string) error {
 }
 
 // withProfiles runs body under the profiles args ask for, args having
-// them taken out. A profile that can't be written is said on stderr
-// and makes the status a failure.
-func withProfiles(args []string, stderr io.Writer, body func(args []string) int) int {
+// them taken out; body fills in rep, nil unless --profile asked for
+// it. A profile that can't be written is said on stderr and makes the
+// status a failure.
+func withProfiles(args []string, stderr io.Writer, body func(args []string, rep *runReport) int) int {
 	args, p, err := takeProfileFlags(args)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "%v.\n", err)
@@ -139,7 +147,19 @@ func withProfiles(args []string, stderr io.Writer, body func(args []string) int)
 		_, _ = fmt.Fprintf(stderr, "Cannot profile: %v\n", err)
 		return 1
 	}
-	status := body(args)
+	var rep *runReport
+	if p.report != "" {
+		rep = newRunReport(args)
+	}
+	status := body(args, rep)
+	if rep != nil {
+		if err := rep.write(p.report, status); err != nil {
+			_, _ = fmt.Fprintf(stderr, "Cannot profile: %v\n", err)
+			if status == exitOK {
+				status = 1
+			}
+		}
+	}
 	if err := stop(); err != nil {
 		_, _ = fmt.Fprintf(stderr, "Cannot profile: %v\n", err)
 		if status == exitOK {

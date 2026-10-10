@@ -6241,6 +6241,10 @@
 					"GroupTwoSkewed"
 				]
 			},
+			"GroupTiming": {
+				"text": "GroupTiming is what one group took, summed over every regeneration that worked on it, and how many times each step ran.",
+				"kind": "struct"
+			},
 			"GroupType": {
 				"kind": "int",
 				"values": [
@@ -7259,6 +7263,16 @@
 			"ThreadResult": {
 				"text": "ThreadResult is what AddThread made.",
 				"kind": "struct"
+			},
+			"Timings": {
+				"text": "Timings collects how long regenerations spend on each group: solving it, making its loops and building its solid.",
+				"kind": "struct",
+				"methods": {
+					"Groups": {
+						"decl": "func (t *Timings) Groups() []GroupTiming",
+						"text": "Groups are the groups' figures, in the order they were first timed."
+					}
+				}
 			},
 			"UndoStack": {
 				"text": "UndoStack is a ring of up to MaxUndo states.",

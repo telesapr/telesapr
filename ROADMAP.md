@@ -46,7 +46,6 @@ From the neosolve survey; each is small and independent.
 | Arrow keys nudge the selected entities | not found in `pkg/ui` |
 | Directional marquee: window left to right, crossing right to left | check what the selection does today |
 | Separate visibility toggles for reference constraints and comments | check what View > Show offers |
-| `telesapr-cli` `--profile` with a JSON dump | benchmarks exist, no flag |
 | `telesapr-cli export --group` | export takes the whole model |
 | Dockable property browser | takigo decides; lowest |
 
