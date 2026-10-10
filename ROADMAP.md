@@ -15,7 +15,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Four cases done 2026-10-10 and 11; two of a ring touching a pot left, and three for K4 |
+| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Six cases done 2026-10-10 and 11; the ring on the pot fails only where K4 is needed; the sweep corners are a sweep problem |
 | 2 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 3 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher |
 | 4 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
@@ -63,7 +63,15 @@ the chord tolerance, the march on the patch beside the curve's own copied it and
 the rest of that patch's curve starts from (`marchOnBothPatches`: a march's points between its seeds
 must lie on both patches within LengthEps); and on its own patch the curve's chord lay on the seam,
 trimming a sliver of nothing (`SEdgeList.hasReversed`, `SSurface.offChord`: the two cancel). The
-handle 9 to 5 of 144.
+handle 9 to 5 of 144. Done 2026-10-11 (the spike's second day), the handle 5 to 3, the three left
+K4's: where the ring's seam passes over the pot's close to where the curve crosses both, the curves
+were split three or four times within 4e-5 mm, one point in the patches' uv, so a trim dropped the
+segment and one side's mesh lacked a vertex the other had; vertices of a Boolean's curves within a
+hundredth of the chord tolerance (and further apart than the 1e-5 a split at a curve's end already
+ignores) are now one point (`SShell.fuseVertices`, `boolean_fuse.go`, a first piece of "fuse first"
+below). And where the ring dips into the pot's patch beside the seam by less than the chord
+tolerance, the curve there is a chord on the seam: the seam was dropped as inside the ring and the
+curve as parallel to it; the curve now stands in for the dropped seam (`SEdgeList.hasSame`).
 
 Tried: fusing every curve vertex within LengthEps before trimming changed no sweep. Splitting the
 operands' trims at the intersection curves' ends that lie within the chord tolerance of them (the
@@ -84,7 +92,7 @@ with explicit valid / grazing / coincident / failed results instead of a vote.
 
 | Open item | State today |
 |---|---|
-| A ring on a pot, tilted, a patch's corner on the pot's seam | 2 of 144 (`TestHandleOnPotSweep`; 3 more are K4's, trims meshed crossing themselves): a curve dips into the pot's patch beside its seam deeper than the classification's probe (the chord tolerance), so the seam reads as inside the ring on both sides; and a march ends 1e-5 from the seam's vertex, under the chord tolerance but over LengthEps, leaving an edge of 1e-5 the outline can't assemble |
+| A ring on a pot, tilted, a patch's corner on the pot's seam | none of K3's left; 3 of 144 fail (`TestHandleOnPotSweep`), all K4's, trims meshed crossing themselves |
 | Sweep corners beside an arc (see [Solid feature leftovers](#solid-feature-leftovers)) | needs the joint inside `MakeFromSweepOf`, not a Boolean of cut runs |
 
 A last resort, not recommended: BRL-CAD's mesh Boolean with deterministic perturbation of

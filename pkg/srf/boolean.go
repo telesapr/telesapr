@@ -41,6 +41,7 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 		sc := &s.Curve[i]
 		sc.RemoveShortSegments(sc.SurfaceA(a, b), sc.SurfaceB(a, b))
 	}
+	s.fuseVertices(a, b)
 
 	// And clean up the piecewise linear things we made as a calculation aid
 	a.CleanupAfterBoolean()
