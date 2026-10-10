@@ -131,8 +131,16 @@ func torusY(c geom.Vector, big, r float64) *SShell {
 // 15 of 144 failed: where two patches met only where their seams cross,
 // the march from there followed one patch's surface past its edge
 // (onBothPatches), and where the curve ran nearly straight along the ring's
-// top, one step took the seeds of three curves and made one. The 9 left
-// are tilted, with corners on the pot's face and seams tangent to it.
+// top, one step took the seeds of three curves and made one. 9 failed
+// then: where a ring's patch corner lies on the pot's seam, the curve
+// runs from it along the ring's seam within the chord tolerance, and the
+// march on the patch beside the curve's own followed it too and used up
+// the seed where the rest of that patch's curve starts
+// (marchOnBothPatches); and the curve's chord lay on the seam, so that
+// on its own patch it trimmed a sliver of nothing (hasReversed). The 5
+// left: two where a curve lies a little inside a seam of the pot, deeper
+// than the classification's probe, or ends 1e-5 from the seam's vertex,
+// and three whose trims mesh crossing themselves (roadmap K4).
 func TestHandleOnPotSweep(t *testing.T) {
 	sweepChordTol(t)
 	grid := sweep.Grid{
@@ -164,7 +172,7 @@ func TestHandleOnPotSweep(t *testing.T) {
 
 // handleMaxFailRate is the fraction of TestHandleOnPotSweep's grid
 // allowed to fail.
-const handleMaxFailRate = 9.0 / 144
+const handleMaxFailRate = 5.0 / 144
 
 // TestTorusVolume checks the ring the handle sweep uses: closed, facing
 // out, of volume 2 pi^2 big r^2.

@@ -1,6 +1,8 @@
 package srf
 
 import (
+	"slices"
+
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 )
@@ -531,6 +533,20 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 			chain.Edges = nil
 			continue
 		}
+		if cThis == BspUvEdgeAntipar && final.hasReversed(chain) && ret.offChord(auv, buv, pt) {
+			// The curve runs back along the patch's edge, which is kept:
+			// it meets the edge at both ends and lies within the chord
+			// tolerance of it between, off it but its chord on it (a
+			// ring's seam beside the curve where it meets a pot, roadmap
+			// K3). The sliver between them is none; kept, the two cancel
+			// in the cull below. A curve on the edge itself, as where
+			// two faces' outlines coincide, is classified as ever.
+			for _, e := range chain.Edges {
+				final.AddEdge(e.A, e.B, e.AuxA, e.AuxB, 0)
+			}
+			chain.Edges = nil
+			continue
+		}
 		tagByClassifiedEdge(cThis, &indirOrig, &outdirOrig)
 		agnst.classifyEdge(&indirShell, &outdirShell,
 			ret.PointAtUv(auv), ret.PointAtUv(buv),
@@ -557,6 +573,30 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	failed = !final.AssemblePolygon(&poly, nil, true)
 
 	return failed
+}
+
+// offChord tells whether p, a point of s, lies further than LengthEps
+// from the curve on s that the uv segment from a to b stands for.
+func (s *SSurface) offChord(a, b geom.Point2d, p geom.Vector) bool {
+	var uv geom.Point2d
+	s.ClosestPointTo(p, &uv, true)
+	ab := b.Minus(a)
+	t := 0.0
+	if l := ab.Dot(ab); l > 0 {
+		t = max(0, min(1, uv.Minus(a).Dot(ab)/l))
+	}
+	return s.PointAtUv(a.Plus(ab.ScaledBy(t))).Minus(p).Magnitude() > geom.LengthEps
+}
+
+// hasReversed tells whether el holds every edge of chain, run the other
+// way.
+func (el *SEdgeList) hasReversed(chain *SEdgeList) bool {
+	for _, c := range chain.Edges {
+		if !slices.ContainsFunc(el.Edges, func(e SEdge) bool { return e.A.Equals(c.B) && e.B.Equals(c.A) }) {
+			return false
+		}
+	}
+	return len(chain.Edges) > 0
 }
 
 // lClearTags is a small helper to reset the Tag field on every edge
