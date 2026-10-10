@@ -14,7 +14,8 @@ import (
 
 // The ray-cast oracle judges a solid without the kernel's surface
 // intersection: it rebuilds the group tree from each group's own
-// definition (a profile and an extrusion, a profile and an axis), finds
+// definition (a profile and an extrusion, a profile and an axis, the
+// motions that place a pattern's or a mirror's copies), finds
 // where a ray may cross each leaf's boundary, and evaluates the tree
 // between those places, point by point. Volumes, centroids and where a
 // line passes through the solid then come from rays alone, and a
@@ -22,8 +23,9 @@ import (
 
 // ErrUnsupported is returned for a group tree with a leaf the oracle
 // can't build: anything but extrusions without draft, lathes and
-// revolves.
-var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions, lathes and revolves only")
+// revolves, and the step and repeats, patterns along a path and
+// mirrors of those.
+var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions without draft, lathes, revolves and their copies only")
 
 // profileTol is the chord tolerance the profiles' curves are cut to:
 // fine enough that the oracle's own error is far below any mesh's.
@@ -392,11 +394,20 @@ func oracleNode(sk *sketch.Sketch, g *sketch.Group) (node, error) {
 	if g == nil {
 		return nil, nil
 	}
-	if g.Type == sketch.GroupMirror || g.Type == sketch.GroupRotate || g.Type == sketch.GroupTranslate ||
-		g.Type == sketch.GroupPathPattern {
-		if len(g.ThisShell.Surface) > 0 || !g.ThisMesh.IsEmpty() {
-			return nil, fmt.Errorf("%s: %w", g.DescriptionString(), ErrUnsupported)
+	if isCopies(g) && !g.Suppress && (len(g.ThisShell.Surface) > 0 || !g.ThisMesh.IsEmpty()) {
+		// Copies are combined with what came before their source, as
+		// their source combines (GenerateShellAndMesh); a mirror of the
+		// solid so far is the whole.
+		copies, whole, err := copiesNode(sk, g)
+		if err != nil || whole {
+			return copies, err
 		}
+		src := sk.Group(g.OpA)
+		base, err := oracleNode(sk, src.RunningMeshGroup(sk))
+		if err != nil {
+			return nil, err
+		}
+		return combine(base, copies, src.MeshCombine), nil
 	}
 	base, err := oracleNode(sk, g.RunningMeshGroup(sk))
 	if err != nil {
@@ -409,14 +420,21 @@ func oracleNode(sk *sketch.Sketch, g *sketch.Group) (node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if base == nil {
-		switch g.MeshCombine {
-		case sketch.CombineDifference, sketch.CombineIntersection:
-			return nil, nil
-		}
-		return leaf, nil
+	return combine(base, leaf, g.MeshCombine), nil
+}
+
+// combine is leaf combined with the solid so far, base, as how says;
+// with nothing so far, a difference or an intersection is nothing.
+func combine(base, leaf node, how sketch.CombineAs) node {
+	switch {
+	case leaf == nil:
+		return base
+	case base != nil:
+		return &boolean{a: base, b: leaf, how: how}
+	case how == sketch.CombineDifference || how == sketch.CombineIntersection:
+		return nil
 	}
-	return &boolean{a: base, b: leaf, how: g.MeshCombine}, nil
+	return leaf
 }
 
 // oracleLeaf is the solid group g makes alone.
@@ -519,8 +537,20 @@ type RayMeasure struct {
 	CenterOfMass geom.Vector
 	// Volumes are the grids' along x, y and z.
 	Volumes [3]float64
+	// Inertia is the inertia tensor about the centre of mass, for a
+	// density of one (mm⁵ for mm): on the diagonal the moments about
+	// the axes through it along x, y and z, the integrals of y²+z²,
+	// z²+x² and x²+y²; off it the products, less the integrals of xy,
+	// yz and zx. The three grids' mean.
+	Inertia [3][3]float64
 	// Rays is how many rays each grid cast, along one side.
 	Rays int
+}
+
+// PrincipalMoments are the inertia tensor's eigenvalues, the moments
+// about the principal axes through the centre of mass, least first.
+func (m RayMeasure) PrincipalMoments() [3]float64 {
+	return symmetricEigenvalues(m.Inertia)
 }
 
 // Spread is the largest difference between two grids' volumes, as a
@@ -536,23 +566,36 @@ func (m RayMeasure) Spread() float64 {
 
 // Measure integrates the solid along three grids of rays, one along
 // each axis, starting at 16 rays a side and doubling them up to most
-// until the three volumes agree within rel. Each ray's inside length,
-// times its cell's area, is the volume of the cell's column; each
-// grid errs only at the solid's edges, differently, so their agreement
-// bounds the error.
+// until the three volumes agree within rel, and with the volume of the
+// grids of half as many rays. Each ray's inside length, times its
+// cell's area, is the volume of the cell's column; each grid errs only
+// at the solid's edges, differently, so their agreement bounds the
+// error. Coarse grids whose cells all fall alike on the solid's faces
+// (four spokes 4 wide on a grid of 2.5) agree with one another and
+// miss alike; the coarser grids' volume catches that.
 func (o *Oracle) Measure(rel float64, most int) RayMeasure {
 	var m RayMeasure
+	prev := math.NaN()
 	for n := 16; ; n *= 2 {
 		m = o.measureAt(n)
-		if m.Spread() <= rel || n*2 > most {
+		settled := m.Volume == 0 || math.Abs(m.Volume-prev) <= rel*math.Abs(m.Volume)
+		if m.Spread() <= rel && settled || n*2 > most {
 			return m
 		}
+		prev = m.Volume
 	}
 }
 
 func (o *Oracle) measureAt(n int) RayMeasure {
 	m := RayMeasure{Rays: n}
 	var moment [3]geom.Vector
+	// The second moments are taken about the box's middle, p0, and moved
+	// to the centre of mass at the end: about the origin, a solid far
+	// from it would lose them to the difference of two large sums.
+	p0 := o.Min.Plus(o.Max).ScaledBy(0.5)
+	var second [3][3]float64
+	// add sums into the upper triangle, which is all inertiaAbout reads.
+	add := func(a, b int, x float64) { second[min(a, b)][max(a, b)] += x }
 	for k := range 3 {
 		i, j := (k+1)%3, (k+2)%3
 		hi, hj := (o.Max.Element(i)-o.Min.Element(i))/float64(n), (o.Max.Element(j)-o.Min.Element(j))/float64(n)
@@ -571,6 +614,20 @@ func (o *Oracle) measureAt(n int) RayMeasure {
 					setElement(&c, j, from.Element(j)*l)
 					setElement(&c, k, (iv.From+iv.To)/2*l)
 					moment[k] = moment[k].Plus(c)
+					// Along the ray, x_k runs from s0 to s1; the others stay.
+					xi, xj := from.Element(i)-p0.Element(i), from.Element(j)-p0.Element(j)
+					s0, s1 := iv.From-p0.Element(k), iv.To-p0.Element(k)
+					area := hi * hj
+					first := (s1*s1 - s0*s0) / 2 * area
+					sq := (s1*s1*s1 - s0*s0*s0) / 3 * area
+					// A ray stands for its cell, which spreads h²/12 about
+					// it in each direction across the ray.
+					add(i, i, (xi*xi+hi*hi/12)*l)
+					add(j, j, (xj*xj+hj*hj/12)*l)
+					add(k, k, sq)
+					add(i, j, xi*xj*l)
+					add(i, k, xi*first)
+					add(j, k, xj*first)
 				}
 			}
 		}
@@ -579,8 +636,63 @@ func (o *Oracle) measureAt(n int) RayMeasure {
 	if m.Volume != 0 {
 		sum := moment[0].Plus(moment[1]).Plus(moment[2])
 		m.CenterOfMass = sum.ScaledBy(1 / (3 * m.Volume))
+		m.Inertia = inertiaAbout(second, m.Volume, m.CenterOfMass.Minus(p0))
 	}
 	return m
+}
+
+// inertiaAbout is the inertia tensor about the centre of mass, c from
+// the point the second moments were taken about, from three grids'
+// second moments summed (second[a][b] for a <= b) and the volume v.
+func inertiaAbout(second [3][3]float64, v float64, c geom.Vector) [3][3]float64 {
+	var cov [3][3]float64
+	for a := range 3 {
+		for b := a; b < 3; b++ {
+			x := second[a][b]/3 - v*c.Element(a)*c.Element(b)
+			cov[a][b], cov[b][a] = x, x
+		}
+	}
+	tr := cov[0][0] + cov[1][1] + cov[2][2]
+	var in [3][3]float64
+	for a := range 3 {
+		for b := range 3 {
+			in[a][b] = -cov[a][b]
+			if a == b {
+				in[a][b] += tr
+			}
+		}
+	}
+	return in
+}
+
+// symmetricEigenvalues are the eigenvalues of the symmetric matrix a,
+// least first, by the closed form for three by three.
+func symmetricEigenvalues(a [3][3]float64) [3]float64 {
+	p1 := a[0][1]*a[0][1] + a[0][2]*a[0][2] + a[1][2]*a[1][2]
+	q := (a[0][0] + a[1][1] + a[2][2]) / 3
+	if p1 == 0 {
+		e := [3]float64{a[0][0], a[1][1], a[2][2]}
+		slices.Sort(e[:])
+		return e
+	}
+	p2 := (a[0][0]-q)*(a[0][0]-q) + (a[1][1]-q)*(a[1][1]-q) + (a[2][2]-q)*(a[2][2]-q) + 2*p1
+	p := math.Sqrt(p2 / 6)
+	var b [3][3]float64
+	for i := range 3 {
+		for j := range 3 {
+			b[i][j] = a[i][j] / p
+			if i == j {
+				b[i][j] -= q / p
+			}
+		}
+	}
+	det := b[0][0]*(b[1][1]*b[2][2]-b[1][2]*b[2][1]) - b[0][1]*(b[1][0]*b[2][2]-b[1][2]*b[2][0]) +
+		b[0][2]*(b[1][0]*b[2][1]-b[1][1]*b[2][0])
+	r := math.Max(-1, math.Min(1, det/2))
+	phi := math.Acos(r) / 3
+	hi := q + 2*p*math.Cos(phi)
+	lo := q + 2*p*math.Cos(phi+2*math.Pi/3)
+	return [3]float64{lo, 3*q - hi - lo, hi}
 }
 
 // MeshProbe is where the line through from along dir passes through a
