@@ -343,6 +343,10 @@ func (r *uiScriptRunner) key(t []string) {
 	case len(k) > 1 && k[0] == 'F':
 		ev.Key = platform.KeyFunction
 		ev.Num, _ = strconv.Atoi(k[1:])
+	case k == "left" || k == "right" || k == "up" || k == "down":
+		ev.Key = platform.KeyArrow
+		ev.Num = map[string]int{"left": platform.ArrowLeft, "right": platform.ArrowRight,
+			"up": platform.ArrowUp, "down": platform.ArrowDown}[k]
 	default:
 		ev.Chr = rune(k[0])
 	}

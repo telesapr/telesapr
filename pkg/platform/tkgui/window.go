@@ -441,6 +441,9 @@ func (w *Window) key(typ platform.KeyboardEventType, ev *event.Event) bool {
 	} else if ev.KeySym >= xkF1 && ev.KeySym <= xkF12 {
 		k.Key = platform.KeyFunction
 		k.Num = int(ev.KeySym-xkF1) + 1
+	} else if arrow, ok := arrowKeys[ev.KeySym]; ok {
+		k.Key = platform.KeyArrow
+		k.Num = arrow
 	} else {
 		return false
 	}
@@ -482,6 +485,13 @@ func digitRowKey(keycode uint) (rune, bool) {
 		return '0', true
 	}
 	return rune('1' + keycode - 10), true
+}
+
+// arrowKeys are the arrow keys' symbols, on the main block and on the
+// keypad, as platform's arrows.
+var arrowKeys = map[tkplatform.KeySym]int{
+	0xff51: platform.ArrowLeft, 0xff52: platform.ArrowUp, 0xff53: platform.ArrowRight, 0xff54: platform.ArrowDown,
+	0xff96: platform.ArrowLeft, 0xff97: platform.ArrowUp, 0xff98: platform.ArrowRight, 0xff99: platform.ArrowDown,
 }
 
 const (

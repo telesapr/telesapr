@@ -1,0 +1,16 @@
+# A line drawn with the mouse, selected, and nudged a pixel right and
+# ten up with Shift; the same as path_nudge.go makes
+# (TestPathEquivalenceNudge).
+key s
+move 200 250
+down L 200 250
+up L 200 250
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+move 275 250
+down L 275 250
+up L 275 250
+key right
+key up shift

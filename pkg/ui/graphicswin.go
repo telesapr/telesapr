@@ -65,11 +65,14 @@ func acceleratorEvent(rawAccel int) platform.KeyboardEvent {
 	return accel
 }
 
-// KeyboardEvent handles a key: Backspace is Escape, '=' is '+', and the
-// menu accelerators.
+// KeyboardEvent handles a key: Backspace is Escape, '=' is '+', the
+// arrows nudge the selection, and the menu accelerators.
 func (gw *graphicsWindow) KeyboardEvent(event platform.KeyboardEvent) bool {
 	if event.Type == platform.KeyRelease {
 		return true
+	}
+	if event.Key == platform.KeyArrow && !event.ControlDown {
+		return gw.nudgeSelection(event.Num, event.ShiftDown)
 	}
 	if event.Key == platform.KeyCharacter {
 		switch event.Chr {

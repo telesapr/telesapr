@@ -55,16 +55,26 @@ const (
 	KeyRelease
 )
 
-// KeyKind says whether a key is a character or a function key.
+// KeyKind says whether a key is a character, a function key or an
+// arrow key.
 type KeyKind int
 
 const (
 	KeyCharacter KeyKind = iota
 	KeyFunction
+	KeyArrow
+)
+
+// The arrow keys, KeyArrow's Num.
+const (
+	ArrowLeft = iota + 1
+	ArrowRight
+	ArrowUp
+	ArrowDown
 )
 
 // KeyboardEvent is a keyboard input event: Chr for a character, Num for
-// function key F<Num>.
+// function key F<Num> or for an arrow key (ArrowLeft to ArrowDown).
 type KeyboardEvent struct {
 	Type        KeyboardEventType
 	Key         KeyKind
@@ -79,7 +89,7 @@ func (k KeyboardEvent) Equals(o KeyboardEvent) bool {
 	return k.Type == o.Type && k.Key == o.Key &&
 		k.ShiftDown == o.ShiftDown && k.ControlDown == o.ControlDown &&
 		((k.Key == KeyCharacter && k.Chr == o.Chr) ||
-			(k.Key == KeyFunction && k.Num == o.Num))
+			(k.Key != KeyCharacter && k.Num == o.Num))
 }
 
 // AcceleratorDescription is the accelerator's label for a menu, like
