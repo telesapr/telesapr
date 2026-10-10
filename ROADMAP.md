@@ -33,7 +33,7 @@ From the neosolve survey; each is small and independent.
 
 | Item | State |
 |---|---|
-| The ray-cast oracle (K2) for more groups: drafts, helices, sweeps, lofts, patterns, mirrors; moments of inertia | extrusions without draft, lathes and revolves; the rest are refused by name (`check.ErrUnsupported`) |
+| The ray-cast oracle (K2) for more groups: drafts, helices, sweeps, lofts | extrusions without draft, lathes, revolves, and since 2026-10-10 step and repeats, patterns along a path and mirrors of them (`sketch.Group.CopyPlacements`), with moments of inertia; the rest are refused by name (`check.ErrUnsupported`). A draft needs the drafted outline at each height (per-side angles, a neutral plane, arcs to cones); helices, sweeps and lofts a ray against a curved swept boundary |
 | Dockable property browser | takigo decides; lowest |
 
 ### F6 IGES import and export

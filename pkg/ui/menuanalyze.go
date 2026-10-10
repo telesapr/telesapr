@@ -4,6 +4,7 @@ package ui
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 
@@ -366,8 +367,9 @@ func (ss *Application) CheckSolid() {
 }
 
 // RayCheck checks the active group's solid by the ray-cast oracle
-// (check.RayCheck): its volume against the mesh's, the rays along which
-// they disagree, which are marked, and the mesh's half-edges.
+// (check.RayCheck): its volume against the mesh's, its centre of mass
+// and principal moments of inertia, the rays along which they
+// disagree, which are marked, and the mesh's half-edges.
 func (ss *Application) RayCheck() {
 	sk := ss.SK
 	g := sk.Group(ss.GW.activeGroupH())
@@ -398,8 +400,14 @@ func (ss *Application) RayCheck() {
 		ss.MmToStringSI(m.Volume, 3), m.Rays, 100*m.Spread())
 	fmt.Fprintf(&b, "The mesh's volume: %s, %+.3f%%\n", ss.MmToStringSI(r.MeshVolume, 3), diff)
 	c := m.CenterOfMass
-	fmt.Fprintf(&b, "Ray-cast center of mass: (%s, %s, %s)\n\n", ss.MmToString(c.X, false),
+	fmt.Fprintf(&b, "Ray-cast center of mass: (%s, %s, %s)\n", ss.MmToString(c.X, false),
 		ss.MmToString(c.Y, false), ss.MmToString(c.Z, false))
+	// Moments are mm⁵ for a density of one; in the view's unit, its fifth
+	// power, as the SI prefixes go no further than volumes.
+	p := m.PrincipalMoments()
+	u5 := math.Pow(ss.MmPerUnit(), 5)
+	fmt.Fprintf(&b, "Ray-cast principal moments of inertia, density 1: %.5g, %.5g, %.5g %s⁵\n\n",
+		p[0]/u5, p[1]/u5, p[2]/u5, ss.UnitName())
 	if len(r.Disagree) == 0 {
 		fmt.Fprintf(&b, "All %d rays agree with the mesh.\n", r.Rays)
 	} else {

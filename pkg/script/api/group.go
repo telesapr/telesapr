@@ -419,13 +419,17 @@ func (g Group) Check() (r check.Report) {
 
 // RayCheck checks the solid of the model up to and with this group by
 // the ray-cast oracle, which rebuilds it from the groups' definitions
-// (profiles, extrusions, axes) without the kernel's surface
-// intersection: its volume and centre of mass by three grids of rays,
-// the rays along which it and the kernel's mesh disagree by more than
-// twice the chord tolerance, and the mesh's half-edges (each edge used
-// twice, once each way). It fails for a model with a group the oracle
-// can't build, as a fillet: extrusions without draft, lathes and
-// revolves only. Analyze > Ray-Cast Check shows the same.
+// (profiles, extrusions, axes, where step and repeats, patterns along a
+// path and mirrors put their copies) without the kernel's surface
+// intersection: its volume, centre of mass and inertia tensor about it
+// (Measure.Inertia, for a density of one, in mm⁵;
+// Measure.PrincipalMoments) by three grids of rays, the rays along
+// which it and the kernel's mesh disagree by more than twice the chord
+// tolerance, and the mesh's half-edges (each edge used twice, once each
+// way). It fails for a model with a group the oracle can't build, as a
+// fillet or a drafted extrusion: extrusions without draft, lathes,
+// revolves and copies of them only. Analyze > Ray-Cast Check shows the
+// same.
 func (g Group) RayCheck() (r check.RayReport) {
 	g.d.read(func(sk *sketch.Sketch) {
 		var err error
@@ -895,9 +899,11 @@ func (d *Doc) Translate(n int, delta Vec, name string) Group {
 		g.ActiveWorkplane = sk.ActiveWorkplane()
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
-		sk.MustParam(hg.Param(0)).Val = delta.X
-		sk.MustParam(hg.Param(1)).Val = delta.Y
-		sk.MustParam(hg.Param(2)).Val = delta.Z
+		// Copy a is moved 2a times the parameters (stepTransform), so
+		// they hold half a step.
+		sk.MustParam(hg.Param(0)).Val = delta.X / 2
+		sk.MustParam(hg.Param(1)).Val = delta.Y / 2
+		sk.MustParam(hg.Param(2)).Val = delta.Z / 2
 	})
 }
 
@@ -937,7 +943,9 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 		g.Subtype = sketch.GroupOneSided
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
-		for i, v := range []float64{at.X, at.Y, at.Z, degrees * math.Pi / 180, dir.X, dir.Y, dir.Z} {
+		// As for Revolve: copy a turns by the quaternion of 2a times
+		// parameter 3, which is 4a times it, so it holds a quarter step.
+		for i, v := range []float64{at.X, at.Y, at.Z, degrees * math.Pi / 180 / 4, dir.X, dir.Y, dir.Z} {
 			sk.MustParam(hg.Param(i)).Val = v
 		}
 	})

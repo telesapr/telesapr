@@ -1724,7 +1724,7 @@
 					},
 					"Measure": {
 						"decl": "func (o *Oracle) Measure(rel float64, most int) RayMeasure",
-						"text": "Measure integrates the solid along three grids of rays, one along each axis, starting at 16 rays a side and doubling them up to most until the three volumes agree within rel."
+						"text": "Measure integrates the solid along three grids of rays, one along each axis, starting at 16 rays a side and doubling them up to most until the three volumes agree within rel, and with the volume of the grids of half as many rays."
 					},
 					"Probe": {
 						"decl": "func (o *Oracle) Probe(from, dir geom.Vector) []Interval",
@@ -1743,6 +1743,10 @@
 				"text": "RayMeasure is what three grids of rays find of a solid: its volume and centroid by each grid's direction, and their mean.",
 				"kind": "struct",
 				"methods": {
+					"PrincipalMoments": {
+						"decl": "func (m RayMeasure) PrincipalMoments() [3]float64",
+						"text": "PrincipalMoments are the inertia tensor's eigenvalues, the moments about the principal axes through the centre of mass, least first."
+					},
 					"Spread": {
 						"decl": "func (m RayMeasure) Spread() float64",
 						"text": "Spread is the largest difference between two grids' volumes, as a fraction of the volume."
@@ -1828,7 +1832,7 @@
 			},
 			"ErrUnsupported": {
 				"decl": "var ErrUnsupported",
-				"text": "ErrUnsupported is returned for a group tree with a leaf the oracle can't build: anything but extrusions without draft, lathes and revolves."
+				"text": "ErrUnsupported is returned for a group tree with a leaf the oracle can't build: anything but extrusions without draft, lathes and revolves, and the step and repeats, patterns along a path and mirrors of those."
 			}
 		}
 	},
@@ -5220,7 +5224,7 @@
 					},
 					"RayCheck": {
 						"decl": "func (g Group) RayCheck() (r check.RayReport)",
-						"text": "RayCheck checks the solid of the model up to and with this group by\nthe ray-cast oracle, which rebuilds it from the groups' definitions\n(profiles, extrusions, axes) without the kernel's surface\nintersection: its volume and centre of mass by three grids of rays,\nthe rays along which it and the kernel's mesh disagree by more than\ntwice the chord tolerance, and the mesh's half-edges (each edge used\ntwice, once each way). It fails for a model with a group the oracle\ncan't build, as a fillet: extrusions without draft, lathes and\nrevolves only. Analyze \u003e Ray-Cast Check shows the same."
+						"text": "RayCheck checks the solid of the model up to and with this group by\nthe ray-cast oracle, which rebuilds it from the groups' definitions\n(profiles, extrusions, axes, where step and repeats, patterns along a\npath and mirrors put their copies) without the kernel's surface\nintersection: its volume, centre of mass and inertia tensor about it\n(Measure.Inertia, for a density of one, in mm⁵;\nMeasure.PrincipalMoments) by three grids of rays, the rays along\nwhich it and the kernel's mesh disagree by more than twice the chord\ntolerance, and the mesh's half-edges (each edge used twice, once each\nway). It fails for a model with a group the oracle can't build, as a\nfillet or a drafted extrusion: extrusions without draft, lathes,\nrevolves and copies of them only. Analyze \u003e Ray-Cast Check shows the\nsame."
 					},
 					"Requests": {
 						"decl": "func (g Group) Requests() (requests []Request)",
@@ -5954,6 +5958,10 @@
 					"CopyAsNRotAxisTrans"
 				]
 			},
+			"CopyPlacement": {
+				"text": "CopyPlacement is where a group that copies a solid puts one copy: the source scaled by Scale about the origin, 1, or -1 for a reflection (a point inversion, which the half turn in Move makes a mirror), then moved by Move.",
+				"kind": "struct"
+			},
 			"Dependency": {
 				"text": "Dependency is one group that another group needs, and the first reason found for it.",
 				"kind": "struct"
@@ -6080,6 +6088,10 @@
 					"CopyEntity": {
 						"decl": "func (g *Group) CopyEntity(sk *Sketch, el *[]core.Entity, ep *core.Entity, timesApplied, remap int, dx, dy, dz, qw, qvx, qvy, qvz, dist core.HParam, as CopyAs)",
 						"text": "CopyEntity appends a transformed copy of ep."
+					},
+					"CopyPlacements": {
+						"decl": "func (g *Group) CopyPlacements(sk *Sketch) (places []CopyPlacement, ofSolid bool, err error)",
+						"text": "CopyPlacements lists where a step and repeat (translate or rotate), a pattern along a path or a mirror puts the copies of its source's solid, the copies the kernel unites into the group's own solid (generateFor- StepAndRepeatShell, generatePatternShell, generateMirrorShell)."
 					},
 					"DescriptionString": {
 						"decl": "func (g *Group) DescriptionString() string",
@@ -7499,6 +7511,10 @@
 			"ErrNoClosedRegion": {
 				"decl": "var ErrNoClosedRegion",
 				"text": "ErrNoClosedRegion is returned when a group's sketch is not a closed region whose area can be taken."
+			},
+			"ErrNotCopies": {
+				"decl": "var ErrNotCopies",
+				"text": "ErrNotCopies is CopyPlacements' error for a group that makes no copies: not a step and repeat, a pattern along a path or a mirror."
 			},
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",
