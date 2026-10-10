@@ -1,11 +1,12 @@
 # Every push to a branch: the checks, the quick tests (make test-fast),
 # the lint and the vulnerability report, as jobs side by side. On a push
 # to master, and on request (workflow_dispatch) for a branch, every test
-# with coverage in place of the quick ones, and the race detector in
-# shards: make ci, run before a merge, is the same locally, so a branch
-# gets its answer in minutes and master still checks it all. The nightly
-# workflow (nightly.yml) runs what is too slow or costs too many minutes
-# for every push, the quick tests on Windows and macOS among it.
+# in place of the quick ones, and the race detector in shards: make ci,
+# run before a merge, is the same locally, so a branch gets its answer in
+# minutes and master still checks it all. The nightly workflow
+# (nightly.yml) runs what is too slow or costs too many minutes for
+# every push: the coverage rule, and the quick tests on Windows and macOS
+# among it.
 #
 # A tag push runs nothing here: make release tags a commit of master
 # that this workflow has passed, and release.yml runs on the tag. There
@@ -106,7 +107,7 @@ jobs:
       - name: Quick tests
         run: make test-fast
 
-  coverage:
+  tests:
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -119,19 +120,15 @@ jobs:
       - uses: actions/cache@v5
         with:
           path: .gocache
-          key: gocache-coverage-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          key: gocache-tests-${{ hashFiles('go.sum') }}-${{ github.sha }}
           restore-keys: |
-            gocache-coverage-${{ hashFiles('go.sum') }}-
-            gocache-coverage-
+            gocache-tests-${{ hashFiles('go.sum') }}-
+            gocache-tests-
       - name: Install X11 development packages, Xvfb and a font
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
-      # Every test, the GUI ones under Xvfb, with the 85% rule.
-      - name: Tests, with coverage
-        run: make coverage
-      - uses: actions/upload-artifact@v7
-        with:
-          name: coverage
-          path: coverage.out
+      # Every test, the GUI ones under Xvfb.
+      - name: Tests
+        run: make test
 
   lint:
     # The whole tree, which is lint-clean since 2026-10-03, with the

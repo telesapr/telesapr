@@ -60,9 +60,14 @@ ICON_SIZES = 16x16 24x24 32x32 48x48
 # the nightly workflow adds test-sweeps, fuzz, bench and the race detector
 # over pkg/ui and pkg/script/api. All of them go through scripts/go-test.sh,
 # which runs the slow packages as several processes, as CI does.
+# Every test, the OpenGL and GUI ones under Xvfb where xvfb-run is
+# installed; their display numbers start apart from test-gui's, which
+# make ci runs beside it.
+XVFB := $(if $(shell command -v xvfb-run),xvfb-run -a -n 140 -s "-screen 0 1280x1024x24 -noreset" env TELESAPR_GUI_TESTS=1)
+
 test:
 	@echo "==> go test ./..."
-	GOCACHE=$(PWD)/.gocache scripts/go-test.sh
+	GOCACHE=$(PWD)/.gocache $(XVFB) scripts/go-test.sh
 
 # A test that takes more than a few seconds skips itself under -short
 # (testing.Short), so this is what is quick enough before every commit;
@@ -121,14 +126,12 @@ test-race:
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
 # package listed in scripts/coverage-packages.txt is under 85%. The
-# OpenGL packages are only reached with an X server, so it runs under
-# Xvfb, with the GUI tests, where xvfb-run is installed; its display
-# numbers start apart from test-gui's, which make ci runs beside it.
-XVFB_COVERAGE := $(if $(shell command -v xvfb-run),xvfb-run -a -n 140 -s "-screen 0 1280x1024x24 -noreset" env TELESAPR_GUI_TESTS=1)
-
+# instrumentation makes it several times slower than test, so the
+# nightly workflow runs it, not make ci. The OpenGL packages are only
+# reached with an X server, so it runs under Xvfb as test does.
 coverage:
 	@echo "==> tests with coverage"
-	GOCACHE=$(PWD)/.gocache $(XVFB_COVERAGE) scripts/coverage-check.sh
+	GOCACHE=$(PWD)/.gocache $(XVFB) scripts/coverage-check.sh
 
 # The fuzz targets, as package:target; go test fuzzes one at a time.
 FUZZTIME ?= 30s
@@ -152,10 +155,10 @@ checks: fmt-check tidy-check generate-check build
 # What .github/workflows/ci.yml runs on a push to master, in one go:
 # the checks, then the rest side by side, each target's output printed
 # when it is done. govet is in the lint; the GUI packages run under
-# Xvfb inside coverage. On a branch the workflow leaves out test-race,
+# Xvfb inside test. On a branch the workflow leaves out test-race,
 # which it runs on master and on request.
 ci: checks
-	@$(MAKE) --no-print-directory -j --output-sync=target coverage test-race lint vuln
+	@$(MAKE) --no-print-directory -j --output-sync=target test test-race lint vuln
 
 fmt-check:
 	@echo "==> gofmt -l"
