@@ -168,7 +168,7 @@ pole slivers grew.
 Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `fillet_setback.go`,
 `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
-solids) at 44 of 59 sound.
+solids) at 45 of 59 sound.
 
 | Item | State | Approach / tried |
 |---|---|---|
@@ -181,8 +181,11 @@ solids) at 44 of 59 sound.
 | Chamfers at setback corners; convex meeting concave at one vertex beyond what the stages round | refused | No setback for chamfers yet |
 | Chamfers of edges between flat faces that end on a curved face | refused | Routed like the fillets, they left 134 naked edges and edges run the same way; not traced |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
-| One box_hole.step edge | the ball skips a face cut from a shared patch between two scan samples (faces 7, 9, 8 round the hole) | |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-11: the box_hole.step edge whose ball passes a vertex where three of the hole's patches
+meet: the scan between two samples now walks every face the ball's point crosses, and a face it is on
+for no length is a vertex passed (`rollingBall.crossings`); box_hole fillets all 14 edges.
 
 Done 2026-10-11: fillets ending on a dome round a corner too wide for one quintic (8 of 40 refused,
 `TestFilletEndsOnCurvedFaceSweep`, now none): when the end section can't be fitted, the blend is

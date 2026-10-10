@@ -707,36 +707,58 @@ func (rb *rollingBall) crossings(scan []rbSection) ([]float64, [][2]int, []int, 
 		for i := range pairsN {
 			a, b := scan[i], scan[(i+1)%n]
 			fa, fb := a.foot[k].f, b.foot[k].f
-			if fa == fb {
-				continue
+			end := b.s
+			if end < a.s {
+				end += rb.length
 			}
-			lo, hi := a.s, b.s
-			if hi < lo {
-				hi += rb.length
-			}
-			for it := 0; it < 60 && hi-lo > 1e-10*rb.length; it++ {
-				m := (lo + hi) / 2
-				sec, err := rb.section(m)
-				if err != nil {
-					return nil, nil, nil, err
+			// A face may lie between the two samples' (a patch cut narrow
+			// round a hole): from each crossing found, on to the next,
+			// until the face after it is the second sample's.
+			from := a.s
+			for crossed := 0; fa != fb; crossed++ {
+				if crossed == maxCrossingsBetween {
+					return nil, nil, nil, filletErr(a.c, "the ball crosses too many faces' seams here")
 				}
-				if sec.foot[k].f == fa {
-					lo = m
+				lo, hi, fh := from, end, fb
+				for it := 0; it < 60 && hi-lo > 1e-10*rb.length; it++ {
+					m := (lo + hi) / 2
+					sec, err := rb.section(m)
+					if err != nil {
+						return nil, nil, nil, err
+					}
+					if f := sec.foot[k].f; f == fa {
+						lo = m
+					} else {
+						hi, fh = m, f
+					}
+				}
+				s := (lo + hi) / 2
+				if rb.closed {
+					s = math.Mod(s, rb.length)
+				}
+				// A face the ball's point is on for no length is a
+				// vertex it passes: the crossing before is this one.
+				if last := len(at) - 1; last >= 0 && sides[last] == k && math.Abs(at[last]-s) < geom.LengthEps {
+					if pairs[last][0] == fh {
+						at, pairs, sides = at[:last], pairs[:last], sides[:last]
+					} else {
+						pairs[last][1] = fh
+					}
 				} else {
-					hi = m
+					at = append(at, s)
+					pairs = append(pairs, [2]int{fa, fh})
+					sides = append(sides, k)
 				}
+				fa, from = fh, hi
 			}
-			s := (lo + hi) / 2
-			if rb.closed {
-				s = math.Mod(s, rb.length)
-			}
-			at = append(at, s)
-			pairs = append(pairs, [2]int{fa, fb})
-			sides = append(sides, k)
 		}
 	}
 	return at, pairs, sides, nil
 }
+
+// maxCrossingsBetween is how many faces' seams the ball may cross between
+// two samples of the scan along the edge.
+const maxCrossingsBetween = 8
 
 // fit is the fillet's surface through the sections at arc lengths ss,
 // rising from ss[0] to less than a turn round the edge past it, and

@@ -9,8 +9,9 @@ import (
 // Fillets of radius 1 on edges of STEP solids (roadmap 22.5) take the
 // volume of an exact construction, or OpenCASCADE's where its fillet is
 // right: a box edge (a cylinder: the corner's square less a quarter
-// circle along 30), a hole's rim (a torus, by Pappus about the hole's
-// axis at the section's centroid, 4 + 0.2234 out), a blob's upright
+// circle along 30), a hole's rims (a torus, by Pappus about the hole's
+// axis at the section's centroid, 4 + 0.2234 out; the lower one's ball
+// passes a vertex where three of the hole's patches meet), a blob's upright
 // corner between two B-spline walls (the section, found in the plane,
 // times its height 5: OpenCASCADE takes a fifth less there), a bored
 // sphere's rim and a turned vase's foot and lip (OpenCASCADE's makeFillet
@@ -31,6 +32,7 @@ func TestFilletOnOtherSolidsVolumes(t *testing.T) {
 	}{
 		{"shapes/box_hole.step", V(0, 0, 15), spandrel * 30},
 		{"shapes/box_hole.step", V(12.8060019, 12.8486353, 30), spandrel * 2 * math.Pi * (4 + (10-3*math.Pi)/(12-3*math.Pi))},
+		{"shapes/box_hole.step", V(11.8484225, 13.5472996, 0), spandrel * 2 * math.Pi * (4 + (10-3*math.Pi)/(12-3*math.Pi))},
 		{"shapes/blob_extruded.step", V(0, 0, 2.5), 5.315751},
 		{"shapes/sphere_bored.step", V(0, -3, -6.32455532), 18.564890},
 		{"shapes/vase_revolved.step", V(4.33049372, -4.15214177, 0), 0.395511},
