@@ -1,0 +1,95 @@
+dialog 3 Bad selection for a sketch on a face.|Select one flat face of the solid; the sketch's workplane lies in it, its normal out of the solid, its origin on a corner of the face and its first axis along an edge, and follows the face when the model changes.
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 80040000
+camera 5 -16 6 -80 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
+counts 4 7 70 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home › g004-sketch-on-face   in plane: g004-sketch-on-face
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-29 64 64 0
+ 30-39 74 64 0
+ 40-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-sketch-on-face [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-27 64 64 0
+ 28-33 6c 64 108 4 1 0
+ 34-34 64 64 0
+ 35-37 6c 64 108 4 1 0
+ 38-40 64 64 0
+ 41-46 73 64 0
+ 47-47 64 64 0
+ 48-51 6c 64 115 4 1 0
+ 52-52 64 64 0
+ 53-53 6c 64 117 4 1 0
+ 54-54 64 64 0
+ 55-55 6c 64 100 4 1 0
+ 56-99 64 64 0
+row 10  sketch on face
+ 0-0 64 64 0
+ 1-14 74 64 0
+ 15-99 64 64 0
+row 12    in face entity 8003002c of g003-extrude
+ 0-2 64 61 0
+ 3-4 74 61 0
+ 5-99 64 61 0
+row 14 
+ 0-99 64 64 0
+row 16    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 18    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 20    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 23    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 25    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 27    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 29    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 31 
+ 0-99 64 64 0
+row 33  requests in group
+ 0-99 74 64 0
+row 35    (none)
+ 0-99 64 61 0
+row 37 
+ 0-99 64 64 0
+row 39  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 41    (none)
+ 0-99 64 61 0
+row 43 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 5 -16 6 -80 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
+counts 5 11 125 17 60
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 11\nTriangles: 30\nVolume: 100.49 cm³\nCenter of mass: (2.08, 6.24, 60.39)\nExtent: 42.00 x 26.00 x 160.00

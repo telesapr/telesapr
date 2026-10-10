@@ -1,0 +1,40 @@
+popup
+  Assign to Style ind=0 en=1 act=0
+    No Style ind=0 en=1 act=0
+    Newly Created Custom Style... ind=0 en=1 act=0
+  Group Info ind=0 en=1 act=0
+  Style Info ind=0 en=1 act=0
+  Toggle Construction ind=0 en=1 act=0
+  ---
+  ---
+  Shell Solid Open Here ind=0 en=1 act=0
+  Mirror in This Plane ind=0 en=1 act=0
+  Sketch On Face ind=0 en=1 act=0
+  Measure Selection ind=0 en=1 act=0
+  Group ind=0 en=1 act=0
+    Hide ind=0 en=1 act=0
+    Suppress with What Uses It ind=0 en=1 act=0
+    ---
+    Delete Group ind=0 en=1 act=0
+  Delete ind=0 en=1 act=0
+  ---
+  Unselect All ind=0 en=1 act=0
+  ---
+  Zoom to Fit ind=0 en=1 act=0
+popup pick Sketch On Face
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 80040000
+camera 5 -16 6 -80 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
+counts 4 7 70 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 80040000
+camera 5 -16 6 -80 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
+counts 4 7 70 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
