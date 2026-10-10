@@ -15,12 +15,12 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
+| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Three cases done; tilted rings on a pot left |
 | 2 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
 | 5 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 6 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 6 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint is not a contact case after all |
 | 7 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 Items 1 and 2 open most of the rest: the dependency column in each table below names which.
@@ -48,35 +48,33 @@ re-implemented in Go, no cgo). Each starts as a two-day spike with a fixed budge
 
 ### K3 Coincident and tangent contact (F5)
 
-F5 in general never finishes, so it is taken case by case, each as a fixture with a sweep.
-`MakeCoincidentEdgesInto` (`pkg/srf/surfinter.go`) handles coincident planes only; the failures
-are an edge of one solid in a face of the other, a cap coincident with several flat patches at
-once, and two coplanar opposite faces with equal outlines.
+F5 in general never finishes, so it is taken case by case, each as a fixture with a sweep
+(`pkg/srf/contact_test.go`, `latheseam_test.go`). Done 2026-10-10 (`a5bf482`): a sheared flat
+patch clipped a plane-plane line short (the leaning wedge, 108 of 252 to none; the rib fillet
+sweep takes leans either way); a face lying on another's coplanar patches is split at their seams
+(`fuseCoplanarSeam`; the off-axis bore 40 to 20 of 80); a march from where seams of both operands
+cross no longer follows a patch past its edge (`onBothPatches`), and stops at the first seed it
+reaches (a ring joined to a lathed pot, `TestHandleOnPotSweep`, 15 to 9 of 144). Caps meeting
+caps with equal curved outlines unite (`TestMitredBarsUnion`); the sweep corners' failure was the
+half-space and bent-cap cuts, not the contact.
 
-Approach (BRL-CAD libnmg): **fuse first, then classify by identity.** Before intersecting, fuse
-the two shells' vertices within tolerance, split edges at vertices lying on them, make coplanar
-faces share one plane, fuse edges. After the cut an element is ON when the other shell uses the
-same vertex or edge; split ON into on-shared (same direction) and on-anti (opposite) and decide
-each Boolean by a table: union keeps shared, drops anti; difference keeps anti; intersection
-keeps shared. Edges with both ends ON are classified at 0.5, then 0.1, then 0.9. Extend
-`keepEdge` / `keepRegion` (`pkg/srf/boolean_trim.go`) with the split. For curved multi-patch
-overlaps (libbrep): the overlap's boundary lies on isocurves at the patches' knots; intersect
-those with the other surface and chain them into loops. Point-in-solid by several rays with
-explicit valid / grazing / coincident / failed results instead of a vote.
+Tried: fusing every curve vertex within LengthEps before trimming changed no sweep.
 
-Spike order:
-
-1. the leaning wedge on a plate (all planes; simplest);
-2. the off-axis bore whose cap lies in a lathed tip's plane (isocurve overlap boundary).
-
-Unblocks:
+Approach for what is left (BRL-CAD libnmg): **fuse first, then classify by identity.** Before
+intersecting, fuse the two shells' vertices within tolerance, split edges at vertices lying on
+them, make coplanar faces share one plane, fuse edges. After the cut an element is ON when the
+other shell uses the same vertex or edge; split ON into on-shared (same direction) and on-anti
+(opposite) and decide each Boolean by a table: union keeps shared, drops anti; difference keeps
+anti; intersection keeps shared. Edges with both ends ON are classified at 0.5, then 0.1, then
+0.9. Extend `keepEdge` / `keepRegion` (`pkg/srf/boolean_trim.go`) with the split. For curved
+multi-patch overlaps (libbrep): the overlap's boundary lies on isocurves at the patches' knots;
+intersect those with the other surface and chain them into loops. Point-in-solid by several rays
+with explicit valid / grazing / coincident / failed results instead of a vote.
 
 | Open item | State today |
 |---|---|
-| A wedge on a plate, its sloping top's foot in the plate's top face, its width leaning back along the foot | the union fails for every lean that way, none the other; `TestFilletRibFootSweep` keeps to the one that works |
-| A bore whose cap lies in a lathed tip's plane, off axis | fails 40 of 80: coincident contact across the tip's four flat patches |
-| Sweep corners beside an arc (see [Solid feature leftovers](#solid-feature-leftovers)) | two runs joined by a union fail where they touch, for corners between lines too |
-| The teapot's handle (a torus joined to a cone) | unsound before any fillet, at 0.005 and 0.02 chord tolerance |
+| A ring on a pot, tilted, a patch's corner on the pot's face or a seam tangent to it | 9 of 144 (`TestHandleOnPotSweep`): a seam of the ring 0.002 inside the cone, under the chord tolerance, is kept as outside |
+| Sweep corners beside an arc (see [Solid feature leftovers](#solid-feature-leftovers)) | needs the joint inside `MakeFromSweepOf`, not a Boolean of cut runs |
 
 A last resort, not recommended: BRL-CAD's mesh Boolean with deterministic perturbation of
 touching operands. It conflicts with "never silently wrong geometry" and could only be an
@@ -109,6 +107,7 @@ Unblocks:
 | NIST_MBE_PMI_6 as a solid | mesh Euler number 6 off the shell's | At two poles a trim runs up a meridian into the pole and earlier ears fanned the last grid row to one trim point, leaving only pole slivers; `poleSliver` as a fallback ear mended one pole. Needs grid points in the band below the pole, or an ear order that keeps a row point for the meridian's top |
 | Run-off chamfers crossing the cone (`TestRunOffSweep`) | 2 of 36 cross by one edge each | `cutOff.crosses` took 10 to 4 failing. Grid lines across rulings of trimmed ruled patches: 8 to 2, but 2x meshes at default tolerance, 5-7x at fine. Demoting ears leaning off the tangent plane: no change |
 | A band-on-cone fillet at r 1, chord 0.001% | 2 crossing mesh edges where the fillet meets the cone tangentially | It is two tangent faces' meshes crossing, not the fit; not re-checked since the mesher fix of `7b3b32a` |
+| A bore off a lathed tip's axis that breaks out through its side (`TestBoreToLathedTipSweep`) | 20 of 80: the Boolean closes; the bore wall's thin lens fans long chords from the rim crossing, sound at chord 0.05, 0.005, 0.0005 and not at 0.02, 0.01, 0.002 | |
 | A chamfer of 3 where a slot meets a cone | 6 naked edges where it reaches the slot's floor at (6, 3, 0); sound to 2.75, 10 naked at 3.25 | The topology lists every edge, so they are the meshes' (the end wall's, or the side wall's thin triangle (6,3,0)-(6.47,3,0)-(6,3,2.25)); not traced |
 
 ### K5 STEP repair and accounting rules
@@ -148,7 +147,7 @@ solids) at 44 of 59 sound.
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | One box_hole.step edge | the ball skips a face cut from a shared patch between two scan samples (faces 7, 9, 8 round the hole) | |
 | STEP cylinder fillet at chord 0.002% | the fit's misfit floors at 2.6e-5 against 2.4e-5 | More rounds change nothing; cause not found |
-| Teapot handle, slot chamfer at 3, run-off chamfer crossings, band-on-cone r 1 | see K3 and K4 | |
+| Teapot handle (tilted, touching), slot chamfer at 3, run-off chamfer crossings, band-on-cone r 1 | see K3 and K4 | |
 
 The robust projection of K1 (`srf.SSurface.Project`, `srf.ProjectFrom`) is not what the rolling
 ball's feet use: most points it projects are on faces far from the ball, where plain Gauss-Newton
@@ -166,7 +165,7 @@ holding it, not only those sharing the nearest one's surface, made a sphere_bore
 
 | Item | State | Approach / tried |
 |---|---|---|
-| Mitred sweep corners next to an arc or curve; corners on twisted or fitted sweeps; closed sweeps | refused; corners between two lines are mitred, and any corner beside lines or arcs rounded with a corner radius (F4) | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines: F5). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. A corner radius (F4, done) rounds corners beside arcs, which is what users usually want |
+| Mitred sweep corners next to an arc or curve; corners on twisted or fitted sweeps; closed sweeps | refused; corners between two lines are mitred, and any corner beside lines or arcs rounded with a corner radius (F4) | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines; whole caps from one ellipse unite, `TestMitredBarsUnion`, so it is the cut caps, not contact). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. A corner radius (F4, done) rounds corners beside arcs, which is what users usually want |
 | Shells of other curved solids (filleted, lofted, revolved) | prisms only | Offsets of patches (22.1) are the first part; faces whose offsets do not cross themselves can be sized. The general shell is open-ended (E12, parked) |
 
 ## Waiting for the user
