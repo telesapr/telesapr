@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
 	"strings"
 
@@ -100,6 +101,7 @@ File formats:
 		list(platform.SurfaceFileFilters))
 	_, _ = io.WriteString(w, scriptUsage)
 	_, _ = io.WriteString(w, mcpUsage)
+	_, _ = io.WriteString(w, profileUsage)
 }
 
 // views are the camera directions --view names, as projRight and
@@ -242,12 +244,14 @@ func newSession(stderr io.Writer) *session {
 // fileCommand is a command that works on model files: the options it
 // takes, what it checks before starting, the output pattern it uses
 // when none is given ("" means one must be), and what it does to each
-// file.
+// file. A command that builds the solids again itself, at the export
+// tolerance, has the file loaded without building them (solidsLater).
 type fileCommand struct {
-	accepted []string
-	output   string
-	check    func(o *options, stderr io.Writer) bool
-	run      func(s *session, o *options, output string) error
+	accepted    []string
+	output      string
+	check       func(o *options, stderr io.Writer) bool
+	run         func(s *session, o *options, output string) error
+	solidsLater bool
 }
 
 // needView and needSize are what the view and thumbnail commands
@@ -278,8 +282,9 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"export-view": {
-		accepted: []string{"--output", "--view", "--chord-tol", "--bg-color"},
-		check:    needView,
+		accepted:    []string{"--output", "--view", "--chord-tol", "--bg-color"},
+		solidsLater: true,
+		check:       needView,
 		run: func(s *session, o *options, output string) error {
 			s.ss.GW.SetProjection(o.projRight, o.projUp)
 			s.ss.ExportChordTol = o.chordTol
@@ -288,7 +293,8 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"export-wireframe": {
-		accepted: []string{"--output", "--chord-tol"},
+		accepted:    []string{"--output", "--chord-tol"},
+		solidsLater: true,
 		run: func(s *session, o *options, output string) error {
 			s.ss.ExportChordTol = o.chordTol
 			return s.ss.ExportViewOrWireframeTo(output, true)
@@ -306,7 +312,8 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"export-mesh": {
-		accepted: []string{"--output", "--chord-tol"},
+		accepted:    []string{"--output", "--chord-tol"},
+		solidsLater: true,
 		run: func(s *session, o *options, output string) error {
 			s.ss.ExportChordTol = o.chordTol
 			return s.ss.ExportMeshTo(output)
@@ -319,8 +326,9 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"regenerate": {
-		accepted: []string{"--chord-tol"},
-		output:   "%.tlspr",
+		accepted:    []string{"--chord-tol"},
+		output:      "%.tlspr",
+		solidsLater: true,
 		run: func(s *session, o *options, output string) error {
 			s.ss.ExportChordTol = o.chordTol
 			s.ss.EnterExportMode()
@@ -398,7 +406,11 @@ func runCommand(args []string, stderr io.Writer) bool {
 			fmt.Fprintf(stderr, "Cannot load '%s': %v\n", input, err)
 			return false
 		}
+		// The loaded sketch is solved; its solids are made at the
+		// display tolerance unless the command makes them again.
+		s.ss.SK.DeferShells = c.solidsLater
 		s.ss.AfterNewFile()
+		s.ss.SK.DeferShells = false
 		if err := c.run(s, o, absOutput); err != nil {
 			fmt.Fprintf(stderr, "Cannot write '%s': %v\n", output, err)
 			return false
@@ -462,7 +474,16 @@ func convertModels(o *options, stderr io.Writer) bool {
 	return ok
 }
 
+// gcPercent is the collector's target for a run of the tool, unless
+// GOGC says otherwise: a command lives for one model, and collecting
+// four times less often makes it 15-20% quicker for a fifth to two
+// thirds more memory at its peak (docs/notes/performance-study.md).
+const gcPercent = 400
+
 func main() {
+	if _, set := os.LookupEnv("GOGC"); !set {
+		debug.SetGCPercent(gcPercent)
+	}
 	srf.SetParallelModeFromEnv()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	args := append([]string{filepath.Base(os.Args[0])}, os.Args[1:]...)
@@ -475,6 +496,13 @@ func main() {
 // and returns the exit status: 0 for success, 1 for a command that
 // failed, and the scripting commands' own statuses.
 func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	return withProfiles(args, stderr, func(args []string) int {
+		return runCommandLine(ctx, args, stdin, stdout, stderr)
+	})
+}
+
+// runCommandLine is run without the profiling options.
+func runCommandLine(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 1 {
 		showUsage(stderr, args[0])
 		return exitOK

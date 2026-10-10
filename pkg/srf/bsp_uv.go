@@ -55,9 +55,23 @@ func scalePoints(pt, a, b *geom.Point2d, srf *SSurface) {
 	if srf == nil {
 		return
 	}
+	scalePointsBy(pt, a, b, uvScaleAt(*pt, srf))
+}
+
+// uvScale is how far a step in u and in v goes on a surface at a point:
+// the lengths of its tangents there.
+type uvScale struct{ mu, mv float64 }
+
+// uvScaleAt is the scale scalePoints applies about pt.
+func uvScaleAt(pt geom.Point2d, srf *SSurface) uvScale {
 	var tu, tv geom.Vector
 	srf.TangentsAt(pt.U, pt.V, &tu, &tv, true)
-	mu, mv := tu.Magnitude(), tv.Magnitude()
+	return uvScale{tu.Magnitude(), tv.Magnitude()}
+}
+
+// scalePointsBy is scalePoints with the scale about pt given.
+func scalePointsBy(pt, a, b *geom.Point2d, sc uvScale) {
+	mu, mv := sc.mu, sc.mv
 	pt.U *= mu
 	pt.V *= mv
 	a.U *= mu
@@ -70,6 +84,11 @@ func scalePoints(pt, a, b *geom.Point2d, srf *SSurface) {
 // (the "inside" of a trim edge).
 func scaledSignedDistanceToLine(pt, a, b geom.Point2d, srf *SSurface) float64 {
 	scalePoints(&pt, &a, &b, srf)
+	return signedDistanceToLine(pt, a, b)
+}
+
+// signedDistanceToLine is positive on the right-hand side of a->b.
+func signedDistanceToLine(pt, a, b geom.Point2d) float64 {
 	n := b.Minus(a).Normal().WithMagnitude(1)
 	d := a.Dot(n)
 	return pt.Dot(n) - d
@@ -87,50 +106,82 @@ func bspUvInsertOrCreateEdge(where *SBspUv, ea, eb geom.Point2d, srf *SSurface) 
 	if where == nil {
 		return &SBspUv{A: ea, B: eb}
 	}
+	where.insertEdge(uvEnd{p: ea}, uvEnd{p: eb}, srf)
+	return where
+}
+
+// uvEnd is an end of an edge being inserted, with the scale about it
+// once it has been worked out: the edge is measured against every node
+// it passes, always about its own ends, and the surface's tangents
+// there are the slow part of that.
+type uvEnd struct {
+	p     geom.Point2d
+	sc    uvScale
+	known bool
+}
+
+// scaledSignedDistance is scaledSignedDistanceToLine from e to the line
+// a->b.
+func (e *uvEnd) scaledSignedDistance(a, b geom.Point2d, srf *SSurface) float64 {
+	if srf == nil {
+		return scaledSignedDistanceToLine(e.p, a, b, nil)
+	}
+	if !e.known {
+		e.sc, e.known = uvScaleAt(e.p, srf), true
+	}
+	pt := e.p
+	scalePointsBy(&pt, &a, &b, e.sc)
+	return signedDistanceToLine(pt, a, b)
+}
+
+func bspUvInsertEnds(where *SBspUv, ea, eb uvEnd, srf *SSurface) *SBspUv {
+	if where == nil {
+		return &SBspUv{A: ea.p, B: eb.p}
+	}
 	where.insertEdge(ea, eb, srf)
 	return where
 }
 
 // insertEdge inserts an edge: coincident edges go on the More chain,
 // edges straddling this node's line are split.
-func (b *SBspUv) insertEdge(ea, eb geom.Point2d, srf *SSurface) {
-	dea := scaledSignedDistanceToLine(ea, b.A, b.B, srf)
-	deb := scaledSignedDistanceToLine(eb, b.A, b.B, srf)
+func (b *SBspUv) insertEdge(ea, eb uvEnd, srf *SSurface) {
+	dea := ea.scaledSignedDistance(b.A, b.B, srf)
+	deb := eb.scaledSignedDistance(b.A, b.B, srf)
 
 	switch {
 	case math.Abs(dea) < geom.LengthEps && math.Abs(deb) < geom.LengthEps:
 		// Line segment is coincident with this one, store in same node
-		b.More = &SBspUv{A: ea, B: eb, More: b.More}
+		b.More = &SBspUv{A: ea.p, B: eb.p, More: b.More}
 	case math.Abs(dea) < geom.LengthEps:
 		// Point A lies on this line, but point B does not
 		if deb > 0 {
-			b.Pos = bspUvInsertOrCreateEdge(b.Pos, ea, eb, srf)
+			b.Pos = bspUvInsertEnds(b.Pos, ea, eb, srf)
 		} else {
-			b.Neg = bspUvInsertOrCreateEdge(b.Neg, ea, eb, srf)
+			b.Neg = bspUvInsertEnds(b.Neg, ea, eb, srf)
 		}
 	case math.Abs(deb) < geom.LengthEps:
 		// Point B lies on this line, but point A does not
 		if dea > 0 {
-			b.Pos = bspUvInsertOrCreateEdge(b.Pos, ea, eb, srf)
+			b.Pos = bspUvInsertEnds(b.Pos, ea, eb, srf)
 		} else {
-			b.Neg = bspUvInsertOrCreateEdge(b.Neg, ea, eb, srf)
+			b.Neg = bspUvInsertEnds(b.Neg, ea, eb, srf)
 		}
 	case dea > 0 && deb > 0:
-		b.Pos = bspUvInsertOrCreateEdge(b.Pos, ea, eb, srf)
+		b.Pos = bspUvInsertEnds(b.Pos, ea, eb, srf)
 	case dea < 0 && deb < 0:
-		b.Neg = bspUvInsertOrCreateEdge(b.Neg, ea, eb, srf)
+		b.Neg = bspUvInsertEnds(b.Neg, ea, eb, srf)
 	default:
 		// New edge crosses this one; we need to split.
 		n := b.B.Minus(b.A).Normal().WithMagnitude(1)
 		d := b.A.Dot(n)
-		t := (d - n.Dot(ea)) / n.Dot(eb.Minus(ea))
-		pi := ea.Plus(eb.Minus(ea).ScaledBy(t))
+		t := (d - n.Dot(ea.p)) / n.Dot(eb.p.Minus(ea.p))
+		pi := uvEnd{p: ea.p.Plus(eb.p.Minus(ea.p).ScaledBy(t))}
 		if dea > 0 {
-			b.Pos = bspUvInsertOrCreateEdge(b.Pos, ea, pi, srf)
-			b.Neg = bspUvInsertOrCreateEdge(b.Neg, pi, eb, srf)
+			b.Pos = bspUvInsertEnds(b.Pos, ea, pi, srf)
+			b.Neg = bspUvInsertEnds(b.Neg, pi, eb, srf)
 		} else {
-			b.Neg = bspUvInsertOrCreateEdge(b.Neg, ea, pi, srf)
-			b.Pos = bspUvInsertOrCreateEdge(b.Pos, pi, eb, srf)
+			b.Neg = bspUvInsertEnds(b.Neg, ea, pi, srf)
+			b.Pos = bspUvInsertEnds(b.Pos, pi, eb, srf)
 		}
 	}
 }

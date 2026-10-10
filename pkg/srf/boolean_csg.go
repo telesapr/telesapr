@@ -523,24 +523,31 @@ func findVertsOnCurve(out *[]geom.Vector, curve *SCurve, sh *SShell) {
 	}
 	var amax, amin geom.Vector
 	curve.AxisAlignedBounding(&amax, &amin)
+	at := func(pt geom.Vector) {
+		if pt.OutsideAndNotOn(amax, amin) {
+			return
+		}
+		t, _ := curve.Exact.ClosestPointTo(pt, false)
+		d := pt.Minus(curve.Exact.PointAt(t)).Magnitude()
+		if t > geom.LengthEps && t < 1-geom.LengthEps && d < geom.LengthEps {
+			*out = append(*out, pt)
+		}
+	}
+	// While a Boolean has the shell indexed, only the ends near the
+	// curve are looked at, in the loop's order.
+	var buf [16]trimEnd
+	if near, ok := sh.index.trimEndsNear(sh, amax, amin, buf[:]); ok {
+		for _, e := range near {
+			at(e.p)
+		}
+		return
+	}
 	for i := range sh.Surface {
 		ss := &sh.Surface[i]
 		for j := range ss.Trim {
 			stb := &ss.Trim[j]
-			for k := range 2 {
-				pt := stb.StartP
-				if k == 1 {
-					pt = stb.FinishP
-				}
-				if pt.OutsideAndNotOn(amax, amin) {
-					continue
-				}
-				t, _ := curve.Exact.ClosestPointTo(pt, false)
-				d := pt.Minus(curve.Exact.PointAt(t)).Magnitude()
-				if t > geom.LengthEps && t < 1-geom.LengthEps && d < geom.LengthEps {
-					*out = append(*out, pt)
-				}
-			}
+			at(stb.StartP)
+			at(stb.FinishP)
 		}
 	}
 }

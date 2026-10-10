@@ -1,7 +1,9 @@
 package srf
 
 import (
+	"context"
 	"math"
+	"runtime/trace"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -10,21 +12,30 @@ import (
 
 // MakeFromBoolean sets s to the boolean combination of a and b.
 func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
+	defer trace.StartRegion(context.Background(), "boolean").End()
+	// stage marks a step of the Boolean in an execution trace.
+	stage := func(name string) func() { return trace.StartRegion(context.Background(), name).End }
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
 
+	end := stage("classifying bsps")
 	a.MakeClassifyingBsps(nil)
 	b.MakeClassifyingBsps(nil)
+	end()
 
 	// Copy over all the original curves, splitting them so that a
 	// piecewise linear segment never crosses a surface from the other
 	// shell.
+	end = stage("split curves")
 	a.CopyCurvesSplitAgainst(true, b, s)
 	b.CopyCurvesSplitAgainst(false, a, s)
+	end()
 
 	// Generate the intersection curves for each surface in A against all
 	// the surfaces in B (which is all of the intersection curves).
+	end = stage("intersection curves")
 	a.MakeIntersectionCurvesAgainst(b, s)
+	end()
 
 	for i := range s.Curve {
 		sc := &s.Curve[i]
@@ -36,12 +47,16 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	b.CleanupAfterBoolean()
 	// Remake the classifying BSPs with the split (and short-segment-removed)
 	// curves
+	end = stage("classifying bsps")
 	a.MakeClassifyingBsps(s)
 	b.MakeClassifyingBsps(s)
+	end()
 
 	// Then trim and copy the surfaces
+	end = stage("trim surfaces")
 	a.CopySurfacesTrimAgainst(a, b, s, op)
 	b.CopySurfacesTrimAgainst(a, b, s, op)
+	end()
 
 	// Now that we've copied the surfaces, we know their new hSurfaces, so
 	// rewrite the curves to refer to the surfaces by their handles in the
@@ -146,6 +161,7 @@ func (s *SShell) CleanupAfterBoolean() {
 	for i := range s.Surface {
 		s.Surface[i].Edges = SEdgeList{}
 	}
+	s.index = nil
 }
 
 // MakeFromUnionOf dispatches to MakeFromBoolean(UNION).
@@ -214,6 +230,9 @@ func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell) {
 		srf.Edges = buildSurfaceClassifyingEdgesXYZ(s, srf, useCurvesFrom)
 		srf.curvedEdges = buildCurvedTrimEdgesXYZ(s, srf, useCurvesFrom)
 	})
+	if len(s.Surface) >= surfaceIndexMin {
+		s.index = newSurfaceIndex(s)
+	}
 }
 
 // buildCurvedTrimEdgesXYZ is buildSurfaceClassifyingEdgesXYZ for the
@@ -297,7 +316,8 @@ func buildSurfaceClassifyingEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *S
 // AllPointsIntersecting collects the intersections of the line (a, b)
 // with every surface of the shell.
 func (s *SShell) AllPointsIntersecting(a, b geom.Vector, inters *[]SInter, asSegment, trimmed, inclTangent bool) {
-	for i := range s.Surface {
+	var buf [16]int
+	for _, i := range s.surfacesNear(a, b, asSegment, buf[:]) {
 		s.Surface[i].AllPointsIntersecting(a, b, inters, asSegment, trimmed, inclTangent)
 	}
 }

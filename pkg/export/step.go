@@ -67,8 +67,13 @@ type stepFileWriter struct {
 	edgeCurveAliases    []stepEdgeCurveAlias
 	curveAliases        []stepCurveAlias
 	orientedEdgeAliases []stepOrientedEdgeAlias
-	exportParts         bool
-	currentColor        core.RGBA
+	// Indexes of the lists above (step_alias_index.go).
+	pointByNumber        aliasIndex
+	vertexByNumber       aliasIndex
+	orientedEdgeByNumber aliasIndex
+	pointCells           pointCells
+	exportParts          bool
+	currentColor         core.RGBA
 }
 
 func (w *stepFileWriter) printf(format string, args ...any) {
@@ -81,26 +86,26 @@ func (w *stepFileWriter) printf(format string, args ...any) {
 func (w *stepFileWriter) HasCartesianPointAnAlias(number int, v geom.Vector, vertex int,
 	vertexHasAlias *bool) bool {
 	// Look for this point "v" in the alias list.
-	for i := range w.pointAliases {
+	if i := w.pointCells.first(w.pointAliases, v); i >= 0 {
+		// This point was already defined. The new number is just an
+		// alias.
 		p := &w.pointAliases[i]
-		if p.v.EqualsTol(v, stepPrecision) {
-			// This point was already defined. The new number is just an
-			// alias.
-			p.alias.aliases = append(p.alias.aliases, number)
-			if vertex > 0 {
-				if p.vertexAlias.reference <= 0 {
-					p.vertexAlias.reference = vertex
-				}
-				p.vertexAlias.aliases = append(p.vertexAlias.aliases, vertex)
-
-				// If the caller is interested let them know if the vertex
-				// is new or has an existing alias.
-				if vertexHasAlias != nil {
-					*vertexHasAlias = len(p.vertexAlias.aliases) != 1
-				}
+		p.alias.aliases = append(p.alias.aliases, number)
+		w.pointByNumber.add(number, i)
+		if vertex > 0 {
+			if p.vertexAlias.reference <= 0 {
+				p.vertexAlias.reference = vertex
 			}
-			return true
+			p.vertexAlias.aliases = append(p.vertexAlias.aliases, vertex)
+			w.vertexByNumber.add(vertex, i)
+
+			// If the caller is interested let them know if the vertex
+			// is new or has an existing alias.
+			if vertexHasAlias != nil {
+				*vertexHasAlias = len(p.vertexAlias.aliases) != 1
+			}
 		}
+		return true
 	}
 
 	// No point was found, it means this is a new point.
@@ -113,17 +118,21 @@ func (w *stepFileWriter) HasCartesianPointAnAlias(number int, v geom.Vector, ver
 	}
 
 	// A new entry in the list.
+	i := len(w.pointAliases)
 	w.pointAliases = append(w.pointAliases, newPoint)
+	w.pointCells.add(v, i)
+	w.pointByNumber.add(number, i)
+	if vertex > 0 {
+		w.vertexByNumber.add(vertex, i)
+	}
 	return false
 }
 
 // InsertPoint is a cartesian point's index, its first alias if it has
 // any.
 func (w *stepFileWriter) InsertPoint(number int) int {
-	for _, p := range w.pointAliases {
-		if slices.Contains(p.alias.aliases, number) {
-			return p.alias.reference
-		}
+	if i, ok := w.pointByNumber.find(number); ok {
+		return w.pointAliases[i].alias.reference
 	}
 
 	// ERROR: it should never reach this point...
@@ -132,10 +141,8 @@ func (w *stepFileWriter) InsertPoint(number int) int {
 
 // InsertVertex is a vertex's index, its first alias if it has any.
 func (w *stepFileWriter) InsertVertex(number int) int {
-	for _, p := range w.pointAliases {
-		if slices.Contains(p.vertexAlias.aliases, number) {
-			return p.vertexAlias.reference
-		}
+	if i, ok := w.vertexByNumber.find(number); ok {
+		return w.pointAliases[i].vertexAlias.reference
 	}
 
 	// ERROR: it should never reach this point...
@@ -249,6 +256,7 @@ func (w *stepFileWriter) HasOrientedEdgeAnAlias(number, edgeCurveID int, flip bo
 		e := &w.orientedEdgeAliases[i]
 		if edgeCurveID == e.edgeCurveID && flip == e.flip {
 			e.alias.aliases = append(e.alias.aliases, number)
+			w.orientedEdgeByNumber.add(number, i)
 			return true
 		}
 	}
@@ -258,16 +266,15 @@ func (w *stepFileWriter) HasOrientedEdgeAnAlias(number, edgeCurveID int, flip bo
 	newOrientedEdge.alias.reference = number
 	newOrientedEdge.alias.aliases = []int{number}
 
+	w.orientedEdgeByNumber.add(number, len(w.orientedEdgeAliases))
 	w.orientedEdgeAliases = append(w.orientedEdgeAliases, newOrientedEdge)
 	return false
 }
 
 // InsertOrientedEdge is an oriented edge's index.
 func (w *stepFileWriter) InsertOrientedEdge(number int) int {
-	for _, e := range w.orientedEdgeAliases {
-		if slices.Contains(e.alias.aliases, number) {
-			return e.alias.reference
-		}
+	if i, ok := w.orientedEdgeByNumber.find(number); ok {
+		return w.orientedEdgeAliases[i].alias.reference
 	}
 
 	// ERROR: it should never reach this point...

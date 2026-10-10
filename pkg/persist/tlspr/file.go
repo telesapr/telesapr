@@ -1,9 +1,11 @@
 package tlspr
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/trace"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/persist/link"
@@ -43,6 +45,7 @@ var ErrCancelled = link.ErrCancelled
 // are regenerated, not loaded. The sketch's ReloadAllLinked reloads its
 // links relative to path.
 func LoadFile(path string) (*Document, error) {
+	defer trace.StartRegion(context.Background(), "load").End()
 	if IsPacked(path) {
 		return LoadPacked(path)
 	}

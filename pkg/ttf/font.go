@@ -44,6 +44,9 @@ type FontList struct {
 	files  []string
 	l      []Font
 	loaded bool
+	// open is the fonts LoadFont has opened, by the basename asked
+	// for; nil for one it found no file of.
+	open map[string]*Font
 }
 
 // NewFontList is the font list of files, read when first used.
@@ -170,17 +173,24 @@ func (fl *FontList) List() []Font {
 }
 
 // LoadFont is the font whose file's basename is font, opened, or nil.
+// Only the files of that basename are read, the first that opens being
+// the font, and the builtin font last: a sketch names its fonts by
+// file, and reading every font of the system to find one took longer
+// than the rest of regenerating a sketch of text.
 func (fl *FontList) LoadFont(font string) *Font {
-	fl.LoadAll()
-	for i := range fl.l {
-		tf := &fl.l[i]
-		if tf.FontFileBaseName() != font {
-			continue
-		}
-		if tf.face == nil {
-			tf.load(true)
-		}
+	if tf, ok := fl.open[font]; ok {
 		return tf
+	}
+	if fl.open == nil {
+		fl.open = make(map[string]*Font)
+	}
+	fl.open[font] = nil
+	for _, file := range append(slices.Clip(fl.files), builtinFontResource) {
+		tf := &Font{FontFile: file}
+		if tf.FontFileBaseName() == font && tf.load(true) {
+			fl.open[font] = tf
+			return tf
+		}
 	}
 	return nil
 }

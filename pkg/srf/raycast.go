@@ -82,11 +82,10 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 	var interSurfN [2]geom.Vector
 	var interEdgeN [2]geom.Vector
 	var interSrf [2]*SSurface
-	for i := range s.Surface {
+	var buf [16]int
+	near := s.surfacesNear(ea, eb, true, buf[:])
+	for _, i := range near {
 		srf := &s.Surface[i]
-		if srf.LineEntirelyOutsideBbox(ea, eb, true) {
-			continue
-		}
 		for j := range srf.Edges.Edges {
 			se := &srf.Edges.Edges[j]
 			if (ea.Equals(se.A) && eb.Equals(se.B)) ||
@@ -257,11 +256,8 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 			bestDot[i] = veryNegative
 			ep[i] = en[i].Minus(edgeD.ScaledBy(en[i].Dot(edgeD))).WithMagnitude(1)
 		}
-		for i := range s.Surface {
+		for _, i := range near {
 			srf := &s.Surface[i]
-			if srf.LineEntirelyOutsideBbox(ea, eb, true) {
-				continue
-			}
 			for j := range srf.Edges.Edges {
 				se := &srf.Edges.Edges[j]
 				if (ea.Equals(se.A) && eb.Equals(se.B)) ||
@@ -307,11 +303,8 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 	}
 
 	// 3. Edge-on-surface check.
-	for i := range s.Surface {
+	for _, i := range near {
 		srf := &s.Surface[i]
-		if srf.LineEntirelyOutsideBbox(ea, eb, true) {
-			continue
-		}
 		var puv geom.Point2d
 		srf.ClosestPointTo(p, &puv, false)
 		pp := srf.PointAt(puv.U, puv.V)
@@ -368,10 +361,13 @@ func rayDirection(i int) geom.Vector {
 func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
 	tol := s.Tol.ChordTolMm() + lengthEps
 	best, bestClear := SurfOutside, -1.0
+	var buf [16]int
+	near := buf[:]
 	for try := range raycastTries {
 		ray := rayDirection(try)
 		var l []SInter
-		for i := range s.Surface {
+		near = s.surfacesNear(p.Minus(ray), p.Plus(ray), false, near)
+		for _, i := range near {
 			s.Surface[i].allPointsIntersecting(p.Minus(ray), p.Plus(ray), &l, false, true, false, tol)
 		}
 		c := SurfOutside

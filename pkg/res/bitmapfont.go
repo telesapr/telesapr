@@ -1,6 +1,10 @@
 package res
 
-import "github.com/telesapr/telesapr/pkg/internal/cxxutf8"
+import (
+	"slices"
+
+	"github.com/telesapr/telesapr/pkg/internal/cxxutf8"
+)
 
 // BitmapGlyph is a glyph's width in 8-pixel cells and its slot in the
 // texture.
@@ -12,7 +16,14 @@ type BitmapGlyph struct {
 // BitmapFont is the text window's font: GNU Unifont's 8x16 and 16x16
 // glyphs, rendered on demand into a 1024x1024 alpha texture.
 type BitmapFont struct {
-	unifontData    string
+	unifontData string
+	// load gives unifontData the first time a glyph is looked up in
+	// it: the bundled font is large to inflate, and a run without a
+	// window may only ever lay text out (see Width).
+	load func() string
+	// bundled is a font of the bundled Unifont, whose widths
+	// unifontWide has.
+	bundled        bool
 	glyphs         map[rune]BitmapGlyph
 	Texture        *Pixmap
 	TextureUpdated bool
@@ -32,7 +43,9 @@ func BitmapFontFrom(unifontData string) *BitmapFont {
 // U+0020, and at U+E000..U+E007 the checkboxes, radio buttons and
 // stipple samples.
 func NewBitmapFont() *BitmapFont {
-	f := BitmapFontFrom(LoadStringFromGzip("fonts/unifont.hex.gz"))
+	f := BitmapFontFrom("")
+	f.load = func() string { return LoadStringFromGzip("fonts/unifont.hex.gz") }
+	f.bundled = true
 	// Unifont doesn't have a glyph for U+0020.
 	f.AddGlyph(0x0020, NewPixmap(FormatRGB, 8, 16))
 	for i, name := range []string{
@@ -45,7 +58,15 @@ func NewBitmapFont() *BitmapFont {
 }
 
 // IsEmpty reports whether the font has no data.
-func (f *BitmapFont) IsEmpty() bool { return f == nil || f.unifontData == "" }
+func (f *BitmapFont) IsEmpty() bool { return f == nil || (f.unifontData == "" && f.load == nil) }
+
+// data is the Unifont .hex data, inflated the first time it is needed.
+func (f *BitmapFont) data() string {
+	if f.load != nil {
+		f.unifontData, f.load = f.load(), nil
+	}
+	return f.unifontData
+}
 
 func (f *BitmapFont) textureRow(position uint16, y int) []byte {
 	perRow := uint16(f.Texture.Width / 16)
@@ -92,7 +113,7 @@ func (f *BitmapFont) Glyph(codepoint rune) BitmapGlyph {
 	}
 
 	// Find the hex representation in the (sorted) Unifont file.
-	data := f.unifontData
+	data := f.data()
 	first, last := 0, len(data)
 	for first < last {
 		mid := first + (last-first)/2
@@ -181,12 +202,29 @@ func (f *BitmapFont) LocateGlyph(codepoint rune) (s0, t0, s1, t1 float64, w, h i
 }
 
 // Width is the glyph's width in cells; the private checkboxes and radio
-// buttons count as one, since Printf pads them.
+// buttons count as one, since Printf pads them. It is answered from
+// unifontWide without looking the glyph up, so that text laid out and
+// never drawn, as in a run without a window, doesn't inflate the font.
 func (f *BitmapFont) Width(codepoint rune) int {
 	if codepoint >= 0xe000 && codepoint <= 0xefff {
 		return 1
 	}
-	return int(f.Glyph(codepoint).AdvanceCells)
+	if !f.bundled {
+		return int(f.Glyph(codepoint).AdvanceCells)
+	}
+	_, wide := slices.BinarySearchFunc(unifontWide[:], codepoint, func(r struct{ lo, hi rune }, c rune) int {
+		switch {
+		case r.hi < c:
+			return -1
+		case r.lo > c:
+			return 1
+		}
+		return 0
+	})
+	if wide {
+		return 2
+	}
+	return 1
 }
 
 // StringWidth is the string's width in cells.

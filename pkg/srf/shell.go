@@ -67,6 +67,11 @@ type SShell struct {
 	Tol Tolerance
 
 	BooleanFailed bool
+
+	// index finds the surfaces a line meets, while a Boolean
+	// classifies against the shell: MakeClassifyingBsps makes it,
+	// CleanupAfterBoolean drops it.
+	index *surfaceIndex
 }
 
 // Clear resets all data.
@@ -74,6 +79,7 @@ func (s *SShell) Clear() {
 	s.Curve = nil
 	s.Surface = nil
 	s.BooleanFailed = false
+	s.index = nil
 }
 
 // MakeFromCopyOf copies src: a transformation by the identity, which
@@ -1268,6 +1274,13 @@ func (s *SShell) FindCurve(h core.HSCurve) *SCurve {
 	if s == nil {
 		return nil
 	}
+	// A shell's curves are numbered in order from 1 as they are added
+	// (addAndAssignCurveID), so the curve is most often at h-1; a shell
+	// numbered otherwise is searched. Handles are unique, so the curve
+	// found there is the one the search would find.
+	if i := int(h.V) - 1; i >= 0 && i < len(s.Curve) && s.Curve[i].H == h {
+		return &s.Curve[i]
+	}
 	for i := range s.Curve {
 		if s.Curve[i].H == h {
 			return &s.Curve[i]
@@ -1280,6 +1293,10 @@ func (s *SShell) FindCurve(h core.HSCurve) *SCurve {
 func (s *SShell) FindSurface(h core.HSSurface) *SSurface {
 	if s == nil {
 		return nil
+	}
+	// As FindCurve: surfaces are numbered in order from 1.
+	if i := int(h.V) - 1; i >= 0 && i < len(s.Surface) && s.Surface[i].H == h {
+		return &s.Surface[i]
 	}
 	for i := range s.Surface {
 		if s.Surface[i].H == h {

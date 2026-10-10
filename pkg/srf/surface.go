@@ -64,6 +64,9 @@ type SSurface struct {
 	// projects points on this surface from several goroutines (see
 	// parallel.go).
 	noCache bool
+	// guess holds the grid ClosestPointTo searches for a first guess
+	// while the cache is off (closest_guess.go).
+	guess *guessCell
 
 	// TrimBuilt is true when the surface's Trim list is authoritative,
 	// so an empty one means "nothing to render". Every SShell
@@ -444,15 +447,18 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 
 	// Search for a reasonable initial guess
 	minDist := veryPositive
-	res := 20
-	if max(s.DegM, s.DegN) == 2 {
-		res = 7
-	}
+	res := s.guessResolution()
+	pts := s.guessPoints()
 	for i := range res {
 		for j := range res {
-			tryu, tryv := (float64(i)+0.5)/float64(res), (float64(j)+0.5)/float64(res)
+			tryu, tryv := guessU(i, res), guessU(j, res)
 
-			tryp := s.PointAt(tryu, tryv)
+			var tryp geom.Vector
+			if pts != nil {
+				tryp = pts[i*res+j]
+			} else {
+				tryp = s.PointAt(tryu, tryv)
+			}
 			d := tryp.Minus(p).Magnitude()
 			if d < minDist {
 				*u = tryu
@@ -641,14 +647,7 @@ func (s *SSurface) CoincidentWithPlane(n geom.Vector, d float64) bool {
 func (s *SSurface) LineEntirelyOutsideBbox(a, b geom.Vector, asSegment bool) bool {
 	var amax, amin geom.Vector
 	s.AxisAlignedBounding(&amax, &amin)
-	if !geom.BoundingBoxIntersectsLine(amax, amin, a, b, asSegment) {
-		// The line segment could fail to intersect the bbox, but lie entirely
-		// within it and intersect the surface.
-		if a.OutsideAndNotOn(amax, amin) && b.OutsideAndNotOn(amax, amin) {
-			return true
-		}
-	}
-	return false
+	return lineOutsideBox(amax, amin, a, b, asSegment)
 }
 
 // WeightControlPoints multiplies each control point by its weight.

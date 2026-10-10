@@ -1,6 +1,9 @@
 package srf
 
 import (
+	"context"
+	"runtime/trace"
+
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/par"
@@ -21,6 +24,7 @@ import (
 // surface reads its trims and the curves' points, never which surfaces
 // a curve lies on, so the result is that of the serial loop.
 func (s *SShell) MergeCoincidentSurfaces() {
+	defer trace.StartRegion(context.Background(), "merge surfaces").End()
 	for i := range s.Surface {
 		s.Surface[i].Tag = 0
 	}
