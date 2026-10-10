@@ -243,6 +243,22 @@ func (gw *graphicsWindow) SelectByMarquee() {
 	}
 }
 
+// onlyFace is the face of the solid selected, by its identity, when it
+// is the one thing selected: a face entity, as an extrusion's, or a face
+// no entity names, picked on the model.
+func (gs *groupedSelection) onlyFace() (srf.FaceID, bool) {
+	if gs.constraints > 0 || len(gs.solidEdge) > 0 {
+		return 0, false
+	}
+	switch {
+	case gs.n == 1 && gs.faces == 1 && len(gs.solidFace) == 0:
+		return srf.FaceID(gs.face[0].V), true
+	case gs.n == 0 && len(gs.solidFace) == 1:
+		return gs.solidFace[0], true
+	}
+	return 0, false
+}
+
 // GroupSelection sorts the selection by kind into gw.gs.
 func (gw *graphicsWindow) GroupSelection() {
 	sk := gw.sk()

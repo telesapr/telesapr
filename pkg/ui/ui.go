@@ -177,6 +177,7 @@ const (
 	cmdShowOccludedInvisible
 	cmdShowOccludedStippled
 	cmdShowOccludedVisible
+	cmdGroupSketchOnFace
 )
 
 // Pending is an operation to be completed by doing something with the

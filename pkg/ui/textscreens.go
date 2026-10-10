@@ -918,7 +918,11 @@ func (tw *textWindow) ShowGroupInfo() {
 	case sketch.GroupDrawing3D:
 		tw.Printf(true, " %Ftsketch in 3d%E")
 	case sketch.GroupDrawingWorkplane:
-		tw.Printf(true, " %Ftsketch in new workplane%E")
+		if g.Subtype == sketch.GroupWorkplaneByFace {
+			tw.showSketchOnFaceInfo(g)
+		} else {
+			tw.Printf(true, " %Ftsketch in new workplane%E")
+		}
 	default:
 		tw.Printf(true, "???")
 	}
@@ -1017,6 +1021,8 @@ func (tw *textWindow) ShowGroupInfo() {
 		switch {
 		case g.HasDraft():
 			tw.Printf(false, "%FxThe draft is left out: %s.%E", g.Problem.Msg)
+		case g.FaceProblem() != "" && g.Problem.Msg == g.FaceProblem():
+			tw.Printf(false, "%FxThe sketch can't follow its face: %s.%E", g.Problem.Msg)
 		case g.Type == sketch.GroupDrawing3D || g.Type == sketch.GroupDrawingWorkplane:
 			tw.Printf(false, "%FxNo solid can be made from it: %s.%E", g.Problem.Msg)
 		default:
@@ -1222,6 +1228,15 @@ func (tw *textWindow) showShellInfo(g *sketch.Group) {
 			bg = 'd'
 		}
 		tw.Printf(false, "%Bp     %s", bg, sk.FaceName(id))
+	}
+}
+
+// showSketchOnFaceInfo shows the face a sketch on a face lies in.
+func (tw *textWindow) showSketchOnFaceInfo(g *sketch.Group) {
+	sk := tw.ss.SK
+	tw.Printf(true, " %Ftsketch on face%E")
+	for _, id := range g.SolidFaces {
+		tw.Printf(false, "%Ba   %Ftin%E %s", sk.FaceName(id))
 	}
 }
 

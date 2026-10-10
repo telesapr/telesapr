@@ -115,6 +115,7 @@ var menuMethods = map[string]string{
 	"Help/About":                                         "- the window's",
 	"Features/Sketch In 3d":                              "Doc.Sketch3D",
 	"Features/Sketch In New Workplane":                   "Doc.SketchIn Doc.SketchAt",
+	"Features/Sketch On Face":                            "Doc.SketchOnFace",
 	"Features/Step Translating":                          "Doc.Translate",
 	"Features/Step Rotating":                             "Doc.Rotate",
 	"Features/Extrude":                                   "Doc.Extrude",

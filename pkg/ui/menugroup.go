@@ -34,6 +34,11 @@ func (ss *Application) MenuGroup(id Command, linkFile string) {
 			return
 		}
 
+	case cmdGroupSketchOnFace:
+		if !ss.groupSketchOnFace(&g) {
+			return
+		}
+
 	case cmdGroupExtrude:
 		if !ss.groupExtrude(&g) {
 			return
@@ -108,6 +113,10 @@ func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 	sk := ss.SK
 	gs := &gw.gs
 
+	if _, ok := gs.onlyFace(); ok {
+		// A face of the solid: the sketch lies in it and follows it.
+		return ss.groupSketchOnFace(g)
+	}
 	g.Type = sketch.GroupDrawingWorkplane
 	g.Name = "sketch-in-plane"
 	switch {
@@ -166,6 +175,9 @@ func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 			case sketch.GroupWorkplaneByPointNormal:
 				g.Predef.Q = wrkplg.Predef.Q
 				g.Predef.EntityB = wrkplg.Predef.EntityB
+			case sketch.GroupWorkplaneByFace:
+				g.Predef.Q, g.Predef.At = wrkplg.Predef.Q, wrkplg.Predef.At
+				g.SolidFaces = slices.Clone(wrkplg.SolidFaces)
 			default:
 				panic("ui: unexpected workplane subtype")
 			}
@@ -183,9 +195,32 @@ func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 			"parallel to the lines)\n" +
 			"    * a point and a normal (through the point, " +
 			"orthogonal to the normal)\n" +
-			"    * a workplane (copy of the workplane)\n")
+			"    * a workplane (copy of the workplane)\n" +
+			"    * a flat face of the solid (in the face, following it)\n")
 		return false
 	}
+	return true
+}
+
+// groupSketchOnFace sets up a cmdGroupSketchOnFace group, or reports why
+// it can't be made.
+func (ss *Application) groupSketchOnFace(g *sketch.Group) bool {
+	face, ok := ss.GW.gs.onlyFace()
+	if !ok {
+		ss.Error("Bad selection for a sketch on a face. Select one flat face of the solid; " +
+			"the sketch's workplane lies in it, its normal out of the solid, its origin on a " +
+			"corner of the face and its first axis along an edge, and follows the face when " +
+			"the model changes.")
+		return false
+	}
+	fg, err := ss.SK.NewSketchOnFace(face, "")
+	if err != nil {
+		ss.Error("Can't sketch on %s. %s.\n\n"+
+			"Sketch On Face starts a sketch in a flat face of the solid so far. Select one "+
+			"flat face of the solid.", ss.SK.FaceName(face), capitalize(err.Error()))
+		return false
+	}
+	*g = fg
 	return true
 }
 
