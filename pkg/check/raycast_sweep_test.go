@@ -21,11 +21,12 @@ func helixRing(d *api.Doc) api.Entity {
 // A helix of a square in a plane through its axis: Pappus gives the
 // volume, area times angle times the centre's radius, however far it
 // moves along the axis; turned both ways about the drawing, the same.
-// Its rays agree with the kernel's mesh within 0.1 mm, not the chord
-// tolerance: the kernel's patches are revolves of up to a quarter turn
-// whose rise follows the arc's rational parameter, not its angle, which
-// puts them off the true helix by about 2% of a patch's rise, more the
-// steeper the helix (roadmap F5).
+// Its rays agree with the kernel's mesh within 0.03 mm at a chord
+// tolerance of 0.01%. Quadratic patches whose rise followed the arc's
+// rational parameter, not its angle, were 2% of a quarter turn's rise
+// off the true helix, and hundreds of rays disagreed here by more; a ray
+// grazing the inner wall still can, where the oracle samples the
+// crossing.
 func TestOracleHelix(t *testing.T) {
 	t.Parallel()
 	for name, c := range map[string]struct {
@@ -41,6 +42,7 @@ func TestOracleHelix(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			d := api.New()
+			d.Edit.SetChordTolerance(0.01)
 			g := d.Features.Helix(helixRing(d), c.degrees, c.length, "")
 			g.SetTwoSided(c.twoSided)
 			want := 100 * 15 * math.Abs(c.degrees) * math.Pi / 180
@@ -48,7 +50,7 @@ func TestOracleHelix(t *testing.T) {
 			if m := o.Measure(1e-3, 128); !near(m.Volume, want, 3e-3) {
 				t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
 			}
-			if diffs := o.Diff(meshOf(d), 24, 0.1); len(diffs) != 0 {
+			if diffs := o.Diff(meshOf(d), 24, 0.03); len(diffs) != 0 {
 				t.Errorf("%d rays disagree with the mesh, as %+v", len(diffs), diffs[0])
 			}
 		})
