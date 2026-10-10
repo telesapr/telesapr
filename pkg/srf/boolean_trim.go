@@ -529,6 +529,19 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		if origBsp != nil {
 			cThis = origBsp.ClassifyEdge(auv, buv, ret)
 		}
+		if cThis == BspUvEdgeParallel && !final.hasSame(chain) && ret.offChord(auv, buv, pt) {
+			// The curve runs along the patch's edge, which was dropped as
+			// inside the other shell: the other shell's patch crosses the
+			// edge and dips into this patch beside it by less than the
+			// chord tolerance (a ring's patch over a pot's seam, roadmap
+			// K3), so its chord lies on the edge. It is the outline there
+			// in the edge's place.
+			for _, e := range chain.Edges {
+				final.AddEdge(e.A, e.B, e.AuxA, e.AuxB, 0)
+			}
+			chain.Edges = nil
+			continue
+		}
 		if cThis == BspUvEdgeParallel {
 			chain.Edges = nil
 			continue
@@ -586,6 +599,13 @@ func (s *SSurface) offChord(a, b geom.Point2d, p geom.Vector) bool {
 		t = max(0, min(1, uv.Minus(a).Dot(ab)/l))
 	}
 	return s.PointAtUv(a.Plus(ab.ScaledBy(t))).Minus(p).Magnitude() > geom.LengthEps
+}
+
+// hasSame tells whether el holds an edge of chain, run the same way.
+func (el *SEdgeList) hasSame(chain *SEdgeList) bool {
+	return slices.ContainsFunc(chain.Edges, func(c SEdge) bool {
+		return slices.ContainsFunc(el.Edges, func(e SEdge) bool { return e.A.Equals(c.A) && e.B.Equals(c.B) })
+	})
 }
 
 // hasReversed tells whether el holds every edge of chain, run the other

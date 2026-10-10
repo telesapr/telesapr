@@ -170,9 +170,29 @@ func TestHandleOnPotSweep(t *testing.T) {
 	}).Require(t)
 }
 
+// TestHandleOnPotSeam unites the pot with two rings of
+// TestHandleOnPotSweep whose patch corner lies on the pot's seam: in one
+// the ring's seam passes over the pot's within 4e-5 of where the curve
+// crosses both (fuseVertices), in the other the ring dips into the pot's
+// patch beside the seam by less than the chord tolerance (hasSame).
+func TestHandleOnPotSeam(t *testing.T) {
+	sweepChordTol(t)
+	for _, c := range []struct{ cx, big, r, z float64 }{{-35, 10, 2.5, 15}, {-31, 8, 2.5, 15}} {
+		pot := lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}})
+		var handle SShell
+		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 1}, 20*math.Pi/180)
+		handle.MakeFromTransformationOf(torusY(geom.Vector{}, c.big, c.r), geom.Vector{X: c.cx, Z: c.z}, q, 1)
+		var out SShell
+		out.MakeFromBoolean(pot, &handle, SurfaceUnion)
+		if out.BooleanFailed || !meshIsSound(&out) {
+			t.Errorf("%+v: %v", c, errUnsound(out.BooleanFailed))
+		}
+	}
+}
+
 // handleMaxFailRate is the fraction of TestHandleOnPotSweep's grid
 // allowed to fail.
-const handleMaxFailRate = 5.0 / 144
+const handleMaxFailRate = 3.0 / 144
 
 // TestTorusVolume checks the ring the handle sweep uses: closed, facing
 // out, of volume 2 pi^2 big r^2.
