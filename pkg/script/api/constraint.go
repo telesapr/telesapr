@@ -277,8 +277,7 @@ func hasVector(e *core.Entity) bool { return e.HasVector() }
 // measure the sketch, which tells its sign.
 func dimension(sk *sketch.Sketch, c *core.Constraint, v float64) {
 	switch c.Type {
-	case core.ConstraintPtPtDistance, core.ConstraintProjPtDistance,
-		core.ConstraintMinDistance, core.ConstraintMaxDistance:
+	case core.ConstraintPtPtDistance, core.ConstraintProjPtDistance:
 		// Where the interface puts the label.
 		c.Disp.Offset = sk.DistanceLabelOffset(sk.MustEntity(c.PtA).PointGetNum(sk),
 			sk.MustEntity(c.PtB).PointGetNum(sk))
@@ -324,36 +323,49 @@ func (d *Doc) Coincident(a, b Entity) Constraint {
 // other side of it.
 func (d *Doc) Distance(a, b Entity, v float64) Constraint {
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		ea, eb := a.get(sk), b.get(sk)
-		if !ea.IsPoint() {
-			a, b = b, a
-			ea, eb = eb, ea
-		}
-		if !ea.IsPoint() {
-			fail("a distance is from a point, and neither %s nor %s is one", a.describe(sk), b.describe(sk))
-		}
-		c.PtA = a.H
-		switch {
-		case eb.IsPoint():
-			c.Type = core.ConstraintPtPtDistance
-			c.PtB = b.H
-		case eb.Type == core.EntityLineSegment:
-			c.Type = core.ConstraintPtLineDistance
-			c.EntityA = b.H
-		case eb.IsWorkplane():
-			c.Type = core.ConstraintPtPlaneDistance
-			c.EntityA = b.H
-		case eb.IsFace():
-			c.Type = core.ConstraintPtFaceDistance
-			c.EntityA = b.H
-		default:
-			fail("no distance from a point to %s", b.describe(sk))
-		}
-		dimension(sk, c, math.Abs(v))
-		if v < 0 {
-			c.ValA = -c.ValA
-		}
+		distanceBetween(sk, c, a, b, v)
 	})
+}
+
+// distanceBetween makes c the distance between a and b, as Distance
+// does, or a's length when b is Entity{} and a is a line segment.
+func distanceBetween(sk *sketch.Sketch, c *core.Constraint, a, b Entity, v float64) {
+	if b.H.V == 0 {
+		l := sk.MustEntity(a.must(sk, "a line segment", isLine))
+		c.Type = core.ConstraintPtPtDistance
+		c.PtA, c.PtB = l.Point[0], l.Point[1]
+		dimension(sk, c, v)
+		return
+	}
+	ea, eb := a.get(sk), b.get(sk)
+	if !ea.IsPoint() {
+		a, b = b, a
+		ea, eb = eb, ea
+	}
+	if !ea.IsPoint() {
+		fail("a distance is from a point, and neither %s nor %s is one", a.describe(sk), b.describe(sk))
+	}
+	c.PtA = a.H
+	switch {
+	case eb.IsPoint():
+		c.Type = core.ConstraintPtPtDistance
+		c.PtB = b.H
+	case eb.Type == core.EntityLineSegment:
+		c.Type = core.ConstraintPtLineDistance
+		c.EntityA = b.H
+	case eb.IsWorkplane():
+		c.Type = core.ConstraintPtPlaneDistance
+		c.EntityA = b.H
+	case eb.IsFace():
+		c.Type = core.ConstraintPtFaceDistance
+		c.EntityA = b.H
+	default:
+		fail("no distance from a point to %s", b.describe(sk))
+	}
+	dimension(sk, c, math.Abs(v))
+	if v < 0 {
+		c.ValA = -c.ValA
+	}
 }
 
 // Length sets the length of a line segment.
@@ -366,35 +378,64 @@ func (d *Doc) Length(line Entity, v float64) Constraint {
 	})
 }
 
-// MinDistance keeps two points at least v apart, or a line segment at
-// least v long when b is Entity{}. Unlike Distance it leaves the
-// points free to move further apart: it holds only where the sketch
-// would come closer, and takes a degree of freedom only then.
+// MinDistance keeps a distance at least v: between two points, from a
+// point to a line segment, a workplane or a face, as Distance takes
+// them, or a line segment's length when b is Entity{}. Unlike
+// Distance it leaves the sketch free to go further: it holds only
+// where the sketch would come nearer, and takes a degree of freedom
+// only then. A distance from a line, a workplane or a face is signed,
+// as Distance's is: the point keeps to v's side, at least |v| away.
 func (d *Doc) MinDistance(a, b Entity, v float64) Constraint {
-	return d.distanceBound(core.ConstraintMinDistance, a, b, v)
+	return d.boundedDistance(core.LimitMin, a, b, v)
 }
 
-// MaxDistance keeps two points at most v apart, or a line segment at
-// most v long when b is Entity{}. It leaves the points free to come
-// closer, and takes a degree of freedom only where the sketch would
-// go further.
+// MaxDistance keeps a distance at most v, taking what MinDistance
+// takes. It leaves the sketch free to come nearer, and takes a degree
+// of freedom only where the sketch would go further.
 func (d *Doc) MaxDistance(a, b Entity, v float64) Constraint {
-	return d.distanceBound(core.ConstraintMaxDistance, a, b, v)
+	return d.boundedDistance(core.LimitMax, a, b, v)
 }
 
-// distanceBound makes a MinDistance or a MaxDistance.
-func (d *Doc) distanceBound(t core.ConstraintType, a, b Entity, v float64) Constraint {
+// boundedDistance makes a MinDistance or a MaxDistance.
+func (d *Doc) boundedDistance(limit core.Limit, a, b Entity, v float64) Constraint {
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		c.Type = t
-		if b.H.V == 0 {
-			l := sk.MustEntity(a.must(sk, "a line segment", isLine))
-			c.PtA, c.PtB = l.Point[0], l.Point[1]
-		} else {
-			c.PtA = a.must(sk, "a point", isPoint)
-			c.PtB = b.must(sk, "a point", isPoint)
-		}
-		dimension(sk, c, v)
+		distanceBetween(sk, c, a, b, v)
+		c.Limit = limit
 	})
+}
+
+// Limits a dimension can have (Constraint.SetLimit).
+const (
+	// NoLimit is a dimension that holds its value.
+	NoLimit = core.LimitNone
+	// Minimum is a dimension that may be its value or more.
+	Minimum = core.LimitMin
+	// Maximum is a dimension that may be its value or less.
+	Maximum = core.LimitMax
+)
+
+// SetLimit makes the dimension a bound: Minimum lets what it measures
+// be its value or more, Maximum its value or less, and NoLimit makes it
+// hold its value again. Any distance, a diameter or radius, and an
+// angle take a limit; for an angle, Minimum is the least angle.
+func (c Constraint) SetLimit(l core.Limit) {
+	c.d.change(func(sk *sketch.Sketch) {
+		constraint := c.get(sk)
+		if !constraint.CanLimit() {
+			fail("%s can't be a minimum or a maximum", constraint.DescriptionString())
+		}
+		if l != core.LimitNone && l != core.LimitMin && l != core.LimitMax {
+			fail("no limit %d", l)
+		}
+		constraint.Limit = l
+		sk.MarkGroupDirty(constraint.Group, false)
+	})
+}
+
+// Limit is the dimension's limit: NoLimit, Minimum or Maximum.
+func (c Constraint) Limit() (l core.Limit) {
+	c.d.read(func(sk *sketch.Sketch) { l = c.get(sk).Limit })
+	return l
 }
 
 // OnSegment puts a point on a line segment, between its ends: unlike

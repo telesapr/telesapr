@@ -1899,6 +1899,10 @@
 			"ConstraintBase": {
 				"kind": "struct",
 				"methods": {
+					"CanLimit": {
+						"decl": "func (c *ConstraintBase) CanLimit() bool",
+						"text": "CanLimit reports whether the constraint is a dimension that can be a bound: a distance of any kind, a diameter or radius, an angle."
+					},
 					"Clear": {
 						"decl": "func (c *ConstraintBase) Clear()"
 					},
@@ -1933,8 +1937,6 @@
 					"ConstraintPtLineDistance",
 					"ConstraintPtFaceDistance",
 					"ConstraintProjPtDistance",
-					"ConstraintMinDistance",
-					"ConstraintMaxDistance",
 					"ConstraintPtInPlane",
 					"ConstraintPtOnLine",
 					"ConstraintPtOnFace",
@@ -2619,6 +2621,21 @@
 					"NewIDList"
 				]
 			},
+			"Limit": {
+				"text": "Limit is which side of its value a bounded dimension keeps to.",
+				"kind": "int",
+				"methods": {
+					"String": {
+						"decl": "func (l Limit) String() string",
+						"text": "String names the limit as files and descriptions do."
+					}
+				},
+				"values": [
+					"LimitNone",
+					"LimitMin",
+					"LimitMax"
+				]
+			},
 			"NoSettings": {
 				"text": "NoSettings stores nothing and returns the defaults.",
 				"kind": "struct",
@@ -3077,12 +3094,6 @@
 			"ConstraintLengthRatio": {
 				"decl": "const ConstraintLengthRatio"
 			},
-			"ConstraintMaxDistance": {
-				"decl": "const ConstraintMaxDistance"
-			},
-			"ConstraintMinDistance": {
-				"decl": "const ConstraintMinDistance"
-			},
 			"ConstraintParallel": {
 				"decl": "const ConstraintParallel"
 			},
@@ -3250,6 +3261,18 @@
 			},
 			"LengthEps": {
 				"decl": "const LengthEps"
+			},
+			"LimitMax": {
+				"decl": "const LimitMax",
+				"text": "Limits a dimension can have."
+			},
+			"LimitMin": {
+				"decl": "const LimitMin",
+				"text": "Limits a dimension can have."
+			},
+			"LimitNone": {
+				"decl": "const LimitNone",
+				"text": "Limits a dimension can have."
 			},
 			"MaxBezierCpts": {
 				"decl": "const MaxBezierCpts"
@@ -4236,6 +4259,10 @@
 						"decl": "func (c Constraint) Group() (g Group)",
 						"text": "Group is the group the constraint is in."
 					},
+					"Limit": {
+						"decl": "func (c Constraint) Limit() (l core.Limit)",
+						"text": "Limit is the dimension's limit: NoLimit, Minimum or Maximum."
+					},
 					"Name": {
 						"decl": "func (c Constraint) Name() (name string)",
 						"text": "Name is what expressions read the constraint's value by, or \"\"."
@@ -4259,6 +4286,10 @@
 					"SetExpr": {
 						"decl": "func (c Constraint) SetExpr(expr string) (err error)",
 						"text": "SetExpr gives the constraint the value of text, as typing it in its\nlabel does: a length in the document's unit (Doc.Units), an angle in\ndegrees, a ratio. A plain number is stored as its value; any other\ntext, \"25.4/2\" or \"wall*4\" with a parameter (Doc.SetParameter), is\nkept and evaluated again at each regeneration."
+					},
+					"SetLimit": {
+						"decl": "func (c Constraint) SetLimit(l core.Limit)",
+						"text": "SetLimit makes the dimension a bound: Minimum lets what it measures\nbe its value or more, Maximum its value or less, and NoLimit makes it\nhold its value again. Any distance, a diameter or radius, and an\nangle take a limit; for an angle, Minimum is the least angle."
 					},
 					"SetName": {
 						"decl": "func (c Constraint) SetName(name string)",
@@ -4580,7 +4611,7 @@
 					},
 					"MaxDistance": {
 						"decl": "func (d *Doc) MaxDistance(a, b Entity, v float64) Constraint",
-						"text": "MaxDistance keeps two points at most v apart, or a line segment at\nmost v long when b is Entity{}. It leaves the points free to come\ncloser, and takes a degree of freedom only where the sketch would\ngo further."
+						"text": "MaxDistance keeps a distance at most v, taking what MinDistance\ntakes. It leaves the sketch free to come nearer, and takes a degree\nof freedom only where the sketch would go further."
 					},
 					"Measure": {
 						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
@@ -4592,7 +4623,7 @@
 					},
 					"MinDistance": {
 						"decl": "func (d *Doc) MinDistance(a, b Entity, v float64) Constraint",
-						"text": "MinDistance keeps two points at least v apart, or a line segment at\nleast v long when b is Entity{}. Unlike Distance it leaves the\npoints free to move further apart: it holds only where the sketch\nwould come closer, and takes a degree of freedom only then."
+						"text": "MinDistance keeps a distance at least v: between two points, from a\npoint to a line segment, a workplane or a face, as Distance takes\nthem, or a line segment's length when b is Entity{}. Unlike\nDistance it leaves the sketch free to go further: it holds only\nwhere the sketch would come nearer, and takes a degree of freedom\nonly then. A distance from a line, a workplane or a face is signed,\nas Distance's is: the point keeps to v's side, at least |v| away."
 					},
 					"Mirror": {
 						"decl": "func (d *Doc) Mirror(plane Entity, name string) Group",
@@ -5813,6 +5844,18 @@
 			"Intersection": {
 				"decl": "const Intersection",
 				"text": "How a group's solid combines with the solid so far."
+			},
+			"Maximum": {
+				"decl": "const Maximum",
+				"text": "Limits a dimension can have (Constraint.SetLimit)."
+			},
+			"Minimum": {
+				"decl": "const Minimum",
+				"text": "Limits a dimension can have (Constraint.SetLimit)."
+			},
+			"NoLimit": {
+				"decl": "const NoLimit",
+				"text": "Limits a dimension can have (Constraint.SetLimit)."
 			},
 			"SuppressSolid": {
 				"decl": "const SuppressSolid",

@@ -37,7 +37,6 @@ func (c *Constraint) HasLabel() bool {
 	case ConstraintPtLineDistance, ConstraintPtPlaneDistance,
 		ConstraintPtFaceDistance, ConstraintPtPtDistance,
 		ConstraintProjPtDistance, ConstraintDiameter,
-		ConstraintMinDistance, ConstraintMaxDistance,
 		ConstraintLengthRatio, ConstraintArcArcLenRatio,
 		ConstraintArcLineLenRatio, ConstraintLengthDifference,
 		ConstraintArcArcDifference, ConstraintArcLineDifference,
@@ -152,9 +151,6 @@ func (c *Constraint) ModifyToSatisfy(sk EntitySketch) {
 		cs := a.Dot(b) / (a.Magnitude() * b.Magnitude())
 		c.ValA = libm.Acos(cs) * 180 / math.Pi
 
-	case ConstraintMinDistance, ConstraintMaxDistance:
-		c.ValA = EvalExpr(sk, DistanceExpr(sk, c.Workplane, c.PtA, c.PtB))
-
 	case ConstraintPtOnSegment:
 		c.SeedParam(sk)
 
@@ -238,6 +234,11 @@ func arcLengthExprs(sk EntitySketch, arc *Entity) (r, theta *Expr) {
 // constraints generate none unless forReference is set.
 func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forReference bool) {
 	if c.Reference && !forReference {
+		return
+	}
+	// A bound writes its dimension's equation only while the solve
+	// holds it.
+	if c.Limit != LimitNone && c.Bound == BoundFree && !forReference {
 		return
 	}
 
@@ -326,10 +327,6 @@ func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forRefere
 
 	case ConstraintPtOnLine:
 		c.ptOnLineEquations(sk, l)
-		return
-
-	case ConstraintMinDistance, ConstraintMaxDistance:
-		c.distanceBoundEquations(sk, l)
 		return
 
 	case ConstraintPtOnSegment:

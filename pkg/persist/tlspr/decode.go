@@ -764,7 +764,18 @@ func (d *decoder) constraint(n *Node) (core.Constraint, bool) {
 	a := d.head(n, 2)
 	c := core.Constraint{
 		H: core.HConstraint{V: d.handle(a[0])}}
-	typ, ok := enumValue(d, constraintTypes, a[1])
+	var typ core.ConstraintType
+	ok := true
+	// A minimum or a maximum distance had a type of its own before
+	// any dimension could be bounded (2026-10-10, within version 2).
+	switch d.word(a[1]) {
+	case "min-distance":
+		typ, c.Limit = core.ConstraintPtPtDistance, core.LimitMin
+	case "max-distance":
+		typ, c.Limit = core.ConstraintPtPtDistance, core.LimitMax
+	default:
+		typ, ok = enumValue(d, constraintTypes, a[1])
+	}
 	c.Type = typ
 	for _, f := range n.Children {
 		switch f.Name {
@@ -794,6 +805,8 @@ func (d *decoder) constraint(n *Node) (core.Constraint, bool) {
 			c.Other2 = d.flag(f)
 		case "reference":
 			c.Reference = d.flag(f)
+		case "limit":
+			enumField(d, limits, f, &c.Limit)
 		case "comment":
 			c.Comment = d.strField(f)
 		case "name":

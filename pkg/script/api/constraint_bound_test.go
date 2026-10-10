@@ -120,7 +120,7 @@ func TestDistanceBoundConflicts(t *testing.T) {
 	}
 	named := false
 	for _, c := range g.Conflicts() {
-		named = named || c.H == hi.H || strings.Contains(c.String(), "min-distance")
+		named = named || c.H == hi.H || strings.Contains(c.String(), "min-pt-pt-distance")
 	}
 	if !named {
 		t.Errorf("the conflicts %v don't name a bound", g.Conflicts())
@@ -158,7 +158,7 @@ func TestDistanceBoundsSavedAndUndone(t *testing.T) {
 	p := d.Point(V(50, 5, 0))
 	d.OnSegment(p, l)
 	d.Regen()
-	if got := lo.String(); got != "c002-min-distance = 36" {
+	if got := lo.String(); got != "c002-min-pt-pt-distance = 36" {
 		t.Errorf("described as %q", got)
 	}
 	// The point, past the end, draws the line out to it: a minimum
@@ -180,7 +180,7 @@ func TestDistanceBoundsSavedAndUndone(t *testing.T) {
 	for _, c := range e.Groups()[len(e.Groups())-1].Constraints() {
 		kinds = append(kinds, c.String())
 	}
-	if got := strings.Join(kinds, ", "); !strings.Contains(got, "min-distance = 36") || !strings.Contains(got, "pt-on-segment") {
+	if got := strings.Join(kinds, ", "); !strings.Contains(got, "min-pt-pt-distance = 36") || !strings.Contains(got, "pt-on-segment") {
 		t.Errorf("loaded %s", got)
 	}
 	if eg := e.Groups()[len(e.Groups())-1]; !eg.Solved() || eg.Dof() != dof {
@@ -214,7 +214,7 @@ func TestDistanceBoundsBadInput(t *testing.T) {
 	d, _, l := boundLine(t, 30)
 	c := d.Circle(V(50, 0, 0), 5)
 	failsWith(t, "isn't a line segment", func() { d.MinDistance(c, Entity{}, 3) })
-	failsWith(t, "isn't a point", func() { d.MaxDistance(l, l.Start(), 3) })
+	failsWith(t, "a distance is from a point", func() { d.MaxDistance(c, c, 3) })
 	failsWith(t, "isn't a line segment", func() { d.OnSegment(l.Start(), c) })
 	failsWith(t, "isn't a point", func() { d.OnSegment(l, l) })
 }
@@ -333,5 +333,85 @@ func BenchmarkDistanceBounds(b *testing.B) {
 			e.MoveTo(V(x, float64(i)*20, 0))
 		}
 		d.Regen()
+	}
+}
+
+// A point's distance from a line, a circle's radius and the angle
+// between two lines bound as a length does: the point kept at least
+// 5 above the line, the radius at most 4, the angle at least 30
+// degrees, each holding only where the sketch would cross it. A
+// dimension made a bound by SetLimit, and back.
+func TestOtherDimensionBounds(t *testing.T) {
+	t.Parallel()
+	d := New()
+	g := d.SketchIn(d.Workplane("XY"), "")
+	base := d.Line(V(0, 0, 0), V(20, 0, 0))
+	d.Lock(base.Start())
+	d.Lock(base.End())
+	p := d.Point(V(10, 2, 0))
+	above := d.MinDistance(p, base, 5)
+	d.Regen()
+	if !g.Solved() || math.Abs(p.Pos().Y-5) > 1e-9 || above.Limit() != Minimum {
+		t.Errorf("a point 2 above, at least 5: at %v, %v", p.Pos(), above)
+	}
+	p.MoveTo(V(10, 9, 0))
+	d.Regen()
+	if math.Abs(p.Pos().Y-9) > 1e-9 {
+		t.Errorf("moved to 9 above: at %v", p.Pos())
+	}
+
+	c := d.Circle(V(40, 0, 0), 6)
+	r := d.Radius(c, 6)
+	r.SetLimit(Maximum)
+	r.Set(4)
+	d.Regen()
+	if math.Abs(c.Radius()-4) > 1e-9 {
+		t.Errorf("a radius of 6, at most 4: %g", c.Radius())
+	}
+	r.Set(10)
+	d.Regen()
+	if math.Abs(c.Radius()-4) > 1e-9 {
+		t.Errorf("at most 10, it stays: %g", c.Radius())
+	}
+
+	arm := d.Line(V(0, 0, 0), V(10, 2, 0))
+	d.Coincident(arm.Start(), base.Start())
+	d.Length(arm, 10)
+	angle := d.Angle(base, arm, 11.31)
+	angle.SetLimit(Minimum)
+	angle.Set(30)
+	d.Regen()
+	dir := arm.End().Pos().Minus(arm.Start().Pos())
+	if got := math.Atan2(dir.Y, dir.X) * 180 / math.Pi; !g.Solved() || math.Abs(got-30) > 1e-6 {
+		t.Errorf("an angle of 11.3, at least 30: %g", got)
+	}
+	if !strings.Contains(angle.String(), "min-angle") {
+		t.Errorf("described as %q", angle.String())
+	}
+	angle.SetLimit(NoLimit)
+	angle.Set(45)
+	d.Regen()
+	dir = arm.End().Pos().Minus(arm.Start().Pos())
+	if got := math.Atan2(dir.Y, dir.X) * 180 / math.Pi; math.Abs(got-45) > 1e-6 || angle.Limit() != NoLimit {
+		t.Errorf("a dimension again, of 45: %g", got)
+	}
+	failsWith(t, "can't be a minimum", func() { d.Horizontal(arm).SetLimit(Minimum) })
+	failsWith(t, "no limit", func() { angle.SetLimit(7) })
+}
+
+// A file from before any dimension could be bounded, with its own
+// minimum and maximum distance types, reads as bounded distances.
+func TestDistanceBoundsOldFile(t *testing.T) {
+	t.Parallel()
+	d := New()
+	if err := d.Load(filepath.Join("..", "..", "..", "testdata", "tlspr", "v2", "limits.tlspr")); err != nil {
+		t.Fatal(err)
+	}
+	var kinds []string
+	for _, c := range d.Groups()[len(d.Groups())-1].Constraints() {
+		kinds = append(kinds, c.String())
+	}
+	if got := strings.Join(kinds, ", "); !strings.Contains(got, "min-pt-pt-distance = 20") || !strings.Contains(got, "max-pt-pt-distance = 40") {
+		t.Errorf("read %s", got)
 	}
 }
