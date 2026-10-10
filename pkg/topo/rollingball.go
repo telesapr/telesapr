@@ -1309,32 +1309,8 @@ func splitNearest(sh *srf.SShell, p, v geom.Vector) error {
 }
 
 // nearestOnWithin is the point of patch s nearest x, within the patch
-// carried on by ext past each of its sides in (u, v): from the kernel's
-// guess, by Gauss-Newton steps, which the kernel's own first-order
-// steps leave short of for a point off the surface.
+// carried on by ext past each of its sides in (u, v) (srf.SSurface.Project).
 func nearestOnWithin(s *srf.SSurface, x geom.Vector, ext float64) (float64, float64, geom.Vector) {
-	var u, v float64
-	s.ClosestPointToUV(x, &u, &v, false)
-	clamp := func(a float64) float64 { return math.Max(-ext, math.Min(1+ext, a)) }
-	u, v = clamp(u), clamp(v)
-	for range 80 {
-		p := s.PointAt(u, v)
-		var tu, tv geom.Vector
-		s.TangentsAt(u, v, &tu, &tv, true)
-		d := x.Minus(p)
-		a11, a12, a22 := tu.Dot(tu), tu.Dot(tv), tv.Dot(tv)
-		b1, b2 := tu.Dot(d), tv.Dot(d)
-		det := a11*a22 - a12*a12
-		if !(math.Abs(det) > 1e-300) {
-			break
-		}
-		du, dv := (a22*b1-a12*b2)/det, (a11*b2-a12*b1)/det
-		nu, nv := clamp(u+du), clamp(v+dv)
-		moved := math.Abs(nu-u) + math.Abs(nv-v)
-		u, v = nu, nv
-		if moved < 1e-15 {
-			break
-		}
-	}
-	return u, v, s.PointAt(u, v)
+	r := s.Project(x, ext)
+	return r.U, r.V, r.P
 }

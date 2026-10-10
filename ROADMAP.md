@@ -15,18 +15,17 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K1 Robust point projection](#k1-robust-point-projection) | kernel foundation | S–M | Smallest kernel item with the widest effect (fillets, pullback, picking, STEP) |
-| 2 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
-| 3 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
-| 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
-| 5 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
-| 6 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 7 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 8 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 9 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
-| 10 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 1 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
+| 2 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
+| 3 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
+| 4 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
+| 5 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 6 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
+| 7 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 8 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 9 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-Items 3 and 4 open most of the rest: the dependency column in each table below names which.
+Items 2 and 3 open most of the rest: the dependency column in each table below names which.
 
 ## Features
 
@@ -61,20 +60,6 @@ Neosolve reads and writes IGES. Low priority: STEP covers the exchange; take it 
 These come before the open defects they unblock. Recommended by the BRL-CAD survey of
 2026-10-07 (BRL-CAD checkout surveyed read-only; the libraries are LGPL 2.1, so ideas are
 re-implemented in Go, no cgo). Each starts as a two-day spike with a fixed budget.
-
-### K1 Robust point projection
-
-`SSurface.ClosestPointTo` / `ClosestPointToUV` (`pkg/srf/surface.go`) can stop short: a point
-2 mm off a cylinder came back 6 µm short, which is why `nearestOn` in `pkg/topo/rollingball.go`
-polishes by Gauss-Newton after it. Port the design of BRL-CAD's
-`surface_closest_point_seeded` (`PullbackCurve.cpp` ~1091-1240): damped Gauss-Newton with an
-explicit 2×2 solve; a per-direction step cap and up to 12 halvings, a step taken only when the 3D
-distance drops; periodic directions evaluated wrapped, open ones clamped; best point kept;
-success judged by the 3D distance against the caller's tolerance, never by step size; fallbacks
-of three seeds per knot span and a branch-and-bound over Bézier span boxes.
-
-Keep the old path behind `mustConverge` until the fillet and STEP suites pass, then drop
-`nearestOn`'s polish. About 500 lines.
 
 ### K2 Ray-cast CSG oracle
 
@@ -163,7 +148,7 @@ exactly one accounted result per entity, so the report says what was repaired or
 
 | Open item | State today |
 |---|---|
-| NIST_MBE_PMI_6 | the pole topology problem under K4 |
+| NIST_MBE_PMI_6 | the pole topology problem under K4. STEP's `newtonOnSurface` keeps its own steps: with the kernel's projection (`srf.ProjectFrom`, K1) the trims moved and the pole slivers grew, the mesh's Euler number off by 10, not 6; switch it after K4 |
 | Schenkel | mesh closed and not self-crossing (`TestSolidSchenkelClosed`), no naked edges since `ed03d3b`, but the shell's Euler number is -34 against the mesh's -6; cause not found, so not counted sound |
 
 ## Open defects
