@@ -1,6 +1,6 @@
 # Roadmap
 
-What is left to build, as of 2026-10-10. Only open work is listed; what is built is described in
+What is left to build, as of 2026-10-11. Only open work is listed; what is built is described in
 `docs/guide`, `docs/ai.md` and `docs/done-audit.md`, and `docs/done-audit.md` holds the definition
 of done every feature meets. The plan of steps 1 to 29 and the kernel's working notes were
 `ROADMAP-JUMP.md` and `docs/notes/` up to commit `e0004fc` (`git show e0004fc:ROADMAP-JUMP.md`);
@@ -15,16 +15,17 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Six cases done 2026-10-10 and 11; the ring on the pot fails only where K4 is needed; the sweep corners are a sweep problem |
-| 2 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 3 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher |
-| 4 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 5 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint is not a contact case after all |
+| 1 | [The helix off the true helix](#solid-feature-leftovers) | kernel defect | S-M | The one open item that makes wrong geometry instead of refusing; the oracle measures it |
+| 2 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher; the mender does not reach them |
+| 3 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry; the dome's end sections first, being measured |
+| 4 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
+| 5 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 6 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 7 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-K3 opens what touches. K4, postponed, would open most of the mesher's open items; the dependency
-column in each table below names which.
+K3 (contact) is closed: every case it measured is sound, the last ones with K4's mender. Its notes
+stay below for the next contact case. K4, postponed as the default, would open the mesher's open
+items that are not crossings; the dependency column in each table below names which.
 
 ## Features
 
@@ -48,6 +49,9 @@ These come before the open defects they unblock. Recommended by the BRL-CAD surv
 re-implemented in Go, no cgo). Each starts as a two-day spike with a fixed budget.
 
 ### K3 Coincident and tangent contact (F5)
+
+Closed 2026-10-11: the bore sweep, the handle on the pot and the leaning wedge fail in none of
+their cases, the last of them mended by K4's mesher. What follows is kept for the next case.
 
 F5 in general never finishes, so it is taken case by case, each as a fixture with a sweep
 (`pkg/srf/contact_test.go`, `latheseam_test.go`). Done 2026-10-10 (`a5bf482`): a sheared flat
@@ -90,10 +94,8 @@ multi-patch overlaps (libbrep): the overlap's boundary lies on isocurves at the 
 intersect those with the other surface and chain them into loops. Point-in-solid by several rays
 with explicit valid / grazing / coincident / failed results instead of a vote.
 
-| Open item | State today |
-|---|---|
-| A ring on a pot, tilted, a patch's corner on the pot's seam | none of K3's left; 3 of 144 fail (`TestHandleOnPotSweep`), all K4's, trims meshed crossing themselves |
-| Sweep corners beside an arc (see [Solid feature leftovers](#solid-feature-leftovers)) | needs the joint inside `MakeFromSweepOf`, not a Boolean of cut runs |
+The sweep corners beside an arc, once listed here, are no contact case: they need the joint inside
+`MakeFromSweepOf`, not a Boolean of cut runs (see [Solid feature leftovers](#solid-feature-leftovers)).
 
 A last resort, not recommended: BRL-CAD's mesh Boolean with deterministic perturbation of
 touching operands. It conflicts with "never silently wrong geometry" and could only be an
@@ -180,7 +182,7 @@ solids) at 44 of 59 sound.
 | Ends on a dome that one degree-5 curve can't follow | 8 of 40 refused at r 1.5 to 2.5 (`TestFilletEndsOnCurvedFaceSweep`) | The dome's height round the corner is no quintic within tolerance (degree 5 misses by 3e-4, 6 by 2e-5); the end section should be several Béziers |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | One box_hole.step edge | the ball skips a face cut from a shared patch between two scan samples (faces 7, 9, 8 round the hole) | |
-| Teapot handle (tilted, touching), slot chamfer at 3, run-off chamfer crossings | see K3 and K4 | |
+| Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
 
 Done 2026-10-11: the run-off sweep's 2 refused fillets of 3 (`TestRunOffFittedCuts`): along a
 curved edge the swept surface is no tube and the end sections' conics strayed from it by 1.6 times
