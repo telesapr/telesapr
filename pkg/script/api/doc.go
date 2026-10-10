@@ -350,14 +350,8 @@ func handleOf(desc string, letter byte) (uint32, bool) {
 func (d *Doc) Group(name string) (g Group) {
 	d.read(func(sk *sketch.Sketch) {
 		g.d = d
-		for i := range sk.Groups {
-			if sk.Groups[i].Name == name {
-				g.H = sk.Groups[i].H
-				return
-			}
-		}
-		if v, ok := handleOf(name, 'g'); ok && sk.Group(core.HGroup{V: v}) != nil {
-			g.H = core.HGroup{V: v}
+		if found := sk.GroupNamed(name); found != nil {
+			g.H = found.H
 		}
 	})
 	return g

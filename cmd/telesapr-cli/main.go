@@ -47,27 +47,33 @@ Common options:
         For non-export commands, the unit is %, and the default is 1.0 %.
     -b, --bg-color <on|off>
         Whether to export the background colour in vector formats. Defaults to off.
+    -g, --group <group>
+        For thumbnail and the export commands but export-drawing: the model
+        as it is up to and with <group>, as the window shows it with that
+        group active, instead of up to the group active when it was saved.
+        <group> is the group's name, or its description as the property
+        browser shows it ("g004-extrude", or just "g004").
 
 Commands:
     version
         Prints the current TeleSAPR version.
     thumbnail --output <pattern> --size <size> --view <direction>
-              [--chord-tol <tolerance>]
+              [--chord-tol <tolerance>] [--group <group>]
         Outputs a rendered view of the sketch, like the TeleSAPR GUI would.
         <size> is <width>x<height>, in pixels. The output is drawn in
         software, and may look slightly different from the GUI.
     export-view --output <pattern> --view <direction> [--chord-tol <tolerance>]
-                [--bg-color <on|off>]
+                [--bg-color <on|off>] [--group <group>]
         Exports a view of the sketch, in a 2d vector format.
     export-drawing --output <pattern> [--chord-tol <tolerance>]
         Exports the sketch's drawing (File > Drawing Sheet), or the default
         one, an A3 sheet of the standard views fitted, in a 2d vector format.
-    export-wireframe --output <pattern> [--chord-tol <tolerance>]
+    export-wireframe --output <pattern> [--chord-tol <tolerance>] [--group <group>]
         Exports a wireframe of the sketch, in a 3d vector format.
-    export-mesh --output <pattern> [--chord-tol <tolerance>]
+    export-mesh --output <pattern> [--chord-tol <tolerance>] [--group <group>]
         Exports a triangle mesh of solids in the sketch, with exact surfaces
         being triangulated first.
-    export-surfaces --output <pattern>
+    export-surfaces --output <pattern> [--group <group>]
         Exports exact surfaces of solids in the sketch, if any.
     regenerate [--chord-tol <tolerance>]
         Reloads all imported files, regenerates the sketch, and saves it.
@@ -126,6 +132,7 @@ type options struct {
 	bgColor       bool
 	width, height uint
 	overwrite     bool
+	group         string
 }
 
 // parse reads args[2:] with the options the command accepts, which are
@@ -170,6 +177,10 @@ func (o *options) parse(args []string, accepted []string, stderr io.Writer) bool
 			case "off":
 				o.bgColor, ok = false, true
 			}
+		case hasValue && takes("--group", "-g", arg):
+			n++
+			o.group = args[n]
+			ok = true
 		case arg == "--overwrite" && takes("--overwrite", "", "--overwrite"):
 			o.overwrite, ok = true, true
 		case hasValue && takes("--size", "", arg):
@@ -275,14 +286,14 @@ func needSize(o *options, stderr io.Writer) bool {
 // fileCommands are the commands that work on model files, by name.
 var fileCommands = map[string]fileCommand{
 	"thumbnail": {
-		accepted: []string{"--output", "--view", "--chord-tol", "--size"},
+		accepted: []string{"--output", "--view", "--chord-tol", "--size", "--group"},
 		check:    needSize,
 		run: func(s *session, o *options, output string) error {
 			return s.ss.WriteThumbnail(output, o.width, o.height, o.projRight, o.projUp)
 		},
 	},
 	"export-view": {
-		accepted:    []string{"--output", "--view", "--chord-tol", "--bg-color"},
+		accepted:    []string{"--output", "--view", "--chord-tol", "--bg-color", "--group"},
 		solidsLater: true,
 		check:       needView,
 		run: func(s *session, o *options, output string) error {
@@ -293,7 +304,7 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"export-wireframe": {
-		accepted:    []string{"--output", "--chord-tol"},
+		accepted:    []string{"--output", "--chord-tol", "--group"},
 		solidsLater: true,
 		run: func(s *session, o *options, output string) error {
 			s.ss.ExportChordTol = o.chordTol
@@ -312,7 +323,7 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"export-mesh": {
-		accepted:    []string{"--output", "--chord-tol"},
+		accepted:    []string{"--output", "--chord-tol", "--group"},
 		solidsLater: true,
 		run: func(s *session, o *options, output string) error {
 			s.ss.ExportChordTol = o.chordTol
@@ -320,7 +331,7 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"export-surfaces": {
-		accepted: []string{"--output"},
+		accepted: []string{"--output", "--group"},
 		run: func(s *session, _ *options, output string) error {
 			return s.ss.ExportSurfacesTo(output)
 		},
@@ -414,6 +425,16 @@ func runCommand(args []string, stderr io.Writer, rep *runReport) bool {
 		s.ss.SK.DeferShells = c.solidsLater
 		s.ss.AfterNewFile()
 		s.ss.SK.DeferShells = false
+		if o.group != "" {
+			g := s.ss.SK.GroupNamed(o.group)
+			if g == nil {
+				fmt.Fprintf(stderr, "Cannot find group '%s' in '%s'.\n", o.group, input)
+				return false
+			}
+			// The model up to and with it, as the window shows it with
+			// the group active.
+			s.ss.SK.Active = g.H
+		}
 		f.regenerated()
 		if err := c.run(s, o, absOutput); err != nil {
 			fmt.Fprintf(stderr, "Cannot write '%s': %v\n", output, err)

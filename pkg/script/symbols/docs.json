@@ -6811,6 +6811,10 @@
 						"decl": "func (sk *Sketch) GroupName(h core.HGroup) string",
 						"text": "anyGroupName names group h, which may have been deleted since the last regeneration."
 					},
+					"GroupNamed": {
+						"decl": "func (sk *Sketch) GroupNamed(name string) *Group",
+						"text": "GroupNamed is the group with a name, or with a description as the property browser shows it: \"g003-extrude\", or just \"g003\"; nil when there is none."
+					},
 					"GroupsInOrder": {
 						"decl": "func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool",
 						"text": "groupsInOrder reports whether before comes before after."

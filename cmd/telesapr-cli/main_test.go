@@ -276,3 +276,35 @@ func TestConvert(t *testing.T) {
 		t.Errorf("unwritable output: ok=%v: %s", ok, msg)
 	}
 }
+
+// TestExportGroup exports a model up to one of its groups: the first
+// extrusion of fillet-tee alone, smaller than the whole, by its handle
+// or its description; a group that isn't there fails, and a command
+// that draws the whole sheet doesn't take the option.
+func TestExportGroup(t *testing.T) {
+	t.Parallel()
+	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")
+	dir := t.TempDir()
+	size := func(args ...string) int64 {
+		t.Helper()
+		out := filepath.Join(dir, "out.stl")
+		if ok, msg := runTool(t, append([]string{"export-mesh", "-o", out}, append(args, in)...)...); !ok {
+			t.Fatalf("%v: %s", args, msg)
+		}
+		fi, err := os.Stat(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return fi.Size()
+	}
+	whole, first := size(), size("--group", "g004")
+	if first >= whole || size("-g", "g004-extrude") != first {
+		t.Errorf("up to g004: %d bytes, the whole %d", first, whole)
+	}
+	if ok, msg := runTool(t, "export-mesh", "-g", "g099", "-o", filepath.Join(dir, "x.stl"), in); ok || !strings.Contains(msg, "Cannot find group 'g099'") {
+		t.Errorf("a missing group: %v, %s", ok, msg)
+	}
+	if ok, msg := runTool(t, "export-drawing", "-g", "g004", "-o", filepath.Join(dir, "x.pdf"), in); ok || !strings.Contains(msg, "Unrecognized option") {
+		t.Errorf("export-drawing --group: %v, %s", ok, msg)
+	}
+}
