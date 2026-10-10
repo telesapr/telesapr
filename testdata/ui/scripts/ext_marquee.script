@@ -1,0 +1,34 @@
+# A marquee dragged from left to right selects only what lies wholly
+# inside it; the same rectangle dragged from right to left selects what
+# it crosses as well (F5). Of a short line inside it and a long one
+# running out of it, the first selects the short one and its ends, the
+# second the long one and its end inside too.
+key s
+move 220 220
+down L 220 220
+up L 220 220
+move 280 220
+down L 280 220
+up L 280 220
+key esc
+key s
+move 220 300
+down L 220 300
+up L 220 300
+move 450 300
+down L 450 300
+up L 450 300
+key esc
+move 200 200
+down L 200 200
+move 250 250 L
+move 320 330 L
+up L 320 330
+dump
+key esc
+move 320 330
+down L 320 330
+move 250 250 L
+move 200 200 L
+up L 200 200
+dump

@@ -205,13 +205,23 @@ func (gw *graphicsWindow) MakeSelected(stog *Selection) {
 	gw.selection = append(gw.selection, *stog)
 }
 
-// SelectByMarquee selects what lies within the marquee.
+// marqueeWindow reports whether the marquee being dragged selects only
+// what lies wholly inside it, dragged from left to right; dragged from
+// right to left it selects whatever it crosses.
+func (gw *graphicsWindow) marqueeWindow() bool {
+	return gw.orig.mouse.U >= gw.ProjectPoint(gw.orig.marqueePoint).U
+}
+
+// SelectByMarquee selects what lies within the marquee: dragged from
+// left to right, what lies wholly inside it; from right to left,
+// whatever it crosses.
 func (gw *graphicsWindow) SelectByMarquee() {
 	sk := gw.sk()
 	marqueePoint := gw.ProjectPoint(gw.orig.marqueePoint)
 	marqueeBBox := core.NewBBox(
 		geom.Vector{X: marqueePoint.U, Y: marqueePoint.V, Z: core.VeryNegative},
 		geom.Vector{X: gw.orig.mouse.U, Y: gw.orig.mouse.V, Z: core.VeryPositive})
+	window := gw.marqueeWindow()
 
 	for i := range sk.Entities {
 		e := &sk.Entities[i]
@@ -225,6 +235,13 @@ func (gw *graphicsWindow) SelectByMarquee() {
 			continue
 		}
 		entityBBox, hasBBox := gw.getOrGenerateScreenBBox(e)
+		if window {
+			if hasBBox && marqueeBBox.Contains(geom.Point2d{U: entityBBox.MinP.X, V: entityBBox.MinP.Y}, 0) &&
+				marqueeBBox.Contains(geom.Point2d{U: entityBBox.MaxP.X, V: entityBBox.MaxP.Y}, 0) {
+				gw.MakeSelectedEntity(e.H)
+			}
+			continue
+		}
 		if hasBBox && entityBBox.Overlaps(marqueeBBox) {
 			if e.Type == core.EntityLineSegment {
 				p0 := gw.ProjectPoint3(e.EndpointStart(sk))
@@ -854,15 +871,20 @@ func (gw *graphicsWindow) Paint() {
 	uiCanvas := &render.UICanvas{Canvas: canvas}
 
 	// If a marquee selection is in progress, then draw the selection
-	// rectangle, as an outline and a transparent fill.
+	// rectangle, as an outline and a transparent fill: in the hovered
+	// colour for one that selects what lies wholly inside it, in the
+	// selected colour for one that selects what it crosses.
 	if gw.pending.operation == pendingDraggingMarquee {
 		begin := gw.ProjectPoint(gw.orig.marqueePoint)
+		color := ss.styleColor(hstyle(core.StyleHovered))
+		if !gw.marqueeWindow() {
+			color = ss.styleColor(hstyle(core.StyleSelected))
+		}
 		uiCanvas.DrawRect(int(gw.orig.mouse.U)+int(camera.Width)/2,
 			int(begin.U)+int(camera.Width)/2,
 			int(gw.orig.mouse.V)+int(camera.Height)/2,
 			int(begin.V)+int(camera.Height)/2,
-			ss.styleColor(hstyle(core.StyleHovered)).WithAlpha(25),
-			ss.styleColor(hstyle(core.StyleHovered)), 0)
+			color.WithAlpha(25), color, 0)
 	}
 
 	// If we've had a screenshot requested, take it now, before the UI is
