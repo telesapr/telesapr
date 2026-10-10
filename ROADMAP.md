@@ -15,7 +15,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry; the dome's end sections first, being measured |
+| 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
@@ -180,10 +180,15 @@ solids) at 44 of 59 sound.
 | Radii 5-6:1 side by side at a setback corner | 4 of 36 refused as folding (`TestFilletSetbackExtremeSweep`) | More patches, or a smaller setback for the small fillets. Tried and given up: one fitted patch over the hole (0.1 rad off at degree 9), a fan of quads, a star for even counts, stronger pulls, larger setbacks, net second differences as fairness |
 | Chamfers at setback corners; convex meeting concave at one vertex beyond what the stages round | refused | No setback for chamfers yet |
 | Chamfers of edges between flat faces that end on a curved face | refused | Routed like the fillets, they left 134 naked edges and edges run the same way; not traced |
-| Ends on a dome that one degree-5 curve can't follow | 8 of 40 refused at r 1.5 to 2.5 (`TestFilletEndsOnCurvedFaceSweep`) | The dome's height round the corner is no quintic within tolerance (degree 5 misses by 3e-4, 6 by 2e-5); the end section should be several Béziers |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | One box_hole.step edge | the ball skips a face cut from a shared patch between two scan samples (faces 7, 9, 8 round the hole) | |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-11: fillets ending on a dome round a corner too wide for one quintic (8 of 40 refused,
+`TestFilletEndsOnCurvedFaceSweep`, now none): when the end section can't be fitted, the blend is
+made again with every section split at its middle into two quintic spans (`rollingBall.splitEnds`),
+two rows of patches along the edge, within 0.17% of OpenCASCADE at radius 2.5. A run-off at the
+other end of such a fillet is refused.
 
 Done 2026-10-11: the run-off sweep's 2 refused fillets of 3 (`TestRunOffFittedCuts`): along a
 curved edge the swept surface is no tube and the end sections' conics strayed from it by 1.6 times
