@@ -80,6 +80,12 @@ func gaussNewton(f Derivs, dom ProjectDomain, p geom.Vector, u, v float64) Proje
 	q, su, sv := f(u, v)
 	d2 := p.Minus(q).MagSquared()
 	stationary := false
+	// Gauss-Newton first: near the surface it converges fast, and costs
+	// a tenth of a Newton step's second derivatives. Once a step gains
+	// less than a factor of four, as far off a tight curve, Newton's
+	// steps take over.
+	slow := false
+	lastStep := 0.0
 	for range projectMaxSteps {
 		r := p.Minus(q)
 		a, b, c := su.Dot(su), su.Dot(sv), sv.Dot(sv)
@@ -97,18 +103,23 @@ func gaussNewton(f Derivs, dom ProjectDomain, p geom.Vector, u, v float64) Proje
 			// No tangents: nowhere to step.
 			break
 		}
-		if rm == 0 || math.Abs(ru) <= 1e-12*rm*math.Sqrt(a) && math.Abs(rv) <= 1e-12*rm*math.Sqrt(c) {
+		if rm == 0 || math.Abs(ru) <= 1e-15*rm*math.Sqrt(a) && math.Abs(rv) <= 1e-15*rm*math.Sqrt(c) {
 			stationary = true
 			break
 		}
 		var du, dv float64
 		det := a*c - b*b
 		// Gauss-Newton gains about the distance over the radius of
-		// curvature a step, slow far off a tight curve: where the full
-		// Hessian, with the second derivatives the offset weighs, is
-		// positive definite, its Newton step is taken instead. The
-		// second derivatives are differences of the tangents.
-		ha, hb, hc, newton := hessian(f, dom, u, v, r, a, b, c)
+		// curvature a step, slow far off a tight curve: there, where
+		// the full Hessian, with the second derivatives the offset
+		// weighs, is positive definite, its Newton step is taken
+		// instead. The second derivatives are differences of the
+		// tangents.
+		var ha, hb, hc float64
+		newton := false
+		if slow {
+			ha, hb, hc, newton = hessian(f, dom, u, v, r, a, b, c)
+		}
 		switch {
 		case newton:
 			du = (hc*ru - hb*rv) / (ha*hc - hb*hb)
@@ -157,6 +168,15 @@ func gaussNewton(f Derivs, dom ProjectDomain, p geom.Vector, u, v float64) Proje
 			break
 		}
 		moved := math.Abs(nu-u) <= 1e-15*(1+math.Abs(u)) && math.Abs(nv-v) <= 1e-15*(1+math.Abs(v))
+		// The distance's excess over its least falls by the step's gain;
+		// d2 alone can't show that far off, so the step's length does:
+		// a step not a quarter of the last is converging fast.
+		if !newton {
+			if step := math.Hypot(nu-u, nv-v); lastStep > 0 && step > 0.25*lastStep {
+				slow = true
+			}
+			lastStep = math.Hypot(nu-u, nv-v)
+		}
 		u, v, q, su, sv, d2 = nu, nv, nq, nsu, nsv, nd2
 		if moved {
 			stationary = true
@@ -215,14 +235,19 @@ func (s *SSurface) derivs(u, v float64) (p, su, sv geom.Vector) {
 // Project is the point of the patch nearest p, within its (u, v)
 // square carried on by ext past each side. It starts from the kernel's
 // own guess (ClosestPointToUV), whose first-order steps stop short of
-// a point off the surface (2 mm off a cylinder, 6 µm short), and
-// steps on from there (ProjectFrom). Where those steps find no
-// stationary point, it tries three seeds a direction, then searches the
-// patch by halves (projectBranchAndBound).
+// a point off the surface (2 mm off a cylinder, 6 µm short), and goes
+// on by plain Gauss-Newton steps until they stop moving (polish), fast
+// where they converge, to the last bit. Where they end somewhere not
+// stationary, the damped steps take over (ProjectFrom), then three
+// seeds a direction, then a search of the patch by halves
+// (projectBranchAndBound).
 func (s *SSurface) Project(p geom.Vector, ext float64) Projection {
 	dom := ProjectDomain{U0: -ext, U1: 1 + ext, V0: -ext, V1: 1 + ext}
 	var u, v float64
 	s.ClosestPointToUV(p, &u, &v, false)
+	if r, ok := s.polish(p, u, v, dom); ok {
+		return r
+	}
 	r := ProjectFrom(s.derivs, dom, p, 0, geom.Point2d{U: u, V: v})
 	if r.Stationary {
 		return r
@@ -269,7 +294,8 @@ func (q *bbQueue) Pop() any {
 // rational patch with positive weights lies in its control points'
 // box, so a piece whose box is further than the nearest point found
 // so far is dropped, and the rest are halved, nearest first, until
-// pieces are small; the nearest piece's middle seeds the last steps.
+// pieces are a sixty-fourth of the patch, or 256 have been looked at;
+// the nearest piece's middle seeds the last steps.
 func (s *SSurface) projectBranchAndBound(p geom.Vector, dom ProjectDomain) Projection {
 	lower := func(u0, u1, v0, v1 float64) float64 {
 		sub := s.Sub(u0, u1, v0, v1)
@@ -290,7 +316,7 @@ func (s *SSurface) projectBranchAndBound(p geom.Vector, dom ProjectDomain) Proje
 	upper := math.Inf(1)
 	var seed geom.Point2d
 	q := &bbQueue{{0, 1, 0, 1, lower(0, 1, 0, 1)}}
-	for n := 0; q.Len() > 0 && n < 2000; n++ {
+	for n := 0; q.Len() > 0 && n < 256; n++ {
 		b := heap.Pop(q).(bbPatch)
 		if b.lower >= upper {
 			break
@@ -299,7 +325,7 @@ func (s *SSurface) projectBranchAndBound(p geom.Vector, dom ProjectDomain) Proje
 		if d := s.PointAt(um, vm).Minus(p).Magnitude(); d < upper {
 			upper, seed = d, geom.Point2d{U: um, V: vm}
 		}
-		if b.u1-b.u0 < 1.0/1024 {
+		if b.u1-b.u0 < 1.0/64 {
 			continue
 		}
 		for _, c := range [4][4]float64{{b.u0, um, b.v0, vm}, {um, b.u1, b.v0, vm}, {b.u0, um, vm, b.v1}, {um, b.u1, vm, b.v1}} {
@@ -309,4 +335,46 @@ func (s *SSurface) projectBranchAndBound(p geom.Vector, dom ProjectDomain) Proje
 		}
 	}
 	return ProjectFrom(s.derivs, dom, p, 0, seed)
+}
+
+// polish runs plain Gauss-Newton steps from (u, v), clamped to the
+// domain, until they stop moving, or 80 of them, as they may go on
+// moving by rounding about the foot, and reports whether they end where
+// the offset is square to the surface or runs out of the domain at its
+// edge.
+func (s *SSurface) polish(p geom.Vector, u, v float64, dom ProjectDomain) (Projection, bool) {
+	clamp := func(t, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, t)) }
+	u, v = clamp(u, dom.U0, dom.U1), clamp(v, dom.V0, dom.V1)
+	for range 80 {
+		q, tu, tv := s.derivs(u, v)
+		d := p.Minus(q)
+		a11, a12, a22 := tu.Dot(tu), tu.Dot(tv), tv.Dot(tv)
+		b1, b2 := tu.Dot(d), tv.Dot(d)
+		det := a11*a22 - a12*a12
+		if !(math.Abs(det) > 1e-300) {
+			return Projection{}, false
+		}
+		du, dv := (a22*b1-a12*b2)/det, (a11*b2-a12*b1)/det
+		nu, nv := clamp(u+du, dom.U0, dom.U1), clamp(v+dv, dom.V0, dom.V1)
+		moved := math.Abs(nu-u) + math.Abs(nv-v)
+		u, v = nu, nv
+		if moved < 1e-15 {
+			break
+		}
+	}
+	q, tu, tv := s.derivs(u, v)
+	d := p.Minus(q)
+	dist := d.Magnitude()
+	// Square to the surface, but for what a domain edge holds back.
+	ru, rv := tu.Dot(d), tv.Dot(d)
+	if u <= dom.U0 && ru < 0 || u >= dom.U1 && ru > 0 {
+		ru = 0
+	}
+	if v <= dom.V0 && rv < 0 || v >= dom.V1 && rv > 0 {
+		rv = 0
+	}
+	if math.Abs(ru) > 1e-12*(dist+1)*tu.Magnitude() || math.Abs(rv) > 1e-12*(dist+1)*tv.Magnitude() {
+		return Projection{}, false
+	}
+	return Projection{U: u, V: v, P: q, Dist: dist, Stationary: true}, true
 }

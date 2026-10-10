@@ -150,6 +150,12 @@ solids) at 44 of 59 sound.
 | STEP cylinder fillet at chord 0.002% | the fit's misfit floors at 2.6e-5 against 2.4e-5 | More rounds change nothing; cause not found |
 | Teapot handle, slot chamfer at 3, run-off chamfer crossings, band-on-cone r 1 | see K3 and K4 | |
 
+The robust projection of K1 (`srf.SSurface.Project`, `srf.ProjectFrom`) is not what the rolling
+ball's feet use: most points it projects are on faces far from the ball, where plain Gauss-Newton
+steps don't settle and the answer is discarded, and refining them made `TestFilletOnOtherSolids`
+four times slower (7.4 million projections against 1.5) with no fillet gained. Use it where a
+projection must be right, not where it is a probe.
+
 Traps kept from the notes: OpenCASCADE is not the truth everywhere (on a hole of 5 in a pipe of
 10, r 2, its fillet face lies up to 0.093 mm inside the balls' envelope; ours within 0.00024).
 OCC's own Volume of our STEP files is off by up to 5% of a fillet: integrate slices in FreeCAD
