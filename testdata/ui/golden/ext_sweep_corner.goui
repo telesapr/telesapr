@@ -46,7 +46,13 @@ row 18    twist 0 deg [change]
  8-14 64 64 0
  15-22 6c 64 108 5 1 0
  23-99 64 64 0
-row 20    frames  turn least   held to x   y   z
+row 20    corners mitred [round]
+ 0-2 64 61 0
+ 3-9 74 61 0
+ 10-17 64 61 0
+ 18-24 6c 61 108 5 1 0
+ 25-99 64 61 0
+row 22    frames  turn least   held to x   y   z
  0-2 64 61 0
  3-8 74 61 0
  9-9 64 61 0
@@ -58,24 +64,24 @@ row 20    frames  turn least   held to x   y   z
  40-41 64 61 0
  42-44 64 61 122 0 1 0
  45-99 64 61 0
-row 22 
+row 24 
  0-99 64 64 0
-row 24  solid model as
+row 26  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 26     union   assemble
+row 28     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 28     difference   intersection
+row 30     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 30    appearance   matte   plastic   glossy   metal
+row 32    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -87,66 +93,66 @@ row 30    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 32    color      (0.39, 0.39, 0.39) [change]
+row 34    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
  11-12 64 7a 646464ff 0
  13-32 64 64 0
- 33-40 6c 64 102 20 1 0
+ 33-40 6c 64 102 22 1 0
  41-99 64 64 0
-row 34    opacity 1.00 [change]
+row 36    opacity 1.00 [change]
  0-2 64 64 0
  3-9 74 64 0
  10-15 64 64 0
  16-23 6c 64 102 0 1 0
  24-99 64 64 0
-row 36      suppress this group's solid model
+row 38      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 38 
+row 40 
  0-99 64 64 0
-row 40    show entities from this group
+row 42    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 42    suppress this group and the groups that use it
+row 44    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 44    force NURBS surfaces to triangle mesh
+row 46    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 47    relax constraints and dimensions
+row 49    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 49    allow redundant constraints
+row 51    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 51    suppress dof calculation (improves solver performance)
+row 53    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 53    treat all dimensions as reference
+row 55    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 55 
+row 57 
  0-99 64 64 0
-row 57  requests in group
+row 59  requests in group
  0-99 74 64 0
-row 59    (none)
+row 61    (none)
  0-99 64 61 0
-row 61 
+row 63 
  0-99 64 64 0
-row 63  constraints in group (0 DOF)
+row 65  constraints in group (0 DOF)
  0-99 74 64 0
-row 65    (none)
+row 67    (none)
  0-99 64 61 0
-row 67 
+row 69 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 20\nVolume: 347.33 mm³\nCenter of mass: (21.85, 0.00, 20.57)\nExtent: 13.45 x 4.00 x 36.89
 pending 0 0 "" 0 0 0 0
