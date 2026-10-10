@@ -64,7 +64,6 @@ inside the solid.
 
 ### Not yet
 
-The rebuilt model takes extrusions without draft, lathes, revolves and the copies step and
+The rebuilt model takes extrusions, drafted or not, lathes, revolves and the copies step and
 repeats, patterns along a path and mirrors make of them; a model with any other solid group (a
-drafted extrusion, a helix, a fillet, a chamfer, a sweep, a loft, a shell, a STEP link) is
-refused, naming the group.
+helix, a fillet, a chamfer, a sweep, a loft, a shell, a STEP link) is refused, naming the group.

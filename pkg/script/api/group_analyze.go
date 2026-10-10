@@ -111,8 +111,8 @@ func (v GroupAnalysis) Check() (r check.Report) {
 // which it and the kernel's mesh disagree by more than twice the chord
 // tolerance, and the mesh's half-edges (each edge used twice, once each
 // way). It fails for a model with a group the oracle can't build, as a
-// fillet or a drafted extrusion: extrusions without draft, lathes,
-// revolves and copies of them only. Analyze > Ray-Cast Check shows the
+// fillet or a sweep: extrusions, drafted or not, lathes, revolves and
+// copies of them only. Analyze > Ray-Cast Check shows the
 // same.
 func (v GroupAnalysis) RayCheck() (r check.RayReport) {
 	g := v.g
