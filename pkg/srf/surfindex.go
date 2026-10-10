@@ -3,6 +3,7 @@ package srf
 import (
 	"math"
 	"slices"
+	"sync"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 )
@@ -22,6 +23,21 @@ type surfaceIndex struct {
 	boxes []surfaceBox
 	nodes []surfaceNode
 	order []int32 // surface indices, each leaf a run of them
+
+	// ends are the ends of the surfaces' trims by x, for
+	// findVertsOnCurve: each with its place in the loop over the
+	// surfaces, their trims and the two ends of each. An end with a
+	// coordinate that is not a number has no place by x, and is in
+	// odd, given to every search. They are sorted by the first search,
+	// which a Boolean of surfaces with no exact curves never makes.
+	ends, odd []trimEnd
+	endsOnce  sync.Once
+}
+
+// trimEnd is an end of a trim, and where the loop over them reaches it.
+type trimEnd struct {
+	p   geom.Vector
+	seq int
 }
 
 // surfaceBox is a surface's box, as AxisAlignedBounding gives it.
@@ -62,6 +78,57 @@ func newSurfaceIndex(sh *SShell) *surfaceIndex {
 		x.build(0, 0, int32(n))
 	}
 	return x
+}
+
+// sortEnds makes ends and odd.
+func (x *surfaceIndex) sortEnds(sh *SShell) {
+	for i := range sh.Surface {
+		for j := range sh.Surface[i].Trim {
+			stb := &sh.Surface[i].Trim[j]
+			for _, p := range [2]geom.Vector{stb.StartP, stb.FinishP} {
+				e := trimEnd{p, len(x.ends) + len(x.odd)}
+				if math.IsNaN(p.X) || math.IsNaN(p.Y) || math.IsNaN(p.Z) {
+					x.odd = append(x.odd, e)
+				} else {
+					x.ends = append(x.ends, e)
+				}
+			}
+		}
+	}
+	slices.SortFunc(x.ends, func(a, b trimEnd) int {
+		if c := cmpFloat(a.p.X, b.p.X); c != 0 {
+			return c
+		}
+		return a.seq - b.seq
+	})
+}
+
+// trimEndsNear appends to buf, and returns, the ends of the shell's
+// trims that may lie in the box (amax, amin), as OutsideAndNotOn
+// decides it, in the order of the loop over the surfaces, their trims
+// and the two ends of each. ok is false when the index no longer fits
+// the shell.
+func (x *surfaceIndex) trimEndsNear(sh *SShell, amax, amin geom.Vector, buf []trimEnd) (near []trimEnd, ok bool) {
+	if x == nil || x.n != len(sh.Surface) {
+		return nil, false
+	}
+	x.endsOnce.Do(func() { x.sortEnds(sh) })
+	near = buf[:0]
+	near = append(near, x.odd...)
+	lo, hi := amin.X-indexSlack, amax.X+indexSlack
+	first, _ := slices.BinarySearchFunc(x.ends, lo, func(e trimEnd, t float64) int { return cmpFloat(e.p.X, t) })
+	for _, e := range x.ends[first:] {
+		if e.p.X > hi {
+			break
+		}
+		if e.p.Y < amin.Y-indexSlack || e.p.Y > amax.Y+indexSlack ||
+			e.p.Z < amin.Z-indexSlack || e.p.Z > amax.Z+indexSlack {
+			continue
+		}
+		near = append(near, e)
+	}
+	slices.SortFunc(near, func(a, b trimEnd) int { return a.seq - b.seq })
+	return near, true
 }
 
 // build makes node the root of the tree over order[first:last], split

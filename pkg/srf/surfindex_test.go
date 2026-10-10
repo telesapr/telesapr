@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"math"
 	"math/rand/v2"
 	"slices"
 	"testing"
@@ -66,6 +67,46 @@ func TestSurfaceIndexFindsWhatTheLoopFinds(t *testing.T) {
 	}
 	if queries < 5000 {
 		t.Fatalf("only %d queries", queries)
+	}
+
+	// The ends of trims near a box: those the loop over every trim
+	// keeps, in its order.
+	for i := range sh.Surface {
+		for range rng.IntN(4) {
+			a, b := v(100), v(100)
+			if rng.IntN(50) == 0 {
+				a.Y = math.NaN()
+			}
+			sh.Surface[i].Trim = append(sh.Surface[i].Trim, STrimBy{StartP: a, FinishP: b})
+		}
+	}
+	sh.index = newSurfaceIndex(&sh)
+	for range 2000 {
+		lo := v(120)
+		hi := lo.Plus(geom.Vector{X: rng.Float64() * 30, Y: rng.Float64() * 30, Z: rng.Float64() * 30})
+		var want []geom.Vector
+		for i := range sh.Surface {
+			for _, tr := range sh.Surface[i].Trim {
+				for _, p := range []geom.Vector{tr.StartP, tr.FinishP} {
+					if !p.OutsideAndNotOn(hi, lo) {
+						want = append(want, p)
+					}
+				}
+			}
+		}
+		near, ok := sh.index.trimEndsNear(&sh, hi, lo, nil)
+		if !ok {
+			t.Fatal("the index doesn't fit the shell it was made for")
+		}
+		var got []geom.Vector
+		for _, e := range near {
+			if !e.p.OutsideAndNotOn(hi, lo) {
+				got = append(got, e.p)
+			}
+		}
+		if !slices.EqualFunc(got, want, func(a, b geom.Vector) bool { return a.EqualsExactly(b) || a.Y != a.Y && b.Y != b.Y }) {
+			t.Fatalf("box %v %v: index %v, loop %v", lo, hi, got, want)
+		}
 	}
 
 	// A shell that has changed since is searched whole.
