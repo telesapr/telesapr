@@ -19,36 +19,36 @@ func TestShellOpenBox(t *testing.T) {
 	top := ex.Solid().FaceAt(api.V(10, 5, 10))
 	step(d)
 	before := saved(t, d)
-	sh := d.Shell([]api.Entity{top.Entity()}, 1, "")
+	sh := d.Features.Shell([]api.Entity{top.Entity()}, 1, "")
 	if p := sh.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := sh.Check()
+	r := sh.Analyze().Check()
 	if want := 2000.0 - 18*8*9; !r.Sound() || math.Abs(r.Volume-want) > 1e-6 || sh.Kind() != "shell" {
 		t.Fatalf("shelled block: %s, want volume %g", r.String(), want)
 	}
 	undoRedo(t, d, before)
 	// It depends on the extrusion whose face it takes away.
 	dependsOnEx := false
-	for _, g := range sh.DependsOn() {
+	for _, g := range sh.History().DependsOn() {
 		dependsOnEx = dependsOnEx || g.Name() == ex.Name()
 	}
 	if !dependsOnEx {
-		t.Fatalf("the shell depends on %v, not on %s", sh.DependsOn(), ex.Name())
+		t.Fatalf("the shell depends on %v, not on %s", sh.History().DependsOn(), ex.Name())
 	}
 	if err := sh.SetExpr(sketch.GroupPitch, "1+1"); err != nil {
 		t.Fatal(err)
 	}
-	d.Regen()
-	if v := sh.Check().Volume; sh.Thickness() != 2 || math.Abs(v-(2000-16*6*8)) > 1e-6 {
-		t.Fatalf("at thickness %g the volume is %g", sh.Thickness(), v)
+	d.Edit.Regen()
+	if v := sh.Analyze().Check().Volume; sh.AsShell().Thickness() != 2 || math.Abs(v-(2000-16*6*8)) > 1e-6 {
+		t.Fatalf("at thickness %g the volume is %g", sh.AsShell().Thickness(), v)
 	}
 	if err := sh.SetExpr(sketch.GroupPitch, "0"); err == nil {
 		t.Fatal("a thickness of 0 was taken")
 	}
 	back := roundTrip(t, d)
 	bs := back.Group(sh.Name())
-	if bs.Kind() != "shell" || bs.Expr(sketch.GroupPitch) != "1+1" || math.Abs(bs.Check().Volume-(2000-16*6*8)) > 1e-6 {
+	if bs.Kind() != "shell" || bs.Expr(sketch.GroupPitch) != "1+1" || math.Abs(bs.Analyze().Check().Volume-(2000-16*6*8)) > 1e-6 {
 		t.Fatalf("reopened: %s, %q", bs.Kind(), bs.Expr(sketch.GroupPitch))
 	}
 	// The cavity's edges have names.
@@ -69,12 +69,12 @@ func TestShellOpenBox(t *testing.T) {
 func TestShellHoledBlock(t *testing.T) {
 	d := api.New()
 	block(d, 0, 0, 30, 30, 10)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(10, 10, 0), api.V(20, 20, 0))
-	cut := d.Extrude(10, "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(10, 10, 0), api.V(20, 20, 0))
+	cut := d.Features.Extrude(10, "")
 	cut.SetCombine(api.Difference)
-	sh := d.ShellSolid([]api.SolidFace{cut.Solid().FaceAt(api.V(5, 5, 10))}, 1, "")
-	r := sh.Check()
+	sh := d.Features.ShellSolid([]api.SolidFace{cut.Solid().FaceAt(api.V(5, 5, 10))}, 1, "")
+	r := sh.Analyze().Check()
 	if want := 8000.0 - (28*28-12*12)*9; !r.Sound() || math.Abs(r.Volume-want) > 1e-6 {
 		t.Fatalf("shelled block with a hole: %s, want volume %g", r.String(), want)
 	}
@@ -88,11 +88,11 @@ func TestShellRefused(t *testing.T) {
 		fn   func()
 		want string
 	}{
-		"no faces":             {func() { d.Shell(nil, 1, "") }, "no faces"},
-		"zero":                 {func() { d.Shell([]api.Entity{top.Entity()}, 0, "") }, "more than zero"},
-		"walls meet":           {func() { d.Shell([]api.Entity{top.Entity()}, 5, "") }, "walls meet"},
-		"not a face":           {func() { d.Shell([]api.Entity{ex.Entities()[0]}, 1, "") }, "not a face"},
-		"thickness of extrude": {func() { ex.Thickness() }, "shell"},
+		"no faces":             {func() { d.Features.Shell(nil, 1, "") }, "no faces"},
+		"zero":                 {func() { d.Features.Shell([]api.Entity{top.Entity()}, 0, "") }, "more than zero"},
+		"walls meet":           {func() { d.Features.Shell([]api.Entity{top.Entity()}, 5, "") }, "walls meet"},
+		"not a face":           {func() { d.Features.Shell([]api.Entity{ex.Entities()[0]}, 1, "") }, "not a face"},
+		"thickness of extrude": {func() { ex.AsShell().Thickness() }, "shell"},
 	} {
 		func() {
 			defer func() {
@@ -107,18 +107,18 @@ func TestShellRefused(t *testing.T) {
 	// A cylinder hollows into a cup, but not past its axis, nor open at
 	// its side (roadmap 15.2).
 	d2 := api.New()
-	d2.SketchIn(d2.Workplane("XY"), "")
-	d2.Circle(api.V(0, 0, 0), 5)
-	cyl := d2.Extrude(10, "")
-	cup := d2.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
-	if r := cup.Check(); !r.Sound() || math.Abs(r.Volume-math.Pi*(250-16*9)) > 0.01*math.Pi*200 {
+	d2.Features.SketchIn(d2.Workplane("XY"), "")
+	d2.Sketch.Circle(api.V(0, 0, 0), 5)
+	cyl := d2.Features.Extrude(10, "")
+	cup := d2.Features.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
+	if r := cup.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-math.Pi*(250-16*9)) > 0.01*math.Pi*200 {
 		t.Errorf("the cup: %s", r.String())
 	}
 	for name, c := range map[string]struct {
 		fn   func()
 		want string
 	}{
-		"a side": {func() { d2.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(5, 0, 5))}, 1, "") }, "only at its ends"},
+		"a side": {func() { d2.Features.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(5, 0, 5))}, 1, "") }, "only at its ends"},
 	} {
 		func() {
 			defer func() {
@@ -131,7 +131,7 @@ func TestShellRefused(t *testing.T) {
 		}()
 	}
 	// Walls past the axis are a problem on the group.
-	cup.SetThickness(5)
+	cup.AsShell().SetThickness(5)
 	if p := cup.Problem(); !strings.Contains(p, "radius") {
 		t.Errorf("walls past the axis: problem %q", p)
 	}
@@ -141,15 +141,15 @@ func TestShellRefused(t *testing.T) {
 // is a problem on the group, and the solid passes through.
 func TestShellProblem(t *testing.T) {
 	d := api.New()
-	sides := d.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
-	width := d.Length(sides[1], 10)
-	ex := d.Extrude(5, "")
-	sh := d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(5, 5, 5)).Entity()}, 2, "")
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	width := d.Constrain.Length(sides[1], 10)
+	ex := d.Features.Extrude(5, "")
+	sh := d.Features.Shell([]api.Entity{ex.Solid().FaceAt(api.V(5, 5, 5)).Entity()}, 2, "")
 	width.Set(3)
 	if p := sh.Problem(); !strings.Contains(p, "walls meet") {
 		t.Fatalf("problem %q", p)
 	}
-	if v := sh.Check().Volume; math.Abs(v-3*10*5) > 1e-6 {
+	if v := sh.Analyze().Check().Volume; math.Abs(v-3*10*5) > 1e-6 {
 		t.Fatalf("with a problem the shell took %g away", 150-v)
 	}
 }
@@ -172,8 +172,8 @@ func TestShellGroupSweep(t *testing.T) {
 		thick := p.Float("k") * math.Min(math.Min(w, 10), h)
 		d := api.New()
 		ex := block(d, 0, 0, w, 10, h)
-		sh := d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(w/2, 5, h)).Entity()}, thick, "")
-		r := sh.Check()
+		sh := d.Features.Shell([]api.Entity{ex.Solid().FaceAt(api.V(w/2, 5, h)).Entity()}, thick, "")
+		r := sh.Analyze().Check()
 		want := w*10*h - (w-2*thick)*(10-2*thick)*(h-thick)
 		switch {
 		case sh.Problem() != "":

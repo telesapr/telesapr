@@ -32,26 +32,26 @@ func main() {
 	if len(os.Args) > 1 {
 		path = os.Args[1]
 	} else {
-		doc.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
-		doc.Circle(api.V(30, 20, 0), 8)
-		plate = doc.Extrude(6, "original")
-		if err := doc.Export(path); err != nil {
+		doc.Sketch.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
+		doc.Sketch.Circle(api.V(30, 20, 0), 8)
+		plate = doc.Features.Extrude(6, "original")
+		if err := doc.File.Export(path); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}
-		plateVolume = plate.Check().Volume
+		plateVolume = plate.Analyze().Check().Volume
 		plate.SetSuppress(api.SuppressSolid)
 	}
 
-	part, err := doc.Link(path, "")
+	part, err := doc.Assembly.Link(path, "")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	for _, line := range part.LinkInfo() {
+	for _, line := range part.AsLink().Info() {
 		fmt.Println(line)
 	}
-	if p := part.LinkProblem(); p != "" {
+	if p := part.AsLink().Problem(); p != "" {
 		fmt.Println("not all of it was read:", p)
 	}
 	points := 0
@@ -60,7 +60,7 @@ func main() {
 			points++
 		}
 	}
-	r := part.Check()
+	r := part.Analyze().Check()
 	fmt.Printf("%s: sound %v, %d triangles, volume %.1f mm³, %d points to constrain to\n",
 		part.Name(), r.Sound(), r.Triangles, r.Volume, points)
 

@@ -11,9 +11,9 @@ import (
 // and a script reads and changes it by the name (roadmap 16.1).
 func TestDimensionNameFile(t *testing.T) {
 	d := api.New()
-	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
-	w := d.Length(sides[0], 30)
-	h := d.Length(sides[1], 20)
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	w := d.Constrain.Length(sides[0], 30)
+	h := d.Constrain.Length(sides[1], 20)
 	step(d)
 	before := saved(t, d)
 	w.SetName("width")

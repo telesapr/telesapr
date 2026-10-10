@@ -18,15 +18,15 @@ func TestSuggestLineConstraint(t *testing.T) {
 	doc := api.NewDoc(ss.ScriptHost())
 	// An arc about the origin from 45 degrees to (-10, 0), and a line.
 	r := 10 / math.Sqrt2
-	doc.Arc(api.V(0, 0, 0), api.V(r, r, 0), api.V(-10, 0, 0))
-	base := doc.Line(api.V(30, 0, 0), api.V(50, 3, 0))
-	doc.Regen()
+	doc.Sketch.Arc(api.V(0, 0, 0), api.V(r, r, 0), api.V(-10, 0, 0))
+	base := doc.Sketch.Line(api.V(30, 0, 0), api.V(50, 3, 0))
+	doc.Edit.Regen()
 	suggest := func(a, b api.Vec) sketch.Suggestion {
-		l := doc.Line(a, b)
-		doc.Regen()
+		l := doc.Sketch.Line(a, b)
+		doc.Edit.Regen()
 		s, _ := ss.GW.SuggestConstraint(l.H.Request())
 		l.Delete()
-		doc.Regen()
+		doc.Edit.Regen()
 		return s
 	}
 	baseDir := api.V(20, 3, 0).WithMagnitude(1)

@@ -4237,11 +4237,203 @@
 	},
 	"github.com/telesapr/telesapr/pkg/script/api": {
 		"name": "api",
-		"text": "Package api is what a script sees of a sketch: a Doc and the groups,\nrequests, entities, constraints and parameters in it. Those are held\nby handle, so they stay valid when the sketch regenerates, and are\nlooked up again at every call; a Doc therefore always shows the\ndrawing as it is.\n\nLengths and coordinates are in millimetres, whatever the document's\nunit, and angles in degrees. Only text typed for a value, as the\nSetExpr methods take, is in the document's unit (Doc.Units), as it\nis in the user interface.\n\nA call that can't do what it was asked, because of what it was given\nor of the sketch's state, panics with an error; the interpreter\nreports it and goes on. What reads or writes files returns an error\ninstead.\n\nThe package is plain Go: a script that works can be compiled as it\nis.",
+		"text": "Package api is what a script sees of a sketch: a Doc and the groups,\nrequests, entities, constraints and parameters in it. Those are held\nby handle, so they stay valid when the sketch regenerates, and are\nlooked up again at every call; a Doc therefore always shows the\ndrawing as it is.\n\nThe calls are where the window's commands are. What changes a\ndrawing is in a field of Doc for each menu, doc.Sketch.Line for\nSketch \u003e Line Segment, doc.Features.Extrude for Features \u003e Extrude,\nand MenuCalls says which call each entry of the menu is. What only\none kind of group has is on a view of it, g.AsFillet().SetRadius;\ng.History() and g.Analyze() hold what the Features \u003e Move Group and\nAnalyze commands do with a group.\n\nLengths and coordinates are in millimetres, whatever the document's\nunit, and angles in degrees. Only text typed for a value, as the\nSetExpr methods take, is in the document's unit (View.Units), as it\nis in the user interface.\n\nA call that can't do what it was asked, because of what it was given\nor of the sketch's state, panics with an error; the interpreter\nreports it and goes on. What reads or writes files returns an error\ninstead.\n\nThe package is plain Go: a script that works can be compiled as it\nis.",
 		"types": {
+			"AnalyzeMenu": {
+				"text": "AnalyzeMenu holds the calls of the Analyze menu that measure what is\nselected or named. What measures a group's solid is on Group.Analyze.\nA script reaches it as doc.Analyze.",
+				"kind": "struct",
+				"methods": {
+					"CurveLength": {
+						"decl": "func (m AnalyzeMenu) CurveLength(curves ...Entity) (mm float64)",
+						"text": "CurveLength is the total length in mm of the curves given, as Analyze \u003e\nMeasure Perimeter gives it: line segments, arcs, circles and cubics,\neach taken as the straight pieces it is drawn with."
+					},
+					"FacesArea": {
+						"decl": "func (m AnalyzeMenu) FacesArea(faces ...Entity) (mm2 float64)",
+						"text": "FacesArea is the area in mm² of faces of the solid at the active\ngroup, as Analyze \u003e Measure Area gives it with them selected: the\nface entities an extrusion or a lathe makes."
+					},
+					"Measure": {
+						"decl": "func (m AnalyzeMenu) Measure(entities ...Entity) (out sketch.Measurement)",
+						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm. A face counts by its\noutward normal: a point outside the solid is at a positive distance\nfrom it, and two opposite faces are at 180 degrees."
+					}
+				}
+			},
+			"AssemblyMenu": {
+				"text": "AssemblyMenu holds the calls of the Assembly menu: linked parts,\nmates, interference, the bill of materials and motion. A script\nreaches it as doc.Assembly.",
+				"kind": "struct",
+				"methods": {
+					"BillOfMaterials": {
+						"decl": "func (m AssemblyMenu) BillOfMaterials() (items []sketch.BOMItem)",
+						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\"."
+					},
+					"Concentric": {
+						"decl": "func (m AssemblyMenu) Concentric(a, b Entity) []Constraint",
+						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other."
+					},
+					"ExportBOM": {
+						"decl": "func (m AssemblyMenu) ExportBOM(path string) error",
+						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them."
+					},
+					"Flush": {
+						"decl": "func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint",
+						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other."
+					},
+					"Hinge": {
+						"decl": "func (m AssemblyMenu) Hinge(a, b Entity) []Constraint",
+						"text": "Hinge puts the start of line b on the start of line a, and the end of\nb on a's line: b may only turn about a, as on a pin."
+					},
+					"Interferences": {
+						"decl": "func (m AssemblyMenu) Interferences() (found []Interference, meshOnly []Group)",
+						"text": "Interferences checks the parts of the assembly up to the active\ngroup against each other by their shells (Analyze \u003e Show Interfering\nParts): each group that combines as an assembly is a part, and so is\nthe solid made before the first of them. It lists the pairs that\noverlap, not those that only touch. A part with no shell, as a\nlinked mesh or STEP file, can't be checked so; meshOnly lists them."
+					},
+					"Link": {
+						"decl": "func (m AssemblyMenu) Link(path, name string) (g Group, err error)",
+						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
+					},
+					"LinkStep": {
+						"decl": "func (m AssemblyMenu) LinkStep(path, name string, asSolid bool) (Group, error)",
+						"text": "LinkStep links a STEP file as Link does, as a solid when asSolid is\nset: its faces exact, so the solid takes part in Booleans, fillets\nand the rest as a solid made here does. A file that can't be read as\na solid comes in as a reference mesh, and LinkProblem says why."
+					},
+					"MotionStudy": {
+						"decl": "func (m AssemblyMenu) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error)",
+						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach (roadmap 16.3). With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
+					}
+				}
+			},
 			"BrokenReference": {
 				"text": "BrokenReference is something a regeneration deleted because what it\nused was gone: a group whose sketch was deleted, or a constraint on a\nline that was.",
 				"kind": "struct"
+			},
+			"ChamferGroup": {
+				"text": "ChamferGroup is the view of a chamfer: its distances.",
+				"kind": "struct",
+				"methods": {
+					"Distance": {
+						"decl": "func (v ChamferGroup) Distance() (mm float64)",
+						"text": "Distance is a chamfer's distance in mm."
+					},
+					"SecondDistance": {
+						"decl": "func (v ChamferGroup) SecondDistance() (mm float64)",
+						"text": "SecondDistance is a chamfer's distance in mm on each edge's second\nface, or 0 when it is the first distance on both faces. An edge's\nfirst face is the one of the lower identity (SolidFace.ID), the one\nits name gives first."
+					},
+					"SetDistance": {
+						"decl": "func (v ChamferGroup) SetDistance(mm float64)",
+						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
+					"SetSecondDistance": {
+						"decl": "func (v ChamferGroup) SetSecondDistance(mm float64)",
+						"text": "SetSecondDistance makes a chamfer of two distances: Distance on each\nedge's first face and mm on the second; 0 makes it a chamfer of one\ndistance again. SetExpr with sketch.GroupValC gives it an expression\nin the document's unit. A chamfer of two distances can't have edges\nthat meet at a corner it cuts by its local edit; there it cuts each\nstraight edge by a wedge instead, and a circular edge not at all."
+					},
+					"SwapDistances": {
+						"decl": "func (v ChamferGroup) SwapDistances()",
+						"text": "SwapDistances swaps a chamfer's two distances, which chamfers each\nedge the other way round. It fails for a chamfer of one distance."
+					}
+				}
+			},
+			"ConstrainMenu": {
+				"text": "ConstrainMenu holds the calls of the Constrain menu: the dimensions\nand constraints that hold a sketch. A script reaches it as\ndoc.Constrain.",
+				"kind": "struct",
+				"methods": {
+					"Angle": {
+						"decl": "func (m ConstrainMenu) Angle(a, b Entity, degrees float64) Constraint",
+						"text": "Angle sets the angle in degrees between two line segments or\nnormals. For two lines that share an end it is the angle at that\ncorner."
+					},
+					"Auto": {
+						"decl": "func (m ConstrainMenu) Auto(e Entity) (c Constraint, ok bool)",
+						"text": "Auto adds to a line, an arc or a circle of the active group\nthe constraint the window adds when one is drawn nearly so (Settings,\n\"auto-constrain while drawing\"): a line horizontal or vertical, else\ntangent to an arc or perpendicular to a line it starts on, parallel to\na line, or as long as one; an arc tangent at an end to a line or arc\nthat ends there, else the same radius as an arc or circle; a circle\nthe same radius as one. It is false, with no constraint, when the\nentity is none of these nearly, or the constraint would be redundant.\nLines and arcs get one only in a workplane."
+					},
+					"Coincident": {
+						"decl": "func (m ConstrainMenu) Coincident(a, b Entity) Constraint",
+						"text": "Coincident puts two points at the same place."
+					},
+					"Comment": {
+						"decl": "func (m ConstrainMenu) Comment(at Vec, text string) Constraint",
+						"text": "Comment writes text on the drawing at a place."
+					},
+					"Diameter": {
+						"decl": "func (m ConstrainMenu) Diameter(circle Entity, v float64) Constraint",
+						"text": "Diameter sets the diameter of a circle or an arc."
+					},
+					"Difference": {
+						"decl": "func (m ConstrainMenu) Difference(a, b Entity, v float64) Constraint",
+						"text": "Difference makes a's length v more than b's, as Constrain \u003e Length /\nArc Difference does, taking what Ratio takes: with a line segment and\nan arc, the line segment is v longer than the arc. A difference is a\nsize, as a distance is, so v is taken without its sign: for a shorter\nthan b, give them the other way round."
+					},
+					"Distance": {
+						"decl": "func (m ConstrainMenu) Distance(a, b Entity, v float64) Constraint",
+						"text": "Distance sets the distance between two points, or from a point to a\nline segment, a workplane or a face; either may come first. A\nnegative distance from a line, a workplane or a face is on the\nother side of it."
+					},
+					"Equal": {
+						"decl": "func (m ConstrainMenu) Equal(a, b Entity) Constraint",
+						"text": "Equal makes two line segments as long as each other, two circles or\narcs of the same radius, or a line segment as long as an arc."
+					},
+					"Horizontal": {
+						"decl": "func (m ConstrainMenu) Horizontal(lineOrPoints ...Entity) Constraint",
+						"text": "Horizontal makes a line segment, or two points, horizontal in the\nactive workplane."
+					},
+					"Length": {
+						"decl": "func (m ConstrainMenu) Length(line Entity, v float64) Constraint",
+						"text": "Length sets the length of a line segment."
+					},
+					"Lock": {
+						"decl": "func (m ConstrainMenu) Lock(point Entity) Constraint",
+						"text": "Lock keeps a point where it is."
+					},
+					"MaxDistance": {
+						"decl": "func (m ConstrainMenu) MaxDistance(a, b Entity, v float64) Constraint",
+						"text": "MaxDistance keeps a distance at most v, taking what MinDistance\ntakes. It leaves the sketch free to come nearer, and takes a degree\nof freedom only where the sketch would go further."
+					},
+					"Midpoint": {
+						"decl": "func (m ConstrainMenu) Midpoint(point, line Entity) Constraint",
+						"text": "Midpoint puts a point at the middle of a line segment."
+					},
+					"MinDistance": {
+						"decl": "func (m ConstrainMenu) MinDistance(a, b Entity, v float64) Constraint",
+						"text": "MinDistance keeps a distance at least v: between two points, from a\npoint to a line segment, a workplane or a face, as Distance takes\nthem, or a line segment's length when b is Entity{}. Unlike\nDistance it leaves the sketch free to go further: it holds only\nwhere the sketch would come nearer, and takes a degree of freedom\nonly then. A distance from a line, a workplane or a face is signed,\nas Distance's is: the point keeps to v's side, at least |v| away."
+					},
+					"On": {
+						"decl": "func (m ConstrainMenu) On(point, on Entity) Constraint",
+						"text": "On puts a point on a line segment, a circle or an arc, a workplane\nor a face."
+					},
+					"OnSegment": {
+						"decl": "func (m ConstrainMenu) OnSegment(point, line Entity) Constraint",
+						"text": "OnSegment puts a point on a line segment, between its ends: unlike\nOn, which puts it anywhere on the segment's line."
+					},
+					"Parallel": {
+						"decl": "func (m ConstrainMenu) Parallel(a, b Entity) Constraint",
+						"text": "Parallel makes two line segments or normals parallel."
+					},
+					"Perpendicular": {
+						"decl": "func (m ConstrainMenu) Perpendicular(a, b Entity) Constraint",
+						"text": "Perpendicular makes two line segments or normals perpendicular."
+					},
+					"Radius": {
+						"decl": "func (m ConstrainMenu) Radius(circle Entity, v float64) Constraint",
+						"text": "Radius sets the radius of a circle or an arc; the drawing shows the\ndimension as a radius."
+					},
+					"Ratio": {
+						"decl": "func (m ConstrainMenu) Ratio(a, b Entity, v float64) Constraint",
+						"text": "Ratio makes a's length v times b's, as Constrain \u003e Length / Arc\nRatio does: two line segments, two arcs (the lengths along them), or\na line segment and an arc, taken in either order, when the ratio is\nthe line segment's length over the arc's."
+					},
+					"Raw": {
+						"decl": "func (m ConstrainMenu) Raw(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint",
+						"text": "Raw adds a constraint of any type, as the core package names\nthem, on up to two points and two other entities; see the solver's\ndocumentation for what each type takes. Give Entity{} for what a\ntype doesn't take."
+					},
+					"SameOrientation": {
+						"decl": "func (m ConstrainMenu) SameOrientation(a, b Entity) Constraint",
+						"text": "SameOrientation makes two normals point the same way and turn the\nsame way about it, as Constrain \u003e Same Orientation does: a linked\npart's to a workplane's, say."
+					},
+					"Symmetric": {
+						"decl": "func (m ConstrainMenu) Symmetric(a, b, about Entity) Constraint",
+						"text": "Symmetric makes two points mirror images of each other about a\nworkplane or a line segment; with no such thing (Entity{}), about\nthe axis of the active workplane they are across."
+					},
+					"Tangent": {
+						"decl": "func (m ConstrainMenu) Tangent(a, b Entity) Constraint",
+						"text": "Tangent makes an arc or a cubic tangent to a line segment, or to\nanother arc or cubic, where they share an end."
+					},
+					"Vertical": {
+						"decl": "func (m ConstrainMenu) Vertical(lineOrPoints ...Entity) Constraint",
+						"text": "Vertical makes a line segment, or two points, vertical in the\nactive workplane."
+					}
+				}
 			},
 			"Constraint": {
 				"text": "Constraint is a constraint of the sketch: a dimension, such as a\ndistance or an angle, or a relation, such as two lines being\nparallel.",
@@ -4289,7 +4481,7 @@
 					},
 					"SetExpr": {
 						"decl": "func (c Constraint) SetExpr(expr string) (err error)",
-						"text": "SetExpr gives the constraint the value of text, as typing it in its\nlabel does: a length in the document's unit (Doc.Units), an angle in\ndegrees, a ratio. A plain number is stored as its value; any other\ntext, \"25.4/2\" or \"wall*4\" with a parameter (Doc.SetParameter), is\nkept and evaluated again at each regeneration."
+						"text": "SetExpr gives the constraint the value of text, as typing it in its\nlabel does: a length in the document's unit (View.Units), an angle in\ndegrees, a ratio. A plain number is stored as its value; any other\ntext, \"25.4/2\" or \"wall*4\" with a parameter (Params.Set), is\nkept and evaluated again at each regeneration."
 					},
 					"SetLimit": {
 						"decl": "func (c Constraint) SetLimit(l core.Limit)",
@@ -4326,224 +4518,36 @@
 				}
 			},
 			"Doc": {
-				"text": "Doc is a sketch: the drawing a script reads and changes.",
+				"text": "Doc is a sketch: the drawing a script reads and changes. Its own\nmethods find what the drawing holds; what changes it is in the\nfields, one for each menu of the window, so that a call is where\nthe command it does is: doc.Sketch.Line is Sketch \u003e Line Segment,\ndoc.Features.Extrude is Features \u003e Extrude.",
 				"kind": "struct",
 				"methods": {
 					"Activate": {
 						"decl": "func (d *Doc) Activate(g Group)",
 						"text": "Activate makes g the group that is worked in."
 					},
-					"ActivateConfiguration": {
-						"decl": "func (d *Doc) ActivateConfiguration(name string) (err error)",
-						"text": "ActivateConfiguration writes the configuration's expressions into\nthe parameter table and makes it active; \"\" makes none active, and\nleaves the table as it is. The model regenerates."
-					},
 					"Active": {
 						"decl": "func (d *Doc) Active() (g Group)",
 						"text": "Active is the group that is worked in: what is drawn goes into it."
-					},
-					"ActiveConfiguration": {
-						"decl": "func (d *Doc) ActiveConfiguration() (name string)",
-						"text": "ActiveConfiguration is the active configuration's name, or \"\"."
-					},
-					"ActiveWorkplane": {
-						"decl": "func (d *Doc) ActiveWorkplane() (wp Entity)",
-						"text": "ActiveWorkplane is the workplane that is drawn in; it isn't Valid\nwhen drawing freely in 3d."
-					},
-					"AddConfiguration": {
-						"decl": "func (d *Doc) AddConfiguration(name string) (err error)",
-						"text": "AddConfiguration adds a configuration, a named set of the parameters'\nexpressions, from the table as it is, and makes it active: while it\nis, SetParameter changes it as well as the table."
-					},
-					"AddDrawingDimension": {
-						"decl": "func (d *Doc) AddDrawingDimension(view, kind string, offset float64, edges ...SolidEdge)",
-						"text": "AddDrawingDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes.\nThe view is front, back, top, bottom, left, right or iso, where a\nlength is the edge's in the model, not as foreshortened, or a section\nor a detail by its letter (A, B, ...: the sections first)."
-					},
-					"AddDrawingEdgeFaceDistance": {
-						"decl": "func (d *Doc) AddDrawingEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace)",
-						"text": "AddDrawingEdgeFaceDistance adds to the drawing's view the distance\nfrom a straight edge to a flat face it runs parallel to, as\nAddDrawingDimension does between edges."
-					},
-					"AddDrawingFaceDimension": {
-						"decl": "func (d *Doc) AddDrawingFaceDimension(view, kind string, offset float64, faces ...SolidFace)",
-						"text": "AddDrawingFaceDimension adds a dimension of faces to the drawing's\nview, as AddDrawingDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
-					},
-					"Angle": {
-						"decl": "func (d *Doc) Angle(a, b Entity, degrees float64) Constraint",
-						"text": "Angle sets the angle in degrees between two line segments or\nnormals. For two lines that share an end it is the angle at that\ncorner."
-					},
-					"Arc": {
-						"decl": "func (d *Doc) Arc(center, start, end Vec) Entity",
-						"text": "Arc adds an arc of a circle around center, from start\ncounter-clockwise to end, in the active workplane. The end is put\nat the start's distance from the centre."
-					},
-					"AutoConstrain": {
-						"decl": "func (d *Doc) AutoConstrain(e Entity) (c Constraint, ok bool)",
-						"text": "AutoConstrain adds to a line, an arc or a circle of the active group\nthe constraint the window adds when one is drawn nearly so (Settings,\n\"auto-constrain while drawing\"): a line horizontal or vertical, else\ntangent to an arc or perpendicular to a line it starts on, parallel to\na line, or as long as one; an arc tangent at an end to a line or arc\nthat ends there, else the same radius as an arc or circle; a circle\nthe same radius as one. It is false, with no constraint, when the\nentity is none of these nearly, or the constraint would be redundant.\nLines and arcs get one only in a workplane."
 					},
 					"Batch": {
 						"decl": "func (d *Doc) Batch(fn func())",
 						"text": "Batch runs fn in one go. In the application, where each call of\nthis package waits for the user interface, that is much faster for\na script that makes many things, and the drawing isn't shown half\ndone."
 					},
-					"BillOfMaterials": {
-						"decl": "func (d *Doc) BillOfMaterials() (items []sketch.BOMItem)",
-						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\"."
-					},
-					"BrokenReferences": {
-						"decl": "func (d *Doc) BrokenReferences() (refs []BrokenReference)",
-						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Edit \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
-					},
-					"Chamfer": {
-						"decl": "func (d *Doc) Chamfer(edges []Entity, distance float64, name string) Group",
-						"text": "Chamfer cuts edges of the solid so far, at distance mm from each\nedge on both faces that meet there, a 45 degree chamfer where they\nare square. An edge is a line segment that lies along an edge\nbetween two flat faces and sticks out, as the copies of the sketch\nat the ends of an extrusion and the lines along its sides do; or a\ncircle or arc where a flat face meets a cylinder or a cone about the\ncircle's axis, as an extruded circle's or a lathed frustum's, which is\ncut all round by a cone. The new group\nbecomes active."
-					},
-					"ChamferSolid": {
-						"decl": "func (d *Doc) ChamferSolid(edges []SolidEdge, distance float64, name string) Group",
-						"text": "ChamferSolid cuts edges of the solid so far, by name, at distance mm\nfrom each edge on both faces: any straight edge between two flat\nfaces, such as one a Boolean made, or a circular one where a flat\nface meets a cylinder or a cone, picked from Solid. The chamfer\nkeeps the edges' names, so it follows them when the model upstream\nchanges, and reports when one no longer resolves. The new group\nbecomes active."
-					},
-					"ChordTolerance": {
-						"decl": "func (d *Doc) ChordTolerance() (pct float64)",
-						"text": "ChordTolerance is how closely meshes follow curves, as a percentage\nof the model's size."
-					},
-					"Circle": {
-						"decl": "func (d *Doc) Circle(center Vec, radius float64) Entity",
-						"text": "Circle adds a circle. In a workplane it lies in it; in 3d it is\nparallel to the XY plane."
-					},
-					"ClearBrokenReferences": {
-						"decl": "func (d *Doc) ClearBrokenReferences()",
-						"text": "ClearBrokenReferences empties the list BrokenReferences gives."
-					},
-					"ClearSection": {
-						"decl": "func (d *Doc) ClearSection()",
-						"text": "ClearSection turns the section view off."
-					},
-					"Coincident": {
-						"decl": "func (d *Doc) Coincident(a, b Entity) Constraint",
-						"text": "Coincident puts two points at the same place."
-					},
-					"Comment": {
-						"decl": "func (d *Doc) Comment(at Vec, text string) Constraint",
-						"text": "Comment writes text on the drawing at a place."
-					},
-					"Concentric": {
-						"decl": "func (d *Doc) Concentric(a, b Entity) []Constraint",
-						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other."
-					},
-					"Configurations": {
-						"decl": "func (d *Doc) Configurations() (names []string)",
-						"text": "Configurations are the configurations' names, in the order they were\nmade."
-					},
-					"Constrain": {
-						"decl": "func (d *Doc) Constrain(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint",
-						"text": "Constrain adds a constraint of any type, as the core package names\nthem, on up to two points and two other entities; see the solver's\ndocumentation for what each type takes. Give Entity{} for what a\ntype doesn't take."
-					},
 					"Constraint": {
 						"decl": "func (d *Doc) Constraint(name string) (c Constraint)",
 						"text": "Constraint is the constraint with a description as the property\nbrowser shows it: \"c002-pt-pt-distance\" or just \"c002\"."
-					},
-					"Copy": {
-						"decl": "func (d *Doc) Copy(entities ...Entity)",
-						"text": "Copy puts the entities on the clipboard, with the constraints between\nthem, as Edit \u003e Copy does with them selected. Workplanes are left out."
-					},
-					"Cubic": {
-						"decl": "func (d *Doc) Cubic(p0, p1, p2, p3 Vec) Entity",
-						"text": "Cubic adds a cubic Bézier curve from p0 to p3, with the control\npoints p1 and p2."
-					},
-					"CurveLength": {
-						"decl": "func (d *Doc) CurveLength(curves ...Entity) (mm float64)",
-						"text": "CurveLength is the total length in mm of the curves given, as Analyze \u003e\nMeasure Perimeter gives it: line segments, arcs, circles and cubics,\neach taken as the straight pieces it is drawn with."
-					},
-					"DeleteConfiguration": {
-						"decl": "func (d *Doc) DeleteConfiguration(name string) (err error)",
-						"text": "DeleteConfiguration removes a configuration; the table stays as it\nis."
-					},
-					"DeleteParameter": {
-						"decl": "func (d *Doc) DeleteParameter(name string) (err error)",
-						"text": "DeleteParameter removes a parameter. One that an expression names\nis not removed, and the error says what names it."
 					},
 					"Describe": {
 						"decl": "func (d *Doc) Describe() (s string)",
 						"text": "Describe says what the drawing is, as text, for a reader that can't\nsee it: the document's unit, the parameters, every group in order\nwith how it solved, its degrees of freedom, what is wrong with it,\nand the volume and bounds of the model up to it, then the active\ngroup's requests and constraints as Group.Describe lists them, and\nwhat is selected. Lengths are in mm. The names it gives are the\nones Doc.Group, Doc.Request and Doc.Constraint take."
 					},
-					"Diameter": {
-						"decl": "func (d *Doc) Diameter(circle Entity, v float64) Constraint",
-						"text": "Diameter sets the diameter of a circle or an arc."
-					},
 					"Dimension": {
 						"decl": "func (d *Doc) Dimension(name string) (c Constraint)",
 						"text": "Dimension is the constraint named name."
 					},
-					"Distance": {
-						"decl": "func (d *Doc) Distance(a, b Entity, v float64) Constraint",
-						"text": "Distance sets the distance between two points, or from a point to a\nline segment, a workplane or a face; either may come first. A\nnegative distance from a line, a workplane or a face is on the\nother side of it."
-					},
-					"Drawing": {
-						"decl": "func (d *Doc) Drawing() (dr Drawing)",
-						"text": "Drawing is the model's drawing, or the default one, an A3 sheet\nfitted, if it has none yet. It is a copy: SetDrawing changes it."
-					},
-					"DrawingDimensions": {
-						"decl": "func (d *Doc) DrawingDimensions() (values []float64, errs []error)",
-						"text": "DrawingDimensions measures the drawing's dimensions on the solid as\nit is: each one's value in mm, and an error for one that can't be\nmeasured, as for an edge no longer in the solid. It needs the\napplication, or a view of it."
-					},
-					"DrawingSheetShown": {
-						"decl": "func (d *Doc) DrawingSheetShown() (shown bool)",
-						"text": "DrawingSheetShown reports whether the window shows the drawing sheet."
-					},
 					"Entity": {
 						"decl": "func (d *Doc) Entity(h uint32) Entity",
 						"text": "Entity is the entity with a handle."
-					},
-					"Equal": {
-						"decl": "func (d *Doc) Equal(a, b Entity) Constraint",
-						"text": "Equal makes two line segments as long as each other, two circles or\narcs of the same radius, or a line segment as long as an arc."
-					},
-					"Export": {
-						"decl": "func (d *Doc) Export(path string) error",
-						"text": "Export writes the sketch in the format the file's extension names:\nthe mesh of the solid (.stl, .obj, ...), the view (.svg, .dxf, .pdf,\n...), the surfaces of the solid (.step), or a picture as Render\nmakes it (.png)."
-					},
-					"ExportAs": {
-						"decl": "func (d *Doc) ExportAs(kind ExportKind, path string) (err error)",
-						"text": "ExportAs is Export for a format that can hold several things, such\nas a wireframe in a .dxf or a .step."
-					},
-					"ExportBOM": {
-						"decl": "func (d *Doc) ExportBOM(path string) error",
-						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them."
-					},
-					"ExportDrawing": {
-						"decl": "func (d *Doc) ExportDrawing(path string) (err error)",
-						"text": "ExportDrawing writes the model's drawing to a vector file, by its\nextension: .pdf, .svg, .dxf, .eps, .ps, .plt. It needs the\napplication, or telesapr-cli export-drawing."
-					},
-					"ExprErrors": {
-						"decl": "func (d *Doc) ExprErrors() (errs []string)",
-						"text": "ExprErrors lists the expressions on constraints and group values\nthat the last regeneration could not evaluate, each with why; the\nvalues they drive keep their last good value."
-					},
-					"Extrude": {
-						"decl": "func (d *Doc) Extrude(depth float64, name string) Group",
-						"text": "Extrude makes a solid of the active group's sketch by extruding it\nby depth along the normal of its workplane, or against it for a\nnegative depth. The depth is where the extrusion starts, as when it\nis dragged; constrain a point of it to keep it. The new group\nbecomes active."
-					},
-					"FaceAppearance": {
-						"decl": "func (d *Doc) FaceAppearance(face SolidFace) (name string)",
-						"text": "FaceAppearance is the appearance the face has: its own, its group's,\nor \"\" for the default."
-					},
-					"FacesArea": {
-						"decl": "func (d *Doc) FacesArea(faces ...Entity) (mm2 float64)",
-						"text": "FacesArea is the area in mm² of faces of the solid at the active\ngroup, as Analyze \u003e Measure Area gives it with them selected: the\nface entities an extrusion or a lathe makes."
-					},
-					"Fillet": {
-						"decl": "func (d *Doc) Fillet(edges []Entity, radius float64, name string) Group",
-						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust end at corners of three flat faces. An edge that sticks out is\nrounded off, and one that goes in, as a pocket's, is filled. Two\nrounded edges that meet at a corner are mitred, their cylinders\nmeeting along an ellipse, the one that turns further going on past it\nwhen the faces don't lie alike about them; three get a sphere. A\ncircle or arc where a flat face meets a cylinder or a cone about the\ncircle's axis, as an extruded circle's, a hole's rim, a boss's foot or\na lathed frustum's top, is rounded all round by a torus. An edge\ntakes with it the edges it meets smoothly, as round a rectangle whose\ncorners are rounded. An edge may have a radius of its own\n(SetEdgeRadius), but edges that meet at a corner need one. The faces\na fillet makes are exact cylinders, spheres and tori, and their edges\nhave names. The new group becomes active."
-					},
-					"FilletSolid": {
-						"decl": "func (d *Doc) FilletSolid(edges []SolidEdge, radius float64, name string) Group",
-						"text": "FilletSolid rounds edges of the solid so far, by name, with radius\nmm, as Fillet does: any straight edge between two flat faces, such\nas one a Boolean made, or a circular one, picked from Solid. The fillet\nkeeps the names, so it follows the edges when the model upstream\nchanges. The new group becomes active."
-					},
-					"Flush": {
-						"decl": "func (d *Doc) Flush(faceA, faceB Entity) []Constraint",
-						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other."
-					},
-					"ForgetChanges": {
-						"decl": "func (d *Doc) ForgetChanges()",
-						"text": "ForgetChanges lets the changes made since the sketch was saved go, as\n\"Don't Save\" does when the application asks: File \u003e New, Open and\nthe others that replace the drawing refuse to run from a script while\nit has unsaved changes, so that nothing is lost unasked. The\ndrawing itself stays as it is until such a command replaces it."
-					},
-					"Free3D": {
-						"decl": "func (d *Doc) Free3D()",
-						"text": "Free3D draws freely in 3d, in no workplane, in the active group."
 					},
 					"Group": {
 						"decl": "func (d *Doc) Group(name string) (g Group)",
@@ -4553,341 +4557,21 @@
 						"decl": "func (d *Doc) Groups() (groups []Group)",
 						"text": "Groups are the groups, in order, without the references."
 					},
-					"Helix": {
-						"decl": "func (d *Doc) Helix(axis Entity, degrees, length float64, name string) Group",
-						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. The new group becomes active."
-					},
-					"Hinge": {
-						"decl": "func (d *Doc) Hinge(a, b Entity) []Constraint",
-						"text": "Hinge puts the start of line b on the start of line a, and the end of\nb on a's line: b may only turn about a, as on a pin."
-					},
-					"Horizontal": {
-						"decl": "func (d *Doc) Horizontal(lineOrPoints ...Entity) Constraint",
-						"text": "Horizontal makes a line segment, or two points, horizontal in the\nactive workplane."
-					},
 					"Host": {
 						"decl": "func (d *Doc) Host() Host",
 						"text": "Host is the program around the sketch."
-					},
-					"Image": {
-						"decl": "func (d *Doc) Image(path string, at Vec, height float64) Entity",
-						"text": "Image adds a picture from a file in the active workplane, for\ntracing: its bottom left corner at at, height high and as wide as\nthe picture's proportions make it. It is construction, as the\ninterface makes it."
-					},
-					"Interferences": {
-						"decl": "func (d *Doc) Interferences() (found []Interference, meshOnly []Group)",
-						"text": "Interferences checks the parts of the assembly up to the active\ngroup against each other by their shells (Analyze \u003e Show Interfering\nParts): each group that combines as an assembly is a part, and so is\nthe solid made before the first of them. It lists the pairs that\noverlap, not those that only touch. A part with no shell, as a\nlinked mesh or STEP file, can't be checked so; meshOnly lists them."
-					},
-					"Lathe": {
-						"decl": "func (d *Doc) Lathe(axis Entity, name string) Group",
-						"text": "Lathe makes a solid of the active group's sketch by turning it all\nthe way around a line segment. The new group becomes active."
-					},
-					"Length": {
-						"decl": "func (d *Doc) Length(line Entity, v float64) Constraint",
-						"text": "Length sets the length of a line segment."
-					},
-					"Line": {
-						"decl": "func (d *Doc) Line(a, b Vec) Entity",
-						"text": "Line adds a line segment from a to b. In a workplane the points are\nput in it."
-					},
-					"Link": {
-						"decl": "func (d *Doc) Link(path, name string) (g Group, err error)",
-						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
-					},
-					"LinkStep": {
-						"decl": "func (d *Doc) LinkStep(path, name string, asSolid bool) (Group, error)",
-						"text": "LinkStep links a STEP file as Link does, as a solid when asSolid is\nset: its faces exact, so the solid takes part in Booleans, fillets\nand the rest as a solid made here does. A file that can't be read as\na solid comes in as a reference mesh, and LinkProblem says why."
-					},
-					"Load": {
-						"decl": "func (d *Doc) Load(path string) (err error)",
-						"text": "Load replaces the sketch by the one in a .tlspr file."
-					},
-					"Lock": {
-						"decl": "func (d *Doc) Lock(point Entity) Constraint",
-						"text": "Lock keeps a point where it is."
-					},
-					"Loft": {
-						"decl": "func (d *Doc) Loft(from, to Group, name string) Group",
-						"text": "Loft joins the closed loops of two sketches in workplanes, from and\nto, with ruled faces, curve by curve, and closes the ends with the\nsketches' planes: each loop must be one closed loop; a circle counts\nas four curves, and a loop with fewer curves than the other has its\nlongest split until they match. The solid joins the solid so far as\nan extrusion's does. The new group becomes active."
-					},
-					"LoftThrough": {
-						"decl": "func (d *Doc) LoftThrough(profiles []Group, name string) Group",
-						"text": "LoftThrough joins the closed loops of sketches in workplanes, three\nor more, in order, by one smooth surface through them all, and closes\nthe ends with the first and last sketches' planes. Loops of fewer\ncurves have their longest split until all match, and each loop after\nthe first starts at the curve nearest where the one before it does.\nThe new group becomes active."
-					},
-					"MaxDistance": {
-						"decl": "func (d *Doc) MaxDistance(a, b Entity, v float64) Constraint",
-						"text": "MaxDistance keeps a distance at most v, taking what MinDistance\ntakes. It leaves the sketch free to come nearer, and takes a degree\nof freedom only where the sketch would go further."
-					},
-					"Measure": {
-						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
-						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm. A face counts by its\noutward normal: a point outside the solid is at a positive distance\nfrom it, and two opposite faces are at 180 degrees."
-					},
-					"Midpoint": {
-						"decl": "func (d *Doc) Midpoint(point, line Entity) Constraint",
-						"text": "Midpoint puts a point at the middle of a line segment."
-					},
-					"MinDistance": {
-						"decl": "func (d *Doc) MinDistance(a, b Entity, v float64) Constraint",
-						"text": "MinDistance keeps a distance at least v: between two points, from a\npoint to a line segment, a workplane or a face, as Distance takes\nthem, or a line segment's length when b is Entity{}. Unlike\nDistance it leaves the sketch free to go further: it holds only\nwhere the sketch would come nearer, and takes a degree of freedom\nonly then. A distance from a line, a workplane or a face is signed,\nas Distance's is: the point keeps to v's side, at least |v| away."
-					},
-					"Mirror": {
-						"decl": "func (d *Doc) Mirror(plane Entity, name string) Group",
-						"text": "Mirror reflects the active group in plane, a workplane or a planar\nface: its entities are copied reflected, and its solid is reflected\nand joined with the original, combined with the model before it as\nthe active group's solid is, so a mirrored hole is cut too. The\ncopies follow the plane when it moves. The new group becomes\nactive; SetKeepOriginal(false) leaves the original out of the\nsolid."
-					},
-					"MmPerUnit": {
-						"decl": "func (d *Doc) MmPerUnit() (mm float64)",
-						"text": "MmPerUnit is the size in mm of the unit the user interface shows\nlengths in."
-					},
-					"MotionStudy": {
-						"decl": "func (d *Doc) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error)",
-						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach (roadmap 16.3). With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
-					},
-					"NewWorkplane": {
-						"decl": "func (d *Doc) NewWorkplane(origin, u, v Vec) Entity",
-						"text": "NewWorkplane adds a workplane through origin, with u to its right\nand v up, to a group drawn freely in 3d."
-					},
-					"On": {
-						"decl": "func (d *Doc) On(point, on Entity) Constraint",
-						"text": "On puts a point on a line segment, a circle or an arc, a workplane\nor a face."
-					},
-					"OnSegment": {
-						"decl": "func (d *Doc) OnSegment(point, line Entity) Constraint",
-						"text": "OnSegment puts a point on a line segment, between its ends: unlike\nOn, which puts it anywhere on the segment's line."
 					},
 					"Origin": {
 						"decl": "func (d *Doc) Origin() Entity",
 						"text": "Origin is the point at the origin."
 					},
-					"Parallel": {
-						"decl": "func (d *Doc) Parallel(a, b Entity) Constraint",
-						"text": "Parallel makes two line segments or normals parallel."
-					},
-					"Parameter": {
-						"decl": "func (d *Doc) Parameter(name string) (p Parameter, ok bool)",
-						"text": "Parameter returns the parameter named name, and whether there is\none."
-					},
-					"ParameterUsers": {
-						"decl": "func (d *Doc) ParameterUsers(name string) (users []string)",
-						"text": "ParameterUsers describes what names the parameter: other\nparameters, constraints and group values."
-					},
-					"Parameters": {
-						"decl": "func (d *Doc) Parameters() (params []Parameter)",
-						"text": "Parameters lists the parameter table, in the order the parameters\nwere made."
-					},
-					"Paste": {
-						"decl": "func (d *Doc) Paste(move Vec, angle, scale float64) (pasted []Entity)",
-						"text": "Paste adds what is on the clipboard to the active group, in the\nactive workplane, turned by angle degrees about the workplane's\norigin, scaled by scale and then moved by move, as Edit \u003e Paste\nTransformed does once; a scale of -1 mirrors it. It returns what\nwas drawn by pasting, a line for a line, without their points."
-					},
-					"PatternAlongPath": {
-						"decl": "func (d *Doc) PatternAlongPath(path []Entity, copies int, name string) Group",
-						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as Features \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. A path that closes, a circle alone or pieces\nthat come back to their start meeting it tangent, has the copies\nshared out evenly round it, starting at its point nearest the\nsolid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
-					},
-					"Perpendicular": {
-						"decl": "func (d *Doc) Perpendicular(a, b Entity) Constraint",
-						"text": "Perpendicular makes two line segments or normals perpendicular."
-					},
-					"Point": {
-						"decl": "func (d *Doc) Point(p Vec) Entity",
-						"text": "Point adds a datum point at p."
-					},
-					"Polyline": {
-						"decl": "func (d *Doc) Polyline(closed bool, points ...Vec) (lines []Entity)",
-						"text": "Polyline adds the line segments through points, each starting\nwhere the last ended, and back to the first if closed."
-					},
-					"Radius": {
-						"decl": "func (d *Doc) Radius(circle Entity, v float64) Constraint",
-						"text": "Radius sets the radius of a circle or an arc; the drawing shows the\ndimension as a radius."
-					},
-					"Rect": {
-						"decl": "func (d *Doc) Rect(a, b Vec) (lines []Entity)",
-						"text": "Rect adds a rectangle with the corners a and b and sides along the\nactive workplane's axes: four line segments, joined, two horizontal\nand two vertical, returned starting with the bottom one and going\naround counter-clockwise. It makes the same requests and constraints\nas the interface's rectangle tool dragged from the top left corner."
-					},
-					"Redo": {
-						"decl": "func (d *Doc) Redo() (ok bool)",
-						"text": "Redo does again what Undo took back."
-					},
-					"Regen": {
-						"decl": "func (d *Doc) Regen()",
-						"text": "Regen regenerates the whole sketch and solves it."
-					},
-					"RenameConfiguration": {
-						"decl": "func (d *Doc) RenameConfiguration(from, to string) (err error)",
-						"text": "RenameConfiguration renames a configuration."
-					},
-					"RenameParameter": {
-						"decl": "func (d *Doc) RenameParameter(from, to string) (err error)",
-						"text": "RenameParameter renames a parameter, and rewrites every expression\nthat names it."
-					},
-					"Render": {
-						"decl": "func (d *Doc) Render(path string, width, height int, view string) (err error)",
-						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"; or \"window\", as the application's\nwindow shows it, the same middle and as much of it across."
-					},
 					"Request": {
 						"decl": "func (d *Doc) Request(name string) (r Request)",
 						"text": "Request is the request with a description as the property browser\nshows it: \"r004-line-segment\" or just \"r004\"."
 					},
-					"Revolve": {
-						"decl": "func (d *Doc) Revolve(axis Entity, degrees float64, name string) Group",
-						"text": "Revolve makes a solid of the active group's sketch by turning it by\nan angle in degrees around a line segment. The new group becomes\nactive."
-					},
-					"Rotate": {
-						"decl": "func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) Group",
-						"text": "Rotate repeats the model so far n times, each turned by an angle in\ndegrees from the one before, about an axis through a point: the\ndirection of a line segment or of a normal, or, with no axis\n(Entity{}), the normal of the active workplane. The new group\nbecomes active."
-					},
-					"RunCommand": {
-						"decl": "func (d *Doc) RunCommand(label string) (err error)",
-						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. telesapr-cli runs scripts on the interface\nwithout a window, so commands run there too; a document of a Go\nprogram's own, from New, has no menu to run them from, and it is an\nerror. What the command says went wrong is the error too: a command\nthat would replace a drawing with unsaved changes, as File \u003e New,\nrefuses; see ForgetChanges. What the command changes is part of the\nscript's step of undo."
-					},
-					"Save": {
-						"decl": "func (d *Doc) Save(path string) (err error)",
-						"text": "Save regenerates the sketch and writes it to a .tlspr file. A\nSolveSpace model (.slvs) is not written."
-					},
-					"Section": {
-						"decl": "func (d *Doc) Section() (s Section)",
-						"text": "Section is the section view's state and its cut of the active\ngroup's solid."
-					},
-					"Select": {
-						"decl": "func (d *Doc) Select(entities ...Entity)",
-						"text": "Select selects entities on the drawing, and nothing else."
-					},
-					"SelectEdges": {
-						"decl": "func (d *Doc) SelectEdges(edges ...SolidEdge)",
-						"text": "SelectEdges selects edges of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a fillet or a chamfer\nmade from the menu. The edges must be of the solid at the active\ngroup, which such a group is made after."
-					},
-					"SelectFaces": {
-						"decl": "func (d *Doc) SelectFaces(faces ...SolidFace)",
-						"text": "SelectFaces selects faces of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a shell made from the\nmenu, or a face to draw on. A face an entity made is selected by its\nentity, one that no entity names by its identity."
-					},
-					"SelectedConstraints": {
-						"decl": "func (d *Doc) SelectedConstraints() (constraints []Constraint)",
-						"text": "SelectedConstraints are the constraints selected on the drawing."
-					},
-					"SelectedEdges": {
-						"decl": "func (d *Doc) SelectedEdges() (edges []SolidEdge)",
-						"text": "SelectedEdges are the edges of the solid selected on the drawing,\npicked on the model or by SelectEdges, as edges of the solid at the\nactive group."
-					},
-					"SelectedFaces": {
-						"decl": "func (d *Doc) SelectedFaces() (faces []SolidFace)",
-						"text": "SelectedFaces are the faces of the solid selected on the drawing,\npicked on the model or by SelectFaces, as faces of the solid at the\nactive group: a face entity's, or a face no entity names by its\nidentity. A face is given as the first with its identity."
-					},
-					"Selection": {
-						"decl": "func (d *Doc) Selection() (entities []Entity)",
-						"text": "Selection is what is selected on the drawing, but for the\nconstraints."
-					},
-					"SetChordTolerance": {
-						"decl": "func (d *Doc) SetChordTolerance(pct float64)",
-						"text": "SetChordTolerance sets how closely meshes follow curves, as a\npercentage of the model's size (0.1 unless set; smaller is finer and\nslower), and regenerates everything. In the application it is the\nsetting Configuration shows; scripts that check volumes against a\nformula use a fine one."
-					},
-					"SetDrawing": {
-						"decl": "func (d *Doc) SetDrawing(dr Drawing)",
-						"text": "SetDrawing gives the model the drawing dr: a sheet A4 to A0, Letter\nor Tabloid; a scale, 0 to fit; views, none for the standard ones\nplaced by the projection."
-					},
-					"SetFaceAppearance": {
-						"decl": "func (d *Doc) SetFaceAppearance(face SolidFace, name string)",
-						"text": "SetFaceAppearance gives one face of the solid its own appearance, or\nwith \"\" takes it away, so that the face has its group's. The face is\nkept by its identity, in the group that made it."
-					},
-					"SetParameter": {
-						"decl": "func (d *Doc) SetParameter(name, expr string) (err error)",
-						"text": "SetParameter gives the parameter name the expression expr, and adds\nit to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
-					},
-					"SetSection": {
-						"decl": "func (d *Doc) SetSection(plane Entity, offset string, flip bool)",
-						"text": "SetSection turns the section view on: the solid is drawn cut by a\nplane parallel to plane, a workplane or a planar face, offset along\nits normal (a number or an expression in the document's unit, \"\"\nfor none), the side the normal points to taken away, or the other\nside with flip. It is a way of looking, as View \u003e Section View is:\nnot saved and not undone. Render draws it too."
-					},
-					"SetUnits": {
-						"decl": "func (d *Doc) SetUnits(u core.Unit) (check []string)",
-						"text": "SetUnits makes u the document's unit, keeping every size, as View \u003e\nDimension Units does: a length expression is rewritten to give the\nsame length in u, \"(1/4)*25.4\" for \"1/4\" from inches to mm. It\nreturns the parameters that lengths are computed from, which now\ncount in u."
-					},
-					"SetWorkplane": {
-						"decl": "func (d *Doc) SetWorkplane(wp Entity)",
-						"text": "SetWorkplane makes wp the workplane that is drawn in, in the active\ngroup."
-					},
-					"Shell": {
-						"decl": "func (d *Doc) Shell(faces []Entity, thick float64, name string) Group",
-						"text": "Shell hollows the solid so far to walls thick mm, open where the faces\nare taken away: face entities, as Group.Faces gives an extrusion's.\nThis version hollows solids of flat faces, and refuses a thickness at\nwhich walls meet. The faces of the cavity have names. The new group\nbecomes active."
-					},
-					"ShellSolid": {
-						"decl": "func (d *Doc) ShellSolid(faces []SolidFace, thick float64, name string) Group",
-						"text": "ShellSolid hollows the solid so far as Shell does, taking away faces\npicked from Solid, such as one a Boolean or a loft made."
-					},
-					"ShowDrawingSheet": {
-						"decl": "func (d *Doc) ShowDrawingSheet(show bool) (err error)",
-						"text": "ShowDrawingSheet shows the drawing sheet in the window in place of\nthe model, as View \u003e Show Drawing Sheet does, or the model again; it\nis view state, not saved. It is an error for a bare sketch with no\napplication around it (New), or when the sheet can't be made, as when\nthe active group has no solid. With the sheet shown, Render with the view\n\"window\" pictures the sheet."
-					},
-					"Sketch3D": {
-						"decl": "func (d *Doc) Sketch3D(name string) Group",
-						"text": "Sketch3D adds a group to draw in freely in 3d, and makes it active."
-					},
-					"SketchAt": {
-						"decl": "func (d *Doc) SketchAt(origin Entity, u, v Vec, name string) Group",
-						"text": "SketchAt adds a group to draw in, in a workplane through a point,\nwith u to its right and v up; the nearest directions square to each\nother are taken. The new group becomes active."
-					},
-					"SketchIn": {
-						"decl": "func (d *Doc) SketchIn(wp Entity, name string) Group",
-						"text": "SketchIn adds a group to draw in, in a workplane like wp: one of\nthe reference workplanes, a workplane that was drawn, or the\nworkplane of another group. The new group becomes active, and its\nworkplane the one drawn in."
-					},
-					"SketchOnFace": {
-						"decl": "func (d *Doc) SketchOnFace(face SolidFace, name string) Group",
-						"text": "SketchOnFace adds a group to draw in, in a workplane lying in a flat\nface of the solid so far, as Solid.FaceAt or Solid.Face give it: its\nnormal out of the solid, its origin on a corner of the face and u\nalong an edge of it (for a face with no straight edge, as a\ncylinder's cap, the origin at the centre of its circle). The\nworkplane follows the face when an edit upstream moves it; when the\nface is gone, it stays where it was and Problem says so. The new\ngroup becomes active, and its workplane the one drawn in."
-					},
-					"Split": {
-						"decl": "func (d *Doc) Split(a, b Entity, near Vec)",
-						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near."
-					},
 					"String": {
 						"decl": "func (d *Doc) String() (s string)",
 						"text": "String describes the document."
-					},
-					"Sweep": {
-						"decl": "func (d *Doc) Sweep(path []Entity, name string) Group",
-						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). Two line segments may\nmeet at a corner, where the sweep is mitred: each piece cut by the\nplane that halves the corner. The new group becomes active."
-					},
-					"SweepEdges": {
-						"decl": "func (d *Doc) SweepEdges(edges []SolidEdge, path []Entity, name string) Group",
-						"text": "SweepEdges is Sweep along a chain of edges of the solid so far, by\nname (Solid, SolidEdge), and the line segments, arcs and cubics of\npath with them, one chain: a straight edge is a line, a circular one\nan arc, any other a curve as a cubic is. The sweep keeps the edges'\nnames, so it follows them when the model upstream changes."
-					},
-					"Symmetric": {
-						"decl": "func (d *Doc) Symmetric(a, b, about Entity) Constraint",
-						"text": "Symmetric makes two points mirror images of each other about a\nworkplane or a line segment; with no such thing (Entity{}), about\nthe axis of the active workplane they are across."
-					},
-					"Tangent": {
-						"decl": "func (d *Doc) Tangent(a, b Entity) Constraint",
-						"text": "Tangent makes an arc or a cubic tangent to a line segment, or to\nanother arc or cubic, where they share an end."
-					},
-					"TangentArc": {
-						"decl": "func (d *Doc) TangentArc(point Entity, radius float64, trim bool)",
-						"text": "TangentArc rounds the corner at a point where two line segments or\narcs of the active workplane meet, with an arc tangent to both, as\nSketch \u003e Tangent Arc at Point does. radius 0 lets the program choose\nit. With trim, the two are cut back to the arc; without, they become\nconstruction and trimmed copies are added."
-					},
-					"Text": {
-						"decl": "func (d *Doc) Text(text, font string, at Vec, height float64) Entity",
-						"text": "Text adds text in a TrueType font in the active workplane, its\nbottom left corner at at, and height high; it is as wide as the\nfont makes it. font is the name of a font file the program knows,\nas the text window lists them, or \"\" for the one built in."
-					},
-					"Thread": {
-						"decl": "func (d *Doc) Thread(circle Entity, o ThreadOptions) (g Group)",
-						"text": "Thread makes a screw thread on a circle or an arc, about its axis\nand from its plane, as Features \u003e Screw Thread does: four groups,\na sketch and a lathe that turn the part down (or bore it), and a\nridge sketch and a helix that sweeps it. It returns the helix group,\nwhich becomes active; its Check says whether the solid came out\nsound at the chord tolerance of the moment."
-					},
-					"Translate": {
-						"decl": "func (d *Doc) Translate(n int, delta Vec, name string) Group",
-						"text": "Translate repeats the model so far n times, each a step of delta\nfrom the one before. The new group becomes active."
-					},
-					"UV": {
-						"decl": "func (d *Doc) UV(u, v float64) (p Vec)",
-						"text": "UV is the point at (u, v) in the active workplane."
-					},
-					"Undo": {
-						"decl": "func (d *Doc) Undo() (ok bool)",
-						"text": "Undo takes back the last step: in a console, what the last line\nthat changed the sketch did."
-					},
-					"Units": {
-						"decl": "func (d *Doc) Units() (u core.Unit)",
-						"text": "Units is the document's unit of length: what lengths typed as text,\nin Constraint.SetExpr and Group.SetExpr and in the user interface,\nare in. Every other length this package takes or gives is in mm."
-					},
-					"Unsaved": {
-						"decl": "func (d *Doc) Unsaved() (unsaved bool)",
-						"text": "Unsaved reports whether the sketch changed since it was saved."
-					},
-					"Vertical": {
-						"decl": "func (d *Doc) Vertical(lineOrPoints ...Entity) Constraint",
-						"text": "Vertical makes a line segment, or two points, vertical in the\nactive workplane."
 					},
 					"With": {
 						"decl": "func (d *Doc) With(fn func(sk *sketch.Sketch))",
@@ -4914,9 +4598,117 @@
 				"text": "DrawingDimension is a dimension on a view of the drawing, see\nsketch.DrawingDimension.",
 				"kind": "sketch.DrawingDimension"
 			},
+			"DrawingMenu": {
+				"text": "DrawingMenu holds the calls of View \u003e Drawing Sheet and File \u003e Export\n\u003e Drawing: the sheet of views, sections and dimensions. A script\nreaches it as doc.Drawing.",
+				"kind": "struct",
+				"methods": {
+					"AddDimension": {
+						"decl": "func (m DrawingMenu) AddDimension(view, kind string, offset float64, edges ...SolidEdge)",
+						"text": "AddDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes.\nThe view is front, back, top, bottom, left, right or iso, where a\nlength is the edge's in the model, not as foreshortened, or a section\nor a detail by its letter (A, B, ...: the sections first)."
+					},
+					"AddEdgeFaceDistance": {
+						"decl": "func (m DrawingMenu) AddEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace)",
+						"text": "AddEdgeFaceDistance adds to the drawing's view the distance\nfrom a straight edge to a flat face it runs parallel to, as\nAddDrawingDimension does between edges."
+					},
+					"AddFaceDimension": {
+						"decl": "func (m DrawingMenu) AddFaceDimension(view, kind string, offset float64, faces ...SolidFace)",
+						"text": "AddFaceDimension adds a dimension of faces to the drawing's\nview, as AddDrawingDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
+					},
+					"Dimensions": {
+						"decl": "func (m DrawingMenu) Dimensions() (values []float64, errs []error)",
+						"text": "Dimensions measures the drawing's dimensions on the solid as\nit is: each one's value in mm, and an error for one that can't be\nmeasured, as for an edge no longer in the solid. It needs the\napplication, or a view of it."
+					},
+					"Export": {
+						"decl": "func (m DrawingMenu) Export(path string) (err error)",
+						"text": "Export writes the model's drawing to a vector file, by its\nextension: .pdf, .svg, .dxf, .eps, .ps, .plt. It needs the\napplication, or telesapr-cli export-drawing."
+					},
+					"Get": {
+						"decl": "func (m DrawingMenu) Get() (dr Drawing)",
+						"text": "Get is the model's drawing, or the default one, an A3 sheet\nfitted, if it has none yet. It is a copy: SetDrawing changes it."
+					},
+					"Set": {
+						"decl": "func (m DrawingMenu) Set(dr Drawing)",
+						"text": "Set gives the model the drawing dr: a sheet A4 to A0, Letter\nor Tabloid; a scale, 0 to fit; views, none for the standard ones\nplaced by the projection."
+					},
+					"Show": {
+						"decl": "func (m DrawingMenu) Show(show bool) (err error)",
+						"text": "Show shows the drawing sheet in the window in place of\nthe model, as View \u003e Show Drawing Sheet does, or the model again; it\nis view state, not saved. It is an error for a bare sketch with no\napplication around it (New), or when the sheet can't be made, as when\nthe active group has no solid. With the sheet shown, Render with the view\n\"window\" pictures the sheet."
+					},
+					"Shown": {
+						"decl": "func (m DrawingMenu) Shown() (shown bool)",
+						"text": "Shown reports whether the window shows the drawing sheet."
+					}
+				}
+			},
 			"DrawingView": {
 				"text": "DrawingView is a view on the sheet, see sketch.DrawingView.",
 				"kind": "sketch.DrawingView"
+			},
+			"EditMenu": {
+				"text": "EditMenu holds the calls of the Edit menu: undo, regeneration, the\nclipboard, the selection, commands and preferences. A script reaches\nit as doc.Edit.",
+				"kind": "struct",
+				"methods": {
+					"ChordTolerance": {
+						"decl": "func (m EditMenu) ChordTolerance() (pct float64)",
+						"text": "ChordTolerance is how closely meshes follow curves, as a percentage\nof the model's size."
+					},
+					"Copy": {
+						"decl": "func (m EditMenu) Copy(entities ...Entity)",
+						"text": "Copy puts the entities on the clipboard, with the constraints between\nthem, as Edit \u003e Copy does with them selected. Workplanes are left out."
+					},
+					"Paste": {
+						"decl": "func (m EditMenu) Paste(move Vec, angle, scale float64) (pasted []Entity)",
+						"text": "Paste adds what is on the clipboard to the active group, in the\nactive workplane, turned by angle degrees about the workplane's\norigin, scaled by scale and then moved by move, as Edit \u003e Paste\nTransformed does once; a scale of -1 mirrors it. It returns what\nwas drawn by pasting, a line for a line, without their points."
+					},
+					"Redo": {
+						"decl": "func (m EditMenu) Redo() (ok bool)",
+						"text": "Redo does again what Undo took back."
+					},
+					"Regen": {
+						"decl": "func (m EditMenu) Regen()",
+						"text": "Regen regenerates the whole sketch and solves it."
+					},
+					"RunCommand": {
+						"decl": "func (m EditMenu) RunCommand(label string) (err error)",
+						"text": "RunCommand runs a command of the main menu, as choosing it does:\n\"View \u003e Zoom To Fit\", or the entry's own name, \"Zoom To Fit\", when\nonly one entry has it. telesapr-cli runs scripts on the interface\nwithout a window, so commands run there too; a document of a Go\nprogram's own, from New, has no menu to run them from, and it is an\nerror. What the command says went wrong is the error too: a command\nthat would replace a drawing with unsaved changes, as File \u003e New,\nrefuses; see ForgetChanges. What the command changes is part of the\nscript's step of undo."
+					},
+					"Select": {
+						"decl": "func (m EditMenu) Select(entities ...Entity)",
+						"text": "Select selects entities on the drawing, and nothing else."
+					},
+					"SelectEdges": {
+						"decl": "func (m EditMenu) SelectEdges(edges ...SolidEdge)",
+						"text": "SelectEdges selects edges of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a fillet or a chamfer\nmade from the menu. The edges must be of the solid at the active\ngroup, which such a group is made after."
+					},
+					"SelectFaces": {
+						"decl": "func (m EditMenu) SelectFaces(faces ...SolidFace)",
+						"text": "SelectFaces selects faces of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a shell made from the\nmenu, or a face to draw on. A face an entity made is selected by its\nentity, one that no entity names by its identity."
+					},
+					"SelectedConstraints": {
+						"decl": "func (m EditMenu) SelectedConstraints() (constraints []Constraint)",
+						"text": "SelectedConstraints are the constraints selected on the drawing."
+					},
+					"SelectedEdges": {
+						"decl": "func (m EditMenu) SelectedEdges() (edges []SolidEdge)",
+						"text": "SelectedEdges are the edges of the solid selected on the drawing,\npicked on the model or by SelectEdges, as edges of the solid at the\nactive group."
+					},
+					"SelectedFaces": {
+						"decl": "func (m EditMenu) SelectedFaces() (faces []SolidFace)",
+						"text": "SelectedFaces are the faces of the solid selected on the drawing,\npicked on the model or by SelectFaces, as faces of the solid at the\nactive group: a face entity's, or a face no entity names by its\nidentity. A face is given as the first with its identity."
+					},
+					"Selection": {
+						"decl": "func (m EditMenu) Selection() (entities []Entity)",
+						"text": "Selection is what is selected on the drawing, but for the\nconstraints."
+					},
+					"SetChordTolerance": {
+						"decl": "func (m EditMenu) SetChordTolerance(pct float64)",
+						"text": "SetChordTolerance sets how closely meshes follow curves, as a\npercentage of the model's size (0.1 unless set; smaller is finer and\nslower), and regenerates everything. In the application it is the\nsetting Configuration shows; scripts that check volumes against a\nformula use a fine one."
+					},
+					"Undo": {
+						"decl": "func (m EditMenu) Undo() (ok bool)",
+						"text": "Undo takes back the last step: in a console, what the last line\nthat changed the sketch did."
+					}
+				}
 			},
 			"Entity": {
 				"text": "Entity is something on the drawing: a point, a line segment, a\ncircle, an arc, a curve, a workplane, a normal, a face. What is\ndrawn makes several: a line segment is an entity and so are its two\nends.",
@@ -5042,29 +4834,249 @@
 					"ExportSurfaces"
 				]
 			},
+			"ExtrudeGroup": {
+				"text": "ExtrudeGroup is the view of an extrusion: its draft.",
+				"kind": "struct",
+				"methods": {
+					"Draft": {
+						"decl": "func (v ExtrudeGroup) Draft() (degrees float64)",
+						"text": "Draft is an extrusion's draft in degrees: its sides lean into the\nsolid by that much from the sketch's plane, out when it is negative."
+					},
+					"DraftFaces": {
+						"decl": "func (v ExtrudeGroup) DraftFaces() (curves []Entity)",
+						"text": "DraftFaces are the curves of an extrusion's sketch whose sides its\ndraft leans, or none when it leans every side."
+					},
+					"DraftNeutral": {
+						"decl": "func (v ExtrudeGroup) DraftNeutral() (mm float64)",
+						"text": "DraftNeutral is how far along an extrusion, from the sketch's plane,\nits draft's neutral plane lies, in mm: where the solid has the\nprofile's outline."
+					},
+					"SetDraft": {
+						"decl": "func (v ExtrudeGroup) SetDraft(degrees float64)",
+						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs; an arc may meet a line at a sharp corner,\nbut arcs meet each other tangent. A draft at which the sides meet is\na problem on the group, and the extrusion is made without it. SetExpr\nwith sketch.GroupValC gives it an expression. SetDraftFaces leans\nonly some sides, and SetDraftNeutral leans them from another plane."
+					},
+					"SetDraftFaces": {
+						"decl": "func (v ExtrudeGroup) SetDraftFaces(curves []Entity)",
+						"text": "SetDraftFaces makes an extrusion's draft lean the sides of curves\nonly, the rest staying upright; none leans every side again. A curve\nis a line, arc or circle of the extruded sketch, or its copy at an end\nof the extrusion, or the face of its side."
+					},
+					"SetDraftNeutral": {
+						"decl": "func (v ExtrudeGroup) SetDraftNeutral(mm float64)",
+						"text": "SetDraftNeutral leans an extrusion's drafted sides from the plane mm\nalong it from the sketch's plane, negative towards a two-sided\nextrusion's other end: there the solid has the profile's outline, and\nit narrows going away from it both ways, as a moulded part does from\nits parting line. 0 is the sketch's plane. A plane off the extrusion\nis a problem on the group. SetExpr with sketch.GroupPitch gives it an\nexpression in the document's unit."
+					}
+				}
+			},
+			"FeaturesMenu": {
+				"text": "FeaturesMenu holds the calls of the Features menu: the groups that\nstart a sketch or make a solid. Each adds a group after the active\none and makes it active. A script reaches it as doc.Features.",
+				"kind": "struct",
+				"methods": {
+					"BrokenReferences": {
+						"decl": "func (m FeaturesMenu) BrokenReferences() (refs []BrokenReference)",
+						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Edit \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
+					},
+					"Chamfer": {
+						"decl": "func (m FeaturesMenu) Chamfer(edges []Entity, distance float64, name string) Group",
+						"text": "Chamfer cuts edges of the solid so far, at distance mm from each\nedge on both faces that meet there, a 45 degree chamfer where they\nare square. An edge is a line segment that lies along an edge\nbetween two flat faces and sticks out, as the copies of the sketch\nat the ends of an extrusion and the lines along its sides do; or a\ncircle or arc where a flat face meets a cylinder or a cone about the\ncircle's axis, as an extruded circle's or a lathed frustum's, which is\ncut all round by a cone. The new group\nbecomes active."
+					},
+					"ChamferSolid": {
+						"decl": "func (m FeaturesMenu) ChamferSolid(edges []SolidEdge, distance float64, name string) Group",
+						"text": "ChamferSolid cuts edges of the solid so far, by name, at distance mm\nfrom each edge on both faces: any straight edge between two flat\nfaces, such as one a Boolean made, or a circular one where a flat\nface meets a cylinder or a cone, picked from Solid. The chamfer\nkeeps the edges' names, so it follows them when the model upstream\nchanges, and reports when one no longer resolves. The new group\nbecomes active."
+					},
+					"ClearBrokenReferences": {
+						"decl": "func (m FeaturesMenu) ClearBrokenReferences()",
+						"text": "ClearBrokenReferences empties the list BrokenReferences gives."
+					},
+					"Extrude": {
+						"decl": "func (m FeaturesMenu) Extrude(depth float64, name string) Group",
+						"text": "Extrude makes a solid of the active group's sketch by extruding it\nby depth along the normal of its workplane, or against it for a\nnegative depth. The depth is where the extrusion starts, as when it\nis dragged; constrain a point of it to keep it. The new group\nbecomes active."
+					},
+					"Fillet": {
+						"decl": "func (m FeaturesMenu) Fillet(edges []Entity, radius float64, name string) Group",
+						"text": "Fillet rounds edges of the solid so far with radius mm: line segments\nalong edges between two flat faces, as the copies of the sketch at\nthe ends of an extrusion and the lines along its sides are. Each edge\nmust end at corners of three flat faces. An edge that sticks out is\nrounded off, and one that goes in, as a pocket's, is filled. Two\nrounded edges that meet at a corner are mitred, their cylinders\nmeeting along an ellipse, the one that turns further going on past it\nwhen the faces don't lie alike about them; three get a sphere. A\ncircle or arc where a flat face meets a cylinder or a cone about the\ncircle's axis, as an extruded circle's, a hole's rim, a boss's foot or\na lathed frustum's top, is rounded all round by a torus. An edge\ntakes with it the edges it meets smoothly, as round a rectangle whose\ncorners are rounded. An edge may have a radius of its own\n(SetEdgeRadius), but edges that meet at a corner need one. The faces\na fillet makes are exact cylinders, spheres and tori, and their edges\nhave names. The new group becomes active."
+					},
+					"FilletSolid": {
+						"decl": "func (m FeaturesMenu) FilletSolid(edges []SolidEdge, radius float64, name string) Group",
+						"text": "FilletSolid rounds edges of the solid so far, by name, with radius\nmm, as Fillet does: any straight edge between two flat faces, such\nas one a Boolean made, or a circular one, picked from Solid. The fillet\nkeeps the names, so it follows the edges when the model upstream\nchanges. The new group becomes active."
+					},
+					"Helix": {
+						"decl": "func (m FeaturesMenu) Helix(axis Entity, degrees, length float64, name string) Group",
+						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. The new group becomes active."
+					},
+					"Lathe": {
+						"decl": "func (m FeaturesMenu) Lathe(axis Entity, name string) Group",
+						"text": "Lathe makes a solid of the active group's sketch by turning it all\nthe way around a line segment. The new group becomes active."
+					},
+					"Loft": {
+						"decl": "func (m FeaturesMenu) Loft(from, to Group, name string) Group",
+						"text": "Loft joins the closed loops of two sketches in workplanes, from and\nto, with ruled faces, curve by curve, and closes the ends with the\nsketches' planes: each loop must be one closed loop; a circle counts\nas four curves, and a loop with fewer curves than the other has its\nlongest split until they match. The solid joins the solid so far as\nan extrusion's does. The new group becomes active."
+					},
+					"LoftThrough": {
+						"decl": "func (m FeaturesMenu) LoftThrough(profiles []Group, name string) Group",
+						"text": "LoftThrough joins the closed loops of sketches in workplanes, three\nor more, in order, by one smooth surface through them all, and closes\nthe ends with the first and last sketches' planes. Loops of fewer\ncurves have their longest split until all match, and each loop after\nthe first starts at the curve nearest where the one before it does.\nThe new group becomes active."
+					},
+					"Mirror": {
+						"decl": "func (m FeaturesMenu) Mirror(plane Entity, name string) Group",
+						"text": "Mirror reflects the active group in plane, a workplane or a planar\nface: its entities are copied reflected, and its solid is reflected\nand joined with the original, combined with the model before it as\nthe active group's solid is, so a mirrored hole is cut too. The\ncopies follow the plane when it moves. The new group becomes\nactive; SetKeepOriginal(false) leaves the original out of the\nsolid."
+					},
+					"PatternAlongPath": {
+						"decl": "func (m FeaturesMenu) PatternAlongPath(path []Entity, copies int, name string) Group",
+						"text": "PatternAlongPath repeats the active group's solid along path, line\nsegments and arcs joined end to end and meeting tangent, as a sweep's\npath, copies times in all: the first where the solid is and the last\nat the far end of the path, spaced evenly along it, each turned with\nit, as Features \u003e Pattern Along Path does. The path starts at its\nend nearest the solid. A path that closes, a circle alone or pieces\nthat come back to their start meeting it tangent, has the copies\nshared out evenly round it, starting at its point nearest the\nsolid. Copies and SetCopies read and change the\ncount; the sketch's entities are not copied."
+					},
+					"Revolve": {
+						"decl": "func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group",
+						"text": "Revolve makes a solid of the active group's sketch by turning it by\nan angle in degrees around a line segment. The new group becomes\nactive."
+					},
+					"Rotate": {
+						"decl": "func (m FeaturesMenu) Rotate(n int, center, axis Entity, degrees float64, name string) Group",
+						"text": "Rotate repeats the model so far n times, each turned by an angle in\ndegrees from the one before, about an axis through a point: the\ndirection of a line segment or of a normal, or, with no axis\n(Entity{}), the normal of the active workplane. The new group\nbecomes active."
+					},
+					"Shell": {
+						"decl": "func (m FeaturesMenu) Shell(faces []Entity, thick float64, name string) Group",
+						"text": "Shell hollows the solid so far to walls thick mm, open where the faces\nare taken away: face entities, as Group.Faces gives an extrusion's.\nThis version hollows solids of flat faces, and refuses a thickness at\nwhich walls meet. The faces of the cavity have names. The new group\nbecomes active."
+					},
+					"ShellSolid": {
+						"decl": "func (m FeaturesMenu) ShellSolid(faces []SolidFace, thick float64, name string) Group",
+						"text": "ShellSolid hollows the solid so far as Shell does, taking away faces\npicked from Solid, such as one a Boolean or a loft made."
+					},
+					"Sketch3D": {
+						"decl": "func (m FeaturesMenu) Sketch3D(name string) Group",
+						"text": "Sketch3D adds a group to draw in freely in 3d, and makes it active."
+					},
+					"SketchAt": {
+						"decl": "func (m FeaturesMenu) SketchAt(origin Entity, u, v Vec, name string) Group",
+						"text": "SketchAt adds a group to draw in, in a workplane through a point,\nwith u to its right and v up; the nearest directions square to each\nother are taken. The new group becomes active."
+					},
+					"SketchIn": {
+						"decl": "func (m FeaturesMenu) SketchIn(wp Entity, name string) Group",
+						"text": "SketchIn adds a group to draw in, in a workplane like wp: one of\nthe reference workplanes, a workplane that was drawn, or the\nworkplane of another group. The new group becomes active, and its\nworkplane the one drawn in."
+					},
+					"SketchOnFace": {
+						"decl": "func (m FeaturesMenu) SketchOnFace(face SolidFace, name string) Group",
+						"text": "SketchOnFace adds a group to draw in, in a workplane lying in a flat\nface of the solid so far, as Solid.FaceAt or Solid.Face give it: its\nnormal out of the solid, its origin on a corner of the face and u\nalong an edge of it (for a face with no straight edge, as a\ncylinder's cap, the origin at the centre of its circle). The\nworkplane follows the face when an edit upstream moves it; when the\nface is gone, it stays where it was and Problem says so. The new\ngroup becomes active, and its workplane the one drawn in."
+					},
+					"Sweep": {
+						"decl": "func (m FeaturesMenu) Sweep(path []Entity, name string) Group",
+						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). Two line segments may\nmeet at a corner, where the sweep is mitred: each piece cut by the\nplane that halves the corner. The new group becomes active."
+					},
+					"SweepEdges": {
+						"decl": "func (m FeaturesMenu) SweepEdges(edges []SolidEdge, path []Entity, name string) Group",
+						"text": "SweepEdges is Sweep along a chain of edges of the solid so far, by\nname (Solid, SolidEdge), and the line segments, arcs and cubics of\npath with them, one chain: a straight edge is a line, a circular one\nan arc, any other a curve as a cubic is. The sweep keeps the edges'\nnames, so it follows them when the model upstream changes."
+					},
+					"Thread": {
+						"decl": "func (m FeaturesMenu) Thread(circle Entity, o ThreadOptions) (g Group)",
+						"text": "Thread makes a screw thread on a circle or an arc, about its axis\nand from its plane, as Features \u003e Screw Thread does: four groups,\na sketch and a lathe that turn the part down (or bore it), and a\nridge sketch and a helix that sweeps it. It returns the helix group,\nwhich becomes active; its Check says whether the solid came out\nsound at the chord tolerance of the moment."
+					},
+					"Translate": {
+						"decl": "func (m FeaturesMenu) Translate(n int, delta Vec, name string) Group",
+						"text": "Translate repeats the model so far n times, each a step of delta\nfrom the one before. The new group becomes active."
+					}
+				}
+			},
+			"FileMenu": {
+				"text": "FileMenu holds the calls of the File menu: loading, saving and\nexporting the drawing. A script reaches it as doc.File.",
+				"kind": "struct",
+				"methods": {
+					"Export": {
+						"decl": "func (m FileMenu) Export(path string) error",
+						"text": "Export writes the sketch in the format the file's extension names:\nthe mesh of the solid (.stl, .obj, ...), the view (.svg, .dxf, .pdf,\n...), the surfaces of the solid (.step), or a picture as Render\nmakes it (.png)."
+					},
+					"ExportAs": {
+						"decl": "func (m FileMenu) ExportAs(kind ExportKind, path string) (err error)",
+						"text": "ExportAs is Export for a format that can hold several things, such\nas a wireframe in a .dxf or a .step."
+					},
+					"ForgetChanges": {
+						"decl": "func (m FileMenu) ForgetChanges()",
+						"text": "ForgetChanges lets the changes made since the sketch was saved go, as\n\"Don't Save\" does when the application asks: File \u003e New, Open and\nthe others that replace the drawing refuse to run from a script while\nit has unsaved changes, so that nothing is lost unasked. The\ndrawing itself stays as it is until such a command replaces it."
+					},
+					"Load": {
+						"decl": "func (m FileMenu) Load(path string) (err error)",
+						"text": "Load replaces the sketch by the one in a .tlspr file."
+					},
+					"Render": {
+						"decl": "func (m FileMenu) Render(path string, width, height int, view string) (err error)",
+						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"; or \"window\", as the application's\nwindow shows it, the same middle and as much of it across."
+					},
+					"Save": {
+						"decl": "func (m FileMenu) Save(path string) (err error)",
+						"text": "Save regenerates the sketch and writes it to a .tlspr file. A\nSolveSpace model (.slvs) is not written."
+					},
+					"Unsaved": {
+						"decl": "func (m FileMenu) Unsaved() (unsaved bool)",
+						"text": "Unsaved reports whether the sketch changed since it was saved."
+					}
+				}
+			},
+			"FilletGroup": {
+				"text": "FilletGroup is the view of a fillet: its radius, and the radius of\neach edge that has its own.",
+				"kind": "struct",
+				"methods": {
+					"EdgeRadius": {
+						"decl": "func (v FilletGroup) EdgeRadius(i int) (mm float64)",
+						"text": "EdgeRadius is the radius in mm a fillet gives its edge i, counting\nthe entities Edges gives and then the edges SolidEdges gives, from 0:\nthe edge's own, or the fillet's."
+					},
+					"Radius": {
+						"decl": "func (v FilletGroup) Radius() (mm float64)",
+						"text": "Radius is a fillet's radius in mm."
+					},
+					"SetEdgeRadius": {
+						"decl": "func (v FilletGroup) SetEdgeRadius(i int, mm float64)",
+						"text": "SetEdgeRadius gives a fillet's edge i, counted as EdgeRadius counts,\na radius of its own in mm, or with 0 the fillet's again. Rounded\nedges that meet at a corner must have one radius; one that ends where\nno other rounded edge does may have any."
+					},
+					"SetEdgeRadiusExpr": {
+						"decl": "func (v FilletGroup) SetEdgeRadiusExpr(i int, expr string) (err error)",
+						"text": "SetEdgeRadiusExpr gives a fillet's edge i, counted as EdgeRadius\ncounts, a radius of its own from an expression in the document's\nunit, which may name parameters; \"\" gives it the fillet's radius\nagain."
+					},
+					"SetRadius": {
+						"decl": "func (v FilletGroup) SetRadius(mm float64)",
+						"text": "SetRadius sets a fillet's radius in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					}
+				}
+			},
 			"Group": {
 				"text": "Group is a group of the sketch: a drawing in a workplane or in 3d,\nor a step that makes a solid from the group before it, as an\nextrusion does.",
 				"kind": "struct",
 				"methods": {
+					"Analyze": {
+						"decl": "func (g Group) Analyze() GroupAnalysis",
+						"text": "Analyze measures and checks the solid up to and with the group."
+					},
 					"Appearance": {
 						"decl": "func (g Group) Appearance() (name string)",
 						"text": "Appearance is the group's solid's appearance, \"\" for the default,\nplastic."
 					},
-					"Area": {
-						"decl": "func (g Group) Area() (mm2 float64)",
-						"text": "Area is the area in mm² of the closed region the group's sketch\ndraws, holes taken out, as Analyze \u003e Measure Area gives it with\nnothing selected."
+					"AsChamfer": {
+						"decl": "func (g Group) AsChamfer() ChamferGroup",
+						"text": "AsChamfer is the view of a chamfer."
 					},
-					"Bounds": {
-						"decl": "func (g Group) Bounds() (lo, hi Vec)",
-						"text": "Bounds are the corners of the box around the model up to and with\nthis group."
+					"AsExtrude": {
+						"decl": "func (g Group) AsExtrude() ExtrudeGroup",
+						"text": "AsExtrude is the view of an extrusion."
 					},
-					"CenterOfMass": {
-						"decl": "func (g Group) CenterOfMass() (p Vec)",
-						"text": "CenterOfMass is the centre of mass of the model up to and with this\ngroup, of one density throughout, as Analyze \u003e Show Center of Mass\nmarks it."
+					"AsFillet": {
+						"decl": "func (g Group) AsFillet() FilletGroup",
+						"text": "AsFillet is the view of a fillet."
 					},
-					"Check": {
-						"decl": "func (g Group) Check() (r check.Report)",
-						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked,\nand is false too when the group added no solid for a Problem (as an\nextrusion of a sketch that crosses itself), which Report.Problem\nholds; Report.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
+					"AsLink": {
+						"decl": "func (g Group) AsLink() LinkGroup",
+						"text": "AsLink is the view of a linked part."
+					},
+					"AsLoft": {
+						"decl": "func (g Group) AsLoft() LoftGroup",
+						"text": "AsLoft is the view of a loft."
+					},
+					"AsMirror": {
+						"decl": "func (g Group) AsMirror() MirrorGroup",
+						"text": "AsMirror is the view of a mirror."
+					},
+					"AsRepeat": {
+						"decl": "func (g Group) AsRepeat() RepeatGroup",
+						"text": "AsRepeat is the view of a step and repeat or a pattern along a path."
+					},
+					"AsShell": {
+						"decl": "func (g Group) AsShell() ShellGroup",
+						"text": "AsShell is the view of a shell."
+					},
+					"AsSweep": {
+						"decl": "func (g Group) AsSweep() SweepGroup",
+						"text": "AsSweep is the view of a sweep along a path."
 					},
 					"Conflicts": {
 						"decl": "func (g Group) Conflicts() (constraints []Constraint)",
@@ -5074,49 +5086,17 @@
 						"decl": "func (g Group) Constraints() (constraints []Constraint)",
 						"text": "Constraints are the group's constraints."
 					},
-					"Copies": {
-						"decl": "func (g Group) Copies() (n int)",
-						"text": "Copies is how many copies a step and repeat or a pattern makes."
-					},
-					"CornerRadius": {
-						"decl": "func (g Group) CornerRadius() (mm float64)",
-						"text": "CornerRadius is a sweep's corner radius in mm, 0 where its corners\nare mitred."
-					},
 					"Delete": {
 						"decl": "func (g Group) Delete()",
 						"text": "Delete deletes the group and what depends on it. If the active\ngroup goes, being this one or one that used it, the last group\nbefore it that is left becomes active, so that new groups come\nwhere the history ends; Doc.Active says which it is."
-					},
-					"DependsOn": {
-						"decl": "func (g Group) DependsOn() (groups []Group)",
-						"text": "DependsOn lists the groups this group refers to, in history order:\nthe group it extrudes or copies, the workplane it is drawn in, and the\ngroups whose entities its sketch and constraints name. The references\nare left out."
 					},
 					"Describe": {
 						"decl": "func (g Group) Describe() (s string)",
 						"text": "Describe lists what the group holds, as text: how it solved, each\nrequest with where it is, in mm, and each constraint with its value\nand what it is on. The names it gives are the ones Doc.Request and\nDoc.Constraint take."
 					},
-					"Distance": {
-						"decl": "func (g Group) Distance() (mm float64)",
-						"text": "Distance is a chamfer's distance in mm."
-					},
 					"Dof": {
 						"decl": "func (g Group) Dof() (dof int)",
 						"text": "Dof is how many degrees of freedom the group's constraints leave."
-					},
-					"Draft": {
-						"decl": "func (g Group) Draft() (degrees float64)",
-						"text": "Draft is an extrusion's draft in degrees: its sides lean into the\nsolid by that much from the sketch's plane, out when it is negative."
-					},
-					"DraftFaces": {
-						"decl": "func (g Group) DraftFaces() (curves []Entity)",
-						"text": "DraftFaces are the curves of an extrusion's sketch whose sides its\ndraft leans, or none when it leans every side."
-					},
-					"DraftNeutral": {
-						"decl": "func (g Group) DraftNeutral() (mm float64)",
-						"text": "DraftNeutral is how far along an extrusion, from the sketch's plane,\nits draft's neutral plane lies, in mm: where the solid has the\nprofile's outline."
-					},
-					"EdgeRadius": {
-						"decl": "func (g Group) EdgeRadius(i int) (mm float64)",
-						"text": "EdgeRadius is the radius in mm a fillet gives its edge i, counting\nthe entities Edges gives and then the edges SolidEdges gives, from 0:\nthe edge's own, or the fillet's."
 					},
 					"Edges": {
 						"decl": "func (g Group) Edges() (edges []Entity)",
@@ -5138,13 +5118,9 @@
 						"decl": "func (g Group) Faces() (faces []Entity)",
 						"text": "Faces are the planar faces this group made, which constraints and\nthe section view can refer to."
 					},
-					"Guides": {
-						"decl": "func (g Group) Guides() (curves []Entity)",
-						"text": "Guides are a loft's guide curves, the line segments, arcs and cubics\nthat hold it (see SetGuides), or none."
-					},
-					"KeepOriginal": {
-						"decl": "func (g Group) KeepOriginal() (keep bool)",
-						"text": "KeepOriginal reports whether a mirror's solid has the original as\nwell as the reflection."
+					"History": {
+						"decl": "func (g Group) History() GroupHistory",
+						"text": "History is what the group depends on, and where it sits in the list\nof groups."
 					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
@@ -5154,85 +5130,21 @@
 						"decl": "func (g Group) LeftOut() (why string)",
 						"text": "LeftOut says why the group is left out of the model, or \"\" if it is\nin: \"suppressed\" for a group suppressed whole, or \"uses g004-sketch,\nwhich is suppressed\" for one that uses such a group. A group left out\nhas no entities and no solid of its own, and can't be made active."
 					},
-					"LinkAsSolid": {
-						"decl": "func (g Group) LinkAsSolid() (on bool)",
-						"text": "LinkAsSolid reports whether a link group reads its STEP file as a\nsolid rather than as a reference mesh."
-					},
-					"LinkInfo": {
-						"decl": "func (g Group) LinkInfo() (lines []string)",
-						"text": "LinkInfo describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
-					},
-					"LinkProblem": {
-						"decl": "func (g Group) LinkProblem() (msg string)",
-						"text": "LinkProblem says what of the file a link group links could not be\nread, such as the faces of a STEP file on a kind of surface the\nreader does not support, or that the file holds no solid it can\nread; \"\" when all of it was."
-					},
-					"Mesh": {
-						"decl": "func (g Group) Mesh() (m *srf.SMesh)",
-						"text": "Mesh is the triangle mesh of the model up to and with this group.\nIt is the sketch's own, and is replaced when the sketch\nregenerates."
-					},
-					"MirrorSolid": {
-						"decl": "func (g Group) MirrorSolid() (whole bool)",
-						"text": "MirrorSolid reports whether a mirror reflects the whole solid so far,\nup to and with its source group, rather than the source group's own\nsolid."
-					},
-					"MoveBefore": {
-						"decl": "func (g Group) MoveBefore(other Group) error",
-						"text": "MoveBefore moves the group in the history to just before other, as\none undo step. A move that would put a group ahead of a group it\nuses is refused with an error naming both, and nothing changes:\nan extrusion can't move before its sketch, nor a sketch after its\nextrusion. The references stay first."
-					},
-					"MoveToEnd": {
-						"decl": "func (g Group) MoveToEnd() error",
-						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes. Only this group moves: the sketches it uses stay where they\nare, as they come before it already. MoveToEndWithSources moves them\nalong."
-					},
-					"MoveToEndWithSources": {
-						"decl": "func (g Group) MoveToEndWithSources() ([]Group, error)",
-						"text": "MoveToEndWithSources moves the group to the end of the history\ntogether with its OwnSources, keeping their order, as one undo step:\nan extrusion moves with its sketch. It returns the groups moved, in\ntheir new order. A move that would put one of them ahead of a group\nit uses, or another group ahead of one of them that it uses, is\nrefused with an error naming both, and nothing changes."
-					},
-					"MoveWithSourcesBefore": {
-						"decl": "func (g Group) MoveWithSourcesBefore(other Group) ([]Group, error)",
-						"text": "MoveWithSourcesBefore moves the group with its OwnSources to just\nbefore other, as MoveToEndWithSources moves them to the end."
-					},
 					"Name": {
 						"decl": "func (g Group) Name() (name string)",
 						"text": "Name is the group's name."
-					},
-					"OwnSources": {
-						"decl": "func (g Group) OwnSources() (groups []Group)",
-						"text": "OwnSources lists the group with the groups only it needs, in history\norder: those it uses, directly or through each other, that no other\ngroup uses, as an extrusion's sketch. These are what\nMoveToEndWithSources moves."
 					},
 					"Param": {
 						"decl": "func (g Group) Param(i int) Param",
 						"text": "Param is the group's i-th parameter: for an extrusion, 0 to 2 are\nthe vector to its middle; for a step and repeat translating, the step; for a\nrevolve or a step and repeat rotating, 3 is the angle in radians."
 					},
-					"Plane": {
-						"decl": "func (g Group) Plane() (plane Entity)",
-						"text": "Plane is the workplane or face a mirror reflects in."
-					},
-					"Probe": {
-						"decl": "func (g Group) Probe(from, dir Vec) (inside []check.Interval)",
-						"text": "Probe is where the line through from along dir passes through the\nsolid of the model up to and with this group, by the ray-cast oracle\n(Group.RayCheck): the stretches inside it, in the line's parameter,\ndir's length to one. It fails as RayCheck does."
-					},
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
 						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where."
 					},
-					"Profiles": {
-						"decl": "func (g Group) Profiles() (out []Group)",
-						"text": "Profiles are the sketches a loft joins, in order."
-					},
-					"Radius": {
-						"decl": "func (g Group) Radius() (mm float64)",
-						"text": "Radius is a fillet's radius in mm."
-					},
-					"RayCheck": {
-						"decl": "func (g Group) RayCheck() (r check.RayReport)",
-						"text": "RayCheck checks the solid of the model up to and with this group by\nthe ray-cast oracle, which rebuilds it from the groups' definitions\n(profiles, extrusions, axes, where step and repeats, patterns along a\npath and mirrors put their copies) without the kernel's surface\nintersection: its volume, centre of mass and inertia tensor about it\n(Measure.Inertia, for a density of one, in mm⁵;\nMeasure.PrincipalMoments) by three grids of rays, the rays along\nwhich it and the kernel's mesh disagree by more than twice the chord\ntolerance, and the mesh's half-edges (each edge used twice, once each\nway). It fails for a model with a group the oracle can't build, as a\nfillet or a drafted extrusion: extrusions without draft, lathes,\nrevolves and copies of them only. Analyze \u003e Ray-Cast Check shows the\nsame."
-					},
 					"Requests": {
 						"decl": "func (g Group) Requests() (requests []Request)",
 						"text": "Requests are what was drawn in the group."
-					},
-					"SecondDistance": {
-						"decl": "func (g Group) SecondDistance() (mm float64)",
-						"text": "SecondDistance is a chamfer's distance in mm on each edge's second\nface, or 0 when it is the first distance on both faces. An edge's\nfirst face is the one of the lower identity (SolidFace.ID), the one\nits name gives first."
 					},
 					"SetAppearance": {
 						"decl": "func (g Group) SetAppearance(name string)",
@@ -5246,93 +5158,17 @@
 						"decl": "func (g Group) SetCombine(how sketch.CombineAs)",
 						"text": "SetCombine says how the group's solid combines with the solid so\nfar: Union, Difference, Intersection or Assemble."
 					},
-					"SetCopies": {
-						"decl": "func (g Group) SetCopies(n int)",
-						"text": "SetCopies is how many copies a step and repeat or a pattern makes."
-					},
-					"SetCornerRadius": {
-						"decl": "func (g Group) SetCornerRadius(mm float64)",
-						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nCorners beside an arc need one, which a mitre can't join; 0 mitres\nthe corners between lines again. A radius too large for a piece, too\nsmall for the profile to clear the arc's axis, or a corner out of an\narc's plane, is a problem on the group. SetExpr with\nsketch.GroupPitch gives it an expression."
-					},
-					"SetDistance": {
-						"decl": "func (g Group) SetDistance(mm float64)",
-						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
-					},
-					"SetDraft": {
-						"decl": "func (g Group) SetDraft(degrees float64)",
-						"text": "SetDraft leans an extrusion's sides into the solid by degrees from\nthe sketch's plane, so that the far end is smaller (larger when\nnegative), as a moulded part's; 0 takes the draft away. The profile\nmust be of lines and arcs; an arc may meet a line at a sharp corner,\nbut arcs meet each other tangent. A draft at which the sides meet is\na problem on the group, and the extrusion is made without it. SetExpr\nwith sketch.GroupValC gives it an expression. SetDraftFaces leans\nonly some sides, and SetDraftNeutral leans them from another plane."
-					},
-					"SetDraftFaces": {
-						"decl": "func (g Group) SetDraftFaces(curves []Entity)",
-						"text": "SetDraftFaces makes an extrusion's draft lean the sides of curves\nonly, the rest staying upright; none leans every side again. A curve\nis a line, arc or circle of the extruded sketch, or its copy at an end\nof the extrusion, or the face of its side."
-					},
-					"SetDraftNeutral": {
-						"decl": "func (g Group) SetDraftNeutral(mm float64)",
-						"text": "SetDraftNeutral leans an extrusion's drafted sides from the plane mm\nalong it from the sketch's plane, negative towards a two-sided\nextrusion's other end: there the solid has the profile's outline, and\nit narrows going away from it both ways, as a moulded part does from\nits parting line. 0 is the sketch's plane. A plane off the extrusion\nis a problem on the group. SetExpr with sketch.GroupPitch gives it an\nexpression in the document's unit."
-					},
-					"SetEdgeRadius": {
-						"decl": "func (g Group) SetEdgeRadius(i int, mm float64)",
-						"text": "SetEdgeRadius gives a fillet's edge i, counted as EdgeRadius counts,\na radius of its own in mm, or with 0 the fillet's again. Rounded\nedges that meet at a corner must have one radius; one that ends where\nno other rounded edge does may have any."
-					},
-					"SetEdgeRadiusExpr": {
-						"decl": "func (g Group) SetEdgeRadiusExpr(i int, expr string) (err error)",
-						"text": "SetEdgeRadiusExpr gives a fillet's edge i, counted as EdgeRadius\ncounts, a radius of its own from an expression in the document's\nunit, which may name parameters; \"\" gives it the fillet's radius\nagain."
-					},
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
-						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (Doc.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
-					},
-					"SetGuides": {
-						"decl": "func (g Group) SetGuides(curves []Entity)",
-						"text": "SetGuides holds a loft to guide curves: line segments, arcs and\ncubics drawn before it, each chain of them that joins end to end one\nguide, from a point of the first profile through every profile to\nthe last. One guide moves the loft's sections across so that it runs\nalong the guide; two move, turn and scale them, so that the loft\nwidens and narrows between them. None takes the guides away. A guide\nthat misses a profile is the group's problem, with how far."
-					},
-					"SetKeepOriginal": {
-						"decl": "func (g Group) SetKeepOriginal(keep bool)",
-						"text": "SetKeepOriginal has a mirror's solid keep the original beside the\nreflection, or not, which leaves the reflection alone."
-					},
-					"SetLinkAsSolid": {
-						"decl": "func (g Group) SetLinkAsSolid(on bool)",
-						"text": "SetLinkAsSolid reads a link group's STEP file as a solid, or as a\nreference mesh, and reads it again."
-					},
-					"SetMirrorSolid": {
-						"decl": "func (g Group) SetMirrorSolid(whole bool)",
-						"text": "SetMirrorSolid has a mirror reflect the whole solid so far, as a body\nmade of several groups needs, or only its source group's solid. With\nthe whole solid, the mirror's result is the solid so far: with its\nreflection when it keeps the original, or the reflection alone."
+						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (View.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
 					},
 					"SetName": {
 						"decl": "func (g Group) SetName(name string)",
 						"text": "SetName names the group."
 					},
-					"SetRadius": {
-						"decl": "func (g Group) SetRadius(mm float64)",
-						"text": "SetRadius sets a fillet's radius in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
-					},
-					"SetSecondDistance": {
-						"decl": "func (g Group) SetSecondDistance(mm float64)",
-						"text": "SetSecondDistance makes a chamfer of two distances: Distance on each\nedge's first face and mm on the second; 0 makes it a chamfer of one\ndistance again. SetExpr with sketch.GroupValC gives it an expression\nin the document's unit. A chamfer of two distances can't have edges\nthat meet at a corner it cuts by its local edit; there it cuts each\nstraight edge by a wedge instead, and a circular edge not at all."
-					},
 					"SetSuppress": {
 						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
 						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
-					},
-					"SetSweepUp": {
-						"decl": "func (g Group) SetSweepUp(up Vec)",
-						"text": "SetSweepUp holds a sweep's frames to the direction up, as far as the\npath's tangent allows, rather than turning them as little as the path\nlets them: a profile swept along a helix with up its axis keeps\nfacing the axis, as a thread's does. The path must never run along\nup. Zero turns them least again."
-					},
-					"SetTangency": {
-						"decl": "func (g Group) SetTangency(start, end float64)",
-						"text": "SetTangency makes a loft leave its first profile square to its plane\nand reach its last square to its, the surface's slope across there\nstart and end times the loft's length; 0 leaves an end free, shaped\nby the profiles alone. A loft of two profiles with an end set is one\nsmooth surface, not ruled patches. SetExpr with sketch.GroupPitch and\nsketch.GroupValC gives them expressions."
-					},
-					"SetThickness": {
-						"decl": "func (g Group) SetThickness(mm float64)",
-						"text": "SetThickness sets a shell's wall thickness in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
-					},
-					"SetTurn": {
-						"decl": "func (g Group) SetTurn(n int)",
-						"text": "SetTurn turns a loft's second profile by n curves, which joins its\ncurves to others of the first: a square lofted to a square turned by\none twists by a quarter."
-					},
-					"SetTwist": {
-						"decl": "func (g Group) SetTwist(degrees float64)",
-						"text": "SetTwist turns a sweep's profile about the path by degrees over the\nwhole of it, evenly along its length: a square swept along a line and\ntwisted by 90 is a twisted bar. A twisted sweep's surface is fitted\nto the true one within a tenth of the chord tolerance, as a sweep\nalong a cubic is. SetExpr with sketch.GroupValC gives it an\nexpression."
 					},
 					"SetTwoSided": {
 						"decl": "func (g Group) SetTwoSided(two bool)",
@@ -5341,10 +5177,6 @@
 					"SetVisible": {
 						"decl": "func (g Group) SetVisible(visible bool)",
 						"text": "SetVisible shows or hides the group."
-					},
-					"Shell": {
-						"decl": "func (g Group) Shell() (s *srf.SShell)",
-						"text": "Shell is the exact surfaces of the model up to and with this group;\nlike Mesh, it is the sketch's own."
 					},
 					"Solid": {
 						"decl": "func (g Group) Solid() Solid",
@@ -5366,34 +5198,6 @@
 						"decl": "func (g Group) Suppression() (mode SuppressMode)",
 						"text": "Suppression is the group's suppress mode, as SetSuppress set it."
 					},
-					"SwapDistances": {
-						"decl": "func (g Group) SwapDistances()",
-						"text": "SwapDistances swaps a chamfer's two distances, which chamfers each\nedge the other way round. It fails for a chamfer of one distance."
-					},
-					"SweepUp": {
-						"decl": "func (g Group) SweepUp() (up Vec)",
-						"text": "SweepUp is the direction a sweep holds its frames to, or zero when\nthey turn as little as the path lets them."
-					},
-					"Tangency": {
-						"decl": "func (g Group) Tangency() (start, end float64)",
-						"text": "Tangency is how square a loft leaves its first profile and reaches\nits last, 0 for an end left free (see SetTangency)."
-					},
-					"Thickness": {
-						"decl": "func (g Group) Thickness() (mm float64)",
-						"text": "Thickness is a shell's wall thickness in mm."
-					},
-					"Triangles": {
-						"decl": "func (g Group) Triangles() (n int)",
-						"text": "Triangles is how many triangles the model has up to and with this\ngroup."
-					},
-					"Turn": {
-						"decl": "func (g Group) Turn() (n int)",
-						"text": "Turn is how many curves a loft turns its second profile by before\njoining curve by curve; a smooth loft turns each after the first."
-					},
-					"Twist": {
-						"decl": "func (g Group) Twist() (degrees float64)",
-						"text": "Twist is how far a sweep turns its profile about the path over the\nwhole of it, in degrees."
-					},
 					"TwoSided": {
 						"decl": "func (g Group) TwoSided() (two bool)",
 						"text": "TwoSided reports whether an extrusion, step and repeat, revolve or\nhelix goes both ways from its sketch, as the text window's\n\"two-sided\" says."
@@ -5401,10 +5205,6 @@
 					"Type": {
 						"decl": "func (g Group) Type() (t sketch.GroupType)",
 						"text": "Type is the group's type, as the sketch package names them."
-					},
-					"UsedBy": {
-						"decl": "func (g Group) UsedBy() (groups []Group)",
-						"text": "UsedBy lists the groups that refer to this group directly, in\nhistory order."
 					},
 					"Valid": {
 						"decl": "func (g Group) Valid() (ok bool)",
@@ -5418,13 +5218,89 @@
 						"decl": "func (g Group) Visible() (visible bool)",
 						"text": "Visible reports whether the group is shown."
 					},
-					"Volume": {
-						"decl": "func (g Group) Volume() (v float64)",
-						"text": "Volume is the volume in mm³ of the model up to and with this group."
-					},
 					"Workplane": {
 						"decl": "func (g Group) Workplane() (wp Entity)",
 						"text": "Workplane is the workplane of a group that is drawn in one."
+					}
+				}
+			},
+			"GroupAnalysis": {
+				"text": "GroupAnalysis measures and checks the solid up to and with a group,\nas the Analyze menu does for the active group: g.Analyze().",
+				"kind": "struct",
+				"methods": {
+					"Area": {
+						"decl": "func (v GroupAnalysis) Area() (mm2 float64)",
+						"text": "Area is the area in mm² of the closed region the group's sketch\ndraws, holes taken out, as Analyze \u003e Measure Area gives it with\nnothing selected."
+					},
+					"Bounds": {
+						"decl": "func (v GroupAnalysis) Bounds() (lo, hi Vec)",
+						"text": "Bounds are the corners of the box around the model up to and with\nthis group."
+					},
+					"CenterOfMass": {
+						"decl": "func (v GroupAnalysis) CenterOfMass() (p Vec)",
+						"text": "CenterOfMass is the centre of mass of the model up to and with this\ngroup, of one density throughout, as Analyze \u003e Show Center of Mass\nmarks it."
+					},
+					"Check": {
+						"decl": "func (v GroupAnalysis) Check() (r check.Report)",
+						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked,\nand is false too when the group added no solid for a Problem (as an\nextrusion of a sketch that crosses itself), which Report.Problem\nholds; Report.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
+					},
+					"Mesh": {
+						"decl": "func (v GroupAnalysis) Mesh() (m *srf.SMesh)",
+						"text": "Mesh is the triangle mesh of the model up to and with this group.\nIt is the sketch's own, and is replaced when the sketch\nregenerates."
+					},
+					"Probe": {
+						"decl": "func (v GroupAnalysis) Probe(from, dir Vec) (inside []check.Interval)",
+						"text": "Probe is where the line through from along dir passes through the\nsolid of the model up to and with this group, by the ray-cast oracle\n(GroupAnalysis.RayCheck): the stretches inside it, in the line's parameter,\ndir's length to one. It fails as RayCheck does."
+					},
+					"RayCheck": {
+						"decl": "func (v GroupAnalysis) RayCheck() (r check.RayReport)",
+						"text": "RayCheck checks the solid of the model up to and with this group by\nthe ray-cast oracle, which rebuilds it from the groups' definitions\n(profiles, extrusions, axes, where step and repeats, patterns along a\npath and mirrors put their copies) without the kernel's surface\nintersection: its volume, centre of mass and inertia tensor about it\n(Measure.Inertia, for a density of one, in mm⁵;\nMeasure.PrincipalMoments) by three grids of rays, the rays along\nwhich it and the kernel's mesh disagree by more than twice the chord\ntolerance, and the mesh's half-edges (each edge used twice, once each\nway). It fails for a model with a group the oracle can't build, as a\nfillet or a drafted extrusion: extrusions without draft, lathes,\nrevolves and copies of them only. Analyze \u003e Ray-Cast Check shows the\nsame."
+					},
+					"Shell": {
+						"decl": "func (v GroupAnalysis) Shell() (s *srf.SShell)",
+						"text": "Shell is the exact surfaces of the model up to and with this group;\nlike Mesh, it is the sketch's own."
+					},
+					"Triangles": {
+						"decl": "func (v GroupAnalysis) Triangles() (n int)",
+						"text": "Triangles is how many triangles the model has up to and with this\ngroup."
+					},
+					"Volume": {
+						"decl": "func (v GroupAnalysis) Volume() (mm3 float64)",
+						"text": "Volume is the volume in mm³ of the model up to and with this group."
+					}
+				}
+			},
+			"GroupHistory": {
+				"text": "GroupHistory holds what a group depends on and where it sits in the\nlist of groups, as Features \u003e Move Group does: g.History().",
+				"kind": "struct",
+				"methods": {
+					"DependsOn": {
+						"decl": "func (v GroupHistory) DependsOn() (groups []Group)",
+						"text": "DependsOn lists the groups this group refers to, in history order:\nthe group it extrudes or copies, the workplane it is drawn in, and the\ngroups whose entities its sketch and constraints name. The references\nare left out."
+					},
+					"MoveBefore": {
+						"decl": "func (v GroupHistory) MoveBefore(other Group) error",
+						"text": "MoveBefore moves the group in the history to just before other, as\none undo step. A move that would put a group ahead of a group it\nuses is refused with an error naming both, and nothing changes:\nan extrusion can't move before its sketch, nor a sketch after its\nextrusion. The references stay first."
+					},
+					"MoveToEnd": {
+						"decl": "func (v GroupHistory) MoveToEnd() error",
+						"text": "MoveToEnd moves the group to the end of the history, as MoveBefore\ndoes. Only this group moves: the sketches it uses stay where they\nare, as they come before it already. MoveToEndWithSources moves them\nalong."
+					},
+					"MoveToEndWithSources": {
+						"decl": "func (v GroupHistory) MoveToEndWithSources() ([]Group, error)",
+						"text": "MoveToEndWithSources moves the group to the end of the history\ntogether with its OwnSources, keeping their order, as one undo step:\nan extrusion moves with its sketch. It returns the groups moved, in\ntheir new order. A move that would put one of them ahead of a group\nit uses, or another group ahead of one of them that it uses, is\nrefused with an error naming both, and nothing changes."
+					},
+					"MoveWithSourcesBefore": {
+						"decl": "func (v GroupHistory) MoveWithSourcesBefore(other Group) ([]Group, error)",
+						"text": "MoveWithSourcesBefore moves the group with its OwnSources to just\nbefore other, as MoveToEndWithSources moves them to the end."
+					},
+					"OwnSources": {
+						"decl": "func (v GroupHistory) OwnSources() (groups []Group)",
+						"text": "OwnSources lists the group with the groups only it needs, in history\norder: those it uses, directly or through each other, that no other\ngroup uses, as an extrusion's sketch. These are what\nMoveToEndWithSources moves."
+					},
+					"UsedBy": {
+						"decl": "func (v GroupHistory) UsedBy() (groups []Group)",
+						"text": "UsedBy lists the groups that refer to this group directly, in\nhistory order."
 					}
 				}
 			},
@@ -5435,6 +5311,88 @@
 			"Interference": {
 				"text": "Interference is two parts of an assembly that overlap, and the\nvolume they share in mm³.",
 				"kind": "struct"
+			},
+			"LinkGroup": {
+				"text": "LinkGroup is the view of a linked part: the file it links and how.",
+				"kind": "struct",
+				"methods": {
+					"AsSolid": {
+						"decl": "func (v LinkGroup) AsSolid() (on bool)",
+						"text": "AsSolid reports whether a link group reads its STEP file as a\nsolid rather than as a reference mesh."
+					},
+					"Info": {
+						"decl": "func (v LinkGroup) Info() (lines []string)",
+						"text": "Info describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
+					},
+					"Problem": {
+						"decl": "func (v LinkGroup) Problem() (msg string)",
+						"text": "Problem says what of the file a link group links could not be\nread, such as the faces of a STEP file on a kind of surface the\nreader does not support, or that the file holds no solid it can\nread; \"\" when all of it was."
+					},
+					"SetAsSolid": {
+						"decl": "func (v LinkGroup) SetAsSolid(on bool)",
+						"text": "SetAsSolid reads a link group's STEP file as a solid, or as a\nreference mesh, and reads it again."
+					}
+				}
+			},
+			"LoftGroup": {
+				"text": "LoftGroup is the view of a loft: its profiles, guides, turn and\ntangency.",
+				"kind": "struct",
+				"methods": {
+					"Guides": {
+						"decl": "func (v LoftGroup) Guides() (curves []Entity)",
+						"text": "Guides are a loft's guide curves, the line segments, arcs and cubics\nthat hold it (see SetGuides), or none."
+					},
+					"Profiles": {
+						"decl": "func (v LoftGroup) Profiles() (out []Group)",
+						"text": "Profiles are the sketches a loft joins, in order."
+					},
+					"SetGuides": {
+						"decl": "func (v LoftGroup) SetGuides(curves []Entity)",
+						"text": "SetGuides holds a loft to guide curves: line segments, arcs and\ncubics drawn before it, each chain of them that joins end to end one\nguide, from a point of the first profile through every profile to\nthe last. One guide moves the loft's sections across so that it runs\nalong the guide; two move, turn and scale them, so that the loft\nwidens and narrows between them. None takes the guides away. A guide\nthat misses a profile is the group's problem, with how far."
+					},
+					"SetTangency": {
+						"decl": "func (v LoftGroup) SetTangency(start, end float64)",
+						"text": "SetTangency makes a loft leave its first profile square to its plane\nand reach its last square to its, the surface's slope across there\nstart and end times the loft's length; 0 leaves an end free, shaped\nby the profiles alone. A loft of two profiles with an end set is one\nsmooth surface, not ruled patches. SetExpr with sketch.GroupPitch and\nsketch.GroupValC gives them expressions."
+					},
+					"SetTurn": {
+						"decl": "func (v LoftGroup) SetTurn(n int)",
+						"text": "SetTurn turns a loft's second profile by n curves, which joins its\ncurves to others of the first: a square lofted to a square turned by\none twists by a quarter."
+					},
+					"Tangency": {
+						"decl": "func (v LoftGroup) Tangency() (start, end float64)",
+						"text": "Tangency is how square a loft leaves its first profile and reaches\nits last, 0 for an end left free (see SetTangency)."
+					},
+					"Turn": {
+						"decl": "func (v LoftGroup) Turn() (n int)",
+						"text": "Turn is how many curves a loft turns its second profile by before\njoining curve by curve; a smooth loft turns each after the first."
+					}
+				}
+			},
+			"MirrorGroup": {
+				"text": "MirrorGroup is the view of a mirror: its plane and what it copies.",
+				"kind": "struct",
+				"methods": {
+					"KeepOriginal": {
+						"decl": "func (v MirrorGroup) KeepOriginal() (keep bool)",
+						"text": "KeepOriginal reports whether a mirror's solid has the original as\nwell as the reflection."
+					},
+					"MirrorSolid": {
+						"decl": "func (v MirrorGroup) MirrorSolid() (whole bool)",
+						"text": "MirrorSolid reports whether a mirror reflects the whole solid so far,\nup to and with its source group, rather than the source group's own\nsolid."
+					},
+					"Plane": {
+						"decl": "func (v MirrorGroup) Plane() (plane Entity)",
+						"text": "Plane is the workplane or face a mirror reflects in."
+					},
+					"SetKeepOriginal": {
+						"decl": "func (v MirrorGroup) SetKeepOriginal(keep bool)",
+						"text": "SetKeepOriginal has a mirror's solid keep the original beside the\nreflection, or not, which leaves the reflection alone."
+					},
+					"SetMirrorSolid": {
+						"decl": "func (v MirrorGroup) SetMirrorSolid(whole bool)",
+						"text": "SetMirrorSolid has a mirror reflect the whole solid so far, as a body\nmade of several groups needs, or only its source group's solid. With\nthe whole solid, the mirror's result is the solid so far: with its\nreflection when it keeps the original, or the reflection alone."
+					}
+				}
 			},
 			"MotionFrame": {
 				"text": "MotionFrame is a step of a motion study: the parameter's value, the\nfile its frame went to, if any, whether every group solved, and the\nvolume of the solid up to the active group.",
@@ -5465,6 +5423,78 @@
 			"Parameter": {
 				"text": "Parameter is a named value of the document's parameter table, which\nexpressions on dimensions and group values can name, as Edit \u003e\nParameters shows it. It is not a Param, which is one of the solver's\nunknowns.",
 				"kind": "struct"
+			},
+			"ParamsMenu": {
+				"text": "ParamsMenu holds the calls of Edit \u003e Parameters: the named numbers\nthat expressions use, and the configurations that give them other\nvalues. A script reaches it as doc.Params.",
+				"kind": "struct",
+				"methods": {
+					"ActivateConfiguration": {
+						"decl": "func (m ParamsMenu) ActivateConfiguration(name string) (err error)",
+						"text": "ActivateConfiguration writes the configuration's expressions into\nthe parameter table and makes it active; \"\" makes none active, and\nleaves the table as it is. The model regenerates."
+					},
+					"ActiveConfiguration": {
+						"decl": "func (m ParamsMenu) ActiveConfiguration() (name string)",
+						"text": "ActiveConfiguration is the active configuration's name, or \"\"."
+					},
+					"AddConfiguration": {
+						"decl": "func (m ParamsMenu) AddConfiguration(name string) (err error)",
+						"text": "AddConfiguration adds a configuration, a named set of the parameters'\nexpressions, from the table as it is, and makes it active: while it\nis, SetParameter changes it as well as the table."
+					},
+					"Configurations": {
+						"decl": "func (m ParamsMenu) Configurations() (names []string)",
+						"text": "Configurations are the configurations' names, in the order they were\nmade."
+					},
+					"Delete": {
+						"decl": "func (m ParamsMenu) Delete(name string) (err error)",
+						"text": "Delete removes a parameter. One that an expression names\nis not removed, and the error says what names it."
+					},
+					"DeleteConfiguration": {
+						"decl": "func (m ParamsMenu) DeleteConfiguration(name string) (err error)",
+						"text": "DeleteConfiguration removes a configuration; the table stays as it\nis."
+					},
+					"Errors": {
+						"decl": "func (m ParamsMenu) Errors() (errs []string)",
+						"text": "Errors lists the expressions on constraints and group values\nthat the last regeneration could not evaluate, each with why; the\nvalues they drive keep their last good value."
+					},
+					"Get": {
+						"decl": "func (m ParamsMenu) Get(name string) (p Parameter, ok bool)",
+						"text": "Get returns the parameter named name, and whether there is\none."
+					},
+					"List": {
+						"decl": "func (m ParamsMenu) List() (params []Parameter)",
+						"text": "List lists the parameter table, in the order the parameters\nwere made."
+					},
+					"Rename": {
+						"decl": "func (m ParamsMenu) Rename(from, to string) (err error)",
+						"text": "Rename renames a parameter, and rewrites every expression\nthat names it."
+					},
+					"RenameConfiguration": {
+						"decl": "func (m ParamsMenu) RenameConfiguration(from, to string) (err error)",
+						"text": "RenameConfiguration renames a configuration."
+					},
+					"Set": {
+						"decl": "func (m ParamsMenu) Set(name, expr string) (err error)",
+						"text": "Set gives the parameter name the expression expr, and adds\nit to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
+					},
+					"Users": {
+						"decl": "func (m ParamsMenu) Users(name string) (users []string)",
+						"text": "Users describes what names the parameter: other\nparameters, constraints and group values."
+					}
+				}
+			},
+			"RepeatGroup": {
+				"text": "RepeatGroup is the view of a step and repeat, translating or\nrotating, or of a pattern along a path: how many copies it makes.",
+				"kind": "struct",
+				"methods": {
+					"Copies": {
+						"decl": "func (v RepeatGroup) Copies() (n int)",
+						"text": "Copies is how many copies a step and repeat or a pattern makes."
+					},
+					"SetCopies": {
+						"decl": "func (v RepeatGroup) SetCopies(n int)",
+						"text": "SetCopies is how many copies a step and repeat or a pattern makes."
+					}
+				}
 			},
 			"Request": {
 				"text": "Request is something that was drawn: a line segment, a circle, a\ndatum point. The property browser lists the requests of a group.",
@@ -5507,6 +5537,20 @@
 			"Section": {
 				"text": "Section is the state of the section view, as its screen shows it,\nand the cut of the active group's solid.",
 				"kind": "struct"
+			},
+			"ShellGroup": {
+				"text": "ShellGroup is the view of a shell: the thickness of its wall.",
+				"kind": "struct",
+				"methods": {
+					"SetThickness": {
+						"decl": "func (v ShellGroup) SetThickness(mm float64)",
+						"text": "SetThickness sets a shell's wall thickness in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
+					"Thickness": {
+						"decl": "func (v ShellGroup) Thickness() (mm float64)",
+						"text": "Thickness is a shell's wall thickness in mm."
+					}
+				}
 			},
 			"SketchHost": {
 				"text": "SketchHost is a Host for a bare sketch, with no user interface: what\nOpen and New make outside the application.",
@@ -5628,6 +5672,76 @@
 				"makers": [
 					"NewSketchHost"
 				]
+			},
+			"SketchMenu": {
+				"text": "SketchMenu holds the calls of the Sketch menu: what is drawn in the\nactive group, and the workplane it is drawn in. A script reaches it\nas doc.Sketch.",
+				"kind": "struct",
+				"methods": {
+					"ActiveWorkplane": {
+						"decl": "func (m SketchMenu) ActiveWorkplane() (wp Entity)",
+						"text": "ActiveWorkplane is the workplane that is drawn in; it isn't Valid\nwhen drawing freely in 3d."
+					},
+					"Anywhere3D": {
+						"decl": "func (m SketchMenu) Anywhere3D()",
+						"text": "Anywhere3D draws freely in 3d, in no workplane, in the active group."
+					},
+					"Arc": {
+						"decl": "func (m SketchMenu) Arc(center, start, end Vec) Entity",
+						"text": "Arc adds an arc of a circle around center, from start\ncounter-clockwise to end, in the active workplane. The end is put\nat the start's distance from the centre."
+					},
+					"Circle": {
+						"decl": "func (m SketchMenu) Circle(center Vec, radius float64) Entity",
+						"text": "Circle adds a circle. In a workplane it lies in it; in 3d it is\nparallel to the XY plane."
+					},
+					"Cubic": {
+						"decl": "func (m SketchMenu) Cubic(p0, p1, p2, p3 Vec) Entity",
+						"text": "Cubic adds a cubic Bézier curve from p0 to p3, with the control\npoints p1 and p2."
+					},
+					"Image": {
+						"decl": "func (m SketchMenu) Image(path string, at Vec, height float64) Entity",
+						"text": "Image adds a picture from a file in the active workplane, for\ntracing: its bottom left corner at at, height high and as wide as\nthe picture's proportions make it. It is construction, as the\ninterface makes it."
+					},
+					"InWorkplane": {
+						"decl": "func (m SketchMenu) InWorkplane(wp Entity)",
+						"text": "InWorkplane makes wp the workplane that is drawn in, in the active\ngroup."
+					},
+					"Line": {
+						"decl": "func (m SketchMenu) Line(a, b Vec) Entity",
+						"text": "Line adds a line segment from a to b. In a workplane the points are\nput in it."
+					},
+					"NewWorkplane": {
+						"decl": "func (m SketchMenu) NewWorkplane(origin, u, v Vec) Entity",
+						"text": "NewWorkplane adds a workplane through origin, with u to its right\nand v up, to a group drawn freely in 3d."
+					},
+					"Point": {
+						"decl": "func (m SketchMenu) Point(p Vec) Entity",
+						"text": "Point adds a datum point at p."
+					},
+					"Polyline": {
+						"decl": "func (m SketchMenu) Polyline(closed bool, points ...Vec) (lines []Entity)",
+						"text": "Polyline adds the line segments through points, each starting\nwhere the last ended, and back to the first if closed."
+					},
+					"Rect": {
+						"decl": "func (m SketchMenu) Rect(a, b Vec) (lines []Entity)",
+						"text": "Rect adds a rectangle with the corners a and b and sides along the\nactive workplane's axes: four line segments, joined, two horizontal\nand two vertical, returned starting with the bottom one and going\naround counter-clockwise. It makes the same requests and constraints\nas the interface's rectangle tool dragged from the top left corner."
+					},
+					"Split": {
+						"decl": "func (m SketchMenu) Split(a, b Entity, near Vec)",
+						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near."
+					},
+					"TangentArc": {
+						"decl": "func (m SketchMenu) TangentArc(point Entity, radius float64, trim bool)",
+						"text": "TangentArc rounds the corner at a point where two line segments or\narcs of the active workplane meet, with an arc tangent to both, as\nSketch \u003e Tangent Arc at Point does. radius 0 lets the program choose\nit. With trim, the two are cut back to the arc; without, they become\nconstruction and trimmed copies are added."
+					},
+					"Text": {
+						"decl": "func (m SketchMenu) Text(text, font string, at Vec, height float64) Entity",
+						"text": "Text adds text in a TrueType font in the active workplane, its\nbottom left corner at at, and height high; it is as wide as the\nfont makes it. font is the name of a font file the program knows,\nas the text window lists them, or \"\" for the one built in."
+					},
+					"UV": {
+						"decl": "func (m SketchMenu) UV(u, v float64) (p Vec)",
+						"text": "UV is the point at (u, v) in the active workplane."
+					}
+				}
 			},
 			"Solid": {
 				"text": "Solid is the solid at a group, as its topology sees it: faces, the\nedges where two faces meet, and the vertices where edges end. Its\nedges have names that outlive a regeneration, so a script can keep\none and use it after changing the model upstream.",
@@ -5774,6 +5888,36 @@
 					"SuppressWhole"
 				]
 			},
+			"SweepGroup": {
+				"text": "SweepGroup is the view of a sweep along a path: its twist, the\nradius of its corners and which way is up.",
+				"kind": "struct",
+				"methods": {
+					"CornerRadius": {
+						"decl": "func (v SweepGroup) CornerRadius() (mm float64)",
+						"text": "CornerRadius is a sweep's corner radius in mm, 0 where its corners\nare mitred."
+					},
+					"SetCornerRadius": {
+						"decl": "func (v SweepGroup) SetCornerRadius(mm float64)",
+						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nCorners beside an arc need one, which a mitre can't join; 0 mitres\nthe corners between lines again. A radius too large for a piece, too\nsmall for the profile to clear the arc's axis, or a corner out of an\narc's plane, is a problem on the group. SetExpr with\nsketch.GroupPitch gives it an expression."
+					},
+					"SetSweepUp": {
+						"decl": "func (v SweepGroup) SetSweepUp(up Vec)",
+						"text": "SetSweepUp holds a sweep's frames to the direction up, as far as the\npath's tangent allows, rather than turning them as little as the path\nlets them: a profile swept along a helix with up its axis keeps\nfacing the axis, as a thread's does. The path must never run along\nup. Zero turns them least again."
+					},
+					"SetTwist": {
+						"decl": "func (v SweepGroup) SetTwist(degrees float64)",
+						"text": "SetTwist turns a sweep's profile about the path by degrees over the\nwhole of it, evenly along its length: a square swept along a line and\ntwisted by 90 is a twisted bar. A twisted sweep's surface is fitted\nto the true one within a tenth of the chord tolerance, as a sweep\nalong a cubic is. SetExpr with sketch.GroupValC gives it an\nexpression."
+					},
+					"SweepUp": {
+						"decl": "func (v SweepGroup) SweepUp() (up Vec)",
+						"text": "SweepUp is the direction a sweep holds its frames to, or zero when\nthey turn as little as the path lets them."
+					},
+					"Twist": {
+						"decl": "func (v SweepGroup) Twist() (degrees float64)",
+						"text": "Twist is how far a sweep turns its profile about the path over the\nwhole of it, in degrees."
+					}
+				}
+			},
 			"ThreadOptions": {
 				"text": "ThreadOptions are what Features \u003e Screw Thread asks for. The zero\nvalue is what the screen starts with: the standard thread nearest\nthe circle's diameter, external, one and a half diameters long,\nending at a shoulder.",
 				"kind": "struct"
@@ -5784,6 +5928,44 @@
 				"makers": [
 					"V"
 				]
+			},
+			"ViewMenu": {
+				"text": "ViewMenu holds the calls of the View menu that change what the\ndrawing shows: the section, the units of dimensions and the\nappearance of faces. A script reaches it as doc.View.",
+				"kind": "struct",
+				"methods": {
+					"ClearSection": {
+						"decl": "func (m ViewMenu) ClearSection()",
+						"text": "ClearSection turns the section view off."
+					},
+					"FaceAppearance": {
+						"decl": "func (m ViewMenu) FaceAppearance(face SolidFace) (name string)",
+						"text": "FaceAppearance is the appearance the face has: its own, its group's,\nor \"\" for the default."
+					},
+					"MmPerUnit": {
+						"decl": "func (m ViewMenu) MmPerUnit() (mm float64)",
+						"text": "MmPerUnit is the size in mm of the unit the user interface shows\nlengths in."
+					},
+					"Section": {
+						"decl": "func (m ViewMenu) Section() (s Section)",
+						"text": "Section is the section view's state and its cut of the active\ngroup's solid."
+					},
+					"SetFaceAppearance": {
+						"decl": "func (m ViewMenu) SetFaceAppearance(face SolidFace, name string)",
+						"text": "SetFaceAppearance gives one face of the solid its own appearance, or\nwith \"\" takes it away, so that the face has its group's. The face is\nkept by its identity, in the group that made it."
+					},
+					"SetSection": {
+						"decl": "func (m ViewMenu) SetSection(plane Entity, offset string, flip bool)",
+						"text": "SetSection turns the section view on: the solid is drawn cut by a\nplane parallel to plane, a workplane or a planar face, offset along\nits normal (a number or an expression in the document's unit, \"\"\nfor none), the side the normal points to taken away, or the other\nside with flip. It is a way of looking, as View \u003e Section View is:\nnot saved and not undone. Render draws it too."
+					},
+					"SetUnits": {
+						"decl": "func (m ViewMenu) SetUnits(u core.Unit) (check []string)",
+						"text": "SetUnits makes u the document's unit, keeping every size, as View \u003e\nDimension Units does: a length expression is rewritten to give the\nsame length in u, \"(1/4)*25.4\" for \"1/4\" from inches to mm. It\nreturns the parameters that lengths are computed from, which now\ncount in u."
+					},
+					"Units": {
+						"decl": "func (m ViewMenu) Units() (u core.Unit)",
+						"text": "Units is the document's unit of length: what lengths typed as text,\nin Constraint.SetExpr and Group.SetExpr and in the user interface,\nare in. Every other length this package takes or gives is in mm."
+					}
+				}
 			}
 		},
 		"funcs": {
@@ -5806,6 +5988,14 @@
 			"Inch": {
 				"decl": "func Inch(v float64) float64",
 				"text": "Inch is v inches in mm."
+			},
+			"MenuEntriesOf": {
+				"decl": "func MenuEntriesOf(call string) []string",
+				"text": "MenuEntriesOf lists the menu entries a call stands for, as\n\"Features \u003e Extrude\", in order."
+			},
+			"MenuEntryCalls": {
+				"decl": "func MenuEntryCalls(entry string) (path string, calls []string, why string, ok bool)",
+				"text": "MenuEntryCalls is what a script calls in place of a menu entry,\nwritten \"Features \u003e Fillet Edges\" or \"Features/Fillet Edges\": the\ncalls, or why there are none. It reports false when no entry has\nthat path."
 			},
 			"New": {
 				"decl": "func New() *Doc",
@@ -5864,6 +6054,10 @@
 			"Maximum": {
 				"decl": "const Maximum",
 				"text": "Limits a dimension can have (Constraint.SetLimit)."
+			},
+			"MenuCalls": {
+				"decl": "var MenuCalls",
+				"text": "MenuCalls says, for each entry of the window's main menu, by its path\n(\"Features/Extrude\"), the calls a script makes instead, as help()\nnames them (\"Features.Extrude\"; several separated by spaces), or,\nafter \"- \", why the entry has none: most of those are the window's\nown, its view and its panels, which a script has none of. A test of\nthe package holds it to the menu, both ways."
 			},
 			"Minimum": {
 				"decl": "const Minimum",
@@ -6594,6 +6788,10 @@
 					"AddThread": {
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
+					},
+					"AlignSameOrientation": {
+						"decl": "func (s *Sketch) AlignSameOrientation(c *core.Constraint, active core.HGroup)",
+						"text": "AlignSameOrientation turns the normal of a same-orientation constraint that the active group can move onto the one it can't, as near as the constraint allows, so that the solver starts at the answer instead of finding a quarter turn of its own."
 					},
 					"AnyShellsStale": {
 						"decl": "func (sk *Sketch) AnyShellsStale() bool",

@@ -7,7 +7,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	ext := doc.Extrude(80, "")
-	doc.Mirror(ext.Faces()[4], "")
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	ext := doc.Features.Extrude(80, "")
+	doc.Features.Mirror(ext.Faces()[4], "")
 }

@@ -21,8 +21,8 @@ each line segment.
 From a script:
 
 ```go
-boss := doc.Extrude(20, "boss")
-boss.SetDraft(3)
+boss := doc.Features.Extrude(20, "boss")
+boss.AsExtrude().SetDraft(3)
 boss.SetExpr(sketch.GroupValC, "angle")
 ```
 
@@ -45,9 +45,9 @@ the line's plane meet in a conic, which the solid follows exactly. Example:
 From a script:
 
 ```go
-boss.SetDraft(3)
-boss.SetDraftNeutral(8)                // lean from the plane 8 up
-boss.SetDraftFaces([]api.Entity{arc})  // only the arc's side
+boss.AsExtrude().SetDraft(3)
+boss.AsExtrude().SetDraftNeutral(8)                // lean from the plane 8 up
+boss.AsExtrude().SetDraftFaces([]api.Entity{arc})  // only the arc's side
 ```
 
 ## Not yet

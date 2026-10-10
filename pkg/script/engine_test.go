@@ -42,7 +42,7 @@ func TestConsole(t *testing.T) {
 		`x := 21`,
 		`x * 2`,
 		`fmt.Println("hello", math.Sqrt(16))`,
-		`l := doc.Line(V(0, 0, 0), V(30, 40, 0))`,
+		`l := doc.Sketch.Line(V(0, 0, 0), V(30, 40, 0))`,
 		`l.Length()`,
 		`l`,
 		`func double(v float64) float64 {`,
@@ -60,7 +60,7 @@ func TestConsole(t *testing.T) {
 		`a[3]`,
 		`doc.Active().Dof()`,
 		`l.Start().Pos()`,
-		`doc.Active().Bounds()`,
+		`doc.Active().Analyze().Bounds()`,
 		`strconv.Atoi("x1")`,
 		`[]int{1, 2}`,
 		`nil`,
@@ -98,16 +98,16 @@ func TestConsoleUndo(t *testing.T) {
 	t.Parallel()
 	host := newHost()
 	console(t, host,
-		`a := doc.Line(V(0, 0, 0), V(10, 0, 0))`,
+		`a := doc.Sketch.Line(V(0, 0, 0), V(10, 0, 0))`,
 		`a.Length()`,
-		`b := doc.Line(V(0, 0, 0), V(0, 10, 0))`,
-		`doc.Coincident(a.Start(), b.Start()); doc.Horizontal(a)`,
+		`b := doc.Sketch.Line(V(0, 0, 0), V(0, 10, 0))`,
+		`doc.Constrain.Coincident(a.Start(), b.Start()); doc.Constrain.Horizontal(a)`,
 	)
 	sk := host.Sketch()
 	if got := sk.Undo.Cnt; got != 3 {
 		t.Errorf("%d steps of undo, want 3", got)
 	}
-	if !api.NewDoc(host).Undo() {
+	if !api.NewDoc(host).Edit.Undo() {
 		t.Fatal("nothing to undo")
 	}
 	sk = host.Sketch()
@@ -127,11 +127,11 @@ import (
 
 func main() {
 	doc := api.Current()
-	sides := doc.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
-	doc.Length(sides[0], 20)
-	doc.Length(sides[1], 10)
-	ex := doc.Extrude(4, "block")
-	fmt.Printf("%s %.0f %v\n", ex, ex.Volume(), os.Args[1:])
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	doc.Constrain.Length(sides[0], 20)
+	doc.Constrain.Length(sides[1], 10)
+	ex := doc.Features.Extrude(4, "block")
+	fmt.Printf("%s %.0f %v\n", ex, ex.Analyze().Volume(), os.Args[1:])
 }
 `
 
@@ -163,12 +163,12 @@ func area() float64 {
 	return w * h
 }
 
-sides := doc.Rect(V(0, 0, 0), V(w, h, 0))
+sides := doc.Sketch.Rect(V(0, 0, 0), V(w, h, 0))
 if len(sides) != 4 {
 	panic("a rectangle has four sides")
 }
 fmt.Println(area())
-doc.Circle(V(1, 1, 0), 2).Pos()
+doc.Sketch.Circle(V(1, 1, 0), 2).Pos()
 `
 	err := RunSource(context.Background(), Options{Host: newHost(), Stdout: &out, Stderr: &out}, "plate.go", src)
 	if got, want := out.String(), "1000\n"; !strings.HasPrefix(got, want) {
@@ -293,7 +293,7 @@ func TestInterpreterForms(t *testing.T) {
 			[]string{"const n = 3; fmt.Println(n)", "var k = 3; k++; fmt.Println(k)", "type pair struct{ a, b int }; p := pair{1, 2}; fmt.Println(p.a + p.b + n + k)"},
 			"3\n4\n10\n"},
 		{"several values of program types",
-			[]string{"pts := doc.Polyline(false, V(0, 0, 0), V(3, 0, 0), V(3, 4, 0), V(0, 4, 0))\na, b, c := pts[0], pts[1], pts[2]\nfmt.Println(a.Length(), b.Length(), c.Length())",
+			[]string{"pts := doc.Sketch.Polyline(false, V(0, 0, 0), V(3, 0, 0), V(3, 4, 0), V(0, 4, 0))\na, b, c := pts[0], pts[1], pts[2]\nfmt.Println(a.Length(), b.Length(), c.Length())",
 				"var g, h = doc.Groups()[0], doc.Groups()[0]; fmt.Println(g == h)"},
 			"3 4 3\ntrue\n"},
 		{"a block's := shadows a kept name",
@@ -331,8 +331,8 @@ func TestInterpreterForms(t *testing.T) {
 func TestInterpreterFormErrors(t *testing.T) {
 	t.Parallel()
 	for src, want := range map[string]string{
-		"g := doc.Active()\nx := g.Bounds()":                       `script:2:6: assignment mismatch: 1 variable(s) but g.Bounds() has more values; name each, as in "lo, hi := g.Bounds()"`,
-		"var n = strconv.Atoi(\"3\")":                              `script:1:9: assignment mismatch: 1 variable(s) but strconv.Atoi("3") has more values; name each, as in "lo, hi := g.Bounds()"`,
+		"g := doc.Active()\nx := g.Analyze().Bounds()":             `script:2:6: assignment mismatch: 1 variable(s) but g.Analyze().Bounds() has more values; name each, as in "lo, hi := g.Analyze().Bounds()"`,
+		"var n = strconv.Atoi(\"3\")":                              `script:1:9: assignment mismatch: 1 variable(s) but strconv.Atoi("3") has more values; name each, as in "lo, hi := g.Analyze().Bounds()"`,
 		"var k = 3; k += nope":                                     "script:1:17: undefined: nope",
 		"x := 1\nfor i := 0; i < 2; i++ {\n\tfmt.Println(nope)\n}": "script:3:14: undefined: nope",
 	} {
@@ -363,9 +363,9 @@ func TestDefinitionsOfProgramTypes(t *testing.T) {
 		`len(w)`,
 		`var v []Group = doc.Groups()`,
 		`v[0]`,
-		`l := doc.Polyline(false, V(0, 0, 0), V(3, 0, 0), V(3, 4, 0))[1]`,
+		`l := doc.Sketch.Polyline(false, V(0, 0, 0), V(3, 0, 0), V(3, 4, 0))[1]`,
 		`l.Length()`,
-		`lo, hi := doc.Active().Bounds()`,
+		`lo, hi := doc.Active().Analyze().Bounds()`,
 		`hi`,
 		`s := doc.Active().Name()[0]`,
 		`s`,

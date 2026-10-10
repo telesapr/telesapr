@@ -11,9 +11,9 @@ same menu entry turns it off. With nothing fitting selected, it says what to sel
 From a script:
 
 ```go
-doc.SetSection(face, "20", false) // offset, flip
-s := doc.Section()
-doc.ClearSection()
+doc.View.SetSection(face, "20", false) // offset, flip
+s := doc.View.Section()
+doc.View.ClearSection()
 ```
 
 `doc.Render` draws the view, cut, to a PNG file.

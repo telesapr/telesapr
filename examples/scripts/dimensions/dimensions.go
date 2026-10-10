@@ -43,29 +43,29 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	sides := doc.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
-	doc.Coincident(sides[0].Start(), doc.Origin())
-	doc.Length(sides[0], 60).SetName("width")
-	must(doc.Length(sides[1], 40).SetExpr("width*2/3"))
-	hole := doc.Circle(api.V(30, 20, 0), 3)
-	must(doc.Diameter(hole, 6).SetExpr("width/10"))
-	doc.Distance(hole.Center(), sides[0], 20)
-	doc.Distance(hole.Center(), sides[3], 30)
-	plate := doc.Extrude(5, "plate")
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
+	doc.Constrain.Coincident(sides[0].Start(), doc.Origin())
+	doc.Constrain.Length(sides[0], 60).SetName("width")
+	must(doc.Constrain.Length(sides[1], 40).SetExpr("width*2/3"))
+	hole := doc.Sketch.Circle(api.V(30, 20, 0), 3)
+	must(doc.Constrain.Diameter(hole, 6).SetExpr("width/10"))
+	doc.Constrain.Distance(hole.Center(), sides[0], 20)
+	doc.Constrain.Distance(hole.Center(), sides[3], 30)
+	plate := doc.Features.Extrude(5, "plate")
 
 	for _, w := range []float64{60, width} {
 		must(doc.Dimension("width").SetExpr(strconv.FormatFloat(w, 'g', -1, 64)))
-		r := plate.Check()
+		r := plate.Analyze().Check()
 		want := (w*w*2/3 - math.Pi*(w/20)*(w/20)) * 5
 		fmt.Printf("width %g: %s, %.1f mm³ (%.1f by the sizes)\n",
 			w, map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume, want)
 		// The hole is drawn as chords, which cut inside it.
-		if !r.Sound() || math.Abs(r.Volume-want) > 0.01*want || len(doc.ExprErrors()) > 0 {
-			fmt.Fprintln(os.Stderr, doc.ExprErrors())
+		if !r.Sound() || math.Abs(r.Volume-want) > 0.01*want || len(doc.Params.Errors()) > 0 {
+			fmt.Fprintln(os.Stderr, doc.Params.Errors())
 			os.Exit(1)
 		}
 	}
 	if write {
-		must(doc.Save("dimensions.tlspr"))
+		must(doc.File.Save("dimensions.tlspr"))
 	}
 }

@@ -34,7 +34,7 @@ rename and delete, to make it active, hide it, or move it earlier or later. Ever
 menus has a script call, or is the window's own (its view and its panels): Doc.Copy and Doc.Paste,
 Doc.CurveLength, Group.Area, Doc.FacesArea and Group.CenterOfMass are the Edit and Analyze
 entries' (`examples/scripts/measure`). A script
-names an entry as the command search lists it, `doc.RunCommand("Features > Extrude")`; the names
+names an entry as the command search lists it, `doc.Edit.RunCommand("Features > Extrude")`; the names
 the entries had before the menus took this order are still taken.
 
 | Page | What it covers | Example |

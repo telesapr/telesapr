@@ -14,16 +14,16 @@ import (
 func TestInterferences(t *testing.T) {
 	d := api.New()
 	block(d, 0, 0, 10, 10, 10)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(8, 0, 0), api.V(18, 10, 0))
-	b := d.Extrude(10, "second")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(8, 0, 0), api.V(18, 10, 0))
+	b := d.Features.Extrude(10, "second")
 	b.SetCombine(api.Assemble)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(18, 0, 0), api.V(28, 10, 0))
-	c := d.Extrude(10, "third")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(18, 0, 0), api.V(28, 10, 0))
+	c := d.Features.Extrude(10, "third")
 	c.SetCombine(api.Assemble)
 
-	found, meshOnly := d.Interferences()
+	found, meshOnly := d.Assembly.Interferences()
 	if len(meshOnly) != 0 || len(found) != 1 {
 		t.Fatalf("%d interferences, %d mesh-only parts", len(found), len(meshOnly))
 	}
@@ -33,21 +33,21 @@ func TestInterferences(t *testing.T) {
 	// A part linked twice, at one place: all its volume, though every
 	// face lies on another.
 	l := api.New()
-	one, err := l.Link("../../testdata/solid/chamfer-parameter.tlspr", "")
+	one, err := l.Assembly.Link("../../testdata/solid/chamfer-parameter.tlspr", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := l.Link("../../testdata/solid/chamfer-parameter.tlspr", ""); err != nil {
+	if _, err := l.Assembly.Link("../../testdata/solid/chamfer-parameter.tlspr", ""); err != nil {
 		t.Fatal(err)
 	}
-	want := one.Check().Volume
-	if found, _ := l.Interferences(); len(found) != 1 || math.Abs(found[0].Volume-want) > 1e-3*want {
+	want := one.Analyze().Check().Volume
+	if found, _ := l.Assembly.Interferences(); len(found) != 1 || math.Abs(found[0].Volume-want) > 1e-3*want {
 		t.Errorf("the part linked twice: %+v, want %g", found, want)
 	}
 
 	// Without the overlapping block, nothing.
 	b.Delete()
-	if found, _ := d.Interferences(); len(found) != 0 {
+	if found, _ := d.Assembly.Interferences(); len(found) != 0 {
 		t.Errorf("%d interferences without the second block", len(found))
 	}
 }

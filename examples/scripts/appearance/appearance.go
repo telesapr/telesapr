@@ -27,27 +27,27 @@ import (
 func main() {
 	write := len(os.Args) < 2 || os.Args[1] != "-"
 	doc := api.Current()
-	doc.Rect(api.V(-20, -20, 0), api.V(20, 20, 0))
-	housing := doc.Extrude(15, "housing")
-	doc.SketchIn(doc.Workplane("XY"), "")
-	doc.Circle(api.V(0, 0, 0), 6)
-	shaft := doc.Extrude(40, "shaft")
+	doc.Sketch.Rect(api.V(-20, -20, 0), api.V(20, 20, 0))
+	housing := doc.Features.Extrude(15, "housing")
+	doc.Features.SketchIn(doc.Workplane("XY"), "")
+	doc.Sketch.Circle(api.V(0, 0, 0), 6)
+	shaft := doc.Features.Extrude(40, "shaft")
 	shaft.SetCombine(api.Assemble)
 
 	housing.SetAppearance("plastic")
 	shaft.SetAppearance("metal")
 	top := housing.Solid().FaceAt(api.V(15, 15, 15))
-	doc.SetFaceAppearance(top, "matte")
+	doc.View.SetFaceAppearance(top, "matte")
 	fmt.Printf("appearances %v: the housing %s, its top %s, the shaft %s\n", api.Appearances(),
-		housing.Appearance(), doc.FaceAppearance(top), shaft.Appearance())
-	if doc.FaceAppearance(top) != "matte" || shaft.Appearance() != "metal" {
+		housing.Appearance(), doc.View.FaceAppearance(top), shaft.Appearance())
+	if doc.View.FaceAppearance(top) != "matte" || shaft.Appearance() != "metal" {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("appearance.tlspr"); err != nil {
+		if err := doc.File.Save("appearance.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}
-		_ = doc.Render("appearance.png", 640, 480, "isometric")
+		_ = doc.File.Render("appearance.png", 640, 480, "isometric")
 	}
 }

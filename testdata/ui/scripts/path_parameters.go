@@ -15,10 +15,10 @@ func must(err error) {
 
 func main() {
 	doc := Current()
-	sides := doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	must(doc.SetParameter("k", "4"))
-	must(doc.SetParameter("w", "k*10"))
-	must(doc.SetParameter("h", "w/2"))
+	sides := doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	must(doc.Params.Set("k", "4"))
+	must(doc.Params.Set("w", "k*10"))
+	must(doc.Params.Set("h", "w/2"))
 	// Each step regenerates, as each does in the interface; the solver
 	// is not a fixed point, so a different sequence of solves can end
 	// an ulp away.
@@ -27,10 +27,10 @@ func main() {
 		v    float64
 		expr string
 	}{{sides[0], 36, "w"}, {sides[1], 26, "h"}} {
-		c := doc.Length(d.side, d.v)
-		doc.Regen()
+		c := doc.Constrain.Length(d.side, d.v)
+		doc.Edit.Regen()
 		must(c.SetExpr(d.expr))
-		doc.Regen()
+		doc.Edit.Regen()
 	}
-	doc.Extrude(80, "")
+	doc.Features.Extrude(80, "")
 }

@@ -37,9 +37,9 @@ func main() {
 	}
 	rad, h, chamfer := 15.0, 20.0, 1.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.Circle(api.V(0, 0, 0), rad)
-	body := doc.Extrude(h, "body")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Sketch.Circle(api.V(0, 0, 0), rad)
+	body := doc.Features.Extrude(h, "body")
 
 	// The extrusion's circles: the sketch's copy at its foot and at its
 	// top.
@@ -54,13 +54,13 @@ func main() {
 			foot = e
 		}
 	}
-	doc.Fillet([]api.Entity{top}, radius, "rounded")
-	knob := doc.Chamfer([]api.Entity{foot}, chamfer, "foot")
+	doc.Features.Fillet([]api.Entity{top}, radius, "rounded")
+	knob := doc.Features.Chamfer([]api.Entity{foot}, chamfer, "foot")
 	if p := knob.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := knob.Check()
+	r := knob.Analyze().Check()
 	// Pappus: each cut's cross section turned about the axis by its
 	// centroid. The fillet takes a square of the radius less a quarter
 	// circle, its centroid (10 - 3 pi) / (12 - 3 pi) of the radius in;
@@ -76,7 +76,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("knob.tlspr"); err != nil {
+		if err := doc.File.Save("knob.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

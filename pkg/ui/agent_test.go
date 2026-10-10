@@ -94,7 +94,7 @@ func TestAgentDraws(t *testing.T) {
 	n := 0
 	a.on(func() { n = len(a.w.Texts) })
 
-	res, err := a.r.Run(ctx, "sides := doc.Rect(V(0, 0, 0), V(40, 20, 0))\nfmt.Println(\"drawn\")\nlen(sides)")
+	res, err := a.r.Run(ctx, "sides := doc.Sketch.Rect(V(0, 0, 0), V(40, 20, 0))\nfmt.Println(\"drawn\")\nlen(sides)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestAgentDraws(t *testing.T) {
 		!strings.HasPrefix(res.Status, "active group g002-sketch-in-plane, sketch-in-plane: solved") {
 		t.Errorf("the script gave %+v", res)
 	}
-	want := "ai> sides := doc.Rect(V(0, 0, 0), V(40, 20, 0))\n    fmt.Println(\"drawn\")\n    len(sides)\ndrawn\n4\n"
+	want := "ai> sides := doc.Sketch.Rect(V(0, 0, 0), V(40, 20, 0))\n    fmt.Println(\"drawn\")\n    len(sides)\ndrawn\n4\n"
 	if got := a.shown(n); got != want {
 		t.Errorf("the console showed\n%s\nwant\n%s", got, want)
 	}
@@ -131,7 +131,7 @@ func TestAgentDraws(t *testing.T) {
 
 	// A script that fails is rolled back, and the console says so.
 	a.on(func() { n = len(a.w.Texts) })
-	res, err = a.r.Run(ctx, "c := doc.Circle(V(5, 5, 0), 2)\nc.Start()")
+	res, err = a.r.Run(ctx, "c := doc.Sketch.Circle(V(5, 5, 0), 2)\nc.Start()")
 	if err != nil || !res.RolledBack || !strings.Contains(res.Error, "has no start") {
 		t.Errorf("the failing script gave %+v, %v", res, err)
 	}
@@ -143,7 +143,7 @@ func TestAgentDraws(t *testing.T) {
 	}
 
 	// The description and the picture are the drawing's.
-	if res, err = a.r.Run(ctx, "doc.Extrude(5, \"plate\")"); err != nil || res.Error != "" {
+	if res, err = a.r.Run(ctx, "doc.Features.Extrude(5, \"plate\")"); err != nil || res.Error != "" {
 		t.Fatalf("the extrusion gave %+v, %v", res, err)
 	}
 	text, err := a.r.Describe(ctx, "")
@@ -204,7 +204,7 @@ func TestAgentDraws(t *testing.T) {
 func TestAgentConfirm(t *testing.T) {
 	a := newAgentApp(t)
 	ctx := context.Background()
-	script := "doc.Circle(V(0, 0, 0), 5)\n" + strings.Repeat("// more\n", 40)
+	script := "doc.Sketch.Circle(V(0, 0, 0), 5)\n" + strings.Repeat("// more\n", 40)
 	a.on(func() {
 		a.ss.AgentConfirm = true
 		a.p.DialogResponses = []platform.Response{platform.ResponseNo, platform.ResponseYes}
@@ -222,7 +222,7 @@ func TestAgentConfirm(t *testing.T) {
 	if requests != 3 {
 		t.Errorf("the refused script left %d requests, want the references alone", requests)
 	}
-	if !strings.HasPrefix(dialog.Description, "doc.Circle(V(0, 0, 0), 5)\n// more\n") ||
+	if !strings.HasPrefix(dialog.Description, "doc.Sketch.Circle(V(0, 0, 0), 5)\n// more\n") ||
 		!strings.HasSuffix(dialog.Description, "… and 11 more lines") {
 		t.Errorf("the user was asked with %q, %q", dialog.Message, dialog.Description)
 	}
@@ -284,7 +284,7 @@ func TestAgentBusyStopAndOff(t *testing.T) {
 		}
 		a.on(func() { a.p.MainMenuBar.Find("Script", "Stop").OnTrigger() })
 	}()
-	res, err := a.r.Run(ctx, "doc.Circle(V(0, 0, 0), 1)\nos.WriteFile(\""+filepath.ToSlash(drawn)+"\", nil, 0o644)\nfor {\n\ttime.Sleep(time.Millisecond)\n}")
+	res, err := a.r.Run(ctx, "doc.Sketch.Circle(V(0, 0, 0), 1)\nos.WriteFile(\""+filepath.ToSlash(drawn)+"\", nil, 0o644)\nfor {\n\ttime.Sleep(time.Millisecond)\n}")
 	if err != nil || res.Error != "the script was stopped" || !res.RolledBack {
 		t.Errorf("the stopped script gave %+v, %v", res, err)
 	}

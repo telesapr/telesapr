@@ -8,8 +8,8 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	a := doc.Circle(V(-2, 7, 0), 10)
-	b := doc.Circle(V(20, 7, 0), 6)
-	doc.Regen()
-	doc.Concentric(a, b)
+	a := doc.Sketch.Circle(V(-2, 7, 0), 10)
+	b := doc.Sketch.Circle(V(20, 7, 0), 6)
+	doc.Edit.Regen()
+	doc.Assembly.Concentric(a, b)
 }

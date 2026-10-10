@@ -2,8 +2,6 @@ package api
 
 import (
 	"fmt"
-	"math"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,7 +10,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/persist/convert"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // Vec is a point or a direction in space, in mm.
@@ -24,15 +21,43 @@ func V(x, y, z float64) Vec { return Vec{X: x, Y: y, Z: z} }
 // Inch is v inches in mm.
 func Inch(v float64) float64 { return v * 25.4 }
 
-// Doc is a sketch: the drawing a script reads and changes.
+// Doc is a sketch: the drawing a script reads and changes. Its own
+// methods find what the drawing holds; what changes it is in the
+// fields, one for each menu of the window, so that a call is where
+// the command it does is: doc.Sketch.Line is Sketch > Line Segment,
+// doc.Features.Extrude is Features > Extrude.
 type Doc struct {
 	h Host
+
+	File      FileMenu
+	Edit      EditMenu
+	Params    ParamsMenu
+	View      ViewMenu
+	Drawing   DrawingMenu
+	Sketch    SketchMenu
+	Constrain ConstrainMenu
+	Features  FeaturesMenu
+	Assembly  AssemblyMenu
+	Analyze   AnalyzeMenu
 }
 
 // NewDoc is the document of a host. The application makes the one a
 // script gets from Current; a program of its own makes them with New
 // and Open.
-func NewDoc(h Host) *Doc { return &Doc{h: h} }
+func NewDoc(h Host) *Doc {
+	d := &Doc{h: h}
+	d.File = FileMenu{d}
+	d.Edit = EditMenu{d}
+	d.Params = ParamsMenu{d}
+	d.View = ViewMenu{d}
+	d.Drawing = DrawingMenu{d}
+	d.Sketch = SketchMenu{d}
+	d.Constrain = ConstrainMenu{d}
+	d.Features = FeaturesMenu{d}
+	d.Assembly = AssemblyMenu{d}
+	d.Analyze = AnalyzeMenu{d}
+	return d
+}
 
 // Host is the program around the sketch.
 func (d *Doc) Host() Host { return d.h }
@@ -129,19 +154,6 @@ func (d *Doc) change(fn func(sk *sketch.Sketch)) {
 	})
 }
 
-// Load replaces the sketch by the one in a .tlspr file.
-func (d *Doc) Load(path string) (err error) {
-	d.h.Run(func() { err = d.h.Load(path) })
-	return err
-}
-
-// Save regenerates the sketch and writes it to a .tlspr file. A
-// SolveSpace model (.slvs) is not written.
-func (d *Doc) Save(path string) (err error) {
-	d.h.Run(func() { err = d.h.Save(path) })
-	return err
-}
-
 // exportKinds says what each file extension holds; the ones that can
 // hold several kinds are exported as the first.
 var exportKinds = map[string]ExportKind{
@@ -149,28 +161,6 @@ var exportKinds = map[string]ExportKind{
 	".svg": ExportView, ".dxf": ExportView, ".pdf": ExportView, ".eps": ExportView, ".ps": ExportView,
 	".plt": ExportView, ".hpgl": ExportView, ".ngc": ExportView, ".txt": ExportView,
 	".step": ExportSurfaces, ".stp": ExportSurfaces,
-}
-
-// Export writes the sketch in the format the file's extension names:
-// the mesh of the solid (.stl, .obj, ...), the view (.svg, .dxf, .pdf,
-// ...), the surfaces of the solid (.step), or a picture as Render
-// makes it (.png).
-func (d *Doc) Export(path string) error {
-	if strings.EqualFold(filepath.Ext(path), ".png") {
-		return d.Render(path, 1024, 768, "isometric")
-	}
-	kind, ok := exportKinds[strings.ToLower(filepath.Ext(path))]
-	if !ok {
-		return fmt.Errorf("can't tell what to export from the name '%s'", path)
-	}
-	return d.ExportAs(kind, path)
-}
-
-// ExportAs is Export for a format that can hold several things, such
-// as a wireframe in a .dxf or a .step.
-func (d *Doc) ExportAs(kind ExportKind, path string) (err error) {
-	d.read(func(*sketch.Sketch) { err = d.h.Export(kind, path) })
-	return err
 }
 
 // views are the directions a picture can be seen from: what is to
@@ -185,100 +175,6 @@ var views = map[string][2]Vec{
 	"isometric": {{X: 0.707, Z: -0.707}, {X: -0.408, Y: 0.816, Z: -0.408}},
 	// The window's own view, no direction: as the user sees it.
 	"window": {},
-}
-
-// Render draws the sketch into a PNG file of width by height pixels,
-// fitted to it and seen from "top", "bottom", "left", "right",
-// "front", "back" or "isometric"; or "window", as the application's
-// window shows it, the same middle and as much of it across.
-func (d *Doc) Render(path string, width, height int, view string) (err error) {
-	v, ok := views[strings.ToLower(view)]
-	if !ok {
-		return fmt.Errorf("no view '%s': they are top, bottom, left, right, front, back, isometric and window", view)
-	}
-	if width < 1 || height < 1 {
-		return fmt.Errorf("a picture of %d by %d pixels", width, height)
-	}
-	d.read(func(*sketch.Sketch) { err = d.h.Render(path, width, height, v[0], v[1]) })
-	return err
-}
-
-// Regen regenerates the whole sketch and solves it.
-func (d *Doc) Regen() {
-	d.h.Run(func() {
-		for i := range d.h.Sketch().Groups {
-			d.h.Sketch().Groups[i].Clean = false
-		}
-		d.h.Sketch().ScheduleGenerateAll()
-		d.h.Regenerate()
-	})
-}
-
-// SetChordTolerance sets how closely meshes follow curves, as a
-// percentage of the model's size (0.1 unless set; smaller is finer and
-// slower), and regenerates everything. In the application it is the
-// setting Configuration shows; scripts that check volumes against a
-// formula use a fine one.
-func (d *Doc) SetChordTolerance(pct float64) {
-	if !(pct > 0) || math.IsInf(pct, 0) {
-		fail("a chord tolerance must be more than zero, not %g", pct)
-	}
-	d.h.Run(func() {
-		d.h.SetChordTolerance(pct)
-		for i := range d.h.Sketch().Groups {
-			d.h.Sketch().Groups[i].Clean = false
-		}
-		d.h.Sketch().ScheduleGenerateAll()
-		d.h.Regenerate()
-	})
-}
-
-// ChordTolerance is how closely meshes follow curves, as a percentage
-// of the model's size.
-func (d *Doc) ChordTolerance() (pct float64) {
-	d.read(func(sk *sketch.Sketch) { pct = sk.ChordTolPercent() })
-	return pct
-}
-
-// Undo takes back the last step: in a console, what the last line
-// that changed the sketch did.
-func (d *Doc) Undo() (ok bool) {
-	d.h.Run(func() { ok = d.h.Undo() })
-	return ok
-}
-
-// Redo does again what Undo took back.
-func (d *Doc) Redo() (ok bool) {
-	d.h.Run(func() { ok = d.h.Redo() })
-	return ok
-}
-
-// Unsaved reports whether the sketch changed since it was saved.
-func (d *Doc) Unsaved() (unsaved bool) {
-	d.h.Run(func() { unsaved = d.h.Sketch().Unsaved })
-	return unsaved
-}
-
-// ForgetChanges lets the changes made since the sketch was saved go, as
-// "Don't Save" does when the application asks: File > New, Open and
-// the others that replace the drawing refuse to run from a script while
-// it has unsaved changes, so that nothing is lost unasked. The
-// drawing itself stays as it is until such a command replaces it.
-func (d *Doc) ForgetChanges() {
-	d.h.Run(func() {
-		if f, ok := d.h.(interface{ ForgetChanges() }); ok {
-			f.ForgetChanges()
-			return
-		}
-		d.h.Sketch().Unsaved = false
-	})
-}
-
-// MmPerUnit is the size in mm of the unit the user interface shows
-// lengths in.
-func (d *Doc) MmPerUnit() (mm float64) {
-	d.h.Run(func() { mm = d.h.MmPerUnit() })
-	return mm
 }
 
 // With runs fn on the sketch itself, for what this package has no
@@ -404,158 +300,6 @@ func (d *Doc) Origin() Entity {
 	return Entity{d, sketch.HRequestReferenceXY.Entity(1)}
 }
 
-// ActiveWorkplane is the workplane that is drawn in; it isn't Valid
-// when drawing freely in 3d.
-func (d *Doc) ActiveWorkplane() (wp Entity) {
-	d.read(func(sk *sketch.Sketch) {
-		wp.d = d
-		if h := sk.ActiveWorkplane(); !core.IsFreeIn3D(h) {
-			wp.H = h
-		}
-	})
-	return wp
-}
-
-// SetWorkplane makes wp the workplane that is drawn in, in the active
-// group.
-func (d *Doc) SetWorkplane(wp Entity) {
-	d.read(func(sk *sketch.Sketch) {
-		if !wp.get(sk).IsWorkplane() {
-			fail("%s isn't a workplane", wp.describe(sk))
-		}
-		sk.Group(sk.ActiveGroup()).ActiveWorkplane = wp.H
-	})
-}
-
-// Free3D draws freely in 3d, in no workplane, in the active group.
-func (d *Doc) Free3D() {
-	d.read(func(sk *sketch.Sketch) {
-		sk.Group(sk.ActiveGroup()).ActiveWorkplane = core.HEntity{}
-	})
-}
-
-// UV is the point at (u, v) in the active workplane.
-func (d *Doc) UV(u, v float64) (p Vec) {
-	d.read(func(sk *sketch.Sketch) {
-		h := sk.ActiveWorkplane()
-		if core.IsFreeIn3D(h) {
-			fail("UV needs a workplane to be active")
-		}
-		wp := sk.MustEntity(h)
-		n := wp.NormalEntity(sk)
-		p = wp.WorkplaneGetOffset(sk).
-			Plus(n.NormalU(sk).ScaledBy(u)).
-			Plus(n.NormalV(sk).ScaledBy(v))
-	})
-	return p
-}
-
-// Selection is what is selected on the drawing, but for the
-// constraints.
-func (d *Doc) Selection() (entities []Entity) {
-	d.read(func(*sketch.Sketch) {
-		for _, s := range d.h.Selection() {
-			if s.Entity.V != 0 {
-				entities = append(entities, Entity{d, s.Entity})
-			}
-		}
-	})
-	return entities
-}
-
-// SelectedConstraints are the constraints selected on the drawing.
-func (d *Doc) SelectedConstraints() (constraints []Constraint) {
-	d.read(func(*sketch.Sketch) {
-		for _, s := range d.h.Selection() {
-			if s.Constraint.V != 0 {
-				constraints = append(constraints, Constraint{d, s.Constraint})
-			}
-		}
-	})
-	return constraints
-}
-
-// Select selects entities on the drawing, and nothing else.
-func (d *Doc) Select(entities ...Entity) {
-	d.read(func(sk *sketch.Sketch) {
-		sel := make([]sketch.Selection, 0, len(entities))
-		for _, e := range entities {
-			e.get(sk)
-			sel = append(sel, sketch.Selection{Entity: e.H})
-		}
-		d.h.Select(sel)
-	})
-}
-
-// SelectEdges selects edges of the solid on the drawing, and nothing
-// else, as picking them on the model does: for a fillet or a chamfer
-// made from the menu. The edges must be of the solid at the active
-// group, which such a group is made after.
-func (d *Doc) SelectEdges(edges ...SolidEdge) {
-	d.read(func(sk *sketch.Sketch) {
-		sel := make([]sketch.Selection, 0, len(edges))
-		for _, e := range edges {
-			e.resolve(sk)
-			sel = append(sel, sketch.Selection{Edge: e.name})
-		}
-		d.h.Select(sel)
-	})
-}
-
-// SelectFaces selects faces of the solid on the drawing, and nothing
-// else, as picking them on the model does: for a shell made from the
-// menu, or a face to draw on. A face an entity made is selected by its
-// entity, one that no entity names by its identity.
-func (d *Doc) SelectFaces(faces ...SolidFace) {
-	d.read(func(sk *sketch.Sketch) {
-		sel := make([]sketch.Selection, 0, len(faces))
-		for _, f := range faces {
-			h := core.HEntity{V: uint32(f.id)}
-			if sk.Entity(h) != nil {
-				sel = append(sel, sketch.Selection{Entity: h})
-			} else {
-				sel = append(sel, sketch.Selection{Face: f.id})
-			}
-		}
-		d.h.Select(sel)
-	})
-}
-
-// SelectedEdges are the edges of the solid selected on the drawing,
-// picked on the model or by SelectEdges, as edges of the solid at the
-// active group.
-func (d *Doc) SelectedEdges() (edges []SolidEdge) {
-	d.read(func(sk *sketch.Sketch) {
-		for _, s := range d.h.Selection() {
-			if s.Edge.A != 0 {
-				edges = append(edges, SolidEdge{s: Solid{d: d, g: sk.ActiveGroup()}, name: s.Edge})
-			}
-		}
-	})
-	return edges
-}
-
-// SelectedFaces are the faces of the solid selected on the drawing,
-// picked on the model or by SelectFaces, as faces of the solid at the
-// active group: a face entity's, or a face no entity names by its
-// identity. A face is given as the first with its identity.
-func (d *Doc) SelectedFaces() (faces []SolidFace) {
-	d.read(func(sk *sketch.Sketch) {
-		s := Solid{d: d, g: sk.ActiveGroup()}
-		for _, x := range d.h.Selection() {
-			switch {
-			case x.Face != 0:
-				faces = append(faces, SolidFace{s: s, id: x.Face})
-			case x.Entity.V != 0:
-				if e := sk.Entity(x.Entity); e != nil && e.IsFace() {
-					faces = append(faces, SolidFace{s: s, id: srf.FaceID(x.Entity.V)})
-				}
-			}
-		}
-	})
-	return faces
-}
-
 // String describes the document.
 func (d *Doc) String() (s string) {
 	d.read(func(sk *sketch.Sketch) {
@@ -571,67 +315,6 @@ func (d *Doc) String() (s string) {
 // In a script the interpreter binds it to the host's; a program
 // compiled on its own has no interface, and none.
 func Commands() []string { return nil }
-
-// RunCommand runs a command of the main menu, as choosing it does:
-// "View > Zoom To Fit", or the entry's own name, "Zoom To Fit", when
-// only one entry has it. telesapr-cli runs scripts on the interface
-// without a window, so commands run there too; a document of a Go
-// program's own, from New, has no menu to run them from, and it is an
-// error. What the command says went wrong is the error too: a command
-// that would replace a drawing with unsaved changes, as File > New,
-// refuses; see ForgetChanges. What the command changes is part of the
-// script's step of undo.
-func (d *Doc) RunCommand(label string) (err error) {
-	d.h.Run(func() {
-		sk := d.h.Sketch()
-		undo := sk.Undo.Write
-		err = d.h.RunCommand(label)
-		if d.h.Sketch() == sk {
-			d.h.Remembered(sk.UndoPushedSince(undo))
-		}
-	})
-	return err
-}
-
-// Measure measures what it is given, as the description of the
-// selection and Analyze > Measure do, without adding a constraint: one
-// line segment (its length) or circle (its radius); two points; a point
-// and a circle, line segment or plane face; two lines, normals or
-// plane faces (their angle in degrees); or two points and a line to
-// project their distance on. Lengths are in mm. A face counts by its
-// outward normal: a point outside the solid is at a positive distance
-// from it, and two opposite faces are at 180 degrees.
-func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement) {
-	d.read(func(sk *sketch.Sketch) {
-		hs := make([]core.HEntity, len(entities))
-		for i, e := range entities {
-			hs[i] = e.get(sk).H
-		}
-		var err error
-		if m, err = sk.Measure(hs...); err != nil {
-			fail("%v", err)
-		}
-	})
-	return m
-}
-
-// Units is the document's unit of length: what lengths typed as text,
-// in Constraint.SetExpr and Group.SetExpr and in the user interface,
-// are in. Every other length this package takes or gives is in mm.
-func (d *Doc) Units() (u core.Unit) {
-	d.read(func(sk *sketch.Sketch) { u = sk.Units })
-	return u
-}
-
-// SetUnits makes u the document's unit, keeping every size, as View >
-// Dimension Units does: a length expression is rewritten to give the
-// same length in u, "(1/4)*25.4" for "1/4" from inches to mm. It
-// returns the parameters that lengths are computed from, which now
-// count in u.
-func (d *Doc) SetUnits(u core.Unit) (check []string) {
-	d.change(func(sk *sketch.Sketch) { check = sk.SetUnits(u) })
-	return check
-}
 
 // BrokenReference is something a regeneration deleted because what it
 // used was gone: a group whose sketch was deleted, or a constraint on a
@@ -649,22 +332,4 @@ type BrokenReference struct {
 	// Text says it all in a line: "deleted g005-extrude, which used
 	// g004-sketch-in-plane".
 	Text string
-}
-
-// BrokenReferences lists what the last regeneration that deleted
-// something deleted, as Edit > Broken References shows it. The list
-// stays until a regeneration deletes something else, an undo or redo,
-// or ClearBrokenReferences. Undo brings the deleted items back.
-func (d *Doc) BrokenReferences() (refs []BrokenReference) {
-	d.read(func(sk *sketch.Sketch) {
-		for _, b := range sk.BrokenReferences {
-			refs = append(refs, BrokenReference{Group: Group{d, b.Group}, Item: b.Item, Missing: b.Missing, Text: b.String()})
-		}
-	})
-	return refs
-}
-
-// ClearBrokenReferences empties the list BrokenReferences gives.
-func (d *Doc) ClearBrokenReferences() {
-	d.h.Run(func() { d.h.Sketch().ClearBrokenReferences() })
 }

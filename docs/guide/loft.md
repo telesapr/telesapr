@@ -25,11 +25,11 @@ surface through itself, which Analyze > Check Solid reports.
 From a script:
 
 ```go
-l := doc.Loft(bottom, top, "duct")
-l.SetTurn(1)
+l := doc.Features.Loft(bottom, top, "duct")
+l.AsLoft().SetTurn(1)
 
-v := doc.LoftThrough([]Group{foot, belly, neck, lip}, "vase")
-v.Profiles() // foot, belly, neck, lip
+v := doc.Features.LoftThrough([]Group{foot, belly, neck, lip}, "vase")
+v.AsLoft().Profiles() // foot, belly, neck, lip
 ```
 
 ## How the smooth surface is made
@@ -52,8 +52,8 @@ one smooth surface, not ruled patches. Example:
 into a round one, square to both.
 
 ```go
-loft.SetTangency(1, 1) // square to both ends
-loft.SetTangency(0, 0) // free again
+loft.AsLoft().SetTangency(1, 1) // square to both ends
+loft.AsLoft().SetTangency(0, 0) // free again
 ```
 
 ## Guide curves
@@ -73,8 +73,8 @@ far it is off. Example: [`examples/scripts/horn`](../../examples/scripts/horn/ho
 flared by two guides.
 
 ```go
-loft.SetGuides([]api.Entity{right, left}) // two guides
-loft.SetGuides(nil)                       // none again
+loft.AsLoft().SetGuides([]api.Entity{right, left}) // two guides
+loft.AsLoft().SetGuides(nil)                       // none again
 ```
 
 ## Not yet

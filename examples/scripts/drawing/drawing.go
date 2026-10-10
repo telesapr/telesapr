@@ -40,34 +40,34 @@ func main() {
 	write := len(os.Args) < 2 || os.Args[1] != "-"
 	doc := api.Current()
 	// The L in the XZ plane, extruded 40 along y.
-	doc.SketchIn(doc.Workplane("ZX"), "profile")
+	doc.Features.SketchIn(doc.Workplane("ZX"), "profile")
 	pts := []api.Vec{api.V(0, 0, 0), api.V(80, 0, 0), api.V(80, 0, 8), api.V(8, 0, 8), api.V(8, 0, 60), api.V(0, 0, 60)}
 	for i := range pts {
-		doc.Line(pts[i], pts[(i+1)%len(pts)])
+		doc.Sketch.Line(pts[i], pts[(i+1)%len(pts)])
 	}
-	doc.Extrude(40, "bracket")
+	doc.Features.Extrude(40, "bracket")
 	// A hole through the foot.
-	doc.SketchIn(doc.Workplane("XY"), "hole")
-	doc.Circle(api.V(50, 20, 0), 5)
-	hole := doc.Extrude(8, "foot-hole")
+	doc.Features.SketchIn(doc.Workplane("XY"), "hole")
+	doc.Sketch.Circle(api.V(50, 20, 0), 5)
+	hole := doc.Features.Extrude(8, "foot-hole")
 	hole.SetCombine(api.Difference)
 
-	d := doc.Drawing()
+	d := doc.Drawing.Get()
 	d.Sheet, d.Title, d.Number, d.Material, d.Author = "A3", "BRACKET", "TS-0001", "steel", "TeleSAPR"
-	doc.SetDrawing(d)
+	doc.Drawing.Set(d)
 
 	// Dimensions of faces and edges, which follow the model as it changes.
 	solid := hole.Solid()
 	under, over := solid.FaceAt(api.V(70, 20, 0)), solid.FaceAt(api.V(70, 20, 8))
 	wall := solid.FaceAt(api.V(55, 20, 4))
-	doc.AddDrawingFaceDimension("right", "distance", 10, over, under)
-	doc.AddDrawingFaceDimension("top", "diameter", 10, wall)
+	doc.Drawing.AddFaceDimension("right", "distance", 10, over, under)
+	doc.Drawing.AddFaceDimension("top", "diameter", 10, wall)
 	for _, e := range solid.Edges() {
 		if a, b := e.Ends(); e.Straight() && a.Z == 0 && b.Z == 0 && a.Y == 0 && b.Y == 0 {
-			doc.AddDrawingDimension("iso", "length", 10, e)
+			doc.Drawing.AddDimension("iso", "length", 10, e)
 		}
 	}
-	values, errs := doc.DrawingDimensions()
+	values, errs := doc.Drawing.Dimensions()
 	for i, v := range values {
 		if errs[i] != nil {
 			fmt.Println("dimension", i, errs[i])
@@ -76,7 +76,7 @@ func main() {
 		fmt.Printf("dimension %d: %.2f mm\n", i, v)
 	}
 
-	r := hole.Check()
+	r := hole.Analyze().Check()
 	fmt.Printf("a bracket of %.0f mm³, drawn on %s, %s\n", r.Volume, d.Sheet, map[bool]string{true: "first angle", false: "third angle"}[d.FirstAngle])
 	if !r.Sound() {
 		os.Exit(1)
@@ -84,13 +84,13 @@ func main() {
 	if !write {
 		return
 	}
-	must(doc.Save("drawing.tlspr"))
+	must(doc.File.Save("drawing.tlspr"))
 	// The sheet in the window, in place of the model, pictured.
-	if err := doc.ShowDrawingSheet(true); err == nil {
-		must(doc.Render("sheet.png", 800, 566, "window"))
-		must(doc.ShowDrawingSheet(false))
+	if err := doc.Drawing.Show(true); err == nil {
+		must(doc.File.Render("sheet.png", 800, 566, "window"))
+		must(doc.Drawing.Show(false))
 	}
-	if err := doc.ExportDrawing("drawing.pdf"); err != nil {
+	if err := doc.Drawing.Export("drawing.pdf"); err != nil {
 		fmt.Println("no window to draw in; write the sheet with: telesapr-cli export-drawing -o drawing.pdf drawing.tlspr")
 	}
 }

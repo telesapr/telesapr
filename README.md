@@ -95,13 +95,13 @@ A sketch can be read and changed from Go scripts, run by an embedded interpreter
   the command line.
 
 ```go
-r := doc.Rect(V(0, 0, 0), V(40, 25, 0)) // mm, in the active workplane
-doc.Length(r[0], 40)
-hole := doc.Circle(V(20, 12, 0), 4)
-doc.Diameter(hole, 8)
-plate := doc.Extrude(6, "plate")
-fmt.Println(plate.Volume())
-doc.Export("plate.stl")
+r := doc.Sketch.Rect(V(0, 0, 0), V(40, 25, 0)) // mm, in the active workplane
+doc.Constrain.Length(r[0], 40)
+hole := doc.Sketch.Circle(V(20, 12, 0), 4)
+doc.Constrain.Diameter(hole, 8)
+plate := doc.Features.Extrude(6, "plate")
+fmt.Println(plate.Analyze().Volume())
+doc.File.Export("plate.stl")
 ```
 
 What a script sees of the sketch is `pkg/script/api` (`go doc ./pkg/script/api`). In a console

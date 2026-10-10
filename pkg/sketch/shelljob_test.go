@@ -14,11 +14,11 @@ func jobModel(t *testing.T) (*api.Doc, *sketch.Sketch, api.Group) {
 	t.Helper()
 	d := api.New()
 	block(d, 0, 0, 20, 10, 10)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Circle(api.V(5, 5, 0), 2)
-	cut := d.Extrude(10, "cut")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(5, 5, 0), 2)
+	cut := d.Features.Extrude(10, "cut")
 	cut.SetCombine(api.Difference)
-	d.Regen()
+	d.Edit.Regen()
 	return d, d.Host().Sketch(), cut
 }
 
@@ -60,7 +60,7 @@ func TestShellJob(t *testing.T) {
 	if got := sk.Group(cut.H).RunningShell; !reflect.DeepEqual(got, want) {
 		t.Error("the job's solid differs from a regeneration in full")
 	}
-	if v := cut.Check().Volume; v <= 0 {
+	if v := cut.Analyze().Check().Volume; v <= 0 {
 		t.Errorf("volume %g after the job", v)
 	}
 

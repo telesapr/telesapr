@@ -38,18 +38,18 @@ func main() {
 	}
 
 	doc := api.Current()
-	doc.SetChordTolerance(0.005)
-	arc := doc.Arc(api.V(0, 0, 0), api.V(20, 0, 0), api.V(-20, 0, 0))
-	doc.Line(api.V(-20, 0, 0), api.V(20, 0, 0))
-	boss := doc.Extrude(16, "boss")
-	boss.SetDraft(degrees)
-	boss.SetDraftNeutral(8)
-	boss.SetDraftFaces([]api.Entity{arc})
+	doc.Edit.SetChordTolerance(0.005)
+	arc := doc.Sketch.Arc(api.V(0, 0, 0), api.V(20, 0, 0), api.V(-20, 0, 0))
+	doc.Sketch.Line(api.V(-20, 0, 0), api.V(20, 0, 0))
+	boss := doc.Features.Extrude(16, "boss")
+	boss.AsExtrude().SetDraft(degrees)
+	boss.AsExtrude().SetDraftNeutral(8)
+	boss.AsExtrude().SetDraftFaces([]api.Entity{arc})
 	if p := boss.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := boss.Check()
+	r := boss.Analyze().Check()
 	// Half a cone's frustum each way from the parting plane.
 	x := 8 * math.Tan(degrees*math.Pi/180)
 	half := math.Pi * 8 / 3 * (20*20 + 20*(20-x) + (20-x)*(20-x)) / 2

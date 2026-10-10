@@ -633,36 +633,7 @@ func (k *constraining) constrainOrientedSame() {
 		return
 	}
 	ss.UndoRemember()
-
-	nfree := sk.Entity(c.EntityA)
-	nref := sk.Entity(c.EntityB)
-	if nref.Group == gw.activeGroupH() {
-		nref, nfree = nfree, nref
-	}
-	if nfree.Group == gw.activeGroupH() && nref.Group != gw.activeGroupH() {
-		// nfree is free, and nref is locked (since it came from a
-		// previous group); so let's force nfree aligned to nref, and
-		// make convergence easy
-		ru, rv := nref.NormalU(sk), nref.NormalV(sk)
-		fu, fv := nfree.NormalU(sk), nfree.NormalV(sk)
-
-		if math.Abs(fu.Dot(ru)) < math.Abs(fu.Dot(rv)) {
-			// There might be an odd*90 degree rotation about the normal
-			// vector; allow that, since the numerical constraint does
-			ru, rv = rv, ru
-		}
-		if fu.Dot(ru) > 0 {
-			fu = ru
-		} else {
-			fu = ru.ScaledBy(-1)
-		}
-		if fv.Dot(rv) > 0 {
-			fv = rv
-		} else {
-			fv = rv.ScaledBy(-1)
-		}
-		nfree.NormalForceTo(sk, geom.QuaternionFromBasis(fu, fv))
-	}
+	sk.AlignSameOrientation(&c, gw.activeGroupH())
 	k.add(c, false)
 }
 

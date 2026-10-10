@@ -8,7 +8,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Circle(V(-2, 7, 0), 10)
-	doc.Extrude(80, "")
-	doc.Fillet([]Entity{doc.Entity(0x80030005)}, 1, "")
+	doc.Sketch.Circle(V(-2, 7, 0), 10)
+	doc.Features.Extrude(80, "")
+	doc.Features.Fillet([]Entity{doc.Entity(0x80030005)}, 1, "")
 }

@@ -37,19 +37,19 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
-	base := doc.Extrude(8, "base")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
+	base := doc.Features.Extrude(8, "base")
 
-	doc.SketchOnFace(base.Solid().FaceAt(api.V(30, 20, 8)), "column-sketch")
-	doc.Rect(api.V(20, 13, 8), api.V(40, 27, 8))
-	column := doc.Extrude(12, "column")
+	doc.Features.SketchOnFace(base.Solid().FaceAt(api.V(30, 20, 8)), "column-sketch")
+	doc.Sketch.Rect(api.V(20, 13, 8), api.V(40, 27, 8))
+	column := doc.Features.Extrude(12, "column")
 
-	doc.SketchOnFace(column.Solid().FaceAt(api.V(30, 20, 20)), "cap-sketch")
-	doc.Rect(api.V(25, 16, 20), api.V(35, 24, 20))
-	pedestal := doc.Extrude(4, "cap")
+	doc.Features.SketchOnFace(column.Solid().FaceAt(api.V(30, 20, 20)), "cap-sketch")
+	doc.Sketch.Rect(api.V(25, 16, 20), api.V(35, 24, 20))
+	pedestal := doc.Features.Extrude(4, "cap")
 
 	check := func(t float64) {
-		r := pedestal.Check()
+		r := pedestal.Analyze().Check()
 		want, high := 60*40*t+20*14*12+10*8*4.0, t+12+4
 		fmt.Printf("base %g mm thick: %s, %.1f mm³ (%.1f by the formula), %g mm high\n",
 			t, map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume, want, r.Max.Z)
@@ -60,11 +60,11 @@ func main() {
 	check(8)
 	// The base's parameters are the vector to its middle.
 	base.Param(2).Set(thick / 2)
-	doc.Regen()
+	doc.Edit.Regen()
 	check(thick)
 
 	if write {
-		if err := doc.Save("pedestal.tlspr"); err != nil {
+		if err := doc.File.Save("pedestal.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

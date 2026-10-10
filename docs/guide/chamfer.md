@@ -28,12 +28,12 @@ and straight edges are cut by wedges instead.
 From a script:
 
 ```go
-c := doc.Chamfer([]api.Entity{edge}, 2, "")
-c.SetDistance(1.5)
-c.SetSecondDistance(3) // 1.5 on the first face, 3 on the second
-c.SwapDistances()      // 3 on the first, 1.5 on the second
+c := doc.Features.Chamfer([]api.Entity{edge}, 2, "")
+c.AsChamfer().SetDistance(1.5)
+c.AsChamfer().SetSecondDistance(3) // 1.5 on the first face, 3 on the second
+c.AsChamfer().SwapDistances()      // 3 on the first, 1.5 on the second
 s := doc.Active().Solid()
-doc.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 2, 10))}, 1, "")
+doc.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 2, 10))}, 1, "")
 ```
 
 ## Edge names

@@ -33,15 +33,15 @@ message naming the later group. The file keeps the active group.
 
 ```go
 doc.Activate(block)
-doc.Chamfer(edges, 2, "")   // between block and what followed it
+doc.Features.Chamfer(edges, 2, "")   // between block and what followed it
 ```
 
 From a script:
 
 ```go
-fmt.Println(boss.DependsOn(), sketch.UsedBy())
-must(in3d.MoveBefore(sketch))
-must(in3d.MoveToEnd())
+fmt.Println(boss.History().DependsOn(), sketch.History().UsedBy())
+must(in3d.History().MoveBefore(sketch))
+must(in3d.History().MoveToEnd())
 ```
 
 ## Suppressing
@@ -60,7 +60,7 @@ Deleting a group deletes the groups that use it, and a constraint goes with the 
 held. Edit > Broken References lists each thing a deletion took, with what it used; the home
 screen links to the list while it is not empty. Undo brings them back.
 
-From a script, `doc.BrokenReferences()` and `doc.ClearBrokenReferences()`.
+From a script, `doc.Features.BrokenReferences()` and `doc.Features.ClearBrokenReferences()`.
 
 ## Not yet
 

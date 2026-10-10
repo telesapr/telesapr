@@ -34,26 +34,26 @@ func TestChamferOneEdge(t *testing.T) {
 	top := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
 	step(d)
 	before := saved(t, d)
-	c := d.Chamfer([]api.Entity{top}, 1, "")
+	c := d.Features.Chamfer([]api.Entity{top}, 1, "")
 	if p := c.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := c.Check()
+	r := c.Analyze().Check()
 	if !r.Sound() || math.Abs(r.Volume-495) > 1e-6 || trimmedFaces(c) != 7 {
 		t.Fatalf("chamfered block: %s", r.String())
 	}
 	undoRedo(t, d, before)
 	// The distance can change, also as an expression in the unit.
-	c.SetDistance(2)
-	if v := c.Check().Volume; math.Abs(v-480) > 1e-6 {
+	c.AsChamfer().SetDistance(2)
+	if v := c.Analyze().Check().Volume; math.Abs(v-480) > 1e-6 {
 		t.Fatalf("at distance 2 the volume is %g, want 480", v)
 	}
 	if err := c.SetExpr(sketch.GroupPitch, "1+0.5"); err != nil {
 		t.Fatal(err)
 	}
-	d.Regen()
-	if v := c.Check().Volume; math.Abs(v-500+0.5*1.5*1.5*10) > 1e-6 || c.Distance() != 1.5 {
-		t.Fatalf("at distance %g the volume is %g", c.Distance(), v)
+	d.Edit.Regen()
+	if v := c.Analyze().Check().Volume; math.Abs(v-500+0.5*1.5*1.5*10) > 1e-6 || c.AsChamfer().Distance() != 1.5 {
+		t.Fatalf("at distance %g the volume is %g", c.AsChamfer().Distance(), v)
 	}
 	if err := c.SetExpr(sketch.GroupPitch, "0"); err == nil {
 		t.Fatal("a distance of 0 was taken")
@@ -74,8 +74,8 @@ func TestChamferCorner(t *testing.T) {
 		lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
 		lineAlong(t, ex, api.V(10, 0, 0), api.V(10, 0, 10)),
 	}
-	c := d.Chamfer(edges, 1, "")
-	r := c.Check()
+	c := d.Features.Chamfer(edges, 1, "")
+	r := c.Analyze().Check()
 	// Three prisms of 0.5*10 each, less the overlaps at the corner.
 	if !r.Sound() || r.Volume > 1000-15+1 || r.Volume < 1000-15 {
 		t.Fatalf("chamfered corner: %s", r.String())
@@ -85,19 +85,22 @@ func TestChamferCorner(t *testing.T) {
 func TestChamferRefused(t *testing.T) {
 	d := api.New()
 	// An L: the inner edge is concave.
-	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
-	ex := d.Extrude(5, "")
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
+	ex := d.Features.Extrude(5, "")
 	inner := lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5))
 	sketchLine := d.Groups()[1].Entities()[0]
 	for name, c := range map[string]struct {
 		fn   func()
 		want string
 	}{
-		"no edges":            {func() { d.Chamfer(nil, 1, "") }, "no edges"},
-		"zero distance":       {func() { d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
-		"a point":             {func() { d.Chamfer([]api.Entity{inner.Start()}, 1, "") }, "neither a line segment nor a circle"},
-		"twice":               {func() { e := lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5)); d.Chamfer([]api.Entity{e, e}, 1, "") }, "twice"},
-		"distance of extrude": {func() { ex.Distance() }, "chamfer"},
+		"no edges":      {func() { d.Features.Chamfer(nil, 1, "") }, "no edges"},
+		"zero distance": {func() { d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
+		"a point":       {func() { d.Features.Chamfer([]api.Entity{inner.Start()}, 1, "") }, "neither a line segment nor a circle"},
+		"twice": {func() {
+			e := lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))
+			d.Features.Chamfer([]api.Entity{e, e}, 1, "")
+		}, "twice"},
+		"distance of extrude": {func() { ex.AsChamfer().Distance() }, "chamfer"},
 	} {
 		func() {
 			defer func() {
@@ -117,12 +120,12 @@ func TestChamferRefused(t *testing.T) {
 // squared along the edge (roadmap 15.1).
 func TestChamferConcave(t *testing.T) {
 	d := api.New()
-	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
-	ex := d.Extrude(5, "")
-	before := ex.Check().Volume
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
+	ex := d.Features.Extrude(5, "")
+	before := ex.Analyze().Check().Volume
 	inner := lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5))
-	c := d.Chamfer([]api.Entity{inner}, 1, "")
-	r := c.Check()
+	c := d.Features.Chamfer([]api.Entity{inner}, 1, "")
+	r := c.Analyze().Check()
 	if c.Problem() != "" || !r.Sound() || math.Abs(r.Volume-before-0.5*5) > 1e-6 {
 		t.Errorf("the concave chamfer: %q, %s, gained %g, want 2.5", c.Problem(), r.String(), r.Volume-before)
 	}
@@ -132,15 +135,15 @@ func TestChamferConcave(t *testing.T) {
 // smaller, gives a problem on the group, and no solid of its own.
 func TestChamferProblem(t *testing.T) {
 	d := api.New()
-	sides := d.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
-	width := d.Length(sides[1], 10)
-	ex := d.Extrude(5, "")
-	c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	width := d.Constrain.Length(sides[1], 10)
+	ex := d.Features.Extrude(5, "")
+	c := d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
 	width.Set(0.5)
 	if p := c.Problem(); !strings.Contains(p, "wider than a face") {
 		t.Fatalf("problem %q", p)
 	}
-	if v := c.Check().Volume; math.Abs(v-0.5*10*5) > 1e-6 {
+	if v := c.Analyze().Check().Volume; math.Abs(v-0.5*10*5) > 1e-6 {
 		t.Fatalf("with a problem the chamfer cut %g away", 25-v)
 	}
 	// A chamfer of nothing.
@@ -157,7 +160,7 @@ func TestChamferProblem(t *testing.T) {
 // cut off whole, with no trims.
 func trimmedFaces(g api.Group) int {
 	n := 0
-	for _, s := range g.Shell().Surface {
+	for _, s := range g.Analyze().Shell().Surface {
 		if len(s.Trim) > 0 {
 			n++
 		}
@@ -183,11 +186,11 @@ func TestChamferSweep(t *testing.T) {
 		th := p.Float("angle") * math.Pi / 180
 		dist, length := p.Float("d"), p.Float("length")
 		d := api.New()
-		d.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
-		ex := d.Extrude(length, "")
+		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
+		ex := d.Features.Extrude(length, "")
 		edge := lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, length))
-		c := d.Chamfer([]api.Entity{edge}, dist, "")
-		r := c.Check()
+		c := d.Features.Chamfer([]api.Entity{edge}, dist, "")
+		r := c.Analyze().Check()
 		want := (50*math.Sin(th) - 0.5*dist*dist*math.Sin(th)) * length
 		switch {
 		case c.Problem() != "":
@@ -206,15 +209,15 @@ func TestChamferSweep(t *testing.T) {
 // the top (roadmap 15.1).
 func TestChamferRoundedOutline(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.005)
-	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	d.Edit.SetChordTolerance(0.005)
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
 	for _, s := range sides {
-		d.TangentArc(s.Start(), 4, true)
+		d.Sketch.TangentArc(s.Start(), 4, true)
 	}
-	ex := d.Extrude(10, "")
-	before := ex.Check().Volume
-	c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 1, "")
-	r := c.Check()
+	ex := d.Features.Extrude(10, "")
+	before := ex.Analyze().Check().Volume
+	c := d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 1, "")
+	r := c.Analyze().Check()
 	// Half the distance squared along the straight runs, and round each
 	// corner the cone's ring: the triangle turned about the corner's
 	// axis, its centroid a third of the distance in from the rim.

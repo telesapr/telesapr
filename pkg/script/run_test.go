@@ -21,11 +21,11 @@ func TestEngineRun(t *testing.T) {
 	ctx := context.Background()
 
 	shown, err := e.Run(ctx, "", `
-r := doc.Rect(V(0, 0, 0), V(40, 20, 0))
+r := doc.Sketch.Rect(V(0, 0, 0), V(40, 20, 0))
 for _, side := range r {
 	fmt.Println(side.Length())
 }
-plate := doc.Extrude(5, "plate")
+plate := doc.Features.Extrude(5, "plate")
 plate.Kind()
 `)
 	if err != nil {
@@ -39,7 +39,7 @@ plate.Kind()
 	}
 
 	// What it defined is there for the next run.
-	shown, err = e.Run(ctx, "", "len(r)\nplate.Bounds()")
+	shown, err = e.Run(ctx, "", "len(r)\nplate.Analyze().Bounds()")
 	if err != nil || shown != "(0, 0, 0), (40, 20, 5)" {
 		t.Errorf("the next run shows %s (%v), want the plate's bounds", shown, err)
 	}
@@ -48,7 +48,7 @@ plate.Kind()
 	if got := len(e.Doc().Groups()); got != 2 {
 		t.Fatalf("%d groups after the run, want 2", got)
 	}
-	if !e.Doc().Undo() {
+	if !e.Doc().Edit.Undo() {
 		t.Fatalf("nothing to undo after the run")
 	}
 	if got, requests := len(e.Doc().Groups()), len(e.Doc().Active().Requests()); got != 1 || requests != 0 {
@@ -61,7 +61,7 @@ plate.Kind()
 	}
 
 	// An error names the line it is on, and what ran before it stays.
-	_, err = e.Run(ctx, "", "y := x + 1\n\ndoc.Line(V(0, 0, 0), V(1, 0, 0)).Radius()\nz := 5")
+	_, err = e.Run(ctx, "", "y := x + 1\n\ndoc.Sketch.Line(V(0, 0, 0), V(1, 0, 0)).Radius()\nz := 5")
 	var serr *Error
 	if !errors.As(err, &serr) || serr.Line != 3 || !strings.Contains(serr.Error(), "isn't a circle") {
 		t.Errorf("the error is %v, want one on line 3 about a circle", err)
@@ -101,7 +101,7 @@ import (
 
 func main() {
 	doc := api.Current()
-	doc.Circle(api.V(0, 0, 0), 5)
+	doc.Sketch.Circle(api.V(0, 0, 0), 5)
 	fmt.Println("requests:", len(doc.Active().Requests()))
 }
 `
@@ -115,7 +115,7 @@ func main() {
 	if got := len(e.Doc().Active().Requests()); got != 1 {
 		t.Errorf("the engine's sketch has %d requests after the program, want 1", got)
 	}
-	_, err = e.Run(ctx, "part.go", strings.Replace(program, "doc.Circle(", "fmt.Println(secret); doc.Circle(", 1))
+	_, err = e.Run(ctx, "part.go", strings.Replace(program, "doc.Sketch.Circle(", "fmt.Println(secret); doc.Sketch.Circle(", 1))
 	var serr *Error
 	if !errors.As(err, &serr) || serr.File != "part.go" {
 		t.Errorf("a program that names what the engine defined: %v, want an error in part.go", err)
@@ -131,6 +131,18 @@ func TestHelpByName(t *testing.T) {
 	out.Reset()
 	if !Help(&out, "Doc.Describe") || !strings.Contains(out.String(), "func (d *Doc) Describe() (s string)") {
 		t.Errorf("Help of Doc.Describe wrote %q", out.String())
+	}
+	out.Reset()
+	if !Help(&out, " Features > Extrude ") || !strings.Contains(out.String(), "Features > Extrude is, in a script:\n\nfunc (m FeaturesMenu) Extrude(") {
+		t.Errorf("Help of a menu entry wrote %q", out.String())
+	}
+	out.Reset()
+	if !Help(&out, "View/Zoom In") || out.String() != "View > Zoom In has no call of its own: the window's view.\n" {
+		t.Errorf("Help of a menu entry with no call wrote %q", out.String())
+	}
+	out.Reset()
+	if Help(&out, "Features > Nothing") || out.Len() != 0 {
+		t.Errorf("Help of a menu entry there isn't wrote %q", out.String())
 	}
 	out.Reset()
 	if Help(&out, "Doc.NoSuchThing") || out.Len() != 0 {

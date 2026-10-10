@@ -8,9 +8,9 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Extrude(80, "")
-	d := doc.Drawing()
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	doc.Features.Extrude(80, "")
+	d := doc.Drawing.Get()
 	d.Sheet, d.Scale, d.FirstAngle, d.Title = "A2", 0.5, true, "PLATE"
-	doc.SetDrawing(d)
+	doc.Drawing.Set(d)
 }

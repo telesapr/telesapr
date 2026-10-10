@@ -18,11 +18,11 @@ import (
 func TestInsertGroup(t *testing.T) {
 	d := api.New()
 	rect := d.Active()
-	d.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
-	block := d.Extrude(10, "block")
-	d.SketchIn(d.Workplane("XY"), "hole-sketch")
-	centre := d.Circle(api.V(5, 5, 0), 2)
-	cut := d.Extrude(10, "cut")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	block := d.Features.Extrude(10, "block")
+	d.Features.SketchIn(d.Workplane("XY"), "hole-sketch")
+	centre := d.Sketch.Circle(api.V(5, 5, 0), 2)
+	cut := d.Features.Extrude(10, "cut")
 	cut.SetCombine(api.Difference)
 	hole := math.Pi * 4 * 10
 
@@ -30,7 +30,7 @@ func TestInsertGroup(t *testing.T) {
 	d.Activate(block)
 	step(d)
 	before := saved(t, d)
-	ch := d.Chamfer([]api.Entity{lineAlong(t, block, api.V(20, 0, 10), api.V(20, 10, 10))}, 2, "")
+	ch := d.Features.Chamfer([]api.Entity{lineAlong(t, block, api.V(20, 0, 10), api.V(20, 10, 10))}, 2, "")
 	var names []string
 	sk := d.Host().Sketch()
 	for _, hg := range sk.GroupOrder {
@@ -39,7 +39,7 @@ func TestInsertGroup(t *testing.T) {
 	if got := strings.Join(names, " "); got != "#references sketch-in-plane block chamfer hole-sketch cut" {
 		t.Fatalf("the history: %s", got)
 	}
-	if v := cut.Volume(); math.Abs(v-(2000-20-hole)) > 0.01*hole {
+	if v := cut.Analyze().Volume(); math.Abs(v-(2000-20-hole)) > 0.01*hole {
 		t.Errorf("the cut after the chamfer leaves %g", v)
 	}
 	for _, hg := range sk.GroupOrder {
@@ -47,10 +47,10 @@ func TestInsertGroup(t *testing.T) {
 			t.Errorf("%s refers to %s, after it", sk.GroupName(hg), sk.GroupName(dep.Group))
 		}
 	}
-	if err := ch.MoveBefore(block); err == nil || !strings.Contains(err.Error(), "which it uses") {
+	if err := ch.History().MoveBefore(block); err == nil || !strings.Contains(err.Error(), "which it uses") {
 		t.Errorf("the chamfer before its block: %v", err)
 	}
-	if err := block.MoveBefore(cut); err == nil || !strings.Contains(err.Error(), "which uses it") {
+	if err := block.History().MoveBefore(cut); err == nil || !strings.Contains(err.Error(), "which uses it") {
 		t.Errorf("the block after the chamfer: %v", err)
 	}
 	undoRedo(t, d, before)
@@ -76,7 +76,7 @@ func TestInsertGroup(t *testing.T) {
 		fn   func()
 		want string
 	}{
-		"a constraint on a later entity": {func() { d.Coincident(corner, centre.Center()) }, "comes after the active group"},
+		"a constraint on a later entity": {func() { d.Constrain.Coincident(corner, centre.Center()) }, "comes after the active group"},
 		"a group on a later face": {func() {
 			d.Activate(block)
 			var face api.Entity
@@ -85,7 +85,7 @@ func TestInsertGroup(t *testing.T) {
 					face = e
 				}
 			}
-			d.Mirror(face, "")
+			d.Features.Mirror(face, "")
 		}, "would refer to"},
 	} {
 		func() {

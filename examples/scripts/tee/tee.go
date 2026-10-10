@@ -38,28 +38,28 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.SetChordTolerance(0.002)
-	doc.SketchIn(doc.Workplane("XY"), "")
-	doc.Circle(api.V(0, 0, 0), 10)
-	doc.Extrude(40, "pipe")
-	doc.SketchIn(doc.Workplane("YZ"), "")
-	doc.Circle(api.V(0, 0, 20), 5)
-	branch := doc.Extrude(25, "branch")
+	doc.Edit.SetChordTolerance(0.002)
+	doc.Features.SketchIn(doc.Workplane("XY"), "")
+	doc.Sketch.Circle(api.V(0, 0, 0), 10)
+	doc.Features.Extrude(40, "pipe")
+	doc.Features.SketchIn(doc.Workplane("YZ"), "")
+	doc.Sketch.Circle(api.V(0, 0, 20), 5)
+	branch := doc.Features.Extrude(25, "branch")
 	if p := branch.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	before := branch.Check().Volume
+	before := branch.Analyze().Check().Volume
 
 	// A point of the joint: on the branch (y² + (z-20)² = 25) and on the
 	// pipe (x² + y² = 100).
 	joint := branch.Solid().EdgeAt(api.V(math.Sqrt(91), 3, 24))
-	fill := doc.FilletSolid([]api.SolidEdge{joint}, radius, "joint")
+	fill := doc.Features.FilletSolid([]api.SolidEdge{joint}, radius, "joint")
 	if p := fill.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := fill.Check()
+	r := fill.Analyze().Check()
 	added := r.Volume - before
 	want := map[float64]float64{1: 3.9617, 2: 15.769, 3: 35.370}[radius]
 	fmt.Printf("the joint filled round at %g mm: %s, %.2f mm³ added", radius,
@@ -74,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("tee.tlspr"); err != nil {
+		if err := doc.File.Save("tee.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

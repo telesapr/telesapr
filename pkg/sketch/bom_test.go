@@ -19,10 +19,10 @@ func TestBillOfMaterials(t *testing.T) {
 	dir := t.TempDir()
 	part := func(name string, w float64) string {
 		d := api.New()
-		d.Rect(api.V(0, 0, 0), api.V(w, w, 0))
-		d.Extrude(w, "")
+		d.Sketch.Rect(api.V(0, 0, 0), api.V(w, w, 0))
+		d.Features.Extrude(w, "")
 		path := filepath.Join(dir, name+".tlspr")
-		if err := d.Save(path); err != nil {
+		if err := d.File.Save(path); err != nil {
 			t.Fatal(err)
 		}
 		return path
@@ -31,7 +31,7 @@ func TestBillOfMaterials(t *testing.T) {
 
 	d := api.New()
 	link := func(path string) api.Group {
-		g, err := d.Link(path, "")
+		g, err := d.Assembly.Link(path, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -39,15 +39,15 @@ func TestBillOfMaterials(t *testing.T) {
 	}
 	link(plate)
 	link(bolt)
-	d.Translate(3, api.V(20, 0, 0), "bolts")
+	d.Features.Translate(3, api.V(20, 0, 0), "bolts")
 	link(nut)
-	d.Mirror(d.Workplane("YZ"), "")
+	d.Features.Mirror(d.Workplane("YZ"), "")
 	w := link(washer)
 	w.SetSuppress(api.SuppressSolid)
 	d.Activate(w)
 
 	got := map[string]int{}
-	for _, it := range d.BillOfMaterials() {
+	for _, it := range d.Assembly.BillOfMaterials() {
 		got[it.Part] = it.Count
 	}
 	want := map[string]int{"plate": 1, "bolt": 3, "nut": 2}
@@ -61,7 +61,7 @@ func TestBillOfMaterials(t *testing.T) {
 	}
 
 	out := filepath.Join(dir, "bom.csv")
-	if err := d.ExportBOM(out); err != nil {
+	if err := d.Assembly.ExportBOM(out); err != nil {
 		t.Fatal(err)
 	}
 	csv, _ := os.ReadFile(out)
@@ -81,14 +81,14 @@ func TestBillOfMaterials(t *testing.T) {
 func TestLinkPlacedAsDrawn(t *testing.T) {
 	dir := t.TempDir()
 	src := api.New()
-	src.Rect(api.V(100, 0, 0), api.V(110, 10, 0))
-	src.Extrude(5, "")
+	src.Sketch.Rect(api.V(100, 0, 0), api.V(110, 10, 0))
+	src.Features.Extrude(5, "")
 	model := filepath.Join(dir, "part.tlspr")
 	mesh := filepath.Join(dir, "part.stl")
-	if err := src.Save(model); err != nil {
+	if err := src.File.Save(model); err != nil {
 		t.Fatal(err)
 	}
-	if err := src.Export(mesh); err != nil {
+	if err := src.File.Export(mesh); err != nil {
 		t.Fatal(err)
 	}
 	// The highest corner of the points: a mesh's origin is one too.
@@ -103,14 +103,14 @@ func TestLinkPlacedAsDrawn(t *testing.T) {
 		return hi
 	}
 	d := api.New()
-	g, err := d.Link(mesh, "")
+	g, err := d.Assembly.Link(mesh, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if hi := highest(g); hi.Minus(api.V(110, 10, 5)).Magnitude() > 1e-4 {
 		t.Errorf("the mesh's highest corner is at %v", hi)
 	}
-	g, err = d.Link(model, "")
+	g, err = d.Assembly.Link(model, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,34 +127,34 @@ func TestBillOfMaterialsNested(t *testing.T) {
 	dir := t.TempDir()
 	save := func(d *api.Doc, name string) string {
 		path := filepath.Join(dir, name+".tlspr")
-		if err := d.Save(path); err != nil {
+		if err := d.File.Save(path); err != nil {
 			t.Fatal(err)
 		}
 		return path
 	}
 	link := func(d *api.Doc, path string) api.Group {
-		g, err := d.Link(path, "")
+		g, err := d.Assembly.Link(path, "")
 		if err != nil {
 			t.Fatal(err)
 		}
 		return g
 	}
 	part := api.New()
-	part.Rect(api.V(0, 0, 0), api.V(2, 2, 0))
-	part.Extrude(2, "")
+	part.Sketch.Rect(api.V(0, 0, 0), api.V(2, 2, 0))
+	part.Features.Extrude(2, "")
 	bolt := save(part, "bolt")
 
 	bracket := api.New()
 	link(bracket, bolt)
-	bracket.Translate(2, api.V(10, 0, 0), "")
+	bracket.Features.Translate(2, api.V(10, 0, 0), "")
 	save(bracket, "bracket")
 
 	top := api.New()
 	link(top, filepath.Join(dir, "bracket.tlspr"))
-	top.Translate(2, api.V(0, 30, 0), "")
+	top.Features.Translate(2, api.V(0, 30, 0), "")
 	counts := func(d *api.Doc) map[string]int {
 		got := map[string]int{}
-		for _, it := range d.BillOfMaterials() {
+		for _, it := range d.Assembly.BillOfMaterials() {
 			got[it.Part] = it.Count
 		}
 		return got
@@ -166,7 +166,7 @@ func TestBillOfMaterialsNested(t *testing.T) {
 		}
 	}
 	check("linked", counts(top))
-	for _, it := range top.BillOfMaterials() {
+	for _, it := range top.Assembly.BillOfMaterials() {
 		if it.Part == "bolt" && (len(it.Groups) != 2 || !strings.Contains(it.Groups[0], " > ")) {
 			t.Errorf("bolts placed by %q", it.Groups)
 		}
@@ -177,16 +177,16 @@ func TestBillOfMaterialsNested(t *testing.T) {
 		t.Fatal(err)
 	}
 	check("opened", counts(opened))
-	opened.Translate(3, api.V(0, 0, 40), "")
+	opened.Features.Translate(3, api.V(0, 0, 40), "")
 	if c := counts(opened); c["bracket"] != 6 || c["bolt"] != 12 {
 		t.Errorf("a repeat of the repeat: %v", c)
 	}
-	opened.Undo()
+	opened.Edit.Undo()
 	check("undone", counts(opened))
 
 	// a links b, which links a.
 	b := api.New()
-	b.Rect(api.V(0, 0, 0), api.V(1, 1, 0))
+	b.Sketch.Rect(api.V(0, 0, 0), api.V(1, 1, 0))
 	bPath := save(b, "b")
 	a := api.New()
 	link(a, bPath)

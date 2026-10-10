@@ -41,7 +41,7 @@ The names it gives (g003-plate, r004-line-segment, c00a-pt-pt-distance) are the 
 
 The view is "isometric" (the default), "front" (the XY plane, where a new drawing's first sketch is: x to the right, y up), "back", "top", "bottom", "left" or "right", fitted; or "window", the view the user has in the window, as they see it. With group, the drawing is drawn as it is up to that group, as if it were active.`
 
-	helpDescription = `Returns the documentation of TeleSAPR's scripting interface. With no name it is the primer: how scripts and drawings work, what the interpreter can't do, an example, and every call there is; read it once before writing the first script. With a name it is the documentation of that type, method or function: "Doc.Extrude", "Group", "Group.SetCombine", "Entity", "ThreadOptions", "math.Hypot".`
+	helpDescription = `Returns the documentation of TeleSAPR's scripting interface. With no name it is the primer: how scripts and drawings work, what the interpreter can't do, an example, and every call there is; read it once before writing the first script. With a name it is the documentation of that type, method or function: "Features.Extrude", "Group", "Group.SetCombine", "Entity", "ThreadOptions", "math.Hypot"; or of what a script calls in place of an entry of the window's menu, as "Features > Fillet Edges". The calls that change the drawing are grouped by menu: "Features" lists them all.`
 )
 
 // RunInput is what run_script takes.
@@ -64,7 +64,7 @@ type RenderInput struct {
 
 // HelpInput is what api_help takes.
 type HelpInput struct {
-	Name string `json:"name,omitempty" jsonschema:"a type, method or function, as Doc.Extrude or Group; the primer if left out"`
+	Name string `json:"name,omitempty" jsonschema:"a menu, type, method or function, as Features, Features.Extrude or Group, or a menu entry, as Features > Fillet Edges; the primer if left out"`
 }
 
 // text is a tool's result that is text.

@@ -29,33 +29,3 @@ func (g Group) SetAppearance(name string) {
 	checkAppearance(name)
 	g.d.change(func(sk *sketch.Sketch) { g.get(sk).Appearance = name })
 }
-
-// SetFaceAppearance gives one face of the solid its own appearance, or
-// with "" takes it away, so that the face has its group's. The face is
-// kept by its identity, in the group that made it.
-func (d *Doc) SetFaceAppearance(face SolidFace, name string) {
-	checkAppearance(name)
-	d.change(func(sk *sketch.Sketch) {
-		g := sk.Group(sketch.FaceGroup(face.id))
-		if g == nil {
-			fail("no group made face %x", uint32(face.id))
-		}
-		kept := g.FaceAppearances[:0]
-		for _, fa := range g.FaceAppearances {
-			if fa.Face != face.id {
-				kept = append(kept, fa)
-			}
-		}
-		g.FaceAppearances = kept
-		if name != "" {
-			g.FaceAppearances = append(g.FaceAppearances, sketch.FaceAppearance{Face: face.id, Appearance: name})
-		}
-	})
-}
-
-// FaceAppearance is the appearance the face has: its own, its group's,
-// or "" for the default.
-func (d *Doc) FaceAppearance(face SolidFace) (name string) {
-	d.read(func(sk *sketch.Sketch) { name = sk.AppearanceOf(face.id) })
-	return name
-}

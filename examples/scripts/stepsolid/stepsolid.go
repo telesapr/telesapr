@@ -27,53 +27,53 @@ import (
 
 func main() {
 	doc := api.Current()
-	doc.SetChordTolerance(0.05)
+	doc.Edit.SetChordTolerance(0.05)
 	path := "boss.step"
 	var plate, boss api.Group
 	if len(os.Args) > 1 {
 		path = os.Args[1]
 	} else {
-		doc.Rect(api.V(-30, -20, 0), api.V(30, 20, 0))
-		plate = doc.Extrude(6, "plate")
-		doc.SketchIn(doc.Workplane("XY"), "boss")
-		doc.Circle(api.V(0, 0, 0), 12)
-		boss = doc.Extrude(20, "boss")
-		if err := doc.Export(path); err != nil {
+		doc.Sketch.Rect(api.V(-30, -20, 0), api.V(30, 20, 0))
+		plate = doc.Features.Extrude(6, "plate")
+		doc.Features.SketchIn(doc.Workplane("XY"), "boss")
+		doc.Sketch.Circle(api.V(0, 0, 0), 12)
+		boss = doc.Features.Extrude(20, "boss")
+		if err := doc.File.Export(path); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}
 	}
 	whole := 0.0
 	if boss.Valid() {
-		whole = boss.Check().Volume
+		whole = boss.Analyze().Check().Volume
 		plate.SetSuppress(api.SuppressSolid)
 		boss.SetSuppress(api.SuppressSolid)
 	}
-	part, err := doc.LinkStep(path, "part", true)
+	part, err := doc.Assembly.LinkStep(path, "part", true)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	for _, l := range part.LinkInfo() {
+	for _, l := range part.AsLink().Info() {
 		fmt.Println(l)
 	}
-	if p := part.LinkProblem(); p != "" {
+	if p := part.AsLink().Problem(); p != "" {
 		fmt.Println("problem:", p)
 	}
-	r := part.Check()
+	r := part.Analyze().Check()
 	fmt.Printf("linked: %s, %.1f mm³\n", map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume)
 	if !boss.Valid() {
 		return
 	}
 	// A slot 6 wide and 6 deep across the boss's top, cut from the
 	// linked solid as from any other.
-	doc.Sketch3D("")
-	o := doc.Point(api.V(0, 0, 14))
-	doc.SketchAt(o, api.V(1, 0, 0), api.V(0, 1, 0), "slot")
-	doc.Rect(api.V(-40, -3, 14), api.V(40, 3, 14))
-	slot := doc.Extrude(10, "slot")
+	doc.Features.Sketch3D("")
+	o := doc.Sketch.Point(api.V(0, 0, 14))
+	doc.Features.SketchAt(o, api.V(1, 0, 0), api.V(0, 1, 0), "slot")
+	doc.Sketch.Rect(api.V(-40, -3, 14), api.V(40, 3, 14))
+	slot := doc.Features.Extrude(10, "slot")
 	slot.SetCombine(api.Difference)
-	cut := slot.Check()
+	cut := slot.Analyze().Check()
 	fmt.Printf("slotted: %s, %.1f mm³ (the original %.1f)\n",
 		map[bool]string{true: "sound", false: "NOT sound"}[cut.Sound()], cut.Volume, whole)
 	if !r.Sound() || math.Abs(r.Volume-whole) > 0.01*whole || !cut.Sound() || cut.Volume >= r.Volume {

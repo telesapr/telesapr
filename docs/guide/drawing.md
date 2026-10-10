@@ -31,8 +31,8 @@ From a script, `Doc.AutoConstrain` adds to a line, an arc or a circle of the act
 the window would add as it is placed, and says whether it added one:
 
 ```go
-c := doc.Circle(V(30, 0, 0), 8.03)
-if con, ok := doc.AutoConstrain(c); ok {
+c := doc.Sketch.Circle(V(30, 0, 0), 8.03)
+if con, ok := doc.Constrain.Auto(c); ok {
 	fmt.Println(con) // c004-eq-radius
 }
 ```

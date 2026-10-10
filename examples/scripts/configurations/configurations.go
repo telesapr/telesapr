@@ -35,21 +35,21 @@ func must(err error) {
 func main() {
 	write := len(os.Args) < 2 || os.Args[1] != "-"
 	doc := api.Current()
-	must(doc.SetParameter("w", "40"))
-	sides := doc.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
-	must(doc.Length(sides[0], 40).SetExpr("w"))
-	must(doc.Length(sides[1], 30).SetExpr("w*3/4"))
-	plate := doc.Extrude(4, "plate")
+	must(doc.Params.Set("w", "40"))
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+	must(doc.Constrain.Length(sides[0], 40).SetExpr("w"))
+	must(doc.Constrain.Length(sides[1], 30).SetExpr("w*3/4"))
+	plate := doc.Features.Extrude(4, "plate")
 
 	sizes := map[string]float64{"small": 40, "medium": 60, "large": 100}
 	for _, name := range []string{"small", "medium", "large"} {
-		must(doc.AddConfiguration(name))
-		must(doc.SetParameter("w", fmt.Sprint(sizes[name])))
+		must(doc.Params.AddConfiguration(name))
+		must(doc.Params.Set("w", fmt.Sprint(sizes[name])))
 	}
 	for _, name := range []string{"small", "large", "medium"} {
-		must(doc.ActivateConfiguration(name))
+		must(doc.Params.ActivateConfiguration(name))
 		w := sizes[name]
-		r := plate.Check()
+		r := plate.Analyze().Check()
 		want := w * w * 3 / 4 * 4
 		fmt.Printf("%-6s w = %3g: %.0f mm³ (%.0f by the sizes)\n", name, w, r.Volume, want)
 		if !r.Sound() || math.Abs(r.Volume-want) > 1e-6*want {
@@ -57,6 +57,6 @@ func main() {
 		}
 	}
 	if write {
-		must(doc.Save("configurations.tlspr"))
+		must(doc.File.Save("configurations.tlspr"))
 	}
 }

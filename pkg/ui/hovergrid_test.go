@@ -101,7 +101,7 @@ func BenchmarkHoverHiddenScan(b *testing.B) {
 // face facing the viewer counted as hidden behind the solid.)
 func TestSolidEdgeHoverFacesViewer(t *testing.T) {
 	ss, _ := newTestApp(t)
-	scriptConsole(t, ss, `doc.Rect(V(0, 0, 0), V(20, 10, 0))`, `doc.Extrude(10, "block")`)
+	scriptConsole(t, ss, `doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))`, `doc.Features.Extrude(10, "block")`)
 	gw := ss.GW
 	w := gw.window.(*headless.Window)
 	w.Width, w.Height = 1200, 900

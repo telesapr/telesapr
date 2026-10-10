@@ -10,9 +10,9 @@ import (
 
 func main() {
 	doc := Current()
-	doc.Circle(V(30, -10, 0), 2)
-	doc.Circle(V(10, -10, 0), 20).SetConstruction(true)
-	post := doc.Extrude(80, "")
+	doc.Sketch.Circle(V(30, -10, 0), 2)
+	doc.Sketch.Circle(V(10, -10, 0), 20).SetConstruction(true)
+	post := doc.Features.Extrude(80, "")
 	// The copy of the ring at the top of the extrusion, which the mouse
 	// picks.
 	var ring Entity
@@ -21,5 +21,5 @@ func main() {
 			ring = e
 		}
 	}
-	doc.PatternAlongPath([]Entity{ring}, 3, "")
+	doc.Features.PatternAlongPath([]Entity{ring}, 3, "")
 }

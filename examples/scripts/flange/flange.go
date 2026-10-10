@@ -37,22 +37,22 @@ func main() {
 	}
 
 	doc := api.Current()
-	doc.Circle(api.V(0, 0, 0), 50)
-	doc.Extrude(8, "disc")
+	doc.Sketch.Circle(api.V(0, 0, 0), 50)
+	doc.Features.Extrude(8, "disc")
 
-	doc.SketchIn(doc.Workplane("XY"), "hole sketch")
-	doc.Circle(api.V(35, 0, 0), 4)
-	pitch := doc.Circle(api.V(0, 0, 0), 35)
+	doc.Features.SketchIn(doc.Workplane("XY"), "hole sketch")
+	doc.Sketch.Circle(api.V(35, 0, 0), 4)
+	pitch := doc.Sketch.Circle(api.V(0, 0, 0), 35)
 	pitch.SetConstruction(true)
-	hole := doc.Extrude(8, "hole")
+	hole := doc.Features.Extrude(8, "hole")
 	hole.SetCombine(api.Difference)
 
-	ring := doc.PatternAlongPath([]api.Entity{pitch}, holes, "holes")
+	ring := doc.Features.PatternAlongPath([]api.Entity{pitch}, holes, "holes")
 	if p := ring.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := ring.Check()
+	r := ring.Analyze().Check()
 	want := math.Pi * 8 * (50*50 - float64(holes)*4*4)
 	fmt.Printf("%d holes: %.0f mm³ (exactly %.0f), sound %v\n", holes, r.Volume, want, r.Sound())
 	if !r.Sound() || math.Abs(r.Volume-want) > 0.02*want {

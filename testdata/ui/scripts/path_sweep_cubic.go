@@ -8,7 +8,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/ui/sweep_cubic.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/ui/sweep_cubic.tlspr"); err != nil {
 		panic(err)
 	}
 	var cubic Entity
@@ -17,7 +17,7 @@ func main() {
 			cubic = e
 		}
 	}
-	s := doc.Sweep([]Entity{cubic}, "")
-	s.SetTwist(90)
-	s.SetSweepUp(V(1, 0, 0))
+	s := doc.Features.Sweep([]Entity{cubic}, "")
+	s.AsSweep().SetTwist(90)
+	s.AsSweep().SetSweepUp(V(1, 0, 0))
 }

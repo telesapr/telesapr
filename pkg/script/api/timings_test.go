@@ -11,8 +11,8 @@ import (
 func TestSketchTimings(t *testing.T) {
 	t.Parallel()
 	d := New()
-	d.Rect(V(0, 0, 0), V(10, 10, 0))
-	ex := d.Extrude(5, "")
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	ex := d.Features.Extrude(5, "")
 	sk := d.Host().Sketch()
 	sk.GenerateAll()
 	tm := &sketch.Timings{}

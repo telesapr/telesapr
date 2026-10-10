@@ -40,20 +40,20 @@ func main() {
 		r = v
 	}
 	doc := api.Current()
-	doc.SetChordTolerance(0.002)
-	doc.SketchIn(doc.Workplane("ZX"), "path")
+	doc.Edit.SetChordTolerance(0.002)
+	doc.Features.SketchIn(doc.Workplane("ZX"), "path")
 	a, b, c := api.V(0, 0, 0), api.V(0, 0, 40), api.V(30, 0, 40)
 	d := api.V(30, 0, 70)
-	path := []api.Entity{doc.Line(a, b), doc.Line(b, c), doc.Line(c, d)}
-	doc.SketchIn(doc.Workplane("XY"), "duct")
-	doc.Rect(api.V(-3, -2, 0), api.V(3, 2, 0))
-	duct := doc.Sweep(path, "duct")
-	duct.SetCornerRadius(r)
+	path := []api.Entity{doc.Sketch.Line(a, b), doc.Sketch.Line(b, c), doc.Sketch.Line(c, d)}
+	doc.Features.SketchIn(doc.Workplane("XY"), "duct")
+	doc.Sketch.Rect(api.V(-3, -2, 0), api.V(3, 2, 0))
+	duct := doc.Features.Sweep(path, "duct")
+	duct.AsSweep().SetCornerRadius(r)
 	if p := duct.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	check := duct.Check()
+	check := duct.Analyze().Check()
 	// Two right-angle corners: each cuts r from both runs and adds a
 	// quarter circle.
 	length := 40 + 30 + 30 - 4*r + 2*r*math.Pi/2

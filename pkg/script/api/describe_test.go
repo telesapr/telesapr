@@ -11,22 +11,22 @@ import (
 // constraint as the lookups take them, with where things are.
 func TestDescribe(t *testing.T) {
 	d := New()
-	if err := d.SetParameter("width", "40"); err != nil {
+	if err := d.Params.Set("width", "40"); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SetParameter("half", "width/2"); err != nil {
+	if err := d.Params.Set("half", "width/2"); err != nil {
 		t.Fatal(err)
 	}
-	sides := d.Rect(V(0, 0, 0), V(40, 20, 0))
-	d.Coincident(sides[0].Start(), d.Origin())
-	d.Length(sides[0], 40)
-	d.Length(sides[1], 20)
-	hole := d.Circle(V(10, 10, 0), 2.5)
-	d.Diameter(hole, 5)
-	guide := d.Line(V(0, 30, 0), V(5, 30, 0))
+	sides := d.Sketch.Rect(V(0, 0, 0), V(40, 20, 0))
+	d.Constrain.Coincident(sides[0].Start(), d.Origin())
+	d.Constrain.Length(sides[0], 40)
+	d.Constrain.Length(sides[1], 20)
+	hole := d.Sketch.Circle(V(10, 10, 0), 2.5)
+	d.Constrain.Diameter(hole, 5)
+	guide := d.Sketch.Line(V(0, 30, 0), V(5, 30, 0))
 	guide.SetConstruction(true)
 	sketch := d.Active()
-	d.Extrude(4, "plate")
+	d.Features.Extrude(4, "plate")
 	d.Activate(sketch)
 
 	const want = `sketch: unit mm, unsaved changes
@@ -101,19 +101,19 @@ active group g002-sketch-in-plane, sketch-in-plane: solved, 6 DOF
 // one that is left out, an expression without a value, the unit.
 func TestDescribeTrouble(t *testing.T) {
 	d := New()
-	line := d.Line(V(0, 0, 0), V(10, 0, 0))
-	d.Length(line, 10)
-	d.Length(line, 12)
+	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
+	d.Constrain.Length(line, 10)
+	d.Constrain.Length(line, 12)
 	if got := d.Describe(); !strings.Contains(got, "NOT SOLVED") {
 		t.Errorf("two lengths on one line, and the description says:\n%s", got)
 	}
 
 	d = New()
-	d.SetUnits(core.UnitInches)
-	d.Rect(V(0, 0, 0), V(10, 10, 0))
-	box := d.Extrude(5, "box")
+	d.View.SetUnits(core.UnitInches)
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	box := d.Features.Extrude(5, "box")
 	box.SetSuppress(SuppressWhole)
-	text := d.Comment(V(1, 1, 0), "a note")
+	text := d.Constrain.Comment(V(1, 1, 0), "a note")
 	got := d.Describe()
 	for _, part := range []string{"unit inch", "g003-box, extrude: left out (suppressed)", `-comment "a note"`} {
 		if !strings.Contains(got, part) {

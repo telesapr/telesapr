@@ -8,8 +8,8 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Extrude(80, "")
-	f := doc.Fillet([]Entity{doc.Entity(0x80030004), doc.Entity(0x80030016)}, 1, "")
-	f.SetEdgeRadius(1, 3)
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	doc.Features.Extrude(80, "")
+	f := doc.Features.Fillet([]Entity{doc.Entity(0x80030004), doc.Entity(0x80030016)}, 1, "")
+	f.AsFillet().SetEdgeRadius(1, 3)
 }

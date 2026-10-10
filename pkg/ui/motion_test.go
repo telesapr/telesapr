@@ -15,16 +15,16 @@ import (
 func TestMotionStudyPictures(t *testing.T) {
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
-	if err := doc.SetParameter("w", "20"); err != nil {
+	if err := doc.Params.Set("w", "20"); err != nil {
 		t.Fatal(err)
 	}
-	sides := doc.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
-	if err := doc.Length(sides[0], 20).SetExpr("w"); err != nil {
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	if err := doc.Constrain.Length(sides[0], 20).SetExpr("w"); err != nil {
 		t.Fatal(err)
 	}
-	doc.Extrude(5, "")
+	doc.Features.Extrude(5, "")
 	dir := t.TempDir()
-	frames, err := doc.MotionStudy("w", 10, 20, 2, filepath.Join(dir, "f%d.png"))
+	frames, err := doc.Assembly.MotionStudy("w", 10, 20, 2, filepath.Join(dir, "f%d.png"))
 	if err != nil || len(frames) != 3 {
 		t.Fatalf("%d frames, %v", len(frames), err)
 	}

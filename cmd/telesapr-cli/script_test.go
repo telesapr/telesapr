@@ -32,18 +32,18 @@ import (
 func main() {
 	size, _ := strconv.ParseFloat(os.Args[1], 64)
 	doc := api.Current()
-	sides := doc.Rect(api.V(0, 0, 0), api.V(size, size, 0))
-	doc.Length(sides[0], size)
-	doc.Length(sides[1], size)
-	doc.Coincident(sides[0].Start(), doc.Origin())
-	block := doc.Extrude(size, "block")
-	fmt.Printf("%s %.0f\n", block, block.Volume())
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(size, size, 0))
+	doc.Constrain.Length(sides[0], size)
+	doc.Constrain.Length(sides[1], size)
+	doc.Constrain.Coincident(sides[0].Start(), doc.Origin())
+	block := doc.Features.Extrude(size, "block")
+	fmt.Printf("%s %.0f\n", block, block.Analyze().Volume())
 	for _, name := range os.Args[2:] {
 		var err error
 		if filepath := name; len(filepath) > 6 && filepath[len(filepath)-6:] == ".tlspr" {
-			err = doc.Save(name)
+			err = doc.File.Save(name)
 		} else {
-			err = doc.Export(name)
+			err = doc.File.Export(name)
 		}
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "failed:", err)
@@ -76,7 +76,7 @@ func TestRunScript(t *testing.T) {
 	}
 
 	status, stdout, stderr = runScripting(t, "", "eval", model,
-		`g := doc.Group("block")`, `math.Round(g.Volume())`, `g.Bounds()`, `len(doc.Groups())`)
+		`g := doc.Group("block")`, `math.Round(g.Analyze().Volume())`, `g.Analyze().Bounds()`, `len(doc.Groups())`)
 	if status != exitOK || stdout != "1000\n(0, 0, 0), (10, 10, 10)\n2\n" || stderr != "" {
 		t.Errorf("eval: status %d, stdout %q, stderr %q", status, stdout, stderr)
 	}
@@ -95,7 +95,7 @@ func TestRunScript(t *testing.T) {
 }
 
 func TestRepl(t *testing.T) {
-	status, stdout, stderr := runScripting(t, "c := doc.Circle(V(1, 2, 0), 3)\nc.Radius()\nc.Center().Pos()\nc.Start()\n", "repl")
+	status, stdout, stderr := runScripting(t, "c := doc.Sketch.Circle(V(1, 2, 0), 3)\nc.Radius()\nc.Center().Pos()\nc.Start()\n", "repl")
 	want := "3\n(1, 2, 0)\nerror: circle r004-circle, radius 3.000 has no start\n"
 	if status != exitOK || stdout != want || stderr != "" {
 		t.Errorf("repl: status %d, stdout %q, stderr %q, want stdout %q", status, stdout, stderr, want)

@@ -9,6 +9,6 @@ import (
 
 func main() {
 	doc := Current()
-	doc.SetUnits(core.UnitInches)
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
+	doc.View.SetUnits(core.UnitInches)
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
 }

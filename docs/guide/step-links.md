@@ -57,13 +57,13 @@ other systems read as sound solids.
 ## From a script
 
 ```go
-g, err := doc.Link("parts/bracket.step", "bracket")
-fmt.Println(g.LinkInfo(), g.LinkProblem())
-fmt.Println(g.Check().Volume)
+g, err := doc.Assembly.Link("parts/bracket.step", "bracket")
+fmt.Println(g.AsLink().Info(), g.AsLink().Problem())
+fmt.Println(g.Analyze().Check().Volume)
 
-part, err := doc.LinkStep("parts/bracket.step", "bracket", true) // as a solid
-part.LinkAsSolid()                                              // true
-part.SetLinkAsSolid(false)                                      // back to a mesh
+part, err := doc.Assembly.LinkStep("parts/bracket.step", "bracket", true) // as a solid
+part.AsLink().AsSolid()                                              // true
+part.AsLink().SetAsSolid(false)                                      // back to a mesh
 ```
 
 ## Not yet

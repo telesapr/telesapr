@@ -7,7 +7,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if _, err := doc.Link("../../testdata/step/shapes/cylinder.step", ""); err != nil {
+	if _, err := doc.Assembly.Link("../../testdata/step/shapes/cylinder.step", ""); err != nil {
 		panic(err)
 	}
 }

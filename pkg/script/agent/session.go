@@ -59,7 +59,7 @@ type Backend interface {
 	// that group, as if it were active.
 	Render(ctx context.Context, view, group string, width, height int) ([]byte, error)
 	// Help is what the scripting interface's help says of name, as
-	// "Doc.Extrude" or "Group"; of "", the Primer.
+	// "Features.Extrude", "Group" or "Features > Extrude"; of "", the Primer.
 	Help(ctx context.Context, name string) (string, error)
 }
 
@@ -227,7 +227,7 @@ func (s *Session) status() (status string, err error) {
 					lines = append(lines, "in trouble: "+firstLine(g.Describe()))
 				}
 			}
-			for _, e := range doc.ExprErrors() {
+			for _, e := range doc.Params.Errors() {
 				lines = append(lines, "expression error: "+e)
 			}
 			status = strings.Join(lines, "\n")
@@ -296,7 +296,7 @@ func (s *Session) Render(_ context.Context, view, group string, width, height in
 			doc.Activate(g)
 			defer doc.Activate(was)
 		}
-		rerr = doc.Render(file, width, height, view)
+		rerr = doc.File.Render(file, width, height, view)
 	}); err != nil {
 		return nil, err
 	}
@@ -319,7 +319,7 @@ func Help(name string) (string, error) {
 	}
 	var b strings.Builder
 	if !script.Help(&b, name) {
-		return "", fmt.Errorf(`nothing is called %q; names are like "api", "Doc", "Doc.Extrude", "Group.Bounds", "strings.ToUpper"`, name)
+		return "", fmt.Errorf(`nothing is called %q; names are like "api", "Doc", "Features", "Features.Extrude", "Features > Extrude", "Group.Solved", "strings.ToUpper"`, name)
 	}
 	return b.String(), nil
 }

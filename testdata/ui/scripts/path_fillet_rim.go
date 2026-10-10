@@ -8,9 +8,9 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/topo/boss.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/topo/boss.tlspr"); err != nil {
 		panic(err)
 	}
 	rim := doc.Group("boss").Solid().EdgeAt(V(20, 23, 0))
-	doc.FilletSolid([]SolidEdge{rim}, 1, "")
+	doc.Features.FilletSolid([]SolidEdge{rim}, 1, "")
 }

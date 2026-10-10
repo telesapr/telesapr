@@ -21,42 +21,42 @@ func TestSweepRoundedCorner(t *testing.T) {
 		d := api.New()
 		if round {
 			// Not saved: the round trip is the square's.
-			d.SetChordTolerance(0.002)
+			d.Edit.SetChordTolerance(0.002)
 		}
 		path := cornerPath(d, 10, 12, 90)
-		d.SketchIn(d.Workplane("XY"), "profile")
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
 		// The square's sides round the bend are curved, and their mesh
 		// is chords of them.
 		area, tol := 8.0, 5e-4
 		if round {
-			d.Circle(api.V(0, 0, 0), 1.5)
+			d.Sketch.Circle(api.V(0, 0, 0), 1.5)
 			area, tol = math.Pi*2.25, 0.005
 		} else {
-			d.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+			d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
 		}
-		s := d.Sweep(path, "")
+		s := d.Features.Sweep(path, "")
 		step(d)
 		before := saved(t, d)
-		s.SetCornerRadius(3)
-		if p := s.Problem(); p != "" || s.CornerRadius() != 3 {
-			t.Fatalf("round %v: %q, radius %g", round, p, s.CornerRadius())
+		s.AsSweep().SetCornerRadius(3)
+		if p := s.Problem(); p != "" || s.AsSweep().CornerRadius() != 3 {
+			t.Fatalf("round %v: %q, radius %g", round, p, s.AsSweep().CornerRadius())
 		}
-		r := s.Check()
+		r := s.Analyze().Check()
 		want := area * (10 + 12 - 2*3 + 3*math.Pi/2)
 		if !r.Sound() || math.Abs(r.Volume-want) > tol*want {
 			t.Errorf("round %v: %s, want %g", round, r.String(), want)
 		}
 		if !round {
 			undoRedo(t, d, before)
-			if e := roundTrip(t, d); e.Groups()[len(e.Groups())-1].CornerRadius() != 3 {
+			if e := roundTrip(t, d); e.Groups()[len(e.Groups())-1].AsSweep().CornerRadius() != 3 {
 				t.Error("the radius didn't come back")
 			}
 			if !strings.Contains(string(saved(t, d)), "corner-radius = 3") {
 				t.Error("the file doesn't hold the radius")
 			}
 		}
-		s.SetCornerRadius(0)
-		if r := s.Check(); s.Problem() != "" || math.Abs(r.Volume-area*22) > tol*area*22 {
+		s.AsSweep().SetCornerRadius(0)
+		if r := s.Analyze().Check(); s.Problem() != "" || math.Abs(r.Volume-area*22) > tol*area*22 {
 			t.Errorf("round %v: mitred again: %q %s", round, s.Problem(), r.String())
 		}
 	}
@@ -72,20 +72,20 @@ func TestSweepRoundedCorner(t *testing.T) {
 // mesh's chords of the curved faces.
 func TestSweepRoundedBesideArc(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.002)
-	d.SketchIn(d.Workplane("ZX"), "path")
+	d.Edit.SetChordTolerance(0.002)
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
 	path := []api.Entity{
-		d.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
-		d.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(5, 0, 15)),
+		d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+		d.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(5, 0, 15)),
 	}
-	d.SketchIn(d.Workplane("XY"), "profile")
-	d.Rect(api.V(-0.5, -1, 0), api.V(0.5, 1, 0))
-	s := d.Sweep(path, "")
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(-0.5, -1, 0), api.V(0.5, 1, 0))
+	s := d.Features.Sweep(path, "")
 	if p := s.Problem(); !strings.Contains(p, "corner radius") {
 		t.Fatalf("unrounded: %q", p)
 	}
 	const r = 2.0
-	s.SetCornerRadius(r)
+	s.AsSweep().SetCornerRadius(r)
 	if p := s.Problem(); p != "" {
 		t.Fatal(p)
 	}
@@ -96,7 +96,7 @@ func TestSweepRoundedBesideArc(t *testing.T) {
 	cut := math.Atan2(r, 15-cz)  // the arc's, cut from its start
 	length := cz + r*turn + 5*(3*math.Pi/2-cut)
 	want := 2 * length
-	if v := s.Check(); !v.Sound() || math.Abs(v.Volume-want) > 1e-3*want {
+	if v := s.Analyze().Check(); !v.Sound() || math.Abs(v.Volume-want) > 1e-3*want {
 		t.Errorf("%s, want %g", v.String(), want)
 	}
 }
@@ -114,29 +114,29 @@ func TestSweepRoundedRefused(t *testing.T) {
 	} {
 		d := api.New()
 		path := cornerPath(d, 10, c.along, 90)
-		d.SketchIn(d.Workplane("XY"), "profile")
-		d.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
-		s := d.Sweep(path, "")
-		s.SetCornerRadius(c.r)
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+		s := d.Features.Sweep(path, "")
+		s.AsSweep().SetCornerRadius(c.r)
 		if p := s.Problem(); !strings.Contains(p, c.want) {
 			t.Errorf("%s: %q, want %q", name, p, c.want)
 		}
 	}
 	d := api.New()
 	path := cornerPath(d, 10, 12, 90)
-	d.SketchIn(d.Workplane("XY"), "profile")
-	d.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
-	s := d.Sweep(path, "")
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+	s := d.Features.Sweep(path, "")
 	func() {
 		defer func() {
 			if err, ok := recover().(error); !ok || !strings.Contains(err.Error(), "a length of 0 or more") {
 				t.Errorf("a negative radius: %v", err)
 			}
 		}()
-		s.SetCornerRadius(-1)
+		s.AsSweep().SetCornerRadius(-1)
 	}()
-	if err := s.SetExpr(sketch.GroupPitch, "1+2"); err != nil || s.CornerRadius() != 3 {
-		t.Errorf("an expression: %v, %g", err, s.CornerRadius())
+	if err := s.SetExpr(sketch.GroupPitch, "1+2"); err != nil || s.AsSweep().CornerRadius() != 3 {
+		t.Errorf("an expression: %v, %g", err, s.AsSweep().CornerRadius())
 	}
 }
 
@@ -157,20 +157,20 @@ func TestSweepRoundedSweep(t *testing.T) {
 	}
 	grid.Run(func(p sweep.Point) error {
 		d := api.New()
-		d.SetChordTolerance(0.002)
+		d.Edit.SetChordTolerance(0.002)
 		along, r, th := p.Float("along"), p.Float("r"), p.Float("angle")*math.Pi/180
 		path := cornerPath(d, 10, along, p.Float("angle"))
-		d.SketchIn(d.Workplane("XY"), "profile")
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
 		area := 0.0
 		if p.String("profile") == "square" {
-			d.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+			d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
 			area = 6
 		} else {
-			d.Circle(api.V(0, 0, 0), 1.5)
+			d.Sketch.Circle(api.V(0, 0, 0), 1.5)
 			area = math.Pi * 2.25
 		}
-		s := d.Sweep(path, "")
-		s.SetCornerRadius(r)
+		s := d.Features.Sweep(path, "")
+		s.AsSweep().SetCornerRadius(r)
 		cut := r * math.Tan(th/2)
 		if cut >= along-1e-6 || cut >= 10-1e-6 {
 			if !strings.Contains(s.Problem(), "too large") {
@@ -178,7 +178,7 @@ func TestSweepRoundedSweep(t *testing.T) {
 			}
 			return nil
 		}
-		rr := s.Check()
+		rr := s.Analyze().Check()
 		want := area * (10 + along - 2*cut + r*th)
 		// The square's sides round the bend are curved, and their mesh
 		// is chords of them.

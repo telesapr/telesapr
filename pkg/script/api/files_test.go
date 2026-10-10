@@ -42,16 +42,16 @@ func TestImport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Groups()) < 3 || d.Groups()[len(d.Groups())-1].Volume() <= 0 {
+	if len(d.Groups()) < 3 || d.Groups()[len(d.Groups())-1].Analyze().Volume() <= 0 {
 		t.Errorf("imported %v", d.Groups())
 	}
 
 	// Saved elsewhere and loaded again, it is the same model.
 	other := filepath.Join(t.TempDir(), "again.tlspr")
-	if err := d.Save(other); err != nil {
+	if err := d.File.Save(other); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.Load(other); err != nil {
+	if err := d.File.Load(other); err != nil {
 		t.Fatal(err)
 	}
 
@@ -95,7 +95,7 @@ func TestFileMisuse(t *testing.T) {
 		filepath.Join(dir, "a.txt"):         "a sketch is saved as a .tlspr file",
 		filepath.Join(dir, "no", "a.tlspr"): "no such file",
 	} {
-		if err := d.Save(path); err == nil || !strings.Contains(err.Error(), want) {
+		if err := d.File.Save(path); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("Save(%s): %v, want %q", path, err, want)
 		}
 	}
@@ -103,7 +103,7 @@ func TestFileMisuse(t *testing.T) {
 	if _, err := Open(fixture); err == nil || !strings.Contains(err.Error(), "convert it with Import first") {
 		t.Errorf("Open of a .slvs file: %v", err)
 	}
-	if err := d.Load(fixture); err == nil || !strings.Contains(err.Error(), "convert it with Import first") {
+	if err := d.File.Load(fixture); err == nil || !strings.Contains(err.Error(), "convert it with Import first") {
 		t.Errorf("Load of a .slvs file: %v", err)
 	}
 	if _, err := Open(filepath.Join(dir, "none.tlspr")); err == nil {
@@ -111,7 +111,7 @@ func TestFileMisuse(t *testing.T) {
 	}
 
 	future := filepath.Join(dir, "future.tlspr")
-	if err := d.Save(future); err != nil {
+	if err := d.File.Save(future); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(future)

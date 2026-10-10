@@ -23,10 +23,10 @@ the face.
 From a script:
 
 ```go
-base := doc.Extrude(8, "base")
-doc.SketchOnFace(base.Solid().FaceAt(api.V(30, 20, 8)), "")
-doc.Rect(api.V(20, 13, 8), api.V(40, 27, 8))
-column := doc.Extrude(12, "column")
+base := doc.Features.Extrude(8, "base")
+doc.Features.SketchOnFace(base.Solid().FaceAt(api.V(30, 20, 8)), "")
+doc.Sketch.Rect(api.V(20, 13, 8), api.V(40, 27, 8))
+column := doc.Features.Extrude(12, "column")
 ```
 
 `Solid.Face` takes a face by its identity instead of a point on it, and `Group.Face` gives the

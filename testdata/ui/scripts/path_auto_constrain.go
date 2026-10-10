@@ -12,7 +12,7 @@ import (
 
 func main() {
 	doc := Current()
-	doc.Circle(V(30, 20, 0), 8)
-	c := doc.Circle(V(30, -10, 0), math.Sqrt(40*40+1)/5)
-	doc.AutoConstrain(c)
+	doc.Sketch.Circle(V(30, 20, 0), 8)
+	c := doc.Sketch.Circle(V(30, -10, 0), math.Sqrt(40*40+1)/5)
+	doc.Constrain.Auto(c)
 }

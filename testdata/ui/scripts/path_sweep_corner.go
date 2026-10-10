@@ -8,8 +8,8 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/ui/sweep_corner.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/ui/sweep_corner.tlspr"); err != nil {
 		panic(err)
 	}
-	doc.Sweep([]Entity{doc.Entity(0x40000), doc.Entity(0x50000)}, "")
+	doc.Features.Sweep([]Entity{doc.Entity(0x40000), doc.Entity(0x50000)}, "")
 }

@@ -39,18 +39,18 @@ func TestFilletOnOtherSolidsVolumes(t *testing.T) {
 	}
 	for _, c := range cases {
 		d := New()
-		d.SetChordTolerance(0.002)
-		g, err := d.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", c.file), "", true)
+		d.Edit.SetChordTolerance(0.002)
+		g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", c.file), "", true)
 		if err != nil {
 			t.Fatal(err)
 		}
-		before := g.Check().Volume
-		f := d.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 1, "")
+		before := g.Analyze().Check().Volume
+		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 1, "")
 		if p := f.Problem(); p != "" {
 			t.Errorf("%s at %v: %s", c.file, c.at, p)
 			continue
 		}
-		r := f.Check()
+		r := f.Analyze().Check()
 		took := before - r.Volume
 		t.Logf("%s at %v: took %.6f, want %.6f (%+.2f%%)", c.file, c.at, took, c.took, 100*(took/c.took-1))
 		if !r.Sound() || math.Abs(took-c.took) > math.Max(0.01*c.took, 0.02) {

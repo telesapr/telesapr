@@ -7,7 +7,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	block := doc.Extrude(80, "")
-	doc.SketchOnFace(block.Solid().Face(0x8003002c), "")
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	block := doc.Features.Extrude(80, "")
+	doc.Features.SketchOnFace(block.Solid().Face(0x8003002c), "")
 }

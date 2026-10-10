@@ -35,9 +35,9 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
-	block := doc.Extrude(10, "block")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
+	block := doc.Features.Extrude(10, "block")
 
 	// The upright edges are the extrusion's lines along z, one at each
 	// corner.
@@ -52,12 +52,12 @@ func main() {
 			upright = append(upright, e)
 		}
 	}
-	round := doc.Fillet(upright, radius, "rounded")
+	round := doc.Features.Fillet(upright, radius, "rounded")
 	if p := round.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := round.Check()
+	r := round.Analyze().Check()
 	// Each corner loses a square of the radius less a quarter circle.
 	want := 60*40*10 - 4*(radius*radius-math.Pi*radius*radius/4)*10
 	fmt.Printf("%d upright edges rounded at %g mm: %s, %.1f mm³ (%.1f by the formula)\n",
@@ -66,7 +66,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("fillet.tlspr"); err != nil {
+		if err := doc.File.Save("fillet.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

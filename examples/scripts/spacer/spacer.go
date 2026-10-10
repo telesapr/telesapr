@@ -35,14 +35,14 @@ func main() {
 	}
 	outer, inner := 12.0, 6.0
 	doc := api.Current()
-	doc.Diameter(doc.Circle(api.V(0, 0, 0), outer), 2*outer)
-	doc.Diameter(doc.Circle(api.V(0, 0, 0), inner), 2*inner)
-	spacer := doc.Extrude(thick, "spacer")
+	doc.Constrain.Diameter(doc.Sketch.Circle(api.V(0, 0, 0), outer), 2*outer)
+	doc.Constrain.Diameter(doc.Sketch.Circle(api.V(0, 0, 0), inner), 2*inner)
+	spacer := doc.Features.Extrude(thick, "spacer")
 	spacer.SetTwoSided(true)
 
-	res := spacer.Check()
+	res := spacer.Analyze().Check()
 	want := math.Pi * (outer*outer - inner*inner) * thick
-	lo, hi := spacer.Bounds()
+	lo, hi := spacer.Analyze().Bounds()
 	fmt.Printf("a spacer %g thick, from z %.3f to %.3f: %s, %.1f mm³ (%.1f by its area)\n",
 		thick, lo.Z, hi.Z, res.String(), res.Volume, want)
 	if !res.Sound() || math.Abs(res.Volume-want) > want*0.01 || math.Abs(lo.Z+thick/2) > 1e-6 || math.Abs(hi.Z-thick/2) > 1e-6 {
@@ -50,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("spacer.tlspr"); err != nil {
+		if err := doc.File.Save("spacer.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

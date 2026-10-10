@@ -28,17 +28,24 @@ func TestHelpOfValues(t *testing.T) {
 	mustContain(t, got,
 		"g002-sketch-in-plane\n\ntype api.Group struct\n    Group is a group of the sketch",
 		"Fields:\n    H                    core.HGroup",
-		"    Bounds() (lo, hi Vec)                        Bounds are the corners of the box",
+		"    Analyze() GroupAnalysis                      Analyze measures and checks the solid",
 		"    SetColor(red, green, blue int)               SetColor colours the group's solid",
 		`help("Group.Method") says more about one.`)
 
 	// A pointer has the methods of what it points at.
 	got = helped(t, `help(doc)`)
 	mustContain(t, got, "type api.Doc struct", "Made by:\n    Current() *Doc",
-		"    Line(a, b Vec) Entity                        Line adds a line segment from a to b.",
+		"Fields:\n    File                 api.FileMenu",
+		"    Origin() Entity                              Origin is the point at the origin.")
+
+	// A menu's calls are a field of doc.
+	got = helped(t, `help(doc.Constrain)`)
+	mustContain(t, got, "type api.ConstrainMenu struct",
+		"    Length(line Entity, v float64) Constraint    Length sets the length of a line segment.",
 		// A declaration too long for its column has its line to itself.
-		"    Constrain(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint\n"+
-			strings.Repeat(" ", 49)+"Constrain adds a constraint of any type")
+		"    Raw(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint\n"+
+			strings.Repeat(" ", 49)+"Raw adds a constraint of any type",
+		`help("Constrain.Method") says more about one.`)
 
 	// A list is described by what is in it.
 	got = helped(t, `help(doc.Groups())`)
@@ -60,7 +67,7 @@ func TestHelpOfValues(t *testing.T) {
 // and is named instead. A type a script made shows its fields.
 func TestHelpOfFunctionsAndScriptTypes(t *testing.T) {
 	t.Parallel()
-	got := helped(t, `help(V)`, `help(strings.ToUpper)`, `help(doc.Line)`)
+	got := helped(t, `help(V)`, `help(strings.ToUpper)`, `help(doc.Sketch.Line)`)
 	mustContain(t, got, "func V(x, y, z float64) Vec\n    V is the vector (x, y, z).",
 		"func ToUpper(s string) string\n    ToUpper returns s with all Unicode letters",
 		"func(geom.Vector, geom.Vector) api.Entity\n    A function, or a method of some value")
@@ -74,14 +81,24 @@ func TestHelpOfFunctionsAndScriptTypes(t *testing.T) {
 // method, a constant, with or without its package.
 func TestHelpOfNames(t *testing.T) {
 	t.Parallel()
-	got := helped(t, `help("Group.Bounds")`, `help("api.Doc.Line")`, `help("geom.Vector.Plus")`,
-		`help("strings.ToUpper")`, `help("Union")`, `help("Inch")`)
-	want := `func (g Group) Bounds() (lo, hi Vec)
+	got := helped(t, `help("GroupAnalysis.Bounds")`, `help("api.SketchMenu.Line")`, `help("Sketch.Rect")`,
+		`help("geom.Vector.Plus")`, `help("strings.ToUpper")`, `help("Union")`, `help("Inch")`)
+	want := `func (v GroupAnalysis) Bounds() (lo, hi Vec)
     Bounds are the corners of the box around the model up to and with
     this group.
-func (d *Doc) Line(a, b Vec) Entity
+func (m SketchMenu) Line(a, b Vec) Entity
     Line adds a line segment from a to b. In a workplane the points are
     put in it.
+
+Menu: Sketch > Construction Line Segment; Sketch > Line Segment
+func (m SketchMenu) Rect(a, b Vec) (lines []Entity)
+    Rect adds a rectangle with the corners a and b and sides along the
+    active workplane's axes: four line segments, joined, two horizontal
+    and two vertical, returned starting with the bottom one and going
+    around counter-clockwise. It makes the same requests and constraints
+    as the interface's rectangle tool dragged from the top left corner.
+
+Menu: Sketch > Rectangle
 func (v Vector) Plus(b Vector) Vector
 func ToUpper(s string) string
     ToUpper returns s with all Unicode letters mapped to their upper case.
@@ -96,7 +113,7 @@ func Inch(v float64) float64
 
 	got = helped(t, `help("api")`, `help("Entity")`, `help("math")`)
 	mustContain(t, got, "package api  // import \"github.com/telesapr/telesapr/pkg/script/api\"\n    Package api is what a script sees",
-		"Types:\n    BrokenReference      BrokenReference is something a regeneration deleted",
+		"Types:\n    AnalyzeMenu          AnalyzeMenu holds the calls of the Analyze menu",
 		"\n    Constraint           Constraint is a constraint of the sketch",
 		"Functions:\n    Appearances() []string", "Constants and variables:\n    Assemble Difference",
 		"type api.Entity struct\n    Entity is something on the drawing",

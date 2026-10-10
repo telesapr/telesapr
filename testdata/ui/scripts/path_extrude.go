@@ -7,6 +7,6 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Extrude(80, "")
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	doc.Features.Extrude(80, "")
 }

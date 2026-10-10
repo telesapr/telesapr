@@ -17,16 +17,16 @@ import (
 // window there are no pictures.
 func TestMotionStudy(t *testing.T) {
 	d := api.New()
-	if err := d.SetParameter("w", "15"); err != nil {
+	if err := d.Params.Set("w", "15"); err != nil {
 		t.Fatal(err)
 	}
-	sides := d.Rect(api.V(0, 0, 0), api.V(15, 10, 0))
-	if err := d.Length(sides[0], 15).SetExpr("w"); err != nil {
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(15, 10, 0))
+	if err := d.Constrain.Length(sides[0], 15).SetExpr("w"); err != nil {
 		t.Fatal(err)
 	}
-	d.Extrude(5, "")
+	d.Features.Extrude(5, "")
 	dir := t.TempDir()
-	frames, err := d.MotionStudy("w", 10, 30, 4, filepath.Join(dir, "f%02d.stl"))
+	frames, err := d.Assembly.MotionStudy("w", 10, 30, 4, filepath.Join(dir, "f%02d.stl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestMotionStudy(t *testing.T) {
 			t.Errorf("frame %d: volume %g, want %g", i, vol, want*50)
 		}
 	}
-	if p, _ := d.Parameter("w"); p.Expr != "15" || p.Value != 15 {
+	if p, _ := d.Params.Get("w"); p.Expr != "15" || p.Value != 15 {
 		t.Errorf("after the study w = %s = %g", p.Expr, p.Value)
 	}
 	for name, c := range map[string]struct {
@@ -69,11 +69,11 @@ func TestMotionStudy(t *testing.T) {
 		"no number":    {"w", 2, filepath.Join(dir, "f.stl"), "verb"},
 		"no window":    {"w", 2, filepath.Join(dir, "f%d.png"), "frame 0"},
 	} {
-		if _, err := d.MotionStudy(c.param, 1, 2, c.steps, c.frames); err == nil || !strings.Contains(err.Error(), c.want) {
+		if _, err := d.Assembly.MotionStudy(c.param, 1, 2, c.steps, c.frames); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	if p, _ := d.Parameter("w"); p.Expr != "15" {
+	if p, _ := d.Params.Get("w"); p.Expr != "15" {
 		t.Errorf("after a failed study w = %s", p.Expr)
 	}
 }

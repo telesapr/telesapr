@@ -26,9 +26,9 @@ closed path with a corner is refused, as an open one is.
 From a script:
 
 ```go
-pegs := doc.PatternAlongPath([]api.Entity{run, bend, tail}, 7, "pegs")
-pegs.SetCopies(5)
-fmt.Println(pegs.Copies(), pegs.Edges())
+pegs := doc.Features.PatternAlongPath([]api.Entity{run, bend, tail}, 7, "pegs")
+pegs.AsRepeat().SetCopies(5)
+fmt.Println(pegs.AsRepeat().Copies(), pegs.Edges())
 ```
 
 ## Not yet

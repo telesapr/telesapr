@@ -43,9 +43,9 @@ func main() {
 	across, down := arg(1, 6), arg(2, 2)
 
 	doc := api.Current()
-	doc.Rect(api.V(0, 0, 0), api.V(60, 20, 0))
-	plate := doc.Extrude(6, "plate")
-	before := plate.Check().Volume
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(60, 20, 0))
+	plate := doc.Features.Extrude(6, "plate")
+	before := plate.Analyze().Check().Volume
 
 	// The front top edge: the copy of the sketch's front line at the
 	// far end of the extrusion.
@@ -61,9 +61,9 @@ func main() {
 	}
 	// A chamfer starts with one distance, on both faces: the smaller,
 	// which fits both.
-	c := doc.Chamfer([]api.Entity{edge}, math.Min(across, down), "bevel")
-	c.SetDistance(across)
-	c.SetSecondDistance(down)
+	c := doc.Features.Chamfer([]api.Entity{edge}, math.Min(across, down), "bevel")
+	c.AsChamfer().SetDistance(across)
+	c.AsChamfer().SetSecondDistance(down)
 
 	// The top face's corner at x = 0 shows how far the top is cut back.
 	cutTop := 0.0
@@ -73,13 +73,13 @@ func main() {
 		}
 	}
 	if math.Abs(cutTop-across) > 1e-9 {
-		c.SwapDistances()
+		c.AsChamfer().SwapDistances()
 	}
 	if p := c.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := c.Check()
+	r := c.Analyze().Check()
 	fmt.Printf("bevel %g across and %g down: %.2f mm³ taken off, sound %v\n",
 		across, down, before-r.Volume, r.Sound())
 	if !r.Sound() || math.Abs(before-r.Volume-0.5*across*down*60) > 1e-6 {

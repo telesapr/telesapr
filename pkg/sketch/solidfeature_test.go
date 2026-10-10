@@ -17,7 +17,7 @@ import (
 func saved(t *testing.T, d *api.Doc) []byte {
 	t.Helper()
 	file := filepath.Join(t.TempDir(), "doc.tlspr")
-	if err := d.Save(file); err != nil {
+	if err := d.File.Save(file); err != nil {
 		t.Fatal(err)
 	}
 	b, err := os.ReadFile(file)
@@ -32,7 +32,7 @@ func saved(t *testing.T, d *api.Doc) []byte {
 func roundTrip(t *testing.T, d *api.Doc) *api.Doc {
 	t.Helper()
 	file := filepath.Join(t.TempDir(), "doc.tlspr")
-	if err := d.Save(file); err != nil {
+	if err := d.File.Save(file); err != nil {
 		t.Fatal(err)
 	}
 	first, _ := os.ReadFile(file)
@@ -52,13 +52,13 @@ func roundTrip(t *testing.T, d *api.Doc) *api.Doc {
 func undoRedo(t *testing.T, d *api.Doc, before []byte) {
 	t.Helper()
 	after := saved(t, d)
-	if !d.Undo() {
+	if !d.Edit.Undo() {
 		t.Fatal("nothing to undo")
 	}
 	if got := saved(t, d); !bytes.Equal(got, before) {
 		t.Fatalf("undo didn't restore the file:\n%s\n----\n%s", got, before)
 	}
-	if !d.Redo() {
+	if !d.Edit.Redo() {
 		t.Fatal("nothing to redo")
 	}
 	if got := saved(t, d); !bytes.Equal(got, after) {
@@ -78,7 +78,7 @@ func forceToMesh(d *api.Doc, g api.Group) {
 		}
 		sk.ScheduleGenerateAll()
 	})
-	d.Regen()
+	d.Edit.Regen()
 }
 
 // fineChord makes the document's meshes fine enough for volumes to
@@ -91,17 +91,17 @@ func fineChord(d *api.Doc) {
 // and returns its file.
 func threeFeatures(t *testing.T) []byte {
 	d := api.New()
-	d.SketchIn(d.Workplane("ZX"), "path")
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
 	path := []api.Entity{
-		d.Line(api.V(3, 0, 0), api.V(3, 0, 10)),
-		d.Arc(api.V(9, 0, 10), api.V(3, 0, 10), api.V(9, 0, 16)),
+		d.Sketch.Line(api.V(3, 0, 0), api.V(3, 0, 10)),
+		d.Sketch.Arc(api.V(9, 0, 10), api.V(3, 0, 10), api.V(9, 0, 16)),
 	}
-	d.SketchIn(d.Workplane("XY"), "profile")
-	d.Rect(api.V(1, -2, 0), api.V(5, 2, 0))
-	sw := d.Sweep(path, "")
-	d.Mirror(d.Workplane("YZ"), "")
-	c := d.Chamfer([]api.Entity{lineAlong(t, sw, api.V(1, -2, 0), api.V(5, -2, 0))}, 0.5, "")
-	if r := c.Check(); !r.Sound() {
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(1, -2, 0), api.V(5, 2, 0))
+	sw := d.Features.Sweep(path, "")
+	d.Features.Mirror(d.Workplane("YZ"), "")
+	c := d.Features.Chamfer([]api.Entity{lineAlong(t, sw, api.V(1, -2, 0), api.V(5, -2, 0))}, 0.5, "")
+	if r := c.Analyze().Check(); !r.Sound() {
 		t.Fatalf("three features: %s", r.String())
 	}
 	return saved(t, d)
@@ -127,178 +127,178 @@ func TestSolidGoldens(t *testing.T) {
 	variants := map[string]func(d *api.Doc){
 		"mirror-apart": func(d *api.Doc) {
 			block(d, 10, 0, 20, 10, 5)
-			d.Mirror(d.Workplane("YZ"), "")
+			d.Features.Mirror(d.Workplane("YZ"), "")
 		},
 		"mirror-face-reflection-only": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 5)
-			m := d.Mirror(ex.Faces()[0], "")
-			m.SetKeepOriginal(false)
+			m := d.Features.Mirror(ex.Faces()[0], "")
+			m.AsMirror().SetKeepOriginal(false)
 		},
 		"mirror-pocket": func(d *api.Doc) {
 			block(d, -20, 0, 20, 10, 5)
-			d.SketchIn(d.Workplane("XY"), "")
-			d.Circle(api.V(10, 5, 0), 2)
-			d.Extrude(5, "").SetCombine(api.Difference)
-			d.Mirror(d.Workplane("YZ"), "")
+			d.Features.SketchIn(d.Workplane("XY"), "")
+			d.Sketch.Circle(api.V(10, 5, 0), 2)
+			d.Features.Extrude(5, "").SetCombine(api.Difference)
+			d.Features.Mirror(d.Workplane("YZ"), "")
 		},
 		"chamfer-corner": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 10)
-			d.Chamfer([]api.Entity{
+			d.Features.Chamfer([]api.Entity{
 				lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10)),
 				lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
 				lineAlong(t, ex, api.V(10, 0, 0), api.V(10, 0, 10)),
 			}, 1, "")
 		},
 		"chamfer-parameter": func(d *api.Doc) {
-			if err := d.SetParameter("c", "1.5"); err != nil {
+			if err := d.Params.Set("c", "1.5"); err != nil {
 				t.Fatal(err)
 			}
 			ex := block(d, 0, 0, 10, 10, 5)
-			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
+			c := d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
 			if err := c.SetExpr(sketch.GroupPitch, "c*2"); err != nil {
 				t.Fatal(err)
 			}
 		},
 		"chamfer-solid-edge": func(d *api.Doc) {
 			block(d, 0, 0, 20, 10, 10)
-			d.SketchIn(d.Workplane("XY"), "")
-			d.Rect(api.V(5, -1, 0), api.V(15, 4, 0))
-			d.Extrude(20, "").SetCombine(api.Difference)
+			d.Features.SketchIn(d.Workplane("XY"), "")
+			d.Sketch.Rect(api.V(5, -1, 0), api.V(15, 4, 0))
+			d.Features.Extrude(20, "").SetCombine(api.Difference)
 			// Where the notch's side meets the top: no entity draws it.
-			d.ChamferSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 2, 10))}, 1, "")
+			d.Features.ChamferSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 2, 10))}, 1, "")
 		},
 		"chamfer-two-distances": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 5)
-			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
-			c.SetSecondDistance(2)
+			c := d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
+			c.AsChamfer().SetSecondDistance(2)
 		},
 		"chamfer-two-distances-corner": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 10)
-			c := d.Chamfer([]api.Entity{
+			c := d.Features.Chamfer([]api.Entity{
 				lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10)),
 				lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
 			}, 1, "")
-			c.SetSecondDistance(2)
+			c.AsChamfer().SetSecondDistance(2)
 		},
 		"draft-sides": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
-			ex.SetDraft(8)
-			ex.SetDraftNeutral(10)
-			ex.SetDraftFaces([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0))})
+			ex.AsExtrude().SetDraft(8)
+			ex.AsExtrude().SetDraftNeutral(10)
+			ex.AsExtrude().SetDraftFaces([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0))})
 		},
 		"draft-sharp-arc": func(d *api.Doc) {
-			d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
-			d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
-			d.Extrude(8, "").SetDraft(6)
+			d.Sketch.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
+			d.Sketch.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
+			d.Features.Extrude(8, "").AsExtrude().SetDraft(6)
 		},
 		"draft-lens": func(d *api.Doc) {
-			d.Arc(api.V(0, 0, 0), api.V(5, 0, 0), api.V(0, 5, 0))
-			d.Arc(api.V(5, 5, 0), api.V(0, 5, 0), api.V(5, 0, 0))
-			d.Extrude(6, "").SetDraft(4)
+			d.Sketch.Arc(api.V(0, 0, 0), api.V(5, 0, 0), api.V(0, 5, 0))
+			d.Sketch.Arc(api.V(5, 5, 0), api.V(0, 5, 0), api.V(5, 0, 0))
+			d.Features.Extrude(6, "").AsExtrude().SetDraft(4)
 		},
 		"sweep-corner": func(d *api.Doc) {
 			path := cornerPath(d, 10, 12, 60)
-			d.SketchIn(d.Workplane("XY"), "profile")
-			d.Circle(api.V(0, 0, 0), 2)
-			d.Sweep(path, "")
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Circle(api.V(0, 0, 0), 2)
+			d.Features.Sweep(path, "")
 		},
 		"sweep-solid-edges": func(d *api.Doc) {
 			block(d, 0, 0, 20, 10, 5)
 			s := d.Active().Solid()
 			front, right := s.EdgeAt(api.V(10, 0, 5)), s.EdgeAt(api.V(20, 5, 5))
-			d.SketchIn(d.Workplane("YZ"), "profile")
-			d.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
-			d.SweepEdges([]api.SolidEdge{front, right}, nil, "")
+			d.Features.SketchIn(d.Workplane("YZ"), "profile")
+			d.Sketch.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
+			d.Features.SweepEdges([]api.SolidEdge{front, right}, nil, "")
 		},
 		"loft-tangency": func(d *api.Doc) {
 			bottom, top := twoProfiles(d, 10, 4, 6)
-			d.Loft(bottom, top, "").SetTangency(1, 0.5)
+			d.Features.Loft(bottom, top, "").AsLoft().SetTangency(1, 0.5)
 			// The file keeps no chord tolerance (twoProfiles sets one).
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-			d.Regen()
+			d.Edit.Regen()
 		},
 		"loft-guides": func(d *api.Doc) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
-			bottom := d.SketchIn(d.Workplane("XY"), "bottom")
-			d.Circle(api.V(0, 0, 0), 5)
-			d.Sketch3D("guides")
-			a := d.Cubic(api.V(5, 0, 0), api.V(9, 0, 4), api.V(9, 0, 8), api.V(5, 0, 12))
-			b := d.Cubic(api.V(-5, 0, 0), api.V(-6, 0, 4), api.V(-6, 0, 8), api.V(-5, 0, 12))
-			top := d.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "top")
-			d.Circle(api.V(0, 0, 12), 5)
-			d.Loft(bottom, top, "").SetGuides([]api.Entity{a, b})
+			bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")
+			d.Sketch.Circle(api.V(0, 0, 0), 5)
+			d.Features.Sketch3D("guides")
+			a := d.Sketch.Cubic(api.V(5, 0, 0), api.V(9, 0, 4), api.V(9, 0, 8), api.V(5, 0, 12))
+			b := d.Sketch.Cubic(api.V(-5, 0, 0), api.V(-6, 0, 4), api.V(-6, 0, 8), api.V(-5, 0, 12))
+			top := d.Features.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "top")
+			d.Sketch.Circle(api.V(0, 0, 12), 5)
+			d.Features.Loft(bottom, top, "").AsLoft().SetGuides([]api.Entity{a, b})
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-			d.Regen()
+			d.Edit.Regen()
 		},
 		"pattern-ring": func(d *api.Doc) {
-			d.SketchIn(d.Workplane("XY"), "ring")
-			ring := d.Circle(api.V(0, 0, 0), 20)
-			d.SketchIn(d.Workplane("XY"), "")
+			d.Features.SketchIn(d.Workplane("XY"), "ring")
+			ring := d.Sketch.Circle(api.V(0, 0, 0), 20)
+			d.Features.SketchIn(d.Workplane("XY"), "")
 			// Beside the ring, not on it: the ring's line over a post's
 			// bottom would take the hover from it (TestEveryFacePicked).
-			d.Rect(api.V(21, -1, 0), api.V(23, 1, 0))
-			d.Extrude(5, "post")
-			d.PatternAlongPath([]api.Entity{ring}, 5, "")
+			d.Sketch.Rect(api.V(21, -1, 0), api.V(23, 1, 0))
+			d.Features.Extrude(5, "post")
+			d.Features.PatternAlongPath([]api.Entity{ring}, 5, "")
 		},
 		"chamfer-of-chamfer": func(d *api.Doc) {
 			ex := block(d, 0, 0, 10, 10, 10)
-			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 2, "")
+			c := d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 2, "")
 			// The edge between the first chamfer's face, which no entity
 			// names, and the front.
-			d.ChamferSolid([]api.SolidEdge{c.Solid().EdgeAt(api.V(5, 0, 8))}, 0.5, "")
+			d.Features.ChamferSolid([]api.SolidEdge{c.Solid().EdgeAt(api.V(5, 0, 8))}, 0.5, "")
 		},
 		"fillet-edges": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
-			d.Fillet([]api.Entity{
+			d.Features.Fillet([]api.Entity{
 				lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
 				lineAlong(t, ex, api.V(0, 10, 0), api.V(20, 10, 0)),
 			}, 2, "")
 		},
 		"fillet-solid-edge": func(d *api.Doc) {
 			block(d, 0, 0, 20, 10, 10)
-			d.SketchIn(d.Workplane("XY"), "")
-			d.Rect(api.V(5, -1, 0), api.V(15, 4, 0))
-			d.Extrude(20, "").SetCombine(api.Difference)
+			d.Features.SketchIn(d.Workplane("XY"), "")
+			d.Sketch.Rect(api.V(5, -1, 0), api.V(15, 4, 0))
+			d.Features.Extrude(20, "").SetCombine(api.Difference)
 			// The notch's upright edge, which no entity draws.
-			d.FilletSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 0, 5))}, 1.5, "")
+			d.Features.FilletSolid([]api.SolidEdge{d.Active().Solid().EdgeAt(api.V(15, 0, 5))}, 1.5, "")
 		},
 		"loft-on-block": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
 			// A square on the block's top joined by its union to a
 			// smaller one above it, turned a quarter, so its sides are
 			// saddles.
-			bottom := d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			d.Rect(api.V(-8, -8, 5), api.V(8, 8, 5))
-			top := d.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			d.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
-			d.Loft(bottom, top, "").SetTurn(1)
+			bottom := d.Features.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Sketch.Rect(api.V(-8, -8, 5), api.V(8, 8, 5))
+			top := d.Features.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Sketch.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
+			d.Features.Loft(bottom, top, "").AsLoft().SetTurn(1)
 		},
 		"loft-circle-to-square": func(d *api.Doc) {
-			bottom := d.SketchIn(d.Workplane("XY"), "")
-			d.Circle(api.V(0, 0, 0), 5)
-			top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
-			d.Loft(bottom, top, "")
+			bottom := d.Features.SketchIn(d.Workplane("XY"), "")
+			d.Sketch.Circle(api.V(0, 0, 0), 5)
+			top := d.Features.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Sketch.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+			d.Features.Loft(bottom, top, "")
 		},
 		"fillet-mitre": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
-			d.Fillet([]api.Entity{
+			d.Features.Fillet([]api.Entity{
 				lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
 				lineAlong(t, ex, api.V(20, 0, 10), api.V(20, 10, 10)),
 			}, 2, "")
 		},
 		"fillet-corner-sphere": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
-			d.Fillet([]api.Entity{
+			d.Features.Fillet([]api.Entity{
 				lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
 				lineAlong(t, ex, api.V(20, 0, 10), api.V(20, 10, 10)),
 				lineAlong(t, ex, api.V(20, 0, 0), api.V(20, 0, 10)),
 			}, 2, "")
 		},
 		"fillet-circle": func(d *api.Doc) {
-			d.Circle(api.V(0, 0, 0), 5)
-			ex := d.Extrude(10, "")
-			d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+			d.Sketch.Circle(api.V(0, 0, 0), 5)
+			ex := d.Features.Extrude(10, "")
+			d.Features.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 		},
 		"fillet-pocket":  func(d *api.Doc) { filletPocket(d, 2) },
 		"fillet-outline": func(d *api.Doc) { filletOutline(t, d) },
@@ -309,64 +309,64 @@ func TestSolidGoldens(t *testing.T) {
 		"fillet-radii":   func(d *api.Doc) { filletRadii(t, d) },
 		"fillet-boss-foot": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
-			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			d.Circle(api.V(0, 0, 5), 4)
-			boss := d.Extrude(5, "")
-			d.Fillet([]api.Entity{circleOf(t, boss, 5)}, 1.5, "")
+			d.Features.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Sketch.Circle(api.V(0, 0, 5), 4)
+			boss := d.Features.Extrude(5, "")
+			d.Features.Fillet([]api.Entity{circleOf(t, boss, 5)}, 1.5, "")
 		},
 		"chamfer-circle-and-edge": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
-			d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			d.Circle(api.V(0, 0, 5), 4)
-			boss := d.Extrude(5, "")
+			d.Features.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Sketch.Circle(api.V(0, 0, 5), 4)
+			boss := d.Features.Extrude(5, "")
 			s := boss.Solid()
-			d.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(4, 0, 10)), s.EdgeAt(api.V(0, -10, 5))}, 1, "")
+			d.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(4, 0, 10)), s.EdgeAt(api.V(0, -10, 5))}, 1, "")
 		},
 		"shell-open-box": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
-			d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
+			d.Features.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
 		},
 		"shell-holed-block": func(d *api.Doc) {
 			block(d, 0, 0, 30, 30, 10)
-			d.SketchIn(d.Workplane("XY"), "")
-			d.Rect(api.V(10, 10, 0), api.V(20, 20, 0))
-			cut := d.Extrude(10, "")
+			d.Features.SketchIn(d.Workplane("XY"), "")
+			d.Sketch.Rect(api.V(10, 10, 0), api.V(20, 20, 0))
+			cut := d.Features.Extrude(10, "")
 			cut.SetCombine(api.Difference)
 			// Open at the top and at a side.
 			s := cut.Solid()
-			d.ShellSolid([]api.SolidFace{s.FaceAt(api.V(5, 5, 10)), s.FaceAt(api.V(15, 0, 5))}, 1.5, "")
+			d.Features.ShellSolid([]api.SolidFace{s.FaceAt(api.V(5, 5, 10)), s.FaceAt(api.V(15, 0, 5))}, 1.5, "")
 		},
 		"sketch-on-face": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 5)
-			d.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
-			d.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
-			d.Extrude(3, "")
+			d.Features.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
+			d.Sketch.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
+			d.Features.Extrude(3, "")
 		},
 		"sketch-on-chamfer-face": func(d *api.Doc) {
 			// A face no entity names, the chamfer's.
 			ex := block(d, 0, 0, 10, 10, 10)
-			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 3, "")
-			d.SketchOnFace(c.Solid().FaceAt(api.V(5, 1.5, 8.5)), "")
-			d.Circle(api.V(5, 1.5, 8.5), 1)
-			d.Extrude(2, "")
+			c := d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 3, "")
+			d.Features.SketchOnFace(c.Solid().FaceAt(api.V(5, 1.5, 8.5)), "")
+			d.Sketch.Circle(api.V(5, 1.5, 8.5), 1)
+			d.Features.Extrude(2, "")
 		},
 		"sweep-pipe": func(d *api.Doc) {
 			path := pipePath(d, 10, 8, 12)
-			d.SketchIn(d.Workplane("XY"), "profile")
-			d.Circle(api.V(0, 0, 0), 2)
-			d.Sweep(path, "")
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Circle(api.V(0, 0, 0), 2)
+			d.Features.Sweep(path, "")
 		},
 		"sweep-ring-down": func(d *api.Doc) {
-			d.SketchIn(d.Workplane("ZX"), "path")
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			path := []api.Entity{
-				d.Line(api.V(0, 0, 0), api.V(0, 0, -10)),
-				d.Arc(api.V(8, 0, -10), api.V(8, 0, -18), api.V(0, 0, -10)),
-				d.Line(api.V(8, 0, -18), api.V(20, 0, -18)),
+				d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, -10)),
+				d.Sketch.Arc(api.V(8, 0, -10), api.V(8, 0, -18), api.V(0, 0, -10)),
+				d.Sketch.Line(api.V(8, 0, -18), api.V(20, 0, -18)),
 			}
-			d.SketchIn(d.Workplane("XY"), "profile")
-			d.Circle(api.V(0, 0, 0), 3)
-			d.Circle(api.V(0, 0, 0), 2)
-			d.Sweep(path, "")
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Circle(api.V(0, 0, 0), 3)
+			d.Sketch.Circle(api.V(0, 0, 0), 2)
+			d.Features.Sweep(path, "")
 		},
 	}
 	for name, build := range variants {
@@ -376,7 +376,7 @@ func TestSolidGoldens(t *testing.T) {
 			if p := d.Active().Problem(); p != "" {
 				t.Fatalf("problem: %s", p)
 			}
-			if r := d.Active().Check(); !r.Sound() {
+			if r := d.Active().Analyze().Check(); !r.Sound() {
 				t.Fatalf("unsound: %s", r.String())
 			}
 			roundTrip(t, d)
@@ -396,7 +396,7 @@ func benchRegen(b *testing.B, build func(d *api.Doc)) {
 			}
 			sk.ScheduleGenerateAll()
 		})
-		d.Regen()
+		d.Edit.Regen()
 	}
 }
 
@@ -410,16 +410,16 @@ func BenchmarkFilletBox(b *testing.B) {
 				edges = append(edges, e)
 			}
 		}
-		d.Fillet(edges, 2, "")
+		d.Features.Fillet(edges, 2, "")
 	})
 }
 
 func BenchmarkFilletCircle(b *testing.B) {
 	t := &testing.T{}
 	benchRegen(b, func(d *api.Doc) {
-		d.Circle(api.V(0, 0, 0), 5)
-		ex := d.Extrude(10, "")
-		d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+		d.Sketch.Circle(api.V(0, 0, 0), 5)
+		ex := d.Features.Extrude(10, "")
+		d.Features.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 	})
 }
 
@@ -427,9 +427,9 @@ func BenchmarkFilletCircle(b *testing.B) {
 // it filled at radius r: spheres in its corners.
 func filletPocket(d *api.Doc, r float64) {
 	block(d, 0, 0, 30, 20, 10)
-	d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
-	d.Rect(api.V(5, 5, 10), api.V(25, 15, 10))
-	cut := d.Extrude(-6, "")
+	d.Features.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+	d.Sketch.Rect(api.V(5, 5, 10), api.V(25, 15, 10))
+	cut := d.Features.Extrude(-6, "")
 	cut.SetCombine(api.Difference)
 	s := cut.Solid()
 	var edges []api.SolidEdge
@@ -438,7 +438,7 @@ func filletPocket(d *api.Doc, r float64) {
 		n := corners[(i+1)%4]
 		edges = append(edges, s.EdgeAt(c.Plus(n).ScaledBy(0.5)), s.EdgeAt(api.V(c.X, c.Y, 7)))
 	}
-	d.FilletSolid(edges, r, "")
+	d.Features.FilletSolid(edges, r, "")
 }
 
 // BenchmarkFilletPocket fills the eight edges inside a pocket: four
@@ -450,12 +450,12 @@ func BenchmarkFilletPocket(b *testing.B) {
 // filletOutline is a block over a rectangle with its corners rounded,
 // its top rounded all round from one side picked.
 func filletOutline(t *testing.T, d *api.Doc) {
-	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
 	for _, s := range sides {
-		d.TangentArc(s.Start(), 4, true)
+		d.Sketch.TangentArc(s.Start(), 4, true)
 	}
-	ex := d.Extrude(10, "")
-	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 2, "")
+	ex := d.Features.Extrude(10, "")
+	d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 2, "")
 }
 
 // BenchmarkFilletOutline rounds a rounded rectangle's top: four
@@ -468,14 +468,14 @@ func BenchmarkFilletOutline(b *testing.B) {
 // filletUneven is a ramp, its top's front edge and its edge along the
 // slope rounded: an uneven mitre.
 func filletUneven(d *api.Doc) {
-	d.SketchIn(d.Workplane("ZX"), "")
-	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
-	s := d.Extrude(10, "").Solid()
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
+	s := d.Features.Extrude(10, "").Solid()
 	slope := s.EdgeAt(api.V(15, 5, 10))
 	if a, b := slope.Ends(); a.Y < -1 || b.Y < -1 {
 		slope = s.EdgeAt(api.V(15, -5, 10))
 	}
-	d.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(7, 0, 10)), slope}, 2, "")
+	d.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(7, 0, 10)), slope}, 2, "")
 }
 
 func BenchmarkFilletUneven(b *testing.B) {
@@ -498,27 +498,27 @@ func ribbed(d *api.Doc) (rib api.Group, edges func(s api.Solid, sides, ends bool
 	inner := api.V(outer.X+thick*up.Y, outer.Y-thick*up.X, 0)
 	midBend := api.V(onFloor.X+bend*math.Cos(235*math.Pi/180), thick+bend+bend*math.Sin(235*math.Pi/180), 0)
 	lines := []api.Entity{
-		d.Line(outer, api.V(0, 0, 0)),
-		d.Line(api.V(0, 0, 0), api.V(50, 0, 0)),
-		d.Line(api.V(50, 0, 0), api.V(50, thick, 0)),
-		d.Line(api.V(50, thick, 0), onFloor),
+		d.Sketch.Line(outer, api.V(0, 0, 0)),
+		d.Sketch.Line(api.V(0, 0, 0), api.V(50, 0, 0)),
+		d.Sketch.Line(api.V(50, 0, 0), api.V(50, thick, 0)),
+		d.Sketch.Line(api.V(50, thick, 0), onFloor),
 	}
-	arc := d.Arc(api.V(onFloor.X, thick+bend, 0), onWall, onFloor)
-	lines = append(lines, d.Line(onWall, inner), d.Line(inner, outer))
+	arc := d.Sketch.Arc(api.V(onFloor.X, thick+bend, 0), onWall, onFloor)
+	lines = append(lines, d.Sketch.Line(onWall, inner), d.Sketch.Line(inner, outer))
 	for i := 0; i+1 < 4; i++ {
-		d.Coincident(lines[i].End(), lines[i+1].Start())
+		d.Constrain.Coincident(lines[i].End(), lines[i+1].Start())
 	}
-	d.Coincident(lines[3].End(), arc.End())
-	d.Coincident(arc.Start(), lines[4].Start())
-	d.Coincident(lines[4].End(), lines[5].Start())
-	d.Coincident(lines[5].End(), lines[0].Start())
-	d.Extrude(42, "").SetTwoSided(true)
+	d.Constrain.Coincident(lines[3].End(), arc.End())
+	d.Constrain.Coincident(arc.Start(), lines[4].Start())
+	d.Constrain.Coincident(lines[4].End(), lines[5].Start())
+	d.Constrain.Coincident(lines[5].End(), lines[0].Start())
+	d.Features.Extrude(42, "").SetTwoSided(true)
 	foot, top := api.V(reach, thick, 0), along(corner, reach-corner.X)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Polyline(true, top, corner, foot)
-	rib = d.Extrude(thick, "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Polyline(true, top, corner, foot)
+	rib = d.Features.Extrude(thick, "")
 	rib.SetTwoSided(true)
-	d.Regen()
+	d.Edit.Regen()
 	edges = func(s api.Solid, sides, ends bool) []api.SolidEdge {
 		var out []api.SolidEdge
 		for _, z := range []float64{thick / 2, -thick / 2} {
@@ -543,7 +543,7 @@ func ribbed(d *api.Doc) (rib api.Group, edges func(s api.Solid, sides, ends bool
 // lies outside the rib.
 func filletRib(d *api.Doc, r float64, sides, ends bool) api.Group {
 	rib, edges := ribbed(d)
-	return d.FilletSolid(edges(rib.Solid(), sides, ends), r, "")
+	return d.Features.FilletSolid(edges(rib.Solid(), sides, ends), r, "")
 }
 
 func BenchmarkFilletRib(b *testing.B) {
@@ -553,13 +553,13 @@ func BenchmarkFilletRib(b *testing.B) {
 // filletCone is a frustum turned by a lathe, its top's rim rounded where
 // the top meets the cone, and its foot chamfered.
 func filletCone(d *api.Doc) {
-	d.SketchIn(d.Workplane("ZX"), "")
-	axis := d.Line(api.V(0, 0, -2), api.V(0, 0, 10))
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 10))
 	axis.SetConstruction(true)
-	d.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
-	s := d.Lathe(axis, "").Solid()
-	d.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(6*math.Cos(1), 6*math.Sin(1), 8))}, 1.5, "")
-	d.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(10*math.Cos(1), 10*math.Sin(1), 0))}, 1, "")
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
+	s := d.Features.Lathe(axis, "").Solid()
+	d.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(6*math.Cos(1), 6*math.Sin(1), 8))}, 1.5, "")
+	d.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(10*math.Cos(1), 10*math.Sin(1), 0))}, 1, "")
 }
 
 func BenchmarkFilletCone(b *testing.B) {
@@ -569,12 +569,12 @@ func BenchmarkFilletCone(b *testing.B) {
 // filletTee is a branch pipe joined to a pipe, the closed edge between
 // the two cylinders filled round by a rolling ball (roadmap 22.2).
 func filletTee(d *api.Doc) {
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Circle(api.V(0, 0, 0), 10)
-	d.Extrude(40, "")
-	d.SketchIn(d.Workplane("YZ"), "")
-	d.Circle(api.V(0, 0, 20), 5)
-	s := d.Extrude(25, "").Solid()
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(0, 0, 0), 10)
+	d.Features.Extrude(40, "")
+	d.Features.SketchIn(d.Workplane("YZ"), "")
+	d.Sketch.Circle(api.V(0, 0, 20), 5)
+	s := d.Features.Extrude(25, "").Solid()
 	// The edge where they meet, the one whose points all lie between x 8
 	// and 10: at the default chord tolerance its chords pass too far
 	// from a point on it for EdgeAt.
@@ -584,7 +584,7 @@ func filletTee(d *api.Doc) {
 			in = in && p.X > 8 && p.X < 10.01
 		}
 		if in {
-			d.FilletSolid([]api.SolidEdge{e}, 2, "")
+			d.Features.FilletSolid([]api.SolidEdge{e}, 2, "")
 			return
 		}
 	}
@@ -604,9 +604,9 @@ func filletRadii(t *testing.T, d *api.Doc) {
 			lineAlong(t, ex, api.V(0, 0, z), api.V(20, 0, z)), lineAlong(t, ex, api.V(20, 0, z), api.V(20, 10, z)),
 			lineAlong(t, ex, api.V(20, 10, z), api.V(0, 10, z)), lineAlong(t, ex, api.V(0, 10, z), api.V(0, 0, z)))
 	}
-	f := d.Fillet(edges, 2, "")
+	f := d.Features.Fillet(edges, 2, "")
 	for i := 4; i < 8; i++ {
-		f.SetEdgeRadius(i, 1)
+		f.AsFillet().SetEdgeRadius(i, 1)
 	}
 }
 
@@ -618,37 +618,37 @@ func BenchmarkFilletRadii(b *testing.B) {
 func BenchmarkShell(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		ex := block(d, 0, 0, 20, 10, 10)
-		d.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
+		d.Features.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
 	})
 }
 
 // A cylinder hollowed into a cup (roadmap 15.2).
 func BenchmarkShellCup(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		d.SketchIn(d.Workplane("XY"), "")
-		d.Circle(api.V(0, 0, 0), 5)
-		cyl := d.Extrude(10, "")
-		d.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Circle(api.V(0, 0, 0), 5)
+		cyl := d.Features.Extrude(10, "")
+		d.Features.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
 	})
 }
 
 // A ring extruded with a draft: cones inside and out (roadmap 15.4).
 func BenchmarkDraft(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		d.SketchIn(d.Workplane("XY"), "")
-		d.Circle(api.V(0, 0, 0), 10)
-		d.Circle(api.V(0, 0, 0), 4)
-		d.Extrude(10, "").SetDraft(3)
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Circle(api.V(0, 0, 0), 10)
+		d.Sketch.Circle(api.V(0, 0, 0), 4)
+		d.Features.Extrude(10, "").AsExtrude().SetDraft(3)
 	})
 }
 
 func BenchmarkLoft(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		bottom := d.SketchIn(d.Workplane("XY"), "")
-		d.Circle(api.V(0, 0, 0), 5)
-		top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
-		d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
-		d.Loft(bottom, top, "").SetTurn(1)
+		bottom := d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Circle(api.V(0, 0, 0), 5)
+		top := d.Features.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Sketch.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+		d.Features.Loft(bottom, top, "").AsLoft().SetTurn(1)
 	})
 }
 
@@ -656,7 +656,7 @@ func BenchmarkFillet(b *testing.B) {
 	t := &testing.T{}
 	benchRegen(b, func(d *api.Doc) {
 		ex := block(d, 0, 0, 20, 10, 10)
-		d.Fillet([]api.Entity{
+		d.Features.Fillet([]api.Entity{
 			lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
 			lineAlong(t, ex, api.V(0, 10, 0), api.V(20, 10, 0)),
 		}, 2, "")
@@ -666,56 +666,56 @@ func BenchmarkFillet(b *testing.B) {
 func BenchmarkMirror(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		block(d, -20, 0, 20, 10, 5)
-		d.SketchIn(d.Workplane("XY"), "")
-		d.Circle(api.V(10, 5, 0), 2)
-		d.Extrude(5, "").SetCombine(api.Difference)
-		d.Mirror(d.Workplane("YZ"), "")
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Circle(api.V(10, 5, 0), 2)
+		d.Features.Extrude(5, "").SetCombine(api.Difference)
+		d.Features.Mirror(d.Workplane("YZ"), "")
 	})
 }
 
 func BenchmarkChamfer(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		d.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
-		ex := d.Extrude(10, "")
+		d.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+		ex := d.Features.Extrude(10, "")
 		var top []api.Entity
 		for _, e := range ex.Entities() {
 			if e.Kind() == "line" && e.Start().Pos().Z == 10 && e.End().Pos().Z == 10 {
 				top = append(top, e)
 			}
 		}
-		d.Chamfer(top, 2, "")
+		d.Features.Chamfer(top, 2, "")
 	})
 }
 
 func BenchmarkSweep(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		path := pipePath(d, 10, 8, 12)
-		d.SketchIn(d.Workplane("XY"), "profile")
-		d.Circle(api.V(0, 0, 0), 3)
-		d.Circle(api.V(0, 0, 0), 2)
-		d.Sweep(path, "")
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Circle(api.V(0, 0, 0), 3)
+		d.Sketch.Circle(api.V(0, 0, 0), 2)
+		d.Features.Sweep(path, "")
 	})
 }
 
 func BenchmarkPathPattern(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		path := patternPath(d, 20, 10, 90)
-		d.SketchIn(d.Workplane("XY"), "post-sketch")
-		d.Circle(api.V(0, 0, 0), 1)
-		d.Extrude(5, "post")
-		d.PatternAlongPath(path, 7, "")
+		d.Features.SketchIn(d.Workplane("XY"), "post-sketch")
+		d.Sketch.Circle(api.V(0, 0, 0), 1)
+		d.Features.Extrude(5, "post")
+		d.Features.PatternAlongPath(path, 7, "")
 	})
 }
 
 // Twelve posts round a ring (roadmap 28.5).
 func BenchmarkPathPatternRing(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		d.SketchIn(d.Workplane("XY"), "ring")
-		ring := d.Circle(api.V(0, 0, 0), 20)
-		d.SketchIn(d.Workplane("XY"), "post-sketch")
-		d.Circle(api.V(20, 0, 0), 1)
-		d.Extrude(5, "post")
-		d.PatternAlongPath([]api.Entity{ring}, 12, "")
+		d.Features.SketchIn(d.Workplane("XY"), "ring")
+		ring := d.Sketch.Circle(api.V(0, 0, 0), 20)
+		d.Features.SketchIn(d.Workplane("XY"), "post-sketch")
+		d.Sketch.Circle(api.V(20, 0, 0), 1)
+		d.Features.Extrude(5, "post")
+		d.Features.PatternAlongPath([]api.Entity{ring}, 12, "")
 	})
 }
 
@@ -723,15 +723,15 @@ func BenchmarkPathPatternRing(b *testing.B) {
 // their corners are cut by wedges.
 func BenchmarkChamferTwo(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		d.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
-		ex := d.Extrude(10, "")
+		d.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+		ex := d.Features.Extrude(10, "")
 		var top []api.Entity
 		for _, e := range ex.Entities() {
 			if e.Kind() == "line" && e.Start().Pos().Z == 10 && e.End().Pos().Z == 10 {
 				top = append(top, e)
 			}
 		}
-		d.Chamfer(top, 1, "").SetSecondDistance(2)
+		d.Features.Chamfer(top, 1, "").AsChamfer().SetSecondDistance(2)
 	})
 }
 
@@ -739,26 +739,26 @@ func BenchmarkChamferTwo(b *testing.B) {
 // 28.2).
 func BenchmarkDraftSharpArc(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		d.SketchIn(d.Workplane("XY"), "")
-		d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
-		d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
-		d.Extrude(8, "").SetDraft(6)
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
+		d.Sketch.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
+		d.Features.Extrude(8, "").AsExtrude().SetDraft(6)
 	})
 }
 
 // A rectangle swept round three mitred corners (roadmap 28.4).
 func BenchmarkSweepCorners(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		d.SketchIn(d.Workplane("ZX"), "path")
+		d.Features.SketchIn(d.Workplane("ZX"), "path")
 		path := []api.Entity{
-			d.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
-			d.Line(api.V(0, 0, 10), api.V(10, 0, 15)),
-			d.Line(api.V(10, 0, 15), api.V(20, 0, 10)),
-			d.Line(api.V(20, 0, 10), api.V(20, 0, 0)),
+			d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+			d.Sketch.Line(api.V(0, 0, 10), api.V(10, 0, 15)),
+			d.Sketch.Line(api.V(10, 0, 15), api.V(20, 0, 10)),
+			d.Sketch.Line(api.V(20, 0, 10), api.V(20, 0, 0)),
 		}
-		d.SketchIn(d.Workplane("XY"), "profile")
-		d.Circle(api.V(0, 0, 0), 1)
-		d.Sweep(path, "")
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Circle(api.V(0, 0, 0), 1)
+		d.Features.Sweep(path, "")
 	})
 }
 
@@ -766,14 +766,14 @@ func BenchmarkSweepCorners(b *testing.B) {
 // loft's sections moved and scaled, then skinned (roadmap 28.3).
 func BenchmarkLoftGuides(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		bottom := d.SketchIn(d.Workplane("XY"), "")
-		d.Circle(api.V(0, 0, 0), 5)
-		d.Sketch3D("")
-		g1 := d.Cubic(api.V(5, 0, 0), api.V(9, 0, 4), api.V(9, 0, 8), api.V(5, 0, 12))
-		g2 := d.Cubic(api.V(-5, 0, 0), api.V(-6, 0, 4), api.V(-6, 0, 8), api.V(-5, 0, 12))
-		top := d.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "")
-		d.Circle(api.V(0, 0, 12), 5)
-		d.Loft(bottom, top, "").SetGuides([]api.Entity{g1, g2})
+		bottom := d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Circle(api.V(0, 0, 0), 5)
+		d.Features.Sketch3D("")
+		g1 := d.Sketch.Cubic(api.V(5, 0, 0), api.V(9, 0, 4), api.V(9, 0, 8), api.V(5, 0, 12))
+		g2 := d.Sketch.Cubic(api.V(-5, 0, 0), api.V(-6, 0, 4), api.V(-6, 0, 8), api.V(-5, 0, 12))
+		top := d.Features.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Sketch.Circle(api.V(0, 0, 12), 5)
+		d.Features.Loft(bottom, top, "").AsLoft().SetGuides([]api.Entity{g1, g2})
 	})
 }
 
@@ -781,10 +781,10 @@ func BenchmarkLoftGuides(b *testing.B) {
 // (roadmap 28.3).
 func BenchmarkLoftTangency(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
-		bottom := d.SketchIn(d.Workplane("XY"), "")
-		d.Circle(api.V(0, 0, 0), 5)
-		top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
-		d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
-		d.Loft(bottom, top, "").SetTangency(1, 1)
+		bottom := d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Circle(api.V(0, 0, 0), 5)
+		top := d.Features.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Sketch.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+		d.Features.Loft(bottom, top, "").AsLoft().SetTangency(1, 1)
 	})
 }

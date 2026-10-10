@@ -84,11 +84,11 @@ func TestChamferSolidEdge(t *testing.T) {
 	d := openSlot(t)
 	s := d.Group("slot").Solid()
 	right := s.EdgeAt(V(32, 0, 10))
-	ch := d.ChamferSolid([]SolidEdge{right}, 1, "")
+	ch := d.Features.ChamferSolid([]SolidEdge{right}, 1, "")
 	if p := ch.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := ch.Check()
+	r := ch.Analyze().Check()
 	want := 10000.0 - 0.5*15
 	if !r.Sound() || math.Abs(r.Volume-want) > 1e-6 {
 		t.Errorf("sound %v, volume %g, want %g", r.Sound(), r.Volume, want)
@@ -99,11 +99,11 @@ func TestChamferSolidEdge(t *testing.T) {
 	}
 	// The edges of the chamfer's own solid have names too: chamfer the
 	// notch's upright edge, which no entity draws either.
-	again := d.ChamferSolid([]SolidEdge{ch.Solid().EdgeAt(V(25, 0, 5))}, 0.5, "")
+	again := d.Features.ChamferSolid([]SolidEdge{ch.Solid().EdgeAt(V(25, 0, 5))}, 0.5, "")
 	if p := again.Problem(); p != "" {
 		t.Errorf("chamfer of the notch's edge: %s", p)
 	}
-	if r := again.Check(); !r.Sound() {
+	if r := again.Analyze().Check(); !r.Sound() {
 		t.Errorf("the second chamfer: %s", r.Summary())
 	}
 }
@@ -114,10 +114,10 @@ func TestChamferSolidEdge(t *testing.T) {
 func TestNamingSweep(t *testing.T) {
 	d := openSlot(t)
 	right := d.Group("slot").Solid().EdgeAt(V(32, 0, 10))
-	ch := d.ChamferSolid([]SolidEdge{right}, 1, "")
+	ch := d.Features.ChamferSolid([]SolidEdge{right}, 1, "")
 	reported := 0
 	for x := -12.2; x <= 43; x += 2.5 {
-		if err := d.SetParameter("slot", fmt.Sprint(x)); err != nil {
+		if err := d.Params.Set("slot", fmt.Sprint(x)); err != nil {
 			t.Fatal(err)
 		}
 		p := ch.Problem()
@@ -135,7 +135,7 @@ func TestNamingSweep(t *testing.T) {
 			continue
 		}
 		lo, hi := x+10, 40.0
-		r := ch.Check()
+		r := ch.Analyze().Check()
 		want := 10000 - 0.5*(hi-lo)
 		if !r.Sound() || math.Abs(r.Volume-want) > 1e-6 {
 			t.Errorf("notch at %g: volume %g, want %g (the chamfer moved?)", x, r.Volume, want)
@@ -161,12 +161,12 @@ func TestSolidMisuse(t *testing.T) {
 		"edge off":        func() { s.EdgeAt(V(100, 0, 0)) },
 		"no direction":    func() { s.EdgesAlong(V(0, 0, 0)) },
 		"chamfer bad name": func() {
-			d.ChamferSolid([]SolidEdge{{s: s, name: s.Edges()[0].name}, {s: s, name: s.Edges()[0].name}}, 1, "")
+			d.Features.ChamferSolid([]SolidEdge{{s: s, name: s.Edges()[0].name}, {s: s, name: s.Edges()[0].name}}, 1, "")
 		},
-		"chamfer curved":          func() { d.ChamferSolid(nil, 1, "") },
+		"chamfer curved":          func() { d.Features.ChamferSolid(nil, 1, "") },
 		"solid edges of a sketch": func() { sketch.SolidEdges() },
 		"solid of a deleted group": func() {
-			g := d.Sketch3D("gone")
+			g := d.Features.Sketch3D("gone")
 			g.Delete()
 			g.Solid().Faces()
 		},
@@ -182,7 +182,7 @@ func TestSolidMisuse(t *testing.T) {
 	}
 	// A solid made only of a mesh has no names.
 	m := New()
-	if _, err := m.Link(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "box.step"), ""); err != nil {
+	if _, err := m.Assembly.Link(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "box.step"), ""); err != nil {
 		t.Fatal(err)
 	}
 	func() {
@@ -200,9 +200,9 @@ func TestSolidMisuse(t *testing.T) {
 // vertex.
 func TestSolidSheets(t *testing.T) {
 	d := New()
-	d.SetChordTolerance(0.01)
-	d.Circle(V(0, 0, 0), 10)
-	s := d.Extrude(5, "body").Solid()
+	d.Edit.SetChordTolerance(0.01)
+	d.Sketch.Circle(V(0, 0, 0), 10)
+	s := d.Features.Extrude(5, "body").Solid()
 	if n := len(s.Faces()); n != 3 {
 		t.Errorf("%d faces, want 3", n)
 	}
@@ -238,14 +238,14 @@ func TestSolidSheets(t *testing.T) {
 		t.Errorf("the rim's faces have %d and %d patches", fs[0].Patches(), fs[1].Patches())
 	}
 	// Filleting the rim by its name rounds it all round.
-	f := d.FilletSolid([]SolidEdge{rim}, 1, "")
+	f := d.Features.FilletSolid([]SolidEdge{rim}, 1, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
 	// Pappus: the spandrel of radius 1 turned about the axis, its
 	// centroid (10-3pi)/(12-3pi) in from the rim.
 	want := math.Pi*100*5 - 2*math.Pi*(10-(10-3*math.Pi)/(12-3*math.Pi))*(1-math.Pi/4)
-	if r := f.Check(); !r.Sound() || math.Abs(r.Volume-want) > 1e-3*want {
+	if r := f.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 1e-3*want {
 		t.Errorf("the fillet: %s, want volume %g", r.Summary(), want)
 	}
 }
@@ -254,8 +254,8 @@ func TestSolidSheets(t *testing.T) {
 // patch's identity names it (roadmap 14.1).
 func TestFaceByAnyPatch(t *testing.T) {
 	d := New()
-	d.Circle(V(0, 0, 0), 5)
-	ex := d.Extrude(10, "")
+	d.Sketch.Circle(V(0, 0, 0), 5)
+	ex := d.Features.Extrude(10, "")
 	s := ex.Solid()
 	var side SolidFace
 	for _, f := range s.Faces() {
@@ -298,15 +298,15 @@ func TestFaceByAnyPatch(t *testing.T) {
 // their faces no longer meet, and name no other edge.
 func TestNamesThroughThreadLength(t *testing.T) {
 	d := New()
-	d.Circle(V(0, 0, 0), 4)
-	d.Extrude(30, "shank")
+	d.Sketch.Circle(V(0, 0, 0), 4)
+	d.Features.Extrude(30, "shank")
 	var top Entity
 	for _, e := range d.Active().Entities() {
 		if e.Kind() == "circle" && e.Center().Pos().Z == 30 {
 			top = e
 		}
 	}
-	hel := d.Thread(top, ThreadOptions{Designation: "M8", Length: 8})
+	hel := d.Features.Thread(top, ThreadOptions{Designation: "M8", Length: 8})
 	var names []string
 	for _, e := range hel.Solid().Edges() {
 		names = append(names, e.Name())
@@ -318,7 +318,7 @@ func TestNamesThroughThreadLength(t *testing.T) {
 	if err := cs[0].SetExpr(fmt.Sprint(cs[0].Value() * 2)); err != nil {
 		t.Fatal(err)
 	}
-	if r := hel.Check(); !r.Sound() {
+	if r := hel.Analyze().Check(); !r.Sound() {
 		t.Fatalf("the longer thread: %s", r.String())
 	}
 	s := hel.Solid()

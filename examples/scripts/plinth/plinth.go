@@ -10,7 +10,7 @@
 //	telesapr --script examples/scripts/plinth/plinth.go
 //
 // A fillet's edges may each have a radius of their own
-// (Group.SetEdgeRadius); edges that meet at a corner need one radius,
+// (FilletGroup.SetEdgeRadius); edges that meet at a corner need one radius,
 // so here the top's four edges, mitred at the corners, take the
 // fillet's radius, 5 mm unless given, and the foot's four 1.5 mm unless
 // given. The script checks the solid against the volume by formula,
@@ -40,9 +40,9 @@ func main() {
 	top, foot := radii[0], radii[1]
 	w, l, h := 60.0, 40.0, 25.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.Rect(api.V(0, 0, 0), api.V(w, l, 0))
-	block := doc.Extrude(h, "block")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(w, l, 0))
+	block := doc.Features.Extrude(h, "block")
 
 	// The block's horizontal edges, the top's first.
 	var edges []api.Entity
@@ -57,15 +57,15 @@ func main() {
 			}
 		}
 	}
-	plinth := doc.Fillet(edges, top, "rounded")
+	plinth := doc.Features.Fillet(edges, top, "rounded")
 	for i := 4; i < len(edges); i++ {
-		plinth.SetEdgeRadius(i, foot)
+		plinth.AsFillet().SetEdgeRadius(i, foot)
 	}
 	if p := plinth.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := plinth.Check()
+	r := plinth.Analyze().Check()
 	// Each ring takes a square of its radius less a quarter circle along
 	// its length, less at each of its four mitres the part two edges both
 	// count, r³(5/3 - π/2).
@@ -80,7 +80,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("plinth.tlspr"); err != nil {
+		if err := doc.File.Save("plinth.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

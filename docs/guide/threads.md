@@ -33,8 +33,8 @@ groups are ordinary groups afterwards; the thread's length is a dimension of its
 From a script:
 
 ```go
-doc.Thread(rim, api.ThreadOptions{Designation: "M8", Length: 20})
-doc.Thread(hole, api.ThreadOptions{Internal: true, Through: true})
+doc.Features.Thread(rim, api.ThreadOptions{Designation: "M8", Length: 20})
+doc.Features.Thread(hole, api.ThreadOptions{Internal: true, Through: true})
 api.ThreadNearest(7.9) // "M8"
 ```
 

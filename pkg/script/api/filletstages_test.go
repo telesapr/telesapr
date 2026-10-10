@@ -22,10 +22,10 @@ func TestFilletStagesScript(t *testing.T) {
 	}
 	const w, l, h, upright, top = 30.0, 20.0, 15.0, 5.0, 2.0
 	build := func(d *Doc) (Group, []SolidEdge, int) {
-		d.SetChordTolerance(0.002)
-		d.SketchIn(d.Workplane("XY"), "")
-		d.Rect(V(0, 0, 0), V(w, l, 0))
-		block := d.Extrude(h, "block")
+		d.Edit.SetChordTolerance(0.002)
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Rect(V(0, 0, 0), V(w, l, 0))
+		block := d.Features.Extrude(h, "block")
 		edges := block.Solid().EdgesAlong(V(0, 0, 1))
 		n := len(edges)
 		for _, e := range block.Solid().Edges() {
@@ -40,9 +40,9 @@ func TestFilletStagesScript(t *testing.T) {
 	if n != 4 || len(edges) != 8 {
 		t.Fatalf("%d upright edges and %d in all", n, len(edges))
 	}
-	fill := d.FilletSolid(edges, upright, "rounded")
+	fill := d.Features.FilletSolid(edges, upright, "rounded")
 	for i := n; i < len(edges); i++ {
-		fill.SetEdgeRadius(i, top)
+		fill.AsFillet().SetEdgeRadius(i, top)
 	}
 	if p := fill.Problem(); p != "" {
 		t.Fatal(p)
@@ -50,24 +50,24 @@ func TestFilletStagesScript(t *testing.T) {
 	spandrel := func(r float64) float64 { return r * r * (1 - math.Pi/4) }
 	c := top * (10 - 3*math.Pi) / (12 - 3*math.Pi)
 	want := w*l*h - 4*spandrel(upright)*h - spandrel(top)*2*(w+l-4*upright) - spandrel(top)*2*math.Pi*(upright-c)
-	r := fill.Check()
+	r := fill.Analyze().Check()
 	if !r.Sound() || math.Abs(r.Volume-want) > 1e-4*want {
 		t.Fatalf("%s, volume %g, want %g", r.Summary(), r.Volume, want)
 	}
 	path := filepath.Join(t.TempDir(), "casing.tlspr")
-	if err := d.Save(path); err != nil {
+	if err := d.File.Save(path); err != nil {
 		t.Fatal(err)
 	}
 	e := New()
-	if err := e.Load(path); err != nil {
+	if err := e.File.Load(path); err != nil {
 		t.Fatal(err)
 	}
-	e.SetChordTolerance(0.002)
+	e.Edit.SetChordTolerance(0.002)
 	g := e.Groups()
-	if r2 := g[len(g)-1].Check(); !r2.Sound() || math.Abs(r2.Volume-r.Volume) > 1e-6*r.Volume {
+	if r2 := g[len(g)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-r.Volume) > 1e-6*r.Volume {
 		t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, r.Volume)
 	}
-	if !d.Undo() {
+	if !d.Edit.Undo() {
 		t.Fatal("no undo")
 	}
 	if g := d.Groups(); g[len(g)-1].Name() == "rounded" {
@@ -77,30 +77,30 @@ func TestFilletStagesScript(t *testing.T) {
 	// The top larger than the uprights it would go round: set back.
 	f := New()
 	_, edges, n = build(f)
-	other := f.FilletSolid(edges, top, "rounded")
+	other := f.Features.FilletSolid(edges, top, "rounded")
 	for i := n; i < len(edges); i++ {
-		other.SetEdgeRadius(i, upright)
+		other.AsFillet().SetEdgeRadius(i, upright)
 	}
 	if p := other.Problem(); p != "" {
 		t.Errorf("the radii the other way round: %q", p)
-	} else if r := other.Check(); !r.Sound() || r.Volume >= w*l*h {
+	} else if r := other.Analyze().Check(); !r.Sound() || r.Volume >= w*l*h {
 		t.Errorf("the radii the other way round: %s, volume %g", r.Summary(), r.Volume)
 	} else {
 		// The same after saving and loading, and gone with one undo.
 		path := filepath.Join(t.TempDir(), "setback.tlspr")
-		if err := f.Save(path); err != nil {
+		if err := f.File.Save(path); err != nil {
 			t.Fatal(err)
 		}
 		e := New()
-		if err := e.Load(path); err != nil {
+		if err := e.File.Load(path); err != nil {
 			t.Fatal(err)
 		}
-		e.SetChordTolerance(0.002)
+		e.Edit.SetChordTolerance(0.002)
 		g := e.Groups()
-		if r2 := g[len(g)-1].Check(); !r2.Sound() || math.Abs(r2.Volume-r.Volume) > 1e-6*r.Volume {
+		if r2 := g[len(g)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-r.Volume) > 1e-6*r.Volume {
 			t.Errorf("set back, loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, r.Volume)
 		}
-		if !f.Undo() {
+		if !f.Edit.Undo() {
 			t.Fatal("no undo")
 		}
 		if g := f.Groups(); g[len(g)-1].Name() == "rounded" {
@@ -121,8 +121,8 @@ func TestFilletStagesScript(t *testing.T) {
 	if len(two) != 2 {
 		t.Fatalf("%d top edges at the corner", len(two))
 	}
-	wrong := g2.FilletSolid(two, top, "rounded")
-	wrong.SetEdgeRadius(1, upright)
+	wrong := g2.Features.FilletSolid(two, top, "rounded")
+	wrong.AsFillet().SetEdgeRadius(1, upright)
 	p := wrong.Problem()
 	if !strings.Contains(p, "left sharp") {
 		t.Errorf("a mitre of two radii: %q", p)

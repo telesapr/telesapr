@@ -7,9 +7,9 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	l := doc.Line(V(-20, 10, 0), V(10, 10, 0))
-	doc.Regen()
+	l := doc.Sketch.Line(V(-20, 10, 0), V(10, 10, 0))
+	doc.Edit.Regen()
 	l.MoveBy(V(0.2, 0, 0))
-	doc.Regen()
+	doc.Edit.Regen()
 	l.MoveBy(V(0, 2, 0))
 }

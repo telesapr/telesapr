@@ -15,14 +15,14 @@ func must(err error) {
 
 func main() {
 	doc := Current()
-	sides := doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	width := doc.Length(sides[0], 36)
-	height := doc.Length(sides[1], 26)
-	doc.Regen()
+	sides := doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	width := doc.Constrain.Length(sides[0], 36)
+	height := doc.Constrain.Length(sides[1], 26)
+	doc.Edit.Regen()
 	width.SetName("width")
 	must(width.SetExpr("40"))
-	doc.Regen()
+	doc.Edit.Regen()
 	must(height.SetExpr("width/2"))
-	doc.Regen()
-	doc.Extrude(80, "")
+	doc.Edit.Regen()
+	doc.Features.Extrude(80, "")
 }

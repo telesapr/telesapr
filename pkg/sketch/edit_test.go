@@ -10,8 +10,8 @@ import (
 // so a save, a reload and a save agree.
 func TestRequestIn3DRoundTrips(t *testing.T) {
 	d := api.New()
-	d.Sketch3D("")
-	d.Point(api.V(1, 2, 3))
-	d.Line(api.V(0, 0, 0), api.V(4, 5, 6))
+	d.Features.Sketch3D("")
+	d.Sketch.Point(api.V(1, 2, 3))
+	d.Sketch.Line(api.V(0, 0, 0), api.V(4, 5, 6))
 	roundTrip(t, d)
 }

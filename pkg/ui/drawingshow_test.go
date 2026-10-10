@@ -47,17 +47,17 @@ func TestShowDrawingSheet(t *testing.T) {
 	ss, doc := drawingModel(t)
 	dir := t.TempDir()
 	model := filepath.Join(dir, "model.png")
-	if err := doc.Render(model, 400, 300, "window"); err != nil {
+	if err := doc.File.Render(model, 400, 300, "window"); err != nil {
 		t.Fatal(err)
 	}
-	if err := doc.ShowDrawingSheet(true); err != nil {
+	if err := doc.Drawing.Show(true); err != nil {
 		t.Fatal(err)
 	}
-	if !doc.DrawingSheetShown() || !ss.GW.SheetShown() {
+	if !doc.Drawing.Shown() || !ss.GW.SheetShown() {
 		t.Fatal("the sheet isn't shown")
 	}
 	sheet := filepath.Join(dir, "sheet.png")
-	if err := doc.Render(sheet, 400, 300, "window"); err != nil {
+	if err := doc.File.Render(sheet, 400, 300, "window"); err != nil {
 		t.Fatal(err)
 	}
 	box, n := litBox(t, sheet)
@@ -65,10 +65,10 @@ func TestShowDrawingSheet(t *testing.T) {
 		t.Errorf("the sheet covers %v (%d pixels), want nearly the picture's width", box, n)
 	}
 
-	d := doc.Drawing()
+	d := doc.Drawing.Get()
 	d.Portrait = true
-	doc.SetDrawing(d)
-	if err := doc.Render(sheet, 400, 300, "window"); err != nil {
+	doc.Drawing.Set(d)
+	if err := doc.File.Render(sheet, 400, 300, "window"); err != nil {
 		t.Fatal(err)
 	}
 	if box, _ := litBox(t, sheet); box.Dx() >= box.Dy() {
@@ -82,10 +82,10 @@ func TestShowDrawingSheet(t *testing.T) {
 	}
 
 	ss.GW.MenuShowDrawingSheet()
-	if doc.DrawingSheetShown() {
+	if doc.Drawing.Shown() {
 		t.Error("the menu didn't show the model again")
 	}
-	if err := doc.Render(sheet, 400, 300, "window"); err != nil {
+	if err := doc.File.Render(sheet, 400, 300, "window"); err != nil {
 		t.Fatal(err)
 	}
 	if _, n := litBox(t, sheet); n == 0 {
@@ -95,11 +95,11 @@ func TestShowDrawingSheet(t *testing.T) {
 	// No solid, no sheet.
 	empty, _ := newTestApp(t)
 	bare := api.NewDoc(empty.ScriptHost())
-	bare.Line(api.V(0, 0, 0), api.V(10, 0, 0))
-	if err := bare.ShowDrawingSheet(true); err == nil || bare.DrawingSheetShown() {
+	bare.Sketch.Line(api.V(0, 0, 0), api.V(10, 0, 0))
+	if err := bare.Drawing.Show(true); err == nil || bare.Drawing.Shown() {
 		t.Errorf("a sketch with no solid showed its sheet (%v)", err)
 	}
-	if err := api.New().ShowDrawingSheet(true); err == nil {
+	if err := api.New().Drawing.Show(true); err == nil {
 		t.Error("a bare sketch showed a sheet")
 	}
 }

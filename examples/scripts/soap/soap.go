@@ -38,12 +38,12 @@ func main() {
 	}
 	w, l, corner, h := 60.0, 40.0, 10.0, 20.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	sides := doc.Rect(api.V(0, 0, 0), api.V(w, l, 0))
+	doc.Edit.SetChordTolerance(0.01)
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(w, l, 0))
 	for _, s := range sides {
-		doc.TangentArc(s.Start(), corner, true)
+		doc.Sketch.TangentArc(s.Start(), corner, true)
 	}
-	bar := doc.Extrude(h, "bar")
+	bar := doc.Features.Extrude(h, "bar")
 
 	// One side of the top: the copy of the front side at the top.
 	var front api.Entity
@@ -56,12 +56,12 @@ func main() {
 			front = e
 		}
 	}
-	soap := doc.Fillet([]api.Entity{front}, radius, "rounded")
+	soap := doc.Features.Fillet([]api.Entity{front}, radius, "rounded")
 	if p := soap.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := soap.Check()
+	r := soap.Analyze().Check()
 	// The fillet takes a square of the radius less a quarter circle,
 	// along the sides and round the corners by its centroid,
 	// (10 - 3 pi) / (12 - 3 pi) of the radius in.
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("soap.tlspr"); err != nil {
+		if err := doc.File.Save("soap.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

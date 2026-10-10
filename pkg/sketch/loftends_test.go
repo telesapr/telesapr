@@ -18,19 +18,19 @@ import (
 func TestLoftTangency(t *testing.T) {
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
-	bottom := d.SketchIn(d.Workplane("XY"), "bottom")
-	d.Rect(api.V(-3, -3, 0), api.V(3, 3, 0))
-	top := d.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "top")
-	d.Rect(api.V(2, -3, 12), api.V(8, 3, 12))
-	l := d.Loft(bottom, top, "")
-	ruled := l.Check().Volume
+	bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")
+	d.Sketch.Rect(api.V(-3, -3, 0), api.V(3, 3, 0))
+	top := d.Features.SketchAt(above(d, 12), api.V(1, 0, 0), api.V(0, 1, 0), "top")
+	d.Sketch.Rect(api.V(2, -3, 12), api.V(8, 3, 12))
+	l := d.Features.Loft(bottom, top, "")
+	ruled := l.Analyze().Check().Volume
 	step(d)
 	before := saved(t, d)
-	l.SetTangency(1, 1)
-	if s, e := l.Tangency(); s != 1 || e != 1 {
+	l.AsLoft().SetTangency(1, 1)
+	if s, e := l.AsLoft().Tangency(); s != 1 || e != 1 {
 		t.Fatalf("tangency %g, %g", s, e)
 	}
-	r := l.Check()
+	r := l.Analyze().Check()
 	if want := 36.0 * 12; l.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.002*want ||
 		math.Abs(ruled-want) > 1e-6*want {
 		t.Fatalf("square ends: %q, %s, want %g (ruled %g)", l.Problem(), r.String(), want, ruled)
@@ -42,19 +42,19 @@ func TestLoftTangency(t *testing.T) {
 	// A file holds curve points at the chord tolerance, which it doesn't
 	// save.
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-	d.Regen()
+	d.Edit.Regen()
 	back := roundTrip(t, d)
-	if s, e := back.Group(l.Name()).Tangency(); s != 1 || e != 0.5 || back.Group(l.Name()).Expr(sketch.GroupValC) != "1/2" {
+	if s, e := back.Group(l.Name()).AsLoft().Tangency(); s != 1 || e != 0.5 || back.Group(l.Name()).Expr(sketch.GroupValC) != "1/2" {
 		t.Errorf("after a round trip: %g, %g", s, e)
 	}
 	// In inches, a tangency is no length.
-	d.SetUnits(core.UnitInches)
+	d.View.SetUnits(core.UnitInches)
 	back = roundTrip(t, d)
-	if s, _ := back.Group(l.Name()).Tangency(); s != 1 {
+	if s, _ := back.Group(l.Name()).AsLoft().Tangency(); s != 1 {
 		t.Errorf("in another unit the start's tangency became %g", s)
 	}
-	l.SetTangency(0, 0)
-	if v := l.Check().Volume; math.Abs(v-ruled) > 1e-9*ruled {
+	l.AsLoft().SetTangency(0, 0)
+	if v := l.Analyze().Check().Volume; math.Abs(v-ruled) > 1e-9*ruled {
 		t.Errorf("free again: %g, want %g", v, ruled)
 	}
 	func() {
@@ -64,6 +64,6 @@ func TestLoftTangency(t *testing.T) {
 				t.Errorf("tangency of a sketch: %v", err)
 			}
 		}()
-		bottom.SetTangency(1, 1)
+		bottom.AsLoft().SetTangency(1, 1)
 	}()
 }

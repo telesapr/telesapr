@@ -8,8 +8,8 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 func main() {
 	doc := Current()
 	sketch := doc.Active()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Extrude(80, "")
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	doc.Features.Extrude(80, "")
 	doc.Activate(sketch)
-	doc.Extrude(80, "")
+	doc.Features.Extrude(80, "")
 }

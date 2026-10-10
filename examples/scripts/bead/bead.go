@@ -40,21 +40,21 @@ func main() {
 	}
 
 	doc := api.Current()
-	doc.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
-	block := doc.Extrude(10, "block")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
+	block := doc.Features.Extrude(10, "block")
 	s := block.Solid()
 	front := s.EdgeAt(api.V(20, 0, 10))
 	right := s.EdgeAt(api.V(40, 10, 10))
 
-	doc.SketchIn(doc.Workplane("YZ"), "bead profile")
+	doc.Features.SketchIn(doc.Workplane("YZ"), "bead profile")
 	h := size / 2
-	doc.Rect(api.V(0, -h, 10-h), api.V(0, h, 10+h))
-	bead := doc.SweepEdges([]api.SolidEdge{front, right}, nil, "bead")
+	doc.Sketch.Rect(api.V(0, -h, 10-h), api.V(0, h, 10+h))
+	bead := doc.Features.SweepEdges([]api.SolidEdge{front, right}, nil, "bead")
 	if p := bead.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := bead.Check()
+	r := bead.Analyze().Check()
 	want := 8000 + 0.75*size*size*60
 	fmt.Printf("block and bead: %.2f mm³ (about %.0f), sound %v\n", r.Volume, want, r.Sound())
 	if !r.Sound() || math.Abs(r.Volume-want) > size*size {

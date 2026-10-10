@@ -40,8 +40,8 @@ func main() {
 
 	// A block, a boss drawn on the block's top, and copies of the boss.
 	base := doc.Active()
-	doc.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
-	block := doc.Extrude(10, "block")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
+	block := doc.Features.Extrude(10, "block")
 	var top api.Entity
 	for _, e := range block.Entities() {
 		if e.Kind() == "point" && e.Pos().Z > 5 {
@@ -49,21 +49,21 @@ func main() {
 			break
 		}
 	}
-	boss := doc.SketchAt(top, api.V(1, 0, 0), api.V(0, 1, 0), "boss-sketch")
-	doc.Circle(api.V(10, 10, 10), 3)
-	post := doc.Extrude(5, "boss")
-	doc.Translate(2, api.V(10, 0, 0), "bosses")
-	doc.Regen()
-	solid := doc.Active().Check().Volume
+	boss := doc.Features.SketchAt(top, api.V(1, 0, 0), api.V(0, 1, 0), "boss-sketch")
+	doc.Sketch.Circle(api.V(10, 10, 10), 3)
+	post := doc.Features.Extrude(5, "boss")
+	doc.Features.Translate(2, api.V(10, 0, 0), "bosses")
+	doc.Edit.Regen()
+	solid := doc.Active().Analyze().Check().Volume
 
 	// What each group uses, and what uses it.
 	for _, g := range doc.Groups() {
-		fmt.Printf("%s uses %v, used by %v\n", g, g.DependsOn(), g.UsedBy())
+		fmt.Printf("%s uses %v, used by %v\n", g, g.History().DependsOn(), g.History().UsedBy())
 	}
 
 	// The boss can't come before the sketch it extrudes, and the
 	// error says why.
-	if err := post.MoveBefore(boss); err == nil {
+	if err := post.History().MoveBefore(boss); err == nil {
 		fail("the boss moved before its sketch")
 	} else {
 		fmt.Println("refused:", err)
@@ -72,30 +72,30 @@ func main() {
 	// Suppressed whole, the boss sketch takes the boss and its copies
 	// out of the model; nothing is deleted, and they come back.
 	boss.SetSuppress(api.SuppressWhole)
-	fmt.Printf("%s: %q; the solid is %.0f mm³\n", post, post.LeftOut(), doc.Groups()[1].Check().Volume)
+	fmt.Printf("%s: %q; the solid is %.0f mm³\n", post, post.LeftOut(), doc.Groups()[1].Analyze().Check().Volume)
 	// The active group had to move back to the block; the last group
 	// is made active again, and the whole model regenerated, since the
 	// chord tolerance follows the size of what is shown.
 	boss.SetSuppress(api.Unsuppressed)
 	doc.Activate(doc.Groups()[len(doc.Groups())-1])
-	doc.Regen()
-	if v := doc.Active().Check().Volume; v != solid {
+	doc.Edit.Regen()
+	if v := doc.Active().Analyze().Check().Volume; v != solid {
 		fail("back, the solid is %v, was %v", v, solid)
 	}
 
 	if len(os.Args) < 2 || os.Args[1] != "-" {
-		must(doc.Save("history.tlspr"))
+		must(doc.File.Save("history.tlspr"))
 	}
 
 	// Deleting the block's sketch deletes what was built on it, and the
 	// list says what and why. (In the application, Edit > Undo brings
 	// it all back; in a script, Undo would take back the whole run.)
 	base.Delete()
-	for _, b := range doc.BrokenReferences() {
+	for _, b := range doc.Features.BrokenReferences() {
 		fmt.Println(b.Text)
 	}
-	if len(doc.BrokenReferences()) != 4 || len(doc.Groups()) != 1 {
+	if len(doc.Features.BrokenReferences()) != 4 || len(doc.Groups()) != 1 {
 		fail("deleting the sketch broke %d references and left %d groups, want 4 and 1",
-			len(doc.BrokenReferences()), len(doc.Groups()))
+			len(doc.Features.BrokenReferences()), len(doc.Groups()))
 	}
 }

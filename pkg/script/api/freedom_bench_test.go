@@ -12,16 +12,16 @@ func zigzag(n int) *Doc {
 		pts[i] = V(float64(i/2*10+i%2*10), float64((i+1)/2*10), 0)
 	}
 	d.Batch(func() {
-		segs := d.Polyline(false, pts...)
+		segs := d.Sketch.Polyline(false, pts...)
 		for i, s := range segs {
 			if i%2 == 0 {
-				d.Horizontal(s)
+				d.Constrain.Horizontal(s)
 			} else {
-				d.Vertical(s)
+				d.Constrain.Vertical(s)
 			}
 		}
 	})
-	d.Regen()
+	d.Edit.Regen()
 	return d
 }
 

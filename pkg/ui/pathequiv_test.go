@@ -541,7 +541,7 @@ func TestPathEquivalenceFilletRim(t *testing.T) {
 }
 
 // A circle made as big as another as it is drawn, and by a script
-// through Doc.AutoConstrain (roadmap 29.4).
+// through Constrain.Auto (roadmap 29.4).
 func TestPathEquivalenceAutoConstrain(t *testing.T) {
 	requireSamePaths(t, "path_auto_constrain", "path_auto_constrain")
 }

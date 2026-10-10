@@ -7,11 +7,11 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	c := doc.Circle(V(0, 0, 0), 10)
+	c := doc.Sketch.Circle(V(0, 0, 0), 10)
 	// Clicked on the origin, the centre is held on it.
-	doc.Coincident(doc.ActiveWorkplane().Points()[0], c.Center())
-	g := doc.Extrude(80, "")
-	doc.Regen()
+	doc.Constrain.Coincident(doc.Sketch.ActiveWorkplane().Points()[0], c.Center())
+	g := doc.Features.Extrude(80, "")
+	doc.Edit.Regen()
 	// The end face nearer the viewer, as the front view looks.
 	var end Entity
 	for _, f := range g.Faces() {
@@ -19,5 +19,5 @@ func main() {
 			end = f
 		}
 	}
-	doc.AddDrawingFaceDimension("front", "diameter", 0, g.Solid().Face(uint32(end.H.V)))
+	doc.Drawing.AddFaceDimension("front", "diameter", 0, g.Solid().Face(uint32(end.H.V)))
 }

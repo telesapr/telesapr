@@ -65,7 +65,7 @@ func TestRemoteSession(t *testing.T) {
 	defer r.Close()
 	ctx := context.Background()
 
-	res, err := r.Run(ctx, "c := doc.Circle(V(0, 0, 0), 5)\nfmt.Println(\"drawn\")\nc.Radius()")
+	res, err := r.Run(ctx, "c := doc.Sketch.Circle(V(0, 0, 0), 5)\nfmt.Println(\"drawn\")\nc.Radius()")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestRemoteSession(t *testing.T) {
 	if res != want {
 		t.Errorf("the run gave %+v, want %+v", res, want)
 	}
-	if res, err = r.Run(ctx, "doc.Extrude(2, \"disc\")\nc.Length()\nundefined()"); err != nil || !res.RolledBack || res.Error == "" {
+	if res, err = r.Run(ctx, "doc.Features.Extrude(2, \"disc\")\nc.Length()\nundefined()"); err != nil || !res.RolledBack || res.Error == "" {
 		t.Errorf("a failing script gave %+v, %v", res, err)
 	}
 
@@ -149,7 +149,7 @@ func TestRemoteCancel(t *testing.T) {
 		}
 		cancel()
 	}()
-	res, err := r.Run(ctx, fmt.Sprintf("doc.Circle(V(0, 0, 0), 1)\nos.WriteFile(%q, nil, 0o644)\nfor {\n\ttime.Sleep(time.Millisecond)\n}", drawn))
+	res, err := r.Run(ctx, fmt.Sprintf("doc.Sketch.Circle(V(0, 0, 0), 1)\nos.WriteFile(%q, nil, 0o644)\nfor {\n\ttime.Sleep(time.Millisecond)\n}", drawn))
 	if err != nil || res.Error != "the script was stopped" || !res.RolledBack {
 		t.Errorf("the cancelled run gave %+v, %v", res, err)
 	}
@@ -295,7 +295,7 @@ func TestServeBadRequests(t *testing.T) {
 		`{"id":1,"op":"hello","protocol":1}`,
 		`not json`,
 		`{"id":3,"op":"dance"}`,
-		`{"id":4,"op":"help","name":"Doc.Line"}`,
+		`{"id":4,"op":"help","name":"Sketch.Line"}`,
 	)
 	if got[0].ID != 1 || got[0].Protocol != Protocol {
 		t.Errorf("hello was answered %+v", got[0])
@@ -306,7 +306,7 @@ func TestServeBadRequests(t *testing.T) {
 	if got[2].ID != 3 || got[2].Error != `no operation "dance"` {
 		t.Errorf("an operation there isn't was answered %+v", got[2])
 	}
-	if got[3].ID != 4 || !strings.Contains(got[3].Text, "func (d *Doc) Line(a, b Vec) Entity") {
+	if got[3].ID != 4 || !strings.Contains(got[3].Text, "func (m SketchMenu) Line(a, b Vec) Entity") {
 		t.Errorf("help was answered %+v", got[3])
 	}
 }

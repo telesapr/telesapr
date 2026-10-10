@@ -9,10 +9,10 @@ import (
 // a diameter stays a diameter.
 func TestRadiusName(t *testing.T) {
 	d := New()
-	a := d.Circle(V(0, 0, 0), 2)
-	b := d.Circle(V(10, 0, 0), 2)
-	r := d.Radius(a, 3)
-	dia := d.Diameter(b, 8)
+	a := d.Sketch.Circle(V(0, 0, 0), 2)
+	b := d.Sketch.Circle(V(10, 0, 0), 2)
+	r := d.Constrain.Radius(a, 3)
+	dia := d.Constrain.Diameter(b, 8)
 	if got := r.String(); !strings.HasSuffix(got, "-radius = 3") {
 		t.Errorf("the radius describes itself as %q, want ...-radius = 3", got)
 	}

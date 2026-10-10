@@ -37,12 +37,12 @@ func scriptConsole(t *testing.T, ss *Application, lines ...string) string {
 func TestScriptHostDraws(t *testing.T) {
 	ss, p := newTestApp(t)
 	got := scriptConsole(t, ss,
-		`sides := doc.Rect(V(0, 0, 0), V(30, 20, 0))`,
-		`doc.Length(sides[0], 40)`,
+		`sides := doc.Sketch.Rect(V(0, 0, 0), V(30, 20, 0))`,
+		`doc.Constrain.Length(sides[0], 40)`,
 		`math.Round(sides[0].Length())`,
-		`ex := doc.Extrude(10, "box")`,
+		`ex := doc.Features.Extrude(10, "box")`,
 		`doc.Active()`,
-		`math.Round(ex.Volume())`,
+		`math.Round(ex.Analyze().Volume())`,
 	)
 	if want := "c009-pt-pt-distance = 40\n40\ng003-box\n8000\n"; got != want {
 		t.Errorf("the console showed %q, want %q", got, want)
@@ -82,14 +82,14 @@ func TestScriptHostMessages(t *testing.T) {
 	ss, _ := newTestApp(t)
 	dir := t.TempDir()
 	got := scriptConsole(t, ss,
-		`doc.Export("`+filepath.Join(dir, "none", "x.stl")+`")`,
-		`doc.Circle(V(0, 0, 0), 5)`,
-		`doc.Extrude(3, "disc")`,
-		`doc.Export("`+filepath.Join(dir, "disc.xyz")+`")`,
-		`doc.Export("`+filepath.Join(dir, "disc.stl")+`")`,
-		`doc.Save("`+filepath.Join(dir, "disc.tlspr")+`")`,
-		`doc.Unsaved()`,
-		`doc.Load("`+filepath.Join(dir, "none.tlspr")+`")`,
+		`doc.File.Export("`+filepath.Join(dir, "none", "x.stl")+`")`,
+		`doc.Sketch.Circle(V(0, 0, 0), 5)`,
+		`doc.Features.Extrude(3, "disc")`,
+		`doc.File.Export("`+filepath.Join(dir, "disc.xyz")+`")`,
+		`doc.File.Export("`+filepath.Join(dir, "disc.stl")+`")`,
+		`doc.File.Save("`+filepath.Join(dir, "disc.tlspr")+`")`,
+		`doc.File.Unsaved()`,
+		`doc.File.Load("`+filepath.Join(dir, "none.tlspr")+`")`,
 	)
 	want := "active group mesh is empty; nothing to export\n" +
 		"circle r004-circle, radius 5.000\n" +
@@ -104,7 +104,7 @@ func TestScriptHostMessages(t *testing.T) {
 	if ss.SaveFile != filepath.Join(dir, "disc.tlspr") || len(ss.SK.Groups) != 3 {
 		t.Errorf("the sketch's file is %q, with %d groups", ss.SaveFile, len(ss.SK.Groups))
 	}
-	if got := scriptConsole(t, ss, `doc.Load("`+filepath.Join(dir, "disc.tlspr")+`")`, `doc.Groups()`); got !=
+	if got := scriptConsole(t, ss, `doc.File.Load("`+filepath.Join(dir, "disc.tlspr")+`")`, `doc.Groups()`); got !=
 		"nil\n0: g002-sketch-in-plane\n1: g003-disc\n" {
 		t.Errorf("loading the saved sketch showed %q", got)
 	}
@@ -116,11 +116,11 @@ func TestScriptHostMessages(t *testing.T) {
 func TestScriptHostSelection(t *testing.T) {
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
-		`a := doc.Line(V(0, 0, 0), V(10, 0, 0))`,
-		`b := doc.Line(V(0, 0, 0), V(0, 10, 0))`,
-		`len(doc.Selection())`,
-		`doc.Select(a, b.End())`,
-		`doc.Selection()`,
+		`a := doc.Sketch.Line(V(0, 0, 0), V(10, 0, 0))`,
+		`b := doc.Sketch.Line(V(0, 0, 0), V(0, 10, 0))`,
+		`len(doc.Edit.Selection())`,
+		`doc.Edit.Select(a, b.End())`,
+		`doc.Edit.Selection()`,
 	)
 	want := "0\n0: line r004-line-segment\n1: point (0.000, 10.000, 0.000) of r005-line-segment\n"
 	if got != want {
@@ -138,19 +138,19 @@ func TestScriptHostSelection(t *testing.T) {
 func TestScriptHostSelectsSolid(t *testing.T) {
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
-		`sides := doc.Rect(V(0, 0, 0), V(20, 10, 0))`,
-		`ex := doc.Extrude(10, "block")`,
+		`sides := doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))`,
+		`ex := doc.Features.Extrude(10, "block")`,
 		`s := ex.Solid()`,
-		`doc.SelectEdges(s.EdgeAt(V(10, 0, 10)), s.EdgeAt(V(20, 5, 10)))`,
-		`len(doc.Selection()) + len(doc.SelectedFaces())`,
-		`doc.SelectedEdges()[1].Describe()`,
-		`doc.RunCommand("Features > Fillet Edges")`,
+		`doc.Edit.SelectEdges(s.EdgeAt(V(10, 0, 10)), s.EdgeAt(V(20, 5, 10)))`,
+		`len(doc.Edit.Selection()) + len(doc.Edit.SelectedFaces())`,
+		`doc.Edit.SelectedEdges()[1].Describe()`,
+		`doc.Edit.RunCommand("Features > Fillet Edges")`,
 		`doc.Active().Kind() + " " + doc.Active().Problem()`,
-		`len(doc.SelectedEdges())`,
-		`doc.Undo()`,
-		`doc.SelectFaces(s.FaceAt(V(10, 5, 10)))`,
-		`doc.SelectedFaces()[0].Name()`,
-		`doc.RunCommand("Features > Shell Solid")`,
+		`len(doc.Edit.SelectedEdges())`,
+		`doc.Edit.Undo()`,
+		`doc.Edit.SelectFaces(s.FaceAt(V(10, 5, 10)))`,
+		`doc.Edit.SelectedFaces()[0].Name()`,
+		`doc.Edit.RunCommand("Features > Shell Solid")`,
 		`doc.Active().Kind() + " " + doc.Active().Problem()`,
 		`len(sides)`,
 	)
@@ -236,7 +236,7 @@ func TestScriptHostRunsOnLoop(t *testing.T) {
 		t.Fatalf("Run ran on goroutine %d, nested on %d; the test is on %d", onLoop, nested, goid())
 	}
 
-	lines := doc.Rect(api.V(0, 0, 0), api.V(4, 3, 0))
+	lines := doc.Sketch.Rect(api.V(0, 0, 0), api.V(4, 3, 0))
 	if got := lines[1].Length(); got < 2.999 || got > 3.001 {
 		t.Errorf("the rectangle's side is %g long, want 3", got)
 	}
@@ -272,10 +272,10 @@ func TestScriptHostRunsOnLoop(t *testing.T) {
 func TestScriptHostChordTolerance(t *testing.T) {
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
-		`doc.SetChordTolerance(0.01)`,
-		`doc.Rect(V(0, 0, 0), V(30, 20, 0))`,
-		`doc.Extrude(10, "")`,
-		`doc.ChordTolerance()`,
+		`doc.Edit.SetChordTolerance(0.01)`,
+		`doc.Sketch.Rect(V(0, 0, 0), V(30, 20, 0))`,
+		`doc.Features.Extrude(10, "")`,
+		`doc.Edit.ChordTolerance()`,
 	)
 	if want := "0.01\n"; !strings.HasSuffix(got, want) || ss.ChordTol != 0.01 || ss.SK.ChordTolPct != 0.01 {
 		t.Errorf("the console showed %q; the setting is %g, the sketch's %g", got, ss.ChordTol, ss.SK.ChordTolPct)
@@ -290,11 +290,11 @@ func TestScriptHostDeleteActiveAndUndo(t *testing.T) {
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`first := doc.Active()`,
-		`doc.Rect(V(0, 0, 0), V(10, 10, 0)); box := doc.Extrude(5, "box")`,
-		`second := doc.SketchIn(first.Workplane(), "second"); doc.Circle(V(20, 20, 0), 3); doc.Extrude(5, "pin")`,
+		`doc.Sketch.Rect(V(0, 0, 0), V(10, 10, 0)); box := doc.Features.Extrude(5, "box")`,
+		`second := doc.Features.SketchIn(first.Workplane(), "second"); doc.Sketch.Circle(V(20, 20, 0), 3); doc.Features.Extrude(5, "pin")`,
 		`second.Delete()`,
 		`doc.Active() == box`,
-		`doc.SketchIn(first.Workplane(), "third"); ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0)); doc.TangentArc(ls[0].End(), 5, true)`,
+		`doc.Features.SketchIn(first.Workplane(), "third"); ls := doc.Sketch.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0)); doc.Sketch.TangentArc(ls[0].End(), 5, true)`,
 	)
 	if !strings.HasSuffix(got, "Choose Edit -> Undo to undelete all elements.\ntrue\n") {
 		t.Fatalf("the console showed %q", got)
