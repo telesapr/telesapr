@@ -88,6 +88,10 @@ type Sketch struct {
 	// display; 0 is the default, 20.
 	MaxSegments int
 
+	// Mesher is how curved surfaces are triangulated; the zero value is
+	// the ear clipper (srf.MesherEarClip).
+	Mesher srf.Mesher
+
 	// Exporting, while set, is the tolerance a regeneration follows
 	// curves and surfaces at, for a file; unset, the tolerance comes
 	// from the model's size and ChordTolPct.

@@ -145,8 +145,11 @@ func TestChamferRunsOffBand(t *testing.T) {
 // now (srf's cutOff.crosses): 2 of those 8 still cross, the chamfers of
 // 3 on the widest band, where the ear clipping is left with no other
 // ear (the shells are sound). The allowance of 4 was fixed at what was
-// measured on 2026-10-10, to be kept from then on. A shell made unsound
-// fails outright.
+// measured on 2026-10-10, to be kept from then on; since 2026-10-11 the
+// cone's face whose ear-clipped mesh crosses the chamfer is meshed again
+// by the constrained Delaunay mesher (srf's mendCrossings, roadmap K4),
+// and only the 2 refused fillets fail. A shell made unsound fails
+// outright.
 func TestRunOffSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
@@ -158,7 +161,7 @@ func TestRunOffSweep(t *testing.T) {
 			sweep.Strings("kind", "chamfer", "fillet"),
 			sweep.Floats("r", 2, 2.5, 3),
 		},
-		MaxFailRate: 4.0 / 36,
+		MaxFailRate: 2.0 / 36,
 		Sample:      7,
 		// The sample's points, measured: one refused.
 		SampleMaxFailRate: 1.0 / 7,

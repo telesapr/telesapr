@@ -95,42 +95,86 @@ const latheSeamMaxFailRate = 0
 // failed until the circle was split at the seams (fuseCoplanarSeam).
 func TestBoreToLathedTipSweep(t *testing.T) {
 	sweepChordTol(t)
-	grid := sweep.Grid{
+	grid := boreTipGrid()
+	grid.MaxFailRate = boreTipMaxFailRate
+	grid.Run(boreToLathedTip).Require(t)
+}
+
+// boreTipGrid is TestBoreToLathedTipSweep's grid, its allowances unset.
+func boreTipGrid() sweep.Grid {
+	return sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("tilt", 0, 30, 48, 75),
 			sweep.Floats("bore", 0.5, 1, 1.5, 2.5, 2.9),
 			sweep.Floats("tip", 3, 1.2),
 			sweep.Floats("off", 0, 0.3),
 		},
-		MaxFailRate:       boreTipMaxFailRate,
-		Sample:            16,
-		SampleMaxFailRate: 5.0 / 16,
+		Sample: 16,
 	}
-	grid.Run(func(p sweep.Point) error {
-		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 0.3, Y: 1, Z: 0.1}.WithMagnitude(1), p.Float("tilt")*math.Pi/180)
-		at := geom.Vector{X: 3, Y: 1, Z: 2}
-		tip := p.Float("tip")
-		var spout, bore SShell
-		spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: tip, Z: 20}, {Z: 20}}), at, q, 1)
-		bore.MakeFromTransformationOf(lathedTube(0, math.Min(p.Float("bore"), tip*0.95), -5, 20),
-			at.Plus(q.Rotate(geom.Vector{X: p.Float("off")})), q, 1)
-		var out SShell
-		out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
-		if out.BooleanFailed || !meshIsSound(&out) {
-			return errUnsound(out.BooleanFailed)
+}
+
+// boreToLathedTip bores the spout of TestBoreToLathedTipSweep at p.
+func boreToLathedTip(p sweep.Point) error {
+	q := geom.QuaternionFromAxisAngle(geom.Vector{X: 0.3, Y: 1, Z: 0.1}.WithMagnitude(1), p.Float("tilt")*math.Pi/180)
+	at := geom.Vector{X: 3, Y: 1, Z: 2}
+	tip := p.Float("tip")
+	var spout, bore SShell
+	spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: tip, Z: 20}, {Z: 20}}), at, q, 1)
+	bore.MakeFromTransformationOf(lathedTube(0, math.Min(p.Float("bore"), tip*0.95), -5, 20),
+		at.Plus(q.Rotate(geom.Vector{X: p.Float("off")})), q, 1)
+	var out SShell
+	out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		return errUnsound(out.BooleanFailed)
+	}
+	return nil
+}
+
+// TestMendCrossings bores the spout of TestBoreToLathedTipSweep where
+// the bore breaks out through its side: the ear clipper's meshes of the
+// faces, each on its own, cross where the bore's wall is a thin lens,
+// and the shell's mesh, mended, is sound (roadmap K4).
+func TestMendCrossings(t *testing.T) {
+	sweepChordTol(t)
+	q := geom.QuaternionIdentity
+	at := geom.Vector{X: 3, Y: 1, Z: 2}
+	var spout, bore SShell
+	spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: 1.2, Z: 20}, {Z: 20}}), at, q, 1)
+	bore.MakeFromTransformationOf(lathedTube(0, 1, -5, 20), at.Plus(geom.Vector{X: 0.3}), q, 1)
+	var out SShell
+	out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
+	if out.BooleanFailed {
+		t.Fatal("the Boolean failed")
+	}
+	var ear SMesh
+	mended := 0
+	for i := range out.Surface {
+		var m SMesh
+		if out.Surface[i].triangulate(&out, &m, false) {
+			mended++
 		}
-		return nil
-	}).Require(t)
+		ear.Triangles = append(ear.Triangles, m.Triangles...)
+	}
+	var naked SEdgeList
+	var inters, leaks bool
+	SKdNodeFrom(&ear).MakeCertainEdgesInto(&naked, EdgeNakedOrSelfInter, true, &inters, &leaks, 0)
+	if !inters && !leaks || mended == 0 {
+		t.Errorf("the ear clipper's mesh is sound (crossing %t, leaking %t, %d faces straying)", inters, leaks, mended)
+	}
+	if !meshIsSound(&out) {
+		t.Error("the mended mesh is not sound")
+	}
 }
 
 // boreTipMaxFailRate is the fraction of TestBoreToLathedTipSweep's
-// grid allowed to fail: of the 40 of 80 with the bore off the axis, the
-// 20 whose bore breaks out through the spout's side below the tip. Their
-// Booleans close; the mesh of the bore's wall, a thin lens between the
-// tip and where the bore leaves the cone, fans long chords from the
-// crossing and is sound at some chord tolerances and not others (the
-// mesher's, roadmap K4).
-const boreTipMaxFailRate = 20.0 / 80
+// grid allowed to fail: none since roadmap K4's mending. The 20 of 80
+// that failed before, whose bore breaks out through the spout's side
+// below the tip, had Booleans that closed; the ear clipper's mesh of the
+// bore's wall, a thin lens between the tip and where the bore leaves the
+// cone, fanned long chords from the crossing that crossed the cone. The
+// lens is now meshed again by the constrained Delaunay mesher
+// (mendCrossings).
+const boreTipMaxFailRate = 0
 
 // errUnsound says how a Boolean's result failed.
 func errUnsound(failed bool) error {
