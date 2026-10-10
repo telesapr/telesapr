@@ -243,6 +243,7 @@ var menuTable = []menuEntry{
 	{1, "Show &Center of Mass", cmdCenterOfMass, ctrl | shift | 'c', kn, mAna},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "Check S&olid", cmdCheckSolid, ctrl | shift | 'o', kn, mAna},
+	{1, "Ray-Cast Check", cmdRayCheck, 0, kn, mAna},
 	{1, "Show &Naked Edges", cmdNakedEdges, ctrl | shift | 'n', kn, mAna},
 	{1, "Show &Underconstrained Points", cmdShowDOF, ctrl | shift | 'f', kn, mAna},
 	{1, "", cmdNone, 0, kn, nil},

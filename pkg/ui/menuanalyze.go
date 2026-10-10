@@ -65,6 +65,9 @@ func (ss *Application) MenuAnalyze(id Command) {
 	case cmdCheckSolid:
 		ss.CheckSolid()
 
+	case cmdRayCheck:
+		ss.RayCheck()
+
 	case cmdCenterOfMass:
 		ss.analyzeCenterOfMass()
 
@@ -356,6 +359,61 @@ func (ss *Application) CheckSolid() {
 	fmt.Fprintf(&b, "Extent: %s x %s x %s", ss.MmToString(d.X, false),
 		ss.MmToString(d.Y, false), ss.MmToString(d.Z, false))
 	if r.Sound() {
+		ss.Message("%s", b.String())
+	} else {
+		ss.Error("%s", b.String())
+	}
+}
+
+// RayCheck checks the active group's solid by the ray-cast oracle
+// (check.RayCheck): its volume against the mesh's, the rays along which
+// they disagree, which are marked, and the mesh's half-edges.
+func (ss *Application) RayCheck() {
+	sk := ss.SK
+	g := sk.Group(ss.GW.activeGroupH())
+	r, err := check.RayCheck(sk, g, 24)
+	if err != nil {
+		ss.Error("The ray-cast check can't build this solid.\n\n%v.", err)
+		return
+	}
+	if r.Measure.Volume == 0 && r.MeshVolume == 0 {
+		ss.Message("The active group has no solid to check.")
+		return
+	}
+	ss.GW.nakedEdges.Clear()
+	for _, d := range r.Disagree {
+		for _, iv := range append(append([]check.Interval(nil), d.Oracle...), d.Mesh...) {
+			ss.GW.nakedEdges.AddEdge(d.From.Plus(d.Dir.ScaledBy(iv.From)), d.From.Plus(d.Dir.ScaledBy(iv.To)), 0, 0, 0)
+		}
+	}
+	ss.GW.Invalidate(false)
+
+	var b strings.Builder
+	m := r.Measure
+	diff := 0.0
+	if m.Volume != 0 {
+		diff = 100 * (r.MeshVolume - m.Volume) / m.Volume
+	}
+	fmt.Fprintf(&b, "Ray-cast volume: %s (three grids of %d rays a side agree within %.3f%%)\n",
+		ss.MmToStringSI(m.Volume, 3), m.Rays, 100*m.Spread())
+	fmt.Fprintf(&b, "The mesh's volume: %s, %+.3f%%\n", ss.MmToStringSI(r.MeshVolume, 3), diff)
+	c := m.CenterOfMass
+	fmt.Fprintf(&b, "Ray-cast center of mass: (%s, %s, %s)\n\n", ss.MmToString(c.X, false),
+		ss.MmToString(c.Y, false), ss.MmToString(c.Z, false))
+	if len(r.Disagree) == 0 {
+		fmt.Fprintf(&b, "All %d rays agree with the mesh.\n", r.Rays)
+	} else {
+		fmt.Fprintf(&b, "%d of %d rays disagree with the mesh by more than twice the chord tolerance; "+
+			"they are marked.\n", len(r.Disagree), r.Rays)
+	}
+	mf := r.Manifold
+	if mf.Closed() {
+		b.WriteString("Every edge of the mesh is used twice, once each way.")
+	} else {
+		fmt.Fprintf(&b, "The mesh's edges: %d used once, %d used more than twice, %d used twice the same way; "+
+			"%d degenerate triangles.", mf.Unmatched, mf.Excess, mf.Misoriented, mf.Degenerate)
+	}
+	if len(r.Disagree) == 0 && mf.Closed() {
 		ss.Message("%s", b.String())
 	} else {
 		ss.Error("%s", b.String())

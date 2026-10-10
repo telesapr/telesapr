@@ -101,6 +101,7 @@ var menuMethods = map[string]string{
 	"Analyze/Measure Perimeter":                          "Doc.CurveLength",
 	"Analyze/Show Center of Mass":                        "Group.CenterOfMass",
 	"Analyze/Check Solid":                                "Group.Check",
+	"Analyze/Ray-Cast Check":                             "Group.RayCheck Group.Probe",
 	"Analyze/Show Naked Edges":                           "Group.Check",
 	"Analyze/Show Underconstrained Points":               "Entity.Free Group.Dof",
 	"Analyze/Trace Point":                                "- draws a point's path in the window; Doc.MotionStudy reports positions",
