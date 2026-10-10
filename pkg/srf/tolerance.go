@@ -8,8 +8,32 @@ package srf
 type Tolerance struct {
 	chordTolMm  float64
 	maxSegments int
+	mesher      Mesher
 	set         bool
 }
+
+// Mesher is how a curved surface's trimmed region is triangulated.
+type Mesher uint8
+
+const (
+	// MesherEarClip grids the region and ear-clips what the grid leaves
+	// along the trims (UvGridTriangulateInto).
+	MesherEarClip Mesher = iota
+	// MesherCDT fills the region with points sized by the surface's sag
+	// and the trim's segments and triangulates them Delaunay, the trim's
+	// segments kept as edges (cdtTriangulateInto; roadmap K4).
+	MesherCDT
+)
+
+// WithMesher is t meshing curved surfaces with m.
+func (t Tolerance) WithMesher(m Mesher) Tolerance {
+	t = t.resolved()
+	t.mesher = m
+	return t
+}
+
+// Mesher is how curved surfaces are triangulated at t.
+func (t Tolerance) Mesher() Mesher { return t.resolved().mesher }
 
 // Tol is the tolerance of chordTolMm and maxSegments. A chord
 // tolerance of 0 leaves the segment limit as the only bound.
@@ -44,6 +68,9 @@ func MaxSegments() int { return DefaultTolerance.maxSegments }
 
 // SetChordTolMm sets DefaultTolerance's chord tolerance; for tests.
 func SetChordTolMm(t float64) { DefaultTolerance = Tol(t, DefaultTolerance.maxSegments) }
+
+// SetMesher sets DefaultTolerance's mesher; for tests.
+func SetMesher(m Mesher) { DefaultTolerance = DefaultTolerance.WithMesher(m) }
 
 // SetMaxSegments sets DefaultTolerance's segment limit; for tests.
 func SetMaxSegments(n int) { DefaultTolerance = Tol(DefaultTolerance.chordTolMm, n) }

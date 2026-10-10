@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // pipePath draws in ZX a line up from the origin by up, a quarter turn
@@ -273,6 +274,15 @@ func TestSweepTwistAndUp(t *testing.T) {
 				t.Errorf("an end corner of the bar at %v, not a corner turned by 45 degrees", p)
 			}
 		}
+	}
+
+	// Meshed by the constrained Delaunay mesher, whose quadtree cells
+	// split where the twist bends the face from their diagonals, the
+	// bias is gone (roadmap K4).
+	d.With(func(sk *sketch.Sketch) { sk.Mesher = srf.MesherCDT })
+	d.Regen()
+	if r := bar.Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.0005*480 {
+		t.Fatalf("a twisted bar meshed Delaunay: %s", r.String())
 	}
 
 	// A quarter of a helix of radius 20 rising 5, as a cubic.

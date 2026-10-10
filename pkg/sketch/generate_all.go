@@ -85,13 +85,13 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	// the bounding box to turn relative chord tolerance to absolute.
 	switch {
 	case sk.Exporting.IsSet():
-		sk.tol = sk.Exporting
+		sk.tol = sk.Exporting.WithMesher(sk.Mesher)
 	case !genForBBox:
 		sk.generateAll(typ, andFindFree, true)
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
-		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.SegmentLimit())
+		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.SegmentLimit()).WithMesher(sk.Mesher)
 	}
 
 	// Remove any requests or constraints that refer to a nonexistent

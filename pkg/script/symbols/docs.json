@@ -8133,6 +8133,14 @@
 					"NewMeshMeta"
 				]
 			},
+			"Mesher": {
+				"text": "Mesher is how a curved surface's trimmed region is triangulated.",
+				"kind": "uint8",
+				"values": [
+					"MesherEarClip",
+					"MesherCDT"
+				]
+			},
 			"OutlineInto": {
 				"text": "OutlineInto takes the curves of plotted text (ttf.OutlineSink) into a list of Béziers.",
 				"kind": "struct",
@@ -9494,9 +9502,17 @@
 						"decl": "func (t Tolerance) MaxSegments() int",
 						"text": "MaxSegments is the most segments one curve is cut into."
 					},
+					"Mesher": {
+						"decl": "func (t Tolerance) Mesher() Mesher",
+						"text": "Mesher is how curved surfaces are triangulated at t."
+					},
 					"Or": {
 						"decl": "func (t Tolerance) Or(o Tolerance) Tolerance",
 						"text": "Or is t if it is set, and o otherwise."
+					},
+					"WithMesher": {
+						"decl": "func (t Tolerance) WithMesher(m Mesher) Tolerance",
+						"text": "WithMesher is t meshing curved surfaces with m."
 					}
 				},
 				"makers": [
@@ -9666,6 +9682,10 @@
 				"decl": "func SetMaxSegments(n int)",
 				"text": "SetMaxSegments sets DefaultTolerance's segment limit; for tests."
 			},
+			"SetMesher": {
+				"decl": "func SetMesher(m Mesher)",
+				"text": "SetMesher sets DefaultTolerance's mesher; for tests."
+			},
 			"SetParallelMode": {
 				"decl": "func SetParallelMode(m ParallelMode)",
 				"text": "SetParallelMode sets the mode; like the chord tolerance, not while a sketch is generated."
@@ -9800,6 +9820,12 @@
 			"MaxDegree": {
 				"decl": "const MaxDegree",
 				"text": "MaxDegree is the highest degree of a patch or a curve in either direction."
+			},
+			"MesherCDT": {
+				"decl": "const MesherCDT"
+			},
+			"MesherEarClip": {
+				"decl": "const MesherEarClip"
 			},
 			"ParallelOff": {
 				"decl": "const ParallelOff"

@@ -792,10 +792,16 @@ func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 
 	start := len(mesh.Triangles)
 	if s.flat() {
-		poly.UvTriangulateInto(mesh, s)
+		if s.Tol.Mesher() != MesherCDT || poly.cdtTriangulateInto(mesh, s) != nil {
+			mesh.Triangles = mesh.Triangles[:start]
+			poly.UvTriangulateInto(mesh, s)
+		}
 	} else {
-		poly.uvGridTriangulateInto(mesh, s, &el)
-		s.splitTrimDiagonals(shell, mesh, start, &el)
+		if s.Tol.Mesher() != MesherCDT || poly.cdtTriangulateInto(mesh, s) != nil {
+			mesh.Triangles = mesh.Triangles[:start]
+			poly.uvGridTriangulateInto(mesh, s, &el)
+			s.splitTrimDiagonals(shell, mesh, start, &el)
+		}
 	}
 
 	meta := STriMeta{Face: shell.displayFace(s), RGBA: s.Color}

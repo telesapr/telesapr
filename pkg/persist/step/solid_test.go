@@ -248,6 +248,48 @@ func TestSolidCorpus(t *testing.T) {
 	t.Logf("%d sound", sound)
 }
 
+// TestSolidCorpusCDT reads the vendor files as solids meshed by the
+// constrained Delaunay mesher (roadmap K4): all nine are sound, at the
+// reference's volume within the mesh's tolerance. The ear clipper
+// leaves NIST_MBE_PMI_6 with slivers at its poles, where the polar
+// chart makes a pole one point, and Schenkel's mesh off its shell's
+// Euler characteristic.
+func TestSolidCorpusCDT(t *testing.T) {
+	if testing.Short() {
+		t.Skip("the corpus")
+	}
+	old := srf.DefaultTolerance
+	t.Cleanup(func() { srf.DefaultTolerance = old })
+	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
+	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
+		if e.expect != "ok" {
+			continue
+		}
+		m := readModel(t, filepath.Join(dir, e.name))
+		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
+		fineMesh(t, tol)
+		srf.SetMesher(srf.MesherCDT)
+		vol := 0.0
+		var why string
+		for _, pl := range m.Placements {
+			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), srf.Tolerance{})
+			if err != nil {
+				why = err.Error()
+				break
+			}
+			r := solidReport(sh)
+			if !r.Sound() {
+				why = r.String()
+				break
+			}
+			vol += r.Volume
+		}
+		if allow := e.area*tol + 1e-6*e.volume; why != "" || math.Abs(vol-e.volume) > allow {
+			t.Errorf("%s: not read as a sound solid: %s; volume %.6g, want %.6g within %.3g", e.name, why, vol, e.volume, allow)
+		}
+	}
+}
+
 // TestSolidSeamEdges reads the two NIST files whose faces meet along
 // another face's seam or a line of its grid (package 27.3): an edge
 // along a sphere-like face's knot line, within the file's tolerance of
