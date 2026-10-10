@@ -895,9 +895,11 @@ func (d *Doc) Translate(n int, delta Vec, name string) Group {
 		g.ActiveWorkplane = sk.ActiveWorkplane()
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
-		sk.MustParam(hg.Param(0)).Val = delta.X
-		sk.MustParam(hg.Param(1)).Val = delta.Y
-		sk.MustParam(hg.Param(2)).Val = delta.Z
+		// Copy a is moved 2a times the parameters (stepTransform), so
+		// they hold half a step.
+		sk.MustParam(hg.Param(0)).Val = delta.X / 2
+		sk.MustParam(hg.Param(1)).Val = delta.Y / 2
+		sk.MustParam(hg.Param(2)).Val = delta.Z / 2
 	})
 }
 
@@ -937,7 +939,9 @@ func (d *Doc) Rotate(n int, center, axis Entity, degrees float64, name string) G
 		g.Subtype = sketch.GroupOneSided
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
-		for i, v := range []float64{at.X, at.Y, at.Z, degrees * math.Pi / 180, dir.X, dir.Y, dir.Z} {
+		// As for Revolve: copy a turns by the quaternion of 2a times
+		// parameter 3, which is 4a times it, so it holds a quarter step.
+		for i, v := range []float64{at.X, at.Y, at.Z, degrees * math.Pi / 180 / 4, dir.X, dir.Y, dir.Z} {
 			sk.MustParam(hg.Param(i)).Val = v
 		}
 	})
