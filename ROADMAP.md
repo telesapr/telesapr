@@ -15,43 +15,23 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [F1 Sketch on a face](#f1-sketch-on-a-face) | feature | M | The one feature the UI review left; every CAD user expects it |
-| 2 | [F2 Inequality and point-on-segment constraints](#f2-inequality-and-point-on-segment-constraints) | feature | M | Solver gap against neosolve; no kernel risk |
-| 3 | [K1 Robust point projection](#k1-robust-point-projection) | kernel foundation | S–M | Smallest kernel item with the widest effect (fillets, pullback, picking, STEP) |
-| 4 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
-| 5 | [P1 Sweep allowances fixed before the run](#p1-sweep-allowances-fixed-before-the-run) | hygiene | S | Three sweeps break the "rate fixed before" rule |
-| 6 | [F3 G-code arcs](#f3-g-code-arcs-g02g03) | feature | S | Local change in `pkg/export/vector.go` |
-| 7 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
-| 8 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
-| 9 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
-| 10 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 11 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 12 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 13 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
-| 14 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 1 | [F2 Inequality and point-on-segment constraints](#f2-inequality-and-point-on-segment-constraints) | feature | M | Solver gap against neosolve; no kernel risk |
+| 2 | [K1 Robust point projection](#k1-robust-point-projection) | kernel foundation | S–M | Smallest kernel item with the widest effect (fillets, pullback, picking, STEP) |
+| 3 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
+| 4 | [P1 Sweep allowances fixed before the run](#p1-sweep-allowances-fixed-before-the-run) | hygiene | S | Three sweeps break the "rate fixed before" rule |
+| 5 | [F3 G-code arcs](#f3-g-code-arcs-g02g03) | feature | S | Local change in `pkg/export/vector.go` |
+| 6 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
+| 7 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
+| 8 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
+| 9 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 10 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
+| 11 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 12 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 13 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-Items 7 and 8 open most of the rest: the dependency column in each table below names which.
+Items 6 and 7 open most of the rest: the dependency column in each table below names which.
 
 ## Features
-
-### F1 Sketch on a face
-
-From the UI review of 2026-10-09; not started.
-
-Select a flat face of the solid and choose Sketch on Face (Features menu and context menu): a new
-sketch group whose workplane lies in the face, its normal out of the solid, its origin and axes
-taken from the face (a corner, an edge's direction), and which follows the face when the model
-regenerates. Today Sketch In New Workplane takes a point, a point and two lines, a point and a
-normal, or a workplane, never a face, and the plane is tied to the points picked, not the face.
-
-Needs:
-
-- a workplane subtype "by face" in `pkg/sketch`, its plane computed from the face (`FacePoint`,
-  `FaceNormal`) at each regeneration;
-- the reference saved in `.tlspr`, with a round trip;
-- faces no entity stands for (a fillet's, a shell's, a STEP solid's) referred to by their
-  topology names (step 9), and a broken reference when the face goes;
-- `Doc.SketchOnFace`, a scenario, a path pair and an example.
 
 ### F2 Inequality and point-on-segment constraints
 
