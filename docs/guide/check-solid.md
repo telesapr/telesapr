@@ -64,6 +64,12 @@ inside the solid.
 
 ### Not yet
 
-The rebuilt model takes extrusions, drafted or not, lathes, revolves and the copies step and
-repeats, patterns along a path and mirrors make of them; a model with any other solid group (a
-helix, a fillet, a chamfer, a sweep, a loft, a shell, a STEP link) is refused, naming the group.
+The rebuilt model takes extrusions, drafted or not, lathes, revolves, helices of a profile drawn
+in a plane through their axis, sweeps along line segments and arcs (mitred or with a corner radius,
+the profile square to an arc's axis), and the copies step and repeats, patterns along a path and
+mirrors make of them; a model with any other solid group (a fillet, a chamfer, a loft, a sweep
+along a cubic, twisted or held to a direction, a shell, a STEP link) is refused, naming the group.
+
+A helix's rays disagree with the mesh by up to a tenth of a millimetre on a steep helix, whatever
+the chord tolerance: the kernel's patches are off the true helix by about 2% of each quarter
+turn's rise, which the rebuilt model, being the true helix, shows.

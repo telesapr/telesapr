@@ -103,17 +103,17 @@ func (v GroupAnalysis) Check() (r check.Report) {
 
 // RayCheck checks the solid of the model up to and with this group by
 // the ray-cast oracle, which rebuilds it from the groups' definitions
-// (profiles, extrusions, axes, where step and repeats, patterns along a
-// path and mirrors put their copies) without the kernel's surface
-// intersection: its volume, centre of mass and inertia tensor about it
-// (Measure.Inertia, for a density of one, in mm⁵;
+// (profiles, extrusions, axes, a sweep's steps, where step and repeats,
+// patterns along a path and mirrors put their copies) without the
+// kernel's surface intersection: its volume, centre of mass and inertia
+// tensor about it (Measure.Inertia, for a density of one, in mm⁵;
 // Measure.PrincipalMoments) by three grids of rays, the rays along
 // which it and the kernel's mesh disagree by more than twice the chord
 // tolerance, and the mesh's half-edges (each edge used twice, once each
 // way). It fails for a model with a group the oracle can't build, as a
-// fillet or a sweep: extrusions, drafted or not, lathes, revolves and
-// copies of them only. Analyze > Ray-Cast Check shows the
-// same.
+// fillet or a loft: extrusions, drafted or not, lathes, revolves,
+// helices, sweeps along lines and arcs, and copies of them only.
+// Analyze > Ray-Cast Check shows the same.
 func (v GroupAnalysis) RayCheck() (r check.RayReport) {
 	g := v.g
 	g.d.read(func(sk *sketch.Sketch) {
