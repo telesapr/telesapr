@@ -49,7 +49,7 @@ func TestScriptConsole(t *testing.T) {
 	}
 	n := len(w.Texts)
 
-	w.Submit(`c := doc.Circle(V(5, 5, 0), 2)`)
+	w.Submit(`c := doc.Sketch.Circle(V(5, 5, 0), 2)`)
 	w.Submit(`c.Radius()`)
 	w.Submit(`for i := 0; i < 2; i++ {`)
 	if w.Prompt != "... " {
@@ -61,14 +61,14 @@ func TestScriptConsole(t *testing.T) {
 		t.Errorf("the prompt after the statement is %q", w.Prompt)
 	}
 	w.Submit(`c.Pos()`)
-	w.Submit(`doc.Export("/nowhere/x.stl")`)
-	want := ">>> c := doc.Circle(V(5, 5, 0), 2)\n" +
+	w.Submit(`doc.File.Export("/nowhere/x.stl")`)
+	want := ">>> c := doc.Sketch.Circle(V(5, 5, 0), 2)\n" +
 		">>> c.Radius()\n2\n" +
 		">>> for i := 0; i < 2; i++ {\n" +
 		"... \tfmt.Println(\"i =\", i)\n" +
 		"... }\ni = 0\ni = 1\n" +
 		">>> c.Pos()\nerror: circle r004-circle, radius 2.000 isn't a point; see Start, End, Center and Points\n" +
-		">>> doc.Export(\"/nowhere/x.stl\")\nactive group mesh is empty; nothing to export\n"
+		">>> doc.File.Export(\"/nowhere/x.stl\")\nactive group mesh is empty; nothing to export\n"
 	if got := after(w, n); got != want {
 		t.Errorf("the console showed:\n%s\nwant:\n%s", got, want)
 	}
@@ -129,10 +129,10 @@ import (
 
 func main() {
 	doc := api.Current()
-	c := doc.Circle(api.V(0, 0, 0), 10)
-	doc.Diameter(c, 30)
+	c := doc.Sketch.Circle(api.V(0, 0, 0), 10)
+	doc.Constrain.Diameter(c, 30)
 	fmt.Println("radius", c.Radius())
-	disc := doc.Extrude(2, "disc")
+	disc := doc.Features.Extrude(2, "disc")
 	fmt.Println(disc, "made")
 }
 `
@@ -208,11 +208,11 @@ func TestScriptConsoleOnLoop(t *testing.T) {
 
 	n := 0
 	on(func() { n = len(w.Texts) })
-	on(func() { w.Submit(`sides := doc.Rect(V(0, 0, 0), V(8, 6, 0))`) })
+	on(func() { w.Submit(`sides := doc.Sketch.Rect(V(0, 0, 0), V(8, 6, 0))`) })
 	idle()
 	// A function of the script, run on the loop by Batch.
 	on(func() {
-		w.Submit("doc.Batch(func() {\n\tfor i := 0; i < 3; i++ {\n\t\tdoc.Point(V(float64(i), 1, 0))\n\t}\n\tfmt.Println(\"batched\")\n})")
+		w.Submit("doc.Batch(func() {\n\tfor i := 0; i < 3; i++ {\n\t\tdoc.Sketch.Point(V(float64(i), 1, 0))\n\t}\n\tfmt.Println(\"batched\")\n})")
 	})
 	idle()
 	on(func() { w.Submit(`len(doc.Active().Requests())`) })
@@ -234,8 +234,8 @@ func TestScriptConsoleOnLoop(t *testing.T) {
 
 	var got string
 	on(func() { got = after(w, n) })
-	want := ">>> sides := doc.Rect(V(0, 0, 0), V(8, 6, 0))\n" +
-		">>> doc.Batch(func() {\n\tfor i := 0; i < 3; i++ {\n\t\tdoc.Point(V(float64(i), 1, 0))\n\t}\n\tfmt.Println(\"batched\")\n})\n" +
+	want := ">>> sides := doc.Sketch.Rect(V(0, 0, 0), V(8, 6, 0))\n" +
+		">>> doc.Batch(func() {\n\tfor i := 0; i < 3; i++ {\n\t\tdoc.Sketch.Point(V(float64(i), 1, 0))\n\t}\n\tfmt.Println(\"batched\")\n})\n" +
 		"batched\n" +
 		">>> len(doc.Active().Requests())\n7\n" +
 		">>> for {\n\ttime.Sleep(time.Millisecond)\n}\nStopped.\n"

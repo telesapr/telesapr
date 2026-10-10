@@ -29,10 +29,10 @@ func TestBackgroundShells(t *testing.T) {
 	ss, p := newTestApp(t)
 	ss.BackgroundShells = true
 	doc := api.NewDoc(ss.ScriptHost())
-	sides := doc.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
-	width := doc.Length(sides[0], 20)
-	block := doc.Extrude(10, "")
-	if v := block.Check().Volume; math.Abs(v-2000) > 1e-6 {
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	width := doc.Constrain.Length(sides[0], 20)
+	block := doc.Features.Extrude(10, "")
+	if v := block.Analyze().Check().Volume; math.Abs(v-2000) > 1e-6 {
 		t.Fatalf("volume %g", v)
 	}
 
@@ -50,7 +50,7 @@ func TestBackgroundShells(t *testing.T) {
 	if g.ShellsStale {
 		t.Fatal("still stale after the job")
 	}
-	if v := block.Check().Volume; math.Abs(v-3000) > 1e-6 {
+	if v := block.Analyze().Check().Volume; math.Abs(v-3000) > 1e-6 {
 		t.Errorf("volume %g after the job, want 3000", v)
 	}
 

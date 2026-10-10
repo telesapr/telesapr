@@ -24,23 +24,23 @@ func must(err error) {
 
 func main() {
 	doc := Current()
-	must(doc.SetParameter("slot", "15"))
-	block := doc.Rect(V(0, 0, 0), V(40, 30, 0))
-	doc.Coincident(block[0].Start(), doc.Origin())
-	doc.Length(block[0], 40)
-	doc.Length(block[1], 30)
-	doc.Extrude(10, "block")
+	must(doc.Params.Set("slot", "15"))
+	block := doc.Sketch.Rect(V(0, 0, 0), V(40, 30, 0))
+	doc.Constrain.Coincident(block[0].Start(), doc.Origin())
+	doc.Constrain.Length(block[0], 40)
+	doc.Constrain.Length(block[1], 30)
+	doc.Features.Extrude(10, "block")
 
-	doc.SketchIn(doc.Workplane("XY"), "slot-sketch")
-	slot := doc.Rect(V(15, -5, 0), V(25, 20, 0))
-	doc.Length(slot[0], 10)
-	doc.Length(slot[1], 25)
-	must(doc.Distance(slot[0].Start(), doc.Workplane("YZ"), 15).SetExpr("slot"))
-	doc.Distance(slot[0].Start(), doc.Workplane("ZX"), 5)
-	cut := doc.Extrude(20, "slot")
+	doc.Features.SketchIn(doc.Workplane("XY"), "slot-sketch")
+	slot := doc.Sketch.Rect(V(15, -5, 0), V(25, 20, 0))
+	doc.Constrain.Length(slot[0], 10)
+	doc.Constrain.Length(slot[1], 25)
+	must(doc.Constrain.Distance(slot[0].Start(), doc.Workplane("YZ"), 15).SetExpr("slot"))
+	doc.Constrain.Distance(slot[0].Start(), doc.Workplane("ZX"), 5)
+	cut := doc.Features.Extrude(20, "slot")
 	cut.SetCombine(sketch.CombineDifference)
 	if len(os.Args) > 1 {
-		must(doc.Save(os.Args[1]))
+		must(doc.File.Save(os.Args[1]))
 	}
-	fmt.Println(cut.Check().Summary())
+	fmt.Println(cut.Analyze().Check().Summary())
 }

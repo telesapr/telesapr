@@ -33,7 +33,7 @@ Scripting commands:
     github.com/telesapr/telesapr/pkg/script/api, whose Current function
     gives the sketch as a document. In repl and eval, and in a script given as
     statements, the document is "doc" and the package's names need no prefix:
-        doc.Line(V(0, 0, 0), V(10, 0, 0)).Length()
+        doc.Sketch.Line(V(0, 0, 0), V(10, 0, 0)).Length()
 `
 
 // Exit statuses of the scripting commands.

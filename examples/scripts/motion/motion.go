@@ -45,18 +45,18 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	must(doc.SetParameter("w", "40"))
-	sides := doc.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
-	must(doc.Length(sides[0], 40).SetExpr("w"))
-	doc.Length(sides[1], 30)
-	doc.Extrude(5, "plate")
+	must(doc.Params.Set("w", "40"))
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+	must(doc.Constrain.Length(sides[0], 40).SetExpr("w"))
+	doc.Constrain.Length(sides[1], 30)
+	doc.Features.Extrude(5, "plate")
 
 	frames := ""
 	if write {
 		must(os.MkdirAll("frames", 0o755))
 		frames = filepath.Join("frames", "plate-%02d.stl")
 	}
-	out, err := doc.MotionStudy("w", 20, 80, steps, frames)
+	out, err := doc.Assembly.MotionStudy("w", 20, 80, steps, frames)
 	must(err)
 	for _, f := range out {
 		want := f.Value * 30 * 5

@@ -40,32 +40,32 @@ func capPixels(t *testing.T, path string) int {
 func TestSectionRender(t *testing.T) {
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
-	doc.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
-	doc.Circle(api.V(20, 20, 0), 8)
-	block := doc.Extrude(30, "")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
+	doc.Sketch.Circle(api.V(20, 20, 0), 8)
+	block := doc.Features.Extrude(30, "")
 	var side api.Entity
 	for _, f := range block.Faces() {
-		doc.SetSection(f, "", false)
-		if doc.Section().Normal.Y < -0.99 {
+		doc.View.SetSection(f, "", false)
+		if doc.View.Section().Normal.Y < -0.99 {
 			side = f
 		}
 	}
 	dir := t.TempDir()
 	render := func(name string) int {
 		path := filepath.Join(dir, name+".png")
-		if err := doc.Render(path, 320, 240, "isometric"); err != nil {
+		if err := doc.File.Render(path, 320, 240, "isometric"); err != nil {
 			t.Fatal(err)
 		}
 		return capPixels(t, path)
 	}
 
-	doc.SetSection(side, "-20", true)
+	doc.View.SetSection(side, "-20", true)
 	through := render("through")
 	if through < 500 {
 		t.Errorf("%d pixels of cap through the bore", through)
 	}
 	cap1 := ss.GW.sectionCap
-	doc.SetSection(side, "-5", true)
+	doc.View.SetSection(side, "-5", true)
 	if near := render("near"); near < 500 || near == through {
 		t.Errorf("%d pixels of cap 5 mm in, %d through the bore", near, through)
 	}
@@ -75,7 +75,7 @@ func TestSectionRender(t *testing.T) {
 	if ss.GW.sectionCap.closed != true || len(ss.GW.sectionCap.poly.Contours) != 1 {
 		t.Errorf("cap 5 mm in: closed %v, %d loops", ss.GW.sectionCap.closed, len(ss.GW.sectionCap.poly.Contours))
 	}
-	doc.ClearSection()
+	doc.View.ClearSection()
 	if off := render("off"); off != 0 {
 		t.Errorf("%d pixels of cap with the section view off", off)
 	}

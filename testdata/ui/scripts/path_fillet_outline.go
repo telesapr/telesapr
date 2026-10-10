@@ -10,12 +10,12 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	sides := doc.Rect(V(-20, 20, 0), V(16, -6, 0))
+	sides := doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
 	for _, s := range sides {
 		if p := s.Start().Pos(); p.X == 16 && p.Y == -6 {
-			doc.TangentArc(s.Start(), 0, false)
+			doc.Sketch.TangentArc(s.Start(), 0, false)
 		}
 	}
-	doc.Extrude(80, "")
-	doc.Fillet([]Entity{doc.Entity(0x80030035)}, 1, "")
+	doc.Features.Extrude(80, "")
+	doc.Features.Fillet([]Entity{doc.Entity(0x80030035)}, 1, "")
 }

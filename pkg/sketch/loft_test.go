@@ -17,18 +17,18 @@ import (
 // workplane h above, a square of side b, and returns their groups.
 func twoProfiles(d *api.Doc, a, b, h float64) (api.Group, api.Group) {
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
-	bottom := d.SketchIn(d.Workplane("XY"), "bottom")
-	d.Rect(api.V(-a/2, -a/2, 0), api.V(a/2, a/2, 0))
-	top := d.SketchAt(above(d, h), api.V(1, 0, 0), api.V(0, 1, 0), "top")
-	d.Rect(api.V(-b/2, -b/2, h), api.V(b/2, b/2, h))
+	bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")
+	d.Sketch.Rect(api.V(-a/2, -a/2, 0), api.V(a/2, a/2, 0))
+	top := d.Features.SketchAt(above(d, h), api.V(1, 0, 0), api.V(0, 1, 0), "top")
+	d.Sketch.Rect(api.V(-b/2, -b/2, h), api.V(b/2, b/2, h))
 	return bottom, top
 }
 
 // above is a point at height h on the z axis, in 3d, for a workplane's
 // origin.
 func above(d *api.Doc, h float64) api.Entity {
-	d.Sketch3D("")
-	return d.Point(api.V(0, 0, h))
+	d.Features.Sketch3D("")
+	return d.Sketch.Point(api.V(0, 0, h))
 }
 
 func TestLoftFrustum(t *testing.T) {
@@ -36,11 +36,11 @@ func TestLoftFrustum(t *testing.T) {
 	bottom, top := twoProfiles(d, 10, 4, 6)
 	step(d)
 	before := saved(t, d)
-	l := d.Loft(bottom, top, "")
+	l := d.Features.Loft(bottom, top, "")
 	if p := l.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := l.Check()
+	r := l.Analyze().Check()
 	want := 6.0 / 3 * (100 + 16 + 40)
 	if !r.Sound() || math.Abs(r.Volume-want) > 1e-9*want || l.Kind() != "loft" {
 		t.Fatalf("frustum: %s, want %g", r.String(), want)
@@ -49,18 +49,18 @@ func TestLoftFrustum(t *testing.T) {
 	// Turned by one, the square twists a quarter turn: its faces are
 	// saddles, and its volume, h (A0 + A1) / 3 with no mixed term
 	// (twistedVolume), is the mesh's within its error.
-	l.SetTurn(1)
+	l.AsLoft().SetTurn(1)
 	quarter := twistedVolume(6, 100, 0.4, math.Pi/2)
-	if r := l.Check(); !r.Sound() || l.Turn() != 1 || math.Abs(r.Volume-quarter) > 0.01*quarter {
+	if r := l.Analyze().Check(); !r.Sound() || l.AsLoft().Turn() != 1 || math.Abs(r.Volume-quarter) > 0.01*quarter {
 		t.Fatalf("a quarter turn: %s, want %g", r.String(), quarter)
 	}
-	l.SetTurn(4)
-	if r := l.Check(); !r.Sound() || math.Abs(r.Volume-want) > 1e-6 {
+	l.AsLoft().SetTurn(4)
+	if r := l.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 1e-6 {
 		t.Fatalf("a whole turn: %s", r.String())
 	}
 	back := roundTrip(t, d)
-	if bl := back.Group(l.Name()); bl.Kind() != "loft" || bl.Turn() != 4 {
-		t.Fatalf("reopened: %s turn %d", bl.Kind(), bl.Turn())
+	if bl := back.Group(l.Name()); bl.Kind() != "loft" || bl.AsLoft().Turn() != 4 {
+		t.Fatalf("reopened: %s turn %d", bl.Kind(), bl.AsLoft().Turn())
 	}
 	if s := l.Solid(); len(s.Problems()) != 0 || len(s.Faces()) != 6 {
 		t.Fatalf("topology: %v, %d faces", s.Problems(), len(s.Faces()))
@@ -70,12 +70,12 @@ func TestLoftFrustum(t *testing.T) {
 func TestLoftCircleToSquare(t *testing.T) {
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
-	bottom := d.SketchIn(d.Workplane("XY"), "circle")
-	d.Circle(api.V(0, 0, 0), 5)
-	top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "square")
-	d.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
-	l := d.Loft(bottom, top, "")
-	r := l.Check()
+	bottom := d.Features.SketchIn(d.Workplane("XY"), "circle")
+	d.Sketch.Circle(api.V(0, 0, 0), 5)
+	top := d.Features.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "square")
+	d.Sketch.Rect(api.V(-3, -3, 10), api.V(3, 3, 10))
+	l := d.Features.Loft(bottom, top, "")
+	r := l.Analyze().Check()
 	// Between the solids lofting the circle's inscribed square and its
 	// circumscribed one to the square.
 	inner := 10.0 / 3 * (50 + 36 + math.Sqrt(50*36))
@@ -101,17 +101,17 @@ func twistedVolume(h, a0, c, theta float64) float64 {
 func TestLoftTwist(t *testing.T) {
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
-	bottom := d.SketchIn(d.Workplane("XY"), "square")
-	d.Rect(api.V(-5, -5, 0), api.V(5, 5, 0))
-	top := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "diamond")
-	d.Polyline(true, api.V(5, 0, 10), api.V(0, 5, 10), api.V(-5, 0, 10), api.V(0, -5, 10))
-	l := d.Loft(bottom, top, "")
+	bottom := d.Features.SketchIn(d.Workplane("XY"), "square")
+	d.Sketch.Rect(api.V(-5, -5, 0), api.V(5, 5, 0))
+	top := d.Features.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "diamond")
+	d.Sketch.Polyline(true, api.V(5, 0, 10), api.V(0, 5, 10), api.V(-5, 0, 10), api.V(0, -5, 10))
+	l := d.Features.Loft(bottom, top, "")
 	c := 1 / math.Sqrt2
 	eighth, threeEighths := twistedVolume(10, 100, c, math.Pi/4), twistedVolume(10, 100, c, 3*math.Pi/4)
 	near := map[float64]int{}
 	for k := range 4 {
-		l.SetTurn(k)
-		r := l.Check()
+		l.AsLoft().SetTurn(k)
+		r := l.Analyze().Check()
 		for _, want := range []float64{eighth, threeEighths} {
 			if r.Sound() && math.Abs(r.Volume-want) < 0.01*want {
 				near[want]++
@@ -128,7 +128,7 @@ func TestLoftTwist(t *testing.T) {
 // its corners r out, the first on the x axis; n of 0 draws a circle.
 func ngon(d *api.Doc, n int, r, z float64) {
 	if n == 0 {
-		d.Circle(api.V(0, 0, z), r)
+		d.Sketch.Circle(api.V(0, 0, z), r)
 		return
 	}
 	var pts []api.Vec
@@ -136,7 +136,7 @@ func ngon(d *api.Doc, n int, r, z float64) {
 		a := 2 * math.Pi * float64(k) / float64(n)
 		pts = append(pts, api.V(r*math.Cos(a), r*math.Sin(a), z))
 	}
-	d.Polyline(true, pts...)
+	d.Sketch.Polyline(true, pts...)
 }
 
 // Lofts between regular polygons, and circles, scaled and turned by a
@@ -161,13 +161,13 @@ func TestLoftSweep(t *testing.T) {
 		}
 		d := api.New()
 		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
-		bottom := d.SketchIn(d.Workplane("XY"), "")
+		bottom := d.Features.SketchIn(d.Workplane("XY"), "")
 		ngon(d, n, 10, 0)
-		top := d.SketchAt(above(d, h), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		top := d.Features.SketchAt(above(d, h), api.V(1, 0, 0), api.V(0, 1, 0), "")
 		ngon(d, n, 10*c, h)
-		l := d.Loft(bottom, top, "")
-		l.SetTurn((turn + curves) % curves)
-		rep := l.Check()
+		l := d.Features.Loft(bottom, top, "")
+		l.AsLoft().SetTurn((turn + curves) % curves)
+		rep := l.Analyze().Check()
 		a0 := math.Pi * 100
 		if n > 0 {
 			a0 = float64(n) / 2 * 100 * math.Sin(2*math.Pi/float64(n))
@@ -214,21 +214,21 @@ func TestLoftOnBlock(t *testing.T) {
 			d := api.New()
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
 			block(d, -10, -10, 10, 10, 5)
-			bottom := d.SketchAt(above(d, z0), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			bottom := d.Features.SketchAt(above(d, z0), api.V(1, 0, 0), api.V(0, 1, 0), "")
 			if kind == "circle" {
-				d.Circle(api.V(0, 0, z0), 8)
+				d.Sketch.Circle(api.V(0, 0, z0), 8)
 			} else {
-				d.Rect(api.V(-8, -8, z0), api.V(8, 8, z0))
+				d.Sketch.Rect(api.V(-8, -8, z0), api.V(8, 8, z0))
 			}
-			top := d.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			d.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
-			l := d.Loft(bottom, top, "")
+			top := d.Features.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
+			d.Sketch.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
+			l := d.Features.Loft(bottom, top, "")
 			turn := 0.0
 			if kind == "twisted" {
-				l.SetTurn(1)
+				l.AsLoft().SetTurn(1)
 				turn = math.Pi / 2
 			}
-			r := l.Check()
+			r := l.Analyze().Check()
 			if !r.Sound() || l.Problem() != "" {
 				t.Errorf("%s from z %g: %s %s", kind, z0, r.String(), l.Problem())
 				continue
@@ -256,16 +256,16 @@ func TestSmoothLoftGroup(t *testing.T) {
 	var loops [][]srf.SBezier
 	for i := range rs {
 		if i == 0 {
-			profiles = append(profiles, d.SketchIn(d.Workplane("XY"), fmt.Sprintf("p%d", i)))
+			profiles = append(profiles, d.Features.SketchIn(d.Workplane("XY"), fmt.Sprintf("p%d", i)))
 		} else {
-			profiles = append(profiles, d.SketchAt(above(d, zs[i]), api.V(1, 0, 0), api.V(0, 1, 0), fmt.Sprintf("p%d", i)))
+			profiles = append(profiles, d.Features.SketchAt(above(d, zs[i]), api.V(1, 0, 0), api.V(0, 1, 0), fmt.Sprintf("p%d", i)))
 		}
-		d.Circle(api.V(0, 0, zs[i]), rs[i])
+		d.Sketch.Circle(api.V(0, 0, zs[i]), rs[i])
 		loops = append(loops, circleLoop(rs[i], zs[i]))
 	}
 	step(d)
 	before := saved(t, d)
-	l := d.LoftThrough(profiles, "vase")
+	l := d.Features.LoftThrough(profiles, "vase")
 	if p := l.Problem(); p != "" {
 		t.Fatal(p)
 	}
@@ -282,23 +282,23 @@ func TestSmoothLoftGroup(t *testing.T) {
 		ra, rb := math.Hypot(a.X, a.Y), math.Hypot(b.X, b.Y)
 		want += math.Pi * (ra*ra + rb*rb) / 2 * (b.Z - a.Z)
 	}
-	r := l.Check()
+	r := l.Analyze().Check()
 	if !r.Sound() || math.Abs(r.Volume-want) > 1e-3*want || l.Kind() != "loft" {
 		t.Fatalf("the vase: %s, want %g", r.String(), want)
 	}
-	if got := l.Profiles(); len(got) != 3 || got[1].Name() != "p1" {
+	if got := l.AsLoft().Profiles(); len(got) != 3 || got[1].Name() != "p1" {
 		t.Fatalf("profiles %v", got)
 	}
 	undoRedo(t, d, before)
 	// A file holds the curves' points at the chord tolerance, which it
 	// doesn't hold: the default's, for the round trip.
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-	d.Regen()
-	r = l.Check()
+	d.Edit.Regen()
+	r = l.Analyze().Check()
 	back := roundTrip(t, d)
-	if bl := back.Group("vase"); len(bl.Profiles()) != 3 || bl.Profiles()[2].Name() != "p2" {
-		t.Fatalf("reopened with profiles %v", bl.Profiles())
-	} else if br := bl.Check(); math.Abs(br.Volume-r.Volume) > 1e-9 {
+	if bl := back.Group("vase"); len(bl.AsLoft().Profiles()) != 3 || bl.AsLoft().Profiles()[2].Name() != "p2" {
+		t.Fatalf("reopened with profiles %v", bl.AsLoft().Profiles())
+	} else if br := bl.Analyze().Check(); math.Abs(br.Volume-r.Volume) > 1e-9 {
 		t.Fatalf("reopened with volume %g, was %g", br.Volume, r.Volume)
 	}
 	profiles[1].Delete()
@@ -329,22 +329,22 @@ func TestLoftUnequalCounts(t *testing.T) {
 	profiles := func() (*api.Doc, api.Group, api.Group, api.Group) {
 		d := api.New()
 		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
-		tri := d.SketchIn(d.Workplane("XY"), "triangle")
+		tri := d.Features.SketchIn(d.Workplane("XY"), "triangle")
 		ngon(d, 3, 10, 0)
-		sq := d.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "square")
+		sq := d.Features.SketchAt(above(d, 10), api.V(1, 0, 0), api.V(0, 1, 0), "square")
 		ngon(d, 4, 8, 10)
-		hex := d.SketchAt(above(d, 20), api.V(1, 0, 0), api.V(0, 1, 0), "hexagon")
+		hex := d.Features.SketchAt(above(d, 20), api.V(1, 0, 0), api.V(0, 1, 0), "hexagon")
 		ngon(d, 6, 9, 20)
 		return d, tri, sq, hex
 	}
 	d, tri, sq, _ := profiles()
-	ruled := d.Loft(tri, sq, "ruled")
-	if r := ruled.Check(); !r.Sound() || ruled.Problem() != "" {
+	ruled := d.Features.Loft(tri, sq, "ruled")
+	if r := ruled.Analyze().Check(); !r.Sound() || ruled.Problem() != "" {
 		t.Errorf("triangle to square: %s %s", r.String(), ruled.Problem())
 	}
 	d, tri, sq, hex := profiles()
-	smooth := d.LoftThrough([]api.Group{tri, sq, hex}, "smooth")
-	if r := smooth.Check(); !r.Sound() || smooth.Problem() != "" {
+	smooth := d.Features.LoftThrough([]api.Group{tri, sq, hex}, "smooth")
+	if r := smooth.Analyze().Check(); !r.Sound() || smooth.Problem() != "" {
 		t.Errorf("triangle through square to hexagon: %s %s", r.String(), smooth.Problem())
 	}
 	for name, ps := range map[string][]api.Group{"twice": {tri, sq, tri}, "alone": {tri}} {
@@ -354,7 +354,7 @@ func TestLoftUnequalCounts(t *testing.T) {
 					t.Errorf("a loft of a profile %s", name)
 				}
 			}()
-			d.LoftThrough(ps, "")
+			d.Features.LoftThrough(ps, "")
 		}()
 	}
 }

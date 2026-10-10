@@ -17,7 +17,7 @@ func (ss *Application) MenuMate(id Command) {
 	switch id {
 	case cmdMateConcentric:
 		what, need = "concentric", "two circles or arcs"
-		run = func(d *api.Doc, a, b api.Entity) { d.Concentric(a, b) }
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Concentric(a, b) }
 		if gs.circlesOrArcs == 2 && gs.n == 2 {
 			for _, h := range gs.entity {
 				picked = append(picked, h.V)
@@ -25,7 +25,7 @@ func (ss *Application) MenuMate(id Command) {
 		}
 	case cmdMateFlush:
 		what, need = "flush", "two faces"
-		run = func(d *api.Doc, a, b api.Entity) { d.Flush(a, b) }
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Flush(a, b) }
 		if gs.faces == 2 && gs.n == 2 {
 			for _, h := range gs.face {
 				picked = append(picked, h.V)
@@ -33,7 +33,7 @@ func (ss *Application) MenuMate(id Command) {
 		}
 	case cmdMateHinge:
 		what, need = "hinge", "two line segments"
-		run = func(d *api.Doc, a, b api.Entity) { d.Hinge(a, b) }
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Hinge(a, b) }
 		if gs.lineSegments == 2 && gs.n == 2 {
 			for _, h := range gs.entity {
 				picked = append(picked, h.V)

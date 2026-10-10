@@ -38,20 +38,20 @@ func must(err error) {
 
 func main() {
 	doc := api.Current()
-	must(doc.SetParameter("notch", "15"))
-	sides := doc.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
-	doc.Coincident(sides[0].Start(), doc.Origin())
-	doc.Length(sides[0], 40)
-	doc.Length(sides[1], 30)
-	doc.Extrude(10, "block")
+	must(doc.Params.Set("notch", "15"))
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+	doc.Constrain.Coincident(sides[0].Start(), doc.Origin())
+	doc.Constrain.Length(sides[0], 40)
+	doc.Constrain.Length(sides[1], 30)
+	doc.Features.Extrude(10, "block")
 
-	doc.SketchIn(doc.Workplane("XY"), "notch-sketch")
-	n := doc.Rect(api.V(15, -5, 0), api.V(25, 20, 0))
-	doc.Length(n[0], 10)
-	doc.Length(n[1], 25)
-	must(doc.Distance(n[0].Start(), doc.Workplane("YZ"), 15).SetExpr("notch"))
-	doc.Distance(n[0].Start(), doc.Workplane("ZX"), 5)
-	cut := doc.Extrude(20, "notch")
+	doc.Features.SketchIn(doc.Workplane("XY"), "notch-sketch")
+	n := doc.Sketch.Rect(api.V(15, -5, 0), api.V(25, 20, 0))
+	doc.Constrain.Length(n[0], 10)
+	doc.Constrain.Length(n[1], 25)
+	must(doc.Constrain.Distance(n[0].Start(), doc.Workplane("YZ"), 15).SetExpr("notch"))
+	doc.Constrain.Distance(n[0].Start(), doc.Workplane("ZX"), 5)
+	cut := doc.Features.Extrude(20, "notch")
 	cut.SetCombine(api.Difference)
 
 	solid := cut.Solid()
@@ -60,25 +60,25 @@ func main() {
 	// The upright edge where the notch's right wall meets the front.
 	edge := solid.EdgeAt(api.V(25, 0, 5))
 	fmt.Printf("chamfering %s: %s\n", edge.Name(), edge.Describe())
-	ch := doc.ChamferSolid([]api.SolidEdge{edge}, 2, "chamfer")
+	ch := doc.Features.ChamferSolid([]api.SolidEdge{edge}, 2, "chamfer")
 
 	for _, at := range []string{"15", "5", "22"} {
-		must(doc.SetParameter("notch", at))
+		must(doc.Params.Set("notch", at))
 		if p := ch.Problem(); p != "" {
 			fmt.Fprintln(os.Stderr, p)
 			os.Exit(1)
 		}
 		a, b := ch.SolidEdges()[0].Ends()
-		r := ch.Check()
+		r := ch.Analyze().Check()
 		fmt.Printf("notch at %s: the edge runs from (%g, %g, %g) to (%g, %g, %g); sound %v, %.1f mm³\n",
 			at, a.X, a.Y, a.Z, b.X, b.Y, b.Z, r.Sound(), r.Volume)
 		if !r.Sound() {
 			os.Exit(1)
 		}
 	}
-	doc.SketchIn(doc.Workplane("XY"), "hole-sketch")
-	doc.Circle(api.V(8, 22, 0), 4)
-	hole := doc.Extrude(10, "hole")
+	doc.Features.SketchIn(doc.Workplane("XY"), "hole-sketch")
+	doc.Sketch.Circle(api.V(8, 22, 0), 4)
+	hole := doc.Features.Extrude(10, "hole")
 	hole.SetCombine(api.Difference)
 	solid = hole.Solid()
 	wall := solid.FaceAt(api.V(12, 22, 5))
@@ -89,5 +89,5 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "-" {
 		return
 	}
-	must(doc.Save("edges.tlspr"))
+	must(doc.File.Save("edges.tlspr"))
 }

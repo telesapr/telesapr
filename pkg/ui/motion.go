@@ -11,7 +11,7 @@ import (
 
 // The motion study (roadmap 16.3): a parameter driven through a range
 // in steps, the model regenerated at each, and a picture or a mesh of
-// each saved if asked (api.Doc.MotionStudy). Its screen takes the
+// each saved if asked (api.AssemblyMenu.MotionStudy). Its screen takes the
 // parameter, the range and the steps, runs it, and lists what each
 // step gave.
 
@@ -125,7 +125,7 @@ func (tw *textWindow) runMotionStudy(frames string) {
 	m := &tw.motion
 	doc := api.NewDoc(tw.ss.ScriptHost())
 	m.frames, m.err = nil, ""
-	fs, err := doc.MotionStudy(m.param, m.from, m.to, m.steps, frames)
+	fs, err := doc.Assembly.MotionStudy(m.param, m.from, m.to, m.steps, frames)
 	m.frames = fs
 	if err != nil {
 		m.err = capitalize(err.Error()) + "."

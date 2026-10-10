@@ -16,10 +16,10 @@ at which the walls meet is a problem on the group, and the solid passes through.
 From a script:
 
 ```go
-box := doc.Extrude(25, "box")
+box := doc.Features.Extrude(25, "box")
 top := box.Solid().FaceAt(api.V(30, 20, 25))
-sh := doc.ShellSolid([]api.SolidFace{top}, 2, "")
-sh.SetThickness(1.5)
+sh := doc.Features.ShellSolid([]api.SolidFace{top}, 2, "")
+sh.AsShell().SetThickness(1.5)
 ```
 
 ## Not yet

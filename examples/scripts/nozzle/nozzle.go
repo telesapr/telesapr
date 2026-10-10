@@ -37,21 +37,21 @@ func main() {
 	}
 
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	square := doc.SketchIn(doc.Workplane("XY"), "square")
-	doc.Rect(api.V(-10, -10, 0), api.V(10, 10, 0))
-	doc.Sketch3D("")
-	at := doc.Point(api.V(10, 0, 30))
-	circle := doc.SketchAt(at, api.V(1, 0, 0), api.V(0, 1, 0), "circle")
-	doc.Circle(api.V(10, 0, 30), 6)
-	loft := doc.Loft(square, circle, "nozzle")
-	free := loft.Check().Volume
-	loft.SetTangency(k, k)
+	doc.Edit.SetChordTolerance(0.01)
+	square := doc.Features.SketchIn(doc.Workplane("XY"), "square")
+	doc.Sketch.Rect(api.V(-10, -10, 0), api.V(10, 10, 0))
+	doc.Features.Sketch3D("")
+	at := doc.Sketch.Point(api.V(10, 0, 30))
+	circle := doc.Features.SketchAt(at, api.V(1, 0, 0), api.V(0, 1, 0), "circle")
+	doc.Sketch.Circle(api.V(10, 0, 30), 6)
+	loft := doc.Features.Loft(square, circle, "nozzle")
+	free := loft.Analyze().Check().Volume
+	loft.AsLoft().SetTangency(k, k)
 	if p := loft.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := loft.Check()
+	r := loft.Analyze().Check()
 	fmt.Printf("free ends: %.0f mm³; square to both by %g: %.0f mm³, sound %v\n", free, k, r.Volume, r.Sound())
 	if !r.Sound() {
 		os.Exit(1)

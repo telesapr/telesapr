@@ -108,37 +108,43 @@ func help(x ...any) { telesaprConsole.Help(x...) }
 `
 
 // helpText is what help() prints.
-const helpText = `doc is the sketch. Lengths are in mm, angles in degrees.
+const helpText = `doc is the sketch. Lengths are in mm, angles in degrees. What changes
+it is grouped as the window's menus are: doc.File, doc.Edit, doc.Params,
+doc.View, doc.Drawing, doc.Sketch, doc.Constrain, doc.Features,
+doc.Assembly and doc.Analyze.
 
 Look around
-    doc.Groups()  doc.Active()  doc.Group("extrude")  doc.Selection()
+    doc.Groups()  doc.Active()  doc.Group("extrude")  doc.Edit.Selection()
     g.Requests()  g.Entities()  g.Constraints()  g.Solved()  g.Dof()
     e.Kind()  e.Pos()  e.Start()  e.End()  e.Center()  e.Length()  e.Radius()
-Draw, in the active group and workplane
-    doc.Point(p)  doc.Line(a, b)  doc.Circle(c, r)  doc.Arc(c, start, end)
-    doc.Rect(a, b)  doc.Polyline(closed, p...)  doc.Cubic(p0, p1, p2, p3)
-    doc.Text(s, "", at, height)  doc.Image(path, at, height)
-    doc.TangentArc(corner, radius, trim)  doc.Split(a, b, near)
-    V(x, y, z) is a point; doc.UV(u, v) one in the active workplane
-Constrain
-    doc.Coincident(p, q)  doc.Distance(a, b, mm)  doc.Length(line, mm)
-    doc.Diameter(c, mm)  doc.Radius(c, mm)  doc.Angle(a, b, degrees)
-    doc.Horizontal(l)  doc.Vertical(l)  doc.Parallel(a, b)  doc.Perpendicular(a, b)
-    doc.Equal(a, b)  doc.Tangent(a, b)  doc.On(p, e)  doc.Midpoint(p, l)
-    doc.Symmetric(p, q, about)  doc.Lock(p)  c.Set(value)  c.Delete()
-Make solids, each a new group
-    doc.Extrude(depth, name)  doc.Lathe(axis, name)  doc.Revolve(axis, degrees, name)
-    doc.Helix(axis, degrees, length, name)
-    doc.Translate(n, V(dx, dy, dz), name)  doc.Rotate(n, center, axis, degrees, name)
-    doc.SketchIn(doc.Workplane("XY"), name)  doc.Sketch3D(name)  g.SetCombine(Difference)
-    g.Volume()  g.Bounds()  g.Check() says whether the solid is sound
+Draw, in the active group and workplane: s := doc.Sketch
+    s.Point(p)  s.Line(a, b)  s.Circle(c, r)  s.Arc(c, start, end)
+    s.Rect(a, b)  s.Polyline(closed, p...)  s.Cubic(p0, p1, p2, p3)
+    s.Text(text, "", at, height)  s.Image(path, at, height)
+    s.TangentArc(corner, radius, trim)  s.Split(a, b, near)
+    V(x, y, z) is a point; s.UV(u, v) one in the active workplane
+Constrain: c := doc.Constrain
+    c.Coincident(p, q)  c.Distance(a, b, mm)  c.Length(line, mm)
+    c.Diameter(circle, mm)  c.Radius(circle, mm)  c.Angle(a, b, degrees)
+    c.Horizontal(l)  c.Vertical(l)  c.Parallel(a, b)  c.Perpendicular(a, b)
+    c.Equal(a, b)  c.Tangent(a, b)  c.On(p, e)  c.Midpoint(p, l)
+    c.Symmetric(p, q, about)  c.Lock(p); a constraint k: k.Set(v)  k.Delete()
+Make solids, each a new group: f := doc.Features
+    f.Extrude(depth, name)  f.Lathe(axis, name)  f.Revolve(axis, degrees, name)
+    f.Helix(axis, degrees, length, name)
+    f.Translate(n, V(dx, dy, dz), name)  f.Rotate(n, center, axis, degrees, name)
+    f.SketchIn(doc.Workplane("XY"), name)  f.Sketch3D(name)  g.SetCombine(Difference)
+    g.Analyze().Volume()  g.Analyze().Bounds()  g.Analyze().Check() says whether
+    the solid is sound; g.AsFillet(), g.AsExtrude() and the like are what only
+    one kind of group has
 Files
-    doc.Save("part.tlspr")  doc.Export("part.stl")  .step .svg .dxf .pdf .png
-    doc.Undo()  doc.Redo()
+    doc.File.Save("part.tlspr")  doc.File.Export("part.stl")  .step .svg .dxf .pdf .png
+    doc.Edit.Undo()  doc.Edit.Redo()
 
-help(x) says what a value is and what it can do: help(doc), help(doc.Active()).
+help(x) says what a value is and what it can do: help(doc), help(doc.Sketch).
 help("name") says what a package, a type, a function or a method is:
-help("api"), help("Group"), help("Group.Bounds"), help("strings.ToUpper").
+help("api"), help("Group"), help("Features.Extrude"), help("strings.ToUpper").
+help("Features > Fillet Edges") says what a script calls for an entry of a menu.
 
 The packages fmt, math, strings, os and others of Go are there without an
 import. The whole of it is package github.com/telesapr/telesapr/pkg/script/api.
@@ -629,7 +635,7 @@ func (e *Engine) run(ctx context.Context, src string) error {
 
 // tooMany says when a definition from one call has fewer names than
 // the call has values. The interpreter would quietly take the first
-// values, as in "x := g.Bounds()", which Go refuses. A function that
+// values, as in "x := g.Analyze().Bounds()", which Go refuses. A function that
 // is never called is compiled, to see whether the call gives one value
 // more than there are names; nothing is run.
 func (e *Engine) tooMany(d definition) error {
@@ -642,7 +648,7 @@ func (e *Engine) tooMany(d definition) error {
 		return nil //nolint:nilerr // the probe failing means the count fits, which is no error
 	}
 	return &Error{Line: d.line, Col: d.col, Err: fmt.Errorf(
-		"assignment mismatch: %d variable(s) but %s has more values; name each, as in \"lo, hi := g.Bounds()\"",
+		"assignment mismatch: %d variable(s) but %s has more values; name each, as in \"lo, hi := g.Analyze().Bounds()\"",
 		len(d.names), d.value)}
 }
 
@@ -853,8 +859,8 @@ func (e *Engine) locate(err error, src string) error {
 		out.Err = errors.New("constant definition loop, or a name that isn't defined")
 	}
 	if m := severalValues.FindStringSubmatch(out.Err.Error()); m != nil {
-		// As fmt.Println("box", g.Bounds()).
-		out.Err = fmt.Errorf("a call that gives several values (%s) can't stand beside other arguments; name them first, as lo, hi := g.Bounds()", m[1])
+		// As fmt.Println("box", g.Analyze().Bounds()).
+		out.Err = fmt.Errorf("a call that gives several values (%s) can't stand beside other arguments; name them first, as lo, hi := g.Analyze().Bounds()", m[1])
 	}
 	return out
 }

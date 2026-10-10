@@ -42,30 +42,30 @@ func main() {
 	}
 
 	doc := api.Current()
-	doc.SketchIn(doc.Workplane("XY"), "rail")
-	run := doc.Line(api.V(0, 0, 0), api.V(30, 0, 0))
-	bend := doc.Arc(api.V(30, 20, 0), api.V(30, 0, 0), api.V(50, 20, 0))
-	tail := doc.Line(api.V(50, 20, 0), api.V(50, 50, 0))
-	doc.Coincident(run.End(), bend.Start())
-	doc.Coincident(bend.End(), tail.Start())
-	doc.Tangent(run, bend)
-	doc.Tangent(bend, tail)
+	doc.Features.SketchIn(doc.Workplane("XY"), "rail")
+	run := doc.Sketch.Line(api.V(0, 0, 0), api.V(30, 0, 0))
+	bend := doc.Sketch.Arc(api.V(30, 20, 0), api.V(30, 0, 0), api.V(50, 20, 0))
+	tail := doc.Sketch.Line(api.V(50, 20, 0), api.V(50, 50, 0))
+	doc.Constrain.Coincident(run.End(), bend.Start())
+	doc.Constrain.Coincident(bend.End(), tail.Start())
+	doc.Constrain.Tangent(run, bend)
+	doc.Constrain.Tangent(bend, tail)
 
-	doc.SketchIn(doc.Workplane("XY"), "post-sketch")
-	doc.Circle(api.V(0, 0, 0), 1.5)
-	post := doc.Extrude(10, "post")
-	one := post.Check().Volume
+	doc.Features.SketchIn(doc.Workplane("XY"), "post-sketch")
+	doc.Sketch.Circle(api.V(0, 0, 0), 1.5)
+	post := doc.Features.Extrude(10, "post")
+	one := post.Analyze().Check().Volume
 
-	pegs := doc.PatternAlongPath([]api.Entity{run, bend, tail}, copies, "pegs")
-	r := pegs.Check()
+	pegs := doc.Features.PatternAlongPath([]api.Entity{run, bend, tail}, copies, "pegs")
+	r := pegs.Analyze().Check()
 	fmt.Printf("%d pegs: sound %v, %d faces, volume %.1f mm³ (one %.1f)\n",
-		pegs.Copies(), r.Sound(), r.Faces, r.Volume, one)
+		pegs.AsRepeat().Copies(), r.Sound(), r.Faces, r.Volume, one)
 	if !r.Sound() || math.Abs(r.Volume-float64(copies)*one) > 1e-6*r.Volume {
 		fmt.Fprintln(os.Stderr, "the pegs overlap or the solid is not sound")
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("pattern.tlspr"); err != nil {
+		if err := doc.File.Save("pattern.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

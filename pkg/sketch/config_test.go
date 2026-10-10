@@ -21,70 +21,70 @@ func TestConfigurations(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	must(d.SetParameter("w", "20"))
-	must(d.SetParameter("h", "w/2"))
-	sides := d.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
-	must(d.Length(sides[0], 20).SetExpr("w"))
-	must(d.Length(sides[1], 10).SetExpr("h"))
-	plate := d.Extrude(5, "")
-	volume := func() float64 { return plate.Check().Volume }
+	must(d.Params.Set("w", "20"))
+	must(d.Params.Set("h", "w/2"))
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	must(d.Constrain.Length(sides[0], 20).SetExpr("w"))
+	must(d.Constrain.Length(sides[1], 10).SetExpr("h"))
+	plate := d.Features.Extrude(5, "")
+	volume := func() float64 { return plate.Analyze().Check().Volume }
 
-	must(d.AddConfiguration("small"))
-	must(d.AddConfiguration("large"))
-	must(d.SetParameter("w", "40"))
+	must(d.Params.AddConfiguration("small"))
+	must(d.Params.AddConfiguration("large"))
+	must(d.Params.Set("w", "40"))
 	if v := volume(); math.Abs(v-40*20*5) > 1e-6 {
 		t.Fatalf("large: volume %g", v)
 	}
 	step(d)
 	before := saved(t, d)
-	must(d.ActivateConfiguration("small"))
-	if v := volume(); math.Abs(v-20*10*5) > 1e-6 || d.ActiveConfiguration() != "small" {
-		t.Fatalf("small: volume %g, active %q", v, d.ActiveConfiguration())
+	must(d.Params.ActivateConfiguration("small"))
+	if v := volume(); math.Abs(v-20*10*5) > 1e-6 || d.Params.ActiveConfiguration() != "small" {
+		t.Fatalf("small: volume %g, active %q", v, d.Params.ActiveConfiguration())
 	}
 	undoRedo(t, d, before)
 	back := roundTrip(t, d)
-	if got := strings.Join(back.Configurations(), " "); got != "small large" || back.ActiveConfiguration() != "small" {
-		t.Errorf("reopened: %q, active %q", got, back.ActiveConfiguration())
+	if got := strings.Join(back.Params.Configurations(), " "); got != "small large" || back.Params.ActiveConfiguration() != "small" {
+		t.Errorf("reopened: %q, active %q", got, back.Params.ActiveConfiguration())
 	}
-	must(back.ActivateConfiguration("large"))
-	if p, _ := back.Parameter("w"); p.Value != 40 {
+	must(back.Params.ActivateConfiguration("large"))
+	if p, _ := back.Params.Get("w"); p.Value != 40 {
 		t.Errorf("the reopened large: w = %g", p.Value)
 	}
 
 	// A rename reaches the inactive configuration; a parameter that an
 	// inactive configuration uses can't be deleted.
-	must(d.RenameParameter("w", "width"))
-	must(d.ActivateConfiguration("large"))
-	if p, _ := d.Parameter("width"); p.Value != 40 {
+	must(d.Params.Rename("w", "width"))
+	must(d.Params.ActivateConfiguration("large"))
+	if p, _ := d.Params.Get("width"); p.Value != 40 {
 		t.Errorf("large after the rename: width = %g", p.Value)
 	}
-	must(d.SetParameter("k", "3"))
-	must(d.ActivateConfiguration("small"))
-	must(d.SetParameter("h", "k*3"))
-	must(d.ActivateConfiguration("large"))
-	if err := d.DeleteParameter("k"); err == nil || !strings.Contains(err.Error(), "configuration small") {
+	must(d.Params.Set("k", "3"))
+	must(d.Params.ActivateConfiguration("small"))
+	must(d.Params.Set("h", "k*3"))
+	must(d.Params.ActivateConfiguration("large"))
+	if err := d.Params.Delete("k"); err == nil || !strings.Contains(err.Error(), "configuration small") {
 		t.Errorf("deleting what small uses: %v", err)
 	}
 	// None active: the table changes alone.
-	must(d.ActivateConfiguration(""))
-	must(d.SetParameter("width", "60"))
-	must(d.ActivateConfiguration("large"))
-	if p, _ := d.Parameter("width"); p.Value != 40 {
+	must(d.Params.ActivateConfiguration(""))
+	must(d.Params.Set("width", "60"))
+	must(d.Params.ActivateConfiguration("large"))
+	if p, _ := d.Params.Get("width"); p.Value != 40 {
 		t.Errorf("large changed with none active: width = %g", p.Value)
 	}
 	for name, err := range map[string]error{
-		"a second large":  d.AddConfiguration("large"),
-		"no such":         d.ActivateConfiguration("medium"),
-		"a blank name":    d.AddConfiguration(" "),
-		"rename to small": d.RenameConfiguration("large", "small"),
+		"a second large":  d.Params.AddConfiguration("large"),
+		"no such":         d.Params.ActivateConfiguration("medium"),
+		"a blank name":    d.Params.AddConfiguration(" "),
+		"rename to small": d.Params.RenameConfiguration("large", "small"),
 	} {
 		if err == nil {
 			t.Errorf("%s: no error", name)
 		}
 	}
-	must(d.RenameConfiguration("large", "big"))
-	must(d.DeleteConfiguration("big"))
-	if d.ActiveConfiguration() != "" || len(d.Configurations()) != 1 {
-		t.Errorf("after the deletion: active %q, %v", d.ActiveConfiguration(), d.Configurations())
+	must(d.Params.RenameConfiguration("large", "big"))
+	must(d.Params.DeleteConfiguration("big"))
+	if d.Params.ActiveConfiguration() != "" || len(d.Params.Configurations()) != 1 {
+		t.Errorf("after the deletion: active %q, %v", d.Params.ActiveConfiguration(), d.Params.Configurations())
 	}
 }

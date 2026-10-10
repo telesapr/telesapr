@@ -32,12 +32,12 @@ func agrees(t *testing.T, name string, d *api.Doc, want, rel float64, most int) 
 func TestOracleTranslate(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(60, 20, 0))
-	d.Extrude(10, "plate")
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Circle(api.V(10, 10, 0), 4)
-	d.Extrude(10, "hole").SetCombine(api.Difference)
-	d.Translate(3, api.V(15, 0, 0), "")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(60, 20, 0))
+	d.Features.Extrude(10, "plate")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(10, 10, 0), 4)
+	d.Features.Extrude(10, "hole").SetCombine(api.Difference)
+	d.Features.Translate(3, api.V(15, 0, 0), "")
 	agrees(t, "translate", d, 60*20*10-3*math.Pi*16*10, 2e-3, 128)
 }
 
@@ -46,12 +46,12 @@ func TestOracleTranslate(t *testing.T) {
 func TestOracleRotate(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(-6, -6, 0), api.V(6, 6, 0))
-	d.Extrude(10, "hub")
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(4, -2, 0), api.V(20, 2, 0))
-	d.Extrude(5, "spoke")
-	d.Rotate(4, d.Origin(), d.Workplane("XY").Normal(), 90, "")
+	d.Sketch.Rect(api.V(-6, -6, 0), api.V(6, 6, 0))
+	d.Features.Extrude(10, "hub")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(4, -2, 0), api.V(20, 2, 0))
+	d.Features.Extrude(5, "spoke")
+	d.Features.Rotate(4, d.Origin(), d.Workplane("XY").Normal(), 90, "")
 	// Each spoke is 4 by 16 by 5, 2 of its length inside the hub; the
 	// one turned onto itself four times counts once.
 	agrees(t, "rotate", d, 12*12*10+4*(4*14*5), 5e-3, 256)
@@ -63,14 +63,14 @@ func TestOracleMirror(t *testing.T) {
 	t.Parallel()
 	block := func() *api.Doc {
 		d := api.New()
-		d.Rect(api.V(5, 0, 0), api.V(15, 10, 0))
-		d.Extrude(10, "block")
+		d.Sketch.Rect(api.V(5, 0, 0), api.V(15, 10, 0))
+		d.Features.Extrude(10, "block")
 		return d
 	}
 	d := block()
-	m := d.Mirror(d.Workplane("YZ"), "")
+	m := d.Features.Mirror(d.Workplane("YZ"), "")
 	agrees(t, "mirror", d, 2*1000, 5e-3, 256)
-	m.SetKeepOriginal(false)
+	m.AsMirror().SetKeepOriginal(false)
 	agrees(t, "the reflection alone", d, 1000, 5e-3, 256)
 	o := oracleOf(t, d)
 	if o.Inside(api.V(10, 5, 5)) || !o.Inside(api.V(-10, 5, 5)) {
@@ -78,13 +78,13 @@ func TestOracleMirror(t *testing.T) {
 	}
 
 	d = api.New()
-	d.Rect(api.V(0, 0, 0), api.V(20, 20, 0))
-	d.Extrude(5, "plate")
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(5, 5, 0), api.V(10, 10, 0))
-	d.Extrude(15, "boss")
-	whole := d.Mirror(d.Workplane("YZ"), "")
-	whole.SetMirrorSolid(true)
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(20, 20, 0))
+	d.Features.Extrude(5, "plate")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(5, 5, 0), api.V(10, 10, 0))
+	d.Features.Extrude(15, "boss")
+	whole := d.Features.Mirror(d.Workplane("YZ"), "")
+	whole.AsMirror().SetMirrorSolid(true)
 	agrees(t, "the solid so far", d, 2*(20*20*5+5*5*10), 5e-3, 256)
 }
 
@@ -93,12 +93,12 @@ func TestOracleMirror(t *testing.T) {
 func TestOraclePathPattern(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	path := d.Line(api.V(0, 0, 0), api.V(40, 0, 0))
+	path := d.Sketch.Line(api.V(0, 0, 0), api.V(40, 0, 0))
 	path.SetConstruction(true)
-	d.SketchIn(d.Workplane("XY"), "post")
-	d.Rect(api.V(-2, -2, 0), api.V(2, 2, 0))
-	d.Extrude(6, "post")
-	d.PatternAlongPath([]api.Entity{path}, 5, "")
+	d.Features.SketchIn(d.Workplane("XY"), "post")
+	d.Sketch.Rect(api.V(-2, -2, 0), api.V(2, 2, 0))
+	d.Features.Extrude(6, "post")
+	d.Features.PatternAlongPath([]api.Entity{path}, 5, "")
 	agrees(t, "pattern", d, 5*16*6, 5e-3, 256)
 }
 
@@ -106,10 +106,10 @@ func TestOraclePathPattern(t *testing.T) {
 func TestOracleCopiesRefused(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
-	ex := d.Extrude(10, "")
-	d.ChamferSolid(ex.Solid().Edges()[:1], 1, "")
-	d.Translate(2, api.V(20, 0, 0), "")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	ex := d.Features.Extrude(10, "")
+	d.Features.ChamferSolid(ex.Solid().Edges()[:1], 1, "")
+	d.Features.Translate(2, api.V(20, 0, 0), "")
 	sk := d.Host().Sketch()
 	sk.GenerateAll()
 	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
@@ -126,8 +126,8 @@ func TestOracleCopiesRefused(t *testing.T) {
 func TestOracleInertia(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
-	d.Extrude(10, "")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	d.Features.Extrude(10, "")
 	m := oracleOf(t, d).Measure(1e-9, 64)
 	v := 6000.0
 	want := [3]float64{v * (20*20 + 10*10) / 12, v * (30*30 + 10*10) / 12, v * (30*30 + 20*20) / 12}
@@ -146,11 +146,11 @@ func TestOracleInertia(t *testing.T) {
 	}
 
 	d = api.New()
-	d.SketchIn(d.Workplane("ZX"), "")
-	axis := d.Line(api.V(0, 0, -1), api.V(0, 0, 21))
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -1), api.V(0, 0, 21))
 	axis.SetConstruction(true)
-	d.Polyline(true, api.V(0, 0, 0), api.V(5, 0, 0), api.V(5, 0, 20), api.V(0, 0, 20))
-	d.Lathe(axis, "")
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(5, 0, 0), api.V(5, 0, 20), api.V(0, 0, 20))
+	d.Features.Lathe(axis, "")
 	m = oracleOf(t, d).Measure(1e-4, 256)
 	v = math.Pi * 25 * 20
 	axial, across := v*25/2, v*(3*25+400)/12

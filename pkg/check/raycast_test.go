@@ -42,8 +42,8 @@ func near(a, b, rel float64) bool { return math.Abs(a-b) <= rel*math.Abs(b) }
 func TestOracleBox(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
-	d.Extrude(10, "")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	d.Features.Extrude(10, "")
 	o := oracleOf(t, d)
 	m := o.Measure(1e-9, 64)
 	if !near(m.Volume, 6000, 1e-9) || m.CenterOfMass.Minus(api.V(15, 10, 5)).Magnitude() > 1e-9 {
@@ -67,15 +67,15 @@ func TestOracleBox(t *testing.T) {
 func TestOracleBooleans(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
-	d.Extrude(10, "plate")
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Circle(api.V(20, 20, 0), 5)
-	hole := d.Extrude(10, "hole")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
+	d.Features.Extrude(10, "plate")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(20, 20, 0), 5)
+	hole := d.Features.Extrude(10, "hole")
 	hole.SetCombine(api.Difference)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(30, 30, 0), api.V(50, 50, 0))
-	d.Extrude(20, "boss")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(30, 30, 0), api.V(50, 50, 0))
+	d.Features.Extrude(20, "boss")
 	want := 40*40*10 - math.Pi*25*10 + 20*20*20 - 10*10*10
 	o := oracleOf(t, d)
 	m := o.Measure(1e-4, 256)
@@ -101,11 +101,11 @@ func TestOracleBooleans(t *testing.T) {
 func TestOracleIntersection(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(20, 20, 0))
-	d.Extrude(20, "")
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(10, 10, 0), api.V(30, 30, 0))
-	g := d.Extrude(5, "")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(20, 20, 0))
+	d.Features.Extrude(20, "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(10, 10, 0), api.V(30, 30, 0))
+	g := d.Features.Extrude(5, "")
 	g.SetCombine(api.Intersection)
 	if m := oracleOf(t, d).Measure(1e-9, 64); !near(m.Volume, 10*10*5, 1e-9) {
 		t.Errorf("volume %g", m.Volume)
@@ -119,14 +119,14 @@ func TestOracleRevolutions(t *testing.T) {
 	t.Parallel()
 	lathe := func(angle float64) (*api.Doc, api.Group) {
 		d := api.New()
-		d.SketchIn(d.Workplane("ZX"), "")
-		axis := d.Line(api.V(0, 0, -1), api.V(0, 0, 21))
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(api.V(0, 0, -1), api.V(0, 0, 21))
 		axis.SetConstruction(true)
-		d.Polyline(true, api.V(0, 0, 0), api.V(8, 0, 0), api.V(4, 0, 20), api.V(0, 0, 20))
+		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(8, 0, 0), api.V(4, 0, 20), api.V(0, 0, 20))
 		if angle == 0 {
-			return d, d.Lathe(axis, "")
+			return d, d.Features.Lathe(axis, "")
 		}
-		return d, d.Revolve(axis, angle, "")
+		return d, d.Features.Revolve(axis, angle, "")
 	}
 	cone := math.Pi * 20 / 3 * (64 + 32 + 16)
 	d, _ := lathe(0)
@@ -138,7 +138,7 @@ func TestOracleRevolutions(t *testing.T) {
 	if !near(m.Volume, cone/4, 3e-3) {
 		t.Errorf("revolve: volume %g, want %g", m.Volume, cone/4)
 	}
-	if c := g.Check().CenterOfMass; m.CenterOfMass.Minus(c).Magnitude() > 0.05 {
+	if c := g.Analyze().Check().CenterOfMass; m.CenterOfMass.Minus(c).Magnitude() > 0.05 {
 		t.Errorf("revolve: centroid %v, the kernel's %v", m.CenterOfMass, c)
 	}
 	if diffs := oracleOf(t, d).Diff(meshOf(d), 16, 0.1); len(diffs) != 0 {
@@ -151,16 +151,16 @@ func TestOracleRevolutions(t *testing.T) {
 func TestOracleLoopsAndUnsupported(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
-	d.Rect(api.V(20, 0, 0), api.V(30, 10, 0))
-	ex := d.Extrude(10, "")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	d.Sketch.Rect(api.V(20, 0, 0), api.V(30, 10, 0))
+	ex := d.Features.Extrude(10, "")
 	// The rectangles' sides fall inside the grid's cells, which it
 	// samples at their middles: the error is a cell's width along the
 	// outline, which three grids' agreement within 0.1% leaves at 0.3%.
 	if m := oracleOf(t, d).Measure(1e-3, 256); !near(m.Volume, 2000, 5e-3) {
 		t.Errorf("two loops: volume %g", m.Volume)
 	}
-	d.ChamferSolid(ex.Solid().Edges()[:1], 1, "")
+	d.Features.ChamferSolid(ex.Solid().Edges()[:1], 1, "")
 	sk := d.Host().Sketch()
 	sk.GenerateAll()
 	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
@@ -181,8 +181,8 @@ func TestOracleLoopsAndUnsupported(t *testing.T) {
 func TestMeshManifold(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
-	d.Extrude(10, "")
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	d.Features.Extrude(10, "")
 	oracleOf(t, d)
 	good := meshOf(d)
 	if m := check.MeshManifold(good); !m.Closed() {
@@ -217,11 +217,11 @@ func TestMeshManifold(t *testing.T) {
 func TestRayCheck(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
-	d.Extrude(10, "")
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Circle(api.V(20, 20, 0), 5)
-	d.Extrude(10, "").SetCombine(api.Difference)
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
+	d.Features.Extrude(10, "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(20, 20, 0), 5)
+	d.Features.Extrude(10, "").SetCombine(api.Difference)
 	sk := d.Host().Sketch()
 	sk.GenerateAll()
 	r, err := check.RayCheck(sk, sk.Group(sk.ActiveGroup()), 16)

@@ -42,9 +42,9 @@ const (
 
 const consoleGreeting = `Go on the sketch: doc is the drawing. Try
     doc.Groups()                              the groups
-    l := doc.Line(V(0, 0, 0), V(40, 0, 0))    draw, in mm
-    doc.Length(l, 50)                         constrain
-    doc.Selection()                           what is selected
+    l := doc.Sketch.Line(V(0, 0, 0), V(40, 0, 0))    draw, in mm
+    doc.Constrain.Length(l, 50)                         constrain
+    doc.Edit.Selection()                           what is selected
 help() says more.
 `
 

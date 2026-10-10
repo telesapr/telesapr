@@ -50,10 +50,10 @@ named on its screen, and the solid passes through unrounded.
 From a script:
 
 ```go
-f := doc.Fillet(edges, 8, "")
+f := doc.Features.Fillet(edges, 8, "")
 f.SetRadius(6)
-f.SetEdgeRadius(1, 3) // the second edge alone
-doc.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
+f.AsFillet().SetEdgeRadius(1, 3) // the second edge alone
+doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
 ```
 
 ## Between two curved faces

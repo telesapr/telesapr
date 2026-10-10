@@ -24,12 +24,12 @@ browser names the bound. A bound made at the value a dimension holds, as a maxim
 From a script:
 
 ```go
-rod := doc.Line(api.V(0, 0, 0), api.V(30, 0, 0))
-doc.MinDistance(rod, api.Entity{}, 20) // or two points, a point and a line, a plane, a face
-doc.MaxDistance(rod, api.Entity{}, 40)
-doc.Angle(a, b, 30).SetLimit(api.Minimum)
-doc.Radius(circle, 4).SetLimit(api.Maximum)
-doc.OnSegment(slider, slot)
+rod := doc.Sketch.Line(api.V(0, 0, 0), api.V(30, 0, 0))
+doc.Constrain.MinDistance(rod, api.Entity{}, 20) // or two points, a point and a line, a plane, a face
+doc.Constrain.MaxDistance(rod, api.Entity{}, 40)
+doc.Constrain.Angle(a, b, 30).SetLimit(api.Minimum)
+doc.Constrain.Radius(circle, 4).SetLimit(api.Maximum)
+doc.Constrain.OnSegment(slider, slot)
 ```
 
 `Constraint.SetLimit(api.NoLimit)` makes a bound a dimension again; `Constraint.Set` and

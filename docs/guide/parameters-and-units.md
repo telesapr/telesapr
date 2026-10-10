@@ -25,16 +25,16 @@ In the window:
 From a script:
 
 ```go
-must(doc.SetParameter("width", "60"))
-must(doc.SetParameter("height", "width*2/3"))
-must(doc.Length(side, 60).SetExpr("width"))
+must(doc.Params.Set("width", "60"))
+must(doc.Params.Set("height", "width*2/3"))
+must(doc.Constrain.Length(side, 60).SetExpr("width"))
 must(chamfer.SetExpr(sketch.GroupPitch, "c*2"))
-for _, p := range doc.Parameters() {
+for _, p := range doc.Params.List() {
 	fmt.Println(p.Name, p.Expr, p.Value)
 }
 ```
 
-`RenameParameter` and `DeleteParameter` do what the table does; `doc.ExprErrors()` lists
+`RenameParameter` and `DeleteParameter` do what the table does; `doc.Params.Errors()` lists
 expressions that do not evaluate.
 
 ## Configurations
@@ -51,10 +51,10 @@ parameter renamed is renamed in every configuration; one that an inactive config
 expression uses can't be deleted. The file keeps the configurations and which is active.
 
 ```go
-must(doc.AddConfiguration("small"))
-must(doc.AddConfiguration("large"))
-must(doc.SetParameter("w", "100"))   // large's w
-must(doc.ActivateConfiguration("small"))
+must(doc.Params.AddConfiguration("small"))
+must(doc.Params.AddConfiguration("large"))
+must(doc.Params.Set("w", "100"))   // large's w
+must(doc.Params.ActivateConfiguration("small"))
 ```
 
 ## Motion study
@@ -70,7 +70,7 @@ view the window shows for `.png`, which makes an animation, or a mesh for `.stl`
 The parameter gets its expression back afterwards.
 
 ```go
-frames, err := doc.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")
+frames, err := doc.Assembly.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")
 for _, f := range frames {
 	fmt.Println(f.Value, f.Solved, f.Volume, f.File)
 }
@@ -93,8 +93,8 @@ dimension measures, and can't be named. Changing the document's unit keeps the l
 read a named length.
 
 ```go
-doc.Length(sides[0], 60).SetName("width")
-must(doc.Length(sides[1], 40).SetExpr("width*2/3"))
+doc.Constrain.Length(sides[0], 60).SetName("width")
+must(doc.Constrain.Length(sides[1], 40).SetExpr("width*2/3"))
 must(doc.Dimension("width").SetExpr("90"))
 ```
 
@@ -106,8 +106,8 @@ lengths in expressions, are in that unit: in an inch document, `1/4` is a quarte
 kept and saved as typed. Changing the unit keeps every size, rewriting each expression to give
 the same length, and is one undo step.
 
-From a script, `doc.SetUnits(core.UnitInches)` does the same, and `doc.Units()` reads it. The
-script methods that take plain numbers, such as `doc.Length(line, 50.8)`, always take mm; only
+From a script, `doc.View.SetUnits(core.UnitInches)` does the same, and `doc.View.Units()` reads it. The
+script methods that take plain numbers, such as `doc.Constrain.Length(line, 50.8)`, always take mm; only
 text, as in `SetExpr("2")`, is in the document's unit.
 
 ## What a sketch says about itself
@@ -119,9 +119,9 @@ text, as in `SetExpr("2")`, is in the document's unit.
   constraints any one of which could be removed, and the canvas marks them. From a script,
   `group.Conflicts()`.
 - **Measure.** Analyze > Measure Selection shows the length, radius, distance or angle of what
-  is selected on the canvas, without adding a constraint. From a script, `doc.Measure(a, b)`.
+  is selected on the canvas, without adding a constraint. From a script, `doc.Analyze.Measure(a, b)`.
 - **Find Command.** Edit > Find Command (Ctrl+K) finds any menu command by typing part of its
-  name. From a script, `api.Commands()` lists them and `doc.RunCommand("View > Zoom To Fit")`
+  name. From a script, `api.Commands()` lists them and `doc.Edit.RunCommand("View > Zoom To Fit")`
   runs one.
 
 ## Not yet

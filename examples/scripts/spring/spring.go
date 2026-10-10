@@ -41,21 +41,21 @@ func main() {
 	// constants with float64s badly.
 	radius, pitch, wire := 15.0, 8.0, 1.5
 	doc := api.Current()
-	doc.SetChordTolerance(0.05)
+	doc.Edit.SetChordTolerance(0.05)
 
 	// A point of the helix and its derivative by the angle.
 	at := func(a float64) (api.Vec, api.Vec) {
 		return api.V(radius*math.Cos(a), radius*math.Sin(a), pitch*a/(2*math.Pi)),
 			api.V(-radius*math.Sin(a), radius*math.Cos(a), pitch/(2*math.Pi))
 	}
-	doc.Sketch3D("helix")
+	doc.Features.Sketch3D("helix")
 	n := int(math.Round(8 * turns))
 	da := 2 * math.Pi * turns / float64(n)
 	var path []api.Entity
 	for k := 0; k < n; k++ {
 		p0, d0 := at(float64(k) * da)
 		p1, d1 := at(float64(k+1) * da)
-		path = append(path, doc.Cubic(p0, p0.Plus(d0.ScaledBy(da/3)), p1.Minus(d1.ScaledBy(da/3)), p1))
+		path = append(path, doc.Sketch.Cubic(p0, p0.Plus(d0.ScaledBy(da/3)), p1.Minus(d1.ScaledBy(da/3)), p1))
 	}
 
 	// The helix's length; the cubics follow it within 0.02%.
@@ -63,17 +63,17 @@ func main() {
 
 	// The wire's circle, across the helix's start.
 	p0, d0 := at(0)
-	o := doc.Point(p0)
-	doc.SketchAt(o, api.V(1, 0, 0), d0.WithMagnitude(1).Cross(api.V(1, 0, 0)), "wire")
-	doc.Circle(p0, wire)
+	o := doc.Sketch.Point(p0)
+	doc.Features.SketchAt(o, api.V(1, 0, 0), d0.WithMagnitude(1).Cross(api.V(1, 0, 0)), "wire")
+	doc.Sketch.Circle(p0, wire)
 
-	spring := doc.Sweep(path, "spring")
-	spring.SetSweepUp(api.V(0, 0, 1))
+	spring := doc.Features.Sweep(path, "spring")
+	spring.AsSweep().SetSweepUp(api.V(0, 0, 1))
 	if p := spring.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := spring.Check()
+	r := spring.Analyze().Check()
 	want := math.Pi * wire * wire * length
 	fmt.Printf("a spring of %g turns, %.1f mm of wire: %s, %.1f mm³ (the wire's section along it, %.1f)\n",
 		turns, length, map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume, want)
@@ -81,7 +81,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("spring.tlspr"); err != nil {
+		if err := doc.File.Save("spring.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

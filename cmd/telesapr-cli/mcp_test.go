@@ -219,9 +219,9 @@ func TestMCPCommandLine(t *testing.T) {
 	dir := t.TempDir()
 	model := filepath.Join(dir, "part.tlspr")
 	doc := api.New()
-	doc.Circle(api.V(0, 0, 0), 4)
-	doc.Extrude(2, "disc")
-	if err := doc.Save(model); err != nil {
+	doc.Sketch.Circle(api.V(0, 0, 0), 4)
+	doc.Features.Extrude(2, "disc")
+	if err := doc.File.Save(model); err != nil {
 		t.Fatal(err)
 	}
 
@@ -229,7 +229,7 @@ func TestMCPCommandLine(t *testing.T) {
 		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}`,
 		`{"jsonrpc":"2.0","method":"notifications/initialized"}`,
 		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_drawing","arguments":{}}}`,
-		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"other := New()\nother.Line(V(0, 0, 0), V(3, 4, 0)).Length()"}}}`,
+		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"other := New()\nother.Sketch.Line(V(0, 0, 0), V(3, 4, 0)).Length()"}}}`,
 	})
 	if status != exitOK || stderr != "" {
 		t.Fatalf("mcp --headless part.tlspr: status %d, stderr %q", status, stderr)
@@ -269,7 +269,7 @@ func TestMCPThroughSocket(t *testing.T) {
 	}
 	defer func() { _ = os.RemoveAll(dir) }()
 	socket := filepath.Join(dir, "none.sock")
-	call := `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"doc.Circle(V(0, 0, 0), 2).Radius()"}}}`
+	call := `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"run_script","arguments":{"code":"doc.Sketch.Circle(V(0, 0, 0), 2).Radius()"}}}`
 	hello := []string{
 		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}`,
 		`{"jsonrpc":"2.0","method":"notifications/initialized"}`,
@@ -278,14 +278,14 @@ func TestMCPThroughSocket(t *testing.T) {
 	// Nothing listens: the server starts all the same, help works, and
 	// a tool that needs the drawing says what to do.
 	answers, status, stderr := converse(t, []string{"--socket", socket}, append(hello, call,
-		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"api_help","arguments":{"name":"Doc.Circle"}}}`))
+		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"api_help","arguments":{"name":"Sketch.Circle"}}}`))
 	if status != exitOK || stderr != "" {
 		t.Fatalf("mcp --socket: status %d, stderr %q", status, stderr)
 	}
 	if a := answers[2]; !a.Result.IsError || !strings.Contains(a.text(), "Allow AI Connections") {
 		t.Errorf("a script with no TeleSAPR running: error %v, %q", a.Result.IsError, a.text())
 	}
-	if a := answers[3]; a.Result.IsError || !strings.Contains(a.text(), "func (d *Doc) Circle(") {
+	if a := answers[3]; a.Result.IsError || !strings.Contains(a.text(), "func (m SketchMenu) Circle(") {
 		t.Errorf("help with no TeleSAPR running: error %v, %q", a.Result.IsError, a.text())
 	}
 

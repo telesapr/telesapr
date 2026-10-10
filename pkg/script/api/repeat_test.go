@@ -14,24 +14,24 @@ import (
 func TestStepAndRepeatSpacing(t *testing.T) {
 	t.Parallel()
 	d := New()
-	d.Rect(V(0, 0, 0), V(2, 2, 0))
-	d.Extrude(2, "")
-	tr := d.Translate(3, V(5, 0, 0), "")
-	if _, hi := tr.Bounds(); !near(hi.X, 12) {
+	d.Sketch.Rect(V(0, 0, 0), V(2, 2, 0))
+	d.Features.Extrude(2, "")
+	tr := d.Features.Translate(3, V(5, 0, 0), "")
+	if _, hi := tr.Analyze().Bounds(); !near(hi.X, 12) {
 		t.Errorf("translate reaches x %g, want 12", hi.X)
 	}
-	if v := tr.Volume(); math.Abs(v-24) > 1e-6 {
+	if v := tr.Analyze().Volume(); math.Abs(v-24) > 1e-6 {
 		t.Errorf("translate volume %g, want 24", v)
 	}
 
 	d = New()
-	d.Rect(V(4, -1, 0), V(6, 1, 0))
-	d.Extrude(2, "")
-	rot := d.Rotate(2, d.Origin(), d.Workplane("XY").Normal(), 90, "")
-	if _, hi := rot.Bounds(); !near(hi.Y, 6) || !near(hi.X, 6) {
+	d.Sketch.Rect(V(4, -1, 0), V(6, 1, 0))
+	d.Features.Extrude(2, "")
+	rot := d.Features.Rotate(2, d.Origin(), d.Workplane("XY").Normal(), 90, "")
+	if _, hi := rot.Analyze().Bounds(); !near(hi.Y, 6) || !near(hi.X, 6) {
 		t.Errorf("rotate reaches %v, want x and y 6", hi)
 	}
-	if v := rot.Volume(); math.Abs(v-16) > 1e-6 {
+	if v := rot.Analyze().Volume(); math.Abs(v-16) > 1e-6 {
 		t.Errorf("rotate volume %g, want 16", v)
 	}
 }

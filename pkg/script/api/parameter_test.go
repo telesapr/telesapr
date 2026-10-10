@@ -19,32 +19,32 @@ import (
 func plate(t *testing.T, d *Doc) (Group, Group, Group) {
 	t.Helper()
 	for _, p := range [][2]string{{"width", "40"}, {"height", "width/2"}, {"hole", "height/4"}, {"n", "2"}} {
-		if err := d.SetParameter(p[0], p[1]); err != nil {
+		if err := d.Params.Set(p[0], p[1]); err != nil {
 			t.Fatal(err)
 		}
 	}
-	sides := d.Rect(V(0, 0, 0), V(30, 20, 0))
+	sides := d.Sketch.Rect(V(0, 0, 0), V(30, 20, 0))
 	for _, c := range []struct {
 		c    Constraint
 		expr string
 	}{
-		{d.Length(sides[0], 30), "width"},
-		{d.Length(sides[1], 20), "height"},
+		{d.Constrain.Length(sides[0], 30), "width"},
+		{d.Constrain.Length(sides[1], 20), "height"},
 	} {
 		if err := c.c.SetExpr(c.expr); err != nil {
 			t.Fatal(err)
 		}
 	}
-	d.Coincident(sides[0].Start(), d.Origin())
-	hole := d.Circle(V(10, 10, 0), 3)
-	if err := d.Diameter(hole, 6).SetExpr("hole"); err != nil {
+	d.Constrain.Coincident(sides[0].Start(), d.Origin())
+	hole := d.Sketch.Circle(V(10, 10, 0), 3)
+	if err := d.Constrain.Diameter(hole, 6).SetExpr("hole"); err != nil {
 		t.Fatal(err)
 	}
-	d.Distance(hole.Center(), sides[0], 10)
-	d.Distance(hole.Center(), sides[3], 10)
+	d.Constrain.Distance(hole.Center(), sides[0], 10)
+	d.Constrain.Distance(hole.Center(), sides[3], 10)
 	sk := d.Active()
-	ex := d.Extrude(5, "plate")
-	rep := d.Translate(3, V(0, 0, 10), "stack")
+	ex := d.Features.Extrude(5, "plate")
+	rep := d.Features.Translate(3, V(0, 0, 10), "stack")
 	if err := rep.SetExpr(sketch.GroupCopies, "n+1"); err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestParameters(t *testing.T) {
 	sk, ex, rep := plate(t, d)
 	check := func(width, height, hole float64, copies int) {
 		t.Helper()
-		lo, hi := ex.Bounds()
+		lo, hi := ex.Analyze().Bounds()
 		if !near(hi.X-lo.X, width) || !near(hi.Y-lo.Y, height) {
 			t.Errorf("plate is %g by %g, want %g by %g", hi.X-lo.X, hi.Y-lo.Y, width, height)
 		}
@@ -64,20 +64,20 @@ func TestParameters(t *testing.T) {
 			t.Errorf("%v copies, want %d", got, copies)
 		}
 		want := (width*height - math.Pi*hole*hole/4) * 5 * float64(copies)
-		if v := rep.Volume(); math.Abs(v-want) > want*0.01 {
+		if v := rep.Analyze().Volume(); math.Abs(v-want) > want*0.01 {
 			t.Errorf("volume %g, want about %g", v, want)
 		}
 	}
 	check(40, 20, 5, 3)
 
-	if err := d.SetParameter("width", "60"); err != nil {
+	if err := d.Params.Set("width", "60"); err != nil {
 		t.Fatal(err)
 	}
 	check(60, 30, 7.5, 3)
-	if p, ok := d.Parameter("hole"); !ok || p.Value != 7.5 || p.Expr != "height/4" || p.Err != "" {
+	if p, ok := d.Params.Get("hole"); !ok || p.Value != 7.5 || p.Expr != "height/4" || p.Err != "" {
 		t.Errorf("hole is %+v", p)
 	}
-	if got := len(d.Parameters()); got != 4 {
+	if got := len(d.Params.List()); got != 4 {
 		t.Errorf("%d parameters", got)
 	}
 	if rep.Expr(sketch.GroupCopies) != "n+1" || rep.Expr(sketch.GroupScale) != "" {
@@ -94,29 +94,29 @@ func TestParameters(t *testing.T) {
 	}
 
 	// Rename and delete.
-	if err := d.RenameParameter("n", "count"); err != nil {
+	if err := d.Params.Rename("n", "count"); err != nil {
 		t.Fatal(err)
 	}
 	if got := rep.Expr(sketch.GroupCopies); got != "count+1" {
 		t.Errorf("copies %q after the rename", got)
 	}
-	if got := strings.Join(d.ParameterUsers("height"), "; "); got != "parameter hole; constraint c00a-pt-pt-distance" {
+	if got := strings.Join(d.Params.Users("height"), "; "); got != "parameter hole; constraint c00a-pt-pt-distance" {
 		t.Errorf("users of height: %s", got)
 	}
-	if err := d.DeleteParameter("height"); err == nil {
+	if err := d.Params.Delete("height"); err == nil {
 		t.Error("a used parameter was deleted")
 	}
-	if err := d.SetParameter("spare", "1"); err != nil {
+	if err := d.Params.Set("spare", "1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.DeleteParameter("spare"); err != nil {
+	if err := d.Params.Delete("spare"); err != nil {
 		t.Fatal(err)
 	}
 
 	// The table and the expressions come back from a file, and a save
 	// of the reopened file is the same.
 	path := filepath.Join(t.TempDir(), "plate.tlspr")
-	if err := d.Save(path); err != nil {
+	if err := d.File.Save(path); err != nil {
 		t.Fatal(err)
 	}
 	saved, err := os.ReadFile(path)
@@ -133,13 +133,13 @@ func TestParameters(t *testing.T) {
 		t.Fatal(err)
 	}
 	again := filepath.Join(t.TempDir(), "again.tlspr")
-	if err := e.Save(again); err != nil {
+	if err := e.File.Save(again); err != nil {
 		t.Fatal(err)
 	}
 	if b, _ := os.ReadFile(again); !bytes.Equal(b, saved) {
 		t.Error("a save of the reopened file differs")
 	}
-	if err := e.SetParameter("count", "0"); err != nil {
+	if err := e.Params.Set("count", "0"); err != nil {
 		t.Fatal(err)
 	}
 	if g := e.Group("stack"); int(g.Value(sketch.GroupCopies)) != 1 {
@@ -148,10 +148,10 @@ func TestParameters(t *testing.T) {
 
 	// Undo takes a parameter change, one step of a script, back.
 	d.h.(interface{ BeginEval() }).BeginEval()
-	if err := d.SetParameter("width", "80"); err != nil {
+	if err := d.Params.Set("width", "80"); err != nil {
 		t.Fatal(err)
 	}
-	d.Undo()
+	d.Edit.Undo()
 	check(60, 30, 7.5, 3)
 }
 
@@ -162,31 +162,31 @@ func TestParameterMisuse(t *testing.T) {
 		{"a", "b", "unknown parameter"},
 		{"a", "1/0", "not a number"},
 	} {
-		if err := d.SetParameter(tc.name, tc.expr); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if err := d.Params.Set(tc.name, tc.expr); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("SetParameter(%q, %q) = %v", tc.name, tc.expr, err)
 		}
 	}
-	if err := d.SetParameter("a", "1"); err != nil {
+	if err := d.Params.Set("a", "1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SetParameter("b", "a"); err != nil {
+	if err := d.Params.Set("b", "a"); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SetParameter("a", "b"); err == nil || !strings.Contains(err.Error(), "cycle") {
+	if err := d.Params.Set("a", "b"); err == nil || !strings.Contains(err.Error(), "cycle") {
 		t.Errorf("cycle gave %v", err)
 	}
-	if err := d.RenameParameter("zz", "y"); err == nil {
+	if err := d.Params.Rename("zz", "y"); err == nil {
 		t.Error("rename of a missing parameter")
 	}
-	if err := d.DeleteParameter("zz"); err == nil {
+	if err := d.Params.Delete("zz"); err == nil {
 		t.Error("delete of a missing parameter")
 	}
-	if _, ok := d.Parameter("zz"); ok {
+	if _, ok := d.Params.Get("zz"); ok {
 		t.Error("a missing parameter was found")
 	}
 
-	line := d.Line(V(0, 0, 0), V(10, 0, 0))
-	length := d.Length(line, 10)
+	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
+	length := d.Constrain.Length(line, 10)
 	if err := length.SetExpr("q*2"); err == nil {
 		t.Error("an unknown name was taken")
 	}
@@ -199,14 +199,14 @@ func TestParameterMisuse(t *testing.T) {
 	if err := length.SetExpr("2*"); err == nil {
 		t.Error("a bad expression was taken")
 	}
-	if errs := d.ExprErrors(); len(errs) != 0 {
+	if errs := d.Params.Errors(); len(errs) != 0 {
 		t.Errorf("errors %v", errs)
 	}
 	d.With(func(sk *sketch.Sketch) {
 		sk.Constraint(length.H).Expr = "gone"
 		sk.MarkGroupDirty(sk.Constraint(length.H).Group, false)
 	})
-	if errs := d.ExprErrors(); len(errs) != 1 || !strings.Contains(errs[0], `unknown parameter "gone"`) {
+	if errs := d.Params.Errors(); len(errs) != 1 || !strings.Contains(errs[0], `unknown parameter "gone"`) {
 		t.Errorf("errors %v", errs)
 	}
 
@@ -214,7 +214,7 @@ func TestParameterMisuse(t *testing.T) {
 	for name, fn := range map[string]func(){
 		"copies of a sketch": func() { _ = g.SetExpr(sketch.GroupCopies, "2") },
 		"value of a horizontal": func() {
-			_ = d.Horizontal(line).SetExpr("1")
+			_ = d.Constrain.Horizontal(line).SetExpr("1")
 		},
 	} {
 		func() {
@@ -235,19 +235,19 @@ func TestParameterMisuse(t *testing.T) {
 // drawing colours them.
 func TestEntityFree(t *testing.T) {
 	d := New()
-	line := d.Line(V(0, 0, 0), V(10, 5, 0))
+	line := d.Sketch.Line(V(0, 0, 0), V(10, 5, 0))
 	if f := line.Free(); f != sketch.FreedomFree {
 		t.Errorf("an unconstrained line is %v", f)
 	}
-	d.Coincident(line.Start(), d.Origin())
+	d.Constrain.Coincident(line.Start(), d.Origin())
 	if f := line.Free(); f != sketch.FreedomPartly {
 		t.Errorf("a line held at one end is %v", f)
 	}
 	if f := line.Start().Free(); f != sketch.FreedomFixed {
 		t.Errorf("the held end is %v", f)
 	}
-	d.Horizontal(line)
-	d.Length(line, 10)
+	d.Constrain.Horizontal(line)
+	d.Constrain.Length(line, 10)
 	if f := line.Free(); f != sketch.FreedomFixed {
 		t.Errorf("a fully constrained line is %v", f)
 	}
@@ -258,7 +258,7 @@ func TestEntityFree(t *testing.T) {
 		t.Errorf("String %q", s)
 	}
 	// Over-constrained: the group does not solve, so nothing is known.
-	d.Length(line, 12)
+	d.Constrain.Length(line, 12)
 	if f := line.Free(); f != sketch.FreedomUnknown {
 		t.Errorf("a line of a group that did not solve is %v", f)
 	}
@@ -267,15 +267,15 @@ func TestEntityFree(t *testing.T) {
 // A group that does not solve names the constraints to blame.
 func TestConflicts(t *testing.T) {
 	d := New()
-	line := d.Line(V(0, 0, 0), V(10, 5, 0))
+	line := d.Sketch.Line(V(0, 0, 0), V(10, 5, 0))
 	g := d.Active()
-	d.Horizontal(line)
+	d.Constrain.Horizontal(line)
 	if c := g.Conflicts(); len(c) != 0 {
 		t.Errorf("a solved group has conflicts %v", c)
 	}
-	a := d.Length(line, 10)
-	d.Vertical(line)
-	b := d.Length(line, 12)
+	a := d.Constrain.Length(line, 10)
+	d.Constrain.Vertical(line)
+	b := d.Constrain.Length(line, 12)
 	got := g.Conflicts()
 	if g.Solved() || len(got) == 0 {
 		t.Fatalf("solved %v, conflicts %v", g.Solved(), got)
@@ -292,7 +292,7 @@ func TestConflicts(t *testing.T) {
 // Without a window there is no menu to run a command from.
 func TestRunCommandWithoutWindow(t *testing.T) {
 	d := New()
-	if err := d.RunCommand("View > Zoom To Fit"); err == nil || !strings.Contains(err.Error(), "no window") {
+	if err := d.Edit.RunCommand("View > Zoom To Fit"); err == nil || !strings.Contains(err.Error(), "no window") {
 		t.Errorf("RunCommand: %v", err)
 	}
 	if c := Commands(); c != nil {
@@ -305,23 +305,23 @@ func TestRunCommandWithoutWindow(t *testing.T) {
 
 func TestMeasure(t *testing.T) {
 	d := New()
-	a := d.Line(V(0, 0, 0), V(30, 40, 0))
-	b := d.Line(V(0, 0, 0), V(10, 0, 0))
-	c := d.Circle(V(100, 0, 0), 5)
+	a := d.Sketch.Line(V(0, 0, 0), V(30, 40, 0))
+	b := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
+	c := d.Sketch.Circle(V(100, 0, 0), 5)
 	for _, tc := range []struct {
 		what string
 		m    sketch.Measurement
 		kind sketch.MeasureKind
 		v    float64
 	}{
-		{"length", d.Measure(a), sketch.MeasureLength, 50},
-		{"radius", d.Measure(c), sketch.MeasureRadius, 5},
-		{"distance", d.Measure(a.End(), b.End()), sketch.MeasureDistance, math.Hypot(20, 40)},
-		{"point to circle", d.Measure(b.End(), c), sketch.MeasureDistance, 85},
-		{"point to line", d.Measure(b.End(), a), sketch.MeasureDistance, 8},
-		{"angle", d.Measure(a, b), sketch.MeasureAngle, math.Atan2(40, 30) * 180 / math.Pi},
+		{"length", d.Analyze.Measure(a), sketch.MeasureLength, 50},
+		{"radius", d.Analyze.Measure(c), sketch.MeasureRadius, 5},
+		{"distance", d.Analyze.Measure(a.End(), b.End()), sketch.MeasureDistance, math.Hypot(20, 40)},
+		{"point to circle", d.Analyze.Measure(b.End(), c), sketch.MeasureDistance, 85},
+		{"point to line", d.Analyze.Measure(b.End(), a), sketch.MeasureDistance, 8},
+		{"angle", d.Analyze.Measure(a, b), sketch.MeasureAngle, math.Atan2(40, 30) * 180 / math.Pi},
 		// Signed along the line's vector, which points from its end to its start.
-		{"projected distance", d.Measure(a.End(), c.Center(), b), sketch.MeasureDistance, -70},
+		{"projected distance", d.Analyze.Measure(a.End(), c.Center(), b), sketch.MeasureDistance, -70},
 	} {
 		if tc.m.What != tc.what || tc.m.Kind != tc.kind || !near(tc.m.Value, tc.v) {
 			t.Errorf("%s: %+v, want %v", tc.what, tc.m, tc.v)
@@ -337,9 +337,9 @@ func TestMeasure(t *testing.T) {
 				t.Error("measuring three lines did not fail")
 			}
 		}()
-		d.Measure(a, b, a)
+		d.Analyze.Measure(a, b, a)
 	}()
-	ex := d.Extrude(10, "")
+	ex := d.Features.Extrude(10, "")
 	var faces []Entity
 	for _, e := range ex.Entities() {
 		if e.Kind() == "face" {
@@ -349,10 +349,10 @@ func TestMeasure(t *testing.T) {
 	if len(faces) < 2 {
 		t.Fatalf("faces %v", faces)
 	}
-	if m := d.Measure(faces[0], faces[1]); m.Kind != sketch.MeasureAngle {
+	if m := d.Analyze.Measure(faces[0], faces[1]); m.Kind != sketch.MeasureAngle {
 		t.Errorf("two faces: %+v", m)
 	}
-	if m := d.Measure(a.Start(), faces[1]); m.What != "point to plane" {
+	if m := d.Analyze.Measure(a.Start(), faces[1]); m.What != "point to plane" {
 		t.Errorf("point and face: %+v", m)
 	}
 }
@@ -361,27 +361,27 @@ func TestMeasure(t *testing.T) {
 // millimetres whatever it is.
 func TestDocumentUnits(t *testing.T) {
 	d := New()
-	if d.Units() != core.UnitMM {
-		t.Fatalf("a new document is in %v", d.Units())
+	if d.View.Units() != core.UnitMM {
+		t.Fatalf("a new document is in %v", d.View.Units())
 	}
-	d.SetUnits(core.UnitInches)
-	if err := d.SetParameter("w", "0.5"); err != nil {
+	d.View.SetUnits(core.UnitInches)
+	if err := d.Params.Set("w", "0.5"); err != nil {
 		t.Fatal(err)
 	}
-	a := d.Line(V(0, 0, 0), V(20, 0, 0))
-	b := d.Line(V(0, 10, 0), V(20, 10, 0))
-	if err := d.Length(a, 20).SetExpr("w*2"); err != nil {
+	a := d.Sketch.Line(V(0, 0, 0), V(20, 0, 0))
+	b := d.Sketch.Line(V(0, 10, 0), V(20, 10, 0))
+	if err := d.Constrain.Length(a, 20).SetExpr("w*2"); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.Length(b, 20).SetExpr("1/4"); err != nil {
+	if err := d.Constrain.Length(b, 20).SetExpr("1/4"); err != nil {
 		t.Fatal(err)
 	}
-	c := d.Length(d.Line(V(0, 20, 0), V(20, 20, 0)), 10) // mm, as every number here
+	c := d.Constrain.Length(d.Sketch.Line(V(0, 20, 0), V(20, 20, 0)), 10) // mm, as every number here
 	if !near(a.Length(), 25.4) || !near(b.Length(), 6.35) || !near(c.Value(), 10) {
 		t.Fatalf("lengths %v %v %v", a.Length(), b.Length(), c.Value())
 	}
 	path := filepath.Join(t.TempDir(), "inch.tlspr")
-	if err := d.Save(path); err != nil {
+	if err := d.File.Save(path); err != nil {
 		t.Fatal(err)
 	}
 	data, _ := os.ReadFile(path)
@@ -394,10 +394,10 @@ func TestDocumentUnits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if e.Units() != core.UnitInches {
-		t.Errorf("reopened in %v", e.Units())
+	if e.View.Units() != core.UnitInches {
+		t.Errorf("reopened in %v", e.View.Units())
 	}
-	check := d.SetUnits(core.UnitMM)
+	check := d.View.SetUnits(core.UnitMM)
 	if len(check) != 1 || check[0] != "w" {
 		t.Errorf("to check %v", check)
 	}
@@ -426,14 +426,14 @@ func TestMeasureFacesOutward(t *testing.T) {
 		if reverse {
 			corners = []Vec{V(0, 0, 0), V(0, 10, 0), V(10, 10, 0), V(10, 0, 0)}
 		}
-		d.Polyline(true, corners...)
-		ex := d.Extrude(5, "")
-		d.SketchIn(d.Workplane("XY"), "")
-		p := d.Point(V(20, 5, 0))
+		d.Sketch.Polyline(true, corners...)
+		ex := d.Features.Extrude(5, "")
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		p := d.Sketch.Point(V(20, 5, 0))
 		var dists []float64
 		var sides []Entity
 		for _, f := range ex.Faces() {
-			m := d.Measure(p, f)
+			m := d.Analyze.Measure(p, f)
 			dists = append(dists, math.Round(m.Value*1e6)/1e6)
 			if math.Abs(m.Value-10) < 1e-6 || math.Abs(m.Value+20) < 1e-6 {
 				sides = append(sides, f)
@@ -443,8 +443,8 @@ func TestMeasureFacesOutward(t *testing.T) {
 		if want := []float64{-20, -5, -5, -5, 0, 10}; !slices.Equal(dists, want) {
 			t.Errorf("reverse %v: distances %v, want %v", reverse, dists, want)
 		}
-		if len(sides) != 2 || !near(d.Measure(sides[0], sides[1]).Value, 180) {
-			t.Errorf("reverse %v: %d sides, angle %v", reverse, len(sides), d.Measure(sides[0], sides[1]).Value)
+		if len(sides) != 2 || !near(d.Analyze.Measure(sides[0], sides[1]).Value, 180) {
+			t.Errorf("reverse %v: %d sides, angle %v", reverse, len(sides), d.Analyze.Measure(sides[0], sides[1]).Value)
 		}
 	}
 }
@@ -456,10 +456,10 @@ func TestMeasureFacesOutward(t *testing.T) {
 // left turn sorts out: the edge is the only problem, every loop closes.
 func TestCheckTouchingHoles(t *testing.T) {
 	d := New()
-	d.Rect(V(0, 0, 0), V(20, 20, 0))
-	d.Rect(V(4, 4, 0), V(10, 10, 0))
-	d.Rect(V(10, 10, 0), V(16, 16, 0))
-	r := d.Extrude(5, "").Check()
+	d.Sketch.Rect(V(0, 0, 0), V(20, 20, 0))
+	d.Sketch.Rect(V(4, 4, 0), V(10, 10, 0))
+	d.Sketch.Rect(V(10, 10, 0), V(16, 16, 0))
+	r := d.Features.Extrude(5, "").Analyze().Check()
 	if r.Sound() || r.TopologyProblems != 1 || !near(r.Volume, 1640) {
 		t.Fatalf("%s", r.String())
 	}
@@ -477,16 +477,16 @@ func TestCheckTouchingHoles(t *testing.T) {
 // quarter of the circle: its patches share a sheet (roadmap 14.1).
 func TestFilletCircleOneFace(t *testing.T) {
 	d := New()
-	d.Circle(V(0, 0, 0), 10)
-	ex := d.Extrude(10, "")
+	d.Sketch.Circle(V(0, 0, 0), 10)
+	ex := d.Features.Extrude(10, "")
 	var rim Entity
 	for _, e := range ex.Entities() {
 		if e.Kind() == "circle" && e.Center().Pos().Z == 10 {
 			rim = e
 		}
 	}
-	f := d.Fillet([]Entity{rim}, 2, "")
-	if r := f.Check(); !r.Sound() || r.Faces != 4 {
+	f := d.Features.Fillet([]Entity{rim}, 2, "")
+	if r := f.Analyze().Check(); !r.Sound() || r.Faces != 4 {
 		t.Errorf("faces %d: %s", r.Faces, r.String())
 	}
 }

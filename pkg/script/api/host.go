@@ -4,9 +4,17 @@
 // looked up again at every call; a Doc therefore always shows the
 // drawing as it is.
 //
+// The calls are where the window's commands are. What changes a
+// drawing is in a field of Doc for each menu, doc.Sketch.Line for
+// Sketch > Line Segment, doc.Features.Extrude for Features > Extrude,
+// and MenuCalls says which call each entry of the menu is. What only
+// one kind of group has is on a view of it, g.AsFillet().SetRadius;
+// g.History() and g.Analyze() hold what the Features > Move Group and
+// Analyze commands do with a group.
+//
 // Lengths and coordinates are in millimetres, whatever the document's
 // unit, and angles in degrees. Only text typed for a value, as the
-// SetExpr methods take, is in the document's unit (Doc.Units), as it
+// SetExpr methods take, is in the document's unit (View.Units), as it
 // is in the user interface.
 //
 // A call that can't do what it was asked, because of what it was given

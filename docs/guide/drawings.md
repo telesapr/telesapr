@@ -56,7 +56,7 @@ View > Show Drawing Sheet, or `[show it in the window]` on the drawing's screen,
 the window in place of the model, fitted to it, until it is chosen again (`[show the model]`). It
 follows each change made on the drawing's screen and to the model; while it is shown the mouse
 picks nothing in the model. It is a view, not saved with the file. From a script,
-`doc.ShowDrawingSheet(true)`, and `doc.Render(path, w, h, "window")` pictures it.
+`doc.Drawing.Show(true)`, and `doc.File.Render(path, w, h, "window")` pictures it.
 
 File > Export > Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
 sheet's size in millimetres. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
@@ -65,17 +65,17 @@ without a window.
 From a script:
 
 ```go
-d := doc.Drawing()
+d := doc.Drawing.Get()
 d.Sheet, d.Scale, d.FirstAngle = "A2", 0.5, true
 d.Title, d.Number = "BRACKET", "TS-0001"
-doc.SetDrawing(d)
-must(doc.ExportDrawing("bracket.pdf"))   // in the application
+doc.Drawing.Set(d)
+must(doc.Drawing.Export("bracket.pdf"))   // in the application
 ```
 
-`doc.AddDrawingDimension("front", "length", 10, edge)` adds a dimension by solid edges,
-`doc.AddDrawingFaceDimension("top", "distance", 10, upper, lower)` one by faces, and
-`doc.AddDrawingEdgeFaceDistance("top", 10, edge, face)` the distance from an edge to a face;
-`doc.DrawingDimensions()` measures them. The example
+`doc.Drawing.AddDimension("front", "length", 10, edge)` adds a dimension by solid edges,
+`doc.Drawing.AddFaceDimension("top", "distance", 10, upper, lower)` one by faces, and
+`doc.Drawing.AddEdgeFaceDistance("top", 10, edge, face)` the distance from an edge to a face;
+`doc.Drawing.Dimensions()` measures them. The example
 [`examples/scripts/drawing`](../../examples/scripts/drawing/drawing.go) dimensions faces and the
 isometric. `d.Sections` and `d.Details` hold the section and detail
 views; `d.Views` places views where you

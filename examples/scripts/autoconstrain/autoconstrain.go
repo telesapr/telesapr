@@ -9,7 +9,7 @@
 //
 //	telesapr --script examples/scripts/autoconstrain/autoconstrain.go
 //
-// Doc.AutoConstrain gives a line, an arc or a circle what the window
+// Constrain.Auto gives a line, an arc or a circle what the window
 // gives one drawn with the mouse: here the slot's bottom, drawn a little
 // off level, is made horizontal; the arc from its end, starting square to
 // it, tangent to it; and three holes drawn about 3 mm in radius, the
@@ -32,29 +32,29 @@ func main() {
 	doc := api.Current()
 	ok := true
 	expect := func(what string, e api.Entity, want core.ConstraintType) {
-		c, made := doc.AutoConstrain(e)
+		c, made := doc.Constrain.Auto(e)
 		fmt.Printf("%-12s %v\n", what, c)
 		if !made || c.Type() != want {
 			ok = false
 		}
 	}
 
-	bottom := doc.Line(api.V(0, 0, 0), api.V(40, 0.4, 0))
+	bottom := doc.Sketch.Line(api.V(0, 0, 0), api.V(40, 0.4, 0))
 	expect("bottom", bottom, core.ConstraintHorizontal)
-	doc.Regen()
+	doc.Edit.Regen()
 	p := bottom.End().Pos()
 	// A half circle from the bottom's end, about a centre square above it.
-	end := doc.Arc(p.Plus(api.V(0, 10, 0)), p, p.Plus(api.V(0, 20, 0)))
-	doc.Coincident(end.Start(), bottom.End())
+	end := doc.Sketch.Arc(p.Plus(api.V(0, 10, 0)), p, p.Plus(api.V(0, 20, 0)))
+	doc.Constrain.Coincident(end.Start(), bottom.End())
 	expect("end", end, core.ConstraintArcLineTangent)
 
-	holes := []api.Entity{doc.Circle(api.V(10, 10, 0), 3)}
-	holes = append(holes, doc.Circle(api.V(20, 10, 0), 3.02))
+	holes := []api.Entity{doc.Sketch.Circle(api.V(10, 10, 0), 3)}
+	holes = append(holes, doc.Sketch.Circle(api.V(20, 10, 0), 3.02))
 	expect("second hole", holes[1], core.ConstraintEqualRadius)
-	holes = append(holes, doc.Circle(api.V(30, 10, 0), 2.99))
+	holes = append(holes, doc.Sketch.Circle(api.V(30, 10, 0), 2.99))
 	expect("third hole", holes[2], core.ConstraintEqualRadius)
 
-	doc.Regen()
+	doc.Edit.Regen()
 	for _, h := range holes {
 		if math.Abs(h.Radius()-holes[0].Radius()) > 1e-6 {
 			ok = false
@@ -66,7 +66,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("autoconstrain.tlspr"); err != nil {
+		if err := doc.File.Save("autoconstrain.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

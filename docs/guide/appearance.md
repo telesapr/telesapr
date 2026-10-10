@@ -17,7 +17,7 @@ face its own:
 
 ```go
 shaft.SetAppearance("metal")
-doc.SetFaceAppearance(housing.Solid().FaceAt(api.V(15, 15, 15)), "matte")
+doc.View.SetFaceAppearance(housing.Solid().FaceAt(api.V(15, 15, 15)), "matte")
 ```
 
 A face's own appearance is kept by the face's identity in the group that made it, and saved with

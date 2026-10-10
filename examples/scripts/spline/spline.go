@@ -29,10 +29,10 @@ func fail(format string, args ...any) {
 
 func main() {
 	doc := api.Current()
-	doc.SketchIn(doc.Workplane("XY"), "curve")
-	c := doc.Cubic(api.V(0, 0, 0), api.V(20, 20, 0), api.V(40, 20, 0), api.V(60, 0, 0))
-	tail := doc.Line(api.V(60, 0, 0), api.V(80, 0, 0))
-	doc.Coincident(c.End(), tail.Start())
+	doc.Features.SketchIn(doc.Workplane("XY"), "curve")
+	c := doc.Sketch.Cubic(api.V(0, 0, 0), api.V(20, 20, 0), api.V(40, 20, 0), api.V(60, 0, 0))
+	tail := doc.Sketch.Line(api.V(60, 0, 0), api.V(80, 0, 0))
+	doc.Constrain.Coincident(c.End(), tail.Start())
 
 	// Each point goes into the span of the spline's points nearest it.
 	c.AddSplinePoint(api.V(20, 25, 0))

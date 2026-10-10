@@ -8,7 +8,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	ext := doc.Extrude(80, "")
-	doc.SetSection(ext.Faces()[4], "-10", true)
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	ext := doc.Features.Extrude(80, "")
+	doc.View.SetSection(ext.Faces()[4], "-10", true)
 }

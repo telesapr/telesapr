@@ -15,14 +15,14 @@ func TestPlate(t *testing.T) {
 	if got := len(d.Groups()); got != 1 {
 		t.Fatalf("a new sketch has %d groups, want 1", got)
 	}
-	sides := d.Rect(V(0, 0, 0), V(30, 20, 0))
-	width := d.Length(sides[0], 40)
-	d.Length(sides[1], 25)
-	d.Coincident(sides[0].Start(), d.Origin())
-	hole := d.Circle(V(10, 10, 0), 3)
-	d.Diameter(hole, 8)
-	d.Distance(hole.Center(), sides[0], 12)
-	d.Distance(hole.Center(), sides[3], 15)
+	sides := d.Sketch.Rect(V(0, 0, 0), V(30, 20, 0))
+	width := d.Constrain.Length(sides[0], 40)
+	d.Constrain.Length(sides[1], 25)
+	d.Constrain.Coincident(sides[0].Start(), d.Origin())
+	hole := d.Sketch.Circle(V(10, 10, 0), 3)
+	d.Constrain.Diameter(hole, 8)
+	d.Constrain.Distance(hole.Center(), sides[0], 12)
+	d.Constrain.Distance(hole.Center(), sides[3], 15)
 
 	g := d.Active()
 	if !g.Solved() {
@@ -41,38 +41,38 @@ func TestPlate(t *testing.T) {
 		t.Errorf("the hole's radius is %g, want 4", r)
 	}
 
-	ex := d.Extrude(5, "plate")
+	ex := d.Features.Extrude(5, "plate")
 	if ex.Name() != "plate" || ex.Kind() != "extrude" || d.Active().H != ex.H {
 		t.Errorf("the extrusion is %v (%s), active %v", ex, ex.Kind(), d.Active())
 	}
 	want := (40*25 - math.Pi*16) * 5
-	if v := ex.Volume(); math.Abs(v-want) > want*0.01 {
+	if v := ex.Analyze().Volume(); math.Abs(v-want) > want*0.01 {
 		t.Errorf("the plate's volume is %g, want about %g", v, want)
 	}
-	if lo, hi := ex.Bounds(); !near(hi.Z-lo.Z, 5) {
+	if lo, hi := ex.Analyze().Bounds(); !near(hi.Z-lo.Z, 5) {
 		t.Errorf("the plate is %g thick, want 5", hi.Z-lo.Z)
 	}
 
-	r := ex.Check()
+	r := ex.Analyze().Check()
 	// Four sides, two caps, and the hole's wall, of four patches.
-	if !r.Sound() || r.Faces != 7 || r.Patches != 10 || !near(r.Volume, ex.Volume()) || !near(r.Max.Z-r.Min.Z, 5) {
+	if !r.Sound() || r.Faces != 7 || r.Patches != 10 || !near(r.Volume, ex.Analyze().Volume()) || !near(r.Max.Z-r.Min.Z, 5) {
 		t.Errorf("the plate does not check sound with 7 faces of 10 patches: %s", r.String())
 	}
-	if r := g.Check(); !r.Empty() {
+	if r := g.Analyze().Check(); !r.Empty() {
 		t.Errorf("the sketch before the extrusion has a solid: %s", r.String())
 	}
 
 	// A dimension changes what depends on it.
 	width.Set(50)
 	want = (50*25 - math.Pi*16) * 5
-	if v := ex.Volume(); math.Abs(v-want) > want*0.01 {
+	if v := ex.Analyze().Volume(); math.Abs(v-want) > want*0.01 {
 		t.Errorf("the wider plate's volume is %g, want about %g", v, want)
 	}
 
 	// Undo takes back everything since the document was made, which
 	// was one step.
 	file := filepath.Join(t.TempDir(), "plate.tlspr")
-	if err := d.Save(file); err != nil {
+	if err := d.File.Save(file); err != nil {
 		t.Fatal(err)
 	}
 	back, err := Open(file)
@@ -83,7 +83,7 @@ func TestPlate(t *testing.T) {
 	if !bg.Valid() {
 		t.Fatalf("the saved sketch has no group 'plate': %v", back.Groups())
 	}
-	if v := bg.Volume(); math.Abs(v-want) > want*0.01 {
+	if v := bg.Analyze().Volume(); math.Abs(v-want) > want*0.01 {
 		t.Errorf("the reloaded plate's volume is %g, want about %g", v, want)
 	}
 	if got := back.Group("g003"); got.H != bg.H {
@@ -94,17 +94,17 @@ func TestPlate(t *testing.T) {
 // What can't be done panics with an error that says why.
 func TestMisuse(t *testing.T) {
 	d := New()
-	line := d.Line(V(0, 0, 0), V(10, 0, 0))
+	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	for name, fn := range map[string]func(){
 		"position of a line": func() { line.Pos() },
 		"radius of a line":   func() { line.Radius() },
-		"diameter of a line": func() { d.Diameter(line, 3) },
+		"diameter of a line": func() { d.Constrain.Diameter(line, 3) },
 		"no workplane":       func() { d.Workplane("AB") },
 		"deleted entity":     func() { line.Delete(); line.Length() },
 		"check of a deleted group": func() {
-			g := d.Sketch3D("gone")
+			g := d.Features.Sketch3D("gone")
 			g.Delete()
-			g.Check()
+			g.Analyze().Check()
 		},
 	} {
 		func() {

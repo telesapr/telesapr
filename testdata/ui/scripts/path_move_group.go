@@ -13,11 +13,11 @@ import (
 func main() {
 	doc := Current()
 	sketch := doc.Active()
-	doc.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Extrude(80, "")
-	in3d := doc.Sketch3D("")
-	doc.Line(V(-20, -20, math.Copysign(0, -1)), V(20, -20, 0))
-	if err := in3d.MoveBefore(sketch); err != nil {
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	doc.Features.Extrude(80, "")
+	in3d := doc.Features.Sketch3D("")
+	doc.Sketch.Line(V(-20, -20, math.Copysign(0, -1)), V(20, -20, 0))
+	if err := in3d.History().MoveBefore(sketch); err != nil {
 		panic(err)
 	}
 }

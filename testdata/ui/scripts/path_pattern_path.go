@@ -6,9 +6,9 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Circle(V(-20, 0, 0), 2)
-	doc.Line(V(-20, 20, 0), V(20, 20, 0)).SetConstruction(true)
-	post := doc.Extrude(80, "")
+	doc.Sketch.Circle(V(-20, 0, 0), 2)
+	doc.Sketch.Line(V(-20, 20, 0), V(20, 20, 0)).SetConstruction(true)
+	post := doc.Features.Extrude(80, "")
 	// The copy of the line at the top of the extrusion, which the mouse
 	// picks.
 	var path Entity
@@ -17,5 +17,5 @@ func main() {
 			path = e
 		}
 	}
-	doc.PatternAlongPath([]Entity{path}, 3, "")
+	doc.Features.PatternAlongPath([]Entity{path}, 3, "")
 }

@@ -18,30 +18,30 @@ import (
 func TestFilletFlatOnConeOffAxis(t *testing.T) {
 	for _, what := range []string{"a fillet", "a chamfer"} {
 		d := New()
-		d.SetChordTolerance(0.002)
-		d.SketchIn(d.Workplane("ZX"), "")
-		axis := d.Line(V(0, 0, -2), V(0, 0, 32))
+		d.Edit.SetChordTolerance(0.002)
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
 		axis.SetConstruction(true)
-		d.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
-		d.Lathe(axis, "")
-		d.SketchIn(d.Workplane("XY"), "")
-		d.Rect(V(6, -3, 0), V(20, 3, 0))
-		band := d.Extrude(25, "band")
+		d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+		d.Features.Lathe(axis, "")
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Rect(V(6, -3, 0), V(20, 3, 0))
+		band := d.Features.Extrude(25, "band")
 		if p := band.Problem(); p != "" {
 			t.Fatal(p)
 		}
-		before := band.Check().Volume
+		before := band.Analyze().Check().Volume
 		edge := band.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))
 		var g Group
 		if what == "a fillet" {
-			g = d.FilletSolid([]SolidEdge{edge}, 1, "")
+			g = d.Features.FilletSolid([]SolidEdge{edge}, 1, "")
 		} else {
-			g = d.ChamferSolid([]SolidEdge{edge}, 1, "")
+			g = d.Features.ChamferSolid([]SolidEdge{edge}, 1, "")
 		}
 		if p := g.Problem(); p != "" {
 			t.Fatalf("%s: %s", what, p)
 		}
-		r := g.Check()
+		r := g.Analyze().Check()
 		added := r.Volume - before
 		// The corner between the band's side and the cone is wide: a
 		// fillet of 1 fills about 1.27 over the edge, a chamfer at 1 about
@@ -61,15 +61,15 @@ func TestFilletFlatOnConeOffAxis(t *testing.T) {
 // top across its side, the band's edge on the cone's side at y, and the
 // volume before.
 func bandOnCone(d *Doc, y, top float64) (SolidEdge, float64) {
-	d.SketchIn(d.Workplane("ZX"), "")
-	axis := d.Line(V(0, 0, -2), V(0, 0, 32))
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
 	axis.SetConstruction(true)
-	d.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
-	d.Lathe(axis, "")
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(V(6, -y, 0), V(20, y, 0))
-	band := d.Extrude(top, "band")
-	return band.Solid().EdgeAt(V(math.Sqrt(64-y*y), y, 10)), band.Check().Volume
+	d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+	d.Features.Lathe(axis, "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(V(6, -y, 0), V(20, y, 0))
+	band := d.Features.Extrude(top, "band")
+	return band.Solid().EdgeAt(V(math.Sqrt(64-y*y), y, 10)), band.Analyze().Check().Volume
 }
 
 // A chamfer or fillet of 2 or more on the band's edge on the cone runs
@@ -83,19 +83,19 @@ func TestChamferRunsOffBand(t *testing.T) {
 	for _, what := range []string{"a chamfer", "a fillet"} {
 		for _, r := range []float64{2, 2.5} {
 			d := New()
-			d.SetChordTolerance(0.003)
+			d.Edit.SetChordTolerance(0.003)
 			edge, before := bandOnCone(d, 3, 25)
 			var g Group
 			if what == "a chamfer" {
-				g = d.ChamferSolid([]SolidEdge{edge}, r, "")
+				g = d.Features.ChamferSolid([]SolidEdge{edge}, r, "")
 			} else {
-				g = d.FilletSolid([]SolidEdge{edge}, r, "")
+				g = d.Features.FilletSolid([]SolidEdge{edge}, r, "")
 			}
 			if p := g.Problem(); p != "" {
 				t.Errorf("%s of %g: %s", what, r, p)
 				continue
 			}
-			rep := g.Check()
+			rep := g.Analyze().Check()
 			added := rep.Volume - before
 			if !rep.Sound() {
 				t.Errorf("%s of %g: %s", what, r, rep.Summary())
@@ -113,21 +113,21 @@ func TestChamferRunsOffBand(t *testing.T) {
 			}
 			// The same after saving and loading, and gone with one undo.
 			path := filepath.Join(t.TempDir(), "runoff.tlspr")
-			if err := d.Save(path); err != nil {
+			if err := d.File.Save(path); err != nil {
 				t.Fatal(err)
 			}
 			e := New()
-			if err := e.Load(path); err != nil {
+			if err := e.File.Load(path); err != nil {
 				t.Fatal(err)
 			}
-			e.SetChordTolerance(0.003)
+			e.Edit.SetChordTolerance(0.003)
 			gs := e.Groups()
-			if r2 := gs[len(gs)-1].Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+			if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
 				t.Errorf("%s, loaded: %s, volume %g, saved %g", what, r2.Summary(), r2.Volume, rep.Volume)
 			}
 			// A Go program's document is one step of undo throughout.
 			n := len(d.Groups())
-			if !d.Undo() || len(d.Groups()) >= n {
+			if !d.Edit.Undo() || len(d.Groups()) >= n {
 				t.Errorf("%s: undo left %d groups of %d", what, len(d.Groups()), n)
 			}
 		}
@@ -165,18 +165,18 @@ func TestRunOffSweep(t *testing.T) {
 	}
 	g.Run(func(p sweep.Point) error {
 		d := New()
-		d.SetChordTolerance(0.003)
+		d.Edit.SetChordTolerance(0.003)
 		edge, _ := bandOnCone(d, p.Float("y"), p.Float("top"))
 		var f Group
 		if p.String("kind") == "chamfer" {
-			f = d.ChamferSolid([]SolidEdge{edge}, p.Float("r"), "")
+			f = d.Features.ChamferSolid([]SolidEdge{edge}, p.Float("r"), "")
 		} else {
-			f = d.FilletSolid([]SolidEdge{edge}, p.Float("r"), "")
+			f = d.Features.FilletSolid([]SolidEdge{edge}, p.Float("r"), "")
 		}
 		if pr := f.Problem(); pr != "" {
 			return errors.New(pr)
 		}
-		rep := f.Check()
+		rep := f.Analyze().Check()
 		if rep.NakedEdges > 0 || rep.TopologyProblems > 0 {
 			t.Errorf("%s: made, not closed: %s", p.Label(), rep.Summary())
 		}
@@ -197,23 +197,23 @@ func TestRunOffSweep(t *testing.T) {
 func TestChamferSlotOnCone(t *testing.T) {
 	for _, r := range []float64{1, 1.5, 2, 2.5} {
 		d := New()
-		d.SetChordTolerance(0.003)
-		d.SketchIn(d.Workplane("ZX"), "")
-		axis := d.Line(V(0, 0, -2), V(0, 0, 32))
+		d.Edit.SetChordTolerance(0.003)
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
 		axis.SetConstruction(true)
-		d.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
-		d.Lathe(axis, "")
-		d.SketchIn(d.Workplane("XY"), "")
-		d.Rect(V(6, -3, 0), V(20, 3, 0))
-		slot := d.Extrude(22, "slot")
+		d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+		d.Features.Lathe(axis, "")
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		d.Sketch.Rect(V(6, -3, 0), V(20, 3, 0))
+		slot := d.Features.Extrude(22, "slot")
 		slot.SetCombine(Difference)
-		before := slot.Check().Volume
-		g := d.ChamferSolid([]SolidEdge{slot.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
+		before := slot.Analyze().Check().Volume
+		g := d.Features.ChamferSolid([]SolidEdge{slot.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
 		if p := g.Problem(); p != "" {
 			t.Errorf("chamfer of %g: %s", r, p)
 			continue
 		}
-		rep := g.Check()
+		rep := g.Analyze().Check()
 		if !rep.Sound() || rep.Volume >= before {
 			t.Errorf("chamfer of %g: %s, volume %g, before %g", r, rep.Summary(), rep.Volume, before)
 		}

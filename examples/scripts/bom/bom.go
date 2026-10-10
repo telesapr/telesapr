@@ -14,7 +14,7 @@
 // plate, four in all unless given. The model links the bracket and
 // repeats it, two brackets; the parts a linked file links count too.
 // Assembly > Bill of Materials lists what the model places, by file; here
-// Doc.BillOfMaterials gives it and Doc.ExportBOM writes bom.csv, unless
+// Assembly.BillOfMaterials gives it and Assembly.ExportBOM writes bom.csv, unless
 // given "-". The script checks the counts.
 package main
 
@@ -37,10 +37,10 @@ func must(err error) {
 // part saves a block of w x d x h as parts/name.tlspr.
 func part(name string, w, d, h float64) string {
 	doc := api.New()
-	doc.Rect(api.V(0, 0, 0), api.V(w, d, 0))
-	doc.Extrude(h, name)
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(w, d, 0))
+	doc.Features.Extrude(h, name)
 	path := filepath.Join("parts", name+".tlspr")
-	must(doc.Save(path))
+	must(doc.File.Save(path))
 	return path
 }
 
@@ -58,14 +58,14 @@ func main() {
 	bolt := part("bolt", 4, 4, 20)
 
 	bracket := api.New()
-	_, err := bracket.Link(plate, "")
+	_, err := bracket.Assembly.Link(plate, "")
 	must(err)
-	_, err = bracket.Link(bolt, "")
+	_, err = bracket.Assembly.Link(bolt, "")
 	must(err)
-	bracket.Translate(bolts, api.V(20, 0, 0), "bolts")
+	bracket.Features.Translate(bolts, api.V(20, 0, 0), "bolts")
 	// The bolt stands in the plate, as one through a hole would; the
 	// check by shells says by how much each part overlaps another.
-	found, _ := bracket.Interferences()
+	found, _ := bracket.Assembly.Interferences()
 	for _, f := range found {
 		fmt.Printf("%s and %s share %.1f mm³\n", f.A, f.B, f.Volume)
 	}
@@ -73,14 +73,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, "the bolt doesn't meet the plate")
 		os.Exit(1)
 	}
-	must(bracket.Save(filepath.Join("parts", "bracket.tlspr")))
+	must(bracket.File.Save(filepath.Join("parts", "bracket.tlspr")))
 
 	doc := api.Current()
-	_, err = doc.Link(filepath.Join("parts", "bracket.tlspr"), "")
+	_, err = doc.Assembly.Link(filepath.Join("parts", "bracket.tlspr"), "")
 	must(err)
-	doc.Translate(2, api.V(0, 50, 0), "brackets")
+	doc.Features.Translate(2, api.V(0, 50, 0), "brackets")
 
-	items := doc.BillOfMaterials()
+	items := doc.Assembly.BillOfMaterials()
 	ok := len(items) == 3
 	for _, it := range items {
 		fmt.Printf("%3d  %s\n", it.Count, it.Part)
@@ -96,6 +96,6 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		must(doc.ExportBOM("bom.csv"))
+		must(doc.Assembly.ExportBOM("bom.csv"))
 	}
 }

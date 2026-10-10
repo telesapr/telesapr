@@ -61,7 +61,7 @@ var funcNames = sync.OnceValue(func() map[uintptr][2]string {
 
 // Help writes what help("name") prints in a console: what the package,
 // type, function or method called name is, as "api", "Group",
-// "Group.Bounds" or "strings.ToUpper"; for "", the summary help()
+// "Features.Extrude", a menu entry, "Features > Extrude", or "strings.ToUpper"; for "", the summary help()
 // prints. It is false if nothing is called that, and then nothing was
 // written.
 func Help(w io.Writer, name string) bool {
@@ -86,7 +86,7 @@ func (e *Engine) help(values ...any) {
 		if name, ok := v.(string); ok {
 			if !helpName(w, name) {
 				_, _ = fmt.Fprintf(w, "%q is a string, and nothing help knows is called that.\n", name)
-				_, _ = fmt.Fprintln(w, `Names are like "api", "Group", "Group.Bounds" or "strings.ToUpper".`)
+				_, _ = fmt.Fprintln(w, `Names are like "api", "Group", "Features.Extrude", "Features > Extrude" or "strings.ToUpper".`)
 			}
 			continue
 		}
@@ -196,6 +196,9 @@ func helpType(w io.Writer, p *symbols.PackageDoc, name string, td *symbols.TypeD
 	}
 	listed(w, "Methods", td.Methods, keys(td.Methods))
 	if len(td.Methods) > 0 {
+		if field, ok := menuFields()[name]; ok && p.Name == "api" && strings.HasSuffix(name, "Menu") {
+			name = field
+		}
 		fmt.Fprintf(w, "\nhelp(\"%s.Method\") says more about one.\n", name)
 	}
 }
@@ -237,11 +240,19 @@ func packagesNamed(name string) (paths []string) {
 }
 
 // helpName writes what the name of a package, a type, a function or
-// a method says: "api", "Group", "Group.Bounds", "geom.Vector" or
+// a method says: "api", "Group", "Features.Extrude", "geom.Vector" or
 // "geom.Vector.Plus". It is false if nothing is called that.
 func helpName(w io.Writer, name string) bool {
+	name = strings.TrimSpace(name)
+	if isMenuPath(name) {
+		return helpMenuEntry(w, name)
+	}
 	docs := symbols.Docs()
+	name = strings.TrimPrefix(name, "doc.")
 	parts := strings.Split(name, ".")
+	if len(parts) <= 2 {
+		parts[0] = apiTypeName(parts[0])
+	}
 	if strings.Contains(name, "/") {
 		// An import path, perhaps with a name after it.
 		for i := len(parts); i > 0; i-- {
@@ -260,7 +271,7 @@ func helpName(w io.Writer, name string) bool {
 		switch len(names) {
 		case 1:
 			if td := p.Types[names[0]]; td != nil {
-				helpType(w, p, names[0], td, nil)
+				helpType(w, p, names[0], td, symbolType(importPath, p.Name, names[0]))
 				return true
 			}
 			if d, ok := p.Funcs[names[0]]; ok {
@@ -275,6 +286,9 @@ func helpName(w io.Writer, name string) bool {
 			if td := p.Types[names[0]]; td != nil {
 				if d, ok := td.Methods[names[1]]; ok {
 					helpDoc(w, d)
+					if importPath == apiPath {
+						menuLine(w, names[0], names[1])
+					}
 					return true
 				}
 			}
@@ -320,7 +334,7 @@ func typeDoc(t reflect.Type) (*symbols.PackageDoc, *symbols.TypeDoc) {
 func helpValue(w io.Writer, value any) {
 	if value == nil {
 		fmt.Fprintln(w, "nil: a value that isn't there has no type to tell about.")
-		fmt.Fprintln(w, `Name what you mean: help("Doc.Save"), help("Group"), help("api").`)
+		fmt.Fprintln(w, `Name what you mean: help("File.Save"), help("Group"), help("api").`)
 		return
 	}
 	v := reflect.ValueOf(value)
@@ -345,7 +359,7 @@ func helpValue(w io.Writer, value any) {
 		}
 		fmt.Fprintf(w, "%s\n", t)
 		fmt.Fprintln(w, `    A function, or a method of some value; which one can't be told from it.`)
-		fmt.Fprintln(w, `    Name it for what it does: help("Doc.Line"), help("strings.ToUpper").`)
+		fmt.Fprintln(w, `    Name it for what it does: help("Sketch.Line"), help("strings.ToUpper").`)
 		return
 	case reflect.Slice, reflect.Array, reflect.Map:
 		what := "a list"

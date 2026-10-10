@@ -16,18 +16,18 @@ import (
 func TestDraftChosenSides(t *testing.T) {
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
-	ex.SetDraft(10)
+	ex.AsExtrude().SetDraft(10)
 	front := lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0))
 	step(d)
 	before := saved(t, d)
-	ex.SetDraftFaces([]api.Entity{front})
+	ex.AsExtrude().SetDraftFaces([]api.Entity{front})
 	tan := math.Tan(10 * math.Pi / 180)
 	want := 20 * (100 - 50*tan)
-	r := ex.Check()
+	r := ex.Analyze().Check()
 	if ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 1e-6*want {
 		t.Fatalf("one side drafted: %q, %s, want %g", ex.Problem(), r.String(), want)
 	}
-	if fs := ex.DraftFaces(); len(fs) != 1 || fs[0].Group().H == ex.H {
+	if fs := ex.AsExtrude().DraftFaces(); len(fs) != 1 || fs[0].Group().H == ex.H {
 		t.Errorf("the draft's sides: %v", fs)
 	}
 	// The back and the ends stay upright: the bounds are the block's.
@@ -36,12 +36,12 @@ func TestDraftChosenSides(t *testing.T) {
 	}
 	undoRedo(t, d, before)
 	back := roundTrip(t, d)
-	if g := back.Group(ex.Name()); len(g.DraftFaces()) != 1 || math.Abs(g.Check().Volume-want) > 1e-6*want {
-		t.Errorf("after a round trip: %d sides, volume %g", len(g.DraftFaces()), g.Check().Volume)
+	if g := back.Group(ex.Name()); len(g.AsExtrude().DraftFaces()) != 1 || math.Abs(g.Analyze().Check().Volume-want) > 1e-6*want {
+		t.Errorf("after a round trip: %d sides, volume %g", len(g.AsExtrude().DraftFaces()), g.Analyze().Check().Volume)
 	}
 	// By the side's face, and two sides.
 	right := ex.Solid().FaceAt(api.V(20, 5, 5)).Entity()
-	ex.SetDraftFaces([]api.Entity{front, right})
+	ex.AsExtrude().SetDraftFaces([]api.Entity{front, right})
 	want2 := 0.0
 	for i := range 1001 {
 		z := 10 * float64(i) / 1000
@@ -52,11 +52,11 @@ func TestDraftChosenSides(t *testing.T) {
 		want2 += w * (20 - z*tan) * (10 - z*tan)
 	}
 	want2 *= 10.0 / 1000 / 3
-	if v := ex.Check().Volume; math.Abs(v-want2) > 1e-6*want2 {
+	if v := ex.Analyze().Check().Volume; math.Abs(v-want2) > 1e-6*want2 {
 		t.Errorf("two sides: volume %g, want %g", v, want2)
 	}
-	ex.SetDraftFaces(nil)
-	if len(ex.DraftFaces()) != 0 {
+	ex.AsExtrude().SetDraftFaces(nil)
+	if len(ex.AsExtrude().DraftFaces()) != 0 {
 		t.Error("all sides again")
 	}
 }
@@ -65,11 +65,11 @@ func TestDraftChosenSides(t *testing.T) {
 // the arc's side a cone, the diameter's a plane, meeting in conics.
 func TestDraftSharpArc(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.002)
-	d.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
-	d.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
-	ex := d.Extrude(8, "")
-	ex.SetDraft(6)
+	d.Edit.SetChordTolerance(0.002)
+	d.Sketch.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
+	d.Sketch.Line(api.V(-10, 0, 0), api.V(10, 0, 0))
+	ex := d.Features.Extrude(8, "")
+	ex.AsExtrude().SetDraft(6)
 	tan := math.Tan(6 * math.Pi / 180)
 	seg := func(r, c float64) float64 { return r*r*math.Acos(c/r) - c*math.Sqrt(r*r-c*c) }
 	want := 0.0
@@ -84,7 +84,7 @@ func TestDraftSharpArc(t *testing.T) {
 		want += w * seg(10-x, x)
 	}
 	want *= 8.0 / n / 3
-	r := ex.Check()
+	r := ex.Analyze().Check()
 	if ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.003*want {
 		t.Fatalf("a drafted D: %q, %s, want %g", ex.Problem(), r.String(), want)
 	}
@@ -96,13 +96,13 @@ func TestDraftSharpArc(t *testing.T) {
 // keep it.
 func TestDraftSharpArcs(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.002)
-	d.Arc(api.V(0, 0, 0), api.V(5, 0, 0), api.V(0, 5, 0))
-	d.Arc(api.V(5, 5, 0), api.V(0, 5, 0), api.V(5, 0, 0))
-	ex := d.Extrude(6, "")
+	d.Edit.SetChordTolerance(0.002)
+	d.Sketch.Arc(api.V(0, 0, 0), api.V(5, 0, 0), api.V(0, 5, 0))
+	d.Sketch.Arc(api.V(5, 5, 0), api.V(0, 5, 0), api.V(5, 0, 0))
+	ex := d.Features.Extrude(6, "")
 	step(d)
 	before := saved(t, d)
-	ex.SetDraft(4)
+	ex.AsExtrude().SetDraft(4)
 	overlap := func(r, dist float64) float64 {
 		x := dist / 2
 		return 2 * (r*r*math.Acos(x/r) - x*math.Sqrt(r*r-x*x))
@@ -119,14 +119,14 @@ func TestDraftSharpArcs(t *testing.T) {
 		want += w * overlap(5-z*tan, 5*math.Sqrt2)
 	}
 	want *= 6.0 / n / 3
-	r := ex.Check()
+	r := ex.Analyze().Check()
 	if ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.003*want {
 		t.Fatalf("a drafted lens: %q, %s, want %g", ex.Problem(), r.String(), want)
 	}
 	undoRedo(t, d, before)
 	// The file keeps no chord tolerance.
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-	d.Regen()
+	d.Edit.Regen()
 	roundTrip(t, d)
 }
 
@@ -136,14 +136,14 @@ func TestDraftSharpArcs(t *testing.T) {
 func TestDraftNeutral(t *testing.T) {
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
-	ex.SetDraft(5)
+	ex.AsExtrude().SetDraft(5)
 	x := 10 * math.Tan(5*math.Pi/180)
 	area := func(s float64) float64 { return (20 - 2*s) * (10 - 2*s) }
 	whole := 10.0 / 6 * (area(0) + 4*area(x/2) + area(x))
 	step(d)
 	before := saved(t, d)
-	ex.SetDraftNeutral(10)
-	r := ex.Check()
+	ex.AsExtrude().SetDraftNeutral(10)
+	r := ex.Analyze().Check()
 	if ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-whole) > 1e-6*whole {
 		t.Fatalf("from the far end: %q, %s, want %g", ex.Problem(), r.String(), whole)
 	}
@@ -155,15 +155,15 @@ func TestDraftNeutral(t *testing.T) {
 	}
 	undoRedo(t, d, before)
 	roundTrip(t, d)
-	ex.SetDraftNeutral(5)
+	ex.AsExtrude().SetDraftNeutral(5)
 	half := 5.0 / 6 * (area(0) + 4*area(x/4) + area(x/2))
-	if r := ex.Check(); ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-2*half) > 1e-6*half {
+	if r := ex.Analyze().Check(); ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-2*half) > 1e-6*half {
 		t.Errorf("from the middle: %q, %s, want %g", ex.Problem(), r.String(), 2*half)
 	}
-	if err := ex.SetExpr(sketch.GroupPitch, "2*2"); err != nil || ex.DraftNeutral() != 4 {
-		t.Errorf("by an expression: %g, %v", ex.DraftNeutral(), err)
+	if err := ex.SetExpr(sketch.GroupPitch, "2*2"); err != nil || ex.AsExtrude().DraftNeutral() != 4 {
+		t.Errorf("by an expression: %g, %v", ex.AsExtrude().DraftNeutral(), err)
 	}
-	ex.SetDraftNeutral(20)
+	ex.AsExtrude().SetDraftNeutral(20)
 	if p := ex.Problem(); !strings.Contains(p, "neutral plane") {
 		t.Errorf("off the extrusion: %q", p)
 	}
@@ -172,17 +172,17 @@ func TestDraftNeutral(t *testing.T) {
 func TestDraftSidesMisuse(t *testing.T) {
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
-	ex.SetDraft(5)
-	d.SketchIn(d.Workplane("XY"), "other")
-	other := d.Line(api.V(0, 30, 0), api.V(5, 30, 0))
+	ex.AsExtrude().SetDraft(5)
+	d.Features.SketchIn(d.Workplane("XY"), "other")
+	other := d.Sketch.Line(api.V(0, 30, 0), api.V(5, 30, 0))
 	for name, c := range map[string]struct {
 		fn   func()
 		want string
 	}{
-		"another sketch's line": {func() { ex.SetDraftFaces([]api.Entity{other}) }, "not a line, arc or circle of the extruded sketch"},
-		"not an extrusion":      {func() { d.Group("other").SetDraftFaces(nil) }, "extrude"},
-		"neutral of a sketch":   {func() { d.Group("other").SetDraftNeutral(1) }, "extrude"},
-		"not a number":          {func() { ex.SetDraftNeutral(math.NaN()) }, "distance"},
+		"another sketch's line": {func() { ex.AsExtrude().SetDraftFaces([]api.Entity{other}) }, "not a line, arc or circle of the extruded sketch"},
+		"not an extrusion":      {func() { d.Group("other").AsExtrude().SetDraftFaces(nil) }, "extrude"},
+		"neutral of a sketch":   {func() { d.Group("other").AsExtrude().SetDraftNeutral(1) }, "extrude"},
+		"not a number":          {func() { ex.AsExtrude().SetDraftNeutral(math.NaN()) }, "distance"},
 	} {
 		func() {
 			defer func() {
@@ -214,17 +214,17 @@ func TestDraftSidesSweep(t *testing.T) {
 		tan := math.Tan(deg * math.Pi / 180)
 		d := api.New()
 		ex := block(d, 0, 0, 20, 10, 10)
-		ex.SetDraft(deg)
-		ex.SetDraftNeutral(s0)
+		ex.AsExtrude().SetDraft(deg)
+		ex.AsExtrude().SetDraftNeutral(s0)
 		front := lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0))
 		right := lineAlong(t, ex, api.V(20, 0, 0), api.V(20, 10, 0))
 		var area func(x float64) float64
 		switch p.String("sides") {
 		case "front":
-			ex.SetDraftFaces([]api.Entity{front})
+			ex.AsExtrude().SetDraftFaces([]api.Entity{front})
 			area = func(x float64) float64 { return 20 * (10 - x) }
 		case "front and right":
-			ex.SetDraftFaces([]api.Entity{front, right})
+			ex.AsExtrude().SetDraftFaces([]api.Entity{front, right})
 			area = func(x float64) float64 { return (20 - x) * (10 - x) }
 		default:
 			area = func(x float64) float64 { return (20 - 2*x) * (10 - 2*x) }
@@ -240,7 +240,7 @@ func TestDraftSidesSweep(t *testing.T) {
 			want += w * area(math.Abs(z-s0)*tan)
 		}
 		want *= 10.0 / n / 3
-		r := ex.Check()
+		r := ex.Analyze().Check()
 		switch {
 		case ex.Problem() != "":
 			return fmt.Errorf("problem: %s", ex.Problem())

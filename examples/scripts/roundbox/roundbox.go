@@ -35,9 +35,9 @@ func main() {
 	}
 	const w, d, h = 60.0, 40.0, 20.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.Rect(api.V(0, 0, 0), api.V(w, d, 0))
-	block := doc.Extrude(h, "block")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(w, d, 0))
+	block := doc.Features.Extrude(h, "block")
 
 	// The block's edges are its line segments: the sketch's four at
 	// each end and the four along its sides, some drawn twice.
@@ -54,12 +54,12 @@ func main() {
 		seen[[2]api.Vec{a, b}] = true
 		edges = append(edges, e)
 	}
-	round := doc.Fillet(edges, radius, "rounded")
+	round := doc.Features.Fillet(edges, radius, "rounded")
 	if p := round.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := round.Check()
+	r := round.Analyze().Check()
 	// Each edge loses its square of the radius less a quarter circle,
 	// along its length; each corner the cube the three edges count
 	// three times over less the sphere's eighth.
@@ -76,7 +76,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("roundbox.tlspr"); err != nil {
+		if err := doc.File.Save("roundbox.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

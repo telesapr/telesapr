@@ -42,9 +42,9 @@ func main() {
 	upright, top := radii[0], radii[1]
 	w, l, h := 60.0, 40.0, 25.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.Rect(api.V(0, 0, 0), api.V(w, l, 0))
-	block := doc.Extrude(h, "block")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(w, l, 0))
+	block := doc.Features.Extrude(h, "block")
 
 	// The block's upright edges, then its top's.
 	solid := block.Solid()
@@ -56,15 +56,15 @@ func main() {
 			edges = append(edges, e)
 		}
 	}
-	lid := doc.FilletSolid(edges, upright, "rounded")
+	lid := doc.Features.FilletSolid(edges, upright, "rounded")
 	for i := uprights; i < len(edges); i++ {
-		lid.SetEdgeRadius(i, top)
+		lid.AsFillet().SetEdgeRadius(i, top)
 	}
 	if p := lid.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := lid.Check()
+	r := lid.Analyze().Check()
 	// The fillets alone, each run to the corners: a square of its radius
 	// less a quarter circle along each edge.
 	spandrel := func(r float64) float64 { return r * r * (1 - math.Pi/4) }
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("setback.tlspr"); err != nil {
+		if err := doc.File.Save("setback.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

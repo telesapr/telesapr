@@ -3,10 +3,12 @@ package mcpserver
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"image"
 	"image/color"
 	"image/png"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -132,7 +134,7 @@ func TestRunScript(t *testing.T) {
 	t.Parallel()
 	cs, _ := connect(t)
 	res, text := call(t, cs, ToolRun, map[string]any{
-		"code": "c := doc.Circle(V(0, 0, 0), 5)\nfmt.Println(\"drawn\")\nc.Radius()",
+		"code": "c := doc.Sketch.Circle(V(0, 0, 0), 5)\nfmt.Println(\"drawn\")\nc.Radius()",
 	})
 	want := "output:\ndrawn\nvalue: 5\nstatus:\nactive group g002-sketch-in-plane, sketch-in-plane: solved, 3 DOF\n"
 	if res.IsError || text != want {
@@ -141,7 +143,7 @@ func TestRunScript(t *testing.T) {
 
 	// A script that fails is the tool's error, with what became of
 	// the drawing.
-	res, text = call(t, cs, ToolRun, map[string]any{"code": "doc.Extrude(2, \"disc\")\nc.Length()\nc.Start()"})
+	res, text = call(t, cs, ToolRun, map[string]any{"code": "doc.Features.Extrude(2, \"disc\")\nc.Length()\nc.Start()"})
 	if !res.IsError || !strings.Contains(text, "error: script:3:") || !strings.Contains(text, "taken back") ||
 		!strings.Contains(text, "active group g002-sketch-in-plane") {
 		t.Errorf("the failing script's result is no error (%v) or reads\n%s", !res.IsError, text)
@@ -153,7 +155,7 @@ func TestRunScript(t *testing.T) {
 		t.Errorf("no code: error %v, text %q", res.IsError, text)
 	}
 	// What the schema doesn't allow never reaches the drawing.
-	bad, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: ToolRun, Arguments: map[string]any{"source": "doc.Point(V(1, 1, 0))"}})
+	bad, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: ToolRun, Arguments: map[string]any{"source": "doc.Sketch.Point(V(1, 1, 0))"}})
 	if err == nil && !bad.IsError {
 		t.Errorf("a call without code was taken")
 	}
@@ -165,7 +167,7 @@ func TestRunScript(t *testing.T) {
 func TestDescribeHelpRender(t *testing.T) {
 	t.Parallel()
 	cs, backend := connect(t)
-	call(t, cs, ToolRun, map[string]any{"code": "doc.Circle(V(0, 0, 0), 5)\ndoc.Extrude(3, \"disc\")"})
+	call(t, cs, ToolRun, map[string]any{"code": "doc.Sketch.Circle(V(0, 0, 0), 5)\ndoc.Features.Extrude(3, \"disc\")"})
 
 	res, text := call(t, cs, ToolDescribe, nil)
 	if res.IsError || !strings.HasPrefix(text, "sketch: unit mm") || !strings.Contains(text, "g003-disc, extrude: solved") {
@@ -233,16 +235,32 @@ func TestSketchProblemShown(t *testing.T) {
 	t.Parallel()
 	cs, _ := connect(t)
 	res, text := call(t, cs, ToolRun, map[string]any{
-		"code": "doc.Polyline(true, V(0, 0, 0), V(10, 10, 0), V(10, 0, 0), V(0, 10, 0))\ndoc.Extrude(5, \"bow\")",
+		"code": "doc.Sketch.Polyline(true, V(0, 0, 0), V(10, 10, 0), V(10, 0, 0), V(0, 10, 0))\ndoc.Features.Extrude(5, \"bow\")",
 	})
 	if res.IsError || !strings.Contains(text, "active group g003-bow, extrude: solved, 1 DOF, problem: the sketch g002-sketch-in-plane crosses itself at (5, 5, 0)") ||
 		!strings.Contains(text, "in trouble: g002-sketch-in-plane, sketch-in-plane: solved, 8 DOF, problem: the sketch crosses itself at (5, 5, 0)") {
 		t.Errorf("the status reads\n%s", text)
 	}
+	// The same, for a program that reads the structured result.
+	raw, err := json.Marshal(res.StructuredContent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out RunOutput
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	want := []agent.GroupStatus{
+		{Name: "bow", Kind: "extrude", Active: true, Solved: true, DOF: 1, Problem: "the sketch g002-sketch-in-plane crosses itself at (5, 5, 0)"},
+		{Name: "sketch-in-plane", Kind: "sketch-in-plane", Solved: true, DOF: 8, Problem: "the sketch crosses itself at (5, 5, 0)"},
+	}
+	if out.Error != "" || !reflect.DeepEqual(out.Groups, want) {
+		t.Errorf("the structured result is %s", raw)
+	}
 	if _, text = call(t, cs, ToolDescribe, nil); !strings.Contains(text, "problem: the sketch g002-sketch-in-plane crosses itself") {
 		t.Errorf("the drawing is described as\n%s", text)
 	}
-	if _, text = call(t, cs, ToolRun, map[string]any{"code": "doc.Active().Check().Sound()"}); !strings.Contains(text, "value: false") {
+	if _, text = call(t, cs, ToolRun, map[string]any{"code": "doc.Active().Analyze().Check().Sound()"}); !strings.Contains(text, "value: false") {
 		t.Errorf("the solid that isn't there is sound:\n%s", text)
 	}
 }

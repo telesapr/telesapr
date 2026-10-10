@@ -8,13 +8,13 @@ func TestCopyPaste(t *testing.T) {
 	t.Parallel()
 	d := New()
 	step := d.Host().(*SketchHost).BeginEval
-	d.SketchIn(d.Workplane("XY"), "")
-	sides := d.Rect(V(0, 0, 0), V(40, 20, 0))
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	sides := d.Sketch.Rect(V(0, 0, 0), V(40, 20, 0))
 	before := len(d.Active().Constraints())
-	d.Copy(sides...)
+	d.Edit.Copy(sides...)
 
 	step()
-	moved := d.Paste(V(100, 0, 0), 0, 1)
+	moved := d.Edit.Paste(V(100, 0, 0), 0, 1)
 	if len(moved) != 4 {
 		t.Fatalf("pasted %d entities, want 4", len(moved))
 	}
@@ -31,7 +31,7 @@ func TestCopyPaste(t *testing.T) {
 	}
 
 	step()
-	turned := d.Paste(V(0, 0, 0), 90, 1)
+	turned := d.Edit.Paste(V(0, 0, 0), 90, 1)
 	found = false
 	for _, e := range turned {
 		found = found || near(e.Start().Pos(), V(-20, 40, 0)) || near(e.End().Pos(), V(-20, 40, 0))
@@ -41,11 +41,11 @@ func TestCopyPaste(t *testing.T) {
 	}
 
 	step()
-	if !d.Undo() || len(d.Active().Constraints()) != 2*before {
+	if !d.Edit.Undo() || len(d.Active().Constraints()) != 2*before {
 		t.Errorf("undo of the turned paste left %d constraints", len(d.Active().Constraints()))
 	}
 
-	failsWith(t, "scale of 0", func() { d.Paste(V(0, 0, 0), 0, 0) })
-	d.Free3D()
-	failsWith(t, "in a workplane", func() { d.Copy(sides...) })
+	failsWith(t, "scale of 0", func() { d.Edit.Paste(V(0, 0, 0), 0, 0) })
+	d.Sketch.Anywhere3D()
+	failsWith(t, "in a workplane", func() { d.Edit.Copy(sides...) })
 }

@@ -45,7 +45,7 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.SetChordTolerance(0.003)
+	doc.Edit.SetChordTolerance(0.003)
 
 	// The bracket's outline: the floor along x, the wall up at 110
 	// degrees, the bend's arc tangent to both.
@@ -62,31 +62,31 @@ func main() {
 	// The middle of the bend, 235 degrees round its centre.
 	midBend := api.V(onFloor.X+bend*math.Cos(235*math.Pi/180), thick+bend+bend*math.Sin(235*math.Pi/180), 0)
 	lines := []api.Entity{
-		doc.Line(outer, api.V(0, 0, 0)),
-		doc.Line(api.V(0, 0, 0), api.V(50, 0, 0)),
-		doc.Line(api.V(50, 0, 0), api.V(50, thick, 0)),
-		doc.Line(api.V(50, thick, 0), onFloor),
+		doc.Sketch.Line(outer, api.V(0, 0, 0)),
+		doc.Sketch.Line(api.V(0, 0, 0), api.V(50, 0, 0)),
+		doc.Sketch.Line(api.V(50, 0, 0), api.V(50, thick, 0)),
+		doc.Sketch.Line(api.V(50, thick, 0), onFloor),
 	}
-	arc := doc.Arc(api.V(onFloor.X, thick+bend, 0), onWall, onFloor)
-	lines = append(lines, doc.Line(onWall, inner), doc.Line(inner, outer))
+	arc := doc.Sketch.Arc(api.V(onFloor.X, thick+bend, 0), onWall, onFloor)
+	lines = append(lines, doc.Sketch.Line(onWall, inner), doc.Sketch.Line(inner, outer))
 	for i := 0; i+1 < 4; i++ {
-		doc.Coincident(lines[i].End(), lines[i+1].Start())
+		doc.Constrain.Coincident(lines[i].End(), lines[i+1].Start())
 	}
-	doc.Coincident(lines[3].End(), arc.End())
-	doc.Coincident(arc.Start(), lines[4].Start())
-	doc.Coincident(lines[4].End(), lines[5].Start())
-	doc.Coincident(lines[5].End(), lines[0].Start())
-	bracket := doc.Extrude(42, "bracket")
+	doc.Constrain.Coincident(lines[3].End(), arc.End())
+	doc.Constrain.Coincident(arc.Start(), lines[4].Start())
+	doc.Constrain.Coincident(lines[4].End(), lines[5].Start())
+	doc.Constrain.Coincident(lines[5].End(), lines[0].Start())
+	bracket := doc.Features.Extrude(42, "bracket")
 	bracket.SetTwoSided(true)
 
 	// The rib: from the floor, reach along it from the corner, to the
 	// wall as far up.
 	foot, top := api.V(reach, thick, 0), along(corner, reach-corner.X)
-	doc.SketchIn(doc.Workplane("XY"), "rib-outline")
-	doc.Polyline(true, top, corner, foot)
-	rib := doc.Extrude(thick, "rib")
+	doc.Features.SketchIn(doc.Workplane("XY"), "rib-outline")
+	doc.Sketch.Polyline(true, top, corner, foot)
+	rib := doc.Features.Extrude(thick, "rib")
 	rib.SetTwoSided(true)
-	doc.Regen()
+	doc.Edit.Regen()
 	if p := rib.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
@@ -109,19 +109,19 @@ func main() {
 		return out
 	}
 	volume := func(sides, ends bool) float64 {
-		g := doc.FilletSolid(edges(rib.Solid(), sides, ends), radius, "")
+		g := doc.Features.FilletSolid(edges(rib.Solid(), sides, ends), radius, "")
 		defer g.Delete()
-		return g.Volume()
+		return g.Analyze().Volume()
 	}
-	bare := rib.Volume()
+	bare := rib.Analyze().Volume()
 	onlySides, onlyEnds := volume(true, false), volume(false, true)
 
-	filled := doc.FilletSolid(edges(rib.Solid(), true, true), radius, "filled")
+	filled := doc.Features.FilletSolid(edges(rib.Solid(), true, true), radius, "filled")
 	if p := filled.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := filled.Check()
+	r := filled.Analyze().Check()
 	corners := r.Volume - onlySides - onlyEnds + bare
 	fmt.Printf("rib's foot filled at %g mm: %s, %.1f mm³, of which the corners %.3f mm³", radius,
 		map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume, corners)
@@ -145,7 +145,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("rib.tlspr"); err != nil {
+		if err := doc.File.Save("rib.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

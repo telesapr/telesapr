@@ -17,7 +17,7 @@ func TestDrawingSaved(t *testing.T) {
 	block(d, 0, 0, 20, 10, 5)
 	step(d)
 	before := saved(t, d)
-	dr := d.Drawing()
+	dr := d.Drawing.Get()
 	dr.Sheet, dr.Portrait, dr.Scale, dr.FirstAngle = "A2", true, 0.5, true
 	dr.Title, dr.Author, dr.Number, dr.Material = "Plate", "M. S.", "TS-7", "steel"
 	dr.Views = []api.DrawingView{{Kind: "front", X: 100, Y: 200}, {Kind: "iso", X: 300, Y: 400}}
@@ -25,10 +25,10 @@ func TestDrawingSaved(t *testing.T) {
 	dr.Details = []sketch.DrawingDetail{{View: "front", CX: 1, CY: 2, R: 3, Scale: 4, X: 50, Y: 60}}
 	dr.Dimensions = []sketch.DrawingDimension{{View: "front", Kind: "distance", Offset: -5,
 		Edges: []topo.Name{{A: 0x10002, B: 0x10003, N: 0, Of: 1}, {A: 0x10004, B: 0x10005, N: 1, Of: 2}}}}
-	d.SetDrawing(dr)
+	d.Drawing.Set(dr)
 	undoRedo(t, d, before)
 	back := roundTrip(t, d)
-	got := back.Drawing()
+	got := back.Drawing.Get()
 	if got.Sheet != "A2" || !got.Portrait || got.Scale != 0.5 || !got.FirstAngle || got.Title != "Plate" ||
 		got.Material != "steel" || len(got.Views) != 2 || got.Views[1].Kind != "iso" || got.Views[1].Y != 400 ||
 		len(got.Sections) != 1 || got.Sections[0].Offset != 2.5 || len(got.Details) != 1 || got.Details[0].Scale != 4 ||
@@ -50,7 +50,7 @@ func TestDrawingSaved(t *testing.T) {
 					t.Errorf("a %s there isn't: no error", name)
 				}
 			}()
-			d.SetDrawing(bad)
+			d.Drawing.Set(bad)
 		}()
 	}
 }

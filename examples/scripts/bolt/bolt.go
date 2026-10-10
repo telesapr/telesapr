@@ -41,14 +41,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	shank := doc.Circle(api.V(0, 0, 0), d/2)
-	doc.Coincident(shank.Center(), doc.Origin())
-	doc.Diameter(shank, d)
-	rod := doc.Extrude(length, "shank")
+	shank := doc.Sketch.Circle(api.V(0, 0, 0), d/2)
+	doc.Constrain.Coincident(shank.Center(), doc.Origin())
+	doc.Constrain.Diameter(shank, d)
+	rod := doc.Features.Extrude(length, "shank")
 
 	// The head, a hexagon 1.6 diameters across the flats and 0.7 of
 	// one high, under the shank.
-	doc.SketchIn(doc.Workplane("XY"), "head-sketch")
+	doc.Features.SketchIn(doc.Workplane("XY"), "head-sketch")
 	across, height := 1.6*d, 0.7*d
 	var corners []api.Vec
 	for i := 0; i < 6; i++ { // the interpreter has no range over an int
@@ -56,8 +56,8 @@ func main() {
 		r := across / 2 / math.Cos(math.Pi/6)
 		corners = append(corners, api.V(r*math.Cos(a), r*math.Sin(a), 0))
 	}
-	doc.Polyline(true, corners...)
-	doc.Extrude(-height, "head")
+	doc.Sketch.Polyline(true, corners...)
+	doc.Features.Extrude(-height, "head")
 
 	// The thread, from the shank's free end towards the head.
 	var end api.Entity
@@ -66,14 +66,14 @@ func main() {
 			end = e
 		}
 	}
-	thread := doc.Thread(end, api.ThreadOptions{
+	thread := doc.Features.Thread(end, api.ThreadOptions{
 		Designation: designation,
 		Length:      0.6 * length,
 		Reverse:     true,
 		Through:     true,
 	})
 
-	r := thread.Check()
+	r := thread.Analyze().Check()
 	fmt.Printf("%s: %d faces, %.1f mm³, sound %v\n", thread, r.Faces, r.Volume, r.Sound())
 	if !r.Sound() {
 		fmt.Fprintln(os.Stderr, r.Summary())
@@ -82,7 +82,7 @@ func main() {
 	if !write {
 		return
 	}
-	if err := doc.Save("bolt.tlspr"); err != nil {
+	if err := doc.File.Save("bolt.tlspr"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -90,7 +90,7 @@ func main() {
 	// where the kernel can still leave a thread with naked edges that
 	// the model doesn't have; the export then says so, and it is a
 	// warning here.
-	if err := doc.Export("bolt.stl"); err != nil {
+	if err := doc.File.Export("bolt.stl"); err != nil {
 		fmt.Fprintln(os.Stderr, "warning:", err)
 	}
 }

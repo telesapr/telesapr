@@ -40,7 +40,7 @@ func TestSketchOnFaceFollowsFace(t *testing.T) {
 	top := ex.Solid().FaceAt(api.V(10, 5, 5))
 	step(d)
 	before := saved(t, d)
-	sk := d.SketchOnFace(top, "")
+	sk := d.Features.SketchOnFace(top, "")
 	if p := sk.Problem(); p != "" || sk.Kind() != "sketch-in-plane" || sk.Name() != "sketch-on-face" {
 		t.Fatalf("problem %q, kind %s, name %s", p, sk.Kind(), sk.Name())
 	}
@@ -58,25 +58,25 @@ func TestSketchOnFaceFollowsFace(t *testing.T) {
 		t.Fatalf("the sketch lies in face %#x, not %#x", f.ID(), top.ID())
 	}
 
-	d.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
-	boss := d.Extrude(3, "boss")
-	if r := boss.Check(); !r.Sound() || math.Abs(r.Volume-(1000+48)) > 1e-6 {
+	d.Sketch.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
+	boss := d.Features.Extrude(3, "boss")
+	if r := boss.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-(1000+48)) > 1e-6 {
 		t.Fatalf("block with a boss: %s", r.String())
 	}
 
 	// Ten deep: the top, the sketch and the boss move up 5.
 	ex.Param(2).Set(5)
-	d.Regen()
+	d.Edit.Regen()
 	o2, u2, n2 := frameOf(d, sk)
 	if !nearPoint(o2, o.Plus(api.V(0, 0, 5))) || !nearPoint(u2, u) || !nearPoint(n2, n) || sk.Problem() != "" {
 		t.Fatalf("after the edit: origin %v, u %v, normal %v, problem %q", o2, u2, n2, sk.Problem())
 	}
-	if r := boss.Check(); !r.Sound() || math.Abs(r.Volume-(2000+48)) > 1e-6 || math.Abs(r.Max.Z-13) > 1e-9 {
+	if r := boss.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-(2000+48)) > 1e-6 || math.Abs(r.Max.Z-13) > 1e-9 {
 		t.Fatalf("after the edit: %s", r.String())
 	}
 
 	back := roundTrip(t, d)
-	if r := back.Group(boss.Name()).Check(); !r.Sound() || math.Abs(r.Volume-(2000+48)) > 1e-6 {
+	if r := back.Group(boss.Name()).Analyze().Check(); !r.Sound() || math.Abs(r.Volume-(2000+48)) > 1e-6 {
 		t.Fatalf("reopened: %s", r.String())
 	}
 }
@@ -87,7 +87,7 @@ func TestSketchOnFaceLost(t *testing.T) {
 	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 5)
-	sk := d.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
+	sk := d.Features.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
 	o, _, _ := frameOf(d, sk)
 	ex.SetSuppress(api.SuppressSolid)
 	p := sk.Problem()
@@ -109,17 +109,17 @@ func TestSketchOnFaceLost(t *testing.T) {
 func TestSketchOnFaceCapAndChamfer(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Circle(api.V(3, 4, 0), 2)
-	cyl := d.Extrude(6, "")
-	top := d.SketchOnFace(cyl.Solid().FaceAt(api.V(3, 4, 6)), "")
+	d.Sketch.Circle(api.V(3, 4, 0), 2)
+	cyl := d.Features.Extrude(6, "")
+	top := d.Features.SketchOnFace(cyl.Solid().FaceAt(api.V(3, 4, 6)), "")
 	if o, _, n := frameOf(d, top); !nearPoint(o, api.V(3, 4, 6)) || !nearPoint(n, api.V(0, 0, 1)) || top.Problem() != "" {
 		t.Fatalf("cap: origin %v, normal %v, problem %q", o, n, top.Problem())
 	}
 
 	d2 := api.New()
 	ex := block(d2, 0, 0, 10, 10, 10)
-	d2.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 1, "")
-	slope := d2.SketchOnFace(d2.Group("chamfer").Solid().FaceAt(api.V(5, 0.5, 9.5)), "")
+	d2.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 1, "")
+	slope := d2.Features.SketchOnFace(d2.Group("chamfer").Solid().FaceAt(api.V(5, 0.5, 9.5)), "")
 	o, u, n := frameOf(d2, slope)
 	if !nearPoint(n, api.V(0, -1, 1).WithMagnitude(1)) || math.Abs(o.Minus(api.V(0, 0, 9)).Dot(n)) > 1e-9 ||
 		math.Abs(u.Dot(n)) > 1e-12 || slope.Problem() != "" {
@@ -132,8 +132,8 @@ func TestSketchOnFaceCapAndChamfer(t *testing.T) {
 	// The floor of a shelled box's cavity, its normal up into the cavity.
 	d3 := api.New()
 	box := block(d3, 0, 0, 20, 10, 10)
-	sh := d3.Shell([]api.Entity{box.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
-	floor := d3.SketchOnFace(sh.Solid().FaceAt(api.V(10, 5, 1)), "")
+	sh := d3.Features.Shell([]api.Entity{box.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
+	floor := d3.Features.SketchOnFace(sh.Solid().FaceAt(api.V(10, 5, 1)), "")
 	if o, _, n := frameOf(d3, floor); !nearPoint(n, api.V(0, 0, 1)) || o.Z != 1 || floor.Problem() != "" {
 		t.Fatalf("cavity floor: origin %v, normal %v, problem %q", o, n, floor.Problem())
 	}
@@ -144,8 +144,8 @@ func TestSketchOnFaceCapAndChamfer(t *testing.T) {
 func TestSketchOnFaceRefused(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	d.Circle(api.V(0, 0, 0), 2)
-	cyl := d.Extrude(6, "")
+	d.Sketch.Circle(api.V(0, 0, 0), 2)
+	cyl := d.Features.Extrude(6, "")
 	side := cyl.Solid().FaceAt(api.V(2, 0, 3))
 	d.With(func(sk *sketch.Sketch) {
 		if _, err := sk.NewSketchOnFace(srf.FaceID(side.ID()), ""); err == nil || !strings.Contains(err.Error(), "not flat") {
@@ -177,17 +177,17 @@ func TestSketchOnFaceTilts(t *testing.T) {
 	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
-	ex.SetDraft(5)
+	ex.AsExtrude().SetDraft(5)
 	lean := math.Tan(5 * math.Pi / 180)
-	side := d.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5*lean, 5)), "")
+	side := d.Features.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5*lean, 5)), "")
 	// The rectangle is square to the workplane's u, which runs along
 	// the side's leaning edge; its size in the plane stays as drawn.
-	ls := d.Rect(api.V(8, 0, 4), api.V(12, 0, 6))
+	ls := d.Sketch.Rect(api.V(8, 0, 4), api.V(12, 0, 6))
 	area := ls[0].Length() * ls[1].Length()
-	boss := d.Extrude(1, "boss")
+	boss := d.Features.Extrude(1, "boss")
 	for _, deg := range []float64{10, -3} {
-		ex.SetDraft(deg)
-		d.Regen()
+		ex.AsExtrude().SetDraft(deg)
+		d.Edit.Regen()
 		rad := deg * math.Pi / 180
 		want := api.V(0, -math.Cos(rad), math.Sin(rad))
 		if _, _, n := frameOf(d, side); !nearPoint(n, want) || side.Problem() != "" {
@@ -199,7 +199,7 @@ func TestSketchOnFaceTilts(t *testing.T) {
 		if half.Cross(want).Magnitude() > 1e-9 {
 			t.Fatalf("draft %g: the boss runs along %v, not %v", deg, half, want)
 		}
-		block, all := ex.Check(), boss.Check()
+		block, all := ex.Analyze().Check(), boss.Analyze().Check()
 		if !all.Sound() || math.Abs(all.Volume-block.Volume-area*2*half.Magnitude()) > 1e-6 {
 			t.Fatalf("draft %g: block %g, with the boss %s", deg, block.Volume, all.String())
 		}
@@ -226,23 +226,23 @@ func TestSketchOnFaceSweep(t *testing.T) {
 		ex := block(d, 0, 0, 20, 10, 10)
 		lean := 5 * math.Tan(p.Float("draft")*math.Pi/180)
 		if p.Float("draft") != 0 {
-			ex.SetDraft(p.Float("draft"))
+			ex.AsExtrude().SetDraft(p.Float("draft"))
 		}
 		on := map[string]api.Vec{
 			"top": api.V(10, 5, 10), "bottom": api.V(10, 5, 0),
 			"front": api.V(10, lean, 5), "back": api.V(10, 10-lean, 5),
 			"left": api.V(lean, 5, 5), "right": api.V(20-lean, 5, 5),
 		}[p.String("face")]
-		sk := d.SketchOnFace(ex.Solid().FaceAt(on), "")
+		sk := d.Features.SketchOnFace(ex.Solid().FaceAt(on), "")
 		o, u, n := frameOf(d, sk)
 		v := n.Cross(u)
-		d.Rect(o.Plus(u).Plus(v), o.Plus(u.ScaledBy(2)).Plus(v.ScaledBy(2)))
-		boss := d.Extrude(1, "boss")
+		d.Sketch.Rect(o.Plus(u).Plus(v), o.Plus(u.ScaledBy(2)).Plus(v.ScaledBy(2)))
+		boss := d.Features.Extrude(1, "boss")
 		if deeper := p.Float("deeper"); deeper != 0 {
 			ex.Param(2).Set(5 + deeper/2)
-			d.Regen()
+			d.Edit.Regen()
 		}
-		block, all := ex.Check(), boss.Check()
+		block, all := ex.Analyze().Check(), boss.Analyze().Check()
 		switch {
 		case sk.Problem() != "" || boss.Problem() != "":
 			return fmt.Errorf("problems %q, %q", sk.Problem(), boss.Problem())
@@ -261,23 +261,23 @@ func TestSketchOnFaceSweep(t *testing.T) {
 func BenchmarkSketchOnFace(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {
 		ex := block(d, 0, 0, 20, 10, 5)
-		d.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
-		d.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
-		d.Extrude(3, "")
+		d.Features.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
+		d.Sketch.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
+		d.Features.Extrude(3, "")
 	})
 }
 
 func BenchmarkSketchOnFaceMoved(b *testing.B) {
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 5)
-	d.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
-	d.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
-	d.Extrude(3, "")
+	d.Features.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
+	d.Sketch.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
+	d.Features.Extrude(3, "")
 	deep := 2.5
 	for b.Loop() {
 		deep = 5 - deep
 		ex.Param(2).Set(deep)
-		d.Regen()
+		d.Edit.Regen()
 	}
 }
 
@@ -289,9 +289,9 @@ func TestSketchOnFaceShellJob(t *testing.T) {
 	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 5)
-	sk := d.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
-	d.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
-	boss := d.Extrude(3, "boss")
+	sk := d.Features.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
+	d.Sketch.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
+	boss := d.Features.Extrude(3, "boss")
 	s := d.Host().Sketch()
 	ex.Param(2).Set(5)
 	s.DeferShells = true
@@ -308,7 +308,7 @@ func TestSketchOnFaceShellJob(t *testing.T) {
 	if o, _, _ := frameIn(s, sk.H); o.Z != 10 {
 		t.Fatalf("after the job the sketch is at %v, not on the new top", o)
 	}
-	if r := boss.Check(); !r.Sound() || math.Abs(r.Volume-(2000+48)) > 1e-6 {
+	if r := boss.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-(2000+48)) > 1e-6 {
 		t.Fatalf("after the job: %s", r.String())
 	}
 }

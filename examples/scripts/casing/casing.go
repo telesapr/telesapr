@@ -41,9 +41,9 @@ func main() {
 	upright, top := radii[0], radii[1]
 	w, l, h := 60.0, 40.0, 25.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.Rect(api.V(0, 0, 0), api.V(w, l, 0))
-	block := doc.Extrude(h, "block")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(w, l, 0))
+	block := doc.Features.Extrude(h, "block")
 
 	// The block's upright edges, then its top's.
 	solid := block.Solid()
@@ -55,15 +55,15 @@ func main() {
 			edges = append(edges, e)
 		}
 	}
-	casing := doc.FilletSolid(edges, upright, "rounded")
+	casing := doc.Features.FilletSolid(edges, upright, "rounded")
 	for i := uprights; i < len(edges); i++ {
-		casing.SetEdgeRadius(i, top)
+		casing.AsFillet().SetEdgeRadius(i, top)
 	}
 	if p := casing.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := casing.Check()
+	r := casing.Analyze().Check()
 	// Each upright edge takes a square of its radius less a quarter
 	// circle along the height; the top takes the same section of its own
 	// radius along the lines left between the arcs, and round each arc a
@@ -79,7 +79,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("casing.tlspr"); err != nil {
+		if err := doc.File.Save("casing.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

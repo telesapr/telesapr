@@ -26,8 +26,8 @@ func TestSplinePoints(t *testing.T) {
 	t.Parallel()
 	d := New()
 	step := d.Host().(*SketchHost).BeginEval // each a console line's undo step
-	d.SketchIn(d.Workplane("XY"), "")
-	c := d.Cubic(V(0, 0, 0), V(10, 10, 0), V(20, 10, 0), V(30, 0, 0))
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	c := d.Sketch.Cubic(V(0, 0, 0), V(10, 10, 0), V(20, 10, 0), V(30, 0, 0))
 	if n := len(c.Points()); n != 4 {
 		t.Fatalf("a new cubic has %d points", n)
 	}
@@ -52,13 +52,13 @@ func TestSplinePoints(t *testing.T) {
 	failsWith(t, "an end", func() { c.Points()[2].RemoveSplinePoint() })
 	step()
 
-	if !d.Undo() || len(c.Points()) != 5 {
+	if !d.Edit.Undo() || len(c.Points()) != 5 {
 		t.Errorf("undo of the removal gave %d points", len(c.Points()))
 	}
-	if !d.Undo() || len(c.Points()) != 4 {
+	if !d.Edit.Undo() || len(c.Points()) != 4 {
 		t.Errorf("undo of the addition gave %d points", len(c.Points()))
 	}
-	failsWith(t, "not part of a cubic spline", func() { d.Line(V(0, 0, 0), V(5, 0, 0)).AddSplinePoint(V(1, 1, 0)) })
+	failsWith(t, "not part of a cubic spline", func() { d.Sketch.Line(V(0, 0, 0), V(5, 0, 0)).AddSplinePoint(V(1, 1, 0)) })
 }
 
 // The coincidences of a point are deleted, and a point without any says
@@ -66,10 +66,10 @@ func TestSplinePoints(t *testing.T) {
 func TestDeleteCoincidences(t *testing.T) {
 	t.Parallel()
 	d := New()
-	d.SketchIn(d.Workplane("XY"), "")
-	a := d.Line(V(0, 0, 0), V(10, 0, 0))
-	b := d.Line(V(10, 0, 0), V(10, 10, 0))
-	d.Coincident(a.End(), b.Start())
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	a := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
+	b := d.Sketch.Line(V(10, 0, 0), V(10, 10, 0))
+	d.Constrain.Coincident(a.End(), b.Start())
 	n := len(d.Active().Constraints())
 	a.End().DeleteCoincidences()
 	if got := len(d.Active().Constraints()); got != n-1 {

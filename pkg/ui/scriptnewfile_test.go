@@ -11,9 +11,9 @@ import (
 func TestScriptNewFileKeepsUnsavedChanges(t *testing.T) {
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
-		`doc.Line(V(0, 0, 0), V(10, 0, 0))`,
-		`doc.Unsaved()`,
-		`doc.RunCommand("File > New")`,
+		`doc.Sketch.Line(V(0, 0, 0), V(10, 0, 0))`,
+		`doc.File.Unsaved()`,
+		`doc.Edit.RunCommand("File > New")`,
 		`len(doc.Active().Requests())`,
 	)
 	if !strings.Contains(got, "The drawing has unsaved changes, which this would lose.") {
@@ -24,9 +24,9 @@ func TestScriptNewFileKeepsUnsavedChanges(t *testing.T) {
 	}
 
 	got = scriptConsole(t, ss,
-		`doc.ForgetChanges()`,
-		`doc.Unsaved()`,
-		`doc.RunCommand("File > New")`,
+		`doc.File.ForgetChanges()`,
+		`doc.File.Unsaved()`,
+		`doc.Edit.RunCommand("File > New")`,
 		`len(doc.Active().Requests())`,
 	)
 	if got != "false\nnil\n0\n" {
@@ -34,7 +34,7 @@ func TestScriptNewFileKeepsUnsavedChanges(t *testing.T) {
 	}
 
 	// A command's own failure is the call's error too.
-	if got := scriptConsole(t, ss, `doc.RunCommand("No Such Command")`); !strings.Contains(got, "no command") {
+	if got := scriptConsole(t, ss, `doc.Edit.RunCommand("No Such Command")`); !strings.Contains(got, "no command") {
 		t.Errorf("an unknown command showed:\n%s", got)
 	}
 }

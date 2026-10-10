@@ -38,10 +38,10 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.SketchIn(doc.Workplane("ZX"), "profile")
-	doc.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
-	ramp := doc.Extrude(10, "ramp")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Features.SketchIn(doc.Workplane("ZX"), "profile")
+	doc.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
+	ramp := doc.Features.Extrude(10, "ramp")
 
 	// The extrusion runs along y, one way or the other.
 	s := ramp.Solid()
@@ -54,12 +54,12 @@ func main() {
 		s.EdgeAt(api.V(15, back/2, 10)),
 		s.EdgeAt(api.V(7, back, 10)),
 	}
-	rounded := doc.FilletSolid(edges, radius, "rounded")
+	rounded := doc.Features.FilletSolid(edges, radius, "rounded")
 	if p := rounded.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := rounded.Check()
+	r := rounded.Analyze().Check()
 	fmt.Printf("top rounded at %g mm: %s, %.1f mm³", radius,
 		map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume)
 	// OpenCASCADE's volumes (FreeCAD's makeFillet), whose curves are
@@ -77,7 +77,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("ramp.tlspr"); err != nil {
+		if err := doc.File.Save("ramp.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

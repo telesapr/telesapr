@@ -7,9 +7,9 @@ import "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := api.Current()
-	if err := doc.Load("../../testdata/ui/loft_guide_profiles.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/ui/loft_guide_profiles.tlspr"); err != nil {
 		panic(err)
 	}
-	loft := doc.Loft(doc.Group("top"), doc.Group("bottom"), "")
-	loft.SetGuides([]api.Entity{doc.Entity(0x50000)})
+	loft := doc.Features.Loft(doc.Group("top"), doc.Group("bottom"), "")
+	loft.AsLoft().SetGuides([]api.Entity{doc.Entity(0x50000)})
 }

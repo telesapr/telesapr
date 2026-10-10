@@ -150,7 +150,7 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 			}
 		}
 		if gs.entities == gs.n {
-			menu.AddItem("Toggle Construction", func() { gw.MenuRequest(cmdConstruction) }, true)
+			menu.AddItem("Toggle Construction", func() { gw.MenuSketch(cmdConstruction) }, true)
 		}
 
 		if gs.points == 1 && sk.PointIsCoincident(gs.point[0]) {
@@ -227,20 +227,20 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 		menu.AddSeparator()
 	}
 	if edges {
-		menu.AddItem("Fillet Edges", func() { ss.MenuGroup(cmdGroupFillet, "") }, true)
-		menu.AddItem("Chamfer Edges", func() { ss.MenuGroup(cmdGroupChamfer, "") }, true)
-		menu.AddItem("Sweep Along Edges", func() { ss.MenuGroup(cmdGroupSweep, "") }, true)
+		menu.AddItem("Fillet Edges", func() { ss.MenuFeatures(cmdGroupFillet, "") }, true)
+		menu.AddItem("Chamfer Edges", func() { ss.MenuFeatures(cmdGroupChamfer, "") }, true)
+		menu.AddItem("Sweep Along Edges", func() { ss.MenuFeatures(cmdGroupSweep, "") }, true)
 	}
 	if faces {
-		menu.AddItem("Shell Solid Open Here", func() { ss.MenuGroup(cmdGroupShell, "") }, true)
+		menu.AddItem("Shell Solid Open Here", func() { ss.MenuFeatures(cmdGroupShell, "") }, true)
 		if g := sk.Group(gw.activeGroupH()); g != nil && g.Type == sketch.GroupExtrude && (g.ValC != 0 || g.ExprC != "") {
 			menu.AddItem("Draft Selected Sides", func() { ss.draftSelectedSides() }, true)
 		}
 		if gs.n == 1 && gs.faces == 1 && len(gs.solidFace) == 0 {
-			menu.AddItem("Mirror in This Plane", func() { ss.MenuGroup(cmdGroupMirror, "") }, true)
+			menu.AddItem("Mirror in This Plane", func() { ss.MenuFeatures(cmdGroupMirror, "") }, true)
 		}
 		if _, ok := gs.onlyFace(); ok {
-			menu.AddItem("Sketch On Face", func() { ss.MenuGroup(cmdGroupSketchOnFace, "") }, true)
+			menu.AddItem("Sketch On Face", func() { ss.MenuFeatures(cmdGroupSketchOnFace, "") }, true)
 		}
 	}
 	if edges || faces || gs.n > 0 {

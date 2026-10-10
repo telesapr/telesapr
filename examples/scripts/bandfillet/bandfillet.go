@@ -42,15 +42,15 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.SetChordTolerance(0.003)
-	doc.SketchIn(doc.Workplane("ZX"), "")
-	axis := doc.Line(api.V(0, 0, -2), api.V(0, 0, 32))
+	doc.Edit.SetChordTolerance(0.003)
+	doc.Features.SketchIn(doc.Workplane("ZX"), "")
+	axis := doc.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 32))
 	axis.SetConstruction(true)
-	doc.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(4, 0, 30), api.V(0, 0, 30))
-	doc.Lathe(axis, "cone")
-	doc.SketchIn(doc.Workplane("XY"), "")
-	doc.Rect(api.V(6, -3, 0), api.V(20, 3, 0))
-	band := doc.Extrude(25, "band")
+	doc.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(4, 0, 30), api.V(0, 0, 30))
+	doc.Features.Lathe(axis, "cone")
+	doc.Features.SketchIn(doc.Workplane("XY"), "")
+	doc.Sketch.Rect(api.V(6, -3, 0), api.V(20, 3, 0))
+	band := doc.Features.Extrude(25, "band")
 	if p := band.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
@@ -59,21 +59,21 @@ func main() {
 	// A point of each side's edge: on the band's side (y = ±3) and on the
 	// cone, of radius 8 at height 10.
 	for _, side := range []float64{3, -3} {
-		before := last.Check().Volume
+		before := last.Analyze().Check().Volume
 		edge := last.Solid().EdgeAt(api.V(math.Sqrt(64-9), side, 10))
 		var g api.Group
 		what, size := "filled round", radius
 		if side > 0 {
-			g = doc.FilletSolid([]api.SolidEdge{edge}, size, "")
+			g = doc.Features.FilletSolid([]api.SolidEdge{edge}, size, "")
 		} else {
 			what, size = "chamfered", 2*radius
-			g = doc.ChamferSolid([]api.SolidEdge{edge}, size, "")
+			g = doc.Features.ChamferSolid([]api.SolidEdge{edge}, size, "")
 		}
 		if p := g.Problem(); p != "" {
 			fmt.Fprintln(os.Stderr, p)
 			os.Exit(1)
 		}
-		r := g.Check()
+		r := g.Analyze().Check()
 		added := r.Volume - before
 		fmt.Printf("the band's side at y = %g %s at %g mm: %s, %.3f mm³ added\n", side, what, size,
 			map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], added)
@@ -83,7 +83,7 @@ func main() {
 		last = g
 	}
 	if write {
-		if err := doc.Save("bandfillet.tlspr"); err != nil {
+		if err := doc.File.Save("bandfillet.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

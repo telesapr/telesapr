@@ -25,8 +25,8 @@ Each makes ordinary constraints, one step of undo, which are listed, edited and 
 one that what is already there makes redundant is left out.
 
 ```go
-doc.Flush(top, bottom)
-doc.Concentric(holeA, holeB)
+doc.Assembly.Flush(top, bottom)
+doc.Assembly.Concentric(holeA, holeB)
 ```
 
 ## Bill of materials
@@ -50,10 +50,10 @@ group in the linked file. A file that links itself, by way of others, is followe
 From a script:
 
 ```go
-for _, it := range doc.BillOfMaterials() {
+for _, it := range doc.Assembly.BillOfMaterials() {
 	fmt.Println(it.Count, it.Part, it.File)
 }
-must(doc.ExportBOM("bom.csv"))
+must(doc.Assembly.ExportBOM("bom.csv"))
 ```
 
 ## Interfering parts
@@ -66,7 +66,7 @@ linked from a mesh or a STEP file has no shell; with one in the model, the check
 the triangles of the whole model, as SolveSpace's does.
 
 ```go
-found, meshOnly := doc.Interferences()
+found, meshOnly := doc.Assembly.Interferences()
 for _, f := range found {
 	fmt.Println(f.A, f.B, f.Volume)
 }

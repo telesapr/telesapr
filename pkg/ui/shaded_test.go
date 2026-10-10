@@ -15,14 +15,14 @@ import (
 func TestShadedAppearance(t *testing.T) {
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
-	doc.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
-	block := doc.Extrude(10, "")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	block := doc.Features.Extrude(10, "")
 	dir := t.TempDir()
 	render := func(shaded bool, appearance string) []byte {
 		ss.Shaded = shaded
 		block.SetAppearance(appearance)
 		path := filepath.Join(dir, "view.png")
-		if err := doc.Render(path, 200, 150, "isometric"); err != nil {
+		if err := doc.File.Render(path, 200, 150, "isometric"); err != nil {
 			t.Fatal(err)
 		}
 		data, err := os.ReadFile(path)

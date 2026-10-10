@@ -230,7 +230,7 @@ func (gw *graphicsWindow) PopulateRecentFiles() {
 		gw.ss.Report(gw.ss.Load(path))
 	})
 	gw.populateMenuWithPathnames(gw.linkRecentMenu, gw.ss.RecentFiles, func(path string) {
-		gw.ss.MenuGroup(cmdGroupLink, path)
+		gw.ss.MenuFeatures(cmdGroupLink, path)
 	})
 }
 
@@ -1216,8 +1216,8 @@ func (gw *graphicsWindow) regenerateAll() {
 	ss.ScheduleShowTW()
 }
 
-// MenuRequest runs a Sketch menu command.
-func (gw *graphicsWindow) MenuRequest(id Command) {
+// MenuSketch runs a Sketch menu command.
+func (gw *graphicsWindow) MenuSketch(id Command) {
 	ss := gw.ss
 	var s string
 	switch id {

@@ -25,11 +25,11 @@ func must(err error) {
 
 func main() {
 	doc := Current()
-	block := doc.Rect(V(0, 0, 0), V(40, 30, 0))
-	doc.Coincident(block[0].Start(), doc.Origin())
-	doc.Length(block[0], 40)
-	doc.Length(block[1], 30)
-	body := doc.Extrude(10, "block")
+	block := doc.Sketch.Rect(V(0, 0, 0), V(40, 30, 0))
+	doc.Constrain.Coincident(block[0].Start(), doc.Origin())
+	doc.Constrain.Length(block[0], 40)
+	doc.Constrain.Length(block[1], 30)
+	body := doc.Features.Extrude(10, "block")
 
 	// The boss is sketched on the block's top and extruded down through
 	// the block, so its ends lie at z = 10 and z = -6 and no entity
@@ -40,14 +40,14 @@ func main() {
 			corner = e
 		}
 	}
-	doc.SketchAt(corner, V(1, 0, 0), V(0, 1, 0), "boss-sketch")
-	c := doc.Circle(V(20, 15, 10), 8)
-	doc.Diameter(c, 16)
-	doc.Distance(c.Center(), doc.Workplane("YZ"), 20)
-	doc.Distance(c.Center(), doc.Workplane("ZX"), 15)
-	boss := doc.Extrude(-16, "boss")
+	doc.Features.SketchAt(corner, V(1, 0, 0), V(0, 1, 0), "boss-sketch")
+	c := doc.Sketch.Circle(V(20, 15, 10), 8)
+	doc.Constrain.Diameter(c, 16)
+	doc.Constrain.Distance(c.Center(), doc.Workplane("YZ"), 20)
+	doc.Constrain.Distance(c.Center(), doc.Workplane("ZX"), 15)
+	boss := doc.Features.Extrude(-16, "boss")
 	if len(os.Args) > 1 {
-		must(doc.Save(os.Args[1]))
+		must(doc.File.Save(os.Args[1]))
 	}
-	fmt.Println(boss.Check().Summary())
+	fmt.Println(boss.Analyze().Check().Summary())
 }

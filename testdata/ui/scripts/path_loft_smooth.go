@@ -8,8 +8,8 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/ui/loft_sections.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/ui/loft_sections.tlspr"); err != nil {
 		panic(err)
 	}
-	doc.LoftThrough([]Group{doc.Group("top"), doc.Group("middle"), doc.Group("bottom")}, "")
+	doc.Features.LoftThrough([]Group{doc.Group("top"), doc.Group("middle"), doc.Group("bottom")}, "")
 }

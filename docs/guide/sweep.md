@@ -31,15 +31,15 @@ From a script:
 
 ```go
 path := []api.Entity{
-	doc.Line(api.V(0, 0, 0), api.V(0, 0, 30)),
+	doc.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 30)),
 	bend,
-	doc.Line(end, end.Plus(api.V(40, 0, 0))),
+	doc.Sketch.Line(end, end.Plus(api.V(40, 0, 0))),
 }
-doc.SketchIn(doc.Workplane("XY"), "ring")
-doc.Circle(api.V(0, 0, 0), 6)
-tube := doc.Sweep(path, "tube")
-tube.SetTwist(90)               // degrees over the whole path
-tube.SetSweepUp(api.V(0, 0, 1)) // frames held to z; zero turns them least again
+doc.Features.SketchIn(doc.Workplane("XY"), "ring")
+doc.Sketch.Circle(api.V(0, 0, 0), 6)
+tube := doc.Features.Sweep(path, "tube")
+tube.AsSweep().SetTwist(90)               // degrees over the whole path
+tube.AsSweep().SetSweepUp(api.V(0, 0, 1)) // frames held to z; zero turns them least again
 ```
 
 ## Limits
@@ -66,8 +66,8 @@ axis, or a corner out of the plane of the arc beside it, is a problem on the gro
 [`examples/scripts/elbow`](../../examples/scripts/elbow/elbow.go), a duct with two rounded corners.
 
 ```go
-duct := doc.Sweep(path, "duct")
-duct.SetCornerRadius(8)
+duct := doc.Features.Sweep(path, "duct")
+duct.AsSweep().SetCornerRadius(8)
 ```
 
 The path may be edges of the solid so far, picked on the model, alone or with sketch entities:
@@ -77,7 +77,7 @@ names, so it follows them when the model upstream changes. Example:
 block.
 
 ```go
-bead := doc.SweepEdges([]api.SolidEdge{front, right}, nil, "bead")
+bead := doc.Features.SweepEdges([]api.SolidEdge{front, right}, nil, "bead")
 ```
 
 ## Not yet

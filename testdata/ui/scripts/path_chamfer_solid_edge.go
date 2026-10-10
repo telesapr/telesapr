@@ -8,9 +8,9 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/topo/slot.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/topo/slot.tlspr"); err != nil {
 		panic(err)
 	}
 	edge := doc.Group("slot").Solid().Edge("edge 80030010 80050019 0")
-	doc.ChamferSolid([]SolidEdge{edge}, 1, "")
+	doc.Features.ChamferSolid([]SolidEdge{edge}, 1, "")
 }

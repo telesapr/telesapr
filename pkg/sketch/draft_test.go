@@ -19,14 +19,14 @@ func TestDraft(t *testing.T) {
 	ex := block(d, 0, 0, 20, 10, 10)
 	step(d)
 	before := saved(t, d)
-	ex.SetDraft(5)
-	if ex.Draft() != 5 {
-		t.Fatalf("draft %g", ex.Draft())
+	ex.AsExtrude().SetDraft(5)
+	if ex.AsExtrude().Draft() != 5 {
+		t.Fatalf("draft %g", ex.AsExtrude().Draft())
 	}
 	x := 10 * math.Tan(5*math.Pi/180)
 	area := func(z float64) float64 { s := z / 10 * x; return (20 - 2*s) * (10 - 2*s) }
 	want := 10.0 / 6 * (area(0) + 4*area(5) + area(10))
-	r := ex.Check()
+	r := ex.Analyze().Check()
 	if ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 1e-6*want {
 		t.Fatalf("drafted block: %q, %s, want %g", ex.Problem(), r.String(), want)
 	}
@@ -47,25 +47,25 @@ func TestDraft(t *testing.T) {
 	}
 	undoRedo(t, d, before)
 	back := roundTrip(t, d)
-	if g := back.Group(ex.Name()); g.Draft() != 5 || math.Abs(g.Check().Volume-want) > 1e-6*want {
-		t.Errorf("after a round trip: draft %g, volume %g", g.Draft(), g.Check().Volume)
+	if g := back.Group(ex.Name()); g.AsExtrude().Draft() != 5 || math.Abs(g.Analyze().Check().Volume-want) > 1e-6*want {
+		t.Errorf("after a round trip: draft %g, volume %g", g.AsExtrude().Draft(), g.Analyze().Check().Volume)
 	}
 	// An expression.
-	if err := ex.SetExpr(sketch.GroupValC, "2+1"); err != nil || ex.Draft() != 3 {
-		t.Errorf("draft by expression: %g, %v", ex.Draft(), err)
+	if err := ex.SetExpr(sketch.GroupValC, "2+1"); err != nil || ex.AsExtrude().Draft() != 3 {
+		t.Errorf("draft by expression: %g, %v", ex.AsExtrude().Draft(), err)
 	}
 	// Leaning out.
-	ex.SetDraft(-5)
-	if r := ex.Check(); ex.Problem() != "" || !r.Sound() || r.Max.X < 20+x-1e-9 {
+	ex.AsExtrude().SetDraft(-5)
+	if r := ex.Analyze().Check(); ex.Problem() != "" || !r.Sound() || r.Max.X < 20+x-1e-9 {
 		t.Errorf("leaning out: %q, %s", ex.Problem(), r.String())
 	}
 	// The sides meet: a problem, and the block without the draft.
-	ex.SetDraft(40)
-	if r := ex.Check(); !strings.Contains(ex.Problem(), "meet") || math.Abs(r.Volume-2000) > 1e-6 {
+	ex.AsExtrude().SetDraft(40)
+	if r := ex.Analyze().Check(); !strings.Contains(ex.Problem(), "meet") || math.Abs(r.Volume-2000) > 1e-6 {
 		t.Errorf("too steep: %q, volume %g", ex.Problem(), r.Volume)
 	}
-	ex.SetDraft(0)
-	if r := ex.Check(); ex.Problem() != "" || math.Abs(r.Volume-2000) > 1e-6 {
+	ex.AsExtrude().SetDraft(0)
+	if r := ex.Analyze().Check(); ex.Problem() != "" || math.Abs(r.Volume-2000) > 1e-6 {
 		t.Errorf("no draft: %q, volume %g", ex.Problem(), r.Volume)
 	}
 }
@@ -74,15 +74,15 @@ func TestDraft(t *testing.T) {
 // hole a cone widening; and a fillet on the drafted solid's top edge.
 func TestDraftRound(t *testing.T) {
 	d := api.New()
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Circle(api.V(0, 0, 0), 10)
-	d.Circle(api.V(0, 0, 0), 4)
-	ex := d.Extrude(10, "")
-	ex.SetDraft(3)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(0, 0, 0), 10)
+	d.Sketch.Circle(api.V(0, 0, 0), 4)
+	ex := d.Features.Extrude(10, "")
+	ex.AsExtrude().SetDraft(3)
 	x := 10 * math.Tan(3*math.Pi/180)
 	cone := func(r0, r1 float64) float64 { return math.Pi * 10 / 3 * (r0*r0 + r0*r1 + r1*r1) }
 	want := cone(10, 10-x) - cone(4, 4+x)
-	if r := ex.Check(); ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.01*want {
+	if r := ex.Analyze().Check(); ex.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.01*want {
 		t.Fatalf("drafted ring: %q, %s, want %g", ex.Problem(), r.String(), want)
 	}
 	// A sketch on the top face still finds its plane.
@@ -93,15 +93,15 @@ func TestDraftRound(t *testing.T) {
 
 func TestDraftMisuse(t *testing.T) {
 	d := api.New()
-	d.Line(api.V(0, 0, 0), api.V(10, 0, 0))
-	d.Rect(api.V(20, 0, 0), api.V(30, 10, 0))
-	ex := d.Extrude(5, "")
+	d.Sketch.Line(api.V(0, 0, 0), api.V(10, 0, 0))
+	d.Sketch.Rect(api.V(20, 0, 0), api.V(30, 10, 0))
+	ex := d.Features.Extrude(5, "")
 	for name, c := range map[string]struct {
 		fn   func()
 		want string
 	}{
-		"ninety":       {func() { ex.SetDraft(90) }, "between -90 and 90"},
-		"not extruded": {func() { d.Group("sketch-in-plane").SetDraft(1) }, "extrude"},
+		"ninety":       {func() { ex.AsExtrude().SetDraft(90) }, "between -90 and 90"},
+		"not extruded": {func() { d.Group("sketch-in-plane").AsExtrude().SetDraft(1) }, "extrude"},
 	} {
 		func() {
 			defer func() {

@@ -19,10 +19,10 @@ measured.
 From a script:
 
 ```go
-half := doc.Extrude(8, "half")
-m := doc.Mirror(doc.Workplane("YZ"), "bracket")
-m.SetKeepOriginal(false) // only the reflection
-m.SetMirrorSolid(true)   // the whole solid so far
+half := doc.Features.Extrude(8, "half")
+m := doc.Features.Mirror(doc.Workplane("YZ"), "bracket")
+m.AsMirror().SetKeepOriginal(false) // only the reflection
+m.AsMirror().SetMirrorSolid(true)   // the whole solid so far
 ```
 
 ## Not yet

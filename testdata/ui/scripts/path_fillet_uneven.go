@@ -8,8 +8,8 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/topo/ramp.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/topo/ramp.tlspr"); err != nil {
 		panic(err)
 	}
-	doc.Fillet([]Entity{doc.Entity(0x8004001a), doc.Entity(0x80040013)}, 1, "")
+	doc.Features.Fillet([]Entity{doc.Entity(0x8004001a), doc.Entity(0x80040013)}, 1, "")
 }

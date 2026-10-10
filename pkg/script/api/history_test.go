@@ -17,18 +17,18 @@ func names(groups []Group) string {
 func TestMoveGroup(t *testing.T) {
 	d := New()
 	sketch := d.Active()
-	d.Rect(V(0, 0, 0), V(10, 10, 0))
-	ex := d.Extrude(5, "box")
-	in3d := d.Sketch3D("other")
-	d.Line(V(0, 0, 0), V(5, 5, 5))
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	ex := d.Features.Extrude(5, "box")
+	in3d := d.Features.Sketch3D("other")
+	d.Sketch.Line(V(0, 0, 0), V(5, 5, 5))
 
-	if got := names(ex.DependsOn()); got != sketch.String() {
+	if got := names(ex.History().DependsOn()); got != sketch.String() {
 		t.Fatalf("the extrusion depends on %q", got)
 	}
-	if got := names(sketch.UsedBy()); got != "g003-box" {
+	if got := names(sketch.History().UsedBy()); got != "g003-box" {
 		t.Fatalf("the sketch is used by %q", got)
 	}
-	if got := in3d.DependsOn(); len(got) != 0 {
+	if got := in3d.History().DependsOn(); len(got) != 0 {
 		t.Fatalf("the sketch in 3d depends on %v", names(got))
 	}
 
@@ -36,11 +36,11 @@ func TestMoveGroup(t *testing.T) {
 	step := d.Host().(*SketchHost).BeginEval
 	step()
 	before := names(d.Groups())
-	err := ex.MoveBefore(sketch)
+	err := ex.History().MoveBefore(sketch)
 	if err == nil || err.Error() != "g003-box can't move before g002-sketch-in-plane, which it uses (operand)" {
 		t.Fatalf("moving the extrusion before its sketch: %v", err)
 	}
-	if err := sketch.MoveToEnd(); err == nil || !strings.Contains(err.Error(), "which uses it") {
+	if err := sketch.History().MoveToEnd(); err == nil || !strings.Contains(err.Error(), "which uses it") {
 		t.Fatalf("moving the sketch to the end: %v", err)
 	}
 	if got := names(d.Groups()); got != before {
@@ -48,30 +48,30 @@ func TestMoveGroup(t *testing.T) {
 	}
 
 	step()
-	if err := in3d.MoveBefore(sketch); err != nil {
+	if err := in3d.History().MoveBefore(sketch); err != nil {
 		t.Fatal(err)
 	}
 	if got, want := names(d.Groups()), "g004-other g002-sketch-in-plane g003-box"; got != want {
 		t.Fatalf("groups %q, want %q", got, want)
 	}
-	if v := ex.Check().Volume; v < 499 || v > 501 {
+	if v := ex.Analyze().Check().Volume; v < 499 || v > 501 {
 		t.Fatalf("the box after the move has volume %v", v)
 	}
 	step()
-	if err := ex.MoveBefore(sketch); err == nil {
+	if err := ex.History().MoveBefore(sketch); err == nil {
 		t.Fatal("moved the extrusion before its sketch")
 	}
-	if !d.Undo() {
+	if !d.Edit.Undo() {
 		t.Fatal("no undo step")
 	}
 	if got := names(d.Groups()); got != before {
 		t.Fatalf("undo left %q, want %q", got, before)
 	}
-	if !d.Redo() {
+	if !d.Edit.Redo() {
 		t.Fatal("no redo step")
 	}
 	step()
-	if err := in3d.MoveToEnd(); err != nil {
+	if err := in3d.History().MoveToEnd(); err != nil {
 		t.Fatal(err)
 	}
 	if got := names(d.Groups()); got != before {
@@ -82,14 +82,14 @@ func TestMoveGroup(t *testing.T) {
 func TestMoveGroupMisuse(t *testing.T) {
 	d := New()
 	g := d.Active()
-	gone := d.Sketch3D("gone")
+	gone := d.Features.Sketch3D("gone")
 	gone.Delete()
 	for name, fn := range map[string]func(){
-		"move before no group":     func() { _ = g.MoveBefore(Group{}) },
-		"move a deleted group":     func() { _ = gone.MoveToEnd() },
-		"move before deleted":      func() { _ = g.MoveBefore(gone) },
-		"dependencies of deleted":  func() { gone.DependsOn() },
-		"users of a deleted group": func() { gone.UsedBy() },
+		"move before no group":     func() { _ = g.History().MoveBefore(Group{}) },
+		"move a deleted group":     func() { _ = gone.History().MoveToEnd() },
+		"move before deleted":      func() { _ = g.History().MoveBefore(gone) },
+		"dependencies of deleted":  func() { gone.History().DependsOn() },
+		"users of a deleted group": func() { gone.History().UsedBy() },
 	} {
 		func() {
 			defer func() {
@@ -105,11 +105,11 @@ func TestMoveGroupMisuse(t *testing.T) {
 func TestSuppressWhole(t *testing.T) {
 	d := New()
 	sketch := d.Active()
-	d.Rect(V(0, 0, 0), V(10, 10, 0))
-	ex := d.Extrude(5, "box")
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	ex := d.Features.Extrude(5, "box")
 	d.Activate(sketch)
 	d.Activate(ex)
-	box := ex.Check().Volume
+	box := ex.Analyze().Check().Volume
 
 	step := d.Host().(*SketchHost).BeginEval
 	step()
@@ -123,7 +123,7 @@ func TestSuppressWhole(t *testing.T) {
 	if got := ex.LeftOut(); got != "uses g002-sketch-in-plane, which is suppressed" {
 		t.Fatalf("the extrusion is left out: %q", got)
 	}
-	if len(ex.Entities()) != 0 || ex.Check().Volume != 0 {
+	if len(ex.Entities()) != 0 || ex.Analyze().Check().Volume != 0 {
 		t.Fatal("the extrusion is still there")
 	}
 	if d.Active().H.V != 1 {
@@ -135,15 +135,15 @@ func TestSuppressWhole(t *testing.T) {
 	step()
 	sketch.SetSuppress(Unsuppressed)
 	d.Activate(ex)
-	if ex.LeftOut() != "" || ex.Check().Volume != box {
+	if ex.LeftOut() != "" || ex.Analyze().Check().Volume != box {
 		t.Fatal("the box didn't come back")
 	}
 	step()
 	ex.SetSuppress(SuppressSolid)
-	if ex.Suppression() != SuppressSolid || ex.LeftOut() != "" || ex.Check().Volume != 0 {
+	if ex.Suppression() != SuppressSolid || ex.LeftOut() != "" || ex.Analyze().Check().Volume != 0 {
 		t.Fatal("suppressing the solid")
 	}
-	if !d.Undo() || ex.Suppression() != Unsuppressed {
+	if !d.Edit.Undo() || ex.Suppression() != Unsuppressed {
 		t.Fatal("undo")
 	}
 }
@@ -151,7 +151,7 @@ func TestSuppressWhole(t *testing.T) {
 func TestSuppressMisuse(t *testing.T) {
 	d := New()
 	sketch := d.Active()
-	d.Line(V(0, 0, 0), V(5, 0, 0))
+	d.Sketch.Line(V(0, 0, 0), V(5, 0, 0))
 	sketch.SetSuppress(SuppressWhole)
 	for name, fn := range map[string]func(){
 		"activate a group left out": func() { d.Activate(sketch) },
@@ -172,17 +172,17 @@ func TestSuppressMisuse(t *testing.T) {
 func TestBrokenReferences(t *testing.T) {
 	d := New()
 	sketch := d.Active()
-	d.Rect(V(0, 0, 0), V(10, 10, 0))
-	d.Extrude(5, "box")
-	d.Translate(2, V(20, 0, 0), "copies")
-	if refs := d.BrokenReferences(); len(refs) != 0 {
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	d.Features.Extrude(5, "box")
+	d.Features.Translate(2, V(20, 0, 0), "copies")
+	if refs := d.Features.BrokenReferences(); len(refs) != 0 {
 		t.Fatalf("broken before anything was deleted: %v", refs)
 	}
 
 	step := d.Host().(*SketchHost).BeginEval
 	step()
 	sketch.Delete()
-	refs := d.BrokenReferences()
+	refs := d.Features.BrokenReferences()
 	var lines []string
 	for _, r := range refs {
 		lines = append(lines, r.Text)
@@ -199,11 +199,11 @@ func TestBrokenReferences(t *testing.T) {
 		t.Fatalf("the deleted group is %q", refs[0].Group.String())
 	}
 
-	d.ClearBrokenReferences()
-	if len(d.BrokenReferences()) != 0 {
+	d.Features.ClearBrokenReferences()
+	if len(d.Features.BrokenReferences()) != 0 {
 		t.Fatal("cleared, the list isn't empty")
 	}
-	if !d.Undo() || len(d.Groups()) != 3 {
+	if !d.Edit.Undo() || len(d.Groups()) != 3 {
 		t.Fatalf("undo left %s", names(d.Groups()))
 	}
 }
@@ -213,18 +213,18 @@ func TestBrokenReferences(t *testing.T) {
 func TestDeleteActiveGroup(t *testing.T) {
 	d := New()
 	first := d.Active()
-	d.Rect(V(0, 0, 0), V(10, 10, 0))
-	box := d.Extrude(5, "box")
-	second := d.SketchIn(first.Workplane(), "second")
-	d.Circle(V(20, 20, 0), 3)
-	d.Extrude(5, "pin")
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	box := d.Features.Extrude(5, "box")
+	second := d.Features.SketchIn(first.Workplane(), "second")
+	d.Sketch.Circle(V(20, 20, 0), 3)
+	d.Features.Extrude(5, "pin")
 
 	// The pin goes with its sketch; the box is what is left before it.
 	second.Delete()
 	if d.Active().H != box.H {
 		t.Fatalf("after deleting the active group's sketch, %v is active, want %v", d.Active(), box)
 	}
-	d.Sketch3D("after")
+	d.Features.Sketch3D("after")
 	if got, want := names(d.Groups()), "g002-sketch-in-plane g003-box g004-after"; got != want {
 		t.Fatalf("groups %q, want %q", got, want)
 	}
@@ -235,7 +235,7 @@ func TestDeleteActiveGroup(t *testing.T) {
 		t.Fatalf("after deleting the active group, %v is active, want %v", d.Active(), box)
 	}
 	// A group that isn't active and isn't used leaves the active one.
-	other := d.Sketch3D("other")
+	other := d.Features.Sketch3D("other")
 	d.Activate(box)
 	other.Delete()
 	if d.Active().H != box.H {
@@ -248,26 +248,26 @@ func TestDeleteActiveGroup(t *testing.T) {
 func TestMoveWithSources(t *testing.T) {
 	d := New()
 	first := d.Active()
-	d.Rect(V(0, 0, 0), V(10, 10, 0))
-	box := d.Extrude(5, "box")
-	pinSketch := d.SketchIn(first.Workplane(), "pin-sketch")
-	d.Circle(V(20, 20, 0), 3)
-	pin := d.Extrude(5, "pin")
-	in3d := d.Sketch3D("free")
-	d.Line(V(0, 0, 0), V(5, 5, 5))
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	box := d.Features.Extrude(5, "box")
+	pinSketch := d.Features.SketchIn(first.Workplane(), "pin-sketch")
+	d.Sketch.Circle(V(20, 20, 0), 3)
+	pin := d.Features.Extrude(5, "pin")
+	in3d := d.Features.Sketch3D("free")
+	d.Sketch.Line(V(0, 0, 0), V(5, 5, 5))
 
-	if got := names(pin.OwnSources()); got != "g004-pin-sketch g005-pin" {
+	if got := names(pin.History().OwnSources()); got != "g004-pin-sketch g005-pin" {
 		t.Fatalf("the pin's own sources are %q", got)
 	}
 	// The first sketch's workplane is the references'; the box's
 	// sketch is its own.
-	if got := names(box.OwnSources()); got != "g002-sketch-in-plane g003-box" {
+	if got := names(box.History().OwnSources()); got != "g002-sketch-in-plane g003-box" {
 		t.Fatalf("the box's own sources are %q", got)
 	}
 	step := d.Host().(*SketchHost).BeginEval
 
 	step()
-	if err := in3d.MoveBefore(pinSketch); err != nil {
+	if err := in3d.History().MoveBefore(pinSketch); err != nil {
 		t.Fatal(err)
 	}
 	before := names(d.Groups())
@@ -277,7 +277,7 @@ func TestMoveWithSources(t *testing.T) {
 	// Moving the pin alone leaves its sketch behind; with its sources
 	// both go.
 	step()
-	moved, err := pin.MoveWithSourcesBefore(in3d)
+	moved, err := pin.History().MoveWithSourcesBefore(in3d)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,16 +288,16 @@ func TestMoveWithSources(t *testing.T) {
 		t.Fatalf("groups %q, want %q", got, want)
 	}
 	step()
-	if _, err := pin.MoveToEndWithSources(); err != nil {
+	if _, err := pin.History().MoveToEndWithSources(); err != nil {
 		t.Fatal(err)
 	}
 	if got := names(d.Groups()); got != before {
 		t.Fatalf("groups %q, want %q", got, before)
 	}
-	if v := pin.Check().Volume; v < 638 || v > 642 { // the box and the pin
+	if v := pin.Analyze().Check().Volume; v < 638 || v > 642 { // the box and the pin
 		t.Fatalf("the pin after the move has volume %v", v)
 	}
-	if !d.Undo() || names(d.Groups()) != "g002-sketch-in-plane g003-box g004-pin-sketch g005-pin g006-free" {
+	if !d.Edit.Undo() || names(d.Groups()) != "g002-sketch-in-plane g003-box g004-pin-sketch g005-pin g006-free" {
 		t.Fatalf("undo left %q", names(d.Groups()))
 	}
 
@@ -311,16 +311,16 @@ func TestMoveWithSources(t *testing.T) {
 			break
 		}
 	}
-	d.SketchAt(corner, V(1, 0, 0), V(0, 1, 0), "on-pin")
-	if _, err := pin.MoveToEndWithSources(); err == nil || !strings.Contains(err.Error(), "can't move after") {
+	d.Features.SketchAt(corner, V(1, 0, 0), V(0, 1, 0), "on-pin")
+	if _, err := pin.History().MoveToEndWithSources(); err == nil || !strings.Contains(err.Error(), "can't move after") {
 		t.Fatalf("moving the pin after a sketch on its face: %v", err)
 	}
-	if _, err := pin.MoveWithSourcesBefore(pinSketch); err == nil || !strings.Contains(err.Error(), "moves with it") {
+	if _, err := pin.History().MoveWithSourcesBefore(pinSketch); err == nil || !strings.Contains(err.Error(), "moves with it") {
 		t.Fatalf("moving the pin before its own sketch: %v", err)
 	}
 	for name, fn := range map[string]func(){
-		"move with sources before no group": func() { _, _ = pin.MoveWithSourcesBefore(Group{}) },
-		"own sources of no group":           func() { Group{d: d, H: in3d.H}.OwnSources(); Group{d: d}.OwnSources() },
+		"move with sources before no group": func() { _, _ = pin.History().MoveWithSourcesBefore(Group{}) },
+		"own sources of no group":           func() { Group{d: d, H: in3d.H}.History().OwnSources(); Group{d: d}.History().OwnSources() },
 	} {
 		func() {
 			defer func() {

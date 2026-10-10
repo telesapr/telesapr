@@ -7,8 +7,8 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	if err := doc.Load("../../testdata/ui/loft_profiles.tlspr"); err != nil {
+	if err := doc.File.Load("../../testdata/ui/loft_profiles.tlspr"); err != nil {
 		panic(err)
 	}
-	doc.Loft(doc.Group("top"), doc.Group("bottom"), "").SetTangency(1, 0.5)
+	doc.Features.Loft(doc.Group("top"), doc.Group("bottom"), "").AsLoft().SetTangency(1, 0.5)
 }

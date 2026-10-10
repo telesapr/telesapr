@@ -24,14 +24,14 @@ import (
 
 func main() {
 	doc := api.Current()
-	sides := doc.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
-	doc.Coincident(sides[0].Start(), doc.Origin())
-	doc.Length(sides[0], 40)
-	doc.Length(sides[1], 20)
-	hole := doc.Circle(api.V(10, 10, 0), 3)
-	doc.Diameter(hole, 6)
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
+	doc.Constrain.Coincident(sides[0].Start(), doc.Origin())
+	doc.Constrain.Length(sides[0], 40)
+	doc.Constrain.Length(sides[1], 20)
+	hole := doc.Sketch.Circle(api.V(10, 10, 0), 3)
+	doc.Constrain.Diameter(hole, 6)
 	outline := doc.Active()
-	doc.Extrude(4, "plate")
+	doc.Features.Extrude(4, "plate")
 
 	// The whole drawing: the groups in order, then the active one's
 	// requests and constraints.

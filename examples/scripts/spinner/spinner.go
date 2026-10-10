@@ -63,21 +63,21 @@ func main() {
 	}
 	foot, top, h, chamfer := 10.0, 6.0, 8.0, 1.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.SketchIn(doc.Workplane("ZX"), "profile")
-	axis := doc.Line(api.V(0, 0, -2), api.V(0, 0, h+2))
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Features.SketchIn(doc.Workplane("ZX"), "profile")
+	axis := doc.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, h+2))
 	axis.SetConstruction(true)
-	doc.Polyline(true, api.V(0, 0, 0), api.V(foot, 0, 0), api.V(top, 0, h), api.V(0, 0, h))
-	body := doc.Lathe(axis, "body")
+	doc.Sketch.Polyline(true, api.V(0, 0, 0), api.V(foot, 0, 0), api.V(top, 0, h), api.V(0, 0, h))
+	body := doc.Features.Lathe(axis, "body")
 
 	s := body.Solid()
-	doc.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(top*math.Cos(1), top*math.Sin(1), h))}, radius, "rounded")
-	spinner := doc.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(foot*math.Cos(1), foot*math.Sin(1), 0))}, chamfer, "foot")
+	doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(top*math.Cos(1), top*math.Sin(1), h))}, radius, "rounded")
+	spinner := doc.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(foot*math.Cos(1), foot*math.Sin(1), 0))}, chamfer, "foot")
 	if p := spinner.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := spinner.Check()
+	r := spinner.Analyze().Check()
 	// The side runs out and down from the top, in and up from the foot.
 	l := math.Hypot(foot-top, h)
 	want := math.Pi*h/3*(foot*foot+foot*top+top*top) -
@@ -89,7 +89,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("spinner.tlspr"); err != nil {
+		if err := doc.File.Save("spinner.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

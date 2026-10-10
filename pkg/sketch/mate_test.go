@@ -14,19 +14,19 @@ import (
 func matePart(t *testing.T) (d *api.Doc, a, b api.Group) {
 	t.Helper()
 	p := api.New()
-	p.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
-	p.Circle(api.V(5, 5, 0), 2)
-	p.Extrude(4, "")
+	p.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	p.Sketch.Circle(api.V(5, 5, 0), 2)
+	p.Features.Extrude(4, "")
 	path := filepath.Join(t.TempDir(), "plate.tlspr")
-	if err := p.Save(path); err != nil {
+	if err := p.File.Save(path); err != nil {
 		t.Fatal(err)
 	}
 	d = api.New()
 	var err error
-	if a, err = d.Link(path, "a"); err != nil {
+	if a, err = d.Assembly.Link(path, "a"); err != nil {
 		t.Fatal(err)
 	}
-	if b, err = d.Link(path, "b"); err != nil {
+	if b, err = d.Assembly.Link(path, "b"); err != nil {
 		t.Fatal(err)
 	}
 	return d, a, b
@@ -73,7 +73,7 @@ func TestMates(t *testing.T) {
 
 	d, a, b := matePart(t)
 	ca, cb := first(t, a, "circle", all), first(t, b, "circle", all)
-	cs := d.Concentric(ca, cb)
+	cs := d.Assembly.Concentric(ca, cb)
 	if len(cs) != 3 || !b.Solved() || !near3(ca.Center().Pos(), cb.Center().Pos()) {
 		t.Errorf("concentric: %d constraints, solved %v, centres %v %v", len(cs), b.Solved(), ca.Center().Pos(), cb.Center().Pos())
 	}
@@ -84,14 +84,14 @@ func TestMates(t *testing.T) {
 	// left free, so the two together solve.
 	_, topA := ends(a)
 	botB, _ := ends(b)
-	if cs := d.Flush(topA, botB); len(cs) != 1 || !b.Solved() {
+	if cs := d.Assembly.Flush(topA, botB); len(cs) != 1 || !b.Solved() {
 		t.Errorf("flush after concentric: %d constraints, solved %v", len(cs), b.Solved())
 	}
 
 	d, a, b = matePart(t)
 	_, topA = ends(a)
 	botB, _ = ends(b)
-	cs = d.Flush(topA, botB)
+	cs = d.Assembly.Flush(topA, botB)
 	if len(cs) != 2 || !b.Solved() {
 		t.Errorf("flush: %d constraints, solved %v", len(cs), b.Solved())
 	}
@@ -101,7 +101,7 @@ func TestMates(t *testing.T) {
 
 	d, a, b = matePart(t)
 	la, lb := first(t, a, "line", all), first(t, b, "line", all)
-	cs = d.Hinge(la, lb)
+	cs = d.Assembly.Hinge(la, lb)
 	if len(cs) != 2 || !b.Solved() || !near3(la.Start().Pos(), lb.Start().Pos()) {
 		t.Errorf("hinge: %d constraints, solved %v", len(cs), b.Solved())
 	}
@@ -110,9 +110,9 @@ func TestMates(t *testing.T) {
 	}
 
 	for name, fn := range map[string]func(){
-		"concentric of lines": func() { d.Concentric(la, lb) },
-		"flush of lines":      func() { d.Flush(la, lb) },
-		"hinge of circles":    func() { d.Hinge(first(t, a, "circle", all), first(t, b, "circle", all)) },
+		"concentric of lines": func() { d.Assembly.Concentric(la, lb) },
+		"flush of lines":      func() { d.Assembly.Flush(la, lb) },
+		"hinge of circles":    func() { d.Assembly.Hinge(first(t, a, "circle", all), first(t, b, "circle", all)) },
 	} {
 		func() {
 			defer func() {

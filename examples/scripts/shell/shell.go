@@ -35,16 +35,16 @@ func main() {
 	}
 	const w, d, h = 60.0, 40.0, 25.0
 	doc := api.Current()
-	doc.Rect(api.V(0, 0, 0), api.V(w, d, 0))
-	block := doc.Extrude(h, "block")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(w, d, 0))
+	block := doc.Features.Extrude(h, "block")
 
 	top := block.Solid().FaceAt(api.V(w/2, d/2, h))
-	box := doc.ShellSolid([]api.SolidFace{top}, thick, "enclosure")
+	box := doc.Features.ShellSolid([]api.SolidFace{top}, thick, "enclosure")
 	if p := box.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := box.Check()
+	r := box.Analyze().Check()
 	want := w*d*h - (w-2*thick)*(d-2*thick)*(h-thick)
 	fmt.Printf("a %g x %g x %g block hollowed to walls %g mm thick: %s, %.1f mm³ (%.1f by the formula)\n",
 		w, d, h, thick, map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume, want)
@@ -52,7 +52,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("shell.tlspr"); err != nil {
+		if err := doc.File.Save("shell.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

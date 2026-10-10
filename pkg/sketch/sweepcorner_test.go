@@ -13,12 +13,12 @@ import (
 // cornerPath draws, in the ZX workplane, up from the origin by up, then
 // at angle degrees from the vertical for along; a corner between them.
 func cornerPath(d *api.Doc, up, along, angle float64) []api.Entity {
-	d.SketchIn(d.Workplane("ZX"), "path")
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
 	th := angle * math.Pi / 180
 	top := api.V(0, 0, up)
 	return []api.Entity{
-		d.Line(api.V(0, 0, 0), top),
-		d.Line(top, top.Plus(api.V(math.Sin(th), 0, math.Cos(th)).ScaledBy(along))),
+		d.Sketch.Line(api.V(0, 0, 0), top),
+		d.Sketch.Line(top, top.Plus(api.V(math.Sin(th), 0, math.Cos(th)).ScaledBy(along))),
 	}
 }
 
@@ -29,15 +29,15 @@ func cornerPath(d *api.Doc, up, along, angle float64) []api.Entity {
 func TestSweepCorner(t *testing.T) {
 	d := api.New()
 	path := cornerPath(d, 10, 12, 90)
-	d.SketchIn(d.Workplane("XY"), "profile")
-	d.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
 	step(d)
 	before := saved(t, d)
-	s := d.Sweep(path, "")
+	s := d.Features.Sweep(path, "")
 	if p := s.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := s.Check()
+	r := s.Analyze().Check()
 	if want := 8.0 * 22; !r.Sound() || math.Abs(r.Volume-want) > 1e-6*want {
 		t.Fatalf("an L: %s, want %g", r.String(), want)
 	}
@@ -45,12 +45,12 @@ func TestSweepCorner(t *testing.T) {
 	roundTrip(t, d)
 	// A round profile, mitred: elliptical joints.
 	d2 := api.New()
-	d2.SetChordTolerance(0.002)
+	d2.Edit.SetChordTolerance(0.002)
 	path2 := cornerPath(d2, 10, 12, 60)
-	d2.SketchIn(d2.Workplane("XY"), "profile")
-	d2.Circle(api.V(0, 0, 0), 2)
-	s2 := d2.Sweep(path2, "")
-	r2 := s2.Check()
+	d2.Features.SketchIn(d2.Workplane("XY"), "profile")
+	d2.Sketch.Circle(api.V(0, 0, 0), 2)
+	s2 := d2.Features.Sweep(path2, "")
+	r2 := s2.Analyze().Check()
 	if want := math.Pi * 4 * 22; s2.Problem() != "" || !r2.Sound() || math.Abs(r2.Volume-want) > 0.005*want {
 		t.Fatalf("a round elbow: %q %s, want %g", s2.Problem(), r2.String(), want)
 	}
@@ -62,18 +62,18 @@ func TestSweepCornerRefused(t *testing.T) {
 		want string
 	}{
 		"too short": {func(d *api.Doc) []api.Entity {
-			d.SketchIn(d.Workplane("ZX"), "path")
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			return []api.Entity{
-				d.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
-				d.Line(api.V(0, 0, 10), api.V(0.5, 0, 10)),
-				d.Line(api.V(0.5, 0, 10), api.V(0.5, 0, 0)),
+				d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+				d.Sketch.Line(api.V(0, 0, 10), api.V(0.5, 0, 10)),
+				d.Sketch.Line(api.V(0.5, 0, 10), api.V(0.5, 0, 0)),
 			}
 		}, "too short"},
 	} {
 		d := api.New()
 		path := c.path(d)
-		d.SketchIn(d.Workplane("XY"), "profile")
-		d.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
 		func() {
 			defer func() {
 				err, ok := recover().(error)
@@ -81,7 +81,7 @@ func TestSweepCornerRefused(t *testing.T) {
 					t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
 				}
 			}()
-			d.Sweep(path, "")
+			d.Features.Sweep(path, "")
 		}()
 	}
 }
@@ -102,19 +102,19 @@ func TestSweepCornerSweep(t *testing.T) {
 	}
 	grid.Run(func(p sweep.Point) error {
 		d := api.New()
-		d.SetChordTolerance(0.002)
+		d.Edit.SetChordTolerance(0.002)
 		path := cornerPath(d, 10, p.Float("along"), p.Float("angle"))
-		d.SketchIn(d.Workplane("XY"), "profile")
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
 		area := 0.0
 		if p.String("profile") == "square" {
-			d.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+			d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
 			area = 6
 		} else {
-			d.Circle(api.V(0, 0, 0), 1.5)
+			d.Sketch.Circle(api.V(0, 0, 0), 1.5)
 			area = math.Pi * 2.25
 		}
-		s := d.Sweep(path, "")
-		r := s.Check()
+		s := d.Features.Sweep(path, "")
+		r := s.Analyze().Check()
 		want := area * (10 + p.Float("along"))
 		tol := 1e-6
 		if p.String("profile") == "circle" {
@@ -142,18 +142,18 @@ func TestSweepSolidEdges(t *testing.T) {
 	right := s.EdgeAt(api.V(20, 5, 5))
 	// The profile: a small square on the block's left end, across the
 	// front top edge's start.
-	d.SketchIn(d.Workplane("YZ"), "profile")
-	d.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
+	d.Features.SketchIn(d.Workplane("YZ"), "profile")
+	d.Sketch.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
 	step(d)
 	before := saved(t, d)
-	g := d.SweepEdges([]api.SolidEdge{right, front}, nil, "")
+	g := d.Features.SweepEdges([]api.SolidEdge{right, front}, nil, "")
 	if p := g.Problem(); p != "" {
 		t.Fatal(p)
 	}
 	if len(g.SolidEdges()) != 2 {
 		t.Errorf("the path's edges: %v", g.SolidEdges())
 	}
-	r := g.Check()
+	r := g.Analyze().Check()
 	// The block and the bead, mitred at the corner: the bead lies a
 	// quarter in the block along each edge, a quarter of its 1 by 1
 	// section, so it adds three quarters of a square mm per mm, along

@@ -37,23 +37,23 @@ func main() {
 	}
 	const radius, side = 20.0, 30.0
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
+	doc.Edit.SetChordTolerance(0.01)
 
-	round := doc.SketchIn(doc.Workplane("XY"), "round")
-	doc.Circle(api.V(0, 0, 0), radius)
+	round := doc.Features.SketchIn(doc.Workplane("XY"), "round")
+	doc.Sketch.Circle(api.V(0, 0, 0), radius)
 
 	// The square's workplane sits on a point h up the z axis, drawn in 3d.
-	doc.Sketch3D("")
-	origin := doc.Point(api.V(0, 0, h))
-	square := doc.SketchAt(origin, api.V(1, 0, 0), api.V(0, 1, 0), "square")
-	doc.Rect(api.V(-side/2, -side/2, h), api.V(side/2, side/2, h))
+	doc.Features.Sketch3D("")
+	origin := doc.Sketch.Point(api.V(0, 0, h))
+	square := doc.Features.SketchAt(origin, api.V(1, 0, 0), api.V(0, 1, 0), "square")
+	doc.Sketch.Rect(api.V(-side/2, -side/2, h), api.V(side/2, side/2, h))
 
-	duct := doc.Loft(round, square, "duct")
+	duct := doc.Features.Loft(round, square, "duct")
 	if p := duct.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := duct.Check()
+	r := duct.Analyze().Check()
 	// Frustums of squares: the circle's inscribed square (area 2r²) and
 	// its circumscribed one (4r²), each to the top square.
 	frustum := func(a0, a1 float64) float64 { return h / 3 * (a0 + a1 + math.Sqrt(a0*a1)) }
@@ -64,7 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("loft.tlspr"); err != nil {
+		if err := doc.File.Save("loft.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

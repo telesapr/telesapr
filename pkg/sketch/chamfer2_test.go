@@ -43,15 +43,15 @@ func TestChamferTwoDistances(t *testing.T) {
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 5)
 	edge := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
-	c := d.Chamfer([]api.Entity{edge}, 1, "")
+	c := d.Features.Chamfer([]api.Entity{edge}, 1, "")
 	before := saved(t, d)
 	step(d)
-	c.SetSecondDistance(2)
+	c.AsChamfer().SetSecondDistance(2)
 	if p := c.Problem(); p != "" {
 		t.Fatal(p)
 	}
 	undoRedo(t, d, before)
-	r := c.Check()
+	r := c.Analyze().Check()
 	if !r.Sound() || math.Abs(r.Volume-(500-0.5*1*2*10)) > 1e-6 {
 		t.Fatalf("chamfer of 1 and 2: %s", r.String())
 	}
@@ -65,40 +65,40 @@ func TestChamferTwoDistances(t *testing.T) {
 	if math.Abs(front-wantFront) > 1e-9 || math.Abs(top-wantTop) > 1e-9 {
 		t.Fatalf("set back %g on the front and %g on the top, want %g and %g", front, top, wantFront, wantTop)
 	}
-	c.SwapDistances()
-	if c.Distance() != 2 || c.SecondDistance() != 1 {
-		t.Fatalf("swapped: %g and %g", c.Distance(), c.SecondDistance())
+	c.AsChamfer().SwapDistances()
+	if c.AsChamfer().Distance() != 2 || c.AsChamfer().SecondDistance() != 1 {
+		t.Fatalf("swapped: %g and %g", c.AsChamfer().Distance(), c.AsChamfer().SecondDistance())
 	}
 	if f, tp := setbacks(t, c, 5); math.Abs(f-wantTop) > 1e-9 || math.Abs(tp-wantFront) > 1e-9 {
 		t.Fatalf("swapped: set back %g on the front and %g on the top", f, tp)
 	}
-	c.SwapDistances()
+	c.AsChamfer().SwapDistances()
 
 	// In the file, in the document's unit, with an expression.
 	if err := c.SetExpr(sketch.GroupValC, "1+1"); err != nil {
 		t.Fatal(err)
 	}
-	d.Regen()
+	d.Edit.Regen()
 	back := roundTrip(t, d)
 	bc := back.Group(c.Name())
-	if bc.SecondDistance() != 2 || bc.Expr(sketch.GroupValC) != "1+1" {
-		t.Fatalf("reopened: %g, %q", bc.SecondDistance(), bc.Expr(sketch.GroupValC))
+	if bc.AsChamfer().SecondDistance() != 2 || bc.Expr(sketch.GroupValC) != "1+1" {
+		t.Fatalf("reopened: %g, %q", bc.AsChamfer().SecondDistance(), bc.Expr(sketch.GroupValC))
 	}
 
 	// Back to one distance.
-	c.SetSecondDistance(0)
-	if v := c.Check().Volume; math.Abs(v-495) > 1e-6 {
+	c.AsChamfer().SetSecondDistance(0)
+	if v := c.Analyze().Check().Volume; math.Abs(v-495) > 1e-6 {
 		t.Fatalf("one distance again: %g", v)
 	}
 
 	// In inches: a quarter and a half of one, which read back exactly.
 	d = api.New()
 	ex = block(d, 0, 0, 30, 30, 30)
-	c = d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 30), api.V(30, 0, 30))}, 6.35, "")
-	c.SetSecondDistance(12.7)
-	d.SetUnits(core.UnitInches)
+	c = d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 30), api.V(30, 0, 30))}, 6.35, "")
+	c.AsChamfer().SetSecondDistance(12.7)
+	d.View.SetUnits(core.UnitInches)
 	back = roundTrip(t, d)
-	if v := back.Group(c.Name()).SecondDistance(); v != 12.7 {
+	if v := back.Group(c.Name()).AsChamfer().SecondDistance(); v != 12.7 {
 		t.Fatalf("reopened in inches: %g mm", v)
 	}
 }
@@ -113,9 +113,9 @@ func TestChamferTwoDistancesCorner(t *testing.T) {
 		lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
 		lineAlong(t, ex, api.V(10, 0, 0), api.V(10, 0, 10)),
 	}
-	c := d.Chamfer(edges, 1, "")
-	c.SetSecondDistance(2)
-	r := c.Check()
+	c := d.Features.Chamfer(edges, 1, "")
+	c.AsChamfer().SetSecondDistance(2)
+	r := c.Analyze().Check()
 	// Three prisms of 1*10 each, less what they share at the corner.
 	if c.Problem() != "" || !r.Sound() || r.Volume > 1000-30+4 || r.Volume < 1000-30 {
 		t.Fatalf("chamfered corner: %q %s", c.Problem(), r.String())
@@ -127,27 +127,27 @@ func TestChamferTwoDistancesCorner(t *testing.T) {
 // turned about it, whose centroid is a third of a in from the rim.
 func TestChamferTwoDistancesCircle(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.002)
-	d.Circle(api.V(0, 0, 0), 5)
-	ex := d.Extrude(10, "")
+	d.Edit.SetChordTolerance(0.002)
+	d.Sketch.Circle(api.V(0, 0, 0), 5)
+	ex := d.Features.Extrude(10, "")
 	var rim api.Entity
 	for _, e := range ex.Entities() {
 		if e.Kind() == "circle" && math.Abs(e.Center().Pos().Z-10) < 1e-9 {
 			rim = e
 		}
 	}
-	before := ex.Check().Volume
-	c := d.Chamfer([]api.Entity{rim}, 1, "")
-	c.SetSecondDistance(2)
-	r := c.Check()
+	before := ex.Analyze().Check().Volume
+	c := d.Features.Chamfer([]api.Entity{rim}, 1, "")
+	c.AsChamfer().SetSecondDistance(2)
+	r := c.Analyze().Check()
 	took := before - r.Volume
 	cut := func(a, b float64) float64 { return 2 * math.Pi * (5 - a/3) * a * b / 2 }
 	if c.Problem() != "" || !r.Sound() ||
 		math.Abs(took-cut(1, 2)) > 0.005*cut(1, 2) && math.Abs(took-cut(2, 1)) > 0.005*cut(2, 1) {
 		t.Fatalf("%q, %s: took %g, want %g or %g", c.Problem(), r.String(), took, cut(1, 2), cut(2, 1))
 	}
-	c.SwapDistances()
-	took2 := before - c.Check().Volume
+	c.AsChamfer().SwapDistances()
+	took2 := before - c.Analyze().Check().Volume
 	if math.Abs(took2-took) < 0.1 {
 		t.Fatalf("swapping the distances took %g, as before", took2)
 	}
@@ -157,15 +157,15 @@ func TestChamferTwoDistancesRefused(t *testing.T) {
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 5)
 	edge := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
-	c := d.Chamfer([]api.Entity{edge}, 1, "")
+	c := d.Features.Chamfer([]api.Entity{edge}, 1, "")
 	for name, tc := range map[string]struct {
 		fn   func()
 		want string
 	}{
-		"negative":       {func() { c.SetSecondDistance(-1) }, "more than zero"},
-		"swap one":       {func() { c.SwapDistances() }, "has one distance"},
-		"not a chamfer":  {func() { ex.SetSecondDistance(1) }, "chamfer"},
-		"read extrusion": {func() { ex.SecondDistance() }, "chamfer"},
+		"negative":       {func() { c.AsChamfer().SetSecondDistance(-1) }, "more than zero"},
+		"swap one":       {func() { c.AsChamfer().SwapDistances() }, "has one distance"},
+		"not a chamfer":  {func() { ex.AsChamfer().SetSecondDistance(1) }, "chamfer"},
+		"read extrusion": {func() { ex.AsChamfer().SecondDistance() }, "chamfer"},
 	} {
 		func() {
 			defer func() {
@@ -181,7 +181,7 @@ func TestChamferTwoDistancesRefused(t *testing.T) {
 		t.Error("a second distance of -1 was taken")
 	}
 	// Wider than the face.
-	c.SetSecondDistance(20)
+	c.AsChamfer().SetSecondDistance(20)
 	if p := c.Problem(); p == "" {
 		t.Error("a second distance wider than the face made no problem")
 	}
@@ -205,12 +205,12 @@ func TestChamferTwoDistancesSweep(t *testing.T) {
 		th := p.Float("angle") * math.Pi / 180
 		d1, d2 := p.Float("d1"), p.Float("d2")
 		d := api.New()
-		d.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
-		ex := d.Extrude(5, "")
+		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
+		ex := d.Features.Extrude(5, "")
 		edge := lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, 5))
-		c := d.Chamfer([]api.Entity{edge}, d1, "")
-		c.SetSecondDistance(d2)
-		r := c.Check()
+		c := d.Features.Chamfer([]api.Entity{edge}, d1, "")
+		c.AsChamfer().SetSecondDistance(d2)
+		r := c.Analyze().Check()
 		want := (50*math.Sin(th) - 0.5*d1*d2*math.Sin(th)) * 5
 		switch {
 		case c.Problem() != "":

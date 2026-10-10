@@ -95,18 +95,21 @@ A sketch can be read and changed from Go scripts, run by an embedded interpreter
   the command line.
 
 ```go
-r := doc.Rect(V(0, 0, 0), V(40, 25, 0)) // mm, in the active workplane
-doc.Length(r[0], 40)
-hole := doc.Circle(V(20, 12, 0), 4)
-doc.Diameter(hole, 8)
-plate := doc.Extrude(6, "plate")
-fmt.Println(plate.Volume())
-doc.Export("plate.stl")
+r := doc.Sketch.Rect(V(0, 0, 0), V(40, 25, 0)) // mm, in the active workplane
+doc.Constrain.Length(r[0], 40)
+hole := doc.Sketch.Circle(V(20, 12, 0), 4)
+doc.Constrain.Diameter(hole, 8)
+plate := doc.Features.Extrude(6, "plate")
+fmt.Println(plate.Analyze().Volume())
+doc.File.Export("plate.stl")
 ```
 
-What a script sees of the sketch is `pkg/script/api` (`go doc ./pkg/script/api`). In a console
-`help()` lists the most used of it, `help(x)` says what a value is and what methods it has, and
-`help("Group.Bounds")` or `help("api")` looks a name up. A script file is a Go program that
+What a script sees of the sketch is `pkg/script/api` (`go doc ./pkg/script/api`). Its calls sit
+where the window's commands do: `doc.Sketch` holds what the Sketch menu does, `doc.Features` the
+Features menu, and so on, and what only one kind of group has is on a view of it
+(`g.AsFillet().SetRadius(3)`). In a console `help()` lists the most used of it, `help(x)` says
+what a value is and what methods it has, `help("Features.Extrude")` or `help("api")` looks a name
+up, and `help("Features > Fillet Edges")` says what a script calls in place of a menu entry. A script file is a Go program that
 imports that package and starts from `api.Current()`, so it can also be compiled as it is; see
 [`examples/scripts`](examples/scripts), each of which a test runs.
 

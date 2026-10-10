@@ -33,23 +33,23 @@ func main() {
 
 	doc := api.Current()
 	// A 40 x 40 block, 30 high, with a bore of 16 mm through it.
-	doc.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
-	doc.Circle(api.V(20, 20, 0), 8)
-	block := doc.Extrude(30, "block")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 40, 0))
+	doc.Sketch.Circle(api.V(20, 20, 0), 8)
+	block := doc.Features.Extrude(30, "block")
 
 	// Cut parallel to the face at y = 0. A face's normal points out of
 	// the solid, so a negative offset goes into it.
 	var side api.Entity
 	for _, f := range block.Faces() {
-		doc.SetSection(f, "0", false)
-		if s := doc.Section(); s.Normal.Y < -0.99 {
+		doc.View.SetSection(f, "0", false)
+		if s := doc.View.Section(); s.Normal.Y < -0.99 {
 			side = f
 		}
 	}
 	// Keep the far side, below the cut as Render's isometric view sees
 	// it, so that the cap faces the camera.
-	doc.SetSection(side, "-("+offset+")", true)
-	s := doc.Section()
+	doc.View.SetSection(side, "-("+offset+")", true)
+	s := doc.View.Section()
 	if s.Err != "" {
 		fmt.Fprintln(os.Stderr, s.Err)
 		os.Exit(2)
@@ -59,7 +59,7 @@ func main() {
 	fmt.Printf("cut at y = %.1f: %.1f mm² in %d loops\n", s.Point.Y, s.Area, s.Loops)
 
 	if write {
-		if err := doc.Render("section.png", 640, 480, "isometric"); err != nil {
+		if err := doc.File.Render("section.png", 640, 480, "isometric"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

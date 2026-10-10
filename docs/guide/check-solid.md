@@ -24,7 +24,7 @@ Naked Edges draws naked ones.
 From a script:
 
 ```go
-r := group.Check()
+r := group.Analyze().Check()
 if !r.Sound() {
 	fmt.Println(r.Summary())
 }
@@ -58,8 +58,8 @@ through it. It reports:
   way. Edges used once, more than twice or twice the same way, and degenerate triangles, are
   counted.
 
-From a script, `group.RayCheck()` gives the same report, with the whole inertia tensor about the
-centre of mass in `Measure.Inertia` (mm⁵), and `group.Probe(from, dir)` the stretches of a line
+From a script, `group.Analyze().RayCheck()` gives the same report, with the whole inertia tensor about the
+centre of mass in `Measure.Inertia` (mm⁵), and `group.Analyze().Probe(from, dir)` the stretches of a line
 inside the solid.
 
 ### Not yet

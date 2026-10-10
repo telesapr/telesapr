@@ -15,10 +15,10 @@ import (
 func boundLine(t *testing.T, length float64) (*Doc, Group, Entity) {
 	t.Helper()
 	d := New()
-	g := d.SketchIn(d.Workplane("XY"), "")
-	l := d.Line(V(0, 0, 0), V(length, 0, 0))
-	d.Lock(l.Start())
-	d.Regen()
+	g := d.Features.SketchIn(d.Workplane("XY"), "")
+	l := d.Sketch.Line(V(0, 0, 0), V(length, 0, 0))
+	d.Constrain.Lock(l.Start())
+	d.Edit.Regen()
 	return d, g, l
 }
 
@@ -41,11 +41,11 @@ func TestDistanceBounds(t *testing.T) {
 		d, g, l := boundLine(t, tc.from)
 		var c Constraint
 		if tc.max {
-			c = d.MaxDistance(l, Entity{}, tc.bound)
+			c = d.Constrain.MaxDistance(l, Entity{}, tc.bound)
 		} else {
-			c = d.MinDistance(l, Entity{}, tc.bound)
+			c = d.Constrain.MinDistance(l, Entity{}, tc.bound)
 		}
-		d.Regen()
+		d.Edit.Regen()
 		if !g.Solved() || math.Abs(l.Length()-tc.want) > 1e-9 || g.Dof() != tc.dof {
 			t.Errorf("%v: from %g, bound %g: solved %v, length %g, dof %d; want %g, %d",
 				c, tc.from, tc.bound, g.Solved(), l.Length(), g.Dof(), tc.want, tc.dof)
@@ -62,13 +62,13 @@ func TestDistanceBounds(t *testing.T) {
 func TestDistanceBoundsMoved(t *testing.T) {
 	t.Parallel()
 	d, g, l := boundLine(t, 30)
-	d.MinDistance(l.Start(), l.End(), 20)
-	d.MaxDistance(l.Start(), l.End(), 40)
+	d.Constrain.MinDistance(l.Start(), l.End(), 20)
+	d.Constrain.MaxDistance(l.Start(), l.End(), 40)
 	for _, tc := range []struct{ to, want float64 }{
 		{10, 20}, {30, 30}, {60, 40}, {25, 25}, {-5, 20},
 	} {
 		l.End().MoveTo(V(tc.to, 0, 0))
-		d.Regen()
+		d.Edit.Regen()
 		if !g.Solved() || math.Abs(l.Length()-tc.want) > 1e-9 {
 			t.Errorf("moved to %g: solved %v, length %g, want %g", tc.to, g.Solved(), l.Length(), tc.want)
 		}
@@ -81,13 +81,13 @@ func TestDistanceBoundsMoved(t *testing.T) {
 func TestOnSegment(t *testing.T) {
 	t.Parallel()
 	d := New()
-	g := d.SketchIn(d.Workplane("XY"), "")
-	l := d.Line(V(0, 0, 0), V(10, 0, 0))
-	d.Lock(l.Start())
-	d.Lock(l.End())
-	p := d.Point(V(4, 3, 0))
-	c := d.OnSegment(p, l)
-	d.Regen()
+	g := d.Features.SketchIn(d.Workplane("XY"), "")
+	l := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
+	d.Constrain.Lock(l.Start())
+	d.Constrain.Lock(l.End())
+	p := d.Sketch.Point(V(4, 3, 0))
+	c := d.Constrain.OnSegment(p, l)
+	d.Edit.Regen()
 	if !g.Solved() || p.Pos().DistanceTo(V(4, 0, 0)) > 1e-9 || g.Dof() != 1 {
 		t.Errorf("%v: solved %v, at %v, dof %d; want (4, 0, 0), 1", c, g.Solved(), p.Pos(), g.Dof())
 	}
@@ -100,7 +100,7 @@ func TestOnSegment(t *testing.T) {
 		{V(7, 1, 0), V(7, 0, 0), 1},
 	} {
 		p.MoveTo(tc.to)
-		d.Regen()
+		d.Edit.Regen()
 		if !g.Solved() || p.Pos().DistanceTo(tc.want) > 1e-9 || g.Dof() != tc.dof {
 			t.Errorf("moved to %v: solved %v, at %v, dof %d; want %v, %d", tc.to, g.Solved(), p.Pos(), g.Dof(), tc.want, tc.dof)
 		}
@@ -112,9 +112,9 @@ func TestOnSegment(t *testing.T) {
 func TestDistanceBoundConflicts(t *testing.T) {
 	t.Parallel()
 	d, g, l := boundLine(t, 30)
-	d.MinDistance(l, Entity{}, 20)
-	hi := d.MaxDistance(l, Entity{}, 10)
-	d.Regen()
+	d.Constrain.MinDistance(l, Entity{}, 20)
+	hi := d.Constrain.MaxDistance(l, Entity{}, 10)
+	d.Edit.Regen()
 	if g.Solved() {
 		t.Error("a minimum of 20 and a maximum of 10 solved")
 	}
@@ -127,9 +127,9 @@ func TestDistanceBoundConflicts(t *testing.T) {
 	}
 
 	d, g, l = boundLine(t, 30)
-	d.Length(l, 5)
-	lo := d.MinDistance(l, Entity{}, 20)
-	d.Regen()
+	d.Constrain.Length(l, 5)
+	lo := d.Constrain.MinDistance(l, Entity{}, 20)
+	d.Edit.Regen()
 	if g.Solved() {
 		t.Error("a length of 5 with a minimum of 20 solved")
 	}
@@ -137,7 +137,7 @@ func TestDistanceBoundConflicts(t *testing.T) {
 		t.Errorf("the conflicts %v aren't the minimum", cs)
 	}
 	lo.Set(4)
-	d.Regen()
+	d.Edit.Regen()
 	if !g.Solved() || math.Abs(l.Length()-5) > 1e-9 || g.Dof() != 1 {
 		t.Errorf("a length of 5 with a minimum of 4: solved %v, length %g, dof %d", g.Solved(), l.Length(), g.Dof())
 	}
@@ -148,16 +148,16 @@ func TestDistanceBoundConflicts(t *testing.T) {
 func TestDistanceBoundsSavedAndUndone(t *testing.T) {
 	t.Parallel()
 	d, g, l := boundLine(t, 30)
-	if err := d.SetParameter("reach", "12"); err != nil {
+	if err := d.Params.Set("reach", "12"); err != nil {
 		t.Fatal(err)
 	}
-	lo := d.MinDistance(l, Entity{}, 1)
+	lo := d.Constrain.MinDistance(l, Entity{}, 1)
 	if err := lo.SetExpr("reach*3"); err != nil {
 		t.Fatal(err)
 	}
-	p := d.Point(V(50, 5, 0))
-	d.OnSegment(p, l)
-	d.Regen()
+	p := d.Sketch.Point(V(50, 5, 0))
+	d.Constrain.OnSegment(p, l)
+	d.Edit.Regen()
 	if got := lo.String(); got != "c002-min-pt-pt-distance = 36" {
 		t.Errorf("described as %q", got)
 	}
@@ -169,11 +169,11 @@ func TestDistanceBoundsSavedAndUndone(t *testing.T) {
 	dof := g.Dof()
 
 	path := filepath.Join(t.TempDir(), "bounds.tlspr")
-	if err := d.Save(path); err != nil {
+	if err := d.File.Save(path); err != nil {
 		t.Fatal(err)
 	}
 	e := New()
-	if err := e.Load(path); err != nil {
+	if err := e.File.Load(path); err != nil {
 		t.Fatal(err)
 	}
 	var kinds []string
@@ -189,19 +189,19 @@ func TestDistanceBoundsSavedAndUndone(t *testing.T) {
 
 	// Each step of a script is one of undo, as at the console.
 	d.Host().(*SketchHost).BeginEval()
-	q := d.Point(V(5, 5, 0))
+	q := d.Sketch.Point(V(5, 5, 0))
 	d.Host().(*SketchHost).BeginEval()
-	d.OnSegment(q, l)
+	d.Constrain.OnSegment(q, l)
 	d.Host().(*SketchHost).BeginEval()
-	d.Regen()
+	d.Edit.Regen()
 	n := len(g.Constraints())
-	if !d.Undo() || len(g.Constraints()) != n-1 {
+	if !d.Edit.Undo() || len(g.Constraints()) != n-1 {
 		t.Fatalf("undo left %d constraints of %d", len(g.Constraints()), n)
 	}
-	if !d.Redo() || len(g.Constraints()) != n {
+	if !d.Edit.Redo() || len(g.Constraints()) != n {
 		t.Fatalf("redo made %d constraints of %d", len(g.Constraints()), n)
 	}
-	d.Regen()
+	d.Edit.Regen()
 	a, b := l.Start().Pos(), l.End().Pos()
 	if off := q.Pos().DistanceToLine(a, b.Minus(a)); off > 1e-9 || g.Dof() != dof+1 {
 		t.Errorf("after redo: point %v off the segment by %g, dof %d", q.Pos(), off, g.Dof())
@@ -212,11 +212,11 @@ func TestDistanceBoundsSavedAndUndone(t *testing.T) {
 func TestDistanceBoundsBadInput(t *testing.T) {
 	t.Parallel()
 	d, _, l := boundLine(t, 30)
-	c := d.Circle(V(50, 0, 0), 5)
-	failsWith(t, "isn't a line segment", func() { d.MinDistance(c, Entity{}, 3) })
-	failsWith(t, "a distance is from a point", func() { d.MaxDistance(c, c, 3) })
-	failsWith(t, "isn't a line segment", func() { d.OnSegment(l.Start(), c) })
-	failsWith(t, "isn't a point", func() { d.OnSegment(l, l) })
+	c := d.Sketch.Circle(V(50, 0, 0), 5)
+	failsWith(t, "isn't a line segment", func() { d.Constrain.MinDistance(c, Entity{}, 3) })
+	failsWith(t, "a distance is from a point", func() { d.Constrain.MaxDistance(c, c, 3) })
+	failsWith(t, "isn't a line segment", func() { d.Constrain.OnSegment(l.Start(), c) })
+	failsWith(t, "isn't a point", func() { d.Constrain.OnSegment(l, l) })
 }
 
 // A maximum at the value a length dimension holds is no conflict: the
@@ -224,12 +224,12 @@ func TestDistanceBoundsBadInput(t *testing.T) {
 func TestDistanceBoundAtDimension(t *testing.T) {
 	t.Parallel()
 	d, g, l := boundLine(t, 30)
-	d.Length(l, 40)
-	d.Regen()
+	d.Constrain.Length(l, 40)
+	d.Edit.Regen()
 	dof := g.Dof()
-	d.MaxDistance(l, Entity{}, 40)
-	d.MinDistance(l, Entity{}, 40)
-	d.Regen()
+	d.Constrain.MaxDistance(l, Entity{}, 40)
+	d.Constrain.MinDistance(l, Entity{}, 40)
+	d.Edit.Regen()
 	if !g.Solved() || g.Dof() != dof || len(g.Conflicts()) != 0 || math.Abs(l.Length()-40) > 1e-9 {
 		t.Errorf("solved %v, dof %d (%d before), conflicts %v, length %g", g.Solved(), g.Dof(), dof, g.Conflicts(), l.Length())
 	}
@@ -256,30 +256,30 @@ func TestDistanceBoundsSweep(t *testing.T) {
 	}
 	g.RunAll(func(p sweep.Point) error {
 		d := New()
-		sk := d.SketchIn(d.Workplane("XY"), "")
+		sk := d.Features.SketchIn(d.Workplane("XY"), "")
 		to, off := p.Float("to"), p.Float("off")
 		var moved Entity
 		var want Vec
 		lo, hi := math.Inf(-1), math.Inf(1)
 		switch p.String("bounds") {
 		case "segment":
-			l := d.Line(V(5, 0, 0), V(30, 0, 0))
-			d.Lock(l.Start())
-			d.Lock(l.End())
-			moved = d.Point(V(12, 1, 0))
-			d.OnSegment(moved, l)
+			l := d.Sketch.Line(V(5, 0, 0), V(30, 0, 0))
+			d.Constrain.Lock(l.Start())
+			d.Constrain.Lock(l.End())
+			moved = d.Sketch.Point(V(12, 1, 0))
+			d.Constrain.OnSegment(moved, l)
 			lo, hi = 5, 30
 			want = V(min(max(to, lo), hi), 0, 0)
 		default:
-			l := d.Line(V(0, 0, 0), V(20, 0, 0))
-			d.Lock(l.Start())
-			d.Horizontal(l)
+			l := d.Sketch.Line(V(0, 0, 0), V(20, 0, 0))
+			d.Constrain.Lock(l.Start())
+			d.Constrain.Horizontal(l)
 			if b := p.String("bounds"); b != "max" {
-				d.MinDistance(l, Entity{}, 10)
+				d.Constrain.MinDistance(l, Entity{}, 10)
 				lo = 10
 			}
 			if b := p.String("bounds"); b != "min" {
-				d.MaxDistance(l, Entity{}, 30)
+				d.Constrain.MaxDistance(l, Entity{}, 30)
 				hi = 30
 			}
 			moved = l.End()
@@ -290,7 +290,7 @@ func TestDistanceBoundsSweep(t *testing.T) {
 			want = V(math.Copysign(min(max(math.Abs(to), lo), hi), to), 0, 0)
 		}
 		moved.MoveTo(V(to, off, 0))
-		d.Regen()
+		d.Edit.Regen()
 		dof := 1
 		if x := math.Abs(want.X); x == lo || x == hi {
 			dof = 0
@@ -308,31 +308,31 @@ func TestDistanceBoundsSweep(t *testing.T) {
 // one at a time.
 func BenchmarkDistanceBounds(b *testing.B) {
 	d := New()
-	d.SketchIn(d.Workplane("XY"), "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
 	var ends []Entity
 	for i := range 20 {
 		y := float64(i) * 20
-		rod := d.Line(V(0, y, 0), V(30, y, 0))
-		d.Lock(rod.Start())
-		d.Horizontal(rod)
-		d.MinDistance(rod, Entity{}, 20)
-		d.MaxDistance(rod, Entity{}, 40)
-		slot := d.Line(V(0, y-10, 0), V(35, y-10, 0))
-		d.Lock(slot.Start())
-		d.Lock(slot.End())
-		slider := d.Point(V(30, y-10, 0))
-		d.OnSegment(slider, slot)
-		d.Vertical(slider, rod.End())
+		rod := d.Sketch.Line(V(0, y, 0), V(30, y, 0))
+		d.Constrain.Lock(rod.Start())
+		d.Constrain.Horizontal(rod)
+		d.Constrain.MinDistance(rod, Entity{}, 20)
+		d.Constrain.MaxDistance(rod, Entity{}, 40)
+		slot := d.Sketch.Line(V(0, y-10, 0), V(35, y-10, 0))
+		d.Constrain.Lock(slot.Start())
+		d.Constrain.Lock(slot.End())
+		slider := d.Sketch.Point(V(30, y-10, 0))
+		d.Constrain.OnSegment(slider, slot)
+		d.Constrain.Vertical(slider, rod.End())
 		ends = append(ends, rod.End())
 	}
-	d.Regen()
+	d.Edit.Regen()
 	x := 10.0
 	for b.Loop() {
 		x = 70 - x
 		for i, e := range ends {
 			e.MoveTo(V(x, float64(i)*20, 0))
 		}
-		d.Regen()
+		d.Edit.Regen()
 	}
 }
 
@@ -344,43 +344,43 @@ func BenchmarkDistanceBounds(b *testing.B) {
 func TestOtherDimensionBounds(t *testing.T) {
 	t.Parallel()
 	d := New()
-	g := d.SketchIn(d.Workplane("XY"), "")
-	base := d.Line(V(0, 0, 0), V(20, 0, 0))
-	d.Lock(base.Start())
-	d.Lock(base.End())
-	p := d.Point(V(10, 2, 0))
-	above := d.MinDistance(p, base, 5)
-	d.Regen()
+	g := d.Features.SketchIn(d.Workplane("XY"), "")
+	base := d.Sketch.Line(V(0, 0, 0), V(20, 0, 0))
+	d.Constrain.Lock(base.Start())
+	d.Constrain.Lock(base.End())
+	p := d.Sketch.Point(V(10, 2, 0))
+	above := d.Constrain.MinDistance(p, base, 5)
+	d.Edit.Regen()
 	if !g.Solved() || math.Abs(p.Pos().Y-5) > 1e-9 || above.Limit() != Minimum {
 		t.Errorf("a point 2 above, at least 5: at %v, %v", p.Pos(), above)
 	}
 	p.MoveTo(V(10, 9, 0))
-	d.Regen()
+	d.Edit.Regen()
 	if math.Abs(p.Pos().Y-9) > 1e-9 {
 		t.Errorf("moved to 9 above: at %v", p.Pos())
 	}
 
-	c := d.Circle(V(40, 0, 0), 6)
-	r := d.Radius(c, 6)
+	c := d.Sketch.Circle(V(40, 0, 0), 6)
+	r := d.Constrain.Radius(c, 6)
 	r.SetLimit(Maximum)
 	r.Set(4)
-	d.Regen()
+	d.Edit.Regen()
 	if math.Abs(c.Radius()-4) > 1e-9 {
 		t.Errorf("a radius of 6, at most 4: %g", c.Radius())
 	}
 	r.Set(10)
-	d.Regen()
+	d.Edit.Regen()
 	if math.Abs(c.Radius()-4) > 1e-9 {
 		t.Errorf("at most 10, it stays: %g", c.Radius())
 	}
 
-	arm := d.Line(V(0, 0, 0), V(10, 2, 0))
-	d.Coincident(arm.Start(), base.Start())
-	d.Length(arm, 10)
-	angle := d.Angle(base, arm, 11.31)
+	arm := d.Sketch.Line(V(0, 0, 0), V(10, 2, 0))
+	d.Constrain.Coincident(arm.Start(), base.Start())
+	d.Constrain.Length(arm, 10)
+	angle := d.Constrain.Angle(base, arm, 11.31)
 	angle.SetLimit(Minimum)
 	angle.Set(30)
-	d.Regen()
+	d.Edit.Regen()
 	dir := arm.End().Pos().Minus(arm.Start().Pos())
 	if got := math.Atan2(dir.Y, dir.X) * 180 / math.Pi; !g.Solved() || math.Abs(got-30) > 1e-6 {
 		t.Errorf("an angle of 11.3, at least 30: %g", got)
@@ -390,12 +390,12 @@ func TestOtherDimensionBounds(t *testing.T) {
 	}
 	angle.SetLimit(NoLimit)
 	angle.Set(45)
-	d.Regen()
+	d.Edit.Regen()
 	dir = arm.End().Pos().Minus(arm.Start().Pos())
 	if got := math.Atan2(dir.Y, dir.X) * 180 / math.Pi; math.Abs(got-45) > 1e-6 || angle.Limit() != NoLimit {
 		t.Errorf("a dimension again, of 45: %g", got)
 	}
-	failsWith(t, "can't be a minimum", func() { d.Horizontal(arm).SetLimit(Minimum) })
+	failsWith(t, "can't be a minimum", func() { d.Constrain.Horizontal(arm).SetLimit(Minimum) })
 	failsWith(t, "no limit", func() { angle.SetLimit(7) })
 }
 
@@ -404,7 +404,7 @@ func TestOtherDimensionBounds(t *testing.T) {
 func TestDistanceBoundsOldFile(t *testing.T) {
 	t.Parallel()
 	d := New()
-	if err := d.Load(filepath.Join("..", "..", "..", "testdata", "tlspr", "v2", "limits.tlspr")); err != nil {
+	if err := d.File.Load(filepath.Join("..", "..", "..", "testdata", "tlspr", "v2", "limits.tlspr")); err != nil {
 		t.Fatal(err)
 	}
 	var kinds []string

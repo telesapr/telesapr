@@ -41,37 +41,37 @@ func main() {
 	doc := api.Current()
 	// The table: each later parameter names earlier ones. Lengths are
 	// in mm.
-	must(doc.SetParameter("width", width))
-	must(doc.SetParameter("height", "width*2/3"))
-	must(doc.SetParameter("margin", "height/5"))
-	must(doc.SetParameter("hole", "margin*0.8"))
+	must(doc.Params.Set("width", width))
+	must(doc.Params.Set("height", "width*2/3"))
+	must(doc.Params.Set("margin", "height/5"))
+	must(doc.Params.Set("hole", "margin*0.8"))
 
 	// The outline, its sides named by the parameters.
-	sides := doc.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
-	doc.Coincident(sides[0].Start(), doc.Origin())
-	must(doc.Length(sides[0], 60).SetExpr("width"))
-	must(doc.Length(sides[1], 40).SetExpr("height"))
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
+	doc.Constrain.Coincident(sides[0].Start(), doc.Origin())
+	must(doc.Constrain.Length(sides[0], 60).SetExpr("width"))
+	must(doc.Constrain.Length(sides[1], 40).SetExpr("height"))
 
 	// A hole in each corner, margin from both sides.
 	corners := []api.Vec{api.V(8, 8, 0), api.V(52, 8, 0), api.V(52, 32, 0), api.V(8, 32, 0)}
 	for i := 0; i < 4; i++ { // the interpreter has no range over an int
-		h := doc.Circle(corners[i], 3)
-		must(doc.Diameter(h, 6).SetExpr("hole"))
-		must(doc.Distance(h.Center(), sides[i], 8).SetExpr("margin"))
-		must(doc.Distance(h.Center(), sides[(i+3)%4], 8).SetExpr("margin"))
+		h := doc.Sketch.Circle(corners[i], 3)
+		must(doc.Constrain.Diameter(h, 6).SetExpr("hole"))
+		must(doc.Constrain.Distance(h.Center(), sides[i], 8).SetExpr("margin"))
+		must(doc.Constrain.Distance(h.Center(), sides[(i+3)%4], 8).SetExpr("margin"))
 	}
-	body := doc.Extrude(5, "plate")
+	body := doc.Features.Extrude(5, "plate")
 
-	r := body.Check()
+	r := body.Analyze().Check()
 	fmt.Printf("%s: %d faces, %.1f mm³, sound %v\n", body, r.Faces, r.Volume, r.Sound())
-	for _, p := range doc.Parameters() {
+	for _, p := range doc.Params.List() {
 		fmt.Printf("  %s = %s = %g\n", p.Name, p.Expr, p.Value)
 	}
-	if !r.Sound() || len(doc.ExprErrors()) > 0 {
-		fmt.Fprintln(os.Stderr, r.Summary(), doc.ExprErrors())
+	if !r.Sound() || len(doc.Params.Errors()) > 0 {
+		fmt.Fprintln(os.Stderr, r.Summary(), doc.Params.Errors())
 		os.Exit(1)
 	}
 	if write {
-		must(doc.Save("plate.tlspr"))
+		must(doc.File.Save("plate.tlspr"))
 	}
 }

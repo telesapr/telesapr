@@ -47,19 +47,19 @@ func main() {
 		a0 := float64(k) * math.Pi / 2
 		at := func(a float64) api.Vec { return c.Plus(api.V(r*math.Cos(a), r*math.Sin(a), 0)) }
 		next := corners[(k+3)%4]
-		doc.Line(next.Plus(api.V(r*math.Cos(a0), r*math.Sin(a0), 0)), at(a0))
-		doc.Arc(c, at(a0), at(a0+math.Pi/2))
+		doc.Sketch.Line(next.Plus(api.V(r*math.Cos(a0), r*math.Sin(a0), 0)), at(a0))
+		doc.Sketch.Arc(c, at(a0), at(a0+math.Pi/2))
 	}
-	doc.Circle(api.V(0, 0, 0), hole)
-	body := doc.Extrude(h, "body")
+	doc.Sketch.Circle(api.V(0, 0, 0), hole)
+	body := doc.Features.Extrude(h, "body")
 
 	top := body.Solid().FaceAt(api.V(0, y, h))
-	pot := doc.ShellSolid([]api.SolidFace{top}, thick, "pot")
+	pot := doc.Features.ShellSolid([]api.SolidFace{top}, thick, "pot")
 	if p := pot.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	res := pot.Check()
+	res := pot.Analyze().Check()
 	outside := (roundedArea(w, d, r) - math.Pi*hole*hole) * h
 	inside := (roundedArea(w-2*thick, d-2*thick, r-thick) - math.Pi*(hole+thick)*(hole+thick)) * (h - thick)
 	want := outside - inside
@@ -70,7 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("pot.tlspr"); err != nil {
+		if err := doc.File.Save("pot.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

@@ -19,11 +19,11 @@ func drawingModel(t *testing.T) (*Application, *api.Doc) {
 	t.Helper()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
-	doc.Rect(api.V(0, 0, 0), api.V(120, 60, 0))
-	doc.Extrude(40, "block")
-	doc.SketchIn(doc.Workplane("XY"), "")
-	doc.Circle(api.V(30, 30, 0), 8)
-	hole := doc.Extrude(40, "hole")
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(120, 60, 0))
+	doc.Features.Extrude(40, "block")
+	doc.Features.SketchIn(doc.Workplane("XY"), "")
+	doc.Sketch.Circle(api.V(30, 30, 0), 8)
+	hole := doc.Features.Extrude(40, "hole")
 	hole.SetCombine(api.Difference)
 	return ss, doc
 }
@@ -69,20 +69,20 @@ func TestDrawingLayout(t *testing.T) {
 // block holds its fields, and the same drawing writes the same bytes.
 func TestExportDrawing(t *testing.T) {
 	ss, doc := drawingModel(t)
-	d := doc.Drawing()
+	d := doc.Drawing.Get()
 	d.Title, d.Number, d.Hidden = "BRACKET", "TS-001", true
-	doc.SetDrawing(d)
+	doc.Drawing.Set(d)
 	dir := t.TempDir()
 	for _, ext := range []string{"svg", "pdf", "dxf"} {
 		path := filepath.Join(dir, "sheet."+ext)
-		if err := doc.ExportDrawing(path); err != nil {
+		if err := doc.Drawing.Export(path); err != nil {
 			t.Fatal(err)
 		}
 		first, err := os.ReadFile(path)
 		if err != nil || len(first) == 0 {
 			t.Fatalf("%s: %v", ext, err)
 		}
-		if err := doc.ExportDrawing(path); err != nil {
+		if err := doc.Drawing.Export(path); err != nil {
 			t.Fatal(err)
 		}
 		if again, _ := os.ReadFile(path); !bytes.Equal(first, again) {
@@ -209,10 +209,10 @@ func TestDrawingDimensions(t *testing.T) {
 			rim = e
 		}
 	}
-	doc.AddDrawingDimension("front", "length", 10, top)
-	doc.AddDrawingDimension("front", "distance", -12, bottom, top)
-	doc.AddDrawingDimension("front", "diameter", 0, rim)
-	values, errs := doc.DrawingDimensions()
+	doc.Drawing.AddDimension("front", "length", 10, top)
+	doc.Drawing.AddDimension("front", "distance", -12, bottom, top)
+	doc.Drawing.AddDimension("front", "diameter", 0, rim)
+	values, errs := doc.Drawing.Dimensions()
 	want := []float64{120, 60, 16}
 	for i := range want {
 		if errs[i] != nil || math.Abs(values[i]-want[i]) > 1e-6 {
@@ -233,14 +233,14 @@ func TestDrawingDimensions(t *testing.T) {
 			p.Val = 150
 		}
 	}
-	doc.Regen()
-	values, errs = doc.DrawingDimensions()
+	doc.Edit.Regen()
+	values, errs = doc.Drawing.Dimensions()
 	if errs[0] != nil || math.Abs(values[0]-150) > 1e-6 {
 		t.Errorf("after the block grew: %g, %v", values[0], errs[0])
 	}
 
 	hole.Delete()
-	_, errs = doc.DrawingDimensions()
+	_, errs = doc.Drawing.Dimensions()
 	if errs[2] == nil || errs[0] != nil {
 		t.Errorf("without the hole: %v", errs)
 	}
@@ -282,21 +282,21 @@ func TestDrawingDimensionsViewsFaces(t *testing.T) {
 			t.Fatalf("no %s face", name)
 		}
 	}
-	dr := doc.Drawing()
+	dr := doc.Drawing.Get()
 	dr.Sheet = "A2"
 	dr.Sections = []sketch.DrawingSection{{View: "top"}}
 	dr.Details = []sketch.DrawingDetail{{View: "front", CX: -30, CY: 0, R: 15, Scale: 2}}
-	doc.SetDrawing(dr)
-	doc.AddDrawingDimension("iso", "length", 10, top)
-	doc.AddDrawingFaceDimension("top", "distance", 10, upper, lower)
-	doc.AddDrawingEdgeFaceDistance("top", -10, top, lower)
-	doc.AddDrawingFaceDimension("top", "diameter", 0, wall)
-	doc.AddDrawingFaceDimension("A", "diameter", 0, wall)
-	doc.AddDrawingDimension("B", "diameter", 0, rim)
-	doc.AddDrawingDimension("B", "length", 0, top)
-	doc.AddDrawingFaceDimension("front", "distance", 0, upper, lower)
-	doc.AddDrawingFaceDimension("top", "distance", 0, upper, side)
-	values, errs := doc.DrawingDimensions()
+	doc.Drawing.Set(dr)
+	doc.Drawing.AddDimension("iso", "length", 10, top)
+	doc.Drawing.AddFaceDimension("top", "distance", 10, upper, lower)
+	doc.Drawing.AddEdgeFaceDistance("top", -10, top, lower)
+	doc.Drawing.AddFaceDimension("top", "diameter", 0, wall)
+	doc.Drawing.AddFaceDimension("A", "diameter", 0, wall)
+	doc.Drawing.AddDimension("B", "diameter", 0, rim)
+	doc.Drawing.AddDimension("B", "length", 0, top)
+	doc.Drawing.AddFaceDimension("front", "distance", 0, upper, lower)
+	doc.Drawing.AddFaceDimension("top", "distance", 0, upper, side)
+	values, errs := doc.Drawing.Dimensions()
 	want := []float64{120, 40, 40, 16, 16, 16}
 	for i := range want {
 		if errs[i] != nil || math.Abs(values[i]-want[i]) > 1e-6 {
@@ -314,14 +314,14 @@ func TestDrawingDimensionsViewsFaces(t *testing.T) {
 
 	// Saved and read back, with the faces and the views by letter.
 	path := filepath.Join(t.TempDir(), "dims.tlspr")
-	if err := doc.Save(path); err != nil {
+	if err := doc.File.Save(path); err != nil {
 		t.Fatal(err)
 	}
 	back, err := api.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, saved := back.Drawing().Dimensions, doc.Drawing().Dimensions
+	got, saved := back.Drawing.Get().Dimensions, doc.Drawing.Get().Dimensions
 	if len(got) != len(saved) {
 		t.Fatalf("%d dimensions read back, want %d", len(got), len(saved))
 	}
@@ -338,7 +338,7 @@ func TestDrawingDimensionsViewsFaces(t *testing.T) {
 		"length of face": {View: "top", Kind: "length", Faces: saved[1].Faces[:1]},
 		"three for two":  {View: "top", Kind: "distance", Edges: saved[0].Edges, Faces: saved[1].Faces},
 	} {
-		d := doc.Drawing()
+		d := doc.Drawing.Get()
 		d.Dimensions = append(d.Dimensions, bad)
 		if err := d.Check(); err == nil {
 			t.Errorf("%s: no error", name)

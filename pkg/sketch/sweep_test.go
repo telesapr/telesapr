@@ -14,32 +14,32 @@ import (
 // pipePath draws in ZX a line up from the origin by up, a quarter turn
 // of radius r towards +x, and a line along x by along.
 func pipePath(d *api.Doc, up, r, along float64) []api.Entity {
-	d.SketchIn(d.Workplane("ZX"), "path")
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
 	return []api.Entity{
-		d.Line(api.V(0, 0, 0), api.V(0, 0, up)),
-		d.Arc(api.V(r, 0, up), api.V(0, 0, up), api.V(r, 0, up+r)),
-		d.Line(api.V(r, 0, up+r), api.V(r+along, 0, up+r)),
+		d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, up)),
+		d.Sketch.Arc(api.V(r, 0, up), api.V(0, 0, up), api.V(r, 0, up+r)),
+		d.Sketch.Line(api.V(r, 0, up+r), api.V(r+along, 0, up+r)),
 	}
 }
 
 func TestSweepPipe(t *testing.T) {
 	d := api.New()
 	path := pipePath(d, 10, 8, 12)
-	d.SketchIn(d.Workplane("XY"), "profile")
-	d.Circle(api.V(0, 0, 0), 2)
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Circle(api.V(0, 0, 0), 2)
 	step(d)
 	before := saved(t, d)
 	// The path is given in any order.
-	s := d.Sweep([]api.Entity{path[2], path[0], path[1]}, "")
+	s := d.Features.Sweep([]api.Entity{path[2], path[0], path[1]}, "")
 	if p := s.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := s.Check()
+	r := s.Analyze().Check()
 	want := math.Pi * 4 * (10 + 8*math.Pi/2 + 12)
 	if !r.Sound() || math.Abs(r.Volume-want) > 0.01*want {
 		t.Fatalf("pipe: %s, want volume %g", r.String(), want)
 	}
-	if lo, hi := s.Bounds(); math.Abs(hi.X-20) > 1e-6 || math.Abs(hi.Z-20) > 1e-6 || math.Abs(lo.Z) > 1e-6 {
+	if lo, hi := s.Analyze().Bounds(); math.Abs(hi.X-20) > 1e-6 || math.Abs(hi.Z-20) > 1e-6 || math.Abs(lo.Z) > 1e-6 {
 		t.Errorf("pipe bounds %v %v", lo, hi)
 	}
 	// The end cap's copy of the circle is at the end of the path,
@@ -64,16 +64,16 @@ func TestSweepPipe(t *testing.T) {
 
 func TestSweepProblems(t *testing.T) {
 	d := api.New()
-	d.SketchIn(d.Workplane("ZX"), "path")
-	up := d.Line(api.V(0, 0, 0), api.V(0, 0, 10))
-	corner := d.Line(api.V(0, 0, 10), api.V(10, 0, 10))
-	apart := d.Line(api.V(0, 0, 20), api.V(0, 0, 30))
-	flat := d.Line(api.V(0, 0, 0), api.V(10, 0, 0))
-	tight := d.Arc(api.V(1, 0, 10), api.V(0, 0, 10), api.V(1, 0, 11))
-	branch := d.Line(api.V(0, 0, 10), api.V(0, 0, 20))
-	back := d.Line(api.V(0, 0, 10), api.V(0, 0, 5))
-	d.SketchIn(d.Workplane("XY"), "profile")
-	circle := d.Circle(api.V(0, 0, 0), 2)
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	up := d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10))
+	corner := d.Sketch.Line(api.V(0, 0, 10), api.V(10, 0, 10))
+	apart := d.Sketch.Line(api.V(0, 0, 20), api.V(0, 0, 30))
+	flat := d.Sketch.Line(api.V(0, 0, 0), api.V(10, 0, 0))
+	tight := d.Sketch.Arc(api.V(1, 0, 10), api.V(0, 0, 10), api.V(1, 0, 11))
+	branch := d.Sketch.Line(api.V(0, 0, 10), api.V(0, 0, 20))
+	back := d.Sketch.Line(api.V(0, 0, 10), api.V(0, 0, 5))
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	circle := d.Sketch.Circle(api.V(0, 0, 0), 2)
 	for name, c := range map[string]struct {
 		path []api.Entity
 		want string
@@ -95,7 +95,7 @@ func TestSweepProblems(t *testing.T) {
 					t.Errorf("%s: %v, want an error saying %q", name, err, c.want)
 				}
 			}()
-			d.Sweep(c.path, "")
+			d.Features.Sweep(c.path, "")
 		}()
 	}
 }
@@ -130,9 +130,9 @@ func TestSweepGrid(t *testing.T) {
 		// about it.
 		tilt := p.Float("tilt") * math.Pi / 180
 		dir := api.V(math.Cos(tilt), math.Sin(tilt), 0)
-		d.Free3D()
-		wp := d.NewWorkplane(api.V(0, 0, 0), api.V(0, 0, 1), dir)
-		d.SketchIn(wp, "path")
+		d.Sketch.Anywhere3D()
+		wp := d.Sketch.NewWorkplane(api.V(0, 0, 0), api.V(0, 0, 1), dir)
+		d.Features.SketchIn(wp, "path")
 		sgn := 1.0
 		if up < 0 {
 			sgn = -1
@@ -144,19 +144,19 @@ func TestSweepGrid(t *testing.T) {
 		tangent := at(math.Sin(th), sgn*math.Cos(th))
 		var arc api.Entity
 		if up > 0 {
-			arc = d.Arc(c, at(0, up), end)
+			arc = d.Sketch.Arc(c, at(0, up), end)
 		} else {
-			arc = d.Arc(c, end, at(0, up))
+			arc = d.Sketch.Arc(c, end, at(0, up))
 		}
 		path := []api.Entity{
-			d.Line(at(0, 0), at(0, up)),
+			d.Sketch.Line(at(0, 0), at(0, up)),
 			arc,
-			d.Line(end, end.Plus(tangent.ScaledBy(tail))),
+			d.Sketch.Line(end, end.Plus(tangent.ScaledBy(tail))),
 		}
-		d.SketchIn(d.Workplane("XY"), "profile")
-		d.Circle(api.V(0, 0, 0), rho)
-		s := d.Sweep(path, "")
-		res := s.Check()
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Circle(api.V(0, 0, 0), rho)
+		s := d.Features.Sweep(path, "")
+		res := s.Analyze().Check()
 		want := math.Pi * rho * rho * (math.Abs(up) + r*th + tail)
 		switch {
 		case s.Problem() != "":
@@ -206,19 +206,19 @@ func cubicLength(p0, p1, p2, p3 api.Vec) float64 {
 func TestSweepAlongCubic(t *testing.T) {
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
-	d.Sketch3D("path")
+	d.Features.Sketch3D("path")
 	c := []api.Vec{api.V(0, 0, 10), api.V(0, 0, 20), api.V(6, 8, 28), api.V(16, 10, 30)}
-	path := []api.Entity{d.Line(api.V(0, 0, 0), c[0]), d.Cubic(c[0], c[1], c[2], c[3])}
-	d.SketchIn(d.Workplane("XY"), "profile")
-	d.Circle(api.V(0, 0, 0), 2)
+	path := []api.Entity{d.Sketch.Line(api.V(0, 0, 0), c[0]), d.Sketch.Cubic(c[0], c[1], c[2], c[3])}
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Circle(api.V(0, 0, 0), 2)
 	step(d)
 	before := saved(t, d)
-	s := d.Sweep(path, "")
+	s := d.Features.Sweep(path, "")
 	if p := s.Problem(); p != "" {
 		t.Fatal(p)
 	}
 	want := math.Pi * 4 * (10 + cubicLength(c[0], c[1], c[2], c[3]))
-	r := s.Check()
+	r := s.Analyze().Check()
 	if !r.Sound() || math.Abs(r.Volume-want) > 0.005*want {
 		t.Fatalf("along a cubic: %s, want volume %g", r.String(), want)
 	}
@@ -239,7 +239,7 @@ func TestSweepAlongCubic(t *testing.T) {
 	// A file holds the curves' points at the chord tolerance, which it
 	// doesn't hold: the default's, for the round trip.
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-	d.Regen()
+	d.Edit.Regen()
 	roundTrip(t, d)
 }
 
@@ -250,17 +250,17 @@ func TestSweepAlongCubic(t *testing.T) {
 func TestSweepTwistAndUp(t *testing.T) {
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
-	d.SketchIn(d.Workplane("ZX"), "path")
-	line := d.Line(api.V(0, 0, 0), api.V(0, 0, 30))
-	d.SketchIn(d.Workplane("XY"), "square")
-	d.Rect(api.V(-2, -2, 0), api.V(2, 2, 0))
-	bar := d.Sweep([]api.Entity{line}, "bar")
-	bar.SetTwist(45)
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	line := d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 30))
+	d.Features.SketchIn(d.Workplane("XY"), "square")
+	d.Sketch.Rect(api.V(-2, -2, 0), api.V(2, 2, 0))
+	bar := d.Features.Sweep([]api.Entity{line}, "bar")
+	bar.AsSweep().SetTwist(45)
 	// Its sides are twisted ruled faces, which the mesher grids with
 	// rows but no columns: as a twisted loft's (TestLoftSweep), the
 	// diagonals of the quads bias the volume, here by 1.6%.
-	if r := bar.Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.02*480 || bar.Twist() != 45 {
-		t.Fatalf("a twisted bar: %s, twist %g", r.String(), bar.Twist())
+	if r := bar.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.02*480 || bar.AsSweep().Twist() != 45 {
+		t.Fatalf("a twisted bar: %s, twist %g", r.String(), bar.AsSweep().Twist())
 	}
 	for _, e := range bar.Entities() {
 		if e.Kind() != "point" {
@@ -281,17 +281,17 @@ func TestSweepTwistAndUp(t *testing.T) {
 	const rad, rise = 20.0, 5.0
 	k := 4.0 / 3 * math.Tan(math.Pi/8)
 	c := []api.Vec{api.V(rad, 0, 0), api.V(rad, rad*k, rise/3), api.V(rad*k, rad, 2*rise/3), api.V(0, rad, rise)}
-	h.Sketch3D("path")
-	helix := h.Cubic(c[0], c[1], c[2], c[3])
+	h.Features.Sketch3D("path")
+	helix := h.Sketch.Cubic(c[0], c[1], c[2], c[3])
 	t0 := c[1].Minus(c[0]).WithMagnitude(1)
-	o := h.Point(c[0])
-	h.SketchAt(o, api.V(1, 0, 0), t0.Cross(api.V(1, 0, 0)), "profile")
-	h.Circle(c[0], 2)
-	s := h.Sweep([]api.Entity{helix}, "spring")
+	o := h.Sketch.Point(c[0])
+	h.Features.SketchAt(o, api.V(1, 0, 0), t0.Cross(api.V(1, 0, 0)), "profile")
+	h.Sketch.Circle(c[0], 2)
+	s := h.Features.Sweep([]api.Entity{helix}, "spring")
 	want := math.Pi * 4 * cubicLength(c[0], c[1], c[2], c[3])
-	least := s.Check()
-	s.SetSweepUp(api.V(0, 0, 3))
-	held := s.Check()
+	least := s.Analyze().Check()
+	s.AsSweep().SetSweepUp(api.V(0, 0, 3))
+	held := s.Analyze().Check()
 	for name, r := range map[string]struct {
 		Sound  bool
 		Volume float64
@@ -300,21 +300,21 @@ func TestSweepTwistAndUp(t *testing.T) {
 			t.Errorf("%s: sound %v, volume %g, want %g", name, r.Sound, r.Volume, want)
 		}
 	}
-	if up := s.SweepUp(); up != api.V(0, 0, 1) {
+	if up := s.AsSweep().SweepUp(); up != api.V(0, 0, 1) {
 		t.Errorf("held to %v", up)
 	}
 	h.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-	h.Regen()
-	if back := roundTrip(t, h).Group("spring"); back.SweepUp() != api.V(0, 0, 1) {
-		t.Errorf("reopened held to %v", back.SweepUp())
+	h.Edit.Regen()
+	if back := roundTrip(t, h).Group("spring"); back.AsSweep().SweepUp() != api.V(0, 0, 1) {
+		t.Errorf("reopened held to %v", back.AsSweep().SweepUp())
 	}
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-	d.Regen()
-	if back := roundTrip(t, d).Group("bar"); back.Twist() != 45 {
-		t.Errorf("reopened twisted by %g", back.Twist())
+	d.Edit.Regen()
+	if back := roundTrip(t, d).Group("bar"); back.AsSweep().Twist() != 45 {
+		t.Errorf("reopened twisted by %g", back.AsSweep().Twist())
 	}
 	// Along a line held up its own way, the frames have no direction.
-	bar.SetSweepUp(api.V(0, 0, 1))
+	bar.AsSweep().SetSweepUp(api.V(0, 0, 1))
 	if bar.Problem() == "" {
 		t.Error("a sweep held up along its path has no problem")
 	}

@@ -19,18 +19,18 @@ func TestAppearance(t *testing.T) {
 	before := saved(t, d)
 	ex.SetAppearance("metal")
 	undoRedo(t, d, before)
-	d.SetFaceAppearance(top, "matte")
-	if ex.Appearance() != "metal" || d.FaceAppearance(top) != "matte" || d.FaceAppearance(side) != "metal" {
-		t.Errorf("group %q, top %q, side %q", ex.Appearance(), d.FaceAppearance(top), d.FaceAppearance(side))
+	d.View.SetFaceAppearance(top, "matte")
+	if ex.Appearance() != "metal" || d.View.FaceAppearance(top) != "matte" || d.View.FaceAppearance(side) != "metal" {
+		t.Errorf("group %q, top %q, side %q", ex.Appearance(), d.View.FaceAppearance(top), d.View.FaceAppearance(side))
 	}
 	back := roundTrip(t, d)
 	g := back.Group(ex.Name())
-	if g.Appearance() != "metal" || back.FaceAppearance(g.Solid().FaceAt(api.V(10, 5, 10))) != "matte" {
+	if g.Appearance() != "metal" || back.View.FaceAppearance(g.Solid().FaceAt(api.V(10, 5, 10))) != "matte" {
 		t.Errorf("reopened: %q", g.Appearance())
 	}
-	d.SetFaceAppearance(top, "")
-	if d.FaceAppearance(top) != "metal" {
-		t.Errorf("the top's own taken away: %q", d.FaceAppearance(top))
+	d.View.SetFaceAppearance(top, "")
+	if d.View.FaceAppearance(top) != "metal" {
+		t.Errorf("the top's own taken away: %q", d.View.FaceAppearance(top))
 	}
 	func() {
 		defer func() {

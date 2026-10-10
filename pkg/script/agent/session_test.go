@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -52,7 +53,7 @@ func primerDocs(t *testing.T) *symbols.PackageDoc {
 func saved(t *testing.T, s *Session) []byte {
 	t.Helper()
 	file := filepath.Join(t.TempDir(), "state.tlspr")
-	if err := s.Engine().Doc().Save(file); err != nil {
+	if err := s.Engine().Doc().File.Save(file); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(file)
@@ -76,7 +77,7 @@ func TestPrimerExample(t *testing.T) {
 		t.Fatalf("the example printed\n%s", res.Output)
 	}
 	doc := s.Engine().Doc()
-	plate, pocket := doc.Group("plate").Volume(), doc.Group("pocket").Volume()
+	plate, pocket := doc.Group("plate").Analyze().Volume(), doc.Group("pocket").Analyze().Volume()
 	wantPlate := (60*20 - 3*math.Pi*2.5*2.5) * 4
 	wantPocket := wantPlate - math.Pi*3*3*2
 	if math.Abs(plate-wantPlate) > wantPlate*0.01 || math.Abs(pocket-wantPocket) > wantPocket*0.01 {
@@ -98,11 +99,11 @@ func TestPrimerAndInstructions(t *testing.T) {
 	for _, part := range []string{
 		"# Scripting TeleSAPR",
 		primerExample,
-		"type api.Doc struct",
-		"Extrude(depth float64, name string) Group",
-		"Describe() (s string)",
-		"    Group: ",
+		"doc finds what the drawing holds:\n    Activate Active ",
+		"    doc.Features   BrokenReferences Chamfer ",
+		"    doc.Sketch     ActiveWorkplane Anywhere3D Arc ",
 		" SetCombine ",
+		"    g.AsFillet()   EdgeRadius Radius ",
 		"    SolidEdge: ",
 		"\nFunctions: ",
 		" V\n",
@@ -114,7 +115,13 @@ func TestPrimerAndInstructions(t *testing.T) {
 	// The types it lists are all there are with methods, but for the
 	// ones only the program uses.
 	p := primerDocs(t)
-	listed := map[string]bool{"Doc": true, "SketchHost": true}
+	listed := map[string]bool{"Doc": true, "Group": true, "SketchHost": true}
+	for f := range reflect.TypeFor[api.Doc]().Fields() {
+		listed[f.Type.Name()] = true
+	}
+	for _, v := range groupViews() {
+		listed[v[1]] = true
+	}
 	for _, name := range primerTypes {
 		if p.Types[name] == nil {
 			t.Errorf("the primer lists %s, which package api doesn't have", name)
@@ -132,19 +139,19 @@ func TestPrimerAndInstructions(t *testing.T) {
 // it defines stays for the next.
 func TestSessionRun(t *testing.T) {
 	s := newSession(t)
-	res := run(t, s, "l := doc.Line(V(0, 0, 0), V(30, 40, 0))\nfmt.Println(\"drawn\")\nl.Length()")
+	res := run(t, s, "l := doc.Sketch.Line(V(0, 0, 0), V(30, 40, 0))\nfmt.Println(\"drawn\")\nl.Length()")
 	if res.Output != "drawn\n" || res.Value != "50" || res.Error != "" || res.RolledBack {
 		t.Errorf("the run gave %+v", res)
 	}
 	if res.Status != "active group g002-sketch-in-plane, sketch-in-plane: solved, 4 DOF" {
 		t.Errorf("the status is %q", res.Status)
 	}
-	if res = run(t, s, "doc.Length(l, 60)\nl.Length()"); res.Value != "60" {
+	if res = run(t, s, "doc.Constrain.Length(l, 60)\nl.Length()"); res.Value != "60" {
 		t.Errorf("the line defined before is %s long, want 60; %+v", res.Value, res)
 	}
 
 	// Trouble in a group that isn't active shows in the status.
-	res = run(t, s, "doc.Length(l, 70)\ndoc.Sketch3D(\"more\")")
+	res = run(t, s, "doc.Constrain.Length(l, 70)\ndoc.Features.Sketch3D(\"more\")")
 	if !strings.Contains(res.Status, "active group g003-more, sketch-in-3d: solved") ||
 		!strings.Contains(res.Status, "\nin trouble: g002-sketch-in-plane, sketch-in-plane: NOT SOLVED") {
 		t.Errorf("after two lengths on a line, the status is\n%s", res.Status)
@@ -180,10 +187,10 @@ func main() { fmt.Println(len(api.Current().Groups())) }
 // redo, and says where it failed.
 func TestSessionRollback(t *testing.T) {
 	s := newSession(t)
-	run(t, s, "doc.Rect(V(0, 0, 0), V(40, 20, 0))")
+	run(t, s, "doc.Sketch.Rect(V(0, 0, 0), V(40, 20, 0))")
 	before := saved(t, s)
 
-	res := run(t, s, "c := doc.Circle(V(10, 10, 0), 3)\ndoc.Extrude(5, \"plate\")\nc.Length()\ndoc.Line(V(0, 0, 0), V(1, 1, 0)).Radius()")
+	res := run(t, s, "c := doc.Sketch.Circle(V(10, 10, 0), 3)\ndoc.Features.Extrude(5, \"plate\")\nc.Length()\ndoc.Sketch.Line(V(0, 0, 0), V(1, 1, 0)).Radius()")
 	if !res.RolledBack || !strings.HasPrefix(res.Error, "script:4:") || !strings.Contains(res.Error, "isn't a group to draw in") {
 		t.Fatalf("the failing script gave %+v", res)
 	}
@@ -194,11 +201,11 @@ func TestSessionRollback(t *testing.T) {
 	if after := saved(t, s); !bytes.Equal(before, after) {
 		t.Errorf("the drawing changed over a script that failed:\n%s\nwas\n%s", after, before)
 	}
-	if doc.Redo() {
+	if doc.Edit.Redo() {
 		t.Errorf("what the failed script did can be redone")
 	}
 	// The rectangle is still one step of undo away.
-	if !doc.Undo() || len(doc.Active().Requests()) != 0 {
+	if !doc.Edit.Undo() || len(doc.Active().Requests()) != 0 {
 		t.Errorf("undo after the rollback leaves %d requests, want none", len(doc.Active().Requests()))
 	}
 
@@ -218,15 +225,15 @@ func TestSessionRollback(t *testing.T) {
 // its first other change.
 func TestSessionRollbackOwnUndoSteps(t *testing.T) {
 	for name, code := range map[string]string{
-		"after a change":  "ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))\ndoc.TangentArc(ls[0].End(), 5, true)\nls[0].Radius()",
-		"first change":    "doc.TangentArc(corner[0].End(), 5, true)\ndoc.Circle(V(0, 0, 0), 1)\ndoc.Group(\"nothing\").Name()",
-		"only change":     "doc.TangentArc(corner[0].End(), 5, false)\ndoc.Group(\"nothing\").Name()",
-		"twice":           "ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0))\ndoc.TangentArc(ls[0].End(), 5, true)\ndoc.TangentArc(ls[1].End(), 5, true)\ndoc.Group(\"nothing\").Name()",
-		"split then fail": "a := doc.Line(V(0, -5, 0), V(0, 5, 0))\nb := doc.Line(V(-5, 0, 0), V(5, 0, 0))\ndoc.Split(a, b, V(0, 0, 0))\ndoc.Group(\"nothing\").Name()",
+		"after a change":  "ls := doc.Sketch.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))\ndoc.Sketch.TangentArc(ls[0].End(), 5, true)\nls[0].Radius()",
+		"first change":    "doc.Sketch.TangentArc(corner[0].End(), 5, true)\ndoc.Sketch.Circle(V(0, 0, 0), 1)\ndoc.Group(\"nothing\").Name()",
+		"only change":     "doc.Sketch.TangentArc(corner[0].End(), 5, false)\ndoc.Group(\"nothing\").Name()",
+		"twice":           "ls := doc.Sketch.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0))\ndoc.Sketch.TangentArc(ls[0].End(), 5, true)\ndoc.Sketch.TangentArc(ls[1].End(), 5, true)\ndoc.Group(\"nothing\").Name()",
+		"split then fail": "a := doc.Sketch.Line(V(0, -5, 0), V(0, 5, 0))\nb := doc.Sketch.Line(V(-5, 0, 0), V(5, 0, 0))\ndoc.Sketch.Split(a, b, V(0, 0, 0))\ndoc.Group(\"nothing\").Name()",
 	} {
 		t.Run(name, func(t *testing.T) {
 			s := newSession(t)
-			run(t, s, "corner := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))")
+			run(t, s, "corner := doc.Sketch.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))")
 			before := saved(t, s)
 			res := run(t, s, code)
 			if !res.RolledBack || res.Error == "" {
@@ -236,11 +243,11 @@ func TestSessionRollbackOwnUndoSteps(t *testing.T) {
 				t.Errorf("the drawing changed over a script that failed:\n%s\nwas\n%s", after, before)
 			}
 			doc := s.Engine().Doc()
-			if doc.Redo() {
+			if doc.Edit.Redo() {
 				t.Errorf("what the failed script did can be redone")
 			}
 			// What was drawn before is one step of undo away.
-			if !doc.Undo() || len(doc.Active().Requests()) != 0 {
+			if !doc.Edit.Undo() || len(doc.Active().Requests()) != 0 {
 				t.Errorf("undo after the rollback leaves %d requests, want none", len(doc.Active().Requests()))
 			}
 		})
@@ -248,11 +255,11 @@ func TestSessionRollbackOwnUndoSteps(t *testing.T) {
 
 	// A script that succeeds is one step of undo, whatever it called.
 	s := newSession(t)
-	if res := run(t, s, "ls := doc.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))\ndoc.TangentArc(ls[0].End(), 5, true)"); res.Error != "" {
+	if res := run(t, s, "ls := doc.Sketch.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))\ndoc.Sketch.TangentArc(ls[0].End(), 5, true)"); res.Error != "" {
 		t.Fatalf("the script gave %+v", res)
 	}
 	doc := s.Engine().Doc()
-	if !doc.Undo() || len(doc.Active().Requests()) != 0 {
+	if !doc.Edit.Undo() || len(doc.Active().Requests()) != 0 {
 		t.Errorf("one undo after the script leaves %d requests, want none", len(doc.Active().Requests()))
 	}
 }
@@ -273,7 +280,7 @@ func TestSessionStopAndBusy(t *testing.T) {
 		}
 		cancel()
 	}()
-	res, err := s.Run(ctx, "doc.Circle(V(0, 0, 0), 1)\nos.WriteFile("+strconv.Quote(drawn)+", nil, 0o644)\nfor {\n\ttime.Sleep(time.Millisecond)\n}")
+	res, err := s.Run(ctx, "doc.Sketch.Circle(V(0, 0, 0), 1)\nos.WriteFile("+strconv.Quote(drawn)+", nil, 0o644)\nfor {\n\ttime.Sleep(time.Millisecond)\n}")
 	if err != nil || res.Error != "the script was stopped" || !res.RolledBack {
 		t.Errorf("the stopped script gave %+v, %v", res, err)
 	}
@@ -300,7 +307,7 @@ func TestSessionStopAndBusy(t *testing.T) {
 func TestSessionDescribeHelpRender(t *testing.T) {
 	s := newSession(t)
 	ctx := context.Background()
-	run(t, s, "doc.Circle(V(0, 0, 0), 5)\ndoc.Extrude(3, \"disc\")")
+	run(t, s, "doc.Sketch.Circle(V(0, 0, 0), 5)\ndoc.Features.Extrude(3, \"disc\")")
 
 	text, err := s.Describe(ctx, "")
 	if err != nil || text != s.Engine().Doc().Describe() || !strings.Contains(text, "g003-disc, extrude") {
@@ -316,10 +323,10 @@ func TestSessionDescribeHelpRender(t *testing.T) {
 	if text, err = s.Help(ctx, ""); err != nil || text != Primer() {
 		t.Errorf("help of no name isn't the primer: %v", err)
 	}
-	if text, err = s.Help(ctx, " Doc.Extrude "); err != nil || !strings.Contains(text, "func (d *Doc) Extrude(depth float64, name string) Group") {
-		t.Errorf("help of Doc.Extrude is %q, %v", text, err)
+	if text, err = s.Help(ctx, " Features.Extrude "); err != nil || !strings.Contains(text, "func (m FeaturesMenu) Extrude(depth float64, name string) Group") {
+		t.Errorf("help of Features.Extrude is %q, %v", text, err)
 	}
-	if _, err = s.Help(ctx, "Doc.Extrud"); err == nil {
+	if _, err = s.Help(ctx, "Features.Extrud"); err == nil {
 		t.Errorf("help of a name nothing has is no error")
 	}
 

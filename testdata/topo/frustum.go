@@ -15,13 +15,13 @@ import (
 
 func main() {
 	doc := Current()
-	doc.SketchIn(doc.Workplane("ZX"), "profile")
-	axis := doc.Line(V(0, 0, -2), V(0, 0, 12))
+	doc.Features.SketchIn(doc.Workplane("ZX"), "profile")
+	axis := doc.Sketch.Line(V(0, 0, -2), V(0, 0, 12))
 	axis.SetConstruction(true)
-	doc.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(6, 0, 8), V(0, 0, 8))
-	doc.Lathe(axis, "frustum")
+	doc.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(6, 0, 8), V(0, 0, 8))
+	doc.Features.Lathe(axis, "frustum")
 	if len(os.Args) > 1 {
-		if err := doc.Save(os.Args[1]); err != nil {
+		if err := doc.File.Save(os.Args[1]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

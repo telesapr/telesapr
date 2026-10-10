@@ -1,9 +1,6 @@
 package api
 
 import (
-	"math"
-
-	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/thread"
 )
 
@@ -34,45 +31,3 @@ type ThreadOptions struct {
 // ThreadNearest is the designation of the standard thread whose major
 // diameter is nearest d mm, as the screw thread screen first offers.
 func ThreadNearest(d float64) string { return thread.Nearest(d).String() }
-
-// Thread makes a screw thread on a circle or an arc, about its axis
-// and from its plane, as Features > Screw Thread does: four groups,
-// a sketch and a lathe that turn the part down (or bore it), and a
-// ridge sketch and a helix that sweeps it. It returns the helix group,
-// which becomes active; its Check says whether the solid came out
-// sound at the chord tolerance of the moment.
-func (d *Doc) Thread(circle Entity, o ThreadOptions) (g Group) {
-	d.change(func(sk *sketch.Sketch) {
-		if d.h.Sketch().RegenerationPending() {
-			d.h.Regenerate()
-			sk = d.h.Sketch()
-		}
-		c := circle.get(sk)
-		if !c.IsCircle() {
-			fail("a thread is made on a circle or an arc, and %s isn't one", circle.describe(sk))
-		}
-		var opts sketch.ThreadOptions
-		diameter := 2 * c.CircleGetRadiusNum(sk)
-		if o.Designation == "" {
-			opts.Spec = thread.Nearest(diameter)
-		} else {
-			spec, err := thread.Parse(o.Designation)
-			if err != nil {
-				fail("%v", err)
-			}
-			opts.Spec = spec
-		}
-		opts.Internal, opts.Through, opts.Reverse = o.Internal, o.Through, o.Reverse
-		opts.Length, opts.Clearance = o.Length, o.Clearance
-		if opts.Length == 0 {
-			opts.Length = math.Ceil(1.5 * opts.Spec.Diameter)
-		}
-		res, err := sk.AddThread(circle.H, opts)
-		if err != nil {
-			fail("%v", err)
-		}
-		d.h.Activate(res.Group)
-		g = Group{d, res.Group}
-	})
-	return g
-}

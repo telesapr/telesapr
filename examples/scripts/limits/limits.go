@@ -34,18 +34,18 @@ func main() {
 	doc := api.Current()
 	none := api.Entity{}
 
-	rod := doc.Line(api.V(0, 0, 0), api.V(30, 0, 0))
-	doc.Lock(rod.Start())
-	doc.Horizontal(rod)
-	doc.MinDistance(rod, none, 20)
-	doc.MaxDistance(rod, none, 40)
+	rod := doc.Sketch.Line(api.V(0, 0, 0), api.V(30, 0, 0))
+	doc.Constrain.Lock(rod.Start())
+	doc.Constrain.Horizontal(rod)
+	doc.Constrain.MinDistance(rod, none, 20)
+	doc.Constrain.MaxDistance(rod, none, 40)
 
-	slot := doc.Line(api.V(0, -10, 0), api.V(35, -10, 0))
-	doc.Lock(slot.Start())
-	doc.Lock(slot.End())
-	slider := doc.Point(api.V(30, -10, 0))
-	doc.OnSegment(slider, slot)
-	doc.Vertical(slider, rod.End())
+	slot := doc.Sketch.Line(api.V(0, -10, 0), api.V(35, -10, 0))
+	doc.Constrain.Lock(slot.Start())
+	doc.Constrain.Lock(slot.End())
+	slider := doc.Sketch.Point(api.V(30, -10, 0))
+	doc.Constrain.OnSegment(slider, slot)
+	doc.Constrain.Vertical(slider, rod.End())
 
 	sketch := doc.Groups()[len(doc.Groups())-1]
 	failed := false
@@ -61,7 +61,7 @@ func main() {
 		// end alike to meet, so between the limits the rod ends near
 		// where it was put, and at one, at it.
 		rod.End().MoveTo(api.V(step.to, 0, 0))
-		doc.Regen()
+		doc.Edit.Regen()
 		length := rod.Length()
 		fmt.Printf("end put at x = %2.0f: rod %5.2f mm, slider at x = %5.2f, %d DOF\n",
 			step.to, length, slider.Pos().X, sketch.Dof())
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("limits.tlspr"); err != nil {
+		if err := doc.File.Save("limits.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

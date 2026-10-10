@@ -29,7 +29,7 @@ func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit in
 	var smooth []bool
 	{
 		d := New()
-		d.SetChordTolerance(0.01)
+		d.Edit.SetChordTolerance(0.01)
 		g := build(d)
 		if p := g.Problem(); p != "" {
 			t.Fatal(p)
@@ -52,15 +52,15 @@ func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit in
 				}
 			}()
 			d := New()
-			d.SetChordTolerance(0.01)
+			d.Edit.SetChordTolerance(0.01)
 			g := build(d)
-			f := d.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
+			f := d.Features.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
 			if p := f.Problem(); p != "" {
 				tl.refused++
 				tl.reasons[reasonOf(p)]++
 				return
 			}
-			if rep := f.Check(); rep.Sound() {
+			if rep := f.Analyze().Check(); rep.Sound() {
 				tl.sound++
 			} else {
 				tl.unsound++
@@ -103,7 +103,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 	}
 	step := func(file string) func(d *Doc) Group {
 		return func(d *Doc) Group {
-			g, err := d.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", file), "", true)
+			g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", file), "", true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -112,30 +112,30 @@ func TestFilletOnOtherSolids(t *testing.T) {
 	}
 	cases := []tcase{
 		{"loft", func(d *Doc) Group {
-			d.SketchIn(d.Workplane("XY"), "foot")
-			d.Rect(V(-18, -18, 0), V(18, 18, 0))
+			d.Features.SketchIn(d.Workplane("XY"), "foot")
+			d.Sketch.Rect(V(-18, -18, 0), V(18, 18, 0))
 			var ps []Group
 			ps = append(ps, d.Groups()[len(d.Groups())-1])
 			for _, p := range []struct{ z, r float64 }{{24, 30}, {50, 10}, {60, 14}} {
-				d.Sketch3D("")
-				o := d.Point(V(0, 0, p.z))
-				ps = append(ps, d.SketchAt(o, V(1, 0, 0), V(0, 1, 0), ""))
-				d.Circle(V(0, 0, p.z), p.r)
+				d.Features.Sketch3D("")
+				o := d.Sketch.Point(V(0, 0, p.z))
+				ps = append(ps, d.Features.SketchAt(o, V(1, 0, 0), V(0, 1, 0), ""))
+				d.Sketch.Circle(V(0, 0, p.z), p.r)
 			}
-			return d.LoftThrough(ps, "vase")
+			return d.Features.LoftThrough(ps, "vase")
 		}, 2, 0},
 		{"sweep", func(d *Doc) Group {
-			d.SketchIn(d.Workplane("ZX"), "path")
-			up := d.Line(V(0, 0, 0), V(0, 0, 30))
-			bend := d.Arc(V(25, 0, 30), V(0, 0, 30), V(25, 0, 55))
-			along := d.Line(V(25, 0, 55), V(65, 0, 55))
-			d.Coincident(up.End(), bend.Start())
-			d.Coincident(bend.End(), along.Start())
-			d.Tangent(up, bend)
-			d.Tangent(bend, along)
-			d.SketchIn(d.Workplane("XY"), "ring")
-			d.Rect(V(-6, -6, 0), V(6, 6, 0))
-			return d.Sweep([]Entity{up, bend, along}, "bar")
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			up := d.Sketch.Line(V(0, 0, 0), V(0, 0, 30))
+			bend := d.Sketch.Arc(V(25, 0, 30), V(0, 0, 30), V(25, 0, 55))
+			along := d.Sketch.Line(V(25, 0, 55), V(65, 0, 55))
+			d.Constrain.Coincident(up.End(), bend.Start())
+			d.Constrain.Coincident(bend.End(), along.Start())
+			d.Constrain.Tangent(up, bend)
+			d.Constrain.Tangent(bend, along)
+			d.Features.SketchIn(d.Workplane("XY"), "ring")
+			d.Sketch.Rect(V(-6, -6, 0), V(6, 6, 0))
+			return d.Features.Sweep([]Entity{up, bend, along}, "bar")
 		}, 1, 12},
 		{"box_hole", step("shapes/box_hole.step"), 1, 13},
 		{"cylinder", step("shapes/cylinder.step"), 1, 2},
@@ -166,17 +166,17 @@ func TestFilletOnOtherSolids(t *testing.T) {
 // centroid, r(10 - 3π)/(12 - 3π) in from the side.
 func TestFilletStepCylinder(t *testing.T) {
 	d := New()
-	d.SetChordTolerance(0.005)
-	g, err := d.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "cylinder.step"), "", true)
+	d.Edit.SetChordTolerance(0.005)
+	g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "cylinder.step"), "", true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	before := g.Check().Volume
-	f := d.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(5, 0, 0))}, 1, "")
+	before := g.Analyze().Check().Volume
+	f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(5, 0, 0))}, 1, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := f.Check()
+	r := f.Analyze().Check()
 	const rad, fr = 5.0, 1.0
 	want := 2 * math.Pi * (rad - fr*(10-3*math.Pi)/(12-3*math.Pi)) * fr * fr * (1 - math.Pi/4)
 	if took := before - r.Volume; !r.Sound() || math.Abs(took-want) > 0.01*want {
@@ -189,10 +189,10 @@ func TestFilletStepCylinder(t *testing.T) {
 // creased ones round its top and foot.
 func TestSolidEdgeSmooth(t *testing.T) {
 	d := New()
-	d.SketchIn(d.Workplane("XY"), "outline")
-	lines := d.Polyline(true, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0))
-	d.TangentArc(lines[0].End(), 5, true)
-	g := d.Extrude(10, "block")
+	d.Features.SketchIn(d.Workplane("XY"), "outline")
+	lines := d.Sketch.Polyline(true, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0))
+	d.Sketch.TangentArc(lines[0].End(), 5, true)
+	g := d.Features.Extrude(10, "block")
 	if p := g.Problem(); p != "" {
 		t.Fatal(p)
 	}
@@ -231,17 +231,17 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 		want float64
 	}{{V(0, 0, 5), 2.173344}, {V(40, 0, 5), 2.292926}, {V(40, 30, 5), 2.025750}, {V(0, 30, 4), 1.804228}} {
 		d := New()
-		d.SetChordTolerance(0.002)
-		g, err := d.LinkStep(lid, "", true)
+		d.Edit.SetChordTolerance(0.002)
+		g, err := d.Assembly.LinkStep(lid, "", true)
 		if err != nil {
 			t.Fatal(err)
 		}
-		before := g.Check().Volume
-		f := d.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 1, "")
+		before := g.Analyze().Check().Volume
+		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 1, "")
 		if p := f.Problem(); p != "" {
 			t.Fatalf("at %v: %s", c.at, p)
 		}
-		rep := f.Check()
+		rep := f.Analyze().Check()
 		took := before - rep.Volume
 		t.Logf("at %v: took %.6g, OpenCASCADE %g", c.at, took, c.want)
 		if !rep.Sound() || math.Abs(took-c.want) > 0.005*c.want {
@@ -251,20 +251,20 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 			continue
 		}
 		path := filepath.Join(t.TempDir(), "lid.tlspr")
-		if err := d.Save(path); err != nil {
+		if err := d.File.Save(path); err != nil {
 			t.Fatal(err)
 		}
 		l := New()
-		if err := l.Load(path); err != nil {
+		if err := l.File.Load(path); err != nil {
 			t.Fatal(err)
 		}
-		l.SetChordTolerance(0.002)
+		l.Edit.SetChordTolerance(0.002)
 		gs := l.Groups()
-		if r2 := gs[len(gs)-1].Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+		if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
 			t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, rep.Volume)
 		}
 		n := len(d.Groups())
-		if !d.Undo() || len(d.Groups()) >= n {
+		if !d.Edit.Undo() || len(d.Groups()) >= n {
 			t.Errorf("undo left %d groups of %d", len(d.Groups()), n)
 		}
 	}
@@ -297,16 +297,16 @@ func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
 			return err
 		}
 		d := New()
-		d.SetChordTolerance(p.Float("chord"))
-		s, err := d.LinkStep(lid, "", true)
+		d.Edit.SetChordTolerance(p.Float("chord"))
+		s, err := d.Assembly.LinkStep(lid, "", true)
 		if err != nil {
 			return err
 		}
-		f := d.FilletSolid([]SolidEdge{s.Solid().EdgeAt(V(x, y, 4))}, p.Float("r"), "")
+		f := d.Features.FilletSolid([]SolidEdge{s.Solid().EdgeAt(V(x, y, 4))}, p.Float("r"), "")
 		if pr := f.Problem(); pr != "" {
 			return errors.New(pr)
 		}
-		if rep := f.Check(); !rep.Sound() {
+		if rep := f.Analyze().Check(); !rep.Sound() {
 			t.Errorf("%s: made, not sound: %s", p.Label(), rep.Summary())
 		}
 		return nil

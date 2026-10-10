@@ -81,8 +81,8 @@ Where things are:
 | Freedom colouring (3.5) | `ext_freedom` | n/a: shown, not saved | `feedback` (`Entity.Free`) | `ext_freedom.goui` | n/a: no solid | `BenchmarkGroupFreedom`, `BenchmarkFreedom150` | n/a: changes nothing | n/a: not saved |
 | Conflicts (3.6) | `ext_conflicts` | n/a: shown, not saved | `feedback` (`Group.Conflicts`) | `ext_conflicts.goui` | n/a: no solid | n/a: found by the solve that fails | n/a: changes nothing | n/a: not saved |
 | Command search (3.7) | `ext_find_command` | n/a: it runs other commands, whose own rows apply | `feedback` (`Commands`, `RunCommand`) | `ext_find_command.goui` | n/a | n/a: not on the regeneration path | n/a: the command run makes its own step | n/a: not saved |
-| Measure (3.8) | `ext_measure` | n/a: adds nothing to the file | `feedback` (`Doc.Measure`) | `ext_measure.goui` | n/a: no solid | n/a: not on the regeneration path | n/a: changes nothing | n/a: not saved |
-| Document units (3.9) | `ext_units` | `path_units` (added by 12.8) | `feedback` (`Doc.SetUnits`) | `ext_units.goui` | n/a: no solid | n/a: not on the regeneration path | `ext_units` (a change of unit is one step) | `TestEveryFieldRoundTrips`, `TestUnitsInFiles` |
+| Measure (3.8) | `ext_measure` | n/a: adds nothing to the file | `feedback` (`Analyze.Measure`) | `ext_measure.goui` | n/a: no solid | n/a: not on the regeneration path | n/a: changes nothing | n/a: not saved |
+| Document units (3.9) | `ext_units` | `path_units` (added by 12.8) | `feedback` (`View.SetUnits`) | `ext_units.goui` | n/a: no solid | n/a: not on the regeneration path | `ext_units` (a change of unit is one step) | `TestEveryFieldRoundTrips`, `TestUnitsInFiles` |
 | Move a group (4.2) | `ext_move_group` | `path_move_group` | `history` | `ext_move_group.goui` | n/a: no solid of its own | n/a: renumbers, then the usual regeneration | `ext_move_group`, `TestMoveGroup` (api) | `TestEveryFieldRoundTrips` (the order) |
 | Suppress whole (4.3) | `ext_suppress_all` | `path_suppress_all` | `history`, `step` | `ext_suppress_all.goui` | n/a: no solid of its own | n/a: skips work | `TestSuppressAllUndo`, `ext_suppress_all` | `TestEveryFieldRoundTrips` |
 | Broken references (4.4) | `ext_broken_references` | `path_delete_group` | `history` | `ext_broken_references.goui` | n/a: no solid of its own | n/a: a report from pruning | `ext_broken_references` | n/a: a report, not saved |
@@ -130,11 +130,11 @@ Where things are:
 
 ## What the audit changed
 
-- `examples/scripts/feedback`: the first example to call `Doc.SetUnits`, `Doc.Measure`,
-  `Entity.Free`, `Group.Conflicts`, `Commands` and `Doc.RunCommand`. The doc comment of
+- `examples/scripts/feedback`: the first example to call `View.SetUnits`, `Analyze.Measure`,
+  `Entity.Free`, `Group.Conflicts`, `Commands` and `Edit.RunCommand`. The doc comment of
   `RunCommand` was wrong: `telesapr-cli run` runs scripts on the interface without a window,
   where commands run.
-- `path_units`: the unit set through the menu and through `Doc.SetUnits` saves the same file.
+- `path_units`: the unit set through the menu and through `View.SetUnits` saves the same file.
 - `TestMirrorSweep`: 0 of 144. A mirror reflects its source group, not the solid so far, so a
   hole cut by a later group is not reflected (15.5); the sweep puts the hole in the profile.
 - `TestLinkStepUndo`: linking a STEP file is one undo step.

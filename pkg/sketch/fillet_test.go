@@ -38,27 +38,27 @@ func TestFilletOneEdge(t *testing.T) {
 	top := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
 	step(d)
 	before := saved(t, d)
-	f := d.Fillet([]api.Entity{top}, 1, "")
+	f := d.Features.Fillet([]api.Entity{top}, 1, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := f.Check()
+	r := f.Analyze().Check()
 	want := 500 - filletLoss(1, math.Pi/2, 10)
 	tol := func(r float64) float64 { return chordLoss(r, math.Pi/2, 10) }
 	if !r.Sound() || math.Abs(r.Volume-want) > tol(1)+1e-9 || f.Kind() != "fillet" {
 		t.Fatalf("filleted block: %s, want volume %g", r.String(), want)
 	}
 	undoRedo(t, d, before)
-	f.SetRadius(2)
-	if v := f.Check().Volume; math.Abs(v-(500-filletLoss(2, math.Pi/2, 10))) > tol(2)+1e-9 || f.Radius() != 2 {
+	f.AsFillet().SetRadius(2)
+	if v := f.Analyze().Check().Volume; math.Abs(v-(500-filletLoss(2, math.Pi/2, 10))) > tol(2)+1e-9 || f.AsFillet().Radius() != 2 {
 		t.Fatalf("at radius 2 the volume is %g", v)
 	}
 	if err := f.SetExpr(sketch.GroupPitch, "1+0.5"); err != nil {
 		t.Fatal(err)
 	}
-	d.Regen()
-	if f.Radius() != 1.5 {
-		t.Fatalf("radius %g", f.Radius())
+	d.Edit.Regen()
+	if f.AsFillet().Radius() != 1.5 {
+		t.Fatalf("radius %g", f.AsFillet().Radius())
 	}
 	if err := f.SetExpr(sketch.GroupPitch, "0"); err == nil {
 		t.Fatal("a radius of 0 was taken")
@@ -92,11 +92,11 @@ func TestFilletSolidEdges(t *testing.T) {
 	fineChordFillet(d)
 	s := d.Group("slot").Solid()
 	upright := s.EdgeAt(api.V(15, 0, 5))
-	f := d.FilletSolid([]api.SolidEdge{upright}, 2, "")
+	f := d.Features.FilletSolid([]api.SolidEdge{upright}, 2, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := f.Check()
+	r := f.Analyze().Check()
 	want := 10000 - filletLoss(2, math.Pi/2, 10)
 	if !r.Sound() || math.Abs(r.Volume-want) > chordLoss(2, math.Pi/2, 10) {
 		t.Fatalf("%s, want %g", r.String(), want)
@@ -105,7 +105,7 @@ func TestFilletSolidEdges(t *testing.T) {
 		t.Fatal("the fillet's edges")
 	}
 	// It follows the notch.
-	if err := d.SetParameter("slot", "8"); err != nil {
+	if err := d.Params.Set("slot", "8"); err != nil {
 		t.Fatal(err)
 	}
 	if p := f.Problem(); p != "" {
@@ -119,21 +119,21 @@ func TestFilletSolidEdges(t *testing.T) {
 
 func TestFilletRefused(t *testing.T) {
 	d := api.New()
-	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
-	ex := d.Extrude(5, "")
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
+	ex := d.Features.Extrude(5, "")
 	for name, c := range map[string]struct {
 		fn   func()
 		want string
 	}{
 		"convex and concave": {func() {
-			d.Fillet([]api.Entity{lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5)), lineAlong(t, ex, api.V(5, 5, 5), api.V(20, 5, 5))}, 1, "")
+			d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5)), lineAlong(t, ex, api.V(5, 5, 5), api.V(20, 5, 5))}, 1, "")
 		}, "a convex edge's fillet meets a concave"},
-		"no edges":          {func() { d.Fillet(nil, 1, "") }, "no edges"},
-		"zero":              {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
-		"too large":         {func() { d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 50, "") }, "wider than a face"},
-		"radius of extrude": {func() { ex.Radius() }, "fillet"},
+		"no edges":          {func() { d.Features.Fillet(nil, 1, "") }, "no edges"},
+		"zero":              {func() { d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
+		"too large":         {func() { d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 50, "") }, "wider than a face"},
+		"radius of extrude": {func() { ex.AsFillet().Radius() }, "fillet"},
 		"bad radius": {func() {
-			d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 20, 5), api.V(5, 20, 5))}, 1, "").SetRadius(-1)
+			d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 20, 5), api.V(5, 20, 5))}, 1, "").AsFillet().SetRadius(-1)
 		}, "more than zero"},
 	} {
 		func() {
@@ -152,15 +152,15 @@ func TestFilletRefused(t *testing.T) {
 // problem on the group, and the solid passes through.
 func TestFilletProblem(t *testing.T) {
 	d := api.New()
-	sides := d.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
-	width := d.Length(sides[1], 10)
-	ex := d.Extrude(5, "")
-	f := d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 2, "")
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	width := d.Constrain.Length(sides[1], 10)
+	ex := d.Features.Extrude(5, "")
+	f := d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 2, "")
 	width.Set(1)
 	if p := f.Problem(); !strings.Contains(p, "wider than a face") {
 		t.Fatalf("problem %q", p)
 	}
-	if v := f.Check().Volume; math.Abs(v-1*10*5) > 1e-6 {
+	if v := f.Analyze().Check().Volume; math.Abs(v-1*10*5) > 1e-6 {
 		t.Fatalf("with a problem the fillet took %g away", 50-v)
 	}
 }
@@ -185,10 +185,10 @@ func TestFilletSweep(t *testing.T) {
 		r := p.Float("k") * 10 * math.Tan(th/2)
 		d := api.New()
 		fineChordFillet(d)
-		d.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
-		ex := d.Extrude(length, "")
-		f := d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, length))}, r, "")
-		rep := f.Check()
+		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
+		ex := d.Features.Extrude(length, "")
+		f := d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, length))}, r, "")
+		rep := f.Analyze().Check()
 		want := 50*math.Sin(th)*length - filletLoss(r, th, length)
 		allow := chordLoss(r, math.Pi-th, length) + 1e-9*want
 		switch {
@@ -209,18 +209,18 @@ func TestFilletThenBoolean(t *testing.T) {
 	for _, cut := range []bool{false, true} {
 		d := api.New()
 		ex := block(d, 0, 0, 20, 10, 10)
-		d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
-		d.SketchIn(d.Workplane("XY"), "")
+		d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
+		d.Features.SketchIn(d.Workplane("XY"), "")
 		var g api.Group
 		if cut {
-			d.Rect(api.V(5, -1, 0), api.V(8, 4, 0))
-			g = d.Extrude(20, "")
+			d.Sketch.Rect(api.V(5, -1, 0), api.V(8, 4, 0))
+			g = d.Features.Extrude(20, "")
 			g.SetCombine(api.Difference)
 		} else {
-			d.Rect(api.V(5, 1, 0), api.V(8, 4, 0))
-			g = d.Extrude(14, "")
+			d.Sketch.Rect(api.V(5, 1, 0), api.V(8, 4, 0))
+			g = d.Features.Extrude(14, "")
 		}
-		if r := g.Check(); !r.Sound() || g.Problem() != "" {
+		if r := g.Analyze().Check(); !r.Sound() || g.Problem() != "" {
 			t.Errorf("cut %v: %s %s", cut, r.String(), g.Problem())
 		}
 	}
@@ -235,14 +235,14 @@ func TestFilletCutChords(t *testing.T) {
 	d := api.New()
 	fineChordFillet(d)
 	ex := block(d, 0, 0, 20, 10, 10)
-	f := d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
+	f := d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
 	a := 4 * (1 - math.Pi/4)
-	filletErr := f.Check().Volume - (2000 - 20*a)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(5, -1, 0), api.V(8, 4, 0))
-	g := d.Extrude(20, "")
+	filletErr := f.Analyze().Check().Volume - (2000 - 20*a)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(5, -1, 0), api.V(8, 4, 0))
+	g := d.Features.Extrude(20, "")
 	g.SetCombine(api.Difference)
-	cutErr := g.Check().Volume - (2000 - 20*a - (120 - 3*a))
+	cutErr := g.Analyze().Check().Volume - (2000 - 20*a - (120 - 3*a))
 	if extra := cutErr - filletErr*17/20; math.Abs(extra) > 0.005 {
 		t.Errorf("the cut loses %g mm³ more than the fillet's chords (fillet %g, cut %g)", extra, filletErr, cutErr)
 	}
@@ -274,11 +274,11 @@ func TestFilletCorners(t *testing.T) {
 		}
 		step(d)
 		before := saved(t, d)
-		f := d.Fillet(edges, 2, "")
+		f := d.Features.Fillet(edges, 2, "")
 		if p := f.Problem(); p != "" {
 			t.Fatal(p)
 		}
-		r := f.Check()
+		r := f.Analyze().Check()
 		loss := boxCornerLoss(2, length, mitres, spheres)
 		want := 2000 - loss
 		if !r.Sound() || math.Abs(r.Volume-want) > 0.01*loss {
@@ -287,7 +287,7 @@ func TestFilletCorners(t *testing.T) {
 		undoRedo(t, d, before)
 		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
 		back := roundTrip(t, d)
-		if br := back.Group(f.Name()).Check(); !br.Sound() {
+		if br := back.Group(f.Name()).Analyze().Check(); !br.Sound() {
 			t.Fatalf("three %v reopened: %s", three, br.String())
 		}
 	}
@@ -324,27 +324,27 @@ func TestFilletCircle(t *testing.T) {
 	for _, flat := range []bool{false, true} {
 		for _, byName := range []bool{false, true} {
 			d := api.New()
-			d.SetChordTolerance(0.005)
-			d.Circle(api.V(0, 0, 0), 5)
-			ex := d.Extrude(10, "")
-			before := ex.Check().Volume
+			d.Edit.SetChordTolerance(0.005)
+			d.Sketch.Circle(api.V(0, 0, 0), 5)
+			ex := d.Features.Extrude(10, "")
+			before := ex.Analyze().Check().Volume
 			step(d)
 			saveBefore := saved(t, d)
 			var g api.Group
 			switch {
 			case flat && byName:
-				g = d.ChamferSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
+				g = d.Features.ChamferSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
 			case flat:
-				g = d.Chamfer([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+				g = d.Features.Chamfer([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 			case byName:
-				g = d.FilletSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
+				g = d.Features.FilletSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
 			default:
-				g = d.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+				g = d.Features.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
 			}
 			if p := g.Problem(); p != "" {
 				t.Fatalf("flat %v by name %v: %s", flat, byName, p)
 			}
-			r := g.Check()
+			r := g.Analyze().Check()
 			want := spandrelLoss(5, 2, false)
 			if flat {
 				want = 2 * 2 / 2.0 * 2 * math.Pi * (5 - 2/3.0)
@@ -355,10 +355,10 @@ func TestFilletCircle(t *testing.T) {
 			undoRedo(t, d, saveBefore)
 			// A reopened file meshes at the default tolerance.
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-			d.Regen()
-			r = g.Check()
+			d.Edit.Regen()
+			r = g.Analyze().Check()
 			back := roundTrip(t, d)
-			if br := back.Group(g.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+			if br := back.Group(g.Name()).Analyze().Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
 				t.Fatalf("flat %v by name %v reopened: %s", flat, byName, br.String())
 			}
 		}
@@ -369,18 +369,18 @@ func TestFilletCircle(t *testing.T) {
 // chamfered in one group, the circle by a cone, the edge by a wedge.
 func TestChamferCircleAndEdge(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.005)
+	d.Edit.SetChordTolerance(0.005)
 	block(d, -10, -10, 10, 10, 5)
-	d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
-	d.Circle(api.V(0, 0, 5), 4)
-	boss := d.Extrude(5, "")
-	before := boss.Check().Volume
+	d.Features.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+	d.Sketch.Circle(api.V(0, 0, 5), 4)
+	boss := d.Features.Extrude(5, "")
+	before := boss.Analyze().Check().Volume
 	edge := boss.Solid().EdgeAt(api.V(0, -10, 5))
-	c := d.ChamferSolid([]api.SolidEdge{boss.Solid().EdgeAt(api.V(4, 0, 10)), edge}, 1, "")
+	c := d.Features.ChamferSolid([]api.SolidEdge{boss.Solid().EdgeAt(api.V(4, 0, 10)), edge}, 1, "")
 	if p := c.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := c.Check()
+	r := c.Analyze().Check()
 	want := 1.0/2*2*math.Pi*(4-1/3.0) + 1.0/2*20
 	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
 		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
@@ -393,22 +393,22 @@ func TestChamferCircleAndEdge(t *testing.T) {
 func TestFilletConcave(t *testing.T) {
 	for _, round := range []bool{false, true} {
 		d := api.New()
-		d.SetChordTolerance(0.005)
+		d.Edit.SetChordTolerance(0.005)
 		block(d, -10, -10, 10, 10, 5)
-		d.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
+		d.Features.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")
 		if round {
-			d.Circle(api.V(0, 0, 5), 4)
+			d.Sketch.Circle(api.V(0, 0, 5), 4)
 		} else {
-			d.Rect(api.V(-4, -4, 5), api.V(4, 4, 5))
+			d.Sketch.Rect(api.V(-4, -4, 5), api.V(4, 4, 5))
 		}
-		boss := d.Extrude(5, "")
-		before := boss.Check().Volume
+		boss := d.Features.Extrude(5, "")
+		before := boss.Analyze().Check().Volume
 		step(d)
 		saveBefore := saved(t, d)
 		var f api.Group
 		var want float64
 		if round {
-			f = d.Fillet([]api.Entity{circleOf(t, boss, 5)}, 1.5, "")
+			f = d.Features.Fillet([]api.Entity{circleOf(t, boss, 5)}, 1.5, "")
 			a := 1.5 * 1.5 * (1 - math.Pi/4)
 			c := 1.5 * (10 - 3*math.Pi) / (12 - 3*math.Pi)
 			want = a * 2 * math.Pi * (4 + c)
@@ -417,7 +417,7 @@ func TestFilletConcave(t *testing.T) {
 			for _, p := range []api.Vec{api.V(0, -4, 5), api.V(4, 0, 5), api.V(0, 4, 5), api.V(-4, 0, 5)} {
 				edges = append(edges, boss.Solid().EdgeAt(p))
 			}
-			f = d.FilletSolid(edges, 1.5, "")
+			f = d.Features.FilletSolid(edges, 1.5, "")
 			// The strips run on past the boss's corners to the mitres: as a
 			// box's mitres, counted the other way.
 			want = boxCornerLoss(1.5, 32, -4, 0)
@@ -425,16 +425,16 @@ func TestFilletConcave(t *testing.T) {
 		if p := f.Problem(); p != "" {
 			t.Fatalf("round %v: %s", round, p)
 		}
-		r := f.Check()
+		r := f.Analyze().Check()
 		if !r.Sound() || math.Abs(r.Volume-before-want) > 0.02*want {
 			t.Fatalf("round %v: %s, added %g, want %g", round, r.String(), r.Volume-before, want)
 		}
 		undoRedo(t, d, saveBefore)
 		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
-		d.Regen()
-		r = f.Check()
+		d.Edit.Regen()
+		r = f.Analyze().Check()
 		back := roundTrip(t, d)
-		if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+		if br := back.Group(f.Name()).Analyze().Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
 			t.Fatalf("round %v reopened: %s", round, br.String())
 		}
 	}
@@ -446,32 +446,32 @@ func TestFilletConcave(t *testing.T) {
 // path.
 func TestFilletRoundedOutline(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.005)
-	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	d.Edit.SetChordTolerance(0.005)
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
 	for _, s := range sides {
-		d.TangentArc(s.Start(), 4, true)
+		d.Sketch.TangentArc(s.Start(), 4, true)
 	}
-	ex := d.Extrude(10, "")
-	before := ex.Check().Volume
+	ex := d.Features.Extrude(10, "")
+	before := ex.Analyze().Check().Volume
 	step(d)
 	saveBefore := saved(t, d)
-	f := d.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 2, "")
+	f := d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 2, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
 	a := 2 * 2 * (1 - math.Pi/4)
 	c := 2 * (10 - 3*math.Pi) / (12 - 3*math.Pi)
 	want := a * (2*22 + 2*12 + 2*math.Pi*(4-c))
-	r := f.Check()
+	r := f.Analyze().Check()
 	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
 		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
 	}
 	undoRedo(t, d, saveBefore)
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
-	d.Regen()
-	r = f.Check()
+	d.Edit.Regen()
+	r = f.Analyze().Check()
 	back := roundTrip(t, d)
-	if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+	if br := back.Group(f.Name()).Analyze().Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
 		t.Fatalf("reopened: %s", br.String())
 	}
 }
@@ -482,10 +482,10 @@ func TestFilletRoundedOutline(t *testing.T) {
 // curves are exact here.
 func TestFilletUnevenMitre(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.005)
-	d.SketchIn(d.Workplane("ZX"), "")
-	d.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
-	ex := d.Extrude(10, "")
+	d.Edit.SetChordTolerance(0.005)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(15, 0, 10), api.V(0, 0, 10))
+	ex := d.Features.Extrude(10, "")
 	s := ex.Solid()
 	front, slope := s.EdgeAt(api.V(7, 0, 10)), s.EdgeAt(api.V(15, 5, 10))
 	if a, b := slope.Ends(); a.Y < -1 || b.Y < -1 {
@@ -494,18 +494,18 @@ func TestFilletUnevenMitre(t *testing.T) {
 	}
 	step(d)
 	saveBefore := saved(t, d)
-	f := d.FilletSolid([]api.SolidEdge{front, slope}, 2, "")
+	f := d.Features.FilletSolid([]api.SolidEdge{front, slope}, 2, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := f.Check()
+	r := f.Analyze().Check()
 	if want := 1734.655169; !r.Sound() || math.Abs(r.Volume-want) > 0.5 {
 		t.Fatalf("%s, want volume %g", r.String(), want)
 	}
 	undoRedo(t, d, saveBefore)
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
 	back := roundTrip(t, d)
-	if br := back.Group(f.Name()).Check(); !br.Sound() {
+	if br := back.Group(f.Name()).Analyze().Check(); !br.Sound() {
 		t.Fatalf("reopened: %s", br.String())
 	}
 }
@@ -523,28 +523,28 @@ func TestFilletUnevenMitre(t *testing.T) {
 func TestFilletRibFoot(t *testing.T) {
 	volume := func(sides, ends bool) float64 {
 		d := api.New()
-		d.SetChordTolerance(0.001)
+		d.Edit.SetChordTolerance(0.001)
 		f := filletRib(d, 2, sides, ends)
 		if p := f.Problem(); p != "" {
 			t.Fatalf("sides %v, ends %v: %s", sides, ends, p)
 		}
-		r := f.Check()
+		r := f.Analyze().Check()
 		if !r.Sound() {
 			t.Fatalf("sides %v, ends %v: %s", sides, ends, r.String())
 		}
 		return r.Volume
 	}
 	d := api.New()
-	d.SetChordTolerance(0.001)
+	d.Edit.SetChordTolerance(0.001)
 	rib, edges := ribbed(d)
-	bare := rib.Volume()
+	bare := rib.Analyze().Volume()
 	step(d)
 	saveBefore := saved(t, d)
-	f := d.FilletSolid(edges(rib.Solid(), true, true), 2, "")
+	f := d.Features.FilletSolid(edges(rib.Solid(), true, true), 2, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	r := f.Check()
+	r := f.Analyze().Check()
 	corners := r.Volume - volume(true, false) - volume(false, true) + bare
 	if want := 4 * 0.0600158; !r.Sound() || math.Abs(corners-want) > 0.1*want {
 		t.Fatalf("%s: the corners hold %g, want %g", r.String(), corners, want)
@@ -559,20 +559,20 @@ func TestFilletRibFoot(t *testing.T) {
 	// A slot cut down through a side's fillet where it ends on the top,
 	// which grew there: the Boolean finds the grown face.
 	step(d)
-	d.SketchIn(d.Workplane("XY"), "")
-	d.Rect(api.V(24, 10.5, 0), api.V(25, 14, 0))
-	slot := d.Extrude(30, "slot")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(24, 10.5, 0), api.V(25, 14, 0))
+	slot := d.Features.Extrude(30, "slot")
 	slot.SetTwoSided(true)
 	slot.SetCombine(api.Difference)
-	d.Regen()
-	if sr := slot.Check(); slot.Problem() != "" || !sr.Sound() || sr.Volume > r.Volume-1 {
+	d.Edit.Regen()
+	if sr := slot.Analyze().Check(); slot.Problem() != "" || !sr.Sound() || sr.Volume > r.Volume-1 {
 		t.Fatalf("the slot: %s %s", sr.String(), slot.Problem())
 	}
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
-	d.Regen()
-	sr := slot.Check()
+	d.Edit.Regen()
+	sr := slot.Analyze().Check()
 	back := roundTrip(t, d)
-	if br := back.Group("slot").Check(); !br.Sound() || math.Abs(br.Volume-sr.Volume) > 1e-6*sr.Volume {
+	if br := back.Group("slot").Analyze().Check(); !br.Sound() || math.Abs(br.Volume-sr.Volume) > 1e-6*sr.Volume {
 		t.Fatalf("reopened: %s", br.String())
 	}
 }
@@ -582,16 +582,16 @@ func TestFilletRibFoot(t *testing.T) {
 // through the group; the volume by Pappus.
 func TestFilletCone(t *testing.T) {
 	d := api.New()
-	d.SetChordTolerance(0.005)
-	d.SketchIn(d.Workplane("ZX"), "")
-	axis := d.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+	d.Edit.SetChordTolerance(0.005)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
 	axis.SetConstruction(true)
-	d.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
-	lathe := d.Lathe(axis, "")
-	before := lathe.Check().Volume
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
+	lathe := d.Features.Lathe(axis, "")
+	before := lathe.Analyze().Check().Volume
 	step(d)
 	saveBefore := saved(t, d)
-	f := d.FilletSolid([]api.SolidEdge{lathe.Solid().EdgeAt(api.V(6*math.Cos(1), 6*math.Sin(1), 8))}, 1.5, "")
+	f := d.Features.FilletSolid([]api.SolidEdge{lathe.Solid().EdgeAt(api.V(6*math.Cos(1), 6*math.Sin(1), 8))}, 1.5, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)
 	}
@@ -607,16 +607,16 @@ func TestFilletCone(t *testing.T) {
 	alpha := (math.Pi - beta) / 2
 	sectorX := c[0] - bis[0]/l*2*1.5*math.Sin(alpha)/(3*alpha)
 	want := 2 * math.Pi * (1.5*s*kiteX - alpha*1.5*1.5*sectorX)
-	r := f.Check()
+	r := f.Analyze().Check()
 	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.03*want {
 		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
 	}
 	undoRedo(t, d, saveBefore)
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
-	d.Regen()
-	r = f.Check()
+	d.Edit.Regen()
+	r = f.Analyze().Check()
 	back := roundTrip(t, d)
-	if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+	if br := back.Group(f.Name()).Analyze().Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
 		t.Fatalf("reopened: %s", br.String())
 	}
 }
@@ -628,11 +628,11 @@ func TestFilletCone(t *testing.T) {
 func TestFilletEdgeRadii(t *testing.T) {
 	d := api.New()
 	fineChordFillet(d)
-	if err := d.SetParameter("r", "1.5"); err != nil {
+	if err := d.Params.Set("r", "1.5"); err != nil {
 		t.Fatal(err)
 	}
 	ex := block(d, 0, 0, 20, 10, 10)
-	f := d.Fillet([]api.Entity{
+	f := d.Features.Fillet([]api.Entity{
 		lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
 		lineAlong(t, ex, api.V(0, 10, 10), api.V(20, 10, 10)),
 		lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0)),
@@ -640,8 +640,8 @@ func TestFilletEdgeRadii(t *testing.T) {
 	}, 2, "")
 	step(d)
 	before := saved(t, d)
-	f.SetEdgeRadius(2, 1)
-	if err := f.SetEdgeRadiusExpr(3, "r*2"); err != nil {
+	f.AsFillet().SetEdgeRadius(2, 1)
+	if err := f.AsFillet().SetEdgeRadiusExpr(3, "r*2"); err != nil {
 		t.Fatal(err)
 	}
 	if p := f.Problem(); p != "" {
@@ -651,60 +651,60 @@ func TestFilletEdgeRadii(t *testing.T) {
 		t.Helper()
 		loss := 2*filletLoss(2, math.Pi/2, 20) + filletLoss(1, math.Pi/2, 20) + filletLoss(r3, math.Pi/2, 20)
 		want := 2000 - loss
-		if r := f.Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.01*loss {
+		if r := f.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.01*loss {
 			t.Fatalf("%s: %s, want volume %g", what, r.String(), want)
 		}
-		if got := f.EdgeRadius(3); got != r3 || f.EdgeRadius(0) != 2 || f.EdgeRadius(2) != 1 {
-			t.Fatalf("%s: radii %g %g %g", what, f.EdgeRadius(0), f.EdgeRadius(2), got)
+		if got := f.AsFillet().EdgeRadius(3); got != r3 || f.AsFillet().EdgeRadius(0) != 2 || f.AsFillet().EdgeRadius(2) != 1 {
+			t.Fatalf("%s: radii %g %g %g", what, f.AsFillet().EdgeRadius(0), f.AsFillet().EdgeRadius(2), got)
 		}
 	}
 	check("set", 3)
-	if err := d.SetParameter("r", "1"); err != nil {
+	if err := d.Params.Set("r", "1"); err != nil {
 		t.Fatal(err)
 	}
 	check("parameter changed", 2)
-	if err := f.SetEdgeRadiusExpr(3, "-r"); err == nil {
+	if err := f.AsFillet().SetEdgeRadiusExpr(3, "-r"); err == nil {
 		t.Error("a radius below zero is taken")
 	}
 	undoRedo(t, d, before)
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
 	back := roundTrip(t, d)
 	bf := back.Group(f.Name())
-	if br := bf.Check(); bf.EdgeRadius(2) != 1 || bf.EdgeRadius(3) != 2 || !br.Sound() {
-		t.Fatalf("reopened: radii %g %g", bf.EdgeRadius(2), bf.EdgeRadius(3))
+	if br := bf.Analyze().Check(); bf.AsFillet().EdgeRadius(2) != 1 || bf.AsFillet().EdgeRadius(3) != 2 || !br.Sound() {
+		t.Fatalf("reopened: radii %g %g", bf.AsFillet().EdgeRadius(2), bf.AsFillet().EdgeRadius(3))
 	}
 	// In inches, the sizes stay, and the expression gains the factor;
 	// reopened, the same (a plain length may move by an ulp on its first
 	// reload in inches, as any does).
-	d.SetUnits(core.UnitInches)
-	if math.Abs(f.EdgeRadius(3)-2) > 1e-9 || math.Abs(f.EdgeRadius(2)-1) > 1e-9 {
-		t.Fatalf("in inches: radii %g %g", f.EdgeRadius(2), f.EdgeRadius(3))
+	d.View.SetUnits(core.UnitInches)
+	if math.Abs(f.AsFillet().EdgeRadius(3)-2) > 1e-9 || math.Abs(f.AsFillet().EdgeRadius(2)-1) > 1e-9 {
+		t.Fatalf("in inches: radii %g %g", f.AsFillet().EdgeRadius(2), f.AsFillet().EdgeRadius(3))
 	}
 	file := filepath.Join(t.TempDir(), "inches.tlspr")
-	if err := d.Save(file); err != nil {
+	if err := d.File.Save(file); err != nil {
 		t.Fatal(err)
 	}
 	inches, err := api.Open(file)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bi := inches.Group(f.Name()); math.Abs(bi.EdgeRadius(3)-2) > 1e-9 || math.Abs(bi.EdgeRadius(2)-1) > 1e-9 {
-		t.Fatalf("reopened in inches: radii %g %g", bi.EdgeRadius(2), bi.EdgeRadius(3))
+	if bi := inches.Group(f.Name()); math.Abs(bi.AsFillet().EdgeRadius(3)-2) > 1e-9 || math.Abs(bi.AsFillet().EdgeRadius(2)-1) > 1e-9 {
+		t.Fatalf("reopened in inches: radii %g %g", bi.AsFillet().EdgeRadius(2), bi.AsFillet().EdgeRadius(3))
 	}
-	d.SetUnits(core.UnitMM)
+	d.View.SetUnits(core.UnitMM)
 	// Back to the group's radius.
-	f.SetEdgeRadius(2, 0)
-	if f.EdgeRadius(2) != 2 {
-		t.Errorf("edge 2 at %g after its own radius is taken off", f.EdgeRadius(2))
+	f.AsFillet().SetEdgeRadius(2, 0)
+	if f.AsFillet().EdgeRadius(2) != 2 {
+		t.Errorf("edge 2 at %g after its own radius is taken off", f.AsFillet().EdgeRadius(2))
 	}
 	// Two that meet must have one radius.
 	d = api.New()
 	ex = block(d, 0, 0, 20, 10, 10)
-	g := d.Fillet([]api.Entity{
+	g := d.Features.Fillet([]api.Entity{
 		lineAlong(t, ex, api.V(0, 0, 10), api.V(0, 10, 10)),
 		lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, 10)),
 	}, 1, "")
-	g.SetEdgeRadius(1, 2)
+	g.AsFillet().SetEdgeRadius(1, 2)
 	if p := g.Problem(); !strings.Contains(p, "radius 1 and 2 meet") {
 		t.Errorf("a corner of two radii: %q", p)
 	}
@@ -716,7 +716,7 @@ func TestFilletEdgeRadii(t *testing.T) {
 func TestFilletBordersDrawn(t *testing.T) {
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
-	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
+	d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
 	var top, front float64
 	d.With(func(sk *sketch.Sketch) {
 		g := sk.Group(sk.Active)
@@ -747,11 +747,11 @@ func near(a, b float64) bool { return math.Abs(a-b) < 1e-6 }
 // the edge's end (roadmap 15.7).
 func TestFilletStoppedAtRoundedCorner(t *testing.T) {
 	d := api.New()
-	sides := d.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
+	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
 	for _, s := range sides {
-		d.TangentArc(s.Start(), 4, true)
+		d.Sketch.TangentArc(s.Start(), 4, true)
 	}
-	ex := d.Extrude(10, "")
+	ex := d.Features.Extrude(10, "")
 	defer func() {
 		err, _ := recover().(error)
 		if err == nil || !strings.Contains(err.Error(), "stops at a rounded corner") ||
@@ -759,7 +759,7 @@ func TestFilletStoppedAtRoundedCorner(t *testing.T) {
 			t.Errorf("refused with %v", err)
 		}
 	}()
-	d.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 4, "")
+	d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(4, 0, 10), api.V(26, 0, 10))}, 4, "")
 }
 
 // spandrelRevolved is the volume a fillet of radius r takes from (or
@@ -804,16 +804,16 @@ func TestFilletConeOnCylinder(t *testing.T) {
 			api.V(5*math.Cos(1), 5*math.Sin(1), 10), [2]float64{5, 10}, [2]float64{5, -10}, [2]float64{0, 1}, false},
 	} {
 		d := api.New()
-		d.SetChordTolerance(0.001)
-		d.SketchIn(d.Workplane("ZX"), "")
-		axis := d.Line(api.V(0, 0, -2), api.V(0, 0, 32))
+		d.Edit.SetChordTolerance(0.001)
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 32))
 		axis.SetConstruction(true)
-		d.Polyline(true, c.profile...)
-		lathe := d.Lathe(axis, "")
-		before := lathe.Check().Volume
+		d.Sketch.Polyline(true, c.profile...)
+		lathe := d.Features.Lathe(axis, "")
+		before := lathe.Analyze().Check().Volume
 		step(d)
 		saveBefore := saved(t, d)
-		f := d.FilletSolid([]api.SolidEdge{lathe.Solid().EdgeAt(c.edge)}, 3, "")
+		f := d.Features.FilletSolid([]api.SolidEdge{lathe.Solid().EdgeAt(c.edge)}, 3, "")
 		if p := f.Problem(); p != "" {
 			t.Fatalf("%s: %s", c.name, p)
 		}
@@ -821,22 +821,22 @@ func TestFilletConeOnCylinder(t *testing.T) {
 		if c.convex {
 			want = -want
 		}
-		r := f.Check()
+		r := f.Analyze().Check()
 		if !r.Sound() || math.Abs(r.Volume-before-want) > 0.03*math.Abs(want) {
 			t.Fatalf("%s: %s, changed by %g, want %g", c.name, r.String(), r.Volume-before, want)
 		}
 		undoRedo(t, d, saveBefore)
 		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0; sk.ScheduleGenerateAll() })
-		d.Regen()
-		r = f.Check()
+		d.Edit.Regen()
+		r = f.Analyze().Check()
 		back := roundTrip(t, d)
-		if br := back.Group(f.Name()).Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+		if br := back.Group(f.Name()).Analyze().Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
 			t.Fatalf("%s: reopened: %s", c.name, br.String())
 		}
 		// The same edge chamfered: a cone's band in place of the torus.
 		f.Delete()
-		ch := d.ChamferSolid([]api.SolidEdge{lathe.Solid().EdgeAt(c.edge)}, 3, "")
-		if r := ch.Check(); ch.Problem() != "" || !r.Sound() {
+		ch := d.Features.ChamferSolid([]api.SolidEdge{lathe.Solid().EdgeAt(c.edge)}, 3, "")
+		if r := ch.Analyze().Check(); ch.Problem() != "" || !r.Sound() {
 			t.Fatalf("%s: chamfered: %s %s", c.name, r.String(), ch.Problem())
 		}
 	}

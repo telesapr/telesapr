@@ -8,7 +8,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
-	doc.Circle(V(-2, 7, 0), 10)
-	cyl := doc.Extrude(80, "")
-	doc.ShellSolid([]SolidFace{cyl.Solid().FaceAt(V(-2, 7, 80))}, 1, "")
+	doc.Sketch.Circle(V(-2, 7, 0), 10)
+	cyl := doc.Features.Extrude(80, "")
+	doc.Features.ShellSolid([]SolidFace{cyl.Solid().FaceAt(V(-2, 7, 80))}, 1, "")
 }

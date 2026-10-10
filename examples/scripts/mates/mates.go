@@ -65,23 +65,23 @@ func hole(g api.Group) api.Entity {
 func main() {
 	write := len(os.Args) < 2 || os.Args[1] != "-"
 	part := api.New()
-	part.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
-	part.Circle(api.V(10, 10, 0), 3)
-	part.Extrude(5, "")
+	part.Sketch.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
+	part.Sketch.Circle(api.V(10, 10, 0), 3)
+	part.Features.Extrude(5, "")
 	must(os.MkdirAll("parts", 0o755))
 	path := filepath.Join("parts", "plate.tlspr")
-	must(part.Save(path))
+	must(part.File.Save(path))
 
 	doc := api.Current()
-	a, err := doc.Link(path, "lower")
+	a, err := doc.Assembly.Link(path, "lower")
 	must(err)
-	b, err := doc.Link(path, "upper")
+	b, err := doc.Assembly.Link(path, "upper")
 	must(err)
 
 	_, top := ends(a)
 	bottom, _ := ends(b)
-	doc.Flush(top, bottom)
-	doc.Concentric(hole(a), hole(b))
+	doc.Assembly.Flush(top, bottom)
+	doc.Assembly.Concentric(hole(a), hole(b))
 
 	ha, hb := hole(a).Center().Pos(), hole(b).Center().Pos()
 	_, top = ends(a)
@@ -93,6 +93,6 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		must(doc.Save("mates.tlspr"))
+		must(doc.File.Save("mates.tlspr"))
 	}
 }

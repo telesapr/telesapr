@@ -19,20 +19,20 @@ func TestExportStepAssembly(t *testing.T) {
 	ss, _ := newTestApp(t)
 	dir := t.TempDir()
 	partDoc := api.New()
-	partDoc.Rect(api.V(0, 0, 0), api.V(10, 4, 0))
-	partDoc.Extrude(2, "")
+	partDoc.Sketch.Rect(api.V(0, 0, 0), api.V(10, 4, 0))
+	partDoc.Features.Extrude(2, "")
 	part := filepath.Join(dir, "bar.tlspr")
-	if err := partDoc.Save(part); err != nil {
+	if err := partDoc.File.Save(part); err != nil {
 		t.Fatal(err)
 	}
 
 	doc := api.NewDoc(ss.ScriptHost())
-	doc.Rect(api.V(30, 0, 0), api.V(35, 5, 0))
-	doc.Extrude(5, "block")
-	if _, err := doc.Link(part, ""); err != nil {
+	doc.Sketch.Rect(api.V(30, 0, 0), api.V(35, 5, 0))
+	doc.Features.Extrude(5, "block")
+	if _, err := doc.Assembly.Link(part, ""); err != nil {
 		t.Fatal(err)
 	}
-	b, err := doc.Link(part, "")
+	b, err := doc.Assembly.Link(part, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,14 +41,14 @@ func TestExportStepAssembly(t *testing.T) {
 	sk.MustParam(b.H.Param(0)).Val = -20
 	sk.MustParam(b.H.Param(3)).Val = math.Sqrt2 / 2
 	sk.MustParam(b.H.Param(6)).Val = math.Sqrt2 / 2
-	doc.Regen()
-	want := doc.Active().Check()
+	doc.Edit.Regen()
+	want := doc.Active().Analyze().Check()
 
 	out := filepath.Join(dir, "assembly.step")
 	if keep := os.Getenv("TELESAPR_KEEP_STEP"); keep != "" {
 		out = keep
 	}
-	if err := doc.Export(out); err != nil {
+	if err := doc.File.Export(out); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(out)

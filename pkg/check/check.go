@@ -4,7 +4,7 @@
 // volume, centre of mass and extent are those expected.
 //
 // Tests call it on every solid they build, the Analyze menu's Check
-// Solid shows it, and scripts get it as Group.Check.
+// Solid shows it, and scripts get it as GroupAnalysis.Check.
 package check
 
 import (

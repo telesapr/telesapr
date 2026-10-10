@@ -36,35 +36,35 @@ func main() {
 
 	// The outline: a rectangle with a corner at the origin, dimensioned.
 	doc := api.Current()
-	sides := doc.Rect(api.V(0, 0, 0), api.V(width, height, 0))
-	doc.Coincident(sides[0].Start(), doc.Origin())
-	doc.Length(sides[0], width)
-	doc.Length(sides[1], height)
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(width, height, 0))
+	doc.Constrain.Coincident(sides[0].Start(), doc.Origin())
+	doc.Constrain.Length(sides[0], width)
+	doc.Constrain.Length(sides[1], height)
 
 	// The holes, each placed from the bottom and the left sides.
 	pitch := width / float64(holes+1)
 	for i := 1; i <= holes; i++ {
 		x := pitch * float64(i)
-		hole := doc.Circle(api.V(x, height/2, 0), diameter/2)
-		doc.Diameter(hole, diameter)
-		doc.Distance(hole.Center(), sides[0], height/2)
-		doc.Distance(hole.Center(), sides[3], x)
+		hole := doc.Sketch.Circle(api.V(x, height/2, 0), diameter/2)
+		doc.Constrain.Diameter(hole, diameter)
+		doc.Constrain.Distance(hole.Center(), sides[0], height/2)
+		doc.Constrain.Distance(hole.Center(), sides[3], x)
 	}
 	sketch := doc.Active()
 	fmt.Printf("%s: solved %v, %d degrees of freedom\n", sketch, sketch.Solved(), sketch.Dof())
 
-	plate := doc.Extrude(thickness, "plate")
-	fmt.Printf("%s: %.1f mm³\n", plate, plate.Volume())
+	plate := doc.Features.Extrude(thickness, "plate")
+	fmt.Printf("%s: %.1f mm³\n", plate, plate.Analyze().Volume())
 
 	if !write {
 		return
 	}
-	if err := doc.Save("bracket.tlspr"); err != nil {
+	if err := doc.File.Save("bracket.tlspr"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	for _, name := range []string{"bracket.stl", "bracket.step", "bracket.png"} {
-		if err := doc.Export(name); err != nil {
+		if err := doc.File.Export(name); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}

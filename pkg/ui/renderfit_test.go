@@ -57,13 +57,13 @@ func modelBounds(t *testing.T, path string) (image.Rectangle, image.Rectangle) {
 func TestRenderWindowAfterAlign(t *testing.T) {
 	ss, p := newTestApp(t)
 	ss.AnimationSpeed = 300
-	scriptConsole(t, ss, `doc.Rect(V(0, 0, 0), V(60, 30, 0))`)
+	scriptConsole(t, ss, `doc.Sketch.Rect(V(0, 0, 0), V(60, 30, 0))`)
 	ss.GW.SetProjection(geom.Vector{X: 0.707, Z: -0.707}, geom.Vector{X: -0.408, Y: 0.816, Z: -0.408})
 	dir := t.TempDir()
 	early, late := filepath.Join(dir, "early.png"), filepath.Join(dir, "late.png")
 	out := scriptConsole(t, ss,
-		`doc.RunCommand("Align View to Workplane")`,
-		fmt.Sprintf(`doc.Render(%q, 320, 240, "window")`, early),
+		`doc.Edit.RunCommand("Align View to Workplane")`,
+		fmt.Sprintf(`doc.File.Render(%q, 320, 240, "window")`, early),
 	)
 	if out != "nil\nnil\n" {
 		t.Fatalf("the script showed %q", out)
@@ -73,7 +73,7 @@ func TestRenderWindowAfterAlign(t *testing.T) {
 	}
 	time.Sleep(time.Duration(ss.AnimationSpeed+50) * time.Millisecond)
 	p.RunDueTimers(100)
-	if out := scriptConsole(t, ss, fmt.Sprintf(`doc.Render(%q, 320, 240, "window")`, late)); out != "nil\n" {
+	if out := scriptConsole(t, ss, fmt.Sprintf(`doc.File.Render(%q, 320, 240, "window")`, late)); out != "nil\n" {
 		t.Fatalf("the script showed %q", out)
 	}
 	a, err := os.ReadFile(early)
@@ -105,14 +105,14 @@ func TestRenderFits(t *testing.T) {
 	views := []string{"isometric", "front", "top", "right", "back"}
 	sizes := [][2]int{{200, 150}, {640, 480}, {300, 600}, {1024, 256}}
 	scriptConsole(t, ss,
-		`doc.Rect(V(0, 0, 0), V(60, 30, 0))`,
-		`doc.Extrude(20, "box")`,
+		`doc.Sketch.Rect(V(0, 0, 0), V(60, 30, 0))`,
+		`doc.Features.Extrude(20, "box")`,
 	)
 	for _, view := range views {
 		for _, size := range sizes {
 			name := fmt.Sprintf("%s-%dx%d.png", view, size[0], size[1])
 			path := filepath.Join(dir, name)
-			if out := scriptConsole(t, ss, fmt.Sprintf(`doc.Render(%q, %d, %d, %q)`, path, size[0], size[1], view)); out != "nil\n" {
+			if out := scriptConsole(t, ss, fmt.Sprintf(`doc.File.Render(%q, %d, %d, %q)`, path, size[0], size[1], view)); out != "nil\n" {
 				t.Fatalf("%s: %s", name, out)
 			}
 			box, all := modelBounds(t, path)

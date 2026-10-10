@@ -49,18 +49,18 @@ func main() {
 		a0 := float64(k) * math.Pi / 2
 		at := func(a float64) api.Vec { return c.Plus(api.V(r*math.Cos(a), r*math.Sin(a), 0)) }
 		prev := corners[(k+3)%4]
-		doc.Line(prev.Plus(api.V(r*math.Cos(a0), r*math.Sin(a0), 0)), at(a0))
-		doc.Arc(c, at(a0), at(a0+math.Pi/2))
+		doc.Sketch.Line(prev.Plus(api.V(r*math.Cos(a0), r*math.Sin(a0), 0)), at(a0))
+		doc.Sketch.Arc(c, at(a0), at(a0+math.Pi/2))
 	}
-	doc.Circle(api.V(0, 0, 0), bore)
-	boss := doc.Extrude(h, "boss")
-	boss.SetDraft(deg)
+	doc.Sketch.Circle(api.V(0, 0, 0), bore)
+	boss := doc.Features.Extrude(h, "boss")
+	boss.AsExtrude().SetDraft(deg)
 	if p := boss.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
 
-	res := boss.Check()
+	res := boss.Analyze().Check()
 	t := math.Tan(deg * math.Pi / 180)
 	section := func(z float64) float64 {
 		s := z * t
@@ -74,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("draft.tlspr"); err != nil {
+		if err := doc.File.Save("draft.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

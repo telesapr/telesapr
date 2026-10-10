@@ -37,15 +37,15 @@ func main() {
 		}
 	}
 	doc := api.Current()
-	doc.SetChordTolerance(0.01)
-	doc.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
-	doc.Extrude(15, "block")
+	doc.Edit.SetChordTolerance(0.01)
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
+	doc.Features.Extrude(15, "block")
 	// The pocket's sketch on the block's top, through a point there, and
 	// cut down 10.
-	doc.Sketch3D("")
-	doc.SketchAt(doc.Point(api.V(0, 0, 15)), api.V(1, 0, 0), api.V(0, 1, 0), "pocket-sketch")
-	doc.Rect(api.V(5, 5, 15), api.V(55, 35, 15))
-	pocket := doc.Extrude(-10, "pocket")
+	doc.Features.Sketch3D("")
+	doc.Features.SketchAt(doc.Sketch.Point(api.V(0, 0, 15)), api.V(1, 0, 0), api.V(0, 1, 0), "pocket-sketch")
+	doc.Sketch.Rect(api.V(5, 5, 15), api.V(55, 35, 15))
+	pocket := doc.Features.Extrude(-10, "pocket")
 	pocket.SetCombine(api.Difference)
 
 	solid := pocket.Solid()
@@ -55,12 +55,12 @@ func main() {
 		n := corners[(i+1)%4]
 		edges = append(edges, solid.EdgeAt(api.V((c.X+n.X)/2, (c.Y+n.Y)/2, 5)), solid.EdgeAt(api.V(c.X, c.Y, 10)))
 	}
-	tray := doc.FilletSolid(edges, radius, "filled")
+	tray := doc.Features.FilletSolid(edges, radius, "filled")
 	if p := tray.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := tray.Check()
+	r := tray.Analyze().Check()
 	// What fillets of the pocket's box would take from it: each edge a
 	// square of the radius less a quarter circle along its length, and
 	// at each corner where three meet the corner cube they count three
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 	if write {
-		if err := doc.Save("tray.tlspr"); err != nil {
+		if err := doc.File.Save("tray.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}

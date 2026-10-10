@@ -36,9 +36,9 @@ func main() {
 	}
 
 	doc := api.Current()
-	doc.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
-	block := doc.Extrude(10, "block")
-	before := block.Check().Volume
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+	block := doc.Features.Extrude(10, "block")
+	before := block.Analyze().Check().Volume
 
 	// The edges round the top are the copies of the sketch's lines at
 	// the far end of the extrusion.
@@ -48,14 +48,14 @@ func main() {
 			top = append(top, e)
 		}
 	}
-	c := doc.Chamfer(top, distance, "chamfer")
+	c := doc.Features.Chamfer(top, distance, "chamfer")
 	if p := c.Problem(); p != "" {
 		fmt.Fprintln(os.Stderr, p)
 		os.Exit(1)
 	}
-	r := c.Check()
+	r := c.Analyze().Check()
 	fmt.Printf("%d edges at %g mm: %.2f mm³ taken off, sound %v\n",
-		len(top), c.Distance(), before-r.Volume, r.Sound())
+		len(top), c.AsChamfer().Distance(), before-r.Volume, r.Sound())
 	if !r.Sound() {
 		os.Exit(1)
 	}

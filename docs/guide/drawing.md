@@ -27,12 +27,12 @@ is placed, unless it would be redundant. "Nearly" is an angle of about one degre
 horizontal and vertical. Holding Ctrl while drawing offers nothing; the setting "enable automatic
 line constraints" on the configuration screen turns all of them off.
 
-From a script, `Doc.AutoConstrain` adds to a line, an arc or a circle of the active group what
+From a script, `Constrain.Auto` adds to a line, an arc or a circle of the active group what
 the window would add as it is placed, and says whether it added one:
 
 ```go
-c := doc.Circle(V(30, 0, 0), 8.03)
-if con, ok := doc.AutoConstrain(c); ok {
+c := doc.Sketch.Circle(V(30, 0, 0), 8.03)
+if con, ok := doc.Constrain.Auto(c); ok {
 	fmt.Println(con) // c004-eq-radius
 }
 ```
