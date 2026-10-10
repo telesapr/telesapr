@@ -282,7 +282,8 @@ func TestConvert(t *testing.T) {
 // or its description; a group that isn't there fails, and a command
 // that draws the whole sheet doesn't take the option.
 func TestExportGroup(t *testing.T) {
-	t.Parallel()
+	// Not parallel: a session's Init sets the link package's hooks,
+	// which are the process's.
 	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")
 	dir := t.TempDir()
 	size := func(args ...string) int64 {

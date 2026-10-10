@@ -60,7 +60,8 @@ func TestProfiles(t *testing.T) {
 // command on no model gives the run's figures alone, and a report that
 // can't be written fails the run.
 func TestProfileReport(t *testing.T) {
-	t.Parallel()
+	// Not parallel: a session's Init sets the link package's hooks,
+	// which are the process's.
 	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")
 	dir := t.TempDir()
 	report := filepath.Join(dir, "profile.json")
