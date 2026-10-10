@@ -123,6 +123,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupValC && g.Type == GroupSweep {
 		return "twist"
 	}
+	if f == GroupPitch && g.Type == GroupSweep {
+		return "corner-radius"
+	}
 	return f.Field()
 }
 

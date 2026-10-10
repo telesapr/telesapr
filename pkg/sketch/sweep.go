@@ -62,7 +62,9 @@ func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, nam
 	g.OpA = src.H
 	g.Edges = append([]core.HEntity(nil), path...)
 	g.SolidEdges = append([]topo.Name(nil), solidEdges...)
-	if _, err := g.sweepPath(sk); err != nil {
+	// A corner beside an arc wants a corner radius, which is set on the
+	// group once it is made: until then the group says so.
+	if _, err := g.sweepPath(sk); err != nil && !errors.Is(err, errCornerBesideArc) {
 		return g, err
 	}
 	return g, nil
@@ -81,6 +83,8 @@ type pathPiece struct {
 	// marks a piece that is neither a line nor an arc.
 	curves []srf.SBezier
 	free   bool
+	// rounded marks the arc a corner radius puts at a corner.
+	rounded bool
 }
 
 func (p pathPiece) reversed() pathPiece {
@@ -122,13 +126,17 @@ func (p pathPiece) step() srf.SweepStep {
 	return srf.SweepStep{Arc: true, Center: p.center, Axis: p.axis, Angle: p.angle}
 }
 
-// pathError is a problem with the path, at a point.
+// pathError is a problem with the path, at a point, and the sentinel
+// it is a case of, if any.
 type pathError struct {
-	msg string
-	at  *geom.Vector
+	msg  string
+	at   *geom.Vector
+	kind error
 }
 
 func (e *pathError) Error() string { return e.msg }
+
+func (e *pathError) Unwrap() error { return e.kind }
 
 func pathErr(at *geom.Vector, format string, args ...any) error {
 	return &pathError{msg: fmt.Sprintf(format, args...), at: at}
@@ -184,6 +192,21 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 		return nil, nil
 	}
 	g.fittedPath = nil
+	if g.ValB > 0 {
+		if chain, err = sk.roundCorners(chain, g.ValB); err != nil {
+			return nil, err
+		}
+
+	} else {
+		for k := range chain {
+			if cornerAt(k) && (chain[k-1].arc || chain[k].arc) {
+				x := chain[k].start
+				return nil, &pathError{at: &x, kind: errCornerBesideArc, msg: fmt.Sprintf(
+					"the path has a corner at (%g, %g, %g) next to an arc: a mitre can't join an arc's sides; "+
+						"give the sweep a corner radius to round it", x.X, x.Y, x.Z)}
+			}
+		}
+	}
 
 	var steps []srf.SweepStep
 	for k, p := range chain {
@@ -255,6 +278,10 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 							r = r.Minus(p.axis.ScaledBy(r.Dot(p.axis)))
 							if r.Dot(pathRadial) <= sweepTol {
 								x := p.center
+								if p.rounded {
+									return nil, pathErr(&x, "the profile reaches the axis of the rounded corner about "+
+										"(%g, %g, %g): the corner radius is too small for it", x.X, x.Y, x.Z)
+								}
 								return nil, pathErr(&x, "the profile reaches the axis of arc %s: the bend is too tight for it",
 									sk.entityName(p.h))
 							}
@@ -433,17 +460,18 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what str
 		next := chain[k%len(chain)]
 		if dot := chain[k-1].tangentAt(true).Dot(next.tangentAt(false)); dot < sweepTangentCos {
 			x := next.start
-			if corners && !chain[k-1].arc && !chain[k-1].free && !next.arc && !next.free {
+			if corners && !chain[k-1].free && !next.free {
 				if dot < -1+1e-6 {
 					return nil, false, pathErr(&x, "the path turns back on itself at (%g, %g, %g)", x.X, x.Y, x.Z)
 				}
-				// A corner between two lines: mitred (roadmap 28.4).
+				// A corner between two lines is mitred (roadmap 28.4);
+				// one beside an arc is rounded, with the sweep's corner
+				// radius (F4).
 				continue
 			}
 			if corners {
-				return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g) next to an arc or a curve: "+
-					"a %s's corners are between line segments, and its arcs and curves meet their neighbours tangent",
-					x.X, x.Y, x.Z, what)
+				return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g) next to a curve: "+
+					"a %s's curves meet their neighbours tangent", x.X, x.Y, x.Z, what)
 			}
 			return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g): a %s needs its pieces to meet tangent",
 				x.X, x.Y, x.Z, what)

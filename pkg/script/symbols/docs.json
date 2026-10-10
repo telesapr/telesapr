@@ -5074,6 +5074,10 @@
 						"decl": "func (g Group) Copies() (n int)",
 						"text": "Copies is how many copies a step and repeat or a pattern makes."
 					},
+					"CornerRadius": {
+						"decl": "func (g Group) CornerRadius() (mm float64)",
+						"text": "CornerRadius is a sweep's corner radius in mm, 0 where its corners\nare mitred."
+					},
 					"Delete": {
 						"decl": "func (g Group) Delete()",
 						"text": "Delete deletes the group and what depends on it. If the active\ngroup goes, being this one or one that used it, the last group\nbefore it that is left becomes active, so that new groups come\nwhere the history ends; Doc.Active says which it is."
@@ -5241,6 +5245,10 @@
 					"SetCopies": {
 						"decl": "func (g Group) SetCopies(n int)",
 						"text": "SetCopies is how many copies a step and repeat or a pattern makes."
+					},
+					"SetCornerRadius": {
+						"decl": "func (g Group) SetCornerRadius(mm float64)",
+						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nCorners beside an arc need one, which a mitre can't join; 0 mitres\nthe corners between lines again. A radius too large for a piece, too\nsmall for the profile to clear the arc's axis, or a corner out of an\narc's plane, is a problem on the group. SetExpr with\nsketch.GroupPitch gives it an expression."
 					},
 					"SetDistance": {
 						"decl": "func (g Group) SetDistance(mm float64)",
@@ -7374,7 +7382,7 @@
 			},
 			"DefaultVisibility": {
 				"decl": "func DefaultVisibility() Visibility",
-				"text": "DefaultVisibility is what GraphicsWindow::Init sets: points, normals, construction and edges shown, workplanes and outlines not."
+				"text": "DefaultVisibility is what GraphicsWindow::Init sets: points, normals, construction, edges, reference dimensions and comments shown, workplanes and outlines not."
 			},
 			"EdgeRadiusField": {
 				"decl": "func EdgeRadiusField(i int) string",

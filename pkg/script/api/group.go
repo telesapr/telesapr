@@ -756,6 +756,38 @@ func (g Group) SetTwist(degrees float64) {
 	})
 }
 
+// CornerRadius is a sweep's corner radius in mm, 0 where its corners
+// are mitred.
+func (g Group) CornerRadius() (mm float64) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupSweep, "CornerRadius")
+		mm = group.ValB
+	})
+	return mm
+}
+
+// SetCornerRadius rounds a sweep's corners on its path by mm: at each
+// corner the pieces either side are cut back to where an arc of the
+// radius, tangent to both, joins them, and the profile turns about the
+// arc's axis, so the solid is exact and needs no surface intersected.
+// Corners beside an arc need one, which a mitre can't join; 0 mitres
+// the corners between lines again. A radius too large for a piece, too
+// small for the profile to clear the arc's axis, or a corner out of an
+// arc's plane, is a problem on the group. SetExpr with
+// sketch.GroupPitch gives it an expression.
+func (g Group) SetCornerRadius(mm float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupSweep, "SetCornerRadius")
+		if !(mm >= 0) || math.IsInf(mm, 0) {
+			fail("a corner radius is a length of 0 or more, not %g", mm)
+		}
+		group.ValB, group.ExprB = mm, ""
+		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
 // SweepUp is the direction a sweep holds its frames to, or zero when
 // they turn as little as the path lets them.
 func (g Group) SweepUp() (up Vec) {
