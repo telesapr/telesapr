@@ -225,8 +225,9 @@ func TestFilletSetbackSweep(t *testing.T) {
 // whose patches would fold is refused, and those refusals are the rate
 // measured: 4 of 36 when this was written (11%: a box's corner of 3,
 // 0.5 and 0.75 either way round, and two apexes, each with radii 5 or 6
-// to 1 side by side), allowed up to 12%. The allowance was set after
-// the first run, unlike the grid above's. The whole grid always runs.
+// to 1 side by side). The allowance was set after the first run, unlike
+// the grid above's, and was fixed at those 4 on 2026-10-10 to be kept
+// from then on. The whole grid always runs.
 func TestFilletSetbackExtremeSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
@@ -240,7 +241,7 @@ func TestFilletSetbackExtremeSweep(t *testing.T) {
 			sweep.Floats("r2", 0.5, 1.5, 3),
 			sweep.Floats("r3", 0.75, 2.5),
 		},
-		MaxFailRate: 0.12,
+		MaxFailRate: 4.0 / 36,
 	}
 	bad := 0
 	grid.Run(func(p sweep.Point) error {

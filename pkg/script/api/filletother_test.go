@@ -277,7 +277,8 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 // that wide is no quintic within half the chord tolerance (a polynomial
 // in the angle round the corner misses it by 3e-4 mm at degree 5, 2e-5
 // at 6), and a section has one piece of degree 5 at most. None is made
-// unsound.
+// unsound. The allowance of 8 was fixed at what was measured on
+// 2026-10-10, to be kept from then on.
 func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
 	g := sweep.Grid{
