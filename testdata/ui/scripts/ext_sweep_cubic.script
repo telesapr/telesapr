@@ -23,15 +23,15 @@ edit 90
 tw
 answer ok
 menu Analyze|Check Solid
-twmove 397 185
-twdown L 397 185
-twup L 397 185
+twmove 397 205
+twdown L 397 205
+twup L 397 205
 answer ok
 menu Analyze|Check Solid
 tw
-twmove 235 185
-twdown L 235 185
-twup L 235 185
+twmove 235 205
+twdown L 235 205
+twup L 235 205
 answer ok
 menu Analyze|Check Solid
 key z ctrl

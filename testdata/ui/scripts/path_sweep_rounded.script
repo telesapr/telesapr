@@ -1,0 +1,17 @@
+# The sweep of path_sweep_corner with its corner rounded at 3 on the
+# group's screen; the same as path_sweep_rounded.go makes
+# (TestPathEquivalenceSweepRounded, F4).
+file $testdata/ui/sweep_corner.tlspr
+menu File|Open...
+view other
+move 347.5 217.5
+down L 347.5 217.5
+up L 347.5 217.5
+move 377.5 202.5
+down L 377.5 202.5
+up L 377.5 202.5
+menu Features|Sweep Along Path
+twmove 186 205
+twdown L 186 205
+twup L 186 205
+edit 3

@@ -537,8 +537,8 @@ func (tw *textWindow) ScreenChangeGroupScale(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
-// ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance or
-// a fillet's radius, all ValB.
+// ScreenChangeHelixPitch edits a helix's pitch, a chamfer's distance, a
+// fillet's radius or a sweep's corner radius, all ValB.
 func (tw *textWindow) ScreenChangeHelixPitch(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
 	text := g.ExprB
@@ -1247,6 +1247,13 @@ func (tw *textWindow) showSweepInfo(g *sketch.Group) {
 	tw.showGroupEdges(g, "path")
 	tw.Printf(false, "%Bd   %Fttwist%E %s deg%s %Fl%Ll%f%D[change]%E",
 		fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+	if g.ValB == 0 && g.ExprB == "" {
+		tw.Printf(false, "%Ba   %Ftcorners%E mitred %Fl%Ll%f%D[round]%E",
+			lf(tw.ScreenChangeHelixPitch), g.H.V)
+	} else {
+		tw.Printf(false, "%Ba   %Ftcorner radius%E %s%s %Fl%Ll%f%D[change]%E",
+			tw.ss.MmToString(g.ValB, true), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+	}
 	up := g.SweepUp
 	tw.Printf(false, "%Ba   %Ftframes%E "+
 		"%f%Ln%Fd%s turn least%E  "+

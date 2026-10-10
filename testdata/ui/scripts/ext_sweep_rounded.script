@@ -1,0 +1,22 @@
+# A sweep's corners rounded (F4): the rectangle of sweep_corner.tlspr
+# swept along its two lines, mitred; [round] on the group's screen asks
+# for a corner radius, and with 3 the corner is an arc on the path; the
+# screen shows the radius, and the solid is checked.
+file $testdata/ui/sweep_corner.tlspr
+menu File|Open...
+view other
+move 347.5 217.5
+down L 347.5 217.5
+up L 347.5 217.5
+move 377.5 202.5
+down L 377.5 202.5
+up L 377.5 202.5
+menu Features|Sweep Along Path
+twmove 186 205
+twdown L 186 205
+twup L 186 205
+edit 3
+tw
+answer ok
+menu Analyze|Check Solid
+dump

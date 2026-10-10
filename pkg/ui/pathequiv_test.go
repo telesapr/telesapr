@@ -182,6 +182,14 @@ func TestPathEquivalenceSweepCorner(t *testing.T) {
 	}
 }
 
+// A sweep's corner rounded on its screen, and by a script (F4).
+func TestPathEquivalenceSweepRounded(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sweep_rounded", "path_sweep_rounded")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || g.ValB != 3 {
+		t.Errorf("the sweep: type %d, problem %q, corner radius %g", g.Type, g.Problem.Msg, g.ValB)
+	}
+}
+
 // A loft's ends set on its screen, and by a script (roadmap 28.3).
 func TestPathEquivalenceLoftTangency(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_loft_tangency", "path_loft_tangency")
