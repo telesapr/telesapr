@@ -34,7 +34,7 @@ func (w *stepFileWriter) WriteAssembly(parts []sketch.AssemblyPart, scale float6
 		}
 		// Each part's solid stands alone: no point or edge is shared
 		// with another's.
-		w.pointAliases, w.edgeCurveAliases, w.curveAliases, w.orientedEdgeAliases = nil, nil, nil, nil
+		w.resetAliases()
 		w.advancedFaces = w.advancedFaces[:0]
 
 		id := w.id
