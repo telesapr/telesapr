@@ -276,7 +276,9 @@ func hasVector(e *core.Entity) bool { return e.HasVector() }
 // dimension gives a new dimension the value v: it is first made to
 // measure the sketch, which tells its sign.
 func dimension(sk *sketch.Sketch, c *core.Constraint, v float64) {
-	if c.Type == core.ConstraintPtPtDistance || c.Type == core.ConstraintProjPtDistance {
+	switch c.Type {
+	case core.ConstraintPtPtDistance, core.ConstraintProjPtDistance,
+		core.ConstraintMinDistance, core.ConstraintMaxDistance:
 		// Where the interface puts the label.
 		c.Disp.Offset = sk.DistanceLabelOffset(sk.MustEntity(c.PtA).PointGetNum(sk),
 			sk.MustEntity(c.PtB).PointGetNum(sk))
@@ -361,6 +363,47 @@ func (d *Doc) Length(line Entity, v float64) Constraint {
 		c.Type = core.ConstraintPtPtDistance
 		c.PtA, c.PtB = l.Point[0], l.Point[1]
 		dimension(sk, c, v)
+	})
+}
+
+// MinDistance keeps two points at least v apart, or a line segment at
+// least v long when b is Entity{}. Unlike Distance it leaves the
+// points free to move further apart: it holds only where the sketch
+// would come closer, and takes a degree of freedom only then.
+func (d *Doc) MinDistance(a, b Entity, v float64) Constraint {
+	return d.distanceBound(core.ConstraintMinDistance, a, b, v)
+}
+
+// MaxDistance keeps two points at most v apart, or a line segment at
+// most v long when b is Entity{}. It leaves the points free to come
+// closer, and takes a degree of freedom only where the sketch would
+// go further.
+func (d *Doc) MaxDistance(a, b Entity, v float64) Constraint {
+	return d.distanceBound(core.ConstraintMaxDistance, a, b, v)
+}
+
+// distanceBound makes a MinDistance or a MaxDistance.
+func (d *Doc) distanceBound(t core.ConstraintType, a, b Entity, v float64) Constraint {
+	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
+		c.Type = t
+		if b.H.V == 0 {
+			l := sk.MustEntity(a.must(sk, "a line segment", isLine))
+			c.PtA, c.PtB = l.Point[0], l.Point[1]
+		} else {
+			c.PtA = a.must(sk, "a point", isPoint)
+			c.PtB = b.must(sk, "a point", isPoint)
+		}
+		dimension(sk, c, v)
+	})
+}
+
+// OnSegment puts a point on a line segment, between its ends: unlike
+// On, which puts it anywhere on the segment's line.
+func (d *Doc) OnSegment(point, line Entity) Constraint {
+	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
+		c.Type = core.ConstraintPtOnSegment
+		c.PtA = point.must(sk, "a point", isPoint)
+		c.EntityA = line.must(sk, "a line segment", isLine)
 	})
 }
 

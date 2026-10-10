@@ -286,7 +286,8 @@ func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Sele
 			c.Disp.Offset = c.Disp.Offset.Plus(trans)
 		case core.ConstraintPtLineDistance:
 			c.ValA *= scale
-		case core.ConstraintPtPtDistance, core.ConstraintProjPtDistance, core.ConstraintDiameter:
+		case core.ConstraintPtPtDistance, core.ConstraintProjPtDistance, core.ConstraintDiameter,
+			core.ConstraintMinDistance, core.ConstraintMaxDistance:
 			c.ValA *= math.Abs(scale)
 		case core.ConstraintArcLineTangent:
 			if scale < 0 {

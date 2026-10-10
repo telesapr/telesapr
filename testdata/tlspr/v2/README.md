@@ -18,3 +18,7 @@ added within version 2 on 2026-10-02), which leaves the extrusion out with it.
 
 `sketch_on_face.tlspr` is a block with a chamfer and a cylinder drawn on the chamfer's face, a face
 no entity names (workplane subtype `face`, added within version 2 on 2026-10-10).
+
+`limits.tlspr` is the rod and slot of `examples/scripts/limits`: a line between a minimum and a
+maximum length, and a point on a segment (`min-distance`, `max-distance` and `pt-on-segment`,
+added within version 2 on 2026-10-10).

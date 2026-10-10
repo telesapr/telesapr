@@ -16,9 +16,12 @@ const (
 	ConstraintPtLineDistance   ConstraintType = 32
 	ConstraintPtFaceDistance   ConstraintType = 33
 	ConstraintProjPtDistance   ConstraintType = 34
+	ConstraintMinDistance      ConstraintType = 35
+	ConstraintMaxDistance      ConstraintType = 36
 	ConstraintPtInPlane        ConstraintType = 41
 	ConstraintPtOnLine         ConstraintType = 42
 	ConstraintPtOnFace         ConstraintType = 43
+	ConstraintPtOnSegment      ConstraintType = 44
 
 	ConstraintEqualLengthLines ConstraintType = 50
 	ConstraintLengthRatio      ConstraintType = 51
@@ -70,12 +73,18 @@ func (t ConstraintType) String() string {
 		return "PtFaceDistance"
 	case ConstraintProjPtDistance:
 		return "ProjPtDistance"
+	case ConstraintMinDistance:
+		return "MinDistance"
+	case ConstraintMaxDistance:
+		return "MaxDistance"
 	case ConstraintPtInPlane:
 		return "PtInPlane"
 	case ConstraintPtOnLine:
 		return "PtOnLine"
 	case ConstraintPtOnFace:
 		return "PtOnFace"
+	case ConstraintPtOnSegment:
+		return "PtOnSegment"
 	case ConstraintEqualLengthLines:
 		return "EqualLengthLines"
 	case ConstraintLengthRatio:
@@ -169,6 +178,11 @@ type ConstraintBase struct {
 
 	Reference bool
 	Comment   string
+
+	// Bound is the bound an inequality is held at in the solve, or
+	// BoundFree: worked out afresh at each solve, and neither saved
+	// nor compared.
+	Bound int
 }
 
 func (c *ConstraintBase) Equals(other *ConstraintBase) bool {
@@ -213,9 +227,12 @@ var constraintNames = map[ConstraintType]string{
 	ConstraintPtPlaneDistance:   "pt-plane-distance",
 	ConstraintPtFaceDistance:    "pt-face-distance",
 	ConstraintProjPtDistance:    "proj-pt-pt-distance",
+	ConstraintMinDistance:       "min-distance",
+	ConstraintMaxDistance:       "max-distance",
 	ConstraintPtInPlane:         "pt-in-plane",
 	ConstraintPtOnLine:          "pt-on-line",
 	ConstraintPtOnFace:          "pt-on-face",
+	ConstraintPtOnSegment:       "pt-on-segment",
 	ConstraintEqualLengthLines:  "eq-length",
 	ConstraintEqLenPtLineD:      "eq-length-and-pt-ln-dist",
 	ConstraintEqPtLnDistances:   "eq-pt-line-distances",
