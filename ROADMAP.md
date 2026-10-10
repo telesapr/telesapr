@@ -15,13 +15,12 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [The helix off the true helix](#solid-feature-leftovers) | kernel defect | S-M | The one open item that makes wrong geometry instead of refusing; the oracle measures it |
-| 2 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher; the mender does not reach them |
-| 3 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry; the dome's end sections first, being measured |
-| 4 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
-| 5 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 6 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
-| 7 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 1 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher; the mender does not reach them |
+| 2 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry; the dome's end sections first, being measured |
+| 3 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
+| 4 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 5 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
+| 6 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 K3 (contact) is closed: every case it measured is sound, the last ones with K4's mender. Its notes
 stay below for the next contact case. K4, postponed as the default, would open the mesher's open
@@ -207,10 +206,15 @@ holding it, not only those sharing the nearest one's surface, made a sphere_bore
 
 ### Solid feature leftovers
 
+Done 2026-10-11: a helix's patches were 2% of a quarter turn's rise off the true helix (0.1 mm on a
+helix rising 30 mm a turn), their rise following the arc's rational parameter, not its angle. They
+are raised to degree 5 along the turn and their rise fitted to the angle, within 3e-6 of it
+(`pkg/srf/helix_rise.go`); `TestOracleHelix` holds the mesh to 0.03 mm at chord 0.01%. Thread
+goldens take 17% longer.
+
 | Item | State | Approach / tried |
 |---|---|---|
 | Mitred sweep corners next to an arc or curve; corners on twisted or fitted sweeps; closed sweeps | refused; corners between two lines are mitred, and any corner beside lines or arcs rounded with a corner radius (F4) | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines; whole caps from one ellipse unite, `TestMitredBarsUnion`, so it is the cut caps, not contact). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. A corner radius (F4, done) rounds corners beside arcs, which is what users usually want |
-| A helix's patches are off the true helix | about 2% of each patch's rise: up to 0.1 mm on a helix rising 30 mm a turn, whatever the chord tolerance; found by the ray-cast oracle (`TestOracleHelix`) | Each patch (`srf.FromRevolutionOf`, a quarter turn at most) carries the rise in its control points, so the rise follows the arc's rational parameter, not its angle. More patches a turn shrink it by their square; exact needs the rise reparametrised, or the patch fitted (degree 3 or more) as the fitted sweeps are. Moves every helix golden |
 | Shells of other curved solids (filleted, lofted, revolved) | prisms only | Offsets of patches (22.1) are the first part; faces whose offsets do not cross themselves can be sized. The general shell is open-ended (E12, parked) |
 
 ## Waiting for the user

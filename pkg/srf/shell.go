@@ -524,8 +524,14 @@ func (s *SShell) MakeFromHelicalRevolutionOf(sbls *SBezierLoopSet, pt, axis geom
 				if j < sections && revs[j].V != 0 && revsp[j].V != 0 {
 					ss := s.FindSurface(revs[j])
 
-					sc := SCurve{IsExact: true, Exact: SBezierFrom3(ss.Ctrl[0][0], ss.Ctrl[0][1], ss.Ctrl[0][2])}
-					sc.Exact.Weight[1] = ss.Weight[0][1]
+					var sc SCurve
+					if ss.DegN == 2 {
+						sc = SCurve{IsExact: true, Exact: SBezierFrom3(ss.Ctrl[0][0], ss.Ctrl[0][1], ss.Ctrl[0][2])}
+						sc.Exact.Weight[1] = ss.Weight[0][1]
+					} else {
+						// A helix's patch, raised along the turn (helixRiseDegree).
+						sc = SCurve{IsExact: true, Exact: ss.EdgeCurve(3)}
+					}
 					maxDt := 0.5
 					if sc.Exact.Degree > 1 {
 						maxDt = 0.125

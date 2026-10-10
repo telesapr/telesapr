@@ -275,8 +275,15 @@ func FromPlane(pt, u, v geom.Vector) SSurface {
 
 // FromRevolutionOf builds a surface by revolving a Bezier profile
 // around an axis (pt, axis) over the angular range [thetas, thetaf],
-// with optional endpoint shrinkage distances (dists, distf).
+// moved along the axis by dists at the start and distf at the finish.
+// Where the two differ the surface is a helix's, of degree
+// helixRiseDegree along the turn, rising with the angle.
 func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, distf float64) SSurface {
+	if dists != distf {
+		s := FromRevolutionOf(sb, pt, axis, thetas, thetaf, dists, dists)
+		dtheta := math.Abs(WrapSymmetric(thetaf-thetas, 2*math.Pi))
+		return s.withHelicalRise(axis, dtheta, distf-dists)
+	}
 	s := SSurface{
 		DegM:  sb.Degree,
 		DegN:  2,
